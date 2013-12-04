@@ -86,6 +86,11 @@ def main():
 													This will be used to automatically calculate the angular steps to use in search of the best alignment.
 													Make sure the apix is correct on the particles' headers, sine the radius will be converted from Angstroms to pixels.
 													Then, the fine angular step is equal to 360/(2*pi*radius), and the coarse angular step 4 times that""", default=0)
+	parser.add_argument("--precision",type=float,default=1.0,help="""Precision in pixels to use
+		when figuring out alignment parameters automatically using --radius. Precision 
+		would be the number of pixels that the the edge of the specimen is moved (rotationally) during the 
+		finest sampling, --ralign. If precision is 1, then the precision of alignment will be that of 
+		the sampling (apix of your images) times the --shrinkfine factor specified.""")
 	
 	parser.add_argument("--search", type=float,default=8.0,help=""""During COARSE alignment
 		translational search in X, Y and Z, in pixels. Only works when --radius is provided.
@@ -123,9 +128,9 @@ def main():
 	
 	#parser.add_argument("--ncoarse", type=int, help="Deprecated. Use --npeakstorefine instead.", default=None)
 	parser.add_argument("--npeakstorefine", type=int, help="The number of best coarse alignments to refine in search of the best final alignment. Default=4.", default=4, guitype='intbox', row=9, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym[1]')
-	parser.add_argument("--align",type=str,help="This is the aligner used to align particles to the previous class average. Default is rotate_translate_3d:search=10:delta=15:dphi=15, specify 'None' to disable", returnNone=True, default="rotate_translate_3d:search=10:delta=15:dphi=15", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'3d\')', row=12, col=0, rowspan=1, colspan=3, nosharedb=True, mode="alignment,breaksym['rotate_symmetry_3d']")
+	parser.add_argument("--align",type=str,help="This is the aligner used to align particles to the previous class average. Default is rotate_translate_3d:search=10:delta=12:dphi=12, specify 'None' to disable", returnNone=True, default="rotate_translate_3d:search=10:delta=12:dphi=12", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'3d\')', row=12, col=0, rowspan=1, colspan=3, nosharedb=True, mode="alignment,breaksym['rotate_symmetry_3d']")
 	parser.add_argument("--aligncmp",type=str,help="The comparator used for the --align aligner. Default is the internal tomographic ccc. Do not specify unless you need to use another specific aligner.",default="ccc.tomo", guitype='comboparambox',choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=13, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
-	parser.add_argument("--ralign",type=str,help="This is the second stage aligner used to refine the first alignment. Default is refine.3d, specify 'None' to disable", default="refine_3d", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine.*3d\')', row=14, col=0, rowspan=1, colspan=3, nosharedb=True, mode='alignment,breaksym[None]')
+	parser.add_argument("--ralign",type=str,help="This is the second stage aligner used to refine the first alignment. Default is refine_3d_grid:delta=3:range=15:search=2, specify 'None' to disable", default="refine_3d_grid:delta=3:range=15:search=2", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine.*3d\')', row=14, col=0, rowspan=1, colspan=3, nosharedb=True, mode='alignment,breaksym[None]')
 	parser.add_argument("--raligncmp",type=str,help="The comparator used by the second stage aligner. Default is the internal tomographic ccc",default="ccc.tomo", guitype='comboparambox',choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=15, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
 	parser.add_argument("--averager",type=str,help="The type of averager used to produce the class average. Default=mean",default="mean")
 	parser.add_argument("--keep",type=float,help="The fraction of particles to keep in each class.",default=1.0, guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode='alignment,breaksym')
@@ -143,8 +148,8 @@ def main():
 	
 	#parser.add_argument('--reverse_contrast', action="store_true", default=False, help=""" This multiplies the input particles by -1. Remember that EMAN2 **MUST** work with 'white protein' """)
 	
-	parser.add_argument("--shrink", type=int,default=0,help="Optionally shrink the input volumes by an integer amount for coarse alignment.", guitype='shrinkbox', row=5, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
-	parser.add_argument("--shrinkrefine", type=int,default=0,help="Optionally shrink the input volumes by an integer amount for refine alignment.", guitype='intbox', row=5, col=2, rowspan=1, colspan=1, mode='alignment')
+	parser.add_argument("--shrink", type=int,default=1.0,help="Optionally shrink the input volumes by an integer amount for coarse alignment.", guitype='shrinkbox', row=5, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
+	parser.add_argument("--shrinkrefine", type=int,default=1.0,help="Optionally shrink the input volumes by an integer amount for refine alignment.", guitype='intbox', row=5, col=2, rowspan=1, colspan=1, mode='alignment')
 	
 	#parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default='', guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 
@@ -211,7 +216,7 @@ def main():
 	
 	if options.align:
 		print "There's options.align", options.align
-		if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align:
+		if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align and 'options_translate_3d:' in options.align:
 			options.align += ':sym=' + str( options.sym )
 			print "And there's sym", options.sym
 	
@@ -839,12 +844,22 @@ def calcAliStep(options):
 		print "options.shrinkrefine > 1, see:", options.shrinkrefine
 		fapix = apix*factorf
 	
-	if factorc > 1.0 and factorf > 1.0:										#The relative shrinking factor doesn't really matter
-		factorRelative = factorc / factorf
+	#if factorc > 1.0 and factorf > 1.0:										#The relative shrinking factor doesn't really matter
+	#	factorRelative = factorc / factorf
 	
-	radPix = options.radius / fapix
+	radPixC = options.radius / capix
+	radPixF = options.radius / fapix
+
+	coarseStep1pix =  360.0/(2.0*math.pi*radPixC)
+	#coarseStep1pixRounded = math.floor(coarseStep1pix*100.00)/100.00
 	
-	fineStep = 360.0/(2.0*math.pi*radPix)
+	if options.precision > 1.0:
+		coarseStep1pix *= options.precision
+	
+	fineStep = 360.0/(2.0*math.pi*radPixF)
+	if options.precision > 1.0:
+		finseStep *= options.precision
+	
 	fineStepRounded = math.floor(fineStep*100.00)/100.00					#Round fine step DOWN to scan slightly more finally than theoretically needed
 	
 	rango = 2.0 * fineStep													#Alignment goes from -range (rango) to +range
@@ -857,6 +872,11 @@ def calcAliStep(options):
 	coarseStep = angularDistanceRounded / 2.25								#The 2.5 factor is approximate. The angular distance A between two rotations R1=a1,b1,c1 and R2=a2,b2,c2 
 																			#where r1=a1=b1=c1 and r2=a2=b2=c2, for example R1=0,0,0 and R2=12,12,12, is roughly A=(r2-r1)*2.25 
 																			#This an be empirically verified with e2spt_transformdistance.py
+	
+	if coarseStep < coarseStep1pix:
+		coarseStep = coarseStep1pix
+		print """The coarse step %f was finer than one pixel at the edge of the particle, 
+		therefore it will be replaced with %f""" % (coarseStep,coarseStep1pix)
 	
 	#factor = 1
 	#if options.shrink and float( options.shrink ) > 1.0:
@@ -872,7 +892,7 @@ def calcAliStep(options):
 	CSrounded = math.floor( coarseStep * 100.00 )/100.00		#Round coarse step DOWN to scan slightly more finally than theoretically needed
 
 	
-	print "\n\n*****************\n\nThe radius in pixels at size for fine alignment (taking --shrinkrefine into account) is", radPix
+	print "\n\n*****************\n\nThe radius in pixels at size for fine alignment (taking --shrinkrefine into account) is", radPixF
 	print "Shrink is", options.shrink
 	print "Shrink refine is", options.shrinkrefine
 	print "Therefore, the coarse step and itself rounded are", coarseStep, CSrounded
@@ -923,9 +943,11 @@ def calcAliStep(options):
 	options.align = 'rotate_translate_3d:search=' + str(searchC) +':delta=' + str(CSrounded) + ':dphi=' + str(CSrounded)
 	if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align:
 		options.align += ':sym=' + str(options.sym)
-		
-	options.ralign = 'refine_3d_grid:range=' + str(rangoRounded) + ':delta=' + str(fineStepRounded) + ':search=' + str(searchF)
-		
+	
+	if options.ralign and options.ralign != None and options.ralign != 'None':
+		options.ralign = 'refine_3d_grid:range=' + str(rangoRounded) + ':delta=' + str(fineStepRounded) + ':search=' + str(searchF)
+	else:
+		options.ralign = 'None'
 	
 	#options.align = 'rotate_translate_3d:search=8:delta=' + str(CSrounded) + ':dphi=' + str(CSrounded)
 	#if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align:
@@ -1740,43 +1762,56 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 	
 	else:
 		sfixedimage = fixedimage
+
+		if options.shrink:
+			sfixedimage = fixedimage.process('math.meanshrink',{'n':options.shrink})		
 		s2fixedimage = fixedimage
+
+		if options.shrinkrefine:
+			s2fixedimage = fixedimage.process('math.meanshrink',{'n':options.shrinkrefine})
 		
+		
+		
+		'''
+		if int(sfixedimage['nx']) != int(simage['nx']):
+			if float(options.shrink) > 1.0:
+				sfixedimage.process_inplace('math.meanshrink',{'n':options.shrink})
+		
+		if int(sfixedimage['nx']) != int(simage['nx']):
+			print """ERROR: For some reason, the particles and the reference are STILL not the
+			same size before COARSE alignment, see""", simage['nx'],sfixedimage['nx']
+			sys.exit()
+		
+		if int(s2fixedimage['nx']) != int(s2image['nx']):
+			print "Fine images ain't the same size."
+			print "ref", s2fixedimage['nx']
+			print "ptcl", s2image['nx']
+			print "Should shrink ref" 
+			if float(options.shrinkrefine) > 1.0:
+				print "Will shrink ref by this much", options.shrinkrefine
+				s2fixedimage.process_inplace('math.meanshrink',{'n':options.shrinkrefine})
+				print "Done see", s2fixedimage['nx']
+				
+		if int(s2fixedimage['nx'] != s2image['nx']):
+			print """ERROR: For some reason, the particles and the reference are STILL not the
+			same size before FINE alignment, see""", s2image['nx'],s2fixedimage['nx']
+			sys.exit()
+		'''
+			
 	
 	'''
 	Preprocess the particle or "moving image"
 	'''
 	if options.shrink or options.normproc or options.lowpass or options.highpass or options.mask or options.preprocess or options.lowpassfine or options.highpassfine or options.preprocessfine or (options.ralign and 'fsc.tomo' in options.ralign[0]) or (options.align and 'fsc.tomo' in options.align[0]):
 		#print "Sending image to preprocessing"
-		retimage = preprocessing(options,image)
-		simage = retimage[0]
-		s2image = retimage[1]
+		retimages = preprocessing(options,image)
+		simage = retimages[0]
+		s2image = retimages[1]
 		
 	else:
 		simage = image
 		s2image = image
 		
-	#print "\noptions.raligncmp is", options.raligncmp
-	#print "\noptions.aligncmp is", options.aligncmp
-	
-	#if options.ref and not refpreprocess and (options.raligncmp and 'fsc.tomo' in options.raligncmp[0]) or (options.aligncmp and 'fsc.tomo' in options.aligncmp[0]):
-	#	print "\nWill put dummy values for reference wedge"
-	#	sfixedimage['spt_wedge_mean'] = simage['spt_wedge_mean']
-	#	sfixedimage['spt_wedge_sigma'] = simage['spt_wedge_sigma']
-	#	
-	#	s2fixedimage['spt_wedge_mean'] = s2image['spt_wedge_mean']
-	#	s2fixedimage['spt_wedge_sigma'] = s2image['spt_wedge_sigma']
-
-
-
-		
-			#print "The mean and sigma for subvolume %d are: mean=%f, sigma=%f" % (i,mean,sigma)
-			#a.write_image(stack,i)
-		
-	#if classoptions.verbose: 
-	#	print "Align size %d,  Refine Align size %d"%(sfixedimage["nx"],s2fixedimage["nx"])
-	
-	#In some cases we want to prealign the particles
 	
 	if transform:
 		#print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nThere WAS a transform, see", transform
@@ -1817,20 +1852,36 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 		
 		#print "Will do coarse alignment"
 		
-		print "Right before alignment, the boxsize of the COARSE image is", simage['nx'],simage['ny'],simage['nz']
+		print "\n\n\nRight before COARSE alignment, the boxsize of image is", simage['nx'],simage['ny'],simage['nz']
+		print "Right before COARSE alignment, the boxsize of FIXEDimage is", sfixedimage['nx'],sfixedimage['ny'],sfixedimage['nz']
+		#print "Side adjustments will be attempted\n\n\n\n"
+		
+	
+		#print "\n\n\nRight before COARSE ali, AFTER size adj, the boxsize of image is", simage['nx'],simage['ny'],simage['nz']
+		#print "Right before COARSE alignment,  AFTER size adj, the boxsize of FIXEDimage is", sfixedimage['nx'],sfixedimage['ny'],sfixedimage['nz']
+		
 		bestcoarse = simage.xform_align_nbest(options.align[0],sfixedimage,options.align[1],options.npeakstorefine,options.aligncmp[0],options.aligncmp[1])
 		
 		# Scale translation
 		scaletrans=1.0
 		if options.ralign and options.shrinkrefine:
-			scaletrans=options.shrink/float(options.shrinkrefine)
-		elif options.shrink:
+			scaletrans = options.shrink/float(options.shrinkrefine)
+		elif options.shrink and not options.ralign:
 			scaletrans=float(options.shrink)
 			
 		if scaletrans>1.0:
+			print "\n\n\nShrink or shrinkrefine are greater than 1 and not equal, and therefore translations need to be scaled!"
+			print "Before, translations are", bestcoarse[0]['xform.align3d'].get_trans()
+			print "Transform is", bestcoarse[0]['xform.align3d']
+			
 			for c in bestcoarse:
 				c["xform.align3d"].set_trans(c["xform.align3d"].get_trans()*scaletrans)
+			print "After, translations are", c['xform.align3d'].get_trans()
+			print "Transform is", c['xform.align3d']
 
+		elif options.shrink > 1.0 and options.shrinkrefine > 1.0 and options.shrink == options.shrinkrefine:
+			print "\n\nshrink and shrink refine were equal!\n\n"
+			
 	# verbose printout
 	if options.verbose > 1 :
 		for i,j in enumerate(bestcoarse): 
@@ -1844,10 +1895,12 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 		for bc in bestcoarse:
 			options.ralign[1]["xform.align3d"] = bc["xform.align3d"]
 			
-			print "Right before alignment, the boxsize of the REFINE image is", s2image['nx'],s2image['ny'],s2image['nz']
-			ali = s2image.align(options.ralign[0],s2fixedimage,options.ralign[1],options.raligncmp[0],options.raligncmp[1])
+			print "\n\n\nRight before FINE alignment, the boxsize of the REFINE image is", s2image['nx'],s2image['ny'],s2image['nz']
+			print "And the transform passed in is", bc["xform.align3d"]
+			#ali = s2image.align(options.ralign[0],s2fixedimage,options.ralign[1],options.raligncmp[0],options.raligncmp[1])
 			
-			#print "\nThe score returned from ralign is", ali['score']
+			ali = s2image.align(options.ralign[0],s2fixedimage,options.ralign[1],options.raligncmp[0],options.raligncmp[1])
+
 			try: 					
 				bestfinal.append({"score":ali["score"],"xform.align3d":ali["xform.align3d"],"coarse":bc})
 				#print "\nThe appended score in TRY is", bestfinal[0]['score']					
@@ -1859,14 +1912,19 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 		if options.verbose:
 			pass
 			#print "Best final is", bestfinal
-				
+		
+		
+		print "\n\n\nAfter fine alignment, before SHRINK compensation, the transform is", bestfinal[0]['xform.align3d']		
 		if options.shrinkrefine>1 :
 			for c in bestfinal:
 			
 				newtrans = c["xform.align3d"].get_trans() * float(options.shrinkrefine)
 				#print "New trans and type are", newtrans, type(newtrans)
 				c["xform.align3d"].set_trans(newtrans)
-
+		
+		print "After fine alignment, after SHRINK compensation, the transform is", bestfinal[0]['xform.align3d']		
+		print "\n\n\n"
+		
 		#verbose printout of fine refinement
 		if options.verbose>1 :
 			for i,j in enumerate(bestfinal): 
