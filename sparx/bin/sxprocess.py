@@ -57,19 +57,25 @@ def main():
 
 	1.  phase flip a stack of images and write output to new file:
 	sxprocess.py input_stack.hdf output_stack.hdf --phase_flip
+	
+	2.  resample (decimate or interpolate up) images (2D or 3D) in a stack to change the pixel size.
+	    The window size will change accordingly.
+	    sxprocess input.hdf output.hdf  --changesize --ratio=0.5
 
-	2.  compute average power spectrum of a stack of 2-D images with optional padding (option wn) with zeroes.
+	3.  compute average power spectrum of a stack of 2D images with optional padding (option wn) with zeroes.
 	sxprocess.py input_stack.hdf powerspectrum.hdf --pw [--wn=1024]
 
-	3.  Order a 2-D stack of image based on pair-wise similarity (computed as a cross-correlation coefficent).
+	4.  Order a 2-D stack of image based on pair-wise similarity (computed as a cross-correlation coefficent).
 	sxprocess.py input_stack.hdf output_stack.hdf --order
 
-	4. generate a stack of projections bdb:data and micrographs with prefix mic (i.e., mic0.hdf, mic1.hdf etc) from structure input_structure.hdf, with CTF applied to both projections and micrographs:
+	5. generate a stack of projections bdb:data and micrographs with prefix mic (i.e., mic0.hdf, mic1.hdf etc) from structure input_structure.hdf, with CTF applied to both projections and micrographs:
 	sxprocess.py input_structure.hdf data mic --generate_projections format="bdb":apix=5.2:CTF=True:boxsize=64 	
 """
 
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--order", action="store_true", help="Two arguments are required: name of input stack and desired name of output stack. The output stack is the input stack sorted by similarity in terms of cross-correlation coefficent.", default=False)
+	parser.add_option("--changesize", action="store_true", help="resample (decimate or interpolate up) images (2D or 3D) in a stack to change the pixel size.", default=False)
+	parser.add_option("--ratio", type="float", default=1.0, help="The ratio of new to old image size (if <1 the pixel size will increase and image size decrease, if>1, the other way round")
 	parser.add_option("--pw", action="store_true", help="compute average power spectrum of a stack of 2-D images with optional padding (option wn) with zeroes", default=False)
 	parser.add_option("--wn", type="int", default=-1, help="Size of window to use (should be larger/equal than particle box size, default padding to max(nx,ny))")
 	parser.add_option("--phase_flip", action="store_true", help="Phase flip the input stack", default=False)
@@ -175,6 +181,21 @@ def main():
 			
 			tmp.write_image(outstack, i)
 
+	if options.changesize:
+		nargs = len(args)
+		if nargs != 2:
+			ERROR("must provide name of input and output file!", "change size", 1)
+			return
+		from utilities import get_im
+		instack = args[0]
+		outstack = args[1]
+		sub_rate = float(options.ratio)
+			
+		nima = EMUtil.get_image_count(instack)
+		from fundamentals import resample
+		for i in xrange(nima):
+			resample(get_im(instack, i), sub_rate).write_image(outstack, i)
+
 	if options.pw:
 		nargs = len(args)
 		if nargs != 2:
@@ -221,7 +242,7 @@ def main():
 			else:		
 				dbdict[pkey] = param_dict[pkey]
 		gbdb[dbkey] = dbdict
-		
+
 	if options.generate_projections:
 
 		nargs = len(args)
