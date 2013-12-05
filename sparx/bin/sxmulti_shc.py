@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import global_def
+from global_def import *
 
 def main():
 	from utilities import write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle
@@ -13,9 +15,9 @@ def main():
 	from global_def import SPARXVERSION
 	from EMAN2 import EMData
 	from multi_shc import multi_shc
-	
+
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack  output_directory  [initial_volume]  --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood  --center=center_type --maxit=max_iter --CTF --snr=SNR  --ref_a=S --sym=c1 --function=user_function  --MPI"
+	usage = progname + " stack  output_directory  [initial_volume]  --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood  --center=center_type --maxit=max_iter --CTF --snr=SNR  --ref_a=S --sym=c1 --function=user_function"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",       type= "int",   default= 1,                  help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--ou",       type= "int",   default= -1,                 help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
@@ -39,21 +41,21 @@ def main():
 		print "usage: " + usage
 		print "Please run '" + progname + " -h' for detailed options"
 		return 1
-	
+
 	mpi_init(0, [])
-	
+
 	log = Logger(BaseLogger_Files())
-	
+
 	runs_count = 3
 	mpi_rank = mpi_comm_rank(MPI_COMM_WORLD)
-	
+
 	if mpi_rank == 0:
 		all_projs = EMData.read_images(args[0])
 		subset = range(len(all_projs))
 	else:
 		all_projs = None
 		subset = None
-	
+
 	outdir = args[1]
 	if mpi_rank == 0:
 		if os.path.exists(outdir):
@@ -63,9 +65,9 @@ def main():
 		os.mkdir(outdir)
 		import global_def
 		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
-	
+
 	mpi_barrier(MPI_COMM_WORLD)
-	
+
 	if outdir[-1] != "/":
 		outdir += "/"
 	log.prefix = outdir
@@ -74,11 +76,11 @@ def main():
 		ref_vol = get_im(args[2])
 	else:
 		ref_vol = None
-	
+
 	options.user_func = user_functions.factory[options.function]
 
 	out_params, out_vol, out_peaks = multi_shc(all_projs, subset, runs_count, options, mpi_comm=MPI_COMM_WORLD, log=log, ref_vol=ref_vol)
-	
+
 	mpi_finalize()
 
 if __name__=="__main__":

@@ -444,7 +444,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				for im in data:
 					phi, theta, psi, sx, sy = get_params_proj(im)
 					params.append([phi, theta, psi, sx, sy])
-				
+
 				# ------ orientation - begin
 				params_0 = wrap_mpi_bcast(params, mpi_subroots[0], mpi_comm)
 				if mpi_subrank == 0:
@@ -894,7 +894,7 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 	
 	mpi_rank = mpi_comm_rank(mpi_comm)
 	mpi_size = mpi_comm_size(mpi_comm)
-	
+
 	assert (mpi_size >= runs_count)
 	
 	if log == None:
