@@ -13377,8 +13377,7 @@ def gendisks_MPI(stack, mask3d, ref_nx, pixel_size, dp, dphi, fract=0.67, rmax=7
 		dpp = (float(dp)/new_pixel_size)
 		rise = int(ceil(dpp))
 		ratio = pixel_size/new_pixel_size
-	from sys import exit
-	exit()
+
 	import user_functions
 	user_func = user_functions.factory[user_func_name]
 	
