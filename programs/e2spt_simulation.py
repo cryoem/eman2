@@ -95,7 +95,14 @@ def main():
 									of the subvolumes within the tomogram are assigned randomly.""")
 	parser.add_argument("--icethickness", type=float,default=100,help="If --tomogramoutput is supplied, this will define the size of Z in PIXELS for the simulated tomogram.")
 
-	parser.add_argument("--saverandstack", action="store_true",default=False,help="Save the stack of randomly oriented particles, before subtomogram simulation (before the missing wedge and noise are added).")
+	parser.add_argument("--saverandstack", action="store_true",default=False,help="""Save 
+		the stack of randomly oriented particles, before subtomogram simulation (before the 
+		missing wedge and noise are added).""")
+
+	parser.add_argument("--nosim", action="store_true",default=False,help="""If on
+		the program will generate stacks of "perfect particles" in different random 
+		orientations, but with no missing wedge, no noise, no ctf parameters, etc.""") 
+	
 	parser.add_argument("--saveprjs", action="store_true",default=False,help="Save the projections (the 'tilt series') for each simulated subtomogram.")
 
 	parser.add_argument("--reconstructor", type=str,default="fourier",help="""The reconstructor to use to reconstruct the tilt series into a tomogram. Type 'e2help.py reconstructors' at the command line
@@ -149,23 +156,35 @@ def main():
 	if options.reconstructor:
 		options.reconstructor = parsemodopt(options.reconstructor)
 	
-	
-	'''
-	If PDB or MRC files are provided to similuate subtomograms, convert them to HDF
-	'''
-	
-	
-	fyles = options.input.split(',')
-	
-	for fyle in fyles:
-		
-		options.input = fyle
-		
-		nrefs = EMUtil.get_image_count( options.input )
-		check=0
-	
-		if nrefs < 2:
 
+	if options.input and options.randstack:
+		print """\nWARNING: No point in supplying --input and --randstack simultaneously.
+		They are mutually exclusive. If --randstack is provided, --input is ignored,
+		because --randstack becomes --input.\n"""
+	
+	randptcls = []
+	if options.randstack:
+		print "\n\nI will not generate a randstack but will read it from", options.randstack
+		nr=EMUtil.get_image_count(options.randstack)
+		print "There are these many particles in the randstack", nr							#ATTENTION: Randstack might still need box size changes and padding...
+		for np in range(nr):
+			a=EMData(options.randstack,np)
+			randptcls.append(a)
+		
+		stackname = originalpath + '/' + os.path.basename(options.randstack)
+		ret=subtomosim(options,randptcls, stackname)
+	
+	elif options.input:
+	
+		fyles = options.input.split(',')
+	
+		for fyle in fyles:
+		
+			options.input = fyle
+		
+			check=0	
+			nrefs = 1 						#MRC and PDB files don't allow for stacks. 
+											#It is only if --input is HDF that nrefs could be > 1
 			if '.pdb' in options.input:
 				pdbmodel = options.input
 				os.system('cp ' + pdbmodel + ' ' + options.path)
@@ -174,7 +193,7 @@ def main():
 				os.system('e2pdb2mrc.py ' + pdbmodel + ' ' + mrcmodel + ' && rm ' + pdbmodel)
 				options.input = mrcmodel
 				check=1
-	
+
 			if '.mrc' in options.input:
 				mrcmodel = options.input
 				if check==0:
@@ -184,156 +203,143 @@ def main():
 				os.system('e2proc3d.py ' + options.input + ' ' + hdfmodel + ' && rm ' + mrcmodel)
 				options.input = hdfmodel
 				check=1
-	
-	
-		if '.hdf' in options.input:
-			hdfmodel = options.input
-			if check == 0:
-				os.system('cp ' + hdfmodel + ' ' + options.path)
-				hdfmodel = options.path + '/' + hdfmodel.split('/')[-1]
-				options.input = hdfmodel
-			workname = hdfmodel.replace('.hdf','_sptsimMODEL.hdf')
-			if nrefs > 1:
-				workname = hdfmodel.replace('.hdf','_sptsimMODELS.hdf')
+					
+			if '.hdf' in options.input:
+				hdfmodel = options.input
+				if check == 0:
+					os.system('cp ' + hdfmodel + ' ' + options.path)
+					hdfmodel = options.path + '/' + hdfmodel.split('/')[-1]
+					options.input = hdfmodel
+				workname = hdfmodel.replace('.hdf','_sptsimMODEL.hdf')
+				if nrefs > 1:
+					workname = hdfmodel.replace('.hdf','_sptsimMODELS.hdf')
 		
-			os.system('cp ' + hdfmodel + ' ' + workname + ' && rm ' + hdfmodel)
-			options.input = workname
-	
-		'''
-		The program can process several FILES, each of which could be STACK with several
-		images each.
-		'''
-		if len(fyles) > 1:
-			options.output = options.input.replace('.hdf','_simSubtomos.hdf')
+				os.system('cp ' + hdfmodel + ' ' + workname + ' && rm ' + hdfmodel)
+				options.input = workname
+					
+				nrefs = EMUtil.get_image_count( options.input )
+			
+			'''
+			The program can process several FILES, each of which could be a STACK with several
+			images each.
+			'''
+			if len(fyles) > 1:
+				options.output = options.input.replace('.hdf','_simSubtomos.hdf')
 		
-		tag = ''
+			tag = ''
 	
-		if options.verbose:
-			print "These many particles will be simulated, for each of the supplied references/models", options.nptcls
-			print "There are these many references/models", nrefs
-		
-		originalpath = options.path
-		kkk=0
-	
-		originalinput = options.input
-		for i in range(nrefs):
 			if options.verbose:
-				print "Generating simulated subtomograms for reference number", kkk
+				print "These many particles will be simulated, for each of the supplied references/models", options.nptcls
+				print "There are these many references/models", nrefs
+		
+			originalpath = options.path
+			kkk=0
 	
-			if nrefs>1:
-				modelfilename = originalinput.split('/')[-1].replace('.hdf','_model' + str(i).zfill(2) + '.hdf')
+			originalinput = options.input
 		
-				options.path = originalpath + '/model' + str(i).zfill(2)
-		
-				os.system('mkdir ' + options.path)
-				#cmd = 'e2proc3d.py '  + options.input + ' ' + options.path + '/' + modelfilename + ' --first=' + str(i) + ' --last=' + str(i) + ' --append'
-			
-				os.system('e2proc3d.py '  + originalinput + ' ' + options.path + '/' + modelfilename + ' --first=' + str(i) + ' --last=' + str(i) + ' --append')
-				print "This is the command to create the model"
-				print 'e2proc3d.py '  + originalinput + ' ' + options.path + '/' + modelfilename + ' --first=' + str(i) + ' --last=' + str(i) + ' --append'
-			
-				options.input = options.path + '/' + modelfilename
-				tag = str(i).zfill(len(str(nrefs)))
+			for i in range(nrefs):
+				if options.verbose:
+					print "Generating simulated subtomograms for reference number", kkk
+					
+				if nrefs>1:
+					modelfilename = originalinput.split('/')[-1].replace('.hdf','_model' + str(i).zfill(2) + '.hdf')
 
-			randptcls = []
-			model = EMData(options.input,0,True)
-			#print "\n\nAAAAAAAAAA\n\nThe apix of the model is", model['apix_x']
-			#print "\n\nAAAAAAAAAAAAA\n\n"
-			newsize = model['nx']
-			oldx = model['nx']
+					options.path = originalpath + '/model' + str(i).zfill(2)
+
+					os.system('mkdir ' + options.path)
+					#cmd = 'e2proc3d.py '  + options.input + ' ' + options.path + '/' + modelfilename + ' --first=' + str(i) + ' --last=' + str(i) + ' --append'
 	
-			if model['nx'] != model['ny'] or model['nx'] != model['nz'] or model['ny'] != model['nz']:
-				newsize = max(model['nx'], model['ny'], model['nz'])
-			
-			if options.shrink and options.shrink > 1:
-				newsize = newsize/options.shrink	
-				if newsize % 2:
-					newsize += 1
-			
-				os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --process=math.meanshrink:n=' + str(options.shrink))
+					os.system('e2proc3d.py '  + originalinput + ' ' + options.path + '/' + modelfilename + ' --first=' + str(i) + ' --last=' + str(i) + ' --append')
+					print "This is the command to create the model"
+					print 'e2proc3d.py '  + originalinput + ' ' + options.path + '/' + modelfilename + ' --first=' + str(i) + ' --last=' + str(i) + ' --append'
 	
-			padded=options.input
-			if options.pad:
-				newsize *= options.pad
-				#padded=padded.replace('.hdf','_padded.hdf')
-							
-			if newsize != oldx:
-				os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(newsize) + ' --first=' + str(i) + ' --last=' + str(i))	
-				options.input=padded
-			
-			model = EMData(options.input,0)
-			#print "after editing, apix of model is", model['apix_x']
-				
-			if not options.finalboxsize:
-				options.finalboxsize = model['nx']
-			
-			else:
-				os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))
+					options.input = options.path + '/' + modelfilename
+					tag = str(i).zfill(len(str(nrefs)))
+
+				randptcls = []
+				model = EMData(options.input,0,True)
+				#print "\n\nAAAAAAAAAA\n\nThe apix of the model is", model['apix_x']
+				#print "\n\nAAAAAAAAAAAAA\n\n"
+				newsize = model['nx']
+				oldx = model['nx']
+
+				if model['nx'] != model['ny'] or model['nx'] != model['nz'] or model['ny'] != model['nz']:
+					newsize = max(model['nx'], model['ny'], model['nz'])
+	
+				if options.shrink and options.shrink > 1:
+					newsize = newsize/options.shrink	
+					if newsize % 2:
+						newsize += 1
+	
+					os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --process=math.meanshrink:n=' + str(options.shrink))
+
+				padded=options.input
+				if options.pad:
+					newsize *= options.pad
+					#padded=padded.replace('.hdf','_padded.hdf')
+					
+				if newsize != oldx:
+					os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(newsize) + ' --first=' + str(i) + ' --last=' + str(i))	
+					options.input=padded
+	
 				model = EMData(options.input,0)
-			
+				#print "after editing, apix of model is", model['apix_x']
 		
-			if options.filter:
-				model.process_inplace(options.filter[0],options.filter[1])
-		
-			#model.process_inplace('normalize')
-			model['origin_x'] = 0									#Make sure the origin is set to zero, to avoid display issues with Chimera
-			model['origin_y'] = 0
-			model['origin_z'] = 0
-		
-			#model = EMData(options.input,0,True)
-			#print "\n\nCCCCCCCCCCCC\n\nThe apix of the FINAL model is", model['apix_x']
-			#print "\n\nCCCCCCCCCCCCC\n\n"
-		
-			'''
-			Transform gridholesize and icethickness to pixels
-			'''
+				if not options.finalboxsize:
+					options.finalboxsize = model['nx']
 	
-			if options.gridholesize:
-				options.gridholesize = int( options.gridholesize * math.pow(10,6) / model['apix_x'] )
+				else:
+					os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))
+					model = EMData(options.input,0)
+	
+				if options.filter:
+					model.process_inplace(options.filter[0],options.filter[1])
+
+				#model.process_inplace('normalize')
+				model['origin_x'] = 0									#Make sure the origin is set to zero, to avoid display issues with Chimera
+				model['origin_y'] = 0
+				model['origin_z'] = 0
+
+				#model = EMData(options.input,0,True)
+				#print "\n\nCCCCCCCCCCCC\n\nThe apix of the FINAL model is", model['apix_x']
+				#print "\n\nCCCCCCCCCCCCC\n\n"
+
+				'''
+				Transform gridholesize and icethickness to pixels
+				'''
+
+				if options.gridholesize:
+					options.gridholesize = int( options.gridholesize * math.pow(10,6) / model['apix_x'] )
+
+				if options.icethickness:
+					options.icethickness = int( options.icethickness * math.pow(10,0) / model['apix_x'] )
+
+				stackname = options.input.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf').split('/')[-1]
+				if options.output:
+					stackname = options.output.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf').split('/')[-1]
 		
-			if options.icethickness:
-				options.icethickness = int( options.icethickness * math.pow(10,0) / model['apix_x'] )
 		
-			stackname = options.input.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf').split('/')[-1]
-			if options.output:
-				stackname = options.output.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf').split('/')[-1]
-				
-			randptcls = []
-			if options.randstack:
-				print "\n\nI will not generate a randstack but will read it from", options.randstack
-				nr=EMUtil.get_image_count(options.randstack)
-				print "There are these many particles in the randstack", nr
-				for np in range(nr):
-					a=EMData(options.randstack,np)
-					randptcls.append(a)
-			else:
+				if options.output:
+					stackname = options.output
+		
 				randptcls = randomizer(options, model, stackname)
-		
-			#stackname = options.input.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf')
-		
-			if options.output:
-				stackname = options.output
-		
-			#print "BEFORE RET"
-			ret=subtomosim(options,randptcls, stackname)
-			#print "AFTER RET"
-		
+			
+				if not options.nosim:
+					ret=subtomosim(options,randptcls, stackname)		
 	
-		
-			#if ret == 1:
-			#	os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))	
-		
-			if options.simref:
-				name = options.input.replace('.hdf','_SIM.hdf').split('/')[-1]
-				model['sptsim_randT'] = Transform()
-				model['xform.align3d'] = Transform()
-				ret = subtomosim(options,[model],name)
-			
-			
-				if ret == 1:
-					os.system('e2proc3d.py ' + name + ' ' + name + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))	
-			kkk+=1
-		
+				#if ret == 1:
+				#	os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))	
+
+				if options.simref and not options.nosim:
+					name = options.input.replace('.hdf','_SIM.hdf').split('/')[-1]
+					model['sptsim_randT'] = Transform()
+					model['xform.align3d'] = Transform()
+					ret = subtomosim(options,[model],name)
+	
+					if ret == 1:
+						os.system('e2proc3d.py ' + name + ' ' + name + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))	
+				kkk+=1
+	
 	E2end(logger)
 					
 	return()
