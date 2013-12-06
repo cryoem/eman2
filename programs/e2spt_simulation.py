@@ -110,7 +110,13 @@ def main():
 	parser.add_argument("--pad", type=int,default=0,help="""If on, it will increase the box size of the model BEFORE generating projections and doing 3D reconstruction of simulated sutomograms.""")								
 	#parser.add_argument("--noiseproc",type=str,help="A noise processor to be applied to the individual projections of the simulated tilt series",default=None)
 	
-	parser.add_argument("--finalboxsize", type=int,default=0,help="""The final box size to clip the subtomograms to.""")								
+	parser.add_argument("--finalboxsize", type=str,default='',help="""The final box size 
+		to clip the subtomograms to. Enter an integer, or a positive number followed by 'x' to
+		be used as an 'expansion factor'. For example, if the model in --input has an original
+		boxsize of 64 and you enter --finalboxsize=1.5x, then the finalboxsize of the
+		simulated subtomograms will be 1.5*64, that is, 96.
+		If you provide --shrink, for example, --shrink=2, then the finalboxsize of the 
+		subtomograms will be 64/2 * 1.5 = 48.""")								
 
 	parser.add_argument("--snr",type=float,help="Weighing noise factor for noise added to the image.",default=0)
 	#parser.add_argument("--addnoise",action="store_true",default=False,help="If on, it adds random noise to the particles")
@@ -134,18 +140,6 @@ def main():
 	logger = E2init(sys.argv, options.ppid)
 
 	print "e2spt_simulation received these many slices", options.nslices
-	'''
-	Make the directory where to create the database where the results will be stored
-	'''
-	
-	from e2spt_classaverage import sptmakepath
-	
-	options = sptmakepath(options,'sptsim')
-	
-	rootpath = os.getcwd()
-	
-	if rootpath not in options.path:
-		options.path = rootpath + '/' + options.path
 
 	'''
 	Parse the options
@@ -162,6 +156,20 @@ def main():
 		They are mutually exclusive. If --randstack is provided, --input is ignored,
 		because --randstack becomes --input.\n"""
 	
+	
+	'''
+	Make the directory where to create the database where the results will be stored
+	'''
+	
+	from e2spt_classaverage import sptmakepath
+	
+	options = sptmakepath(options,'sptsim')
+	
+	rootpath = os.getcwd()
+	
+	if rootpath not in options.path:
+		options.path = rootpath + '/' + options.path
+		
 	randptcls = []
 	if options.randstack:
 		print "\n\nI will not generate a randstack but will read it from", options.randstack
@@ -217,7 +225,7 @@ def main():
 				os.system('cp ' + hdfmodel + ' ' + workname + ' && rm ' + hdfmodel)
 				options.input = workname
 					
-				nrefs = EMUtil.get_image_count( options.input )
+				nrefs = EMUtil.get_image_count( options.input )		
 			
 			'''
 			The program can process several FILES, each of which could be a STACK with several
@@ -265,22 +273,48 @@ def main():
 
 				if model['nx'] != model['ny'] or model['nx'] != model['nz'] or model['ny'] != model['nz']:
 					newsize = max(model['nx'], model['ny'], model['nz'])
+					print "\n\n\n\nNEWSIZE will be", newsize
 	
 				if options.shrink and options.shrink > 1:
 					newsize = newsize/options.shrink	
 					if newsize % 2:
 						newsize += 1
 	
-					os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --process=math.meanshrink:n=' + str(options.shrink))
-
+					#os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --process=math.meanshrink:n=' + str(options.shrink))
+					
+					shrinkcmd='e2proc3d.py ' + options.input + ' ' + options.input + ' --process=math.meanshrink:n=' + str(options.shrink)
+					p=subprocess.Popen( shrinkcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+					text=p.communicate()	
+					p.stdout.close()
+				
+				if options.finalboxsize:
+					if 'x' not in options.finalboxsize:
+						print "\nThere is no x factor in finalboxsize"
+						finalboxsize = int( float(options.finalboxsize) )
+					else:
+						options.finalboxsize = int( round( float( options.finalboxsize.replace('x','') ) * newsize ) )	
+						
+						print "Therefore the expanded boxisze is", options.finalboxsize
+						print "\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n\n\n\n\n\n\n\n"
+						
 				padded=options.input
 				if options.pad:
 					newsize *= options.pad
 					#padded=padded.replace('.hdf','_padded.hdf')
 					
 				if newsize != oldx:
-					os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(newsize) + ' --first=' + str(i) + ' --last=' + str(i))	
+					#os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(newsize) + ' --first=' + str(i) + ' --last=' + str(i))	
+					
+					clipcmd = 'e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(newsize) + ' --first=' + str(i) + ' --last=' + str(i)
+					p=subprocess.Popen( clipcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+					text=p.communicate()	
+					p.stdout.close()
+					
+					
 					options.input=padded
+					
+					
+					
 	
 				model = EMData(options.input,0)
 				#print "after editing, apix of model is", model['apix_x']
@@ -289,7 +323,14 @@ def main():
 					options.finalboxsize = model['nx']
 	
 				else:
-					os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))
+					#os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))
+					
+					clip2cmd = 'e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i)
+					p=subprocess.Popen( clip2cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+					text=p.communicate()	
+					p.stdout.close()
+					
+					
 					model = EMData(options.input,0)
 	
 				if options.filter:
@@ -337,7 +378,12 @@ def main():
 					ret = subtomosim(options,[model],name)
 	
 					if ret == 1:
-						os.system('e2proc3d.py ' + name + ' ' + name + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))	
+						#os.system('e2proc3d.py ' + name + ' ' + name + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))
+						
+						clip3cmd = 'e2proc3d.py ' + name + ' ' + name + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i)
+						p=subprocess.Popen( clip3cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+						text=p.communicate()	
+						p.stdout.close()
 				kkk+=1
 	
 	E2end(logger)
