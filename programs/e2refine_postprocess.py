@@ -69,7 +69,7 @@ def main():
 	if options.underfilter: underfilter=":sscale=1.1"
 	else: underfilter=""
 
-	if options.m3dpostprocess==None : m3dpostproc=""
+	if options.m3dpostprocess==None or len(options.m3dpostprocess.strip())==0 : m3dpostproc=""
 	else : m3dpostproc="--process "+options.m3dpostprocess
 
 	### Post-processing ###
@@ -135,13 +135,13 @@ def main():
 	combined2=0
 
 	### Masking
-	if options.automask3d==None :
+	if options.automask3d==None or len(options.automask3d.strip())==0 :
 		amask3d="--process mask.auto3d:threshold={thresh}:radius={radius}:nshells={shells}:nshellsgauss={gshells}:nmaxseed={seed}".format(
 			thresh=sigmanz*.85,radius=nx/10,shells=int(nx*.08+.5),gshells=int(nx*.06),seed=16)
 	else:
 		amask3d="--process "+options.automask3d
 
-	if options.automask3d2==None : amask3d2=""
+	if options.automask3d2==None or len(options.automask3d2.strip())==0 : amask3d2=""
 	else : amask3d2="--process "+options.automask3d2
 
 	run("e2proc3d.py {cfile} {path}/mask.hdf {mask}:return_mask=1 {amask3d2}".format(path=path,cfile=combfile,mask=amask3d,amask3d2=amask3d2))

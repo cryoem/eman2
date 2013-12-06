@@ -2670,7 +2670,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 	//in case we arre aligning tomos
 	Dict altered_cmp_params(cmp_params);
 	if (cmp_name == "ccc.tomo") {
-                altered_cmp_params.set_default("searchx", searchx);
+		altered_cmp_params.set_default("searchx", searchx);
 		altered_cmp_params.set_default("searchy", searchy);
 		altered_cmp_params.set_default("searchz", searchz);
 		altered_cmp_params.set_default("norm", true);
