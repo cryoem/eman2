@@ -217,6 +217,7 @@ not need to specify any of the following other than the ones already listed abov
 			img3 = EMData(options.model,0,True)
 			try:
 				scale=img3["apix_x"]/img1["apix_x"]
+				print "Reference is {box3} x {box3} x {box3} at {apix3:1.2f} A/pix, particles are {box2} x {box2} at {apix2:1.2f} A/pix. Scaling by {scale:1.3f}".format(box3=img3["nx"],box2=img1["nx"],apix3=img3["apix_x"],apix2=img1["apix_x"],scale=scale)
 			except:
 				print "A/pix unknown, assuming scale same as relative box size"
 				scale=float(xsize)/xsize3d
@@ -567,14 +568,14 @@ Based on your requested resolution and box-size, I will use an angular sampling 
 		### 3-D Reconstruction
 		# FIXME - --lowmem removed due to some tricky bug in e2make3d
 		cmd="e2make3d.py --input {path}/classes_{itr:02d}_even.hdf --iter 2 -f --sym {sym} --output {path}/threed_{itr:02d}_even.hdf --recon {recon} --preprocess {preprocess} \
-{postprocess} --keep={m3dkeep} {keepsig} --apix={apix} --pad={m3dpad} {setsf} {verbose}".format(
-			path=options.path, itr=it, sym=options.sym, recon=options.recon, preprocess=options.m3dpreprocess, postprocess=postprocess, m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
+ --keep={m3dkeep} {keepsig} --apix={apix} --pad={m3dpad} {setsf} {verbose}".format(
+			path=options.path, itr=it, sym=options.sym, recon=options.recon, preprocess=options.m3dpreprocess,  m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
 			m3dpad=options.pad, setsf=m3dsetsf, apix=apix, verbose=verbose)
 		run(cmd)
 
 		cmd="e2make3d.py --input {path}/classes_{itr:02d}_odd.hdf --iter 2 -f --sym {sym} --output {path}/threed_{itr:02d}_odd.hdf --recon {recon} --preprocess {preprocess} \
-{postprocess} --keep={m3dkeep} {keepsig} --apix={apix} --pad={m3dpad} {setsf} {verbose}".format(
-			path=options.path, itr=it, sym=options.sym, recon=options.recon, preprocess=options.m3dpreprocess, postprocess=postprocess, m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
+ --keep={m3dkeep} {keepsig} --apix={apix} --pad={m3dpad} {setsf} {verbose}".format(
+			path=options.path, itr=it, sym=options.sym, recon=options.recon, preprocess=options.m3dpreprocess, m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
 			m3dpad=options.pad, apix=apix, setsf=m3dsetsf, verbose=verbose)
 		run(cmd)
 		progress += 1.0
