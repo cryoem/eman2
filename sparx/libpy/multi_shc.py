@@ -205,9 +205,9 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 	number_of_proc = mpi_comm_size(mpi_comm)
 	myid           = mpi_comm_rank(mpi_comm)
 	main_node = 0
-	
+
 	if myid == main_node:
-		log.add("Start")
+		log.add("Start ali3d_multishc")
 	
 	if number_of_proc < number_of_runs:
 		ERROR("number_of_proc < number_of_runs","ali3d_multishc")
@@ -216,7 +216,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 	mpi_subrank = mpi_comm_rank(mpi_subcomm)
 	mpi_subsize = mpi_comm_size(mpi_subcomm)
 	mpi_subroots = range(number_of_runs)
-	
+
 	xrng        = get_input_from_string(xr)
 	if  yr == "-1":  yrng = xrng
 	else          :  yrng = get_input_from_string(yr)
@@ -267,9 +267,9 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 
 	cs = [0.0]*3
 	total_iter = 0
-	
+
 	orient_and_shuffle = False
-	
+
 	# do the projection matching
 	for N_step in xrange(lstp):
 		
@@ -294,12 +294,12 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 			for r in refrings:
 				all_ref_dirs.append( [r.get_attr("phi"), r.get_attr("theta")] )
 			#=========================================================================
-			
+
 			mpi_barrier(mpi_comm)
 			if myid == main_node:
 				log.add("Time to prepare rings: %f\n" % (time()-start_time))
 				start_time = time()
-			
+
 			#=========================================================================
 			if total_iter == 1 or orient_and_shuffle:
 				# adjust params to references, calculate psi+shifts, calculate previousmax
@@ -317,8 +317,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 			#=========================================================================
 
 			mpi_barrier(mpi_comm)
-			if myid == main_node:
-				start_time = time()
+			if myid == main_node: start_time = time()
 			#=========================================================================
 			# alignment
 			if mpi_subrank == 0:
@@ -363,7 +362,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 						if ir in used_refs:
 							# reference is already used - cancel all changes
 							vector_previousmax[i] = data[proj_ids[i]].get_attr("previousmax")
-							vector_xformprojs[i] = data[proj_ids[i]].get_attr("xform.projection")
+							vector_xformprojs[i]  = data[proj_ids[i]].get_attr("xform.projection")
 						else:
 							used_refs.add(ir)
 							proj_ids_to_process.remove(proj_ids[i])
@@ -376,7 +375,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				# ------- broadcast results
 				used_refs = wrap_mpi_bcast(used_refs, 0, mpi_subcomm)
 				vector_previousmax = wrap_mpi_bcast(vector_previousmax, 0, mpi_subcomm)
-				vector_xformprojs = wrap_mpi_bcast(vector_xformprojs, 0, mpi_subcomm)
+				vector_xformprojs  = wrap_mpi_bcast(vector_xformprojs, 0, mpi_subcomm)
 				# ------- delete used references
 				for ir in used_refs:
 					del refrings[ir]
@@ -411,9 +410,9 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 					if i < 1.0: temp += 1
 				percent_of_pixerr_below_one = (temp * 1.0) / (total_nima * number_of_runs)
 				orient_and_shuffle = ( percent_of_pixerr_below_one > 0.3 )  #  TODO - parameter ?
-				terminate = ( percent_of_pixerr_below_one > 0.9 )           #  TODO - parameter ?
+				terminate          = ( percent_of_pixerr_below_one > 0.9 )  #  TODO - parameter ?
 				log.add("=========================")
-				log.add("Percent of positions with pixel error below 1.0 = ", (percent_of_pixerr_below_one*100), "%")
+				log.add("Percent of positions with pixel error below 1.0 = ", (int(percent_of_pixerr_below_one*100)), "%")
 			terminate = wrap_mpi_bcast(terminate, main_node, mpi_comm)
 			orient_and_shuffle = wrap_mpi_bcast(orient_and_shuffle, 0, mpi_comm)
 			#=========================================================================
@@ -456,7 +455,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 					orient_params([params_0, params], subset)
 				params = wrap_mpi_bcast(params, 0, mpi_subcomm)
 				# ------ orientation - end
-				
+
 				# ------ gather parameters to root
 				if myid == 0:
 					all_params = []
@@ -469,10 +468,10 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 					if mpi_subrank == 0:
 						wrap_mpi_send(params, 0, mpi_comm)
 				# ---------------------------------
-	
+
 				if myid == 0:
 					all_params = shuffle_configurations(all_params)
-				
+
 				if myid == 0:
 					for i in xrange(number_of_runs):
 						sr = mpi_subroots[i]
@@ -483,11 +482,11 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				else:
 					if mpi_subrank == 0:
 						params = wrap_mpi_recv(0, mpi_comm)
-	
+
 				params = wrap_mpi_bcast(params, 0, mpi_subcomm)
 				for i in xrange(nima):
 					set_params_proj(data[i], params[i])
-				
+
 				mpi_barrier(mpi_comm)
 				if myid == main_node:
 					log.add("Time of orientation and shuffling = %f\n"%(time()-start_time))
@@ -515,22 +514,22 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 		params.append( [t[0], t[1], t[2], t[3], t[4]] )
 		previousmax.append(p)
 	assert(len(params) == nima)
-	
+
 	# gather data to main root
 	if mpi_subrank == 0:
-		vol = wrap_mpi_gatherv([vol], 0, mpi_comm)
-		params = wrap_mpi_gatherv([params], 0, mpi_comm)
+		vol         = wrap_mpi_gatherv([vol], 0, mpi_comm)
+		params      = wrap_mpi_gatherv([params], 0, mpi_comm)
 		previousmax = wrap_mpi_gatherv([previousmax], 0, mpi_comm)
 	else:
-		vol = wrap_mpi_gatherv([], 0, mpi_comm)
-		params = wrap_mpi_gatherv([], 0, mpi_comm)
+		vol         = wrap_mpi_gatherv([], 0, mpi_comm)
+		params      = wrap_mpi_gatherv([], 0, mpi_comm)
 		previousmax = wrap_mpi_gatherv([], 0, mpi_comm)
-		
+
 	mpi_comm_free(mpi_subcomm)
 	
 	
 	if myid == main_node: 
-		log.add("Finish")
+		log.add("Finish ali3d_multishc")
 		return params, vol, previousmax
 	else:
 		return None, None, None  # results for the other processes
@@ -660,10 +659,10 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None,
 	number_of_proc = mpi_comm_size(mpi_comm)
 	myid           = mpi_comm_rank(mpi_comm)
 	main_node = 0
-	
+
 	if myid == main_node:
-		log.add("Start")
-	
+		log.add("Start ali3d_multishc_2")
+
 	xrng        = get_input_from_string(xr)
 	if  yr == "-1":  yrng = xrng
 	else          :  yrng = get_input_from_string(yr)
@@ -738,7 +737,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None,
 			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, MPI=mpi_comm)
 			del volft, kb
 			#=========================================================================
-			
+
 			if myid == main_node:
 				log.add("Time to prepare rings: %f\n" % (time()-start_time))
 				start_time = time()
@@ -836,11 +835,11 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None,
 	if myid == 0:
 		assert(total_nima == len(params))
 	previousmax = wrap_mpi_gatherv(previousmax, 0, mpi_comm)
-	
+
 	par_r = wrap_mpi_gatherv(par_r, 0, mpi_comm)
-	
+
 	if myid == main_node: 
-		log.add("Finish")
+		log.add("Finish ali3d_multishc_2")
 		return params, vol, previousmax, par_r
 	else:
 		return None, None, None, None  # results for the other processes
@@ -869,7 +868,7 @@ def volume_reconstruction(data, options, mpi_comm):
 	if myid == 0:
 		nx = data[0].get_xsize()
 		last_ring   = int(options.ou)
-		mask3D = mask3D = model_circle(last_ring, nx, nx, nx)
+		mask3D = model_circle(last_ring, nx, nx, nx)
 		ref_data = [ mask3D, max(center,0), None, None, None, None ]
 		ref_data[2] = vol
 		ref_data[3] = None #fscc
@@ -884,19 +883,19 @@ def volume_reconstruction(data, options, mpi_comm):
 
 
 # all_projs and subset must be set only for root (MPI rank == 0)
-# rest parameters must be set for all
+# remaining parameters must be set for all
 # size of mpi_communicator must be >= runs_count
 def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, ref_vol=None):
 	from applications import MPI_start_end
 	from mpi import mpi_comm_rank, mpi_comm_size
 	from utilities import set_params_proj, wrap_mpi_bcast, write_text_row, drop_image, write_text_file
 	from random import random
-	
+
 	mpi_rank = mpi_comm_rank(mpi_comm)
 	mpi_size = mpi_comm_size(mpi_comm)
 
 	assert (mpi_size >= runs_count)
-	
+
 	if log == None:
 		from logger import Logger
 		log = Logger()
@@ -914,9 +913,9 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 				all_projs[i].del_attr("xform.projection" + str(j))
 				j += 1
 	projections = wrap_mpi_bcast(projections, 0, mpi_comm)
-	
+
 	n_projs = len(projections)
-	
+
 	if ref_vol == None:
 		proj_begin, proj_end = MPI_start_end(n_projs, mpi_size, mpi_rank)
 		ref_vol = volume_reconstruction(projections[proj_begin:proj_end], ali3d_options, mpi_comm=mpi_comm)
@@ -924,14 +923,14 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 	out_params, out_vol, out_peaks = ali3d_multishc(projections, ref_vol, ali3d_options, mpi_comm=mpi_comm, log=log, number_of_runs=runs_count)
 	if mpi_rank == 0:
 		assert(len(out_params) == runs_count)
-	
+
 	if mpi_rank == 0:
 		write_text_file(subset, log.prefix + "indexes.txt")
 		for i in xrange(len(out_params)):
 			write_text_row(out_params[i], log.prefix + "part_" + str(i) + "_params.txt")
 			drop_image(out_vol[i], log.prefix + "part_" + str(i) + "_volf.hdf")
 			#write_text_row(out_peaks[i], log.prefix + "part_" + str(i) + "_peaks.txt")
-		
+
 		temp_projs = []
 		for iP in xrange(len(out_params[0])):
 			iBestPeak = 0
@@ -944,18 +943,18 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 			projections[iP].set_attr("stable", 1)
 	else:
 		temp_projs = None
-	
+
 	temp_projs = wrap_mpi_bcast(temp_projs, 0, mpi_comm)
 	proj_begin, proj_end  = MPI_start_end(3*n_projs, mpi_size, mpi_rank)
 	ref_vol = volume_reconstruction(temp_projs[proj_begin:proj_end], ali3d_options, mpi_comm=mpi_comm)
-	
+
 	out_params, out_vol, out_peaks, out_r = ali3d_multishc_2(projections, ref_vol, ali3d_options, mpi_comm=mpi_comm, log=log, number_of_runs=runs_count)
 	if mpi_rank == 0:
 		assert(len(out_params) == n_projs)
-	
+
 	if mpi_rank == 0:
 		write_text_row(out_params, log.prefix + "params.txt")
 		drop_image(out_vol, log.prefix + "volf.hdf")
-	
+
 	return out_params, out_vol, out_peaks
 
