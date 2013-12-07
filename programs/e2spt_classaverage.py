@@ -654,7 +654,7 @@ def main():
 			#The reference for the next iteration should ALWAYS be the RAW AVERAGE of the aligned particles, since the reference will be "pre-processed" identically to the raw particles.
 			#There should be NO post-processing of the final averages, EXCEPT for visualization purposes (so, postprocessing is only applied to write out the output, if specified.
 			
-			#print "\n\n\nOptions.donotaverage is", options.donotaverage
+			#print "\n\n\nOptions.donotaverage is", options.donotaveragestack2match
 			#print "\n\n\n"
 			
 			if not options.donotaverage:					
@@ -679,6 +679,9 @@ def main():
 			if options.savesteps and not options.donotaverage:
 				refname = options.path + '/class_' + str(ic).zfill( len( str(ic) )) + '.hdf'
 				ref.write_image(refname,it)
+				
+				print "\n\nFor the final avg going into class_x.hdf, ali params are", ref['xform.align3d']
+				
 				if options.postprocess:
 					ppref = ref.copy()
 					maskPP = "mask.sharp:outer_radius=-2"
@@ -710,15 +713,20 @@ def main():
 					
 					t = r[0]['xform.align3d']
 					trans=t.get_trans()
+					print "\n\n\nTranslations were", trans
+					print "Therefre the transform was", t
 					rots=t.get_rotation()
 					
 					tx=trans[0]
+					print "Translation in x was", tx
 					classmxXs.set_value_at(ic,iii,tx)
 					
 					ty=trans[1]
+					print "Translation in y was", tx
 					classmxYs.set_value_at(ic,iii,ty)
 					
 					tz=trans[2]
+					print "Translation in z was", tx
 					classmxZs.set_value_at(ic,iii,tz)
 					
 					az=rots['az']
@@ -764,9 +772,14 @@ def main():
 				outdir += '/'
 			
 			finaloutput = outdir + options.output
+
+			print "\n\n\n\n\n\nBefore writing out the average, its ali params are", ref['xform.align3d']
 			
 			if options.verbose:
 				print "The file to write the final output to is", finaloutput
+			
+			print "\n\n\n\n\n\nBefore writing out the average, its ali params are", ref['xform.align3d']
+			
 			ref.write_image(finaloutput,0)
 			
 			if options.resume and actualNums:
