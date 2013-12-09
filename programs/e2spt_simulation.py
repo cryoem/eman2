@@ -107,7 +107,10 @@ def main():
 
 	parser.add_argument("--reconstructor", type=str,default="fourier",help="""The reconstructor to use to reconstruct the tilt series into a tomogram. Type 'e2help.py reconstructors' at the command line
 											to see all options and parameters available.""")
-	parser.add_argument("--pad", type=int,default=0,help="""If on, it will increase the box size of the model BEFORE generating projections and doing 3D reconstruction of simulated sutomograms.""")								
+	parser.add_argument("--pad", type=float,default=0.0,help="""If on, it will increase the 
+		box size of the model BEFORE generating projections and doing 3D reconstruction of 
+		simulated sutomograms. Make sure to supply --finalboxsize to clip the simulated 
+		subtomograms back to a reasonable box size.""")								
 	#parser.add_argument("--noiseproc",type=str,help="A noise processor to be applied to the individual projections of the simulated tilt series",default=None)
 	
 	parser.add_argument("--finalboxsize", type=str,default='',help="""The final box size 
@@ -152,9 +155,11 @@ def main():
 	
 
 	if options.input and options.randstack:
-		print """\nWARNING: No point in supplying --input and --randstack simultaneously.
+		print """\n(e2spt_simulation)WARNING: No point in supplying --input and --randstack simultaneously.
 		They are mutually exclusive. If --randstack is provided, --input is ignored,
-		because --randstack becomes --input.\n"""
+		because --randstack becomes --input.\n
+		--input was""",options.input
+		print '--randstack was', options.randstack
 	
 	
 	'''
@@ -175,12 +180,25 @@ def main():
 		print "\n\nI will not generate a randstack but will read it from", options.randstack
 		nr=EMUtil.get_image_count(options.randstack)
 		print "There are these many particles in the randstack", nr							#ATTENTION: Randstack might still need box size changes and padding...
+		
+		print "--randstack is", options.randstack
+		randstackbase = os.path.basename( options.randstack )
+		randstackcopy = options.path + '/' + randstackbase
+		
+		os.system('e2proc3d.py ' + options.randstack + ' ' + randstackcopy)
+		
+		if options.filter or float(options.pad) > 1.0 or int(options.shrink) > 1:
+			ret = preprocess(options,randstackcopy) 
+			randstackcopy = ret[-1]
+		print "Randstackcopy to read particles from is", randstackcopy
+		
 		for np in range(nr):
-			a=EMData(options.randstack,np)
+			a=EMData(randstackcopy,np)
 			randptcls.append(a)
 		
-		stackname = originalpath + '/' + os.path.basename(options.randstack)
-		ret=subtomosim(options,randptcls, stackname)
+		#stackname = originalpath + '/' + os.path.basename(options.randstack)
+		
+		ret=subtomosim(options, randptcls, randstackcopy )
 	
 	elif options.input:
 	
@@ -237,7 +255,7 @@ def main():
 			tag = ''
 	
 			if options.verbose:
-				print "These many particles will be simulated, for each of the supplied references/models", options.nptcls
+				print "\nThese many particles will be simulated, for each of the supplied references/models", options.nptcls
 				print "There are these many references/models", nrefs
 		
 			originalpath = options.path
@@ -247,7 +265,7 @@ def main():
 		
 			for i in range(nrefs):
 				if options.verbose:
-					print "Generating simulated subtomograms for reference number", kkk
+					print "\n\nGenerating simulated subtomograms for reference number", kkk
 					
 				if nrefs>1:
 					modelfilename = originalinput.split('/')[-1].replace('.hdf','_model' + str(i).zfill(2) + '.hdf')
@@ -275,18 +293,15 @@ def main():
 					newsize = max(model['nx'], model['ny'], model['nz'])
 					print "\n\n\n\nNEWSIZE will be", newsize
 	
-				if options.shrink and options.shrink > 1:
-					newsize = newsize/options.shrink	
-					if newsize % 2:
-						newsize += 1
-	
-					#os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --process=math.meanshrink:n=' + str(options.shrink))
-					
-					shrinkcmd='e2proc3d.py ' + options.input + ' ' + options.input + ' --process=math.meanshrink:n=' + str(options.shrink)
-					p=subprocess.Popen( shrinkcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+					fixboxcmd='e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(newsize)
+					p=subprocess.Popen( fixboxcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 					text=p.communicate()	
 					p.stdout.close()
 				
+				if options.filter or options.pad or options.shrink:
+					ret = preprocess(options,options.input)
+					options = ret[0]
+					
 				if options.finalboxsize:
 					if 'x' not in options.finalboxsize:
 						print "\nThere is no x factor in finalboxsize"
@@ -296,33 +311,7 @@ def main():
 						
 						print "Therefore the expanded boxisze is", options.finalboxsize
 						print "\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\n\n\n\n\n\n\n\n"
-						
-				padded=options.input
-				if options.pad:
-					newsize *= options.pad
-					#padded=padded.replace('.hdf','_padded.hdf')
-					
-				if newsize != oldx:
-					#os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(newsize) + ' --first=' + str(i) + ' --last=' + str(i))	
-					
-					clipcmd = 'e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(newsize) + ' --first=' + str(i) + ' --last=' + str(i)
-					p=subprocess.Popen( clipcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-					text=p.communicate()	
-					p.stdout.close()
-					
-					
-					options.input=padded
-					
-					
-					
 	
-				model = EMData(options.input,0)
-				#print "after editing, apix of model is", model['apix_x']
-		
-				if not options.finalboxsize:
-					options.finalboxsize = model['nx']
-	
-				else:
 					#os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))
 					
 					clip2cmd = 'e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i)
@@ -330,16 +319,9 @@ def main():
 					text=p.communicate()	
 					p.stdout.close()
 					
-					
-					model = EMData(options.input,0)
-	
-				if options.filter:
-					model.process_inplace(options.filter[0],options.filter[1])
-
-				#model.process_inplace('normalize')
-				model['origin_x'] = 0									#Make sure the origin is set to zero, to avoid display issues with Chimera
-				model['origin_y'] = 0
-				model['origin_z'] = 0
+				else:
+					modelhdr = EMData(options.input,0,True)
+					options.finalboxsize = max( int(model['nx']), int(model['ny']), int(model['nz']) )
 
 				#model = EMData(options.input,0,True)
 				#print "\n\nCCCCCCCCCCCC\n\nThe apix of the FINAL model is", model['apix_x']
@@ -349,6 +331,8 @@ def main():
 				Transform gridholesize and icethickness to pixels
 				'''
 
+				model = EMData(options.input,0)
+				
 				if options.gridholesize:
 					options.gridholesize = int( options.gridholesize * math.pow(10,6) / model['apix_x'] )
 
@@ -358,7 +342,6 @@ def main():
 				stackname = options.input.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf').split('/')[-1]
 				if options.output:
 					stackname = options.output.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf').split('/')[-1]
-		
 		
 				if options.output:
 					stackname = options.output
@@ -389,6 +372,52 @@ def main():
 	E2end(logger)
 					
 	return()
+
+
+def preprocess(options,stack):
+		
+	preprocessed = stack.replace('.hdf','_preproc.hdf')
+	
+	os.system('e2proc3d.py	' + stack + ' ' + preprocessed)
+	
+	hdr = EMData(stack,0,True)
+	newsize=hdr['nx']
+	nf = EMUtil.get_image_count(stack)
+	
+	if options.shrink and int(options.shrink) > 1:
+		newsize = newsize/options.shrink	
+		if newsize % 2:
+			newsize += 1
+
+		#os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --process=math.meanshrink:n=' + str(options.shrink))
+		
+		shrinkcmd='e2proc3d.py ' + preprocessed + ' ' + preprocessed + ' --process=math.meanshrink:n=' + str(options.shrink)
+		p=subprocess.Popen( shrinkcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		text=p.communicate()	
+		p.stdout.close()
+
+	if options.pad and float(options.pad) > 1.0:
+		newsize *= options.pad
+		newsize = int( round( newsize ) )
+		
+		clipcmd = 'e2proc3d.py ' + preprocessed + ' ' + preprocessed + ' --clip=' + str(newsize)
+		p=subprocess.Popen( clipcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		text=p.communicate()	
+		p.stdout.close()
+	
+		fixcmd = 'e2fixheaderparam.py --input=' + preprocessed + ' --stem=origin --stemval=0.0'
+		p=subprocess.Popen( fixcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		text=p.communicate()	
+		p.stdout.close()
+		
+		options.input = preprocessed
+		
+	if options.filter:
+		pass #Filter not working for now
+		
+	
+
+	return [options,preprocessed]
 	
 
 '''
@@ -479,6 +508,11 @@ def randomizer(options, model, stackname):
 				#print "Whereas stackname is", stackname
 				#print "Therefore stackname.split('/')[-1] is", stackname.split('/')[-1]
 				
+				
+				b['origin_x'] = 0									#Make sure the origin is set to zero, to avoid display issues with Chimera
+				b['origin_y'] = 0
+				b['origin_z'] = 0
+				
 				b.write_image(randstackname,i)
 
 			randptcls.append(b)
@@ -487,6 +521,7 @@ def randomizer(options, model, stackname):
 				print "The random transform applied to it was", random_transform
 
 	return(randptcls)
+
 	
 '''
 ====================
@@ -507,9 +542,6 @@ def subtomosim(options,ptcls,stackname):
 		print "\n\n"
 		from EMAN2PAR import EMTaskCustomer
 		etc=EMTaskCustomer(options.parallel)
-		
-
-	
 	
 	if options.verbose:
 		
@@ -536,24 +568,45 @@ def subtomosim(options,ptcls,stackname):
 	
 	#pn = 0
 	
-	print "I have these many particles from results", len(results)
-	print "From outname", outname
-
+	#print "I have these many particles from results", len(results)
+	#print "From outname", outname
+	ii=0
 	for pn in range(len(results)):
 		finaloutname = outname
 		
 		if options.path not in outname:
 			finaloutname = options.path + '/' + outname
 		
-		print "\n\n\n\n\n\nn\\n\n\nn\\nn\n\n\n\n\n THe final outname rigth before writing is", finaloutname
-		print "because options.path is", options.path
-		print "and outname is", outname
-		print "And the particle is", results[pn]
-		print "And its type is", type( results[pn])
-		print "And its index is", pn
+		#print "\n\n\n\n\n\nn\\n\n\nn\\nn\n\n\n\n\n THe final outname rigth before writing is", finaloutname
+		#print "because options.path is", options.path
+		#print "and outname is", outname
+		#print "And the particle is", results[pn]
+		#print "And its type is", type( results[pn])
+		#print "And its index is", pn
+		if i==0:
+			print "\n\n(subtomosim) The size of the final particle is",results[pn]['nx'],results[pn]['ny'],results[pn]['nz']
 		
+		results[pn]['origin_x'] = 0									#Make sure the origin is set to zero, to avoid display issues with Chimera
+		results[pn]['origin_y'] = 0
+		results[pn]['origin_z'] = 0
+		
+		finaloutname = finaloutname.replace('_preproc','')
 		results[pn].write_image(finaloutname,pn)
 		#pn+=1
+		ii+=1
+	
+	if options.finalboxsize:
+		box = int(options.finalboxsize)
+		print "\nActually, because of finalboxsize$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n options.finalboxsize is", options.finalboxsize
+		print "Therefore, box of final simulated stack is", box
+		
+		clipcmdf = 'e2proc3d.py ' + finaloutname + ' ' + finaloutname + ' --clip=' + str(options.finalboxsize)
+		print "with cmmand", clipcmdf
+		
+		p=subprocess.Popen( clipcmdf, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		text=p.communicate()	
+		p.stdout.close()
+		
 	
 	if options.tomogramoutput:
 		tomogramsim(options,results)
@@ -579,7 +632,6 @@ class SubtomoSimTask(JSTask):
 		
 		JSTask.__init__(self,"SubTomoSim",data,{},"")
 
-		#self.classoptions={"options":options,"ptcl":ptcl,"label":label,"mask":options.mask,"normproc":options.normproc,"preprocess":options.preprocess,"lowpass":options.lowpass,"highpass":options.highpass,"npeakstorefine":options.npeakstorefine,"align":options.align,"aligncmp":options.aligncmp,"ralign":options.ralign,"raligncmp":options.raligncmp,"shrink":options.shrink,"shrinkrefine":options.shrinkrefine,"transform":transform,"verbose":options.verbose,"randomizewedge":options.randomizewedge,"wedgeangle":options.wedgeangle,"wedgei":options.wedgei,"wedgef":options.wedgef}
 		self.classoptions={"options":options,"ptclnum":ptclnum,"outname":outname}
 	
 	def execute(self,callback=None):
@@ -591,6 +643,8 @@ class SubtomoSimTask(JSTask):
 		i = self.classoptions['ptclnum']
 		
 		image = self.data['image']
+		
+		print "\n\n(SubtomoSimTask) Size of the particle for simulation is", image['nx'],image['ny'],image['nz']
 		
 		outname = self.classoptions['outname']
 		
@@ -620,10 +674,15 @@ class SubtomoSimTask(JSTask):
 	
 		randT = image['sptsim_randT']
 	
-		#print "Will process particle i", i
-		#print "Nslices are", nslices
-		#print "Lower bound is", lower_bound
+		print "\n\nWill process particle i", i
+		print "Nslices are", nslices
+		print "Lower bound is", lower_bound
 	
+		finalprjsRAW = finalprjsED = ''
+
+		print "The 3d image is", image
+		print "Its size is",image['nx'],image['ny'],image['nz']
+			
 		for j in range(nslices):
 			realalt = alt + j*tiltstep
 		
@@ -644,19 +703,25 @@ class SubtomoSimTask(JSTask):
 			prj['apix_y']=apix
 			prj['sptsim_tiltangle']=realalt
 		
-			#print "The size of the prj is", prj['nx']
-		
+			#print "\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\nThe size of the prj is", prj['nx']
+			#print "\n"
+			
 			prj.process_inplace('normalize')
 		
 			if options.saveprjs:
+				finalprjsRAW = options.path + '/' + stackname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsRAW.hdf')
 				if options.path + '/' in stackname:
-					prj.write_image( stackname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsRAW.hdf') , j)					#Write projections stack for particle i
-				else:
-					prj.write_image( options.path + '/' + stackname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsRAW.hdf') , j)					#Write projections stack for particle i
+					finalprjsRAW = stackname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsRAW.hdf')
 				
+				finalprjsRAW = finalprjsRAW.replace('_preproc','')	
+				prj.write_image( finalprjsRAW , -1)					#Write projections stack for particle i
+				
+			
 			raw_projections.append(prj)
 				
 			prj_fft = prj.do_fft()
+			
+			print "Sizes of prj and prj_ftt are", prj['nx'],prj['ny'],prj_fft['nx'],prj_fft['ny']
 		
 			if options.negativecontrast:
 				prj_fft.mult(-1)								#Reverse the contrast, as in "authentic" cryoEM data		
@@ -694,33 +759,27 @@ class SubtomoSimTask(JSTask):
 				elif options.snr:
 					print "WARNING: You specified snr but there's no noise to add, apparently!"
 
-			ctfed_projections.append(prj_r)		
+			ctfed_projections.append(prj_r)
 			#print "Appended ctfed prj in slice j", j
 		
-			if options.saveprjs and options.applyctf or options.saveprjs and options.snr:
+			if options.saveprjs and (options.applyctf or options.snr):
+				finalprjsED = options.path + '/' + stackname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsEDITED.hdf')
 				if options.path + '/' in stackname:
-					prj_r.write_image( stackname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsEDITED.hdf') , j)
-				else:
-					prj_r.write_image(options.path + '/' + stackname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsEDITED.hdf') , j)	
-					
-			#alt += tiltstep
-			#print "\nAt end of loop after adding tiltstep, tiltstep,alt are", tiltstep,realalt
-			#print "\n$$$$$$$$$"
+					finalprjsED = stackname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsEDITED.hdf') 
+				
+				finalprjsED = finalprjsED.replace('_preproc','')
+				prj_r.write_image( finalprjsED , -1)	
 	
-		#print "\n########I am done with all the slices for particle", i
 	
-		box = image.get_xsize()
-		
-		print "The box for IMAGE is with image.get_xsize", box
+	
+	
+		print "The box for IMAGE is with image.get_xsize", image.get_xsize()
 		print "Whereas with image['nx']", image['nx']
-		box = image['nx']
+
+		box = max(int(image['nx']),int(image['ny']),int(image['nz']))
 		
-		if options.finalboxsize:
-			box = options.finalboxsize
-			"\n\n\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n options.finalboxsize is", options.finalboxsize
-	
-		#print "The boxsize to use is", options.finalboxsize
-	
+		print "!!!!!!!!!!!!!!!Therefore, box is", box
+		
 		r = Reconstructors.get(options.reconstructor[0],{'size':(box,box,box),'sym':'c1','verbose':True,'mode':'gauss_2'})
 		#r = Reconstructors.get(options.reconstructor[0],options.reconstructor[1])
 		r.setup()
@@ -749,14 +808,18 @@ class SubtomoSimTask(JSTask):
 		rec['apix_y']=apix
 		rec['apix_z']=apix
 		rec['sptsim_randT'] = randT
-	
-		
+		rec['origin_x']=0
+		rec['origin_y']=0
+		rec['origin_z']=0
+
 		#print "The apix of rec is", rec['apix_x']
 		
 		print "\nThe outname to write the particle i", i 
-		finaloutname = options.path + '/' + outname
 		
-		print "is, finaloutname", finaloutname
+		#finaloutname = options.path + '/' + outname
+		#finaloutname.replace('_preproc','')
+		#print "is, finaloutname", finaloutname
+
 		print "rec to return is", rec
 			
 		#rec.write_image(finaloutname,i)
@@ -767,6 +830,41 @@ class SubtomoSimTask(JSTask):
 		#	return {'ptcl':rec,'px':px,'py':py,'pz':pz}
 		#	
 		#else:
+		
+		if options.finalboxsize:
+			box = int(options.finalboxsize)
+			print "\nActually, because of finalboxsize$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n options.finalboxsize is", options.finalboxsize
+			print "Therefore, box is", box
+			
+		#print "The boxsize to use is", options.finalboxsize
+			
+		if finalprjsRAW and options.finalboxsize and float(options.pad) > 1.0:
+			print "\n\n\n\n\n\n\n\n\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@prjs raw need to be clipped! to a size of", options.finalboxsize
+			
+			finalprjsRAWclipped = finalprjsRAW.replace('.hdf','_clipped.hdf')  
+			clipcmd1 = 'e2proc2d.py ' + finalprjsRAW + ' ' + finalprjsRAWclipped + ' --clip=' + str(options.finalboxsize) + ',' + str(options.finalboxsize) + ' && mv ' + finalprjsRAWclipped + ' ' + finalprjsRAW
+			print "with cmmand", clipcmd1
+			
+			
+			p=subprocess.Popen( clipcmd1, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			text=p.communicate()	
+			p.stdout.close()
+			
+		if finalprjsED and options.finalboxsize and float(options.pad) > 1.0:
+			print "\n\n\n\n\n\n\n\n\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@prjs ED need to be clipped! to a size of", options.finalboxsize
+			
+			finalprjsEDclipped = finalprjsED.replace('.hdf','_clipped.hdf')  
+			
+			clipcmd2 = 'e2proc2d.py ' + finalprjsED + ' ' + finalprjsEDclipped + ' --clip=' + str(options.finalboxsize) + ',' + str(options.finalboxsize) + ' && mv ' + finalprjsEDclipped + ' ' + finalprjsED 
+			print "with cmmand", clipcmd2
+			
+			
+			
+			p=subprocess.Popen( clipcmd2, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			text=p.communicate()	
+			p.stdout.close()
+		
+		#box = image.get_xsize()
 		
 		print "\n\n\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\nThe final boxsize of rec is", rec['nx'], box
 		return rec
