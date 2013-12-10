@@ -2,7 +2,7 @@
 
 '''
 ====================
-Author: Jesus Galaz - whoknows-2012, Last update: 25/Feb/2013
+Author: Jesus Galaz - whoknows-2012, Last update: 10/Dec/2013
 ====================
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -130,32 +130,35 @@ def main():
 	'''
 	Make a directory where to store the results
 	'''
-
-	if options.path and ("/" in options.path or "#" in options.path) :
-		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
-		sys.exit(1)
-
-	if not options.path: 
-		options.path = "orthoproject_01"
 	
-	files=os.listdir(os.getcwd())
-	while options.path in files:
-		if '_' not in options.path:
-			options.path = options.path + '_00'
-		else:
-			jobtag=''
-			components=options.path.split('_')
-			if components[-1].isdigit():
-				components[-1] = str(int(components[-1])+1).zfill(2)
-			else:
-				components.append('00')
-						
-			options.path = '_'.join(components)
-			#options.path = path
+	from e2spt_classaverage import sptmakepath
+	options = sptmakepath(options,'orthoprjs')
+	
+	#if options.path and ("/" in options.path or "#" in options.path) :
+	#	print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
+	#	sys.exit(1)
+	#
+	#if not options.path: 
+	#	options.path = "orthoproject_01"
+	#
+	#files=os.listdir(os.getcwd())
+	#while options.path in files:
+	#	if '_' not in options.path:
+	#		options.path = options.path + '_00'
+	#	else:
+	#		jobtag=''
+	#		components=options.path.split('_')
+	#		if components[-1].isdigit():
+	#			components[-1] = str(int(components[-1])+1).zfill(2)
+	#		else:
+	#			components.append('00')
+	#					
+	#		options.path = '_'.join(components)
+	#		#options.path = path
 
-	if options.path not in files:
-		
-		os.system('mkdir ' + options.path)
+	#if options.path not in files:
+	#	
+	#	os.system('mkdir ' + options.path)
 	
 	
 	'''
@@ -220,7 +223,7 @@ def main():
 		
 		newpath = path
 		if len(models) > 1:
-			newpath = path + '/' + model.split('.')[0]
+			newpath = path + '/' + model.split('.hdf')[0]
 			os.system('mkdir ' + newpath)
 		
 		kstack=0
@@ -234,11 +237,11 @@ def main():
 					submodelname = subpath + '/' + model.split('.')[0] + '_ptcl' + str(i).zfill(len(str(n))) + '_prjs.hdf'
 				else:
 					if options.onlyx:
-						submodelname = subpath + '/' + model.split('.')[0] + '_Xprjs.hdf'
+						submodelname = subpath + '/' + model.split('.hdf')[0] + '_Xprjs.hdf'
 					if options.onlyy:
-						submodelname = subpath + '/' + model.split('.')[0] + '_Yprjs.hdf'
+						submodelname = subpath + '/' + model.split('.hdf')[0] + '_Yprjs.hdf'
 					if options.onlyz:
-						submodelname = subpath + '/' + model.split('.')[0] + '_Zprjs.hdf'
+						submodelname = subpath + '/' + model.split('.hdf')[0] + '_Zprjs.hdf'
 		
 			submodel = EMData(model,i)	
 			
@@ -317,14 +320,14 @@ def main():
 				else:
 					k = kindividual
 						
-				prj.write_image(submodelname.replace('.','_' + tag + '.'),k)
+				prj.write_image(submodelname.replace('.hdf','_' + tag + '.hdf'),k)
 				
 				#print "Options.saverotvol is", options.saverotvol
 				if options.saverotvol:
 					submodel_rot = submodel.copy()
 					submodel_rot.transform(projectiondirections[d])
 					
-					volname = submodelname.replace('prjs.', '_vol' + d + '.')
+					volname = submodelname.replace('_prjs.', '_vol' + d + '.')
 					#print "I will save the rotated volume to this file", volname
 					submodel_rot.write_image( volname , 0)
 					
