@@ -216,7 +216,7 @@ string TagData::read_native(bool is_value_stored)
 		unsigned int val = 0;
 		fread(&val, sz, 1, in);
 		tagtable->become_host_endian(&val);
-		sprintf(val_str, "%d", (int) val);
+		sprintf(val_str, "%u", (int) val);
 	}
 	else if (tag_type == FLOAT) {
 		float val = 0;
@@ -231,16 +231,16 @@ string TagData::read_native(bool is_value_stored)
 		sprintf(val_str, "%10e", val);
 	}
 	else if (tag_type == OCTEU) {
-		double val = 0;
+		long val = 0;
 		fread(&val, sz, 1, in);
 		tagtable->become_host_endian(&val);
-		sprintf(val_str, "%10e", val);
+		sprintf(val_str, "%ld", val);
 	}
 	else if (tag_type == OCTEV) {
-		double val = 0;
+		unsigned long val = 0;
 		fread(&val, sz, 1, in);
 		tagtable->become_host_endian(&val);
-		sprintf(val_str, "%10e", val);
+		sprintf(val_str, "%ld", val);
 	}
 	else {
 		LOGERR("invalid tag type: '%d'", tag_type);
@@ -476,7 +476,7 @@ int TagData::read(bool nodata)
 	fread(&interval, sizeof(interval), 1, in);
 
 	ByteOrder::become_big_endian(&interval);
-	
+
 	fread(mark, mark_sz, 1, in);
 	mark[mark_sz] = '\0';
 
@@ -625,12 +625,15 @@ int TagEntry::read(bool nodata)
 		err = tag_data.read(nodata);
 	}
 	else if (tag_type == GROUP_TAG) {
+		long tot_size = 0;	//size of DataType record + size of data
+		fread(&tot_size, sizeof(long), 1, in);
+		ByteOrder::become_big_endian(&tot_size);
 
 		TagGroup group(in, tagtable, name);
 		err = group.read(nodata);
 	}
 
-/*	
+/*
 	long tot_size = 0;	//size of DataType record + size of data
 	fread(&tot_size, sizeof(long), 1, in);
 */
@@ -651,10 +654,13 @@ TagGroup::~TagGroup()
 int TagGroup::read(bool nodata)
 {
 	LOGVAR("TagGroup::read()");
+	char is_sorted, is_open;
 
 	long ntags = 0;
 	
-	portable_fseek(in, sizeof(char) * 2, SEEK_CUR);
+//	portable_fseek(in, sizeof(char) * 2, SEEK_CUR);
+	fread(&is_sorted, sizeof(is_sorted), 1, in);
+	fread(&is_open,   sizeof(is_open),   1, in);
 
 	fread(&ntags, sizeof(ntags), 1, in);
 	
