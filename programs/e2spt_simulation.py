@@ -199,6 +199,24 @@ def main():
 		#stackname = originalpath + '/' + os.path.basename(options.randstack)
 		
 		ret=subtomosim(options, randptcls, randstackcopy )
+		
+		if options.simref and options.input and not options.nosim:
+			model = EMData(options.input,0)
+			
+			name = options.path + '/' + options.input.replace('.hdf','_SIM.hdf').split('/')[-1]
+			model['sptsim_randT'] = Transform()
+			model['xform.align3d'] = Transform()
+			ret = subtomosim(options,[model],name)
+
+			if ret == 1:
+				#os.system('e2proc3d.py ' + name + ' ' + name + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))
+				
+				clip3cmd = 'e2proc3d.py ' + name + ' ' + name + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(0) + ' --last=' + str(0)
+				p=subprocess.Popen( clip3cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+				text=p.communicate()	
+				p.stdout.close()
+		
+		
 	
 	elif options.input:
 	
@@ -338,18 +356,20 @@ def main():
 
 				if options.icethickness:
 					options.icethickness = int( options.icethickness * math.pow(10,0) / model['apix_x'] )
-
-				stackname = options.input.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf').split('/')[-1]
-				if options.output:
-					stackname = options.output.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf').split('/')[-1]
-		
-				if options.output:
-					stackname = options.output
-		
-				randptcls = randomizer(options, model, stackname)
+				
+				#stackname = options.input.replace('.hdf','_ptcls.hdf')
+				#if options.output:
+				#	stackname = options.output
+				
+				#print "###############\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n#################\nThe stackname for the RANDOMIZED particles, before randomizer, is", stackname
+				#print "#####################################\n\n\n\n\n\n\n\n\n\n\n\n\n"
+				
+				retrand = randomizer(options, model,tag)
+				randptcls = retrand[0]
+				randstackname = retrand[-1]
 			
 				if not options.nosim:
-					ret=subtomosim(options,randptcls, stackname)		
+					ret=subtomosim(options,randptcls,randstackname)		
 	
 				#if ret == 1:
 				#	os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))	
@@ -426,7 +446,7 @@ RANDOMIZER - Takes a file in .hdf format and generates a set of n particles rand
 the size of the set and is defined by the user
 ====================
 '''
-def randomizer(options, model, stackname):
+def randomizer(options, model, tag):
 	
 	#print "I am inside the RANDOMIZER"
 	
@@ -434,6 +454,10 @@ def randomizer(options, model, stackname):
 		print "You have requested to generate %d particles with random orientations and translations" %(options.nptcls)
 	
 	randptcls = []
+	
+	randstackname = options.path + '/' + options.input.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf').split('/')[-1]
+	if options.output:
+		randstackname = options.path + '/' + options.output.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf').split('/')[-1]
 	
 	if options.orthogonal:
 		for i in range(4):
@@ -465,7 +489,15 @@ def randomizer(options, model, stackname):
 				b['xform.align3d'] = Transform()
 				randptcls.append(b)
 			
-	else:	
+			randstackname = options.path + '/' + options.input.replace('.hdf','_orthost' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf').split('/')[-1]
+			if options.output:
+				randstackname = options.path + '/' + options.output.replace('.hdf','_orthost' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf').split('/')[-1]
+			
+	else:
+		
+		print "###############\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n#################\nThe stackname inside RANDOMIZER, is", randstackname
+		print "--saverandstack is", options.saverandstack
+		print "#####################################\n\n\n\n\n\n\n\n\n\n\n\n\n"
 		for i in range(options.nptcls):
 			if options.verbose:
 				print "I will generate particle #", i
@@ -502,7 +534,7 @@ def randomizer(options, model, stackname):
 			if options.saverandstack:	
 
 				#print "The stackname to use is", stackname
-				randstackname = options.path + '/' + stackname.split('/')[-1]
+				#randstackname = options.path + '/' + stackname.split('/')[-1]
 				#print "\n\n\n\n\nI will save randstack! Using THE PATH in e2spt_simulation and stackname both of which together are", randstackname
 				#print "options path received is", options.path
 				#print "Whereas stackname is", stackname
@@ -514,13 +546,14 @@ def randomizer(options, model, stackname):
 				b['origin_z'] = 0
 				
 				b.write_image(randstackname,i)
+				print "Actually, particle written to", randstackname
 
 			randptcls.append(b)
 
 			if options.verbose:
 				print "The random transform applied to it was", random_transform
 
-	return(randptcls)
+	return(randptcls,randstackname)
 
 	
 '''
@@ -547,8 +580,11 @@ def subtomosim(options,ptcls,stackname):
 		
 		print "(e2spt_simulation) There are these many slices to produce to simulate each subtomogram", options.nslices
 	
-	outname = stackname.replace('.hdf','_ptcls.hdf')
-	
+	#outname = stackname.replace('.hdf','_ptcls.hdf')
+	outname = options.path + '/' + options.input.replace('.hdf','_ptcls.hdf').split('/')[-1]
+	if options.output:
+		outname = options.path + '/' + options.output.replace('.hdf','_ptcls.hdf')
+		
 	if len(ptcls) == 1 and '_SIM.hdf' in stackname:
 		outname = stackname.split('/')[-1]
 	
