@@ -52,7 +52,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)	
 	
 	parser.add_argument("--path",type=str,default=None,help="Directory to store results in. The default is a numbered series of directories containing the prefix 'sptsim'; for example, sptsim_02 will be the directory by default if 'sptsim_01' already exists.")
-	parser.add_argument("--output",type=str,default=None,help="Name of the output stack for the simulated subtomograms.")
+	#parser.add_argument("--output",type=str,default=None,help="Name of the output stack for the simulated subtomograms.")
 	parser.add_argument("--randstack",type=str,default=None,help="If you already have a stack of particles (presumably in random orientations) you can supply it here.")
 	parser.add_argument("--tomogramoutput",type=str,default=None,help="This will generate a simulated tilt series and tomogram containing the entire set of subtomograms.")
 
@@ -84,7 +84,7 @@ def main():
 									Note that this parameter will determine the size of the missing wedge.""")
 	parser.add_argument("--applyctf", action="store_true",default=False,help="If on, it applies ctf to the projections in the simulated tilt series based on defocus, cs, and voltage parameters.")
 	
-	parser.add_argument("--orthogonal", action="store_true",default=False,help="If on, --nptcls is ignored and you get 3 subtomograms (simulated from the model supplied) which are orthogonal to each other.")
+	parser.add_argument("--saveorthostack", action="store_true",default=False,help="If on, --nptcls is ignored and you get 3 subtomograms (simulated from the model supplied) which are orthogonal to each other.")
 
 	parser.add_argument("--defocus", type=float,default=3.0,help="Intended defocus at the tilt axis (in microns) for the simulated tilt series.")
 	parser.add_argument("--voltage", type=int,default=200,help="Voltage of the microscope, used to simulate the ctf added to the subtomograms.")
@@ -175,17 +175,20 @@ def main():
 	if rootpath not in options.path:
 		options.path = rootpath + '/' + options.path
 		
-	randptcls = []
+	randptcls = {}
+	
 	if options.randstack:
 		print "\n\nI will not generate a randstack but will read it from", options.randstack
-		nr=EMUtil.get_image_count(options.randstack)
-		print "There are these many particles in the randstack", nr							#ATTENTION: Randstack might still need box size changes and padding...
-		
-		print "--randstack is", options.randstack
+
 		randstackbase = os.path.basename( options.randstack )
 		randstackcopy = options.path + '/' + randstackbase
-		
+
 		os.system('e2proc3d.py ' + options.randstack + ' ' + randstackcopy)
+		
+		nr=EMUtil.get_image_count(randstackcopy)
+		print "There are these many particles in the randstack", nr							#ATTENTION: Randstack might still need box size changes and padding...
+		
+		options.input = randstackcopy
 		
 		if options.filter or float(options.pad) > 1.0 or int(options.shrink) > 1:
 			ret = preprocess(options,randstackcopy) 
@@ -194,29 +197,30 @@ def main():
 		
 		for np in range(nr):
 			a=EMData(randstackcopy,np)
-			randptcls.append(a)
+			#>>randptcls.append(a)
+			randptcls.update({np:a})
 		
-		#stackname = originalpath + '/' + os.path.basename(options.randstack)
+		#stackname = rootpath + '/' + os.path.basename(options.randstack)
 		
-		ret=subtomosim(options, randptcls, randstackcopy )
-		
-		if options.simref and options.input and not options.nosim:
-			model = EMData(options.input,0)
-			
-			name = options.path + '/' + options.input.replace('.hdf','_SIM.hdf').split('/')[-1]
-			model['sptsim_randT'] = Transform()
-			model['xform.align3d'] = Transform()
-			ret = subtomosim(options,[model],name)
-
-			if ret == 1:
-				#os.system('e2proc3d.py ' + name + ' ' + name + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))
-				
-				clip3cmd = 'e2proc3d.py ' + name + ' ' + name + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(0) + ' --last=' + str(0)
-				p=subprocess.Popen( clip3cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-				text=p.communicate()	
-				p.stdout.close()
+		simptclsname = options.path + '/simptcls.hdf'
+		subtomosim(options, randptcls, simptclsname )
 		
 		
+		#if options.simref and options.input and not options.nosim:
+		#	model = EMData(options.input,0)
+		#	
+		#	name = options.path + '/' + options.input.replace('.hdf','_SIM.hdf').split('/')[-1]
+		#	model['sptsim_randT'] = Transform()
+		#	model['xform.align3d'] = Transform()
+		#	ret = subtomosim(options,[model],name)
+		#
+		#	if ret == 1:
+		#		#os.system('e2proc3d.py ' + name + ' ' + name + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))
+		#		
+		#		clip3cmd = 'e2proc3d.py ' + name + ' ' + name + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(0) + ' --last=' + str(0)
+		#		p=subprocess.Popen( clip3cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		#		text=p.communicate()	
+		#		p.stdout.close()	
 	
 	elif options.input:
 	
@@ -226,54 +230,24 @@ def main():
 		
 			options.input = fyle
 		
-			check=0	
-			nrefs = 1 						#MRC and PDB files don't allow for stacks. 
-											#It is only if --input is HDF that nrefs could be > 1
-			if '.pdb' in options.input:
-				pdbmodel = options.input
-				os.system('cp ' + pdbmodel + ' ' + options.path)
-				pdbmodel = options.path + '/' + pdbmodel.split('/')[-1]
-				mrcmodel = pdbmodel.replace('.pdb','.mrc')
-				os.system('e2pdb2mrc.py ' + pdbmodel + ' ' + mrcmodel + ' && rm ' + pdbmodel)
-				options.input = mrcmodel
-				check=1
-
-			if '.mrc' in options.input:
-				mrcmodel = options.input
-				if check==0:
-					os.system('cp ' + mrcmodel + ' ' + options.path)
-					mrcmodel = options.path + '/' + mrcmodel.split('/')[-1]
-				hdfmodel = mrcmodel.replace('.mrc','.hdf')
-				os.system('e2proc3d.py ' + options.input + ' ' + hdfmodel + ' && rm ' + mrcmodel)
-				options.input = hdfmodel
-				check=1
+			'''
+			Convert pdb or mrc files to hdf
+			'''
+			options = sptfixformat( options )
 					
-			if '.hdf' in options.input:
-				hdfmodel = options.input
-				if check == 0:
-					os.system('cp ' + hdfmodel + ' ' + options.path)
-					hdfmodel = options.path + '/' + hdfmodel.split('/')[-1]
-					options.input = hdfmodel
-				workname = hdfmodel.replace('.hdf','_sptsimMODEL.hdf')
-				if nrefs > 1:
-					workname = hdfmodel.replace('.hdf','_sptsimMODELS.hdf')
-		
-				os.system('cp ' + hdfmodel + ' ' + workname + ' && rm ' + hdfmodel)
-				options.input = workname
-					
-				nrefs = EMUtil.get_image_count( options.input )		
+			nrefs = EMUtil.get_image_count( options.input )		
 			
 			'''
 			The program can process several FILES, each of which could be a STACK with several
 			images each.
 			'''
-			if len(fyles) > 1:
-				options.output = options.input.replace('.hdf','_simSubtomos.hdf')
+			#if len(fyles) > 1:
+			#	options.output = options.input.replace('.hdf','_simSubtomos.hdf')
 		
 			tag = ''
 	
 			if options.verbose:
-				print "\nThese many particles will be simulated, for each of the supplied references/models", options.nptcls
+				print "These many particles will be simulated, for each of the supplied references/models", options.nptcls
 				print "There are these many references/models", nrefs
 		
 			originalpath = options.path
@@ -300,26 +274,22 @@ def main():
 					options.input = options.path + '/' + modelfilename
 					tag = str(i).zfill(len(str(nrefs)))
 
-				randptcls = []
-				model = EMData(options.input,0,True)
-				#print "\n\nAAAAAAAAAA\n\nThe apix of the model is", model['apix_x']
-				#print "\n\nAAAAAAAAAAAAA\n\n"
-				newsize = model['nx']
-				oldx = model['nx']
-
-				if model['nx'] != model['ny'] or model['nx'] != model['nz'] or model['ny'] != model['nz']:
-					newsize = max(model['nx'], model['ny'], model['nz'])
-					print "\n\n\n\nNEWSIZE will be", newsize
-	
-					fixboxcmd='e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(newsize)
-					p=subprocess.Popen( fixboxcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-					text=p.communicate()	
-					p.stdout.close()
+				'''
+				Make model's box cubical if it isn't
+				'''
+				modelhdr = EMData(options.input,0,True)
+				if modelhdr['nx'] != modelhdr['ny'] or modelhdr['nx'] != modelhdr['nz'] or modelhdr['ny'] != modelhdr['nz']:	
+					sptmakecube( options )
+					modelhdr = EMData(options.input,0,True)	
 				
+				'''
+				Preprocess model if necessary
+				'''
 				if options.filter or options.pad or options.shrink:
 					ret = preprocess(options,options.input)
 					options = ret[0]
 					
+				newsize = max( int(modelhdr['nx']), int(modelhdr['ny']), int(modelhdr['nz']) )
 				if options.finalboxsize:
 					if 'x' not in options.finalboxsize:
 						print "\nThere is no x factor in finalboxsize"
@@ -338,60 +308,102 @@ def main():
 					p.stdout.close()
 					
 				else:
-					modelhdr = EMData(options.input,0,True)
-					options.finalboxsize = max( int(model['nx']), int(model['ny']), int(model['nz']) )
-
-				#model = EMData(options.input,0,True)
-				#print "\n\nCCCCCCCCCCCC\n\nThe apix of the FINAL model is", model['apix_x']
-				#print "\n\nCCCCCCCCCCCCC\n\n"
-
-				'''
-				Transform gridholesize and icethickness to pixels
-				'''
+					options.finalboxsize = max( int(modelhdr['nx']), int(modelhdr['ny']), int(modelhdr['nz']) )
 
 				model = EMData(options.input,0)
-				
-				if options.gridholesize:
-					options.gridholesize = int( options.gridholesize * math.pow(10,6) / model['apix_x'] )
-
-				if options.icethickness:
-					options.icethickness = int( options.icethickness * math.pow(10,0) / model['apix_x'] )
-				
-				#stackname = options.input.replace('.hdf','_ptcls.hdf')
-				#if options.output:
-				#	stackname = options.output
-				
-				#print "###############\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n#################\nThe stackname for the RANDOMIZED particles, before randomizer, is", stackname
-				#print "#####################################\n\n\n\n\n\n\n\n\n\n\n\n\n"
-				
+							
 				retrand = randomizer(options, model,tag)
 				randptcls = retrand[0]
 				randstackname = retrand[-1]
-			
+				
+				
 				if not options.nosim:
-					ret=subtomosim(options,randptcls,randstackname)		
-	
+					simptclsname = options.path + '/simptcls.hdf'
+					subtomosim(options,randptcls,simptclsname)		
+				
+				if options.saveorthostack:
+					orthoptcls = orthostack( options, model )
+					
+					if not options.nosim:
+						simorthoptclsname = options.path + '/orthoptcls.hdf'
+						subtomosim(options,orthoptcls,simorthoptclsname)		
+
 				#if ret == 1:
 				#	os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))	
 
-				if options.simref and not options.nosim:
-					name = options.input.replace('.hdf','_SIM.hdf').split('/')[-1]
-					model['sptsim_randT'] = Transform()
-					model['xform.align3d'] = Transform()
-					ret = subtomosim(options,[model],name)
-	
-					if ret == 1:
-						#os.system('e2proc3d.py ' + name + ' ' + name + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))
-						
-						clip3cmd = 'e2proc3d.py ' + name + ' ' + name + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i)
-						p=subprocess.Popen( clip3cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-						text=p.communicate()	
-						p.stdout.close()
+				#if options.simref and not options.nosim:
+				#	#name = options.input.replace('.hdf','_SIM.hdf').split('/')[-1]
+				#	
+				#	simmodelname = options.path + '/simmodel.hdf'
+				#	model['sptsim_randT'] = Transform()
+				#	model['xform.align3d'] = Transform()
+				#	ret = subtomosim(options,[model],simmodelname)
+				#
+				#	if ret == 1:
+				#		#os.system('e2proc3d.py ' + name + ' ' + name + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))
+				#		
+				#		clip3cmd = 'e2proc3d.py ' + simmodelname + ' ' + simmodelname + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i)
+				#		p=subprocess.Popen( clip3cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+				#		text=p.communicate()	
+				#		p.stdout.close()
 				kkk+=1
 	
 	E2end(logger)
 					
 	return()
+
+
+
+
+def sptfixformat( options ):
+	check=0	
+	
+	if '.pdb' in options.input:
+		pdbmodel = options.input
+		os.system('cp ' + pdbmodel + ' ' + options.path)
+		pdbmodel = options.path + '/' + pdbmodel.split('/')[-1]
+		mrcmodel = pdbmodel.replace('.pdb','.mrc')
+		os.system('e2pdb2mrc.py ' + pdbmodel + ' ' + mrcmodel + ' && rm ' + pdbmodel)
+		options.input = mrcmodel
+		check=1
+
+	if '.mrc' in options.input:
+		mrcmodel = options.input
+		if check==0:
+			os.system('cp ' + mrcmodel + ' ' + options.path)
+			mrcmodel = options.path + '/' + mrcmodel.split('/')[-1]
+		hdfmodel = mrcmodel.replace('.mrc','.hdf')
+		os.system('e2proc3d.py ' + options.input + ' ' + hdfmodel + ' && rm ' + mrcmodel)
+		options.input = hdfmodel
+		check=1
+			
+	if '.hdf' in options.input:
+		hdfmodel = options.input
+		if check == 0:
+			os.system('cp ' + hdfmodel + ' ' + options.path)
+			hdfmodel = options.path + '/' + hdfmodel.split('/')[-1]
+			options.input = hdfmodel
+		workname = hdfmodel.replace('.hdf','_sptsimMODEL.hdf')
+		#if nrefs > 1:
+		#	workname = hdfmodel.replace('.hdf','_sptsimMODELS.hdf')
+
+		os.system('cp ' + hdfmodel + ' ' + workname + ' && rm ' + hdfmodel)
+		options.input = workname
+
+	return options
+
+
+def sptmakecube( options ):
+	
+	newsize = max( int(modelhdr['nx']), int(modelhdr['ny']), int(modelhdr['nz']) )
+	print "\n\n\n\nNEWSIZE will be", newsize
+
+	fixboxcmd='e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(newsize)
+	p=subprocess.Popen( fixboxcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	text=p.communicate()	
+	p.stdout.close()
+			
+	return
 
 
 def preprocess(options,stack):
@@ -453,63 +465,31 @@ def randomizer(options, model, tag):
 	if options.verbose:
 		print "You have requested to generate %d particles with random orientations and translations" %(options.nptcls)
 	
-	randptcls = []
+	randptcls = {}
 	
-	randstackname = options.path + '/' + options.input.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf').split('/')[-1]
-	if options.output:
-		randstackname = options.path + '/' + options.output.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf').split('/')[-1]
+	#randstackname = options.path + '/' + options.input.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf').split('/')[-1]
+	#if options.output:
+	#	randstackname = options.path + '/' + options.output.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf').split('/')[-1]
 	
-	if options.orthogonal:
-		for i in range(4):
-			b = model.copy()
-			
-			if i==0:
-				b['sptsim_randT'] = Transform()
-				b['xform.align3d'] = Transform()
-				randptcls.append(b)
-			
-			#if i == 1:
-			#	b.rotate(90,0,0)
-			#	t = Transform({'type':'eman','az':0,'alt':90,'phi':0})
-			#	b['sptsim_randT'] = t
-			#	b['xform.align3d'] = Transform()				
-			#	randptcls.append(b)
-			
-			if i == 1:
-				b.rotate(0,90,0)
-				t = Transform({'type':'eman','az':0,'alt':90,'phi':0})
-				b['sptsim_randT'] = t
-				b['xform.align3d'] = Transform()				
-				randptcls.append(b)
-				
-			if i == 2:
-				b.rotate(90,90,90)
-				t = Transform({'type':'eman','az':0,'alt':90,'phi':90})
-				b['sptsim_randT'] = t
-				b['xform.align3d'] = Transform()
-				randptcls.append(b)
-			
-			randstackname = options.path + '/' + options.input.replace('.hdf','_orthost' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf').split('/')[-1]
-			if options.output:
-				randstackname = options.path + '/' + options.output.replace('.hdf','_orthost' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf').split('/')[-1]
-			
-	else:
-		
-		print "###############\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n#################\nThe stackname inside RANDOMIZER, is", randstackname
-		print "--saverandstack is", options.saverandstack
-		print "#####################################\n\n\n\n\n\n\n\n\n\n\n\n\n"
-		for i in range(options.nptcls):
-			if options.verbose:
-				print "I will generate particle #", i
+	randstackname = options.path + '/randstack.hdf'
+	
+	print "###############\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n#################\nThe stackname inside RANDOMIZER, is", randstackname
+	print "--saverandstack is", options.saverandstack
+	print "#####################################\n\n\n\n\n\n\n\n\n\n\n\n\n"
+	for i in range(options.nptcls):
+		if options.verbose:
+			print "I will generate particle #", i
 
-			b = model.copy()
-			
-			random_transform = Transform()	
-			if not options.notrandomize:
+		b = model.copy()
+		
+		random_transform = Transform()	
+		
+		if not options.notrandomize:
+			if i > 0:
 				rand_orient = OrientGens.get("rand",{"n":1, "phitoo":1})						#Generate a random orientation (randomizes all 3 euler angles)
 				c1_sym = Symmetries.get("c1")
 				random_transform = rand_orient.gen_orientations(c1_sym)[0]
-				
+			
 				randtx = randty = randtz = 0	
 				if options.transrange:
 					randtx = random.randrange(-1 * options.transrange, options.transrange)			#Generate random translations
@@ -522,39 +502,75 @@ def randomizer(options, model, tag):
 					randty = random.randrange(-1 * options.tyrange, options.tyrange)
 				if options.tzrange:
 					randtz = random.randrange(-1 * options.tzrange, options.tzrange)
-				
+			
 				if randtx or randty or randtz:
 					random_transform.translate(randtx, randty, randtz)
 
-				b.transform(random_transform)		
+			b.transform(random_transform)		
 
-			b['sptsim_randT'] = random_transform
-			b['xform.align3d'] = Transform()							#This parameter should be set to the identity transform since it can be used later to determine whether
-														#alignment programs can "undo" the random rotation in spt_randT accurately or not
-			if options.saverandstack:	
+		b['sptsim_randT'] = random_transform
+		b['xform.align3d'] = Transform()							#This parameter should be set to the identity transform since it can be used later to determine whether
+													#alignment programs can "undo" the random rotation in spt_randT accurately or not
+		if options.saverandstack:	
 
-				#print "The stackname to use is", stackname
-				#randstackname = options.path + '/' + stackname.split('/')[-1]
-				#print "\n\n\n\n\nI will save randstack! Using THE PATH in e2spt_simulation and stackname both of which together are", randstackname
-				#print "options path received is", options.path
-				#print "Whereas stackname is", stackname
-				#print "Therefore stackname.split('/')[-1] is", stackname.split('/')[-1]
-				
-				
-				b['origin_x'] = 0									#Make sure the origin is set to zero, to avoid display issues with Chimera
-				b['origin_y'] = 0
-				b['origin_z'] = 0
-				
-				b.write_image(randstackname,i)
-				print "Actually, particle written to", randstackname
+			#print "The stackname to use is", stackname
+			#randstackname = options.path + '/' + stackname.split('/')[-1]
+			#print "\n\n\n\n\nI will save randstack! Using THE PATH in e2spt_simulation and stackname both of which together are", randstackname
+			#print "options path received is", options.path
+			#print "Whereas stackname is", stackname
+			#print "Therefore stackname.split('/')[-1] is", stackname.split('/')[-1]
+			
+			
+			b['origin_x'] = 0									#Make sure the origin is set to zero, to avoid display issues with Chimera
+			b['origin_y'] = 0
+			b['origin_z'] = 0
+			
+			b.write_image(randstackname,i)
+			print "Actually, particle written to", randstackname
 
-			randptcls.append(b)
+		#>>randptcls.append(b)
 
-			if options.verbose:
-				print "The random transform applied to it was", random_transform
+			randptcls.update({i:b})
+		if options.verbose:
+			print "The random transform applied to it was", random_transform
 
 	return(randptcls,randstackname)
 
+	
+def orthostack(options, model):
+	orthoptcls={}
+	for i in range(4):
+		b = model.copy()
+		
+		if i==0:
+			b['sptsim_randT'] = Transform()
+			b['xform.align3d'] = Transform()
+			orthoptcls.append(b)
+		
+		#if i == 1:
+		#	b.rotate(90,0,0)
+		#	t = Transform({'type':'eman','az':0,'alt':90,'phi':0})
+		#	b['sptsim_randT'] = t
+		#	b['xform.align3d'] = Transform()				
+		#	randptcls.append(b)
+		
+		if i == 1:
+			b.rotate(0,90,0)
+			t = Transform({'type':'eman','az':0,'alt':90,'phi':0})
+			b['sptsim_randT'] = t
+			b['xform.align3d'] = Transform()				
+			orthoptcls.append(b)
+			
+		if i == 2:
+			b.rotate(0,90,90)
+			t = Transform({'type':'eman','az':0,'alt':90,'phi':90})
+			b['sptsim_randT'] = t
+			b['xform.align3d'] = Transform()
+			orthoptcls.update({i:b})
+		
+		#orthostackname = options.path + '/orthostack.hdf'
+		
+	return( orthoptcls )
 	
 '''
 ====================
@@ -564,14 +580,14 @@ adds noise and ctf to each projection, randomizes the position of each particle 
 and recounstructs a new 3D volume from the simulated tilt series.
 ====================
 '''	
-def subtomosim(options,ptcls,stackname):
+def subtomosim(options,ptcls,outname):
 	#print "INSIDE SUBTOMOSIM"
 
 	'''
 	Initialize parallelism if being used
 	'''
 	if options.parallel :
-		print "\n\n(e2spt_simulation.py) INITIALIZING PARALLELISM, for this name (stack, or reference)", stackname
+		print "\n\n(e2spt_simulation.py) INITIALIZING PARALLELISM, for this outname (stack, or reference)", outname
 		print "\n\n"
 		from EMAN2PAR import EMTaskCustomer
 		etc=EMTaskCustomer(options.parallel)
@@ -581,19 +597,23 @@ def subtomosim(options,ptcls,stackname):
 		print "(e2spt_simulation) There are these many slices to produce to simulate each subtomogram", options.nslices
 	
 	#outname = stackname.replace('.hdf','_ptcls.hdf')
-	outname = options.path + '/' + options.input.replace('.hdf','_ptcls.hdf').split('/')[-1]
-	if options.output:
-		outname = options.path + '/' + options.output.replace('.hdf','_ptcls.hdf')
 		
-	if len(ptcls) == 1 and '_SIM.hdf' in stackname:
-		outname = stackname.split('/')[-1]
+	#
+	#if options.output:
+	#	outname = options.path + '/' + options.output.replace('.hdf','_ptcls.hdf')
+	
+		
+	#if len(ptcls) == 1 and '_SIM.hdf' in stackname:
+	#	outname = stackname.split('/')[-1]
 	
 	#tomogramdata=[]
 	
 	#print "\n\n\n%%%%%%%%%%%%%%%%The number of particles are", len(ptcls)
 	#print "\n\n\n"
+	
 	tasks=[]
-	for i in range(len(ptcls)):
+	#>>for i in range(len(ptcls)):
+	for i in ptcls:	
 		#if options.parallel:			
 		task=SubtomoSimTask(ptcls[i],i,options,outname)
 		tasks.append(task)
@@ -607,11 +627,13 @@ def subtomosim(options,ptcls,stackname):
 	#print "I have these many particles from results", len(results)
 	#print "From outname", outname
 	ii=0
-	for pn in range(len(results)):
+	#>>for pn in range(len(results)):
+	for result in results:
 		finaloutname = outname
+		key = result.keys()[0]
 		
-		if options.path not in outname:
-			finaloutname = options.path + '/' + outname
+		#if options.path not in outname:
+		#	finaloutname = options.path + '/' + outname
 		
 		#print "\n\n\n\n\n\nn\\n\n\nn\\nn\n\n\n\n\n THe final outname rigth before writing is", finaloutname
 		#print "because options.path is", options.path
@@ -619,15 +641,17 @@ def subtomosim(options,ptcls,stackname):
 		#print "And the particle is", results[pn]
 		#print "And its type is", type( results[pn])
 		#print "And its index is", pn
+		
 		if i==0:
-			print "\n\n(subtomosim) The size of the final particle is",results[pn]['nx'],results[pn]['ny'],results[pn]['nz']
+			#>>print "\n\n(subtomosim) The size of the final particle is",results[pn]['nx'],results[pn]['ny'],results[pn]['nz']
+			print "\n\n(subtomosim) The size of the final particle is",result[key]['nx'],result[key]['ny'],result[key]['nz']
+
+		result[key]['origin_x'] = 0									#Make sure the origin is set to zero, to avoid display issues with Chimera
+		result[key]['origin_y'] = 0
+		result[key]['origin_z'] = 0
 		
-		results[pn]['origin_x'] = 0									#Make sure the origin is set to zero, to avoid display issues with Chimera
-		results[pn]['origin_y'] = 0
-		results[pn]['origin_z'] = 0
-		
-		finaloutname = finaloutname.replace('_preproc','')
-		results[pn].write_image(finaloutname,pn)
+		#finaloutname = finaloutname.replace('_preproc','')
+		result[key].write_image(finaloutname,key)
 		#pn+=1
 		ii+=1
 	
@@ -642,13 +666,21 @@ def subtomosim(options,ptcls,stackname):
 		p=subprocess.Popen( clipcmdf, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		text=p.communicate()	
 		p.stdout.close()
+	
+	
+	if options.simref and not options.saveorthostack:
+		simrefname = options.path + '/simmodel.hdf'
 		
+		simrefcmd = 'e2proc3d.py ' + finaloutname + ' ' + simrefname + ' --first=0 --last=0'
+		p=subprocess.Popen( simrefcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		text=p.communicate()	
+		p.stdout.close()
 	
 	if options.tomogramoutput:
 		tomogramsim(options,results)
 
 	
-	return 1
+	return
 	
 	
 	
@@ -674,7 +706,7 @@ class SubtomoSimTask(JSTask):
 		"""This simulates a subtomogram and saves projections before and after adding noise if instructed to."""
 		classoptions=self.classoptions
 		options=self.classoptions['options']
-		stackname = self.classoptions['outname']
+		outname = self.classoptions['outname']
 		
 		i = self.classoptions['ptclnum']
 		
@@ -745,9 +777,9 @@ class SubtomoSimTask(JSTask):
 			prj.process_inplace('normalize')
 		
 			if options.saveprjs:
-				finalprjsRAW = options.path + '/' + stackname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsRAW.hdf')
-				if options.path + '/' in stackname:
-					finalprjsRAW = stackname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsRAW.hdf')
+				finalprjsRAW = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsRAW.hdf')
+				#if options.path + '/' in outname:
+				#	finalprjsRAW = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsRAW.hdf')
 				
 				finalprjsRAW = finalprjsRAW.replace('_preproc','')	
 				prj.write_image( finalprjsRAW , -1)					#Write projections stack for particle i
@@ -799,9 +831,9 @@ class SubtomoSimTask(JSTask):
 			#print "Appended ctfed prj in slice j", j
 		
 			if options.saveprjs and (options.applyctf or options.snr):
-				finalprjsED = options.path + '/' + stackname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsEDITED.hdf')
-				if options.path + '/' in stackname:
-					finalprjsED = stackname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsEDITED.hdf') 
+				finalprjsED = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsEDITED.hdf')
+				#if options.path + '/' in outname:
+				#	finalprjsED = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsEDITED.hdf') 
 				
 				finalprjsED = finalprjsED.replace('_preproc','')
 				prj_r.write_image( finalprjsED , -1)	
@@ -851,6 +883,8 @@ class SubtomoSimTask(JSTask):
 		#print "The apix of rec is", rec['apix_x']
 		
 		print "\nThe outname to write the particle i", i 
+		print "is", outname
+		print "\n\n"
 		
 		#finaloutname = options.path + '/' + outname
 		#finaloutname.replace('_preproc','')
@@ -903,7 +937,7 @@ class SubtomoSimTask(JSTask):
 		#box = image.get_xsize()
 		
 		print "\n\n\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\nThe final boxsize of rec is", rec['nx'], box
-		return rec
+		return { classoptions['ptclnum']:rec }
 
 
 jsonclasses["SubtomoSimTask"]=SubtomoSimTask.from_jsondict
@@ -945,6 +979,18 @@ def get_results(etc,tids,options):
 
 
 def tomogramsim(options,tomogramdata):
+	'''
+	Transform gridholesize and icethickness to pixels
+	'''
+
+	modelhdr = EMData(options.input,0,True)
+	
+	if options.gridholesize:
+		options.gridholesize = int( options.gridholesize * math.pow(10,6) / model['apix_x'] )
+
+	if options.icethickness:
+		options.icethickness = int( options.icethickness * math.pow(10,0) / model['apix_x'] )
+	
 	tomox=options.gridholesize 						
 	tomoy=options.gridholesize
 	tomoz=options.icethickness
@@ -970,6 +1016,7 @@ def tomogramsim(options,tomogramdata):
 	tomogrampath = options.path + '/' + options.tomogramoutput
 	T.write_image(tomogrampath,0)
 	
+	return
 
 
 if __name__ == '__main__':
