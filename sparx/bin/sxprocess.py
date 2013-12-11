@@ -32,8 +32,9 @@
 #
 
 # $Id$
-from EMAN2 import *
-from sparx import *
+import	global_def
+from	global_def 	import *
+from	EMAN2 		import EMUtil
 
 
 def main():
@@ -45,8 +46,6 @@ def main():
 	import time
 	from   random   import random, seed, randint
 	from   optparse import OptionParser
-	from   global_def import SPARXVERSION
-	import global_def
 
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + """ [options] <inputfile> <outputfile>
@@ -201,6 +200,7 @@ def main():
 		if nargs != 2:
 			ERROR("must provide name of input and output file!", "pw", 1)
 			return
+		from utilities import get_im
 		d = get_im(args[0])
 		nx = d.get_xsize()
 		ny = d.get_ysize()
@@ -220,7 +220,7 @@ def main():
 		p/=n
 		p.write_image(args[1])
 		sys.exit()
-			
+
 	if options.makedb != None:
 		nargs = len(args)
 		if nargs != 1:
