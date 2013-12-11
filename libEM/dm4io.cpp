@@ -48,7 +48,7 @@ const char *TagTable::IMAGE_THUMB_INDEX_TAG = "ImageIndex";
 
 
 TagTable::TagTable()
-	:	img_index(0), is_big_endian(true)
+	:	img_index(0), is_big_endian(true), img_counted(1)
 {
 }
 
@@ -968,7 +968,7 @@ int DM4IO::get_nimg()
 
 	TagGroup root_group(dm4file, tagtable, "");
 	root_group.read(true);
-	
+
 	return tagtable->get_image_counted();
 }
 
