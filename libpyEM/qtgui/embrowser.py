@@ -692,7 +692,7 @@ class EMBdbFileType(EMFileType):
 
 		# single 3-D
 		if self.nimg==1 and self.dim[2]>1 :
-			return [("Show 3D+","New 3D Window",self.show3DNew),("Show 3D","Add to 3D window",self.show3dApp),("Show Stack","Show as set of 2-D Z slices",self.show2dStack),
+			return [("Show 3D","Add to 3D window",self.show3dApp),("Show 3D+","New 3D Window",self.show3DNew),("Show Stack","Show as set of 2-D Z slices",self.show2dStack),
 				("Show Stack+","Show all images together in a new window",self.show2dStackNew),("Show 2D","Show in a scrollable 2D image window",self.show2dSingle),
 				("Show 2D+","Show all images, one at a time in a new window",self.show2dSingleNew),("Chimera","Open in chimera (if installed)",self.showChimera),
 				("FilterTool","Open in e2filtertool.py",self.showFilterTool),("Save As","Saves images in new file format",self.saveAs)]
@@ -770,7 +770,7 @@ class EMImageFileType(EMFileType):
 		"Returns a list of (name,callback) tuples detailing the operations the user can call on the current file"
 		# single 3-D
 		if  self.dim[2]>1 :
-			return [("Show 3D+","New 3D Window",self.show3DNew),("Show 3D","Add to 3D window",self.show3dApp),("Show Stack","Show as set of 2-D Z slices",self.show2dStack),
+			return [("Show 3D","Add to 3D window",self.show3dApp),("Show 3D+","New 3D Window",self.show3DNew),("Show Stack","Show as set of 2-D Z slices",self.show2dStack),
 				("Show Stack+","Show all images together in a new window",self.show2dStackNew),("Show 2D","Show in a scrollable 2D image window",self.show2dSingle),
 				("Show 2D+","Show all images, one at a time in a new window",self.show2dSingleNew),("Chimera","Open in chimera (if installed)",self.showChimera),
 				("FilterTool","Open in e2filtertool.py",self.showFilterTool),("Save As","Saves images in new file format",self.saveAs)]

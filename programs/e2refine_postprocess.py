@@ -144,7 +144,11 @@ def main():
 	if options.automask3d2==None or len(options.automask3d2.strip())==0 : amask3d2=""
 	else : amask3d2="--process "+options.automask3d2
 
-	run("e2proc3d.py {cfile} {path}/mask.hdf {mask}:return_mask=1 {amask3d2}".format(path=path,cfile=combfile,mask=amask3d,amask3d2=amask3d2))
+	# this is a terrible hack. mask.auto3d needs the actual data to generate a mask, but the other mask. processors don't in general, and don't have the return_mask option
+	if amask3d.split(":")[0]=="mask.auto3d" : maskopt=":return_mask=1"
+	else: maskopt=" --inputto1"
+	
+	run("e2proc3d.py {cfile} {path}/mask.hdf {mask}{maskopt} {amask3d2}".format(path=path,cfile=combfile,mask=amask3d,amask3d2=amask3d2,maskopt=maskopt))
 	
 	### Masked FSC
 	run("e2proc3d.py {evenfile} {path}/tmp_even.hdf --multfile {path}/mask.hdf".format(evenfile=evenfile,path=path))

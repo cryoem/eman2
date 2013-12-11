@@ -50,7 +50,7 @@ def main():
 	parser.add_argument("--dark",type=str,default=None,help="Perform dark image correction using the specified image file")
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
 	parser.add_argument("--step",type=str,default="1,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 1,1 (first image skipped)")
-	parser.add_argument("--frames",type=str,default="1,1",help="Save the dark/gain corrected frames")
+	parser.add_argument("--frames",action="store_true",default=False,help="Save the dark/gain corrected frames")
 	parser.add_argument("--movie", action="store_true",help="Display a 5-frame averaged 'movie' of the frames",default=False)
 	parser.add_argument("--simpleavg", action="store_true",help="Will save a simple average of the dark/gain corrected frames (no alignment or weighting)",default=False)
 	parser.add_argument("--avgs", action="store_true",help="Testing",default=False)
@@ -266,7 +266,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			av=sum(outim)
 			av.mult(1.0/len(outim))
 			fav=[av]
-			for it in xrange(4):
+			for it in xrange(6):
 
 				for im in outim:
 					dx,dy=zonealign(im,av)
