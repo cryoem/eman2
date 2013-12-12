@@ -19410,11 +19410,10 @@ vector<float> Util::multiref_polar_ali_helicon_local(EMData* image, const vector
 	
 	if (ynumber == 0) {
 		ky = 0;
-	} else { 
-
+	} else {
 		if (ynumber > 0) stepy=2*yrng/ynumber;
 		else if (ynumber == -1) stepy = step;
-		
+
 		if (yrnglocal >= 0.0) {
 		   	ky = int(yrnglocal/stepy);
 		} else { // search range is not restricted
@@ -19423,7 +19422,6 @@ vector<float> Util::multiref_polar_ali_helicon_local(EMData* image, const vector
 			} else {
 				ky = int(2*yrng/stepy+0.5)/2;	
 			}	
-					
 		}
 	}
 	for (int i = -ky; i <= ky; i++) {
