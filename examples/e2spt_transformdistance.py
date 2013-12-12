@@ -96,6 +96,14 @@ def main():
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
+	#parser.add_argument("--shrink", type=int,default=0,help="""If the 'solution transform'
+	#	storied in the header parameter 'xform.align3d' was derived from particles that 
+	#	were shrunk during alignment, providing --shrinkalign in e2spt_tomosimjobs.py,
+	#	then this program needs to know what the shrink factor was, to properly compute
+	#	the error between 'xform.align3d' and 'sptsim_randT', the latter containing the
+	#	'randomized Transform' that was used to rotate the simulated subtomogram. 
+	#	""")
+	
 	parser.add_argument("--nolog",action="store_true",help="Turn off recording of the command ran for this program onto the .eman2log.txt file",default=False) 
 	
 	(options, args) = parser.parse_args()
@@ -147,7 +155,15 @@ def main():
 			#solutionT = ptcl['spt_ali_param']	#If the solution IS an aproximate solution, its inverse should be almost equal to simT (or 'spt_randT' in particle headers), and thus
 								#the distance between simT and solutionT.inverse() should be small.
 			solutionT = ptcl['xform.align3d']
-		
+			
+			#'''
+			#If solutionT was found for particles shrunk during alignment, but not during
+			#suntomogram simulation, then the solution is also 'shrunk' respect to the real
+			#answer. Therefore, translations must be multiplied by the shrinking factor.
+			#'''
+			#if options.shrink:
+			#	solutionT.set_trans( solutionT.get_trans() * options.shrink )
+			
 			if compensatoryT:
 				solutionT = compensatoryT * solutionT
 		
@@ -159,6 +175,7 @@ def main():
 			transY = pow(simT.get_trans()[1] - solutionTinverse.get_trans()[1],2)
 			transZ = pow(simT.get_trans()[2] - solutionTinverse.get_trans()[2],2)
 			trans = sqrt(transX + transY + transZ)
+			
 			print "The translational distance is", trans
 			translations.append(trans)	
 	

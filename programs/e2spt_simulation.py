@@ -101,7 +101,8 @@ def main():
 
 	parser.add_argument("--nosim", action="store_true",default=False,help="""If on
 		the program will generate stacks of "perfect particles" in different random 
-		orientations, but with no missing wedge, no noise, no ctf parameters, etc.""") 
+		orientations, but with no missing wedge, no noise, no ctf parameters, etc.
+		The output randstack.hdf will be identical to simptcls.hdf""") 
 	
 	parser.add_argument("--saveprjs", action="store_true",default=False,help="Save the projections (the 'tilt series') for each simulated subtomogram.")
 
@@ -183,7 +184,12 @@ def main():
 		randstackbase = os.path.basename( options.randstack )
 		randstackcopy = options.path + '/' + randstackbase
 
-		os.system('e2proc3d.py ' + options.randstack + ' ' + randstackcopy)
+		copycmd = 'e2proc3d.py ' + options.randstack + ' ' + randstackcopy
+		
+		p=subprocess.Popen( copycmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		text=p.communicate()	
+		p.stdout.close()
+		
 		
 		nr=EMUtil.get_image_count(randstackcopy)
 		print "There are these many particles in the randstack", nr							#ATTENTION: Randstack might still need box size changes and padding...
@@ -193,17 +199,36 @@ def main():
 		if options.filter or float(options.pad) > 1.0 or int(options.shrink) > 1:
 			ret = preprocess(options,randstackcopy) 
 			randstackcopy = ret[-1]
+
 		print "Randstackcopy to read particles from is", randstackcopy
-		
-		for np in range(nr):
-			a=EMData(randstackcopy,np)
-			#>>randptcls.append(a)
-			randptcls.update({np:a})
 		
 		#stackname = rootpath + '/' + os.path.basename(options.randstack)
 		
 		simptclsname = options.path + '/simptcls.hdf'
-		subtomosim(options, randptcls, simptclsname )
+		if options.nosim:
+			
+			clip2cmd = 'e2proc3d.py ' + randstackcopy + ' ' + randstackcopy + ' --clip=' + str(options.finalboxsize)
+			p=subprocess.Popen( clip2cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			text=p.communicate()	
+			p.stdout.close()
+	
+			os.system('cp ' + options.input + ' ' + simptclsname)
+		
+			simrefname = options.path + '/simmodel.hdf'
+			
+			simrefcmd = 'e2proc3d.py ' + randstackcopy + ' ' + simrefname + ' --first=0 --last=0'
+			p=subprocess.Popen( simrefcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			text=p.communicate()	
+			p.stdout.close()
+			
+			
+		else:
+			for np in range(nr):
+				a=EMData(randstackcopy,np)
+				#>>randptcls.append(a)
+				randptcls.update({np:a})
+			
+			subtomosim(options, randptcls, simptclsname )
 		
 		
 		#if options.simref and options.input and not options.nosim:
@@ -273,15 +298,18 @@ def main():
 	
 					options.input = options.path + '/' + modelfilename
 					tag = str(i).zfill(len(str(nrefs)))
-
+				
+				
+				modelhdr = EMData(options.input,0,True)
+	
 				'''
 				Make model's box cubical if it isn't
 				'''
-				modelhdr = EMData(options.input,0,True)
+			
 				if modelhdr['nx'] != modelhdr['ny'] or modelhdr['nx'] != modelhdr['nz'] or modelhdr['ny'] != modelhdr['nz']:	
 					sptmakecube( options )
 					modelhdr = EMData(options.input,0,True)	
-				
+			
 				'''
 				Preprocess model if necessary
 				'''
@@ -316,11 +344,19 @@ def main():
 				randptcls = retrand[0]
 				randstackname = retrand[-1]
 				
-				
+				simptclsname = options.path + '/simptcls.hdf'
 				if not options.nosim:
-					simptclsname = options.path + '/simptcls.hdf'
 					subtomosim(options,randptcls,simptclsname)		
-				
+				else:
+					os.system('cp ' + randstackname + ' ' + simptclsname)
+					
+					simrefname = options.path + '/simmodel.hdf'
+			
+					simrefcmd = 'e2proc3d.py ' + options.input + ' ' + simrefname + ' --first=0 --last=0'
+					p=subprocess.Popen( simrefcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+					text=p.communicate()	
+					p.stdout.close()
+					
 				if options.saveorthostack:
 					orthoptcls = orthostack( options, model )
 					
@@ -533,6 +569,17 @@ def randomizer(options, model, tag):
 			randptcls.update({i:b})
 		if options.verbose:
 			print "The random transform applied to it was", random_transform
+			
+		if options.finalboxise:
+			if int(b['nx']) != int(options.finalboxsze) or int(b['ny']) != int(options.finalboxsze) or int(b['nz']) != int(options.finalboxsze):
+				
+				
+				clipcmdf = 'e2proc3d.py ' + randstackname + ' ' + randstackname + ' --clip=' + str(options.finalboxsize)
+		
+				p=subprocess.Popen( clipcmdf, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+				text=p.communicate()	
+				p.stdout.close()
+	
 
 	return(randptcls,randstackname)
 
@@ -822,6 +869,9 @@ class SubtomoSimTask(JSTask):
 				if noise:
 					#print "I will add noise"
 					#noise.process_inplace('normalize')
+					
+					prj_r.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.25})
+					prj_r.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.75})
 					prj_r.add(noise)
 			
 				elif options.snr:
