@@ -87,7 +87,7 @@ def main():
 			outtilt=outtilt.replace('.TIF','.mrc')
 			outtilt=outtilt.replace('.HDF','.mrc')
 				
-			os.system('e2proc2d.py ' + f + ' ' + outtilt)
+			os.system('e2proc2d.py ' + f + ' ' + outtilt + ' --mrc16bit')
 		elif '.mrc' in f:	
 			outtilts.append(outtilt)
 			
@@ -107,7 +107,7 @@ def main():
 		a.write_image('tmp.hdf',k)
 		k+=1
 	
-	os.system('e2proc2d.py tmp.hdf ' + options.output + ' --twod2threed --mrc16bit && mv ' + options.output + ' ' + options.output.replace('.mrc','.st'))
+	os.system('e2proc2d.py tmp.hdf ' + options.output + ' --twod2threed && mv ' + options.output + ' ' + options.output.replace('.mrc','.st'))
 	
 	if options.lowerend and options.upperend and options.tiltstep:
 		tltfile = options.output.split('.')[0] + '.rawtlt'
