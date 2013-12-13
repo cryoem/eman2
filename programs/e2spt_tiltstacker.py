@@ -2,7 +2,7 @@
 
 '''
 ====================
-Author: Jesus Galaz-Montoya 2/20/2013 , Last update: 2/20/2013
+Author: Jesus Galaz-Montoya 2/20/2013 , Last update: December/12/2013
 ====================
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -37,8 +37,10 @@ import sys
 
 def main():
 
-	usage = """e2spt_tiltstacker.py <options> . The options should be supplied in "--option=value", replacing "option" for a valid option name, and "value" for an acceptable value for that option. 
-	This program stacks individual .dm3 or .tiff images into an .mrc (or .st) stack. It must be run in a directory containing the numbered images only.
+	usage = """e2spt_tiltstacker.py <options> . The options should be supplied in "--option=value", 
+	replacing "option" for a valid option name, and "value" for an acceptable value for that option. 
+	This program stacks individual .dm3, .tiff or .hdf images into an .mrc (or .st) stack. 
+	It must be run in a directory containing the numbered images only.
 	It also generates a .rawtlt file with tilt angle values if --lowerend, --upperend and --tiltstep are provided
 	"""
 			
@@ -77,12 +79,14 @@ def main():
 	outtilts=[]
 	for f in filesindir:
 		outtilt=f
-		if '.dm3' in f or '.DM3' in f or '.tiff' in f or '.TIFF' in f:
+		if '.dm3' in f or '.DM3' in f or '.tif' in f or '.TIF' in f or '.hdf' in f or '.HDF' in f:
 			outtilt=outtilt.replace('.dm3','.mrc')
-			outtilt=outtilt.replace('.tiff','.mrc')
+			outtilt=outtilt.replace('.tif','.mrc')
+			outtilt=outtilt.replace('.hdf','.mrc')
 			outtilt=outtilt.replace('.DM3','.mrc')
-			outtilt=outtilt.replace('.TIFF','.mrc')
-					
+			outtilt=outtilt.replace('.TIF','.mrc')
+			outtilt=outtilt.replace('.HDF','.mrc')
+				
 			os.system('e2proc2d.py ' + f + ' ' + outtilt)
 		elif '.mrc' in f:	
 			outtilts.append(outtilt)
@@ -103,7 +107,7 @@ def main():
 		a.write_image('tmp.hdf',k)
 		k+=1
 	
-	os.system('e2proc2d.py tmp.hdf ' + options.output + ' --twod2threed && mv ' + options.output + ' ' + options.output.replace('.mrc','.st'))
+	os.system('e2proc2d.py tmp.hdf ' + options.output + ' --twod2threed --mrc16bit && mv ' + options.output + ' ' + options.output.replace('.mrc','.st'))
 	
 	if options.lowerend and options.upperend and options.tiltstep:
 		tltfile = options.output.split('.')[0] + '.rawtlt'
