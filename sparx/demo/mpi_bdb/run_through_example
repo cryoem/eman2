@@ -96,7 +96,10 @@ e2proc3d.py junk.hdf init1.hdf --process=filter.lowpass.tanh:cutoff_abs=0.15:fal
 rm -f junk.hdf
 rm -rf outdirshc
 sxheader.py bdb:class_averages --params=stable --zero   || exit
-mpirun -np 12 sxali3d.py bdb:class_averages init1.hdf outdirshc --shc --ou=28 --xr=3.0 --delta=2.0 --maxit=100 --ref_a=S --function="[..,demo_user_funcs,ali3d_reference1]" --MPI   || exit
+#  First version, so-so
+#mpirun -np 12 sxali3d.py bdb:class_averages init1.hdf outdirshc --shc --ou=28 --xr=3.0 --delta=2.0 --maxit=100 --function="[..,demo_user_funcs,ali3d_reference2]" --MPI   || exit
+# Second, more advanced version.  Note this one requires number of CPUs to be multiplicity of 3.
+mpirun -np 12 sxmulti_sch.py bdb:class_averages init1.hdf outdirshc --shc --ou=28 --xr=3.0 --delta=2.0 --maxit=100 --function="[..,demo_user_funcs,ali3d_reference2]" --MPI
 
 
 # 3D projection alignment - refinement of the initial structure
