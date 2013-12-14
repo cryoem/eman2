@@ -45,9 +45,8 @@ def main():
 	progname = os.path.basename(arglist[0])
 	usage = progname + """ firstvolume  secondvolume maskfile outputfile --wn --step --cutoff  --radius  --fsc
 
-	Compute local resolution in real space within are outlined by the maskfile and within regions wnxwnxwn
+	    Compute local resolution in real space within are outlined by the maskfile and within regions wnxwnxwn
 
-	
 	"""
 	parser = OptionParser(usage,version=SPARXVERSION)
 	
@@ -60,7 +59,7 @@ def main():
 	(options, args) = parser.parse_args(arglist[1:])
 	
 	if len(args) <3 or len(args) > 4:
-		print "see usage " + usage
+		print "See usage " + usage
 		sys.exit()
 	
 	vi = get_im(args[0])
@@ -80,70 +79,72 @@ def main():
 		m = get_im(args[2])
 		outvol = args[3]
 
+	mc = model_blank(nn,nn,nn,1.0)-m
 
 	if global_def.CACHE_DISABLE:
 		from utilities import disable_bdb_cache
 		disable_bdb_cache()
 
 
-		vf = fft(vi)
-		uf = fft(ui)
+	vf = fft(vi)
+	uf = fft(ui)
 
-		lp = nn/3
-		step = 0.5/lp
+	lp = int(nn/2/options.step+0.5)
+	step = 0.5/lp
 
-		freqvol = model_blank(nn,nn,nn)
-		resolut = []
-		for i in xrange(lp):
-			fl = step*i
-			fh = fl+step
-			v = fft(filt_tophatb( vf, fl, fh))
-			u = fft(filt_tophatb( uf, fl, fh))
-			tmp1 = Util.muln_img(v,v)
-			tmp2 = Util.muln_img(u,u)
+	freqvol = model_blank(nn,nn,nn)
+	resolut = []
+	for i in xrange(lp):
+		print lp,i
+		fl = step*i
+		fh = fl+step
+		v = fft(filt_tophatb( vf, fl, fh))
+		u = fft(filt_tophatb( uf, fl, fh))
+		tmp1 = Util.muln_img(v,v)
+		tmp2 = Util.muln_img(u,u)
 
-			do = Util.infomask(square_root(Util.muln_img(tmp1,tmp2)),m,True)[0]
-
-
-			tmp3 = Util.muln_img(u,v)
-			dp = Util.infomask(tmp3,m,True)[0]
-
-			resolut.append([i,(fl+fh)/2.0, dp/do])
-	
-
-			tmp1 = rsconvolution(tmp1, kern)
-			tmp2 = rsconvolution(tmp2, kern)
-			tmp3 = rsconvolution(tmp3, kern)
-
-			Util.mul_img(tmp1,tmp2)
-
-			tmp1 = square_root(tmp1)
-
-			Util.mul_img(tmp1,m)
-			Util.add_img(tmp1,mc)
+		do = Util.infomask(square_root(Util.muln_img(tmp1,tmp2)),m,True)[0]
 
 
-			Util.mul_img(tmp3,m)
-			Util.add_img(tmp3,mc)
+		tmp3 = Util.muln_img(u,v)
+		dp = Util.infomask(tmp3,m,True)[0]
 
-			Util.div_img(tmp3,tmp1)
+		resolut.append([i,(fl+fh)/2.0, dp/do])
 
-			Util.mul_img(tmp3,m)
-			freq=(fl+fh)/2.0
-			bailout = True
-			for x in xrange(nn):
-				for y in xrange(nn):
-					for z in xrange(nn):
-						if(m.get_value_at(x,y,z) > 0.5):
-							if(freqvol.get_value_at(x,y,z) == 0.0):
-								if(tmp3.get_value_at(x,y,z) <0.5):
-									freqvol.set_value_at(x,y,z,freq)
-								else:
-									bailout = False
-			if(bailout):  break
 
-		freqvol.write_image(outvol)
-		if(options.fsc != None): write_text_row(resolut, options.fsc)
+		tmp1 = rsconvolution(tmp1, kern)
+		tmp2 = rsconvolution(tmp2, kern)
+		tmp3 = rsconvolution(tmp3, kern)
+
+		Util.mul_img(tmp1,tmp2)
+
+		tmp1 = square_root(tmp1)
+
+		Util.mul_img(tmp1,m)
+		Util.add_img(tmp1,mc)
+
+
+		Util.mul_img(tmp3,m)
+		Util.add_img(tmp3,mc)
+
+		Util.div_img(tmp3,tmp1)
+
+		Util.mul_img(tmp3,m)
+		freq=(fl+fh)/2.0
+		bailout = True
+		for x in xrange(nn):
+			for y in xrange(nn):
+				for z in xrange(nn):
+					if(m.get_value_at(x,y,z) > 0.5):
+						if(freqvol.get_value_at(x,y,z) == 0.0):
+							if(tmp3.get_value_at(x,y,z) <0.5):
+								freqvol.set_value_at(x,y,z,freq)
+							else:
+								bailout = False
+		if(bailout):  break
+
+	freqvol.write_image(outvol)
+	if(options.fsc != None): write_text_row(resolut, options.fsc)
 
 if __name__ == "__main__":
 	main()

@@ -31,7 +31,7 @@
 #
 #
 import global_def
-from  global_def import *
+from   global_def import *
 
 
 def main():
