@@ -108,16 +108,17 @@ e2proc2d.py bdb:class_averages_raw bdb:class_averages --process=filter.homomorph
 ###################################################################
 
 sxheader.py bdb:class_averages --params=active --one    || exit
-sxheader.py bdb:class_averages --params=xform.projection --rand_alpha    || exit
-sxrecons3d_n.py  bdb:class_averages  junk.hdf    || exit
-e2proc3d.py junk.hdf init1.hdf --process=filter.lowpass.tanh:cutoff_abs=0.15:fall_off=0.2    || exit
-rm -f junk.hdf
-rm -rf outdirshc
-sxheader.py bdb:class_averages --params=stable --zero   || exit
 #  First version, so-so
+#sxheader.py bdb:class_averages --params=xform.projection --rand_alpha    || exit
+#sxrecons3d_n.py  bdb:class_averages  junk.hdf    || exit
+#e2proc3d.py junk.hdf init1.hdf --process=filter.lowpass.tanh:cutoff_abs=0.15:fall_off=0.2    || exit
+#rm -f junk.hdf
+#rm -rf outdirshc
 #mpirun -np 12 sxali3d.py bdb:class_averages init1.hdf outdirshc --shc --ou=28 --xr=3.0 --delta=2.0 --maxit=100 --function="[..,demo_user_funcs,ali3d_reference2]" --MPI   || exit
+
 # Second, more advanced version.  Note this one requires number of CPUs to be multiplicity of 3.
-mpirun -np 12 sxmulti_sch.py bdb:class_averages init1.hdf outdirshc --shc --ou=28 --xr=3.0 --delta=2.0 --maxit=100 --function="[..,demo_user_funcs,ali3d_reference2]" --MPI
+sxheader.py bdb:class_averages --params=stable --zero   || exit
+mpirun -np 12 sxmulti_sch.py bdb:class_averages outdirshc --ou=28 --xr=3.0 --delta=2.0 --maxit=100 --function="[..,demo_user_funcs,ali3d_reference2]"
 
 
 # 3D projection alignment - refinement of the initial structure
@@ -126,7 +127,7 @@ sxheader.py bdb:data --params=xform.projection --zero    || exit
 mpirun -np 12 sxali3d.py  bdb:data  outdirshc/volume_filt.hdf  outmatch --CTF --maxit=1  --ou=28 --xr=3.0 --delta=2.0 --MPI   || exit
 sxheader.py bdb:data --params=xform.projection --export=outmatch/matchparams.txt    || exit
 sxheader.py bdb:data --params=stable --one    || exit
-mpirun -np 12 sxali3d.py bdb:data outdirshc/volume_filt.hdf poutdirshc --CTF  --ou=28 --xr=2.0 --delta=2.0 --maxit=100  --function="[..,demo_user_funcs,ali3d_reference3]" || exit
+mpirun -np 12 sxali3d.py bdb:data poutdirshc --CTF  --ou=28 --xr=2.0 --delta=2.0 --maxit=100  --function="[..,demo_user_funcs,ali3d_reference3]" || exit
 
 
 # Refinement of the 3D structure using high accuracy alignment
