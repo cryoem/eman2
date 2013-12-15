@@ -99,7 +99,7 @@ sxheader.py bdb:class_averages --params=stable --zero   || exit
 #  First version, so-so
 #mpirun -np 12 sxali3d.py bdb:class_averages init1.hdf outdirshc --shc --ou=28 --xr=3.0 --delta=2.0 --maxit=100 --function="[..,demo_user_funcs,ali3d_reference2]" --MPI   || exit
 # Second, more advanced version.  Note this one requires number of CPUs to be multiplicity of 3.
-mpirun -np 12 sxmulti_sch.py bdb:class_averages init1.hdf outdirshc --shc --ou=28 --xr=3.0 --delta=2.0 --maxit=100 --function="[..,demo_user_funcs,ali3d_reference2]" --MPI
+mpirun -np 12 sxmulti_sch.py bdb:class_averages init1.hdf outdirshc --ou=28 --xr=3.0 --delta=2.0 --maxit=100 --function="[..,demo_user_funcs,ali3d_reference2]"
 
 
 # 3D projection alignment - refinement of the initial structure
