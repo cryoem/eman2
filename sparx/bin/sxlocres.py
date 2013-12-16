@@ -145,7 +145,6 @@ def main():
 			freq=(fl+fh)/2.0
 			print number_of_proc,myid,lp,i,step,fl,fh
 
-
 			if i>0 :
 				v = fft(filt_tophatb( vf, fl, fh))
 				u = fft(filt_tophatb( uf, fl, fh))
@@ -193,7 +192,10 @@ def main():
 						tmp3 = recv_EMData(k, tag_node)
 						#print  "received ",myid
 					if(dis[0] <=0.5):  resolut.append(dis)
-
+					fl = step*(i+k)
+					fh = fl+step
+					freq=(fl+fh)/2.0
+					#print k,dis,Util.infomask(tmp3,m,True)
 					if(k == number_of_proc-1):  bailout = 1
 					print  "setting freqvol  ",k
 					for x in xrange(nx):
@@ -203,9 +205,12 @@ def main():
 									if(freqvol.get_value_at(x,y,z) == 0.0):
 										if(tmp3.get_value_at(x,y,z) < cutoff):
 											freqvol.set_value_at(x,y,z,freq)
+											bailout = 0
 										else:
 											if(k == number_of_proc-1):
 												bailout = 0
+
+					#print k,dis,Util.infomask(freqvol,m,True)
 
 			else:
 				tag_node = myid+1001
@@ -215,7 +220,6 @@ def main():
 				send_EMData(tmp3, main_node, tag_node)
 				#print   "sent EMD from",myid
 
-
 			bailout = bcast_number_to_all(bailout, main_node)
 			if(bailout == 1):  break
 
@@ -224,8 +228,6 @@ def main():
 		if(myid == 0):
 			freqvol.write_image(outvol)
 			if(options.fsc != None): write_text_row(resolut, options.fsc)
-
-
 
 		from mpi import mpi_finalize
 		mpi_finalize()
@@ -287,7 +289,6 @@ def main():
 			Util.mul_img(tmp1,m)
 			Util.add_img(tmp1,mc)
 
-
 			Util.mul_img(tmp3,m)
 			Util.add_img(tmp3,mc)
 
@@ -303,6 +304,7 @@ def main():
 							if(freqvol.get_value_at(x,y,z) == 0.0):
 								if(tmp3.get_value_at(x,y,z) < cutoff):
 									freqvol.set_value_at(x,y,z,freq)
+									bailout = False
 								else:
 									bailout = False
 			if(bailout):  break
