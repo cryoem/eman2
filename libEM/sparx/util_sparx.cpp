@@ -22913,7 +22913,7 @@ float Util::local_inner_product(EMData* image1, EMData* image2, int lx, int ly, 
 
 	int lop = w/2;
 
-	float lip = 0.0f;
+	float lip  = 0.0f;
 	float nrm1 = 0.0f;
 	float nrm2 = 0.0f;
 
@@ -22924,7 +22924,7 @@ float Util::local_inner_product(EMData* image1, EMData* image2, int lx, int ly, 
 			for (int i=-lop; i<=lop; i++) {
 				int kx = lx + i;
 				nrm1 += img_ptr(kx, ky, kz)*img_ptr(kx, ky, kz);
-				nrm2 += img2_ptr(kx, ky, kz)*img2_ptr(kx, ky, kz);			
+				nrm2 += img2_ptr(kx, ky, kz)*img2_ptr(kx, ky, kz);
 				lip  += img_ptr(kx, ky, kz)*img2_ptr(kx, ky, kz);
 			}
 		}
