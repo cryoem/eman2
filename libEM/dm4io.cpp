@@ -879,8 +879,6 @@ int DM4IO::read_data(float *rdata, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
-	//single image format, index can only be zero
-	image_index = 0;
 	check_read_access(image_index, rdata);
 
 	portable_fseek(dm4file, NUM_ID_INT * sizeof(int), SEEK_SET);
@@ -899,33 +897,36 @@ int DM4IO::read_data(float *rdata, int image_index, const Region * area, bool)
 	char *data = tagtable->get_data();
 	int data_type = tagtable->get_datatype();
 
+	long offset;
+	offset = image_index * (nx * ny);
+
 	int k = 0;
 	for (int i = y0; i < y0 + ylen; i++) {
 		for (int j = x0; j < x0 + xlen; j++) {
 			switch (data_type) {
 			case GatanDM4::DataType::SIGNED_INT8_DATA:
-				rdata[k] = (float) ((char *) data)[i * nx + j];
+				rdata[k] = (float) ((char *) data)[offset + i * nx + j];
 				break;
 			case GatanDM4::DataType::UNSIGNED_INT8_DATA:
-				rdata[k] = (float) ((unsigned char *) data)[i * nx + j];
+				rdata[k] = (float) ((unsigned char *) data)[offset + i * nx + j];
 				break;
 			case GatanDM4::DataType::SIGNED_INT16_DATA:
-				rdata[k] = (float) ((short *) data)[i * nx + j];
+				rdata[k] = (float) ((short *) data)[offset + i * nx + j];
 				break;
 			case GatanDM4::DataType::UNSIGNED_INT16_DATA:
-				rdata[k] = (float) ((unsigned short *) data)[i * nx + j];
+				rdata[k] = (float) ((unsigned short *) data)[offset + i * nx + j];
 				break;
 			case GatanDM4::DataType::SIGNED_INT32_DATA:
-				rdata[k] = (float) ((int *) data)[i * nx + j];
+				rdata[k] = (float) ((int *) data)[offset + i * nx + j];
 				break;
 			case GatanDM4::DataType::UNSIGNED_INT32_DATA:
-				rdata[k] = (float) ((unsigned int *) data)[i * nx + j];
+				rdata[k] = (float) ((unsigned int *) data)[offset + i * nx + j];
 				break;
 			case GatanDM4::DataType::REAL4_DATA:
-				rdata[k] = (float) ((float *) data)[i * nx + j];
+				rdata[k] = (float) ((float *) data)[offset + i * nx + j];
 				break;
 			case GatanDM4::DataType::REAL8_DATA:
-				rdata[k] = (double) ((float *) data)[i * nx + j];
+				rdata[k] = (double) ((float *) data)[offset + i * nx + j];
 				break;				
 			default:
 				string desc = string("unsupported DM3 data type") +
