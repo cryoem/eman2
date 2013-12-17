@@ -51,7 +51,7 @@ def main():
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
 	parser.add_argument("--step",type=str,default="1,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 1,1 (first image skipped)")
 	parser.add_argument("--frames",action="store_true",default=False,help="Save the dark/gain corrected frames")
-	parser.add_argument("--movie", action="store_true",help="Display a 5-frame averaged 'movie' of the frames",default=False)
+	parser.add_argument("--movie", type=int,help="Display an n-frame averaged 'movie' of the stack, specify number of frames to average",default=0)
 	parser.add_argument("--simpleavg", action="store_true",help="Will save a simple average of the dark/gain corrected frames (no alignment or weighting)",default=False)
 	parser.add_argument("--avgs", action="store_true",help="Testing",default=False)
 	parser.add_argument("--parallel", default=None, help="parallelism argument. This program supports only thread:<n>")
@@ -167,10 +167,10 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 		ny=outim[0]["ny"]
 
 		# show a little movie of 5 averaged frames
-		if options.movie :
+		if options.movie>0 :
 			mov=[]
-			for i in xrange(6,len(outim),2):
-				im=sum(outim[i-6:i])
+			for i in xrange(options.movie+1,len(outim)):
+				im=sum(outim[i-options.movie-1:i])
 	#			im.process_inplace("normalize.edgemean")
 				#im.write_image("movie%d.hdf"%(i/5-1),0)
 				#im.process_inplace("filter.lowpass.gauss",{"cutoff_freq":.02})
@@ -263,6 +263,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 		# we iterate the alignment process several times
 		if options.align_frames:
 			outim2=[]
+			for im in outim: im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4,"tomean":True})
 			av=sum(outim)
 			av.mult(1.0/len(outim))
 			fav=[av]
@@ -351,41 +352,56 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 def zonealign(s1,s2):
 	s1a=s1.copy()
 	s1a.process_inplace("math.xystripefix",{"xlen":200,"ylen":200})
-	s1a.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.02})
+#	s1a.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
+	s1a.process_inplace("threshold.compress",{"value":0,"range":s1a["sigma"]/2.0})
+	s1a.process_inplace("filter.highpass.gauss",{"cutoff_abs":.002})
 	
 	s2a=s2.copy()
-	s2a.process_inplace("math.xystripefix",{"xlen":200,"ylen":200})
-	s1a.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.02})
+#	s2a.process_inplace("math.xystripefix",{"xlen":200,"ylen":200})
+#	s2a.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
+	s2a.process_inplace("filter.highpass.gauss",{"cutoff_abs":.002})
 	
-	tot=None
-	for x in range(256,s1["nx"]-512,512):
-		for y in range(256,s1["ny"]-512,512):
-			s1b=s1a.get_clip(Region(x,y,512,512))
-			s2b=s2a.get_clip(Region(x,y,512,512))
+	#### Not doing by zone ATM
+	#tot=None
+	#for x in range(256,s1["nx"]-512,512):
+		#for y in range(256,s1["ny"]-512,512):
+			#s1b=s1a.get_clip(Region(x,y,512,512))
+			#s2b=s2a.get_clip(Region(x,y,512,512))
 			
-			c12=s1b.calc_ccf(s2b)
-			c12.process_inplace("xform.phaseorigin.tocenter")
-			c12.process_inplace("normalize.edgemean")
+			#c12=s1b.calc_ccf(s2b)
+			#c12.process_inplace("xform.phaseorigin.tocenter")
+			#c12.process_inplace("normalize.edgemean")
 						
-			cm=c12.calc_center_of_mass(0)
-			try: tot.add(cm)
-			except: tot=c12
+			#cm=c12.calc_center_of_mass(0)
+			#try: tot.add(cm)
+			#except: tot=c12
 			
-	dx,dy=(c12["nx"]/2,c12["ny"]/2)					# the 'false peak' should always be at the origin, ie - no translation
-	for x in xrange(dx-2,dx+3):
-		for y in xrange(dy-2,dy+3):
-			tot[x,y]=-1.0		# exclude from COM
+	tot=s1a.calc_ccf(s2a)
+	tot.process_inplace("xform.phaseorigin.tocenter")
+	tot.process_inplace("normalize.edgemean")
+			
+#	display((s1a,s2a,tot),force_2d=True)
+	
+	dx,dy=(tot["nx"]/2,tot["ny"]/2)					# the 'false peak' should always be at the origin, ie - no translation
+	for x in xrange(dx-4,dx+5):
+		for y in xrange(dy-4,dy+5):
+			tot[x,y]=0		# exclude from COM
 
 
+	tot=tot.get_clip(Region(tot["nx"]/2-96,tot["ny"]/2-96,192,192))
+	tot.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.04})
 	dx,dy,dz=tot.calc_max_location()
-	while hypot(dx-256,dy-256)>50 :
-		tot[dx,dy]=0
-		dx,dy,dz=tot.calc_max_location()
+	#while hypot(dx-tot["nx"]/2,dy-tot["ny"]/2)>64 :
+		#tot[dx,dy]=0
+		#dx,dy,dz=tot.calc_max_location()
+
+#	display(tot)
+	
+	return dx-96,dy-96
 		
-		
-	cl=tot.get_clip(Region(dx-8,dy-8,17,17))
-	cm=cl.calc_center_of_mass(0)
-	return dx+cm[0]-8-256,dy+cm[1]-8-256
+	#cl=tot.get_clip(Region(dx-8,dy-8,17,17))
+	#cm=cl.calc_center_of_mass(0)
+	#return dx+cm[0]-8-256,dy+cm[1]-8-256
 
 def align(s1,s2,hint=None):
 

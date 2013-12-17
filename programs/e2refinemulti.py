@@ -388,6 +388,7 @@ maps.")
 		if sym[0].lower() in ("icos","tet","oct") or sym[0][0].lower()=="d" : align="" 	# no alignment with higher symmetries
 		elif sym[0][0].lower()=="c" and sym[0][1]!="1" : align=align=" --ralignz={path}/tmp0.hdf".format(path=options.path)		# z alignment only
 		else: align="--alignref={path}/tmp0.hdf --align=refine_3d".format(path=options.path)	# full 3-D alignment for C1
+	else : align=align=" --ralignz={path}/tmp0.hdf".format(path=options.path)
 
 	##################################
 	### prepare for the run
