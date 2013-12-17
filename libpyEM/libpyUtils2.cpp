@@ -505,6 +505,7 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.def("mul_img", &EMAN::Util::mul_img, args("img", "img1"), "img *= img1")
 		.def("div_img", &EMAN::Util::div_img, args("img", "img1"), "img /= img1")
 		.def("div_filter", &EMAN::Util::div_filter, args("img", "img1"), "img /= Re(img1) with zero check")
+		.def("set_freq", &EMAN::Util::div_img, args("freqvol", "freqvol"), "utility for sxlocres")
 		.def("ctf_img", &EMAN::Util::ctf_img, return_value_policy< manage_new_object >(), args("nx", "ny", "nz", "dz", "ps", "voltage", "cs", "wgh", "b_factor", "dza", "azz", "sign"), "")
 		.def("ctf2_rimg", &EMAN::Util::ctf2_rimg, return_value_policy< manage_new_object >(), args("nx", "ny", "nz", "dz", "ps", "voltage", "cs", "wgh", "b_factor", "dza", "azz", "sign"), "")
 		.def("ctf_rimg", &EMAN::Util::ctf_rimg, return_value_policy< manage_new_object >(), args("nx", "ny", "nz", "dz", "ps", "voltage", "cs", "wgh", "b_factor", "dza", "azz", "sign"), "")
@@ -551,6 +552,7 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.def("mul_img", &EMAN::Util::mul_img)
 		.def("div_img", &EMAN::Util::div_img)
 		.def("div_filter", &EMAN::Util::div_filter)
+		.def("set_freq", &EMAN::Util::set_freq)
 		.def("ctf_img", &EMAN::Util::ctf_img, return_value_policy< manage_new_object >())
 		.def("ctf2_rimg", &EMAN::Util::ctf2_rimg, return_value_policy< manage_new_object >())
 		.def("ctf_rimg", &EMAN::Util::ctf_rimg, return_value_policy< manage_new_object >())
@@ -687,6 +689,7 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.staticmethod("mul_img")
 		.staticmethod("div_img")
 		.staticmethod("div_filter")
+		.staticmethod("set_freq")
 		.staticmethod("histogram")
 #ifndef _WIN32
 		.staticmethod("recv_broadcast")

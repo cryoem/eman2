@@ -17414,7 +17414,6 @@ L12:
 ################################################################################################*/
 
 
-
 EMData* Util::mult_scalar(EMData* img, float scalar)
 {
 	ENTERFUNC;
@@ -17812,6 +17811,33 @@ void Util::div_filter(EMData* img, EMData* img1)
 
 	EXITFUNC;
 }
+
+
+void Util::set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, float freq)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!freqvol) {
+		throw NullPointerException("NULL input image");
+	}
+
+	int nx=freqvol->get_xsize(),ny=freqvol->get_ysize(),nz=freqvol->get_zsize();
+	size_t size = (size_t)nx*ny*nz;
+	float *freqvol_ptr  = freqvol->get_data();
+	float *temp_ptr = temp->get_data();
+	float *mask_ptr = mask->get_data();
+
+	for (size_t i=0;i<size;++i) {
+		if(mask_ptr[i] >0.5f) {
+			if(temp_ptr[i] < cutoff) freqvol_ptr[i] = freq;
+		}
+	}
+
+	freqvol->update();
+	EXITFUNC;
+}
+
+
 
 #define img_ptr(i,j,k)  img_ptr[2*(i-1)+((j-1)+((k-1)*ny))*(size_t)nxo]
 

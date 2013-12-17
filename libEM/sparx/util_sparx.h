@@ -825,6 +825,11 @@ costlist, int* curbranch);
 	static void div_img(EMData* img, EMData* img1);
 	/* img /= Re(img1) with zero check  */
 	static void div_filter(EMData* img, EMData* img1);
+
+	//utility for sxlocres
+	static void set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, float freq);
+
+
 	/* pack absolute values of complex image into  real image with addition of Friedel part  */
 	static EMData* pack_complex_to_real(EMData* img);
 private:

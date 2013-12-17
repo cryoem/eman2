@@ -196,8 +196,11 @@ def main():
 					fh = fl+step
 					freq=(fl+fh)/2.0
 					#print k,dis,Util.infomask(tmp3,m,True)
-					if(k == number_of_proc-1):  bailout = 1
-					#print  "setting freqvol  ",k
+					#if(k == number_of_proc-1):  bailout = 1
+					bailout = 0
+					print  "setting freqvol  ",k
+					Util.set_freq(freqvol,tmp3,m,cutoff,freq)
+					"""
 					for x in xrange(nx):
 						for y in xrange(ny):
 							for z in xrange(nz):
@@ -209,8 +212,8 @@ def main():
 										else:
 											if(k == number_of_proc-1):
 												bailout = 0
-
-					#print k,freq,Util.infomask(freqvol,m,True)
+					"""
+					print k,freq,Util.infomask(freqvol,m,True)
 
 			else:
 				tag_node = myid+1001
