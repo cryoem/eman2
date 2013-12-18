@@ -106,7 +106,7 @@ def main():
 	parser.add_argument("--freq",               type=float, 			 default=-1.0,                help="Cut-off frequency at which to high-pass filter micrographs before windowing. Default is -1, in which case, the micrographs will be high-pass filtered with cut-off frequency 1.0/segnx, where segnx is the target x dimension of the segments.") 
 	parser.add_argument("--apix",               type=float,				 default= -1.0,               help="pixel size in Angstroms")   
 	parser.add_argument("--rmax",               type=float, 			 default= 80.0,               help="maximal radius for hsearch (Angstroms)")
-	parser.add_argument("--minseg",             type=int,	 			 default=0,                   help="Skip filaments that yield fewer then minseg segments. Default is 6.")
+	parser.add_argument("--minseg",             type=int,	 			 default=6,                   help="Skip filaments that yield fewer then minseg segments. Default is 6.")
 	parser.add_argument("--dbg",                type=int,	 			 default=1,                   help="If 1, then intermediate files in output directory will not be deleted; if 0, then all output directories where intermediate files were stored will be deleted. Default is 1.")
 	parser.add_argument("--topdir",             type=str,				 default="",                  help="Path name of directory containing relevant micrograph directories")
 	
@@ -158,7 +158,7 @@ def main():
 		px_dst = options.ptcl_dst	
 	
 	logid=E2init(sys.argv)
-	
+
 	if options.gui:
 		if ENABLE_GUI:
 			logid=E2init(sys.argv,options.ppid)
