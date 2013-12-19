@@ -333,6 +333,7 @@ int PngIO::write_data(float *data, int image_index, const Region*,
 
 	// If we didn't get any parameters in 'render_min' or 'render_max', we need to find some good ones
 	if (!rendermin && !rendermax) EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax);
+//	printf("render %f %f \n",rendermin,rendermax);
 
 	/**Flip the image vertically, since EMAN use top-left corner as image origin
 	* But PNG use bottom-left corner as image origin */

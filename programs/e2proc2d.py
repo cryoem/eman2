@@ -99,6 +99,7 @@ def main():
 	parser.add_argument("--mraprep",  action="store_true", help="this is an experimental option")
 	parser.add_argument("--mrc16bit",  action="store_true", help="output as 16 bit MRC file")
 	parser.add_argument("--mrc8bit",  action="store_true", help="output as 8 bit MRC file")
+	parser.add_argument("--fixintscaling", type=str, default=None, help="When writing to an 8 or 16 bit integer format the data must be scaled. 'noscale' will assume the pixel values are already correct, 'sane' will pick a good range, a number will set the range to mean+=sigma*number")
 	parser.add_argument("--multfile", type=str, action="append", help="Multiplies the volume by another volume of identical size. This can be used to apply masks, etc.")
 	
 	parser.add_argument("--norefs", action="store_true", help="Skip any input images which are marked as references (usually used with classes.*)")
@@ -555,6 +556,22 @@ def main():
 				#elif options.mraprep:
 						#outfile = outfile + "%04d" % i + ".lst"
 						#options.outtype = "lst"
+				
+				if options.fixintscaling!=None :
+					if options.fixintscaling=="sane" : 
+						d["render_min"]=d["mean"]-d["sigma"]*2.5
+						d["render_max"]=d["mean"]+d["sigma"]*2.5
+					elif options.fixintscaling=="noscale":
+						d["render_min"]=0.0
+						if "mrc16bit" in optionlist : d["render_max"]=65535.0
+						else : d["render_max"]=255.0
+					else:
+						try: 
+							sca=int(options.fixintscaling)
+							d["render_min"]=d["mean"]-d["sigma"]*sca
+							d["render_max"]=d["mean"]+d["sigma"]*sca
+						except:
+							print "Warning: bad fixintscaling option"
 				
 				if not options.average:	#skip writing the input image to output file 
 					#write processed image to file

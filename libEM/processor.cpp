@@ -894,22 +894,46 @@ EMData *DistanceSegmentProcessor::process(const EMData * const image)
 
 EMData* ApplySymProcessor::process(const EMData * const image)
 {
+	Averager* imgavg = Factory<Averager>::get((string)params.set_default("avger","mean"));
+	
+	if (image->get_zsize()==1) {
+		string s=(string)params["sym"];
+		if (s[0]!='c' && s[0]!='C') throw ImageDimensionException("xform.applysym: Cn symmetry required for 2-D symmetrization");
+		int n=atoi(s.c_str()+1);
+		if (n<=0) throw InvalidValueException(n,"xform.applysym: Cn symmetry, n>0");
+		
+		for (int i=0; i<n; i++) {
+			Transform t(Dict("type","2d","alpha",(float)(i*360.0f/n)));
+			EMData* transformed = image->process("xform",Dict("transform",&t));
+			imgavg->add_image(transformed);
+			delete transformed;
+		}
+		EMData *ret=imgavg->finish();
+		delete imgavg;
+		return ret;
+	}
+	
 	Symmetry3D* sym = Factory<Symmetry3D>::get((string)params.set_default("sym","c1"));
 	vector<Transform> transforms = sym->get_syms();
 
-	Averager* imgavg = Factory<Averager>::get((string)params.set_default("avger","mean"));
 	for(vector<Transform>::const_iterator trans_it = transforms.begin(); trans_it != transforms.end(); trans_it++) {
 		Transform t = *trans_it;
 		EMData* transformed = image->process("xform",Dict("transform",&t));
 		imgavg->add_image(transformed);
 		delete transformed;
 	}
-	return imgavg->finish();
+	EMData *ret=imgavg->finish();
+	delete imgavg;
+	return ret;
 }
 
 void ApplySymProcessor::process_inplace(EMData* image)
 {
-	cout << "Not implemented yet" << endl;
+	EMData *tmp=process(image);
+	memcpy(image->get_data(),tmp->get_data(),(size_t)image->get_xsize()*image->get_ysize()*image->get_zsize()*sizeof(float));
+	delete tmp;
+	image->update();
+	return;
 }
 
 EMData* KmeansSegmentProcessor::process(const EMData * const image)
@@ -5427,7 +5451,7 @@ void AutoMask2DProcessor::process_inplace(EMData * image)
 
 void CtfSimProcessor::process_inplace(EMData *image) {
 	EMData *tmp=process(image);
-	memcpy(image->get_data(),tmp->get_data(),image->get_xsize()*image->get_ysize()*image->get_zsize()*sizeof(float));
+	memcpy(image->get_data(),tmp->get_data(),(size_t)image->get_xsize()*image->get_ysize()*image->get_zsize()*sizeof(float));
 	delete tmp;
 	image->update();
 	return;

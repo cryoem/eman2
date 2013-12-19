@@ -264,14 +264,14 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 		if options.align_frames:
 			outim2=[]
 			for im in outim: im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4,"tomean":True})
-			av=sum(outim)
-			av.mult(1.0/len(outim))
-			fav=[av]
-			for it in xrange(6):
+			av=outim[-1].copy()
+#			av.mult(1.0/len(outim))
+			fav=[]
+			for it in xrange(3):
 
 				for im in outim:
-					dx,dy=zonealign(im,av)
-					im2=im.process("xform",{"transform":Transform({"type":"2d","tx":dx,"ty":dy})})
+					dx,dy=zonealign(im,av,verbose=0)
+					im2=im.process("xform",{"transform":Transform({"type":"2d","tx":-dx,"ty":-dy})})
 					print "{}, {}".format(dx,dy)
 					outim2.append(im2)
 
@@ -280,9 +280,11 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				av=sum(outim2)
 				av.mult(1.0/len(outim))
 				fav.append(av)
-				outim2=[]
-				
-			display(fav)
+				if it!=2 : outim2=[]
+							
+			av.write_image(outname[:-4]+"_aliavg.hdf",-1)
+			for i,im in enumerate(outim2): im.write_image(outname[:-4]+"_align.hdf",i)
+			display(fav,True)
 
 		# show CCF between first and last frame
 		#cf=mov[0].calc_ccf(mov[-1])
@@ -349,11 +351,11 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 		
 			
 
-def zonealign(s1,s2):
+def zonealign(s1,s2,verbose=0):
 	s1a=s1.copy()
 	s1a.process_inplace("math.xystripefix",{"xlen":200,"ylen":200})
 #	s1a.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
-	s1a.process_inplace("threshold.compress",{"value":0,"range":s1a["sigma"]/2.0})
+#	s1a.process_inplace("threshold.compress",{"value":0,"range":s1a["sigma"]/2.0})
 	s1a.process_inplace("filter.highpass.gauss",{"cutoff_abs":.002})
 	
 	s2a=s2.copy()
@@ -380,11 +382,11 @@ def zonealign(s1,s2):
 	tot.process_inplace("xform.phaseorigin.tocenter")
 	tot.process_inplace("normalize.edgemean")
 			
-#	display((s1a,s2a,tot),force_2d=True)
+	if verbose>1 : display((s1a,s2a,tot),force_2d=True)
 	
 	dx,dy=(tot["nx"]/2,tot["ny"]/2)					# the 'false peak' should always be at the origin, ie - no translation
-	for x in xrange(dx-4,dx+5):
-		for y in xrange(dy-4,dy+5):
+	for x in xrange(dx-1,dx+2):
+		for y in xrange(dy-1,dy+2):
 			tot[x,y]=0		# exclude from COM
 
 
@@ -395,7 +397,7 @@ def zonealign(s1,s2):
 		#tot[dx,dy]=0
 		#dx,dy,dz=tot.calc_max_location()
 
-#	display(tot)
+	if verbose>0: display(tot)
 	
 	return dx-96,dy-96
 		

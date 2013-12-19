@@ -1619,6 +1619,7 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny, float& re
 		rendermax=m+s*5.0f;
 		if (rendermin<=min) rendermin=min;
 		if (rendermax>=max) rendermax=max;
+//	printf("rendermm %f %f %f %f\n",rendermin,rendermax,m,s);
 	}
 }
 

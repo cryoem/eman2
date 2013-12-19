@@ -1646,7 +1646,7 @@ The basic design of EMAN Processors: <br>\
 
 			virtual string get_desc() const
 			{
-				return "Symmetry is applied to the 3D EM object";
+				return "Symmetry is imposed on a 2-D image (Cn only) or 3-D volume";
 			}
 
 			static const string NAME;

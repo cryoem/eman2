@@ -2094,6 +2094,8 @@ class EMImageInspector2D(QtGui.QWidget):
 
 		for i in range(self.stminsb.value()-1,self.stmaxsb.value()):
 			im=self.target().list_data[i]
+			im["render_min"]=im["mean"]-im["sigma"]*2.5
+			im["render_max"]=im["mean"]+im["sigma"]*2.5
 			im.write_image("tmp.%03d.png"%(i-self.stminsb.value()+1))
 
 		ret= os.system("ffmpeg -i tmp.%%03d.png %s"%fsp)
