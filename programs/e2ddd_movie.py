@@ -270,7 +270,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			for it in xrange(3):
 
 				for im in outim:
-					dx,dy=zonealign(im,av,verbose=0)
+					dx,dy=zonealign(im,av,verbose=options.verbose-1)
 					im2=im.process("xform",{"transform":Transform({"type":"2d","tx":-dx,"ty":-dy})})
 					print "{}, {}".format(dx,dy)
 					outim2.append(im2)
@@ -284,7 +284,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 							
 			av.write_image(outname[:-4]+"_aliavg.hdf",-1)
 			for i,im in enumerate(outim2): im.write_image(outname[:-4]+"_align.hdf",i)
-			display(fav,True)
+			if options.verbose>1 : display(fav,True)
 
 		# show CCF between first and last frame
 		#cf=mov[0].calc_ccf(mov[-1])
