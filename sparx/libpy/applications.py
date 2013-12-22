@@ -31,7 +31,7 @@
 from global_def import *
 
 def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", nomirror=False, dst=0.0, center=-1, maxit=0, \
-		CTF=False, snr=1.0, Fourvar=False, Ng=-1, user_func_name="ref_ali2d", CUDA=False, GPUID="", MPI=False):
+		CTF=False, snr=1.0, Fourvar=False, Ng=-1, user_func_name="ref_ali2d", CUDA=False, GPUID="", MPI=False, template=None):
 	"""
 		Name
 			ali2d - Perform 2-D reference-free alignment of an image series
@@ -90,10 +90,10 @@ def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1"
 	data = EMData.read_images(stack, list_of_particles)
 	for im in xrange(nima):
 		data[im].set_attr('ID', list_of_particles[im])
-	
+
 	print_msg("Input stack                 : %s\n"%(stack))
 
-	ali2d_data(data, outdir, maskfile, ir, ou, rs, xr, yr, ts, nomirror, dst, center, maxit, CTF, snr, Fourvar, Ng, user_func_name, CUDA, GPUID, True)
+	ali2d_data(data, outdir, maskfile, ir, ou, rs, xr, yr, ts, nomirror, dst, center, maxit, CTF, snr, Fourvar, Ng, user_func_name, CUDA, GPUID, True, template)
 
 	# write out headers
 	from utilities import write_headers
@@ -102,7 +102,7 @@ def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1"
 
 
 def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", nomirror=False, dst=0.0, center=-1, maxit=0, \
-		CTF=False, snr=1.0, Fourvar=False, Ng=-1, user_func_name="ref_ali2d", CUDA=False, GPUID="", from_ali2d=False):
+		CTF=False, snr=1.0, Fourvar=False, Ng=-1, user_func_name="ref_ali2d", CUDA=False, GPUID="", from_ali2d=False, template=None):
 
 	# Comment by Zhengfan Yang 02/25/11
 	# This is where ali2d() actually runs, the reason I divided it into two parts is that
@@ -264,75 +264,81 @@ def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 		for Iter in xrange(max_iter):
 			total_iter += 1
 			print_msg("Iteration #%4d\n"%(total_iter))
-			if CUDA:
-				ave1 = model_blank(nx, nx)
-				ave2 = model_blank(nx, nx)
-				R.sum_oe(all_ctf_params, all_ali_params, ave1, ave2)
-				# Comment by Zhengfan Yang on 02/01/10
-				# The reason for this step is that in CUDA 2-D FFT, the image is multipled by NX*NY times after
-				# FFT and IFFT, so we want to decrease it such that the criterion is in line with non-CUDA version
-				# However, this step is not mandatory.
-				if CTF:
-					ave1 /= (nx*2)**2
-					ave2 /= (nx*2)**2
-			else:
-				ave1, ave2 = sum_oe(data, "a", CTF, EMData())  # pass empty object to prevent calculation of ctf^2
-			if CTF:
-				tavg_Ng = fft(Util.divn_filter(Util.muln_img(fft(Util.addn_img(ave1, ave2)), adw_img), ctf_2_sum))
-				tavg = fft(Util.divn_filter(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
-			else: tavg = (ave1+ave2)/nima
-
-			if outdir:
-				tavg.write_image(os.path.join(outdir, "aqc.hdf"), total_iter-1)
-				if CTF:
-					tavg_Ng.write_image(os.path.join(outdir, "aqc_view.hdf"), total_iter-1)
-				frsc = fsc_mask(ave1, ave2, mask, 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
-			else:
-				frsc = fsc_mask(ave1, ave2, mask, 1.0)
-
-			if Fourvar:
-				if CTF: vav, rvar = varf2d(data, tavg, mask, "a")
-				else: vav, rvar = varf(data, tavg, mask, "a")
-				tavg = fft(Util.divn_img(fft(tavg), vav))
-				vav_r	= Util.pack_complex_to_real(vav)
-				if outdir:
-					vav_r.write_image(os.path.join(outdir, "varf.hdf"), total_iter-1)
-
-			ref_data[2] = tavg
-			ref_data[3] = frsc
-			#  call user-supplied function to prepare reference image, i.e., center and filter it
-			if center == -1:
-				# When center = -1, which is by default, we use the average center method
-				ref_data[1] = 0
-				tavg, cs = user_func(ref_data)
-				cs[0] = sx_sum/float(nima)
-				cs[1] = sy_sum/float(nima)
-				tavg = fshift(tavg, -cs[0], -cs[1])
-				msg = "Average center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
-				print_msg(msg)
-			else:
-				tavg, cs = user_func(ref_data)
-
-			# write the current filtered average
-			if outdir:
-				tavg.write_image(os.path.join(outdir, "aqf.hdf"), total_iter-1)
-
-			# a0 should increase; stop algorithm when it decreases.  However, it will depend on filtration, so it is not quite right.
-			a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
-			msg = "Criterion %d = %15.8e\n"%(total_iter, a1)
-			print_msg(msg)
-			if total_iter == len(xrng)*max_iter: break
-			if a1 < a0:
-				if auto_stop == True: break
-			else:	a0 = a1
-
-			if CUDA:
-				old_ali_params = all_ali_params[:]
-			else:
+			if( total_iter ==1 and template != None):
+				from utilities import get_im
+				tavg = get_im(template)
 				old_ali_params = []
-			        for im in xrange(nima):
-			        	alphan, sxn, syn, mirror, scale = get_params2D(data[im])
-		        		old_ali_params.extend([alphan, sxn, syn, mirror])
+				for im in xrange(nima):  old_ali_params.extend([0.0,0.0,0.0,0])
+			else:
+				if CUDA:
+					ave1 = model_blank(nx, nx)
+					ave2 = model_blank(nx, nx)
+					R.sum_oe(all_ctf_params, all_ali_params, ave1, ave2)
+					# Comment by Zhengfan Yang on 02/01/10
+					# The reason for this step is that in CUDA 2-D FFT, the image is multipled by NX*NY times after
+					# FFT and IFFT, so we want to decrease it such that the criterion is in line with non-CUDA version
+					# However, this step is not mandatory.
+					if CTF:
+						ave1 /= (nx*2)**2
+						ave2 /= (nx*2)**2
+				else:
+					ave1, ave2 = sum_oe(data, "a", CTF, EMData())  # pass empty object to prevent calculation of ctf^2
+				if CTF:
+					tavg_Ng = fft(Util.divn_filter(Util.muln_img(fft(Util.addn_img(ave1, ave2)), adw_img), ctf_2_sum))
+					tavg = fft(Util.divn_filter(fft(Util.addn_img(ave1, ave2)), ctf_2_sum))
+				else: tavg = (ave1+ave2)/nima
+
+				if outdir:
+					tavg.write_image(os.path.join(outdir, "aqc.hdf"), total_iter-1)
+					if CTF:
+						tavg_Ng.write_image(os.path.join(outdir, "aqc_view.hdf"), total_iter-1)
+					frsc = fsc_mask(ave1, ave2, mask, 1.0, os.path.join(outdir, "resolution%03d"%(total_iter)))
+				else:
+					frsc = fsc_mask(ave1, ave2, mask, 1.0)
+
+				if Fourvar:
+					if CTF: vav, rvar = varf2d(data, tavg, mask, "a")
+					else: vav, rvar = varf(data, tavg, mask, "a")
+					tavg = fft(Util.divn_img(fft(tavg), vav))
+					vav_r	= Util.pack_complex_to_real(vav)
+					if outdir:
+						vav_r.write_image(os.path.join(outdir, "varf.hdf"), total_iter-1)
+
+				ref_data[2] = tavg
+				ref_data[3] = frsc
+				#  call user-supplied function to prepare reference image, i.e., center and filter it
+				if center == -1:
+					# When center = -1, which is by default, we use the average center method
+					ref_data[1] = 0
+					tavg, cs = user_func(ref_data)
+					cs[0] = sx_sum/float(nima)
+					cs[1] = sy_sum/float(nima)
+					tavg = fshift(tavg, -cs[0], -cs[1])
+					msg = "Average center x =      %10.3f        Center y       = %10.3f\n"%(cs[0], cs[1])
+					print_msg(msg)
+				else:
+					tavg, cs = user_func(ref_data)
+
+				# write the current filtered average
+				if outdir:
+					tavg.write_image(os.path.join(outdir, "aqf.hdf"), total_iter-1)
+
+				# a0 should increase; stop algorithm when it decreases.  However, it will depend on filtration, so it is not quite right.
+				a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
+				msg = "Criterion %d = %15.8e\n"%(total_iter, a1)
+				print_msg(msg)
+				if total_iter == len(xrng)*max_iter: break
+				if a1 < a0:
+					if auto_stop == True: break
+				else:	a0 = a1
+
+				if CUDA:
+					old_ali_params = all_ali_params[:]
+				else:
+					old_ali_params = []
+					for im in xrange(nima):
+						alphan, sxn, syn, mirror, scale = get_params2D(data[im])
+						old_ali_params.extend([alphan, sxn, syn, mirror])
 
 			if Iter%4 != 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0 
 			else: delta = dst
@@ -344,20 +350,20 @@ def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 			else:
 				sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], nomirror, mode, CTF=CTF, delta=delta)
 
-		        pixel_error = 0.0
-		        mirror_consistent = 0
+			pixel_error = 0.0
+			mirror_consistent = 0
 			pixel_error_list = []
-		        for im in xrange(nima):
-		        	if CUDA:
+			for im in xrange(nima):
+				if CUDA:
 					alpha = all_ali_params[im*4]
 					sx = all_ali_params[im*4+1]
 					sy = all_ali_params[im*4+2]
 					mirror = all_ali_params[im*4+3]
 				else:
-			        	alpha, sx, sy, mirror, scale = get_params2D(data[im]) 
-		        	if old_ali_params[im*4+3] == mirror:
-		        		this_error = pixel_error_2D(old_ali_params[im*4:im*4+3], [alpha, sx, sy], last_ring)
-		        		pixel_error += this_error
+					alpha, sx, sy, mirror, scale = get_params2D(data[im]) 
+				if old_ali_params[im*4+3] == mirror:
+					this_error = pixel_error_2D(old_ali_params[im*4:im*4+3], [alpha, sx, sy], last_ring)
+					pixel_error += this_error
 					pixel_error_list.append(this_error)
 					mirror_consistent += 1
 			print_msg("Mirror consistent rate = %6.4f%%\n"%(float(mirror_consistent)/nima*100))

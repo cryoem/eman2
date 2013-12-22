@@ -65,6 +65,7 @@ def main():
 	parser.add_option("--mode",       type="string", default="F",     help="Full or Half rings, default F")
 	parser.add_option("--randomize",  action="store_true", default=False,   help="randomize initial rotations (suboption of friedel, default False)")
 	parser.add_option("--orient",   action="store_true", default=False,   help="orient images such that the average is symmetric about x-axis, for layer lines (suboption of friedel, default False)")
+	parser.add_option("--template",   type="string", default=None,   help="2D alignment will be initialized uisng the template provided (only non-MPI version, default None)")
 	(options, args) = parser.parse_args()
 	if len(args) < 2 or len(args) > 3:
     		print "usage: " + usage
@@ -92,7 +93,7 @@ def main():
 
 		global_def.BATCH = True
 		ali2d(args[0], outdir, mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.nomirror, options.dst, \
-			options.center, options.maxit, options.CTF, options.snr, options.Fourvar, options.Ng, options.function, options.CUDA, options.GPUID, options.MPI)
+			options.center, options.maxit, options.CTF, options.snr, options.Fourvar, options.Ng, options.function, options.CUDA, options.GPUID, options.MPI, options.template)
 		global_def.BATCH = False
 
 		if options.MPI:
