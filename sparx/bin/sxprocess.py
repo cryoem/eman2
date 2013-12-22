@@ -69,6 +69,9 @@ def main():
 
 	5. generate a stack of projections bdb:data and micrographs with prefix mic (i.e., mic0.hdf, mic1.hdf etc) from structure input_structure.hdf, with CTF applied to both projections and micrographs:
 	sxprocess.py input_structure.hdf data mic --generate_projections format="bdb":apix=5.2:CTF=True:boxsize=64 	
+
+    6. Retrieve original image numbers in the selected ISAC group (here group 12 from generation 3):
+    sxprocess.py  bdb:test3 class_averages_generation_3.hdf  list3_12.txt --isacgroup=12 --params=myid
 """
 
 	parser = OptionParser(usage,version=SPARXVERSION)
@@ -82,7 +85,9 @@ def main():
 					action="append",  help="One argument is required: name of key with which the database will be created. Fill in database with parameters specified as follows: --makedb param1=value1:param2=value2, e.g. 'gauss_width'=1.0:'pixel_input'=5.2:'pixel_output'=5.2:'thr_low'=1.0")
 	parser.add_option("--generate_projections", metavar="param1=value1:param2=value2", type=str,
 					action="append", help="Three arguments are required: name of input structure from which to generate projections, desired name of output projection stack, and desired prefix for micrographs (e.g. if prefix is 'mic', then micrographs mic0.hdf, mic1.hdf etc will be generated). Optional arguments specifying format, apix, box size and whether to add CTF effects can be entered as follows after --generate_projections: format='bdb':apix=5.2:CTF=True:boxsize=100, or format='hdf', etc., where format is bdb or hdf, apix (pixel size) is a float, CTF is True or False, and boxsize denotes the dimension of the box (assumed to be a square). If an optional parameter is not specified, it will default as follows: format='bdb', apix=2.5, CTF=False, boxsize=64.")
-	(options, args) = parser.parse_args()
+	parser.add_option("--isacgroup", type="int", help="Retrieve original image numbers in the selected ISAC group   See ISAC documentaion for details.", default=-1)
+	parser.add_option("--params",	   type="string",       default=None,    help="Name of header of parameter, whic one depends on specific option")
+ 	(options, args) = parser.parse_args()
 
 	global_def.BATCH = True
 
@@ -194,6 +199,20 @@ def main():
 		from fundamentals import resample
 		for i in xrange(nima):
 			resample(get_im(instack, i), sub_rate).write_image(outstack, i)
+
+	if options.isacgroup>-1:
+		nargs = len(args)
+		if nargs != 3:
+			ERROR("Three files needed on impurt!", "isacgroup", 1)
+			return
+		from utilities import get_im
+		instack = args[0]
+		m=get_im(args[1],int(options.isacgroup)).get_attr("members")
+		l = []
+		for k in m:
+			 l.append(int(get_im(args[0],k).get_attr(options.params)))
+		from utilities import write_text_file
+		write_text_file(l, args[2])
 
 	if options.pw:
 		nargs = len(args)

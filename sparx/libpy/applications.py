@@ -10773,7 +10773,7 @@ def extract_value( s ):
 	return s 
 
 def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, rand_alpha=False, fimport=None, 
-	   fexport=None, fprint=False, backup=False, suffix='_backup', restore=False, delete=False):
+	   fexport=None, fprint=False, backup=False, suffix='_backup', restore=False, delete=False, consequtive=False):
 	from string    import split
 	from utilities import write_header, file_type, generate_ctf
 	from random    import random, randint
@@ -10783,7 +10783,7 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 	if set == 0.0: doset = False
 	else:          doset = True
 
-	op = zero+one+randomize+rand_alpha+(fimport!=None)+(fexport!=None)+fprint+backup+restore+delete+doset
+	op = zero+one++consequtive+randomize+rand_alpha+(fimport!=None)+(fexport!=None)+fprint+backup+restore+delete+doset
 	if op == 0:
 		print "Error: no operation selected!"
 		return
@@ -10833,7 +10833,7 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 					elif ext == "hdf":					
 						EMUtil.write_hdf_attribute(stack, "xform.align2d", t, i)
 					il+=5
-			
+
 				elif p[:16] == "xform.projection":
 					if len(parmvalues) < il+3:
 						print "Not enough parameters!"
@@ -10904,7 +10904,7 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 					elif ext == "hdf":
 						EMUtil.write_hdf_attribute(stack, p, extract_value(parmvalues[il]), i)
 					il+=1
-			
+
 		else:
 			for p in params:
 
@@ -10960,6 +10960,11 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 							DB.set_attr(i, p, set)
 						elif ext == "hdf":
 							EMUtil.write_hdf_attribute(stack, p, set, i)
+				elif consequtive:
+					if ext == "bdb":
+						DB.set_attr(i, p, i)
+					elif ext == "hdf":
+						EMUtil.write_hdf_attribute(stack, p, i, i)					
 				elif randomize:
 					if p[:13] == "xform.align2d":
 						alpha = random()*360.0
