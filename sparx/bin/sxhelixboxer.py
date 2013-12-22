@@ -1115,7 +1115,7 @@ if ENABLE_GUI:
 			
 			# add input fields for CTF estimation
 			hbl_doctf = QtGui.QHBoxLayout()
-			self.doctf_chk = QtGui.QCheckBox("CTF Estimation using CTER                                                           ")
+			self.doctf_chk = QtGui.QCheckBox("To estimate CTF use sxcter.py instead!!!                               ")
 			self.doctf_chk.setToolTip("CTF Estimation using CTER")
 			self.doctf_chk.setChecked(self.doctf)
 			hbl_doctf.addWidget(self.doctf_chk)
