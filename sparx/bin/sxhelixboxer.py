@@ -2081,7 +2081,9 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 				ctfs = ctfs[i]
 				nx = False
 				break
-		if nx:  ERROR("Could not find the micrograph name in imported sxcter results %s"%filename,"sxhelixboxer",1)
+		if nx:
+			print "Micrograph %s"%filename,"  not listed in CTER results, skipping ...."
+			return
 		if(ctfs[8]/ctfs[0] > cterr[0]):
 			print_msg('Defocus error %f exceeds the threshold. Micrograph %s rejected.\n'%(ctfs[8]/ctfs[0], filename))
 			return
