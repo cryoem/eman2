@@ -60,14 +60,28 @@ e2boxer.py --gauss_autoboxer=demoparms --do_ctf=demoparms --write_ptcl --boxsize
 e2bdb.py bdb:particles\#mic0_ptcls bdb:particles\#mic1_ptcls bdb:particles\#mic2_ptcls bdb:particles\#mic3_ptcls bdb:particles\#mic4_ptcls --makevstack=bdb:data
 
 #  phase flip the data set before processing with sxisac since bdb:data has CTF but sxisac currently does not correct for CTF.
+
 sxprocess.py bdb:data bdb:flip_data --phase_flip
 
-sxheader.py bdb:data --params=active --one
-sxheader.py bdb:data --params=xform.align2d --zero
+# sxheader.py bdb:data --params=active --one
+# sxheader.py bdb:data --params=xform.align2d --zero
+# set attibute of active to 1 and xform.align2d to zero (not necessary to do it with no-phase-flipped data at this point)
+
 sxheader.py bdb:flip_data --params=active --one
 sxheader.py bdb:flip_data --params=xform.align2d --zero
 
-mpirun -np 16 sxisac.py bdb:flip_data --stab_ali=2 --init_iter=1 --main_iter=1 --match_second=1 --ou=30 --max_round=5 --img_per_grp=60 --thld_err=1.75 --generation=1 --MPI
+# pre-align particles with sxali2d.py
+
+sxali2d.py bdb:flip_data None --ou=28 --xr="2 1" --ts="1 0.5" --maxit=33 --dst=90
+
+# apply the results from sxali2d.py to the data:
+
+sxtransform2d.py bdb:flip_data bdb:stack_ali
+
+# run sxisac.py
+mpirun -np 16 sxisac.py bdb:stack_ali --stab_ali=2 --init_iter=1 --main_iter=1 --match_second=1 --ou=30 --max_round=5 --img_per_grp=60 --thld_err=1.75 --generation=1 --MPI
+
+
 ###################################################################<<<<<<< run_through_example
 # ISAC run with parameters given above is not sufficiently restrictive for EM data. Instead, one may try to use default parameters, in which case
 #  the program will be more stringent, but will run significantly longer.
@@ -96,7 +110,7 @@ mpirun -np 16 sxisac.py bdb:flip_data --stab_ali=2 --init_iter=1 --main_iter=1 -
 
 sxcpy.py class_averages_generation_*.hdf bdb:class_averages_raw  || exit
 
-# additional filter - it helps to minimize disturbances caused by the CTF
+# additional filter - it helps to alleviate artifacts induced by the CTF
 e2proc2d.py bdb:class_averages_raw bdb:class_averages --process=filter.homomorphic.tanh:cutoff_abs=0.03:fall_off=2.45:value_at_zero_frequency=12  || exit
 
 ###################################################################
@@ -118,7 +132,7 @@ sxheader.py bdb:class_averages --params=active --one    || exit
 
 # Second, more advanced version.  Note this one requires number of CPUs to be multiplicity of 3.
 sxheader.py bdb:class_averages --params=stable --zero   || exit
-mpirun -np 12 sxmulti_shc.py bdb:class_averages outdirshc --ou=28 --xr=3.0 --delta=2.0 --maxit=100 --function="[..,demo_user_funcs,ali3d_reference2]"
+mpirun -np 12 sxmulti_sch.py bdb:class_averages outdirshc --ou=28 --xr=3.0 --delta=2.0 --maxit=100 --function="[..,demo_user_funcs,ali3d_reference2]"
 
 
 # 3D projection alignment - refinement of the initial structure
