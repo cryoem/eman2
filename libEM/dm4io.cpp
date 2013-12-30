@@ -569,9 +569,11 @@ int TagEntry::read(bool nodata)
 {
 	LOGVAR("TagEntry::read()");
 	int err = 0;
+	long pos = 0;
 	char tag_type = 0;
 	char *tmp_name = 0;
 
+	pos = ftell(in);
 	fread(&tag_type, sizeof(char), 1, in);
 
 	if (tag_type != GROUP_TAG && tag_type != DATA_TAG) {
@@ -586,7 +588,7 @@ int TagEntry::read(bool nodata)
 			return 1;
 		}
 		else{
-			LOGERR("TagEntry::read() invalid tag type: %d", tag_type);
+			LOGERR("TagEntry::read() invalid tag type: %d @ position %ld", tag_type, pos);
 			return 1;
 		}
 	}
