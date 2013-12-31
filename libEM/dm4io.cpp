@@ -569,7 +569,7 @@ int TagEntry::read(bool nodata)
 {
 	LOGVAR("TagEntry::read()");
 	int err = 0;
-	long pos = 0;
+	long long pos = 0;
 	char tag_type = 0;
 	char *tmp_name = 0;
 
@@ -588,7 +588,7 @@ int TagEntry::read(bool nodata)
 			return 1;
 		}
 		else{
-			LOGERR("TagEntry::read() invalid tag type: %d @ position %ld", tag_type, pos);
+		    LOGERR("TagEntry::read() invalid tag type: %d @ position %lld (%d bytes)", tag_type, pos, sizeof(long));
 			return 1;
 		}
 	}
