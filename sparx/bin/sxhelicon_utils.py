@@ -45,32 +45,30 @@ def main():
 	usage2 = progname + """ inputfile outputfile [options]
         Functionalities:
 
-        Symmetry search		
-
-        * Helicise input volume and save the result to output volume:
+        1. Helicise input volume and save the result to output volume:
             sxhelicon_utils.py input_vol.hdf output_vol.hdf --helicise --dp=27.6 --dphi=166.5 --fract=0.65 --rmax=70 --rmin=1 --apix=1.84         
 
-        * Generate two lists of image indices used to split segment stack into halves for helical fsc calculation.			
+        2. Generate two lists of image indices used to split segment stack into halves for helical fsc calculation.			
             sxhelicon_utils.py bdb:big_stack --hfsc='flst' --filament_attr=filament
 
-        * Map of filament distribution in the stack
+        3. Map of filament distribution in the stack
             sxhelicon_utils.py bdb:big_stack --filinfo=info.txt
             The output file will contain four columns:
                      1                    2                     3                         4
             first image number     last image number      number of images         in the filament name
 
-        * Predict segments' orientation parameters based on distances between segments and known helical symmetry
+        4. Predict segments' orientation parameters based on distances between segments and known helical symmetry
             sxhelicon_utils.py bdb:big_stack --predict_helical=helical_params.txt --dp=27.6 --dphi=166.5 --apix=1.84
             
-        * Generate disks from filament based reconstructions:		
+        5. Generate disks from filament based reconstructions:		
             sxheader.py stk.hdf --params=xform.projection --import=params.txt
             sxheader.py stk.hdf --params=active --one
             mpirun -np 2 sxhelicon_utils.py stk.hdf --gendisk='bdb:disk' --ref_nx=100 --ref_ny=100 --ref_nz=200 --apix=1.84 --dp=27.6 --dphi=166.715 --fract=0.67 --rmin=0 --rmax=64 --function="[.,nofunc,helical3c]" --sym="c1" --MPI
 
-        * Stack disks based on helical symmetry parameters
+        6. Stack disks based on helical symmetry parameters
             sxhelicon_utils.py disk_to_stack.hdf --stackdisk=stacked_disks.hdf --dphi=166.5 --dp=27.6 --ref_nx=160 --ref_ny=160 --ref_nz=225 --apix=1.84
 		
-        * Do helical symmetry search:
+        7. Helical symmetry search:
             mpirun -np 3 sxhelicon_utils.py volf0010.hdf outsymsearch --symsearch --dp=27.6 --dphi=166.715 --apix=1.84 --fract=0.65 --rmin=0 --rmax=92.0 --datasym=datasym.txt  --dp_step=0.92 --ndp=3 --dphi_step=1.0 --ndphi=10 --MPI
 """
 	parser = OptionParser(usage2,version=SPARXVERSION)
