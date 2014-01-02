@@ -325,9 +325,13 @@ int TagData::read_array_data(vector < int >item_types, bool nodata)
 		return 1;
 	}
 
+	long pos;
+	bool debug = (getenv("DEBUG_DM4") != NULL);
+
 	int err = 0;
 	long array_size = 0;
 
+	pos = portable_ftell(in);
 	fread(&array_size, sizeof(array_size), 1, in);
 	ByteOrder::become_big_endian(&array_size);
 
@@ -349,7 +353,20 @@ int TagData::read_array_data(vector < int >item_types, bool nodata)
 	}
 	else if (!nodata && name == "Data") {
 		char *data = new char[buf_size];
+
+		if (debug) {
+			printf("pos, array_size, item_size, buf_size = %ld %ld %ld %ld\n",
+				pos, array_size, item_size, buf_size);
+			pos = portable_ftell(in);
+			printf("pos before data read = %ld\n", pos);
+		}
+
 		fread(data, buf_size, 1, in);
+
+		if (debug) {
+			pos = portable_ftell(in);
+			printf("pos after  data read = %ld\n", pos);
+		}
 
 		if (item_size == sizeof(short)) {
 			tagtable->become_host_endian((short *) data, array_size);
@@ -368,7 +385,19 @@ int TagData::read_array_data(vector < int >item_types, bool nodata)
 		tagtable->add_data(data);
 	}
 	else {
+		if (debug && name == "Data") {
+			printf("pos, array_size, item_size, buf_size = %ld %ld %ld %ld\n",
+				pos, array_size, item_size, buf_size);
+			pos = portable_ftell(in);
+			printf("pos before data skipped = %ld\n", pos);
+		}
+
 		portable_fseek(in, buf_size, SEEK_CUR);
+
+		if (debug && name == "Data") {
+			pos = portable_ftell(in);
+			printf("pos after  data skipped = %ld\n", pos);
+		}
 	}
 	EXITFUNC;
 	return err;
@@ -723,6 +752,7 @@ DM4IO::~DM4IO()
 	if (dm4file) {
 		fclose(dm4file);
 		dm4file = 0;
+		printf("-------------------------------------------------------\n");
 	}
 	if (tagtable) {
 		delete tagtable;
