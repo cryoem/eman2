@@ -752,7 +752,9 @@ DM4IO::~DM4IO()
 	if (dm4file) {
 		fclose(dm4file);
 		dm4file = 0;
-		printf("-------------------------------------------------------\n");
+		if (getenv("DEBUG_DM4") != NULL) {
+			printf("-------------------------------------------------------\n");
+		}
 	}
 	if (tagtable) {
 		delete tagtable;
