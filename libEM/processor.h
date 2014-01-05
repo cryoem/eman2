@@ -2517,7 +2517,7 @@ The basic design of EMAN Processors: <br>\
 		void process_dist_pixel(float *pixel, float dist) const
 		{
 			if (dist>=inner_radius_square && dist<=outer_radius_square) return;
-			
+
 			if (dist<inner_radius_square) *pixel=value+(*pixel-value)*exp(-pow((inner_radius-sqrt(dist))/width,2.0f));
 			else *pixel=value+(*pixel-value)*exp(-pow((sqrt(dist)-outer_radius)/width,2.0f));
 		}
@@ -5070,6 +5070,48 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			}
 
 			static const string NAME;
+	};
+
+	/** A "dust removal" filter which will remove above threshold densities smaller than a given size
+	 * @param voxels
+	 * @param threshold
+	 */
+	class AutoMaskDustProcessor:public Processor
+	{
+	  public:
+		virtual void process_inplace(EMData * image);
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		static Processor *NEW()
+		{
+			return new AutoMaskDustProcessor();
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("threshold", EMObject::FLOAT,"Only considers densities above the threshold");
+			d.put("voxels", EMObject::INT,"If a connected mass is smaller than this many voxels it is removed");
+			return d;
+		}
+
+		virtual string get_desc() const
+		{
+			return "A dust removal filter which will remove above threshold densities smaller than a given size";
+		}
+
+		static const string NAME;
+
+		protected:
+		int recurse(int x, int y, int z, float threshold, int maxvox,int vox);
+		void recurse_set(int x, int y, int z, float threshold, int maxvox);
+
+		EMData *mask;
+		EMData *image;
 	};
 
 	/**Tries to mask out only interesting density

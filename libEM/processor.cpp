@@ -168,6 +168,7 @@ const string AutoMask2DProcessor::NAME = "mask.auto2d";
 const string AutoMaskAsymUnit::NAME = "mask.asymunit";
 const string AutoMask3DProcessor::NAME = "mask.auto3d.thresh";
 const string AutoMask3D2Processor::NAME = "mask.auto3d";
+const string AutoMaskDustProcessor::NAME = "mask.dust3d";
 const string AddMaskShellProcessor::NAME = "mask.addshells";
 const string PhaseToMassCenterProcessor::NAME = "xform.phasecenterofmass";
 const string ToMassCenterProcessor::NAME = "xform.centerofmass";
@@ -391,7 +392,7 @@ template <> Factory < Processor >::Factory()
 	force_add<FourierToCornerProcessor>();
 	force_add<AutoMask2DProcessor>();
 	force_add<AutoMask3DProcessor>();
-	force_add<AutoMask3D2Processor>();
+	force_add<AutoMaskDustProcessor>();
 	force_add<AddMaskShellProcessor>();
 	force_add<AutoMaskAsymUnit>();
 
@@ -895,13 +896,13 @@ EMData *DistanceSegmentProcessor::process(const EMData * const image)
 EMData* ApplySymProcessor::process(const EMData * const image)
 {
 	Averager* imgavg = Factory<Averager>::get((string)params.set_default("avger","mean"));
-	
+
 	if (image->get_zsize()==1) {
 		string s=(string)params["sym"];
 		if (s[0]!='c' && s[0]!='C') throw ImageDimensionException("xform.applysym: Cn symmetry required for 2-D symmetrization");
 		int n=atoi(s.c_str()+1);
 		if (n<=0) throw InvalidValueException(n,"xform.applysym: Cn symmetry, n>0");
-		
+
 		for (int i=0; i<n; i++) {
 			Transform t(Dict("type","2d","alpha",(float)(i*360.0f/n)));
 			EMData* transformed = image->process("xform",Dict("transform",&t));
@@ -912,7 +913,7 @@ EMData* ApplySymProcessor::process(const EMData * const image)
 		delete imgavg;
 		return ret;
 	}
-	
+
 	Symmetry3D* sym = Factory<Symmetry3D>::get((string)params.set_default("sym","c1"));
 	vector<Transform> transforms = sym->get_syms();
 
@@ -3008,29 +3009,29 @@ void SigmaZeroEdgeProcessor::process_inplace(EMData * image)
 	if (nonzero) {
 		int x,y;
 		size_t corn=nx*ny-1;
-		
+
 		// this set of 4 tests looks for any edges with exactly the same value
 		for (x=1; x<nx; x++) { if (d[x]!=d[0]) break;}
 		if (x==nx) zval=d[0];
-		
+
 		for (y=1; y<ny; y++) { if (d[y*nx]!=d[0]) break; }
 		if (y==ny) zval=d[0];
-		
+
 		for (x=1; x<nx; x++) { if (d[corn-x]!=d[corn]) break;}
 		if (x==nx) zval=d[corn];
-		
+
 		for (y=1; y<ny; y++) { if (d[corn-y*nx]!=d[corn]) break; }
 		if (y==ny) zval=d[corn];
-		
+
 		if (zval!=9.99e23f) { image->set_attr("hadzeroedge",1); printf("zeroedge %f\n",zval); }
 		else image->set_attr("hadzeroedge",0);
-		
+
 		// This tries to detect images where the edges have been filled with the nearest non-zero value. The filter does nothing, but we set the tag.
 		for (x=nx/2-5; x<nx/2+5; x++) {
 			if (d[x]!=d[x+nx] || d[x]!=d[x+nx*2] ) break;
 		}
 		if (x==nx/2+5) image->set_attr("hadzeroedge",2);
-			
+
 		for (x=nx/2-5; x<nx/2+5; x++) {
 			if (d[corn-x]!=d[corn-x-nx] || d[corn-x]!=d[corn-x-nx*2]) break;
 		}
@@ -3040,7 +3041,7 @@ void SigmaZeroEdgeProcessor::process_inplace(EMData * image)
 			if (d[y*nx]!=d[y*nx+1] || d[y*nx]!=d[y*nx+2] ) break;
 		}
 		if (y==ny/2+5) image->set_attr("hadzeroedge",2);
-			
+
 		for (y=ny/2-5; y<ny/2+5; y++) {
 			if (d[corn-y*nx]!=d[corn-y*nx-1] || d[corn-y*nx]!=d[corn-y*nx-2]) break;
 		}
@@ -3637,7 +3638,7 @@ void NormalizeByMassProcessor::process_inplace(EMData * image)
 {
 	float mass = params.set_default("mass",-1.0f);
 	int verbose = params.set_default("verbose",0);
-	
+
 	if (mass <= 0) throw InvalidParameterException("You must specify a positive non zero mass");
 
 	float tthr = params.set_default("thr",(float)image->get_attr("mean")+(float)image->get_attr("sigma"));
@@ -3651,7 +3652,7 @@ void NormalizeByMassProcessor::process_inplace(EMData * image)
 
 	if (step==0) throw InvalidParameterException("This image has sigma=0, cannot give it mass");
 
-	
+
 	size_t n = image->get_size();
 	float* d = image->get_data();
 
@@ -6685,6 +6686,75 @@ void AutoMask3DProcessor::process_inplace(EMData * image)
 	}
 }
 
+int AutoMaskDustProcessor::recurse(int x, int y, int z, float threshold, int maxvox, int vox) {
+	int ret=1;
+	mask->set_value_at(x,y,z,2.0);
+	if (image->sget_value_at(x-1,y,z)>threshold && mask->sget_value_at(x-1,y,z)==1.0) ret+=recurse(x-1,y,z,threshold,maxvox,vox+ret);
+	if (ret+vox>maxvox) return ret;
+	if (image->sget_value_at(x+1,y,z)>threshold && mask->sget_value_at(x+1,y,z)==1.0) ret+=recurse(x+1,y,z,threshold,maxvox,vox+ret);
+	if (ret+vox>maxvox) return ret;
+	if (image->sget_value_at(x,y-1,z)>threshold && mask->sget_value_at(x,y-1,z)==1.0) ret+=recurse(x,y-1,z,threshold,maxvox,vox+ret);
+	if (ret+vox>maxvox) return ret;
+	if (image->sget_value_at(x,y+1,z)>threshold && mask->sget_value_at(x,y+1,z)==1.0) ret+=recurse(x,y+1,z,threshold,maxvox,vox+ret);
+	if (ret+vox>maxvox) return ret;
+	if (image->sget_value_at(x,y,z-1)>threshold && mask->sget_value_at(x,y,z-1)==1.0) ret+=recurse(x,y,z-1,threshold,maxvox,vox+ret);
+	if (ret+vox>maxvox) return ret;
+	if (image->sget_value_at(x,y,z+1)>threshold && mask->sget_value_at(x,y,z+1)==1.0) ret+=recurse(x,y,z+1,threshold,maxvox,vox+ret);
+	if (ret+vox>maxvox) return ret;
+	return ret;
+}
+
+void AutoMaskDustProcessor::recurse_set(int x, int y, int z, float threshold, int maxvox) {
+	mask->set_value_at(x,y,z,0.0);
+	if (mask->sget_value_at(x-1,y,z)==2.0) recurse_set(x-1,y,z,threshold,maxvox);
+	if (mask->sget_value_at(x+1,y,z)==2.0) recurse_set(x+1,y,z,threshold,maxvox);
+	if (mask->sget_value_at(x,y-1,z)==2.0) recurse_set(x,y-1,z,threshold,maxvox);
+	if (mask->sget_value_at(x,y+1,z)==2.0) recurse_set(x,y+1,z,threshold,maxvox);
+	if (mask->sget_value_at(x,y,z-1)==2.0) recurse_set(x,y,z-1,threshold,maxvox);
+	if (mask->sget_value_at(x,y,z+1)==2.0) recurse_set(x,y,z+1,threshold,maxvox);
+	return ;
+}
+
+void AutoMaskDustProcessor::process_inplace(EMData * imagein)
+{
+	if (!imagein) {
+		LOGWARN("NULL Image");
+		return;
+	}
+	image=imagein;
+
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+
+	int voxels=params.set_default("voxels",27);
+	float threshold=params.set_default("threshold",1.5);
+
+	mask = new EMData();
+	mask->set_size(nx, ny, nz);
+	mask->to_one();
+
+	for (int z = 0; z < nz; z++) {
+		for (int y = 0; y < ny; y++) {
+			for (int x = 0; x < nx; x++) {
+				if (image->get_value_at(x,y,z)>threshold && mask->get_value_at(x,y,z)==1.0) {
+					int c=recurse(x,y,z,threshold,voxels,0);
+					if (c<voxels) recurse_set(x,y,z,threshold,voxels);
+				}
+			}
+		}
+	}
+
+	mask->process_inplace("threshold.binary",Dict("value",0.5));
+	mask->process_inplace("mask.contract");
+	mask->update();
+
+	image->mult(*mask);
+	mask->write_image("mask.mrc", 0, EMUtil::IMAGE_MRC);
+
+	delete mask;
+}
+
 
 void AutoMask3D2Processor::process_inplace(EMData * image)
 {
@@ -8872,18 +8942,18 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 	int segbymerge = params.set_default("segbymerge",0);
 	int verbose = params.set_default("verbose",0);
 	if (nseg<=1) throw InvalidValueException(nseg,"nseg must be greater than 1");
-	
+
 	if (segbymerge) { segbymerge=nseg; nseg=4096; }		// set max number of segments to a large (but not infinite) value. Too many will make connectivity matrix too big
-	
+
 	EMData *ret=new EMData(image->get_xsize(),image->get_ysize(),image->get_zsize());
 	ret->to_zero();
-	
-	
+
+
 	int nx=image->get_xsize();
 	int ny=image->get_ysize();
 	int nz=image->get_zsize();
 	if (nz==1) throw ImageDimensionException("Only 3-D data supported");
-	
+
 	// Count the number of above threshold pixels
 	size_t n2seg = 0;
 	for (int z=0; z<nz; z++) {
@@ -8894,7 +8964,7 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 		}
 	}
 	if (verbose) printf("%ld voxels above threshold\n",n2seg);
-	
+
 	// Extract the pixels for sorting
 	WSsortlist srt[n2seg];
 	size_t i=0;
@@ -8912,11 +8982,11 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 		}
 	}
 	if (verbose) printf("Voxels extracted, sorting\n");
-	
+
 	// actual sort
 	qsort(&srt,n2seg,sizeof(WSsortlist),WScmp);
 	if (verbose) printf("Voxels sorted (%1.4g max), starting watershed\n",srt[0].pix);
-	
+
 	// now we start with the highest value and fill in the segments
 	float cseg=1.0;
 	int start=n2seg;
@@ -8933,19 +9003,19 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 				}
 			}
 		}
-		if (lvl==0) { 
+		if (lvl==0) {
 			if (verbose) printf("%d %d %d\t%1.0f\t%1.3g\n",x,y,z,cseg,srt[i].pix);
-			lvl=cseg; 
-			cseg+=1.0; 
+			lvl=cseg;
+			cseg+=1.0;
 		}
-		if (lvl>nseg) { 
+		if (lvl>nseg) {
 			start=i;
 			if (verbose) printf("Requested number of segments achieved at density %1.4g\n",srt[i].pix);
-			break; 
+			break;
 		}		// This means we've made as many segments as we need, so we switch to flood-filling
 		ret->set_value_at_fast(x,y,z,lvl);
 	}
-	
+
 	// We have as many segments as we'll get, but not all voxels have been segmented, so we do a progressive flood fill in density order
 	size_t chg=1;
 	while (chg) {
@@ -8955,7 +9025,7 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 			int y=srt[i].y;
 			int z=srt[i].z;
 			if (ret->get_value_at(x,y,z)!=0) continue;	// This voxel is already done
-			
+
 			float lvl=0;
 			for (int zz=z-1; zz<=z+1; zz++) {
 				for (int yy=y-1; yy<=y+1; yy++) {
@@ -8971,31 +9041,31 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 		}
 		if (verbose) printf("%ld voxels changed\n",chg);
 	}
-	
+
 	if (segbymerge) {
 		if (cseg<segbymerge) return ret;
 	}
 	else if (cseg<=nseg) return ret;		// We don't have too many segments, so we just return now
-	
+
 	if (verbose) printf("Merging segments\n");
 	// If requested, we now merge segments with the most surface contact until we have the correct final number
 	if (segbymerge) {
 		int nsegstart=(int)cseg;	// number of segments we actually generated
-		nseg=(int)cseg;		
+		nseg=(int)cseg;
 		EMData *mx=new EMData(nsegstart,nsegstart,1);		// This will be a "contact matrix" among segments
 		float *mxd=mx->get_data();
-		
+
 		// each cycle of the while loop, we eliminate one segment by merging
 		int sub1=-1,sub2=-1;		// sub2 will be merged into sub1
 		nseg++;						// since we don't actually remove one on the first pass, but decrement the counter
 		while (segbymerge<nseg) {
 			mx->to_zero();
-			
+
 			for (i=0; i<n2seg; i++) {
 				int x=srt[i].x;
 				int y=srt[i].y;
 				int z=srt[i].z;
-				
+
 				int v1=(int)ret->get_value_at(x,y,z);
 				if (v1==sub2) { ret->set_value_at_fast(x,y,z,sub1); v1=sub1; }
 				mxd[v1+v1*nsegstart]++;					// the diagonal is a count of the number of voxels in the segment
@@ -9013,13 +9083,13 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 			mx->update();
 			nseg--;					// number of segments left
 			if (verbose && sub1==-1) { mx->write_image("contactmx.hdf",0); } 		// for debugging
-			
+
 			sub1=-1;
 			sub2=-1;
 			// contact matrix complete, now figure out which 2 segments to merge
 			// diagonal of matrix is a count of the 'volume' of the segment. off-diagonal elements are surface area of contact region (roughly)
 			// we want to normalize the surface area elements so they are roughly proportional to the size of the segment, so we don't merge
-			// based on total contact area, but contact area as a fraction of the total area. 
+			// based on total contact area, but contact area as a fraction of the total area.
 			float bestv=-1.0;
 			for (int s1=1; s1<nsegstart; s1++) {
 				for (int s2=1; s2<nsegstart; s2++) {
@@ -9040,10 +9110,10 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 				break;
 			}
 		}
-		
+
 	}
-	
-	
+
+
 	return ret;
 }
 

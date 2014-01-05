@@ -401,7 +401,7 @@ void EMData::subsquare(const EMData & image)
 void EMData::sub(float f)
 {
 	ENTERFUNC;
-	
+
 #ifdef EMAN2_USING_CUDA
 		if (EMData::usecuda == 1 && cudarwdata) {
 			if(f != 0){
@@ -754,8 +754,8 @@ float& EMData::get_value_at_wrap(int x, int y)
 
 float& EMData::get_value_at_wrap(int x, int y, int z)
 {
-	
-#ifdef EMAN2_USING_CUDA 
+
+#ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1 && cudarwdata){
 		float result = get_value_at_wrap_cuda(cudarwdata, x, y, z, nx, ny, nz); // this should work....
 		return result;

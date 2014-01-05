@@ -1283,7 +1283,7 @@ def base_name( file_name,extension=False,bdb_keep_dir=False,nodir=False ):
 		if nodir or (len(apath)>1 and apath[-2] in ("sets","particles","micrographs","ddd","raw")) :
 			if extension : return os.path.basename(file_name)
 			else : return os.path.splitext(os.path.basename(file_name))[0].split("__")[0].replace("_ptcls","")		# double underscore is used to mark tags added to micrograph names
-		
+
 		# but for other files, like classes_xx which users might make selection lists on, we want to include the
 		# subdirectory name, to prevent mixing between different refinement directories
 		if extension : return "-".join(apath[-2:])
@@ -1618,6 +1618,9 @@ def test_image_3d(type=0,size=(128,128,128)):
 	type=4  sphere
 	type=5  ellipse with holes
 	type=6  random gaussian noise
+	type=7  gaussian ellipsoid 3 axes different
+	type=8	gaussian ellipsoid Z long x,y same
+	type=9	gaussian ellipsoid Z short x,y same
 	size=(128,128,128) """
 	ret=EMData()
 	if len(size) != 3:
@@ -1684,6 +1687,15 @@ def test_image_3d(type=0,size=(128,128,128)):
 
 	elif type==6 :
 		ret.process_inplace("testimage.noise.gauss")
+
+	elif type==7:
+		ret.process_inplace("testimage.ellipsoid",{"a":size[0]/6,"b":size[0]/5,"c":size[0]/3})
+
+	elif type==8:
+		ret.process_inplace("testimage.ellipsoid",{"a":size[0]/6,"b":size[0]/6,"c":size[0]/3})
+
+	elif type==9:
+		ret.process_inplace("testimage.ellipsoid",{"a":size[0]/3,"b":size[0]/3,"c":size[0]/6})
 
 	return ret
 

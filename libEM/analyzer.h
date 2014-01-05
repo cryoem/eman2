@@ -121,6 +121,55 @@ namespace EMAN
 		vector<EMData *> images;
 	};
 
+	/** Inertia Matrix computer
+	 * Computes the Inertia Matrix for a 3-D volume
+	 * @author Steve Ludtke
+	 * @date 12/29/2013
+	 * @param verbose Display progress if set, more detail with larger numbers
+	 *
+	 */
+	class InertiaMatrixAnalyzer:public Analyzer
+	{
+	  public:
+		InertiaMatrixAnalyzer() : verbose(0) {}
+
+		virtual int insert_image(EMData *image) {
+			images.push_back(image);
+			if (images.size()>1) { printf("InertiaMatrixAnalyzer takes only a single image\n"); return 1; }
+			return 0;
+		}
+
+		virtual vector<EMData*> analyze();
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		string get_desc() const
+		{
+			return "Compute Inertia matrix for a volume";
+		}
+
+		static Analyzer * NEW()
+		{
+			return new InertiaMatrixAnalyzer();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("verbose", EMObject::INT, "Display progress if set, more detail with larger numbers");
+			return d;
+		}
+
+		static const string NAME;
+
+	  protected:
+		int verbose;
+		vector<EMData *> ret;		// This will contain only a single image
+	};
+
 	/** KMeansAnalyzer
 	 * Performs k-means classification on a set of input images (shape/size arbitrary)
 	 * returned result is a set of classification vectors
@@ -178,7 +227,7 @@ namespace EMAN
 		}
 
 		static const string NAME;
-		
+
 	  protected:
 		void update_centers(int sigmas=0);
 		void reclassify();
@@ -245,7 +294,7 @@ namespace EMAN
 		}
 
 		static const string NAME;
-		
+
 	  protected:
 		EMData * mask;
 		int nvec;	//number of desired principal components
