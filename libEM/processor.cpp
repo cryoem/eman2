@@ -113,7 +113,7 @@ const string MakeRadiusSquaredProcessor::NAME = "math.toradiussqr";
 const string MakeRadiusProcessor::NAME = "math.toradius";
 const string ComplexNormPixel::NAME = "complex.normpixels";
 const string LaplacianProcessor::NAME = "math.laplacian";
-const string ZeroConstantProcessor::NAME = "mask.contract";
+const string ZeroConstantProcessor::NAME = "mask.contract";	// This is broken, it never worked. Somebody didn't think it through properly
 const string BoxMedianProcessor::NAME = "eman1.filter.median";
 const string BoxSigmaProcessor::NAME = "math.localsigma";
 const string NonConvexProcessor::NAME = "math.nonconvex";
@@ -330,7 +330,7 @@ template <> Factory < Processor >::Factory()
 	force_add<ComplexNormPixel>();
 
 	force_add<LaplacianProcessor>();
-	force_add<ZeroConstantProcessor>();
+//	force_add<ZeroConstantProcessor>();   // this is badly written, it does not work and never did. Who wrote this !?!?
 
 	force_add<BoxMedianProcessor>();
 	force_add<BoxSigmaProcessor>();
@@ -5624,7 +5624,7 @@ void AddMaskShellProcessor::process_inplace(EMData * image)
 		return;
 	}
 
-	int num_shells = params["nshells"];
+	int num_shells = params.set_default("nshells",1);
 
 	float *d = image->get_data();
 	float k = 0.99999f;
@@ -6686,35 +6686,8 @@ void AutoMask3DProcessor::process_inplace(EMData * image)
 	}
 }
 
-int AutoMaskDustProcessor::recurse(int x, int y, int z, float threshold, int maxvox, int vox) {
-	int ret=1;
-	mask->set_value_at(x,y,z,2.0);
-	if (image->sget_value_at(x-1,y,z)>threshold && mask->sget_value_at(x-1,y,z)==1.0) ret+=recurse(x-1,y,z,threshold,maxvox,vox+ret);
-	if (ret+vox>maxvox) return ret;
-	if (image->sget_value_at(x+1,y,z)>threshold && mask->sget_value_at(x+1,y,z)==1.0) ret+=recurse(x+1,y,z,threshold,maxvox,vox+ret);
-	if (ret+vox>maxvox) return ret;
-	if (image->sget_value_at(x,y-1,z)>threshold && mask->sget_value_at(x,y-1,z)==1.0) ret+=recurse(x,y-1,z,threshold,maxvox,vox+ret);
-	if (ret+vox>maxvox) return ret;
-	if (image->sget_value_at(x,y+1,z)>threshold && mask->sget_value_at(x,y+1,z)==1.0) ret+=recurse(x,y+1,z,threshold,maxvox,vox+ret);
-	if (ret+vox>maxvox) return ret;
-	if (image->sget_value_at(x,y,z-1)>threshold && mask->sget_value_at(x,y,z-1)==1.0) ret+=recurse(x,y,z-1,threshold,maxvox,vox+ret);
-	if (ret+vox>maxvox) return ret;
-	if (image->sget_value_at(x,y,z+1)>threshold && mask->sget_value_at(x,y,z+1)==1.0) ret+=recurse(x,y,z+1,threshold,maxvox,vox+ret);
-	if (ret+vox>maxvox) return ret;
-	return ret;
-}
-
-void AutoMaskDustProcessor::recurse_set(int x, int y, int z, float threshold, int maxvox) {
-	mask->set_value_at(x,y,z,0.0);
-	if (mask->sget_value_at(x-1,y,z)==2.0) recurse_set(x-1,y,z,threshold,maxvox);
-	if (mask->sget_value_at(x+1,y,z)==2.0) recurse_set(x+1,y,z,threshold,maxvox);
-	if (mask->sget_value_at(x,y-1,z)==2.0) recurse_set(x,y-1,z,threshold,maxvox);
-	if (mask->sget_value_at(x,y+1,z)==2.0) recurse_set(x,y+1,z,threshold,maxvox);
-	if (mask->sget_value_at(x,y,z-1)==2.0) recurse_set(x,y,z-1,threshold,maxvox);
-	if (mask->sget_value_at(x,y,z+1)==2.0) recurse_set(x,y,z+1,threshold,maxvox);
-	return ;
-}
-
+// Originally this was done recursively, but there were issues with exceeding the maximum recursion depth,
+// so switched to a vector-style algorithm instead
 void AutoMaskDustProcessor::process_inplace(EMData * imagein)
 {
 	if (!imagein) {
@@ -6727,6 +6700,7 @@ void AutoMaskDustProcessor::process_inplace(EMData * imagein)
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 
+	int verbose=params.set_default("verbose",0);
 	int voxels=params.set_default("voxels",27);
 	float threshold=params.set_default("threshold",1.5);
 
@@ -6734,21 +6708,58 @@ void AutoMaskDustProcessor::process_inplace(EMData * imagein)
 	mask->set_size(nx, ny, nz);
 	mask->to_one();
 
-	for (int z = 0; z < nz; z++) {
-		for (int y = 0; y < ny; y++) {
-			for (int x = 0; x < nx; x++) {
-				if (image->get_value_at(x,y,z)>threshold && mask->get_value_at(x,y,z)==1.0) {
-					int c=recurse(x,y,z,threshold,voxels,0);
-					if (c<voxels) recurse_set(x,y,z,threshold,voxels);
+	for (int zz = 0; zz < nz; zz++) {
+		for (int yy = 0; yy < ny; yy++) {
+			for (int xx = 0; xx < nx; xx++) {
+				if (image->get_value_at(xx,yy,zz)>threshold && mask->get_value_at(xx,yy,zz)==1.0) {
+					vector<Vec3i> pvec;
+					pvec.push_back(Vec3i(xx,yy,zz));
+					for (uint i=0; i<pvec.size(); i++) {
+						// Duplicates will occur the way the algorithm is constructed, so we eliminate them as we encounter them
+						if (mask->sget_value_at(pvec[i])==0.0f) {
+							pvec.erase(pvec.begin()+i);
+							i--;
+							continue;
+						}
+						
+						// mask out the points in the volume
+						mask->set_value_at(pvec[i],0.0f);
+						
+						int x=pvec[i][0];
+						int y=pvec[i][1];
+						int z=pvec[i][2];
+						// Any neighboring values above threshold we haven't already set get added to the list
+						if (image->sget_value_at(x-1,y,z)>threshold && mask->get_value_at(x-1,y,z)==1.0) pvec.push_back(Vec3i(x-1,y,z));
+						if (image->sget_value_at(x+1,y,z)>threshold && mask->get_value_at(x+1,y,z)==1.0) pvec.push_back(Vec3i(x+1,y,z));
+						if (image->sget_value_at(x,y-1,z)>threshold && mask->get_value_at(x,y-1,z)==1.0) pvec.push_back(Vec3i(x,y-1,z));
+						if (image->sget_value_at(x,y+1,z)>threshold && mask->get_value_at(x,y+1,z)==1.0) pvec.push_back(Vec3i(x,y+1,z));
+						if (image->sget_value_at(x,y,z-1)>threshold && mask->get_value_at(x,y,z-1)==1.0) pvec.push_back(Vec3i(x,y,z-1));
+						if (image->sget_value_at(x,y,z+1)>threshold && mask->get_value_at(x,y,z+1)==1.0) pvec.push_back(Vec3i(x,y,z+1));
+					}
+					
+					// If the blob is too big, then we don't mask it out after all, but we set the value 
+					// to 2.0 so we know the voxels have already been examined, and don't check them again
+					if (pvec.size()>voxels) {
+						if (verbose) printf("%d\t%d\t%d\tvoxels: %d\n",xx,yy,zz,pvec.size());
+						for (uint i=0; i<pvec.size(); i++) mask->set_value_at(pvec[i],2.0);
+					}
 				}
 			}
 		}
 	}
 
 	mask->process_inplace("threshold.binary",Dict("value",0.5));
-	mask->process_inplace("mask.contract");
+	
+	// Now we expand the mask by 1 pixel and blur the edge
+	mask->mult(-1.0f);
+	mask->add(1.0f);
+	mask->process_inplace("mask.addshells",Dict("nshells",2));		// expand by 1 shell
+	mask->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.25f));
+	mask->mult(-1.0f);
+	mask->add(1.0f);
 	mask->update();
 
+	// apply the mask
 	image->mult(*mask);
 	mask->write_image("mask.mrc", 0, EMUtil::IMAGE_MRC);
 

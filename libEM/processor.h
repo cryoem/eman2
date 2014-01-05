@@ -5096,6 +5096,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			TypeDict d;
 			d.put("threshold", EMObject::FLOAT,"Only considers densities above the threshold");
 			d.put("voxels", EMObject::INT,"If a connected mass is smaller than this many voxels it is removed");
+			d.put("verbose", EMObject::INT, "Level of verbosity, 0 default. 1 will print each non-excluded zone");
 			return d;
 		}
 
@@ -5107,9 +5108,6 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		static const string NAME;
 
 		protected:
-		int recurse(int x, int y, int z, float threshold, int maxvox,int vox);
-		void recurse_set(int x, int y, int z, float threshold, int maxvox);
-
 		EMData *mask;
 		EMData *image;
 	};

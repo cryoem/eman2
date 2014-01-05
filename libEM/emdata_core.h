@@ -398,6 +398,12 @@ float& get_value_at_wrap(int x, int y);
 float get_value_at_wrap(int x) const;
 float& get_value_at_wrap(int x);
 
+/** Vec3i version of save routines below
+ * 
+ * @param coord
+ */
+inline float sget_value_at(Vec3i v) { return sget_value_at(v[0],v[1],v[2]); }
+
 /** A safer, slower way to get the pixel density value at
  * coordinates (x,y,z). The validity of x, y, and z is checked.
  * If the coordinates are out of range, return 0;
@@ -452,6 +458,11 @@ float sget_value_at_interp(float x, float y) const;
  */
 float sget_value_at_interp(float x, float y, float z) const;
 
+/** set_value_at with Vec3i
+ * @param loc location
+ * @param v value
+ */
+inline void set_value_at(Vec3i loc,float val) { set_value_at(loc[0],loc[1],loc[2],val); }
 
 /** Set the pixel density value at coordinates (x,y,z).
  * This implementation does bounds checking.

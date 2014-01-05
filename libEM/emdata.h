@@ -50,6 +50,7 @@
 #include "sparx/emarray.h"
 #include "geometry.h"
 #include "transform.h"
+#include "vec3.h"
 #ifdef EMAN2_USING_CUDA
 #include <cuda_runtime_api.h>
 #include "cuda/cuda_util.h"
