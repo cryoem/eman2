@@ -309,7 +309,7 @@ class EMPlot2DWidget(EMGLWidget):
 				fin=file(filename)
 				fin.seek(0)
 				rdata=fin.readlines()
-				rdata=[i for i in rdata if i[0]!='#']
+				rdata=[i.split("#")[0] for i in rdata if i[0]!='#']
 				if ',' in rdata[0]: rdata=[[float(j) for j in i.split(',')] for i in rdata]
 				else : rdata=[[float(j) for j in i.split()] for i in rdata]
 				nx=len(rdata[0])

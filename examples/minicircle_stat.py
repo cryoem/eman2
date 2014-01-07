@@ -15,14 +15,19 @@ import numpy.linalg as LA
 try: os.mkdir("xf")
 except: pass
 
+out=file("parms.txt","w")
 for pf in sys.argv[1:]:
-	p=EMData(pf)
+	try: p=EMData(pf)
+	except:
+		print "Couldn't read:",pf
+		continue
 	
 	# This will (hopefully) isolate the mini-circle
-	p.process_inplace("normalize.circlemean")
-	#p.process_inplace("mask.auto3d",{"nshells":2,"nshellsgauss":3,"radius":4,"threshold":2.2})
-	p.process_inplace("mask.dust3d",{"voxels":2,"threshold":2.2})
+	p.process_inplace("normalize.edgemean")
+	p.process_inplace("mask.dust3d",{"voxels":8000,"threshold":1.6})
+	p.process_inplace("mask.auto3d",{"nshells":2,"nshellsgauss":3,"radius":35,"threshold":1.6})
 	p.process_inplace("xform.centerofmass")
+	p.process_inplace("normalize.edgemean")
 
 	# compute the resulting inertia matrix
 	an=Analyzers.get("inertiamatrix",{"verbose":0})
@@ -47,6 +52,9 @@ for pf in sys.argv[1:]:
 	#print T
 	#print LA.inv(T)
 	#print "============================"
+	
+	out.write("%1.3g\t%1.3g\t%1.3g\t# %s\n"%(eig[0][0],eig[1][0],eig[2][0],pf))
+	print "%1.3g\t%1.3g\t%1.3g\t# %s"%(eig[0][0],eig[1][0],eig[2][0],pf)
 	
 	T=Transform((float(i) for i in (eig[0][1][0],eig[0][1][1],eig[0][1][2],0,eig[1][1][0],eig[1][1][1],eig[1][1][2],0,eig[2][1][0],eig[2][1][1],eig[2][1][2],0)))
 	#T=Transform((float(i) for i in (eig[0][1][0],eig[1][1][0],eig[2][1][0],0,eig[0][1][1],eig[1][1][1],eig[2][1][1],0,eig[0][1][2],eig[1][1][2],eig[2][1][2],0)))
