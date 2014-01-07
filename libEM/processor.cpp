@@ -392,6 +392,7 @@ template <> Factory < Processor >::Factory()
 	force_add<FourierToCornerProcessor>();
 	force_add<AutoMask2DProcessor>();
 	force_add<AutoMask3DProcessor>();
+	force_add<AutoMask3D2Processor>();
 	force_add<AutoMaskDustProcessor>();
 	force_add<AddMaskShellProcessor>();
 	force_add<AutoMaskAsymUnit>();
@@ -6761,7 +6762,7 @@ void AutoMaskDustProcessor::process_inplace(EMData * imagein)
 
 	// apply the mask
 	image->mult(*mask);
-	mask->write_image("mask.mrc", 0, EMUtil::IMAGE_MRC);
+	if (verbose>1) mask->write_image("mask.hdf", 0, EMUtil::IMAGE_HDF);
 
 	delete mask;
 }
