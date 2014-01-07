@@ -170,6 +170,58 @@ namespace EMAN
 		vector<EMData *> ret;		// This will contain only a single image
 	};
 
+	/** Shape characterization
+	 * Computes a set of values characteristic of the shape of a volume.
+	 * The first 3 values are distributions along X, Y and Z axes respectively, and are not orientation independent.
+	 * @author Steve Ludtke
+	 * @date 12/29/2013
+	 * @param verbose Display progress if set, more detail with larger numbers
+	 *
+	 */
+	class ShapeAnalyzer:public Analyzer
+	{
+	  public:
+		ShapeAnalyzer() : verbose(0) {}
+
+		virtual int insert_image(EMData *image) {
+			images.push_back(image);
+			if (images.size()>1) { printf("ShapeAnalyzer takes only a single image\n"); return 1; }
+			return 0;
+		}
+
+		virtual vector<EMData*> analyze();
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		string get_desc() const
+		{
+			return "Experimental. Computes a set of values characterizing a 3-D volume. Returns a 3x2x1 image containing X, Y and Z axial distributions using axis squared and axis linear weighting.";
+		}
+
+		static Analyzer * NEW()
+		{
+			return new ShapeAnalyzer();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("verbose", EMObject::INT, "Display progress if set, more detail with larger numbers");
+			return d;
+		}
+
+		static const string NAME;
+
+	  protected:
+		int verbose;
+		vector<EMData *> ret;		// This will contain only a single image
+	};
+
+
+	
 	/** KMeansAnalyzer
 	 * Performs k-means classification on a set of input images (shape/size arbitrary)
 	 * returned result is a set of classification vectors

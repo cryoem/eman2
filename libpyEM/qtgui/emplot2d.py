@@ -184,7 +184,7 @@ class EMPlot2DWidget(EMGLWidget):
 			glDeleteLists(self.main_display_list,1)
 			self.main_display_list = 0
 
-	def set_data(self,input_data,key="data",replace=False,quiet=False,color=-1,linewidth=1,linetype=-2,symtype=-2,symsize=4):
+	def set_data(self,input_data,key="data",replace=False,quiet=False,color=-1,linewidth=1,linetype=-2,symtype=-2,symsize=10):
 		"""Set a keyed data set. The key should generally be a string describing the data.
 		'data' is a tuple/list of tuples/list representing all values for a particular
 		axis. eg - the points: 1,5; 2,7; 3,9 would be represented as ((1,2,3),(5,7,9)).
@@ -235,10 +235,10 @@ class EMPlot2DWidget(EMGLWidget):
 				self.visibility.pop(key)
 
 		if symtype==-2 and linetype==-2:
-			if len(self.data[key][0])>2500 : dosym,symtype=1,0
+			if data[0]!=sorted(data[0]) : dosym,symtype=1,0
 			else : doline,linetype=1,0
-		if color<0 : color=colortypes[len(data)%len(colortypes)]			# Automatic color setting
-		if color not in range(len(colortypes)): color = 0 # there are only a certain number of colors
+		if color<0 : color=len(self.data)%len(colortypes)			# Automatic color setting
+		if color >len(colortypes): color = 0 # there are only a certain number of colors
 		if linetype>=0 : doline=1
 		else : doline,linetype=0,0
 		if symtype>=0 : dosym=1
@@ -1104,7 +1104,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 
 		self.del_shapes()
 
-	def set_data(self,input_data,key="data",replace=False,quiet=False,color=0,linewidth=1,linetype=0,symtype=-1,symsize=4,radcut=-1,datapoints=None):
+	def set_data(self,input_data,key="data",replace=False,quiet=False,color=-1,linewidth=1,linetype=-1,symtype=-1,symsize=4,radcut=-1,datapoints=None):
 		"""
 		Reimplemtation to set polar data
 		see set_data in EMPlot2DWidget for details
@@ -1134,8 +1134,11 @@ class EMPolarPlot2DWidget(EMGLWidget):
 			else : self.axes[key]=(-1,0,-2,-2)
 		except: return
 
-		if color<0 : color=colortypes[len(data)%len(colortypes)]			# Automatic color setting
-		if color not in range(len(colortypes)): color = 0 # there are only a certain number of colors
+		if color<0 : color=len(self.data)%len(colortypes)			# Automatic color setting
+		if color >len(colortypes): color = 0 # there are only a certain number of colors
+		if linetype<0 and symtype<0 :
+			if data[0]==sorted(data[0]) : linetype=0
+			else: symtype=0
 		if linetype>=0 : doline=1
 		else : doline,linetype=0,0
 		if symtype>=0 : dosym=1

@@ -152,10 +152,35 @@ namespace EMAN
 		 */
 		void opt_from_proj(const vector<EMData*> & proj,float pixres);
 
+		/** Used for simplistic loop dynamics simulation
+		 * Assumes all points are connected sequetially in a closed loop,
+		 * potential includes distance, angle and dihedral terms, with optional denisty based terms
+		 *  @param dist0 - center distance for quadratic energy term
+		 *  @param distc - quadratic distance coefficient c(dist-dist0)^2
+		 *  @param angc - quadratic angle coefficient c*(180-ang)^2
+		 *  @param dihed0 - dihedral center angle
+		 *  @param dihedc - dihedral angle coefficient c*(dihed-dihed0)^2
+		 *  @param mapc - coefficient for map energy
+		 *  @param map - EMData representing map to match/fit
+		 */
+		double potential(double dist0,double distc,double angc, double dihed0, double dihedc, double mapc, EMData *map=None);
+		
+		/** Updates the dist,ang,dihed parameters **/
+		void updategeom();
+		
+		/** Takes a step to minimize the potential **/ 
+		void minstep(double dist0,double distc,double angc, double dihed0, double dihedc, double mapc, EMData *map=None);
+		
 		private:
 		double *points;
 		size_t n;
 		double *bfactor;
+		
+		// These are used internally for the simple dynamics/minimization code, and are otherwise unallocated
+		// Note that this is NOT for PDB MD, just for simplified point-chains, and mapping points into density
+		double *dist;	// distance squared between the numbered point and the previous point with wrap-around
+		double *ang;	// angle at the numbered point using the point before and the point after
+		double *dihed;	// dihedral using 2 points before and one point after
 	};
 }
 

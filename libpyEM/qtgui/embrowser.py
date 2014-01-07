@@ -270,6 +270,27 @@ class EMFileType(object):
 		target.show()
 		target.raise_()
 
+	def show3DAll(self,brws):
+		"All in new 3-D window (3-D stacks)"
+		brws.busy()
+
+		target=emscene3d.EMScene3D()
+		brws.view3d.append(target)
+
+		for n in xrange(self.nimg) :
+			data=emdataitem3d.EMDataItem3D(self.path,n=n)
+			target.insertNewNode("{} #{}".format(self.path.split("/")[-1],n),data)
+			iso = emdataitem3d.EMIsosurface(data)
+			target.insertNewNode('Isosurface', iso, parentnode=data)
+		target.initialViewportDims(data.getData().get_xsize())	# Scale viewport to object size
+		target.setCurrentSelection(iso)				# Set isosurface to display upon inspector loading
+		brws.notbusy()
+		target.setWindowTitle(self.path.split('/')[-1])
+
+		target.show()
+		target.raise_()
+
+
 	def show2dStack(self,brws):
 		"A set of 2-D images together in an existing window"		
 		brws.busy()
@@ -834,7 +855,7 @@ class EMStackFileType(EMFileType):
 		"Returns a list of (name,callback) tuples detailing the operations the user can call on the current file"
 		# 3-D stack
 		if self.nimg>1 and self.dim[2]>1 :
-			return [("Show 3D","Show all in a single 3D window",self.show3DNew),("Chimera","Open in chimera (if installed)",self.showChimera),("Save As","Saves images in new file format",self.saveAs)]
+			return [("Show all 3D","Show all in a single 3D window",self.show3DAll),("Show 1st 3D","Show only the first volume",self.show3DNew),("Chimera","Open in chimera (if installed)",self.showChimera),("Save As","Saves images in new file format",self.saveAs)]
 		# 2-D stack
 		elif self.nimg>1 and self.dim[1]>1 :
 			return [("Show Stack","Show all images together in one window",self.show2dStack),("Show Stack+","Show all images together in a new window",self.show2dStackNew),

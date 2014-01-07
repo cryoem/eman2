@@ -204,7 +204,7 @@ class EMWidgetFromFile(object):
 					data = None # This is like a flag - the ImageMXWidget only needs the file name
 			else:
 				data = EMData()
-				data.read_image(filename,0)
+				data.read_image(filename,0,True)		# This should be 3-D. We read the header-only here
 				data = [data]
 				
 			if data != None and len(data) == 1: data = data[0]
@@ -223,11 +223,13 @@ class EMWidgetFromFile(object):
 			elif isinstance(data,EMData):
 				if isinstance(old,EMScene3D): widget = old
 				else: widget = EMScene3D()
-				data = EMDataItem3D(data, transform=Transform())
-				#data.setSelectedItem(True)
-				isosurface = EMIsosurface(data, transform=Transform())
-				widget.insertNewNode(os.path.basename(filename), data, parentnode=widget)
-				widget.insertNewNode("Iso", isosurface, parentnode=data)
+				print n,data
+				for ii in xrange(n):
+					data=EMData(filename,ii)
+					datai = EMDataItem3D(data, transform=Transform())
+					widget.insertNewNode(os.path.basename(filename), datai, parentnode=widget)
+					isosurface = EMIsosurface(datai, transform=Transform())
+					widget.insertNewNode("Iso", isosurface, parentnode=datai)
 				return widget
 				
 			elif data == None or isinstance(data,list):

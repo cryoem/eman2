@@ -586,6 +586,11 @@ namespace EMAN
 		
 		static EMData* calc_bessel(const int n, const float& x);
 
+		/** Given 2 vectors, it will compute the angle between them in radians **/
+		inline double angle3(double x1,double y1, double z1,double x2, double y2, double z2) {
+			return acos((x1*x2+y1*y2+z1*z2)/(hypot3(x1,y1,z1)*hypot3(x2,y2,z2)));
+		}
+		
 		/** Calculate a number's square.
 		 * @param[in] n Given number.
 		 * @return (n*n).

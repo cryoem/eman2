@@ -97,12 +97,20 @@ PointArray::PointArray()
 	points = 0;
 	bfactor = 0;
 	n = 0;
+	
+	dist=0;
+	ang=0;
+	dihed=0;
 }
 
 PointArray::PointArray( int nn)
 {
 	n = nn;
 	points = (double *) calloc(4 * n, sizeof(double));
+	
+	dist=0;
+	ang=0;
+	dihed=0;
 }
 
 PointArray::~PointArray()
@@ -112,6 +120,10 @@ PointArray::~PointArray()
 		free(points);
 		points = 0;
 	}
+	
+	if (dist) free(dist);
+	if (ang) free(ang);
+	if (dihed) free(dihed);
 }
 
 void PointArray::zero()
@@ -1020,6 +1032,25 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 	map->update();
 }
 
+double PointArray::potential(double dist0,double distc,double angc, double dihed0, double dihedc, double mapc, EMData *map=None);
+		
+/** Updates the dist,ang,dihed parameters **/
+void PointArray::updategeom() {
+	if (!dist) dist=(double *)malloc(sizeof(double)*n);
+	if (!ang) ang=(double *)malloc(sizeof(double)*n);
+	if (!dihed) dihed=(double *)malloc(sizeof(double)*n);
+	
+	for (int i=0; i<n*3; i+=3) {
+		// how expensive is % ?  Worth replacing ?
+		int ib=(i+n-3)%3*n;	// point before i with wraparound
+		int ibb=(i+n-6)%n;	// 2 points before i with wraparound
+		int ia=(i+3)%n;		// 1 point after
+
+		dist[i]=hypot3(points[i]-points[ib],points[i+1]-points[ib+1],points[i+2]-points[ib+2]);
+	}
+		
+/** Takes a step to minimize the potential **/ 
+void PointArray::minstep(double dist0,double distc,double angc, double dihed0, double dihedc, double mapc, EMData *map=None);
 
 
 

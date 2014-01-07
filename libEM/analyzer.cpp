@@ -52,6 +52,7 @@ namespace EMAN {
 	const string PCAlarge::NAME = "pca_large";
 	const string varimax::NAME = "varimax";
 	const string InertiaMatrixAnalyzer::NAME = "inertiamatrix";
+	const string ShapeAnalyzer::NAME = "shape";
 	const string KMeansAnalyzer::NAME = "kmeans";
 	const string SVDAnalyzer::NAME = "svd_gsl";
 
@@ -61,6 +62,7 @@ namespace EMAN {
 		force_add<PCAlarge>();
 		force_add<varimax>();
  		force_add<InertiaMatrixAnalyzer>();
+		force_add<ShapeAnalyzer>();
  		force_add<KMeansAnalyzer>();
  		force_add<SVDAnalyzer>();
 	}
@@ -116,6 +118,41 @@ vector<EMData *> InertiaMatrixAnalyzer::analyze() {
 		printf("%1.3g\t%1.3g\t%1.3g\n",mx->get_value_at(0,1),mx->get_value_at(1,1),mx->get_value_at(2,1));
 		printf("%1.3g\t%1.3g\t%1.3g\n",mx->get_value_at(0,2),mx->get_value_at(1,2),mx->get_value_at(2,2));
 	}
+
+	return ret;
+}
+
+vector<EMData *> ShapeAnalyzer::analyze() {
+	int verbose = params.set_default("verbose",0);
+	EMData *mx = new EMData(3,2,1);	// result is 3 values
+	mx->to_zero();
+	ret.push_back(mx);
+
+	if (images.size()!=1) throw ImageDimensionException("Shape computation accepts only a single volume as input");
+	int nx=images[0]->get_xsize();
+	int ny=images[0]->get_ysize();
+	int nz=images[0]->get_zsize();
+	if (nz==1 || ny==1 || nz==1) throw ImageDimensionException("Map must be 3-D");
+
+	if (verbose>0) printf("Shape size: %d %d %d\n",nx,ny,nz);
+
+	for (int z=0; z<nz; z++) {
+		for (int y=0; y<ny; y++) {
+			for (int x=0; x<nx; x++) {
+				int xx=x-nx/2;
+				int yy=y-ny/2;
+				int zz=z-nz/2;
+				float v=images[0]->get_value_at(x,y,z);
+				mx->set_value_at(0,0,mx->get_value_at(0,0)+v*(xx*xx));
+				mx->set_value_at(1,0,mx->get_value_at(1,0)+v*(yy*yy));
+				mx->set_value_at(2,0,mx->get_value_at(2,0)+v*(zz*zz));
+				mx->set_value_at(0,1,mx->get_value_at(0,0)+v*fabs(xx));
+				mx->set_value_at(1,1,mx->get_value_at(1,0)+v*fabs(yy));
+				mx->set_value_at(2,1,mx->get_value_at(2,0)+v*fabs(zz));
+			}
+		}
+	}
+	mx->mult(1.0f/(nx*ny*nz));
 
 	return ret;
 }

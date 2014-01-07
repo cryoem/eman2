@@ -15,19 +15,30 @@ import numpy.linalg as LA
 try: os.mkdir("xf")
 except: pass
 
-out=file("parms.txt","w")
-for pf in sys.argv[1:]:
+ldr=""
+for pf in sorted(sys.argv[1:]):
 	try: p=EMData(pf)
 	except:
 		print "Couldn't read:",pf
 		continue
-	
+
+	# identify when we've started on a new directory
+	dr=pf.split("/")[0]
+	if ldr!=dr :
+		out=file("stat_%s.txt"%dr,"w")
+		ldr=dr
+		drn=0
+	else: drn+=1
+
 	# This will (hopefully) isolate the mini-circle
 	p.process_inplace("normalize.edgemean")
 	p.process_inplace("mask.dust3d",{"voxels":8000,"threshold":1.6})
 	p.process_inplace("mask.auto3d",{"nshells":2,"nshellsgauss":3,"radius":35,"threshold":1.6})
+	p.process_inplace("threshold.belowtozero",{"minval":0})
 	p.process_inplace("xform.centerofmass")
-	p.process_inplace("normalize.edgemean")
+	comxf=p["xform.align3d"]
+	p.process_inplace("normalize.unitsum")
+	p.mult(10000.0)
 
 	# compute the resulting inertia matrix
 	an=Analyzers.get("inertiamatrix",{"verbose":0})
@@ -41,6 +52,7 @@ for pf in sys.argv[1:]:
 	eigvv=LA.eig(mx)		# a 3-vector with eigenvalues and a 3x3 with the vectors
 	if min(eigvv[0])==0 :
 		print "error on ",pf
+		drn-=1
 		continue
 	#print eigvv[0]
 	#print eigvv[1]
@@ -53,8 +65,8 @@ for pf in sys.argv[1:]:
 	#print LA.inv(T)
 	#print "============================"
 	
-	out.write("%1.3g\t%1.3g\t%1.3g\t# %s\n"%(eig[0][0],eig[1][0],eig[2][0],pf))
-	print "%1.3g\t%1.3g\t%1.3g\t# %s"%(eig[0][0],eig[1][0],eig[2][0],pf)
+	#out.write("%1.3g\t%1.3g\t%1.3g\t# %s\n"%(1.0/eig[0][0],1.0/eig[1][0],1.0/eig[2][0],pf.split("/")[-1]))
+	#print "%1.3g\t%1.3g\t%1.3g\t# %s"%(1.0/eig[0][0],1.0/eig[1][0],1.0/eig[2][0],pf)
 	
 	T=Transform((float(i) for i in (eig[0][1][0],eig[0][1][1],eig[0][1][2],0,eig[1][1][0],eig[1][1][1],eig[1][1][2],0,eig[2][1][0],eig[2][1][1],eig[2][1][2],0)))
 	#T=Transform((float(i) for i in (eig[0][1][0],eig[1][1][0],eig[2][1][0],0,eig[0][1][1],eig[1][1][1],eig[2][1][1],0,eig[0][1][2],eig[1][1][2],eig[2][1][2],0)))
@@ -62,6 +74,22 @@ for pf in sys.argv[1:]:
 	#T.printme()
 	#print "------------------"
 	p.transform(T)
-	p.write_image("xf/"+base_name(pf)+".hdf",0)
+	p.write_image("xf/"+dr+".hdf",drn)
 
+	# write the original unfiltered, spherically masked, centered and oriented particles
+	p2=EMData(pf)
+	p2.process_inplace("normalize.edgemean")
+	p2.transform(comxf)		# center
+	p2.transform(T)			# reorient
+	p2.process_inplace("mask.sharp",{"outer_radius":p2["nx"]/2-1})
+	p2.write_image("xf/orig_"+dr+".hdf",drn)
 
+	# now the shape is aligned to Z/Y/X so the greatest axial extent should be along Z
+	an=Analyzers.get("shape",{"verbose":0})
+	an.insert_image(p)
+	shp=an.analyze()[0]
+	
+	# Z/Y - should always be >1, Y/X, Z/X
+	out.write("%1.3g\t%1.3g\t%1.3g\t# %s\n"%(shp[2]/shp[1],shp[1]/shp[0],shp[2]/shp[0],pf.split("/")[-1]))
+	print "%1.3g\t%1.3g\t%1.3g\t# %s"%(shp[2]/shp[1],shp[1]/shp[0],shp[2]/shp[0],pf)
+	
