@@ -162,11 +162,15 @@ namespace EMAN
 		
 		/** Updates the dist,ang,dihed parameters **/
 		void updategeom();
+
+		/** returns a vector pointing downhill for a single point **/
+		Vec3f descent(int i);
 		
 		/** Takes a step to minimize the potential **/ 
-		void minstep(double dist0,double distc,double angc, double dihed0, double dihedc, double mapc, EMData *map=NULL);
-		
-		Vec3f descent(int i);		// returns a vector pointing downhill for one point
+		void minstep(double maxshift);
+
+		/** Sets the parameters for the energy function **/ 
+		void set_pot_parms(double pdist0,double pdistc,double pangc, double pdihed0, double pdihedc, double pmapc, EMData *pmap);
 		
 		private:
 		double *points;
