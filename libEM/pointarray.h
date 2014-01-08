@@ -152,24 +152,21 @@ namespace EMAN
 		 */
 		void opt_from_proj(const vector<EMData*> & proj,float pixres);
 
-		/** Used for simplistic loop dynamics simulation
-		 * Assumes all points are connected sequetially in a closed loop,
-		 * potential includes distance, angle and dihedral terms, with optional denisty based terms
-		 *  @param dist0 - center distance for quadratic energy term
-		 *  @param distc - quadratic distance coefficient c(dist-dist0)^2
-		 *  @param angc - quadratic angle coefficient c*(180-ang)^2
-		 *  @param dihed0 - dihedral center angle
-		 *  @param dihedc - dihedral angle coefficient c*(dihed-dihed0)^2
-		 *  @param mapc - coefficient for map energy
-		 *  @param map - EMData representing map to match/fit
-		 */
-		double potential(double dist0,double distc,double angc, double dihed0, double dihedc, double mapc, EMData *map=NULL);
+		/** Computes a potential value for a single point from a set of angles/distances using current energy settings **/
+		inline double potential(double dist, double ang, double dihed) {
+			return pow(dist-dist0,2.0)*distc+ang*ang*angc+pow(dihed-dihed0,2.0)*dihedc;
+		}
+
+		/** Compute a potential value with perturbations **/
+		double potentiald(int i, double dx, double dy, double dz);
 		
 		/** Updates the dist,ang,dihed parameters **/
 		void updategeom();
 		
 		/** Takes a step to minimize the potential **/ 
 		void minstep(double dist0,double distc,double angc, double dihed0, double dihedc, double mapc, EMData *map=NULL);
+		
+		Vec3f descent(int i);		// returns a vector pointing downhill for one point
 		
 		private:
 		double *points;
@@ -181,6 +178,20 @@ namespace EMAN
 		double *dist;	// distance squared between the numbered point and the previous point with wrap-around
 		double *ang;	// angle at the numbered point using the point before and the point after
 		double *dihed;	// dihedral using 2 points before and one point after
+		
+		/** Used for simplistic loop dynamics simulation
+		 * Assumes all points are connected sequetially in a closed loop,
+		 * potential includes distance, angle and dihedral terms, with optional denisty based terms
+		 *  @param dist0 - center distance for quadratic energy term
+		 *  @param distc - quadratic distance coefficient c(dist-dist0)^2
+		 *  @param angc - quadratic angle coefficient c*(180-ang)^2
+		 *  @param dihed0 - dihedral center angle
+		 *  @param dihedc - dihedral angle coefficient c*(dihed-dihed0)^2
+		 *  @param mapc - coefficient for map energy
+		 *  @param map - EMData representing map to match/fit
+		 */
+		double dist0, distc, angc, dihed0, dihedc, mapc;
+		EMData *map;
 	};
 }
 

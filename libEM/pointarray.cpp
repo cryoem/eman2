@@ -35,6 +35,7 @@
 
 #include "pointarray.h"
 #include "util.h"
+#include "vec3.h"
 #include <vector>
 #include <cstring>
 
@@ -1033,8 +1034,6 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 	map->update();
 }
 
-double PointArray::potential(double dist0,double distc,double angc, double dihed0, double dihedc, double mapc, EMData *map) { }
-		
 /** Updates the dist,ang,dihed parameters **/
 void PointArray::updategeom() {
 	if (!dist) dist=(double *)malloc(sizeof(double)*n);
@@ -1047,12 +1046,22 @@ void PointArray::updategeom() {
 		int ibb=(i+n-6)%n;	// 2 points before i with wraparound
 		int ia=(i+3)%n;		// 1 point after
 
-		dist[i]=Util::hypot3(points[i]-points[ib],points[i+1]-points[ib+1],points[i+2]-points[ib+2]);
+		Vec3f a(points[ib]-points[ibb],points[ib+1]-points[ibb+1],points[ib+2]-points[ibb+2]);  // -2 -> -1
+		Vec3f b(points[i]-points[ib],points[i+1]-points[ib+1],points[i+2]-points[ib+2]);		// -1 -> 0
+		Vec3f c(points[ia]-points[i],points[ia+1]-points[i+1],points[ia+2]-points[i+2]);		// 0 -> 1
+		dist[i]=b.length();
+		ang[i]=acos(b.dot(c)/(dist[i]*c.length()));
+		Vec3f cr1=a.cross(b);
+		Vec3f cr2=b.cross(c);
+		dihed[i]=acos(cr1.dot(cr2)/(cr1.length()*cr2.length())); 
+		
 	}
 }
 		
 /** Takes a step to minimize the potential **/ 
-void PointArray::minstep(double dist0,double distc,double angc, double dihed0, double dihedc, double mapc, EMData *map) { }
+void PointArray::minstep(double dist0,double distc,double angc, double dihed0, double dihedc, double mapc, EMData *map) { 
+	
+}
 
 void PointArray::sort_by_axis(int axis)
 {
@@ -1064,6 +1073,36 @@ void PointArray::sort_by_axis(int axis)
 		qsort(points, n, sizeof(double) * 4, cmp_axis_z);
 	else
 		qsort(points, n, sizeof(double) * 4, cmp_val);
+}
+
+double PointArray::potentiald(int i, double dx, double dy, double dz) {
+	// how expensive is % ?  Worth replacing ?
+	int ib=(i+n-3)%3*n;	// point before i with wraparound
+	int ibb=(i+n-6)%n;	// 2 points before i with wraparound
+	int ia=(i+3)%n;		// 1 point after
+	
+	Vec3f a(points[ib]-points[ibb],points[ib+1]-points[ibb+1],points[ib+2]-points[ibb+2]);  		// -2 -> -1
+	Vec3f b(points[i]+dx-points[ib],points[i+1]+dy-points[ib+1],points[i+2]+dz-points[ib+2]);		// -1 -> 0
+	Vec3f c(points[ia]-points[i]+dx,points[ia+1]-points[i+1]+dy,points[ia+2]-points[i+2]+dz);		// 0 -> 1
+	double dist=b.length();
+	double ang=acos(b.dot(c)/(dist*c.length()));
+	Vec3f cr1=a.cross(b);
+	Vec3f cr2=b.cross(c);
+	double dihed;
+	double denom=cr1.length()*cr2.length();
+	if (denom==0) dihed=0;
+	else dihed=acos(cr1.dot(cr2)/(denom)); 
+
+	return potential(dist,ang,dihed);
+}
+
+Vec3f PointArray::descent(int i) {
+	double pot=potentiald(i,0.0,0.0,0.0);
+	double potx=potentiald(i,1.0,0.0,0.0);
+	double poty=potentiald(i,0.0,1.0,0.0);
+	double potz=potentiald(i,0.0,0.0,1.0);
+	
+	return Vec3f(1.0/(pot-potx),1.0/(pot-poty),1.0/(pot-potz));
 }
 
 
