@@ -163,13 +163,13 @@ namespace EMAN
 		 *  @param mapc - coefficient for map energy
 		 *  @param map - EMData representing map to match/fit
 		 */
-		double potential(double dist0,double distc,double angc, double dihed0, double dihedc, double mapc, EMData *map=None);
+		double potential(double dist0,double distc,double angc, double dihed0, double dihedc, double mapc, EMData *map=NULL);
 		
 		/** Updates the dist,ang,dihed parameters **/
 		void updategeom();
 		
 		/** Takes a step to minimize the potential **/ 
-		void minstep(double dist0,double distc,double angc, double dihed0, double dihedc, double mapc, EMData *map=None);
+		void minstep(double dist0,double distc,double angc, double dihed0, double dihedc, double mapc, EMData *map=NULL);
 		
 		private:
 		double *points;

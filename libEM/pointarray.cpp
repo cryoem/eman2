@@ -34,6 +34,7 @@
  * */
 
 #include "pointarray.h"
+#include "util.h"
 #include <vector>
 #include <cstring>
 
@@ -1032,7 +1033,7 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 	map->update();
 }
 
-double PointArray::potential(double dist0,double distc,double angc, double dihed0, double dihedc, double mapc, EMData *map=None);
+double PointArray::potential(double dist0,double distc,double angc, double dihed0, double dihedc, double mapc, EMData *map) { }
 		
 /** Updates the dist,ang,dihed parameters **/
 void PointArray::updategeom() {
@@ -1040,19 +1041,18 @@ void PointArray::updategeom() {
 	if (!ang) ang=(double *)malloc(sizeof(double)*n);
 	if (!dihed) dihed=(double *)malloc(sizeof(double)*n);
 	
-	for (int i=0; i<n*3; i+=3) {
+	for (uint i=0; i<n*3; i+=3) {
 		// how expensive is % ?  Worth replacing ?
 		int ib=(i+n-3)%3*n;	// point before i with wraparound
 		int ibb=(i+n-6)%n;	// 2 points before i with wraparound
 		int ia=(i+3)%n;		// 1 point after
 
-		dist[i]=hypot3(points[i]-points[ib],points[i+1]-points[ib+1],points[i+2]-points[ib+2]);
+		dist[i]=Util::hypot3(points[i]-points[ib],points[i+1]-points[ib+1],points[i+2]-points[ib+2]);
 	}
+}
 		
 /** Takes a step to minimize the potential **/ 
-void PointArray::minstep(double dist0,double distc,double angc, double dihed0, double dihedc, double mapc, EMData *map=None);
-
-
+void PointArray::minstep(double dist0,double distc,double angc, double dihed0, double dihedc, double mapc, EMData *map) { }
 
 void PointArray::sort_by_axis(int axis)
 {

@@ -694,9 +694,9 @@ namespace EMAN
 		 * @param[in] z The third number.
 		 * @return sqrt(x*x + y*y + z*z);
 		 */
-		static inline float hypot3(double x, double y, double z)
+		static inline double hypot3(double x, double y, double z)
 		{
-			return (float) sqrt(x * x + y * y + z * z);
+			return (double) sqrt(x * x + y * y + z * z);
 		}
 
 		/** Euclidean distance in 2D for integers computed fast using a cached lookup table
