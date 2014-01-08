@@ -902,40 +902,68 @@ int DM4IO::read_data(float *rdata, int image_index, const Region * area, bool)
 	long offset;
 	offset = image_index * (nx * ny);
 
-	int k = 0;
-	for (int i = y0; i < y0 + ylen; i++) {
-		for (int j = x0; j < x0 + xlen; j++) {
-			switch (data_type) {
-			case GatanDM4::DataType::SIGNED_INT8_DATA:
-				rdata[k] = (float) ((char *) data)[offset + i * nx + j];
-				break;
-			case GatanDM4::DataType::UNSIGNED_INT8_DATA:
-				rdata[k] = (float) ((unsigned char *) data)[offset + i * nx + j];
-				break;
-			case GatanDM4::DataType::SIGNED_INT16_DATA:
-				rdata[k] = (float) ((short *) data)[offset + i * nx + j];
-				break;
-			case GatanDM4::DataType::UNSIGNED_INT16_DATA:
-				rdata[k] = (float) ((unsigned short *) data)[offset + i * nx + j];
-				break;
-			case GatanDM4::DataType::SIGNED_INT32_DATA:
-				rdata[k] = (float) ((int *) data)[offset + i * nx + j];
-				break;
-			case GatanDM4::DataType::UNSIGNED_INT32_DATA:
-				rdata[k] = (float) ((unsigned int *) data)[offset + i * nx + j];
-				break;
-			case GatanDM4::DataType::REAL4_DATA:
-				rdata[k] = (float) ((float *) data)[offset + i * nx + j];
-				break;
-			case GatanDM4::DataType::REAL8_DATA:
-				rdata[k] = (double) ((float *) data)[offset + i * nx + j];
-				break;				
-			default:
-				string desc = string("unsupported DM3 data type") +
-					string(GatanDM4::to_str((GatanDM4::DataType::GatanDataType) data_type));
-				throw ImageReadException(filename, desc);
+	long k = 0;
+	long off = 0;
+	int xlast = x0 + xlen;
+	int ylast = y0 + ylen;
+
+	for (int iy = y0; iy < ylast; iy++) {
+		off = offset + iy * nx;
+
+		switch (data_type) {
+		case GatanDM4::DataType::SIGNED_INT8_DATA:
+			for (int ix = x0; ix < xlast; ix++) {
+				rdata[k] = (float) ((char *) data)[off + ix];
+				k++;
 			}
-			k++;
+			break;
+		case GatanDM4::DataType::UNSIGNED_INT8_DATA:
+			for (int ix = x0; ix < xlast; ix++) {
+				rdata[k] = (float) ((unsigned char *) data)[off + ix];
+				k++;
+			}
+			break;
+		case GatanDM4::DataType::SIGNED_INT16_DATA:
+			for (int ix = x0; ix < xlast; ix++) {
+				rdata[k] = (float) ((short *) data)[off + ix];
+				k++;
+			}
+			break;
+		case GatanDM4::DataType::UNSIGNED_INT16_DATA:
+			for (int ix = x0; ix < xlast; ix++) {
+				rdata[k] = (float) ((unsigned short *) data)[off + ix];
+				k++;
+			}
+			break;
+		case GatanDM4::DataType::SIGNED_INT32_DATA:
+			for (int ix = x0; ix < xlast; ix++) {
+				rdata[k] = (float) ((int *) data)[off + ix];
+				k++;
+			}
+			break;
+		case GatanDM4::DataType::UNSIGNED_INT32_DATA:
+			for (int ix = x0; ix < xlast; ix++) {
+				rdata[k] = (float) ((unsigned int *) data)[off + ix];
+				k++;
+			}
+			break;
+		case GatanDM4::DataType::REAL4_DATA:
+			for (int ix = x0; ix < xlast; ix++) {
+				rdata[k] = (float) ((float *) data)[off + ix];
+				k++;
+			}
+			break;
+		case GatanDM4::DataType::REAL8_DATA:
+			for (int ix = x0; ix < xlast; ix++) {
+				rdata[k] = (float) ((double *) data)[off + ix];
+				k++;
+			}
+			break;				
+		default:
+			string desc = string("unsupported DM4 data type") +
+				string(GatanDM4::to_str((GatanDM4::DataType::GatanDataType) data_type));
+			throw ImageReadException(filename, desc);
+			k += xlen;
 		}
 	}
 	EXITFUNC;
