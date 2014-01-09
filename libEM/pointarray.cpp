@@ -1040,22 +1040,33 @@ void PointArray::updategeom() {
 	if (!ang) ang=(double *)malloc(sizeof(double)*n);
 	if (!dihed) dihed=(double *)malloc(sizeof(double)*n);
 	
-	for (uint i=0; i<n*4; i+=4) {
+	for (uint ii=0; ii<n; ii++) {
 		// how expensive is % ?  Worth replacing ?
-		int ib=(i+n-4)%4*n;	// point before i with wraparound
-		int ibb=(i+n-8)%n;	// 2 points before i with wraparound
-		int ia=(i+4)%n;		// 1 point after
+		int ib=4*((ii+n-1)%n);		// point before i with wraparound
+		int ibb=4*((ii+n-2)%n);	// 2 points before i with wraparound
+		int ia=4*((ii+1)%n);		// 1 point after
+		int i=4*ii;
 
 		Vec3f a(points[ib]-points[ibb],points[ib+1]-points[ibb+1],points[ib+2]-points[ibb+2]);  // -2 -> -1
 		Vec3f b(points[i]-points[ib],points[i+1]-points[ib+1],points[i+2]-points[ib+2]);		// -1 -> 0
 		Vec3f c(points[ia]-points[i],points[ia+1]-points[i+1],points[ia+2]-points[i+2]);		// 0 -> 1
-		dist[i]=b.length();
-		ang[i]=acos(b.dot(c)/(dist[i]*c.length()));
+		dist[ii]=b.length();
+		ang[ii]=acos(b.dot(c)/(dist[ii]*c.length()));
 		Vec3f cr1=a.cross(b);
 		Vec3f cr2=b.cross(c);
-		dihed[i]=acos(cr1.dot(cr2)/(cr1.length()*cr2.length())); 
+		dihed[ii]=acos(cr1.dot(cr2)/(cr1.length()*cr2.length())); 
+		if (isnan(dihed[ii])) dihed[ii]=dihed0;
+		if (isnan(ang[ii])) ang[ii]=0;
 		
 	}
+}
+
+double PointArray::potential() {
+	double ret;
+	updategeom();
+	for (int i=0; i<n; i++) ret+=pointpotential(dist[i],ang[i],dihed[i]);
+	
+	return ret;
 }
 
 double PointArray::potentiald(int i, double dx, double dy, double dz) {
@@ -1079,16 +1090,18 @@ double PointArray::potentiald(int i, double dx, double dy, double dz) {
 	if (denom==0) dihed=0;
 	else dihed=acos(cr1.dot(cr2)/(denom)); 
 
-	if (isnan(dist) || isnan(ang) ||isnan(dihed)) printf("%d\t%g\t%g\t%g\n",i,dist,ang,dihed);
+//	if (isnan(dist) || isnan(ang) || isnan(dihed)) printf("%d\t%g\t%g\t%g\t%g\t%g\t%g\n",i,dist,ang,dihed,b.length(),c.length(),b.dot(c)/(dist*c.length()));
+	if (isnan(dihed)) dihed=dihed0;
+	if (isnan(ang)) ang=0;
 	
-	return potential(dist,ang,dihed);
+	return pointpotential(dist,ang,dihed);
 }
 
 Vec3f PointArray::descent(int i) {
 	double pot=potentiald(i,0.0,0.0,0.0);
-	double potx=potentiald(i,1.0,0.0,0.0);
-	double poty=potentiald(i,0.0,1.0,0.0);
-	double potz=potentiald(i,0.0,0.0,1.0);
+	double potx=potentiald(i,0.1,0.0,0.0);
+	double poty=potentiald(i,0.0,0.1,0.0);
+	double potz=potentiald(i,0.0,0.0,0.1);
 //	printf("%1.4g\t%1.4g\t%1.4g\t%1.4g\t%1.4g\t%1.4g\t%1.4g\n",pot,potx,poty,potz,(pot-potx),(pot-poty),(pot-potz));
 	
 // 	if (pot==potx) potx=pot+1000000.0;
@@ -1102,13 +1115,17 @@ void PointArray::minstep(double maxshift) {
 	vector<Vec3f> shifts;
 	
 	double max=0.0;
+	double mean=0.0;
 	for (uint i=0; i<n; i++) {
-		shifts.push_back(descent(i));
+		if (oldshifts.size()==n) shifts.push_back((descent(i)+oldshifts[i])/2.0);
+		else shifts.push_back(descent(i));
 		float len=shifts[i].length();
 		if (len>max) max=len;
+		mean+=len;
 	}
+	oldshifts=shifts;
 	
-	printf("max vec %f\n",max);
+//	printf("max vec %1.2f\tmean %1.3f\n",max,mean/n);
 	
 	for (uint i=0; i<n; i++) {
 		if (isnan(shifts[i][0]) ||isnan(shifts[i][1]) ||isnan(shifts[i][2])) { printf("Nan: %d\n",i); shifts[i]=Vec3f(max,max,max); }

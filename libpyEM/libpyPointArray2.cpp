@@ -110,6 +110,7 @@ BOOST_PYTHON_MODULE(libpyPointArray2)
         .def("opt_from_proj", &EMAN::PointArray::opt_from_proj)
         .def("set_pot_parms", &EMAN::PointArray::set_pot_parms)
         .def("minstep", &EMAN::PointArray::minstep)
+        .def("potential", &EMAN::PointArray::potential)
     );
 
     enum_< EMAN::PointArray::Density2PointsArrayAlgorithm >("Density2PointsArrayAlgorithm")

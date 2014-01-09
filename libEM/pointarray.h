@@ -153,10 +153,13 @@ namespace EMAN
 		void opt_from_proj(const vector<EMData*> & proj,float pixres);
 
 		/** Computes a potential value for a single point from a set of angles/distances using current energy settings **/
-		inline double potential(double dist, double ang, double dihed) {
+		inline double pointpotential(double dist, double ang, double dihed) {
 			return pow(dist-dist0,2.0)*distc+ang*ang*angc+pow(dihed-dihed0,2.0)*dihedc;
 		}
 
+		/** Computes overall potential for the configuration **/
+		double potential();
+		
 		/** Compute a potential value with perturbations **/
 		double potentiald(int i, double dx, double dy, double dz);
 		
@@ -196,6 +199,7 @@ namespace EMAN
 		 */
 		double dist0, distc, angc, dihed0, dihedc, mapc;
 		EMData *map;
+		vector<Vec3f> oldshifts;
 	};
 }
 
