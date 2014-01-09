@@ -153,27 +153,39 @@ namespace EMAN
 		void opt_from_proj(const vector<EMData*> & proj,float pixres);
 
 		/** Computes a potential value for a single point from a set of angles/distances using current energy settings **/
-		inline double pointpotential(double dist, double ang, double dihed) {
+		inline double sim_pointpotential(double dist, double ang, double dihed) {
 			return pow(dist-dist0,2.0)*distc+ang*ang*angc+pow(dihed-dihed0,2.0)*dihedc;
 		}
 
 		/** Computes overall potential for the configuration **/
-		double potential();
+		double sim_potential();
 		
-		/** Compute a potential value with perturbations **/
-		double potentiald(int i, double dx, double dy, double dz);
+		/** Compute a single point potential value **/
+		double sim_potentiald(int i);
+
+		/** Compute a potential value for a perturbed point, including +-2 nearest neighbors which will also be impacted **/
+		double sim_potentialdxyz(int i,double dx, double dy, double dz);
 		
 		/** Updates the dist,ang,dihed parameters **/
-		void updategeom();
+		void sim_updategeom();
 
 		/** returns a vector pointing downhill for a single point **/
-		Vec3f descent(int i);
+		Vec3f sim_descent(int i);
 		
 		/** Takes a step to minimize the potential **/ 
-		void minstep(double maxshift);
+		void sim_minstep(double maxshift);
 
+		/** Takes a step to minimize the potential **/ 
+		void sim_minstep_seq(double meanshift);
+
+		/** rescale the entire set so the mean bond length matches dist0 **/
+		void sim_rescale();
+		
+		/** prints some statistics to the screen **/
+		void sim_printstat();
+		
 		/** Sets the parameters for the energy function **/ 
-		void set_pot_parms(double pdist0,double pdistc,double pangc, double pdihed0, double pdihedc, double pmapc, EMData *pmap);
+		void sim_set_pot_parms(double pdist0,double pdistc,double pangc, double pdihed0, double pdihedc, double pmapc, EMData *pmap);
 		
 		private:
 		double *points;

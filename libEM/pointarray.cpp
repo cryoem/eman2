@@ -1035,7 +1035,7 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 }
 
 /** Updates the dist,ang,dihed parameters **/
-void PointArray::updategeom() {
+void PointArray::sim_updategeom() {
 	if (!dist) dist=(double *)malloc(sizeof(double)*n);
 	if (!ang) ang=(double *)malloc(sizeof(double)*n);
 	if (!dihed) dihed=(double *)malloc(sizeof(double)*n);
@@ -1054,23 +1054,28 @@ void PointArray::updategeom() {
 		ang[ii]=acos(b.dot(c)/(dist[ii]*c.length()));
 		Vec3f cr1=a.cross(b);
 		Vec3f cr2=b.cross(c);
-		dihed[ii]=acos(cr1.dot(cr2)/(cr1.length()*cr2.length())); 
+		double denom=cr1.length()*cr2.length();
+		if (denom==0) dihed[ii]=0;
+		else dihed[ii]=acos(cr1.dot(cr2)/(denom)); 
 		if (isnan(dihed[ii])) dihed[ii]=dihed0;
 		if (isnan(ang[ii])) ang[ii]=0;
 		
 	}
 }
 
-double PointArray::potential() {
-	double ret;
-	updategeom();
-	for (int i=0; i<n; i++) ret+=pointpotential(dist[i],ang[i],dihed[i]);
+double PointArray::sim_potential() {
+	double ret=0;
+	sim_updategeom();
+	for (int i=0; i<n; i++) ret+=sim_pointpotential(dist[i],ang[i],dihed[i]);
 	
-	return ret;
+	return ret/n;
 }
 
-double PointArray::potentiald(int i, double dx, double dy, double dz) {
-	if (i<0 || i>=n) throw InvalidParameterException("Point number out of range");
+// potential for a single point. Note that if a point moves, it will impact energies +-2 from its position. This function computes only for the point i
+double PointArray::sim_potentiald(int i) {
+//	if (i<0 || i>=n) throw InvalidParameterException("Point number out of range");
+	if (i<0) i-=n*(i/n-1);
+	if (i>=n) i=i%n;
 	
 	// how expensive is % ?  Worth replacing ?
 	int ib=4*((i+n-1)%n);		// point before i with wraparound
@@ -1079,8 +1084,8 @@ double PointArray::potentiald(int i, double dx, double dy, double dz) {
 	i*=4;
 	
 	Vec3f a(points[ib]-points[ibb],points[ib+1]-points[ibb+1],points[ib+2]-points[ibb+2]);  		// -2 -> -1
-	Vec3f b(points[i]+dx-points[ib],points[i+1]+dy-points[ib+1],points[i+2]+dz-points[ib+2]);		// -1 -> 0
-	Vec3f c(points[ia]-points[i]-dx,points[ia+1]-points[i+1]-dy,points[ia+2]-points[i+2]-dz);		// 0 -> 1
+	Vec3f b(points[i]-points[ib],points[i+1]-points[ib+1],points[i+2]-points[ib+2]);		// -1 -> 0
+	Vec3f c(points[ia]-points[i],points[ia+1]-points[i+1],points[ia+2]-points[i+2]);		// 0 -> 1
 	double dist=b.length();
 	double ang=acos(b.dot(c)/(dist*c.length()));
 	Vec3f cr1=a.cross(b);
@@ -1094,15 +1099,50 @@ double PointArray::potentiald(int i, double dx, double dy, double dz) {
 	if (isnan(dihed)) dihed=dihed0;
 	if (isnan(ang)) ang=0;
 	
-	return pointpotential(dist,ang,dihed);
+	return sim_pointpotential(dist,ang,dihed);
 }
 
-Vec3f PointArray::descent(int i) {
-	double pot=potentiald(i,0.0,0.0,0.0);
-	double potx=potentiald(i,0.1,0.0,0.0);
-	double poty=potentiald(i,0.0,0.1,0.0);
-	double potz=potentiald(i,0.0,0.0,0.1);
-//	printf("%1.4g\t%1.4g\t%1.4g\t%1.4g\t%1.4g\t%1.4g\t%1.4g\n",pot,potx,poty,potz,(pot-potx),(pot-poty),(pot-potz));
+// Computes a potential for a point and +-2 nearest neighbors under perturbation of the central point location
+double PointArray::sim_potentialdxyz(int i, double dx, double dy, double dz) {
+	Vec3f old(points[i*4],points[i*4+1],points[i*4+2]);
+	double potd=0.;
+		
+	points[i*4]=old[0]+dx;
+	points[i*4+1]=old[1]+dy;
+	points[i*4+2]=old[2]+dz;
+ 	for (int ii=i-2; ii<=i+2; ii++) potd+=sim_potentiald(ii);
+//	potd=potential();
+	points[i*4]=old[0];
+	points[i*4+1]=old[1];
+	points[i*4+2]=old[2];
+	
+	return potd;
+}
+
+// Computes a gradient of the potential for a single point, including impact on +-2 nearest neighbors
+Vec3f PointArray::sim_descent(int i) {
+	Vec3f old(points[i*4],points[i*4+1],points[i*4+2]);
+	double pot=0.,potx=0.,poty=0.,potz=0.;
+	
+	for (int ii=i-2; ii<=i+2; ii++) pot+=sim_potentiald(ii);
+// 	pot=potential();
+	
+	points[i*4]=old[0]+0.01;
+	for (int ii=i-2; ii<=i+2; ii++) potx+=sim_potentiald(ii);
+// 	potx=potential();
+	points[i*4]=old[0];
+
+	points[i*4+1]=old[1]+0.01;
+	for (int ii=i-2; ii<=i+2; ii++) poty+=sim_potentiald(ii);
+// 	poty=potential();
+	points[i*4+1]=old[1];
+
+	points[i*4+2]=old[2]+0.01;
+	for (int ii=i-2; ii<=i+2; ii++) potz+=sim_potentiald(ii);
+// 	potz=potential();
+	points[i*4+2]=old[2];
+	
+	//	printf("%1.4g\t%1.4g\t%1.4g\t%1.4g\t%1.4g\t%1.4g\t%1.4g\n",pot,potx,poty,potz,(pot-potx),(pot-poty),(pot-potz));
 	
 // 	if (pot==potx) potx=pot+1000000.0;
 // 	if (pot==potx) potx=pot+1000000.0;
@@ -1111,14 +1151,14 @@ Vec3f PointArray::descent(int i) {
 }
 
 /** Takes a step to minimize the potential **/ 
-void PointArray::minstep(double maxshift) { 
+void PointArray::sim_minstep(double maxshift) { 
 	vector<Vec3f> shifts;
 	
 	double max=0.0;
 	double mean=0.0;
 	for (uint i=0; i<n; i++) {
-		if (oldshifts.size()==n) shifts.push_back((descent(i)+oldshifts[i])/2.0);
-		else shifts.push_back(descent(i));
+		if (oldshifts.size()==n) shifts.push_back((sim_descent(i)+oldshifts[i])/2.0);
+		else shifts.push_back(sim_descent(i));
 		float len=shifts[i].length();
 		if (len>max) max=len;
 		mean+=len;
@@ -1136,7 +1176,105 @@ void PointArray::minstep(double maxshift) {
 	}
 }
 
-void PointArray::set_pot_parms(double pdist0,double pdistc,double pangc, double pdihed0, double pdihedc, double pmapc, EMData *pmap) {
+/** Takes a step to minimize the potential **/ 
+void PointArray::sim_minstep_seq(double meanshift) { 
+	// we compute 10 random gradients and use these to adjust stepsize
+	double mean=0.0;
+	for (int i=0; i<10; i++) {
+		Vec3f shift=sim_descent(random()%n);
+		mean+=shift.length();
+	}
+	mean/=10.0;
+	double stepadj=meanshift/mean;
+//	printf("\t%1.4g\n",stepadj);
+
+	// Now we go through all points sequentially and move each downhill
+	// The trick here is the sequential part, as each point is impacted by the point already moved before it.
+	// This may create a "seam" at the first point which won't be adjusted to compensate for the last point (wraparound)
+	// until the next cycle
+	for (uint i=0; i<n; i++) {
+		Vec3f shift,d;
+		if (oldshifts.size()==n) {
+			d=sim_descent(i);
+			shift=(d+oldshifts[i])/2.0;
+			oldshifts[i]=d;
+		}
+		else {
+			shift=sim_descent(i);
+			oldshifts.push_back(shift);
+		}
+		
+//		double p2=potential();
+		double pot=sim_potentialdxyz(i,0.0,0.0,0.0);
+		double pots=sim_potentialdxyz(i,shift[0]*stepadj,shift[1]*stepadj,shift[2]*stepadj);
+
+		// only step if it actually improves the potential for this particle (note that it does not need to improve the overall potential)
+//		if (pots<pot) {
+			points[i*4]+=shift[0]*stepadj;
+			points[i*4+1]+=shift[1]*stepadj;
+			points[i*4+2]+=shift[2]*stepadj;
+//			printf("%d. %1.4g -> %1.4g\n",i,pot,pots);
+//			if (potential()>p2) printf("%d. %1.4g %1.4g\t%1.4g %1.4g\n",i,pot,pots,p2,potential());
+//		}
+	}
+	
+}
+
+
+void PointArray::sim_rescale() {
+	double meandist=0.0;
+	double max=0.0,min=dist0*1000.0;
+	
+	for (uint ii=0; ii<n; ii++) {
+		int ib=4*((ii+n-1)%n);		// point before i with wraparound
+		int i=4*ii;
+
+		Vec3f b(points[i]-points[ib],points[i+1]-points[ib+1],points[i+2]-points[ib+2]);		// -1 -> 0
+		double len=b.length();
+		meandist+=len;
+		max=len>max?len:max;
+		min=len<min?len:min;
+	}
+	meandist/=n;
+	double scale=dist0/meandist;
+	
+	printf("mean = %1.3f rescaled: %1.3f - %1.3f\n",meandist,min*scale,max*scale);
+	
+	for (uint i=0; i<n; i++) {
+		points[i*4]*=scale;
+		points[i*4+1]*=scale;
+		points[i*4+2]*=scale;
+	}
+
+}	
+void PointArray::sim_printstat() {
+	sim_updategeom();
+	
+	double mdist=0.0,mang=0.0,mdihed=0.0;
+	double midist=1000.0,miang=M_PI*2,midihed=M_PI*2;
+	double madist=0.0,maang=0.0,madihed=0.0;
+	
+	for (int i=0; i<n; i++) {
+		mdist+=dist[i];
+		mang+=ang[i];
+		mdihed+=dihed[i];
+
+		midist=dist[i]<midist?dist[i]:midist;
+		madist=dist[i]>madist?dist[i]:madist;
+		
+		miang=ang[i]<miang?ang[i]:miang;
+		maang=ang[i]>maang?ang[i]:maang;
+		
+		midihed=dihed[i]<midihed?dihed[i]:midihed;
+		madihed=dihed[i]>madihed?dihed[i]:madihed;
+	}
+	
+	double anorm = 180.0/M_PI;
+	printf("dist: %1.2f / %1.2f / %1.2f\tang: %1.2f / %1.2f / %1.2f\tdihed: %1.2f / %1.2f / %1.2f\n",midist,mdist/n,madist,miang*anorm,mang/n*anorm,maang*anorm,midihed*anorm,mdihed/n*anorm,madihed*anorm);
+		
+}
+
+void PointArray::sim_set_pot_parms(double pdist0,double pdistc,double pangc, double pdihed0, double pdihedc, double pmapc, EMData *pmap) {
 	dist0=pdist0;
 	distc=pdistc;
 	angc=pangc;
