@@ -221,33 +221,6 @@ def main():
 			print "And there's sym", options.sym
 	
 	'''
-	Get rootpath to provide absoulute paths to files.
-	Make the directory where to create the database where the results will be stored, if --resume is not provided.
-	'''
-	
-	rootpath = os.getcwd()
-	print "I am trying to open from here", rootpath
-	print "And the path is", options.path
-
-	if not options.resume:
-		options = sptmakepath(options,'spt')	
-	else:
-		if rootpath not in options.resume:
-			options.resume = rootpath + '/' + options.resume
-	
-		if not options.path:
-			print "ERROR: If you provide --resume, I need to know what working directory needs to be resumed. Provide it through --path"
-			sys.exit()
-
-	abspath= rootpath + '/' + options.path
-	print "Thus the abs path could be", abspath
-	
-	'''
-	Store parameters in parameters.txt file inside --path
-	'''
-	writeParameters(options,'e2spt_classaverage.py', 'sptclassavg')
-	
-	'''
 	Parse parameters
 	'''
 	if options.align:
@@ -327,11 +300,45 @@ def main():
 			sys.exit(1)
 	
 	if not options.donotaverage:		
-		if '.' not in options.output:					
-			print "Error in output name. It must end in a valid format, like '.hdf'; make sure you didn't mistake a comma for a dot"
+		if '.hdf' not in options.output:					
+			print "Error in output name. Format must be '.hdf'; make sure you didn't mistake a comma for a dot"
 			sys.exit(1)
 		
 	logger = E2init(sys.argv, options.ppid)
+	
+	
+	
+	'''
+	Get rootpath to provide absoulute paths to files.
+	Make the directory where to create the database where the results will be stored, if --resume is not provided.
+	'''
+	
+	rootpath = os.getcwd()
+	print "I am trying to open from here", rootpath
+	print "And the path is", options.path
+
+	if not options.resume:
+		options = sptmakepath(options,'spt')	
+	else:
+		if rootpath not in options.resume:
+			options.resume = rootpath + '/' + options.resume
+	
+		if not options.path:
+			print "ERROR: If you provide --resume, I need to know what working directory needs to be resumed. Provide it through --path"
+			sys.exit()
+
+	abspath= rootpath + '/' + options.path
+	print "Thus the abs path could be", abspath
+	
+	'''
+	Store parameters in parameters.txt file inside --path
+	'''
+	writeParameters(options,'e2spt_classaverage.py', 'sptclassavg')
+	
+	
+	
+	
+	
 	
 	try: 
 		classmx = EMData.read_images(options.classmx)		# we keep the entire classification matrix in memory, since we need to update it in most cases
@@ -1659,7 +1666,7 @@ class Align3DTask(JSTask):
 		JSTask.__init__(self,"ClassAv3d",data,{},"")
 
 		#self.classoptions={"options":options,"ptcl":ptcl,"label":label,"mask":options.mask,"normproc":options.normproc,"preprocess":options.preprocess,"lowpass":options.lowpass,"highpass":options.highpass,"npeakstorefine":options.npeakstorefine,"align":options.align,"aligncmp":options.aligncmp,"ralign":options.ralign,"raligncmp":options.raligncmp,"shrink":options.shrink,"shrinkrefine":options.shrinkrefine,"transform":transform,"verbose":options.verbose,"randomizewedge":options.randomizewedge,"wedgeangle":options.wedgeangle,"wedgei":options.wedgei,"wedgef":options.wedgef}
-		self.classoptions={"options":options,"ptclnum":ptclnum,"label":label,"transform":transform}
+		self.classoptions={"options":options,"ptclnum":ptclnum,"label":label,"transform":transform,"currentIter":currentIter}
 	
 	def execute(self,callback=None):
 		"""This aligns one volume to a reference and returns the alignment parameters"""
@@ -1693,7 +1700,8 @@ class Align3DTask(JSTask):
 		
 		if options.refpreprocess:
 			refpreprocess=1
-
+		
+		currentIter=self.classoptions['currentIter']
 		if int(options.iter) > 1 and currentIter > 0:
 			refpreprocess=1
 		
