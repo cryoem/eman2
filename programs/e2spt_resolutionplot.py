@@ -67,7 +67,16 @@ def main():
 	parser.add_argument("--maskali",type=str,help="""Mask processor applied to particles 
 		before alignment. Default is mask.sharp:outer_radius=-2""", default="mask.sharp:outer_radius=-2")
 	parser.add_argument("--maskfsc",type=str,help="""Mask processor applied to particles 
-		before fsc computation. Default is mask.sharp:outer_radius=-2""", default="mask.sharp:outer_radius=-2")
+		before fsc computation. Default is mask.sharp:outer_radius=-2""", default=None)
+	
+	
+	parser.add_argument("--search", type=float,default=8.0,help=""""During COARSE alignment
+		translational search in X, Y and Z, in pixels. Only works when --radius is provided.
+		Otherwise, search parameters are provided with the aligner, through --align.""")
+	
+	parser.add_argument("--searchfine", type=float,default=2.0,help=""""During FINE alignment
+		translational search in X, Y and Z, in pixels. Only works when --radius is provided.
+		Otherwise, search parameters are provided with the aligner, through --ralign.""")
 			
 	parser.add_argument("--normproc",type=str,help="""Normalization processor applied to particles before alignment. 
 													Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. 
@@ -314,7 +323,7 @@ def alignment(options):
 	#print "\n\nalign and its type are", options.align, type(options.align)
 	#print "\n\nralign is type are", options.ralign, type(options.ralign)
 	
-	alicmd = 'cd ' + options.path + ' && e2spt_classaverage.py --path=alignment --input=../' + str(options.input) + ' --output=' + str(alivolfile) + ' --ref=../' + str(options.ref) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + str(options.maskali) + ' --lowpass=' + str(options.lowpass) + ' --parallel=' + str(options.parallel) + ' --aligncmp=' + str(options.aligncmp) + ' --raligncmp=' + str(options.raligncmp) + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + str(options.normproc) + ' --sym=' + str(options.sym) + ' --breaksym'
+	alicmd = 'cd ' + options.path + ' && e2spt_classaverage.py --search=' + str(options.search) + ' --searchfine=' + str(options.searchfine) + '--path=alignment --input=../' + str(options.input) + ' --output=' + str(alivolfile) + ' --ref=../' + str(options.ref) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + str(options.maskali) + ' --lowpass=' + str(options.lowpass) + ' --parallel=' + str(options.parallel) + ' --aligncmp=' + str(options.aligncmp) + ' --raligncmp=' + str(options.raligncmp) + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + str(options.normproc) + ' --sym=' + str(options.sym) + ' --breaksym'
 	
 	if options.radius:
 		alicmd += ' --radius=' + str(options.radius)
