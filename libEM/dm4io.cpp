@@ -48,7 +48,7 @@ const char *TagTable::IMAGE_THUMB_INDEX_TAG = "ImageIndex";
 
 
 TagTable::TagTable()
-	:	img_index(0), is_big_endian(true), img_counted(1)
+	:	img_index(0), is_big_endian(true), img_counted(1), num_images_found(0)
 {
 }
 
@@ -167,6 +167,16 @@ void TagTable::set_thumb_index(int i)
 	}
 }
 
+int TagTable::get_num_images_found() const
+{
+	return num_images_found;
+}
+
+void TagTable::set_num_images_found(int num_found)
+{
+	num_images_found = num_found;
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////
 
 TagData::TagData(FILE * data_file, TagTable * table, const string & tagname)
@@ -181,64 +191,65 @@ TagData::~TagData()
 string TagData::read_native(bool is_value_stored)
 {
 	size_t sz = typesize();
+	size_t nr;
 	char val_str[32];
 
 	if (tag_type == SHORT) {
 		short val = 0;
-		fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in);
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%d", val);
 	}
 	else if (tag_type == USHORT) {
 		unsigned short val = 0;
-		fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in);
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%d", val);
 	}
 	else if (tag_type == INT) {
 		int val = 0;
-		fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in);
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%d", val);
 	}
 	else if (tag_type == CHAR || tag_type == OCTET) {
 		char val = 0;
-		fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in);
 		sprintf(val_str, "%d", val);
 	}
 	else if (tag_type == BOOLEAN) {
 		bool val = false;
-		fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in);
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%d", val);
 	}
 	else if (tag_type == UINT) {
 		unsigned int val = 0;
-		fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in);
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%u", (int) val);
 	}
 	else if (tag_type == FLOAT) {
 		float val = 0;
-		fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in);
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%f", val);
 	}
 	else if (tag_type == DOUBLE) {
 		double val = 0;
-		fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in);
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%10e", val);
 	}
 	else if (tag_type == OCTEU) {
 		long val = 0;
-		fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in);
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%ld", val);
 	}
 	else if (tag_type == OCTEV) {
 		unsigned long val = 0;
-		fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in);
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%ld", val);
 	}
@@ -261,7 +272,8 @@ vector < int >TagData::read_array_types()
 	LOGVAR("TagData::read_array_types()");
 
 	long array_type = 0;
-	fread(&array_type, sizeof(array_type), 1, in);
+	size_t nr;
+	nr = fread(&array_type, sizeof(array_type), 1, in);
 
 	ByteOrder::become_big_endian(&array_type);
 
@@ -293,7 +305,8 @@ string TagData::read_string(int size)
 	unsigned short *buf = new unsigned short[size];
 	char *str = new char[size + 1];
 
-	fread(buf, size * sizeof(unsigned short), 1, in);
+	size_t nr;
+	nr = fread(buf, size * sizeof(unsigned short), 1, in);
 	tagtable->become_host_endian < unsigned short >(buf, size);
 
 	for (int i = 0; i < size; i++) {
@@ -317,7 +330,7 @@ string TagData::read_string(int size)
 	return str1;
 }
 
-int TagData::read_array_data(vector < int >item_types, bool nodata)
+int TagData::read_array_data(vector < int >item_types, bool nodata, int image_index, int num_images)
 {
 	ENTERFUNC;
 	if (item_types.size() == 0) {
@@ -328,7 +341,8 @@ int TagData::read_array_data(vector < int >item_types, bool nodata)
 	int err = 0;
 	long array_size = 0;
 
-	fread(&array_size, sizeof(array_size), 1, in);
+	size_t nr;
+	nr = fread(&array_size, sizeof(array_size), 1, in);
 	ByteOrder::become_big_endian(&array_size);
 
 	LOGVAR("array size = %d\n", array_size);
@@ -348,8 +362,25 @@ int TagData::read_array_data(vector < int >item_types, bool nodata)
 		LOGVAR("value: %s", val.c_str());
 	}
 	else if (!nodata && name == "Data") {
-		char *data = new char[buf_size];
-		fread(data, item_size, array_size, in);
+		int num_found = tagtable->get_num_images_found();
+		num_found++;
+		tagtable->set_num_images_found(num_found);
+
+		char * data;
+
+		if (image_index < 0  ||  buf_size % num_images != 0  ||  num_found == 1) {
+			data = new char[buf_size];
+			nr = fread(data, item_size, array_size, in);
+		}
+		else {
+			size_t image_size = buf_size / num_images;
+
+			data = new char[image_size];
+			portable_fseek(in, image_index * image_size, SEEK_CUR);
+			nr = fread(data, image_size, 1, in);
+			portable_fseek(in, (num_images - image_index - 1) * image_size, SEEK_CUR);
+			array_size = array_size / num_images;
+		}
 
 		if (item_size == sizeof(short)) {
 			tagtable->become_host_endian((short *) data, array_size);
@@ -381,10 +412,11 @@ vector < int >TagData::read_struct_types()
 	long namelength = 0;
 	long nfields = 0;
 
-	fread(&namelength, sizeof(namelength), 1, in);
+	size_t nr;
+	nr = fread(&namelength, sizeof(namelength), 1, in);
 	ByteOrder::become_big_endian(&namelength);
 
-	fread(&nfields, sizeof(nfields), 1, in);
+	nr = fread(&nfields, sizeof(nfields), 1, in);
 	ByteOrder::become_big_endian(&nfields);
 
 	LOGVAR("namelength = %d\n", namelength);
@@ -393,11 +425,11 @@ vector < int >TagData::read_struct_types()
 	vector < int >field_types;
 
 	for (unsigned int i = 0; i < nfields; i++) {
-		fread(&namelength, sizeof(namelength), 1, in);
+		nr = fread(&namelength, sizeof(namelength), 1, in);
 		ByteOrder::become_big_endian(&namelength);
 
 		long field_type = 0;
-		fread(&field_type, sizeof(field_type), 1, in);
+		nr = fread(&field_type, sizeof(field_type), 1, in);
 		ByteOrder::become_big_endian(&field_type);
 		
 		LOGVAR("%dth namelength = %d, type = '%s'",
@@ -408,11 +440,12 @@ vector < int >TagData::read_struct_types()
 	return field_types;
 }
 
-int TagData::read_any(bool nodata)
+int TagData::read_any(bool nodata, int image_index, int num_images)
 {
 	int err = 0;
 
-	fread(&tag_type, sizeof(tag_type), 1, in);
+	size_t nr;
+	nr = fread(&tag_type, sizeof(tag_type), 1, in);
 	
 	ByteOrder::become_big_endian(&tag_type);
 	LOGVAR("TagData::read_any tag type = '%s'\n", GatanDM4::to_str((Type) tag_type));
@@ -420,7 +453,7 @@ int TagData::read_any(bool nodata)
 
 	if (tag_type == ARRAY) {
 		vector < int >item_types = read_array_types();
-		err = read_array_data(item_types, nodata);
+		err = read_array_data(item_types, nodata, image_index, num_images);
 	}
 	else if (tag_type == STRUCT) {
 		vector < int >field_types = read_struct_types();
@@ -440,11 +473,12 @@ int TagData::read_any(bool nodata)
 	else if (tag_type == STRING) {
 
 		int str_sz = 0;
-		fread(&str_sz, sizeof(str_sz), 1, in);
+		size_t nr;
+		nr = fread(&str_sz, sizeof(str_sz), 1, in);
 		ByteOrder::become_big_endian(&str_sz);
 
 		char *val = new char[str_sz + 1];
-		fread(val, str_sz, 1, in);
+		nr = fread(val, str_sz, 1, in);
 		val[str_sz] = '\0';
 		string val_str = string(val);
 		if( val )
@@ -462,9 +496,9 @@ int TagData::read_any(bool nodata)
 	return err;
 }
 
-int TagData::read(bool nodata)
+int TagData::read_tag_data(bool nodata, int image_index, int num_images)
 {
-	LOGVAR("TagData::read()");
+	LOGVAR("TagData::read_tag_data()");
 	int err = 0;
 
 	const char *DATA_TYPE_MARK = "%%%%";
@@ -473,11 +507,12 @@ int TagData::read(bool nodata)
 
 	long interval;
 	
-	fread(&interval, sizeof(interval), 1, in);
+	size_t nr;
+	nr = fread(&interval, sizeof(interval), 1, in);
 
 	ByteOrder::become_big_endian(&interval);
 
-	fread(mark, mark_sz, 1, in);
+	nr = fread(mark, mark_sz, 1, in);
 	mark[mark_sz] = '\0';
 
 	if (strcmp(mark, DATA_TYPE_MARK) != 0) {
@@ -493,12 +528,12 @@ int TagData::read(bool nodata)
 	}
 
 	long encoded_types_size = 0;
-	fread(&encoded_types_size, sizeof(long), 1, in);
+	nr = fread(&encoded_types_size, sizeof(long), 1, in);
 	ByteOrder::become_big_endian(&encoded_types_size);
 
 	LOGVAR("encoded types size = %d\n", encoded_types_size);
 
-	err = read_any(nodata);
+	err = read_any(nodata, image_index, num_images);
 
 	return err;
 }
@@ -565,20 +600,21 @@ TagEntry::~TagEntry()
 {
 }
 
-int TagEntry::read(bool nodata)
+int TagEntry::read_tag_entry(bool nodata, int image_index, int num_images)
 {
-	LOGVAR("TagEntry::read()");
+	LOGVAR("TagEntry::read_tag_entry()");
 	int err = 0;
 	long pos = 0;
 	char tag_type = 0;
 	char *tmp_name = 0;
 
 	pos = ftell(in);
-	fread(&tag_type, sizeof(char), 1, in);
+	size_t nr;
+	nr = fread(&tag_type, sizeof(char), 1, in);
 
 	if (tag_type != GROUP_TAG && tag_type != DATA_TAG) {
 		portable_fseek(in, sizeof(char) * 7, SEEK_CUR);
-		fread(&tag_type, sizeof(char), 1, in);
+		nr = fread(&tag_type, sizeof(char), 1, in);
 	}
 
 	if (tag_type != GROUP_TAG && tag_type != DATA_TAG) {
@@ -588,20 +624,20 @@ int TagEntry::read(bool nodata)
 			return 1;
 		}
 		else{
-			LOGERR("TagEntry::read() invalid tag type: %d @ position %ld", tag_type, pos);
+			LOGERR("TagEntry::read_tag_entry() invalid tag type: %d @ position %ld", tag_type, pos);
 			return 1;
 		}
 	}
 
 
 	short name_len = 0;
-	fread(&name_len, sizeof(short), 1, in);
+	nr = fread(&name_len, sizeof(short), 1, in);
 
 	ByteOrder::become_big_endian(&name_len);
 
 	if (name_len != 0) {
 		tmp_name = new char[name_len + 1];
-		fread(tmp_name, name_len, 1, in);
+		nr = fread(tmp_name, name_len, 1, in);
 		tmp_name[name_len] = '\0';
 	}
 	else {
@@ -624,20 +660,20 @@ int TagEntry::read(bool nodata)
 	if (tag_type == DATA_TAG) {
 
 		TagData tag_data(in, tagtable, name);
-		err = tag_data.read(nodata);
+		err = tag_data.read_tag_data(nodata, image_index, num_images);
 	}
 	else if (tag_type == GROUP_TAG) {
 		long tot_size = 0;	//size of DataType record + size of data
-		fread(&tot_size, sizeof(long), 1, in);
+		nr = fread(&tot_size, sizeof(long), 1, in);
 		ByteOrder::become_big_endian(&tot_size);
 
 		TagGroup group(in, tagtable, name);
-		err = group.read(nodata);
+		err = group.read_tag_group(nodata, image_index, num_images);
 	}
 
 /*
 	long tot_size = 0;	//size of DataType record + size of data
-	fread(&tot_size, sizeof(long), 1, in);
+	nr = fread(&tot_size, sizeof(long), 1, in);
 */
 	return err;
 }
@@ -653,18 +689,19 @@ TagGroup::~TagGroup()
 {
 }
 
-int TagGroup::read(bool nodata)
+int TagGroup::read_tag_group(bool nodata, int image_index, int num_images)
 {
-	LOGVAR("TagGroup::read()");
+	LOGVAR("TagGroup::read_tag_group()");
 	char is_sorted, is_open;
 
 	long ntags = 0;
 	
 //	portable_fseek(in, sizeof(char) * 2, SEEK_CUR);
-	fread(&is_sorted, sizeof(is_sorted), 1, in);
-	fread(&is_open,   sizeof(is_open),   1, in);
+	size_t nr;
+	nr = fread(&is_sorted, sizeof(is_sorted), 1, in);
+	nr = fread(&is_open,   sizeof(is_open),   1, in);
 
-	fread(&ntags, sizeof(ntags), 1, in);
+	nr = fread(&ntags, sizeof(ntags), 1, in);
 	
 	ByteOrder::become_big_endian(&ntags);
 
@@ -675,7 +712,7 @@ int TagGroup::read(bool nodata)
 	for (int i = 0; i < ntags; i++) {
 		/*
 		portable_fseek(in, sizeof(char) * 9, SEEK_CUR);
-		fread(&flagend, sizeof(char), 1, in);
+		nr = fread(&flagend, sizeof(char), 1, in);
 		
 		if (flagend ==EOF){
 			break;
@@ -687,7 +724,7 @@ int TagGroup::read(bool nodata)
 		*/
 		
 		TagEntry tag_entry(in, tagtable, this);
-		err = tag_entry.read(nodata);
+		err = tag_entry.read_tag_entry(nodata, image_index, num_images);
 
 		if (err) {
 			break;
@@ -828,7 +865,7 @@ int DM4IO::read_header(Dict & dict, int image_index, const Region * area, bool)
 
 	portable_fseek(dm4file, NUM_ID_INT * sizeof(int), SEEK_SET);
 	TagGroup root_group(dm4file, tagtable, "");
-	root_group.read(true);
+	root_group.read_tag_group(true, 0, 1);
 
 	int nx = tagtable->get_xsize();
 	int ny = tagtable->get_ysize();
@@ -885,10 +922,14 @@ int DM4IO::read_data(float *rdata, int image_index, const Region * area, bool)
 
 	portable_fseek(dm4file, NUM_ID_INT * sizeof(int), SEEK_SET);
 	TagGroup root_group(dm4file, tagtable, "");
-	root_group.read(false);
+	root_group.read_tag_group(true, 0, 1);
 
 	int nx = tagtable->get_xsize();
 	int ny = tagtable->get_ysize();
+	int num_images = tagtable->get_image_counted();
+
+	portable_fseek(dm4file, NUM_ID_INT * sizeof(int), SEEK_SET);
+	root_group.read_tag_group(false, image_index, num_images);
 
 	check_region(area, IntSize(nx, ny));
 
@@ -899,9 +940,7 @@ int DM4IO::read_data(float *rdata, int image_index, const Region * area, bool)
 	char *data = tagtable->get_data();
 	int data_type = tagtable->get_datatype();
 
-	long offset;
-	offset = image_index * (nx * ny);
-
+	long offset = 0;
 	long k = 0;
 	long off = 0;
 	int xlast = x0 + xlen;
@@ -966,6 +1005,9 @@ int DM4IO::read_data(float *rdata, int image_index, const Region * area, bool)
 			k += xlen;
 		}
 	}
+
+// #include "debug_read_data.h"
+
 	EXITFUNC;
 	return 0;
 
@@ -998,7 +1040,7 @@ int DM4IO::get_nimg()
 	init();
 
 	TagGroup root_group(dm4file, tagtable, "");
-	root_group.read(true);
+	root_group.read_tag_group(true, 0, 1);
 
 	return tagtable->get_image_counted();
 }

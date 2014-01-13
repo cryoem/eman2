@@ -61,6 +61,8 @@ namespace EMAN
 			int get_ysize() const;
 			int get_datatype() const;
 			char *get_data() const;
+			int get_num_images_found() const;
+			void set_num_images_found(int num_found);
 
 			void dump() const;
 
@@ -86,6 +88,7 @@ namespace EMAN
 		  private:
 			int img_counted;
 			int img_index;
+			int num_images_found;
 			bool is_big_endian;
 			std::map < string, string > tags;
 			vector < int >x_list;
@@ -119,15 +122,15 @@ namespace EMAN
 			TagData(FILE * data_file, TagTable * tagtable, const string & tagname);
 			~TagData();
 
-			int read(bool nodata = false);
+			int read_tag_data(bool nodata = false, int image_index = 0, int num_images = 1);
 
 		  private:
 			size_t typesize() const;
 			size_t typesize(int type) const;
-			int read_any(bool nodata = false);
+			int read_any(bool nodata = false, int image_index = 0, int num_images = 1);
 
 			vector < int >read_array_types();
-			int read_array_data(vector < int >item_types, bool nodata = false);
+			int read_array_data(vector < int >item_types, bool nodata = false, int image_index = 0, int num_images = 1);
 			vector < int >read_struct_types();
 			string read_native(bool is_value_stored);
 			string read_string(int size);
@@ -146,7 +149,7 @@ namespace EMAN
 			TagGroup(FILE * data_file, TagTable * tagtable, const string & groupname);
 			~TagGroup();
 
-			int read(bool nodata = false);
+			int read_tag_group(bool nodata = false, int image_index = 0, int num_images = 1);
 			string get_name() const;
 			int get_entry_id();
 
@@ -169,7 +172,7 @@ namespace EMAN
 			TagEntry(FILE * data_file, TagTable * tagtable, TagGroup * parent_group);
 			~TagEntry();
 
-			int read(bool nodata = false);
+			int read_tag_entry(bool nodata = false, int image_index = 0, int num_images = 1);
 
 		  private:
 			FILE * in;
