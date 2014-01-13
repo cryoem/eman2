@@ -95,6 +95,12 @@ def main():
 	parser.add_argument("--iter", type=int, help="""The number of iterations to perform. 
 		Default is 1.""", default=1)
 	
+	parser.add_argument("--precision",type=float,default=1.0,help="""Precision in pixels to use
+		when figuring out alignment parameters automatically using --radius. Precision 
+		would be the number of pixels that the the edge of the specimen is moved (rotationally) during the 
+		finest sampling, --ralign. If precision is 1, then the precision of alignment will be that of 
+		the sampling (apix of your images) times the --shrinkfine factor specified.""")
+	
 	parser.add_argument("--radius", type=float, help="""Hydrodynamic radius of the particle in Angstroms. 
 		This will be used to automatically calculate the angular steps to use in search of the best alignment.
 		Make sure the apix is correct on the particles' headers, sine the radius will be converted from Angstroms to pixels.
