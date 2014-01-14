@@ -49,6 +49,10 @@
 #include <algorithm>
 #include <ctime>
 
+#ifdef __APPLE__
+	typedef unsigned int uint;
+#endif	//__APPLE__
+
 #ifdef EMAN2_USING_CUDA
 //#include "cuda/cuda_util.h"
 #include "cuda/cuda_processor.h"
