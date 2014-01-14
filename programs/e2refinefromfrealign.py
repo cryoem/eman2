@@ -56,36 +56,36 @@ for option1 in optionList:
 
 OUT_META_FILE = "OutParam"
 FINAL_META_FILE = OUT_META_FILE
-fsc_dict = db_open_dict("bdb:" + dir + "#convergence.results")
-a = EMData(dir + "/3DMapInOut.mrc")
-b = EMData(dir + "/OutputMap_Normalized.mrc")
-s =  "init_00_fsc"
-fsc = a.calc_fourier_shell_correlation(b)
-fsc_len = len(fsc)
-for i in range(0,fsc_len/3-1):
-   fsc[i] = fsc[i]/b['apix_x']
-fsc_dict[s] = [fsc[:fsc_len/3-1],fsc[fsc_len/3:fsc_len/3*2-1]]  
+#fsc_dict = db_open_dict("bdb:" + dir + "#convergence.results")
+#a = EMData(dir + "/3DMapInOut.mrc")
+#b = EMData(dir + "/OutputMap_Normalized.mrc")
+#s =  "init_00_fsc"
+#fsc = a.calc_fourier_shell_correlation(b)
+#fsc_len = len(fsc)
+#for i in range(0,fsc_len/3-1):
+   #fsc[i] = fsc[i]/b['apix_x']
+#fsc_dict[s] = [fsc[:fsc_len/3-1],fsc[fsc_len/3:fsc_len/3*2-1]]  
 
-f=open(dir + "/" + FINAL_META_FILE, 'r')
-l3=f.readlines()
-f.close()
-nyquist = []
-fsc_val = []
-start = 0
+#f=open(dir + "/" + FINAL_META_FILE, 'r')
+#l3=f.readlines()
+#f.close()
+#nyquist = []
+#fsc_val = []
+#start = 0
 
-for i in range(len(l3)):
-   lst=l3[i].split()
-   if l3[i][0] == 'C' and len(lst) > 1:
-      if lst[1] =='Average' and lst[2] != 'phase':
-         break
-   if start == 1:
-      nyquist.append(1/float(lst[2]))
-      fsc_val.append(float(lst[5]))
-   if l3[i][0] == 'C' and len(lst) > 1:
-      if lst[1] =='NO.':
-         start = 1
-s = 'even_odd_fsc'
-fsc_dict[s] = [nyquist,fsc_val]
+#for i in range(len(l3)):
+   #lst=l3[i].split()
+   #if l3[i][0] == 'C' and len(lst) > 1:
+      #if lst[1] =='Average' and lst[2] != 'phase':
+         #break
+   #if start == 1:
+      #nyquist.append(1/float(lst[2]))
+      #fsc_val.append(float(lst[5]))
+   #if l3[i][0] == 'C' and len(lst) > 1:
+      #if lst[1] =='NO.':
+         #start = 1
+#s = 'even_odd_fsc'
+#fsc_dict[s] = [nyquist,fsc_val]
 
    
 f = open(dir + "/" + IN_META_FILE, 'r')

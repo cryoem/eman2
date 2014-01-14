@@ -15,20 +15,21 @@ import shutil
 from EMAN2 import *
 
 usage = """prog
-Add Help doc to me...
+...
 """
 
 parser = EMArgumentParser(usage,version=EMANVERSION)
 
 parser.add_header(name="runfrealign", help='Click Launch to run Frealign', title="### Click Launch to run e2runfrealign ###", row=0, col=0, rowspan=1, colspan=1)
+parser.add_pos_argument(name="dir",help="The refinement directory to use for FreAlign.", default="", guitype='dirbox', dirbasename='frealign',  row=1, col=0,rowspan=1, colspan=2)
 parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 (options, args) = parser.parse_args()
 
-if len(args) != 0:
-   print "Please use e2runfrealign.py with no arguments"
+if len(args) != 1:
+   print "Please use e2runfrealign.py with only one argument - which FreAlign directory to run in"
    exit(-1)
-
+os.chdir(str(args[0]))
 E2n=E2init(args,options.ppid)
 
 shutil.copy('3DMapInOut.mrc', '3DMapInOut.mrc.old')
