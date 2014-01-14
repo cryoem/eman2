@@ -145,7 +145,6 @@ bool EmIO::is_valid(const void *first_block, off_t file_size)
 int EmIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
-	dict = {};
 	//single image format, index can only be zero
 	if(image_index == -1) {
 		image_index = 0;
