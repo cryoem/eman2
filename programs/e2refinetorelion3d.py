@@ -7,7 +7,7 @@
 # code is distributed with EMAN2. While you may use your own institution for the copyright notice
 # the terms of the GPL/BSD license permit us to redistribute it.
 
-#****************UPDATED for RELION 1.2 RELEASE on 7/1/12******************
+#****************UPDATED for RELION 1.2 RELEASE on 9/17/13******************
 
 #import block
 from EMAN2 import *
@@ -25,7 +25,7 @@ RELION_RUN = 	"relion_refine_mpi "
 progname = os.path.basename(sys.argv[0])
 usage = """ prog [options] <set name> <reference map name>
 
-This program will extract the necessary parameters from an EMAN2 refinement and 
+This program will extract the necessary parameters from an EMAN2 refinement and
 
 Examples:
 
@@ -35,10 +35,10 @@ Examples:
 print "Running e2refinetorelion3d.py"
 # Required Program Options and Parameters (GUI and Command Line)
 parser = EMArgumentParser(usage, version=EMANVERSION)
-parser.add_header(name="relionversion", help="This module will only work with Relion-1.2", title="This module will only work with Relion v1.1", row=0, col=0, rowspan=1, colspan=3)
+parser.add_header(name="relionversion", help="This module is supported to work with Relion-1.2 from 9/17/13 onward", title="This module will work with Relion v1.2, 9/17/13 onward", row=0, col=0, rowspan=1, colspan=3)
 parser.add_header(name="relion3dheader", help="Options below this label are specific to e2refinetorelion3d", title="   ### e2refinetorelion3d.py Options ###", row=1, col=0, rowspan=1, colspan=3)
 #I/O Options
-parser.add_header(name="io", help="Options in this section pertain to I/O", title="---I/O Options---", row=2, col=0, rowspan=1, colspan=1) 
+parser.add_header(name="io", help="Options in this section pertain to I/O", title="---I/O Options---", row=2, col=0, rowspan=1, colspan=1)
 parser.add_pos_argument(name="set_name",help="The set name of the set of particles.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=3, col=0, rowspan=2, colspan=2)
 parser.add_pos_argument(name="refmap", type=str, help="Reference Map", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=5, col=0, rowspan=2, colspan=2)
 parser.add_argument("--randomizemodel", help="Optionally randomize the phases of the initial model to this resolution (in Angstroms)", default=0,  guitype='floatbox', row=7, col=0, rowspan=1, colspan=1)
@@ -59,7 +59,7 @@ parser.add_argument("--solventmask",type=str, help="Location of the mask to be u
 parser.add_header(name="sampling", help="Options in this section pertain to Sampling parameters", title="---Sampling Options---", row=17, col=0, rowspan=1, colspan=3)
 parser.add_argument("--healpix", type=str, default=7.5, help="Angular Sampling Interval (Degrees)", guitype='combobox', choicelist='30,15,7.5,3.7,1.8,0.9,0.5,0.2,0.1', row=18, col=0, rowspan=1, colspan=1)
 parser.add_argument("--auto_healpix", type=str, default=1.8, help="Local angular search value", guitype='combobox', choicelist='30,15,7.5,3.7,1.8,0.9,0.5,0.2,0.1', row=18, col=1, rowspan=1, colspan=1)
-parser.add_argument("--offsetrange", type=float, help="Offset search range (pix)", default=10.0, guitype='floatbox', row=19, col=0, rowspan=1, colspan=1) 
+parser.add_argument("--offsetrange", type=float, help="Offset search range (pix)", default=10.0, guitype='floatbox', row=19, col=0, rowspan=1, colspan=1)
 parser.add_argument("--offsetstep", type=float, help="Offset search step (pix)", default=2.0, guitype='floatbox', row=19, col=1, rowspan=1, colspan=1)
 #Run Options
 parser.add_header(name="running", help="Options in this section pertain to running RELION itself", title="---Run Options---", row=20, col=0, rowspan=1, colspan=3)
@@ -67,7 +67,7 @@ parser.add_argument("--threads", type=int, help="# of threads", default=1, guity
 parser.add_argument("--maxmemory", type=float, help="Maximum memory (in GB) available for each thread", guitype='floatbox', row=21, col=1, rowspan=1, colspan=1)
 
 
-# Command line only parameters (or expert parameters in hte GUI)
+# Command line only parameters (or expert parameters in the GUI)
 parser.add_header(name="Expert Options", help="Options in this section are for expert users", title="---Expert Options---", expert=True, row=22, col=0, rowspan=1, colspan=3)
 parser.add_argument("--amplitudecontrast", type=float, help="Amplitude Contrast value for the micrographs", default=0.07, guitype='floatbox',row=23, col=0, rowspan=1, colspan=1, expert=True)
 parser.add_argument("--intensitycorrection", action="store_true", help="(T/F)Perform intensity-scale corrections on image groups?", default=False, guitype='boolbox', row=23, col=1, rowspan=1, colspan=1, expert=True)
@@ -196,6 +196,7 @@ set_orig = set_name
 #set_db = db_open_dict(set_orig)
 i = 0
 old_src = EMData(set_name,0).get_attr_dict()['data_source']
+print old_src
 s =  "e2proc2d.py " + set_orig + " " + E2RLN + "/ptcl_stack.hdf --verbose="+str(options.verbose)
 call(s,shell=True)
 ctf_corr = 0
@@ -208,8 +209,10 @@ for option1 in optionList:
 		asample = True
 if ctf_corr == 1:
 
-	dblist = os.listdir("sets")	
+	dblist = os.listdir("sets")
 	for db in dblist:
+		print "***************"
+		print db
 		db_src=set_name.replace(".lst",'').replace("sets/",'')
 		if db.find(db_src) != -1:
 			db_set=EMData("sets/" +db,0,True)
@@ -231,8 +234,9 @@ for k in range(num_ptcl):
 #	print k, '\t',temp['data_source'].split('?')[0].split('#')[1],'\t', temp['defocus'],'\t', temp['voltage'],'\t', temp['cs'],'\t', '1.8'	
 	src = EMData(set_name,k).get_attr_dict()['data_source']
 	#print "***" + str(src) + "***" + str(old_src)
-	########## Cleared to here##############
+	########### Cleared to here##############
 	if (src != old_src):
+		print old_src
 		temp=EMData("sets/"+db,k-1)
 		s = "e2proc2d.py " + E2RLN + "/ptcl_stack.hdf" + " " + E2RLN + "/" + base_name(old_src) + ".hdf --verbose="+str(options.verbose)+" --step=" + str(i) + ",1 --last=" + str(k-1)
 		call(s, shell=True)
@@ -240,7 +244,7 @@ for k in range(num_ptcl):
 			s = "e2proc2d.py " + E2RLN + "/" + base_name(old_src) + ".hdf " + E2RLN + "/" + base_name(old_src) + ".mrc --verbose="+str(options.verbose) + " --process=normalize.edgemean"
                         call(s, shell=True)
 		else:
-			s = "e2proc2d.py " + E2RLN + "/" + base_name(old_src) + ".hdf " + E2RLN + "/" + base_name(old_src) + ".mrc --verbose=" + str(options.verbose) + " --process=normalize.edgemean --twod2threed" 
+			s = "e2proc2d.py " + E2RLN + "/" + base_name(old_src) + ".hdf " + E2RLN + "/" + base_name(old_src) + ".mrc --verbose=" + str(options.verbose) + " --process=normalize.edgemean --twod2threed"
 			call(s, shell=True)
 		s1 = E2RLN + "/" + base_name(old_src) + ".mrc"
 		stemp="e2proc3d.py " + s1 + " " + s1 + " --process=normalize"
@@ -252,9 +256,9 @@ for k in range(num_ptcl):
 			defocus1 = defocus2 = str(temp['ctf'].to_dict()['defocus']*10000)
 			s = "relion_star_datablock_stack " + str(k-i) + " " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + str(defocus1) + " " + str(defocus2) + " 0 " + str(voltage) + " " + str(cs) + " " + str(amplitude_contrast) + " >> " + E2RLN + "/all_images.star"
 		else:
-			s = "relion_star_datablock_stack " + str(k-i) + " " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + str(voltage) + " " + str(amplitude_contrast) + "  >> " + E2RLN + "/all_images.star" 
+			s = "relion_star_datablock_stack " + str(k-i) + " " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + str(voltage) + " " + str(amplitude_contrast) + "  >> " + E2RLN + "/all_images.star"
 		call(s,shell=True)
-		s = "rm " + E2RLN + "/" + base_name(old_src) + ".hdf" 
+		s = "rm " + E2RLN + "/" + base_name(old_src) + ".hdf"
 		call(s,shell=True)
 		i = k
 		old_src = src
@@ -278,9 +282,9 @@ for k in range(num_ptcl):
 			defocus1 = defocus2 = str(temp['ctf'].to_dict()['defocus']*1000)
 			s = "relion_star_datablock_stack " + str(k-i+1) + " " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + str(defocus1) + " " + str(defocus2) + " 0 " + str(voltage) + " " + str(cs) + " " + str(amplitude_contrast) + " >> " + E2RLN + "/all_images.star"
 		else:
-			s = "relion_star_datablock_stack " + str(k-i+1) + " " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + str(voltage) + " " + amplitude_contrast + "  >> " + E2RLN + "/all_images.star" 
+			s = "relion_star_datablock_stack " + str(k-i+1) + " " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + E2RLN + "/stacks/" + base_name(old_src) + ".mrcs " + str(voltage) + " " + amplitude_contrast + "  >> " + E2RLN + "/all_images.star"
 		call(s,shell=True)
-		s = "rm " + E2RLN + "/" + base_name(src) + ".hdf" 
+		s = "rm " + E2RLN + "/" + base_name(src) + ".hdf"
 		call(s,shell=True)
 		i = k
 		old_src = src
@@ -357,7 +361,7 @@ for option1 in optionList:
 	elif option1 == "print_symmetry":
 		s = s + " --print_symmetry_ops"
 	elif option1 == "onlyflipphase":
-		s = s + " --only_flip_phases" 
+		s = s + " --only_flip_phases"
 	elif option1 == "dataphaseflipped":
 		s = s + " --ctf_phase_flipped"
 	elif option1 == "ignoretofirstpeak":
@@ -443,7 +447,7 @@ f.write("""#!/bin/sh
 #PBS -q ###QueueName###
 
 cd ###DirectoryDataIsIn###
-mpiexec -bynode -n ###NumberofNodes### """ + s + """ 
+mpiexec -bynode -n ###NumberofNodes### """ + s + """
 echo "done" """)
 
 f.close()
