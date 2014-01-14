@@ -1062,8 +1062,8 @@ void PointArray::sim_updategeom() {
 		double denom=cr1.length()*cr2.length();
 		if (denom==0) dihed[ii]=0;
 		else dihed[ii]=acos(cr1.dot(cr2)/(denom)); 
-		if (isnan(dihed[ii])) dihed[ii]=dihed0;
-		if (isnan(ang[ii])) ang[ii]=0;
+		if (std::isnan(dihed[ii])) dihed[ii]=dihed0;
+		if (std::isnan(ang[ii])) ang[ii]=0;
 		
 	}
 }
@@ -1100,9 +1100,9 @@ double PointArray::sim_potentiald(int i) {
 	if (denom==0) dihed=0;
 	else dihed=acos(cr1.dot(cr2)/(denom)); 
 
-//	if (isnan(dist) || isnan(ang) || isnan(dihed)) printf("%d\t%g\t%g\t%g\t%g\t%g\t%g\n",i,dist,ang,dihed,b.length(),c.length(),b.dot(c)/(dist*c.length()));
-	if (isnan(dihed)) dihed=dihed0;
-	if (isnan(ang)) ang=0;
+//	if (std::isnan(dist) || std::isnan(ang) || std::isnan(dihed)) printf("%d\t%g\t%g\t%g\t%g\t%g\t%g\n",i,dist,ang,dihed,b.length(),c.length(),b.dot(c)/(dist*c.length()));
+	if (std::isnan(dihed)) dihed=dihed0;
+	if (std::isnan(ang)) ang=0;
 	
 	return sim_pointpotential(dist,ang,dihed);
 }
@@ -1173,7 +1173,7 @@ void PointArray::sim_minstep(double maxshift) {
 //	printf("max vec %1.2f\tmean %1.3f\n",max,mean/n);
 	
 	for (uint i=0; i<n; i++) {
-		if (isnan(shifts[i][0]) ||isnan(shifts[i][1]) ||isnan(shifts[i][2])) { printf("Nan: %d\n",i); shifts[i]=Vec3f(max,max,max); }
+		if (std::isnan(shifts[i][0]) ||std::isnan(shifts[i][1]) ||std::isnan(shifts[i][2])) { printf("Nan: %d\n",i); shifts[i]=Vec3f(max,max,max); }
 		points[i*4]+=shifts[i][0]*maxshift/max;
 		points[i*4+1]+=shifts[i][1]*maxshift/max;
 		points[i*4+2]+=shifts[i][2]*maxshift/max;
