@@ -8399,6 +8399,7 @@ void WaveletProcessor::process_inplace(EMData *image)
 
 	int K=(int)params["ord"];
 	gsl_wavelet_direction dir;
+
 	if ((int)params["dir"]==1) dir=(gsl_wavelet_direction)1;	// defined as 'forward', but name is broken on mac
 	else dir=(gsl_wavelet_direction)-1;	// backward
 

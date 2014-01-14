@@ -145,7 +145,7 @@ bool EmIO::is_valid(const void *first_block, off_t file_size)
 int EmIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
-
+	dict = {};
 	//single image format, index can only be zero
 	if(image_index == -1) {
 		image_index = 0;
@@ -160,7 +160,6 @@ int EmIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 
 	int xlen = 0, ylen = 0, zlen = 0;
 	EMUtil::get_region_dims(area, emh.nx, &xlen, emh.ny, &ylen, emh.nz, &zlen);
-
 	dict["nx"] = xlen;
 	dict["ny"] = ylen;
 	dict["nz"] = zlen;

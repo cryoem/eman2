@@ -281,6 +281,7 @@ def main():
 				d = EMData()
 				d.read_image(infile, 0, False, Region(0,0,i,threed_xsize,threed_ysize,1))
 			else:
+				d = EMData()
 				d.read_image(infile, i)
 		else:
 			if plane in xyplanes:

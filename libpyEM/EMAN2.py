@@ -1926,6 +1926,7 @@ performed with read_image either here or in the EMData class. Returns a tuple (n
 but this method prevents multiple open/close operations on the #LSX file."""
 
 		n,fsp,cmt=self.read(n)
+		ret=EMData()
 		ret=EMData(fsp,n)
 		if cmt!=None and len(cmt)>0 : ret["lst_comment"]=cmt
 

@@ -42,7 +42,7 @@ from emrctboxergui import ControlPannel
 from emshape import EMShape
 import os, sys, itertools
 
-EMBOXERRCT_DB = "bdb:emboxerrct"
+EMBOXERRCT_DB = "boxercache/rctboxer.json"
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -65,7 +65,7 @@ Usage: e2RCTboxer.py untilted.hdf tilted.hdf options.
 	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=-1, guitype='intbox', row=3, col=0, rowspan=1, colspan=3, mode="boxing,extraction")
 	parser.add_argument("--write_boxes",action="store_true",help="Write coordinate file (eman1 dbbox) files",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="extraction")
 	parser.add_argument("--write_ptcls",action="store_true",help="Write particles to disk",default=False, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode="extraction[True]")
-	parser.add_argument("--format", help="Format of the output particles images, should be bdb,img,spi or hdf", default="bdb", guitype='combobox', choicelist="['bdb','hdf','img','spi']", row=7, col=0, rowspan=1, colspan=2, mode="extraction")
+	parser.add_argument("--format", help="Format of the output particles images, should be hdf", default="hdf", guitype='combobox', choicelist="['hdf']", row=7, col=0, rowspan=1, colspan=2, mode="extraction")
 	parser.add_argument("--shrink", type=int, help="Shrink the images by an integer, uses math.meanshrink", default = 0, guitype='shrinkbox', row=6, col=2, rowspan=1, colspan=1, mode="extraction")
 	parser.add_argument("--norm", type=str,help="Normalization processor to apply to written particle images. Should be normalize, normalize.edgemean,etc.Specifc \"None\" to turn this off", default="normalize.edgemean", guitype='combobox', choicelist='re_filter_list(dump_processors_list(),\'normalize\')', row=6, col=0, rowspan=1, colspan=2, mode="extraction")
 	parser.add_argument("--invert",action="store_true",help="If writing outputt inverts pixel intensities",default=False, guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode="extraction")
@@ -80,7 +80,7 @@ Usage: e2RCTboxer.py untilted.hdf tilted.hdf options.
 	logid=E2init(sys.argv,options.ppid)
 	
 	# The RCT DB needs to be accessible, anywhere
-	rctdb = db_open_dict(EMBOXERRCT_DB)
+	rctdb = js_open_dict(EMBOXERRCT_DB)
 	
 	# Get and set the boxsize
 	cache_box_size = True
@@ -105,7 +105,7 @@ Usage: e2RCTboxer.py untilted.hdf tilted.hdf options.
 		rctboxer.load_untilt_image(args[0])		# Load the untilted image
 		rctboxer.load_tilt_image(args[1])		# Load the tilted image
 		rctboxer.init_control_pannel()
-		rctboxer.init_control_pannel_tools()			# Initialize control pannel tools, this needs to be done last as loaded data maybe be used
+		rctboxer.init_control_pannel_tools()			# Initialize control panel tools, this needs to be done last as loaded data maybe be used
 		application.execute()
 	
 	# Clean up
@@ -120,8 +120,8 @@ class RCTprocessor:
 		self.args = args
 		self.options = options
 			
-	def write_particles(self, database="bdb:e2boxercache"):
-		db = db_open_dict(database+"#quality")
+	def write_particles(self, database="e2boxercache.json"):
+		db = js_open_dict(database+"#quality")
 		db['suffix'] = self.options.suffix
 		db['extension'] = os.path.splitext(self.args[0])[-1]
 		
