@@ -33,11 +33,16 @@
  *
  * */
 
+
 #include "pointarray.h"
 #include "util.h"
 #include "vec3.h"
 #include <vector>
 #include <cstring>
+
+#ifdef __APPLE__
+	typedef unsigned int uint;
+#endif	//__APPLE__
 
 using namespace EMAN;
 
