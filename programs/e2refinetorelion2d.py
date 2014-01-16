@@ -319,10 +319,10 @@ for option1 in optionList:
 		s = s + " --ctf_intact_first_peak"
 	elif option1 == "numclasses":
 		s = s + " --K " + str(options.numclasses)
-	elif option1 == "oversampling":
-		s = s + " --oversampling " + str(options.oversampling)
+#	elif option1 == "oversampling":
+#		s = s + " --oversampling " + str(options.oversampling)
 	elif option1 == "inplaneang":
-		s = s + " --psi_step " + str((2 ** int(options.oversampling)) * options.inplaneang)
+		s = s + " --psi_step " + str((2 ** 1) * options.inplaneang)
 	elif option1 == "offsetrange":
 		s = s + " --offset_range " + str(options.offsetrange)
 	elif option1 == "offsetstep":
