@@ -209,8 +209,9 @@ namespace EMAN
 		 *  @param mapc - coefficient for map energy
 		 *  @param map - EMData representing map to match/fit
 		 */
-		double dist0, distc, angc, dihed0, dihedc, mapc;
+		double dist0, distc, angc, dihed0, dihedc, mapc,apix;
 		EMData *map;
+		EMData *gradx,*grady,*gradz;
 		vector<Vec3f> oldshifts;
 	};
 }

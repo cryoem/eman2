@@ -108,6 +108,8 @@ PointArray::PointArray()
 	dist=0;
 	ang=0;
 	dihed=0;
+	
+	map=gradx=grady=gradz=0;
 }
 
 PointArray::PointArray( int nn)
@@ -118,6 +120,7 @@ PointArray::PointArray( int nn)
 	dist=0;
 	ang=0;
 	dihed=0;
+	map=gradx=grady=gradz=0;
 }
 
 PointArray::~PointArray()
@@ -131,6 +134,10 @@ PointArray::~PointArray()
 	if (dist) free(dist);
 	if (ang) free(ang);
 	if (dihed) free(dihed);
+	if (map!=0) delete map;
+	if (gradx!=0) delete gradx;
+	if (grady!=0) delete grady;
+	if (gradz!=0) delete gradz;
 }
 
 void PointArray::zero()
@@ -1071,7 +1078,7 @@ void PointArray::sim_updategeom() {
 double PointArray::sim_potential() {
 	double ret=0;
 	sim_updategeom();
-	for (int i=0; i<n; i++) ret+=sim_pointpotential(dist[i],ang[i],dihed[i]);
+	for (uint i=0; i<n; i++) ret+=sim_pointpotential(dist[i],ang[i],dihed[i]);
 	
 	return ret/n;
 }
@@ -1104,6 +1111,7 @@ double PointArray::sim_potentiald(int i) {
 	if (std::isnan(dihed)) dihed=dihed0;
 	if (std::isnan(ang)) ang=0;
 	
+	if (map && mapc) return sim_pointpotential(dist,ang,dihed)-mapc*map->sget_value_at_interp(points[i]*apix,points[i+1]*apix,points[i+2]*apix);
 	return sim_pointpotential(dist,ang,dihed);
 }
 
@@ -1286,7 +1294,19 @@ void PointArray::sim_set_pot_parms(double pdist0,double pdistc,double pangc, dou
 	dihed0=pdihed0;
 	dihedc=pdihedc;
 	mapc=pmapc;
-	map=pmap;
+	if (pmap!=0 && pmap!=map) {
+		if (map!=0) delete map;
+		if (gradx!=0) delete gradx;
+		if (grady!=0) delete grady;
+		if (gradz!=0) delete gradz;
+		
+		map=pmap;
+		apix=map->get_attr("apix_x");
+// 		gradx=map->process("math.edge.xgradient");  // we compute the gradient to make the minimization easier
+// 		grady=map->process("math.edge.ygradient");
+// 		gradz=map->process("math.edge.zgradient");
+	}
+		
 }
 
 void PointArray::sort_by_axis(int axis)
