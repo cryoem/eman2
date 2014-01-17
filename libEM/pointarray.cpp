@@ -134,7 +134,7 @@ PointArray::~PointArray()
 	if (dist) free(dist);
 	if (ang) free(ang);
 	if (dihed) free(dihed);
-	if (map!=0) delete map;
+//	if (map!=0) delete map;
 	if (gradx!=0) delete gradx;
 	if (grady!=0) delete grady;
 	if (gradz!=0) delete gradz;
@@ -1078,8 +1078,13 @@ void PointArray::sim_updategeom() {
 double PointArray::sim_potential() {
 	double ret=0;
 	sim_updategeom();
-	for (uint i=0; i<n; i++) ret+=sim_pointpotential(dist[i],ang[i],dihed[i]);
 	
+	if (map &&mapc) {
+		for (uint i=0; i<n; i++) ret+=sim_pointpotential(dist[i],ang[i],dihed[i])-mapc*map->sget_value_at_interp(points[i]/apix+map->get_xsize()/2,points[i+1]/apix+map->get_ysize()/2,points[i+2]/apix+map->get_zsize()/2);
+	}
+	else {
+		for (uint i=0; i<n; i++) ret+=sim_pointpotential(dist[i],ang[i],dihed[i]);
+	}
 	return ret/n;
 }
 
@@ -1108,10 +1113,16 @@ double PointArray::sim_potentiald(int i) {
 	else dihed=acos(cr1.dot(cr2)/(denom)); 
 
 //	if (std::isnan(dist) || std::isnan(ang) || std::isnan(dihed)) printf("%d\t%g\t%g\t%g\t%g\t%g\t%g\n",i,dist,ang,dihed,b.length(),c.length(),b.dot(c)/(dist*c.length()));
-	if (std::isnan(dihed)) dihed=dihed0;
-	if (std::isnan(ang)) ang=0;
+ 	if (std::isnan(dihed)) dihed=dihed0;
+ 	if (std::isnan(ang)) ang=0;
+// 	if (std::isnan(dist)) dist=3.3;
+//	if (isnan(dihed)) dihed=dihed0;
+//	if (isnan(ang)) ang=0;
 	
-	if (map && mapc) return sim_pointpotential(dist,ang,dihed)-mapc*map->sget_value_at_interp(points[i]*apix,points[i+1]*apix,points[i+2]*apix);
+	if (map && mapc) {
+//		printf("%f\n",map->sget_value_at_interp(points[i]/apix+map->get_xsize()/2,points[i+1]/apix+map->get_ysize()/2,points[i+2]/apix+map->get_zsize()/2));
+		return sim_pointpotential(dist,ang,dihed)-mapc*map->sget_value_at_interp(points[i]/apix+map->get_xsize()/2,points[i+1]/apix+map->get_ysize()/2,points[i+2]/apix+map->get_zsize()/2);
+	}
 	return sim_pointpotential(dist,ang,dihed);
 }
 
@@ -1226,7 +1237,7 @@ void PointArray::sim_minstep_seq(double meanshift) {
 			points[i*4]+=shift[0]*stepadj;
 			points[i*4+1]+=shift[1]*stepadj;
 			points[i*4+2]+=shift[2]*stepadj;
-//			printf("%d. %1.4g -> %1.4g\n",i,pot,pots);
+//			printf("%d. %1.4g -> %1.4g  %1.3g %1.3g %1.3g %1.3g\n",i,pot,pots,shift[0],shift[1],shift[2],stepadj);
 //			if (potential()>p2) printf("%d. %1.4g %1.4g\t%1.4g %1.4g\n",i,pot,pots,p2,potential());
 //		}
 	}
@@ -1295,7 +1306,7 @@ void PointArray::sim_set_pot_parms(double pdist0,double pdistc,double pangc, dou
 	dihedc=pdihedc;
 	mapc=pmapc;
 	if (pmap!=0 && pmap!=map) {
-		if (map!=0) delete map;
+//		if (map!=0) delete map;
 		if (gradx!=0) delete gradx;
 		if (grady!=0) delete grady;
 		if (gradz!=0) delete gradz;
