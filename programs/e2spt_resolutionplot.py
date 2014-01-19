@@ -60,9 +60,10 @@ def main():
 	parser.add_argument("--ref", type=str, help="Volume that will be 'static' (the 'reference' to which volumes in --input will be aligned to). The format MUST be '.hdf' or '.mrc' ", default=None)
 	parser.add_argument("--output", type=str, help="""Name for the .txt file that will contain the FSC data. If not specified, a default name will be used.""", default=None)
 
-	parser.add_argument("--sym", type=str, default='c1', help = """Will symmetrize --ref and limit alignment of other structure --input against it to searching the asymmetric unit only. 
-								Then, after alignment, --input will be symmetrized as well, and the FSC will be calculated. 
-								Note that this will only work IF --ref is ALREADY aligned to the symmetry axis as defined by EMAN2.""")
+
+	parser.add_argument("--symali", type=str, default='c1', help = """Will pass the value to --sym for alignment with e2spt_classaverage.py""")
+
+	parser.add_argument("--symmap", type=str, default='c1', help = """Will symmetrize --ref AND pass --sym to e2spt_classaverage.py""")
 	
 	parser.add_argument("--maskali",type=str,help="""Mask processor applied to particles 
 		before alignment. Default is mask.sharp:outer_radius=-2""", default="mask.sharp:outer_radius=-2")
@@ -159,6 +160,8 @@ def main():
 	
 	from e2spt_classaverage import sptmakepath
 	options = sptmakepath(options,'sptres')
+
+	print '\n\nafter making path, options.path is', options.path
 	
 	#print "Returned options are of type", type(options)
 	#print "\n\n\nand are", options
@@ -185,16 +188,20 @@ def main():
 		sys.exit()
 	
 	elif options.align:
-		if options.sym and options.sym is not 'c1' and options.sym is not 'C1':		
+		print '\n\nI will align'
+		if options.symmap and options.symmap is not 'c1' and options.symmap is not 'C1':		
 			ref = EMData(options.ref,0)
 			ref = symmetrize(ref,options)
 			options.ref = options.path + '/' + os.path.basename(options.ref).replace('.','_' + options.sym + '.')
 			ref.write_image(options.ref,0)
 		
 		ptclali = alignment(options)
+		
+		print '\n\nthe returned path for ali ptcl is', ptclali
 		inputbackup = options.input
 		options.input = ptclali
 		
+		print '\n\nwill get fsc'
 		getfscs(options)
 
 		if options.mirror:
@@ -221,7 +228,8 @@ def main():
 def getfscs(options):
 	
 	options.input
-	print "options.input is", options.input
+	print "\n inside getfscs options.input is", options.input
+	print 'and the current directory is', os.getcwd()
 	fyle = 'alignment/' + options.input.split('/')[-1]
 	
 	
@@ -247,11 +255,11 @@ def getfscs(options):
 		ptcl = EMData( fyle ,i)
 		ref = EMData(options.ref,0)
 		fscfilename = path + '/' + options.output.replace('.txt','_' + str(i).zfill(len(str(n))) + '.txt')
-		if options.sym and options.sym is not 'c1' and options.sym is not 'C1':
+		if options.symmap and options.symmap is not 'c1' and options.symmap is not 'C1':
 			ptcl = symmetrize(ptcl,options) 
 			ref = symmetrize(ref,options)
 			#fscfilename = options.output.replace('.txt','_' + str(i).zfill(len(str(n))) + '_' + options.sym + '.txt')
-			fscfilename = fscfilename.replace('.txt', '_' + options.sym + '.txt')
+			fscfilename = fscfilename.replace('.txt', '_' + options.symmap + '.txt')
 		
 		if options.maskfsc:
 		
@@ -297,12 +305,12 @@ def alignment(options):
 	aligner=aligner.split(':')
 	newaligner=''
 		
-	if 'sym='+options.sym not in aligner:
+	if 'sym='+options.symali not in aligner:
 		
 		for element in aligner:
 			newElement = element
 			if 'sym' in element:
-				newElement='sym=' +options.sym
+				newElement='sym=' +options.symali
 			newaligner=newaligner + newElement + ":"
 		
 		if newaligner[-1] == ':':
@@ -323,7 +331,7 @@ def alignment(options):
 	#print "\n\nalign and its type are", options.align, type(options.align)
 	#print "\n\nralign is type are", options.ralign, type(options.ralign)
 	
-	alicmd = 'cd ' + options.path + ' && e2spt_classaverage.py --search=' + str(options.search) + ' --searchfine=' + str(options.searchfine) + '--path=alignment --input=../' + str(options.input) + ' --output=' + str(alivolfile) + ' --ref=../' + str(options.ref) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + str(options.maskali) + ' --lowpass=' + str(options.lowpass) + ' --parallel=' + str(options.parallel) + ' --aligncmp=' + str(options.aligncmp) + ' --raligncmp=' + str(options.raligncmp) + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + str(options.normproc) + ' --sym=' + str(options.sym) + ' --breaksym'
+	alicmd = 'cd ' + options.path + ' && e2spt_classaverage.py --search=' + str(options.search) + ' --searchfine=' + str(options.searchfine) + ' --path=alignment --input=../' + str(options.input) + ' --output=' + str(alivolfile) + ' --ref=../' + str(options.ref) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + str(options.maskali) + ' --lowpass=' + str(options.lowpass) + ' --parallel=' + str(options.parallel) + ' --aligncmp=' + str(options.aligncmp) + ' --raligncmp=' + str(options.raligncmp) + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + str(options.normproc) + ' --sym=' + str(options.symali) + ' --breaksym'
 	
 	if options.radius:
 		alicmd += ' --radius=' + str(options.radius)
@@ -365,7 +373,7 @@ def calcfsc(v1,v2,fscfilename,options):
 		
 
 def symmetrize(vol,options):
-	sym = options.sym
+	sym = options.symmap
 	xf = Transform()
 	xf.to_identity()
 	nsym=xf.get_nsym(sym)
