@@ -173,8 +173,8 @@ def main():
 	
 	rootpath = os.getcwd()
 	
-	if rootpath not in options.path:
-		options.path = rootpath + '/' + options.path
+	#if rootpath not in options.path:
+	#	options.path = rootpath + '/' + options.path
 		
 	randptcls = {}
 	
@@ -345,6 +345,9 @@ def main():
 				randstackname = retrand[-1]
 				
 				simptclsname = options.path + '/simptcls.hdf'
+				
+				print "\n\n\n\n\n\(e2spt_simulation) before subtomosim, simptclsname is", simptclsname
+				print "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS\n\n\n\n\n\n\n\n"
 				if not options.nosim:
 					subtomosim(options,randptcls,simptclsname)		
 				else:
@@ -570,8 +573,8 @@ def randomizer(options, model, tag):
 		if options.verbose:
 			print "The random transform applied to it was", random_transform
 			
-		if options.finalboxise:
-			if int(b['nx']) != int(options.finalboxsze) or int(b['ny']) != int(options.finalboxsze) or int(b['nz']) != int(options.finalboxsze):
+		if options.finalboxsize:
+			if int(b['nx']) != int(options.finalboxsize) or int(b['ny']) != int(options.finalboxsize) or int(b['nz']) != int(options.finalboxsize):
 				
 				
 				clipcmdf = 'e2proc3d.py ' + randstackname + ' ' + randstackname + ' --clip=' + str(options.finalboxsize)
@@ -629,7 +632,9 @@ and recounstructs a new 3D volume from the simulated tilt series.
 '''	
 def subtomosim(options,ptcls,outname):
 	#print "INSIDE SUBTOMOSIM"
-
+	
+	print "\n\n\n\n\n(e2spt_simulation) Outname received in subtomosim", outname
+	print "OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO\n\n\n\n\n\n"	
 	'''
 	Initialize parallelism if being used
 	'''
@@ -675,8 +680,9 @@ def subtomosim(options,ptcls,outname):
 	#print "From outname", outname
 	ii=0
 	#>>for pn in range(len(results)):
+	finaloutname = outname
 	for result in results:
-		finaloutname = outname
+		
 		key = result.keys()[0]
 		
 		#if options.path not in outname:
@@ -811,7 +817,11 @@ class SubtomoSimTask(JSTask):
 																	#px is negative. With negative alt [left end of the ice down, right end up], 
 																	#dz should be negative.
 			defocus = options.defocus + dz
-					
+			
+			
+			
+			#prj = image.process("misc.directional_sum",{"axis":"z"})
+				
 			prj = image.project("standard",t)
 			prj.set_attr('xform.projection',t)
 			prj['apix_x']=apix
@@ -836,7 +846,7 @@ class SubtomoSimTask(JSTask):
 				
 			prj_fft = prj.do_fft()
 			
-			print "Sizes of prj and prj_ftt are", prj['nx'],prj['ny'],prj_fft['nx'],prj_fft['ny']
+			#print "Sizes of prj and prj_ftt are", prj['nx'],prj['ny'],prj_fft['nx'],prj_fft['ny']
 		
 			if options.negativecontrast:
 				prj_fft.mult(-1)								#Reverse the contrast, as in "authentic" cryoEM data		
@@ -872,6 +882,13 @@ class SubtomoSimTask(JSTask):
 					
 					prj_r.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.25})
 					prj_r.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.75})
+					
+					fractionationfactor = 61.0/nslices		#At snr = 10, simulated subtomograms look like empirical ones for +-60 deg data collection range
+															#using 2 deg tilt step. If 61 slices go into each subtomo, then fractionation factor
+															#Will be 1. If nslices is > 61 the signal in each slice will be diluted.
+															#If nslices < 1, the signal in each slice will be enhanced. In the end, regardless of the nslices value, 
+															#subtomograms will always have the same amount of signal.
+					prj_r.mult( fractionationfactor )
 					prj_r.add(noise)
 			
 				elif options.snr:
