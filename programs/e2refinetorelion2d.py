@@ -49,7 +49,7 @@ parser.add_argument("--ignoretofirstpeak", action="store_true", help="(T/F)Ignor
 parser.add_header(name="optimisation", help="Options in this section are Optimisation-related", title="---Optimisation Options---", row=7, col=0, rowspan=1, colspan=3)
 parser.add_argument("--numiter", type=int, help="# of iterations to refine", default=25, guitype='intbox',row=8, col=0, rowspan=1, colspan=1 )
 parser.add_argument("--regparam", type=float, help="Regularization Parameter T (weights experimental data vs. prior", default=1.0, guitype='floatbox',row=8, col=1, rowspan=1, colspan=1 )
-parser.add_argument("--imagemaskd", type=float, help="Diameter of the image mask", default=-1, guitype='floatbox',row=9, col=0, rowspan=1, colspan=1 )
+parser.add_argument("--particle_mask_diameter", type=float, help="Diameter of the soft circular image mask (in Angstroms)", default=-1, guitype='floatbox',row=9, col=0, rowspan=1, colspan=1 )
 parser.add_argument("--maskzeroes", action="store_true", help="(T/F) For individual particles, the area outside a circle with the radius of the particle will be set to zeros prior to taking the Fourier transform", default=False, guitype='boolbox', row=9, col=1, rowspan=1, colspan=1)
 parser.add_argument("--solventmask",type=str, help="Location of the mask to be used", guitype='filebox',default="", browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=10, col=0, rowspan=2, colspan=2)
 #Sampling Options
@@ -291,8 +291,8 @@ for option1 in optionList:
 	if option1 == "echo":
 		echo=True
 for option1 in optionList:
-	if option1 == "imagemaskd":
-		s = s + " --particle_diameter " + str(options.imagemaskd)
+	if option1 == "particle_mask_diameter":
+		s = s + " --particle_diameter " + str(options.particle_mask_diameter)
 	elif option1 == "numiter":
 		s = s + " --iter " + str(options.numiter)
 	elif option1 == "regparam":
