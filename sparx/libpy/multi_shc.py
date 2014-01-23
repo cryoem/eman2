@@ -42,41 +42,32 @@ def mult_transform(v1, v2):
 	return [ T.get_params("spider")["phi"], T.get_params("spider")["theta"], T.get_params("spider")["psi"], T.get_params("spider")["tx"], T.get_params("spider")["ty"]  ]
 
 
-def wrap_rotation_between_anglesets(ang1, ang2):
-	from utilities import rotation_between_anglesets
-	
-	phi, theta, psi = rotation_between_anglesets(ang1, ang2)
-	return [phi, theta, psi, 0.0, 0.0]
-
-
 def orient_params(params, indexes=None):
+	from utilities import rotation_between_anglesets
+	from pixel_error import angle_diff
+
 	m = len(params)
 	n = len(params[0])
 
 	if indexes == None:
 		indexes = range(n)
-	
+
 	for i in xrange(1,m):
 		cmp_par_i = []
 		cmp_par_0 = []
 		for j in indexes:
 			cmp_par_i.append(params[i][j])
 			cmp_par_0.append(params[0][j])
-		rot = wrap_rotation_between_anglesets(cmp_par_i, cmp_par_0)
+		t1,t2,t3 = rotation_between_anglesets(cmp_par_i, cmp_par_0)
+		rot = [t1, t2, t3, 0.0, 0.0]
 		for j in xrange(n):
 			params[i][j] = mult_transform(params[i][j], rot)
 		# mirror checking
-		psi_diff = 0.0
-		for j in indexes:
-			t = abs(params[i][j][2] - params[0][j][2]) % 360.0
-			if t > 180.0:
-				t = 360.0 - t
-			psi_diff += t
-		if (psi_diff / len(indexes) > 90.0):
+		psi_diff = angle_diff( [params[i][j][2] for j in indexes], [params[0][j][2] for j in indexes] )
+		if(abs(psi_diff-180.0) <90.0):
+			#mirror
 			for j in xrange(n):
 				params[i][j][2] = (params[i][j][2] + 180.0) % 360.0
-				params[i][j][3] = -params[i][j][3]   # ? shift
-				params[i][j][4] = -params[i][j][4]   # ? shift
 
 
 def shuffle_configurations(params):
@@ -91,32 +82,31 @@ def shuffle_configurations(params):
 		shuffle(src)
 		for j in xrange(m):
 			new_params[j][i] = params[src[j]][i]
-	
+
 	return new_params
 
 
 def calculate_matrix_rot(projs):
+	from utilities import rotation_between_anglesets
 	sc = len(projs)
-	matrix_rot  = [0]*sc
-	for i in xrange(sc):
-		matrix_rot [i] = [0]*i
+	matrix_rot  = [[[0.0,0.0,0.0,0.0,0.0] for i in xrange(sc)] for k in xrange(sc)]
 	for i in xrange(sc):
 		for j in xrange(i):
-			matrix_rot[i][j] = wrap_rotation_between_anglesets(projs[i], projs[j])
+			t1, t2, t3 = rotation_between_anglesets(projs[i], projs[j])
+			matrix_rot[i][j] = [t1, t2, t3, 0.0, 0.0]
 	return matrix_rot
 
 
 # returns subset_for_threshold, subset_for_minimal_size[, threshold_for_thr_subset, threshold_for_min_subset]
 def find_common_subset_3(projs, target_threshold, minimal_subset_size, thresholds=False):
 	from global_def import Util
-	
+
 	n = len(projs[0])
 	sc = len(projs)
 
 	subset = range(n)
 
-	if minimal_subset_size > n:
-		minimal_subset_size = n
+	minimal_subset_size = min( minimal_subset_size, n)
 
 	res_thr_subset  = None
 	res_size_subset = None
@@ -161,7 +151,7 @@ def find_common_subset_3(projs, target_threshold, minimal_subset_size, threshold
 	if res_size_subset == None:
 		res_size_subset = res_thr_subset
 		error_size_subset = error_thr_subset
-	
+
 	if thresholds:
 		return res_thr_subset, res_size_subset, error_thr_subset, error_size_subset
 	return res_thr_subset, res_size_subset
@@ -181,19 +171,19 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 	from time         import time
 	from random       import shuffle
 
-	ir = ali3d_options.ir
-	rs = ali3d_options.rs
-	ou = ali3d_options.ou
-	xr = ali3d_options.xr
-	yr = ali3d_options.yr
-	ts = ali3d_options.ts
-	an = ali3d_options.an
-	sym = ali3d_options.sym
-	delta = ali3d_options.delta
+	ir     = ali3d_options.ir
+	rs     = ali3d_options.rs
+	ou     = ali3d_options.ou
+	xr     = ali3d_options.xr
+	yr     = ali3d_options.yr
+	ts     = ali3d_options.ts
+	an     = ali3d_options.an
+	sym    = ali3d_options.sym
+	delta  = ali3d_options.delta
 	center = ali3d_options.center
-	maxit = ali3d_options.maxit
-	CTF = ali3d_options.CTF
-	ref_a = ali3d_options.ref_a
+	maxit  = ali3d_options.maxit
+	CTF    = ali3d_options.CTF
+	ref_a  = ali3d_options.ref_a
 
 	if mpi_comm == None:
 		mpi_comm = MPI_COMM_WORLD
@@ -208,7 +198,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 
 	if myid == main_node:
 		log.add("Start ali3d_multishc")
-	
+
 	if number_of_proc < number_of_runs:
 		ERROR("number_of_proc < number_of_runs","ali3d_multishc")
 	
@@ -343,17 +333,17 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 					peak, pixel_error, checked_refs, iref = shc(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step])
 					# -------- gather results to root
 					vector_assigned_refs = wrap_mpi_gatherv([iref], 0, mpi_subcomm)
-					vector_previousmax = wrap_mpi_gatherv([data[im].get_attr("previousmax")], 0, mpi_subcomm)
-					vector_xformprojs  = wrap_mpi_gatherv([data[im].get_attr("xform.projection")], 0, mpi_subcomm)
-					vector_pixel_error = wrap_mpi_gatherv([pixel_error], 0, mpi_subcomm)
-					vector_checked_ref = wrap_mpi_gatherv([checked_refs], 0, mpi_subcomm)
+					vector_previousmax   = wrap_mpi_gatherv([data[im].get_attr("previousmax")], 0, mpi_subcomm)
+					vector_xformprojs    = wrap_mpi_gatherv([data[im].get_attr("xform.projection")], 0, mpi_subcomm)
+					vector_pixel_error   = wrap_mpi_gatherv([pixel_error], 0, mpi_subcomm)
+					vector_checked_ref   = wrap_mpi_gatherv([checked_refs], 0, mpi_subcomm)
 				else:
 					# -------- no projection assigned, send to root empty lists
 					vector_assigned_refs = wrap_mpi_gatherv([], 0, mpi_subcomm)
-					vector_previousmax = wrap_mpi_gatherv([], 0, mpi_subcomm)
-					vector_xformprojs  = wrap_mpi_gatherv([], 0, mpi_subcomm)
-					vector_pixel_error = wrap_mpi_gatherv([], 0, mpi_subcomm)
-					vector_checked_ref = wrap_mpi_gatherv([], 0, mpi_subcomm)
+					vector_previousmax   = wrap_mpi_gatherv([], 0, mpi_subcomm)
+					vector_xformprojs    = wrap_mpi_gatherv([], 0, mpi_subcomm)
+					vector_pixel_error   = wrap_mpi_gatherv([], 0, mpi_subcomm)
+					vector_checked_ref   = wrap_mpi_gatherv([], 0, mpi_subcomm)
 				# -------- merge results
 				if mpi_subrank == 0:
 					used_refs = set()
@@ -556,7 +546,6 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, number_of_runs, finfo=
 	dp = t1.get_params("spider")
 	if finfo:
 		finfo.write("Image id: %6d\n"%(ID))
-		#finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, sxo, syo))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
 		finfo.flush()
 
@@ -567,12 +556,12 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, number_of_runs, finfo=
 	number_of_checked_refs = 0
 	peak = 0.0
 	for i in xrange(peaks_count):
-		ang = peaks[i*7+0]
-		sxs = peaks[i*7+1]
-		sys = peaks[i*7+2]
+		ang    = peaks[i*7+0]
+		sxs    = peaks[i*7+1]
+		sys    = peaks[i*7+2]
 		mirror = peaks[i*7+3]
-		iref = int(peaks[i*7+4])
-		peak = peaks[i*7+5]
+		iref   = int(peaks[i*7+4])
+		peak   = peaks[i*7+5]
 		checked_refs = int(peaks[i*7+6])
 		number_of_checked_refs += checked_refs
 		#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
@@ -594,7 +583,6 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, number_of_runs, finfo=
 			s2x   = sxb - dp["tx"]
 			s2y   = syb - dp["ty"]
 
-		#set_params_proj(data, [phi, theta, psi, s2x, s2y])
 		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 		t2.set_trans(Vec2f(-s2x, -s2y))
 		if i == 0:
@@ -606,14 +594,14 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, number_of_runs, finfo=
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 			finfo.flush()
-	
+
 	# remove old xform.projection
 	i = max(peaks_count, 1)
 	while data.has_attr("xform.projection" + str(i)):
 		data.del_attr("xform.projection" + str(i))
 		i += 1
-	
-	# -------- remove weights
+
+# -------- remove weights
 # 	data.del_attr("weight")
 # 	for i in xrange(1, 50):
 # 		if data.has_attr("weight" + str(i)):
@@ -635,19 +623,19 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None,
 	from global_def import Util
 	from time import time
 
-	ir = ali3d_options.ir
-	rs = ali3d_options.rs
-	ou = ali3d_options.ou
-	xr = ali3d_options.xr
-	yr = ali3d_options.yr
-	ts = ali3d_options.ts
-	an = ali3d_options.an
-	sym = ali3d_options.sym
-	delta = ali3d_options.delta
+	ir     = ali3d_options.ir
+	rs     = ali3d_options.rs
+	ou     = ali3d_options.ou
+	xr     = ali3d_options.xr
+	yr     = ali3d_options.yr
+	ts     = ali3d_options.ts
+	an     = ali3d_options.an
+	sym    = ali3d_options.sym
+	delta  = ali3d_options.delta
 	center = ali3d_options.center
-	maxit = ali3d_options.maxit
-	CTF = ali3d_options.CTF
-	ref_a = ali3d_options.ref_a
+	maxit  = ali3d_options.maxit
+	CTF    = ali3d_options.CTF
+	ref_a  = ali3d_options.ref_a
 
 	if mpi_comm == None:
 		mpi_comm = MPI_COMM_WORLD

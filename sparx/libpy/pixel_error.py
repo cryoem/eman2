@@ -148,7 +148,7 @@ def angle_diff(angle1, angle2):
 
 def angle_error(ang1, ang2, delta_ang=0.0):
 	'''
-	This function calculate the error (variance) between two sets of angles after delta_ang (angle difference) is added to the
+	This function calculates the error (variance) between two sets of angles after delta_ang (angle difference) is added to the
 	first sets. When the angle difference (delta_ang) is the true difference, this function will return maximum error.
 	'''
 	from math import cos, sin, pi, radians

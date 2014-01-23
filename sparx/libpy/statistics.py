@@ -10377,8 +10377,8 @@ def pixel_error_angle_sets(agls1, agls2, Threshold=10.e23, r=1.0):
 	if N < 2:
 		print 'At least two orientations are required in each list'
 		return [-1]
-		
-	
+
+
 	##############################################################################################
 	# Find overall rotation between two angle sets, and then apply it to one of the angle sets
 
