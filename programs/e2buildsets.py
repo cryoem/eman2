@@ -32,6 +32,7 @@
 #
 import os, re
 from EMAN2 import *
+import traceback
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -58,6 +59,12 @@ def main():
 	parser.add_argument("--setname",type=str,help="Name of the stack to build", default='my_stack', guitype='strbox',row=2, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--filetype",help="Type of file",default='lst',guitype='combobox',choicelist='["lst","bdb"]',row=3,col=0,rowspan=1,colspan=1)
 	parser.add_argument("--excludebad",action="store_true",help="Exclude bad particles.",default=False, guitype='boolbox',row=4,col=0,rowspan=1,colspan=1)
+	parser.add_argument("--allparticles",action="store_true",help="Will process all particle stacks stored in the particles subdirectory (if specified, list of files will be ignored)",default=False, guitype='boolbox',row=1, col=0, mode='autofit,tuning,genoutp,gensf')
+	parser.add_argument("--withflipped",action="store_true",help="Only include images with phase-flipped counterparts!",default=False,guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode='genoutp[True]')
+	parser.add_argument("--minptcl",type=int,help="Files with fewer than the specified number of particles will be skipped",default=0,guitype='intbox', row=2, col=0, mode='autofit,tuning,genoutp,gensf')
+	parser.add_argument("--minqual",type=int,help="Files with a quality value lower than specified will be skipped",default=0,guitype='intbox', row=2, col=1, mode='autofit,tuning,genoutp,gensf')
+	parser.add_argument("--mindf",type=int,help="Files with a defocus lower than specified will be skipped",default=0,guitype='floatbox', row=2, col=1, mode='autofit,tuning,genoutp,gensf')
+	parser.add_argument("--maxdf",type=int,help="Files with a defocus higher than specified will be skipped",default=20.0,guitype='floatbox', row=2, col=1, mode='autofit,tuning,genoutp,gensf')
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
@@ -68,12 +75,56 @@ def main():
 		print "Only BDB and LST filetypes are accepted"
 		sys.exit(1)
 
-	# refactor the arguments in case someone gave us a full specification
-	for i in range(len(args)):
-		args[i]=base_name(args[i]).replace("bdb:","").split("_ctf")[0]	# This should give us the true base name
+	# If allparticles, list of files is ignored !
+	if options.allparticles:
+		args=[base_name("particles/"+i) for i in os.listdir("particles") if "__" not in i and i[0]!="." and ".hed" not in i ]
+		args.sort()
+		print "%d particle stacks identified"%len(args)
+	else :
+		# refactor the arguments in case someone gave us a full specification
+		for i in range(len(args)):
+			args[i]=base_name(args[i]).replace("bdb:","").split("_ctf")[0]	# This should give us the true base name
 
-	print args
+	try:
+		nimg = EMUtil.get_image_count("particles/{}__ptcls.hdf".format(args[0]))
+		basetype="__ptcls"
+	except :
+		try:
+			nimg = EMUtil.get_image_count("particles/{}_ptcls.hdf".format(args[0]))
+			basetype="_ptcls"
+		except:
+			nimg = EMUtil.get_image_count("particles/{}.hdf".format(args[0]))
+			basetype=""
 
+
+	# remove any files that don't have enough particles from the list
+	if options.minptcl>0 :
+		print "Filtering by particle count"
+		args=[i for i in args if imcount("particles/{}{}.hdf".format(i,basetype))>=options.minptcl]
+		if options.verbose: print "{} stacks after minptcl filter".format(len(args))
+
+	# remove files with quality too low
+	if options.minqual>0 :
+		print "Filtering by quality"
+		outargs=[]
+		for i in args:
+			try:
+				if js_open_dict(info_name(i))["quality"]>=options.minqual : outargs.append(i)
+			except:
+				traceback.print_exc()
+				print "Unknown quality for {}, including it".format(info_name(i))
+				outargs.append(i)
+
+		args=outargs
+
+	# remove files without phase flipped particles
+	if options.withflipped :
+		print "Insuring that files have phase flipped particles"
+		ptcls=[i for i in os.listdir("particles") if i[0]!="."]
+		args=[i for i in args if i+"__ctf_flip_hp.hdf"in ptcls or i+"__ctf_flip.hdf" in ptcls]	# Not super-efficient, but functional
+
+	print "%d files to include in processing after filters"%len(args)
+	
 	logid=E2init(sys.argv)
 
 	# identify particle groups present
@@ -115,16 +166,7 @@ def main():
 			lsx[t]=LSXFile("sets/{}{}.lst".format(options.setname,t))
 
 		for f in args:
-			try:
-				nimg = EMUtil.get_image_count("particles/{}__ptcls.hdf".format(f))
-				basetype="__ptcls"
-			except :
-				try:
-					nimg = EMUtil.get_image_count("particles/{}_ptcls.hdf".format(f))
-					basetype="_ptcls"
-				except:
-					nimg = EMUtil.get_image_count("particles/{}.hdf".format(f))
-					basetype=""
+			nimg=EMUtil.get_image_count("particles/{}{}.hdf".format(f,basetype))
 
 			if options.excludebad :
 				try : bad=set(js_open_dict(info_name(f))["sets"]["bad_particles"])
@@ -142,6 +184,9 @@ def main():
 		print "Done - {} particles total".format(totptcl)
 	E2end(logid)
 
+def imcount(fsp):
+	try: return EMUtil.get_image_count(fsp)
+	except: return 0
 
 if __name__ == "__main__":
 	main()
