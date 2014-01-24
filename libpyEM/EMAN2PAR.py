@@ -138,12 +138,12 @@ class EMTaskCustomer:
 			except: print "Error: MPI environment was never established, cannot clean it up"
 
 	def wait_for_server(self,delay=10):
-		print "%s: Server communication failure, sleeping %d secs"%(time.ctime(),delay)
+		print "%s: Server communication failure, sleeping %d secs"%(local_datetime(),delay)
 		time.sleep(delay)
 		try:
 			x=EMDCsendonecom(self.addr,"TEST",None)
 			if (x[0]=="TEST") :
-				print "%s: Server is ok now"%time.ctime()
+				print "%s: Server is ok now"%local_datetime()
 				return
 		except: pass
 
@@ -611,7 +611,7 @@ class EMMpiClient():
 
 	def log(self,s):
 		if self.logfile!=None:
-			self.logfile.write("%s\t%s\n"%(time.ctime(),s))
+			self.logfile.write("%s\t%s\n"%(local_datetime(),s))
 			self.logfile.flush()
 
 	def test(self,verbose):
@@ -1194,11 +1194,11 @@ class EMMpiTaskHandler():
 	def sendcom(self,com,data=None):
 		"""Transmits a command to MPI rank 0 and waits for a single object in reply"""
 		global DBUG
-		if DBUG : self.mpiout.write("{} customer sending {}".format(time.ctime(),com)
+		if DBUG : self.mpiout.write("{} customer sending {}".format(local_datetime(),com))
 		dump((com,data),self.mpifile,-1)
 		self.mpifile.flush()
 
-		if DBUG : self.mpiout.write("{} customer sent".format(time.ctime(),com)
+		if DBUG : self.mpiout.write("{} customer sent".format(local_datetime(),com))
 		return load(self.mpifile)
 
 	def add_task(self,task):
@@ -1218,7 +1218,7 @@ class EMMpiTaskHandler():
 		dump(task,file("%s/%07d"%(self.queuedir,self.maxid),"wb"),-1)
 		ret=self.maxid
 		self.sendcom("NEWJ",self.maxid)
-		if DBUG : self.mpiout.write("{} customer NEWJ complete {}".format(time.ctime(),self.maxid)
+		if DBUG : self.mpiout.write("{} customer NEWJ complete {}".format(local_datetime(),self.maxid))
 
 
 		self.maxid+=1
@@ -1238,7 +1238,7 @@ class EMMpiTaskHandler():
 		"""This returns a (task,dictionary) tuple for a task, and cleans up files"""
 #		print "Retrieve ",taskid
 
-		if DBUG : self.mpiout.write("{} customer results {}".format(time.ctime(),taskid)
+		if DBUG : self.mpiout.write("{} customer results {}".format(local_datetime(),taskid))
 
 		try :
 			task=load(file("%s/%07d"%(self.queuedir,taskid),"rb"))
