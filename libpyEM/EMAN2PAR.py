@@ -800,8 +800,8 @@ class EMMpiClient():
 						# The rank needs data to proceed, we get ("NEED",(file,#|min,max|(#'s)),...)
 						elif r[0]=="NEED" :
 							if verbose>2:
-								print "Task used :",task.data
-								print "rank %d requested :"%rank,r[1]
+								self.log("Task used :%s"%str(task.data))
+								self.log("rank %d requested %s"%(rank,str(r[1])))
 							imgs=filesenum(r[1])		# a generator enumerating all of the required images
 
 							d2s=[]
@@ -833,7 +833,7 @@ class EMMpiClient():
 								sys.stdout.flush()
 								os._exit(1)
 
-							if verbose>1 : print "Send requested data to rank %d"%rank
+							if verbose>1 : self.log("Send requested data to rank %d"%rank)
 
 						# if we got here, the task should be running
 						self.rankjobs[rank]=self.nextjob
