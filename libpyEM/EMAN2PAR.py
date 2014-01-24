@@ -32,6 +32,8 @@
 
 # This file contains functions related to running jobs in parallel in EMAN2
 
+DBUG=False		# If set will dump a bunch of debugging output, normally should be False
+
 import os.path
 import time
 import socket
@@ -1191,9 +1193,12 @@ class EMMpiTaskHandler():
 
 	def sendcom(self,com,data=None):
 		"""Transmits a command to MPI rank 0 and waits for a single object in reply"""
+		global DBUG
+		if DBUG : self.mpiout.write("{} customer sending {}".format(time.ctime(),com)
 		dump((com,data),self.mpifile,-1)
 		self.mpifile.flush()
 
+		if DBUG : self.mpiout.write("{} customer sent".format(time.ctime(),com)
 		return load(self.mpifile)
 
 	def add_task(self,task):
@@ -1213,6 +1218,8 @@ class EMMpiTaskHandler():
 		dump(task,file("%s/%07d"%(self.queuedir,self.maxid),"wb"),-1)
 		ret=self.maxid
 		self.sendcom("NEWJ",self.maxid)
+		if DBUG : self.mpiout.write("{} customer NEWJ complete {}".format(time.ctime(),self.maxid)
+
 
 		self.maxid+=1
 
@@ -1230,6 +1237,8 @@ class EMMpiTaskHandler():
 	def get_results(self,taskid):
 		"""This returns a (task,dictionary) tuple for a task, and cleans up files"""
 #		print "Retrieve ",taskid
+
+		if DBUG : self.mpiout.write("{} customer results {}".format(time.ctime(),taskid)
 
 		try :
 			task=load(file("%s/%07d"%(self.queuedir,taskid),"rb"))
