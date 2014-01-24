@@ -1129,8 +1129,8 @@ class EMMpiTaskHandler():
 		self.maxid=1			# Current task counter, points to the next open number
 		self.completed={}		# set of completed tasks, key is task id, value is completion status
 
-		mpiout=file("%s/mpiout.txt"%self.scratchdir,"w")
-		mpierr=file("%s/mpierr.txt"%self.scratchdir,"w")
+		self.mpiout=file("%s/mpiout.txt"%self.scratchdir,"w")
+		self.mpierr=file("%s/mpierr.txt"%self.scratchdir,"w")
 
 		# Named pipes we use to communicate with rank 0 of the MPI job
 		# Unfortunately this isn't windows compatible as far as I know :^(
@@ -1154,7 +1154,7 @@ class EMMpiTaskHandler():
 		mpiopts=os.getenv("EMANMPIOPTS","-n %d"%ncpus)
 		cmd="mpirun %s e2parallel.py mpiclient --scratchdir=%s %s -v 2 </dev/null"%(mpiopts,self.scratchdir,cache)
 
-		self.mpitask=subprocess.Popen(cmd, stdin=None, stdout=mpiout, stderr=mpierr, shell=True)
+		self.mpitask=subprocess.Popen(cmd, stdin=None, stdout=self.mpiout, stderr=self.mpierr, shell=True)
 
 		self.mpisock.listen(1)
 		self.mpiconn, self.mpiaddr = self.mpisock.accept()
