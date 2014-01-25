@@ -10412,7 +10412,7 @@ def pixel_error_angle_sets(agls1, agls2, Threshold=10.e23, r=1.0):
 			error = max_3D_pixel_error(agls12[i],agls2[i] , r)
 			if error < Threshold:
 				avgPixError12.append([i,error])
-			
+
 	return avgPixError12
 
 def match_lists(l1, l2):

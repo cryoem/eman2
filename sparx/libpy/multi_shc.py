@@ -127,7 +127,7 @@ def find_common_subset_3(projs, target_threshold, minimal_subset_size, threshold
 		for i in xrange(sc):
 			for j in xrange(i):
 				trans_matrix.extend(matrix_rot[i][j][0:3])
-		avg_diff_per_image =  Util.diff_between_matrix_of_3D_parameters_angles(trans_projs, trans_matrix)
+		avg_diff_per_image = Util.diff_between_matrix_of_3D_parameters_angles(trans_projs, trans_matrix)
 		#print avg_diff_per_image
 		max_error = -1.0
 		the_worst_proj = -1
@@ -154,7 +154,7 @@ def find_common_subset_3(projs, target_threshold, minimal_subset_size, threshold
 
 	if thresholds:
 		return res_thr_subset, res_size_subset, error_thr_subset, error_size_subset
-	return res_thr_subset, res_size_subset
+	return res_thr_subset, res_size_subset, avg_diff_per_image
 
 
 # parameters: list of (all) projections | reference volume | ...
@@ -437,7 +437,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				# ------ orientation - begin
 				params_0 = wrap_mpi_bcast(params, mpi_subroots[0], mpi_comm)
 				if mpi_subrank == 0:
-					subset_thr, subset_min = find_common_subset_3([params_0, params], 2.0, len(params)/3)
+					subset_thr, subset_min, avg_diff_per_image = find_common_subset_3([params_0, params], 2.0, len(params)/3)
 					if len(subset_thr) < len(subset_min):
 						subset = subset_min
 					else:
