@@ -98,7 +98,7 @@ def calculate_matrix_rot(projs):
 
 
 # returns subset_for_threshold, subset_for_minimal_size[, threshold_for_thr_subset, threshold_for_min_subset]
-def find_common_subset_3(projs, target_threshold, minimal_subset_size, thresholds=False):
+def find_common_subset_3(projs, target_threshold, minimal_subset_size=3, thresholds=False):
 	from global_def import Util
 
 	n = len(projs[0])
