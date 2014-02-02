@@ -98,7 +98,7 @@ def calculate_matrix_rot(projs):
 
 
 # returns subset_for_threshold, subset_for_minimal_size[, threshold_for_thr_subset, threshold_for_min_subset]
-def find_common_subset_3(projs, target_threshold, minimal_subset_size=3, thresholds=False):
+def find_common_subset_3(projs, target_threshold, minimal_subset_size=3, sym = "c1", thresholds=False):
 	from global_def import Util
 
 	n = len(projs[0])
@@ -114,14 +114,16 @@ def find_common_subset_3(projs, target_threshold, minimal_subset_size=3, thresho
 	error_size_subset = -1
 
 	for iIter in xrange(n-2):
-		projs2 = [0]*sc
-		trans_projs = []
-		for iConf in xrange(sc):
-			projs2[iConf] = []
-			for i in subset:
-				projs2[iConf].append(projs[iConf][i][:])
-				trans_projs.extend(projs[iConf][i][0:5])
-		matrix_rot = calculate_matrix_rot(projs2)
+		if( sym[0] == "d"):		matrix_rot  = [[[0.0,0.0,0.0,0.0,0.0] for i in xrange(sc)] for k in xrange(projs2)]
+		else:
+			projs2 = [0.0]*sc
+			trans_projs = []
+			for iConf in xrange(sc):
+				projs2[iConf] = []
+				for i in subset:
+					projs2[iConf].append(projs[iConf][i][:])
+					trans_projs.extend(projs[iConf][i][0:5])
+			matrix_rot = calculate_matrix_rot(projs2)
 
 		trans_matrix = []
 		for i in xrange(sc):
@@ -179,6 +181,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 	ts     = ali3d_options.ts
 	an     = ali3d_options.an
 	sym    = ali3d_options.sym
+	sym = sym[0].lower() + sym[1:]
 	delta  = ali3d_options.delta
 	center = ali3d_options.center
 	maxit  = ali3d_options.maxit
@@ -437,12 +440,12 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				# ------ orientation - begin
 				params_0 = wrap_mpi_bcast(params, mpi_subroots[0], mpi_comm)
 				if mpi_subrank == 0:
-					subset_thr, subset_min, avg_diff_per_image = find_common_subset_3([params_0, params], 2.0, len(params)/3)
+					subset_thr, subset_min, avg_diff_per_image = find_common_subset_3([params_0, params], 2.0, len(params)/3, sym)
 					if len(subset_thr) < len(subset_min):
 						subset = subset_min
 					else:
 						subset = subset_thr
-					orient_params([params_0, params], subset)
+					if(sym[0] != "d"):  orient_params([params_0, params], subset)
 				params = wrap_mpi_bcast(params, 0, mpi_subcomm)
 				# ------ orientation - end
 
@@ -631,6 +634,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None,
 	ts     = ali3d_options.ts
 	an     = ali3d_options.an
 	sym    = ali3d_options.sym
+	sym = sym[0].lower() + sym[1:]
 	delta  = ali3d_options.delta
 	center = ali3d_options.center
 	maxit  = ali3d_options.maxit
@@ -843,6 +847,7 @@ def volume_reconstruction(data, options, mpi_comm):
 	
 	myid = mpi_comm_rank(mpi_comm)
 	symmetry  = options.sym
+	sym = sym[0].lower() + sym[1:]
 	npad      = options.npad
 	user_func = options.user_func
 	CTF       = options.CTF
