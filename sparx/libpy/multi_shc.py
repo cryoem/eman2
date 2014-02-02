@@ -114,16 +114,15 @@ def find_common_subset_3(projs, target_threshold, minimal_subset_size=3, sym = "
 	error_size_subset = -1
 
 	for iIter in xrange(n-2):
-		if( sym[0] == "d"):		matrix_rot  = [[[0.0,0.0,0.0,0.0,0.0] for i in xrange(sc)] for k in xrange(projs2)]
-		else:
-			projs2 = [0.0]*sc
-			trans_projs = []
-			for iConf in xrange(sc):
-				projs2[iConf] = []
-				for i in subset:
-					projs2[iConf].append(projs[iConf][i][:])
-					trans_projs.extend(projs[iConf][i][0:5])
-			matrix_rot = calculate_matrix_rot(projs2)
+		projs2 = [0.0]*sc
+		trans_projs = []
+		for iConf in xrange(sc):
+			projs2[iConf] = []
+			for i in subset:
+				projs2[iConf].append(projs[iConf][i][:])
+				trans_projs.extend(projs[iConf][i][0:5])
+		if( sym[0] == "d"):		matrix_rot  = [[[0.0,0.0,0.0,0.0,0.0] for i in xrange(sc)] for k in xrange(sc)]
+		else:					matrix_rot = calculate_matrix_rot(projs2)
 
 		trans_matrix = []
 		for i in xrange(sc):
@@ -846,7 +845,7 @@ def volume_reconstruction(data, options, mpi_comm):
 	from utilities import bcast_EMData_to_all, model_circle
 	
 	myid = mpi_comm_rank(mpi_comm)
-	symmetry  = options.sym
+	sym  = options.sym
 	sym = sym[0].lower() + sym[1:]
 	npad      = options.npad
 	user_func = options.user_func
@@ -855,8 +854,8 @@ def volume_reconstruction(data, options, mpi_comm):
 	center    = options.center
 	#=========================================================================
 	# volume reconstruction
-	if CTF: vol = recons3d_4nn_ctf_MPI(myid, data, snr, symmetry=symmetry, npad=npad, mpi_comm=mpi_comm)
-	else:   vol = recons3d_4nn_MPI    (myid, data,      symmetry=symmetry, npad=npad, mpi_comm=mpi_comm)
+	if CTF: vol = recons3d_4nn_ctf_MPI(myid, data, snr, symmetry=sym, npad=npad, mpi_comm=mpi_comm)
+	else:   vol = recons3d_4nn_MPI    (myid, data,      symmetry=sym, npad=npad, mpi_comm=mpi_comm)
 
 	if myid == 0:
 		nx = data[0].get_xsize()
