@@ -1046,6 +1046,16 @@ def get_sym(symmetry):
 
 	return angs
 
+def get_symt(symmetry):
+
+	RA   = Transform()
+	NTot = RA.get_nsym(symmetry)
+	angs = []
+	for j in xrange(NTot):
+		angs.append(RA.get_sym(symmetry, j))
+
+	return angs
+
 def get_textimage(fname):
 	"""	
 		Return an image created from a text file.  The first line of
