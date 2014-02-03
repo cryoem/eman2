@@ -401,10 +401,11 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				for i in all_pixer:
 					if i < 1.0: temp += 1
 				percent_of_pixerr_below_one = (temp * 1.0) / (total_nima * number_of_runs)
-				orient_and_shuffle = ( percent_of_pixerr_below_one > 0.05 )  #  TODO - parameter ?
+				orient_and_shuffle = ( percent_of_pixerr_below_one > 0.3 )  #  TODO - parameter ?
 				terminate          = ( percent_of_pixerr_below_one > 0.9 )  #  TODO - parameter ?
 				log.add("=========================")
 				log.add("Percent of positions with pixel error below 1.0 = ", (int(percent_of_pixerr_below_one*100)), "%")
+				print " orient terminate",orient_and_shuffle,terminate
 			terminate = wrap_mpi_bcast(terminate, main_node, mpi_comm)
 			orient_and_shuffle = wrap_mpi_bcast(orient_and_shuffle, 0, mpi_comm)
 			#=========================================================================
@@ -439,13 +440,21 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				# ------ orientation - begin
 				params_0 = wrap_mpi_bcast(params, mpi_subroots[0], mpi_comm)
 				if mpi_subrank == 0:
+					if(sym[0] == "d"):
+						qtmp = []
+						for kl in xrange(len(params_0)):  qtmp.append(params_0[kl])
+						reduce_dsym_angles(params_0, sym)
+						for kl in xrange(len(params_0)):
+							for lk in xrange(len(params_0[kl])):
+								if(params_0[kl][lk] != qtmp[kl][lk]):  print "reduced  ",params_0[kl][lk],qtmp[kl][lk]
+						reduce_dsym_angles(params, sym)
 					subset_thr, subset_min, avg_diff_per_image = find_common_subset_3([params_0, params], 2.0, len(params)/3, sym)
 					if len(subset_thr) < len(subset_min):
 						subset = subset_min
 					else:
 						subset = subset_thr
 					if(sym[0] != "d"):  orient_params([params_0, params], subset)
-				params = wrap_mpi_bcast(params, 0, mpi_subcomm)
+				if(sym[0] != "d"):  params = wrap_mpi_bcast(params, 0, mpi_subcomm)
 				# ------ orientation - end
 
 				# ------ gather parameters to root
@@ -954,7 +963,7 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 def reduce_dsym_angles(p1, sym):
 	#  works only for d symmetry
 	from utilities import get_symt
-	from EMAN2 import Vec2f
+	from EMAN2 import Vec2f, Transform
 	t = get_symt(sym)
 	ns = int(sym[1:])
 	for i in xrange(len(t)):  t[i] = t[i].inverse()
