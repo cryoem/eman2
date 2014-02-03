@@ -401,7 +401,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				for i in all_pixer:
 					if i < 1.0: temp += 1
 				percent_of_pixerr_below_one = (temp * 1.0) / (total_nima * number_of_runs)
-				orient_and_shuffle = ( percent_of_pixerr_below_one > 0.3 )  #  TODO - parameter ?
+				orient_and_shuffle = ( percent_of_pixerr_below_one > 0.05 )  #  TODO - parameter ?
 				terminate          = ( percent_of_pixerr_below_one > 0.9 )  #  TODO - parameter ?
 				log.add("=========================")
 				log.add("Percent of positions with pixel error below 1.0 = ", (int(percent_of_pixerr_below_one*100)), "%")
@@ -950,3 +950,24 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 
 	return out_params, out_vol, out_peaks
 
+
+def reduce_dsym_angles(p1, sym):
+	#  works only for d symmetry
+	from utilities import get_symt
+	from EMAN2 import Vec2f
+	t = get_symt(sym)
+	ns = int(sym[1:])
+	for i in xrange(len(t)):  t[i] = t[i].inverse()
+
+	for i in xrange(len(p1)):
+		 a = Transform({"type":"spider","phi":p1[i][0], "theta":p1[i][1], "psi":p1[i][2]})
+		 a.set_trans(Vec2f(-p1[i][3], -p1[i][4]))
+		 for l in xrange(len(t)):
+			q = a*t[l]
+			q = q.get_params("spider")
+			if(q["phi"]<360./ns and q["theta"] <= 90.0): break
+		 p1[i][0] = q["phi"]
+		 p1[i][1] = q["theta"]
+		 p1[i][2] = q["psi"]
+		 p1[i][3] = -q["tx"]
+		 p1[i][4] = -q["ty"]
