@@ -441,12 +441,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				params_0 = wrap_mpi_bcast(params, mpi_subroots[0], mpi_comm)
 				if mpi_subrank == 0:
 					if(sym[0] == "d"):
-						qtmp = []
-						for kl in xrange(len(params_0)):  qtmp.append(params_0[kl])
 						reduce_dsym_angles(params_0, sym)
-						for kl in xrange(len(params_0)):
-							for lk in xrange(len(params_0[kl])):
-								if(params_0[kl][lk] != qtmp[kl][lk]):  print "reduced  ",params_0[kl][lk],qtmp[kl][lk]
 						reduce_dsym_angles(params, sym)
 					subset_thr, subset_min, avg_diff_per_image = find_common_subset_3([params_0, params], 2.0, len(params)/3, sym)
 					if len(subset_thr) < len(subset_min):
