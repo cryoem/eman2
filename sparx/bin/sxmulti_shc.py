@@ -34,6 +34,7 @@ def main():
 	parser.add_option("--ref_a",    type="string", default= "S",                help="method for generating the quasi-uniformly distributed projection directions (default S)")
 	parser.add_option("--sym",      type="string", default= "c1",               help="symmetry of the refined structure")
 	parser.add_option("--function", type="string", default="ref_ali3d",         help="name of the reference preparation function (ref_ali3d by default)")
+	parser.add_option("--nruns",    type="int",    default= 3,                  help="number of quasi-independent runs (default=3)")
 	parser.add_option("--npad",     type="int",    default= 2,                  help="padding size for 3D reconstruction (default=2)")
 	#parser.add_option("--MPI",      action="store_true", default=True,          help="whether to use MPI version - this is always set to True")
 	(options, args) = parser.parse_args(sys.argv[1:])
@@ -46,7 +47,7 @@ def main():
 
 	log = Logger(BaseLogger_Files())
 
-	runs_count = 3
+	runs_count = options.nruns
 	mpi_rank = mpi_comm_rank(MPI_COMM_WORLD)
 
 	if mpi_rank == 0:

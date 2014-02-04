@@ -1,4 +1,4 @@
-
+# For some reason these programs get stuck on MPI if I change the order of programs in the file.  Strange, PAP.
 def generate_uneven_projections_directions(count, half_sphere=False, output_filename=None, 
 										   density_ratio_on_poles_and_equator=1.0): 
 	"""
@@ -404,8 +404,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				orient_and_shuffle = ( percent_of_pixerr_below_one > 0.3 )  #  TODO - parameter ?
 				terminate          = ( percent_of_pixerr_below_one > 0.9 )  #  TODO - parameter ?
 				log.add("=========================")
-				log.add("Percent of positions with pixel error below 1.0 = ", (int(percent_of_pixerr_below_one*100)), "%")
-				print " orient terminate",orient_and_shuffle,terminate
+				log.add("Percent of positions with pixel error below 1.0 = ", (int(percent_of_pixerr_below_one*100)), "%","   Shuffling: ",orient_and_shuffle)
 			terminate = wrap_mpi_bcast(terminate, main_node, mpi_comm)
 			orient_and_shuffle = wrap_mpi_bcast(orient_and_shuffle, 0, mpi_comm)
 			#=========================================================================
@@ -617,6 +616,232 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, number_of_runs, finfo=
 
 
 # parameters: list of (all) projections | reference volume | ...
+def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None ):
+
+	from alignment       import Numrinit, prepare_refrings, proj_ali_incore_local, shc
+	from utilities       import model_circle, get_input_from_string, get_params_proj, wrap_mpi_gatherv, wrap_mpi_bcast
+	from mpi             import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
+	from projection      import prep_vol
+	from statistics      import hist_list
+	from applications    import MPI_start_end
+	from filter         import filt_ctf
+	from global_def import Util
+	from time import time
+
+	ir     = ali3d_options.ir
+	rs     = ali3d_options.rs
+	ou     = ali3d_options.ou
+	xr     = ali3d_options.xr
+	yr     = ali3d_options.yr
+	ts     = ali3d_options.ts
+	an     = ali3d_options.an
+	sym    = ali3d_options.sym
+	sym = sym[0].lower() + sym[1:]
+	delta  = ali3d_options.delta
+	center = ali3d_options.center
+	maxit  = ali3d_options.maxit
+	CTF    = ali3d_options.CTF
+	ref_a  = ali3d_options.ref_a
+
+	if mpi_comm == None:
+		mpi_comm = MPI_COMM_WORLD
+
+	if log == None:
+		from logger import Logger
+		log = Logger()
+
+	number_of_proc = mpi_comm_size(mpi_comm)
+	myid           = mpi_comm_rank(mpi_comm)
+	main_node = 0
+
+	if myid == main_node:
+		log.add("Start ali3d_multishc_2")
+
+	xrng        = get_input_from_string(xr)
+	if  yr == "-1":  yrng = xrng
+	else          :  yrng = get_input_from_string(yr)
+	step        = get_input_from_string(ts)
+	delta       = get_input_from_string(delta)
+	lstp = min(len(xrng), len(yrng), len(step), len(delta))
+	if an == "-1":
+		an = [-1] * lstp
+	else:
+		an = get_input_from_string(an)
+
+	first_ring  = int(ir)
+	rstep       = int(rs)
+	last_ring   = int(ou)
+	max_iter    = int(maxit)
+	center      = int(center)
+
+	vol = ref_vol
+	nx      = vol.get_xsize()
+	if last_ring < 0:	last_ring = int(nx/2) - 2
+
+	numr	= Numrinit(first_ring, last_ring, rstep, "F")
+	mask2D  = model_circle(last_ring,nx,nx) - model_circle(first_ring,nx,nx)
+
+	if myid == main_node:
+		list_of_particles = range(len(stack))
+		total_nima = len(list_of_particles)
+	else:
+		list_of_particles = None
+		total_nima = None
+	total_nima = wrap_mpi_bcast(total_nima, main_node, mpi_comm)
+	list_of_particles = wrap_mpi_bcast(list_of_particles, main_node, mpi_comm)
+
+	image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
+	# create a list of images for each node
+	list_of_particles = list_of_particles[image_start: image_end]
+	nima = len(list_of_particles)
+
+	data = [ stack[im] for im in list_of_particles ]
+	for im in xrange(nima):
+		data[im].set_attr('ID', list_of_particles[im])
+		ctf_applied = data[im].get_attr_default('ctf_applied', 0)
+		if CTF and ctf_applied == 0:
+			ctf_params = data[im].get_attr("ctf")
+			st = Util.infomask(data[im], mask2D, False)
+			data[im] -= st[0]
+			data[im] = filt_ctf(data[im], ctf_params)
+			data[im].set_attr('ctf_applied', 1)
+
+	pixer = [0.0]*nima
+	par_r = [[] for im in list_of_particles ]
+	cs = [0.0]*3
+	total_iter = 0
+	# do the projection matching
+	for N_step in xrange(lstp):
+		
+		terminate = 0
+		Iter = 0
+		while Iter < max_iter and terminate == 0:
+
+			Iter += 1
+			total_iter += 1
+
+			mpi_barrier(mpi_comm)
+			if myid == main_node:
+				log.add("ITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],yrng[N_step],step[N_step]))
+				start_time = time()
+
+			#=========================================================================
+			# build references
+			volft, kb = prep_vol(vol)
+			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, MPI=mpi_comm)
+			del volft, kb
+			#=========================================================================
+
+			if myid == main_node:
+				log.add("Time to prepare rings: %f\n" % (time()-start_time))
+				start_time = time()
+			
+			#=========================================================================
+			#if total_iter == 1:
+			# adjust params to references, calculate psi+shifts, calculate previousmax
+			for im in xrange(nima):
+				stable = data[im].get_attr_default("stable", 0)
+				if stable == 0:
+					data[im].set_attr("previousmax", -1.0e23)
+					data[im].set_attr("stable", 1)
+				else:
+					peak, pixer[im] = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],1.0)
+					data[im].set_attr("previousmax", peak)
+			if myid == main_node:
+				log.add("Time to calculate first psi+shifts+previousmax: %f\n" % (time()-start_time))
+				start_time = time()
+			#=========================================================================
+
+			mpi_barrier(mpi_comm)
+			if myid == main_node:
+				start_time = time()
+			#=========================================================================
+			# alignment
+			number_of_checked_refs = 0
+			for im in xrange(nima):
+				#peak, pixer[im], checked_refs, number_of_peaks = shc_multi(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step], number_of_runs=number_of_runs)
+				peak, pixer[im], checked_refs, iref = shc(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], an[N_step])
+				number_of_checked_refs += checked_refs
+			#=========================================================================
+			mpi_barrier(mpi_comm)
+			if myid == main_node:
+				print  data[0].get_attr_dict()
+				log.add("Time of alignment = %f\n"%(time()-start_time))
+				start_time = time()
+
+			#=========================================================================
+			#output pixel errors, check stop criterion
+			all_pixer = wrap_mpi_gatherv(pixer, 0, mpi_comm)
+			total_checked_refs = wrap_mpi_gatherv([number_of_checked_refs], main_node, mpi_comm)
+			terminate = 0
+			if myid == main_node:
+				total_checked_refs = sum(total_checked_refs)
+				lhist = 20
+				region, histo = hist_list(all_pixer, lhist)
+				log.add("=========================")
+				for lhx in xrange(lhist):
+					msg = " %10.3f     %7d"%(region[lhx], histo[lhx])
+					log.add(msg)
+				if (max(all_pixer) < 0.5) and (sum(all_pixer)/total_nima < 0.05):
+					terminate = 1
+			terminate = wrap_mpi_bcast(terminate, main_node, mpi_comm)
+			#=========================================================================
+
+			#=========================================================================
+			# centering
+			if center == -1 and sym[0] == 'c':
+				from utilities      import estimate_3D_center_MPI, rotate_3D_shift
+				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(data, total_nima, myid, number_of_proc, main_node, mpi_comm=mpi_comm)
+				if myid == main_node:
+					msg = " Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
+					log.add(msg)
+				if int(sym[1]) > 1:
+					cs[0] = cs[1] = 0.0
+					if myid == main_node:
+						log.add("For symmetry group cn (n>1), we only center the volume in z-direction\n")
+				cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, mpi_comm)
+				cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
+				rotate_3D_shift(data, cs)
+			#=========================================================================
+
+			#=========================================================================
+			# volume reconstruction
+			mpi_barrier(mpi_comm)
+			if myid == main_node:
+				start_time = time()
+			vol = volume_reconstruction(data, ali3d_options, mpi_comm)
+			# log
+			if myid == main_node:
+				log.add("3D reconstruction time = %f\n"%(time()-start_time))
+				start_time = time()
+			#=========================================================================
+
+	#=========================================================================
+	# gather parameters
+	params = []
+	previousmax = []
+	for im in data:
+		t = get_params_proj(im)
+		p = im.get_attr("previousmax")
+		params.append( [t[0], t[1], t[2], t[3], t[4]] )
+		previousmax.append(p)
+	assert(nima == len(params))
+	params = wrap_mpi_gatherv(params, 0, mpi_comm)
+	if myid == 0:
+		assert(total_nima == len(params))
+	previousmax = wrap_mpi_gatherv(previousmax, 0, mpi_comm)
+
+	par_r = wrap_mpi_gatherv(par_r, 0, mpi_comm)
+
+	if myid == main_node: 
+		log.add("Finish ali3d_multishc_2")
+		return params, vol, previousmax, par_r
+	else:
+		return None, None, None, None  # results for the other processes
+
+"""
+
+# parameters: list of (all) projections | reference volume | ...
 def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, number_of_runs=2 ):
 
 	from alignment       import Numrinit, prepare_refrings, proj_ali_incore_local
@@ -763,9 +988,11 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None,
 				peak, pixer[im], checked_refs, number_of_peaks = shc_multi(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step], number_of_runs=number_of_runs)
 				number_of_checked_refs += checked_refs
 				par_r[im].append(number_of_peaks)
+				print  myid,im,number_of_peaks
 			#=========================================================================
 			mpi_barrier(mpi_comm)
 			if myid == main_node:
+				print  data[0].get_attr_dict()
 				log.add("Time of alignment = %f\n"%(time()-start_time))
 				start_time = time()
 
@@ -838,7 +1065,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None,
 		return params, vol, previousmax, par_r
 	else:
 		return None, None, None, None  # results for the other processes
-
+"""
 
 # data - projections (scattered between cpus)
 # options - the same for all cpus
@@ -915,7 +1142,7 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 	if ref_vol == None:
 		proj_begin, proj_end = MPI_start_end(n_projs, mpi_size, mpi_rank)
 		ref_vol = volume_reconstruction(projections[proj_begin:proj_end], ali3d_options, mpi_comm=mpi_comm)
-	
+
 	out_params, out_vol, out_peaks = ali3d_multishc(projections, ref_vol, ali3d_options, mpi_comm=mpi_comm, log=log, number_of_runs=runs_count)
 	if mpi_rank == 0:
 		assert(len(out_params) == runs_count)
@@ -931,8 +1158,7 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 		for iP in xrange(len(out_params[0])):
 			iBestPeak = 0
 			for iC in xrange(len(out_params)):
-				if out_peaks[iC][iP] > out_peaks[iBestPeak][iP]:
-					iBestPeak = iC
+				if out_peaks[iC][iP] > out_peaks[iBestPeak][iP]:  iBestPeak = iC
 				temp_projs.append( projections[iP].copy() )
 				set_params_proj( temp_projs[len(temp_projs)-1], out_params[iC][iP])
 			set_params_proj( projections[iP], out_params[iBestPeak][iP] )
@@ -944,7 +1170,7 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 	proj_begin, proj_end  = MPI_start_end(3*n_projs, mpi_size, mpi_rank)
 	ref_vol = volume_reconstruction(temp_projs[proj_begin:proj_end], ali3d_options, mpi_comm=mpi_comm)
 
-	out_params, out_vol, out_peaks, out_r = ali3d_multishc_2(projections, ref_vol, ali3d_options, mpi_comm=mpi_comm, log=log, number_of_runs=runs_count)
+	out_params, out_vol, out_peaks, out_r = ali3d_multishc_2(projections, ref_vol, ali3d_options, mpi_comm=mpi_comm, log=log)
 	if mpi_rank == 0:
 		assert(len(out_params) == n_projs)
 
