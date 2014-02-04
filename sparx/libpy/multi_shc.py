@@ -525,6 +525,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 	
 	if myid == main_node: 
 		log.add("Finish ali3d_multishc")
+		if(sym[0] == "d"):  reduce_dsym_angles(params, sym)		
 		return params, vol, previousmax
 	else:
 		return None, None, None  # results for the other processes
@@ -835,6 +836,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None 
 
 	if myid == main_node: 
 		log.add("Finish ali3d_multishc_2")
+		if(sym[0] == "d"):  reduce_dsym_angles(params, sym)
 		return params, vol, previousmax, par_r
 	else:
 		return None, None, None, None  # results for the other processes
