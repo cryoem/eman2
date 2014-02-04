@@ -1035,7 +1035,9 @@ def get_image_data(img):
 	return EMNumPy.em2numpy(img)
 
 def get_sym(symmetry):
-
+	"""
+	get a list of point-group symmetry angles, symmetry="c3"
+	"""
 	RA   = Transform()
 	NTot = RA.get_nsym(symmetry)
 	angs = []
@@ -1047,6 +1049,9 @@ def get_sym(symmetry):
 	return angs
 
 def get_symt(symmetry):
+	"""
+	get a list of point-group symmetry transformations, symmetry="c3"
+	"""
 
 	RA   = Transform()
 	NTot = RA.get_nsym(symmetry)
