@@ -134,7 +134,7 @@ def main():
 		if nargs != 2:
 			print "must provide name of input and output file!"
 			return
-		
+		from EMAN2 import Processor
 		instack = args[0]
 		outstack = args[1]
 		nima = EMUtil.get_image_count(instack)
