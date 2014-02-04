@@ -178,13 +178,25 @@ ctf_corr = 0
 for option1 in optionList:
 	if option1 == "ctfcorrect":
 		ctf_corr = 1		
+dblist = os.listdir("sets")	
+for db in dblist:
+	db_src=set_name.replace(".lst",'').replace("sets/",'')
+	if db.find(db_src) != -1:
+		db_set=EMData("sets/" +db,0,True)
+		if db_set.get_attr_dict().__contains__('ctf') and (EMUtil.get_image_count("sets/"+db) == num_images):
+			ctf_value=True
+			amplitude_contrast = float(db_set['ctf'].to_dict()['ampcont']) / 10
+			break
+
+if options.verbosity == 0 :
+	print "CTF information being pulled from: " + db
 if ctf_corr == 1:
 	s = "echo \"data_\nloop_\n_rlnImageName\n_rlnMicrographName\n_rlnDefocusU\n_rlnDefocusV\n_rlnDefocusAngle\n_rlnVoltage\n_rlnSphericalAberration\n_rlnAmplitudeContrast\" > " + E2RLN + "/all_images.star"
 	if "defocus" in optionList:
 		DEF1 = DEF2 = str(options.defocus)
 	elif os.path.exists("sets/" + base_name(set_name) + "__ctf_flip.lst"):
 		#amplitude_contrast = float(db_set['ctf'].to_dict()['ampcont']) / 10
-		DEF1 = DEF2 = EMData("sets/" + base_name(set_name) + "__ctf_flip.lst").get_attr_dict()['ctf'].to_dict()['defocus']
+		DEF1 = DEF2 = EMData("sets/" + base_name(set_name) + "__ctf_flip.lst").get_attr_dict()['ctf'].to_dict()['defocus']*10000
 	elif EMData(set_name).get_attr_dict().__contains__('defocus'):
 		DEF1 = DEF2 = EMData(set_name)['defocus']
 	else:
@@ -202,28 +214,17 @@ if ctf_corr == 1:
 		print "An amplitude contrast was not found in the chosen set, the ctf_flip version of the chosen set, and was not provided via a command line option. Defaulting to .1"
 		amplitude_contrast = .1
 
-	#dblist = os.listdir("sets")	
-	#for db in dblist:
-		#db_src=base_name(set_name)
-		#if not db.find(db_src):
-			#db_set=EMData("sets/" +db,0,True)
-			#if db_set.get_attr_dict().__contains__('ctf') and (EMUtil.get_image_count("sets/"+db) == num_images):
-				#ctf_value=True
-				##				defocus = db_set['ctf'].to_dict()['defocus']*1000
-				#break
-				#print "CTF information being pulled from: " + db
-				#if db_set.get_attr_dict().__contains__('ctf'):
-					#amplitude_contrast = float(db_set['ctf'].to_dict()['ampcont']) / 10
 
 
 else:
 	s = "echo \"data_\nloop_\n_rlnImageName\n_rlnMicrographName\n_rlnVoltage\n_rlnAmplitudeContrast\" > " + E2RLN + "/all_images.star"
 call(s,shell=True)
 print "Converting EMAN2 Files to Formats Compatible with RELION"
-
+temp = EMData(set_name,0)
 for k in range(num_images):
 	src = EMData(set_name,k).get_attr_dict()['data_source'].replace("particles/",'')
 	if src != old_src:
+		temp=EMData("sets/"+db,k-1)
 		s = "e2proc2d.py " + E2RLN + "/ptcl_stack.hdf" + " " + E2RLN + "/" + base_name(old_src) + ".hdf --first=" + str(i) + " --last=" + str(k-1) + " --verbose=" + verbosity
 		call(s, shell=True)
 		if (k-i-1) == 0:
@@ -236,8 +237,9 @@ for k in range(num_images):
 		s2 = s1 + "s"
 		shutil.move(s1, s2)
 		if ctf_corr == 1:
+			defocus1 = defocus2 = str(temp['ctf'].to_dict()['defocus']*10000)
 			for num in range(k-i):
-				s = "echo \"" +  str(num+1).zfill(6) + "@" +  E2RLN + "/" + base_name(old_src) + ".mrcs " + E2RLN + "/" + base_name(old_src) + ".mrcs " + str(DEF1) + " " + str(DEF2) + " 0 " +str(voltage) + " " + str(cs) + " " + amplitude_contrast + "\" >> " + E2RLN + "/all_images.star" 
+				s = "echo \"" +  str(num+1).zfill(6) + "@" +  E2RLN + "/" + base_name(old_src) + ".mrcs " + E2RLN + "/" + base_name(old_src) + ".mrcs " + str(defocus1) + " " + str(defocus2) + " 0 " +str(voltage) + " " + str(cs) + " " + str(amplitude_contrast) + "\" >> " + E2RLN + "/all_images.star" 
 				call(s,shell=True)
 #			s = "relion_star_datablock_stack " +  str(k-i) + " " +  E2RLN + "/" + base_name(old_src) + ".mrcs " + E2RLN + "/" + base_name(old_src) + ".mrcs " + str(DEF1) + " " + str(DEF2) + " 0 " +str(voltage) + " " + str(cs) + " " + amplitude_contrast + " >> " + E2RLN + "/all_images.star" 
 		else:
@@ -251,6 +253,7 @@ for k in range(num_images):
 		i = k
 		old_src = src
 	elif (k+1) == num_images:
+		temp=EMData("sets/"+db,k)
 		s = "e2proc2d.py " + E2RLN + "/ptcl_stack.hdf" + " " + E2RLN + "/" + base_name(src) + ".hdf --first=" + str(i) + " --last=" + str(k) + " --verbose=" + verbosity
 		call(s, shell=True)
 		if k-i-1 == 0:
@@ -262,8 +265,9 @@ for k in range(num_images):
 		s2 = s1 + "s"
 		shutil.move(s1, s2)
 		if ctf_corr == 1:
+			defocus1 = defocus2 = str(temp['ctf'].to_dict()['defocus']*10000)
 			for num in range(k-i+1):
-				s = "echo \""+  str(num+1).zfill(6) + "@" + E2RLN + "/" + base_name(src) + ".mrcs " + E2RLN + "/" + base_name(src) + ".mrcs "  + str(DEF1) + " " + str(DEF2) + " 0 " + str(voltage) + " " + str(cs) + " " + amplitude_contrast + "\" >> " + E2RLN + "/all_images.star" 
+				s = "echo \""+  str(num+1).zfill(6) + "@" + E2RLN + "/" + base_name(src) + ".mrcs " + E2RLN + "/" + base_name(src) + ".mrcs "  + str(defocus1) + " " + str(defocus2) + " 0 " + str(voltage) + " " + str(cs) + " " + str(amplitude_contrast) + "\" >> " + E2RLN + "/all_images.star" 
 				call(s,shell=True)
 #			s = "relion_star_datablock_stack "+  str(k-i+1)+ " " + E2RLN + "/" + base_name(src) + ".mrcs " + E2RLN + "/" + base_name(src) + ".mrcs "  + str(DEF1) + " " + str(DEF2) + " 0 " + str(voltage) + " " + str(cs) + " " + amplitude_contrast + "  >> " + E2RLN + "/all_images.star" 
 		else:

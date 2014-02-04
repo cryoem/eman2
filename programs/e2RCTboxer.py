@@ -110,7 +110,7 @@ Usage: e2RCTboxer.py untilted.hdf tilted.hdf options.
 	
 	# Clean up
 	E2end(logid)
-	db_close_dict(EMBOXERRCT_DB)
+	js_close_dict(EMBOXERRCT_DB)
 
 class RCTprocessor:
 	"""
@@ -120,8 +120,8 @@ class RCTprocessor:
 		self.args = args
 		self.options = options
 			
-	def write_particles(self, database="e2boxercache.json"):
-		db = js_open_dict(database+"#quality")
+	def write_particles(self, database="e2boxercache"):
+		db = js_open_dict(database+"/quality.json")
 		db['suffix'] = self.options.suffix
 		db['extension'] = os.path.splitext(self.args[0])[-1]
 		
@@ -162,10 +162,10 @@ class RCTprocessor:
 	def get_ptcl_names(self):
 		self.names = []
 		for name in self.args:
-			if self.options.format == "bdb":
-				out = "bdb:particles#" + get_file_tag(name) + self.options.suffix
-			else:
-				out = os.path.join(os.path.join(".","particles"),get_file_tag(name)+self.options.suffix+"."+self.options.format)
+			#if self.options.format == "bdb":
+				#out = "bdb:particles#" + get_file_tag(name) + self.options.suffix
+			#else:
+			out = os.path.join(os.path.join(".","particles"),get_file_tag(name)+self.options.suffix+"."+self.options.format)
 			self.names.append(out)
 			
 	def write_boxes(self):
@@ -544,10 +544,10 @@ class EMBoxList:
 	def set_boxes_db(self, name = "boxlist", entry="default.mrc"):
 		self.entry = entry
 		self.box_type = name
-		self.db = db_open_dict("bdb:e2boxercache"+"#boxes"+name)	#db for data in this window
+		self.db = js_open_dict("e2boxercache/boxes"+name+".json")	#db for data in this window
 
 	def close_db(self):
-		db_close_dict(self.db)
+		js_close_dict(self.db)
 		
 	def load_boxes_from_db(self):
 		data = self.db[self.entry]

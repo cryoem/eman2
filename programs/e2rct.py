@@ -33,7 +33,7 @@
 
 
 from EMAN2 import *
-from EMAN2db import db_close_dict
+from EMAN2jsondb import *
 from os import system
 import sys
 
@@ -88,9 +88,9 @@ def main():
 	if options.cuda: initializeCUDAdevice()
 	
 	if not options.path:
-		options.path = "bdb:rct/"
+		options.path = "rct/"
 	else:
-		options.path = "bdb:"+options.path+"/"
+		options.path = options.path+"/"
 	    
 	if not options.tiltdata:
 		print "Error, tiltdata needed! Crashing!"
@@ -188,7 +188,7 @@ def main():
 			symavg.write_image("%srctrecon_symavg" % (options.path), 0)
 		avged.write_image("%srctrecon_avg" % (options.path), 0)
   
-	db_close_dict(options.classavg)
+	js_close_dict(options.classavg)
 	E2end(logid)
 	
 def average_rcts(arlist, totalptcls):
