@@ -194,9 +194,9 @@ namespace EMAN
 		
 		// These are used internally for the simple dynamics/minimization code, and are otherwise unallocated
 		// Note that this is NOT for PDB MD, just for simplified point-chains, and mapping points into density
-		double *dist;	// distance squared between the numbered point and the previous point with wrap-around
-		double *ang;	// angle at the numbered point using the point before and the point after
-		double *dihed;	// dihedral using 2 points before and one point after
+		double *adist;	// distance squared between the numbered point and the previous point with wrap-around
+		double *aang;	// angle at the numbered point using the point before and the point after
+		double *adihed;	// dihedral using 2 points before and one point after
 		
 		/** Used for simplistic loop dynamics simulation
 		 * Assumes all points are connected sequetially in a closed loop,

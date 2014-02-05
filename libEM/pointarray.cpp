@@ -105,9 +105,9 @@ PointArray::PointArray()
 	bfactor = 0;
 	n = 0;
 	
-	dist=0;
-	ang=0;
-	dihed=0;
+	adist=0;
+	aang=0;
+	adihed=0;
 	
 	map=gradx=grady=gradz=0;
 }
@@ -117,9 +117,9 @@ PointArray::PointArray( int nn)
 	n = nn;
 	points = (double *) calloc(4 * n, sizeof(double));
 	
-	dist=0;
-	ang=0;
-	dihed=0;
+	adist=0;
+	aang=0;
+	adihed=0;
 	map=gradx=grady=gradz=0;
 }
 
@@ -131,9 +131,9 @@ PointArray::~PointArray()
 		points = 0;
 	}
 	
-	if (dist) free(dist);
-	if (ang) free(ang);
-	if (dihed) free(dihed);
+	if (adist) free(adist);
+	if (aang) free(aang);
+	if (adihed) free(adihed);
 //	if (map!=0) delete map;
 	if (gradx!=0) delete gradx;
 	if (grady!=0) delete grady;
@@ -1048,9 +1048,9 @@ void PointArray::set_from_density_map(EMData * map, int num, float thresh, float
 
 /** Updates the dist,ang,dihed parameters **/
 void PointArray::sim_updategeom() {
-	if (!dist) dist=(double *)malloc(sizeof(double)*n);
-	if (!ang) ang=(double *)malloc(sizeof(double)*n);
-	if (!dihed) dihed=(double *)malloc(sizeof(double)*n);
+	if (!adist) adist=(double *)malloc(sizeof(double)*n);
+	if (!aang) aang=(double *)malloc(sizeof(double)*n);
+	if (!adihed) adihed=(double *)malloc(sizeof(double)*n);
 	
 	for (uint ii=0; ii<n; ii++) {
 		// how expensive is % ?  Worth replacing ?
@@ -1062,15 +1062,25 @@ void PointArray::sim_updategeom() {
 		Vec3f a(points[ib]-points[ibb],points[ib+1]-points[ibb+1],points[ib+2]-points[ibb+2]);  // -2 -> -1
 		Vec3f b(points[i]-points[ib],points[i+1]-points[ib+1],points[i+2]-points[ib+2]);		// -1 -> 0
 		Vec3f c(points[ia]-points[i],points[ia+1]-points[i+1],points[ia+2]-points[i+2]);		// 0 -> 1
-		dist[ii]=b.length();
-		ang[ii]=acos(b.dot(c)/(dist[ii]*c.length()));
+		adist[ii]=b.length();
+		
+		// angle
+		aang[ii]=b.dot(c);
+		if (aang[ii]!=0) {
+			aang[ii]/=(adist[ii]*c.length());
+			if (aang[ii]>=1.0) aang[ii]=0.0;
+			else if (aang[ii]<=-1.0) aang[ii]=M_PI;
+			else aang[ii]=acos(aang[ii]);
+		}
+
+		// dihedral
 		Vec3f cr1=a.cross(b);
 		Vec3f cr2=b.cross(c);
 		double denom=cr1.length()*cr2.length();
-		if (denom==0) dihed[ii]=0;
-		else dihed[ii]=acos(cr1.dot(cr2)/(denom)); 
-		if (std::isnan(dihed[ii])) dihed[ii]=dihed0;
-		if (std::isnan(ang[ii])) ang[ii]=0;
+		if (denom==0) adihed[ii]=0;
+		else adihed[ii]=acos(cr1.dot(cr2)/(denom)); 
+//		if (std::isnan(dihed[ii])) dihed[ii]=dihed0;
+//		if (std::isnan(ang[ii])) ang[ii]=0;
 		
 	}
 }
@@ -1080,16 +1090,18 @@ double PointArray::sim_potential() {
 	sim_updategeom();
 	
 	if (map &&mapc) {
-		for (uint i=0; i<n; i++) ret+=sim_pointpotential(dist[i],ang[i],dihed[i])-mapc*map->sget_value_at_interp(points[i]/apix+map->get_xsize()/2,points[i+1]/apix+map->get_ysize()/2,points[i+2]/apix+map->get_zsize()/2);
+		for (uint i=0; i<n; i++) ret+=sim_pointpotential(adist[i],aang[i],adihed[i])-mapc*map->sget_value_at_interp(points[i]/apix+map->get_xsize()/2,points[i+1]/apix+map->get_ysize()/2,points[i+2]/apix+map->get_zsize()/2);
 	}
 	else {
-		for (uint i=0; i<n; i++) ret+=sim_pointpotential(dist[i],ang[i],dihed[i]);
+		for (uint i=0; i<n; i++) ret+=sim_pointpotential(adist[i],aang[i],adihed[i]);
 	}
 	return ret/n;
 }
 
 // potential for a single point. Note that if a point moves, it will impact energies +-2 from its position. This function computes only for the point i
 double PointArray::sim_potentiald(int i) {
+	if (!adist) sim_updategeom();		// wasteful, but only once
+	
 //	if (i<0 || i>=n) throw InvalidParameterException("Point number out of range");
 	if (i<0) i-=n*(i/n-1);
 	if (i>=n) i=i%n;
@@ -1104,17 +1116,35 @@ double PointArray::sim_potentiald(int i) {
 	Vec3f b(points[i]-points[ib],points[i+1]-points[ib+1],points[i+2]-points[ib+2]);		// -1 -> 0
 	Vec3f c(points[ia]-points[i],points[ia+1]-points[i+1],points[ia+2]-points[i+2]);		// 0 -> 1
 	double dist=b.length();
-	double ang=acos(b.dot(c)/(dist*c.length()));
+	adist[i]=dist;
+	
+	// Angle, tests should avoid isnan being necessary
+	double ang=b.dot(c);
+	if (ang!=0.0) {					// if b.dot(c) is 0, we set it to the last determined value...
+		ang/=(dist*c.length());
+		if (ang>1.0) ang=1.0;		// should never happen, but just in case of roundoff error
+		if (ang<-1.0) ang=-1.0;
+		ang=acos(ang);
+	}
+	else ang=aang[i];
+	aang[i]=ang;
+	
+	// Dihedral
 	Vec3f cr1=a.cross(b);
 	Vec3f cr2=b.cross(c);
 	double dihed;
 	double denom=cr1.length()*cr2.length();
-	if (denom==0) dihed=0;
-	else dihed=acos(cr1.dot(cr2)/(denom)); 
-
+	if (denom==0) dihed=adihed[i];						// set the dihedral to the last determined value if indeterminate
+	else {
+		dihed=cr1.dot(cr2)/denom;
+		if (dihed>1.0) dihed=1.0;				// should never happen, but just in case of roundoff error
+		if (dihed<-1.0) dihed=-1.0;
+		dihed=acos(dihed);
+	}
+	adihed[i]=dihed;
 //	if (std::isnan(dist) || std::isnan(ang) || std::isnan(dihed)) printf("%d\t%g\t%g\t%g\t%g\t%g\t%g\n",i,dist,ang,dihed,b.length(),c.length(),b.dot(c)/(dist*c.length()));
- 	if (std::isnan(dihed)) dihed=dihed0;
- 	if (std::isnan(ang)) ang=0;
+// 	if (std::isnan(dihed)) dihed=dihed0;
+// 	if (std::isnan(ang)) ang=0;
 // 	if (std::isnan(dist)) dist=3.3;
 //	if (isnan(dihed)) dihed=dihed0;
 //	if (isnan(ang)) ang=0;
@@ -1192,7 +1222,7 @@ void PointArray::sim_minstep(double maxshift) {
 //	printf("max vec %1.2f\tmean %1.3f\n",max,mean/n);
 	
 	for (uint i=0; i<n; i++) {
-		if (std::isnan(shifts[i][0]) ||std::isnan(shifts[i][1]) ||std::isnan(shifts[i][2])) { printf("Nan: %d\n",i); shifts[i]=Vec3f(max,max,max); }
+//		if (std::isnan(shifts[i][0]) ||std::isnan(shifts[i][1]) ||std::isnan(shifts[i][2])) { printf("Nan: %d\n",i); shifts[i]=Vec3f(max,max,max); }
 		points[i*4]+=shifts[i][0]*maxshift/max;
 		points[i*4+1]+=shifts[i][1]*maxshift/max;
 		points[i*4+2]+=shifts[i][2]*maxshift/max;
@@ -1216,12 +1246,13 @@ void PointArray::sim_minstep_seq(double meanshift) {
 	// The trick here is the sequential part, as each point is impacted by the point already moved before it.
 	// This may create a "seam" at the first point which won't be adjusted to compensate for the last point (wraparound)
 	// until the next cycle
-	for (uint i=0; i<n; i++) {
+	for (uint ii=0; ii<n; ii++) {
+		uint i=2*(ii%(n/2))+2*ii/n;	// this maps a linear sequence to an all-even -> all odd sequence
 		Vec3f shift,d;
 		if (oldshifts.size()==n) {
 			d=sim_descent(i);
-			shift=(d+oldshifts[i])/2.0;
-			oldshifts[i]=d;
+			shift=(d+oldshifts[ii])/2.0;
+			oldshifts[ii]=d;
 		}
 		else {
 			shift=sim_descent(i);
@@ -1279,22 +1310,22 @@ void PointArray::sim_printstat() {
 	double madist=0.0,maang=0.0,madihed=0.0;
 	
 	for (int i=0; i<n; i++) {
-		mdist+=dist[i];
-		mang+=ang[i];
-		mdihed+=dihed[i];
+		mdist+=adist[i];
+		mang+=aang[i];
+		mdihed+=adihed[i];
 
-		midist=dist[i]<midist?dist[i]:midist;
-		madist=dist[i]>madist?dist[i]:madist;
+		midist=adist[i]<midist?adist[i]:midist;
+		madist=adist[i]>madist?adist[i]:madist;
 		
-		miang=ang[i]<miang?ang[i]:miang;
-		maang=ang[i]>maang?ang[i]:maang;
+		miang=aang[i]<miang?aang[i]:miang;
+		maang=aang[i]>maang?aang[i]:maang;
 		
-		midihed=dihed[i]<midihed?dihed[i]:midihed;
-		madihed=dihed[i]>madihed?dihed[i]:madihed;
+		midihed=adihed[i]<midihed?adihed[i]:midihed;
+		madihed=adihed[i]>madihed?adihed[i]:madihed;
 	}
 	
 	double anorm = 180.0/M_PI;
-	printf("dist: %1.2f / %1.2f / %1.2f\tang: %1.2f / %1.2f / %1.2f\tdihed: %1.2f / %1.2f / %1.2f\n",midist,mdist/n,madist,miang*anorm,mang/n*anorm,maang*anorm,midihed*anorm,mdihed/n*anorm,madihed*anorm);
+	printf("dist: %1.2f / %1.2f / %1.2f\tang: %1.2f / %1.2f / %1.2f\tdihed: %1.2f / %1.2f / %1.2f  ln=%1.1f\n",midist,mdist/n,madist,miang*anorm,mang/n*anorm,maang*anorm,midihed*anorm,mdihed/n*anorm,madihed*anorm,mdihed/(M_PI*2.0)-n/10.0);
 		
 }
 

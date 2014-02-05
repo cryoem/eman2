@@ -429,71 +429,6 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.force_display_update()
 		self.updateGL()
 
-
-	allim=WeakKeyDictionary()
-
-	def __del__(self):
-		#self.clear_gl_memory() # this is intentionally commented out, it makes sense to clear the memory but not here
-		self.deleteLater()
-
-	def get_emit_signals_and_connections(self):
-		return {"set_origin":self.set_origin,"set_scale":self.set_scale,"origin_update":self.origin_update}
-
-	def get_data(self):
-		'''
-		Gets the current data object, this is either an EMDataListCache, an EM3DDataListCache, an EMLightWeightParticleCache, or None
-		'''
-		return self.data
-
-#	def width(self):
-#		return self.view_width()
-
-	def get_font_size(self):
-		return self.font_renderer.get_face_size()
-
-	def set_font_size(self,value):
-		self.font_renderer.set_face_size(value)
-		self.force_display_update() # only for redoing the fonts, this could be made more efficient :(
-		self.updateGL()
-
-	def set_mouse_mode(self,mode):
-		if mode in self.mouse_modes:
-			self.mmode = mode
-		else:
-			print "unknown mode:", mode
-
-	def set_file_name(self,name):
-		#print "set image file name",name
-		self.file_name = name
-
-	def get_inspector(self):
-		if not self.inspector :
-			self.inspector=EMImageInspectorMX(self)
-			button = self.inspector.add_panel(EMMXSetsPanel(self),"Sets")
-			self.inspector_update()
-		return self.inspector
-
-	def inspector_update(self):
-		#FIXME
-		pass
-		#print "do inspector update"
-
-	def set_reroute_delete(self,val=True):
-		self.reroute_delete = val
-
-	def get_scale(self):
-		return self.scale
-
-	def remove_particle_image(self,idx,event=None,update_gl=False):
-		if self.reroute_delete == False:
-			self.deletion_manager.delete_box(idx)
-			if update_gl:
-				self.force_display_update()
-				self.updateGL()
-				if event != None: self.emit(QtCore.SIGNAL("mx_boxdeleted"),event,[idx],False)
-		else:
-			self.emit(QtCore.SIGNAL("mx_boxdeleted"),event,[idx],False)
-
 	def load_sets(self):
 		"""This will attempt to load the sets associated with the current filename"""
 		self.current_set=None
@@ -581,6 +516,71 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		if update_gl:
 			self.force_display_update()
 			self.updateGL()
+
+	allim=WeakKeyDictionary()
+
+	def __del__(self):
+		#self.clear_gl_memory() # this is intentionally commented out, it makes sense to clear the memory but not here
+		self.deleteLater()
+
+	def get_emit_signals_and_connections(self):
+		return {"set_origin":self.set_origin,"set_scale":self.set_scale,"origin_update":self.origin_update}
+
+	def get_data(self):
+		'''
+		Gets the current data object, this is either an EMDataListCache, an EM3DDataListCache, an EMLightWeightParticleCache, or None
+		'''
+		return self.data
+
+#	def width(self):
+#		return self.view_width()
+
+	def get_font_size(self):
+		return self.font_renderer.get_face_size()
+
+	def set_font_size(self,value):
+		self.font_renderer.set_face_size(value)
+		self.force_display_update() # only for redoing the fonts, this could be made more efficient :(
+		self.updateGL()
+
+	def set_mouse_mode(self,mode):
+		if mode in self.mouse_modes:
+			self.mmode = mode
+		else:
+			print "unknown mode:", mode
+
+	def set_file_name(self,name):
+		#print "set image file name",name
+		self.file_name = name
+
+	def get_inspector(self):
+		if not self.inspector :
+			self.inspector=EMImageInspectorMX(self)
+			button = self.inspector.add_panel(EMMXSetsPanel(self),"Sets")
+			self.inspector_update()
+		return self.inspector
+
+	def inspector_update(self):
+		#FIXME
+		pass
+		#print "do inspector update"
+
+	def set_reroute_delete(self,val=True):
+		self.reroute_delete = val
+
+	def get_scale(self):
+		return self.scale
+
+	def remove_particle_image(self,idx,event=None,update_gl=False):
+		if self.reroute_delete == False:
+			self.deletion_manager.delete_box(idx)
+			if update_gl:
+				self.force_display_update()
+				self.updateGL()
+				if event != None: self.emit(QtCore.SIGNAL("mx_boxdeleted"),event,[idx],False)
+		else:
+			self.emit(QtCore.SIGNAL("mx_boxdeleted"),event,[idx],False)
+
 
 	def get_box_image(self,idx):
 		return self.data[idx]

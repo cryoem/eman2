@@ -336,7 +336,7 @@ resolution) --targetres by ~25%. Hopefully this will eliminate the misalignment,
 		# target resolution worse than 1/2 Nyquist
 		if options.targetres>apix*4 :
 			effbox=nx*apix*2/options.targetres
-			astep=90.0/ceil(90.0/sqrt(4300/effbox))		# This rounds to the best angular step divisible by 90 degrees
+			astep=89.999/ceil(90.0/sqrt(4300/effbox))		# This rounds to the best angular step divisible by 90 degrees
 			options.orientgen="eman:delta={:1.3f}:inc_mirror=0:perturb=0".format(astep)
 			if options.classiter<0 :
 				if options.targetres>12.0 :

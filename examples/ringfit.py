@@ -1,3 +1,9 @@
+# 01/13/2014		Steven Ludtke
+# This program tries to fit a closed loop of blobs to DNA-minicircle density pattern using
+# a simple distance, angle, dihedral potential with a closed linear chain of balls
+
+# ringfit <map>
+
 from EMAN2 import *
 import sys
 import numpy.linalg as LA
@@ -48,8 +54,8 @@ p.transform(T)
 m=p.process("threshold.binary",{"value":p["mean"]+p["sigma"]*5.0})
 m.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.04})
 
-pa=PointArray()
-pa.set_number_points(336)
+pa=PointArray(336)
+#pa.set_number_points(336)
 
 for i in xrange(336):
 	ang=2.0*pi*i/336.0

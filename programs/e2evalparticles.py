@@ -56,7 +56,6 @@ def main():
 	print "Sorry, e2evalparticles is still broken in EMAN2.1alpha2. We are working on repairing it, and it should be functional in a nighly snapshot version very soon. \
 If you are using e2refinemulti and need to extract the subsets of particles associated with each map, you can use the e2classextract.py command-line program (though \
 current versions of e2refinemulti will do this automatically when the job completes)."
-	sys.exit(1)
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
