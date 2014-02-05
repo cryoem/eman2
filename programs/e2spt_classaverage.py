@@ -685,6 +685,7 @@ def main():
 			
 			if options.savesteps and not options.donotaverage:
 				refname = options.path + '/class_' + str(ic).zfill( len( str(ic) )) + '.hdf'
+				ref['xform.align3d']=Transform()
 				ref.write_image(refname,it)
 				
 				print "\n\nFor the final avg going into class_x.hdf, ali params are", ref['xform.align3d']
