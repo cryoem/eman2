@@ -2002,4 +2002,3 @@ def classmx_ptcls(classmx,n):
 if __name__ == "__main__":
     main()
     sys.stdout.flush()
->>>>>>> 1.85
