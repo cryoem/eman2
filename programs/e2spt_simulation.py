@@ -51,6 +51,11 @@ def main():
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)	
 	
+	
+	#parser.add_argument("--interpolator",default='',help="""What interpolation scheme 
+	#	to use for reconstruction. Options are 'nearest_neighbor', 'gauss_2', 'gauss_3', 'gauss_5', 
+	#	'gauss_5_slow', 'gypergeom_5', experimental""")
+	
 	parser.add_argument("--path",type=str,default=None,help="Directory to store results in. The default is a numbered series of directories containing the prefix 'sptsim'; for example, sptsim_02 will be the directory by default if 'sptsim_01' already exists.")
 	#parser.add_argument("--output",type=str,default=None,help="Name of the output stack for the simulated subtomograms.")
 	parser.add_argument("--randstack",type=str,default=None,help="If you already have a stack of particles (presumably in random orientations) you can supply it here.")
@@ -106,8 +111,14 @@ def main():
 	
 	parser.add_argument("--saveprjs", action="store_true",default=False,help="Save the projections (the 'tilt series') for each simulated subtomogram.")
 
-	parser.add_argument("--reconstructor", type=str,default="fourier",help="""The reconstructor to use to reconstruct the tilt series into a tomogram. Type 'e2help.py reconstructors' at the command line
-											to see all options and parameters available.""")
+	parser.add_argument("--reconstructor", type=str,default="fourier",help="""The reconstructor 
+		to use to reconstruct the tilt series into a tomogram. Type 'e2help.py reconstructors' 
+		at the command line to see all options and parameters available.
+		To specify the interpolation scheme for the fourier reconstruction, specify 'mode'.
+		Options are 'nearest_neighbor', 'gauss_2', 'gauss_3', 'gauss_5', 
+		'gauss_5_slow', 'gypergeom_5', 'experimental'.
+		For example --reconstructor=fourier:mode=gauss_5 """)									
+											
 	parser.add_argument("--pad", type=float,default=0.0,help="""If on, it will increase the 
 		box size of the model BEFORE generating projections and doing 3D reconstruction of 
 		simulated sutomograms. Make sure to supply --finalboxsize to clip the simulated 
@@ -168,7 +179,6 @@ def main():
 	'''
 	
 	from e2spt_classaverage import sptmakepath
-	
 	options = sptmakepath(options,'sptsim')
 	
 	rootpath = os.getcwd()
@@ -915,6 +925,15 @@ class SubtomoSimTask(JSTask):
 		
 		print "!!!!!!!!!!!!!!!Therefore, box is", box
 		
+		mode='gauss_2'
+		if options.reconstructor:
+			if len(options.reconstructor) > 1:
+				if 'mode' in options.reconstructor[-1]:
+					mode=options.reconstructor[-1]['mode']
+					
+					print "\nThe reconstructor mode has been changed from default to", mode
+					sys.exit()
+					
 		r = Reconstructors.get(options.reconstructor[0],{'size':(box,box,box),'sym':'c1','verbose':True,'mode':'gauss_2'})
 		#r = Reconstructors.get(options.reconstructor[0],options.reconstructor[1])
 		r.setup()
