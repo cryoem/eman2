@@ -410,7 +410,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				orient_and_shuffle = ( percent_of_pixerr_below_one > 0.3 )  #  TODO - parameter ?
 				#terminate          = ( percent_of_pixerr_below_one > 0.9 )  #  TODO - parameter ?
 				log.add("=========================")
-				log.add("Percent of positions with pixel error below 1.0 = ", (int(percent_of_pixerr_below_one*100)), "%","   Shuffling: ",orient_and_shuffle)
+				log.add("Percent of positions with pixel error below 1.0 = ", (int(percent_of_pixerr_below_one*100)), "%","   Mutations: ",orient_and_shuffle)
 			orient_and_shuffle = wrap_mpi_bcast(orient_and_shuffle, 0, mpi_comm)
 			#=========================================================================
 
@@ -601,7 +601,10 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 						log.add("3D reconstruction time = %f\n"%(time()-start_time))
 						start_time = time()
 					#=========================================================================
-
+					#
+					#  Here we have a problem to fix - if it is to terminate we should restore parameters from GA
+					#    This is sufficiently easy to do by returning GA, but the problem is with previousmax we do not have, not to mention
+					# the volumes are out of date.  WORK ON IT!
 				mpi_barrier(mpi_comm)
 				if myid == main_node:
 					log.add("Time of orientation and mutations = %f\n"%(time()-start_time))
