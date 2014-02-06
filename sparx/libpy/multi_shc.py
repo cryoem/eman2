@@ -440,10 +440,11 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				phi, theta, psi, sx, sy = get_params_proj(im)
 				params.append([phi, theta, psi, sx, sy])
 			params_0 = wrap_mpi_bcast(params, mpi_subroots[0], mpi_comm)
+			"""
 			if mpi_subrank == 0:
 				from utilities import write_text_row
 				write_text_row(params, "qparams%04d%04d.hdf"%(myid,total_iter) )
-
+			"""
 
 			#=========================================================================
 			# volume reconstruction
@@ -512,30 +513,68 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				if myid == 0:
 					#all_params = shuffle_configurations(all_params)
 					for i in xrange(number_of_runs):
-						GA.append([all_L2s[i],params[i]])
+						GA.append([all_L2s[i],all_params[i]])
 					GA.sort(reverse=True)
 					GA = GA[:number_of_runs]
 					#  ---  Stopping criterion
 					from statistics import table_stat
 					from math import sqrt
 					q1,q2,q3,q4 = table_stat([GA[i][0] for i in xrange(number_of_runs)])
-					# Terminate if Vvariation of L2 norms less than 10% of their average
-					terminate = sqrt(max(q2,0.0))/q1 <0.1
+					# Terminate if variation of L2 norms less than 10% of their average
+					crit = sqrt(max(q2,0.0))/q1
+					terminate = crit <0.1
+					for i in xrange(number_of_runs):
+						log.add("L2 norm for volume %3d  = %f"%(i,GA[i][0]))
+					log.add("L2 norm std dev %f\n"%crit)
 
 					if not terminate:
-						#  Now do the mutation
-
-						#  Put mutated params on one list
+						#  Now do the mutations
 						all_params = []
-						for i in xrange(number_of_runs):
-							all_params.append(GA[i][1])
+
+						from utilities import nearestk_projangles
+						from random import random, randint, shuffle
+						# select random pairs of solutions
+						ipl = range(number_of_runs)
+						shuffle(ipl)
+						for ip in xrange(0,2*(len(ipl)/2),2):
+							#  random reference projection:
+							itmp = randint(0,total_nima-1)
+							keepset = nearestk_projangles(GA[ipl[ip]][1], whichone = itmp, howmany = total_nima/2)
+							keepset.append(itmp)
+							otherset = set(range(total_nima)) - set(keepset)
+							otherset = [i for i in otherset]
+							keepset.sort()
+							otherset.sort()
+							newparms1 = [None]*total_nima
+							newparms2 = [None]*total_nima
+							for i in keepset:
+								newparms1[i] = GA[ipl[ip]][1][i]
+								newparms2[i] = GA[ipl[ip+1]][1][i]
+							for i in otherset:
+								newparms1[i] = GA[ipl[ip+1]][1][i]
+								newparms2[i] = GA[ipl[ip]][1][i]
+							#print "  PRINTOUT SHUFFLED   ",ipl[ip],ipl[ip+1]
+							"""
+							for i in xrange(total_nima):
+								print  i,newparms1[i],GA[ipl[ip]][1][i]
+							for i in xrange(total_nima):
+								print  i,newparms2[i],GA[ipl[ip+1]][1][i]
+							for i in xrange(total_nima):
+								GA[ipl[ip]][1][i]   = newparms1[i]
+								GA[ipl[ip+1]][1][i] = newparms2[i]
+							"""
+
+							#  Put mutated params on one list
+							all_params.append(newparms1)
+							all_params.append(newparms2)
 
 				terminate = wrap_mpi_bcast(terminate, main_node, mpi_comm)
-
 
 				if not terminate:
 					# Send params back
 					if myid == 0:
+						#print  all_params
+						#print "GA  ",GA
 						for i in xrange(number_of_runs):
 							sr = mpi_subroots[i]
 							if sr == myid:
@@ -594,7 +633,8 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 	
 	if myid == main_node: 
 		log.add("Finish ali3d_multishc")
-		if(sym[0] == "d"):  reduce_dsym_angles(params, sym)
+		if(sym[0] == "d"):
+			for i in xrange(number_of_runs):  reduce_dsym_angles(params[i], sym)
 		return params, vol, previousmax
 	else:
 		return None, None, None  # results for the other processes
@@ -1222,7 +1262,6 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None 
 			#=========================================================================
 			mpi_barrier(mpi_comm)
 			if myid == main_node:
-				print  data[0].get_attr_dict()
 				log.add("Time of alignment = %f\n"%(time()-start_time))
 				start_time = time()
 
