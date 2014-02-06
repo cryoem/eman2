@@ -159,6 +159,450 @@ def find_common_subset_3(projs, target_threshold, minimal_subset_size=3, sym = "
 
 
 # parameters: list of (all) projections | reference volume | ...
+#  Genetic programming version
+#  The data structure:
+#  [[L2, [parameters row-wise]], [], []number_of_runs ]
+#  It is kept on main proc
+def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, number_of_runs=2 ):
+
+	from alignment    import Numrinit, prepare_refrings, proj_ali_incore_local, shc
+	from utilities    import model_circle, get_input_from_string, get_params_proj, set_params_proj, wrap_mpi_gatherv, wrap_mpi_bcast, wrap_mpi_send, wrap_mpi_recv
+	from mpi          import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier, mpi_comm_split, mpi_comm_free
+	from projection   import prep_vol
+	from statistics   import hist_list
+	from applications import MPI_start_end
+	from filter       import filt_ctf
+	from global_def   import Util, ERROR
+	from time         import time
+	from random       import shuffle
+
+	ir     = ali3d_options.ir
+	rs     = ali3d_options.rs
+	ou     = ali3d_options.ou
+	xr     = ali3d_options.xr
+	yr     = ali3d_options.yr
+	ts     = ali3d_options.ts
+	an     = ali3d_options.an
+	sym    = ali3d_options.sym
+	sym = sym[0].lower() + sym[1:]
+	delta  = ali3d_options.delta
+	center = ali3d_options.center
+	maxit  = ali3d_options.maxit
+	CTF    = ali3d_options.CTF
+	ref_a  = ali3d_options.ref_a
+
+	if mpi_comm == None:
+		mpi_comm = MPI_COMM_WORLD
+
+	if log == None:
+		from logger import Logger
+		log = Logger()
+
+	number_of_proc = mpi_comm_size(mpi_comm)
+	myid           = mpi_comm_rank(mpi_comm)
+	main_node = 0
+
+	if myid == main_node:
+		log.add("Start ali3d_multishc")
+
+	if number_of_proc < number_of_runs:
+		ERROR("number_of_proc < number_of_runs","ali3d_multishc")
+	
+	mpi_subcomm = mpi_comm_split(mpi_comm, myid % number_of_runs, myid / number_of_runs)
+	mpi_subrank = mpi_comm_rank(mpi_subcomm)
+	mpi_subsize = mpi_comm_size(mpi_subcomm)
+	mpi_subroots = range(number_of_runs)
+
+	xrng        = get_input_from_string(xr)
+	if  yr == "-1":  yrng = xrng
+	else          :  yrng = get_input_from_string(yr)
+	step        = get_input_from_string(ts)
+	delta       = get_input_from_string(delta)
+	lstp = min(len(xrng), len(yrng), len(step), len(delta))
+	if an == "-1":
+		an = [-1] * lstp
+	else:
+		an = get_input_from_string(an)
+
+	first_ring  = int(ir)
+	rstep       = int(rs)
+	last_ring   = int(ou)
+	max_iter    = int(maxit)
+	center      = int(center)
+
+	vol = ref_vol
+	nx      = vol.get_xsize()
+	if last_ring < 0:
+		last_ring = int(nx/2) - 2
+
+	numr	= Numrinit(first_ring, last_ring, rstep, "F")
+	mask2D  = model_circle(last_ring,nx,nx) - model_circle(first_ring,nx,nx)
+
+	if myid == main_node:
+		list_of_particles = range(len(stack))
+		total_nima = len(list_of_particles)
+	else:
+		list_of_particles = None
+		total_nima = None
+	total_nima = wrap_mpi_bcast(total_nima, main_node, mpi_comm)
+	list_of_particles = wrap_mpi_bcast(list_of_particles, main_node, mpi_comm)
+	nima = len(list_of_particles)
+
+	image_start, image_end = MPI_start_end(total_nima, mpi_subsize, mpi_subrank)
+
+	data = [ stack[im] for im in list_of_particles ]
+	for im in xrange(nima):
+		data[im].set_attr('ID', list_of_particles[im])
+		ctf_applied = data[im].get_attr_default('ctf_applied', 0)
+		if CTF and ctf_applied == 0:
+			ctf_params = data[im].get_attr("ctf")
+			st = Util.infomask(data[im], mask2D, False)
+			data[im] -= st[0]
+			data[im] = filt_ctf(data[im], ctf_params)
+			data[im].set_attr('ctf_applied', 1)
+
+	cs = [0.0]*3
+	total_iter = 0
+
+	# initialize GA data structure [ [L2, [params]], ...]
+	if myid == main_node:
+		GA = [ [0.0, [[0.0,0.,0.0,0.0,0.0] for j in xrange(total_nima)]] for i in xrange(number_of_runs)]
+
+	orient_and_shuffle = False
+
+	# do the projection matching
+	for N_step in xrange(lstp):  # At this point there is just one value here, it cannot loop.
+		
+		terminate = 0
+		Iter = 0
+		while Iter < max_iter and terminate == 0:
+
+			Iter += 1
+			total_iter += 1
+
+			mpi_barrier(mpi_comm)
+			if myid == main_node:
+				log.add("ITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],yrng[N_step],step[N_step]))
+				start_time = time()
+
+			#=========================================================================
+			# build references
+			volft, kb = prep_vol(vol)
+			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, MPI=mpi_subcomm)
+			del volft, kb
+			all_ref_dirs = []
+			for r in refrings:
+				all_ref_dirs.append( [r.get_attr("phi"), r.get_attr("theta")] )
+			#=========================================================================
+
+			mpi_barrier(mpi_comm)
+			if myid == main_node:
+				log.add("Time to prepare rings: %f\n" % (time()-start_time))
+				start_time = time()
+
+			#=========================================================================
+			if total_iter == 1 or orient_and_shuffle:
+				# adjust params to references, calculate psi+shifts, calculate previousmax
+				for im in xrange(nima):
+					stable = data[im].get_attr_default("stable", 0)
+					if stable == 0:
+						data[im].set_attr("previousmax", -1.0e23)
+						data[im].set_attr("stable", 1)
+					else:
+						peak, temp = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step], delta[N_step]*0.7 )
+						data[im].set_attr("previousmax", peak)
+				if myid == main_node:
+					log.add("Time to calculate first psi+shifts+previousmax: %f\n" % (time()-start_time))
+					start_time = time()
+			#=========================================================================
+
+			mpi_barrier(mpi_comm)
+			if myid == main_node: start_time = time()
+			#=========================================================================
+			# alignment
+			if mpi_subrank == 0:
+				pixer = []
+				number_of_checked_refs = 0
+				proj_ids_to_process = range(nima)
+				shuffle(proj_ids_to_process)
+			while True:
+				# --------- broadcast projections ids
+				if mpi_subrank == 0:
+					if len(proj_ids_to_process) >= mpi_subsize:
+						proj_ids = proj_ids_to_process[:(mpi_subsize)]
+					else:
+						proj_ids = proj_ids_to_process[:]
+				else:
+					proj_ids = None
+				proj_ids = wrap_mpi_bcast(proj_ids, 0, mpi_subcomm)
+				if len(proj_ids) == 0:
+					break
+				if mpi_subrank < len(proj_ids):
+					# -------- alignment
+					im = proj_ids[mpi_subrank]
+					peak, pixel_error, checked_refs, iref = shc(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], an[N_step])
+					# -------- gather results to root
+					vector_assigned_refs = wrap_mpi_gatherv([iref], 0, mpi_subcomm)
+					vector_previousmax   = wrap_mpi_gatherv([data[im].get_attr("previousmax")], 0, mpi_subcomm)
+					vector_xformprojs    = wrap_mpi_gatherv([data[im].get_attr("xform.projection")], 0, mpi_subcomm)
+					vector_pixel_error   = wrap_mpi_gatherv([pixel_error], 0, mpi_subcomm)
+					vector_checked_ref   = wrap_mpi_gatherv([checked_refs], 0, mpi_subcomm)
+				else:
+					# -------- no projection assigned, send to root empty lists
+					vector_assigned_refs = wrap_mpi_gatherv([], 0, mpi_subcomm)
+					vector_previousmax   = wrap_mpi_gatherv([], 0, mpi_subcomm)
+					vector_xformprojs    = wrap_mpi_gatherv([], 0, mpi_subcomm)
+					vector_pixel_error   = wrap_mpi_gatherv([], 0, mpi_subcomm)
+					vector_checked_ref   = wrap_mpi_gatherv([], 0, mpi_subcomm)
+				# -------- merge results
+				if mpi_subrank == 0:
+					used_refs = set()
+					for i in xrange(len(vector_assigned_refs)):
+						ir = vector_assigned_refs[i]
+						if ir in used_refs:
+							# reference is already used - cancel all changes
+							vector_previousmax[i] = data[proj_ids[i]].get_attr("previousmax")
+							vector_xformprojs[i]  = data[proj_ids[i]].get_attr("xform.projection")
+						else:
+							used_refs.add(ir)
+							proj_ids_to_process.remove(proj_ids[i])
+							pixer.append(vector_pixel_error[i])
+							number_of_checked_refs += vector_checked_ref[i]
+					used_refs = list(used_refs)
+					used_refs.sort(reverse=True)
+				else:
+					used_refs = None
+				# ------- broadcast results
+				used_refs = wrap_mpi_bcast(used_refs, 0, mpi_subcomm)
+				vector_previousmax = wrap_mpi_bcast(vector_previousmax, 0, mpi_subcomm)
+				vector_xformprojs  = wrap_mpi_bcast(vector_xformprojs, 0, mpi_subcomm)
+				# ------- delete used references
+				for ir in used_refs:  del refrings[ir]
+				# ------- set projections parameters
+				for i in xrange(len(vector_previousmax)):
+					data[proj_ids[i]].set_attr("previousmax", vector_previousmax[i])
+					data[proj_ids[i]].set_attr("xform.projection", vector_xformprojs[i])
+			#=========================================================================
+			mpi_barrier(mpi_comm)
+			if myid == main_node:
+				log.add("Time of alignment = %f\n"%(time()-start_time))
+
+			#=========================================================================
+			#output pixel errors, check stop criterion
+			if mpi_subrank == 0:
+				all_pixer          = wrap_mpi_gatherv(pixer, 0, mpi_comm)
+				total_checked_refs = wrap_mpi_gatherv([number_of_checked_refs], main_node, mpi_comm)
+			else:
+				all_pixer          = wrap_mpi_gatherv([], 0, mpi_comm)
+				total_checked_refs = wrap_mpi_gatherv([], main_node, mpi_comm)
+			if myid == main_node:
+				total_checked_refs = sum(total_checked_refs)
+				lhist = 20
+				region, histo = hist_list(all_pixer, lhist)
+				log.add("=========================")
+				for lhx in xrange(lhist):
+					msg = " %10.3f     %7d"%(region[lhx], histo[lhx])
+					log.add(msg)
+				temp = 0
+				for i in all_pixer:
+					if i < 1.0: temp += 1
+				percent_of_pixerr_below_one = (temp * 1.0) / (total_nima * number_of_runs)
+				orient_and_shuffle = ( percent_of_pixerr_below_one > 0.3 )  #  TODO - parameter ?
+				#terminate          = ( percent_of_pixerr_below_one > 0.9 )  #  TODO - parameter ?
+				log.add("=========================")
+				log.add("Percent of positions with pixel error below 1.0 = ", (int(percent_of_pixerr_below_one*100)), "%","   Shuffling: ",orient_and_shuffle)
+			orient_and_shuffle = wrap_mpi_bcast(orient_and_shuffle, 0, mpi_comm)
+			#=========================================================================
+
+			#=========================================================================
+			# centering
+			if center == -1 and sym[0] == 'c':
+				from utilities      import estimate_3D_center_MPI, rotate_3D_shift
+				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(data[image_start:image_end], total_nima, mpi_subrank, mpi_subsize, 0, mpi_comm=mpi_subcomm) #estimate_3D_center_MPI(data, number_of_runs*total_nima, myid, number_of_proc, main_node, mpi_comm=mpi_comm)
+				if myid == main_node:
+					msg = " Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
+					log.add(msg)
+				if int(sym[1]) > 1:
+					cs[0] = cs[1] = 0.0
+					if myid == main_node:
+						log.add("For symmetry group cn (n>1), we only center the volume in z-direction\n")
+				cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, mpi_subcomm)
+				cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
+				rotate_3D_shift(data, cs)
+			#=========================================================================
+
+			mpi_barrier(mpi_comm)
+			if myid == main_node:
+				start_time = time()
+			#  Temporary - write out params
+			params = []
+			for im in data:
+				phi, theta, psi, sx, sy = get_params_proj(im)
+				params.append([phi, theta, psi, sx, sy])
+			params_0 = wrap_mpi_bcast(params, mpi_subroots[0], mpi_comm)
+			if mpi_subrank == 0:
+				from utilities import write_text_row
+				write_text_row(params, "qparams%04d%04d.hdf"%(myid,total_iter) )
+
+
+			#=========================================================================
+			# volume reconstruction
+			mpi_barrier(mpi_comm)
+			if myid == main_node:
+				start_time = time()
+			vol = volume_reconstruction(data[image_start:image_end], ali3d_options, mpi_subcomm)
+			if mpi_subrank == 0:  vol.write_image("qvolf%04d%04d.hdf"%(myid,total_iter))
+			# log
+			if myid == main_node:
+				log.add("3D reconstruction time = %f\n"%(time()-start_time))
+				start_time = time()
+
+			#=========================================================================
+			if orient_and_shuffle:
+				terminate = 0
+				params = []
+				for im in data:
+					phi, theta, psi, sx, sy = get_params_proj(im)
+					params.append([phi, theta, psi, sx, sy])
+
+				# ------ orientation - begin
+				params_0 = wrap_mpi_bcast(params, mpi_subroots[0], mpi_comm)
+				if mpi_subrank == 0:
+					if(sym[0] == "d"):
+						reduce_dsym_angles(params_0, sym)
+						reduce_dsym_angles(params, sym)
+					subset_thr, subset_min, avg_diff_per_image = find_common_subset_3([params_0, params], 2.0, len(params)/3, sym)
+					if len(subset_thr) < len(subset_min):
+						subset = subset_min
+					else:
+						subset = subset_thr
+					if(sym[0] != "d"):  orient_params([params_0, params], subset)
+				if(sym[0] != "d"):  params = wrap_mpi_bcast(params, 0, mpi_subcomm)
+				# ------ orientation - end
+				
+				# ------ Compute L2s and gather to the root
+				if mpi_subrank == 0:
+					L2 = vol.cmp("dot", vol, dict(negative = 0, mask = model_circle(last_ring, nx, nx, nx)))
+				if myid == 0:
+					all_L2s = []
+					for sr in mpi_subroots:
+						if sr == myid:
+							all_L2s.append(L2)
+						else:
+							all_L2s.append(wrap_mpi_recv(sr, mpi_comm))
+				else:
+					if mpi_subrank == 0:
+						wrap_mpi_send(L2, 0, mpi_comm)				
+
+				# ------ gather parameters to root
+				if myid == 0:
+					all_params = []
+					for sr in mpi_subroots:
+						if sr == myid:
+							all_params.append(params)
+						else:
+							all_params.append(wrap_mpi_recv(sr, mpi_comm))
+				else:
+					if mpi_subrank == 0:
+						wrap_mpi_send(params, 0, mpi_comm)
+				
+				# ---------------------------------
+
+				#  Add params to GA, do mutations and send back
+				if myid == 0:
+					#all_params = shuffle_configurations(all_params)
+					for i in xrange(number_of_runs):
+						GA.append([all_L2s[i],params[i]])
+					GA.sort(reverse=True)
+					GA = GA[:number_of_runs]
+					#  ---  Stopping criterion
+					from statistics import table_stat
+					from math import sqrt
+					q1,q2,q3,q4 = table_stat([GA[i][0] for i in xrange(number_of_runs)])
+					# Terminate if Vvariation of L2 norms less than 10% of their average
+					terminate = sqrt(max(q2,0.0))/q1 <0.1
+
+					if not terminate:
+						#  Now do the mutation
+
+						#  Put mutated params on one list
+						all_params = []
+						for i in xrange(number_of_runs):
+							all_params.append(GA[i][1])
+
+				terminate = wrap_mpi_bcast(terminate, main_node, mpi_comm)
+
+
+				if not terminate:
+					# Send params back
+					if myid == 0:
+						for i in xrange(number_of_runs):
+							sr = mpi_subroots[i]
+							if sr == myid:
+								params = all_params[i]
+							else:
+								wrap_mpi_send(all_params[i], sr, mpi_comm)
+					else:
+						if mpi_subrank == 0:
+							params = wrap_mpi_recv(0, mpi_comm)
+
+					params = wrap_mpi_bcast(params, 0, mpi_subcomm)
+					for i in xrange(nima):
+						set_params_proj(data[i], params[i])
+
+					#=========================================================================
+					# volume reconstruction
+					mpi_barrier(mpi_comm)
+					if myid == main_node:
+						start_time = time()
+					vol = volume_reconstruction(data[image_start:image_end], ali3d_options, mpi_subcomm)
+					if mpi_subrank == 0:  vol.write_image("qmutatedvolf%04d%04d.hdf"%(myid,total_iter))
+					# log
+					if myid == main_node:
+						log.add("3D reconstruction time = %f\n"%(time()-start_time))
+						start_time = time()
+					#=========================================================================
+
+				mpi_barrier(mpi_comm)
+				if myid == main_node:
+					log.add("Time of orientation and mutations = %f\n"%(time()-start_time))
+					start_time = time()
+
+	#=========================================================================
+	# gather parameters to subroot-s
+	params = []
+	previousmax = []
+	for im in data:
+		t = get_params_proj(im)
+		p = im.get_attr("previousmax")
+		params.append( [t[0], t[1], t[2], t[3], t[4]] )
+		previousmax.append(p)
+	assert(len(params) == nima)
+
+	# gather data to main root
+	if mpi_subrank == 0:
+		vol         = wrap_mpi_gatherv([vol], 0, mpi_comm)
+		params      = wrap_mpi_gatherv([params], 0, mpi_comm)
+		previousmax = wrap_mpi_gatherv([previousmax], 0, mpi_comm)
+	else:
+		vol         = wrap_mpi_gatherv([], 0, mpi_comm)
+		params      = wrap_mpi_gatherv([], 0, mpi_comm)
+		previousmax = wrap_mpi_gatherv([], 0, mpi_comm)
+
+	mpi_comm_free(mpi_subcomm)
+	
+	
+	if myid == main_node: 
+		log.add("Finish ali3d_multishc")
+		if(sym[0] == "d"):  reduce_dsym_angles(params, sym)
+		return params, vol, previousmax
+	else:
+		return None, None, None  # results for the other processes
+
+"""
+
+
+# parameters: list of (all) projections | reference volume | ...
 def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, number_of_runs=2 ):
 
 	from alignment    import Numrinit, prepare_refrings, proj_ali_incore_local, shc
@@ -332,7 +776,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				if mpi_subrank < len(proj_ids):
 					# -------- alignment
 					im = proj_ids[mpi_subrank]
-					peak, pixel_error, checked_refs, iref = shc(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step])
+					peak, pixel_error, checked_refs, iref = shc(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], an[N_step])
 					# -------- gather results to root
 					vector_assigned_refs = wrap_mpi_gatherv([iref], 0, mpi_subcomm)
 					vector_previousmax   = wrap_mpi_gatherv([data[im].get_attr("previousmax")], 0, mpi_subcomm)
@@ -369,8 +813,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				vector_previousmax = wrap_mpi_bcast(vector_previousmax, 0, mpi_subcomm)
 				vector_xformprojs  = wrap_mpi_bcast(vector_xformprojs, 0, mpi_subcomm)
 				# ------- delete used references
-				for ir in used_refs:
-					del refrings[ir]
+				for ir in used_refs:  del refrings[ir]
 				# ------- set projections parameters
 				for i in xrange(len(vector_previousmax)):
 					data[proj_ids[i]].set_attr("previousmax", vector_previousmax[i])
@@ -383,10 +826,10 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 			#=========================================================================
 			#output pixel errors, check stop criterion
 			if mpi_subrank == 0:
-				all_pixer = wrap_mpi_gatherv(pixer, 0, mpi_comm)
+				all_pixer          = wrap_mpi_gatherv(pixer, 0, mpi_comm)
 				total_checked_refs = wrap_mpi_gatherv([number_of_checked_refs], main_node, mpi_comm)
 			else:
-				all_pixer = wrap_mpi_gatherv([], 0, mpi_comm)
+				all_pixer          = wrap_mpi_gatherv([], 0, mpi_comm)
 				total_checked_refs = wrap_mpi_gatherv([], main_node, mpi_comm)
 			terminate = 0
 			if myid == main_node:
@@ -429,6 +872,15 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 			mpi_barrier(mpi_comm)
 			if myid == main_node:
 				start_time = time()
+			#  Temporary - write out params
+			params = []
+			for im in data:
+				phi, theta, psi, sx, sy = get_params_proj(im)
+				params.append([phi, theta, psi, sx, sy])
+			params_0 = wrap_mpi_bcast(params, mpi_subroots[0], mpi_comm)
+			if mpi_subrank == 0:
+				from utilities import write_text_row
+				write_text_row(params, "qparams%04d%04d.hdf"%(myid,total_iter) )
 			#=========================================================================
 			if orient_and_shuffle and not terminate:
 				params = []
@@ -493,6 +945,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 			if myid == main_node:
 				start_time = time()
 			vol = volume_reconstruction(data[image_start:image_end], ali3d_options, mpi_subcomm)
+			if mpi_subrank == 0:  vol.write_image("qvolf%04d%04d.hdf"%(myid,total_iter))
 			# log
 			if myid == main_node:
 				log.add("3D reconstruction time = %f\n"%(time()-start_time))
@@ -525,13 +978,14 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 	
 	if myid == main_node: 
 		log.add("Finish ali3d_multishc")
-		if(sym[0] == "d"):
-			for i in xrange(len(params)):
-				reduce_dsym_angles(params[i], sym)
+		if(sym[0] == "d"):  reduce_dsym_angles(params, sym)		
 		return params, vol, previousmax
 	else:
 		return None, None, None  # results for the other processes
 
+
+
+"""
 
 def shc_multi(data, refrings, numr, xrng, yrng, step, an, number_of_runs, finfo=None):
 	from utilities    import compose_transform2
