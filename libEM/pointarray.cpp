@@ -37,7 +37,6 @@
 #include "pointarray.h"
 #include "util.h"
 #include "vec3.h"
-#include "randnum.h"
 #include <vector>
 #include <cstring>
 
@@ -1241,7 +1240,7 @@ void PointArray::sim_minstep_seq(double meanshift) {
 	double mean=0.0;
 	for (int i=0; i<10; i++) {
 //		Vec3f shift=sim_descent(random()%n);
-		Vec3f shift=sim_descent(get_irand(0,n-1));
+		Vec3f shift=sim_descent(Util::get_irand(0,n-1));
 		mean+=shift.length();
 	}
 	mean/=10.0;
