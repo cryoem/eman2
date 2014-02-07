@@ -37,12 +37,17 @@
 #include "pointarray.h"
 #include "util.h"
 #include "vec3.h"
+#include "randnum.h"
 #include <vector>
 #include <cstring>
 
 #ifdef __APPLE__
 	typedef unsigned int uint;
 #endif	//__APPLE__
+
+#ifdef _WIN32
+	typedef unsigned int uint;
+#endif	//_WIN32
 
 using namespace EMAN;
 
@@ -1235,7 +1240,8 @@ void PointArray::sim_minstep_seq(double meanshift) {
 	// we compute 10 random gradients and use these to adjust stepsize
 	double mean=0.0;
 	for (int i=0; i<10; i++) {
-		Vec3f shift=sim_descent(random()%n);
+//		Vec3f shift=sim_descent(random()%n);
+		Vec3f shift=sim_descent(get_irand(0,n-1));
 		mean+=shift.length();
 	}
 	mean/=10.0;
