@@ -73,7 +73,7 @@ def main():
 	parser.add_argument("--naliref", default=5, type=int, help="Number of alignment references to when determining particle orientations", guitype='intbox', row=3, col=0, rowspan=1, colspan=1, mode="spr")
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None, guitype='strbox', row=4, col=0, rowspan=1, colspan=3, mode="spr")
 	parser.add_argument("--automask", default=False, action="store_true",help="This will perform a 2-D automask on class-averages to help with centering. May be useful for negative stain data particularly.")
-	parser.add_argument("--centeracf", default=False, action="store_true",help="This will use an alternative centering algorithm, which may work better with negative stain data. Alternative to --automask.")
+	parser.add_argument("--centeracf", default=False, action="store_true",help="This will use an alternative centering algorithm, which may work better with negative stain data. Alternative to --automask.",guitype='boolbox', row=2, col=2, rowspan=1, colspan=1, mode="spr")
 	parser.add_argument("--check", "-c",default=False, action="store_true",help="Checks the contents of the current directory to verify that e2refine2d.py command will work - checks for the existence of the necessary starting files and checks their dimensions. Performs no work ")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--maxshift", default=-1, type=int, help="Maximum particle translation in x and y")

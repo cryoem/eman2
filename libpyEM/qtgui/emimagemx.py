@@ -204,7 +204,7 @@ class EMMatrixPanel:
 
 
 class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
-	def __init__(self, data=None,application=None,winid=None, parent=None):
+	def __init__(self, data=None,application=None,winid=None, parent=None, title=""):
 
 		self.emit_events = False
 
@@ -220,6 +220,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.data=None
 #		EMGLWidget.__init__(self,ensure_gl_context=True,winid=winid)
 		EMImageMXWidget.allim[self] = 0
+		self.wintitle=title
 		self.file_name = ''					# file the images are from
 		self.infoname = None				# This is the info_name() associated with self.file_name or None
 #		self.image_file_name = None
@@ -399,6 +400,16 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 		self.emit(QtCore.SIGNAL("setsChanged"))
 
+	def get_set(self,name):
+		"""Returns the actual set object for the named set. Creates a new empty set of that
+		name if it doesn't exist. The user can actually muck about with this set if they like,
+		and provided they call the corresponding update method it should be fine. However, if
+		something else causes the set object to be reallocated in the meantime, strange things
+		may occur, so modifications of the set should be done promptly."""
+
+		if not self.sets.has_key(name) : self.sets[name]=set()
+		return self.sets[name]
+
 
 	def enable_set(self,name,lst=[],display=True,update=True, force=False):
 		'''
@@ -406,6 +417,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		'''
 		if not self.sets.has_key(name) or force : self.sets[name]=set(lst)
 		if display : self.sets_visible[name]=self.sets[name]
+		if self.current_set==None : self.current_set=name
 		self.force_display_update()
 		if update: self.updateGL()
 
@@ -424,6 +436,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		'''
 		try: self.sets_visible={db_name:self.sets[db_name]}
 		except : self.sets_visible={}
+		if self.current_set==None : self.current_set=name
 
 		self.emit(QtCore.SIGNAL("setsChanged"))
 		self.force_display_update()
@@ -446,6 +459,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 	def commit_sets(self):
 		"""this will store all of the current sets in the appropriate _info.json file, if available"""
+#		print "commit ",self.file_name,self.infoname
 		if self.infoname==None : return	# an in-ram stack of particles, no place to save to...
 
         # convert sets into tuples for more legible files
@@ -472,10 +486,15 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 	def invert_set(self,update_gl=True):
 		'''
-		Unset all images in the current set
+		Invert the current selection
 		'''
-		self.sets_manager.invert_set()
+
+		if self.current_set==None : return
+
+		cset=self.sets[self.current_set]
+		self.sets[self.current_set]=set(range(self.nimg))-cset
 		self.commit_sets()
+		
 		if update_gl:
 			self.force_display_update()
 			self.updateGL()
@@ -485,8 +504,11 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		'''
 		Sets all images in the current set
 		'''
-		self.sets_manager.all_set()
+		if self.current_set==None : return
+
+		self.sets[self.current_set]=set(range(self.nimg))
 		self.commit_sets()
+
 		if update_gl:
 			self.force_display_update()
 			self.updateGL()
@@ -494,8 +516,12 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 	def subset_set(self,toadd,update_gl=True):
 		"""merges toadd to current set"""
 
-		self.sets_manager.subset_set(toadd)
+		if self.current_set==None : return
+
+		cset=self.sets[self.current_set]
+		self.sets[self.current_set]=cset|set(toadd)
 		self.commit_sets()
+
 		if update_gl:
 			self.force_display_update()
 			self.updateGL()
@@ -649,8 +675,14 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			return (int(w)+26,int(hfac)+12) # the 12 is related to the EMParentWin... hack...
 		else: return (512+12,512+12)
 
+	def set_title(self,title):
+		"""This function will set a base title for the window, which will automatically be modified with the current filename
+		when there is one, the next time the file changes (so you should use this before loading data)."""
+		self.wintitle=title
+		EMGLWidget.setWindowTitle(self, title)
+
 	def setWindowTitle(self,filename):
-		EMGLWidget.setWindowTitle(self, remove_directories_from_name(filename))
+		EMGLWidget.setWindowTitle(self, "{} ({})".format(self.wintitle,base_name(filename)))
 
 	def xyz_changed(self,xyz):
 		if self.data.set_xyz(str(xyz)):
@@ -2568,7 +2600,6 @@ class EMMXSetsPanel(QtGui.QWidget):
 		self.setlist.clear()
 
 		for i,k in enumerate(keys):
-			print i,k
 			item=QtGui.QListWidgetItem(k)
 			item.setFlags(self.itemflags)
 			item.setTextColor(self.target().setcolors[i%len(self.target().setcolors)])
