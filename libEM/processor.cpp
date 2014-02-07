@@ -53,6 +53,10 @@
 	typedef unsigned int uint;
 #endif	//__APPLE__
 
+#ifdef _WIN32
+	typedef unsigned int uint;
+#endif	//_WIN32
+
 #ifdef EMAN2_USING_CUDA
 //#include "cuda/cuda_util.h"
 #include "cuda/cuda_processor.h"
