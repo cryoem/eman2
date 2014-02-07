@@ -8987,7 +8987,8 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 	if (verbose) printf("%ld voxels above threshold\n",n2seg);
 
 	// Extract the pixels for sorting
-	WSsortlist srt[n2seg];
+//	WSsortlist srt[n2seg];
+	WSsortlist * srt = new WSsortlist[n2seg+1];
 	size_t i=0;
 	for (int z=1; z<nz-1; z++) {
 		for (int y=1; y<ny-1; y++) {
@@ -9134,6 +9135,7 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 
 	}
 
+	delete [] srt;
 
 	return ret;
 }
