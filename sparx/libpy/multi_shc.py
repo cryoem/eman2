@@ -1670,6 +1670,9 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 	proj_begin, proj_end  = MPI_start_end(3*n_projs, mpi_size, mpi_rank)
 	ref_vol = volume_reconstruction(temp_projs[proj_begin:proj_end], ali3d_options, mpi_comm=mpi_comm)
 
+	if mpi_rank == 0:
+		ref_vol.write_image(log.prefix + "refvol2.hdf")
+
 	out_params, out_vol, out_peaks, out_r = ali3d_multishc_2(projections, ref_vol, ali3d_options, mpi_comm=mpi_comm, log=log)
 	if mpi_rank == 0:
 		assert(len(out_params) == n_projs)
