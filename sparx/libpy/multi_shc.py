@@ -453,7 +453,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 			if myid == main_node:
 				start_time = time()
 			vol = volume_reconstruction(data[image_start:image_end], ali3d_options, mpi_subcomm)
-			if mpi_subrank == 0:  vol.write_image("qvolf%04d%04d.hdf"%(myid,total_iter))
+			#if mpi_subrank == 0:  vol.write_image("qvolf%04d%04d.hdf"%(myid,total_iter))
 			# log
 			if myid == main_node:
 				log.add("3D reconstruction time = %f\n"%(time()-start_time))
@@ -596,7 +596,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 					if myid == main_node:
 						start_time = time()
 					vol = volume_reconstruction(data[image_start:image_end], ali3d_options, mpi_subcomm)
-					if mpi_subrank == 0:  vol.write_image("qmutatedvolf%04d%04d.hdf"%(myid,total_iter))
+					#if mpi_subrank == 0:  vol.write_image("qmutatedvolf%04d%04d.hdf"%(myid,total_iter))
 					# log
 					if myid == main_node:
 						log.add("3D reconstruction time = %f\n"%(time()-start_time))
@@ -1030,6 +1030,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 
 """
 
+"""
 def shc_multi(data, refrings, numr, xrng, yrng, step, an, number_of_runs, finfo=None):
 	from utilities    import compose_transform2
 	from math         import cos, pi
@@ -1113,7 +1114,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, number_of_runs, finfo=
 # 			data.del_attr("weight" + str(i))
 	
 	return peak, (pixel_error / 7), (number_of_checked_refs / 7), peaks_count
-
+"""
 
 # parameters: list of (all) projections | reference volume | ...
 def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None ):
@@ -1310,7 +1311,8 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None 
 			vol = volume_reconstruction(data, ali3d_options, mpi_comm)
 			# log
 			if myid == main_node:
-				log.add("3D reconstruction time = %f\n"%(time()-start_time))
+				L2 = vol.cmp("dot", vol, dict(negative = 0, mask = model_circle(last_ring, nx, nx, nx)))
+				log.add("3D reconstruction time = %f\n"%(time()-start_time),"   L2 norm:  %f"%L2)
 				start_time = time()
 			#=========================================================================
 
