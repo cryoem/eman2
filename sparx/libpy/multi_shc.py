@@ -42,7 +42,7 @@ def mult_transform(v1, v2):
 	return [ T.get_params("spider")["phi"], T.get_params("spider")["theta"], T.get_params("spider")["psi"], T.get_params("spider")["tx"], T.get_params("spider")["ty"]  ]
 
 
-def orient_params(params, indexes=None):
+def orient_params(params, indexes=None, sym = "c1"):
 	from utilities import rotation_between_anglesets
 	from pixel_error import angle_diff
 
@@ -53,15 +53,16 @@ def orient_params(params, indexes=None):
 		indexes = range(n)
 
 	for i in xrange(1,m):
-		cmp_par_i = []
-		cmp_par_0 = []
-		for j in indexes:
-			cmp_par_i.append(params[i][j])
-			cmp_par_0.append(params[0][j])
-		t1,t2,t3 = rotation_between_anglesets(cmp_par_i, cmp_par_0)
-		rot = [t1, t2, t3, 0.0, 0.0]
-		for j in xrange(n):
-			params[i][j] = mult_transform(params[i][j], rot)
+		if(sym[0] != "d"):
+			cmp_par_i = []
+			cmp_par_0 = []
+			for j in indexes:
+				cmp_par_i.append(params[i][j])
+				cmp_par_0.append(params[0][j])
+			t1,t2,t3 = rotation_between_anglesets(cmp_par_i, cmp_par_0)
+			rot = [t1, t2, t3, 0.0, 0.0]
+			for j in xrange(n):
+				params[i][j] = mult_transform(params[i][j], rot)
 		# mirror checking
 		psi_diff = angle_diff( [params[i][j][2] for j in indexes], [params[0][j][2] for j in indexes] )
 		if(abs(psi_diff-180.0) <90.0):
@@ -161,7 +162,7 @@ def find_common_subset_3(projs, target_threshold, minimal_subset_size=3, sym = "
 # parameters: list of (all) projections | reference volume | ...
 #  Genetic programming version
 #  The data structure:
-#  [[L2, [parameters row-wise]], [], []number_of_runs ]
+#  [[L2, [parameters row-wise]], [], []...number_of_runs ]
 #  It is kept on main proc
 def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, number_of_runs=2 ):
 
@@ -187,9 +188,9 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 	sym = sym[0].lower() + sym[1:]
 	delta  = ali3d_options.delta
 	center = ali3d_options.center
-	maxit  = ali3d_options.maxit
 	CTF    = ali3d_options.CTF
 	ref_a  = ali3d_options.ref_a
+	L2threshold = ali3d_options.L2threshold
 
 	if mpi_comm == None:
 		mpi_comm = MPI_COMM_WORLD
@@ -227,7 +228,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 	first_ring  = int(ir)
 	rstep       = int(rs)
 	last_ring   = int(ou)
-	max_iter    = int(maxit)
+	max_iter    = int(ali3d_options.maxit1)
 	center      = int(center)
 
 	vol = ref_vol
@@ -477,8 +478,8 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 						subset = subset_min
 					else:
 						subset = subset_thr
-					if(sym[0] != "d"):  orient_params([params_0, params], subset)
-				if(sym[0] != "d"):  params = wrap_mpi_bcast(params, 0, mpi_subcomm)
+					orient_params([params_0, params], subset)
+				params = wrap_mpi_bcast(params, 0, mpi_subcomm)
 				# ------ orientation - end
 				
 				# ------ Compute L2s and gather to the root
@@ -522,7 +523,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 					q1,q2,q3,q4 = table_stat([GA[i][0] for i in xrange(number_of_runs)])
 					# Terminate if variation of L2 norms less than 10% of their average
 					crit = sqrt(max(q2,0.0))/q1
-					terminate = crit <0.1
+					terminate = crit < L2threshold
 					for i in xrange(number_of_runs):
 						log.add("L2 norm for volume %3d  = %f"%(i,GA[i][0]))
 					log.add("L2 norm std dev %f\n"%crit)
@@ -670,7 +671,6 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 	sym = sym[0].lower() + sym[1:]
 	delta  = ali3d_options.delta
 	center = ali3d_options.center
-	maxit  = ali3d_options.maxit
 	CTF    = ali3d_options.CTF
 	ref_a  = ali3d_options.ref_a
 
@@ -710,7 +710,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 	first_ring  = int(ir)
 	rstep       = int(rs)
 	last_ring   = int(ou)
-	max_iter    = int(maxit)
+	max_iter    = int(ali3d_options.maxit1)
 	center      = int(center)
 
 	vol = ref_vol
@@ -1139,7 +1139,6 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None 
 	sym = sym[0].lower() + sym[1:]
 	delta  = ali3d_options.delta
 	center = ali3d_options.center
-	maxit  = ali3d_options.maxit
 	CTF    = ali3d_options.CTF
 	ref_a  = ali3d_options.ref_a
 
@@ -1171,7 +1170,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None 
 	first_ring  = int(ir)
 	rstep       = int(rs)
 	last_ring   = int(ou)
-	max_iter    = int(maxit)
+	max_iter    = int(ali3d_options.maxit2)
 	center      = int(center)
 
 	vol = ref_vol
@@ -1365,7 +1364,6 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None,
 	sym = sym[0].lower() + sym[1:]
 	delta  = ali3d_options.delta
 	center = ali3d_options.center
-	maxit  = ali3d_options.maxit
 	CTF    = ali3d_options.CTF
 	ref_a  = ali3d_options.ref_a
 
@@ -1397,7 +1395,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None,
 	first_ring  = int(ir)
 	rstep       = int(rs)
 	last_ring   = int(ou)
-	max_iter    = int(maxit)
+	max_iter    = int(ali3d_options.maxit2)
 	center      = int(center)
 
 	vol = ref_vol
@@ -1650,10 +1648,11 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 	if mpi_rank == 0:
 		write_text_file(subset, log.prefix + "indexes.txt")
 		for i in xrange(len(out_params)):
-			write_text_row(out_params[i], log.prefix + "part_" + str(i) + "_params.txt")
-			drop_image(out_vol[i], log.prefix + "part_" + str(i) + "_volf.hdf")
-			#write_text_row(out_peaks[i], log.prefix + "part_" + str(i) + "_peaks.txt")
+			write_text_row(out_params[i], log.prefix + "run_" + str(i) + "_params.txt")
+			drop_image(out_vol[i], log.prefix + "run_" + str(i) + "_volf.hdf")
+			#write_text_row(out_peaks[i], log.prefix + "run_" + str(i) + "_peaks.txt")
 
+		"""
 		temp_projs = []
 		for iP in xrange(len(out_params[0])):
 			iBestPeak = 0
@@ -1663,12 +1662,20 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 				set_params_proj( temp_projs[len(temp_projs)-1], out_params[iC][iP])
 			set_params_proj( projections[iP], out_params[iBestPeak][iP] )
 			projections[iP].set_attr("stable", 1)
+		"""
+		#  Use the best one to finish off
+		for iP in xrange(len(out_params[0])):
+			projections[iP].set_attr("stable", 1)
+			set_params_proj( projections[iP], out_params[0][iP] )
+	"""
 	else:
 		temp_projs = None
-
-	temp_projs = wrap_mpi_bcast(temp_projs, 0, mpi_comm)
-	proj_begin, proj_end  = MPI_start_end(3*n_projs, mpi_size, mpi_rank)
-	ref_vol = volume_reconstruction(temp_projs[proj_begin:proj_end], ali3d_options, mpi_comm=mpi_comm)
+	"""
+	#temp_projs = wrap_mpi_bcast(temp_projs, 0, mpi_comm)
+	projections = wrap_mpi_bcast(projections, 0, mpi_comm)
+	proj_begin, proj_end  = MPI_start_end(n_projs, mpi_size, mpi_rank)
+	#ref_vol = volume_reconstruction(temp_projs[proj_begin:proj_end], ali3d_options, mpi_comm=mpi_comm)
+	ref_vol = volume_reconstruction(projections[proj_begin:proj_end], ali3d_options, mpi_comm=mpi_comm)
 
 	if mpi_rank == 0:
 		ref_vol.write_image(log.prefix + "refvol2.hdf")

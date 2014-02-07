@@ -17,7 +17,7 @@ def main():
 	from multi_shc import multi_shc
 
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack  output_directory  [initial_volume]  --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood  --center=center_type --maxit=max_iter --CTF --snr=SNR  --ref_a=S --sym=c1 --function=user_function"
+	usage = progname + " stack  output_directory  [initial_volume]  --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood  --center=center_type --maxit1=max_iter1 --maxit2=max_iter2 --L2threshold=0.1  --CTF --snr=SNR  --ref_a=S --sym=c1 --function=user_function"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",       type= "int",   default= 1,                  help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--ou",       type= "int",   default= -1,                 help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
@@ -28,7 +28,9 @@ def main():
 	parser.add_option("--delta",    type="string", default= "2",                help="angular step of reference projections")
 	parser.add_option("--an",       type="string", default= "-1",               help="angular neighborhood for local searches (phi and theta)")
 	parser.add_option("--center",   type="float",  default= -1,                 help="-1: average shift method; 0: no centering; 1: center of gravity (default=-1)")
-	parser.add_option("--maxit",    type="float",  default= 100,                help="maximum number of iterations performed for each angular step (set to 100) ")
+	parser.add_option("--maxit1",    type="float",  default= 400,               help="maximum number of iterations performed for the GA part (set to 400) ")
+	parser.add_option("--maxit2",    type="float",  default= 30,               help="maximum number of iterations performed for the finishing up part (set to 30) ")
+	parser.add_option("--L2threshold",    type="float",  default= 0.05,         help="Stopping criterion of GA given as a maximum relative dispersion of L2 norms (set to 0.5) ")
 	parser.add_option("--CTF",      action="store_true", default=False,         help="Consider CTF correction during the alignment ")
 	parser.add_option("--snr",      type="float",  default= 1.0,                help="Signal-to-Noise Ratio of the data")	
 	parser.add_option("--ref_a",    type="string", default= "S",                help="method for generating the quasi-uniformly distributed projection directions (default S)")
