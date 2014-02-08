@@ -932,7 +932,7 @@ class SubtomoSimTask(JSTask):
 					mode=options.reconstructor[-1]['mode']
 					
 					print "\nThe reconstructor mode has been changed from default to", mode
-					sys.exit()
+					#sys.exit()
 					
 		r = Reconstructors.get(options.reconstructor[0],{'size':(box,box,box),'sym':'c1','verbose':True,'mode':'gauss_2'})
 		#r = Reconstructors.get(options.reconstructor[0],options.reconstructor[1])
