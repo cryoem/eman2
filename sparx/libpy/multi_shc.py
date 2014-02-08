@@ -1713,3 +1713,35 @@ def reduce_dsym_angles(p1, sym):
 		 p1[i][2] = q["psi"]
 		 p1[i][3] = -q["tx"]
 		 p1[i][4] = -q["ty"]
+
+
+
+
+def get_dsym_angles(p1, sym):
+	#  works only for d symmetry
+	from utilities import get_symt
+	from EMAN2 import Vec2f, Transform
+	t = get_symt(sym)
+	ns = int(sym[1:])
+	for i in xrange(len(t)):  t[i] = t[i].inverse()
+
+	for i in xrange(len(p1)):
+		 a = Transform({"type":"spider","phi":p1[i][0], "theta":p1[i][1], "psi":p1[i][2]})
+		 a.set_trans(Vec2f(-p1[i][3], -p1[i][4]))
+		 for l in xrange(len(t)):
+			q = a*t[l]
+			q = q.get_params("spider")
+			print  q["phi"], q["theta"], q["psi"],-q["tx"],-q["tx"]
+
+
+	mm = Transform({"type":"spider","phi":180., "theta":180., "psi":0.})
+
+	for i in xrange(len(p1)):
+		 a = Transform({"type":"spider","phi":p1[i][0], "theta":p1[i][1], "psi":-p1[i][2]})
+		 a.set_trans(Vec2f(-p1[i][3], -p1[i][4]))
+		 for l in xrange(len(t)):
+			q = a*t[l]
+			q = mm*q
+			q = q.get_params("spider")
+			print  q["phi"], q["theta"], q["psi"],-q["tx"],-q["tx"]
+
