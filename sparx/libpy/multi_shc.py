@@ -49,11 +49,23 @@ def orient_params(params, indexes=None, sym = "c1"):
 	m = len(params)
 	n = len(params[0])
 
-	if indexes == None:
-		indexes = range(n)
-
-	for i in xrange(1,m):
-		if(sym[0] != "d"):
+	if(sym[0] == "d"):
+		# In this one the first params is taken as a reference
+		if indexes == None:
+			mirror_and_reduce_dsym(params, sym)
+		else:
+			temp = []
+			for i in xrange(m):
+				temp.append([params[i][j] for j in indexes])
+			mirror_and_reduce_dsym(temp, sym)
+			for i in xrange(1,m):
+				k = 0
+				for j in indexes:
+					params[i][j] = temp[i][k]
+					k += 1
+	else:
+		if indexes == None:   indexes = range(n)
+		for i in xrange(1,m):
 			cmp_par_i = []
 			cmp_par_0 = []
 			for j in indexes:
@@ -63,12 +75,12 @@ def orient_params(params, indexes=None, sym = "c1"):
 			rot = [t1, t2, t3, 0.0, 0.0]
 			for j in xrange(n):
 				params[i][j] = mult_transform(params[i][j], rot)
-		# mirror checking
-		psi_diff = angle_diff( [params[i][j][2] for j in indexes], [params[0][j][2] for j in indexes] )
-		if(abs(psi_diff-180.0) <90.0):
-			#mirror
-			for j in xrange(n):
-				params[i][j][2] = (params[i][j][2] + 180.0) % 360.0
+			# mirror checking
+			psi_diff = angle_diff( [params[i][j][2] for j in indexes], [params[0][j][2] for j in indexes] )
+			if(abs(psi_diff-180.0) <90.0):
+				#mirror
+				for j in indexes:
+					params[i][j][2] = (params[i][j][2] + 180.0) % 360.0
 
 
 def shuffle_configurations(params):
@@ -102,7 +114,7 @@ def calculate_matrix_rot(projs):
 def find_common_subset_3(projs, target_threshold, minimal_subset_size=3, sym = "c1", thresholds=False):
 	from global_def import Util
 
-	n = len(projs[0])
+	n  = len(projs[0])
 	sc = len(projs)
 
 	subset = range(n)
@@ -116,20 +128,30 @@ def find_common_subset_3(projs, target_threshold, minimal_subset_size=3, sym = "
 
 	for iIter in xrange(n-2):
 		projs2 = [0.0]*sc
-		trans_projs = []
 		for iConf in xrange(sc):
 			projs2[iConf] = []
 			for i in subset:
 				projs2[iConf].append(projs[iConf][i][:])
-				trans_projs.extend(projs[iConf][i][0:5])
-		if( sym[0] == "d"):		matrix_rot  = [[[0.0,0.0,0.0,0.0,0.0] for i in xrange(sc)] for k in xrange(sc)]
-		else:					matrix_rot = calculate_matrix_rot(projs2)
-
+		if( sym[0] == "d"):
+			# have to figure whether anything has to be mirrored and then reduce the angles.
+			mirror_and_reduce_dsym(projs2, sym)
+		trans_projs = []
+		if( sym[0] == "d"):
+			matrix_rot  = [[[0.0,0.0,0.0,0.0,0.0] for i in xrange(sc)] for k in xrange(sc)]
+			for iConf in xrange(sc):
+				for i in xrange(len(projs2[iConf])):
+					trans_projs.extend(projs2[iConf][i][0:5])
+		else:
+			matrix_rot = calculate_matrix_rot(projs2)
+			for iConf in xrange(sc):
+				for i in subset:
+					trans_projs.extend(projs[iConf][i][0:5])
 		trans_matrix = []
 		for i in xrange(sc):
 			for j in xrange(i):
 				trans_matrix.extend(matrix_rot[i][j][0:3])
 		avg_diff_per_image = Util.diff_between_matrix_of_3D_parameters_angles(trans_projs, trans_matrix)
+		#print  "  AAAA ",iIter
 		#print avg_diff_per_image
 		max_error = -1.0
 		the_worst_proj = -1
@@ -478,7 +500,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 						subset = subset_min
 					else:
 						subset = subset_thr
-					orient_params([params_0, params], subset)
+					if(sym[0] != "d"):  orient_params([params_0, params], subset)
 				params = wrap_mpi_bcast(params, 0, mpi_subcomm)
 				# ------ orientation - end
 				
@@ -1715,7 +1737,76 @@ def reduce_dsym_angles(p1, sym):
 		 p1[i][4] = -q["ty"]
 
 
+def mirror_and_reduce_dsym(params, sym):
+	# for the time being do it in a silly way, i.e., select first as a reference and run with it.
+	from utilities import get_symt
+	from EMAN2 import Vec2f, Transform, EMData
+	from pixel_error import angle_diff
 
+	sc = len(params)
+	ns = len(params[0])
+	#  Convert 0 to transforms
+	t0 = [None]*ns
+	for j in xrange(ns):
+		t0[j] = Transform({"type":"spider","phi":params[0][j][0], "theta":params[0][j][1], "psi":params[0][j][2]})
+		#t0[j].set_trans(Vec2f(-params[0][j][3], -params[0][j][4]))
+	#  get sym transforms
+	ts = get_symt(sym)
+	ks = len(ts)
+	for i in xrange(ks):  ts[i] = ts[i].inverse()
+
+	# set rotation for mirror
+	mm = Transform({"type":"spider","phi":360./2/int(sym[1:]), "theta":0., "psi":0.})
+
+
+	for i in xrange(1,sc):
+		# mirror checking
+		psi_diff = angle_diff( [params[i][j][2] for j in xrange(ns)], [params[0][j][2] for j in xrange(ns)] )
+		if(abs(psi_diff-180.0) <90.0):
+			#mirror
+			# For each projection direction from the reference set (here zero) find the nearest reduced from the other set
+			# and replace it in the other set
+			for j in xrange(ns):
+				apixer = 1.e20
+				qt = Transform({"type":"spider","phi":params[i][j][0], "theta":params[i][j][1], "psi":180.0+params[i][j][2]})
+				qt.set_trans(Vec2f(-params[i][j][3], -params[i][j][4]))
+				for k in xrange(ks):
+					ut = qt*ts[k]
+					ut = ut*mm
+					per = EMData().max_3D_pixel_error(t0[j], ut, 100.0)
+					if(per < apixer):
+						apixer = per
+						bk = k
+				qt.set_trans(Vec2f(-params[i][j][3], -params[i][j][4]))
+				bt = qt*ts[bk]
+				bt = bt*mm
+				bt = bt.get_params("spider")
+				params[i][j][0] = bt["phi"]
+				params[i][j][1] = bt["theta"]
+				params[i][j][2] = bt["psi"]
+				params[i][j][3] = -bt["tx"]
+				params[i][j][4] = -bt["tx"]
+		else:
+			# For each projection direction from the reference set (here zero) find the nearest reduced from the other set
+			# and replace it in the other set
+			for j in xrange(ns):
+				apixer = 1.e20
+				qt = Transform({"type":"spider","phi":params[i][j][0], "theta":params[i][j][1], "psi":params[i][j][2]})
+				qt.set_trans(Vec2f(-params[i][j][3], -params[i][j][4]))
+				for k in xrange(ks):
+					ut = qt*ts[k]
+					per = EMData().max_3D_pixel_error(t0[j], ut, 1.0)
+					if(per < apixer):
+						apixer = per
+						bk = k
+				qt.set_trans(Vec2f(-params[i][j][3], -params[i][j][4]))
+				bt = qt*ts[bk]
+				bt = bt.get_params("spider")
+				params[i][j][0] = bt["phi"]
+				params[i][j][1] = bt["theta"]
+				params[i][j][2] = bt["psi"]
+				params[i][j][3] = -bt["tx"]
+				params[i][j][4] = -bt["tx"]
 
 def get_dsym_angles(p1, sym):
 	#  works only for d symmetry
@@ -1731,17 +1822,17 @@ def get_dsym_angles(p1, sym):
 		 for l in xrange(len(t)):
 			q = a*t[l]
 			q = q.get_params("spider")
-			print  q["phi"], q["theta"], q["psi"],-q["tx"],-q["tx"]
+			print  " s ",q["phi"], q["theta"], q["psi"],-q["tx"],-q["tx"]
 
 
-	mm = Transform({"type":"spider","phi":180., "theta":180., "psi":0.})
+	mm = Transform({"type":"spider","phi":180., "theta":0., "psi":0.})
 
 	for i in xrange(len(p1)):
-		 a = Transform({"type":"spider","phi":p1[i][0], "theta":p1[i][1], "psi":-p1[i][2]})
-		 a.set_trans(Vec2f(-p1[i][3], -p1[i][4]))
-		 for l in xrange(len(t)):
+		a = Transform({"type":"spider","phi":-p1[i][0], "theta":180-p1[i][1], "psi":p1[i][2]})
+		a.set_trans(Vec2f(-p1[i][3], -p1[i][4]))
+		a = mm*a
+		for l in xrange(len(t)):
 			q = a*t[l]
-			q = mm*q
 			q = q.get_params("spider")
-			print  q["phi"], q["theta"], q["psi"],-q["tx"],-q["tx"]
+			print  " m ",q["phi"], q["theta"], q["psi"],-q["tx"],-q["tx"]
 
