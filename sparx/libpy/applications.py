@@ -11329,8 +11329,9 @@ def imgstat_inf( stacks, rad ):
 		img = get_im( stacks[0], i )
 
 		[avg,sigma,fmin,fmax] = Util.infomask( img, mask, True )
+		L2 = img.cmp("dot", img, dict(negative = 0, mask = mask))
 
-		print "nx,ny,nz,avg,sigma,min,max: %6d %6d %6d %11.4e %10.5f %10.5f %10.5f" % (nx, ny, nz, avg, sigma, fmin, fmax )
+		print "nx,ny,nz,avg,sigma,min,max, L2: %6d %6d %6d %11.4e %10.5f %10.5f %10.5f %10.5f" % (nx, ny, nz, avg, sigma, fmin, fmax, L2 )
 
 def imgstat( stacks, ifccc, fscfile, pinf, rad ):
 	if ifccc:
