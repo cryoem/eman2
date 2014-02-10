@@ -3251,6 +3251,7 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 					peak, pixel_error = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
 				else:
 					peak, pixel_error = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step])
+				data[im].set_attr("previousmax", peak)
 			if center == -1 and sym[0] == 'c':
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center(data)
 				msg = "Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
@@ -3508,6 +3509,7 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 						peak, pixer[im] = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],finfo)
 					else:
 						peak, pixer[im] = proj_ali_incore_local_psi(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],apsi[N_step],finfo)
+				data[im].set_attr("previousmax", peak)
 
 			if myid == main_node:
 				print_msg("Time of alignment = %d\n"%(time()-start_time))
@@ -3559,7 +3561,7 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 
 			# write out headers, under MPI writing has to be done sequentially
 			mpi_barrier(MPI_COMM_WORLD)
-			par_str = ['xform.projection', 'ID']
+			par_str = ['xform.projection', 'previousmax', 'ID']
 			if myid == main_node:
 	   			if(file_type(stack) == "bdb"):
 	        			from utilities import recv_attr_dict_bdb
@@ -3570,7 +3572,6 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				print_msg("Time to write header information= %d\n"%(time()-start_time))
 				start_time = time()
 	        	else:	       send_attr_dict(main_node, data, par_str, image_start, image_end)
-
 
 			if CTF: vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution%04d"%(total_iter)), myid, main_node, npad = npad)
 			else:    vol, fscc = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution%04d"%(total_iter)), myid, main_node, npad = npad)
@@ -3601,7 +3602,6 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 
 			del varf
 			bcast_EMData_to_all(vol, myid, main_node)
-
 
 
 	if myid == main_node: print_end_msg("ali3d_MPI")
@@ -3820,6 +3820,7 @@ def ali3dpsi_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 				else:
 					psi   = (720.0 - ang)%360.0
 				set_params_proj(data[im],[phi,tht,psi,0.0,0.0])
+				data[im].set_attr("previousmax", peak)
 
 			if myid == main_node:
 				print_msg("Time of alignment = %d\n"%(time()-start_time))
@@ -3844,7 +3845,7 @@ def ali3dpsi_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 			bcast_EMData_to_all(vol, myid, main_node)
 			# write out headers, under MPI writing has to be done sequentially
 			mpi_barrier(MPI_COMM_WORLD)
-			par_str = ['xform.projection', 'ID']
+			par_str = ['xform.projection', 'previousmax', 'ID']
 			if myid == main_node:
 	   			if(file_type(stack) == "bdb"):
 	        			from utilities import recv_attr_dict_bdb
@@ -4049,7 +4050,7 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 	final_volume_filtered = None
 	# do the projection matching
 	for N_step in xrange(lstp):
-		
+
 		terminate = 0
 		Iter = 0
 		while Iter < max_iter and terminate == 0:
@@ -4065,14 +4066,17 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 			# build references
 			volft, kb = prep_vol(vol)
 			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, True)
+			lastdelta = delta[N_step]
 			del volft, kb
 			#=========================================================================
-			
+
 			if myid == main_node:
 				print_msg("Time to prepare rings: %d\n" % (time()-start_time))
 				start_time = time()
-			
+
 			#=========================================================================
+			#  We assume previousmax exists
+			"""
 			if total_iter == 1:
 				# adjust params to references, calculate psi+shifts, calculate previousmax
 				for im in xrange(nima):
@@ -4081,11 +4085,14 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 						data[im].set_attr("previousmax", -1.0e23)
 						data[im].set_attr("stable", 1)
 					else:
-						peak, pixer[im] = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],1.0,finfo)
+						#print "  params  ",get_params_proj(data[im])
+						peak, pixer[im] = proj_ali_incore_local(data[im],refrings,numr,0.0,0.0,1.0,delta[N_step]/4.0,finfo)
 						data[im].set_attr("previousmax", peak)
+						print "peak  ",im,peak,get_params_proj(data[im])
 				if myid == main_node:
 					print_msg("Time to calculate first psi+shifts+previousmax: %d\n" % (time()-start_time))
 					start_time = time()
+			"""
 			#=========================================================================
 
 			#=========================================================================
@@ -4109,10 +4116,10 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 						to_be_deleted.sort(reverse=True)
 						for irr in to_be_deleted:
 							del refrings[irr]
-				else:
-					if gamma == 0:
+				elif gamma == 0:
 						del refrings[iref]
 			#=========================================================================
+			del refrings
 
 			if myid == main_node:
 				print_msg("Time of alignment = %d\n"%(time()-start_time))
@@ -4179,6 +4186,7 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 					else:
 						from utilities import recv_attr_dict
 						recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+					"""
 					# save parameters to file
 					paro = [None]*total_nima
 					projs_headers = EMData.read_images(stack, range(total_nima), True)
@@ -4194,13 +4202,14 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 					# ------- end of saving parameters to file
 					print_msg("Time to write header information= %d\n"%(time()-start_time))
 					start_time = time()
+					"""
 				else:
 					send_attr_dict(main_node, data, par_str, image_start, image_end)
 			#=========================================================================
 
 			#=========================================================================
 			# volume reconstruction
-			vol_previous = vol
+			#vol_previous = vol
 			if CTF: vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution%04d"%(total_iter)), myid, main_node, npad = npad)
 			else:   vol, fscc = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution%04d"%(total_iter)), myid, main_node, npad = npad)
 			# log
@@ -4221,25 +4230,21 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 			# user functions + save volume
 			if myid == main_node:
 				#drop_image(vol, os.path.join(outdir, "vol%04d.hdf"%(total_iter)))
-				final_volume = vol
 				ref_data[2] = vol
 				ref_data[3] = fscc
 				ref_data[4] = varf
 				#  call user-supplied function to prepare reference image, i.e., center and filter it
 				vol, cs = user_func(ref_data)
 				drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(total_iter)))
-				final_volume_filtered = vol
-				print_msg("Euclidean distance between the current and the previous volume: " + str(sqrt(vol.cmp("SqEuclidean",vol_previous,{"mask":mask3D,"zeromask":0,"normto":0}))) + "\n")
+				#print_msg("Euclidean distance between the current and the previous volume: " + str(sqrt(vol.cmp("SqEuclidean",vol_previous,{"mask":mask3D,"zeromask":0,"normto":0}))) + "\n")
 				print_msg("L2 norm of the volume: " + str(vol.cmp("dot", vol, {"negative":0, "mask":mask3D})) + "\n")
 			del varf
 			# broadcast volume
 			bcast_EMData_to_all(vol, myid, main_node)
 			#=========================================================================
 
+
 	if myid == main_node: 
-		write_text_row(final_params, os.path.join(outdir, "params.txt"))
-		drop_image(final_volume_filtered, os.path.join(outdir, "volume_filt.hdf"))
-		drop_image(final_volume         , os.path.join(outdir, "volume.hdf"     ))
 		print_end_msg("ali3d_shcMPI")
 
 
@@ -11329,7 +11334,8 @@ def imgstat_inf( stacks, rad ):
 		img = get_im( stacks[0], i )
 
 		[avg,sigma,fmin,fmax] = Util.infomask( img, mask, True )
-		L2 = img.cmp("dot", img, dict(negative = 0, mask = mask))
+		if mask == None:    L2 = img.cmp("dot", img, dict(negative = 0))
+		else:               L2 = img.cmp("dot", img, dict(negative = 0, mask = mask))
 
 		print "nx,ny,nz,avg,sigma,min,max, L2: %6d %6d %6d %11.4e %10.5f %10.5f %10.5f %10.5f" % (nx, ny, nz, avg, sigma, fmin, fmax, L2 )
 

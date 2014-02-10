@@ -4060,19 +4060,19 @@ def wrap_mpi_recv(source, communicator = None):
 
 def wrap_mpi_bcast(data, root, communicator = None):
 	from mpi import mpi_bcast, MPI_COMM_WORLD, mpi_comm_rank, MPI_CHAR
-	
+
 	if communicator == None:
 		communicator = MPI_COMM_WORLD
-	
+
 	rank = mpi_comm_rank(communicator)
-	
+
 	if rank == root:
 		msg = pack_message(data)
 		n = pack("I",len(msg))
 	else:
 		msg = None
 		n = None
-		
+
 	n = mpi_bcast(n, 4, MPI_CHAR, root, communicator)  # int MPI_Bcast ( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm ) 
 	n=unpack("I",n)[0]
 	msg = mpi_bcast(msg, n, MPI_CHAR, root, communicator)  # int MPI_Bcast ( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm ) 

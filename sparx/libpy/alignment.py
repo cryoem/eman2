@@ -1103,6 +1103,7 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 	#phi, theta, psi, sxo, syo = get_params_proj(data)
 	t1 = data.get_attr("xform.projection")
 	dp = t1.get_params("spider")
+	#print  dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]
 	if finfo:
 		finfo.write("Image id: %6d\n"%(ID))
 		#finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, sxo, syo))
@@ -1114,6 +1115,7 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 	iref=int(iref)
 	#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
 	#ang = (ang+360.0)%360.0
+	#print  ang, sxs, sys, mirror, iref, peak
 	if iref > -1:
 		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
@@ -1137,6 +1139,7 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 		data.set_attr("xform.projection", t2)
 		from pixel_error import max_3D_pixel_error
 		pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
+		#print phi, theta, psi, s2x, s2y, peak, pixel_error
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 			finfo.flush()
@@ -2070,7 +2073,7 @@ def shc(data, refrings, numr, xrng, yrng, step, an, finfo=None):
 	ant = cos(an*pi/180.0)
 	#phi, theta, psi, sxo, syo = get_params_proj(data)
 	t1 = data.get_attr("xform.projection")
-	dp = t1.get_params("spider")
+	#dp = t1.get_params("spider")
 	if finfo:
 		finfo.write("Image id: %6d\n"%(ID))
 		#finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, sxo, syo))
@@ -2083,8 +2086,10 @@ def shc(data, refrings, numr, xrng, yrng, step, an, finfo=None):
 	number_of_checked_refs += int(checked_refs)
 	#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
 	#ang = (ang+360.0)%360.0
-	
+
 	if peak <= previousmax:
+		return -1.0e23, 0.0, number_of_checked_refs, -1
+		"""
 		# there is no better solutions - if the current position is free, we don't change anything
 		last_phi = dp["phi"]
 		last_theta = dp["theta"]
@@ -2096,32 +2101,33 @@ def shc(data, refrings, numr, xrng, yrng, step, an, finfo=None):
 				break
 		if found_current_location:
 			return -1.0e23, 0.0, number_of_checked_refs, ir
-		
-	# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
-	# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-	angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
-	if  mirror:
-		phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
-		theta = 180.0-refrings[iref].get_attr("theta")
-		psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
-		s2x   = sxb #- dp["tx"]
-		s2y   = syb #- dp["ty"]
-	else:
-		phi   = refrings[iref].get_attr("phi")
-		theta = refrings[iref].get_attr("theta")
-		psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-		s2x   = sxb #- dp["tx"]
-		s2y   = syb #- dp["ty"]
+		"""
+	else:	
+		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
+		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
+		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+		if  mirror:
+			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
+			theta = 180.0-refrings[iref].get_attr("theta")
+			psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
+			s2x   = sxb #- dp["tx"]
+			s2y   = syb #- dp["ty"]
+		else:
+			phi   = refrings[iref].get_attr("phi")
+			theta = refrings[iref].get_attr("theta")
+			psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
+			s2x   = sxb #- dp["tx"]
+			s2y   = syb #- dp["ty"]
 
-	#set_params_proj(data, [phi, theta, psi, s2x, s2y])
-	t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
-	t2.set_trans(Vec2f(-s2x, -s2y))
-	data.set_attr("xform.projection", t2)
-	data.set_attr("previousmax", peak)
-	from pixel_error import max_3D_pixel_error
-	pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
-	if finfo:
-		finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
-		finfo.flush()
-	return peak, pixel_error, number_of_checked_refs, iref
+		#set_params_proj(data, [phi, theta, psi, s2x, s2y])
+		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
+		t2.set_trans(Vec2f(-s2x, -s2y))
+		data.set_attr("xform.projection", t2)
+		data.set_attr("previousmax", peak)
+		from pixel_error import max_3D_pixel_error
+		pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
+		if finfo:
+			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
+			finfo.flush()
+		return peak, pixel_error, number_of_checked_refs, iref
 

@@ -73,7 +73,7 @@ def main():
 	parser.add_option("--chunk",    type="float",  default= 0.2,                help="percentage of data used for alignment")
 	parser.add_option("--rantest",  action="store_true", default=False,         help="rantest")
 	parser.add_option("--searchpsi",action="store_true", default= False,        help="psi refinement")
-	parser.add_option("--gamma",    type="float",  default= 0.1,                help="gamma")
+	parser.add_option("--gamma",    type="float",  default= -1.0,                help="gamma")
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
 		print "usage: " + usage
