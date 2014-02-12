@@ -180,8 +180,8 @@ namespace EMAN
 		static ImageIO *get_imageio(const string & filename, int rw_mode,
 									ImageType image_type = IMAGE_UNKNOWN);
 
-        /** Ian: Close ImageIO object*/
-        static void *close_imageio(const string & filename, const ImageIO * io);
+      /** Ian: Close ImageIO object*/
+      static void close_imageio(const string & filename, const ImageIO * io);
 
 		/** Give each image type a meaningful name.
 		 * @param type Image format type.
