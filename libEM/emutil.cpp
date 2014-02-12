@@ -668,7 +668,7 @@ ImageIO *EMUtil::get_imageio(const string & filename, int rw,
 	return imageio;
 }
 
-void *EMUtil::close_imageio(const string & filename, const ImageIO * io)
+void EMUtil::close_imageio(const string & filename, const ImageIO * io)
 {
     //printf("EMUtil::close_imageio\n");
     #ifdef IMAGEIO_CACHE
