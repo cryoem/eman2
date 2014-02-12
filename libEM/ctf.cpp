@@ -686,8 +686,8 @@ vector <float> EMAN2Ctf::compute_1d_fromimage(int size, float ds, EMData *image)
 		for (x=0; x<nx; x+=2,i+=2) {
 			if (x==0 && y>ny/2) continue;
 			float r=(float)(Util::hypot_fast(x/2,y<ny/2?y:ny-y));		// origin at 0,0; periodic
-			float a=(float)atan2(y<ny/2?y:ny-y,x/2);					// angle to point (radians)
-			r=stos2(r*ds,-dfdiff/2*cos(2.0*a-2.0*M_PI/180.0*dfang))/ds;			// angle-based defocus -> convert s to remove astigmatism, dfang in degrees
+			float a=(float)atan2((float)(y<ny/2?y:ny-y),(float)(x/2));		// angle to point (radians)
+			r=stos2(r*ds,-dfdiff/2*cos(2.0*a-2.0*M_PI/180.0*dfang))/ds;		// angle-based defocus -> convert s to remove astigmatism, dfang in degrees
 			int f=int(r);	// safe truncation, so floor isn't needed
 			r-=float(f);	// r is now the fractional spacing between bins
 			
@@ -725,13 +725,13 @@ vector <float> EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * sf
 	r.resize(np);
 
 	float s = 0;
-	float g1=M_PI/2.0*cs*1.0e7*pow(lambda(),3.0);	// s^4 coefficient for gamma, cached in a variable for simplicity (maybe speed? depends on the compiler)
+	float g1=M_PI/2.0*cs*1.0e7*pow(lambda(),3.0f);	// s^4 coefficient for gamma, cached in a variable for simplicity (maybe speed? depends on the compiler)
 	float g2=M_PI*lambda()*defocus*10000.0;			// s^2 coefficient for gamma 
 	float acac=acos(ampcont/100.0);					// instead of ac*cos(g)+sqrt(1-ac^2)*sin(g), we can use cos(g-acos(ac)) and save a trig op
 	switch (type) {
 	case CTF_AMP:
 		for (int i = 0; i < np; i++) {
-			float gam=-g1*pow(s,4.0)+g2*pow(s,2.0);
+			float gam=-g1*s*s*s*s+g2*s*s;
 			r[i] = cos(gam-acac)*exp(-(bfactor/4.0f * s * s));
 			s += ds;
 		}
@@ -739,7 +739,7 @@ vector <float> EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * sf
 
 	case CTF_SIGN:
 		for (int i = 0; i < np; i++) {
-			float gam=-g1*pow(s,4.0)+g2*pow(s,2.0);
+			float gam=-g1*s*s*s*s+g2*s*s;
 			r[i] = cos(gam-acac)<0?-1.0:1.0;
 			s += ds;
 		}
@@ -785,7 +785,7 @@ vector <float> EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * sf
 			float s0=s;
 			
 			for (int i = 0; i < np; i++) {
-				float gam=-g1*pow(s,4.0)+g2*pow(s,2.0);
+				float gam=-g1*s*s*s*s+g2*s*s;
 				tsnr[i] = cos(gam-acac)*exp(-(bfactor/4.0f * s * s));		// ctf amp
 
 				// background value
@@ -882,13 +882,13 @@ vector <float> EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * sf
 	case CTF_TOTAL:
 
 		for (int i = 0; i < np; i++) {
-			float gam=-g1*pow(s,4.0)+g2*pow(s,2.0);
+			float gam=-g1*s*s*s*s+g2*s*s;
 			if (sf) {
-				r[i] = cos(gam-acac)*exp(-(bfactor/4.0f * pow(s,2.0)));
+				r[i] = cos(gam-acac)*exp(-(bfactor/4.0f * s*s));
 				r[i] = r[i] * r[i] * sf->get_yatx(s) + calc_noise(s);
 			}
 			else {
-				r[i] = cos(gam-acac)*exp(-(bfactor/4.0f * pow(s,2.0)));
+				r[i] = cos(gam-acac)*exp(-(bfactor/4.0f * s*s));
 				r[i] = r[i] * r[i] + calc_noise(s);
 			}
 			s += ds;
@@ -935,7 +935,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 	image->to_one();
 
 	float *d = image->get_data();
-	float g1=M_PI/2.0*cs*1.0e7*pow(lambda(),3.0);	// s^4 coefficient for gamma, cached in a variable for simplicity (maybe speed? depends on the compiler)
+	float g1=M_PI/2.0*cs*1.0e7*pow(lambda(),3.0f);	// s^4 coefficient for gamma, cached in a variable for simplicity (maybe speed? depends on the compiler)
 	float g2=M_PI*lambda()*10000.0;					// s^2 coefficient for gamma 
 	float acac=acos(ampcont/100.0);					// instead of ac*cos(g)+sqrt(1-ac^2)*sin(g), we can use cos(g-acos(ac)) and save a trig op
 
@@ -959,9 +959,9 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 			for (int x = 0; x < nx / 2; x++) {
 				float s = (float)Util::hypot_fast(x,y ) * ds;
 				float gam;
-				if (dfdiff==0) gam=-g1*pow(s,4.0)+g2*defocus*pow(s,2.0);
-				else gam=-g1*pow(s,4.0)+g2*df(atan2(y,x))*pow(s,2.0);
-				float v = cos(gam-acac)*exp(-(bfactor/4.0f * pow(s,2.0)));
+				if (dfdiff==0) gam=-g1*s*s*s*s+g2*defocus*s*s;
+				else gam=-g1*s*s*s*s+g2*df(atan2((float)y,(float)x))*s*s;
+				float v = cos(gam-acac)*exp(-(bfactor/4.0f * s*s));
 				d[x * 2 + ynx] = v;
 				d[x * 2 + ynx + 1] = 0;
 			}
@@ -974,8 +974,8 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 			for (int x = 0; x < nx / 2; x++) {
 				float s = (float)Util::hypot_fast(x,y ) * ds;
 				float gam;
-				if (dfdiff==0) gam=-g1*pow(s,4.0)+g2*defocus*pow(s,2.0);
-				else gam=-g1*pow(s,4.0)+g2*df(atan2(y,x))*pow(s,2.0);
+				if (dfdiff==0) gam=-g1*s*s*s*s+g2*defocus*s*s;
+				else gam=-g1*s*s*s*s+g2*df(atan2((float)y,(float)x))*s*s;
 				float v = cos(gam-acac);
 				d[x * 2 + ynx] = v<0?-1.0:1.0;
 				d[x * 2 + ynx + 1] = 0;
@@ -998,12 +998,12 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				// Rather than suddenly "turning on" the CTF, we do it gradually
 				float mf=1.0;
 				if (s<.05) {
-					mf=1.0-exp(-pow((s-.04)*300.0,2.0));
+					mf=1.0-exp(-pow((s-.04f)*300.0f,2.0f));
 				}
 				float gam;
-				if (dfdiff==0) gam=-g1*pow(s,4.0)+g2*defocus*pow(s,2.0);
-				else gam=-g1*pow(s,4.0)+g2*df(atan2(y,x))*pow(s,2.0);
-				float v = cos(gam-acac)*exp(-(bfactor/4.0f * pow(s,2.0)));
+				if (dfdiff==0) gam=-g1*s*s*s*s+g2*defocus*s*s;
+				else gam=-g1*s*s*s*s+g2*df(atan2((float)y,(float)x))*s*s;
+				float v = cos(gam-acac)*exp(-(bfactor/4.0f * s*s));
 				d[x * 2 + ynx] = mf*v*v;
 				d[x * 2 + ynx + 1] = 0;
 			}
@@ -1088,9 +1088,9 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 			for (int x = 0; x < nx / 2; x++) {
 				float s = (float)Util::hypot_fast(x,y ) * ds;
 				float gam;
-				if (dfdiff==0) gam=-g1*pow(s,4.0)+g2*defocus*pow(s,2.0);
-				else gam=-g1*pow(s,4.0)+g2*df(atan2(y,x))*pow(s,2.0);
-				float v = cos(gam-acac)*exp(-(bfactor/4.0f * pow(s,2.0)));
+				if (dfdiff==0) gam=-g1*s*s*s*s+g2*defocus*s*s;
+				else gam=-g1*s*s*s*s+g2*df(atan2((float)y,(float)x))*s*s;
+				float v = cos(gam-acac)*exp(-(bfactor/4.0f * s*s));
 				d[x * 2 + ynx] = v*v+calc_noise(s);
 				d[x * 2 + ynx + 1] = 0;
 //				if ((x==101||x==100) && y2==79) printf("%f %f %f %f\n",s,gam,v,d[x * 2 + ynx]);
