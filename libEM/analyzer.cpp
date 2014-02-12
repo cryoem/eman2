@@ -146,9 +146,9 @@ vector<EMData *> ShapeAnalyzer::analyze() {
 				mx->set_value_at(0,0,mx->get_value_at(0,0)+v*(xx*xx));
 				mx->set_value_at(1,0,mx->get_value_at(1,0)+v*(yy*yy));
 				mx->set_value_at(2,0,mx->get_value_at(2,0)+v*(zz*zz));
-				mx->set_value_at(0,1,mx->get_value_at(0,0)+v*fabs(xx));
-				mx->set_value_at(1,1,mx->get_value_at(1,0)+v*fabs(yy));
-				mx->set_value_at(2,1,mx->get_value_at(2,0)+v*fabs(zz));
+				mx->set_value_at(0,1,mx->get_value_at(0,0)+v*abs(xx));
+				mx->set_value_at(1,1,mx->get_value_at(1,0)+v*abs(yy));
+				mx->set_value_at(2,1,mx->get_value_at(2,0)+v*abs(zz));
 			}
 		}
 	}
