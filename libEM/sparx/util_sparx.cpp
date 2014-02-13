@@ -18855,7 +18855,8 @@ vector<float> Util::shc_multipeaks(EMData* image, const vector< EMData* >& crefi
 	}
 
 	// remove unused parameters from the header
-	for (unsigned i = std::max(no_of_solution, 1u);  image->has_attr("weight" + toString(i));  ++i ) {
+	unsigned i0 = (no_of_solution < 1) ? 1 : no_of_solution);
+	for (unsigned i = i0; image->has_attr("weight" + toString(i));  ++i ) {
 		image->del_attr("weight" + toString(i));
 	}
 
@@ -22631,7 +22632,7 @@ void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> f
 								while( tiy <= ywobble - ystep + piy + nwyc )  {
 									tiy += ystep;
 									int iuy = int(tiy);
-									if(iuy > -1 and iuy < nwy-1)  {
+									if(iuy > -1 && iuy < nwy-1)  {
 									
 										float ydif = yiy - fiy;
 										float yrem = 1.0f - ydif;
@@ -22674,7 +22675,7 @@ void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> f
 									while( tiy <= ywobble - ystep + piy + nwyc )  {
 										tiy += ystep;
 										int iuy = int(tiy);
-										if(iuy > -1 and iuy < nwy-1)  {
+										if(iuy > -1 && iuy < nwy-1)  {
 								
 											float ydif = yiy - fiy;
 											float yrem = 1.0f - ydif;
