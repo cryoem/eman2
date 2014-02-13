@@ -18855,7 +18855,7 @@ vector<float> Util::shc_multipeaks(EMData* image, const vector< EMData* >& crefi
 	}
 
 	// remove unused parameters from the header
-	unsigned i0 = (no_of_solution < 1) ? 1 : no_of_solution);
+	unsigned i0 = (no_of_solution < 1) ? 1 : no_of_solution;
 	for (unsigned i = i0; image->has_attr("weight" + toString(i));  ++i ) {
 		image->del_attr("weight" + toString(i));
 	}
