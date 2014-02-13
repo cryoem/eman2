@@ -47,6 +47,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_argument("--align_frames", action="store_true",help="Perform whole-frame alignment of the stack",default=False)
+	parser.add_argument("--save_aligned", action="store_true",help="Save aligned stack",default=False)
 	parser.add_argument("--dark",type=str,default=None,help="Perform dark image correction using the specified image file")
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
 	parser.add_argument("--step",type=str,default="1,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 1,1 (first image skipped)")
@@ -283,7 +284,8 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				if it!=2 : outim2=[]
 							
 			av.write_image(outname[:-4]+"_aliavg.hdf",-1)
-			for i,im in enumerate(outim2): im.write_image(outname[:-4]+"_align.hdf",i)
+			if options.save_aligned:
+				for i,im in enumerate(outim2): im.write_image(outname[:-4]+"_align.hdf",i)
 			if options.verbose>1 : display(fav,True)
 
 		# show CCF between first and last frame
