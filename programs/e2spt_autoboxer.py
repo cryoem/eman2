@@ -37,7 +37,7 @@ from EMAN2 import *
 from time import time
 	
 import matplotlib
-matplotlib.use('Agg')	 
+matplotlib.use('Agg',warn=False)	 
 
 
 import matplotlib.pyplot as plt
@@ -1139,7 +1139,7 @@ def main():
 			'''
 			pprjside=e.project("standard",tside)
 			pprjside['apix_x'] = e['apix_x']
-			pprjside['apix_y'] = e['apix_x']
+			pprjside['apix_y'] = e['apix_y']
 			pprjside.write_image(options.path + '/' + 'pprj_corrected_sorted_side.hdf',mmm)
 			
 			pmxside=pprjside.process('xform.mirror',{'axis':'x'})
