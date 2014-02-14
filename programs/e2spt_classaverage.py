@@ -1212,55 +1212,27 @@ def preprocessing(options,image,tag='ptcls'):
 			options.normproc[1]["mask"]=mask
 	
 	
-	'''
-	If the fsc.tomo comparator is being used, the particles need wedge statistics on their header.
-	Fitting the wedge has to happen after all processing steps that do NOT "put stuff" in the wedge.
-	'''
-	
 	simage = image.copy()
-	#rawmask = mask.copy()
-	if 'fsc.tomo' == options.aligncmp[0]:
-		if options.normproc:
-			simage.process_inplace(options.normproc[0],options.normproc[1])
-		
-		if options.lowpass or options.highpass or options.preprocess or options.shrink:
-			simage = filters(simage,options.preprocess,options.lowpass,options.highpass,options.shrink)
-		
-		retr = wedgestats(simage,options.wedgeangle,options.wedgei,options.wedgef,options)
-		simage['spt_wedge_mean'] = retr[0]
-		simage['spt_wedge_sigma'] = retr[1]
-		simage['spt_wedge_thresh'] = retr[2]
-		
-		if options.mask:
-			maskCoarse = mask.copy()
-			if options.shrink:
-				maskCoarse.process_inplace('math.meanshrink',{'n':options.shrink})
-			simage.mult(maskCoarse)
-		
-		if options.threshold:
-			simage.process_inplace(options.threshold[0],options.threshold[1])
-		
-		'''
-		If any other comparator is specified, follow mask-normalize-mask scheme
-		'''
-	else:
-		if options.mask:
-			#if options.shrink:
-			#	maskCoarse = mask.copy()
-			#	maskCoarse.process_inplace('math.meanshrink',{'n':options.shrink})
-			simage.mult(mask)
-		
-		if options.normproc:
-			simage.process_inplace(options.normproc[0],options.normproc[1])
-			
-		if options.mask:
-			simage.mult(mask)
 	
-		if options.lowpass or options.highpass or options.preprocess or options.shrink:
-			simage = filters(simage,options.preprocess,options.lowpass,options.highpass,options.shrink)
+	
+	
+	if options.mask:
+		#if options.shrink:
+		#	maskCoarse = mask.copy()
+		#	maskCoarse.process_inplace('math.meanshrink',{'n':options.shrink})
+		simage.mult(mask)
+	
+	if options.normproc:
+		simage.process_inplace(options.normproc[0],options.normproc[1])
 		
-		if options.threshold:
-			simage.process_inplace(options.threshold[0],options.threshold[1])	
+	if options.mask:
+		simage.mult(mask)
+
+	if options.lowpass or options.highpass or options.preprocess or options.shrink:
+		simage = filters(simage,options.preprocess,options.lowpass,options.highpass,options.shrink)
+	
+	if options.threshold:
+		simage.process_inplace(options.threshold[0],options.threshold[1])	
 	
 	'''
 	If there is a round of fine alignment, preprocess the particle for fine alignment

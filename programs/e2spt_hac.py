@@ -182,7 +182,7 @@ def main():
 		Default is the internal tomographic ccc. Do not specify unless you need to use another specific aligner.""",default="ccc.tomo")
 
 	parser.add_argument("--ralign",type=str,help="""This is the second stage aligner used to refine the first alignment. 
-		Default is refine.3d, specify 'None' to disable""", default="refine_3d")
+		Default is refine_3d_grid:range=12:delta=4, specify 'None' to disable""", default="refine_3d_grid:range=12:delta=4")
 	
 	parser.add_argument("--raligncmp",type=str,help="""The comparator used by the second stage aligner. 
 		Default is the internal tomographic ccc""",default="ccc.tomo")
