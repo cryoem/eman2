@@ -47,6 +47,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_argument("--align_frames", action="store_true",help="Perform whole-frame alignment of the stack",default=False)
+	parser.add_argument("--align_frames_countmode", action="store_true",help="Perform whole-frame alignment of frames collected in counting mode",default=False)
 	parser.add_argument("--save_aligned", action="store_true",help="Save aligned stack",default=False)
 	parser.add_argument("--dark",type=str,default=None,help="Perform dark image correction using the specified image file")
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
@@ -264,7 +265,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 		# we iterate the alignment process several times
 		if options.align_frames:
 			outim2=[]
-			for im in outim: im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4,"tomean":True})
+			for im in outim: im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":6,"tomean":True})	# nsigma was normally 4, but for K2 images even 6 may not be enough
 			av=outim[-1].copy()
 #			av.mult(1.0/len(outim))
 			fav=[]
@@ -274,6 +275,35 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 					dx,dy=zonealign(im,av,verbose=options.verbose-1)
 					im2=im.process("xform",{"transform":Transform({"type":"2d","tx":-dx,"ty":-dy})})
 					print "{}, {}".format(dx,dy)
+					outim2.append(im2)
+
+				print "-----"
+				
+				av=sum(outim2)
+				av.mult(1.0/len(outim))
+				fav.append(av)
+				if it!=2 : outim2=[]
+							
+			av.write_image(outname[:-4]+"_aliavg.hdf",-1)
+			if options.save_aligned:
+				for i,im in enumerate(outim2): im.write_image(outname[:-4]+"_align.hdf",i)
+			if options.verbose>1 : display(fav,True)
+
+		# we iterate the alignment process several times
+		if options.align_frames_countmode:
+			outim2=[]
+			for im in outim: im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":6,"tomean":True})	# nsigma was normally 4, but for K2 images even 6 may not be enough
+			av=sum(outim)
+#			av.mult(1.0/len(outim))
+			fav=[]
+			for it in xrange(2):		# K2 data seems to converge pretty much immediately in my tests
+
+				for im in outim:
+					if it==0 : av.sub(im)
+					dx,dy=zonealign(im,av,verbose=options.verbose-1)
+					im2=im.process("xform",{"transform":Transform({"type":"2d","tx":-dx,"ty":-dy})})
+					print "{}, {}".format(dx,dy)
+					if it==0: av.add(im2)
 					outim2.append(im2)
 
 				print "-----"
@@ -355,15 +385,24 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 def zonealign(s1,s2,verbose=0):
 	s1a=s1.copy()
+	s2a=s2.copy()
+
+	# reduce region used for alignment a bit (perhaps a lot for superresolution imaging
+	newbx=good_boxsize(min(s1a["nx"],s1a["ny"],4096)*0.8)
+	if s1a["nx"]>newbx or s1a["ny"]>newbx : 
+		s1a=s1a.get_clip(Region((s1a["nx"]-newbx)/2,(s1a["ny"]-newbx)/2,newbx,newbx))
+		s2a=s2a.get_clip(Region((s2a["nx"]-newbx)/2,(s2a["ny"]-newbx)/2,newbx,newbx))
+
+
 	s1a.process_inplace("math.xystripefix",{"xlen":200,"ylen":200})
 #	s1a.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
 #	s1a.process_inplace("threshold.compress",{"value":0,"range":s1a["sigma"]/2.0})
 	s1a.process_inplace("filter.highpass.gauss",{"cutoff_abs":.002})
 	
-	s2a=s2.copy()
 #	s2a.process_inplace("math.xystripefix",{"xlen":200,"ylen":200})
 #	s2a.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
 	s2a.process_inplace("filter.highpass.gauss",{"cutoff_abs":.002})
+
 	
 	#### Not doing by zone ATM
 	#tot=None
