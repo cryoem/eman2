@@ -885,6 +885,8 @@ class PMFSCTableWidget(PMTableBase):
 		dirs = []
 		for pattern in self.patterns:
 			dirs.extend(glob.glob("%s*"%pattern))
+		
+		dirs=[i for i in dirs if os.path.isdir(i)]
 		self.tablewidget.setRowCount(len(dirs))
 
 		for i, directory in enumerate(sorted(dirs)):
