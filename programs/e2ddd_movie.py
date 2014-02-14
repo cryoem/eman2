@@ -284,7 +284,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				fav.append(av)
 				if it!=2 : outim2=[]
 							
-			av.write_image(outname[:-4]+"_aliavg.hdf",-1)
+			av.write_image(outname[:-4]+"_aliavg.hdf",0)
 			if options.save_aligned:
 				for i,im in enumerate(outim2): im.write_image(outname[:-4]+"_align.hdf",i)
 			if options.verbose>1 : display(fav,True)
@@ -313,7 +313,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				fav.append(av)
 				if it!=2 : outim2=[]
 							
-			av.write_image(outname[:-4]+"_aliavg.hdf",-1)
+			av.write_image(outname[:-4]+"_aliavg.hdf",0)
 			if options.save_aligned:
 				for i,im in enumerate(outim2): im.write_image(outname[:-4]+"_align.hdf",i)
 			if options.verbose>1 : display(fav,True)
