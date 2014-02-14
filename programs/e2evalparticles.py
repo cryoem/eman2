@@ -351,7 +351,8 @@ class EMClassPtclTool(QtGui.QWidget):
 		"Updates the list of classes files"
 		subdir=sorted([i for i in os.listdir(e2getcwd()) if "r2d_" in i or "relion2d_" in i or "refine_" in i or "multi_" in i])
 		for d in subdir:
-			dbs=os.listdir(d)
+			try: dbs=os.listdir(d)
+			except: pass
 			dbs.sort()
 			for db in dbs:
 				if "classes_" in db or "allrefs_" in db :

@@ -569,6 +569,7 @@ def parsemodopt(optstr):
 
 	op2=opstr.split(":")
 	if len(op2)==1 or op2[1]=="" : return (op2[0],{})		# name with no options
+	print op2
 
 	r2={}
 	for p in op2[1:]:
@@ -583,7 +584,7 @@ def parsemodopt(optstr):
 		except:
 			try: v=float(v)
 			except:
-				if v[0]=='"' and v[-1]=='"' : v=v[1:-1]
+				if len(v)>2 and v[0]=='"' and v[-1]=='"' : v=v[1:-1]
 		r2[k]=v
 
 	return (op2[0],r2)

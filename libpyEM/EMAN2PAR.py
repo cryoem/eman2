@@ -890,7 +890,8 @@ class EMMpiClient():
 							lname=self.pathtocache(data[0])
 							try:
 								mtime=e2filemodtime(lname)
-								numim=EMUtil.get_image_count(lname)
+								db=js_open_dict(self.cachedir+"/cached.json")
+								numim=len(db[lname])
 								#cdict=db_open_dict("bdb:%s#00image_counts"%self.cachedir,ro=True)
 								#parm=cdict[lname]
 								#if parm[0]<data[1] or parm[1]!=data[2] : mpi_eman2_send("NEED",0,2)		# if host data is newer or file count doesn't match then request it
@@ -910,6 +911,7 @@ class EMMpiClient():
 
 
 						n=0
+						inums=set()
 						while 1:
 							# chunk will be "DONE" or (EMData,EMData,...)
 							chunk=mpi_bcast_recv(0)
@@ -922,9 +924,14 @@ class EMMpiClient():
 								for im in chunk:
 									try:
 										im.write_image(fsp,n)
+										inums.add(n)
 									except: pass
 									n+=1
-
+									
+						if fsp!=None:
+							# We keep a database of images in each cache file so we don't have to keep opening the HDF file
+							db=js_open_dict(self.cachedir+"/cached.json")
+							db[fsp]=set(db[fsp])+inums
 
 					if com=="EXEC":
 						if self.logfile!=None : self.logfile.write( "EXEC\n")
@@ -947,14 +954,16 @@ class EMMpiClient():
 								# if we're here, then we have a 'cache' object
 								# if true, we need to ask for everything in this file
 								try :
-									if not db_check_dict(self.pathtocache(i[1])) or task.modtimes[i[1]]>e2filemodtime(self.pathtocache(i[1])):	raise Exception
+									if not os.path.exists(self.pathtocache(i[1])) or task.modtimes[i[1]]>e2filemodtime(self.pathtocache(i[1])):	raise Exception
 								except:
 									needlst.append(i[1:])
 									continue
 
 								# enumerate all individual images in the specified list and check the cache for them
-								db=db_open_dict(self.pathtocache(i[1]))
-								neednums=[j for j in imgnumenum(i[1:]) if not db.has_key(j)]	# list of images missing in the cache
+								db=js_open_dict(self.cachedir+"/cached.json")
+								reqd=set(imgnumenum)
+								have=set(db[self.pathtocache(i[1])])
+								neednums=list(reqd-have)
 								if len(neednums)>0 :
 									if neednums[-1]-neednums[0]==len(neednums)-1 : 			# if we have a complete range, convert to min/max
 										needlst.append((i[1],neednums[0],neednums[-1]+1))
