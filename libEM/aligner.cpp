@@ -1625,10 +1625,13 @@ static void refalidf(const gsl_vector * v, void *params,gsl_vector * df) {
 	
 	double f = refalifn(v,params);
 	for (unsigned int i=0; i<v->size; i++) {
-		double *vp = gsl_vector_ptr(vc,i);
-		*vp+=lstep[i];
+		// double *vp = gsl_vector_ptr(vc,i);
+		double vp = gsl_vector_get(vc,i);
+		// *vp+=lstep[i];
+		gsl_vector_set(vc,i,vp+lstep[i]);
 		double f2 = refalifn(vc,params);
-		*vp-=lstep[i];
+		// *vp-=lstep[i];
+		gsl_vector_set(vc,i,vp);
 		
 		gsl_vector_set(df,i,(f2-f)/lstep[i]);
 	}
@@ -1648,17 +1651,19 @@ static void refalifdf(const gsl_vector * v, void *params, double * f, gsl_vector
 	
 	*f = refalifn(v,params);
 	for (unsigned int i=0; i<v->size; i++) {
-		double *vp = gsl_vector_ptr(vc,i);
-		*vp+=lstep[i];
+		// double *vp = gsl_vector_ptr(vc,i);
+		double vp = gsl_vector_get(vc,i);
+		// *vp+=lstep[i];
+		gsl_vector_set(vc,i,vp+lstep[i]);
 		double f2 = refalifn(vc,params);
-		*vp-=lstep[i];
+		// *vp-=lstep[i];
+		gsl_vector_set(vc,i,vp);
 		
 		gsl_vector_set(df,i,(f2-*f)/lstep[i]);
 	}
 	
 	gsl_vector_free(vc);
 	return;
-
 }
 
 static double refalifnfast(const gsl_vector * v, void *params)
