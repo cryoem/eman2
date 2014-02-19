@@ -454,7 +454,6 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 			mpi_barrier(mpi_comm)
 			if myid == main_node:
 				start_time = time()
-			#  Temporary - write out params
 			params = []
 			for im in data:
 				phi, theta, psi, sx, sy = get_params_proj(im)
@@ -483,8 +482,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				params = []
 				for im in data:
 					phi, theta, psi, sx, sy = get_params_proj(im)
-					previousmax = im.get_attr("previousmax")
-					params.append([phi, theta, psi, sx, sy, previousmax])
+					params.append([phi, theta, psi, sx, sy])
 
 				# ------ orientation - begin
 				params_0 = wrap_mpi_bcast(params, mpi_subroots[0], mpi_comm)
@@ -529,13 +527,15 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 
 				# ---------------------------------
 
-				#  Add params to GA, do mutations and send back
+				#  Add params to GA, sort, check termination and if not terminate do mutations and send back
 				if myid == 0:
 					#all_params = shuffle_configurations(all_params)
 					for i in xrange(number_of_runs):
 						GA.append([all_L2s[i],all_params[i]])
 					GA.sort(reverse=True)
 					GA = GA[:number_of_runs]
+
+
 					#  ---  Stopping criterion
 					from statistics import table_stat
 					from math import sqrt
@@ -589,53 +589,96 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 							all_params.append(newparms2)
 
 				terminate = wrap_mpi_bcast(terminate, main_node, mpi_comm)
+				if not terminate:
 
-				# Send params back
-				if myid == 0:
-					#print  all_params
-					#print "GA  ",GA
-					for i in xrange(number_of_runs):
-						sr = mpi_subroots[i]
-						if sr == myid:
-							params = all_params[i]
-						else:
-							wrap_mpi_send(all_params[i], sr, mpi_comm)
+					# Send params back
+					if myid == 0:
+						#print  all_params
+						#print "GA  ",GA
+						for i in xrange(number_of_runs):
+							sr = mpi_subroots[i]
+							if sr == myid:
+								params = all_params[i]
+							else:
+								wrap_mpi_send(all_params[i], sr, mpi_comm)
+					else:
+						if mpi_subrank == 0:
+							params = wrap_mpi_recv(0, mpi_comm)
+
+					params = wrap_mpi_bcast(params, 0, mpi_subcomm)
+					for i in xrange(nima):
+						set_params_proj(data[i], params[i])
+
+					#=========================================================================
+					# volume reconstruction
+					mpi_barrier(mpi_comm)
+					if myid == main_node:
+						start_time = time()
+					vol = volume_reconstruction(data[image_start:image_end], ali3d_options, mpi_subcomm)
+					#if mpi_subrank == 0:  vol.write_image("qmutatedvolf%04d%04d.hdf"%(myid,total_iter))
+
+					if myid == main_node:
+						from utilities import write_text_row
+						write_text_row(GA[0][1], "qparams%04d%04d.txt"%(myid,total_iter) )
+
+					#=========================================================================
+					#
+					mpi_barrier(mpi_comm)
+					if myid == main_node:
+						log.add("Time of orientation and mutations = %f\n"%(time()-start_time))
+						start_time = time()
 				else:
+					#VERIFY GA
+					# Send params back
+					if myid == 0:
+						#print  all_params
+						#print "GA  ",GA
+						for i in xrange(number_of_runs):
+							sr = mpi_subroots[i]
+							if sr == myid:
+								params = GA[i][1]
+							else:
+								wrap_mpi_send(GA[i], sr, mpi_comm)
+					else:
+						if mpi_subrank == 0:
+							params = wrap_mpi_recv(0, mpi_comm)
+
+					params = wrap_mpi_bcast(params, 0, mpi_subcomm)
+					for i in xrange(nima):
+						set_params_proj(GA[i], params[i])
+
+					#=========================================================================
+					# volume reconstruction
+					mpi_barrier(mpi_comm)
+					if myid == main_node:
+						start_time = time()
+					vol = volume_reconstruction(data[image_start:image_end], ali3d_options, mpi_subcomm)
 					if mpi_subrank == 0:
-						params = wrap_mpi_recv(0, mpi_comm)
+						L2 = vol.cmp("dot", vol, dict(negative = 0, mask = model_circle(last_ring, nx, nx, nx)))
+						print  "VERIFICATION  ",myid,L2
+						#vol.write_image("qmutatedvolf%04d%04d.hdf"%(myid,total_iter))
 
-				params = wrap_mpi_bcast(params, 0, mpi_subcomm)
-				for i in xrange(nima):
-					set_params_proj(data[i], params[i])
+					#if myid == main_node:
+					#	from utilities import write_text_row
+					#	write_text_row(GA[0][1], "qparams%04d%04d.txt"%(myid,total_iter) )
 
-				#=========================================================================
-				# volume reconstruction
-				mpi_barrier(mpi_comm)
-				if myid == main_node:
-					start_time = time()
-				vol = volume_reconstruction(data[image_start:image_end], ali3d_options, mpi_subcomm)
-				#if mpi_subrank == 0:  vol.write_image("qmutatedvolf%04d%04d.hdf"%(myid,total_iter))
+					#=========================================================================
+					#
+					mpi_barrier(mpi_comm)
+					if myid == main_node:
+						log.add("Time of verification = %f\n"%(time()-start_time))
+						start_time = time()
 
-				if myid == main_node:
-					from utilities import write_text_row
-					write_text_row(GA[0][1], "qparams%04d%04d.txt"%(myid,total_iter) )
 
-				#=========================================================================
-				#
-				mpi_barrier(mpi_comm)
-				if myid == main_node:
-					log.add("Time of orientation and mutations = %f\n"%(time()-start_time))
-					start_time = time()
 
 	#=========================================================================
 	mpi_comm_free(mpi_subcomm)
-	
-	
+
 	if myid == main_node:
 		log.add("Finish ali3d_multishc")
-		return GA[0][1], vol
+		return GA[0][1]
 	else:
-		return None,None  # results for the other processes
+		return None  # results for the other processes
 
 
 # parameters: list of (all) projections | reference volume | ...
@@ -771,10 +814,12 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None 
 						peak, pixer[im] = proj_ali_incore_local(data[im],refrings,numr,0.0,0.0,1.0,delta/4.0)
 						data[im].set_attr("previousmax", peak)
 				"""
+				from utilities import get_params_proj
 				for im in xrange(nima):
+					print "orin  ",data[im].get_attr("ID"),get_params_proj(data[im])
 					peak, pixer[im] = proj_ali_incore_local(data[im],refrings,numr,0.0,0.0,1.0,delta[N_step]/4.0)
 					data[im].set_attr("previousmax", peak)
-					print  data[im].get_attr("ID"), peak
+					print  "peak ",data[im].get_attr("ID"), peak,get_params_proj(data[im])
 
 			if myid == main_node:
 				log.add("Time to calculate first psi+shifts+previousmax: %f\n" % (time()-start_time))
@@ -954,7 +999,7 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 
 
 	# Each node keeps all projection data, this would not work for large datasets
-	out_params, ref_vol = ali3d_multishc(projections, ref_vol, ali3d_options, mpi_comm=mpi_comm, log=log, number_of_runs=runs_count)
+	out_params = ali3d_multishc(projections, ref_vol, ali3d_options, mpi_comm=mpi_comm, log=log, number_of_runs=runs_count)
 	"""
 	if mpi_rank == 0:
 		assert(len(out_params) == runs_count)
@@ -985,11 +1030,13 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 		temp = []
 		from utilities import get_params_proj
 		for i in xrange(n_projs):
+			"""
 			#projections[i].set_attr("stable", 1)
 			t1,t2,t3,t4,t5 = get_params_proj( projections[i])
 			t6 = projections[i].get_attr("previousmax")
 			temp.append([t1,t2,t3,t4,t5,t6])
-			#set_params_proj( projections[i], out_params[i] )
+			"""
+			set_params_proj( projections[i], out_params[i] )
 		write_text_row(out_params, log.prefix + "refparams2.txt")
 
 	"""
@@ -1000,11 +1047,27 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 	#temp_projs = wrap_mpi_bcast(temp_projs, 0, mpi_comm)
 	#ref_vol = volume_reconstruction(temp_projs[proj_begin:proj_end], ali3d_options, mpi_comm=mpi_comm)
 	#projections = wrap_mpi_bcast(projections, 0, mpi_comm)
-	#ref_vol = volume_reconstruction(projections[proj_begin:proj_end], ali3d_options, mpi_comm=mpi_comm)
-	#projections = wrap_mpi_bcast(projections, 0, mpi_comm)
-	ref_vol = wrap_mpi_bcast(ref_vol, 0, mpi_comm)
+	#
+	projections = wrap_mpi_bcast(projections, 0, mpi_comm)
+	ref_vol = volume_reconstruction(projections[proj_begin:proj_end], ali3d_options, mpi_comm=mpi_comm)
 	if mpi_rank == 0:
 		ref_vol.write_image(log.prefix + "refvol2.hdf")
+		from utilities import model_circle
+		L2 = ref_vol.cmp("dot", ref_vol, dict(negative = 0, mask = model_circle(30,64,64,64)))
+		log.add(" L2 norm of reference volume:  %f"%L2)
+
+	"""
+	if mpi_rank == 17:
+		temp = []
+		from utilities import get_params_proj
+		for i in xrange(n_projs):
+			#projections[i].set_attr("stable", 1)
+			t1,t2,t3,t4,t5 = get_params_proj( projections[i])
+			t6 = projections[i].get_attr("previousmax")
+			temp.append([t1,t2,t3,t4,t5,t6])
+			#set_params_proj( projections[i], out_params[i] )
+		write_text_row(temp, log.prefix + "refparams17.txt")
+	"""
 
 	out_params, out_vol, previousmax, out_r = ali3d_multishc_2(projections, ref_vol, ali3d_options, mpi_comm=mpi_comm, log=log)
 	if mpi_rank == 0:

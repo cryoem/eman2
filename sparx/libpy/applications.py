@@ -13731,10 +13731,10 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, phiwobble, psi_max, search
 	
 	if data_nx != data_ny:
 		ERROR('Input projections must be square.', "helicon_MPI", 1,myid)
-	
+
 	if(nx != data_ny):
 		ERROR('Height of reference volume must be same as dimension of input projections', "helicon_MPI", 1,myid)
-		
+
 	data_nn = max(data_nx, data_ny)
 	segmask = pad(model_blank(2*int(rmax), seg_ny, 1, 1.0), data_nx, data_ny, 1, 0.0)
 	fdata = [None]*nima
