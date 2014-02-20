@@ -37,7 +37,7 @@ def main():
 	parser.add_option("--sym",      type="string", default= "c1",               help="symmetry of the refined structure")
 	parser.add_option("--function", type="string", default="ref_ali3d",         help="name of the reference preparation function (ref_ali3d by default)")
 	parser.add_option("--nruns",    type="int",    default= 3,                  help="number of quasi-independent runs (default=3)")
-	parser.add_option("--doga",     type="float",  default= 0.3,                help="do GA when fraction of orientation changes drops below (default=0.3)")
+	parser.add_option("--doga",     type="float",  default= 0.3,                help="do GA when fraction of orientation changes less than 1.0 degrees is at least doga (default=0.3)")
 	parser.add_option("--npad",     type="int",    default= 2,                  help="padding size for 3D reconstruction (default=2)")
 	#parser.add_option("--MPI",      action="store_true", default=True,          help="whether to use MPI version - this is always set to True")
 	(options, args) = parser.parse_args(sys.argv[1:])
