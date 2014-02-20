@@ -202,6 +202,8 @@ class EMWidgetFromFile(object):
 					data=a.read_images(filename)
 				else:
 					data = None # This is like a flag - the ImageMXWidget only needs the file name
+			elif nz == 1:
+				data = [EMData(filename,0)]
 			else:
 				data = EMData()
 				data.read_image(filename,0,True)		# This should be 3-D. We read the header-only here

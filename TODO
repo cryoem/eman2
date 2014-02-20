@@ -6,7 +6,14 @@ High priority
 8/2/12		More dimensions in tilt validate
 8/9/12		Astigmatism ?
 7/13/13		Gauss boxer can't be run from GUI on second image without funny button series
+2/20/14		Problem with pickling particles and MPI transport  :^((((
+2/20/14		DDD movies, reference based alignment
+2/20/14		Bootstrapping in e2classaverage not working well tolc project
+2/20/14		Finish e2motion
+2/20/14		Eliminate simmx files
 
+2/20/14		Save plots as images, more features in 2-D plotting
+2/20/14		Progress display integrated in projectmanager
 7/27/12		RCT .box import broken in projectmanager (temporarily removed)
 7/22/12		2d plotting of 1d image in browser broken
 8/1/12		Need to re-examine CTF fitting. Should be able to get better B-factors
@@ -39,6 +46,8 @@ Low priority
 
 
 Complete
+2/20/14		Added --speed option
+2/12/14		Fixed e2evalparticles finally !
 11/22/13	Revamp CMakeList
 11/22/13	Added slider for sequential viewing in 3D
 11/22/13	Added mask.soft

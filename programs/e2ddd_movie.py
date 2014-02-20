@@ -66,6 +66,8 @@ def main():
 		print usage
 		parser.error("Specify input DDD stack")
 
+	pid=E2init(sys.argv)
+
 	if options.dark : 
 		nd=EMUtil.get_image_count(options.dark)
 		dark=EMData(options.dark,0)
@@ -115,7 +117,6 @@ def main():
 		gain.mult(1.0/gain["mean"])									# normalize so gain reference on average multiplies by 1.0
 		gain.process_inplace("math.reciprocal",{"zero_to":1.0})		 
 	
-	pid=E2init(sys.argv)
 
 	#try: display((dark,gain,sigd,sigg))
 	#except: display((dark,gain))

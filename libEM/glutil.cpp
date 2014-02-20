@@ -222,7 +222,10 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 						 float render_min, float render_max,float gamma,int flags)
 {
 	ENTERFUNC;
-
+	
+//	printf("%f\t%f\t",(float)emdata->get_attr("sigma"),(float)emdata->get_attr("mean"));
+//	printf("%d %d %d %d %d %f %d %d %f %f %f %d\n",x0,y0,ixsize,iysize,bpl,scale,mingray,maxgray,render_min,render_max,gamma,flags);
+	
 	int asrgb;
 	int hist=(flags&2)/2;
 	int invy=(flags&4)?1:0;
