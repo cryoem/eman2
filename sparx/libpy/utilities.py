@@ -2976,7 +2976,7 @@ def assign_projangles_slow(projangles, refangles):
 
 def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 	lookup = range(len(projangles))
-	if( sym == "c1 "):
+	if( sym == "c1"):
 		refnormal = [None]*len(projangles)
 		for i in xrange(len(projangles)):
 			refnormal[i] = getvec(projangles[i][0], projangles[i][1])
