@@ -1101,7 +1101,107 @@ def reduce_dsym_angles(p1, sym):
 
 def mirror_and_reduce_dsym(params, sym):
 	# for the time being do it in a silly way, i.e., select first as a reference and run with it.
-	from utilities import get_symt
+	#
+	#  Another problem, if the angles are reduced for STRAIGHT it does not seem to be necessary
+	#    to find the closest one as they are all within asymmetric triangle
+	#     For mirrored who knows.
+	
+	from utilities import get_symt, get_sym, getvec
+	from EMAN2 import Vec2f, Transform, EMData
+	from pixel_error import angle_diff
+
+	sc = len(params)
+	ns = len(params[0])
+	#  Convert 0 to transforms
+	t0 = [None]*ns
+	vt0 = [None]*ns
+	for j in xrange(ns):
+		vt0[j] = getvec(params[0][j][0], params[0][j][1])
+		t0[j] = Transform({"type":"spider","phi":params[0][j][0], "theta":params[0][j][1], "psi":params[0][j][2]})
+		#t0[j].set_trans(Vec2f(-params[0][j][3], -params[0][j][4]))
+	#  get sym transforms
+	ts = get_symt(sym)
+	phir = 360.0/int(sym[1:])
+	ks = len(ts)
+	for i in xrange(ks):  ts[i] = ts[i].inverse()
+
+	# set rotation for mirror
+	mm = Transform({"type":"spider","phi":360./2/int(sym[1:]), "theta":0., "psi":0.})
+
+
+	for i in xrange(1,sc):
+		# mirror checking
+		psi_diff = angle_diff( [params[i][j][2] for j in xrange(ns)], [params[0][j][2] for j in xrange(ns)] )
+		#print  psi_diff
+		if(abs(psi_diff-180.0) <90.0):
+			#mirror
+			#print "  MIRROR "
+			# For each projection direction from the reference set (here zero) find the nearest reduced from the other set
+			# and replace it in the other set
+			for j in xrange(ns):
+				apixer = -1.e20
+				qt = Transform({"type":"spider","phi":params[i][j][0], "theta":params[i][j][1], "psi":180.0+params[i][j][2]})
+				#qt.set_trans(Vec2f(-params[i][j][3], -params[i][j][4]))
+				for k in xrange(ks):
+					ut = qt*ts[k]
+					ut = ut*mm
+					d = ut.get_params("spider")
+					if(d["phi"]<phir and d["theta"] <= 90.0 ):
+						vec = getvec(d["phi"],  d["theta"])
+						per = abs(vt0[i][0]*vec[0] + vt0[i][1]*vec[1] + vt0[i][2]*vec[2])
+						#print  j,k,d["phi"],  d["theta"], d["psi"],params[0][j],per
+						if(per > apixer):
+							apixer = per
+							bk = k
+				qt.set_trans(Vec2f(-params[i][j][3], -params[i][j][4]))
+				bt = qt*ts[bk]
+				bt = bt*mm
+				bt = bt.get_params("spider")
+				params[i][j][0] = bt["phi"]
+				params[i][j][1] = bt["theta"]
+				params[i][j][2] = bt["psi"]
+				params[i][j][3] = -bt["tx"]
+				params[i][j][4] = -bt["ty"]
+		#  The assumption is the angles are reduced, so if it is straight no checking is needed
+		"""
+		else:
+			# For each projection direction from the reference set (here zero) find the nearest reduced from the other set,
+			#    but it cannot be mirrored
+			# and replace it in the other set
+			print "STR"
+			for j in xrange(ns):
+				apixer = -1.e20
+				qt = Transform({"type":"spider","phi":params[i][j][0], "theta":params[i][j][1], "psi":params[i][j][2]})
+				#qt.set_trans(Vec2f(-params[i][j][3], -params[i][j][4]))
+
+				for k in xrange(ks):
+					ut = qt*ts[k]
+					d = ut.get_params("spider")
+					if(d["phi"]<phir and d["theta"] <= 90.0 ):
+						vec = getvec(d["phi"],  d["theta"])
+						per = abs(vt0[i][0]*vec[0] + vt0[i][1]*vec[1] + vt0[i][2]*vec[2])
+						if(per > apixer):
+							apixer = per
+							bk = k
+				qt.set_trans(Vec2f(-params[i][j][3], -params[i][j][4]))
+				bt = qt*ts[bk]
+				bt = bt.get_params("spider")
+				params[i][j][0] = bt["phi"]
+				params[i][j][1] = bt["theta"]
+				params[i][j][2] = bt["psi"]
+				params[i][j][3] = -bt["tx"]
+				params[i][j][4] = -bt["ty"]
+		"""
+
+"""
+def mirror_and_reduce_dsym(params, sym):
+	# for the time being do it in a silly way, i.e., select first as a reference and run with it.
+	#
+	#  Another problem, if the angles are reduced for STRAIGHT it does not seem to be necessary
+	#    to find the closest one as they are all within asymmetric triangle
+	#     For mirrored who knows.
+	
+	from utilities import get_symt, get_sym
 	from EMAN2 import Vec2f, Transform, EMData
 	from pixel_error import angle_diff
 
@@ -1114,6 +1214,7 @@ def mirror_and_reduce_dsym(params, sym):
 		#t0[j].set_trans(Vec2f(-params[0][j][3], -params[0][j][4]))
 	#  get sym transforms
 	ts = get_symt(sym)
+	phir = 360.0/int(sym[1:])
 	ks = len(ts)
 	for i in xrange(ks):  ts[i] = ts[i].inverse()
 
@@ -1124,6 +1225,7 @@ def mirror_and_reduce_dsym(params, sym):
 	for i in xrange(1,sc):
 		# mirror checking
 		psi_diff = angle_diff( [params[i][j][2] for j in xrange(ns)], [params[0][j][2] for j in xrange(ns)] )
+		print  psi_diff
 		if(abs(psi_diff-180.0) <90.0):
 			#mirror
 			# For each projection direction from the reference set (here zero) find the nearest reduced from the other set
@@ -1131,14 +1233,16 @@ def mirror_and_reduce_dsym(params, sym):
 			for j in xrange(ns):
 				apixer = 1.e20
 				qt = Transform({"type":"spider","phi":params[i][j][0], "theta":params[i][j][1], "psi":180.0+params[i][j][2]})
-				qt.set_trans(Vec2f(-params[i][j][3], -params[i][j][4]))
+				#qt.set_trans(Vec2f(-params[i][j][3], -params[i][j][4]))
 				for k in xrange(ks):
 					ut = qt*ts[k]
 					ut = ut*mm
-					per = EMData().max_3D_pixel_error(t0[j], ut, 100.0)
-					if(per < apixer):
-						apixer = per
-						bk = k
+					d = ut.get_params("spider")
+					if(d["phi"]<phir and d["theta"] <= 90.0 ):
+						per = EMData().max_3D_pixel_error(t0[j], ut, 100.0)
+						if(per < apixer):
+							apixer = per
+							bk = k
 				qt.set_trans(Vec2f(-params[i][j][3], -params[i][j][4]))
 				bt = qt*ts[bk]
 				bt = bt*mm
@@ -1147,20 +1251,24 @@ def mirror_and_reduce_dsym(params, sym):
 				params[i][j][1] = bt["theta"]
 				params[i][j][2] = bt["psi"]
 				params[i][j][3] = -bt["tx"]
-				params[i][j][4] = -bt["tx"]
+				params[i][j][4] = -bt["ty"]
 		else:
-			# For each projection direction from the reference set (here zero) find the nearest reduced from the other set
+			# For each projection direction from the reference set (here zero) find the nearest reduced from the other set,
+			#    but it cannot be mirrored
 			# and replace it in the other set
 			for j in xrange(ns):
 				apixer = 1.e20
 				qt = Transform({"type":"spider","phi":params[i][j][0], "theta":params[i][j][1], "psi":params[i][j][2]})
-				qt.set_trans(Vec2f(-params[i][j][3], -params[i][j][4]))
+				#qt.set_trans(Vec2f(-params[i][j][3], -params[i][j][4]))
+
 				for k in xrange(ks):
 					ut = qt*ts[k]
-					per = EMData().max_3D_pixel_error(t0[j], ut, 1.0)
-					if(per < apixer):
-						apixer = per
-						bk = k
+					d = ut.get_params("spider")
+					if(d["phi"]<phir and d["theta"] <= 90.0 ):
+						per = EMData().max_3D_pixel_error(t0[j], ut, 1.0)
+						if(per < apixer):
+							apixer = per
+							bk = k
 				qt.set_trans(Vec2f(-params[i][j][3], -params[i][j][4]))
 				bt = qt*ts[bk]
 				bt = bt.get_params("spider")
@@ -1168,7 +1276,8 @@ def mirror_and_reduce_dsym(params, sym):
 				params[i][j][1] = bt["theta"]
 				params[i][j][2] = bt["psi"]
 				params[i][j][3] = -bt["tx"]
-				params[i][j][4] = -bt["tx"]
+				params[i][j][4] = -bt["ty"]
+"""
 
 def get_dsym_angles(p1, sym):
 	#  works only for d symmetry

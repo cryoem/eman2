@@ -730,7 +730,7 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, me
 			n = len(angles)
 			badb = 360.0/int(symmetry_string[1:])/4
 			bade = 2*badb
-			bbdb = badb+360.0/int(symmetry_string[1:])/2
+			bbdb = badb + 360.0/int(symmetry_string[1:])/2
 			bbde = bbdb + 360.0/int(symmetry_string[1:])/4
 			for i in xrange(n):
 				t = n-i-1
