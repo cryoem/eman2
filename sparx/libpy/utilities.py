@@ -726,17 +726,7 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, me
 			angles = even_angles_cd(delta, theta1, theta2, phi1, phi2, method, phiEqpsi)
 	elif(symmetry_string[0]  == "d"):
 		if(phi2 == 359.99):
-			angles = even_angles_cd(delta, theta1, theta2, phi1, 360.0/int(symmetry_string[1:]), method, phiEqpsi)
-			n = len(angles)
-			badb = 360.0/int(symmetry_string[1:])/4
-			bade = 2*badb
-			bbdb = badb + 360.0/int(symmetry_string[1:])/2
-			bbde = bbdb + 360.0/int(symmetry_string[1:])/4
-			for i in xrange(n):
-				t = n-i-1
-				qt = angles[t][0]
-				if((qt>=badb and qt<bade) or (qt>=bbdb and qt<bbde)):  del angles[t]
-				
+			angles = even_angles_cd(delta, theta1, theta2, phi1, 360.0/2/int(symmetry_string[1:]), method, phiEqpsi)
 			if (int(symmetry_string[1:])%2 == 0):
 				qt = 360.0/2/int(symmetry_string[1:])
 			else:
@@ -2916,8 +2906,7 @@ def parse_user_function(opt_string):
 
 
 def getvec( phi, tht ):
-	from math import pi,cos,sin
-	angle_to_rad = pi/180.0
+	from math import radians,cos,sin
 
 	if tht > 180.0:
 		tht -= 180.0
@@ -2928,12 +2917,22 @@ def getvec( phi, tht ):
 
 	assert tht <=90.0
 
-	tht *= angle_to_rad
-	phi *= angle_to_rad
+	qt = radians(tht)
+	qp = radians(phi)
 
-	x = sin(tht)*cos(phi) 
-	y = sin(tht)*sin(phi)
-	z = cos(tht)
+	x = sin(qt)*cos(qp) 
+	y = sin(qt)*sin(qp)
+	z = cos(qt)
+
+	return (x,y,z)
+
+def getfvec( phi, tht ):
+	from math import radians,cos,sin
+	qt = radians(tht)
+	qp = radians(phi)
+	x = sin(qt)*cos(qp) 
+	y = sin(qt)*sin(qp)
+	z = cos(qt)
 
 	return (x,y,z)
 
@@ -2975,19 +2974,66 @@ def assign_projangles_slow(projangles, refangles):
 		assignments[best_i].append(i)
 	return assignments
 
-def nearestk_projangles(projangles, whichone = 0, howmany = 1):
+def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 	lookup = range(len(projangles))
-	refnormal = [None]*len(projangles)
-	for i in xrange(len(projangles)):
-		refnormal[i] = getvec(projangles[i][0], projangles[i][1])
-	# remove the reference projection from the list
-	ref = refnormal[whichone]
-	del refnormal[whichone], lookup[whichone]
-	assignments = [-1]*howmany
-	for i in xrange(howmany):
-		k = closest_ang(refnormal, ref)
-		assignments[i] = lookup[k]
-		del refnormal[k], lookup[k]
+	if( sym == "c1 "):
+		refnormal = [None]*len(projangles)
+		for i in xrange(len(projangles)):
+			refnormal[i] = getvec(projangles[i][0], projangles[i][1])
+		# remove the reference projection from the list
+		ref = refnormal[whichone]
+		del refnormal[whichone], lookup[whichone]
+		assignments = [-1]*howmany
+		for i in xrange(howmany):
+			k = closest_ang(refnormal, ref)
+			assignments[i] = lookup[k]
+			del refnormal[k], lookup[k]
+
+	elif( sym[:1] == "d" ):
+		from utilities import get_symt, getvec
+		from EMAN2 import Vec2f, Transform
+		t = get_symt(sym)
+		phir = 360.0/int(sym[1:])
+		for i in xrange(len(t)):  t[i] = t[i].inverse()
+		a = Transform({"type":"spider","phi":projangles[whichone][0], "theta":projangles[whichone][1]})
+		for l in xrange(len(t)):
+			q = a*t[l]
+			q = q.get_params("spider")
+			if(q["phi"]<phir and q["theta"] <= 90.0): break
+		#refvec = getfvec(q["phi"], q["theta"])
+		print  "refvec   ",q["phi"], q["theta"]
+
+		tempan =  [None]*len(projangles)
+		for i in xrange(len(projangles)): tempan[i] = projangles[i]
+		del tempan[whichone], lookup[whichone]
+		assignments = [-1]*howmany
+
+		for i in xrange(howmany):
+			best = -1
+			for j in xrange(len(tempan)):
+				nearest = -1.
+				a = Transform({"type":"spider","phi":tempan[j][0], "theta":tempan[j][1]})
+				for l in xrange(len(t)):
+					q = a*t[l]
+					q = q.get_params("spider")
+					vecs = getfvec(q["phi"], q["theta"])
+					s = vecs[0]*refvec[0] + vecs[1]*refvec[1] + vecs[2]*refvec[2]
+					if( s > nearest ):
+						nearest = s
+						#ttt = (q["phi"], q["theta"])
+				if( nearest > best ):
+					best = nearest
+					best_j = j
+					#print  j,tempan[j][0], tempan[j][1],best,lookup[j],ttt
+			assignments[i] = lookup[best_j]
+			del tempan[best_j], lookup[best_j]
+
+		
+	else:
+		print  "  ERROR: this symmetry is not supported  ",sym
+		assignments = []
+
+
 	return assignments
 
 def nearestk_to_refdir(refnormal, refdir, howmany = 1):
@@ -4060,19 +4106,19 @@ def wrap_mpi_recv(source, communicator = None):
 
 def wrap_mpi_bcast(data, root, communicator = None):
 	from mpi import mpi_bcast, MPI_COMM_WORLD, mpi_comm_rank, MPI_CHAR
-
+	
 	if communicator == None:
 		communicator = MPI_COMM_WORLD
-
+	
 	rank = mpi_comm_rank(communicator)
-
+	
 	if rank == root:
 		msg = pack_message(data)
 		n = pack("I",len(msg))
 	else:
 		msg = None
 		n = None
-
+		
 	n = mpi_bcast(n, 4, MPI_CHAR, root, communicator)  # int MPI_Bcast ( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm ) 
 	n=unpack("I",n)[0]
 	msg = mpi_bcast(msg, n, MPI_CHAR, root, communicator)  # int MPI_Bcast ( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm ) 
