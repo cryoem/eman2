@@ -139,9 +139,8 @@ namespace EMAN
 			FILE * in;
 			TagTable *tagtable;
 			string name;
-			long tag_type;
+			long long tag_type;
 		};
-
 
 		class TagGroup
 		{
@@ -180,7 +179,6 @@ namespace EMAN
 			TagGroup *parent_group;
 			string name;
 		};
-
 
 		class DataType
 		{
@@ -272,10 +270,6 @@ namespace EMAN
 		bool initialized;
 		GatanDM4::TagTable * tagtable;
 	};
-
-
-
-
 }
 
 #endif	//__dm4io_h__
