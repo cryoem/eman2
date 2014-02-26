@@ -352,8 +352,8 @@ are really required to achieve the targeted resolution, you may consider manuall
 		# target resolution worse than 1/2 Nyquist
 		if options.targetres>apix*4 :
 			effbox=nx*apix*2/options.targetres
-			astep=89.999/ceil(90.0/sqrt(4300/effbox))		# This rounds to the best angular step divisible by 90 degrees
-			astep*=(float(options.speed)+5.0)/10.0			# empirical adjustment of angular step based on "speed"
+#			astep=89.999/ceil(90.0/sqrt(4300/effbox))		# This rounds to the best angular step divisible by 90 degrees. Old way without speed
+			astep=89.999/ceil(90.0*9.0/((options.speed+3.0)*sqrt(4300/effbox)))		# This rounds to the best angular step divisible by 90 degrees
 			options.orientgen="eman:delta={:1.3f}:inc_mirror=0:perturb=0".format(astep)
 			if options.classiter<0 :
 				if options.targetres>12.0 :
@@ -377,8 +377,7 @@ even lead to worse structures. Based on your requested resolution and box-size, 
 
 		# target resolution between 1/2 and 3/4 Nyquist
 		elif options.targetres>apix*3 :
-			astep=89.999/ceil(90.0/sqrt(4300/nx))		# This rounds to the best angular step divisible by 90 degrees
-			astep*=(float(options.speed)+5.0)/10.0			# empirical adjustment of angular step based on "speed"
+			astep=89.999/ceil(90.0*9.0/((options.speed+3.0)*sqrt(4300/nx)))		# This rounds to the best angular step divisible by 90 degrees
 			options.orientgen="eman:delta={:1.3f}:inc_mirror=0:perturb=0".format(astep)
 			append_html("<p>Based on your requested resolution and box-size, modified by --speed,  I will use an angular sampling of {} deg. For details, please see \
 <a href=http://blake.bcm.edu/emanwiki/EMAN2/AngStep>http://blake.bcm.edu/emanwiki/EMAN2/AngStep</a></p>".format(astep))
@@ -393,8 +392,7 @@ will help avoid noise bias in early rounds, but it may be reduced at zero if con
 				options.classiter=1
 				append_html("<p>Your desired resolution is beyond 3/4 Nyquist. Regardless, we will set --classiter to 1 initially. Leaving this above 0 \
 will help avoid noise bias, but it may be reduced at zero if convergence seems to have been achieved.</p>")
-			astep=89.999/ceil(90.0/sqrt(4300/nx))		# This rounds to the best angular step divisible by 90 degrees
-			astep*=(float(options.speed)+5.0)/10.0			# empirical adjustment of angular step based on "speed"
+			astep=89.999/ceil(90.0*9.0/((options.speed+3.0)*sqrt(4300/nx)))		# This rounds to the best angular step divisible by 90 degrees
 			options.orientgen="eman:delta={:1.3f}:inc_mirror=0:perturb=0".format(astep)
 			append_html("<p>The resolution you are requesting is beyond 2/3 Nyquist. This is normally not recommended, as it represents insufficient sampling to give a good representation of your \
 reconstructed map, and resolution can be difficult to accurately assess. The reconstruction will proceed, but generally speaking your A/pix should be less than 1/3 the targeted resolution. \
