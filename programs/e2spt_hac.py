@@ -87,7 +87,23 @@ def main():
 	parser.add_argument("--clusters",type=int,default=1,help="""Number of clusters to group the data in 
 		after the 1st iteration, based on correlation.""")
 
-	parser.add_argument("--autocenter",action="store_true", help="""Autocenters each averaged pair on all rounds using their center of mass""",default=False)
+	parser.add_argument("--autocenter",type=str, default='',help="""Autocenters each averaged pair on
+		all rounds. Options are --autocenter=xform.centerofmass (self descriptive), or
+		--autocenter=xform.centeracf, which applies auto-convolution on the average.
+		Default=None.""")
+
+	parser.add_argument("--autocentermask",type=str, default='',help="""Masking processor 
+		to apply before autocentering. Default=None.
+		'e2help.py processors -v 10' at the command line.""")
+		
+	#parser.add_argument("--autocenterthresh",type=str, default='',help="""Thresholding processor
+	#	 to apply before autocentering. Default=None. 
+	#	 See processors by typing 'e2help.py processors -v 10' at the command line.""")
+		 
+	parser.add_argument("--autocenterpreprocess",action='store_true', default=False,help="""This will apply
+		a highpass filter at a frequency of half the box size times the apix, and will shrink
+		the average by 2 for autocentering, and will apply a low pass filter at half nyquist
+		frequency. Default=False.""")
 
 	parser.add_argument("--input", type=str, help="""The name of the input volume stack. 
 		MUST be HDF or BDB, since volume stack support is required.""", default=None)
@@ -276,6 +292,16 @@ def main():
 	'''
 	Parse parameters
 	'''
+	
+	if options.autocenter:
+		options.autocenter=parsemodopt(options.autocenter)
+		
+	if options.autocentermask:
+		options.autocentermask=parsemodopt(options.autocentermask)
+	
+	#if options.autocenterpreprocess:
+	#	options.autocenterpreprocess=parsemodopt(options.autocenterpreprocess)
+	
 	if options.align:
 		options.align=parsemodopt(options.align)
 	
@@ -475,7 +501,7 @@ def allvsall(options):
 		print "ERROR, input volumes are not cubes"
 		sys.exit(1)
 	
-	print "Officialy counting number of particles"
+	print "(e2spt_hac.py)(allvsall functiomn) Counting number of particles"
 	nptcl = EMUtil.get_image_count(options.input)
 	if nptcl<3: 
 		print "ERROR: at least 3 particles are required in the input stack for all vs all. Otherwise, to align 2 particles (one to the other or to a model) use e2spt_classaverage.py"
@@ -532,7 +558,14 @@ def allvsall(options):
 		FinalAliStack.update({i:rawptcl})
 	
 	maxScore = 1
+	
+	dendocount = 0
+	
+	dendofile = options.path + '/dendogram.txt'
+	
+	
 	for k in range(options.iter):							#Start the loop over the user-defined number of iterations
+		
 		#avgname = options.path + '/round' + str(k).zfill(fillfactor) + '_averages.hdf'
 		newstack = options.path + '/round' + str(k-1).zfill(fillfactor) + '_averages.hdf'
 		if k== 0:
@@ -561,6 +594,11 @@ def allvsall(options):
 		if nnew + len(oldptcls) == 1:						#Stop the loop if the data has converged and you're left with one final particle (an average of all)
 			print "TERMINATING: There's only one particle left; the algorithm has converged; TERMINATING"
 			break
+		
+		elif k < int(options.iter):
+			f=open(dendofile,'a')
+			f.write('ITERATION ' + str(k) + '\n')
+			f.close()
 		
 		allptclsRound = {}							
 		
@@ -646,7 +684,7 @@ def allvsall(options):
 		
 		results = get_results(etc,tids,options.verbose)				#Wait for alignments to finish and get results
 		#results = ret[0]
-		results = results + surviving_results					#The total results to process/analyze includes results (comparisons) from previous rounds that were not used
+		results = results + surviving_results						#The total results to process/analyze includes results (comparisons) from previous rounds that were not used
 		results = sorted(results, key=itemgetter('score'))			#Sort/rank the results by score
 		
 		#print "results are", results
@@ -675,7 +713,7 @@ def allvsall(options):
 		simmxPhis.to_zero()
 		simmxScales.to_one()
 		
-		compNum=0
+		#compNum=0
 		
 		clusters = {}
 		usedSet=set([])
@@ -696,12 +734,13 @@ def allvsall(options):
 			
 			#if k == 0:
 			
-			if compNum == 0.0:
-				maxScore = float( i['score'] )
-			else:
-				compNum = float( i['score'] )
+			#if compNum == 0.0 or compNum == 0:
+			#	maxScore = float( i['score'] )
+			#else:
+			#	compNum = float( i['score'] )
 			
 			#plotX.append( compNum )
+			
 			thisScore = float( i['score'] ) 
 			plotY.append( thisScore )
 			
@@ -755,7 +794,7 @@ def allvsall(options):
 			simmxPhis.set_value_at(indxA,indxB,float(rots['phi']))
 			simmxScales.set_value_at(indxA,indxB,float(i['score']))
 		
-			compNum+=1
+			#compNum+=1
 	
 		#if k == 0:
 		simmxFile = options.path + '/simmx_' + str( k ).zfill( len (str (options.iter))) + '.hdf'
@@ -780,7 +819,9 @@ def allvsall(options):
 			plotter (plotX, plotY, options,plotName)
 	
 		#from e2figureplot import textwriter
-		textwriter(plotX, compsInfo, options, plotName.replace('.png','.txt') )
+		textwriterinfo(plotX, compsInfo, options, plotName.replace('.png','_info.txt') )
+		textwriter(plotY, options, plotName.replace('.png','.txt') )
+
 
 		print "\n\n\n\nIn iteration %d, the total number of comparisons in the ranking list, either new or old that survived, is %d" % (k, len(results))
 		
@@ -808,6 +849,8 @@ def allvsall(options):
 			aliInfo = {}
 			
 			if results[z]['ptclA'] not in tried and results[z]['ptclB'] not in tried:
+				
+				
 				tried.add(results[z]['ptclA'])							#If the two particles in the pair have not been tried, and they're the next "best pair", they MUST be averaged
 				tried.add(results[z]['ptclB'])							#Add both to "tried" AND "used" 
 				used.add(results[z]['ptclA'])		
@@ -832,11 +875,14 @@ def allvsall(options):
 				ptcl1_indxs_transforms = ptcl1info[-1]
 				
 				
-				
-				
-				
 				#print "\n\nptcl1_indexes_transforms is", ptcl1_indxs_transforms
 				#print "\n\n"
+						
+						
+				if len(ptcl1['spt_ptcl_indxs']) == 1:
+					dendo1 = 'raw' + str( ptcl1['spt_ptcl_indxs'][0] ).zfill(4)
+				else:
+					dendo1 = ptcl1['spt_dendoID']	
 								
 				for p in ptcl1['spt_ptcl_indxs']:											
 					pastt = ptcl1_indxs_transforms[p]
@@ -891,6 +937,13 @@ def allvsall(options):
 				
 				#ptcl2avgr = Averagers.get(options.averager[0], options.averager[1])		#You need to recompute ptcl2 "fresh" from the raw data to avoid multiple interpolations
 				
+				
+				
+				if len(ptcl2['spt_ptcl_indxs']) == 1:
+					dendo2 = 'raw' + str( ptcl2['spt_ptcl_indxs'][0] ).zfill(4)
+				else:
+					dendo2 = ptcl2['spt_dendoID']
+				
 				for p in ptcl2['spt_ptcl_indxs']:						#All the particles in ptcl2's history need to undergo the new transformation before averaging
 					print "I'm fixing the transform for this index in the new average", p	#(multiplied by any old transforms, all in one step, to avoid multiple interpolations)
 					
@@ -928,17 +981,32 @@ def allvsall(options):
 				avg=avgr.finish()
 				
 				
-				
-				
-				
-				
 				print "THe average was successfully finished"
 
 				if options.autocenter:
 					print "\n\n\n\nYou have selected to autocenter!\n"
-					avg = avg.process('xform.centerofmass')
-					tcenter = avg['xform.align3d']
+					#avg = avg.process('xform.centerofmass')
+					
+					avgac = avg.copy()
+					if options.autocentermask:
+						avgac.process_inplace( options.autocentermask[0],options.autocentermask[1] )
+						
+					if options.autocenterpreprocess:
+						apix = avg['apix_x']
+						halfnyquist = apix*4
+						highpassf = apix*a['nx']/2.0
+						
+						avgac.process_inplace( 'filter.highpassgauss',{'cutoff_freq':highpassf,'apix':apix})
+						avgac.process_inplace( 'filter.lowpassgauss',{'cutoff_freq':halfnyquist,'apix':apix})
+						avgac.process_inplace( 'math.meanshrink',{'n':2})
+						
+					avgac.process_inplace(options.autocenter[0],options.autocenter[1])
+					
+					tcenter = avgac['xform.align3d']
 					print "Thus the average HAS BEEN be translated like this", tcenter
+					
+					avg.transform(tcenter)
+					
 					
 					if options.saveali:
 						avg_ptcls = []
@@ -1047,7 +1115,19 @@ def allvsall(options):
 				
 				avg.process_inplace('normalize')
 				
+				
+				dendonew = 'avg' + str(dendocount).zfill(4)
+				
+				avg['spt_dendoID'] = dendonew
+
+				dendocount+=1
+				
 				avg.write_image(options.path + '/round' + str(k).zfill(fillfactor) + '_averages.hdf',mm)
+				
+				dendo=open(dendofile,'a')
+				dendo.write(dendo1 + '\taveraged with \t' + str(dendo2) + '\tinto \t' + str(dendonew) + ' | particles in average: ' + str(avg['spt_ptcl_indxs']) + '\n')
+				dendo.close()
+				
 				
 				if len(results) == 1:
 					avg.write_image(options.path + '/finalAvg.hdf',0)
@@ -1102,7 +1182,9 @@ def allvsall(options):
 			
 				clustersDict.close()
 				
-			
+		f=open(dendofile,'a')
+		f.write("======================\n\n")
+		f.close()	
 			
 		roundInfoDict.close()
 			
@@ -1153,7 +1235,7 @@ def allvsall(options):
 		oldptcls.update(surviving_oldptcls)  
 		oldptcls.update(surviving_newptcls)					#All the particles from the newptcls list that were not averaged become "old"
 				
-		newptcls = averages							#All the new averages become part of the new "newptcls" list
+		newptcls = averages									#All the new averages become part of the new "newptcls" list
 		
 		fs=os.listdir( options.path)
 		
@@ -1172,10 +1254,9 @@ def allvsall(options):
 					
 		
 		print "And these many new averages", len(newptcls), len(averages)
-		
 		print "So there are these many old particles for the next round", len(oldptcls)
-		print "And these many new-new ones", len(newptcls)
-		
+		print "(e2spt_hac.py)(allvsall function) And these many new-new ones", len(newptcls)
+		print "\n\n"
 		#if k>0:
 		#	os.system('rm ' + newstack)
 
@@ -1279,7 +1360,7 @@ class Align3DTaskAVSA(JSTask):
 		return {"final":bestfinal,"coarse":bestcoarse}
 		
 		
-def textwriter(xdata,ydata,options,name):
+def textwriterinfo(xdata,ydata,options,name):
 	if len(xdata) == 0 or len(ydata) ==0:
 		print "ERROR: Attempting to write an empty text file!"
 		sys.exit()
@@ -1293,6 +1374,26 @@ def textwriter(xdata,ydata,options,name):
 	lines=[]
 	for i in range(len(xdata)):
 		line2write = 'comparison#' + str(xdata[i]) + ' ptclA #' + str(ydata[i][-2]) + ' vs ptclB #' + str(ydata[i][-1])+ ' score=' + str(ydata[i][0]) + '\n'
+		#print "THe line to write is"
+		lines.append(line2write)
+	
+	f.writelines(lines)
+	f.close()
+
+	return()
+	
+	
+def textwriter(ydata,options,name):
+	
+	if options.path not in name:
+		name=options.path + '/' + name
+	
+	print "I am in the text writer for this file", name
+	
+	f=open(name,'w')
+	lines=[]
+	for i in range(len(ydata)):
+		line2write = str(i) + ' ' + str(ydata) + '\n'
 		#print "THe line to write is"
 		lines.append(line2write)
 	
@@ -1314,11 +1415,12 @@ def plotter(xaxis,yaxis,options,name):
 	FORMAT AXES
 	'''
 	
+	yaxis.sort()
+	
 	for i in range(len(yaxis)):
-		print "\n\nBefore conversion, original score is", yaxis[i]
 		yaxis[i] = float( yaxis[i] )*-1.0
-		print "\n\nAfter conversion, original score is", yaxis[i]
-		
+		print "Positive Y score to plot is", yaxis[i]
+				
 	matplotlib.rc('xtick', labelsize=16) 
 	matplotlib.rc('ytick', labelsize=16) 
 	
