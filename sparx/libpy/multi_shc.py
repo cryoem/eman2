@@ -84,7 +84,7 @@ def orient_params(params, indexes=None, sym = "c1"):
 				#mirror
 				for j in indexes:
 					params[i][j][2] = (params[i][j][2] + 180.0) % 360.0
-
+"""
 
 def shuffle_configurations(params):
 	from random import shuffle
@@ -100,7 +100,7 @@ def shuffle_configurations(params):
 			new_params[j][i] = params[src[j]][i]
 
 	return new_params
-
+"""
 
 def calculate_matrix_rot(projs):
 	from utilities import rotation_between_anglesets
@@ -164,20 +164,20 @@ def find_common_subset_3(projs, target_threshold, minimal_subset_size=3, sym = "
 				max_error = avg_diff_per_image[i]
 				the_worst_proj = subset[i]
 		if max_error <= target_threshold:
-			res_thr_subset = subset[:]
+			res_thr_subset   = subset[:]
 			error_thr_subset = max_error
 			break
 		if len(subset) == minimal_subset_size:
-			res_size_subset = subset[:]
+			res_size_subset   = subset[:]
 			error_size_subset = max_error
 		subset.remove(the_worst_proj)
 
 	if res_thr_subset == None:
-		res_thr_subset = subset
+		res_thr_subset   = subset
 		error_thr_subset = max_error
 
 	if res_size_subset == None:
-		res_size_subset = res_thr_subset
+		res_size_subset   = res_thr_subset
 		error_size_subset = error_thr_subset
 
 	if thresholds:
@@ -1275,7 +1275,7 @@ def mirror_and_reduce_dsym(params, sym):
 	# for the time being do it in a silly way, i.e., select first as a reference and run with it.
 	#
 	
-	from utilities import get_symt, get_sym, getvec
+	from utilities import get_symt, get_sym, getfvec
 	from EMAN2 import Vec2f, Transform, EMData
 	from pixel_error import angle_diff
 
@@ -1285,7 +1285,7 @@ def mirror_and_reduce_dsym(params, sym):
 	#t0 = [None]*ns
 	vt0 = [None]*ns
 	for j in xrange(ns):
-		vt0[j] = getvec(params[0][j][0], params[0][j][1])
+		vt0[j] = getfvec(params[0][j][0], params[0][j][1])
 		#t0[j] = Transform({"type":"spider","phi":params[0][j][0], "theta":params[0][j][1], "psi":params[0][j][2]})
 		#t0[j].set_trans(Vec2f(-params[0][j][3], -params[0][j][4]))
 	#  get sym transforms
@@ -1322,7 +1322,7 @@ def mirror_and_reduce_dsym(params, sym):
 					d = ut.get_params("spider")
 					tt = d["phi"]
 					if(not ((tt>=badb and tt<bade) or (tt>=bbdb and tt<bbde) )):
-						vec = getvec(tt,  d["theta"])
+						vec = getfvec(tt,  d["theta"])
 						per = abs(vt0[i][0]*vec[0] + vt0[i][1]*vec[1] + vt0[i][2]*vec[2])
 						#print  j,k,d["phi"],  d["theta"], d["psi"],params[0][j],per
 						if(per > apixer):
@@ -1337,6 +1337,64 @@ def mirror_and_reduce_dsym(params, sym):
 				params[i][j][2] = bt["psi"]
 				params[i][j][3] = -bt["tx"]
 				params[i][j][4] = -bt["ty"]
+		else:
+			#  check the other possibility of mirroring
+			p2 = []
+			for j in xrange(ns):
+				p2.append([ (-params[i][j][0])%360.0, (180-params[i][j][1])%360.0, params[i][j][2] ,params[i][j][3], params[i][j][4]])
+			for j in xrange(ns):  p2[j] = mult_transform(p2[j], mm)
+			#  Now check whether p2 is closer to params[0] than params[i] is.
+			per1=0.0
+			per2=0.0
+
+			for j in xrange(ns):
+				apixer = -1.e20
+				qt = Transform({"type":"spider","phi":params[i][j][0], "theta":params[i][j][1], "psi":params[i][j][2]})
+				#qt.set_trans(Vec2f(-params[i][j][3], -params[i][j][4]))
+				for k in xrange(ks):
+					ut = qt*ts[k]
+					d = ut.get_params("spider")
+					vec = getfvec(d["phi"],  d["theta"])
+					tmp = vt0[i][0]*vec[0] + vt0[i][1]*vec[1] + vt0[i][2]*vec[2]
+					if(tmp > apixer): apixer = tmp
+				per1 += apixer
+
+				apixer = -1.e20
+				qt = Transform({"type":"spider","phi":p2[j][0], "theta":p2[j][1], "psi":p2[j][2]})
+				for k in xrange(ks):
+					ut = qt*ts[k]
+					d = ut.get_params("spider")
+					vec = getfvec(d["phi"],  d["theta"])
+					tmp = vt0[i][0]*vec[0] + vt0[i][1]*vec[1] + vt0[i][2]*vec[2]
+					if(tmp > apixer): apixer = tmp
+				per2 += apixer
+
+			if(per2>per1):
+				for j in xrange(ns):
+					apixer = -1.e20
+					qt = Transform({"type":"spider","phi":p2[j][0], "theta":p2[j][1], "psi":p2[j][2]})
+					for k in xrange(ks):
+						ut = qt*ts[k]
+						d = ut.get_params("spider")
+						tt = d["phi"]
+						if(not ((tt>=badb and tt<bade) or (tt>=bbdb and tt<bbde) )):
+							vec = getfvec(tt,  d["theta"])
+							tmp = vt0[i][0]*vec[0] + vt0[i][1]*vec[1] + vt0[i][2]*vec[2]
+							if(tmp > apixer):
+								apixer = tmp
+								bk = k
+					qt.set_trans(Vec2f(-p2[j][3], -p2[j][4]))
+					bt = qt*ts[bk]
+					bt = bt.get_params("spider")
+					params[i][j][0] = bt["phi"]
+					params[i][j][1] = bt["theta"]
+					params[i][j][2] = bt["psi"]
+					params[i][j][3] = -bt["tx"]
+					params[i][j][4] = -bt["ty"]
+
+
+ 
+
 		#  The assumption is the angles are reduced, so if it is straight no checking is needed
 		"""
 		else:

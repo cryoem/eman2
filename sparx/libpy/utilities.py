@@ -2975,8 +2975,10 @@ def assign_projangles_slow(projangles, refangles):
 	return assignments
 
 def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
+	# In both cases mirrored should be treated the same way as straight as they carry the same structural information
 	lookup = range(len(projangles))
 	if( sym == "c1"):
+		from utilities import getvec
 		refnormal = [None]*len(projangles)
 		for i in xrange(len(projangles)):
 			refnormal[i] = getvec(projangles[i][0], projangles[i][1])
@@ -3000,8 +3002,8 @@ def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 			q = a*t[l]
 			q = q.get_params("spider")
 			if(q["phi"]<phir and q["theta"] <= 90.0): break
-		#refvec = getfvec(q["phi"], q["theta"])
-		print  "refvec   ",q["phi"], q["theta"]
+		refvec = getfvec(q["phi"], q["theta"])
+		#print  "refvec   ",q["phi"], q["theta"]
 
 		tempan =  [None]*len(projangles)
 		for i in xrange(len(projangles)): tempan[i] = projangles[i]
@@ -3017,7 +3019,7 @@ def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 					q = a*t[l]
 					q = q.get_params("spider")
 					vecs = getfvec(q["phi"], q["theta"])
-					s = vecs[0]*refvec[0] + vecs[1]*refvec[1] + vecs[2]*refvec[2]
+					s = abs(vecs[0]*refvec[0] + vecs[1]*refvec[1] + vecs[2]*refvec[2])
 					if( s > nearest ):
 						nearest = s
 						#ttt = (q["phi"], q["theta"])
