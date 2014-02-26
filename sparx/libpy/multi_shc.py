@@ -37,8 +37,7 @@ def generate_uneven_projections_directions(count, half_sphere=False, output_file
 def mult_transform(v1, v2):
 	from EMAN2 import Transform
 	T1 = Transform({"type":"spider","phi":v1[0],"theta":v1[1],"psi":v1[2],"tx":v1[3],"ty":v1[4],"tz":0.0,"mirror":0,"scale":1.0})
-	T2 = Transform({"type":"spider","phi":v2[0],"theta":v2[1],"psi":v2[2],"tx":v2[3],"ty":v2[4],"tz":0.0,"mirror":0,"scale":1.0})
-	T = T1*T2
+	T = T1*v2
 	return [ T.get_params("spider")["phi"], T.get_params("spider")["theta"], T.get_params("spider")["psi"], T.get_params("spider")["tx"], T.get_params("spider")["ty"]  ]
 
 
@@ -51,6 +50,8 @@ def orient_params(params, indexes=None, sym = "c1"):
 
 	if(sym[0] == "d"):
 		# In this one the first params is taken as a reference
+		mirror_and_reduce_dsym(params, sym)
+		"""
 		if indexes == None:
 			mirror_and_reduce_dsym(params, sym)
 		else:
@@ -63,7 +64,9 @@ def orient_params(params, indexes=None, sym = "c1"):
 				for j in indexes:
 					params[i][j] = temp[i][k]
 					k += 1
+		"""
 	else:
+		from EMAN2 import Transform
 		if indexes == None:   indexes = range(n)
 		for i in xrange(1,m):
 			cmp_par_i = []
@@ -72,7 +75,7 @@ def orient_params(params, indexes=None, sym = "c1"):
 				cmp_par_i.append(params[i][j])
 				cmp_par_0.append(params[0][j])
 			t1,t2,t3 = rotation_between_anglesets(cmp_par_i, cmp_par_0)
-			rot = [t1, t2, t3, 0.0, 0.0]
+			rot = Transform({"type":"spider","phi":t1,"theta":t2,"psi":t3})
 			for j in xrange(n):
 				params[i][j] = mult_transform(params[i][j], rot)
 			# mirror checking
@@ -139,8 +142,9 @@ def find_common_subset_3(projs, target_threshold, minimal_subset_size=3, sym = "
 		if( sym[0] == "d"):
 			matrix_rot  = [[[0.0,0.0,0.0,0.0,0.0] for i in xrange(sc)] for k in xrange(sc)]
 			for iConf in xrange(sc):
-				for i in xrange(len(projs2[iConf])):
-					trans_projs.extend(projs2[iConf][i][0:5])
+				temp = reduce_dsym_angles(projs2[iConf], sym)
+				for i in xrange(len(temp)):
+					trans_projs.extend(temp[i][0:5])
 		else:
 			matrix_rot = calculate_matrix_rot(projs2)
 			for iConf in xrange(sc):
@@ -273,6 +277,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 	nima = len(list_of_particles)
 
 	image_start, image_end = MPI_start_end(total_nima, mpi_subsize, mpi_subrank)
+	#print "  image_start, image_end  ", myid,image_start, image_end
 
 	data = [ stack[im] for im in list_of_particles ]
 	for im in xrange(nima):
@@ -296,7 +301,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 
 	# do the projection matching
 	for N_step in xrange(lstp):  # At this point there is just one value here, it cannot loop.
-		
+		if myid == 0:  afterGAcounter = 0
 		terminate = 0
 		Iter = 0
 		while Iter < max_iter and terminate == 0:
@@ -427,8 +432,11 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				for i in all_pixer:
 					if i < 1.0: temp += 1
 				percent_of_pixerr_below_one = (temp * 1.0) / (total_nima * number_of_runs)
-				orient_and_shuffle = ( percent_of_pixerr_below_one > doga )  #  TODO - parameter ?
-				#terminate          = ( percent_of_pixerr_below_one > 0.9 )  #  TODO - parameter ?
+				orient_and_shuffle = ( percent_of_pixerr_below_one > doga )  and ( afterGAcounter < 0 ) #  TODO - parameter ?
+				afterGAcounter -= 1
+				## if total_iter%3 == 0:  orient_and_shuffle = True
+				## else:   orient_and_shuffle = False
+				# terminate          = ( percent_of_pixerr_below_one > 0.9 )  #  TODO - parameter ?
 				log.add("=========================")
 				log.add("Percent of positions with pixel error below 1.0 = ", (int(percent_of_pixerr_below_one*100)), "%","   Mutations: ",orient_and_shuffle)
 			orient_and_shuffle = wrap_mpi_bcast(orient_and_shuffle, 0, mpi_comm)
@@ -449,93 +457,136 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, mpi_subcomm)
 				cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
 				rotate_3D_shift(data, cs)
-			#=========================================================================
+			#===================== CORRECT PARAMETERS ON DATA =======================
 
 			mpi_barrier(mpi_comm)
 			if myid == main_node:
 				start_time = time()
+			"""
 			params = []
 			for im in data:
 				phi, theta, psi, sx, sy = get_params_proj(im)
 				params.append([phi, theta, psi, sx, sy])
 			params_0 = wrap_mpi_bcast(params, mpi_subroots[0], mpi_comm)
-			"""
+
 			if mpi_subrank == 0:
 				from utilities import write_text_row
 				write_text_row(params, "qparams%04d%04d.hdf"%(myid,total_iter) )
 			"""
 
 			#=========================================================================
-			# volume reconstruction
-			mpi_barrier(mpi_comm)
-			if myid == main_node:
-				start_time = time()
-			vol = volume_reconstruction(data[image_start:image_end], ali3d_options, mpi_subcomm)
-			#if mpi_subrank == 0:  vol.write_image("qvolf%04d%04d.hdf"%(myid,total_iter))
-			# log
-			if myid == main_node:
-				log.add("3D reconstruction time = %f\n"%(time()-start_time))
-				start_time = time()
-
-			#=========================================================================
-			if orient_and_shuffle:
+			if orient_and_shuffle:   #  DO orient
 				params = []
 				for im in data:
 					phi, theta, psi, sx, sy = get_params_proj(im)
 					params.append([phi, theta, psi, sx, sy])
+				# if myid == 2:  print  " initial params before orient  ",myid,[get_params_proj(data[i]) for i in xrange(4)]
 
 				# ------ orientation - begin
 				params_0 = wrap_mpi_bcast(params, mpi_subroots[0], mpi_comm)
 				if mpi_subrank == 0:
-					if(sym[0] == "d"):
-						reduce_dsym_angles(params_0, sym)
-						reduce_dsym_angles(params, sym)
+
 					subset_thr, subset_min, avg_diff_per_image = find_common_subset_3([params_0, params], 2.0, len(params)/3, sym)
 					if len(subset_thr) < len(subset_min):
 						subset = subset_min
 					else:
 						subset = subset_thr
-					orient_params([params_0, params], subset)
+					# if myid == 2:  print  " params before orient  ",myid,params[:4],params[-4:]
+					"""
+					if myid == 2:
+						from utilities import write_text_row
+						write_text_row(params_0,"bparamszero%03d.txt"%total_iter)
+						write_text_row(params,"bparams%03d.txt"%total_iter)
+					"""
+					orient_params([params_0, params], subset, sym)
+					"""
+					if myid == 2:
+						print  " subset  ",len(subset)#," ...  ",subset
+						from utilities import write_text_row
+						write_text_row(params_0,"aparamszero%03d.txt"%total_iter)
+						write_text_row(params,"aparams%03d.txt"%total_iter)
+					"""
+					# if myid == 2:  print  " params after orient  ",myid,params[:4],params[-4:]
 				params = wrap_mpi_bcast(params, 0, mpi_subcomm)
+				# if myid == 2:  print  " params after wrap_mpi_bcast  ",myid,params[:4],params[-4:]
 				# ------ orientation - end
-				
-				# ------ Compute L2s and gather to the root
+
+
+				#=========================================================================
+				# volume reconstruction
+				mpi_barrier(mpi_comm)
+				if myid == main_node:
+					start_time = time()
+
+				#temp = [None]*nima
+				#for i in xrange(nima): temp[i] = data[i].get_attr("xform.projection")
+				for i in xrange(nima):  set_params_proj(data[i], params[i])
+				vol = volume_reconstruction(data[image_start:image_end], ali3d_options, mpi_subcomm)
+				#for i in xrange(nima): data[i].set_attr("xform.projection",temp[i])
+				#del temp
+
+
 				if mpi_subrank == 0:
 					L2 = vol.cmp("dot", vol, dict(negative = 0, mask = model_circle(last_ring, nx, nx, nx)))
-				if myid == 0:
-					all_L2s = []
-					for sr in mpi_subroots:
-						if sr == myid:
-							all_L2s.append(L2)
-						else:
-							all_L2s.append(wrap_mpi_recv(sr, mpi_comm))
-				else:
-					if mpi_subrank == 0:
-						wrap_mpi_send(L2, 0, mpi_comm)				
+					# if myid == 2:  print  " Right after reconstruction L2", myid, L2,[get_params_proj(data[i]) for i in xrange(4)]
+					#print  " Right after reconstruction of oriented parameters L2", myid, total_iter,L2
+					##vol.write_image("recvolf%04d%04d.hdf"%(myid,total_iter))
+				# log
+				if myid == main_node:
+					log.add("3D reconstruction time = %f\n"%(time()-start_time))
+					start_time = time()
 
 				# ------ gather parameters to root
 				if myid == 0:
+					all_L2s = []
 					all_params = []
 					for sr in mpi_subroots:
 						if sr == myid:
+							all_L2s.append(L2)
 							all_params.append(params)
 						else:
+							all_L2s.append(wrap_mpi_recv(sr, mpi_comm))
 							all_params.append(wrap_mpi_recv(sr, mpi_comm))
 				else:
 					if mpi_subrank == 0:
+						wrap_mpi_send(L2, 0, mpi_comm)				
 						wrap_mpi_send(params, 0, mpi_comm)
 
 				# ---------------------------------
 
 				#  Add params to GA, sort, check termination and if not terminate do mutations and send back
 				if myid == 0:
+					#  after GA move do 3 iterations to give the program a chance to improve mutated structures.
+					afterGAcounter = 3
 					#all_params = shuffle_configurations(all_params)
 					for i in xrange(number_of_runs):
 						GA.append([all_L2s[i],all_params[i]])
+					##for i in xrange(len(GA)):
+					##	log.add("L2 norm added to stack %3d  = %f"%(i,GA[i][0]))
+					# if myid == 2: 
+					#	print  "  GA top before sorting  "
+					#	for i in xrange(number_of_runs):
+					#		print i,GA[i][0],GA[i][1][:4]
 					GA.sort(reverse=True)
 					GA = GA[:number_of_runs]
-
-
+					# if myid == 2:  
+					#	print  "  GA top sorted "
+					#	for i in xrange(number_of_runs):
+					#		print i,GA[i][0],GA[i][1][:4]
+					"""
+					#  Verify GAs
+					from utilities import model_circle
+					from multi_shc import volume_recsp
+					temp = [None]*nima
+					for i in xrange(nima): temp[i] = data[i].get_attr("xform.projection")
+					for k in xrange(len(GA)):
+						for i in xrange(nima):  set_params_proj(data[i], GA[k][1][i])
+						tvol = volume_recsp(data, ali3d_options)
+						LL2 = tvol.cmp("dot", tvol, dict(negative = 0, mask = model_circle(last_ring, nx, nx, nx)))
+						log.add(" LLLLLLL2 norm of reference volume %3d  = :  %f"%(k,LL2))
+					for i in xrange(nima): data[i].set_attr("xform.projection",temp[i])
+					del temp
+					"""
 					#  ---  Stopping criterion
 					from statistics import table_stat
 					from math import sqrt
@@ -543,6 +594,8 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 					# Terminate if variation of L2 norms less than (L2threshold*100)% of their average
 					crit = sqrt(max(q2,0.0))/q1
 					terminate = crit < L2threshold
+					##  if  total_iter > 17: terminate = True
+					##  else:  terminate=False
 					for i in xrange(number_of_runs):
 						log.add("L2 norm for volume %3d  = %f"%(i,GA[i][0]))
 					log.add("L2 norm std dev %f\n"%crit)
@@ -559,7 +612,8 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 						for ip in xrange(0,2*(len(ipl)/2),2):
 							#  random reference projection:
 							itmp = randint(0,total_nima-1)
-							keepset = nearestk_projangles(GA[ipl[ip]][1], whichone = itmp, howmany = total_nima/2)
+							#  if(   )
+							keepset = nearestk_projangles(GA[ipl[ip]][1], whichone = itmp, howmany = total_nima/2, sym=sym)
 							keepset.append(itmp)
 							otherset = set(range(total_nima)) - set(keepset)
 							otherset = [i for i in otherset]
@@ -608,72 +662,113 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 					params = wrap_mpi_bcast(params, 0, mpi_subcomm)
 					for i in xrange(nima):
 						set_params_proj(data[i], params[i])
-
+					"""
 					#=========================================================================
 					# volume reconstruction
 					mpi_barrier(mpi_comm)
 					if myid == main_node:
 						start_time = time()
 					vol = volume_reconstruction(data[image_start:image_end], ali3d_options, mpi_subcomm)
-					#if mpi_subrank == 0:  vol.write_image("qmutatedvolf%04d%04d.hdf"%(myid,total_iter))
+					##if mpi_subrank == 0:  vol.write_image("mutatedvolf%04d%04d.hdf"%(myid,total_iter))
+					if mpi_subrank == 0:
+						L2 = vol.cmp("dot", vol, dict(negative = 0, mask = model_circle(last_ring, nx, nx, nx)))
+						# if myid == 2:  print  " Right after reconstruction L2", myid, L2,[get_params_proj(data[i]) for i in xrange(4)]
+						print  "Mutated L2", myid, total_iter,L2
 
-					if myid == main_node:
-						from utilities import write_text_row
-						write_text_row(GA[0][1], "qparams%04d%04d.txt"%(myid,total_iter) )
-
+					##if myid == main_node:
+					##	from utilities import write_text_row
+					##	write_text_row(GA[0][1], "qparams%04d%04d.txt"%(myid,total_iter) )
+					"""
 					#=========================================================================
 					#
 					mpi_barrier(mpi_comm)
 					if myid == main_node:
 						log.add("Time of orientation and mutations = %f\n"%(time()-start_time))
 						start_time = time()
-				else:
-					#VERIFY GA
-					# Send params back
-					if myid == 0:
-						#print  all_params
-						#print "GA  ",GA
-						for i in xrange(number_of_runs):
-							sr = mpi_subroots[i]
-							if sr == myid:
-								params = GA[i][1]
-							else:
-								wrap_mpi_send(GA[i], sr, mpi_comm)
-					else:
-						if mpi_subrank == 0:
-							params = wrap_mpi_recv(0, mpi_comm)
+				#else:  continue
+			if not terminate:
+				#=========================================================================
+				# volume reconstruction
+				mpi_barrier(mpi_comm)
+				if myid == main_node:
+					start_time = time()
+				vol = volume_reconstruction(data[image_start:image_end], ali3d_options, mpi_subcomm)
+				"""
+				if mpi_subrank == 0:
+					L2 = vol.cmp("dot", vol, dict(negative = 0, mask = model_circle(last_ring, nx, nx, nx)))
+					# if myid == 2:  print  " Right after reconstruction L2", myid, L2,[get_params_proj(data[i]) for i in xrange(4)]
+					print  " Right after reconstruction L2", myid, total_iter,L2
+					##vol.write_image("recvolf%04d%04d.hdf"%(myid,total_iter))
+				"""
+				# log
+				if myid == main_node:
+					log.add("3D reconstruction time = %f\n"%(time()-start_time))
+					start_time = time()
 
-					params = wrap_mpi_bcast(params, 0, mpi_subcomm)
+			"""
+			#VERIFY GA
+			if myid == 0:
+				temp = [None]*nima
+				for i in xrange(nima): temp[i] = data[i].get_attr("xform.projection")
+				for k in xrange(len(GA)):
 					for i in xrange(nima):
-						set_params_proj(GA[i], params[i])
+						set_params_proj(data[i], GA[k][1][i])
+					tvol = volume_reconstruction(data, ali3d_options, mpi_subcomm)
+					LL2 = tvol.cmp("dot", tvol, dict(negative = 0, mask = model_circle(last_ring, nx, nx, nx)))
+					print  "GA VERIFY  ",k,GA[k][0],LL2,GA[k][1][:4],GA[k][1][-5:]
+				for i in xrange(nima): data[i].set_attr("xform.projection",temp[i])
+			"""
+			"""
+			# Send params back
+			if myid == 0:
+				#print  all_params
+				#print "GA  ",GA
+				for i in xrange(number_of_runs):
+					sr = mpi_subroots[i]
+					if sr == myid:
+						params = GA[i][1]
+					else:
+						wrap_mpi_send(GA[i][1], sr, mpi_comm)
+			else:
+				if mpi_subrank == 0:
+					params = wrap_mpi_recv(0, mpi_comm)
 
-					#=========================================================================
-					# volume reconstruction
-					mpi_barrier(mpi_comm)
-					if myid == main_node:
-						start_time = time()
-					vol = volume_reconstruction(data[image_start:image_end], ali3d_options, mpi_subcomm)
-					if mpi_subrank == 0:
-						L2 = vol.cmp("dot", vol, dict(negative = 0, mask = model_circle(last_ring, nx, nx, nx)))
-						print  "VERIFICATION  ",myid,L2
-						#vol.write_image("qmutatedvolf%04d%04d.hdf"%(myid,total_iter))
+			params = wrap_mpi_bcast(params, 0, mpi_subcomm)
+			if myid == 0:
+				print  "params  "
+				print params
+			for i in xrange(nima):
+				set_params_proj(data[i], params[i])
 
-					#if myid == main_node:
-					#	from utilities import write_text_row
-					#	write_text_row(GA[0][1], "qparams%04d%04d.txt"%(myid,total_iter) )
+			#=========================================================================
+			# volume reconstruction
+			mpi_barrier(mpi_comm)
+			if myid == main_node:
+				start_time = time()
+			vol = volume_reconstruction(data[image_start:image_end], ali3d_options, mpi_subcomm)
+			if mpi_subrank == 0:
+				L2 = vol.cmp("dot", vol, dict(negative = 0, mask = model_circle(last_ring, nx, nx, nx)))
+				print  "VERIFICATION  ",myid,L2
+				#vol.write_image("qmutatedvolf%04d%04d.hdf"%(myid,total_iter))
 
-					#=========================================================================
-					#
-					mpi_barrier(mpi_comm)
-					if myid == main_node:
-						log.add("Time of verification = %f\n"%(time()-start_time))
-						start_time = time()
+			#if myid == main_node:
+			#	from utilities import write_text_row
+			#	write_text_row(GA[0][1], "qparams%04d%04d.txt"%(myid,total_iter) )
+
+			#=========================================================================
+			#
+			mpi_barrier(mpi_comm)
+			if myid == main_node:
+				log.add("Time of verification = %f\n"%(time()-start_time))
+				start_time = time()
+			"""
 
 
 
 	#=========================================================================
 	mpi_comm_free(mpi_subcomm)
-
+	
+	
 	if myid == main_node:
 		log.add("Finish ali3d_multishc")
 		return GA[0][1]
@@ -771,6 +866,73 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None 
 			data[im] = filt_ctf(data[im], ctf_params)
 			data[im].set_attr('ctf_applied', 1)
 
+
+
+
+	#=========================================================================
+	# adjust params to references, calculate psi+shifts, calculate previousmax
+	qvol = volume_reconstruction(data, ali3d_options, mpi_comm)
+	# log
+	"""
+	if myid == main_node:
+		start_time = time()
+		#qvol.write_image("vitera.hdf")
+		L2 = qvol.cmp("dot", qvol, dict(negative = 0, mask = model_circle(last_ring, nx, nx, nx)))
+		log.add("3D reconstruction time = %f\n"%(time()-start_time)," START  L2 norm:  %f"%L2)
+		start_time = time()
+	del qvol
+	"""
+
+	from projection   import prep_vol, prgs
+	from alignment import ringwe
+	cnx = nx//2 + 1
+	cny = nx//2 + 1
+	wr_four  = ringwe(numr, "F")
+	from math import pi, sin, cos
+	qv = pi/180.
+	volft, kb = prep_vol(ref_vol)
+	from utilities import get_params_proj
+	for im in xrange(nima):
+		phi,theta,psi,tx,ty = get_params_proj(data[im])
+		prjref = prgs(volft, kb, [phi,theta,psi, 0.0, 0.0])
+		cimage = Util.Polar2Dm(prjref, cnx, cny, numr, "F")
+		Util.Normalize_ring(cimage, numr)
+		Util.Frngs(cimage, numr)
+		Util.Applyws(cimage, numr, wr_four)
+		refrings = [cimage]
+		n1 = sin(theta*qv)*cos(phi*qv)
+		n2 = sin(theta*qv)*sin(phi*qv)
+		n3 = cos(theta*qv)
+		refrings[0].set_attr_dict( {"n1":n1, "n2":n2, "n3":n3} )
+		refrings[0].set_attr("phi",   phi)
+		refrings[0].set_attr("theta", theta)
+		refrings[0].set_attr("psi",   psi)
+
+		#print "orin  ",data[im].get_attr("ID"),get_params_proj(data[im])
+		peak, pixer = proj_ali_incore_local(data[im],refrings,numr,0.0,0.0,1.0,delta[0]/4)
+		data[im].set_attr("previousmax", peak)
+		#print  "peak ",data[im].get_attr("ID"), peak,pixer,get_params_proj(data[im])
+	del volft
+	# volume reconstruction
+	mpi_barrier(mpi_comm)
+	if myid == main_node:
+		start_time = time()
+	ref_vol = volume_reconstruction(data, ali3d_options, mpi_comm)
+	# log
+	if myid == main_node:
+		##ref_vol.write_image("viterb.hdf")
+		L2 = ref_vol.cmp("dot", ref_vol, dict(negative = 0, mask = model_circle(last_ring, nx, nx, nx)))
+		log.add("3D reconstruction time = %f\n"%(time()-start_time),"   L2 norm:  %f"%L2)
+		start_time = time()
+
+	if myid == main_node:
+		log.add("Time to calculate first psi+shifts+previousmax: %f\n" % (time()-start_time))
+		start_time = time()
+
+	#=========================================================================
+
+
+
 	pixer = [0.0]*nima
 	par_r = [[] for im in list_of_particles ]
 	cs = [0.0]*3
@@ -800,32 +962,6 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None 
 			if myid == main_node:
 				log.add("Time to prepare rings: %f\n" % (time()-start_time))
 				start_time = time()
-			
-			#=========================================================================
-			if total_iter == 1:
-			# adjust params to references, calculate psi+shifts, calculate previousmax
-				"""
-				for im in xrange(nima):
-					stable = data[im].get_attr_default("stable", 0)
-					if stable == 0:
-						data[im].set_attr("previousmax", -1.0e23)
-						data[im].set_attr("stable", 1)
-					else:
-						peak, pixer[im] = proj_ali_incore_local(data[im],refrings,numr,0.0,0.0,1.0,delta/4.0)
-						data[im].set_attr("previousmax", peak)
-				"""
-				from utilities import get_params_proj
-				for im in xrange(nima):
-					print "orin  ",data[im].get_attr("ID"),get_params_proj(data[im])
-					peak, pixer[im] = proj_ali_incore_local(data[im],refrings,numr,0.0,0.0,1.0,delta[N_step]/4.0)
-					data[im].set_attr("previousmax", peak)
-					print  "peak ",data[im].get_attr("ID"), peak,get_params_proj(data[im])
-
-			if myid == main_node:
-				log.add("Time to calculate first psi+shifts+previousmax: %f\n" % (time()-start_time))
-				start_time = time()
-
-			#=========================================================================
 
 			mpi_barrier(mpi_comm)
 			if myid == main_node:
@@ -887,6 +1023,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None 
 			vol = volume_reconstruction(data, ali3d_options, mpi_comm)
 			# log
 			if myid == main_node:
+				#vol.write_image("viter%03d.hdf"%total_iter)
 				L2 = vol.cmp("dot", vol, dict(negative = 0, mask = model_circle(last_ring, nx, nx, nx)))
 				log.add("3D reconstruction time = %f\n"%(time()-start_time),"   L2 norm:  %f"%L2)
 				start_time = time()
@@ -913,7 +1050,6 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None 
 
 	if myid == main_node: 
 		log.add("Finish ali3d_multishc_2")
-		if(sym[0] == "d"):  reduce_dsym_angles(params, sym)
 		return params, vol, previousmax, par_r
 	else:
 		return None, None, None, None  # results for the other processes
@@ -952,6 +1088,37 @@ def volume_reconstruction(data, options, mpi_comm):
 
 	# broadcast volume
 	bcast_EMData_to_all(vol, myid, 0, comm=mpi_comm)
+	#=========================================================================
+	return vol
+
+
+def volume_recsp(data, options):
+
+	from reconstruction import recons3d_4nn, recons3d_4nn_ctf
+	from utilities import bcast_EMData_to_all, model_circle
+	
+	sym  = options.sym
+	sym = sym[0].lower() + sym[1:]
+	npad      = options.npad
+	user_func = options.user_func
+	CTF       = options.CTF
+	snr       = options.snr
+	center    = options.center
+	#=========================================================================
+	# volume reconstruction
+	if CTF: vol = recons3d_4nn_ctf(data, snr, symmetry=sym, npad=npad)
+	else:   vol = recons3d_4nn(data,      symmetry=sym, npad=npad)
+
+	nx = data[0].get_xsize()
+	last_ring   = int(options.ou)
+	mask3D = model_circle(last_ring, nx, nx, nx)
+	ref_data = [ mask3D, max(center,0), None, None, None, None ]
+	ref_data[2] = vol
+	ref_data[3] = None #fscc
+	ref_data[4] = None#varf
+	#  call user-supplied function to prepare reference image, i.e., center and filter it
+	vol, cs = user_func(ref_data)
+
 	#=========================================================================
 	return vol
 
@@ -1030,30 +1197,33 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 		temp = []
 		from utilities import get_params_proj
 		for i in xrange(n_projs):
-			"""
-			#projections[i].set_attr("stable", 1)
-			t1,t2,t3,t4,t5 = get_params_proj( projections[i])
-			t6 = projections[i].get_attr("previousmax")
-			temp.append([t1,t2,t3,t4,t5,t6])
-			"""
 			set_params_proj( projections[i], out_params[i] )
 		write_text_row(out_params, log.prefix + "refparams2.txt")
-
+		"""
+		log.add("  WILL RECONSTRUCT  ")
+		from utilities import model_circle
+		tvol = volume_recsp(projections, ali3d_options)
+		LL2 = tvol.cmp("dot", tvol, dict(negative = 0, mask = model_circle(22, 48, 48, 48)))
+		log.add(" LLLLLLL2 norm of reference volume:  %f"%LL2)
+		for k in xrange(mpi_size):
+			proj_begin, proj_end  = MPI_start_end(n_projs, mpi_size, k)
+			print  " from within   ",k,proj_begin,get_params_proj(projections[proj_begin])
+		"""
 	"""
 	else:
 		temp_projs = None
 	"""
 	proj_begin, proj_end  = MPI_start_end(n_projs, mpi_size, mpi_rank)
-	#temp_projs = wrap_mpi_bcast(temp_projs, 0, mpi_comm)
-	#ref_vol = volume_reconstruction(temp_projs[proj_begin:proj_end], ali3d_options, mpi_comm=mpi_comm)
-	#projections = wrap_mpi_bcast(projections, 0, mpi_comm)
-	#
+
 	projections = wrap_mpi_bcast(projections, 0, mpi_comm)
+	from utilities import get_params_proj
+	#print  " from mpi   ",mpi_rank,proj_begin,get_params_proj(projections[proj_begin])
 	ref_vol = volume_reconstruction(projections[proj_begin:proj_end], ali3d_options, mpi_comm=mpi_comm)
 	if mpi_rank == 0:
 		ref_vol.write_image(log.prefix + "refvol2.hdf")
 		from utilities import model_circle
-		L2 = ref_vol.cmp("dot", ref_vol, dict(negative = 0, mask = model_circle(30,64,64,64)))
+		nx = ref_vol.get_xsize()
+		L2 = ref_vol.cmp("dot", ref_vol, dict(negative = 0, mask = model_circle(ali3d_options.ou, nx,nx,nx)))
 		log.add(" L2 norm of reference volume:  %f"%L2)
 
 	"""
@@ -1075,36 +1245,35 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 		write_text_row(out_params, log.prefix + "params.txt")
 		drop_image(out_vol, log.prefix + "volf.hdf")
 
-	return out_params, out_vol, out_peaks
-
+	return out_params, out_vol, None#, out_peaks
 
 def reduce_dsym_angles(p1, sym):
+	#  WARNING - it returns incorrect parameters that are only suitable for calculation of angular distances
 	#  works only for d symmetry
 	from utilities import get_symt
 	from EMAN2 import Vec2f, Transform
 	t = get_symt(sym)
-	ns = int(sym[1:])
+	phir = 360.0/int(sym[1:])
 	for i in xrange(len(t)):  t[i] = t[i].inverse()
-
+	pr = [[0.0 for i in xrange(5)] for q in xrange(len(p1))]
 	for i in xrange(len(p1)):
 		 a = Transform({"type":"spider","phi":p1[i][0], "theta":p1[i][1], "psi":p1[i][2]})
 		 a.set_trans(Vec2f(-p1[i][3], -p1[i][4]))
 		 for l in xrange(len(t)):
 			q = a*t[l]
 			q = q.get_params("spider")
-			if(q["phi"]<360./ns and q["theta"] <= 90.0): break
-		 p1[i][0] = q["phi"]
-		 p1[i][1] = q["theta"]
-		 p1[i][2] = q["psi"]
-		 p1[i][3] = -q["tx"]
-		 p1[i][4] = -q["ty"]
+			#print q["phi"], q["theta"],q["psi"]
+			if(q["phi"]<phir and q["theta"] <= 90.0): break
+		 pr[i][0] = q["phi"]
+		 pr[i][1] = q["theta"]
+		 pr[i][2] = q["psi"]
+		 pr[i][3] = -q["tx"]
+		 pr[i][4] = -q["ty"]
+	return pr
 
 def mirror_and_reduce_dsym(params, sym):
 	# for the time being do it in a silly way, i.e., select first as a reference and run with it.
 	#
-	#  Another problem, if the angles are reduced for STRAIGHT it does not seem to be necessary
-	#    to find the closest one as they are all within asymmetric triangle
-	#     For mirrored who knows.
 	
 	from utilities import get_symt, get_sym, getvec
 	from EMAN2 import Vec2f, Transform, EMData
@@ -1113,21 +1282,26 @@ def mirror_and_reduce_dsym(params, sym):
 	sc = len(params)
 	ns = len(params[0])
 	#  Convert 0 to transforms
-	t0 = [None]*ns
+	#t0 = [None]*ns
 	vt0 = [None]*ns
 	for j in xrange(ns):
 		vt0[j] = getvec(params[0][j][0], params[0][j][1])
-		t0[j] = Transform({"type":"spider","phi":params[0][j][0], "theta":params[0][j][1], "psi":params[0][j][2]})
+		#t0[j] = Transform({"type":"spider","phi":params[0][j][0], "theta":params[0][j][1], "psi":params[0][j][2]})
 		#t0[j].set_trans(Vec2f(-params[0][j][3], -params[0][j][4]))
 	#  get sym transforms
 	ts = get_symt(sym)
-	phir = 360.0/int(sym[1:])
 	ks = len(ts)
 	for i in xrange(ks):  ts[i] = ts[i].inverse()
 
 	# set rotation for mirror
 	mm = Transform({"type":"spider","phi":360./2/int(sym[1:]), "theta":0., "psi":0.})
 
+	#  Excluded values for phi
+	badb = 360.0/int(sym[1:])/4
+	bade = 2*badb
+	bbdb = badb + 360.0/int(sym[1:])/2
+	bbde = bbdb + 360.0/int(sym[1:])/4
+	
 
 	for i in xrange(1,sc):
 		# mirror checking
@@ -1146,8 +1320,9 @@ def mirror_and_reduce_dsym(params, sym):
 					ut = qt*ts[k]
 					ut = ut*mm
 					d = ut.get_params("spider")
-					if(d["phi"]<phir and d["theta"] <= 90.0 ):
-						vec = getvec(d["phi"],  d["theta"])
+					tt = d["phi"]
+					if(not ((tt>=badb and tt<bade) or (tt>=bbdb and tt<bbde) )):
+						vec = getvec(tt,  d["theta"])
 						per = abs(vt0[i][0]*vec[0] + vt0[i][1]*vec[1] + vt0[i][2]*vec[2])
 						#print  j,k,d["phi"],  d["theta"], d["psi"],params[0][j],per
 						if(per > apixer):
@@ -1192,92 +1367,6 @@ def mirror_and_reduce_dsym(params, sym):
 				params[i][j][3] = -bt["tx"]
 				params[i][j][4] = -bt["ty"]
 		"""
-
-"""
-def mirror_and_reduce_dsym(params, sym):
-	# for the time being do it in a silly way, i.e., select first as a reference and run with it.
-	#
-	#  Another problem, if the angles are reduced for STRAIGHT it does not seem to be necessary
-	#    to find the closest one as they are all within asymmetric triangle
-	#     For mirrored who knows.
-	
-	from utilities import get_symt, get_sym
-	from EMAN2 import Vec2f, Transform, EMData
-	from pixel_error import angle_diff
-
-	sc = len(params)
-	ns = len(params[0])
-	#  Convert 0 to transforms
-	t0 = [None]*ns
-	for j in xrange(ns):
-		t0[j] = Transform({"type":"spider","phi":params[0][j][0], "theta":params[0][j][1], "psi":params[0][j][2]})
-		#t0[j].set_trans(Vec2f(-params[0][j][3], -params[0][j][4]))
-	#  get sym transforms
-	ts = get_symt(sym)
-	phir = 360.0/int(sym[1:])
-	ks = len(ts)
-	for i in xrange(ks):  ts[i] = ts[i].inverse()
-
-	# set rotation for mirror
-	mm = Transform({"type":"spider","phi":360./2/int(sym[1:]), "theta":0., "psi":0.})
-
-
-	for i in xrange(1,sc):
-		# mirror checking
-		psi_diff = angle_diff( [params[i][j][2] for j in xrange(ns)], [params[0][j][2] for j in xrange(ns)] )
-		print  psi_diff
-		if(abs(psi_diff-180.0) <90.0):
-			#mirror
-			# For each projection direction from the reference set (here zero) find the nearest reduced from the other set
-			# and replace it in the other set
-			for j in xrange(ns):
-				apixer = 1.e20
-				qt = Transform({"type":"spider","phi":params[i][j][0], "theta":params[i][j][1], "psi":180.0+params[i][j][2]})
-				#qt.set_trans(Vec2f(-params[i][j][3], -params[i][j][4]))
-				for k in xrange(ks):
-					ut = qt*ts[k]
-					ut = ut*mm
-					d = ut.get_params("spider")
-					if(d["phi"]<phir and d["theta"] <= 90.0 ):
-						per = EMData().max_3D_pixel_error(t0[j], ut, 100.0)
-						if(per < apixer):
-							apixer = per
-							bk = k
-				qt.set_trans(Vec2f(-params[i][j][3], -params[i][j][4]))
-				bt = qt*ts[bk]
-				bt = bt*mm
-				bt = bt.get_params("spider")
-				params[i][j][0] = bt["phi"]
-				params[i][j][1] = bt["theta"]
-				params[i][j][2] = bt["psi"]
-				params[i][j][3] = -bt["tx"]
-				params[i][j][4] = -bt["ty"]
-		else:
-			# For each projection direction from the reference set (here zero) find the nearest reduced from the other set,
-			#    but it cannot be mirrored
-			# and replace it in the other set
-			for j in xrange(ns):
-				apixer = 1.e20
-				qt = Transform({"type":"spider","phi":params[i][j][0], "theta":params[i][j][1], "psi":params[i][j][2]})
-				#qt.set_trans(Vec2f(-params[i][j][3], -params[i][j][4]))
-
-				for k in xrange(ks):
-					ut = qt*ts[k]
-					d = ut.get_params("spider")
-					if(d["phi"]<phir and d["theta"] <= 90.0 ):
-						per = EMData().max_3D_pixel_error(t0[j], ut, 1.0)
-						if(per < apixer):
-							apixer = per
-							bk = k
-				qt.set_trans(Vec2f(-params[i][j][3], -params[i][j][4]))
-				bt = qt*ts[bk]
-				bt = bt.get_params("spider")
-				params[i][j][0] = bt["phi"]
-				params[i][j][1] = bt["theta"]
-				params[i][j][2] = bt["psi"]
-				params[i][j][3] = -bt["tx"]
-				params[i][j][4] = -bt["ty"]
-"""
 
 def get_dsym_angles(p1, sym):
 	#  works only for d symmetry
@@ -1608,7 +1697,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 						subset = subset_min
 					else:
 						subset = subset_thr
-					if(sym[0] != "d"):  orient_params([params_0, params], subset)
+					if(sym[0] != "d"):  orient_params([params_0, params], subset, sym)
 				if(sym[0] != "d"):  params = wrap_mpi_bcast(params, 0, mpi_subcomm)
 				# ------ orientation - end
 
