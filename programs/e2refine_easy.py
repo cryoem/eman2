@@ -130,6 +130,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--speed", default=5,type=int,help="(1-7) Balances speed vs precision. Larger values sacrifice a bit of potential resolution for significant speed increases. Set to 1 when pushing resolution. default=5", guitype='intbox', row=16, col=1, rowspan=1, colspan=1, mode="refinement")
 	parser.add_header(name="required", help='Just a visual separation', title="Required:", row=9, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--sym", dest = "sym", default="c1",help = "Specify symmetry - choices are: c<n>, d<n>, tet, oct, icos.", guitype='strbox', row=10, col=1, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--breaksym", action="store_true", default=False,help = "If selected, reconstruction will be asymmetric with sym= specifying a known pseudosymmetry, not an imposed symmetry.", guitype='boolbox', row=11, col=1, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--iter", dest = "iter", type = int, default=6, help = "The total number of refinement iterations to perform. Default=auto", guitype='intbox', row=10, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--mass", default=0, type=float,help="The ~mass of the particle in kilodaltons, used to run normalize.bymass. Due to resolution effects, not always the true mass.", guitype='floatbox', row=12, col=0, rowspan=1, colspan=1, mode="refinement['self.pm().getMass()']")
 	parser.add_header(name="optional", help='Just a visual separation', title="Optional:", row=14, col=0, rowspan=1, colspan=3, mode="refinement")
@@ -402,6 +403,8 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 	else :
 		append_html("<p>Using your specified orientation generator with angular step. You may consider reading this page: <a href=http://blake.bcm.edu/emanwiki/EMAN2/AngStep>http://blake.bcm.edu/emanwiki/EMAN2/AngStep</a></p></p>")
 		if options.classiter<0 : options.classiter=1
+	if options.breaksym : options.orientgen=options.orientgen+":breaksym=1"
+
 
 	if options.simaligncmp==None : options.simaligncmp="ccc"
 	if options.simralign==None :
@@ -585,15 +588,17 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 
 		### 3-D Reconstruction
 		# FIXME - --lowmem removed due to some tricky bug in e2make3d
+		if options.breaksym : m3dsym="c1"
+		else : m3dsym=options.sym
 		cmd="e2make3d.py --input {path}/classes_{itr:02d}_even.hdf --iter 2 -f --sym {sym} --output {path}/threed_{itr:02d}_even.hdf --recon {recon} --preprocess {preprocess} \
  --keep={m3dkeep} {keepsig} --apix={apix} --pad={m3dpad} {setsf} {verbose}".format(
-			path=options.path, itr=it, sym=options.sym, recon=options.recon, preprocess=options.m3dpreprocess,  m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
+			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=options.m3dpreprocess,  m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
 			m3dpad=options.pad, setsf=m3dsetsf, apix=apix, verbose=verbose)
 		run(cmd)
 
 		cmd="e2make3d.py --input {path}/classes_{itr:02d}_odd.hdf --iter 2 -f --sym {sym} --output {path}/threed_{itr:02d}_odd.hdf --recon {recon} --preprocess {preprocess} \
  --keep={m3dkeep} {keepsig} --apix={apix} --pad={m3dpad} {setsf} {verbose}".format(
-			path=options.path, itr=it, sym=options.sym, recon=options.recon, preprocess=options.m3dpreprocess, m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
+			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=options.m3dpreprocess, m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
 			m3dpad=options.pad, apix=apix, setsf=m3dsetsf, verbose=verbose)
 		run(cmd)
 		progress += 1.0
