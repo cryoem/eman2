@@ -118,6 +118,7 @@ def stopautoflush():
 	""" Return to buffered stdout """
 	sys.stdout = originalstdout
 
+
 # These map standard names for data types to internal representation, and provide a minimum and maximum value for each type
 file_mode_map={
 	"int8"  :EMUtil.EMDataType.EM_CHAR,
@@ -130,6 +131,16 @@ file_mode_map={
 
 # inverse dictionary for getting printable names
 file_mode_imap=dict([[int(v),k] for k,v in file_mode_map.items()])
+
+file_mode_intmap={
+	1 :EMUtil.EMDataType.EM_CHAR,
+	2 :EMUtil.EMDataType.EM_UCHAR,
+	3 :EMUtil.EMDataType.EM_SHORT,
+	4 :EMUtil.EMDataType.EM_USHORT,
+	5 :EMUtil.EMDataType.EM_INT,
+	6 :EMUtil.EMDataType.EM_UINT,
+	7 :EMUtil.EMDataType.EM_FLOAT  }
+
 
 #keyed both by type and by the integer version for flexibility
 file_mode_range={

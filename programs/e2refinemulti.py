@@ -82,12 +82,17 @@ To run this program, you would normally specify only the following options:
   OR
   --models=<starting map 1>,<starting map 2>,...
 
+  Required:
   --input=<lst file referencing phase-flipped particles in HDF format>
 
   --targetres=<in A>     Resolution to target in Angstroms in this refinement run. Do not be overoptimistic !
                          Generally begin with something conservative like 25, then use --startfrom and reduce
                          to ~12, only after that try for high (3-8 A). Data permitting, of course. Low resolution
                          attempts will run MUCH faster due to more efficient parameters.
+  --speed=<1-7>          Default=5. Larger values will run faster, with a coarser angular step. Smaller values will
+                         sample the angular step more finely than strictly required and increase sep=. Usually a 
+                         larger value here combined with a smaller value in the subsequent single-model refinements
+                         will produce good results.
   --sym=<symmetry>       Symmetry to enforce during refinement (Cn, Dn, icos, oct, cub).
                          Default=c1 (no symmetry)
   --mass=<in kDa>        Putative mass of object in kDa, but as desired volume varies with resolution
@@ -130,12 +135,13 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--input", dest="input", default=None,type=str, help="The name of the image file containing the particle data", guitype='filebox', browser='EMSetsTable(withmodal=True,multiselect=False)', filecheck=False, row=8, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_header(name="required", help='Just a visual separation', title="Required:", row=9, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--targetres", default=12.0, type=float,help="Target resolution in A of the final single-model refinements.", guitype='floatbox', row=10, col=0, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--speed", default=5,type=int,help="(1-7) Balances speed vs precision. Larger values sacrifice a bit of potential resolution for significant speed increases. Set to 1 when pushing resolution. default=5", guitype='intbox', row=16, col=1, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--sym", dest = "sym", default="c1",help = "Specify symmetry - choices are: c<n>, d<n>, tet, oct, icos. You can specify either a single value or one for each model.", guitype='strbox', row=10, col=1, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--iter", dest = "iter", type = int, default=6, help = "The total number of refinement iterations to perform. Default=auto", guitype='intbox', row=10, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--mass", default=0, type=str,help="The ~mass of the particles in kilodaltons. May specify one number or one number for each map. Due to resolution effects, not always the true mass.", guitype='floatbox', row=12, col=0, rowspan=1, colspan=1, mode="refinement['self.pm().getMass()']")
 	parser.add_header(name="optional", help='Just a visual separation', title="Optional:", row=14, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--apix", default=0, type=float,help="The angstrom per pixel of the input particles. This argument is required if you specify the --mass argument. If unspecified (set to 0), the convergence plot is generated using either the project apix, or if not an apix of 1.", guitype='floatbox', row=16, col=0, rowspan=1, colspan=1, mode="refinement['self.pm().getAPIX()']")
-	parser.add_argument("--sep", type=int, help="The number of classes each particle can contribute towards (normally 1). Increasing will improve SNR, but produce rotational blurring.", default=1, guitype='intbox', row=16, col=1, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--sep", type=int, help="The number of classes each particle can contribute towards (normally 1). Increasing will improve SNR, but produce rotational blurring.", default=-1)
 	parser.add_argument("--classkeep",type=float,help="The fraction of particles to keep in each class, based on the similarity score. (default=0.9 -> 90%%)", default=0.9, guitype='floatbox', row=16, col=2, rowspan=1, colspan=2, mode="refinement")
 	parser.add_argument("--classautomask",default=False, action="store_true", help="This will apply an automask to the class-average during iterative alignment for better accuracy. The final class averages are unmasked.",guitype='boolbox', row=18, col=0, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--prethreshold",default=False, action="store_true", help="Applies a threshold to the volume just before generating projections. A sort of aggressive solvent flattening for the reference.",guitype='boolbox', row=18, col=1, rowspan=1, colspan=1, mode="refinement")
@@ -202,6 +208,10 @@ not need to specify any of the following other than the ones already listed abov
 	if options.input==None or options.input[-4:]!=".lst":
 		print "ERROR : You must specify --input, which must be a .lst file\n"
 		sys.exit(1)
+
+	if options.speed>7 or options.speed<1 :
+		print "ERROR: --speed must be between 1 and 7. Lower numbers will make refinements take longer, but produce slightly better measured resolutions. The default value of 5 is a good balance for typical refinements. When\
+satisfied with the results with speed=5 you may consider reducing this number, though pushing for higher resolution would normally be done in the subsequent single-model refinements."
 
 	if options.path == None:
 		fls=[int(i[-2:]) for i in os.listdir(".") if i[:6]=="multi_" and len(i)==8]
@@ -323,18 +333,69 @@ maps.")
 		postprocess=""
 		m3dsetsf=""
 
+	if options.sep<1 :
+		options.sep=max(1,6-options.speed)
+		append_html("<p>Based on your selected --speed, I am setting --sep {}. This puts each particle into its N best orientations. If the angular sampling is finer than required \
+to achieve the specified resolution, then a certain amount of rotational 'smearing' of each particle will help improve SNR in the resulting map without actually the 'smearing' degrading \
+the actual map quality. This can achieve maximum liklihood-like effects without the substantial compuations this can entail. If you are concerned by this, or have many more particles than \
+are really required to achieve the targeted resolution, you may consider manually specifiying --sep 1, which will override this automatic behavior.</p>")
+
 
 	if options.orientgen==None :
-			astep=90.0/ceil(90.0/sqrt(4300/nx))		# This rounds to the best angular step divisible by 90 degrees
-			options.orientgen="eman:delta={:1.3f}:inc_mirror=0".format(astep)
-			append_html("<p>I will use an angular sampling of {} deg. For details, please see \
+		# target resolution worse than 1/2 Nyquist
+		if options.targetres>apix*4 :
+			effbox=nx*apix*2/options.targetres
+			astep=89.999/ceil(90.0/sqrt(4300/effbox))		# This rounds to the best angular step divisible by 90 degrees
+			astep*=(float(options.speed)+5.0)/10.0			# empirical adjustment of angular step based on "speed"
+			options.orientgen="eman:delta={:1.3f}:inc_mirror=0:perturb=0".format(astep)
+			if options.classiter<0 :
+				if options.targetres>12.0 :
+					options.classiter=3
+					append_html("<p>Your desired resolution is below 1/2 Nyquist, and you requested a resolution of <12 A, so we will initially set --classiter to 3. This will help \
+low resolution refinements converge more rapidly. If you run more than 2 iterations and the map seems to have converged fairly well, this will be decreased.</p>")
+				elif options.targetres>8.0 :
+					options.classiter=2
+					append_html("<p>Your desired resolution is below 1/2 Nyquist, and you requested a resolution of <8 A, so we will initially set --classiter to 2. This balances \
+rapid convergence with the subnanometer resolution goal. If you run more than 2 iterations and the map seems to have converged fairly well, this will be decreased.</p>")
+				else :
+					options.classiter=1
+					append_html("<p>Your desired resolution is below 1/2 Nyquist, and you requested a high resolution, so we will initially set --classiter to 1. This balances \
+rapid convergence with the resolution goal. If you run more than 2 iterations and the map seems to have converged fairly well, this will be decreased.</p>")
+
+			append_html("<p>Automatically selecting a good angular spacing for the refinement adjusted for your selected --speed. The resolution you are requesting ({}) is quite conservative given the \
+sampling ({}) of your data. If this is simply an initial refinement designed to get the overall shape of the structure correct, this is fine. If this is your final resolution \
+target, you may wish to consider downsampling the data and importing into a new project, as too much oversampling is both <i>extremely</i> inefficient, and in some cases will \
+even lead to worse structures. Based on your requested resolution and box-size, I will use an angular sampling of {} deg. For details, please see \
+<a href=http://blake.bcm.edu/emanwiki/EMAN2/AngStep>http://blake.bcm.edu/emanwiki/EMAN2/AngStep</a></p>".format(options.targetres,apix,astep))
+
+		# target resolution between 1/2 and 3/4 Nyquist
+		elif options.targetres>apix*3 :
+			astep=89.999/ceil(90.0/sqrt(4300/nx))		# This rounds to the best angular step divisible by 90 degrees
+			astep*=(float(options.speed)+5.0)/10.0			# empirical adjustment of angular step based on "speed"
+			options.orientgen="eman:delta={:1.3f}:inc_mirror=0:perturb=0".format(astep)
+			append_html("<p>Based on your requested resolution and box-size, modified by --speed,  I will use an angular sampling of {} deg. For details, please see \
+<a href=http://blake.bcm.edu/emanwiki/EMAN2/AngStep>http://blake.bcm.edu/emanwiki/EMAN2/AngStep</a></p>".format(astep))
+			if options.classiter<0 :
+				options.classiter=1
+				append_html("<p>Your desired resolution is between 1/2 and 3/4 Nyquist, so we will set --classiter to 1. Leaving this above 0 \
+will help avoid noise bias in early rounds, but it may be reduced at zero if convergence seems to have been achieved.</p>")
+
+		# target resolution is beyond 3/4 Nyquist
+		else :
+			if options.classiter<0 :
+				options.classiter=1
+				append_html("<p>Your desired resolution is beyond 3/4 Nyquist. Regardless, we will set --classiter to 1 initially. Leaving this above 0 \
+will help avoid noise bias, but it may be reduced at zero if convergence seems to have been achieved.</p>")
+			astep=89.999/ceil(90.0/sqrt(4300/nx))		# This rounds to the best angular step divisible by 90 degrees
+			astep*=(float(options.speed)+5.0)/10.0			# empirical adjustment of angular step based on "speed"
+			options.orientgen="eman:delta={:1.3f}:inc_mirror=0:perturb=0".format(astep)
+			append_html("<p>The resolution you are requesting is beyond 2/3 Nyquist. This is normally not recommended, as it represents insufficient sampling to give a good representation of your \
+reconstructed map, and resolution can be difficult to accurately assess. The reconstruction will proceed, but generally speaking your A/pix should be less than 1/3 the targeted resolution. \
+Based on your requested resolution and box-size, modified by --speed, I will use an angular sampling of {} deg. For details, please see \
 <a href=http://blake.bcm.edu/emanwiki/EMAN2/AngStep>http://blake.bcm.edu/emanwiki/EMAN2/AngStep</a></p>".format(astep))
 	else :
 		append_html("<p>Using your specified orientation generator with angular step. You may consider reading this page: <a href=http://blake.bcm.edu/emanwiki/EMAN2/AngStep>http://blake.bcm.edu/emanwiki/EMAN2/AngStep</a></p></p>")
-
-	if options.classiter<0 :
-		options.classiter=3
-		append_html("<p>Setting --classiter to 3 to give better convergence with multi-model refinement. In the followup single model refinements, this may be decreased automatically.</p>")
+		if options.classiter<0 : options.classiter=1
 
 	if options.simaligncmp==None : options.simaligncmp="ccc"
 	if options.simralign==None :

@@ -457,7 +457,6 @@ def db_read_images(fsp,*parms):
 EMData.read_images_c=staticmethod(EMData.read_images)
 EMData.read_images=staticmethod(db_read_images)
 
-
 def db_write_image(self,fsp,*parms):
 	"""write_image(fsp,image #,[image type],[header only],[region],[storage type],[use host endian])
 
@@ -468,6 +467,7 @@ def db_write_image(self,fsp,*parms):
 	the remaining options are ignored
 	"""
 #	print "In db_write_image, WI ",fsp,str(parms)
+		
 	if fsp[:4].lower()=="bdb:" :
 		db,keys=db_open_dict(fsp,False,True)
 		if keys :			# if the user specifies the key in fsp, we ignore parms

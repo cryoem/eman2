@@ -84,6 +84,10 @@ To run this program, you would normally specify only the following options:
                          Generally begin with something conservative like 25, then use --startfrom and reduce
                          to ~12, only after that try for high (3-8 A). Data permitting, of course. Low resolution
                          attempts will run MUCH faster due to more efficient parameters.
+  --speed=<1-7>          Default=5. Larger values will run faster, with a coarser angular step. Smaller values will
+                         sample the angular step more finely than strictly required and increase sep=. A larger value
+                         is good for early refinement. A smaller value will push "gold standard" resolution towards its
+                         limit.
   --sym=<symmetry>       Symmetry to enforce during refinement (Cn, Dn, icos, oct, cub).
                          Default=c1 (no symmetry)
   --mass=<in kDa>        Putative mass of object in kDa, but as desired volume varies with resolution
@@ -372,7 +376,7 @@ even lead to worse structures. Based on your requested resolution and box-size, 
 
 		# target resolution between 1/2 and 3/4 Nyquist
 		elif options.targetres>apix*3 :
-			astep=90.0/ceil(90.0/sqrt(4300/nx))		# This rounds to the best angular step divisible by 90 degrees
+			astep=89.999/ceil(90.0/sqrt(4300/nx))		# This rounds to the best angular step divisible by 90 degrees
 			astep*=(float(options.speed)+5.0)/10.0			# empirical adjustment of angular step based on "speed"
 			options.orientgen="eman:delta={:1.3f}:inc_mirror=0:perturb=0".format(astep)
 			append_html("<p>Based on your requested resolution and box-size, modified by --speed,  I will use an angular sampling of {} deg. For details, please see \
@@ -388,7 +392,7 @@ will help avoid noise bias in early rounds, but it may be reduced at zero if con
 				options.classiter=1
 				append_html("<p>Your desired resolution is beyond 3/4 Nyquist. Regardless, we will set --classiter to 1 initially. Leaving this above 0 \
 will help avoid noise bias, but it may be reduced at zero if convergence seems to have been achieved.</p>")
-			astep=90.0/ceil(90.0/sqrt(4300/nx))		# This rounds to the best angular step divisible by 90 degrees
+			astep=89.999/ceil(90.0/sqrt(4300/nx))		# This rounds to the best angular step divisible by 90 degrees
 			astep*=(float(options.speed)+5.0)/10.0			# empirical adjustment of angular step based on "speed"
 			options.orientgen="eman:delta={:1.3f}:inc_mirror=0:perturb=0".format(astep)
 			append_html("<p>The resolution you are requesting is beyond 2/3 Nyquist. This is normally not recommended, as it represents insufficient sampling to give a good representation of your \
