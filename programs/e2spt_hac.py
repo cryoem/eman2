@@ -561,7 +561,7 @@ def allvsall(options):
 	
 	dendocount = 0
 	
-	dendofile = options.path + '/dendogram.txt'
+	dendofile = options.path + '/dendrogram.txt'
 	
 	
 	for k in range(options.iter):							#Start the loop over the user-defined number of iterations
