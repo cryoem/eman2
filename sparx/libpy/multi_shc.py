@@ -1315,9 +1315,9 @@ def mirror_and_reduce_dsym(params, sym):
 	symphi = 360./int(sym[1:])
 
 	#  Excluded values for phi
-	badb = 360.0/int(sym[1:])/4
-	bade = 2*badb
-	bbdb = badb + 360.0/int(sym[1:])/2
+	badb = 0.0
+	bade = 360.0/int(sym[1:])/4
+	bbdb = 360.0/int(sym[1:])/2
 	bbde = bbdb + 360.0/int(sym[1:])/4
 	
 	for i in xrange(1,sc):
@@ -1326,7 +1326,8 @@ def mirror_and_reduce_dsym(params, sym):
 		for rphi in xrange(0,61,60):
 			tpari = [None]*ns
 			for j in xrange(ns):  tpari[j] = params[i][j]
-			if(rphi == 60):  tpari[j][0] = (tpari[j][0]+60)%symphi
+			if(rphi == 60):
+				for j in xrange(ns):  tpari[j][0] = (tpari[j][0]+60)%symphi
 
 			# mirror checking
 			psi_diff = angle_diff( [tpari[j][2] for j in xrange(ns)], [params[0][j][2] for j in xrange(ns)] )
@@ -1350,7 +1351,7 @@ def mirror_and_reduce_dsym(params, sym):
 						tt = bt["theta"]
 						if(tt > 90.0):   mp = (tp+180.0)%360.0
 						else:            mp = tp
-						if(not ((mp>=badb and mp<bade) or (mp>=bbdb and mp<bbde) )): k = ks
+						if( (mp>=badb and mp<bade) or (mp>=bbdb and mp<bbde) ): k = ks
 						else: k += 1
 					temp[j][0] = bt["phi"]
 					temp[j][1] = bt["theta"]
@@ -1382,7 +1383,7 @@ def mirror_and_reduce_dsym(params, sym):
 							tt = bt["theta"]
 							if(tt > 90.0):   mp = (tp+180.0)%360.0
 							else:            mp = tp
-							if(not ((mp>=badb and mp<bade) or (mp>=bbdb and mp<bbde) )): k = ks
+							if( (mp>=badb and mp<bade) or (mp>=bbdb and mp<bbde) ): k = ks
 							else: k += 1
 						temp[j][0] = bt["phi"]
 						temp[j][1] = bt["theta"]
@@ -1407,7 +1408,7 @@ def mirror_and_reduce_dsym(params, sym):
 					tt = bt["theta"]
 					if(tt > 90.0):   mp = (tp+180.0)%360.0
 					else:            mp = tp
-					if(not ((mp>=badb and mp<bade) or (mp>=bbdb and mp<bbde) )): k = ks
+					if( (mp>=badb and mp<bade) or (mp>=bbdb and mp<bbde) ): k = ks
 					else: k += 1
 				temp[j][0] = bt["phi"]
 				temp[j][1] = bt["theta"]
