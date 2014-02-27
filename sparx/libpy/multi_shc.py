@@ -304,7 +304,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 		if myid == 0:  afterGAcounter = 0
 		terminate = 0
 		Iter = 0
-		while Iter < max_iter and terminate == 0:
+		while terminate == 0:
 
 			Iter += 1
 			total_iter += 1
@@ -411,6 +411,8 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 			mpi_barrier(mpi_comm)
 			if myid == main_node:
 				log.add("Time of alignment = %f\n"%(time()-start_time))
+
+			storevol=False
 
 			#=========================================================================
 			#output pixel errors, check stop criterion
@@ -530,7 +532,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 					L2 = vol.cmp("dot", vol, dict(negative = 0, mask = model_circle(last_ring, nx, nx, nx)))
 					# if myid == 2:  print  " Right after reconstruction L2", myid, L2,[get_params_proj(data[i]) for i in xrange(4)]
 					#print  " Right after reconstruction of oriented parameters L2", myid, total_iter,L2
-					##vol.write_image("recvolf%04d%04d.hdf"%(myid,total_iter))
+					vol.write_image("recvolf%04d%04d.hdf"%(myid,total_iter))
 				# log
 				if myid == main_node:
 					log.add("3D reconstruction time = %f\n"%(time()-start_time))
@@ -593,7 +595,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 					q1,q2,q3,q4 = table_stat([GA[i][0] for i in xrange(number_of_runs)])
 					# Terminate if variation of L2 norms less than (L2threshold*100)% of their average
 					crit = sqrt(max(q2,0.0))/q1
-					terminate = crit < L2threshold
+					terminate = Iter > max_iter or crit < L2threshold
 					##  if  total_iter > 17: terminate = True
 					##  else:  terminate=False
 					for i in xrange(number_of_runs):
@@ -645,6 +647,8 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				terminate = wrap_mpi_bcast(terminate, main_node, mpi_comm)
 				if not terminate:
 
+					storevol=True
+
 					# Send params back
 					if myid == 0:
 						#print  all_params
@@ -693,13 +697,13 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				if myid == main_node:
 					start_time = time()
 				vol = volume_reconstruction(data[image_start:image_end], ali3d_options, mpi_subcomm)
-				"""
+
 				if mpi_subrank == 0:
 					L2 = vol.cmp("dot", vol, dict(negative = 0, mask = model_circle(last_ring, nx, nx, nx)))
 					# if myid == 2:  print  " Right after reconstruction L2", myid, L2,[get_params_proj(data[i]) for i in xrange(4)]
 					print  " Right after reconstruction L2", myid, total_iter,L2
-					##vol.write_image("recvolf%04d%04d.hdf"%(myid,total_iter))
-				"""
+					if storevol:   vol.write_image("mutated%04d%04d.hdf"%(myid,total_iter))
+
 				# log
 				if myid == main_node:
 					log.add("3D reconstruction time = %f\n"%(time()-start_time))
