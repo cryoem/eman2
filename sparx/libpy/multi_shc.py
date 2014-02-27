@@ -1262,7 +1262,6 @@ def reduce_dsym_angles(p1, sym):
 		 for l in xrange(len(t)):
 			q = a*t[l]
 			q = q.get_params("spider")
-			#print q["phi"], q["theta"],q["psi"]
 			if(q["phi"]<phir and q["theta"] <= 90.0): break
 		 pr[i][0] = q["phi"]
 		 pr[i][1] = q["theta"]
@@ -1340,22 +1339,19 @@ def mirror_and_reduce_dsym(params, sym):
 				for j in xrange(ns):
 					apixer = -1.e20
 					qt = Transform({"type":"spider","phi":tpari[j][0], "theta":tpari[j][1], "psi":180.0+tpari[j][2]})
-					#qt.set_trans(Vec2f(-tpari[j][3], -tpari[j][4]))
-					for k in xrange(ks):
+					qt.set_trans(Vec2f(-tpari[j][3], -tpari[j][4]))
+					k = 0
+					while(k < ks):
 						ut = qt*ts[k]
 						ut = ut*mm
-						d = ut.get_params("spider")
-						tt = d["phi"]
-						if(not ((tt>=badb and tt<bade) or (tt>=bbdb and tt<bbde) )):
-							vec = getfvec(tt,  d["theta"])
-							per = vt0[i][0]*vec[0] + vt0[i][1]*vec[1] + vt0[i][2]*vec[2]
-							if(per > apixer):
-								apixer = per
-								bk = k
-					qt.set_trans(Vec2f(-tpari[j][3], -tpari[j][4]))
-					bt = qt*ts[bk]
-					bt = bt*mm
-					bt = bt.get_params("spider")
+						bt = ut.get_params("spider")
+
+						tp = bt["phi"]
+						tt = bt["theta"]
+						if(tt > 90.0):   mp = (tp+180.0)%360.0
+						else:            mp = tp
+						if(not ((mp>=badb and mp<bade) or (mp>=bbdb and mp<bbde) )): k = ks
+						else: k += 1
 					temp[j][0] = bt["phi"]
 					temp[j][1] = bt["theta"]
 					temp[j][2] = bt["psi"]
@@ -1375,21 +1371,19 @@ def mirror_and_reduce_dsym(params, sym):
 
 				if(per2>per1):
 					for j in xrange(ns):
-						apixer = -1.e20
 						qt = Transform({"type":"spider","phi":p2[j][0], "theta":p2[j][1], "psi":p2[j][2]})
-						for k in xrange(ks):
-							ut = qt*ts[k]
-							d = ut.get_params("spider")
-							tt = d["phi"]
-							if(not ((tt>=badb and tt<bade) or (tt>=bbdb and tt<bbde) )):
-								vec = getfvec(tt,  d["theta"])
-								tmp = vt0[i][0]*vec[0] + vt0[i][1]*vec[1] + vt0[i][2]*vec[2]
-								if(tmp > apixer):
-									apixer = tmp
-									bk = k
 						qt.set_trans(Vec2f(-p2[j][3], -p2[j][4]))
-						bt = qt*ts[bk]
-						bt = bt.get_params("spider")
+						k = 0
+						while(k < ks):
+							ut = qt*ts[k]
+							bt = ut.get_params("spider")
+
+							tp = bt["phi"]
+							tt = bt["theta"]
+							if(tt > 90.0):   mp = (tp+180.0)%360.0
+							else:            mp = tp
+							if(not ((mp>=badb and mp<bade) or (mp>=bbdb and mp<bbde) )): k = ks
+							else: k += 1
 						temp[j][0] = bt["phi"]
 						temp[j][1] = bt["theta"]
 						temp[j][2] = bt["psi"]
@@ -1403,20 +1397,18 @@ def mirror_and_reduce_dsym(params, sym):
 			for j in xrange(ns):
 				apixer = -1.e20
 				qt = Transform({"type":"spider","phi":tpari[j][0], "theta":tpari[j][1], "psi":tpari[j][2]})
-				#qt.set_trans(Vec2f(-tpari[j][3], -tpari[j][4]))
-				for k in xrange(ks):
-					ut = qt*ts[k]
-					d = ut.get_params("spider")
-					tt = d["phi"]
-					if(not ((tt>=badb and tt<bade) or (tt>=bbdb and tt<bbde) )):
-						vec = getfvec(tt,  d["theta"])
-						per = vt0[i][0]*vec[0] + vt0[i][1]*vec[1] + vt0[i][2]*vec[2]
-						if(per > apixer):
-							apixer = per
-							bk = k
 				qt.set_trans(Vec2f(-tpari[j][3], -tpari[j][4]))
-				bt = qt*ts[bk]
-				bt = bt.get_params("spider")
+				k = 0
+				while(k < ks):
+					ut = qt*ts[k]
+					bt = ut.get_params("spider")
+
+					tp = bt["phi"]
+					tt = bt["theta"]
+					if(tt > 90.0):   mp = (tp+180.0)%360.0
+					else:            mp = tp
+					if(not ((mp>=badb and mp<bade) or (mp>=bbdb and mp<bbde) )): k = ks
+					else: k += 1
 				temp[j][0] = bt["phi"]
 				temp[j][1] = bt["theta"]
 				temp[j][2] = bt["psi"]
