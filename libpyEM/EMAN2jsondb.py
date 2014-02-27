@@ -125,7 +125,7 @@ def emdata_to_jsondict(obj):
 	"""This is tacked on to EMData objects to give them non-pickle JSON support"""
 	ret=obj.get_attr_dict()
 	ret["__class__"]="EMData"
-	ret["~bindata~"]=base64.encodestring(zlib.compress(obj.get_data_string()))		# we use ~ here as a delimiter because it's alphabetically after letters
+	ret["~bindata~"]=base64.encodestring(zlib.compress(obj.get_data_string(),1))		# we use ~ here as a delimiter because it's alphabetically after letters
 	return ret
 
 EMData.to_jsondict=emdata_to_jsondict		# we hack this into the EMData object

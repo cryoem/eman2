@@ -1291,7 +1291,6 @@ void EMData::scale_pixel(float scale) const
 	}
 }
 
-
 //vector<float> EMData::get_data_pickle() const
 std::string EMData::get_data_pickle() const
 {

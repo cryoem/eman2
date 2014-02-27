@@ -62,7 +62,6 @@ EMData *get_fft_amplitude2D();
  */
 EMData *get_fft_phase();
 
-
 /** Get the image pixel density data in a 1D float array.
  * @return The image pixel density data.
  */
