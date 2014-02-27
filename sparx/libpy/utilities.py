@@ -726,7 +726,17 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, me
 			angles = even_angles_cd(delta, theta1, theta2, phi1, phi2, method, phiEqpsi)
 	elif(symmetry_string[0]  == "d"):
 		if(phi2 == 359.99):
-			angles = even_angles_cd(delta, theta1, theta2, phi1, 360.0/2/int(symmetry_string[1:]), method, phiEqpsi)
+			angles = even_angles_cd(delta, theta1, theta2, phi1, 360.0/int(symmetry_string[1:]), method, phiEqpsi)
+			n = len(angles)
+			badb = 360.0/int(symmetry_string[1:])/4
+			bade = 2*badb
+			bbdb = badb + 360.0/int(symmetry_string[1:])/2
+			bbde = bbdb + 360.0/int(symmetry_string[1:])/4
+			for i in xrange(n):
+				t = n-i-1
+				qt = angles[t][0]
+				if((qt>=badb and qt<bade) or (qt>=bbdb and qt<bbde)):  del angles[t]
+				
 			if (int(symmetry_string[1:])%2 == 0):
 				qt = 360.0/2/int(symmetry_string[1:])
 			else:

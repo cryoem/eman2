@@ -1279,6 +1279,24 @@ def mirror_and_reduce_dsym(params, sym):
 	from EMAN2 import Vec2f, Transform, EMData
 	from pixel_error import angle_diff
 
+	def discangset(pari, vt0, ts):
+		ks = len(ts)
+		per1 = 0.0
+		apixer = -1.e20
+		for j in xrange(len(pari)):
+			apixer = -1.e20
+			qt = Transform({"type":"spider","phi":pari[j][0], "theta":pari[j][1], "psi":pari[j][2]})
+			for k in xrange(ks):
+				ut = qt*ts[k]
+				d = ut.get_params("spider")
+				vec = getfvec(d["phi"],  d["theta"])
+				tmp = vt0[i][0]*vec[0] + vt0[i][1]*vec[1] + vt0[i][2]*vec[2]
+				if(tmp > apixer): apixer = tmp
+			per1 += apixer
+
+		return per1
+
+
 	sc = len(params)
 	ns = len(params[0])
 	#  Convert 0 to transforms
@@ -1295,6 +1313,7 @@ def mirror_and_reduce_dsym(params, sym):
 
 	# set rotation for mirror
 	mm = Transform({"type":"spider","phi":360./2/int(sym[1:]), "theta":0., "psi":0.})
+	symphi = 360./int(sym[1:])
 
 	#  Excluded values for phi
 	badb = 360.0/int(sym[1:])/4
@@ -1302,130 +1321,114 @@ def mirror_and_reduce_dsym(params, sym):
 	bbdb = badb + 360.0/int(sym[1:])/2
 	bbde = bbdb + 360.0/int(sym[1:])/4
 	
-
 	for i in xrange(1,sc):
-		# mirror checking
-		psi_diff = angle_diff( [params[i][j][2] for j in xrange(ns)], [params[0][j][2] for j in xrange(ns)] )
-		#print  psi_diff
-		if(abs(psi_diff-180.0) <90.0):
-			#mirror
-			#print "  MIRROR "
-			# For each projection direction from the reference set (here zero) find the nearest reduced from the other set
-			# and replace it in the other set
-			for j in xrange(ns):
-				apixer = -1.e20
-				qt = Transform({"type":"spider","phi":params[i][j][0], "theta":params[i][j][1], "psi":180.0+params[i][j][2]})
-				#qt.set_trans(Vec2f(-params[i][j][3], -params[i][j][4]))
-				for k in xrange(ks):
-					ut = qt*ts[k]
-					ut = ut*mm
-					d = ut.get_params("spider")
-					tt = d["phi"]
-					if(not ((tt>=badb and tt<bade) or (tt>=bbdb and tt<bbde) )):
-						vec = getfvec(tt,  d["theta"])
-						per = abs(vt0[i][0]*vec[0] + vt0[i][1]*vec[1] + vt0[i][2]*vec[2])
-						#print  j,k,d["phi"],  d["theta"], d["psi"],params[0][j],per
-						if(per > apixer):
-							apixer = per
-							bk = k
-				qt.set_trans(Vec2f(-params[i][j][3], -params[i][j][4]))
-				bt = qt*ts[bk]
-				bt = bt*mm
-				bt = bt.get_params("spider")
-				params[i][j][0] = bt["phi"]
-				params[i][j][1] = bt["theta"]
-				params[i][j][2] = bt["psi"]
-				params[i][j][3] = -bt["tx"]
-				params[i][j][4] = -bt["ty"]
-		else:
-			#  check the other possibility of mirroring
-			p2 = []
-			for j in xrange(ns):
-				p2.append([ (-params[i][j][0])%360.0, (180-params[i][j][1])%360.0, params[i][j][2] ,params[i][j][3], params[i][j][4]])
-			for j in xrange(ns):  p2[j] = mult_transform(p2[j], mm)
-			#  Now check whether p2 is closer to params[0] than params[i] is.
-			per1=0.0
-			per2=0.0
+		solvs = []
+		temp = [[0.,0.,0.,0.,0.] for j in xrange(ns)]
+		for rphi in xrange(0,61,60):
+			tpari = [None]*ns
+			for j in xrange(ns):  tpari[j] = params[i][j]
+			if(rphi == 60):  tpari[j][0] = (tpari[j][0]+60)%symphi
 
-			for j in xrange(ns):
-				apixer = -1.e20
-				qt = Transform({"type":"spider","phi":params[i][j][0], "theta":params[i][j][1], "psi":params[i][j][2]})
-				#qt.set_trans(Vec2f(-params[i][j][3], -params[i][j][4]))
-				for k in xrange(ks):
-					ut = qt*ts[k]
-					d = ut.get_params("spider")
-					vec = getfvec(d["phi"],  d["theta"])
-					tmp = vt0[i][0]*vec[0] + vt0[i][1]*vec[1] + vt0[i][2]*vec[2]
-					if(tmp > apixer): apixer = tmp
-				per1 += apixer
-
-				apixer = -1.e20
-				qt = Transform({"type":"spider","phi":p2[j][0], "theta":p2[j][1], "psi":p2[j][2]})
-				for k in xrange(ks):
-					ut = qt*ts[k]
-					d = ut.get_params("spider")
-					vec = getfvec(d["phi"],  d["theta"])
-					tmp = vt0[i][0]*vec[0] + vt0[i][1]*vec[1] + vt0[i][2]*vec[2]
-					if(tmp > apixer): apixer = tmp
-				per2 += apixer
-
-			if(per2>per1):
+			# mirror checking
+			psi_diff = angle_diff( [tpari[j][2] for j in xrange(ns)], [params[0][j][2] for j in xrange(ns)] )
+			#print  psi_diff
+			if(abs(psi_diff-180.0) <90.0):
+				#mirror
+				#print "  MIRROR "
+				# For each projection direction from the reference set (here zero) find the nearest reduced from the other set
+				# and replace it in the other set
 				for j in xrange(ns):
 					apixer = -1.e20
-					qt = Transform({"type":"spider","phi":p2[j][0], "theta":p2[j][1], "psi":p2[j][2]})
+					qt = Transform({"type":"spider","phi":tpari[j][0], "theta":tpari[j][1], "psi":180.0+tpari[j][2]})
+					#qt.set_trans(Vec2f(-tpari[j][3], -tpari[j][4]))
 					for k in xrange(ks):
 						ut = qt*ts[k]
+						ut = ut*mm
 						d = ut.get_params("spider")
 						tt = d["phi"]
 						if(not ((tt>=badb and tt<bade) or (tt>=bbdb and tt<bbde) )):
 							vec = getfvec(tt,  d["theta"])
-							tmp = vt0[i][0]*vec[0] + vt0[i][1]*vec[1] + vt0[i][2]*vec[2]
-							if(tmp > apixer):
-								apixer = tmp
+							per = vt0[i][0]*vec[0] + vt0[i][1]*vec[1] + vt0[i][2]*vec[2]
+							if(per > apixer):
+								apixer = per
 								bk = k
-					qt.set_trans(Vec2f(-p2[j][3], -p2[j][4]))
+					qt.set_trans(Vec2f(-tpari[j][3], -tpari[j][4]))
 					bt = qt*ts[bk]
+					bt = bt*mm
 					bt = bt.get_params("spider")
-					params[i][j][0] = bt["phi"]
-					params[i][j][1] = bt["theta"]
-					params[i][j][2] = bt["psi"]
-					params[i][j][3] = -bt["tx"]
-					params[i][j][4] = -bt["ty"]
+					temp[j][0] = bt["phi"]
+					temp[j][1] = bt["theta"]
+					temp[j][2] = bt["psi"]
+					temp[j][3] = -bt["tx"]
+					temp[j][4] = -bt["ty"]
+				solvs.append([discangset(temp, vt0, ts), temp, [rphi,"psidiff"]])
 
+			else:
+				#  check the other possibility of mirroring
+				p2 = []
+				for j in xrange(ns):
+					p2.append([ (-tpari[j][0])%360.0, (180-tpari[j][1])%360.0, tpari[j][2] ,tpari[j][3], tpari[j][4]])
+				for j in xrange(ns):  p2[j] = mult_transform(p2[j], mm)
+				#  Now check whether p2 is closer to params[0] than tpari is.
+				per1 = discangset(tpari, vt0, ts)
+				per2 = discangset(p2, vt0, ts)
 
- 
+				if(per2>per1):
+					for j in xrange(ns):
+						apixer = -1.e20
+						qt = Transform({"type":"spider","phi":p2[j][0], "theta":p2[j][1], "psi":p2[j][2]})
+						for k in xrange(ks):
+							ut = qt*ts[k]
+							d = ut.get_params("spider")
+							tt = d["phi"]
+							if(not ((tt>=badb and tt<bade) or (tt>=bbdb and tt<bbde) )):
+								vec = getfvec(tt,  d["theta"])
+								tmp = vt0[i][0]*vec[0] + vt0[i][1]*vec[1] + vt0[i][2]*vec[2]
+								if(tmp > apixer):
+									apixer = tmp
+									bk = k
+						qt.set_trans(Vec2f(-p2[j][3], -p2[j][4]))
+						bt = qt*ts[bk]
+						bt = bt.get_params("spider")
+						temp[j][0] = bt["phi"]
+						temp[j][1] = bt["theta"]
+						temp[j][2] = bt["psi"]
+						temp[j][3] = -bt["tx"]
+						temp[j][4] = -bt["ty"]
+					solvs.append([discangset(temp, vt0, ts), temp, [rphi,"mirror"]])
 
-		#  The assumption is the angles are reduced, so if it is straight no checking is needed
-		"""
-		else:
 			# For each projection direction from the reference set (here zero) find the nearest reduced from the other set,
 			#    but it cannot be mirrored
 			# and replace it in the other set
-			print "STR"
 			for j in xrange(ns):
 				apixer = -1.e20
-				qt = Transform({"type":"spider","phi":params[i][j][0], "theta":params[i][j][1], "psi":params[i][j][2]})
-				#qt.set_trans(Vec2f(-params[i][j][3], -params[i][j][4]))
-
+				qt = Transform({"type":"spider","phi":tpari[j][0], "theta":tpari[j][1], "psi":tpari[j][2]})
+				#qt.set_trans(Vec2f(-tpari[j][3], -tpari[j][4]))
 				for k in xrange(ks):
 					ut = qt*ts[k]
 					d = ut.get_params("spider")
-					if(d["phi"]<phir and d["theta"] <= 90.0 ):
-						vec = getvec(d["phi"],  d["theta"])
-						per = abs(vt0[i][0]*vec[0] + vt0[i][1]*vec[1] + vt0[i][2]*vec[2])
+					tt = d["phi"]
+					if(not ((tt>=badb and tt<bade) or (tt>=bbdb and tt<bbde) )):
+						vec = getfvec(tt,  d["theta"])
+						per = vt0[i][0]*vec[0] + vt0[i][1]*vec[1] + vt0[i][2]*vec[2]
 						if(per > apixer):
 							apixer = per
 							bk = k
-				qt.set_trans(Vec2f(-params[i][j][3], -params[i][j][4]))
+				qt.set_trans(Vec2f(-tpari[j][3], -tpari[j][4]))
 				bt = qt*ts[bk]
 				bt = bt.get_params("spider")
-				params[i][j][0] = bt["phi"]
-				params[i][j][1] = bt["theta"]
-				params[i][j][2] = bt["psi"]
-				params[i][j][3] = -bt["tx"]
-				params[i][j][4] = -bt["ty"]
-		"""
+				temp[j][0] = bt["phi"]
+				temp[j][1] = bt["theta"]
+				temp[j][2] = bt["psi"]
+				temp[j][3] = -bt["tx"]
+				temp[j][4] = -bt["ty"]
+			solvs.append([discangset(temp, vt0, ts), temp, [rphi,"straight"]])
 
+		solvs.sort(reverse=True)
+		for k in xrange(len(solvs)):
+			print  "  SOLVS  ",solvs[k][0],solvs[k][-1]
+		for j in xrange(ns):  params[i][j] = solvs[0][1][j]
+	
 def get_dsym_angles(p1, sym):
 	#  works only for d symmetry
 	from utilities import get_symt
