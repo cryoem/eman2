@@ -1323,7 +1323,6 @@ def mirror_and_reduce_dsym(params, sym):
 	
 	for i in xrange(1,sc):
 		solvs = []
-		temp = [[0.,0.,0.,0.,0.] for j in xrange(ns)]
 		for rphi in xrange(0,61,60):
 			tpari = [None]*ns
 			for j in xrange(ns):  tpari[j] = params[i][j]
@@ -1338,6 +1337,7 @@ def mirror_and_reduce_dsym(params, sym):
 				#print "  MIRROR "
 				# For each projection direction from the reference set (here zero) find the nearest reduced from the other set
 				# and replace it in the other set
+				temp = [[0.,0.,0.,0.,0.] for j in xrange(ns)]
 				for j in xrange(ns):
 					apixer = -1.e20
 					qt = Transform({"type":"spider","phi":tpari[j][0], "theta":tpari[j][1], "psi":180.0+tpari[j][2]})
@@ -1372,6 +1372,7 @@ def mirror_and_reduce_dsym(params, sym):
 				per2 = discangset(p2, vt0, ts)
 
 				if(per2>per1):
+					temp = [[0.,0.,0.,0.,0.] for j in xrange(ns)]
 					for j in xrange(ns):
 						qt = Transform({"type":"spider","phi":p2[j][0], "theta":p2[j][1], "psi":p2[j][2]})
 						qt.set_trans(Vec2f(-p2[j][3], -p2[j][4]))
@@ -1396,6 +1397,7 @@ def mirror_and_reduce_dsym(params, sym):
 			# For each projection direction from the reference set (here zero) find the nearest reduced from the other set,
 			#    but it cannot be mirrored
 			# and replace it in the other set
+			temp = [[0.,0.,0.,0.,0.] for j in xrange(ns)]
 			for j in xrange(ns):
 				apixer = -1.e20
 				qt = Transform({"type":"spider","phi":tpari[j][0], "theta":tpari[j][1], "psi":tpari[j][2]})
@@ -1419,8 +1421,8 @@ def mirror_and_reduce_dsym(params, sym):
 			solvs.append([discangset(temp, vt0, ts), temp, [rphi,"straight"]])
 
 		solvs.sort(reverse=True)
-		for k in xrange(len(solvs)):
-			print  "  SOLVS  ",solvs[k][0],solvs[k][-1]
+		#for k in xrange(len(solvs)):
+		#	print  "  SOLVS  ",solvs[k][0],solvs[k][-1]
 		for j in xrange(ns):  params[i][j] = solvs[0][1][j]
 	
 def get_dsym_angles(p1, sym):
