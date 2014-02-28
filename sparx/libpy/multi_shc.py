@@ -494,20 +494,17 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 					else:
 						subset = subset_thr
 					# if myid == 2:  print  " params before orient  ",myid,params[:4],params[-4:]
-					"""
-					if myid == 2:
-						from utilities import write_text_row
-						write_text_row(params_0,"bparamszero%03d.txt"%total_iter)
-						write_text_row(params,"bparams%03d.txt"%total_iter)
-					"""
+					from utilities import write_text_row
+					write_text_row(params_0,"bparamszero%04d%04d.txt"%(myid,total_iter))
+					write_text_row(params,"bparams%04d%04d.txt"%(myid,total_iter))
 					orient_params([params_0, params], subset, sym)
 					"""
 					if myid == 2:
 						print  " subset  ",len(subset)#," ...  ",subset
-						from utilities import write_text_row
-						write_text_row(params_0,"aparamszero%03d.txt"%total_iter)
-						write_text_row(params,"aparams%03d.txt"%total_iter)
-					"""
+						"""
+					from utilities import write_text_row
+					write_text_row(params_0,"aparamszero%04d%04d.txt"%(myid,total_iter))
+					write_text_row(params,"aparams%04d%04d.txt"%(myid,total_iter))
 					# if myid == 2:  print  " params after orient  ",myid,params[:4],params[-4:]
 				params = wrap_mpi_bcast(params, 0, mpi_subcomm)
 				# if myid == 2:  print  " params after wrap_mpi_bcast  ",myid,params[:4],params[-4:]
