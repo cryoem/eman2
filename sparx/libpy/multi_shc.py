@@ -51,20 +51,6 @@ def orient_params(params, indexes=None, sym = "c1"):
 	if(sym[0] == "d"):
 		# In this one the first params is taken as a reference
 		mirror_and_reduce_dsym(params, sym)
-		"""
-		if indexes == None:
-			mirror_and_reduce_dsym(params, sym)
-		else:
-			temp = []
-			for i in xrange(m):
-				temp.append([params[i][j] for j in indexes])
-			mirror_and_reduce_dsym(temp, sym)
-			for i in xrange(1,m):
-				k = 0
-				for j in indexes:
-					params[i][j] = temp[i][k]
-					k += 1
-		"""
 	else:
 		from EMAN2 import Transform
 		if indexes == None:   indexes = range(n)
@@ -488,11 +474,14 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				params_0 = wrap_mpi_bcast(params, mpi_subroots[0], mpi_comm)
 				if mpi_subrank == 0:
 
-					subset_thr, subset_min, avg_diff_per_image = find_common_subset_3([params_0, params], 2.0, len(params)/3, sym)
-					if len(subset_thr) < len(subset_min):
-						subset = subset_min
+					if(sym[0] == "d"):
+						subset = None
 					else:
-						subset = subset_thr
+						subset_thr, subset_min, avg_diff_per_image = find_common_subset_3([params_0, params], 2.0, len(params)/3, sym)
+						if len(subset_thr) < len(subset_min):
+							subset = subset_min
+						else:
+							subset = subset_thr
 					# if myid == 2:  print  " params before orient  ",myid,params[:4],params[-4:]
 					from utilities import write_text_row
 					write_text_row(params_0,"bparamszero%04d%04d.txt"%(myid,total_iter))
@@ -1418,6 +1407,8 @@ def mirror_and_reduce_dsym(params, sym):
 				temp[j][2] = bt["psi"]
 				temp[j][3] = -bt["tx"]
 				temp[j][4] = -bt["ty"]
+			psi_diff = angle_diff( [temp[j][2] for j in xrange(ns)], [params[0][j][2] for j in xrange(ns)] )
+			if(abs(psi_diff-180.0) <90.0): temp[j][2] = (temp[j][2]+180.0)%360.0
 			solvs.append([discangset(temp, vt0, ts), temp, [rphi,"straight"]])
 
 		solvs.sort(reverse=True)
