@@ -298,7 +298,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 		GA = [ [0.0, [[0.0,0.,0.0,0.0,0.0] for j in xrange(total_nima)]] for i in xrange(number_of_runs)]
 
 	orient_and_shuffle = False
-
+	if myid == main_node:  noimprovement = 0
 	# do the projection matching
 	for N_step in xrange(lstp):  # At this point there is just one value here, it cannot loop.
 		if myid == 0:  afterGAcounter = 0
@@ -556,53 +556,38 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				#  Add params to GA, sort, check termination and if not terminate do mutations and send back
 				if myid == 0:
 					#  after GA move do 3 iterations to give the program a chance to improve mutated structures.
-					afterGAcounter = 3
 					#all_params = shuffle_configurations(all_params)
 					for i in xrange(number_of_runs):
 						GA.append([all_L2s[i],all_params[i]])
-					##for i in xrange(len(GA)):
-					##	log.add("L2 norm added to stack %3d  = %f"%(i,GA[i][0]))
-					# if myid == 2: 
-					#	print  "  GA top before sorting  "
-					#	for i in xrange(number_of_runs):
-					#		print i,GA[i][0],GA[i][1][:4]
-					GA.sort(reverse=True)
-					GA = GA[:number_of_runs]
-					if( sym[0] == "d"  and   GA[0][0]>0.0 ):
-						for i in xrange(1,len(GA)):
-							mirror_and_reduce_dsym([GA[0][1],GA[i][1]], sym)
-					# if myid == 2:  
-					#	print  "  GA top sorted "
-					#	for i in xrange(number_of_runs):
-					#		print i,GA[i][0],GA[i][1][:4]
-					"""
-					#  Verify GAs
-					from utilities import model_circle
-					from multi_shc import volume_recsp
-					temp = [None]*nima
-					for i in xrange(nima): temp[i] = data[i].get_attr("xform.projection")
-					for k in xrange(len(GA)):
-						for i in xrange(nima):  set_params_proj(data[i], GA[k][1][i])
-						tvol = volume_recsp(data, ali3d_options)
-						LL2 = tvol.cmp("dot", tvol, dict(negative = 0, mask = model_circle(last_ring, nx, nx, nx)))
-						log.add(" LLLLLLL2 norm of reference volume %3d  = :  %f"%(k,LL2))
-					for i in xrange(nima): data[i].set_attr("xform.projection",temp[i])
-					del temp
-					"""
-					#  ---  Stopping criterion
-					from statistics import table_stat
-					from math import sqrt
-					q1,q2,q3,q4 = table_stat([GA[i][0] for i in xrange(number_of_runs)])
-					# Terminate if variation of L2 norms less than (L2threshold*100)% of their average
-					crit = sqrt(max(q2,0.0))/q1
-					terminate = Iter > max_iter or crit < L2threshold
-					##  if  total_iter > 17: terminate = True
-					##  else:  terminate=False
-					for i in xrange(number_of_runs):
-						log.add("L2 norm for volume %3d  = %f"%(i,GA[i][0]))
-					log.add("L2 norm std dev %f\n"%crit)
+					#  check whether this move will improve anything
+					all_L2s.sort(reverse=True)
+					if(all_L2s[0]<GA[number_of_runs-1]):
+						noimprovement += 1
+						if(noimprovement == 2):  terminate = True
+						GA = GA[:number_of_runs]
+					else:
+						noimprovement = 0
+						GA.sort(reverse=True)
+						GA = GA[:number_of_runs]
+						if( sym[0] == "d"  and   GA[0][0]>0.0 ):
+							for i in xrange(1,len(GA)):
+								mirror_and_reduce_dsym([GA[0][1],GA[i][1]], sym)
 
-					if not terminate:
+						#  ---  Stopping criterion
+						from statistics import table_stat
+						from math import sqrt
+						q1,q2,q3,q4 = table_stat([GA[i][0] for i in xrange(number_of_runs)])
+						# Terminate if variation of L2 norms less than (L2threshold*100)% of their average
+						crit = sqrt(max(q2,0.0))/q1
+						terminate = Iter > max_iter or crit < L2threshold
+						##  if  total_iter > 17: terminate = True
+						##  else:  terminate=False
+						for i in xrange(number_of_runs):
+							log.add("L2 norm for volume %3d  = %f"%(i,GA[i][0]))
+						log.add("L2 norm std dev %f\n"%crit)
+
+					if not terminate and noimprovement == 0:
+						afterGAcounter = 3
 						#  Now do the mutations
 						all_params = []
 
@@ -651,8 +636,6 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 
 					# Send params back
 					if myid == 0:
-						#print  all_params
-						#print "GA  ",GA
 						for i in xrange(number_of_runs):
 							sr = mpi_subroots[i]
 							if sr == myid:
