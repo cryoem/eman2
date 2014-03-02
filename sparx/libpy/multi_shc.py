@@ -568,6 +568,9 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 					#		print i,GA[i][0],GA[i][1][:4]
 					GA.sort(reverse=True)
 					GA = GA[:number_of_runs]
+					if( sym[0] == "d"  and   GA[0][0]>0.0 ):
+						for i in xrange(1,len(GA)):
+							mirror_and_reduce_dsym([GA[0][1],GA[i][1]], sym)
 					# if myid == 2:  
 					#	print  "  GA top sorted "
 					#	for i in xrange(number_of_runs):
