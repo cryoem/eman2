@@ -302,9 +302,9 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 	# do the projection matching
 	for N_step in xrange(lstp):  # At this point there is just one value here, it cannot loop.
 		if myid == 0:  afterGAcounter = 0
-		terminate = 0
+		terminate = False
 		Iter = 0
-		while terminate == 0:
+		while not terminate:
 
 			Iter += 1
 			total_iter += 1
@@ -561,7 +561,9 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 						GA.append([all_L2s[i],all_params[i]])
 					#  check whether this move will improve anything
 					all_L2s.sort(reverse=True)
-					if(all_L2s[0]<GA[number_of_runs-1]):
+					print " sorted terminate  ",all_L2s
+					for i in xrange(number_of_runs): print GA[i][0]
+					if(all_L2s[0]<GA[number_of_runs-1][0]):
 						noimprovement += 1
 						if(noimprovement == 2):  terminate = True
 						GA = GA[:number_of_runs]
