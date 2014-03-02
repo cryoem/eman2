@@ -564,6 +564,8 @@ def allvsall(options):
 	dendofile = options.path + '/dendrogram.txt'
 	
 	
+	maxX=0
+	maxY=0
 	for k in range(options.iter):							#Start the loop over the user-defined number of iterations
 		
 		#avgname = options.path + '/round' + str(k).zfill(fillfactor) + '_averages.hdf'
@@ -813,10 +815,16 @@ def allvsall(options):
 		print "Before calling plotter, y len is", len(plotY)
 		
 		plotName = simmxFile.replace('.hdf','_PLOT.png')
-		plotX = [i for i in range(len(plotY))]
+		plotX = [int(i+1) for i in range(len(plotY))]
+		
+		print "plotX is", plotX
+		
+		if k==0:
+			maxY=max(plotY)
+			maxX=max(plotX)
 		
 		if options.plotccc:
-			plotter (plotX, plotY, options,plotName)
+			plotter (plotX, plotY, options,plotName,maxX,maxY)
 	
 		#from e2figureplot import textwriter
 		textwriterinfo(plotX, compsInfo, options, plotName.replace('.png','_info.txt') )
@@ -1403,8 +1411,10 @@ def textwriter(ydata,options,name):
 	return()
 
 
-def plotter(xaxis,yaxis,options,name):
-	plt.clf()
+def plotter(xaxis,yaxis,options,name,maxX,maxY):
+	#plt.clf()
+	#plt.close('all')
+	
 	#import matplotlib
 	#matplotlib.use('Agg',warn=False)
  
@@ -1419,6 +1429,7 @@ def plotter(xaxis,yaxis,options,name):
 	
 	for i in range(len(yaxis)):
 		yaxis[i] = float( yaxis[i] )*-1.0
+		
 		print "Positive Y score to plot is", yaxis[i]
 				
 	matplotlib.rc('xtick', labelsize=16) 
@@ -1427,23 +1438,46 @@ def plotter(xaxis,yaxis,options,name):
 	font = {'weight':'bold','size':16}
 	matplotlib.rc('font', **font)
 	
-	ax=plt.axes()
-	pylab.rc("axes", linewidth=2.0)
+	#ax=plt.axes()
 	
-	pylab.xlabel('Comparison number (n)', fontsize=18, fontweight='bold')
-	pylab.ylabel('Normalized cross correlation score', fontsize=18, fontweight='bold')
-
+	fig = plt.figure()
+	
+	#ax = plt.subplots()
+	
+	ax = fig.add_subplot(111)
+	
+	#if maxX:
+	#	ax.set_xlim([-1,maxX+1])
+	#if maxY:
+	#
+	#	ax.set_ylim([0,maxY+1])
+	
 	ax.get_xaxis().tick_bottom()
 	ax.get_yaxis().tick_left()
-
 	ax.tick_params(axis='both',reset=False,which='both',length=8,width=3)
 	
+	ax.set_xlabel('Comparison number (n)', fontsize=18, fontweight='bold')
+	ax.set_ylabel('Normalized cross correlation score', fontsize=18, fontweight='bold')
+	
+	print "Xaxis to plot is", xaxis	
+	#plt.scatter(xaxis,yaxis,alpha=1,zorder=1,s=20)
+	
+	#pylab.rc("axes", linewidth=2.0)
+	
+	#pylab.xlabel('Comparison number (n)', fontsize=18, fontweight='bold')
+	#pylab.ylabel('Normalized cross correlation score', fontsize=18, fontweight='bold')
+	
+	#ax.scatter(xaxis,yaxis)
+	ax.plot(yaxis,marker='o')
 	print "\n\n\nThe values to plot are"
 	for ele in range(len(xaxis)):
 		print xaxis[ele],yaxis[ele]
 		
-	plt.scatter(xaxis,yaxis,alpha=1,zorder=1,s=20)
+		
+
 	
+	#plt.plot(yaxis,marker='o')
+
 	
 	#if options.minscore:
 	#	minval = options.minscore * max(yaxis)	
@@ -1468,8 +1502,18 @@ def plotter(xaxis,yaxis,options,name):
 	if options.path not in name:
 		name = options.path + '/' + name
 
-	plt.savefig(name)	
-	plt.clf()
+	#if maxY:
+	#x1,x2,y1,y2 = plt.axis()
+	#plt.axis((-1,maxX+1,0,maxY+1))
+	#pylab.ylim([0,maxY+1])
+	#if maxX:
+	#plt.plot(yaxis,marker='o')
+	
+	plt.savefig(name)
+	print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nSSSSSSSSSSSSSSSSSSSS\nSaved plot"
+	print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+	
+	#plt.clf()
 	
 	return	
 
