@@ -77,7 +77,7 @@ def main():
 	# helicise the Atom coordinates
 	parser.add_option("--heli",                   action="store_true",      default=False,      		  	 help="Helicise the atom coordinates of input pdb file according to input helical symmetry parameters. \n Input: pdb file containing atom coordinates to be helicised and helical symmetry parameters dp and dphi. \n Output: pdb file containing helicised atom coordinates")
 	parser.add_option("--dp",                     type="float",			    default= -1.0,              	 help="delta z - translation in Angstroms")   
-	parser.add_option("--dphi",                   type="float",			    default= -1.0,              	 help="delta phi - rotation in degrees")  
+	parser.add_option("--dphi",                   type="float",			    default=  0.0,              	 help="delta phi - rotation in degrees")  
 	
 	# generate micrographs of helical filament
 	parser.add_option("--generate_micrograph",    action="store_true",      default=False,      		  	 help="Generate three micrographs where each micrograph contains one projection of a long filament. \n Input: Reference Volume, output directory \n Output: Three micrographs containing helical filament projections stored in output directory")
@@ -118,7 +118,7 @@ def main():
 			generate_runscript(options.filename, options.seg_ny, options.ptcl_dist, options.fract)
 			
 		if options.heli:
-			if options.dp < 0 or options.dphi < 0:
+			if options.dp < 0 or options.dphi == 0.:
 				print "Please enter helical symmetry parameters dp and dphi."
 				sys.exit()
 			helicise_pdb(args[0], args[1], options.dp, options.dphi)
