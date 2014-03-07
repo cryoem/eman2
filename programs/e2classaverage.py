@@ -336,7 +336,9 @@ class ClassAvTask(JSTask):
 			# This was commented out because the class-average doesn't have CTF parameters (or shouldn't) and
 			# often will be using a comparator which makes use of CTF. Hard-coding the aligner for now
 			#ali=align_one(avg,ref,True,self.options["align"],self.options["aligncmp"],self.options["ralign"],self.options["raligncmp"])
-			ali=align_one(avg,ref,True,("rotate_translate_flip_iterative",{}),("ccc",{}),("refine",{}),("ccc",{}))
+#			ali=align_one(avg,ref,True,("rotate_translate_flip_iterative",{}),("ccc",{}),("refine",{}),("ccc",{}))
+			# changed to this in 3/6/14 because it was causing class-averages done without flipping to sometimes become flipped. Also not sure if I trust the _iterative aligner
+			ali=align_one(avg,ref,True,("rotate_translate",{}),("ccc",{}),("refine",{}),("ccc",{}))
 			fxf=ali["xform.align2d"]
 			avg1=avg
 			if options["verbose"]>0 : print "Final realign:",fxf

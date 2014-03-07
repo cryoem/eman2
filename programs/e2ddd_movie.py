@@ -266,16 +266,18 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 		# we iterate the alignment process several times
 		if options.align_frames:
 			outim2=[]
-			for im in outim: im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":6,"tomean":True})	# nsigma was normally 4, but for K2 images even 6 may not be enough
-			av=outim[-1].copy()
+#			for im in outim: im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4,"tomean":True})
+#			for im in outim: im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4})
+			av=sum(outim[-5:])
+#			av=outim[-1].copy()
 #			av.mult(1.0/len(outim))
 			fav=[]
-			for it in xrange(3):
+			for it in xrange(2):
 
 				for im in outim:
-					dx,dy=zonealign(im,av,verbose=options.verbose-1)
+					dx,dy=zonealign(im,av,verbose=options.verbose)
 					im2=im.process("xform",{"transform":Transform({"type":"2d","tx":-dx,"ty":-dy})})
-					print "{}, {}".format(dx,dy)
+					if options.verbose==1 : print "{}, {}".format(dx,dy)
 					outim2.append(im2)
 
 				print "-----"
@@ -293,7 +295,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 		# we iterate the alignment process several times
 		if options.align_frames_countmode:
 			outim2=[]
-			for im in outim: im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":6,"tomean":True})	# nsigma was normally 4, but for K2 images even 6 may not be enough
+#			for im in outim: im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":6,"tomean":True})	# nsigma was normally 4, but for K2 images even 6 may not be enough
 			av=sum(outim)
 #			av.mult(1.0/len(outim))
 			fav=[]
@@ -301,9 +303,9 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 				for im in outim:
 					if it==0 : av.sub(im)
-					dx,dy=zonealign(im,av,verbose=options.verbose-1)
+					dx,dy=zonealign(im,av,verbose=options.verbose)
 					im2=im.process("xform",{"transform":Transform({"type":"2d","tx":-dx,"ty":-dy})})
-					print "{}, {}".format(dx,dy)
+					if options.verbose==1 : print "{}, {}".format(dx,dy)
 					if it==0: av.add(im2)
 					outim2.append(im2)
 
@@ -317,7 +319,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			av.write_image(outname[:-4]+"_aliavg.hdf",0)
 			if options.save_aligned:
 				for i,im in enumerate(outim2): im.write_image(outname[:-4]+"_align.hdf",i)
-			if options.verbose>1 : display(fav,True)
+			if options.verbose>2 : display(fav,True)
 
 		# show CCF between first and last frame
 		#cf=mov[0].calc_ccf(mov[-1])
@@ -385,14 +387,15 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			
 
 def zonealign(s1,s2,verbose=0):
-	s1a=s1.copy()
-	s2a=s2.copy()
 
 	# reduce region used for alignment a bit (perhaps a lot for superresolution imaging
-	newbx=good_boxsize(min(s1a["nx"],s1a["ny"],4096)*0.8)
-	if s1a["nx"]>newbx or s1a["ny"]>newbx : 
-		s1a=s1a.get_clip(Region((s1a["nx"]-newbx)/2,(s1a["ny"]-newbx)/2,newbx,newbx))
-		s2a=s2a.get_clip(Region((s2a["nx"]-newbx)/2,(s2a["ny"]-newbx)/2,newbx,newbx))
+	newbx=good_boxsize(min(s1["nx"],s1["ny"],4096)*0.8)
+	if s1["nx"]>newbx or s1["ny"]>newbx : 
+		s1a=s1.get_clip(Region((s1["nx"]-newbx)/2,(s1["ny"]-newbx)/2,newbx,newbx))
+		s2a=s2.get_clip(Region((s2["nx"]-newbx)/2,(s2["ny"]-newbx)/2,newbx,newbx))
+	else :
+		s1a=s1.copy()
+		s2a=s2.copy()
 
 
 	s1a.process_inplace("math.xystripefix",{"xlen":200,"ylen":200})
@@ -419,29 +422,45 @@ def zonealign(s1,s2,verbose=0):
 			#cm=c12.calc_center_of_mass(0)
 			#try: tot.add(cm)
 			#except: tot=c12
-			
+	
+	
 	tot=s1a.calc_ccf(s2a)
 	tot.process_inplace("xform.phaseorigin.tocenter")
 	tot.process_inplace("normalize.edgemean")
+	
+	#if verbose>1 : 
+		#s1a.write_image("s1a.hdf",0)
+		#s2a.write_image("s2a.hdf",0)
+		#tot.write_image("stot.hdf",0)
 			
-	if verbose>1 : display((s1a,s2a,tot),force_2d=True)
+	if verbose>3 : display((s1a,s2a,tot),force_2d=True)
 	
 	dx,dy=(tot["nx"]/2,tot["ny"]/2)					# the 'false peak' should always be at the origin, ie - no translation
 	for x in xrange(dx-1,dx+2):
 		for y in xrange(dy-1,dy+2):
 			tot[x,y]=0		# exclude from COM
 
+	# first pass to make sure we find the true peak with a lot of blurring
+	tot2=tot.get_clip(Region(tot["nx"]/2-96,tot["ny"]/2-96,192,192))
+	tot2.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.04})		# This is an empirical value. Started with 0.04 which also seemed to be blurring out high-res features.
+	dx1,dy1,dz=tot2.calc_max_location()
+	dx1-=96
+	dy1-=96
 
-	tot=tot.get_clip(Region(tot["nx"]/2-96,tot["ny"]/2-96,192,192))
-	tot.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.04})
+	# second pass with less blurring to fine tune it
+	tot=tot.get_clip(Region(tot["nx"]/2-12+dx1,tot["ny"]/2-12+dy1,24,24))
+	tot.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.12})		# This is an empirical value. Started with 0.04 which also seemed to be blurring out high-res features.
 	dx,dy,dz=tot.calc_max_location()
+	dx-=12
+	dy-=12
 	#while hypot(dx-tot["nx"]/2,dy-tot["ny"]/2)>64 :
 		#tot[dx,dy]=0
 		#dx,dy,dz=tot.calc_max_location()
 
-	if verbose>0: display(tot)
+	if verbose>1: print "{},{} + {},{}".format(dx1,dy1,dx,dy)
+	if verbose>2: display(tot)
 	
-	return dx-96,dy-96
+	return dx1+dx,dy1+dy
 		
 	#cl=tot.get_clip(Region(dx-8,dy-8,17,17))
 	#cm=cl.calc_center_of_mass(0)

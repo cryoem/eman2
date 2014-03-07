@@ -9697,8 +9697,8 @@ void NSigmaClampingProcessor::process_inplace(EMData *image)
 	float nsigma = params.set_default("nsigma",default_sigma);
 	float sigma = image->get_attr("sigma");
 	float mean = image->get_attr("mean");
-	params.set_default("minval",mean - nsigma*sigma);
-	params.set_default("maxval",mean + nsigma*sigma);
+	params.put("minval",mean - nsigma*sigma);
+	params.put("maxval",mean + nsigma*sigma);
 
 	ClampingProcessor::process_inplace(image);
 }

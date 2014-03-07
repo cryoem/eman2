@@ -11,6 +11,7 @@ High priority
 2/20/14		Bootstrapping in e2classaverage not working well tolc project
 2/20/14		Finish e2motion
 2/20/14		Eliminate simmx files
+3/6/14		e2classaverage has hardcoded final aligner to reference, but imposes flips when it shouldn't happen
 
 2/24/14		Save sets in imagemx control panel error (updateGL, update not defined ?)
 2/20/14		Save plots as images, more features in 2-D plotting
