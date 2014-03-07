@@ -548,7 +548,7 @@ JSDicts are open at one time."""
 		if cls.opendicts.has_key(normpath) :
 			cls.lock.release()
 			return cls.opendicts[normpath]
-
+		
 		try : ret=JSDict(path)
 		except:
 			cls.lock.release()

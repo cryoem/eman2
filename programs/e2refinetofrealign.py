@@ -111,35 +111,39 @@ az_list = {}
 alt_list = {}
 exc = 0
 command_dict = js_open_dict(dir+"/0_refine_parms.json")
-for i in range(num_classes):
-   for index in class_list[i]['class_ptcl_idxs']:
-      if i%2 == 0:
-         az_list[2*index] = class_list[i]['xform.projection'].get_rotation("eman")['az']
-         alt_list[2*index] = class_list[i]['xform.projection'].get_rotation("eman")['alt']
-         if 'exc_class_ptcl_idxs' in class_list[i].get_attr_dict():
-            if isinstance(class_list[i]['exc_class_ptcl_idxs'], ( int, long )):
-               az_list[2*int(class_list[i]['exc_class_ptcl_idxs'])] = class_list[i]['xform.projection'].get_rotation("eman")['az']
-               alt_list[2*int(class_list[i]['exc_class_ptcl_idxs'])] = class_list[i]['xform.projection'].get_rotation("eman")['alt']
-            else:
-               for exc_index in class_list[i]['exc_class_ptcl_idxs']:
-                  az_list[2*exc_index] = class_list[i]['xform.projection'].get_rotation("eman")['az']
-                  alt_list[2*exc_index] = class_list[i]['xform.projection'].get_rotation("eman")['alt']
-      else:
-         az_list[2*index+1] = class_list[i]['xform.projection'].get_rotation("eman")['az']
-         alt_list[2*index+1] = class_list[i]['xform.projection'].get_rotation("eman")['alt']
-         if 'exc_class_ptcl_idxs' in class_list[i].get_attr_dict():
-            if isinstance(class_list[i]['exc_class_ptcl_idxs'], ( int, long )):
-               az_list[2*int(class_list[i]['exc_class_ptcl_idxs'])+1] = class_list[i]['xform.projection'].get_rotation("eman")['az']
-               alt_list[2*int(class_list[i]['exc_class_ptcl_idxs'])+1] = class_list[i]['xform.projection'].get_rotation("eman")['alt']
-            else:
-               for exc_index in class_list[i]['exc_class_ptcl_idxs']:
-                  az_list[2*exc_index+1] = class_list[i]['xform.projection'].get_rotation("eman")['az']
-                  alt_list[2*exc_index+1] = class_list[i]['xform.projection'].get_rotation("eman")['alt']
+classes_even = EMData.read_images(dir + "/classes_" + high +"_even.hdf")
+classes_odd = EMData.read_images(dir + "/classes_" + high +"_odd.hdf")
+
+
+#for i in range(num_classes):
+   #for index in class_list[i]['class_ptcl_idxs']:
+      #if i%2 == 0:
+         #az_list[2*index] = class_list[i]['xform.projection'].get_rotation("eman")['az']
+         #alt_list[2*index] = class_list[i]['xform.projection'].get_rotation("eman")['alt']
+         #if 'exc_class_ptcl_idxs' in class_list[i].get_attr_dict():
+            #if isinstance(class_list[i]['exc_class_ptcl_idxs'], ( int, long )):
+               #az_list[2*int(class_list[i]['exc_class_ptcl_idxs'])] = class_list[i]['xform.projection'].get_rotation("eman")['az']
+               #alt_list[2*int(class_list[i]['exc_class_ptcl_idxs'])] = class_list[i]['xform.projection'].get_rotation("eman")['alt']
+            #else:
+               #for exc_index in class_list[i]['exc_class_ptcl_idxs']:
+                  #az_list[2*exc_index] = class_list[i]['xform.projection'].get_rotation("eman")['az']
+                  #alt_list[2*exc_index] = class_list[i]['xform.projection'].get_rotation("eman")['alt']
+      #else:
+         #az_list[2*index+1] = class_list[i]['xform.projection'].get_rotation("eman")['az']
+         #alt_list[2*index+1] = class_list[i]['xform.projection'].get_rotation("eman")['alt']
+         #if 'exc_class_ptcl_idxs' in class_list[i].get_attr_dict():
+            #if isinstance(class_list[i]['exc_class_ptcl_idxs'], ( int, long )):
+               #az_list[2*int(class_list[i]['exc_class_ptcl_idxs'])+1] = class_list[i]['xform.projection'].get_rotation("eman")['az']
+               #alt_list[2*int(class_list[i]['exc_class_ptcl_idxs'])+1] = class_list[i]['xform.projection'].get_rotation("eman")['alt']
+            #else:
+               #for exc_index in class_list[i]['exc_class_ptcl_idxs']:
+                  #az_list[2*exc_index+1] = class_list[i]['xform.projection'].get_rotation("eman")['az']
+                  #alt_list[2*exc_index+1] = class_list[i]['xform.projection'].get_rotation("eman")['alt']
    
 total_len = len(az_list)
 even_set_name = class_list[0].get_attr_dict()['class_ptcl_src']
 odd_set_name = class_list[1].get_attr_dict()['class_ptcl_src']
-all_set_name = even_set_name.replace("_even",'')
+all_set_name = "sets/"+base_name(even_set_name)+".lst"
 all_set_data = EMData.read_images(all_set_name)
 
 s = "e2proc2d.py " + all_set_name + " " + E2FA + "/particlestack.mrc --twod2threed --process=normalize.edgemean --verbose=0"
@@ -149,33 +153,61 @@ call(s, shell=True)
 s = "e2proc2d.py " + dir + "/cls_result_" + high + "_even.hdf cls_stack_temp.hdf --interlv=" +  dir + "/cls_result_" + high + "_odd.hdf --writejunk --verbose=0"
 call(s, shell=True)
 
+#brute force way to do it but need to make sure its right...
+cls_even = EMData.read_images(dir + "/cls_result_" + high + "_even.hdf")
+cls_odd = EMData.read_images(dir + "/cls_result_" + high + "_odd.hdf")
+cls_class_list_even = cls_even[CLASS]
+cls_class_list_odd = cls_odd[CLASS]
+dx_list_even = cls_even[DX]
+dx_list_odd = cls_odd[DX]
+dy_list_even = cls_even[DY]
+dy_list_odd = cls_odd[DY]
+dalpha_list_even = cls_even[DALPHA]
+dalpha_list_odd = cls_odd[DALPHA]
+flip_list_even = cls_even[FLIP]
+flip_list_odd = cls_odd[FLIP]
 
-#if not 'ctf' in part2[0].get_attr_dict():
-   #print "This command cannot be run with data that has not been CTF corrected"
-   #exit(-1)
-#part = EMData.read_images(str(inpt))
-#tmp = part2[0]['ctf'].to_dict()                                      # CTF has things like Defocus, apix, etc
-
-
-### Retrieve the pixel values of each image in the CLS stack.
-cls_stack = EMData.read_images("cls_stack_temp.hdf")
-ny = cls_stack[0]['ny']
 dx_list = {}
 dy_list = {}
 dalpha_list = {}
 flip_list = {}
 cls_class_list = {}
-for i in range(ny):
-   cls_class_list[i] = cls_stack[2*CLASS][i]
-   cls_class_list[i+ny] = cls_stack[2*CLASS+1][i]
-   dx_list[i] = cls_stack[2*DX][i]
-   dx_list[i+ny] = cls_stack[2*DX+1][i]
-   dy_list[i] = cls_stack[2*DY][i]
-   dy_list[i+ny] = cls_stack[2*DY+1][i]   
-   dalpha_list[i] = cls_stack[2*DALPHA][i]
-   dalpha_list[i+ny] = cls_stack[2*DALPHA+1][i]
-   flip_list[i] = cls_stack[2*FLIP][i]
-   flip_list[i+ny] = cls_stack[2*FLIP+1][i]
+
+for i in range(cls_class_list_even.get_attr_dict()['ny']):
+	cls_class_list[2*i] = cls_class_list_even[0,i]
+	dx_list[2*i] = dx_list_even[0,i]
+	dy_list[2*i] = dy_list_even[0,i]
+	dalpha_list[2*i] = dalpha_list_even[0,i]
+	flip_list[2*i] = flip_list_even[0,i]
+
+for i in range(cls_class_list_odd.get_attr_dict()['ny']):
+	cls_class_list[2*i+1] = cls_class_list_odd[0,i]
+	dx_list[2*i+1] = dx_list_odd[0,i]
+	dy_list[2*i+1] = dy_list_odd[0,i]
+	dalpha_list[2*i+1] = dalpha_list_odd[0,i]
+	flip_list[2*i+1] = flip_list_odd[0,i]
+
+ny = len(dx_list)
+
+### Retrieve the pixel values of each image in the CLS stack.
+#cls_stack = EMData.read_images("cls_stack_temp.hdf")
+#ny = cls_stack[0]['ny']
+#dx_list = {}
+#dy_list = {}
+#dalpha_list = {}
+#flip_list = {}
+#cls_class_list = {}
+#for i in range(ny):
+   #cls_class_list[i] = cls_stack[2*CLASS][i]
+   #cls_class_list[i+ny] = cls_stack[2*CLASS+1][i]
+   #dx_list[i] = cls_stack[2*DX][i]
+   #dx_list[i+ny] = cls_stack[2*DX+1][i]
+   #dy_list[i] = cls_stack[2*DY][i]
+   #dy_list[i+ny] = cls_stack[2*DY+1][i]   
+   #dalpha_list[i] = cls_stack[2*DALPHA][i]
+   #dalpha_list[i+ny] = cls_stack[2*DALPHA+1][i]
+   #flip_list[i] = cls_stack[2*FLIP][i]
+   #flip_list[i+ny] = cls_stack[2*FLIP+1][i]
 
    
 ## Write output file of particle meta data for FreAlign into the E2FA subdirectory created above
@@ -198,14 +230,19 @@ for i in range(len(all_set_data)):
       film_dict[film] = ctf_dict
    bool_found = 0
    mag = APERPIX / ctf_dict['apix']
-   class_num = cls_class_list[i]   
-   #t = Transform({"type":"eman","az":az_list[i],"alt":alt_list[i],"phi":dalpha_list[i],"tx":dx_list[i],"ty":dy_list[i]})
-   if flip_list[i] == 1:
-      t = Transform({"type":"eman","az":az_list[i]+180,"alt":180-alt_list[i],"phi":dalpha_list[i]*-1,"tx":dx_list[i],"ty":dy_list[i]})
+   class_num = cls_class_list[i]
+   if i%2==0:
+      az=classes_even[int(class_num)].get_attr_dict()['xform.projection'].get_rotation("eman")['az']
+      alt=classes_even[int(class_num)].get_attr_dict()['xform.projection'].get_rotation("eman")['alt']
    else:
-      t = Transform({"type":"eman","az":az_list[i],"alt":alt_list[i],"phi":dalpha_list[i],"tx":dx_list[i],"ty":dy_list[i]})
+      az=classes_odd[int(class_num)].get_attr_dict()['xform.projection'].get_rotation("eman")['az']
+      alt=classes_odd[int(class_num)].get_attr_dict()['xform.projection'].get_rotation("eman")['alt']
+   if flip_list[i] == 1:
+      t = Transform({"type":"eman","az":az+180,"alt":180-alt,"phi":dalpha_list[i]*-1,"tx":dx_list[i],"ty":dy_list[i]})
+   else:
+      t = Transform({"type":"eman","az":az,"alt":alt,"phi":dalpha_list[i],"tx":dx_list[i],"ty":dy_list[i]})
    t = t.inverse()
-   s = '{0:7d}{1:8.2f}{2:8.2f}{3:8.2f}{4:8.2f}{5:8.2f}{6:7.0f}.{7:6d}{8:9.1f}{9:9.1f}{10:8.2f}{11:7.2f}{12:6.2f}\n'.format(i+1, t.get_rotation("mrc")['phi'], t.get_rotation("mrc")['theta'], t.get_rotation("mrc")['omega'], t.get_trans()[0], t.get_trans()[1], mag, film + 1, defocus, defocus, ANGAST, PRESA, PRESA)
+   s = '{0:7d}{1:8.2f}{2:8.2f}{3:8.2f}{4:8.2f}{5:8.2f}{6:7.0f}.{7:6d}{8:9.1f}{9:9.1f}{10:8.2f}{11:7.2f}{12:6.2f}\n'.format(i+1, t.get_rotation("spider")['phi'], t.get_rotation("spider")['theta'], t.get_rotation("spider")['psi'], t.get_trans()[0], t.get_trans()[1], mag, film + 1, defocus, defocus, ANGAST, PRESA, PRESA)
    #s = '{0:7d}{1:8.2f}{2:8.2f}{3:8.2f}{4:8.2f}{5:8.2f}{6:7.0f}.{7:6d}{8:9.1f}{9:9.1f}{10:8.2f}{11:7.2f}{12:6.2f}\n'.format(i+1, t.get_rotation("eman")['az'], t.get_rotation("eman")['alt'], t.get_rotation("eman")['phi'], t.get_trans()[0], t.get_trans()[1], mag, film + 1, defocus, defocus, ANGAST, PRESA, PRESA)
    f.write(s)
 s = "rm class_stack_temp.hdf cls_stack_temp.hdf "
@@ -244,7 +281,7 @@ f = open(OUTFILE2, 'w')      # card.txt to be placed in the E2FA subdirectory cr
  
 # Card 1
 CFORM = 'M'
-IFLAG = '1'
+IFLAG = '0'
 FMAG = FDEF = FASTIG = FPART = FMATCH = 'F'
 IEWALD = '0'
 s = CFORM + SPACE + IFLAG + SPACE + FMAG + SPACE + FDEF + SPACE + FASTIG + SPACE + FPART + SPACE + IEWALD + SPACE + FBEAUT + SPACE + FFILT + SPACE + FBFACT + SPACE + FMATCH + SPACE + IFSC + SPACE + FSTAT + SPACE + IBLOW + '\n'
@@ -267,7 +304,7 @@ f.write(MASK + '\n')
 
 # Card 4
 IFIRST = '1'
-ILAST = str(ny*2)
+ILAST = str(ny)
 f.write(IFIRST + SPACE + ILAST + '\n')
 
 # Card 5
