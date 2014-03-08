@@ -138,23 +138,38 @@ def find_common_subset_3(projs, target_threshold, minimal_subset_size=3, sym = "
 		if( sym[0] == "d"):
 			# have to figure whether anything has to be mirrored and then reduce the angles.
 			mirror_and_reduce_dsym(projs2, sym)
-		trans_projs = []
-		if( sym[0] == "d"):
-			matrix_rot  = [[[0.0,0.0,0.0,0.0,0.0] for i in xrange(sc)] for k in xrange(sc)]
+			from utilities import getvec
+			from math import acos, degrees
+			
+			trans_vec = [0.0]*sc
 			for iConf in xrange(sc):
-				temp = reduce_dsym_angles(projs2[iConf], sym)
-				for i in xrange(len(temp)):
-					trans_projs.extend(temp[i][0:5])
+				#temp = reduce_dsym_angles(projs2[iConf], sym)
+				trans_vec[iConf] = []
+				for i in xrange(len(projs2[0])):
+					t1,t2,t3=getvec(projs2[iConf][i][0], projs2[iConf][i][1])
+					trans_vec[iConf].append([t1,t2,t3])
+
+			avg_diff_per_image = []
+			for i in xrange(len(trans_vec[0])):
+				qt = 0.0
+				for k in xrange(sc-1):
+					for l in xrange(k+1,sc):
+						zt = 0.0
+						for m in xrange(3):  zt += trans_vec[k][i][m]*trans_vec[l][i][m]
+						qt += degrees(acos(min(1.0,max(-1.0,zt))))
+				avg_diff_per_image.append(qt/sc/(sc-1)/2.0)
+
 		else:
+			trans_projs = []
 			matrix_rot = calculate_matrix_rot(projs2)
 			for iConf in xrange(sc):
 				for i in subset:
 					trans_projs.extend(projs[iConf][i][0:5])
-		trans_matrix = []
-		for i in xrange(sc):
-			for j in xrange(i):
-				trans_matrix.extend(matrix_rot[i][j][0:3])
-		avg_diff_per_image = Util.diff_between_matrix_of_3D_parameters_angles(trans_projs, trans_matrix)
+			trans_matrix = []
+			for i in xrange(sc):
+				for j in xrange(i):
+					trans_matrix.extend(matrix_rot[i][j][0:3])
+			avg_diff_per_image = Util.diff_between_matrix_of_3D_parameters_angles(trans_projs, trans_matrix)
 		#print  "  AAAA ",iIter
 		#print avg_diff_per_image
 		max_error = -1.0
@@ -1239,6 +1254,12 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 def reduce_dsym_angles(p1, sym):
 	#  WARNING - it returns incorrect parameters that are only suitable for calculation of angular distances
 	#  works only for d symmetry
+	pr = [[0.0 for i in xrange(5)] for q in xrange(len(p1))]
+	for i in xrange(len(p1)):
+		if( p1[i][1] >90.0):
+			p1[i][1] = 180.0 - p1[i][1]
+			p1[i][0] = (p1[i][0] +180.0)%360.0
+	"""
 	from utilities import get_symt
 	from EMAN2 import Vec2f, Transform
 	t = get_symt(sym)
@@ -1257,6 +1278,7 @@ def reduce_dsym_angles(p1, sym):
 		 pr[i][2] = q["psi"]
 		 pr[i][3] = -q["tx"]
 		 pr[i][4] = -q["ty"]
+	"""
 	return pr
 
 def mirror_and_reduce_dsym(params, sym):
