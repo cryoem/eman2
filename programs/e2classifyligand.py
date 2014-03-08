@@ -69,13 +69,14 @@ ligand/no-ligand contrast in individual images:
 	parser.add_argument("--ref2",type=str,default=None,help="Rather than using a mask, ref1/ref2 permit using a pair of volumes for classification.")
 	parser.add_argument("--cmp",type=str,help="The name of a 'cmp' to be used in conjunction with ref1/2", default="dot:normalize=1")
 	parser.add_argument("--process",type=str,default=None,help="A processor to apply to the particle data before classifying")
+	parser.add_argument("--plotout",type=str,default="plot_ligand.txt",help="Name of a text file to contain the classification plot.")
 	parser.add_argument("--badgroup",action="store_true",default=False,help="Split the data into 4 groups rather than 2. The extra two groups contain particles more likely to be bad.")
 	parser.add_argument("--badqualsig",type=float,help="When identifying 'bad' particles, particles with similarities >mean+sigma*badqualsig will be considered bad. Default 0.5", default=.5)
 	parser.add_argument("--badsepsig",type=float,help="When identifying 'bad' particles, if s1/s2 are the similarities to reference 1/2, then those where |s1-s2| < sigma*badsepsig will be excluded. Default 0.25 ", default=0.25)
 	parser.add_argument("--postfix",type=str,default="",help="This string will be appended to each set name to help differentiate the results from multiple runs")
+	parser.add_argument("--splitparticles",action="store_true",default=False,help="Specify this to write new files containing the classified particles")
 	parser.add_argument("--debug",action="store_true",default=False,help="Enable debugging mode with verbose output and image display. Not suitable for real runs.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	
 	#parser.add_argument("--ncls","-N",type=int,help="Number of classes to generate",default=-1)
 	#parser.add_argument("--average","-A",action="store_true",help="Average the particles within each class",default=False)
 
@@ -120,7 +121,7 @@ ligand/no-ligand contrast in individual images:
 	# now we loop over each class, and assess the masked region for each particle in terms of
 	# sigma of the image. Note that we don't have a list of which particle is in each class,
 	# but rather a list of which class each particle is in, so we do this a bit inefficiently for now
-	out=file("plot.ligand.txt","w")
+	out=file(options.plotout,"w")
 	statall={}	# keyed by particle number, contains (statm,statr,statr2) for each particle, with Null if the right options weren't specified
 	for i in range(nref-1,-1,-1):
 		if options.verbose>1 : print "--- Class %d"%i
@@ -274,51 +275,52 @@ ligand/no-ligand contrast in individual images:
 		#sq=sqrt(sq/100.0)			# deviation from zero, not from mean
 		#out .write("%f\t%f\n"%(x,sq))
 		#out2.write("%f\t%f\n"%(x,sm))
-		
-	counts=[0,0,0,0,0,0,0,0]		# image counts, all class 1, all class 2,good class 1, good class 2, bad class 1, bad class2, low mask, high mask
-	if options.ref1 and options.ref2 :
-		if options.badgroup:
-			# These aren't very efficient, but shouldn't matter much
-			avgq=  sum([statall[i][2][0] for i in statall])/float(len(statall))
-			avgqsq=sqrt(sum([statall[i][2][0]**2 for i in statall])/float(len(statall))-avgq**2)
-			avgcsq=sqrt(sum([statall[i][1]**2 for i in statall])/float(len(statall)))
+	
+	if options.splitparticles :
+		counts=[0,0,0,0,0,0,0,0]		# image counts, all class 1, all class 2,good class 1, good class 2, bad class 1, bad class2, low mask, high mask
+		if options.ref1 and options.ref2 :
+			if options.badgroup:
+				# These aren't very efficient, but shouldn't matter much
+				avgq=  sum([statall[i][2][0] for i in statall])/float(len(statall))
+				avgqsq=sqrt(sum([statall[i][2][0]**2 for i in statall])/float(len(statall))-avgq**2)
+				avgcsq=sqrt(sum([statall[i][1]**2 for i in statall])/float(len(statall)))
+				for i in statall:
+					# we consider a particle 'bad' if it's mean quality with both refs is greater than the mean+sigma/2
+					# or if the quality difference between images is within 1/4 sigma of zero
+					if statall[i][2][0]>avgq+avgqsq*options.badqualsig or fabs(statall[i][1])<avgcsq*options.badsepsig :
+						if statall[i][1]<0 : 
+							write_particle(args[0],"_ref1_bad"+options.postfix,i)		# if the particle was more similar to ref1
+							counts[4]+=1
+						else : 
+							write_particle(args[0],"_ref2_bad"+options.postfix,i)						# if the particle was more similar to ref2
+							counts[5]+=1
+					else :
+						if statall[i][1]<0 : 
+							write_particle(args[0],"_ref1_good"+options.postfix,i)		# if the particle was more similar to ref1
+							counts[2]+=1
+						else : 
+							write_particle(args[0],"_ref2_good"+options.postfix,i)						# if the particle was more similar to ref2
+							counts[3]+=1
+
+
 			for i in statall:
-				# we consider a particle 'bad' if it's mean quality with both refs is greater than the mean+sigma/2
-				# or if the quality difference between images is within 1/4 sigma of zero
-				if statall[i][2][0]>avgq+avgqsq*options.badqualsig or fabs(statall[i][1])<avgcsq*options.badsepsig :
-					if statall[i][1]<0 : 
-						write_particle(args[0],"_ref1_bad"+options.postfix,i)		# if the particle was more similar to ref1
-						counts[4]+=1
-					else : 
-						write_particle(args[0],"_ref2_bad"+options.postfix,i)						# if the particle was more similar to ref2
-						counts[5]+=1
-				else :
-					if statall[i][1]<0 : 
-						write_particle(args[0],"_ref1_good"+options.postfix,i)		# if the particle was more similar to ref1
-						counts[2]+=1
-					else : 
-						write_particle(args[0],"_ref2_good"+options.postfix,i)						# if the particle was more similar to ref2
-						counts[3]+=1
+				if statall[i][1]<0 : 
+					write_particle(args[0],"_ref1"+options.postfix,i)		# if the particle was more similar to ref1
+					counts[0]+=1
+				else : 
+					write_particle(args[0],"_ref2"+options.postfix,i)						# if the particle was more similar to ref2
+					counts[1]+=1
+		if options.maskfile:
+			for i in statall:
+				if statall[i][0]==None : continue
+				if statall[i][0]<0:
+					write_particle(args[0],"_low"+options.postfix,i)		# low mask density
+					counts[6]+=1
+				else : 
+					write_particle(args[0],"_high"+options.postfix,i)		# high mask density
+					counts[7]+=1
 
-
-		for i in statall:
-			if statall[i][1]<0 : 
-				write_particle(args[0],"_ref1"+options.postfix,i)		# if the particle was more similar to ref1
-				counts[0]+=1
-			else : 
-				write_particle(args[0],"_ref2"+options.postfix,i)						# if the particle was more similar to ref2
-				counts[1]+=1
-	if options.maskfile:
-		for i in statall:
-			if statall[i][0]==None : continue
-			if statall[i][0]<0:
-				write_particle(args[0],"_low"+options.postfix,i)		# low mask density
-				counts[6]+=1
-			else : 
-				write_particle(args[0],"_high"+options.postfix,i)		# high mask density
-				counts[7]+=1
-
-	print counts
+		print counts
 	
 	E2end(logid)
 
