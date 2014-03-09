@@ -580,7 +580,6 @@ def parsemodopt(optstr):
 
 	op2=opstr.split(":")
 	if len(op2)==1 or op2[1]=="" : return (op2[0],{})		# name with no options
-	print op2
 
 	r2={}
 	for p in op2[1:]:
