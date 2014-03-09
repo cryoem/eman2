@@ -109,12 +109,12 @@ def main():
 		y_restrict2 = ""
 
 		for i in xrange(len(xr)):    xrp += str(float(xr[i])/options.apix)+" "
-		xrp = xrp[:-2]
+		xrp = xrp[:-1]
 		for i in xrange(len(txs)):  txsp += str(float(txs[i])/options.apix)+" "
-		txsp = txsp[:-2]
+		txsp = txsp[:-1]
 		# now y_restrict has the same format as x search range .... has to change ihrsr accordingly
 		for i in xrange(len(y_restrict)): y_restrict2 +=  str(float(y_restrict[i])/options.apix)+" "
-		y_restrict2 = y_restrict2[:-2]
+		y_restrict2 = y_restrict2[:-1]
 
 		from mpi import mpi_init, mpi_finalize
 		sys.argv = mpi_init(len(sys.argv), sys.argv)
