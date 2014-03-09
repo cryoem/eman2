@@ -104,14 +104,17 @@ def main():
 		irp = 1
 		if options.ou < 0:  oup = -1
 		else:               oup = int( (options.ou/options.apix) + 0.5)
-		xrp = ''
-		txsp = ''
-		y_restrict2 = ''
+		xrp = ""
+		txsp = ""
+		y_restrict2 = ""
 
-		for i in xrange(len(xr)):    xrp += " "+str(float(xr[i])/options.apix)
-		for i in xrange(len(txs)):  txsp += " "+str(float(txs[i])/options.apix)
+		for i in xrange(len(xr)):    xrp += str(float(xr[i])/options.apix)+" "
+		xrp = xrp[:-2]
+		for i in xrange(len(txs)):  txsp += str(float(txs[i])/options.apix)+" "
+		txsp = txsp[:-2]
 		# now y_restrict has the same format as x search range .... has to change ihrsr accordingly
-		for i in xrange(len(y_restrict)): y_restrict2 += " "+str(float(y_restrict[i])/options.apix)
+		for i in xrange(len(y_restrict)): y_restrict2 +=  str(float(y_restrict[i])/options.apix)+" "
+		y_restrict2 = y_restrict2[:-2]
 
 		from mpi import mpi_init, mpi_finalize
 		sys.argv = mpi_init(len(sys.argv), sys.argv)
