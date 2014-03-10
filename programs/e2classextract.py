@@ -143,12 +143,13 @@ single-model refinement.
 					nextf,extf,com=outlst[k].read(i)
 					ptcls.append((extf,nextf))
 				ptcls.sort()
+				if options.verbose>1: print "Sorting {} ({})".format(k,len(ptcls))
 
 				# erase and reopen LSX file
-				outlst[mdl]=0
-				pth=outlst[mdl].path
+				pth=outlst[k].path
+				outlst[k]=0
 				os.unlink(pth)
-				outlst[mdl]=LSXFile(pth)
+				outlst[k]=LSXFile(pth)
 				
 				# rewrite without duplicates
 				j=0
