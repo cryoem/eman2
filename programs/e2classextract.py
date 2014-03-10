@@ -50,7 +50,7 @@ single-model refinement.
 	parser.add_argument("--classlist",type=str,help="Filename of a text file containing a (comma or whitespace separated) list of class average numbers to operate on. ", default=None)
 	parser.add_argument("--excludebad",action="store_true",help="Excludes the particles from the generated set(s). They are included by default.",default=False)
 	parser.add_argument("--noderef",action="store_true",help="If particle file was .lst, normally the output .lst will reference the original image file. With this option, the output will reference the .lst file instead, creating a lst pointing to another lst.",default=False)
-	parser.add_argument("--sort",action="store_true",help="If set, output .lst file will be sorted. The default is to leave the output grouped by class-average.",default=False)
+	parser.add_argument("--sort",action="store_true",help="If set, output .lst file will be sorted. The default is to leave the output grouped by class-average. If (and only if) sorted, duplicate entries will be removed.",default=False)
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -144,8 +144,18 @@ single-model refinement.
 					ptcls.append((extf,nextf))
 				ptcls.sort()
 
+				# erase and reopen LSX file
+				outlst[mdl]=0
+				pth=outlst[mdl].path
+				os.unlink(pth)
+				outlst[mdl]=LSXFile(pth)
+				
+				# rewrite without duplicates
+				j=0
 				for i,v in enumerate(ptcls):
-					outlst[k].write(i,v[1],v[0])
+					if v==ptcls[i-1] : continue			# no special case for i=0 since first and last elements never the same
+					outlst[k].write(j,v[1],v[0])
+					j+=1
 
 		if options.verbose>0 :
 			print "Output files:"
