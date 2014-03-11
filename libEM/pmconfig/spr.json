@@ -150,7 +150,17 @@
 	"NOTELEVEL": "1",
 	"EXPERT": 1,
 	"CHILDREN": []
+      },
+      {
+	"ICON": "single_image",
+	"PROGRAM":"e2evalparticles.py",
+	"WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2evalparticles",
+	"NAME": "Class-based particle eval",
+	"NOTELEVEL": "1",
+	"EXPERT": 1,
+	"CHILDREN": []
       }
+
     ]
   },
   {

@@ -398,13 +398,15 @@ def zonealign(s1,s2,verbose=0):
 		s2a=s2.copy()
 
 
-	s1a.process_inplace("math.xystripefix",{"xlen":200,"ylen":200})
+#	s1a.process_inplace("math.xystripefix",{"xlen":200,"ylen":200})
+	s1a.process_inplace("filter.xyaxes0")
 #	s1a.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
 #	s1a.process_inplace("threshold.compress",{"value":0,"range":s1a["sigma"]/2.0})
 	s1a.process_inplace("filter.highpass.gauss",{"cutoff_abs":.002})
 	
 #	s2a.process_inplace("math.xystripefix",{"xlen":200,"ylen":200})
 #	s2a.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
+	s2a.process_inplace("filter.xyaxes0")
 	s2a.process_inplace("filter.highpass.gauss",{"cutoff_abs":.002})
 
 	

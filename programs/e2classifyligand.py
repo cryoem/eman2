@@ -67,6 +67,7 @@ ligand/no-ligand contrast in individual images:
 	parser.add_argument("--maskfile",type=str,default=None,help="File containing a 3-D binary mask to use for data separation")
 	parser.add_argument("--ref1",type=str,default=None,help="Rather than using a mask, ref1/ref2 permit using a pair of volumes for classification.")
 	parser.add_argument("--ref2",type=str,default=None,help="Rather than using a mask, ref1/ref2 permit using a pair of volumes for classification.")
+	parser.add_argument("--alistacks",type=float,help="In ref1/2 mode, if sum of cmp results is less than the spefified value, will save the aligned particle to a per-class stack",default=-1.0e10)
 	parser.add_argument("--cmp",type=str,help="The name of a 'cmp' to be used in conjunction with ref1/2", default="dot:normalize=1")
 	parser.add_argument("--process",type=str,default=None,help="A processor to apply to the particle data before classifying")
 	parser.add_argument("--plotout",type=str,default="plot_ligand.txt",help="Name of a text file to contain the classification plot.")
@@ -136,6 +137,10 @@ ligand/no-ligand contrast in individual images:
 			proj2=ref2.project("standard",{"transform":eulers[i]})
 #			proj2.process_inplace("normalize")
 		
+		# Computes the union of non-zero points in both projections
+		projmask=proj.process("threshold.notzero")
+		projmask.add(proj2.process("threshold.notzero"))
+		projmask.process_inplace("threshold.notzero")
 
 		#p1=[]
 		#p2=[]
@@ -147,6 +152,7 @@ ligand/no-ligand contrast in individual images:
 		statr=[]
 		statr2=[]
 		statm=[]
+		nalis=0
 		for j in range(nptcl):
 			if classmx[0,j]!=i : continue		# only proceed if the particle is in this class
 			
@@ -159,7 +165,7 @@ ligand/no-ligand contrast in individual images:
 			statn.append(j)
 			if options.ref1 and options.ref2 :
 				ptcl2=ptcl.process("filter.matchto",{"to":proj+proj2})
-				projc=proj.process("xform",{"transform":ptclxf})		# we transform the mask projection, not the particle (as in the original classification)
+				projc=proj.process("xform",{"transform":ptclxf})		# we transform the projection, not the particle (as in the original classification)
 				projc2=proj2.process("xform",{"transform":ptclxf})
 				projc.process_inplace("normalize.toimage",{"to":ptcl2})
 				projc2.process_inplace("normalize.toimage",{"to":ptcl2})
@@ -170,6 +176,19 @@ ligand/no-ligand contrast in individual images:
 				
 				statr.append(result)
 				statr2.append((cmp1+cmp2,cmp1-cmp2))
+				
+				if cmp1+cmp2<options.alistacks :
+					ptcl2=ptcl.process("xform",{"transform":ptclxf.inverse()})
+					ptcl2.mult(projmask)
+					ptcl2.write_image("aligned_{}.hdf".format(i),nalis+2)
+					
+					if nalis==0 :
+						projc=proj.process("normalize.toimage",{"to":ptcl2})
+						projc2=proj2.process("normalize.toimage",{"to":ptcl2})
+						projc.write_image("aligned_{}.hdf".format(i),0)
+						projc2.write_image("aligned_{}.hdf".format(i),1)
+
+					nalis+=1
 #				statr2.append((cmp1+cmp2,cmp1-cmp2,ptcl["ctf"].defocus))
 				
 				#print j,result			# number of standard deviations above or below surrounding mean

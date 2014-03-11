@@ -460,7 +460,47 @@ The basic design of EMAN Processors: <br>\
 		int dosqrt;
 	};
 
+	/**Zeroes the values on the X=0 and y=0 Fourier axes (except x=y=0)
+	 */
+	class Axis0FourierProcessor:public Processor
+	{
+	  public:
+		string get_name() const
+		{
+			return NAME;
+		}
 
+		void process_inplace(EMData * image);
+
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("x", EMObject::INT, "If set, zeroes along X axis. Default True.");
+			d.put("y", EMObject::INT, "If set, zeroes along X axis. Default True.");
+			return d;
+		}
+
+		static Processor *NEW()
+		{
+			return new Axis0FourierProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Sets values along X/Y Fourier axes to 0, except origin";
+		}
+
+		static const string NAME;
+
+		protected:
+	};
+
+	
 	/**Multiplies each Fourier pixel by its amplitude
 	 *@param sum Adds the weights to sum for normalization
 	 *@param sqrt Weights using sqrt of the amplitude if set

@@ -67,6 +67,7 @@ using std::reverse;
 
 const string SNREvalProcessor::NAME = "eval.maskedsnr";
 const string AmpweightFourierProcessor::NAME = "filter.ampweight";
+const string Axis0FourierProcessor::NAME = "filter.xyaxes0";
 const string ConvolutionProcessor::NAME = "math.convolution";
 const string XGradientProcessor::NAME = "math.edge.xgradient";
 const string YGradientProcessor::NAME = "math.edge.ygradient";
@@ -274,6 +275,7 @@ template <> Factory < Processor >::Factory()
 	force_add<DoGFourierProcessor>();
 
 	force_add<AmpweightFourierProcessor>();
+	force_add<Axis0FourierProcessor>();
 	force_add<Wiener2DFourierProcessor>();
 	force_add<LowpassAutoBProcessor>();
 
@@ -731,6 +733,50 @@ mask1=EMData(ys2,ys2,1)
 
 
 */
+}
+
+void Axis0FourierProcessor::process_inplace(EMData * image)
+{
+	EMData *fft;
+	float *fftd;
+	int f=0;
+//	static float sum1=0,sum1a=0;
+//	static double sum2=0,sum2a=0;
+
+	if (!image) {
+		LOGWARN("NULL Image");
+		return;
+	}
+
+	if (!image->is_complex()) {
+		fft = image->do_fft();
+		fftd = fft->get_data();
+		f=1;
+	}
+	else {
+		fft=image;
+		fftd=image->get_data();
+	}
+
+	int nx=fft->get_xsize();
+	int ny=fft->get_ysize();
+	if (params.set_default("x",1)) {
+		for (int x=2; x<nx; x++) fftd[x]=0;
+	}
+	if (params.set_default("y",1)) {
+		for (int y=1; y<ny; y++) { fftd[y*nx]=0; fftd[y*nx+1]=0; }
+	}
+	
+	if (f) {
+		fft->update();
+		EMData *ift=fft->do_ift();
+		memcpy(image->get_data(),ift->get_data(),(nx-2)*ny*sizeof(float));
+		delete fft;
+		delete ift;
+	}
+
+	image->update();
+
 }
 
 void AmpweightFourierProcessor::process_inplace(EMData * image)
