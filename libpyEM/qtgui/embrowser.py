@@ -2563,14 +2563,14 @@ dirregex - default "", a regular expression for filtering filenames (directory n
 
 			else:
 				de=self.updlist.pop()
-#				print de.internalPointer().truepath()
+# 				print de.internalPointer().truepath()
 				r=de.internalPointer().fillDetails()
 				if r==1 :
 					self.redrawlist.append(de)		# if the update changed anything, we trigger a redisplay of this entry
 					time.sleep(0.01)			# prevents updates from happening too fast and slowing the machine down
 				if r==2 :						# This means we're reading from a cache, and we should probably update as fast as possible
 					self.redrawlist.append(de)
-#				print "### ",de.internalPointer().path()
+# 				print "### ",de.internalPointer().path()
 
 	def updateDetailsDisplay(self):
 		"""Since we can't do GUI updates from a thread, this is a timer event to update the display after the beckground thread
@@ -2709,12 +2709,14 @@ dirregex - default "", a regular expression for filtering filenames (directory n
 		"When the OK button is pressed, this will emit a signal. The receiver should call the getResult method (once) to get the list of paths"
 		qism=self.wtree.selectionModel().selectedRows()
 		self.result=[i.internalPointer().path().replace(os.getcwd(),".") for i in qism]
-		self.emit(QtCore.SIGNAL("ok")) # this signal is important when e2ctf is being used by a program running its own eve
+		self.updtimer.stop()
+ 		self.emit(QtCore.SIGNAL("ok")) # this signal is important when e2ctf is being used by a program running its own eve
 
 	def buttonCancel(self,tog):
 		"When the Cancel button is pressed, a signal is emitted, but getResult should not be called."
 		self.result=[]
-		self.emit(QtCore.SIGNAL("cancel")) # this signal is important when e2ctf is being used by a program running its own eve
+		self.updtimer.stop()
+ 		self.emit(QtCore.SIGNAL("cancel")) # this signal is important when e2ctf is being used by a program running its own eve
 		self.close()
 
 	def selectAll(self):
@@ -2875,6 +2877,7 @@ dirregex - default "", a regular expression for filtering filenames (directory n
 			self.infowin.close()
 
 		event.accept()
+		self.updtimer.stop()
 		#self.app().close_specific(self)
 		self.emit(QtCore.SIGNAL("module_closed"))
 
