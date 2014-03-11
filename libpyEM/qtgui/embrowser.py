@@ -302,11 +302,11 @@ class EMFileType(object):
 
 		try:
 			target=brws.view2ds[-1]
-			target.set_data(self.path,os.path.basename(self.path))
+			target.set_data(self.path,self.path)
 			#if self.getSetsDB(): target.set_single_active_set(self.getSetsDB())
 		except:
 			target=EMImageMXWidget()
-			target.set_data(self.path,os.path.basename(self.path))
+			target.set_data(self.path,self.path)
 			QtCore.QObject.connect(target, QtCore.SIGNAL("mx_image_double"),target.mouse_double_click)		# this makes class average viewing work in app mode
 			#if self.getSetsDB(): target.set_single_active_set(self.getSetsDB())
 			brws.view2ds.append(target)
@@ -320,14 +320,14 @@ class EMFileType(object):
 	def show2dStackNew(self,brws):
 		"A set of 2-D images together in a new window"
 		brws.busy()
-		if self.dim[2]>1:
-			data=[]
-			for z in range(self.dim[2]):
-				data.append(EMData(self.path,0,False,Region(0,0,z,self.dim[0],self.dim[1],1)))
-		else : data=EMData.read_images(self.path)
+		#if self.dim[2]>1:
+			#data=[]
+			#for z in range(self.dim[2]):
+				#data.append(EMData(self.path,0,False,Region(0,0,z,self.dim[0],self.dim[1],1)))
+		#else : data=EMData.read_images(self.path)
 
 		target=EMImageMXWidget()
-		target.set_data(data)
+		target.set_data(self.path,self.path)
 		QtCore.QObject.connect(target, QtCore.SIGNAL("mx_image_double"),target.mouse_double_click)
 		#if self.getSetsDB(): target.set_single_active_set(self.getSetsDB())
 		brws.view2ds.append(target)

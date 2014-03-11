@@ -67,7 +67,7 @@ EMData *EMData::do_fft() const
 
 	if (is_complex() ) { // ming add 08/17/2010
 #ifdef NATIVE_FFT
-		LOGERR(" NATIVE_FFT does not supported complex to complex.");  // PAP
+		LOGERR(" NATIVE_FFT does not support complex to complex.");  // PAP
 		throw ImageFormatException("real image expected. Input image is complex image.");
 #else
 		EMData *temp_in=copy();
