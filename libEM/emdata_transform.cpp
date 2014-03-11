@@ -59,6 +59,11 @@ typedef vector< pair<float,int> > vp;
 EMData *EMData::do_fft() const
 {
 	ENTERFUNC;
+#ifdef FFT_CACHING
+	if (fftcache!=0) {
+		return fftcache->copy();
+	}
+#endif FFT_CACHING
 
 	if (is_complex() ) { // ming add 08/17/2010
 #ifdef NATIVE_FFT
@@ -103,6 +108,12 @@ EMData *EMData::do_fft() const
 		dat->set_ri(true);
 
 		EXITFUNC;
+#ifdef FFT_CACHING
+//		printf("%p %d\n",this,nxyz);
+		if (nxyz<80000000) {
+			fftcache=dat->copy();
+		}
+#endif FFT_CACHING
 		return dat;
 	}
 }

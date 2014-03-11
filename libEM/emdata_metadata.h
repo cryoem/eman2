@@ -143,6 +143,10 @@ inline void update()
 {
 	flags |= EMDATA_NEEDUPD;
 	changecount++;
+#ifdef FFT_CACHING
+	if (fftcache!=0) { delete fftcache; fftcache=0; }
+#endif FFT_CACHING
+
 }
 
 /** turn off updates. Useful to avoid wasteful recacling stats */

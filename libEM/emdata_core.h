@@ -490,8 +490,7 @@ inline void set_value_at(int x, int y, int z, float v)
 	else
 	{
 		get_data()[(size_t)x + (size_t)y * (size_t)nx + (size_t)z * (size_t)nxy] = v;
-		flags |= EMDATA_NEEDUPD;
-		changecount++;
+		update();
 	}
 }
 
@@ -508,8 +507,7 @@ inline void set_value_at(int x, int y, int z, float v)
 inline void set_value_at_fast(int x, int y, int z, float v)
 {
 	get_data()[(size_t)x + (size_t)y * (size_t)nx + (size_t)z * (size_t)nxy] = v;
-	flags |= EMDATA_NEEDUPD;
-	changecount++;
+	update();
 }
 
 /** Set the pixel density value at index
@@ -544,8 +542,8 @@ inline void set_value_at(int x, int y, float v)
 	else
 	{
 		get_data()[x + y * nx] = v;
-		flags |= EMDATA_NEEDUPD;
-		changecount++;
+		update();
+		
 	}
 }
 
@@ -560,8 +558,7 @@ inline void set_value_at(int x, int y, float v)
 inline void set_value_at_fast(int x, int y, float v)
 {
 	get_data()[x + y * nx] = v;
-	flags |= EMDATA_NEEDUPD;
-	changecount++;
+	update();
 }
 
 
@@ -581,8 +578,8 @@ inline void set_value_at(int x, float v)
 	else
 	{
 		get_data()[x] = v;
-		flags |= EMDATA_NEEDUPD;
-		changecount++;
+
+		update();
 	}
 }
 
@@ -595,8 +592,8 @@ inline void set_value_at(int x, float v)
 inline void set_value_at_fast(int x, float v)
 {
 	get_data()[x] = v;
-	flags |= EMDATA_NEEDUPD;
-	changecount++;
+
+	update();
 }
 
 

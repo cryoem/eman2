@@ -855,6 +855,10 @@ namespace EMAN
 		/** This is a cached rotational footprint, can save much time */
 		mutable EMData* rot_fp;
 
+#ifdef FFT_CACHING
+		mutable EMData *fftcache;
+#endif FFT_CACHING
+		
 		// Clip inplace variables is a local class used from convenience in EMData::clip_inplace
 		// Added by d.woolford
 		class ClipInplaceVariables
