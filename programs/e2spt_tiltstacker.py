@@ -104,6 +104,8 @@ def main():
 	options = sptmakepath( options, 'sptstacker')
 	
 	
+	options.path = os.getcwd() + '/' + options.path
+	
 	if options.unstack:
 		
 		if '.hdf' in options.input:
@@ -118,6 +120,7 @@ def main():
 				text = p.communicate()	
 				p.stdout.close()
 				print "Unstacked image", i
+	
 		
 		elif '.st' or'.mrc'	in options.input:
 			n = EMData( options.input )['nz']
@@ -131,6 +134,7 @@ def main():
 		
 	
 	else:
+		kk=0
 		for f in filesindir:
 			fyle=''
 			if not options.input:
@@ -156,52 +160,67 @@ def main():
 					p = subprocess.Popen( cmd , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 					text = p.communicate()	
 					p.stdout.close()
-					
 				else:
+					print "Copied file to path"
 					os.system('cp ' + fyle + ' ' + options.path)
 					outtilt = options.path + '/' + fyle
-					
+						
 				if options.clip:
 					hdr=EMData(outtilt,0,True)
+					print "Read header of tilt before clipping",kk
 					
-					xsize=hdr['nx']
-					ysize=hdr['ny']
+					xsize=float(hdr['nx'])
+					ysize=float(hdr['ny'])
 					
 					centerx=xsize/2.0
 					centery=ysize/2.0
 					
-					newx=xsize-2*options.clip
-					newy=ysize-2*options.clip
+					newx=xsize-2.0*float(options.clip)
+					newy=ysize-2.0*float(options.clip)
 					
 					outtiltclip = outtilt.replace('.hdf','_clip.hdf')
 					
-					cmd = 'e2proc2d.py ' + outtilt + ' ' + outtilt + ' --clip=' + str(newx) + ',' + str(newy) + ',' + str(centerx) + ',' + str(centery)
+					cmd = 'e2proc2d.py ' + outtilt + ' ' + outtiltclip + ' --clip=' + str(int(round(float(newx)))) + ',' + str(int(round(float(newy)))) + ',' + str(int(round(float(centerx)))) + ',' + str(int(round(float(centery))))
+					print "Clipping cmd is", cmd
 					p = subprocess.Popen( cmd , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 					text = p.communicate()	
 					p.stdout.close()
+					if options.verbose > 9:
+						print "Feedback from cmd was", text
 					
 					outtilt = outtiltclip
 						
-				if options.apix:
+				outtilthdr = EMData(outtilt,0,True)
+				currentapix = outtilthdr['apix_x']
+				if options.apix and options.apix != currentapix:
 					print "Fixing apix"
 					cmdapix = 'e2fixheaderparam.py --input=' + outtilt + ' --stem=apix --valtype=float --stemval=' + str( options.apix )
 					p = subprocess.Popen( cmdapix , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 					text = p.communicate()	
 					p.stdout.close()
-		
-				hdfs.append( outtilt )
+					
+					if options.verbose > 9:
+						print "Feedback from cmd was", text
+				else:
+					print "\nThe apix for current tilt is already the same as options.apix"
+				#hdfs.append( outtilt )
 		
 				
 				if options.mirroraxis:
-					print "Mirroring"
+					print "\n\nMirroring"
 					outtiltmirror = outtilt.replace('.hdf','_mirrorY.hdf')
 		
 					cmdMirror = 'e2proc2d.py ' + outtilt + ' ' + outtiltmirror + ' --process=xform.mirror:axis=' + options.mirroraxis #+ ' --mrc16bit' #+ ' --fixintscaling=sane'
 					p = subprocess.Popen( cmdMirror , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 					text = p.communicate()	
 					p.stdout.close()
+					
+					print "Through command", cmdMirror
+					
+					if options.verbose > 9:
+						print "Feedback from cmd was", text
 			
-					hdfsmirror.append( outtiltmirror )
+					#hdfsmirror.append( outtiltmirror )
 		
 		
 				print "Converting to mrc"
@@ -214,8 +233,11 @@ def main():
 				p = subprocess.Popen( cmdmrc , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 				text = p.communicate()	
 				p.stdout.close()
+				
+				if options.verbose > 9:
+						print "Feedback from cmd was", text
 		
-				mrcs.append( outtiltmrc )
+				#mrcs.append( outtiltmrc )
 		
 		
 				if options.mirroraxis:
@@ -227,11 +249,12 @@ def main():
 					text = p.communicate()	
 					p.stdout.close()
 			
-					mrcsmirror.append( outtiltmirrormrc )
+					#mrcsmirror.append( outtiltmirrormrc )
+				kk+=1
 			else:
 				pass
 				
-				
+		""" THIS PART IS-NONFUNCTIONAL UNTIL MRC WRITING IN EMAN2 IS FIXED	
 		print "Sorting stacks"
 		mrcs.sort()	
 		hdfs.sort()
@@ -275,10 +298,10 @@ def main():
 				a.write_image('tmpmirror.hdf',-1)
 			
 				#hdfsmirror[k].write_image('tmpmirror.hdf',k)
+		"""
 	
-	
-		mrcout = options.output.split('.')[0] + '.mrc'
-		stout = options.output.split('.')[0] + '.st'
+		mrcout = options.path + '/' + options.output.split('.')[0] + '.mrc'
+		stout = options.path + '/' + options.output.split('.')[0] + '.st'
 	
 	
 		print "Converting 2-D hdf stack to 3-D mrc stack"
@@ -286,15 +309,17 @@ def main():
 		#cmdst = 'e2proc2d.py tmp.hdf ' + mrcout + ' --twod2threed' + ' --mrc16bit' + ' --fixintscaling=sane'
 		#cmdst += ' && mv ' + mrcout + ' ' + stout + ' && rm tmp.hdf'
 		
-		cmdst = 'newstack *mrc ' + stout
-		print "cmdst is",cmdst
-	
+		cmdst = 'newstack ' + options.path + '/*.mrc ' + stout
+		print "\n\n\n\nNEWSTACK cmdst is",cmdst
+		
 		p = subprocess.Popen( cmdst , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		text = p.communicate()	
 		p.stdout.close()
 		
+		if options.verbose > 9:
+			print "Feedback from cmd was", text
 	
-		print "Done", text
+		#print "Done", text
 	
 		if options.mirroraxis:
 			print "Converting 2-D hdf mirror stack to 3-D mrc mirror stack"
@@ -302,17 +327,18 @@ def main():
 			mrcoutmirror = options.output.split('.')[0] + '_mirror.mrc'
 			stoutmirror = options.output.split('.')[0] + '_mirror.st'
 			
-			cmdstmirror = 'newstack *mirror*mrc ' + stoutmirror
+			cmdstmirror = 'newstack ' + options.path + '/*mirror*mrc ' + stoutmirror
 			#cmdstmirror = 'e2proc2d.py tmpmirror.hdf ' + mrcoutmirror + ' --twod2threed' + ' --mrc16bit' + ' --fixintscaling=sane' + ' && mv ' + mrcoutmirror + ' ' + stoutmirror + ' && rm tmpmirror.hdf' 
 			print "cmdstmirror is", cmdstmirror
 		
-			
+			print "\n\nNEWSTACK cmdst for MIRROR is",cmdst
 		
 			p = subprocess.Popen( cmdstmirror , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 			text = p.communicate()	
 			p.stdout.close()
 		
-			print "Done",text
+			if options.verbose > 9:
+				print "Feedback from cmd was", text
 	
 		if options.lowerend and options.upperend and options.tiltstep:
 			print "Generating .rawtlt file"
