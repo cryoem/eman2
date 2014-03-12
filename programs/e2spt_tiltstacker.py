@@ -324,8 +324,8 @@ def main():
 		if options.mirroraxis:
 			print "Converting 2-D hdf mirror stack to 3-D mrc mirror stack"
 
-			mrcoutmirror = options.output.split('.')[0] + '_mirror.mrc'
-			stoutmirror = options.output.split('.')[0] + '_mirror.st'
+			mrcoutmirror = options.path + '/' + options.output.split('.')[0] + '_mirror.mrc'
+			stoutmirror = options.path + '/' + options.output.split('.')[0] + '_mirror.st'
 			
 			cmdstmirror = 'newstack ' + options.path + '/*mirror*mrc ' + stoutmirror
 			#cmdstmirror = 'e2proc2d.py tmpmirror.hdf ' + mrcoutmirror + ' --twod2threed' + ' --mrc16bit' + ' --fixintscaling=sane' + ' && mv ' + mrcoutmirror + ' ' + stoutmirror + ' && rm tmpmirror.hdf' 
