@@ -182,8 +182,13 @@ def main():
 
 	# Note that the snrmult=4 below should really be 2 (due to the averaging of the 2 maps), the 4 is a somewhat arbitrary compensation for the .143 cutoff being a bit low
 	nx,ny,nz=combined["nx"],combined["ny"],combined["nz"]
-	run("e2proc3d.py {combfile} {combfile} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter} --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass} {postproc}".format(
-		combfile=combfile,path=path,itr=options.iter,mass=options.mass,postproc=m3dpostproc,underfilter=underfilter))
+	
+	# we impose the symmetry in real-space, since this is what people expect
+	if options.sym=="c1" : symopt=""
+	else: symopt="--sym {}".format(options.sym)
+	
+	run("e2proc3d.py {combfile} {combfile} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter} --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass} {symopt} {postproc}".format(
+		combfile=combfile,path=path,itr=options.iter,mass=options.mass,postproc=m3dpostproc,symopt=symopt,underfilter=underfilter))
 
 	try:
 		os.unlink("{path}tmp_even.hdf".format(path=path))

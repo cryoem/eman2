@@ -606,7 +606,7 @@ Based on your requested resolution and box-size, modified by --speed, I will use
  		oddfile="{path}/threed_{itr:02d}_odd.hdf".format(path=options.path,itr=it)
  		combfile="{path}/threed_{itr:02d}.hdf".format(path=options.path,itr=it)
 		run("e2refine_postprocess.py --even {path}/threed_{it:02d}_even.hdf --odd {path}/threed_{it:02d}_odd.hdf --output {path}/threed_{it:02d}.hdf --align --mass {mass} --iter {it} {amask3d} {amask3d2} {m3dpostproc} --sym={sym} --underfilter".format(
-			path=options.path,it=it,mass=options.mass,amask3d=amask3d,sym=options.sym,amask3d2=amask3d2,m3dpostproc=m3dpostproc))
+			path=options.path,it=it,mass=options.mass,amask3d=amask3d,sym=m3dsym,amask3d2=amask3d2,m3dpostproc=m3dpostproc))
 
 
 		db.update({"last_map":combfile,"last_even":evenfile,"last_odd":oddfile})
