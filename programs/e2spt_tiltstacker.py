@@ -149,11 +149,17 @@ def main():
 					outtilt=outtilt.replace('.DM3','.hdf')
 					outtilt=outtilt.replace('.TIF','.hdf')
 					outtilt=outtilt.replace('.HDF','.hdf')
+					
+					outtilt = options.path + '/' + outtilt
 			
 					cmd = 'e2proc2d.py ' + fyle + ' ' + outtilt #+ ' --mrc16bit' # --fixintscaling=sane'
 					p = subprocess.Popen( cmd , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 					text = p.communicate()	
 					p.stdout.close()
+					
+				else:
+					os.system('cp ' + fyle + ' ' + options.path)
+					outtilt = options.path + '/' + fyle
 					
 				if options.clip:
 					hdr=EMData(outtilt,0,True)
@@ -165,7 +171,7 @@ def main():
 					centery=ysize/2.0
 					
 					newx=xsize-2*options.clip
-					newy=ysize-2*options.cip
+					newy=ysize-2*options.clip
 					
 					outtiltclip = outtilt.replace('.hdf','_clip.hdf')
 					
