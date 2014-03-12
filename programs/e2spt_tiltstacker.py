@@ -214,7 +214,7 @@ def main():
 		
 				if options.mirroraxis:
 					print "Converting mirror to mrc"
-					outtiltmirrormrc = outtilt.replace('.mrc','_mirrorY.mrc')
+					outtiltmirrormrc = outtiltmrc.replace('.mrc','_mirrorY.mrc')
 					cmdMirrormrc = 'e2proc2d.py ' + outtiltmrc + ' ' + outtiltmirrormrc + ' --process=xform.mirror:axis=' + options.mirroraxis + ' --mrc16bit' + ' --fixintscaling=sane'
 		
 					p = subprocess.Popen( cmdMirrormrc , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
