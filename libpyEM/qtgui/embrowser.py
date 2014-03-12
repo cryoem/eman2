@@ -164,6 +164,20 @@ class EMFileType(object):
 		if outpath[1]!=True : return
 
 		outpath=str(outpath[0])
+
+		if outpath == "" :
+			print "No file name to save to entered."
+			return
+
+		not_writeable_extensions = \
+			[".dm2", ".dm3", ".dm4", ".v4l", ".sal", ".fts"] + \
+			[".DM2", ".DM3", ".DM4", ".V4L", ".SAL", ".FTS"]
+
+		for ext in not_writeable_extensions :
+			if outpath.endswith(ext) :
+				print "File type '" + ext + "' is not writeable."
+				return
+
 		action="overwrite"
 		if file_exists(outpath):
 			action=askFileExists()
