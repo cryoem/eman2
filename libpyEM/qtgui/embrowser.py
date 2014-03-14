@@ -37,6 +37,7 @@ from PyQt4.QtCore import Qt,QString,QChar
 from emapplication import EMApp
 from EMAN2 import *
 from EMAN2jsondb import js_open_dict
+from libpyUtils2 import EMUtil
 import os.path
 import os
 import re
@@ -175,8 +176,13 @@ class EMFileType(object):
 
 		for ext in not_writeable_extensions :
 			if outpath.endswith(ext) :
-				print "File type '" + ext + "' is not writeable."
+				print "Image file type '" + ext + "' is not writeable."
 				return
+
+		if not EMUtil.is_valid_filename(outpath) :
+			print "Output file name '" + outpath + \
+				"' does not have a valid image file extension."
+			return
 
 		action="overwrite"
 		if file_exists(outpath):
