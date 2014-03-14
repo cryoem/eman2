@@ -52,6 +52,10 @@ import threading
 import time
 import weakref
 
+def display_error(msg) :
+	print msg
+	QtGui.QMessageBox.warning(None, "Error", msg)
+
 # This is a floating point number-finding regular expression
 renumfind=re.compile(r"-?[0-9]+\.*[0-9]*[eE]?[-+]?[0-9]*")
 
@@ -166,8 +170,8 @@ class EMFileType(object):
 
 		outpath=str(outpath[0])
 
-		if outpath == "" :
-			print "No file name to save to entered."
+		if outpath == "" :		
+			display_error ("No file name to save to entered.")
 			return
 
 		not_writeable_extensions = \
@@ -176,12 +180,12 @@ class EMFileType(object):
 
 		for ext in not_writeable_extensions :
 			if outpath.endswith(ext) :
-				print "Image file type '" + ext + "' is not writeable."
+				display_error ("Image file type '" + ext + "' is not writeable.")
 				return
 
 		if not EMUtil.is_valid_filename(outpath) :
-			print "Output file name '" + outpath + \
-				"' does not have a valid image file extension."
+			display_error ("Output file name '" + outpath + \
+				"' does not have a valid image file extension.")
 			return
 
 		action="overwrite"
