@@ -63,7 +63,7 @@ def main():
 	outdir = args[1]
 	if mpi_rank == 0:
 		if os.path.exists(outdir):
-			ERROR('Output directory exists, please change the name and restart the program', "sxmulti_shc", 1)
+			ERROR('Output directory exists, please change the name and restart the program', "sxviper", 1)
 			mpi_finalize()
 			return
 		os.mkdir(outdir)
