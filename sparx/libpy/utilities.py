@@ -1105,7 +1105,10 @@ def get_input_from_string(str_input):
 		Extract input numbers from given string, 
 	"""
 	from re import split
-	return [float(v) for v in split(" |,",str_input)]
+	qq = split(" |,",str_input)
+	for i in xrange(len(qq)-1, -1, -1):
+		if(qq[i] == ""):  del qq[i]
+	return [float(v) for v in qq]
 
 def hist_func(args, data):
 	#Util.hist_comp_freq(float PA,float PB,int size_img, int hist_len, float *img_ptr, float *ref_freq_bin, float *mask_ptr, float ref_h_diff, float ref_h_min)
