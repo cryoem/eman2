@@ -77,9 +77,9 @@ def main():
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_argument("--path",type=str,default=None,help="""Directory to store results in. 
-		The default is a numbered series of directories containing the prefix 'sptsimjob'; 
-		for example, sptsimjob_02 will be the directory by default if 'sptsimjob_01' already exists.""")
+	parser.add_argument("--path",type=str,default='',help="""Directory to store results in. 
+		The default is a numbered series of directories containing the prefix 'spthac'; 
+		for example, spthac_02 will be the directory by default if 'spthac_01' already exists.""")
 	
 	parser.add_argument("--groups",type=int,default=1,help="""Breaks the set into subgroups 
 		and does ALL vs ALL on the subgroups separately. Recommended when the set is > 100""")
@@ -106,7 +106,7 @@ def main():
 		frequency. Default=False.""")
 
 	parser.add_argument("--input", type=str, help="""The name of the input volume stack. 
-		MUST be HDF or BDB, since volume stack support is required.""", default=None)
+		MUST be HDF or BDB, since volume stack support is required.""", default='')
 		
 	parser.add_argument("--iter", type=int, help="""The number of iterations to perform. 
 		Default is 1.""", default=1)
@@ -192,7 +192,7 @@ def main():
 		to refine in search of the best final alignment. Default=4.""", default=4)
 	
 	parser.add_argument("--align",type=str,help="""This is the aligner use for alignments. 
-		Default is rotate_translate_3d:search=10:delta=10:dphi=10""", default="rotate_translate_3d:search=10:delta=10:dphi=10")
+		Default is rotate_translate_3d:search=10:delta=12:dphi=12""", default="rotate_translate_3d:search=10:delta=12:dphi=12")
 
 	parser.add_argument("--aligncmp",type=str,help="""The comparator used for the --align aligner. 
 		Default is the internal tomographic ccc. Do not specify unless you need to use another specific aligner.""",default="ccc.tomo")
@@ -1004,8 +1004,8 @@ def allvsall(options):
 						halfnyquist = apix*4
 						highpassf = apix*a['nx']/2.0
 						
-						avgac.process_inplace( 'filter.highpassgauss',{'cutoff_freq':highpassf,'apix':apix})
-						avgac.process_inplace( 'filter.lowpassgauss',{'cutoff_freq':halfnyquist,'apix':apix})
+						avgac.process_inplace( 'filter.highpass.gauss',{'cutoff_freq':highpassf,'apix':apix})
+						avgac.process_inplace( 'filter.lowpass.gauss',{'cutoff_freq':halfnyquist,'apix':apix})
 						avgac.process_inplace( 'math.meanshrink',{'n':2})
 						
 					avgac.process_inplace(options.autocenter[0],options.autocenter[1])
