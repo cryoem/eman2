@@ -91,9 +91,22 @@ def main():
 	
 	parser.add_argument("--saveorthostack", action="store_true",default=False,help="If on, --nptcls is ignored and you get 3 subtomograms (simulated from the model supplied) which are orthogonal to each other.")
 
-	parser.add_argument("--defocus", type=float,default=3.0,help="Intended defocus at the tilt axis (in microns) for the simulated tilt series.")
-	parser.add_argument("--voltage", type=int,default=200,help="Voltage of the microscope, used to simulate the ctf added to the subtomograms.")
-	parser.add_argument("--cs", type=float,default=2.1,help="Cs of the microscope, used to simulate the ctf added to the subtomograms.")
+	#parser.add_argument("--defocus", type=float,default=3.0,help="Intended defocus at the tilt axis (in microns) for the simulated tilt series.")
+	#parser.add_argument("--voltage", type=int,default=200,help="Voltage of the microscope, used to simulate the ctf added to the subtomograms.")
+	#parser.add_argument("--cs", type=float,default=2.1,help="Cs of the microscope, used to simulate the ctf added to the subtomograms.")
+
+	parser.add_argument("--defocus", type=float,default=3.0,help="""Intended defocus at 
+		the tilt axis (in microns) for the simulated tilt series.""")
+	parser.add_argument("--voltage", type=int,default=200,help="""Voltage of the microscope, 
+		used to simulate the ctf added to the subtomograms.""")
+	parser.add_argument("--cs", type=float,default=2.1,help="""Cs of the microscope, used 
+		to simulate the ctf added to the subtomograms.""")
+	parser.add_argument("--apix",type=float,default=0.0,help="""Provide accurate apix in case
+		the header has the wrong apix info.""")	
+	parser.add_argument("--bfactor",type=int,default=400,help="""Bfactor to use for CTF correction
+		phase flipping. Default is 400.""")
+	parser.add_argument("--ampcont",type=float,default=0.05,help="""Amplitude contrast to use for CTF
+		correction phase flipping. Default is 0.05.""")
 
 	parser.add_argument("--gridholesize", type=float,default=0.5,help="""Size of the carbon hole in micrometers for the simulated grid (this will determine the shifts in defocus for each particle at 
 									each tilt step, depending on the position of the particle respect to the tilt axis; the tilt axis by convention goes parallel to Y through the middle of the tomogram.
