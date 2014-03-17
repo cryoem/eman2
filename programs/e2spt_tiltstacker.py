@@ -69,8 +69,8 @@ def main():
 	parser.add_argument("--apix",type=float,default=0.0,help="""True apix of images to be 
 		written on final stack.""")
 	
-	parser.add_argument("--unstack",type=str,default='',help="""Must be provided to unstack .hdf, or 3D .st 
-		or .mrc files into individual images.""")
+	parser.add_argument("--unstack",action='store_true',default=False,help="""Must be provided to unstack .hdf, or 3D .st 
+		or .mrc files into individual images. Default is False.""")
 	
 	parser.add_argument("--mirroraxis",type=str,default='',help="""Options are x or y, and the
 		a mirrored copy of the 2-D images will be generated before being put into the tilt series.""")
