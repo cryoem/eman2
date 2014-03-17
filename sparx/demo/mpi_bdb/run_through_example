@@ -100,7 +100,7 @@ sxheader.py bdb:class_averages --params=active --one    || exit
 
 # Second, more advanced version.  Note this one requires number of CPUs to be multiplicity of 3.
 sxheader.py bdb:class_averages --params=stable --zero   || exit
-mpirun -np 12 sxmulti_shc.py bdb:class_averages outdirshc --ou=28 --xr=3.0 --delta=2.0 --maxit=100 --function="[..,demo_user_funcs,ali3d_reference2]"
+mpirun -np 12 sxviper.py bdb:class_averages outdirshc --ou=28 --xr=3.0 --delta=2.0 --maxit=100 --function="[..,demo_user_funcs,ali3d_reference2]"
 
 
 # 3D projection alignment - refinement of the initial structure
