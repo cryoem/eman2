@@ -4031,7 +4031,7 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 		ref_data = [ mask3D, max(center,0), None, None, None, None ]
 		# for method -1, switch off centering in user function
 
-	from time import time	
+	from time import time
 
 	#  this is needed for gathering of pixel errors
 	disps = []
