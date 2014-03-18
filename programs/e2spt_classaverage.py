@@ -107,7 +107,10 @@ def main():
 	parser.add_argument("--saveali",action="store_true", help="If set, will save the aligned particle volumes in class_ptcl.hdf. Overwrites existing file.",default=False, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
 	parser.add_argument("--saveallalign",action="store_true", help="If set, will save the alignment parameters after each iteration",default=False, guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode='alignment,breaksym')
 	parser.add_argument("--sym", dest = "sym", default=None, help = "Symmetry to impose - choices are: c<n>, d<n>, h<n>, tet, oct, icos", guitype='symbox', row=9, col=1, rowspan=1, colspan=2, mode='alignment,breaksym')
-	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", returnNone=True, default="mask.sharp:outer_radius=-2", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=11, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--mask",type=str,help="""Mask processor applied to particles before alignment. 
+		Default is mask.sharp:outer_radius=-2. IF using --clipali, make sure to express outer mask radii as negative 
+		pixels from the edge.""", returnNone=True, default="mask.sharp:outer_radius=-2", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=11, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	
 	parser.add_argument("--normproc",type=str,help="Normalization processor applied to particles before alignment. Default is to use normalize. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'", default="normalize.edgemean")
 	
 	parser.add_argument("--threshold",type=str,help="""A threshold applied to the subvolumes after normalization. 
@@ -122,6 +125,12 @@ def main():
 	parser.add_argument("--highpass",type=str,help="A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=18, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	parser.add_argument("--highpassfine",type=str,help="A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.", default=None)
 
+	parser.add_argument("--clipali",type=int,default=0,help="""Boxsize to clip particles as part of preprocessing
+		to speed up alignment. For example, the boxsize of the particles might be 100 pixels, but the particles are only 50 pixels 
+		in diameter. Aliasing effects are not always as deleterious for all specimens, and sometimes 2x padding isn't necessary;
+		still, there are some benefits from 'oversampling' the data during averaging; so you might still want an average of size
+		2x, but perhaps particles in a box of 1.5x are sufficiently good for alignment. In this case, you would supply --clipali=75""")
+	
 	parser.add_argument("--postprocess",type=str,help="A processor to be applied to the FINAL volume after averaging the raw volumes in their FINAL orientations, after all iterations are done.",default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=16, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
 	parser.add_argument("--procfinelikecoarse",type=bool,default=True,help="Turn on with --procfinelikecoarse=False, and supply fine alignment parameters, such as --lowpassfine, --highpassfine, etc; to preprocess the particles for FINE alignment differently than for COARSE alignment.")
@@ -550,6 +559,21 @@ def main():
 		elif options.hacref:
 			pass
 		
+		if options.clipali:
+				
+			sx = ref['nx']
+			sy = ref['ny']
+			sz = ref['nz']
+		
+			xc = sx/2
+			yc = sy/2
+			zc = sz/2
+		
+			newsize = options.clipali
+		
+			r=Region( (2*newsize - xc)/2, (2*newsize - yc)/2, (2*newsize - zc)/2, newsize , newsize , newsize)
+			ref.clip_inplace( r )
+		
 		'''
 		Now we iteratively refine a single class
 		'''
@@ -796,6 +820,22 @@ def main():
 			actualNums = [] 		#Reset this so that when --resume is provided the incomplete jason file is 'fixed' considering the info in actualNums only once
 		
 		
+		if options.clipali:
+				
+			sx = ref['nx']
+			sy = ref['ny']
+			sz = ref['nz']
+		
+			xc = sx/2
+			yc = sy/2
+			zc = sz/2
+		
+			newsize = options.clipali
+		
+			r=Region( (2*newsize - xc)/2, (2*newsize - yc)/2, (2*newsize - zc)/2, newsize , newsize , newsize)
+			ref.clip_inplace( r )
+		
+		
 		ic+=1	
 		 
 		
@@ -868,6 +908,9 @@ def calcAliStep(options):
 	#if factorc > 1.0 and factorf > 1.0:										#The relative shrinking factor doesn't really matter
 	#	factorRelative = factorc / factorf
 	
+	print "\n\n\n\nAAAAAAAAAAA\nApix is", apix
+	print "\n\n\n\nAAAAAAAAAAA\n"
+	
 	radPixC = options.radius / capix
 	radPixF = options.radius / fapix
 
@@ -890,9 +933,9 @@ def calcAliStep(options):
 	angularDistance = 2.0*rango												#This is the angular distance between points generated by the sphere aligner for coarse alignment
 	angularDistanceRounded = math.floor(angularDistance*100.00)/100.00		#Round angular distance between coarse points down, to sample more tightly
 	
-	coarseStep = angularDistanceRounded / 2.25								#The 2.5 factor is approximate. The angular distance A between two rotations R1=a1,b1,c1 and R2=a2,b2,c2 
+	coarseStep = angularDistanceRounded / 2.25								#The 2.25 factor is approximate. The angular distance A between two rotations R1=a1,b1,c1 and R2=a2,b2,c2 
 																			#where r1=a1=b1=c1 and r2=a2=b2=c2, for example R1=0,0,0 and R2=12,12,12, is roughly A=(r2-r1)*2.25 
-																			#This an be empirically verified with e2spt_transformdistance.py
+																			#This can be empirically verified with e2spt_transformdistance.py
 	
 	if coarseStep < coarseStep1pix:
 		coarseStep = coarseStep1pix
@@ -913,7 +956,8 @@ def calcAliStep(options):
 	CSrounded = math.floor( coarseStep * 100.00 )/100.00		#Round coarse step DOWN to scan slightly more finally than theoretically needed
 
 	
-	print "\n\n*****************\n\nThe radius in pixels at size for fine alignment (taking --shrinkrefine into account) is", radPixF
+	print "\n\n*****************"
+	print"\n\nThe radius in pixels at size for fine alignment (taking --shrinkrefine into account) is", radPixF
 	print "Shrink is", options.shrink
 	print "Shrink refine is", options.shrinkrefine
 	print "Therefore, the coarse step and itself rounded are", coarseStep, CSrounded
@@ -1189,8 +1233,7 @@ def filters(fimage,preprocess,lowpass,highpass,shrink):
 def preprocessing(options,image,tag='ptcls'):
 	#print "I am in the preprocessing function"
 	
-	
-	#print "\n$$$$$$$\nIn preprocessing, received options and image, types", type(options), type(image)
+	#print "\n$$$$$$$\nIn preprocessing, received options and image, types", type(options), type(image)		
 	
 	'''
 	Make the mask first 
@@ -1198,23 +1241,40 @@ def preprocessing(options,image,tag='ptcls'):
 	mask=EMData( int(image["nx"]), int(image["ny"]), int(image["nz"]) )
 	mask.to_one()
 	
+	simage = image.copy()
+	
+	'''
+	Clip the box size smaller if instructed to
+	'''
+	if options.clipali:
+		
+		sx = simage['nx']
+		sy = simage['ny']
+		sz = simage['nz']
+		
+		xc = sx/2
+		yc = sy/2
+		zc = sz/2
+		
+		newsize = options.clipali
+		
+		r=Region( (2*newsize - xc)/2, (2*newsize - yc)/2, (2*newsize - zc)/2, newsize , newsize , newsize)
+		simage.clip_inplace( r )
+		
+		mask.clip_inplace( r )
+	
+	
 	if options.mask:
 		#if options.verbose:
 			#print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
 		mask.process_inplace(options.mask[0],options.mask[1])
 		
-	
 	'''
 	Set the 'mask' parameter for --normproc if normalize.mask is being used
 	'''
 	if options.normproc:
 		if options.normproc[0]=="normalize.mask": 
 			options.normproc[1]["mask"]=mask
-	
-	
-	simage = image.copy()
-	
-	
 	
 	if options.mask:
 		#if options.shrink:
@@ -1238,7 +1298,10 @@ def preprocessing(options,image,tag='ptcls'):
 	If there is a round of fine alignment, preprocess the particle for fine alignment
 	'''
 	s2image = image.copy()
+	
 	if options.ralign:
+		
+		"""
 		if 'fsc.tomo' == options.raligncmp[0]:
 			
 			'''
@@ -1272,29 +1335,46 @@ def preprocessing(options,image,tag='ptcls'):
 				
 				if options.threshold:
 					s2image.process_inplace(options.threshold[0],options.threshold[1])	
-				
-		else:
-			if options.mask:
-				#if options.shrink:
-				#	mask.process_inplace('math.meanshrink',{'n':options.shrink})
-				
-				#print "The sizes of the mask are", mask['nx'],mask['ny'],mask['nz']
-				#print "The sizes of the refine particle BEFORE shrinking are", s2image['nx'],s2image['ny'],s2image['nz']
-				s2image.mult(mask)
+		"""		
+		#else:
 		
-			if options.normproc:
-				s2image.process_inplace(options.normproc[0],options.normproc[1])
+		
+		if options.clipali:
+		
+			sx = s2image['nx']
+			sy = s2image['ny']
+			sz = s2image['nz']
+		
+			xc = sx/2
+			yc = sy/2
+			zc = sz/2
+		
+			newsize = options.clipali
+		
+			r=Region( (2*newsize - xc)/2, (2*newsize - yc)/2, (2*newsize - zc)/2, newsize , newsize , newsize)
+			s2image.clip_inplace( r )
+		
+		if options.mask:
+			#if options.shrink:
+			#	mask.process_inplace('math.meanshrink',{'n':options.shrink})
 			
-			if options.mask:
-				s2image.mult(mask)
+			print "The sizes of the fine alignment mask are", mask['nx'],mask['ny'],mask['nz']
+			print "The sizes of the fine alignment particle BEFORE shrinking are", s2image['nx'],s2image['ny'],s2image['nz']
+			s2image.mult(mask)
 	
-			if options.lowpassfine or options.highpassfine or options.preprocessfine or options.shrinkrefine:
-				#print "Options.lowpassfine to pass is", options.lowpassfine
-				s2image = filters(s2image,options.preprocessfine,options.lowpassfine,options.highpassfine,options.shrinkrefine)
-	
-			if options.threshold:
-				s2image.process_inplace(options.threshold[0],options.threshold[1])	
-	
+		if options.normproc:
+			s2image.process_inplace(options.normproc[0],options.normproc[1])
+		
+		if options.mask:
+			s2image.mult(mask)
+
+		if options.lowpassfine or options.highpassfine or options.preprocessfine or options.shrinkrefine:
+			#print "Options.lowpassfine to pass is", options.lowpassfine
+			s2image = filters(s2image,options.preprocessfine,options.lowpassfine,options.highpassfine,options.shrinkrefine)
+
+		if options.threshold:
+			s2image.process_inplace(options.threshold[0],options.threshold[1])	
+
 	if options.savepreprocessed and (options.mask or options.normproc or options.lowpass or options.highpass or options.preprocess or options.shrink or options.shrinkrefine or options.lowpassfine or options.highpassfine or options.preprocessfine):
 			
 		if tag == 'ref':
@@ -1324,7 +1404,8 @@ def preprocessing(options,image,tag='ptcls'):
 			
 			simage.write_image(preprocessedCoarse,-1)
 			s2image.write_image(preprocessedFine,-1)
-
+	
+	print "\n(e2spt_classaverage.py)(preprocessing) Exiting preprocessing"
 	return(simage,s2image)
 	
 
@@ -1528,7 +1609,6 @@ def get_results(etc,tids,verbose,jsA,nptcls,savealiparams=0,ref=''):
 				results[ptcl]=r[1]["final"]					# this will be a list of (qual,Transform)
 				
 				#print "ptcl and type are", ptcl, type(ptcl)
-				
 				#print "results[ptcl] are", results[ptcl]
 				#print "because results are", results
 				
@@ -1888,14 +1968,14 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 			print "coarse %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
 
 	if options.ralign:
-		#print "Will to fine alignment, over these many peaks", len(bestcoarse)
+		print "Will do fine alignment, over these many peaks", len(bestcoarse)
 		# Now loop over the individual peaks and refine each
 		bestfinal=[]
 		peaknum=0
 		for bc in bestcoarse:
 			options.ralign[1]["xform.align3d"] = bc["xform.align3d"]
 			
-			print "\n\n\nRight before FINE alignment, the boxsize of the REFINE image is", s2image['nx'],s2image['ny'],s2image['nz']
+			print "\n\n\nRight BEFORE FINE alignment, the boxsize of the REFINE image is", s2image['nx'],s2image['ny'],s2image['nz']
 			print "And the transform passed in is", bc["xform.align3d"]
 			#ali = s2image.align(options.ralign[0],s2fixedimage,options.ralign[1],options.raligncmp[0],options.raligncmp[1])
 			
@@ -1914,7 +1994,7 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 			#print "Best final is", bestfinal
 		
 		
-		print "\n\n\nAfter fine alignment, before SHRINK compensation, the transform is", bestfinal[0]['xform.align3d']		
+		#print "\n\n\nAfter fine alignment, before SHRINK compensation, the transform is", bestfinal[0]['xform.align3d']		
 		if options.shrinkrefine>1 :
 			for c in bestfinal:
 			
@@ -1922,23 +2002,23 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 				#print "New trans and type are", newtrans, type(newtrans)
 				c["xform.align3d"].set_trans(newtrans)
 		
-		print "After fine alignment, after SHRINK compensation, the transform is", bestfinal[0]['xform.align3d']		
+		print "AFTER fine alignment, after SHRINK compensation, the transform is", bestfinal[0]['xform.align3d']		
 		print "\n\n\n"
 		
 		#verbose printout of fine refinement
 		if options.verbose>1 :
 			for i,j in enumerate(bestfinal): 
 				print "fine %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
-
 	else: 
 		bestfinal = bestcoarse
 		if options.verbose:
 			print "\nThere was no fine alignment; therefore, score is", bestfinal[0]['score']
 	
-	from operator import itemgetter						#If you just sort 'bestfinal' it will be sorted based on the 'coarse' key in the dictionaries of the list
-														##because they come before the 'score' key of the dictionary (alphabetically)
+	from operator import itemgetter							#If you just sort 'bestfinal' it will be sorted based on the 'coarse' key in the dictionaries of the list
+															#because they come before the 'score' key of the dictionary (alphabetically)
 	bestfinal = sorted(bestfinal, key=itemgetter('score'))
 	
+	print "Best final answer determined"
 	if options.verbose:
 		#print "\nThe best peaks sorted are"	#confirm the peaks are adequately sorted
 		#for i in bestfinal:
@@ -1952,7 +2032,8 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 		#print "Best %1.5g\t %s"%(bestfinal[0]["score"],str(bestfinal[0]["xform.align3d"]))
 		#print "Inside ALIGNMENT function in e2spt_classaverage, done aligning ",label
 		pass	
-		
+	
+	print "\n(e2spt_classaverage.py)(alignment)Rreturning from alignment."	
 	return (bestfinal,bestcoarse)
 	
 

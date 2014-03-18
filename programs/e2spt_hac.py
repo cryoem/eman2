@@ -188,6 +188,13 @@ def main():
 		
 	parser.add_argument("--sym", dest = "sym", default='c1', help = """Symmetry to impose - choices are: c<n>, d<n>, h<n>, tet, oct, icos""")
 
+
+	parser.add_argument("--clipali",type=int,default=0,help="""Boxsize to clip particles as part of preprocessing
+		to speed up alignment. For example, the boxsize of the particles might be 100 pixels, but the particles are only 50 pixels 
+		in diameter. Aliasing effects are not always as deleterious for all specimens, and sometimes 2x padding isn't necessary;
+		still, there are some benefits from 'oversampling' the data during averaging; so you might still want an average of size
+		2x, but perhaps particles in a box of 1.5x are sufficiently good for alignment. In this case, you would supply --clipali=75""")
+
 	parser.add_argument("--npeakstorefine", type=int, help="""The number of best coarse alignments 
 		to refine in search of the best final alignment. Default=4.""", default=4)
 	
@@ -685,6 +692,8 @@ def allvsall(options):
 		print "%d tasks queued in iteration %d"%(len(tids),k) 
 		
 		results = get_results(etc,tids,options.verbose)				#Wait for alignments to finish and get results
+		print "\n(e2spt_hac.py)(main) Done fetching results"
+		
 		#results = ret[0]
 		results = results + surviving_results						#The total results to process/analyze includes results (comparisons) from previous rounds that were not used
 		results = sorted(results, key=itemgetter('score'))			#Sort/rank the results by score
@@ -1284,6 +1293,8 @@ def get_results(etc,tids,verbose):
 	tidsleft=tids[:]
 	
 	numtides = len(tids)
+	
+	print "\n(e2spt_hac.py)(get_results) Entering get_results function"
 	while 1:
 		time.sleep(5)
 		proglist=etc.check_task(tidsleft)
@@ -1312,6 +1323,9 @@ def get_results(etc,tids,verbose):
 	
 		if len(tidsleft)==0 or ncomplete == numtides: 
 			break		
+	
+	print "\n(e2spt_hac.py)(get_results) Exiting get_results function"
+
 	return results
 
 
@@ -1360,7 +1374,10 @@ class Align3DTaskAVSA(JSTask):
 		xformslabel = 'round' + str(options['round']).zfill( len( str(options['classoptions'].iter))) + '_comparison' + str(options['comparison']).zfill( len( str(potentialcomps) ) ) + '_ptclA' + str(options['pAn']).zfill( len(str(nptcls))) + '_ptclB' + str(options['pBn']).zfill( len(str(nptcls)))
 		
 		refpreprocess=1
+		
+		print "\n(e2spt_hac.py)(Align3DTaskAVSA) Will call alignment function"
 		ret=alignment( fixedimage, image, options['label'], options['classoptions'],xformslabel,None,'e2spt_hac',refpreprocess)
+		print "\n(e2spt_hac.py)(Align3DTaskAVSA) Done with alignment, back in e2spt_hac.py."
 		
 		bestfinal=ret[0]
 		bestcoarse=ret[1]
