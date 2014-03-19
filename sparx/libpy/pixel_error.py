@@ -107,7 +107,7 @@ def angle_ave(angle1):
 		qt = radians( angle1[i] )
 		cosi += cos(qt)
 		sini += sin(qt)
-	alphai = degrees(atan2(sini, cosi))
+	alphai = degrees(atan2(sini, cosi))%360.0
 	# what follows is not correct, it is just to give a measure of dispersion
 	stdv = 0.0
 	for i in xrange(nima):
