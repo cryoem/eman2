@@ -2917,6 +2917,9 @@ def parse_user_function(opt_string):
 		# defined (and referenced) in user_functions.
 		return opt_string
 
+def getang(n):
+	from math import atan2, acos, degrees
+	return degrees(atan2(n[1],n[0])), degrees(acos(n[2]))
 
 def getvec( phi, tht ):
 	from math import radians,cos,sin
