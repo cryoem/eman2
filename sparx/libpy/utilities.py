@@ -3304,9 +3304,9 @@ def angles_between_anglesets(angleset1, angleset2, indexes=None):
 
 
 def phi_theta_to_xyz(ang):
-	from math import sin, cos, pi
-	phi   = ang[0] * (pi / 180.0)
-	theta = ang[1] * (pi / 180.0)
+	from math import sin, cos, pi, radians
+	phi   = radians( ang[0] )
+	theta = radians( ang[1] )
 	z = cos(theta)
 	x = sin(theta) * cos(phi)
 	y = sin(theta) * sin(phi)
@@ -3314,24 +3314,10 @@ def phi_theta_to_xyz(ang):
 
 
 def xyz_to_phi_theta(xyz):
-	from math import pi, acos, sqrt
-	x = xyz[0]
-	y = xyz[1]
-	z = xyz[2]
-	z = max( -1.0, min(1.0, z) )
-	theta = acos(z)
-	sin_theta = sqrt(1 - z*z)
-	if theta > 180.0:
-		sin_theta *= -1
-	if abs(sin_theta) >= 0.001:
-		v_sin = max( -1.0, min(1.0, y / sin_theta) )
-		v_cos = max( -1.0, min(1.0, x / sin_theta) )
-		phi = acos( v_cos )
-		if v_sin < 0.0:
-			phi = 2*pi - phi
-	else:
-		phi = 0.0
-	return [phi * (180.0/pi), theta * (180.0/pi), 0.0]
+	from math import pi, acos, sqrt, degrees, atan2
+	theta = acos(xyz[2])
+	phi   = atan2(xyz[1], xyz[0])
+	return [ degrees(phi), degrees(theta), 0.0]
 	
 # input: list of triplets (phi, theta, psi)
 # output: average triplet: (phi, theta, psi)

@@ -70,7 +70,7 @@ def pixel_error_2D(ali_params1, ali_params2, r = 1.0):
 
 def max_3D_pixel_error(t1, t2, r=1.0):
 	"""
-	Compute maximum pixel error between two projection directions
+	Compute maximum pixel error between two sets of orientation parameters
 	assuming object has radius r, t1 is the projection transformation
 	of the first projection and t2 of the second one, respectively:
 		t = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
@@ -107,7 +107,7 @@ def angle_ave(angle1):
 		qt = radians( angle1[i] )
 		cosi += cos(qt)
 		sini += sin(qt)
-	alphai = degrees(atan2(sini, cosi))%360.0
+	alphai = degrees(atan2(sini, cosi))
 	# what follows is not correct, it is just to give a measure of dispersion
 	stdv = 0.0
 	for i in xrange(nima):
