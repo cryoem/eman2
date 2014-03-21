@@ -246,10 +246,10 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 	main_node = 0
 
 	if myid == main_node:
-		log.add("Start ali3d_multishc")
+		log.add("Start VIPER1")
 
 	if number_of_proc < number_of_runs:
-		ERROR("number_of_proc < number_of_runs","ali3d_multishc")
+		ERROR("number_of_proc < number_of_runs","VIPER1")
 	
 	mpi_subcomm = mpi_comm_split(mpi_comm, myid % number_of_runs, myid / number_of_runs)
 	mpi_subrank = mpi_comm_rank(mpi_subcomm)
@@ -510,16 +510,16 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 						subset = subset_thr
 					# if myid == 2:  print  " params before orient  ",myid,params[:4],params[-4:]
 					from utilities import write_text_row
-					write_text_row(params_0,"bparamszero%04d%04d.txt"%(myid,total_iter))
-					write_text_row(params,"bparams%04d%04d.txt"%(myid,total_iter))
+					#write_text_row(params_0,"bparamszero%04d%04d.txt"%(myid,total_iter))
+					#write_text_row(params,"bparams%04d%04d.txt"%(myid,total_iter))
 					orient_params([params_0, params], subset, sym)
 					"""
 					if myid == 2:
 						print  " subset  ",len(subset)#," ...  ",subset
-						"""
+					"""
 					from utilities import write_text_row
-					write_text_row(params_0,"aparamszero%04d%04d.txt"%(myid,total_iter))
-					write_text_row(params,"aparams%04d%04d.txt"%(myid,total_iter))
+					#write_text_row(params_0,"aparamszero%04d%04d.txt"%(myid,total_iter))
+					#write_text_row(params,"aparams%04d%04d.txt"%(myid,total_iter))
 					# if myid == 2:  print  " params after orient  ",myid,params[:4],params[-4:]
 				params = wrap_mpi_bcast(params, 0, mpi_subcomm)
 				# if myid == 2:  print  " params after wrap_mpi_bcast  ",myid,params[:4],params[-4:]
@@ -544,7 +544,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 					L2 = vol.cmp("dot", vol, dict(negative = 0, mask = model_circle(last_ring, nx, nx, nx)))
 					# if myid == 2:  print  " Right after reconstruction L2", myid, L2,[get_params_proj(data[i]) for i in xrange(4)]
 					#print  " Right after reconstruction of oriented parameters L2", myid, total_iter,L2
-					vol.write_image("recvolf%04d%04d.hdf"%(myid,total_iter))
+					#vol.write_image("recvolf%04d%04d.hdf"%(myid,total_iter))
 				# log
 				if myid == main_node:
 					log.add("3D reconstruction time = %f\n"%(time()-start_time))
@@ -576,8 +576,8 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 						GA.append([all_L2s[i],all_params[i]])
 					#  check whether this move will improve anything
 					all_L2s.sort(reverse=True)
-					print " sorted terminate  ",all_L2s
-					for i in xrange(number_of_runs): print GA[i][0]
+					#print " sorted terminate  ",all_L2s
+					#for i in xrange(number_of_runs): print GA[i][0]
 					if(all_L2s[0]<GA[number_of_runs-1][0]):
 						noimprovement += 1
 						if(noimprovement == 2):  terminate = True
@@ -702,7 +702,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 					L2 = vol.cmp("dot", vol, dict(negative = 0, mask = model_circle(last_ring, nx, nx, nx)))
 					# if myid == 2:  print  " Right after reconstruction L2", myid, L2,[get_params_proj(data[i]) for i in xrange(4)]
 					print  " Right after reconstruction L2", myid, total_iter,L2
-					if storevol:   vol.write_image("mutated%04d%04d.hdf"%(myid,total_iter))
+					#if storevol:   vol.write_image("mutated%04d%04d.hdf"%(myid,total_iter))
 
 				# log
 				if myid == main_node:
@@ -774,7 +774,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 	
 	
 	if myid == main_node:
-		log.add("Finish ali3d_multishc")
+		log.add("Finish viper1")
 		return GA[0][1]
 	else:
 		return None  # results for the other processes
@@ -819,7 +819,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None 
 	main_node = 0
 
 	if myid == main_node:
-		log.add("Start ali3d_multishc_2")
+		log.add("Start VIPER2")
 
 	xrng        = get_input_from_string(xr)
 	if  yr == "-1":  yrng = xrng
@@ -1053,7 +1053,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None 
 	par_r = wrap_mpi_gatherv(par_r, 0, mpi_comm)
 
 	if myid == main_node: 
-		log.add("Finish ali3d_multishc_2")
+		log.add("Finish VIPER2")
 		return params, vol, previousmax, par_r
 	else:
 		return None, None, None, None  # results for the other processes
