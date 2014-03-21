@@ -1076,13 +1076,15 @@ void GLUtil::glLoadMatrix(const Transform& xform)
 	glLoadTransposeMatrixf = (PFNGLLOADTRANSPOSEMATRIXFPROC) wglGetProcAddress("glLoadTransposeMatrixf");
 	static bool printed = false;
 	if (glLoadTransposeMatrixf == NULL  &&  ! printed) {
-		printf ("Cannot rotate or translate object - glLoadTransposeMatrixf is missing.\n");
+		printf ("Cannot load transformation matrix - glLoadTransposeMatrixf is missing.\n");
 		printed = true;
 	}
 #endif	//_WIN32
-
+ 
 	vector<float> xformlist = xform.get_matrix_4x4();
-	glLoadTransposeMatrixf(reinterpret_cast<GLfloat*>(&xformlist[0]));
+	if (glLoadTransposeMatrixf != NULL) {
+		glLoadTransposeMatrixf(reinterpret_cast<GLfloat*>(&xformlist[0]));
+	}
 }
 
 void GLUtil::glMultMatrix(const Transform& xform)
@@ -1091,6 +1093,11 @@ void GLUtil::glMultMatrix(const Transform& xform)
 	typedef void (APIENTRYP PFNGLMULTTRANSPOSEMATRIXFPROC) (const GLfloat *m);
 	PFNGLMULTTRANSPOSEMATRIXFPROC glMultTransposeMatrixf = NULL;
 	glMultTransposeMatrixf = (PFNGLMULTTRANSPOSEMATRIXFPROC) wglGetProcAddress("glMultTransposeMatrixf");
+	static bool printed = false;
+	if (glMultTransposeMatrixf == NULL  &&  ! printed) {
+		printf ("Cannot rotate or translate object - glMultTransposeMatrixf is missing.\n");
+		printed = true;
+	}
 #endif	//_WIN32
 
 	vector<float> xformlist = xform.get_matrix_4x4();
