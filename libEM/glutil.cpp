@@ -1074,6 +1074,11 @@ void GLUtil::glLoadMatrix(const Transform& xform)
 	typedef void (APIENTRYP PFNGLLOADTRANSPOSEMATRIXFPROC) (const GLfloat *m);
 	PFNGLLOADTRANSPOSEMATRIXFPROC glLoadTransposeMatrixf = NULL;
 	glLoadTransposeMatrixf = (PFNGLLOADTRANSPOSEMATRIXFPROC) wglGetProcAddress("glLoadTransposeMatrixf");
+	static bool printed = false;
+	if (glLoadTransposeMatrixf == NULL  &&  ! printed) {
+		printf ("Cannot rotate or translate object - glLoadTransposeMatrixf is missing.\n");
+		printed = true;
+	}
 #endif	//_WIN32
 
 	vector<float> xformlist = xform.get_matrix_4x4();
@@ -1089,7 +1094,9 @@ void GLUtil::glMultMatrix(const Transform& xform)
 #endif	//_WIN32
 
 	vector<float> xformlist = xform.get_matrix_4x4();
-	glMultTransposeMatrixf(reinterpret_cast<GLfloat*>(&xformlist[0]));
+	if (glMultTransposeMatrixf != NULL) {
+		glMultTransposeMatrixf(reinterpret_cast<GLfloat*>(&xformlist[0]));
+	}
 }
 
 //This draw a bounding box, or any box 
