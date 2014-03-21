@@ -1076,6 +1076,7 @@ void GLUtil::glLoadMatrix(const Transform& xform)
 	glLoadTransposeMatrixf = (PFNGLLOADTRANSPOSEMATRIXFPROC) wglGetProcAddress("glLoadTransposeMatrixf");
 	static bool printed = false;
 	if (glLoadTransposeMatrixf == NULL  &&  ! printed) {
+		setbuf (stdout, NULL);
 		printf ("Cannot load transformation matrix - glLoadTransposeMatrixf is missing.\n");
 		printed = true;
 	}
@@ -1095,6 +1096,7 @@ void GLUtil::glMultMatrix(const Transform& xform)
 	glMultTransposeMatrixf = (PFNGLMULTTRANSPOSEMATRIXFPROC) wglGetProcAddress("glMultTransposeMatrixf");
 	static bool printed = false;
 	if (glMultTransposeMatrixf == NULL  &&  ! printed) {
+		setbuf (stdout, NULL);
 		printf ("Cannot rotate or translate object - glMultTransposeMatrixf is missing.\n");
 		printed = true;
 	}
