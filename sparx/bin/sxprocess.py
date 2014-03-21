@@ -34,7 +34,7 @@
 # $Id$
 import	global_def
 from	global_def 	import *
-from	EMAN2 		import EMUtil
+from	EMAN2 		import EMUtil, parsemodopt
 
 
 def main():
