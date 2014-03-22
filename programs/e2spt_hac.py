@@ -229,9 +229,13 @@ def main():
 	
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="""verbose level [0-9], higner number means higher level of verboseness""")
 
-	parser.add_argument("--procfinelikecoarse",type=bool,default=True,help="""Turn on with --procfinelikecoarse=False, 
-		and supply fine alignment parameters, such as --lowpassfine, --highpassfine, etc; 
-		to preprocess the particles for FINE alignment differently than for COARSE alignment.""")
+	parser.add_argument("--notprocfinelikecoarse",action='store_true',default=False,help="""
+		If you supply this parameters, particles for fine alignment will NOT be preprocessed
+		identically to particles for coarse alignment by default.  
+		If you supply this, but want specific parameters for preprocessing particles for 
+		also supply: fine alignment, nd supply fine alignment parameters, such as 
+		--lowpassfine, --highpassfine, etc; to preprocess the particles for FINE alignment 
+		differently than for COARSE alignment.""")
 	
 	parser.add_argument("--randomizewedge",action="store_true", help="""This parameter is EXPERIMENTAL. 
 		It randomizes the position of the particles BEFORE alignment, to minimize missing wedge bias 
