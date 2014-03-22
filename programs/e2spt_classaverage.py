@@ -1924,7 +1924,11 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 		print "\n\n!!!!!!!!!!!!!!!!!!!!!!!!\n(e2spt_classaverage.py)(alignment)Aligning ",label
 		print "\n\!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!n\n\n\n\n\n\n"
 	
-	ptclindx = int(label.split(' ')[1])
+	try:
+		ptclindx = int(label.split(' ')[1])
+	
+	except:
+		ptclindx = 0
 	
 	"""
 	PREPROCESSING CALL 
