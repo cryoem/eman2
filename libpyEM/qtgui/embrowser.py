@@ -54,6 +54,7 @@ import weakref
 
 def display_error(msg) :
 	print msg
+	sys.stdout.flush()
 	QtGui.QMessageBox.warning(None, "Error", msg)
 
 # This is a floating point number-finding regular expression
