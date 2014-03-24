@@ -631,6 +631,9 @@ if __name__ == "__main__":
     parser.add_argument('--scpdest',   help='Upload: scp destination directory', default='/home/zope-extdata/reposit/ncmi/software/counter_222/software_86')
     
     args = parser.parse_args()
+    if not args.root.startswith("/"):
+      raise Exception("Absolute path to root directory required.")
+    
     print("EMAN2 Nightly Build -- Version: %s -- Target: %s -- Date: %s"%(VERSION, args.target, datetime.datetime.utcnow().isoformat()))
     target = TARGETS.get(args.target, Target)(args)
     target.run(args.commands)
