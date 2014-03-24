@@ -206,7 +206,7 @@ class Target(object):
         
     def upload(self):
         raise NotImplementedError
-    
+
 class MacTarget(Target):
     """Generic Mac target."""
     
@@ -281,14 +281,6 @@ class Linux64Target(LinuxTarget):
     target_desc = 'linux64'
     pass 
     
-# TODO: Use a class decorator or somesuch.
-TARGETS = {
-    'i686-apple-darwin10': SnowLeopardTarget,
-    'i686-apple-darwin11': LionTarget,
-    'i686-redhat-linux': LinuxTarget,
-    'x86_64-redhat-linux': Linux64Target
-}
-
 ##### Builder Modules #####
 
 class Builder(object):
@@ -558,6 +550,72 @@ class MacUpload(Builder):
         scp = ['scp', img, scpdest]
         cmd(scp)
 
+
+##### Source code #####
+
+class SourceTarget(Target):
+  installtxt = """EMAN2 Source code."""
+  eman2install = None
+  bashrc = None
+  cshrc = None
+  
+  def build(self):
+    pass
+    
+  def install(self):
+    self._run([SourceInstall])
+    
+  def package(self):
+    self._run([SourcePackage])
+  
+  def upload(self):
+    self._run([SourceUpload])
+
+class SourceInstall(Builder):
+    def run(self):
+        log("Copying source...")
+
+        log("...removing previous install: %s"%self.args.cwd_stage)
+        rmtree(self.args.cwd_stage)
+        
+        log("...copying source: %s"%self.args.cwd_stage)
+        shutil.copytree(self.args.cwd_co_distname, self.args.cwd_rpath, symlinks=True)        
+
+class SourcePackage(Builder):
+    def run(self):
+        log("Building source tarball")
+        mkdirs(os.path.join(self.args.cwd_images))
+
+        now = datetime.datetime.now().strftime('%Y-%m-%d')   
+        with open(os.path.join(self.args.cwd_rpath, 'build_date.'+now), 'w') as f:
+            f.write("EMAN2 %s source code from %s."%(self.args.cvstag, now))
+
+        imgname = "%s.%s.%s.tar.gz"%(self.args.cvsmodule, self.args.release, self.args.target_desc)
+        img = os.path.join(self.args.cwd_images, imgname)
+        hdi = ['tar', '-czf', img, 'EMAN2']
+        cmd(hdi, cwd=self.args.cwd_stage)
+
+class SourceUpload(Builder):
+    def run(self):
+        log("Uploading source tarball")
+        imgname = "%s.%s.%s.tar.gz"%(self.args.cvsmodule, self.args.release, self.args.target_desc)
+        img = os.path.join(self.args.cwd_images, imgname)
+        scpdest = "eman@%s:%s/%s"%(self.args.scphost, self.args.scpdest, imgname)
+        scp = ['scp', img, scpdest]
+        print "...", scp
+        cmd(scp)
+        
+##### Registry #####
+
+# TODO: Use a class decorator or somesuch.
+TARGETS = {
+    'i686-apple-darwin10': SnowLeopardTarget,
+    'i686-apple-darwin11': LionTarget,
+    'i686-redhat-linux': LinuxTarget,
+    'x86_64-redhat-linux': Linux64Target,
+    'source': SourceTarget
+}
+        
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('commands',    help='Build commands', nargs='+')
