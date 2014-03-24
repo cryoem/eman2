@@ -35,7 +35,7 @@
 import	global_def
 from	global_def 	import *
 from	EMAN2 		import EMUtil, parsemodopt
-
+from EMAN2jsondb import js_open_dict
 
 def main():
 	import sys
@@ -105,8 +105,8 @@ def main():
 		
 		d = EMData.read_images(stack)
 		for i in xrange(len(d)):
-       			alpha, sx, sy, mirror, scale = get_params2D(d[i])
-        		d[i] = rot_shift2D(d[i], alpha, sx, sy, mirror)
+			alpha, sx, sy, mirror, scale = get_params2D(d[i])
+			d[i] = rot_shift2D(d[i], alpha, sx, sy, mirror)
 		m = model_circle(30, 64, 64)
 
 		init = 0
@@ -115,17 +115,17 @@ def main():
 		del d[init]
 		k = 1
 		while len(d) > 1:
-        		maxcit = -111.
-        		for i in xrange(len(d)):
-                		cuc = ccc(d[i], temp, m)
-                		if cuc > maxcit:
-                        		maxcit = cuc
-                        		qi = i
-        		#print k, maxcit
-        		temp = d[qi].copy()
-        		del d[qi]
-        		temp.write_image(new_stack, k)
-        		k += 1
+			maxcit = -111.
+			for i in xrange(len(d)):
+					cuc = ccc(d[i], temp, m)
+					if cuc > maxcit:
+							maxcit = cuc
+							qi = i
+			#print k, maxcit
+			temp = d[qi].copy()
+			del d[qi]
+			temp.write_image(new_stack, k)
+			k += 1
 
 		d[0].write_image(new_stack, k)
 			
@@ -150,7 +150,7 @@ def main():
 			
 			dopad = True
 			sign = 1
-			binary = 1 # phase flip
+			binary = 1  # phase flip
 				
 			assert img.get_ysize() > 1	
 			dict = ctf.to_dict()
@@ -163,7 +163,7 @@ def main():
 			dza = dict["dfdiff"]
 			azz = dict["dfang"]
 			
-			if dopad and not img.is_complex():  ip = 1
+			if dopad and not img.is_complex(): ip = 1
 			else:                             ip = 0
 	
 	
@@ -181,7 +181,7 @@ def main():
 				"azz":azz}
 			
 			tmp = Processor.EMFourierFilter(img, params)
-			tmp.set_attr_dict({"ctf":ctf})
+			tmp.set_attr_dict({"ctf": ctf})
 			
 			tmp.write_image(outstack, i)
 
@@ -210,7 +210,7 @@ def main():
 		m=get_im(args[1],int(options.isacgroup)).get_attr("members")
 		l = []
 		for k in m:
-			 l.append(int(get_im(args[0],k).get_attr(options.params)))
+			l.append(int(get_im(args[0],k).get_attr(options.params)))
 		from utilities import write_text_file
 		write_text_file(l, args[2])
 
@@ -224,7 +224,8 @@ def main():
 		nx = d.get_xsize()
 		ny = d.get_ysize()
 		wn = int(options.wn)
-		if wn == -1:  wn = max(nx,ny)
+		if wn == -1:
+			wn = max(nx, ny)
 		else:
 			if( (wn<nx) or (wn<ny) ):  ERROR("window size cannot be smaller than the image size","pw",1)
 		n = EMUtil.get_image_count(args[0])
@@ -232,11 +233,11 @@ def main():
 		from EMAN2 import periodogram
 		p = model_blank(wn,wn)
 		for i in xrange(n):
-			d = get_im(args[0],i)
+			d = get_im(args[0], i)
 			st = Util.infomask(d, None, True)
 			d -= st[0]
-			p += periodogram(pad(d,wn,wn,1,0.))
-		p/=n
+			p += periodogram(pad(d, wn, wn, 1, 0.))
+		p /= n
 		p.write_image(args[1])
 		sys.exit()
 
@@ -249,7 +250,7 @@ def main():
 		print "database key under which params will be stored: ", dbkey
 		gbdb = js_open_dict("e2boxercache/gauss_box_DB.json")
 				
-		parmstr= 'dummy:'+options.makedb[0]
+		parmstr = 'dummy:'+options.makedb[0]
 		(processorname, param_dict) = parsemodopt(parmstr)
 		dbdict = {}
 		for pkey in param_dict:
@@ -263,7 +264,6 @@ def main():
 		gbdb[dbkey] = dbdict
 
 	if options.generate_projections:
-
 		nargs = len(args)
 		if nargs != 3:
 			print "must provide name of input structure from which to generate projections, desired name of output projection stack, and desired prefix for output micrographs. Exiting..."
@@ -272,7 +272,7 @@ def main():
 		outstk = args[1]
 		micpref = args[2]
 
-		parmstr= 'dummy:'+options.generate_projections[0]
+		parmstr = 'dummy:'+options.generate_projections[0]
 		(processorname, param_dict) = parsemodopt(parmstr)
 
 		parm_CTF = False
@@ -293,7 +293,7 @@ def main():
 		if 'boxsize' in param_dict:
 			boxsize = int(param_dict['boxsize'])
 
-		print "pixel size: ", parm_apix," format: ", parm_format," add CTF: ",parm_CTF," box size: ", boxsize
+		print "pixel size: ", parm_apix, " format: ", parm_format, " add CTF: ", parm_CTF, " box size: ", boxsize
 
 		scale_mult = 2500
 		sigma_add = 1.5
@@ -326,7 +326,7 @@ def main():
 		from projection import prep_vol,prgs
 		seed(14567)
 		delta = 29
-		angles = even_angles(delta,0.0,89.9,0.0,359.9,"S")
+		angles = even_angles(delta, 0.0, 89.9, 0.0, 359.9, "S")
 		nangle = len(angles)
 		
 		modelvol = EMData()
@@ -342,13 +342,13 @@ def main():
 		nvol = 10
 		volfts = [None]*nvol
 		for i in xrange(nvol):
-			sigma = sigma_add + random() # 1.5-2.5
+			sigma = sigma_add + random()  # 1.5-2.5
 			addon = model_gauss(sigma, boxsize, boxsize, boxsize, sigma, sigma, 38, 38, 40 )
 			scale = scale_mult * (0.5+random())
 			model = modelvol + scale*addon
-			volfts[i],kb = prep_vol(modelvol + scale*addon)
+			volfts[i], kb = prep_vol(modelvol + scale*addon)
 			
-		if parm_format=="bdb":
+		if parm_format == "bdb":
 			stack_data = "bdb:"+outstk
 			delete_bdb(stack_data)
 		else:
@@ -366,17 +366,16 @@ def main():
 		rowlen = 17
 
 		params = []
-		for idef in xrange(3,8):
+		for idef in xrange(3, 8):
 
 			irow = 0
 			icol = 0
 
 			mic = model_blank(4096, 4096)
-			defocus = idef*0.2
-			if parm_CTF :
+			defocus = idef * 0.2
+			if parm_CTF:
 				ctf = EMAN2Ctf()
-				ctf.from_dict( {"defocus":defocus, "cs":Cs, "voltage":voltage, "apix":pixel, "ampcont":ampcont, "bfactor":0.0} )
-		
+				ctf.from_dict({"defocus": defocus, "cs": Cs, "voltage": voltage, "apix": pixel, "ampcont": ampcont, "bfactor": 0.0})
 
 			for i in xrange(nangle):
 				for k in xrange(12):
@@ -390,10 +389,9 @@ def main():
 					s2x = 4.0*(random()-0.5)
 					s2y = 4.0*(random()-0.5)
 
+					params.append([phi, tht, psi, s2x, s2y])
 
-					params.append( [phi, tht, psi, s2x, s2y])
-
-					ivol = iprj%nvol
+					ivol = iprj % nvol
 					proj = prgs(volfts[ivol], kb, [phi, tht, psi, -s2x, -s2y])
 		
 					x = xstart + irow * width
@@ -402,12 +400,12 @@ def main():
 					mic += pad(proj, 4096, 4096, 1, 0.0, x-2048, y-2048, 0)
 			
 					proj = proj + model_gauss_noise( sigma_proj, nx, nx )
-					if parm_CTF :
+					if parm_CTF:
 						proj = filt_ctf(proj, ctf)
 						proj.set_attr_dict({"ctf":ctf, "ctf_applied":0})
 			
-					proj = proj + filt_gaussl(model_gauss_noise(sigma2_proj,nx,nx), sigma_gauss)
-					proj.set_attr( "active", 1 )
+					proj = proj + filt_gaussl(model_gauss_noise(sigma2_proj, nx, nx), sigma_gauss)
+					proj.set_attr("active", 1)
 					# flags describing the status of the image (1 = true, 0 = false)
 					set_params2D(proj, [0.0, 0.0, 0.0, 0, 1.0])
 					set_params_proj(proj, [phi, tht, psi, s2x, s2y])
@@ -422,15 +420,14 @@ def main():
 					iprj += 1
 
 			mic += model_gauss_noise(sigma_mic,4096,4096)
-			if parm_CTF :
+			if parm_CTF:
 				#apply CTF
 				mic = filt_ctf(mic, ctf)
-			mic += filt_gaussl(model_gauss_noise(sigma2_mic,4096,4096), sigma_gauss_mic)
+			mic += filt_gaussl(model_gauss_noise(sigma2_mic, 4096, 4096), sigma_gauss_mic)
 	
-			mic.write_image(micpref+"%1d.hdf"%(idef-3),0)
+			mic.write_image(micpref + "%1d.hdf" % (idef-3), 0)
 		
 		drop_spider_doc("params.txt", params)
-	
-			
+
 if __name__ == "__main__":
 	main()

@@ -601,12 +601,12 @@ def parsemodopt(optstr):
 
 def parsedict(dictstr):
 	cmpparms = {}
-        for d in dictstr:
-	        keyval = d.split(":")
-	        try:
-	                cmpparms[keyval[0]] = float(keyval[1])
-	        except:
-	                cmpparms[keyval[0]] = keyval[1]
+	for d in dictstr:
+		keyval = d.split(":")
+		try:
+			cmpparms[keyval[0]] = float(keyval[1])
+		except:
+			cmpparms[keyval[0]] = keyval[1]
 	return cmpparms
 
 parseparmobj_op = re.compile("\+=|-=|\*=|\/=|%=")
