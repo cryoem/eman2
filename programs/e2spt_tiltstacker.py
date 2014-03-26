@@ -125,7 +125,7 @@ def main():
 		elif '.st' or'.mrc'	in options.input:
 			n = EMData( options.input )['nz']
 			for i in range(n):
-				cmd = 'newstack ' + options.input + ' ' + options.path + '/tilt' + str(i).zfill( str( len( str(n))) ) + '.mrc --secs ' + str(i)
+				cmd = 'newstack ' + options.input + ' ' + options.path + '/tilt' + str(i).zfill( len( str(n)) )  + '.mrc --secs ' + str(i)
 			
 				print "Cmd to extract tilt is", cmd		
 				p = subprocess.Popen( cmd , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
