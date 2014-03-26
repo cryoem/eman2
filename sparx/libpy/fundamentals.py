@@ -525,9 +525,9 @@ def resample(img, sub_rate=0.5):
 	else:  #  sub_rate>1
 		new_nx = int(nx*sub_rate+0.5)
 		new_ny = int(ny*sub_rate+0.5)
-		if nz==1: 
+		if nz==1:
 			new_nz = 1
-		else: 
+		else:
 			new_nz = int(ny*sub_rate+0.5)
 		if ( nx!=ny and nz==1 ):
 			nn = max(new_nx, new_ny)
@@ -553,6 +553,20 @@ def resample(img, sub_rate=0.5):
 	apix = get_pixel_size(e)
 	apix /= sub_rate
 	set_pixel_size(e, apix)
+	cc = e.get_attr_default("xform.projection", None)
+	if cc:
+		cp = cc.get_params("spider")
+		cp["tx"] *= sub_rate
+		cp["ty"] *= sub_rate
+		from utilities import set_params_proj
+		set_params_proj(e, [cp["phi"], cp["theta"], cp["psi"], -cp["tx"], -cp["ty"]]) # have to invert as set inverts them again
+	cc = e.get_attr_default("xform.align2d", None)
+	if cc:
+		cp = cc.get_params("2D")
+		cp["tx"] *= sub_rate
+		cp["ty"] *= sub_rate
+		from utilities import set_params2D
+		set_params2D(e, [cp["alpha"], cp["tx"], cp["ty"], cp["mirror"], cp["scale"]])
 
 	return 	e
 	
