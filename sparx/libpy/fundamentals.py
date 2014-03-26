@@ -511,7 +511,7 @@ def resample(img, sub_rate=0.5):
 
 	from fundamentals import subsample
 	from utilities    import get_pixel_size, set_pixel_size
-	
+
 	if type(img) == str:
 		from utilities    import get_image
 		img = get_image(img)
