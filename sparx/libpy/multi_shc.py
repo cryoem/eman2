@@ -563,7 +563,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 							all_params.append(wrap_mpi_recv(sr, mpi_comm))
 				else:
 					if mpi_subrank == 0:
-						wrap_mpi_send(L2, 0, mpi_comm)				
+						wrap_mpi_send(L2, 0, mpi_comm)
 						wrap_mpi_send(params, 0, mpi_comm)
 
 				# ---------------------------------
@@ -701,7 +701,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				if mpi_subrank == 0:
 					L2 = vol.cmp("dot", vol, dict(negative = 0, mask = model_circle(last_ring, nx, nx, nx)))
 					# if myid == 2:  print  " Right after reconstruction L2", myid, L2,[get_params_proj(data[i]) for i in xrange(4)]
-					print  " Right after reconstruction L2", myid, total_iter,L2
+					#print  " Right after reconstruction L2", myid, total_iter,L2
 					#if storevol:   vol.write_image("mutated%04d%04d.hdf"%(myid,total_iter))
 
 				# log
