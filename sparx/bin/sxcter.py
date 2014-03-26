@@ -121,14 +121,28 @@ def main():
 
 	from morphology import cter
 	global_def.BATCH = True
+
 	cter(stack, out1, out2, options.indir, options.nameroot, options.micsuffix, options.wn, \
-		f_start=options.f_start, f_stop=options.f_stop, voltage=options.voltage, Pixel_size=options.apix, Cs = options.Cs, wgh=options.ac, kboot=options.kboot,\
-		 MPI=options.MPI, DEBug = options.debug, overlap_x = options.overlap_x, overlap_y = options.overlap_y, edge_x = options.edge_x, edge_y = options.edge_y, guimic=None)
+		f_start=options.f_start, f_stop=options.f_stop, voltage=options.voltage, Pixel_size=options.apix, \
+		Cs = options.Cs, wgh=options.ac, kboot=options.kboot, MPI=options.MPI, DEBug = options.debug, \
+		overlap_x = options.overlap_x, overlap_y = options.overlap_y, edge_x = options.edge_x, \
+		edge_y = options.edge_y, guimic=None)
+
 	global_def.BATCH = False
 
 	if options.MPI:
 		from mpi import mpi_finalize
 		mpi_finalize()
+
+		# MPI writes many files, combine all CTF info into one file.
+		out = open(os.path.join(out2, 'partres'), 'w')
+		for file_name in os.listdir(out2):
+			file_path = os.path.join(out2, file_name)
+			if os.path.isfile(file_path):
+				_f = open(file_path, 'r')
+				out.write(_f.read())
+				_f.close()
+		out.close()
 
 if __name__ == "__main__":
 	main()

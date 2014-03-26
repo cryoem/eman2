@@ -15,6 +15,7 @@ def main():
 	from global_def import SPARXVERSION
 	from EMAN2 import EMData
 	from multi_shc import multi_shc
+	import multiprocessing
 
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack  output_directory  [initial_volume]  --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood  --center=center_type --maxit1=max_iter1 --maxit2=max_iter2 --L2threshold=0.1  --CTF --snr=SNR  --ref_a=S --sym=c1 --function=user_function"
@@ -52,20 +53,31 @@ def main():
 
 	runs_count = options.nruns
 	mpi_rank = mpi_comm_rank(MPI_COMM_WORLD)
+	mpi_size = mpi_comm_size(MPI_COMM_WORLD)	# Total number of processes, passed by --np option.
 
 	if mpi_rank == 0:
 		all_projs = EMData.read_images(args[0])
 		subset = range(len(all_projs))
+		if mpi_size > len(all_projs):
+			ERROR('Number of processes needs to be less than or equal to %d (total number of images) ' % len(all_projs), 'sxviper', 1)
+			mpi_finalize()
+			return
 	else:
 		all_projs = None
 		subset = None
 
 	outdir = args[1]
 	if mpi_rank == 0:
+		if mpi_size % (multiprocessing.cpu_count() * options.nruns) != 0:
+			ERROR('Number of processes needs to be in multiple of cpu multiplied by total number of runs.\n         In your case cpu=%d, runs=%d \n         So number of processes needs to be in multiple of %d' % (multiprocessing.cpu_count(), options.nruns, multiprocessing.cpu_count() * options.nruns), 'sxviper', 1)
+			mpi_finalize()
+			return
+
 		if os.path.exists(outdir):
 			ERROR('Output directory exists, please change the name and restart the program', "sxviper", 1)
 			mpi_finalize()
 			return
+
 		os.mkdir(outdir)
 		import global_def
 		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
