@@ -613,7 +613,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 						# select random pairs of solutions
 						ipl = range(number_of_runs)
 						shuffle(ipl)
-						for ip in xrange(0,2*(len(ipl)/2),2):
+						for ip in xrange(0,2*(len(ipl)/2)+len(ipl)%2,2):
 							#  random reference projection:
 							itmp = randint(0,total_nima-1)
 							#  if(   )
@@ -627,9 +627,9 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 							newparms2 = [None]*total_nima
 							for i in keepset:
 								newparms1[i] = GA[ipl[ip]][1][i]
-								newparms2[i] = GA[ipl[ip+1]][1][i]
+								newparms2[i] = GA[ipl[(ip+1)%number_of_runs]][1][i]
 							for i in otherset:
-								newparms1[i] = GA[ipl[ip+1]][1][i]
+								newparms1[i] = GA[ipl[(ip+1)%number_of_runs]][1][i]
 								newparms2[i] = GA[ipl[ip]][1][i]
 							#print "  PRINTOUT SHUFFLED   ",ipl[ip],ipl[ip+1]
 							"""
@@ -645,6 +645,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 							#  Put mutated params on one list
 							all_params.append(newparms1)
 							all_params.append(newparms2)
+						all_params = all_params[:number_of_runs]
 
 				terminate = wrap_mpi_bcast(terminate, main_node, mpi_comm)
 				if not terminate:
