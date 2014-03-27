@@ -241,6 +241,21 @@ def threshold_maxval(img, maxval = 0.0):
 	st = Util.infomask(img, None, True)	
 	return img.process( "threshold.clampminmax", {"minval": st[2], "maxval": maxval } )	
 
+def linchange(a, fct):
+	"""
+	reinterpolate a line given as a list by a factor of fct.
+	Useful for adjusting 1D power spectra, uses linear interplation
+	"""
+	n = len(a)
+	m = int(n*fct+0.5)
+	o = [0.0]*m
+	for i in xrange(m):
+		x = i/fct
+		j = min(int(x), n-2)
+		dx = x-j
+		o[i] = (1.0-dx)*a[j] + dx*a[j+1]
+	return o
+
 ## CTF related functions
 def rotavg_ctf(img, defocus, Cs, voltage, Pixel_size, bfactor, wgh, amp, ang):
 	"""1D rotational average of a 2D power spectrum (img)
