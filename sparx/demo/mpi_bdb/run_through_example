@@ -100,13 +100,13 @@ sxheader.py bdb:class_averages --params=active --one    || exit
 
 # Second, more advanced version.  Note this one requires number of CPUs to be multiplicity of 3.
 sxheader.py bdb:class_averages --params=stable --zero   || exit
-mpirun -np 12 sxviper.py bdb:class_averages outdirshc --ou=28 --xr=3.0 --delta=2.0 --maxit=100 --function="[..,demo_user_funcs,ali3d_reference2]"
+mpirun -np 12 sxviper.py bdb:class_averages outdirshc --ou=28 --xr=3.0 --delta=2.0 --maxit2=20 --function="[..,demo_user_funcs,ali3d_reference2]"
 
 
 # 3D projection alignment - refinement of the initial structure
 sxheader.py bdb:data --params=xform.projection --zero    || exit
 #  establish initial orientations of all projection data
-mpirun -np 12 sxali3d.py  bdb:data  outdirshc/volume_filt.hdf  outmatch --maxit=1  --ou=28 --xr=3.0 --delta=2.0 --MPI   || exit
+mpirun -np 12 sxali3d.py  bdb:data  outdirshc/volf.hdf  outmatch --maxit=1  --ou=28 --xr=3.0 --delta=2.0 --MPI   || exit
 sxheader.py bdb:data --params=xform.projection --export=outmatch/matchparams.txt    || exit
 sxheader.py bdb:data --params=stable --one    || exit
 mpirun -np 12 sxali3d.py bdb:data poutdirshc --shc --ou=28 --xr=2.0 --delta=2.0 --maxit=100 --ref_a=S --function="[..,demo_user_funcs,ali3d_reference3]" --MPI   || exit
