@@ -113,9 +113,11 @@ def main():
 									of the subvolumes within the tomogram are assigned randomly.""")
 	parser.add_argument("--icethickness", type=float,default=100,help="If --tomogramoutput is supplied, this will define the size of Z in PIXELS for the simulated tomogram.")
 
-	parser.add_argument("--saverandstack", action="store_true",default=False,help="""Save 
-		the stack of randomly oriented particles, before subtomogram simulation (before the 
-		missing wedge and noise are added).""")
+	parser.add_argument("--saverandstack", action="store_true",default=True,help="""DEPREPCATED.
+		[This option is on by default and there's no way to turn it off. The stack of 
+		randomly oriented particles before simulating the missing wedge WILL be saved].
+		Save the stack of randomly oriented particles, before subtomogram simulation 
+		(before the missing wedge and noise are added).""")
 
 	parser.add_argument("--nosim", action="store_true",default=False,help="""If on
 		the program will generate stacks of "perfect particles" in different random 

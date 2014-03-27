@@ -409,7 +409,7 @@ def main():
 		etc=''
 
 	if options.inixforms: 
-		preOrientationDict = js_open_dict(options.inixforms)
+		preOrientationsDict = js_open_dict(options.inixforms)
 		
 	resumeDict = {}
 	actualNums=[]

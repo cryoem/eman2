@@ -64,7 +64,19 @@ def main():
 	parser.add_pos_argument(name="tomogram",help="The tomogram to use for boxing.", default="", guitype='filebox', browser="EMTomoDataTable(withmodal=True,multiselect=False)",  row=0, col=0, rowspan=1, colspan=3, mode="boxing")
 	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=32)
 	
-	parser.add_argument("--centerbox", action="store_true", default=False, help='Will apply xform.centerofmass to the boxed subvolumes before the final extraction.')
+	parser.add_argument("--centerbox", action="store_true", default=False, help="""DEPRECATED.
+		Will apply xform.centerofmass to the boxed subvolumes before the final extraction.""")
+
+
+	parser.add_argument("--autocenter", type=str, default='', help="""Options are 
+		--autocenter=xform.centerofmass (applies center of mass after --autocentermask if specified)
+		or --autocenter=xform.centeracf (applies autoconvolution after --autocentermask if sepcified).
+		This is intended to yield raw subtomograms that are better centered in the box.
+		Mostly aplicable for freestanding, soluble, globular single particles.""")
+		
+	parser.add_argument("--autocentermask",type=str,default='',help="""Mask used to autocenter particles. 
+		Default is --autocentermask=None""")
+
 
 	parser.add_argument("--path",type=str,help="Pathname to save data to",default="")
 	parser.add_argument("--inmemory",action="store_true",default=False,help="This will read the entire tomogram into memory. Much faster, but you must have enough ram !", guitype='boolbox', row=2, col=1, rowspan=1, colspan=1, mode="boxing")
@@ -77,6 +89,7 @@ def main():
 													If using the latter, you must provide --masknorm, otherwise, a default --masknorm=mask.sharp:outer_radius=-2 will be used.""", default='')
 	parser.add_argument("--masknorm",type=str,help="Mask used to normalize particles before extraction. Default is mask.sharp:outer_radius=-2", default='')
 	parser.add_argument("--thresh",type=float,help="Threshold particles before writing them out to get rid of too high and/or too low pixel values.", default=0.0)
+
 
 	#parser.add_argument('--bin', type=int, default=1, help="""Specify the binning/shrinking factor you want to use (for X,Y and Z) when opening the tomogram for boxing. \nDon't worry, the sub-volumes will be extracted from the UNBINNED tomogram. \nIf binx, biny or binz are also specified, they will override the general bin value for the corresponding X, Y or Z directions""", guitype='intbox', row=3, col=1, rowspan=1, colspan=1, mode="boxing")
 	
@@ -117,6 +130,14 @@ def main():
 		
 	if options.thresh: 
 		options.thresh=parsemodopt(options.thresh)
+		
+	if options.autocentermask: 
+		options.autocentermask=parsemodopt(options.autocentermask)
+		
+	options.centerbox = options.autocenter
+	
+	print "\n\n\n\n\nAUTOCENTER IS", options.autocenter
+	print "Therefore center is", options.centerbox
 	
 	
 	'''
@@ -246,6 +267,8 @@ a coordinates file
 """
 def unbinned_extractor(options,boxsize,x,y,z,cshrink,invert,center,tomogram=argv[1]):
 	
+	print "\n\nUnbinned extractor received this center", center
+	
 	tomo_header=EMData(tomogram,0,True)
 	print "Which has a size of", tomo_header['nx'],tomo_header['ny'],tomo_header['nz']
 	#print cbin, tomogram
@@ -269,17 +292,48 @@ def unbinned_extractor(options,boxsize,x,y,z,cshrink,invert,center,tomogram=argv
 		'''
 		Attempt to center particles. They must be masked to ensure other particles will not cause shifts in center of mass
 		'''
-		if center:
-			rad = boxsize/2.0+1.0
-			ec = e.process('mask.sharp',{'outer_radius':rad})
-			ec.process_inplace('xform.centerofmass')
+		
+		e['xform.align3d'] = Transform() #Make sure the default alignment parameters are zero
+		
+		
+		print "\n\n\n\nCENTER is",center
+		
+		if center:			
+			ec = e.copy()
+			ec = ec*-1
+			
+			if options.autocentermask:
+				print "\nMasking for autocentering"
+				ec.process_inplace(options.autocentermask[0],options.autocentermask[1])
+			
+			ec.process_inplace('normalize')
+			
+			if options.autocentermask:
+				print "\nMasking for autocentering"
+				ec.process_inplace(options.autocentermask[0],options.autocentermask[1])
+		
+			ec.process_inplace("threshold.belowtozero",{'minval':0.0})
+			
+			if center == 'xform.centerofmass':
+				ec.process_inplace('xform.centerofmass')
+				print "\nApplying center of mass"
+	
+			elif center == 'xform.centeracf':
+				ec.process_inplace('xform.centeracf')
+				print "\nApplying xform.centeracf"
+			
+		
+			#rad = boxsize/2.0+1.0
+			#ec = e.process('mask.sharp',{'outer_radius':rad})
+			#ec.process_inplace('xform.centerofmass')
+			
 			trans = ec['xform.align3d'].get_trans()
 			tx = trans[0]
 			ty = trans[1]
 			tz = trans[2]
 			
-			print "I will apply these translations in trying to center the particles with xform.centerofmass", tx,ty,tz
-			print "The old coordinates were", x, y, z
+			print "\nAutocentering translations are", tx,ty,tz
+			print "\n\nThe old coordinates were", x, y, z
 
 			x = x - tx				
 			y = y - ty
@@ -414,6 +468,7 @@ def commandline_tomoboxer(tomogram,options):
 			z = aux
 			print "Therefore, the swapped coordinates are", x, y, z
 
+		print "\n\nBefore calling unbinned extractor, options.centerbox is", options.centerbox
 		ret = unbinned_extractor(options,options.boxsize,x,y,z,options.cshrink,options.invert,options.centerbox)
 		
 		if ret:
