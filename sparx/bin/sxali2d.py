@@ -65,7 +65,7 @@ def main():
 	parser.add_option("--mode",       type="string", default="F",     help="Full or Half rings, default F")
 	parser.add_option("--randomize",  action="store_true", default=False,   help="randomize initial rotations (suboption of friedel, default False)")
 	parser.add_option("--orient",   action="store_true", default=False,   help="orient images such that the average is symmetric about x-axis, for layer lines (suboption of friedel, default False)")
-	parser.add_option("--template",   type="string", default=None,   help="2D alignment will be initialized uisng the template provided (only non-MPI version, default None)")
+	parser.add_option("--template",   type="string", default=None,   help="2D alignment will be initialized using the template provided (only non-MPI version, default None)")
 	(options, args) = parser.parse_args()
 	if len(args) < 2 or len(args) > 3:
     		print "usage: " + usage
