@@ -35,7 +35,7 @@
 import	global_def
 from	global_def 	import *
 from	EMAN2 		import EMUtil, parsemodopt
-from EMAN2jsondb import js_open_dict
+from    EMAN2jsondb import js_open_dict
 
 def main():
 	import sys
@@ -59,7 +59,7 @@ def main():
 	
 	2.  resample (decimate or interpolate up) images (2D or 3D) in a stack to change the pixel size.
 	    The window size will change accordingly.
-	    sxprocess input.hdf output.hdf  --changesize --ratio=0.5
+	sxprocess input.hdf output.hdf  --changesize --ratio=0.5
 
 	3.  compute average power spectrum of a stack of 2D images with optional padding (option wn) with zeroes.
 	sxprocess.py input_stack.hdf powerspectrum.hdf --pw [--wn=1024]
@@ -72,6 +72,11 @@ def main():
 
     6. Retrieve original image numbers in the selected ISAC group (here group 12 from generation 3):
     sxprocess.py  bdb:test3 class_averages_generation_3.hdf  list3_12.txt --isacgroup=12 --params=myid
+
+    . Adjust rotationally averaged power spectrum of an image to that of a reference image or a reference 1D power spectrum stored in an ASCII file.
+    	Optionally use a tangent low-pass filter.  Also works for a stack of images, in which case the output is also a stack.
+    sxprocess.py  vol.hdf ref.hdf  avol.hf < 0.25 0.2> --adjpw
+    sxprocess.py  vol.hdf pw.txt  avol.hf < 0.25 0.2> --adjpw
 """
 
 	parser = OptionParser(usage,version=SPARXVERSION)
@@ -86,7 +91,8 @@ def main():
 	parser.add_option("--generate_projections", metavar="param1=value1:param2=value2", type=str,
 					action="append", help="Three arguments are required: name of input structure from which to generate projections, desired name of output projection stack, and desired prefix for micrographs (e.g. if prefix is 'mic', then micrographs mic0.hdf, mic1.hdf etc will be generated). Optional arguments specifying format, apix, box size and whether to add CTF effects can be entered as follows after --generate_projections: format='bdb':apix=5.2:CTF=True:boxsize=100, or format='hdf', etc., where format is bdb or hdf, apix (pixel size) is a float, CTF is True or False, and boxsize denotes the dimension of the box (assumed to be a square). If an optional parameter is not specified, it will default as follows: format='bdb', apix=2.5, CTF=False, boxsize=64.")
 	parser.add_option("--isacgroup", type="int", help="Retrieve original image numbers in the selected ISAC group   See ISAC documentaion for details.", default=-1)
-	parser.add_option("--params",	   type="string",       default=None,    help="Name of header of parameter, whic one depends on specific option")
+	parser.add_option("--params",	   type="string",       default=None,    help="Name of header of parameter, which one depends on specific option")
+	parser.add_option("--adjpw", action="store_true", help="Adjust rotationally averaged power spectrum of an image", default=False)
  	(options, args) = parser.parse_args()
 
 	global_def.BATCH = True
@@ -240,6 +246,47 @@ def main():
 		p /= n
 		p.write_image(args[1])
 		sys.exit()
+
+	if options.adjpw:
+
+		if len(args) < 3:
+			ERROR("filt_by_rops input target output fl aa (the last two are optional parameters of a low-pass filter)","adjpw",1)
+			return
+		img_stack = args[0]
+		from math         import sqrt
+		from fundamentals import rops_table, fft
+		from utilities    import read_text_file, get_im
+		from filter       import  filt_tanl, filt_table
+		if(  args[1][-3:] == 'txt'):
+			rops_dst = read_text_file( args[1] )
+		else:
+			rops_dst = rops_table(get_im( args[1] ))
+
+		out_stack = args[2]
+		if(len(args) >4):
+			fl = float(args[3])
+			aa = float(args[4])
+		else:
+			fl = -1.0
+			aa = 0.0
+
+		nimage = EMUtil.get_image_count( img_stack )
+
+		for i in xrange(nimage):
+			img = fft(get_im(img_stack, i) )
+			rops_src = rops_table(img)
+
+			assert len(rops_dst) == len(rops_src)
+
+			table = [0.0]*len(rops_dst)
+			for j in xrange( len(rops_dst) ):
+				table[j] = sqrt( rops_dst[j]/rops_src[j] )
+
+			if( fl > 0.0):
+				img = filt_tanl(img, fl, aa)
+			img = fft(filt_table(img, table))
+			img.write_image(out_stack, i)
+
 
 	if options.makedb != None:
 		nargs = len(args)
