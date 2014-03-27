@@ -2513,7 +2513,7 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 			if(ISID == 0):
 				imm = im
 			else:
-				imm = nvalue[ISID]
+				imm = nvalue[list_params.index('ID')]
 			# read head, set params, and write it
 			dummy = EMData()
 			dummy.read_image(stack, imm, True)
