@@ -59,7 +59,7 @@ def main():
 		all_projs = EMData.read_images(args[0])
 		subset = range(len(all_projs))
 		if mpi_size > len(all_projs):
-			ERROR('Number of processes needs to be less than or equal to %d (total number of images) ' % len(all_projs), 'sxviper', 1)
+			ERROR('Number of processes supplied by --np needs to be less than or equal to %d (total number of images) ' % len(all_projs), 'sxviper', 1)
 			mpi_finalize()
 			return
 	else:
@@ -68,8 +68,8 @@ def main():
 
 	outdir = args[1]
 	if mpi_rank == 0:
-		if mpi_size % (multiprocessing.cpu_count() * options.nruns) != 0:
-			ERROR('Number of processes needs to be in multiple of cpu multiplied by total number of runs.\n         In your case cpu=%d, runs=%d \n         So number of processes needs to be in multiple of %d' % (multiprocessing.cpu_count(), options.nruns, multiprocessing.cpu_count() * options.nruns), 'sxviper', 1)
+		if mpi_size % options.nruns != 0:
+			ERROR('Number of processes needs to be in multiple of total number of runs. Total runs by default are 3, you can change it by specifying --nruns option.', 'sxviper', 1)
 			mpi_finalize()
 			return
 
