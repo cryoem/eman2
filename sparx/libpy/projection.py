@@ -334,12 +334,11 @@ def prep_vol(vol):
 
 # plot angles, map on half-sphere
 # agls: [[phi0, theta0, psi0], [phi1, theta1, psi1], ..., [phin, thetan, psin]]
-def plot_angles(agls):
-	from math      import cos, sin, fmod, pi
+def plot_angles(agls, nx = 256):
+	from math      import cos, sin, fmod, pi, radians
 	from utilities import model_blank
 
 	# var
-	nx = 256
 	im = model_blank(nx, nx)
 	"""
 	c  = 2
@@ -377,14 +376,14 @@ def plot_angles(agls):
 			agls[i][0] = agls[i][0] + 180.0
 			agls[i][1] = 180.0 - float(agls[i][1])
 
-		rc  = rr*sin( agls[i][1] *conv)
+		rc  = rr*sin( radians(agls[i][1]))
+		rd  = radians(agls[i][0])
+		px  = ri + rc * cos( rd )
+		py  = ri + rc * sin( rd )
 
-		px  = ri + rc * cos( agls[i][0] * conv )
-		py  = ri + rc * sin( agls[i][0] * conv )
+		px = min(max(int(px+0.5),0), nx-1)
 
-		px = min(max(int(px),0), nx-1)
-
-		py = min(max(int(py),0), nx-1)
+		py = min(max(int(py+0.5),0), nx-1)
 
 		im.set_value_at(px, py, 1.0 + im.get_value_at(px, py))
 

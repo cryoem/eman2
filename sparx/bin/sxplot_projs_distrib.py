@@ -45,7 +45,8 @@ def main():
 Read projection angles from 2Dprojections file and write a 2D image file
 containing their distribution on a hemisphere."""
 	parser = OptionParser(usage,version=SPARXVERSION)
-	
+	parser.add_option("--wnx",       type="int",  default=256,             help="plot image size (default = 256)")
+
 	(options, args) = parser.parse_args()
     	if len(args) != 2:
 		print "usage: " + usage
@@ -56,7 +57,7 @@ containing their distribution on a hemisphere."""
 			disable_bdb_cache()
 		from applications import plot_projs_distrib
 		global_def.BATCH = True
-		plot_projs_distrib(args[0], args[1])
+		plot_projs_distrib(args[0], args[1], options.wnx)
 		global_def.BATCH = False
 
 if __name__ == "__main__":

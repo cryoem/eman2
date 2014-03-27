@@ -12343,7 +12343,7 @@ def k_means_groups(stack, out_file, maskname, opt_method, K1, K2, rand_seed, max
 
 # 2008-12-08 12:46:11 JB
 # Plot angles distribution on a hemisphere from a list of given projection
-def plot_projs_distrib(stack, outplot):
+def plot_projs_distrib(stack, outplot, wnx = 256):
 	from projection import plot_angles
 	from utilities  import get_params_proj, file_type
 	import sys
@@ -12366,8 +12366,7 @@ def plot_projs_distrib(stack, outplot):
 
 	if ext == 'bdb': DB.close()
 
-	im = plot_angles(agls)
-	im.write_image(outplot, 0)
+	plot_angles(agls, wnx).write_image(outplot, 0)
 
 # 2008-12-08 12:46:46 JB
 # Wrap for the HAC part of py_cluster in the statistics.py file
