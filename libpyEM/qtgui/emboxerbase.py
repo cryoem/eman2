@@ -1453,21 +1453,21 @@ class EMBoxList:
 
 
 	def write_coordinates(self,input_file_name,out_file_name,box_size):
-		f=file(out_file_name,'w')
-		for box in self.boxes:
-			xc = box.x-box_size/2
-			yc = box.y-box_size/2
-			f.write(str(int(xc))+'\t'+str(int(yc))+'\t'+str(box_size)+'\t'+str(box_size)+'\n')
+		f = open(out_file_name,'w')
+		if out_file_name.endswith('json'):
+			# Write .json file
+			coord_str = 'coordinates'
+			data = {input_file_name: {coord_str : [], 'box_size': box_size}}
+			for box in self.boxes:
+				data[input_file_name][coord_str].append((box.x, box.y))
+			f.write(json.dumps(data, sort_keys=True, indent=2, separators=(',', ': ')))
+		else:
+			# Write .box file
+			for box in self.boxes:
+				xc = box.x-box_size/2
+				yc = box.y-box_size/2
+				f.write(str(int(xc))+'\t'+str(int(yc))+'\t'+str(box_size)+'\t'+str(box_size)+'\n')
 		f.close()
-
-		# Writing coordinates in json file
-		#f = file(out_file_name.replace('.box', '_coordinates.json'), 'w')
-		#coordinates = 'coordinates'
-		#output = {coordinates: []}
-		#for box in self.boxes:
-		#	output[coordinates].append((box.x, box.y))
-		#f.write(json.dumps(output, sort_keys=True, indent=4, separators=(',', ': ')))
-		#f.close()
 
 
 class EMBoxerModuleVitals(object):
@@ -2140,6 +2140,30 @@ class EMBoxerWriteOutputTask(WorkFlowTask):
 		db = js_open_dict(self.form_db_name)
 		is_gauss = self.current_tool == 'Gauss'
 
+		# params = []
+		# params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
+		# params.append(self.get_table())
+		#
+		# pbox = ParamDef(name="output_boxsize",vartype="int",desc_short="Box Size",desc_long="An integer value",property=None,defaultunits=db.setdefault("output_boxsize",self.dfl_boxsize),choices=[])
+		# pfo = ParamDef(name="force",vartype="boolean",desc_short="Force Overwrite",desc_long="Whether or not to force overwrite files that already exist",property=None,defaultunits=db.setdefault("force",False),choices=None)
+		# params.append([pbox,pfo])
+		#
+		# pwc = ParamDef(name="write_coords",vartype="boolean",desc_short="Write Coordinates",desc_long="Whether or not to write .box files",property=None,defaultunits=db.setdefault("write_coords", is_gauss),choices=None)
+		# if not is_gauss:
+		# 	pwb = ParamDef(name="write_particles",vartype="boolean",desc_short="Write Particles",desc_long="Whether or not box images should be written",property=None,defaultunits=db.setdefault("write_particles", True),choices=None)
+		# 	pwb.dependents = ["invert","normproc","format","suffix"] # these are things that become disabled when the pwb checkbox is unchecked etc
+		# 	params.append([pwc, pwb])
+		#
+		# 	psuffix = ParamDef(name="suffix",vartype="string",desc_short="Output Suffix", desc_long="This text will be appended to the names of the output files",property=None,defaultunits=db.setdefault("suffix","_ptcls"),choices=None )
+		# 	pinv = ParamDef(name="invert",vartype="boolean",desc_short="Invert Pixels",desc_long="Do you want the pixel intensities in the output inverted?",property=None,defaultunits=db.setdefault("invert",False),choices=None)
+		# 	pn =  ParamDef(name="normproc",vartype="string",desc_short="Normalize Images",desc_long="How the output box images should be normalized",property=None,defaultunits=db.setdefault("normproc","normalize.edgemean"),choices=["normalize","normalize.edgemean","normalize.ramp.normvar","None"])
+		# 	pop = ParamDef(name="format",vartype="string",desc_short="Output Image Format",desc_long="The format of the output box images",property=None,defaultunits=db.setdefault("format","bdb"),choices=self.output_formats)
+		# 	params.append([psuffix,pinv])
+		# 	params.append(pn)
+		# 	params.append(pop)
+		# else:
+		# 	params.append(pwc)
+		# return params
 		params = []
 		params.append(ParamDef(name="blurb",vartype="text",desc_short="",desc_long="",property=None,defaultunits=self.__doc__,choices=None))
 		params.append(self.get_table())
@@ -2149,20 +2173,17 @@ class EMBoxerWriteOutputTask(WorkFlowTask):
 		params.append([pbox,pfo])
 
 		pwc = ParamDef(name="write_coords",vartype="boolean",desc_short="Write Coordinates",desc_long="Whether or not to write .box files",property=None,defaultunits=db.setdefault("write_coords", is_gauss),choices=None)
-		if not is_gauss:
-			pwb = ParamDef(name="write_particles",vartype="boolean",desc_short="Write Particles",desc_long="Whether or not box images should be written",property=None,defaultunits=db.setdefault("write_particles", True),choices=None)
-			pwb.dependents = ["invert","normproc","format","suffix"] # these are things that become disabled when the pwb checkbox is unchecked etc
-			params.append([pwc, pwb])
+		pwb = ParamDef(name="write_particles",vartype="boolean",desc_short="Write Particles",desc_long="Whether or not box images should be written",property=None,defaultunits=db.setdefault("write_particles", True),choices=None)
+		pwb.dependents = ["invert","normproc","format","suffix"] # these are things that become disabled when the pwb checkbox is unchecked etc
+		params.append([pwc, pwb])
 
-			psuffix = ParamDef(name="suffix",vartype="string",desc_short="Output Suffix", desc_long="This text will be appended to the names of the output files",property=None,defaultunits=db.setdefault("suffix","_ptcls"),choices=None )
-			pinv = ParamDef(name="invert",vartype="boolean",desc_short="Invert Pixels",desc_long="Do you want the pixel intensities in the output inverted?",property=None,defaultunits=db.setdefault("invert",False),choices=None)
-			pn =  ParamDef(name="normproc",vartype="string",desc_short="Normalize Images",desc_long="How the output box images should be normalized",property=None,defaultunits=db.setdefault("normproc","normalize.edgemean"),choices=["normalize","normalize.edgemean","normalize.ramp.normvar","None"])
-			pop = ParamDef(name="format",vartype="string",desc_short="Output Image Format",desc_long="The format of the output box images",property=None,defaultunits=db.setdefault("format","bdb"),choices=self.output_formats)
-			params.append([psuffix,pinv])
-			params.append(pn)
-			params.append(pop)
-		else:
-			params.append(pwc)
+		psuffix = ParamDef(name="suffix",vartype="string",desc_short="Output Suffix", desc_long="This text will be appended to the names of the output files",property=None,defaultunits=db.setdefault("suffix","_ptcls"),choices=None )
+		pinv = ParamDef(name="invert",vartype="boolean",desc_short="Invert Pixels",desc_long="Do you want the pixel intensities in the output inverted?",property=None,defaultunits=db.setdefault("invert",False),choices=None)
+		pn =  ParamDef(name="normproc",vartype="string",desc_short="Normalize Images",desc_long="How the output box images should be normalized",property=None,defaultunits=db.setdefault("normproc","normalize.edgemean"),choices=["normalize","normalize.edgemean","normalize.ramp.normvar","None"])
+		pop = ParamDef(name="format",vartype="string",desc_short="Output Image Format",desc_long="The format of the output box images",property=None,defaultunits=db.setdefault("format","bdb"),choices=self.output_formats)
+		params.append([psuffix,pinv])
+		params.append(pn)
+		params.append(pop)
 		return params
 
 	def check_params(self,params):
@@ -2266,7 +2287,10 @@ def get_coord_outnames(params):
 	input = params["filenames"]
 	output = []
 	for name in input:
-		output.append(base_name(name)+".box")
+		if params.get('format') and params['format'].lower() == 'json':
+			output.append(base_name(name) + '.json')
+		else:
+			output.append(base_name(name)+ '.box')
 	return output
 
 from PyQt4 import QtGui
