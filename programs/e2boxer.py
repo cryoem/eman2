@@ -1974,7 +1974,6 @@ class GaussPanel:
 			hgc.addWidget(gconvheader)
 			vbl.addLayout(hgc)
 
-			'''
 			hbl = QtGui.QHBoxLayout()
 			pixel_input_label = QtGui.QLabel("Input Pixel Size:")
 			pixel_input_label.setToolTip("Input pixel size")
@@ -2002,7 +2001,6 @@ class GaussPanel:
 			self.new_pixel_output()
 			self.new_pixel_input()
 			vbl.addLayout(hbl)
-			'''
 
 			hbl_invcont = QtGui.QHBoxLayout()
 			self.invert_contrast_chk = QtGui.QCheckBox("Invert Contrast")
@@ -2079,7 +2077,6 @@ class GaussPanel:
 
 			vbl.addLayout(hbl_ww)
 
-			'''
 			# add input fields for CTF estimation
 			hgctf = QtGui.QHBoxLayout()
 			ctftitle = QtGui.QLabel("<b>Parameters of CTF estimation</b>")
@@ -2192,7 +2189,8 @@ class GaussPanel:
 			self.estimate_ctf_cter =QtGui.QPushButton("Estimate CTF using CTER")
 			hbl_ctf_cter.addWidget(self.estimate_ctf_cter)
 			vbl.addLayout(hbl_ctf_cter)
-			'''
+
+
 
 			#hbl_fed.addWidget(self.estdef)
 
@@ -2216,8 +2214,8 @@ class GaussPanel:
 			#vbl.addLayout(hbl_ctf)
 
 
-			#QtCore.QObject.connect(self.pixel_input_edit,QtCore.SIGNAL("editingFinished()"),self.new_pixel_input)
-			#QtCore.QObject.connect(self.pixel_output_edit,QtCore.SIGNAL("editingFinished()"),self.new_pixel_output)
+			QtCore.QObject.connect(self.pixel_input_edit,QtCore.SIGNAL("editingFinished()"),self.new_pixel_input)
+			QtCore.QObject.connect(self.pixel_output_edit,QtCore.SIGNAL("editingFinished()"),self.new_pixel_output)
 			QtCore.QObject.connect(self.autobox, QtCore.SIGNAL("clicked(bool)"), self.auto_box_clicked)
 			QtCore.QObject.connect(self.clear, QtCore.SIGNAL("clicked(bool)"), self.clear_clicked)
 			QtCore.QObject.connect(self.invert_contrast_chk,QtCore.SIGNAL("clicked(bool)"),self.invert_contrast_checked)
@@ -2228,15 +2226,15 @@ class GaussPanel:
 			QtCore.QObject.connect(self.thr_hi_edit,QtCore.SIGNAL("editingFinished()"),self.new_thr_hi)
 #			QtCore.QObject.connect(self.estimate_ctf,QtCore.SIGNAL("clicked(bool)"), self.calc_ctf)
 #			QtCore.QObject.connect(self.inspect_button,QtCore.SIGNAL("clicked(bool)"), self.inspect_ctf)
-			#QtCore.QObject.connect(self.ctf_window_size,QtCore.SIGNAL("editingFinished()"),self.new_ctf_window)
-			#QtCore.QObject.connect(self.ctf_cs,QtCore.SIGNAL("editingFinished()"),self.new_ctf_cs)
-			#QtCore.QObject.connect(self.ctf_edge_size,QtCore.SIGNAL("editingFinished()"),self.new_ctf_edge)
-			#QtCore.QObject.connect(self.ctf_volt,QtCore.SIGNAL("editingFinished()"),self.new_ctf_volt)
-			#QtCore.QObject.connect(self.ctf_overlap_size,QtCore.SIGNAL("editingFinished()"),self.new_ctf_overlap_size)
-			#QtCore.QObject.connect(self.ctf_ampcont,QtCore.SIGNAL("editingFinished()"),self.new_ctf_ampcont)
-			#QtCore.QObject.connect(self.ctf_kboot,QtCore.SIGNAL("editingFinished()"),self.new_ctf_kboot)
+			QtCore.QObject.connect(self.ctf_window_size,QtCore.SIGNAL("editingFinished()"),self.new_ctf_window)
+			QtCore.QObject.connect(self.ctf_cs,QtCore.SIGNAL("editingFinished()"),self.new_ctf_cs)
+			QtCore.QObject.connect(self.ctf_edge_size,QtCore.SIGNAL("editingFinished()"),self.new_ctf_edge)
+			QtCore.QObject.connect(self.ctf_volt,QtCore.SIGNAL("editingFinished()"),self.new_ctf_volt)
+			QtCore.QObject.connect(self.ctf_overlap_size,QtCore.SIGNAL("editingFinished()"),self.new_ctf_overlap_size)
+			QtCore.QObject.connect(self.ctf_ampcont,QtCore.SIGNAL("editingFinished()"),self.new_ctf_ampcont)
+			QtCore.QObject.connect(self.ctf_kboot,QtCore.SIGNAL("editingFinished()"),self.new_ctf_kboot)
 
-			#QtCore.QObject.connect(self.estimate_ctf_cter,QtCore.SIGNAL("clicked(bool)"), self.calc_ctf_cter)
+			QtCore.QObject.connect(self.estimate_ctf_cter,QtCore.SIGNAL("clicked(bool)"), self.calc_ctf_cter)
 
 		return self.widget
 
@@ -2821,10 +2819,10 @@ class GaussBoxer:
 
 		self.target().clear_boxes([GaussBoxer.REF_NAME,GaussBoxer.AUTO_NAME,GaussBoxer.WEAK_REF_NAME],cache=True)
 
-		#self.panel_object.pixel_output_edit.setText(str(self.pixel_output))
-		#self.panel_object.new_pixel_output()
-		#self.panel_object.pixel_input_edit.setText(str(self.pixel_input))
-		#self.panel_object.new_pixel_input()
+		self.panel_object.pixel_output_edit.setText(str(self.pixel_output))
+		self.panel_object.new_pixel_output()
+		self.panel_object.pixel_input_edit.setText(str(self.pixel_input))
+		self.panel_object.new_pixel_input()
 		self.panel_object.gauss_width.setText(str(self.gauss_width))
 		self.panel_object.gauss_width_edited()
 		self.panel_object.setgwbox=False
