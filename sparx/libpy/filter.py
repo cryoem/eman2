@@ -645,7 +645,7 @@ def fit_tanh(dres, low = 0.1):
 		dres - list produced by the fsc funcion
 		dres[0] - absolute frequencies
 		dres[1] - fsc, because it was calculated from the dataset split into halves, convert it to full using rn = 2r/(1+r)
-		dres[2] - number of point use to calculate fsc coeff
+		dres[2] - number of points use to calculate fsc coeff
 		low cutoff of the fsc curve
 		return parameters of the tanh filter: freq - cutoff frequency at which filter value is 0.5, and fall_off, the 'width' of the filter
 	"""
@@ -698,7 +698,7 @@ def fit_tanh1(dres, low = 0.1):
 		dres - list produced by the fsc funcion
 		dres[0] - absolute frequencies
 		dres[1] - fsc, to be conservative, do not use factor of 2.
-		dres[2] - number of point use to calculate fsc coeff
+		dres[2] - number of points use to calculate fsc coeff
 		low cutoff of the fsc curve
 		return parameters of the tanh filter: freq - cutoff frequency at which filter value is 0.5, and fall_off, the 'width' of the filter
 	"""
@@ -715,7 +715,8 @@ def fit_tanh1(dres, low = 0.1):
 
 	freq = -1.0
 	for i in xrange(1,len(dres[0])-1):
-		if ( dres[1][i]/(1.0+dres[1][i]) < 0.5):
+		#if ( dres[1][i]/(1.0+dres[1][i]) < 0.5):
+		if ( dres[1][i] < 0.5):
 			freq = dres[0][i-1]
 			break
 	if(freq < 0.0):
@@ -723,7 +724,6 @@ def fit_tanh1(dres, low = 0.1):
 		freq = 0.2
 		fall_off = 0.1
 		return freq, fall_off
-	
 	from utilities import amoeba
 	args   = [freq, 0.1]
 	scale  = [0.05, 0.05]
