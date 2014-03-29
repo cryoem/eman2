@@ -667,7 +667,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	#print "  mirror stable  ",nima2
 
 
-	# Keep the alignment paramters of mirror stable particles
+	# Keep the alignment parameters of mirror stable particles
 	ali_params_mir_stab = [[] for i in xrange(num_ali)]
 	for i in xrange(num_ali):
 		for j in mir_stab_part:
@@ -678,7 +678,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 		alpha, sx, sy, mirror = align_diff_params(ali_params_mir_stab[i], ali_params_mir_stab[num_ali-1])
 		args.extend([alpha, sx, sy])
 
-	# Do an initial analysis, purge all outlier particles, whose pixel error are larger than three times of threshold
+	# Do an initial analysis, purge all outlier particles, whose pixel error are larger than three times the threshold
 	data = [ali_params_mir_stab, d]
 	pixel_error_before, ave_params = func(array(args), data, return_avg_pixel_error=False)
 
@@ -737,6 +737,63 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 			if print_individual:  print "Particle %4d :  Mirror unstable"%i
 
 	return stable_set, mir_stab_rate, sqrt(val)
+
+
+
+# args - G, data - [T, d]
+def ave2dtransform(args, data, return_avg_pixel_error=False):
+
+	from math import pi, sin, cos, radians
+
+	ali_params = data[0]
+	d = data[1]
+	L = len(ali_params)
+	N = len(ali_params[0])/4
+
+	args_list= [0.0]*(L*3)
+	for i in xrange(L*3-3):  args_list[i] = args[i]
+
+	cosa = [0.0]*L
+	sina = [0.0]*L
+	for i in xrange(L):
+		cosa[i] = cos(args_list[i*3]*pi/180.0)
+		sina[i] = sin(args_list[i*3]*pi/180.0)
+	sqr_pixel_error = [0.0]*N
+	ave_params = []
+	for i in xrange(N):
+		sum_cosa = 0.0
+		sum_sina = 0.0
+		sx = [0.0]*L
+		sy = [0.0]*L
+		for j in xrange(L):
+			if int(ali_params[j][i*4+3]) == 0:
+				sum_cosa += cos((args_list[j*3]+ali_params[j][i*4])*pi/180.0)
+				sum_sina += sin((args_list[j*3]+ali_params[j][i*4])*pi/180.0)
+				sx[j] =  args_list[j*3+1] + ali_params[j][i*4+1]*cosa[j] + ali_params[j][i*4+2]*sina[j]
+				sy[j] =  args_list[j*3+2] - ali_params[j][i*4+1]*sina[j] + ali_params[j][i*4+2]*cosa[j]
+			else:
+				sum_cosa += cos((-args_list[j*3]+ali_params[j][i*4])*pi/180.0)
+				sum_sina += sin((-args_list[j*3]+ali_params[j][i*4])*pi/180.0)
+				sx[j] = -args_list[j*3+1] + ali_params[j][i*4+1]*cosa[j] - ali_params[j][i*4+2]*sina[j]
+				sy[j] =  args_list[j*3+2] + ali_params[j][i*4+1]*sina[j] + ali_params[j][i*4+2]*cosa[j]
+		sqrtP = sqrt(sum_cosa**2+sum_sina**2)
+		sqr_pixel_error[i] = max( 0.0, d*d/4.*(1-sqrtP/L) + sqerr(sx) + sqerr(sy) )
+		# Get ave transform params
+		H = Transform({"type":"2D"})
+		H.set_matrix([sum_cosa/sqrtP, sum_sina/sqrtP, 0.0, sum(sx)/L, -sum_sina/sqrtP, sum_cosa/sqrtP, 0.0, sum(sy)/L, 0.0, 0.0, 1.0, 0.0])
+		dd = H.get_params("2D")
+		#  We are using here mirror of the LAST SET.
+		H = Transform({"type":"2D","alpha":dd[ "alpha" ],"tx":dd[ "tx" ],"ty": dd[ "ty" ],"mirror":int(ali_params[L-1][i*4+3]),"scale":1.0})
+		dd = H.get_params("2D")
+		ave_params.append([dd[ "alpha" ], dd[ "tx" ], dd[ "ty" ], dd[ "mirror" ]])
+	# Warning: Whatever I return here is squared pixel error, this is for the easy expression of derivative
+	# Don't forget to square root it after getting the value
+	if return_avg_pixel_error:
+		return sum(sqr_pixel_error)/N
+	else:
+		return sqr_pixel_error, ave_params
+
+
 
 def ordersegments(infilaments, ptclcoords):
 	'''
