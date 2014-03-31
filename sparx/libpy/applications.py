@@ -6048,7 +6048,7 @@ def local_ali3dm_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, 
 		from reconstruction import rec3D_MPI
 	else:
 		from reconstruction import rec3D_MPI_noCTF
-	
+
 
 	#  this is needed for gathering of pixel errors
 	disps = []

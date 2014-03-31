@@ -18571,21 +18571,21 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 		    		double qn = retvals["qn"];
 		    		double qm = retvals["qm"];
 		    		if(qn >= peak || qm >= peak) {
-					sx = -ix;
-					sy = -iy;
-					nref = iref;
-					if (qn >= qm) {
-						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-						peak = static_cast<float>( qn );
-						mirror = 0;
-					} else {
-						ang = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
-						peak = static_cast<float>( qm );
-						mirror = 1;
-					}
-				}
-		    }
-		}  delete cimage; cimage = 0;
+                        sx = -ix;
+                        sy = -iy;
+                        nref = iref;
+                        if (qn >= qm) {
+                            ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+                            peak = static_cast<float>( qn );
+                            mirror = 0;
+                        } else {
+                            ang = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
+                            peak = static_cast<float>( qm );
+                            mirror = 1;
+                        }
+				    }
+		        }
+		    }  delete cimage; cimage = 0;
 	    }
 	}
 	float co, so, sxs, sys;
