@@ -281,7 +281,7 @@ f = open(OUTFILE2, 'w')      # card.txt to be placed in the E2FA subdirectory cr
  
 # Card 1
 CFORM = 'M'
-IFLAG = '0'
+IFLAG = '1'
 FMAG = FDEF = FASTIG = FPART = FMATCH = 'F'
 IEWALD = '0'
 s = CFORM + SPACE + IFLAG + SPACE + FMAG + SPACE + FDEF + SPACE + FASTIG + SPACE + FPART + SPACE + IEWALD + SPACE + FBEAUT + SPACE + FFILT + SPACE + FBFACT + SPACE + FMATCH + SPACE + IFSC + SPACE + FSTAT + SPACE + IBLOW + '\n'
