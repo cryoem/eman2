@@ -48,7 +48,7 @@ def main():
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ou",       type="float",        default=-1,            help="radius < int(nx/2)-1 (set to int(nx/2)-1)")
 	parser.add_option("--delta",    type="float",        default=2,             help="angular bracket (set to 2)")
-	parser.add_option("--ts",       type="float",        default=0.25,          help="shift bracket (set to 2)")
+	parser.add_option("--ts",       type="float",        default=2.0,          help="shift bracket (set to 2)")
 	parser.add_option("--maxit",    type="int",          default=2,             help="maximum number of iterations (set to 10) ")
 	parser.add_option("--termprec", type="float",        default=0.0,           help="Minimum percentage of assignment change to stop the program")   
 	parser.add_option("--nassign",  type="int",          default=4,             help="number of assignment steps in one iteration")
