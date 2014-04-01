@@ -146,6 +146,7 @@ class Target(object):
         # Add a bunch of attributes to the args Namespace
         args.python = self.python
         args.distname = '%s.%s'%(args.cvsmodule, args.release)
+	args.distname_source ='%s.%s'%(args.cvsmodule, args.target)
         args.installtxt = self.installtxt
         args.bashrc = self.bashrc
         args.cshrc = self.cshrc
@@ -157,12 +158,16 @@ class Target(object):
         # I just want to avoid excessive duplicate os.join()
         # calls in the main code, because each one is a chance for an error.        
         args.cwd_co           = os.path.join(args.root, 'co')
-        args.cwd_co_distname  = os.path.join(args.root, 'co',      args.distname)
-        args.cwd_extlib       = os.path.join(args.root, 'extlib',  args.distname)
+        args.cwd_co_distname  = os.path.join(args.root, 'co',	args.distname)
+	args.cwd_extlib       = os.path.join(args.root, 'extlib',  args.distname)
         args.cwd_build        = os.path.join(args.root, 'build',   args.distname)
         args.cwd_images       = os.path.join(args.root, 'images',  args.distname)
+	args.cwd_images_source = os.path.join(args.root, 'images',  args.distname_source)
         args.cwd_stage        = os.path.join(args.root, 'stage',   args.distname)
+	args.cwd_stage_source = os.path.join(args.root, 'stage',   args.distname_source)
+	args.cwd_stage_source_path = os.path.join(args.root, 'stage',   args.distname_source,'EMAN2/src/build')
         args.cwd_rpath        = os.path.join(args.root, 'stage',   args.distname, args.cvsmodule.upper())
+	args.cwd_rpath_source = os.path.join(args.root, 'stage',   args.distname_source, args.cvsmodule.upper(),'src/build')
         args.cwd_rpath_extlib = os.path.join(args.cwd_rpath, 'extlib')
         args.cwd_rpath_lib    = os.path.join(args.cwd_rpath, 'lib')        
 
@@ -576,33 +581,33 @@ class SourceInstall(Builder):
         log("Copying source...")
 
         log("...removing previous install: %s"%self.args.cwd_stage)
-        rmtree(self.args.cwd_stage)
-        
-        log("...copying source: %s"%self.args.cwd_stage)
-        shutil.copytree(self.args.cwd_co_distname, self.args.cwd_rpath, symlinks=True)        
+        rmtree(self.args.cwd_stage_source_path)
+
+        log("...copying source: %s"%self.args.cwd_stage_source_path)
+        shutil.copytree(self.args.cwd_co_distname, self.args.cwd_rpath_source, symlinks=True)        
 
 class SourcePackage(Builder):
     def run(self):
         log("Building source tarball")
-        mkdirs(os.path.join(self.args.cwd_images))
+        mkdirs(os.path.join(self.args.cwd_images_source))
 
         now = datetime.datetime.now().strftime('%Y-%m-%d')   
-        with open(os.path.join(self.args.cwd_rpath, 'build_date.'+now), 'w') as f:
+        with open(os.path.join(self.args.cwd_rpath_source, 'build_date.'+now), 'w') as f:
             f.write("EMAN2 %s source code from %s."%(self.args.cvstag, now))
 
         imgname = "%s.%s.%s.tar.gz"%(self.args.cvsmodule, self.args.release, self.args.target_desc)
-        img = os.path.join(self.args.cwd_images, imgname)
+        img = os.path.join(self.args.cwd_images_source, imgname)
         hdi = ['tar', '-czf', img, 'EMAN2']
-        cmd(hdi, cwd=self.args.cwd_stage)
+        cmd(hdi, cwd=self.args.cwd_stage_source)
+
 
 class SourceUpload(Builder):
     def run(self):
         log("Uploading source tarball")
         imgname = "%s.%s.%s.tar.gz"%(self.args.cvsmodule, self.args.release, self.args.target_desc)
-        img = os.path.join(self.args.cwd_images, imgname)
+        img = os.path.join(self.args.cwd_images_source, imgname)
         scpdest = "eman@%s:%s/%s"%(self.args.scphost, self.args.scpdest, imgname)
         scp = ['scp', img, scpdest]
-        print "...", scp
         cmd(scp)
         
 ##### Registry #####
