@@ -484,7 +484,7 @@ void ColorRGBGenerator::generateRadialColorMap()
 		}
 		if(normrad >= 2.094){
 			if (normrad > 4.189f) normrad = 4.189f;
-			normrad =- 2.094f;
+			normrad -= 2.094f;
 			colormap[i*3] = 0.0;
 			colormap[i*3 + 1] = 0.5f*(1 + cos(normrad)/cos(1.047f - normrad));
 			colormap[i*3 + 2] = 1.5f - colormap[i*3 + 1];
@@ -523,7 +523,7 @@ float* ColorRGBGenerator::getRGBColor(int x, int y, int z)
 		}
 		if(value >= 2.094){
 			if (value > 4.189f) value = 4.189f;
-			value =- 2.094f;
+			value -= 2.094f;
 			rgb[0] = 0.0;
 			rgb[1] = 0.5f*(1 + cos(value)/cos(1.047f - value));
 			rgb[2] = 1.5f - rgb[1];
