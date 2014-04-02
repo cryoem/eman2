@@ -857,8 +857,8 @@ namespace EMAN
 
 #ifdef FFT_CACHING
 		mutable EMData *fftcache;
-#endif FFT_CACHING
-		
+#endif
+
 		// Clip inplace variables is a local class used from convenience in EMData::clip_inplace
 		// Added by d.woolford
 		class ClipInplaceVariables

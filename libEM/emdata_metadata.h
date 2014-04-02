@@ -145,7 +145,7 @@ inline void update()
 	changecount++;
 #ifdef FFT_CACHING
 	if (fftcache!=0) { delete fftcache; fftcache=0; }
-#endif FFT_CACHING
+#endif //FFT_CACHING
 
 }
 

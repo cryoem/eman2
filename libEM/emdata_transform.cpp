@@ -63,7 +63,7 @@ EMData *EMData::do_fft() const
 	if (fftcache!=0) {
 		return fftcache->copy();
 	}
-#endif FFT_CACHING
+#endif //FFT_CACHING
 
 	if (is_complex() ) { // ming add 08/17/2010
 #ifdef NATIVE_FFT
@@ -113,7 +113,7 @@ EMData *EMData::do_fft() const
 		if (nxyz<80000000) {
 			fftcache=dat->copy();
 		}
-#endif FFT_CACHING
+#endif //FFT_CACHING
 		return dat;
 	}
 }
