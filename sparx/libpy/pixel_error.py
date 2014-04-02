@@ -275,7 +275,7 @@ def align_diff(data1, data2=None, suffix="_ideal"):
 def align_diff_textfile(textfile1, textfile2):
 	
 	'''
-	This function determines the relative angle, shifts and mirrorness between
+	This function (2D) determines the relative angle, shifts and mirrorness between
 	the two textfile of alignment parameters
 	'''
 	from utilities import read_text_row

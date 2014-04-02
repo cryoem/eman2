@@ -2921,6 +2921,13 @@ def getang(n):
 	from math import atan2, acos, degrees
 	return degrees(atan2(n[1],n[0]))%360.0, degrees(acos(n[2]))%360.0
 
+def getang3(p1,p2):
+	from utilities import getfvec
+	from math import acos, degrees
+	n1 = getfvec(p1[0],p1[1])
+	n2 = getfvec(p2[0],p2[1])
+	return degrees(acos(n1[0]*n2[0]+n1[1]*n2[1]+n1[2]*n2[2]))
+
 def getvec( phi, tht ):
 	from math import radians,cos,sin
 
