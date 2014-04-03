@@ -18628,7 +18628,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
     vector<float> n1;
     vector<float> n2;
     vector<float> n3;
-
+ //cout << ant <<endl;
      if( ant >= 0.0) {
         t = image->get_attr("xform.projection");
         n1.resize((int)crefim_len);
@@ -18672,7 +18672,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 	}
 
 	float sx=0.0f, sy=0.0f;
-	float peak = -previousmax;
+	float peak = -1.0e23f;
 	float ang = 0.0f;
 	int nref = 0, mirror = 0;
 	bool found_better = false;
@@ -18709,6 +18709,9 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 			    EMData* cimage = cimages[i+ky][j+kx];
     			Dict retvals = Crosrng_rand_ms(crefim[iref], cimage, numr, previousmax);
 	    		const float new_peak = static_cast<float>( retvals["qn"] );
+
+	    		//cout << new_peak <<endl;
+
 		    	if (new_peak > peak) {
 			    	sx = -ix;
 				    sy = -iy;
@@ -18717,12 +18720,14 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 		    		peak = new_peak;
 			    	mirror = static_cast<int>( retvals["mirror"] );
 				    found_better = (peak > previousmax);
+				    //cout << found_better <<endl;
     				if (found_better) break;
 				}
 			}
 		}
 	}
-	
+	//cout << "  JUMPED OUT " <<endl;
+
 	for (unsigned i = 0; i < cimages.size(); ++i) {
 		for (unsigned j = 0; j < cimages[i].size(); ++j) {
 			delete cimages[i][j];
