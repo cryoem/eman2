@@ -27,12 +27,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-import os
+import os, sys
 import json
 from optparse import OptionParser
 
-from EMAN2 import EMData, Region
+from EMAN2 import EMData, Region, Util
 from utilities import read_text_row, set_ctf
+from filter import filt_gaussh
 
 
 def read_coordinates(location):
@@ -56,14 +57,24 @@ def window(data):
 	"""
 	for k, info in data.items():
 		print 'Processing {0}'.format(k)
+		box_size = data[k]['box_size']
+		pixel_ratio = float(data[k]['input_pixel'])/float(data[k]['output_pixel'])
 		img = EMData()
 		img.read_image(k)
-		box_size = data[k]['box_size']
+		img_filt = filt_gaussh(img, pixel_ratio/box_size)
+
+
+		if pixel_ratio != 1.0:
+			print "Generating downsampled image\n"
+			sb = Util.sincBlackman(15, .5 * pixel_ratio,1999) # 1999 taken directly from util_sparx.h
+			img_filt = img_filt.downsample(sb, pixel_ratio)
+			box_size = box_size / pixel_ratio
+
 		output_file_name = 'out_' + os.path.basename(k)
 		clip = EMData()
 		for i, (x, y) in enumerate(data[k]['coordinates']):
-			reg = Region(x-box_size//2, y-box_size//2, box_size, box_size)
-			clip = img.get_clip(reg)
+			reg = Region((x * pixel_ratio)-box_size//2, (y * pixel_ratio)-box_size//2, box_size, box_size)
+			clip = img_filt.get_clip(reg)
 			clip.write_image(output_file_name, i)
 		# Set ctf
 		set_ctf(clip, data[k]['ctf'])
@@ -75,6 +86,8 @@ def main():
 	parser.add_option('-c', '--coord', dest='coord', help='location where coordinates are located')
 	parser.add_option('-f', '--ctf', dest='ctf_file', help='ctf information file')
 	parser.add_option('-m', '--mic_dir', dest='mic_dir', help='micrograph location')
+	parser.add_option('-i', '--input_pixel', dest='input_pixel', help='input pixel size', default=1)
+	parser.add_option('-o', '--output_pixel', dest='output_pixel', help='output pixel size', default=1)
 	(options, args) = parser.parse_args()
 
 	if options.coord and os.path.exists(options.coord):
@@ -105,6 +118,10 @@ def main():
 
 			# Add CTF information
 			data[mic_path]['ctf'] = ctf_dir[mic_name]
+
+			# Add input output pixel size
+			data[mic_path]['input_pixel'], data[mic_path]['output_pixel'] = options.input_pixel, options.output_pixel
+
 		# Now that data contains information about each micrographs, let's window particles.
 		window(data)
 	else:
