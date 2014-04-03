@@ -18625,9 +18625,9 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 	const size_t crefim_len = crefim.size();
 	const float qv = static_cast<float>( pi/180.0 );
     Transform * t = 0;
-    vector<float> n1(crefim_len);
-    vector<float> n2(crefim_len);
-    vector<float> n3(crefim_len);
+    vector<float> n1;
+    vector<float> n2;
+    vector<float> n3;
 
      if( ant >= 0.0) {
         t = image->get_attr("xform.projection");
