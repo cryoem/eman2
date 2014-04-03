@@ -2082,7 +2082,7 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 		finfo.flush()
 
 	previousmax = data.get_attr("previousmax")
-	[ang, sxs, sys, mirror, iref, peak, checked_refs] = Util.shc(data, refrings, xrng, yrng, step, ant, mode, numr, cnx, cny, sym) ) #+dp["tx"], cny+dp["ty"])
+	[ang, sxs, sys, mirror, iref, peak, checked_refs] = Util.shc(data, refrings, xrng, yrng, step, ant, mode, numr, cnx, cny, sym)  #+dp["tx"], cny+dp["ty"])
 	iref=int(iref)
 	number_of_checked_refs += int(checked_refs)
 	#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
