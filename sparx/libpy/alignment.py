@@ -2054,9 +2054,9 @@ def alivol_mask( v, vref, mask ):
 
 # =================== SHC
 
-def shc(data, refrings, numr, xrng, yrng, step, an, finfo=None):
+def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=None):
 	from utilities    import compose_transform2
-	from math         import cos, sin, pi
+	from math         import cos, sin, pi, degrees, radians
 	from EMAN2 import Vec2f
 
 	ID = data.get_attr("ID")
@@ -2070,7 +2070,8 @@ def shc(data, refrings, numr, xrng, yrng, step, an, finfo=None):
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
 
-	ant = cos(an*pi/180.0)
+	if( an>= 0.0):  ant = cos(radians(an))
+	else:           ant = -1.0
 	#phi, theta, psi, sxo, syo = get_params_proj(data)
 	t1 = data.get_attr("xform.projection")
 	#dp = t1.get_params("spider")
@@ -2081,7 +2082,7 @@ def shc(data, refrings, numr, xrng, yrng, step, an, finfo=None):
 		finfo.flush()
 
 	previousmax = data.get_attr("previousmax")
-	[ang, sxs, sys, mirror, iref, peak, checked_refs] = Util.shc(data, refrings, xrng, yrng, step, ant, mode, numr, cnx, cny ) #+dp["tx"], cny+dp["ty"])
+	[ang, sxs, sys, mirror, iref, peak, checked_refs] = Util.shc(data, refrings, xrng, yrng, step, ant, mode, numr, cnx, cny, sym) ) #+dp["tx"], cny+dp["ty"])
 	iref=int(iref)
 	number_of_checked_refs += int(checked_refs)
 	#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
@@ -2102,7 +2103,7 @@ def shc(data, refrings, numr, xrng, yrng, step, an, finfo=None):
 		if found_current_location:
 			return -1.0e23, 0.0, number_of_checked_refs, ir
 		"""
-	else:	
+	else:
 		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
 		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
@@ -2130,4 +2131,3 @@ def shc(data, refrings, numr, xrng, yrng, step, an, finfo=None):
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 			finfo.flush()
 		return peak, pixel_error, number_of_checked_refs, iref
-

@@ -69,6 +69,10 @@ struct EMAN_Symmetry3D_Wrapper : public EMAN::Symmetry3D
 		return call_method< EMAN::Transform >(py_self, "get_sym", n);
 	}
 
+	EMAN::Transform get_sym_proj(const string s) const {
+		return call_method< EMAN::Transform >(py_self, "get_sym_proj", s);
+	}
+
 	EMAN::Dict get_delimiters(const bool b) const {
 		return call_method< EMAN::Dict >(py_self, "get_delimiters",b);
 	}
@@ -607,6 +611,7 @@ BOOST_PYTHON_MODULE(libpyTransform2)
 		.def("at", &EMAN::Transform::at, "Get the value stored in the internal transformation matrix at at coordinate (r,c)\n")
 		.def("get_nsym", &EMAN::Transform::get_nsym, args("sym"), "get the number of symmetries associated with the given symmetry name\n")
 		.def("get_sym", &EMAN::Transform::get_sym, args("sym", "n"), "Apply the symmetry deduced from the function arguments to this Transform and\nreturn the result\n")
+		.def("get_sym_proj", &EMAN::Transform::get_sym_proj, args("sym", "s"), "Who knows  Apply the symmetry deduced from the function arguments to this Transform and\nreturn the result\n")
 		.def("get_scale", &EMAN::Transform::get_scale, "Get the scale that was applied\n \nreturn the scale factor\n")
 		.def("scale", &EMAN::Transform::scale, args("scale"), "Increment the scale\n \nscale - the amount to scale by\n")
 		.def("to_identity", &EMAN::Transform::to_identity, "Force the internal matrix to become the identity\n")

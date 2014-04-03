@@ -18537,10 +18537,10 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 	Transform * t = image->get_attr("xform.projection");
 	Dict d = t->get_params("spider");
 	if(t) {delete t; t=0;}
-	float phi = d["phi"];
+	float phi   = d["phi"];
 	float theta = d["theta"];
-	int   ky = int(2*yrng/step+0.5)/2;
-	int   kx = int(2*xrng/step+0.5)/2;
+	int   ky    = int(2*yrng/step+0.5)/2;
+	int   kx    = int(2*xrng/step+0.5)/2;
 	int   iref, nref=0, mirror=0;
 	float iy, ix, sx=0, sy=0;
 	float peak = -1.0E23f;
@@ -18552,9 +18552,9 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 	vector<float> n2(crefim_len);
 	vector<float> n3(crefim_len);
 	for ( iref = 0; iref < (int)crefim_len; iref++) {
-			n1[iref] = crefim[iref]->get_attr("n1");
-			n2[iref] = crefim[iref]->get_attr("n2");
-			n3[iref] = crefim[iref]->get_attr("n3");
+		n1[iref] = crefim[iref]->get_attr("n1");
+		n2[iref] = crefim[iref]->get_attr("n2");
+		n3[iref] = crefim[iref]->get_attr("n3");
 	}
 	for (int i = -ky; i <= ky; i++) {
 	    iy = i * step ;
@@ -18610,7 +18610,7 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 
 vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, float ant, string mode,
-                vector<int>numr, float cnx, float cny) {
+                vector<int>numr, float cnx, float cny, string sym) {
 
     // Manually extract.
 /*    vector< EMAN::EMData* > crefim;
@@ -18624,6 +18624,23 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 */
 	const size_t crefim_len = crefim.size();
 	const float qv = static_cast<float>( pi/180.0 );
+    Transform * t = 0;
+    vector<float> n1(crefim_len);
+    vector<float> n2(crefim_len);
+    vector<float> n3(crefim_len);
+
+     if( ant >= 0.0) {
+        t = image->get_attr("xform.projection");
+        n1.resize((int)crefim_len);
+        n2.resize((int)crefim_len);
+        n3.resize((int)crefim_len);
+        for ( int iref = 0; iref < (int)crefim_len; iref++) {
+            n1[iref] = crefim[iref]->get_attr("n1");
+            n2[iref] = crefim[iref]->get_attr("n2");
+            n3[iref] = crefim[iref]->get_attr("n3");
+        }
+    }
+
 
 	//Transform * t = image->get_attr("xform.projection");
 	const float previousmax = image->get_attr("previousmax");
@@ -18633,9 +18650,9 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 	//float theta = d["theta"];
 	const int ky = int(2*yrng/step+0.5)/2;
 	const int kx = int(2*xrng/step+0.5)/2;
-	
+
 	vector< vector<EMData*> > cimages( 2*ky+1, vector<EMData*>(2*kx+1) );
-	
+
 	for (int i = -ky; i <= ky; i++) {
 		const int iy = i * step ;
 		for (int j = -kx; j <= kx; j++) {
@@ -18646,7 +18663,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 			cimages[i+ky][j+kx] = cimage;
 		}
 	}
-	
+
 	vector<unsigned> listr(crefim_len);
 	for (unsigned i = 0; i < crefim_len; ++i) listr[i] = i;
 	for (unsigned i = 0; i < crefim_len; ++i) {
@@ -18654,33 +18671,53 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 		swap( listr[r], listr[i] );
 	}
 
-	float sx=0, sy=0;
-	float peak = -1;
-	float ang=0.0f;
-	int nref=0, mirror=0;
+	float sx=0.0f, sy=0.0f;
+	float peak = -previousmax;
+	float ang = 0.0f;
+	int nref = 0, mirror = 0;
 	bool found_better = false;
 	size_t tiref = 0;
 	for ( ;  (tiref < crefim_len) && (! found_better); tiref++) {
 		const int iref = listr[tiref];
-		std::vector<int> shifts = shuffled_range( 0, (2*kx+1) * (2*ky+1) - 1 );
-		for ( unsigned nodeId = 0;  nodeId < shifts.size();  ++nodeId ) {
-			const int i = ( shifts[nodeId] % (2*ky+1) ) - ky;
-			const int j = ( shifts[nodeId] / (2*ky+1) ) - kx;
-			const float iy = i * step;
-			const float ix = j * step;
-			EMData* cimage = cimages[i+ky][j+kx];
-			Dict retvals = Crosrng_rand_ms(crefim[iref], cimage, numr, previousmax);
-			const float new_peak = static_cast<float>( retvals["qn"] );
-			if (new_peak > peak) {
-				sx = -ix;
-				sy = -iy;
-				nref = iref;
-				ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-				peak = new_peak;
-				mirror = static_cast<int>( retvals["mirror"] );
-				found_better = (peak > previousmax);
-				if (found_better) {
-					break;
+		//  Here check for neighbors
+		bool gogo;
+		if( ant >= 0.0 )  {
+		    bool gogo = false;
+		    vector<Transform> tsym = t->get_sym_proj(sym);
+		    int isym = 0;
+		    int nsym = tsym.size();
+		    while ( isym < nsym && not gogo ) {
+                Dict d = tsym[isym].get_params("spider");
+                float phi   = d["phi"];
+                float theta = d["theta"];
+                float imn1 = sin(theta*qv)*cos(phi*qv);
+                float imn2 = sin(theta*qv)*sin(phi*qv);
+                float imn3 = cos(theta*qv);
+		        if(abs(n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3)>=ant)  gogo = true;
+		        isym ++;
+		     }
+		}
+        else    gogo = true;
+
+        if( gogo ) {
+	    	std::vector<int> shifts = shuffled_range( 0, (2*kx+1) * (2*ky+1) - 1 );
+		    for ( unsigned nodeId = 0;  nodeId < shifts.size();  ++nodeId ) {
+			    const int i = ( shifts[nodeId] % (2*ky+1) ) - ky;
+    			const int j = ( shifts[nodeId] / (2*ky+1) ) - kx;
+	    		const float iy = i * step;
+		    	const float ix = j * step;
+			    EMData* cimage = cimages[i+ky][j+kx];
+    			Dict retvals = Crosrng_rand_ms(crefim[iref], cimage, numr, previousmax);
+	    		const float new_peak = static_cast<float>( retvals["qn"] );
+		    	if (new_peak > peak) {
+			    	sx = -ix;
+				    sy = -iy;
+    				nref = iref;
+	    			ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+		    		peak = new_peak;
+			    	mirror = static_cast<int>( retvals["mirror"] );
+				    found_better = (peak > previousmax);
+    				if (found_better) break;
 				}
 			}
 		}
@@ -19550,10 +19587,10 @@ vector<float> Util::multiref_polar_ali_helicon_90_local(EMData* image, const vec
 		n2[iref] = crefim[iref]->get_attr("n2");
 		n3[iref] = crefim[iref]->get_attr("n3");
 	}
-	
+
 	float stepy;
 	int ky;
-	
+
 	if (ynumber == 0) {
 		ky = 0;
 	} else {

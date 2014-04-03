@@ -3960,10 +3960,10 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 		print_msg("Translational step          : %s\n"%(step))
 		print_msg("Angular step                : %s\n"%(delta))
 		print_msg("Angular search range (phi and theta)       : %s\n"%(an))
-		print_msg("Angular search range (psi)                 : %s\n"%(apsi))
-		print_msg("Delta psi                   : %s\n"%(deltapsi))
-		print_msg("Start psi                   : %s\n"%(startpsi))
-		print_msg("Maximum iteration           : %i\n"%(max_iter))
+		#print_msg("Angular search range (psi)                 : %s\n"%(apsi))
+		#print_msg("Delta psi                   : %s\n"%(deltapsi))
+		#print_msg("Start psi                   : %s\n"%(startpsi))
+		print_msg("Maximum number of iterations : %i\n"%(max_iter))
 		print_msg("Percentage of change for termination: %f\n"%(termprec))
 		print_msg("Center type                 : %i\n"%(center))
 		print_msg("CTF correction              : %s\n"%(CTF))
@@ -4060,7 +4060,8 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 
 			if myid == main_node:
 				start_time = time()
-				print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f, delta psi = %5.2f, start psi = %5.2f\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],yrng[N_step],step[N_step],deltapsi[N_step],startpsi[N_step]))
+				print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %5.2f, an = %5.2f, xrange = %5.2f, yrange = %5.2f,translational step = %5.2f\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step], yrng[N_step], step[N_step]))
+				#print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f, delta psi = %5.2f, start psi = %5.2f\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],yrng[N_step],step[N_step],deltapsi[N_step],startpsi[N_step]))
 
 			#=========================================================================
 			# build references
@@ -4100,7 +4101,8 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 			iter_indexes = range(nima)
 			shuffle(iter_indexes)
 			for im in iter_indexes:
-				peak, pixer[im], number_of_checked_refs, iref = shc(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],finfo)
+				peak, pixer[im], number_of_checked_refs, iref = \
+					shc(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], an[N_step], sym, finfo)
 				if gamma > 0:
 					n1 = refrings[iref].get_attr("n1")
 					n2 = refrings[iref].get_attr("n2")
