@@ -56,12 +56,11 @@ TagTable::~TagTable()
 {
 	for (unsigned int i = 0; i < data_list.size(); i++) {
 		if (data_list[i]) {
-			delete[]data_list[i];
+			delete [] data_list[i];
 			data_list[i] = 0;
 		}
 	}
 }
-
 
 void TagTable::add(const string & name, const string & value)
 {
@@ -159,7 +158,6 @@ void TagTable::set_thumb_index(int i)
 	}
 }
 
-
 TagData::TagData(FILE * data_file, TagTable * table, const string & tagname)
 	:	in(data_file), tagtable(table), name(tagname), tag_type(UNKNOWN)
 {
@@ -172,52 +170,53 @@ TagData::~TagData()
 string TagData::read_native(bool is_value_stored)
 {
 	size_t sz = typesize();
+	size_t nr;
 	char val_str[32];
 
 	if (tag_type == SHORT) {
 		short val = 0;
-		fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in);
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%d", val);
 	}
 	else if (tag_type == USHORT) {
 		unsigned short val = 0;
-		fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in);
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%d", val);
 	}
 	else if (tag_type == INT) {
 		int val = 0;
-		fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in);
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%d", val);
 	}
 	else if (tag_type == CHAR || tag_type == OCTET) {
 		char val = 0;
-		fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in);
 		sprintf(val_str, "%d", val);
 	}
 	else if (tag_type == BOOLEAN) {
 		bool val = false;
-		fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in);
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%d", val);
 	}
 	else if (tag_type == UINT) {
 		unsigned int val = 0;
-		fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in);
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%d", (int) val);
 	}
 	else if (tag_type == FLOAT) {
 		float val = 0;
-		fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in);
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%f", val);
 	}
 	else if (tag_type == DOUBLE) {
 		double val = 0;
-		fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in);
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%10e", val);
 	}
@@ -235,13 +234,13 @@ string TagData::read_native(bool is_value_stored)
 	return string(val_str);
 }
 
-
 vector < int >TagData::read_array_types()
 {
 	LOGVAR("TagData::read_array_types()");
 
 	int array_type = 0;
-	fread(&array_type, sizeof(array_type), 1, in);
+	size_t nr;
+	nr = fread(&array_type, sizeof(array_type), 1, in);
 
 	ByteOrder::become_big_endian(&array_type);
 
@@ -263,8 +262,8 @@ vector < int >TagData::read_array_types()
 	return item_types;
 }
 
-
 // string tag data are stored in unicode
+
 string TagData::read_string(int size)
 {
 	if (size <= 0) {
@@ -274,7 +273,8 @@ string TagData::read_string(int size)
 	unsigned short *buf = new unsigned short[size];
 	char *str = new char[size + 1];
 
-	fread(buf, size * sizeof(unsigned short), 1, in);
+	size_t nr;
+	nr = fread(buf, size * sizeof(unsigned short), 1, in);
 	tagtable->become_host_endian < unsigned short >(buf, size);
 
 	for (int i = 0; i < size; i++) {
@@ -284,20 +284,18 @@ string TagData::read_string(int size)
 	str[size] = '\0';
 	string str1 = string(str);
 
-	if( str )
-	{
-		delete[]str;
-		str = 0;
+	if (str) {
+		delete [] str;
+		str = NULL;
 	}
-	if( buf )
-	{
-		delete[]buf;
-		buf = 0;
+
+	if (buf) {
+		delete [] buf;
+		buf = NULL;
 	}
 
 	return str1;
 }
-
 
 int TagData::read_array_data(vector < int >item_types, bool nodata)
 {
@@ -310,7 +308,8 @@ int TagData::read_array_data(vector < int >item_types, bool nodata)
 	int err = 0;
 	int array_size = 0;
 
-	fread(&array_size, sizeof(array_size), 1, in);
+	size_t nr;
+	nr = fread(&array_size, sizeof(array_size), 1, in);
 	ByteOrder::become_big_endian(&array_size);
 
 	LOGVAR("array size = %d\n", array_size);
@@ -331,7 +330,7 @@ int TagData::read_array_data(vector < int >item_types, bool nodata)
 	}
 	else if (!nodata && name == "Data") {
 		char *data = new char[buf_size];
-		fread(data, buf_size, 1, in);
+		nr = fread(data, buf_size, 1, in);
 
 		if (item_size == sizeof(short)) {
 			tagtable->become_host_endian((short *) data, array_size);
@@ -363,10 +362,11 @@ vector < int >TagData::read_struct_types()
 	unsigned int namelength = 0;
 	unsigned int nfields = 0;
 
-	fread(&namelength, sizeof(namelength), 1, in);
+	size_t nr;
+	nr = fread(&namelength, sizeof(namelength), 1, in);
 	ByteOrder::become_big_endian(&namelength);
 
-	fread(&nfields, sizeof(nfields), 1, in);
+	nr = fread(&nfields, sizeof(nfields), 1, in);
 	ByteOrder::become_big_endian(&nfields);
 
 	LOGVAR("namelength = %d\n", namelength);
@@ -375,11 +375,11 @@ vector < int >TagData::read_struct_types()
 	vector < int >field_types;
 
 	for (unsigned int i = 0; i < nfields; i++) {
-		fread(&namelength, sizeof(namelength), 1, in);
+		nr = fread(&namelength, sizeof(namelength), 1, in);
 		ByteOrder::become_big_endian(&namelength);
 
 		int field_type = 0;
-		fread(&field_type, sizeof(field_type), 1, in);
+		nr = fread(&field_type, sizeof(field_type), 1, in);
 		ByteOrder::become_big_endian(&field_type);
 
 		LOGVAR("%dth namelength = %d, type = '%s'",
@@ -390,13 +390,12 @@ vector < int >TagData::read_struct_types()
 	return field_types;
 }
 
-
-
 int TagData::read_any(bool nodata)
 {
 	int err = 0;
 
-	fread(&tag_type, sizeof(tag_type), 1, in);
+	size_t nr;
+	nr = fread(&tag_type, sizeof(tag_type), 1, in);
 	ByteOrder::become_big_endian(&tag_type);
 	LOGVAR("tag type = '%s'\n", Gatan::to_str((Type) tag_type));
 
@@ -418,11 +417,11 @@ int TagData::read_any(bool nodata)
 	}
 	else if (tag_type == STRING) {
 		int str_sz = 0;
-		fread(&str_sz, sizeof(str_sz), 1, in);
+		nr = fread(&str_sz, sizeof(str_sz), 1, in);
 		ByteOrder::become_big_endian(&str_sz);
 
 		char *val = new char[str_sz + 1];
-		fread(val, str_sz, 1, in);
+		nr = fread(val, str_sz, 1, in);
 		val[str_sz] = '\0';
 		string val_str = string(val);
 		if( val )
@@ -448,7 +447,9 @@ int TagData::read(bool nodata)
 	const char *DATA_TYPE_MARK = "%%%%";
 	const size_t mark_sz = strlen(DATA_TYPE_MARK);
 	char *mark = new char[mark_sz + 1];
-	fread(mark, mark_sz, 1, in);
+
+	size_t nr;
+	nr = fread(mark, mark_sz, 1, in);
 	mark[mark_sz] = '\0';
 
 	if (strcmp(mark, DATA_TYPE_MARK) != 0) {
@@ -457,14 +458,13 @@ int TagData::read(bool nodata)
 		return 1;
 	}
 
-	if( mark )
-	{
-		delete[]mark;
+	if (mark) {
+		delete [] mark;
 		mark = 0;
 	}
 
 	int encoded_types_size = 0;
-	fread(&encoded_types_size, sizeof(int), 1, in);
+	nr = fread(&encoded_types_size, sizeof(int), 1, in);
 	ByteOrder::become_big_endian(&encoded_types_size);
 
 	LOGVAR("encoded types size = %d\n", encoded_types_size);
@@ -473,7 +473,6 @@ int TagData::read(bool nodata)
 
 	return err;
 }
-
 
 size_t TagData::typesize() const
 {
@@ -534,11 +533,11 @@ int TagGroup::read(bool nodata)
 {
 	LOGVAR("TagGroup::read()");
 
-
 	int ntags = 0;
 	portable_fseek(in, sizeof(char) * 2, SEEK_CUR);
 	
-	fread(&ntags, sizeof(ntags), 1, in);
+	size_t nr;
+	nr = fread(&ntags, sizeof(ntags), 1, in);
 	
 	ByteOrder::become_big_endian(&ntags);
 	
@@ -570,8 +569,6 @@ int TagGroup::get_entry_id()
 	return id;
 }
 
-
-
 /////////////////////////////////////////////
 
 TagEntry::TagEntry(FILE * data_file, TagTable * table, TagGroup * parent)
@@ -583,7 +580,6 @@ TagEntry::~TagEntry()
 {
 }
 
-
 int TagEntry::read(bool nodata)
 {
 	LOGVAR("TagEntry::read()");
@@ -591,7 +587,8 @@ int TagEntry::read(bool nodata)
 	char tag_type = 0;
 	char *tmp_name = 0;
 
-	fread(&tag_type, sizeof(char), 1, in);
+	size_t nr;
+	nr = fread(&tag_type, sizeof(char), 1, in);
 
 	if (tag_type != GROUP_TAG && tag_type != DATA_TAG) {
 		LOGERR("TagEntry::read() invalid tag type: %d", tag_type);
@@ -599,12 +596,12 @@ int TagEntry::read(bool nodata)
 	}
 
 	short name_len = 0;
-	fread(&name_len, sizeof(short), 1, in);
+	nr = fread(&name_len, sizeof(short), 1, in);
 	ByteOrder::become_big_endian(&name_len);
 
 	if (name_len != 0) {
 		tmp_name = new char[name_len + 1];
-		fread(tmp_name, name_len, 1, in);
+		nr = fread(tmp_name, name_len, 1, in);
 		tmp_name[name_len] = '\0';
 	}
 	else {
@@ -615,9 +612,9 @@ int TagEntry::read(bool nodata)
 	}
 
 	name = string(tmp_name);
-	if( tmp_name )
-	{
-		delete[]tmp_name;
+
+	if (tmp_name) {
+		delete [] tmp_name;
 		tmp_name = 0;
 	}
 
@@ -635,7 +632,6 @@ int TagEntry::read(bool nodata)
 
 	return err;
 }
-
 
 ////////////////////////////////////////////
 
@@ -698,8 +694,6 @@ void DM3IO::init()
 
 	EXITFUNC;
 }
-
-
 
 bool DM3IO::is_valid(const void *first_block)
 {
@@ -795,7 +789,7 @@ int DM3IO::read_header(Dict & dict, int image_index, const Region * area, bool)
 		dict["apix_z"]=apix;
 	}
 
-//tagtable->dump();
+//	tagtable->dump();
 
 	EXITFUNC;
 	return err;
@@ -826,30 +820,43 @@ int DM3IO::read_data(float *rdata, int image_index, const Region * area, bool)
 	int data_type = tagtable->get_datatype();
 
 	int k = 0;
+	int off = 0;
+	int xlast = x0 + xlen;
+	int ylast = y0 + ylen;
+
+//	bool flip_vertical = (getenv ("FLIP_VERTICAL") != NULL);
+	bool flip_vertical = true;
 	
-	for (int i = y0; i < y0 + ylen; i++) {
-		for (int j = x0; j < x0 + xlen; j++) {
+	for (int iy = y0; iy < ylast; iy++) {
+		if (flip_vertical) {
+			off = (y0 + ylast - 1 - iy) * nx;
+		}
+		else {
+			off = iy * nx;
+		}
+
+		for (int ix = x0; ix < xlast; ix++) {
 			switch (data_type) {
 			case Gatan::DataType::SIGNED_INT8_DATA:
-				rdata[k] = (float) ((char *) data)[i * nx + j];
+				rdata[k] = (float) ((char *) data)[off + ix];
 				break;
 			case Gatan::DataType::UNSIGNED_INT8_DATA:
-				rdata[k] = (float) ((unsigned char *) data)[i * nx + j];
+				rdata[k] = (float) ((unsigned char *) data)[off + ix];
 				break;
 			case Gatan::DataType::SIGNED_INT16_DATA:
-				rdata[k] = (float) ((short *) data)[i * nx + j];
+				rdata[k] = (float) ((short *) data)[off + ix];
 				break;
 			case Gatan::DataType::UNSIGNED_INT16_DATA:
-				rdata[k] = (float) ((unsigned short *) data)[i * nx + j];
+				rdata[k] = (float) ((unsigned short *) data)[off + ix];
 				break;
 			case Gatan::DataType::SIGNED_INT32_DATA:
-				rdata[k] = (float) ((int *) data)[i * nx + j];
+				rdata[k] = (float) ((int *) data)[off + ix];
 				break;
 			case Gatan::DataType::UNSIGNED_INT32_DATA:
-				rdata[k] = (float) ((unsigned int *) data)[i * nx + j];
+				rdata[k] = (float) ((unsigned int *) data)[off + ix];
 				break;
 			case Gatan::DataType::REAL4_DATA:
-				rdata[k] = (float) ((float *) data)[i * nx + j];
+				rdata[k] = (float) ((float *) data)[off + ix];
 				break;
 			default:
 				string desc = string("unsupported DM3 data type") +
@@ -919,7 +926,6 @@ int Gatan::to_em_datatype(int gatan_datatype)
 	return t;
 }
 
-
 const char *Gatan::to_str(TagData::Type type)
 {
 	const char *str = "unknown";
@@ -983,7 +989,6 @@ const char *Gatan::to_str(TagEntry::EntryType type)
 	}
 	return str;
 }
-
 
 const char *Gatan::to_str(Gatan::DataType::GatanDataType type)
 {
@@ -1065,4 +1070,3 @@ const char *Gatan::to_str(Gatan::DataType::GatanDataType type)
 	}
 	return "Unknown Type";
 }
-
