@@ -62,7 +62,6 @@ TagTable::~TagTable()
 	}
 }
 
-
 void TagTable::add(const string & name, const string & value)
 {
 	const char *value_str = value.c_str();
@@ -316,15 +315,14 @@ string TagData::read_string(int size)
 	str[size] = '\0';
 	string str1 = string(str);
 
-	if( str )
-	{
-		delete[]str;
-		str = 0;
+	if (str) {
+		delete [] str;
+		str = NULL;
 	}
-	if( buf )
-	{
-		delete[]buf;
-		buf = 0;
+
+	if (buf) {
+		delete [] buf;
+		buf = NULL;
 	}
 
 	return str1;
@@ -481,10 +479,10 @@ int TagData::read_any(bool nodata, int image_index, int num_images)
 		nr = fread(val, str_sz, 1, in);
 		val[str_sz] = '\0';
 		string val_str = string(val);
-		if( val )
-		{
-			delete[]val;
-			val = 0;
+
+		if (val) {
+			delete [] val;
+			val = NULL;
 		}
 
 		tagtable->add(name, val_str);
@@ -521,10 +519,9 @@ int TagData::read_tag_data(bool nodata, int image_index, int num_images)
 		return 1;
 	}
 
-	if( mark )
-	{
-		delete[]mark;
-		mark = 0;
+	if (mark) {
+		delete [] mark;
+		mark = NULL;
 	}
 
 	long long encoded_types_size = 0;
@@ -647,10 +644,10 @@ int TagEntry::read_tag_entry(bool nodata, int image_index, int num_images)
 	}
 
 	name = string(tmp_name);
-	if( tmp_name )
-	{
-		delete[]tmp_name;
-		tmp_name = 0;
+
+	if (tmp_name) {
+		delete [] tmp_name;
+		tmp_name = NULL;
 	}
 
 	LOGVAR("\ntag name: '%s', len: %d, type: '%s'",
@@ -944,8 +941,16 @@ int DM4IO::read_data(float *rdata, int image_index, const Region * area, bool)
 	int xlast = x0 + xlen;
 	int ylast = y0 + ylen;
 
+//	bool flip_vertical = (getenv ("FLIP_VERTICAL") != NULL);
+	bool flip_vertical = true;
+
 	for (int iy = y0; iy < ylast; iy++) {
-		off = offset + iy * nx;
+		if (flip_vertical) {
+			off = offset + (y0 + ylast - 1 - iy) * nx;
+		}
+		else {
+			off = offset + iy * nx;
+		}
 
 		switch (data_type) {
 		case GatanDM4::DataType::SIGNED_INT8_DATA:
