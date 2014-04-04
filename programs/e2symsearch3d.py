@@ -56,7 +56,7 @@ def main():
 	parser.add_argument("--sym", dest = "sym", default="c1", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos. For asymmetric reconstruction omit this option or specify c1.", guitype='symbox', row=4, col=0, rowspan=1, colspan=2, mode="align")
 	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes. Default=0, no shrinking", guitype='shrinkbox', row=5, col=0, rowspan=1, colspan=1, mode="align")
 	parser.add_argument("--steps", dest="steps", type = int, default=10, help="Number of steps (for the MC)", guitype='intbox', row=5, col=1, rowspan=1, colspan=1, mode="align")
-	parser.add_argument("--symmetrize", default=True, action="store_true", help="Symmetrize volume after alignment.", guitype='boolbox', row=6, col=0, rowspan=1, colspan=1, mode="align")
+	parser.add_argument("--symmetrize", default=False, action="store_true", help="Symmetrize volume after alignment.", guitype='boolbox', row=6, col=0, rowspan=1, colspan=1, mode="align")
 	parser.add_argument("--cmp",type=str,help="The name of a 'cmp' to be used in comparing the symmtrized object to unsymmetrized", default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=7, col=0, rowspan=1, colspan=2, mode="align")
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None, guitype='strbox', row=8, col=0, rowspan=1, colspan=2, mode="align")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -123,11 +123,13 @@ def main():
 		output.process_inplace('xform',{'transform':symxform})
 		output.set_attr('symxform', symxform)	# Obviously only HDF or BDB files will contain this metadata
 		if options.symmetrize:
+			print "symmetrize output"
 			output = output.process('xform.applysym',{'sym':options.sym})
 	else:
 		output = volume.process('xform',{'transform':symxform})
 		output.set_attr('symxform', symxform)	# Obviously only HDF or BDB files will contain this metadata
 		if options.symmetrize:
+			print "symmetrize output"
 			output = output.process('xform.applysym',{'sym':options.sym})
 			
 	if inimodeldir =='./' or inimodeldir.upper == './NONE': # That is to say no directory is wanted (--path='')

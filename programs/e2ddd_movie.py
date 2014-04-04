@@ -34,7 +34,8 @@
 import pprint
 from EMAN2 import *
 import sys
-
+from numpy import *
+import numpy.linalg as LA
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -47,6 +48,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_argument("--align_frames", action="store_true",help="Perform whole-frame alignment of the stack",default=False)
+	parser.add_argument("--align_frames_tree", action="store_true",help="Perform whole-frame alignment of the stack hierarchically",default=False)
 	parser.add_argument("--align_frames_countmode", action="store_true",help="Perform whole-frame alignment of frames collected in counting mode",default=False)
 	parser.add_argument("--save_aligned", action="store_true",help="Save aligned stack",default=False)
 	parser.add_argument("--dark",type=str,default=None,help="Perform dark image correction using the specified image file")
@@ -275,7 +277,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			for it in xrange(2):
 
 				for im in outim:
-					dx,dy=zonealign(im,av,verbose=options.verbose)
+					dx,dy,z=align(im,av,verbose=options.verbose)
 					im2=im.process("xform",{"transform":Transform({"type":"2d","tx":-dx,"ty":-dy})})
 					if options.verbose==1 : print "{}, {}".format(dx,dy)
 					outim2.append(im2)
@@ -293,6 +295,46 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			if options.verbose>1 : display(fav,True)
 
 		# we iterate the alignment process several times
+		if options.align_frames_tree:
+			outim2=[]
+			
+			print len(outim)
+			alignments=[array((0,0))]*len(outim)		# this will contain the final alignments which are hierarchically estimated and improved
+			
+			step=len(outim)					# coarsest search aligns the first 1/2 of the images against the second, step=step/2 each cycle
+			
+			while step>1:
+				step/=2
+				i0=0
+				i1=step
+				while i1<len(outim):
+					av0=sum(outim[i0:i0+step])
+					av1=sum(outim[i1:i1+step])
+					
+					print step,i0,i1,
+					dx,dy,Z=align(av0,av1,guess=alignments[i1+step/2]-alignments[i0+step/2],localrange=LA.norm(alignments[i1+step-1]-alignments[i0]))
+					dxpf=array((float(dx),float(dy)))/step
+					print dx,dy,Z,dxpf			
+					
+					if i0==0 : last=array((0,0))		# the end of the alignment one step before this. The first image is defined as having 0 translation
+					else : last=alignments[i0-1]
+					for i in xrange(i0,min(i0+step*3,len(alignments))): 	# should really only go to i0+step*2, this is just to deal with roundoff issues
+						alignments[i]=last+dxpf*(i-i0+1)
+					
+					i0+=step*2
+					i1+=step*2
+				
+				for i in xrange(len(outim)): 
+					print "%4d"%alignments[i][0],
+				print ""
+					
+				for i in xrange(len(outim)): 
+					print "%4d"%alignments[i][1],
+				print ""
+					
+			if options.verbose>1 : display(fav,True)
+			
+		# we iterate the alignment process several times
 		if options.align_frames_countmode:
 			outim2=[]
 #			for im in outim: im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":6,"tomean":True})	# nsigma was normally 4, but for K2 images even 6 may not be enough
@@ -303,7 +345,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 				for im in outim:
 					if it==0 : av.sub(im)
-					dx,dy=zonealign(im,av,verbose=options.verbose)
+					dx,dy,z=align(im,av,verbose=options.verbose)
 					im2=im.process("xform",{"transform":Transform({"type":"2d","tx":-dx,"ty":-dy})})
 					if options.verbose==1 : print "{}, {}".format(dx,dy)
 					if it==0: av.add(im2)
@@ -321,81 +363,21 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				for i,im in enumerate(outim2): im.write_image(outname[:-4]+"_align.hdf",i)
 			if options.verbose>2 : display(fav,True)
 
-		# show CCF between first and last frame
-		#cf=mov[0].calc_ccf(mov[-1])
-		#cf.process_inplace("xform.phaseorigin.tocenter")
-		#display(cf)
-
-		## save 10-frame averages without alignment
-		#im=sum(outim[:10])
-		#im.process_inplace("normalize.edgemean")
-		#im.write_image("sum0-10.hdf",0)
-		#im=sum(outim[10:20])
-		#im.process_inplace("normalize.edgemean")
-		#im.write_image("sum10-20.hdf",0)
-		#im=sum(outim[20:30])
-		#im.process_inplace("normalize.edgemean")
-		#im.write_image("sum20-30.hdf",0)
-	
-	
-
-		#try:
-			#dot1=s1.cmp("ccc",dark2,{"negative":0})
-			#dot2=s2.cmp("ccc",dark2,{"negative":0})
-
-			##s1.sub(dark2*dot1)
-			##s2.sub(dark2*dot2)
-
-			#print dot1,dot2
-		#except:
-			#print "no dark"
-
-		# alignment
-		#ni=len(outim)		# number of input images in movie
-		
-		#s1=sum(outim[:ni/4])
-		#s1.process_inplace("normalize.edgemean")
-		#s2=sum(outim[ni*3/4:])
-		#s2.process_inplace("normalize.edgemean")
-		#dx,dy=align(s1,s2)
-		#print "half vs half: ",dx,dy
-		
-		#dxn=dx/(ni/2.0)		# dx per n
-		#dyn=dy/(ni/2.0)mpi_test.py
-		
-		#s1=sum(outim[:ni/4])
-		#s1.process_inplace("normalize.edgemean")
-		#s2=sum(outim[ni/4:ni/2])
-		#s2.process_inplace("normalize.edgemean")
-		#dx,dy=align(s1,s2,(dxn*ni/4.0,dyn*ni/4.0))
-		#print dx,dy
-		
-		#s1=sum(outim[ni/4:ni/2])
-		#s1.process_inplace("normalize.edgemean")
-		#s2=sum(outim[ni/2:ni*3/4])
-		#s2.process_inplace("normalize.edgemean")
-		#dx,dy=align(s1,s2,(dxn*ni/4.0,dyn*ni/4.0))
-		#print dx,dy
-		
-		#s1=sum(outim[ni/2:ni*3/4])
-		#s1.process_inplace("normalize.edgemean")
-		#s2=sum(outim[ni*3/4:])
-		#s2.process_inplace("normalize.edgemean")
-		#dx,dy=align(s1,s2,(dxn*ni/4.0,dyn*ni/4.0))
-		#print dx,dy
 		
 			
 
-def zonealign(s1,s2,verbose=0):
+def align(s1,s2,guess=(0,0),localrange=192,verbose=0):
+	"""Aligns a pair of images, and returns a (dx,dy,Z) tuple. Z is the Z-score of the best peak, not a shift.
+	The search will be limited to a region of +-localrange/2 about the guess, a (dx,dy) tuple. Resulting dx,dy
+	is relative to the initial guess. guess and return both indicate the shift required to bring s2 in register
+	with s1"""
 
 	# reduce region used for alignment a bit (perhaps a lot for superresolution imaging
-	newbx=good_boxsize(min(s1["nx"],s1["ny"],4096)*0.8)
-	if s1["nx"]>newbx or s1["ny"]>newbx : 
-		s1a=s1.get_clip(Region((s1["nx"]-newbx)/2,(s1["ny"]-newbx)/2,newbx,newbx))
-		s2a=s2.get_clip(Region((s2["nx"]-newbx)/2,(s2["ny"]-newbx)/2,newbx,newbx))
-	else :
-		s1a=s1.copy()
-		s2a=s2.copy()
+	guess=(int(guess[0]),int(guess[1]))
+	if localrange<5 : localrange=192
+	newbx=good_boxsize(min(s1["nx"],s1["ny"],4096)*0.8,larger=False)
+	s1a=s1.get_clip(Region((s1["nx"]-newbx)/2,(s1["ny"]-newbx)/2,newbx,newbx))
+	s2a=s2.get_clip(Region((s2["nx"]-newbx)/2-guess[0],(s2["ny"]-newbx)/2-guess[1],newbx,newbx))
 
 
 #	s1a.process_inplace("math.xystripefix",{"xlen":200,"ylen":200})
@@ -408,22 +390,6 @@ def zonealign(s1,s2,verbose=0):
 #	s2a.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
 	s2a.process_inplace("filter.xyaxes0")
 	s2a.process_inplace("filter.highpass.gauss",{"cutoff_abs":.002})
-
-	
-	#### Not doing by zone ATM
-	#tot=None
-	#for x in range(256,s1["nx"]-512,512):
-		#for y in range(256,s1["ny"]-512,512):
-			#s1b=s1a.get_clip(Region(x,y,512,512))
-			#s2b=s2a.get_clip(Region(x,y,512,512))
-			
-			#c12=s1b.calc_ccf(s2b)
-			#c12.process_inplace("xform.phaseorigin.tocenter")
-			#c12.process_inplace("normalize.edgemean")
-						
-			#cm=c12.calc_center_of_mass(0)
-			#try: tot.add(cm)
-			#except: tot=c12
 	
 	
 	tot=s1a.calc_ccf(s2a)
@@ -442,17 +408,18 @@ def zonealign(s1,s2,verbose=0):
 		for y in xrange(dy-1,dy+2):
 			tot[x,y]=0		# exclude from COM
 
-	# first pass to make sure we find the true peak with a lot of blurring
-	tot2=tot.get_clip(Region(tot["nx"]/2-96,tot["ny"]/2-96,192,192))
+	# first pass to have a better chance at finding the first peak, using a lot of blurring
+	tot2=tot.get_clip(Region(tot["nx"]/2-localrange/2,tot["ny"]/2-localrange/2,localrange,localrange))
 	tot2.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.04})		# This is an empirical value. Started with 0.04 which also seemed to be blurring out high-res features.
 	dx1,dy1,dz=tot2.calc_max_location()
-	dx1-=96
-	dy1-=96
+	dx1-=localrange/2
+	dy1-=localrange/2
 
 	# second pass with less blurring to fine tune it
 	tot=tot.get_clip(Region(tot["nx"]/2-12+dx1,tot["ny"]/2-12+dy1,24,24))
 	tot.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.12})		# This is an empirical value. Started with 0.04 which also seemed to be blurring out high-res features.
 	dx,dy,dz=tot.calc_max_location()
+	zscore=tot[dx,dy]/tot["sigma"]		# a rough Z score for the peak
 	dx-=12
 	dy-=12
 	#while hypot(dx-tot["nx"]/2,dy-tot["ny"]/2)>64 :
@@ -462,61 +429,12 @@ def zonealign(s1,s2,verbose=0):
 	if verbose>1: print "{},{} + {},{}".format(dx1,dy1,dx,dy)
 	if verbose>2: display(tot)
 	
-	return dx1+dx,dy1+dy
+	return dx1+dx,dy1+dy,zscore
 		
 	#cl=tot.get_clip(Region(dx-8,dy-8,17,17))
 	#cm=cl.calc_center_of_mass(0)
 	#return dx+cm[0]-8-256,dy+cm[1]-8-256
 
-def align(s1,s2,hint=None):
-
-	s11=s1.get_clip(Region(1024,500,2048,2048))
-#	s11.process_inplace("math.addsignoise",{"noise":0.5})
-#	s11.process_inplace("normalize.local",{"radius":6,"threshold":0})
-#	s11.process_inplace("math.xystripefix",{"xlen":200,"ylen":200})
-	#s11.process_inplace("threshold.compress",{"value":s11["mean"],"range":s11["sigma"]})
-	s11.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.02})
-	s21=s2.get_clip(Region(1024,500,2048,2048))
-#	s21.process_inplace("math.addsignoise",{"noise":0.5})
-#	s21.process_inplace("normalize.local",{"radius":6,"threshold":0})
-#	s21.process_inplace("math.xystripefix",{"xlen":200,"ylen":200})
-	#s21.process_inplace("threshold.compress",{"value":s21["mean"],"range":s21["sigma"]})
-	s21.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.02})
-
-	c12=s11.calc_ccf(s21)
-	m=c12["minimum"]
-#	for x in xrange(c12["nx"]): c12[x,0]=m
-	c12.process_inplace("normalize.edgemean")
-	c12.process_inplace("xform.phaseorigin.tocenter")
-
-	# This peak is the false peak caused by the imperfect dark noise subtraction
-	# we want to wipe this peak out
-	#dx,dy,dz=tuple(c12.calc_max_location())		# dz is obviously 0
-	dx,dy=(c12["nx"]/2,c12["ny"]/2)					# the 'false peak' should always be at the origin, ie - no translation
-	newval=(c12[dx-3,dy]+c12[dx+3,dy]+c12[dx,dy-3]+c12[dx,dy+3])/8		# /4 would be the average, we intentionally downweight it
-	for x in xrange(dx-2,dx+3):
-		for y in xrange(dy-2,dy+3):
-			c12[x,y]=newval
-	#c12[dx-1,dy]=(c12[dx-1,dy-1]+c12[dx-1,dy+1])/2.0
-	#c12[dx+1,dy]=(c12[dx+1,dy-1]+c12[dx+1,dy+1])/2.0
-	#c12[dx,dy+1]=(c12[dx+1,dy+1]+c12[dx-1,dy+1])/2.0
-	#c12[dx,dy-1]=(c12[dx+1,dy-1]+c12[dx-1,dy-1])/2.0
-	#c12[dx,dy]=(c12[dx-1,dy]+c12[dx+1,dy]+c12[dx,dy+1]+c12[dx,dy-1])/4.0
-	
-	display((s11,s21,c12))
-#	display(c12)
-	
-	if hint!=None:
-		cl=c12.get_clip(Region(1024+hint[0]-4,1024+hint[1]-4,9,9))
-		dx,dy,dz=cl.calc_max_location()
-		cl=c12.get_clip(Region(1024+dx-3,1024+dy-3,7,7))
-		cm=cl.calc_center_of_mass(0)
-		return dx+cm[0]-3,dy+cm[1]-3
-	else:
-		dx,dy,dz=c12.calc_max_location()
-		cl=c12.get_clip(Region(dx-8,dy-8,17,17))
-		cm=cl.calc_center_of_mass(0)
-		return dx+cm[0]-8-1024,dy+cm[1]-8-1024
 
 if __name__ == "__main__":
 	main()

@@ -1514,6 +1514,50 @@ The basic design of EMAN Processors: <br>\
 
 	/**Rotate by 180 using pixel swapping, works for 2D only
 	 * @author David Woolford
+	 * @date March 21, 2014
+	 */
+	class AddShapeProcessor:public Processor
+	{
+		public:
+			string get_name() const
+			{
+				return NAME;
+			}
+			
+			static Processor *NEW()
+			{
+				return new AddShapeProcessor();
+			}
+
+			void process_inplace(EMData* image);
+
+			TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("shape", EMObject::STRING, "Name of the shape to add (");
+				d.put("x", EMObject::FLOAT, "X coordinate of object center");
+				d.put("y", EMObject::FLOAT, "Y coordinate of object center");
+				d.put("z", EMObject::FLOAT, "Z coordinate of object center");
+				d.put("size1", EMObject::FLOAT, "Size of the object. Meaning varies by shape.");
+				d.put("size2", EMObject::FLOAT, "2nd axis size of the object. Meaning varies by shape.");
+				d.put("size3", EMObject::FLOAT, "3rd axis size of the object. Meaning varies by shape.");
+				d.put("val1", EMObject::FLOAT, "First pixel value. Meaning varies by shape.");
+				d.put("val2", EMObject::FLOAT, "2nd pixel value. Meaning varies with shape");
+				
+				return d;
+			}
+			
+			string get_desc() const
+			{
+				return "Adds a specified shape to a volume.";
+			}
+
+			static const string NAME;
+	};
+
+	
+	/**Rotate by 180 using pixel swapping, works for 2D only
+	 * @author David Woolford
 	 * @date July 29th 2008
 	 * @ingroup CUDA_ENABLED
 	 */

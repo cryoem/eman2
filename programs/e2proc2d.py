@@ -369,6 +369,7 @@ def main():
 				if d["apix_x"]<=0 : raise Exception,"Error: 'calccont' requires an A/pix value, which is missing in the input images"
 				lopix=int(d["nx"]*d["apix_x"]/200.0)
 				hipix=int(d["nx"]*d["apix_x"]/25.0)
+				if lopix==hipix : lopix,hipix=3,d["nx"]/5		# in case the A/pix value is drastically out of range
 				r=f.calc_radial_dist(d["ny"]/2,0,1.0,1)
 				lo=sum(r[lopix:hipix])/(hipix-lopix)
 				hi=sum(r[hipix+1:-1])/(len(r)-hipix-2)
