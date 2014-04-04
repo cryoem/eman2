@@ -1473,8 +1473,8 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 		os.mkdir(outpwrot)
 		os.mkdir(outpartres)
 
-	if micsuffix[0] == '.': micsuffix = micsuffix[1:]
 	if stack == None:
+		if micsuffix[0] == '.': micsuffix = micsuffix[1:]
 		if guimic == None:
 			lenroot = len(nameroot)
 			flist  = os.listdir(indir)
