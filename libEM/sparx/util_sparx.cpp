@@ -17744,8 +17744,8 @@ void Util::mul_img(EMData* img, EMData* img1)
 	if(img->is_complex()) {
 		for (size_t i=0; i<size; i+=2) {
 			float tmp     = img_ptr[i] * img1_ptr[i]   - img_ptr[i+1] * img1_ptr[i+1] ;
-			img_ptr[i+1] = img_ptr[i] * img1_ptr[i+1] + img_ptr[i+1] * img1_ptr[i] ;
-			img_ptr[i]   = tmp;
+			img_ptr[i+1]  = img_ptr[i] * img1_ptr[i+1] + img_ptr[i+1] * img1_ptr[i] ;
+			img_ptr[i]    = tmp;
 
 		}
 	} else {

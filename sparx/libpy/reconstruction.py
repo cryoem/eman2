@@ -253,6 +253,101 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad=4, xysize=-1,
 	return fftvol
 
 
+def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", info=None, npad=4, xysize=-1, zsize=-1, mpi_comm=None):
+	from utilities    import reduce_EMData_to_root, pad, get_params_proj
+	from EMAN2        import Reconstructors
+	from utilities    import iterImagesList
+	from fundamentals import fft
+	from mpi          import MPI_COMM_WORLD
+	import types
+
+	if mpi_comm == None:
+		mpi_comm = MPI_COMM_WORLD
+
+	if type(prjlist) == types.ListType:
+		prjlist = iterImagesList(prjlist)
+
+	if not prjlist.goToNext():
+		ERROR("empty input list","recons3d_4nn_MPI",1)
+
+	imgsize = prjlist.image().get_xsize()
+	if prjlist.image().get_ysize() != imgsize:
+		imgsize = max(imgsize, prjlist.image().get_ysize())
+		dopad = True
+	else:
+		dopad = False
+
+	from projection import prep_vol
+	volft,kb = prep_vol(prevol)
+
+	prjlist.goToPrev()
+
+	fftvol = EMData()
+	weight = EMData()
+	if (xysize == -1 and zsize == -1 ):
+		params = {"size":imgsize, "npad":npad, "symmetry":symmetry, "fftvol":fftvol, "weight":weight}
+		r = Reconstructors.get( "nn4", params )
+	else:
+		if ( xysize != -1 and zsize != -1):
+			rx = float(xysize)/imgsize
+			ry = float(xysize)/imgsize
+			rz = float(zsize)/imgsize
+		elif( xysize != -1):
+			rx = float(xysize)/imgsize
+			ry = float(xysize)/imgsize
+			rz = 1.0
+		else:
+			rx = 1.0
+			ry = 1.0
+			rz = float(zsize)/imgsize
+		params = {"sizeprojection":imgsize, "npad":npad, "symmetry":symmetry, "fftvol":fftvol,"weight":weight,"xratio":rx,"yratio":ry,"zratio":rz}
+		r = Reconstructors.get( "nn4_rect", params )
+	r.setup()
+
+	bigsize = imgsize*npad
+
+	if not (info is None): nimg = 0
+	while prjlist.goToNext():
+		prj = prjlist.image()
+
+		active = prj.get_attr_default('active', 1)
+		if(active == 1):
+			if dopad:
+				prj = pad(prj, imgsize,imgsize, 1, "circumference")
+			phi, theta, psi, sx, sy = get_params_proj(prj)
+			tpj = prgs(volft, kb, [phi, theta, psi, sx, sy])
+			ct = prj.get_attr("ctf")
+
+			qdif = fft(pad(prj,bigsize,bigsize,1,0.0)) - filt_ctf(fft(pad(tpj, bigsize, bigsize, 1, 0.0)), ct, False)
+
+			insert_slices(r, prj)
+			if( not (info is None) ):
+				nimg += 1
+				info.write("Image %4d inserted.\n" %(nimg) )
+				info.flush()
+
+	if not (info is None):
+		info.write( "Begin reducing ...\n" )
+		info.flush()
+
+	reduce_EMData_to_root(fftvol, myid, comm=mpi_comm)
+	reduce_EMData_to_root(weight, myid, comm=mpi_comm)
+
+	if myid == 0:  dummy = r.finish(True)
+	else:
+		from utilities import model_blank
+		if ( xysize == -1 and zsize == -1 ):
+			fftvol = model_blank(imgsize, imgsize, imgsize)
+		else:
+			if zsize == -1:
+				fftvol = model_blank(xysize, xysize, imgsize)
+			elif xysize == -1:
+				fftvol = model_blank(imgsize, imgsize, zsize)
+			else:
+				fftvol = model_blank(xysize, xysize, zsize)
+	return fftvol
+
+
 def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 10.0, sign=1, symmetry="c1", verbose=0, npad=4, xysize = -1, zsize = -1 ):
 	"""Perform a 3-D reconstruction using Pawel's FFT Back Projection algoritm.
 	   

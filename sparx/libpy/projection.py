@@ -99,7 +99,8 @@ def prj(vol, params, stack = None):
 				either: an in-core stack of generated 2-D projections
 			stack
 	"""
-	from utilities import set_params_proj
+	from utilities  import set_params_proj
+	from projection import prep_vol
 	volft,kb = prep_vol(vol)
 	for i in xrange(len(params)):
 		proj = prgs(volft, kb, params[i])

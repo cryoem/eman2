@@ -3270,8 +3270,7 @@ int nn4_ctfReconstructor::insert_slice(const EMData* const slice, const Transfor
         }
 
 	int padffted= slice->get_attr_default("padffted", 0);
-	if( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  )
-        {
+	if( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  )  {
 		// FIXME: Why doesn't this throw an exception?
 		LOGERR("Tried to insert a slice that is the wrong size.");
 		return 1;
