@@ -3559,24 +3559,24 @@ int nn4_ctfwReconstructor::insert_slice(const EMData* const slice,  const Transf
 	if( padffted != 0 ) padfft = new EMData(*slice);
 	else                padfft = padfft_slice( slice, t, m_npad );
 
-	insert_padfft_slicew( padfft, sigmasq, t );
+	insert_padfft_slice( padfft,  t );
 
 	checked_delete( padfft );
 
 	return 0;
 }
 
-int nn4_ctfwReconstructor::insert_padfft_slicew( EMData* padfft, EMData* sigmasq, const Transform& t )
-{
-	Assert( padfft != NULL );
-	//float tmp = padfft->get_attr_default("ctf_applied", 0);
-	//int   ctf_applied = (int) tmp;
-
-	vector<Transform> tsym = t.get_sym_proj(m_symmetry);
-	for (unsigned int isym=0; isym < tsym.size(); isym++) m_volume->nn_ctfw(m_wptr, padfft, sigmasq, tsym[isym]);
-
-	return 0;
-}
+// int nn4_ctfwReconstructor::insert_padfft_slicew( EMData* padfft, EMData* sigmasq, const Transform& t )
+// {
+// 	Assert( padfft != NULL );
+// 	//float tmp = padfft->get_attr_default("ctf_applied", 0);
+// 	//int   ctf_applied = (int) tmp;
+// 
+// 	vector<Transform> tsym = t.get_sym_proj(m_symmetry);
+// 	for (unsigned int isym=0; isym < tsym.size(); isym++) m_volume->nn_ctfw(m_wptr, padfft, sigmasq, tsym[isym]);
+// 
+// 	return 0;
+// }
 
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
 EMData* nn4_ctfwReconstructor::finishw(bool)

@@ -1357,7 +1357,7 @@ namespace EMAN
 
 		void setup( const string& symmetry, int size, int npad, float snr, int sign );
 
-		int insert_padfft_slicew( EMData* padfft, EMData* sigmasq, const Transform& trans);
+		int insert_padfft_slice( EMData* padfft,  const Transform& trans);
 		
 		static const string NAME;
 		
