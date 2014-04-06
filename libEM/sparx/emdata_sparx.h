@@ -226,11 +226,36 @@ EMData* mult_radial(EMData* radial);
 		 * @param mult
 		 */
 		void nn_ctf(EMData* w, EMData* myfft, const Transform& tf, float mult);
-                /**
+        /**
 		 helper function to insert rectangualr slice for ctf rect case
 		**/
+
 		void insert_rect_slice_ctf( EMData* w, EMData* myfft,const Transform& trans, int sizeofprojection, float xratio, float yratio, float zratio, int npad, float mult);
 		void insert_rect_slice_ctf_applied(EMData* w, EMData* myfft, const Transform& trans, int sizeofprojection, float xratio, float yratio, float zratio, int npad,float mult);
+	
+
+
+		/** Helper function for method nn4_ctfw.
+		 *
+		 * @param j y fourier index (frequency)
+		 * @param n number of real elements.
+		 * @param n2 Number of complex elements.
+		 * @param w Normalization matrix [0:n2][1:n][1:n]
+		 * @param bi Fourier transform matrix [0:n2][1:n]
+		 * @param tf Transform reference
+		 * @param mult
+		 */
+		void onelinenn_ctfw(int j, int n, int n2, EMData* w, EMData* bi, EMData* sigmasq, const Transform& tf );
+
+		/** Nearest Neighbor interpolation.
+		 *  Modifies the current object.
+		 *
+		 * @param w Normalization data.
+		 * @param myfft FFT data.
+		 * @param tf Transform reference
+		 * @param mult
+		 */
+		void nn_ctfw(EMData* w, EMData* myfft, EMData* sigmasq, const Transform& tf );
 	
 
 		/** Helper function for method nn4_ctf.
