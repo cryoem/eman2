@@ -3537,14 +3537,16 @@ void nn4_ctfwReconstructor::buildNormVolume()
 
 }
 
-int nn4_ctfwReconstructor::insert_slice(const EMData* const slice, EMData* sigmasq, const Transform& t)
+int nn4_ctfwReconstructor::insert_slice(const EMData* const slice,  const Transform& t)
 {
 	// sanity checks
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
 		return 1;
 	}
-
+	
+	EMData* sigmasq = (EMData *)slice->get_attr("sigma_squared");
+	
 	int padffted= slice->get_attr_default("padffted", 0);
 	if( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  )  {
 		// FIXME: Why doesn't this throw an exception?

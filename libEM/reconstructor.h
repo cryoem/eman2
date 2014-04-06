@@ -1320,7 +1320,7 @@ namespace EMAN
 		* @exception NullPointerException if the input EMData pointer is null
 		* @exception ImageFormatException if the image is complex as opposed to real
 		*/
-		virtual int insert_slice(const EMData* const slice, EMData* sigmasq, const Transform & euler);
+		virtual int insert_slice(const EMData* const slice, const Transform & euler);
 
 		virtual EMData *finishw(bool doift=true);
 
