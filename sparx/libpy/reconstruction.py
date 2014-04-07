@@ -283,11 +283,14 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", info=None, npad=2, m
 		refvol = model_blank(bnx, bigsize, bigsize)
 		temp = fft(pad(prevol,bigsize,bigsize,bigsize,0.0))
 		temp.set_attr("is_complex",0)
+		st = 2.0/(bigsize*bigsize)
 		for kk in xrange(bigsize):
 			for jj in xrange(bigsize):
 				for ii in xrange(0,bnx,2):
 					#print ii,jj,kk,temp.get_value_at(ii,jj,kk), temp.get_value_at(ii,jj,kk+1)
-					refvol.set_value_at_fast(ii//2,jj,kk,0.5/((temp.get_value_at(ii,jj,kk))**2+(temp.get_value_at(ii+1,jj,kk))**2) )
+					refvol.set_value_at_fast(ii//2,jj,kk,st/((temp.get_value_at(ii,jj,kk))**2+(temp.get_value_at(ii+1,jj,kk))**2) )
+					#refvol.set_value_at_fast(ii//2,jj,kk,1.0 )
+		refvol.set_value_at_fast(0,0,0,0.0)
 		del temp
 	else:  refvol = EMData()
 	print " DONE refvol"
@@ -313,14 +316,14 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", info=None, npad=2, m
 			assert st[0] != 0.0
 			prj = (prj - st[0])/st[1]
 			st = Util.infomask(prj, mask2d, True)
-			print  " data :",st
+			#print  " data :",st
 			phi, theta, psi, sx, sy = get_params_proj(prj)
 			tpj = prgs(volft, kb, [phi, theta, psi, sx, sy])
 			#  Make sure template is normalized properly
 			ct = prj.get_attr("ctf")
 			temp = filt_ctf(tpj, ct, False)
 			qt = Util.infomask(temp, mask2d, False)
-			print  "  reproj :",ll,qt
+			#print  "  reproj :",ll,qt
 			tpj -= qt[0]
 			qt = Util.infomask(temp, mask2d, True)
 			tpj *= st[1]/qt[1]

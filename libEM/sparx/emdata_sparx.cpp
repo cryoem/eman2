@@ -1768,9 +1768,9 @@ void EMData::nn_ctf(EMData* w, EMData* myfft, const Transform& tf, float mult) {
 	set_array_offsets(0,1,1);
 	myfft->set_array_offsets(0,1);
 
-        Ctf* ctf = myfft->get_attr("ctf");
-        ctf_store::init( ny, ctf );
-        if(ctf) {delete ctf; ctf=0;}
+    Ctf* ctf = myfft->get_attr("ctf");
+    ctf_store::init( ny, ctf );
+    if(ctf) {delete ctf; ctf=0;}
 
 	// loop over frequencies in y
 	for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn_ctf(iy, ny, nxc, w, myfft, tf, mult);

@@ -2032,11 +2032,11 @@ def im_diff(im1, im2, mask = None):
 	import types
 	from utilities import model_circle, get_im
 	if type(im1) == types.StringType : im1 = get_im(im1)
-	if type(im2) == types.StringType : im2 = get_im(im2) 
+	if type(im2) == types.StringType : im2 = get_im(im2)
+	nx = im1.get_xsize()
+	ny = im1.get_ysize()
+	nz = im1.get_zsize()
 	if mask != None :
-		nx = im1.get_xsize()
-		ny = im1.get_ysize()
-		nz = im1.get_zsize()
 		if   type(mask) == types.FloatType or type(mask) == types.IntType: m = model_circle(mask, nx, ny, nz)
 		elif type(mask) == types.StringType:   m = get_im(mask)
 		else: m = mask

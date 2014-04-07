@@ -1976,7 +1976,7 @@ EMData* EMAN::padfft_slice( const EMData* const slice, const Transform& t, int n
 	Assert( zeropadded != NULL );
 	checked_delete( temp );
 
-        zeropadded->do_fft_inplace();
+    zeropadded->do_fft_inplace();
 	EMData* padfftslice = zeropadded;
 
 	// shift the projection
@@ -1988,8 +1988,6 @@ EMData* EMAN::padfft_slice( const EMData* const slice, const Transform& t, int n
 
         int remove = slice->get_attr_default("remove", 0);
         padfftslice->set_attr( "remove", remove );
-
-
 
       	padfftslice->center_origin_fft();
 	return padfftslice;
