@@ -9862,6 +9862,66 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, li
 	prjlist = iterImagesStack(prj_stack, pid_list[image_start:image_end])
 	del pid_list
 
+	if CTF: vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, finfo, npad,xysize, zsize)
+	else:	vol = recons3d_4nn_MPI(myid, prjlist, sym, finfo, npad,xysize, zsize)
+	if myid == 0 :
+		if(vol_stack[-3:] == "spi"):
+			drop_image(vol, vol_stack, "s")
+		else:
+			drop_image(vol, vol_stack)
+		if not(finfo is None):
+			finfo.write( "result written to " + vol_stack + "\n")
+			finfo.write( "Total time: %10.3f\n" % (time()-time_start) )
+			finfo.flush()
+
+def newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, listfile, group, verbose,xysize, zsize):
+	from reconstruction import recons3d_4nn_ctf_MPI, recons3d_4nn_MPI
+	from utilities      import get_im, drop_image, bcast_number_to_all
+	from string         import replace
+	from time           import time
+	from utilities      import iterImagesStack
+	from mpi            import mpi_comm_size, mpi_comm_rank, mpi_bcast, MPI_INT, MPI_COMM_WORLD
+
+	myid  = mpi_comm_rank(MPI_COMM_WORLD)
+	nproc = mpi_comm_size(MPI_COMM_WORLD)
+	time_start = time()
+
+	if(myid == 0):
+		if(listfile):
+			from utilities import read_text_file
+			pid_list = read_text_file(listfile, 0)
+			pid_list = map(int, pid_list)
+		elif(group > -1):
+			tmp_list = EMUtil.get_all_attributes(prj_stack, 'group')
+			pid_list = []
+			for i in xrange(len(tmp_list)):
+				if(tmp_list[i] == group):  pid_list.append(i)
+			del tmp_list
+		nima = len(pid_list)
+	else:
+		nima = 0
+
+	nima = bcast_number_to_all(nima, source_node = 0)
+
+	if(listfile or group > -1):
+		if myid != 0:
+			pid_list = [-1]*nima
+		pid_list = mpi_bcast(pid_list, nima, MPI_INT, 0, MPI_COMM_WORLD)
+		pid_list = map(int, pid_list)
+	else:
+		if(not pid_list):  pid_list = range(nima)
+
+	if verbose==0:
+		finfo = None
+	else:
+		infofile = "progress%04d.txt"%(myid+1)
+		finfo = open( infofile, 'w' )
+
+	image_start, image_end = MPI_start_end(nima, nproc, myid)
+
+	prjlist = iterImagesStack(prj_stack, pid_list[image_start:image_end])
+	del pid_list
+
 	#if CTF: vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, finfo, npad,xysize, zsize)
 	from utilities import model_blank, get_im
 	from reconstruction import recons3d_4nnw_MPI

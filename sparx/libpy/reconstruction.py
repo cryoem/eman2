@@ -260,7 +260,6 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", info=None, npad=2, m
 	from fundamentals  import fft
 	from mpi           import MPI_COMM_WORLD
 	import types
-	print  "  NEW "
 
 	if mpi_comm == None:
 		mpi_comm = MPI_COMM_WORLD
@@ -283,7 +282,7 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", info=None, npad=2, m
 		refvol = model_blank(bnx, bigsize, bigsize)
 		temp = fft(pad(prevol,bigsize,bigsize,bigsize,0.0))
 		temp.set_attr("is_complex",0)
-		st = 2.0/(bigsize*bigsize)
+		st = 0.5/(bigsize*bigsize)
 		for kk in xrange(bigsize):
 			for jj in xrange(bigsize):
 				for ii in xrange(0,bnx,2):
@@ -316,27 +315,27 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", info=None, npad=2, m
 			assert st[0] != 0.0
 			prj = (prj - st[0])/st[1]
 			st = Util.infomask(prj, mask2d, True)
-			#print  " data :",st
 			phi, theta, psi, sx, sy = get_params_proj(prj)
 			tpj = prgs(volft, kb, [phi, theta, psi, sx, sy])
 			#  Make sure template is normalized properly
 			ct = prj.get_attr("ctf")
-			temp = filt_ctf(tpj, ct, False)
-			qt = Util.infomask(temp, mask2d, False)
+			qt = Util.infomask(tpj, mask2d, False)
 			#print  "  reproj :",ll,qt
 			tpj -= qt[0]
-			qt = Util.infomask(temp, mask2d, True)
+			tpj = filt_ctf(pad(tpj, bigsize, bigsize, 1, 0.0), ct, False)
+			qt = Util.infomask(tpj, maskbi, True)
 			tpj *= st[1]/qt[1]
+			#print  " data :",Util.infomask(prj, mask2d, True),Util.infomask(tpj, maskbi, True)
 
-			qdif = fft(pad(prj,bigsize,bigsize,1,0.0)) - filt_ctf(fft(pad(tpj, bigsize, bigsize, 1, 0.0)), ct, False)
-			fft(qdif).write_image("wdif.hdf", ll); ll +=1
+			qdif = fft(pad(prj,bigsize,bigsize,1,0.0) - tpj)
+			#fft(qdif).write_image("wdif.hdf", ll); ll +=1
 			# pack qdif by x and invert it
 			pqdif = model_blank((bigsize+2)//2, bigsize)
 			qdif.set_attr("is_complex", 0)
 			for jj in xrange(bigsize):
 				for ii in xrange(0,bnx,2):
 					pqdif.set_value_at_fast(ii//2,jj,1.0/((qdif.get_value_at(ii,jj))**2+(qdif.get_value_at(ii+1,jj))**2) )
-
+			pqdif.set_value_at_fast(0,0,1.0)
 			prj.set_attr("sigmasq2", pqdif)
 
 			insert_slices(r, prj)
@@ -349,7 +348,7 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", info=None, npad=2, m
 		info.write( "Begin reducing ...\n" )
 		info.flush()
 
-	del qdif, temp, pqdif
+	del qdif, pqdif, mask2d, maskbi
 
 	reduce_EMData_to_root(fftvol, myid, comm=mpi_comm)
 	reduce_EMData_to_root(weight, myid, comm=mpi_comm)
@@ -359,15 +358,7 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", info=None, npad=2, m
 		dummy = r.finish(True)
 	else:
 		from utilities import model_blank
-		if ( xysize == -1 and zsize == -1 ):
-			fftvol = model_blank(imgsize, imgsize, imgsize)
-		else:
-			if zsize == -1:
-				fftvol = model_blank(xysize, xysize, imgsize)
-			elif xysize == -1:
-				fftvol = model_blank(imgsize, imgsize, zsize)
-			else:
-				fftvol = model_blank(xysize, xysize, zsize)
+		fftvol = model_blank(imgsize, imgsize, imgsize)
 	return fftvol
 
 
