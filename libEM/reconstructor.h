@@ -1262,8 +1262,8 @@ namespace EMAN
 			d.put("snr",		EMObject::FLOAT);
 			d.put("fftvol",		EMObject::EMDATA);
 			d.put("weight",		EMObject::EMDATA);
-			d.put("weighting",  EMObject::INT);
-			d.put("varsnr",     EMObject::INT);
+			d.put("weighting",      EMObject::INT);
+			d.put("varsnr",         EMObject::INT);
 			return d;
 		}
 
@@ -1278,93 +1278,6 @@ namespace EMAN
 	  private:
 		EMData* m_volume;
 		EMData* m_wptr;
-		int m_vnx, m_vny, m_vnz;
-		int m_vnzp, m_vnyp, m_vnxp;
-		int m_vnxc, m_vnyc, m_vnzc;
-		int m_npad;
-		int m_sign;
-		int m_varsnr;
-		int m_weighting;
-		float m_wghta, m_wghtb;
-		float m_snr;
-		string m_symmetry;
-		int m_nsym;
-
-		void buildFFTVolume();
-		void buildNormVolume();
-
-	};
-
-
-
-	/** nn4_ctfw Direct Fourier Inversion Reconstructor
-     *
-     */
-	class nn4_ctfwReconstructor:public Reconstructor
-	{
-	  public:
-		nn4_ctfwReconstructor();
-
-		nn4_ctfwReconstructor( const string& symmetry, int size, int npad, float snr, int sign );
-
-		virtual ~nn4_ctfwReconstructor();
-
-		virtual void setup();
-
-		/** Insert a slice into a 3D volume, in a given orientation
-		* @return 0 if successful, 1 otherwise
-		* @param slice the image slice to be inserted into the 3D volume
-		* @param euler Euler angle of this image slice.
-		* @param weight A weighting factor for this slice, generally the number of particles in a class-average. May be ignored by some reconstructors
-		* @return 0 if OK. 1 if error.
-		* @exception NullPointerException if the input EMData pointer is null
-		* @exception ImageFormatException if the image is complex as opposed to real
-		*/
-		virtual int insert_slice(const EMData* const slice, const Transform & euler);
-
-		virtual EMData *finishw(bool doift=true);
-
-		virtual string get_name() const
-		{
-			return NAME;
-		}
-
-		virtual string get_desc() const
-		{
-			return "Direct Fourier inversion reconstruction routine";
-		}
-
-		static Reconstructor *NEW()
-		{
-			return new nn4_ctfwReconstructor();
-		}
-
-
-		TypeDict get_param_types() const
-		{
-			TypeDict d;
-			d.put("size",		EMObject::INT);
-			d.put("npad",		EMObject::INT);
-			d.put("sign",		EMObject::INT);
-			d.put("symmetry",	EMObject::STRING);
-			d.put("snr",		EMObject::FLOAT);
-			d.put("fftvol",		EMObject::EMDATA);
-			d.put("weight",		EMObject::EMDATA);
-			d.put("weighting",  EMObject::INT);
-			d.put("varsnr",     EMObject::INT);
-			return d;
-		}
-
-		void setup( const string& symmetry, int size, int npad, float snr, int sign );
-
-		int insert_padfft_slice( EMData* padfft,  const Transform& trans);
-		
-		static const string NAME;
-		
-	  private:
-		EMData* m_volume;
-		EMData* m_wptr;
-		EMData* m_vol;
 		int m_vnx, m_vny, m_vnz;
 		int m_vnzp, m_vnyp, m_vnxp;
 		int m_vnxc, m_vnyc, m_vnzc;
@@ -1467,7 +1380,7 @@ namespace EMAN
 		int m_sizeofprojection;
 		int m_npad;
 		int m_sign;
-	    int m_varsnr;
+	        int m_varsnr;
 		int m_weighting;
 		float m_wghta, m_wghtb;
 		float m_snr;

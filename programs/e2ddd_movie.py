@@ -311,7 +311,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 					av0=sum(outim[i0:i0+step])
 					av1=sum(outim[i1:i1+step])
 					
-					print step,i0,i1,
+					print step,i0,i1,alignments[i1+step/2]-alignments[i0+step/2],
 					dx,dy,Z=align(av0,av1,guess=alignments[i1+step/2]-alignments[i0+step/2],localrange=LA.norm(alignments[i1+step-1]-alignments[i0]))
 					dxpf=array((float(dx),float(dy)))/step
 					print dx,dy,Z,dxpf			
