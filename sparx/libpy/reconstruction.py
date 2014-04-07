@@ -253,13 +253,14 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad=4, xysize=-1,
 	return fftvol
 
 
-def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", info=None, npad=4, xysize=-1, zsize=-1, mpi_comm=None):
-	from utilities    import reduce_EMData_to_root, pad, get_params_proj
-	from EMAN2        import Reconstructors
-	from utilities    import iterImagesList
-	from fundamentals import fft
-	from mpi          import MPI_COMM_WORLD
+def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", info=None, npad=2, mpi_comm=None):
+	from utilities     import reduce_EMData_to_root, pad, get_params_proj
+	from EMAN2         import Reconstructors
+	from utilities     import iterImagesList, model_blank, model_circle
+	from fundamentals  import fft
+	from mpi           import MPI_COMM_WORLD
 	import types
+	print  "  NEW "
 
 	if mpi_comm == None:
 		mpi_comm = MPI_COMM_WORLD
@@ -271,54 +272,69 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", info=None, npad=4, x
 		ERROR("empty input list","recons3d_4nn_MPI",1)
 
 	imgsize = prjlist.image().get_xsize()
-	if prjlist.image().get_ysize() != imgsize:
-		imgsize = max(imgsize, prjlist.image().get_ysize())
-		dopad = True
-	else:
-		dopad = False
-
-	from projection import prep_vol
-	volft,kb = prep_vol(prevol)
+	bigsize = imgsize*npad
+	bnx = bigsize//2+1
 
 	prjlist.goToPrev()
 
 	fftvol = EMData()
 	weight = EMData()
-	if (xysize == -1 and zsize == -1 ):
-		params = {"size":imgsize, "npad":npad, "symmetry":symmetry, "fftvol":fftvol, "weight":weight}
-		r = Reconstructors.get( "nn4", params )
-	else:
-		if ( xysize != -1 and zsize != -1):
-			rx = float(xysize)/imgsize
-			ry = float(xysize)/imgsize
-			rz = float(zsize)/imgsize
-		elif( xysize != -1):
-			rx = float(xysize)/imgsize
-			ry = float(xysize)/imgsize
-			rz = 1.0
-		else:
-			rx = 1.0
-			ry = 1.0
-			rz = float(zsize)/imgsize
-		params = {"sizeprojection":imgsize, "npad":npad, "symmetry":symmetry, "fftvol":fftvol,"weight":weight,"xratio":rx,"yratio":ry,"zratio":rz}
-		r = Reconstructors.get( "nn4_rect", params )
+	if myid == 0:
+		refvol = model_blank(bnx, bigsize, bigsize)
+		temp = fft(pad(prevol,bigsize,bigsize,bigsize,0.0))
+		temp.set_attr("is_complex",0)
+		for kk in xrange(bigsize):
+			for jj in xrange(bigsize):
+				for ii in xrange(0,bnx,2):
+					#print ii,jj,kk,temp.get_value_at(ii,jj,kk), temp.get_value_at(ii,jj,kk+1)
+					refvol.set_value_at_fast(ii//2,jj,kk,0.5/((temp.get_value_at(ii,jj,kk))**2+(temp.get_value_at(ii+1,jj,kk))**2) )
+		del temp
+	else:  refvol = EMData()
+	print " DONE refvol"
+	params = {"size":imgsize, "npad":npad, "symmetry":symmetry, "fftvol":fftvol, "refvol":refvol, "weight":weight, "weighting":0, "snr":1.0}
+	r = Reconstructors.get( "nn4_ctfw", params )
 	r.setup()
 
-	bigsize = imgsize*npad
+	from projection import prep_vol, prgs
+	from filter import filt_ctf
+	volft,kb = prep_vol(prevol)
 
+	mask2d = model_circle(imgsize//2-2, imgsize,imgsize)
+	maskbi = model_circle(imgsize//2-2, bigsize,bigsize)
 	if not (info is None): nimg = 0
+	ll = 0
 	while prjlist.goToNext():
 		prj = prjlist.image()
 
 		active = prj.get_attr_default('active', 1)
 		if(active == 1):
-			if dopad:
-				prj = pad(prj, imgsize,imgsize, 1, "circumference")
+			#  Make sure image is normalized properly
+			st = Util.infomask(prj, mask2d, False)
+			assert st[0] != 0.0
+			prj = (prj - st[0])/st[1]
+			st = Util.infomask(prj, mask2d, True)
+			print  " data :",st
 			phi, theta, psi, sx, sy = get_params_proj(prj)
 			tpj = prgs(volft, kb, [phi, theta, psi, sx, sy])
+			#  Make sure template is normalized properly
 			ct = prj.get_attr("ctf")
+			temp = filt_ctf(tpj, ct, False)
+			qt = Util.infomask(temp, mask2d, False)
+			print  "  reproj :",ll,qt
+			tpj -= qt[0]
+			qt = Util.infomask(temp, mask2d, True)
+			tpj *= st[1]/qt[1]
 
 			qdif = fft(pad(prj,bigsize,bigsize,1,0.0)) - filt_ctf(fft(pad(tpj, bigsize, bigsize, 1, 0.0)), ct, False)
+			fft(qdif).write_image("wdif.hdf", ll); ll +=1
+			# pack qdif by x and invert it
+			pqdif = model_blank((bigsize+2)//2, bigsize)
+			qdif.set_attr("is_complex", 0)
+			for jj in xrange(bigsize):
+				for ii in xrange(0,bnx,2):
+					pqdif.set_value_at_fast(ii//2,jj,1.0/((qdif.get_value_at(ii,jj))**2+(qdif.get_value_at(ii+1,jj))**2) )
+
+			prj.set_attr("sigmasq2", pqdif)
 
 			insert_slices(r, prj)
 			if( not (info is None) ):
@@ -330,10 +346,14 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", info=None, npad=4, x
 		info.write( "Begin reducing ...\n" )
 		info.flush()
 
+	del qdif, temp, pqdif
+
 	reduce_EMData_to_root(fftvol, myid, comm=mpi_comm)
 	reduce_EMData_to_root(weight, myid, comm=mpi_comm)
 
-	if myid == 0:  dummy = r.finish(True)
+	if myid == 0:
+		print  "  STARTING FINISH"
+		dummy = r.finish(True)
 	else:
 		from utilities import model_blank
 		if ( xysize == -1 and zsize == -1 ):
@@ -348,7 +368,7 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", info=None, npad=4, x
 	return fftvol
 
 
-def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 10.0, sign=1, symmetry="c1", verbose=0, npad=4, xysize = -1, zsize = -1 ):
+def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 1.0, sign=1, symmetry="c1", verbose=0, npad=4, xysize = -1, zsize = -1 ):
 	"""Perform a 3-D reconstruction using Pawel's FFT Back Projection algoritm.
 	   
 	   Input:

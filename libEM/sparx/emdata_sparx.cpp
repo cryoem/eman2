@@ -1674,6 +1674,45 @@ void EMData::onelinenn_ctf(int j, int n, int n2, EMData* w, EMData* bi, const Tr
 	}
 }
 
+//  Helper functions for method nn4_ctfw
+void EMData::onelinenn_ctfw(int j, int n, int n2, EMData* w, EMData* bi, EMData* sigmasq2, const Transform& tf) {
+//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
+    int nnd4 = n*n/4;
+	int jp = (j >= 0) ? j+1 : n+j+1;
+	// loop over x
+	for (int i = 0; i <= n2; i++) {
+		int r2 = i*i+j*j;
+		if ( (r2<nnd4) && !((0==i) && (j<0)) ) {
+			float ctf = ctf_store::get_ctf( r2, i, j ); //This is in 2D projection plane
+			float xnew = i*tf[0][0] + j*tf[1][0];
+			float ynew = i*tf[0][1] + j*tf[1][1];
+			float znew = i*tf[0][2] + j*tf[1][2];
+			std::complex<float> btq;
+			if (xnew < 0.) {
+				xnew = -xnew;
+				ynew = -ynew;
+				znew = -znew;
+				btq = conj(bi->cmplx(i,jp));
+			} else  btq = bi->cmplx(i,jp);
+			int ixn = int(xnew + 0.5 + n) - n;
+			int iyn = int(ynew + 0.5 + n) - n;
+			int izn = int(znew + 0.5 + n) - n;
+
+			int iza, iya;
+			if (izn >= 0)  iza = izn + 1;
+			else           iza = n + izn + 1;
+
+			if (iyn >= 0) iya = iyn + 1;
+			else          iya = n + iyn + 1;
+
+            float mult = (*sigmasq2)(i,jp);
+			cmplx(ixn,iya,iza) += btq*ctf*mult;
+			(*w)(ixn,iya,iza)  += ctf*ctf*mult;
+
+		}
+	}
+}
+
 void EMData::onelinenn_ctf_applied(int j, int n, int n2,
 		          EMData* w, EMData* bi, const Transform& tf, float mult) {//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
 
@@ -1720,8 +1759,7 @@ void EMData::onelinenn_ctf_applied(int j, int n, int n2,
 	}
 }
 
-void
-EMData::nn_ctf(EMData* w, EMData* myfft, const Transform& tf, float mult) {
+void EMData::nn_ctf(EMData* w, EMData* myfft, const Transform& tf, float mult) {
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"]; // # of complex elements along x
 	// let's treat nr, bi, and local data as matrices
@@ -1741,8 +1779,28 @@ EMData::nn_ctf(EMData* w, EMData* myfft, const Transform& tf, float mult) {
 	EXITFUNC;
 }
 
-void
-EMData::nn_ctf_applied(EMData* w, EMData* myfft, const Transform& tf, float mult) {
+void EMData::nn_ctfw(EMData* w, EMData* myfft, EMData* sigmasq2, const Transform& tf) {
+	ENTERFUNC;
+	int nxc = attr_dict["nxc"]; // # of complex elements along x
+	// let's treat nr, bi, and local data as matrices
+	vector<int> saved_offsets = get_array_offsets();
+	vector<int> myfft_saved_offsets = myfft->get_array_offsets();
+	set_array_offsets(0,1,1);
+	myfft->set_array_offsets(0,1);
+	sigmasq2->set_array_offsets(0,1);
+
+    Ctf* ctf = myfft->get_attr("ctf");
+    ctf_store::init( ny, ctf );
+    if(ctf) {delete ctf; ctf=0;}
+
+	// loop over frequencies in y
+	for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn_ctfw(iy, ny, nxc, w, myfft, sigmasq2, tf);
+	set_array_offsets(saved_offsets);
+	myfft->set_array_offsets(myfft_saved_offsets);
+	EXITFUNC;
+}
+
+void EMData::nn_ctf_applied(EMData* w, EMData* myfft, const Transform& tf, float mult) {
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"]; // # of complex elements along x
 	// let's treat nr, bi, and local data as matrices

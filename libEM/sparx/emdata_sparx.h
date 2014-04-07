@@ -217,6 +217,19 @@ EMData* mult_radial(EMData* radial);
 		 */
 		void onelinenn_ctf(int j, int n, int n2, EMData* w, EMData* bi, const Transform& tf, float mult);
 
+		/** Helper function for method nn4_ctfw.
+		 *
+		 * @param j y fourier index (frequency)
+		 * @param n number of real elements.
+		 * @param n2 Number of complex elements.
+		 * @param w Normalization matrix [0:n2][1:n][1:n]
+		 * @param bi Fourier transform matrix [0:n2][1:n]
+		 * @param tf Transform reference
+		 * @param mult
+		 */
+		void onelinenn_ctfw(int j, int n, int n2, EMData* w, EMData* bi, EMData* sigmasq2, const Transform& tf);
+
+
 		/** Nearest Neighbor interpolation.
 		 *  Modifies the current object.
 		 *
@@ -264,6 +277,20 @@ EMData* mult_radial(EMData* radial);
 		 */
 		void symplane0_ctf(EMData* w);
 		void symplane0_rect(EMData* w);
+
+
+
+		/** Helper functions for method nn4_ctf.
+		 *
+		 * @param j y fourier index (frequency)
+		 * @param n number of real elements.
+		 * @param n2 Number of complex elements.
+		 * @param w Normalization matrix [0:n2][1:n][1:n]
+		 * @param bi Fourier transform matrix [0:n2][1:n]
+		 * @param tf Transform reference
+		 * @param mult
+		 */
+		void nn_ctfw(EMData* w, EMData* myfft, EMData* sigmasq2, const Transform& tf);
 
 
 		/** Symmetrize volume in real space.

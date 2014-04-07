@@ -9862,7 +9862,11 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym, li
 	prjlist = iterImagesStack(prj_stack, pid_list[image_start:image_end])
 	del pid_list
 
-	if CTF: vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, finfo, npad,xysize, zsize)
+	#if CTF: vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, finfo, npad,xysize, zsize)
+	from utilities import model_blank, get_im
+	from reconstruction import recons3d_4nnw_MPI
+	prevol = get_im("oldvol.hdf")
+	if CTF: vol = recons3d_4nnw_MPI(myid, prjlist, prevol, sym, finfo, npad)
 	else:	vol = recons3d_4nn_MPI(myid, prjlist, sym, finfo, npad,xysize, zsize)
 	if myid == 0 :
 		if(vol_stack[-3:] == "spi"):
