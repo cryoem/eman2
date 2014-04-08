@@ -166,7 +166,7 @@ class EMFileType(object):
 	def saveAs(self,brws):
 		"Save an image file/stack to a new file"
 
-		outpath=QtGui.QInputDialog.getText(None,"Save Filename","Filename to save to (type determined by extension)")
+		outpath=QtGui.QInputDialog.getText(None,"Save Filename","Filename to save to (type determined by extension)", 0, self.path) 
 		if outpath[1]!=True : return
 
 		outpath=str(outpath[0])
