@@ -49,6 +49,7 @@ Low priority
 
 
 Complete
+4/7/14		Make e2.py work with current ipython versions, finally
 2/20/14		Added --speed option
 2/12/14		Fixed e2evalparticles finally !
 11/22/13	Revamp CMakeList

@@ -429,7 +429,7 @@ def align(s1,s2,guess=(0,0),localrange=192,verbose=0):
 	if verbose>1: print "{},{} + {},{}".format(dx1,dy1,dx,dy)
 	if verbose>2: display(tot)
 	
-	return dx1+dx,dy1+dy,zscore
+	return dx1+dx+guess[0],dy1+dy+guess[1],zscore
 		
 	#cl=tot.get_clip(Region(dx-8,dy-8,17,17))
 	#cm=cl.calc_center_of_mass(0)
