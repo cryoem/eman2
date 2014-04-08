@@ -348,6 +348,7 @@ def ctf_2(nx, ctf):
 		ctf_2[i] = ctf_val*ctf_val
 	return ctf_2
 
+
 def ctf_img(nx, ctf, sign = 1, ny = 0, nz = 1):
 	"""
 		Generate a 1-2-3-D complex image containing the CTF.
@@ -1443,7 +1444,7 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 	from   fundamentals import tilemic, rot_avg_table
 	from   morphology import threshold, bracket_original, bracket_def, bracket, goldsearch_astigmatism
 	from   morphology import defocus_baseline_fit, simpw1d, movingaverage, localvariance, defocusgett
-	from   morphology import ctf_222, defocus_guessn, defocusgett_, defocusget_from_crf, make_real
+	from   morphology import defocus_guessn, defocusgett_, defocusget_from_crf, make_real
 	from   morphology import fastigmatism, fastigmatism1, fastigmatism2, fastigmatism3, simctf, simctf2, simctf2out, fupw,ctf2_rimg
 	from   alignment import Numrinit, ringwe
 	from   statistics import table_stat
@@ -2143,34 +2144,6 @@ def defocusgett(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1, f_s
 	return def1, subpw, ctf2, baseline, envelope, i_start, i_stop
 
 
-def ctf_222(nx, ctf):
-	"""
-		Generate a list of 1D CTF^2 values 
-		Input
-			nx: image size to which CTF will be applied.
-			ctf: ctf object created using generate_ctf
-		Output
-			a list of CTF2 values.
-	"""
-	dict       = ctf.to_dict()
-	dz         = dict["defocus"]
-	cs         = dict["cs"]
-	voltage    = dict["voltage"]
-	pixel_size = dict["apix"]
-	b_factor   = dict["bfactor"]
-	ampcont    = dict["ampcont"]
-
-	ctf_2  = []
-	scl    = 1.0/pixel_size/nx
-	length = int(1.7321*float(nx/2)) + 2
-	ctf_2 = [0.0]*length
-	for i in xrange(length):
-		ctf_val = Util.tf(dz, i*scl, voltage, cs, ampcont, b_factor)
-		print  i,dz, i*scl, voltage, cs, ampcont,ctf_val*ctf_val
-		ctf_2[i] = ctf_val*ctf_val
-	return ctf_2
-
-
 def defocus_guessn(roo, volt, Cs, Pixel_size, ampcont, istart, i_stop):
 	"""
 		Use specified frequencies area (istart-istop)to estimate defocus
@@ -2641,7 +2614,7 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 	import os
 	from mpi  import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier
 	from fundamentals import tilemic, rot_avg_table
-	from morphology import threshold, bracket_original, bracket_def, bracket, goldsearch_astigmatism, defocus_baseline_fit, simpw1d, movingaverage, localvariance, defocusgett, ctf_222, defocus_guessn, defocusgett_, defocusget_from_crf, make_real, fastigmatism, fastigmatism1, fastigmatism2, fastigmatism3, simctf, simctf2, simctf2out, fupw,ctf2_rimg
+	from morphology import threshold, bracket_original, bracket_def, bracket, goldsearch_astigmatism, defocus_baseline_fit, simpw1d, movingaverage, localvariance, defocusgett, defocus_guessn, defocusgett_, defocusget_from_crf, make_real, fastigmatism, fastigmatism1, fastigmatism2, fastigmatism3, simctf, simctf2, simctf2out, fupw,ctf2_rimg
 	from alignment import Numrinit, ringwe
 	from statistics import table_stat
 	from pixel_error import angle_ave
