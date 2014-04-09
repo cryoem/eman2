@@ -83,7 +83,7 @@ def main():
 					print " {}/{}   \r".format(i+1,nd),
 					sys.stdout.flush()
 				t=EMData(options.dark,i)
-				t.process_inplace("threshold.clampminmax",{"minval":0,"maxval":t["mean"]+t["sigma"]*3.0,"tozero":1})
+				t.process_inplace("threshold.clampminmax",{"minval":0,"maxval":t["mean"]+t["sigma"]*3.5,"tozero":1})
 				a.add_image(t)
 			dark=a.finish()
 			dark.write_image(options.dark.rsplit(".",1)[0]+"_sum.hdf")
@@ -106,7 +106,7 @@ def main():
 					sys.stdout.flush()
 				t=EMData(options.gain,i)
 				#t.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4.0,"tozero":1})
-				t.process_inplace("threshold.clampminmax",{"minval":0,"maxval":t["mean"]+t["sigma"]*3.0,"tozero":1})
+				t.process_inplace("threshold.clampminmax",{"minval":0,"maxval":t["mean"]+t["sigma"]*3.5,"tozero":1})
 				a.add_image(t)
 			gain=a.finish()
 			gain.write_image(options.gain.rsplit(".",1)[0]+"_sum.hdf")
@@ -161,7 +161,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			if gain!=None : im.mult(gain)
 
 			#im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
-			im.process_inplace("threshold.clampminmax",{"minval":0,"maxval":im["mean"]+im["sigma"]*2.0,"tozero":1})		# TODO - not sure if 2 is really safe here, even on the high end
+			im.process_inplace("threshold.clampminmax",{"minval":0,"maxval":im["mean"]+im["sigma"]*3.5,"tozero":1})		# TODO - not sure if 2 is really safe here, even on the high end
 #			im.mult(-1.0)
 			
 			if options.frames : im.write_image(outname[:-4]+"_corr.hdf",ii-first)
@@ -311,27 +311,33 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 					av0=sum(outim[i0:i0+step])
 					av1=sum(outim[i1:i1+step])
 					
-					print step,i0,i1,alignments[i1+step/2]-alignments[i0+step/2],
-					dx,dy,Z=align(av0,av1,guess=alignments[i1+step/2]-alignments[i0+step/2],localrange=LA.norm(alignments[i1+step-1]-alignments[i0]))
+					print step,i0,i1,alignments[i1+step/2]-alignments[i0+step/2],alignments[i1+step/2],alignments[i0+step/2],
+					dx,dy,Z=align_subpixel(av0,av1,guess=alignments[i1+step/2]-alignments[i0+step/2],localrange=LA.norm(alignments[i1+step-1]-alignments[i0]))
 					dxpf=array((float(dx),float(dy)))/step
 					print dx,dy,Z,dxpf			
 					
 					if i0==0 : last=array((0,0))		# the end of the alignment one step before this. The first image is defined as having 0 translation
 					else : last=alignments[i0-1]
-					for i in xrange(i0,min(i0+step*3,len(alignments))): 	# should really only go to i0+step*2, this is just to deal with roundoff issues
+					for i in xrange(i0,min(i0+step*2,len(alignments))):
 						alignments[i]=last+dxpf*(i-i0+1)
 					
 					i0+=step*2
 					i1+=step*2
 				
 				for i in xrange(len(outim)): 
-					print "%4d"%alignments[i][0],
+					print "%5.2f"%alignments[i][0],
 				print ""
 					
 				for i in xrange(len(outim)): 
-					print "%4d"%alignments[i][1],
+					print "%5.2f"%alignments[i][1],
 				print ""
-					
+			
+			fav=outim[0].copy()
+			for i in xrange(1,len(outim)):
+				c=outim[i].copy()
+				c.translate(alignments[i][0],alignments[i][1],0)
+				fav.add(c)
+			
 			if options.verbose>1 : display(fav,True)
 			
 		# we iterate the alignment process several times
@@ -430,6 +436,80 @@ def align(s1,s2,guess=(0,0),localrange=192,verbose=0):
 	if verbose>2: display(tot)
 	
 	return dx1+dx+guess[0],dy1+dy+guess[1],zscore
+		
+	#cl=tot.get_clip(Region(dx-8,dy-8,17,17))
+	#cm=cl.calc_center_of_mass(0)
+	#return dx+cm[0]-8-256,dy+cm[1]-8-256
+
+def align_subpixel(s1,s2,guess=(0,0),localrange=192,verbose=0):
+	"""Aligns a pair of images to 1/4 pixel precision, and returns a (dx,dy,Z) tuple. Z is the Z-score of the best peak, not a shift.
+	The search will be limited to a region of +-localrange/2 about the guess, a (dx,dy) tuple. Resulting dx,dy
+	is relative to the initial guess. guess and return both indicate the shift required to bring s2 in register
+	with s1"""
+
+	# reduce region used for alignment a bit (perhaps a lot for superresolution imaging
+	guess=(int(guess[0]*2.0),int(guess[1]*2.0))
+	localrange*=2
+	if localrange<5 : localrange=192*2
+	newbx=good_boxsize(min(s1["nx"],s1["ny"],2048)*0.8,larger=False)
+	newbx*=2
+	s1a=s1.get_clip(Region((s1["nx"]-newbx)/2,(s1["ny"]-newbx)/2,newbx,newbx))
+	s1a.scale(2)
+	s2a=s2.get_clip(Region((s2["nx"]-newbx)/2-guess[0],(s2["ny"]-newbx)/2-guess[1],newbx,newbx))
+	s2a.scale(2)
+
+#	s1a.process_inplace("math.xystripefix",{"xlen":200,"ylen":200})
+	s1a.process_inplace("filter.xyaxes0")
+#	s1a.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
+#	s1a.process_inplace("threshold.compress",{"value":0,"range":s1a["sigma"]/2.0})
+	s1a.process_inplace("filter.highpass.gauss",{"cutoff_abs":.002})
+	
+#	s2a.process_inplace("math.xystripefix",{"xlen":200,"ylen":200})
+#	s2a.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
+	s2a.process_inplace("filter.xyaxes0")
+	s2a.process_inplace("filter.highpass.gauss",{"cutoff_abs":.002})
+	
+	
+	tot=s1a.calc_ccf(s2a)
+	tot.process_inplace("xform.phaseorigin.tocenter")
+	tot.process_inplace("normalize.edgemean")
+	
+	#if verbose>1 : 
+		#s1a.write_image("s1a.hdf",0)
+		#s2a.write_image("s2a.hdf",0)
+		#tot.write_image("stot.hdf",0)
+			
+	if verbose>3 : display((s1a,s2a,tot),force_2d=True)
+	
+	mn=tot["mean"]
+	dx,dy=(tot["nx"]/2,tot["ny"]/2)					# the 'false peak' should always be at the origin, ie - no translation
+	for x in xrange(dx-2,dx+3):
+		for y in xrange(dy-2,dy+3):
+#			tot[x,y]=mn		# exclude from COM
+			pass
+			
+	# first pass to have a better chance at finding the first peak, using a lot of blurring
+	tot2=tot.get_clip(Region(tot["nx"]/2-localrange/2,tot["ny"]/2-localrange/2,localrange,localrange))
+	tot2.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.04})		# This is an empirical value. Started with 0.04 which also seemed to be blurring out high-res features.
+	dx1,dy1,dz=tot2.calc_max_location()
+	dx1-=localrange/2
+	dy1-=localrange/2
+
+	# second pass with less blurring to fine tune it
+	tot=tot.get_clip(Region(tot["nx"]/2-24+dx1,tot["ny"]/2-24+dy1,48,48))
+	tot.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.08})		# This is an empirical value. Started with 0.04 which also seemed to be blurring out high-res features.
+	dx,dy,dz=tot.calc_max_location()
+	zscore=tot[dx,dy]/tot["sigma"]		# a rough Z score for the peak
+	dx-=24
+	dy-=24
+	#while hypot(dx-tot["nx"]/2,dy-tot["ny"]/2)>64 :
+		#tot[dx,dy]=0
+		#dx,dy,dz=tot.calc_max_location()
+
+	if verbose>1: print "{},{} + {},{}".format(dx1,dy1,dx,dy)
+	if verbose>2: display(tot)
+	
+	return (dx1+dx+guess[0])/2.0,(dy1+dy+guess[1])/2.0,zscore
 		
 	#cl=tot.get_clip(Region(dx-8,dy-8,17,17))
 	#cm=cl.calc_center_of_mass(0)
