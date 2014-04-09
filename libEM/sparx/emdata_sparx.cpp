@@ -1677,6 +1677,7 @@ void EMData::onelinenn_ctf(int j, int n, int n2, EMData* w, EMData* bi, const Tr
 //  Helper functions for method nn4_ctfw
 void EMData::onelinenn_ctfw(int j, int n, int n2, EMData* w, EMData* bi, EMData* sigmasq2, const Transform& tf) {
 //std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
+//for (int i = 0; i <= 127; i++)  cout <<"  "<<i<<"  "<<(*sigmasq2)(i)<<endl;
     int nnd4 = n*n/4;
 	int jp = (j >= 0) ? j+1 : n+j+1;
 	// loop over x
@@ -1705,9 +1706,14 @@ void EMData::onelinenn_ctfw(int j, int n, int n2, EMData* w, EMData* bi, EMData*
 			if (iyn >= 0) iya = iyn + 1;
 			else          iya = n + iyn + 1;
 
-            float mult = (*sigmasq2)(i,jp);
-			cmplx(ixn,iya,iza) += btq*ctf*mult;
-			(*w)(ixn,iya,iza)  += ctf*ctf*mult;
+            // linear interpolation of 1D sigmasq2
+            r2 = std::sqrt(float(r2));
+            int ir = int(r2);
+            float df = r2 - float(ir);
+            float mult = (1.0f - df)*(*sigmasq2)(ir) + df*(*sigmasq2)(ir+1);
+            //cout <<"  "<<jp<<"  "<<i<<"  "<<j<<"  "<<r2<<"  "<<mult<<"  "<<int(std::sqrt(float(r2)+0.5))<<endl;
+			cmplx(ixn, iya, iza) += btq*ctf*mult;
+			(*w)(ixn, iya, iza)  += ctf*ctf*mult;
 
 		}
 	}
@@ -1787,7 +1793,7 @@ void EMData::nn_ctfw(EMData* w, EMData* myfft, EMData* sigmasq2, const Transform
 	vector<int> myfft_saved_offsets = myfft->get_array_offsets();
 	set_array_offsets(0,1,1);
 	myfft->set_array_offsets(0,1);
-	sigmasq2->set_array_offsets(0,1);
+	//sigmasq2->set_array_offsets(0,1);
 
     Ctf* ctf = myfft->get_attr("ctf");
     ctf_store::init( ny, ctf );
@@ -6050,7 +6056,7 @@ float EMData::find_3d_threshold(float mass, float pixel_size)
 #undef C
 
 
-// reworked peak_ccf uses max queue lenght for peak objects, i.e. lowest
+// reworked peak_ccf uses max queue length for peak objects, i.e. lowest
 //    peaks are deleted if queue length is exceeded and a new peak is inserted
 //    instead.
 

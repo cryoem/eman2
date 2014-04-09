@@ -253,11 +253,11 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad=4, xysize=-1,
 	return fftvol
 
 
-def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", info=None, npad=2, mpi_comm=None):
+def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, mpi_comm=None):
 	from utilities     import reduce_EMData_to_root, pad, get_params_proj
 	from EMAN2         import Reconstructors
 	from utilities     import iterImagesList, model_blank, model_circle
-	from fundamentals  import fft
+	from fundamentals  import fft, rops
 	from mpi           import MPI_COMM_WORLD
 	import types
 
@@ -272,7 +272,7 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", info=None, npad=2, m
 
 	imgsize = prjlist.image().get_xsize()
 	bigsize = imgsize*npad
-	bnx = bigsize//2+1
+	bnx     = bigsize//2+1
 
 	prjlist.goToPrev()
 
@@ -280,6 +280,7 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", info=None, npad=2, m
 	weight = EMData()
 
 	if myid == 0:
+		"""
 		refvol = model_blank(bnx, bigsize, bigsize)
 		temp = fft(pad(prevol,bigsize,bigsize,bigsize,0.0))
 		temp.set_attr("is_complex",0)
@@ -292,8 +293,17 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", info=None, npad=2, m
 					#refvol.set_value_at_fast(ii//2,jj,kk,1.0 )
 		refvol.set_value_at_fast(0,0,0,0.0)
 		del temp
+		"""
+		st = rops(pad(prevol,bigsize,bigsize,bigsize,0.0))*(bigsize**6)/4.
+		from utilities import info
+		from utilities import write_text_file
+		#zizi = [st.get_value_at(i) for i in xrange(st.get_xsize())]
+		#for i in xrange(st.get_xsize()):  st.set_value_at(i,1.0)#/st.get_value_at(i))
+		#info(st,None,"refvol")
+		refvol = model_blank(bigsize,1,1,1.0)
+		for i in xrange(st.get_xsize()):  refvol.set_value_at(i,1.0/(211*st.get_value_at(i)))
 	else:  refvol = EMData()
-	print " DONE refvol"
+	#print " DONE refvol"
 	params = {"size":imgsize, "npad":npad, "symmetry":symmetry, "fftvol":fftvol, "refvol":refvol, "weight":weight, "weighting":0, "snr":1.0}
 	r = Reconstructors.get( "nn4_ctfw", params )
 	r.setup()
@@ -304,20 +314,20 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", info=None, npad=2, m
 
 	mask2d = model_circle(imgsize//2-2, imgsize,imgsize)
 	maskbi = model_circle(imgsize//2-2, bigsize,bigsize)
-	if not (info is None): nimg = 0
+	if not (finfo is None): nimg = 0
 	ll = 0
 	while prjlist.goToNext():
 		prj = prjlist.image()
 
 		active = prj.get_attr_default('active', 1)
 		if(active == 1):
+			phi, theta, psi, sx, sy = get_params_proj(prj)
 			#  Make sure image is normalized properly
 			st = Util.infomask(prj, mask2d, False)
 			assert st[0] != 0.0
 			prj = (prj - st[0])/st[1]
 			st = Util.infomask(prj, mask2d, True)
-			phi, theta, psi, sx, sy = get_params_proj(prj)
-			tpj = prgs(volft, kb, [phi, theta, psi, sx, sy])
+			tpj = prgs(volft, kb, [phi, theta, psi, -sx, -sy])
 			#  Make sure template is normalized properly
 			ct = prj.get_attr("ctf")
 			qt = Util.infomask(tpj, mask2d, False)
@@ -327,25 +337,58 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", info=None, npad=2, m
 			qt = Util.infomask(tpj, maskbi, True)
 			tpj *= st[1]/qt[1]
 			#print  " data :",Util.infomask(prj, mask2d, True),Util.infomask(tpj, maskbi, True)
-
+			#info(pad(prj,bigsize,bigsize,1,0.0), None, "pad(prj,bigsize,bigsize,1,0.0)")
+			#info(tpj, None, "   tpj")
+			#tpj.write_image("tpj.hdf")
+			pad(prj,bigsize,bigsize,1,0.0).write_image("prj.hdf")
 			qdif = fft(pad(prj,bigsize,bigsize,1,0.0) - tpj)
+			st = rops(qdif)*(bigsize**4)/4.
+			st[0] = st[1]
+			#for i in xrange(st.get_xsize()):  st.set_value_at(i,i)#1.0)#/(st.get_value_at(i)))
+			#for i in xrange(st.get_xsize()):  print i,st.get_value_at(i)
+			pqdif = model_blank(bigsize,1,1,0.0)
+			for i in xrange(st.get_xsize()):  pqdif.set_value_at(i,1.0/(st.get_value_at(i)))
+			"""
+			from fundamentals import rops_table
+			sso = rops_table(qdif)
+			for i in xrange(len(sso)):  sso[i] *= (bigsize**4)/4.
+			from morphology import ctf_2
+			ct2 = ctf_2(bigsize, ct)
+			from utilities import write_text_file
+			#write_text_file([range(len(sso)),sso,ct2[:len(sso)], zizi[:len(sso)]],"soso.txt")
 			#fft(qdif).write_image("wdif.hdf", ll); ll +=1
 			# pack qdif by x and invert it
 			pqdif = model_blank((bigsize+2)//2, bigsize)
 			qdif.set_attr("is_complex", 0)
+			from math import sqrt
 			for jj in xrange(bigsize):
-				for ii in xrange(0,bnx,2):
+				#if( jj > bigsize/2):  fdsfds = (jj-bigsize)**2
+				#else:  fdsfds= jj**2
+				for ii in xrange(0,bigsize+2,2):
+					#st = sqrt((ii//2)**2+fdsfds)
+					#st = ((ii//2)**2+fdsfds)
+					#if st == 0.0:  st=1.0
 					pqdif.set_value_at_fast(ii//2,jj,1.0/((qdif.get_value_at(ii,jj))**2+(qdif.get_value_at(ii+1,jj))**2) )
 			pqdif.set_value_at_fast(0,0,1.0)
+			"""
+			"""
+			pqdif.write_image("pqdif.hdf")
+			from sys import exit
+			exit()
+			"""
+			#pqdif = model_blank((bigsize+2)//2, bigsize,1,1.0)
+			#info(pqdif,None,"pqdif")
 			prj.set_attr("sigmasq2", pqdif)
-
+			#if ll == 0:
+			#	write_text_file([range(bigsize),[pqdif[i] for i in xrange(bigsize)] ],"pqdif.txt")
+			#	ll+=1
 			insert_slices(r, prj)
-			if( not (info is None) ):
+			if( not (finfo is None) ):
 				nimg += 1
 				info.write("Image %4d inserted.\n" %(nimg) )
 				info.flush()
 
-	if not (info is None):
+	if not (finfo is None):
 		info.write( "Begin reducing ...\n" )
 		info.flush()
 

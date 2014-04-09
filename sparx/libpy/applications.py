@@ -9790,7 +9790,7 @@ def transform2d(stack_data, stack_data_ali):
 
 def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=4, sym="c1", listfile = "", group = -1, verbose=0, MPI=False,xysize=-1, zsize = -1):
 	if MPI:
-		recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose,xysize, zsize)
+		newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose,xysize, zsize)
 		return
 
 	from reconstruction import recons3d_4nn_ctf, recons3d_4nn
@@ -9921,13 +9921,14 @@ def newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, sign, npad, sym,
 
 	prjlist = iterImagesStack(prj_stack, pid_list[image_start:image_end])
 	del pid_list
-
+	print "  NEW  "
 	#if CTF: vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, finfo, npad,xysize, zsize)
 	from utilities import model_blank, get_im
 	from reconstruction import recons3d_4nnw_MPI
 	prevol = get_im("refvol.hdf")
+	print  sym,finfo,npad
 	if CTF: vol = recons3d_4nnw_MPI(myid, prjlist, prevol, sym, finfo, npad)
-	else:	vol = recons3d_4nn_MPI(myid, prjlist, sym, finfo, npad,xysize, zsize)
+	else:	vol = recons3d_4nn_MPI(myid, prjlist, sym, finfo, npad, xysize, zsize)
 	if myid == 0 :
 		if(vol_stack[-3:] == "spi"):
 			drop_image(vol, vol_stack, "s")

@@ -3353,10 +3353,10 @@ EMData* nn4_ctfReconstructor::finish(bool)
 		for (iy = 1; iy <= m_vnyp; iy++) {
 			for (ix = 0; ix <= m_vnxc; ix++) {
 				if ( (*m_wptr)(ix,iy,iz) > 0.0f) {//(*v) should be treated as complex!!
-					int iyp = (iy<=m_vnyc) ? iy - 1 : iy-m_vnyp-1;
-					int izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
-					float tmp=0.0;
+					float tmp=0.0f;
 					if( m_varsnr )  {
+					    int iyp = (iy<=m_vnyc) ? iy - 1 : iy-m_vnyp-1;
+					    int izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
 						float freq = sqrt( (float)(ix*ix+iyp*iyp+izp*izp) );
 						tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+freq*osnr)*m_sign;
 					} else  {
@@ -3558,6 +3558,8 @@ int nn4_ctfwReconstructor::insert_slice(const EMData* const slice, const Transfo
 	else                padfft = padfft_slice( slice, t, m_npad );
 
 	Assert( mult > 0 );
+//for (int ix = 0; ix <= 20; ix++) cout <<"  "<<(*sigmasq2)(ix,1) <<"  "<<(*padfft)(ix,1);
+//cout <<endl;
 	insert_padfft_slice_weighted( padfft, sigmasq2, t );
 
 	checked_delete( padfft );
@@ -3603,15 +3605,18 @@ EMData* nn4_ctfwReconstructor::finish(bool)
 	for (iz = 1; iz <= m_vnzp; iz++) {
 		for (iy = 1; iy <= m_vnyp; iy++) {
 			for (ix = 0; ix <= m_vnxc; ix++) {
-				if ( (*m_wptr)(ix,iy,iz) > 0.0f) {//(*v) should be treated as complex!!
+				if ( (*m_wptr)(ix,iy,iz) > 0.0f) {
 					int iyp = (iy<=m_vnyc) ? iy - 1 : iy-m_vnyp-1;
 					int izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
+					float freq = sqrt( (float)(ix*ix+iyp*iyp+izp*izp) );
 					float tmp=0.0;
-					if( m_varsnr )  {
-						float freq = sqrt( (float)(ix*ix+iyp*iyp+izp*izp) );
-						tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+freq*osnr)*m_sign;
-					} else  {
-						tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+(*m_refvol)(ix,iy,iz))*m_sign;
+					if( m_varsnr )  tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+freq*osnr)*m_sign;
+					else {
+                        int ir = int(freq);
+                        float df = freq - float(ir);
+                        float add = (1.0f - df)*(*m_refvol)(ir) + df*(*m_refvol)(ir+1);
+                        //cout<<"  "<<iz<<"  "<<iy<<"  "<<"  "<<ix<<"  "<<ir<<"  "<<"  "<<(*m_wptr)(ix,iy,iz)<<"  "<<add<<"  "<<endl;
+					    tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+add)*m_sign;
 					}
 
 			if( m_weighting == ESTIMATE ) {
@@ -3909,16 +3914,13 @@ EMData* nn4_ctf_rectReconstructor::finish(bool)
 		for (iy = 1; iy <= m_vnyp; iy++) {
 			for (ix = 0; ix <= m_vnxc; ix++) {
 				if ( (*m_wptr)(ix,iy,iz) > 0.0f) {//(*v) should be treated as complex!!
-                    int iyp = (iy<=m_vnyc) ? iy - 1 : iy-m_vnyp-1;
-                    int izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
-                    float tmp=0.0;
-                    if( m_varsnr )
-                    {
-			float freq = sqrt( (float)(ix*ix/(m_xratio*m_xratio)+iyp*iyp/(m_zratio*m_yratio)+izp*izp) );
+                    float tmp=0.0f;
+                    if( m_varsnr ) {
+                        int iyp = (iy<=m_vnyc) ? iy - 1 : iy-m_vnyp-1;
+                        int izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
+			            float freq = sqrt( (float)(ix*ix/(m_xratio*m_xratio)+iyp*iyp/(m_zratio*m_yratio)+izp*izp) );
                         tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+freq*osnr)*m_sign;
-                    }
-                    else
-                    {
+                    } else {
                         tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+osnr)*m_sign;
                     }
 
