@@ -321,6 +321,8 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, 
 
 		active = prj.get_attr_default('active', 1)
 		if(active == 1):
+			if ll%100 == 0:  print ll
+			ll +=1
 			phi, theta, psi, sx, sy = get_params_proj(prj)
 			#  Make sure image is normalized properly
 			st = Util.infomask(prj, mask2d, False)
@@ -340,7 +342,7 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, 
 			#info(pad(prj,bigsize,bigsize,1,0.0), None, "pad(prj,bigsize,bigsize,1,0.0)")
 			#info(tpj, None, "   tpj")
 			#tpj.write_image("tpj.hdf")
-			pad(prj,bigsize,bigsize,1,0.0).write_image("prj.hdf")
+			#pad(prj,bigsize,bigsize,1,0.0).write_image("prj.hdf")
 			qdif = fft(pad(prj,bigsize,bigsize,1,0.0) - tpj)
 			st = rops(qdif)*(bigsize**4)/4.
 			st[0] = st[1]
