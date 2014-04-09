@@ -278,6 +278,7 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", info=None, npad=2, m
 
 	fftvol = EMData()
 	weight = EMData()
+
 	if myid == 0:
 		refvol = model_blank(bnx, bigsize, bigsize)
 		temp = fft(pad(prevol,bigsize,bigsize,bigsize,0.0))

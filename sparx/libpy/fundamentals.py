@@ -763,6 +763,36 @@ def rops_table(img, lng = False):
 		table[0] = table[1]
 	return table
 
+def rops_dir(indir, output_dir = "1dpw2_dir"):
+	"""
+		Calculate 1D rotationally averaged power spectra from
+		image stack listed in a directory
+	"""
+	from EMAN2 import periodogram
+	import os
+	flist = os.listdir(indir)
+	print flist
+	if os.path.exists(output_dir) is False: os.mkdir(output_dir)
+	for i, v in enumerate(flist):
+		(filename, filextension) = os.path.splitext(v)
+		nima = EMUtil.get_image_count(os.path.join(indir,v))
+		print nima
+		for im in xrange(nima):
+			e = EMData()
+			file_name = os.path.join(indir,v)
+			e.read_image(file_name, im)
+			tmp1 = periodogram(e)
+			tmp  = tmp1.rotavg()
+			if im == 0:
+				sum_ima  = model_blank(tmp.get_xsize())
+				sum_ima += tmp
+			else :  sum_ima += tmp
+		table = []
+		nr = sum_ima.get_xsize()
+		for ir in xrange(nr):  table.append([sum_ima.get_value_at(ir)])
+		drop_spider_doc(os.path.join(output_dir, "1dpw2_"+filename+".txt"), table)
+
+
 def rotshift2dg(image, ang, dx, dy, kb, scale = 1.0):
 	"""Rotate and shift an image using gridding
 	"""

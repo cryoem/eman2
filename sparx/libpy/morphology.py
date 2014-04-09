@@ -293,8 +293,6 @@ def rotavg_ctf(img, defocus, Cs, voltage, Pixel_size, bfactor, wgh, amp, ang):
 	return lr[:nc]
 
 
-
-
 def ctf_1d(nx, ctf, sign = 1):
 	"""
 		Generate a list of 1D CTF values 
