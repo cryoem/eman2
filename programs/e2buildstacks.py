@@ -82,7 +82,7 @@ def main():
 				cmd = "e2bdb.py"
 				no_exc = True
 				if options.excludebad and select_db != None:
-					exc_db = re.sub(r'_ctf_flip$|_ctf_wiener$','',get_file_tag(name))
+					exc_db = re.sub(r'_ctf_flip$|_ctf_wiener$','',base_name(name))
 					if select_db.has_key(exc_db):
 						cmd += " "+name+"?exclude."+exc_db
 						no_exc=False

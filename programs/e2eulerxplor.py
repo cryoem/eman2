@@ -537,7 +537,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 			cls_result = []
 			for l in data:
 				for s in l:
-					stag = get_file_tag(s)
+					stag = base_name(s)
 
 					if len(stag) > 11 and stag[:11] == "projections":
 						prj.append(s)

@@ -243,7 +243,7 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 		'''
 		Only works if you the params dictionary has the filenames and name keys 
 		'''
-		return ["bdb:tomo_particles#"+get_file_tag(self.convert_to_root(f))+"_"+params["name"] for f in params["filenames"]]
+		return ["bdb:tomo_particles#"+base_name(self.convert_to_root(f))+"_"+params["name"] for f in params["filenames"]]
 		
 	def process_all(self,params):
 		
@@ -610,11 +610,11 @@ class E2TomoBoxerGuiTask(WorkFlowTask):
 		return table, n
 
 	def get_tomo_boxes_in_database(name):
-		print "checking for boxes, but this aspect of things is not working yet...."+get_file_tag(name)+" "+name
+		print "checking for boxes, but this aspect of things is not working yet...."+base_name(name)+" "+name
 		#from e2spt_boxer import tomo_db_name
 		#if db_check_dict(tomo_db_name):
 			#tomo_db = db_open_dict(tomo_db_name)
-			#image_dict = tomo_db.get(get_file_tag(name),dfl={})
+			#image_dict = tomo_db.get(base_name(name),dfl={})
 			#if image_dict.has_key("coords"):
 				#return str(len(image_dict["coords"]))
 		

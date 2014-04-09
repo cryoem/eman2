@@ -468,8 +468,8 @@ class EMTomoOutputWriter:
 		
 		all_solns = results["all_solns"]
 		if len(all_solns) > 1:
-			target_name = get_file_tag(files[target_idx])
-			probe_name = get_file_tag(files[probe_idx]) 
+			target_name = base_name(files[target_idx])
+			probe_name = base_name(files[probe_idx]) 
 			out=file("log-s3-%s_VS_%s.txt"%(target_name,probe_name),"w")
 			peak = 0
 			for d in all_solns:

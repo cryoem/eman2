@@ -33,7 +33,7 @@
 
 from PyQt4.QtCore import Qt
 from PyQt4 import QtGui,QtCore
-from EMAN2 import EMData, file_exists, gimme_image_dimensions3D,get_image_directory,EMUtil,get_file_tag,gm_time_string
+from EMAN2 import EMData, file_exists, gimme_image_dimensions3D,get_image_directory,EMUtil,base_name,gm_time_string
 from EMAN2db import db_check_dict, db_remove_dict
 import os
 # For example usage see http://blake.bcm.edu/emanwiki/EMAN2ImageFormats#SavingEMDatafromPython
@@ -692,7 +692,7 @@ class EMGeneralTmpFileHandle(EMTmpFileHandleBase):
 		self.__file_ext = "."+splt[-1]
 		
 		EMTmpFileHandleBase.__init__(self)
-		self.__file_name = get_file_tag(file_name)
+		self.__file_name = base_name(file_name)
 		self.__full_file_name = file_name
 		self.__tmp_file_name = None
 		self.__establish_tmp_file_name()
@@ -756,7 +756,7 @@ class EMImagicTmpFileHandle(EMTmpFileHandleBase):
 		splt = file_name.split(".")
 		if len(splt) < 2 or splt[-1] not in ["img","hed"]: raise
 		
-		self.__file_name_root = get_file_tag(file_name)
+		self.__file_name_root = base_name(file_name)
 		
 		if not os.path.exists(self.__file_name_root+".img"): raise
 		if not os.path.exists(self.__file_name_root+".hed"): raise

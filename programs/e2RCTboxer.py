@@ -163,9 +163,9 @@ class RCTprocessor:
 		self.names = []
 		for name in self.args:
 			#if self.options.format == "bdb":
-				#out = "bdb:particles#" + get_file_tag(name) + self.options.suffix
+				#out = "bdb:particles#" + base_name(name) + self.options.suffix
 			#else:
-			out = os.path.join(os.path.join(".","particles"),get_file_tag(name)+self.options.suffix+"."+self.options.format)
+			out = os.path.join(os.path.join(".","particles"),base_name(name)+self.options.suffix+"."+self.options.format)
 			self.names.append(out)
 			
 	def write_boxes(self):
@@ -191,9 +191,9 @@ class RCTprocessor:
 		self.names = []
 		for name in self.args:
 			#if self.options.format == "bdb":
-			#	out = "bdb:RCTparticles#" + get_file_tag(name) + self.options.suffix + "_boxes"
+			#	out = "bdb:RCTparticles#" + base_name(name) + self.options.suffix + "_boxes"
 			#else:
-			out = get_file_tag(name)+self.options.suffix+".box"
+			out = base_name(name)+self.options.suffix+".box"
 			self.names.append(out)
 			
 class RCTboxer:

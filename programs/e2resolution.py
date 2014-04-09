@@ -156,7 +156,7 @@ def main():
 	out.close()
 	
 	if options.path != None:
-		s = get_file_tag(args[0])
+		s = base_name(args[0])
 		db = db_open_dict("bdb:"+options.path+"#convergence.results")	
 		db[s+"res_fsc"] = [x,fsc] # warning, changing this naming convention will disrupt forms in the workflow (make them fail)
 		db[s+"res_datapow"] = [x,datapow]

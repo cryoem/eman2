@@ -37,7 +37,7 @@
 
 import shelve
 import sys,os,time
-from EMAN2 import get_file_tag, EMArgumentParser
+from EMAN2 import base_name, EMArgumentParser
 import EMAN2db
 
 # also defined in EMAN2, but we don't want to have to import it
@@ -131,7 +131,7 @@ class HistoryForm:
 					
 					args = h["args"]
 					if len(args) > 0:
-						cmd.append(get_file_tag(args[0]))
+						cmd.append(base_name(args[0]))
 						full_cmd.append(args[0])
 						if len(args) > 1:
 							prgargs.append(" ".join(args[1:]))

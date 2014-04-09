@@ -156,7 +156,7 @@ models are not completely compatible."""
 		# Save parameters
 		if options.debug :
 			print "  Saving result..."
-		newctflines.append( [ get_file_tag( f ), str( e1ctf.defocus ) + "," + str( e1ctf.bfactor ) + "," + str( e1ctf.amplitude ) + "," + str( e1ctf.ampcont ) + "," + str( e1ctf.noise0 ) + "," + str( e1ctf.noise1 ) + "," + str( e1ctf.noise2 ) + "," + str( e1ctf.noise3 ) + "," + str( e1ctf.voltage ) + "," + str( e1ctf.cs ) + "," + str( e1ctf.apix ) + "," + str( options.sf ) ] )
+		newctflines.append( [ base_name( f ), str( e1ctf.defocus ) + "," + str( e1ctf.bfactor ) + "," + str( e1ctf.amplitude ) + "," + str( e1ctf.ampcont ) + "," + str( e1ctf.noise0 ) + "," + str( e1ctf.noise1 ) + "," + str( e1ctf.noise2 ) + "," + str( e1ctf.noise3 ) + "," + str( e1ctf.voltage ) + "," + str( e1ctf.cs ) + "," + str( e1ctf.apix ) + "," + str( options.sf ) ] )
 	
 	# Save results
 	if options.debug :

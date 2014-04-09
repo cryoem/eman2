@@ -31,7 +31,7 @@
 #
 #
 
-from EMAN2 import EMANVERSION,E2init,E2end,EMData,get_file_tag,file_exists,EMArgumentParser
+from EMAN2 import EMANVERSION,E2init,E2end,EMData,base_name,file_exists,EMArgumentParser
 from emimage import EMImageWidget,EMWidgetFromFile
 
 import sys
@@ -213,7 +213,7 @@ def getmxim(fsp,fsp2,clsnum):
 
 def display_file(filename,app,force_2d=False,usescenegraph=False):
 	w = EMWidgetFromFile(filename,application=app,force_2d=force_2d)
-	w.setWindowTitle(get_file_tag(filename))
+	w.setWindowTitle(base_name(filename))
 	
 	app.show_specific(w)
 	try: w.optimally_resize()
