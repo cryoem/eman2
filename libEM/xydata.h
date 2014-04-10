@@ -81,6 +81,9 @@ namespace EMAN
 
 		float get_yatx(float x,bool outzero=true);		// if outzero is set, values outside the data domain will be 0, otherwise clamped at the edge
 		
+		float get_yatx_smooth(float x,int smoothing);	// This will use interpolation to smooth the returned values, and will continue interpolating outside the domain
+														// smoothing=1 (linear) is the only supported mode at the moment
+		
 
 		float get_x(size_t i) const
 		{
@@ -104,6 +107,8 @@ namespace EMAN
 			data[i].y = y;
 		}
 
+		void insort(float x, float y);		// inserts a new value in x-sorted position, lengthens vector by 1
+		
 		vector<float> get_xlist() const;
 
 		vector<float> get_ylist() const;

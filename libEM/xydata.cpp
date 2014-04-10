@@ -186,6 +186,44 @@ float XYData::get_yatx(float x,bool outzero)
 	return y;
 }
 
+float XYData::get_yatx_smooth(float x,int smoothing)
+{
+	if (data.size()==0 || mean_x_spacing==0) return 0.0;
+	if (smoothing!=1) throw InvalidParameterException("Only smoothing==1 (linear) currently supported");
+	
+	int nx = (int) data.size();
+	
+	int s = (int) floor((x - data[0].x) / mean_x_spacing);
+	if (s>nx-2) s=nx-2;
+	else if (s<0) s=0;
+	else {
+		// These deal with possibly nonuniform x values. A btree would be better, but this is simple, and there usually won't be THAT many points
+		while (s>0 && data[s].x > x) s--;
+		while (s<(nx-2) && data[s + 1].x < x ) s++;
+	}
+	
+	float f = (x - data[s].x) / (data[s + 1].x - data[s].x);
+//	printf("%d %1.2f x %1.2f %1.2f %1.2f y %1.2f %1.2f\n",s,f,x,data[s].x,data[s+1].x,data[s].y,data[s+1].y);
+	float y = data[s].y * (1 - f) + data[s + 1].y * f;
+	return y;
+}
+
+// FIXME: clearly a slow way to do this
+void XYData::insort(float x, float y) {
+	int nx = (int) data.size();
+	if (nx==0) { data.push_back(Pair(x,y)); return; }
+	
+	int s = (int) floor((x - data[0].x) / mean_x_spacing);
+	if (s>nx) s=nx;
+	else if (s<0) s=0;
+	else {
+	// These deal with possibly nonuniform x values. A btree would be better, but this is simple, and there usually won't be THAT many points
+		while (s>0 && data[s-1].x > x) s--;
+		while (s<nx && data[s].x <= x ) s++;
+	}
+	data.insert(data.begin()+s,Pair(x,y));
+}	
+
 void XYData::set_xy_list(const vector<float>& xlist, const vector<float>& ylist)
 {
 	if(xlist.size() != ylist.size()) {
