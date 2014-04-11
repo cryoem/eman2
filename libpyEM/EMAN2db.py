@@ -89,6 +89,7 @@ def DB_cleanup(signum=None,stack=None):
 			try: nopen=len([i for i in DBDict.alldicts if i.bdb!=None])
 			except: nopen=0
 			print "Program interrupted (%d), closing %d databases, please wait (%d)"%(signum,nopen,os.getpid())
+			for i in DBDict.alldicts.keys(): print i.name
 		if stack!=None : traceback.print_stack(stack)
 	for d in DBDict.alldicts.keys():
 		d.forceclose()

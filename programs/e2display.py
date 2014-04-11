@@ -130,22 +130,25 @@ def set_full_range():
 	@return the current settings - so the calling function can call revert_full_range
 	'''
 	current_settings = {}
-	global HOMEDB
-	HOMEDB=EMAN2db.EMAN2DB.open_db()
-	HOMEDB.open_dict("display_preferences")
-	db = HOMEDB.display_preferences
-	auto_contrast = db.get("display_2d_auto_contrast",dfl=True)
-	db["display_2d_auto_contrast"] = False
-	current_settings["display_2d_auto_contrast"] = auto_contrast
+	#global HOMEDB
+	#HOMEDB=EMAN2db.EMAN2DB.open_db()
+	#HOMEDB.open_dict("display_preferences")
+	#db = HOMEDB.display_preferences
+	#auto_contrast = db.get("display_2d_auto_contrast",dfl=True)
+	#db["display_2d_auto_contrast"] = False
+	#current_settings["display_2d_auto_contrast"] = auto_contrast
+	current_settings["display_2d_auto_contrast"] = True
 	
-	stack_auto_contrast = db.get("display_stack_auto_contrast",dfl=True)
-	stack_np_for_auto = db.get("display_stack_np_for_auto",dfl=5)
+	#stack_auto_contrast = db.get("display_stack_auto_contrast",dfl=True)
+	#stack_np_for_auto = db.get("display_stack_np_for_auto",dfl=5)
 	
-	db["display_stack_auto_contrast"] = False
-	current_settings["display_stack_auto_contrast"] = stack_auto_contrast
+	#db["display_stack_auto_contrast"] = False
+	#current_settings["display_stack_auto_contrast"] = stack_auto_contrast
+	current_settings["display_stack_auto_contrast"] = True
 	
-	db["display_stack_np_for_auto"] = -1
-	current_settings["display_stack_np_for_auto"] = stack_np_for_auto
+	#db["display_stack_np_for_auto"] = -1
+	#current_settings["display_stack_np_for_auto"] = stack_np_for_auto
+	current_settings["display_stack_np_for_auto"] = -1
 	
 	return current_settings
 	
@@ -154,15 +157,15 @@ def revert_full_range(d):
 	Reverts the call to set_full_range.
 	@param d - that which was returned by set_full_range
 	'''
-	global HOMEDB
-	HOMEDB=EMAN2db.EMAN2DB.open_db()
-	HOMEDB.open_dict("display_preferences")
-	db = HOMEDB.display_preferences
+	#global HOMEDB
+	#HOMEDB=EMAN2db.EMAN2DB.open_db()
+	#HOMEDB.open_dict("display_preferences")
+	#db = HOMEDB.display_preferences
 	
-	for key,value in d.items():
-		db[key] = d[key]
+	#for key,value in d.items():
+		#db[key] = d[key]
 		
-	
+	pass
 	
 def on_browser_done(string_list):
 	if len(string_list) != 0:

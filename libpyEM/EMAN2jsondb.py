@@ -85,7 +85,8 @@ def js_remove_dict(url):
 		raise Exception,"JSON databases must have .json extension"
 
 	js_close_dict(url)
-	os.unlink(url)
+	try : os.unlink(url)
+	except OSError: pass
 
 	return
 

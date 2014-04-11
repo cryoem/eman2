@@ -688,16 +688,19 @@ def display(img,force_2d=False,force_plot=False):
 		return image
 	else:
 		# In non interactive GUI mode, this will display an image or list of images with e2display
-		fsp="bdb:%s/.eman2dir#tmp"%e2gethome()
+		path="%s/tmp"%e2gethome()
+		fsp=path+"/tmp.hdf"
 
-		db_remove_dict(fsp)
-		d=db_open_dict(fsp)
+		if not os.path.exists(path) : os.mkdir(path)
+
+		try: os.unlink(fsp)
+		except: pass
+
 		if isinstance(img,list) or isinstance(img,tuple) :
-			for i,j in enumerate(img): d[i]=j
+			for i,j in enumerate(img): j.write_image(fsp,i)
 		else:
-			d[0]=img
-		d.close()
-	#	os.system("v2 /tmp/img.hed")
+			img.write_image(fsp,0)
+
 		os.system("e2display.py --singleimage "+fsp)
 
 def euler_display(emdata_list):

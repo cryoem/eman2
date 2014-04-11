@@ -299,45 +299,44 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			outim2=[]
 			
 			print len(outim)
-			alignments=[array((0,0))]*len(outim)		# this will contain the final alignments which are hierarchically estimated and improved
+			xali=XYData()		# this will contain the alignments which are hierarchically estimated and improved
+			yali=XYData()		# x is time in both cases, y is x or y
 			
+			aliavg=sum(outim)				# we start with a simple average of all frames
 			step=len(outim)					# coarsest search aligns the first 1/2 of the images against the second, step=step/2 each cycle
 			
-			while step>1:
-				step/=2
-				i0=0
-				i1=step
-				while i1<len(outim):
-					av0=sum(outim[i0:i0+step])
-					av1=sum(outim[i1:i1+step])
+			for it in xrange(2):
+				while step>1:
+					step/=2
+					i0=0
+					while i0<len(outim):
+						i1=min(i0+step,len(outim))
+						av0=sum(outim[i0:i1])
+						tloc=(i0+i1-1)/2		# the "time" of the current average
+						lrange=hypot(xali.get_yatx_smooth(i1,1)-xali.get_yatx_smooth(i0,1),yali.get_yatx_smooth(i1,1)-yali.get_yatx_smooth(i0,1))*1.5
+						if lrange<8 : lrange=8		
+						
+						print step,i0,xali.get_yatx_smooth(tloc,1),yali.get_yatx_smooth(tloc,1),lrange,
+	#					dx,dy,Z=align_subpixel(av0,av1,guess=alignments[i1+step/2]-alignments[i0+step/2],localrange=LA.norm(alignments[i1+step-1]-alignments[i0]))
+						if step==len(outim)/2 :
+							dx,dy,Z=align(aliavg,av0,guess=(0,0),localrange=192,verbose=4)
+						else:
+							dx,dy,Z=align(aliavg,av0,guess=(xali.get_yatx_smooth(tloc,1),yali.get_yatx_smooth(tloc,1)),localrange=lrange)
+						print dx,dy,Z			
+						
+						xali.insort(tloc,dx)
+						yali.insort(tloc,dy)
+											
+						i0+=step
 					
-					print step,i0,i1,alignments[i1+step/2]-alignments[i0+step/2],alignments[i1+step/2],alignments[i0+step/2],
-#					dx,dy,Z=align_subpixel(av0,av1,guess=alignments[i1+step/2]-alignments[i0+step/2],localrange=LA.norm(alignments[i1+step-1]-alignments[i0]))
-					dx,dy,Z=align(av0,av1,guess=alignments[i1+step/2]-alignments[i0+step/2],localrange=LA.norm(alignments[i1+step-1]-alignments[i0]))
-					dxpf=array((float(dx),float(dy)))/step
-					print dx,dy,Z,dxpf			
+					print ["%6d"%i for i in xali.get_xlist()]
+					print ["%6.2f"%i for i in xali.get_ylist()]
+					print ["%6.2f"%i for i in yali.get_ylist()]
 					
-					if i0==0 : last=array((0,0))		# the end of the alignment one step before this. The first image is defined as having 0 translation
-					else : last=alignments[i0-1]
-					for i in xrange(i0,min(i0+step*2,len(alignments))):
-						alignments[i]=last+dxpf*(i-i0+1)
-					
-					i0+=step*2
-					i1+=step*2
+				outim2=[outim[i].get_clip(Region(xali.get_yatx_smooth(i,1),yali.get_yatx_smooth(i,1),outim[i]["nx"],outim[i]["ny"])) for i in xrange(len(outim))]
 				
-				for i in xrange(len(outim)): 
-					print "%5.2f"%alignments[i][0],
-				print ""
-					
-				for i in xrange(len(outim)): 
-					print "%5.2f"%alignments[i][1],
-				print ""
-			
-			fav=outim[0].copy()
-			for i in xrange(1,len(outim)):
-				c=outim[i].copy()
-				c.translate(alignments[i][0],alignments[i][1],0)
-				fav.add(c)
+				aliavg=sum(outim2)
+				aliavg.mult(1.0/len(outim2))
 			
 			if options.verbose>1 : display(fav,True)
 			
@@ -410,14 +409,15 @@ def align(s1,s2,guess=(0,0),localrange=192,verbose=0):
 			
 	if verbose>3 : display((s1a,s2a,tot),force_2d=True)
 	
-	dx,dy=(tot["nx"]/2,tot["ny"]/2)					# the 'false peak' should always be at the origin, ie - no translation
+	dx,dy=(tot["nx"]/2-int(guess[0]),tot["ny"]/2-int(guess[1]))					# the 'false peak' should always be at the origin, ie - no translation
 	for x in xrange(dx-1,dx+2):
 		for y in xrange(dy-1,dy+2):
 			tot[x,y]=0		# exclude from COM
 
 	# first pass to have a better chance at finding the first peak, using a lot of blurring
-	tot2=tot.get_clip(Region(tot["nx"]/2-localrange/2,tot["ny"]/2-localrange/2,localrange,localrange))
+	tot2=tot.get_clip(Region(tot["nx"]/2-96,tot["ny"]/2-96,192,192))
 	tot2.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.04})		# This is an empirical value. Started with 0.04 which also seemed to be blurring out high-res features.
+	tot2=tot.get_clip(Region(tot2["nx"]/2-localrange/2,tot2["ny"]/2-localrange/2,localrange,localrange))
 	dx1,dy1,dz=tot2.calc_max_location()
 	dx1-=localrange/2
 	dy1-=localrange/2

@@ -327,7 +327,7 @@ so in most cases it is not dealt with.'
 		print 'An Intel Core i7-3960X 3.3Ghz SF --------------------------------'
 
 	print '\nYour machines speed factor = %1.4f +- %1.4f (%1.4f +- %1.5f sec)\n' % (2.3/tms.mean(),2.3/tms.mean()-2.3/(tms.mean()+tms.std()),tms.mean()/(NTT-5.0),tms.std()/(NTT-5.0))
-	print '\nThis repesents %1.2f (RTFAlign+Refine)/sec\n' % (5.0 * (NTT - 5.0) / ti)
+#	print '\nThis represents %1.2f (RTFAlign+Refine)/sec\n' % (5.0 * (NTT - 5.0) / ti)
 
 if __name__ == "__main__":
 	main()
