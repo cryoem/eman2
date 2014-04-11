@@ -319,7 +319,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 						print step,i0,xali.get_yatx_smooth(tloc,1),yali.get_yatx_smooth(tloc,1),lrange,
 	#					dx,dy,Z=align_subpixel(av0,av1,guess=alignments[i1+step/2]-alignments[i0+step/2],localrange=LA.norm(alignments[i1+step-1]-alignments[i0]))
 						if step==len(outim)/2 :
-							dx,dy,Z=align(aliavg,av0,guess=(0,0),localrange=192,verbose=4)
+							dx,dy,Z=align(aliavg,av0,guess=(0,0),localrange=192)
 						else:
 							dx,dy,Z=align(aliavg,av0,guess=(xali.get_yatx_smooth(tloc,1),yali.get_yatx_smooth(tloc,1)),localrange=lrange)
 						print dx,dy,Z			
@@ -417,7 +417,7 @@ def align(s1,s2,guess=(0,0),localrange=192,verbose=0):
 	# first pass to have a better chance at finding the first peak, using a lot of blurring
 	tot2=tot.get_clip(Region(tot["nx"]/2-96,tot["ny"]/2-96,192,192))
 	tot2.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.04})		# This is an empirical value. Started with 0.04 which also seemed to be blurring out high-res features.
-	tot2=tot.get_clip(Region(tot2["nx"]/2-localrange/2,tot2["ny"]/2-localrange/2,localrange,localrange))
+	tot2=tot2.get_clip(Region(tot2["nx"]/2-localrange/2,tot2["ny"]/2-localrange/2,localrange,localrange))
 	dx1,dy1,dz=tot2.calc_max_location()
 	dx1-=localrange/2
 	dy1-=localrange/2
