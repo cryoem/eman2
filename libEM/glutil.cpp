@@ -59,87 +59,112 @@
 
 using namespace EMAN;
 
-//By depfault we need to first bind data to the GPU
+// By depfault we need to first bind data to the GPU
+
 GLuint GLUtil::buffer[2] = {0, 0};
 
 unsigned int GLUtil::gen_glu_mipmaps(const EMData* const emdata)
 {
-	if ( emdata->get_data() == 0 ) throw NullPointerException("Error, attempt to create an OpenGL mipmap without internally stored data");
+	if (emdata->get_data() == 0) {
+		throw NullPointerException("Error, attempt to create an OpenGL mipmap "
+			"without internally stored data");
+	}
+
 	ENTERFUNC;
 
 	unsigned int tex_name;
 	glGenTextures(1, &tex_name);
 
-	if ( emdata->ny == 1 && emdata->nz == 1 )
-	{
+	if (emdata->ny == 1 && emdata->nz == 1) {
 		glBindTexture(GL_TEXTURE_1D, tex_name);
-		gluBuild1DMipmaps(GL_TEXTURE_1D, GL_LUMINANCE, emdata->nx, GL_LUMINANCE, GL_FLOAT, (void*)(emdata->get_data()));
+		gluBuild1DMipmaps(GL_TEXTURE_1D, GL_LUMINANCE, emdata->nx, GL_LUMINANCE,
+			 GL_FLOAT, (void*)(emdata->get_data()));
 	} else if (emdata->nz == 1) {
 		glBindTexture(GL_TEXTURE_2D, tex_name);
-		gluBuild2DMipmaps(GL_TEXTURE_2D, GL_LUMINANCE, emdata->nx, emdata->ny, GL_LUMINANCE, GL_FLOAT, (void*)(emdata->get_data()));
+		gluBuild2DMipmaps(GL_TEXTURE_2D, GL_LUMINANCE, emdata->nx, emdata->ny,
+			 GL_LUMINANCE, GL_FLOAT, (void*)(emdata->get_data()));
 	}
 	else {
 #ifdef	_WIN32
-		//There is no gluBuild3DMipmaps() function in glu.h for VS2003 and VS2005
+		// There is no gluBuild3DMipmaps() function in glu.h for VS2003 and VS2005
+
 		printf("3D OpenGL mipmaps are not available on this platform.\n");
 #else
 		glBindTexture(GL_TEXTURE_3D, tex_name);
-		gluBuild3DMipmaps(GL_TEXTURE_3D, GL_LUMINANCE, emdata->nx, emdata->ny, emdata->nz, GL_LUMINANCE, GL_FLOAT, (void*)(emdata->get_data()));
+		gluBuild3DMipmaps(GL_TEXTURE_3D, GL_LUMINANCE, emdata->nx, emdata->ny,
+			 emdata->nz, GL_LUMINANCE, GL_FLOAT, (void*)(emdata->get_data()));
 #endif	//_WIN32
 	}
 
 	EXITFUNC;
+
 	return tex_name;
 }
 
 unsigned int GLUtil::gen_gl_texture(const EMData* const emdata, GLenum format)
 {
-	if ( emdata->get_data() == 0 ) throw NullPointerException("Error, attempt to create an OpenGL texture without internally stored data");
+	if (emdata->get_data() == 0) {
+		throw NullPointerException("Error, attempt to create an OpenGL texture"
+			" without internally stored data");
+	}
+
 	ENTERFUNC;
 
 	unsigned int tex_name;
 	glGenTextures(1, &tex_name);
 
-	if ( emdata->ny == 1 && emdata->nz == 1 )
-	{
+	if (emdata->ny == 1 && emdata->nz == 1) {
 		glBindTexture(GL_TEXTURE_1D, tex_name);
-		glTexImage1D(GL_TEXTURE_1D,0,format,emdata->nx,0,format, GL_FLOAT, (void*)(emdata->get_data()));
+		glTexImage1D(GL_TEXTURE_1D, 0, format, emdata->nx, 0, format, GL_FLOAT,
+			 (void*)(emdata->get_data()));
 	} else if (emdata->nz == 1) {
-		glBindTexture(GL_TEXTURE_2D, tex_name);
-		glTexImage2D(GL_TEXTURE_2D,0,format,emdata->nx,emdata->ny,0,format, GL_FLOAT, (void*)(emdata->get_data()));
+		glBindTexture(GL_TEXTURE_2D,  tex_name);
+		glTexImage2D(GL_TEXTURE_2D, 0, format, emdata->nx, emdata->ny, 0, format,
+			 GL_FLOAT, (void*)(emdata->get_data()));
 	}
 	else {
 		glBindTexture(GL_TEXTURE_3D, tex_name);
 #ifdef _WIN32
 	PFNGLTEXIMAGE3DPROC glTexImage3D;
 #endif
-		glTexImage3D(GL_TEXTURE_3D,0, format,emdata->nx,emdata->ny,emdata->nz,0,format, GL_FLOAT, (void*)(emdata->get_data()));
+		glTexImage3D(GL_TEXTURE_3D, 0, format, 
+		emdata->nx, emdata->ny, emdata->nz, 0, format, GL_FLOAT, 
+		(void*)(emdata->get_data()));
 	}
 
 	EXITFUNC;
+
 	return tex_name;
 }
 
-unsigned int GLUtil::render_amp8_gl_texture(EMData* emdata, int x0, int y0, int ixsize, int iysize, int bpl, float scale, int mingray, int maxgray,	float render_min, float render_max,float gamma,int flags) {
-
-	string pixels = render_amp8(emdata, x0, y0, ixsize,iysize, bpl, scale, mingray, maxgray, render_min, render_max, gamma,flags);
+unsigned int GLUtil::render_amp8_gl_texture(EMData* emdata,
+		 int x0, int y0, int ixsize, int iysize, int bpl, float scale,
+		 int mingray, int maxgray, float render_min, float render_max,
+		 float gamma, int flags)
+{
+	string pixels = render_amp8(emdata, x0, y0, ixsize,iysize, bpl, scale,
+		 mingray, maxgray, render_min, render_max, gamma, flags);
 
 	unsigned int tex_name;
 	glGenTextures(1, &tex_name);
 
-	glBindTexture(GL_TEXTURE_2D,tex_name);
-	glTexImage2D(GL_TEXTURE_2D,0,GL_LUMINANCE,ixsize,iysize,0,GL_LUMINANCE, GL_UNSIGNED_BYTE, pixels.c_str() );
+	glBindTexture(GL_TEXTURE_2D, tex_name);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, ixsize, iysize , 0,
+		 GL_LUMINANCE, GL_UNSIGNED_BYTE, pixels.c_str());
 
 	return tex_name;
 }
 
 // undef GL_GLEXT_PROTOTYPES
+
 #ifdef GL_GLEXT_PROTOTYPES
 #undef GL_GLEXT_PROTOTYPES
 #endif
 
-int GLUtil::nearest_projected_points(const vector<float>& model_matrix, const vector<float>& proj_matrix, const vector<int>& view_matrix,
-		const vector<Vec3f>& points, const float mouse_x, const float mouse_y,const float& nearness)
+int GLUtil::nearest_projected_points(const vector<float>& model_matrix,
+		 const vector<float>& proj_matrix, const vector<int>& view_matrix,
+		 const vector<Vec3f>& points, const float mouse_x, const float mouse_y,
+		 const float& nearness)
 {
 	double proj[16];
 	double model[16];
@@ -152,28 +177,33 @@ int GLUtil::nearest_projected_points(const vector<float>& model_matrix, const ve
 	vector<Vec3f> unproj_points;
 	double x,y,z;
 	double r,s,t;
-	for(vector<Vec3f>::const_iterator it = points.begin(); it != points.end(); ++it) {
+
+	for (vector<Vec3f>::const_iterator it = points.begin(); it != points.end(); ++it) {
 		r = (double) (*it)[0];
 		s = (double) (*it)[1];
 		t = (double) (*it)[2];
-		gluProject(r,s,t, model, proj, view, &x,&y,&z);
-		unproj_points.push_back(Vec3f(x,y,z));
+
+		gluProject(r,s,t, model, proj, view, &x, &y, &z);
+		unproj_points.push_back(Vec3f(x, y, z));
 	}
 
 	vector<int> intersections;
 
-	float n_squared = nearness*nearness;
-	for(unsigned int i = 0; i < unproj_points.size(); ++i){
+	float n_squared = nearness * nearness;
+
+	for(unsigned int i = 0; i < unproj_points.size(); ++i) {
 		Vec3f& v = unproj_points[i];
 		float dx = v[0] - mouse_x;
 		dx *= dx;
 		float dy = v[1] - mouse_y;
 		dy *= dy;
+
 		if ((dx+dy) <= n_squared) intersections.push_back((int)i);
 	}
 
 	int intersection = -1;
 	float near_z = 0;
+
 	for(vector<int>::const_iterator it = intersections.begin(); it != intersections.end(); ++it) {
 		if (intersection == -1 || unproj_points[*it][2] < near_z) {
 			intersection = *it;
@@ -184,14 +214,15 @@ int GLUtil::nearest_projected_points(const vector<float>& model_matrix, const ve
 	return intersection;
 }
 
-void GLUtil::colored_rectangle(const vector<float>& data,const float& alpha,const bool center_point){
-
+void GLUtil::colored_rectangle(const vector<float>& data,
+		 const float& alpha, const bool center_point)
+{
 	glBegin(GL_LINE_LOOP);
-	glColor4f(data[0],data[1],data[2],alpha);
-	glVertex2i(data[3],data[4]);
-	glVertex2i(data[5],data[4]);
-	glVertex2i(data[5],data[6]);
-	glVertex2i(data[3],data[6]);
+	glColor4f(data[0], data[1], data[2], alpha);
+	glVertex2i(data[3], data[4]);
+	glVertex2i(data[5], data[4]);
+	glVertex2i(data[5], data[6]);
+	glVertex2i(data[3], data[6]);
 	glEnd();
 
 	if (center_point) {
@@ -201,34 +232,48 @@ void GLUtil::colored_rectangle(const vector<float>& data,const float& alpha,cons
 	}
 }
 
-void GLUtil::mx_bbox(const vector<float>& data, const vector<float>& text_color, const vector<float>& bg_color) {
+void GLUtil::mx_bbox(const vector<float>& data,
+		 const vector<float>& text_color, const vector<float>& bg_color)
+{
 	glDisable(GL_TEXTURE_2D);
 	glBegin(GL_QUADS);
-	if (bg_color.size()==4) glColor4f(bg_color[0],bg_color[1],bg_color[2],bg_color[3]);
-	else glColor3f(bg_color[0],bg_color[1],bg_color[2]);
-	glVertex3f(data[0]-1,data[1]-1,-.1f);
-	glVertex3f(data[3]+1,data[1]-1,-.1f);
-	glVertex3f(data[3]+1,data[4]+1,-.1f);
-	glVertex3f(data[0]-1,data[4]+1,-.1f);
+
+	if (bg_color.size() == 4) {
+		glColor4f(bg_color[0], bg_color[1], bg_color[2], bg_color[3]);
+	}
+	else {
+		glColor3f(bg_color[0], bg_color[1], bg_color[2]);
+	}
+
+	glVertex3f(data[0]-1, data[1]-1, -.1f);
+	glVertex3f(data[3]+1, data[1]-1, -.1f);
+	glVertex3f(data[3]+1, data[4]+1, -.1f);
+	glVertex3f(data[0]-1, data[4]+1, -.1f);
 	glEnd();
+
 //	glEnable(GL_TEXTURE_2D);
-	if (text_color.size()==4) glColor4f(text_color[0],text_color[1],text_color[2],text_color[3]);
-	else glColor3f(text_color[0],text_color[1],text_color[2]);
-	
+
+	if (text_color.size() == 4) {
+		glColor4f(text_color[0], text_color[1], text_color[2], text_color[3]);
+	}
+	else {
+		glColor3f(text_color[0], text_color[1], text_color[2]);
+	}
 }
 
-std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int iysize,
-						 int bpl, float scale, int mingray, int maxgray,
-						 float render_min, float render_max,float gamma,int flags)
+std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
+		 int iysize, int bpl, float scale, int mingray, int maxgray,
+		 float render_min, float render_max,float gamma,int flags)
 {
 	ENTERFUNC;
 	
 //	printf("%f\t%f\t",(float)emdata->get_attr("sigma"),(float)emdata->get_attr("mean"));
-//	printf("%d %d %d %d %d %f %d %d %f %f %f %d\n",x0,y0,ixsize,iysize,bpl,scale,mingray,maxgray,render_min,render_max,gamma,flags);
+//	printf("%d %d %d %d %d %f %d %d %f %f %f %d\n",x0,y0,ixsize,iysize,bpl,
+// scale,mingray,maxgray,render_min,render_max,gamma,flags);
 	
 	int asrgb;
-	int hist=(flags&2)/2;
-	int invy=(flags&4)?1:0;
+	int hist = (flags & 2)/2;
+	int invy = (flags & 4)?1:0;
 
 	int nx = emdata->nx;
 	int ny = emdata->ny;
@@ -247,7 +292,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 		render_max = render_min + 0.01f;
 	}
 
-	if (gamma<=0) gamma=1.0;
+	if (gamma <= 0) gamma = 1.0;
 
 	// Calculating a full floating point gamma for
 	// each piGLUtil::xel in the image slows rendering unacceptably
@@ -256,28 +301,36 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 	// as a 12 bit colorspace and apply the gamma mapping to that
 	// This should produce good accuracy for gamma values
 	// larger than 0.5 (and a high upper limit)
-	static int smg0=0,smg1=0;	// while this destroys threadsafety in the rendering process
-	static float sgam=0;		// it is necessary for speed when rendering large numbers of small images
+
+	static int smg0 = 0, smg1 = 0; // while this destroys threadsafety in the rendering process
+	static float sgam=0; // it is necessary for speed when rendering large numbers of small images
 	static unsigned char gammamap[4096];
-	if (gamma!=1.0 && (smg0!=mingray || smg1!=maxgray || sgam!=gamma)) {
+
+	if (gamma != 1.0 && (smg0 != mingray || smg1 != maxgray || sgam != gamma)) {
 		for (int i=0; i<4096; i++) {
-			if (mingray<maxgray) gammamap[i]=(unsigned char)(mingray+(maxgray-mingray+0.999)*pow(((float)i/4096.0f),gamma));
-			else gammamap[4095-i]=(unsigned char)(mingray+(maxgray-mingray+0.999)*pow(((float)i/4096.0f),gamma));
+			if (mingray<maxgray) {
+				gammamap[i] = (unsigned char)(mingray+(maxgray-mingray+0.999)*pow(((float)i/4096.0f),gamma));
+			}
+			else {
+				gammamap[4095-i] = (unsigned char)(mingray+(maxgray-mingray+0.999)*pow(((float)i/4096.0f),gamma));
+			}
 		}
 	}
-	smg0=mingray;	// so we don't recompute the map unless something changes
-	smg1=maxgray;
-	sgam=gamma;
+	smg0 = mingray; // so we don't recompute the map unless something changes
+	smg1 = maxgray;
+	sgam = gamma;
 
-	if (flags&8) asrgb=4;
-	else if (flags&1) asrgb=3;
-	else asrgb=1;
+	if (flags & 8) asrgb = 4;
+	else if (flags & 1) asrgb = 3;
+	else asrgb = 1;
 
 	std::string ret=std::string();
 //	ret.resize(iysize*bpl);
 	ret.assign(iysize*bpl+hist*1024,char(mingray));
-	unsigned char *data=(unsigned char *)ret.data();
-	unsigned int *histd=(unsigned int *)(data+iysize*bpl);
+
+	unsigned char *data = (unsigned char *)ret.data();
+	unsigned int *histd = (unsigned int *)(data+iysize*bpl);
+
 	if (hist) {
 		for (int i=0; i<256; i++) histd[i]=0;
 	}
@@ -288,6 +341,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 	int xsize = ixsize;
 
 	int ymin = 0;
+
 	if (iysize * inv_scale > ny) {
 		ymin = (int) (iysize - ny / inv_scale);
 	}
@@ -295,6 +349,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 	float gs = (maxgray - mingray) / (render_max - render_min);
 	float gs2 = 4095.999f / (render_max - render_min);
 //	float gs2 = 1.0 / (render_max - render_min);
+
 	if (render_max < render_min) {
 		gs = 0;
 		rm = FLT_MAX;
@@ -308,6 +363,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 
 	int addi = 0;
 	int addr = 0;
+
 	if (inv_scale == floor(inv_scale)) {
 		dsx = (int) inv_scale;
 		dsy = (int) (inv_scale * nx);
@@ -318,6 +374,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 	}
 
 	int xmin = 0;
+
 	if (x0 < 0) {
 		xmin = (int) (-x0 / inv_scale);
 		xsize -= (int) floor(x0 / inv_scale);
@@ -327,7 +384,9 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 	if ((xsize - xmin) * inv_scale > (nx - x0)) {
 		xsize = (int) ((nx - x0) / inv_scale + xmin);
 	}
+
 	int ymax = ysize - 1;
+
 	if (y0 < 0) {
 		ymax = (int) (ysize + y0 / inv_scale - 1);
 		ymin += (int) floor(y0 / inv_scale);
@@ -344,50 +403,54 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 	int mid=nx*ny/2;
 	float * image_data = emdata->get_data();
 
-	//////Begin of Histogram Equalization//////
+	////// Begin of Histogram Equalization //////
 
-	const int rangemax=4082;
-	int gaussianwide=5000;
-	unsigned int* grayhe=NULL;
-	float* gaussianpdf=NULL;
-	float* gaussiancdf=NULL;
-	int* gaussianlookup=NULL;
+	const int rangemax = 4082;
+	int gaussianwide = 5000;
+	unsigned int* grayhe = NULL;
+	float* gaussianpdf   = NULL;
+	float* gaussiancdf   = NULL;
+	int* gaussianlookup  = NULL;
 	
-	unsigned int* graypdftwo=NULL;
+	unsigned int* graypdftwo = NULL;
 	
-	bool binflag=0;
-	int binlocation=-1;
+	bool binflag = 0;
+	int binlocation = -1;
 	
-	if (flags&32){
-		int graypdf[rangemax]={0};//256
-		int graycdf[rangemax-2]={0};//254
-		//unsigned int grayhe[rangemax-2]={0};//#number=254
+	if (flags & 32) {
+		int graypdf[rangemax]   = {0}; // 256
+		int graycdf[rangemax-2] = {0}; // 254
+
+		// unsigned int grayhe[rangemax-2]={0};//#number=254
 		
 		graypdftwo = new unsigned int[maxgray-mingray];
 		grayhe = new unsigned int[rangemax-2];
-		//unsigned char graylookup[(int)(render_max-render_min)];//render_max-render_min
+		// unsigned char graylookup[(int)(render_max-render_min)];//render_max-render_min
 		
 		for (int i=0; i<(int)(rangemax-2); i++) {
-			grayhe[i] = 0;    // Initialize all elements to zero.
+			grayhe[i] = 0; // Initialize all elements to zero.
 		}
 		
-		for (int i=0; i<(maxgray-mingray); i++) {//0~253
-			graypdftwo[i]=0;
+		for (int i=0; i<(maxgray-mingray); i++) { // 0~253
+			graypdftwo[i] = 0;
 		}
 		
 		if (dsx != -1) {
 			int l = x0 + y0 * nx;
+
 			for (int j = ymax; j >= ymin; j--) {
 				int br = l;
 				for (int i = xmin; i < xsize; i++) {
 					if (l > lmax) {
 						break;
 					}
+
 					int k = 0;
 					int p;
 					float t;
-					if (dsx==1) t=image_data[l];
-					else {						// This block does local pixel averaging for nicer reduced views
+
+					if (dsx == 1) t=image_data[l];
+					else { // This block does local pixel averaging for nicer reduced views
 						t=0;
 						
 						if ((l+dsx+dsy) > lmax) {
@@ -396,12 +459,11 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 						
 						for (int iii=0; iii<dsx; iii++) {
 							for (int jjj=0; jjj<dsy; jjj+=nx) {
-								t+=image_data[l+iii+jjj];
+								t += image_data[l+iii+jjj];
 							}
 						}
-						
-						
-						t/=dsx*(dsy/nx);
+
+						t /= dsx*(dsy/nx);
 					}
 
 					if (t <= rm) graypdf[0]++;
@@ -410,42 +472,53 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 						graypdf[(int)(ceil((rangemax-2)*(t - render_min)/(render_max-render_min)))]++;
 						graypdftwo[(unsigned char) (gs * (t - render_min))]++;
 					}
+
 					l += dsx;
 				}
+
 				l = br + dsy;
 			}
 		}
 		else {
 			remy = 10;
 			int l = x0 + y0 * nx;
+
 			for (int j = ymax; j >= ymin; j--) {
 				int addj = addi;
+
 				// There seems to be some overflow issue happening
 				// where the statement if (l > lmax) break (below) doesn't work
 				// because the loop that iterates jjj can inadvertantly go out of bounds
-				if (( l + addi*nx ) >= nxy ) {
+
+				if ((l + addi*nx) >= nxy) {
 					addj = (nxy-l)/nx;
+
 					if (addj <= 0) continue;
 				}
+
 				int br = l;
 				remx = 10;
+
 				for (int i = xmin; i < xsize; i++) {
 					if (l > lmax) break;
 					int k = 0;
 					int p;
 					float t;
-					if (addi<=1) t = image_data[l];
-					else {						// This block does local pixel averaging for nicer reduced views
+					if (addi <= 1) t = image_data[l];
+					else { // This block does local pixel averaging for nicer reduced views
 						t=0;
 						
 						for (int jjj=0; jjj<addj; jjj++) {
 							for (int iii=0; iii<addi; iii++) {
-								t+=image_data[l+iii+jjj*nx];
+								t += image_data[l+iii+jjj*nx];
 							}
 						}
-						t/=addi*addi;
+
+						t /= addi*addi;
 					}
+
 					////////////
+
 					if (t <= rm) graypdf[0]++;
 					else if (t >= render_max) graypdf[rangemax-1]++;
 					else {
@@ -453,16 +526,21 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 					}
 
 					data[i * asrgb + j * bpl] = p;
+
 					if (hist) histd[p]++;
+
 					l += addi;
 					remx += addr;
+
 					if (remx > scale_n) {
 						remx -= scale_n;
 						l++;
 					}
 				}
+
 				l = br + addi * nx;
 				remy += addr;
+
 				if (remy > scale_n) {
 					remy -= scale_n;
 					l += nx; 
@@ -470,111 +548,122 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 			}
 		}
 		
-		for (int i=0; i<(rangemax-2); i++) {//0~253
+		for (int i=0; i<(rangemax-2); i++) { // 0~253
 			for (int j=0;j<(i+1);j++) {
 				graycdf[i]=graycdf[i]+graypdf[j+1];
 			}
 		}
 		
-		//graypdftwo binflag
-		binflag=0;
-		for (int i=1; i<(maxgray-mingray); i++) {//0~253
-			
-			if (((float)graypdftwo[i]/graycdf[rangemax-3])>0.2){
-				binflag=1;
-				binlocation=i;
+		// graypdftwo binflag
+
+		binflag = 0;
+
+		for (int i=1; i<(maxgray-mingray); i++) { // 0~253	
+			if (((float)graypdftwo[i]/graycdf[rangemax-3])>0.2) {
+				binflag = 1;
+				binlocation = i;
+
 				break;
 			}
 		}		
 		
-		if (binflag==1){
+		if (binflag == 1) {
 			for (int i=(binlocation*16+1); i<((binlocation+1)*16); i++) {
-				graypdf[i]=0;
-				//graypdf[i]=(graycdf[rangemax-3]-graypdftwo[binlocation])/(maxgray-mingray);
+				graypdf[i] = 0;
+				// graypdf[i]=(graycdf[rangemax-3]-graypdftwo[binlocation])/(maxgray-mingray);
 			}
 
-			for (int i=0; i<(rangemax-2); i++) {//0~253
-				graycdf[i]=0;
+			for (int i=0; i<(rangemax-2); i++) { // 0~253
+				graycdf[i] = 0;
 			}
 			
-			for (int i=0; i<(rangemax-2); i++) {//0~253
+			for (int i=0; i<(rangemax-2); i++) { // 0~253
 				for (int j=0;j<(i+1);j++) {
-					graycdf[i]=graycdf[i]+graypdf[j+1];
+					graycdf[i] = graycdf[i]+graypdf[j+1];
 				}
 			}
 		}
-		
-		
+
 		// start gaussian matching
-		float mean=abs(rangemax-2)/2;
-		float standdv=abs(mean)/3;
-		gaussianpdf=new float[rangemax-2];
-		gaussiancdf=new float[rangemax-2];
-		gaussianlookup=new int[rangemax-2];
+
+		float mean = abs(rangemax-2)/2;
+		float standdv = abs(mean)/3;
+
+		gaussianpdf = new float[rangemax-2];
+		gaussiancdf = new float[rangemax-2];
+		gaussianlookup = new int[rangemax-2];
 		
-		for (int i=0; i<(rangemax-2); i++){
+		for (int i=0; i<(rangemax-2); i++) {
 			gaussianpdf[i]=exp(-(i-mean)*(i-mean)/(2*standdv*standdv))/sqrt(standdv * standdv * 2 * M_PI);
 			
-			if(i!=0){
-				gaussiancdf[i]=gaussiancdf[i-1]+gaussianpdf[i];
+			if (i != 0) {
+				gaussiancdf[i] = gaussiancdf[i-1]+gaussianpdf[i];
 			}
-			else{
-				gaussiancdf[i]=gaussianpdf[i];
+			else {
+				gaussiancdf[i] = gaussianpdf[i];
 			}
 		}
 		
 		for (int i=0; i<(rangemax-2); i++) {
-			gaussiancdf[i]=graycdf[rangemax-3]*gaussiancdf[i]/gaussiancdf[rangemax-3];
+			gaussiancdf[i] = graycdf[rangemax-3]*gaussiancdf[i]/gaussiancdf[rangemax-3];
 		}
 		
-		for (int i=0; i<(rangemax-2); i++){
-			for (int j=0; j<(rangemax-2); j++){
-				if (graycdf[i]<=gaussiancdf[j]){
-					gaussianlookup[i]=j;
+		for (int i=0; i<(rangemax-2); i++) {
+			for (int j=0; j<(rangemax-2); j++) {
+				if (graycdf[i] <= gaussiancdf[j]) {
+					gaussianlookup[i] = j;
+
 					break;
 				}
 			}
 		}
 		
 		for (int i=0; i<(rangemax-2); i++) {			
-			grayhe[i]=floor(0.5+(((double)(rangemax-3)*graycdf[i])/graycdf[rangemax-3]));
+			grayhe[i] = floor(0.5+(((double)(rangemax-3)*graycdf[i])/graycdf[rangemax-3]));
 		}
 		
 	} 
-		
-	//////End of Histogram Equalization///////	
-	
-	
+
+	////// End of Histogram Equalization ///////	
+
 	if (emdata->is_complex()) {
 		if (dsx != -1) {
 			int l = y0 * nx;
+
 			for (int j = ymax; j >= ymin; j--) {
 				int ll = x0;
+
 				for (int i = xmin; i < xsize; i++) {
 					if (l + ll > lmax || ll >= nx - 2) break;
 
 					int k = 0;
 					unsigned char p;
+
 					if (ll >= nx / 2) {
 						if (l >= (ny - inv_scale) * nx) k = 2 * (ll - nx / 2) + 2;
 						else k = 2 * (ll - nx / 2) + l + 2 + nx;
 					}
 					else k = nx * ny - (l + 2 * ll) - 2;
-					if (k>=mid) k-=mid;		// These 2 lines handle the Fourier origin being in the corner, not the middle
-					else k+=mid;
+
+					if (k >= mid) k -= mid; // These 2 lines handle the Fourier origin being in the corner, not the middle
+					else k += mid;
+
 					float t = image_data[k];
 					int ph;
+
 					// in color mode
-					if (flags&16 && asrgb>2) {
+
+					if (flags & 16 && asrgb>2) {
 //						if (l >= (ny - inv_scale) * nx) ph = (int)(image_data[k+1]*768/(2.0*M_PI))+384;	 // complex phase as integer 0-767;
 						if (ll >= nx / 2) ph = (int)(image_data[k+1]*768/(2.0*M_PI))+384;	 // complex phase as integer 0-767;
 						else ph = (int)(-image_data[k+1]*768/(2.0*M_PI))+384;	// complex phase as integer 0-767;
 					}
+
 					if (t <= rm)  p = mingray;
 					else if (t >= render_max) p = maxgray;
-					else if (gamma!=1.0) {
-						k=(int)(gs2 * (t-render_min));		// map float value to 0-4096 range
-						p = gammamap[k];					// apply gamma using precomputed gamma map
+					else if (gamma != 1.0) {
+						k=(int)(gs2 * (t-render_min)); // map float value to 0-4096 range
+						p = gammamap[k]; // apply gamma using precomputed gamma map
 //						p = (unsigned char) (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma);
 //						p += mingray;
 //						k = static_cast<int>( (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma) );
@@ -584,8 +673,10 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 						p = (unsigned char) (gs * (t - render_min));
 						p += mingray;
 					}
+
 					// color rendering
-					if (flags&16 && asrgb>2) {
+
+					if (flags & 16 && asrgb>2) {
 						if (ph<256) {
 							data[i * asrgb + j * bpl] = p*(255-ph)/256;
 							data[i * asrgb + j * bpl+1] = p*ph/256;
@@ -606,45 +697,54 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 					if (hist) histd[p]++;
 					ll += dsx;
 				}
+
 				l += dsy;
 			}
 		}
 		else {
 			remy = 10;
 			int l = y0 * nx;
+
 			for (int j = ymax; j >= ymin; j--) {
 				int br = l;
 				remx = 10;
 				int ll = x0;
+
 				for (int i = xmin; i < xsize - 1; i++) {
 					if (l + ll > lmax || ll >= nx - 2) {
 						break;
 					}
+
 					int k = 0;
 					unsigned char p;
+
 					if (ll >= nx / 2) {
 						if (l >= (ny * nx - nx)) k = 2 * (ll - nx / 2) + 2;
 						else k = 2 * (ll - nx / 2) + l + 2 + nx;
 					}
 					else k = nx * ny - (l + 2 * ll) - 2;
-					if (k>=mid) k-=mid;		// These 2 lines handle the Fourier origin being in the corner, not the middle
-					else k+=mid;
+
+					if (k >= mid) k -= mid; // These 2 lines handle the Fourier origin being in the corner, not the middle
+					else k += mid;
 
 					float t = image_data[k];
 					// in color mode
 					int ph;
-					if (flags&16 && asrgb>2) {
+
+					if (flags & 16 && asrgb>2) {
 						if (l >= (ny * nx - nx)) ph = (int)(image_data[k+1]*768/(2.0*M_PI))+384;	 // complex phase as integer 0-767;
 						else ph = (int)(-image_data[k+1]*768/(2.0*M_PI))+384;	// complex phase as integer 0-767;
 					}
+
 					if (t <= rm)
 						p = mingray;
 					else if (t >= render_max) {
 						p = maxgray;
 					}
-					else if (gamma!=1.0) {
-						k=(int)(gs2 * (t-render_min));		// map float value to 0-4096 range
-						p = gammamap[k];					// apply gamma using precomputed gamma map
+					else if (gamma != 1.0) {
+						k=(int)(gs2 * (t-render_min)); // map float value to 0-4096 range
+						p = gammamap[k]; // apply gamma using precomputed gamma map
+
 //						p = (unsigned char) (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma);
 //						p += mingray;
 //						k = static_cast<int>( (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma) );
@@ -654,7 +754,8 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 						p = (unsigned char) (gs * (t - render_min));
 						p += mingray;
 					}
-					if (flags&16 && asrgb>2) {
+
+					if (flags & 16 && asrgb>2) {
 						if (ph<256) {
 							data[i * asrgb + j * bpl] = p*(255-ph)/256;
 							data[i * asrgb + j * bpl+1] = p*ph/256;
@@ -672,16 +773,21 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 						}
 					}
 					else data[i * asrgb + j * bpl] = p;
+
 					if (hist) histd[p]++;
+
 					ll += addi;
 					remx += addr;
+
 					if (remx > scale_n) {
 						remx -= scale_n;
 						ll++;
 					}
 				}
+
 				l = br + addi * nx;
 				remy += addr;
+
 				if (remy > scale_n) {
 					remy -= scale_n;
 					l += nx;
@@ -692,17 +798,21 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 	else {
 		if (dsx != -1) {
 			int l = x0 + y0 * nx;
+
 			for (int j = ymax; j >= ymin; j--) {
 				int br = l;
+
 				for (int i = xmin; i < xsize; i++) {
 					if (l > lmax) {
 						break;
 					}
+
 					int k = 0;
 					unsigned char p;
 					float t;
-					if (dsx==1) t=image_data[l];
-					else {						// This block does local pixel averaging for nicer reduced views
+
+					if (dsx == 1) t=image_data[l];
+					else { // This block does local pixel averaging for nicer reduced views
 						t=0;
 						
 						if ((l+dsx+dsy) > lmax) {
@@ -711,16 +821,17 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 						
 						for (int iii=0; iii<dsx; iii++) {
 							for (int jjj=0; jjj<dsy; jjj+=nx) {
-								t+=image_data[l+iii+jjj];
+								t += image_data[l+iii+jjj];
 							}
 						}
-						t/=dsx*(dsy/nx);
+
+						t /= dsx*(dsy/nx);
 					}
 
 					if (t <= rm) p = mingray;
 					else if (t >= render_max) p = maxgray;
-					else if (gamma!=1.0) {
-						k=(int)(gs2 * (t-render_min));		// map float value to 0-4096 range
+					else if (gamma != 1.0) {
+						k=(int)(gs2 * (t-render_min)); // map float value to 0-4096 range
 						p = gammamap[k];// apply gamma using precomputed gamma map
 //						k = (int) (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma);
 //						k += mingray;
@@ -728,14 +839,14 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 //						k += mingray;
 					}
 					else {
-						if (flags&32){
+						if (flags & 32) {
 							//p = graylookup[(int)(t - render_min)];
 							//graylookup[i]=(unsigned char)((maxgray-mingray-2)*grayhe[(int)(i*(rangemax-3)/(render_max-render_min))]/(rangemax-3)+1);
-							if (flags&64)
+							if (flags & 64)
 							{
 								p=(unsigned char)(gaussianlookup[(int)(floor((rangemax-2)*(t - render_min)/(render_max-render_min)))]*(maxgray-mingray-2)/(rangemax-3)+1);
 							}
-							else{
+							else {
 								p=(unsigned char)(grayhe[(int)((t - render_min)*(rangemax-3)/(render_max-render_min))]*(maxgray-mingray-2)/(rangemax-3)+1);}
 							//p=(unsigned char)gaussianlookup[(int)(ceil)((t - render_min)*(rangemax-3)/(render_max-render_min))]+1;
 						}
@@ -750,76 +861,94 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 					if (hist) histd[p]++;
 					l += dsx;
 				}
+
 				l = br + dsy;
 			}
 		}
 		else {
 			remy = 10;
 			int l = x0 + y0 * nx;
+
 			for (int j = ymax; j >= ymin; j--) {
 				int addj = addi;
+
 				// There seems to be some overflow issue happening
 				// where the statement if (l > lmax) break (below) doesn't work
 				// because the loop that iterates jjj can inadvertantly go out of bounds
-				if (( l + addi*nx ) >= nxy ) {
+
+				if ((l + addi*nx) >= nxy) {
 					addj = (nxy-l)/nx;
+
 					if (addj <= 0) continue;
 				}
+
 				int br = l;
 				remx = 10;
+
 				for (int i = xmin; i < xsize; i++) {
 					if (l > lmax) break;
 					int k = 0;
 					unsigned char p;
 					float t;
-					if (addi<=1) t = image_data[l];
-					else {						// This block does local pixel averaging for nicer reduced views
+
+					if (addi <= 1) t = image_data[l];
+					else { // This block does local pixel averaging for nicer reduced views
 						t=0;
 						for (int jjj=0; jjj<addj; jjj++) {
 							for (int iii=0; iii<addi; iii++) {
-								t+=image_data[l+iii+jjj*nx];
+								t += image_data[l+iii+jjj*nx];
 							}
 						}
-						t/=addi*addi;
+
+						t /= addi*addi;
 					}
+
 					if (t <= rm) p = mingray;
 					else if (t >= render_max) p = maxgray;
-					else if (gamma!=1.0) {
-						k=(int)(gs2 * (t-render_min));		// map float value to 0-4096 range
-						p = gammamap[k];					// apply gamma using precomputed gamma map
+					else if (gamma != 1.0) {
+						k=(int)(gs2 * (t-render_min)); // map float value to 0-4096 range
+						p = gammamap[k]; // apply gamma using precomputed gamma map
 //						k = (int) (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma);
 //						k += mingray;
 //						k = static_cast<int>( (maxgray-mingray)*pow((gs2 * (t - render_min)),gamma) );
 //						k += mingray;
 					}
 					else {
-						if (flags&32){
-							//p = graylookup[(int)(t - render_min)];
-							if (flags&64){
-								p=(unsigned char)(gaussianlookup[(int)(floor((rangemax-2)*(t - render_min)/(render_max-render_min)))]*(maxgray-mingray-2)/(rangemax-3)+1);
+						if (flags & 32) {
+							// p = graylookup[(int)(t - render_min)];
+
+							if (flags & 64) {
+								p = (unsigned char)(gaussianlookup[(int)(floor((rangemax-2)*(t - render_min)/(render_max-render_min)))]*(maxgray-mingray-2)/(rangemax-3)+1);
 							}
-							else{
-								p=(unsigned char)(grayhe[(int)((t - render_min)*(rangemax-3)/(render_max-render_min))]*(maxgray-mingray-2)/(rangemax-3)+1);
+							else {
+								p = (unsigned char)(grayhe[(int)((t - render_min)*(rangemax-3)/(render_max-render_min))]*(maxgray-mingray-2)/(rangemax-3)+1);
 							}
-							//p=(unsigned char)gaussianlookup[(int)(ceil)((t - render_min)*(rangemax-3)/(render_max-render_min))]+1;
+
+							// p = (unsigned char)gaussianlookup[(int)(ceil)((t - render_min)*(rangemax-3)/(render_max-render_min))]+1;
 						}
-						else{
-							p=(unsigned char) (gs * (t - render_min));	
+						else {
+							p = (unsigned char) (gs * (t - render_min));	
 						}
 						
 						p += mingray;
 					}
+
 					data[i * asrgb + j * bpl] = p;
+
 					if (hist) histd[p]++;
+
 					l += addi;
 					remx += addr;
+
 					if (remx > scale_n) {
 						remx -= scale_n;
 						l++;
 					}
 				}
+
 				l = br + addi * nx;
 				remy += addr;
+
 				if (remy > scale_n) {
 					remy -= scale_n;
 					l += nx;
@@ -829,18 +958,20 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 	}
 
 	// this replicates r -> g,b
-	if (asrgb==3 && !(flags&16)) {
-		for (int j=ymin*bpl; j<=ymax*bpl; j+=bpl) {
+
+	if (asrgb == 3 && !(flags & 16)) {
+		for (int j=ymin*bpl; j <= ymax*bpl; j+=bpl) {
 			for (int i=xmin; i<xsize*3; i+=3) {
-				data[i+j+1]=data[i+j+2]=data[i+j];
+				data[i+j+1] = data[i+j+2] = data[i+j];
 			}
 		}
 	}
-	if (asrgb==4 && !(flags&16)) {
-		for (int j=ymin*bpl; j<=ymax*bpl; j+=bpl) {
+
+	if (asrgb == 4 && !(flags & 16)) {
+		for (int j=ymin*bpl; j <= ymax*bpl; j+=bpl) {
 			for (int i=xmin; i<xsize*4; i+=4) {
-				data[i+j+1]=data[i+j+2]=data[i+j+3]=data[i+j];
-				data[i+j+3]=255;
+				data[i+j+1] = data[i+j+2] = data[i+j+3] = data[i+j];
+				data[i+j+3] = 255;
 			}
 		}
 	}
@@ -848,84 +979,96 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize, int 
 	EXITFUNC;
 
 	// ok, ok, not the most efficient place to do this, but it works
+
 	if (invy) {
 		int x,y;
 		char swp;
+
 		for (y=0; y<iysize/2; y++) {
 			for (x=0; x<ixsize; x++) {
-				swp=ret[y*bpl+x];
-				ret[y*bpl+x]=ret[(iysize-y-1)*bpl+x];
-				ret[(iysize-y-1)*bpl+x]=swp;
+				swp = ret[y*bpl+x];
+				ret[y*bpl+x] = ret[(iysize-y-1)*bpl+x];
+				ret[(iysize-y-1)*bpl+x] = swp;
 			}
 		}
 	}
 
-    //	return PyString_FromStringAndSize((const char*) data,iysize*bpl);
-	if (flags&16) {
-		glDrawPixels(ixsize,iysize,GL_LUMINANCE,GL_UNSIGNED_BYTE,(const GLvoid *)ret.data());
+	// return PyString_FromStringAndSize((const char*) data,iysize*bpl);
+
+	if (flags & 16) {
+		glDrawPixels(ixsize, iysize, GL_LUMINANCE, GL_UNSIGNED_BYTE,
+			 (const GLvoid *)ret.data());
 	}
 
-
-	delete[] grayhe;
-	delete[] gaussianpdf;
-	delete[] gaussiancdf;
-	delete[] gaussianlookup;
-	delete[] graypdftwo;
+	delete [] grayhe;
+	delete [] gaussianpdf;
+	delete [] gaussiancdf;
+	delete [] gaussianlookup;
+	delete [] graypdftwo;
 	
 	return ret;
 }
 
-//DEPRECATED
-unsigned long GLUtil::get_isosurface_dl(MarchingCubes* mc, unsigned int tex_id,bool surface_face_z, bool recontour)
+// DEPRECATED
+
+unsigned long GLUtil::get_isosurface_dl(MarchingCubes* mc,
+		 unsigned int tex_id, bool surface_face_z, bool recontour)
 {
-	if ( mc->_isodl != 0 ) glDeleteLists(mc->_isodl,1);
-		
-	if ( recontour ) mc->calculate_surface();
-	if ( surface_face_z ) mc->surface_face_z();
-	if( mc->getRGBmode() ) mc->color_vertices();
+	if (mc->_isodl != 0) glDeleteLists(mc->_isodl,1);
+	if (recontour) mc->calculate_surface();
+	if (surface_face_z) mc->surface_face_z();
+	if (mc->getRGBmode()) mc->color_vertices();
 	
 #if MARCHING_CUBES_DEBUG
-	cout << "There are " << ff.elem()/3 << " faces and " << pp.elem() << " points and " << nn.elem() << " normals to render in generate dl" << endl;
+	cout << "There are " << ff.elem()/3 << " faces and " << pp.elem() <<
+		 " points and " << nn.elem() << " normals to render in generate dl" << endl;
 #endif
+
 	int maxf;
 //#ifdef	_WIN32
-//	glGetIntegerv(GL_MAX_ELEMENTS_INDICES_WIN,&maxf);
+//	glGetIntegerv(GL_MAX_ELEMENTS_INDICES_WIN, & maxf);
 //#else
-	glGetIntegerv(GL_MAX_ELEMENTS_INDICES,&maxf);
+	glGetIntegerv(GL_MAX_ELEMENTS_INDICES, & maxf);
 //#endif	//_WIN32
+
 #if MARCHING_CUBES_DEBUG
 	int maxv;
-	glGetIntegerv(GL_MAX_ELEMENTS_VERTICES,&maxv);
+	glGetIntegerv(GL_MAX_ELEMENTS_VERTICES, & maxv);
+
 	cout << "Max vertices is " << maxv << " max indices is " << maxf << endl;
 	cout << "Using OpenGL " << glGetString(GL_VERSION) << endl;
 #endif
 
-	if ( recontour ) for (unsigned int i = 0; i < mc->ff.elem(); ++i ) mc->ff[i] /= 3;
+	if (recontour) {
+		for (unsigned int i = 0; i < mc->ff.elem(); ++i) mc->ff[i] /= 3;
+	}
 
-	if ( maxf % 3 != 0 )
-	{
+	if (maxf % 3 != 0) {
 		maxf = maxf - (maxf%3);
 	}
 
-	if ( tex_id != 0 ) {
+	if (tex_id != 0) {
 		// Normalize the coordinates to be on the interval 0,1
-		mc->pp.mult3(1.0f/(float) mc->_emdata->get_xsize(), 1.0f/(float)mc->_emdata->get_ysize(), 1.0f/(float)mc->_emdata->get_zsize());
+
+		mc->pp.mult3(1.0f/(float) mc->_emdata->get_xsize(),
+			 1.0f/(float)mc->_emdata->get_ysize(),
+			 1.0f/(float)mc->_emdata->get_zsize());
 		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 		glDisableClientState(GL_NORMAL_ARRAY);
-		glTexCoordPointer(3,GL_FLOAT,0,mc->pp.get_data());
+		glTexCoordPointer(3, GL_FLOAT, 0, mc->pp.get_data());
 	}
 	else {
 		glEnableClientState(GL_NORMAL_ARRAY);
 		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-		glNormalPointer(GL_FLOAT,0, mc->nn.get_data());
+		glNormalPointer(GL_FLOAT, 0,  mc->nn.get_data());
 	}
 
 	glEnableClientState(GL_VERTEX_ARRAY);
-	glVertexPointer(3,GL_FLOAT,0, mc->pp.get_data());
+	glVertexPointer(3, GL_FLOAT, 0,  mc->pp.get_data());
 	
-	if (mc->getRGBmode()){
+	if (mc->getRGBmode()) {
 		glEnableClientState(GL_COLOR_ARRAY);
-		glColorPointer(3,GL_FLOAT,0, mc->cc.get_data());
+		glColorPointer(3, GL_FLOAT, 0,  mc->cc.get_data());
 	}
 	
 	mc->_isodl = glGenLists(1);
@@ -936,7 +1079,7 @@ unsigned long GLUtil::get_isosurface_dl(MarchingCubes* mc, unsigned int tex_id,b
 	
 	glNewList(mc->_isodl,GL_COMPILE);
 
-	if ( tex_id != 0 ) {
+	if (tex_id != 0) {
 		glEnable(GL_TEXTURE_3D);
 		glBindTexture(GL_TEXTURE_3D, tex_id);
 		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP);
@@ -947,46 +1090,60 @@ unsigned long GLUtil::get_isosurface_dl(MarchingCubes* mc, unsigned int tex_id,b
 		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	}
 	
-	// Drawing range elements based on the output of glGetIntegerv(GL_MAX_ELEMENTS_INDICES,&maxf);
+	// Drawing range elements based on the output of
+	// glGetIntegerv(GL_MAX_ELEMENTS_INDICES, & maxf);
 	// Saved about 60% of the time... drawRange should probably always be true
+
 	bool drawRange = true;
-	if ( drawRange == false ) {
+
+	if (drawRange == false) {
 		glDrawElements(GL_TRIANGLES,mc->ff.elem(),GL_UNSIGNED_INT, mc->ff.get_data());
 	} else {
 		for(unsigned int i = 0; i < mc->ff.elem(); i+=maxf)
 		{
-			if ( (i+maxf) > mc->ff.elem())
-				glDrawElements(GL_TRIANGLES,mc->ff.elem()-i,GL_UNSIGNED_INT,&(mc->ff[i]));
+			if ((i+maxf) > mc->ff.elem())
+				glDrawElements(GL_TRIANGLES, mc->ff.elem()-i, GL_UNSIGNED_INT, &(mc->ff[i]));
 			else
-				glDrawElements(GL_TRIANGLES,maxf,GL_UNSIGNED_INT,&(mc->ff[i]));
-				// glDrawRangeElements is part of the extensions, we might want to experiment with its performance at some stage,
-				// so please leave this code here, commented out. This is an either or situation, so if glDrawRangeElements is used,
+				glDrawElements(GL_TRIANGLES, maxf, GL_UNSIGNED_INT, &(mc->ff[i]));
+
+				// glDrawRangeElements is part of the extensions,
+				// we might want to experiment with its performance at some stage,
+				// so please leave this code here, commented out.
+				// This is an either or situation, so if glDrawRangeElements is used,
 				// glDrawElements above would have to be commented out.
-				// glDrawRangeElements(GL_TRIANGLES,0,0,maxf,GL_UNSIGNED_INT,&ff[i]);
+				// glDrawRangeElements(GL_TRIANGLES, 0, 0, maxf, GL_UNSIGNED_INT, &ff[i]);
 		}
 	}
 
-	if ( tex_id != 0 ) glDisable(GL_TEXTURE_3D);
+	if (tex_id != 0) glDisable(GL_TEXTURE_3D);
 
 	glEndList();
 	
 #if MARCHING_CUBES_DEBUG
 	int time1 = clock();
-	cout << "It took " << (time1-time0) << " " << (float)(time1-time0)/CLOCKS_PER_SEC << " to draw elements" << endl;
+
+	cout << "It took " << (time1-time0) << " " <<
+		 (float)(time1-time0)/CLOCKS_PER_SEC << " to draw elements" << endl;
 #endif
+
 	return mc->_isodl;
 }
 
 void GLUtil::contour_isosurface(MarchingCubes* mc)
 {
 	mc->calculate_surface();
-	//What does this do???
+
+	// What does this do???
+
 	for (unsigned int i = 0; i < mc->ff.elem(); ++i ) mc->ff[i] /= 3;
-	//Need to rebind data (to the GPU)
+
+	// Need to rebind data (to the GPU)
+
 	mc->needtobind = true;
 }
 
-void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,bool surface_face_z)
+void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,
+		 bool surface_face_z)
 {
 	// In current version Texture is not supported b/c it is not used... EVER
 	
@@ -1000,22 +1157,26 @@ void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,bool surfa
 	glIsBuffer = (PFNGLISBUFFERPROC) wglGetProcAddress("glIsBuffer");
 #endif	//_WIN32
 
-	if ( surface_face_z ) mc->surface_face_z();
+	if (surface_face_z) mc->surface_face_z();
 	
-	//Bug in OpenGL, sometimes glGenBuffers doesn't work. Try again, if we still fail then return...
+	// Bug in OpenGL, sometimes glGenBuffers doesn't work.
+	// Try again, if we still fail then return...
+
 	if (!glIsBuffer(mc->buffer[0])) glGenBuffers(4, mc->buffer);
 
-	//whenever something changes, like color mode or color scale (or threshold), we need to recolor
-	if( mc->getRGBmode() && (mc->rgbgenerator.getNeedToRecolor() || mc->needtobind)){
+	// whenever something changes, like color mode or color scale (or threshold),
+	// we need to recolor
+
+	if (mc->getRGBmode() && (mc->rgbgenerator.getNeedToRecolor() ||
+		 mc->needtobind)) {
 		mc->color_vertices();
 		mc->needtobind = true;
 	}
 
 	int maxf;
-	glGetIntegerv(GL_MAX_ELEMENTS_INDICES,&maxf);
+	glGetIntegerv(GL_MAX_ELEMENTS_INDICES, & maxf);
 
-	if ( maxf % 3 != 0 )
-	{
+	if (maxf % 3 != 0) {
 		maxf = maxf - (maxf%3);
 	}
 
@@ -1024,100 +1185,117 @@ void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,bool surfa
 	PFNGLBINDBUFFERPROC glBindBuffer;
 	glBindBuffer = (PFNGLBINDBUFFERPROC) wglGetProcAddress("glBindBuffer");
 
-	typedef void (APIENTRYP PFNGLBUFFERDATAPROC) (GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage);
+	typedef void (APIENTRYP PFNGLBUFFERDATAPROC) (GLenum target, GLsizeiptr size,
+		 const GLvoid *data, GLenum usage);
 	PFNGLBUFFERDATAPROC glBufferData;
 	glBufferData = (PFNGLBUFFERDATAPROC) wglGetProcAddress("glBufferData");
 #endif	//_WIN32
 
-	//Normal vectors
+	// Normal vectors
+
 	glEnableClientState(GL_NORMAL_ARRAY);
 	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 	glBindBuffer(GL_ARRAY_BUFFER, mc->buffer[2]);
-	if (mc->needtobind) glBufferData(GL_ARRAY_BUFFER, 4*mc->nn.elem(), mc->nn.get_data(), GL_STATIC_DRAW);
+
+	if (mc->needtobind) {
+		glBufferData(GL_ARRAY_BUFFER, 4*mc->nn.elem(), mc->nn.get_data(),
+				 GL_STATIC_DRAW);
+	}
+
 	glNormalPointer(GL_FLOAT,0,0);
 
-	//Vertex vectors
+	// Vertex vectors
+
 	glBindBuffer(GL_ARRAY_BUFFER, mc->buffer[0]);
-	if (mc->needtobind) glBufferData(GL_ARRAY_BUFFER, 4*mc->pp.elem(), mc->pp.get_data(), GL_STATIC_DRAW);
+
+	if (mc->needtobind) {
+		glBufferData(GL_ARRAY_BUFFER, 4*mc->pp.elem(), mc->pp.get_data(),
+				 GL_STATIC_DRAW);
+	}
+
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glVertexPointer(3,GL_FLOAT,0,0);
 
-	//Color vectors
-	if (mc->getRGBmode()){
+	// Color vectors
+
+	if (mc->getRGBmode()) {
 		glEnableClientState(GL_COLOR_ARRAY);
 		glBindBuffer(GL_ARRAY_BUFFER, mc->buffer[3]);
-		if (mc->needtobind) glBufferData(GL_ARRAY_BUFFER, 4*mc->cc.elem(), mc->cc.get_data(), GL_STATIC_DRAW);
+
+		if (mc->needtobind) {
+			glBufferData(GL_ARRAY_BUFFER, 4*mc->cc.elem(), mc->cc.get_data(),
+				 GL_STATIC_DRAW);
+		}
+
 		glColorPointer(3,GL_FLOAT,0, 0);
 	}
 	
-	//Indices
+	// Indices
+
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mc->buffer[1]);
-	if (mc->needtobind) glBufferData(GL_ELEMENT_ARRAY_BUFFER, 4*mc->ff.elem(), mc->ff.get_data(), GL_STATIC_DRAW);
-	
+
+	if (mc->needtobind) {
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, 4*mc->ff.elem(), mc->ff.get_data(),
+				 GL_STATIC_DRAW);
+	}
+
 	// This lets us know if buffers an not implmemted
-	if (!glIsBuffer(mc->buffer[0])){
+
+	if (!glIsBuffer(mc->buffer[0])) {
 		cout << "Can't Generate GL Vertex Buffers. glGenBuffer error" << endl;
+
 		return;
 	}
 	
-	//finally draw the elemenets
-	glDrawElements(GL_TRIANGLES,mc->ff.elem(),GL_UNSIGNED_INT,0);
+	// finally draw the elemenets
+
+	glDrawElements(GL_TRIANGLES, mc->ff.elem(), GL_UNSIGNED_INT, 0);
+
 	// No longer need to bind data to the GPU
+
 	mc->needtobind = false;
-
 }
 
-// This crap could be avoided and speed up(A lot) if we implemented an openGL shader........
-void GLUtil::glLoadMatrix(const Transform& xform)
+static void transpose_4_by_4_matrix (vector <float> & v)
 {
-#ifdef _WIN32
-	typedef void (APIENTRYP PFNGLLOADTRANSPOSEMATRIXFPROC) (const GLfloat *m);
-	PFNGLLOADTRANSPOSEMATRIXFPROC glLoadTransposeMatrixf = NULL;
-	glLoadTransposeMatrixf = (PFNGLLOADTRANSPOSEMATRIXFPROC) wglGetProcAddress("glLoadTransposeMatrixf");
-	static bool printed = false;
-	if (glLoadTransposeMatrixf == NULL  &&  ! printed) {
-		setbuf (stdout, NULL);
-		printf ("Cannot load transformation matrix - glLoadTransposeMatrixf is missing.\n");
-		printed = true;
-	}
-#endif	//_WIN32
- 
-	vector<float> xformlist = xform.get_matrix_4x4();
-	if (glLoadTransposeMatrixf != NULL) {
-		glLoadTransposeMatrixf(reinterpret_cast<GLfloat*>(&xformlist[0]));
-	}
+	std::swap (v [ 1], v [ 4]);
+	std::swap (v [ 2], v [ 8]);
+	std::swap (v [ 3], v [12]);
+	std::swap (v [ 6], v [ 9]);
+	std::swap (v [ 7], v [13]);
+	std::swap (v [11], v [14]);
 }
 
-void GLUtil::glMultMatrix(const Transform& xform)
+void GLUtil::glLoadMatrix (const Transform & xform)
 {
-#ifdef _WIN32
-	typedef void (APIENTRYP PFNGLMULTTRANSPOSEMATRIXFPROC) (const GLfloat *m);
-	PFNGLMULTTRANSPOSEMATRIXFPROC glMultTransposeMatrixf = NULL;
-	glMultTransposeMatrixf = (PFNGLMULTTRANSPOSEMATRIXFPROC) wglGetProcAddress("glMultTransposeMatrixf");
-	static bool printed = false;
-	if (glMultTransposeMatrixf == NULL  &&  ! printed) {
-		setbuf (stdout, NULL);
-		printf ("Cannot rotate or translate object - glMultTransposeMatrixf is missing.\n");
-		printed = true;
-	}
-#endif	//_WIN32
+	vector <float> xformlist = xform.get_matrix_4x4 ();
 
-	vector<float> xformlist = xform.get_matrix_4x4();
-	if (glMultTransposeMatrixf != NULL) {
-		glMultTransposeMatrixf(reinterpret_cast<GLfloat*>(&xformlist[0]));
-	}
+	transpose_4_by_4_matrix (xformlist);
+
+	glLoadMatrixf (reinterpret_cast <GLfloat *> (& xformlist [0]));
 }
 
-//This draw a bounding box, or any box 
+void GLUtil::glMultMatrix (const Transform & xform)
+{
+	vector <float> xformlist = xform.get_matrix_4x4 ();
+
+	transpose_4_by_4_matrix (xformlist);
+
+	glMultMatrixf (reinterpret_cast <GLfloat *> (& xformlist [0]));
+}
+
+// This draws a bounding box, or any box
+
 void GLUtil::glDrawBoundingBox(float width, float height, float depth)
 {
-	
 	float w2 = width/2.0f;
 	float h2 = height/2.0f;
 	float d2 = depth/2.0f;
 	
-	float vertices[24] = {-w2,  h2,  d2, w2,  h2,  d2, w2, -h2,  d2, -w2, -h2,  d2, -w2,  h2, -d2, w2,  h2, -d2, w2, -h2, -d2, -w2, -h2, -d2};
-	int indices[24] = {0, 1, 1, 2, 2, 3, 3, 0, 4, 5, 5, 6, 6, 7, 7, 4, 0, 4, 3, 7, 1, 5, 2, 6};
+	float vertices[24] = {-w2,  h2,  d2, w2,  h2,  d2, w2, -h2,  d2, -w2,
+		 -h2,  d2, -w2,  h2, -d2, w2,  h2, -d2, w2, -h2, -d2, -w2, -h2, -d2};
+	int indices[24] = {0, 1, 1, 2, 2, 3, 3, 0, 4, 5, 5, 6,
+		 6, 7, 7, 4, 0, 4, 3, 7, 1, 5, 2, 6};
 	
 #ifdef _WIN32
 	typedef void (APIENTRYP PFNGLGENBUFFERSPROC) (GLsizei n, GLuint *buffers);
@@ -1132,25 +1310,27 @@ void GLUtil::glDrawBoundingBox(float width, float height, float depth)
 	PFNGLBINDBUFFERPROC glBindBuffer;
 	glBindBuffer = (PFNGLBINDBUFFERPROC) wglGetProcAddress("glBindBuffer");
 
-	typedef void (APIENTRYP PFNGLBUFFERDATAPROC) (GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage);
+	typedef void (APIENTRYP PFNGLBUFFERDATAPROC) (GLenum target, GLsizeiptr size,
+		 const GLvoid *data, GLenum usage);
 	PFNGLBUFFERDATAPROC glBufferData;
 	glBufferData = (PFNGLBUFFERDATAPROC) wglGetProcAddress("glBufferData");
 #endif	//_WIN32
 
-	if ( glIsBuffer(GLUtil::buffer[0])  == GL_FALSE ){
+	if (glIsBuffer(GLUtil::buffer[0]) == GL_FALSE) {
 		glGenBuffers(2, GLUtil::buffer);
 	}
 	
 	// Could use dirty bit here but not worth my time to implment
+
 	glBindBuffer(GL_ARRAY_BUFFER, GLUtil::buffer[0]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glVertexPointer(3,GL_FLOAT,0,0);
 	
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GLUtil::buffer[1]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
+		 GL_STATIC_DRAW);
 	glDrawElements(GL_LINES,24,GL_UNSIGNED_INT,0);
-	
 }
 
 void GLUtil::glDrawDisk(float radius, int spokes)
@@ -1168,19 +1348,21 @@ void GLUtil::glDrawDisk(float radius, int spokes)
 	PFNGLBINDBUFFERPROC glBindBuffer;
 	glBindBuffer = (PFNGLBINDBUFFERPROC) wglGetProcAddress("glBindBuffer");
 
-	typedef void (APIENTRYP PFNGLBUFFERDATAPROC) (GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage);
+	typedef void (APIENTRYP PFNGLBUFFERDATAPROC) (GLenum target, GLsizeiptr size,
+		 const GLvoid *data, GLenum usage);
 	PFNGLBUFFERDATAPROC glBufferData;
 	glBufferData = (PFNGLBUFFERDATAPROC) wglGetProcAddress("glBufferData");
 #endif	//_WIN32
 
 	//This code is experimental
-	int arraysize = 4*pow((double)2,(double)spokes);
-	int sideofarray = pow((double)2,(double)spokes);
+	int arraysize = 4*pow((double)2, (double)spokes);
+	int sideofarray = pow((double)2, (double)spokes);
 	
 //	float vertices[3*arraysize + 3];
 	vector<float> vertices(3*arraysize + 3);
 	
-	//last vertex is center
+	// last vertex is center
+
 	vertices[3*arraysize] = 0.0;
 	vertices[3*arraysize+1] = 0.0;
 	vertices[3*arraysize+2] = 0.0;
@@ -1201,39 +1383,46 @@ void GLUtil::glDrawDisk(float radius, int spokes)
 	vertices[sideofarray*9 + 1] = 0.0;
 	vertices[sideofarray*9 + 2] = 0.0;
 	
-	//This could aslo be implemented recusivly
-	for(int step = 0; step < spokes; step++){
-		//starting location
+	// This could aslo be implemented recursively
+
+	for (int step = 0; step < spokes; step++) {
+		// starting location
 		int x = sideofarray/pow(2.0,(double)(step+1));
-		for(int i = 1; i <= 4*pow(2.0,(double)step); i++ ){
-			
+
+		for (int i = 1; i <= 4*pow(2.0,(double)step); i++) {
 			// take the necessary steps
+
 			int index =  x + 2*x*(i-1);
 			int index_f = (index + x) % arraysize;
 			int index_i = index - x;
+
 			cout << index << " " << index_f << " " << index_i << endl;
 			
-			//need to resclae length to that of radius
+			// need to resclae length to that of radius
+
 			vertices[index_f*3] = (vertices[index_f*3] - vertices[index_i*3])/2.0f;
 			vertices[index_f*3 + 1] = (vertices[index_f*3 + 1] - vertices[index_i*3 + 1])/2.0f;
 			vertices[index_f*3 + 2] = (vertices[index_f*3 + 2] - vertices[index_i*3 + 2])/2.0f;
 		}
 	}
 	
-	//GL stuff
-	if ( glIsBuffer(GLUtil::buffer[0])  == GL_FALSE ){
+	// GL stuff
+
+	if (glIsBuffer(GLUtil::buffer[0]) == GL_FALSE) {
 		glGenBuffers(2, GLUtil::buffer);
 	}
 	
-	// Could use dirty bit here but not worth my time to implment
+	// Could use dirty bit here but not worth my time to implement
+
 	glBindBuffer(GL_ARRAY_BUFFER, GLUtil::buffer[0]);
-	//glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size(), &(vertices[0]), GL_STATIC_DRAW);
+
+	// glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	glBufferData(GL_ARRAY_BUFFER, vertices.size(), &(vertices[0]),
+		 GL_STATIC_DRAW);
 	glEnableClientState(GL_VERTEX_ARRAY);
-	glVertexPointer(3,GL_FLOAT,0,0);
+	glVertexPointer(3, GL_FLOAT, 0, 0);
 	
-	//Code to select indices
-	
-	
+	// Code to select indices
 }
 #endif // EMAN2_USING_OPENGL
