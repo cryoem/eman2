@@ -133,18 +133,22 @@ It is strongly suggested that you run 'e2bdb.py -c' prior to running this progra
 			js["ctf"]=[c,ctf[k][1],ctf[k][2],ctffg[k],ctfbg[k]]
 	except:
 		traceback.print_exc()
+		print "\n\nUnable to convert projects without CTF information. If this is a major problem, please contact sludtke@bcm.edu"
 		sys.exit(1)
 	
 	# Boxes
+	if options.verbose : print "Converting Boxes"
+	boxes=db_open_dict("bdb:e2boxercache#boxes",ro=True)
 	try:
-		if options.verbose : print "Converting Boxes"
-		boxes=db_open_dict("bdb:e2boxercache#boxes",ro=True)
-		for k in boxes.keys():
+	for k in boxes.keys():
+		try:
 			if options.verbose>1 : print "\t",k
 			js=js_open_dict("{}/{}".format(dest,info_name(k)))
 			js["boxes"]=boxes[k]
+		except:
+			print "Error converting boxes for ",k
 	except:
-		print "No boxes found to import"
+		print "Note: No box locations found to convert"
 	
 	dl=[i for i in os.listdir(".") if os.path.isdir(i) and i not in ("sets","e2boxercache","EMAN2DB")]
 
@@ -167,9 +171,10 @@ It is strongly suggested that you run 'e2bdb.py -c' prior to running this progra
 		# First we handle BDBs in subdirectories
 		try: os.mkdir("{}/{}".format(dest,d))
 		except: pass
-		try:
-			dcts=db_list_dicts("bdb:"+d)
-			for dct in dcts:
+
+		dcts=db_list_dicts("bdb:"+d)
+		for dct in dcts:
+			try:
 				if options.verbose>0 : print "Processing {}/{}".format(d,dct)
 				n=EMUtil.get_image_count("bdb:{}#{}".format(d,dct))
 				tmp2=db_open_dict("bdb:{}#{}".format(d,dct),ro=True)
@@ -185,7 +190,8 @@ It is strongly suggested that you run 'e2bdb.py -c' prior to running this progra
 							sys.stdout.flush()
 						im=tmp2[k]
 						im.write_image("{}/{}/{}.hdf".format(dest,d,dct2),k)
-		except: print "No BDB's converted in ",d
+			except:
+				print "Error in converting ",dct," (skipping)"
 
 		# Now we handle any regular files that may exist
 		fls=[i for i in os.listdir(d) if i!="EMAN2DB" and os.path.isfile(i)]

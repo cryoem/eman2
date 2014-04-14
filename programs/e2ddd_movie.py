@@ -340,6 +340,14 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				aliavg.mult(1.0/len(outim2))
 			
 			if options.verbose>1 : 
+				out=file("align.txt","w")
+				for i in xrange(xali.get_size()):
+					out.write("%1.2f\t%1.2f\n"%(xali.get_y(i),yali.get_y(i)));
+				out=file("alignsm.txt","w")
+				for i in xrange(len(outim)):
+					out.write("%1.2f\t%1.2f\n"%(xali.get_yatx_smooth(i,1),yali.get_yatx_smooth(i,1)));
+				xali.write_file("alignx.txt")
+				yali.write_file("aligny.txt")
 				t=sum(outim)
 				t.mult(1.0/len(outim2))
 				display([t,aliavg],True)

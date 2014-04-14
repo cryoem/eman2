@@ -97,6 +97,10 @@ To run this program, you would normally specify only the following options:
                          and you will likely wait a very long time. To use more than one core on a single computer,
                          just say thread:N (eg - thread:4). For other options, like MPI, see:
                          http://blake.bcm.edu/emanwiki/EMAN2/Parallel for details.
+  --threads=<ncpu>        For some algorithms, processing in parallel over the network (MPI) works poorly.
+                         Running on multiple processors on a single machine may still be worthwhile. If you specify this
+                         option, in specific cases it will replace your specified --parallel option. Specify
+                         the number of cores that can be used on a single machine. 
 
   Optional:
   --apix=<A/pix>         The value will normally come from the particle data if present. You can override with this.
@@ -142,6 +146,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--m3dkeep", type=float, help="The fraction of slices to keep in e2make3d.py. Default=0.8 -> 80%%", default=0.8, guitype='floatbox', row=18, col=1, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--m3dpostprocess", type=str, default=None, help="Default=none. An arbitrary post-processor to run after all other automatic processing. Maps are autofiltered, so a low-pass filter should not normally be used here.", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter.lowpass|filter.highpass\')', row=20, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel",default=None, guitype='strbox', row=24, col=0, rowspan=1, colspan=2, mode="refinement")
+	parser.add_argument("--threads", default=4,type=int,help="", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--path", default=None, type=str,help="The name of a directory where results are placed. Default = create new refine_xx")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 #	parser.add_argument("--usefilt", dest="usefilt", type=str,default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used in projection matching routines, and elsewhere.")
@@ -456,7 +461,12 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 	if options.verbose>0 : verbose="--verbose {}".format(options.verbose)
 	else: verbose=""
 
+	if options.threads<1 :
+		print "WARNING: threads set to an invalid value. Changing to 1, but you should really provide a reasonable number."
+		options.threads=1
+
 	if options.parallel!=None : parallel="--parallel {}".format(options.parallel)
+	elif options.threads>1: parallel="--parallel thread:{}".format(options.threads)
 	else: parallel=""
 
 	if options.prefilt : prefilt="--prefilt"
@@ -516,11 +526,12 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 		append_html("<h4>Beginning iteration {} at {}</h4>".format(it,time.ctime(time.time())),True)
 
 		### 3-D Projections
-		cmd = "e2project3d.py {path}/threed_{itrm1:02d}_even.hdf  --outfile {path}/projections_{itr:02d}_even.hdf -f --projector {projector} --orientgen {orient} --sym {sym} --postprocess normalize.circlemean {prethr} {parallel} {verbose}".format(
-			path=options.path,itrm1=it-1,itr=it,projector=options.projector,orient=options.orientgen,sym=options.sym,prethr=prethreshold,parallel=parallel,verbose=verbose)
+		# Note that projections are generated on a single node only as specified by --threads
+		cmd = "e2project3d.py {path}/threed_{itrm1:02d}_even.hdf  --outfile {path}/projections_{itr:02d}_even.hdf -f --projector {projector} --orientgen {orient} --sym {sym} --postprocess normalize.circlemean {prethr} --parallel thread:{threads} {verbose}".format(
+			path=options.path,itrm1=it-1,itr=it,projector=options.projector,orient=options.orientgen,sym=options.sym,prethr=prethreshold,threads=options.threads,verbose=verbose)
 		run(cmd)
-		cmd = "e2project3d.py  {path}/threed_{itrm1:02d}_odd.hdf --outfile {path}/projections_{itr:02d}_odd.hdf -f --projector {projector} --orientgen {orient} --sym {sym} --postprocess normalize.circlemean {prethr} {parallel} {verbose}".format(
-			path=options.path,itrm1=it-1,itr=it,projector=options.projector,orient=options.orientgen,sym=options.sym,prethr=prethreshold,parallel=parallel,verbose=verbose)
+		cmd = "e2project3d.py  {path}/threed_{itrm1:02d}_odd.hdf --outfile {path}/projections_{itr:02d}_odd.hdf -f --projector {projector} --orientgen {orient} --sym {sym} --postprocess normalize.circlemean {prethr} --parallel thread:{threads} {verbose}".format(
+			path=options.path,itrm1=it-1,itr=it,projector=options.projector,orient=options.orientgen,sym=options.sym,prethr=prethreshold,threads=options.threads,verbose=verbose)
 		run(cmd)
 		progress += 1.0
 		E2progress(logid,progress/total_procs)
