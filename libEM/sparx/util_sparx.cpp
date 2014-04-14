@@ -18686,7 +18686,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 		    vector<Transform> tsym = t->get_sym_proj(sym);
 		    int isym = 0;
 		    int nsym = tsym.size();
-		    while ( isym < nsym && not gogo ) {
+		    while ( isym < nsym && ! gogo ) {
                 Dict d = tsym[isym].get_params("spider");
                 float phi   = d["phi"];
                 float theta = d["theta"];
