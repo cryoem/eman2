@@ -188,13 +188,14 @@ float XYData::get_yatx(float x,bool outzero)
 
 float XYData::get_yatx_smooth(float x,int smoothing)
 {
-	if (data.size()==0 || mean_x_spacing==0) return 0.0;
+	if (data.size()==0) return 0.0;
 	if (data.size()==1) return data[0].y;
 	if (smoothing!=1) throw InvalidParameterException("Only smoothing==1 (linear) currently supported");
 	
 	int nx = (int) data.size();
 	
-	int s = (int) floor((x - data[0].x) / mean_x_spacing);
+	int s = nx/2; 
+	if (mean_x_spacing>0) s=(int) floor((x - data[0].x) / mean_x_spacing);
 	if (s>nx-2) s=nx-2;
 	else if (s<0) s=0;
 	else {
@@ -203,9 +204,23 @@ float XYData::get_yatx_smooth(float x,int smoothing)
 		while (s<(nx-2) && data[s + 1].x < x ) s++;
 	}
 	
-	float f = (x - data[s].x) / (data[s + 1].x - data[s].x);
+	float f = 0,y=0;
+	if (data[s + 1].x != data[s].x) {
+		f= (x - data[s].x) / (data[s + 1].x - data[s].x);
+		y = data[s].y * (1 - f) + data[s + 1].y * f;
+	}
+	else {
+		int s2=s;
+		while (data[s2].x==data[s].x) {
+			if (s2<nx-1) s2++;
+			if (s>0) s--;
+			if (s==0 &&s2==nx-1) return data[nx/2].y;
+		}
+		f= (x - data[s].x) / (data[s2].x - data[s].x);
+		y = data[s].y * (1 - f) + data[s2].y * f;
+		
+	}
 //	printf("%d %1.2f x %1.2f %1.2f %1.2f y %1.2f %1.2f\n",s,f,x,data[s].x,data[s+1].x,data[s].y,data[s+1].y);
-	float y = data[s].y * (1 - f) + data[s + 1].y * f;
 	return y;
 }
 

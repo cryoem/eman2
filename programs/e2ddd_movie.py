@@ -55,6 +55,7 @@ def main():
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
 	parser.add_argument("--step",type=str,default="1,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 1,1 (first image skipped)")
 	parser.add_argument("--frames",action="store_true",default=False,help="Save the dark/gain corrected frames")
+	parser.add_argument("--normalize",action="store_true",default=False,help="Apply edgenormalization to input images after dark/gain")
 	parser.add_argument("--movie", type=int,help="Display an n-frame averaged 'movie' of the stack, specify number of frames to average",default=0)
 	parser.add_argument("--simpleavg", action="store_true",help="Will save a simple average of the dark/gain corrected frames (no alignment or weighting)",default=False)
 	parser.add_argument("--avgs", action="store_true",help="Testing",default=False)
@@ -163,6 +164,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			#im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
 			im.process_inplace("threshold.clampminmax",{"minval":0,"maxval":im["mean"]+im["sigma"]*3.5,"tozero":1})		# TODO - not sure if 2 is really safe here, even on the high end
 #			im.mult(-1.0)
+			if options.normalize : im.process_inplace("normalize.edgemean")
 			
 			if options.frames : im.write_image(outname[:-4]+"_corr.hdf",ii-first)
 			outim.append(im)
@@ -176,7 +178,6 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			mov=[]
 			for i in xrange(options.movie+1,len(outim)):
 				im=sum(outim[i-options.movie-1:i])
-	#			im.process_inplace("normalize.edgemean")
 				#im.write_image("movie%d.hdf"%(i/5-1),0)
 				#im.process_inplace("filter.lowpass.gauss",{"cutoff_freq":.02})
 				mov.append(im)
@@ -299,20 +300,20 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			outim2=[]
 			
 			print len(outim)
-			xali=XYData()		# this will contain the alignments which are hierarchically estimated and improved
-			yali=XYData()		# x is time in both cases, y is x or y
 			
 			aliavg=sum(outim)				# we start with a simple average of all frames
-			step=len(outim)					# coarsest search aligns the first 1/2 of the images against the second, step=step/2 each cycle
 			
 			for it in xrange(2):
+				step=len(outim)					# coarsest search aligns the first 1/2 of the images against the second, step=step/2 each cycle
+				xali=XYData()		# this will contain the alignments which are hierarchically estimated and improved
+				yali=XYData()		# x is time in both cases, y is x or y
 				while step>1:
 					step/=2
 					i0=0
 					while i0<len(outim):
 						i1=min(i0+step,len(outim))
 						av0=sum(outim[i0:i1])
-						tloc=(i0+i1-1)/2		# the "time" of the current average
+						tloc=(i0+i1-1)/2.0		# the "time" of the current average
 						lrange=hypot(xali.get_yatx_smooth(i1,1)-xali.get_yatx_smooth(i0,1),yali.get_yatx_smooth(i1,1)-yali.get_yatx_smooth(i0,1))*1.5
 						if lrange<8 : lrange=8		
 						
@@ -329,16 +330,19 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 											
 						i0+=step
 					
-					print ["%6d"%i for i in xali.get_xlist()]
+					print ["%6.1f"%i for i in xali.get_xlist()]
 					print ["%6.2f"%i for i in xali.get_ylist()]
 					print ["%6.2f"%i for i in yali.get_ylist()]
 					
-				outim2=[outim[i].get_clip(Region(xali.get_yatx_smooth(i,1),yali.get_yatx_smooth(i,1),outim[i]["nx"],outim[i]["ny"])) for i in xrange(len(outim))]
+				outim2=[outim[i].get_clip(Region(-xali.get_yatx_smooth(i,1),-yali.get_yatx_smooth(i,1),outim[i]["nx"],outim[i]["ny"])) for i in xrange(len(outim))]
 				
 				aliavg=sum(outim2)
 				aliavg.mult(1.0/len(outim2))
 			
-			if options.verbose>1 : display(fav,True)
+			if options.verbose>1 : 
+				t=sum(outim)
+				t.mult(1.0/len(outim2))
+				display([t,aliavg],True)
 			
 		# we iterate the alignment process several times
 		if options.align_frames_countmode:
@@ -409,10 +413,13 @@ def align(s1,s2,guess=(0,0),localrange=192,verbose=0):
 			
 	if verbose>3 : display((s1a,s2a,tot),force_2d=True)
 	
+	mn=tot["mean"]
 	dx,dy=(tot["nx"]/2-int(guess[0]),tot["ny"]/2-int(guess[1]))					# the 'false peak' should always be at the origin, ie - no translation
+#	tot[dx,dy]=mn
 	for x in xrange(dx-1,dx+2):
 		for y in xrange(dy-1,dy+2):
-			tot[x,y]=0		# exclude from COM
+			tot[x,y]=mn		# exclude from COM
+#			pass
 
 	# first pass to have a better chance at finding the first peak, using a lot of blurring
 	tot2=tot.get_clip(Region(tot["nx"]/2-96,tot["ny"]/2-96,192,192))
@@ -486,8 +493,8 @@ def align_subpixel(s1,s2,guess=(0,0),localrange=192,verbose=0):
 	dx,dy=(tot["nx"]/2,tot["ny"]/2)					# the 'false peak' should always be at the origin, ie - no translation
 	for x in xrange(dx-2,dx+3):
 		for y in xrange(dy-2,dy+3):
-#			tot[x,y]=mn		# exclude from COM
-			pass
+			tot[x,y]=mn		# exclude from COM
+#			pass
 			
 	# first pass to have a better chance at finding the first peak, using a lot of blurring
 	tot2=tot.get_clip(Region(tot["nx"]/2-localrange/2,tot["ny"]/2-localrange/2,localrange,localrange))
