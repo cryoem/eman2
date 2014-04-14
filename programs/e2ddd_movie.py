@@ -69,6 +69,13 @@ def main():
 		print usage
 		parser.error("Specify input DDD stack")
 
+	if options.parallel!=None :
+		if options.parallel[:7]!="thread:":
+			print "ERROR: only thread:<n> parallelism supported by this program. It is i/o limited."
+			sys.exit(1)
+		threads=int(options.parallel[7:])
+	else: threads=1
+
 	pid=E2init(sys.argv)
 
 	if options.dark : 
@@ -304,7 +311,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			aliavg=sum(outim)				# we start with a simple average of all frames
 			
 			for it in xrange(2):
-				step=len(outim)					# coarsest search aligns the first 1/2 of the images against the second, step=step/2 each cycle
+				step=len(outim)		# coarsest search aligns the first 1/2 of the images against the second, step=step/2 each cycle
 				xali=XYData()		# this will contain the alignments which are hierarchically estimated and improved
 				yali=XYData()		# x is time in both cases, y is x or y
 				while step>1:
@@ -317,12 +324,17 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 						lrange=hypot(xali.get_yatx_smooth(i1,1)-xali.get_yatx_smooth(i0,1),yali.get_yatx_smooth(i1,1)-yali.get_yatx_smooth(i0,1))*1.5
 						if lrange<8 : lrange=8		
 						
+						guess=(xali.get_yatx_smooth(tloc,1),yali.get_yatx_smooth(tloc,1))
+						if xali.get_size()>1 and guess[0]<2 and guess[1]<2 : 
+							i0+=step
+							continue				# if the predicted shift is too small, then we won't get it right anyway, so we just interpolate
+						
 						print step,i0,xali.get_yatx_smooth(tloc,1),yali.get_yatx_smooth(tloc,1),lrange,
 	#					dx,dy,Z=align_subpixel(av0,av1,guess=alignments[i1+step/2]-alignments[i0+step/2],localrange=LA.norm(alignments[i1+step-1]-alignments[i0]))
 						if step==len(outim)/2 :
 							dx,dy,Z=align(aliavg,av0,guess=(0,0),localrange=192)
 						else:
-							dx,dy,Z=align(aliavg,av0,guess=(xali.get_yatx_smooth(tloc,1),yali.get_yatx_smooth(tloc,1)),localrange=lrange)
+							dx,dy,Z=align(aliavg,av0,guess=guess,localrange=lrange)
 						print dx,dy,Z			
 						
 						xali.insort(tloc,dx)
