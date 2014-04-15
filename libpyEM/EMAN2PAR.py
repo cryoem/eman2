@@ -961,7 +961,7 @@ class EMMpiClient():
 
 								# enumerate all individual images in the specified list and check the cache for them
 								db=js_open_dict(self.cachedir+"/cached.json")
-								reqd=set(imgnumenum)
+								reqd=set(imgnumenum(i[1:]))
 								have=set(db[self.pathtocache(i[1])])
 								neednums=list(reqd-have)
 								if len(neednums)>0 :
