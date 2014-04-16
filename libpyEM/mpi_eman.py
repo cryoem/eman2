@@ -33,6 +33,7 @@ from cPickle import dumps,loads
 from zlib import compress,decompress
 from struct import pack,unpack
 
+# no longer used
 def mpi_dout(data):
 	"""Convert data for transmission efficiently"""
 
@@ -45,6 +46,7 @@ def mpi_dout(data):
 		else : return "O"+d2x
 
 	
+# no longer used
 def mpi_din(msg):
 	"""Unpack a data payload prepared by mpi_cout"""
 	
@@ -63,8 +65,8 @@ def mpi_eman2_send(data,dest,tag):
 	in memory may occur."""
 	from mpi import mpi_send, MPI_CHAR, MPI_COMM_WORLD
 
-	data = mpi_dout(data)
-	mpi_send(data, len(data), MPI_CHAR, dest, tag, MPI_COMM_WORLD)
+	data = dumps(data,-1)
+	mpi_send(data, len(data), MPI_CHAR, dest, tag, MPI_COMM_WORLD)		# removed use of mpi_dout/din for speed
 
 def mpi_eman2_recv(src,tag):
 	"""Synchronously receive a message from 'src' with 'tag'."""
@@ -73,7 +75,7 @@ def mpi_eman2_recv(src,tag):
 	mpi_probe(src, tag, MPI_COMM_WORLD)
 	count = mpi_get_count(MPI_CHAR)
 	msg = mpi_recv(count, MPI_CHAR, src, tag, MPI_COMM_WORLD)
-	return (mpi_din(msg),src,tag)
+	return (loads(msg),src,tag)
 	
 def mpi_bcast_send(data):
 	"""Unlike the C routine, in this python module, mpi_bcast is split into a send and a receive method. Send must be 
@@ -81,7 +83,7 @@ def mpi_bcast_send(data):
 	variable length objects."""
 	from mpi import mpi_comm_rank, mpi_bcast, MPI_CHAR, MPI_COMM_WORLD
 
-	data=mpi_dout(data)
+	data=dumps(data,-1)
 	l=pack("I",len(data))
 	rank = mpi_comm_rank(MPI_COMM_WORLD)	
 	mpi_bcast(l, len(l), MPI_CHAR, rank, MPI_COMM_WORLD)
@@ -96,4 +98,4 @@ def mpi_bcast_recv(src):
 	l = mpi_bcast(None, 4, MPI_CHAR, src, MPI_COMM_WORLD)
 	l=unpack("I",l)[0]
 	data = mpi_bcast(None, l, MPI_CHAR, src, MPI_COMM_WORLD)
-	return mpi_din(data)
+	return loads(data)

@@ -9,7 +9,7 @@ mpi_init(0,[])
 proc=mpi_comm_rank(MPI_COMM_WORLD)
 nproc=mpi_comm_size(MPI_COMM_WORLD)
 
-a=test_image()
+a=test_image_3d(type=7,size=(256,256,256))
 
 print "Running on %d/%d"%(proc,nproc)
 
@@ -29,7 +29,8 @@ else :
 
 # stage 2, broadcast EMData
 if proc==0:
-	a=test_image(1)
+#	a=test_image(1)
+	a=test_image_3d(type=7,size=(195,195,195))
 	mpi_bcast_send(a)
 	
 	allsrc=set(range(1,nproc))	# we use this to make sure we get a reply from all nodes
