@@ -75,7 +75,7 @@ def mpi_eman2_recv(src,tag):
 	mpi_probe(src, tag, MPI_COMM_WORLD)
 	count = mpi_get_count(MPI_CHAR)
 	msg = mpi_recv(count, MPI_CHAR, src, tag, MPI_COMM_WORLD)
-	return (loads(msg),src,tag)
+	return (loads(str(msg)),src,tag)
 	
 def mpi_bcast_send(data):
 	"""Unlike the C routine, in this python module, mpi_bcast is split into a send and a receive method. Send must be 
@@ -98,4 +98,4 @@ def mpi_bcast_recv(src):
 	l = mpi_bcast(None, 4, MPI_CHAR, src, MPI_COMM_WORLD)
 	l=unpack("I",l)[0]
 	data = mpi_bcast(None, l, MPI_CHAR, src, MPI_COMM_WORLD)
-	return loads(data)
+	return loads(str(data))
