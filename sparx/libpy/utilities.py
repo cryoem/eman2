@@ -3887,7 +3887,7 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 
 def findall(value, L, start=0):
 	"""
-	 return a list of all indexes of a value on the list L beginning from position start
+	 return a list of all indices of a value on the list L beginning from position start
 	"""
 	positions = []
 	lL = len(L) - 1
