@@ -79,6 +79,10 @@ class StarFile(dict):
 		
 		if os.path.isfile(filename) :
 			self.readfile()
+	def _nextline(self):
+		"""Used internally when parsing a star file to emulate readline"""
+		self.lineptr+=1
+		return self.lines[self.lineptr-1]
 	
 	def readfile(self):
 		"""This parses the STAR file, replacing any previous contents in the dictionary"""
@@ -88,15 +92,15 @@ class StarFile(dict):
 		
 		matcher=re.compile("""("[^"]+")|('[^']+')|([^\s]+)""")
 		
-		fin=file(self.filename,"r")
-		line=fin.readline().strip()
+		# read the entire file into a buffer, this dramatically simplifies the logic, even if it eats a chunk of RAM
+		self.lines=[i for i in file(self.filename,"r") if len(i.strip())!=0 and i[0]!="#"]
+		self.lineptr=0
+		
 		while 1:
-			if len(line)==0: break
-			if line[0]=="#" : 
-				try: line=fin.readline().strip()
-				except: break
-				continue		# skip comments
-			elif line[0]=="_" :				# A single key/value pair
+			try: line=self._nextline().strip()
+			except: break
+		
+			if line[0]=="_" :				# A single key/value pair
 				spl=line.split(None,1)		# split on whitespace
 				key=spl[0][1:]
 				
@@ -110,17 +114,13 @@ class StarFile(dict):
 					
 						self[key]=val
 				else:						# value starts on next line
-					line2=fin.readline()
-					if line2[0]=="#" : 
-						try: line=fin.readline().strip()
-						except: break
-						continue		# not sure if this is even legal
-					elif line2[0] in ("'",'"') :
-						self[key]=line2[1:-1]
+					line2=self._nextline()
+					if line2[0] in ("'",'"') :
+						self[key]=line2.strip()[1:-1]
 					elif line2[0]==";" :
 						val=[line2[1:]]
 						while 1:
-							try: line2=fin.readline()
+							try: line2=self._nextline()
 							except: raise Exception,"StarFile: Error found parsing multi-line string value for %s"%key
 							if line2[0]==';' : break
 							val.append(line2)
@@ -136,20 +136,26 @@ class StarFile(dict):
 			elif line[:5].lower()=="loop_":
 				loop=[]
 				self.loops.append(loop)				# add it to the list of loops immediately then update it as we go
-				while 1:							# first we read the parameter names
-					line2=fin.readline().strip()
+				# First we read the parameter names for the loop
+				while 1:
+					line2=self._nextline().strip()
 					if line2[0]=="_":
-						loop.append(line2[1:])
+						loop.append(line2.split()[0][1:])
 						self[loop[-1]]=[]			# this will hold the data values when we read them
 					else: break
+				self.lineptr-=1
 				
+				# Now we read the actual loop data elements
 				vals=[]
-				while 1:							# now we read the actual data elements
-					if line2[0]=="_" or line2.lower()[:5]=="loop_" or line2=="#": break
+				while 1:
+					try: line2=self._nextline().strip()
+					except: break
+				
+					if line2[0]=="_" or line2.lower()[:5]=="loop_" : break
 					elif line2[0]==";" :
 						val=line2[0][1:]
 						while 1:
-							line2=fin.readline()
+							line2=self._nextline()
 							if line2[0]==";":
 								break
 							val+=line2
@@ -157,7 +163,6 @@ class StarFile(dict):
 					else:
 						vals.extend([goodval(i) for i in matcher.findall(line2)])
 						if len(vals)<len(loop) :			# we may need to read multiple lines to get enough values
-							line2=fin.readline().strip()
 							continue
 						if len(vals)>len(loop) : 
 							print "mismatch"
@@ -167,15 +172,10 @@ class StarFile(dict):
 							break
 						for i in range(len(vals)): self[loop[i]].append(vals[i])
 						vals=[]
-					try: line2=fin.readline().strip()
-					except: break
-				line=line2
+				self.lineptr-=1
 			else:
 				print "StarFile: Unknown content on line :",line
 				break
-
-			try: line=fin.readline().strip()
-			except: break
 
 				
 	def writefile(self,filename=None):
