@@ -45,7 +45,7 @@ def main():
 	progname = os.path.basename(arglist[0])
 	usage = progname + """ inputvolume  locresvolume maskfile outputfile   --radius --falloff  --MPI
 
-	    Apply local filtration of local volume based on local resolution volume (sxlocres.py) within are outlined by the maskfile
+	    Locally filer a volume based on local resolution volume (sxlocres.py) within area outlined by the maskfile
 	"""
 	parser = OptionParser(usage,version=SPARXVERSION)
 
@@ -118,7 +118,7 @@ def main():
 
 		fftip(vi)  #  volume to be filtered
 
-		filteredvol = model_blank(nx,ny,nz)
+		filteredvol = model_blank(nx, ny, nz)
 
 		for z in xrange(myid,nz,number_of_proc):
 			print myid,z
@@ -129,7 +129,7 @@ def main():
 						filteredvol.set_value_at_fast(x,y,z,fft(filt_tanl(vi, cutoff, falloff) ).get_value_at(x,y,z))
 
 		mpi_barrier(MPI_COMM_WORLD)
-		reduce_EMData_to_root(filteredvol, myid, MPI_COMM_WORLD)
+		reduce_EMData_to_root(filteredvol, myid, main_node, MPI_COMM_WORLD)
 		if(myid == 0):   filteredvol.write_image(outvol)
 
 		from mpi import mpi_finalize
@@ -148,7 +148,7 @@ def main():
 			if( radius == -1 ):  radius = nn//2 -1
 			m = model_circle( radius ,nn,nn,nn)
 			outvol = args[2]
-		
+
 		elif len(args) == 4:
 			m = binarize(get_im(args[2]), 0.5)
 			outvol = args[3]
@@ -156,7 +156,6 @@ def main():
 		mc = model_blank(nn,nn,nn,1.0)-m
 
 		fft(vi)  # this is volume to be filtered
-
 
 		filteredvol = model_blank(nn,nn,nn)
 		for x in xrange(nn):
