@@ -62,6 +62,14 @@ import traceback
 # actual data storage.
 ######
 
+def goodval(vals): 
+	val=max(vals)
+	try: val=int(val)
+	except:
+		try: val=float(val)
+		except: pass
+	return val
+
 class StarFile(dict):
 	
 	def __init__(self,filename):
@@ -138,18 +146,27 @@ class StarFile(dict):
 				vals=[]
 				while 1:							# now we read the actual data elements
 					if line2[0]=="_" or line2.lower()[:5]=="loop_" or line2=="#": break
-					vals.extend(matcher.findall(line2))
-					if len(vals)<len(loop) :			# we may need to read multiple lines to get enough values
-						line2=fin.readline().strip()
-						continue
-					if len(vals)>len(loop) : 
-						print "mismatch"
-						print line2
-						print len(loop),loop
-						print len(vals),vals
-						break
-					for i in range(len(vals)): self[loop[i]].append(vals[i])
-					vals=[]
+					elif line2[0]==";" :
+						val=line2[0][1:]
+						while 1:
+							line2=fin.readline()
+							if line2[0]==";":
+								break
+							val+=line2
+						vals.append(val)
+					else:
+						vals.extend([goodval(i) for i in matcher.findall(line2)])
+						if len(vals)<len(loop) :			# we may need to read multiple lines to get enough values
+							line2=fin.readline().strip()
+							continue
+						if len(vals)>len(loop) : 
+							print "mismatch"
+							print line2
+							print len(loop),loop
+							print len(vals),vals
+							break
+						for i in range(len(vals)): self[loop[i]].append(vals[i])
+						vals=[]
 					try: line2=fin.readline().strip()
 					except: break
 				line=line2
