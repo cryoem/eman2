@@ -181,7 +181,7 @@ class StarFile(dict):
 	def writefile(self,filename=None):
 		"""Writes the contents of the current dictionary back to disk using either the existing filename, or an alternative name passed in"""
 		
-		
+		print "Sorry, writing not implemented yet"
 					
 			
 			

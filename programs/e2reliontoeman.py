@@ -39,6 +39,7 @@ import os
 import sys
 import time
 import traceback
+from EMAN2star import StarFile
 
 
 def main():
@@ -57,11 +58,22 @@ will be extracted from the STAR file and will be automatically processed through
 	#options associated with e2refine.py
 	parser.add_argument("--apix", default=0, type=float,help="The angstrom per pixel of the input particles. This argument is required if you specify the --mass argument. If unspecified (set to 0), the convergence plot is generated using either the project apix, or if not an apix of 1.", guitype='floatbox', row=16, col=0, rowspan=1, colspan=1, mode="refinement['self.pm().getAPIX()']")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-
+	parser.add_argument("--refinedefocus",  action="store_true", help="Will use EMAN2 CTF fitting to refine the defocus by SNR optimization (+-0.1 micron from the current values, no astigmatism adjustment)")
+	parser.add_argument("--refitdefocus",  action="store_true", help="Will use EMAN2 CTF fitting to refit the defocus values (+-0.1 micron, astigmatism adjusted if present in original file)")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
 
 	logid=E2init(sys.argv,options.ppid)
 
+	star=StarFile(args[0])
+	
+	micronum=1
+	for i in xrange(len(star["rlnImageName"])):
+		name=star["rlnImageName"][i].split("@")[1]
+		imgnum=int(star["rlnImageName"][i].split("@")[0])-1
+		
+
+
 	E2end(logid)
+
