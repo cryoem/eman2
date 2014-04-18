@@ -84,11 +84,15 @@ def main():
 			falloff = options.falloff
 			radius  = options.radius
 			if(radius == -1):  radius = nx//2-1
+			dis = [nx,ny,nz]
 		else:
 			falloff = 0.0
 			radius  = 0
+			dis = [0,0,0]
 		falloff = bcast_number_to_all(falloff, main_node)
 		radius  = bcast_number_to_all(radius, main_node)
+
+		dis = bcast_list_to_all(dis, source_node = main_node)
 
 		if(myid != main_node):
 			nx = int(dis[0])
@@ -98,7 +102,7 @@ def main():
 			vi = model_blank(nx,ny,nz)
 			ui = model_blank(nx,ny,nz)
 
-		m  = model_circle((min(nx,ny,nz)-wn)//2,nx,ny,nz)
+		m  = model_circle(min(nx,ny,nz)-1,nx,ny,nz)
 
 		if len(args) == 3:
 			outvol = args[2]
@@ -117,12 +121,12 @@ def main():
 		filteredvol = model_blank(nx,ny,nz)
 
 		for z in xrange(myid,nz,number_of_proc):
-
-			for x in xrange(nn):
-				for y in xrange(nn):
+			print myid,z
+			for x in xrange(nx):
+				for y in xrange(ny):
 					if(m.get_value_at(x,y,z) > 0.5):
 						cutoff = max(0.01, min(0.49, ui.get_value_at(x,y,z)))
-						filteredvol.set_value_at(x,y,z,fft(filt_tanl(vi, cutoff,falloff) ))
+						filteredvol.set_value_at_fast(x,y,z,fft(filt_tanl(vi, cutoff, falloff) ).get_value_at(x,y,z))
 
 		mpi_barrier(MPI_COMM_WORLD)
 		reduce_EMData_to_root(filteredvol, myid, MPI_COMM_WORLD)
@@ -156,11 +160,12 @@ def main():
 
 		filteredvol = model_blank(nn,nn,nn)
 		for x in xrange(nn):
+			print x
 			for y in xrange(nn):
 				for z in xrange(nn):
 					if(m.get_value_at(x,y,z) > 0.5):
 						cutoff = max(0.01, min(0.49, ui.get_value_at(x,y,z)))
-						filteredvol.set_value_at(x,y,z,fft(filt_tanl(vi, cutoff, falloff) ))
+						filteredvol.set_value_at_fast(x,y,z,fft(filt_tanl(vi, cutoff, falloff) ).get_value_at(x,y,z))
 
 		filteredvol.write_image(outvol)
 
