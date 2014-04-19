@@ -1299,6 +1299,33 @@ def adaptive_mask2D(img, nsigma = 1.0, ndilation = 3, kernel_size = 11, gauss_st
 	#mask = gauss_edge(mask, kernel_size, gauss_standard_dev)
 	return mask
 
+def cosinemask(im, radius = -1, cosine_width = 5):
+	from utilities import model_blank
+	from math import cos, sqrt, pi
+	nx = im.get_xsize()
+	ny = im.get_ysize()
+	nz = im.get_zsize()
+	if(radius < 0):
+		if(ny == 1):    radius = nx//2 - cosine_width
+		elif(nz == 1):  radius = min(nx,ny)//2 - cosine_width
+		else:           radius = min(nx,ny,nz)//2 - cosine_width
+	radius_p = radius + cosine_width
+	om = im.copy()
+	cz = nz//2
+	cy = ny//2
+	cx = nx//2
+	for z in xrange(nz):
+		tz = (z-cz)**2
+		for y in xrange(ny):
+			ty = tz + (y-cy)**2
+			for x in xrange(nx):
+				r = sqrt(ty + (x-cx)**2)
+				if(r > radius_p):
+					om.set_value_at_fast(x,y,z, 0.0)
+				elif(r>=radius):
+					om.set_value_at_fast(x,y,z, om.get_value_at(x,y,z)*(0.5 - 0.5 * cos(pi*(radius_p - r)/cosine_width )))
+					#om.set_value_at_fast(x,y,z, om.get_value_at(x,y,z)*(0.5 + 0.5 * cos(pi*(radius_p - r)/cosine_width )))
+	return om
 
 '''
 
