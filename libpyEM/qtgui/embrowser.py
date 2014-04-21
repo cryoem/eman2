@@ -51,6 +51,7 @@ import re
 import threading
 import time
 import weakref
+from matching import matches_pats
 
 def display_error(msg) :
 	print msg
@@ -1067,11 +1068,24 @@ class EMDirEntry(object):
 
 			# Weed out undesirable files
 			self.__children = []
-			if self.dirregex!=None:
-				for child in filelist:
-#					print child,self.dirregex.search(child)
-					if os.path.isdir(self.filepath+"/"+child) or self.dirregex.match(child)!=None:
-						self.__children.append(child)
+			if self.dirregex != None:
+				for child in filelist :
+#					print child, self.dirregex.search (child)
+
+					have_dir = os.path.isdir (self.filepath+"/"+child)
+
+					if isinstance (self.dirregex, str) :
+						if have_dir :
+							chl = child + ".dir"
+						else :
+							chl = child
+						matching = matches_pats (chl, self.dirregex)
+						have_dir = False
+					else :
+						matching = self.dirregex.match(child) != None
+
+					if have_dir or matching :
+						self.__children.append (child)
 			#elif self.regex:
 				#for child in filelist:
 					#if not self.regex.search(child) or child == "EMAN2DB":
@@ -1079,18 +1093,20 @@ class EMDirEntry(object):
 			else:
 				self.__children = filelist
 
-
 			if "EMAN2DB" in self.__children :
 				self.__children.remove("EMAN2DB")
 
-				if self.dirregex!=None:
-					t=["bdb:"+i for i in db_list_dicts("bdb:"+self.filepath) if self.dirregex.match(i)!=None]
-#					for i in db_list_dicts("bdb:"+self.filepath): print i,self.dirregex.search(i)
+				if self.dirregex != None:
+					if isinstance (self.dirregex, str) :
+						t = ["bdb:"+i for i in db_list_dicts("bdb:"+self.filepath) if matches_pats (i, self.dirregex)]
+					else :
+						t = ["bdb:"+i for i in db_list_dicts("bdb:"+self.filepath) if self.dirregex.match (i) != None]
+
+#					for i in db_list_dicts("bdb:"+self.filepath) : print i, self.dirregex.search (i)
 				else:
-					t=["bdb:"+i for i in db_list_dicts("bdb:"+self.filepath)]
+					t = ["bdb:"+i for i in db_list_dicts("bdb:"+self.filepath)]
 
 				self.__children.extend(t)
-
 
 			self.__children.sort()
 
@@ -2845,12 +2861,14 @@ dirregex - default "", a regular expression for filtering filenames (directory n
 		self.wpath.setText(path)
 		filt=str(self.wfilter.currentText()).strip()
 
-		if filt=="" : filt=None
+		if filt == "" : filt = None
 		else:
-			try: filt=re.compile(filt)
+			try:
+				flt = re.compile(filt)
+				filt = flt
 			except:
-				filt=None
-				QtGui.QMessageBox.warning(self,"Error","Bad filter expression")
+				filt = filt
+#				QtGui.QMessageBox.warning(self,"Error","Bad filter expression")
 
 		#if path in self.models :
 			#self.curmodel=self.models[path]
