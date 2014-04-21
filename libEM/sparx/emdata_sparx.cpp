@@ -980,6 +980,131 @@ Output: 2D 3xk real image.
 	return result;
 }
 
+
+vector < float >EMData::scale_factors(EMData * with, int beg, int end)
+{
+	ENTERFUNC;
+
+/*
+ ******************************************************
+ *DISCLAIMER
+ * 04/20/14 P.A.Penczek
+ * The University of Texas
+ * Pawel.A.Penczek@uth.tmc.edu
+ * Please do not modify
+ ******************************************************/
+/*
+*/
+	int needfree=0, kz, ky, ii;
+	float  argx, argy, argz;
+
+	if (!with) {
+		throw NullPointerException("NULL input image");
+	}
+
+
+	EMData *f = this;
+	EMData *g = with;
+
+	int nx  = f->get_xsize();
+	int ny  = f->get_ysize();
+	int nz  = f->get_zsize();
+
+	if (ny==0 && nz==0) {
+		throw ImageFormatException( "Cannot calculate for 1D images");
+	}
+
+	if (f->is_complex()) nx = (nx - 2 + f->is_fftodd()); // nx is the real-space size of the input image
+	int lsd2 = (nx + 2 - nx%2) ; // Extended x-dimension of the complex image
+
+//  Process f if real
+	EMData* fpimage = NULL;
+	if (f->is_complex()) fpimage = f;
+	else {
+		fpimage= f->norm_pad(false, 1); 
+		fpimage->do_fft_inplace();
+		needfree|=1; // Extend and do the FFT if f is real
+	} 
+
+//  Process g if real
+	EMData* gpimage = NULL;
+	if (g->is_complex()) gpimage = g;
+	else {
+		gpimage= g->norm_pad(false, 1);
+		gpimage->do_fft_inplace();
+		needfree|=2;  // Extend and do the FFT if g is real
+	}
+
+	float *d1 = fpimage->get_data();
+	float *d2 = gpimage->get_data();
+
+	int nx2 = nx/2;
+	int ny2 = ny/2;
+	int nz2 = nz/2;
+
+	float dx2 = 1.0f/float(nx2)/float(nx2);
+	float dy2 = 1.0f/float(ny2)/float(ny2);
+
+#ifdef _WIN32
+	float dz2 = 1.0f / _cpp_max(float(nz2),1.0f)/_cpp_max(float(nz2),1.0f);
+#else
+	float dz2 = 1.0f/std::max(float(nz2),1.0f)/std::max(float(nz2),1.0f);
+#endif	//_WIN32
+	int inc = end - beg + 1;
+
+	double* ret1 = new double[inc+1];
+	double* ret2 = new double[inc+1];
+	float*  lr   = new float[inc+1];
+	for (int i = 0; i < inc; i++) {
+		ret1[i] = 0; ret2[i] = 0; lr[i]=0;
+	}
+
+	for (int iz = 0; iz <= nz-1; iz++) {
+		if(iz>nz2) kz=iz-nz; else kz=iz; argz = float(kz*kz)*dz2;
+		for (int iy = 0; iy <= ny-1; iy++) {
+			if(iy>ny2) ky=iy-ny; else ky=iy; argy = argz + float(ky*ky)*dy2;
+			for (int ix = 0; ix <= lsd2-1; ix+=2) {
+			// Skip Friedel related values
+				if (ix>0 || (kz>=0 && (ky>=0 || kz!=0))) {
+					argx = 0.5f*std::sqrt(argy + float(ix*ix)*0.25f*dx2);
+					int r = Util::round(inc*2*argx);
+					if((r >= beg) && (r <= end)) {
+						ii = ix + (iy  + iz * ny)* lsd2;
+						ret1[r-beg] += d1[ii] * double(d2[ii]) + d1[ii + 1] * double(d2[ii + 1]);
+						ret2[r-beg] += d2[ii] * double(d2[ii]) + d2[ii + 1] * double(d2[ii + 1]);
+						lr[r]  += 2;
+					}
+				}
+			}
+		}
+	}
+
+	vector<float> result(inc*3);
+
+	for (int i = 0; i < inc; i++) {
+			result[i]       = ret1[i];
+			result[i+inc]   = ret2[i];
+			result[i+2*inc] = lr[i];
+	}
+
+	if (needfree&1) {
+		if (fpimage) {
+			delete fpimage;
+			fpimage = 0;
+		}
+	}
+	if (needfree&2) {
+		if (gpimage) {
+			delete gpimage;
+			gpimage = 0;
+		}
+	}
+	delete[] ret1; delete[] ret2; delete[]  lr;
+
+	EXITFUNC;
+	return result;
+}
+
 EMData* EMData::symvol(string symString) {
 	ENTERFUNC;
 	int nsym = Transform::get_nsym(symString); // number of symmetries
