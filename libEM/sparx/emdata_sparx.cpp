@@ -919,7 +919,7 @@ Output: 2D 3xk real image.
 	double* n2 = new double[inc+1];
 	float*  lr = new float[inc+1];
 	for (int i = 0; i <= inc; i++) {
-		ret[i] = 0; n1[i] = 0; n2[i] = 0; lr[i]=0;
+		ret[i] = 0.0f; n1[i] = 0.0f; n2[i] = 0.0f; lr[i]=0.0f;
 	}
 
 	for (int iz = 0; iz <= nz-1; iz++) {
@@ -936,7 +936,7 @@ Output: 2D 3xk real image.
 						ret[r] += d1[ii] * double(d2[ii]) + d1[ii + 1] * double(d2[ii + 1]);
 						n1[r]  += d1[ii] * double(d1[ii]) + d1[ii + 1] * double(d1[ii + 1]);
 						n2[r]  += d2[ii] * double(d2[ii]) + d2[ii + 1] * double(d2[ii + 1]);
-						lr[r]  += 2;
+						lr[r]  += 2.0f;
 					}
 				}
 			}
@@ -1045,18 +1045,21 @@ vector < float >EMData::scale_factors(EMData * with, int beg, int end)
 	float dx2 = 1.0f/float(nx2)/float(nx2);
 	float dy2 = 1.0f/float(ny2)/float(ny2);
 
+
 #ifdef _WIN32
 	float dz2 = 1.0f / _cpp_max(float(nz2),1.0f)/_cpp_max(float(nz2),1.0f);
+	int inc = Util::round(float( _cpp_max( _cpp_max(nx2,ny2),nz2) ));
 #else
 	float dz2 = 1.0f/std::max(float(nz2),1.0f)/std::max(float(nz2),1.0f);
+	int inc = Util::round(float(std::max(std::max(nx2,ny2),nz2) ));
 #endif	//_WIN32
-	int inc = end - beg + 1;
+	int len = end - beg + 1;
 
-	double* ret1 = new double[inc+1];
-	double* ret2 = new double[inc+1];
-	float*  lr   = new float[inc+1];
-	for (int i = 0; i < inc; i++) {
-		ret1[i] = 0; ret2[i] = 0; lr[i]=0;
+	double* ret1 = new double[len];
+	double* ret2 = new double[len];
+	float*  lr   = new float[len];
+	for (int i = 0; i < len; i++) {
+		ret1[i] = 0.0f; ret2[i] = 0.0f; lr[i]=0;
 	}
 
 	for (int iz = 0; iz <= nz-1; iz++) {
@@ -1072,20 +1075,21 @@ vector < float >EMData::scale_factors(EMData * with, int beg, int end)
 						ii = ix + (iy  + iz * ny)* lsd2;
 						ret1[r-beg] += d1[ii] * double(d2[ii]) + d1[ii + 1] * double(d2[ii + 1]);
 						ret2[r-beg] += d2[ii] * double(d2[ii]) + d2[ii + 1] * double(d2[ii + 1]);
-						lr[r]  += 2;
+						lr[r-beg]   += 2.0f;
 					}
 				}
 			}
 		}
 	}
 
-	vector<float> result(inc*3);
+	vector<float> result(len*2);
 
-	for (int i = 0; i < inc; i++) {
-			result[i]       = ret1[i];
-			result[i+inc]   = ret2[i];
-			result[i+2*inc] = lr[i];
+	for (int i = 0; i < len; i++) {
+			result[i]       = ret1[i]/lr[i];
+			result[i+len]   = ret2[i]/lr[i];
 	}
+
+	delete[] ret1; delete[] ret2; delete[]  lr;
 
 	if (needfree&1) {
 		if (fpimage) {
@@ -1099,7 +1103,6 @@ vector < float >EMData::scale_factors(EMData * with, int beg, int end)
 			gpimage = 0;
 		}
 	}
-	delete[] ret1; delete[] ret2; delete[]  lr;
 
 	EXITFUNC;
 	return result;
