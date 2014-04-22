@@ -804,6 +804,8 @@ costlist, int* curbranch);
 	static EMData* muln_img(EMData* img, EMData* img1);
 	/* out = img / img1  */
 	static EMData* divn_img(EMData* img, EMData* img1);
+	/* out = |img|^2  */
+	static EMData* squaren_img(EMData* img);
 	/* img /= Re(img1) with zero check  */
 	static EMData* divn_filter(EMData* img, EMData* img1);
 
@@ -823,6 +825,8 @@ costlist, int* curbranch);
 	static void mul_img(EMData* img, EMData* img1);
 	/* img /= img1  */
 	static void div_img(EMData* img, EMData* img1);
+	/* img = |img|^2  */
+	static void square_img(EMData* img);
 	/* img /= Re(img1) with zero check  */
 	static void div_filter(EMData* img, EMData* img1);
 

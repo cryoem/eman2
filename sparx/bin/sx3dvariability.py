@@ -241,7 +241,7 @@ def main():
 		mpi_barrier(MPI_COMM_WORLD)
 
 		if myid == main_node:
-			print_msg("%-70s:  %.2f\n"%("Finding neighboring projections lasted [s]", time()-t2))			
+			print_msg("%-70s:  %.2f\n"%("Finding neighboring projections lasted [s]", time()-t2))
 			print_msg("%-70s:  %d\n"%("Number of groups processed on main node", len(proj_list)))
 			if options.VERBOSE:
 				print "Grouping projections took: ", (time()-t2)/60	, "[min]"

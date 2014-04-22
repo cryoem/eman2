@@ -17581,6 +17581,36 @@ EMData* Util::divn_img(EMData* img, EMData* img1)
 	return img2;
 }
 
+EMData* Util::squaren_img(EMData* img)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ========= img = |img|^2 ===================== */
+
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	size_t size = (size_t)nx*ny*nz;
+	EMData * img2   = img->copy_head();
+	float *img_ptr  = img->get_data();
+	float *img2_ptr = img2->get_data();
+	if(img->is_complex()) {
+		for (size_t i=0; i<size; i+=2) {
+			img2_ptr[i]    = img_ptr[i] * img_ptr[i] + img_ptr[i+1] * img_ptr[i+1];;
+			img2_ptr[i+1]  = 0.0f;
+		}
+		img2->set_complex(true);
+		if(img->is_fftodd()) img2->set_fftodd(true); else img2->set_fftodd(false);
+	} else {
+		for (size_t i=0;i<size;++i) img_ptr[i] *= img_ptr[i];
+	}
+	img2->update();
+
+	EXITFUNC;
+	return img2;
+}
+
 EMData* Util::divn_filter(EMData* img, EMData* img1)
 {
 	ENTERFUNC;
@@ -17605,7 +17635,7 @@ EMData* Util::divn_filter(EMData* img, EMData* img1)
 		}
 	} else  throw ImageFormatException("Only Fourier image allowed");
 
-	img->update();
+	img2->update();
 
 	EXITFUNC;
 	return img2;
@@ -17700,7 +17730,7 @@ void Util::add_img2(EMData* img, EMData* img1)
 	float *img_ptr  = img->get_data();
 	float *img1_ptr = img1->get_data();
 	if(img->is_complex()) {
-		for (size_t i=0; i<size; i+=2) img_ptr[i] += img1_ptr[i] * img1_ptr[i] + img1_ptr[i+1] * img1_ptr[i+1] ;
+		for (size_t i=0; i<size; i+=2) img_ptr[i] += img1_ptr[i] * img1_ptr[i] + img1_ptr[i+1] * img1_ptr[i+1];
 	} else {
 		for (size_t i=0;i<size;++i) img_ptr[i] += img1_ptr[i]*img1_ptr[i];
 	}
@@ -17743,8 +17773,8 @@ void Util::mul_img(EMData* img, EMData* img1)
 	float *img1_ptr = img1->get_data();
 	if(img->is_complex()) {
 		for (size_t i=0; i<size; i+=2) {
-			float tmp     = img_ptr[i] * img1_ptr[i]   - img_ptr[i+1] * img1_ptr[i+1] ;
-			img_ptr[i+1]  = img_ptr[i] * img1_ptr[i+1] + img_ptr[i+1] * img1_ptr[i] ;
+			float tmp     = img_ptr[i] * img1_ptr[i]   - img_ptr[i+1] * img1_ptr[i+1];
+			img_ptr[i+1]  = img_ptr[i] * img1_ptr[i+1] + img_ptr[i+1] * img1_ptr[i];
 			img_ptr[i]    = tmp;
 
 		}
@@ -17773,8 +17803,8 @@ void Util::div_img(EMData* img, EMData* img1)
 		float  sq2;
 		for (size_t i=0; i<size; i+=2) {
 			sq2 = 1.0f/(img1_ptr[i] * img1_ptr[i]   + img1_ptr[i+1] * img1_ptr[i+1]);
-			float tmp    = sq2*(img_ptr[i] * img1_ptr[i]   + img_ptr[i+1] * img1_ptr[i+1]) ;
-			img_ptr[i+1] = sq2*(img_ptr[i+1] * img1_ptr[i] - img_ptr[i] * img1_ptr[i+1]) ;
+			float tmp    = sq2*(img_ptr[i] * img1_ptr[i]   + img_ptr[i+1] * img1_ptr[i+1]);
+			img_ptr[i+1] = sq2*(img_ptr[i+1] * img1_ptr[i] - img_ptr[i] * img1_ptr[i+1]);
 			img_ptr[i]   = tmp;
 		}
 	} else {
@@ -17784,6 +17814,33 @@ void Util::div_img(EMData* img, EMData* img1)
 
 	EXITFUNC;
 }
+
+
+void Util::square_img(EMData* img)
+{
+	ENTERFUNC;
+	/* Exception Handle */
+	if (!img) {
+		throw NullPointerException("NULL input image");
+	}
+	/* ========= img = |img|^2 ===================== */
+
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	size_t size = (size_t)nx*ny*nz;
+	float *img_ptr  = img->get_data();
+	if(img->is_complex()) {
+		for (size_t i=0; i<size; i+=2) {
+			img_ptr[i]    = img_ptr[i] * img_ptr[i] + img_ptr[i+1] * img_ptr[i+1];;
+			img_ptr[i+1]  = 0.0f;
+		}
+	} else {
+		for (size_t i=0;i<size;++i) img_ptr[i] *= img_ptr[i];
+	}
+	img->update();
+
+	EXITFUNC;
+}
+
 
 void Util::div_filter(EMData* img, EMData* img1)
 {
@@ -22992,9 +23049,9 @@ float Util::local_inner_product(EMData* image1, EMData* image2, int lx, int ly, 
 			int ky = ly +j;
 			for (int i=-lop; i<=lop; i++) {
 				int kx = lx + i;
-				nrm1 += img_ptr(kx, ky, kz)*img_ptr(kx, ky, kz);
-				nrm2 += img2_ptr(kx, ky, kz)*img2_ptr(kx, ky, kz);
-				lip  += img_ptr(kx, ky, kz)*img2_ptr(kx, ky, kz);
+				nrm1 += img_ptr(kx, ky, kz)  * img_ptr(kx, ky, kz);
+				nrm2 += img2_ptr(kx, ky, kz) * img2_ptr(kx, ky, kz);
+				lip  += img_ptr(kx, ky, kz)  * img2_ptr(kx, ky, kz);
 			}
 		}
 	}

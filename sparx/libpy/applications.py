@@ -14306,7 +14306,7 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 				sn = int(symmetry_string[1:])
 				for i in xrange( len(refrings) ):
 					if( sn%2 ==0 and abs( refrings[i].get_attr('n3') ) <1.0e-6 ):
-						#  even point-group symmetry AND theta = 90. 
+						#  even point-group symmetry AND theta = 90.0
 						refrings1.append( refrings[i] )
 					else:
 						# odd point-group symmetry AND any theta (including theta=90), OR even point-group symmetry AND theta <> 90.
