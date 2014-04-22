@@ -95,6 +95,7 @@ NOTE: This program should be run from the project directory, not from within the
 	parser.add_argument("--autofit",action="store_true",help="Runs automated CTF fitting on the input images",default=False, guitype='boolbox', row=8, col=0, rowspan=1, colspan=1, mode='autofit[True]')
 	parser.add_argument("--astigmatism",action="store_true",help="Includes astigmatism in automatic fitting",default=False, guitype='boolbox', row=8, col=1, rowspan=1, colspan=1, mode='autofit[False]')
 	parser.add_argument("--curdefocushint",action="store_true",help="Rather than doing the defocus from scratch, use existing values in the project as a starting point",default=False, guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, mode='autofit[True]')
+	parser.add_argument("--curdefocusfix",action="store_true",help="Fixes the defocus at the current determined value (if any) (+-.001um)",default=False)
 	parser.add_argument("--bgmask",type=int,help="Background is computed using a soft mask of the center/edge of each particle with the specified radius. Default radius is boxsize/2.6.",default=0)
 	parser.add_argument("--fixnegbg",action="store_true",help="Will perform a final background correction to avoid slight negative values near zeroes")
 	parser.add_argument("--computesf",action="store_true",help="Will determine the structure factor*envelope for the aggregate set of images", default=False, nosharedb=True, guitype='boolbox', row=9, col=0, rowspan=1, colspan=1, mode="autofit,tuning,gensf[True]")
@@ -478,17 +479,19 @@ def pspec_and_ctf_fit(options,debug=False):
 
 			# Fit the CTF parameters
 			if debug : print "Fit CTF"
-			if options.curdefocushint :
+			if options.curdefocushint or options.curdefocusfix:
 				try:
 					ctf=js_parms["ctf"][0]
 					curdf=ctf.defocus
-					dfhint=(curdf-0.1,curdf+0.1)
+					if options.curdefocushint: dfhint=(curdf-0.1,curdf+0.1)
+					else: dfhint=(curdf-.001,curdf+.001)
 					print "Using existing defocus as hint :",dfhint
 				except :
 					try:
 						ctf=js_parms["ctf_frame"][1]
 						curdf=ctf.defocus
-						dfhint=(curdf-0.1,curdf+0.1)
+						if options.curdefocushint: dfhint=(curdf-0.1,curdf+0.1)
+						else: dfhint=(curdf-.001,curdf+.001)
 						print "Using existing defocus from frame as hint :",dfhint
 					except:
 						dfhint=None
@@ -1523,7 +1526,7 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=
 
 	if dfhint==None : dfhint = (0.5,5.5,0.05)
 	elif isinstance(dfhint,float) : dfhint=(dfhint-.2, dfhint+.2,0.02)
-	else: dfhint=(dfhint[0],dfhint[1],0.05)
+	else: dfhint=(dfhint[0],dfhint[1],min(0.05,(dfhint[1]-dfhint[0])/5))
 	
 	ys=im_2d.get_ysize()
 	ds=1.0/(apix*ys)
@@ -1549,7 +1552,8 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=
 	bg=ctf.compute_1d_fromimage(len(ctf.background)*2, ds, bg_2d)
 	
 	for rng in (0,1):
-		if rng==1: dfhint=(ctf.defocus-0.1,ctf.defocus+0.1,0.005)	 	#2 passes
+		# second pass is +-0.1 unless the original hint range was narrower
+		if rng==1: dfhint=(max(dfhint[0],ctf.defocus-0.1),min(dfhint[1],ctf.defocus+0.1),min(dfhint[2]/2.0,0.005))
 		
 		curve=[im[i]-bg[i] for i in xrange(len(im_1d))]
 		for df in arange(dfhint[0],dfhint[1],dfhint[2]):

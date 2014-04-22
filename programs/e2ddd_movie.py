@@ -459,6 +459,8 @@ def align(s1,s2,guess=(0,0),localrange=192,verbose=0):
 	zscore=tot[dx,dy]/tot["sigma"]		# a rough Z score for the peak
 	dx-=12
 	dy-=12
+	
+	tot.write_image("tot.hdf",-1)
 	#while hypot(dx-tot["nx"]/2,dy-tot["ny"]/2)>64 :
 		#tot[dx,dy]=0
 		#dx,dy,dz=tot.calc_max_location()
