@@ -537,6 +537,7 @@ EMData* EMData::rotavg() {
 	int rmax;
     EMData* ret = new EMData();
     vector<int> saved_offsets = get_array_offsets();
+    vector<float> count;
 
 	if (ny<2 && nz <2) {
 		LOGERR("No 1D images.");
@@ -546,11 +547,9 @@ EMData* EMData::rotavg() {
     if( this->is_complex() )  {
         //  We will assume square image for the time being
         rmax = ny/2;
-         cout<<"  "<<nx<<"  "<<ny<<"  "<<nz<<"  "<<rmax<<endl;
-
         ret->set_size(rmax+1, 1, 1);
         ret->to_zero();
-        vector<float> count(rmax+1);
+        count.resize(rmax+1);
     	set_array_offsets(1,1,1);
     	int nz2 = nz/2;
     	int ny2 = ny/2;
@@ -569,6 +568,7 @@ EMData* EMData::rotavg() {
                     float frac = r - float(ir);
                     float qres = 1.0f - frac;
                     float temp = std::real(cmplx(ix,iy,iz));
+                    // cout<<"  "<<jx<<"  "<<jy<<"  "<<ir<<"  "<<temp<<"  "<<frac<<endl;
                     (*ret)(ir)   += temp*qres;
                     (*ret)(ir+1) += temp*frac;
                     count[ir]    += qres;
@@ -615,7 +615,7 @@ EMData* EMData::rotavg() {
 
         ret->set_size(rmax+1, 1, 1);
         ret->to_zero();
-        vector<float> count(rmax+1);
+        count.resize(rmax+1);
         for (int k = -nz/2; k < nz/2 + nz%2; k++) {
             if (abs( k*apix_z) > rmax*rmax_ratio ) continue;
             for (int j = -ny/2; j < ny/2 + ny%2; j++) {
@@ -632,14 +632,14 @@ EMData* EMData::rotavg() {
                 }
             }
         }
-	    for (int ir = 0; ir <= rmax; ir++) {
-#ifdef _WIN32
-	    	(*ret)(ir) /= _cpp_max(count[ir],1.0f);
-#else
-    		(*ret)(ir) /= std::max(count[ir],1.0f);
-	#endif	//_WIN32
-	    }
 	}
+	for (int ir = 0; ir <= rmax; ir++) {
+#ifdef _WIN32
+        (*ret)(ir) /= _cpp_max(count[ir],1.0f);
+#else
+        (*ret)(ir) /= std::max(count[ir],1.0f);
+#endif	//_WIN32
+    }
 	set_array_offsets(saved_offsets);
 	ret->update();
 	EXITFUNC;
@@ -6043,9 +6043,9 @@ vector<float> EMData::phase_cog()
 		SNY = SNY - ((ny/2)+1);
 		ph_cntog.push_back(SNX); ph_cntog.push_back(SNY);
 #ifdef _WIN32
-		 ph_cntog.push_back((float)Util::round(SNX)); ph_cntog.push_back((float)Util::round(SNY));
+		ph_cntog.push_back((float)Util::round(SNX)); ph_cntog.push_back((float)Util::round(SNY));
 #else
-		 ph_cntog.push_back(round(SNX)); ph_cntog.push_back(round(SNY));
+		ph_cntog.push_back(round(SNX)); ph_cntog.push_back(round(SNY));
 #endif	//_WIN32
 	} else {
 #ifdef _WIN32
