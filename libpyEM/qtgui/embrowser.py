@@ -52,6 +52,7 @@ import threading
 import time
 import weakref
 from matching import matches_pats
+from string import lower
 
 def display_error(msg) :
 	print msg
@@ -2444,10 +2445,13 @@ dirregex - default "", a regular expression for filtering filenames (directory n
 		self.wfilter.setEditable(True)
 		self.wfilter.setInsertPolicy(QtGui.QComboBox.InsertAtBottom)
 		self.wfilter.addItem("")
+		self.wfilter.addItem("help")
 		self.wfilter.addItem("(.(?!_ctf))*$")
 		self.wfilter.addItem(".*\.img")
 		self.wfilter.addItem(".*\.box")
 		self.wfilter.addItem(".*\.hdf")
+		self.wfilter.addItem(".*\.mrc")
+		self.wfilter.addItem(".*\.tiff")
 		self.wfilter.addItem(".*_ptcls$")
 		self.wtoolhbl2.addWidget(self.wfilter,5)
 
@@ -2857,11 +2861,42 @@ dirregex - default "", a regular expression for filtering filenames (directory n
 		self.updlist=[]
 		self.redrawlist=[]
 
-		self.curpath=str(path)
-		self.wpath.setText(path)
-		filt=str(self.wfilter.currentText()).strip()
+		filt = str(self.wfilter.currentText()).strip()
 
-		if filt == "" : filt = None
+		if filt != ""  and  not os.path.isdir(path) :
+			path = os.path.dirname(path)
+			if path == "" :
+				path = "."
+
+		self.curpath = str(path)
+		self.wpath.setText(path)
+
+		if filt == "" :
+			filt = None
+		elif filt == "?"  or  lower(filt) == "help" :
+			filt = None
+			help = \
+			"Enter a regular expression to filter files to see, or\n" + \
+			"enter wildcard file name patterns as in Linux 'ls' or DOS 'dir',\n" + \
+			"where you may use wildcards *, ?, %, #, or !.\n" + \
+			"    * matches any number of characters, including none\n" + \
+			"    ? matches 1 character, or none\n" + \
+			"    % matches 1 character\n" + \
+			"    # matches 1 decimal digit, 0 to 9\n" + \
+			"    ! matches 1 upper or lower case letter\n" + \
+			"The syntax is\n" + \
+			"    { pattern } [ 'not' { pattern } ]\n" + \
+			"Any patterns after the optional 'not' exclude matching files.\n" + \
+			"Folders have an implicit '.dir' extension, to match or exclude.\n" + \
+			"If a wildcard pattern fails to work, it is probably interpreted\n" + \
+			"as a regular expression, so append ' [' to it to prevent it.\n" + \
+			"Examples:\n" + \
+			"1. *.dir         - find all directories (folders)\n" + \
+			"2. * not *.dir   - find all non-directories\n" + \
+			"3. *.txt *.tiff  - find all text files or tiff files\n" + \
+			"4. *             - find all files"
+
+			QtGui.QMessageBox.warning(None, "Info", help)
 		else:
 			try:
 				flt = re.compile(filt)
