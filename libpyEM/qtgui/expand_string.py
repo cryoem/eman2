@@ -31,7 +31,7 @@
 #
 #-------------------------------------------------------------------------
 #
-# Python Function  expand_string     Level     5     Date 04/23/14
+# Python Function  expand_string     Level     6     Date 04/23/14
 #
 # Purpose:  expand_string is a Python string function to expand any
 #           environment variables (beginning with '$' and ended
@@ -47,10 +47,6 @@
 #
 # string is an input character string giving a string in which
 # environment variables should be expanded into their values.
-#
-# The string returned is a static local string of up to 2048
-# characters, so the next call to this routine will overwrite
-# the string.
 #
 # External Variables Used:  None.
 #
@@ -75,6 +71,8 @@
 # Modified by Vernon Williams, April     23, 2014,
 #    to make Python version expand_string.py from K version
 #    w_expand_string.c.
+# Modified by Vernon Williams, April     23, 2014,
+#    to remove constant blank=" " and an incorrect comment.
 #
 #--------------------------------------------------------------------------*/
 
@@ -82,8 +80,6 @@ import os
 
 def expand_string (string) :
 	# Constants:
-
-	blank  = " "
 
 	# Character to signal start of an environment variable:
 
