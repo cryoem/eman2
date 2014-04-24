@@ -108,7 +108,6 @@ sxheader.py bdb:data --params=xform.projection --zero    || exit
 #  establish initial orientations of all projection data
 mpirun -np 12 sxali3d.py  bdb:data  outdirshc/volf.hdf  outmatch --maxit=1  --ou=28 --xr=3.0 --delta=2.0 --MPI   || exit
 sxheader.py bdb:data --params=xform.projection --export=outmatch/matchparams.txt    || exit
-sxheader.py bdb:data --params=stable --one    || exit
 mpirun -np 12 sxali3d.py bdb:data poutdirshc --shc --ou=28 --xr=2.0 --delta=2.0 --maxit=100 --ref_a=S --function="[..,demo_user_funcs,ali3d_reference3]" --MPI   || exit
 
 
