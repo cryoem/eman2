@@ -54,10 +54,10 @@ def main():
 	parser.add_option("--list",    type="string",                      help="file with list of images to be used in the first column" )
 	parser.add_option("--group",   type="int",          default=-1,    help="perform reconstruction using images for a given group number (group is attribute in the header)" )
 	parser.add_option("--MPI",     action="store_true", default=False, help="use MPI version ")
-	parser.add_option("--npad",    type="int",	    default=2,     help="number of times padding (default 2)" )
+	parser.add_option("--npad",    type="int",	        default=2,     help="number of times padding (default 2)" )
 	parser.add_option("--verbose", type="int",          default=0,     help="verbose level: 0 no verbose, 1 verbose" )
-	parser.add_option("--xysize",  type="int",	    default=-1,     help="user expected size at xy direction" )
-	parser.add_option("--zsize",   type="int",	    default=-1,     help="user expected size at z direction" )
+	parser.add_option("--xysize",  type="int",	        default=-1,     help="user expected size at xy direction" )
+	parser.add_option("--zsize",   type="int",	        default=-1,     help="user expected size at z direction" )
 
 	(options,args) = parser.parse_args(arglist[1:])
 

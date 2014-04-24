@@ -1788,7 +1788,7 @@ float ctf_store_new::m_defocus, ctf_store_new::m_dza, ctf_store_new::m_azz;
 void EMData::onelinenn_ctf(int j, int n, int n2, EMData* w, EMData* bi, const Transform& tf, float mult) {
 //std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
 
-	int remove = bi->get_attr_default( "remove", 0 );
+	//int remove = bi->get_attr_default( "remove", 0 );
 
 	int jp = (j >= 0) ? j+1 : n+j+1;
 	// loop over x
@@ -1814,16 +1814,16 @@ void EMData::onelinenn_ctf(int j, int n, int n2, EMData* w, EMData* bi, const Tr
 			if (izn >= 0)  iza = izn + 1;
 			else           iza = n + izn + 1;
 
-			if (iyn >= 0) iya = iyn + 1;
-			else          iya = n + iyn + 1;
+			if (iyn >= 0)  iya = iyn + 1;
+			else           iya = n + iyn + 1;
 
-			if(remove > 0 ) {
-				cmplx(ixn,iya,iza) -= btq*ctf*mult;
-				(*w)(ixn,iya,iza)  -= ctf*ctf*mult;
-			} else {
+			//if(remove > 0 ) {
+			//	cmplx(ixn,iya,iza) -= btq*ctf*mult;
+			//	(*w)(ixn,iya,iza)  -= ctf*ctf*mult;
+			//} else {
 				cmplx(ixn,iya,iza) += btq*ctf*mult;
 				(*w)(ixn,iya,iza)  += ctf*ctf*mult;
- 			}
+ 			//}
 
 		}
 	}
