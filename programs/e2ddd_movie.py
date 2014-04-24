@@ -354,7 +354,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				aliavg=sum(outim2)
 				aliavg.mult(1.0/len(outim2))
 			
-			if options.verbose>1 : 
+			if options.verbose>2 : 
 				out=file("align.txt","w")
 				for i in xrange(xali.get_size()):
 					out.write("%1.2f\t%1.2f\n"%(xali.get_y(i),yali.get_y(i)));
@@ -365,7 +365,14 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				yali.write_file("aligny.txt")
 				t=sum(outim)
 				t.mult(1.0/len(outim2))
-				display([t,aliavg],True)
+
+			aliavg.write_image(outname[:-4]+"_aliavg.hdf",0)
+			if options.save_aligned:
+				for i,im in enumerate(outim2): im.write_image(outname[:-4]+"_align.hdf",i)
+				
+			if options.verbose>2 : display([t,aliavg],True)
+
+
 			
 		# we iterate the alignment process several times
 		if options.align_frames_countmode:
