@@ -10026,7 +10026,6 @@ def recons3d_f_MPI(prj_stack, vol_stack, fsc_file, mask, CTF=True, snr=1.0, sym=
 	eve_start = (odd_start+1)%2
 	if CTF:
 		from reconstruction import rec3D_MPI
-
 		vol,fsc = rec3D_MPI(imgdata, snr, sym, mask, fsc_file, myid, 0, 1.0, odd_start, eve_start, finfo, npad = npad)
 	else :
 		from reconstruction import rec3D_MPI_noCTF
