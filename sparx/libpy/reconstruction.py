@@ -172,10 +172,10 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weig
 
 
 def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad=4, xysize=-1, zsize=-1, mpi_comm=None):
-	from utilities import reduce_EMData_to_root, pad
-	from EMAN2 import Reconstructors
-	from utilities import iterImagesList
-	from mpi import MPI_COMM_WORLD
+	from utilities  import reduce_EMData_to_root, pad
+	from EMAN2      import Reconstructors
+	from utilities  import iterImagesList
+	from mpi        import MPI_COMM_WORLD
 	import types
 
 	if mpi_comm == None:
@@ -220,10 +220,9 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad=4, xysize=-1,
 	if not (info is None): nimg = 0
 	while prjlist.goToNext():
 		prj = prjlist.image()
-
 		active = prj.get_attr_default('active', 1)
 		if(active == 1):
-			if dopad: 
+			if dopad:
 				prj = pad(prj, imgsize,imgsize, 1, "circumference")
 			insert_slices(r, prj)
 			if( not (info is None) ):
@@ -278,11 +277,10 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, 
 
 	fftvol = EMData()
 	weight = EMData()
-
+	"""
 	if myid == 0:
-		"""
-		refvol = model_blank(bnx, bigsize, bigsize)
-		temp = fft(pad(prevol,bigsize,bigsize,bigsize,0.0))
+		model_blank(bnx, bigsize, bigsize)
+		temp = fft(pad(prevol,bigsize,bigsize,bigsize,0refvol = m.0))
 		temp.set_attr("is_complex",0)
 		st = 0.5/(bigsize*bigsize)
 		for kk in xrange(bigsize):
@@ -293,7 +291,7 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, 
 					#refvol.set_value_at_fast(ii//2,jj,kk,1.0 )
 		refvol.set_value_at_fast(0,0,0,0.0)
 		del temp
-		"""
+
 		st = rops(pad(prevol,bigsize,bigsize,bigsize,0.0))*(bigsize**6)/4.
 		from utilities import info
 		from utilities import write_text_file
@@ -303,6 +301,8 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, 
 		refvol = model_blank(bigsize,1,1,1.0)
 		for i in xrange(st.get_xsize()):  refvol.set_value_at(i,1.0/(211*st.get_value_at(i)))
 	else:  refvol = EMData()
+	"""
+	refvol = model_blank(1, 1, 1)
 	#print " DONE refvol"
 	params = {"size":imgsize, "npad":npad, "symmetry":symmetry, "fftvol":fftvol, "refvol":refvol, "weight":weight, "weighting":0, "snr":1.0}
 	r = Reconstructors.get( "nn4_ctfw", params )
@@ -310,10 +310,19 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, 
 
 	from projection import prep_vol, prgs
 	from filter import filt_ctf
-	volft,kb = prep_vol(prevol)
+	#volft,kb = prep_vol(prevol)
 
-	mask2d = model_circle(imgsize//2-2, imgsize,imgsize)
-	maskbi = model_circle(imgsize//2-2, bigsize,bigsize)
+	#mask2d = model_circle(imgsize//2-2, imgsize,imgsize)
+	#maskbi = model_circle(imgsize//2-2, bigsize,bigsize)
+	from utilities import read_text_file
+	groupkeys = read_text_file("groupkeys.txt",-1)
+	for ml in xrange(3):  groupkeys[ml] = map(int, groupkeys[ml])
+	models = [None]*len(groupkeys[0])
+	for ml in xrange(len(models)):
+		temp = read_text_file("metadata/model-%04d.txt"%groupkeys[1][ml],-1)
+		models[ml] = model_blank(len(temp[0]))
+		for lm in xrange(len(temp[0])):  models[ml].set_value_at(lm,1.0e-6/temp[2][lm])
+
 	if not (finfo is None): nimg = 0
 	ll = 0
 	while prjlist.goToNext():
@@ -321,8 +330,9 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, 
 
 		active = prj.get_attr_default('active', 1)
 		if(active == 1):
-			if ll%100 == 0:  print ll
+			if ll%100 == 0:  print "  moved  ",ll
 			ll +=1
+			"""
 			phi, theta, psi, sx, sy = get_params_proj(prj)
 			#  Make sure image is normalized properly
 			st = Util.infomask(prj, mask2d, False)
@@ -350,6 +360,7 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, 
 			#for i in xrange(st.get_xsize()):  print i,st.get_value_at(i)
 			pqdif = model_blank(bigsize,1,1,0.0)
 			for i in xrange(st.get_xsize()):  pqdif.set_value_at(i,1.0/(st.get_value_at(i)))
+			"""
 			"""
 			from fundamentals import rops_table
 			sso = rops_table(qdif)
@@ -380,7 +391,14 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, 
 			"""
 			#pqdif = model_blank((bigsize+2)//2, bigsize,1,1.0)
 			#info(pqdif,None,"pqdif")
-			prj.set_attr("sigmasq2", pqdif)
+			ml = int(prj.get_attr('data_path')[4:8])
+			"""
+			from utilities import info
+			print "models"
+			info(models[groupkeys[1].index(ml)])
+			for lm in xrange(len(temp[0])):  print models[groupkeys[1].index(ml)].get_value_at(lm)
+			"""
+			prj.set_attr("sigmasq2", models[groupkeys[1].index(ml)])
 			#if ll == 0:
 			#	write_text_file([range(bigsize),[pqdif[i] for i in xrange(bigsize)] ],"pqdif.txt")
 			#	ll+=1
@@ -394,7 +412,7 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, 
 		info.write( "Begin reducing ...\n" )
 		info.flush()
 
-	del qdif, pqdif, mask2d, maskbi
+	#del qdif, pqdif, mask2d, maskbi
 
 	reduce_EMData_to_root(fftvol, myid, comm=mpi_comm)
 	reduce_EMData_to_root(weight, myid, comm=mpi_comm)
@@ -426,7 +444,7 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 1.0, sign=1, symmetry="c1
 	     vol = do_reconstruction(filepattern, start, end, anglelist, symmetry)
 	"""
 	import types
-	from EMAN2 import Reconstructors
+	from EMAN2     import Reconstructors
 	from utilities import pad
 
 	# read first image to determine the size to use
@@ -504,10 +522,10 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None, n
 			sign: sign of the CTF 
 			symmetry: point-group symmetry to be enforced, each projection will enter the reconstruction in all symmetry-related directions.
 	"""
-	from utilities import reduce_EMData_to_root, pad
-	from EMAN2 import Reconstructors
-	from utilities import iterImagesList
-	from mpi import MPI_COMM_WORLD
+	from utilities  import reduce_EMData_to_root, pad
+	from EMAN2      import Reconstructors
+	from utilities  import iterImagesList
+	from mpi        import MPI_COMM_WORLD
 	import types
 
 	if mpi_comm == None:
@@ -547,10 +565,13 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None, n
 		r = Reconstructors.get( "nn4_ctf_rect", params )
 	r.setup()
 
-	if not (info is None): nimg = 0
+	#if not (info is None):
+	nimg = 0
 	while prjlist.goToNext():
 		prj = prjlist.image()
 		active = prj.get_attr_default('active', 1)
+		if nimg%10 == 0:  print "III  ",nimg
+		nimg +=1
 		if active == 1:
 			if dopad: 
 				prj = pad(prj, imgsize,imgsize, 1, "circumference")

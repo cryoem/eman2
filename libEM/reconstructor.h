@@ -995,7 +995,7 @@ namespace EMAN
 			d.put("snr",		EMObject::FLOAT);
 			d.put("fftvol",		EMObject::EMDATA);
 			d.put("weight",		EMObject::EMDATA);
-			d.put("weighting",      EMObject::INT);
+			d.put("weighting",  EMObject::INT);
 			return d;
 		}
 
@@ -1320,7 +1320,7 @@ namespace EMAN
 		* @exception NullPointerException if the input EMData pointer is null
 		* @exception ImageFormatException if the image is complex as opposed to real
 		*/
-		virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight);
+		virtual int insert_slice(const EMData* const slice, const Transform & euler, const float weight);
 
 		virtual EMData *finish(bool doift=true);
 
@@ -1358,7 +1358,7 @@ namespace EMAN
 
 		void setup( const string& symmetry, int size, int npad, float snr, int sign );
 
-		int insert_padfft_slice_weighted( EMData* padfft, EMData* sigmasq2, const Transform& trans);
+		int insert_padfft_slice_weighted( EMData* padfft, EMData* sigmasq2, const Transform& trans, const float weight);
 
 		//  It appears here one could add extra functions  int insert_buffed_slice( const EMData* buffer, float mult );
 
@@ -1464,7 +1464,7 @@ namespace EMAN
 		int m_sizeofprojection;
 		int m_npad;
 		int m_sign;
-	        int m_varsnr;
+	    int m_varsnr;
 		int m_weighting;
 		float m_wghta, m_wghtb;
 		float m_snr;

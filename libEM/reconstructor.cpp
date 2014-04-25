@@ -3534,7 +3534,7 @@ void nn4_ctfwReconstructor::buildNormVolume()
 
 }
 
-int nn4_ctfwReconstructor::insert_slice(const EMData* const slice, const Transform& t, const float mult)
+int nn4_ctfwReconstructor::insert_slice(const EMData* const slice, const Transform& t, const float weight)
 {
 	// sanity checks
 	if (!slice) {
@@ -3560,21 +3560,21 @@ int nn4_ctfwReconstructor::insert_slice(const EMData* const slice, const Transfo
 	Assert( mult > 0 );
 //for (int ix = 0; ix <= 20; ix++) cout <<"  "<<(*sigmasq2)(ix,1) <<"  "<<(*padfft)(ix,1);
 //cout <<endl;
-	insert_padfft_slice_weighted( padfft, sigmasq2, t );
+	insert_padfft_slice_weighted( padfft, sigmasq2, t, weight );
 
 	checked_delete( padfft );
 
 	return 0;
 }
 
-int nn4_ctfwReconstructor::insert_padfft_slice_weighted( EMData* padfft, EMData* sigmasq2, const Transform& t )
+int nn4_ctfwReconstructor::insert_padfft_slice_weighted( EMData* padfft, EMData* sigmasq2, const Transform& t, float weight )
 {
 	Assert( padfft != NULL );
 	//float tmp = padfft->get_attr_default("ctf_applied", 0);
 	//int   ctf_applied = (int) tmp;
 
 	vector<Transform> tsym = t.get_sym_proj(m_symmetry);
-	for (unsigned int isym=0; isym < tsym.size(); isym++)  m_volume->nn_ctfw(m_wptr, padfft, sigmasq2, tsym[isym]);
+	for (unsigned int isym=0; isym < tsym.size(); isym++)  m_volume->nn_ctfw(m_wptr, padfft, sigmasq2, tsym[isym], weight);
 
 	return 0;
 }
@@ -3612,11 +3612,14 @@ EMData* nn4_ctfwReconstructor::finish(bool)
 					float tmp=0.0;
 					if( m_varsnr )  tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+freq*osnr)*m_sign;
 					else {
+					    tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+osnr);
+					    /*
                         int ir = int(freq);
                         float df = freq - float(ir);
                         float add = (1.0f - df)*(*m_refvol)(ir) + df*(*m_refvol)(ir+1);
                         //cout<<"  "<<iz<<"  "<<iy<<"  "<<"  "<<ix<<"  "<<ir<<"  "<<"  "<<(*m_wptr)(ix,iy,iz)<<"  "<<add<<"  "<<endl;
 					    tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+add)*m_sign;
+					    */
 					}
 
 			if( m_weighting == ESTIMATE ) {
@@ -3664,7 +3667,7 @@ EMData* nn4_ctfwReconstructor::finish(bool)
  */
 				tmp = tmp * wght;
 				}
-				(*m_volume)(2*ix,iy,iz) *= tmp;
+				(*m_volume)(2*ix,iy,iz)   *= tmp;
 				(*m_volume)(2*ix+1,iy,iz) *= tmp;
 				}
 			}
