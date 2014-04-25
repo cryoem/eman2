@@ -32,7 +32,7 @@
 
 # This file contains functions related to running jobs in parallel in EMAN2
 
-DBUG=False		# If set will dump a bunch of debugging output, normally should be False
+DBUG=True		# If set will dump a bunch of debugging output, normally should be False
 
 import os.path
 import time
@@ -120,12 +120,12 @@ class EMTaskCustomer:
 			try: self.scratchdir=target.split(":")[2]
 			except: self.scratchdir="/tmp"
 			try:
+				# Caching no longer used at all with MPI
 				if target.split(":")[3].lower()=="nocache" :
 					self.cache=False
-					print "Caching disabled at user request"
-				else: self.cache=True
-			except: self.cache=True
-			self.handler=EMMpiTaskHandler(self.maxthreads,self.scratchdir,self.cache)
+				else: self.cache=False
+			except: self.cache=False
+			self.handler=EMMpiTaskHandler(self.maxthreads,self.scratchdir)
 		else : raise Exception,"Only 'dc', 'thread' and 'mpi' servertypes currently supported"
 
 	def __del__(self):
@@ -604,6 +604,7 @@ class EMMpiClient():
 
 		self.rankmap={}			# key=rank, value=hostname
 		self.noderanks={}		# key=hostname, value=rank. Provides one rank/node to be used when precaching
+		if DBUG : print "Run EMMpiClient in: ",os.getcwd()
 
 	def log(self,s):
 		if self.logfile!=None:
@@ -777,6 +778,7 @@ class EMMpiClient():
 						else :
 							try : self.status[data[0]]=data[1]
 							except: print "Warning: Invalid progress report :",data
+					else : print "Warning: unknown task command ",com
 					continue
 
 				time.sleep(2)
@@ -848,8 +850,10 @@ class EMMpiClient():
 	def progress_callback(self,prog):
 		""" This gets progress callbacks from the task. We need to make sure we haven't been asked
 		to exit if we get this, and we want to update the progress on rank 0 """
+		if DBUG : print "progress called",prog
 		r=mpi_iprobe(0, MPI_ANY_TAG, MPI_COMM_WORLD)		# listen for a message from rank 0
 		if r :
+			if DBUG: print "probed ",r
 			r = mpi_status()
 			com,data=mpi_eman2_recv((int)(r[0]),(int)(r[1]))[0]
 
@@ -866,9 +870,12 @@ class EMMpiClient():
 				os._exit(1)
 
 		if time.time()-self.lastupdate>120 :
+			if DBUG : print "Sending progress"
 			ret=self.mpi_send_com(0,"PROG",(self.task.taskid,prog))
 			if ret!="OK" : print "Warning: got '%s' instead of OK from my progress report"%str(ret)
 			self.lastupdate=time.time()
+
+		if DBUG : print "progress done"
 		return True
 
 	def pathtocache(self,path):
@@ -987,11 +994,11 @@ class EMMpiTaskHandler():
 	def sendcom(self,com,data=None):
 		"""Transmits a command to MPI rank 0 and waits for a single object in reply"""
 		global DBUG
-		if DBUG : self.mpiout.write("{} customer sending {}".format(local_datetime(),com))
+		if DBUG : self.mpiout.write("{} customer sending {}\n".format(local_datetime(),com))
 		dump((com,data),self.mpifile,-1)
 		self.mpifile.flush()
 
-		if DBUG : self.mpiout.write("{} customer sent".format(local_datetime(),com))
+		if DBUG : self.mpiout.write("{} customer sent\n".format(local_datetime(),com))
 		return load(self.mpifile)
 
 	def add_task(self,task):
@@ -1002,7 +1009,7 @@ class EMMpiTaskHandler():
 		dump(task,file("%s/%07d"%(self.queuedir,self.maxid),"wb"),-1)
 		ret=self.maxid
 		self.sendcom("NEWJ",self.maxid)
-		if DBUG : self.mpiout.write("{} customer NEWJ complete {}".format(local_datetime(),self.maxid))
+		if DBUG : self.mpiout.write("{} customer NEWJ complete {}\n".format(local_datetime(),self.maxid))
 
 		self.maxid+=1
 
@@ -1021,7 +1028,7 @@ class EMMpiTaskHandler():
 		"""This returns a (task,dictionary) tuple for a task, and cleans up files"""
 #		print "Retrieve ",taskid
 
-		if DBUG : self.mpiout.write("{} customer results {}".format(local_datetime(),taskid))
+		if DBUG : self.mpiout.write("{} customer results {}\n".format(local_datetime(),taskid))
 
 		try :
 			task=load(file("%s/%07d"%(self.queuedir,taskid),"rb"))

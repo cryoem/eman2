@@ -116,7 +116,7 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 		runlocaltask(options.taskin,options.taskout)
 
 	elif args[0]=="mpiclient" :
-		runinmpi(options.scratchdir,options.cache,options.verbose)
+		runinmpi(options.scratchdir,options.verbose)
 		
 	elif args[0]=="rerunall":
 		rerunall()
@@ -132,9 +132,9 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 def progcb(val):
 	return True
 
-def runinmpi(scratchdir,cache,verbose):
+def runinmpi(scratchdir,verbose):
 	"""This function can only be used when called by mpirun from a valid MPI environment"""
-	client=EMMpiClient(scratchdir,cache)
+	client=EMMpiClient(scratchdir)
 	client.test(verbose)		# don't skip this. It's necessary to identify node names
 	client.run(verbose)
 
