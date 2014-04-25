@@ -705,8 +705,7 @@ class EMMpiClient():
 						self.mpifile.flush()
 						self.log("Normal EXIT")
 						for i in range(1,self.nrank):
-							r=self.mpi_send_com(i,"EXIT")
-							if r!="OK" : print "Error: Unexpected reply when shutting down from rank %d"%i
+							r=self.mpi_eman2_send("EXIT","",i)
 
 						self.mpifile.close()
 						self.mpisock.close()
@@ -742,15 +741,9 @@ class EMMpiClient():
 						rank=self.rankjobs.index(-1)
 						if verbose>1 : print "Sending job %d to rank %d (%d idle)"%(self.nextjob,rank,self.rankjobs.count(-1))
 
-						task = load(file("%s/%07d"%(self.queuedir,self.nextjob),"rb"))
+						task = file("%s/%07d"%(self.queuedir,self.nextjob),"rb").read()		# we don't unpickle
 						self.log("Sending task %d to rank %d (%s)"%(self.nextjob,rank,str(type(task))))
-						r=self.mpi_send_com(rank,"EXEC",task)
-
-						if r=="OK" : pass
-						# The rank needs data to proceed, we get ("NEED",(file,#|min,max|(#'s)),...)
-						elif r[0]=="NEED" :
-							self.log("Error: node said it needed data. Since we no longer cache, and nodes read themselves, this makes no sense. task=%d rank=%d"%(self.nextjob,rank))
-							sys.exit(1)
+						r=self.mpi_send("EXEC",task,rank)
 
 						# if we got here, the task should be running
 						self.rankjobs[rank]=self.nextjob
@@ -761,18 +754,14 @@ class EMMpiClient():
 				# Now look for any requests from existing running jobs
 				info=mpi_iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD)
 				if info:
-					info = mpi_status()
-					data,src,tag=mpi_eman2_recv((int)(info[0]),(int)(info[1]))
-					com,data=data
+					com,data,src=mpi_eman2_recv(MPI_ANY_SOURCE)
 					if com=="DONE" :
-						mpi_eman2_send("OK",src,2)
 						taskid=self.rankjobs[src]
-						dump(data,file("%s/%07d.out"%(self.queuedir,taskid),"wb"),-1)
+						file("%s/%07d.out"%(self.queuedir,taskid),"wb").write(data)	# assume what we got back is already pickled
 						self.status[taskid]=100
 						self.rankjobs[src]=-1
 						self.log('Task %s complete on rank %d'%(taskid,src))
 					elif com=="PROG" :
-						mpi_eman2_send("OK",src,2)
 						if data[1]<0 or data[1]>99 :
 							print "Warning: Invalid progress report :",data
 						else :
@@ -790,25 +779,16 @@ class EMMpiClient():
 				r=mpi_iprobe(0, MPI_ANY_TAG, MPI_COMM_WORLD)		# listen for a message from rank 0, this one doesn't block
 				#if self.logfile!=None : self.logfile.write( "Listen response (%s)\n"%str(r))
 				if r:
-					r = mpi_status()
-					com,data=mpi_eman2_recv((int)(r[0]),(int)(r[1]))[0]
+					com,data,src=mpi_eman2_recv(0)
 
 					if com=="EXIT":
 						if verbose>1 : print "rank %d: I was just told to exit"%self.rank
-						mpi_eman2_send("OK",0,2)			# we reply immediately, assuming we will kill our job and finalize
-
 						break
-
-					if com=="CHKC":
-						self.log("ERROR: Caching disabled, but rank=%d was asked to check it"%self.rank)
-						
-					if com=="CACH":
-						self.log("ERROR: Caching disabled, but rank=%d was asked to cache something"%self.rank)
 					
 					if com=="EXEC":
 						if self.logfile!=None : self.logfile.write( "EXEC\n")
 						if verbose>1 : print "rank %d: I just got a task to execute (%s):"%(self.rank,socket.gethostname()),data
-						task=data		# just for clarity
+						task=loads(data)		# just for clarity
 						if not isinstance(task,JSTask) : raise Exception,"Non-task object passed to MPI for execution !"
 
 						self.taskfile="%s/taskexe.%d"%(self.queuedir,os.getpid())
@@ -824,8 +804,7 @@ class EMMpiClient():
 
 						# return results to rank 0
 						if verbose : print "rank %d: Process done :"%self.rank,self.task.taskid
-						r=self.mpi_send_com(0,"DONE",ret)
-						if r!="OK" : print "Warning, sent results to rank 0 and got ",r
+						r=self.mpi_eman2_send("DONE",dumps(ret,-1),0)
 
 						######## OpenMPI wasn't so hot on the idea of a process that fork()ed, even if it wasn't doing MPI directly
 						## Run the job
@@ -854,8 +833,7 @@ class EMMpiClient():
 		r=mpi_iprobe(0, MPI_ANY_TAG, MPI_COMM_WORLD)		# listen for a message from rank 0
 		if r :
 			if DBUG: print "probed ",r
-			r = mpi_status()
-			com,data=mpi_eman2_recv((int)(r[0]),(int)(r[1]))[0]
+			com,data,src=mpi_eman2_recv(0)
 
 			if com=="EXIT":
 				print "rank %d: I was just told to exit during processing"%self.rank
@@ -871,8 +849,7 @@ class EMMpiClient():
 
 		if time.time()-self.lastupdate>120 :
 			if DBUG : print "Sending progress"
-			ret=self.mpi_send_com(0,"PROG",(self.task.taskid,prog))
-			if ret!="OK" : print "Warning: got '%s' instead of OK from my progress report"%str(ret)
+			self.mpi_eman2_send("PROG",(self.task.taskid,prog),0)
 			self.lastupdate=time.time()
 
 		if DBUG : print "progress done"

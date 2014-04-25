@@ -84,6 +84,9 @@ originalstdout = sys.stdout
 # Aliases
 EMData.get=EMData.get_value_at
 EMData.set=EMData.set_value_at
+EMData.numpy=EMNumPy.em2numpy
+from_numpy=EMNumPy.numpy2em
+to_numpy=EMNumPy.em2numpy
 
 def emdata_to_string(self):
 	"""This returns a compressed string representation of the EMData object, suitable for storage
@@ -1840,24 +1843,25 @@ def clear_dead_cudajobs():
 			print "removing deadfile ", lock
 			os.unlink(lock)
 
-def set_emdata_array(img, array):
-	"""
-	Return a new EMData object, set its data with a list of float, all all attribute are the same as input image.
-	The array's size must be the same as the img's size, i.e. nx*ny or nx*ny*nz.
-	img - a EMData object
-	array - a list of float data
-	"""
-	import numpy
-	dict = img.get_attr_dict()
+### Very odd function, I can't find it used anywhere, so I'm commenting it out.
+#def set_emdata_array(img, array):
+	#"""
+	#Return a new EMData object, set its data with a list of float, all all attribute are the same as input image.
+	#The array's size must be the same as the img's size, i.e. nx*ny or nx*ny*nz.
+	#img - a EMData object
+	#array - a list of float data
+	#"""
+	#import numpy
+	#dct = img.get_attr_dict()
 
-	if len(array) != dict['nz']*dict['ny']*dict['nx']:
-		print "Error: Array's size does not match nx*ny*nz"
-		return
+	#if len(array) != dict['nz']*dict['ny']*dict['nx']:
+		#print "Error: Array's size does not match nx*ny*nz"
+		#return
 
-	numpy_array = numpy.reshape(numpy.array(array, numpy.float32), (dict['nz'], dict['ny'], dict['nx']))
-	new_img = EMNumPy.numpy2em(numpy_array)
-	new_img.set_attr_dict(dict)
-	return new_img
+	#numpy_array = numpy.reshape(numpy.array(array, numpy.float32), (dct['nz'], dct['ny'], dct['nx']))
+	#new_img = EMNumPy.numpy2em(numpy_array)
+	#new_img.set_attr_dict(dct)
+	#return new_img
 
 def initializeCUDAdevice():
 	# Initialize CUDA upon EMAN2 import. If cuda is not compiled an error will be thrown an nothing will happen
