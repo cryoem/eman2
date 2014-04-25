@@ -63,13 +63,14 @@ def mpi_eman2_send(com,data,dest):
 	"""Synchronously send 'data' to 'dest' with 4 char string command flag com. data may be any pickleable type.
 	Compression and pickling will be performed on the fly when deemed useful. Note that data duplication
 	in memory may occur."""
-	from mpi import mpi_send, MPI_CHAR, MPI_COMM_WORLD
+	from mpi import mpi_send, MPI_CHAR, MPI_COMM_WORLD,mpi_comm_rank
+	rank = mpi_comm_rank(MPI_COMM_WORLD)	
 
 	if isinstance(data,str) :
 		# tag 1 used for message "header" containing length of subsequent message with different tag
 		data = dumps(data,-1)
-		l=pack("4sII",com,len(data),3)
-		mpi_send(l,8,MPI_CHAR,dest,1,MPI_COMM_WORLD)		# Blocking issues with probe/get_count, so sending length packet, stupid, but apparently necessary
+		l=pack("4sIII",com,len(data),rank,3)
+		mpi_send(l,16,MPI_CHAR,dest,1,MPI_COMM_WORLD)		# Blocking issues with probe/get_count, so sending length packet, stupid, but apparently necessary
 
 		# tag 3 used for unpickled strings
 		mpi_send(data, len(data), MPI_CHAR, dest, 2, MPI_COMM_WORLD)		# removed use of mpi_dout/din for speed
@@ -77,8 +78,8 @@ def mpi_eman2_send(com,data,dest):
 	else:
 		# tag 1 used for message "header" containing length of subsequent message with different tag
 		data = dumps(data,-1)
-		l=pack("4sII",com,len(data),2)
-		mpi_send(l,8,MPI_CHAR,dest,1,MPI_COMM_WORLD)		# Blocking issues with probe/get_count, so sending length packet, stupid, but apparently necessary
+		l=pack("4sIII",com,len(data),rank,2)
+		mpi_send(l,16,MPI_CHAR,dest,1,MPI_COMM_WORLD)		# Blocking issues with probe/get_count, so sending length packet, stupid, but apparently necessary
 
 		# tag 2 used for a single pickled data block
 		mpi_send(data, len(data), MPI_CHAR, dest, 2, MPI_COMM_WORLD)		# removed use of mpi_dout/din for speed
@@ -87,13 +88,13 @@ def mpi_eman2_recv(src):
 	"""Synchronously receive a message from 'src' with 'tag'."""
 	from mpi import mpi_probe, mpi_get_count, mpi_recv, MPI_CHAR, MPI_COMM_WORLD
 	
-	lmsg=mpi_recv(4,MPI_CHAR, src,1,MPI_COMM_WORLD)		# first get the message length
-	com,l,tag=unpack("4sII",lmsg)
+	lmsg=mpi_recv(16,MPI_CHAR, src,1,MPI_COMM_WORLD)		# first get the message length
+	com,l,srank,tag=unpack("4sIII",lmsg)
 	
 	msg=mpi_recv(l,MPI_CHAR, src,tag,MPI_COMM_WORLD)	# then the message
 	
-	if tag==2 : return (com,loads(str(msg.data)),src)
-	elif tag==3 : return (com,str(msg.data),src)
+	if tag==2 : return (com,loads(str(msg.data)),srank)
+	elif tag==3 : return (com,str(msg.data),srank)
 	
 def mpi_bcast_send(data):
 	"""Unlike the C routine, in this python module, mpi_bcast is split into a send and a receive method. Send must be 

@@ -589,6 +589,7 @@ class EMMpiClient():
 
 	def __init__(self,scratchdir="/tmp"):
 		mpi_init(0, [])
+		mpi_barrier(MPI_COMM_WORLD)		# make sure all ranks are up before we start
 		self.rank=mpi_comm_rank(MPI_COMM_WORLD)
 		self.nrank=mpi_comm_size(MPI_COMM_WORLD)
 		self.scratchdir=scratchdir
@@ -626,13 +627,9 @@ class EMMpiClient():
 			while (1):
 				if len(allsrc)==0 : break
 				mpi_probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD)
-				starr = mpi_status()
-				src = (int)(starr[0])
-				tag = (int)(starr[1])
-				l = mpi_get_count(MPI_CHAR)
-				b=mpi_eman2_recv(src,tag)[0]
-				self.log("Rank %d = %s"%(src,str(b)[3:]))
-				if b[:2]!="OK" :
+				com,b,src=mpi_eman2_recv(MRC_ANY_SOURCE)
+				self.log("Rank %d = %s"%(src,b))
+				if com!="OK  " :
 					print "MPI: Failed receive from node=%d"%src
 					mpi_finalize()
 					sys.stderr.flush()
@@ -652,14 +649,7 @@ class EMMpiClient():
 				sys.stderr.flush()
 				sys.stdout.flush()
 				os._exit(1)
-			mpi_eman2_send("OK "+socket.gethostname(),0,0)
-
-	def mpi_send_com(self,target,com,data=None):
-		"""Syncronously sends a command to a specified target rank as a tuple, and waits for a
-		single object in reply (which is returned)."""
-
-		mpi_eman2_send((com,data),target,1)
-		return mpi_eman2_recv(target,2)[0]
+			mpi_eman2_send("OK  ",socket.gethostname(),0)
 
 	def run(self,verbose):
 
