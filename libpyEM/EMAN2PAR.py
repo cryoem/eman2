@@ -32,7 +32,7 @@
 
 # This file contains functions related to running jobs in parallel in EMAN2
 
-DBUG=True		# If set will dump a bunch of debugging output, normally should be False
+DBUG=False		# If set will dump a bunch of debugging output, normally should be False
 
 import os.path
 import time
