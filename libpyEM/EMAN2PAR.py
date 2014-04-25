@@ -32,7 +32,7 @@
 
 # This file contains functions related to running jobs in parallel in EMAN2
 
-DBUG=False		# If set will dump a bunch of debugging output, normally should be False
+DBUG=True		# If set will dump a bunch of debugging output, normally should be False
 
 import os.path
 import time
@@ -627,7 +627,7 @@ class EMMpiClient():
 			while (1):
 				if len(allsrc)==0 : break
 				mpi_probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD)
-				com,b,src=mpi_eman2_recv(MRC_ANY_SOURCE)
+				com,b,src=mpi_eman2_recv(MPI_ANY_SOURCE)
 				self.log("Rank %d = %s"%(src,b))
 				if com!="OK  " :
 					print "MPI: Failed receive from node=%d"%src

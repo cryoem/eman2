@@ -10,7 +10,7 @@ mpi_barrier(MPI_COMM_WORLD)
 proc=mpi_comm_rank(MPI_COMM_WORLD)
 nproc=mpi_comm_size(MPI_COMM_WORLD)
 
-a=test_image_3d(type=7,size=(256,256,256))
+a=test_image_3d(type=7,size=(64,64,64))
 
 print "Running on %d/%d"%(proc,nproc)
 
@@ -36,7 +36,7 @@ else :
 # stage 2, broadcast EMData
 if proc==0:
 #	a=test_image(1)
-	a=test_image_3d(type=7,size=(195,195,195))
+	a=test_image_3d(type=7,size=(256,256,256))
 	print "Stage 2, broadcast test"
 	print "Rank ",
 	mpi_bcast_send(a)
@@ -47,7 +47,7 @@ if proc==0:
 		mpi_probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD)
 		
 		com,data,src=mpi_eman2_recv(MPI_ANY_SOURCE)
-		print i,
+		print src,
 		stdout.flush()
 
 		allsrc.remove(src)
@@ -58,11 +58,11 @@ else:
 	mpi_eman2_send("DATA",a,0)
 
 mpi_barrier(MPI_COMM_WORLD)
-print "Stage 2, broadcast test complete"
 
 mpi_finalize()
 
 if proc==0:
+	print "\nStage 2, broadcast test complete"
 	print "done"
 
 	print "\nIf you didn't see any errors above, then the test was a success."
