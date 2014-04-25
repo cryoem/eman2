@@ -68,12 +68,11 @@ def mpi_eman2_send(com,data,dest):
 
 	if isinstance(data,str) :
 		# tag 1 used for message "header" containing length of subsequent message with different tag
-		data = dumps(data,-1)
 		l=pack("4sIII",com,len(data),rank,3)
 		mpi_send(l,16,MPI_CHAR,dest,1,MPI_COMM_WORLD)		# Blocking issues with probe/get_count, so sending length packet, stupid, but apparently necessary
 
 		# tag 3 used for unpickled strings
-		mpi_send(data, len(data), MPI_CHAR, dest, 2, MPI_COMM_WORLD)		# removed use of mpi_dout/din for speed
+		mpi_send(data, len(data), MPI_CHAR, dest, 3, MPI_COMM_WORLD)		# removed use of mpi_dout/din for speed
 		
 	else:
 		# tag 1 used for message "header" containing length of subsequent message with different tag
@@ -91,7 +90,7 @@ def mpi_eman2_recv(src):
 	lmsg=mpi_recv(16,MPI_CHAR, src,1,MPI_COMM_WORLD)		# first get the message length
 	com,l,srank,tag=unpack("4sIII",lmsg)
 	
-	msg=mpi_recv(l,MPI_CHAR, src,tag,MPI_COMM_WORLD)	# then the message
+	msg=mpi_recv(l,MPI_CHAR, srank,tag,MPI_COMM_WORLD)	# then the message
 	
 	if tag==2 : return (com,loads(str(msg.data)),srank)
 	elif tag==3 : return (com,str(msg.data),srank)

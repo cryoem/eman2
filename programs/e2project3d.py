@@ -64,11 +64,11 @@ class EMParallelProject3D:
 		self.modeln=modeln
 
 		from EMAN2PAR import EMTaskCustomer
-		etc=EMTaskCustomer(options.parallel)
+		self.etc=EMTaskCustomer(options.parallel)
 		print "Precache ",fsp
-		etc.precache([fsp])
+		self.etc.precache([fsp])
 
-		self.num_cpus = etc.cpu_est()
+		self.num_cpus = self.etc.cpu_est()
 		print self.num_cpus," total CPUs available"
 		if self.num_cpus > 64: # upper limit
 			self.num_cpus = 64
@@ -94,7 +94,7 @@ class EMParallelProject3D:
 		return self.__task_options
 
 	def execute(self):
-		from EMAN2PAR import EMTaskCustomer
+#		from EMAN2PAR import EMTaskCustomer
 
 		if len(self.options.parallel) > 1:
 			self.__init_memory(self.options)
@@ -109,7 +109,7 @@ class EMParallelProject3D:
 			first = 0
 			task_customers = []
 			tids = []
-			self.etc=EMTaskCustomer(self.options.parallel)
+#			self.etc=EMTaskCustomer(self.options.parallel)
 			for i in xrange(0,num_tasks):
 				last = first+eulers_per_task
 				if resid_eulers > 0:

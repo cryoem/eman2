@@ -589,7 +589,6 @@ class EMMpiClient():
 
 	def __init__(self,scratchdir="/tmp"):
 		mpi_init(0, [])
-		mpi_barrier(MPI_COMM_WORLD)		# make sure all ranks are up before we start
 		self.rank=mpi_comm_rank(MPI_COMM_WORLD)
 		self.nrank=mpi_comm_size(MPI_COMM_WORLD)
 		self.scratchdir=scratchdir
@@ -606,6 +605,7 @@ class EMMpiClient():
 		self.rankmap={}			# key=rank, value=hostname
 		self.noderanks={}		# key=hostname, value=rank. Provides one rank/node to be used when precaching
 		if DBUG : print "Run EMMpiClient in: ",os.getcwd()
+		mpi_barrier(MPI_COMM_WORLD)		# make sure all ranks are up before we start
 
 	def log(self,s):
 		if self.logfile!=None:
@@ -617,6 +617,7 @@ class EMMpiClient():
 		then waiting for an OK response."""
 
 		if verbose and self.rank==0: print "Testing MPI Communications"
+		mpi_barrier(MPI_COMM_WORLD)		# make sure all ranks are up before we start
 
 		# A little test to make sure MPI communications are really established. Also identifies node names
 		# for each rank
@@ -650,6 +651,9 @@ class EMMpiClient():
 				sys.stdout.flush()
 				os._exit(1)
 			mpi_eman2_send("OK  ",socket.gethostname(),0)
+
+		mpi_barrier(MPI_COMM_WORLD)		# make sure all ranks are done before we move on
+
 
 	def run(self,verbose):
 
@@ -695,7 +699,7 @@ class EMMpiClient():
 						self.mpifile.flush()
 						self.log("Normal EXIT")
 						for i in range(1,self.nrank):
-							r=self.mpi_eman2_send("EXIT","",i)
+							r=mpi_eman2_send("EXIT","",i)
 
 						self.mpifile.close()
 						self.mpisock.close()
@@ -733,7 +737,7 @@ class EMMpiClient():
 
 						task = file("%s/%07d"%(self.queuedir,self.nextjob),"rb").read()		# we don't unpickle
 						self.log("Sending task %d to rank %d (%s)"%(self.nextjob,rank,str(type(task))))
-						r=self.mpi_send("EXEC",task,rank)
+						r=mpi_eman2_send("EXEC",task,rank)
 
 						# if we got here, the task should be running
 						self.rankjobs[rank]=self.nextjob
@@ -779,7 +783,7 @@ class EMMpiClient():
 						if self.logfile!=None : self.logfile.write( "EXEC\n")
 						if verbose>1 : print "rank %d: I just got a task to execute (%s):"%(self.rank,socket.gethostname()),data
 						task=loads(data)		# just for clarity
-						if not isinstance(task,JSTask) : raise Exception,"Non-task object passed to MPI for execution !"
+						if not isinstance(task,JSTask) : raise Exception,"Non-task object passed to MPI for execution ! (%s)"%str(type(task))
 
 						self.taskfile="%s/taskexe.%d"%(self.queuedir,os.getpid())
 						self.taskout="%s/taskout.%d"%(self.queuedir,os.getpid())
@@ -794,7 +798,7 @@ class EMMpiClient():
 
 						# return results to rank 0
 						if verbose : print "rank %d: Process done :"%self.rank,self.task.taskid
-						r=self.mpi_eman2_send("DONE",dumps(ret,-1),0)
+						r=mpi_eman2_send("DONE",dumps(ret,-1),0)
 
 						######## OpenMPI wasn't so hot on the idea of a process that fork()ed, even if it wasn't doing MPI directly
 						## Run the job
@@ -839,7 +843,7 @@ class EMMpiClient():
 
 		if time.time()-self.lastupdate>120 :
 			if DBUG : print "Sending progress"
-			self.mpi_eman2_send("PROG",(self.task.taskid,prog),0)
+			mpi_eman2_send("PROG",(self.task.taskid,prog),0)
 			self.lastupdate=time.time()
 
 		if DBUG : print "progress done"

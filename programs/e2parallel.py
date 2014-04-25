@@ -134,6 +134,8 @@ def progcb(val):
 
 def runinmpi(scratchdir,verbose):
 	"""This function can only be used when called by mpirun from a valid MPI environment"""
+#	from mpi import *
+#	mpi_barrier(MPI_COMM_WORLD)
 	client=EMMpiClient(scratchdir)
 	client.test(verbose)		# don't skip this. It's necessary to identify node names
 	client.run(verbose)
