@@ -209,7 +209,7 @@ def main():
 	if options.isacgroup>-1:
 		nargs = len(args)
 		if nargs != 3:
-			ERROR("Three files needed on impurt!", "isacgroup", 1)
+			ERROR("Three files needed on input!", "isacgroup", 1)
 			return
 		from utilities import get_im
 		instack = args[0]
