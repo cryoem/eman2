@@ -1863,7 +1863,7 @@ void EMData::onelinenn_ctfw(int j, int n, int n2, EMData* w, EMData* bi, EMData*
 			else          iya = n + iyn + 1;
 
             // linear interpolation of 1D sigmasq2
-            float rr = std::sqrt(float(r2))/2.0f;
+            float rr = std::sqrt(float(r2));
             int   ir = int(rr);
             float df = rr - float(ir);
             float mult = (1.0f - df)*(*sigmasq2)(ir) + df*(*sigmasq2)(ir+1);
