@@ -54,26 +54,26 @@ def main():
 
 	Functionality:
 
-	1.  phase flip a stack of images and write output to new file:
+	1.  Phase flip a stack of images and write output to new file:
 	sxprocess.py input_stack.hdf output_stack.hdf --phase_flip
 	
-	2.  resample (decimate or interpolate up) images (2D or 3D) in a stack to change the pixel size.
+	2.  Resample (decimate or interpolate up) images (2D or 3D) in a stack to change the pixel size.
 	    The window size will change accordingly.
 	sxprocess input.hdf output.hdf  --changesize --ratio=0.5
 
-	3.  compute average power spectrum of a stack of 2D images with optional padding (option wn) with zeroes.
+	3.  Compute average power spectrum of a stack of 2D images with optional padding (option wn) with zeroes.
 	sxprocess.py input_stack.hdf powerspectrum.hdf --pw [--wn=1024]
 
 	4.  Order a 2-D stack of image based on pair-wise similarity (computed as a cross-correlation coefficent).
 	sxprocess.py input_stack.hdf output_stack.hdf --order
 
-	5. generate a stack of projections bdb:data and micrographs with prefix mic (i.e., mic0.hdf, mic1.hdf etc) from structure input_structure.hdf, with CTF applied to both projections and micrographs:
+	5.  Generate a stack of projections bdb:data and micrographs with prefix mic (i.e., mic0.hdf, mic1.hdf etc) from structure input_structure.hdf, with CTF applied to both projections and micrographs:
 	sxprocess.py input_structure.hdf data mic --generate_projections format="bdb":apix=5.2:CTF=True:boxsize=64 	
 
-    6. Retrieve original image numbers in the selected ISAC group (here group 12 from generation 3):
+    6.  Retrieve original image numbers in the selected ISAC group (here group 12 from generation 3):
     sxprocess.py  bdb:test3 class_averages_generation_3.hdf  list3_12.txt --isacgroup=12 --params=myid
 
-    . Adjust rotationally averaged power spectrum of an image to that of a reference image or a reference 1D power spectrum stored in an ASCII file.
+    7.  Adjust rotationally averaged power spectrum of an image to that of a reference image or a reference 1D power spectrum stored in an ASCII file.
     	Optionally use a tangent low-pass filter.  Also works for a stack of images, in which case the output is also a stack.
     sxprocess.py  vol.hdf ref.hdf  avol.hf < 0.25 0.2> --adjpw
     sxprocess.py  vol.hdf pw.txt  avol.hf < 0.25 0.2> --adjpw
