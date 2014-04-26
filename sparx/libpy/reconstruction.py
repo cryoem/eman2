@@ -255,7 +255,7 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad=4, xysize=-1,
 def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, mpi_comm=None):
 	from utilities     import reduce_EMData_to_root, pad, get_params_proj
 	from EMAN2         import Reconstructors
-	from utilities     import iterImagesList, model_blank, model_circle
+	from utilities     import iterImagesList, model_blank, model_circle, reshape_1d
 	from fundamentals  import fft, rops
 	from mpi           import MPI_COMM_WORLD
 	import types
@@ -302,6 +302,7 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, 
 		for i in xrange(st.get_xsize()):  refvol.set_value_at(i,1.0/(211*st.get_value_at(i)))
 	else:  refvol = EMData()
 	"""
+	print "   NEW"
 	refvol = model_blank(1, 1, 1)
 	#print " DONE refvol"
 	params = {"size":imgsize, "npad":npad, "symmetry":symmetry, "fftvol":fftvol, "refvol":refvol, "weight":weight, "weighting":0, "snr":1.0}
