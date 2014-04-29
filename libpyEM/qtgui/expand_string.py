@@ -31,7 +31,7 @@
 #
 #-------------------------------------------------------------------------
 #
-# Python Function  expand_string     Level     6     Date 04/23/14
+# Python Function  expand_string     Level     7     Date 04/29/14
 #
 # Purpose:  expand_string is a Python string function to expand any
 #           environment variables (beginning with '$' and ended
@@ -73,6 +73,11 @@
 #    w_expand_string.c.
 # Modified by Vernon Williams, April     23, 2014,
 #    to remove constant blank=" " and an incorrect comment.
+# Modified by Vernon Williams, April     29, 2014,
+#    to make more efficient by removing unnecessary variables outlen,
+#    envlen, vallen, and iv and by removing loop to concatenate envval
+#    to outstr character by character and concatenating the whole string
+#    instead, to add constant null_string.    
 #
 #--------------------------------------------------------------------------*/
 
@@ -80,6 +85,8 @@ import os
 
 def expand_string (string) :
 	# Constants:
+
+	null_string = ""
 
 	# Character to signal start of an environment variable:
 
@@ -91,7 +98,6 @@ def expand_string (string) :
 
 	gotenv = False
 	inplen = len (string)
-	outlen = 0
 	outstr = ""
 
 	for ii in xrange (0, inplen + 1) :
@@ -104,40 +110,32 @@ def expand_string (string) :
 			if ch in envend :
 				gotenv = (ch == envbeg)
 
-				if envnam == "" :
-					envval = ""
+				if envnam == null_string :
+					envval = null_string
 
 					error  = False
 				else :
 					if envnam in os.environ :
 						envval = os.getenv (envnam)
 					else :
-						envval = ""
+						envval = null_string
 
 					error  = False
 
 				if not error :
-					vallen = len (envval)
+					outstr += envval
 
-					for iv in xrange (0, vallen) :
-						outstr += envval [iv]
-						outlen += 1
 				if gotenv :
-					envnam = ""
-					envlen = 0
+					envnam = null_string
 				else :
 					outstr += ch
-					outlen += 1
 			else :
 				envnam += ch
-				envlen += 1
 		else :
 			if ch == envbeg :
 				gotenv = True
-				envlen = 0
-				envnam = ""
+				envnam = null_string
 			else :
 				outstr += ch
-				outlen += 1
 
 	return outstr
