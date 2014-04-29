@@ -51,6 +51,7 @@ import threading
 import time
 import weakref
 from matching import matches_pats
+from expand_string import expand_string
 from string import lower
 
 #---------------------------------------------------------------------------
@@ -3174,6 +3175,8 @@ class EMBrowserWidget(QtGui.QWidget) :
 		if path != ""  and  path[0] == ":" :
 			os.system(path[1:])
 			return
+
+		path = expand_string(path)
 
 		if path == "" :
 			path = "."
