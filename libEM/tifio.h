@@ -57,6 +57,7 @@ namespace EMAN
 
 		DEFINE_IMAGEIO_FUNC;
 		static bool is_valid(const void *first_block);
+		int get_nimg();
 
 	  private:
 		enum
@@ -68,6 +69,7 @@ namespace EMAN
 		string filename;
 		IOMode rw_mode;
 		TIFF *tiff_file;
+		int nimg;
 		unsigned short bitspersample;
 		unsigned short photometric;
 		bool is_big_endian;
