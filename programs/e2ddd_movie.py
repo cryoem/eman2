@@ -313,7 +313,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			
 			aliavg=sum(outim)				# we start with a simple average of all frames
 			
-			for it in xrange(2):
+			for it in xrange(3):
 				step=len(outim)		# coarsest search aligns the first 1/2 of the images against the second, step=step/2 each cycle
 				xali=XYData()		# this will contain the alignments which are hierarchically estimated and improved
 				yali=XYData()		# x is time in both cases, y is x or y
