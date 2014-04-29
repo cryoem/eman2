@@ -54,7 +54,7 @@ namespace {
 TiffIO::TiffIO(string tiff_filename, IOMode rw)
 :	filename(tiff_filename), rw_mode(rw), tiff_file(0),
 	bitspersample(0), photometric(0), initialized(false),
-	rendermin(0.0f), rendermax(0.0f)
+	rendermin(0.0f), rendermax(0.0f), nimg(1)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();
 }
@@ -82,8 +82,9 @@ void TiffIO::init()
 		throw ImageReadException(filename, "open TIFF");
 	}
 
-	if( !is_new_file ) {
+	if (! is_new_file) {
 		char buf[64];
+
 		if (fread(buf, sizeof(buf), 1, tmp_in) != 1) {
 			throw ImageReadException(filename, "first block");
 		}
@@ -105,18 +106,19 @@ void TiffIO::init()
 
 	TIFFSetWarningHandler(0);
 
-	if( rw_mode == ImageIO::READ_ONLY ) {
+	if (rw_mode == ImageIO::READ_ONLY) {
 		tiff_file = TIFFOpen(filename.c_str(), "r");
 
-		if (!tiff_file) {
+		if (! tiff_file) {
 			throw ImageReadException(filename, "open TIFF");
 		}
 
 		TIFFGetField(tiff_file, TIFFTAG_BITSPERSAMPLE, &bitspersample);
 
 		if (bitspersample != CHAR_BIT &&
-				bitspersample != (CHAR_BIT * sizeof(short)) &&
-				bitspersample != (CHAR_BIT * sizeof(float)) ) {
+			bitspersample != (CHAR_BIT * sizeof(short)) &&
+			bitspersample != (CHAR_BIT * sizeof(float)) ) {
+
 			char desc[256];
 			sprintf(desc, "invalid %d bits. only %d-bit and %d-bit TIFF are supported",
 					bitspersample, CHAR_BIT, (int)(CHAR_BIT * sizeof(short)));
@@ -125,9 +127,18 @@ void TiffIO::init()
 	}
 	else {
 		tiff_file = TIFFOpen(filename.c_str(), "w");
-		if (!tiff_file) {
+
+		if (! tiff_file) {
 			throw ImageReadException(filename, "open TIFF");
 		}
+	}
+
+	if (tiff_file) {
+		nimg = 0;
+
+		do {
+			nimg++;
+		} while (TIFFReadDirectory(tiff_file));
 	}
 
 	EXITFUNC;
@@ -138,7 +149,7 @@ bool TiffIO::is_valid(const void *first_block)
 	ENTERFUNC;
 	bool result = false;
 
-	if (!first_block) {
+	if (! first_block) {
 		result = false;
 	}
 	else {
@@ -152,20 +163,24 @@ bool TiffIO::is_valid(const void *first_block)
 	return result;
 }
 
+int TiffIO::get_nimg()
+{
+	init();
+
+	return nimg;
+}
+
 int TiffIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
 	init();
 
-	//single image format, index can only be zero
-	if(image_index == -1) {
+	if (image_index == -1) {
 		image_index = 0;
 	}
 
-	if(image_index != 0) {
-		throw ImageReadException(filename, "no stack allowed for MRC image. For take 2D slice out of 3D image, read the 3D image first, then use get_clip().");
-	}
+	TIFFSetDirectory(tiff_file, image_index);
 
 	int nx = 0;
 	int ny = 0;
@@ -196,6 +211,7 @@ int TiffIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	dict["ny"] = ylen;
 	dict["nz"] = 1;
 
+	dict["nimg"] = nimg;
 	dict["minimum"] = min;
 	dict["maximum"] = max;
 
@@ -220,10 +236,9 @@ int TiffIO::read_data(float *rdata, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
-	//single image format, index can only be zero
-	image_index = 0;
 	check_read_access(image_index, rdata);
 
+	TIFFSetDirectory(tiff_file, image_index);
 	int nx = 0;
 	int ny = 0;
 	TIFFGetField(tiff_file, TIFFTAG_IMAGEWIDTH, &nx);
@@ -396,13 +411,14 @@ int TiffIO::write_header(const Dict & dict, int image_index, const Region*, EMUt
 {
 	ENTERFUNC;
 
-	//support single image TIFF only, index must be zero
-	if(image_index == -1) {
+	image_index = 0;
+
+	if (image_index == -1) {
 		image_index = 0;
 	}
-	if(image_index != 0) {
-		throw ImageWriteException(filename, "TIFF file does not support stack.");
-	}
+
+//	TIFFSetDirectory(tiff_file, image_index);
+
 	check_write_access(rw_mode, image_index);
 
 	nx = (unsigned int) (int) dict["nx"];
@@ -414,6 +430,7 @@ int TiffIO::write_header(const Dict & dict, int image_index, const Region*, EMUt
 	}
 
 //	EMUtil::EMDataType datatype = (EMUtil::EMDataType) (int) dict["datatype"];
+
 	if (datatype == EMUtil::EM_UCHAR) {
 		bitspersample = CHAR_BIT;
 	}
@@ -429,6 +446,7 @@ int TiffIO::write_header(const Dict & dict, int image_index, const Region*, EMUt
 				EMUtil::get_datatype_string(EMUtil::EM_USHORT));
 		bitspersample = CHAR_BIT * sizeof(short);
 	}
+
 	TIFFSetField(tiff_file, TIFFTAG_BITSPERSAMPLE, bitspersample);
 	TIFFSetField(tiff_file, TIFFTAG_SAMPLESPERPIXEL, 1);
 	TIFFSetField(tiff_file, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
@@ -437,18 +455,25 @@ int TiffIO::write_header(const Dict & dict, int image_index, const Region*, EMUt
 	TIFFSetField(tiff_file, TIFFTAG_ROWSPERSTRIP, ny);
 	TIFFSetField(tiff_file, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
 	TIFFSetField(tiff_file, TIFFTAG_SOFTWARE, "EMAN2" );
-	//TIFFSetField(tiff_file, TIFFTAG_COMPRESSION, NO_COMPRESSION);
-	//TIFFSetField(tiff_file, TIFFTAG_FILLORDER, FILLORDER_MSB2LSB);
+
+	// TIFFSetField(tiff_file, TIFFTAG_COMPRESSION, NO_COMPRESSION);
+	// TIFFSetField(tiff_file, TIFFTAG_FILLORDER, FILLORDER_MSB2LSB);
 
 	EXITFUNC;
 	return 0;
 }
 
-int TiffIO::write_data(float * data, int, const Region* , EMUtil::EMDataType, bool)
+int TiffIO::write_data(float * data, int image_index, const Region* , EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 
-	// If we didn't get any parameters in 'render_min' or 'render_max', we need to find some good ones
+	image_index = 0;
+
+//	TIFFSetDirectory(tiff_file, image_index);
+
+	// If we didn't get any parameters in 'render_min' or 'render_max',
+	// we need to find some good ones
+
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax);
 
 	if(bitspersample == CHAR_BIT) {
