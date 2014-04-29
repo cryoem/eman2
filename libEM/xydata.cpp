@@ -229,6 +229,7 @@ void XYData::insort(float x, float y) {
 	data.push_back(Pair(x,y));
 	update();
 	
+	
 	// 	int nx = (int) data.size();
 // 	if (nx==0) { data.push_back(Pair(x,y)); return; }
 // 	
@@ -242,6 +243,23 @@ void XYData::insort(float x, float y) {
 // 	}
 // 	data.insert(data.begin()+s,Pair(x,y));
 }	
+
+// data must be sorted before this will work
+void XYData::dedupx() {
+	float acnt=1.0;
+	for (std::vector<Pair>::iterator it = data.begin() ; it+1 < data.end(); ++it) {
+		while (it+1<data.end() && it->x==(it+1)->x) {
+//			printf("%d\t%d\t%1.0f\t%f\t%f\n",it-data.begin(),data.end()-it,acnt,it->x,(it+1)->x);
+			it->y+=(it+1)->y;
+			acnt+=1.0;
+			data.erase(it+1);
+		}
+		if (acnt>1.0) {
+			it->y/=acnt;
+			acnt=1.0;
+		}
+	}
+}
 
 void XYData::set_xy_list(const vector<float>& xlist, const vector<float>& ylist)
 {

@@ -107,7 +107,12 @@ namespace EMAN
 			data[i].y = y;
 		}
 
-		void insort(float x, float y);		// inserts a new value in x-sorted position, lengthens vector by 1
+		// inserts a new value in x-sorted position, lengthens vector by 1
+		void insort(float x, float y);
+		
+		// If any identical X values exist, y values will be averaged and a point removed
+		// data must be sorted on X for this to work (see update)
+		void dedupx();
 		
 		vector<float> get_xlist() const;
 

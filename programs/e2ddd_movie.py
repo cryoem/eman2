@@ -345,6 +345,16 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 											
 						i0+=step
 					
+					# possible sometimes to have multiple values for the same x (img #), average in these cases 
+					xali.dedupx()
+					yali.dedupx()
+					
+					# Smoothing
+					# we should have all possible x-values at this point, so we just do a very simplistic smoothing
+					for i in xrange(xali.get_size()-2):
+						xali.set_y(i+1,(xali.get_y(i)+xali.get_y(i+1)*2.0+xali.get_y(i+2))/4.0)
+						yali.set_y(i+1,(yali.get_y(i)+yali.get_y(i+1)*2.0+yali.get_y(i+2))/4.0)
+					
 					print ["%6.1f"%i for i in xali.get_xlist()]
 					print ["%6.2f"%i for i in xali.get_ylist()]
 					print ["%6.2f"%i for i in yali.get_ylist()]
@@ -354,23 +364,26 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				aliavg=sum(outim2)
 				aliavg.mult(1.0/len(outim2))
 			
-			if options.verbose>2 : 
-				out=file("align.txt","w")
-				for i in xrange(xali.get_size()):
-					out.write("%1.2f\t%1.2f\n"%(xali.get_y(i),yali.get_y(i)));
-				out=file("alignsm.txt","w")
-				for i in xrange(len(outim)):
-					out.write("%1.2f\t%1.2f\n"%(xali.get_yatx_smooth(i,1),yali.get_yatx_smooth(i,1)));
-				xali.write_file("alignx.txt")
-				yali.write_file("aligny.txt")
-				t=sum(outim)
-				t.mult(1.0/len(outim2))
+				if options.verbose>2 : 
+					out=file("align%d.txt"%it,"w")
+					for i in xrange(xali.get_size()):
+						out.write("%1.2f\t%1.2f\n"%(xali.get_y(i),yali.get_y(i)));
+					out=file("alignsm%d.txt"%it,"w")
+					for i in xrange(len(outim)):
+						out.write("%1.2f\t%1.2f\n"%(xali.get_yatx_smooth(i,1),yali.get_yatx_smooth(i,1)));
+					xali.write_file("alignx%d.txt"%it)
+					yali.write_file("aligny%d.txt"%it)
 
 			aliavg.write_image(outname[:-4]+"_aliavg.hdf",0)
 			if options.save_aligned:
 				for i,im in enumerate(outim2): im.write_image(outname[:-4]+"_align.hdf",i)
 				
-			if options.verbose>2 : display([t,aliavg],True)
+			if options.verbose>2 : 
+				t=sum(outim)
+				t.mult(1.0/len(outim2))
+				t=t.get_clip(Region(500,500,3072,3072))
+				aliavg=aliavg.get_clip(Region(500,500,3072,3072))
+				display([t,aliavg],True)
 
 
 			
@@ -443,13 +456,13 @@ def align(s1,s2,guess=(0,0),localrange=192,verbose=0):
 			
 	if verbose>3 : display((s1a,s2a,tot),force_2d=True)
 	
-	mn=tot["mean"]
 	dx,dy=(tot["nx"]/2-int(guess[0]),tot["ny"]/2-int(guess[1]))					# the 'false peak' should always be at the origin, ie - no translation
+	mn=(tot[dx-2,dy-2]+tot[dx+2,dy+2]+tot[dx-2,dy+2]+tot[dx+2,dy-2])/4.0
 #	tot[dx,dy]=mn
 	for x in xrange(dx-1,dx+2):
 		for y in xrange(dy-1,dy+2):
 			tot[x,y]=mn		# exclude from COM
-#			pass
+			pass
 
 	# first pass to have a better chance at finding the first peak, using a lot of blurring
 	tot2=tot.get_clip(Region(tot["nx"]/2-96,tot["ny"]/2-96,192,192))
