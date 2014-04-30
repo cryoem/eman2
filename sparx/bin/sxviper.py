@@ -30,7 +30,7 @@ def main():
 	parser.add_option("--center",   type="float",  default= -1,                 help="-1: average shift method; 0: no centering; 1: center of gravity (default=-1)")
 	parser.add_option("--maxit1",    type="float",  default= 400,               help="maximum number of iterations performed for the GA part (set to 400) ")
 	parser.add_option("--maxit2",    type="float",  default= 30,               help="maximum number of iterations performed for the finishing up part (set to 30) ")
-	parser.add_option("--L2threshold",    type="float",  default= 0.05,         help="Stopping criterion of GA given as a maximum relative dispersion of L2 norms (set to 0.5) ")
+	parser.add_option("--L2threshold",    type="float",  default= 0.05,         help="Stopping criterion of GA given as a maximum relative dispersion of L2 norms (set to 0.05) ")
 	parser.add_option("--CTF",      action="store_true", default=False,         help="Consider CTF correction during the alignment ")
 	parser.add_option("--snr",      type="float",  default= 1.0,                help="Signal-to-Noise Ratio of the data")	
 	parser.add_option("--ref_a",    type="string", default= "S",                help="method for generating the quasi-uniformly distributed projection directions (default S)")
