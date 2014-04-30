@@ -48,8 +48,8 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_argument("--align_frames", action="store_true",help="Perform whole-frame alignment of the stack",default=False)
-	parser.add_argument("--align_frames_tree", action="store_true",help="Perform whole-frame alignment of the stack hierarchically",default=False)
-	parser.add_argument("--align_frames_countmode", action="store_true",help="Perform whole-frame alignment of frames collected in counting mode",default=False)
+#	parser.add_argument("--align_frames_tree", action="store_true",help="Perform whole-frame alignment of the stack hierarchically",default=False)
+#	parser.add_argument("--align_frames_countmode", action="store_true",help="Perform whole-frame alignment of frames collected in counting mode",default=False)
 	parser.add_argument("--save_aligned", action="store_true",help="Save aligned stack",default=False)
 	parser.add_argument("--dark",type=str,default=None,help="Perform dark image correction using the specified image file")
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
@@ -286,36 +286,36 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 
 		# we iterate the alignment process several times
-		if options.align_frames:
-			outim2=[]
-#			for im in outim: im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4,"tomean":True})
-#			for im in outim: im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4})
-			av=sum(outim[-5:])
-#			av=outim[-1].copy()
-#			av.mult(1.0/len(outim))
-			fav=[]
-			for it in xrange(2):
+		#if options.align_frames:
+			#outim2=[]
+##			for im in outim: im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4,"tomean":True})
+##			for im in outim: im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4})
+			#av=sum(outim[-5:])
+##			av=outim[-1].copy()
+##			av.mult(1.0/len(outim))
+			#fav=[]
+			#for it in xrange(2):
 
-				for im in outim:
-					dx,dy,z=align(im,av,verbose=options.verbose)
-					im2=im.process("xform",{"transform":Transform({"type":"2d","tx":-dx,"ty":-dy})})
-					if options.verbose==1 : print "{}, {}".format(dx,dy)
-					outim2.append(im2)
+				#for im in outim:
+					#dx,dy,z=align(im,av,verbose=options.verbose)
+					#im2=im.process("xform",{"transform":Transform({"type":"2d","tx":-dx,"ty":-dy})})
+					#if options.verbose==1 : print "{}, {}".format(dx,dy)
+					#outim2.append(im2)
 
-				print "-----"
+				#print "-----"
 				
-				av=sum(outim2)
-				av.mult(1.0/len(outim))
-				fav.append(av)
-				if it!=2 : outim2=[]
+				#av=sum(outim2)
+				#av.mult(1.0/len(outim))
+				#fav.append(av)
+				#if it!=2 : outim2=[]
 							
-			av.write_image(outname[:-4]+"_aliavg.hdf",0)
-			if options.save_aligned:
-				for i,im in enumerate(outim2): im.write_image(outname[:-4]+"_align.hdf",i)
-			if options.verbose>1 : display(fav,True)
+			#av.write_image(outname[:-4]+"_aliavg.hdf",0)
+			#if options.save_aligned:
+				#for i,im in enumerate(outim2): im.write_image(outname[:-4]+"_align.hdf",i)
+			#if options.verbose>1 : display(fav,True)
 
 		# we iterate the alignment process several times
-		if options.align_frames_tree:
+		if options.align_frames:
 			outim2=[]
 			
 			print len(outim)
@@ -397,33 +397,33 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 			
 		# we iterate the alignment process several times
-		if options.align_frames_countmode:
-			outim2=[]
-#			for im in outim: im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":6,"tomean":True})	# nsigma was normally 4, but for K2 images even 6 may not be enough
-			av=sum(outim)
-#			av.mult(1.0/len(outim))
-			fav=[]
-			for it in xrange(2):		# K2 data seems to converge pretty much immediately in my tests
+		#if options.align_frames_countmode:
+			#outim2=[]
+##			for im in outim: im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":6,"tomean":True})	# nsigma was normally 4, but for K2 images even 6 may not be enough
+			#av=sum(outim)
+##			av.mult(1.0/len(outim))
+			#fav=[]
+			#for it in xrange(2):		# K2 data seems to converge pretty much immediately in my tests
 
-				for im in outim:
-					if it==0 : av.sub(im)
-					dx,dy,z=align(im,av,verbose=options.verbose)
-					im2=im.process("xform",{"transform":Transform({"type":"2d","tx":-dx,"ty":-dy})})
-					if options.verbose==1 : print "{}, {}".format(dx,dy)
-					if it==0: av.add(im2)
-					outim2.append(im2)
+				#for im in outim:
+					#if it==0 : av.sub(im)
+					#dx,dy,z=align(im,av,verbose=options.verbose)
+					#im2=im.process("xform",{"transform":Transform({"type":"2d","tx":-dx,"ty":-dy})})
+					#if options.verbose==1 : print "{}, {}".format(dx,dy)
+					#if it==0: av.add(im2)
+					#outim2.append(im2)
 
-				print "-----"
+				#print "-----"
 				
-				av=sum(outim2)
-				av.mult(1.0/len(outim))
-				fav.append(av)
-				if it!=2 : outim2=[]
+				#av=sum(outim2)
+				#av.mult(1.0/len(outim))
+				#fav.append(av)
+				#if it!=2 : outim2=[]
 							
-			av.write_image(outname[:-4]+"_aliavg.hdf",0)
-			if options.save_aligned:
-				for i,im in enumerate(outim2): im.write_image(outname[:-4]+"_align.hdf",i)
-			if options.verbose>2 : display(fav,True)
+			#av.write_image(outname[:-4]+"_aliavg.hdf",0)
+			#if options.save_aligned:
+				#for i,im in enumerate(outim2): im.write_image(outname[:-4]+"_align.hdf",i)
+			#if options.verbose>2 : display(fav,True)
 
 		
 			
