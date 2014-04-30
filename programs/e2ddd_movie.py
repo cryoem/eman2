@@ -144,11 +144,14 @@ def main():
 	# the user may provide multiple movies to process at once
 	for fsp in args:
 		if options.verbose : print "Processing ",fsp
-		
+				
 		n=EMUtil.get_image_count(fsp)
 		if n<3 : 
-			print "ERROR: {} has only {} images. Min 3 required.".format(fsp,n)
-			continue
+			hdr=EMData(fsp,0,True)
+			if hdr["nz"]<2 :
+				print "ERROR: {} has only {} images. Min 3 required.".format(fsp,n)
+				continue
+			n=hdr["nz"]
 		if last<=0 : flast=n
 		else : flast=last
 		
@@ -158,6 +161,10 @@ def main():
 
 def process_movie(fsp,dark,gain,first,flast,step,options):
 		outname=fsp.rsplit(".",1)[0]+"_proc.hdf"		# always output to an HDF file. Output contents vary with options
+
+		if fsp[-4:].lower() in (".mrc","mrcs") :
+			hdr=EMData(fsp,0,True)			# read header
+			nx,ny=hdr["nx"],hdr["ny"]
 		
 		# bgsub and gain correct the stack
 		outim=[]
@@ -166,7 +173,9 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				print " {}/{}   \r".format(ii-first+1,flast-first+1),
 				sys.stdout.flush()
 
-			im=EMData(fsp,ii)
+			if fsp[-4:].lower() in (".mrc","mrcs") :
+				im=EMData(fsp,0,False,Region(0,0,ii,nx,ny,1))
+			else: im=EMData(fsp,ii)
 			
 			if dark!=None : im.sub(dark)
 			if gain!=None : im.mult(gain)
