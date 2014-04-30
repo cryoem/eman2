@@ -303,7 +303,16 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, 
 	else:  refvol = EMData()
 	"""
 	print "   NEW"
-	refvol = model_blank(1, 1, 1)
+	refvol = model_blank(bnx,1,1,0.5)
+	"""
+	from math import tanh,pi
+	fl = 0.15
+	aa = 0.15
+	for i in xrange(bnx):
+		r = float(i)/bigsize
+		refvol.set_value_at(i, 0.5*( tanh(pi*(r+fl)/2.0/fl/aa) - tanh(pi*(r-fl)/2.0/2.0/fl/aa) ) )
+		print "  FILTER  ",i,refvol.get_value_at(i)
+	"""
 	#print " DONE refvol"
 	params = {"size":imgsize, "npad":npad, "symmetry":symmetry, "fftvol":fftvol, "refvol":refvol, "weight":weight, "weighting":0, "snr":1.0}
 	r = Reconstructors.get( "nn4_ctfw", params )

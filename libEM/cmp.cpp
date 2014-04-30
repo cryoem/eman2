@@ -303,7 +303,7 @@ float SqEuclideanCmp::cmp(EMData *image,EMData * withorig ) const
 		int iyb = ny%2;
 		//
 		if(nz == 1) {
-		//  it looks like it could work in 3D, but it is not, really.
+		//  it looks like it could work in 3D, but it does not, really.
 		for ( int iz = 0; iz <= nz-1; iz++) {
 			double part = 0.;
 			for ( int iy = 0; iy <= ny-1; iy++) {
@@ -343,7 +343,7 @@ float SqEuclideanCmp::cmp(EMData *image,EMData * withorig ) const
 		}
 		n = (float)nx*(float)ny*(float)nz*(float)nx*(float)ny*(float)nz;
 
-		}else{ //This 3D code is incorrect, but it is the best I can do now 01/09/06 PAP
+		} else { //This 3D code is incorrect, but it is the best I can do now 01/09/06 PAP
 		int ky, kz;
 		int ny2 = ny/2; int nz2 = nz/2;
 		for ( int iz = 0; iz <= nz-1; iz++) {

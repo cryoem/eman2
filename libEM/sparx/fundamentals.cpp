@@ -92,7 +92,7 @@ periodogram(EMData* f) {
 			int jy=iy-1; 
 			if(jy>=ny2p) jy=jy-nyt;
 			for (int ix = 1; ix <= lsd2; ix++) {
-				int jx=ix-1; 
+				int jx=ix-1;
 				if(jx>=nx2p) jx=jx-nx;
 				power(jx,jy,jz) = real(fp->cmplx(ix,iy,iz)) * scale;
 			}
@@ -116,12 +116,12 @@ periodogram(EMData* f) {
 		if(nz2 != 0)  {
 			if(nz%2 == 0) {  //if nz even, fix the first slice
 				for (int iy = nyb; iy <= nye; iy++) {
-					for (int ix = nxb; ix <= -1; ix++) { 
+					for (int ix = nxb; ix <= -1; ix++) {
 						power(ix,iy,-nz2) = power(-ix,-iy,-nz2);
 					}
 				}
 				if(ny%2 == 0) {  //if ny even, fix the first line
-					for (int ix = nxb; ix <= -1; ix++) { 
+					for (int ix = nxb; ix <= -1; ix++) {
 						power(ix,-ny2,-nz2) = power(-ix,-ny2,-nz2);
 					}
 				}

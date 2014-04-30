@@ -1867,7 +1867,7 @@ void EMData::onelinenn_ctfw(int j, int n, int n2, EMData* w, EMData* bi, EMData*
             int   ir = int(rr);
             float df = rr - float(ir);
             float mult = (1.0f - df)*(*sigmasq2)(ir) + df*(*sigmasq2)(ir+1);
-            //cout <<"  "<<jp<<"  "<<i<<"  "<<j<<"  "<<rr<<"  "<<ir<<"  "<<mult<<"  "<<1.0f/mult<<"  "<<btq<<"  "<<weight<<endl;
+            cout <<"  "<<jp<<"  "<<i<<"  "<<j<<"  "<<rr<<"  "<<ir<<"  "<<mult<<"  "<<1.0f/mult<<"  "<<btq<<"  "<<weight<<endl;
 			cmplx(ixn, iya, iza) += btq*ctf*mult*weight;
 			(*w)(ixn, iya, iza)  += ctf*ctf*mult*weight;
 

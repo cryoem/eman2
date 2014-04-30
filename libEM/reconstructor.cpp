@@ -3358,9 +3358,9 @@ EMData* nn4_ctfReconstructor::finish(bool)
 					    int iyp = (iy<=m_vnyc) ? iy - 1 : iy-m_vnyp-1;
 					    int izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
 						float freq = sqrt( (float)(ix*ix+iyp*iyp+izp*izp) );
-						tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+freq*osnr)*m_sign;
+						tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+freq*osnr);//*m_sign;
 					} else  {
-						tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+osnr)*m_sign;
+						tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+osnr);//*m_sign;
 					}
 
 			if( m_weighting == ESTIMATE ) {
@@ -3585,7 +3585,7 @@ EMData* nn4_ctfwReconstructor::finish(bool)
 	m_volume->set_array_offsets(0, 1, 1);
 	m_wptr->set_array_offsets(0, 1, 1);
 	cout <<  "  will set refvol  "  <<endl;
-	m_refvol->set_array_offsets(0, 1, 1);
+	//m_refvol->set_array_offsets(0, 1, 1);
 	m_volume->symplane0_ctf(m_wptr);
 
 	int box = 7;
@@ -3600,29 +3600,83 @@ EMData* nn4_ctfwReconstructor::finish(bool)
 	float alpha = ( 1.0f - 1.0f/(float)vol ) / max;
 	float osnr = 1.0f/m_snr;
 
-	// normalize
+
+    vector<float> sigma2(m_vnyc+1, 0.0f);
+    vector<float> count(m_vnyc+1, 0.0f);
+
 	int ix,iy,iz;
+	// compute sigma2
 	for (iz = 1; iz <= m_vnzp; iz++) {
+		int   izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
+		float argz = float(izp*izp);
 		for (iy = 1; iy <= m_vnyp; iy++) {
+			int   iyp = (iy<=m_vnyc) ? iy - 1 : iy-m_vnyp-1;
+            float argy = argz + float(iyp*iyp);
 			for (ix = 0; ix <= m_vnxc; ix++) {
-				if ( (*m_wptr)(ix,iy,iz) > 0.0f) {
-					int iyp = (iy<=m_vnyc) ? iy - 1 : iy-m_vnyp-1;
-					int izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
-					float freq = sqrt( (float)(ix*ix+iyp*iyp+izp*izp) );
-					float tmp=0.0;
-					if( m_varsnr )  tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+freq*osnr)*m_sign;
-					else {
-					    tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+osnr);
+			    if(ix>0 || (izp>=0 && (iyp>=0 || izp!=0))) {  //Skip Friedel related values
+                    float r = std::sqrt(argy + float(ix*ix));
+                    int  ir = int(r);
+                    if (ir <= m_vnyc) {
+                        float frac = r - float(ir);
+                        float qres = 1.0f - frac;
+                        float temp = (*m_wptr)(ix,iy,iz);
+                        // cout<<"  "<<jx<<"  "<<jy<<"  "<<ir<<"  "<<temp<<"  "<<frac<<endl;
+                        sigma2[ir]   += temp*qres;
+                        sigma2[ir+1] += temp*frac;
+                        count[ir]    += qres;
+                        count[ir+1]  += frac;
+                    }
+                }
+            }
+        }
+    }
+    for (ix = 0; ix <= m_vnyc+1; ix++) {
+        if( sigma2[ix] > 0.0f )  sigma2[ix] = count[ix]/sigma2[ix];
+    }
+    // now counter will serve to keep fsc-derived stuff
+
+    for (ix = 0; ix <= m_vnyc+1; ix++)
+#ifdef _WIN32
+        count[ix] = _cpp_max(0.0f, _cpp_min( 0.999f, (*m_refvol)(ix) ) );
+#else
+	    count[ix] = std::max(0.0f, std::min( 0.999f, (*m_refvol)(ix) ) );
+#endif	//_WIN32
+    for (ix = 0; ix <= m_vnyc+1; ix++)  count[ix] = count[ix]/(1.0f - count[ix]) * sigma2[ix];
+    for (ix = 0; ix <= m_vnyc+1; ix++)  {
+        if ( count[ix] >0.0f) count[ix] = 1.0f/count[ix];  //fudge?
+    }
+
+	// normalize
+	for (iz = 1; iz <= m_vnzp; iz++) {
+		int   izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
+		float argz = float(izp*izp);
+		for (iy = 1; iy <= m_vnyp; iy++) {
+			int   iyp = (iy<=m_vnyc) ? iy - 1 : iy-m_vnyp-1;
+            float argy = argz + float(iyp*iyp);
+			for (ix = 0; ix <= m_vnxc; ix++) {
+                    float r = std::sqrt(argy + float(ix*ix));
+                    int  ir = int(r);
+                    if (ir <= m_vnyc) {
+                        float frac = r - float(ir);
+                        float qres = 1.0f - frac;
+                        osnr = qres*count[ir] + frac*count[ir+1];
+                        if(osnr == 0.0f)  osnr = 1.0f/(0.001*(*m_wptr)(ix,iy,iz));
+ 					    float tmp=((*m_wptr)(ix,iy,iz)+osnr);
+					    //if( m_varsnr )  tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+freq*osnr)*m_sign;
+					    //else {
+					    //cout<<"  "<<iz<<"  "<<iy<<"  "<<"  "<<ix<<"  "<<iz<<"  "<<"  "<<(*m_wptr)(ix,iy,iz)<<"  "<<osnr<<"  "<<endl;
+					    if(tmp>0.0f) {
+					        tmp = (-2*((ix+iy+iz)%2)+1)/tmp;
 					    /*
                         int ir = int(freq);
                         float df = freq - float(ir);
                         float add = (1.0f - df)*(*m_refvol)(ir) + df*(*m_refvol)(ir+1);
-                        //cout<<"  "<<iz<<"  "<<iy<<"  "<<"  "<<ix<<"  "<<ir<<"  "<<"  "<<(*m_wptr)(ix,iy,iz)<<"  "<<add<<"  "<<endl;
+                        cout<<"  "<<iz<<"  "<<iy<<"  "<<"  "<<ix<<"  "<<ir<<"  "<<"  "<<(*m_wptr)(ix,iy,iz)<<"  "<<add<<"  "<<endl;
 					    tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+add)*m_sign;
 					    */
-					}
+					//}
 
-			if( m_weighting == ESTIMATE ) {
+			/*if( false) {//m_weighting == ESTIMATE ) {
 			cout <<  "  ESTIMATE  "  <<endl;
 				int cx = ix;
 				int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;
@@ -3656,7 +3710,7 @@ EMData* nn4_ctfwReconstructor::finish(bool)
 					}
 				}
 				float wght = 1.0f / ( 1.0f - alpha * sum );
-/*
+/
                         if(ix%10==0 && iy%10==0)
                         {
                             std::cout << boost::format( "%4d %4d %4d " ) % ix % iy %iz;
@@ -3664,11 +3718,15 @@ EMData* nn4_ctfwReconstructor::finish(bool)
                             std::  << boost::format( "%10.3f %10.3e " ) % pow_b[r] % alpha;
                             std::cout << std::endl;
                         }
- */
+ /
 				tmp = tmp * wght;
-				}
+				}*/
 				(*m_volume)(2*ix,iy,iz)   *= tmp;
 				(*m_volume)(2*ix+1,iy,iz) *= tmp;
+				} else {
+				(*m_volume)(2*ix,iy,iz)   = 0.0f;
+				(*m_volume)(2*ix+1,iy,iz) = 0.0f;
+				}
 				}
 			}
 		}
