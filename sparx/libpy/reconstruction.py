@@ -331,8 +331,13 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, 
 	for ml in xrange(len(models)):
 		temp = read_text_file("metadata/model-%04d.txt"%groupkeys[1][ml],-1)
 		temp = reshape_1d(temp[2], len(temp[0]), 2*len(temp[0]))
-		models[ml] = model_blank(len(temp)+10)
-		for lm in xrange(len(temp)):  models[ml].set_value_at(lm,1.0/(temp[lm]*4*imgsize**4/npad))
+		models[ml] = model_blank(len(temp)+10,1,1,1.0)
+		#  THIS IS FINE  for lm in xrange(len(temp)):  models[ml].set_value_at(lm,1.0/(temp[lm]*4*imgsize**4/npad))
+		#from sys import exit
+		#print "metadata/model-%04d.txt"%groupkeys[1][ml]
+		#for lm in xrange(len(temp)):  print  lm,models[ml].get_value_at(lm)
+		#exit()
+
 
 	if not (finfo is None): nimg = 0
 	ll = 0
@@ -581,8 +586,8 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign=1, symmetry="c1", info=None, n
 	while prjlist.goToNext():
 		prj = prjlist.image()
 		active = prj.get_attr_default('active', 1)
-		if nimg%10 == 0:  print "III  ",nimg
-		nimg +=1
+		#if nimg%10 == 0:  print "III  ",nimg
+		#nimg +=1
 		if active == 1:
 			if dopad: 
 				prj = pad(prj, imgsize,imgsize, 1, "circumference")
