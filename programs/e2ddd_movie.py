@@ -41,8 +41,7 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] <ddd_movie_stack>
 
-	This program will take an image stack from movie mode on a DirectElectron DDD camera and process it in various ways.
-	The input stack should be <dark ref> <gain ref> <img 1> ...
+	This (still experimental) program will do various processing operations on "movies" recorded on direct detection cameras.
 	"""
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)

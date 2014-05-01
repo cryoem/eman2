@@ -126,27 +126,32 @@ It is strongly suggested that you run 'e2bdb.py -c' prior to running this progra
 		ctffg=db_open_dict("bdb:.#e2ctf.im2d",ro=True)
 		for k in ctf.keys():
 			if options.verbose>1 : print "\t",k
-			js=js_open_dict("{}/{}".format(dest,info_name(k)))
+			js=js_open_dict("{}/{}".format(dest,info_name("bdb:particles#"+k)))
+			if options.verbose>2 : print "Generating {}/{}".format(dest,info_name("bdb:particles#"+k))
 			js.setval("quality",int(ctf[k][-1]),True)
 			c=EMAN2Ctf()
 			c.from_string(ctf[k][0])
-			js["ctf"]=[c,ctf[k][1],ctf[k][2],ctffg[k],ctfbg[k]]
+			cfg=ctffg[k]
+			cfg.del_attr("micrograph_id")	# unicode problems  :^(
+			cbg=ctfbg[k]
+			cbg.del_attr("micrograph_id")
+			js["ctf"]=[c,ctf[k][1],ctf[k][2],cfg,cbg]
 	except:
 		traceback.print_exc()
-		print "\n\nUnable to convert projects without CTF information. If this is a major problem, please contact sludtke@bcm.edu"
+		print "\n\nUnable to convert projects without CTF information(%s). If this is a major problem, please contact sludtke@bcm.edu"%k
 		sys.exit(1)
 	
 	# Boxes
 	if options.verbose : print "Converting Boxes"
 	boxes=db_open_dict("bdb:e2boxercache#boxes",ro=True)
 	try:
-	for k in boxes.keys():
-		try:
-			if options.verbose>1 : print "\t",k
-			js=js_open_dict("{}/{}".format(dest,info_name(k)))
-			js["boxes"]=boxes[k]
-		except:
-			print "Error converting boxes for ",k
+		for k in boxes.keys():
+			try:
+				if options.verbose>1 : print "\t",k
+				js=js_open_dict("{}/{}".format(dest,info_name(k)))
+				js["boxes"]=boxes[k]
+			except:
+				print "Error converting boxes for ",k
 	except:
 		print "Note: No box locations found to convert"
 	

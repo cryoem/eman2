@@ -67,7 +67,9 @@ def main():
 				boxlist = []
 				fh = open(filename, 'r')
 				for line in fh.readlines():
+					if line[0]=="#" : continue
 					fields = line.split()
+					if len(fields)<4) : continue		# skip lines that don't work
 					boxlist.append([float(fields[0])+float(fields[3])/2, float(fields[1])+float(fields[3])/2, 'manual'])
 
 				js_open_dict(info_name(filename,nodir=True))["boxes"]=boxlist
@@ -80,7 +82,9 @@ def main():
 				boxlist = []
 				fh = open(filename, 'r')
 				for line in fh.readlines():
+					if line[0]=="#" : continue
 					fields = line.split()
+					if len(fields)<4) : continue		# skip lines that don't work
 					boxlist.append([float(fields[0])+float(fields[3])/2, float(fields[1])+float(fields[3])/2, 'tilted'])
 				js_open_dict(info_name(filename,nodir=True))["boxes_tilted"]=boxlist
 
@@ -89,7 +93,9 @@ def main():
 				boxlist = []
 				fh = open(filename, 'r')
 				for line in fh.readlines():
+					if line[0]=="#" : continue
 					fields = line.split()
+					if len(fields)<4) : continue		# skip lines that don't work
 					boxlist.append([float(fields[0])+float(fields[3])/2, float(fields[1])+float(fields[3])/2, 'untilted'])
 				js_open_dict(info_name(filename,nodir=True))["boxes_untilted"]=boxlist
 

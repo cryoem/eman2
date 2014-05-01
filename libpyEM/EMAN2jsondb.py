@@ -689,7 +689,7 @@ of the path is stored as self.normpath"""
 			self.changes={}
 			for k in self.delkeys: del self.data[k]
 			self.delkeys=set()
-			jss=json.dumps(self.data,indent=0,sort_keys=True,default=obj_to_json)			# write the whole dictionary back to disk
+			jss=json.dumps(self.data,indent=0,sort_keys=True,default=obj_to_json,encoding="ascii")			# write the whole dictionary back to disk
 			jss=re.sub(listrex,denl,jss)
 
 			### We do the actual write as a rapid sequence to avoid conflicts
@@ -810,7 +810,7 @@ def obj_to_json(obj):
 	try:
 		return obj.to_jsondict()
 	except:
-		return {"__pickle__":cPickle.dumps(obj)}
+		return {"__pickle__":cPickle.dumps(obj,0)}
 
 __doc__ = \
 """This module provides a dict-like wrapper for JSON files on disk, with full support for file locking and other
