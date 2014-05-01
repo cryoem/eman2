@@ -332,7 +332,7 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, 
 		temp = read_text_file("metadata/model-%04d.txt"%groupkeys[1][ml],-1)
 		temp = reshape_1d(temp[2], len(temp[0]), 2*len(temp[0]))
 		models[ml] = model_blank(len(temp)+10)
-		for lm in xrange(len(temp)):  models[ml].set_value_at(lm,1.0/(temp[lm]*4*imgsize**4))
+		for lm in xrange(len(temp)):  models[ml].set_value_at(lm,1.0/(temp[lm]*4*imgsize**4/npad))
 
 	if not (finfo is None): nimg = 0
 	ll = 0

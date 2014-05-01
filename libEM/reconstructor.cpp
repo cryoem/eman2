@@ -3661,6 +3661,7 @@ EMData* nn4_ctfwReconstructor::finish(bool)
                         float qres = 1.0f - frac;
                         osnr = qres*count[ir] + frac*count[ir+1];
                         if(osnr == 0.0f)  osnr = 1.0f/(0.001*(*m_wptr)(ix,iy,iz));
+                        //cout<<"  "<<iz<<"   "<<iy<<"   "<<"   "<<ix<<"   "<<(*m_wptr)(ix,iy,iz)<<"   "<<osnr<<"      "<<(*m_volume)(2*ix,iy,iz)<<"      "<<(*m_volume)(2*ix+1,iy,iz)<<endl;
  					    float tmp=((*m_wptr)(ix,iy,iz)+osnr);
 					    //if( m_varsnr )  tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+freq*osnr)*m_sign;
 					    //else {
