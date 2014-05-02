@@ -418,7 +418,7 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, 
 		t[i] = sqrt(2*t[i]/(1.0+t[i]))
 	t = reshape_1d(t,len(t),npad*len(t))
 	refvol = model_blank(2*bnx,1,1,0.5)
-	for i in xrange(len(t)):  refvol.set_value_at(i,t[i])
+	#for i in xrange(len(t)):  refvol.set_value_at(i,t[i])
 	"""
 	from math import tanh,pi
 	fl = 0.15
