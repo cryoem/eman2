@@ -255,7 +255,114 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad=4, xysize=-1,
 def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, mpi_comm=None):
 	from utilities     import reduce_EMData_to_root, pad, get_params_proj
 	from EMAN2         import Reconstructors
-	from utilities     import iterImagesList, model_blank, model_circle, reshape_1d
+	from utilities     import iterImagesList, model_blank, model_circle, reshape_1d, read_text_file
+	from fundamentals  import fft, rops
+	from mpi           import MPI_COMM_WORLD
+	import types
+
+	if mpi_comm == None:
+		mpi_comm = MPI_COMM_WORLD
+
+	if type(prjlist) == types.ListType:
+		prjlist = iterImagesList(prjlist)
+
+	if not prjlist.goToNext():
+		ERROR("empty input list","recons3d_4nn_MPI",1)
+
+	imgsize = prjlist.image().get_xsize()
+	bigsize = imgsize*npad
+	bnx     = bigsize//2+1
+
+	prjlist.goToPrev()
+
+	fftvol = EMData()
+	weight = EMData()
+	print "   NEW"
+	#t = read_text_file('fromrun8model.txt',4)
+	#  GET FSC
+	t = read_text_file('data_model.txt',4)
+	from math import sqrt
+	for i in xrange(len(t)):
+		t[i] = max(t[i],0.0)
+		#  This is what is used to get the SSNR
+		t[i] = sqrt(2*t[i]/(1.0+t[i]))
+	t = reshape_1d(t,len(t),npad*len(t))
+	refvol = model_blank(2*bnx,1,1,0.5)
+	for i in xrange(len(t)):  refvol.set_value_at(i,t[i])
+	"""
+	from math import tanh,pi
+	fl = 0.15
+	aa = 0.15
+	for i in xrange(bnx):
+		r = float(i)/bigsize
+		refvol.set_value_at(i, 0.5*( tanh(pi*(r+fl)/2.0/fl/aa) - tanh(pi*(r-fl)/2.0/2.0/fl/aa) ) )
+		print "  FILTER  ",i,refvol.get_value_at(i)
+	"""
+	#print " DONE refvol"
+	params = {"size":imgsize, "npad":npad, "symmetry":symmetry, "fftvol":fftvol, "refvol":refvol, "weight":weight, "weighting":0, "snr":1.0}
+	r = Reconstructors.get( "nn4_ctfw", params )
+	r.setup()
+
+	from projection import prep_vol, prgs
+	from filter import filt_ctf
+	#volft,kb = prep_vol(prevol)
+
+	#mask2d = model_circle(imgsize//2-2, imgsize,imgsize)
+	#maskbi = model_circle(imgsize//2-2, bigsize,bigsize)
+	#  noise model of 2D data.
+	models = [None]
+	for ml in xrange(len(models)):
+		temp = read_text_file('sigma2.txt',2)
+		temp = reshape_1d(temp, len(temp), 2*len(temp))
+		models[ml] = model_blank(len(temp)+10)
+		for lm in xrange(len(temp)):  models[ml].set_value_at(lm,1.0/(temp[lm]*4*imgsize**2/npad))
+		#from sys import exit
+		#print "metadata/model-%04d.txt"%groupkeys[1][ml]
+		#for lm in xrange(len(temp)):  print  lm,models[ml].get_value_at(lm)
+		#exit()
+
+
+	if not (finfo is None): nimg = 0
+	ll = 0
+	while prjlist.goToNext():
+		prj = prjlist.image()
+
+		active = prj.get_attr_default('active', 1)
+		if(active == 1):
+			if ll%100 == 0:  print "  moved  ",ll
+			ll +=1
+			prj.set_attr("sigmasq2", models[0])
+			#if ll == 0:
+			#	write_text_file([range(bigsize),[pqdif[i] for i in xrange(bigsize)] ],"pqdif.txt")
+			#	ll+=1
+			insert_slices(r, prj)
+			if( not (finfo is None) ):
+				nimg += 1
+				info.write("Image %4d inserted.\n" %(nimg) )
+				info.flush()
+
+	if not (finfo is None):
+		info.write( "Begin reducing ...\n" )
+		info.flush()
+
+	#del qdif, pqdif, mask2d, maskbi
+
+	reduce_EMData_to_root(fftvol, myid, comm=mpi_comm)
+	reduce_EMData_to_root(weight, myid, comm=mpi_comm)
+
+	if myid == 0:
+		print  "  STARTING FINISH"
+		dummy = r.finish(True)
+	else:
+		from utilities import model_blank
+		fftvol = model_blank(imgsize, imgsize, imgsize)
+	return fftvol
+
+
+def chc5recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, mpi_comm=None):
+	from utilities     import reduce_EMData_to_root, pad, get_params_proj
+	from EMAN2         import Reconstructors
+	from utilities     import iterImagesList, model_blank, model_circle, reshape_1d, read_text_file
 	from fundamentals  import fft, rops
 	from mpi           import MPI_COMM_WORLD
 	import types
@@ -280,7 +387,7 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, 
 	"""
 	if myid == 0:
 		model_blank(bnx, bigsize, bigsize)
-		temp = fft(pad(prevol,bigsize,bigsize,bigsize,0refvol = m.0))
+		temp = fft(pad(prevol,bigsize,bigsize,bigsize,0.0))
 		temp.set_attr("is_complex",0)
 		st = 0.5/(bigsize*bigsize)
 		for kk in xrange(bigsize):
@@ -303,7 +410,15 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, 
 	else:  refvol = EMData()
 	"""
 	print "   NEW"
-	refvol = model_blank(bnx,1,1,0.5)
+	#t = read_text_file('fromrun8model.txt',4)
+	t = read_text_file('../for-pawel/fsc-relion.txt',1)
+	from math import sqrt
+	for i in xrange(len(t)):
+		t[i] = max(t[i],0.0)
+		t[i] = sqrt(2*t[i]/(1.0+t[i]))
+	t = reshape_1d(t,len(t),npad*len(t))
+	refvol = model_blank(2*bnx,1,1,0.5)
+	for i in xrange(len(t)):  refvol.set_value_at(i,t[i])
 	"""
 	from math import tanh,pi
 	fl = 0.15
@@ -324,15 +439,15 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, 
 
 	#mask2d = model_circle(imgsize//2-2, imgsize,imgsize)
 	#maskbi = model_circle(imgsize//2-2, bigsize,bigsize)
-	from utilities import read_text_file
+
 	groupkeys = read_text_file("groupkeys.txt",-1)
 	for ml in xrange(3):  groupkeys[ml] = map(int, groupkeys[ml])
 	models = [None]*len(groupkeys[0])
 	for ml in xrange(len(models)):
 		temp = read_text_file("metadata/model-%04d.txt"%groupkeys[1][ml],-1)
 		temp = reshape_1d(temp[2], len(temp[0]), 2*len(temp[0]))
-		models[ml] = model_blank(len(temp)+10,1,1,1.0)
-		#  THIS IS FINE  for lm in xrange(len(temp)):  models[ml].set_value_at(lm,1.0/(temp[lm]*4*imgsize**4/npad))
+		models[ml] = model_blank(len(temp)+10)
+		for lm in xrange(len(temp)):  models[ml].set_value_at(lm,1.0/(temp[lm]*4*imgsize**4/npad))
 		#from sys import exit
 		#print "metadata/model-%04d.txt"%groupkeys[1][ml]
 		#for lm in xrange(len(temp)):  print  lm,models[ml].get_value_at(lm)

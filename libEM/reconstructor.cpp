@@ -3620,7 +3620,8 @@ EMData* nn4_ctfwReconstructor::finish(bool)
                         float frac = r - float(ir);
                         float qres = 1.0f - frac;
                         float temp = (*m_wptr)(ix,iy,iz);
-                        // cout<<"  "<<jx<<"  "<<jy<<"  "<<ir<<"  "<<temp<<"  "<<frac<<endl;
+                        //cout<<" WEIGHTS "<<jx<<"  "<<jy<<"  "<<ir<<"  "<<temp<<"  "<<frac<<endl;
+                        //cout<<" WEIGHTS "<<ix<<"  "<<iy-1<<"  "<<iz-1<<"  "<<temp<<"  "<<endl;
                         sigma2[ir]   += temp*qres;
                         sigma2[ir+1] += temp*frac;
                         count[ir]    += qres;
@@ -3632,6 +3633,7 @@ EMData* nn4_ctfwReconstructor::finish(bool)
     }
     for (ix = 0; ix <= m_vnyc+1; ix++) {
         if( sigma2[ix] > 0.0f )  sigma2[ix] = count[ix]/sigma2[ix];
+        cout<<"  1/sigma2  "<< ix <<"   "<<sigma2[ix]<<endl;
     }
     // now counter will serve to keep fsc-derived stuff
 
@@ -3645,7 +3647,7 @@ EMData* nn4_ctfwReconstructor::finish(bool)
     for (ix = 0; ix <= m_vnyc+1; ix++)  {
         if ( count[ix] >0.0f) count[ix] = 1.0f/count[ix];  //fudge?
     }
-
+for (ix = 0; ix <= m_vnyc+1; ix++)  cout<<"  tau2  "<< ix <<"   "<<count[ix]<<endl;
 	// normalize
 	for (iz = 1; iz <= m_vnzp; iz++) {
 		int   izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
