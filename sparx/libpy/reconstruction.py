@@ -251,8 +251,8 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad=4, xysize=-1,
 				fftvol = model_blank(xysize, xysize, zsize)
 	return fftvol
 
-
-def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, mpi_comm=None):
+# secondrun
+def secondrunrecons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, mpi_comm=None):
 	from utilities     import reduce_EMData_to_root, pad, get_params_proj
 	from EMAN2         import Reconstructors
 	from utilities     import iterImagesList, model_blank, model_circle, reshape_1d, read_text_file
@@ -358,8 +358,8 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, 
 		fftvol = model_blank(imgsize, imgsize, imgsize)
 	return fftvol
 
-
-def chc5recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, mpi_comm=None):
+#chc5
+def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, mpi_comm=None):
 	from utilities     import reduce_EMData_to_root, pad, get_params_proj
 	from EMAN2         import Reconstructors
 	from utilities     import iterImagesList, model_blank, model_circle, reshape_1d, read_text_file
@@ -447,7 +447,7 @@ def chc5recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad
 		temp = read_text_file("metadata/model-%04d.txt"%groupkeys[1][ml],-1)
 		temp = reshape_1d(temp[2], len(temp[0]), 2*len(temp[0]))
 		models[ml] = model_blank(len(temp)+10)
-		for lm in xrange(len(temp)):  models[ml].set_value_at(lm,1.0/(temp[lm]*4*imgsize**4/npad))
+		for lm in xrange(len(temp)):  models[ml].set_value_at(lm,1.0/(temp[lm]*4*imgsize**2/npad))
 		#from sys import exit
 		#print "metadata/model-%04d.txt"%groupkeys[1][ml]
 		#for lm in xrange(len(temp)):  print  lm,models[ml].get_value_at(lm)
