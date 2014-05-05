@@ -32,11 +32,11 @@ FFILT = 'F'
 FBFACT = 'F'
 IFSC = '0'
 FSTAT = 'F'
-IBLOW = '2'
+IMEM = '2'
 RREC = '10.0'
 RMAX1 = '200.0'
 RMAX2 = '25.0'
-
+IFLAG = '1'
 progname = os.path.basename(sys.argv[0])
 usage = """ prog [options] <name of refinement directory> <iteration number>
 
@@ -52,17 +52,25 @@ e2refinetofrealign.py refine_04 7
 
 parser = EMArgumentParser(usage,version=EMANVERSION)
 
-parser.add_header(name="frealignheader", help='Options below this label are specific to e2refinetofrealign', title="### e2refinetofrealign options ###", row=0, col=0, rowspan=1, colspan=3)
-parser.add_pos_argument(name="dir",help="The refinement directory to use for FreAlign.", default="", guitype='dirbox', dirbasename='refine',  row=1, col=0,rowspan=1, colspan=2)
-parser.add_pos_argument(name="refineiter",help="The refinement iteration to use.", default="", guitype='intbox',  row=1, col=2,rowspan=1, colspan=1)
-parser.add_argument("--fbeaut", action="store_true", help="(T/F)Apply extra real space symmetry averaging and masking to beautify final map prior to output", default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1)
-parser.add_argument("--fcref", action="store_true", help="(T/F)Apply FOM filter to final reconstruction using function SQRT(2.0*FSC/(1.0+FSC))", default=False, guitype='boolbox', row=2, col=1, rowspan=1, colspan=1)
-parser.add_argument("--fstat", action="store_true", help="(T/F)Calculate additional statistics in resolution table at end (QFACT, SSNR, CC, etc.). T Uses more than 50 percent more memory.", default=False, guitype='boolbox', row=2, col=2, rowspan=1, colspan=1)
-parser.add_argument("--rrec", type=float, help="Resolution of reconstruction in angstroms. It is the resolution to which the reconstruction is calculated.", default = 10.0, guitype='floatbox', row=4, col=0, rowspan=1, colspan=2)
-parser.add_argument("--reslow", type=float, help="Resolution of the data included in the alignment. This is the low resolution value. ex:200", default=200.0, guitype='floatbox', row=3, col=0, rowspan=1, colspan=2)
-parser.add_argument("--reshigh", type=float, help="Resolution of the data included in the alignment. This is the high resolution value. ex:25", default=25.0, guitype='floatbox', row=3, col=2, rowspan=1, colspan=1)
-parser.add_argument("--thresh", type=float, help="Phase Residual cutoff. Particles with a higher phase residual will not be included in the refinement ", default=90.0, guitype='floatbox', row=4, col=2, rowspan=1, colspan=1)
-parser.add_argument("--randomizemodel", help="Optionally randomize the phases of the initial model to this resolution (in Angstroms)", default=0,  guitype='floatbox', row=5, col=0, rowspan=1, colspan=1)
+parser.add_header(name="frealignheader", help='Options below this label are specific to e2refinetofrealign', title="### e2refinetofrealign options: Works with only FreAlign v9.07 and newer ###", row=0, col=0, rowspan=1, colspan=3)
+parser.add_pos_argument(name="dir",help="The refinement directory to use for FreAlign.", default="", guitype='dirbox', dirbasename='refine',  row=1, col=0,rowspan=1, colspan=1)
+parser.add_pos_argument(name="refineiter",help="The refinement iteration to use.", default="", guitype='intbox',  row=1, col=1,rowspan=1, colspan=1)
+parser.add_argument("--mode", type=str, help="Mode to run FreAlign in: Mode 1 - Refinement and Reconstruction, Mode 3 - Simple Search and Refinement", default='1', guitype='combobox', choicelist="""'1','3'""", row=2, col=0, rowspan=1, colspan=1)
+parser.add_argument("--fbeaut", action="store_true", help="(T/F)Apply extra real space symmetry averaging and masking to beautify final map prior to output", default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1)
+parser.add_argument("--ffilt", action="store_true", help="(T/F)Apply Single Particle Wiener filter to final reconstruction", default=False, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1)
+parser.add_argument("--fstat", action="store_true", help="(T/F)Calculate additional statistics in resolution table at end (QFACT, SSNR, CC, etc.). T Uses more than 50 percent more memory.", default=False, guitype='boolbox', row=4, col=2, rowspan=1, colspan=1)
+parser.add_argument("--reslow", type=float, help="Resolution of the data included in the alignment. This is the low resolution value. ex:200", default=200.0, guitype='floatbox', row=5, col=0, rowspan=1, colspan=2)
+parser.add_argument("--reshigh", type=float, help="Resolution of the data included in the alignment. This is the high resolution value. ex:25", default=25.0, guitype='floatbox', row=5, col=2, rowspan=1, colspan=1)
+parser.add_argument("--rrec", type=float, help="Resolution of reconstruction in angstroms. It is the resolution to which the reconstruction is calculated.", default = 10.0, guitype='floatbox', row=6, col=0, rowspan=1, colspan=1)
+parser.add_argument("--rclas", type=float, help="High resloution limit used for classification", default = 10.0, guitype='floatbox', row=6, col=1, rowspan=1, colspan=1)
+parser.add_argument("--thresh", type=float, help="Phase Residual cutoff. Particles with a higher phase residual will not be included in the refinement ", default=0.0, guitype='floatbox', row=6, col=2, rowspan=1, colspan=1)
+parser.add_argument("--mass", default=0, type=float,help="The ~mass of the particle in kilodaltons", guitype='floatbox', row=7, col=0, rowspan=1, colspan=1)
+parser.add_argument("--interp", type=str, help="Type of interpolation: 0 - Nearest Neighbor, 1 - Trilinear Interpolation (More Time-Consuming)", default='0', guitype='combobox', choicelist="""'0','1'""", row=7, col=1, rowspan=1, colspan=1)
+parser.add_argument("--randomizemodel", help="Optionally randomize the phases of the initial model to this resolution (in Angstroms)", default=0,  guitype='floatbox', row=8, col=0, rowspan=1, colspan=2)
+parser.add_argument("--imem", type=str, help="Memory Usage: 0 - Least Memory, 3 - Most memory", default='1', guitype='combobox', choicelist="""'0','1','2','3'""",row=8, col=2, rowspan=1, colspan=1)
+#parser.add_argument("--mass", default=0, type=float,help="The ~mass of the particle in kilodaltons, used to run normalize.bymass. Due to resolution effects, not always the true mass.", guitype='floatbox', row=12, col=0, rowspan=1, colspan=1, mode="refinement['self.pm().getMass()']")
+
+
 parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 optionList = pyemtbx.options.get_optionlist(sys.argv[1:])
 
@@ -146,7 +154,7 @@ odd_set_name = class_list[1].get_attr_dict()['class_ptcl_src']
 all_set_name = "sets/"+base_name(even_set_name)+".lst"
 all_set_data = EMData.read_images(all_set_name)
 
-s = "e2proc2d.py " + all_set_name + " " + E2FA + "/particlestack.mrc --twod2threed --process=normalize.edgemean --verbose=0"
+s = "e2proc2d.py " + all_set_name + " " + E2FA + "/particlestack.mrc --twod2threed --process=normalize.edgemean --mult=-1 --verbose=0"
 call(s, shell=True)
 s = "e2proc3d.py " + dir + "/threed_" + high + ".hdf " + E2FA + "/3DMapInOut.mrc --process=normalize.edgemean --verbose=0"
 call(s, shell=True)
@@ -188,27 +196,6 @@ for i in range(cls_class_list_odd.get_attr_dict()['ny']):
 	flip_list[2*i+1] = flip_list_odd[0,i]
 
 ny = len(dx_list)
-
-### Retrieve the pixel values of each image in the CLS stack.
-#cls_stack = EMData.read_images("cls_stack_temp.hdf")
-#ny = cls_stack[0]['ny']
-#dx_list = {}
-#dy_list = {}
-#dalpha_list = {}
-#flip_list = {}
-#cls_class_list = {}
-#for i in range(ny):
-   #cls_class_list[i] = cls_stack[2*CLASS][i]
-   #cls_class_list[i+ny] = cls_stack[2*CLASS+1][i]
-   #dx_list[i] = cls_stack[2*DX][i]
-   #dx_list[i+ny] = cls_stack[2*DX+1][i]
-   #dy_list[i] = cls_stack[2*DY][i]
-   #dy_list[i+ny] = cls_stack[2*DY+1][i]   
-   #dalpha_list[i] = cls_stack[2*DALPHA][i]
-   #dalpha_list[i+ny] = cls_stack[2*DALPHA+1][i]
-   #flip_list[i] = cls_stack[2*FLIP][i]
-   #flip_list[i+ny] = cls_stack[2*FLIP+1][i]
-
    
 ## Write output file of particle meta data for FreAlign into the E2FA subdirectory created above
 f = open(OUTFILE1,'w')
@@ -230,6 +217,7 @@ for i in range(len(all_set_data)):
       film_dict[film] = ctf_dict
    bool_found = 0
    mag = APERPIX / ctf_dict['apix']
+   apix_shift = ctf_dict['apix']
    class_num = cls_class_list[i]
    if i%2==0:
       az=classes_even[int(class_num)].get_attr_dict()['xform.projection'].get_rotation("eman")['az']
@@ -242,7 +230,7 @@ for i in range(len(all_set_data)):
    else:
       t = Transform({"type":"eman","az":az,"alt":alt,"phi":dalpha_list[i],"tx":dx_list[i],"ty":dy_list[i]})
    t = t.inverse()
-   s = '{0:7d}{1:8.2f}{2:8.2f}{3:8.2f}{4:8.2f}{5:8.2f}{6:7.0f}.{7:6d}{8:9.1f}{9:9.1f}{10:8.2f}{11:7.2f}{12:6.2f}\n'.format(i+1, t.get_rotation("spider")['phi'], t.get_rotation("spider")['theta'], t.get_rotation("spider")['psi'], t.get_trans()[0], t.get_trans()[1], mag, film + 1, defocus, defocus, ANGAST, PRESA, PRESA)
+   s = '{0:7d}{1:8.2f}{2:8.2f}{3:8.2f}{4:8.2f}{5:8.2f}{6:7.0f}.{7:6d}{8:9.1f}{9:9.1f}{10:8.2f}{11:7.2f}{12:6.2f}\n'.format(i+1, t.get_rotation("spider")['phi'], t.get_rotation("spider")['theta'], t.get_rotation("spider")['psi'], t.get_trans()[0]*apix_shift, t.get_trans()[1]*apix_shift, mag, film + 1, defocus, defocus, ANGAST, PRESA, PRESA)
    #s = '{0:7d}{1:8.2f}{2:8.2f}{3:8.2f}{4:8.2f}{5:8.2f}{6:7.0f}.{7:6d}{8:9.1f}{9:9.1f}{10:8.2f}{11:7.2f}{12:6.2f}\n'.format(i+1, t.get_rotation("eman")['az'], t.get_rotation("eman")['alt'], t.get_rotation("eman")['phi'], t.get_trans()[0], t.get_trans()[1], mag, film + 1, defocus, defocus, ANGAST, PRESA, PRESA)
    f.write(s)
 s = "rm class_stack_temp.hdf cls_stack_temp.hdf "
@@ -260,16 +248,24 @@ RO = str(command_dict['apix']*.375*(all_set_data[0]['nx']))
 for option1 in optionList:
 	if option1 == "fbeaut":
 		FBEAUT = 'T'
-	elif option1 == "fcref":
-		FCREF = 'T'
+	elif option1 == "ffilt":
+		FFILT = 'T'
   	elif option1 == "rrec":
 		RREC = str(options.rrec)
 	elif option1 == "reslow":
 		RMAX1 = str(options.reslow)
 	elif option1 == "reshigh":
 		RMAX2 = str(options.reshigh)
+	elif option1 == "rclas":
+		RCLAS = str(options.rclas)
 	elif option1 == "fstat":
 		FSTAT = 'T'
+	elif option1 == "mass":
+		MASS = str(options.mass)
+	elif option1 == "interp":
+		INTERP = str(options.interp)
+	elif option1 == "mode":
+		IFLAG = str(options.mode)
 	elif option1 == "randomizemodel":
 		if float(options.randomizemodel) != 0.0:
 			s1 = "e2proc3d.py " + E2FA + "/3DMapInOut.mrc " + E2FA + "/3DMapInOut.mrc --process=filter.lowpass.randomphase:apix=" + str(command_dict['apix']) + ":cutoff_freq=" + str(1/float(options.randomizemodel))
@@ -281,21 +277,22 @@ f = open(OUTFILE2, 'w')      # card.txt to be placed in the E2FA subdirectory cr
  
 # Card 1
 CFORM = 'M'
-IFLAG = '1'
+
 FMAG = FDEF = FASTIG = FPART = FMATCH = 'F'
 IEWALD = '0'
-s = CFORM + SPACE + IFLAG + SPACE + FMAG + SPACE + FDEF + SPACE + FASTIG + SPACE + FPART + SPACE + IEWALD + SPACE + FBEAUT + SPACE + FFILT + SPACE + FBFACT + SPACE + FMATCH + SPACE + IFSC + SPACE + FSTAT + SPACE + IBLOW + '\n'
+s = CFORM + SPACE + IFLAG + SPACE + FMAG + SPACE + FDEF + SPACE + FASTIG + SPACE + FPART + SPACE + IEWALD + SPACE + FBEAUT + SPACE + FFILT + SPACE + FBFACT + SPACE + FMATCH + SPACE + IFSC + SPACE + FSTAT + SPACE + IMEM + SPACE + INTERP + '\n'
 f.write(s)
 
 # Card 2
 RI = DANG = ITMAX = '0'
-XSTD = '1'
-PBC = '100'
-BOFF = '60'
+XSTD = '0'
+PBC = '20'
+BOFF = '30'
 IPMAX = '10' 
 PSIZE = str(command_dict['apix']) 
 WGH = str(ctf_dict['ampcont']/100)
-s = RO + SPACE + RI + SPACE + PSIZE + SPACE + WGH + SPACE + XSTD + SPACE + PBC + SPACE + BOFF + SPACE + DANG + SPACE + ITMAX + SPACE + IPMAX + '\n'
+MASS = str(options.mass)
+s = RO + SPACE + RI + SPACE + PSIZE + SPACE + MASS + SPACE + WGH + SPACE + XSTD + SPACE + PBC + SPACE + BOFF + SPACE + DANG + SPACE + ITMAX + SPACE + IPMAX + '\n'
 f.write(s)
  
 # Card 3
@@ -329,7 +326,7 @@ f.write(ASYM + '\n')
 RELMAG = 1.0
 DSTEP = 10 
 TARGET = 15
-THRESH = 90
+THRESH = 0.0
 CS = ctf_dict['cs']
 AKV = ctf_dict['voltage'] 
 TX = TY = 0.0
@@ -339,7 +336,7 @@ f.write(s)
 # Card 7
 DFSTD = '200.0'
 RBFACT = '0.0'
-s = RREC + SPACE + RMAX1 + SPACE + RMAX2 + SPACE + DFSTD + SPACE + RBFACT + '\n' 
+s = RREC + SPACE + RMAX1 + SPACE + RMAX2 + SPACE + RCLAS + SPACE + DFSTD + SPACE + RBFACT + '\n' 
 f.write(s)
 
 # Card 8

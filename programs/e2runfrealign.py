@@ -36,7 +36,7 @@ shutil.copy('3DMapInOut.mrc', '3DMapInOut.mrc.old')
 shutil.copy('ptcl_meta_data', 'ptcl_meta_data.old')
 
 try:
-	retcode = call('frealign_v8.exe < card.txt', shell=True)
+	retcode = call('frealign_v9.exe < card.txt', shell=True)
 	if retcode < 0:
 		print >>sys.stderr, "Child was terminated by signal", -retcode
 	else:
