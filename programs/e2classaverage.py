@@ -344,7 +344,7 @@ class ClassAvTask(JSTask):
 			if options["verbose"]>0 : print "Final realign:",fxf
 #			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,Transform(),options["averager"],options["normproc"],options["verbose"])
 #			avg.write_image("bdb:xf",-1)
-			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,fxf,options["averager"],options["normproc"],options["verbose"])
+			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,fxf,ref,options["averager"],options["normproc"],options["verbose"])
 #			avg.write_image("bdb:xf",-1)
 
 			#self.data["ref"].write_image("tst.hdf",-1)
@@ -356,7 +356,7 @@ class ClassAvTask(JSTask):
 			fxf=ali["xform.align2d"]
 			if options["verbose"]>0 : print "Final center:",fxf
 			avg1=avg
-			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,Transform(),options["averager"],options["normproc"],options["verbose"])
+			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,Transform(),None,options["averager"],options["normproc"],options["verbose"])
 
 		try:
 			avg["class_ptcl_qual"]=avg1["class_ptcl_qual"]
@@ -399,7 +399,7 @@ def align_one(ptcl,ref,prefilt,align,aligncmp,ralign,raligncmp):
 
 	return ali
 
-def class_average_withali(images,ptcl_info,xform,averager=("mean",{}),normproc=("normalize.edgemean",{}),verbose=0):
+def class_average_withali(images,ptcl_info,xform,ref,averager=("mean",{}),normproc=("normalize.edgemean",{}),verbose=0):
 	"""This will generate a final class-average, given a ptcl_info list as returned by class_average,
 	and a final transform to be applied to each of the relative transforms in ptcl_info. ptcl_info will
 	be modified in-place to contain the aggregate transformations, and the final aligned average will be returned"""
@@ -425,6 +425,11 @@ def class_average_withali(images,ptcl_info,xform,averager=("mean",{}),normproc=(
 		elif img.has_attr("source_n") : excl.append(img["source_n"])
 
 	avg=avgr.finish()
+	
+	# normalize to the reference, this should make make3dpar work better as we can skip the normalization step
+	if ref!=None : 
+		avg.process_inplace("normalize.toimage",{"to":ref})		
+		avg["class_qual"]=avg.cmp("ccc",ref)
 
 	# set some useful attributes
 	if len(incl)>0 or len(excl)>0 :

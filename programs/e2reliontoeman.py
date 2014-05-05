@@ -98,7 +98,7 @@ will be extracted from the STAR file and will be automatically processed through
 			if micronum>0 and options.verbose>0 : print "Image {}: {} particles processed, df={}".format(micronum,fnum,ctf.defocus)
 			micronum+=1
 			fnum=0
-			microname="particles/{}_{:04d}.hdf".format(name.rsplit(".",1)[0],micronum)
+			microname="particles/{}_{:04d}.hdf".format(base_name(name),micronum)
 			jdb=js_open_dict(info_name(microname))
 			
 			# Make a "micrograph" CTF entry for each set of different defocuses to use when fitting
