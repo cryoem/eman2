@@ -43,7 +43,7 @@ import sys
 import math
 import random
 import traceback
-from numpy import array
+import numpy as np
 
 def get_usage():
 	progname = os.path.basename(sys.argv[0])
@@ -181,6 +181,28 @@ def main():
 
 	data=initialize_data(options.input,options.input_model,options.tlt,options.pad,options.no_wt,options.lowmem,options.preprocess)
 
+	# Filter out averages/images which aren't good enough
+	if verbose: print "Filtering data, %d images ->"%len(data),
+
+	# we have an absolute threshold
+	if options.keepabs: thr=options.keep
+	else :
+		quals=np.array(sorted[i["quality"] for i in data])
+		if np.std(quals)==0 : thr=max(quals)+1.0
+		else :
+			if options.keepsig:
+				thr=np.mean(quals)+options.keep*np.std(quals)
+			else:
+				try: 
+					thr=quals[int(floor(len(quals)*options.keep))]
+				except: thr=max(quals)+1.0
+	
+	excluded=[max(i["fileslice"],i["filenum"]) for i in data if i["quality"]>thr]
+	included=[max(i["fileslice"],i["filenum"]) for i in data if i["quality"]<=thr]
+	data=[i for i in data if i["quality"]<=thr]
+	
+	if verbose: print "After filter, %d images"%len(data)
+
 	# Get the reconstructor and initialize it correctly
 	a = {"size":padvol,"sym":options.sym,"verbose":options.verbose-1}
 	recon=Reconstructors.get("fourier", a)
@@ -294,6 +316,7 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,lowmem,preproces
 			if not lowmem :
 				if nslice>1 : elem["data"]=get_processed_image(inputfile,0,i,preprocess,pad,nx,ny)
 				else : elem["data"]=get_processed_image(inputfile,i,-1,preprocess,pad,nx,ny)
+			elem["quality"]=1.0
 			data.append(elem)
 
 		if len(data)!=n_input and len(data)!=nslice :
@@ -382,21 +405,6 @@ def reconstruct(data,recon,preprocess,pad,keep=1.0,keepsig=False,verbose=0,keepa
 
 		ptcl=0
 		for i,elem in enumerate(data):
-			if not elem.has_key("norm") : elem["norm"]=1.0
-
-			# If the image is below the quality cutoff, skip it
-			try:
-				if (keepabs and elem["reconstruct_absqual"]<qcutoff) or (not keepabs and elem["reconstruct_qual"]<qcutoff) or elem["weight"]==0 :
-					if verbose>0 : print i," *  (%1.3g)"%(elem["reconstruct_qual"])
-					if it==niter-1 :
-						if elem["fileslice"]<0 : excluded.append(elem["filenum"])
-						else : excluded.append(elem["fileslice"])
-					continue
-			except: pass
-
-			if elem["fileslice"]<0 : included.append(elem["filenum"])
-			else : included.append(elem["fileslice"])
-
 			# get the image to insert
 			try:
 				img=elem["data"]
