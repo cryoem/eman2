@@ -85,7 +85,7 @@ To run this program, you would normally specify only the following options:
                          to ~12, only after that try for high (3-8 A). Data permitting, of course. Low resolution
                          attempts will run MUCH faster due to more efficient parameters.
   --speed=<1-7>          Default=5. Larger values will run faster, with a coarser angular step. Smaller values will
-                         sample the angular step more finely than strictly required and increase sep=. A larger value
+                         sample the angular step more finely than stric0tly required and increase sep=. A larger value
                          is good for early refinement. A smaller value will push "gold standard" resolution towards its
                          limit.
   --sym=<symmetry>       Symmetry to enforce during refinement (Cn, Dn, icos, oct, cub).

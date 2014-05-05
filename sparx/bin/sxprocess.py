@@ -65,7 +65,8 @@ def main():
 	sxprocess.py input_stack.hdf powerspectrum.hdf --pw [--wn=1024]
 
 	4.  Order a 2-D stack of image based on pair-wise similarity (computed as a cross-correlation coefficent).
-	sxprocess.py input_stack.hdf output_stack.hdf --order
+	    Option initial specifies which image will be used as an initial seed to form the chain.
+	sxprocess.py input_stack.hdf output_stack.hdf --order  --initial=23
 
 	5.  Generate a stack of projections bdb:data and micrographs with prefix mic (i.e., mic0.hdf, mic1.hdf etc) from structure input_structure.hdf, with CTF applied to both projections and micrographs:
 	sxprocess.py input_structure.hdf data mic --generate_projections format="bdb":apix=5.2:CTF=True:boxsize=64 	
@@ -81,6 +82,7 @@ def main():
 
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--order", action="store_true", help="Two arguments are required: name of input stack and desired name of output stack. The output stack is the input stack sorted by similarity in terms of cross-correlation coefficent.", default=False)
+	parser.add_option("--initial", type="int", default=0, help="Specifies which image will be used as an initial seed to form the chain. (default = 0, means the first image)")
 	parser.add_option("--changesize", action="store_true", help="resample (decimate or interpolate up) images (2D or 3D) in a stack to change the pixel size.", default=False)
 	parser.add_option("--ratio", type="float", default=1.0, help="The ratio of new to old image size (if <1 the pixel size will increase and image size decrease, if>1, the other way round")
 	parser.add_option("--pw", action="store_true", help="compute average power spectrum of a stack of 2-D images with optional padding (option wn) with zeroes", default=False)
@@ -115,7 +117,7 @@ def main():
 			d[i] = rot_shift2D(d[i], alpha, sx, sy, mirror)
 		m = model_circle(30, 64, 64)
 
-		init = 0
+		init = options.initial
 		temp = d[init].copy()
 		temp.write_image(new_stack, 0)
 		del d[init]
