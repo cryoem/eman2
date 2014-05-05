@@ -57,7 +57,6 @@ def main():
 	parser.add_pos_argument(name="stack_files",help="List of micrograph names", default="", guitype='filebox', browser="EMParticlesEditTable(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=2, nosharedb=True)
 #	parser.add_header(name="buildheader", help='Options below this label are specific to e2buildsets', title="### e2buildsets options ###", row=1, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--setname",type=str,help="Name of the stack to build", default='my_stack', guitype='strbox',row=2, col=0, rowspan=1, colspan=1)
-	parser.add_argument("--filetype",help="Type of file",default='lst',guitype='combobox',choicelist='["lst","bdb"]',row=3,col=0,rowspan=1,colspan=1)
 	parser.add_argument("--excludebad",action="store_true",help="Exclude bad particles.",default=False, guitype='boolbox',row=4,col=0,rowspan=1,colspan=1)
 	parser.add_argument("--allparticles",action="store_true",help="Will process all particle stacks stored in the particles subdirectory (if specified, list of files will be ignored)",default=False, guitype='boolbox',row=1, col=0, mode='autofit,tuning,genoutp,gensf')
 	parser.add_argument("--withflipped",action="store_true",help="Only include images with phase-flipped counterparts!",default=False,guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode='genoutp[True]')
@@ -69,11 +68,6 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
-
-
-	if options.filetype.lower() not in ("bdb","lst") :
-		print "Only BDB and LST filetypes are accepted"
-		sys.exit(1)
 
 	# If allparticles, list of files is ignored !
 	if options.allparticles:
@@ -109,10 +103,10 @@ def main():
 		outargs=[]
 		for i in args:
 			try:
-				if js_open_dict(info_name(i))["quality"]>=options.minqual : outargs.append(i)
+				if js_open_dict(info_name(i+".hdf"))["quality"]>=options.minqual : outargs.append(i)
 			except:
 				traceback.print_exc()
-				print "Unknown quality for {}, including it".format(info_name(i))
+				print "Unknown quality for {},{}, including it".format(i,info_name(i+".hdf"))
 				outargs.append(i)
 
 		args=outargs
@@ -123,13 +117,26 @@ def main():
 		ptcls=[i for i in os.listdir("particles") if i[0]!="."]
 		args=[i for i in args if i+"__ctf_flip_hp.hdf"in ptcls or i+"__ctf_flip.hdf" in ptcls]	# Not super-efficient, but functional
 
+	print "Filtering by defocus"
+	outargs=[]
+	for i in args:
+		try:
+			defocus=js_open_dict(info_name(i+".hdf"))["ctf"][0].defocus
+			if defocus>=options.mindf and defocus<=options.maxdf : outargs.append(i)
+		except:
+			traceback.print_exc()
+			print "Unknown defocus for {},{}, including it".format(i,info_name(i+".hdf"))
+			outargs.append(i)
+	
+	args=outargs
+	
+
 	print "%d files to include in processing after filters"%len(args)
 	
 	logid=E2init(sys.argv)
 
 	# identify particle groups present
-	if options.filetype=="bdb" : ptcls=db_list_dicts("bdb:particles")
-	else : ptcls=[i for i in os.listdir("particles") if i[0]!="."]
+	ptcls=[i for i in os.listdir("particles") if i[0]!="."]
 
 	groups=None
 	for f in args:
@@ -142,46 +149,31 @@ def main():
 	for i in groups: print "'{}' ".format(i),
 	print ""
 
-	if options.filetype.lower()=="bdb":
+	totptcl=0
+	lsx={}
+	for t in groups:
+		try: os.unlink("sets/{}{}.lst".format(options.setname,t))		# we remake each set from scratch
+		except: pass
+		lsx[t]=LSXFile("sets/{}{}.lst".format(options.setname,t))
 
-		for n in range(0,len(args),10):			# process in groups of 10 for efficiency
-			for t in groups:
-				cmd="e2bdb.py "
-				for f in args[n:n+10]:
-					if "_ctf" in f : f=f.split("_ctf")[0]						# if the user provided ctf modified names, we clean up the mess for them
-					if options.excludebad: cmd+="bdb:particles#%s%s?exclude.%s "%(f,t,f)
-					else : cmd+="bdb:particles#%s%s "%(f,t)
+	for f in args:
+		nimg=EMUtil.get_image_count("particles/{}{}.hdf".format(f,basetype))
 
-				cmd+="--appendvstack=bdb:sets#%s%s"%(options.setname,t)
+		if options.excludebad :
+			try : bad=set(js_open_dict(info_name(f+".hdf"))["sets"]["bad_particles"])
+			except :
+				if options.verbose : print "No badlist for ",f
+				bad=set()
+		else : bad=set()
+		if options.verbose>1 : print "File: {} -> {} particles - {} bad".format(f,nimg,len(bad))
+		totptcl+=nimg-len(bad)
 
-				launch_childprocess(cmd)
-				#print cmd
-
-	elif options.filetype.lower()=="lst" :
-		totptcl=0
-		lsx={}
 		for t in groups:
-			try: os.unlink("sets/{}{}.lst".format(options.setname,t))		# we remake each set from scratch
-			except: pass
-			lsx[t]=LSXFile("sets/{}{}.lst".format(options.setname,t))
+			for i in xrange(nimg):
+				if i not in bad : lsx[t].write(-1,i,"particles/{}{}.hdf".format(f,t))
 
-		for f in args:
-			nimg=EMUtil.get_image_count("particles/{}{}.hdf".format(f,basetype))
-
-			if options.excludebad :
-				try : bad=set(js_open_dict(info_name(f))["sets"]["bad_particles"])
-				except :
-					if options.verbose : print "No badlist for ",f
-					bad=set()
-			else : bad=set()
-			if options.verbose>1 : print "File: {} -> {} particles - {} bad".format(f,nimg,len(bad))
-			totptcl+=nimg-len(bad)
-
-			for t in groups:
-				for i in xrange(nimg):
-					if i not in bad : lsx[t].write(-1,i,"particles/{}{}.hdf".format(f,t))
-
-		print "Done - {} particles total".format(totptcl)
+	print "Done - {} particles total".format(totptcl)
+	
 	E2end(logid)
 
 def imcount(fsp):
