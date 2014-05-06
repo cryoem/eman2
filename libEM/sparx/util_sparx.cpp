@@ -18824,8 +18824,8 @@ vector<float> Util::shc_multipeaks(EMData* image, const vector< EMData* >& crefi
 	const float qv = static_cast<float>( pi/180.0 );
 
 	const float previousmax = image->get_attr("previousmax");
-	int   ky = int(2*yrng/step+0.5)/2;
-	int   kx = int(2*xrng/step+0.5)/2;
+	const int   ky = int(2*yrng/step+0.5)/2;
+	const int   kx = int(2*xrng/step+0.5)/2;
 	int   iref, nref=0, mirror=0;
 	float iy, ix, sx=0, sy=0;
 	float ang=0.0f;
@@ -18855,32 +18855,29 @@ vector<float> Util::shc_multipeaks(EMData* image, const vector< EMData* >& crefi
 	for ( ;  (tiref < crefim_len) && (results.size() / 7 < static_cast<unsigned>(max_peaks_count)); tiref++) {
 		iref = listr[tiref];
 		float peak = previousmax;
-		for (int i = -ky; i <= ky; i++) {
-			iy = i * step ;
-			for (int j = -kx; j <= kx; j++) {
-				ix = j*step;
-				EMData* cimage = cimages[i+ky][j+kx];
-				Dict retvals = Crosrng_ms(crefim[iref], cimage, numr);
-				double qn = retvals["qn"];
-				double qm = retvals["qm"];
-				if (qn > peak || qm > peak) {
-					sx = -ix;
-					sy = -iy;
-					nref = iref;
-					if (qn >= qm) {
-						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-						peak = static_cast<float>( qn );
-						mirror = 0;
-					} else {
-						ang = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
-						peak = static_cast<float>( qm );
-						mirror = 1;
-					}
-					//cout <<"  iref "<<iref<<"  tiref "<<tiref<<"   "<<previousmax<<"   "<<qn<<"   "<<qm<<endl;
-				}
-			}
-		}
-		if (peak > previousmax) {
+
+
+	    	std::vector<int> shifts = shuffled_range( 0, (2*kx+1) * (2*ky+1) - 1 );
+		    //for ( unsigned nodeId = 0;  nodeId < shifts.size();  ++nodeId ) {
+		    unsigned nodeId = 0;
+		    bool found_better = false;
+		    while(nodeId < shifts.size()  &&  !found_better) {
+			    const int i = ( shifts[nodeId] % (2*ky+1) ) - ky;
+    			const int j = ( shifts[nodeId] / (2*ky+1) ) - kx;
+	    		const float iy = i * step;
+		    	const float ix = j * step;
+			    EMData* cimage = cimages[i+ky][j+kx];
+    			Dict retvals = Crosrng_rand_ms(crefim[iref], cimage, numr, previousmax);
+	    		const float new_peak = static_cast<float>( retvals["qn"] );
+		    	if (new_peak > peak) {
+			    	sx = -ix;
+				    sy = -iy;
+    				nref = iref;
+	    			ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+		    		peak = new_peak;
+			    	mirror = static_cast<int>( retvals["mirror"] );
+				    bool found_better = (peak > previousmax);
+
 			const float co =  cos(ang*qv);
 			const float so = -sin(ang*qv);
 			const float sxs = sx*co - sy*so;
@@ -18893,8 +18890,10 @@ vector<float> Util::shc_multipeaks(EMData* image, const vector< EMData* >& crefi
 			results.push_back(peak);
 			results.push_back(static_cast<float>(tiref));
 		}
+		++nodeId;
 	}
 
+    }
 	for (unsigned i = 0; i < cimages.size(); ++i) {
 		for (unsigned j = 0; j < cimages[i].size(); ++j) {
 			delete cimages[i][j];

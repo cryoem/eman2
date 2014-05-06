@@ -73,6 +73,7 @@ def insert_slices(reconstructor, proj):
 		xforms.append(xform_proj)
 		weights.append(proj.get_attr_default("weight" + str(ixform), 1.0))
 	for i in xrange(len(xforms)):
+		print i, xforms[i],weights[i]
 		reconstructor.insert_slice( proj, xforms[i], weights[i] )
 
 
