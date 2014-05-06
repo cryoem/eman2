@@ -109,8 +109,6 @@ def main():
 
 	(options, args) = parser.parse_args()
 
-	if options.nofilecheck: options.check = True
-
 	# make sure that the user has atleast specified an input file
 #	if len(args) <1:
 #		parser.error("No input file specified")
@@ -179,15 +177,15 @@ def main():
 		print "Couldn't parse outsize option :",options.outsize
 		exit(1)
 
-	data=initialize_data(options.input,options.input_model,options.tlt,options.pad,options.no_wt,options.lowmem,options.preprocess)
+	data=initialize_data(options.input,options.input_model,options.tlt,options.pad,options.no_wt,options.preprocess)
 
 	# Filter out averages/images which aren't good enough
-	if verbose: print "Filtering data, %d images ->"%len(data),
+	if options.verbose: print "Filtering data, %d images ->"%len(data),
 
 	# we have an absolute threshold
 	if options.keepabs: thr=options.keep
 	else :
-		quals=np.array(sorted[i["quality"] for i in data])
+		quals=np.array(sorted([i["quality"] for i in data]))
 		if np.std(quals)==0 : thr=max(quals)+1.0
 		else :
 			if options.keepsig:
@@ -201,7 +199,7 @@ def main():
 	included=[max(i["fileslice"],i["filenum"]) for i in data if i["quality"]<=thr]
 	data=[i for i in data if i["quality"]<=thr]
 	
-	if verbose: print "After filter, %d images"%len(data)
+	if options.verbose: print "After filter, %d images"%len(data)
 
 	# Get the reconstructor and initialize it correctly
 	a = {"size":padvol,"sym":options.sym,"verbose":options.verbose-1}
@@ -217,6 +215,21 @@ def main():
 	for t in threads: t.run()
 	
 	for t in threads: t.join()
+	
+	output = recon.finish(True)
+
+	if options.verbose>0 : print "Finished Reconstruction"
+	
+	try:
+		output.set_attr("ptcl_repr",len(data))
+		if len(included)>0 : output.set_attr("threed_ptcl_idxs",included)
+		if len(excluded)>0 : output.set_attr("threed_excl_ptcl_idxs",excluded)
+		output.set_attr("threed_ptcl_src",data[0]["filename"])
+	except:
+		print "Warning, error setting reconstruction attributes"
+#	progress += 10
+#	E2progress(logid,float(progress)/total_progress)
+
 	#
 	########################################################3
 
@@ -283,7 +296,7 @@ def main():
 
 	print "Exiting"
 
-def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,lowmem,preprocess):
+def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,preprocess):
 	"""returned list will contain dictionaries containing metadata about each image, and optionally the image itself
 	xform - a Transform object
 	weight - a floating point weight
@@ -314,9 +327,9 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,lowmem,preproces
 			else :
 				elem["fileslice"]=-1
 				elem["filenum"]=i
-			if not lowmem :
-				if nslice>1 : elem["data"]=get_processed_image(inputfile,0,i,preprocess,pad,nx,ny)
-				else : elem["data"]=get_processed_image(inputfile,i,-1,preprocess,pad,nx,ny)
+			#if not lowmem :
+				#if nslice>1 : elem["data"]=get_processed_image(inputfile,0,i,preprocess,pad,nx,ny)
+				#else : elem["data"]=get_processed_image(inputfile,i,-1,preprocess,pad,nx,ny)
 			elem["quality"]=1.0
 			data.append(elem)
 
@@ -326,8 +339,8 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,lowmem,preproces
 	else :
 		tmp=EMData()
 		for i in xrange(n_input):
-			if lowmem: tmp.read_image(inputfile,i,True)
-			else : tmp=get_processed_image(inputfile,i,-1,preprocess,pad)
+			tmp.read_image(inputfile,i,True)
+			#else : tmp=get_processed_image(inputfile,i,-1,preprocess,pad)
 
 			# these rely only on the header
 			try: elem={"xform":tmp["xform.projection"]}
@@ -353,9 +366,9 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,lowmem,preproces
 			elem["filename"]=inputfile
 			elem["filenum"]=i
 			elem["fileslice"]=-1
-			if not lowmem:
-				elem["data"]=tmp
-				tmp=EMData()
+			#if not lowmem:
+				#elem["data"]=tmp
+				#tmp=EMData()
 
 			data.append(elem)
 
@@ -386,7 +399,7 @@ def get_processed_image(filename,nim,nsl,preprocess,pad,nx=0,ny=0):
 
 	return ret
 
-def reconstruct(data,recon,preprocess,pad,verbose=0):
+def reconstruct(data,recon,preprocess,pad,fillangle,verbose=0):
 	"""Do an actual reconstruction using an already allocated reconstructor, and a data list as produced
 	by initialize_data(). preprocess is a list of processor strings to be applied to the image data in the
 	event that it hasn't already been read into the data array. start and startweight are optional parameters
@@ -426,110 +439,8 @@ def reconstruct(data,recon,preprocess,pad,verbose=0):
 		# Actual slice insertion into the volume
 #		if i==len(data)-1 : display(img)
 		recon.insert_slice(img,elem["xform"],elem["weight"])
-
-	if it!=niter-1:
-		if verbose>0: print "\t   az      alt    phi  \t tweight      norm     absqual    weight"
-		for i,elem in enumerate(data):
-
-			try:
-				if (keepabs and elem["reconstruct_absqual"]<qcutoff) or (not keepabs and elem["reconstruct_qual"]<qcutoff) or elem["weight"]==0:
-					if verbose>0 : print i," *"
-#						continue
-			except: pass
-
-			# get the image to insert
-			try:
-				img=elem["data"]
-			except:
-				if elem["fileslice"]>=0 : img=get_processed_image(elem["filename"],elem["filenum"],elem["fileslice"],preprocess,pad,elem["nx"],elem["ny"])
-				else : img=get_processed_image(elem["filename"],elem["filenum"],-1,preprocess,pad)
-				img=recon.preprocess_slice(img,elem["xform"])	# no caching here, with the lowmem option
-				img.mult(elem["norm"])
-
-			rd=elem["xform"].get_rotation("eman")
-			if verbose>0 : print "%d.\t%6.2f  %6.2f  %6.2f\t"%(i,rd["az"],rd["alt"],rd["phi"]),
-
-			if img["sigma"]==0 :
-				elem["reconstruct_weight"]=0
-				elem["reconstruct_norm"]=0
-				elem["reconstruct_absqual"]=0
-				if verbose>0 : print ""
-				continue
-
-			dosub=True
-			try:
-				if (keepabs and elem["reconstruct_absqual"]<qcutoff) or (not keepabs and elem["reconstruct_qual"]<qcutoff) or elem["weight"]==0: dosub=False
-			except: pass
-
-			recon.determine_slice_agreement(img,elem["xform"],elem["weight"],dosub)
-
-			# These are the parameters returned by determine_slice_agreement. Since the images may be reloaded, we cache them in the data dictionary
-			for i in ("reconstruct_weight","reconstruct_norm","reconstruct_absqual"):
-				elem[i]=img[i]
-				if verbose>0 : print "%8.3g  "%elem[i],
-			elem["norm"]*=img["reconstruct_norm"]
-
-			if verbose>0 : print "%d"%int(elem["weight"])
-
-		# Convert absolute qualities to relative qualities by local averaging vs classes with similar numbers of particles
-		squal=sorted([[data[i]["weight"],data[i]["reconstruct_absqual"],0,i,data[i]] for i in xrange(len(data))])
-
-		# compute a running average of qualities (sorted by weight), then measure each value vs. the local average
-		qlist=[]
-		for i in range(len(squal)):
-			# skip averages with weight=0
-			if squal[i][0]==0 :
-				squal[i][4]["reconstruct_qual"]=-1
-				continue
-			sub=[squal[j][1] for j in xrange(max(0,i-10),min(i+10,len(squal)))]
-			squal[i][2]=sum(sub)/len(sub)
-			try:
-				squal[i][4]["reconstruct_qual"]=squal[i][1]/squal[i][2]
-				qlist.append(squal[i][1]/squal[i][2])
-			except :
-				traceback.print_exc()
-				print "##############  ",sub, squal[i], i,len(squal)
-				squal[i][4]["reconstruct_qual"]=-1
-				qlist.append(-1)
-#			plot(qlist)
-
-		# we also get some statistics on the absolute qualities in case the user doesn't want local averaging
-		sq=array(sorted([data[i]["reconstruct_absqual"] for i in xrange(len(data))]))
-		aqmean=sq.mean()
-		aqsigma=sq.std()
-
-		# set exclusion thresholds
-		if keepabs:
-			if keepsig:
-				qcutoff=aqmean-aqsigma*keepabs
-				if verbose>0: print "Absolute Quality: mean=%1.3f sigma=%1.3f  ->  cutoff = %1.3f (%d ptcl)"%(aqmean,aqsigma,qcutoff,ptcl)
-			else:
-				qcutoff=sq[-int(keep*len(qlist))]
-				if verbose>0: print "Absolute Quality: min=%1.3f max=%1.3f  ->  cutoff = %1.3f (%d ptcl)"%(sq[0],sq[-1],qcutoff,ptcl)
-		else:
-			if keepsig:
-				qmean=sum(qlist)/len(qlist)
-				qsigma=sqrt(sum([i*i for i in qlist])/len(qlist)-qmean**2)
-				qcutoff=qmean-qsigma*keep
-				if verbose>0: print "Quality: mean=%1.3f sigma=%1.3f  ->  cutoff = %1.3f (%d ptcl)"%(qmean,qsigma,qcutoff,ptcl)
-			else:
-				qlist.sort()
-				qcutoff=qlist[-int(keep*len(qlist))]
-				if verbose>0: print "Quality: min=%1.3f max=%1.3f  ->  cutoff = %1.3f (%d ptcl)"%(qlist[0],qlist[-1],qcutoff,ptcl)
-
-
-	try:
-		output.set_attr("ptcl_repr",ptcl)
-		if len(included)>0 : output.set_attr("threed_ptcl_idxs",included)
-		if len(excluded)>0 : output.set_attr("threed_excl_ptcl_idxs",excluded)
-		output.set_attr("threed_ptcl_src",data[0]["filename"])
-	except:
-		print "Warning, error setting reconstruction attributes"
-#	progress += 10
-#	E2progress(logid,float(progress)/total_progress)
-	if verbose>0 : print "Finished Reconstruction"
-
-	return output
+	
+	return
 
 if __name__=="__main__":
 	main()
