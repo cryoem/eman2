@@ -488,7 +488,7 @@ class PathWalker(object):
 
 		self.write_tsplib(filename=tspfile)
 		
-		args = ['LKH', lkhfile]
+		args =' '.join(['LKH',lkhfile])
 		try:
 			a = subprocess.Popen(args, shell=True)
 		except OSError:
