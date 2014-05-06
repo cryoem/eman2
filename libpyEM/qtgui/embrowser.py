@@ -3242,8 +3242,9 @@ class EMBrowserWidget(QtGui.QWidget) :
 				self.curmodel = inimodel(path, dirregex = filt)
 			except :
 				self.curmodel = inimodel(path)
-				filt = None
-				QtGui.QMessageBox.warning(None, "Error", "Filtering not allowed.")
+ 				filt = None
+#				QtGui.QMessageBox.warning(None, "Error", "Filtering not allowed.")
+				print "Filtering is not implemented in this instance of the file browser."
 		else :
 			self.curmodel = inimodel(path)
 
