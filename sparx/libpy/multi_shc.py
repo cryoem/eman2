@@ -1920,6 +1920,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
 
 		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 		t2.set_trans(Vec2f(-s2x, -s2y))
+		print i,phi,theta,psi
 		if i == 0:
 			data.set_attr("xform.projection", t2)
 		else:
@@ -2114,7 +2115,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 			#=========================================================================
 			mpi_barrier(mpi_comm)
 			if myid == main_node:
-				print  data[0].get_attr_dict()
+				#print  data[0].get_attr_dict()
 				log.add("Time of alignment = %f\n"%(time()-start_time))
 				start_time = time()
 

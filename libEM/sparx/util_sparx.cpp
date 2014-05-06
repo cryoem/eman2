@@ -18850,7 +18850,9 @@ vector<float> Util::shc_multipeaks(EMData* image, const vector< EMData* >& crefi
 		swap( listr[r], listr[i] );
 	}
 
-	std::vector<float> results;
+	std::vector<float> results;//(7*max_peaks_count, -1.0e23);
+	int numpeaks=0;
+	float largest_peak = -1.0e23;
 	size_t tiref = 0;
 	for ( ;  (tiref < crefim_len) && (results.size() / 7 < static_cast<unsigned>(max_peaks_count)); tiref++) {
 		iref = listr[tiref];
