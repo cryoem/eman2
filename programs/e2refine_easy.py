@@ -135,6 +135,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_header(name="required", help='Just a visual separation', title="Required:", row=9, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--sym", dest = "sym", default="c1",help = "Specify symmetry - choices are: c<n>, d<n>, tet, oct, icos.", guitype='strbox', row=10, col=1, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--breaksym", action="store_true", default=False,help = "If selected, reconstruction will be asymmetric with sym= specifying a known pseudosymmetry, not an imposed symmetry.", guitype='boolbox', row=11, col=1, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--m3dpar", action="store_true", default=False,help = "Experimental new option for parallel e2make3dpar with angle filling for more optimal angular filtering")
 	parser.add_argument("--iter", dest = "iter", type = int, default=6, help = "The total number of refinement iterations to perform. Default=auto", guitype='intbox', row=10, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--mass", default=0, type=float,help="The ~mass of the particle in kilodaltons, used to run normalize.bymass. Due to resolution effects, not always the true mass.", guitype='floatbox', row=12, col=0, rowspan=1, colspan=1, mode="refinement['self.pm().getMass()']")
 	parser.add_header(name="optional", help='Just a visual separation', title="Optional:", row=14, col=0, rowspan=1, colspan=3, mode="refinement")
@@ -405,6 +406,10 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 <a href=http://blake.bcm.edu/emanwiki/EMAN2/AngStep>http://blake.bcm.edu/emanwiki/EMAN2/AngStep</a></p>".format(astep))
 	else :
 		append_html("<p>Using your specified orientation generator with angular step. You may consider reading this page: <a href=http://blake.bcm.edu/emanwiki/EMAN2/AngStep>http://blake.bcm.edu/emanwiki/EMAN2/AngStep</a></p></p>")
+		try: astep=float(parsemodopt(options.orientgen)[1]["delta"])
+		except:
+			append_html("<p>Could not extract an angular step from your orientation generator. This means I won't be able to use it for optimal rotational averaging during reconstruction</p>")
+			astep=0
 		if options.classiter<0 : options.classiter=1
 	if options.breaksym : options.orientgen=options.orientgen+":breaksym=1"
 
@@ -599,13 +604,25 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 		# FIXME - --lowmem removed due to some tricky bug in e2make3d
 		if options.breaksym : m3dsym="c1"
 		else : m3dsym=options.sym
-		cmd="e2make3d.py --input {path}/classes_{itr:02d}_even.hdf --iter 2 -f --sym {sym} --output {path}/threed_{itr:02d}_even.hdf --recon {recon} --preprocess {preprocess} \
+		if options.m3dpar : 
+			cmd="e2make3dpar.py --input {path}/classes_{itr:02d}_even.hdf --sym {sym} --output {path}/threed_{itr:02d}_even.hdf --preprocess {preprocess} \
+ --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --fillangle {fillangle} --threads {threads} {setsf} {verbose}".format(
+			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=options.m3dpreprocess,  m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
+			m3dpad=options.pad, setsf=m3dsetsf, fillangle=astep ,threads=options.threads, apix=apix, verbose=verbose)
+		else:
+			cmd="e2make3d.py --input {path}/classes_{itr:02d}_even.hdf --iter 2 -f --sym {sym} --output {path}/threed_{itr:02d}_even.hdf --recon {recon} --preprocess {preprocess} \
  --keep={m3dkeep} {keepsig} --apix={apix} --pad={m3dpad} {setsf} {verbose}".format(
 			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=options.m3dpreprocess,  m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
 			m3dpad=options.pad, setsf=m3dsetsf, apix=apix, verbose=verbose)
 		run(cmd)
 
-		cmd="e2make3d.py --input {path}/classes_{itr:02d}_odd.hdf --iter 2 -f --sym {sym} --output {path}/threed_{itr:02d}_odd.hdf --recon {recon} --preprocess {preprocess} \
+		if options.m3dpar : 
+			cmd="e2make3dpar.py --input {path}/classes_{itr:02d}_odd.hdf --sym {sym} --output {path}/threed_{itr:02d}_odd.hdf --preprocess {preprocess} \
+ --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --fillangle {fillangle} --threads {threads} {setsf} {verbose}".format(
+			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=options.m3dpreprocess, m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
+			m3dpad=options.pad, apix=apix, setsf=m3dsetsf, fillangle=astep ,threads=options.threads, verbose=verbose)
+		else:
+			cmd="e2make3d.py --input {path}/classes_{itr:02d}_odd.hdf --iter 2 -f --sym {sym} --output {path}/threed_{itr:02d}_odd.hdf --recon {recon} --preprocess {preprocess} \
  --keep={m3dkeep} {keepsig} --apix={apix} --pad={m3dpad} {setsf} {verbose}".format(
 			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=options.m3dpreprocess, m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
 			m3dpad=options.pad, apix=apix, setsf=m3dsetsf, verbose=verbose)

@@ -73,11 +73,19 @@ struct EMAN_Reconstructor_Wrapper: EMAN::Reconstructor
     }
     
  	int insert_slice(const EMAN::EMData* const slice, const EMAN::Transform& euler) {
- 		return call_method< int >(py_self, "insert_slice", slice,euler,1.0);
- 	}
+		int ret;
+		Py_BEGIN_ALLOW_THREADS
+		ret=call_method< int >(py_self, "insert_slice", slice,euler,1.0);
+		Py_END_ALLOW_THREADS
+		return ret;
+	}
 
  	int insert_slice(const EMAN::EMData* const slice, const EMAN::Transform& euler,float weight) {
- 		return call_method< int >(py_self, "insert_slice", slice,euler,weight);
+		int ret;
+		Py_BEGIN_ALLOW_THREADS
+ 		ret=call_method< int >(py_self, "insert_slice", slice,euler,weight);
+		Py_END_ALLOW_THREADS
+		return ret;
  	}
 
     EMAN::EMData* finish(bool doift) {

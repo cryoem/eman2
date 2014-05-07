@@ -109,6 +109,7 @@ def main():
 
 	(options, args) = parser.parse_args()
 
+	options.fillangle=options.fillangle*pi/180.0
 	# make sure that the user has atleast specified an input file
 #	if len(args) <1:
 #		parser.error("No input file specified")
@@ -212,7 +213,8 @@ def main():
 			options.fillangle,options.verbose-1)) for i in xrange(options.threads)]
 	
 	recon.setup()
-	for t in threads: t.run()
+	print threads
+	for t in threads: t.start()
 	
 	for t in threads: t.join()
 	
@@ -409,6 +411,15 @@ def reconstruct(data,recon,preprocess,pad,fillangle,verbose=0):
 
 	if verbose>0:print "Inserting Slices (%d)"%len(data)
 
+	astep=atan2(1.0,max(pad)/2.0)
+	den=floor(fillangle/astep)
+	if den==0: 
+		fillangle=0
+		if verbose: print "No filling"
+	else: 
+		astep=fillangle/den-.00001
+		if verbose: print "Filling %dx%d"%(den,den)
+
 	ptcl=0
 	for i,elem in enumerate(data):
 		# get the image to insert
@@ -418,15 +429,12 @@ def reconstruct(data,recon,preprocess,pad,fillangle,verbose=0):
 			if not img.has_attr("reconstruct_preproc") :
 				img=recon.preprocess_slice(img,elem["xform"])
 				elem["data"]=img		# cache this for use in later iterations
-			elem["data"].mult(elem["norm"])
-			elem["norm"]=1.0
 		except:
 #			print traceback.print_exc()
 			if elem["fileslice"]>=0 : img=get_processed_image(elem["filename"],elem["filenum"],elem["fileslice"],preprocess,pad,elem["nx"],elem["ny"])
 			else : img=get_processed_image(elem["filename"],elem["filenum"],-1,preprocess,pad)
 			if img["sigma"]==0 : continue
 			img=recon.preprocess_slice(img,elem["xform"])	# no caching here, with the lowmem option
-			img.mult(elem["norm"])
 #		img["n"]=i
 #		if i==7 : display(img)
 
@@ -438,7 +446,16 @@ def reconstruct(data,recon,preprocess,pad,fillangle,verbose=0):
 
 		# Actual slice insertion into the volume
 #		if i==len(data)-1 : display(img)
-		recon.insert_slice(img,elem["xform"],elem["weight"])
+		if fillangle<=0:
+			recon.insert_slice(img,elem["xform"],elem["weight"])
+		else:
+			xf=elem["xform"].get_rotation("eman")
+			alt,az=xf["alt"],xf["az"]
+			for dalt in np.arange(-fillangle/2.0,fillangle/2.0,astep):
+				for daz in np.arange(-fillangle/2.0,fillangle/2.0,astep):
+					newxf=Transform({"type":"eman","alt":alt+dalt,"az":az+daz})
+					recon.insert_slice(img,newxf,elem["weight"])
+			
 	
 	return
 
