@@ -18857,9 +18857,7 @@ vector<float> Util::shc_multipeaks(EMData* image, const vector< EMData* >& crefi
 	for ( ;  (tiref < crefim_len) && (numpeaks < static_cast<unsigned>(max_peaks_count)); tiref++) {
 		iref = listr[tiref];
 		float peak = previousmax;
-
 		std::vector<int> shifts = shuffled_range( 0, (2*kx+1) * (2*ky+1) - 1 );
-		//for ( unsigned nodeId = 0;  nodeId < shifts.size();  ++nodeId ) {
 		unsigned nodeId = 0;
 		bool found_better = false;
 		while(nodeId < shifts.size()  &&  !found_better) {
@@ -18920,7 +18918,8 @@ vector<float> Util::shc_multipeaks(EMData* image, const vector< EMData* >& crefi
 	results.resize(7*max_peaks_count);
 	results.shrink_to_fit();
 	// set new previous max to the smalles peak it found.  This is supposed to slow down the convergence
-	image->set_attr("previousmax",results[7*(max_peaks_count-1)+5]);
+	//  Try top
+	image->set_attr("previousmax",results[7*0+5]);
 
 	//  I believe handling of weights should be moved up to python.
 	// set weights
