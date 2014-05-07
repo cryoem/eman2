@@ -213,7 +213,9 @@ def main():
 			options.fillangle,options.verbose-1)) for i in xrange(options.threads)]
 	
 	recon.setup()
-	for t in threads: t.start()
+	for i,t in enumerate(threads): 
+		if options.verbose>1: print "started thread ",i
+		t.start()
 	
 	for t in threads: t.join()
 	

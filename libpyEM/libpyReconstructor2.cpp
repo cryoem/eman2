@@ -50,7 +50,28 @@ using std::cout;
 using std::endl;
 
 // Declarations ================================================================
-namespace  {
+using namespace EMAN;
+
+	int reconstructor_insert_slice2(Reconstructor &self, const EMData* slice, const Transform& euler) {
+		int ret;
+		Py_BEGIN_ALLOW_THREADS
+//		printf("wrapper1\n");
+		ret=self.insert_slice(slice,euler);
+//		ret=call_method< int >(py_self, "insert_slice", slice,euler,1.0f);
+		Py_END_ALLOW_THREADS
+		return ret;
+	}
+
+ 	int reconstructor_insert_slice3(Reconstructor &self, const EMData* slice, const Transform& euler,float weight) {
+		int ret;
+		Py_BEGIN_ALLOW_THREADS
+//		printf("wrapper2 %p %p %f\n",&self,slice,weight);
+		ret=self.insert_slice(slice,euler,weight);
+// 		ret=call_method< int >(py_self, "insert_slice", slice,euler,weight);
+		Py_END_ALLOW_THREADS
+		return ret;
+ 	}
+
 
 struct EMAN_Reconstructor_Wrapper: EMAN::Reconstructor
 {
@@ -87,6 +108,26 @@ struct EMAN_Reconstructor_Wrapper: EMAN::Reconstructor
 		Py_END_ALLOW_THREADS
 		return ret;
  	}
+ 	
+// 	int insert_slice2( const EMData* slice, const Transform& euler) {
+// 		int ret;
+// 		Py_BEGIN_ALLOW_THREADS
+// 		printf("wrapper1\n");
+// //		ret=py_self->insert_slice(slice,euler);
+// 		ret=call_method< int >(py_self, "insert_slice", slice,euler,1.0f);
+// 		Py_END_ALLOW_THREADS
+// 		return ret;
+// 	}
+// 
+//  	int insert_slice3( const EMData* slice, const Transform& euler,float weight) {
+// 		int ret;
+// 		Py_BEGIN_ALLOW_THREADS
+// 		printf("wrapper2 %p %p %f\n",py_self,slice,weight);
+// //		ret=py_self->insert_slice(slice,euler,weight);
+//  		ret=call_method< int >(py_self, "insert_slice", slice,euler,weight);
+// 		Py_END_ALLOW_THREADS
+// 		return ret;
+//  	}
 
     EMAN::EMData* finish(bool doift) {
         return call_method< EMAN::EMData* >(py_self, "finish", doift);
@@ -129,9 +170,6 @@ struct EMAN_Reconstructor_Wrapper: EMAN::Reconstructor
 };
 
 
-}// namespace
-
-
 // Module ======================================================================
 BOOST_PYTHON_MODULE(libpyReconstructor2)
 {
@@ -141,8 +179,12 @@ BOOST_PYTHON_MODULE(libpyReconstructor2)
         .def("setup", pure_virtual(&EMAN::Reconstructor::setup))
         .def("clear", pure_virtual(&EMAN::Reconstructor::clear))
 		.def("setup_seed", (int (EMAN::Reconstructor::*)(const EMAN::EMData*, const float))&EMAN::Reconstructor::setup_seed)
-		.def("insert_slice", (int (EMAN::Reconstructor::*)(const EMAN::EMData* const, const EMAN::Transform&, const float))&EMAN::Reconstructor::insert_slice)
-		.def("insert_slice", (int (EMAN::Reconstructor::*)(const EMAN::EMData* const, const EMAN::Transform&))&EMAN::Reconstructor::insert_slice)
+//		.def("insert_slice", (int (EMAN::Reconstructor::*)(const EMAN::EMData* const, const EMAN::Transform&, const float))&EMAN::Reconstructor::insert_slice)
+//		.def("insert_slice", (int (EMAN::Reconstructor::*)(const EMAN::EMData* const, const EMAN::Transform&))&EMAN::Reconstructor::insert_slice)
+// 		.def("insert_slice", (int (EMAN::Reconstructor::*)(const EMAN::EMData* const, const EMAN::Transform&, const float))&EMAN_Reconstructor_Wrapper::insert_slice3)
+// 		.def("insert_slice", (int (EMAN::Reconstructor::*)(const EMAN::EMData* const, const EMAN::Transform&))&EMAN_Reconstructor_Wrapper::insert_slice2)
+		.def("insert_slice", &reconstructor_insert_slice3)
+		.def("insert_slice", &reconstructor_insert_slice2)
 		.def("determine_slice_agreement", (int (EMAN::Reconstructor::*)(EMAN::EMData* , const EMAN::Transform&, const float, bool))&EMAN::Reconstructor::determine_slice_agreement)
         .def("preprocess_slice", (EMAN::EMData* (EMAN::Reconstructor::*)(const EMAN::EMData* const, const EMAN::Transform&))&EMAN::Reconstructor::preprocess_slice, return_value_policy< manage_new_object >())
         .def("finish", (EMAN::EMData* (EMAN::Reconstructor::*)(bool))&EMAN::Reconstructor::finish, return_value_policy< manage_new_object >())
