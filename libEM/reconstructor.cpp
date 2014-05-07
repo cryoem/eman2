@@ -2154,7 +2154,7 @@ void printImage( const EMData* line )
 
 
 
-int nn4Reconstructor::insert_slice(const EMData* const slice, const Transform& t, const float mult) {
+int nn4Reconstructor::insert_slice(const EMData* const slice, const Transform& t, const float weight) {
 	// sanity checks
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
@@ -2175,58 +2175,51 @@ int nn4Reconstructor::insert_slice(const EMData* const slice, const Transform& t
 			return 1;
 		}
 	}
+	if( weight > 0.0f )  {
+		EMData* padfft = NULL;
 
-	EMData* padfft = NULL;
+		if( padffted != 0 ) padfft = new EMData(*slice);
+		else                padfft = padfft_slice( slice, t,  m_npad );
 
-	if( padffted != 0 ) padfft = new EMData(*slice);
-	else                padfft = padfft_slice( slice, t,  m_npad );
+		if( m_ndim==3 ) {
+			insert_padfft_slice( padfft, t, weight );
+		} else {
+			float alpha = padfft->get_attr( "alpha" );
+			alpha = alpha/180.0f*M_PI;
+			for(int i=0; i < m_vnxc+1; ++i ) {
+				float xnew = i*cos(alpha);
+				float ynew = -i*sin(alpha);
+				float btqr = padfft->get_value_at( 2*i, 0, 0 );
+				float btqi = padfft->get_value_at( 2*i+1, 0, 0 );
+				if( xnew < 0.0 ) {
+					xnew *= -1;
+					ynew *= -1;
+					btqi *= -1;
+				}
 
-	Assert( mult > 0 );
+				int ixn = int(xnew+0.5+m_vnxp) - m_vnxp;
+				int iyn = int(ynew+0.5+m_vnyp) - m_vnyp;
 
-	if( m_ndim==3 ) {
-		insert_padfft_slice( padfft, t, mult );
-	} else {
-		float alpha = padfft->get_attr( "alpha" );
-		alpha = alpha/180.0f*M_PI;
-		for(int i=0; i < m_vnxc+1; ++i ) {
-			float xnew = i*cos(alpha);
-			float ynew = -i*sin(alpha);
-			float btqr = padfft->get_value_at( 2*i, 0, 0 );
-			float btqi = padfft->get_value_at( 2*i+1, 0, 0 );
-			if( xnew < 0.0 ) {
-				xnew *= -1;
-				ynew *= -1;
-				btqi *= -1;
+				if(iyn < 0 ) iyn += m_vnyp;
+
+				(*m_volume)( 2*ixn, iyn+1, 1 )   += btqr * weight;
+				(*m_volume)( 2*ixn+1, iyn+1, 1 ) += btqi * weight;
+				(*m_wptr)(ixn,iyn+1, 1) += weight;
 			}
 
-			int ixn = int(xnew+0.5+m_vnxp) - m_vnxp;
-			int iyn = int(ynew+0.5+m_vnyp) - m_vnyp;
-
-			if(iyn < 0 ) iyn += m_vnyp;
-
-			(*m_volume)( 2*ixn, iyn+1, 1 ) += btqr * mult;
-			(*m_volume)( 2*ixn+1, iyn+1, 1 ) += btqi * mult;
-			(*m_wptr)(ixn,iyn+1, 1) += mult;
 		}
-
+		checked_delete( padfft );
 	}
-	checked_delete( padfft );
 	return 0;
 }
 
-int nn4Reconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, float mult )
+int nn4Reconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, float weight )
 {
 	Assert( padfft != NULL );
 
 	vector<Transform> tsym = t.get_sym_proj(m_symmetry);
-	for (unsigned int isym=0; isym < tsym.size(); isym++) {
-		m_volume->nn( m_wptr, padfft, tsym[isym], mult);
-        }
+	for (unsigned int isym=0; isym < tsym.size(); isym++)  m_volume->nn( m_wptr, padfft, tsym[isym], weight);
 	
-	/*for (int isym=0; isym < m_nsym; isym++) {
-		Transform tsym = t.get_sym(m_symmetry, isym);
-		m_volume->nn( m_wptr, padfft, tsym, mult);
-        }*/
 	return 0;
 }
 
@@ -2540,11 +2533,10 @@ void nn4_rectReconstructor::buildNormVolume() {
 	m_wptr->set_array_offsets(0,1,1);
 }
 
-int nn4_rectReconstructor::insert_slice(const EMData* const slice, const Transform& t, const float mult) {
+int nn4_rectReconstructor::insert_slice(const EMData* const slice, const Transform& t, const float weight) {
 	// sanity checks
 
 
-	//m_count=m_count+1;
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
 		return 1;
@@ -2566,95 +2558,95 @@ int nn4_rectReconstructor::insert_slice(const EMData* const slice, const Transfo
         		return 1;
 		}
 	}
+	if( weight > 0.0f )  {
 
-	EMData* padfft = NULL;
+		EMData* padfft = NULL;
 
-	if( padffted != 0 ) padfft = new EMData(*slice);
-	else                padfft = padfft_slice( slice, t,  m_npad );
+		if( padffted != 0 ) padfft = new EMData(*slice);
+		else                padfft = padfft_slice( slice, t,  m_npad );
 
-	Assert( mult > 0 );
+		Assert( mult > 0 );
 
-        if( m_ndim==3 ) {
-		insert_padfft_slice( padfft, t, mult );		
+			if( m_ndim==3 ) {
+			insert_padfft_slice( padfft, t, weight );		
 		
-	} else {
-		float ellipse_length,ellipse_step,cos_alpha,sin_alpha;
-		int ellipse_length_int;
-		float alpha = padfft->get_attr( "alpha" );
-		alpha = alpha/180.0f*M_PI;
-		int loop_range;
-		float temp1,temp2;
-                temp1=m_xratio*cos(alpha)*float(m_sizeofprojection*m_npad)/2;
-		temp2=m_yratio*sin(alpha)*float(m_sizeofprojection*m_npad)/2;
-		ellipse_length=sqrt(temp1*temp1+temp2*temp2);
-		ellipse_length_int=int(ellipse_length);
-		ellipse_step=0.5f*(m_sizeofprojection*m_npad)/float(ellipse_length_int);
-		loop_range=ellipse_length_int;
-		cos_alpha=temp1/ellipse_length;
-		sin_alpha=temp2/ellipse_length;
-		if(m_count%100==0)
-                {
-			std::cout<<"#############################################################"<<std::endl;
-			std::cout<<"line insert start=="<<m_count<<std::endl;
-			std::cout<<"ellipse lenth=="<<ellipse_length_int<<"ellips step=="<<ellipse_step<<std::endl;
-			std::cout<<"loop_range"<<loop_range<<std::endl;
-                        std::cout<<"x and y ratio=="<<m_xratio<<"  "<<m_yratio<<std::endl;
-			std::cout<<"cos sin of alpha=="<<cos(alpha)<<"   "<<sin(alpha)<<std::endl;
-			std::cout<<"cos sin of alpha_new==="<<cos_alpha<<sin_alpha<<std::endl;
-			std::cout<<"alpah dig==="<<cos_alpha<<sin_alpha<<std::endl;
-			std::cout<<"prjection maximum==="<<loop_range*ellipse_step<<"ideal maximum"<<m_sizeofprojection*m_npad/2<<std::endl;
-			std::cout<<"x_size=="<<m_volume->get_xsize()<<"y_size=="<<m_volume->get_ysize()<<std::endl;
-			std::cout<<"#############################################################"<<std::endl;
+		} else {
+			float ellipse_length,ellipse_step,cos_alpha,sin_alpha;
+			int ellipse_length_int;
+			float alpha = padfft->get_attr( "alpha" );
+			alpha = alpha/180.0f*M_PI;
+			int loop_range;
+			float temp1,temp2;
+					temp1=m_xratio*cos(alpha)*float(m_sizeofprojection*m_npad)/2;
+			temp2=m_yratio*sin(alpha)*float(m_sizeofprojection*m_npad)/2;
+			ellipse_length=sqrt(temp1*temp1+temp2*temp2);
+			ellipse_length_int=int(ellipse_length);
+			ellipse_step=0.5f*(m_sizeofprojection*m_npad)/float(ellipse_length_int);
+			loop_range=ellipse_length_int;
+			cos_alpha=temp1/ellipse_length;
+			sin_alpha=temp2/ellipse_length;
+			if(m_count%100==0)
+					{
+				std::cout<<"#############################################################"<<std::endl;
+				std::cout<<"line insert start=="<<m_count<<std::endl;
+				std::cout<<"ellipse lenth=="<<ellipse_length_int<<"ellips step=="<<ellipse_step<<std::endl;
+				std::cout<<"loop_range"<<loop_range<<std::endl;
+							std::cout<<"x and y ratio=="<<m_xratio<<"  "<<m_yratio<<std::endl;
+				std::cout<<"cos sin of alpha=="<<cos(alpha)<<"   "<<sin(alpha)<<std::endl;
+				std::cout<<"cos sin of alpha_new==="<<cos_alpha<<sin_alpha<<std::endl;
+				std::cout<<"alpah dig==="<<cos_alpha<<sin_alpha<<std::endl;
+				std::cout<<"prjection maximum==="<<loop_range*ellipse_step<<"ideal maximum"<<m_sizeofprojection*m_npad/2<<std::endl;
+				std::cout<<"x_size=="<<m_volume->get_xsize()<<"y_size=="<<m_volume->get_ysize()<<std::endl;
+				std::cout<<"#############################################################"<<std::endl;
 
 
-                        
+						
 
-		}
-		for(int i=0; i <=loop_range; ++i ) {
-			float xnew = i*cos_alpha;
-			float ynew = -i*sin_alpha;
-			if(m_count%100==0&&i==loop_range)
-				std::cout<<"x_new=="<<xnew<<"Y_new=="<<ynew<<std::endl;
-			float btqr=0,btqi=0;
-	   		float xprj=i*ellipse_step;
-			float t=xprj-int(xprj);
-			btqr = (1-t)*padfft->get_value_at( 2*int(xprj), 0, 0 )+t*padfft->get_value_at( 2*(1+int(xprj)), 0, 0 );
-			btqi = (1-t)*padfft->get_value_at( 2*int(xprj)+1, 0, 0 )+t*padfft->get_value_at( 2*(1+int(xprj))+1, 0, 0 );
-			if( xnew < 0.0 ) {
-				xnew *= -1;
-				ynew *= -1;
-				btqi *= -1;
+			}
+			for(int i=0; i <=loop_range; ++i ) {
+				float xnew = i*cos_alpha;
+				float ynew = -i*sin_alpha;
+				if(m_count%100==0&&i==loop_range)
+					std::cout<<"x_new=="<<xnew<<"Y_new=="<<ynew<<std::endl;
+				float btqr=0,btqi=0;
+				float xprj=i*ellipse_step;
+				float t=xprj-int(xprj);
+				btqr = (1-t)*padfft->get_value_at( 2*int(xprj), 0, 0 )+t*padfft->get_value_at( 2*(1+int(xprj)), 0, 0 );
+				btqi = (1-t)*padfft->get_value_at( 2*int(xprj)+1, 0, 0 )+t*padfft->get_value_at( 2*(1+int(xprj))+1, 0, 0 );
+				if( xnew < 0.0 ) {
+					xnew *= -1;
+					ynew *= -1;
+					btqi *= -1;
+				}
+
+				int ixn = int(xnew+0.5+m_vnxp) - m_vnxp;
+				int iyn = int(ynew+0.5+m_vnyp) - m_vnyp;
+
+				if(iyn < 0 ) iyn += m_vnyp;
+				if(m_count%100==0&&i==loop_range)
+					std::cout<<"xnn=="<<ixn<<"ynn=="<<iyn<<std::endl;
+				(*m_volume)( 2*ixn, iyn+1, 1 )   += btqr * weight;
+				(*m_volume)( 2*ixn+1, iyn+1, 1 ) += btqi * weight;
+				(*m_wptr)(ixn,iyn+1, 1) += weight;
 			}
 
-			int ixn = int(xnew+0.5+m_vnxp) - m_vnxp;
-			int iyn = int(ynew+0.5+m_vnyp) - m_vnyp;
 
-			if(iyn < 0 ) iyn += m_vnyp;
-			if(m_count%100==0&&i==loop_range)
-				std::cout<<"xnn=="<<ixn<<"ynn=="<<iyn<<std::endl;
-			(*m_volume)( 2*ixn, iyn+1, 1 ) += btqr * mult;
-			(*m_volume)( 2*ixn+1, iyn+1, 1 ) += btqi * mult;
-			(*m_wptr)(ixn,iyn+1, 1) += mult;
 		}
-
-
+		checked_delete( padfft );
+		return 0;
 	}
-	checked_delete( padfft );
-	return 0;
 }
 
 
 
 
-int nn4_rectReconstructor::insert_padfft_slice( EMData* padded, const Transform& t, float mult )
+int nn4_rectReconstructor::insert_padfft_slice( EMData* padded, const Transform& t, float weight )
 {
 	Assert( padded != NULL );
 		
 	vector<Transform> tsym = t.get_sym_proj(m_symmetry);
-	for (unsigned int isym=0; isym < tsym.size(); isym++) {
-		m_volume->insert_rect_slice(m_wptr, padded, tsym[isym], m_sizeofprojection, m_xratio, m_yratio, m_zratio, m_npad, mult);
-        }
-	
+	for (unsigned int isym=0; isym < tsym.size(); isym++)
+		m_volume->insert_rect_slice(m_wptr, padded, tsym[isym], m_sizeofprojection, m_xratio, m_yratio, m_zratio, m_npad, weight);
 
 	return 0;
 
@@ -2945,40 +2937,40 @@ void nnSSNR_Reconstructor::buildNorm2Volume() {
 }
 
 
-int nnSSNR_Reconstructor::insert_slice(const EMData* const slice, const Transform& t, const float mult) {
+int nnSSNR_Reconstructor::insert_slice(const EMData* const slice, const Transform& t, const float weight) {
 	// sanity checks
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
 		return 1;
 	}
+	if( weight > 0.0f )  {
+		int padffted=slice->get_attr_default( "padffted", 0 );
 
-	int padffted=slice->get_attr_default( "padffted", 0 );
+		if ( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  ) {
+			// FIXME: Why doesn't this throw an exception?
+			LOGERR("Tried to insert a slice that has wrong size.");
+			return 1;
+		}
 
-	if ( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  ) {
-		// FIXME: Why doesn't this throw an exception?
-		LOGERR("Tried to insert a slice that has wrong size.");
-		return 1;
+		EMData* padfft = NULL;
+
+		if( padffted != 0 ) padfft = new EMData(*slice);
+		else		    padfft = padfft_slice( slice, t, m_npad );
+
+		insert_padfft_slice( padfft, t, weight );
+
+		checked_delete( padfft );
+		return 0;
 	}
-
-	EMData* padfft = NULL;
-
-	if( padffted != 0 ) padfft = new EMData(*slice);
-	else		    padfft = padfft_slice( slice, t, m_npad );
-
-	Assert( mult > 0 );
-	insert_padfft_slice( padfft, t, mult );
-
-	checked_delete( padfft );
-	return 0;
 }
 
-int nnSSNR_Reconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, float mult )
+int nnSSNR_Reconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, float weight )
 {
 	Assert( padfft != NULL );
 	// insert slice for all symmetry related positions
 	for (int isym=0; isym < m_nsym; isym++) {
 		Transform tsym = t.get_sym(m_symmetry, isym);
-		m_volume->nn_SSNR( m_wptr, m_wptr2, padfft, tsym, mult);
+		m_volume->nn_SSNR( m_wptr, m_wptr2, padfft, tsym, weight);
 	}
 	return 0;
 }
@@ -3255,42 +3247,42 @@ void nn4_ctfReconstructor::buildNormVolume()
 
 }
 
-int nn4_ctfReconstructor::insert_slice(const EMData* const slice, const Transform& t, const float mult)
+int nn4_ctfReconstructor::insert_slice(const EMData* const slice, const Transform& t, const float weight)
 {
 	// sanity checks
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
 		return 1;
 	}
+	if( weight > 0.0f )  {
+		int buffed = slice->get_attr_default( "buffed", 0 );
+			if( buffed > 0 ) {
+				insert_buffed_slice( slice, weight );
+				return 0;
+			}
 
-	int buffed = slice->get_attr_default( "buffed", 0 );
-        if( buffed > 0 ) {
-        	insert_buffed_slice( slice, mult );
-        	return 0;
-        }
+		int padffted= slice->get_attr_default("padffted", 0);
+		if( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  )
+			{
+			// FIXME: Why doesn't this throw an exception?
+			LOGERR("Tried to insert a slice that is the wrong size.");
+			return 1;
+		}
 
-	int padffted= slice->get_attr_default("padffted", 0);
-	if( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  )
-        {
-		// FIXME: Why doesn't this throw an exception?
-		LOGERR("Tried to insert a slice that is the wrong size.");
-		return 1;
+		EMData* padfft = NULL;
+
+		if( padffted != 0 ) padfft = new EMData(*slice);
+		else                padfft = padfft_slice( slice, t, m_npad );
+
+		insert_padfft_slice( padfft, t, weight );
+
+		checked_delete( padfft );
+
+		return 0;
 	}
-
-	EMData* padfft = NULL;
-
-	if( padffted != 0 ) padfft = new EMData(*slice);
-	else                padfft = padfft_slice( slice, t, m_npad );
-
-	Assert( mult > 0 );
-	insert_padfft_slice( padfft, t, mult );
-
-	checked_delete( padfft );
-
-	return 0;
 }
 
-int nn4_ctfReconstructor::insert_buffed_slice( const EMData* buffed, float mult )
+int nn4_ctfReconstructor::insert_buffed_slice( const EMData* buffed, float weight )
 {
 	const float* bufdata = buffed->get_data();
 	float* cdata = m_volume->get_data();
@@ -3301,9 +3293,9 @@ int nn4_ctfReconstructor::insert_buffed_slice( const EMData* buffed, float mult 
 
 		int pos2 = int( bufdata[4*i] );
 		int pos1 = pos2 * 2;
-		cdata[pos1  ] += bufdata[4*i+1]*mult;
-		cdata[pos1+1] += bufdata[4*i+2]*mult;
-		wdata[pos2  ] += bufdata[4*i+3]*mult;
+		cdata[pos1  ] += bufdata[4*i+1]*weight;
+		cdata[pos1+1] += bufdata[4*i+2]*weight;
+		wdata[pos2  ] += bufdata[4*i+3]*weight;
 /*
         std::cout << "pos1, pos2, ctfv1, ctfv2, ctf2: ";
         std::cout << pos1 << " " << bufdata[5*i+1] << " " << bufdata[5*i+2] << " ";
@@ -3313,7 +3305,7 @@ int nn4_ctfReconstructor::insert_buffed_slice( const EMData* buffed, float mult 
 	return 0;
 }
 
-int nn4_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, float mult )
+int nn4_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, float weight )
 {
 	Assert( padfft != NULL );
 	float tmp = padfft->get_attr_default("ctf_applied", 0);
@@ -3321,8 +3313,8 @@ int nn4_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform& 
 	
 	vector<Transform> tsym = t.get_sym_proj(m_symmetry);
 	for (unsigned int isym=0; isym < tsym.size(); isym++) {
-		if(ctf_applied) m_volume->nn_ctf_applied(m_wptr, padfft, tsym[isym], mult);
-		else            m_volume->nn_ctf(m_wptr, padfft, tsym[isym], mult);
+		if(ctf_applied) m_volume->nn_ctf_applied(m_wptr, padfft, tsym[isym], weight);
+		else            m_volume->nn_ctf(m_wptr, padfft, tsym[isym], weight);
 	}
 
 	return 0;
@@ -3541,29 +3533,27 @@ int nn4_ctfwReconstructor::insert_slice(const EMData* const slice, const Transfo
 		LOGERR("try to insert NULL slice");
 		return 1;
 	}
+	if(weight >0.0f) {
+		int padffted= slice->get_attr_default("padffted", 0);
+		if( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  ) {
+			// FIXME: Why doesn't this throw an exception?
+			LOGERR("Tried to insert a slice that is the wrong size.");
+			return 1;
+		}
 
-	int padffted= slice->get_attr_default("padffted", 0);
-	if( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  )
-        {
-		// FIXME: Why doesn't this throw an exception?
-		LOGERR("Tried to insert a slice that is the wrong size.");
-		return 1;
-	}
+		EMData* padfft = NULL;
+		EMData* sigmasq2;
+		sigmasq2 = slice->get_attr("sigmasq2");
 
-	EMData* padfft = NULL;
-	EMData* sigmasq2;
-	sigmasq2 = slice->get_attr("sigmasq2");
+		if( padffted != 0 ) padfft = new EMData(*slice);
+		else                padfft = padfft_slice( slice, t, m_npad );
 
-	if( padffted != 0 ) padfft = new EMData(*slice);
-	else                padfft = padfft_slice( slice, t, m_npad );
-
-//	Assert( mult > 0 );
-//for (int ix = 0; ix <= 20; ix++) cout <<"  "<<(*sigmasq2)(ix,1) <<"  "<<(*padfft)(ix,1);
+///for (int ix = 0; ix <= 20; ix++) cout <<"  "<<(*sigmasq2)(ix,1) <<"  "<<(*padfft)(ix,1);
 //cout <<endl;
-	insert_padfft_slice_weighted( padfft, sigmasq2, t, weight );
+		insert_padfft_slice_weighted( padfft, sigmasq2, t, weight );
 
-	checked_delete( padfft );
-
+		checked_delete( padfft );
+	}
 	return 0;
 }
 
@@ -3875,43 +3865,42 @@ void nn4_ctf_rectReconstructor::buildNormVolume()
 
 }
 
-int nn4_ctf_rectReconstructor::insert_slice(const EMData* const slice, const Transform& t, const float mult)
+int nn4_ctf_rectReconstructor::insert_slice(const EMData* const slice, const Transform& t, const float weight)
 {
 	// sanity checks
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
 		return 1;
 	}
+	if(weight >0.0f )  {
+		int buffed = slice->get_attr_default( "buffed", 0 );
+		if( buffed > 0 ) {
+			insert_buffed_slice( slice, weight );
+			return 0;
+		}
 
-	int buffed = slice->get_attr_default( "buffed", 0 );
-	if( buffed > 0 ) {
-		insert_buffed_slice( slice, mult );
-		return 0;
+		int padffted= slice->get_attr_default("padffted", 0);
+		//if( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  )
+		if( padffted==0 && (slice->get_xsize()!=slice->get_ysize())  )
+		{
+			// FIXME: Why doesn't this throw an exception?
+			LOGERR("Tried to insert a slice that is the wrong size.");
+			return 1;
+		}
+
+		EMData* padfft = NULL;
+
+		if( padffted != 0 ) padfft = new EMData(*slice);
+		else                padfft = padfft_slice( slice, t, m_npad );
+
+		insert_padfft_slice( padfft, t, weight );
+
+		checked_delete( padfft );
 	}
-
-	int padffted= slice->get_attr_default("padffted", 0);
-	//if( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  )
-	if( padffted==0 && (slice->get_xsize()!=slice->get_ysize())  )
-	{
-		// FIXME: Why doesn't this throw an exception?
-		LOGERR("Tried to insert a slice that is the wrong size.");
-		return 1;
-	}
-
-	EMData* padfft = NULL;
-
-	if( padffted != 0 ) padfft = new EMData(*slice);
-	else                padfft = padfft_slice( slice, t, m_npad );
-
-	Assert( mult > 0 );
-	insert_padfft_slice( padfft, t, mult );
-
-	checked_delete( padfft );
-
 	return 0;
 }
 
-int nn4_ctf_rectReconstructor::insert_buffed_slice( const EMData* buffed, float mult )
+int nn4_ctf_rectReconstructor::insert_buffed_slice( const EMData* buffed, float weight )
 {
 	const float* bufdata = buffed->get_data();
 	float* cdata = m_volume->get_data();
@@ -3922,9 +3911,9 @@ int nn4_ctf_rectReconstructor::insert_buffed_slice( const EMData* buffed, float 
 
 		int pos2 = int( bufdata[4*i] );
 		int pos1 = pos2 * 2;
-		cdata[pos1  ] += bufdata[4*i+1]*mult;
-		cdata[pos1+1] += bufdata[4*i+2]*mult;
-		wdata[pos2  ] += bufdata[4*i+3]*mult;
+		cdata[pos1  ] += bufdata[4*i+1]*weight;
+		cdata[pos1+1] += bufdata[4*i+2]*weight;
+		wdata[pos2  ] += bufdata[4*i+3]*weight;
 /*
         std::cout << "pos1, pos2, ctfv1, ctfv2, ctf2: ";
         std::cout << pos1 << " " << bufdata[5*i+1] << " " << bufdata[5*i+2] << " ";
@@ -3935,22 +3924,17 @@ int nn4_ctf_rectReconstructor::insert_buffed_slice( const EMData* buffed, float 
 }
 
 
-int nn4_ctf_rectReconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, float mult )
+int nn4_ctf_rectReconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, float weight )
 {
-	Assert( padfft != NULL );
 	float tmp = padfft->get_attr("ctf_applied");
 	int   ctf_applied = (int) tmp;
 	vector<Transform> tsym = t.get_sym_proj(m_symmetry);
 	for (unsigned int isym=0; isym < tsym.size(); isym++) {
-		if(ctf_applied) m_volume->insert_rect_slice_ctf_applied(m_wptr, padfft, tsym[isym], m_sizeofprojection, m_xratio,m_yratio, m_zratio, m_npad, mult);
-				
-		else            m_volume->insert_rect_slice_ctf(m_wptr, padfft, tsym[isym], m_sizeofprojection, m_xratio, m_yratio, m_zratio, m_npad, mult);
-		
-        }
-
+		if(ctf_applied) m_volume->insert_rect_slice_ctf_applied(m_wptr, padfft, tsym[isym], m_sizeofprojection, m_xratio,m_yratio, m_zratio, m_npad, weight);			
+		else            m_volume->insert_rect_slice_ctf(m_wptr, padfft, tsym[isym], m_sizeofprojection, m_xratio, m_yratio, m_zratio, m_npad, weight);	
+	}
 
 	return 0;
-
 }
 
 #define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
@@ -4171,39 +4155,38 @@ void nnSSNR_ctfReconstructor::buildNorm3Volume() {
 	m_wptr3->set_array_offsets(0,1,1);
 }
 
-int nnSSNR_ctfReconstructor::insert_slice(const EMData *const  slice, const Transform& t, const float mult) {
+int nnSSNR_ctfReconstructor::insert_slice(const EMData *const  slice, const Transform& t, const float weight) {
 	// sanity checks
 	if (!slice) {
 		LOGERR("try to insert NULL slice");
 		return 1;
 	}
-	int padffted= slice->get_attr_default("padffted", 0);
-	if ( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  ) {
-		// FIXME: Why doesn't this throw an exception?
-		LOGERR("Tried to insert a slice that is the wrong size.");
-		return 1;
+	if( weight > 0.0f ) {
+		int padffted= slice->get_attr_default("padffted", 0);
+		if ( padffted==0 && (slice->get_xsize()!=slice->get_ysize() || slice->get_xsize()!=m_vnx)  ) {
+			// FIXME: Why doesn't this throw an exception?
+			LOGERR("Tried to insert a slice that is the wrong size.");
+			return 1;
+		}
+		EMData* padfft = NULL;
+
+		if( padffted != 0 )  padfft = new EMData(*slice);
+		else                 padfft = padfft_slice( slice, t, m_npad );
+
+		insert_padfft_slice( padfft, t, weight );
+
+		checked_delete( padfft );
 	}
-	EMData* padfft = NULL;
-
-	if( padffted != 0 ) padfft = new EMData(*slice);
-	else                 padfft = padfft_slice( slice, t, m_npad );
-
-	Assert( mult > 0 );
-	insert_padfft_slice( padfft, t, mult );
-
-	checked_delete( padfft );
 	return 0;
 }
-int nnSSNR_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, float mult )
+int nnSSNR_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, float weight )
 {
-	Assert( padfft != NULL );
 
 	// insert slice for all symmetry related positions
 	for (int isym=0; isym < m_nsym; isym++) {
 		Transform tsym = t.get_sym(m_symmetry, isym);
-		m_volume->nn_SSNR_ctf(m_wptr, m_wptr2, m_wptr3, padfft, tsym, mult);
+		m_volume->nn_SSNR_ctf(m_wptr, m_wptr2, m_wptr3, padfft, tsym, weight);
 	}
-
 	return 0;
 }
 
