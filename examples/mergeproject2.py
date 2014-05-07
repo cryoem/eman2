@@ -35,6 +35,8 @@ from EMAN2 import *
 import sys
 import time
 
+print "WARNING: this program was designed for EMAN2.07. It will not work properly with EMAN2.1+ projects. With EMAN2.1 projects, you can simply combine the files from micrographs, particles and info into a single project directory. No specific programs need to be used"
+
 if len(sys.argv)<2 : 
 	print "Usage: mergeproject.py <project dir> ... [--minquality=<0-9>]\n\nThis is a new version of mergeproject desinged to work with e2projectmanager projects rather than e2workflow project. \n\nRun this program from the target project directory, and specify the path to another project whose particles you wish to incorporate.\nDeals only with boxed particles & CTF. New sets will need to be made in the current project.\nIf minquality is provided, only particles with a quality at least as large as the specified value will be copied."
 

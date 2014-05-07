@@ -213,7 +213,6 @@ def main():
 			options.fillangle,options.verbose-1)) for i in xrange(options.threads)]
 	
 	recon.setup()
-	print threads
 	for t in threads: t.start()
 	
 	for t in threads: t.join()
@@ -411,7 +410,7 @@ def reconstruct(data,recon,preprocess,pad,fillangle,verbose=0):
 
 	if verbose>0:print "Inserting Slices (%d)"%len(data)
 
-	astep=atan2(1.0,max(pad)/2.0)
+	astep=atan2(1.0,max(pad)/2.0)*3.0
 	den=floor(fillangle/astep)
 	if den==0: 
 		fillangle=0

@@ -3557,7 +3557,7 @@ int nn4_ctfwReconstructor::insert_slice(const EMData* const slice, const Transfo
 	if( padffted != 0 ) padfft = new EMData(*slice);
 	else                padfft = padfft_slice( slice, t, m_npad );
 
-	Assert( mult > 0 );
+//	Assert( mult > 0 );
 //for (int ix = 0; ix <= 20; ix++) cout <<"  "<<(*sigmasq2)(ix,1) <<"  "<<(*padfft)(ix,1);
 //cout <<endl;
 	insert_padfft_slice_weighted( padfft, sigmasq2, t, weight );
