@@ -1858,6 +1858,95 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 """
 
 
+def proj_ali_incore_multi(data, refrings, numr, xrng = 0.0, yrng = 0.0, step=1.0, nsoft = -1, finfo=None):
+	from utilities    import compose_transform2
+	from math         import cos, pi, radians, degrees
+	from EMAN2 import Vec2f, Transform
+	from global_def import Util
+
+	mode = "F"
+	nx   = data.get_xsize()
+	ny   = data.get_ysize()
+	#  center is in SPIDER convention
+	cnx  = nx//2 + 1
+	cny  = ny//2 + 1
+
+	#phi, theta, psi, sxo, syo = get_params_proj(data)
+	t1 = data.get_attr("xform.projection")
+	dp = t1.get_params("spider")
+	if finfo:
+		ID = data.get_attr("ID")
+		finfo.write("Image id: %6d\n"%(ID))
+		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
+		finfo.flush()
+
+	#[ang, sxs, sys, mirror, iref, peak, checked_refs] = Util.shc(data, refrings, xrng, yrng, step, ant, mode, numr, cnx+dp["tx"], cny+dp["ty"])
+	peaks = Util.multiref_polar_ali_2d_peaklist(data, refrings, xrng, yrng, step, mode, numr, cnx+dp["tx"], cny+dp["ty"])
+	# the list of peaks is unsorted, but it does not matter at the moment.
+	peaks_count = len(peaks) / 5
+	pixel_error = 0.0
+	peak = 0.0
+	if( peaks_count > 0 ):
+		ws = sum([peaks[i*5] for i in xrange(peaks_count)])
+		for i in xrange(peaks_count):
+			iref = i
+			ang    = peaks[i*5+1]
+			sxs    = peaks[i*5+2]
+			sys    = peaks[i*5+3]
+			mirror = peaks[i*5+4]
+			peak   = peaks[i*5+0]/ws
+			#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
+			#ang = (ang+360.0)%360.0
+
+			# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
+			# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
+			angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+			if  mirror:
+				phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
+				theta = 180.0-refrings[iref].get_attr("theta")
+				psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
+				s2x   = sxb - dp["tx"]
+				s2y   = syb - dp["ty"]
+			else:
+				phi   = refrings[iref].get_attr("phi")
+				theta = refrings[iref].get_attr("theta")
+				psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
+				s2x   = sxb - dp["tx"]
+				s2y   = syb - dp["ty"]
+
+			t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
+			t2.set_trans(Vec2f(-s2x, -s2y))
+			#print i,phi,theta,psi,-s2x, -s2y,peak
+			if i == 0:
+				data.set_attr("xform.projection", t2)
+			else:
+				data.set_attr("xform.projection" + str(i), t2)
+			if i == 0:
+				data.set_attr("weight", peak)
+			else:
+				data.set_attr("weight" + str(i), peak)
+			from pixel_error import max_3D_pixel_error
+			pixel_error += max_3D_pixel_error(t1, t2, numr[-3])
+			if finfo:
+				finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
+				finfo.flush()
+
+		# remove old xform.projection
+		i = max(peaks_count, 1)
+		while data.has_attr("xform.projection" + str(i)):
+			data.del_attr("xform.projection" + str(i))
+			i += 1
+		i = max(peaks_count, 1)
+		while data.has_attr("weight" + str(i)):
+			data.del_attr("weight" + str(i))
+			i += 1
+		pixel_error /= peaks_count
+		peak = peaks[0]  # It is not used anywhere, but set it to the maximum.
+	
+	return peak, pixel_error
+
+
+
 def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
 	from utilities    import compose_transform2
 	from math         import cos, pi
@@ -1890,52 +1979,55 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
 	pixel_error = 0.0
 	number_of_checked_refs = 0
 	peak = 0.0
-	for i in xrange(peaks_count):
-		ang    = peaks[i*7+0]
-		sxs    = peaks[i*7+1]
-		sys    = peaks[i*7+2]
-		mirror = peaks[i*7+3]
-		iref   = int(peaks[i*7+4])
-		peak   = peaks[i*7+5]
-		checked_refs = int(peaks[i*7+6])
-		number_of_checked_refs += checked_refs
-		#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
-		#ang = (ang+360.0)%360.0
+	if( peaks_count > 0 ):
+		for i in xrange(peaks_count):
+			ang    = peaks[i*7+0]
+			sxs    = peaks[i*7+1]
+			sys    = peaks[i*7+2]
+			mirror = peaks[i*7+3]
+			iref   = int(peaks[i*7+4])
+			#peak   = peaks[i*7+5]
+			checked_refs = int(peaks[i*7+6])
+			number_of_checked_refs += checked_refs
+			#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
+			#ang = (ang+360.0)%360.0
 
-		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
-		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
-		if  mirror:
-			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
-			theta = 180.0-refrings[iref].get_attr("theta")
-			psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
-			s2x   = sxb - dp["tx"]
-			s2y   = syb - dp["ty"]
-		else:
-			phi   = refrings[iref].get_attr("phi")
-			theta = refrings[iref].get_attr("theta")
-			psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-			s2x   = sxb - dp["tx"]
-			s2y   = syb - dp["ty"]
+			# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
+			# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
+			angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+			if  mirror:
+				phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
+				theta = 180.0-refrings[iref].get_attr("theta")
+				psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
+				s2x   = sxb - dp["tx"]
+				s2y   = syb - dp["ty"]
+			else:
+				phi   = refrings[iref].get_attr("phi")
+				theta = refrings[iref].get_attr("theta")
+				psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
+				s2x   = sxb - dp["tx"]
+				s2y   = syb - dp["ty"]
 
-		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
-		t2.set_trans(Vec2f(-s2x, -s2y))
-		print i,phi,theta,psi
-		if i == 0:
-			data.set_attr("xform.projection", t2)
-		else:
-			data.set_attr("xform.projection" + str(i), t2)
-		from pixel_error import max_3D_pixel_error
-		pixel_error += max_3D_pixel_error(t1, t2, numr[-3])
-		if finfo:
-			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
-			finfo.flush()
+			t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
+			t2.set_trans(Vec2f(-s2x, -s2y))
+			print i,phi,theta,psi
+			if i == 0:
+				data.set_attr("xform.projection", t2)
+			else:
+				data.set_attr("xform.projection" + str(i), t2)
+			from pixel_error import max_3D_pixel_error
+			pixel_error += max_3D_pixel_error(t1, t2, numr[-3])
+			if finfo:
+				finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
+				finfo.flush()
 
-	# remove old xform.projection
-	i = max(peaks_count, 1)
-	while data.has_attr("xform.projection" + str(i)):
-		data.del_attr("xform.projection" + str(i))
-		i += 1
+		# remove old xform.projection
+		i = max(peaks_count, 1)
+		while data.has_attr("xform.projection" + str(i)):
+			data.del_attr("xform.projection" + str(i))
+			i += 1
+		pixel_error /= peaks_count
+		peak = peaks[i*0+5]  # It is not used anywhere, but set it to the maximum.
 
 # -------- remove weights
 # 	data.del_attr("weight")
@@ -1943,7 +2035,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
 # 		if data.has_attr("weight" + str(i)):
 # 			data.del_attr("weight" + str(i))
 	
-	return peak, (pixel_error / 7), (number_of_checked_refs / 7), peaks_count
+	return peak, pixel_error, number_of_checked_refs, peaks_count
 
 
 

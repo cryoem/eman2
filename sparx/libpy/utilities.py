@@ -2956,7 +2956,7 @@ def closest_ang( vecs, vec) :
 
 	return best_i
 
-# This is in python, it is very slow, we keep it just for comparison
+# This is in python, it is very slow, we keep it just for comparison, use Util.assign_projangles instead
 def assign_projangles_slow(projangles, refangles):
 	refnormal = [None]*len(refangles)
 	for i in xrange(len(refangles)):
@@ -3023,7 +3023,6 @@ def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 			assignments[i] = lookup[best_j]
 			del tempan[best_j], lookup[best_j]
 
-		
 	else:
 		print  "  ERROR: this symmetry is not supported  ",sym
 		assignments = []
@@ -3111,18 +3110,30 @@ def assign_projangles(projangles, refangles, return_asg = False):
 
 	return assignments
 
-
-def cone_ang( projangles, phi, tht, ant ) :
+def cone_ang( projangles, phi, tht, ant ):
 	from utilities import getvec
-	from math import cos, pi
+	from math import cos, pi, degrees, radians
 	vec = getvec( phi, tht )
 
-	cone = cos(ant*pi/180.0)
+	cone = cos(radians(ant))
 	la = []
 	for i in xrange( len(projangles) ):
-		vec  = getvec( phi, tht )
 		vecs = getvec( projangles[i][0], projangles[i][1] )
 		s = abs(vecs[0]*vec[0] + vecs[1]*vec[1] + vecs[2]*vec[2])
+		if s >= cone:
+			la.append(i)
+
+	return la
+
+def cone_vectors( normvectors, phi, tht, ant ):
+	from utilities import getvec
+	from math import cos, pi, degrees, radians
+	vec = getvec( phi, tht )
+
+	cone = cos(radians(ant))
+	la = []
+	for i in xrange( len(normvectors) ):
+		s = abs(normvectors[i][0]*vec[0] + normvectors[i][1]*vec[1] + normvectors[i][2]*vec[2])
 		if s >= cone:
 			la.append(i)
 
