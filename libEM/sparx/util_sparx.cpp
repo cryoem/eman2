@@ -18851,50 +18851,49 @@ vector<float> Util::shc_multipeaks(EMData* image, const vector< EMData* >& crefi
 	}
 
 	std::vector<float> results;//(7*max_peaks_count, -1.0e23);
-	int numpeaks=0;
+	int numpeaks = 0;
 	float largest_peak = -1.0e23;
 	size_t tiref = 0;
-	for ( ;  (tiref < crefim_len) && (results.size() / 7 < static_cast<unsigned>(max_peaks_count)); tiref++) {
+	for ( ;  (tiref < crefim_len) && (numpeaks < static_cast<unsigned>(max_peaks_count)); tiref++) {
 		iref = listr[tiref];
 		float peak = previousmax;
 
+		std::vector<int> shifts = shuffled_range( 0, (2*kx+1) * (2*ky+1) - 1 );
+		//for ( unsigned nodeId = 0;  nodeId < shifts.size();  ++nodeId ) {
+		unsigned nodeId = 0;
+		bool found_better = false;
+		while(nodeId < shifts.size()  &&  !found_better) {
+			const int i = ( shifts[nodeId] % (2*ky+1) ) - ky;
+			const int j = ( shifts[nodeId] / (2*ky+1) ) - kx;
+			const float iy = i * step;
+			const float ix = j * step;
+			EMData* cimage = cimages[i+ky][j+kx];
+			Dict retvals = Crosrng_rand_ms(crefim[iref], cimage, numr, previousmax);
+			const float new_peak = static_cast<float>( retvals["qn"] );
+			if (new_peak > peak) {
+				sx = -ix;
+				sy = -iy;
+				nref = iref;
+				ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+				peak = new_peak;
+				mirror = static_cast<int>( retvals["mirror"] );
+				bool found_better = (peak > previousmax);
 
-	    	std::vector<int> shifts = shuffled_range( 0, (2*kx+1) * (2*ky+1) - 1 );
-		    //for ( unsigned nodeId = 0;  nodeId < shifts.size();  ++nodeId ) {
-		    unsigned nodeId = 0;
-		    bool found_better = false;
-		    while(nodeId < shifts.size()  &&  !found_better) {
-			    const int i = ( shifts[nodeId] % (2*ky+1) ) - ky;
-    			const int j = ( shifts[nodeId] / (2*ky+1) ) - kx;
-	    		const float iy = i * step;
-		    	const float ix = j * step;
-			    EMData* cimage = cimages[i+ky][j+kx];
-    			Dict retvals = Crosrng_rand_ms(crefim[iref], cimage, numr, previousmax);
-	    		const float new_peak = static_cast<float>( retvals["qn"] );
-		    	if (new_peak > peak) {
-			    	sx = -ix;
-				    sy = -iy;
-    				nref = iref;
-	    			ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-		    		peak = new_peak;
-			    	mirror = static_cast<int>( retvals["mirror"] );
-				    bool found_better = (peak > previousmax);
-
-			const float co =  cos(ang*qv);
-			const float so = -sin(ang*qv);
-			const float sxs = sx*co - sy*so;
-			const float sys = sx*so + sy*co;
-			results.push_back(ang);
-			results.push_back(sxs);
-			results.push_back(sys);
-			results.push_back(static_cast<float>(mirror));
-			results.push_back(static_cast<float>(nref));
-			results.push_back(peak);
-			results.push_back(static_cast<float>(tiref));
+				const float co =  cos(ang*qv);
+				const float so = -sin(ang*qv);
+				const float sxs = sx*co - sy*so;
+				const float sys = sx*so + sy*co;
+				results.push_back(ang);
+				results.push_back(sxs);
+				results.push_back(sys);
+				results.push_back(static_cast<float>(mirror));
+				results.push_back(static_cast<float>(nref));
+				results.push_back(peak);
+				results.push_back(static_cast<float>(tiref));
+				if( new_peak > previousmax )  ++numpeaks;
+			}
+			++nodeId;
 		}
-		++nodeId;
-	}
-
     }
 	for (unsigned i = 0; i < cimages.size(); ++i) {
 		for (unsigned j = 0; j < cimages[i].size(); ++j) {
@@ -18904,11 +18903,10 @@ vector<float> Util::shc_multipeaks(EMData* image, const vector< EMData* >& crefi
 	}
 
 	// sorting
-	unsigned no_of_solution = results.size() / 7;
-	for (unsigned i = 0; i < no_of_solution; ++i) {
+	for (unsigned i = 0; i < max_peaks_count; ++i) {
 		unsigned max_peak_ind = i;
 		float max_peak_val = results[7*i+5];
-		for (unsigned j = i+1; j < no_of_solution; ++j) {
+		for (unsigned j = i+1; j < max_peaks_count; ++j) {
 			const float peak_j = results[7*j+5];
 			if (peak_j > max_peak_val) {
 				max_peak_val = peak_j;
@@ -18916,46 +18914,39 @@ vector<float> Util::shc_multipeaks(EMData* image, const vector< EMData* >& crefi
 			}
 		}
 		if (max_peak_ind != i) {
-			for (unsigned j = 0; j < 7; ++j) {
-				std::swap(results[7*i+j], results[7*max_peak_ind+j]);
-			}
+			for (unsigned j = 0; j < 7; ++j) std::swap(results[7*i+j], results[7*max_peak_ind+j]);
 		}
 	}
+	results.resize(7*max_peaks_count);
+	results.shrink_to_fit();
+	// set new previous max to the smalles peak it found.  This is supposed to slow down the convergence
+	image->set_attr("previousmax",results[7*(max_peaks_count-1)+5]);
 
-	// set new previous max
-	if ( no_of_solution > 0 ) {
-		image->set_attr("previousmax",results[7*0+5]);
-	}
-
+	//  I believe handling of weights should be moved up to python.
 	// set weights
-	if ( no_of_solution < 2 ) {
-		image->set_attr("weight",1.0);
-	} else {
-		// the idea is like this:
-		// - the minimal weight should equal 1/no_of_solution of maximal weight
-		// - the sum of weights should equal 1.0
-		vector<float> w(no_of_solution);
-		for (unsigned i = 0; i < no_of_solution; ++i) {
-			w[i] = results[7*i+5];
+	// the idea is like this:
+	// - the minimal weight should equal 1/no_of_solution of maximal weight
+	// - the sum of weights should equal 1.0
+	vector<float> w(max_peaks_count);
+	for (unsigned i = 0; i < max_peaks_count; ++i)  w[i] = results[7*i+5];
+	float r = (w.front() - max_peaks_count * w.back()) / (max_peaks_count - 1);
+	float sum = 0;
+	for (unsigned i = 0; i < max_peaks_count; ++i) {
+		w[i] += r;
+		sum += w[i];
+	}
+	for (unsigned i = 0; i < max_peaks_count; ++i) {
+		w[i] /= sum;
+		if (i == 0) {
+			image->set_attr("weight",w[i]);
+		} else {
+			image->set_attr("weight" + toString(i),w[i]);
 		}
-		float r = (w.front() - no_of_solution * w.back()) / (no_of_solution - 1);
-		float sum = 0;
-		for (unsigned i = 0; i < no_of_solution; ++i) {
-			w[i] += r;
-			sum += w[i];
-		}
-		for (unsigned i = 0; i < no_of_solution; ++i) {
-			w[i] /= sum;
-			if (i == 0) {
-				image->set_attr("weight",w[i]);
-			} else {
-				image->set_attr("weight" + toString(i),w[i]);
-			}
-		}
+
 	}
 
 	// remove unused parameters from the header
-	unsigned i0 = (no_of_solution < 1) ? 1 : no_of_solution;
+	unsigned i0 = (max_peaks_count < 1) ? 1 : max_peaks_count;
 	for (unsigned i = i0; image->has_attr("weight" + toString(i));  ++i ) {
 		image->del_attr("weight" + toString(i));
 	}
