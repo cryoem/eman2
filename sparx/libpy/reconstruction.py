@@ -523,7 +523,7 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, 
 			"""
 			#pqdif = model_blank((bigsize+2)//2, bigsize,1,1.0)
 			#info(pqdif,None,"pqdif")
-			ml = int(prj.get_attr('data_path')[4:8])
+			ml = prj.get_attr('groupindex')#int(prj.get_attr('data_path')[4:8])
 			"""
 			from utilities import info
 			print "models"
