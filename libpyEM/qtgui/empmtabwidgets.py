@@ -50,7 +50,7 @@ class EMRefine2dTable(EMBrowserWidget):
 
 class EMRefine2dModel(EMFileItemModel):
 	""" Item model for the refinement data """
-	def __init__(self,startpath=None):
+	def __init__(self, startpath=None, dirregex=None):
 		regex = re.compile('^r2d')
 		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMDirEntry, dirregex=regex)
 
@@ -66,7 +66,7 @@ class EMValidateTable(EMBrowserWidget):
 
 class EMValidateModel(EMFileItemModel):
 	""" Item model for the refinement data """
-	def __init__(self,startpath=None):
+	def __init__(self, startpath=None, dirregex=None):
 		regex = re.compile('^TiltValidate')
 		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMDirEntry, dirregex=regex)
 
@@ -82,7 +82,7 @@ class EMRefineTable(EMBrowserWidget):
 
 class EMRefineModel(EMFileItemModel):
 	""" Item model for the refinement data """
-	def __init__(self,startpath=None):
+	def __init__(self, startpath=None, dirregex=None):
 		regex = re.compile('^refine|^frealign')
 		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMDirEntry, dirregex=regex)
 
@@ -102,8 +102,8 @@ class EMModelsModel(EMFileItemModel):
 
 	headers=("Row","3D Models","Quality", "Dims")
 
-	def __init__(self,startpath=None):
-		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMModelsEntry)
+	def __init__(self, startpath=None, dirregex=None):
+		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMModelsEntry, dirregex=dirregex)
 
 	def columnCount(self,parent):
 		"Always 4 columns"
@@ -200,8 +200,8 @@ class EMSetsModel(EMFileItemModel):
 
 	headers=("Row","Name","Num Particles", "Dims")
 
-	def __init__(self,startpath=None):
-		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMSetsEntry)
+	def __init__(self, startpath=None, dirregex=None):
+		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMSetsEntry, dirregex=dirregex)
 
 	def columnCount(self,parent):
 		"Always 4 columns"
@@ -292,8 +292,8 @@ class EMParticlesModel(EMFileItemModel):
 
 	headers=("Row","Raw Data Files","Type", "Num Particles", "Particle Dims", "Quality")
 
-	def __init__(self,startpath=None):
-		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMParticlesEntry)
+	def __init__(self, startpath=None, dirregex=None):
+		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMParticlesEntry, dirregex=dirregex)
 
 	def columnCount(self,parent):
 		"Always 6 columns"
@@ -414,11 +414,11 @@ class EMCTFParticlesModel(EMFileItemModel):
 
 	headers=("Row","Raw Data Files","Type", "Num Particles", "Particle Dims", "Defocus", "B Factor", "SNR-lo","SNR-hi", "Quality", "Sampling")
 
-	def __init__(self,startpath=None, direntryclass=None,dirregex=None):
+	def __init__(self,startpath=None, direntryclass=None, dirregex=None):
 		if not direntryclass:
-			EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMCTFParticlesEntry,dirregex=dirregex)
+			EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMCTFParticlesEntry, dirregex=dirregex)
 		else:
-			EMFileItemModel.__init__(self, startpath=startpath, direntryclass=direntryclass,dirregex=dirregex)
+			EMFileItemModel.__init__(self, startpath=startpath, direntryclass=direntryclass, dirregex=dirregex)
 
 	def columnCount(self,parent):
 		"Always 11 columns"
@@ -574,8 +574,8 @@ class EMCTFcorrectedParticlesTable(EMCTFParticlesTable):
 
 class EMCTFcorrectedParticlesModel(EMCTFParticlesModel):
 	""" Item model for the raw data """
-	def __init__(self,startpath=None):
-		EMCTFParticlesModel.__init__(self,startpath=startpath,direntryclass=EMCTFcorrectedParticlesEntry)
+	def __init__(self, startpath=None, dirregex=None):
+		EMCTFParticlesModel.__init__(self, startpath=startpath, direntryclass=EMCTFcorrectedParticlesEntry, dirregex=dirregex)
 
 class EMCTFcorrectedParticlesEntry(EMCTFParticlesEntry):
 	""" Subclassing of EMDirEntry to provide functionality"""
