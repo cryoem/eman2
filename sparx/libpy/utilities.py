@@ -3992,6 +3992,7 @@ class iterImagesList:
 			return False
 		self.position -= 1
 		return (self.position >= 0)
+
 # ================ Iterator for stack of images
 class iterImagesStack:
 	stackName = ""
@@ -4123,10 +4124,10 @@ def wrap_mpi_gatherv(data, root, communicator = None):
 
 	if communicator == None:
 		communicator = MPI_COMM_WORLD
-	
+
 	rank = mpi_comm_rank(communicator)
 	procs = mpi_comm_size(communicator)
-	
+
 	out_array = None
 	if rank == root:
 		if type(data) is list:
@@ -4141,7 +4142,7 @@ def wrap_mpi_gatherv(data, root, communicator = None):
 			raise Exception("wrap_mpi_gatherv: type of data not supported")
 	else:
 		wrap_mpi_send(data, root, communicator)
-	
+
 	return out_array
 
 def get_dist(c1, c2):

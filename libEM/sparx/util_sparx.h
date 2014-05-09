@@ -526,7 +526,7 @@ class FakeKaiserBessel : public KaiserBessel {
 	static void  Applyws(EMData* circ, vector<int> numr, vector<float> wr);
 
 	/*
-	  	A little notes about different Crosrng:
+	  	A little note about different Crosrng:
 		Basically, they all do cross-correlation function to two images in polar coordinates
 		Crosrng_e is the original one
 		Crosrng_ew is the one that you could apply weights to different rings
@@ -852,6 +852,11 @@ public:
 	/* In this version, we return a list of peaks for all reference images */
 	static vector<float> multiref_polar_ali_2d_peaklist(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, string mode,
+                vector< int >numr, float cnx, float cny);
+
+	/* In this version, we return a list of peaks for local subset of reference images */
+	static vector<float> multiref_polar_ali_2d_peaklist_local(EMData* image, const vector< EMData* >& crefim,
+                float xrng, float yrng, float step, float ant, string mode,
                 vector< int >numr, float cnx, float cny);
 
 	/* This is used in ISAC program to assigning particles equally to grops */

@@ -3237,13 +3237,13 @@ c       automatic arrays
 				// first set is conjugated (mirrored)
 				for (j=3;j<=numr3i;j=j+2) {
 					jc = j+numr2i-1;
-					t(j) =(circ1(jc))*circ2(jc)-(circ1(jc+1))*circ2(jc+1);
-					t(j+1) = -(circ1(jc))*circ2(jc+1)-(circ1(jc+1))*circ2(jc);
+					t(j)   =  (circ1(jc))*circ2(jc)   - (circ1(jc+1))*circ2(jc+1);
+					t(j+1) = -(circ1(jc))*circ2(jc+1) - (circ1(jc+1))*circ2(jc);
 				}
 			} else {
 				for (j=3;j<=numr3i;j=j+2) {
 					jc = j+numr2i-1;
-					t(j) = (circ1(jc))*circ2(jc) + (circ1(jc+1))*circ2(jc+1);
+					t(j)   =  (circ1(jc))*circ2(jc)   + (circ1(jc+1))*circ2(jc+1);
 					t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
 				}
 			}
@@ -3254,13 +3254,13 @@ c       automatic arrays
 				// first set is conjugated (mirrored)
 				for (j=3;j<=maxrin;j=j+2) {
 					jc = j+numr2i-1;
-					t(j) = (circ1(jc))*circ2(jc) - (circ1(jc+1))*circ2(jc+1);
+					t(j)   =  (circ1(jc))*circ2(jc)   - (circ1(jc+1))*circ2(jc+1);
 					t(j+1) = -(circ1(jc))*circ2(jc+1) - (circ1(jc+1))*circ2(jc);
 				}
 			} else {
 				for (j=3;j<=maxrin;j=j+2) {
 					jc = j+numr2i-1;
-					t(j) = (circ1(jc))*circ2(jc) + (circ1(jc+1))*circ2(jc+1);
+					t(j)   =  (circ1(jc))*circ2(jc)   + (circ1(jc+1))*circ2(jc+1);
 					t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
 				}
 			}
@@ -3344,13 +3344,13 @@ c       automatic arrays
 				// first set is conjugated (mirrored)
 				for (j=3; j<=numr3i; j=j+2) {
 					jc = j+numr2i-1;
-					t(j)   =  (circ1(jc))*circ2(jc)-(circ1(jc+1))*circ2(jc+1);
-					t(j+1) = -(circ1(jc))*circ2(jc+1)-(circ1(jc+1))*circ2(jc);
+					t(j)   =  (circ1(jc))*circ2(jc)   - (circ1(jc+1))*circ2(jc+1);
+					t(j+1) = -(circ1(jc))*circ2(jc+1) - (circ1(jc+1))*circ2(jc);
 				}
 			} else {
 				for (j=3; j<=numr3i; j=j+2) {
-					jc = j+numr2i-1;
-					t(j) = (circ1(jc))*circ2(jc) + (circ1(jc+1))*circ2(jc+1);
+					jc     = j+numr2i-1;
+					t(j)   =  (circ1(jc))*circ2(jc)   + (circ1(jc+1))*circ2(jc+1);
 					t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
 				}
 			}
@@ -3361,13 +3361,13 @@ c       automatic arrays
 				// first set is conjugated (mirrored)
 				for (j=3; j<=maxrin; j=j+2) {
 					jc = j+numr2i-1;
-					t(j) = (circ1(jc))*circ2(jc) - (circ1(jc+1))*circ2(jc+1);
+					t(j)   =  (circ1(jc))*circ2(jc)   - (circ1(jc+1))*circ2(jc+1);
 					t(j+1) = -(circ1(jc))*circ2(jc+1) - (circ1(jc+1))*circ2(jc);
 				}
 			} else {
 				for (j=3; j<=maxrin; j=j+2) {
 			    	jc = j+numr2i-1;
-			    	t(j) = (circ1(jc))*circ2(jc) + (circ1(jc+1))*circ2(jc+1);
+			    	t(j)   =  (circ1(jc))*circ2(jc)   + (circ1(jc+1))*circ2(jc+1);
 			    	t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
 				}
 			}
@@ -18035,7 +18035,7 @@ vector<float> Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >
         crefim.push_back(proxy());
     }
 */
-
+	const float qv = static_cast<float>( pi/180.0 );
 	size_t crefim_len = crefim.size();
 
 	int   ky = int(2*yrng/step+0.5)/2;
@@ -18076,9 +18076,10 @@ vector<float> Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >
 			}  delete cimage; cimage = 0;
 		}
 	}
+
 	float co, so, sxs, sys;
-	co = static_cast<float>( cos(ang*pi/180.0) );
-	so = static_cast<float>( -sin(ang*pi/180.0) );
+	co = static_cast<float>(  cos(ang*qv) );
+	so = static_cast<float>( -sin(ang*qv) );
 	sxs = sx*co - sy*so;
 	sys = sx*so + sy*co;
 	vector<float> res;
@@ -18095,6 +18096,7 @@ vector<float> Util::multiref_polar_ali_2d_peaklist(EMData* image, const vector< 
                 float xrng, float yrng, float step, string mode,
                 vector<int>numr, float cnx, float cny) {
 
+	const float qv = static_cast<float>( pi/180.0 );
 	size_t crefim_len = crefim.size();
 
 	int   ky = int(2*yrng/step+0.5)/2;
@@ -18112,34 +18114,91 @@ vector<float> Util::multiref_polar_ali_2d_peaklist(EMData* image, const vector< 
 				Dict retvals = Crosrng_ms(crefim[iref], cimage, numr);
 				double qn = retvals["qn"];
 				double qm = retvals["qm"];
-				if(qn >= peak[iref*5] || qm >= peak[iref*5]) {
-					if (qn >= qm) {
-						peak[iref*5]   = static_cast<float>(qn);
-						peak[iref*5+1] = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-						peak[iref*5+2] = -ix;
-						peak[iref*5+3] = -iy;
-						peak[iref*5+4] = 0;
-					} else {
-						peak[iref*5]   = static_cast<float>(qm);
-						peak[iref*5+1] = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
-						peak[iref*5+2] = -ix;
-						peak[iref*5+3] = -iy;
-						peak[iref*5+4] = 1;
-					}
+				if (qn >= qm) {
+					peak[iref*5]   = static_cast<float>(qn);
+					peak[iref*5+1] = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+					peak[iref*5+2] = -ix;
+					peak[iref*5+3] = -iy;
+					peak[iref*5+4] = 0;
+				} else {
+					peak[iref*5]   = static_cast<float>(qm);
+					peak[iref*5+1] = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
+					peak[iref*5+2] = -ix;
+					peak[iref*5+3] = -iy;
+					peak[iref*5+4] = 1;
 				}
 			}  delete cimage; cimage = 0;
 		}
 	}
+
 	for (int iref = 0; iref < (int)crefim_len; iref++) {
 		float ang = peak[iref*5+1];
 		float sx = peak[iref*5+2];
 		float sy = peak[iref*5+3];
-		float co =  cos(ang*pi/180.0);
-		float so = -sin(ang*pi/180.0);
+		float co =  cos(ang*qv);
+		float so = -sin(ang*qv);
 		float sxs = sx*co - sy*so;
 		float sys = sx*so + sy*co;
 		peak[iref*5+2] = sxs;
 		peak[iref*5+3] = sys;
+	}
+	return peak;
+}
+
+vector<float> Util::multiref_polar_ali_2d_peaklist_local(EMData* image, const vector< EMData* >& crefim,
+                float xrng, float yrng, float step, float ant, string mode,
+                vector<int>numr, float cnx, float cny) {
+
+	size_t crefim_len = crefim.size();
+	const float qv = static_cast<float>( pi/180.0 );
+
+	Transform * t = image->get_attr("xform.projection");
+	Dict d = t->get_params("spider");
+	if(t) {delete t; t=0;}
+	float phi   = d["phi"];
+	float theta = d["theta"];
+	int   ky    = int(2*yrng/step+0.5)/2;
+	int   kx    = int(2*xrng/step+0.5)/2;
+	int   iref, nref=0, mirror=0;
+	float imn1 = sin(theta*qv)*cos(phi*qv);
+	float imn2 = sin(theta*qv)*sin(phi*qv);
+	float imn3 = cos(theta*qv);
+	vector<float> n1(crefim_len);
+	vector<float> n2(crefim_len);
+	vector<float> n3(crefim_len);
+	for ( iref = 0; iref < (int)crefim_len; iref++) {
+		n1[iref] = crefim[iref]->get_attr("n1");
+		n2[iref] = crefim[iref]->get_attr("n2");
+		n3[iref] = crefim[iref]->get_attr("n3");
+	}
+
+	vector<float> peak;
+	for (int i = -ky; i <= ky; i++) {
+		float iy = i * step ;
+		for (int j = -kx; j <= kx; j++) {
+			float ix = j*step ;
+			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+			Normalize_ring( cimage, numr );
+			Frngs(cimage, numr);
+			for (int iref = 0; iref < (int)crefim_len; iref++) {
+				if( n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3 >=ant ) {
+					Dict retvals = Crosrng_e(crefim[iref], cimage, numr, 0);
+					const float ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+					const float sx  = -ix;
+					const float sy  = -iy;
+					const float co  =  cos(ang*qv);
+					const float so  = -sin(ang*qv);
+					const float sxs = sx*co - sy*so;
+					const float sys = sx*so + sy*co;
+					double qn = retvals["qn"];
+					peak.push_back(static_cast<float>(qn));
+					peak.push_back( ang );
+					peak.push_back( sxs );
+					peak.push_back( sys );
+					peak.push_back( static_cast<float>(iref) );
+				}	
+			}  delete cimage; cimage = 0;
+		}
 	}
 	return peak;
 }
@@ -18463,6 +18522,7 @@ vector<float> Util::multiref_polar_ali_2d_delta(EMData* image, const vector< EMD
 */
 
 	size_t crefim_len = crefim.size();
+	const float qv = static_cast<float>( pi/180.0 );
 
 	int   ky = int(2*yrng/step+0.5)/2;
 	int   kx = int(2*xrng/step+0.5)/2;
@@ -18503,8 +18563,8 @@ vector<float> Util::multiref_polar_ali_2d_delta(EMData* image, const vector< EMD
 		}
 	}
 	float co, so, sxs, sys;
-	co = static_cast<float>( cos(ang*pi/180.0) );
-	so = static_cast<float>( -sin(ang*pi/180.0) );
+	co = static_cast<float>(  cos(ang*qv) );
+	so = static_cast<float>( -sin(ang*qv) );
 	sxs = sx*co - sy*so;
 	sys = sx*so + sy*co;
 	vector<float> res;
@@ -18532,6 +18592,7 @@ vector<float> Util::multiref_polar_ali_2d_nom(EMData* image, const vector< EMDat
     }
 */
 	size_t crefim_len = crefim.size();
+	const float qv = static_cast<float>( pi/180.0 );
 
 	int   ky = int(2*yrng/step+0.5)/2;
 	int   kx = int(2*xrng/step+0.5)/2;
@@ -18561,8 +18622,8 @@ vector<float> Util::multiref_polar_ali_2d_nom(EMData* image, const vector< EMDat
 		}
 	}
 	float co, so, sxs, sys;
-	co = static_cast<float>( cos(ang*pi/180.0) );
-	so = static_cast<float>( -sin(ang*pi/180.0) );
+	co = static_cast<float>(  cos(ang*qv) );
+	so = static_cast<float>( -sin(ang*qv) );
 	sxs = sx*co - sy*so;
 	sys = sx*so + sy*co;
 	vector<float> res;
@@ -19074,6 +19135,7 @@ vector<float> Util::multiref_polar_ali_helical(EMData* image, const vector< EMDa
                 vector<int>numr, float cnx, float cny, int ynumber) {
 	
 	size_t crefim_len = crefim.size();
+	const float qv = static_cast<float>( pi/180.0 );
 
 	int   iref, nref=0, mirror=0;
 	float iy, ix, sx=0, sy=0;
@@ -19161,8 +19223,8 @@ vector<float> Util::multiref_polar_ali_helical(EMData* image, const vector< EMDa
 		}
 	}
 	float co, so, sxs, sys;
-	co = static_cast<float>( cos(ang*pi/180.0) );
-	so = static_cast<float>( -sin(ang*pi/180.0) );
+	co = static_cast<float>(  cos(ang*qv) );
+	so = static_cast<float>( -sin(ang*qv) );
 	sxs = sx*co - sy*so;
 	sys = sx*so + sy*co;
 	vector<float> res;
@@ -19180,13 +19242,13 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
                 vector<int>numr, float cnx, float cny, int ynumber, float yrnglocal) {
 	
 	size_t crefim_len = crefim.size();
+	const float qv = static_cast<float>( pi/180.0 );
 
 	int   iref, nref=-1, mirror=0;
 	float iy, ix, sx=0, sy=0;
 	float peak = -1.0E23f;
 	float jneginf = -2.0E23f;
 	float ang=0.0f;
-	const float qv = static_cast<float>( pi/180.0 );
 	Transform * t = image->get_attr("xform.projection");
 	Dict d = t->get_params("spider");
 	if(t) {delete t; t=0;}
@@ -19290,8 +19352,8 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 	}
 
 	float co, so, sxs, sys;
-	co = static_cast<float>( cos(ang*pi/180.0) );
-	so = static_cast<float>( -sin(ang*pi/180.0) );
+	co = static_cast<float>(  cos(ang*qv) );
+	so = static_cast<float>( -sin(ang*qv) );
 	sxs = sx*co - sy*so;
 	sys = sx*so + sy*co;
 	vector<float> res;
@@ -19310,6 +19372,7 @@ vector<float> Util::multiref_polar_ali_helical_90(EMData* image, const vector< E
                 vector<int>numr, float cnx, float cny, int ynumber) {
 
 	size_t crefim_len = crefim.size();
+	const float qv = static_cast<float>( pi/180.0 );
 
 	int   iref, nref=0, mirror=0;
 	float iy, ix, sx=0, sy=0;
@@ -19382,8 +19445,8 @@ vector<float> Util::multiref_polar_ali_helical_90(EMData* image, const vector< E
 		}
 	}	
 	float co, so, sxs, sys;
-	co = static_cast<float>( cos(ang*pi/180.0) );
-	so = static_cast<float>( -sin(ang*pi/180.0) );
+	co = static_cast<float>(  cos(ang*qv) );
+	so = static_cast<float>( -sin(ang*qv) );
 	sxs = sx*co - sy*so;
 	sys = sx*so + sy*co;
 	vector<float> res;
@@ -19480,8 +19543,8 @@ vector<float> Util::multiref_polar_ali_helical_90_local(EMData* image, const vec
 	}
 
 	float co, so, sxs, sys;
-	co = static_cast<float>( cos(ang*pi/180.0) );
-	so = static_cast<float>( -sin(ang*pi/180.0) );
+	co = static_cast<float>(  cos(ang*qv) );
+	so = static_cast<float>( -sin(ang*qv) );
 	sxs = sx*co - sy*so;
 	sys = sx*so + sy*co;
 	vector<float> res;
@@ -19500,13 +19563,13 @@ vector<float> Util::multiref_polar_ali_helicon_local(EMData* image, const vector
                 vector<int>numr, float cnx, float cny, int ynumber, float yrnglocal) {
 	
 	size_t crefim_len = crefim.size();
+	const float qv = static_cast<float>( pi/180.0 );
 
 	int   iref, nref=-1, mirror=0;
 	float iy, ix, sx=0, sy=0;
 	float peak = -1.0E23f;
 	float jneginf = -2.0E23f;
 	float ang=0.0f;
-	const float qv = static_cast<float>( pi/180.0 );
 	Transform * t = image->get_attr("xform.projection");
 	Dict d = t->get_params("spider");
 	if(t) {delete t; t=0;}
@@ -19602,8 +19665,8 @@ vector<float> Util::multiref_polar_ali_helicon_local(EMData* image, const vector
 	}
 
 	float co, so, sxs, sys;
-	co = static_cast<float>( cos(ang*pi/180.0) );
-	so = static_cast<float>( -sin(ang*pi/180.0) );
+	co = static_cast<float>(  cos(ang*qv) );
+	so = static_cast<float>( -sin(ang*qv) );
 	sxs = sx*co - sy*so;
 	sys = sx*so + sy*co;
 	vector<float> res;
@@ -19624,6 +19687,7 @@ vector<float> Util::multiref_polar_ali_helicon_90_local(EMData* image, const vec
 
 	size_t crefim_len = crefim.size();
 	const float qv = static_cast<float>( pi/180.0 );
+
 	Transform * t = image->get_attr("xform.projection");
 	Dict d = t->get_params("spider");
 	if(t) {delete t; t=0;}
@@ -19701,8 +19765,8 @@ vector<float> Util::multiref_polar_ali_helicon_90_local(EMData* image, const vec
 	}
 
 	float co, so, sxs, sys;
-	co = static_cast<float>( cos(ang*pi/180.0) );
-	so = static_cast<float>( -sin(ang*pi/180.0) );
+	co = static_cast<float>(  cos(ang*qv) );
+	so = static_cast<float>( -sin(ang*qv) );
 	sxs = sx*co - sy*so;
 	sys = sx*so + sy*co;
 	vector<float> res;

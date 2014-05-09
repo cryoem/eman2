@@ -1858,7 +1858,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 """
 
 
-def proj_ali_incore_multi(data, refrings, numr, xrng = 0.0, yrng = 0.0, step=1.0, nsoft = -1, finfo=None):
+def proj_ali_incore_multi(data, refrings, numr, xrng = 0.0, yrng = 0.0, step=1.0, an = 1.0, nsoft = -1, finfo=None):
 	from utilities    import compose_transform2
 	from math         import cos, pi, radians, degrees
 	from EMAN2 import Vec2f, Transform
@@ -1870,6 +1870,7 @@ def proj_ali_incore_multi(data, refrings, numr, xrng = 0.0, yrng = 0.0, step=1.0
 	#  center is in SPIDER convention
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
+	ant = cos(radians(an))
 
 	#phi, theta, psi, sxo, syo = get_params_proj(data)
 	t1 = data.get_attr("xform.projection")
@@ -1879,28 +1880,34 @@ def proj_ali_incore_multi(data, refrings, numr, xrng = 0.0, yrng = 0.0, step=1.0
 		finfo.write("Image id: %6d\n"%(ID))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
 		finfo.flush()
-
+	#print "Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"])
 	#[ang, sxs, sys, mirror, iref, peak, checked_refs] = Util.shc(data, refrings, xrng, yrng, step, ant, mode, numr, cnx+dp["tx"], cny+dp["ty"])
-	peaks = Util.multiref_polar_ali_2d_peaklist(data, refrings, xrng, yrng, step, mode, numr, cnx+dp["tx"], cny+dp["ty"])
-	# the list of peaks is unsorted, but it does not matter at the moment.
+	peaks = Util.multiref_polar_ali_2d_peaklist_local(data, refrings, xrng, yrng, step, ant, mode, numr, cnx+dp["tx"], cny+dp["ty"])
 	peaks_count = len(peaks) / 5
 	pixel_error = 0.0
 	peak = 0.0
 	if( peaks_count > 0 ):
-		ws = sum([peaks[i*5] for i in xrange(peaks_count)])
+		if( nsoft == -1 ):  nsoft = peaks_count
+		params = [None]*peaks_count
+		#                                              peak         iref      ang  sxs  sys 
+		for i in xrange(peaks_count):  params[i] = [ peaks[i*5+0], int(peaks[i*5+4]), peaks[i*5+1], peaks[i*5+2], peaks[i*5+3]]
+		params.sort(reverse=True)
+		if(peaks_count < nsoft ):
+			for i in xrange(peaks_count,nsoft,1): params.insert(0,params[0])
+			peaks_count = nsoft
+		elif( peaks_count > nsoft ):  peaks_count = min(peaks_count, nsoft)
+		ws = sum([params[i][0] for i in xrange(peaks_count)])
 		for i in xrange(peaks_count):
-			iref = i
-			ang    = peaks[i*5+1]
-			sxs    = peaks[i*5+2]
-			sys    = peaks[i*5+3]
-			mirror = peaks[i*5+4]
-			peak   = peaks[i*5+0]/ws
-			#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
-			#ang = (ang+360.0)%360.0
-
+			iref   = params[i][1]
+			ang    = params[i][2]
+			sxs    = params[i][3]
+			sys    = params[i][4]
+			#mirror = 0
+			peak   = params[i][0]/ws
 			# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 			# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
 			angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+			"""
 			if  mirror:
 				phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 				theta = 180.0-refrings[iref].get_attr("theta")
@@ -1908,15 +1915,15 @@ def proj_ali_incore_multi(data, refrings, numr, xrng = 0.0, yrng = 0.0, step=1.0
 				s2x   = sxb - dp["tx"]
 				s2y   = syb - dp["ty"]
 			else:
-				phi   = refrings[iref].get_attr("phi")
-				theta = refrings[iref].get_attr("theta")
-				psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-				s2x   = sxb - dp["tx"]
-				s2y   = syb - dp["ty"]
+			"""
+			phi   = refrings[iref].get_attr("phi")
+			theta = refrings[iref].get_attr("theta")
+			psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
+			s2x   = sxb - dp["tx"]
+			s2y   = syb - dp["ty"]
 
 			t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 			t2.set_trans(Vec2f(-s2x, -s2y))
-			#print i,phi,theta,psi,-s2x, -s2y,peak
 			if i == 0:
 				data.set_attr("xform.projection", t2)
 			else:
@@ -1930,6 +1937,7 @@ def proj_ali_incore_multi(data, refrings, numr, xrng = 0.0, yrng = 0.0, step=1.0
 			if finfo:
 				finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 				finfo.flush()
+			#print  "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error)
 
 		# remove old xform.projection
 		i = max(peaks_count, 1)
@@ -1942,8 +1950,8 @@ def proj_ali_incore_multi(data, refrings, numr, xrng = 0.0, yrng = 0.0, step=1.0
 			i += 1
 		pixel_error /= peaks_count
 		peak = peaks[0]  # It is not used anywhere, but set it to the maximum.
-	
-	return peak, pixel_error
+
+	return peak, pixel_error, peaks_count
 
 
 

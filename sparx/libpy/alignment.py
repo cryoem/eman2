@@ -930,7 +930,7 @@ def prep_vol_kb(vol, kb, npad=2):
 def prepare_refrings( volft, kb, nz, delta, ref_a, sym, numr, MPI=False, phiEqpsi = "Minus", kbx = None, kby = None, initial_theta = None, delta_theta = None):
 
 	from projection   import prep_vol, prgs
-	from math         import sin, cos, pi
+	from math         import sin, cos, pi, radians
 	from applications import MPI_start_end
 	from utilities    import even_angles
 	from types import BooleanType
@@ -955,7 +955,6 @@ def prepare_refrings( volft, kb, nz, delta, ref_a, sym, numr, MPI=False, phiEqps
 	wr_four  = ringwe(numr, mode)
 	cnx = nz//2 + 1
 	cny = nz//2 + 1
-	qv = pi/180.
 	num_ref = len(ref_angles)
 
 	if MPI:
@@ -1003,13 +1002,12 @@ def prepare_refrings( volft, kb, nz, delta, ref_a, sym, numr, MPI=False, phiEqps
 			bcast_EMData_to_all(refrings[i], myid, rootid, comm=mpi_comm)
 
 	for i in xrange(len(ref_angles)):
-		n1 = sin(ref_angles[i][1]*qv)*cos(ref_angles[i][0]*qv)
-		n2 = sin(ref_angles[i][1]*qv)*sin(ref_angles[i][0]*qv)
-		n3 = cos(ref_angles[i][1]*qv)
-		refrings[i].set_attr_dict( {"n1":n1, "n2":n2, "n3":n3} )
-		refrings[i].set_attr("phi",   ref_angles[i][0])
-		refrings[i].set_attr("theta", ref_angles[i][1])
-		refrings[i].set_attr("psi",   ref_angles[i][2])
+		q0 = radians(ref_angles[i][0])
+		q1 = radians(ref_angles[i][1])
+		n1 = sin(q1)*cos(q0)
+		n2 = sin(q1)*sin(q0)
+		n3 = cos(q1)
+		refrings[i].set_attr_dict( {"phi":ref_angles[i][0], "theta":ref_angles[i][1], "psi":ref_angles[i][2], "n1":n1, "n2":n2, "n3":n3} )
 
 	return refrings
 
