@@ -2018,7 +2018,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
 
 			t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 			t2.set_trans(Vec2f(-s2x, -s2y))
-			print i,phi,theta,psi
+			#print i,phi,theta,psi
 			if i == 0:
 				data.set_attr("xform.projection", t2)
 			else:
@@ -2268,25 +2268,33 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 				start_time = time()
 			#=========================================================================
 
-	#=========================================================================
-	# gather parameters
-	params = []
-	previousmax = []
-	for im in data:
-		t = get_params_proj(im)
-		p = im.get_attr("previousmax")
-		params.append( [t[0], t[1], t[2], t[3], t[4]] )
-		previousmax.append(p)
-	assert(nima == len(params))
-	params = wrap_mpi_gatherv(params, 0, mpi_comm)
-	if myid == 0:
-		assert(total_nima == len(params))
-	previousmax = wrap_mpi_gatherv(previousmax, 0, mpi_comm)
+			#=========================================================================
+			if(total_iter%4 == 0):
+				# gather parameters
+				params = []
+				previousmax = []
+				for im in data:
+					t = get_params_proj(im)
+					params.append( [t[0], t[1], t[2], t[3], t[4]] )
+					previousmax.append(im.get_attr("previousmax"))
+				assert(nima == len(params))
+				params = wrap_mpi_gatherv(params, 0, mpi_comm)
+				if myid == 0:
+					assert(total_nima == len(params))
+				previousmax = wrap_mpi_gatherv(previousmax, 0, mpi_comm)
+				if myid == main_node:
+					from utilities import write_text_row, write_text_file
+					write_text_row(params, "soft/params%04d.txt"%total_iter)
+					write_text_file(previousmax, "soft/previousmax%04d.txt"%total_iter)
+				del previousmax, params
 
 	par_r = wrap_mpi_gatherv(par_r, 0, mpi_comm)
 
-	if myid == main_node: 
-		log.add("Finish ali3d_multishc_spft")
+	if myid == main_node:
+		from utilities import write_text_row, write_text_file
+		write_text_row(params,"soft/params.txt")
+		write_text_file(previousmax, "soft/previousmax.txt")
+		log.add("Finish ali3d_multishc_soft")
 		return params, vol, previousmax, par_r
 	else:
 		return None, None, None, None  # results for the other processes
