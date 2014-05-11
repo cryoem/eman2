@@ -45,9 +45,10 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	helpstring =  """Help is available on the following topics:
 processors, cmps, aligners, averagers, projectors, reconstructors, analyzers, symmetries, orientgens, rotationtypes"""
-	usage = """prog <topic>
+	usage = """prog <topic> [contains]
 	
-Interactive help on a variety of topics."""
+Interactive help on a variety of the eman2 library's modular functions. The optional 'contains' argument will
+act as a filter on the names of the algorithms."""
 	usage += " "+helpstring
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
@@ -140,14 +141,16 @@ Interactive help on a variety of topics."""
 		
 	if l:
 		if options.verbose>0:
-			k=l.keys()
+			if len(args)>1 : k=[i for i in l.keys() if args[1] in i]
+			else: k=l.keys()
 			k.sort()
 			for i in k:
 				print "%s : %s"%(i, l[i][0])
 				for j in range(1,len(l[i]),3): 
 					print "\t%s(%s) - %s"%(l[i][j],l[i][j+1],l[i][j+2])
 		else :
-			k=l.keys()
+			if len(args)>1 : k=[i for i in l.keys() if args[1] in i]
+			else: k=l.keys()
 			maxk=max([len(ii) for ii in k])
 			fmt="%%-%0ds : "%maxk
 			k.sort()
