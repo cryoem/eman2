@@ -2007,14 +2007,14 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
 				phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 				theta = 180.0-refrings[iref].get_attr("theta")
 				psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
-				s2x   = sxb - dp["tx"]
-				s2y   = syb - dp["ty"]
+				s2x   = sxb #- dp["tx"]
+				s2y   = syb #- dp["ty"]
 			else:
 				phi   = refrings[iref].get_attr("phi")
 				theta = refrings[iref].get_attr("theta")
 				psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-				s2x   = sxb - dp["tx"]
-				s2y   = syb - dp["ty"]
+				s2x   = sxb #- dp["tx"]
+				s2y   = syb #- dp["ty"]
 
 			t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 			t2.set_trans(Vec2f(-s2x, -s2y))
@@ -2269,7 +2269,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 			#=========================================================================
 
 			#=========================================================================
-			if(total_iter%4 == 0):
+			if(total_iter%4 == 0 or terminate):
 				# gather parameters
 				params = []
 				previousmax = []
@@ -2291,12 +2291,9 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 	par_r = wrap_mpi_gatherv(par_r, 0, mpi_comm)
 
 	if myid == main_node:
-		from utilities import write_text_row, write_text_file
-		write_text_row(params,"soft/params.txt")
-		write_text_file(previousmax, "soft/previousmax.txt")
 		log.add("Finish ali3d_multishc_soft")
-		return params, vol, previousmax, par_r
+		return #params, vol, previousmax, par_r
 	else:
-		return None, None, None, None  # results for the other processes
+		return #None, None, None, None  # results for the other processes
 
 
