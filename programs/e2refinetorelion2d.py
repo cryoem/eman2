@@ -228,10 +228,10 @@ for k in range(num_images):
 		s = "e2proc2d.py " + E2RLN + "/ptcl_stack.hdf" + " " + E2RLN + "/" + base_name(old_src) + ".hdf --first=" + str(i) + " --last=" + str(k-1) + " --verbose=" + verbosity
 		call(s, shell=True)
 		if (k-i-1) == 0:
-			s = "e2proc2d.py " + E2RLN + "/" + base_name(old_src) + ".hdf " + E2RLN + "/" + base_name(old_src) + ".mrc --verbose=" + verbosity
+			s = "e2proc2d.py " + E2RLN + "/" + base_name(old_src) + ".hdf " + E2RLN + "/" + base_name(old_src) + ".mrc --process=normalize.edgemean --verbose=" + verbosity
 			call(s,shell=True)
 		else:
-			s = "e2proc2d.py " + E2RLN + "/" + base_name(old_src) + ".hdf " + E2RLN + "/" + base_name(old_src) + ".mrc --twod2threed --verbose=" + verbosity 
+			s = "e2proc2d.py " + E2RLN + "/" + base_name(old_src) + ".hdf " + E2RLN + "/" + base_name(old_src) + ".mrc --process=normalize.edgemean --twod2threed --verbose=" + verbosity 
 			call(s, shell=True)
 		s1 = E2RLN + "/" + base_name(old_src) + ".mrc"
 		s2 = s1 + "s"
@@ -254,12 +254,12 @@ for k in range(num_images):
 		old_src = src
 	elif (k+1) == num_images:
 		temp=EMData("sets/"+db,k)
-		s = "e2proc2d.py " + E2RLN + "/ptcl_stack.hdf" + " " + E2RLN + "/" + base_name(src) + ".hdf --first=" + str(i) + " --last=" + str(k) + " --verbose=" + verbosity
+		s = "e2proc2d.py " + E2RLN + "/ptcl_stack.hdf" + " " + E2RLN + "/" + base_name(src) + ".hdf --first=" + str(i) + " --process=normalize.edgemean --last=" + str(k) + " --verbose=" + verbosity
 		call(s, shell=True)
 		if k-i-1 == 0:
-			s = "e2proc2d.py " + E2RLN + "/" + base_name(src) + ".hdf " + E2RLN + "/" + base_name(src) + ".mrc --verbose=" + verbosity
+			s = "e2proc2d.py " + E2RLN + "/" + base_name(src) + ".hdf " + E2RLN + "/" + base_name(src) + ".mrc --process=normalize.edgemean --verbose=" + verbosity
 		else:
-			s = "e2proc2d.py " + E2RLN + "/" + base_name(src) + ".hdf " + E2RLN + "/" + base_name(src) + ".mrc --twod2threed --verbose=" + verbosity
+			s = "e2proc2d.py " + E2RLN + "/" + base_name(src) + ".hdf " + E2RLN + "/" + base_name(src) + ".mrc --process=normalize.edgemean --twod2threed --verbose=" + verbosity
 		call(s,shell=True)
 		s1 = E2RLN + "/" + base_name(src) + ".mrc"
 		s2 = s1 + "s"
