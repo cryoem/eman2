@@ -1905,7 +1905,7 @@ def proj_ali_incore_multi(data, refrings, numr, xrng = 0.0, yrng = 0.0, step=1.0
 			#mirror = 0
 			peak   = params[i][0]/ws
 			# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
-			# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
+			# What that means is that one has to change the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
 			angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
 			"""
 			if  mirror:
@@ -1953,8 +1953,6 @@ def proj_ali_incore_multi(data, refrings, numr, xrng = 0.0, yrng = 0.0, step=1.0
 
 	return peak, pixel_error, peaks_count
 
-
-
 def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
 	from utilities    import compose_transform2
 	from math         import cos, pi
@@ -1988,17 +1986,20 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
 	number_of_checked_refs = 0
 	peak = 0.0
 	if( peaks_count > 0 ):
+		params = [None]*peaks_count
+		#                                              peak         iref                  ang        sxs           sys           mirror           checked references
+		for i in xrange(peaks_count):  params[i] = [ peaks[i*7+5], int(peaks[i*7+4]), peaks[i*7+0], peaks[i*7+1], peaks[i*7+2], int(peaks[i*7+3]), int(peaks[i*7+6])]
+		params.sort(reverse=True)
+		ws = sum([params[i][0] for i in xrange(peaks_count)])  # peaks could be stretched
 		for i in xrange(peaks_count):
-			ang    = peaks[i*7+0]
-			sxs    = peaks[i*7+1]
-			sys    = peaks[i*7+2]
-			mirror = peaks[i*7+3]
-			iref   = int(peaks[i*7+4])
+			ang    = params[i][2]
+			sxs    = params[i][3]
+			sys    = params[i][4]
+			mirror = params[i][5]
+			iref   = params[i][1]
 			#peak   = peaks[i*7+5]
-			checked_refs = int(peaks[i*7+6])
-			number_of_checked_refs += checked_refs
-			#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
-			#ang = (ang+360.0)%360.0
+			#checked_refs = int(peaks[i*7+6])
+			#number_of_checked_refs += checked_refs
 
 			# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 			# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
@@ -2021,31 +2022,33 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
 			#print i,phi,theta,psi
 			if i == 0:
 				data.set_attr("xform.projection", t2)
+				data.set_attr("weight", params[i][0]/ws)
 			else:
 				data.set_attr("xform.projection" + str(i), t2)
+				data.set_attr("weight" + str(i), params[i][0]/ws)
 			from pixel_error import max_3D_pixel_error
 			pixel_error += max_3D_pixel_error(t1, t2, numr[-3])
 			if finfo:
 				finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 				finfo.flush()
+		
+		# Now set previousmax to a value halfway through
+		data.set_attr("previousmax", params[peaks_count//2][0])
 
 		# remove old xform.projection
 		i = max(peaks_count, 1)
 		while data.has_attr("xform.projection" + str(i)):
 			data.del_attr("xform.projection" + str(i))
 			i += 1
+		i = max(peaks_count, 1)
+		while data.has_attr("weight" + str(i)):
+			data.del_attr("weight" + str(i))
+			i += 1
 		pixel_error /= peaks_count
-		peak = peaks[i*0+5]  # It is not used anywhere, but set it to the maximum.
-
-# -------- remove weights
-# 	data.del_attr("weight")
-# 	for i in xrange(1, 50):
-# 		if data.has_attr("weight" + str(i)):
-# 			data.del_attr("weight" + str(i))
+		peak = params[0][0]  # It is not used anywhere, but set it to the maximum.
 	
+	#  if it did not find any higher peaks would do nothing and return peaks_count=0
 	return peak, pixel_error, number_of_checked_refs, peaks_count
-
-
 
 
 # parameters: list of (all) projections | reference volume | ...
@@ -2053,7 +2056,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 
 	from alignment       import Numrinit, prepare_refrings, proj_ali_incore_local
 	from utilities       import get_im, file_type, model_circle, get_input_from_string, get_params_proj, wrap_mpi_gatherv, wrap_mpi_bcast
-	from mpi             import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
+	from mpi             import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier, mpi_reduce, MPI_INT, MPI_SUM
 	from projection      import prep_vol
 	from statistics      import hist_list
 	from applications    import MPI_start_end
@@ -2159,12 +2162,12 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 			data[im].set_attr('ctf_applied', 1)
 
 	pixer = [0.0]*nima
-	par_r = [[] for im in list_of_particles ]
+	#par_r = [[] for im in list_of_particles ]
 	cs = [0.0]*3
 	total_iter = 0
 	# do the projection matching
 	for N_step in xrange(lstp):
-		
+
 		terminate = 0
 		Iter = 0
 		while Iter < max_iter and terminate == 0:
@@ -2174,7 +2177,8 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 
 			mpi_barrier(mpi_comm)
 			if myid == main_node:
-				log.add("ITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],yrng[N_step],step[N_step]))
+				log.add("ITERATION #%3d,  inner iteration #%3d"%(total_iter, Iter))
+				log.add("Delta = %4.1f, an = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f\n"%(delta[N_step], an[N_step], xrng[N_step],yrng[N_step],step[N_step]))
 				start_time = time()
 
 			#=========================================================================
@@ -2206,11 +2210,12 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 				start_time = time()
 			#=========================================================================
 			# alignment
-			number_of_checked_refs = 0
+			#number_of_checked_refs = 0
+			par_r = [0]*(nsoft+1)
 			for im in xrange(nima):
 				peak, pixer[im], checked_refs, number_of_peaks = shc_multi(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step], nsoft)
-				number_of_checked_refs += checked_refs
-				par_r[im].append(number_of_peaks)
+				#number_of_checked_refs += checked_refs
+				par_r[number_of_peaks] += 1
 				#print  myid,im,number_of_peaks
 			#=========================================================================
 			mpi_barrier(mpi_comm)
@@ -2222,19 +2227,28 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 			#=========================================================================
 			#output pixel errors, check stop criterion
 			all_pixer = wrap_mpi_gatherv(pixer, 0, mpi_comm)
-			total_checked_refs = wrap_mpi_gatherv([number_of_checked_refs], main_node, mpi_comm)
+			par_r = mpi_reduce(par_r, nsoft+1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
+			#total_checked_refs = wrap_mpi_gatherv([number_of_checked_refs], main_node, mpi_comm)
 			terminate = 0
 			if myid == main_node:
-				total_checked_refs = sum(total_checked_refs)
+				#total_checked_refs = sum(total_checked_refs)
+				log.add("=========== Number of better peaks found ==============")
+				for lhx in xrange(nsoft+1):
+					msg = "            %5d     %7d"%(lhx, par_r[lhx])
+					log.add(msg)
+				log.add("_______________________________________________________")
+
 				lhist = 20
 				region, histo = hist_list(all_pixer, lhist)
 				log.add("=========== Histogram of pixel errors ==============")
 				for lhx in xrange(lhist):
-					msg = " %10.3f     %7d"%(region[lhx], histo[lhx])
+					msg = "          %10.3f     %7d"%(region[lhx], histo[lhx])
 					log.add(msg)
+				log.add("____________________________________________________")
 				if (max(all_pixer) < 0.5) and (sum(all_pixer)/total_nima < 0.05):
 					terminate = 1
-					log.add("Will terminate due to small pixel errors")
+					log.add("...............")
+					log.add(">>>>>>>>>>>>>>>   Will terminate due to small pixel errors")
 			terminate = wrap_mpi_bcast(terminate, main_node, mpi_comm)
 			#=========================================================================
 
@@ -2288,12 +2302,21 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 					write_text_file(previousmax, "soft/previousmax%04d.txt"%total_iter)
 				del previousmax, params
 
-	par_r = wrap_mpi_gatherv(par_r, 0, mpi_comm)
-
 	if myid == main_node:
 		log.add("Finish ali3d_multishc_soft")
 		return #params, vol, previousmax, par_r
 	else:
 		return #None, None, None, None  # results for the other processes
 
-
+def get_softy(im):
+	w = [im.get_attr('weight')]
+	from utilities import get_params_proj
+	p1,p2,p3,p4,p5 = get_params_proj(im)
+	x = [[p1,p2,p3,p4,p5]]
+	i = 1
+	while im.has_attr("xform.projection" + str(i)):
+		w.append(im.get_attr("weight" + str(i)))
+		p1,p2,p3,p4,p5 = get_params_proj(im, "xform.projection" + str(i))
+		x.append( [p1,p2,p3,p4,p5] )
+		i += 1
+	return w,x

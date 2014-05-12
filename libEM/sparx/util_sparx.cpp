@@ -18133,10 +18133,10 @@ vector<float> Util::multiref_polar_ali_2d_peaklist(EMData* image, const vector< 
 
 	for (int iref = 0; iref < (int)crefim_len; iref++) {
 		float ang = peak[iref*5+1];
-		float sx = peak[iref*5+2];
-		float sy = peak[iref*5+3];
-		float co =  cos(ang*qv);
-		float so = -sin(ang*qv);
+		float sx  = peak[iref*5+2];
+		float sy  = peak[iref*5+3];
+		float co  =  cos(ang*qv);
+		float so  = -sin(ang*qv);
 		float sxs = sx*co - sy*so;
 		float sys = sx*so + sy*co;
 		peak[iref*5+2] = sxs;
@@ -18181,6 +18181,8 @@ vector<float> Util::multiref_polar_ali_2d_peaklist_local(EMData* image, const ve
 			Normalize_ring( cimage, numr );
 			Frngs(cimage, numr);
 			for (int iref = 0; iref < (int)crefim_len; iref++) {
+// UUU
+//cout<<"  "<<n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3<<"  "<<ant<<endl;
 				if( n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3 >=ant ) {
 					Dict retvals = Crosrng_e(crefim[iref], cimage, numr, 0);
 					const float ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
@@ -18917,43 +18919,41 @@ vector<float> Util::shc_multipeaks(EMData* image, const vector< EMData* >& crefi
 		iref = listr[tiref];
 		float peak = previousmax;
 
+		std::vector<int> shifts = shuffled_range( 0, (2*kx+1) * (2*ky+1) - 1 );
+		//for ( unsigned nodeId = 0;  nodeId < shifts.size();  ++nodeId ) {
+		unsigned nodeId = 0;
+		bool found_better = false;
+		while(nodeId < shifts.size()  &&  !found_better) {
+			const int i = ( shifts[nodeId] % (2*ky+1) ) - ky;
+			const int j = ( shifts[nodeId] / (2*ky+1) ) - kx;
+			const float iy = i * step;
+			const float ix = j * step;
+			EMData* cimage = cimages[i+ky][j+kx];
+			Dict retvals = Crosrng_rand_ms(crefim[iref], cimage, numr, previousmax);
+			const float new_peak = static_cast<float>( retvals["qn"] );
+			if (new_peak > peak) {
+				sx = -ix;
+				sy = -iy;
+				nref = iref;
+				ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+				peak = new_peak;
+				mirror = static_cast<int>( retvals["mirror"] );
+				bool found_better = (peak > previousmax);
 
-	    	std::vector<int> shifts = shuffled_range( 0, (2*kx+1) * (2*ky+1) - 1 );
-		    //for ( unsigned nodeId = 0;  nodeId < shifts.size();  ++nodeId ) {
-		    unsigned nodeId = 0;
-		    bool found_better = false;
-		    while(nodeId < shifts.size()  &&  !found_better) {
-			    const int i = ( shifts[nodeId] % (2*ky+1) ) - ky;
-    			const int j = ( shifts[nodeId] / (2*ky+1) ) - kx;
-	    		const float iy = i * step;
-		    	const float ix = j * step;
-			    EMData* cimage = cimages[i+ky][j+kx];
-    			Dict retvals = Crosrng_rand_ms(crefim[iref], cimage, numr, previousmax);
-	    		const float new_peak = static_cast<float>( retvals["qn"] );
-		    	if (new_peak > peak) {
-			    	sx = -ix;
-				    sy = -iy;
-    				nref = iref;
-	    			ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-		    		peak = new_peak;
-			    	mirror = static_cast<int>( retvals["mirror"] );
-				    bool found_better = (peak > previousmax);
-
-			const float co =  cos(ang*qv);
-			const float so = -sin(ang*qv);
-			const float sxs = sx*co - sy*so;
-			const float sys = sx*so + sy*co;
-			results.push_back(ang);
-			results.push_back(sxs);
-			results.push_back(sys);
-			results.push_back(static_cast<float>(mirror));
-			results.push_back(static_cast<float>(nref));
-			results.push_back(peak);
-			results.push_back(static_cast<float>(tiref));
-		}
+				const float co =  cos(ang*qv);
+				const float so = -sin(ang*qv);
+				const float sxs = sx*co - sy*so;
+				const float sys = sx*so + sy*co;
+				results.push_back(ang);
+				results.push_back(sxs);
+				results.push_back(sys);
+				results.push_back(static_cast<float>(mirror));
+				results.push_back(static_cast<float>(nref));
+				results.push_back(peak);
+				results.push_back(static_cast<float>(tiref));
+			}
 		++nodeId;
-	}
-
+		}
     }
 	for (unsigned i = 0; i < cimages.size(); ++i) {
 		for (unsigned j = 0; j < cimages[i].size(); ++j) {
@@ -18961,7 +18961,7 @@ vector<float> Util::shc_multipeaks(EMData* image, const vector< EMData* >& crefi
 			cimages[i][j] = NULL;
 		}
 	}
-
+/*  moved to python
 	// sorting
 	unsigned no_of_solution = results.size() / 7;
 	for (unsigned i = 0; i < no_of_solution; ++i) {
@@ -18981,7 +18981,7 @@ vector<float> Util::shc_multipeaks(EMData* image, const vector< EMData* >& crefi
 		}
 	}
 
-	// set new previous max
+	// set new previousmax to the middle value
 	if ( no_of_solution > 0 ) {
 		image->set_attr("previousmax",results[7*(no_of_solution/2)+5]);
 	}
@@ -19018,7 +19018,7 @@ vector<float> Util::shc_multipeaks(EMData* image, const vector< EMData* >& crefi
 	for (unsigned i = i0; image->has_attr("weight" + toString(i));  ++i ) {
 		image->del_attr("weight" + toString(i));
 	}
-
+*/
 	return results;
 }
 
@@ -20681,7 +20681,7 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
-	cout <<"  VERSION  05/11/2014  11:00 am"<<endl;
+	cout <<"  VERSION  05/12/2014  3:00 pm"<<endl;
 	float dummy;
 	dummy = ri;
 	cout <<  "   fmod   "<<fmod(qprob,dummy)<<endl;
