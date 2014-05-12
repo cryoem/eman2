@@ -412,7 +412,7 @@ def reconstruct(data,recon,preprocess,pad,fillangle,verbose=0):
 
 	if verbose>0:print "Inserting Slices (%d)"%len(data)
 
-	astep=atan2(1.0,max(pad)/2.0)*3.0
+	astep=atan2(1.0,max(pad)/2.0)*2.0
 	den=floor(fillangle/astep)
 	if den==0: 
 		fillangle=0
