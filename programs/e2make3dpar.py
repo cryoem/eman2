@@ -419,7 +419,7 @@ def reconstruct(data,recon,preprocess,pad,fillangle,verbose=0):
 		if verbose: print "No filling"
 	else: 
 		astep=fillangle/den-.00001
-		if verbose: print "Filling %dx%d"%(den,den)
+		if verbose: print "Filling %dx%d, %1.2f deg  %1.3f step"%(den,den,fillangle*180./pi,astep*180./pi)
 
 	ptcl=0
 	for i,elem in enumerate(data):

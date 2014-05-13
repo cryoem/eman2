@@ -193,7 +193,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--recon", dest="recon", default="fourier", help="Default=auto. Reconstructor to use see e2help.py reconstructors -v",)
 	parser.add_argument("--m3dkeepsig", default=False, action="store_true", help="Default=auto. The standard deviation alternative to the --m3dkeep argument")
 	parser.add_argument("--m3dsetsf", type=str,dest="m3dsetsf", default=None, help="Default=auto. Name of a file containing a structure factor to apply after refinement")
-	parser.add_argument("--m3dpreprocess", type=str, default="normalize.edgemean", help="Default=auto. Normalization processor applied before 3D reconstruction")
+	parser.add_argument("--m3dpreprocess", type=str, default=None, help="Default=auto. Normalization processor applied before 3D reconstruction")
 
 	#lowmem!
 	parser.add_argument("--lowmem", default=True, action="store_true",help="Default=auto. Make limited use of memory when possible - useful on lower end machines")
@@ -209,6 +209,10 @@ not need to specify any of the following other than the ones already listed abov
 		print "ERROR : You must specify --input and --model  OR  --startfrom\n"
 		parser.print_help()
 		sys.exit(1)
+
+	if options.m3dpreprocess==None:
+		if options.m3dpar : options.m3dpreprocess=""
+		else: options.m3dpreprocess="normalize.edgemean"
 
 	if options.path == None:
 		fls=[int(i[-2:]) for i in os.listdir(".") if i[:7]=="refine_" and len(i)==9]

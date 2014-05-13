@@ -386,7 +386,7 @@ def get_image(images,n,normproc=("normalize.edgemean",{})):
 def align_one(ptcl,ref,prefilt,align,aligncmp,ralign,raligncmp):
 	"""Performs the multiple steps of a single particle-alignment"""
 
-	if prefilt : ref.process_inplace("filter.matchto",{"to":ptcl})
+	if prefilt : ref=ref.process("filter.matchto",{"to":ptcl})
 
 	# initial alignment
 	if align!=None :
