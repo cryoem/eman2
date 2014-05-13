@@ -4500,7 +4500,14 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 
 		string get_desc() const
 		{
-			return "normalizes an image, mean value equals to mean of 2 pixel circular border.";
+			return "normalizes an image, mean value equals to mean of 2 pixel circular radius or of the circular border if no radius is set.";
+		}
+		
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("radius", EMObject::FLOAT,"Radius of 2 pixel circular border");
+			return d;
 		}
 
 		static const string NAME;

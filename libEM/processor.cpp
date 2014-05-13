@@ -3769,7 +3769,41 @@ float NormalizeCircleMeanProcessor::calc_mean(EMData * image) const
 		LOGWARN("NULL Image");
 		return 0;
 	}
-	return image->get_circle_mean();
+//	return image->get_circle_mean();
+	int nx=image->get_xsize();
+	int ny=image->get_ysize();
+	int nz=image->get_zsize();
+
+	float radius = params.set_default("radius",((float)ny/2-2));
+	
+	static bool busy = false;
+	static EMData *mask = 0;
+		
+	if (!mask || !EMUtil::is_same_size(image, mask)) {
+		if (!mask) {
+			mask = new EMData();
+		}
+		mask->set_size(nx, ny, nz);
+		mask->to_one();
+		
+		mask->process_inplace("mask.sharp", Dict("inner_radius", radius - 1,
+							 "outer_radius", radius + 1));
+		
+	}
+	double n = 0,s=0;
+	float *d = mask->get_data();
+	float * data = image->get_data();
+	size_t size = (size_t)nx*ny*nz;
+	for (size_t i = 0; i < size; ++i) {
+		if (d[i]) { n+=1.0; s+=data[i]; }
+	}
+	
+	
+	float result = (float)(s/n);
+	
+	return result;
+	
+	
 }
 
 
