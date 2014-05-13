@@ -102,6 +102,10 @@ To run this program, you would normally specify only the following options:
                          and you will likely wait a very long time. To use more than one core on a single computer,
                          just say thread:N (eg - thread:4). For other options, like MPI, see:
                          http://blake.bcm.edu/emanwiki/EMAN2/Parallel for details.
+  --threads=<ncpu>       For some algorithms, processing in parallel over the network (MPI) works poorly.
+                         Running on multiple processors on a single machine may still be worthwhile. If you specify this
+                         option, in specific cases it will replace your specified --parallel option. Specify
+                         the number of cores that can be used on a single machine. 
 
   Optional:
   --apix=<A/pix>         The value will normally come from the particle data if present. You can override with this.
@@ -150,6 +154,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--nosingle",default=False, action="store_true", help="Normally the multi-model refinement will be followed by N single model refinements automatically. If this is set the job will finish after making the split data sets.")
 	parser.add_argument("--m3dpostprocess", type=str, default="", help="Default=none. An arbitrary post-processor to run after all other automatic processing. Maps are autofiltered, so a low-pass filter is not required here.", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter.lowpass|filter.highpass\')', row=20, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel",default=None, guitype='strbox', row=24, col=0, rowspan=1, colspan=2, mode="refinement")
+	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--path", default=None, type=str,help="The name of a directory where results are placed. Default = create new multi_xx")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 #	parser.add_argument("--usefilt", dest="usefilt", type=str,default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used in projection matching routines, and elsewhere.")
@@ -218,6 +223,10 @@ satisfied with the results with speed=5 you may consider reducing this number, t
 		fls=[int(i[-2:]) for i in os.listdir(".") if i[:6]=="multi_" and len(i)==8]
 		if len(fls)==0 : fls=[0]
 		options.path = "multi_{:02d}".format(max(fls)+1)
+
+	if options.threads<1 :
+		print "WARNING: threads set to an invalid value. Changing to 1, but you should really provide a reasonable number."
+		options.threads=1
 
 	global output_path
 	output_path="{}/report".format(options.path)
@@ -513,8 +522,8 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 
 		### 3-D Projections
 		models=["{path}/threed_{itrm1:02d}_{mdl:02d}.hdf".format(path=options.path,itrm1=it-1,mdl=mdl+1) for mdl in xrange(options.nmodels)]
-		run("e2project3d.py {mdls} --outfile {path}/projections_{itr:02d}.hdf -f --projector {projector} --orientgen {orient} --sym {sym} --postprocess normalize.circlemean {prethr} {parallel} {verbose}".format(
-			path=options.path,mdls=" ".join(models),itrm1=it-1,mdl=i,itr=it,projector=options.projector,orient=options.orientgen,sym=",".join(sym),prethr=prethreshold,parallel=parallel,verbose=verbose))
+		run("e2project3d.py {mdls} --outfile {path}/projections_{itr:02d}.hdf -f --projector {projector} --orientgen {orient} --sym {sym} --postprocess normalize.circlemean {prethr} --parallel thread:{threads} {verbose}".format(
+			path=options.path,mdls=" ".join(models),itrm1=it-1,mdl=i,itr=it,projector=options.projector,orient=options.orientgen,sym=",".join(sym),prethr=prethreshold,threads=options.threads,verbose=verbose))
 
 		progress += 1.0
 		E2progress(logid,progress/total_procs)

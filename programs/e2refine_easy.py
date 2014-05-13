@@ -97,7 +97,7 @@ To run this program, you would normally specify only the following options:
                          and you will likely wait a very long time. To use more than one core on a single computer,
                          just say thread:N (eg - thread:4). For other options, like MPI, see:
                          http://blake.bcm.edu/emanwiki/EMAN2/Parallel for details.
-  --threads=<ncpu>        For some algorithms, processing in parallel over the network (MPI) works poorly.
+  --threads=<ncpu>       For some algorithms, processing in parallel over the network (MPI) works poorly.
                          Running on multiple processors on a single machine may still be worthwhile. If you specify this
                          option, in specific cases it will replace your specified --parallel option. Specify
                          the number of cores that can be used on a single machine. 
@@ -147,7 +147,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--m3dkeep", type=float, help="The fraction of slices to keep in e2make3d.py. Default=0.8 -> 80%%", default=0.8, guitype='floatbox', row=18, col=1, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--m3dpostprocess", type=str, default=None, help="Default=none. An arbitrary post-processor to run after all other automatic processing. Maps are autofiltered, so a low-pass filter should not normally be used here.", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter.lowpass|filter.highpass\')', row=20, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel",default=None, guitype='strbox', row=24, col=0, rowspan=1, colspan=2, mode="refinement")
-	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't possible", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--path", default=None, type=str,help="The name of a directory where results are placed. Default = create new refine_xx")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 #	parser.add_argument("--usefilt", dest="usefilt", type=str,default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used in projection matching routines, and elsewhere.")
