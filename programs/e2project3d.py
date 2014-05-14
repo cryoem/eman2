@@ -213,6 +213,8 @@ class EMProject3DTaskDC(JSTask):
 			euler = eulers[i]
 			projector_opts["transform"] = euler
 			projection = threed_image.project(projector,projector_opts)
+			# The 5.0 is arbitrary. The goal is to get sigma in the ~1-3 range, and with typical density patterns, this should get in the right neighborhood
+			projection.mult(5.0/projection["nx"])		
 			projection.set_attr("xform.projection",euler)
 			projection.set_attr("ptcl_repr",0)
 			projections[indices[i]] = projection
