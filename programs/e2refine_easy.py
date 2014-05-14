@@ -211,8 +211,10 @@ not need to specify any of the following other than the ones already listed abov
 		sys.exit(1)
 
 	if options.m3dpreprocess==None:
-		if options.m3dpar : options.m3dpreprocess=""
-		else: options.m3dpreprocess="normalize.edgemean"
+		if options.m3dpar : m3dpreprocess=""
+		else: m3dpreprocess="--preprocess normalize.edgemean"
+	else:
+		m3dpreprocess="--preprocess "+options.m3dpreprocess
 
 	if options.path == None:
 		fls=[int(i[-2:]) for i in os.listdir(".") if i[:7]=="refine_" and len(i)==9]
@@ -609,26 +611,26 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 		if options.breaksym : m3dsym="c1"
 		else : m3dsym=options.sym
 		if options.m3dpar : 
-			cmd="e2make3dpar.py --input {path}/classes_{itr:02d}_even.hdf --sym {sym} --output {path}/threed_{itr:02d}_even.hdf --preprocess {preprocess} \
+			cmd="e2make3dpar.py --input {path}/classes_{itr:02d}_even.hdf --sym {sym} --output {path}/threed_{itr:02d}_even.hdf {preprocess} \
  --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --fillangle {fillangle} --threads {threads} {setsf} {verbose}".format(
-			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=options.m3dpreprocess,  m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
+			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=m3dpreprocess,  m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
 			m3dpad=options.pad, setsf=m3dsetsf, fillangle=astep ,threads=options.threads, apix=apix, verbose=verbose)
 		else:
-			cmd="e2make3d.py --input {path}/classes_{itr:02d}_even.hdf --iter 2 -f --sym {sym} --output {path}/threed_{itr:02d}_even.hdf --recon {recon} --preprocess {preprocess} \
+			cmd="e2make3d.py --input {path}/classes_{itr:02d}_even.hdf --iter 2 -f --sym {sym} --output {path}/threed_{itr:02d}_even.hdf --recon {recon} {preprocess} \
  --keep={m3dkeep} {keepsig} --apix={apix} --pad={m3dpad} {setsf} {verbose}".format(
-			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=options.m3dpreprocess,  m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
+			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=m3dpreprocess,  m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
 			m3dpad=options.pad, setsf=m3dsetsf, apix=apix, verbose=verbose)
 		run(cmd)
 
 		if options.m3dpar : 
-			cmd="e2make3dpar.py --input {path}/classes_{itr:02d}_odd.hdf --sym {sym} --output {path}/threed_{itr:02d}_odd.hdf --preprocess {preprocess} \
+			cmd="e2make3dpar.py --input {path}/classes_{itr:02d}_odd.hdf --sym {sym} --output {path}/threed_{itr:02d}_odd.hdf {preprocess} \
  --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --fillangle {fillangle} --threads {threads} {setsf} {verbose}".format(
-			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=options.m3dpreprocess, m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
+			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=m3dpreprocess, m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
 			m3dpad=options.pad, apix=apix, setsf=m3dsetsf, fillangle=astep ,threads=options.threads, verbose=verbose)
 		else:
-			cmd="e2make3d.py --input {path}/classes_{itr:02d}_odd.hdf --iter 2 -f --sym {sym} --output {path}/threed_{itr:02d}_odd.hdf --recon {recon} --preprocess {preprocess} \
+			cmd="e2make3d.py --input {path}/classes_{itr:02d}_odd.hdf --iter 2 -f --sym {sym} --output {path}/threed_{itr:02d}_odd.hdf --recon {recon} {preprocess} \
  --keep={m3dkeep} {keepsig} --apix={apix} --pad={m3dpad} {setsf} {verbose}".format(
-			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=options.m3dpreprocess, m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
+			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=m3dpreprocess, m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
 			m3dpad=options.pad, apix=apix, setsf=m3dsetsf, verbose=verbose)
 		run(cmd)
 		progress += 1.0
