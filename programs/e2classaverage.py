@@ -414,7 +414,8 @@ def class_average_withali(images,ptcl_info,xform,ref,averager=("mean",{}),normpr
 	avgr=Averagers.get(averager[0], averager[1])
 	for i in range(nimg):
 		img=get_image(images,i,normproc)
-		ptcl_info[i]=(ptcl_info[i][0],xform*ptcl_info[i][1],ptcl_info[i][2])		# apply the new Transform to the existing one
+#		ptcl_info[i]=(ptcl_info[i][0],xform*ptcl_info[i][1],ptcl_info[i][2])		# apply the new Transform to the existing one
+		ptcl_info[i]=(ptcl_info[i][0],ptcl_info[i][1]*xform,ptcl_info[i][2])		# apply the new Transform to the existing one
 		img.process_inplace("xform",{"transform":ptcl_info[i][1]})
 		try: use=ptcl_info[i][2]
 		except: use=1
