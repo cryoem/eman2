@@ -43,28 +43,47 @@ import math
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = """Must be run in the directory containing the stack(s)/particle(s) whose header is to be modified.
-	e2fixheaderparam.py --input=stack_to_fix --output=fixed_stack_name --params=param1:value1,param2:value2... --type=type_of_parameters. 
-	This programs fix values for any parameter on the header of an HDF file or a stack of HDF files."""
+	usage = """Must be run in the directory containing the stack(s)/particle(s) whose header 
+	is to be modified. e2fixheaderparam.py --input=stack_to_fix --output=fixed_stack_name 
+	--params=param1:value1,param2:value2... --type=type_of_parameters. 
+	This programs fix values for any parameter on the header of an HDF file or a stack of 
+	HDF files or an MRC file. ADDING new parameters, such as through --addfilename, or any
+	parameters supplied through --params=parameter:value,parameter:value,.... that are not
+	already in the header, will force HDF format on the output."""
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_argument("--input", type=str, help="""File or stack for which to fix header parameters. To indicate multiple files with a common string, use *.
-													For example, if you want to process all the .mrc files in a given directory, supply options.input=*.mrc""", default='')
-	parser.add_argument("--output", type=str, help="""File to write the fixed stack to. If not provided, the stack in --input will be overwritten.""", default='')
-	parser.add_argument("--params", type=str, help="""Comma separated pairs of parameter:value. The parameter will be changed to the value specified.""", default='')
-	parser.add_argument("--stem", type=str, help="""Some parameters have common stems. For example, 'origin_x', 'origin_y', 'origin"x'. 
-												Supply the stem and all parameters containing it will be modified.""",default='')
-	parser.add_argument("--stemval", type=str, help="""New value for all parameters containing --stem.""",default='')
-
-	parser.add_argument("--valtype", type=str, help="""Type of the value to enforce. It can be: str, float, int, list, or transform.""",default='str')
+	parser.add_argument("--input", type=str, help="""File or stack for which to fix header 
+		parameters. To indicate multiple files with a common string, use *.
+		For example, if you want to process all the .mrc files in a given directory, 
+		supply options.input=*.mrc""", default='')
+	
+	parser.add_argument("--output", type=str, help="""File to write the fixed stack to. 
+		If not provided, the stack in --input will be overwritten.""", default='')
+	
+	parser.add_argument("--params", type=str, help="""Comma separated pairs of parameter:value. 
+		The parameter will be changed to the value specified.""", default='')
+	
+	parser.add_argument("--stem", type=str, help="""Some parameters have common stems. 
+		For example, 'origin_x', 'origin_y', 'origin"x'. 
+		Supply the stem and all parameters containing it will be modified.""",default='')
+	
+	parser.add_argument("--stemval", type=str, help="""New value for all parameters 
+		containing --stem.""",default='')
+	
+	parser.add_argument("--valtype", type=str, help="""Type of the value to enforce. 
+		It can be: str, float, int, list, or transform.""",default='str')
+	
 	#parser.add_argument("--addparam", action='store_true', help="""If you want to add a new parameter to the header opposed to overwriting an existing one, turn this option on.""",default=False) 
-	parser.add_argument("--addfilename", action='store_true', help="""Automatically adds the original filename of a file or stack to the header of each particle.
-																	--params will be overwritten if this option is on.""",default=False) 
+	
+	parser.add_argument("--addfilename", action='store_true', help="""Automatically adds 
+		the original filename of a file or stack to the header of each particle.
+		--params will be overwritten if this option is on.""",default=False) 
 
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
 
 	(options, args) = parser.parse_args()
+	
 	
 	if not options.input:
 		print "ERROR: You must supply an input stack and it must be in HDF format."
@@ -73,10 +92,14 @@ def main():
 	t=[]
 	tags=[]
 	outputbase = options.input.split('.')[0]
+	
+	
+	originaloutput = options.output
+	
 	if options.output:
 		outputbase = options.output
 		
-		print "Output is", options.output
+		print "(line 98)Output is", options.output
 	
 	files2process = []
 	
@@ -101,32 +124,47 @@ def main():
 			if '*' in options.input and int(proceed) == int(ntags):
 				#options.input = f
 				files2process.append( f )
+				print "\nFile appended!", f
 	else:
 		files2process.append( options.input )
 	
 	k=0
 	for fyle in files2process:
-		if options.output:
+		if originaloutput:
 			if len(files2process) > 1:
 				options.output = outputbase.split('.')[0] + str(k).zfill( len(files2process) ) + '.' +  outputbase.split('.')[-1]
 		else:
 			#options.output = fyle.replace('.','_hdrEd.')
-			options.output = options.input
+			options.output = fyle
+			print "(e2fixheaderparam.py line 134) Defining options.output as", fyle
 			
 		if options.addfilename:
+			
 			if options.params:
 				options.params += ',tag_originalfile:' + fyle.split('/')[0]
 			else:
 				options.params += 'tag_originalfile:' + fyle.split('/')[0]			
 	
+		
+			newinput = fyle.split('.')[0] + '.hdf'
+			os.system('e2proc3d.py ' + fyle + ' ' + newinput )
+		
+			options.output = options.output.split('.')[0] + '.hdf'
+			
+			fyle = newinput
+			
+			print "\n\n\n\n\n\n\n\n\nNEW input is", fyle
+			print "\n\n\n\n\n\n\n\n\n"
+		
+		
 		print "Sending this file for fixing", fyle
-		fixer( options )
+		fixer( fyle, options )
 		k+=1
 				
 	return
 		
 	
-def fixer(options):	
+def fixer(fyle, options):	
 	formats=['.hdf','.mrc','.st','.ali','.rec']
 	nonhdfformats = ['.mrc','.st','.ali','.rec']
 	
@@ -135,6 +173,8 @@ def fixer(options):
 		#print "lets see if .hdf is in it", '.hdf' in options.output[-4:0]
 		#print "Therefore not in it should be false, and it is...", '.hdf' not in options.output[-4:0]
 		#if '.hdf' not in options.output[-4:] and '.mrc' not in options.output[-4:] and 'bdb:' not in options.output[:5] and '.st' not in options.output[-4:] and '.ali' not in options.output[-4:] and '.rec' not in options.output[-4:]:
+		
+		print "Output is", options.output
 		if options.output[-4:] not in formats:	
 			print "ERROR: The output filename must be in .hdf or .mrc format (.st, .ali and .rec format endings are also allowed for MRC files)."
 			sys.exit()
@@ -149,8 +189,8 @@ def fixer(options):
 	
 	
 	
-	if options.input[-4:] == '.hdf':
-		n=EMUtil.get_image_count(options.input)
+	if fyle[-4:] == '.hdf':
+		n=EMUtil.get_image_count( fyle )
 	else:
 		n=1
 		
@@ -159,12 +199,12 @@ def fixer(options):
 		aux1=aux2=aux3=0
 		
 		indx=i
-		if options.input[-4:] == '.hdf':
-			print "Fixing the header of particle %d in the stack %s" %( indx, options.input )
+		if fyle[-4:] == '.hdf':
+			print "Fixing the header of particle %d in the stack %s" %( indx, fyle )
 		else:
 			indx=0
 				
-		imgHdr = EMData(options.input,indx,True)
+		imgHdr = EMData(fyle,indx,True)
 		print "\nType of imgHdr is", type(imgHdr)
 		print "\n\n\nand imgHdr is", imgHdr
 		
@@ -185,15 +225,15 @@ def fixer(options):
 					print "latter was not present already!"
 					p2add.append( p )
 			
-			if len(p2add) > 0 and options.input[-4:] in nonhdfformats:
+			if len(p2add) > 0 and fyle[-4:] in nonhdfformats:
 				tmp = options.input.split('.')[0] + '.hdf'
-				cmd = 'e2proc3d.py ' + options.input + ' ' + tmp
+				cmd = 'e2proc3d.py ' + fyle + ' ' + tmp
 				p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 				text=p.communicate()
 				p.stdout.close()
-				options.input = tmp
+				fyle = tmp
 				
-				print "\nThere are parameters to add and the format is non-hdf. Therefore, this image will be create", options.input
+				print "\nThere are parameters to add and the format is non-hdf. Therefore, this image will be created", fyle
 				
 				print """\nWARNING: You are trying to add parameters to a file format that does not allow this.
 						You can only add new parameters to .hdf files. 
@@ -224,22 +264,29 @@ def fixer(options):
 					aux2 = 1
 					imgHdr.set_attr(p,v)
 					print "\nNew PARAMETER %s added with this value %s" %(p,v)
+					print "Let's see if we can read it", p, imgHdr[p]
 						
 			if not options.output:
-				if '.hdf' in options.input[-4:]:
-					imgHdr.write_image(options.input,indx,EMUtil.ImageType.IMAGE_HDF,True)
-	
-				elif options.input[-4:] in nonhdfformats:
-					imgHdr.write_image(options.input,-1,EMUtil.ImageType.IMAGE_MRC, True, None, EMUtil.EMDataType.EM_SHORT)
+				
+				outputformat = fyle.split('.')[-1]
+				if '.hdf' in fyle[-4:]:
+					imgHdr.write_image(fyle,indx,EMUtil.ImageType.IMAGE_HDF,True)
+					
+				elif fyle[-4:] in nonhdfformats:
+					imgHdr.write_image(fyle,-1,EMUtil.ImageType.IMAGE_MRC, True, None, EMUtil.EMDataType.EM_SHORT)
 				
 				else:
 					print "ERROR: Only MRC (.mrc, .rec, .ali, .st) and HDF (.hdf) formats supported."
 					sys.exit()
+				
+				print """\n\nOutput format will the be same as the input format (changed 
+					to HDF by default if new parameters here added), which is""", outputformat
+			
 			else:
 				outindx = 0
 				if '.hdf' in options.output[-4:]:
 					outindx=indx
-				img = EMData(options.input,outindx)
+				img = EMData(fyle,outindx)
 				img.set_attr_dict(imgHdr.get_attr_dict())
 				img.write_image(options.output,outindx)	
 
@@ -266,13 +313,18 @@ def fixer(options):
 				
 			if aux3 !=0:
 				if not options.output:
-					if '.hdf' in options.input[-4:]:
-						imgHdr.write_image(options.input,indx,EMUtil.ImageType.IMAGE_HDF,True)				
-					elif options.input[-4:] in nonhdfformats:
-						imgHdr.write_image(options.input,-1,EMUtil.ImageType.IMAGE_MRC, True, None, EMUtil.EMDataType.EM_SHORT)
+					outputformat = fyle.split('.')[-1]
+					
+					if '.hdf' in fyle[-4:]:
+						imgHdr.write_image(fyle,indx,EMUtil.ImageType.IMAGE_HDF,True)				
+					elif fyle[-4:] in nonhdfformats:
+						imgHdr.write_image(fyle,-1,EMUtil.ImageType.IMAGE_MRC, True, None, EMUtil.EMDataType.EM_SHORT)
+					else:
+						print "ERROR: Only MRC (.mrc, .rec, .ali, .st) and HDF (.hdf) formats supported."
+						sys.exit()
 				
 				else:
-					img = EMData(options.input,indx)
+					img = EMData(fyle,indx)
 					print "\nType of imgHdr is", type(imgHdr)
 					print "\n\n\nand imgHdr is", imgHdr
 					img.set_attr_dict(imgHdr.get_attr_dict())
