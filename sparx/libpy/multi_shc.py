@@ -2034,6 +2034,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
 		
 		# Now set previousmax to a value halfway through
 		data.set_attr("previousmax", params[peaks_count//2][0])
+
 		#  Add orientations around the main peak with exclusion of those already taken
 		if(peaks_count<nsoft):
 			from utilities import getfvec
@@ -2052,11 +2053,25 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
 				n2 = tempref[i].get_attr("n2")
 				n3 = tempref[i].get_attr("n3")
 				refvecs[i] = [n1,n2,n3]
-			for i in xrange(peaks_count, nsoft):
-				#  it does not use mirror, do it by hand
-				if( dp["theta"] > 90.0 ): tdata = mirror(data)
-				else:                     tdata = data
-				proj_ali_incore_multi(data, refrings, numr, xrng, yrng, step, 180.0, nsoft-peaks_count)
+			from utilities import nearestk_to_refdir
+			nrst = nearestk_to_refdir(tempref, refvecs, howmany = nsoft-peaks_count)
+			#  it does not use mirror, do it by hand
+			if( dp["theta"] > 90.0 ):
+				tdata = mirror(data)
+				#  delete from tdata higher xform and weight
+				i = max(peaks_count, 1)
+				while tdata.has_attr("xform.projection" + str(i)):
+					tdata.del_attr("xform.projection" + str(i))
+					i += 1
+				i = max(peaks_count, 1)
+				while tdata.has_attr("weight" + str(i)):
+					tdata.del_attr("weight" + str(i))
+					i += 1
+				proj_ali_incore_multi(data, [tempref[k] for k in nrst], numr, xrng, yrng, step, 180.0, nsoft-peaks_count)
+				#  Change parameters if mirrored
+				for i in xrange(peaks_count, nsoft):
+					continue
+			else:	proj_ali_incore_multi(data, [tempref[k] for k in nrst], numr, xrng, yrng, step, 180.0, nsoft-peaks_count)
 
 		# remove old xform.projection
 		i = max(peaks_count, 1)

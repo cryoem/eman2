@@ -2932,7 +2932,8 @@ def getfvec( phi, tht ):
 def nearest_ang( vecs, phi, tht ) :
 	from utilities import getvec
 	vec = getvec( phi, tht )
-
+	return  Util.nearest_ang(vecs, vec[0],vec[1],vec[2])
+	"""
 	best_s = -1.0
 	best_i = -1
 
@@ -2943,7 +2944,9 @@ def nearest_ang( vecs, phi, tht ) :
 			best_i = i
 
 	return best_i
-
+	"""
+"""
+Util.nearest_ang(vecs, vec[0],vec[1],vec[2])
 def closest_ang( vecs, vec) :
 	best_s = -1.0
 	best_i = -1
@@ -2955,7 +2958,7 @@ def closest_ang( vecs, vec) :
 			best_i = i
 
 	return best_i
-
+"""
 # This is in python, it is very slow, we keep it just for comparison, use Util.assign_projangles instead
 def assign_projangles_slow(projangles, refangles):
 	refnormal = [None]*len(refangles)
@@ -2980,7 +2983,7 @@ def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 		del refnormal[whichone], lookup[whichone]
 		assignments = [-1]*howmany
 		for i in xrange(howmany):
-			k = closest_ang(refnormal, ref)
+			k = Util.nearest_ang(refnormal, ref[0],ref[1],ref[2])
 			assignments[i] = lookup[k]
 			del refnormal[k], lookup[k]
 
@@ -3034,7 +3037,7 @@ def nearestk_to_refdir(refnormal, refdir, howmany = 1):
 	lookup = range(len(refnormal))
 	assignments = [-1]*howmany
 	for i in xrange(howmany):
-		k = closest_ang(refnormal, refdir)
+		k = Util.nearest_ang(refnormal, refdir[0],refdir[1],refdir[2])
 		assignments[i] = lookup[k]
 		del refnormal[k], lookup[k]
 	return assignments
@@ -3046,7 +3049,7 @@ def nearestk_to_refdirs(refnormal, refdir, howmany = 1):
 	for j in xrange(len(refdir)):
 		assignment = [-1]*howmany
 		for i in xrange(howmany):
-			k = closest_ang(refnormal, refdir[j])
+			k = Util.nearest_ang(refnormal, refdir[j][0],refdir[j][1],refdir[j][2])
 			assignment[i] = lookup[k]
 			del refnormal[k], lookup[k]
 		assignments.append(assignment)
