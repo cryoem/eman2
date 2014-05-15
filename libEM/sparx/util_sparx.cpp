@@ -18280,7 +18280,7 @@ vector<int> Util::assign_groups(std::string matrix_address, int nref, int nima)
 int Util::nearest_ang(const vector<float>& vecref, float x, float y, float z) {
 	float best_v = -1.0f;
 	int best_i = -1;
-	
+
 	for (unsigned int i=0; i<vecref.size()/3; i++) {
 		float v = abs(vecref[i*3]*x+vecref[i*3+1]*y+vecref[i*3+2]*z);
 		if (v > best_v) {

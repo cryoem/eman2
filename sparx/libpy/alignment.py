@@ -930,9 +930,8 @@ def prep_vol_kb(vol, kb, npad=2):
 def prepare_refrings( volft, kb, nz, delta, ref_a, sym, numr, MPI=False, phiEqpsi = "Minus", kbx = None, kby = None, initial_theta = None, delta_theta = None):
 
 	from projection   import prep_vol, prgs
-	from math         import sin, cos, pi, radians
 	from applications import MPI_start_end
-	from utilities    import even_angles
+	from utilities    import even_angles, getfvec
 	from types import BooleanType
 
 	# mpi communicator can be sent by the MPI parameter
@@ -1002,11 +1001,7 @@ def prepare_refrings( volft, kb, nz, delta, ref_a, sym, numr, MPI=False, phiEqps
 			bcast_EMData_to_all(refrings[i], myid, rootid, comm=mpi_comm)
 
 	for i in xrange(len(ref_angles)):
-		q0 = radians(ref_angles[i][0])
-		q1 = radians(ref_angles[i][1])
-		n1 = sin(q1)*cos(q0)
-		n2 = sin(q1)*sin(q0)
-		n3 = cos(q1)
+		n1,n2,n3 = getfvec(ref_angles[i][0], ref_angles[i][1])
 		refrings[i].set_attr_dict( {"phi":ref_angles[i][0], "theta":ref_angles[i][1], "psi":ref_angles[i][2], "n1":n1, "n2":n2, "n3":n3} )
 
 	return refrings
