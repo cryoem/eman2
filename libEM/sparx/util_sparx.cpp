@@ -18923,7 +18923,7 @@ vector<float> Util::shc_multipeaks(EMData* image, const vector< EMData* >& crefi
 		//for ( unsigned nodeId = 0;  nodeId < shifts.size();  ++nodeId ) {
 		unsigned nodeId = 0;
 		bool found_better = false;
-		while(nodeId < shifts.size()  &&  !found_better) {
+		while(nodeId < shifts.size()  &&  !found_better  && (results.size() / 7 < static_cast<unsigned>(max_peaks_count)) ) {
 			const int i = ( shifts[nodeId] % (2*ky+1) ) - ky;
 			const int j = ( shifts[nodeId] / (2*ky+1) ) - kx;
 			const float iy = i * step;
@@ -18961,7 +18961,7 @@ vector<float> Util::shc_multipeaks(EMData* image, const vector< EMData* >& crefi
 			cimages[i][j] = NULL;
 		}
 	}
-/*  moved to python
+/*
 	// sorting
 	unsigned no_of_solution = results.size() / 7;
 	for (unsigned i = 0; i < no_of_solution; ++i) {
