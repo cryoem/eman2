@@ -47,6 +47,8 @@ def main():
 	output file sequentially in the order provided on the command-line. Some file formats will not
 	support multiple images, or multiple volumes. Appropriate errors will be raised in these cases.
 	HDF is the only format supporting full metadata retention for stacks of images or volumes.
+	
+	The output file will be emptied and overwritten!
 	"""
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
@@ -62,13 +64,22 @@ def main():
 		print "--stackname is required (output file)"
 		sys.exit(1)
 	
-	if stackname[-4:].lower()==".lst" :
+	# remove existing output file
+	if os.path.exists(options.stackname) :
+		try: os.unlink(options.stackname)
+		except:
+			print "ERROR: Unable to remove ",options.stackname,". Cannot proceed"
+			sys.exit(1)
+			
+	# if output is LSX format, we handle it differently, with a specific object for these files
+	if options.stackname[-4:].lower()==".lst" :
 		outfile=LSXFile(options.stackname)
 	else: outfile=None
 	
-	n=0
+	n=0		# number of images in output file
 	for infile in args:
-		nimg = EMUtil.get_image_count(infile)
+		nimg = EMUtil.get_image_count(infile)		# number of images in each input file as it is processed
+		
 		if options.verbose : 
 			if nimg==1 : print infile
 			else : print infile,nimg
