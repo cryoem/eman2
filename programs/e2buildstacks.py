@@ -35,75 +35,54 @@ from EMAN2 import *
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """prog [options] <micrograph1, micrograph2....>
-	Use e2bdb.py or e2proc2d.py to build particle sets
+	usage = """prog [options] --stackname myfile.hdf <image1> <image2> <image3> ...
+	This program will combine many image files into a single output file. 
+	
+	If the output name has a ".lst" extension:
+	the output is a formatted text file, one line per image, describing the file containing the actual
+	image data in a searchable form. .lst files can be used as if they conatined actual images in any
+	EMAN2 programs.
+	
+	If the output is a normal image file (.hdf, .spi, etc.) then the images will be copied into the
+	output file sequentially in the order provided on the command-line. Some file formats will not
+	support multiple images, or multiple volumes. Appropriate errors will be raised in these cases.
+	HDF is the only format supporting full metadata retention for stacks of images or volumes.
 	"""
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_pos_argument(name="stack_files",help="List building material (sets) here.", default="", guitype='filebox', browser="EMParticlesEditTable(withmodal=True,multiselect=True)",  row=0, col=0,rowspan=1, colspan=2, nosharedb=True)
-	parser.add_header(name="buildheader", help='Options below this label are specific to e2buildstacks', title="### e2buildstacks options ###", row=1, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--stackname",type=str,help="Name of the stack to build", default='my_stack', guitype='strbox',row=2, col=0, rowspan=1, colspan=1)
-	parser.add_argument("--filetype",help="Type of file",default='bdb',guitype='combobox',choicelist='["bdb","hdf","spi"]',row=3,col=0,rowspan=1,colspan=1)
-	parser.add_argument("--excludebad",action="store_true",help="Exculde bad particles. Only works for BDB stacks",default=True, guitype='boolbox',row=4,col=0,rowspan=1,colspan=1)
+	parser.add_argument("--stackname",type=str,help="Name of the stack to build", default=None, guitype='strbox',row=2, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higner number means higher level of verboseness",default=1)
 	
 	(options, args) = parser.parse_args()
 	
-	# Now do the work
-	path = "sets"
+	if options.stackname==None :
+		print "--stackname is required (output file)"
+		sys.exit(1)
+	
+	if stackname[-4:].lower()==".lst" :
+		outfile=LSXFile(options.stackname)
+	else: outfile=None
+	
+	n=0
+	for infile in args:
+		nimg = EMUtil.get_image_count(infile)
+		if options.verbose : 
+			if nimg==1 : print infile
+			else : print infile,nimg
 
-	boxesdir = os.path.join(".",path)
-	if not os.access(boxesdir, os.R_OK):
-		os.mkdir(path)
-	
-	#If we use bdb, then make a virtual stack (but only if all input files are also BDB)
-	out_name = ""
-	if options.filetype == "bdb":
-		out_name = "bdb:%s#%s"%(path,os.path.splitext(options.stackname)[0])
-	
-		# Check to see if any of the input files are not BDB format if this is so then we Cannot make a virtual stack and must make a 'regular' stack
-		bdbfiles = True
-		for arg in args:
-			if arg[:4] != "bdb:": 
-				bdbfiles = False
-				break
-			
-		# Make a virtual stack. This is only possible if all input files and the output format are BDB. Otherwise pass over this code and make a 'real' stack
-		if bdbfiles:		
-			# Check exclude DB
-			if db_check_dict("bdb:select"):
-				select_db = db_open_dict("bdb:select")
+		for i in xrange(nimg):
+			if outfile!=None:
+				outfile.write(n,i,infile)
 			else:
-				select_db = None
-			cmd = ""
-	
-			for i,name in enumerate(args):
-				cmd = "e2bdb.py"
-				no_exc = True
-				if options.excludebad and select_db != None:
-					exc_db = re.sub(r'_ctf_flip$|_ctf_wiener$','',base_name(name))
-					if select_db.has_key(exc_db):
-						cmd += " "+name+"?exclude."+exc_db
-						no_exc=False
-				
-				if no_exc:
-					cmd += " "+name
-				
-				cmd += " --appendvstack="+out_name
-		
-				success = (os.system(cmd) in (0,11,12))
+				img=EMData(infile,i)
+				img.write_image(options.stackname,n)
+			n+=1
 			
-			exit(0)
-	
-	#Make a 'real' stack
-	if options.filetype == "hdf":
-		out_name = os.path.join(path,"%s.hdf"%os.path.splitext(options.stackname)[0])
-	if options.filetype == "spi":
-		out_name = os.path.join(path,"%s.spi"%os.path.splitext(options.stackname)[0])
-		
-	for arg in args:
-		launch_childprocess("e2proc2d.py %s %s"%(arg,out_name))
-	
+	if options.verbose : print n," total images written to ",options.stackname
+			
+			
 if __name__ == "__main__":
 	main()
