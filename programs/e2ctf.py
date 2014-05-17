@@ -93,6 +93,7 @@ NOTE: This program should be run from the project directory, not from within the
 	parser.add_argument("--chunk",type=str,help="<chunksize>,<nchunk>. Will process files in groups of chunksize, and process the <nchunk>th group. eg - 100,3 will read files 300-399 ",default=None,guitype='strbox',row=1,col=1, mode='autofit,tuning,genoutp,gensf')
 	parser.add_argument("--gui",action="store_true",help="Start the GUI for interactive fitting",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="tuning[True]")
 	parser.add_argument("--autofit",action="store_true",help="Runs automated CTF fitting on the input images",default=False, guitype='boolbox', row=8, col=0, rowspan=1, colspan=1, mode='autofit[True]')
+	parser.add_argument("--zerook",action="store_true",help="Normally particles with zero value on the edge are considered to be bad. This overrides that behavior, primarily for simulated data.",default=False)
 	parser.add_argument("--astigmatism",action="store_true",help="Includes astigmatism in automatic fitting",default=False, guitype='boolbox', row=8, col=1, rowspan=1, colspan=1, mode='autofit[False]')
 	parser.add_argument("--curdefocushint",action="store_true",help="Rather than doing the defocus from scratch, use existing values in the project as a starting point",default=False, guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, mode='autofit[True]')
 	parser.add_argument("--curdefocusfix",action="store_true",help="Fixes the defocus at the current determined value (if any) (+-.001um)",default=False)
@@ -342,7 +343,7 @@ def write_e2ctf_output(options):
 			if wienerout : print "Wiener image out: ",wienerout,
 			print "  defocus=",ctf.defocus
 
-			process_stack(filename,phaseout,phasehpout,wienerout,not options.nonorm,options.oversamp,ctf,invert=options.invert,storeparm=options.storeparm,source_image=options.source_image)
+			process_stack(filename,phaseout,phasehpout,wienerout,not options.nonorm,options.oversamp,ctf,invert=options.invert,storeparm=options.storeparm,source_image=options.source_image,zero_ok=options.zerook)
 
 			if logid : E2progress(logid,float(i+1)/len(options.filenames))
 
@@ -461,8 +462,8 @@ def pspec_and_ctf_fit(options,debug=False):
 		if apix<=0 : apix=EMData(filename,0,1)["apix_x"]
 		
 		# After this, PS contains a list of (im_1d,bg_1d,im_2d,bg_2d,bg_1d_low) tuples. If classify is <2 then this list will have only 1 tuple in it
-		if options.classify>1 : ps=split_powspec_with_bg(filename,options.source_image,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp,apix=apix,nclasses=options.classify)
-		else: ps=list((powspec_with_bg(filename,options.source_image,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp,apix=apix),))
+		if options.classify>1 : ps=split_powspec_with_bg(filename,options.source_image,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp,apix=apix,nclasses=options.classify,zero_ok=options.zerook)
+		else: ps=list((powspec_with_bg(filename,options.source_image,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp,apix=apix,zero_ok=options.zerook),))
 		# im_1d,bg_1d,im_2d,bg_2d,bg_1d_low
 		if ps==None : 
 			print "Error fitting CTF on ",filename
@@ -622,7 +623,7 @@ def env_cmp(sca,envelopes):
 
 	return ret
 
-def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,edgenorm=True,oversamp=1,default_ctf=None,invert=False,storeparm=False,source_image=None):
+def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,edgenorm=True,oversamp=1,default_ctf=None,invert=False,storeparm=False,source_image=None,zero_ok=False):
 	"""Will phase-flip and/or Wiener filter particles in a file based on their stored CTF parameters.
 	phaseflip should be the path for writing the phase-flipped particles
 	wiener should be the path for writing the Wiener filtered (and possibly phase-flipped) particles
@@ -684,7 +685,7 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,edgenorm=Tru
 		im1.process_inplace("mask.zeroedgefill",{"nonzero":1})		# This tries to deal with particles that were boxed off the edge of the micrograph
 
 		# If we detected a zero edge, we mark the particle as bad
-		if im1.has_attr("hadzeroedge") and im1["hadzeroedge"]!=0:
+		if not zero_ok and im1.has_attr("hadzeroedge") and im1["hadzeroedge"]!=0:
 			print "Particle outside of micrograph detected, marking as bad ({},{})".format(stackfile,i)
 			js=js_open_dict(info_name(stackfile))
 			try:
@@ -826,7 +827,7 @@ def powspec(stackfile,source_image=None,mask=None,edgenorm=True):
 	return av
 
 masks={}		# mask cache for background/foreground masking
-def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=1,apix=2,ptclns=None):
+def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=1,apix=2,ptclns=None,zero_ok=False):
 	"""This routine will read the images from the specified file, optionally edgenormalize,
 	then apply a gaussian mask with the specified radius then compute the average 2-D power
 	spectrum for the stack. It will also compute the average 2-D power spectrum using 1-mask + edge
@@ -851,14 +852,18 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 	try:
 		mask1,ratio1,mask2,ratio2=masks[(ys,radius)]
 	except:
+		# Mask 1 is an "inner" Gaussian to extract primarily the particle from the middle of the image
 		mask1=EMData(ys2,ys2,1)
 		mask1.to_one()
 		mask1.process_inplace("mask.gaussian",{"outer_radius":radius,"exponent":4.0})
+		# Mask 2 is the 'inverse' (1.0-val) of mask1, with the addition of a soft outer edge to reduce periodic boundary condition issues
 		mask2=mask1.copy()*-1+1
 #		mask1.process_inplace("mask.decayedge2d",{"width":4})
 		mask2.process_inplace("mask.decayedge2d",{"width":4})
 		mask1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
 		mask2.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
+		
+		# ratio1,2 give us info about how much of the image the mask covers for normalization purposes
 		ratio1=mask1.get_attr("square_sum")/(ys*ys)	#/1.035
 		ratio2=mask2.get_attr("square_sum")/(ys*ys)
 		masks[(ys,radius)]=(mask1,ratio1,mask2,ratio2)
@@ -879,10 +884,11 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 		im1.read_image(stackfile,i)
 		
 		# Images with flat edges due to boxing too close to the edge can adversely impact the power spectrum
-		im1.process_inplace("mask.zeroedgefill",{"nonzero":1})		# This tries to deal with particles that were boxed off the edge of the micrograph
-		if im1.has_attr("hadzeroedge") and im1["hadzeroedge"]!=0:
-			print "Skipped particle with bad edge ({}:{})".format(stackfile,i)
-			continue
+		if not zero_ok : 
+			im1.process_inplace("mask.zeroedgefill",{"nonzero":1})		# This tries to deal with particles that were boxed off the edge of the micrograph
+			if im1.has_attr("hadzeroedge") and im1["hadzeroedge"]!=0:
+				print "Skipped particle with bad edge ({}:{})".format(stackfile,i)
+				continue
 
 		nn+=1
 #		im1=EMData(stackfile,i)
@@ -896,6 +902,8 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 
 #		print im2.get_size(), im1.get_size()
 
+		# now we compute power spectra for the 2 regions defined by the masks
+		# av1/2 contain the incoherent averaged power spectra (intensity average)
 		im1*=mask1
 		imf=im1.do_fft()
 		imf.ri2inten()
@@ -916,6 +924,7 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 
 	if nn==0 : return None
 
+	# normalize the 2 curves
 	av1/=(float(nn)*av1.get_ysize()*av1.get_ysize()*ratio1)
 	av1.set_value_at(0,0,0.0)
 	av1.set_complex(1)
@@ -928,6 +937,7 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 	av2["is_intensity"]=1
 	av2["ptcl_repr"]=nn
 
+	# These now should represent the FG+BG and BG curves
 	av1_1d=av1.calc_radial_dist(av1.get_ysize()/2,0.0,1.0,1)
 	av2_1d=av2.calc_radial_dist(av2.get_ysize()/2,0.0,1.0,1)
 
