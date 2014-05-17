@@ -973,7 +973,7 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 	return (av1_1d,av2_1d,av1,av2,low_bg_curve(av2_1d,ds))
 
 # img_sets : filename,ctf,im_1d,bg_1d,im_2d,bg_2d,qual,bg_1d_low
-def split_powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=1,apix=2,nclasses=2):
+def split_powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=1,apix=2,nclasses=2,zero_ok=False):
 	"""Same as powspec_with_bg, but also subclassifies the data into groups based on differences in the 1-D background subtracted power spectrum.
 Rather than returning a single tuple, returns a list of nclasses tuples.
 	"""
