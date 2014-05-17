@@ -31,7 +31,7 @@
 
 def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, init_iter, main_iter, iter_reali, \
 			  match_first, max_round, match_second, stab_ali, thld_err, indep_run, thld_grp, img_per_grp, \
-			  generation, random_seed=None):
+			  generation, candidatesexist = False, random_seed=None):
 	from global_def   import ERROR, EMData, Transform
 	from pixel_error  import multi_align_stability
 	from utilities    import model_blank, write_text_file, get_params2D
@@ -101,7 +101,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	# The other way is all nodes reading it one by one, we have to test to determine which way is better.
 	# The test shows that way 1 (18s) is way faster then way 2 (197s) on the test on 16 nodes.
 	# The drawback of way 1 is it cannot have all attibutes, but I assume this is not important.
-	'''
+
 	# Method 1:
 	if myid == main_node:
 		alldata = EMData.read_images(stack)
@@ -155,7 +155,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		alldata[im].set_attr_dict({"xform.align2d": tdummy, "ID": im})
 		data[im] = alldata[im]
 	mpi_barrier(MPI_COMM_WORLD)
-
+	'''
 
 	ali_params_filename = "ali_params_%d"%color
 
@@ -174,169 +174,173 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	match_initialization = False
 	avg_first_stage = "class_averages_candidate_generation_%d.hdf"%generation
 
-	# I am adding here Artificial Intelligence for stopping 
-	#  The program should stop if
-	#	(a)  three times in a row it could not find new stable groups
-	couldnt_find_stable = 0
-	#	(b)  if number of groups to process is less than three
-	K = ndata/img_per_grp
+	if  not candidatesexist:
 
-	while Iter <= max_round and couldnt_find_stable < 3 and K > 3:
-		if myid == main_node: 
-			print "################################################################################"
-			print "#           Beginning of Round %2d           "%Iter+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"          #"
-			print "################################################################################"
-			print "**********************************************************************"
-			print "               Initialization of averages using EQ-mref               "
-			print "**********************************************************************"
-			print "     We will process:  %d current images divided equally between %d groups"%(ndata, K)
+		# I am adding here Artificial Intelligence for stopping 
+		#  The program should stop if
+		#	(a)  three times in a row it could not find new stable groups
+		couldnt_find_stable = 0
+		#	(b)  if number of groups to process is less than three
+		K = ndata/img_per_grp
 
-		# Generate random averages for each group
-		if key == group_main_node:
-			refim = generate_random_averages(data, K, 9023)
-			#for j in xrange(len(refim)):  refim[j].write_image("refim_%d.hdf"%color, j)
-		else:
-			refim = [model_blank(nx, nx) for i in xrange(K)]
+		while Iter <= max_round and couldnt_find_stable < 3 and K > 3:
+			if myid == main_node: 
+				print "################################################################################"
+				print "#           Beginning of Round %2d           "%Iter+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"          #"
+				print "################################################################################"
+				print "**********************************************************************"
+				print "               Initialization of averages using EQ-mref               "
+				print "**********************************************************************"
+				print "     We will process:  %d current images divided equally between %d groups"%(ndata, K)
 
-		for i in xrange(K):
-			bcast_EMData_to_all(refim[i], key, group_main_node, group_comm)
-
-		# Generate inital averages
-		#if myid == main_node: print "	 Generating initial averages ",localtime()[:5]
-		refi = isac_MPI(data, refim, maskfile=None, outname=None, ir=ir, ou=ou, rs=rs, xrng=xr, yrng=yr, step=ts, 
-				maxit=maxit, isac_iter=init_iter, CTF=CTF, snr=snr, rand_seed=-1, color=color, comm=group_comm, 
-				stability=False, FL=FL, FH=FH, FF=FF, dst=dst)
-		del refim
-
-		# gather the data on main node
-		if match_initialization:
+			# Generate random averages for each group
 			if key == group_main_node:
-				#print "Begin gathering ...", myid, len(refi)
-				refi = gather_EMData(refi, indep_run, myid, main_node)
-			if myid == main_node:
-				# Match all averages in the initialization and select good ones
-				#print "before matching, len = ", len(refi)
-				current_refim = get_unique_averages(refi, indep_run)
-				# If data_good is too few, add some random ones, otherwise, cut to K
-				print " found data good = ", len(current_refim)
-				if len(current_refim) > K:
-					current_refim = current_refim[:K]
-				elif len(current_refim) < K:
-					defi = K - len(current_refim)
-					for i in xrange(defi):
-						current_refim.append(refi[randint(0, indep_run*K-1)].copy())
+				refim = generate_random_averages(data, K, 9023)
+				#for j in xrange(len(refim)):  refim[j].write_image("refim_%d.hdf"%color, j)
 			else:
-				current_refim = [model_blank(nx, nx) for i in xrange(K)]
+				refim = [model_blank(nx, nx) for i in xrange(K)]
 
-			mpi_barrier(MPI_COMM_WORLD)	
-		else:
-			current_refim = refi
+			for i in xrange(K):
+				bcast_EMData_to_all(refim[i], key, group_main_node, group_comm)
 
-		# broadcast current_refim to all nodes
-		for i in xrange(K):
-			bcast_EMData_to_all(current_refim[i], myid, main_node)
-		mpi_barrier(MPI_COMM_WORLD)
+			# Generate inital averages
+			#if myid == main_node: print "	 Generating initial averages ",localtime()[:5]
+			refi = isac_MPI(data, refim, maskfile=None, outname=None, ir=ir, ou=ou, rs=rs, xrng=xr, yrng=yr, step=ts, 
+					maxit=maxit, isac_iter=init_iter, CTF=CTF, snr=snr, rand_seed=-1, color=color, comm=group_comm, 
+					stability=False, FL=FL, FH=FH, FF=FF, dst=dst)
+			del refim
 
-		#if key == group_main_node:
-		#	for i in xrange(K):
-		#		current_refim[i].write_image("init_group%d_round%d.hdf"%(color, Iter), i)
-
-		# Run ISAC
-		if myid == main_node:
-			print "**********************************************************************"
-			print "                     The main part of ISAC program                    "
-			print "**********************************************************************"
-	
-		for mloop in xrange(1, match_first+1):
-			if myid == main_node:
-				print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-				print "                  Loop %3d for 2-way matching               "%mloop
-				print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-			refi = isac_MPI(data, current_refim, maskfile=None, outname=None, ir=ir, ou=ou, rs=rs, xrng=xr, yrng=yr, step=ts,
-					maxit=maxit, isac_iter=main_iter, CTF=CTF, snr=snr, rand_seed=-1, color=color, comm=group_comm,
-					stability=True, stab_ali=stab_ali, iter_reali=iter_reali, thld_err=thld_err, FL=FL, FH=FH, FF=FF, dst=dst)
-
-			all_ali_params = [[] for i in xrange(5)]
-			for im in data:
-				alpha, sx, sy, mirror, scale = get_params2D(im)
-				all_ali_params[0].append(alpha)
-				all_ali_params[1].append(sx)			
-				all_ali_params[2].append(sy)
-				all_ali_params[3].append(mirror)
-				all_ali_params[4].append(scale)
-			if key == group_main_node:
-				final_ali_params_filename = ali_params_filename + "_" + str(mloop)
-				if os.path.exists(final_ali_params_filename):
-					os.remove(final_ali_params_filename)
-				write_text_file(all_ali_params, final_ali_params_filename)
-			del all_ali_params
-
-			# gather the data from the group main node to the main node
-			if key == group_main_node:
-				refi = gather_EMData(refi, indep_run, myid, main_node)
-
-			if mloop != match_first:
+			# gather the data on main node
+			if match_initialization:
+				if key == group_main_node:
+					#print "Begin gathering ...", myid, len(refi)
+					refi = gather_EMData(refi, indep_run, myid, main_node)
 				if myid == main_node:
-					current_refim = match_2_way(data, refi, indep_run, thld_grp, FH, FF, suffix="_"+str(mloop) )
+					# Match all averages in the initialization and select good ones
+					#print "before matching, len = ", len(refi)
+					current_refim = get_unique_averages(refi, indep_run)
+					# If data_good is too few, add some random ones, otherwise, cut to K
+					print " found data good = ", len(current_refim)
+					if len(current_refim) > K:
+						current_refim = current_refim[:K]
+					elif len(current_refim) < K:
+						defi = K - len(current_refim)
+						for i in xrange(defi):
+							current_refim.append(refi[randint(0, indep_run*K-1)].copy())
 				else:
 					current_refim = [model_blank(nx, nx) for i in xrange(K)]
-				for k in xrange(K):
-					bcast_EMData_to_all(current_refim[k], myid, main_node)
+
+				mpi_barrier(MPI_COMM_WORLD)	
+			else:
+				current_refim = refi
+
+			# broadcast current_refim to all nodes
+			for i in xrange(K):
+				bcast_EMData_to_all(current_refim[i], myid, main_node)
 			mpi_barrier(MPI_COMM_WORLD)
-		del current_refim
 
-		# Run Matching
-		if myid == main_node:
-			#print " Before matching ...  ", localtime()[:5] #len(data), len(refi), indep_run
-			matched_data = match_2_way(data, refi, indep_run, thld_grp, FH, FF, suffix="_"+str(mloop) )
-			members = []
-			for im in matched_data:
-				im.write_image(avg_first_stage, avg_num)
-				avg_num += 1
-				members.extend(im.get_attr('members'))
+			#if key == group_main_node:
+			#	for i in xrange(K):
+			#		current_refim[i].write_image("init_group%d_round%d.hdf"%(color, Iter), i)
 
-			# Because it's 2-way matching, it is possible some members are accounted for twice, we must delete the duplicate ones.   Yang 03/28/11
-			members.sort()
-			for i in xrange(len(members)-1, 0, -1):
-				if members[i] == members[i-1]: del members[i]
-			for i in xrange(len(members)-1): assert members[i]!=members[i+1]
-			mem_len = len(members)
-			print "In Round #%d, we found %d stable and reproducible averages, accounted for %d particles.  "%(Iter, len(matched_data), mem_len)
-		else:
-			mem_len = 0
-			members = []
-		mem_len = mpi_bcast(mem_len, 1, MPI_INT, main_node, MPI_COMM_WORLD)
-		mem_len = int(mem_len[0])
-
-		if mem_len > 0:
-			# In members we have absolute ID
-			members = mpi_bcast(members, mem_len, MPI_INT, main_node, MPI_COMM_WORLD)
-			members = map(int, members)
-
-			# Take out the good ones and use the remaining ones for initialization again
-			nndata = ndata-len(members)
-			newdata = [-1]*nndata
-			ll = 0
-			for i in xrange(ndata):
-				abs_id = data[i].get_attr("ID")
-				if abs_id not in members:
-					newdata[ll] = abs_id
-					ll += 1
-			data = [alldata[im] for im in newdata]
-			del newdata
-			for im in data:
-				im.set_attr("xform.align2d", tdummy)
-			ndata = nndata
-
-			couldnt_find_stable = 0
-			K = ndata/img_per_grp
-		else:
-			couldnt_find_stable += 1
-		Iter += 1
-		mpi_barrier(MPI_COMM_WORLD)
+			# Run ISAC
+			if myid == main_node:
+				print "**********************************************************************"
+				print "                     The main part of ISAC program                    "
+				print "**********************************************************************"
 	
-	del data
+			for mloop in xrange(1, match_first+1):
+				if myid == main_node:
+					print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+					print "                  Loop %3d for 2-way matching               "%mloop
+					print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+				refi = isac_MPI(data, current_refim, maskfile=None, outname=None, ir=ir, ou=ou, rs=rs, xrng=xr, yrng=yr, step=ts,
+						maxit=maxit, isac_iter=main_iter, CTF=CTF, snr=snr, rand_seed=-1, color=color, comm=group_comm,
+						stability=True, stab_ali=stab_ali, iter_reali=iter_reali, thld_err=thld_err, FL=FL, FH=FH, FF=FF, dst=dst)
+
+				all_ali_params = [[] for i in xrange(5)]
+				for im in data:
+					alpha, sx, sy, mirror, scale = get_params2D(im)
+					all_ali_params[0].append(alpha)
+					all_ali_params[1].append(sx)			
+					all_ali_params[2].append(sy)
+					all_ali_params[3].append(mirror)
+					all_ali_params[4].append(scale)
+				if key == group_main_node:
+					final_ali_params_filename = ali_params_filename + "_" + str(mloop)
+					if os.path.exists(final_ali_params_filename):
+						os.remove(final_ali_params_filename)
+					write_text_file(all_ali_params, final_ali_params_filename)
+				del all_ali_params
+
+				# gather the data from the group main node to the main node
+				if key == group_main_node:
+					refi = gather_EMData(refi, indep_run, myid, main_node)
+
+				if mloop != match_first:
+					if myid == main_node:
+						current_refim = match_2_way(data, refi, indep_run, thld_grp, FH, FF, suffix="_"+str(mloop) )
+					else:
+						current_refim = [model_blank(nx, nx) for i in xrange(K)]
+					for k in xrange(K):
+						bcast_EMData_to_all(current_refim[k], myid, main_node)
+				mpi_barrier(MPI_COMM_WORLD)
+			del current_refim
+
+			# Run Matching
+			if myid == main_node:
+				#print " Before matching ...  ", localtime()[:5] #len(data), len(refi), indep_run
+				matched_data = match_2_way(data, refi, indep_run, thld_grp, FH, FF, suffix="_"+str(mloop) )
+				members = []
+				for im in matched_data:
+					im.write_image(avg_first_stage, avg_num)
+					avg_num += 1
+					members.extend(im.get_attr('members'))
+
+				# Because it's 2-way matching, it is possible some members are accounted for twice, we must delete the duplicate ones.   Yang 03/28/11
+				members.sort()
+				for i in xrange(len(members)-1, 0, -1):
+					if members[i] == members[i-1]: del members[i]
+				for i in xrange(len(members)-1): assert members[i]!=members[i+1]
+				mem_len = len(members)
+				print "In Round #%d, we found %d stable and reproducible averages, accounted for %d particles.  "%(Iter, len(matched_data), mem_len)
+			else:
+				mem_len = 0
+				members = []
+			mem_len = mpi_bcast(mem_len, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+			mem_len = int(mem_len[0])
+
+			if mem_len > 0:
+				# In members we have absolute ID
+				members = mpi_bcast(members, mem_len, MPI_INT, main_node, MPI_COMM_WORLD)
+				members = map(int, members)
+
+				# Take out the good ones and use the remaining ones for initialization again
+				nndata = ndata-len(members)
+				newdata = [-1]*nndata
+				ll = 0
+				for i in xrange(ndata):
+					abs_id = data[i].get_attr("ID")
+					if abs_id not in members:
+						newdata[ll] = abs_id
+						ll += 1
+				data = [alldata[im] for im in newdata]
+				del newdata
+				for im in data:
+					im.set_attr("xform.align2d", tdummy)
+				ndata = nndata
+
+				couldnt_find_stable = 0
+				K = ndata/img_per_grp
+			else:
+				couldnt_find_stable += 1
+			Iter += 1
+			mpi_barrier(MPI_COMM_WORLD)
+	
+		del data
+	#  If candidates exist start from here
 	refim_stack = avg_first_stage
+
 
 	if myid == main_node:
 		print "******************************************************************************************"
