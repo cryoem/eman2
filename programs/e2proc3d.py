@@ -134,6 +134,7 @@ def main():
 								help="the first image in the input to process [0 - n-1])")
 	parser.add_option("--trans", metavar="dx,dy,dz", type="string", action="append",
 								help="Translate map by dx,dy,dz ")
+	parser.add_option("--resetxf",action="store_true",help="Reset an existing transform matrix to the identity matrix")
 	parser.add_option("--align", metavar="aligner_name:param1=value1:param2=value2", type="string", action="append",
 								help="Align input map to reference specified with --alignref. As with processors, a sequence of aligners is permitted")
 	parser.add_option("--ralignz", type=str ,action="append",
@@ -302,7 +303,8 @@ def main():
 	img_index = 0
 	for data in datlst:
 		if options.inputto1 : data.to_one()			# replace all voxel values with 1.0
-
+		if options.resetxf : data["xform.align3d"]=Transform()
+		
 		for option1 in optionlist:
 			if option1 == "origin":
 				if(len(options.origin)==3):
@@ -407,6 +409,7 @@ def main():
 
 				# actual alignment
 				data=data.align(alignername,alignref, param_dict)
+				if options.verbose>0 : print "Final alignment:",data["xform.align3d"]
 				index_d[option1] += 1
 
 			elif option1 == "mult":

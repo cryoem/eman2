@@ -109,7 +109,7 @@ def main():
 
 	(options, args) = parser.parse_args()
 
-	options.fillangle=options.fillangle*pi/180.0
+#	options.fillangle=options.fillangle*pi/180.0
 	# make sure that the user has atleast specified an input file
 #	if len(args) <1:
 #		parser.error("No input file specified")
@@ -412,14 +412,14 @@ def reconstruct(data,recon,preprocess,pad,fillangle,verbose=0):
 
 	if verbose>0:print "Inserting Slices (%d)"%len(data)
 
-	astep=atan2(1.0,max(pad)/2.0)*2.0
+	astep=atan2(1.0,max(pad)/2.0)*180./pi
 	den=floor(fillangle/astep)
 	if den==0: 
 		fillangle=0
 		if verbose: print "No filling"
 	else: 
-		astep=fillangle/den-.00001
-		if verbose: print "Filling %dx%d, %1.2f deg  %1.3f step"%(den,den,fillangle*180./pi,astep*180./pi)
+		astep=fillangle/(den-1)-.00001
+		if verbose: print "Filling %dx%d, %1.2f deg  %1.3f step"%(den,den,fillangle,astep)
 
 	ptcl=0
 	for i,elem in enumerate(data):
@@ -455,6 +455,7 @@ def reconstruct(data,recon,preprocess,pad,fillangle,verbose=0):
 			for dalt in np.arange(-fillangle/2.0,fillangle/2.0,astep):
 				for daz in np.arange(-fillangle/2.0,fillangle/2.0,astep):
 					newxf=Transform({"type":"eman","alt":alt+dalt,"az":az+daz})
+#					print i,elem["filenum"],newxf
 					recon.insert_slice(img,newxf,elem["weight"])
 			
 	
