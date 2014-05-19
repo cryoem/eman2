@@ -41,3 +41,4 @@ from user_functions  import *
 from global_def      import *
 from pixel_error     import *
 from development     import *
+from multi_shc       import *

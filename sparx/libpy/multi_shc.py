@@ -1955,6 +1955,7 @@ def proj_ali_incore_multi(data, refrings, numr, xrng = 0.0, yrng = 0.0, step=1.0
 
 def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
 	from utilities    import compose_transform2
+	from fundamentals import mirror
 	from math         import cos, pi
 	from EMAN2 import Vec2f, Transform
 	from global_def import Util
@@ -1977,7 +1978,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
 		finfo.flush()
 
-	#[ang, sxs, sys, mirror, iref, peak, checked_refs] = Util.shc(data, refrings, xrng, yrng, step, ant, mode, numr, cnx+dp["tx"], cny+dp["ty"])
+	#[ang, sxs, sys, mir, iref, peak, checked_refs] = Util.shc(data, refrings, xrng, yrng, step, ant, mode, numr, cnx+dp["tx"], cny+dp["ty"])
 	#peaks = Util.shc_multipeaks(data, refrings, xrng, yrng, step, ant, mode, numr, cnx+dp["tx"], cny+dp["ty"], nsoft)
 	#  Do not shift the image to prevent sliding away
 	peaks = Util.shc_multipeaks(data, refrings, xrng, yrng, step, ant, mode, numr, cnx, cny, nsoft)
@@ -1987,7 +1988,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
 	peak = 0.0
 	if( peaks_count > 0 ):
 		params = [None]*peaks_count
-		#                                              peak         iref                  ang        sxs           sys           mirror           checked references
+		#                                              peak         iref                  ang        sxs           sys           mir           checked references
 		for i in xrange(peaks_count):  params[i] = [ peaks[i*7+5], int(peaks[i*7+4]), peaks[i*7+0], peaks[i*7+1], peaks[i*7+2], int(peaks[i*7+3]), int(peaks[i*7+6])]
 		params.sort(reverse=True)
 		ws = sum([params[i][0] for i in xrange(peaks_count)])  # peaks could be stretched
@@ -1995,16 +1996,16 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
 			ang    = params[i][2]
 			sxs    = params[i][3]
 			sys    = params[i][4]
-			mirror = params[i][5]
+			mir = params[i][5]
 			iref   = params[i][1]
 			#peak   = peaks[i*7+5]
 			#checked_refs = int(peaks[i*7+6])
 			#number_of_checked_refs += checked_refs
 
-			# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
-			# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
+			# The ormqip returns parameters such that the transformation is applied first, the mir operation second.
+			# What that means is that one has to change the the Eulerian angles so they point into mired direction: phi+180, 180-theta, 180-psi
 			angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
-			if  mirror:
+			if  mir:
 				phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 				theta = 180.0-refrings[iref].get_attr("theta")
 				psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
@@ -2031,7 +2032,9 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
 			if finfo:
 				finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 				finfo.flush()
-		
+			#  preserve params, they might be needed if peaks_count<nsoft
+			params[i] = [params[i][0], phi, theta, psi, s2x, s2y, iref]
+
 		# Now set previousmax to a value halfway through
 		data.set_attr("previousmax", params[peaks_count//2][0])
 
@@ -2041,38 +2044,68 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
 			t1 = data.get_attr("xform.projection")
 			dp = t1.get_params("spider")
 			n1,n2,n3 = getfvec(dp["phi"],dp["theta"])
-			datanvec = [n1,n2,n3]	
+			datanvec = [n1,n2,n3]
 			tempref = [refrings[i] for i in xrange(len(refrings))]
-			taken = [params[i][1] for i in xrange(peaks_count)]
+			taken = [params[i][6] for i in xrange(peaks_count)]
 			taken.sort(reverse=True)
 			#  delete taken
 			for i in xrange(peaks_count):  del  tempref[taken[i]]
-			refvecs = [None]*len(tempref)
+			refvecs = [None]*3*len(tempref)
 			for i in xrange(len(tempref)):
 				n1 = tempref[i].get_attr("n1")
 				n2 = tempref[i].get_attr("n2")
 				n3 = tempref[i].get_attr("n3")
-				refvecs[i] = [n1,n2,n3]
+				refvecs[3*i+0] = n1
+				refvecs[3*i+1] = n2
+				refvecs[3*i+2] = n3
 			from utilities import nearestk_to_refdir
-			nrst = nearestk_to_refdir(tempref, refvecs, howmany = nsoft-peaks_count)
-			#  it does not use mirror, do it by hand
-			if( dp["theta"] > 90.0 ):
-				tdata = mirror(data)
-				#  delete from tdata higher xform and weight
-				i = max(peaks_count, 1)
-				while tdata.has_attr("xform.projection" + str(i)):
-					tdata.del_attr("xform.projection" + str(i))
-					i += 1
-				i = max(peaks_count, 1)
-				while tdata.has_attr("weight" + str(i)):
-					tdata.del_attr("weight" + str(i))
-					i += 1
-				proj_ali_incore_multi(data, [tempref[k] for k in nrst], numr, xrng, yrng, step, 180.0, nsoft-peaks_count)
-				#  Change parameters if mirrored
-				for i in xrange(peaks_count, nsoft):
-					continue
-			else:	proj_ali_incore_multi(data, [tempref[k] for k in nrst], numr, xrng, yrng, step, 180.0, nsoft-peaks_count)
-
+			nrst = nearestk_to_refdir(refvecs, datanvec, howmany = nsoft-peaks_count)
+			del refvecs
+			#  it does not use mir, do it by hand
+			if( dp["theta"] > 90.0 ):  tdata = mirror(data)
+			else:                      tdata = data.copy()
+			#  delete from tdata higher xform and weight and keep only base one as it will be used to do orientation search.
+			#  In addition, zero shifts as here we always search around the origin to prevent sliding away.
+			i = 1
+			while tdata.has_attr("xform.projection" + str(i)):
+				tdata.del_attr("xform.projection" + str(i))
+				i += 1
+			i = 1
+			while tdata.has_attr("weight" + str(i)):
+				tdata.del_attr("weight" + str(i))
+				i += 1
+			#  Search
+			proj_ali_incore_multi(tdata, [tempref[k] for k in nrst], numr, xrng, yrng, step, 180.0, nsoft-peaks_count)
+			for i in xrange(nsoft-peaks_count):
+				if i == 0:    t1 = tdata.get_attr("xform.projection")
+				else:         t1 = tdata.get_attr("xform.projection" + str(i))
+				d = t1.get_params("spider")
+				phi   = d["phi"]
+				theta = d["theta"]
+				psi   = d["psi"]
+				s2x   = d["tx"]
+				s2y   = d["ty"]
+				if( dp["theta"] > 90.0 ):	
+					#  Change parameters if mired
+					phi   = (phi+540.0)%360.0
+					theta = 180.0-theta
+					psi   = (540.0-psi)%360.0
+				if i == 0 :   w = tdata.get_attr("weight")
+				else:         w = tdata.get_attr("weight" + str(i))
+				params.append([w,  phi, theta, psi, s2x, s2y])
+			params.sort(reverse=True)
+			ws = sum([params[i][0] for i in xrange(peaks_count)])  # peaks could be stretched
+			for i in xrange(nsoft):
+				t2 = Transform({"type":"spider","phi":params[i][0],"theta":params[i][1],"psi":params[i][2]})
+				t2.set_trans(Vec2f(-params[i][3], -params[i][4]))
+				#print i,phi,theta,psi
+				if i == 0:
+					data.set_attr("xform.projection", t2)
+					data.set_attr("weight", params[i][0]/ws)
+				else:
+					data.set_attr("xform.projection" + str(i), t2)
+					data.set_attr("weight" + str(i), params[i][0]/ws)
+			
 		# remove old xform.projection
 		i = max(peaks_count, 1)
 		while data.has_attr("xform.projection" + str(i)):
@@ -2321,7 +2354,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 			#=========================================================================
 
 			#=========================================================================
-			if(total_iter%4 == 0 or terminate):
+			if(total_iter%1 == 0 or terminate):
 				# gather parameters
 				params = []
 				previousmax = []
@@ -2339,6 +2372,25 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 					write_text_row(params, "soft/params%04d.txt"%total_iter)
 					write_text_file(previousmax, "soft/previousmax%04d.txt"%total_iter)
 				del previousmax, params
+				i = 1
+				while data[0].has_attr("xform.projection" + str(i)):
+					params = []
+					previousmax = []
+					for im in data:
+						print  im.get_attr_dict()
+						try:  t = get_params_proj(im,"xform.projection" + str(i))
+						except:  						print myid, i,im.get_attr('ID')
+
+						params.append( [t[0], t[1], t[2], t[3], t[4]] )
+					assert(nima == len(params))
+					params = wrap_mpi_gatherv(params, 0, mpi_comm)
+					if myid == 0:
+						assert(total_nima == len(params))
+					if myid == main_node:
+						write_text_row(params, "soft/params-%04d-%04d.txt"%(i,total_iter))
+				del previousmax, params
+				i+=1
+
 
 	if myid == main_node:
 		log.add("Finish ali3d_multishc_soft")
