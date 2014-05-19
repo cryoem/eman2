@@ -2106,6 +2106,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
 					data.set_attr("xform.projection" + str(i), t2)
 					data.set_attr("weight" + str(i), params[i][0]/ws)
 			
+		"""
 		# remove old xform.projection
 		i = max(peaks_count, 1)
 		while data.has_attr("xform.projection" + str(i)):
@@ -2115,6 +2116,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
 		while data.has_attr("weight" + str(i)):
 			data.del_attr("weight" + str(i))
 			i += 1
+		"""
 		pixel_error /= peaks_count
 		peak = params[0][0]  # It is not used anywhere, but set it to the maximum.
 	
@@ -2269,8 +2271,8 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 				for im in xrange(nima):
 					previousmax = data[im].get_attr_default("previousmax", -1.0e23)
 					if(previousmax == -1.0e23):
-						peak, pixer[im] = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],1.0)
-						data[im].set_attr("previousmax", peak)
+						peak, pixer[im] = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],10.0)
+						data[im].set_attr("previousmax", peak*0.9)
 				if myid == main_node:
 					log.add("Time to calculate first psi+shifts+previousmax: %f\n" % (time()-start_time))
 					start_time = time()
@@ -2377,9 +2379,14 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 					params = []
 					previousmax = []
 					for im in data:
-						print  im.get_attr_dict()
-						try:  t = get_params_proj(im,"xform.projection" + str(i))
-						except:  						print myid, i,im.get_attr('ID')
+
+						try:
+							#print  im.get_attr("xform.projection" + str(i))
+							t = get_params_proj(im,"xform.projection" + str(i))
+						except:
+							print " NO XFORM  ",myid, i,im.get_attr('ID')
+							from sys import exit
+							exit()
 
 						params.append( [t[0], t[1], t[2], t[3], t[4]] )
 					assert(nima == len(params))
@@ -2388,8 +2395,8 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 						assert(total_nima == len(params))
 					if myid == main_node:
 						write_text_row(params, "soft/params-%04d-%04d.txt"%(i,total_iter))
-				del previousmax, params
-				i+=1
+					del previousmax, params
+					i+=1
 
 
 	if myid == main_node:
