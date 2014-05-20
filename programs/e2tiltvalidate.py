@@ -60,40 +60,43 @@ def main():
 	
 	# options associated with e2tiltvalidate.py
 	parser.add_header(name="tvheader", help='Options below this label are specific to e2tiltvalidate', title="### e2tiltvalidate options ###", row=3, col=0, rowspan=1, colspan=2, mode="analysis,gui")
-	parser.add_argument("--path", type=str,help="The folder the results are placed", default="", guitype='dirbox', dirbasename='TiltValidate', row=0, col=0,rowspan=1, colspan=2, mode="gui")
-	parser.add_argument("--volume", type=str,help="3D volume to validate",default=None, guitype='filebox', browser='EMModelsTable(withmodal=True,multiselect=False)', row=2, col=0, rowspan=1, colspan=2, mode="analysis")
+
+	
+	# "analysys" mode options
 	parser.add_argument("--untiltdata", type=str,help="Stack of untilted images",default=None, guitype='filebox', browser='EMSetsTable(withmodal=True,multiselect=False)', row=0, col=0, rowspan=1, colspan=2, mode="analysis")
 	parser.add_argument("--tiltdata", type=str,help="Stack of tilted images",default=None, guitype='filebox', browser='EMSetsTable(withmodal=True,multiselect=False)', row=1, col=0, rowspan=1, colspan=2, mode="analysis")
-	parser.add_argument("--align", type=str,help="The name of a aligner to be used in comparing the aligned images",default="translational", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', expert=True, row=7, col=0, rowspan=1, colspan=2, mode="analysis")
-	parser.add_argument("--cmp", type=str,help="The name of a 'cmp' to be used in comparing the aligned images",default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', expert=True, row=8, col=0, rowspan=1, colspan=2, mode="analysis")
+	parser.add_argument("--volume", type=str,help="3D volume to validate",default=None, guitype='filebox', browser='EMModelsTable(withmodal=True,multiselect=False)', row=2, col=0, rowspan=1, colspan=2, mode="analysis")
+	parser.add_argument("--maxtiltangle", type=float, help="Maximum tiltangle permitted when finding tilt distances", default=180.0, guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="analysis")
+	parser.add_argument("--quaternion",action="store_true",help="Use Quaterions for tilt distance computation",default=False, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode='analysis')
+	parser.add_argument("--sym",  type=str,help="The recon symmetry", default="c1", guitype='symbox', row=5, col=0, rowspan=1, colspan=1, mode="analysis")
 	parser.add_argument("--docontourplot",action="store_true",help="Compute a contour plot",default=False, guitype='boolbox',row=6,col=0, rowspan=1, colspan=1, expert=True, mode="analysis") 
 	parser.add_argument("--tiltrange", type=int,help="The angular tiltrange to search",default=15, guitype='intbox', row=6, col=1, rowspan=1, colspan=1, expert=True, mode="analysis")
-	parser.add_argument("--sym",  type=str,help="The recon symmetry", default="c1", guitype='symbox', row=5, col=0, rowspan=1, colspan=1, mode="analysis")
-	parser.add_argument("--planethres", type=float, help="Maximum out of plane threshold for the tiltaxis. 0 = perfectly in plane, 1 = normal to plane", default=360.0, guitype='floatbox', row=5, col=0, rowspan=1, mode="gui")
-	parser.add_argument("--datalabels", action="store_true",help="Add data labels to the plot", default=False, guitype='boolbox', row=6, col=1, rowspan=1, mode="gui")
-	parser.add_argument("--colorzaxis", action="store_true",help="Color scatter dots by Z axis", default=False, guitype='boolbox', row=7, col=0, rowspan=1, mode="gui")
-	parser.add_argument("--maxtiltangle", type=float, help="Maximum tiltangle permitted when finding tilt distances", default=180.0, guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="analysis")
-	parser.add_argument("--gui",action="store_true",help="Start the GUI for viewing the tiltvalidate plots",default=False, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode="gui[True]")
-	parser.add_argument("--datalabelscolor", type=str, help="Set the color of the data labels. Any vaild matplotlib color is ok", default='#00ff00', guitype='strbox', row=6, col=0, rowspan=1, colspan=1, mode="gui")
-	parser.add_argument("--radcut", type = float, default=-1, help="For use in the GUI, truncate the polar plot after R. -1 = no truncation", guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="gui")
-	parser.add_argument("--quaternion",action="store_true",help="Use Quaterions for tilt distance computation",default=False, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode='analysis')
-	parser.add_argument("--eulerfile",type=str,help="Euler angles file, to create tiltdistance from pre-aligned particles. Format is: imgnum, name, az, alt, phi",default=None)
-	# options associated with e2projector3d.py
+	parser.add_argument("--align", type=str,help="The name of a aligner to be used in comparing the aligned images",default="translational", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', expert=True, row=7, col=0, rowspan=1, colspan=2, mode="analysis")
+	parser.add_argument("--cmp", type=str,help="The name of a 'cmp' to be used in comparing the aligned images",default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', expert=True, row=8, col=0, rowspan=1, colspan=2, mode="analysis")
 	parser.add_header(name="projheader", help='Options below this label are specific to e2project', title="### e2project options ###", row=10, col=0, rowspan=1, colspan=2, mode="analysis")
 	parser.add_argument("--delta", type=float,help="The angular step size for alingment", default=5.0, guitype='floatbox', row=11, col=0, rowspan=1, colspan=1, mode="analysis")
 	# options associated with e2simmx.py
 	parser.add_header(name="simmxheader", help='Options below this label are specific to e2simmx', title="### e2simmx options ###", row=12, col=0, rowspan=1, colspan=2, mode="analysis")
+	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes. Defulat = 0, no shrinking", guitype='shrinkbox', row=13, col=0, rowspan=1, colspan=1, mode="analysis")
+	parser.add_argument("--simcmp",type=str,help="The name of a 'cmp' to be used in comparing the aligned images (default=ccc)", default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=14, col=0, rowspan=1, colspan=2, mode="analysis")
+	# options associated with e2projector3d.py
 	parser.add_argument("--simalign",type=str,help="The name of an 'aligner' to use prior to comparing the images (default=rotate_translate)", default="rotate_translate", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine|3d\', 1)', row=15, col=0, rowspan=1, colspan=2, mode="analysis")
 	parser.add_argument("--simaligncmp",type=str,help="Name of the aligner along with its construction arguments (default=ccc)",default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=16, col=0, rowspan=1, colspan=2, mode="analysis")
-	parser.add_argument("--simcmp",type=str,help="The name of a 'cmp' to be used in comparing the aligned images (default=ccc)", default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=14, col=0, rowspan=1, colspan=2, mode="analysis")
 	parser.add_argument("--simralign",type=str,help="The name and parameters of the second stage aligner which refines the results of the first alignment", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine\', 0)', row=17, col=0, rowspan=1, colspan=2, mode="analysis")
 	parser.add_argument("--simraligncmp",type=str,help="The name and parameters of the comparitor used by the second stage aligner. (default=dot).",default="dot", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=18, col=0, rowspan=1, colspan=2, mode="analysis")
-	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes. Defulat = 0, no shrinking", guitype='shrinkbox', row=13, col=0, rowspan=1, colspan=1, mode="analysis")
-	
 	parser.add_argument("--parallel",type=str,help="Parallelism string",default=None, guitype='strbox', row=9, col=0, rowspan=1, colspan=2, mode="analysis")
-	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness", guitype='intbox', row=19, col=0, rowspan=1, colspan=1, mode="analysis")
-	
+	# "gui" mode options
+	parser.add_argument("--path", type=str,help="The folder the results are placed", default="", guitype='dirbox', dirbasename='TiltValidate', row=0, col=0,rowspan=1, colspan=2, mode="gui")
+	parser.add_argument("--radcut", type = float, default=-1, help="For use in the GUI, truncate the polar plot after R. -1 = no truncation", guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="gui")
+	parser.add_argument("--gui",action="store_true",help="Start the GUI for viewing the tiltvalidate plots",default=True, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode="gui[True]")
+	parser.add_argument("--planethres", type=float, help="Maximum out of plane threshold for the tiltaxis. 0 = perfectly in plane, 1 = normal to plane", default=360.0, guitype='floatbox', row=5, col=0, rowspan=1, mode="gui")
+	parser.add_argument("--datalabelscolor", type=str, help="Set the color of the data labels. Any vaild matplotlib color is ok", default='#00ff00', guitype='strbox', row=6, col=0, rowspan=1, colspan=1, mode="gui")
+	parser.add_argument("--datalabels", action="store_true",help="Add data labels to the plot", default=False, guitype='boolbox', row=6, col=1, rowspan=1, mode="gui")
+	parser.add_argument("--colorzaxis", action="store_true",help="Color scatter dots by Z axis", default=False, guitype='boolbox', row=7, col=0, rowspan=1, mode="gui")
+	#other options
+	parser.add_argument("--eulerfile",type=str,help="Euler angles file, to create tiltdistance from pre-aligned particles. Format is: imgnum, name, az, alt, phi",default=None)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	(options, args) = parser.parse_args()
 		
 	# Run the GUI if in GUI mode
@@ -119,7 +122,20 @@ def main():
 	options.align=parsemodopt(options.align)
 	
 	# Make a new dir for each run
-	if not options.path : options.path=numbered_path("TiltValidate",True)
+	if not options.path : 
+		#options.path=numbered_path("TiltValidate",True)
+		# Create the run directory structure if it does not exist
+		i = 1
+		found = 1
+		while found == 1:
+			if i < 10:
+				run_dir = '0' + str(i)
+			else:
+				run_dir = str(i)
+			found = os.path.exists("TiltValidate_" + run_dir)
+			i = i+1
+		os.mkdir("TiltValidate_" + run_dir)
+		options.path="TiltValidate_"+run_dir
 	
 	#Make tilt distance generator
 	tiltgenerator = ComputeTilts(options)
@@ -161,14 +177,14 @@ def main():
 		exit(1)
 	
 	# write projection command to DB. If we rerun this program no need to reproject if it was done using same pars before
-	cdb = db_open_dict('bdb:cmdcache')
+	cdb = js_open_dict('info/cmdcache.json')
 	projparmas = "%s%f%s"%(options.volume,options.delta, options.sym)
 #	try:
 #		if (cdb.has_key('projparmas') and  cdb['projparmas'] == projparmas): raise IOError("Projection file does not exist")
 #		run("e2proc2d.py bdb:%s#projections_00 bdb:%s#projections_00"%(cdb['previouspath'], options.path))
 #	except:	
 	# Do projections
-	e2projectcmd = "e2project3d.py %s --orientgen=eman:delta=%f:inc_mirror=1:perturb=0 --outfile=bdb:%s#projections_00 --projector=standard --sym=%s" % (options.volume,options.delta,options.path, options.sym) # Seems to work better when I check all possibilites	
+	e2projectcmd = "e2project3d.py %s --orientgen=eman:delta=%f:inc_mirror=1:perturb=0 --outfile=%s/projections_00.hdf --projector=standard --sym=%s" % (options.volume,options.delta,options.path, options.sym) # Seems to work better when I check all possibilites	
 	if options.parallel: e2projectcmd += " --parallel=%s" %options.parallel
 	run(e2projectcmd)
 	cdb['projparmas'] = projparmas
@@ -176,22 +192,22 @@ def main():
 	cdb.close()
 		
 	# Make simmx
-	e2simmxcmd = "e2simmx.py bdb:%s#projections_00 %s bdb:%s#simmx -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d" % (options.path,options.untiltdata,options.path,options.simcmp,options.simalign,options.simaligncmp,options.verbose)
+	e2simmxcmd = "e2simmx.py %s/projections_00.hdf %s %s/simmx.hdf -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d" % (options.path,options.untiltdata,options.path,options.simcmp,options.simalign,options.simaligncmp,options.verbose)
 	if options.simralign: e2simmxcmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)
 	if options.parallel: e2simmxcmd += " --parallel=%s" %options.parallel
 	if options.shrink: e2simmxcmd += " --shrink=%d" %options.shrink
 	run(e2simmxcmd)
 	
-	e2simmxcmd = "e2simmx.py bdb:%s#projections_00 %s bdb:%s#simmx_tilt -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d" % (options.path,options.tiltdata,options.path,options.simcmp,options.simalign,options.simaligncmp,options.verbose)
+	e2simmxcmd = "e2simmx.py %s/projections_00.hdf %s %s/simmx_tilt.hdf -f --saveali --cmp=%s --align=%s --aligncmp=%s --verbose=%d" % (options.path,options.tiltdata,options.path,options.simcmp,options.simalign,options.simaligncmp,options.verbose)
 	if options.simralign: e2simmxcmd += " --ralign=%s --raligncmp=%s" %(options.simralign,options.simraligncmp)
 	if options.parallel: e2simmxcmd += " --parallel=%s" %options.parallel
 	if options.shrink: e2simmxcmd += " --shrink=%d" %options.shrink
 	run(e2simmxcmd)
 
 	# Read in the data
-	simmx= EMData.read_images("bdb:%s#simmx"%options.path)
-	simmx_tilt= EMData.read_images("bdb:%s#simmx_tilt"%options.path)
-	projections = EMData.read_images("bdb:%s#projections_00"%options.path)
+	simmx= EMData.read_images("%s/simmx.hdf"%options.path)
+	simmx_tilt= EMData.read_images("%s/simmx_tilt.hdf"%options.path)
+	projections = EMData.read_images("%s/projections_00.hdf"%options.path)
 	volume = EMData() 
 	volume.read_image(options.volume) # I don't know why I cant EMData.read_image.......
 	
@@ -203,10 +219,10 @@ def main():
 		tasks=[]
 		distplot = EMData(options.tiltrange*2+1,options.tiltrange*2+1)
 		distplot.to_zero()
-		for imgnum in xrange(simmx[0].get_ysize()):
+		for imgnum in range(simmx[0].get_ysize()):
 			bestscore = float('inf')
 			bestrefnum = 0
-			for refnum in xrange(simmx[0].get_xsize()):
+			for refnum in range(simmx[0].get_xsize()):
 				if simmx[0].get_value_at(refnum, imgnum) < bestscore:
 					bestscore = simmx[0].get_value_at(refnum, imgnum)
 					bestrefnum = refnum
@@ -224,7 +240,7 @@ def main():
 		
 	
 		# Make scoremx avg
-		scoremxs = EMData.read_images("bdb:%s#scorematrix"%options.path)
+		scoremxs = EMData.read_images("%s/scorematrix.hdf"%options.path)
 		avgmxavger = Averagers.get('mean')
 		for mx in scoremxs:
 			avgmxavger.add_image(mx)
@@ -239,7 +255,7 @@ class ComputeTilts:
 		self.options = options
 		self.symmeties = Symmetries.get(self.options.sym)
 		self.particletilt_list = []
-		self.tdb = db_open_dict("bdb:%s#perparticletilts"%self.options.path)
+		self.tdb = js_open_dict("%s/perparticletilts.json"%self.options.path)
 		#self.test = open("test.dat","w")
 		self.eulersfile = open("eulersforxplor.dat", "w")
 		self.classifyfile = None
@@ -248,13 +264,13 @@ class ComputeTilts:
 		""" Compute tiltdistances based on data """
 		# Save data to classify file
 		self.classifyfile = [EMData(1,simmx[0].get_ysize()),EMData(1,simmx[0].get_ysize()),EMData(1,simmx[0].get_ysize()),EMData(1,simmx[0].get_ysize()),EMData(1,simmx[0].get_ysize())]
-		for imgnum in xrange(simmx[0].get_ysize()):
+		for imgnum in range(simmx[0].get_ysize()):
 			untiltbestscore = float('inf')
 			tiltbestscore = float('inf')
 			untiltbestrefnum = 0
 			tiltbestrefnum = 0
 			tiltimgnum = imgnum
-			for refnum in xrange(simmx[0].get_xsize()):
+			for refnum in range(simmx[0].get_xsize()):
 				if simmx[0].get_value_at(refnum, imgnum) < untiltbestscore:
 					untiltbestscore = simmx[0].get_value_at(refnum, imgnum)
 					untiltbestrefnum = refnum
@@ -263,11 +279,11 @@ class ComputeTilts:
 					tiltbestrefnum = refnum
 			
 			# save classifcation info, for use with e2eulerplot.py
-			self.classifyfile[0][1,imgnum] = untiltbestrefnum
-			self.classifyfile[1][1,imgnum] = simmx[1].get_value_at(untiltbestrefnum, imgnum)
-			self.classifyfile[2][1,imgnum] = simmx[2].get_value_at(untiltbestrefnum, imgnum)
-			self.classifyfile[3][1,imgnum] = simmx[3].get_value_at(untiltbestrefnum, imgnum)
-			self.classifyfile[4][1,imgnum] = simmx[4].get_value_at(untiltbestrefnum, imgnum)
+			self.classifyfile[0][0,imgnum] = untiltbestrefnum
+			self.classifyfile[1][0,imgnum] = simmx[1].get_value_at(untiltbestrefnum, imgnum)
+			self.classifyfile[2][0,imgnum] = simmx[2].get_value_at(untiltbestrefnum, imgnum)
+			self.classifyfile[3][0,imgnum] = simmx[3].get_value_at(untiltbestrefnum, imgnum)
+			self.classifyfile[4][0,imgnum] = simmx[4].get_value_at(untiltbestrefnum, imgnum)
 			
 			# Here we actuall compute tilt geometry
 			# Untilt
@@ -302,7 +318,7 @@ class ComputeTilts:
 		if len(untilteulers) != len(tilteulers):
 			raise ValueError("untilteulers and tilteulers list is not the same length")
 		
-		for num in xrange(len(untilteulers)):
+		for num in range(len(untilteulers)):
 			untilt_euler_xform = Transform({'type':'eman','az':untilteulers[num]['az'],'alt':untilteulers[num]['alt'],'phi':untilteulers[num]['phi']})
 			tilt_euler_xform = Transform({'type':'eman','az':tilteulers[num]['az'],'alt':tilteulers[num]['alt'],'phi':tilteulers[num]['phi']})
 			self.find_bestsymsoln(num, untilt_euler_xform, tilt_euler_xform)
@@ -356,8 +372,8 @@ class ComputeTilts:
 		self.tdb["particletilt_list"] = self.particletilt_list
 		self.tdb.close()
 		if self.classifyfile:
-			for i in xrange(5):
-				self.classifyfile[i].write_image("bdb:%s#classify_00"%self.options.path,i)
+			for i in range(5):
+				self.classifyfile[i].write_image("%s/classify_00.hdf"%self.options.path,i)
 	
 # Function to compute a similarity map for a given image
 class CompareToTiltTask(JSTask):
@@ -381,8 +397,8 @@ class CompareToTiltTask(JSTask):
 	def execute(self,callback=None):
 		scoremx = EMData(2*self.tiltrange+1,2*self.tiltrange+1)
 		bestscore = float('inf')
-		for rotx in xrange(-self.tiltrange, self.tiltrange+1,self.tiltstep):
-			for roty in xrange(-self.tiltrange, self.tiltrange+1,self.tiltstep):
+		for rotx in range(-self.tiltrange, self.tiltrange+1,self.tiltstep):
+			for roty in range(-self.tiltrange, self.tiltrange+1,self.tiltstep):
 				# First make the projection
 				tiltangle = math.sqrt(rotx*rotx + roty*roty)
 				tiltaxis = math.degrees(math.atan2(roty, rotx))
@@ -393,7 +409,7 @@ class CompareToTiltTask(JSTask):
 				tiltalign = self.data['tilted'].align(self.options.align[0],testprojection,self.options.align[1],self.options.cmp[0],self.options.cmp[1])
 				score = tiltalign.cmp(self.options.cmp[0], testprojection, self.options.cmp[1])
 				scoremx.set_value_at(rotx+self.tiltrange, roty+self.tiltrange, score)
-		scoremx.write_image("bdb:%s#scorematrix"%self.options.path, self.imgnum)
+		scoremx.write_image("%s/scorematrix.hdf"%self.options.path, self.imgnum)
 		# Denoise the contiur plot, I need to experiment around with this
 		radius = 4
 		scoremx_blur = scoremx.process('eman1.filter.median',{'radius':radius})
@@ -441,7 +457,7 @@ def display_validation_plots(path, radcut, planethres, plotdatalabels=False, col
 	zaxis = []
 	
 	try:
-		tpdb = db_open_dict("bdb:%s#perparticletilts"%path)
+		tpdb = js_open_dict("%s/perparticletilts.json"%path)
 		tplist = tpdb["particletilt_list"]
 		maxcolorval = max(tplist, key=lambda x: x[3])[3]
 

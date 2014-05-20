@@ -30,7 +30,7 @@ This program will extract the required information from an EMAN2 project and out
 print "Running e2emx.py"
 # Required Program Options and Parameters (GUI and Command Line)
 parser = EMArgumentParser(usage, version=EMANVERSION)
-parser.add_argument("--export", action="store_true", help="This option will create an emx directory, where it will export the eman2 project into EMX format", default=False)
+parser.add_argument("--export_whole_project", action="store_true", help="This option will create an emx directory, where it will export the eman2 project into EMX format", default=False)
 parser.add_argument("--import_box_coordinates", type=str, help="Import box coordinates and corresponding micrographs")
 parser.add_argument("--import_ctf", type=str, help="Import ctf information and corresponding micrographs")
 parser.add_argument("--refinedefocus",  action="store_true", help="Will use EMAN2 CTF fitting to refine the defocus by SNR optimization (+-0.1 micron from the current values, no astigmatism adjustment)")
@@ -121,7 +121,6 @@ for option1 in optionList:
 						index = index + 1
 		f.write("</EMX>")
 		f.close()
-
 	elif option1 == "import_ctf":
 		found_per_particle = False
 		et = xml.etree.ElementTree.parse(options.import_ctf)
@@ -371,8 +370,69 @@ for option1 in optionList:
 				else:
 					db['boxes'].append(tup)
 					db.setval("boxes",db['boxes'],deferupdate=True)
-
-					
+	#elif option1 == "import_2d_alignment":
+		#et = xml.etree.ElementTree.parse(options.import_box_coordinates)
+		#emx = et.getroot()
+		#if item.tag == "particle":
+			#for particle_attrib in item.attrib:
+				#if particle_attrib == "fileName":
+					#particle_filename = item.attrib['fileName']
+				#elif particle_attrib == "index":
+					#particle_index = item.attrib['index']
+				#else:
+					#print "Unknown tag: " + particle_attrib
+			#for item2 in item:
+				##if item2.tag == "boxSize":
+					##for item3 in item2:
+						##if item3.tag == "X":
+							##nx = item3.text #in pixels
+						##elif item3.tag == "Y":
+							##ny = item3.text #in pixels
+						##elif item3.tag == "Z":
+							##nz = item3.text #in pixels
+				##elif item2.tag == "centerCoord":
+					##for item3 in item2:
+						##if item3.tag == "X":
+							##center_x = item3.text #in pixels
+						##elif item3.tag == "Y":
+							##center_y = item3.text #in pixels
+						##elif item3.tag == "Z":
+							##center_z = item3.text #in pixels
+				##elif item2.tag == "defocusU":
+					##defocus_particle_1 = item2.text # in nm
+				##elif item2.tag == "defocusV":
+					##defocus_particle_2 = item2.text # in nm
+				##elif item2.tag == "defocusUAngle":
+					##defocus_particle_angle = item2.text # in degrees (0->180)
+				##elif item2.tag == "fom":
+					##particle_fom = item2.text # figure-of-merit (0->1)
+				##elif item2.tag == "micrograph":
+					##for micrograph_attrib in item2.attrib:
+						##if micrograph_attrib == "fileName":
+							##particle_micrograph_filename = item2.attrib['fileName']
+						##elif micrograph_attrib == "index":
+							##particle_micrograph_index = item2.attrib['index']
+						##else:
+							##print "Unknown tag: " + micrograph_attrib
+				##elif item2.tag == "pixelSpacing":
+					##for item3 in item2:
+						##if item3.tag == "X":
+							##apix_x = item3.text
+						##elif item3.tag == "Y":
+							##apix_y = item3.text
+						##elif item3.tag == "Z":
+							##apix_z = item3.text
+				#if item2.tag == "transformationMatrix":
+					##do something...
+				#else:
+					#print "Unknown Tag: " + item2.tag
+			#db = js_open_dict(info_name(particle_micrograph_filename))
+			#tup = (float(center_x),float(center_y),"manual")
+			#if 'boxes' not in db:
+				#db['boxes'] = [tup]
+			#else:
+				#db['boxes'].append(tup)
+				#db.setval("boxes",db['boxes'],deferupdate=True)
 #js_close_dict(info_name(particle_micrograph_filename))
 print "e2emx.py finished!"
 
