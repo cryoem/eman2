@@ -88,10 +88,22 @@ def main():
 	if options.cuda: initializeCUDAdevice()
 	
 	if not options.path:
-		options.path = "rct/"
+#		options.path = "rct"
+		i=1
+		found = 1
+		while found == 1:
+			if i < 10:
+				run_dir = '0' + str(i)
+			else:
+				run_dir = str(i)
+			found = os.path.exists("rct" + run_dir)
+			i = i+1
+		os.mkdir("rct_" + run_dir)
+		options.path="rct_"+run_dir
+	
 	else:
 		options.path = options.path+"/"
-	    
+
 	if not options.tiltdata:
 		print "Error, tiltdata needed! Crashing!"
 		exit(1)
@@ -150,18 +162,18 @@ def main():
 			if options.align:
 				centered_particles = center_particles(tiltimgs, avnum, 1)
 				for r, idx in enumerate(a.get_attr('class_ptcl_idxs')):
-					centered_particles[idx].write_image("%srctclasses_%02d" % (options.path,avnum), r)
+					centered_particles[idx].write_image("%s/rctclasses_%02d.hdf" % (options.path,avnum), r)
 			else:
 				for r, idx in enumerate(a.get_attr('class_ptcl_idxs')):
-					tiltimgs[idx].write_image("%srctclasses_%02d" % (options.path,avnum), r)
+					tiltimgs[idx].write_image("%s/rctclasses_%02d.hdf" % (options.path,avnum), r)
 				
-			if options.verbose>0: print "Reconstructing: %srctrecon_%02d" % (options.path,avnum)
-			run("e2make3d.py --input=%srctclasses_%02d --output=%srctrecon_%02d --iter=2" % (options.path,avnum,options.path,avnum))
+			if options.verbose>0: print "Reconstructing: %s/rctrecon_%02d.hdf" % (options.path,avnum)
+			run("e2make3d.py --input=%s/rctclasses_%02d.hdf --output=%s/rctrecon_%02d.hdf --iter=2" % (options.path,avnum,options.path,avnum))
 			
 			# Process the RCTs usually for filtering
-			currentrct = EMData("%srctrecon_%02d" % (options.path,avnum))
+			currentrct = EMData("%s/rctrecon_%02d.hdf" % (options.path,avnum))
 			processimage(currentrct, options.process)
-			currentrct.write_image(("%srctrecon_%02d" % (options.path,avnum)),0)
+			currentrct.write_image(("%s/rctrecon_%02d.hdf" % (options.path,avnum)),0)
 			
 			#now make an averaged 
 			if options.avgrcts:
@@ -174,7 +186,7 @@ def main():
 					if options.cuda: EMData.switchoffcuda()
 					# write output
 					arlist.append(raligned)
-					raligned.write_image(("%srctrecon_align%02d" % (options.path,avnum)),0)
+					raligned.write_image(("%s/rctrecon_align%02d.hdf" % (options.path,avnum)),0)
 					if not options.reference:
 						reference = average_rcts(arlist, totalptcls)	# Make a running average
 				else:
@@ -185,10 +197,10 @@ def main():
 		avged = average_rcts(arlist, totalptcls)
 		if options.sym != "c1":
 			symavg = avged.process('xform.applysym',{"sym":options.sym})
-			symavg.write_image("%srctrecon_symavg" % (options.path), 0)
-		avged.write_image("%srctrecon_avg" % (options.path), 0)
+			symavg.write_image("%s/rctrecon_symavg.hdf" % (options.path), 0)
+		avged.write_image("%s/rctrecon_avg.hdf" % (options.path), 0)
   
-	js_close_dict(options.classavg)
+#	js_close_dict(options.classavg)
 	E2end(logid)
 	
 def average_rcts(arlist, totalptcls):
@@ -214,7 +226,7 @@ def center_particles(particles, avnum, iterations):
 			ptclavgr.add_image(img)
 		ptclavg = ptclavgr.finish()
 		ptclavg.process_inplace("math.rotationalaverage")
-		ptclavg.write_image("%scentref_%02d" % (options.path,avnum), it)
+		ptclavg.write_image("%s/centref_%02d.hdf" % (options.path,avnum), it)
 		#align translationally align particles
 		for img in particles:
 			#img.process_inplace("mask.noise", {"dx":0,"dy":0,"outer_radius":radius})

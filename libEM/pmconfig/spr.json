@@ -185,6 +185,12 @@
         "NAME": "Align to Symmetry Axis",
 	"NOTELEVEL": "1",
         "CHILDREN": []
+      },
+      {
+        "ICON":"refine",
+        "NAME":"Random Conical Tilt Reconstruction",
+        "PROGRAM":"e2rct.py",
+        "CHILDREN":[]
       }
     ]
   },

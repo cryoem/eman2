@@ -42,7 +42,7 @@ from emrctboxergui import ControlPannel
 from emshape import EMShape
 import os, sys, itertools
 
-EMBOXERRCT_DB = "boxercache/rctboxer.json"
+EMBOXERRCT_DB = "e2boxercache/rctboxer.json"
 
 def main():
 	progname = os.path.basename(sys.argv[0])
