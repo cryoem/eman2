@@ -166,6 +166,7 @@ class RCTprocessor:
 				#out = "bdb:particles#" + base_name(name) + self.options.suffix
 			#else:
 			out = os.path.join(os.path.join(".","particles"),base_name(name)+self.options.suffix+"."+self.options.format)
+			if not os.path.exists("./particles"): os.mkdir("./particles")
 			self.names.append(out)
 			
 	def write_boxes(self):
@@ -438,7 +439,7 @@ class MainWin:
 		self.win_ysize = self.window.data.get_ysize()
 		
 	def load_database(self):
-		self.boxes.set_boxes_db(name=self.name, entry=self.filename)	# set the name and entry of the db, the name reprents the window, and the entry, each instance of the window
+		self.boxes.set_boxes_db(name=self.name, entry=self.filename)# set the name and entry of the db, the name reprents the window, and the entry, each instance of the window
 		if(self.boxes.load_boxes_from_db()):				# load boxes from db
 			self.window.set_shapes(self.boxes.get_box_shapes(self.rctwidget.boxsize))
 			self.window.updateGL()
@@ -505,7 +506,7 @@ class MainWin:
 		self.rctwidget.update_particles(self.boxes.get_particle_images(self.filename,self.rctwidget.boxsize),self.boxes.objectidx)
 		
 	def write_particles(self,input_file_name,out_file_name,box_size,normproc=None):
-		db_remove_dict(out_file_name)	# Delete any old data
+		#js_remove_dict(out_file_name)	# Delete any old data
 		for i,box in enumerate(self.boxes.boxlist):
 			image = box.get_image(input_file_name,box_size)
 			self.rctwidget.handle_image_save(image)
@@ -544,17 +545,18 @@ class EMBoxList:
 	def set_boxes_db(self, name = "boxlist", entry="default.mrc"):
 		self.entry = entry
 		self.box_type = name
-		self.db = js_open_dict("e2boxercache/boxes"+name+".json")	#db for data in this window
+		self.db = js_open_dict("e2boxercache/boxes"+name+".json")
+#		EMData().write_image("e2boxercache/boxes"+name+".hdf")	#db for data in this window
 
 	def close_db(self):
-		js_close_dict(self.db)
-		
+#		js_close_dict(self.db)
+		pass
 	def load_boxes_from_db(self):
-		data = self.db[self.entry]
-		if data == None: data = self.db[os.path.basename(self.entry)]	# Backward compability
-
-		if data != None:
-			for box in data:
+		#data = self.db[self.entry]
+		if not self.entry in self.db.keys(): 
+			pass#data = self.db[os.path.basename(self.entry)]	# Backward compability
+		else:
+			for box in self.db[self.entry]:
 				self.append_box(int(box[0]),int(box[1]),box[2])
 			return True
 		return False
@@ -564,7 +566,7 @@ class EMBoxList:
 		if self.db.has_key("tiltparams_"+self.entry):
 			return self.db["tiltparams_"+self.entry]
 		else:
-			return self.db["tiltparams_"+os.path.basename(self.entry)]
+			return None
 		
 	def save_boxes_to_db(self):
 		self.db[self.entry] = [[box.x,box.y,box.type] for box in self.boxlist]
