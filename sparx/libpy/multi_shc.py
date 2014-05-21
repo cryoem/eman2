@@ -1996,11 +1996,12 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
 			ang    = params[i][2]
 			sxs    = params[i][3]
 			sys    = params[i][4]
-			mir = params[i][5]
+			mir    = params[i][5]
 			iref   = params[i][1]
 			#peak   = peaks[i*7+5]
 			#checked_refs = int(peaks[i*7+6])
 			#number_of_checked_refs += checked_refs
+			#if(sxs>0.0 or sys >0.0):  print  "  SERROR in shc_multi  ",i,params[i]
 
 			# The ormqip returns parameters such that the transformation is applied first, the mir operation second.
 			# What that means is that one has to change the the Eulerian angles so they point into mired direction: phi+180, 180-theta, 180-psi
@@ -2017,6 +2018,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
 				psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
 				s2x   = sxb #- dp["tx"]
 				s2y   = syb #- dp["ty"]
+			#if(sxs>0.0 or sys >0.0):  print  "  SERROR2 in shc_multi  ",i,phi,theta,psi,s2x,s2y
 
 			t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 			t2.set_trans(Vec2f(-s2x, -s2y))
@@ -2075,6 +2077,8 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
 				tdata.del_attr("weight" + str(i))
 				i += 1
 			#  Search
+			#if( dp["theta"] > 90.0 ): 
+			#	print "  IS MIRRORED  ",dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]
 			proj_ali_incore_multi(tdata, [tempref[k] for k in nrst], numr, xrng, yrng, step, 180.0, nsoft-peaks_count)
 			for i in xrange(nsoft-peaks_count):
 				if i == 0:    t1 = tdata.get_attr("xform.projection")
@@ -2085,19 +2089,21 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
 				psi   = d["psi"]
 				s2x   = d["tx"]
 				s2y   = d["ty"]
-				if( dp["theta"] > 90.0 ):	
-					#  Change parameters if mired
+				if( dp["theta"] > 90.0 ):
+					#  Change parameters if mirrored
+					print "  BEFORE MIRRORED  ",i,phi, theta, psi, s2x, s2y
 					phi   = (phi+540.0)%360.0
 					theta = 180.0-theta
 					psi   = (540.0-psi)%360.0
+					print "  AFTER MIRRORED  ",i,phi, theta, psi, s2x, s2y
 				if i == 0 :   w = tdata.get_attr("weight")
 				else:         w = tdata.get_attr("weight" + str(i))
 				params.append([w,  phi, theta, psi, s2x, s2y])
 			params.sort(reverse=True)
 			ws = sum([params[i][0] for i in xrange(peaks_count)])  # peaks could be stretched
 			for i in xrange(nsoft):
-				t2 = Transform({"type":"spider","phi":params[i][0],"theta":params[i][1],"psi":params[i][2]})
-				t2.set_trans(Vec2f(-params[i][3], -params[i][4]))
+				t2 = Transform({"type":"spider","phi":params[i][1],"theta":params[i][2],"psi":params[i][3]})
+				t2.set_trans(Vec2f(-params[i][4], -params[i][5]))
 				#print i,phi,theta,psi
 				if i == 0:
 					data.set_attr("xform.projection", t2)
@@ -2290,6 +2296,9 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 				#number_of_checked_refs += checked_refs
 				par_r[number_of_peaks] += 1
 				#print  myid,im,number_of_peaks
+				#t = get_params_proj(data[im])
+				#if(t[3] >0.0 or t[4]>0.0):  print  "  MERRROR  ",t
+				
 			#=========================================================================
 			mpi_barrier(mpi_comm)
 			if myid == main_node:
@@ -2363,6 +2372,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 				for im in data:
 					t = get_params_proj(im)
 					params.append( [t[0], t[1], t[2], t[3], t[4]] )
+					#if(t[3] >0.0 or t[4]>0.0):  print  "  ERRROR  ",t
 					previousmax.append(im.get_attr("previousmax"))
 				assert(nima == len(params))
 				params = wrap_mpi_gatherv(params, 0, mpi_comm)
@@ -2389,6 +2399,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 							exit()
 
 						params.append( [t[0], t[1], t[2], t[3], t[4]] )
+						#if(t[3] >0.0 or t[4]>0.0):  print  "  ERRROR  ",i,t
 					assert(nima == len(params))
 					params = wrap_mpi_gatherv(params, 0, mpi_comm)
 					if myid == 0:
