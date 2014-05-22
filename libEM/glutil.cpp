@@ -510,6 +510,11 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 
 			if (debug) printf ("loop for pixel averaging\n");
 
+			if (debug) {
+				printf ("xmin, xsize, ymin, ymax, addi = %d %d %d %d %d\n",
+							xmin, xsize, ymin, ymax, addi);
+			}
+
 			for (int j = ymax; j >= ymin; j--) {
 				int addj = addi;
 
@@ -525,6 +530,10 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 
 				int br = l;
 				remx = 10;
+
+				if (debug) {
+					printf ("j, l, addj, br, remx = %d %d %d %d %d\n", j, l, addj, br, remx);
+				}
 
 				for (int i = xmin; i < xsize; i++) {
 					if (l > lmax) break;
