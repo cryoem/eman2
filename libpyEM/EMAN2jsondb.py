@@ -738,6 +738,25 @@ performance than many individual changes."""
 		self.sync()
 
 	def setdefault(self,key,dfl,noupdate=False):
+		"""Returns the value for key if it exists. Otherwise, sets the value to be dfl and returns it"""
+
+		key=str(key)
+
+		if noupdate:
+			if key in self.delkeys and key not in self.changes and key not in self.data : 
+				del self.delkeys[key]
+				self.changes[key]=dfl
+				return dfl
+			if key in self.changes : return self.changes[key]
+			return self.data[key]
+
+		self.sync()
+		if key in self.data : return self.data[key]
+		self.changes[key]=dfl
+		return dfl
+
+	def getdefault(self,key,dfl,noupdate=False):
+		"""Returns the value for key if it exists. Otherwise returns dfl"""
 
 		key=str(key)
 
