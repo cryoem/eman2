@@ -412,8 +412,8 @@ def reconstruct(data,recon,preprocess,pad,fillangle,verbose=0):
 
 	if verbose>0:print "Inserting Slices (%d)"%len(data)
 
-#	astep=atan2(1.0,max(pad)/2.0)*180./pi
-	astep=atan2(1.0,max(pad)/2.0)/1.5*180./pi		# experimental smaller step size
+	astep=atan2(1.0,max(pad)/2.0)*180./pi
+#	astep=atan2(1.0,max(pad)/2.0)/1.5*180./pi		# experimental smaller step size
 	den=floor(fillangle/astep)
 	if den==0: 
 		fillangle=0
