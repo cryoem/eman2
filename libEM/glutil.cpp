@@ -263,7 +263,7 @@ void GLUtil::mx_bbox(const vector<float>& data,
 
 std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 		 int iysize, int bpl, float scale, int mingray, int maxgray,
-		 float render_min, float render_max,float gamma,int flags)
+		 float render_min, float render_max, float gamma, int flags)
 {
 	ENTERFUNC;
 
@@ -328,10 +328,15 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 
 	if (debug) {
 		setbuf (stdout, NULL);
-		printf ("flags, flags&1, flags&2, flags&4, flags&8, flags&16, flags&32, flags&64 = ");
+		printf ("------------------------------------------------------------\n");
+		printf ("x0, y0, ixsize, iysize, bpl, scale = %d %d %d %d %d %g\n",
+					x0, y0, ixsize, iysize, bpl, scale);
+		printf ("mingray, maxgray, render_min, render_max, gamma = %d %d %g %g %g\n",
+					mingray, maxgray, render_min, render_max, gamma);
+		printf ("flags, fl&1, fl&2, fl&4, fl&8, fl&16, fl&32, fl&64 = ");
 		printf ("%d %d %d %d %d %d %d %d\n",
-			flags, flags&1, flags&2, flags&4, flags&8, flags&16, flags&32, flags&64);
-		printf ("hist, invy, asrgb = %d %d %d\n", hist, invy, asrgb);
+					flags, flags&1, flags&2, flags&4, flags&8, flags&16, flags&32, flags&64);
+		printf ("nx, ny, hist, invy, asrgb = %d %d %d %d %d\n", nx, ny, hist, invy, asrgb);
 	}
 
 	std::string ret=std::string();
@@ -342,7 +347,11 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 	unsigned int *histd = (unsigned int *)(data+iysize*bpl);
 
 	if (hist) {
+		if (debug) printf ("histogram option\n");
+
 		for (int i=0; i<256; i++) histd[i]=0;
+
+		if (debug) printf ("histogram initialized\n");
 	}
 
 	float rm = render_min;
@@ -428,6 +437,8 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 	int binlocation = -1;
 	
 	if (flags & 32) {
+		if (debug) printf ("flag 32 option\n");
+
 		int graypdf[rangemax]   = {0}; // 256
 		int graycdf[rangemax-2] = {0}; // 254
 
@@ -444,7 +455,9 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 		for (int i=0; i<(maxgray-mingray); i++) { // 0~253
 			graypdftwo[i] = 0;
 		}
-		
+
+		if (debug) printf ("gray arrays initialized\n");
+
 		if (dsx != -1) {
 			int l = x0 + y0 * nx;
 
@@ -490,8 +503,12 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 			}
 		}
 		else {
+			if (debug) printf ("dsx = -1 option\n");
+
 			remy = 10;
 			int l = x0 + y0 * nx;
+
+			if (debug) printf ("loop for pixel averaging\n");
 
 			for (int j = ymax; j >= ymin; j--) {
 				int addj = addi;
@@ -556,8 +573,12 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 					l += nx; 
 				}
 			}
+
+			if (debug) printf ("end pixel averaging\n");
 		}
-		
+
+		if (debug) printf ("set graycdf\n");
+
 		for (int i=0; i<(rangemax-2); i++) { // 0~253
 			for (int j=0;j<(i+1);j++) {
 				graycdf[i]=graycdf[i]+graypdf[j+1];
@@ -578,6 +599,8 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 		}		
 		
 		if (binflag == 1) {
+			if (debug) printf ("set graypdf\n");
+
 			for (int i=(binlocation*16+1); i<((binlocation+1)*16); i++) {
 				graypdf[i] = 0;
 				// graypdf[i]=(graycdf[rangemax-3]-graypdftwo[binlocation])/(maxgray-mingray);
@@ -602,7 +625,9 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 		gaussianpdf = new float[rangemax-2];
 		gaussiancdf = new float[rangemax-2];
 		gaussianlookup = new int[rangemax-2];
-		
+
+		if (debug) printf ("set gaussian arrays\n");
+
 		for (int i=0; i<(rangemax-2); i++) {
 			gaussianpdf[i]=exp(-(i-mean)*(i-mean)/(2*standdv*standdv))/sqrt(standdv * standdv * 2 * M_PI);
 			
@@ -873,13 +898,13 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 							{
 								if (debug  &&  old_t != t) {
 									int gauss_index = (int)(floor((rangemax-2)*(t - render_min)/(render_max-render_min)));
-									printf ("t, gauss_index = %g %d\n", t, gauss_index);  
+//									printf ("t, gauss_index = %g %d\n", t, gauss_index);  
 								}
 
 								p=(unsigned char)(gaussianlookup[(int)(floor((rangemax-2)*(t - render_min)/(render_max-render_min)))]*(maxgray-mingray-2)/(rangemax-3)+1);
 
 								if (debug  &&  old_t != t) {
-									printf ("p = %d\n", (int) p);
+//									printf ("p = %d\n", (int) p);
 								}
 							}
 							else {
@@ -959,13 +984,13 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 							if (flags & 64) {
 								if (debug  &&  old_t != t) {
 									int gauss_index = (int)(floor((rangemax-2)*(t - render_min)/(render_max-render_min)));
-									printf ("t, gauss_index = %g %d\n", t, gauss_index);  
+//									printf ("t, gauss_index = %g %d\n", t, gauss_index);  
 								}
 
 								p = (unsigned char)(gaussianlookup[(int)(floor((rangemax-2)*(t - render_min)/(render_max-render_min)))]*(maxgray-mingray-2)/(rangemax-3)+1);
 
 								if (debug  &&  old_t != t) {
-									printf ("p = %d\n", (int) p);
+//									printf ("p = %d\n", (int) p);
 								}
 							}
 							else {
