@@ -32,7 +32,7 @@
 from EMAN2 import get_image_directory, dump_processors_list
 from PyQt4 import QtCore, QtGui
 from emrctstrategy import Strategy2IMGMan, Strategy2IMGPair
-from EMAN2db import db_open_dict
+from EMAN2jsondb import js_open_dict
 from EMAN2 import *
 import os
 
@@ -43,8 +43,8 @@ class ControlPannel(QtGui.QWidget):
 	def __init__(self, mediator):
 		QtGui.QWidget.__init__(self)
 		self.mediator = mediator
-		self.db = db_open_dict("bdb:emboxerrctgui")
-		self.qualitydb = db_open_dict("bdb:e2boxercache#quality")
+		self.db = js_open_dict("info/emboxerrctgui.json")
+		self.qualitydb = js_open_dict("e2boxercache/quality.json")
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"green_boxes.png"))
 		self.setWindowTitle("e2RCTboxer")
 		
@@ -68,8 +68,8 @@ class ControlPannel(QtGui.QWidget):
 		self.updateGeometry()
 
 		# Initialize tools
-		self.tools_stacked_widget.setCurrentIndex(self.db.get("toolidx",dfl=0))
-		self.current_tool_combobox.setCurrentIndex(self.db.get("toolidx",dfl=0))
+		self.tools_stacked_widget.setCurrentIndex(self.db.getdefault("toolidx",dfl=0))
+		self.current_tool_combobox.setCurrentIndex(self.db.getdefault("toolidx",dfl=0))
 		E2loadappwin("e2rctboxer","main",self)
 #		E2loadappwin("e2rctboxer","maintab",self.wimage)
 #		E2loadappwin("e2rctboxer","processortab",self.wfft)
@@ -148,14 +148,14 @@ class ControlPannel(QtGui.QWidget):
 			if len(key) >= 5 and key[:7] == "filter.":
 				#print key
 				self.processor_combobox.addItem(key)
-		self.processor_combobox.setCurrentIndex(int(self.db.get("processor",dfl=0)))
+		self.processor_combobox.setCurrentIndex(int(self.db.getdefault("processor",dfl=0)))
 		hbl.addWidget(self.processor_combobox)
 		vbox1.addLayout(hbl)
 		
 		hbl2=QtGui.QHBoxLayout()
 		plabel = QtGui.QLabel("Parameters:",self)
 		hbl2.addWidget(plabel)
-		self.params_listbox = QtGui.QLineEdit(str(self.db.get("processorparams",dfl="")), self)
+		self.params_listbox = QtGui.QLineEdit(str(self.db.getdefault("processorparams",dfl="")), self)
 		hbl2.addWidget(self.params_listbox)
 		vbox1.addLayout(hbl2)
 		vbox1.setAlignment(QtCore.Qt.AlignTop)
@@ -216,7 +216,7 @@ class ControlPannel(QtGui.QWidget):
 		self.kernel_combobox.addItem("5x5")
 		self.kernel_combobox.addItem("7x7")
 		# Load data
-		idx = self.db.get("kernelsizeidx",dfl=0)
+		idx = self.db.getdefault("kernelsizeidx",dfl=0)
 		self.kernel_combobox.setCurrentIndex(idx)
 		self.kernel_combobox_changed(idx)
 		
@@ -304,10 +304,10 @@ class ControlPannel(QtGui.QWidget):
 		self.quality = QtGui.QComboBox()
 		for i in xrange(5): self.quality.addItem(str(i))
 		# check full path then check basename
-		if self.qualitydb[self.mediator.windowlist[0].filename]:
-			self.quality.setCurrentIndex(self.qualitydb.get(self.mediator.windowlist[0].filename,dfl=0))
+		if not self.qualitydb.has_key(self.mediator.windowlist[0].filename):
+			self.quality.setCurrentIndex(self.qualitydb.getdefault(self.mediator.windowlist[0].filename,dfl=0))
 		else:
-			self.quality.setCurrentIndex(self.qualitydb.get(os.path.basename(self.mediator.windowlist[0].filename),dfl=0))
+			self.quality.setCurrentIndex(self.qualitydb.getdefault(os.path.basename(self.mediator.windowlist[0].filename),dfl=0))
 		grid.addWidget(QtGui.QLabel("Quality Score"),2,0)
 		grid.addWidget(self.quality, 2,1)
 		# add to layout
@@ -377,9 +377,9 @@ class ControlPannel(QtGui.QWidget):
 		for window in self.mediator.windowlist:
 			splitpath = os.path.split(os.path.splitext(window.filename)[0])
 			if splitpath[0] == '':
-				window.write_particles(window.filename, ("bdb:particles#"+splitpath[1]),self.mediator.boxsize,normproc="normalize.edgemean")
+				window.write_particles(window.filename, ("particles/"+splitpath[1]),self.mediator.boxsize,normproc="normalize.edgemean")
 			else:
-				window.write_particles(window.filename, ("bdb:"+splitpath[0]+"/particles#"+splitpath[1]),self.mediator.boxsize,normproc="normalize.edgemean")
+				window.write_particles(window.filename, (splitpath[0]+"/particles/"+splitpath[1]),self.mediator.boxsize,normproc="normalize.edgemean")
 	def on_write_box(self):
 		for window in self.mediator.windowlist:
 			window.write_boxes(os.path.splitext(window.filename)[0]+".box",self.mediator.boxsize)
@@ -517,16 +517,16 @@ class PairPickerTool(QtGui.QWidget):
 		self.connect(self.upboxes_but,QtCore.SIGNAL("clicked(bool)"),self.on_upboxes_but)
 	
 		# Initialize
-		self.spinbox.setValue(self.db.get("ppspinbox",dfl=self.minpp_for_xform))
-		self.updateboxes_cb.setChecked(self.db.get("ppcheckbox",dfl=self.updateboxes))
-		self.centertilts_cb.setChecked(self.db.get("tiltcheckbox",dfl=self.centertilts))
+		self.spinbox.setValue(self.db.getdefault("ppspinbox",dfl=self.minpp_for_xform))
+		self.updateboxes_cb.setChecked(self.db.getdefault("ppcheckbox",dfl=self.updateboxes))
+		self.centertilts_cb.setChecked(self.db.getdefault("tiltcheckbox",dfl=self.centertilts))
 		self.addmasks()
 	
 	def addmasks(self):
 		self.mask_combobox.addItem("None")
 		self.mask_combobox.addItem("LineMask")
 		self.mask_combobox.addItem("SolidMask")
-		self.mask_combobox.setCurrentIndex(self.db.get("masktype",dfl=0))
+		self.mask_combobox.setCurrentIndex(self.db.getdefault("masktype",dfl=0))
 		
 		QtCore.QObject.connect(self.mask_combobox, QtCore.SIGNAL("activated(int)"), self.mask_combobox_changed)
 		

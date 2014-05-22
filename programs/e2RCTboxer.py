@@ -130,8 +130,10 @@ class RCTprocessor:
 			input = self.args[i]
 			tiltbox_list = EMBoxList()
 			tiltbox_list.set_boxes_db('tilted',input)
+
 			tiltdata = tiltbox_list.get_tiltdata_from_db()
 			if tiltbox_list.load_boxes_from_db():
+				output = output.replace(".hdf","") + "__tilted.hdf"
 				for i,box in enumerate(tiltbox_list.boxlist):
 					image = box.get_image(input,self.options.boxsize)
 					if tiltdata:
@@ -147,6 +149,7 @@ class RCTprocessor:
 			untiltbox_list.set_boxes_db('untilted',input)
 			tiltdata = untiltbox_list.get_tiltdata_from_db()
 			if untiltbox_list.load_boxes_from_db():
+				output = output.replace(".hdf","") + "__untilted.hdf"
 				for i,box in enumerate(untiltbox_list.boxlist):
 					image = box.get_image(input,self.options.boxsize)
 					if tiltdata:
@@ -516,7 +519,7 @@ class MainWin:
 	def write_boxes(self,out_file_name,box_size):
 		boxfile = open(out_file_name, 'w')
 		for i,box in enumerate(self.boxes.boxlist):
-			boxfile.write("%d\t%d\t%d\t%d\n" % (int(box.x - box_size/2),int(box.y - box_size/2),box_size,box_size))
+			boxfile.write("%d\t%d\t%d\t%d\t-1\n" % (int(box.x - box_size/2),int(box.y - box_size/2),box_size,box_size))
 		boxfile.close()
 			
 		
@@ -545,19 +548,19 @@ class EMBoxList:
 	def set_boxes_db(self, name = "boxlist", entry="default.mrc"):
 		self.entry = entry
 		self.box_type = name
-		self.db = js_open_dict("e2boxercache/boxes"+name+".json")
-#		EMData().write_image("e2boxercache/boxes"+name+".hdf")	#db for data in this window
+		self.db = js_open_dict("info/"+base_name(entry)+"_info.json")
 
 	def close_db(self):
 #		js_close_dict(self.db)
 		pass
 	def load_boxes_from_db(self):
 		#data = self.db[self.entry]
-		if not self.entry in self.db.keys(): 
+		if not "boxes_rct" in self.db.keys(): 
 			pass#data = self.db[os.path.basename(self.entry)]	# Backward compability
 		else:
-			for box in self.db[self.entry]:
+			for box in self.db["boxes_rct"]:
 				self.append_box(int(box[0]),int(box[1]),box[2])
+				print box[0], box[1], box[2]
 			return True
 		return False
 	
@@ -569,7 +572,7 @@ class EMBoxList:
 			return None
 		
 	def save_boxes_to_db(self):
-		self.db[self.entry] = [[box.x,box.y,box.type] for box in self.boxlist]
+		self.db["boxes_rct"] = [[box.x,box.y,box.type] for box in self.boxlist]
 		
 	def save_tiltdata_to_db(self, tiltdata):
 		self.db["tiltparams_"+self.entry] = tiltdata

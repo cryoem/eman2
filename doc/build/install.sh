@@ -42,7 +42,7 @@ setup_shell() {
 setup_csh() {
 	OUT=$1
 	echo "setenv EMAN2DIR ${EMAN2DIR}" > ${OUT}
-	echo 'setenv PATH ${EMAN2DIR}/bin:${PATH}' >> ${OUT}
+	echo 'setenv PATH ${EMAN2DIR}/bin:${EMAN2DIR}/extlib/bin:${PATH}' >> ${OUT}
 	echo 'if ($?PYTHONPATH == 0) then' >> ${OUT}
 	echo '    setenv PYTHONPATH ${EMAN2DIR}/lib:${EMAN2DIR}/bin' >> ${OUT}
 	echo 'else' >> ${OUT}
@@ -55,7 +55,7 @@ setup_bash()
 {
 	OUT=$1
 	echo "export EMAN2DIR=${EMAN2DIR}" > ${OUT}
-	echo 'export PATH=${EMAN2DIR}/bin:$PATH' >> ${OUT}
+	echo 'export PATH=${EMAN2DIR}/bin:${EMAN2DIR}/extlib/bin:$PATH' >> ${OUT}
 	echo 'export PYTHONPATH=${EMAN2DIR}/lib:${EMAN2DIR}/bin:${PYTHONPATH}' >> ${OUT}
 	echo 'alias sparx=sx.py' >> ${OUT}
 }
