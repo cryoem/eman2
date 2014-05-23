@@ -266,8 +266,6 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 		 float render_min, float render_max, float gamma, int flags)
 {
 	ENTERFUNC;
-
-	bool debug = getenv("DEBUG");
 	
 //	printf("%f\t%f\t",(float)emdata->get_attr("sigma"),(float)emdata->get_attr("mean"));
 //	printf("%d %d %d %d %d %f %d %d %f %f %f %d\n",x0,y0,ixsize,iysize,bpl,
@@ -326,19 +324,6 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 	else if (flags & 1) asrgb = 3;
 	else asrgb = 1;
 
-	if (debug) {
-		setbuf (stdout, NULL);
-		printf ("------------------------------------------------------------\n");
-		printf ("x0, y0, ixsize, iysize, bpl, scale = %d %d %d %d %d %g\n",
-					x0, y0, ixsize, iysize, bpl, scale);
-		printf ("mingray, maxgray, render_min, render_max, gamma = %d %d %g %g %g\n",
-					mingray, maxgray, render_min, render_max, gamma);
-		printf ("flags, fl&1, fl&2, fl&4, fl&8, fl&16, fl&32, fl&64 = ");
-		printf ("%d %d %d %d %d %d %d %d\n",
-					flags, flags&1, flags&2, flags&4, flags&8, flags&16, flags&32, flags&64);
-		printf ("nx, ny, hist, invy, asrgb = %d %d %d %d %d\n", nx, ny, hist, invy, asrgb);
-	}
-
 	std::string ret=std::string();
 //	ret.resize(iysize*bpl);
 	ret.assign(iysize*bpl+hist*1024,char(mingray));
@@ -347,11 +332,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 	unsigned int *histd = (unsigned int *)(data+iysize*bpl);
 
 	if (hist) {
-		if (debug) printf ("histogram option\n");
-
 		for (int i=0; i<256; i++) histd[i]=0;
-
-		if (debug) printf ("histogram initialized\n");
 	}
 
 	float rm = render_min;
@@ -437,8 +418,6 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 	int binlocation = -1;
 	
 	if (flags & 32) {
-		if (debug) printf ("flag 32 option\n");
-
 		int graypdf[rangemax]   = {0}; // 256
 		int graycdf[rangemax-2] = {0}; // 254
 
@@ -455,9 +434,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 		for (int i=0; i<(maxgray-mingray); i++) { // 0~253
 			graypdftwo[i] = 0;
 		}
-
-		if (debug) printf ("gray arrays initialized\n");
-
+		
 		if (dsx != -1) {
 			int l = x0 + y0 * nx;
 
@@ -503,12 +480,8 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 			}
 		}
 		else {
-			if (debug) printf ("dsx = -1 option\n");
-
 			remy = 10;
 			int l = x0 + y0 * nx;
-
-			if (debug) printf ("loop for pixel averaging\n");
 
 			for (int j = ymax; j >= ymin; j--) {
 				int addj = addi;
@@ -528,12 +501,11 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 
 				for (int i = xmin; i < xsize; i++) {
 					if (l > lmax) break;
-					int k = 0;
-					int p;
+					int p = 0;
 					float t;
 					if (addi <= 1) t = image_data[l];
 					else { // This block does local pixel averaging for nicer reduced views
-						t=0;
+						t = 0;
 						
 						for (int jjj=0; jjj<addj; jjj++) {
 							for (int iii=0; iii<addi; iii++) {
@@ -550,10 +522,6 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 					else if (t >= render_max) graypdf[rangemax-1]++;
 					else {
 						graypdf[(int)(ceil((rangemax-2)*(t - render_min)/(render_max-render_min)))]++;
-					}
-
-					if (debug) {
-						if (p < 0  ||  p >= 255) p = 0;
 					}
 
 					data[i * asrgb + j * bpl] = p;
@@ -577,12 +545,8 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 					l += nx; 
 				}
 			}
-
-			if (debug) printf ("end pixel averaging\n");
 		}
-
-		if (debug) printf ("set graycdf\n");
-
+		
 		for (int i=0; i<(rangemax-2); i++) { // 0~253
 			for (int j=0;j<(i+1);j++) {
 				graycdf[i]=graycdf[i]+graypdf[j+1];
@@ -603,8 +567,6 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 		}		
 		
 		if (binflag == 1) {
-			if (debug) printf ("set graypdf\n");
-
 			for (int i=(binlocation*16+1); i<((binlocation+1)*16); i++) {
 				graypdf[i] = 0;
 				// graypdf[i]=(graycdf[rangemax-3]-graypdftwo[binlocation])/(maxgray-mingray);
@@ -629,9 +591,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 		gaussianpdf = new float[rangemax-2];
 		gaussiancdf = new float[rangemax-2];
 		gaussianlookup = new int[rangemax-2];
-
-		if (debug) printf ("set gaussian arrays\n");
-
+		
 		for (int i=0; i<(rangemax-2); i++) {
 			gaussianpdf[i]=exp(-(i-mean)*(i-mean)/(2*standdv*standdv))/sqrt(standdv * standdv * 2 * M_PI);
 			
@@ -655,18 +615,6 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 					break;
 				}
 			}
-		}
-
-		if (debug) {
-			printf ("rangemax, mingray, maxgray, render_min, render_max = %d %d %d %g %g\n",
-				rangemax, mingray, maxgray, render_min, render_max);
-//			printf ("gaussianlookup:");
-
-//			for (int i = 0; i < rangemax-2; i++) {
-//				printf (" %d", gaussianlookup[i]);
-//			}
-
-//			printf ("\n");
 		}
 		
 		for (int i=0; i<(rangemax-2); i++) {			
@@ -847,10 +795,6 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 		}
 	}
 	else {
-		if (debug) {
-			printf ("dsx = %d\n", dsx);
-		}
-
 		if (dsx != -1) {
 			int l = x0 + y0 * nx;
 
@@ -865,7 +809,6 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 					int k = 0;
 					unsigned char p;
 					float t;
-					static float old_t = -1.0e30;
 
 					if (dsx == 1) t=image_data[l];
 					else { // This block does local pixel averaging for nicer reduced views
@@ -900,16 +843,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 							//graylookup[i]=(unsigned char)((maxgray-mingray-2)*grayhe[(int)(i*(rangemax-3)/(render_max-render_min))]/(rangemax-3)+1);
 							if (flags & 64)
 							{
-								if (debug  &&  old_t != t) {
-									int gauss_index = (int)(floor((rangemax-2)*(t - render_min)/(render_max-render_min)));
-//									printf ("t, gauss_index = %g %d\n", t, gauss_index);  
-								}
-
 								p=(unsigned char)(gaussianlookup[(int)(floor((rangemax-2)*(t - render_min)/(render_max-render_min)))]*(maxgray-mingray-2)/(rangemax-3)+1);
-
-								if (debug  &&  old_t != t) {
-//									printf ("p = %d\n", (int) p);
-								}
 							}
 							else {
 								p=(unsigned char)(grayhe[(int)((t - render_min)*(rangemax-3)/(render_max-render_min))]*(maxgray-mingray-2)/(rangemax-3)+1);}
@@ -922,8 +856,6 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 						
 						p += mingray;
 					}
-
-					old_t = t;
 					data[i * asrgb + j * bpl] = p;
 					if (hist) histd[p]++;
 					l += dsx;
@@ -957,7 +889,6 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 					int k = 0;
 					unsigned char p;
 					float t;
-					static float old_t = -1.0e30;
 
 					if (addi <= 1) t = image_data[l];
 					else { // This block does local pixel averaging for nicer reduced views
@@ -986,16 +917,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 							// p = graylookup[(int)(t - render_min)];
 
 							if (flags & 64) {
-								if (debug  &&  old_t != t) {
-									int gauss_index = (int)(floor((rangemax-2)*(t - render_min)/(render_max-render_min)));
-//									printf ("t, gauss_index = %g %d\n", t, gauss_index);  
-								}
-
 								p = (unsigned char)(gaussianlookup[(int)(floor((rangemax-2)*(t - render_min)/(render_max-render_min)))]*(maxgray-mingray-2)/(rangemax-3)+1);
-
-								if (debug  &&  old_t != t) {
-//									printf ("p = %d\n", (int) p);
-								}
 							}
 							else {
 								p = (unsigned char)(grayhe[(int)((t - render_min)*(rangemax-3)/(render_max-render_min))]*(maxgray-mingray-2)/(rangemax-3)+1);
@@ -1010,7 +932,6 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 						p += mingray;
 					}
 
-					old_t = t;
 					data[i * asrgb + j * bpl] = p;
 
 					if (hist) histd[p]++;
