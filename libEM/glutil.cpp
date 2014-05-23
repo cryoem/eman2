@@ -552,6 +552,10 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 						graypdf[(int)(ceil((rangemax-2)*(t - render_min)/(render_max-render_min)))]++;
 					}
 
+					if (debug) {
+						if (p < 0  ||  p >= 255) p = 0;
+					}
+
 					data[i * asrgb + j * bpl] = p;
 
 					if (hist) histd[p]++;
