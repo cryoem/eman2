@@ -44,6 +44,7 @@ import sys
 import weakref
 import traceback
 from numpy import array,arange
+import numpy
 
 from Simplex import Simplex
 
@@ -112,6 +113,7 @@ NOTE: This program should be run from the project directory, not from within the
 	parser.add_argument("--nosmooth",action="store_true",help="Disable smoothing of the background (running-average of the log with adjustment at the zeroes of the CTF)",default=False, guitype='boolbox', row=7, col=1, rowspan=1, colspan=1, mode='autofit')
 	parser.add_argument("--refinebysnr",action="store_true",help="Refines the defocus value by looking at the high resolution smoothed SNR. Requires good starting defocus. Important: also replaces the SNR with a smoothed version.",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode='genoutp')
 	parser.add_argument("--phaseflip",action="store_true",help="Perform phase flipping after CTF determination and writes to specified file.",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='genoutp[True]')
+	parser.add_argument("--phaseflipproc",help="Specify a --process style processor to be applied after phase flipping. Useful for masking, etc.",default=None, guitype='strbox', row=6, col=0, rowspan=1, colspan=3, mode='genoutp')
 	parser.add_argument("--phasefliphp",action="store_true",help="Perform phase flipping with auto-high pass filter",default=False, guitype='boolbox', row=5, col=0, rowspan=1, colspan=1, mode='genoutp')
 	parser.add_argument("--wiener",action="store_true",help="Wiener filter (optionally phaseflipped) particles.",default=False, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode='genoutp[True]')
 #	parser.add_argument("--virtualout",type=str,help="Make a virtual stack copy of the input images with CTF parameters stored in the header. BDB only.",default=None)
@@ -224,7 +226,7 @@ NOTE: This program should be run from the project directory, not from within the
 	### Process input files
 	if debug : print "Phase flipping / Wiener filtration"
 	# write wiener filtered and/or phase flipped particle data to the local database
-	if options.phaseflip or options.wiener or options.phasefliphp or options.storeparm: # only put this if statement here to make the program flow obvious
+	if options.phaseflip or options.wiener or options.phasefliphp or options.phaseflipproc or options.storeparm: # only put this if statement here to make the program flow obvious
 		write_e2ctf_output(options) # converted to a function so to work with the workflow
 
 	if options.computesf :
@@ -333,17 +335,23 @@ def write_e2ctf_output(options):
 				else: wienerout="particles/{}__ctf_wiener.hdf".format(name)
 			else : wienerout=None
 
+			if options.phaseflipproc!=None:
+				(processor_name, processor_dict) = parsemodopt(options.phaseflipproc)
+				phaseprocout=("particles/{}__ctf_flip_proc.hdf".format(name),processor_name,processor_dict)
+			else: phaseprocout=None
+
 			try: ctf=js_open_dict(info_name(filename))["ctf"][0]		# EMAN2CTF object from disk
 			except:
 				print "No CTF parameters found in {}, skipping {}.".format(info_name(filename),filename)
 				continue
 
 			if phaseout : print "Phase image out: ",phaseout,"\t",
+			if phaseprocout : print "Processesd phase image out: ",phaseprocout[0],"\t",
 			if phasehpout : print "Phase-hp image out: ",phasehpout,"\t",
 			if wienerout : print "Wiener image out: ",wienerout,
 			print "  defocus=",ctf.defocus
 
-			process_stack(filename,phaseout,phasehpout,wienerout,not options.nonorm,options.oversamp,ctf,invert=options.invert,storeparm=options.storeparm,source_image=options.source_image,zero_ok=options.zerook)
+			process_stack(filename,phaseout,phasehpout,wienerout,phaseprocout,not options.nonorm,options.oversamp,ctf,invert=options.invert,storeparm=options.storeparm,source_image=options.source_image,zero_ok=options.zerook)
 
 			if logid : E2progress(logid,float(i+1)/len(options.filenames))
 
@@ -623,7 +631,7 @@ def env_cmp(sca,envelopes):
 
 	return ret
 
-def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,edgenorm=True,oversamp=1,default_ctf=None,invert=False,storeparm=False,source_image=None,zero_ok=False):
+def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,phaseproc=None,edgenorm=True,oversamp=1,default_ctf=None,invert=False,storeparm=False,source_image=None,zero_ok=False):
 	"""Will phase-flip and/or Wiener filter particles in a file based on their stored CTF parameters.
 	phaseflip should be the path for writing the phase-flipped particles
 	wiener should be the path for writing the Wiener filtered (and possibly phase-flipped) particles
@@ -670,7 +678,6 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,edgenorm=Tru
 
 #		print hpfilt[:c+4]
 
-
 	for i in range(n):
 		if source_image!=None :
 			im1=EMData()
@@ -716,7 +723,7 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,edgenorm=Tru
 #		print i
 		fft1=im1.do_fft()
 
-		if phaseflip or phasehp:
+		if phaseflip or phasehp or phaseproc:
 			if not lctf or not lctf.equal(ctf):
 				flipim=fft1.copy()
 				ctf.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
@@ -729,8 +736,22 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,edgenorm=Tru
 			out["apix_z"] = ctf.apix
 			out.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys2,ys2))
 			if invert: out.mult(-1.0)
-			out.process("normalize.edgemean")
+			if edgenorm: out.process("normalize.edgemean")
 			if phaseflip: out.write_image(phaseflip,i)
+
+			if phaseproc!=None:
+				out2=out.copy()				# processor may or may not be in Fourier space
+				out2.process_inplace(phaseproc[1],phaseproc[2])
+				out2["ctf"]=ctf
+				out2["apix_x"] = ctf.apix
+				out2["apix_y"] = ctf.apix
+				out2["apix_z"] = ctf.apix
+				out2.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys2,ys2))
+
+#				print fft2.get_ysize(),len(hpfilt)
+
+				if edgenorm: out2.process_inplace("normalize.edgemean")
+				out2.write_image(phaseproc[0],i)
 
 			if phasehp:
 				fft2=fft1.copy()
@@ -744,9 +765,11 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,edgenorm=Tru
 
 #				print fft2.get_ysize(),len(hpfilt)
 
-				out.process_inplace("normalize.edgemean")
+				if edgenorm: out.process_inplace("normalize.edgemean")
 				#process_inplace("filter.highpass.autopeak")
 				out.write_image(phasehp,i)
+
+				
 
 		if wiener :
 			if not lctf or not lctf.equal(ctf):
@@ -950,7 +973,7 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 	av2["is_intensity"]=0
 
 	# This is a new addition (2/4/10) to prevent negative BG subtracted curves near the origin
-	maxpix=int(0.04/ds)               # we do this up to ~80 A
+	maxpix=int(0.04/ds)               # we do this up to ~25 A
 	avsnr=0
 	avc=0
 	for i in xrange(maxpix):
@@ -1398,7 +1421,9 @@ returns (fg1d,bg1d)"""
 		n+=1
 	
 	# deal with the points from the origin to the first zero
-	try : bg[:lwz]+=lwd
+	try : 
+		bg[:lwz]+=lwd
+		bg[:lwz]=numpy.minimum(bg[:lwz],fg[:lwz])	# this makes sure the bg subtracted curve isn't negative before the first zero
 	except:
 		print "ERROR in flattening background. This should only occur if the defocus is either too close or too far from focus with the current box-size and sampling."
 		return (list(fg),list(bg))

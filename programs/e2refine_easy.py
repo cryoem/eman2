@@ -356,9 +356,9 @@ resolution) --targetres by ~25%. Hopefully this will eliminate the misalignment,
 	if options.sep<1 :
 		options.sep=max(1,6-options.speed)
 		append_html("<p>Based on your selected --speed, I am setting --sep {}. This puts each particle into its N best orientations. If the angular sampling is finer than required \
-to achieve the specified resolution, then a certain amount of rotational 'smearing' of each particle will help improve SNR in the resulting map without actually the 'smearing' degrading \
+to achieve the specified resolution, then a certain amount of rotational 'smearing' of each particle will help improve SNR in the resulting map without the 'smearing' degrading \
 the actual map quality. This can achieve maximum liklihood-like effects without the substantial compuations this can entail. If you are concerned by this, or have many more particles than \
-are really required to achieve the targeted resolution, you may consider manually specifiying --sep 1, which will override this automatic behavior.</p>")
+are really required to achieve the targeted resolution, you may consider manually specifiying --sep 1, which will override this automatic behavior.</p>".format(options.sep))
 
 	if options.orientgen==None :
 		# target resolution worse than 1/2 Nyquist
@@ -653,6 +653,13 @@ important to use an angular step which is 90/integer.</p>")
 		E2progress(logid,progress/total_procs)
 
 	E2end(logid)
+	
+	print """
+*************************************************************"
+* REFINEMENT COMPLETE - Please look at {}/report/index.html *
+*************************************************************
+
+"""
 
 def get_apix_used(options):
 	'''

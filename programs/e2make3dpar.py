@@ -415,9 +415,9 @@ def reconstruct(data,recon,preprocess,pad,fillangle,verbose=0):
 	astep=atan2(1.0,max(pad)/2.0)*180./pi
 #	astep=atan2(1.0,max(pad)/2.0)/1.5*180./pi		# experimental smaller step size
 	den=floor(fillangle/astep)
-	if den>10 :
-		den/=2
-		if verbose>0 : print "Note: Reducing oversampling in make3dpar for speed, may have minor impact on reconstruction"
+	if den>9 :
+		den=9
+		if verbose>0 : print "Note: Reducing oversampling in make3dpar for speed, this will make higher resolution 'smearing' less effective"
 	if den==0: 
 		fillangle=0
 		if verbose: print "No filling"
