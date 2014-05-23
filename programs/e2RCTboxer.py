@@ -129,11 +129,10 @@ class RCTprocessor:
 		for i,output in enumerate(self.names):
 			input = self.args[i]
 			tiltbox_list = EMBoxList()
-			tiltbox_list.set_boxes_db('tilted',input)
-
+			tiltbox_list.get_boxes_db(input)
 			tiltdata = tiltbox_list.get_tiltdata_from_db()
 			if tiltbox_list.load_boxes_from_db():
-				output = output.replace(".hdf","") + "__tilted.hdf"
+				output = output.replace(".hdf","") + "__" + tiltbox_list.db['boxes_rct'][0][2] + ".hdf"
 				for i,box in enumerate(tiltbox_list.boxlist):
 					image = box.get_image(input,self.options.boxsize)
 					if tiltdata:
@@ -143,23 +142,7 @@ class RCTprocessor:
 					if self.options.invert: image.mult(-1)
 					if self.options.shrink: image.process_inplace('math.meanshrink',{'n':self.options.shrink})
 					if self.options.norm: image.process_inplace(self.options.norm)
-					image.write_image(output, i)
-	
-			untiltbox_list = EMBoxList()
-			untiltbox_list.set_boxes_db('untilted',input)
-			tiltdata = untiltbox_list.get_tiltdata_from_db()
-			if untiltbox_list.load_boxes_from_db():
-				output = output.replace(".hdf","") + "__untilted.hdf"
-				for i,box in enumerate(untiltbox_list.boxlist):
-					image = box.get_image(input,self.options.boxsize)
-					if tiltdata:
-						image.set_attr("tiltangle", tiltdata[0])
-						image.set_attr("tiltaxis", tiltdata[1])
-						image.set_attr("tiltgamma", tiltdata[2])
-					if self.options.invert: image.mult(-1)
-					if self.options.shrink: image.process_inplace('math.meanshrink',{'n':self.options.shrink})
-					if self.options.norm: image.process_inplace(self.options.norm)
-					image.write_image(output, i)
+					image.write_image(str(output), i)
 		print "Done writing particles :)"
 	
 	def get_ptcl_names(self):
@@ -177,20 +160,14 @@ class RCTprocessor:
 		for i,output in enumerate(self.names):
 			input = self.args[i]
 			tiltbox_list = EMBoxList()
-			tiltbox_list.set_boxes_db('tilted',input)
+			tiltbox_list.get_boxes_db(input)
 			if tiltbox_list.load_boxes_from_db():
+				output = output.replace(".box","") + "__" + tiltbox_list.db['boxes_rct'][0][2] + ".box"
 				boxfile = open(output, 'w')
 				for i,box in enumerate(tiltbox_list.boxlist):
-					boxfile.write("%d\t%d\t%d\t%d\n" % (int(box.x - self.options.boxsize/2),int(box.y - self.options.boxsize/2),self.options.boxsize,self.options.boxsize))
+					boxfile.write("%d\t%d\t%d\t%d\t-1\n" % (int(box.x - self.options.boxsize/2),int(box.y - self.options.boxsize/2),self.options.boxsize,self.options.boxsize))
 				boxfile.close()
-			untiltbox_list = EMBoxList()
-			untiltbox_list.set_boxes_db('untilted',input)
-			if untiltbox_list.load_boxes_from_db():
-				boxfile = open(output, 'w')
-				for i,box in enumerate(untiltbox_list.boxlist):
-					boxfile.write("%d\t%d\t%d\t%d\n" % (int(box.x - self.options.boxsize/2),int(box.y - self.options.boxsize/2),self.options.boxsize,self.options.boxsize))
-				boxfile.close()
-				
+
 	def get_box_names(self):
 		self.names = []
 		for name in self.args:
@@ -442,7 +419,7 @@ class MainWin:
 		self.win_ysize = self.window.data.get_ysize()
 		
 	def load_database(self):
-		self.boxes.set_boxes_db(name=self.name, entry=self.filename)# set the name and entry of the db, the name reprents the window, and the entry, each instance of the window
+		self.boxes.set_boxes_db(name=self.name, entry=self.filename)# set the name and entry of the db, the name represents the window, and the entry, each instance of the window
 		if(self.boxes.load_boxes_from_db()):				# load boxes from db
 			self.window.set_shapes(self.boxes.get_box_shapes(self.rctwidget.boxsize))
 			self.window.updateGL()
@@ -545,6 +522,10 @@ class EMBoxList:
 	def add_mask(self, mask):
 		self.mask = mask
 	
+	def get_boxes_db(self, entry):
+		self.db=js_open_dict("info/"+base_name(entry)+"_info.json")
+		self.entry = entry
+	
 	def set_boxes_db(self, name = "boxlist", entry="default.mrc"):
 		self.entry = entry
 		self.box_type = name
@@ -553,14 +534,15 @@ class EMBoxList:
 	def close_db(self):
 #		js_close_dict(self.db)
 		pass
+
 	def load_boxes_from_db(self):
 		#data = self.db[self.entry]
 		if not "boxes_rct" in self.db.keys(): 
 			pass#data = self.db[os.path.basename(self.entry)]	# Backward compability
 		else:
 			for box in self.db["boxes_rct"]:
+				self.box_type = self.db['boxes_rct'][0][2]
 				self.append_box(int(box[0]),int(box[1]),box[2])
-				print box[0], box[1], box[2]
 			return True
 		return False
 	
