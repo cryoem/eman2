@@ -268,10 +268,10 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 		sx_sum=0 
 		sy_sum=0 
 		if search_rng > 0: nwx = 2*search_rng+1
-		else:              nwx=nx
+		else:              nwx = nx
 		
 		if search_rng_y > 0: nwy = 2*search_rng_y+1
-		else:              nwy=ny
+		else:                nwy = ny
 
 		not_zero = 0
 		for im in xrange(len(data)):
