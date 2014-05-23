@@ -100,11 +100,11 @@ def main():
 		finest sampling, --ralign. If precision is 1, then the precision of alignment will be that of 
 		the sampling (apix of your images) times the --shrinkfine factor specified.""")
 	
-	parser.add_argument("--search", type=float,default=8.0,help=""""During COARSE alignment
+	parser.add_argument("--search", type=float,default=1.0,help=""""During COARSE alignment
 		translational search in X, Y and Z, in pixels. Only works when --radius is provided.
 		Otherwise, search parameters are provided with the aligner, through --align.""")
 	
-	parser.add_argument("--searchfine", type=float,default=2.0,help=""""During FINE alignment
+	parser.add_argument("--searchfine", type=float,default=1.0,help=""""During FINE alignment
 		translational search in X, Y and Z, in pixels. Only works when --radius is provided.
 		Otherwise, search parameters are provided with the aligner, through --ralign.""")
 	
@@ -205,16 +205,17 @@ def main():
 	'''
 	Parameters to compensate for the missing wedge using --cpm=fsc.tomo
 	'''
-	parser.add_argument("--wedgeangle",type=float,help="""Missing wedge angle, calculated as 90 minus the value yo provide, times 2. 
-														For example, --wedgeangle=60 will represent a wedge of size (90-60)*2=60.
-														--wedgeangle=70, results in a narrower wedge of size (90-70)*2=40.
-														In reality, you should enter here the range of your DATA COLLECTION.
-														I.e., if you collected your tiltseries from -60 to 60, enter --wedgeangle=60.""",default=60.0)
+	
+	#parser.add_argument("--wedgeangle",type=float,help="""Missing wedge angle, calculated as 90 minus the value yo provide, times 2. 
+	#													For example, --wedgeangle=60 will represent a wedge of size (90-60)*2=60.
+	#													--wedgeangle=70, results in a narrower wedge of size (90-70)*2=40.
+	#													In reality, you should enter here the range of your DATA COLLECTION.
+	#													I.e., if you collected your tiltseries from -60 to 60, enter --wedgeangle=60.""",default=60.0)
 														
-	parser.add_argument("--wedgei",type=float,help="Missingwedge begining (in terms of its 'height' along Z. If you specify 0, the wedge will start right at the origin.", default=0.10)
-	parser.add_argument("--wedgef",type=float,help="Missingwedge ending (in terms of its 'height' along Z. If you specify 1, the wedge will go all the way to the edge of the box.", default=0.9)
+	#parser.add_argument("--wedgei",type=float,help="Missingwedge begining (in terms of its 'height' along Z. If you specify 0, the wedge will start right at the origin.", default=0.10)
+	#parser.add_argument("--wedgef",type=float,help="Missingwedge ending (in terms of its 'height' along Z. If you specify 1, the wedge will go all the way to the edge of the box.", default=0.9)
 	#parser.add_argument("--fitwedgepost", action="store_true", help="Fit the missing wedge AFTER preprocessing the subvolumes, not before, IF using the fsc.tomo comparator for --aligncmp or --raligncmp.", default=True)
-	parser.add_argument("--writewedge", action="store_true", help="Write a subvolume with the shape of the fitted missing wedge if --raligncmp or --aligncmp are fsc.tomo. Default is 'False'. To turn on supply --writewedge", default=False)
+	#parser.add_argument("--writewedge", action="store_true", help="Write a subvolume with the shape of the fitted missing wedge if --raligncmp or --aligncmp are fsc.tomo. Default is 'False'. To turn on supply --writewedge", default=False)
 
 	parser.add_argument("--plotccc", action='store_true', help="""Turn this option on to generate
 		a plot of the ccc scores during each iteration.
@@ -248,6 +249,57 @@ def main():
 		if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align and 'options_translate_3d:' in options.align:
 			options.align += ':sym=' + str( options.sym )
 			print "And there's sym", options.sym
+	
+		if "rotate_translate_3d_grid" in options.align:
+			if "alt0" and "alt1" in options.align:
+				alt0 = int(options.align.split('alt0')[-1].split(':')[0].replace('=',''))	
+				alt1 = int(options.align.split('alt1')[-1].split(':')[0].replace('=',''))
+				
+				print "alt0 and alt1 are", alt0,alt1, type(alt0), type(alt1)
+				print alt1-alt0 == 0
+				#sys.exit()
+				
+				if alt1-alt0 == 0:
+					print """\nERROR: alt0 and alt1 cannot be equal for rotate_translate_3d_grid.
+					If you want to inactivate searches in this angle, provide a alt0 and alt1
+					such that alt1-alt0 is NOT ZERO, and provide a step size for dalt that is larger
+					than this difference. For example: 
+					alt0=0:alt1=1:dalt=2."""
+					sys.exit()
+					
+			if "phi0" and "phi1" in options.align:
+				phi0 = int(options.align.split('phi0')[-1].split(':')[0].replace('=',''))	
+				phi1 = int(options.align.split('phi1')[-1].split(':')[0].replace('=',''))
+				
+				print "phi0 and phi1 are", phi0,phi1, type(phi0), type(phi1)
+				print phi1-phi0 == 0
+				#sys.exit()
+				
+				if phi1-phi0 == 0:
+					print """\nERROR: phi0 and phi1 cannot be equal for rotate_translate_3d_grid.
+					If you want to inactivate searches in this angle, provide a phi0 and phi1
+					such that phi1-phi0 is NOT ZERO, and provide a step size for dphi that is larger
+					than this difference. For example: 
+					phi0=0:phi1=1:dphi=2."""
+					sys.exit()
+					
+			if "az0" and "az1" in options.align:
+				az0 = int(options.align.split('az0')[-1].split(':')[0].replace('=',''))	
+				az1 = int(options.align.split('az1')[-1].split(':')[0].replace('=',''))
+				
+				print "az0 and az1 are", az0,az1, type(az0), type(az1)
+				print az1-az0 == 0
+				#sys.exit()
+				
+				if az1-az0 == 0:
+					print """\nERROR: az0 and az1 cannot be equal for rotate_translate_3d_grid.
+					If you want to inactivate searches in this angle, provide a az0 and az1
+					such that az1-az0 is NOT ZERO, and provide a step size for daz that is larger
+					than this difference. For example: 
+					az0=0:az1=1:daz=2."""
+					sys.exit()
+			
+				
 	
 	'''
 	Parse parameters
@@ -628,6 +680,45 @@ def main():
 			
 			
 			
+			if options.clipali:
+				
+				#sys.exit()
+			
+				sx = ref['nx']
+				sy = ref['ny']
+				sz = ref['nz']
+		
+				xc = sx/2
+				yc = sy/2
+				zc = sz/2
+		
+				newsize = options.clipali
+		
+				ref['origin_x'] = 0
+				ref['origin_y'] = 0
+				ref['origin_z'] = 0
+				
+				print "\nRef BEFORE clip ali is", ref, ref['nx'], ref['minimum'],ref['maximum'],ref['sigma'],ref['mean']
+		
+			
+				r=Region( (2*xc - newsize)/2, (2*yc - newsize)/2, (2*zc - newsize)/2, newsize , newsize , newsize)
+				
+				
+				ref.clip_inplace( r )
+			
+				print "\n\n\nRef AFTER clip ali is", ref, ref['nx'], ref['minimum'],ref['maximum'], ref['sigma'],ref['mean']
+				if not ref['minimum'] and not ref['maximum']:
+					print "ERROR: emtpy ref after clip ali, region", r
+					print "sizes", ref['nx']
+					sys.exit()
+			
+			
+			
+			
+			
+			
+			
+			
 			'''
 			Code to 'resume' crashed jobs
 			'''
@@ -844,34 +935,9 @@ def main():
 			actualNums = [] 		#Reset this so that when --resume is provided the incomplete jason file is 'fixed' considering the info in actualNums only once
 		
 		
-		if options.clipali:
+			
 				
-			sys.exit()
-			
-			sx = ref['nx']
-			sy = ref['ny']
-			sz = ref['nz']
-		
-			xc = sx/2
-			yc = sy/2
-			zc = sz/2
-		
-			newsize = options.clipali
-		
-			
-			print "\nRef BEFORE clip ali is", ref, ref['nx'], ref['minimum'],ref['maximum']
-		
-			
-			r=Region( (2*newsize - xc)/2, (2*newsize - yc)/2, (2*newsize - zc)/2, newsize , newsize , newsize)
-			ref.clip_inplace( r )
-			
-			print "\n\n\nRef AFTER clip ali is", ref, ref['nx'], ref['minimum'],ref['maximum']
-			if not ref['minimum'] and not ref['maximum']:
-				print "ERROR: emtpy ref after clip ali, region", r
-				print "sizes", ref['nx']
-				sys.exit()
-				
-			sys.exit()
+				#sys.exit()
 
 		
 		
@@ -905,8 +971,18 @@ def writeParameters( options, program, tag ):
 		if getattr(options,name) and "__" not in name and "_" not in name:	
 			#if "__" not in name and "_" not in name and str(getattr(options,name)) and 'path' not in name and str(getattr(options,name)) != 'False' and str(getattr(options,name)) != 'True' and str(getattr(options,name)) != 'None':			
 			line = name + '=' + str(getattr(options,name))
+					
 			lines.append(line+'\n')
-			cmd += ' --' + name + '=' + str(getattr(options,name))
+			
+			if str(getattr(options,name)) != 'True' and str(getattr(options,name)) != 'False':
+			
+				if name != 'parallel':
+					cmd += ' --' + name + '=' + str(getattr(options,name)).replace(':','=').replace('(','').replace(')','').replace('{','').replace('}','').replace(',',':').replace(' ','').replace("'",'')
+				else:
+					cmd += ' --' + name + '=' + str(getattr(options,name))
+			
+			elif str(getattr(options,name)) == 'True' or str(getattr(options,name)) == 'False':
+				cmd += ' --' + name
 	
 	parmFile = 'parameters_' + tag + '.txt'
 	lines.append('\n'+cmd+'\n')
@@ -1857,7 +1933,8 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 	#########################################
 	#Preprocess the reference or "fixed image"
 	#########################################
-	sfixedimage = fixedimage
+	sfixedimage = fixedimage.copy()
+	
 	s2fixedimage = sfixedimage.copy()
 	
 	
@@ -1882,6 +1959,9 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 			
 		if options.shrinkrefine and int(options.shrinkrefine) > 1:
 			s2fixedimage = s2fixedimage.process('math.meanshrink',{'n':options.shrinkrefine})
+	
+		elif not options.notprocfinelikecoarse:
+			s2fixedimage = sfixedimage.copy()
 	
 	elif refpreprocess:
 		if options.clipali or options.threshold or options.normproc or options.mask or options.preprocess or options.lowpass or options.highpass or int(options.shrink) > 1:
@@ -2027,7 +2107,7 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 				print "ERROR: FINE alignment images not the same size"
 				print "\nThe particle's FINE size is", s2image['nx'],s2image['ny'],s2image['nz']
 				print "\nThe reference's FINE size is", s2fixedimage['nx'],s2fixedimage['ny'],s2fixedimage['nz']
-				sys.exit('MIERDA')
+				sys.exit('MIE')
 			
 			ali = s2image.align(options.ralign[0],s2fixedimage,options.ralign[1],options.raligncmp[0],options.raligncmp[1])
 
