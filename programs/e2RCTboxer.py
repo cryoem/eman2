@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #
 # Author: John Flanagan (jfflanag@bcm.edu)
+# Edited by: Stephen Murray (scmurray@bcm.edu) May 2014
 # Copyright (c) 2000-2011 Baylor College of Medicine
 
 
@@ -143,7 +144,7 @@ class RCTprocessor:
 					if self.options.shrink: image.process_inplace('math.meanshrink',{'n':self.options.shrink})
 					if self.options.norm: image.process_inplace(self.options.norm)
 					image.write_image(str(output), i)
-		print "Done writing particles :)"
+		print "Done writing particles!"
 	
 	def get_ptcl_names(self):
 		self.names = []
@@ -167,6 +168,7 @@ class RCTprocessor:
 				for i,box in enumerate(tiltbox_list.boxlist):
 					boxfile.write("%d\t%d\t%d\t%d\t-1\n" % (int(box.x - self.options.boxsize/2),int(box.y - self.options.boxsize/2),self.options.boxsize,self.options.boxsize))
 				boxfile.close()
+		print "Done writing box files!"
 
 	def get_box_names(self):
 		self.names = []
