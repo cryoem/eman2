@@ -47,6 +47,7 @@ if global_def.GUIUSE:
 	IPython.lib.inputhook.enable_qt4(app)
 
 from EMAN2 import *
+from sparx import *
 if global_def.GUIUSE:
 	from emimage import image_update
 
