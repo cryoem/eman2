@@ -18934,7 +18934,6 @@ vector<float> Util::shc_multipeaks(EMData* image, const vector< EMData* >& crefi
 			if (new_peak > peak) {
 				sx = -ix;
 				sy = -iy;
-				nref = iref;
 				ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
 				peak = new_peak;
 				mirror = static_cast<int>( retvals["mirror"] );
@@ -18944,11 +18943,12 @@ vector<float> Util::shc_multipeaks(EMData* image, const vector< EMData* >& crefi
 				const float so = -sin(ang*qv);
 				const float sxs = sx*co - sy*so;
 				const float sys = sx*so + sy*co;
+				
 				results.push_back(ang);
 				results.push_back(sxs);
 				results.push_back(sys);
 				results.push_back(static_cast<float>(mirror));
-				results.push_back(static_cast<float>(nref));
+				results.push_back(static_cast<float>(iref));
 				results.push_back(peak);
 				results.push_back(static_cast<float>(tiref));
 			}
