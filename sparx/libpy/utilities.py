@@ -3039,7 +3039,7 @@ def nearestk_to_refdir(refnormal, refdir, howmany = 1):
 	for i in xrange(howmany):
 		k = Util.nearest_ang(refnormal, refdir[0],refdir[1],refdir[2])
 		assignments[i] = lookup[k]
-		del refnormal[3*k+0], refnormal[3*k+1], refnormal[3*k+2], lookup[k]
+		del refnormal[3*k+2], refnormal[3*k+1], refnormal[3*k+0], lookup[k]
 	return assignments
 
 
@@ -3051,7 +3051,7 @@ def nearestk_to_refdirs(refnormal, refdir, howmany = 1):
 		for i in xrange(howmany):
 			k = Util.nearest_ang(refnormal, refdir[j][0],refdir[j][1],refdir[j][2])
 			assignment[i] = lookup[k]
-			del refnormal[3*k+0], refnormal[3*k+1], refnormal[3*k+2], lookup[k]
+			del refnormal[3*k+2], refnormal[3*k+1], refnormal[3*k+0], lookup[k]
 		assignments.append(assignment)
 	return assignments
 
