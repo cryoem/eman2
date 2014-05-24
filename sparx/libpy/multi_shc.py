@@ -1884,7 +1884,7 @@ def proj_ali_incore_multi(data, refrings, numr, xrng = 0.0, yrng = 0.0, step=1.0
 	#[ang, sxs, sys, mirror, iref, peak, checked_refs] = Util.shc(data, refrings, xrng, yrng, step, ant, mode, numr, cnx+dp["tx"], cny+dp["ty"])
 	peaks = Util.multiref_polar_ali_2d_peaklist_local(data, refrings, xrng, yrng, step, ant, mode, numr, cnx+dp["tx"], cny+dp["ty"])
 	peaks_count = len(peaks) / 5
-	pixel_error = 0.0
+	#pixel_error = 0.0
 	peak = 0.0
 	if( peaks_count > 0 ):
 		if( nsoft == -1 ):  nsoft = peaks_count
@@ -1932,8 +1932,8 @@ def proj_ali_incore_multi(data, refrings, numr, xrng = 0.0, yrng = 0.0, step=1.0
 				data.set_attr("weight", peak)
 			else:
 				data.set_attr("weight" + str(i), peak)
-			from pixel_error import max_3D_pixel_error
-			pixel_error += max_3D_pixel_error(t1, t2, numr[-3])
+			#from pixel_error import max_3D_pixel_error
+			#pixel_error += max_3D_pixel_error(t1, t2, numr[-3])
 			if finfo:
 				finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 				finfo.flush()
@@ -1948,10 +1948,13 @@ def proj_ali_incore_multi(data, refrings, numr, xrng = 0.0, yrng = 0.0, step=1.0
 		while data.has_attr("weight" + str(i)):
 			data.del_attr("weight" + str(i))
 			i += 1
-		pixel_error /= peaks_count
+		#pixel_error /= peaks_count
+	return ws
+	"""
 		peak = peaks[0]  # It is not used anywhere, but set it to the maximum.
 
-	return peak, pixel_error, peaks_count
+	return peak, pixel_error, peaks_count, ws
+	"""
 
 def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
 	from utilities    import compose_transform2
@@ -2079,7 +2082,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
 			#  Search
 			#if( dp["theta"] > 90.0 ): 
 			#	print "  IS MIRRORED  ",dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]
-			proj_ali_incore_multi(tdata, [tempref[k] for k in nrst], numr, xrng, yrng, step, 180.0, nsoft-peaks_count)
+			pws = proj_ali_incore_multi(tdata, [tempref[k] for k in nrst], numr, xrng, yrng, step, 180.0, nsoft-peaks_count)
 			for i in xrange(nsoft-peaks_count):
 				if i == 0:    t1 = tdata.get_attr("xform.projection")
 				else:         t1 = tdata.get_attr("xform.projection" + str(i))
@@ -2091,17 +2094,19 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
 				s2y   = d["ty"]
 				if( dp["theta"] > 90.0 ):
 					#  Change parameters if mirrored
-					print "  BEFORE MIRRORED  ",i,phi, theta, psi, s2x, s2y
+					#print "  BEFORE MIRRORED  ",i,phi, theta, psi, s2x, s2y
 					phi   = (phi+540.0)%360.0
 					theta = 180.0-theta
 					psi   = (540.0-psi)%360.0
-					print "  AFTER MIRRORED  ",i,phi, theta, psi, s2x, s2y
+					#print "  AFTER MIRRORED  ",i,phi, theta, psi, s2x, s2y
 				if i == 0 :   w = tdata.get_attr("weight")
 				else:         w = tdata.get_attr("weight" + str(i))
+				w *= pws  # remove normalization
 				params.append([w,  phi, theta, psi, s2x, s2y])
 			params.sort(reverse=True)
-			ws = sum([params[i][0] for i in xrange(peaks_count)])  # peaks could be stretched
+			ws = sum([params[i][0] for i in xrange(nsoft)])  # peaks could be stretched
 			for i in xrange(nsoft):
+				#print  "  ADDITIONAL SOFT ASSIGNMENT  ",i,peaks_count,params[i][1],params[i][1],params[i][2],params[i][0]/ws
 				t2 = Transform({"type":"spider","phi":params[i][1],"theta":params[i][2],"psi":params[i][3]})
 				t2.set_trans(Vec2f(-params[i][4], -params[i][5]))
 				#print i,phi,theta,psi
