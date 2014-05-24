@@ -1498,6 +1498,8 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 			ERROR('Output directory exists, please change the name and restart the program', "cter", 1, myid)
 		os.mkdir(outpwrot)
 		os.mkdir(outpartres)
+		myid = 0
+		ncpu = 1
 
 	if stack == None:
 		if micsuffix[0] == '.': micsuffix = micsuffix[1:]
@@ -1890,14 +1892,21 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 		#except:
 			#print  namics[ifi],"     FAILED"
 	#from utilities import write_text_row
+	if( myid == 0 ):
+		outf = open( os.path.join(outpartres,"partres"), "w")
+	from utilities import wrap_mpi_gatherv
+	totresi = wrap_mpi_gatherv(totresi, 0, MPI_COMM_WORLD)
+	"""
 	if MPI:
 		outf = open( os.path.join(outpartres,"partres_%05d"%myid), "w")
 	else:
 		outf = open( os.path.join(outpartres,"partres"), "w")
-	for i in xrange(len(totresi)):
-		for k in xrange(1,len(totresi[i])): outf.write("  %12.5g"%totresi[i][k])
-		outf.write("  %s\n"%totresi[i][0])
-	outf.close()
+	"""
+	if( myid == 0 ):
+		for i in xrange(len(totresi)):
+			for k in xrange(1,len(totresi[i])): outf.write("  %12.5g"%totresi[i][k])
+			outf.write("  %s\n"%totresi[i][0])
+		outf.close()
 
 	if guimic != None:
 		return totresi[0][1], totresi[0][7], totresi[0][8], totresi[0][9], totresi[0][10], totresi[0][11]

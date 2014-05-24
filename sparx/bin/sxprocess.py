@@ -78,6 +78,15 @@ def main():
     	Optionally use a tangent low-pass filter.  Also works for a stack of images, in which case the output is also a stack.
     sxprocess.py  vol.hdf ref.hdf  avol.hf < 0.25 0.2> --adjpw
     sxprocess.py  vol.hdf pw.txt  avol.hf < 0.25 0.2> --adjpw
+
+	8.  Import ctf parameters from the output of sxcter into windowed particle headers.
+	    There are three possible input files formats:  (1) all particles are in one stack, (2 aor 3) particles are in stacks, each stack corresponds to a single micrograph.
+	    In each case the particles should contain a name of the micrograph of origin stores using attribute name 'ptcl_source_image'.  Normally this is done by e2boxer.py during windowing.
+	    Particles whose defocus or astigmatism error exceed set thresholds will have attribute 'active' set to zero; otherwise, active will be set to one.
+	sxprocess.py  bdb:data  --importctf=outdir/partres  --defocuserror=10.0  --astigmatismerror=5.0
+	sxprocess.py  directory/stacks*  --importctf=outdir/partres  --defocuserror=10.0  --astigmatismerror=5.0
+	sxprocess.py  bdb:directory/stacks*  --importctf=outdir/partres  --defocuserror=10.0  --astigmatismerror=5.0
+
 """
 
 	parser = OptionParser(usage,version=SPARXVERSION)
@@ -95,6 +104,14 @@ def main():
 	parser.add_option("--isacgroup", type="int", help="Retrieve original image numbers in the selected ISAC group   See ISAC documentaion for details.", default=-1)
 	parser.add_option("--params",	   type="string",       default=None,    help="Name of header of parameter, which one depends on specific option")
 	parser.add_option("--adjpw", action="store_true", help="Adjust rotationally averaged power spectrum of an image", default=False)
+
+	
+	# import ctf estimates done using cter
+	parser.add_option("--importctf",          type=str,				 default= None,     		  help="File name with CTF parameters produced by sxcter.")
+	parser.add_option("--defocuserror",       type=float,  			 default=1000000.0,           help="Exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent.  The error is computed as (std dev defocus)/defocus*100%")
+	parser.add_option("--astigmatismerror",   type=float,  			 default=360.0,               help="Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees.")
+
+
  	(options, args) = parser.parse_args()
 
 	global_def.BATCH = True
@@ -477,6 +494,10 @@ def main():
 			mic.write_image(micpref + "%1d.hdf" % (idef-3), 0)
 		
 		drop_spider_doc("params.txt", params)
+
+	if options.importctf != None:
+		print ' HERE  '
+		
 
 if __name__ == "__main__":
 	main()

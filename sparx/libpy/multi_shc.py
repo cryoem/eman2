@@ -2045,17 +2045,25 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
 
 		#  Add orientations around the main peak with exclusion of those already taken
 		if(peaks_count<nsoft):
+			tempref = [refrings[i] for i in xrange(len(refrings))]
+			taken   = [params[i][6] for i in xrange(peaks_count)]
+			taken.sort(reverse=True)
+			#  delete taken
+			try:
+				for i in xrange(peaks_count):  del  tempref[taken[i]]
+			except:
+				print  "  failed deleting tempref "
+				print i,peaks_count,nsoft
+				print  " taken ",taken
+				print  len(tempref), len(refrings)
+				from sys import exit
+				exit()
+			refvecs = [None]*3*len(tempref)
 			from utilities import getfvec
 			t1 = data.get_attr("xform.projection")
 			dp = t1.get_params("spider")
 			n1,n2,n3 = getfvec(dp["phi"],dp["theta"])
 			datanvec = [n1,n2,n3]
-			tempref = [refrings[i] for i in xrange(len(refrings))]
-			taken = [params[i][6] for i in xrange(peaks_count)]
-			taken.sort(reverse=True)
-			#  delete taken
-			for i in xrange(peaks_count):  del  tempref[taken[i]]
-			refvecs = [None]*3*len(tempref)
 			for i in xrange(len(tempref)):
 				n1 = tempref[i].get_attr("n1")
 				n2 = tempref[i].get_attr("n2")

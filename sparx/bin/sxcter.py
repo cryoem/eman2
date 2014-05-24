@@ -134,15 +134,5 @@ def main():
 		from mpi import mpi_finalize
 		mpi_finalize()
 
-		# MPI writes many files, combine all CTF info into one file.
-		out = open(os.path.join(out2, 'partres'), 'w')
-		for file_name in os.listdir(out2):
-			file_path = os.path.join(out2, file_name)
-			if os.path.isfile(file_path):
-				_f = open(file_path, 'r')
-				out.write(_f.read())
-				_f.close()
-		out.close()
-
 if __name__ == "__main__":
 	main()
