@@ -18932,7 +18932,8 @@ vector<float> Util::shc_multipeaks(EMData* image, const vector< EMData* >& crefi
 			Dict retvals = Crosrng_rand_ms(crefim[iref], cimage, numr, previousmax);
 			const float new_peak = static_cast<float>( retvals["qn"] );
 			if (new_peak > peak) {
-				bool found_better = true;//(peak > previousmax);
+				found_better = true;//(peak > previousmax);
+
 				sx = -ix;
 				sy = -iy;
 				ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
@@ -18943,7 +18944,7 @@ vector<float> Util::shc_multipeaks(EMData* image, const vector< EMData* >& crefi
 				const float so = -sin(ang*qv);
 				const float sxs = sx*co - sy*so;
 				const float sys = sx*so + sy*co;
-				
+
 				results.push_back(ang);
 				results.push_back(sxs);
 				results.push_back(sys);
