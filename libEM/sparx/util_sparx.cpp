@@ -18932,12 +18932,12 @@ vector<float> Util::shc_multipeaks(EMData* image, const vector< EMData* >& crefi
 			Dict retvals = Crosrng_rand_ms(crefim[iref], cimage, numr, previousmax);
 			const float new_peak = static_cast<float>( retvals["qn"] );
 			if (new_peak > peak) {
+				bool found_better = true;//(peak > previousmax);
 				sx = -ix;
 				sy = -iy;
 				ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
 				peak = new_peak;
 				mirror = static_cast<int>( retvals["mirror"] );
-				bool found_better = (peak > previousmax);
 
 				const float co =  cos(ang*qv);
 				const float so = -sin(ang*qv);
@@ -18952,7 +18952,7 @@ vector<float> Util::shc_multipeaks(EMData* image, const vector< EMData* >& crefi
 				results.push_back(peak);
 				results.push_back(static_cast<float>(tiref));
 			}
-		++nodeId;
+			++nodeId;
 		}
     }
 	for (unsigned i = 0; i < cimages.size(); ++i) {
@@ -20681,7 +20681,7 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
-	cout <<"  VERSION  05/12/2014  3:00 pm"<<endl;
+	cout <<"  VERSION  05/25/2014  11:00 am"<<endl;
 	float dummy;
 	dummy = ri;
 	cout <<  "   fmod   "<<fmod(qprob,dummy)<<endl;

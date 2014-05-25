@@ -2071,7 +2071,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 						print  "  PROBLEM 2, entries duplicated  ",taken
 						dod.append(k)
 				if(len(dod) >0):
-					for k in did:  del taken[k]
+					for k in dod:  del taken[k]
 			#  delete taken
 			try:
 				for i in xrange(peaks_count):  del  tempref[taken[i]]
