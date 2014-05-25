@@ -1956,7 +1956,7 @@ def proj_ali_incore_multi(data, refrings, numr, xrng = 0.0, yrng = 0.0, step=1.0
 	return peak, pixel_error, peaks_count, ws
 	"""
 
-def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
+def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None):
 	from utilities    import compose_transform2
 	from fundamentals import mirror
 	from math         import cos, pi
@@ -1993,6 +1993,22 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
 		params = [None]*peaks_count
 		#                                              peak         iref                  ang        sxs           sys           mir           checked references
 		for i in xrange(peaks_count):  params[i] = [ peaks[i*7+5], int(peaks[i*7+4]), peaks[i*7+0], peaks[i*7+1], peaks[i*7+2], int(peaks[i*7+3]), int(peaks[i*7+6])]
+		#  Make sure nothing is repeated
+		if(peaks_count>1):
+			taken = [params[k][1] for k in xrange(peaks_count)]
+			from utilities import findall
+			i = 0
+			while(i<peaks_count):
+				ll = findall(taken[i], taken)
+				if(len(ll) > 1):
+					print  "  PROBLEM, found the same orientation more than once !  "
+					for k in xrange(len(params)):  print  params[k]
+					ll.sort(reverse=True)
+					for k in xrange(0,len(ll)-1):
+						del params[k]
+						peaks_count -= 1
+					taken = [params[k][1] for k in xrange(peaks_count)]
+				i+=1
 		params.sort(reverse=True)
 		ws = sum([params[i][0] for i in xrange(peaks_count)])  # peaks could be stretched
 		for i in xrange(peaks_count):
@@ -2048,6 +2064,14 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
 			tempref = [refrings[i] for i in xrange(len(refrings))]
 			taken   = [params[i][6] for i in xrange(peaks_count)]
 			taken.sort(reverse=True)
+			if(len(taken) > 1):
+				for k in xrange(1,len(taken)):
+					dod = []
+					if( taken[k] == taken[k-1] ):
+						print  "  PROBLEM 2, entries duplicated  ",taken
+						dod.append(k)
+				if(len(dod) >0):
+					for k in did:  del taken[k]
 			#  delete taken
 			try:
 				for i in xrange(peaks_count):  del  tempref[taken[i]]
@@ -2058,19 +2082,44 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
 				print  len(tempref), len(refrings)
 				from sys import exit
 				exit()
-			refvecs = [None]*3*len(tempref)
+
 			from utilities import getfvec
 			t1 = data.get_attr("xform.projection")
 			dp = t1.get_params("spider")
 			n1,n2,n3 = getfvec(dp["phi"],dp["theta"])
 			datanvec = [n1,n2,n3]
-			for i in xrange(len(tempref)):
-				n1 = tempref[i].get_attr("n1")
-				n2 = tempref[i].get_attr("n2")
-				n3 = tempref[i].get_attr("n3")
-				refvecs[3*i+0] = n1
-				refvecs[3*i+1] = n2
-				refvecs[3*i+2] = n3
+			if(int(sym[1:]) >1):
+				iq = len(tempref)
+				tempref += (tempref+tempref)
+				refvecs = [None]*3*len(tempref)
+				dphi = 360.0/int(sym[1:])
+				for i in xrange(len(tempref)):
+					phi   = tempref[i].get_attr("phi")
+					theta = tempref[i].get_attr("theta")
+					n1,n2,n3 = getfvec(phi-dphi,theta)
+					refvecs[3*i+0] = n1
+					refvecs[3*i+1] = n2
+					refvecs[3*i+2] = n3
+					n1,n2,n3 = getfvec(phi+dphi,theta)
+					refvecs[3*i+0+iq] = n1
+					refvecs[3*i+1+iq] = n2
+					refvecs[3*i+2+iq] = n3
+				for i in xrange(len(tempref),2*len(tempref)):
+					n1 = tempref[i].get_attr("n1")
+					n2 = tempref[i].get_attr("n2")
+					n3 = tempref[i].get_attr("n3")
+					refvecs[3*i+0] = n1
+					refvecs[3*i+1] = n2
+					refvecs[3*i+2] = n3
+			else: 
+				refvecs = [None]*3*len(tempref)
+				for i in xrange(len(tempref)):
+					n1 = tempref[i].get_attr("n1")
+					n2 = tempref[i].get_attr("n2")
+					n3 = tempref[i].get_attr("n3")
+					refvecs[3*i+0] = n1
+					refvecs[3*i+1] = n2
+					refvecs[3*i+2] = n3
 			from utilities import nearestk_to_refdir
 			nrst = nearestk_to_refdir(refvecs, datanvec, howmany = nsoft-peaks_count)
 			del refvecs
@@ -2091,6 +2140,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, finfo=None):
 			#if( dp["theta"] > 90.0 ): 
 			#	print "  IS MIRRORED  ",dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]
 			pws = proj_ali_incore_multi(tdata, [tempref[k] for k in nrst], numr, xrng, yrng, step, 180.0, nsoft-peaks_count)
+			#  Can there be a problem with (0,0) direction??  PAP  05/25/2014
 			for i in xrange(nsoft-peaks_count):
 				if i == 0:    t1 = tdata.get_attr("xform.projection")
 				else:         t1 = tdata.get_attr("xform.projection" + str(i))
@@ -2305,7 +2355,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 			#number_of_checked_refs = 0
 			par_r = [0]*(nsoft+1)
 			for im in xrange(nima):
-				peak, pixer[im], checked_refs, number_of_peaks = shc_multi(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step], nsoft)
+				peak, pixer[im], checked_refs, number_of_peaks = shc_multi(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step], nsoft, sym)
 				#number_of_checked_refs += checked_refs
 				par_r[number_of_peaks] += 1
 				#print  myid,im,number_of_peaks
