@@ -39,7 +39,7 @@ from    EMAN2jsondb import js_open_dict
 
 def main():
 	import sys
-	import os.path
+	import os
 	import math
 	import random
 	import pyemtbx.options
@@ -97,9 +97,9 @@ def main():
 	parser.add_option("--pw", action="store_true", help="compute average power spectrum of a stack of 2-D images with optional padding (option wn) with zeroes", default=False)
 	parser.add_option("--wn", type="int", default=-1, help="Size of window to use (should be larger/equal than particle box size, default padding to max(nx,ny))")
 	parser.add_option("--phase_flip", action="store_true", help="Phase flip the input stack", default=False)
-	parser.add_option("--makedb", metavar="param1=value1:param2=value2", type=str,
+	parser.add_option("--makedb", metavar="param1=value1:param2=value2", type="string",
 					action="append",  help="One argument is required: name of key with which the database will be created. Fill in database with parameters specified as follows: --makedb param1=value1:param2=value2, e.g. 'gauss_width'=1.0:'pixel_input'=5.2:'pixel_output'=5.2:'thr_low'=1.0")
-	parser.add_option("--generate_projections", metavar="param1=value1:param2=value2", type=str,
+	parser.add_option("--generate_projections", metavar="param1=value1:param2=value2", type="string",
 					action="append", help="Three arguments are required: name of input structure from which to generate projections, desired name of output projection stack, and desired prefix for micrographs (e.g. if prefix is 'mic', then micrographs mic0.hdf, mic1.hdf etc will be generated). Optional arguments specifying format, apix, box size and whether to add CTF effects can be entered as follows after --generate_projections: format='bdb':apix=5.2:CTF=True:boxsize=100, or format='hdf', etc., where format is bdb or hdf, apix (pixel size) is a float, CTF is True or False, and boxsize denotes the dimension of the box (assumed to be a square). If an optional parameter is not specified, it will default as follows: format='bdb', apix=2.5, CTF=False, boxsize=64.")
 	parser.add_option("--isacgroup", type="int", help="Retrieve original image numbers in the selected ISAC group   See ISAC documentaion for details.", default=-1)
 	parser.add_option("--params",	   type="string",       default=None,    help="Name of header of parameter, which one depends on specific option")
@@ -107,9 +107,9 @@ def main():
 
 	
 	# import ctf estimates done using cter
-	parser.add_option("--importctf",          type=str,				 default= None,     		  help="File name with CTF parameters produced by sxcter.")
-	parser.add_option("--defocuserror",       type=float,  			 default=1000000.0,           help="Exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent.  The error is computed as (std dev defocus)/defocus*100%")
-	parser.add_option("--astigmatismerror",   type=float,  			 default=360.0,               help="Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees.")
+	parser.add_option("--importctf",          type="string",		 default= None,     		  help="File name with CTF parameters produced by sxcter.")
+	parser.add_option("--defocuserror",       type="float",  	 default=1000000.0,           help="Exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent.  The error is computed as (std dev defocus)/defocus*100%")
+	parser.add_option("--astigmatismerror",   type="float",  	 default=360.0,               help="Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees.")
 
 
  	(options, args) = parser.parse_args()
@@ -332,7 +332,7 @@ def main():
 	if options.generate_projections:
 		nargs = len(args)
 		if nargs != 3:
-			print "must provide name of input structure from which to generate projections, desired name of output projection stack, and desired prefix for output micrographs. Exiting..."
+			print "Must provide name of input structure from which to generate projections, desired name of output projection stack, and desired prefix for output micrographs. Exiting..."
 			return
 		inpstr = args[0]
 		outstk = args[1]
@@ -497,6 +497,37 @@ def main():
 
 	if options.importctf != None:
 		print ' HERE  '
+		ctfs = read_text_row(options.importctf)
+		for kk in xrange(len(ctfs)):
+			root,name = os.path.split(ctfs[kk][-1])
+			ctfs[kk][-1] = name[:-4]
+		if(args[0][:4] != 'bdb:'):
+			ERROR('Sorry, only bdb files implemented','importctf',1)
+		d = args[0][4:]
+		try:     str = d.index('*')
+		except:  str = -1
+		from string import split
+		import glob
+		uu = os.path.split(d)
+		uu = os.path.join(s[0],'EMAN2DB',s[1]+'.bdb')
+		flist = glob.glob(uu)
+		for i in xrange(len(flist)):
+			root,name = os.path.split(flist[i])
+			root = root[:-7]
+			name = name[:-4]
+			fil = 'bdb:'+os.path.join(root,name)
+			sourcemic = EMUtil.get_all_attributes(fil,'ptcl_source_image')
+			nn = len(sourcemic)
+			for kk in xrange(nn):
+				root,name = os.path.split(sourcemic[kk])
+				name = name[:-4]
+				ctfp = [-1.0,]
+				for ll in xrange(len(ctfs)):
+					if(name == ctfs[ll]):
+						#  found correct
+						ctfp = []
+						break
+				
 		
 
 if __name__ == "__main__":
