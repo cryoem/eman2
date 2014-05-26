@@ -78,10 +78,13 @@ disable_cache()
 {
 	cd ${EMAN2DIR}/lib
 	echo "start substituting..."
-	cp global_def.py global_def.py.bak
-	rm -f global_def.py
-	sed -e 's/CACHE_DISABLE = False/CACHE_DISABLE = True/' -e 's/GUIUSE = True/GUIUSE = False/' global_def.py.bak > global_def.py
+	mv global_def.py global_def.py.bak
+	sed -e 's/CACHE_DISABLE = False/CACHE_DISABLE = True/'  global_def.py.bak > global_def.py
 	rm -f  global_def.py.bak
+	cd ${EMAN2DIR}/bin
+	mv sx_real.py sx_real.py.bak
+	sed  -e 's/GUIUSE = True/GUIUSE = False/' sx_real.py.bak > sx_real.py
+	rm -f  sx_real.py.bak
 	cd ${EMAN2DIR}
 }
 

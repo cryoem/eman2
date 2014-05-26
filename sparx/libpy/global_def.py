@@ -63,8 +63,6 @@ BATCH = False
 # variable for disabling bdb cache use, For running sparx on clusters, set it to True to disable cache,
 CACHE_DISABLE = False
 
-# variable for disabling gui use (set by default to True, which means use GUI. Change to False to disable GUI).
-GUIUSE = True
 
 global LOGFILE 
 LOGFILE = "logfile"
@@ -75,7 +73,7 @@ LOGFILE_HANDLE = 0
 IS_LOGFILE_OPEN = False
 '''   SYSTEM FUNCTIONS - please do not change the text below '''
 global SPARXVERSION
-SPARXVERSION = "SPARX v2.0" + ' (CVS' + CVSDATESTAMP[6:-2] +')'
+SPARXVERSION = "SPARX v3.0" + ' (CVS' + CVSDATESTAMP[6:-2] +')'
 
 def ERROR(message, where, action = 1, myid = 0):
 	"""
