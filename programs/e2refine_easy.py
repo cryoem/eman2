@@ -741,7 +741,7 @@ overinterpret these plots. The FSC plots themselves contain some noise, so there
 				else : lastres=0
 			
 			plt.axhline(0.0,color="k")
-			plt.axhline(0.143,color="0x204020")
+			plt.axhline(0.143,color="#204020")
 			plt.axis((0,maxx,-.02,1.02))
 #			plt.legend(loc="lower left")
 			plt.legend(loc="upper right",fontsize="x-small")
@@ -786,7 +786,7 @@ two files should match extremely well, other than more noise being present in th
 <br><i>e2proc2d.py {path}/classes_{iter:02d}.hdf clsvsproj.hdf --interlv {path}/projections_{iter:02d}.hdf</i></li>
 <li>It may also be worthwhile to compare {path}/threed_{iter:02d}_even.hdf to {path}/threed_{iter:02d}_odd.hdf to observe
 the differences responsible for the assessed resolution.</li>
-</ul>""".format(path=options.path,iter=it)
+</ul>""".format(path=options.path,iter=it))
 
 
 	E2end(logid)
