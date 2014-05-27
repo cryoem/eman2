@@ -34,23 +34,33 @@
 #
 #
 
-from PyQt4 import QtCore, QtGui, QtOpenGL
-from emapplication import EMApp
-import IPython.lib.inputhook
-
-
-app=EMApp()
-IPython.lib.inputhook.enable_qt4(app)
-
+import EMAN2
 from EMAN2 import *
-from emimage import image_update
 
-def ipy_on_timer():
-	image_update()
+failed=False
+try:
+	from PyQt4 import QtCore, QtGui, QtOpenGL
+	from emapplication import EMApp
+	import IPython.lib.inputhook
 
-ipytimer = QtCore.QTimer()
-ipytimer.timeout.connect(ipy_on_timer)
-ipytimer.start(200)
+
+	app=EMApp()
+	IPython.lib.inputhook.enable_qt4(app)
+
+	from emimage import image_update
+
+	def ipy_on_timer():
+		image_update()
+
+	ipytimer = QtCore.QTimer()
+	ipytimer.timeout.connect(ipy_on_timer)
+	ipytimer.start(200)
+	
+	EMAN2.GUIMode=True
+	EMAN2.app=app
+except:
+	failed=True
+
 
 print """Welcome to the interactive EMAN2 Python interface, provided by ipython
 
@@ -59,3 +69,4 @@ NOTE: that you should NOT be running this program if your intent is to run other
   directly at the system command line. This interface is for people who know some
   Python programming."""
   
+if failed : print "\nWarning: Failed to initialize Qt mode. Running in fallback mode with non-interactive graphics."
