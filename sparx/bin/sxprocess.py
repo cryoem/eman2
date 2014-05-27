@@ -82,10 +82,14 @@ def main():
 	8.  Import ctf parameters from the output of sxcter into windowed particle headers.
 	    There are three possible input files formats:  (1) all particles are in one stack, (2 aor 3) particles are in stacks, each stack corresponds to a single micrograph.
 	    In each case the particles should contain a name of the micrograph of origin stores using attribute name 'ptcl_source_image'.  Normally this is done by e2boxer.py during windowing.
-	    Particles whose defocus or astigmatism error exceed set thresholds will have attribute 'active' set to zero; otherwise, active will be set to one.
-	sxprocess.py  bdb:data  --importctf=outdir/partres  --defocuserror=10.0  --astigmatismerror=5.0
-	sxprocess.py  directory/stacks*  --importctf=outdir/partres  --defocuserror=10.0  --astigmatismerror=5.0
-	sxprocess.py  bdb:directory/stacks*  --importctf=outdir/partres  --defocuserror=10.0  --astigmatismerror=5.0
+	    Particles whose defocus or astigmatism error exceed set thresholds will be skipped, otherwise, virtual stacks with the original way preceded by G will be created.
+	sxprocess.py  --input=bdb:data  --importctf=outdir/partres  --defocuserror=10.0  --astigmatismerror=5.0
+	#  Output will be a vritual stack bdb:Gdata
+	sxprocess.py  --input="bdb:directory/stacks*"  --importctf=outdir/partres  --defocuserror=10.0  --astigmatismerror=5.0
+	To concatenate output files:
+	cd directory
+	e2bdb.py . --makevstack=bdb:allparticles  --filt=G
+	IMPORTANT:  Please do not move (or remove!) any input/intermediate EMAN2DB files as the information is linked between them.
 
 """
 
@@ -107,9 +111,10 @@ def main():
 
 	
 	# import ctf estimates done using cter
-	parser.add_option("--importctf",          type="string",		 default= None,     		  help="File name with CTF parameters produced by sxcter.")
-	parser.add_option("--defocuserror",       type="float",  	 default=1000000.0,           help="Exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent.  The error is computed as (std dev defocus)/defocus*100%")
-	parser.add_option("--astigmatismerror",   type="float",  	 default=360.0,               help="Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees.")
+	parser.add_option("--input",              type="string",	default= None,     		  help="Input particles.")
+	parser.add_option("--importctf",          type="string",	default= None,     		  help="Name of the file containing CTF parameters produced by sxcter.")
+	parser.add_option("--defocuserror",       type="float",  	default=1000000.0,        help="Exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent.  The error is computed as (std dev defocus)/defocus*100%")
+	parser.add_option("--astigmatismerror",   type="float",  	default=360.0,            help="Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees.")
 
 
  	(options, args) = parser.parse_args()
@@ -496,20 +501,26 @@ def main():
 		drop_spider_doc("params.txt", params)
 
 	if options.importctf != None:
-		print ' HERE  '
+		print ' IMPORTCTF  '
+		from utilities import read_text_row,write_text_row
+		from random import randint
+		import subprocess
+		grpfile = 'groupid%04d'%randint(1000,9999)
+		ctfpfile = 'ctfpfile%04d'%randint(1000,9999)
+		cterr = [options.defocuserror/100.0, options.astigmatismerror]
 		ctfs = read_text_row(options.importctf)
 		for kk in xrange(len(ctfs)):
 			root,name = os.path.split(ctfs[kk][-1])
 			ctfs[kk][-1] = name[:-4]
-		if(args[0][:4] != 'bdb:'):
+		if(options.input[:4] != 'bdb:'):
 			ERROR('Sorry, only bdb files implemented','importctf',1)
-		d = args[0][4:]
-		try:     str = d.index('*')
-		except:  str = -1
+		d = options.input[4:]
+		#try:     str = d.index('*')
+		#except:  str = -1
 		from string import split
 		import glob
 		uu = os.path.split(d)
-		uu = os.path.join(s[0],'EMAN2DB',s[1]+'.bdb')
+		uu = os.path.join(uu[0],'EMAN2DB',uu[1]+'.bdb')
 		flist = glob.glob(uu)
 		for i in xrange(len(flist)):
 			root,name = os.path.split(flist[i])
@@ -518,16 +529,39 @@ def main():
 			fil = 'bdb:'+os.path.join(root,name)
 			sourcemic = EMUtil.get_all_attributes(fil,'ptcl_source_image')
 			nn = len(sourcemic)
+			gctfp = []
+			groupid = []
 			for kk in xrange(nn):
-				root,name = os.path.split(sourcemic[kk])
-				name = name[:-4]
-				ctfp = [-1.0,]
+				junk,name2 = os.path.split(sourcemic[kk])
+				name2 = name2[:-4]
+				ctfp = [-1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
 				for ll in xrange(len(ctfs)):
-					if(name == ctfs[ll]):
+					if(name2 == ctfs[ll][-1]):
 						#  found correct
-						ctfp = []
+						if(ctfs[ll][8]/ctfs[ll][0] <= cterr[0]):
+							#  acceptable defocus error
+							ctfp = ctfs[ll][:8]
+							if(ctfs[ll][10] > cterr[1] ):
+								# error of astigmatism exceed the threshold, set astigmatism to zero.
+								ctfp[6] = 0.0
+								ctfp[7] = 0.0
+							gctfp.append(ctfp)
+							groupid.append(kk)
 						break
+			if(len(groupid) > 0):
+				write_text_row(groupid, grpfile)
+				write_text_row(gctfp, ctfpfile)
+				cmd = "{} {} {} {}".format('e2bdb.py',fil,'--makevstack=bdb:'+root+'G'+name,'--list='+grpfile)
+				#print cmd
+				subprocess.call(cmd, shell=True)
+				cmd = "{} {} {} {}".format('sxheader.py','bdb:'+root+'G'+name,'--params=ctf','--import='+ctfpfile)
+				#print cmd
+				subprocess.call(cmd, shell=True)
+			else:
+				print  ' >>>  Group ',name,'  skipped.'
 				
+		cmd = "{} {} {}".format("rm -f",grpfile,ctfpfile)
+		subprocess.call(cmd, shell=True)
 		
 
 if __name__ == "__main__":

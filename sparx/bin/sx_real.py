@@ -34,21 +34,21 @@
 #
 #
 
-# variable for disabling gui use (set by default to True, which means use GUI. Change to False to disable GUI).
-GUIUSE = True
-
-if GUIUSE: from PyQt4 import QtCore, QtGui, QtOpenGL
-from emapplication import EMApp
-import IPython.lib.inputhook
+import EMAN2
+from EMAN2 import *
 
 
-if GUIUSE:
+
+GUIUSE=True
+try:
+	from PyQt4 import QtCore, QtGui, QtOpenGL
+	from emapplication import EMApp
+	import IPython.lib.inputhook
+
+
 	app=EMApp()
 	IPython.lib.inputhook.enable_qt4(app)
 
-from EMAN2 import *
-from sparx import *
-if GUIUSE:
 	from emimage import image_update
 
 	def ipy_on_timer():
@@ -57,6 +57,14 @@ if GUIUSE:
 	ipytimer = QtCore.QTimer()
 	ipytimer.timeout.connect(ipy_on_timer)
 	ipytimer.start(200)
+	
+	EMAN2.GUIMode=True
+	EMAN2.app=app
+except:
+	GUIUSE=False
+
+from sparx import *
+if GUIUSE:
 	print "Welcome to the interactive SPARX-GUI Python interface, provided by ipython, ",
 else:
 	print "Welcome to the interactive SPARX-NoGUI Python interface, provided by ipython, ",

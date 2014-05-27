@@ -1765,7 +1765,7 @@ def write_text_row(data, file_name):
 		for j in xrange(len(data)):
 			qtp = type(data[j])
 			if qtp == type(0):
-				outf.write("  %12d\n"%data[j])
+				outf.write("  %12d"%data[j])
 			elif qtp == type(0.0):
 				outf.write("  %12.5g"%data[j])
 			else:
