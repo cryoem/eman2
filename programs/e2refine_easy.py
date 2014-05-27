@@ -398,7 +398,7 @@ rapid convergence with the resolution goal. If you run more than 2 iterations an
 			append_html("<p>Automatically selecting a good angular spacing for the refinement adjusted for your selected --speed. The resolution you are requesting ({}) is quite conservative given the \
 sampling ({}) of your data. If this is simply an initial refinement designed to get the overall shape of the structure correct, this is fine. If this is your final resolution \
 target, you may wish to consider downsampling the data and importing into a new project, as too much oversampling is both <i>extremely</i> inefficient, and in some cases will \
-even lead to worse structures. Based on your requested resolution and box-size, I will use an angular sampling of {} deg. For details, please see \
+even lead to worse structures. Based on your requested resolution and box-size, I will use an angular sampling of {:1.2f} deg. For details, please see \
 <a href=http://blake.bcm.edu/emanwiki/EMAN2/AngStep>http://blake.bcm.edu/emanwiki/EMAN2/AngStep</a></p>".format(options.targetres,apix,astep))
 
 		# target resolution between 1/2 and 3/4 Nyquist
