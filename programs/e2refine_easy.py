@@ -575,6 +575,8 @@ overinterpret these plots. The FSC plots themselves contain some noise, so there
 	xticklbl=["1/100","1/20","1/12","1/8","1/6","1/5","1/4","1/3","1/2.5","1/2"][:len(xticklocs)]
 	yticklocs=(0.0,.125,.143,.25,.375,.5,.625,.75,.875,1.0)
 	yticklbl=("0"," ","0.143","0.25"," ","0.5"," ","0.75"," ","1.0")
+	yticklocs2=(0.0,.125,.25,.375,.5,.625,.75,.875,1.0)
+	yticklbl2=("0"," ","0.25"," ","0.5"," ","0.75"," ","1.0")
 	
 	### Actual refinement loop ###
 	for it in range(1,options.iter+1) :
@@ -725,7 +727,7 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
 			plt.legend(loc="upper right",fontsize="x-small")
 			#plt.minorticks_on()
 			plt.xticks(xticklocs,xticklbl)
-			plt.yticks(yticklocs,yticklbl)
+			plt.yticks(yticklocs2,yticklbl2)
 			plt.savefig("{}/report/converge.png".format(options.path))
 			plt.savefig("{}/report/converge.pdf".format(options.path))
 			plt.clf()

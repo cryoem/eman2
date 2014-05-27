@@ -14,9 +14,12 @@ options=[]
 def parse(s):
 	global options
 	
-	sub=s[s.find("(")+1:]
+	sub="myfn"+s[s.find("("):]
+	dct=eval(sub)
 	
 
+def myfn(*args):
+	return args
 
 lines=[i for i in file(sys.argv[1],"r")]
 
