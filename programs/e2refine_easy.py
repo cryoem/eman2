@@ -408,7 +408,7 @@ even lead to worse structures. Based on your requested resolution and box-size, 
 <a href=http://blake.bcm.edu/emanwiki/EMAN2/AngStep>http://blake.bcm.edu/emanwiki/EMAN2/AngStep</a></p>".format(options.targetres,apix,astep))
 
 		# target resolution between 1/2 and 3/4 Nyquist
-		elif options.targetres>apix*3 :
+		elif options.targetres>apix*8.0/3.0 :
 			astep=89.99/ceil(90.0*9.0/((options.speed+3.0)*sqrt(4300/nx)))		# This rounds to the best angular step divisible by 90 degrees
 			options.orientgen="eman:delta={:1.5f}:inc_mirror=0:perturb=0".format(astep)
 			append_html("<p>Based on your requested resolution and box-size, modified by --speed,  I will use an angular sampling of {:1.2f} deg. For details, please see \
