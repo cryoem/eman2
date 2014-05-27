@@ -15,21 +15,29 @@ def parse(s):
 	global options
 	
 	sub="myfn"+s[s.find("("):]
-	dct=eval(sub)
+	return eval(sub)
 	
 
-def myfn(*args):
-	return args
+def myfn(*args,**kargs):
+	return (args,kargs)
 
 lines=[i for i in file(sys.argv[1],"r")]
 
 for j,i in enumerate(lines): 
  	if "parser.add_argument" in i:
-		try : parse(i.strip())
+		try : op=parse(i.strip())
 		except:
-			try: parse((i+lines[j+1]).strip())
+			try: op=parse((i+lines[j+1]).strip())
 			except: print (i+lines[j+1]).strip()
-	
+			
+		com={"name":op[0][0][2:]}
+		com.update(op[1])
+		if len(op[0])>1 : com["short"]=op[0][1]
+
+		options.append(com)
+
+print options
+
 #print parser.__dict__.keys()
 #print parser.optionslist
 #print "0000000000000000000000000"
