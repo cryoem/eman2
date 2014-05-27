@@ -64,10 +64,9 @@ except:
 	GUIUSE=False
 
 from sparx import *
-if GUIUSE:
-	print "Welcome to the interactive SPARX-GUI Python interface, provided by ipython, ",
-else:
-	print "Welcome to the interactive SPARX-NoGUI Python interface, provided by ipython, ",
-#from global_def import *
 import global_def
-print  global_def.SPARXVERSION
+if GUIUSE:
+	print "Welcome to the interactive SPARX-GUI Python interface, provided by ipython"
+else:
+	print "Welcome to the interactive SPARX-NoGUI Python interface, provided by ipython"
+print  "  ",global_def.SPARXVERSION
