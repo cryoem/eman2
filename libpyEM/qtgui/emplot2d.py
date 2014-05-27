@@ -710,7 +710,7 @@ lc is the cursor selection point in plot coords"""
 			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
 			try: recip="%1.2f"%(1.0/lc[0])
 			except: recip="-"
-			self.add_shape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-10,"%1.4g (%s), %1.4g"%(lc[0],recip,lc[1]),120.0,-1)))
+			self.add_shape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-10,"%1.5g (%s), %1.5g"%(lc[0],recip,lc[1]),120.0,-1)))
 			self.update_selected((event.x(),event.y()),lc)
 			self.updateGL()
 			#if self.mmode==0:
@@ -734,7 +734,7 @@ lc is the cursor selection point in plot coords"""
 
 			try: recip="%1.2f"%(1.0/lc[0])
 			except: recip="-"
-			self.add_shape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-10,"%1.4g (%s), %1.4g"%(lc[0],recip,lc[1]),120.0,-1)))
+			self.add_shape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-10,"%1.5g (%s), %1.5g"%(lc[0],recip,lc[1]),120.0,-1)))
 			self.update_selected((event.x(),event.y()),lc)
 			self.updateGL()
 #			self.add_shape("mcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-80,self.scrlim[3]-20,"%1.3g, %1.3g"%(self.plot2scr(*lc)[0],self.plot2scr(*lc)[1]),1.5,1)))

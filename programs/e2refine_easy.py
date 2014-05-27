@@ -31,6 +31,14 @@
 #
 #
 
+try:
+	import matplotlib
+	matplotlib.use("Cairo")
+	import matplotlib.pyplot as plt
+	pltcolors=["k","b","g","r","m","c","darkblue","darkgreen","darkred","darkmagenta","darkcyan","0.5"]
+except:
+	print "Matplotlib not available, some output will not be generated"
+
 
 from EMAN2 import *
 from optparse import OptionParser
@@ -39,6 +47,8 @@ import os
 import sys
 import time
 import traceback
+import numpy as np
+
 
 # This is used to build the HTML status file. It's a global for convenience
 output_html=[]
@@ -55,7 +65,7 @@ def append_html(msg,com=False) :
 def write_html() :
 	global output_html,output_html_com,output_path
 	out=file(output_path+"/index.html","w")
-	out.write("<html><head><title>EMAN2 Refinement Analysis</title></head>\n<body>")
+	out.write("<html><head><title>EMAN2 Refinement Overview</title></head>\n<body>")
 	out.write("\n".join(output_html))
 	out.write("<h4>Detailed command log</h4>\n")
 	out.write("\n".join(output_html_com))
@@ -266,11 +276,10 @@ satisfied with the results with speed=5 you may consider reducing this number as
 	###################################
 	append_html("<h1>e2refine_easy.py report</h1>\n")
 
-	append_html("<h3>Warning - This is an alpha release version of EMAN2.1</h3> <p>This program is still experimental and planned functionality is not yet complete. \
-While it will run refinements and do a decent job with parameters, this will improve substantially as we approach the actual 2.1 release, so please do not \
-judge EMAN2.1 based on this preliminary version. As always, bug reports or reports of unexpected results are welcome.</p>\
-<p>This analysis document is quite verbose. If you are just curious to see a list of the exact refinement parameters used, browse to the 0_refine_parms.json file\
-in the refinement directory. You can use Info with the browser or just read the file directly (.json files are plain text)")
+	append_html("""<h3>Warning - This is a beta release version of EMAN2.1</h3> <p>This program is fully functional, but we will continue
+to add new features and refinements as we approach the ifnal release. If you are curious to see a list of the exact refinement parameters 
+used, browse to the 0_refine_parms.json file in the refinement directory. You can use 'Info' in the file browser or just read the file directly
+(.json files are plain text)""")
 
 
 	### Prepare initial models
@@ -287,9 +296,14 @@ in the refinement directory. You can use Info with the browser or just read the 
 			sys.exit(1)
 	else:
 		try:
-			run("e2proc3d.py {model} {path}/threed_00_even.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix}".format(model=options.model,path=options.path,freq=1.0/(options.targetres*1.5),apix=apix))
-			run("e2proc3d.py {model} {path}/threed_00_odd.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix}" .format(model=options.model,path=options.path,freq=1.0/(options.targetres*1.5),apix=apix))
-			append_html("<p>Phase randomizing {model} at {res}. Input particles are from {infile}</p>".format(model=options.model,infile=options.input,res=options.targetres*1.5))
+			if options.targetres>12 : randomres=options.targetres*1.5
+			else : randomres=options.targetres*2.0
+			
+			run("e2proc3d.py {model} {path}/threed_00_even.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix}".format(model=options.model,path=options.path,freq=1.0/(randomres),apix=apix))
+			run("e2proc3d.py {model} {path}/threed_00_odd.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix}" .format(model=options.model,path=options.path,freq=1.0/(randomres),apix=apix))
+			append_html("""<p>Randomizing the Fourier phases of {model} at {res:1.1f}A. If the final achieved resolution is not at least ~{resb:1.1f}, then the 
+gold standard resolution assessment is not valid, and you need to re-refine, starting with a lower resolution target.</p>
+<p>Input particles are from {infile}</p>""".format(model=options.model,infile=options.input,res=randomres,resb=randomres*0.9))
 			options.input=image_eosplit(options.input)
 		except:
 			traceback.print_exc()
@@ -311,7 +325,7 @@ in the refinement directory. You can use Info with the browser or just read the 
 # parameter is the amplitude contrast setting when determining the structure factor.</p>")
 # 			postprocess="--postprocess filter.lowpass.autob"
 # 			m3dsetsf="--setsf strucfac.fromdata.txt"
-			append_html("<p>Several different methods can be used for final amplitude correction in cryoEM. The most accurate of these is to take the final\
+			append_html("""<p>Several different methods can be used for final amplitude correction in cryoEM. The most accurate of these is to take the final\
  structure and filter it so its 1-D power spectrum matches a known 1-D power spectrum from X-ray solution scattering or other source. This 'ideally filtered'\
  structure is then low-pass filtered based on the same FSC curve used to measure resolution between the independent even/odd models used in the Gold Standard\
  resolution criterion. This is the normal method EMAN2 will use for final corrections. Other choices are possible as well, however. EMAN2 generates an\
@@ -319,9 +333,9 @@ in the refinement directory. You can use Info with the browser or just read the 
  and the high resolution portion (generally past 14-18 A) is an empirical structure factor for proteins in general with a mix of alpha and beta components.\
  This works quite well for most proteins, however is not completely appropriate for hybrid molecules with nucleotides (like ribosomes), but will generally\
  still produce reasonable structures. Note that this is just a standard linear filter, which is not really changing the 3-D structure at all, it's really\
- just changing how that structure is portrayed. The structure factor\
- produced when CTF fitting is stored in strucfac.txt in the project directory. If you replace this file with a structure factor from some other source, it\
- will be used to process all subsequent particles.</p>")
+ just changing how that structure is portrayed.</p> 
+ <p>The structure factorproduced when CTF fitting is stored in strucfac.txt in the project directory. If you replace this file with a structure factor from 
+ some other source, it will be used to process all subsequent particles.</p>""")
 			postprocess=""
 			m3dsetsf="--setsf strucfac.txt"
 		else :
@@ -536,6 +550,21 @@ important to use an angular step which is 90/integer.</p>")
 
 	print "NOTE: you can check the progress of the refinement at any time by opening this URL in your web-browser:  file://{}/index.html".format(os.path.abspath(output_path))
 
+	append_html("""<h3>Analysis of Refinement Results</h3>""")
+	
+	append_html("""<h4>Convergence Analysis</h4> <p>The plot below shows the FSC computed between iterations for both even and
+odd particle subsets. It is not a measure of resolution, but is a measure of how much the individual even/odd maps are changing
+from one iteration to the next. In a perfect world, this plot would eventually be 1.0 indicating no change from one iteration
+to the next after the refinement converges. In reality we normally expect only a pseudoconvergence, where the curves approach a
+final shape but do not actually become 1.0. This plot is automatically updated after each iteration.</p><br><a href=converge.pdf><img src=converge.png></a><br>""")
+	
+	append_html("""<h4>Gold Standard Resolution</h4> <p>e2refine_easy computes a true gold-standard resolution as part of its stanard
+processing. This curve is also used as a basis for filtering the maps. Resolution can be gagued as the point at which this curve falls
+below a value of 0.143. Note that when computing FSCs in other situations, for example, when comparing the final map produced with 
+all of the particle data to a higher resolution crystal structure, the more stringent 0.5 (actually 0.4) criterion must be used. Don't
+overinterpret these plots. The FSC plots themselves contain some noise, so there is some uncertainty in any resolution value.</p>
+<br><a href=resolution.pdf><img src=resolution.png></a><br>""")
+	
 	### Actual refinement loop ###
 	for it in range(1,options.iter+1) :
 		append_html("<h4>Beginning iteration {} at {}</h4>".format(it,time.ctime(time.time())),True)
@@ -649,17 +678,125 @@ important to use an angular step which is 90/integer.</p>")
 
 		db.update({"last_map":combfile,"last_even":evenfile,"last_odd":oddfile})
 
+		### Generate analysis files
+		if it>0:
+			cmd="e2proc3d.py {path}/threed_{itr:02d}_even.hdf {path}/converge_even_{itrm1:02d}_{itr:02d}.txt --calcfsc {path}/threed_{itrm1:02d}_even.hdf".format(path=options.path,itr=it,itrm1=it-1)
+			run(cmd)
+			cmd="e2proc3d.py {path}/threed_{itr:02d}_odd.hdf {path}/converge_odd_{itrm1:02d}_{itr:02d}.txt --calcfsc {path}/threed_{itrm1:02d}_odd.hdf".format(path=options.path,itr=it,itrm1=it-1)
+			run(cmd)
+
+		try:
+			plt.title("Convergence plot (not resolution)")
+			plt.xlabel(r"Spatial Frequency (1/$\AA$)")
+			plt.ylabel("FSC")
+			cnvrg=[i for i in os.listdir(options.path) if "converge_" in i and i[-4:]==".txt"]
+			cnvrg.sort(reverse=True)
+			nummx=int(cnvrg[0].split("_")[2][:2])
+			maxx=0.01
+			for c in cnvrg:
+				num=int(c.split("_")[2][:2])
+				d=np.loadtxt("{}/{}".format(options.path,c)).transpose()
+				if c[9:13]=="even" : plt.plot(d[0],d[1],label=c[14:-4],color=pltcolors[(nummx-num)%12])
+				else : plt.plot(d[0],d[1],color=pltcolors[(nummx-num)%12])
+				maxx=max(maxx,max(d[0]))
+			plt.axhline(0.0,color="k")
+			plt.axis((0,maxx,-.06,1.02))
+			plt.legend(loc="upper right",fontsize="x-small")
+			plt.savefig("{}/report/converge.png".format(options.path))
+			plt.savefig("{}/report/converge.pdf".format(options.path))
+			plt.clf()
+			
+		except:
+			traceback.print_exc()
+			append_html("<p>Error generating convergence plot in report. Please look at fsc* files in the refine_xx folder</p>")
+			
+		try:
+			plt.title("Gold Standard Resolution")
+			plt.xlabel(r"Spatial Frequency (1/$\AA$)")
+			plt.ylabel("FSC")
+			fscs=[i for i in os.listdir(options.path) if "fsc_masked" in i and i[-4:]==".txt"]
+			fscs.sort(reverse=True)
+			nummx=int(fscs[0].split("_")[2][:2])
+			maxx=0.01
+			
+			# iterate over fsc curves
+			for f in fscs:
+				num=int(f.split("_")[2][:2])
+				
+				# read the fsc curve
+				d=np.loadtxt("{}/{}".format(options.path,f)).transpose()
+				
+				# plot the curve
+				plt.plot(d[0],d[1],label=f[4:],color=pltcolors[(nummx-num)%12])
+				maxx=max(maxx,max(d[0]))
+			
+			# find the resolution from the first curve (actually the highest numbered one)
+			if f==fscs[0]:
+				# find the 0.143 crossing
+				for si in xrange(2,len(d[0])-2):
+					if d[1][si-1]>0.143 and d[1][si]<=0.143 :
+						frac=(0.143-d[1][si])/(d[1][si-1]-d[1][si])		# 1.0 if 0.143 at si-1, 0.0 if .143 at si
+						lastres=d[0][si]*(1.0-frac)+d[0][si-1]*frac
+						break
+				else : lastres=0
+			
+			plt.axhline(0.0,color="k")
+			plt.axhline(0.143,color="0x204020")
+			plt.axis((0,maxx,-.02,1.02))
+#			plt.legend(loc="lower left")
+			plt.legend(loc="upper right",fontsize="x-small")
+			plt.savefig("{}/report/resolution.png".format(options.path))
+			plt.savefig("{}/report/resolution.pdf".format(options.path))
+			plt.clf()
+		except:
+			traceback.print_exc()
+			append_html("<p>Error generating resolution plot in report. Please look at fsc* files in the refine_xx folder</p>")
+
+		if lastres==0 : 
+			append_html("<p>No valid resolution found for iteration {}".format(it))
+		else:
+			append_html("<p>Iteration {}: Resolution = {:1.1f} &Aring; (gold standard refinement, FSC @0.143)</p>".format(it,1.0/lastres))
 
 		E2progress(logid,progress/total_procs)
+
+	if lastres==0 :
+		append_html("""<p>I was unable to determine a resolution for your final iteration. This should not happen, and indicates a problem.
+You may consider consulting the EMAN2 mailing list if you cannot figure out what's going wrong</p>""")
+	else:
+		try:
+			if 1.0/lastres>randomres*.9 :
+				append_html("""<p>Unfortunately your final determined resolution of {:1.1f} &Aring; is not sufficiently better than the 
+phase randomization resolution of {:1.1f} &Aring; for the 'gold standard' resolution method to be valid. Please do not trust this result.
+You must rerun the refinement with a more conservative initial target resolution (suggest ~{:1.1f}).</p>""".format(1.0/lastres,randomres,1.0/lastres*0.9))
+			else:
+				append_html("""<p>Congratulations, your refinement is complete, and you have a gold standard resolution of {:1.1f} &Aring;. 
+If you wish to continue this refinement to further improve resolution, the most efficient approach is to use the --startfrom {} option
+rather than specifying --input and --model. When you use --startfrom, it will not re-randomize the phases. Since you have already achieved
+sufficient resolution to validate the gold-standard approach, continuing to extend this resolution is valid, and more efficient.""".format(1.0/lastres,options.path))
+		except:
+			append_html("""<p>Congratulations, your refinement is complete, and you have a gold standard resolution of {:1.1f} &Aring;. 
+Since this refinement continued from an existing refinement, it is impossible to tell if the gold-standard criteria have been met, but
+if they were met in the refinement this run continued, then your resolution should still be valid.""".format(1.0/lastres,options.path))
+
+	append_html("""<h3>Additional considerations</h3><p>Here are some useful output files to look at:</p><ul>
+<li>Your final 3-D map from this run is {path}/threed_{iter:02d}.hdf</li>
+<li>It may be useful to compare {path}/classes_{iter:02d}.hdf to {path}/projections_{iter:02d}.hdf. The images in these
+two files should match extremely well, other than more noise being present in the class-averages.</li>
+<li>If you wish to make a single stack where you can look at the two files side-by-side: 
+<br><i>e2proc2d.py {path}/classes_{iter:02d}.hdf clsvsproj.hdf --interlv {path}/projections_{iter:02d}.hdf</i></li>
+<li>It may also be worthwhile to compare {path}/threed_{iter:02d}_even.hdf to {path}/threed_{iter:02d}_odd.hdf to observe
+the differences responsible for the assessed resolution.</li>
+</ul>""".format(path=options.path,iter=it)
+
 
 	E2end(logid)
 	
 	print """
-*************************************************************"
-* REFINEMENT COMPLETE - Please look at {}/report/index.html *
-*************************************************************
+*************************************************************{stars}"
+* REFINEMENT COMPLETE - Please look at {path}/report/index.html *
+*************************************************************{stars}
 
-"""
+""".format(path=options.path,stars="*"*len(options.path))
 
 def get_apix_used(options):
 	'''
