@@ -276,8 +276,8 @@ satisfied with the results with speed=5 you may consider reducing this number as
 	###################################
 	append_html("<h1>e2refine_easy.py report</h1>\n")
 
-	append_html("""<h3>Warning - This is a beta release version of EMAN2.1</h3> <p>This program is fully functional, but we will continue
-to add new features and refinements as we approach the ifnal release. If you are curious to see a list of the exact refinement parameters 
+	append_html("""<h3>Note - This is a beta release version of EMAN2.1</h3> <p>This program is fully functional, but we will continue
+to add new features and refinements as we approach the final release. If you are curious to see a list of the exact refinement parameters 
 used, browse to the 0_refine_parms.json file in the refinement directory. You can use 'Info' in the file browser or just read the file directly
 (.json files are plain text)""")
 
@@ -571,6 +571,7 @@ overinterpret these plots. The FSC plots themselves contain some noise, so there
 
 		### 3-D Projections
 		# Note that projections are generated on a single node only as specified by --threads
+		append_html("<p>Generating 2-D projections of even/odd 3-D maps",True)
 		cmd = "e2project3d.py {path}/threed_{itrm1:02d}_even.hdf  --outfile {path}/projections_{itr:02d}_even.hdf -f --projector {projector} --orientgen {orient} --sym {sym} --postprocess normalize.circlemean {prethr} --parallel thread:{threads} {verbose}".format(
 			path=options.path,itrm1=it-1,itr=it,projector=options.projector,orient=options.orientgen,sym=options.sym,prethr=prethreshold,threads=options.threads,verbose=verbose)
 		run(cmd)
@@ -598,6 +599,7 @@ overinterpret these plots. The FSC plots themselves contain some noise, so there
 		### Simmx
 		#FIXME - Need to combine simmx with classification !!!
 
+		append_html("<p>Computing similarity of each particle to the set of projections using a hierarchical scheme. This will be the basis for classification.</p>",True)
 		cmd = "e2simmx2stage.py {path}/projections_{itr:02d}_even.hdf {inputfile} {path}/simmx_{itr:02d}_even.hdf {path}/proj_simmx_{itr:02d}_even.hdf {path}/proj_stg1_{itr:02d}_even.hdf {path}/simmx_stg1_{itr:02d}_even.hdf --saveali --cmp {simcmp} \
 --align {simalign} --aligncmp {simaligncmp} {simralign} {shrinks1} {shrink} {prefilt} {simmask} {verbose} {parallel}".format(
 			path=options.path,itr=it,inputfile=options.input[0],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,
@@ -612,6 +614,7 @@ overinterpret these plots. The FSC plots themselves contain some noise, so there
 		E2progress(logid,progress/total_procs)
 
 		### Classify
+		append_html("<p>Based on the similarity values, put each particle in to 1 or more classes (depending on --sep)</p>",True)
 		cmd = "e2classify.py {path}/simmx_{itr:02d}_even.hdf {path}/classmx_{itr:02d}_even.hdf -f --sep {sep} {verbose}".format(
 			path=options.path,itr=it,sep=options.sep,verbose=verbose)
 		run(cmd)
@@ -622,6 +625,7 @@ overinterpret these plots. The FSC plots themselves contain some noise, so there
 		E2progress(logid,progress/total_procs)
 
 		### Class-averaging
+		append_html("<p>Iteratively align and average all of the particles within each class, discarding the worst fraction</p>",True)
 		cmd="e2classaverage.py --input {inputfile} --classmx {path}/classmx_{itr:02d}_even.hdf --storebad --output {path}/classes_{itr:02d}_even.hdf --ref {path}/projections_{itr:02d}_even.hdf --iter {classiter} \
 -f --resultmx {path}/cls_result_{itr:02d}_even.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
 --align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} {verbose} {parallel}".format(
@@ -643,6 +647,7 @@ overinterpret these plots. The FSC plots themselves contain some noise, so there
 		# FIXME - --lowmem removed due to some tricky bug in e2make3d
 		if options.breaksym : m3dsym="c1"
 		else : m3dsym=options.sym
+		append_html("<p>Using the known orientations, reconstruct the even/odd 3-D maps from the even/odd 2-D class-averages.</p>",True)
 		if not options.m3dold : 
 			cmd="e2make3dpar.py --input {path}/classes_{itr:02d}_even.hdf --sym {sym} --output {path}/threed_{itr:02d}_even.hdf {preprocess} \
  --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --fillangle {fillangle} --threads {threads} {setsf} {verbose}".format(
@@ -669,6 +674,8 @@ overinterpret these plots. The FSC plots themselves contain some noise, so there
 		progress += 1.0
 
 		### postprocessing
+		append_html("""<p>Finally, determine the resolution, filter and mask the even/odd maps, and then produce the final 3-D map for this iteration.
+Note that the next iteration is seeded with the individual even/odd maps, not the final average.</p>""",True)
  		evenfile="{path}/threed_{itr:02d}_even.hdf".format(path=options.path,itr=it)
  		oddfile="{path}/threed_{itr:02d}_odd.hdf".format(path=options.path,itr=it)
  		combfile="{path}/threed_{itr:02d}.hdf".format(path=options.path,itr=it)
