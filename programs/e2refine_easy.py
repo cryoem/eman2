@@ -737,15 +737,15 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
 				plt.plot(d[0],d[1],label=f[4:],color=pltcolors[(nummx-num)%12])
 				maxx=max(maxx,max(d[0]))
 			
-			# find the resolution from the first curve (actually the highest numbered one)
-			if f==fscs[0]:
-				# find the 0.143 crossing
-				for si in xrange(2,len(d[0])-2):
-					if d[1][si-1]>0.143 and d[1][si]<=0.143 :
-						frac=(0.143-d[1][si])/(d[1][si-1]-d[1][si])		# 1.0 if 0.143 at si-1, 0.0 if .143 at si
-						lastres=d[0][si]*(1.0-frac)+d[0][si-1]*frac
-						break
-				else : lastres=0
+				# find the resolution from the first curve (actually the highest numbered one)
+				if f==fscs[0]:
+					# find the 0.143 crossing
+					for si in xrange(2,len(d[0])-2):
+						if d[1][si-1]>0.143 and d[1][si]<=0.143 :
+							frac=(0.143-d[1][si])/(d[1][si-1]-d[1][si])		# 1.0 if 0.143 at si-1, 0.0 if .143 at si
+							lastres=d[0][si]*(1.0-frac)+d[0][si-1]*frac
+							break
+					else : lastres=0
 			
 			plt.axhline(0.0,color="k")
 			plt.axhline(0.143,color="#204020")
