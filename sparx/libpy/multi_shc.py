@@ -2060,6 +2060,8 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 		data.set_attr("previousmax", params[peaks_count//2][0])
 
 		#  Add orientations around the main peak with exclusion of those already taken
+		#  Allow matching to bsoft>nsoft, but still keep nsoft.  This should allow elongated neighberhood
+		bsoft = 2*nsoft
 		if(peaks_count<nsoft):
 			tempref = [refrings[i] for i in xrange(len(refrings))]
 			taken   = [params[i][6] for i in xrange(peaks_count)]
@@ -2123,7 +2125,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 					refvecs[3*i+1] = n2
 					refvecs[3*i+2] = n3
 			from utilities import nearestk_to_refdir
-			nrst = nearestk_to_refdir(refvecs, datanvec, howmany = nsoft-peaks_count)
+			nrst = nearestk_to_refdir(refvecs, datanvec, howmany = bsoft-peaks_count)
 			del refvecs
 			#  it does not use mir, do it by hand
 			if( dp["theta"] > 90.0 ):  tdata = mirror(data)
@@ -2141,9 +2143,9 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 			#  Search
 			#if( dp["theta"] > 90.0 ): 
 			#	print "  IS MIRRORED  ",dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]
-			pws = proj_ali_incore_multi(tdata, [tempref[k] for k in nrst], numr, xrng, yrng, step, 180.0, nsoft-peaks_count)
+			pws = proj_ali_incore_multi(tdata, [tempref[k] for k in nrst], numr, xrng, yrng, step, 180.0, bsoft-peaks_count)
 			#  Can there be a problem with (0,0) direction??  PAP  05/25/2014
-			for i in xrange(nsoft-peaks_count):
+			for i in xrange(bsoft-peaks_count):
 				if i == 0:    t1 = tdata.get_attr("xform.projection")
 				else:         t1 = tdata.get_attr("xform.projection" + str(i))
 				d = t1.get_params("spider")
@@ -2163,6 +2165,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 				else:         w = tdata.get_attr("weight" + str(i))
 				w *= pws  # remove normalization
 				params.append([w,  phi, theta, psi, s2x, s2y])
+			#  From now on process nsfot largest
 			params.sort(reverse=True)
 			ws = sum([params[i][0] for i in xrange(nsoft)])  # peaks could be stretched
 			for i in xrange(nsoft):
@@ -2176,7 +2179,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 				else:
 					data.set_attr("xform.projection" + str(i), t2)
 					data.set_attr("weight" + str(i), params[i][0]/ws)
-			
+
 		"""
 		# remove old xform.projection
 		i = max(peaks_count, 1)
