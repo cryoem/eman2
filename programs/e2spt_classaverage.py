@@ -97,16 +97,16 @@ def main():
 	parser.add_argument("--precision",type=float,default=1.0,help="""Precision in pixels to use
 		when figuring out alignment parameters automatically using --radius. Precision 
 		would be the number of pixels that the the edge of the specimen is moved (rotationally) during the 
-		finest sampling, --ralign. If precision is 1, then the precision of alignment will be that of 
+		finest sampling, --falign. If precision is 1, then the precision of alignment will be that of 
 		the sampling (apix of your images) times the --shrinkfine factor specified.""")
 	
-	parser.add_argument("--search", type=float,default=1.0,help=""""During COARSE alignment
+	parser.add_argument("--search", type=int,default=1.0,help=""""During COARSE alignment
 		translational search in X, Y and Z, in pixels. Only works when --radius is provided.
 		Otherwise, search parameters are provided with the aligner, through --align.""")
 	
-	parser.add_argument("--searchfine", type=float,default=1.0,help=""""During FINE alignment
+	parser.add_argument("--searchfine", type=int,default=1.0,help=""""During FINE alignment
 		translational search in X, Y and Z, in pixels. Only works when --radius is provided.
-		Otherwise, search parameters are provided with the aligner, through --ralign.""")
+		Otherwise, search parameters are provided with the aligner, through --falign.""")
 	
 	parser.add_argument("--donotaverage",action="store_true", help="If e2spt_refinemulti.py is calling e2spt_classaverage.py, the latter need not average any particles, but rather only yield the alignment results.", default=False)
 	
@@ -159,12 +159,24 @@ def main():
 		--lowpassfine, --highpassfine, etc; to preprocess the particles for FINE alignment 
 		differently than for COARSE alignment.""")
 	
-	#parser.add_argument("--ncoarse", type=int, help="Deprecated. Use --npeakstorefine instead.", default=None)
 	parser.add_argument("--npeakstorefine", type=int, help="The number of best coarse alignments to refine in search of the best final alignment. Default=4.", default=4, guitype='intbox', row=9, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym[1]')
 	parser.add_argument("--align",type=str,help="This is the aligner used to align particles to the previous class average. Default is rotate_translate_3d:search=10:delta=12:dphi=12, specify 'None' to disable", returnNone=True, default="rotate_translate_3d:search=10:delta=12:dphi=12", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'3d\')', row=12, col=0, rowspan=1, colspan=3, nosharedb=True, mode="alignment,breaksym['rotate_symmetry_3d']")
 	parser.add_argument("--aligncmp",type=str,help="The comparator used for the --align aligner. Default is the internal tomographic ccc. Do not specify unless you need to use another specific aligner.",default="ccc.tomo", guitype='comboparambox',choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=13, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
-	parser.add_argument("--ralign",type=str,help="This is the second stage aligner used to refine the first alignment. Default is refine_3d_grid:delta=3:range=15:search=2, specify 'None' to disable", default="refine_3d_grid:delta=3:range=15:search=2", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine.*3d\')', row=14, col=0, rowspan=1, colspan=3, nosharedb=True, mode='alignment,breaksym[None]')
-	parser.add_argument("--raligncmp",type=str,help="The comparator used by the second stage aligner. Default is the internal tomographic ccc",default="ccc.tomo", guitype='comboparambox',choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=15, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
+	
+	parser.add_argument("--falign",type=str,help="""This is the second stage aligner used to refine the first alignment. 
+		Default is refine_3d_grid:delta=3:range=15:search=2, specify 'None' to disable""", 
+		default="refine_3d_grid:delta=3:range=15:search=2", returnNone=True, guitype='comboparambox', 
+		choicelist='re_filter_list(dump_aligners_list(),\'refine.*3d\')', row=14, col=0, rowspan=1, 
+		colspan=3, nosharedb=True, mode='alignment,breaksym[None]')
+		
+	parser.add_argument("--faligncmp",type=str,help="""The comparator used by the second stage aligner. 
+		Default is the internal tomographic ccc""",default="ccc.tomo", guitype='comboparambox',
+		choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=15, col=0, rowspan=1, 
+		colspan=3,mode="alignment,breaksym")
+	
+	parser.add_argument("--ralign",type=str,help="""DEPRECATED. See and use --falign instead.""",default=None)
+	parser.add_argument("--raligncmp",type=str,help="""DEPRECATED. See and use --faligncmp instead.""",default=None)
+		
 	parser.add_argument("--averager",type=str,help="The type of averager used to produce the class average. Default=mean",default="mean")
 	parser.add_argument("--keep",type=float,help="The fraction of particles to keep in each class.",default=1.0, guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode='alignment,breaksym')
 	parser.add_argument("--inixforms",type=str,help="directory containing a dict of transform to apply before reference generation", default="", guitype='dirbox', dirbasename='spt_|sptsym_', row=7, col=0,rowspan=1, colspan=2, nosharedb=True, mode='breaksym')
@@ -179,9 +191,6 @@ def main():
 	parser.add_argument("--keepsig", action="store_true", help="Causes the keep argument to be interpreted in standard deviations.",default=False, guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
 	parser.add_argument("--nocenterofmass", action="store_true", help="Disable Centering of mass of the subtomogram every iteration.", default=False, guitype='boolbox', row=6, col=2, rowspan=1, colspan=1, mode='alignment,breaksym')
 	
-	#parser.add_argument('--reverse_contrast', action="store_true", default=False, help=""" This multiplies the input particles by -1. Remember that EMAN2 **MUST** work with 'white protein' """)
-	#parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default='', guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
-
 	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default="thread:1", guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
 	#parser.add_argument("--automask",action="store_true",help="Applies a 3-D automask before centering. Can help with negative stain data, and other cases where centering is poor.")
@@ -200,35 +209,16 @@ def main():
 															
 	parser.add_argument("--hacref",type=int,default=0,help="""Size of the SUBSET of particles to use to build an initial reference by calling e2spt_hac.py
 															which does Hierarchical Ascendant Classification (HAC) or 'all vs all' alignments.""") 
-
-
-	'''
-	Parameters to compensate for the missing wedge using --cpm=fsc.tomo
-	'''
 	
-	#parser.add_argument("--wedgeangle",type=float,help="""Missing wedge angle, calculated as 90 minus the value yo provide, times 2. 
-	#													For example, --wedgeangle=60 will represent a wedge of size (90-60)*2=60.
-	#													--wedgeangle=70, results in a narrower wedge of size (90-70)*2=40.
-	#													In reality, you should enter here the range of your DATA COLLECTION.
-	#													I.e., if you collected your tiltseries from -60 to 60, enter --wedgeangle=60.""",default=60.0)
-														
-	#parser.add_argument("--wedgei",type=float,help="Missingwedge begining (in terms of its 'height' along Z. If you specify 0, the wedge will start right at the origin.", default=0.10)
-	#parser.add_argument("--wedgef",type=float,help="Missingwedge ending (in terms of its 'height' along Z. If you specify 1, the wedge will go all the way to the edge of the box.", default=0.9)
-	#parser.add_argument("--fitwedgepost", action="store_true", help="Fit the missing wedge AFTER preprocessing the subvolumes, not before, IF using the fsc.tomo comparator for --aligncmp or --raligncmp.", default=True)
-	#parser.add_argument("--writewedge", action="store_true", help="Write a subvolume with the shape of the fitted missing wedge if --raligncmp or --aligncmp are fsc.tomo. Default is 'False'. To turn on supply --writewedge", default=False)
-
 	parser.add_argument("--plotccc", action='store_true', help="""Turn this option on to generate
 		a plot of the ccc scores during each iteration.
 		Running on a cluster or via ssh remotely might not support plotting.""",default=False)
 
 	(options, args) = parser.parse_args()
 	
-	if 'fsc.tomo' in options.aligncmp or 'fsc.tomo' in options.raligncmp:
+	if 'fsc.tomo' in options.aligncmp or 'fsc.tomo' in options.faligncmp:
 		print "Wedge paramters ARE defined, see", options.wedgeangle, options.wedgei, options.wedgef
 	
-
-	#if int(options.groups) > 1 and int(options.iter) > 1:
-	#	print "ERROR: --groups cannot be > 1 if --iter is > 1."
 	
 	print "\n\n\n(e2spt_classaverage.py) options.refpreprocess is", options.refpreprocess
 	print "\n\n\n"
@@ -243,13 +233,32 @@ def main():
 		print "(e2spt_classaverage.py)(main) before calling calcAliStep, options.input is", options.input
 		options = calcAliStep(options)
 		
+		
+	if options.falign:
+		if 'search' in options.falign:
+			searchF = options.falign.split('search=')[-1].split(':')[0]			
+			if options.searchfine:
+				if int(options.searchfine) != int( searchF ):
+					print """\nERROR: --searchfine is different from search= provided through
+					--falign. There's no need to specify both, but if you insist, please
+					make them consistent to avoid ambiguities :-) ."""
+					sys.exit()
 	
 	if options.align:
 		print "There's options.align", options.align
 		if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align and 'options_translate_3d:' in options.align:
 			options.align += ':sym=' + str( options.sym )
 			print "And there's sym", options.sym
-	
+		
+		if 'search' in options.align:
+			searchA = options.align.split('search=')[-1].split(':')[0]			
+			if options.search:
+				if int(options.search) != int( searchA ):
+					print """\nERROR: --search is different from search= provided through
+					--align. There's no need to specify both, but if you insist, please
+					make them consistent to avoid ambiguities :-) ."""
+					sys.exit()
+		
 		if "rotate_translate_3d_grid" in options.align:
 			if "alt0" and "alt1" in options.align:
 				alt0 = int(options.align.split('alt0')[-1].split(':')[0].replace('=',''))	
@@ -308,20 +317,20 @@ def main():
 		print "(e2spt_classaverage.py) --align to parse is", options.align
 		options.align=parsemodopt(options.align)
 	
-	#if options.ralign and not options.raligncmp:
-	#	options.raligncmp = options.aligncmp	
+	#if options.falign and not options.faligncmp:
+	#	options.faligncmp = options.aligncmp	
 			
-	if options.ralign: 
-		options.ralign=parsemodopt(options.ralign)
-		print "(e2spt_classaverage.py) --ralign to parse is", options.ralign
+	if options.falign: 
+		options.falign=parsemodopt(options.falign)
+		print "(e2spt_classaverage.py) --falign to parse is", options.falign
 		
-	#print "\n\nTHE ALIGNERS ARE ", options.ralign, options.align
+	#print "\n\nTHE ALIGNERS ARE ", options.falign, options.align
 	
 	if options.aligncmp: 
 		options.aligncmp=parsemodopt(options.aligncmp)
 	
-	if options.raligncmp: 
-		options.raligncmp=parsemodopt(options.raligncmp)
+	if options.faligncmp: 
+		options.faligncmp=parsemodopt(options.faligncmp)
 	
 	if options.averager: 
 		options.averager=parsemodopt(options.averager)
@@ -572,17 +581,7 @@ def main():
 	
 		
 		
-		
-		
-	#		#groupPATH = options.input
-	#		if nrefs > 1:
-	#			groupID = 'group' + str(i+1).zfill(len(str(options.nrefs)))
-	#		
-	#			#groupDIR = originalPath + '/' + options.path + '/' + groupID
-	#		
-	#			groupStack = originalCompletePath + '/' + os.path.basename(options.input).replace('.hdf','group' + str(i+1).zfill(len(str(options.nrefs) ) ) + 'ptcls.hdf')
-	#		
-	#			divisioncmd = 'e2proc3d.py ' + options.input + ' ' + groupStack + ' --append --first=' + str(bottom_range) + ' --last=' + str(top_range)
+	#divisioncmd = 'e2proc3d.py ' + options.input + ' ' + groupStack + ' --append --first=' + str(bottom_range) + ' --last=' + str(top_range)
 				
 	'''		
 	This is where the actual class-averaging process begins.
@@ -782,45 +781,16 @@ def main():
 				"""Wait for alignments to finish and get results"""
 				#results=get_results(etc,tids,options.verbose,jsA,len(ptclnums),1)
 				results=get_results(etc,tids,options.verbose,jsA, nptcl ,1)
-
-
-
-
-				#if options.verbose>2 : 
-				#	print "Results:"
-				#	pprint(results)
-			#else:
-				#print "No parallelism specified"
-				#results=tasks
 			
 			if options.verbose > 2: 
 				print "Results:" 
 				pprint(results)
 						
-			#The reference for the next iteration should ALWAYS be the RAW AVERAGE of the aligned particles, since the reference will be "pre-processed" identically to the raw particles.
-			#There should be NO post-processing of the final averages, EXCEPT for visualization purposes (so, postprocessing is only applied to write out the output, if specified.
-			
-			#print "\n\n\nOptions.donotaverage is", options.donotaveragestack2match
-			#print "\n\n\n"
 			
 			if not options.donotaverage:					
 				ref = make_average(options,ic,options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.sym,options.groups,options.breaksym,options.nocenterofmass,options.verbose,it)
 	
-			#if options.groups > 1:
-			#	for i in range(len(ref)):
-			#		refc=ref[i]
-			#		
-			#		if options.savesteps:
-			#			refname = options.path + '/class_' + str(i).zfill( len( str(i) )) + '.hdf'
-			#			if options.postprocess:
-			#				ppref = refc.copy()
-			#				postprocess(ppref,None,options.normproc,options.postprocess)
-			#				ppref.write_image(refname,it)
-			#				#ppref.write_image("%s/class_%02d.hdf"%(options.path,i),it)
-			#			else:
-			#				refc.write_image(refname,it)
-			#				#refc.write_image("%s/class_%02d.hdf"%(options.path,i),it)
-			#else:
+			
 			
 			if options.savesteps and not options.donotaverage:
 				refname = options.path + '/class_' + str(ic).zfill( len( str(ic) )) + '.hdf'
@@ -841,19 +811,22 @@ def main():
 					#ppref.write_image("%s/class_%02d.hdf"%(options.path,ic),it)
 					ppref.write_image(refnamePP,it)
 			
-				#else:
-				#	#refname = options.path + '/class_' + str(ic).zfill( len( str(ic) )) + '.hdf'
-				#	
-				#	#ref.write_image("%s/class_%02d.hdf"%(options.path,ic),it)
+				
 		
 			jsA.close()
 		
-		
+			
+			classScoresList = [] 
+			
 			iii=0
 			for r in results:
 				if r and r[0]:	
 					score = r[0]['score']
 					classmxScores.set_value_at(ic,iii,score)
+					
+					posscore = math.fabs(score)
+					classScoresList.append(posscore  )
+					#print "\n\n\n\n\n\n\n\nThe appended positive score is", posscore
 					
 					weight=1.0
 					classmxWeights.set_value_at(ic,iii,weight)
@@ -898,6 +871,26 @@ def main():
 			classmxAlts.write_image(classmxFile,6)
 			classmxPhis.write_image(classmxFile,7)	
 			classmxScales.write_image(classmxFile,8)
+		
+		if options.plotccc:
+			#classScoresList.reverse()
+			maxY = max(classScoresList) + 1
+			
+			plotX = range( len(classScoresList) )
+			maxX = max(plotX) + 1
+			
+			plotName = 'spt_cccs.png'
+			
+			if int( ncls ) > 1:
+				plotName.replace('.png', '_' + str(ic).zfill( len (str (ncls))) + '.png')
+			
+			from e2spt_hac import textwriter
+			
+			txtname = plotName.replace('.png','.txt')
+			textwriter(classScoresList,options,txtname)
+			
+			from e2spt_hac import plotter
+			plotter (plotX, classScoresList, options, plotName, maxX, maxY)
 			
 		if options.verbose: 
 			print "Preparing final average"
@@ -1057,17 +1050,6 @@ def calcAliStep(options):
 		print """The coarse step %f was finer than one pixel at the edge of the particle, 
 		therefore it will be replaced with %f""" % (coarseStep,coarseStep1pix)
 	
-	#factor = 1
-	#if options.shrink and float( options.shrink ) > 1.0:
-	#	print "options.shrink is > 1, see:", options.shrink
-	#	factor = options.shrink
-	#	if options.shrinkrefine and float(options.shrinkrefine)>1.0:
-	#		print "options.shrinkrefine > 1, see:", options.shrinkrefine
-	#
-	#		factor = float(options.shrink) / float(options.shrinkrefine)
-	#	
-	#	coarseStep = coarseStep * factor
-	
 	CSrounded = math.floor( coarseStep * 100.00 )/100.00		#Round coarse step DOWN to scan slightly more finally than theoretically needed
 
 	
@@ -1083,13 +1065,17 @@ def calcAliStep(options):
 	searchC = hdr['nx']/2.0 - 2.0
 	searchF = 2
 	
-	if options.search:
+	if int( options.search ) > 1 :
 		searchC = options.search
 		print "searchC is", searchC
 	else:
 		if int(options.search) == 0:
 			searchC = 0
 			print "searchC is", searchC	
+
+		elif int( options.search ) == 1:
+			searchC = 1
+
 		elif options.mask:
 			if 'mask.sharp' in options.mask[0]:
 				if 'outer_radius' in options.mask[1]:
@@ -1111,37 +1097,22 @@ def calcAliStep(options):
 		searchF = options.searchfine
 		print "\nSearchF is", searchF
 		print "\n"
-
-	#else:
-	#	if options.maskfine:
-	#		if 'mask.sharp' in options.maskfine[0]:
-	#			if 'outer_radius' in options.maskfine[1]:
-	#				om = options.maskfine[1]['outer_radius']
-	#			
-	#				if '-' in str(om):
-	#
-	#	if options.shrinkrefine and options.shrinkrefine > 1:
-	#		searchF = int( searchF / options.shrink )
+	else:
+		searchF = 0
 	
 	options.align = 'rotate_translate_3d:search=' + str(searchC) +':delta=' + str(CSrounded) + ':dphi=' + str(CSrounded)
 	if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align:
 		options.align += ':sym=' + str(options.sym)
 	
-	if options.ralign and options.ralign != None and options.ralign != 'None':
-		options.ralign = 'refine_3d_grid:range=' + str(rangoRounded) + ':delta=' + str(fineStepRounded) + ':search=' + str(searchF)
+	if options.falign and options.falign != None and options.falign != 'None':
+		options.falign = 'refine_3d_grid:range=' + str(rangoRounded) + ':delta=' + str(fineStepRounded) + ':search=' + str(searchF)
 	else:
-		options.ralign = 'None'
-	
-	#options.align = 'rotate_translate_3d:search=8:delta=' + str(CSrounded) + ':dphi=' + str(CSrounded)
-	#if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align:
-	#	options.align += ':sym=' + str(options.sym)
-		
-	#options.ralign = 'refine_3d_grid:range=' + str(rangoRounded) + ':delta=' + str(fineStepRounded) + ':search=2'
+		options.falign = 'None'
 	
 	if options.verbose:
 		if options.verbose > 9:
 			options.align += ':verbose=1'
-			options.ralign += ':verbose=1'
+			options.falign += ':verbose=1'
 	
 	return options
 	
@@ -1213,7 +1184,7 @@ def binaryTreeRef(options,nptclForRef,ptclnums,ic,etc,classize):
 			#Unfortunately this tree structure limits the parallelism to the number of pairs at the current level :^(
 			if options.parallel:
 				#task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
-				#	options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,transform,options.verbose-1,options.randomizewedge,options.wedgeangle,options.wedgei,options.wedgef)
+				#	options.npeakstorefine,options.align,options.aligncmp,options.falign,options.faligncmp,options.shrink,options.shrinkrefine,transform,options.verbose-1,options.randomizewedge,options.wedgeangle,options.wedgei,options.wedgef)
 				
 				task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options,transform,0)
 				tasks.append(task)
@@ -1783,7 +1754,7 @@ CLASS TO PARALLELIZE ALIGNMENTS
 class Align3DTask(JSTask):
 	"""This is a task object for the parallelism system. It is responsible for aligning one 3-D volume to another, with a variety of options"""
 
-	#def __init__(self,fixedimage,image,ptcl,label,mask,normproc,preprocess,lowpass,highpass,npeakstorefine,align,aligncmp,ralign,raligncmp,shrink,shrinkrefine,transform,verbose,randomizewedge,wedgeangle,wedgei,wedgef):
+	#def __init__(self,fixedimage,image,ptcl,label,mask,normproc,preprocess,lowpass,highpass,npeakstorefine,align,aligncmp,falign,faligncmp,shrink,shrinkrefine,transform,verbose,randomizewedge,wedgeangle,wedgei,wedgef):
 	def __init__(self,fixedimage,image,ptclnum,label,options,transform,currentIter):
 	
 		"""fixedimage and image may be actual EMData objects, or ["cache",path,number]
@@ -1800,7 +1771,7 @@ class Align3DTask(JSTask):
 		
 		JSTask.__init__(self,"ClassAv3d",data,{},"")
 
-		#self.classoptions={"options":options,"ptcl":ptcl,"label":label,"mask":options.mask,"normproc":options.normproc,"preprocess":options.preprocess,"lowpass":options.lowpass,"highpass":options.highpass,"npeakstorefine":options.npeakstorefine,"align":options.align,"aligncmp":options.aligncmp,"ralign":options.ralign,"raligncmp":options.raligncmp,"shrink":options.shrink,"shrinkrefine":options.shrinkrefine,"transform":transform,"verbose":options.verbose,"randomizewedge":options.randomizewedge,"wedgeangle":options.wedgeangle,"wedgei":options.wedgei,"wedgef":options.wedgef}
+		#self.classoptions={"options":options,"ptcl":ptcl,"label":label,"mask":options.mask,"normproc":options.normproc,"preprocess":options.preprocess,"lowpass":options.lowpass,"highpass":options.highpass,"npeakstorefine":options.npeakstorefine,"align":options.align,"aligncmp":options.aligncmp,"falign":options.falign,"faligncmp":options.faligncmp,"shrink":options.shrink,"shrinkrefine":options.shrinkrefine,"transform":transform,"verbose":options.verbose,"randomizewedge":options.randomizewedge,"wedgeangle":options.wedgeangle,"wedgei":options.wedgei,"wedgef":options.wedgef}
 		self.classoptions={"options":options,"ptclnum":ptclnum,"label":label,"transform":transform,"currentIter":currentIter}
 	
 	def execute(self,callback=None):
@@ -1969,7 +1940,7 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 			sfixedimage = preprocessing(options,options.mask,options.clipali,options.normproc,options.shrink,options.lowpass,options.highpass,options.preprocess,options.threshold,fixedimage,0,'ref','yes')
 		
 		#Only preprocess again if there's fine alignment, AND IF the parameters for fine alignment are different
-		if options.ralign and (options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkrefine) > 1):
+		if options.falign and (options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkrefine) > 1):
 			s2fixedimage = preprocessing(options,options.mask,options.clipali,options.normproc,options.shrinkrefine,options.lowpassfine,options.highpassfine,options.preprocessfine,options.threshold,fixedimage,0,'ref','no')
 		
 		elif not options.notprocfinelikecoarse:
@@ -1992,7 +1963,7 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 	
 	#Only preprocess again if there's fine alignment, AND IF the parameters for fine alignment are different
 	
-	if options.ralign and (options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkrefine) > 1):
+	if options.falign and (options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkrefine) > 1):
 		s2image = preprocessing(options,options.mask,options.clipali,options.normproc,options.shrinkrefine,options.lowpassfine,options.highpassfine,options.preprocessfine,options.threshold,image,ptclindx,'ptcls','no')
 		print "There was fine preprocessing"
 		#sys.exit()
@@ -2063,9 +2034,9 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 		
 		# Scale translation
 		scaletrans=1.0
-		if options.ralign and options.shrinkrefine:
+		if options.falign and options.shrinkrefine:
 			scaletrans = options.shrink/float(options.shrinkrefine)
-		elif options.shrink and not options.ralign:
+		elif options.shrink and not options.falign:
 			scaletrans=float(options.shrink)
 			
 		if scaletrans>1.0:
@@ -2086,17 +2057,17 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 		for i,j in enumerate(bestcoarse): 
 			print "coarse %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
 
-	if options.ralign:
+	if options.falign:
 		print "\n(e2spt_classaverage.py)(alignment) Will do fine alignment, over these many peaks", len(bestcoarse)
 		# Now loop over the individual peaks and refine each
 		bestfinal=[]
 		peaknum=0
 		for bc in bestcoarse:
-			options.ralign[1]["xform.align3d"] = bc["xform.align3d"]
+			options.falign[1]["xform.align3d"] = bc["xform.align3d"]
 			
 			#print "\n\n\nRight BEFORE FINE alignment, the boxsize of the REFINE image is", s2image['nx'],s2image['ny'],s2image['nz']
 			#print "And the transform passed in is", bc["xform.align3d"]
-			#ali = s2image.align(options.ralign[0],s2fixedimage,options.ralign[1],options.raligncmp[0],options.raligncmp[1])
+			#ali = s2image.align(options.falign[0],s2fixedimage,options.falign[1],options.faligncmp[0],options.faligncmp[1])
 			
 			
 			print s2image['nx'] == s2fixedimage['nx'],  s2image['nx'], type(s2image['nx']), s2fixedimage['nx'], type(s2fixedimage['nx'])
@@ -2109,7 +2080,7 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 				print "\nThe reference's FINE size is", s2fixedimage['nx'],s2fixedimage['ny'],s2fixedimage['nz']
 				sys.exit('MIE')
 			
-			ali = s2image.align(options.ralign[0],s2fixedimage,options.ralign[1],options.raligncmp[0],options.raligncmp[1])
+			ali = s2image.align(options.falign[0],s2fixedimage,options.falign[1],options.faligncmp[0],options.faligncmp[1])
 
 			try: 					
 				bestfinal.append({"score":ali["score"],"xform.align3d":ali["xform.align3d"],"coarse":bc})
@@ -2155,7 +2126,7 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 		#	print i
 		pass
 	
-	if bestfinal[0]["score"] == 1.0e10 and options.ralign:
+	if bestfinal[0]["score"] == 1.0e10 and options.falign:
 		print "Error: all refine alignments failed for %s. May need to consider altering filter/shrink parameters. Using coarse alignment, but results are likely invalid."%self.options["label"]
 	
 	if options.verbose: 
