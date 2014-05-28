@@ -2090,10 +2090,12 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 			datanvec = [n1,n2,n3]
 			if(int(sym[1:]) >1):
 				iq = len(tempref)
+				iq3 = 3*iq
+				iq6 = 6*iq
 				tempref += (tempref+tempref)
-				refvecs = [None]*3*len(tempref)
+				refvecs = [None]*3*iq3
 				dphi = 360.0/int(sym[1:])
-				for i in xrange(len(tempref)):
+				for i in xrange(iq):
 					phi   = tempref[i].get_attr("phi")
 					theta = tempref[i].get_attr("theta")
 					n1,n2,n3 = getfvec(phi-dphi,theta)
@@ -2101,10 +2103,10 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 					refvecs[3*i+1] = n2
 					refvecs[3*i+2] = n3
 					n1,n2,n3 = getfvec(phi+dphi,theta)
-					refvecs[3*i+0+iq] = n1
-					refvecs[3*i+1+iq] = n2
-					refvecs[3*i+2+iq] = n3
-				for i in xrange(len(tempref),2*len(tempref)):
+					refvecs[3*i+0+iq6] = n1
+					refvecs[3*i+1+iq6] = n2
+					refvecs[3*i+2+iq6] = n3
+				for i in xrange(iq,2*iq):
 					n1 = tempref[i].get_attr("n1")
 					n2 = tempref[i].get_attr("n2")
 					n3 = tempref[i].get_attr("n3")
