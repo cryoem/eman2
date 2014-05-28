@@ -114,7 +114,7 @@ def main():
 	parser.add_argument("--precision",type=float,default=1.0,help="""Precision in pixels to use
 		when figuring out alignment parameters automatically using --radius. Precision 
 		would be the number of pixels that the the edge of the specimen is moved (rotationally) during the 
-		finest sampling, --ralign. If precision is 1, then the precision of alignment will be that of 
+		finest sampling, --falign. If precision is 1, then the precision of alignment will be that of 
 		the sampling (apix of your images) times the --shrinkfine factor specified.""")
 	
 	parser.add_argument("--radius", type=float, help="""Hydrodynamic radius of the particle in Angstroms. 
@@ -128,7 +128,7 @@ def main():
 	
 	parser.add_argument("--searchfine", type=float,default=2.0,help=""""During FINE alignment
 		translational search in X, Y and Z, in pixels. Only works when --radius is provided.
-		Otherwise, search parameters are provided with the aligner, through --ralign.""")
+		Otherwise, search parameters are provided with the aligner, through --falign.""")
 
 	parser.add_argument("--exclusive_class_min", type=int, help="""The minimum multiplicity 
 		(number of particles that went into an average) to look for mutually exclusive classes/averages.
@@ -204,10 +204,10 @@ def main():
 	parser.add_argument("--aligncmp",type=str,help="""The comparator used for the --align aligner. 
 		Default is the internal tomographic ccc. Do not specify unless you need to use another specific aligner.""",default="ccc.tomo")
 
-	parser.add_argument("--ralign",type=str,help="""This is the second stage aligner used to refine the first alignment. 
+	parser.add_argument("--falign",type=str,help="""This is the second stage aligner used to refine the first alignment. 
 		Default is refine_3d_grid:range=12:delta=4, specify 'None' to disable""", default="refine_3d_grid:range=12:delta=4")
 	
-	parser.add_argument("--raligncmp",type=str,help="""The comparator used by the second stage aligner. 
+	parser.add_argument("--faligncmp",type=str,help="""The comparator used by the second stage aligner. 
 		Default is the internal tomographic ccc""",default="ccc.tomo")
 	
 	parser.add_argument("--averager",type=str,help="""The type of averager used to produce the class average. 
@@ -241,13 +241,30 @@ def main():
 		It randomizes the position of the particles BEFORE alignment, to minimize missing wedge bias 
 		and artifacts during symmetric alignment where only a fraction of space is scanned""", default=False,)
 
-	parser.add_argument("--minscore",type=float,help="""Percent of the maximum score to use as a threshold for the minimum score to allow.
-													For example, if the best pair in the first iteration yielded a score of 15.0, and you supply --minscore=0.666,
-													any pair wise alignments with a score lower than 15*0.666=10 will be forbidden.""", default=0.0)
+	parser.add_argument("--minscore",type=float,help="""Percent of the maximum score to 
+		use as a threshold for the minimum score to allow.
+		For example, if the best pair in the first iteration yielded a score of -15.0, and 
+		you supply --minscore=0.9, any pair-wise alignments with a score worse than 
+		-15*0.9 = -13.5 will be forbidden.
+		Remember that 'more negative' is 'better' in EMAN2.""", default=0.0)
 
 	parser.add_argument("--savepreprocessed",action="store_true", help="""Will save stacks 
 		of preprocessed particles (one for coarse alignment and one for fine alignment if 
 		preprocessing options are different).""", default=False)
+
+
+	parser.add_argument("--maxmergenum",type=int,default=0,help="""This is the maximum number
+		of particles ('multiplicity') that any two given averages can have to be allowed to merge.
+		For example, if at some point (some given iteration in the algorithm) a particular
+		average "A" is an average of 10 particles, and --maxmergenum=8, this average "A" will
+		only be allowed to merge with other averages that have 8 particles or less in them.
+		This maintains "big classes" in a mutually exclusive state.
+		For example, if --maxmergenum=1, particles will merge pair-wise in the first round;
+		but after that averages with more than one particle will NOT merge each other, 
+		because they will contain 2 or more particles, which exceeds 'maxmergenum'. So in
+		subsequent iterations, the averages formed in the first iteration will continue to
+		take up raw particles or new averages (between single raw particles) might emerge;
+		but "large averages" never inter-merge""")		
 
 
 	'''
@@ -259,15 +276,6 @@ def main():
 														In reality, you should enter here the range of your DATA COLLECTION.
 														I.e., if you collected your tiltseries from -60 to 60, enter --wedgeangle=60.""",default=60.0)
 	
-	parser.add_argument("--wedgei",type=float,help="""Missingwedge begining 
-		(in terms of its 'height' along Z. If you specify 0, the wedge will start right at the origin.""", default=0.15)
-		
-	parser.add_argument("--wedgef",type=float,help="""Missingwedge ending (in terms of its 'height' along Z. 
-		If you specify 1, the wedge will go all the way to the edge of the box.""", default=0.9)
-	
-	parser.add_argument("--fitwedgepost", action="store_true", help="""Fit the missing wedge AFTER preprocessing the subvolumes, 
-		NOT before, IF using the fsc.tomo comparator for --aligncmp or --raligncmp.""", default=False)
-
 	parser.add_argument("--plotccc", action='store_true', help="""Turn this option on to generate
 		a plot of the ccc scores for all comparisons for the FIRST iteration of all vs all.
 		Running on a cluster or via ssh remotely might not support plotting.""",default=False)
@@ -316,14 +324,14 @@ def main():
 	if options.align:
 		options.align=parsemodopt(options.align)
 	
-	if options.ralign: 
-		options.ralign=parsemodopt(options.ralign)
+	if options.falign: 
+		options.falign=parsemodopt(options.falign)
 	
 	if options.aligncmp: 
 		options.aligncmp=parsemodopt(options.aligncmp)
 	
-	if options.raligncmp: 
-		options.raligncmp=parsemodopt(options.raligncmp)
+	if options.faligncmp: 
+		options.faligncmp=parsemodopt(options.faligncmp)
 	
 	if options.averager: 
 		options.averager=parsemodopt(options.averager)
@@ -543,11 +551,21 @@ def allvsall(options):
 		particletag = roundtag + '_' + str(i).zfill(fillfactor)
 		newptcls.update({particletag :a})
 		
-		if 'spt_ID' not in a.get_attr_dict():					#spt_multiplicity keeps track of how many particles were averaged to make any given new particle (set to 1 for the raw data)
-			a['spt_ID'] = particletag
-		elif not a['spt_ID']:
-			a['spt_ID'] = particletag	
+		#if 'spt_ID' not in a.get_attr_dict():					#spt_multiplicity keeps track of how many particles were averaged to make any given new particle (set to 1 for the raw data)
+		a['spt_ID'] = particletag
+		#elif not a['spt_ID']:
+		#	a['spt_ID'] = particletag	
 		
+		spt_dentoID_orig = 'raw' + str( i ).zfill(4)
+		
+		#if "spt_dendoID" not in a.get_attr_dict():
+		a['spt_dendoID'] = spt_dentoID_orig
+		#elif not a['spt_dendoID']:
+		#	a['spt_dendoID'] = spt_dentoID_orig	
+		
+		#print "spt_dendoID has been set to", spt_dendoID
+		#print "for the particle it is", a['spt_dendoID']
+			
 		a.write_image(options.input,i)						#Overwrite the raw stack with one that has the appropriate header parameters set to work with e2spt_hac	
 		
 		allptclsRound.update({particletag : [a,{i:totalt}]})			
@@ -569,6 +587,7 @@ def allvsall(options):
 		FinalAliStack.update({i:rawptcl})
 	
 	maxScore = 1
+	absoluteMaxScore = 1
 	
 	dendocount = 0
 	
@@ -649,7 +668,7 @@ def allvsall(options):
 				task = Align3DTaskAVSA(newstack,newstack, jj, reftag, particletag, ptcl1, ptcl2,"Aligning particle#%s VS particle#%s in iteration %d" % (reftag,particletag,k),options,k)
 
 				#task = Align3DTaskAVSA(newstack,newstack, jj, reftag, particletag, ptcl1, ptcl2,"Aligning particle#%s VS particle#%s in iteration %d" % (reftag,particletag,k),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
-				#options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
+				#options.npeakstorefine,options.align,options.aligncmp,options.falign,options.faligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
 				
 				tasks.append(task)
 				
@@ -681,7 +700,7 @@ def allvsall(options):
 					print "Setting the following comparison: %s vs %s in ALL VS ALL" %(refkey,particlekey)
 					
 					#task = Align3DTaskAVSA( newstack, options.path + '/oldptclstack.hdf', jj , refkey, particlekey, ptcl1, ptcl2,"Aligning particle round#%d_%d VS particle#%s, in iteration %d" % (k,ptcl1,particlekey.split('_')[0] + str(ptcl2),k),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
-					#options.npeakstorefine,options.align,options.aligncmp,options.ralign,options.raligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
+					#options.npeakstorefine,options.align,options.aligncmp,options.falign,options.faligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
 					
 					task = Align3DTaskAVSA( newstack, options.path + '/oldptclstack.hdf', jj , refkey, particlekey, ptcl1, ptcl2,"Aligning particle round#%d_%d VS particle#%s, in iteration %d" % (k,ptcl1,particlekey.split('_')[0] + '_' + str(ptcl2),k),options,k)
 					
@@ -741,6 +760,9 @@ def allvsall(options):
 				
 				for cn in range(options.clusters):
 					clusters.update({ cn:set([]) })
+		
+		
+		
 			
 		for i in results:
 			if options.verbose > 0:
@@ -766,9 +788,9 @@ def allvsall(options):
 
 			print "\n(e2spt_hac.py, before plotter) Score appended to plot! and its type, and for pair", thisScore, type(thisScore), indxA, indxB
 
-			
 			'''
-			Allocate particles in a comparison to a cluster so long as they haven't been allocated to another cluster.
+			Allocate particles in a comparison to a cluster so long as they haven't 
+			been allocated to another cluster.
 			All particles high on the SORTED list will fill in the highest clusters.
 			In theory, if the particles are good quality, particles could cluster with other 
 			like-particles from the first round, particularly if their masses are different.
@@ -811,6 +833,10 @@ def allvsall(options):
 		
 			#compNum+=1
 	
+	
+	
+		
+	
 		#if k == 0:
 		simmxFile = options.path + '/simmx_' + str( k ).zfill( len (str (options.iter))) + '.hdf'
 		simmxScores.write_image(simmxFile,0)
@@ -825,12 +851,12 @@ def allvsall(options):
 		#from e2figureplot import plotter
 		
 		
-		print "Before calling plotter, y len is", len(plotY)
+		print "\nBefore calling plotter, y len is", len(plotY)
 		
 		plotName = simmxFile.replace('.hdf','_PLOT.png')
 		plotX = [int(i+1) for i in range(len(plotY))]
 		
-		print "plotX is", plotX
+		print "\nPlotX is", plotX
 		
 		if k==0:
 			maxY=max(plotY)
@@ -840,7 +866,8 @@ def allvsall(options):
 			plotter (plotX, plotY, options,plotName,maxX,maxY)
 	
 		#from e2figureplot import textwriter
-		textwriterinfo(plotX, compsInfo, options, plotName.replace('.png','_info.txt') )
+		#textwriterinfo(plotX, compsInfo, options, plotName.replace('.png','_info.txt') )
+		
 		textwriter(plotY, options, plotName.replace('.png','.txt') )
 
 
@@ -856,20 +883,69 @@ def allvsall(options):
 		roundRawInfoFile = options.path + '/aliInfo_'+ str( k ).zfill( len(str(options.iter)) ) + '.json'
 		roundInfoDict = js_open_dict(roundRawInfoFile) #Write particle orientations to json database.
 		
+		
+		
+		
+		
+		
+		simmxtxtinfo = []
+		
+		maxScore =  min( plotY ) 		#As absurd as it may seem, the minimum is the 
+										#maximum score because in EMAN2 'more negative' is better
+										#plotY is a list with the ranked scores already
+		
+		if k == 0:									#In the first iteration, the best global score is the best for iteration 0
+			absoluteMaxScore = maxScore
+		else:
+			if maxScore < absoluteMaxScore:			#As the algorithm progresses, averages might improve, yielding improved scores
+				absoluteMaxScore = maxScore			#If such is the case, make absoluteMaxScore equal to the best score so far amongst all iterations
+												
+		
+		
+		scoreFilter = absoluteMaxScore * round( float( options.minscore ), 4 )
+		multiplicityFilter = 0
+		
 		for z in range(len(results)):
-			if options.minscore:
-				score = results[z]['score']			
-				if score > maxScore * float( options.minscore ):
-					print "Breaking loop because the next comparison score", score
-					print "Is worse (larger, more positive, in EMAN2) than the specified percentage", options.minscore
-					print "Of the maximum score from the initial simmx matrix", maxScore
-					break
 			
+			
+			score = round(float(results[z]['score']), 4)
+			
+			print "\n\n\n\n\nSCORE IS", score	
+				
+			ptcl1dendoID = allptclsMatrix[k][results[z]['ptclA']][0]['spt_dendoID']				
+			ptcl2dendoID = allptclsMatrix[k][results[z]['ptclB']][0]['spt_dendoID']
+			simmxtxtinfo.append( [score,ptcl1dendoID,ptcl2dendoID] )
+			
+			multiplicity1 = int(allptclsMatrix[k][results[z]['ptclA']][0]['spt_multiplicity'])
+			multiplicity2 = int(allptclsMatrix[k][results[z]['ptclB']][0]['spt_multiplicity'])
+			#multiplicitySum = multiplicity1 + multiplicity2
+			
+			if options.minscore:		
+				if score > scoreFilter:
+					print "\nSkipping comparison because the score is", score
+					print "And that's worse (larger, more positive, in EMAN2) than the specified percentage", options.minscore
+					print "Of the best maximum score so far", absoluteMaxScore
+			
+			if options.maxmergenum:
+				if multiplicity1 > int( options.maxmergenum ) and multiplicity2 > int( options.maxmergenum ):
+					multiplicityFilter = 1
+				
+				if multiplicityFilter:
+					print """\nSkipping comparison because at least one of the particles
+						in the comparison has a multiplicity greater than --maxmergenum.
+						--maxmergenum is""", options.maxmergenum
+					print """Whereas the multiplicities of the involved particles are""", multiplicity1, multiplicity2
+					
+				
 			key = str(z).zfill( len( str( nptcls*(nptcls-1)/2 )) )
 			
 			aliInfo = {}
 			
-			if results[z]['ptclA'] not in tried and results[z]['ptclB'] not in tried:
+			
+			if results[z]['ptclA'] not in tried and results[z]['ptclB'] not in tried and score < scoreFilter and not multiplicityFilter:
+				
+				
+				
 				
 				
 				tried.add(results[z]['ptclA'])							#If the two particles in the pair have not been tried, and they're the next "best pair", they MUST be averaged
@@ -900,10 +976,10 @@ def allvsall(options):
 				#print "\n\n"
 						
 						
-				if len(ptcl1['spt_ptcl_indxs']) == 1:
-					dendo1 = 'raw' + str( ptcl1['spt_ptcl_indxs'][0] ).zfill(4)
-				else:
-					dendo1 = ptcl1['spt_dendoID']	
+				#if len(ptcl1['spt_ptcl_indxs']) == 1:
+				#	dendo1 = 'raw' + str( ptcl1['spt_ptcl_indxs'][0] ).zfill(4)
+				#else:
+				dendo1 = ptcl1['spt_dendoID']	
 								
 				for p in ptcl1['spt_ptcl_indxs']:											
 					pastt = ptcl1_indxs_transforms[p]
@@ -960,10 +1036,10 @@ def allvsall(options):
 				
 				
 				
-				if len(ptcl2['spt_ptcl_indxs']) == 1:
-					dendo2 = 'raw' + str( ptcl2['spt_ptcl_indxs'][0] ).zfill(4)
-				else:
-					dendo2 = ptcl2['spt_dendoID']
+				#if len(ptcl2['spt_ptcl_indxs']) == 1:
+				#	dendo2 = 'raw' + str( ptcl2['spt_ptcl_indxs'][0] ).zfill(4)
+				#else:
+				dendo2 = ptcl2['spt_dendoID']
 				
 				for p in ptcl2['spt_ptcl_indxs']:						#All the particles in ptcl2's history need to undergo the new transformation before averaging
 					print "I'm fixing the transform for this index in the new average", p	#(multiplied by any old transforms, all in one step, to avoid multiple interpolations)
@@ -1105,13 +1181,18 @@ def allvsall(options):
 				
 				print "I will normalize the average"
 				
-				# Make the mask first, use it to normalize (optionally), then apply it 
-				#mask=EMData(avg['nx'],avg['ny'],avg['nz'])
-				#mask.to_one()
+				
+				
+				
+				#Make the mask first, use it to normalize (optionally), then apply it 
+				mask=EMData(avg['nx'],avg['ny'],avg['nz'])
+				mask.to_one()
 				
 				#if options.mask:
 				#	#print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
-				#	mask.process_inplace(options.mask[0],options.mask[1])
+			
+				mask.process_inplace( 'mask.sharp', {'outer_radius':-2})
+				avg.mult(mask)
 		
 				# normalize
 				#if options.normproc:
@@ -1136,6 +1217,7 @@ def allvsall(options):
 				
 				avg.process_inplace('normalize')
 				
+				avg.mult(mask)
 				
 				dendonew = 'avg' + str(dendocount).zfill(4)
 				
@@ -1146,7 +1228,7 @@ def allvsall(options):
 				avg.write_image(options.path + '/round' + str(k).zfill(fillfactor) + '_averages.hdf',mm)
 				
 				dendo=open(dendofile,'a')
-				dendo.write(dendo1 + '\taveraged with \t' + str(dendo2) + '\tinto \t' + str(dendonew) + ' | particles in average: ' + str(avg['spt_ptcl_indxs']) + '\n')
+				dendo.write(dendo1 + '\taveraged with \t' + str(dendo2) + '\tinto \t' + str(dendonew) + '\twith score=' + str(score) + ' | particles in average: ' + str(avg['spt_ptcl_indxs']) + '\n')
 				dendo.close()
 				
 				
@@ -1176,6 +1258,9 @@ def allvsall(options):
 			
 			roundInfoDict[ key ] = aliInfo
 	
+		
+		textwriterinfo(simmxtxtinfo, options, plotName.replace('.png','_info.txt') )
+
 		
 		if k == 0:
 			if options.clusters and int(options.clusters) >1:
@@ -1337,7 +1422,7 @@ class Align3DTaskAVSA(JSTask):
 	"""This is a task object for the parallelism system. It is responsible for aligning one 3-D volume to another, with a variety of options"""
 	
 	
-	#def __init__(self,fixedimagestack,imagestack,comparison,ptcl1,ptcl2,p1n,p2n,label,mask,normproc,preprocess,lowpass,highpass,npeakstorefine,align,aligncmp,ralign,raligncmp,shrink,shrinkrefine,verbose):
+	#def __init__(self,fixedimagestack,imagestack,comparison,ptcl1,ptcl2,p1n,p2n,label,mask,normproc,preprocess,lowpass,highpass,npeakstorefine,align,aligncmp,falign,faligncmp,shrink,shrinkrefine,verbose):
 
 	def __init__(self,fixedimagestack,imagestack,comparison, ptclA, ptclB, pAn, pBn,label,classoptions, round):
 		
@@ -1345,7 +1430,7 @@ class Align3DTaskAVSA(JSTask):
 		data={"fixedimage":fixedimagestack,"image":imagestack}
 		JSTask.__init__(self,"SptHac",data,{},"")
 
-		#self.options={"comparison":comparison,"ptcl1":ptcl1,"ptcl2":ptcl2,"p1number":p1n,"p2number":p2n,"label":label,"mask":mask,"normproc":normproc,"preprocess":preprocess,"lowpass":lowpass,"highpass":highpass,"npeakstorefine":npeakstorefine,"align":align,"aligncmp":aligncmp,"ralign":ralign,"raligncmp":raligncmp,"shrink":shrink,"shrinkrefine":shrinkrefine,"verbose":verbose}
+		#self.options={"comparison":comparison,"ptcl1":ptcl1,"ptcl2":ptcl2,"p1number":p1n,"p2number":p2n,"label":label,"mask":mask,"normproc":normproc,"preprocess":preprocess,"lowpass":lowpass,"highpass":highpass,"npeakstorefine":npeakstorefine,"align":align,"aligncmp":aligncmp,"falign":falign,"faligncmp":faligncmp,"shrink":shrink,"shrinkrefine":shrinkrefine,"verbose":verbose}
 		self.classoptions={"comparison":comparison,"ptclA":ptclA,"ptclB":ptclB,"pAn":pAn,"pBn":pBn,"label":label,"classoptions":classoptions, 'round':round}
 	
 	def execute(self,callback=None):
@@ -1389,8 +1474,8 @@ class Align3DTaskAVSA(JSTask):
 		return {"final":bestfinal,"coarse":bestcoarse}
 		
 		
-def textwriterinfo(xdata,ydata,options,name):
-	if len(xdata) == 0 or len(ydata) ==0:
+def textwriterinfo(ydata,options,name):
+	if len(ydata) ==0:
 		print "ERROR: Attempting to write an empty text file!"
 		sys.exit()
 	
@@ -1401,10 +1486,14 @@ def textwriterinfo(xdata,ydata,options,name):
 	
 	f=open(name,'w')
 	lines=[]
-	for i in range(len(xdata)):
-		line2write = 'comparison#' + str(xdata[i]) + ' ptclA #' + str(ydata[i][-2]) + ' vs ptclB #' + str(ydata[i][-1])+ ' score=' + str(ydata[i][0]) + '\n'
+	for i in range(len(ydata)):
+		line2write = 'comparison#' + str(i) + ' ' + str(ydata[i][-2]) + ' vs ' + str(ydata[i][-1])+ ' score=' + str(ydata[i][0]) + '\n'
 		#print "THe line to write is"
 		lines.append(line2write)
+	
+	#print "Thare are these many lines", len (lines)
+	#print "Cause y data is", len(ydata)
+	#sys.exit()
 	
 	f.writelines(lines)
 	f.close()
@@ -1422,7 +1511,7 @@ def textwriter(ydata,options,name):
 	f=open(name,'w')
 	lines=[]
 	for i in range(len(ydata)):
-		line2write = str(i) + ' ' + str(ydata) + '\n'
+		line2write = str(i) + ' ' + str(ydata[i]) + '\n'
 		#print "THe line to write is"
 		lines.append(line2write)
 	
@@ -1446,12 +1535,17 @@ def plotter(xaxis,yaxis,options,name,maxX,maxY):
 	FORMAT AXES
 	'''
 	
-	yaxis.sort()
+	#yaxis.sort()
 	
 	for i in range(len(yaxis)):
-		yaxis[i] = float( yaxis[i] )*-1.0
+		
+		if float(yaxis[i]) < 0.0:
+			yaxis[i] = float( yaxis[i] )*-1.0
 		
 		print "Positive Y score to plot is", yaxis[i]
+	
+	yaxis.sort()
+	yaxis.reverse()
 				
 	matplotlib.rc('xtick', labelsize=16) 
 	matplotlib.rc('ytick', labelsize=16) 
@@ -1477,10 +1571,13 @@ def plotter(xaxis,yaxis,options,name,maxX,maxY):
 	ax.get_yaxis().tick_left()
 	ax.tick_params(axis='both',reset=False,which='both',length=8,width=3)
 	
+	matplotlib.pyplot.xticks( xaxis )
+	
+	
 	ax.set_xlabel('Comparison number (n)', fontsize=18, fontweight='bold')
 	ax.set_ylabel('Normalized cross correlation score', fontsize=18, fontweight='bold')
 	
-	print "Xaxis to plot is", xaxis	
+	print "\nXaxis to plot is", xaxis	
 	#plt.scatter(xaxis,yaxis,alpha=1,zorder=1,s=20)
 	
 	#pylab.rc("axes", linewidth=2.0)
@@ -1489,7 +1586,9 @@ def plotter(xaxis,yaxis,options,name,maxX,maxY):
 	#pylab.ylabel('Normalized cross correlation score', fontsize=18, fontweight='bold')
 	
 	#ax.scatter(xaxis,yaxis)
-	ax.plot(yaxis,marker='o')
+	ax.plot(xaxis,yaxis,marker='o')
+	
+	
 	print "\n\n\nThe values to plot are"
 	for ele in range(len(xaxis)):
 		print xaxis[ele],yaxis[ele]
