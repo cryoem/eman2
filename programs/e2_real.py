@@ -40,7 +40,7 @@ from EMAN2 import *
 
 failed=False
 try:
-	if os.getenv("DISPLAY")==None: raise Exception
+	if get_platform()=="Linux" and os.getenv("DISPLAY")==None: raise Exception
 
 	from PyQt4 import QtCore, QtGui, QtOpenGL
 	from emapplication import EMApp
