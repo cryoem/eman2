@@ -1856,31 +1856,36 @@ void BaldwinWoolfordReconstructor::insert_pixel(const float& x, const float& y, 
 
 void BackProjectionReconstructor::setup()
 {
-	int size = params["size"];
 	image = new EMData();
-	nx = size;
-	ny = size;
-	if ( (int) params["zsample"] != 0 ) nz = params["zsample"];
-	else nz = size;
+	vector<int> size=params["size"];
+	nx = size[0];
+	ny = size[1];
+	nz = size[2];
 	image->set_size(nx, ny, nz);
 }
 
 EMData* BackProjectionReconstructor::preprocess_slice(const EMData* const slice, const Transform& t)
 {
 
-	EMData* return_slice = slice->process("normalize.edgemean");
-	return_slice->process_inplace("filter.linearfourier");
+// 	EMData* return_slice = slice->process("normalize.edgemean");
+// 	return_slice->process_inplace("filter.linearfourier");
 
-	Transform tmp(t);
-	tmp.set_rotation(Dict("type","eman")); // resets the rotation to 0 implicitly
-	Vec2f trans = tmp.get_trans_2d();
-	float scale = tmp.get_scale();
-	bool mirror = tmp.get_mirror();
-	if (trans[0] != 0 || trans[1] != 0 || scale != 1.0 ) {
-		return_slice->transform(tmp);
-	} else if ( mirror == true ) {
-		return_slice = slice->process("xform.flip",Dict("axis","x"));
-	}
+	EMData* return_slice;
+
+	return_slice = slice->process("filter.linearfourier");
+//	return_slice = slice->copy();
+	
+// 	Transform tmp(t);
+// 	tmp.set_rotation(Dict("type","eman")); // resets the rotation to 0 implicitly
+// 	Vec2f trans = tmp.get_trans_2d();
+// 	float scale = tmp.get_scale();
+// 	bool mirror = tmp.get_mirror();
+// 	if (trans[0] != 0 || trans[1] != 0 || scale != 1.0 ) {
+// 		return_slice->transform(tmp);
+// 	} 
+// 	if ( mirror == true ) {
+// 		return_slice->process_inplace("xform.flip",Dict("axis","x"));
+// 	}
 
 	return return_slice;
 }
@@ -1897,16 +1902,17 @@ int BackProjectionReconstructor::insert_slice(const EMData* const input, const T
 		return 1;
 	}
 
-	Transform * transform;
-	if ( input->has_attr("xform.projection") ) {
-		transform = (Transform*) (input->get_attr("xform.projection")); // assignment operator
-	} else {
-		transform = new Transform(t); // assignment operator
-	}
+// 	Transform * transform;
+// 	if ( input->has_attr("xform.projection") ) {
+// 		transform = (Transform*) (input->get_attr("xform.projection")); // assignment operator
+// 	} else {
+// 		transform = new Transform(t); // assignment operator
+// 	}
 	EMData* slice = preprocess_slice(input, t);
 
-	float weight = params["weight"];
-	slice->mult(weight);
+	// Clearly weight isn't a useful concept in back-projection without compensating with an exact-filter
+// 	float weight = params["weight"];
+// 	slice->mult(weight);
 
 	EMData *tmp = new EMData();
 	tmp->set_size(nx, ny, nz);
@@ -1919,20 +1925,34 @@ int BackProjectionReconstructor::insert_slice(const EMData* const input, const T
 	for (int i = 0; i < nz; ++i) {
 		memcpy(&tmp_data[nxy * i], slice_data, nxy_size);
 	}
+	tmp->update();
 
-	transform->set_scale(1.0);
-	transform->set_mirror(false);
-	transform->set_trans(0,0,0);
-	transform->invert();
+// 	transform->set_scale(1.0);
+// 	transform->set_mirror(false);
+// 	transform->set_trans(0,0,0);
+// 	transform->invert();
 
-	tmp->transform(*transform);
+	tmp->transform(t);
 	image->add(*tmp);
 
-	if(transform) {delete transform; transform=0;}
+// 	if(transform) {delete transform; transform=0;}
 	delete tmp;
 	delete slice;
 
 	return 0;
+}
+
+int BackProjectionReconstructor::determine_slice_agreement(EMData*  input_slice, const Transform & arg, const float weight,bool sub)
+{
+	// Are these exceptions really necessary? (d.woolford)
+	if (!input_slice) throw NullPointerException("EMData pointer (input image) is NULL");
+
+	input_slice->set_attr("reconstruct_norm",1.0f);
+	input_slice->set_attr("reconstruct_absqual",1.0f);
+	input_slice->set_attr("reconstruct_weight",1.0f);
+
+	return 0;
+
 }
 
 EMData *BackProjectionReconstructor::finish(bool)
@@ -1943,14 +1963,20 @@ EMData *BackProjectionReconstructor::finish(bool)
 
 	for ( vector<Transform>::const_iterator it = syms.begin(); it != syms.end(); ++it ) {
 
-		EMData tmpcopy(*image);
-		tmpcopy.transform(*it);
-		image->add(tmpcopy);
+//		it->printme();
+		Transform t=*it;
+		EMData *tmpcopy = image->process("xform",Dict("transform",(EMObject)&t));
+		image->add(*tmpcopy);
+		delete tmpcopy;
 	}
 
 	image->mult(1.0f/(float)sym->get_nsym());
 	delete sym;
-
+	if (image->get_xsize()==image->get_ysize() && image->get_ysize()==image->get_zsize()) {
+		image->process_inplace("mask.sharp",Dict("outer_radius",image->get_xsize()/2-1));
+	}
+	else printf("No masking %d %d %d\n",image->get_xsize(),image->get_ysize(),image->get_zsize());
+		
 	EMData *ret = image;
 	image = 0 ;
 	return ret;

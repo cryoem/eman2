@@ -892,6 +892,17 @@ namespace EMAN
 		 */
 		virtual int insert_slice(const EMData* const slice, const Transform & euler,const float weight);
 
+		/** Dummy function which always returns the same values. It could be implemented, but isn't, as this reconstructor is really just for testing.
+	  	 * @param input_slice The EMData slice to be compared
+	  	 * @param euler The orientation of the slice as a Transform object
+	  	 * @param weight A weighting factor for this slice, generally the number of particles in a class-average. May be ignored by some reconstructors
+		 * @param sub Flag indicating whether to subtract the slice from the volume before comparing. May be ignored by some reconstructors
+		 * @return 0 if OK. 1 if error.
+		* @exception NullPointerException if the input EMData pointer is null
+		* @exception ImageFormatException if the image is complex as opposed to real
+		*/
+		virtual int determine_slice_agreement(EMData* slice, const Transform &euler, const float weight=1.0, bool sub=true );
+
 		virtual EMData *finish(bool doift=true);
 
 		virtual string get_name() const
@@ -912,10 +923,10 @@ namespace EMAN
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("size", EMObject::INT, "Necessary. The x and y dimensions of the input images.");
+			d.put("size", EMObject::INTARRAY, "Required. The dimensions of the real-space output volume, including any padding (must be handled by the calling application). Assumed that apix x/y/z identical.");
 			d.put("weight", EMObject::FLOAT, "Optional. A temporary value set prior to slice insertion, indicative of the inserted slice's weight. Default sis 1.");
 			d.put("sym", EMObject::STRING, "Optional. The symmetry to impose on the final reconstruction. Default is c1");
-			d.put("zsample", EMObject::INT, "Optional. The z dimensions of the reconstructed volume.");
+			d.put("verbose", EMObject::BOOL, "Optional. Toggles writing useful information to standard out. Default is false.");
 			return d;
 		}
 		
@@ -931,9 +942,8 @@ namespace EMAN
 		{
 			params["weight"] = 1.0;
 			params["use_weights"] = true;
-			params["size"] = 0;
 			params["sym"] = "c1";
-			params["zsample"] = 0;
+			params["verbose"] = false;
 		}
 
 		EMData* preprocess_slice(const EMData* const slice, const Transform& t);
