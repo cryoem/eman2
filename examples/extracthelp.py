@@ -36,7 +36,7 @@ for j,i in enumerate(lines):
 
 		options.append(com)
 
-print options
+#print options
 
 #print parser.__dict__.keys()
 #print parser.optionslist

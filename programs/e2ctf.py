@@ -113,7 +113,8 @@ NOTE: This program should be run from the project directory, not from within the
 	parser.add_argument("--nosmooth",action="store_true",help="Disable smoothing of the background (running-average of the log with adjustment at the zeroes of the CTF)",default=False, guitype='boolbox', row=7, col=1, rowspan=1, colspan=1, mode='autofit')
 	parser.add_argument("--refinebysnr",action="store_true",help="Refines the defocus value by looking at the high resolution smoothed SNR. Requires good starting defocus. Important: also replaces the SNR with a smoothed version.",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode='genoutp')
 	parser.add_argument("--phaseflip",action="store_true",help="Perform phase flipping after CTF determination and writes to specified file.",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='genoutp[True]')
-	parser.add_argument("--phaseflipproc",help="Specify a --process style processor to be applied after phase flipping. Useful for masking, etc.",default=None, guitype='strbox', row=6, col=0, rowspan=1, colspan=3, mode='genoutp')
+	parser.add_argument("--phaseflipproc",help="Optionally specify a --process style processor to be applied after phase flipping. Useful for masking, etc.",default=None, guitype='strbox', row=6, col=0, rowspan=1, colspan=3, mode='genoutp')
+	parser.add_argument("--phaseflipproc2",help="Optionally specify a second --process style processor to be applied after phase flipping. Useful for masking, etc.",default=None, guitype='strbox', row=7, col=0, rowspan=1, colspan=3, mode='genoutp')
 	parser.add_argument("--phasefliphp",action="store_true",help="Perform phase flipping with auto-high pass filter",default=False, guitype='boolbox', row=5, col=0, rowspan=1, colspan=1, mode='genoutp')
 	parser.add_argument("--wiener",action="store_true",help="Wiener filter (optionally phaseflipped) particles.",default=False, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode='genoutp[True]')
 #	parser.add_argument("--virtualout",type=str,help="Make a virtual stack copy of the input images with CTF parameters stored in the header. BDB only.",default=None)
@@ -335,10 +336,12 @@ def write_e2ctf_output(options):
 				else: wienerout="particles/{}__ctf_wiener.hdf".format(name)
 			else : wienerout=None
 
+			phaseprocout=None
 			if options.phaseflipproc!=None:
-				(processor_name, processor_dict) = parsemodopt(options.phaseflipproc)
-				phaseprocout=("particles/{}__ctf_flip_proc.hdf".format(name),processor_name,processor_dict)
-			else: phaseprocout=None
+				phaseprocout=["particles/{}__ctf_flip_proc.hdf".format(name),parsemodopt(options.phaseflipproc)]
+				
+				if options.phaseflipproc2!=None:
+					phaseprocout.append(parsemodopt(options.phaseflipproc2))
 
 			try: ctf=js_open_dict(info_name(filename))["ctf"][0]		# EMAN2CTF object from disk
 			except:
@@ -741,7 +744,9 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,phaseproc=No
 
 			if phaseproc!=None:
 				out2=out.copy()				# processor may or may not be in Fourier space
-				out2.process_inplace(phaseproc[1],phaseproc[2])
+				# we take a sequence of processor option 2-tuples
+				for op in phaseproc[1:]:
+					out2.process_inplace(op[0],op[1])
 				out2["ctf"]=ctf
 				out2["apix_x"] = ctf.apix
 				out2["apix_y"] = ctf.apix

@@ -61,6 +61,7 @@ def main():
 	parser.add_argument("--tries", type=int, default=10, help="The number of different initial models to generate in search of a good one", guitype='intbox', row=2, col=1, rowspan=1, colspan=1)
 	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="Optionally shrink the input particles by an integer amount prior to reconstruction. Default=0, no shrinking", guitype='shrinkbox', row=2, col=2, rowspan=1, colspan=1)
 	parser.add_argument("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos",default="c1", guitype='symbox', row=4, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--maskproc", default=None, type=str,help="Default=none. If specified, this mask will be performed after the built-in automask, eg - mask.soft to remove the core of a virus", )
 #	parser.add_argument("--savemore",action="store_true",help="Will cause intermediate results to be written to flat files",default=False, guitype='boolbox', expert=True, row=5, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--orientgen",type=str, default="eman",help="The type of orientation generator. Default is safe. See e2help.py orientgens", guitype='combobox', choicelist='dump_orientgens_list()', expert=True, row=2, col=2, rowspan=1, colspan=1)
@@ -97,6 +98,15 @@ def main():
 			sfcurve.update()
 	except : sfcurve=None
 
+	if options.maskproc!=None :
+		mask2=EMData(boxsize,boxsize,boxsize)
+		mask2.to_one()
+		parms=parsemodopt(options.maskproc)
+		if parms[0]=="mask.auto3d":
+			print "Error, maskproc may not be mask.auto3d, it must be a processor that does not rely on the input map density to function"
+			sys.exit(1)
+		mask2.process_inplace(parms[0],parms[1])
+	else: mask2=None
 
 	# angles to use for refinement
 	sym_object = parsesym(options.sym)
@@ -132,7 +142,7 @@ def main():
 
 	tasks=[]
 	for t in xrange(options.tries):
-		tasks.append(InitMdlTask(particles_name,len(ptcls),orts,t,sfcurve,options.iter,options.sym,options.verbose))
+		tasks.append(InitMdlTask(particles_name,len(ptcls),orts,t,sfcurve,options.iter,options.sym,mask2,options.verbose))
 
 	taskids=etc.send_tasks(tasks)
 	alltaskids=taskids[:]			# we keep a copy for monitoring progress
@@ -173,8 +183,8 @@ def main():
 
 class InitMdlTask(JSTask):
 
-	def __init__(self,ptclfile=None,ptcln=0,orts=[],tryid=0,strucfac=None,niter=5,sym="c1",verbose=0) :
-		data={"images":["cache",ptclfile,(0,ptcln)],"strucfac":strucfac,"orts":orts}
+	def __init__(self,ptclfile=None,ptcln=0,orts=[],tryid=0,strucfac=None,niter=5,sym="c1",mask2=None,verbose=0) :
+		data={"images":["cache",ptclfile,(0,ptcln)],"strucfac":strucfac,"orts":orts,"mask2":mask2}
 		JSTask.__init__(self,"InitMdl",data,{"tryid":tryid,"iter":niter,"sym":sym,"verbose":verbose},"")
 
 
@@ -186,6 +196,7 @@ class InitMdlTask(JSTask):
 		verbose=options["verbose"]
 		boxsize=ptcls[0].get_xsize()
 		apix=ptcls[0]["apix_x"]
+		mask2=self.data["mask2"]
 
 		# We make one new reconstruction for each loop of t
 		threed=[make_random_map(boxsize,sfcurve)]		# initial model
@@ -270,7 +281,8 @@ class InitMdlTask(JSTask):
 			threed[-1].process_inplace("mask.gaussian",{"inner_radius":boxsize/3.0,"outer_radius":boxsize/12.0})
 			threed[-1].process_inplace("filter.lowpass.gauss",{"cutoff_abs":.2})
 			threed[-1].process_inplace("normalize.edgemean")
-			if it>1 : threed[-1].process_inplace("mask.auto3d",{"radius":boxsize/6,"threshold":1.2,"nmaxseed":60,"nshells":boxsize/20,"nshellsgauss":boxsize/20})
+			if it>1 : threed[-1].process_inplace("mask.auto3d",{"radius":boxsize/6,"threshold":threed[-1]["sigma_nonzero"]*.85,"nmaxseed":30,"nshells":boxsize/20,"nshellsgauss":boxsize/20})
+			if mask2!=None:threed[-1].mult(mask2)
 			threed[-1]["apix_x"]=apix
 			threed[-1]["apix_y"]=apix
 			threed[-1]["apix_z"]=apix

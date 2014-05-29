@@ -35,10 +35,13 @@
 #
 
 import EMAN2
+import os
 from EMAN2 import *
 
 failed=False
 try:
+	if os.getenv("DISPLAY")==None: raise Exception
+
 	from PyQt4 import QtCore, QtGui, QtOpenGL
 	from emapplication import EMApp
 	import IPython.lib.inputhook
