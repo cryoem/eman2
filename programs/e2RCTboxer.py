@@ -133,7 +133,7 @@ class RCTprocessor:
 			tiltbox_list.get_boxes_db(input)
 			tiltdata = tiltbox_list.get_tiltdata_from_db()
 			if tiltbox_list.load_boxes_from_db():
-				output = output.replace(".hdf","") + "__" + tiltbox_list.db['boxes_rct'][0][2] + ".hdf"
+				output = output.replace(".hdf","").replace("_ptcls","") + "_" + tiltbox_list.db['boxes_rct'][0][2] + "_ptcls.hdf"
 				for i,box in enumerate(tiltbox_list.boxlist):
 					image = box.get_image(input,self.options.boxsize)
 					if tiltdata:
@@ -163,7 +163,7 @@ class RCTprocessor:
 			tiltbox_list = EMBoxList()
 			tiltbox_list.get_boxes_db(input)
 			if tiltbox_list.load_boxes_from_db():
-				output = output.replace(".box","") + "__" + tiltbox_list.db['boxes_rct'][0][2] + ".box"
+				output = output.replace(".box","") + "_" + tiltbox_list.db['boxes_rct'][0][2] + ".box"
 				boxfile = open(output, 'w')
 				for i,box in enumerate(tiltbox_list.boxlist):
 					boxfile.write("%d\t%d\t%d\t%d\t-1\n" % (int(box.x - self.options.boxsize/2),int(box.y - self.options.boxsize/2),self.options.boxsize,self.options.boxsize))

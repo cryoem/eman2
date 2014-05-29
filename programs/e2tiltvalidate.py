@@ -89,7 +89,7 @@ def main():
 	# "gui" mode options
 	parser.add_argument("--path", type=str,help="The folder the results are placed", default="", guitype='dirbox', dirbasename='TiltValidate', row=0, col=0,rowspan=1, colspan=2, mode="gui")
 	parser.add_argument("--radcut", type = float, default=-1, help="For use in the GUI, truncate the polar plot after R. -1 = no truncation", guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="gui")
-	parser.add_argument("--gui",action="store_true",help="Start the GUI for viewing the tiltvalidate plots",default=True, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode="gui[True]")
+	parser.add_argument("--gui",action="store_true",help="Start the GUI for viewing the tiltvalidate plots",default=False, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode="gui[True]")
 	parser.add_argument("--planethres", type=float, help="Maximum out of plane threshold for the tiltaxis. 0 = perfectly in plane, 1 = normal to plane", default=360.0, guitype='floatbox', row=5, col=0, rowspan=1, mode="gui")
 	parser.add_argument("--datalabelscolor", type=str, help="Set the color of the data labels. Any vaild matplotlib color is ok", default='#00ff00', guitype='strbox', row=6, col=0, rowspan=1, colspan=1, mode="gui")
 	parser.add_argument("--datalabels", action="store_true",help="Add data labels to the plot", default=False, guitype='boolbox', row=6, col=1, rowspan=1, mode="gui")
@@ -100,6 +100,7 @@ def main():
 	(options, args) = parser.parse_args()
 		
 	# Run the GUI if in GUI mode
+	print options
 	if options.gui:
 		display_validation_plots(options.path, options.radcut, options.planethres, plotdatalabels=options.datalabels, color=options.datalabelscolor, plotzaxiscolor=options.colorzaxis)
 		exit(0)
