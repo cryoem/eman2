@@ -49,7 +49,7 @@ def main():
 		Specify directory and prefix and suffix (type) of micrographs to process through --indir, --nameroot, and --micsuffix
 		Specify output directories pwrot and partres as arguments.
 		
-			mpirun -np 16 sxcter.py pwrot partres --indir=. --nameroot=micrograph_PSC23_A8A_1GD_11112_135 --micsuffixmrc --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --MPI
+			mpirun -np 16 sxcter.py pwrot partres --indir=. --nameroot=micrograph_PSC23_A8A_1GD_11112_135 --micsuffix=mrc --wn=512 --apix=2.29 --Cs=2.0 --voltage=300 --ac=10.0 --MPI
 		After the program stops, it is advisable to concatenate all output files in partres directory:
 		cd partres
 		cat */* >>allctfs.txt
