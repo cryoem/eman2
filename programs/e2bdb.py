@@ -146,7 +146,8 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 	for path in args:
 		if path.lower()[:4]=="bdb:" and not "#" in path :
 			uu = os.path.split(path)
-			path=uu[0]+"#"+uu[1]
+			if(uu[0] == ''):    path="bdb:.#"+path[4:]
+			else:               path=uu[0]+"#"+uu[1]
 		if path.lower()[:4]!="bdb:" : path="bdb:"+path
 		if '#' in path :
 			if len(args)>1 : print "\n",path,":"
