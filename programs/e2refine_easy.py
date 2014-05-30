@@ -33,7 +33,7 @@
 
 try:
 	import matplotlib
-	matplotlib.use("Cairo")
+	matplotlib.use("AGG")
 	import matplotlib.pyplot as plt
 	pltcolors=["k","b","g","r","m","c","darkblue","darkgreen","darkred","darkmagenta","darkcyan","0.5"]
 except:
