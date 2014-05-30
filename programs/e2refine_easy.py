@@ -736,39 +736,48 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
 			traceback.print_exc()
 			append_html("<p>Error generating convergence plot in report. Please look at fsc* files in the refine_xx folder</p>")
 		
+		######################
 		### Resolution plot
+		### broken up into multiple try/except blocks because we need some of the info, even if plotting fails
 		try:
 			plt.title("Gold Standard Resolution")
 			plt.xlabel(r"Spatial Frequency (1/$\AA$)")
 			plt.ylabel("FSC")
-			fscs=[i for i in os.listdir(options.path) if "fsc_masked" in i and i[-4:]==".txt"]
-			fscs.sort(reverse=True)
-			nummx=int(fscs[0].split("_")[2][:2])
-			maxx=0.01
+		except:
+			pass
+		
+		fscs=[i for i in os.listdir(options.path) if "fsc_masked" in i and i[-4:]==".txt"]
+		fscs.sort(reverse=True)
+		nummx=int(fscs[0].split("_")[2][:2])
+		maxx=0.01
+		
+		# iterate over fsc curves
+		for f in fscs:
+			num=int(f.split("_")[2][:2])
 			
-			# iterate over fsc curves
-			for f in fscs:
-				num=int(f.split("_")[2][:2])
-				
-				# read the fsc curve
-				d=np.loadtxt("{}/{}".format(options.path,f)).transpose()
-				
-				# plot the curve
-				plt.plot(d[0],d[1],label=f[4:],color=pltcolors[(nummx-num)%12])
-				maxx=max(maxx,max(d[0]))
+			# read the fsc curve
+			d=np.loadtxt("{}/{}".format(options.path,f)).transpose()
 			
-				# find the resolution from the first curve (the highest numbered one)
-				if f==fscs[0]:
-					# find the 0.143 crossing
-					for si in xrange(2,len(d[0])-2):
-						if d[1][si-1]>0.143 and d[1][si]<=0.143 :
-							frac=(0.143-d[1][si])/(d[1][si-1]-d[1][si])		# 1.0 if 0.143 at si-1, 0.0 if .143 at si
-							lastres=d[0][si]*(1.0-frac)+d[0][si-1]*frac
+			# plot the curve
+			try: plt.plot(d[0],d[1],label=f[4:],color=pltcolors[(nummx-num)%12])
+			except: pass
+			maxx=max(maxx,max(d[0]))
+		
+			# find the resolution from the first curve (the highest numbered one)
+			if f==fscs[0]:
+				# find the 0.143 crossing
+				for si in xrange(2,len(d[0])-2):
+					if d[1][si-1]>0.143 and d[1][si]<=0.143 :
+						frac=(0.143-d[1][si])/(d[1][si-1]-d[1][si])		# 1.0 if 0.143 at si-1, 0.0 if .143 at si
+						lastres=d[0][si]*(1.0-frac)+d[0][si-1]*frac
+						try:
 							plt.annotate(r"{:1.1f} $\AA$".format(1.0/lastres),xy=(lastres,0.143),
 								xytext=((lastres*4+d[0][-1])/5.0,0.2),arrowprops={"width":1,"frac":.1,"headwidth":7,"shrink":.05})
-							break
-					else : lastres=0
+						except: pass
+						break
+				else : lastres=0
 			
+		try:
 			plt.axhline(0.0,color="k")
 			plt.axhline(0.143,color="#306030",linestyle=":")
 			plt.axis((0,maxx,-.02,1.02))
