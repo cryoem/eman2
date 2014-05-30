@@ -615,7 +615,7 @@ class GUIEvalImage(QtGui.QWidget):
 
 	def doImport(self,val=None):
 		"""Imports the currently selected image into a project"""
-		print "import ",base_name(self.setlist.item(self.curset).text())
+		print "import ",base_name(self.setlist.item(self.curset).text(),nodir=True)
 
 		# This is just the (presumably) unique portion of the filename
 		item=base_name(self.setlist.item(self.curset).text())
