@@ -83,6 +83,7 @@ power spectrum in various ways."""
 	parser.add_argument("--cs",type=float,help="Microscope Cs (spherical aberation)",default=None, guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="eval['self.pm().getCS()']")
 	parser.add_argument("--ac",type=float,help="Amplitude contrast (percentage, default=10)",default=10, guitype='floatbox', row=4, col=1, rowspan=1, colspan=1, mode="eval")
 	parser.add_argument("--box",type=int,help="Box size in grid mode ",default=512, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="eval")
+	parser.add_argument("--usefoldername",action="store_true",help="If you have the same image filename in multiple folders, and need to import into the same project, this will prepend the folder name on each image name",default=False,row=5, col=1, rowspan=1, colspan=1, mode="eval")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
@@ -92,7 +93,7 @@ power spectrum in various ways."""
 
 	from emapplication import EMApp
 	app=EMApp()
-	gui=GUIEvalImage(args,options.voltage,options.apix,options.cs,options.ac,options.box)
+	gui=GUIEvalImage(args,options.voltage,options.apix,options.cs,options.ac,options.box,options.usefoldername)
 	gui.show()
 	app.execute()
 
@@ -101,7 +102,7 @@ power spectrum in various ways."""
 
 
 class GUIEvalImage(QtGui.QWidget):
-	def __init__(self,images,voltage=None,apix=None,cs=None,ac=10.0,box=512):
+	def __init__(self,images,voltage=None,apix=None,cs=None,ac=10.0,box=512,usefoldername=False):
 		"""Implements the CTF fitting dialog using various EMImage and EMPlot2D widgets
 		'data' is a list of (filename,ctf,im_1d,bg_1d,quality)
 		'parms' is [box size,ctf,box coord,set of excluded boxnums,quality,oversampling]
@@ -120,6 +121,7 @@ class GUIEvalImage(QtGui.QWidget):
 		QtGui.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
 
+		self.nodir=not usefoldername
 		self.data=None
 		self.curset=0
 		self.calcmode=1
@@ -161,7 +163,7 @@ class GUIEvalImage(QtGui.QWidget):
 		# Now we try to restore old image information
 		for i in images:
 			try:
-				pd=js_open_dict(info_name(i))
+				pd=js_open_dict(info_name(i,nodir=self.nodir))
 				parms=pd["ctf_frame"]
 				parms[4]=pd["quality"]
 #				if parms==None : raise Exception
@@ -608,17 +610,17 @@ class GUIEvalImage(QtGui.QWidget):
 
 
 	def unImport(self,val=None):
-		print "unimport ",base_name(self.setlist.item(self.curset).text())
-		item=base_name(self.setlist.item(self.curset).text())
+		print "unimport ",base_name(self.setlist.item(self.curset).text(),nodir=self.nodir)
+		item=base_name(self.setlist.item(self.curset).text(),nodir=self.nodir)
 		try: os.unlink("micrographs/%s.hdf"%item)
 		except: print "Couldn't delete micrographs/%s.hdf"%item
 
 	def doImport(self,val=None):
 		"""Imports the currently selected image into a project"""
-		print "import ",base_name(self.setlist.item(self.curset).text(),nodir=True)
+		print "import ",base_name(self.setlist.item(self.curset).text(),nodir=self.nodir)
 
 		# This is just the (presumably) unique portion of the filename
-		item=base_name(self.setlist.item(self.curset).text())
+		item=base_name(self.setlist.item(self.curset).text(),nodir=self.nodir)
 
 		# create directory if necessary
 		if not os.access("micrographs",os.R_OK) :
@@ -642,7 +644,7 @@ class GUIEvalImage(QtGui.QWidget):
 	def writeCurParm(self):
 		"Called to store the current parameters for this image to the frameparms database"
 		parms=self.parms[self.curset]
-		js=js_open_dict(info_name(self.curfilename))
+		js=js_open_dict(info_name(self.curfilename,nodir=self.nodir))
 		js.setval("ctf_frame",parms,True)
 		js.setval("quality",parms[4])
 # 		db_fparms=db_open_dict("bdb:e2ctf.frameparms")

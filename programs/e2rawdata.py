@@ -48,6 +48,7 @@ def main():
 	parser.add_header(name="filterheader", help='Options below this label are specific to filtering', title="### filtering options ###", row=1, col=0, rowspan=1, colspan=2, mode='import,filter')
 	parser.add_argument("--invert",action="store_true",help="Invert contrast",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='filter[True]')
 	parser.add_argument("--edgenorm",action="store_true",help="Edge normalize",default=False, guitype='boolbox', row=2, col=1, rowspan=1, colspan=1, mode='filter[True]')
+	parser.add_argument("--usefoldername",action="store_true",help="If you have the same image filename in multiple folders, and need to import into the same project, this will prepend the folder name on each image name",default=False,row=2, col=2, rowspan=1, colspan=1, mode="eval")
 	parser.add_argument("--xraypixel",action="store_true",help="Filter X-ray pixels",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode='filter[True]')
 	parser.add_argument("--ctfest",action="store_true",help="Estimate defocus from whole micrograph",default=False, guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode='filter[True]')
 	parser.add_argument("--astigmatism",action="store_true",help="Includes astigmatism in automatic fitting",default=False, guitype='boolbox', row=3, col=2, rowspan=1, colspan=1, mode='filter[False]')
@@ -83,7 +84,7 @@ def main():
 			os.mkdir("raw_micrographs")
 			
 	for i,arg in enumerate(args):
-		base = base_name(arg,nodir=True)
+		base = base_name(arg,nodir=not options.usefoldername)
 		output = os.path.join(os.path.join(".","micrographs"),base+".hdf")
 		cmd = "e2proc2d.py %s %s --inplace"%(arg,output)
 
@@ -131,9 +132,9 @@ def main():
 			
 			#ctf.background=bg_1d
 			#ctf.dsbg=ds
-			db=js_open_dict(info_name(arg))
+			db=js_open_dict(info_name(arg,nodir=not options.usefoldername))
 			db["ctf_frame"]=[512,ctf,(256,256),set(),5,1]
-			print info_name(arg),ctf
+			print info_name(arg,nodir=not options.usefoldername),ctf
 
 		E2progress(logid,(float(i)/float(len(args))))
 
