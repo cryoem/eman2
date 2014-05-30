@@ -771,6 +771,7 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,phaseproc=No
 #				print fft2.get_ysize(),len(hpfilt)
 
 				if edgenorm: out.process_inplace("normalize.edgemean")
+				if invert: out.mult(-1.0)
 				#process_inplace("filter.highpass.autopeak")
 				out.write_image(phasehp,i)
 
