@@ -3288,10 +3288,8 @@ def angles_between_anglesets(angleset1, angleset2, indexes=None):
 	for i in xrange(len(angleset1)):
 		T1 = Transform({"type":"spider","phi":angleset1[i][0],"theta":angleset1[i][1],"psi":angleset1[i][2],"tx":0.0,"ty":0.0,"tz":0.0,"mirror":0,"scale":1.0})
 		T = T1*T2
-		phi   = T.get_params("spider")["phi"]
-		theta = T.get_params("spider")["theta"]
-		psi   = T.get_params("spider")["psi"]
-		angles.append([phi, theta, psi])
+		d = T.get_params("spider")
+		angles.append([d["phi"], d["theta"], d["psi"]])
 		angle_errors.append( angle_between_projections_directions(angles[i], angleset2[i]) )
 	return angle_errors
 

@@ -205,7 +205,7 @@ def align_diff_params(ali_params1, ali_params2):
 	for i in xrange(nima):
 		mirror1 = ali_params1[i*4+3]
 		mirror2 = ali_params2[i*4+3]
-		if abs(mirror1-mirror2) == mirror: 
+		if abs(mirror1-mirror2) == mirror:
 			alpha1 = ali_params1[i*4]
 			alpha2 = ali_params2[i*4]
 			if mirror1 == 1:
@@ -221,7 +221,7 @@ def align_diff_params(ali_params1, ali_params2):
 	for i in xrange(nima):
 		mirror1 = ali_params1[i*4+3]
 		mirror2 = ali_params2[i*4+3]
-		if abs(mirror1-mirror2) == mirror: 
+		if abs(mirror1-mirror2) == mirror:
 			alpha1 = ali_params1[i*4]
 			#alpha2 = ali_params2[i*4]
 			sx1 = ali_params1[i*4+1]
@@ -507,10 +507,10 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 		for i in xrange(n): sq += a[i]**2
 		return (sq-avg*avg/n)/n
 
-	# args - G, data -[T, d]
+	# args - G, data - [T, d]
 	def func(args, data, return_avg_pixel_error=True):
 
-		from math import pi, sin, cos
+		from math import pi, sin, cos, radians, degrees
 
 		ali_params = data[0]
 		d = data[1]
@@ -523,8 +523,8 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 		cosa = [0.0]*L
 		sina = [0.0]*L
 		for i in xrange(L):
-			cosa[i] = cos(args_list[i*3]*pi/180.0)
-			sina[i] = sin(args_list[i*3]*pi/180.0)
+			cosa[i] = cos(radians(args_list[i*3]))
+			sina[i] = sin(radians(args_list[i*3]))
 		sqr_pixel_error = [0.0]*N
 		ave_params = []
 		for i in xrange(N):
@@ -534,13 +534,13 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 			sy = [0.0]*L
 			for j in xrange(L):
 				if int(ali_params[j][i*4+3]) == 0:
-					sum_cosa += cos((args_list[j*3]+ali_params[j][i*4])*pi/180.0)
-					sum_sina += sin((args_list[j*3]+ali_params[j][i*4])*pi/180.0)
+					sum_cosa += cos(radians(args_list[j*3]+ali_params[j][i*4]))
+					sum_sina += sin(radians(args_list[j*3]+ali_params[j][i*4]))
 					sx[j] =  args_list[j*3+1] + ali_params[j][i*4+1]*cosa[j] + ali_params[j][i*4+2]*sina[j]
 					sy[j] =  args_list[j*3+2] - ali_params[j][i*4+1]*sina[j] + ali_params[j][i*4+2]*cosa[j]
 				else:
-					sum_cosa += cos((-args_list[j*3]+ali_params[j][i*4])*pi/180.0)
-					sum_sina += sin((-args_list[j*3]+ali_params[j][i*4])*pi/180.0)
+					sum_cosa += cos(radians(-args_list[j*3]+ali_params[j][i*4]))
+					sum_sina += sin(radians(-args_list[j*3]+ali_params[j][i*4]))
 					sx[j] = -args_list[j*3+1] + ali_params[j][i*4+1]*cosa[j] - ali_params[j][i*4+2]*sina[j]
 					sy[j] =  args_list[j*3+2] + ali_params[j][i*4+1]*sina[j] + ali_params[j][i*4+2]*cosa[j]
 			sqrtP = sqrt(sum_cosa**2+sum_sina**2)
@@ -743,7 +743,7 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 # args - G, data - [T, d]
 def ave2dtransform(args, data, return_avg_pixel_error=False):
 
-	from math import pi, sin, cos, radians
+	from math import pi, sin, cos, radians, degrees
 
 	ali_params = data[0]
 	d = data[1]
@@ -756,8 +756,8 @@ def ave2dtransform(args, data, return_avg_pixel_error=False):
 	cosa = [0.0]*L
 	sina = [0.0]*L
 	for i in xrange(L):
-		cosa[i] = cos(args_list[i*3]*pi/180.0)
-		sina[i] = sin(args_list[i*3]*pi/180.0)
+		cosa[i] = cos(radians(args_list[i*3]))
+		sina[i] = sin(radians(args_list[i*3]))
 	sqr_pixel_error = [0.0]*N
 	ave_params = []
 	for i in xrange(N):
@@ -767,13 +767,13 @@ def ave2dtransform(args, data, return_avg_pixel_error=False):
 		sy = [0.0]*L
 		for j in xrange(L):
 			if int(ali_params[j][i*4+3]) == 0:
-				sum_cosa += cos((args_list[j*3]+ali_params[j][i*4])*pi/180.0)
-				sum_sina += sin((args_list[j*3]+ali_params[j][i*4])*pi/180.0)
+				sum_cosa += cos(radians(args_list[j*3]+ali_params[j][i*4]))
+				sum_sina += sin(radians(args_list[j*3]+ali_params[j][i*4]))
 				sx[j] =  args_list[j*3+1] + ali_params[j][i*4+1]*cosa[j] + ali_params[j][i*4+2]*sina[j]
 				sy[j] =  args_list[j*3+2] - ali_params[j][i*4+1]*sina[j] + ali_params[j][i*4+2]*cosa[j]
 			else:
-				sum_cosa += cos((-args_list[j*3]+ali_params[j][i*4])*pi/180.0)
-				sum_sina += sin((-args_list[j*3]+ali_params[j][i*4])*pi/180.0)
+				sum_cosa += cos(radians(-args_list[j*3]+ali_params[j][i*4]))
+				sum_sina += sin(radians(-args_list[j*3]+ali_params[j][i*4]))
 				sx[j] = -args_list[j*3+1] + ali_params[j][i*4+1]*cosa[j] - ali_params[j][i*4+2]*sina[j]
 				sy[j] =  args_list[j*3+2] + ali_params[j][i*4+1]*sina[j] + ali_params[j][i*4+2]*cosa[j]
 		sqrtP = sqrt(sum_cosa**2+sum_sina**2)
@@ -792,8 +792,6 @@ def ave2dtransform(args, data, return_avg_pixel_error=False):
 		return sum(sqr_pixel_error)/N
 	else:
 		return sqr_pixel_error, ave_params
-
-
 
 def ordersegments(infilaments, ptclcoords):
 	'''
