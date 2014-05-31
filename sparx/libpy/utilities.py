@@ -3282,16 +3282,15 @@ def angles_between_anglesets(angleset1, angleset2, indexes=None):
 		angleset2 = new_ang2
 	
 	rot = rotation_between_anglesets(angleset1, angleset2)
+	T2 = Transform({"type":"spider","phi":rot[0],"theta":rot[1],"psi":rot[2],"tx":0.0,"ty":0.0,"tz":0.0,"mirror":0,"scale":1.0})
 	angles = []
 	angle_errors = []
 	for i in xrange(len(angleset1)):
-		prj = angleset1[i]
-		T1 = Transform({"type":"spider","phi":prj[0],"theta":prj[1],"psi":prj[2],"tx":0.0,"ty":0.0,"tz":0.0,"mirror":0,"scale":1.0})
-		T2 = Transform({"type":"spider","phi":rot[0],"theta":rot[1],"psi":rot[2],"tx":0.0,"ty":0.0,"tz":0.0,"mirror":0,"scale":1.0})
+		T1 = Transform({"type":"spider","phi":angleset1[i][0],"theta":angleset1[i][1],"psi":angleset1[i][2],"tx":0.0,"ty":0.0,"tz":0.0,"mirror":0,"scale":1.0})
 		T = T1*T2
-		phi = T.get_params("spider")["phi"]
+		phi   = T.get_params("spider")["phi"]
 		theta = T.get_params("spider")["theta"]
-		psi = T.get_params("spider")["psi"]
+		psi   = T.get_params("spider")["psi"]
 		angles.append([phi, theta, psi])
 		angle_errors.append( angle_between_projections_directions(angles[i], angleset2[i]) )
 	return angle_errors

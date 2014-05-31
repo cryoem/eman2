@@ -106,8 +106,8 @@ def calculate_matrix_rot(projs):
 	from utilities import rotation_between_anglesets
 	sc = len(projs)
 	matrix_rot  = [[[0.0,0.0,0.0,0.0,0.0] for i in xrange(sc)] for k in xrange(sc)]
-	for i in xrange(sc):
-		for j in xrange(i):
+	for i in xrange(sc-1):
+		for j in xrange(i+1,sc):
 			t1, t2, t3 = rotation_between_anglesets(projs[i], projs[j])
 			matrix_rot[i][j] = [t1, t2, t3, 0.0, 0.0]
 	return matrix_rot
