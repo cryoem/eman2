@@ -123,12 +123,12 @@ def main():
 		Then, the fine angular step is equal to 360/(2*pi*radius), and the coarse angular step 4 times that""", default=0)
 	
 	parser.add_argument("--search", type=int,default=8,help=""""During COARSE alignment
-		translational search in X, Y and Z, in pixels. Only works when --radius is provided.
-		Otherwise, search parameters are provided with the aligner, through --align.""")
+		translational search in X, Y and Z, in pixels. Default=8.
+		This WILL overwrite any search: provided through --align.""")
 	
 	parser.add_argument("--searchfine", type=int,default=2,help=""""During FINE alignment
-		translational search in X, Y and Z, in pixels. Only works when --radius is provided.
-		Otherwise, search parameters are provided with the aligner, through --falign.""")
+		translational search in X, Y and Z, in pixels. Default=2.
+		This WILL overwrite any search: provided through --falign.""")
 
 	parser.add_argument("--exclusive_class_min", type=int, help="""The minimum multiplicity 
 		(number of particles that went into an average) to look for mutually exclusive classes/averages.
@@ -199,16 +199,22 @@ def main():
 		to refine in search of the best final alignment. Default=4.""", default=4)
 	
 	parser.add_argument("--align",type=str,help="""This is the aligner use for alignments. 
-		Default is rotate_translate_3d:search=10:delta=12:dphi=12""", default="rotate_translate_3d:search=10:delta=12:dphi=12")
+		Default is rotate_translate_3d:search=8:delta=12:dphi=12""", default="rotate_translate_3d:search=8:delta=12:dphi=12")
 
 	parser.add_argument("--aligncmp",type=str,help="""The comparator used for the --align aligner. 
 		Default is the internal tomographic ccc. Do not specify unless you need to use another specific aligner.""",default="ccc.tomo")
 
+	parser.add_argument("--ralign",type=str,help="""DEPRECATED: See and use --falign.""", default="refine_3d_grid:range=12:delta=4:search=2")
+	
+	parser.add_argument("--raligncmp",type=str,help="""DEPRECATED: See and use --faligncmp""",default="ccc.tomo")
+	
+	
 	parser.add_argument("--falign",type=str,help="""This is the second stage aligner used to refine the first alignment. 
-		Default is refine_3d_grid:range=12:delta=4, specify 'None' to disable""", default="refine_3d_grid:range=12:delta=4")
+		Default is refine_3d_grid:range=12:delta=4:search=2, specify 'None' to disable""", default="refine_3d_grid:range=12:delta=4:search=2")
 	
 	parser.add_argument("--faligncmp",type=str,help="""The comparator used by the second stage aligner. 
 		Default is the internal tomographic ccc""",default="ccc.tomo")
+	
 	
 	parser.add_argument("--averager",type=str,help="""The type of averager used to produce the class average. 
 		Default=mean""",default="mean")
@@ -219,8 +225,12 @@ def main():
 	parser.add_argument("--shrink", type=int,default=1,help="""Optionally shrink the input volumes 
 		by an integer amount for coarse alignment.""")
 	
-	parser.add_argument("--shrinkrefine", type=int,default=1,help="""Optionally shrink the input volumes 
+	parser.add_argument("--shrinkfine", type=int,default=1,help="""Optionally shrink the input volumes 
 		by an integer amount for refine alignment.""")
+		
+	
+	parser.add_argument("--shrinkrefine", type=int,default=1,help="""DEPRECATED: See and use --shrinkfine instead. """)
+		
 	#parser.add_argument("--automask",action="store_true",help="Applies a 3-D automask before centering. Can help with negative stain data, and other cases where centering is poor.")
 	
 	parser.add_argument("--parallel",  help="""Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel""", default="thread:1")
@@ -267,15 +277,6 @@ def main():
 		but "large averages" never inter-merge""")		
 
 
-	'''
-	Parameters to compensate for the missing wedge using --cpm=fsc.tomo
-	'''
-	parser.add_argument("--wedgeangle",type=float,help="""Missing wedge angle, calculated as 90 minus the value yo provide, times 2. 
-														For example, --wedgeangle=60 will represent a wedge of size (90-60)*2=60.
-														--wedgeangle=70, results in a narrower wedge of size (90-70)*2=40.
-														In reality, you should enter here the range of your DATA COLLECTION.
-														I.e., if you collected your tiltseries from -60 to 60, enter --wedgeangle=60.""",default=60.0)
-	
 	parser.add_argument("--plotccc", action='store_true', help="""Turn this option on to generate
 		a plot of the ccc scores for all comparisons for the FIRST iteration of all vs all.
 		Running on a cluster or via ssh remotely might not support plotting.""",default=False)
@@ -285,18 +286,113 @@ def main():
 	
 	'''
 	If --radius of the particle is provided, we calculate the optimal alignment steps for 
-	coarse and fine alignment rounds using --shrink and --shrinkrefine options and apix info
+	coarse and fine alignment rounds using --shrink and --shrinkfine options and apix info
 	'''
 	if options.radius:
 		from e2spt_classaverage import calcAliStep
 		options = calcAliStep(options)
 			
 	if options.align:
-		print "There's options.align", options.align
+		#print "There's options.align", options.align
 		if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align:
 			options.align += ':sym' + str( options.sym )
-			print "And there's sym", options.sym
+			#print "And there's sym", options.sym
+			
+		if 'search' not in options.align:		
+			options.align += ':search' + str( options.search )
+			
+		else:
+			searchA = options.align.split('search=')[-1].split(':')[0]
+			searchdefault = 8
+			
+			if options.search and options.search != searchdefault:
+						
+				prefix = options.align.split('search=')[0]
+				trail = options.align.split('search=')[-1].split(':')[-1]
+			
+				options.align =  prefix + 'search=' + str(options.search)
+				if len(trail) > 2 and '=' in trail:
+					options.align += ':' + trail 
+			
+				print """\nWARNING: --search is different from search= provided through
+				--align or its default value of 8. There's no need to specify both, 
+				but if you did, --search takes precedence :-) ."""
+				#sys.exit()
 
+	
+		
+		if "rotate_translate_3d_grid" in options.align:
+			if "alt0" and "alt1" in options.align:
+				alt0 = int(options.align.split('alt0')[-1].split(':')[0].replace('=',''))	
+				alt1 = int(options.align.split('alt1')[-1].split(':')[0].replace('=',''))
+				
+				print "alt0 and alt1 are", alt0,alt1, type(alt0), type(alt1)
+				print alt1-alt0 == 0
+				#sys.exit()
+				
+				if alt1-alt0 == 0:
+					print """\nERROR: alt0 and alt1 cannot be equal for rotate_translate_3d_grid.
+					If you want to inactivate searches in this angle, provide a alt0 and alt1
+					such that alt1-alt0 is NOT ZERO, and provide a step size for dalt that is larger
+					than this difference. For example: 
+					alt0=0:alt1=1:dalt=2."""
+					sys.exit()
+					
+			if "phi0" and "phi1" in options.align:
+				phi0 = int(options.align.split('phi0')[-1].split(':')[0].replace('=',''))	
+				phi1 = int(options.align.split('phi1')[-1].split(':')[0].replace('=',''))
+				
+				print "phi0 and phi1 are", phi0,phi1, type(phi0), type(phi1)
+				print phi1-phi0 == 0
+				#sys.exit()
+				
+				if phi1-phi0 == 0:
+					print """\nERROR: phi0 and phi1 cannot be equal for rotate_translate_3d_grid.
+					If you want to inactivate searches in this angle, provide a phi0 and phi1
+					such that phi1-phi0 is NOT ZERO, and provide a step size for dphi that is larger
+					than this difference. For example: 
+					phi0=0:phi1=1:dphi=2."""
+					sys.exit()
+					
+			if "az0" and "az1" in options.align:
+				az0 = int(options.align.split('az0')[-1].split(':')[0].replace('=',''))	
+				az1 = int(options.align.split('az1')[-1].split(':')[0].replace('=',''))
+				
+				print "az0 and az1 are", az0,az1, type(az0), type(az1)
+				print az1-az0 == 0
+				#sys.exit()
+				
+				if az1-az0 == 0:
+					print """\nERROR: az0 and az1 cannot be equal for rotate_translate_3d_grid.
+					If you want to inactivate searches in this angle, provide a az0 and az1
+					such that az1-az0 is NOT ZERO, and provide a step size for daz that is larger
+					than this difference. For example: 
+					az0=0:az1=1:daz=2."""
+					sys.exit()
+	
+	
+	if options.falign:
+		if 'search' not in options.falign:		
+			options.falign += ':search' + str( options.searchfine )
+			
+		else:
+			searchA = options.falign.split('search=')[-1].split(':')[0]
+			searchfinedefault = 2
+			
+			if options.searchfine and options.searchfine != searchfinedefault:
+						
+				prefix = options.falign.split('search=')[0]
+				trail = options.falign.split('search=')[-1].split(':')[-1]
+			
+				options.falign =  prefix + 'search=' + str(options.searchfine)
+				if len(trail) > 2 and '=' in trail:
+					options.falign += ':' + trail 
+			
+				print """\nWARNING: --searchfine is different from search= provided through
+				--falign or its default value of 2. There's no need to specify both, but 
+				if you did, --searchfine takes precedence :-) ."""
+				#sys.exit()
+	
 	'''
 	Make the directory where to create the database where the results will be stored
 	'''
@@ -668,7 +764,7 @@ def allvsall(options):
 				task = Align3DTaskAVSA(newstack,newstack, jj, reftag, particletag, ptcl1, ptcl2,"Aligning particle#%s VS particle#%s in iteration %d" % (reftag,particletag,k),options,k)
 
 				#task = Align3DTaskAVSA(newstack,newstack, jj, reftag, particletag, ptcl1, ptcl2,"Aligning particle#%s VS particle#%s in iteration %d" % (reftag,particletag,k),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
-				#options.npeakstorefine,options.align,options.aligncmp,options.falign,options.faligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
+				#options.npeakstorefine,options.align,options.aligncmp,options.falign,options.faligncmp,options.shrink,options.shrinkfine,options.verbose-1)
 				
 				tasks.append(task)
 				
@@ -700,7 +796,7 @@ def allvsall(options):
 					print "Setting the following comparison: %s vs %s in ALL VS ALL" %(refkey,particlekey)
 					
 					#task = Align3DTaskAVSA( newstack, options.path + '/oldptclstack.hdf', jj , refkey, particlekey, ptcl1, ptcl2,"Aligning particle round#%d_%d VS particle#%s, in iteration %d" % (k,ptcl1,particlekey.split('_')[0] + str(ptcl2),k),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
-					#options.npeakstorefine,options.align,options.aligncmp,options.falign,options.faligncmp,options.shrink,options.shrinkrefine,options.verbose-1)
+					#options.npeakstorefine,options.align,options.aligncmp,options.falign,options.faligncmp,options.shrink,options.shrinkfine,options.verbose-1)
 					
 					task = Align3DTaskAVSA( newstack, options.path + '/oldptclstack.hdf', jj , refkey, particlekey, ptcl1, ptcl2,"Aligning particle round#%d_%d VS particle#%s, in iteration %d" % (k,ptcl1,particlekey.split('_')[0] + '_' + str(ptcl2),k),options,k)
 					
@@ -1422,7 +1518,7 @@ class Align3DTaskAVSA(JSTask):
 	"""This is a task object for the parallelism system. It is responsible for aligning one 3-D volume to another, with a variety of options"""
 	
 	
-	#def __init__(self,fixedimagestack,imagestack,comparison,ptcl1,ptcl2,p1n,p2n,label,mask,normproc,preprocess,lowpass,highpass,npeakstorefine,align,aligncmp,falign,faligncmp,shrink,shrinkrefine,verbose):
+	#def __init__(self,fixedimagestack,imagestack,comparison,ptcl1,ptcl2,p1n,p2n,label,mask,normproc,preprocess,lowpass,highpass,npeakstorefine,align,aligncmp,falign,faligncmp,shrink,shrinkfine,verbose):
 
 	def __init__(self,fixedimagestack,imagestack,comparison, ptclA, ptclB, pAn, pBn,label,classoptions, round):
 		
@@ -1430,7 +1526,7 @@ class Align3DTaskAVSA(JSTask):
 		data={"fixedimage":fixedimagestack,"image":imagestack}
 		JSTask.__init__(self,"SptHac",data,{},"")
 
-		#self.options={"comparison":comparison,"ptcl1":ptcl1,"ptcl2":ptcl2,"p1number":p1n,"p2number":p2n,"label":label,"mask":mask,"normproc":normproc,"preprocess":preprocess,"lowpass":lowpass,"highpass":highpass,"npeakstorefine":npeakstorefine,"align":align,"aligncmp":aligncmp,"falign":falign,"faligncmp":faligncmp,"shrink":shrink,"shrinkrefine":shrinkrefine,"verbose":verbose}
+		#self.options={"comparison":comparison,"ptcl1":ptcl1,"ptcl2":ptcl2,"p1number":p1n,"p2number":p2n,"label":label,"mask":mask,"normproc":normproc,"preprocess":preprocess,"lowpass":lowpass,"highpass":highpass,"npeakstorefine":npeakstorefine,"align":align,"aligncmp":aligncmp,"falign":falign,"faligncmp":faligncmp,"shrink":shrink,"shrinkfine":shrinkfine,"verbose":verbose}
 		self.classoptions={"comparison":comparison,"ptclA":ptclA,"ptclB":ptclB,"pAn":pAn,"pBn":pBn,"label":label,"classoptions":classoptions, 'round':round}
 	
 	def execute(self,callback=None):
