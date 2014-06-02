@@ -184,7 +184,7 @@ def align_diff_params(ali_params1, ali_params2):
 		print "Error: Number of images do not agree!"
 		return 0.0, 0.0, 0.0, 0
 	else:
-		nima/=4	
+		nima/=4
 		del nima2
 
 	# Read the alignment parameters and determine the relative mirrorness
