@@ -33,6 +33,7 @@
 
 from EMAN2 import *
 import math
+import numpy
 from copy import deepcopy
 import os
 import sys
@@ -1668,6 +1669,12 @@ def plotter(xaxis,yaxis,options,name,maxX,maxY):
 	ax.tick_params(axis='both',reset=False,which='both',length=8,width=3)
 	
 	matplotlib.pyplot.xticks( xaxis )
+	
+	stepsize = len(xaxis)/10
+	
+	start, end = ax.get_xlim()
+	ax.xaxis.set_ticks(numpy.arange(start, end, stepsize))
+	
 	
 	
 	ax.set_xlabel('Comparison number (n)', fontsize=18, fontweight='bold')

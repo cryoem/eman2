@@ -35,6 +35,7 @@
 
 from EMAN2 import *
 import math
+import numpy
 from copy import deepcopy
 import os
 import sys
