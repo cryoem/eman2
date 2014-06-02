@@ -203,7 +203,7 @@ def main():
 	if options.verbose: print "After filter, %d images"%len(data)
 
 	# Get the reconstructor and initialize it correctly
-	a = {"size":padvol,"sym":options.sym,"verbose":options.verbose-1}
+	a = {"size":padvol,"sym":options.sym,"mode":"gauss_2","verbose":options.verbose-1}
 	recon=Reconstructors.get("fourier", a)
 
 	#########################################################
@@ -461,7 +461,7 @@ def reconstruct(data,recon,preprocess,pad,fillangle,verbose=0):
 					weightmod=exp(-(dalt**2+daz**2)/(fillangle/4.0)**2)
 					newxf=Transform({"type":"eman","alt":alt+dalt,"az":az+daz})
 #					print i,elem["filenum"],newxf
-					recon.insert_slice(img,newxf,elem["weight"])
+					recon.insert_slice(img,newxf,elem["weight"]*weightmod)
 			
 	
 	return
