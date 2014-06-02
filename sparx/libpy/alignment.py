@@ -1045,7 +1045,7 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 	dp = t1.get_params("spider")
 	#[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
 	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings, xrng, yrng, step, mode, numr, cnx+dp["tx"], cny+dp["ty"])
-	print ang, sxs, sys, mirror, iref, peak
+	#print ang, sxs, sys, mirror, iref, peak
 	iref = int(iref)
 	#[ang,sxs,sys,mirror,peak,numref] = apmq(projdata[imn], ref_proj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
 	#ang = (ang+360.0)%360.0
