@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Jesus Galaz-Montoya, 07/2011; modified 05/November/2013
+# Author: Jesus Galaz-Montoya, 07/2011; modified 02/June/2014
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -28,31 +28,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
-#
-#
+
 
 from EMAN2 import *
-import math
-import numpy
-from copy import deepcopy
+
 import os
 import sys
-import random
-from random import choice
-from pprint import pprint
 
 from EMAN2jsondb import JSTask,jsonclasses
-
-from operator import itemgetter	
-
-from e2spt_classaverage import sptmakepath
-
-import matplotlib
-matplotlib.use('Agg',warn=False)
-
-import matplotlib.pyplot as plt
-import pylab
-
 
 
 def main():
@@ -397,6 +380,7 @@ def main():
 	'''
 	Make the directory where to create the database where the results will be stored
 	'''
+	from e2spt_classaverage import sptmakepath
 	options = sptmakepath(options,'spt_hac')
 	
 	'''
@@ -538,6 +522,8 @@ def main():
 
 
 def exclusive_classes(options):
+	from operator import itemgetter	
+
 
 	findir = os.listdir(options.path)
 	
@@ -603,6 +589,8 @@ def exclusive_classes(options):
 
 
 def allvsall(options):
+	from operator import itemgetter	
+
 	print "These are path and input received in allvsall", options.path, options.input
 	
 	print "With these many particles in it", EMUtil.get_image_count(options.input)
@@ -1619,6 +1607,13 @@ def textwriter(ydata,options,name):
 
 
 def plotter(xaxis,yaxis,options,name,maxX,maxY):
+	
+	import matplotlib
+	matplotlib.use('Agg',warn=False)
+
+	import matplotlib.pyplot as plt
+	import pylab
+	
 	#plt.clf()
 	#plt.close('all')
 	
@@ -1673,6 +1668,8 @@ def plotter(xaxis,yaxis,options,name,maxX,maxY):
 	stepsize = len(xaxis)/10
 	
 	start, end = ax.get_xlim()
+
+	import numpy
 	ax.xaxis.set_ticks(numpy.arange(start, end, stepsize))
 	
 	
