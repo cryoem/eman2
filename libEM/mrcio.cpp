@@ -36,6 +36,8 @@
 #include <cstring>
 #include <climits>
 
+#include <sys/stat.h>
+
 #include "mrcio.h"
 #include "portable_fileio.h"
 #include "geometry.h"
@@ -51,7 +53,7 @@ const char *MrcIO::SHORT_CTF_MAGIC = "!$";
 MrcIO::MrcIO(const string & mrc_filename, IOMode rw)
 :	filename(mrc_filename), rw_mode(rw), mrcfile(0), mode_size(0),
 		isFEI(false), is_ri(0), is_new_file(false), initialized(false),
-		is_transpose(false)
+		is_transpose(false), is_stack(false), stack_size(1)
 {
 	memset(&mrch, 0, sizeof(MrcHeader));
 	is_big_endian = ByteOrder::is_host_big_endian();
@@ -73,8 +75,23 @@ void MrcIO::init()
 		return;
 	}
 
+	IOMode rwmode;
+
+	if (rw_mode == WRITE_ONLY) {
+		rwmode = READ_WRITE;
+	}
+	else {
+		rwmode = rw_mode;
+	}
+
+	int error_type;
+	struct stat status;
+	error_type = stat(filename.c_str(), & status);
+	is_new_file = (error_type != 0);
+
 	initialized = true;
-	mrcfile = sfopen(filename, rw_mode, &is_new_file);
+//	mrcfile = sfopen(filename, rwmode, &is_new_file);
+	mrcfile = sfopen(filename, rwmode, NULL);
 
 	if (!is_new_file) {
 		if (fread(&mrch, sizeof(MrcHeader), 1, mrcfile) != 1) {
@@ -89,6 +106,7 @@ void MrcIO::init()
 		if (is_big_endian != ByteOrder::is_host_big_endian()) {
 			swap_header(mrch);
 		}
+
 		//become_host_endian((int *) &mrch, NUM_4BYTES_PRE_MAP);
 		//become_host_endian((int *) &mrch.machinestamp, NUM_4BYTES_AFTER_MAP);
 		mode_size = get_mode_size(mrch.mode);
@@ -116,19 +134,35 @@ void MrcIO::init()
 			mrch.zlen = 1.0;
 		}
 
-		if(mrch.nlabels>0) {
-			if( string(mrch.labels[0],3) == "Fei") {
+		if (mrch.nlabels > 0) {
+			if (string(mrch.labels[0],3) == "Fei") {
 				isFEI = true;
 			}
 		}
 
-		if(mrch.mapc==2 && mrch.mapr==1) {
+		if (mrch.mapc == 2 && mrch.mapr == 1) {
 			is_transpose = true;
+		}
+
+		string ext = Util::get_filename_ext(filename);
+
+		if (ext != "") {
+			if (ext == "raw"   ||  ext == "RAW") {
+				isFEI = true;
+			}
+
+			if (ext == "mrcs"  ||  ext == "MRCS") {
+				is_stack = true;
+			}
+		}
+
+		if (is_stack) {
+			stack_size = mrch.nz;
+			mrch.nz = 1;
 		}
 	}
 	EXITFUNC;
 }
-
 
 bool MrcIO::is_image_big_endian()
 {
@@ -171,7 +205,8 @@ bool MrcIO::is_valid(const void *first_block, off_t file_size)
 		(nx > 1 && nx < max_dim) && (ny > 0 && ny < max_dim) && (nz > 0 && nz < max_dim)) {
 //#ifndef SPIDERMRC // Spider MRC files don't satisfy the following test
 		if (file_size > 0) {
-			off_t file_size1 = (off_t)nx * (off_t)ny * (off_t)nz * (off_t)get_mode_size(mrcmode) + (off_t)sizeof(MrcHeader) + nsymbt;
+			off_t file_size1 = (off_t)nx * (off_t)ny * (off_t)nz * (off_t)get_mode_size(mrcmode) +
+				(off_t)sizeof(MrcHeader) + nsymbt;
 			if (file_size == file_size1) {
 				return true;
 			}
@@ -204,12 +239,14 @@ int MrcIO::read_mrc_header(Dict & dict, int image_index, const Region * area, bo
 {
 	ENTERFUNC;
 
-	//single image format, index can only be zero
-	if(image_index < 0) {
+	if (image_index < 0) {
 		image_index = 0;
 	}
-	if(image_index != 0) {
-		throw ImageReadException(filename, "no stack allowed for MRC image. For take 2D slice out of 3D image, read the 3D image first, then use get_clip().");
+
+	if (image_index != 0  &&  ! is_stack) {
+		throw ImageReadException(filename,
+			"no stack allowed for MRC image. For take 2D slice out of 3D image, "
+			"read the 3D image first, then use get_clip().");
 	}
 
 	check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file, false);
@@ -257,6 +294,7 @@ int MrcIO::read_mrc_header(Dict & dict, int image_index, const Region * area, bo
 	float apx = mrch.xlen / mrch.mx;
 	float apy = mrch.ylen / mrch.my;
 	float apz = mrch.zlen / mrch.mz;
+
 	if(apx>1000 || apx<0.01) {
 		dict["apix_x"] = 1.0f;
 	}
@@ -303,6 +341,7 @@ int MrcIO::read_mrc_header(Dict & dict, int image_index, const Region * area, bo
 	dict["MRC.rms"] = mrch.rms;
 	dict["sigma"] = mrch.rms;
 	dict["MRC.nlabels"] = mrch.nlabels;
+
 	for (int i = 0; i < mrch.nlabels; i++) {
 		char label[32];
 		sprintf(label, "MRC.label%d", i);
@@ -486,13 +525,19 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 {
 	ENTERFUNC;
 
-	//single image format, index can only be zero
-	if(image_index == -1) {
+	string ext = Util::get_filename_ext(filename);
+	is_stack = (ext == "mrcs"  ||  ext == "MRCS");
+
+	bool append = (image_index == -1);
+
+	if (image_index == -1) {
 		image_index = 0;
 	}
-	if(image_index != 0) {
+
+	if (image_index != 0  &&  ! is_stack) {
 		throw ImageWriteException(filename, "MRC file does not support stack.");
 	}
+
 	check_write_access(rw_mode, image_index, 1);
 	if (area) {
 		check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file);
@@ -604,11 +649,39 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 	}
 	mrch.ny = ny;
 
-	if (is_new_file) {
+	if (is_stack) {
+		if (is_new_file) {
+			stack_size = 1;
+			image_index = stack_size - 1;
+		}
+		else if (append) {
+			stack_size++;
+			image_index = stack_size - 1;
+		}
+		else if (image_index >= stack_size) {
+			stack_size = image_index + 1;
+		}
+
+		nz = stack_size;
 		mrch.nz = nz;
 	}
-	else if (image_index >= mrch.nz) {
-		mrch.nz = image_index + 1;
+	else {
+		if (is_new_file) {
+			mrch.nz = nz;
+		}
+		else if (append) {
+			nz++;
+			mrch.nz = nz;
+		}
+		else if (image_index >= nz) {
+			nz = image_index + 1;
+			mrch.nz = nz;
+		}
+		else {
+			mrch.nz = nz;
+		}
+
+		stack_size = 1;
 	}
 
 	mrch.ispg = dict.has_key("MRC.ispg") ? (int)dict["MRC.ispg"] : 0;
@@ -678,6 +751,10 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 	mode_size = get_mode_size(mrch.mode);
 	is_new_file = false;
 
+	if (is_stack) {
+		mrch.nz = 1;
+	}
+
 	//Do not write ctf to mrc header in EMAN2
 //	if( dict.has_key("ctf") ) {
 //		vector<float> vctf = dict["ctf"];
@@ -690,17 +767,18 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 	return 0;
 }
 
-int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool )
+int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
-	if(!isFEI) {
+	if (! (isFEI || is_stack)) {
 		//single image format, index can only be zero
 		image_index = 0;
 	}
 
-	if(is_transpose && area!=0) {
-		printf("Warning: This image dimension is in (y,x,z), region I/O not supported, return the whole image instead.");
+	if (is_transpose && area != 0) {
+		printf("Warning: This image dimension is in (y,x,z), "
+			"region I/O not supported, return the whole image instead.");
 	}
 
 	check_read_access(image_index, rdata);
@@ -787,13 +865,24 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 					  EMUtil::EMDataType, bool use_host_endian)
 {
 	ENTERFUNC;
-	//single image format, index can only be zero
-	image_index = 0;
-	check_write_access(rw_mode, image_index, 1, data);
+
+	if (is_stack  &&  image_index == -1) {
+		image_index = stack_size - 1;
+	}
+
+	int max_images = 0;
+
+	if (! is_stack) {
+		max_images  = 1;
+		image_index = 0;
+	}
+
+	check_write_access(rw_mode, image_index, max_images, data);
 	check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file);
 
 	int nx, ny, nz;
-	if(!area) {
+
+	if (!area) {
 		nx = mrch.nx;
 		ny = mrch.ny;
 		nz = mrch.nz;
@@ -803,6 +892,11 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 		ny = area->get_height();
 		nz = area->get_depth();
 	}
+
+	if (is_stack) {
+		nz = 1;
+	}
+
 	size_t size = (size_t)nx * ny * nz;
 
 	if (is_complex_mode()) {
@@ -1083,7 +1177,6 @@ bool MrcIO::is_complex_mode()
 	return false;
 }
 
-
 int MrcIO::read_ctf(Ctf & ctf, int)
 {
 	ENTERFUNC;
@@ -1121,7 +1214,6 @@ void MrcIO::flush()
 {
 	fflush(mrcfile);
 }
-
 
 int MrcIO::get_mode_size(int mm)
 {
@@ -1177,7 +1269,6 @@ int MrcIO::to_em_datatype(int m)
 	return e;
 }
 
-
 int MrcIO::to_mrcmode(int e, int is_complex)
 {
 	MrcMode m = MRC_UNKNOWN;
@@ -1228,8 +1319,6 @@ int MrcIO::to_mrcmode(int e, int is_complex)
 	return m;
 }
 
-
-
 int MrcIO::generate_machine_stamp()
 {
 	int stamp = 0;
@@ -1260,7 +1349,7 @@ int MrcIO::get_nimg()
 {
 	init();
 
-	return 1;
+	return stack_size;
 }
 
 int MrcIO::transpose(float *data, int xlen, int ylen, int zlen) const

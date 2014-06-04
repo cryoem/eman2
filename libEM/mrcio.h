@@ -275,6 +275,10 @@ namespace EMAN
 		/* the extended MRC format for tomography, used by FEI */
 		bool isFEI;
 
+		/* for MRCS (MRC stack) format */
+		bool is_stack;
+		int stack_size;
+
 		int is_ri;
 		bool is_big_endian;
 		bool is_new_file;
