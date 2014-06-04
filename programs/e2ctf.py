@@ -37,7 +37,6 @@
 from EMAN2 import *
 from EMAN2db import db_open_dict, db_close_dict, db_check_dict, db_list_dicts
 from optparse import OptionParser
-from OpenGL import GL,GLUT
 from math import *
 import os
 import sys
@@ -2046,6 +2045,7 @@ def ctf_env_points(im_1d,bg_1d,ctf) :
 try:
 	from PyQt4 import QtCore, QtGui, QtOpenGL
 	from PyQt4.QtCore import Qt
+	from OpenGL import GL,GLUT
 	from emshape import *
 	from valslider import ValSlider,CheckBox
 except:
@@ -2056,8 +2056,13 @@ except:
 		"A dummy class for use when Qt not installed"
 		def __init__(self,parent):
 			print "Qt4 has not been loaded"
+	class QListWidget:
+		"A dummy class"
+		def __init__(self,parent):
+			print "Qt4 has not been loaded"
 	QtGui=dummy()
 	QtGui.QWidget=QWidget
+	QtGui.QListWidget=QListWidget
 
 def notzero(x):
 	if x==0 : return 1.0
