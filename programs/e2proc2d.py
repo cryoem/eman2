@@ -262,6 +262,8 @@ def main():
 	lasttime=time.time()
 	outfilename_no_ext = outfile[:-4]
 	outfilename_ext = outfile[-3:]
+	if outfilename_ext == "rcs" and outfile[-4:] == "mrcs":
+		outfilename_ext = outfile[-4:]
 	dummy=0										#JESUS
 	for i in range(n0, n1+1, options.step[1]):
 		if options.verbose >= 1:
