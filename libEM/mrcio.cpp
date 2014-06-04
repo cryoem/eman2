@@ -538,7 +538,14 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 		throw ImageWriteException(filename, "MRC file does not support stack.");
 	}
 
-	check_write_access(rw_mode, image_index, 1);
+	int max_images = 0;
+
+	if (! is_stack) {
+		max_images = 1;
+	}
+
+	check_write_access(rw_mode, image_index, max_images);
+
 	if (area) {
 		check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file);
 		EXITFUNC;
