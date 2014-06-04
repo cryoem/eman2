@@ -58,18 +58,18 @@ for option1 in optionList:
 		f = open("./emx/particles.emx",'w')
 
 		f.write("""<?xml version='1.0' encoding='utf-8'?>
-		<EMX version="1.0">
-		<!--
-		##########################################################################
-		#               EMX Exchange file 
-		#               Produced by e2emx.py (EMAN2, version 2.1)
-		# 
-		#  This is a EMX file.
-		#
-		#  Information on this file format is available at 
-		#  http://i2pc.cnb.csic.es/emx
-		##########################################################################
-		-->\n""")
+<EMX version="1.0">
+<!--
+##########################################################################
+#               EMX Exchange file 
+#               Produced by e2emx.py (EMAN2, version 2.1)
+# 
+#  This is a EMX file.
+#
+#  Information on this file format is available at 
+#  http://i2pc.cnb.csic.es/emx
+##########################################################################
+-->\n""")
 
 		#Check to see if the micrographs folder exists
 		dir_list = os.listdir(cwd)
@@ -97,13 +97,18 @@ for option1 in optionList:
 				if ptcl_by_micrograph.find("__") == -1 and ptcl_by_micrograph.find(".") != 0:
 					if os.path.exists(cwd + "/particles/" + ptcl_by_micrograph.replace(".hdf",'') + "__ctf_flip.hdf"):
 						particle_stack = EMData().read_images(cwd + "/particles/" + ptcl_by_micrograph.replace(".hdf",'') + "__ctf_flip.hdf")
+						s1 = "e2proc2d.py " + cwd + "/particles/" + ptcl_by_micrograph.replace(".hdf",'') + "__ctf_flip.hdf emx/" + ptcl_by_micrograph.replace(".hdf.",".mrcs")
+						call(s1,shell=True)
 					else:
 						particle_stack = EMData().read_images(cwd + "/particles/" + ptcl_by_micrograph)
+						s1 = "e2proc2d.py " + cwd + "/particles/" + ptcl_by_micrograph + " emx/" + ptcl_by_micrograph.replace(".hdf",".mrcs")
+						call(s1,shell=True)
 					#num_images = len(particle_stack)
+					
 					#print num_images
 					index = 1
 					for particle in particle_stack:
-						f.write("<particle fileName=\"" + ptcl_by_micrograph +"\" index=\"" + str(index) + "\">\n")
+						f.write("<particle fileName=\"" + ptcl_by_micrograph.replace(".hdf",".mrc") +"\" index=\"" + str(index) + "\">\n")
 						f.write("  <micrograph fileName=\"" + base_name(ptcl_by_micrograph).split("_")[0] + ".mrc\"/>\n")
 						f.write("  <centerCoord>\n")
 						f.write("    <X unit=\"px\">" + str(particle['ptcl_source_coord'][0]) + "</X>\n")
