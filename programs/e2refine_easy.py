@@ -453,7 +453,7 @@ important to use an angular step which is 90/integer.</p>")
 			options.simralign="refine"
 			options.simraligncmp="frc:zeromask=1:snrweight=1"
 		simralign="--ralign {} --raligncmp {}".format(options.simralign,options.simraligncmp)
-	elif options.simralign.lower()=="none" or options.speed==7:
+	elif options.speed==7 or options.simralign.lower()=="none" :
 		simralign=" "
 	else: simralign="--ralign {} --raligncmp {}".format(options.simralign,options.simraligncmp)
 
