@@ -527,8 +527,10 @@ class EMHTMLFileType(EMFileType) :
 
 		if get_platform() == "Linux" :
 			os.system("firefox -new-tab file://%s"%os.path.abspath(self.path))
-
-		else : print "Sorry, I don't know how to run Firefox on this platform"
+		elif get_platform() == "Darwin" :
+			os.system("open {}".format(os.path.abspath(self.path)))		# uses the default browser
+		else : 
+			print "Sorry, I don't know how to run Firefox on this platform"
 
 #---------------------------------------------------------------------------
 
