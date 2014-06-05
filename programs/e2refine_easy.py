@@ -73,8 +73,9 @@ def write_html() :
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """prog [options]
+	usage = """e2refine_easy.py [options]
 
+========================================================================
 	This is the primary single particle refinement program in EMAN2.1+. It replaces earlier programs such as e2refine.py
 and e2refine_evenodd.py. Major features of this program:
 
@@ -94,10 +95,12 @@ To run this program, you would normally specify only the following options:
                          Generally begin with something conservative like 25, then use --startfrom and reduce
                          to ~12, only after that try for high (3-8 A). Data permitting, of course. Low resolution
                          attempts will run MUCH faster due to more efficient parameters.
-  --speed=<1-7>          Default=5. Larger values will run faster, with a coarser angular step. Smaller values will
-                         sample the angular step more finely than stric0tly required and increase sep=. A larger value
-                         is good for early refinement. A smaller value will push "gold standard" resolution towards its
-                         limit.
+  --speed=<1-7>          Default=5. Larger values will run faster but slightly decrease measured resolution. 7 may
+                         be useful for initial refinement runs. 5 is good for routine refinement. You may consider 1
+                         when all other possibilities are exhausted and you are ready to push for a final published map.
+                         This option modifies several parameters, including the angular step, sep= and even the
+                         specific alignment and similarity metric options. The resolution difference between 1 and 7 is
+                         generally no more than 10%%.
   --sym=<symmetry>       Symmetry to enforce during refinement (Cn, Dn, icos, oct, cub).
                          Default=c1 (no symmetry)
   --mass=<in kDa>        Putative mass of object in kDa, but as desired volume varies with resolution
@@ -125,6 +128,10 @@ To run this program, you would normally specify only the following options:
                          you can override, but it may cause minor GUI problems if you break the standard naming
                          convention.
 
+Since many parameters are now selected automatically, if you are curious exactly what the differences are between any
+two refinements, on Linux/Mac, you can run, for example, diff refine_01/0_refine_parms.json refine_02/0_refine_parms.json
+to compare exactly what changed between the two runs.
+
 ========================================================================
   There are numerous additional options based on the original e2refine.py command. These options are not available from
 the graphical interface, as it is generally best to let e2refine_easy pick these values for you. Normally you should
@@ -141,7 +148,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_header(name="orblock", help='Just a visual separation', title="- OR -", row=5, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--startfrom", default=None, type=str,help="Path to an existing refine_xx directory to continue refining from. Alternative to --input and --model.",guitype='filebox', filecheck=False, browser='EMModelsTable(withmodal=True,multiselect=False)', row=7, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--targetres", default=25.0, type=float,help="Target resolution in A of this refinement run. Usually works best in at least two steps (low/medium resolution, then final resolution) when starting with a poor starting model. Usually 3-4 iterations is sufficient.", guitype='floatbox', row=10, col=0, rowspan=1, colspan=1, mode="refinement")
-	parser.add_argument("--speed", default=5,type=int,help="(1-7) Balances speed vs precision. Larger values sacrifice a bit of potential resolution for significant speed increases. Set to 1 when pushing resolution. default=5", guitype='intbox', row=16, col=1, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--speed", default=5,type=int,help="(1-7) Balances speed vs precision. Larger values sacrifice a bit of potential resolution for significant speed increases. Set to 1 when really pushing resolution. Set to 7 for initial refinements. default=5", guitype='intbox', row=16, col=1, rowspan=1, colspan=1, mode="refinement")
 	parser.add_header(name="required", help='Just a visual separation', title="Required:", row=9, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--sym", dest = "sym", default="c1",help = "Specify symmetry - choices are: c<n>, d<n>, tet, oct, icos.", guitype='strbox', row=10, col=1, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--breaksym", action="store_true", default=False,help = "If selected, reconstruction will be asymmetric with sym= specifying a known pseudosymmetry, not an imposed symmetry.", guitype='boolbox', row=11, col=1, rowspan=1, colspan=1, mode="refinement")
