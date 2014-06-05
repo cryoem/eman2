@@ -452,7 +452,10 @@ important to use an angular step which is 90/integer.</p>")
 		else :
 			options.simralign="refine"
 			options.simraligncmp="frc:zeromask=1:snrweight=1"
-	simralign="--ralign {} --raligncmp {}".format(options.simralign,options.simraligncmp)
+		simralign="--ralign {} --raligncmp {}".format(options.simralign,options.simraligncmp)
+	elif options.simralign.lower()=="none":
+		simralign=" "
+	else: simralign="--ralign {} --raligncmp {}".format(options.simralign,options.simraligncmp)
 
 	if options.simcmp==None :
 		if options.targetres>18.0 or not hasctf: options.simcmp="frc:maxres={}".format(options.targetres)
@@ -476,7 +479,10 @@ important to use an angular step which is 90/integer.</p>")
 		else :
 			options.classralign="refine"
 			options.classraligncmp="frc:snrweight=1:zeromask=1"
-	classralign="--ralign {ralign} --raligncmp {raligncmp}".format(ralign=options.classralign,raligncmp=options.classraligncmp)
+		classralign="--ralign {ralign} --raligncmp {raligncmp}".format(ralign=options.classralign,raligncmp=options.classraligncmp)
+	elif options.classralign.lower()=="none":
+		classralign=" "
+	else: classralign="--ralign {ralign} --raligncmp {raligncmp}".format(ralign=options.classralign,raligncmp=options.classraligncmp)
 
 	if options.classaverager==None :
 		if hasctf and options.targetres<15 : options.classaverager="ctfw.auto"
