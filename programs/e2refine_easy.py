@@ -445,15 +445,15 @@ important to use an angular step which is 90/integer.</p>")
 
 
 	if options.simaligncmp==None : options.simaligncmp="ccc"
-	if options.simralign==None :
-		if options.targetres>=11.0 :
+	if options.simralign==None and options.speed<7 :
+		if options.targetres>=11.0 or options.speed==6:
 			options.simralign="refine"
 			options.simraligncmp="ccc"
 		else :
 			options.simralign="refine"
 			options.simraligncmp="frc:zeromask=1:snrweight=1"
 		simralign="--ralign {} --raligncmp {}".format(options.simralign,options.simraligncmp)
-	elif options.simralign.lower()=="none":
+	elif options.simralign.lower()=="none" or options.speed==7:
 		simralign=" "
 	else: simralign="--ralign {} --raligncmp {}".format(options.simralign,options.simraligncmp)
 
@@ -472,8 +472,8 @@ important to use an angular step which is 90/integer.</p>")
 	if options.classaligncmp==None :
 		options.classaligncmp="ccc"
 
-	if options.classralign==None :
-		if options.targetres>15 or not hasctf :
+	if options.classralign==None:
+		if options.targetres>15 or not hasctf or options.speed>5:
 			options.classralign="refine"
 			options.classraligncmp="ccc"
 		else :
@@ -537,8 +537,8 @@ important to use an angular step which is 90/integer.</p>")
 	if options.classkeepsig : classkeepsig="--keepsig"
 	else: classkeepsig=""
 
-	if options.classralign!=None : classralign="--ralign {} --raligncmp {}".format(options.classralign,options.classraligncmp)
-	else: classralign=""
+	#if options.classralign!=None : classralign="--ralign {} --raligncmp {}".format(options.classralign,options.classraligncmp)
+	#else: classralign=""
 
 	if options.m3dkeepsig : m3dkeepsig="--keepsig"
 	else: m3dkeepsig=""
