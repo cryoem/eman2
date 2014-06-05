@@ -186,12 +186,7 @@ def main():
 		Default is rotate_translate_3d:search=8:delta=12:dphi=12""", default="rotate_translate_3d:search=8:delta=12:dphi=12")
 
 	parser.add_argument("--aligncmp",type=str,help="""The comparator used for the --align aligner. 
-		Default is the internal tomographic ccc. Do not specify unless you need to use another specific aligner.""",default="ccc.tomo")
-
-	parser.add_argument("--ralign",type=str,help="""DEPRECATED: See and use --falign.""", default="refine_3d_grid:range=12:delta=4:search=2")
-	
-	parser.add_argument("--raligncmp",type=str,help="""DEPRECATED: See and use --faligncmp""",default="ccc.tomo")
-	
+		Default is the internal tomographic ccc. Do not specify unless you need to use another specific aligner.""",default="ccc.tomo")	
 	
 	parser.add_argument("--falign",type=str,help="""This is the second stage aligner used to refine the first alignment. 
 		Default is refine_3d_grid:range=12:delta=4:search=2, specify 'None' to disable""", default="refine_3d_grid:range=12:delta=4:search=2")
@@ -212,9 +207,7 @@ def main():
 	parser.add_argument("--shrinkfine", type=int,default=1,help="""Optionally shrink the input volumes 
 		by an integer amount for refine alignment.""")
 		
-	
-	parser.add_argument("--shrinkrefine", type=int,default=1,help="""DEPRECATED: See and use --shrinkfine instead. """)
-		
+			
 	#parser.add_argument("--automask",action="store_true",help="Applies a 3-D automask before centering. Can help with negative stain data, and other cases where centering is poor.")
 	
 	parser.add_argument("--parallel",  help="""Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel""", default="thread:1")
@@ -278,18 +271,18 @@ def main():
 			
 	if options.align:
 		#print "There's options.align", options.align
-		if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align:
-			options.align += ':sym' + str( options.sym )
+		if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align and ('rotate_translate_3d' in options.align or 'rotate_symmetry_3d' in options.align) and 'grid' not in options.align:
+			options.align += ':sym=' + str( options.sym )
 			#print "And there's sym", options.sym
 			
 		if 'search' not in options.align:		
-			options.align += ':search' + str( options.search )
+			options.align += ':search=' + str( options.search )
 			
 		else:
 			searchA = options.align.split('search=')[-1].split(':')[0]
 			searchdefault = 8
 			
-			if options.search and options.search != searchdefault:
+			if options.search != searchdefault:
 						
 				prefix = options.align.split('search=')[0]
 				trail = options.align.split('search=')[-1].split(':')[-1]
@@ -355,15 +348,15 @@ def main():
 					sys.exit()
 	
 	
-	if options.falign:
+	if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
 		if 'search' not in options.falign:		
-			options.falign += ':search' + str( options.searchfine )
+			options.falign += ':search=' + str( options.searchfine )
 			
 		else:
 			searchA = options.falign.split('search=')[-1].split(':')[0]
 			searchfinedefault = 2
 			
-			if options.searchfine and options.searchfine != searchfinedefault:
+			if options.searchfine != searchfinedefault:
 						
 				prefix = options.falign.split('search=')[0]
 				trail = options.falign.split('search=')[-1].split(':')[-1]
@@ -405,7 +398,7 @@ def main():
 	if options.align:
 		options.align=parsemodopt(options.align)
 	
-	if options.falign: 
+	if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none': 
 		options.falign=parsemodopt(options.falign)
 	
 	if options.aligncmp: 
@@ -415,37 +408,44 @@ def main():
 		options.faligncmp=parsemodopt(options.faligncmp)
 	
 	if options.averager: 
-		options.averager=parsemodopt(options.averager)
-
-	if options.normproc: 
-		options.normproc=parsemodopt(options.normproc)
-	
-	if options.mask: 
-		options.mask=parsemodopt(options.mask)
-			
-	if options.threshold: 
-		options.threshold=parsemodopt(options.threshold)
+		options.averager=parsemodopt(options.averager)		
 		
-	if options.preprocess: 
+		
+	if options.normproc and options.normproc != 'None' and options.normproc != 'none':
+		options.normproc=parsemodopt(options.normproc)	
+		
+	if options.mask and options.mask != 'None' and options.mask != 'none':
+		#print "parsing mask", sys.exit()
+		options.mask=parsemodopt(options.mask)
+	
+	if options.preprocess and options.preprocess != 'None' and options.preprocess != 'none': 
 		options.preprocess=parsemodopt(options.preprocess)
 		
-	if options.preprocessfine: 
+	if options.threshold and options.threshold != 'None' and options.threshold != 'none': 
+		options.threshold=parsemodopt(options.threshold)
+		
+	if options.preprocessfine and options.preprocessfine != 'None' and options.preprocessfine != 'none': 
 		options.preprocessfine=parsemodopt(options.preprocessfine)
 		
-	if options.lowpass: 
+	if options.lowpass and options.lowpass != 'None' and options.lowpass != 'none': 
 		options.lowpass=parsemodopt(options.lowpass)
 		
-	if options.lowpassfine: 
+	if options.lowpassfine and options.lowpassfine != 'None' and options.lowpassfine != 'none': 
 		options.lowpassfine=parsemodopt(options.lowpassfine)
 	
-	if options.highpass: 
+	if options.highpass and options.highpass != 'None' and options.highpass != 'none': 
 		options.highpass=parsemodopt(options.highpass)
 		
-	if options.highpassfine: 
+	if options.highpassfine and options.highpassfine != 'None' and options.highpassfine != 'none': 
 		options.highpassfine=parsemodopt(options.highpassfine)
-
-	if options.postprocess: 
+		
+	if options.postprocess and options.postprocess != 'None' and options.postprocess != 'none': 
 		options.postprocess=parsemodopt(options.postprocess)
+		
+		
+		
+		
+		
 
 	group_ranges=[]
 	data_files = []
