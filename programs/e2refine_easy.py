@@ -729,7 +729,8 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
 			plt.xticks(xticklocs,xticklbl)
 			plt.yticks(yticklocs2,yticklbl2)
 			plt.savefig("{}/report/converge.png".format(options.path))
-			plt.savefig("{}/report/converge.pdf".format(options.path))
+			try: plt.savefig("{}/report/converge.pdf".format(options.path))
+			except: pass
 			plt.clf()
 			
 		except:
@@ -787,7 +788,8 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
 			plt.xticks(xticklocs,xticklbl)
 			plt.yticks(yticklocs,yticklbl)
 			plt.savefig("{}/report/resolution.png".format(options.path))
-			plt.savefig("{}/report/resolution.pdf".format(options.path))
+			try: plt.savefig("{}/report/resolution.pdf".format(options.path))
+			except: pass
 			plt.clf()
 		except:
 			traceback.print_exc()
