@@ -39,18 +39,29 @@ import os
 import sys
 import datetime
 
+try:
+	import numpy as np
+	import matplotlib
+	matplotlib.use("AGG")
+#	matplotlib.use("PDF")
+	import matplotlib.pyplot as plt
+	pltcolors=["k","b","g","r","m","c","darkblue","darkgreen","darkred","darkmagenta","darkcyan","0.5"]
+except:
+	print "Matplotlib not available, plotting options will not be available"
+
 
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] 
 	This program is still in its early stages. Eventually will provide a variety of tools for 
-	evaluating a single particle reconstruction refinement run. Currently only provides a 
-	single option to compare the parameters used for different refinement runs in a single project."""
+	evaluating a single particle reconstruction refinement run."""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
 	parser.add_argument("--timing", default=False, action="store_true", help="report on how long each step of the refinement process took during the first iteration of each run")
-	parser.add_argument("--parmcmp",  default=False, action="store_true",help="Compare parameters used in different refinement rounds")
-	parser.add_argument("--parmpair",default=None,type=str,help="Specify iter,iter to compare the parameters used between 2 itertions.")
+	parser.add_argument("--resolution", type=str, default=None, help="generates a resolution and convergence plot for a single refinement run. Provide the refine_xx folder name.")
+	parser.add_argument("--resolution_all", default=False, action="store_true", help="generates resolution plot with the last iteration of all refine_xx directories")
+	#parser.add_argument("--parmcmp",  default=False, action="store_true",help="Compare parameters used in different refinement rounds")
+	#parser.add_argument("--parmpair",default=None,type=str,help="Specify iter,iter to compare the parameters used between 2 itertions.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	#options associated with e2refine.py
 	#parser.add_argument("--iter", dest = "iter", type = int, default=0, help = "The total number of refinement iterations to perform")
@@ -60,30 +71,136 @@ def main():
 
 	(options, args) = parser.parse_args()
 
-	if options.parmpair :
-		try: 
-			na,nb=options.parmpair.split(",")
-			na=int(na)
-			nb=int(nb)
-		except:
-			print "Please specify <iter1>,<iter2>"
+	xticlocs=[i for i in (.01,.05,.0833,.125,.1667,.2,.25,.3333,.4,.5)]
+	xticlbl=["1/100","1/20","1/12","1/8","1/6","1/5","1/4","1/3","1/2.5","1/2"]
+	yticlocs=(0.0,.125,.143,.25,.375,.5,.625,.75,.875,1.0)
+	yticlbl=("0"," ","0.143","0.25"," ","0.5"," ","0.75"," ","1.0")
+	yticlocs2=(0.0,.125,.25,.375,.5,.625,.75,.875,1.0)
+	yticlbl2=("0"," ","0.25"," ","0.5"," ","0.75"," ","1.0")
+
+	if options.resolution!=None:
+
+		if not os.path.isdir(options.resolution):
+			print "You must provide the name of the refine_XX folder"
 			sys.exit(1)
-		db=db_open_dict("bdb:refine_%02d#register"%na,ro=True)
-		pa=db["cmd_dict"]
-		db=db_open_dict("bdb:refine_%02d#register"%nb,ro=True)
-		pb=db["cmd_dict"]
+		
+		### Convergenece plot
+		
+		plt.title("Convergence plot (not resolution)")
+		plt.xlabel(r"Spatial Frequency (1/$\AA$)")
+		plt.ylabel("FSC")
+		cnvrg=[i for i in os.listdir(options.resolution) if "converge_" in i and i[-4:]==".txt"]
+		cnvrg.sort(reverse=True)
+		nummx=int(cnvrg[0].split("_")[2][:2])
+		maxx=0.01
+		for c in cnvrg:
+			num=int(c.split("_")[2][:2])
+			d=np.loadtxt("{}/{}".format(options.resolution,c)).transpose()
+			if c[9:13]=="even" : plt.plot(d[0],d[1],label=c[14:-4],color=pltcolors[(nummx-num)%12])
+			else : plt.plot(d[0],d[1],color=pltcolors[(nummx-num)%12])
+			maxx=max(maxx,max(d[0]))
+			
+		if max(d[0])<max(xticlocs) :
+			xticlocs=[i for i in xticlocs if i<=max(d[0])]
+			xticlbl=xticlbl[:len(xticlocs)]
+		plt.axhline(0.0,color="k")
+		plt.axis((0,maxx,-.06,1.02))
+		plt.legend(loc="upper right",fontsize="x-small")
+		#plt.minorticks_on()
+		plt.xticks(xticlocs,xticlbl)
+		plt.yticks(yticlocs2,yticlbl2)
+		plt.savefig("converge_{}.pdf".format(options.resolution[-2:]))
+		print "Generated : converge_{}.pdf".format(options.resolution[-2:])
+		plt.clf()
+		
+		######################
+		### Resolution plot
+		### broken up into multiple try/except blocks because we need some of the info, even if plotting fails
+		plt.title("Gold Standard Resolution")
+		plt.xlabel(r"Spatial Frequency (1/$\AA$)")
+		plt.ylabel("FSC")
+		
+		fscs=[i for i in os.listdir(options.resolution) if "fsc_masked" in i and i[-4:]==".txt"]
+		fscs.sort(reverse=True)
+		nummx=int(fscs[0].split("_")[2][:2])
+		maxx=0.01
+		
+		# iterate over fsc curves
+		for f in fscs:
+			num=int(f.split("_")[2][:2])
+			
+			# read the fsc curve
+			d=np.loadtxt("{}/{}".format(options.resolution,f)).transpose()
+			
+			# plot the curve
+			try: plt.plot(d[0],d[1],label=f[4:],color=pltcolors[(nummx-num)%12])
+			except: pass
+			maxx=max(maxx,max(d[0]))
+		
+			# find the resolution from the first curve (the highest numbered one)
+			if f==fscs[0]:
+				# find the 0.143 crossing
+				for si in xrange(2,len(d[0])-2):
+					if d[1][si-1]>0.143 and d[1][si]<=0.143 :
+						frac=(0.143-d[1][si])/(d[1][si-1]-d[1][si])		# 1.0 if 0.143 at si-1, 0.0 if .143 at si
+						lastres=d[0][si]*(1.0-frac)+d[0][si-1]*frac
+						try:
+							plt.annotate(r"{:1.1f} $\AA$".format(1.0/lastres),xy=(lastres,0.143),
+								xytext=((lastres*4+d[0][-1])/5.0,0.2),arrowprops={"width":1,"frac":.1,"headwidth":7,"shrink":.05})
+						except: pass
+						break
+				else : lastres=0
+			
+		plt.axhline(0.0,color="k")
+		plt.axhline(0.143,color="#306030",linestyle=":")
+		plt.axis((0,maxx,-.02,1.02))
+		plt.legend(loc="upper right",fontsize="x-small")
+		plt.xticks(xticlocs,xticlbl)
+		plt.yticks(yticlocs,yticlbl)
+		plt.savefig("goldstandard_{}.pdf".format(options.resolution[-2:]))
+		print "Generated: goldstandard_{}.pdf".format(options.resolution[-2:])
+		plt.clf()
 
-		ks=set(pa.keys())
-		ks|=set(pb.keys())
-		ks=list(ks)
-		ks.sort()
+	if options.resolution_all:
+		######################
+		### Resolution plot
+		### broken up into multiple try/except blocks because we need some of the info, even if plotting fails
+		plt.title("Gold Standard Resolution")
+		plt.xlabel(r"Spatial Frequency (1/$\AA$)")
+		plt.ylabel("FSC")
+		
+		refines=[i for i in os.listdir(".") if "refine_" in i]
+		fscs=[]
+		for r in refines:
+			itr=max([i for i in os.listdir(r) if "fsc_masked" in i and i[-4:]==".txt"])
+			fscs.append("{}/{}".format(r,itr))
+		
+		fscs.sort(reverse=True)
+		maxx=0.01
+		
+		# iterate over fsc curves
+		for num,f in enumerate(fscs):
+			# read the fsc curve
+			d=np.loadtxt(f).transpose()
+			
+			# plot the curve
+			try: plt.plot(d[0],d[1],label=f[:9],color=pltcolors[(num)%12])
+			except: pass
+			maxx=max(maxx,max(d[0]))
+			
+		if max(d[0])<max(xticlocs) :
+			xticlocs=[i for i in xticlocs if i<=max(d[0])]
+			xticlbl=xticlbl[:len(xticlocs)]
+		plt.axhline(0.0,color="k")
+		plt.axhline(0.143,color="#306030",linestyle=":")
+		plt.axis((0,maxx,-.02,1.02))
+		plt.legend(loc="upper right",fontsize="x-small")
+		plt.xticks(xticlocs,xticlbl)
+		plt.yticks(yticlocs,yticlbl)
+		plt.savefig("goldstandard.pdf")
+		print "Generated: goldstandard.pdf"
+		plt.clf()
 
-		for k in ks:
-			try :
-				if pa[k]!=pb[k] : print "%s: %s -> %s"%(k,pa[k],pb[k])
-			except:
-				try: print "%s: %s -> None"%(k,pa[k])
-				except: print "%s: None -> %s"%(k,pb[k])
 
 	if options.timing:
 		#dl=[i for i in os.listdir(".") if "refine_" in i]		# list of all refine_ directories
@@ -99,7 +216,7 @@ def main():
 			try: com=spl[4].split()[0].split("/")[-1]
 			except : continue
 
-			if com in ("e2refine.py","e2refine_easy.py","e2refinemulti.py","e2project3d.py","e2simmx.py","e2simmx2stage.py","e2classify.py","e2classaverage.py","e2make3d.py") : hist.append((com,spl))
+			if com in ("e2refine.py","e2refine_easy.py","e2refinemulti.py","e2project3d.py","e2simmx.py","e2simmx2stage.py","e2classify.py","e2classaverage.py","e2make3d.py","e2make3dpar.py","e2refine_postprocess.py") : hist.append((com,spl))
 			
 		n=0
 		while n<len(hist):
@@ -117,52 +234,6 @@ def main():
 			
 			n+=1
 			
-
-	if options.parmcmp:
-		dl=[i for i in os.listdir(".") if "refine_" in i]		# list of all refine_ directories
-		dl.sort()
-		
-		# extract an array of various parameters
-		parmlist=[(" ","it","shr","sep","2s","simcmp","simr","simrcmp","clsit","clscmp","clsr","clsrcmp","csf","3sf","3post","initmdl","sym")]
-		for d in dl:
-			if not os.path.isdir(d) : continue
-			try :
-				db=db_open_dict("bdb:%s#register"%d,ro=True)
-				parms=db["cmd_dict"]
-			except :
-				print d," missing refinement log"
-				continue
-			try:
-				p=[d,parms["iter"],parms.get("shrink",1),parms["sep"],parms.get("twostage",0),parms["simcmp"],str(parms["simralign"])[:1],parms["simraligncmp"],parms["classiter"],
-					parms["classcmp"],str(parms["classralign"])[:1],parms["classraligncmp"],parms["classrefsf"][-2:-1],parms["m3dsetsf"],parms["m3dpostprocess"],parms["model"],parms["sym"]]
-			except:
-				print d, "incomplete parameters"
-				continue
-		
-			if p[2]==None or p[2]=="None": p[2]=1
-			
-			parmlist.append(tuple(p))
-		# find the max length of each element in the array
-		nparm=len(parmlist[0])
-		lens=[0]*nparm
-		for i in xrange(nparm):
-			for p in parmlist:
-				try : lens[i]=max(lens[i],len(str(p[i])))
-				except : print "Error with len of ",i,p[i]
-
-		# build a format string
-		fmt="%%-%0ds "%lens[0]
-		totlen=lens[0]+1
-		for i in xrange(1,nparm): 
-			if totlen+lens[i]>120 and lens[i]+lens[0]+1<120 :
-				fmt+="\n          "
-				totlen=10
-			fmt+="%%-%0ds "%lens[i]
-			totlen+=lens[i]+1
-			
-		# print results
-		for p in parmlist:
-			print fmt%p
 
 		
 if __name__ == "__main__":
