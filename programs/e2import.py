@@ -69,7 +69,7 @@ def main():
 				for line in fh.readlines():
 					if line[0]=="#" : continue
 					fields = line.split()
-					if (len(fields)<4 : continue		# skip lines that don't work
+					if len(fields)<4 : continue		# skip lines that don't work
 					boxlist.append([float(fields[0])+float(fields[3])/2, float(fields[1])+float(fields[3])/2, 'manual'])
 
 				js_open_dict(info_name(filename,nodir=True))["boxes"]=boxlist
