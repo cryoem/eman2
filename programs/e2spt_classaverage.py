@@ -82,7 +82,7 @@ def main():
 	parser.add_argument("--output", type=str, help="""The name of the output class-average stack. 
 		MUST be HDF or BDB, since volume stack support is required.""", default='avg.hdf', 
 		guitype='strbox', row=2, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
-	parser.add_argument("--oneclass", type=int, help="Create only a single class-average. Specify the class number.",default=None)
+	parser.add_argument("--oneclass", type=int, help="Create only a single class-average. Specify the class number.",default=0)
 	parser.add_argument("--classmx", type=str, help="The name of the classification matrix specifying how particles in 'input' should be grouped. If omitted, all particles will be averaged.", default='')
 	parser.add_argument("--ref", type=str, help="Reference image(s). Used as an initial alignment reference and for final orientation adjustment if present. This is typically the projections that were used for classification.", default=None, guitype='filebox', browser='EMBrowserWidget(withmodal=True,multiselect=True)', filecheck=False, row=1, col=0, rowspan=1, colspan=3, mode='alignment')
 	
@@ -118,9 +118,12 @@ def main():
 	parser.add_argument("--saveali",action="store_true", help="If set, will save the aligned particle volumes in class_ptcl.hdf. Overwrites existing file.",default=False, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
 	parser.add_argument("--saveallalign",action="store_true", help="If set, will save the alignment parameters after each iteration",default=False, guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode='alignment,breaksym')
 	parser.add_argument("--sym", dest = "sym", default=None, help = "Symmetry to impose - choices are: c<n>, d<n>, h<n>, tet, oct, icos", guitype='symbox', row=9, col=1, rowspan=1, colspan=2, mode='alignment,breaksym')
+	
 	parser.add_argument("--mask",type=str,help="""Mask processor applied to particles before alignment. 
 		Default is mask.sharp:outer_radius=-2. IF using --clipali, make sure to express outer mask radii as negative 
-		pixels from the edge.""", returnNone=True, default="mask.sharp:outer_radius=-2", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=11, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+		pixels from the edge.""", returnNone=True, default="mask.sharp:outer_radius=-2", 
+		guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', 
+		row=11, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
 	parser.add_argument("--normproc",type=str,help="""Normalization processor applied to 
 		particles before alignment. Default is 'normalize.edgemean'. 
@@ -169,7 +172,7 @@ def main():
 	parser.add_argument("--aligncmp",type=str,help="The comparator used for the --align aligner. Default is the internal tomographic ccc. Do not specify unless you need to use another specific aligner.",default="ccc.tomo", guitype='comboparambox',choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=13, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
 	
 	parser.add_argument("--falign",type=str,help="""This is the second stage aligner used to fine-tune the first alignment. 
-		Default is refine_3d_grid:delta=3:range=15:search=2, specify 'None' (with capital N) to disable.""", 
+		Default is refine_3d_grid:delta=3:range=15:search=2, specify 'None' to disable.""", 
 		default="refine_3d_grid:delta=3:range=15:search=2", returnNone=True, guitype='comboparambox', 
 		choicelist='re_filter_list(dump_aligners_list(),\'refine.*3d\')', row=14, col=0, rowspan=1, 
 		colspan=3, nosharedb=True, mode='alignment,breaksym[None]')
@@ -177,12 +180,7 @@ def main():
 	parser.add_argument("--faligncmp",type=str,help="""The comparator used by the second stage aligner. 
 		Default is the internal tomographic ccc""",default="ccc.tomo", guitype='comboparambox',
 		choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=15, col=0, rowspan=1, 
-		colspan=3,mode="alignment,breaksym")
-	
-	parser.add_argument("--ralign",type=str,help="""DEPRECATED. See and use --falign instead.""",default=None)
-	parser.add_argument("--raligncmp",type=str,help="""DEPRECATED. See and use --faligncmp instead.""",default=None)
-	parser.add_argument("--shrinkrefine", type=int,default=2,help="""DEPRECATED: See and use --shrinkfine instead. """)
-		
+		colspan=3,mode="alignment,breaksym")		
 		
 	parser.add_argument("--averager",type=str,help="The type of averager used to produce the class average. Default=mean",default="mean")
 	parser.add_argument("--keep",type=float,help="The fraction of particles to keep in each class.",default=1.0, guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode='alignment,breaksym')
@@ -223,9 +221,7 @@ def main():
 
 	(options, args) = parser.parse_args()
 	
-	if 'fsc.tomo' in options.aligncmp or 'fsc.tomo' in options.faligncmp:
-		print "Wedge paramters ARE defined, see", options.wedgeangle, options.wedgei, options.wedgef
-	
+	#print "options are", options
 	
 	print "\n\n\n(e2spt_classaverage.py) options.refpreprocess is", options.refpreprocess
 	print "\n\n\n"
@@ -237,24 +233,24 @@ def main():
 		
 
 	if options.radius and float(options.radius) > 0.0:
-		print "(e2spt_classaverage.py)(main) before calling calcAliStep, options.input is", options.input
+		#print "(e2spt_classaverage.py)(main) before calling calcAliStep, options.input is", options.input
 		options = calcAliStep(options)
 	
 		
 	if options.align:
 		#print "There's options.align", options.align
-		if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align:
-			options.align += ':sym' + str( options.sym )
+		if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align and ('rotate_translate_3d' in options.align or 'rotate_symmetry_3d' in options.align) and 'grid' not in options.align:
+			options.align += ':sym=' + str( options.sym )
 			#print "And there's sym", options.sym
 			
 		if 'search' not in options.align:		
-			options.align += ':search' + str( options.search )
+			options.align += ':search=' + str( options.search )
 			
 		else:
 			searchA = options.align.split('search=')[-1].split(':')[0]
 			searchdefault = 8
 			
-			if options.search and options.search != searchdefault:
+			if options.search != searchdefault:
 						
 				prefix = options.align.split('search=')[0]
 				trail = options.align.split('search=')[-1].split(':')[-1]
@@ -317,16 +313,16 @@ def main():
 					az0=0:az1=1:daz=2."""
 					sys.exit()
 			
-				
-	if options.falign:
+	#print "\n\nBefore adding search, options.falign is", options.falign, type(options.falign)	
+	if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
 		if 'search' not in options.falign:		
-			options.falign += ':search' + str( options.searchfine )
+			options.falign += ':search=' + str( options.searchfine )
 			
 		else:
 			searchA = options.falign.split('search=')[-1].split(':')[0]
 			searchfinedefault = 2
 			
-			if options.searchfine and options.searchfine != searchfinedefault:
+			if options.searchfine != searchfinedefault:
 						
 				prefix = options.falign.split('search=')[0]
 				trail = options.falign.split('search=')[-1].split(':')[-1]
@@ -354,10 +350,14 @@ def main():
 	#if options.falign and not options.faligncmp:
 	#	options.faligncmp = options.aligncmp	
 			
-	if options.falign: 
+	#print "(e2spt_classaverage.py) --falign before parsing is", options.falign, type(options.falign)
+
+	if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none': 
 		options.falign=parsemodopt(options.falign)
-		print "(e2spt_classaverage.py) --falign to parse is", options.falign
+		#print "(e2spt_classaverage.py) --falign parsed is", options.falign, type(options.falign)
 		
+	#sys.exit()
+	
 	#print "\n\nTHE ALIGNERS ARE ", options.falign, options.align
 	
 	if options.aligncmp: 
@@ -369,34 +369,35 @@ def main():
 	if options.averager: 
 		options.averager=parsemodopt(options.averager)
 
-	if options.normproc: 
+	if options.normproc and options.normproc != 'None' and options.normproc != 'none':
 		options.normproc=parsemodopt(options.normproc)
 	
-	if options.mask: 
+	if options.mask and options.mask != 'None' and options.mask != 'none':
+		#print "parsing mask", sys.exit()
 		options.mask=parsemodopt(options.mask)
 	
-	if options.preprocess: 
+	if options.preprocess and options.preprocess != 'None' and options.preprocess != 'none': 
 		options.preprocess=parsemodopt(options.preprocess)
 		
-	if options.threshold: 
+	if options.threshold and options.threshold != 'None' and options.threshold != 'none': 
 		options.threshold=parsemodopt(options.threshold)
 		
-	if options.preprocessfine: 
+	if options.preprocessfine and options.preprocessfine != 'None' and options.preprocessfine != 'none': 
 		options.preprocessfine=parsemodopt(options.preprocessfine)
 		
-	if options.lowpass: 
+	if options.lowpass and options.lowpass != 'None' and options.lowpass != 'none': 
 		options.lowpass=parsemodopt(options.lowpass)
 		
-	if options.lowpassfine: 
+	if options.lowpassfine and options.lowpassfine != 'None' and options.lowpassfine != 'none': 
 		options.lowpassfine=parsemodopt(options.lowpassfine)
 	
-	if options.highpass: 
+	if options.highpass and options.highpass != 'None' and options.highpass != 'none': 
 		options.highpass=parsemodopt(options.highpass)
 		
-	if options.highpassfine: 
+	if options.highpassfine and options.highpassfine != 'None' and options.highpassfine != 'none': 
 		options.highpassfine=parsemodopt(options.highpassfine)
 		
-	if options.postprocess: 
+	if options.postprocess and options.postprocess != 'None' and options.postprocess != 'none': 
 		options.postprocess=parsemodopt(options.postprocess)
 
 	if options.resultmx: 
@@ -989,31 +990,46 @@ Function to write the parameters used for every run of the program to parameters
 '''
 def writeParameters( options, program, tag ):
 	print "Tag received in writeParameters is", tag
+
 	names = dir(options)
+	
 	cmd = program
 	lines = []
 	now = datetime.datetime.now()
 	lines.append(str(now)+'\n')
+	
+	#print "\nnames are", names
+	optionscopy = options
+	
+	if options.search == 0 or options.search == 0.0:
+		options.search = '0'
+	if options.searchfine == 0 or options.searchfine == 0.0:
+		options.searchfine = '0'
+	
+	print "mask in write parameters is", optionscopy.mask, type(optionscopy.mask)
 	for name in names:
-		if getattr(options,name) and "__" not in name and "_" not in name:	
+				
+		if getattr(options,name) and "__" not in name and "_" not in name:
+		#if "__" not in name and "_" not in name:	
+	
 			#if "__" not in name and "_" not in name and str(getattr(options,name)) and 'path' not in name and str(getattr(options,name)) != 'False' and str(getattr(options,name)) != 'True' and str(getattr(options,name)) != 'None':			
-			line = name + '=' + str(getattr(options,name))
+			line = name + '=' + str(getattr(optionscopy,name))
 					
 			lines.append(line+'\n')
 			
-			if str(getattr(options,name)) != 'True' and str(getattr(options,name)) != 'False':
+			if str(getattr(optionscopy,name)) != 'True' and str(getattr(optionscopy,name)) != 'False' and str(getattr(optionscopy,name)) != '':
 			
 				if name != 'parallel':
-					cmd += ' --' + name + '=' + str(getattr(options,name)).replace(':','=').replace('(','').replace(')','').replace('{','').replace('}','').replace(',',':').replace(' ','').replace("'",'')
+					cmd += ' --' + name + '=' + str(getattr(optionscopy,name)).replace(':','=').replace('(','').replace(')','').replace('{','').replace('}','').replace(',',':').replace(' ','').replace("'",'')
 				else:
-					cmd += ' --' + name + '=' + str(getattr(options,name))
+					cmd += ' --' + name + '=' + str(getattr(optionscopy,name))
 			
-			elif str(getattr(options,name)) == 'True' or str(getattr(options,name)) == 'False':
+			elif str(getattr(optionscopy,name)) == 'True' or str(getattr(optionscopy,name)) == 'False':
 				cmd += ' --' + name
 	
 	parmFile = 'parameters_' + tag + '.txt'
 	lines.append('\n'+cmd+'\n')
-	f=open(options.path + '/' + parmFile,'w')
+	f=open(optionscopy.path + '/' + parmFile,'w')
 	f.writelines(lines)
 	f.close()
 	
@@ -1138,7 +1154,7 @@ def calcAliStep(options):
 	if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align:
 		options.align += ':sym=' + str(options.sym)
 	
-	if options.falign and options.falign != None and options.falign != 'None':
+	if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
 		options.falign = 'refine_3d_grid:range=' + str(rangoRounded) + ':delta=' + str(fineStepRounded) + ':search=' + str(searchF)
 	else:
 		options.falign = 'None'
@@ -1362,6 +1378,17 @@ def filters(options,fimage,preprocess,lowpass,highpass,shrink):
 
 def preprocessing(options,mask,clipali,normproc,shrink,lowpass,highpass,preprocess,threshold,image,ptclindx,tag='ptcls',coarse='yes'):
 	
+	if mask == 'None' or mask == 'none':
+		mask = None
+	if lowpass == 'None' or lowpass == 'none':
+		lowpass = None
+	if highpass == 'None' or highpass == 'none':
+		highpass = None
+	if preprocess == 'None' or preprocess == 'none':
+		preprocess = None
+	if threshold == 'None' or threshold == 'none':
+		threshold = None
+	
 	if coarse != 'yes':
 		print "lowpassfine received is", lowpass	
 	
@@ -1421,7 +1448,7 @@ def preprocessing(options,mask,clipali,normproc,shrink,lowpass,highpass,preproce
 		
 	
 	
-	if mask:
+	if mask and mask != 'None' and mask != 'none':
 		#if options.verbose:
 			#print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
 		maskimg.process_inplace(mask[0],mask[1])
@@ -1429,14 +1456,15 @@ def preprocessing(options,mask,clipali,normproc,shrink,lowpass,highpass,preproce
 		print "(e2spt_classaverage.py)(preprocessing) --mask provided:", mask
 		#mask.write_image(options.path + '/mask.hdf',-1)
 		
+		
 	'''
 	Set the 'mask' parameter for --normproc if normalize.mask is being used
 	'''
-	if normproc:
+	if normproc and normproc != 'None' and normproc != 'none':
 		if normproc[0]=="normalize.mask": 
 			normproc[1]["mask"]=maskimg
 		
-	if mask:
+	if mask and mask != 'None' and mask != 'none':
 		#if options.shrink:
 		#	maskCoarse = mask.copy()
 		#	maskCoarse.process_inplace('math.meanshrink',{'n':options.shrink})
@@ -1445,13 +1473,13 @@ def preprocessing(options,mask,clipali,normproc,shrink,lowpass,highpass,preproce
 		simage.mult(maskimg)
 		#simage.write_image(options.path + '/imgMsk1.hdf',-1)
 	
-	if normproc:
+	if normproc and normproc != 'None' and normproc != 'none':
 		simage.process_inplace(normproc[0],normproc[1])
 		#simage.write_image(options.path + '/imgMsk1norm.hdf',-1)
 
 		print "(e2spt_classaverage.py)(preprocessing) --normproc provided:", normproc
 
-	if mask:
+	if mask and mask != 'None' and mask != 'none':
 		print "Masking again after normalizing"
 		simage.mult(maskimg)
 		#simage.write_image(options.path + '/imgMsk1normMsk2.hdf',-1)
@@ -1462,7 +1490,7 @@ def preprocessing(options,mask,clipali,normproc,shrink,lowpass,highpass,preproce
 		#simage.write_image(options.path + '/imgMsk1normMsk2Filts.hdf',-1)
 
 	
-	if threshold:
+	if threshold and threshold != 'None' and threshold != 'none':
 		simage.process_inplace(threshold[0],threshold[1])
 		#simage.write_image(options.path + '/imgMsk1normMsk2LpFiltsThr.hdf',-1)
 	
@@ -1974,7 +2002,7 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 			sfixedimage = preprocessing(options,options.mask,options.clipali,options.normproc,options.shrink,options.lowpass,options.highpass,options.preprocess,options.threshold,fixedimage,0,'ref','yes')
 		
 		#Only preprocess again if there's fine alignment, AND IF the parameters for fine alignment are different
-		if options.falign and (options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1):
+		if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none' and (options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1):
 			s2fixedimage = preprocessing(options,options.mask,options.clipali,options.normproc,options.shrinkfine,options.lowpassfine,options.highpassfine,options.preprocessfine,options.threshold,fixedimage,0,'ref','no')
 		
 		elif not options.notprocfinelikecoarse:
@@ -1997,7 +2025,7 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 	
 	#Only preprocess again if there's fine alignment, AND IF the parameters for fine alignment are different
 	
-	if options.falign and (options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1):
+	if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none' and (options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1):
 		s2image = preprocessing(options,options.mask,options.clipali,options.normproc,options.shrinkfine,options.lowpassfine,options.highpassfine,options.preprocessfine,options.threshold,image,ptclindx,'ptcls','no')
 		print "There was fine preprocessing"
 		#sys.exit()
@@ -2068,7 +2096,7 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 		
 		# Scale translation
 		scaletrans=1.0
-		if options.falign and options.shrinkfine:
+		if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none' and options.shrinkfine:
 			scaletrans = options.shrink/float(options.shrinkfine)
 		elif options.shrink and not options.falign:
 			scaletrans=float(options.shrink)
@@ -2091,11 +2119,12 @@ def alignment(fixedimage,image,label,options,xformslabel,transform,prog='e2spt_c
 		for i,j in enumerate(bestcoarse): 
 			print "coarse %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
 
-	if options.falign:
+	if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
 		print "\n(e2spt_classaverage.py)(alignment) Will do fine alignment, over these many peaks", len(bestcoarse)
 		# Now loop over the individual peaks and refine each
 		bestfinal=[]
 		peaknum=0
+		print "options.falign is", options.falign, type(options.falign)
 		for bc in bestcoarse:
 			options.falign[1]["xform.align3d"] = bc["xform.align3d"]
 			
