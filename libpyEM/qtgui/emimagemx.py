@@ -760,8 +760,9 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		m0=1.0e10
 		m1=-1.0e10
 		nav=0
-				
+
 		stp=max(len(self.data)/32,1)
+
 		for i in range(0,len(self.data),stp):		# we check ~32 images randomly spaced in the set
 			d = self.data.get_image_header(i)
 			
@@ -769,14 +770,57 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			#print d["maximum"]
 			#print "d=",d
 			
-			if d == None: continue
-			try:
-				mean+=d["mean"]
-				nav+=1
-				sigma=max(sigma,d["sigma"])
-				m0=min(m0,d["minimum"])
-				m1=max(m1,d["maximum"])
-			except: pass
+			if d == None:
+				continue
+
+			try :
+				ave = d["mean"]
+			except :
+				ave = None
+
+			try :
+				dev = d["sigma"]
+			except :
+				dev = None
+
+			try :
+				mnv = d["minimum"]
+			except :
+				mnv = None
+
+			try :
+				mxv = d["maximum"]
+			except :
+				mxv = None
+
+			if mnv == None :
+				try :
+					mnv = d["MRC.minimum"]
+				except :
+					mnv = None
+
+			if mxv == None :
+				try :
+					mxv = d["MRC.maximum"]
+				except :
+					mxv = None
+
+			if ave == None or dev == None or mnv == None or mxv == None :
+				continue
+
+			mean  += ave
+			nav   += 1
+			sigma  = max(sigma, dev)
+			m0     = min(m0, mnv)
+			m1     = max(m1, mxv)
+
+#			try:
+#				mean+=d["mean"]
+#				nav+=1
+#				sigma=max(sigma,d["sigma"])
+#				m0=min(m0,d["minimum"])
+#				m1=max(m1,d["maximum"])
+#			except: pass
 
 		#print "\n mn=",mn, "mx=",mx, "m0=",m0,"m1=",m1
 
