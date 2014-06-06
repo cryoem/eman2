@@ -707,70 +707,75 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			else:
 				return None
 
-	def set_data(self,obj,filename='',update_gl=True,soft_delete=False):
+	def set_data(self, obj, filename = '', update_gl = True, soft_delete = False) :
 		'''
-		This function will work if you give it a list of EMData objects, or if you give it the file name (as the first argument)
-		If this solution is undesirable one could easily split this function into two equivalents.
+		This function will work if you give it a list of EMData objects, or
+		if you give it the file name (as the first argument).
+		If this solution is undesirable one could easily split this function
+		into two equivalents.
 		'''
 				
 		cache_size = -1
-		if isinstance(obj,EMMXDataCache): self.data = obj
-		else: self.data = self.__get_cache(obj,soft_delete)
 
-		
-		if self.data == None: return
+		if isinstance(obj, EMMXDataCache) :
+			self.data = obj
+		else :
+			self.data = self.__get_cache(obj, soft_delete)
 
-		if self.data.is_3d():
+		if self.data == None : return
+
+		if self.data.is_3d() :
 			self.get_inspector()
 			self.inspector.enable_xyz()
 			self.data.set_xyz(str(self.inspector.xyz.currentText()))
-		else:			
+		else :			
 			self.get_inspector()
 			self.inspector.disable_xyz()
 
-		if filename==None or len(filename)==0:
-			try:
-				filename=obj[0]["data_path"]
-			except:
-				filename=""
+		if filename == None or len(filename) == 0 :
+			try :
+				filename = obj[0]["data_path"]
+			except :
+				filename = ""
 
 		self.file_name = filename
-		if self.file_name != None and len(self.file_name) > 0:
+
+		if self.file_name != None and len(self.file_name) > 0 :
 			self.setWindowTitle(self.file_name)
 			self.infoname=info_name(self.file_name)
 
 		self.load_sets()
 
 		self.force_display_update()
-		self.nimg=len(self.data)
+		self.nimg = len(self.data)
 				
 		self.max_idx = len(self.data)
-		if self.nimg == 0: return # the list is empty
+
+		if self.nimg == 0 : return # the list is empty
 
 		global HOMEDB
-		HOMEDB=EMAN2db.EMAN2DB.open_db()
+		HOMEDB = EMAN2db.EMAN2DB.open_db()
 		HOMEDB.open_dict("display_preferences")
 		db = HOMEDB.display_preferences
-		#auto_contrast = db.get("display_stack_auto_contrast",dfl=True)
-		start_guess = db.get("display_stack_np_for_auto",dfl=20)
+		#auto_contrast = db.get("display_stack_auto_contrast", dfl = True)
+		start_guess = db.get("display_stack_np_for_auto", dfl = 20)
 
+		mean  = 0.0
+		sigma = 0.0
+		m0    = 1.0e10
+		m1    = -1.0e10
+		nav   = 0
 
-		mean=0
-		sigma=0
-		m0=1.0e10
-		m1=-1.0e10
-		nav=0
+		stp = max(len(self.data)/32, 1)
 
-		stp=max(len(self.data)/32,1)
-
-		for i in range(0,len(self.data),stp):		# we check ~32 images randomly spaced in the set
+		for i in range(0, len(self.data), stp) : # we check ~32 images randomly spaced in the set
 			d = self.data.get_image_header(i)
 			
 			#print "\n"
 			#print d["maximum"]
-			#print "d=",d
+			#print "d=", d
 			
-			if d == None:
+			if d == None :
 				continue
 
 			try :
@@ -815,57 +820,61 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			m1     = max(m1, mxv)
 
 #			try:
-#				mean+=d["mean"]
-#				nav+=1
-#				sigma=max(sigma,d["sigma"])
-#				m0=min(m0,d["minimum"])
-#				m1=max(m1,d["maximum"])
-#			except: pass
+#				mean += d["mean"]
+#				nav  += 1
+#				sigma = max(sigma, d["sigma"])
+#				m0    = min(m0, d["minimum"])
+#				m1    = max(m1, d["maximum"])
+#			except : pass
 
-		#print "\n mn=",mn, "mx=",mx, "m0=",m0,"m1=",m1
+		#print "\n mn=", mn, "mx=", mx, "m0=", m0, "m1=", m1
 
-		if nav==0:
-			mean=0
-			sigma=1
-		else: mean/=float(nav)
-
-		try:
-			if ((filename.split('.')[-1]=="dm4") and (m0==1.0e10)):
-				data=EMData(filename)
-				m0=data.get_attr("minimum")
-				m1=data.get_attr("maximum")
-				mean=data.get_attr("mean")
-				sigma=data.get_attr("sigma")
-		except:	pass 
-		
-		if self.auto_contrast:
-			mn=max(m0,mean-3.0*sigma)
-			mx=min(m1,mean+4.0*sigma)
+		if nav == 0 :
+			m0    = 0.0
+			m1    = 0.0
+			mean  = 0.0
+			sigma = 1.0
 		else:
-			mn=m0
-			mx=m1
+			mean /= float(nav)
 
-		#print "\n mn=",mn, "mx=",mx, "m0=",m0,"m1=",m1, "mean=",mean, "sigma=",sigma
+		try :
+			if ((filename.split('.')[-1] == "dm4") and (m0 == 1.0e10)) :
+				data  = EMData(filename)
+				m0    = data.get_attr("minimum")
+				m1    = data.get_attr("maximum")
+				mean  = data.get_attr("mean")
+				sigma = data.get_attr("sigma")
+		except :
+			pass 
+		
+		if self.auto_contrast :
+			mn = max(m0, mean - 3.0*sigma)
+			mx = min(m1, mean + 4.0*sigma)
+		else :
+			mn = m0
+			mx = m1
+
+		#print "\n mn=",mn, "mx=",mx, "m0=",m0, "m1=",m1, "mean=",mean, "sigma=",sigma
 		#mn= -2.98711583766  mx= 4.0128849968 		m0= -12.1826601028 		m1= 4.72158241272
 		
-		if self.auto_contrast:
-			self.minden=mn
-			self.maxden=mx
-			self.mindeng=m0
-			self.maxdeng=m1
+		if self.auto_contrast :
+			self.minden  = mn
+			self.maxden  = mx
+			self.mindeng = m0
+			self.maxdeng = m1
 		
-		if self.inspector:
-			self.inspector.set_limits(self.mindeng,self.maxdeng,self.minden,self.maxden)
+		if self.inspector :
+			self.inspector.set_limits(self.mindeng, self.maxdeng, self.minden, self.maxden)
 
-		if update_gl: self.updateGL()
+		if update_gl : self.updateGL()
 
-
-
-	def set_den_range(self,x0,x1,update_gl=True):
+	def set_den_range(self, x0, x1, update_gl = True) :
 		"""Set the range of densities to be mapped to the 0-255 pixel value range"""
-		self.minden=x0
-		self.maxden=x1
-		if update_gl: self.updateGL()
+
+		self.minden = x0
+		self.maxden = x1
+
+		if update_gl : self.updateGL()
 
 	def get_density_min(self):
 		return self.minden
@@ -878,6 +887,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 	def set_origin(self,x,y,update_gl=True):
 		"""Set the display origin within the image"""
+
 		if self.animation_enabled:
 			if self.line_animation != None and self.line_animation.animated: return # this is so the current animation has to end before starting another one. It could be the other way but I like it this way
 			self.line_animation = LineAnimation(self,self.origin,(x,y))
