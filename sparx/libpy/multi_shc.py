@@ -140,7 +140,7 @@ def find_common_subset_3(projs, target_threshold, minimal_subset_size=3, sym = "
 			mirror_and_reduce_dsym(projs2, sym)
 			from utilities import getvec
 			from math import acos, degrees
-			
+
 			trans_vec = [0.0]*sc
 			for iConf in xrange(sc):
 				#temp = reduce_dsym_angles(projs2[iConf], sym)

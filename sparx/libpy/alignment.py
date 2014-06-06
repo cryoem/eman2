@@ -927,8 +927,14 @@ def prep_vol_kb(vol, kb, npad=2):
 	volft.fft_shuffle()
 	return  volft
 
-def prepare_refrings( volft, kb, nz, delta, ref_a, sym, numr, MPI=False, phiEqpsi = "Minus", kbx = None, kby = None, initial_theta = None, delta_theta = None):
-
+def prepare_refrings( volft, kb, nz, delta, ref_a, sym = "c1", numr = None, MPI=False, \
+						phiEqpsi = "Minus", kbx = None, kby = None, initial_theta = None, \
+						delta_theta = None, ant = -1.0):
+	"""
+		Generate quasi-evenly distributed reference projections converted to rings
+		ant - neighborhood for local searches.  I believe the fastest way to deal with it in case of point-group symmetry
+		        it to generate cushion projections within an/2 of the border of unique zone
+	"""
 	from projection   import prep_vol, prgs
 	from applications import MPI_start_end
 	from utilities    import even_angles, getfvec
@@ -1078,11 +1084,11 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 
 	return peak, pixel_error
 
-def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None):
+def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None, sym='c1'):
 	from utilities    import compose_transform2
 	#from utilities    import set_params_proj, get_params_proj
-	from math         import cos, sin, pi
-	from EMAN2 import Vec2f
+	from math         import cos, sin, pi, radians
+	from EMAN2        import Vec2f
 
 	ID = data.get_attr("ID")
 
@@ -1093,7 +1099,7 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
 
-	ant = cos(an*pi/180.0)
+	ant = cos(radians(an))
 	#phi, theta, psi, sxo, syo = get_params_proj(data)
 	t1 = data.get_attr("xform.projection")
 	dp = t1.get_params("spider")
@@ -1114,18 +1120,24 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
 		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+		isym = int(sym[1:])
+		phi   = refrings[iref].get_attr("phi")
+		if(isym > 1 and an > 0.0):
+			qsym = 360.0/isym
+			if(phi < 0.0 or phi >= qsym ):  phi = phi%qsym
 		if  mirror:
-			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
+			phi   = (phi+540.0)%360.0
 			theta = 180.0-refrings[iref].get_attr("theta")
 			psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
 			s2x   = sxb - dp["tx"]
 			s2y   = syb - dp["ty"]
-		else:
-			phi   = refrings[iref].get_attr("phi")
+		else:			
 			theta = refrings[iref].get_attr("theta")
 			psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
 			s2x   = sxb - dp["tx"]
 			s2y   = syb - dp["ty"]
+			
+			
 
 		#set_params_proj(data, [phi, theta, psi, s2x, s2y])
 		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})

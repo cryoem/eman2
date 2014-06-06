@@ -145,6 +145,35 @@ def angle_diff(angle1, angle2):
 
 	return alphai
 
+def angle_diff_sym(angle1, angle2, simi=1):
+	'''
+	This function determines the relative angle around Z axis (phi) between two sets of angles
+	   taking into account point group symmetry with multiplicity simi.
+	The input has to be in the form [[phi0,theta0], [phi1,theta1], ...]
+	  Only sets that have theta in the same range (0,90), or (90,180) are included in calculation.
+	The resulting angle has to be added (modulo 360/i) to the first set.
+	'''
+	from math import cos, sin, pi, atan2, degrees, radians
+	
+	nima = len(angle1)
+	nima2 = len(angle2)
+	if nima2 != nima:
+		print "Error: List lengths do not agree!"
+		return 0
+	else:
+		del nima2
+
+	cosi = 0.0
+	sini = 0.0
+	for i in xrange(nima):
+		if( ( (angle2[i][1] <90.0) and (angle1[i][1] <90.0) ) or ( (angle2[i][1] >90.0) and (angle1[i][1] >90.0) ) ):
+			qt = radians((angle2[i][0]-angle1[i][0])*simi)
+			cosi += cos( qt )
+			sini += sin( qt )
+	alphai = degrees(atan2(sini, cosi)/simi)%(360.0/simi)
+
+	return alphai
+
 
 def angle_error(ang1, ang2, delta_ang=0.0):
 	'''

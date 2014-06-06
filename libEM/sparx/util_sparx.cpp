@@ -18664,7 +18664,7 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 	int   iref, nref=0, mirror=0;
 	float iy, ix, sx=0, sy=0;
 	float peak = -1.0E23f;
-	float ang=0.0f;
+	float ang  = 0.0f;
 	float imn1 = sin(theta*qv)*cos(phi*qv);
 	float imn2 = sin(theta*qv)*sin(phi*qv);
 	float imn3 = cos(theta*qv);
@@ -18713,8 +18713,8 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 		ang=0.0; sxs=0.0; sys=0.0; mirror=0;
 		nref = -1;
 	} else {
-		co =  cos(ang*qv);
-		so = -sin(ang*qv);
+		co  =  cos(ang*qv);
+		so  = -sin(ang*qv);
 		sxs = sx*co - sy*so;
 		sys = sx*so + sy*co;
 	}

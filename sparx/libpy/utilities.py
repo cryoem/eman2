@@ -695,12 +695,16 @@ def dump_row(input, fname, ix=0, iz=0):
 		fout.write("%d\t%12.5g\n" % (iy, image.get_value_at(ix,iy,iz)))
 	fout.close()
 
-def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, method = 'S', phiEqpsi = "Minus", symmetry='c1'):
+def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
+				method = 'S', phiEqpsi = "Minus", symmetry='c1', ant = 0.0):
 	"""Create a list of Euler angles suitable for projections.
 	   method is either 'S' - for Saff algorithm
-	                  or   'P' - for Penczek '94 algorithm
-			  'S' assumes phi1<phi2 and phi2-phi1>> delta ;
-	   symmetry  - if this is set to point-group symmetry (cn or dn) or helical symmetry with point-group symmetry (scn or sdn), it will yield angles from the asymmetric unit, not the specified range;
+	               or   'P' - for Penczek '94 algorithm
+			         'S' assumes phi1<phi2 and phi2-phi1>> delta ;
+	   symmetry  - if this is set to point-group symmetry (cn or dn) or helical symmetry with point-group symmetry (scn or sdn), \
+	                 it will yield angles from the asymmetric unit, not the specified range;
+	   ant - neighborhood for local searches.  I believe the fastest way to deal with it in case of point-group symmetry
+		        it to generate cushion projections within an/2 of the border of unique zone
 	"""
 
 	from math      import pi, sqrt, cos, acos, tan, sin
@@ -711,43 +715,43 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, me
 	symmetry_string = split(symmetry)[0]
 	if  (symmetry_string[0]  == "c"):
 		if(phi2 == 359.99):
-			angles = even_angles_cd(delta, theta1, theta2, phi1, phi2/int(symmetry_string[1:]), method, phiEqpsi)
-			if(int(symmetry_string[1:]) > 1):
-				if( int(symmetry_string[1:])%2 ==0):
-					qt = 360.0/int(symmetry_string[1:])
-				else:
-					qt = 180.0/int(symmetry_string[1:])
-				n = len(angles)
-				for i in xrange(n):
-					t = n-i-1
-					if(angles[t][1] == 90.0):
-						if(angles[t][0] >= qt):  del angles[t]
+			angles = even_angles_cd(delta, theta1, theta2, phi1-ant, phi2/int(symmetry_string[1:])+ant, method, phiEqpsi)
 		else:
-			angles = even_angles_cd(delta, theta1, theta2, phi1, phi2, method, phiEqpsi)
-	elif(symmetry_string[0]  == "d"):
-		if(phi2 == 359.99):
-			angles = even_angles_cd(delta, theta1, theta2, phi1, 360.0/int(symmetry_string[1:]), method, phiEqpsi)
-			n = len(angles)
-			badb = 360.0/int(symmetry_string[1:])/4
-			bade = 2*badb
-			bbdb = badb + 360.0/int(symmetry_string[1:])/2
-			bbde = bbdb + 360.0/int(symmetry_string[1:])/4
-			for i in xrange(n):
-				t = n-i-1
-				qt = angles[t][0]
-				if((qt>=badb and qt<bade) or (qt>=bbdb and qt<bbde)):  del angles[t]
-				
-			if (int(symmetry_string[1:])%2 == 0):
-				qt = 360.0/2/int(symmetry_string[1:])
+			angles = even_angles_cd(delta, theta1, theta2, phi1-ant, phi2+ant, method, phiEqpsi)
+		if(int(symmetry_string[1:]) > 1):
+			if( int(symmetry_string[1:])%2 ==0):
+				qt = 360.0/int(symmetry_string[1:])
 			else:
-				qt = 180.0/2/int(symmetry_string[1:])
+				qt = 180.0/int(symmetry_string[1:])
 			n = len(angles)
 			for i in xrange(n):
 				t = n-i-1
 				if(angles[t][1] == 90.0):
-					if(angles[t][0] >= qt):  del angles[t]
+					if(angles[t][0] >= qt+ant):  del angles[t]
+	elif(symmetry_string[0]  == "d"):
+		if(phi2 == 359.99):
+			angles = even_angles_cd(delta, theta1, theta2, phi1, 360.0/int(symmetry_string[1:]), method, phiEqpsi)
 		else:
 			angles = even_angles_cd(delta, theta1, theta2, phi1, phi2, method, phiEqpsi)
+		n = len(angles)
+		badb = 360.0/int(symmetry_string[1:])/4 + ant
+		bade = 2*badb -ant
+		bbdb = badb + 360.0/int(symmetry_string[1:])/2 + ant
+		bbde = bbdb + 360.0/int(symmetry_string[1:])/4 - ant
+		for i in xrange(n):
+			t = n-i-1
+			qt = angles[t][0]
+			if((qt>=badb and qt<bade) or (qt>=bbdb and qt<bbde)):  del angles[t]
+			
+		if (int(symmetry_string[1:])%2 == 0):
+			qt = 360.0/2/int(symmetry_string[1:])
+		else:
+			qt = 180.0/2/int(symmetry_string[1:])
+		n = len(angles)
+		for i in xrange(n):
+			t = n-i-1
+			if(angles[t][1] == 90.0):
+				if(angles[t][0] >= qt + ant ):  del angles[t]
 	elif(symmetry_string[0]  == "s"):
 	
 	#if symetry is "s", deltphi=delta, theata intial=theta1, theta end=90, delttheta=theta2
