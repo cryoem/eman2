@@ -79,7 +79,14 @@ def main():
     sxprocess.py  vol.hdf ref.hdf  avol.hf < 0.25 0.2> --adjpw
     sxprocess.py  vol.hdf pw.txt  avol.hf < 0.25 0.2> --adjpw
 
-	8.  Import ctf parameters from the output of sxcter into windowed particle headers.
+	8.  Generate a 1D rotationally averaged power spectrum of an image.
+    sxprocess.py  vol.hdf --rotwp=rotpw.txt
+    # Output will contain three columns:
+       (1) integer line number (from zero to approximately to half the image size)
+       (2) rotationally averaged power spectrum
+       (3) logarithm of the rotationally averaged power spectrum
+
+	9.  Import ctf parameters from the output of sxcter into windowed particle headers.
 	    There are three possible input files formats:  (1) all particles are in one stack, (2 aor 3) particles are in stacks, each stack corresponds to a single micrograph.
 	    In each case the particles should contain a name of the micrograph of origin stores using attribute name 'ptcl_source_image'.  Normally this is done by e2boxer.py during windowing.
 	    Particles whose defocus or astigmatism error exceed set thresholds will be skipped, otherwise, virtual stacks with the original way preceded by G will be created.
@@ -108,6 +115,7 @@ def main():
 	parser.add_option("--isacgroup", type="int", help="Retrieve original image numbers in the selected ISAC group   See ISAC documentaion for details.", default=-1)
 	parser.add_option("--params",	   type="string",       default=None,    help="Name of header of parameter, which one depends on specific option")
 	parser.add_option("--adjpw", action="store_true", help="Adjust rotationally averaged power spectrum of an image", default=False)
+	parser.add_option("--rotpw", type="string",   default=None,    help="Name of the text file to contain rotationally averaged power spectrum of the input image.")
 
 	
 	# import ctf estimates done using cter
@@ -310,6 +318,20 @@ def main():
 				img = filt_tanl(img, fl, aa)
 			img = fft(filt_table(img, table))
 			img.write_image(out_stack, i)
+
+	if options.rotpw != None:
+
+		if len(args) != 1:
+			ERROR("Only one input permitted","rotpw",1)
+			return
+		from utilities import write_text_file, get_im
+		from fundamentals import rops_table
+		from math import log10
+		t = rops_table(get_im(args[0]))
+		x = range(len(t))
+		r = [0.0]*len(x)
+		for i in x:  r[i] = log10(t[i])
+		write_text_file([x,t,r],options.rotpw)
 
 
 	if options.makedb != None:
