@@ -18114,18 +18114,20 @@ vector<float> Util::multiref_polar_ali_2d_peaklist(EMData* image, const vector< 
 				Dict retvals = Crosrng_ms(crefim[iref], cimage, numr);
 				double qn = retvals["qn"];
 				double qm = retvals["qm"];
-				if (qn >= qm) {
-					peak[iref*5]   = static_cast<float>(qn);
-					peak[iref*5+1] = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-					peak[iref*5+2] = -ix;
-					peak[iref*5+3] = -iy;
-					peak[iref*5+4] = 0;
-				} else {
-					peak[iref*5]   = static_cast<float>(qm);
-					peak[iref*5+1] = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
-					peak[iref*5+2] = -ix;
-					peak[iref*5+3] = -iy;
-					peak[iref*5+4] = 1;
+				if(qn >= peak[iref*5] || qm >= peak[iref*5]) {
+					if (qn >= qm) {
+						peak[iref*5] = static_cast<float>(qn);
+						peak[iref*5+1] = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+						peak[iref*5+2] = -ix;
+						peak[iref*5+3] = -iy;
+						peak[iref*5+4] = 0;
+					} else {
+						peak[iref*5] = static_cast<float>(qm);
+						peak[iref*5+1] = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
+						peak[iref*5+2] = -ix;
+						peak[iref*5+3] = -iy;
+						peak[iref*5+4] = 1;
+					}
 				}
 			}  delete cimage; cimage = 0;
 		}
