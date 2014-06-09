@@ -48,7 +48,8 @@ using namespace EMAN;
 
 #ifdef EMAN2_USING_CUDA
 #include "cuda/cuda_processor.h"
-#endif // EMAN2_USING_CUDA
+#endif
+// EMAN2_USING_CUDA
 
 EMData* EMData::get_fft_amplitude2D()
 {
@@ -896,7 +897,8 @@ void EMData::set_size(int x, int y, int z, bool noalloc)
 		ro_free();
 		ro_alloc();
 	}
-#endif // EMAN2_USING_CUDA
+#endif
+// EMAN2_USING_CUDA
 
 	if (old_nx == 0) {
 		EMUtil::em_memset(get_data(),0,size);
@@ -939,7 +941,8 @@ void EMData::set_size_cuda(int x, int y, int z)
 	EXITFUNC;
 }
 
-#endif // EMAN2_USING_CUDA
+#endif
+// EMAN2_USING_CUDA
 
 MArray2D EMData::get_2dview() const
 {
