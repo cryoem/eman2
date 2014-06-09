@@ -108,11 +108,17 @@ def main():
 	
 	parser.add_argument("--search", type=int,default=8,help=""""During COARSE alignment
 		translational search in X, Y and Z, in pixels. Default=8.
-		This WILL overwrite any search: provided through --align.""")
+		This WILL overwrite any search: provided through --align,
+		EXCEPT if you provide --search=8, which is the default. In general, just avoid
+		providing search twice (through here and through the aligner, --align). If you do,
+		just be careful to make them consistent to minimize misinterpretation and error.""")
 	
 	parser.add_argument("--searchfine", type=int,default=2,help=""""During FINE alignment
 		translational search in X, Y and Z, in pixels. Default=2.
-		This WILL overwrite any search: provided through --falign.""")
+		This WILL overwrite any search: provided through --falign,
+		EXCEPT if you provide --searchfine=2, which is the default. In general, just avoid
+		providing search twice (through here and through the fine aligner --falign). If you do,
+		just be careful to make them consistent to minimize misinterpretation and error.""")
 
 	parser.add_argument("--exclusive_class_min", type=int, help="""The minimum multiplicity 
 		(number of particles that went into an average) to look for mutually exclusive classes/averages.
@@ -142,6 +148,9 @@ def main():
 	
 	parser.add_argument("--mask",type=str,help="""Mask processor applied to particles before alignment. 
 		Default is mask.sharp:outer_radius=-2""", default="mask.sharp:outer_radius=-2")
+		
+	parser.add_argument("--maskfile",type=str,default=None,help="""Mask file (3D IMAGE) applied to particles 
+		before alignment. Must be in HDF format. Default is None.""")
 
 	parser.add_argument("--normproc",type=str,help="""Normalization processor applied to particles before alignment. 
 		Default is to use 'normalize'. If normalize.mask is used, results of the mask option will be passed in automatically. 
@@ -282,6 +291,8 @@ def main():
 			searchA = options.align.split('search=')[-1].split(':')[0]
 			searchdefault = 8
 			
+			#print "There was search in --align", searchA
+			#sys.exit()
 			if options.search != searchdefault:
 						
 				prefix = options.align.split('search=')[0]
@@ -295,6 +306,9 @@ def main():
 				--align or its default value of 8. There's no need to specify both, 
 				but if you did, --search takes precedence :-) ."""
 				#sys.exit()
+			elif options.search == searchdefault:
+				options.search = searchA
+				
 
 	
 		
@@ -353,7 +367,7 @@ def main():
 			options.falign += ':search=' + str( options.searchfine )
 			
 		else:
-			searchA = options.falign.split('search=')[-1].split(':')[0]
+			searchF = options.falign.split('search=')[-1].split(':')[0]
 			searchfinedefault = 2
 			
 			if options.searchfine != searchfinedefault:
@@ -369,6 +383,9 @@ def main():
 				--falign or its default value of 2. There's no need to specify both, but 
 				if you did, --searchfine takes precedence :-) ."""
 				#sys.exit()
+				
+			elif options.searchfine == searchfinedefault:
+				options.searchfine = searchF
 	
 	'''
 	Make the directory where to create the database where the results will be stored
@@ -446,6 +463,11 @@ def main():
 		
 		
 		
+		
+	
+		
+		
+		
 
 	group_ranges=[]
 	data_files = []
@@ -455,6 +477,25 @@ def main():
 	originalpath = options.path
 	
 	logger = E2init(sys.argv,options.ppid)
+
+
+
+
+	if options.savepreprocessed:
+		dummy = EMData(8,8,8)
+		dummy.to_one()
+		
+		preprocnameCoarse = options.path + '/' + options.input.replace('.hdf','_preprocCoarse.hdf')
+		preprocnameFine = options.path + '/' + options.input.replace('.hdf','_preprocFine.hdf')
+
+		for i in range(nptcl):
+			dummy.write_image( preprocnameCoarse ,i)
+			
+			if options.falign and options.falign != 'None' and options.falign != 'none':
+				dummy.write_image( preprocnameFine ,i)
+
+
+
 
 	for i in range(options.groups):	
 		#if options.groups > 1:
@@ -1550,7 +1591,7 @@ class Align3DTaskAVSA(JSTask):
 		refpreprocess=1
 		
 		print "\n(e2spt_hac.py)(Align3DTaskAVSA) Will call alignment function"
-		ret=alignment( fixedimage, image, options['label'], options['classoptions'],xformslabel,None,'e2spt_hac',refpreprocess)
+		ret=alignment( fixedimage, image, options['label'], options['classoptions'],xformslabel,options['round'],None,'e2spt_hac',refpreprocess)
 		print "\n(e2spt_hac.py)(Align3DTaskAVSA) Done with alignment, back in e2spt_hac.py."
 		
 		bestfinal=ret[0]
@@ -1669,10 +1710,9 @@ def plotter(xaxis,yaxis,options,name,maxX,maxY):
 	
 	start, end = ax.get_xlim()
 
-	import numpy
-	ax.xaxis.set_ticks(numpy.arange(start, end, stepsize))
-	
-	
+	if len( xaxis ) > 10:
+		import numpy
+		ax.xaxis.set_ticks(numpy.arange(start, end, stepsize))
 	
 	ax.set_xlabel('Comparison number (n)', fontsize=18, fontweight='bold')
 	ax.set_ylabel('Normalized cross correlation score', fontsize=18, fontweight='bold')
