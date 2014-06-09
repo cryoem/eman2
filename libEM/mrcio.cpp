@@ -286,6 +286,8 @@ int MrcIO::read_mrc_header(Dict & dict, int image_index, const Region * area, bo
 	dict["MRC.minimum"] = mrch.amin;
 	dict["MRC.maximum"] = mrch.amax;
 	dict["MRC.mean"] = mrch.amean;
+	dict["minimum"] = mrch.amin;
+	dict["maximum"] = mrch.amax;
 	dict["mean"] = mrch.amean;
 
 	dict["MRC.ispg"] = mrch.ispg;
