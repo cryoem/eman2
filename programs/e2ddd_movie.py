@@ -29,7 +29,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
-#
 
 import pprint
 from EMAN2 import *
@@ -128,7 +127,6 @@ def main():
 	elif options.gaink2 :
 		gain=EMData(options.gaink2)
 	else : gain=None
-	
 
 	#try: display((dark,gain,sigd,sigg))
 	#except: display((dark,gain))
@@ -141,6 +139,7 @@ def main():
 	if options.verbose: print "Range={} - {}, Step={}".format(first,last,step)
 
 	# the user may provide multiple movies to process at once
+
 	for fsp in args:
 		if options.verbose : print "Processing ",fsp
 				
@@ -166,6 +165,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			nx,ny=hdr["nx"],hdr["ny"]
 		
 		# bgsub and gain correct the stack
+
 		outim=[]
 		for ii in xrange(first,flast,step):
 			if options.verbose:
@@ -192,6 +192,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 		ny=outim[0]["ny"]
 
 		# show a little movie of 5 averaged frames
+
 		if options.movie>0 :
 			mov=[]
 			for i in xrange(options.movie+1,len(outim)):
@@ -215,6 +216,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 #			plot(fsc)
 		
 		# A simple average
+
 		if options.simpleavg :
 			if options.verbose : print "Simple average"
 			avgr=Averagers.get("mean")
@@ -227,9 +229,9 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 			av=avgr.finish()
 			av.write_image(outname[:-4]+"_mean.hdf",0)
-			
-		
+
 		# Generates different possibilites for resolution-weighted, but unaligned, averages
+
 		xy=XYData()
 		xy.set_size(2)
 		xy.set_x(0,0)
@@ -254,6 +256,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 #			display(normim)
 
 			# linear weighting with shifting 0 cutoff
+
 			xy.set_y(1,0.0)
 			for i in xrange(len(outim)):
 				if options.verbose:
@@ -268,6 +271,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			av.write_image(outname[:-4]+"_b.hdf",0)
 
 			# exponential falloff with shifting width
+
 			xy.set_size(64)
 			for j in xrange(64): xy.set_x(j,0.8*j/64.0)
 			for i in xrange(len(outim)):
@@ -283,8 +287,8 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			av=avgr.finish()
 			av.write_image(outname[:-4]+"_c.hdf",0)
 
-
 		# we iterate the alignment process several times
+
 		#if options.align_frames:
 			#outim2=[]
 ##			for im in outim: im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4,"tomean":True})
@@ -314,6 +318,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			#if options.verbose>1 : display(fav,True)
 
 		# we iterate the alignment process several times
+
 		if options.align_frames:
 			outim2=[]
 			
@@ -353,12 +358,14 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 											
 						i0+=step
 					
-					# possible sometimes to have multiple values for the same x (img #), average in these cases 
+					# possible sometimes to have multiple values for the same x (img #), average in these cases
+
 					xali.dedupx()
 					yali.dedupx()
 					
 					# Smoothing
 					# we should have all possible x-values at this point, so we just do a very simplistic smoothing
+
 					for i in xrange(xali.get_size()-2):
 						xali.set_y(i+1,(xali.get_y(i)+xali.get_y(i+1)*2.0+xali.get_y(i+2))/4.0)
 						yali.set_y(i+1,(yali.get_y(i)+yali.get_y(i+1)*2.0+yali.get_y(i+2))/4.0)
@@ -393,9 +400,8 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				aliavg=aliavg.get_clip(Region(500,500,3072,3072))
 				display([t,aliavg],True)
 
-
-			
 		# we iterate the alignment process several times
+
 		#if options.align_frames_countmode:
 			#outim2=[]
 ##			for im in outim: im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":6,"tomean":True})	# nsigma was normally 4, but for K2 images even 6 may not be enough
@@ -424,9 +430,6 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				#for i,im in enumerate(outim2): im.write_image(outname[:-4]+"_align.hdf",i)
 			#if options.verbose>2 : display(fav,True)
 
-		
-			
-
 def align(s1,s2,guess=(0,0),localrange=192,verbose=0):
 	"""Aligns a pair of images, and returns a (dx,dy,Z) tuple. Z is the Z-score of the best peak, not a shift.
 	The search will be limited to a region of +-localrange/2 about the guess, a (dx,dy) tuple. Resulting dx,dy
@@ -434,12 +437,12 @@ def align(s1,s2,guess=(0,0),localrange=192,verbose=0):
 	with s1"""
 
 	# reduce region used for alignment a bit (perhaps a lot for superresolution imaging
+
 	guess=(int(guess[0]),int(guess[1]))
 	if localrange<5 : localrange=192
 	newbx=good_boxsize(min(s1["nx"],s1["ny"],4096)*0.8,larger=False)
 	s1a=s1.get_clip(Region((s1["nx"]-newbx)/2,(s1["ny"]-newbx)/2,newbx,newbx))
 	s2a=s2.get_clip(Region((s2["nx"]-newbx)/2-guess[0],(s2["ny"]-newbx)/2-guess[1],newbx,newbx))
-
 
 #	s1a.process_inplace("math.xystripefix",{"xlen":200,"ylen":200})
 	s1a.process_inplace("filter.xyaxes0")
@@ -451,8 +454,7 @@ def align(s1,s2,guess=(0,0),localrange=192,verbose=0):
 #	s2a.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
 	s2a.process_inplace("filter.xyaxes0")
 	s2a.process_inplace("filter.highpass.gauss",{"cutoff_abs":.002})
-	
-	
+
 	tot=s1a.calc_ccf(s2a)
 	tot.process_inplace("xform.phaseorigin.tocenter")
 	tot.process_inplace("normalize.edgemean")
@@ -473,6 +475,7 @@ def align(s1,s2,guess=(0,0),localrange=192,verbose=0):
 			pass
 
 	# first pass to have a better chance at finding the first peak, using a lot of blurring
+
 	tot2=tot.get_clip(Region(tot["nx"]/2-96,tot["ny"]/2-96,192,192))
 	tot2.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.04})		# This is an empirical value. Started with 0.04 which also seemed to be blurring out high-res features.
 	tot2=tot2.get_clip(Region(tot2["nx"]/2-localrange/2,tot2["ny"]/2-localrange/2,localrange,localrange))
@@ -481,12 +484,20 @@ def align(s1,s2,guess=(0,0),localrange=192,verbose=0):
 	dy1-=localrange/2
 
 	# second pass with less blurring to fine tune it
+
 	tot=tot.get_clip(Region(tot["nx"]/2-12+dx1,tot["ny"]/2-12+dy1,24,24))
 	tot.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.12})		# This is an empirical value. Started with 0.04 which also seemed to be blurring out high-res features.
-	dx,dy,dz=tot.calc_max_location()
-	zscore=tot[dx,dy]/tot["sigma"]		# a rough Z score for the peak
-	dx-=12
-	dy-=12
+	dx,dy,dz = tot.calc_max_location()
+
+	dev = tot["sigma"]
+
+	if dev == 0.0 :
+		dev  = 1.0
+		print "Warning: sigma is zero in 'align' in iterative step for guess (", guess[0], ",", guess[1], ")."
+
+	zscore = tot[dx,dy] / dev		# a rough Z score for the peak
+	dx -= 12
+	dy -= 12
 	
 	tot.write_image("tot.hdf",-1)
 	#while hypot(dx-tot["nx"]/2,dy-tot["ny"]/2)>64 :
@@ -509,6 +520,7 @@ def align_subpixel(s1,s2,guess=(0,0),localrange=192,verbose=0):
 	with s1"""
 
 	# reduce region used for alignment a bit (perhaps a lot for superresolution imaging
+
 	guess=(int(guess[0]*2.0),int(guess[1]*2.0))
 	localrange*=2
 	if localrange<5 : localrange=192*2
@@ -530,7 +542,6 @@ def align_subpixel(s1,s2,guess=(0,0),localrange=192,verbose=0):
 	s2a.process_inplace("filter.xyaxes0")
 	s2a.process_inplace("filter.highpass.gauss",{"cutoff_abs":.002})
 	
-	
 	tot=s1a.calc_ccf(s2a)
 	tot.process_inplace("xform.phaseorigin.tocenter")
 	tot.process_inplace("normalize.edgemean")
@@ -550,19 +561,29 @@ def align_subpixel(s1,s2,guess=(0,0),localrange=192,verbose=0):
 #			pass
 			
 	# first pass to have a better chance at finding the first peak, using a lot of blurring
+
 	tot2=tot.get_clip(Region(tot["nx"]/2-localrange/2,tot["ny"]/2-localrange/2,localrange,localrange))
-	tot2.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.04})		# This is an empirical value. Started with 0.04 which also seemed to be blurring out high-res features.
+	tot2.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.04})	# This is an empirical value. Started with 0.04 which also seemed to be blurring out high-res features.
 	dx1,dy1,dz=tot2.calc_max_location()
 	dx1-=localrange/2
 	dy1-=localrange/2
 
 	# second pass with less blurring to fine tune it
+
 	tot=tot.get_clip(Region(tot["nx"]/2-24+dx1,tot["ny"]/2-24+dy1,48,48))
 	tot.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.08})		# This is an empirical value. Started with 0.04 which also seemed to be blurring out high-res features.
-	dx,dy,dz=tot.calc_max_location()
-	zscore=tot[dx,dy]/tot["sigma"]		# a rough Z score for the peak
-	dx-=24
-	dy-=24
+	dx,dy,dz = tot.calc_max_location()
+
+	dev = tot["sigma"]
+
+	if dev == 0.0 :
+		dev  = 1.0
+		print "Warning: sigma is zero in 'align_subpixel' in iterative step for guess (", guess[0], ",", guess[1], ")."
+
+	zscore = tot[dx,dy] / dev 	# a rough Z score for the peak
+	dx -= 24
+	dy -= 24
+
 	#while hypot(dx-tot["nx"]/2,dy-tot["ny"]/2)>64 :
 		#tot[dx,dy]=0
 		#dx,dy,dz=tot.calc_max_location()
