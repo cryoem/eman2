@@ -91,9 +91,13 @@ run e2parallel.py dcclient on as many other machines as possible, pointing at th
 	if len(args)<1 or args[0] not in commandlist: parser.error("command required: "+str(commandlist))
 
 	if args[0]=="dcserver" :
-		rundcserver(options.port,options.verbose-1)
+		print "Sorry : e2parallel DC mode is not supported in EMAN2.1. We may revisit this if users complain, though. Please email sludtke@bcm.edu."
+		sys.exit(1)
+#		rundcserver(options.port,options.verbose-1)
 		
 	elif args[0]=="dcclient" :
+		print "Sorry : e2parallel DC mode is not supported in EMAN2.1. We may revisit this if users complain, though. Please email sludtke@bcm.edu."
+		sys.exit(1)
 		if options.clientpath!=None : 
 			try: os.makedirs(options.clientpath)
 			except: pass
