@@ -258,18 +258,18 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 						maxit=maxit, isac_iter=main_iter, CTF=CTF, snr=snr, rand_seed=-1, color=color, comm=group_comm,
 						stability=True, stab_ali=stab_ali, iter_reali=iter_reali, thld_err=thld_err, FL=FL, FH=FH, FF=FF, dst=dst)
 
-				all_ali_params = [[] for i in xrange(5)]
+				all_ali_params = [[] for i in xrange(4)]
 				for im in data:
 					alpha, sx, sy, mirror, scale = get_params2D(im)
 					all_ali_params[0].append(alpha)
 					all_ali_params[1].append(sx)			
 					all_ali_params[2].append(sy)
 					all_ali_params[3].append(mirror)
-					all_ali_params[4].append(scale)
+					#all_ali_params[4].append(scale)
 				if key == group_main_node:
 					final_ali_params_filename = ali_params_filename + "_" + str(mloop)
-					if os.path.exists(final_ali_params_filename):
-						os.remove(final_ali_params_filename)
+					#if os.path.exists(final_ali_params_filename):
+					#	os.remove(final_ali_params_filename)
 					write_text_file(all_ali_params, final_ali_params_filename)
 				del all_ali_params
 
@@ -486,18 +486,18 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				maxit=maxit, isac_iter=main_iter, CTF=CTF, snr=snr, rand_seed=-1, color=color, comm=group_comm, 
 				stability=True, stab_ali=stab_ali, iter_reali=iter_reali, thld_err=thld_err, FL=FL, FH=FH, FF=FF, dst=dst)
 
-		all_ali_params = [[] for i in xrange(5)]
+		all_ali_params = [[] for i in xrange(4)]
 		for im in alldata:
 			alpha, sx, sy, mirror, scale = get_params2D(im)
 			all_ali_params[0].append(alpha)
 			all_ali_params[1].append(sx)			
 			all_ali_params[2].append(sy)
 			all_ali_params[3].append(mirror)
-			all_ali_params[4].append(scale)
+			#all_ali_params[4].append(scale)
 		if key == group_main_node:
 			final_ali_params_filename = ali_params_filename + "_" + str(mloop)
-			if os.path.exists(final_ali_params_filename):
-				os.remove(final_ali_params_filename)
+			#if os.path.exists(final_ali_params_filename):
+			#	os.remove(final_ali_params_filename)
 			write_text_file(all_ali_params, final_ali_params_filename)
 
 		# gather refim to the main node
@@ -664,7 +664,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			all_sx = [0]*l_stable_set
 			all_sy = [0]*l_stable_set
 			all_mirror = [0]*l_stable_set
-			all_scale = [1.0]*l_stable_set
+			#all_scale = [1.0]*l_stable_set
 			for j in xrange(l_stable_set): 
 				stable_set_id[j] = members_id[stable_set[j][1]]
 				all_alpha[j]  = stable_set[j][2][0]
@@ -681,7 +681,8 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				send_EMData(ave, main_node, i+70000)		
 				ave_num = mpi_recv(1, MPI_INT, main_node, i+80000, MPI_COMM_WORLD)
 				ave_num = int(ave_num[0])
-				write_text_file([all_alpha, all_sx, all_sy, all_mirror, all_scale], "%s/ali_params_%03d"%(ali_params_dir, ave_num))
+				write_text_file([all_alpha, all_sx, all_sy, all_mirror], "%s/ali_params_%03d"%(ali_params_dir, ave_num))
+				#write_text_file([all_alpha, all_sx, all_sy, all_mirror, all_scale], "%s/ali_params_%03d"%(ali_params_dir, ave_num))
 
 	mpi_barrier(MPI_COMM_WORLD)
 	
@@ -947,7 +948,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			fl = FL
 			do_within_group = 1
 
-		# Here stability does not need to be checked for each main iteration, it only need to
+		# Here stability does not need to be checked for each main iteration, it only needs to
 		# be done for every 'iter_reali' iterations. If one really want it to be checked each time
 		# simple set iter_reali to 1, which is the default value right now.
 		check_stability = (stability and (main_iter%iter_reali==0))

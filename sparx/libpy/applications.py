@@ -12656,7 +12656,7 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 			tavg = fshift(tavg, -cs[0], -cs[1])
 			if Iter%4 != 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0
 			else: delta = dst
-			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF=False, delta=delta)
+			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode=mode, CTF=False, delta=delta)
 
 def volalixshift_MPI(stack, ref_vol, outdir, search_rng, pixel_size, dp, dphi, fract, rmax, rmin, maskfile = None, \
 	    maxit = 1, CTF = False, snr = 1.0, sym = "c1",  user_func_name = "helical", \
