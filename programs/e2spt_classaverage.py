@@ -1030,7 +1030,7 @@ def writeParameters( options, program, tag ):
 	if options.searchfine == 0 or options.searchfine == 0.0:
 		options.searchfine = '0'
 	
-	print "mask in write parameters is", optionscopy.mask, type(optionscopy.mask)
+	#print "mask in write parameters is", optionscopy.mask, type(optionscopy.mask)
 	for name in names:
 				
 		if getattr(options,name) and "__" not in name and "_" not in name:
@@ -1044,7 +1044,11 @@ def writeParameters( options, program, tag ):
 			if str(getattr(optionscopy,name)) != 'True' and str(getattr(optionscopy,name)) != 'False' and str(getattr(optionscopy,name)) != '':
 			
 				if name != 'parallel':
-					cmd += ' --' + name + '=' + str(getattr(optionscopy,name)).replace(':','=').replace('(','').replace(')','').replace('{','').replace('}','').replace(',',':').replace(' ','').replace("'",'')
+					if "{" in str(getattr(optionscopy,name)) or "}" in  str(getattr(optionscopy,name)) or ")" in  str(getattr(optionscopy,name)) or ")"  in str(getattr(optionscopy,name)): 
+						cmd += ' --' + name + '=' + str(getattr(optionscopy,name)).replace(':','=').replace('(','').replace(')','').replace('{','').replace('}','').replace(',',':').replace(' ','').replace("'",'')
+					else:
+						cmd += ' --' + name + '=' + str(getattr(optionscopy,name))
+						
 				else:
 					cmd += ' --' + name + '=' + str(getattr(optionscopy,name))
 			
