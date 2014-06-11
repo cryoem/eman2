@@ -12651,12 +12651,79 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 				fl = 0.1+(FH-0.1)*Iter/float(max_iter-1)
 				tavg = filt_tanl(tavg, fl, FF)
 			if total_iter == len(xrng)*max_iter:  return tavg
-			if( xrng[0] > 0.0 ): cs[0] = sx_sum/float(nima)
-			if( yrng[0] > 0.0 ): cs[1] = sy_sum/float(nima)
-			tavg = fshift(tavg, -cs[0], -cs[1])
+			#if( xrng[0] > 0.0 ): cs[0] = sx_sum/float(nima)
+			#if( yrng[0] > 0.0 ): cs[1] = sy_sum/float(nima)
+			#tavg = fshift(tavg, -cs[0], -cs[1])
 			if Iter%4 != 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0
 			else: delta = dst
 			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode=mode, CTF=False, delta=delta)
+
+def within_group_refinement_fast(data, dimage, maskfile, randomize, ir, ou, rs, xrng, yrng, step, dst, maxit, FH, FF):
+
+	# Comment by Zhengfan Yang 03/11/11
+	# This is a simple version of ali2d_data (down to the bone), no output dir, no logfile, no CTF, no MPI or CUDA, no Fourvar, no auto stop, no user function
+	
+	from alignment    import Numrinit, ringwe, ali2d_single_iter_fast
+	from filter	      import filt_tanl
+	from fundamentals import fshift, rot_shift2D, cyclic_shift
+	from random	      import randint, random
+	from statistics   import ave_series
+	from utilities    import get_input_from_string, model_circle, model_blank, set_params2D, get_params2D, combine_params2, inverse_transform2
+
+	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit);
+	nima = len(data)
+	nx = data[0].get_xsize()
+	if last_ring == -1:  last_ring = nx/2-2
+	if maskfile: mask = maskfile
+	else: mask = model_circle(last_ring, nx, nx)
+
+	params = [[0.,0.,0.,0] for im in xrange(nima) ]
+	if randomize:
+		for im in xrange(nima):
+			alpha, sx, sy, mirror, scale = get_params2D(data[im])
+			#alphai, sxi, syi, mirrori = inverse_transform2(alpha, sx, sy)
+			#alphan, sxn, syn, mirrorn = combine_params2(0.0, -sxi, -syi, 0, random()*360.0, 0,0, randint(0, 1))
+			params[im] = [alpha +random()*360.0, 0, 0, randint(0, 1)]
+	else:
+		for im in xrange(nima):
+			alpha, sx, sy, mirror, scale = get_params2D(data(im))
+			params[im] = [alpha, 0, 0, mirror]
+
+	cnx = nx/2+1
+	cny = cnx
+	mode = "F"
+	numr = Numrinit(first_ring, last_ring, rstep, mode)
+	wr = ringwe(numr, mode)
+
+	sx_sum = 0
+	sy_sum = 0
+	cs = [0.0]*2
+	total_iter = 0
+	for N_step in xrange(len(xrng)):
+		for Iter in xrange(max_iter):
+			total_iter += 1
+			tavg = model_blank(nx,nx)
+			for im in xrange(nima):
+				alpha, sx, sy, mirror = inverse_transform2(params[im][0], -params[im][1], -params[im][2], params[im][3])
+				Util.add_img( tavg, rot_shift2D(data[im], alpha, sx, sy, mirror) )
+			tavg /= nima
+			if( FH > 0.0):
+				fl = 0.4#0.1+(FH-0.1)*Iter/float(max_iter-1)
+			tavg = filt_tanl(tavg, fl, FF)
+			if total_iter == len(xrng)*max_iter:
+				for im in xrange(nima):
+					alpha, sx, sy, mirror = inverse_transform2(params[im][0], -params[im][1], -params[im][2], params[im][3])
+					set_params2D(data[im], [alpha, sx, sy, mirror, 1.0])
+				return tavg
+			if( xrng[0] > 0.0 ): sx_sum = int(sx_sum/float(nima)+0.5)
+			if( yrng[0] > 0.0 ): sy_sum = int(sy_sum/float(nima)+0.5)
+			print ' ave shift',sx_sum, sy_sum
+			tavg = cyclic_shift(tavg, sx_sum, sy_sum)
+			tavg.write_image('tavg.hdf',total_iter-1)
+			if Iter%4 != 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0
+			else:                                                 delta = dst
+			#for im in xrange(nima):		print  " sx, sy:  %2d   %2d"%(params[im][1], params[im][2]) 
+			sx_sum, sy_sum = ali2d_single_iter_fast(data, dimage, params, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode=mode, delta=delta)
 
 def volalixshift_MPI(stack, ref_vol, outdir, search_rng, pixel_size, dp, dphi, fract, rmax, rmin, maskfile = None, \
 	    maxit = 1, CTF = False, snr = 1.0, sym = "c1",  user_func_name = "helical", \

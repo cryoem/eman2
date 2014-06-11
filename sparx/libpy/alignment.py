@@ -81,6 +81,51 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomi
 	return sx_sum, sy_sum
 
 
+def ali2d_single_iter_fast(data, dimage, params, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="F", random_method="", T=1.0, ali_params="xform.align2d", delta = 0.0):
+	"""
+		single iteration of 2D alignment using ormq
+		if CTF = True, apply CTF to data (not to reference!)
+	"""
+	from utilities import combine_params2, inverse_transform2, get_params2D, set_params2D
+	from alignment import ormq, ornq
+
+	# 2D alignment using rotational ccf in polar coords and quadratic interpolation
+	cimage = Util.Polar2Dm(tavg, cnx, cny, numr, mode)
+	Util.Frngs(cimage, numr)
+	Util.Applyws(cimage, numr, wr)
+
+	maxrin = numr[-1]
+	sx_sum = 0
+	sy_sum = 0
+	for im in xrange(len(data)):
+		#alpha, sx, sy, mirror, dummy = get_params2D(data[im], ali_params)
+		#alpha, sx, sy, mirror        = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
+		#alphai, sxi, syi, scalei     = inverse_transform2(alpha, sx, sy)
+		"""
+		# align current image to the reference
+		if random_method == "SA":
+			peaks = ormq_peaks(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
+			[angt, sxst, syst, mirrort, peakt, select] = sim_anneal(peaks, T, step, mode, maxrin)
+			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
+			data[im].set_attr_dict({"select":select, "peak":peakt})
+			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
+		else:
+			if nomirror:  [angt, sxst, syst, mirrort, peakt] = ornq(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
+			else:
+		"""
+		[angt, sxst, syst, mirrort, peakt] = ormq_fast(dimage[im], cimage, xrng, yrng, step, params[im][1], params[im][2], numr, mode, delta)
+		# combine parameters and set them to the header, ignore previous angle and mirror
+		#[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
+		#set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
+		params[im] = [angt, sxst, syst, mirrort]
+
+		if mirrort == 0: sx_sum += sxst
+		else:            sx_sum -= sxst
+		sy_sum += syst
+
+	return sx_sum, sy_sum
+
+
 def ang_n(tot, mode, maxrin):
 	"""
 	  Calculate angle based on the position of the peak
@@ -386,7 +431,7 @@ def ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0):
 		quadratic interpolation
 		cnx, cny in FORTRAN convention
 	"""
-	from math import pi, cos, sin
+	from math import pi, cos, sin, radians
 	#print "ORMQ"
 	peak = -1.0E23
 	ky = int(2*yrng/step+0.5)//2
@@ -426,11 +471,59 @@ def ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0):
 		 		peak = qn
 		 		mirror = 0
 			'''
-	co =  cos(ang*pi/180.0)
-	so = -sin(ang*pi/180.0)
+	co =  cos(radians(ang))
+	so = -sin(radians(ang))
 	sxs = sx*co - sy*so
 	sys = sx*so + sy*co
 	return  ang, sxs, sys, mirror, peak
+
+def ormq_fast(dimage, crefim, xrng, yrng, step, isx, isy, numr, mode, delta = 0.0):
+	"""Determine shift and rotation between image and reference image (crefim)
+		crefim should be as FT of polar coords with applied weights
+	        consider mirror
+		quadratic interpolation
+		cnx, cny in FORTRAN convention
+	"""
+	#from math import pi, cos, sin, radians
+	#print "ORMQ_FAST"
+	maxrange = 4
+	peak = -1.0E23
+	#print ' isx, isy',isx, isy
+	ky = int(yrng)#int(2*yrng/step+0.5)//2
+	kx = int(xrng)#int(2*xrng/step+0.5)//2
+	#print  ' y ',max(-ky+isy,-maxrange), min(ky+isy+1,maxrange+1)
+	for i in xrange(max(-ky+isy,-maxrange), min(ky+isy+1,maxrange+1)):
+		#iy = i*step
+		#print  ' x ',max(-kx+isx,-maxrange), min(kx+isx+1,maxrange+1)
+		for j in xrange(max(-kx+isx,-maxrange), min(kx+isx+1,maxrange+1)):
+			#ix = j*step
+			# The following code it used when mirror is considered
+			if delta == 0.0: retvals = Util.Crosrng_ms(crefim, dimage[i+ky][j+kx], numr)
+			else:            retvals = Util.Crosrng_ms_delta(crefim, dimage[i+ky][j+kx], numr, 0.0, delta)
+			qn = retvals["qn"]
+			qm = retvals["qm"]
+			if (qn >= peak or qm >= peak):
+				sx = j
+				sy = i
+				if (qn >= qm):
+					ang = ang_n(retvals["tot"], mode, numr[-1])
+					peak = qn
+					mirror = 0
+				else:
+					ang = ang_n(retvals["tmt"], mode, numr[-1])
+					peak = qm
+					mirror = 1
+	"""
+	co =  cos(radians(ang))
+	so = -sin(radians(ang))
+	sxs = sx*co - sy*so
+	sys = sx*so + sy*co
+	"""
+	if( peak < -1.0e5):
+		print " ORMQ_FAST failed, most likelt due to search ranges "
+		from sys import exit
+		exit()
+	return  ang, sx, sy, mirror, peak
 			
 
 def ormq_peaks(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
