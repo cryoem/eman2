@@ -2,7 +2,7 @@
 
 '''
 ====================
-Author: Jesus Galaz - 2011, Last update: July/08/2013
+Author: Jesus Galaz - 2011, Last update: June/2014
 ====================
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -33,14 +33,10 @@ Author: Jesus Galaz - 2011, Last update: July/08/2013
 
 from optparse import OptionParser
 from EMAN2 import *
-from sys import argv
-import EMAN2
-import heapq
-import operator
-import random
-import numpy
-import math
 from EMAN2jsondb import JSTask,jsonclasses
+
+import sys
+import numpy
 
 def main():
 
@@ -524,6 +520,8 @@ the size of the set and is defined by the user
 '''
 def randomizer(options, model, tag):
 	
+	import random
+	
 	#print "I am inside the RANDOMIZER"
 	
 	if options.verbose:
@@ -811,6 +809,7 @@ class SubtomoSimTask(JSTask):
 		#print "\n\nBBBBBBBBBB\n\nThe apix of the simulated ptcl is", apix
 		#print "\n\nBBBBBBBBBB\n\n"
 	
+		import random
 		px = random.uniform(-1* options.gridholesize/2 + image['nx']/2, options.gridholesize/2 - image['nx']/2)			#random distance in X of the particle's center from the tilt axis, at tilt=0
 																																#The center of a particle cannot be right at the edge of the tomogram; it has to be
 																																#at least ptcl_size/2 away from it
@@ -1044,6 +1043,7 @@ class SubtomoSimTask(JSTask):
 jsonclasses["SubtomoSimTask"]=SubtomoSimTask.from_jsondict
 
 
+
 def get_results(etc,tids,options):
 	"""This will get results for a list of submitted tasks. Won't return until it has all requested results.
 	aside from the use of options["ptcl"] this is fairly generalizable code. """
@@ -1079,7 +1079,11 @@ def get_results(etc,tids,options):
 
 
 
+
+
 def tomogramsim(options,tomogramdata):
+	import math
+	
 	'''
 	Transform gridholesize and icethickness to pixels
 	'''
