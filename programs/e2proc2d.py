@@ -97,8 +97,10 @@ def main():
 	parser.add_argument("--meanshrink", metavar="n", type=int, action="append", help="Reduce an image size by an integral scaling factor using average. Clip is not required.")
 	parser.add_argument("--medianshrink", metavar="n", type=int, action="append", help="Reduce an image size by an integral scaling factor, uses median filter. Clip is not required.")
 	parser.add_argument("--mraprep",  action="store_true", help="this is an experimental option")
-	parser.add_argument("--mrc16bit",  action="store_true", help="output as 16 bit MRC file")
-	parser.add_argument("--mrc8bit",  action="store_true", help="output as 8 bit MRC file")
+	parser.add_argument("--outmode", type=str, default="float", help="All EMAN2 programs write images with 4-byte floating point values when possible by default. This allows specifying an alternate format when supported (int8, int16, int32, uint8, uint16, uint32). Values are rescaled to fill MIN-MAX range.")
+	parser.add_argument("--outnorescale", action="store_true", default=False, help="If specified, floating point values will not be rescaled when writing data as integers. Values outside of range are truncated.")
+	parser.add_argument("--mrc16bit",  action="store_true", help="(deprecated, use --outmode instead) output as 16 bit MRC file")
+	parser.add_argument("--mrc8bit",  action="store_true", help="(deprecated, use --outmode instead) output as 8 bit MRC file")
 	parser.add_argument("--fixintscaling", type=str, default=None, help="When writing to an 8 or 16 bit integer format the data must be scaled. 'noscale' will assume the pixel values are already correct, 'sane' will pick a good range, a number will set the range to mean+=sigma*number")
 	parser.add_argument("--multfile", type=str, action="append", help="Multiplies the volume by another volume of identical size. This can be used to apply masks, etc.")
 	
@@ -151,6 +153,18 @@ def main():
 		print 'Invalid options. You used --first and --step. The --step option contains both a step size and the first image to step from. Please use only the --step option rather than --step and --first'
 		sys.exit(1)
 		
+	if options.mrc16bit:
+		print "Deprecated option mrc16bit, please use outmode=int16"
+		options.outmode="int16"
+
+	if options.mrc8bit:
+		print "Deprecated option mrc8bit, please use outmode=int8"
+		options.outmode="int8"
+
+	if not file_mode_map.has_key(options.outmode) :
+		print "Invalid output mode, please specify one of :\n",str(file_mode_map.keys()).translate(None,'"[]')
+		sys.exit(1)
+
 	infile = args[0]
 	outfile = args[1]
 
@@ -576,7 +590,18 @@ def main():
 							d["render_max"]=d["mean"]+d["sigma"]*sca
 						except:
 							print "Warning: bad fixintscaling option"
-				
+
+				#print_iminfo(data, "Final")
+				if options.outmode!="float":
+					if options.outnorescale :
+						# This sets the minimum and maximum values to the range for the specified type, which should result in no rescaling
+						outmode=file_mode_map[options.outmode]
+						d["render_min"]=file_mode_range[outmode][0]
+						d["render_max"]=file_mode_range[outmode][1]
+					else:
+						d["render_min"]=d["minimum"]
+						d["render_max"]=d["maximum"]
+
 				if not options.average:	#skip writing the input image to output file 
 					#write processed image to file
 					if options.threed2threed or options.twod2threed:    #output a single 3D image
@@ -641,7 +666,8 @@ def main():
 						elif 'mrc16bit' in optionlist:
 								d.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, region, EMUtil.EMDataType.EM_SHORT, not(options.swap))
 						else:
-								d.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, region, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+#								d.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, region, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+								d.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, region, file_mode_map[options.outmode], not(options.swap))
 					
 					elif options.unstacking:	#output a series numbered single image files
 						if 'mrc8bit' in optionlist:
@@ -650,7 +676,8 @@ def main():
 							d.write_image(outfile.split('.')[0]+'-'+str(i+1).zfill(len(str(nimg)))+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
 						else:
 							#d.write_image(outfile.split('.')[0]+'-'+str(i+1).zfill(len(str(nimg)))+'.'+outfile.split('.')[-1])
-							d.write_image(outfile.split('.')[0]+'-'+str(i+1).zfill(len(str(nimg)))+'.'+outfile.split('.')[-1], 0, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+#							d.write_image(outfile.split('.')[0]+'-'+str(i+1).zfill(len(str(nimg)))+'.'+outfile.split('.')[-1], 0, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+							d.write_image(outfile.split('.')[0]+'-'+str(i+1).zfill(len(str(nimg)))+'.'+outfile.split('.')[-1], 0, EMUtil.get_image_ext_type(options.outtype), False, None, file_mode_map[options.outmode], not(options.swap))
 							#print "I will unstack to HDF" #JESUS
 							
 					else:   #output a single 2D image or a 2D stack			
@@ -666,9 +693,11 @@ def main():
 							d.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
 						else:
 							if options.inplace:
-								d.write_image(outfile, i, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+#								d.write_image(outfile, i, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+								d.write_image(outfile, i, EMUtil.get_image_ext_type(options.outtype), False, None, file_mode_map[options.outmode], not(options.swap))
 							else: 
-								d.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+#								d.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+								d.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype), False, None, file_mode_map[options.outmode], not(options.swap))
 				
 	#end of image loop
 		
