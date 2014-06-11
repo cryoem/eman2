@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Jesus Galaz-Montoya, 2012. Last update: 7/15/2013.
+# Author: Jesus Galaz-Montoya, 2012. Last update: dec/9/2013.
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -41,6 +41,7 @@ import random
 import numpy
 import colorsys
 import os
+import math
 
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
@@ -107,23 +108,51 @@ def main():
 	"""
 	Parameters to be passed on to e2spt_simulation.py
 	"""
-	parser.add_argument("--input", type=str, help="""The name of the input volume from which simulated subtomograms will be generated. 
-							The output will be in HDF format, since volume stack support is required. The input CAN be PDB, MRC or and HDF stack. 
-							If the input file is PDB or MRC, a version of the supplied model will be written out in HDF format.
-							If the input file is a stack, simulatd subvolumes will be generated from each model in the stack and written to different output stacks.
-							For example, if the input file contains models A and B, two output stacks with simulated subvolumes will be generated.""", default=None)
+	
+	#parser.add_argument("--interpolator",default='',help="""What interpolation scheme 
+	#	to use for reconstruction. Options are 'nearest_neighbor', 'gauss_2', 'gauss_3', 'gauss_5', 
+	#	'gauss_5_slow', 'gypergeom_5', 'experimental' """)
+		
+	parser.add_argument("--model", type=str, default='',help="""The name of the input volume from which 
+							simulated subtomograms will be generated. 
+							The output will be in HDF format, since volume stack support is required. 
+							The input CAN be PDB, MRC or and HDF stack. 
+							If the input file is PDB or MRC, a version of the supplied 
+							model will be written out in HDF format.
+							If the input file is a stack, simulatd subvolumes will be 
+							generated from each model in the stack and written to different output stacks.
+							For example, if the input file contains models A and B, 
+							two output stacks with simulated subvolumes will be generated.""")
+							
+	parser.add_argument("--ptclstack", type=str, default='', help="""You can provide a stack
+		of simulated particles to skip generation of the simulated stack. This can be useful
+		in testing the alignment of the stack under different particle preprocessing 
+		(--lowpass/--testlowpassfreq, --highpass, --mask/--testmaskradius, --shrinkalign/--testsampling) 
+		and alignment (--align, --falign, --npeakstorefine) parameters. 
+		""")
+		
+	parser.add_argument("--randstack", type=str, default='', help="""You can provide a stack
+		of randomly oriented particles. These still need to be simulated though. 
+		This can be useful in testing the alignment of the SAME particles under different 
+		particle simulation (tilt range, tilt step, snr) and alignment parameters (shrink, mask, etc). 
+		""")
 				
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	parser.add_argument("--nptcls", type=int,default=10,help="Number of simulated subtomograms tu generate per referece.")
-	parser.add_argument("--tx", type=int,default=None,help="""Maximum number of pixels to randomly translate each subtomogram in X. The random translation will be picked between -txrange and +txrange. 
+	parser.add_argument("--tx", type=int,default=0,help="""Maximum number of pixels to randomly translate each subtomogram in X. The random translation will be picked between -txrange and +txrange. 
 								     Default value is set by --transrange, but --txrange will overwrite it if specified.""")
-	parser.add_argument("--ty", type=int,default=None,help="""Maximum number of pixels to randomly translate each subtomogram in Y. The random translation will be picked between -tyrange and +tyrange.
+	parser.add_argument("--ty", type=int,default=0,help="""Maximum number of pixels to randomly translate each subtomogram in Y. The random translation will be picked between -tyrange and +tyrange.
 								     Default value is set by --transrange, but --txrange will overwrite it if specified.""")
-	parser.add_argument("--tz", type=int,default=None,help="""Maximum number of pixels to randomly translate each subtomogram in Z. The random translation will be picked between -tzrange and +tzrange.
+	parser.add_argument("--tz", type=int,default=0,help="""Maximum number of pixels to randomly translate each subtomogram in Z. The random translation will be picked between -tzrange and +tzrange.
 								     Default value is set by --transrange, but --txrange will overwrite it if specified.""")
 	parser.add_argument("--transrange", type=int,default=4,help="""Maximum number of pixels to randomly translate each subtomogram in all X, Y and Z. 
 									The random translation will be picked between -transrage and +transrange; --txrange, --tyrange and --tzrange overwrite --transrange for each specified direction.""")
+	
+	parser.add_argument("--search", type=int,default=4,help="""Maximum number of pixels 
+		to search translationally during alignment in all three X, Y and Z directions.""")
+	
+	
 	
 	parser.add_argument("--applyctf", action="store_true",default=False,help="If on, it applies ctf to the projections in the simulated tilt series based on defocus, cs, and voltage parameters.")
 
@@ -134,10 +163,22 @@ def main():
 	parser.add_argument("--gridholesize", type=int,default=2,help="""Size of the carbon hole for the simulated grid (this will determine shifts in defocus for each particle at 
 									each tilt step, depending on the position of the particle respect to the tilt axis, which is assigned randomly.""")
 	parser.add_argument("--saverandstack", action="store_true",default=False,help="Save the stack of randomly oriented particles, before subtomogram simulation (before the missing wedge and noise are added).")
+	
+	
+	parser.add_argument("--nosim", action="store_true",default=False,help="""If on
+		the program will generate stacks of "perfect particles" in different random 
+		orientations, but with no missing wedge, no noise, no ctf parameters, etc.""") 
+		
+	
 	parser.add_argument("--saveprjs", action="store_true",default=False,help="Save the projections (the 'tilt series') for each simulated subtomogram.")
 
-	parser.add_argument("--reconstructor", type=str,default="fourier",help="""The reconstructor to use to reconstruct the tilt series into a tomogram. Type 'e2help.py reconstructors' at the command line
-											to see all options and parameters available.""")
+	parser.add_argument("--reconstructor", type=str,default="fourier",help="""The reconstructor 
+		to use to reconstruct the tilt series into a tomogram. Type 'e2help.py reconstructors' 
+		at the command line to see all options and parameters available.
+		To specify the interpolation scheme for the fourier reconstruction, specify 'mode'.
+		Options are 'nearest_neighbor', 'gauss_2', 'gauss_3', 'gauss_5', 
+		'gauss_5_slow', 'gypergeom_5', 'experimental'.
+		For example --reconstructor=fourier:mode=gauss_5 """)
 
 	parser.add_argument("--pad", type=int,default=0,help="""If on, it will increase the box size of the model BEFORE generating projections and doing 3D reconstruction of simulated sutomograms.""")								
 	
@@ -156,7 +197,6 @@ def main():
 
 	parser.add_argument("--testalignment",action="store_true",default=False,help="This will run e2spt_classaverage.py to test the alignment of the particles against the simulated reference.")
 
-	parser.add_argument("--quicktest",action="store_true",default=False,help="This will run e2spt_classaverage.py with minimal parameters to quickly test the program.")
 	parser.add_argument("--files",type=str,default='',help="""Text files to be plotted, with information in the correct format. To enter multiple files, separate them with commas: file1,file2,etc...
 								Each file must contain lines with the following values:
 								tr= ts= snr= angular_error= translational_error=""")
@@ -167,16 +207,24 @@ def main():
 	"""
 	Parameters to be passed on to e2spt_classaverage.py
 	"""
-	parser.add_argument("--raligncmp",type=str,default='ccc.tomo',help="Comparator to use for missing wedge compensation during fine alignment.")
+	parser.add_argument("--faligncmp",type=str,default='ccc.tomo',help="Comparator to use for missing wedge compensation during fine alignment.")
 	parser.add_argument("--aligncmp",type=str,default='ccc.tomo',help="Comparator to use for missing wedge compensation during coarse alignment.")
 	
 	parser.add_argument("--comparators",type=str,default='',help="""Supply comparators to COMPARE, separated my a comma. For example --comparators=ccc,ccc.tomo,fsc.tomo:sigmas=0.005 .
-																	If supplied, --raligncmp and --aligncmp will be ignored.""")
-	parser.add_argument("--lowpass",type=str,help="""A lowpass filter (as in a processor from e2proc3d.py) apply to the model before generating simulated particles from it.
-							Type 'e2help.py processors' at the command line and find the options availbale from the processors list)""",default='')
-	parser.add_argument("--highpass",type=str,help="""A lowpass filter (as in a processor from e2proc3d.py) apply to the model before generating simulated particles from it.
-							Type 'e2help.py processors' at the command line and find the options availbale from the processors list)""",default='')
-							
+																	If supplied, --faligncmp and --aligncmp will be ignored.""")
+	
+	parser.add_argument("--lowpass",type=str,help="""A lowpass filter (as in a processor 
+		from e2proc3d.py) apply to the particles during alignment. Type 'e2help.py processors' 
+		at the command line to find the options available from the processors list)""",default='')
+	
+	parser.add_argument("--highpass",type=str,help="""A highpass filter (as in a processor 
+		from e2proc3d.py) to apply to the particles before alignment. Type 'e2help.py processors' 
+		at the command line to find the options available from the processors list)""",default='')
+	
+	parser.add_argument("--mask",type=str,help="""A mask (as in a processor from e2proc3d.py)
+		to apply to the particles before alignment. Type 'e2help.py processors' 
+		at the command line to find the options available from the processors list)""",default='')
+	
 	parser.add_argument("--shrinkalign", type=int,default=0,help="Optionally shrink the input volume before the simulation if you want binned/down-sampled subtomograms.")
 	parser.add_argument("--shrinksim", type=int,default=0,help="Optionally shrink the input volume before the simulation if you want binned/down-sampled subtomograms.")
 	
@@ -186,10 +234,15 @@ def main():
 	parser.add_argument("--parallel",type=str,default='thread:1',help="Parallelization to use.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
-	parser.add_argument("--normproc",type=str,help="Normalization processor applied to particles before alignment. Default is to use normalize. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'", default="normalize.edgemean")
+	parser.add_argument("--normproc",type=str,help="""Normalization processor applied to 
+		particles before alignment. Default is to use None. If normalize.mask is used, 
+		results of the mask option will be passed in automatically. If you want to turn 
+		this option on specify any normalizing processor such as 'normalize' or '
+		normalize.edgemean'. To see all processors available, type e2help.py propcessors
+		at the commnad line.""", default='')
 
 
-	#parser.add_argument("--fitwedgepost", action="store_true", help="Fit the missing wedge AFTER preprocessing the subvolumes, not before, IF using the fsc.tomo comparator for --aligncmp or --raligncmp.", default=False)
+	#parser.add_argument("--fitwedgepost", action="store_true", help="Fit the missing wedge AFTER preprocessing the subvolumes, not before, IF using the fsc.tomo comparator for --aligncmp or --faligncmp.", default=False)
 
 
 	parser.add_argument("--radius", type=float, help="""Hydrodynamic radius of the particle in Angstroms. 
@@ -197,26 +250,273 @@ def main():
 													Make sure the apix is correct on the particles' headers, sine the radius will be converted from Angstroms to pixels.
 													Then, the fine angular step is equal to 360/(2*pi*radius), and the coarse angular step 4 times that""", default=0)
 
+	
+	parser.add_argument("--precision",type=float,default=1.0,help="""Precision in pixels to use
+		when figuring out alignment parameters automatically using --radius. Precision 
+		would be the number of pixels that the the edge of the specimen is moved (rotationally) during the 
+		finest sampling, --falign. If precision is 1, then the precision of alignment will be that of 
+		the sampling (apix of your images) times the --shrinkfine factor specified.""")
+	
+	#parser.add_argument("--wedgeangle",type=float,help="Missing wedge angle",default=60)
+	#parser.add_argument("--wedgei",type=float,help="Missingwedge begining", default=0.10)
+	#parser.add_argument("--wedgef",type=float,help="Missingwedge ending", default=0.9)
+	parser.add_argument("--writewedge", action="store_true", help="Write a subvolume with the shape of the fitted missing wedge if --faligncmp or --aligncmp are fsc.tomo. Default is 'True'. To turn on supply --writewedge", default=False)
 
-	parser.add_argument("--wedgeangle",type=float,help="Missing wedge angle",default=60)
-	parser.add_argument("--wedgei",type=float,help="Missingwedge begining", default=0.10)
-	parser.add_argument("--wedgef",type=float,help="Missingwedge ending", default=0.9)
-	parser.add_argument("--writewedge", action="store_true", help="Write a subvolume with the shape of the fitted missing wedge if --raligncmp or --aligncmp are fsc.tomo. Default is 'True'. To turn on supply --writewedge", default=False)
+	parser.add_argument("--quicktest",action="store_true",default=False,help="This will run e2spt_classaverage.py with minimal parameters to quickly test the program.")
+	
+	parser.add_argument("--testsampling",type=str,default='',help="""Enter a number for 
+		the maximum shrinking factor to test. For example, if your particles have an apix 
+		of 2angstroms/pixel and you enter --testsampling=4, your particle will be shrunk by 
+		1,2,3 and 4 in independent runs of the program (1 needs no shrinking, but still is
+		the initial point to test the alignments) and thus alignment will be tested at
+		samplings of 2,4,6, and 8 A/pixel (corresponding to shrink factors of 1,2,3 and 4).
+		This parameter will overwrite the --shrinkalign parameter.""")
+	
+	parser.add_argument("--testlowpassfreq",type=str,default='',help="""
+		You have to provide the lowpass processor through --lowpass for this parameter to work.
+		Enter three numbers in angstroms: the lightest lowpass to start with, the harshest limit 
+		for lowpassing, and the step with which to vary the lowpass.
+		For example, you can test lowpass filtering between 10 and 50 angstroms, every 5
+		angstroms, by providing --testlowpasssfreq=10,50,5""")
 
-
+	parser.add_argument("--testboxsize",type=str,default='',help="""Enter two numbers:
+		1) The largest boxsize to use, and a positive increment.
+		OR
+		2) The smallest boxisze to use, and a negative decrement.
+		In case 1, it is assumed that the particle is in a 'tight box' with no padding,
+		and increasingly large boxes will be tested. For example, if you're particles/model are/is 
+		in a box of size 64, and you supply --testboxisze=128,4, successive boxes will be
+		tested starting at 64 and up to 128: 64,68,72,76,... ...128.
+		In case 2, it is assumed that the particles/model are/is already padded, therefore smaller
+		boxes will be tested, as follows. For example, if the box is 128, and you supply:
+		--testboxsize=64,-4, the boxes to test will be: 128, 124, 120... ...64.
+		""")
+		
+	parser.add_argument("--testmaskradius",type=str,default='',help="""
+		--mask has to be supplied for this parameter to work.
+		This assumes the particles/model are/is already adequately padded (that is, 
+		the box size is ~2x the size of the molecule it contains).
+		The mask's radius is expressed in pixels from the edge, and starts at -2.
+		Provide two numbers: The smallest radius to use, and the decrement.
+		For example, if your particles/model are/is in a box of 128, and you provide
+		--testmaskradius=-64,-4, the masks tried will be: -2,-6,-10,-14 ... ... -62.""")
+	
 	(options, args) = parser.parse_args()	
 	
 	logger = E2init(sys.argv, options.ppid)
 	
 	rootpath = os.getcwd()
 	
-	
 	'''
-	If COMPUTING alignment ERRORS
+	If PERFORMING alignments to compute ALIGNMENT ERROR
 	'''
 	if not options.plotonly:
 		
-		simloop(options,rootpath)
+		skip=0
+		if options.comparators:
+			if len( options.comparators.split(',') ) > 1:
+				skip=1
+		
+		if not skip:
+		
+			options = sptmakepath( options, options.path )
+		
+		#print "This is the path RETURNED after the first path made", options.path
+		
+		rootpath = os.getcwd() + '/' + options.path
+		originalpathbase = options.path
+		
+		randstack=''
+		if not options.ptclstack:
+			
+			#if options.randstack:
+			#	os.system('e2proc3d.py ' + options.randstack + ' ' + rootpath + '/model.hdf --first=0 --last=0')
+			#	options.model = rootpath + '/model.hdf'
+			#	
+			#elif options.model:	
+			#	os.system('cp ' + options.model + ' ' + rootpath + '/' + os.path.basename(options.model) )
+			
+			wildcard = ''
+			if options.testsampling or options.testboxsize or options.testlowpassfreq or options.testmaskradius:
+				wildcard = 'tmp'
+			
+			
+			if options.randstack:
+				randstack = options.randstack
+			
+			ret=simloop(options,rootpath,randstack,wildcard)
+		
+			randstack= ret[10]
+			simstack= ret[-3][0]
+			#print "\n\n\n\nSize of randomized randstack is", EMData(randstack,0,True)['nx']
+			#print "Randstack is", randstack
+			#print "!@#$%^&*()_+(*&^%$#@!@#$%^&*()(*&^%$#@!@#$%^&*()(*&^%$#@#$%^&*(*&^%$#@#$%^&*()*&^%$#@#$%^&*\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+		
+			#if options.path not in randstack:
+			#	randstack = options.path + '/' + randstack
+			
+			#if rootpath not in randstack:
+			#	randstack = rootpath + '/' + randstack
+				
+			#if options.path not in simstack:
+			#	randstack = options.path + '/' + randstack
+			
+			#if rootpath not in simstack:
+			#	randstack = rootpath + '/' + randstack
+		
+			#print "\n\n(e2spt_tomosimjobs.py) in the first round,randstack fixed after returned is", randstack
+			#print "simstack fixed after returned is", simstack
+			
+		else:
+			randstack=options.ptclstack
+			print "You've provided randstack via ptclstack", options.ptclstack
+			
+		
+		if randstack and (options.testsampling or options.testboxsize or options.testlowpassfreq or options.testmaskradius):
+			
+			
+			#print "\n\n\n\nInitial randstack for testboxsize is", randstack
+			#print "And rootpath is", rootpath
+			
+			#randstack = randstack.replace(options.path,options.path + '/' + options.path)
+			#print "Randstack should be", randstack
+			
+			filesindir = os.listdir( os.getcwd() )
+			if originalpathbase not in filesindir:
+				os.system('mkdir ' + rootpath)
+			
+			
+			randstack = rootpath + '/' + options.path + '/randstack.hdf'
+			
+			options.model = rootpath + '/simmodel.hdf'
+			#print "\n\n\n\nSize of randomized randstack is", EMData(randstack,0,True)['nx']
+			#print "Randstack is", randstack
+			#print "!@#$%^&*()_+(*&^%$#@!@#$%^&*()(*&^%$#@!@#$%^&*()(*&^%$#@#$%^&*(*&^%$#@#$%^&*()*&^%$#@#$%^&*\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+			
+			#print "Actual randstack after adding rootpath is", randstack
+			#print "Because rootpath plus randstack are", rootpath, randstack, rootpath + randstack
+			#print "\n\n\n\n"
+			
+			
+			if options.ptclstack:
+				randstack=options.ptclstack
+				print "You've provided randstack via ptclstack", options.ptclstack
+			
+			os.system( 'e2proc3d.py ' + randstack + ' ' + rootpath + '/randstack.hdf')
+						
+			os.system( 'e2proc3d.py ' + randstack + ' ' + options.model + ' --first=0 --last=0' )
+	
+			if options.ptclstack:
+				randstack = rootpath + '/randstack.hdf'
+			
+					
+			nrefs=1
+			
+			nslices = ''
+			if options.tiltstep:
+				nslices = ((2 * options.tiltrangelowerlimit) / options.tiltstep ) + 1						#You have to add 1 to account for the slice at 0deg
+				#nslicesu = nslices + 1																#Add 1 because the loop will exclude the upper limit
+			elif options.nsliceslowerlimit:
+				nslices = options.nsliceslowerlimit		
+			else:
+				print "ERROR: You have to supply either tiltrange parameters including --tiltstep, or nslices parameters"
+			
+			if not nslices:
+				print "ERROR: Couldn't figureout nslices"
+				sys.exit()
+			
+			
+			tiltrange = options.tiltrangelowerlimit
+			snr = options.snrlowerlimit
+			
+			tiltrangetag = ("%d" %( tiltrange ) ).zfill(3)
+			nslicestag = ("%d" %( nslices ) ).zfill(3)
+			snrtag = ("%.2f" %( snr) ).zfill(5)
+			
+			
+			simround = 1
+			samestackformany = 1
+			firstrandstack = randstack
+			
+			thesemodels = [ options.model ]
+			thesestacks = [ randstack ]
+			
+			'''
+			TEST PADDING BY CLIPPING
+			'''
+			if options.testboxsize:
+				limit = int(options.testboxsize.split(',')[0])
+				boxstep = int(options.testboxsize.split(',')[-1])
+				
+				boxes=[]
+				currentbox = int(EMData(randstack,0,True)['nx'])
+				if boxstep < 0:
+					boxes = [ x for x in xrange( limit, currentbox + -1*boxstep, int(math.fabs( boxstep )) ) ]
+				elif boxstep > 0:
+					boxes = [ x for x in xrange( currentbox, limit + 1*boxstep, int(math.fabs( boxstep )) ) ]
+				
+				print "\n\n\n\nThe boxes to use are", boxes
+				print "Current box is", currentbox
+				print "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBVVVVBVVVVBBBBBBBBBBBBBB\n\n\n\n"
+				if boxes:
+					for box in boxes:
+						
+						options.finalboxsize = box
+						
+						options.path = 'bx' + str(box).zfill(3)
+						
+						#os.system('mkdir ' + rootpath + '/' + options.path)
+						#wildcard = options.path
+						
+						gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany=0,thesestacks=[],thesemodels=[],itersMode=0,wildcard=options.path)
+
+				if options.testalignment:
+					analyzeresults(options,rootpath,nrefs,{},'testbx')
+			
+			
+			'''
+			TEST SAMPLING BY SHRINKING
+			'''
+			if options.testsampling:
+				shrinkvals = [ x for x in range(options.testsampling) ]
+				
+				for shrink in shrinkvals:
+					if shrink > 1:
+						if options.finalboxsize:
+							options.finalboxsize /= shrink
+					
+						options.shrinkalign = shrink
+					
+					options.path = 'sh' + str(shrink).zfill(2)
+					#wildcard = options.path
+					
+					gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany=0,thesestacks=[],thesemodels=[],itersMode=0,wildcard=options.path)
+				
+				
+				
+				if options.testalignment:
+					analyzeresults(options,rootpath,nrefs,{},'testsh')
+			
+			
+			'''
+			'''
+			if options.testmaskradius:
+				pass
+			
+				if options.testalignment:
+					analyzeresults(options,rootpath,nrefs,{},'testlp')
+			
+			'''
+			'''
+			if options.testlowpassfreq:
+				pass
+						
+				if options.testalignment:
+					analyzeresults(options,rootpath,nrefs,{},'testhp')
+
+			
+			
+			
 		
 		'''
 		If ONLY PLOTTING previously computed alignment error files
@@ -249,28 +549,48 @@ def main():
 			files.sort()
 			print "\n\nAnd these the files", files
 			print "\n\n"
-			resfiles_analysis(options,files,resultsdir,0)
+			extra=''
+			resfiles_analysis(options,files,resultsdir,extra,0)
 		
 		
 	E2end(logger)
 	return()
 	
 
-def simloop(options,rootpath):
+def simloop(options,rootpath,randstack,wildcard=''):
+	
+	
+
+	rootpathOrig = rootpath
 	
 	comps = options.comparators.split(',')
+	
+	#compIDS={}
+	#if comps and len(comps) >1:
+	#	for comp in comps:
+	#		compID = comp.split(':')[0].replace('.','P')
+	#		compIDS.update({ compID : comp })
+	
 	iters=str(options.iter).split(',')
+	iterPATHS={}
+	
+	
 	#print "ITers are", iters
 	#print "Therefore len(iters) is", len(iters)
 	
 	if not options.comparators or len(comps) == 1:
 		if len(iters) < 2:
-			options = sptmakepath(options,'spt_tomosimjob')
-	
-	if "/" not in options.input:
-		options.input = rootpath + "/" + options.input
-		print "\n\n\n\n\nI am going to make path", options.path
-	
+			if not wildcard:
+			#	print "No wildcard ." + wildcard + " Will make path directly"
+			#	options = sptmakepath(options,'spt_tomosimjob')
+			#else:
+			#	print "Wildcard. " + wildcard + " .Will make path in rootpath"
+			#	options = sptmakepath(options,'spt_tomosimjob',rootpath)
+
+			#print "\n\n\n\n\n\n\n\nPPPPPPPPPPPPP\nPath made was", options.path
+		
+				pass
+				
 	print "\nInside simloop, options.path is", options.path
 	#if options.testalignment:	
 	#	resultsdir = 'results_ali_errors'
@@ -305,19 +625,21 @@ def simloop(options,rootpath):
 		print """ERROR: You must supply parameters EITHER for --nslices change and lower and upper limits, OR --tiltstep."""
 		sys.exit()
 	
-	nrefs = EMUtil.get_image_count(options.input)
-	#kk=0
+	print "\n\nORIGINAL options.model is", options.model
 	
+	nrefs = 1
+	
+	if not options.randstack and not options.ptclstack and options.model:
+		nrefs = EMUtil.get_image_count( os.path.basename(options.model) )
+		
 	originalpath = options.path
 	
 	simround=0
-	
 	firstrandstack = ''
-	
-	
-	
-	compPATHS={}
-	iterPATHS={}
+
+	if randstack:
+		simround = 1
+		firstrandstack = randstack
 	
 	itersMode = 0
 	if not options.simref:
@@ -331,9 +653,9 @@ def simloop(options,rootpath):
 		if options.tiltstep:
 			#print "Tilt step is", tiltstep
 			#print "Tilt range is", tiltrange
-			nslices = (2 * tiltrange) / tiltstep
+			nslices = ((2 * tiltrange) / tiltstep ) + 1						#You have to add 1 to account for the slice at 0deg
 			#print "Therefore, 2*tiltrange/tiltstep is nslices",nslices
-			nslicesu = nslices + 1
+			nslicesu = nslices + 1											#Add 1 because the loop will exclude the upper limit
 			#nslicestag = str(int(nslices)).zfill(3)
 
 		while nslices < nslicesu:
@@ -365,53 +687,73 @@ def simloop(options,rootpath):
 				
 				if len(iters) > 1 and options.comparators:
 					print """ERROR: You can't test MULTIPLE iteration numbers, AND MULTIPLE comparators at the same time.
-							To test a SINGLE comparator with MULTIPLE ITERATION NUMBERS, supply the comparator via --aligncmp and --raligncmp."""
+							To test a SINGLE comparator with MULTIPLE ITERATION NUMBERS, supply the comparator via --aligncmp and --faligncmp."""
 					sys.exit()
 				
 				if options.comparators:
 					if len(comps) > 1:
 						for comp in comps:
-							print "Comparator is", comp
-							print "Whereas root is", originalpath
+							#print "Comparator is", comp
+							#print "Whereas root is", originalpath
+							
 							options.aligncmp = comp
-							options.raligncmp = comp
+							options.faligncmp = comp
+							
+							#compID = comp.split(':')[0].replace('.','P')
+							#if simround == 0:
+							#options.path = originalpath + compID
+							
 							compID = comp.split(':')[0].replace('.','P')
-						
-							if 'fsc.tomo' in comp:
-								compID = comp.split(':')[0].replace('.','P') +  comp.split(':')[1].replace('sigmas=','Sigmas').replace('.','P')
-						
-							#options.path = originalpath + '_' + compID
-						
-							#findir=os.getcwd()
-							#if options.path not in findir:
-							#	os.system('mkdir ' + options.path)
 							
-							
-							
-							if simround == 0:
+							if simround == 0 or (simround == 1 and options.randstack):										#In the first round, the original path
+								#pathstem = options.path
+								
+								
+								rootpath = rootpathOrig + compID
 								options.path = originalpath + compID
-								pathstem = options.path
 							
-								options = sptmakepath( options, pathstem )
-								options.path = rootpath + '/' + options.path
+								options = sptmakepath( options, options.path )
 								print "\n\n\n\n\n\n\n\nSimround is 0 and therefore I made path", options.path
-								
-								compPATHS.update({ compID : options.path })
-								
-								print "THE NEW PATH IS",  options.path
-								print "because compID is", compID
-								print "because comp is", comp
+
+								rootpath = rootpathOrig + options.path.replace(originalpath,'')
+
+							if options.randstack:
+								os.system('e2proc3d.py ' + options.randstack + ' ' + rootpath + '/model.hdf --first=0 --last=0')
+								options.model = rootpath + '/model.hdf'			
 							
-							elif simround > 0:
-								print "compPATHS are", compPATHS
-								options.path = compPATHS[ compID ]
+							if not options.randstack and options.model:
+								os.system('cp ' + options.model + ' ' + rootpath)
 							
-							print "\n\n$$$$$$$$$$\nThe stack thestack BEFORE sending is", thestack
+								#if "/" not in options.model:								
+									
+								options.model = rootpath + "/" + options.model.split('/')[-1]
+						
+						
+							nrefs = EMUtil.get_image_count( options.model )
+
+						
+							#if rootpath not in options.path:
+							#	options.path = rootpath + '/' + options.path
+							
+							
+							#compPATHS.update({ compID : options.path })
+							
+							print "THE NEW PATH IS",  options.path
+							print "because compID is", compID
+							print "because comp is", comp
+							
+							
+							#elif simround > 0:
+							#	print "compPATHS are", compPATHS
+							#	options.path = compPATHS[ compID ]
+							
+							#print "\n\n$$$$$$$$$$\nThe stack thestack BEFORE sending is", thestack
 
 							#simloop(options,rootpath)
-							print "\n\n\nPPPPPPPPPPPPPP\nAnd path is", options.path
+							#print "\n\n\nPPPPPPPPPPPPPP\nAnd path is", options.path
+							
 							itersMode=0
-							ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany,thestack,themodel,itersMode)
+							ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany,thestack,themodel,itersMode,wildcard)
 						
 							if samestackformany == 0:
 								thestack = ret[0]
@@ -425,86 +767,139 @@ def simloop(options,rootpath):
 							samestackformany+=1
 					
 					elif len(iters) == 1:
-						options.raligncmp = comps[0]
+						options.faligncmp = comps[0]
 						options.aligncmp = comps[0]
 						
 						itersMode = 0
 						
-						#print "There's comps but length was less than one!"
-						ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany,thestack,themodel,itersMode)
-						if simround == 0:
-							firstrandstack = ret[2]
+						
+						if options.randstack:
+							os.system('e2proc3d.py ' + options.randstack + ' ' + rootpath + '/model.hdf --first=0 --last=0')
+							options.model = rootpath + '/model.hdf'			
+					
+						if not options.randstack and options.model:
+							os.system('cp ' + options.model + ' ' + rootpath)
+					
+							#if "/" not in options.model:								
+							
+							options.model = rootpath + "/" + options.model.split('/')[-1]
 				
-				elif len(iters) > 1:
-					
-					itersMode = 1
-					
-					itersint =[ int(it) for it in iters]
-					itmax = max(itersint)			
-					itersint.sort()
-					
-					#iters = [ str(it) for it in itersint]
-					
-					itround = 0
-					for it in itersint:
-						#print "ITERATIONS TO DO ARE", it
+				
+						nrefs = EMUtil.get_image_count( options.model )
+
 						
-						if itround == 0:
-							options.iter = str(it)
-						else:
-							options.iter = str(itersint[itround] - itersint[itround-1])
 						
-						print "\nThe literal iterations to do were supposed to be", it
-						print "And because itround is", itround
-						print "The actual iterations necessary are", options.iter	
+						#print "\n\n\n\nThere's comps but length was less than one!"
+						ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany,thestack,themodel,itersMode,wildcard)
 						
-						iterID = 'ITERS' + str(it).zfill( len( str(itmax)))
-						
-						if simround == 0:
-							options.path = originalpath + iterID
-							pathstem = options.path
+						#if samestackformany == 0:
+						#	thestack = ret[0]
+						#	themodel = ret[1]
 							
-							options = sptmakepath( options, pathstem )
-							options.path = rootpath + '/' + options.path
-							
-							iterPATHS.update({ iterID : options.path })
-							
-							print "THE NEW PATH IS",  options.path
-							print "because compID is", iterID
-							print "because iter is", it
-						
-						elif simround > 0:
-							print "iterPATHS are", iterPATHS
-							options.path = iterPATHS[ iterID ]
-					
-						
-						#options.path = originalpath + '_' + itID
-						
-						print "The path to use is", options.path
-		
-						ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany,thestack,themodel,itersMode)
-						
-						if samestackformany == 0:
-							thestack = ret[0]
-						
-						themodel = ret[1]
-						
 						if simround == 0:
 							firstrandstack = ret[2]
-	
 						
-										
-						print "Samestackformany is", samestackformany
 						
-						samestackformany+=1
-						
-						itround += 1
+						#if simround == 0:
+						#	firstrandstack = ret[2]
+				
+					'''
+					elif len(iters) > 1:
 					
+						itersMode = 1
+					
+						itersint =[ int(it) for it in iters]
+						itmax = max(itersint)			
+						itersint.sort()
+					
+						#iters = [ str(it) for it in itersint]
+					
+						itround = 0
+						for it in itersint:
+							#print "ITERATIONS TO DO ARE", it
+						
+							if itround == 0:
+								options.iter = str(it)
+							else:
+								options.iter = str(itersint[itround] - itersint[itround-1])
+						
+							print "\nThe literal iterations to do were supposed to be", it
+							print "And because itround is", itround
+							print "The actual iterations necessary are", options.iter	
+						
+							iterID = 'ITERS' + str(it).zfill( len( str(itmax)))
+						
+							if simround == 0:
+								options.path = originalpath + iterID
+								pathstem = options.path
+							
+								options = sptmakepath( options, pathstem )
+								options.path = rootpath + '/' + options.path
+							
+								iterPATHS.update({ iterID : options.path })
+							
+								print "THE NEW PATH IS",  options.path
+								print "because compID is", iterID
+								print "because iter is", it
+						
+							elif simround > 0:
+								print "iterPATHS are", iterPATHS
+								options.path = iterPATHS[ iterID ]
+					
+						
+							#options.path = originalpath + '_' + itID
+						
+							print "The path to use is", options.path
+		
+							ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany,thestack,themodel,itersMode,wildcard)
+						
+							if samestackformany == 0:
+								thestack = ret[0]
+						
+							themodel = ret[1]
+						
+							if simround == 0:
+								firstrandstack = ret[2]
+				
+							print "Samestackformany is", samestackformany
+						
+							samestackformany+=1
+						
+							itround += 1
+					'''	
 				else:
 					itersMode = 0
-					ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany,thestack,themodel,itersMode)
+					
+					#if samestackformany == 0:
+					#	thestack = ret[0]
+					#	themodel = ret[1]
+							
+					
+					
+					if options.randstack:
+						os.system('e2proc3d.py ' + options.randstack + ' ' + rootpath + '/model.hdf --first=0 --last=0')
+						options.model = rootpath + '/model.hdf'			
+					
+					if not options.randstack and options.model:
+						os.system('cp ' + options.model + ' ' + rootpath)
+					
+						#if "/" not in options.model:								
+							
+						options.model = rootpath + "/" + options.model.split('/')[-1]
+				
+				
+					nrefs = EMUtil.get_image_count( options.model )
+
+					ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany,thestack,themodel,itersMode,wildcard)
+
 					if simround == 0:
 						firstrandstack = ret[2]
+					
+					
+					
+					#if simround == 0:
+					#	firstrandstack = ret[2]
+					#	thestack = ret[0]
 				
 				simround+= 1
 				snr += snrch
@@ -515,210 +910,108 @@ def simloop(options,rootpath):
 				nslices += tiltstep
 			else:
 				nslices += nslicesch
-			
-		
 		
 		tiltrange += tiltrangech
-		
-
-			
-	"""
-	After running simulation and alignment commands, the results need to be compiled, parsed/analyzed and plotted
-	"""
 	
-	resultsdir=''	
+	if options.testalignment and wildcard != 'tmp':
 	
-	print "\n\n\n\n========================================================================================\n\n\n\n"
-	print "All ALIGNMENTS ARE DONE! It is now a matter of analyzing the results"
-	print "\n\n\n\n========================================================================================\n\n\n\n"
+		print "\n\n\n\n========================================================================================\n\n\n\n"
+		print "All ALIGNMENTS ARE DONE! It is now a matter of analyzing the results"
+		print "\n\n\n\n========================================================================================\n\n\n\n"
 
-	if options.testalignment:
-		for i in range(nrefs):
-			print "\n\n\n\n I will analyze alignments results for ref number", i
-		
-			comps = options.comparators.split(',')
-			#iters = str(options.iter).split(',')
-		
-			print "len(iterPATHS) is", len(iterPATHS)
-
-			if options.comparators and len(comps) >1 :
-			
-				compFilts = []
-				for comp in comps:
-				
-					compID = comp.split(':')[0].replace('.','P')
-				
-					if 'fsc.tomo' in comp:
-						compID = comp.split(':')[0].replace('.','P') +  comp.split(':')[1].replace('sigmas=','Sigmas').replace('.','P')
-					compFilt = originalpath + compID
-					compFilts.append( compFilt )
-			
-				compFilts = set(compFilts)
-			
-			
-				for filt in compFilts:
-					#print "\nComparator filt and refnum are", filt,i
-					print "Whereas originalpath, refnum are", originalpath,i
-					print "\n"
-				
-					otherFilts = compFilts - set(filt)
-					#options.aligncmp = comp
-					#options.raligncmp = comp
-				
-
-					#print "\nTherefore compID is", compID
-					#print "\n"
-				
-					potentialdirs=[]
-					findir = os.listdir(rootpath)
-					#filterID = originalpath + compID
-				
-					for f in findir:
-						if filt == f.split('_')[0]:
-							potentialdirs.append(f)
-				
-					thisone = filt
-					if len(potentialdirs) > 1:
-						potentialdirs.sort()
-						thisone = potentialdirs[-1]	
-				
-				
-					#print "In simloop after alignments, to ANALYZE results, the RESULTS dir WITHOUT hyphen should be based on filt",filt
-					#print "based on the originalpath", originalpath
-					#print "or now rather on the thisone path", thisone
-				
-					options.path = thisone
-				
-					if nrefs > 1:
-						modname = 'model' + str(i).zfill(len(str(nrefs)))
-			
-						resultsdir = options.path + '/' + modname + '/results_' + modname
-						if rootpath not in resultsdir:
-							resultsdir = rootpath + '/' + resultsdir
-		
-					else:
-						resultsdir = options.path + '/results' 
-						if rootpath not in resultsdir:
-							resultsdir = rootpath + '/' + resultsdir 
-		
-					resfiles = []
-				
-					findir = os.listdir(resultsdir)
-					for f in findir:
-						if 'error.txt' in f:
-							resfiles.append(f)
-		
-					resfiles.sort()
-		
-					resfiles_analysis(options,resfiles,resultsdir,modelnum=i)
-		
-			elif len(iterPATHS) > 1:
-				#print "\n\n\nThere are these many iterPAHTS", len(iterPATHS)
-				#print "Which are", iterPATHS
-			
-				for ele in iterPATHS:
-					#print "Analyzing THIS element of iterPATHS", ele
-					options.path = iterPATHS[ele]
-				
-					if nrefs > 1:
-						modname = 'model' + str(i).zfill(len(str(nrefs)))
-			
-						resultsdir = options.path + '/' + modname + '/results_' + modname
-						if rootpath not in resultsdir:
-							resultsdir = rootpath + '/' + resultsdir
-		
-					else:
-						resultsdir = options.path + '/results' 
-						if rootpath not in resultsdir:
-							resultsdir = rootpath + '/' + resultsdir 
-		
-					resfiles = []
-				
-					findir = os.listdir(resultsdir)
-					for f in findir:
-						if 'error.txt' in f:
-							resfiles.append(f)
-		
-					resfiles.sort()
-		
-					resfiles_analysis(options,resfiles,resultsdir,modelnum=i)			
-		
-			else:
-				if nrefs > 1:
-					modname = 'model' +  str(i).zfill(len(str(nrefs)))
-				
-					resultsdir = options.path + '/' + modname + '/results_' + modname
-					if rootpath not in resultsdir:
-						resultsdir = rootpath + '/' + resultsdir
-		
-				else:
-					resultsdir = options.path + '/results' 
-					if rootpath not in resultsdir:
-						resultsdir = rootpath + '/' + resultsdir
-		
-				resfiles = []
-				findir = os.listdir(resultsdir)
-				for f in findir:
-					if 'error.txt' in f:
-						resfiles.append(f)
-		
-				if len(resfiles) < 2:
-					print "Some of your jobs failed. There seems to be only ONE results file, and thus no variability of either SNR, TR, or TS"
-					sys.exit()
-				else:
-					resfiles.sort()		
-					resfiles_analysis(options,resfiles,resultsdir,modelnum=i)
-
-	return()
+		analyzeresults(options,rootpathOrig,nrefs,iterPATHS)
+		print "len(iterPATHS) is", len(iterPATHS)
 	
-'''
-FUNCTION TO RUN A COMMAND AT THE COMMAND LINE FROM A SCRIPT
-'''
-def runcmd(cmd):
-	p=subprocess.Popen( cmd , shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	
-	for line in iter(p.stdout.readline, ''):
-		print line.replace('\n','')
-
-	p.communicate()	
-	p.stdout.close()
-	return
+	
+	print "\n\nIn simloop, these are stack and model", thestack, themodel
+	
+	return (options,rootpathOrig,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany,thestack,themodel,itersMode)
 
 
-def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany=0,thesestacks=[],thesemodels=[],itersMode=0):
+
+
+
+
+def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany=0,thesestacks=[],thesemodels=[],itersMode=0, wildcard=''):
 	thisstack=''
 	thissimodel=''
+	
 	#finalAvgPath=''
+	
 	
 	finalAvgs=[]
 	
-	modeldir = options.path
-	if rootpath not in modeldir:
-		modeldir = rootpath + '/' + modeldir
+	print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n(e2spt_tomosimjobs.py)(gencmds)\nSSSSSSSSSSSSSSSSS\nsamestackformany is", samestackformany
+	print "SSSSSSSSSSSSSSSSS\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
 	
+	#modeldir = options.path
+	#if rootpath not in modeldir:
+	
+	#modeldir = rootpath + '/' + modeldir
+	modeldir = rootpath
+	if options.model and "/" in options.model:
+		modelbase = os.path.basename(options.model)
+		modeldir = options.model.replace( modelbase , '')
 			
-	resultsdir = options.path + '/results'
+	#resultsdir = options.path + '/results'
+	#resultsdir = 'results'
 	
-	if rootpath not in resultsdir:
-		resultsdir = rootpath + '/' + resultsdir
+	if wildcard:
+		modeldir = rootpath
+		#resultsdir = rootpath + '/results'
+	
+	#if rootpath not in resultsdir:
+	
+	resultsdir = rootpath + '/results'
 
 	#print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n ! ! ! ! ! ! ! ! ! ! ! ! ! ! \n The results dir to make should be", resultsdir
 	#print "(e2spt_tomosimjobs) (function gencmds) Options path is", options.path
 	#print"\n ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
 	
-	inputdata = options.input
+	inputdata = options.model
+	
+	
+
 	
 	for d in range(nrefs):
 		modeltag = ''
 		#subpath = rootpath + '/' + options.path + '/' +'TR' + str(tiltrange).zfill(5) + '_TS' + tiltsteptag + '_SNR' + str(snr).zfill(5)
 		
-		subpath = options.path + '/' +'TR' + tiltrangetag + '_NS' + nslicestag + '_SNR' + snrtag
+		#subpath = options.path + '/' +'TR' + tiltrangetag + '_NS' + nslicestag + '_SNR' + snrtag
+		
+		subpath = 'TR' + tiltrangetag + '_NS' + nslicestag + '_SNR' + snrtag
+		
+		
+		subdirs = ''
 
 		if rootpath not in subpath:
-			subpath = rootpath + '/' + options.path + '/' +'TR' + tiltrangetag + '_NS' + nslicestag + '_SNR' + snrtag
+			#subpath = rootpath + '/' + options.path + '/' +'TR' + tiltrangetag + '_NS' + nslicestag + '_SNR' + snrtag
+			subpath = rootpath + '/' + subpath
 		
-		subdirs = os.listdir(options.path)
 		
+		if wildcard:
+			#	#if wildcard != 'tmp'
+			#	subpath += '_' + wildcard
+			#	
+			 
+			#if wildcard == 'ref':
+			#	subpath = wildcard
+			
+			#else:
+			subpath = options.path
+		
+		print "\n\n\n\nSUBPATH IS!!!!!!!!!!!!!!!!!!!!!!", subpath
+		print "\n\n\n"
+		#>>subdirs = os.listdir(rootpath + '/' + options.path)
+		
+		if wildcard:
+			subdirs = os.listdir( rootpath )
+		else:
+			#os.system('mkdir ' + options.path)
+			subdirs = os.listdir( options.path )
+			
+			
 		resultsbase = 'results'
 		
 		if nrefs > 1:
@@ -726,17 +1019,32 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			#subpath += '_' + modeltag
 			
 			
-			modeldir = options.path + '/' + modeltag
+			#print "Model tag is", modeltag
+			
+			modeldir = modeltag
 			
 			if rootpath not in modeldir:
 				modeldir = rootpath + '/' + modeldir
-		
+			
+			#print "(rootpath) modeldir is", modeldir		
+			
+			if options.path not in modeldir:
+				modeldir = options.path + '/' + modeldir
+			
+			#print "(path) Modeldir is", modeldir
+			
+			
 			if modeltag not in subdirs:
 				os.system('mkdir ' + modeldir)
+			
+			#print "Subdirs are", subdirs
 			
 			resultsbase = 'results_' + modeltag
 
 			resultsdir = modeldir + '/' + resultsbase
+			
+			#print "Results dir is", resultsdir
+			#sys.exit()
 			
 			subdirs = os.listdir(modeldir)
 			
@@ -746,7 +1054,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			
 			#print "I've just made this subpath for this specific model and conditions", subpath
 			
-			model = EMData(options.input,d)
+			model = EMData(options.model,d)
 
 			newname = modeldir + '/' + inputdata.split('/')[-1].replace('.hdf','_' + modeltag + '.hdf') #CHANGED
 			
@@ -761,7 +1069,9 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 		if resultsbase not in subdirs:
 			os.system('mkdir ' + resultsdir)
 		
-		subtomos =  subpath.split('/')[-1] + '.hdf'
+		#>>subtomos =  subpath.split('/')[-1] + '.hdf'
+		
+		subtomos = 'simptcls.hdf'
 		
 		cmd1a = cmd1b = ''
 		
@@ -776,28 +1086,48 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			#print "\n(e2spt_tomosimjobs.py) (gencmds function) Simulated particles are here", subtomos
 			#print '\n'
 			
-			jobcmd = 'e2spt_simulation.py --input=' + inputdata + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --nslices=' + str(nslices) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --shrink=' + str(options.shrinksim) + ' --finalboxsize=' + str(options.finalboxsize) + ' --verbose=' + str(options.verbose) + ' --parallel=' + str(options.parallel) + ' --path=' + subpath.split('/')[-1]
+			#jobcmd = 'e2spt_simulation.py --input=' + inputdata + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --nslices=' + str(nslices) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --finalboxsize=' + str(options.finalboxsize) + ' --verbose=' + str(options.verbose) + ' --parallel=' + str(options.parallel) + ' --path=' + subpath.split('/')[-1]
+			
+			jobcmd = 'e2spt_simulation.py --input=' + inputdata +  ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --nslices=' + str(nslices) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --finalboxsize=' + str(options.finalboxsize) + ' --verbose=' + str(options.verbose) + ' --parallel=' + str(options.parallel) 
+			
+			#if not wildcard:
+			jobcmd += ' --path=' + subpath.split('/')[-1]
+			
+			#else:
+			#	jobcmd += ' && mv sptsim_01/* ' + modeldir
+			
+			
 			
 			#snrl = options.snrlowerlimit
 			#snru = options.snrupperlimit
 			#snrch = options.snrchange
 			  
 			if simround < 1:
-				jobcmd += ' --saverandstack'
+				jobcmd += ' --saverandstack' + ' --shrink=' + str(options.shrinksim)
 				
 				#nrefs = EMUtil.get_image_count(inputdata)
 				tag=''
 				if nrefs>1:
 					tag = str(d).zfill(len(str(nrefs)))
 					
-				firstrandstack =  subpath + '/' + subtomos.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf').split('/')[-1]
-				
+				#>>firstrandstack =  subpath + '/' + subtomos.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf').split('/')[-1]
 				#firstrandstack =  subpath.split('/')[-1] + '/' + inputdata.replace('.hdf','_randst' + tag + '_n' + str(options.nptcls).zfill(len(str(options.nptcls))) + '.hdf').split('/')[-1]
+				
+				firstrandstack =  subpath + '/randstack.hdf'
+				
 				print "\n\nThe firstrandstack name in e2spt_tomosimjobs when simround is 0, is", firstrandstack
 			
 			if simround > 0 and firstrandstack:
-				print "\n\nThe randstack to PROVIDE because simround > 1 is", firstrandstack
+				print "\n\nRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR\nThe randstack to PROVIDE because simround > 1 is", firstrandstack
+				print "\nRRRRRRRRRRRRRRRRRRRR\n\n"
 				randstackcmd = ' --randstack=' + firstrandstack
+				
+				if options.randstack:
+					randstackcmd = ' --randstack=../' + firstrandstack
+					
+					if simround == 1:
+						jobcmd += ' --shrink=' + str(options.shrinksim)
+					
 				jobcmd += randstackcmd
 			
 			if options.simref:
@@ -810,19 +1140,38 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 				jobcmd += ' --negativecontrast'
 			
 			if options.notrandomize:
-				jobcmd += ' --notrandomize'				
+				jobcmd += ' --notrandomize'
+				
+			if options.nosim:
+				jobcmd += ' --nosim'			
+			
+			if options.reconstructor:
+				jobcmd += ' --reconstructor=' + options.reconstructor
+		
+
 			
 			cmd1a = 'cd ' + modeldir + ' && ' + jobcmd
+			
+			print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n ! ! ! ! ! ! ! ! ! ! ! ! ! ! \n "
+			print "e2spt_simulation job, or cmd1a is",cmd1a
+			print "\n ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+			
 			runcmd( cmd1a )
 	
 		elif samestackformany > 0:
-			#print "Thesemodels when stackformany > 0, and its type, are", thesemodels, type(thesemodels)
+			#print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nMMMMMMMMMMM\nThesemodels when stackformany > 0, and its type, are", thesemodels, type(thesemodels)
 			#print "Therefore for this model", d
 			#print "THEMODEL, thesemodels[d], would be", thesemodels[d]
-			os.system('mkdir ' + subpath)
-			cmd1b = 'cp ' + str(thesestacks[d]) + ' ' + subpath+ '/' + subtomos.replace('.hdf','_ptcls.hdf')
+			#print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nMMMMMMMMMMM\n"
 			
-			simmodel = subpath + '/' + inputdata.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf') 
+			os.system('mkdir ' + subpath)
+			#>>cmd1b = 'cp ' + str(thesestacks[d]) + ' ' + subpath+ '/' + subtomos.replace('.hdf','_ptcls.hdf')
+			
+			cmd1b = 'cp ' + str(thesestacks[d]) + ' ' + subpath+ '/simptcls.hdf'
+			
+			#>>simmodel = subpath + '/' + inputdata.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf') 
+			
+			simmodel = subpath + '/simmodel.hdf'
 			
 			if itersMode:
 				simmodel = subpath + '/' + thesemodels[d].split('/')[-1].replace('.hdf','_previousITER.hdf')
@@ -831,10 +1180,10 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			
 			runcmd( cmd1b )
 			
-			#print "\n\n\nCCCCCCCCCC\nstackformany is", samestackformany
+			#print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nCCCCCCCCCC\nstackformany is", samestackformany
 			#print "Therefore I WILL NOT run a job for e2spt_simulation, and will rather copy the previous MODEL",  str(thesemodels[d])
 			#print "TO", simmodel 
-			#print "CCCCCCCCCCCCCn\n"
+			#print "CCCCCCCCCCCCC\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
 
 		#resultsfiles=[]
 		
@@ -843,27 +1192,35 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 		cmd2 = extractcmd = solutioncmd = rfilecmd = ''
 		extractcmd1 = extractcmd2 = refprepcmd = extractcmd0 = finalAvgPath = ''
 		
-		if options.testalignment:
-			print "\n\n$$$$$$$$$\nI will test alignment and for that will cd into SUBPATH", subpath
-			print "This is SIMROUND number", simround 
-			print "$$$$$$$$\n\n"
+		if options.testalignment and wildcard!='tmp': 
+			#print "\n\n$$$$$$$$$\nI will test alignment and for that will cd into SUBPATH", subpath
+			#print "This is SIMROUND number", simround 
+			#print "$$$$$$$$\n\n"
 
 			#cmd = cmd + ' && cd ' + subpath
+			if rootpath not in subpath:
+				subpath = rootpath + '/' + subpath
+				
 			cmd2 = 'cd ' + subpath
 
 			ref=''
 			if options.simref:
-				ref = inputdata.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf')
-			
+				#ref = inputdata.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf')
+				ref = 'simmodel.hdf'
+				
 			else:
-				prepRefFromOrigModel = subpath + '/' + options.input.split('/')[-1].replace('.hdf','_REFPREP.hdf')
-				refprepcmd = 'e2spt_refprep.py --refstack=' + subpath + '/' + subtomos.replace('.hdf','_ptcls.hdf') + ' --output=' + prepRefFromOrigModel + ' --stack2process=' + options.input
+				prepRefFromOrigModel = subpath + '/' + options.model.split('/')[-1].replace('.hdf','_REFPREP.hdf')
+				#refprepcmd = 'e2spt_refprep.py --refstack=' + subpath + '/' + subtomos.replace('.hdf','_ptcls.hdf') + ' --output=' + prepRefFromOrigModel + ' --stack2process=' + options.model
+				
+				refprepcmd = 'e2spt_refprep.py --stack2match=' + subpath + '/simptcls.hdf --output=' + prepRefFromOrigModel + ' --stack2process=' + options.model
+				
 				runcmd( refprepcmd )
 				ref = prepRefFromOrigModel
 				
-				print "\n\n\nRRRRRRRRRRRRRRRRRRRRRRRR\n\n\n REFPREP command was", refprepcmd
-				print "\nRRRRRRRRRRRRRRRRRRRRRRRRRRRR\n\n"
-							
+				#print "\n\n\nRRRRRRRRRRRRRRRRRRRRRRRR\n\n\n REFPREP command was", refprepcmd
+				#print "\nRRRRRRRRRRRRRRRRRRRRRRRRRRRR\n\n"
+			
+			print "\n\n\n\n\n\n\n\n\n\n\n rrrrrrrrrrrrrrrrrrrrrr THERE WAS SIMMREF, therefore, ref is", ref			
 			if samestackformany > 0:
 				ref = thesemodels[d].split('/')[-1]
 	
@@ -871,34 +1228,45 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 					#ref = subpath + '/' + thesemodels[d].split('/')[-1].replace('.hdf','_previousITER.hdf')
 					ref = thesemodels[d].split('/')[-1].replace('.hdf','_previousITER.hdf')
 
-			output=subtomos.replace('.hdf', '_avg.hdf')
+				print "BUT THERE is ALSO SAMESTACK FOR MANY!, so ref is", ref
+				print "rrrrrrrrrrrrrrrr\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+				
+			output = subtomos.replace('.hdf', '_avg.hdf')
 			#print "\n\n$$$$$$$$$$$$$$$$$$$$$$\nRef name is\n$$$$$$$$$$$$$$$$$$$\n", ref
 
 			#print "\n\%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%noutput name is\n", output
 
-			alipath1=output.split('/')[-1].replace('_avg.hdf','_ali')
+			alipath1 = output.split('/')[-1].replace('_avg.hdf','_ali')
 			#alipath2= subpath + '/' + output.replace('_avg.hdf','_ali')
 			alipath2 = subpath + '/' + alipath1
 			#print "\n##################################\nAlipath1 for results will be\n", alipath1
 			#print "\n##################################\nAlipath2 for results will be\n", alipath2
 			
 			subtomos = subpath + '/' + subtomos
+			if rootpath not in subtomos:
+				subtomos = rootpath + '/' + subtomos
 			
-			alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --radius=" + str(options.radius) + " --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=0 --parallel=" + options.parallel + " --ralign=refine_3d_grid:delta=3:range=12:search=2 --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=" + str(options.shrinkalign) + " --shrinkrefine=" + str(options.shrinkalign) +" --savesteps --saveali --normproc=" + str(options.normproc)  + ' --iter=' + str(options.iter) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose)
+			#>>alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --radius=" + str(options.radius) + " --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=0 --parallel=" + options.parallel + " --falign=refine_3d_grid:delta=3:range=12:search=2 --averager=mean.tomo --aligncmp=" + options.aligncmp + " --faligncmp=" + options.faligncmp + " --shrink=" + str(options.shrinkalign) + " --shrinkfine=" + str(options.shrinkalign) +" --savesteps --saveali --normproc=" + str(options.normproc)  + ' --iter=' + str(options.iter) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose)
+			
+			alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos + " --output=" + output + " --ref=" + ref + " --radius=" + str(options.radius) + " --precision=" + str(options.precision) + " --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_translate_3d:search=" + str(options.search) + ":delta=12:dphi=12:verbose=0 --parallel=" + options.parallel + " --falign=refine_3d_grid:delta=3:range=12:search=2 --averager=mean.tomo --aligncmp=" + options.aligncmp + " --faligncmp=" + options.faligncmp + " --shrink=" + str(options.shrinkalign) + " --shrinkfine=" + str(options.shrinkalign) +" --savesteps --saveali --normproc=" + str(options.normproc)  + ' --iter=' + str(options.iter) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose)
+			alicmd += " --nocenterofmass"
+			
 			
 			if options.shrinkalign or options.lowpass or options.highpass:
 				alicmd += ' --refpreprocess'
 			
 			if options.quicktest:
-				alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --radius=" + str(options.radius) + " -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_symmetry_3d:sym=c1:verbose=0 --parallel=" + options.parallel + " --ralign=None --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=3 --normproc=" + str(options.normproc) + ' --iter=' + str(options.iter) + ' --npeakstorefine=1 --savesteps --saveali --refpreprocess'
-
+				#>>alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --radius=" + str(options.radius) + " -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_symmetry_3d:sym=c1:verbose=0 --parallel=" + options.parallel + " --falign=None --averager=mean.tomo --aligncmp=" + options.aligncmp + " --faligncmp=" + options.faligncmp + " --shrink=3 --normproc=" + str(options.normproc) + ' --iter=' + str(options.iter) + ' --npeakstorefine=1 --savesteps --saveali --refpreprocess'
+				alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos + " --output=" + output + " --ref=" + ref + " --radius=" + str(options.radius) + " -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_symmetry_3d:sym=c1:verbose=0 --parallel=" + options.parallel + " --falign=None --averager=mean.tomo --aligncmp=" + options.aligncmp + " --faligncmp=" + options.faligncmp + " --shrink=3 --normproc=" + str(options.normproc) + ' --iter=' + str(options.iter) + ' --npeakstorefine=1 --savesteps --saveali --refpreprocess'
+				alicmd += " --nocenterofmass"
 			
 			#You want --wedgeangle (or data collection range) to be a bit bigger than it actually is
 			#so that the missing wedge is smaller than it actually is, to ensure there will be no overlap with any data.
 			#This is effectively accomplished by adding 1 (or more) to 'tiltrange'
-			if 'fsc.tomo' in options.aligncmp or 'fsc.tomo' in options.raligncmp:
-				print "\n\n\n\n\n\n\n\n$$$$$$$$$$$$$$$$\nYOU are selecting FSC.TOMO, therefore, wedgeangle needs to be specified", tiltrange+1
-				alicmd += ' --wedgeangle=' + str(tiltrange+1)  + ' --wedgei=' + str(options.wedgei) + ' --wedgef=' + str(options.wedgef)
+			
+			#if 'fsc.tomo' in options.aligncmp or 'fsc.tomo' in options.faligncmp:
+			#	print "\n\n\n\n\n\n\n\n$$$$$$$$$$$$$$$$\nYOU are selecting FSC.TOMO, therefore, wedgeangle needs to be specified", tiltrange+1
+			#	alicmd += ' --wedgeangle=' + str(tiltrange+1)  + ' --wedgei=' + str(options.wedgei) + ' --wedgef=' + str(options.wedgef)
 				
 			#if options.fitwedgepost:
 			#	print "\n\nYou have selected --fitwedgwepost"
@@ -912,7 +1280,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			runcmd( cmd2 )	
 			
 			
-			aliptcls = output.replace('_avg.hdf','_ptcls_ali.hdf')
+			aliptcls = output.replace('_avg.hdf','_ali.hdf')
 			
 			finalAvgPath = alipath2 + '/' + output
 			
@@ -944,8 +1312,8 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 				#This makes NO SENSE AT ALL. With iter > 1, the reference should be the previous average. PERIOD.
 				
 				if not options.simref:
-					prepRefFromOrigModel = subpath + '/' + options.input.split('/')[-1].replace('.hdf','_REFPREP.hdf')
-					refprepcmd = 'e2spt_refprep.py --refstack=' + finalrefname + ' --output=' + prepRefFromOrigModel + ' --stack2process=' + options.input
+					prepRefFromOrigModel = subpath + '/' + options.model.split('/')[-1].replace('.hdf','_REFPREP.hdf')
+					refprepcmd = 'e2spt_refprep.py --refstack=' + finalrefname + ' --output=' + prepRefFromOrigModel + ' --stack2process=' + options.model
 					
 					refToCompensate = prepRefFromOrigModel
 					runcmd( refprepcmd )
@@ -962,13 +1330,13 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 					
 				
 				if not options.quicktest:
-					extractcmd2 = "cd " + alipath2 + " && e2spt_classaverage.py --path=finalRef_vs_OriginalRef --input=" + finalrefname + " --output=finalrefali.hdf --ref=" + refToCompensate + " --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=0 --parallel=" + options.parallel + " --ralign=refine_3d_grid:delta=3:range=12:search=2 --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=" + str(options.shrinkalign) + " --shrinkrefine=" + str(options.shrinkalign) +" --savesteps --saveali --normproc=" + str(options.normproc)  + ' --iter=1 --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose)
+					extractcmd2 = "cd " + alipath2 + " && e2spt_classaverage.py --path=finalRef_vs_OriginalRef --input=" + finalrefname + " --output=finalrefali.hdf --ref=" + refToCompensate + " --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_translate_3d:search=" + str(options.search) + ":delta=12:dphi=12:verbose=0 --parallel=" + options.parallel + " --falign=refine_3d_grid:delta=3:range=12:search=2 --averager=mean.tomo --aligncmp=" + options.aligncmp + " --faligncmp=" + options.faligncmp + " --shrink=" + str(options.shrinkalign) + " --shrinkfine=" + str(options.shrinkalign) +" --savesteps --saveali --normproc=" + str(options.normproc)  + ' --iter=1 --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose)
 				
 					if options.shrinkalign or options.lowpass or options.highpass:
 						extractcmd2 += ' --refpreprocess'
 				
 				elif options.quicktest:
-					extractcmd2 = "cd " + alipath2 + " && e2spt_classaverage.py --path=finalRef_vs_OriginalRef --input=" + finalrefname + " --output=finalrefali.hdf --ref=" + refToCompensate + " -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_symmetry_3d:sym=c1:verbose=0 --parallel=" + options.parallel + " --ralign=None --averager=mean.tomo --aligncmp=" + options.aligncmp + " --raligncmp=" + options.raligncmp + " --shrink=3 --normproc=" + str(options.normproc) + " --iter=1 --npeakstorefine=1 --savesteps --saveali --refpreprocess"
+					extractcmd2 = "cd " + alipath2 + " && e2spt_classaverage.py --path=finalRef_vs_OriginalRef --input=" + finalrefname + " --output=finalrefali.hdf --ref=" + refToCompensate + " -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_symmetry_3d:sym=c1:verbose=0 --parallel=" + options.parallel + " --falign=None --averager=mean.tomo --aligncmp=" + options.aligncmp + " --faligncmp=" + options.faligncmp + " --shrink=3 --normproc=" + str(options.normproc) + " --iter=1 --npeakstorefine=1 --savesteps --saveali --refpreprocess"
 				
 				runcmd( extractcmd2 )
 			
@@ -976,7 +1344,9 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 				print "\n\n\n"
 				
 			
-			resultsfile = aliptcls.replace('_ptcls_ali.hdf','_ali_error.txt')
+			#>>resultsfile = aliptcls.replace('_ali.hdf','_ali_error.txt')
+			
+			resultsfile = subpath.split('/')[-1] + '_ali_error.txt'
 			
 			#print "\n@@@@@@@\n@@@@@@@\n@@@@@@@@@\n@@@@@@@ Results file is %s \n@@@@@@@\n@@@@@@@\n@@@@@@@@@\n@@@@@@@" %(resultsfile)
 
@@ -986,6 +1356,10 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			#	os.system('mkdir ' + resultsdir)
 			
 			solutioncmd = "e2spt_transformdistance.py --nolog --input=" + alipath2 + '/' + aliptcls + ' --output=' + resultsdir + '/' + resultsfile
+			
+			#if options.shrinkalign:
+			#	solutioncmd += ' --shrink=' + str( options.shrinkalign )
+			
 			
 			if int(options.iter) > 1:
 				finalRefVsOriginalRefPath = alipath2 + '/finalRef_vs_OriginalRef'
@@ -1042,15 +1416,30 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 		#os.system(cmd)
 
 		if samestackformany == 0:
-			thisstack = subpath + '/' + thisstack.split('/')[-1].replace('.hdf','_ptcls.hdf')
+			#>>thisstack = subpath + '/' + thisstack.split('/')[-1].replace('.hdf','_ptcls.hdf')
+			
+			print "\nthe stack before messing up is", thisstack
+			thisstack = subpath + '/' + thisstack.split('/')[-1]
+			
+			print "\nThis is where I'm messing up the stack see", thisstack
+			
 			thesestacks.append(thisstack)			
 			
 			if not itersMode:
 				if options.simref:			
-					thissimmodel = subpath + '/' + thissimmodel.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf')
+					#>>thissimmodel = subpath + '/' + thissimmodel.split('/')[-1].replace('.hdf','_sptsimMODEL_SIM.hdf')
+					
+					print "\n and the model before", thissimmodel
+					thissimmodel = subpath + '/' + thissimmodel.split('/')[-1]
+					
+					thissimmodel = subpath + '/simmodel.hdf'
+					
+					print "\n and the model after", thissimmodel
 					thesemodels.append(thissimmodel)
+				
+				
 				else:
-					thissmodel = prepRefFromOrigModel = subpath + '/' + options.input.split('/')[-1].replace('.hdf','_REFPREP.hdf')
+					thissmodel = prepRefFromOrigModel = subpath + '/' + options.model.split('/')[-1].replace('.hdf','_REFPREP.hdf')
 					thesemodels.append(thissmodel)
 					
 	
@@ -1067,109 +1456,377 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 
 
 
-def resfiles_analysis(options,resfiles,resultsdir,modelnum=0):
+
+
+
+
+
+			
+"""
+After running simulation and alignment commands (if --testalignments is provided, 
+the results need to be compiled, parsed/analyzed and plotted.
+"""
+	
+def analyzeresults(options,rootpath,nrefs,iterPATHS,extra=''):
+	
+	
+	resultsdir=''	
+	
+	for i in range(nrefs):
+		#print "\n\n\n\n I will analyze alignments results for ref number", i
+	
+		comps = options.comparators.split(',')
+		#iters = str(options.iter).split(',')
+		
+		print "\n\n\n\n\n\nCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCn\nCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\nCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\nCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\nIn analyze results, comaprators are", comps
+
+		if options.comparators and len(comps) >1 :
+			originalpath = rootpath
+			compFilts = []
+			for comp in comps:
+			
+				compID = comp.split(':')[0].replace('.','P')
+			
+				#if 'fsc.tomo' in comp:
+				#	compID = comp.split(':')[0].replace('.','P') +  comp.split(':')[1].replace('sigmas=','Sigmas').replace('.','P')
+				
+				compFilt = originalpath + compID
+				compFilts.append( compFilt )
+		
+			compFilts = set(compFilts)
+		
+		
+			for filt in compFilts:
+				rootpath = filt
+				print "\nComparator filt and refnum are", filt,i
+				print "Whereas originalpath, refnum are", originalpath,i
+				print "\n"
+			
+				otherFilts = compFilts - set(filt)
+				#options.aligncmp = comp
+				#options.faligncmp = comp
+			
+
+				#print "\nTherefore compID is", compID
+				#print "\n"
+			
+				potentialdirs=[]
+				findir = os.listdir(rootpath)
+
+				#findir = os.listdir(filt)
+				#filterID = originalpath + compID
+			
+				for f in findir:
+					if filt == f.split('_')[0]:
+						potentialdirs.append(f)
+			
+				thisone = filt
+				if len(potentialdirs) > 1:
+					potentialdirs.sort()
+					thisone = potentialdirs[-1]	
+			
+			
+				#print "In simloop after alignments, to ANALYZE results, the RESULTS dir WITHOUT hyphen should be based on filt",filt
+				#print "based on the originalpath", originalpath
+				#print "or now rather on the thisone path", thisone
+			
+				options.path = thisone
+			
+				if nrefs > 1:
+					modname = 'model' + str(i).zfill(len(str(nrefs)))
+		
+					resultsdir = modname + '/results_' + modname
+					if rootpath not in resultsdir:
+						resultsdir = rootpath + '/' + resultsdir
+	
+				else:
+					#resultsdir = options.path + '/results' 
+					#if rootpath not in resultsdir:
+					#	resultsdir = rootpath + '/' + resultsdir 
+					resultsdir = rootpath + '/results'
+	
+				resfiles = []
+			
+				os.system('mkdir ' + resultsdir)
+				findir = os.listdir(resultsdir)
+				for f in findir:
+					if 'error.txt' in f:
+						resfiles.append(f)
+	
+				resfiles.sort()
+	
+				resfiles_analysis(options,resfiles,resultsdir,extra,modelnum=i)
+	
+		elif len(iterPATHS) > 1:
+			#print "\n\n\nThere are these many iterPAHTS", len(iterPATHS)
+			#print "Which are", iterPATHS
+		
+			for ele in iterPATHS:
+				#print "Analyzing THIS element of iterPATHS", ele
+				options.path = iterPATHS[ele]
+			
+				if nrefs > 1:
+					modname = 'model' + str(i).zfill(len(str(nrefs)))
+		
+					resultsdir = modname + '/results_' + modname
+					if rootpath not in resultsdir:
+						resultsdir = rootpath + '/' + resultsdir
+	
+				else:
+					resultsdir = options.path + '/results' 
+					if rootpath not in resultsdir:
+						resultsdir = rootpath + '/' + resultsdir 
+	
+				resfiles = []
+			
+				findir = os.listdir(resultsdir)
+				for f in findir:
+					if 'error.txt' in f:
+						resfiles.append(f)
+	
+				resfiles.sort()
+	
+				resfiles_analysis(options,resfiles,resultsdir,extra,modelnum=i)			
+	
+		else:
+			resultsdir='results'
+			if nrefs > 1:
+				modname = 'model' +  str(i).zfill(len(str(nrefs)))
+			
+				resultsdir = modname + '/results_' + modname
+				if rootpath not in resultsdir:
+					resultsdir = rootpath + '/' + resultsdir
+	
+			else:
+				#print "(line 899) Results dir is", resultsdir
+				#print "options path is", options.path 
+				#if options.path not in resultsdir:
+				#	resultsdir = options.path + '/results'
+				#	print "options.path was not in results dir, therefore latter now is", resultsdir
+				#print "rootpath is", rootpath
+	
+				if rootpath not in resultsdir:
+					resultsdir = rootpath + '/' + resultsdir
+					print "Rootpath was not in resultsdir, so latter now is", resultsdir
+	
+				if 'test' in extra:
+					resultsdir = rootpath + '/results'
+				
+				
+			resfiles = []
+			findir = os.listdir(resultsdir)
+			for f in findir:
+				if 'error.txt' in f:
+					resfiles.append(f)
+	
+			if len(resfiles) < 2:
+				print "Some of your jobs failed. There seems to be only ONE results file, and thus no variability of either SNR, TR, or TS"
+				sys.exit()
+			else:
+				resfiles.sort()		
+				resfiles_analysis(options,resfiles,resultsdir,extra,modelnum=i)
+
+	return
+
+	
+'''
+FUNCTION TO PROPERLY RUN A COMMAND AT THE COMMAND LINE FROM A SCRIPT
+'''
+def runcmd(cmd):
+	
+	if cmd:
+		p=subprocess.Popen( cmd , shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	
+		for line in iter(p.stdout.readline, ''):
+			print line.replace('\n','')
+
+		p.communicate()	
+		p.stdout.close()
+	else:
+		print "Command to run was empty!"
+	return
+
+
+
+def resfiles_analysis(options,resfiles,resultsdir,extra,modelnum=0):
 	print "Inside resfiles_analysis"
+	
 	ang_errors = []
 	trans_errors = []
+	var=''
+	
+	print "\nExtra received is", extra
+	if 'test' in extra:
+		var = extra.replace('test','').upper()
 		
-	snrs = []
-	trs = []
-	tss = []
+		print "Therefore var is",var
+	
+		vals=[]
+		resfiles.sort()
 		
-	twoD_tr_ts_points = []
-	twoD_snr_tr_points = []	
-	twoD_snr_ts_points = []
-			
-	threeD_points = []
+		for ff in resfiles:
+			val=0.0
+			#var=''
+			xaxis=''
+			print "\nParsing this resfile", ff
+			ffbase = ff.split('/')[-1].split('_')[0]
+			if 'bx' in ffbase:
+				val = float(ffbase.replace('bx',''))
+				#var = 'BX'
+				xaxis = 'Box size (pixels)'
+			elif 'sh' in ffbase:
+				val = float(ffbase.replace('sh',''))
+				#var = 'SH'
+				xaxis = 'Shrink factor'
+			elif 'msk' in ffbase:
+				val = float(ffbase.replace('msk',''))
+				#var = 'MSK'
+				xaxis = "Masking radius (pixels)"
+			elif 'lp' in ffbase:
+				val = float(ffbase.replace('lp',''))
+				#var = 'LP'
+				xaxis = "Low pass resolution (angstroms)"
+			elif 'hp' in ffbase:
+				val = float(ffbase.replace('hp',''))
+				#var = 'HP'
+				xaxis = "High pass resolution (angstroms)"
 
-	resfiles.sort()
-	print "\n\n\nIN resfiles_analysis, sorted files are", resfiles
+			if val:
+				vals.append(val)
+			
+			
+			if xaxis and var:
+				resultsfilelocation = resultsdir + '/' + ff
+				#print "\n\n%%%%%%%%%%%%\nThe results file is here\n%%%%%%%%%%%%%%%%%\n\n", resultsfilelocation
+		
+				fff = open(resultsfilelocation,'r')
+				lines = fff.readlines()
 	
-	for ff in resfiles:
-		print "Parsing this one", ff
-		tr = float(ff.split('TR')[-1].split('_')[0])
-		trs.append(tr)
+				ang = float( lines[0].split('=')[-1].replace('\n','') )
+				ang_errors.append(ang)
+	
+				trans = float( lines[1].split('=')[-1].replace('\n','') )
+				trans_errors.append(trans)
+				
+			else:
+				print "ERROR: There seems to be something wrong with your resfiles"
+				print "xaxis is", xaxis
+				print "var is", var
+		
+		if vals and var and ang_errors and trans_errors:
+			angfilename = resultsdir+'/' + extra + '_angular_error_var' + var + '.txt'
+			oneD_plot( vals , ang_errors, angfilename.replace('.txt','.png'),xaxis,'angular error')
+			writeresultsfile( vals, ang_errors, angfilename)
+		
+			transfilename = angfilename.replace('angular','translational')
+			oneD_plot(vals,trans_errors,transfilename.replace('.txt','.png'),'tilt step','translational error')
+			writeresultsfile(vals,trans_errors,transfilename)
+			
+	
+	
+	
+	
+	elif 'test' not in extra:
+		
+		
+		snrs = []
+		trs = []
+		tss = []
+		
+		twoD_tr_ts_points = []
+		twoD_snr_tr_points = []	
+		twoD_snr_ts_points = []
+			
+		threeD_points = []
 
-		snr = float(ff.split('SNR')[-1].split('_')[0])
-		snrs.append(snr)
+		resfiles.sort()
+		print "\n\n\nIN resfiles_analysis, sorted files are", resfiles
+	
+		for ff in resfiles:
+			print "\nParsing this one", ff
+			tr = float(ff.split('TR')[-1].split('_')[0])
+			trs.append(tr)
+
+			snr = float(ff.split('SNR')[-1].split('_')[0])
+			snrs.append(snr)
 		
-		ts = float(ff.split('NS')[-1].split('_')[0])
-		if options.tiltstep:
-			ts = float( options.tiltstep )
-			#tss.append(options.tiltstep)
-		tss.append(ts)
+			ts = float(ff.split('NS')[-1].split('_')[0])
+			if options.tiltstep:
+				ts = float( options.tiltstep )
+				#tss.append(options.tiltstep)
+			tss.append(ts)
 		
-		#3dpoints.append([tr,snr,ts])
+			#3dpoints.append([tr,snr,ts])
 	
 		
-		resultsfilelocation = resultsdir + '/' + ff
-		#print "\n\n%%%%%%%%%%%%\nThe results file is here\n%%%%%%%%%%%%%%%%%\n\n", resultsfilelocation
+			resultsfilelocation = resultsdir + '/' + ff
+			#print "\n\n%%%%%%%%%%%%\nThe results file is here\n%%%%%%%%%%%%%%%%%\n\n", resultsfilelocation
 		
-		fff = open(resultsfilelocation,'r')
-		lines = fff.readlines()
+			fff = open(resultsfilelocation,'r')
+			lines = fff.readlines()
 		
-		ang = float( lines[0].split('=')[-1].replace('\n','') )
-		ang_errors.append(ang)
+			ang = float( lines[0].split('=')[-1].replace('\n','') )
+			ang_errors.append(ang)
 		
-		trans = float( lines[1].split('=')[-1].replace('\n','') )
-		trans_errors.append(trans)
+			trans = float( lines[1].split('=')[-1].replace('\n','') )
+			trans_errors.append(trans)
 		
-		threeD_points.append({'tilt range':tr,'tilt step':ts,'noise level':snr,'angular_error':ang,'translational_error':trans})
-		twoD_tr_ts_points.append({'tilt range':tr,'tilt step':ts,'angular_error':ang,'translational_error':trans})
-		twoD_snr_tr_points.append({'tilt range':tr,'noise level':snr,'angular_error':ang,'translational_error':trans})
-		twoD_snr_ts_points.append({'tilt step':ts,'noise level':snr,'angular_error':ang,'translational_error':trans})
+			threeD_points.append({'tilt range':tr,'tilt step':ts,'noise level':snr,'angular_error':ang,'translational_error':trans})
+			twoD_tr_ts_points.append({'tilt range':tr,'tilt step':ts,'angular_error':ang,'translational_error':trans})
+			twoD_snr_tr_points.append({'tilt range':tr,'noise level':snr,'angular_error':ang,'translational_error':trans})
+			twoD_snr_ts_points.append({'tilt step':ts,'noise level':snr,'angular_error':ang,'translational_error':trans})
 	
-	print "The len(set(snrs)) is", len(set(snrs))
+		print "The len(set(snrs)) is", len(set(snrs))
 	
-	print "The len(set(trs)) is", len(set(trs))
+		print "The len(set(trs)) is", len(set(trs))
 			
-	print "The len(set(tss)) is", len(set(tss))
+		print "The len(set(tss)) is", len(set(tss))
 	
-	if len(set(snrs)) == 1 and len(set(tss)) == 1 and len(set(trs)) == 1:
-		print "Some of your jobs failed. There seems to be only ONE results file, and thus no variability of either SNR, TR, or TS"
-		sys.exit()
+		if len(set(snrs)) == 1 and len(set(tss)) == 1 and len(set(trs)) == 1:
+			print "Some of your jobs failed. There seems to be only ONE results file, and thus no variability of either SNR, TR, or TS"
+			sys.exit()
 		
 	
-	if len(set(snrs)) == 1: 
-		if len(set(trs)) == 1 and len(set(tss)) > 1:
-			angfilename = resultsdir+'/' + resultsdir.split('/')[-2] + '_angular_error_varNS.txt'
-			oneD_plot(tss,ang_errors,angfilename.replace('.txt','.png'),'tilt step','angular error')
-			writeresultsfile(tss,ang_errors,angfilename)
+		if len(set(snrs)) == 1: 
+			if len(set(trs)) == 1 and len(set(tss)) > 1:
+				angfilename = resultsdir+'/' + resultsdir.split('/')[-2] + '_angular_error_varNS.txt'
+				oneD_plot(tss,ang_errors,angfilename.replace('.txt','.png'),'tilt step','angular error')
+				writeresultsfile(tss,ang_errors,angfilename)
 			
-			transfilename = angfilename.replace('angular','translational')
-			oneD_plot(tss,trans_errors,transfilename.replace('.txt','.png'),'tilt step','translational error')
-			writeresultsfile(tss,trans_errors,transfilename)
+				transfilename = angfilename.replace('angular','translational')
+				oneD_plot(tss,trans_errors,transfilename.replace('.txt','.png'),'tilt step','translational error')
+				writeresultsfile(tss,trans_errors,transfilename)
 			
-		if len(set(tss)) == 1 and len(set(trs)) > 1:
-			angfilename = resultsdir+'/' + resultsdir.split('/')[-2] + '_angular_error_varTR.txt'
-			oneD_plot(trs,ang_errors,angfilename.replace('.txt','.png'),'tilt range','angular error')
-			writeresultsfile(trs,ang_errors,angfilename)
+			if len(set(tss)) == 1 and len(set(trs)) > 1:
+				angfilename = resultsdir+'/' + resultsdir.split('/')[-2] + '_angular_error_varTR.txt'
+				oneD_plot(trs,ang_errors,angfilename.replace('.txt','.png'),'tilt range','angular error')
+				writeresultsfile(trs,ang_errors,angfilename)
 			
-			transfilename = angfilename.replace('angular','translational')
-			oneD_plot(trs,trans_errors,transfilename.replace('.txt','.png'),'tilt range','translational error')
-			writeresultsfile(trs,trans_errors,transfilename)
+				transfilename = angfilename.replace('angular','translational')
+				oneD_plot(trs,trans_errors,transfilename.replace('.txt','.png'),'tilt range','translational error')
+				writeresultsfile(trs,trans_errors,transfilename)
 	
-	if len(set(trs)) == 1: 
-		if len(set(tss)) == 1 and len(set(snrs)) > 1:
-			angfilename = resultsdir+'/' + resultsdir.split('/')[-2] + '_angular_error_varSNR.txt'
-			oneD_plot(snrs,ang_errors,angfilename.replace('.txt','.png'),'noise level','angular error')
-			writeresultsfile(snrs,ang_errors,angfilename)
+		if len(set(trs)) == 1: 
+			if len(set(tss)) == 1 and len(set(snrs)) > 1:
+				angfilename = resultsdir+'/' + resultsdir.split('/')[-2] + '_angular_error_varSNR.txt'
+				oneD_plot(snrs,ang_errors,angfilename.replace('.txt','.png'),'noise level','angular error')
+				writeresultsfile(snrs,ang_errors,angfilename)
 			
-			transfilename = angfilename.replace('angular','translational')
-			oneD_plot(snrs,trans_errors,transfilename.replace('.txt','.png'),'noise level','translational error')
-			writeresultsfile(snrs,trans_errors,transfilename)
+				transfilename = angfilename.replace('angular','translational')
+				oneD_plot(snrs,trans_errors,transfilename.replace('.txt','.png'),'noise level','translational error')
+				writeresultsfile(snrs,trans_errors,transfilename)
 			
-	if len(set(snrs)) == 1 and len(set(trs)) > 1 and len(set(tss)) > 1:
-		twoD_plot(twoD_tr_ts_points,val1='tilt range',val2='tilt step',location=resultsdir +'/')
+		if len(set(snrs)) == 1 and len(set(trs)) > 1 and len(set(tss)) > 1:
+			twoD_plot(twoD_tr_ts_points,val1='tilt range',val2='tilt step',location=resultsdir +'/')
 	
-	if len(set(trs)) == 1 and len(set(snrs)) > 1 and len(set(tss)) > 1:
-		twoD_plot(twoD_snr_ts_points,val1='noise level',val2='tilt step',location=resultsdir +'/')
+		if len(set(trs)) == 1 and len(set(snrs)) > 1 and len(set(tss)) > 1:
+			twoD_plot(twoD_snr_ts_points,val1='noise level',val2='tilt step',location=resultsdir +'/')
 	
-	if len(set(tss)) == 1 and len(set(trs)) > 1 and len(set(snrs)) > 1:
-		twoD_plot(twoD_snr_tr_points,val1='noise level',val2='tilt range',location=resultsdir +'/')
+		if len(set(tss)) == 1 and len(set(trs)) > 1 and len(set(snrs)) > 1:
+			twoD_plot(twoD_snr_tr_points,val1='noise level',val2='tilt range',location=resultsdir +'/')
 	
-	if len(set(tss)) > 1 and len(set(trs)) > 1 and len(set(snrs)) > 1:
-		threeD_plot(threeD_points,resultsdir +'/')
+		if len(set(tss)) > 1 and len(set(trs)) > 1 and len(set(snrs)) > 1:
+			threeD_plot(threeD_points,resultsdir +'/')
 	
 	print "Done with resfiles_analysis"
 	return()
