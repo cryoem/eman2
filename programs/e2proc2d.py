@@ -29,7 +29,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
-#
 
 # $Id$
 
@@ -42,6 +41,7 @@ import pyemtbx.options
 import time
 
 #constants
+
 HEADER_ONLY=True
 HEADER_AND_DATA=False
 
@@ -51,9 +51,6 @@ yzplanes = ['yz', 'yz']
 threedplanes = xyplanes + xzplanes + yzplanes
 
 # usage: e2proc2d.py [options] input output
-
-
-
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -74,7 +71,7 @@ def main():
 	e2proc2d.py bdb:particles#set1 bdb:particles#set1 --inplace --mult=-1
 
 	'e2help.py processors -v 2' for a detailed list of available procesors
-"""
+	"""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
@@ -129,6 +126,7 @@ def main():
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <init>,<step>. Processes only a subset of the input data. For example, 0,2 would process only the even numbered particles")
 	
 	# Parallelism
+
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:n=<proc>:option:option",default=None)
 	
 	append_options = ["clip", "process", "meanshrink", "medianshrink", "scale", "randomize", "rotate","translate","multfile"]
@@ -186,7 +184,6 @@ def main():
 	sfout_n = 0
 	sfout = None
 	sf_amwid = 0
-
 		
 	MAXMICROCTF = 1000
 	defocus_val = [0] * MAXMICROCTF
@@ -199,6 +196,7 @@ def main():
 	threed_xsize = 0
 	threed_ysize = 0
 	nimg = 1
+
 	if options.threed2threed or options.threed2twod:
 		d.read_image(infile, 0, True)
 		if(d.get_zsize() == 1):
@@ -253,6 +251,7 @@ def main():
 		print "%d images, processing %d-%d stepping by %d"%(nimg,n0,n1,options.step[1])
 
 	# Now we deal with inclusion/exclusion lists
+
 	if options.list or options.select :
 		imagelist=[0]*nimg
 		
@@ -271,14 +270,13 @@ def main():
 	
 	sfcurve1 = None
 
-			
-
 	lasttime=time.time()
 	outfilename_no_ext = outfile[:-4]
 	outfilename_ext = outfile[-3:]
 	if outfilename_ext == "rcs" and outfile[-4:] == "mrcs":
 		outfilename_ext = outfile[-4:]
 	dummy=0										#JESUS
+
 	for i in range(n0, n1+1, options.step[1]):
 		if options.verbose >= 1:
 			
@@ -315,7 +313,6 @@ def main():
 				d = threed.get_clip(roi)
 				#d.read_image(infile,0, HEADER_AND_DATA, roi)
 				d.set_size(tomo_ny,tomo_nz,1)
-
 
 		sigma = d.get_attr("sigma").__float__()
 		if sigma == 0:
@@ -544,7 +541,6 @@ def main():
 							outfile2 = outfile2 + ".%03d" % (i+100)
 						Util.save_data(0, sf_dx, curve, outfile2)
 				
-				
 			elif option1 == "interlv":
 				if not options.outtype:
 					options.outtype = "unknown"
@@ -644,7 +640,8 @@ def main():
 								#print "Wrote dummy mrc16bit"
 							else:
 								#print "Writting dummy float"
-								out3d_img.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+#								out3d_img.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
+								out3d_img.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, None, file_mode_map[options.outmode], not(options.swap))
 								dummy=1
 								#print "Wrote dummy float"
 							
