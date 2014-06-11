@@ -1029,10 +1029,11 @@ def allvsall(options):
 		
 		
 		scoreFilter = absoluteMaxScore * round( float( options.minscore ), 4 )
-		multiplicityFilter = 0
+		
 		
 		for z in range(len(results)):
 			
+			multiplicityFilter = 0
 			
 			score = round(float(results[z]['score']), 4)
 			
@@ -1046,19 +1047,19 @@ def allvsall(options):
 			multiplicity2 = int(allptclsMatrix[k][results[z]['ptclB']][0]['spt_multiplicity'])
 			#multiplicitySum = multiplicity1 + multiplicity2
 			
-			if options.minscore:		
-				if score > scoreFilter:
+			if options.minscore and float(options.minscore) > 0.0:		
+				if float(score) > float(scoreFilter):
 					print "\nSkipping comparison because the score is", score
 					print "And that's worse (larger, more positive, in EMAN2) than the specified percentage", options.minscore
 					print "Of the best maximum score so far", absoluteMaxScore
 			
-			if options.maxmergenum:
+			if options.maxmergenum and int(options.maxmergenum) > 0:
 				if multiplicity1 > int( options.maxmergenum ) and multiplicity2 > int( options.maxmergenum ):
 					multiplicityFilter = 1
 				
 				if multiplicityFilter:
-					print """\nSkipping comparison because at least one of the particles
-						in the comparison has a multiplicity greater than --maxmergenum.
+					print """\nSkipping comparison because BOTH particles
+						in the comparison have a multiplicity greater than --maxmergenum.
 						--maxmergenum is""", options.maxmergenum
 					print """Whereas the multiplicities of the involved particles are""", multiplicity1, multiplicity2
 					
@@ -1311,14 +1312,14 @@ def allvsall(options):
 				
 				
 				#Make the mask first, use it to normalize (optionally), then apply it 
-				mask=EMData(avg['nx'],avg['ny'],avg['nz'])
-				mask.to_one()
+				#mask=EMData(avg['nx'],avg['ny'],avg['nz'])
+				#mask.to_one()
 				
 				#if options.mask:
 				#	#print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
 			
-				mask.process_inplace( 'mask.sharp', {'outer_radius':-2})
-				avg.mult(mask)
+				#mask.process_inplace( 'mask.sharp', {'outer_radius':-2})
+				#avg.mult(mask)
 		
 				# normalize
 				#if options.normproc:
@@ -1343,7 +1344,7 @@ def allvsall(options):
 				
 				avg.process_inplace('normalize')
 				
-				avg.mult(mask)
+				#avg.mult(mask)
 				
 				dendonew = 'avg' + str(dendocount).zfill(4)
 				
@@ -1384,6 +1385,11 @@ def allvsall(options):
 			
 			roundInfoDict[ key ] = aliInfo
 	
+		if len(averages) == 0:
+			print """\n\nTERMINATING: No productive new mergers occured in the current iteration.
+				Since nothing will change in next iteration, the algorithm has finished."""
+			break
+			
 		
 		textwriterinfo(simmxtxtinfo, options, plotName.replace('.png','_info.txt') )
 
