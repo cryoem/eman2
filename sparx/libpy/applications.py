@@ -12686,7 +12686,7 @@ def within_group_refinement_fast(data, dimage, maskfile, randomize, ir, ou, rs, 
 			params[im] = [alpha +random()*360.0, 0, 0, randint(0, 1)]
 	else:
 		for im in xrange(nima):
-			alpha, sx, sy, mirror, scale = get_params2D(data(im))
+			alpha, sx, sy, mirror, scale = get_params2D(data[im])
 			params[im] = [alpha, 0, 0, mirror]
 
 	cnx = nx/2+1

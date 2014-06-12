@@ -239,11 +239,10 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				bcast_EMData_to_all(current_refim[i], myid, main_node)
 			mpi_barrier(MPI_COMM_WORLD)
 
-			if key == group_main_node:
-				for i in xrange(K):
-					current_refim[i].write_image("init_group%d_round%d.hdf"%(color, Iter), i)
-			from sys import exit
-			exit()			
+			#if key == group_main_node:
+			#	for i in xrange(K):
+			#		current_refim[i].write_image("init_group%d_round%d.hdf"%(color, Iter), i)
+
 			# Run ISAC
 			if myid == main_node:
 				print "**********************************************************************"
