@@ -12708,7 +12708,7 @@ def within_group_refinement_fast(data, dimage, maskfile, randomize, ir, ou, rs, 
 				Util.add_img( tavg, rot_shift2D(data[im], alpha, sx, sy, mirror) )
 			tavg /= nima
 			if( FH > 0.0):
-				fl = 0.4#0.1+(FH-0.1)*Iter/float(max_iter-1)
+				fl = 0.1+(FH-0.1)*Iter/float(max_iter-1)
 			tavg = filt_tanl(tavg, fl, FF)
 			if total_iter == len(xrng)*max_iter:
 				for im in xrange(nima):
