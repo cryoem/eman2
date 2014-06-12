@@ -86,7 +86,7 @@ def main():
 					fields = line.split()
 					if len(fields)<4 : continue		# skip lines that don't work
 					boxlist.append([float(fields[0])+float(fields[3])/2, float(fields[1])+float(fields[3])/2, 'tilted'])
-				js_open_dict(info_name(filename,nodir=True))["boxes_tilted"]=boxlist
+				js_open_dict(info_name(filename,nodir=True))["boxes_rct"]=boxlist
 
 		elif options.box_type == 'untiltedboxes':
 			for filename in args:
@@ -97,7 +97,7 @@ def main():
 					fields = line.split()
 					if len(fields)<4 : continue		# skip lines that don't work
 					boxlist.append([float(fields[0])+float(fields[3])/2, float(fields[1])+float(fields[3])/2, 'untilted'])
-				js_open_dict(info_name(filename,nodir=True))["boxes_untilted"]=boxlist
+				js_open_dict(info_name(filename,nodir=True))["boxes_rct"]=boxlist
 
 		else : print "ERROR: Unknown box_type"
 
