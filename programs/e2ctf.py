@@ -1405,6 +1405,12 @@ returns (fg1d,bg1d)"""
 	bgc=bg.copy()
 #			bg=smooth_by_ctf(bg,ds,ctf)					# still need to work on this routine, similar concept to SNR smoothing, but has some problems
 #	bglow=low_bg_curve(bg,ds)
+
+	#fg2d.write_image("a.hdf")
+	#bg2d.write_image("b.hdf")
+	#Util.save_data(0,ds,list(fg),"av1.txt")
+	#Util.save_data(0,ds,list(bg),"av2.txt")
+
 	
 	# here we adjust the background to make the zeroes zero
 	n=2

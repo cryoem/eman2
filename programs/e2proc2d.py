@@ -94,7 +94,7 @@ def main():
 	parser.add_argument("--meanshrink", metavar="n", type=int, action="append", help="Reduce an image size by an integral scaling factor using average. Clip is not required.")
 	parser.add_argument("--medianshrink", metavar="n", type=int, action="append", help="Reduce an image size by an integral scaling factor, uses median filter. Clip is not required.")
 	parser.add_argument("--mraprep",  action="store_true", help="this is an experimental option")
-	parser.add_argument("--outmode", type=str, default="float", help="All EMAN2 programs write images with 4-byte floating point values when possible by default. This allows specifying an alternate format when supported (int8, int16, int32, uint8, uint16, uint32). Values are rescaled to fill MIN-MAX range.")
+	parser.add_argument("--outmode", type=str, default="float", help="All EMAN2 programs write images with 4-byte floating point values when possible by default. This allows specifying an alternate format when supported (float, int8, int16, int32, uint8, uint16, uint32). Values are rescaled to fill MIN-MAX range.")
 	parser.add_argument("--outnorescale", action="store_true", default=False, help="If specified, floating point values will not be rescaled when writing data as integers. Values outside of range are truncated.")
 	parser.add_argument("--mrc16bit",  action="store_true", help="(deprecated, use --outmode instead) output as 16 bit MRC file")
 	parser.add_argument("--mrc8bit",  action="store_true", help="(deprecated, use --outmode instead) output as 8 bit MRC file")
@@ -156,7 +156,7 @@ def main():
 		options.outmode="int16"
 
 	if options.mrc8bit:
-		print "Deprecated option mrc8bit, please use outmode=int8"
+		print "Deprecated option mrc8bit, please use outmode=int8|uint8"
 		options.outmode="int8"
 
 	if not file_mode_map.has_key(options.outmode) :
@@ -589,6 +589,8 @@ def main():
 
 				#print_iminfo(data, "Final")
 				if options.outmode!="float":
+					if outfile[-4:]!=".hdf" :
+						print "WARNING: outmode is not working correctly for non HDF images in 2.1beta3. We expect to have this fixed in the next few days."
 					if options.outnorescale :
 						# This sets the minimum and maximum values to the range for the specified type, which should result in no rescaling
 						outmode=file_mode_map[options.outmode]
