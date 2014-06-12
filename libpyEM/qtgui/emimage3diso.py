@@ -501,7 +501,7 @@ class EMIsoInspector(QtGui.QWidget):
 		custom["emission"] = [self.emission_tab.r.getValue(), self.emission_tab.g.getValue(), self.emission_tab.b.getValue(),1.0]
 		custom["shininess"] = self.shininess.getValue()
 		self.target().colors["custom"] = custom
-		
+
 		n = self.cbb.findText(QtCore.QString("custom"))
 		if n < 0: return
 		self.cbb.setCurrentIndex(n)
