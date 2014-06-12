@@ -12713,13 +12713,14 @@ def within_group_refinement_fast(data, dimage, maskfile, randomize, ir, ou, rs, 
 			if total_iter == len(xrng)*max_iter:
 				for im in xrange(nima):
 					alpha, sx, sy, mirror = inverse_transform2(params[im][0], -params[im][1], -params[im][2], params[im][3])
-					set_params2D(data[im], [alpha, sx, sy, mirror, 1.0])
-				return tavg
+					#set_params2D(data[im], [alpha, sx, sy, mirror, 1.0])
+					params[im] = [alpha, sx, sy, mirror]
+				return tavg, params
 			if( xrng[0] > 0.0 ): sx_sum = int(sx_sum/float(nima)+0.5)
 			if( yrng[0] > 0.0 ): sy_sum = int(sy_sum/float(nima)+0.5)
-			print ' ave shift',sx_sum, sy_sum
+			#print ' ave shift',sx_sum, sy_sum
 			tavg = cyclic_shift(tavg, sx_sum, sy_sum)
-			tavg.write_image('tavg.hdf',total_iter-1)
+			#tavg.write_image('tavg.hdf',total_iter-1)
 			if Iter%4 != 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0
 			else:                                                 delta = dst
 			#for im in xrange(nima):		print  " sx, sy:  %2d   %2d"%(params[im][1], params[im][2]) 
