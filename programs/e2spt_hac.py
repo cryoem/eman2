@@ -977,19 +977,19 @@ def allvsall(options):
 		#from e2figureplot import plotter
 		
 		
-		print "\nBefore calling plotter, y len is", len(plotY)
+		#print "\nBefore calling plotter, y len is", len(plotY)
 		
 		plotName = simmxFile.replace('.hdf','_PLOT.png')
 		plotX = [int(i+1) for i in range(len(plotY))]
 		
-		print "\nPlotX is", plotX
+		#print "\nPlotX is", plotX
 		
 		if k==0:
 			maxY=max(plotY)
 			maxX=max(plotX)
 		
 		if options.plotccc:
-			plotter (plotX, plotY, options,plotName,maxX,maxY)
+			plotter(plotX, plotY, options,plotName,maxX,maxY)
 	
 		#from e2figureplot import textwriter
 		#textwriterinfo(plotX, compsInfo, options, plotName.replace('.png','_info.txt') )
@@ -1031,6 +1031,8 @@ def allvsall(options):
 		scoreFilter = absoluteMaxScore * round( float( options.minscore ), 4 )
 		
 		
+		
+		frank = open(options.path + '/ranking' + str(k).zfill( len(str(options.iter)) ) + '.txt','a')
 		for z in range(len(results)):
 			
 			multiplicityFilter = 0
@@ -1047,9 +1049,12 @@ def allvsall(options):
 			multiplicity2 = int(allptclsMatrix[k][results[z]['ptclB']][0]['spt_multiplicity'])
 			#multiplicitySum = multiplicity1 + multiplicity2
 			
+			rankline = ptcl1dendoID + ' \tvs\t' + ptcl2dendoID + '\tscore=' + str(score) + '\n'
+			frank.write(rankline)
+			
 			if options.minscore and float(options.minscore) > 0.0:		
 				if float(score) > float(scoreFilter):
-					print "\nSkipping comparison because the score is", score
+					print "\nSkipping a marger because the score is", score
 					print "And that's worse (larger, more positive, in EMAN2) than the specified percentage", options.minscore
 					print "Of the best maximum score so far", absoluteMaxScore
 			
@@ -1058,7 +1063,7 @@ def allvsall(options):
 					multiplicityFilter = 1
 				
 				if multiplicityFilter:
-					print """\nSkipping comparison because BOTH particles
+					print """\nSkipping a merger because BOTH particles
 						in the comparison have a multiplicity greater than --maxmergenum.
 						--maxmergenum is""", options.maxmergenum
 					print """Whereas the multiplicities of the involved particles are""", multiplicity1, multiplicity2
@@ -1355,7 +1360,7 @@ def allvsall(options):
 				avg.write_image(options.path + '/round' + str(k).zfill(fillfactor) + '_averages.hdf',mm)
 				
 				dendo=open(dendofile,'a')
-				dendo.write(dendo1 + '\taveraged with \t' + str(dendo2) + '\tinto \t' + str(dendonew) + '\twith score=' + str(score) + ' | particles in average: ' + str(avg['spt_ptcl_indxs']) + '\n')
+				dendo.write(dendo1 + '\taveraged with\t' + str(dendo2) + '\tinto\t' + str(dendonew) + '\twith score=' + str(score) + '\t| particles in average: ' + str(avg['spt_ptcl_indxs']) + '\n')
 				dendo.close()
 				
 				
@@ -1425,7 +1430,7 @@ def allvsall(options):
 		f.close()	
 			
 		roundInfoDict.close()
-			
+		frank.close()	
 			
 			
 			
@@ -1678,10 +1683,10 @@ def plotter(xaxis,yaxis,options,name,maxX,maxY):
 	
 	for i in range(len(yaxis)):
 		
-		if float(yaxis[i]) < 0.0:
-			yaxis[i] = float( yaxis[i] )*-1.0
+		#if float(yaxis[i]) < 0.0:
+		yaxis[i] = float( yaxis[i] )*-1.0
 		
-		print "Positive Y score to plot is", yaxis[i]
+		#print "Positive Y score to plot is", yaxis[i]
 	
 	yaxis.sort()
 	yaxis.reverse()
