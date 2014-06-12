@@ -883,8 +883,8 @@ def main():
 					score = r[0]['score']
 					classmxScores.set_value_at(ic,iii,score)
 					
-					posscore = math.fabs(score)
-					classScoresList.append(posscore  )
+					#posscore = math.fabs(score)
+					classScoresList.append(score)
 					#print "\n\n\n\n\n\n\n\nThe appended positive score is", posscore
 					
 					weight=1.0
@@ -949,7 +949,7 @@ def main():
 			textwriter(classScoresList,options,txtname)
 			
 			from e2spt_hac import plotter
-			plotter (plotX, classScoresList, options, plotName, maxX, maxY)
+			plotter(plotX, classScoresList, options, plotName, maxX, maxY)
 			
 		if options.verbose: 
 			print "Preparing final average"
