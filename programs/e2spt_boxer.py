@@ -1215,7 +1215,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 					
 				if "." in fsp: 
 					img.write_image(os.path.join(options.path,"%s_%03d.%s"%(fsp.rsplit(".",1)[0],i,fsp.rsplit(".",1)[1])))
-					prj.wirte_image(fspprjs,-1)
+					prj.write_image(fspprjs,-1)
 					
 				else:
 					QtGui.QMessageBox.warning(None,"Error","Please provide a valid image file extension. The numerical sequence will be inserted before the extension.")
@@ -1282,7 +1282,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				#img=img.process('normalize.edgemean')
 			
 				img.write_image(fsp,i)
-				prj.wirte_image(fspprjs,-1)
+				prj.write_image(fspprjs,-1)
 				
 				progress.setValue(i+1)
 				if progress.wasCanceled(): 
