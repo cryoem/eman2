@@ -196,7 +196,7 @@ def main():
 			if options.lowpass:
 				filt=1.0/options.lowpass
 				print "The tomogram is being low pass filtered to %d Angstroms resolution" %(options.lowpass)
-				img = img.process('filter.lowpass.gauss',{'cutoff_freq':filt})
+				img = img.process('filter.lowpass.gauss',{'cutoff_freq':filt,"apix":img['apix_x']})
 				
 			print "Done !"
 			
@@ -759,7 +759,7 @@ class EMBoxViewer(QtGui.QWidget):
 			return
 		
 		if self.wfilt.getValue()!=0.0 :
-			self.fdata=self.data.process("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue()})
+			self.fdata=self.data.process("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue(),"apix":self.data['apix_x']}) #JESUS
 		
 		xyd=self.fdata.process("misc.directional_sum",{"axis":"z"})
 		xzd=self.fdata.process("misc.directional_sum",{"axis":"y"})
@@ -1422,7 +1422,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		av=avgr.finish()
 		if not self.yshort: av.process_inplace("xform.transpose")
 		
-		if self.wfilt.getValue()!=0.0 : av.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue()})
+		if self.wfilt.getValue()!=0.0 : av.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue(),"apix":self.data['apix_x']})
 		self.zyview.set_data(av)
 		
 		# xz
@@ -1433,7 +1433,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			avgr.add_image(slc)
 			
 		av=avgr.finish()
-		if self.wfilt.getValue()!=0.0 : av.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue()})
+		if self.wfilt.getValue()!=0.0 : av.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue(),"apix":self.data['apix_x']})
 		self.xzview.set_data(av)
 
 
@@ -1483,7 +1483,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			avgr.add_image(slc)
 		
 		av=avgr.finish()
-		if self.wfilt.getValue()!=0.0 : av.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue()})
+		if self.wfilt.getValue()!=0.0 : av.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue(),"apix":self.data['apix_x']})
 		self.xyview.set_data(av)
 
 	def update_all(self):
