@@ -167,7 +167,8 @@ def main():
 def process_movie(fsp,dark,gain,first,flast,step,options):
 		outname=fsp.rsplit(".",1)[0]+"_proc.hdf"		# always output to an HDF file. Output contents vary with options
 
-		if fsp[-4:].lower() in (".mrc","mrcs") :
+		#if fsp[-4:].lower() in (".mrc","mrcs") :
+		if fsp[-4:].lower() in (".mrc") :
 			hdr=EMData(fsp,0,True)			# read header
 			nx,ny=hdr["nx"],hdr["ny"]
 		
@@ -179,7 +180,8 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 				print " {}/{}   \r".format(ii-first+1,flast-first+1),
 				sys.stdout.flush()
 
-			if fsp[-4:].lower() in (".mrc","mrcs") :
+			#if fsp[-4:].lower() in (".mrc","mrcs") :
+			if fsp[-4:].lower() in (".mrc") :
 				im=EMData(fsp,0,False,Region(0,0,ii,nx,ny,1))
 			else: im=EMData(fsp,ii)
 			
