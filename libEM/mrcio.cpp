@@ -63,7 +63,7 @@ MrcIO::~MrcIO()
 {
 	if (mrcfile) {
 		fclose(mrcfile);
-		mrcfile = 0;
+		mrcfile = NULL;
 	}
 }
 
@@ -107,8 +107,9 @@ void MrcIO::init()
 			swap_header(mrch);
 		}
 
-		//become_host_endian((int *) &mrch, NUM_4BYTES_PRE_MAP);
-		//become_host_endian((int *) &mrch.machinestamp, NUM_4BYTES_AFTER_MAP);
+		// become_host_endian((int *) &mrch, NUM_4BYTES_PRE_MAP);
+		// become_host_endian((int *) &mrch.machinestamp, NUM_4BYTES_AFTER_MAP);
+
 		mode_size = get_mode_size(mrch.mode);
 		if(is_complex_mode()) {
 			is_ri = 1;
@@ -183,7 +184,7 @@ bool MrcIO::is_valid(const void *first_block, off_t file_size)
 	int ny = data[1];
 	int nz = data[2];
 	int mrcmode = data[3];
-	int nsymbt = data[23];	//this field specify the extra bytes for symmetry information
+	int nsymbt = data[23];	// this field specify the extra bytes for symmetry information
 
 	bool data_big_endian = ByteOrder::is_data_big_endian(&nz);
 
@@ -203,7 +204,9 @@ bool MrcIO::is_valid(const void *first_block, off_t file_size)
 
 	if ((mrcmode >= MRC_UCHAR && mrcmode < MRC_UNKNOWN) &&
 		(nx > 1 && nx < max_dim) && (ny > 0 && ny < max_dim) && (nz > 0 && nz < max_dim)) {
+
 //#ifndef SPIDERMRC // Spider MRC files don't satisfy the following test
+
 		if (file_size > 0) {
 			off_t file_size1 = (off_t)nx * (off_t)ny * (off_t)nz * (off_t)get_mode_size(mrcmode) +
 				(off_t)sizeof(MrcHeader) + nsymbt;
@@ -211,14 +214,17 @@ bool MrcIO::is_valid(const void *first_block, off_t file_size)
 				return true;
 			}
 //			return false;
-			LOGWARN("image size check fails, still try to read it...");	//when size doesn't match, print error message instead of make it fail
+			LOGWARN("image size check fails, still try to read it...");	// when size doesn't match, print error message instead of make it fail
 		}
 		else {
 			return true;
 		}
+
 //#endif // SPIDERMRC
+
 		return true;
 	}
+
 	EXITFUNC;
 	return false;
 }
@@ -471,7 +477,7 @@ int MrcIO::read_fei_header(Dict & dict, int image_index, const Region * area, bo
 	dict["FEIMRC.vd1"] = feimrch.vd1;
 	dict["FEIMRC.vd2"] = feimrch.vd2;
 
-	for(int i=0; i<9; i++) {	//9 tilt angles
+	for(int i=0; i<9; i++) {	// 9 tilt angles
 		char label[32];
 		sprintf(label, "MRC.tiltangles%d", i);
 		dict[string(label)] = feimrch.tiltangles[i];
@@ -488,7 +494,8 @@ int MrcIO::read_fei_header(Dict & dict, int image_index, const Region * area, bo
 		dict[string(label)] = string(feimrch.labl[i], 80);
 	}
 
-	/* Read extended image header by specified image index*/
+	/* Read extended image header by specified image index */
+
 	FeiMrcExtHeader feiexth;
 	portable_fseek(mrcfile, sizeof(FeiMrcHeader)+sizeof(FeiMrcExtHeader)*image_index, SEEK_SET);
 	if (fread(&feiexth, sizeof(FeiMrcExtHeader), 1, mrcfile) != 1) {
@@ -516,7 +523,7 @@ int MrcIO::read_fei_header(Dict & dict, int image_index, const Region * area, bo
 	dict["FEIMRC.binning"] = feiexth.binning;
 	dict["FEIMRC.appliedDefocus"] = feiexth.appliedDefocus;
 
-	//remainder 16 4-byte floats not used
+	// remainder 16 4-byte floats not used
 
 	EXITFUNC;
 	return 0;
@@ -627,13 +634,13 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 		_snprintf(label,31, "MRC.label%d", i);
 #else
 		snprintf(label,31, "MRC.label%d", i);
-#endif	//_WIN32
+#endif	// _WIN32
 		if (dict.has_key(label)) {
 #ifdef _WIN32
 			_snprintf(&mrch.labels[i][0],80, "%s", (const char *) dict[label]);
 #else
 			snprintf(&mrch.labels[i][0],80, "%s", (const char *) dict[label]);
-#endif	//_WIN32
+#endif	// _WIN32
 			mrch.nlabels = i + 1;
 		}
 	}
@@ -643,7 +650,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 		_snprintf(&mrch.labels[mrch.nlabels][0],79, "EMAN %s", Util::get_time_label().c_str());
 #else
 		snprintf(&mrch.labels[mrch.nlabels][0],79, "EMAN %s", Util::get_time_label().c_str());
-#endif	//_WIN32
+#endif	// _WIN32
 		mrch.nlabels++;
 	}
 
@@ -702,6 +709,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 
 	/** the folowing lines are commented out.
 	 * To make EMAN2 consistent with IMOD. Especially "header" command in IMOD. */
+
 //	if(dict.has_key("MRC.mx")) {
 //		mrch.mx = dict["MRC.mx"];
 //	}
@@ -764,7 +772,8 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 		mrch.nz = 1;
 	}
 
-	//Do not write ctf to mrc header in EMAN2
+	// Do not write ctf to mrc header in EMAN2
+
 //	if( dict.has_key("ctf") ) {
 //		vector<float> vctf = dict["ctf"];
 //		EMAN1Ctf ctf_;
@@ -782,6 +791,7 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 
 	if (! (isFEI || is_stack)) {
 		//single image format, index can only be zero
+
 		image_index = 0;
 	}
 
@@ -803,7 +813,8 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 
 	size_t size = 0;
 	int xlen = 0, ylen = 0, zlen = 0;
-	if(isFEI) {	//FEI extended MRC
+
+	if(isFEI) {	// FEI extended MRC
 		check_region(area, FloatSize(feimrch.nx, feimrch.ny, feimrch.nz), is_new_file, false);
 		portable_fseek(mrcfile, sizeof(MrcHeader)+feimrch.next, SEEK_SET);
 
@@ -815,7 +826,7 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 
 		size = (size_t)xlen * ylen * zlen;
 	}
-	else {	//regular MRC
+	else {	// regular MRC
 		check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file, false);
 		portable_fseek(mrcfile, sizeof(MrcHeader)+mrch.nsymbt, SEEK_SET);
 
@@ -840,7 +851,7 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 	if (mrch.mode == MRC_UCHAR) {
 		for (size_t i = 0; i < size; ++i) {
 			size_t j = size - 1 - i;
-			//rdata[i] = static_cast<float>(cdata[i]/100.0f - 1.28f);
+			// rdata[i] = static_cast<float>(cdata[i]/100.0f - 1.28f);
 			rdata[j] = static_cast < float >(cdata[j]);
 		}
 	}
@@ -935,17 +946,20 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 //	int xlen = 0, ylen = 0, zlen = 0;
 //	EMUtil::get_region_dims(area, nx, &xlen, mrch.ny, &ylen, mrch.nz, &zlen);
 //	int size = xlen * ylen * zlen;
+
 	void * ptr_data = data;
 
 	float rendermin = 0.0f;
 	float rendermax = 0.0f;
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, nz);
 
-	unsigned char *cdata = 0;
-	short *sdata = 0;
-	unsigned short *usdata = 0;
+	unsigned char  *  cdata  = NULL;
+	short          *  sdata  = NULL;
+	unsigned short *  usdata = NULL;
+
 	if (mrch.mode == MRC_UCHAR) {
 		cdata = new unsigned char[size];
+
 		for (size_t i = 0; i < size; ++i) {
 			if(data[i] <= rendermin) {
 				cdata[i] = 0;
@@ -957,11 +971,14 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 				cdata[i]=(unsigned char)((data[i]-rendermin)/(rendermax-rendermin)*UCHAR_MAX);
 			}
 		}
+
 		ptr_data = cdata;
-		update_stat((void *)cdata);
+
+		update_stats((void *)cdata, size);
 	}
 	else if (mrch.mode == MRC_SHORT || mrch.mode == MRC_SHORT_COMPLEX) {
 		sdata = new short[size];
+
 		for (size_t i = 0; i < size; ++i) {
 			if(data[i] <= rendermin) {
 				sdata[i] = SHRT_MIN;
@@ -973,11 +990,14 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 				sdata[i]=(short)(((data[i]-rendermin)/(rendermax-rendermin))*(SHRT_MAX-SHRT_MIN) - SHRT_MAX);
 			}
 		}
+
 		ptr_data = sdata;
-		update_stat((void *)sdata);
+
+		update_stats((void *)sdata, size);
 	}
 	else if (mrch.mode == MRC_USHORT) {
 		usdata = new unsigned short[size];
+
 		for (size_t i = 0; i < size; ++i) {
 			if(data[i] <= rendermin) {
 				usdata[i] = 0;
@@ -989,19 +1009,22 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 				usdata[i]=(unsigned short)((data[i]-rendermin)/(rendermax-rendermin)*USHRT_MAX);
 			}
 		}
+
 		ptr_data = usdata;
-		update_stat((void *)usdata);
+
+		update_stats((void *)usdata, size);
 	}
 
 	// New way to write data which includes region writing.
 	// If it is tested to be OK, remove the old code in the
 	// #if 0  ... #endif block.
+
 	EMUtil::process_region_io(ptr_data, mrcfile, WRITE_ONLY, image_index,
 							  mode_size, mrch.nx, mrch.ny, mrch.nz, area);
 
-	if(cdata) {delete [] cdata; cdata=0;}
-	if(sdata) {delete [] sdata; sdata=0;}
-	if(usdata) {delete [] usdata; usdata=0;}
+	if (cdata)  {delete [] cdata;  cdata  = NULL;}
+	if (sdata)  {delete [] sdata;  sdata  = NULL;}
+	if (usdata) {delete [] usdata; usdata = NULL;}
 
 #if 0
 	int row_size = nx * get_mode_size(mrch.mode);
@@ -1064,98 +1087,106 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 	return 0;
 }
 
-void MrcIO::update_stat(void* data)
+void MrcIO::update_stats(void * data, size_t size)
 {
-	size_t size =  mrch.nx * mrch.ny * mrch.nz;
-	float v = 0.0f;	//variable to hold pixel value
-	double sum = 0.0;
-	double square_sum = 0.0;
-	double mean = 0.0;
-	float min, max;
+	float  v;	// variable to hold pixel value
+	double sum;
+	double square_sum;
+	double mean;
+	double sigma;
+	double vv;
+	float  min, max;
 	
-	unsigned char * cdata = 0;
-	short * sdata = 0;
-	unsigned short * usdata = 0;
+	unsigned char  *  cdata  = NULL;
+	short          *  sdata  = NULL;
+	unsigned short *  usdata = NULL;
+
+	bool use_uchar  = (mrch.mode == MRC_UCHAR);
+	bool use_short  = (mrch.mode == MRC_SHORT || mrch.mode == MRC_SHORT_COMPLEX);
+	bool use_ushort = (mrch.mode == MRC_USHORT);
 	
-	if (mrch.mode == MRC_UCHAR) {
-		max = 0.0f;
-		min = UCHAR_MAX;
-		cdata = (unsigned char *)data;
-		
-		for (size_t i = 0; i < size; ++i) {
-			v = (float)(cdata[i]);
-#ifdef _WIN32
-			max = _cpp_max(max,v);
-			min = _cpp_min(min,v);
-#else
-			max=std::max<float>(max,v);
-			min=std::min<float>(min,v);
-#endif	//_WIN32
-			
-			sum += v;
-			square_sum += v * v;
-		}
+	if (use_uchar) {
+		max    = 0.0;
+		min    = UCHAR_MAX;
+		cdata  = (unsigned char *) data;
 	}
-	else if (mrch.mode == MRC_SHORT || mrch.mode == MRC_SHORT_COMPLEX) {
-		max = (float)SHRT_MIN;
-		min = (float)SHRT_MAX;
-		sdata = (short *)data;
-		
-		for (size_t i = 0; i < size; ++i) {
-			v = (float)(sdata[i]);
-#ifdef _WIN32
-			max = _cpp_max(max,v);
-			min = _cpp_min(min,v);
-#else
-			max=std::max<float>(max,v);
-			min=std::min<float>(min,v);
-#endif	//_WIN32
-			
-			sum += v;
-			square_sum += v * v;
-		}
+	else if (use_short) {
+		max    = (float) SHRT_MIN;
+		min    = (float) SHRT_MAX;
+		sdata  = (short *) data;
 	}
-	else if (mrch.mode == MRC_USHORT) {
-		max = 0.0f;
-		min = (float)USHRT_MAX;
-		usdata = (unsigned short*)data;
-		
-		for (size_t i = 0; i < size; ++i) {
-			v = (float)(usdata[i]);
-#ifdef _WIN32
-			max = _cpp_max(max,v);
-			min = _cpp_min(min,v);
-#else
-			max=std::max<float>(max,v);
-			min=std::min<float>(min,v);
-#endif	//_WIN32
-			
-			sum += v;
-			square_sum += v * v;
-		}
+	else if (use_ushort) {
+		max    = 0.0f;
+		min    = (float) USHRT_MAX;
+		usdata = (unsigned short *) data;
 	}
 	else {
 		throw InvalidCallException("This function is used to write 8bit/16bit mrc file only.");
 	}
-	
-	mean = sum/size;
-#ifdef _WIN32
-	float sigma = (float)std::sqrt( _cpp_max(0.0,(square_sum - sum*sum / size)/(size-1)));
-#else
-	float sigma = (float)std::sqrt(std::max<float>(0.0,(square_sum - sum*sum / size)/(size-1)));
-#endif	//_WIN32
 
-	/*change mrch.amin/amax/amean.rms here*/
-	mrch.amin = min;
-	mrch.amax = max;
-	mrch.amean = (float)mean;
-	mrch.rms = sigma;
-	
-	MrcHeader mrch2 = mrch;
+	sum = 0.0;
 
-//endian issue, can't get use_host_endian argument
+	for (size_t i = 0; i < size; i++) {
+		if (use_uchar) {
+			v = (float) (cdata[i]);
+		}
+		else if (use_short) {
+			v = (float) (sdata[i]);
+		}
+		else {
+			v = (float) (usdata[i]);
+		}
+
+		if (v < min) min = v;
+		if (v > max) max = v;
+
+		sum = sum + v;
+	}
+
+	if (size > 0) {
+		mean = sum / (double) size;
+	}
+	else {
+		mean = 0.0;
+	}
+
+	square_sum = 0.0;
+
+	for (size_t i = 0; i < size; i++) {
+		if (use_uchar) {
+			v = (float) (cdata[i]);
+		}
+		else if (use_short) {
+			v = (float) (sdata[i]);
+		}
+		else {
+			v = (float) (usdata[i]);
+		}
+
+		vv = v - mean;
+
+		square_sum = square_sum  +  vv * vv;
+	}
+
+	if (size > 1) {
+		sigma = std::sqrt(square_sum / (double) (size-1));
+	}
+	else {
+		sigma = 0.0;
+	}
+
+	/* change mrch.amin / amax / amean / rms here */
+
+	mrch.amin  = min;
+	mrch.amax  = max;
+	mrch.amean = mean;
+	mrch.rms   = sigma;
+	
+//	MrcHeader mrch2 = mrch;
+//
+// endian issue, can't get use_host_endian argument
 //	bool opposite_endian = false;
-
+//
 //	if (!is_new_file) {
 //		if (is_big_endian != ByteOrder::is_host_big_endian()) {
 //			opposite_endian = true;
@@ -1170,8 +1201,8 @@ void MrcIO::update_stat(void* data)
 
 	portable_fseek(mrcfile, 0, SEEK_SET);
 	
-	if (fwrite(&mrch2, sizeof(MrcHeader), 1, mrcfile) != 1) {
-		throw ImageWriteException(filename, "MRC header");
+	if (fwrite(& mrch, sizeof(MrcHeader), 1, mrcfile) != 1) {
+		throw ImageWriteException(filename, "Error writing MRC header to update statistics.");
 	}
 	
 	portable_fseek(mrcfile, sizeof(MrcHeader), SEEK_SET);
