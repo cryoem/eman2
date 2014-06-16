@@ -13,18 +13,20 @@ High priority
 3/6/14		e2classaverage has hardcoded final aligner to reference, but imposes flips when it shouldn't happen
 3/8/14		Found that smaller than recommended angular step can produce slight resolution improvement combined with sep. Need to write new reconstructor with angular smearing in some way to compensate for reduced sampling without over smearing resulting reconstruction.
 3/29/14		e2refinevariance broken ?
+6/12/14		isosurface color on mac (and other machines with older opengl). Why no newer opengl working on mac?
+6/12/14		per particle movie mode alignment
+6/12/14		new particle picker
+6/13/14		Fix internationalization bug with Qt
+6/14/14		e2markbadptcl
 
 2/24/14		Save sets in imagemx control panel error (updateGL, update not defined ?)
 2/20/14		Save plots as images, more features in 2-D plotting
 2/20/14		Progress display integrated in projectmanager
-7/27/12		RCT .box import broken in projectmanager (temporarily removed)
 7/22/12		2d plotting of 1d image in browser broken
-8/1/12		Need to re-examine CTF fitting. Should be able to get better B-factors
 8/1/12		New options for better masking during alignment and classification to make smoother alignment energy function
 8/2/12		min/max not shown in browser info window
 8/2/12		Update wiki output files for twostage, automaskalign options.
 8/13/12		When 3D windows are closed, don't reuse them
-8/14/12		parallel make3d
 8/14/12		monte-carlo initial model generator
 8/17/12		Registration system in GUI
 

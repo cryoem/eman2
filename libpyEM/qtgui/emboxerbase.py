@@ -2240,11 +2240,11 @@ class EMBoxerWriteOutputTask(WorkFlowTask):
 
 		files_written = []
 		for i,output in enumerate(output_names):
-			input = input_names[i]
+			infile = input_names[i]
 			box_list = EMBoxList()
-			box_list.load_boxes_from_database(input)
-			if len(extra_args) > 0:box_list_function(box_list,input,output,box_size,*extra_args)
-			else:box_list_function(box_list,input,output,box_size)
+			box_list.load_boxes_from_database(infile)
+			if len(extra_args) > 0:box_list_function(box_list,infile,output,box_size,*extra_args)
+			else:box_list_function(box_list,infile,output,box_size)
 			files_written.append(output)
 			prog += 1
 			progress.setValue(prog)

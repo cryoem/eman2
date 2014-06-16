@@ -59,6 +59,7 @@ def main():
 	parser.add_argument("--simpleavg", action="store_true",help="Will save a simple average of the dark/gain corrected frames (no alignment or weighting)",default=False)
 	parser.add_argument("--avgs", action="store_true",help="Testing",default=False)
 	parser.add_argument("--parallel", default=None, help="parallelism argument. This program supports only thread:<n>")
+	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement[4]")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
@@ -74,6 +75,12 @@ def main():
 			sys.exit(1)
 		threads=int(options.parallel[7:])
 	else: threads=1
+	
+	if options.threads>1 : 
+		threads=max(threads,options.threads)
+
+	#if threads>1 : print "Running with {} threads".format(threads)
+	if threads>1 : print "Sorry, limited to one thread at the moment."
 
 	pid=E2init(sys.argv)
 
@@ -348,9 +355,9 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 						print step,i0,xali.get_yatx_smooth(tloc,1),yali.get_yatx_smooth(tloc,1),lrange,
 	#					dx,dy,Z=align_subpixel(av0,av1,guess=alignments[i1+step/2]-alignments[i0+step/2],localrange=LA.norm(alignments[i1+step-1]-alignments[i0]))
 						if step==len(outim)/2 :
-							dx,dy,Z=align(aliavg,av0,guess=(0,0),localrange=192)
+							dx,dy,Z=align(aliavg,av0,guess=(0,0),localrange=192,verbose=options.verbose-1)
 						else:
-							dx,dy,Z=align(aliavg,av0,guess=guess,localrange=lrange)
+							dx,dy,Z=align(aliavg,av0,guess=guess,localrange=lrange,verbose=options.verbose-1)
 						print dx,dy,Z			
 						
 						xali.insort(tloc,dx)
@@ -391,7 +398,7 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 			aliavg.write_image(outname[:-4]+"_aliavg.hdf",0)
 			if options.save_aligned:
-				for i,im in enumerate(outim2): im.write_image(outname[:-4]+"_align.hdf",i)
+				for i,im in enumerate(outim2): im.write_image(outname[:-4]+"_align.hdf",i,IMAGE_HDF, False, None, EM_USHORT)
 				
 			if options.verbose>2 : 
 				t=sum(outim)
@@ -459,10 +466,11 @@ def align(s1,s2,guess=(0,0),localrange=192,verbose=0):
 	tot.process_inplace("xform.phaseorigin.tocenter")
 	tot.process_inplace("normalize.edgemean")
 	
-	#if verbose>1 : 
-		#s1a.write_image("s1a.hdf",0)
-		#s2a.write_image("s2a.hdf",0)
-		#tot.write_image("stot.hdf",0)
+	if verbose>2 : 
+		display((s1a,s2a,tot))
+#		s1a.write_image("s1a.hdf",0)
+#		s2a.write_image("s2a.hdf",0)
+#		tot.write_image("stot.hdf",0)
 			
 	if verbose>3 : display((s1a,s2a,tot),force_2d=True)
 	
@@ -500,6 +508,7 @@ def align(s1,s2,guess=(0,0),localrange=192,verbose=0):
 	dy -= 12
 	
 	tot.write_image("tot.hdf",-1)
+	print 
 	#while hypot(dx-tot["nx"]/2,dy-tot["ny"]/2)>64 :
 		#tot[dx,dy]=0
 		#dx,dy,dz=tot.calc_max_location()
