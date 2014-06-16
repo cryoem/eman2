@@ -293,7 +293,7 @@ namespace EMAN
 		 * when write MRC file as 16 bit or 8 bit. It will write new set of 
 		 * min/max/mean/sigma to mrch.
 		 * this function needs get the output data storage type from mrch.mode.*/
-		void update_stat(void* data);
+		void update_stats(void* data, size_t size);
 
 		int read_mrc_header(Dict & dict, int image_index = 0, const Region * area = 0, bool is_3d = false);
 		int read_fei_header(Dict & dict, int image_index = 0, const Region * area = 0, bool is_3d = false);
