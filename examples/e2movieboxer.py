@@ -42,8 +42,8 @@ each particle from each frame, putting all particles into a single stack. If the
 in the movie, each particle will be in the output file N times sequentially, with header data
 indicating its position in the movie. 
 
-- 'movies' folder must contain movie frames, each exposure sequentially in one file
-- info_name of movies must correspond to info/*json file
+- 'movie' folder must contain movie frames, each exposure sequentially in one file
+- info_name of movie must correspond to info/*json file
 - movieparticles folder will be created with corresponding named files
 - movie stacks must have at least 3 frames
 
@@ -66,9 +66,23 @@ indicating its position in the movie.
 	try: os.mkdir("movieparticles")
 	except: pass
 
-	for m in os.listdir("movies"):
-		fsp=os.path.join("movies",m)
-		outfsp=os.path.join("movieframes",base_name(m)+".hdf")
+	uniq=set()
+	for i in os.listdir("particles"):
+		if ".hdf" in i: uniq.add(base_name(i,nodir=True))
+
+	for u in sorted(uniq):
+		if os.path.exists("movie/{}_raw_proc_align.hdf".format(u)): m="{}_raw_proc_align.hdf".format(u)
+		elif os.path.exists("movie/{}_proc_align.hdf".format(u)): m="{}_proc_align.hdf".format(u)
+		elif os.path.exists("movie/{}.mrc".format(u)): m="{}.mrc".format(u)
+		elif os.path.exists("movie/{}.mrcs".format(u)): m="{}.mrcs".format(u)
+		else :
+			print "Couldn't find movie for ",u
+			continue
+		print "Movie found {} -> {}".format(u,m)
+
+
+		fsp=os.path.join("movie",m)
+		outfsp=os.path.join("movieparticles",u+".hdf")
 
 		try: 
 			n=EMUtil.get_image_count(fsp)
@@ -79,13 +93,15 @@ indicating its position in the movie.
 			print "skipping ",m
 			continue
 
-		if !os.path.exists(info_name(m)) :
-			print "No info file for {} ({})".format(m,info_name(m))
+		if not os.path.exists("info/{}_info.json".format(u)) :
+			print "No info file for {} (info/{}.json)".format(m,u)
+			continue
 		try:
-			db=js_open_dict(info_name(m))
+			db=js_open_dict(info_name(u))
 			boxes=db["boxes"]
 		except:
-			print "No box locations for {} ({})".format(m,info_name(m))
+			print "No box locations for {} ({})".format(m,info_name(u))
+			continue
 
 		
 		for i in xrange(n):
