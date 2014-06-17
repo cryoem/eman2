@@ -73,8 +73,10 @@ indicating its position in the movie.
 	for u in sorted(uniq):
 		if os.path.exists("movie/{}_raw_proc_align.hdf".format(u)): m="{}_raw_proc_align.hdf".format(u)
 		elif os.path.exists("movie/{}_proc_align.hdf".format(u)): m="{}_proc_align.hdf".format(u)
+		#elif os.path.exists("movie/{}_proc_aliavg.hdf".format(u)): m="{}_proc_aliavg.hdf".format(u)
 		elif os.path.exists("movie/{}.hdf".format(u)): m="{}_proc_align.hdf".format(u)
 		elif os.path.exists("movie/{}.mrcs".format(u)): m="{}.mrcs".format(u)
+		elif os.path.exists("movie/"+ u.replace("aliavg","align")+".hdf"):m=u.replace("aliavg","align")+".hdf"
 		else :
 			print "Couldn't find movie for ",u
 			continue
