@@ -52,6 +52,7 @@ indicating its position in the movie.
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_argument("--boxsize", type=int, help="Box size for particle extraction, may be larger than the standard size for the project to compensate for motion",default=-1)
+	parser.add_argument("--invert",action="store_true",help="Extracted images are multiplied by -1 ",default=False)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
@@ -72,8 +73,7 @@ indicating its position in the movie.
 
 	for u in sorted(uniq):
 		if os.path.exists("movie/{}_raw_proc_align.hdf".format(u)): m="{}_raw_proc_align.hdf".format(u)
-		elif os.path.exists("movie/{}_proc_align.hdf".format(u)): m="{}_proc_align.hdf".format(u)
-		#elif os.path.exists("movie/{}_proc_aliavg.hdf".format(u)): m="{}_proc_aliavg.hdf".format(u)
+		elif os.path.exists("movie/{}.hdf".format(u.replace("_aliavg","_align"))): m="{}.hdf".format(u.replace("_aliavg","_align"))
 		elif os.path.exists("movie/{}.hdf".format(u)): m="{}_proc_align.hdf".format(u)
 		elif os.path.exists("movie/{}.mrcs".format(u)): m="{}.mrcs".format(u)
 		elif os.path.exists("movie/"+ u.replace("aliavg","align")+".hdf"):m=u.replace("aliavg","align")+".hdf"
@@ -84,7 +84,7 @@ indicating its position in the movie.
 
 
 		fsp=os.path.join("movie",m)
-		outfsp=os.path.join("movieparticles",u+".hdf")
+		outfsp=os.path.join("movieparticles",u+"_ptcls.hdf")
 
 		try: 
 			n=EMUtil.get_image_count(fsp)
@@ -95,21 +95,29 @@ indicating its position in the movie.
 			print "skipping ",m
 			continue
 
-		if not os.path.exists("info/{}_info.json".format(u)) :
-			print "No info file for {} (info/{}.json)".format(m,u)
-			continue
-		try:
-			db=js_open_dict(info_name(u))
-			boxes=db["boxes"]
-		except:
-			print "No box locations for {} ({})".format(m,info_name(u))
+		#if not os.path.exists("info/{}_info.json".format(u)) :
+			#print "No info file for {} (info/{}.json)".format(m,u)
+			#continue
+		#try:
+			#db=js_open_dict(info_name(u))
+			#boxes=db["boxes"]
+		#except:
+			#print "No box locations for {} ({})".format(m,info_name(u))
+			#continue
+
+		ptclfile="particles/{}_ptcls.hdf".format(u)
+		nptcl=EMUtil.get_image_count(ptclfile)
+		if nptcl==0 : 
+			print "no particles found :",u
 			continue
 
 		
 		for i in xrange(n):
 			fm=EMData(fsp,i)
-			for ib,b in enumerate(boxes):
+			for ib in xrange(nptcl):
+				b=EMData(ptclfile,ib,True)["ptcl_source_coord"]
 				ptcl=fm.get_clip(Region(b[0]-box/2,b[1]-box/2,box,box))
+				if options.invert : ptcl.mult(-1.0)
 				ptcl["movie_frames"]=n
 				ptcl["movie_n"]=i
 				ptcl.write_image(outfsp,i+ib*n)

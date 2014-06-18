@@ -101,24 +101,47 @@ def main():
 		# i is particle number in the cls file
 		for i in xrange(lst.n):
 			ptloc=lst.read(i)		# ptloc is n,filename for the source image
+			
+			# if the input particle file changed, we need some new info
 			if lastloc!=ptloc[1]:
-				movie="movieparticles/{}.hdf".format(base_name(ptloc[1]))		# movie particle stack
-				movien=EMData(movie,0,True)["movie_frames"]		# number of frames in each movie for this stack
+				movie="movieparticles/{}_ptcls.hdf".format(base_name(ptloc[1]))		# movie particle stack
+				movieim=EMData(movie,0)		# number of frames in each movie for this stack
+				movien=movieim["movie_frames"]
+				
+				# we construct a phase flipping image from the first particle CTF info
+				ptcl=EMData(ptloc[1],ptloc[0])		# the original particle image, should have CTF info too
+				ctf=ptcl["ctf"]
+				flipim=movieim.do_fft()		# we're just getting a complex image of the right size, a bit stupid way to handle it 
+				ctf.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
 				lastloc=ptloc[1]
 			
 			proj=EMData(projfsp,int(cls[0][0,i]))	# projection image for this particle
-			orient=Transform({"type":"2d","tx":cls[2][0,i],"ty":cls[3][0,i],"alpha":cls[4][0,i],"mirror":int(cls[5][0,i])})
+#			orient=Transform({"type":"2d","tx":cls[2][0,i],"ty":cls[3][0,i],"alpha":cls[4][0,i],"mirror":int(cls[5][0,i])})
+			orient=Transform({"type":"2d","tx":0,"ty":0,"alpha":cls[4][0,i],"mirror":int(cls[5][0,i])})		# we want the alignment reference in the middle of the box
 			proj.transform(orient.inverse())
 			
 			stack=EMData.read_images(movie,xrange(movien*ptloc[0],movien*(ptloc[0]+1)))
 			avg=sum(stack)
 			avg.mult(1.0/len(stack))
 
-			ptcl=EMData(ptloc[1],ptloc[0])
-	
-			proj.process_inplace("normalize.edgemean")
-			proj.write_image("tmp.hdf",-1)
+			ptcl=EMData(ptloc[1],ptloc[0])		# the original particle image, should have CTF info too
 			ptcl.process_inplace("normalize.edgemean")
+			ctf=ptcl["ctf"]
+			
+			oldbox=proj["nx"]
+			moviebox=stack[0]["nx"]
+			
+			# CTF phase flipping of the projection so the alignment works
+			proj.process_inplace("normalize.edgemean")
+			if oldbox!=moviebox : 
+				proj=proj.get_clip(Region(-(moviebox-oldbox)/2,-(moviebox-oldbox)/2,moviebox,moviebox))
+				ptcl=ptcl.get_clip(Region(-(moviebox-oldbox)/2,-(moviebox-oldbox)/2,moviebox,moviebox))
+			pfft=proj.do_fft()
+			pfft.mult(flipim)
+			proj=pfft.do_ift()
+			
+#			if proj["nx"]!=ptcl["nx"] : proj=proj.get_clip
+			proj.write_image("tmp.hdf",-1)
 			#ptcl.process_inplace("normalize.toimage",{"to":proj})
 			ptcl.write_image("tmp.hdf",-1)
 			avg.process_inplace("normalize.edgemean")
