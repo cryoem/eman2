@@ -89,6 +89,10 @@ def main():
 
 	if options.verbose: print "running on:",clsout
 
+	newproj="../"+os.getcwd().split("/")[-1]+"_m"
+	try: os.makedirs(newproj)
+	except: pass
+
 	lastloc=None
 	# eo is 0/1 for even/odd files
 	for eo in xrange(2):
@@ -141,14 +145,21 @@ def main():
 			proj=pfft.do_ift()
 			
 #			if proj["nx"]!=ptcl["nx"] : proj=proj.get_clip
-			proj.write_image("tmp.hdf",-1)
+			if options.verbose>3 : proj.write_image("tmp.hdf",-1)
 			#ptcl.process_inplace("normalize.toimage",{"to":proj})
-			ptcl.write_image("tmp.hdf",-1)
+			if options.verbose>3 :ptcl.write_image("tmp.hdf",-1)
 			avg.process_inplace("normalize.edgemean")
-			avg.write_image("tmp.hdf",-1)
+			if options.verbose>3 :avg.write_image("tmp.hdf",-1)
+			av=Averagers.get("mean")
 			for j in stack: 
 				j.process_inplace("normalize.edgemean")
-				j.write_image("tmp.hdf",-1)
+				ali=j.align("translational",proj)
+				av.add_image(ali)
+				if options.verbose>1 : print ali["xform.align2d"]
+				if options.verbose>3 : j.write_image("tmp.hdf",-1)
+			
+			newpt=av.finish()
+			newpt.write_image("{}/{}".format(newproj,ptloc[1]),ptloc[0])
 			
 			if options.verbose>1 : print i,movie,ptloc[0],int(cls[0][0,i])
 	E2end(pid)
