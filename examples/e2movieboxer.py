@@ -61,7 +61,7 @@ indicating its position in the movie.
 		print "Please specify a box size"
 		sys.exit(1)
 
-	box=options.boxsize/2
+	box=options.boxsize
 
 	try: os.mkdir("movieparticles")
 	except: pass

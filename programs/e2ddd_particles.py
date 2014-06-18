@@ -81,16 +81,18 @@ def main():
 
 	refineparms=js_open_dict(args[0]+"/0_refine_parms.json")
 	inlst=refineparms["input"]
-	if inlst[-4:]!=".lst" :
+	if inlst[0][-4:]!=".lst" :
 		print "Error: refine_xx must be run with a 'set' as --input following canonical EMAN2.1 guidelines"
 		sys.exit(1)
 		
-	clsout=sorted([i for i in os.listdir(args[0]) if "cls_result" in i])[-2:]
+	clsout=sorted([args[0]+"/"+i for i in os.listdir(args[0]) if "cls_result" in i])[-2:]
+
+	if options.verbose: print "running on:",clsout
 
 	lastloc=None
 	# eo is 0/1 for even/odd files
 	for eo in xrange(2):
-		if verbose: print "EO: ",eo
+		if options.verbose: print "EO: ",eo
 		cls=EMData.read_images(clsout[eo])		# not normally all that big, so we just read the whole darn thing
 		projfsp=clsout[eo].replace("cls_result","projections")
 		
@@ -104,19 +106,19 @@ def main():
 				movien=EMData(movie,0,True)["movie_frames"]		# number of frames in each movie for this stack
 				lastloc=ptloc[1]
 			
-			proj=EMData(projfsp,cls[0][0][i])	# projection image for this particle
-			orient=Transform({"type":"2d","tx":cls[2][0][i],"ty":cls[3][0][i],"alpha":cls[4][0][i],"flip":cls[5][0][i]})
+			proj=EMData(projfsp,int(cls[0][0,i]))	# projection image for this particle
+			orient=Transform({"type":"2d","tx":cls[2][0,i],"ty":cls[3][0,i],"alpha":cls[4][0,i],"mirror":int(cls[5][0,i])})
 			proj.transform(orient)
 			
-			stack=EMData.read_images(movie,xrange(movien*ptloc[0],movien*(ptcloc[0]+1)))
+			stack=EMData.read_images(movie,xrange(movien*ptloc[0],movien*(ptloc[0]+1)))
 			avg=sum(stack)
 			avg.mult(1.0/len(stack))
 	
 			proj.write_image("tmp.hdf",-1)
 			avg.write_image("tmp.hdf",-1)
-			for i in stack: stack[i].write_image("tmp.hdf",-1)
+			for j in stack: j.write_image("tmp.hdf",-1)
 			
-			if verbose>1 : print i,movie,ptloc[0],cls[0][0][i]
+			if options.verbose>1 : print i,movie,ptloc[0],int(cls[0][0,i])
 	E2end(pid)
 
 
