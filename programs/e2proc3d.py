@@ -249,6 +249,11 @@ def main():
 		for i in range(n0,n1,n2):
 			ptcls.append(EMData(infile,i))
 		avg = sum(ptcls)/len(ptcls)
+		try : 
+			avg["ptcl_repr"]=sum([i["ptcl_repr"] for i in ptcls])
+		except:
+			pass
+			
 #		avg.process_inplace('normalize.edgemean')
 		avg.write_image(outfile,0)
 		sys.exit()

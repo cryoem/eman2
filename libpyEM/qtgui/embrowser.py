@@ -926,6 +926,9 @@ class EMImageFileType(EMFileType) :
 			else :
 				os.system("e2proc3d.py %s /tmp/vol.hdf"%self.path)		# Probably not a good hack to use, but it will do for now...
 				os.system("chimera /tmp/vol.hdf&")
+		elif get_platform() == "Darwin" :
+			os.system("e2proc3d.py %s /tmp/vol.hdf"%self.path)		# Probably not a good hack to use, but it will do for now...
+			os.system("/Applications/Chimera.app/Contents/MacOS/chimera /tmp/vol.hdf&")
 		else : print "Sorry, I don't know how to run Chimera on this platform"
 
 #---------------------------------------------------------------------------
@@ -996,6 +999,9 @@ class EMStackFileType(EMFileType) :
 			else :
 				os.system("e2proc3d.py %s /tmp/vol.hdf"%self.path)		# Probably not a good hack to use, but it will do for now...
 				os.system("chimera /tmp/vol.hdf&")
+		elif get_platform() == "Darwin" :
+			os.system("e2proc3d.py %s /tmp/vol.hdf"%self.path)		# Probably not a good hack to use, but it will do for now...
+			os.system("/Applications/Chimera.app/Contents/MacOS/chimera /tmp/vol.hdf&")
 		else : print "Sorry, I don't know how to run Chimera on this platform"
 
 #---------------------------------------------------------------------------

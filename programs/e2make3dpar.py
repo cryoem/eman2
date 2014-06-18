@@ -199,6 +199,7 @@ def main():
 	excluded=[max(i["fileslice"],i["filenum"]) for i in data if i["quality"]>thr]
 	included=[max(i["fileslice"],i["filenum"]) for i in data if i["quality"]<=thr]
 	data=[i for i in data if i["quality"]<=thr]
+	ptclcount=sum([i["weight"] for i in data])
 	
 	if options.verbose: print "After filter, %d images"%len(data)
 
@@ -224,7 +225,7 @@ def main():
 	if options.verbose>0 : print "Finished Reconstruction"
 	
 	try:
-		output.set_attr("ptcl_repr",len(data))
+		output.set_attr("ptcl_repr",ptclcount)
 		if len(included)>0 : output.set_attr("threed_ptcl_idxs",included)
 		if len(excluded)>0 : output.set_attr("threed_excl_ptcl_idxs",excluded)
 		output.set_attr("threed_ptcl_src",data[0]["filename"])

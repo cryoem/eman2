@@ -125,6 +125,8 @@ def main():
 	even=EMData(evenfile,0)
 	odd=EMData(oddfile,0)
 	combined=even+odd
+	try: combined["ptcl_repr"]=even["ptcl_repr"]+odd["ptcl_repr"]
+	except: pass
 	combined.write_image(combfile,0)
 
 	nx,ny,nz=combined["nx"],combined["ny"],combined["nz"]

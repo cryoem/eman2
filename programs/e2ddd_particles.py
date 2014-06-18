@@ -108,15 +108,24 @@ def main():
 			
 			proj=EMData(projfsp,int(cls[0][0,i]))	# projection image for this particle
 			orient=Transform({"type":"2d","tx":cls[2][0,i],"ty":cls[3][0,i],"alpha":cls[4][0,i],"mirror":int(cls[5][0,i])})
-			proj.transform(orient)
+			proj.transform(orient.inverse())
 			
 			stack=EMData.read_images(movie,xrange(movien*ptloc[0],movien*(ptloc[0]+1)))
 			avg=sum(stack)
 			avg.mult(1.0/len(stack))
+
+			ptcl=EMData(ptloc[1],ptloc[0])
 	
+			proj.process_inplace("normalize.edgemean")
 			proj.write_image("tmp.hdf",-1)
+			ptcl.process_inplace("normalize.edgemean")
+			#ptcl.process_inplace("normalize.toimage",{"to":proj})
+			ptcl.write_image("tmp.hdf",-1)
+			avg.process_inplace("normalize.edgemean")
 			avg.write_image("tmp.hdf",-1)
-			for j in stack: j.write_image("tmp.hdf",-1)
+			for j in stack: 
+				j.process_inplace("normalize.edgemean")
+				j.write_image("tmp.hdf",-1)
 			
 			if options.verbose>1 : print i,movie,ptloc[0],int(cls[0][0,i])
 	E2end(pid)
