@@ -155,7 +155,7 @@ def main():
 			# This function is the actual stack alignment to the reference, producing the aligned average
 			newpt=alignstack(proj,stack,options.verbose-1)
 			if options.verbose>3 :
-				newpt.process_inplace("normalize.toimage",{"to":avg})
+				newpt.process_inplace("normalize.edgemean")
 				newpt.write_image("tmp.hdf",-1)
 			if newpt["nx"]!=oldbox : newpt=newpt.window_center(oldbox)
 
@@ -181,7 +181,7 @@ def alignstack(refo,stack,verbose=0):
 	for i in outim:
 		i.scale(2.0)
 		i.process_inplace("filter.highpass.gauss",{"cutoff_abs":.002})
-		i.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.1})
+		i.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
 	
 	ref=refo.get_clip(Region(-nx/2,-ny/2,nx*2,ny*2))
 	ref.scale(2.0)
@@ -193,6 +193,8 @@ def alignstack(refo,stack,verbose=0):
 	yali=XYData()			# x is time in both cases, y is x or y
 	for it in xrange(1):
 		step=len(outim)
+		Zs=[]
+		Zthr=0
 		
 		while step>1:
 			step/=2
@@ -241,15 +243,20 @@ def alignstack(refo,stack,verbose=0):
 				dy-=lrange
 				if verbose: print dx,dy,Z
 				
+				Zs.append(Z)
+				
 				# we only include points where the alignment seems reliable
-				if Z>5.0 :
+				if step>=len(outim)/2 or Z>Zthr :
 					xali.insort(tloc,guess[0]-dx)
 					yali.insort(tloc,guess[1]-dy)
 					xali.dedupx()
 					yali.dedupx()
 									
 				i0+=step
-			
+				
+			if Zthr==0:
+				Zthr=max((Zs[0]+Zs[1])/3.0,3.0)
+				if verbose : print "Z threshold: ",Zthr
 			# Smoothing
 			# we just do a very simplistic smoothing at each step
 
@@ -268,14 +275,14 @@ def alignstack(refo,stack,verbose=0):
 				yali.set_y(0,(yali.get_y(1)-sl*sx0+yali.get_y(0))/2.0)
 
 				# smooth last point
-				print xali.get_y(lp),yali.get_y(lp),"->",
+#				print xali.get_y(lp),yali.get_y(lp),"->",
 				sx1=xali.get_x(lp-1)-xali.get_x(1)
 				sx0=xali.get_x(lp)-xali.get_x(lp-1)
 				sl=(xali.get_y(lp-1)-xali.get_y(1))/sx1
 				xali.set_y(lp,(xali.get_y(lp-1)+sl*sx0+xali.get_y(lp))/2.0)
 				sl=(yali.get_y(lp-1)-yali.get_y(1))/sx1
 				yali.set_y(lp,(yali.get_y(lp-1)+sl*sx0+yali.get_y(lp))/2.0)
-				print xali.get_y(lp),yali.get_y(lp)
+#				print xali.get_y(lp),yali.get_y(lp)
 			   
 
 			if verbose>1 :
@@ -283,10 +290,10 @@ def alignstack(refo,stack,verbose=0):
 				print ["%6.2f"%i for i in xali.get_ylist()]
 				print ["%6.2f"%i for i in yali.get_ylist()]
 
-			out=file("path_{}_{}.txt".format(cnt,step),"w")
-			for i in xrange(len(outim)): out.write("{}\t{}\t{}\n".format(i,xali.get_yatx_smooth(i,1),yali.get_yatx_smooth(i,1)))
+			#out=file("path_{}_{}.txt".format(cnt,step),"w")
+			#for i in xrange(len(outim)): out.write("{}\t{}\t{}\n".format(i,xali.get_yatx_smooth(i,1),yali.get_yatx_smooth(i,1)))
 
-	cnt+=1
+	#cnt+=1
 			
 		
 	av=sum([stack[i].process("xform.translate.int",{"trans":(int(xali.get_yatx_smooth(i,1)/2.0),int(yali.get_yatx_smooth(i,1)/2.0))}) for i in xrange(len(outim))])
