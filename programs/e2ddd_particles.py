@@ -90,7 +90,7 @@ def main():
 	if options.verbose: print "running on:",clsout
 
 	newproj="../"+os.getcwd().split("/")[-1]+"_m"
-	try: os.makedirs(newproj)
+	try: os.makedirs(newproj+"/particles")
 	except: pass
 
 	lastloc=None
@@ -105,6 +105,7 @@ def main():
 		# i is particle number in the cls file
 		for i in xrange(lst.n):
 			ptloc=lst.read(i)		# ptloc is n,filename for the source image
+			if options.verbose: print "{}/{}   ({})".format(i,lst.n,ptloc)
 			
 			# if the input particle file changed, we need some new info
 			if lastloc!=ptloc[1]:
@@ -125,6 +126,7 @@ def main():
 			proj.transform(orient.inverse())
 			
 			stack=EMData.read_images(movie,xrange(movien*ptloc[0],movien*(ptloc[0]+1)))
+			for im in stack: im.process_inplace("normalize.edgemean")
 			avg=sum(stack)
 			avg.mult(1.0/len(stack))
 
@@ -150,17 +152,24 @@ def main():
 			avg.process_inplace("normalize.edgemean")
 			if options.verbose>3 :avg.write_image("tmp.hdf",-1)
 			
-			newpt=alignstack(proj,stack)
+			# This function is the actual stack alignment to the reference, producing the aligned average
+			newpt=alignstack(proj,stack,options.verbose-1)
+			if options.verbose>3 :
+				newpt.process_inplace("normalize.toimage",{"to":avg})
+				newpt.write_image("tmp.hdf",-1)
+			if newpt["nx"]!=oldbox : newpt=newpt.window_center(oldbox)
+
+			# write the aligned, clipped average to the output file
+			newpt.process_inplace("normalize.edgemean")
 			newpt.write_image("{}/{}".format(newproj,ptloc[1]),ptloc[0])
-			if options.verbose>3 :newpt.write_image("tmp.hdf",-1)
 			
 			if options.verbose>1 : print i,movie,ptloc[0],int(cls[0][0,i])
 			
 	E2end(pid)
 
-def alignstack(ref,stack):
-	"aligns a movie stack to a reference image, with some constraints forcing the relative alignments to follow a pattern
-	Returns the aligned average."
+def alignstack(ref,stack,verbose=0):
+	"""aligns a movie stack to a reference image, with some constraints forcing the relative alignments to follow a pattern
+	Returns the aligned average."""
 	
 	nx=ref["nx"]
 	ny=ref["ny"]
@@ -173,12 +182,15 @@ def alignstack(ref,stack):
 	for it in xrange(2):
 		step=len(outim)
 		
-		while step>=1:
+		while step>1:
 			step/=2
 			i0=0
 			while i0<len(outim):
 				i1=min(i0+step,len(outim))
-				av=sum([outim[i].process("xform.translate.int",{"trans":(xali.get_yatx_smooth(i,1),yali.get_yatx_smooth(i,1))}) for i in xrange(i0,i1)])
+				if i1-i0<step/2 : 
+					i0+=step
+					continue
+				av=sum([outim[i].process("xform.translate.int",{"trans":(int(xali.get_yatx_smooth(i,1)),int(yali.get_yatx_smooth(i,1)))}) for i in xrange(i0,i1)])
 				
 				tloc=(i0+i1-1)/2.0		# the "time" of the current average
 				if step>=len(outim)/2 : lrange=nx/4
@@ -187,16 +199,18 @@ def alignstack(ref,stack):
 				
 				guess=(xali.get_yatx_smooth(tloc,1),yali.get_yatx_smooth(tloc,1))
 				
-				print step,i0,xali.get_yatx_smooth(tloc,1),yali.get_yatx_smooth(tloc,1),lrange,
+				if verbose :print step,i0,xali.get_yatx_smooth(tloc,1),yali.get_yatx_smooth(tloc,1),lrange
 
 				ccf=av.calc_ccf(ref,fp_flag.CIRCULANT,1)		# centered CCF
 				ccf.process_inplace("normalize.edgemean")
 				ccf.clip_inplace(Region(nx/2-lrange,ny/2-lrange,lrange*2,lrange*2))
-				dx1,dy1,dz=ccf.calc_max_location()
-				Z=ccf[dx1,dy1]/ccf["sigma"]
+				dx,dy,dz=ccf.calc_max_location()
+				Z=ccf[dx,dy]/ccf["sigma"]
+				dx-=lrange
+				dy-=lrange
 				
-				xali.insort(tloc,dx)
-				yali.insort(tloc,dy)
+				xali.insort(tloc,xali.get_yatx_smooth(tloc,1)-dx)
+				yali.insort(tloc,yali.get_yatx_smooth(tloc,1)-dy)
 				xali.dedupx()
 				yali.dedupx()
 									
@@ -208,13 +222,15 @@ def alignstack(ref,stack):
 			for i in xrange(xali.get_size()-2):
 				xali.set_y(i+1,(xali.get_y(i)+xali.get_y(i+1)*2.0+xali.get_y(i+2))/4.0)
 				yali.set_y(i+1,(yali.get_y(i)+yali.get_y(i+1)*2.0+yali.get_y(i+2))/4.0)
-			
-			print ["%6.1f"%i for i in xali.get_xlist()]
-			print ["%6.2f"%i for i in xali.get_ylist()]
-			print ["%6.2f"%i for i in yali.get_ylist()]
+
+			if verbose :
+				print ["%6.1f"%i for i in xali.get_xlist()]
+				print ["%6.2f"%i for i in xali.get_ylist()]
+				print ["%6.2f"%i for i in yali.get_ylist()]
 			
 		
-	av=sum([outim[i].process("xform.translate.int",{"trans":(xali.get_yatx_smooth(i,1),yali.get_yatx_smooth(i,1))}) for i in xrange(len(outim))])
+	av=sum([outim[i].process("xform.translate.int",{"trans":(int(xali.get_yatx_smooth(i,1)),int(yali.get_yatx_smooth(i,1)))}) for i in xrange(len(outim))])
+	av.mult(1.0/len(outim))
 
 	return av
 	
