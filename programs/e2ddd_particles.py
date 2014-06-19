@@ -163,7 +163,9 @@ def main():
 
 			# write the aligned, clipped average to the output file
 			newpt.process_inplace("normalize.edgemean")
-			newpt.write_image("{}/particles/{}_ptcls.hdf".format(newproj,base_name(ptloc[1])),ptloc[0])
+			#newpt.write_image("{}/particles/{}_ptcls.hdf".format(newproj,base_name(ptloc[1])),ptloc[0])
+			# We're appending here to avoid the problem with missing "bad" particles in the original set. not a perfect solution
+			newpt.write_image("{}/particles/{}_ptcls.hdf".format(newproj,base_name(ptloc[1])),-1)
 			
 			if options.verbose>1 : print i,movie,ptloc[0],int(cls[eo][0][0,i])
 			
