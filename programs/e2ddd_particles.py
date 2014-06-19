@@ -94,18 +94,20 @@ def main():
 	except: pass
 
 	lastloc=None
-	# eo is 0/1 for even/odd files
-	for eo in xrange(2):
-		if options.verbose: print "EO: ",eo
-		cls=EMData.read_images(clsout[eo])		# not normally all that big, so we just read the whole darn thing
-		projfsp=clsout[eo].replace("cls_result","projections")
+	lst=(LSXFile(inlst[0]),LSXFile(inlst[1]))	# Input particle "sets" in LSX files
+	cls=(EMData.read_images(clsout[0]),EMData.read_images(clsout[1]))	# Generally small enough we can just read the whole thing
+	
+	neo=max(lst[0].n,lst[1].n)
+	
+	# i is particle number in the cls file
+	for i in xrange(neo):
+		# eo is 0/1 for even/odd files
+		for eo in xrange(2):
+			if i>=lst[eo].n : continue
 		
-		lst=LSXFile(inlst[eo])				# open a convenient object for accessing images from the input stack
-		
-		# i is particle number in the cls file
-		for i in xrange(lst.n):
-			ptloc=lst.read(i)		# ptloc is n,filename for the source image
-			if options.verbose: print "{}/{}   ({})".format(i,lst.n,ptloc)
+			projfsp=clsout[eo].replace("cls_result","projections")
+			ptloc=lst[eo].read(i)		# ptloc is n,filename for the source image
+			if options.verbose: print "{}/{}   ({})".format(i,lst[eo].n,ptloc)
 			
 			# if the input particle file changed, we need some new info
 			if lastloc!=ptloc[1]:
@@ -120,9 +122,9 @@ def main():
 				ctf.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
 				lastloc=ptloc[1]
 			
-			proj=EMData(projfsp,int(cls[0][0,i]))	# projection image for this particle
+			proj=EMData(projfsp,int(cls[eo][0][0,i]))	# projection image for this particle
 #			orient=Transform({"type":"2d","tx":cls[2][0,i],"ty":cls[3][0,i],"alpha":cls[4][0,i],"mirror":int(cls[5][0,i])})
-			orient=Transform({"type":"2d","tx":0,"ty":0,"alpha":cls[4][0,i],"mirror":int(cls[5][0,i])})		# we want the alignment reference in the middle of the box
+			orient=Transform({"type":"2d","tx":0,"ty":0,"alpha":cls[eo][4][0,i],"mirror":int(cls[eo][5][0,i])})		# we want the alignment reference in the middle of the box
 			proj.transform(orient.inverse())
 			
 			stack=EMData.read_images(movie,xrange(movien*ptloc[0],movien*(ptloc[0]+1)))
@@ -163,7 +165,7 @@ def main():
 			newpt.process_inplace("normalize.edgemean")
 			newpt.write_image("{}/particles/{}_ptcls.hdf".format(newproj,base_name(ptloc[1])),ptloc[0])
 			
-			if options.verbose>1 : print i,movie,ptloc[0],int(cls[0][0,i])
+			if options.verbose>1 : print i,movie,ptloc[0],int(cls[eo][0][0,i])
 			
 	E2end(pid)
 
