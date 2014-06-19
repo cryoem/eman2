@@ -161,7 +161,7 @@ def main():
 
 			# write the aligned, clipped average to the output file
 			newpt.process_inplace("normalize.edgemean")
-			newpt.write_image("{}/{}".format(newproj,ptloc[1]),ptloc[0])
+			newpt.write_image("{}/{}_ptcls.hdf".format(newproj,base_name(ptloc[1])),ptloc[0])
 			
 			if options.verbose>1 : print i,movie,ptloc[0],int(cls[0][0,i])
 			
@@ -205,7 +205,12 @@ def alignstack(ref,stack,verbose=0):
 				ccf.process_inplace("normalize.edgemean")
 				ccf.clip_inplace(Region(nx/2-lrange,ny/2-lrange,lrange*2,lrange*2))
 				dx,dy,dz=ccf.calc_max_location()
-				Z=ccf[dx,dy]/ccf["sigma"]
+				try: Z=ccf[dx,dy]/ccf["sigma"]
+				except: 
+					print "Bad alignment {},{} on {} to {}".format(dx,dy,i0,i1)
+					i0+=step
+					continue
+
 				dx-=lrange
 				dy-=lrange
 				
