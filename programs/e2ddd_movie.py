@@ -138,29 +138,43 @@ def main():
 	#try: display((dark,gain,sigd,sigg))
 	#except: display((dark,gain))
 
-	step=options.step.split(",")
-	if len(step)==3 : last=int(step[2])
-	else: last=-1
-	first=int(step[0])
-	step=int(step[1])
-	if options.verbose: print "Range={} - {}, Step={}".format(first,last,step)
+	step = options.step.split(",")
+
+	if len(step) == 3 :
+		last = int(step[2])
+	else :
+		last = -1
+
+	first = int(step[0])
+	step  = int(step[1])
+
+	if options.verbose : print "Range = {} - {}, Step = {}".format(first, last, step)
 
 	# the user may provide multiple movies to process at once
 
 	for fsp in args:
-		if options.verbose : print "Processing ",fsp
+		if options.verbose : print "Processing", fsp
 				
-		n=EMUtil.get_image_count(fsp)
-		if n<3 : 
-			hdr=EMData(fsp,0,True)
-			if hdr["nz"]<2 :
-				print "ERROR: {} has only {} images. Min 3 required.".format(fsp,n)
+		n = EMUtil.get_image_count(fsp)
+
+		if n < 3 : 
+			hdr = EMData(fsp, 0, True)
+
+			if hdr["nz"] < 2 :
+				print "ERROR: {} has only {} images. Min 3 required.".format(fsp, n)
 				continue
-			n=hdr["nz"]
-		if last<=0 : flast=n
-		else : flast=last
+
+			n = hdr["nz"]
+
+		if last <= 0 :
+			flast = n
+		else :
+			flast = last
+
+		if flast > n :
+			flast = n
 		
-		process_movie(fsp,dark,gain,first,flast,step,options)
+		process_movie(fsp, dark, gain, first, flast, step, options)
 		
 	E2end(pid)
 
@@ -328,23 +342,26 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 
 		# we iterate the alignment process several times
 
-		if options.align_frames:
-			outim2=[]
+		if options.align_frames :
+			outim2 = []
 			
 			print len(outim)
 			
-			aliavg=sum(outim)				# we start with a simple average of all frames
+			aliavg = sum(outim)				# we start with a simple average of all frames
 			
-			for it in xrange(3):
-				step=len(outim)		# coarsest search aligns the first 1/2 of the images against the second, step=step/2 each cycle
-				xali=XYData()		# this will contain the alignments which are hierarchically estimated and improved
-				yali=XYData()		# x is time in both cases, y is x or y
-				while step>1:
-					step/=2
-					i0=0
-					while i0<len(outim):
-						i1=min(i0+step,len(outim))
-						av0=sum(outim[i0:i1])
+			for it in xrange(3) :
+				step = len(outim)		# coarsest search aligns the first 1/2 of the images against the second, step=step/2 each cycle
+				xali = XYData()		# this will contain the alignments which are hierarchically estimated and improved
+				yali = XYData()		# x is time in both cases, y is x or y
+
+				while step > 1 :
+					step /= 2
+					i0 = 0
+
+					while i0 < len(outim) :
+						i1 = min(i0+step, len(outim))
+						av0 = sum(outim[i0:i1])
+
 						tloc=(i0+i1-1)/2.0		# the "time" of the current average
 						lrange=hypot(xali.get_yatx_smooth(i1,1)-xali.get_yatx_smooth(i0,1),yali.get_yatx_smooth(i1,1)-yali.get_yatx_smooth(i0,1))*1.5
 						if lrange<8 : lrange=8		
@@ -354,13 +371,14 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 							i0+=step
 							continue				# if the predicted shift is too small, then we won't get it right anyway, so we just interpolate
 						
-						print step,i0,xali.get_yatx_smooth(tloc,1),yali.get_yatx_smooth(tloc,1),lrange,
+##						print step,i0,xali.get_yatx_smooth(tloc,1),yali.get_yatx_smooth(tloc,1),lrange,
 	#					dx,dy,Z=align_subpixel(av0,av1,guess=alignments[i1+step/2]-alignments[i0+step/2],localrange=LA.norm(alignments[i1+step-1]-alignments[i0]))
+
 						if step==len(outim)/2 :
 							dx,dy,Z=align(aliavg,av0,guess=(0,0),localrange=192,verbose=options.verbose-1)
 						else:
 							dx,dy,Z=align(aliavg,av0,guess=guess,localrange=lrange,verbose=options.verbose-1)
-						print dx,dy,Z			
+##						print dx,dy,Z			
 						
 						xali.insort(tloc,dx)
 						yali.insort(tloc,dy)
@@ -379,9 +397,9 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 						xali.set_y(i+1,(xali.get_y(i)+xali.get_y(i+1)*2.0+xali.get_y(i+2))/4.0)
 						yali.set_y(i+1,(yali.get_y(i)+yali.get_y(i+1)*2.0+yali.get_y(i+2))/4.0)
 					
-					print ["%6.1f"%i for i in xali.get_xlist()]
-					print ["%6.2f"%i for i in xali.get_ylist()]
-					print ["%6.2f"%i for i in yali.get_ylist()]
+##					print ["%6.1f"%i for i in xali.get_xlist()]
+##					print ["%6.2f"%i for i in xali.get_ylist()]
+##					print ["%6.2f"%i for i in yali.get_ylist()]
 					
 				outim2=[outim[i].get_clip(Region(-xali.get_yatx_smooth(i,1),-yali.get_yatx_smooth(i,1),outim[i]["nx"],outim[i]["ny"])) for i in xrange(len(outim))]
 				
