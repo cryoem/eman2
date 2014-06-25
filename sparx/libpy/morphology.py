@@ -1892,17 +1892,11 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 		#except:
 			#print  namics[ifi],"     FAILED"
 	#from utilities import write_text_row
-	if( myid == 0 ):
-		outf = open( os.path.join(outpartres,"partres"), "w")
-	from utilities import wrap_mpi_gatherv
-	totresi = wrap_mpi_gatherv(totresi, 0, MPI_COMM_WORLD)
-	"""
 	if MPI:
-		outf = open( os.path.join(outpartres,"partres_%05d"%myid), "w")
-	else:
-		outf = open( os.path.join(outpartres,"partres"), "w")
-	"""
+		from utilities import wrap_mpi_gatherv
+		totresi = wrap_mpi_gatherv(totresi, 0, MPI_COMM_WORLD)
 	if( myid == 0 ):
+		outf = open( os.path.join(outpartres,"partres"), "w")
 		for i in xrange(len(totresi)):
 			for k in xrange(1,len(totresi[i])): outf.write("  %12.5g"%totresi[i][k])
 			outf.write("  %s\n"%totresi[i][0])
