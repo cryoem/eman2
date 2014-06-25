@@ -453,6 +453,7 @@ mpiexec -bynode -n ###NumberofNodes### """ + s + """
 echo "done" """)
 
 f.close()
+print "Please note that this command does not do the Relion postprocessing step. You should do this yourself but please be careful of overmasking!
 print "************** Relion Command *******************"
 print s
 print "*************************************************"

@@ -68,6 +68,7 @@ parser.add_argument("--mass", default=0, type=float,help="The ~mass of the parti
 parser.add_argument("--interp", type=str, help="Type of interpolation: 0 - Nearest Neighbor, 1 - Trilinear Interpolation (More Time-Consuming)", default='0', guitype='combobox', choicelist="""'0','1'""", row=7, col=1, rowspan=1, colspan=1)
 parser.add_argument("--randomizemodel", help="Optionally randomize the phases of the initial model to this resolution (in Angstroms)", default=0,  guitype='floatbox', row=8, col=0, rowspan=1, colspan=2)
 parser.add_argument("--imem", type=str, help="Memory Usage: 0 - Least Memory, 3 - Most memory", default='1', guitype='combobox', choicelist="""'0','1','2','3'""",row=8, col=2, rowspan=1, colspan=1)
+parser.add_argument("--verbose",type=int, help="Level of verbose; how much information do you want the program to output?(0-9)", default=1, guitype='intbox',row=9, col=0, rowspan=1, colspan=1)
 #parser.add_argument("--mass", default=0, type=float,help="The ~mass of the particle in kilodaltons, used to run normalize.bymass. Due to resolution effects, not always the true mass.", guitype='floatbox', row=12, col=0, rowspan=1, colspan=1, mode="refinement['self.pm().getMass()']")
 
 
@@ -109,8 +110,7 @@ high = args[1]
 if int(high) < 10:
    high = "0" + high
 
-
-s = "e2proc2d.py " + dir + "/classes_" + high +"_even.hdf class_stack_temp.hdf --interlv=" + dir + "/classes_" + high +"_odd.hdf --verbose=0"
+s = "e2proc2d.py " + dir + "/classes_" + high +"_even.hdf class_stack_temp.hdf --interlv=" + dir + "/classes_" + high +"_odd.hdf --verbose=" + str(options.verbose)
 call(s,shell=True)
 class_list = {}
 class_list = EMData.read_images("class_stack_temp.hdf")
@@ -123,44 +123,19 @@ classes_even = EMData.read_images(dir + "/classes_" + high +"_even.hdf")
 classes_odd = EMData.read_images(dir + "/classes_" + high +"_odd.hdf")
 
 
-#for i in range(num_classes):
-   #for index in class_list[i]['class_ptcl_idxs']:
-      #if i%2 == 0:
-         #az_list[2*index] = class_list[i]['xform.projection'].get_rotation("eman")['az']
-         #alt_list[2*index] = class_list[i]['xform.projection'].get_rotation("eman")['alt']
-         #if 'exc_class_ptcl_idxs' in class_list[i].get_attr_dict():
-            #if isinstance(class_list[i]['exc_class_ptcl_idxs'], ( int, long )):
-               #az_list[2*int(class_list[i]['exc_class_ptcl_idxs'])] = class_list[i]['xform.projection'].get_rotation("eman")['az']
-               #alt_list[2*int(class_list[i]['exc_class_ptcl_idxs'])] = class_list[i]['xform.projection'].get_rotation("eman")['alt']
-            #else:
-               #for exc_index in class_list[i]['exc_class_ptcl_idxs']:
-                  #az_list[2*exc_index] = class_list[i]['xform.projection'].get_rotation("eman")['az']
-                  #alt_list[2*exc_index] = class_list[i]['xform.projection'].get_rotation("eman")['alt']
-      #else:
-         #az_list[2*index+1] = class_list[i]['xform.projection'].get_rotation("eman")['az']
-         #alt_list[2*index+1] = class_list[i]['xform.projection'].get_rotation("eman")['alt']
-         #if 'exc_class_ptcl_idxs' in class_list[i].get_attr_dict():
-            #if isinstance(class_list[i]['exc_class_ptcl_idxs'], ( int, long )):
-               #az_list[2*int(class_list[i]['exc_class_ptcl_idxs'])+1] = class_list[i]['xform.projection'].get_rotation("eman")['az']
-               #alt_list[2*int(class_list[i]['exc_class_ptcl_idxs'])+1] = class_list[i]['xform.projection'].get_rotation("eman")['alt']
-            #else:
-               #for exc_index in class_list[i]['exc_class_ptcl_idxs']:
-                  #az_list[2*exc_index+1] = class_list[i]['xform.projection'].get_rotation("eman")['az']
-                  #alt_list[2*exc_index+1] = class_list[i]['xform.projection'].get_rotation("eman")['alt']
-   
 total_len = len(az_list)
 even_set_name = class_list[0].get_attr_dict()['class_ptcl_src']
 odd_set_name = class_list[1].get_attr_dict()['class_ptcl_src']
-all_set_name = "sets/"+base_name(even_set_name)+".lst"
+all_set_name = "sets/"+base_name(even_set_name)+"_ptcls.lst"
 all_set_data = EMData.read_images(all_set_name)
+print all_set_name
 
-s = "e2proc2d.py " + all_set_name + " " + E2FA + "/particlestack.mrc --twod2threed --process=normalize.edgemean --mult=-1 --verbose=0"
+s = "e2proc2d.py " + all_set_name + " " + E2FA + "/particlestack.mrc --twod2threed --process=normalize.edgemean --mult=-1 --verbose=" + str(options.verbose)
 call(s, shell=True)
-s = "e2proc3d.py " + dir + "/threed_" + high + ".hdf " + E2FA + "/3DMapInOut.mrc --process=normalize.edgemean --verbose=0"
+s = "e2proc3d.py " + dir + "/threed_" + high + ".hdf " + E2FA + "/3DMapInOut.mrc --process=normalize.edgemean --verbose=" + str(options.verbose)
 call(s, shell=True)
-s = "e2proc2d.py " + dir + "/cls_result_" + high + "_even.hdf cls_stack_temp.hdf --interlv=" +  dir + "/cls_result_" + high + "_odd.hdf --writejunk --verbose=0"
+s = "e2proc2d.py " + dir + "/cls_result_" + high + "_even.hdf cls_stack_temp.hdf --interlv=" +  dir + "/cls_result_" + high + "_odd.hdf --writejunk --verbose=" + str(options.verbose)
 call(s, shell=True)
-
 #brute force way to do it but need to make sure its right...
 cls_even = EMData.read_images(dir + "/cls_result_" + high + "_even.hdf")
 cls_odd = EMData.read_images(dir + "/cls_result_" + high + "_odd.hdf")
@@ -219,6 +194,7 @@ for i in range(len(all_set_data)):
    mag = APERPIX / ctf_dict['apix']
    apix_shift = ctf_dict['apix']
    class_num = cls_class_list[i]
+   print class_num
    if i%2==0:
       az=classes_even[int(class_num)].get_attr_dict()['xform.projection'].get_rotation("eman")['az']
       alt=classes_even[int(class_num)].get_attr_dict()['xform.projection'].get_rotation("eman")['alt']
