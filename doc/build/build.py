@@ -147,7 +147,7 @@ class Target(object):
         args.python = self.python
         args.distname = '%s.%s'%(args.cvsmodule, args.release)
 	args.distname_source ='%s.%s'%(args.cvsmodule, args.target)
-        args.installtxt = self.installtxt
+	args.installtxt = self.installtxt
         args.bashrc = self.bashrc
         args.cshrc = self.cshrc
         args.target_desc = self.target_desc
@@ -170,7 +170,7 @@ class Target(object):
         args.cwd_rpath        = os.path.join(args.root, 'stage',   args.distname, args.cvsmodule.upper())
 	args.cwd_rpath_source = os.path.join(args.root, 'stage',   args.distname_source, args.cvsmodule.upper(),'src/eman2')
         args.cwd_rpath_extlib = os.path.join(args.cwd_rpath, 'extlib')
-        args.cwd_rpath_lib    = os.path.join(args.cwd_rpath, 'lib')        
+        args.cwd_rpath_lib    = os.path.join(args.cwd_rpath, 'lib')           
 
         # OS X links using absolute pathnames; update these to @rpath macro.
         # This dictionary contains regex sub keys/values
@@ -212,7 +212,7 @@ class Target(object):
         
     def upload(self):
         raise NotImplementedError
-
+    
 class MacTarget(Target):
     """Generic Mac target."""
     
@@ -604,9 +604,35 @@ class SourcePackage(Builder):
         mkdirs(os.path.join(self.args.cwd_images_source))
 
         now = datetime.datetime.now().strftime('%Y-%m-%d')   
-        with open(os.path.join(self.args.c
-			     
-			     
+        with open(os.path.join(self.args.cwd_rpath_source, 'build_date.'+now), 'w') as f:
+            f.write("EMAN2 %s source code from %s."%(self.args.cvstag, now))
+
+        imgname = "%s.%s.%s.tar.gz"%(self.args.cvsmodule, self.args.release, self.args.target_desc)
+        img = os.path.join(self.args.cwd_images_source, imgname)
+        hdi = ['tar', '-czf', img, 'EMAN2']
+        cmd(hdi, cwd=self.args.cwd_stage_source)
+
+
+class SourceUpload(Builder):
+    def run(self):
+        log("Uploading source tarball")
+        imgname = "%s.%s.%s.tar.gz"%(self.args.cvsmodule, self.args.release, self.args.target_desc)
+        img = os.path.join(self.args.cwd_images_source, imgname)
+        scpdest = "eman@%s:%s/%s"%(self.args.scphost, self.args.scpdest, imgname)
+        scp = ['scp', img, scpdest]
+        cmd(scp)
+
+##### Registry #####
+
+# TODO: Use a class decorator or somesuch.
+TARGETS = {
+    'i686-apple-darwin10': SnowLeopardTarget,
+    'i686-apple-darwin11': LionTarget,
+    'i686-redhat-linux': LinuxTarget,
+    'x86_64-redhat-linux': Linux64Target,
+    'source': SourceTarget
+}
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('commands',    help='Build commands', nargs='+')
