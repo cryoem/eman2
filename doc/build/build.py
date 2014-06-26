@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Ian Rees, 2012
-#
+# Edited by Stephen Murray 2014
 # This is a new version of the EMAN2 build and post-install package management system.
 # The original version was a collection of shell scripts, with various scripts for
 # setting configuration information, CVS checkout, build, package, upload, etc., run
@@ -165,9 +165,10 @@ class Target(object):
 	args.cwd_images_source = os.path.join(args.root, 'images',  args.distname_source)
         args.cwd_stage        = os.path.join(args.root, 'stage',   args.distname)
 	args.cwd_stage_source = os.path.join(args.root, 'stage',   args.distname_source)
-	args.cwd_stage_source_path = os.path.join(args.root, 'stage',   args.distname_source,'EMAN2/src/build')
+	args.cwd_stage_source_build = os.path.join(args.root, 'stage',	args.distname_source,'EMAN2/src/build')
+	args.cwd_stage_source_path = os.path.join(args.root, 'stage',   args.distname_source,'EMAN2/src/eman2')
         args.cwd_rpath        = os.path.join(args.root, 'stage',   args.distname, args.cvsmodule.upper())
-	args.cwd_rpath_source = os.path.join(args.root, 'stage',   args.distname_source, args.cvsmodule.upper(),'src/build')
+	args.cwd_rpath_source = os.path.join(args.root, 'stage',   args.distname_source, args.cvsmodule.upper(),'src/eman2')
         args.cwd_rpath_extlib = os.path.join(args.cwd_rpath, 'extlib')
         args.cwd_rpath_lib    = os.path.join(args.cwd_rpath, 'lib')        
 
@@ -240,7 +241,7 @@ class MacTarget(Target):
     bashrc = """#!/bin/sh
 export EMAN2DIR=/Applications/EMAN2/
 export PATH=$EMAN2DIR/bin:$EMAN2DIR/extlib/bin:$PATH
-export PYTHONPATH=$EMAN2DIR/lib:$EMAN2DIR/bin:$EMAN2DIR/extlib/site-packages:$PYTHONPATH
+export PYTHONPATH=$EMAN2DIR/lib:$EMAN2DIR/bin:$EMAN2DIR/extlib/site-packages:$EMAN2DIR/extlib/site-packages/ipython-1.2.1-py2.7.egg:$PYTHONPATH
 """
 
     cshrc = """#!/bin/csh
@@ -250,7 +251,7 @@ if ( $?PYTHONPATH ) then
 else
 setenv PYTHONPATH
 endif
-setenv PYTHONPATH ${EMAN2DIR}/lib:${EMAN2DIR}/bin:${EMAN2DIR}/extlib/site-packages:${PYTHONPATH}
+setenv PYTHONPATH ${EMAN2DIR}/lib:${EMAN2DIR}/bin:${EMAN2DIR}/extlib/site-packages:${EMAN2DIR}/extlib/site-packages/ipython-1.2.1-py2.7.egg:${PYTHONPATH}
 """    
     
     def build(self):
@@ -286,6 +287,14 @@ class Linux64Target(LinuxTarget):
     target_desc = 'linux64'
     pass 
     
+# TODO: Use a class decorator or somesuch.
+TARGETS = {
+    'i686-apple-darwin10': SnowLeopardTarget,
+    'i686-apple-darwin11': LionTarget,
+    'i686-redhat-linux': LinuxTarget,
+    'x86_64-redhat-linux': Linux64Target
+}
+
 ##### Builder Modules #####
 
 class Builder(object):
@@ -347,6 +356,7 @@ class CopyExtlib(Builder):
         try:
             shutil.copytree(self.args.cwd_extlib, self.args.cwd_rpath_extlib, symlinks=True)        
         except:
+            print "ERROR$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"
             pass
 
 # Build sub-command.
@@ -586,41 +596,17 @@ class SourceInstall(Builder):
         log("...copying source: %s"%self.args.cwd_stage_source_path)
         shutil.copytree(self.args.cwd_co_distname, self.args.cwd_rpath_source, symlinks=True)        
 
+	mkdirs(self.args.cwd_stage_source_build)
+
 class SourcePackage(Builder):
     def run(self):
         log("Building source tarball")
         mkdirs(os.path.join(self.args.cwd_images_source))
 
         now = datetime.datetime.now().strftime('%Y-%m-%d')   
-        with open(os.path.join(self.args.cwd_rpath_source, 'build_date.'+now), 'w') as f:
-            f.write("EMAN2 %s source code from %s."%(self.args.cvstag, now))
-
-        imgname = "%s.%s.%s.tar.gz"%(self.args.cvsmodule, self.args.release, self.args.target_desc)
-        img = os.path.join(self.args.cwd_images_source, imgname)
-        hdi = ['tar', '-czf', img, 'EMAN2']
-        cmd(hdi, cwd=self.args.cwd_stage_source)
-
-
-class SourceUpload(Builder):
-    def run(self):
-        log("Uploading source tarball")
-        imgname = "%s.%s.%s.tar.gz"%(self.args.cvsmodule, self.args.release, self.args.target_desc)
-        img = os.path.join(self.args.cwd_images_source, imgname)
-        scpdest = "eman@%s:%s/%s"%(self.args.scphost, self.args.scpdest, imgname)
-        scp = ['scp', img, scpdest]
-        cmd(scp)
-        
-##### Registry #####
-
-# TODO: Use a class decorator or somesuch.
-TARGETS = {
-    'i686-apple-darwin10': SnowLeopardTarget,
-    'i686-apple-darwin11': LionTarget,
-    'i686-redhat-linux': LinuxTarget,
-    'x86_64-redhat-linux': Linux64Target,
-    'source': SourceTarget
-}
-        
+        with open(os.path.join(self.args.c
+			     
+			     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('commands',    help='Build commands', nargs='+')
@@ -636,14 +622,6 @@ if __name__ == "__main__":
     parser.add_argument('--scpdest',   help='Upload: scp destination directory', default='/home/zope-extdata/reposit/ncmi/software/counter_222/software_86')
     
     args = parser.parse_args()
-    if not args.root.startswith("/"):
-      raise Exception("Absolute path to root directory required.")
-    
     print("EMAN2 Nightly Build -- Version: %s -- Target: %s -- Date: %s"%(VERSION, args.target, datetime.datetime.utcnow().isoformat()))
     target = TARGETS.get(args.target, Target)(args)
     target.run(args.commands)
-
-
-    
-    
-
