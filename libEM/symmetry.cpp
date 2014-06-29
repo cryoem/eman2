@@ -101,7 +101,9 @@ Symmetry3D* Factory < Symmetry3D >::get(const string & instancename_)
 			string temp;
 			temp=instancename;
 			temp.erase(0,1);
-			sscanf(temp.c_str(),"%d,%d,%f,%f,%f",&nsym,&nstart,&daz,&tz,&maxtilt);
+			if (sscanf(temp.c_str(),"%d:%d:%f:%f:%f",&nsym,&nstart,&daz,&tz,&maxtilt)<4) {
+				sscanf(temp.c_str(),"%d,%d,%f,%f,%f",&nsym,&nstart,&daz,&tz,&maxtilt);
+			}
 			parms["nstart"]=nstart;
 			parms["nsym"]=nsym;
 			parms["daz"]=daz;
