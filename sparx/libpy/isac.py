@@ -1432,3 +1432,24 @@ def get_unique_averages(data, indep_run, m_th=0.45):
 		if flag[im] == 3:	 data_good.append(data[im])
 	
 	return data_good
+
+
+
+
+def prepref(data,maskfile, cnx, cny, numr, mode, maxrangex, maxrangey):
+	from EMAN2 import Util
+	#step = 1
+	nima = len(data) 
+	dimage = [[[None for j in xrange(2*maxrangey+1)] for i in xrange(2*maxrangex+1)] for im in xrange(nima) ]
+	for im in xrange(nima):
+		sts = Util.infomask(data[im], maskfile, False)
+		data[im] -= sts[0]
+		data[im] /= sts[1]
+		for j in xrange(-maxrangey, maxrangey+1):
+			#iy = j*step
+			for i in xrange(-maxrangex, maxrangex+1):
+				#ix = i*step
+				dimage[im][i+maxrangex][j+maxrangey] = Util.Polar2Dm(data[im], cnx+i, cny+j, numr, mode)
+				print ' prepref  ',j,i,j+maxrangey,i+maxrangex
+				Util.Frngs(dimage[im][i+maxrangex][j+maxrangey], numr)
+	return dimage

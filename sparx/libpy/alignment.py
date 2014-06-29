@@ -95,8 +95,8 @@ def ali2d_single_iter_fast(data, dimage, params, numr, wr, cs, tavg, cnx, cny, x
 	Util.Applyws(cimage, numr, wr)
 
 	maxrin = numr[-1]
-	sx_sum = 0
-	sy_sum = 0
+	#sx_sum = 0
+	#sy_sum = 0
 	for im in xrange(len(data)):
 		#alpha, sx, sy, mirror, dummy = get_params2D(data[im], ali_params)
 		#alpha, sx, sy, mirror        = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
@@ -119,11 +119,11 @@ def ali2d_single_iter_fast(data, dimage, params, numr, wr, cs, tavg, cnx, cny, x
 		#set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
 		params[im] = [angt, sxst, syst, mirrort]
 
-		if mirrort == 0: sx_sum += sxst
-		else:            sx_sum -= sxst
-		sy_sum += syst
+		#if mirrort == 0: sx_sum += sxst
+		#else:            sx_sum -= sxst
+		#sy_sum += syst
 
-	return sx_sum, sy_sum
+#	return sx_sum, sy_sum
 
 
 def ang_n(tot, mode, maxrin):
@@ -498,8 +498,8 @@ def ormq_fast(dimage, crefim, xrng, yrng, step, isx, isy, numr, mode, delta = 0.
 		for j in xrange(max(-kx+isx,-maxrange), min(kx+isx+1,maxrange+1)):
 			#ix = j*step
 			# The following code it used when mirror is considered
-			if delta == 0.0: retvals = Util.Crosrng_ms(crefim, dimage[i+ky][j+kx], numr)
-			else:            retvals = Util.Crosrng_ms_delta(crefim, dimage[i+ky][j+kx], numr, 0.0, delta)
+			if delta == 0.0: retvals = Util.Crosrng_ms(crefim, dimage[i+maxrange][j+maxrange], numr)
+			else:            retvals = Util.Crosrng_ms_delta(crefim, dimage[i+maxrange][j+maxrange], numr, 0.0, delta)
 			qn = retvals["qn"]
 			qm = retvals["qm"]
 			if (qn >= peak or qm >= peak):
