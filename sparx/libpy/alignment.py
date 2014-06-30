@@ -394,7 +394,7 @@ def ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 		quadratic interpolation
 		cnx, cny in FORTRAN convention
 	"""
-	from math import pi, cos, sin
+	from math import pi, cos, sin, radians
 	from alignment import ang_n
 	#from utilities import info
 	#print "ORNQ"
@@ -417,8 +417,8 @@ def ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 				peak = qn
 	# mirror is returned as zero for consistency
 	mirror = 0
-	co =  cos(ang*pi/180.0)
-	so = -sin(ang*pi/180.0)
+	co =  cos(radians(ang))
+	so = -sin(radians(ang))
 	sxs = sx*co - sy*so
 	sys = sx*so + sy*co
 	return  ang, sxs, sys, mirror, peak
@@ -492,19 +492,19 @@ def ormq_fast(dimage, crefim, xrng, yrng, step, isx, isy, numr, mode, delta = 0.
 	ky = int(yrng)#int(2*yrng/step+0.5)//2
 	kx = int(xrng)#int(2*xrng/step+0.5)//2
 	#print  ' y ',max(-ky+isy,-maxrange), min(ky+isy+1,maxrange+1)
-	for i in xrange(max(-ky+isy,-maxrange), min(ky+isy+1,maxrange+1)):
+	for j in xrange(max(-ky+isy,-maxrange), min(ky+isy+1,maxrange+1)):
 		#iy = i*step
 		#print  ' x ',max(-kx+isx,-maxrange), min(kx+isx+1,maxrange+1)
-		for j in xrange(max(-kx+isx,-maxrange), min(kx+isx+1,maxrange+1)):
+		for i in xrange(max(-kx+isx,-maxrange), min(kx+isx+1,maxrange+1)):
 			#ix = j*step
-			# The following code it used when mirror is considered
+			# The following code is used when mirror is considered
 			if delta == 0.0: retvals = Util.Crosrng_ms(crefim, dimage[i+maxrange][j+maxrange], numr)
 			else:            retvals = Util.Crosrng_ms_delta(crefim, dimage[i+maxrange][j+maxrange], numr, 0.0, delta)
 			qn = retvals["qn"]
 			qm = retvals["qm"]
 			if (qn >= peak or qm >= peak):
-				sx = j
-				sy = i
+				sx = i
+				sy = j
 				if (qn >= qm):
 					ang = ang_n(retvals["tot"], mode, numr[-1])
 					peak = qn
