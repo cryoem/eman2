@@ -36,7 +36,7 @@ Examples:
 print "Running e2refinetorelion3d.py"
 # Required Program Options and Parameters (GUI and Command Line)
 parser = EMArgumentParser(usage, version=EMANVERSION)
-parser.add_header(name="relionversion", help="This module is supported to work with Relion-1.2 from 9/17/13 onward", title="This module will work with Relion v1.2, 9/17/13 onward", row=0, col=0, rowspan=1, colspan=3)
+parser.add_header(name="relionversion", help="This module is supported to work with Relion-1.3 from 6/1/14 onward", title="This module will work with Relion v1.2, 9/17/13 onward", row=0, col=0, rowspan=1, colspan=3)
 parser.add_header(name="relion3dheader", help="Options below this label are specific to e2refinetorelion3d", title="   ### e2refinetorelion3d.py Options ###", row=1, col=0, rowspan=1, colspan=3)
 #I/O Options
 parser.add_header(name="io", help="Options in this section pertain to I/O", title="---I/O Options---", row=2, col=0, rowspan=1, colspan=1)
@@ -453,7 +453,7 @@ mpiexec -bynode -n ###NumberofNodes### """ + s + """
 echo "done" """)
 
 f.close()
-print "Please note that this command does not do the Relion postprocessing step. You should do this yourself but please be careful of overmasking!
+print "Please note that this command does not do the Relion postprocessing step. You should do this yourself but please be careful of overmasking!"
 print "************** Relion Command *******************"
 print s
 print "*************************************************"
