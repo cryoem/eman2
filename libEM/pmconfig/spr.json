@@ -309,7 +309,13 @@
         "NAME": "Run e2plotFSC",
 	"NOTELEVEL": "1",
         "CHILDREN": []
-      }
+       },
+       {
+        "ICON":"resolution",
+        "PROGRAM":"e2runresmap.py",
+        "NAME":"Run ResMap",
+        "CHILDREN":[]
+       }
     ]
   }
 ]
