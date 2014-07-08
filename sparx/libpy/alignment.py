@@ -81,7 +81,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomi
 	return sx_sum, sy_sum
 
 
-def ali2d_single_iter_fast(data, dimage, params, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="F", random_method="", T=1.0, ali_params="xform.align2d", delta = 0.0):
+def ali2d_single_iter_fast(data, dimage, params, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, maxrange, nomirror = False, mode="F", random_method="", T=1.0, ali_params="xform.align2d", delta = 0.0):
 	"""
 		single iteration of 2D alignment using ormq
 		if CTF = True, apply CTF to data (not to reference!)
@@ -113,7 +113,7 @@ def ali2d_single_iter_fast(data, dimage, params, numr, wr, cs, tavg, cnx, cny, x
 			if nomirror:  [angt, sxst, syst, mirrort, peakt] = ornq(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
 			else:
 		"""
-		[angt, sxst, syst, mirrort, peakt] = ormq_fast(dimage[im], cimage, xrng, yrng, step, params[im][1], params[im][2], numr, mode, delta)
+		[angt, sxst, syst, mirrort, peakt] = ormq_fast(dimage[im], cimage, xrng, yrng, step, params[im][1], params[im][2], maxrange, numr, mode, delta)
 		# combine parameters and set them to the header, ignore previous angle and mirror
 		#[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
 		#set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
@@ -477,7 +477,7 @@ def ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0):
 	sys = sx*so + sy*co
 	return  ang, sxs, sys, mirror, peak
 
-def ormq_fast(dimage, crefim, xrng, yrng, step, isx, isy, numr, mode, delta = 0.0):
+def ormq_fast(dimage, crefim, xrng, yrng, step, isx, isy, maxrange, numr, mode, delta = 0.0):
 	"""Determine shift and rotation between image and reference image (crefim)
 		crefim should be as FT of polar coords with applied weights
 	        consider mirror
@@ -486,7 +486,7 @@ def ormq_fast(dimage, crefim, xrng, yrng, step, isx, isy, numr, mode, delta = 0.
 	"""
 	#from math import pi, cos, sin, radians
 	#print "ORMQ_FAST"
-	maxrange = 4
+	#maxrange = 4
 	peak = -1.0E23
 	#print ' isx, isy',isx, isy
 	ky = int(yrng)#int(2*yrng/step+0.5)//2

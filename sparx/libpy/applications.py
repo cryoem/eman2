@@ -12658,7 +12658,7 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 			else:                                                 delta = dst
 			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode=mode, CTF=False, delta=delta)
 
-def within_group_refinement_fast(data, dimage, maskfile, randomize, ir, ou, rs, xrng, yrng, step, dst, maxit, FH, FF):
+def within_group_refinement_fast(data, dimage, maskfile, randomize, ir, ou, rs, xrng, yrng, step, maxrange, dst, maxit, FH, FF):
 
 	# Comment by Zhengfan Yang 03/11/11
 	# This is a simple version of ali2d_data (down to the bone), no output dir, no logfile, no CTF, no MPI or CUDA, no Fourvar, no auto stop, no user function
@@ -12681,10 +12681,10 @@ def within_group_refinement_fast(data, dimage, maskfile, randomize, ir, ou, rs, 
 	params = [[0.,0.,0.,0] for im in xrange(nima) ]
 	if randomize:
 		for im in xrange(nima):
-			alpha, sx, sy, mirror, scale = get_params2D(data[im])
+			#alpha, sx, sy, mirror, scale = get_params2D(data[im])
 			#alphai, sxi, syi, mirrori = inverse_transform2(alpha, sx, sy)
 			#alphan, sxn, syn, mirrorn = combine_params2(0.0, -sxi, -syi, 0, random()*360.0, 0,0, randint(0, 1))
-			params[im] = [alpha +random()*360.0, 0, 0, randint(0, 1)]
+			params[im] = [random()*360.0, 0, 0, randint(0, 1)]
 	else:
 		for im in xrange(nima):
 			alpha, sx, sy, mirror, scale = get_params2D(data[im])
@@ -12695,7 +12695,8 @@ def within_group_refinement_fast(data, dimage, maskfile, randomize, ir, ou, rs, 
 		Util.add_img( tavg, rot_shift2D(data[im], params[im][0], params[im][1], params[im][2], params[im][3]) )
 	tavg /= nima
 	tavg = filt_tanl(tavg, 0.1, FF)
-	
+	#tavg = EMData('image.hdf')
+	#for im in xrange(nima):  print  im,params[im]
 
 	cnx = nx/2+1
 	cny = cnx
@@ -12705,13 +12706,15 @@ def within_group_refinement_fast(data, dimage, maskfile, randomize, ir, ou, rs, 
 
 	cs = [0.0]*2
 	total_iter = 0
-	for N_step in xrange(len(xrng)):
-		for Iter in xrange(max_iter):
+	for Iter in xrange(max_iter):
+		for N_step in xrange(len(xrng)):
 			total_iter += 1
 			if Iter%4 != 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0
 			else:                                                 delta = dst
+			#delta=0.0
 			#for im in xrange(nima):		print  " sx, sy:  %2d   %2d"%(params[im][1], params[im][2]) 
-			ali2d_single_iter_fast(data, dimage, params, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode=mode, delta=delta)
+			ali2d_single_iter_fast(data, dimage, params, numr, wr, cs, tavg, cnx, cny, \
+					xrng[N_step], yrng[N_step], step[N_step], maxrange = maxrange, mode=mode, delta=delta)
 			tavg = model_blank(nx,nx)
 			sx_sum = 0.0
 			sy_sum = 0.0
@@ -12736,10 +12739,15 @@ def within_group_refinement_fast(data, dimage, maskfile, randomize, ir, ou, rs, 
 			if( FH > 0.0):
 				fl = 0.1+(FH-0.1)*Iter/float(max_iter-1)
 			tavg = filt_tanl(tavg, fl, FF)
+			"""
 			if( xrng[0] > 0.0 ): sx_sum = int(sx_sum/float(nima)+0.5)
 			if( yrng[0] > 0.0 ): sy_sum = int(sy_sum/float(nima)+0.5)
-			print ' ave shift',sx_sum, sy_sum
-			tavg = cyclic_shift(tavg, -sx_sum,sy_sum)
+			#print ' ave shift',sx_sum, sy_sum
+			tavg = cyclic_shift(tavg, -sx_sum, -sy_sum)
+			"""
+			if( xrng[0] > 0.0 ): sx_sum = sx_sum/float(nima)
+			if( yrng[0] > 0.0 ): sy_sum = sy_sum/float(nima)
+			tavg = fshift(tavg, -sx_sum, -sy_sum)
 			#tavg.write_image('tavg.hdf',total_iter-1)
 	for im in xrange(nima):
 		sxi = -params[im][1]
