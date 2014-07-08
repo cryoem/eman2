@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # Author: Ian Rees (ian.rees@bcm.edu), 03/20/2012
 # Copyright (c) 2000-2011 Baylor College of Medicine
@@ -29,6 +30,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 
 import EMAN2
+from EMAN2 import *
 import collections
 import math
 import random
@@ -100,7 +102,6 @@ def read_pdb(filename, atomtype=None, chain=None, noisemodel=None):
 	pdbfile = open(filename, "r")
 	lines = pdbfile.readlines()
 	pdbfile.close()
-
 	atomtypes = set()
 	chains = set()
 	for line in (i for i in lines if i.startswith("ATOM  ")):
@@ -125,7 +126,7 @@ def read_pdb(filename, atomtype=None, chain=None, noisemodel=None):
 		if chain and chain != lchain:
 			continue
 
-		atomnumber = int(line[23:27])
+		atomnumber = int(line[22:27])
 		pos = [float(line[30:38].strip()), float(line[38:46].strip()), float(line[46:54].strip())]
 		points[atomnumber] = noisemodel(pos) # tuple([noisemodel(i) for i in x])
 		path.append(atomnumber)
@@ -162,7 +163,9 @@ def write_pdbs(filename, paths, points=None, bfactors=None, tree=None):
 		out.write(
 			"MODEL     %4d\n"%pathid
 		)
+		
 		for atom in path:
+		
 			point = points.get(atom)
 			out.write(
 				"ATOM %6d  CA  ALA %s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f     S_00  0\n"
@@ -202,7 +205,7 @@ def write_pdbs(filename, paths, points=None, bfactors=None, tree=None):
 
 class PathWalker(object):
 
-	def __init__(self, filename=None, outfile=None, start=None, end=None, edgefile=None, edges=None, dmin=2.0, dmax=4.2, average=3.78, atomtype='CA', chain=None, noise=0, solver=False, json=True, overwrite=False):
+	def __init__(self, filename=None, outfile=None, start=None, end=None, edgefile=None, edges=None, dmin=2.0, dmax=4.2, average=3.78, atomtype='CA', chain=None, noise=0, solver=False, json=True, overwrite=False, mrcfile=None,  mrcweight=5000, mapthresh=3.0):
 
 		# Run parameters
 		self.dmin = dmin
@@ -216,7 +219,14 @@ class PathWalker(object):
 		self.noise = noise
 		self.solver = solver
 		self.json = json
+		self.mrcfile=mrcfile
+		self.mrcweight=mrcweight
+		self.mrc=EMData(mrcfile)
+		self.mapthresh=mapthresh
 		
+		self.apix_x=self.mrc["apix_x"]
+		self.apix_y=self.mrc["apix_y"]
+		self.apix_z=self.mrc["apix_z"]
 		if self.atomtype in ['all', 'None', '']:
 			self.atomtype = None
 			
@@ -225,7 +235,6 @@ class PathWalker(object):
 		
 		# Point graph
 		self.itree = {}
-
 		# Calculated distances
 		self.distances = {}
 		self.weighted = {}
@@ -240,6 +249,7 @@ class PathWalker(object):
 				
 		for count1, point1 in self.points.items():
 			for count2, point2 in self.points.items():
+				#print count1,count2,
 				d, w = self.calcweight(point1, point2)
 				self.distances[(count1, count2)] = d
 				self.weighted[(count1, count2)] = w
@@ -247,7 +257,7 @@ class PathWalker(object):
 					self.itree[count1].add(count2)
 				# print count1, count2, self.distances[(count1, count2)], self.weighted[(count1, count2)]
 
-
+		
 		# Read an edge fragment file... 1 string of points per line, separated space
 		self.fixededges = self.read_fixed(edgefile)
 		
@@ -264,14 +274,18 @@ class PathWalker(object):
 
 		print "Note: linking start/end: ", self.start, self.end
 		self.fixededges.append((self.start, self.end))
-	
+		
+		print self.itree
 		# Process forced edges
 		for link in self.fixededges:
-			self.itree[link[0]].add(link[1])
-			self.itree[link[1]].add(link[0])
-			self.weighted[(link[0], link[1])] = 0
-			self.weighted[(link[1], link[0])] = 0
-
+			try:
+				self.itree[link[0]].add(link[1])
+				self.itree[link[1]].add(link[0])
+				self.weighted[(link[0], link[1])] = 0
+				self.weighted[(link[1], link[0])] = 0
+			except KeyError:
+				print "Atom ",link[0]," or ", link[1], " does not exist..."
+				
 		# Some useful statistics
 		self.endpoints = self.find_endpoints()
 		self.branches = self.find_branches()
@@ -311,6 +325,10 @@ class PathWalker(object):
 			rot = d['path'].index(self.start or d['path'][0])
 			path = collections.deque(d['path'])
 			path.rotate(-rot)
+			if (path[1]==self.start or path[1]==self.end):
+				ptmp=path[0]
+				path.remove(path[0])
+				path.append(ptmp)
 			d['path'] = list(path)
 		
 			# Evaluate path and calculate CA ramachandran angles
@@ -320,6 +338,7 @@ class PathWalker(object):
 
 		# Write output
 		if check_exists(self.outfile, overwrite=self.overwrite):
+
 			write_pdbs(filename=self.outfile, paths=paths, points=self.points)
 			if self.json:
 				self.write_json(ret)
@@ -489,6 +508,7 @@ class PathWalker(object):
 		self.write_tsplib(filename=tspfile)
 		
 		args =' '.join(['LKH',lkhfile])
+		print args
 		try:
 			a = subprocess.Popen(args, shell=True)
 		except OSError:
@@ -645,8 +665,40 @@ class PathWalker(object):
 			# w = 0
 		else:
 			w = int((math.fabs(d-self.average)*100)**2)
-		if w > 100000:
-			w = 100000
+		midp=7
+		a=[(x[1]-x[0])/midp for x in zip(point1, point2)]
+		mpt=0
+		p=point1
+		
+		SX=0#self.mrc.get_xsize()
+		SY=0#self.mrc.get_ysize()
+		SZ=0#self.mrc.get_zsize()
+		
+		#p=[(x[0]+x[1]) for x in zip(p,a)]
+		count=0
+		#print point1,point2,
+		for i in range(1,midp):
+		    np=[(x[0]+x[1]*i) for x in zip(p,a)]
+		    #print np,
+		    #np=[(x[0]+x[1]) for x in zip(p,a)]
+		    mmm=self.mrc.get_value_at(int(round(np[0]/self.apix_x+SX/2)),int(round(np[1]/self.apix_y+SY/2)),int(round(np[2]/self.apix_z+SZ/2)))
+		    mpt+=mmm
+		    count+=1
+		    #print mmm,
+		    #p=np
+		
+		
+		mpt=mpt/count
+		#print mpt,
+		if mpt<self.mapthresh:
+			mpt=0#mpt*10
+		dst=-(mpt)
+		w=w+dst*self.mrcweight
+		w=int(w+10000)
+		#print self.mrc.get_value_at(int(a[0]),int(a[1]),int(a[2]))
+		if w > 1000000:
+			w = 1000000
+		#print w
 		return d, w
 
 
@@ -720,7 +772,10 @@ class PathWalker(object):
 		if self.fixededges:
 			fout.write("FIXED_EDGES_SECTION\n")
 			for i in self.fixededges:
-				fout.write("%s %s\n"%(keyorder.index(i[0])+1, keyorder.index(i[1])+1))
+				try:
+					fout.write("%s %s\n"%(keyorder.index(i[0])+1, keyorder.index(i[1])+1))
+				except ValueError:
+					print i,"is not in the list"
 			fout.write("-1\n")
 
 		fout.write("EDGE_WEIGHT_SECTION\n")
@@ -779,9 +834,10 @@ class PathWalker(object):
 	
 			dpxps=numpy.dot(xp2n,xp1n)
 			if dpxps > 1:
-				dp=1
+				dpxps=1
 			if dpxps<-1:
 				dpxps=-1
+
 			CaCaCaCa=math.acos(dpxps)*(180/math.pi)
 			# print CaCaCa, CaCaCaCa
 			out.append((CaCaCa, CaCaCaCa))
@@ -833,9 +889,10 @@ def main():
 	usage = """e2pathwalker.py [options] <pdb file>
 
 	Find paths between two atoms in a PDB model. You can also specify two PDB files to calculate an RMSD.
-
+	
 	Use "--solve=<solver>" to run the TSP solver and save the output.
 	Use "--output" to save the output to a PDB file.
+	Use "--mapfile" to input the density map.
 
 	Pathwalker wiki:
 		http://blake.bcm.edu/emanwiki/Pathwalker
@@ -844,9 +901,12 @@ def main():
 	"""
 	parser = EMAN2.EMArgumentParser(usage=usage,version=EMAN2.EMANVERSION)
 	parser.add_argument("--output", type=str,help="Output file")
+	parser.add_argument("--mapfile", type=str,help="Density file", default=None)
 	parser.add_argument("--start", type=int,help="Start ATOM")
 	parser.add_argument("--end", type=int,help="End ATOM")	
 	parser.add_argument("--average", type=float,help="Average Ca-Ca length", default=3.78)
+	parser.add_argument("--mapweight", type=float,help="Weight of density", default=5000)
+	parser.add_argument("--mapthresh", type=float,help="Density threshold", default=3.0)
 	parser.add_argument("--dmin", type=float,help="Mininum Ca-Ca length", default=2.0)
 	parser.add_argument("--dmax", type=float,help="Maximum Ca-Ca length", default=4.2)
 	parser.add_argument("--noise", type=float,help="Add Gaussian Noise", default=0.0)
@@ -871,7 +931,6 @@ def main():
 		#		print "Iteration:", j
 		if options.iterations > 1:
 			print "Warning: Iterations currently unsupported."
-
 		pw = PathWalker(
 			filename=filename, 
 			start=options.start, 
@@ -886,7 +945,10 @@ def main():
 			json=options.json,
 			solver=options.solver,
 			overwrite=options.overwrite,
-			outfile=options.output
+			outfile=options.output,
+			mrcfile=options.mapfile,
+			mrcweight=options.mapweight,
+			mapthresh=options.mapthresh
 		)
 		pw.run()
 
