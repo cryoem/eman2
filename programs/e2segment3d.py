@@ -39,6 +39,26 @@ import sys
 from e2simmx import cmponetomany
 import traceback
 
+def read_helix(filename,sx,sy,sz,ax,ay,az):
+	print "Reading helix atoms from pdb file..."
+	points = []
+	pdbfile = open(filename, "r")
+	lines = pdbfile.readlines()
+	pdbfile.close()
+	nhlx=0
+	# Read atoms
+	for line in (i for i in lines if i.startswith("HELIX  ")):
+		atomid=[int(line[21:27].strip()), int(line[33:38].strip())]
+		for atline in (i for i in lines if i.startswith("ATOM  ")):
+			cn=int(atline[22:30].strip())
+			if cn>=atomid[0] and cn<=atomid[1]:
+				if atline[13:15]=="CA":
+					pos = (float(atline[30:38].strip())/ax+sx/2, float(atline[38:46].strip())/ay+sy/2, float(atline[46:54].strip())/az+sz/2)#,nhlx)
+					points.append( pos)
+		nhlx+=1
+	
+	return points
+
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog <input volume> [options] 
@@ -57,6 +77,10 @@ def main():
 	parser.add_argument("--pdbout", default=None, type=str,help="Name of file to write center of segments in PDB format.")
 	parser.add_argument("--txtout", default=None, type=str,help="Name of file to write center of segments in text format (n\tx\ty\tz, with coordinates in pixels, 0,0,0 in the corner)")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--shifttocenter", action="store_true", help="Shift the output pdb to center of the density map")
+	parser.add_argument("--helixfile", default=None, type=str, help="Start with existing secondary structure.")
+	parser.add_argument("--edgefile", default=None, type=str, help="Write an edge file for pathwalker.py. Only avaliable while using existing secondary structures.")
+	
 	
 	(options, args) = parser.parse_args()
 
@@ -70,13 +94,38 @@ def main():
 	if options.verbose>0: print "Reading volume"
 	volume=EMData(args[0],0)
 	
+	if options.shifttocenter:
+		sx=volume.get_xsize()
+		sy=volume.get_ysize()
+		sz=volume.get_zsize()
+	else:
+		sx=0
+		sy=0
+		sz=0
+	print sx,sy,sz
+	
+	if options.helixfile!=None:
+		helix=read_helix(options.helixfile,sx,sy,sz,volume["apix_x"],volume["apix_y"],volume["apix_z"])
+		ps=options.process
+		p1=ps.find("nseg")
+		p2=ps.find(":",p1)
+		if p2==-1: 
+			p2=len(ps)
+		num=int(ps[p1+5:p2])
+		nps=ps[:p1+5]+str(num-len(helix))+ps[p2:]
+		options.process=nps
+		
+		print "Existing helix length: "+ str(len(helix))
+		#print helix[0]
+		
+	
 	if options.verbose>0: print "Executing segmentation"
 	(processorname, param_dict) = parsemodopt(options.process)
 	seg=volume.process(processorname,param_dict)
 	seg["apix_x"]=volume["apix_x"]
 	seg["apix_y"]=volume["apix_y"]
 	seg["apix_z"]=volume["apix_z"]
-	
+
 	if options.verbose>0: print "Writing output"
 	if options.output!=None : seg.write_image(options.output,0)
 	
@@ -84,9 +133,22 @@ def main():
 	centers=seg["segment_centers"]
 	centers=[(centers[i],centers[i+1],centers[i+2]) for i in xrange(0,len(centers),3)]
 	
+	if options.helixfile!=None:
+		for h in helix:
+			centers.append(h)
+		out=file(options.edgefile,"w")
+		for i in range(1,len(helix)):
+			d=sqrt((helix[i-1][0]-helix[i][0])**2+(helix[i-1][1]-helix[i][1])**2+(helix[i-1][2]-helix[i][2])**2)
+			if d<3.8:
+				out.write("%d\t%d\n"%(i-1+num-len(helix),i+num-len(helix)))
+		
+		out.close()
+		#print centers
+		
+		
 	# write output
 	if options.chimeraout : write_chimera_markers(options.chimeraout,centers,seg["apix_x"],seg["apix_y"],seg["apix_z"],seg["apix_x"]*3)
-	if options.pdbout : write_pdb_markers(options.pdbout,centers,seg["apix_x"],seg["apix_y"],seg["apix_z"])
+	if options.pdbout : write_pdb_markers(options.pdbout,centers,seg["apix_x"],seg["apix_y"],seg["apix_z"],sx,sy,sz)
 	if options.txtout :
 		out=file(options.txtout,"w")
 		for n,i in enumerate(centers): out.write("%d\t%1.3f\t%1.3f\t%1.3f\n"%(n,i[0],i[1],i[2]))
@@ -107,12 +169,13 @@ def write_chimera_markers(filename,centers,apix_x,apix_y,apix_z,marker_size=3.0)
 		print "\n---------------\nFailed to write Chimera output file, check permissions, etc"
 		
 	
-def write_pdb_markers(filename,centers,apix_x,apix_y,apix_z):
+def write_pdb_markers(filename,centers,apix_x,apix_y,apix_z,sx,sy,sz):
 	"""Writes a set of coordinates into a pseudo-PDB file"""
+	print sx,sy,sz
 	try: 
 		out=file(filename,"w")
 		for j,c in enumerate(centers) :
-			out.write("ATOM  %5d  CA  ALA  %4d    %8.3f%8.3f%8.3f  1.00%6.2f      S_00  0 \n"%(j,j,c[0]*apix_x,c[1]*apix_y,c[2]*apix_z,1.0))
+			out.write("ATOM  %5d  CA  ALA  %4d    %8.3f%8.3f%8.3f  1.00%6.2f      S_00  0 \n"%(j,j,(c[0]-sx/2)*apix_x,(c[1]-sy/2)*apix_y,(c[2]-sz/2)*apix_z,1.0))
 		out.close()
 	except:
 		traceback.print_exc()

@@ -124,7 +124,7 @@ vector<EMData *> InertiaMatrixAnalyzer::analyze() {
 
 vector<EMData *> ShapeAnalyzer::analyze() {
 	int verbose = params.set_default("verbose",0);
-	EMData *mx = new EMData(3,2,1);	// result is 3 values
+	EMData *mx = new EMData(4,2,1);	// result is 4 values
 	mx->to_zero();
 	ret.push_back(mx);
 
@@ -146,9 +146,12 @@ vector<EMData *> ShapeAnalyzer::analyze() {
 				mx->set_value_at(0,0,mx->get_value_at(0,0)+v*(xx*xx));
 				mx->set_value_at(1,0,mx->get_value_at(1,0)+v*(yy*yy));
 				mx->set_value_at(2,0,mx->get_value_at(2,0)+v*(zz*zz));
+				mx->set_value_at(3,0,mx->get_value_at(3,0)+v*(xx*xx+yy*yy+zz*zz)); 
+				// sum(m*r^2), in which r is the distance to the center. Used for minicircle classification
 				mx->set_value_at(0,1,mx->get_value_at(0,0)+v*abs(xx));
 				mx->set_value_at(1,1,mx->get_value_at(1,0)+v*abs(yy));
 				mx->set_value_at(2,1,mx->get_value_at(2,0)+v*abs(zz));
+				mx->set_value_at(3,1,mx->get_value_at(3,0)+v*sqrt(xx*xx+yy*yy+zz*zz));
 			}
 		}
 	}

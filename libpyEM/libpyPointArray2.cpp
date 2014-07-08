@@ -114,6 +114,14 @@ BOOST_PYTHON_MODULE(libpyPointArray2)
         .def("sim_rescale", &EMAN::PointArray::sim_rescale)
         .def("sim_potential", &EMAN::PointArray::sim_potential)
         .def("sim_printstat", &EMAN::PointArray::sim_printstat)
+        .def("sim_add_point_double", &EMAN::PointArray::sim_add_point_double)
+        .def("sim_add_point_one", &EMAN::PointArray::sim_add_point_one)
+        .def("calc_total_length", &EMAN::PointArray::calc_total_length)
+        .def("fit_helix", &EMAN::PointArray::fit_helix)
+        .def("reverse_chain", &EMAN::PointArray::reverse_chain)
+        .def("save_pdb_with_helix", &EMAN::PointArray::save_pdb_with_helix)
+        .def("remove_helix_from_map", &EMAN::PointArray::remove_helix_from_map)
+		
     );
 
     enum_< EMAN::PointArray::Density2PointsArrayAlgorithm >("Density2PointsArrayAlgorithm")

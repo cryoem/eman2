@@ -996,7 +996,7 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 {
 	EMData * result = image->copy();
 
-	int nseg = params.set_default("nseg",12);
+	int nseg = params.set_default("nseg",200);
 	float thr = params.set_default("thr",-1.0e30f);
 	int ampweight = params.set_default("ampweight",1);
 	float maxsegsize = params.set_default("maxsegsize",10000.0f);
@@ -1004,19 +1004,79 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 	int maxiter = params.set_default("maxiter",100);
 	int maxvoxmove = params.set_default("maxvoxmove",25);
 	int verbose = params.set_default("verbose",0);
+	bool psudoatom = params.set_default("psudoatom",0);
+	float sep = params.set_default("sep",3.78f);
 
-	vector<float> centers(nseg*3);
-	vector<float> count(nseg);
 	int nx=image->get_xsize();
 	int ny=image->get_ysize();
 	int nz=image->get_zsize();
 //	int nxy=nx*ny;
-
+	
 	// seed
-	for (int i=0; i<nseg*3; i+=3) {
-		centers[i]=  Util::get_frand(0.0f,(float)nx);
-		centers[i+1]=Util::get_frand(0.0f,(float)ny);
-		centers[i+2]=Util::get_frand(0.0f,(float)nz);
+	vector<float> centers(nseg*3);
+	vector<float> count(nseg);
+	// Alternative seeding method for paudoatom generation. Seed on the gird.
+	if (psudoatom){  
+		float ax=image->get_attr("apix_x");
+		sep/=ax;
+		if (verbose) printf("Seeding .....\n");
+		int sx=int(nx/sep)+1,sy=int(ny/sep)+1,sz=int(nz/sep)+1;
+		EMData m(sx,sy,sz);
+		EMData mcount(sx,sy,sz);
+		
+		for (int i=0; i<nx; i++){
+			for (int j=0; j<ny; j++){
+				for (int k=0; k<nz; k++){
+					int ni=(i/sep),nj=(j/sep),nk=(k/sep);
+					float v=image->get_value_at(i,j,k);
+					if (v>thr){
+						m.set_value_at(ni,nj,nk,(m.get_value_at(ni,nj,nk)+v));
+						mcount.set_value_at(ni,nj,nk,(mcount.get_value_at(ni,nj,nk)+1));
+					}
+				}
+			}
+		}
+		int nsum=0;
+		float l=0,r=2000,th=5;
+		while (abs(nsum-nseg)>0){
+			th=(l+r)/2;
+			nsum=0;
+			for (int i=0; i<sx; i++){
+				for (int j=0; j<sy; j++){
+					for (int k=0; k<sz; k++){
+						if (m.get_value_at(i,j,k)>th)  nsum+=1;
+					}
+				}
+			}
+			if (verbose) printf("%3f\t %3f\t %3f,\t %4d\t %4d\n", l,th,r,nsum,nseg);
+			if (nsum>nseg) l=th;
+			if (nsum<nseg) r=th;
+			if ((r-l)<.01) break;
+		}
+// 		nseg=nsum;
+		int q=0;
+		for (int i=0; i<sx; i++){
+			for (int j=0; j<sy; j++){
+				for (int k=0; k<sz; k++){
+					if (m.get_value_at(i,j,k)>th){
+						if(q<nseg*3){
+							centers[q]=  float(i+.5)*sep;
+							centers[q+1]=float(j+.5)*sep;
+							centers[q+2]=float(k+.5)*sep;
+							q+=3;
+						}
+					}
+				}
+			}
+		}
+	}
+	// Default: random seeding.
+	else{	
+		for (int i=0; i<nseg*3; i+=3) {
+			centers[i]=  Util::get_frand(0.0f,(float)nx);
+			centers[i+1]=Util::get_frand(0.0f,(float)ny);
+			centers[i+2]=Util::get_frand(0.0f,(float)nz);
+		}
 	}
 
 	for (int iter=0; iter<maxiter; iter++) {
@@ -1024,7 +1084,7 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 		size_t pixmov=0;		// count of moved pixels
 		for (int z=0; z<nz; z++) {
 			for (int y=0; y<ny; y++) {
-				for (int x=0; x<nz; x++) {
+				for (int x=0; x<nx; x++) {
 					if (image->get_value_at(x,y,z)<thr) {
 						result->set_value_at(x,y,z,-1.0);		//below threshold -> -1 (unclassified)
 						continue;
@@ -1045,11 +1105,10 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 		// **** adjust centers
 		for (int i=0; i<nseg*3; i++) centers[i]=0;
 		for (int i=0; i<nseg; i++) count[i]=0;
-
 		// weighted sums
 		for (int z=0; z<nz; z++) {
 			for (int y=0; y<ny; y++) {
-				for (int x=0; x<nz; x++) {
+				for (int x=0; x<nx; x++) {
 					int cls = (int)result->get_value_at(x,y,z);
 					if (cls==-1) continue;
 					float w=1.0;
@@ -1062,7 +1121,6 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 				}
 			}
 		}
-
 		// now each becomes center of mass, or gets randomly reseeded
 		int nreseed=0;
 		for (int c=0; c<nseg; c++) {

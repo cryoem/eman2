@@ -804,6 +804,13 @@ The basic design of EMAN Processors: <br>\
 			d.put("maxiter",EMObject::FLOAT,"Maximum number of iterations to run before stopping. Default=100");
 			d.put("maxvoxmove",EMObject::FLOAT,"Maximum number of voxels that can move before quitting. Default=25");
 			d.put("verbose",EMObject::INT,"Be verbose while running");
+			/**
+			 *An option for psudoatom generation in pathwalker. Instead of random seeding, seed on the gird initially.
+			 *@author Muyuan Chen
+			 *@date 2014/06/05
+	         */
+			d.put("psudoatom",EMObject::BOOL,"Doing psudoatom generation");
+			d.put("sep",EMObject::FLOAT,"Separation distance, used only in psudoatom generation. Default=3.78");
 			return d;
 		}
 
@@ -821,6 +828,7 @@ The basic design of EMAN Processors: <br>\
 
 	};
 
+	
 	/** CTF simulation processor. Takes individual CTF parameters, suitable for use with programs like
 	 * e2filtertool.py. Can use an internal noise profile or an external profile from a text file.
 	 *@param defocus[in]	Defocus in microns (underfocus positive)

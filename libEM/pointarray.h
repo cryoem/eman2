@@ -185,8 +185,29 @@ namespace EMAN
 		void sim_printstat();
 		
 		/** Sets the parameters for the energy function **/ 
-		void sim_set_pot_parms(double pdist0,double pdistc,double pangc, double pdihed0, double pdihedc, double pmapc, EMData *pmap);
+		void sim_set_pot_parms(double pdist0,double pdistc,double pangc, double pdihed0, double pdihedc, double pmapc, EMData *pmap,double pmindistc,double pdistpenc);
 		
+		/** Add more points during the simulation **/
+		void sim_add_point_double();
+		void sim_add_point_one();
+		
+		/** Calculate total length **/
+		double calc_total_length();
+		
+		/** Fit helix from peptide chains**/
+		vector<double> fit_helix(EMData *pmap,int minlength,float mindensity,vector<int> edge,int twodir);
+		
+		/** Do principal component analysis to (a subset of) the point array**/
+		vector<float> do_pca(int start, int end);
+		
+		vector<float> do_filter(vector<float> pts, float *ft, int num);
+		
+		vector<double> construct_helix(int start,int end,float phs, float &score,bool &dir);
+		void reverse_chain();
+
+		void save_pdb_with_helix(const char *file, vector<float> hlxid);
+		
+		void remove_helix_from_map(EMData *m, vector<float> hlxid);
 		private:
 		double *points;
 		size_t n;
@@ -208,8 +229,10 @@ namespace EMAN
 		 *  @param dihedc - dihedral angle coefficient c*(dihed-dihed0)^2
 		 *  @param mapc - coefficient for map energy
 		 *  @param map - EMData representing map to match/fit
+		 *  @param mindistc - mininum distance between two points
+		 *  @param distpenc - penalty for close points
 		 */
-		double dist0, distc, angc, dihed0, dihedc, mapc,apix;
+		double dist0, distc, angc, dihed0, dihedc, mapc,apix, mindistc,distpenc;
 		EMData *map;
 		EMData *gradx,*grady,*gradz;
 		vector<Vec3f> oldshifts;
