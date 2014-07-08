@@ -55,6 +55,13 @@ import threading
 
 HOMEDB=None
 
+# Without this, in many countries Qt will set things so "," is used as a decimal
+# separator by sscanf and other functions, which breaks CTF reading and some other things
+try:
+	os.putenv("LC_CTYPE","en_US.utf8")
+	os.putenv("LC_ALL","en_US.utf8")
+except: pass
+
 # This block attempts to open the standard EMAN2 database interface
 # if it fails, it sets db to None. Applications can then alter their
 # behavior appropriately

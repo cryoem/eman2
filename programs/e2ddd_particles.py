@@ -225,7 +225,7 @@ def alignstack(refo,stack,verbose=0):
 				csig=ccf["sigma"]
 				cmean=ccf["mean"]
 #				ccf.write_image("xyz.hdf",-1)
-				ccf.clip_inplace(Region(nx/2-lrange-guess[0],ny/2-lrange-guess[1],lrange*2,lrange*2))
+				ccf=ccf.get_clip(Region(nx/2-lrange-guess[0],ny/2-lrange-guess[1],lrange*2,lrange*2))
 				dx,dy,dz=ccf.calc_max_location()
 				try: Z=(ccf[dx,dy]-cmean)/csig
 				except: 

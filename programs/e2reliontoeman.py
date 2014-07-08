@@ -110,7 +110,8 @@ will be extracted from the STAR file and will be automatically processed through
 			jdb["ctf_frame"]=[512,ctf,(256,256),tuple(),5,1]
 		
 		# copy the image
-		img=EMData("../"+name,0,False,Region(0,0,imgnum,nx,ny,1))		# read one slice from the MRC stack
+		if name[-5:]==".mrcs" : img=EMData("../"+name,imgnum)		# read one slice from the MRC stack
+		else: img=EMData("../"+name,0,False,Region(0,0,imgnum,nx,ny,1))		# read one slice from the MRC stack
 		img.write_image(microname,fnum)
 		fnum+=1
 
