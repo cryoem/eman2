@@ -10910,7 +10910,7 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 					t = Transform({"type":"2D","alpha":alpha,"tx":sx,"ty":sy,"mirror":mirror,"scale":scale})
 					if ext == "bdb":
 						DB.set_attr(i, "xform.align2d", t)
-					elif ext == "hdf":					
+					elif ext == "hdf":
 						EMUtil.write_hdf_attribute(stack, "xform.align2d", t, i)
 					il+=5
 

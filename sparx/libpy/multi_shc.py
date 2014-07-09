@@ -2496,3 +2496,376 @@ def get_softy(im):
 		x.append( [p1,p2,p3,p4,p5] )
 		i += 1
 	return w,x
+
+
+# data - projections (scattered between cpus)
+# options - the same for all cpus
+# return - volume the same for all cpus
+def do_volume(data, options, mpi_comm):
+	from mpi import mpi_comm_rank
+	from reconstruction import recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
+	from utilities import bcast_EMData_to_all, model_circle, get_im
+	
+	myid = mpi_comm_rank(mpi_comm)
+	sym  = options.sym
+	sym = sym[0].lower() + sym[1:]
+	npad      = options.npad
+	CTF       = options.CTF
+	snr       = options.snr
+	#=========================================================================
+	# volume reconstruction
+	if CTF: vol = recons3d_4nn_ctf_MPI(myid, data, snr, symmetry=sym, npad=npad, mpi_comm=mpi_comm)
+	else:   vol = recons3d_4nn_MPI    (myid, data,      symmetry=sym, npad=npad, mpi_comm=mpi_comm)
+
+	if myid == 0:
+		nx = data[0].get_xsize()
+		last_ring   = int(options.ou)
+		if(options.mask3D == None):	mask3D = model_circle(last_ring, nx, nx, nx)
+		elif(options.mask3D == "auto"):
+			pass
+		else:						mask3D = get_im(options.mask3D)
+		stat = Util.infomask(vol, mask3D, False)
+		vol -= stat[0]
+		Util.mul_scalar(vol, 1.0/stat[1])
+		vol = threshold(vol)
+		Util.mul_img(volf, mask3D)
+		del mask3D
+		vol = filt_tanl(vol, options.fl, options.aa)
+	# broadcast volume
+	bcast_EMData_to_all(vol, myid, 0, comm=mpi_comm)
+	#=========================================================================
+	return vol
+
+
+# parameters: list of (all) projections | reference volume | ...
+#  Add reduction
+def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, log = None, nsoft=2 ):
+
+	from alignment       import Numrinit, prepare_refrings, proj_ali_incore_local
+	from utilities       import get_im, file_type, model_circle, get_input_from_string, get_params_proj, wrap_mpi_gatherv, wrap_mpi_bcast
+	from mpi             import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier, mpi_reduce, MPI_INT, MPI_SUM
+	from mpi             import bcast_number_to_all, bcast_EMData_to_all
+	from projection      import prep_vol
+	from statistics      import hist_list
+	from applications    import MPI_start_end
+	from filter          import filt_ctf
+	from global_def      import Util
+	from fundamentals    import resample
+	from multi_shc       import do_volume
+	from EMAN2           import EMUtil, EMData
+	import types
+	from time            import time
+
+	ir     = ali3d_options.ir
+	rs     = ali3d_options.rs
+	ou     = ali3d_options.ou
+	xr     = ali3d_options.xr
+	yr     = ali3d_options.yr
+	ts     = ali3d_options.ts
+	an     = ali3d_options.an
+	sym    = ali3d_options.sym
+	sym    = sym[0].lower() + sym[1:]
+	delta  = ali3d_options.delta
+	center = ali3d_options.center
+	CTF    = ali3d_options.CTF
+	ref_a  = ali3d_options.ref_a
+
+	if mpi_comm == None:
+		mpi_comm = MPI_COMM_WORLD
+
+	if log == None:
+		from logger import Logger
+		log = Logger()
+
+	number_of_proc = mpi_comm_size(mpi_comm)
+	myid           = mpi_comm_rank(mpi_comm)
+	main_node = 0
+
+	if myid == main_node:
+		log.add("Start ali3d_multishc_soft")
+
+	xrng        = get_input_from_string(xr)
+	if  yr == "-1":  yrng = xrng
+	else          :  yrng = get_input_from_string(yr)
+	step        = get_input_from_string(ts)
+	delta       = get_input_from_string(delta)
+	lstp = min(len(xrng), len(yrng), len(step), len(delta))
+	if an == "-1":
+		an = [-1] * lstp
+	else:
+		an = get_input_from_string(an)
+
+	first_ring  = int(ir)
+	rstep       = int(rs)
+	last_ring   = int(ou)
+	max_iter    = int(ali3d_options.maxit)
+	center      = int(center)
+
+	if( type(ref_vol) is types.StringType ):
+		if(myid == main_node):
+			vol = get_im(ref_vol)
+	else:
+		vol = ref_vol
+
+	if(myid == main_node):
+		onx      = vol.get_xsize()
+		if(shrinkage == 1.0):  nx = onx
+		else:		
+			vol = resample(vol, shrinkage)
+			nx = vol.get_xsize()
+	else:
+		nx = 0
+		onx = 0
+
+	nx = bcast_number_to_all(nx, source_node = main_node)
+	onx = bcast_number_to_all(onx, source_node = main_node)
+	if(myid != main_node):  vol = model_blank(nx, nx, nx)
+	bcast_EMData_to_all(vol, myid, main_node)
+
+
+
+	if last_ring < 0:	last_ring = int(nx/2) - 2
+
+	numr	= Numrinit(first_ring, last_ring, rstep, "F")
+	mask2D  = model_circle(last_ring,nx,nx) - model_circle(first_ring,nx,nx)
+
+	if( type(stack) is types.StringType ):
+		if myid == main_node:
+			if file_type(stack) == "bdb":
+				from EMAN2db import db_open_dict
+				dummy = db_open_dict(stack, True)
+			active = EMUtil.get_all_attributes(stack, 'active')
+			list_of_particles = []
+			for im in xrange(len(active)):
+				if active[im]:  list_of_particles.append(im)
+			del active
+			total_nima = len(list_of_particles)
+		else:
+			list_of_particles = None
+			total_nima = 0
+
+	else:
+		if myid == main_node:
+			list_of_particles = range(len(stack))
+			total_nima = len(list_of_particles)
+		else:
+			list_of_particles = None
+			total_nima = None
+	total_nima = wrap_mpi_bcast(total_nima, main_node, mpi_comm)
+	list_of_particles = wrap_mpi_bcast(list_of_particles, main_node, mpi_comm)
+
+	image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
+	# create a list of images for each node
+	list_of_particles = list_of_particles[image_start: image_end]
+	nima = len(list_of_particles)
+
+	data = [None]*nima
+	for im in xrange(nima):
+		if( type(stack) is types.StringType ):  data[im] = get_im(stack, list_of_particles[im])
+		else:                                   data[im] = stack[list_of_particles[im]].copy()
+		data[im].set_attr('ID', list_of_particles[im])
+		ctf_applied = data[im].get_attr_default('ctf_applied', 0)
+		if CTF and ctf_applied == 0:
+			ctf_params = data[im].get_attr("ctf")
+			if(im == 0):
+				# preserve original ctf params
+				org_ctf_patams = ctf_params
+			st = Util.infomask(data[im], mask2D, False)
+			data[im] -= st[0]
+			data[im] = filt_ctf(data[im], ctf_params)
+			data[im].set_attr('ctf_applied', 1)
+		if(shrinkage != 1.0):
+			phi,theta,psi,sx,sy = get_params_proj(data[im])
+			data[im] = resample(data[im], shrinkage)
+			sx *= shrinkage
+			sy *= shrinkage
+			set_params_proj(data[im], [phi,theta,psi,sx,sy])
+
+	pixer = [0.0]*nima
+	#par_r = [[] for im in list_of_particles ]
+	cs = [0.0]*3
+	total_iter = 0
+	# do the projection matching
+	for N_step in xrange(lstp):
+
+		terminate = 0
+		Iter = 0
+		while Iter < max_iter and terminate == 0:
+
+			Iter += 1
+			total_iter += 1
+
+			mpi_barrier(mpi_comm)
+			if myid == main_node:
+				log.add("ITERATION #%3d,  inner iteration #%3d"%(total_iter, Iter))
+				log.add("Delta = %4.1f, an = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f\n"%(delta[N_step], an[N_step], xrng[N_step], yrng[N_step], step[N_step]))
+				start_time = time()
+
+			#=========================================================================
+			# build references
+			volft, kb = prep_vol(vol)
+			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, MPI=mpi_comm)
+			del volft, kb
+			#=========================================================================
+
+			if myid == main_node:
+				log.add("Time to prepare rings: %f\n" % (time()-start_time))
+				start_time = time()
+			
+			#=========================================================================
+			if total_iter == 1:
+				# adjust params to references, calculate psi+shifts, calculate previousmax
+				for im in xrange(nima):
+					previousmax = data[im].get_attr_default("previousmax", -1.0e23)
+					if(previousmax == -1.0e23):
+						peak, pixer[im] = proj_ali_incore_local(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], 10.0)
+						data[im].set_attr("previousmax", peak*0.9)
+				if myid == main_node:
+					log.add("Time to calculate first psi+shifts+previousmax: %f\n" % (time()-start_time))
+					start_time = time()
+			#=========================================================================
+
+			mpi_barrier(mpi_comm)
+			if myid == main_node:
+				start_time = time()
+			#=========================================================================
+			# alignment
+			#number_of_checked_refs = 0
+			par_r = [0]*(nsoft+1)
+			for im in xrange(nima):
+				peak, pixer[im], checked_refs, number_of_peaks = shc_multi(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], an[N_step], nsoft, sym)
+				#number_of_checked_refs += checked_refs
+				par_r[number_of_peaks] += 1
+				#print  myid,im,number_of_peaks
+				#t = get_params_proj(data[im])
+				#if(t[3] >0.0 or t[4]>0.0):  print  "  MERRROR  ",t
+				
+			#=========================================================================
+			mpi_barrier(mpi_comm)
+			if myid == main_node:
+				#print  data[0].get_attr_dict()
+				log.add("Time of alignment = %f\n"%(time()-start_time))
+				start_time = time()
+
+			#=========================================================================
+			#output pixel errors, check stop criterion
+			all_pixer = wrap_mpi_gatherv(pixer, 0, mpi_comm)
+			par_r = mpi_reduce(par_r, nsoft+1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
+			#total_checked_refs = wrap_mpi_gatherv([number_of_checked_refs], main_node, mpi_comm)
+			terminate = 0
+			if myid == main_node:
+				#total_checked_refs = sum(total_checked_refs)
+				log.add("=========== Number of better peaks found ==============")
+				for lhx in xrange(nsoft+1):
+					msg = "            %5d     %7d"%(lhx, par_r[lhx])
+					log.add(msg)
+				log.add("_______________________________________________________")
+
+				lhist = 20
+				region, histo = hist_list(all_pixer, lhist)
+				log.add("=========== Histogram of pixel errors ==============")
+				for lhx in xrange(lhist):
+					msg = "          %10.3f     %7d"%(region[lhx], histo[lhx])
+					log.add(msg)
+				log.add("____________________________________________________")
+				if (max(all_pixer) < 0.5) and (sum(all_pixer)/total_nima < 0.05):
+					terminate = 1
+					log.add("...............")
+					log.add(">>>>>>>>>>>>>>>   Will terminate due to small pixel errors")
+			terminate = wrap_mpi_bcast(terminate, main_node, mpi_comm)
+			#=========================================================================
+
+			#=========================================================================
+			# centering
+			if center == -1 and sym[0] == 'c':
+				from utilities      import estimate_3D_center_MPI, rotate_3D_shift
+				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(data, total_nima, myid, number_of_proc, main_node, mpi_comm=mpi_comm)
+				if myid == main_node:
+					msg = " Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
+					log.add(msg)
+				if int(sym[1]) > 1:
+					cs[0] = cs[1] = 0.0
+					if myid == main_node:
+						log.add("For symmetry group cn (n>1), we only center the volume in z-direction\n")
+				cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, mpi_comm)
+				cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
+				rotate_3D_shift(data, cs)
+			#=========================================================================
+
+			#=========================================================================
+			# volume reconstruction
+			mpi_barrier(mpi_comm)
+			if myid == main_node:
+				start_time = time()
+			vol = do_volume(data, ali3d_options, mpi_comm)
+			if myid == main_node:  vol.write_image('soft/smvol%04d.hdf'%total_iter)
+			# log
+			if myid == main_node:
+				log.add("3D reconstruction time = %f\n"%(time()-start_time))
+				start_time = time()
+			#=========================================================================
+
+			#=========================================================================
+			if(total_iter%1 == 0 or terminate):
+				# gather parameters
+				params = []
+				previousmax = []
+				for im in data:
+					t = get_params_proj(im)
+					params.append( [t[0], t[1], t[2], t[3]/shrinkage, t[4]/shrinkage] )
+					#if(t[3] >0.0 or t[4]>0.0):  print  "  ERRROR  ",t
+					previousmax.append(im.get_attr("previousmax"))
+				assert(nima == len(params))
+				params = wrap_mpi_gatherv(params, 0, mpi_comm)
+				if myid == 0:
+					assert(total_nima == len(params))
+				previousmax = wrap_mpi_gatherv(previousmax, 0, mpi_comm)
+				if myid == main_node:
+					from utilities import write_text_row, write_text_file
+					write_text_row(params, "soft/params%04d.txt"%total_iter)
+					write_text_file(previousmax, "soft/previousmax%04d.txt"%total_iter)
+
+					if terminate:
+						if( type(stack) is types.StringType ):
+							from EMAN2db import db_open_dict
+							DB = db_open_dict(stack)
+							for im in xrange(len(params)):
+								t = Transform({"type":"spider","phi":params[im][0],"theta":params[im][1],"psi":params[im][2]})
+								t.set_trans(Vec2f(-params[im][3], -params[im][4]))
+								DB.set_attr(list_of_particles[im], "xform.projection", t)
+							DB.close()
+						else:
+							for im in xrange(len(params)): set_params_proj(stack[list_of_particles[im]], params[im])
+
+
+				del previousmax, params
+				i = 1
+				while data[0].has_attr("xform.projection" + str(i)):
+					params = []
+					previousmax = []
+					for im in data:
+
+						try:
+							#print  im.get_attr("xform.projection" + str(i))
+							t = get_params_proj(im,"xform.projection" + str(i))
+						except:
+							print " NO XFORM  ",myid, i,im.get_attr('ID')
+							from sys import exit
+							exit()
+
+						params.append( [t[0], t[1], t[2], t[3]/shrinkage, t[4]/shrinkage] )
+					assert(nima == len(params))
+					params = wrap_mpi_gatherv(params, 0, mpi_comm)
+					if myid == 0:
+						assert(total_nima == len(params))
+					if myid == main_node:
+						write_text_row(params, "soft/params-%04d-%04d.txt"%(i,total_iter))
+					del previousmax, params
+					i+=1
+
+
+	if myid == main_node:
+		log.add("Finish ali3d_multishc_soft")
+		return vol #params, vol, previousmax, par_r
+	else:
+		return vol #None, None, None, None  # results for the other processes
