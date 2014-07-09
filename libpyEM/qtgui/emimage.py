@@ -225,7 +225,7 @@ class EMWidgetFromFile(object):
 			elif isinstance(data,EMData):
 				if isinstance(old,EMScene3D): widget = old
 				else: widget = EMScene3D()
-				print n,data
+#				print n,data
 				for ii in xrange(n):
 					data=EMData(filename,ii)
 					datai = EMDataItem3D(data, transform=Transform())
