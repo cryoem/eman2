@@ -49,6 +49,8 @@ setup_csh() {
 	echo '    setenv PYTHONPATH ${EMAN2DIR}/lib:${EMAN2DIR}/bin:${PYTHONPATH}' >> ${OUT}
 	echo 'endif' >> ${OUT}
 	echo 'alias sparx sx.py' >> ${OUT}
+	echo "setenv LC_CTYPE=en_US.utf8"
+	echo "setenv LC_ALL=en_US.utf8"
 }
 
 setup_bash()
@@ -57,6 +59,8 @@ setup_bash()
 	echo "export EMAN2DIR=${EMAN2DIR}" > ${OUT}
 	echo 'export PATH=${EMAN2DIR}/bin:${EMAN2DIR}/extlib/bin:$PATH' >> ${OUT}
 	echo 'export PYTHONPATH=${EMAN2DIR}/lib:${EMAN2DIR}/bin:${PYTHONPATH}' >> ${OUT}
+	echo 'export LC_CTYPE=en_US.utf8'
+	echo 'export LC_ALL=en_US.utf8'
 	echo 'alias sparx=sx.py' >> ${OUT}
 }
 
