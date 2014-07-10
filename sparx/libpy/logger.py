@@ -42,7 +42,7 @@ class Logger:
 		for p in params:
 			if p != None:
 				line += " " + str(p)
-		
+
 		self.base_logger.logLine(self.prefix, line)
 
 	def sublog(self, add_prefix):

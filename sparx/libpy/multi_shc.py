@@ -2502,9 +2502,10 @@ def get_softy(im):
 # options - the same for all cpus
 # return - volume the same for all cpus
 def do_volume(data, options, mpi_comm):
-	from mpi import mpi_comm_rank
+	from EMAN2          import Util
+	from mpi            import mpi_comm_rank
 	from reconstruction import recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
-	from utilities import bcast_EMData_to_all, model_circle, get_im
+	from utilities      import bcast_EMData_to_all
 	
 	myid = mpi_comm_rank(mpi_comm)
 	sym  = options.sym
@@ -2518,6 +2519,9 @@ def do_volume(data, options, mpi_comm):
 	else:   vol = recons3d_4nn_MPI    (myid, data,      symmetry=sym, npad=npad, mpi_comm=mpi_comm)
 
 	if myid == 0:
+		from morphology import threshold
+		from filter     import filt_tanl
+		from utilities  import model_circle, get_im
 		nx = data[0].get_xsize()
 		last_ring   = int(options.ou)
 		if(options.mask3D == None):	mask3D = model_circle(last_ring, nx, nx, nx)
@@ -2528,7 +2532,7 @@ def do_volume(data, options, mpi_comm):
 		vol -= stat[0]
 		Util.mul_scalar(vol, 1.0/stat[1])
 		vol = threshold(vol)
-		Util.mul_img(volf, mask3D)
+		Util.mul_img(vol, mask3D)
 		del mask3D
 		vol = filt_tanl(vol, options.fl, options.aa)
 	# broadcast volume
@@ -2542,9 +2546,9 @@ def do_volume(data, options, mpi_comm):
 def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, log = None, nsoft=2 ):
 
 	from alignment       import Numrinit, prepare_refrings, proj_ali_incore_local
-	from utilities       import get_im, file_type, model_circle, get_input_from_string, get_params_proj, wrap_mpi_gatherv, wrap_mpi_bcast
+	from utilities       import bcast_number_to_all, bcast_EMData_to_all, 	wrap_mpi_gatherv, wrap_mpi_bcast, model_blank
+	from utilities       import get_im, file_type, model_circle, get_input_from_string, get_params_proj, set_params_proj
 	from mpi             import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier, mpi_reduce, MPI_INT, MPI_SUM
-	from mpi             import bcast_number_to_all, bcast_EMData_to_all
 	from projection      import prep_vol
 	from statistics      import hist_list
 	from applications    import MPI_start_end
@@ -2579,7 +2583,7 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 
 	number_of_proc = mpi_comm_size(mpi_comm)
 	myid           = mpi_comm_rank(mpi_comm)
-	main_node = 0
+	main_node      = 0
 
 	if myid == main_node:
 		log.add("Start ali3d_multishc_soft")
@@ -2616,10 +2620,12 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 	else:
 		nx = 0
 		onx = 0
-
-	nx = bcast_number_to_all(nx, source_node = main_node)
+	nx  = bcast_number_to_all(nx, source_node = main_node)
 	onx = bcast_number_to_all(onx, source_node = main_node)
 	if(myid != main_node):  vol = model_blank(nx, nx, nx)
+	mpi_barrier(mpi_comm)
+	from utilities import info
+	print " BA  ",myid,onx,nx,info(vol)
 	bcast_EMData_to_all(vol, myid, main_node)
 
 
@@ -2806,7 +2812,7 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 			#=========================================================================
 
 			#=========================================================================
-			if(total_iter%1 == 0 or terminate):
+			if(total_iter%1 == 5 or terminate):
 				# gather parameters
 				params = []
 				previousmax = []
