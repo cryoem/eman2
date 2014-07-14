@@ -1775,7 +1775,7 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 		#exit()
 		ad1,ad2,ad3,ad4 = table_stat(adefocus)
 		reject = []
-		thr = 3*sqrt(ad3)
+		thr = 3*sqrt(ad2)
 		for i in xrange(len(adefocus)):
 			if(abs(adefocus[i]-ad1)>thr):
 				print adefocus[i],ad1,thr

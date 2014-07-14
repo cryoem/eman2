@@ -2545,7 +2545,7 @@ def do_volume(data, options, mpi_comm):
 #  Add reduction
 def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, log = None, nsoft=2 ):
 
-	from alignment       import Numrinit, prepare_refrings, proj_ali_incore_local
+	from alignment       import Numrinit, prepare_refrings, proj_ali_incore_local, shc
 	from utilities       import bcast_number_to_all, bcast_EMData_to_all, 	wrap_mpi_gatherv, wrap_mpi_bcast, model_blank
 	from utilities       import get_im, file_type, model_circle, get_input_from_string, get_params_proj, set_params_proj
 	from mpi             import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier, mpi_reduce, MPI_INT, MPI_SUM
@@ -2555,7 +2555,7 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 	from filter          import filt_ctf
 	from global_def      import Util
 	from fundamentals    import resample
-	from multi_shc       import do_volume
+	from multi_shc       import do_volume, shc_multi
 	from EMAN2           import EMUtil, EMData
 	import types
 	from time            import time
@@ -2752,8 +2752,9 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 					peak, pixer[im], number_of_checked_refs, iref = \
 						shc(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], an[N_step], sym, finfo)
 					#peak, pixer[im] = proj_ali_incore(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], finfo)
-				else:            peak, pixer[im], checked_refs, number_of_peaks = shc_multi(data[im], refrings, numr, \
-																			xrng[N_step], yrng[N_step], step[N_step], an[N_step], nsoft, sym)
+				else:
+					peak, pixer[im], checked_refs, number_of_peaks = shc_multi(data[im], refrings, numr, \
+												xrng[N_step], yrng[N_step], step[N_step], an[N_step], nsoft, sym)
 				#number_of_checked_refs += checked_refs
 				par_r[number_of_peaks] += 1
 				
