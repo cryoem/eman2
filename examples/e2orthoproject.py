@@ -198,16 +198,17 @@ def main():
 			projectiondirections.update({ tag:t })
 			k+=1
 	
-	elif options.angles:
-		angles=options.angles
-		angles=angles.replace(',',' ')
-		angles=angles.split()
-		t=Transform({'type':'eman','az':float(angles[0]),'alt':float(angles[1]),'phi':float(angles[2])})
+	#elif options.angles:
+	#	angles=options.angles
+	#	angles=angles.replace(',',' ')
+	#	angles=angles.split()
+	#	t=Transform({'type':'eman','az':float(angles[0]),'alt':float(angles[1]),'phi':float(angles[2])})
 		
-		tag = 'p' + 'az' + str(int(round(float( angles[0] )))) + 'alt' + str(int(round(float( angles[1] ))))  + 'phi' + str(int(round(float( angles[2] ))))  
-		if options.tag:
-			tag = options.tag
-		projectiondirections.update({ tag:t })
+	#	tag = 'p' + 'az' + str(int(round(float( angles[0] )))) + 'alt' + str(int(round(float( angles[1] ))))  + 'phi' + str(int(round(float( angles[2] ))))  
+	#	if options.tag:
+	#		tag = options.tag
+		
+		#projectiondirections.update({ tag:t })
 		
 	
 	'''
@@ -219,7 +220,7 @@ def main():
 	path = rootpath + '/' + options.path
 	
 	for model in models:
-		n = EMUtil.get_image_count(model)
+		n = EMUtil.get_image_count(model)	
 		
 		newpath = path
 		if len(models) > 1:
@@ -243,7 +244,14 @@ def main():
 					if options.onlyz:
 						submodelname = subpath + '/' + model.split('.hdf')[0] + '_Zprjs.hdf'
 		
-			submodel = EMData(model,i)	
+			submodel = EMData(model,i)
+			if options.angles:
+				angles = options.angles
+				angles = angles.replace(',',' ')
+				angles = angles.split()
+				t=Transform({'type':'eman','az':float(angles[0]),'alt':float(angles[1]),'phi':float(angles[2])})
+			
+				submodel.transform(t)
 			
 			apix = submodel['apix_x']
 			'''
