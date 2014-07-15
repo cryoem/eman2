@@ -1106,8 +1106,13 @@ double PointArray::sim_potential() {
 	else {
 		for (uint i=0; i<n; i++) ret+=sim_pointpotential(adist[i],aang[i],adihed[i]);
 	}
-	if (std::isnan(ret/n))
-		printf("%f             %f\n",ret,n);
+
+#ifdef _WIN32
+//	if (_isnan(ret/n))
+#else
+//	if (std::isnan(ret/n))
+#endif
+//		printf("%f             %f\n",ret,n);
 	
 	return ret/n;
 }
@@ -1518,7 +1523,7 @@ void PointArray::sim_add_point_one() {
 	int i;
 	double* pa2data=(double *) calloc(4 * (n+1), sizeof(double));
 	for (int ii=0; ii<n+1; ii++) {
-		if(ii!=ipt and ii!=ipt+1){
+		if(ii!=ipt && ii!=ipt+1){
 			if(ii<ipt)
 				i=ii;
 			else	// shift the points after the adding position
@@ -1672,7 +1677,7 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 			// for each point, search the following 50 points, find the longest rod
 			for (int len=5; len<50; len++){
 				int pos=i+len;
-				if (pos>=n or pos<0)	break;
+				if (pos>=n || pos<0)	break;
 				vector<float> eigvec=do_pca(i,pos); // align the points 
 				vector<float> pts((len+1)*3);
 				float mean[3];
@@ -1696,7 +1701,7 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 			nd=do_filter(nd,ft,7);
 			// length of the first rod
 			for (int j=7; j<49; j++){
-				if(nd[j]>nd[j-1] and nd[j]>nd[j+1]){
+				if(nd[j]>nd[j-1] && nd[j]>nd[j+1]){
 					hlxlen[i]=j-6;
 					break;
 				}
@@ -1756,7 +1761,7 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 			change=0;
 			for (uint j=i+1; j<helix.size()/2; j++){
 				if(helix[j*2]==0) continue;
-				if(helix[j*2]-2<helix[i*2+1] and helix[j*2+1]+2>helix[i*2]){
+				if(helix[j*2]-2<helix[i*2+1] && helix[j*2+1]+2>helix[i*2]){
 					helix[i*2]=(helix[i*2]<helix[j*2])?helix[i*2]:helix[j*2];
 					helix[i*2+1]=(helix[i*2+1]>helix[j*2+1])?helix[i*2+1]:helix[j*2+1];
 					helix[j*2]=0;
@@ -1927,7 +1932,7 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 				vector<double> pts=construct_helix(start,end,bestphs,score,dir);
 				int lendiff=end-start-pts.size()/3-2;
 				printf("%d\t",dir);
-				if (pts.size()/3-2>9 and lendiff>-5){
+				if (pts.size()/3-2>9 && lendiff>-5){
 					
 					hlxid.push_back(finalhlx.size()/3+1);
 					printf("%d\t",finalhlx.size()/3+1);
@@ -2098,7 +2103,7 @@ void PointArray::remove_helix_from_map(EMData *m, vector<float> hlxid){
 					float l=dp.length();
 					float d=((p0-p1).cross(p0-p2)).length()/l;
 					float t=-(p1-p0).dot(p2-p1)/(l*l);
-					if (d<5 and t>0 and t<1){
+					if (d<5 && t>0 && t<1){
 						inhlx=true;
 						break;
 					}
