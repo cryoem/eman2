@@ -151,7 +151,7 @@ vector<EMData *> ShapeAnalyzer::analyze() {
 				mx->set_value_at(0,1,mx->get_value_at(0,0)+v*abs(xx));
 				mx->set_value_at(1,1,mx->get_value_at(1,0)+v*abs(yy));
 				mx->set_value_at(2,1,mx->get_value_at(2,0)+v*abs(zz));
-				mx->set_value_at(3,1,mx->get_value_at(3,0)+v*sqrt(xx*xx+yy*yy+zz*zz));
+				mx->set_value_at(3,1,mx->get_value_at(3,0)+v*(float)sqrt((float)(xx*xx+yy*yy+zz*zz)));
 			}
 		}
 	}
