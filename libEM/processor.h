@@ -1520,6 +1520,43 @@ The basic design of EMAN Processors: <br>\
 			}
 	};
 
+	/**f(x) = x if x <= maxval; f(x) = 0 if x > maxval
+	 * @param maxval
+	 */
+	class AboveToZeroProcessor:public RealPixelProcessor
+	{
+	public:
+		string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new AboveToZeroProcessor();
+		}
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("maxval", EMObject::FLOAT, "Everything above this value is set to zero");
+			return d;
+		}
+		
+		string get_desc() const
+		{
+			return "f(x) = x if x <= maxval; f(x) = 0 if x > maxval.";
+		}
+		
+		static const string NAME;
+		
+	protected:
+		inline void process_pixel(float *x) const
+		{
+			if (*x > value) {
+				*x = 0;
+			}
+		}
+	};
+	
 	/**Rotate by 180 using pixel swapping, works for 2D only
 	 * @author David Woolford
 	 * @date March 21, 2014

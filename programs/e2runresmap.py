@@ -48,6 +48,7 @@ optionList = pyemtbx.options.get_optionlist(sys.argv[1:])
 # Create the E2ResMap directory structure if it does not exist
 i = 1
 found = 1
+mask=False
 while found == 1:
 	if i < 10:
 		res_run = '0' + str(i)
@@ -94,6 +95,7 @@ if float(options.res_max) != 0.0:
 	s = s + " --maxRes=" + str(options.res_max)
 if mask:
 	s = s + " --maskVol=" + E2RES + "/mask.mrc"
+s = s + ">" + E2RES + "/resmap_output_text.txt"
 print s
 call(s,shell=True)
 

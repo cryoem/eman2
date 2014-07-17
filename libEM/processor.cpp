@@ -91,6 +91,7 @@ const string ValuePowProcessor::NAME = "math.pow";
 const string ValueSquaredProcessor::NAME = "math.squared";
 const string ValueSqrtProcessor::NAME = "math.sqrt";
 const string ToZeroProcessor::NAME = "threshold.belowtozero";
+const string AboveToZeroProcessor::NAME="threshold.abovetozero";
 const string Rotate180Processor::NAME = "math.rotate.180";
 const string TransformProcessor::NAME = "xform";
 const string IntTranslateProcessor::NAME = "xform.translate.int";
@@ -300,6 +301,7 @@ template <> Factory < Processor >::Factory()
 	force_add<NSigmaClampingProcessor>();
 
 	force_add<ToZeroProcessor>();
+	force_add<AboveToZeroProcessor>();
 	force_add<ToMinvalProcessor>();
 	force_add<CutToZeroProcessor>();
 	force_add<BinarizeProcessor>();
