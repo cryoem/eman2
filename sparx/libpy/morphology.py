@@ -1494,12 +1494,12 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 			os.mkdir(outpartres)
 		mpi_barrier(MPI_COMM_WORLD)
 	else:
+		myid = 0
+		ncpu = 1
 		if os.path.exists(outpwrot) or os.path.exists(outpartres):
 			ERROR('Output directory exists, please change the name and restart the program', "cter", 1, myid)
 		os.mkdir(outpwrot)
 		os.mkdir(outpartres)
-		myid = 0
-		ncpu = 1
 
 	if stack == None:
 		if micsuffix[0] == '.': micsuffix = micsuffix[1:]
@@ -1805,10 +1805,15 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 			stdavad1 = np.sqrt(kboot*max(0.0,ad2))
 			stdavbd1 = np.sqrt(kboot*max(0.0,bd2))
 			cd2 *= np.sqrt(kboot)
-			#  SANITY CHECK, do not produce anything if astigmatism amplitude larger than defocus or defocus is negative.
-			if(bd1 >= ad1 or ad1 < 0.0):
+			#  SANITY CHECK, do not produce anything if defocus abd astigmatism amplitude are out of whack
+			try:
+				pwrot2 = rotavg_ctf( model_blank(wn, wn), ad1, Cs, voltage, Pixel_size, 0.0, wgh, bd1, cd1)
+				willdo = True
+			except:
 				print "  Astigmatism amplitude larger than defocus or defocus is negative :",namics[ifi]
-			else:
+				willdo = False
+
+			if(willdo):
 				#  Estimate the point at which (sum_errordz ctf_1(dz+errordz))^2 falls to 0.5
 				import random as rqt
 
@@ -2385,8 +2390,8 @@ def fastigmatism3(amp, data):
 	cnx = data[2]//2+1
 	#qt = 0.5*nx**2
 	pc = ctf2_rimg(data[2], generate_ctf([data[3], data[4], data[5], data[6], 0.0, data[7], amp, 0.0]) )
-	st = Util.infomask(pc, data[9], True)
-	Util.mul_scalar(pc, 1.0/st[0])
+	#st = Util.infomask(pc, data[9], True)
+	#∆Util.mul_scalar(pc, 1.0/st[0])
 	ang, sxs, sys, mirror, peak = ornq(pc, data[0], 0.0, 0.0, 1, "H", data[1], cnx, cnx)
 	#print  ang, sxs, sys, mirror, peak
 	#exit()

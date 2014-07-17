@@ -2604,11 +2604,6 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 	last_ring   = int(ou)
 	max_iter    = int(ali3d_options.maxit)
 	center      = int(center)
-	if(shrinkage < 1.0):
-		first_ring = max(1, int(first_ring*shrinkage+0.5))
-		last_ring  = int(last_ring*shrinkage+0.5)
-		ali3d_options.ou = last_ring
-		ali3d_options.ir = first_ring
 		
 
 	if( type(ref_vol) is types.StringType ):
@@ -2630,11 +2625,15 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 		onx = 0
 	nx  = bcast_number_to_all(nx, source_node = main_node)
 	onx = bcast_number_to_all(onx, source_node = main_node)
+	if last_ring < 0:	last_ring = int(onx/2) - 2
+	if(shrinkage < 1.0):
+		first_ring = max(1, int(first_ring*shrinkage))
+		last_ring  = int(last_ring*shrinkage)
+		ali3d_options.ou = last_ring
+		ali3d_options.ir = first_ring
 	if(myid != main_node):  vol = model_blank(nx, nx, nx)
 	mpi_barrier(mpi_comm)
 	bcast_EMData_to_all(vol, myid, main_node)
-
-	if last_ring < 0:	last_ring = int(nx/2) - 2
 
 	numr	= Numrinit(first_ring, last_ring, rstep, "F")
 	mask2D  = model_circle(last_ring,nx,nx) - model_circle(first_ring,nx,nx)
@@ -2665,6 +2664,7 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 	total_nima = wrap_mpi_bcast(total_nima, main_node, mpi_comm)
 	list_of_particles = wrap_mpi_bcast(list_of_particles, main_node, mpi_comm)
 	if myid == main_node:
+		log.add("  %5d     %5d     %5d     %5d     %6.3f\n"%(nx, onx, first_ring, last_ring, shrinkage))
 		particle_ids = [0]*total_nima
 		for i in xrange(total_nima):  particle_ids[i] = list_of_particles[i]
 	image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
@@ -2746,17 +2746,17 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 			# alignment
 			#number_of_checked_refs = 0
 			par_r = [0]*(nsoft+1)
-			if(nsoft == 1):  number_of_peaks = 1
 			for im in xrange(nima):
 				if(nsoft == 1):
 					peak, pixer[im], number_of_checked_refs, iref = \
-						shc(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], an[N_step], sym, finfo)
-					#peak, pixer[im] = proj_ali_incore(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], finfo)
+						shc(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], an[N_step], sym)
+					if(pixer[im] == 0.0):  par_r[0] += 1
+					#peak, pixer[im] = proj_ali_incore(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step])
 				else:
 					peak, pixer[im], checked_refs, number_of_peaks = shc_multi(data[im], refrings, numr, \
 												xrng[N_step], yrng[N_step], step[N_step], an[N_step], nsoft, sym)
-				#number_of_checked_refs += checked_refs
-				par_r[number_of_peaks] += 1
+					par_r[number_of_peaks] += 1
+					#number_of_checked_refs += checked_refs
 				
 			#=========================================================================
 			mpi_barrier(mpi_comm)
@@ -2768,17 +2768,16 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 			#=========================================================================
 			#output pixel errors, check stop criterion
 			all_pixer = wrap_mpi_gatherv(pixer, 0, mpi_comm)
-			if(nsoft > 1):  par_r = mpi_reduce(par_r, nsoft+1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
+			par_r = mpi_reduce(par_r, nsoft+1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
 			#total_checked_refs = wrap_mpi_gatherv([number_of_checked_refs], main_node, mpi_comm)
 			terminate = 0
 			if myid == main_node:
 				#total_checked_refs = sum(total_checked_refs)
-				if(nsoft > 1):
-					log.add("=========== Number of better peaks found ==============")
-					for lhx in xrange(nsoft+1):
-						msg = "            %5d     %7d"%(lhx, par_r[lhx])
-						log.add(msg)
-					log.add("_______________________________________________________")
+				log.add("=========== Number of better peaks found ==============")
+				for lhx in xrange(nsoft+1):
+					msg = "            %5d     %7d"%(lhx, par_r[lhx])
+					log.add(msg)
+				log.add("_______________________________________________________")
 				saturatecrit = 0.95
 				changes = par_r[0]/float(total_nima)
 				if(  changes > saturatecrit ):
@@ -2894,6 +2893,13 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 					i+=1
 
 
+			if terminate:
+				# gather parameters
+				params = []
+				for im in data:
+					t = get_params_proj(im)
+					params.append( [t[0], t[1], t[2], t[3]/shrinkage, t[4]/shrinkage] )
+				params = wrap_mpi_gatherv(params, main_node, mpi_comm)
 			if( terminate and (myid == main_node) ):
 				if( type(stack) is types.StringType ):
 					from EMAN2 import Vec2f, Transform
@@ -2909,7 +2915,10 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 
 
 	if myid == main_node:
+		from utilities import write_text_file
+		write_text_file([1],"finishedok")
 		log.add("Finish ali3d_base")
+		
 		return #params, vol, previousmax, par_r
 	else:
 		return #None, None, None, None  # results for the other processes
