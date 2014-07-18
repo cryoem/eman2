@@ -524,12 +524,13 @@ def main():
 
 				options.path = groupDIR
 
-				print "I will start ALL vs ALL on group number", i+1
+				print "\n************************************\n(e2spt_hac.py) I will start ALL vs ALL on group number", i+1
 				print "For which options.input is", options.input
+				print "************************************"
 
 			mm = 0
 			for jj in xrange(bottom_range,top_range):
-				print "I am rewritting the spt_ptcl_indxs header parameter for every particle in the stack"
+				#print "I am rewritting the spt_ptcl_indxs header parameter for every particle in the stack"
 				a = EMData(entirestack,jj)
 				a['spt_ptcl_indxs'] = mm
 	
@@ -537,15 +538,15 @@ def main():
 				
 				for i in params:
 					if 'sptID' in i:
-						print "I'm resetting THIS parameter", i
+						#print "I'm resetting THIS parameter", i
 						a[str(i)] = ''
 						
 					if 'spt_ID' in i:
-						print "I'm resetting THIS parameter", i
+						#print "I'm resetting THIS parameter", i
 						a[str(i)] = ''						
 						
 						
-				print "The type of a should be EMData", type(a)
+				#print "The type of a should be EMData", type(a)
 				a.write_image(groupPATH,mm)
 
 				mm += 1
@@ -553,7 +554,7 @@ def main():
 			options.input = groupPATH
 		
 		#print "\nTHe len of options is ", len(options)
-		print "\n\nAnd options are", options
+		#print "\n\nAnd options are", options
 		allvsall(options)
 		if options.exclusive_class_min:
 			exclusive_classes(options)
@@ -632,11 +633,8 @@ def exclusive_classes(options):
 def allvsall(options):
 	from operator import itemgetter	
 
-	print "These are path and input received in allvsall", options.path, options.input
-	
-	print "With these many particles in it", EMUtil.get_image_count(options.input)
-	
-	print "\nI will load the header of a particle."
+	#print "These are path and input received in allvsall", options.path, options.input
+	#print "With these many particles in it", EMUtil.get_image_count(options.input)
 	
 	hdr = EMData(options.input,0,True)
 	nx = int(hdr["nx"])
@@ -646,7 +644,6 @@ def allvsall(options):
 		print "ERROR, input volumes are not cubes"
 		sys.exit(1)
 	
-	print "(e2spt_hac.py)(allvsall functiomn) Counting number of particles"
 	nptcl = EMUtil.get_image_count(options.input)
 	if nptcl<3: 
 		print "ERROR: at least 3 particles are required in the input stack for all vs all. Otherwise, to align 2 particles (one to the other or to a model) use e2spt_classaverage.py"
@@ -659,11 +656,11 @@ def allvsall(options):
 											#{particle_id : [EMData,{index1:totalTransform1, index2:totalTransform2...}]} elements
 											#The totalTransform needs to be calculated for each particle after each round, to avoid multiple interpolations
 	
-	print "Starting the loop"
+	print "\n(e2spt_hac.py) Preparing particle headers"
 	for i in range(nptcl):								#In the first round, all the particles in the input stack are "new" and should have an identity transform associated to them
 		a=EMData(options.input,i)
 		totalt=Transform()
-
+		
 		if 'spt_multiplicity' not in a.get_attr_dict():				#spt_multiplicity keeps track of how many particles were averaged to make any given new particle (set to 1 for the raw data)
 			a['spt_multiplicity']=1
 		elif not a['spt_multiplicity']:
@@ -695,6 +692,10 @@ def allvsall(options):
 		a.write_image(options.input,i)						#Overwrite the raw stack with one that has the appropriate header parameters set to work with e2spt_hac	
 		
 		allptclsRound.update({particletag : [a,{i:totalt}]})			
+		
+		if options.verbose:
+			print "\n ptcl %d/%d done" %( i, nptcl )
+		
 		
 	oldptcls = {}									#'Unused' particles (those that weren't part of any unique-best-pair) join the 'oldptcls' dictionary onto the next round
 	surviving_results = []								#This list stores the results for previous alignment pairs that weren't used, so you don't have to recompute them
@@ -729,8 +730,8 @@ def allvsall(options):
 		if k== 0:
 			newstack =options.input
 		
-		print "\n\n\n\n\n\n\n$$$$$$$$$$$$$$$$$\n$$$$$$$$$$$$$$$$$\nStarting this iteration!", k
-		print "\n\n"
+		print "\n\n==================================\n(e2spt_hca.py) Starting iteration %d / %d " % ( k, options.iter )
+		print "==================================\n\n"
 		
 		nnew = len(newptcls)
 		#if k == (int(options.iter) - 1) or (nnew + len(oldptcls) ) == 1 :
@@ -740,17 +741,18 @@ def allvsall(options):
 		#	#sys.exit()
 			
 		if k == (int(options.iter) - 1) or (nnew + len(oldptcls) ) < 3 :
-			print "This is the final round", k
+			print "\n(e2spt_hac.py) (allvsall) This will be the final round", k
 			if options.saveali:
-				print "You selected ; therefore, I will write the latest state of all particles in the inpust stack."
+				if options.verbose:
+					print "\n(e2spt_hac.py) (allvsall) Saving aligned particles"
 			
 				for key in FinalAliStack:
 					aliptcl = FinalAliStack[key]
 					aliptcl.write_image(options.path + '/finalAliStack.hdf',key)
-					print "Wrote this ptcl to final stack", key
+					#print "Wrote this ptcl to final stack", key
 		
 		if nnew + len(oldptcls) == 1:						#Stop the loop if the data has converged and you're left with one final particle (an average of all)
-			print "TERMINATING: There's only one particle left; the algorithm has converged; TERMINATING"
+			print "\n(e2spt_hac.py) (allvsall) TERMINATING: There's only one particle left; the algorithm has converged; TERMINATING"
 			break
 		
 		elif k < int(options.iter):
@@ -761,7 +763,7 @@ def allvsall(options):
 		allptclsRound = {}							
 		
 		
-		print "\nInitialize parallelism"
+		print "\n(e2spt_hac.py) (allvsall) Initializing parallelism"
 		if options.parallel:							# Initialize parallelism if being used
 			from EMAN2PAR import EMTaskCustomer
 			etc=EMTaskCustomer(options.parallel)
@@ -779,7 +781,7 @@ def allvsall(options):
 		jj=0									#Counter to track the number of comparisons (also the number of tasks to parallelize)
 		roundtag = 'round' + str(k).zfill(fillfactor) + '_'			#The round tag needs to change as the iterations/rounds progress
 		
-		print "\n Start all vs all comparisons"
+		#print "\nStart all vs all comparisons"
 		for ptcl1, compare in newptclsmap:
 			for ptcl2 in compare:
 				
@@ -787,7 +789,7 @@ def allvsall(options):
 				particletag = roundtag + str(ptcl2).zfill(fillfactor)
 				
 				#if options.verbose > 2:
-				print "Setting the following comparison: %s vs %s in ALL VS ALL" %(reftag,particletag)
+				print "Setting the following comparison (all vs all amongst new ptcls): %s vs %s in ALL VS ALL" %(reftag,particletag)
 				
 				#def __init__(self,fixedimagestack,imagestack,comparison, ptcl1, ptcl2, p1n, p2n,label,options,transform):
 				
@@ -814,7 +816,7 @@ def allvsall(options):
 				oldtags.update({EMData(options.path + '/oldptclstack.hdf',i,True)['spt_ID'] : i})
 			
 			
-			print "Old tagas are:\n", oldtags
+			#print "Old tagas are:\n", oldtags
 			nnn = 0
 			for refkey,refvalue in newptcls.iteritems():
 				ptcl1 = nnn
@@ -823,7 +825,7 @@ def allvsall(options):
 					ptcl2 = oldtags[particlekey]
 					
 					#if options.verbose > 2:
-					print "Setting the following comparison: %s vs %s in ALL VS ALL" %(refkey,particlekey)
+					print "Setting the following comparison (old vs new ptcls): %s vs %s in ALL VS ALL" %(refkey,particlekey)
 					
 					#task = Align3DTaskAVSA( newstack, options.path + '/oldptclstack.hdf', jj , refkey, particlekey, ptcl1, ptcl2,"Aligning particle round#%d_%d VS particle#%s, in iteration %d" % (k,ptcl1,particlekey.split('_')[0] + str(ptcl2),k),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
 					#options.npeakstorefine,options.align,options.aligncmp,options.falign,options.faligncmp,options.shrink,options.shrinkfine,options.verbose-1)
@@ -841,7 +843,6 @@ def allvsall(options):
 		print "%d tasks queued in iteration %d"%(len(tids),k) 
 		
 		results = get_results(etc,tids,options.verbose)				#Wait for alignments to finish and get results
-		print "\n(e2spt_hac.py)(main) Done fetching results"
 		
 		#results = ret[0]
 		results = results + surviving_results						#The total results to process/analyze includes results (comparisons) from previous rounds that were not used
@@ -889,9 +890,10 @@ def allvsall(options):
 		
 		
 		
-			
+		
+		print "\n(e2spt_hac.py) (allvsall) Results completed for iteration", k	
 		for i in results:
-			if options.verbose > 0:
+			if options.verbose > 8:
 				print "In iteration %d the SORTED results are:", k	
 				print "%s VS %s , score=%f, transform=%s" %(i['ptclA'], i['ptclB'], i['score'], i['xform.align3d'] )
 			
@@ -911,8 +913,9 @@ def allvsall(options):
 			indxB = int( i['ptclB'].split('_')[-1] )
 			
 			compsInfo.append( [thisScore,indxA,indxB] )
-
-			print "\n(e2spt_hac.py, before plotter) Score appended to plot! and its type, and for pair", thisScore, type(thisScore), indxA, indxB
+			
+			if options.verbose > 9 and options.plotccc:
+				print "\n(e2spt_hac.py, before plotter) Score appended to plot! and its type, and for pair", thisScore, type(thisScore), indxA, indxB
 
 			'''
 			Allocate particles in a comparison to a cluster so long as they haven't 
@@ -996,27 +999,20 @@ def allvsall(options):
 		
 		textwriter(plotY, options, plotName.replace('.png','.txt') )
 
-
-		print "\n\n\n\nIn iteration %d, the total number of comparisons in the ranking list, either new or old that survived, is %d" % (k, len(results))
+		if options.verbose:
+			print "\n\n\n\nIn iteration %d, the total number of comparisons in the ranking list, either new or old that survived, is %d" % (k, len(results))
 		
 		tried = set()											#Tracks what particles have "appeared" on the list, whether averaged or not
 		averages = {}											#Stores the new averages; you need a dict different from newptcls because you'll need to 'fetch' data from the previous version of newptcls
 		used = set()											#Tracks what particles WERE actually averaged
 		
 		mm=0												#Counter to track new particles/averages produced and write them to output
-		print "I'm in the averager!!!!!!!!!!!!"
-		
-		
-		
 		
 		
 		
 		roundRawInfoFile = options.path + '/aliInfo_'+ str( k ).zfill( len(str(options.iter)) ) + '.json'
 		
 		roundInfoDict = js_open_dict(roundRawInfoFile) #Write particle orientations to json database.
-		
-		
-		
 		
 		
 		
@@ -1047,7 +1043,8 @@ def allvsall(options):
 			
 			score = round(float(results[z]['score']), 4)
 			
-			print "\n\n\n\n\nSCORE IS", score	
+			if options.verbose:
+				print "\n\n(e2spt_hac.py)The CCC SCORE for comparison %d in iteration %d is %f" %( z, k, score )
 				
 			ptcl1dendoID = allptclsMatrix[k][results[z]['ptclA']][0]['spt_dendoID']				
 			ptcl2dendoID = allptclsMatrix[k][results[z]['ptclB']][0]['spt_dendoID']
