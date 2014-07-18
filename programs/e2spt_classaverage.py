@@ -246,14 +246,16 @@ def main():
 		
 	if options.align:
 		#print "There's options.align", options.align
-		if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align and ('rotate_translate_3d' in options.align or 'rotate_symmetry_3d' in options.align) and 'grid' not in options.align:
-			options.align += ':sym=' + str( options.sym )
+		if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align and 'grid' not in options.align:
+			if 'rotate_translate_3d' in options.align or 'rotate_symmetry_3d' in options.align:
+				options.align += ':sym=' + str( options.sym )
 			#print "And there's sym", options.sym
 			
-		if 'search' not in options.align and 'rotate_translate_3d' in options.align:	
+		if 'search' not in options.align:
+			if 'rotate_translate_3d' in options.align:	
 				options.align += ':search=' + str( options.search )
 			
-		else:
+		elif 'rotate_translate_3d' in options.align:
 			searchA = options.align.split('search=')[-1].split(':')[0]
 			searchdefault = 8
 			
