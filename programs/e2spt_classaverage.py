@@ -250,8 +250,8 @@ def main():
 			options.align += ':sym=' + str( options.sym )
 			#print "And there's sym", options.sym
 			
-		if 'search' not in options.align:		
-			options.align += ':search=' + str( options.search )
+		if 'search' not in options.align and 'rotate_translate_3d' in options.align:	
+				options.align += ':search=' + str( options.search )
 			
 		else:
 			searchA = options.align.split('search=')[-1].split(':')[0]
@@ -325,7 +325,7 @@ def main():
 			
 	#print "\n\nBefore adding search, options.falign is", options.falign, type(options.falign)	
 	if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
-		if 'search' not in options.falign:		
+		if 'search' not in options.falign and 'refine_3d_grid' in options.falign:		
 			options.falign += ':search=' + str( options.searchfine )
 			
 		else:
@@ -471,7 +471,7 @@ def main():
 	'''
 	Store parameters in parameters.txt file inside --path
 	'''
-	writeParameters(options,'e2spt_classaverage.py', 'sptclassavg')
+	cmdwp = writeParameters(options,'e2spt_classaverage.py', 'sptclassavg')
 	
 	
 	
@@ -699,8 +699,19 @@ def main():
 		elif not options.hacref:
 			nptclForRef = len(ptclnums)
 			ref = binaryTreeRef(options,nptclForRef,ptclnums,ic,etc,classize)
+		
 		elif options.hacref:
-			pass
+			elements = cmdwp.split(' ')
+			
+			hacelements = []
+			for ele in elements:
+				if '--output' not in ele and '--ref' not in ele:
+					hacelements.append(ele)
+					
+			cmdhac = ' '.join(hacelements)
+			cmdhac.replace('e2spt_classaverage','e2spt_hac')
+			#cmdhac.replace(
+			#pass
 		
 		
 		
@@ -1061,7 +1072,7 @@ def writeParameters( options, program, tag ):
 	f.writelines(lines)
 	f.close()
 	
-	return
+	return cmd
 
 
 def calcAliStep(options):
