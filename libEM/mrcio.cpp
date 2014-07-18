@@ -75,6 +75,8 @@ void MrcIO::init()
 		return;
 	}
 
+	setbuf (stdout, NULL);
+
 	IOMode rwmode;
 
 	if (rw_mode == WRITE_ONLY) {
@@ -86,23 +88,38 @@ void MrcIO::init()
 
 	int error_type;
 	struct stat status;
+
 	error_type = stat(filename.c_str(), & status);
 	is_new_file = (error_type != 0);
 
 	initialized = true;
+
 //	mrcfile = sfopen(filename, rwmode, &is_new_file);
 	mrcfile = sfopen(filename, rwmode, NULL);
 
-	if (!is_new_file) {
+	string ext = Util::get_filename_ext(filename);
+
+	if (ext != "") {
+		if (ext == "raw"   ||  ext == "RAW") {
+			isFEI = true;
+		}
+
+		if (ext == "mrcs"  ||  ext == "MRCS") {
+			is_stack = true;
+		}
+	}
+
+	if (! is_new_file) {
 		if (fread(&mrch, sizeof(MrcHeader), 1, mrcfile) != 1) {
 			throw ImageReadException(filename, "MRC header");
 		}
 
-		if (!is_valid(&mrch)) {
+		if (! is_valid(&mrch)) {
 			throw ImageReadException(filename, "invalid MRC");
 		}
 
 		is_big_endian = ByteOrder::is_data_big_endian(&mrch.nz);
+
 		if (is_big_endian != ByteOrder::is_host_big_endian()) {
 			swap_header(mrch);
 		}
@@ -111,7 +128,8 @@ void MrcIO::init()
 		// become_host_endian((int *) &mrch.machinestamp, NUM_4BYTES_AFTER_MAP);
 
 		mode_size = get_mode_size(mrch.mode);
-		if(is_complex_mode()) {
+
+		if (is_complex_mode()) {
 			is_ri = 1;
 		}
 
@@ -145,29 +163,19 @@ void MrcIO::init()
 			is_transpose = true;
 		}
 
-		string ext = Util::get_filename_ext(filename);
-
-		if (ext != "") {
-			if (ext == "raw"   ||  ext == "RAW") {
-				isFEI = true;
-			}
-
-			if (ext == "mrcs"  ||  ext == "MRCS") {
-				is_stack = true;
-			}
-		}
-
 		if (is_stack) {
 			stack_size = mrch.nz;
 			mrch.nz = 1;
 		}
 	}
+
 	EXITFUNC;
 }
 
 bool MrcIO::is_image_big_endian()
 {
 	init();
+
 	return is_big_endian;
 }
 
@@ -210,10 +218,13 @@ bool MrcIO::is_valid(const void *first_block, off_t file_size)
 		if (file_size > 0) {
 			off_t file_size1 = (off_t)nx * (off_t)ny * (off_t)nz * (off_t)get_mode_size(mrcmode) +
 				(off_t)sizeof(MrcHeader) + nsymbt;
+
 			if (file_size == file_size1) {
 				return true;
 			}
+
 //			return false;
+
 			LOGWARN("image size check fails, still try to read it...");	// when size doesn't match, print error message instead of make it fail
 		}
 		else {
@@ -226,6 +237,7 @@ bool MrcIO::is_valid(const void *first_block, off_t file_size)
 	}
 
 	EXITFUNC;
+
 	return false;
 }
 
@@ -233,7 +245,7 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 {
 	init();
 
-	if(isFEI) {
+	if (isFEI) {
 		return read_fei_header(dict, image_index, area, is_3d);
 	}
 	else {
@@ -258,7 +270,8 @@ int MrcIO::read_mrc_header(Dict & dict, int image_index, const Region * area, bo
 	check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file, false);
 
 	int xlen = 0, ylen = 0, zlen = 0;
-	EMUtil::get_region_dims(area, mrch.nx, &xlen, mrch.ny, &ylen, mrch.nz, &zlen);
+
+	EMUtil::get_region_dims(area, mrch.nx, & xlen, mrch.ny, & ylen, mrch.nz, & zlen);
 
 	dict["nx"] = xlen;
 	dict["ny"] = ylen;
@@ -303,19 +316,21 @@ int MrcIO::read_mrc_header(Dict & dict, int image_index, const Region * area, bo
 	float apy = mrch.ylen / mrch.my;
 	float apz = mrch.zlen / mrch.mz;
 
-	if(apx>1000 || apx<0.01) {
+	if (apx > 1000 || apx < 0.01) {
 		dict["apix_x"] = 1.0f;
 	}
 	else {
 		dict["apix_x"] = apx;
 	}
-	if(apy>1000 || apy<0.01) {
+
+	if (apy > 1000 || apy < 0.01) {
 		dict["apix_y"] = 1.0f;
 	}
 	else {
 		dict["apix_y"] = apy;
 	}
-	if(apz>1000 || apz<0.01) {
+
+	if (apz > 1000 || apz < 0.01) {
 		dict["apix_z"] = 1.0f;
 	}
 	else {
@@ -357,12 +372,13 @@ int MrcIO::read_mrc_header(Dict & dict, int image_index, const Region * area, bo
 	}
 
 	EMAN1Ctf ctf_;
-	if(read_ctf(ctf_) == 0) {
+
+	if (read_ctf(ctf_) == 0) {
 		vector<float> vctf = ctf_.to_vector();
 		dict["ctf"] = vctf;
 	}
 
-	if(is_transpose) {
+	if (is_transpose) {
 		dict["nx"] = ylen;
 		dict["ny"] = xlen;
 		dict["MRC.nx"] = mrch.ny;
@@ -378,7 +394,8 @@ int MrcIO::read_mrc_header(Dict & dict, int image_index, const Region * area, bo
 	}
 
 	Transform * trans = new Transform();
-	if(is_transpose) {
+
+	if (is_transpose) {
 		trans->set_trans(mrch.nystart, mrch.nxstart, mrch.nzstart);
 		trans->set_rotation(Dict("type", "imagic", "alpha", mrch.alpha, "beta", mrch.beta, "gamma", mrch.gamma));
 	}
@@ -387,16 +404,17 @@ int MrcIO::read_mrc_header(Dict & dict, int image_index, const Region * area, bo
 		trans->set_rotation(Dict("type", "imagic", "alpha", mrch.alpha, "beta", mrch.beta, "gamma", mrch.gamma));
 	}
 	
-	if(zlen<=1) {
+	if (zlen <= 1) {
 		dict["xform.projection"] = trans;
 	}
 	else {
 		dict["xform.align3d"] = trans;
 	}
 
-	if(trans) {delete trans; trans=0;}
+	if (trans) {delete trans; trans = NULL;}
 
 	EXITFUNC;
+
 	return 0;
 }
 
@@ -413,7 +431,8 @@ int MrcIO::read_fei_header(Dict & dict, int image_index, const Region * area, bo
 	check_region(area, FloatSize(feimrch.nx, feimrch.ny, feimrch.nz), is_new_file, false);
 
 	int xlen = 0, ylen = 0, zlen = 0;
-	EMUtil::get_region_dims(area, feimrch.nx, &xlen, feimrch.ny, &ylen, feimrch.nz, &zlen);
+
+	EMUtil::get_region_dims(area, feimrch.nx, & xlen, feimrch.ny, & ylen, feimrch.nz, & zlen);
 
 	dict["nx"] = xlen;
 	dict["ny"] = ylen;
@@ -488,6 +507,7 @@ int MrcIO::read_fei_header(Dict & dict, int image_index, const Region * area, bo
 	dict["FEIMRC.yorg"] = feimrch.yorg;
 
 	dict["FEIMRC.nlabl"] = feimrch.nlabl;
+
 	for (int i = 0; i < feimrch.nlabl; i++) {
 		char label[32];
 		sprintf(label, "MRC.label%d", i);
@@ -497,7 +517,9 @@ int MrcIO::read_fei_header(Dict & dict, int image_index, const Region * area, bo
 	/* Read extended image header by specified image index */
 
 	FeiMrcExtHeader feiexth;
+
 	portable_fseek(mrcfile, sizeof(FeiMrcHeader)+sizeof(FeiMrcExtHeader)*image_index, SEEK_SET);
+
 	if (fread(&feiexth, sizeof(FeiMrcExtHeader), 1, mrcfile) != 1) {
 		throw ImageReadException(filename, "FEI MRC extended header");
 	}
@@ -526,6 +548,7 @@ int MrcIO::read_fei_header(Dict & dict, int image_index, const Region * area, bo
 	// remainder 16 4-byte floats not used
 
 	EXITFUNC;
+
 	return 0;
 }
 
@@ -557,7 +580,9 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 
 	if (area) {
 		check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file);
+
 		EXITFUNC;
+
 		return 0;
 	}
 
@@ -565,20 +590,26 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 	int nx = dict["nx"];
 	int ny = dict["ny"];
 	int nz = dict["nz"];
+
+	bool got_one_image = (nz > 1);
+
 	is_ri =  dict["is_complex_ri"];
 
 	bool opposite_endian = false;
 
-	if (!is_new_file) {
+	if (! is_new_file) {
 		if (is_big_endian != ByteOrder::is_host_big_endian()) {
 			opposite_endian = true;
 		}
+
 #if 0
 		if (new_mode != mrch.mode) {
 			LOGERR("cannot write to different mode file %s", filename.c_str());
+
 			return 1;
 		}
 #endif
+
 		portable_fseek(mrcfile, 0, SEEK_SET);
 	}
 	else {
@@ -589,30 +620,32 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 		mrch.nxstart = mrch.nystart = mrch.nzstart = 0;
 	}
 
-	if(nz<=1 && dict.has_key("xform.projection") && !dict.has_key("UCSF.chimera")) {
+	if (nz <= 1 && dict.has_key("xform.projection") && ! dict.has_key("UCSF.chimera")) {
 		Transform * t = dict["xform.projection"];
 		Dict d = t->get_params("imagic");
-		mrch.alpha = d["alpha"];
-		mrch.beta = d["beta"];
-		mrch.gamma = d["gamma"];
+		mrch.alpha   = d["alpha"];
+		mrch.beta    = d["beta"];
+		mrch.gamma   = d["gamma"];
 		mrch.xorigin = d["tx"];
 		mrch.yorigin = d["ty"];
 		mrch.zorigin = d["tz"];
-		if(t) {delete t; t=0;}
+
+		if (t) {delete t; t = NULL;}
 	}
-	else if(nz>1 && dict.has_key("xform.align3d") && !dict.has_key("UCSF.chimera")) {
+	else if (nz > 1 && dict.has_key("xform.align3d") && ! dict.has_key("UCSF.chimera")) {
 		Transform * t = dict["xform.align3d"];
 		Dict d = t->get_params("imagic");
-		mrch.alpha = d["alpha"];
-		mrch.beta = d["beta"];
-		mrch.gamma = d["gamma"];
+		mrch.alpha   = d["alpha"];
+		mrch.beta    = d["beta"];
+		mrch.gamma   = d["gamma"];
 		mrch.xorigin = d["tx"];
 		mrch.yorigin = d["ty"];
 		mrch.zorigin = d["tz"];
-		if(t) {delete t; t=0;}
+
+		if (t) {delete t; t = NULL;}
 	}
 
-	if(dict.has_key("origin_x") && dict.has_key("origin_y") && dict.has_key("origin_z")){
+	if (dict.has_key("origin_x") && dict.has_key("origin_y") && dict.has_key("origin_z")){
 		mrch.xorigin = (float)dict["origin_x"];
 		mrch.yorigin = (float)dict["origin_y"];
 
@@ -630,17 +663,20 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 
 	for (int i = 0; i < MRC_NUM_LABELS; i++) {
 		char label[32];
+
 #ifdef _WIN32
 		_snprintf(label,31, "MRC.label%d", i);
 #else
-		snprintf(label,31, "MRC.label%d", i);
+		 snprintf(label,31, "MRC.label%d", i);
 #endif	// _WIN32
+
 		if (dict.has_key(label)) {
 #ifdef _WIN32
 			_snprintf(&mrch.labels[i][0],80, "%s", (const char *) dict[label]);
 #else
-			snprintf(&mrch.labels[i][0],80, "%s", (const char *) dict[label]);
+			 snprintf(&mrch.labels[i][0],80, "%s", (const char *) dict[label]);
 #endif	// _WIN32
+
 			mrch.nlabels = i + 1;
 		}
 	}
@@ -649,7 +685,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 #ifdef _WIN32
 		_snprintf(&mrch.labels[mrch.nlabels][0],79, "EMAN %s", Util::get_time_label().c_str());
 #else
-		snprintf(&mrch.labels[mrch.nlabels][0],79, "EMAN %s", Util::get_time_label().c_str());
+		 snprintf(&mrch.labels[mrch.nlabels][0],79, "EMAN %s", Util::get_time_label().c_str());
 #endif	// _WIN32
 		mrch.nlabels++;
 	}
@@ -663,16 +699,25 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 	else {
 		mrch.nx = nx;
 	}
+
 	mrch.ny = ny;
 
 	if (is_stack) {
-		if (is_new_file) {
-			stack_size = 1;
-			image_index = stack_size - 1;
+		if (got_one_image) {
+			stack_size = nz;
+			image_index = 0;
 		}
 		else if (append) {
+			if (is_new_file) {
+				stack_size = 0;
+			}
+
 			stack_size++;
 			image_index = stack_size - 1;
+		}
+		else if (is_new_file) {
+			stack_size = nz;
+			image_index = 0;
 		}
 		else if (image_index >= stack_size) {
 			stack_size = image_index + 1;
@@ -733,26 +778,28 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 	mrch.ylen = mrch.my * (float) dict["apix_y"];
 	mrch.zlen = mrch.mz * (float) dict["apix_z"];
 
-	if(dict.has_key("MRC.nxstart")) {
+	if (dict.has_key("MRC.nxstart")) {
 		mrch.nxstart = dict["MRC.nxstart"];
 	}
 	else {
 		mrch.nxstart = -nx / 2;
 	}
-	if(dict.has_key("MRC.nystart")) {
+
+	if (dict.has_key("MRC.nystart")) {
 		mrch.nystart = dict["MRC.nystart"];
 	}
 	else {
 		mrch.nystart = -ny / 2;
 	}
-	if(dict.has_key("MRC.nzstart")) {
+
+	if (dict.has_key("MRC.nzstart")) {
 		mrch.nzstart = dict["MRC.nzstart"];
 	}
 	else {
 		mrch.nzstart = -nz / 2;
 	}
 
-	strncpy(mrch.map,"MAP ",4);
+	strncpy(mrch.map, "MAP ", 4);
 	mrch.machinestamp = generate_machine_stamp();
 
 	MrcHeader mrch2 = mrch;
@@ -768,10 +815,6 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 	mode_size = get_mode_size(mrch.mode);
 	is_new_file = false;
 
-	if (is_stack) {
-		mrch.nz = 1;
-	}
-
 	// Do not write ctf to mrc header in EMAN2
 
 //	if( dict.has_key("ctf") ) {
@@ -782,6 +825,7 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 //	}
 
 	EXITFUNC;
+
 	return 0;
 }
 
@@ -790,31 +834,32 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 	ENTERFUNC;
 
 	if (! (isFEI || is_stack)) {
-		//single image format, index can only be zero
+		// single image format, index can only be zero
 
 		image_index = 0;
 	}
 
 	if (is_transpose && area != 0) {
 		printf("Warning: This image dimension is in (y,x,z), "
-			"region I/O not supported, return the whole image instead.");
+				"region I/O not supported, return the whole image instead.");
 	}
 
 	check_read_access(image_index, rdata);
 
 	if (area && is_complex_mode()) {
 		LOGERR("Error: cannot read a region of a complex image.");
+
 		return 1;
 	}
 
-	unsigned char *cdata = (unsigned char *) rdata;
-	short *sdata = (short *) rdata;
-	unsigned short *usdata = (unsigned short *) rdata;
+	unsigned char *  cdata  = (unsigned char *)  rdata;
+	short *          sdata  = (short *)          rdata;
+	unsigned short * usdata = (unsigned short *) rdata;
 
 	size_t size = 0;
 	int xlen = 0, ylen = 0, zlen = 0;
 
-	if(isFEI) {	// FEI extended MRC
+	if (isFEI) {	// FEI extended MRC
 		check_region(area, FloatSize(feimrch.nx, feimrch.ny, feimrch.nz), is_new_file, false);
 		portable_fseek(mrcfile, sizeof(MrcHeader)+feimrch.next, SEEK_SET);
 
@@ -868,16 +913,21 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 		}
 	}
 
-	if(is_transpose) {
+	if (is_transpose) {
 		transpose(rdata, xlen, ylen, zlen);
 	}
 
 	if (is_complex_mode()) {
-		if(!is_ri) Util::ap2ri(rdata, size);
+		if (! is_ri) {
+			Util::ap2ri(rdata, size);
+		}
+
 		Util::flip_complex_phase(rdata, size);
 		Util::rotate_phase_origin(rdata, xlen, ylen, zlen);
 	}
+
 	EXITFUNC;
+
 	return 0;
 }
 
@@ -902,7 +952,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 
 	int nx, ny, nz;
 
-	if (!area) {
+	if (! area) {
 		nx = mrch.nx;
 		ny = mrch.ny;
 		nz = mrch.nz;
@@ -913,7 +963,9 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 		nz = area->get_depth();
 	}
 
-	if (is_stack) {
+	bool got_one_image = (nz > 1);
+
+	if (is_stack  &&  ! got_one_image) {
 		nz = 1;
 	}
 
@@ -921,17 +973,19 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 
 	if (is_complex_mode()) {
 		nx *= 2;
-		if (!is_ri) {
+
+		if (! is_ri) {
 			Util::ap2ri(data, size);
 			is_ri = 1;
 		}
+
 		Util::flip_complex_phase(data, size);
 		Util::rotate_phase_origin(data, nx, ny, nz);
 	}
 
 	portable_fseek(mrcfile, sizeof(MrcHeader), SEEK_SET);
 
-	if ( (is_big_endian != ByteOrder::is_host_big_endian()) || !use_host_endian) {
+	if ((is_big_endian != ByteOrder::is_host_big_endian()) || ! use_host_endian) {
 		if (mrch.mode != MRC_UCHAR) {
 			if (mode_size == sizeof(short)) {
 				ByteOrder::swap_bytes((short*) data, size);
@@ -941,6 +995,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 			}
 		}
 	}
+
 	mode_size = get_mode_size(mrch.mode);
 
 //	int xlen = 0, ylen = 0, zlen = 0;
@@ -951,6 +1006,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 
 	float rendermin = 0.0f;
 	float rendermax = 0.0f;
+
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, nz);
 
 	unsigned char  *  cdata  = NULL;
@@ -961,14 +1017,14 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 		cdata = new unsigned char[size];
 
 		for (size_t i = 0; i < size; ++i) {
-			if(data[i] <= rendermin) {
+			if (data[i] <= rendermin) {
 				cdata[i] = 0;
 			}
-			else if(data[i] >= rendermax){
+			else if (data[i] >= rendermax){
 				cdata[i] = UCHAR_MAX;
 			}
 			else {
-				cdata[i]=(unsigned char)((data[i]-rendermin)/(rendermax-rendermin)*UCHAR_MAX);
+				cdata[i] = (unsigned char)((data[i]-rendermin)/(rendermax-rendermin)*UCHAR_MAX);
 			}
 		}
 
@@ -980,14 +1036,14 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 		sdata = new short[size];
 
 		for (size_t i = 0; i < size; ++i) {
-			if(data[i] <= rendermin) {
+			if (data[i] <= rendermin) {
 				sdata[i] = SHRT_MIN;
 			}
-			else if(data[i] >= rendermax) {
+			else if (data[i] >= rendermax) {
 				sdata[i] = SHRT_MAX;
 			}
 			else {
-				sdata[i]=(short)(((data[i]-rendermin)/(rendermax-rendermin))*(SHRT_MAX-SHRT_MIN) - SHRT_MAX);
+				sdata[i] = (short)(((data[i]-rendermin)/(rendermax-rendermin))*(SHRT_MAX-SHRT_MIN) - SHRT_MAX);
 			}
 		}
 
@@ -999,14 +1055,14 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 		usdata = new unsigned short[size];
 
 		for (size_t i = 0; i < size; ++i) {
-			if(data[i] <= rendermin) {
+			if (data[i] <= rendermin) {
 				usdata[i] = 0;
 			}
-			else if(data[i] >= rendermax) {
+			else if (data[i] >= rendermax) {
 				usdata[i] = USHRT_MAX;
 			}
 			else {
-				usdata[i]=(unsigned short)((data[i]-rendermin)/(rendermax-rendermin)*USHRT_MAX);
+				usdata[i] = (unsigned short)((data[i]-rendermin)/(rendermax-rendermin)*USHRT_MAX);
 			}
 		}
 
@@ -1030,22 +1086,25 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 	int row_size = nx * get_mode_size(mrch.mode);
 	int sec_size = nx * ny;
 
-	unsigned char *cbuf = new unsigned char[row_size];
-	unsigned short *sbuf = (unsigned short *) cbuf;
+	unsigned char *  cbuf = new unsigned char[row_size];
+	unsigned short * sbuf = (unsigned short *) cbuf;
 
 	for (int i = 0; i < nz; i++) {
 		int i2 = i * sec_size;
+
 		for (int j = 0; j < ny; j++) {
 			int k = i2 + j * nx;
-			void *pbuf = 0;
+			void * pbuf = 0;
 
 			switch (mrch.mode) {
 			case MRC_UCHAR:
 				for (int l = 0; l < nx; l++) {
 					cbuf[l] = static_cast < unsigned char >(data[k + l]);
 				}
+
 				pbuf = cbuf;
 				fwrite(cbuf, row_size, 1, mrcfile);
+
 				break;
 
 			case MRC_SHORT:
@@ -1053,33 +1112,39 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 				for (int l = 0; l < nx; l++) {
 					sbuf[l] = static_cast < short >(data[k + l]);
 				}
+
 				pbuf = sbuf;
 				fwrite(sbuf, row_size, 1, mrcfile);
+
 				break;
 
 			case MRC_USHORT:
 				for (int l = 0; l < nx; l++) {
 					sbuf[l] = static_cast < unsigned short >(data[k + l]);
 				}
+
 				pbuf = sbuf;
 				fwrite(sbuf, row_size, 1, mrcfile);
+
 				break;
 
 			case MRC_FLOAT:
 			case MRC_FLOAT_COMPLEX:
 				pbuf = &data[k];
+
 				break;
 			}
+
 			if (pbuf) {
 				fwrite(pbuf, row_size, 1, mrcfile);
 			}
 		}
 	}
 
-	if(cbuf)
+	if (cbuf)
 	{
-		delete[]cbuf;
-		cbuf = 0;
+		delete [] cbuf;
+		cbuf = NULL;
 	}
 #endif
 
@@ -1211,42 +1276,52 @@ void MrcIO::update_stats(void * data, size_t size)
 bool MrcIO::is_complex_mode()
 {
 	init();
+
 	if (mrch.mode == MRC_SHORT_COMPLEX || mrch.mode == MRC_FLOAT_COMPLEX) {
 		return true;
 	}
+
 	return false;
 }
 
 int MrcIO::read_ctf(Ctf & ctf, int)
 {
 	ENTERFUNC;
-	init();
-	size_t n = strlen(CTF_MAGIC);
 
+	init();
+
+	size_t n = strlen(CTF_MAGIC);
 	int err = 1;
+
 	if (strncmp(&mrch.labels[0][0], CTF_MAGIC, n) == 0) {
 		err = ctf.from_string(string(&mrch.labels[0][n]));
 	}
+
 	EXITFUNC;
+
 	return err;
 }
 
 void MrcIO::write_ctf(const Ctf & ctf, int)
 {
 	ENTERFUNC;
+
 	init();
 
 	string ctf_str = ctf.to_string();
+
 #ifdef _WIN32
 	_snprintf(&mrch.labels[0][0],80, "%s%s", CTF_MAGIC, ctf_str.c_str());
 #else
-	snprintf(&mrch.labels[0][0],80, "%s%s", CTF_MAGIC, ctf_str.c_str());
+	 snprintf(&mrch.labels[0][0],80, "%s%s", CTF_MAGIC, ctf_str.c_str());
 #endif	//_WIN32
+
 	rewind(mrcfile);
 
 	if (fwrite(&mrch, sizeof(MrcHeader), 1, mrcfile) != 1) {
 		throw ImageWriteException(filename, "write CTF info to header failed");
 	}
+
 	EXITFUNC;
 }
 
@@ -1306,6 +1381,7 @@ int MrcIO::to_em_datatype(int m)
 	default:
 		e = EMUtil::EM_UNKNOWN;
 	}
+
 	return e;
 }
 
@@ -1317,6 +1393,7 @@ int MrcIO::to_mrcmode(int e, int is_complex)
 	switch (em_type) {
 	case EMUtil::EM_UCHAR:
 		m = MRC_UCHAR;
+
 		break;
 	case EMUtil::EM_USHORT:
 		if (is_complex) {
@@ -1325,6 +1402,7 @@ int MrcIO::to_mrcmode(int e, int is_complex)
 		else {
 			m = MRC_USHORT;
 		}
+
 		break;
 	case EMUtil::EM_SHORT:
 		if (is_complex) {
@@ -1333,10 +1411,12 @@ int MrcIO::to_mrcmode(int e, int is_complex)
 		else {
 			m = MRC_SHORT;
 		}
+
 		break;
 	case EMUtil::EM_SHORT_COMPLEX:
 	case EMUtil::EM_USHORT_COMPLEX:
 		m = MRC_SHORT_COMPLEX;
+
 		break;
 	case EMUtil::EM_CHAR:
 	case EMUtil::EM_INT:
@@ -1348,9 +1428,11 @@ int MrcIO::to_mrcmode(int e, int is_complex)
 		else {
 			m = MRC_FLOAT;
 		}
+
 		break;
 	case EMUtil::EM_FLOAT_COMPLEX:
 		m = MRC_FLOAT_COMPLEX;
+
 		break;
 	default:
 		m = MRC_FLOAT;
@@ -1376,6 +1458,7 @@ int MrcIO::generate_machine_stamp()
 		p[2] = 0;
 		p[3] = 0;
 	}
+
 	return stamp;
 }
 
@@ -1402,6 +1485,7 @@ int MrcIO::transpose(float *data, int xlen, int ylen, int zlen) const
 				tmp[x*ylen+y] = data[z*xlen*ylen+y*xlen+x];
 			}
 		}
+
 		std::copy(tmp, tmp+xlen*ylen, data+z*xlen*ylen);
 	}
 
