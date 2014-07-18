@@ -72,6 +72,10 @@ def main():
 	parser.add_argument("--unstack",action='store_true',default=False,help="""Must be provided to unstack .hdf, or 3D .st 
 		or .mrc files into individual images. Default is False.""")
 	
+	parser.add_argument("--imodstack",action='store_true',default=False,help="""
+		Supply this option if your goal is to produce an MRCS stack, such as an IMOD tilt 
+		series. NOT necessary to produce an EMAN2 HDF stack""")
+	
 	parser.add_argument("--mirroraxis",type=str,default='',help="""Options are x or y, and the
 		a mirrored copy of the 2-D images will be generated before being put into the tilt series.""")
 	
@@ -143,7 +147,8 @@ def main():
 				if options.input in f:
 					fyle=f
 		
-			if fyle:	
+			if fyle:
+				print "\nprocessing file",fyle
 				outtilt=fyle
 				#Convert from other formats to HDF
 				if '.dm3' in f or '.DM3' in f or '.tif' in f or '.TIF' in f or '.MRC' in f and '.txt' not in f and '.db' not in f and 'mirror' not in f:
@@ -202,7 +207,8 @@ def main():
 					if options.verbose > 9:
 						print "Feedback from cmd was", text
 				else:
-					print "\nThe apix for current tilt is already the same as options.apix"
+					pass
+					#print "\nThe apix for current tilt is already the same as options.apix"
 				#hdfs.append( outtilt )
 		
 				
@@ -222,123 +228,134 @@ def main():
 			
 					#hdfsmirror.append( outtiltmirror )
 		
-		
-				print "Converting to mrc"
-				outtiltmrc = outtilt.replace('.hdf','.mrc')
+				if options.imodstack:
+					print "Converting to mrc"
+					outtiltmrc = outtilt.replace('.hdf','.mrc')
 			
-				#os.system('e2proc2d.py ' + f + ' ' + outtilt + ' --mrc16bit')
+					#os.system('e2proc2d.py ' + f + ' ' + outtilt + ' --mrc16bit')
 		
-				cmdmrc = 'e2proc2d.py ' + outtilt + ' ' + outtiltmrc + ' --mrc16bit' + ' --fixintscaling=sane'
+					cmdmrc = 'e2proc2d.py ' + outtilt + ' ' + outtiltmrc + ' --mrc16bit' + ' --fixintscaling=sane'
 		
-				p = subprocess.Popen( cmdmrc , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-				text = p.communicate()	
-				p.stdout.close()
-				
-				if options.verbose > 9:
-						print "Feedback from cmd was", text
-		
-				#mrcs.append( outtiltmrc )
-		
-		
-				if options.mirroraxis:
-					print "Converting mirror to mrc"
-					outtiltmirrormrc = outtiltmrc.replace('.mrc','_mirrorY.mrc')
-					cmdMirrormrc = 'e2proc2d.py ' + outtiltmrc + ' ' + outtiltmirrormrc + ' --process=xform.mirror:axis=' + options.mirroraxis + ' --mrc16bit' + ' --fixintscaling=sane'
-		
-					p = subprocess.Popen( cmdMirrormrc , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+					p = subprocess.Popen( cmdmrc , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 					text = p.communicate()	
 					p.stdout.close()
+					
+					if options.verbose > 9:
+						print "Feedback from cmd was", text
+		
+					#mrcs.append( outtiltmrc )
+		
+		
+					if options.mirroraxis:
+					
+						print "Converting mirror to mrc"
+						outtiltmirrormrc = outtiltmrc.replace('.mrc','_mirrorY.mrc')
+						cmdMirrormrc = 'e2proc2d.py ' + outtiltmrc + ' ' + outtiltmirrormrc + ' --process=xform.mirror:axis=' + options.mirroraxis + ' --mrc16bit' + ' --fixintscaling=sane'
+		
+						p = subprocess.Popen( cmdMirrormrc , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+						text = p.communicate()	
+						p.stdout.close()
 			
 					#mrcsmirror.append( outtiltmirrormrc )
 				kk+=1
 			else:
 				pass
 				
-		""" THIS PART IS-NONFUNCTIONAL UNTIL MRC WRITING IN EMAN2 IS FIXED	
+		""" THIS PART IS-NONFUNCTIONAL UNTIL MRC WRITING IN EMAN2 IS FIXED"""	
+		
 		print "Sorting stacks"
-		mrcs.sort()	
+		
+		if options.imodstack:
+			mrcs.sort()	
+	
 		hdfs.sort()
 	
 		if options.mirroraxis:
-			mrcsmirror.sort()
+			if options.imodstack:
+				mrcsmirror.sort()
+			
 			hdfsmirror.sort()
 	
 		print "\nI'll write temporary hdf stack!!!!!!!!!!!!!!!"
+		
+		if not options.imodstack:
 
-		for k in range(len(hdfs)):
+			for k in range(len(hdfs)):
 		
-			#cmd = 'e2proc2d.py ' + hdfs[k] + ' tmp.hdf --append'
-			#p = subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-			#text = p.communicate()	
-			#p.stdout.close()
-		
-			print "Inserting image into temporary stack",text
-
-			a=EMData(hdfs[k])
-			print "A is", a
-			print "A is type", type(a)
-			a.write_image('tmp.hdf',-1)
-		
-		
-			#print "cmd is", cmd
-			#a=EMData(hdfs[k])	
-			#a.write_image('tmp.hdf',k)
-		
-			if options.mirroraxis:
-				#print "\nWriting temporary mirror stack"
-				#cmdmirror = 'e2proc2d.py ' + hdfsmirror[k] + ' tmpmirror.hdf --append'
-			
-				#print "cmdmirror is",cmdmirror
-				#p = subprocess.Popen( cmdmirror, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+				#cmd = 'e2proc2d.py ' + hdfs[k] + ' tmp.hdf --append'
+				#p = subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 				#text = p.communicate()	
 				#p.stdout.close()
 		
-				print "Inserting image into temporary mirror stack",text
-				a=EMData(hdfsmirror[k])
-				a.write_image('tmpmirror.hdf',-1)
+				print "Inserting image into temporary stack",text
+
+				a=EMData(hdfs[k])
+				print "A is", a
+				print "A is type", type(a)
+				a.write_image('tmp.hdf',-1)
+		
+		
+				#print "cmd is", cmd
+				#a=EMData(hdfs[k])	
+				#a.write_image('tmp.hdf',k)
+		
+				if options.mirroraxis:
+					#print "\nWriting temporary mirror stack"
+					#cmdmirror = 'e2proc2d.py ' + hdfsmirror[k] + ' tmpmirror.hdf --append'
 			
-				#hdfsmirror[k].write_image('tmpmirror.hdf',k)
-		"""
+					#print "cmdmirror is",cmdmirror
+					#p = subprocess.Popen( cmdmirror, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+					#text = p.communicate()	
+					#p.stdout.close()
+		
+					print "Inserting image into temporary mirror stack",text
+					a=EMData(hdfsmirror[k])
+					a.write_image('tmpmirror.hdf',-1)
+			
+					#hdfsmirror[k].write_image('tmpmirror.hdf',k)
+		#"""
+
 	
-		mrcout = options.path + '/' + options.output.split('.')[0] + '.mrc'
-		stout = options.path + '/' + options.output.split('.')[0] + '.st'
-	
-	
-		print "Converting 2-D hdf stack to 3-D mrc stack"
+		
 
 		#cmdst = 'e2proc2d.py tmp.hdf ' + mrcout + ' --twod2threed' + ' --mrc16bit' + ' --fixintscaling=sane'
 		#cmdst += ' && mv ' + mrcout + ' ' + stout + ' && rm tmp.hdf'
 		
-		cmdst = 'newstack ' + options.path + '/*.mrc ' + stout
-		print "\n\n\n\nNEWSTACK cmdst is",cmdst
+		if options.imodstack:
+			print "Converting 2-D hdf stack to 3-D mrc stack"
+			mrcout = options.path + '/' + options.output.split('.')[0] + '.mrc'
+			stout = options.path + '/' + options.output.split('.')[0] + '.st'
+			cmdst = 'newstack ' + options.path + '/*.mrc ' + stout
 		
-		p = subprocess.Popen( cmdst , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		text = p.communicate()	
-		p.stdout.close()
+			print "\n\n\n\nNEWSTACK cmdst is",cmdst
 		
-		if options.verbose > 9:
-			print "Feedback from cmd was", text
-	
-		#print "Done", text
-	
-		if options.mirroraxis:
-			print "Converting 2-D hdf mirror stack to 3-D mrc mirror stack"
-
-			mrcoutmirror = options.path + '/' + options.output.split('.')[0] + '_mirror.mrc'
-			stoutmirror = options.path + '/' + options.output.split('.')[0] + '_mirror.st'
-			
-			cmdstmirror = 'newstack ' + options.path + '/*mirror*mrc ' + stoutmirror
-			#cmdstmirror = 'e2proc2d.py tmpmirror.hdf ' + mrcoutmirror + ' --twod2threed' + ' --mrc16bit' + ' --fixintscaling=sane' + ' && mv ' + mrcoutmirror + ' ' + stoutmirror + ' && rm tmpmirror.hdf' 
-			print "cmdstmirror is", cmdstmirror
-		
-			print "\n\nNEWSTACK cmdst for MIRROR is",cmdst
-		
-			p = subprocess.Popen( cmdstmirror , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			p = subprocess.Popen( cmdst , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 			text = p.communicate()	
 			p.stdout.close()
 		
 			if options.verbose > 9:
 				print "Feedback from cmd was", text
+	
+			#print "Done", text
+	
+			if options.mirroraxis:
+				print "Converting 2-D hdf mirror stack to 3-D mrc mirror stack"
+
+				mrcoutmirror = options.path + '/' + options.output.split('.')[0] + '_mirror.mrc'
+				stoutmirror = options.path + '/' + options.output.split('.')[0] + '_mirror.st'
+			
+				cmdstmirror = 'newstack ' + options.path + '/*mirror*mrc ' + stoutmirror
+				#cmdstmirror = 'e2proc2d.py tmpmirror.hdf ' + mrcoutmirror + ' --twod2threed' + ' --mrc16bit' + ' --fixintscaling=sane' + ' && mv ' + mrcoutmirror + ' ' + stoutmirror + ' && rm tmpmirror.hdf' 
+				print "cmdstmirror is", cmdstmirror
+		
+				print "\n\nNEWSTACK cmdst for MIRROR is",cmdst
+		
+				p = subprocess.Popen( cmdstmirror , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+				text = p.communicate()	
+				p.stdout.close()
+		
+				if options.verbose > 9:
+					print "Feedback from cmd was", text
 	
 		if options.lowerend and options.upperend and options.tiltstep:
 			print "Generating .rawtlt file"
