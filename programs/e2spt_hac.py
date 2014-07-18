@@ -284,7 +284,7 @@ def main():
 			options.align += ':sym=' + str( options.sym )
 			#print "And there's sym", options.sym
 			
-		if 'search' not in options.align:		
+		if 'search' not in options.align and 'rotate_translate_3d' in options.align:		
 			options.align += ':search=' + str( options.search )
 			
 		else:
@@ -363,7 +363,7 @@ def main():
 	
 	
 	if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
-		if 'search' not in options.falign:		
+		if 'search' not in options.falign and 'refine_3d_grid' in options.falign:	
 			options.falign += ':search=' + str( options.searchfine )
 			
 		else:
@@ -1006,7 +1006,13 @@ def allvsall(options):
 		mm=0												#Counter to track new particles/averages produced and write them to output
 		print "I'm in the averager!!!!!!!!!!!!"
 		
+		
+		
+		
+		
+		
 		roundRawInfoFile = options.path + '/aliInfo_'+ str( k ).zfill( len(str(options.iter)) ) + '.json'
+		
 		roundInfoDict = js_open_dict(roundRawInfoFile) #Write particle orientations to json database.
 		
 		
@@ -1033,6 +1039,8 @@ def allvsall(options):
 		
 		
 		frank = open(options.path + '/ranking' + str(k).zfill( len(str(options.iter)) ) + '.txt','a')
+		
+		
 		for z in range(len(results)):
 			
 			multiplicityFilter = 0
@@ -1075,9 +1083,6 @@ def allvsall(options):
 			
 			
 			if results[z]['ptclA'] not in tried and results[z]['ptclB'] not in tried and score < scoreFilter and not multiplicityFilter:
-				
-				
-				
 				
 				
 				tried.add(results[z]['ptclA'])							#If the two particles in the pair have not been tried, and they're the next "best pair", they MUST be averaged
@@ -1381,14 +1386,19 @@ def allvsall(options):
 				mm+=1
 			
 				
+				roundInfoDict[ key ] = aliInfo
+				
+				
+			
 			if results[z]['ptclA'] not in tried:						#If a particle appeared in the ranking list but its pair was already taken, the particle must be classified as "tried"
 				tried.add(results[z]['ptclA'])						#because you don't want to average it with any other available particle lower down the list that is available
 													#We only average "UNIQUE BEST PAIRS" (the first occurance in the ranking list of BOTH particles in a pair).
 			if results[z]['ptclB'] not in tried:
 				tried.add(results[z]['ptclB'])
 			
+		
+		roundInfoDict.close()	
 			
-			roundInfoDict[ key ] = aliInfo
 	
 		if len(averages) == 0:
 			print """\n\nTERMINATING: No productive new mergers occured in the current iteration.
@@ -1429,7 +1439,7 @@ def allvsall(options):
 		f.write("======================\n\n")
 		f.close()	
 			
-		roundInfoDict.close()
+		
 		frank.close()	
 			
 			
