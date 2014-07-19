@@ -998,7 +998,7 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 {
 	EMData * result = image->copy();
 
-	int nseg = params.set_default("nseg",200);
+	int nseg = params.set_default("nseg",12);
 	float thr = params.set_default("thr",-1.0e30f);
 	int ampweight = params.set_default("ampweight",1);
 	float maxsegsize = params.set_default("maxsegsize",10000.0f);
