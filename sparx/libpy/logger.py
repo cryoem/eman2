@@ -50,4 +50,4 @@ class Logger:
 		logger.base_logger = self.base_logger
 		logger.prefix = self.prefix + add_prefix
 		return logger
-	
+

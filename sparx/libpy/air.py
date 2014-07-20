@@ -120,10 +120,10 @@ def shrink_step(projections, stable_subset, target_threshold, options, min_stabl
 		terminate = wrap_mpi_bcast(terminate, 0, mpi_env.main_comm)
 		if terminate:
 			break
-	
+
 	if mpi_env.main_rank == 0:
 		log.add("-------------> Contracting step - END")
-	
+
 	return stable_subset, stable_threshold
 
 

@@ -2915,10 +2915,8 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 
 
 	if myid == main_node:
-		from utilities import write_text_file
-		write_text_file([1],"finishedok")
 		log.add("Finish ali3d_base")
-		
-		return #params, vol, previousmax, par_r
-	else:
-		return #None, None, None, None  # results for the other processes
+	i = 1
+	return i   #params, vol, previousmax, par_r
+	#else:
+	#	return #None, None, None, None  # results for the other processes
