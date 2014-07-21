@@ -71,11 +71,11 @@ def main():
 		before fsc computation. Default is mask.sharp:outer_radius=-2""", default=None)
 	
 	
-	parser.add_argument("--search", type=float,default=8.0,help=""""During COARSE alignment
+	parser.add_argument("--search", type=int,default=8,help=""""During COARSE alignment
 		translational search in X, Y and Z, in pixels. Only works when --radius is provided.
 		Otherwise, search parameters are provided with the aligner, through --align.""")
 	
-	parser.add_argument("--searchfine", type=float,default=2.0,help=""""During FINE alignment
+	parser.add_argument("--searchfine", type=int,default=2,help=""""During FINE alignment
 		translational search in X, Y and Z, in pixels. Only works when --radius is provided.
 		Otherwise, search parameters are provided with the aligner, through --falign.""")
 			
@@ -101,6 +101,13 @@ def main():
 	parser.add_argument("--shrink", type=int,default=1,help="Optionally shrink the input volumes by an integer amount for coarse alignment.")
 	parser.add_argument("--shrinkfine", type=int,default=1,help="Optionally shrink the input volumes by an integer amount for refine alignment.")
 
+	parser.add_argument("--threshold",type=str,default='',help="""A threshold applied to 
+		the subvolumes after normalization. 
+		For example, --threshold=threshold.belowtozero:minval=0 makes all negative pixels 
+		equal 0, so that they do not contribute to the correlation score.""")
+
+	parser.add_argument("--nocenterofmass", default=False, action="store_true", help="""Disable Centering 
+		of mass of the subtomogram every iteration.""")
 
 	parser.add_argument("--npeakstorefine", type=int, help="The number of best 'coarse peaks' from 'coarse alignment' to refine in search for the best final alignment. Default=4.", default=4)
 	
@@ -123,7 +130,7 @@ def main():
 	parser.add_argument("--boxsize", type=float, help="(Probably not needed for anything)", default=0)
 
 	parser.add_argument("--maxres", type=float, help="How far in resolution to extend the FSC curve on the x axis; for example, to see up to 20anstroms, provide --maxres=1.0. Default=15", default=1.0)
-	parser.add_argument("--thresholds", type=str, help="Comma separated values of thresholds to plot as horizontal lines. Default=0.5, to turn of supply 'None'. ", default='0.5')
+	parser.add_argument("--cutoff", type=str, help="Comma separated values of cutoff thresholds to plot as horizontal lines. Default=0.5, to turn of supply 'None'. ", default='0.5')
 	
 	parser.add_argument("--smooth",action="store_true", help="Smooth out FSC curves by ignoring dips or local minima.", default=False)
 	
@@ -135,21 +142,25 @@ def main():
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID.",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	#parser.add_argument("--plotonly",action="store_true", help="Assumes vol1 and vol2 are already aligned and fsc files will be provided through --curves; thus skips alignment and fsc curve generation", default=False)
-	parser.add_argument("--fsconly",action="store_true", help="Assumes --input and --ref are already aligned with respect to each other and thus skips alignment", default=False)
-	parser.add_argument("--plotonly",type=str, help="FSC curves to plot in separate plots. Skips alignment and fsc curve generation. Provide .txt. files separated by commas --plotonly=file1.txt,file2.txt,file3.txt etc...", default=None)
+	
+	parser.add_argument("--fsconly",action="store_true", help="""Assumes --input and --ref 
+		are already aligned with respect to each other and thus skips alignment""", default=False)
+		
+	parser.add_argument("--plotonly",type=str, help="""FSC curves to plot in separate plots. 
+		Skips alignment and fsc curve generation. Provide .txt. files separated by commas 
+		--plotonly=file1.txt,file2.txt,file3.txt etc...""", default=None)
 	parser.add_argument("--singleplot",action="store_true",help="It --plotonly provided, all FSC curves will be on the same plot/figure", default=False)
 		
 	(options, args) = parser.parse_args()
 	
 	logger = E2init(sys.argv, options.ppid)
 
-
 	if options.maskfsc: 
 		options.maskfsc=parsemodopt(options.maskfsc)
 
-	if options.thresholds:
-		options.thresholds = options.thresholds.split(',')
-		print "Options.thresholds is", options.thresholds
+	if options.cutoff:
+		options.cutoff = options.cutoff.split(',')
+		print "Options.cutoff is", options.cutoff
 
 	if not options.output and not options.plotonly:
 		print "ERROR: Unless you provide .txt files through --plotonly, you must specify an --output in .txt format."
@@ -171,6 +182,13 @@ def main():
 
 	print '\n\nafter making path, options.path is', options.path
 	
+	if options.input:
+		hdr = EMData(options.input,0,True)
+		apix = hdr['apix_x']
+	
+	if options.apix:
+		apix = float (options.apix)
+		
 	#print "Returned options are of type", type(options)
 	#print "\n\n\nand are", options
 	
@@ -181,16 +199,16 @@ def main():
 		if not options.singleplot:
 			for curve in curves:
 				print "Found this curve to plot", curve
-				fscplotter([curve],options)
+				fscplotter([curve],options,apix)
 				
 		elif options.singleplot:
-			fscplotter(curves,options)
+			fscplotter(curves,options,apix)
 		
 		print "Done plotting"
 		sys.exit()
 		
 	elif options.fsconly:
-		getfscs(options)
+		getfscs(options,apix)
 	
 		print "Done calculating FSCs and plotting them."
 		sys.exit()
@@ -210,7 +228,7 @@ def main():
 		options.input = ptclali
 		
 		print '\n\nwill get fsc'
-		getfscs(options)
+		getfscs(options,apix)
 
 		if options.mirror:
 			options.input = inputbackup
@@ -227,13 +245,13 @@ def main():
 			ptclalimirror = alignment(options)
 		
 			options.input = ptclalimirror
-			getfscs(options)
+			getfscs(options,apix)
 		
 	E2end(logger)
 	return
 
 
-def getfscs(options):
+def getfscs(options,apix):
 	
 	options.input
 	print "\n inside getfscs options.input is", options.input
@@ -284,7 +302,7 @@ def getfscs(options):
 		calcfsc(ptcl,ref,fscfilename,options)
 		
 		if not options.singleplot:
-			fscplotter([fscfilename],options)
+			fscplotter([fscfilename],options,apix)
 		else:
 			fscs.append(fscfilename)
 	
@@ -298,13 +316,13 @@ def getfscs(options):
 			calcfsc(ptcl,refm,fscmfilename,options)
 			
 			if not options.singleplot:
-				fscplotter([fscmfilename],options)
+				fscplotter([fscmfilename],options,apix)
 			else:
 				fscsm.append(fscmfilename)
 	
 	if options.singleplot:
-		fscplotter(fscs,options)
-		fscplotter(fscsm,options)
+		fscplotter(fscs,options,apix)
+		fscplotter(fscsm,options,apix)
 	return
 
 
@@ -339,7 +357,10 @@ def alignment(options):
 	#print "\n\nalign and its type are", options.align, type(options.align)
 	#print "\n\nfalign is type are", options.falign, type(options.falign)
 	
-	alicmd = 'cd ' + options.path + ' && e2spt_classaverage.py --search=' + str(options.search) + ' --searchfine=' + str(options.searchfine) + ' --path=alignment --input=../' + str(options.input) + ' --output=' + str(alivolfile) + ' --ref=../' + str(options.ref) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + str(options.maskali) + ' --lowpass=' + str(options.lowpass) + ' --parallel=' + str(options.parallel) + ' --aligncmp=' + str(options.aligncmp) + ' --faligncmp=' + str(options.faligncmp) + ' --shrink=' + str(options.shrink) + ' --shrinkfine=' + str(options.shrinkfine) + ' --saveali' + ' --normproc=' + str(options.normproc) + ' --sym=' + str(options.symali) + ' --breaksym'
+	alicmd = 'cd ' + options.path + ' && e2spt_classaverage.py --search=' + str(options.search) + ' --searchfine=' + str(options.searchfine) + ' --path=alignment --input=../' + str(options.input) + ' --output=' + str(alivolfile) + ' --ref=../' + str(options.ref) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + str(options.maskali) + ' --lowpass=' + str(options.lowpass) + ' --parallel=' + str(options.parallel) + ' --aligncmp=' + str(options.aligncmp) + ' --faligncmp=' + str(options.faligncmp) + ' --shrink=' + str(options.shrink) + ' --shrinkfine=' + str(options.shrinkfine) + ' --threshold=' + str(options.threshold) + ' --saveali' + ' --normproc=' + str(options.normproc) + ' --sym=' + str(options.symali) + ' --breaksym'
+	
+	if options.nocenterofmass:
+		alicmd += ' --nocenterofmass'
 	
 	if options.radius:
 		alicmd += ' --radius=' + str(options.radius)
@@ -520,7 +541,7 @@ def maxima(xaxis,yaxis):
 	
 	
 		
-def fscplotter(fscs,options):
+def fscplotter(fscs,options,apix=0.0):
 	fig = figure()
 
 	#from itertools import product
@@ -537,7 +558,7 @@ def fscplotter(fscs,options):
 	plot_name = ''
 	for fscoutputname in fscs:
 	
-		print "I found THIS FSC file and will thus plot it", fscoutputname
+		print "\nI found THIS FSC file and will thus plot it", fscoutputname
 
 		f= open(fscoutputname,'r')
 		lines = f.readlines()
@@ -702,15 +723,15 @@ def fscplotter(fscs,options):
 			fsc0p143resolution1 = ''
 			fsc0p143resolution1label=''
 
-			if fsc0p5pixel and options.apix and options.boxsize:		
-				fsc0p5resolution1 = (float(options.apix) * float(options.boxsize)) / float(fsc0p5pixel)
+			if fsc0p5pixel and apix and options.boxsize:		
+				fsc0p5resolution1 = (float(apix) * float(options.boxsize)) / float(fsc0p5pixel)
 				fsc0p5resolution1label = "%.1f" % ( fsc0p5resolution1 )
 			else:
 				print "Method 1 for resolution calculation failed (there was a division by zero somewhere, or you forgot to provide --boxsize or --apix)"
 
 
-			if fsc0p143pixel and options.apix and options.boxsize:		
-				fsc0p143resolution1 = (float(options.apix) * float(options.boxsize)) / float(fsc0p143pixel)
+			if fsc0p143pixel and apix and options.boxsize:		
+				fsc0p143resolution1 = (float(apix) * float(options.boxsize)) / float(fsc0p143pixel)
 				fsc0p143resolution1label = "%.1f" % ( fsc0p143resolution1 )
 
 			elif not fsc0p5pixel:
@@ -783,26 +804,6 @@ def fscplotter(fscs,options):
 		pylab.rc("axes", linewidth=2.0)
 		pylab.plot(x, values, color=RGB_tuples[kont], linewidth=2,alpha=1.0)
 	
-		'''
-		PLOT Threshold criteria as horizontal lines
-		'''
-		if options.thresholds:
-			for thresh in options.thresholds:
-				print "Current thresh is", thresh
-				if float(thresh) == 0.5:
-					yy1=[0.500]*len(values)	
-					pylab.plot(x, yy1, 'k--', linewidth=1)
-				
-				if float(thresh) == 0.143:
-					yy2=[0.143]*len(values)
-					pylab.plot(x, yy2, 'k--', linewidth=1)
-				
-				if float(thresh) == 0.33 or float(thresh) == 0.3 or float(thresh) == 0.333:
-					yy3=[0.333]*len(values)
-					pylab.plot(x,yy3, 'k--', linewidth=1)
-						
-		#fit = pylab.plot(x, yfit, 'r-')
-
 		ax = fig.add_subplot(111)
 		
 		for tick in ax.xaxis.get_major_ticks():
@@ -822,6 +823,30 @@ def fscplotter(fscs,options):
 		print "ticks are", xticks
 		ax.xaxis.set_major_locator(MaxNLocator(nbins=len(xticks)))
 		pylab.setp(ax, xticklabels=xticks)
+		
+		
+		'''
+		PLOT Threshold criteria as horizontal lines
+		'''
+		if options.cutoff:
+			print "\n\n\n\nTTTTTTTTTTTTTTTTT\nPlotting cutoff threshold"
+			for thresh in options.cutoff:
+				print "\nCurrent cutoff thresh is", thresh
+				if float(thresh) == 0.5:
+					yy1=[0.500]*len(values)	
+					pylab.plot(x, yy1, 'k--', linewidth=1)
+				
+				if float(thresh) == 0.143:
+					yy2=[0.143]*len(values)
+					pylab.plot(x, yy2, 'k--', linewidth=1)
+				
+				if float(thresh) == 0.33 or float(thresh) == 0.3 or float(thresh) == 0.333:
+					yy3=[0.333]*len(values)
+					pylab.plot(x,yy3, 'k--', linewidth=1)
+						
+		#fit = pylab.plot(x, yfit, 'r-')
+
+		
 
 		
 		#pylab.annotate("FSC0.5 = "+str(final0p5)+" A", xy=(0, 1), xytext=(300, -30), xycoords='data', textcoords='offset points',bbox=dict(boxstyle="round", fc="0.8"))
