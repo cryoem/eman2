@@ -77,20 +77,31 @@ def main():
 	
 	parser.add_argument("--searchfine", type=float,default=2.0,help=""""During FINE alignment
 		translational search in X, Y and Z, in pixels. Only works when --radius is provided.
-		Otherwise, search parameters are provided with the aligner, through --ralign.""")
+		Otherwise, search parameters are provided with the aligner, through --falign.""")
 			
 	parser.add_argument("--normproc",type=str,help="""Normalization processor applied to particles before alignment. 
 													Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. 
 													If you want to turn this option off specify \'None\'""", default="normalize.mask")
-	parser.add_argument("--preprocess",type=str,help="Any processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.", default=None)
+
 	parser.add_argument("--saveallalign",action="store_true", help="If set, will save the alignment parameters after each iteration",default=True)
 
 	parser.add_argument("--mirror",action="store_true", help="""If set, it will generate a mirrored version of --ref and align --input against it.=; then FSCs will be computed. 
 															This will be done IN ADDITION to aligment and FSC computation of the alignment of --input against the original, unmirrored --ref.""",default=False)
 
-	parser.add_argument("--lowpass",type=str,help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.", default=None)
-	parser.add_argument("--highpass",type=str,help="A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.", default=None)
+
+	parser.add_argument("--preprocess",type=str,default='',help="Any processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.")
+	parser.add_argument("--preprocessfine",type=str,default='',help="Any processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.")
 	
+	parser.add_argument("--lowpass",type=str,default='',help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.")
+	parser.add_argument("--lowpassfine",type=str,default='',help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.")
+
+	parser.add_argument("--highpass",type=str,default='',help="A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.")
+	parser.add_argument("--highpassfine",type=str,default='',help="A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.")
+
+	parser.add_argument("--shrink", type=int,default=1,help="Optionally shrink the input volumes by an integer amount for coarse alignment.")
+	parser.add_argument("--shrinkfine", type=int,default=1,help="Optionally shrink the input volumes by an integer amount for refine alignment.")
+
+
 	parser.add_argument("--npeakstorefine", type=int, help="The number of best 'coarse peaks' from 'coarse alignment' to refine in search for the best final alignment. Default=4.", default=4)
 	
 	parser.add_argument("--align",type=str,help="This is the aligner used to align particles to the previous class average.", default="rotate_translate_3d:search=6:delta=12:dphi=12")
@@ -101,13 +112,13 @@ def main():
 													Make sure the apix is correct on the particles' headers, sine the radius will be converted from Angstroms to pixels.
 													Then, the fine angular step is equal to 360/(2*pi*radius), and the coarse angular step 4 times that""", default=0)
 	
-	parser.add_argument("--ralign",type=str,help="This is the second stage aligner used to refine the first alignment. Default is refine_3d:search=2:delta=3:range=12", default="refine_3d:search=2:delta=3:range=9")
-	parser.add_argument("--raligncmp",type=str,help="The comparator used by the second stage aligner. Default is the internal tomographic ccc",default="ccc.tomo")
+	parser.add_argument("--falign",type=str,help="This is the second stage aligner used to refine the first alignment. Default is refine_3d:search=2:delta=3:range=12", default="refine_3d:search=2:delta=3:range=9")
+	parser.add_argument("--faligncmp",type=str,help="The comparator used by the second stage aligner. Default is the internal tomographic ccc",default="ccc.tomo")
 	
 	parser.add_argument("--postprocess",type=str,help="A processor to be applied to the volume after averaging the raw volumes, before subsequent iterations begin.",default=None)
 		
 	parser.add_argument("--shrink", type=int,default=1,help="Optionally shrink the input volumes by an integer amount for coarse alignment.")
-	parser.add_argument("--shrinkrefine", type=int,default=1,help="Optionally shrink the input volumes by an integer amount for refine alignment.")
+	parser.add_argument("--shrinkfine", type=int,default=1,help="Optionally shrink the input volumes by an integer amount for refine alignment.")
 	
 	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default="thread:2")
 	
@@ -329,15 +340,15 @@ def alignment(options):
 	#print "maskali is", options.maskali
 	#print "lowpass is", options.lowpass
 	#print "\n\nalign and its type are", options.align, type(options.align)
-	#print "\n\nralign is type are", options.ralign, type(options.ralign)
+	#print "\n\nfalign is type are", options.falign, type(options.falign)
 	
-	alicmd = 'cd ' + options.path + ' && e2spt_classaverage.py --search=' + str(options.search) + ' --searchfine=' + str(options.searchfine) + ' --path=alignment --input=../' + str(options.input) + ' --output=' + str(alivolfile) + ' --ref=../' + str(options.ref) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + str(options.maskali) + ' --lowpass=' + str(options.lowpass) + ' --parallel=' + str(options.parallel) + ' --aligncmp=' + str(options.aligncmp) + ' --raligncmp=' + str(options.raligncmp) + ' --shrink=' + str(options.shrink) + ' --shrinkrefine=' + str(options.shrinkrefine) + ' --saveali' + ' --normproc=' + str(options.normproc) + ' --sym=' + str(options.symali) + ' --breaksym'
+	alicmd = 'cd ' + options.path + ' && e2spt_classaverage.py --search=' + str(options.search) + ' --searchfine=' + str(options.searchfine) + ' --path=alignment --input=../' + str(options.input) + ' --output=' + str(alivolfile) + ' --ref=../' + str(options.ref) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose) + ' --mask=' + str(options.maskali) + ' --lowpass=' + str(options.lowpass) + ' --parallel=' + str(options.parallel) + ' --aligncmp=' + str(options.aligncmp) + ' --faligncmp=' + str(options.faligncmp) + ' --shrink=' + str(options.shrink) + ' --shrinkfine=' + str(options.shrinkfine) + ' --saveali' + ' --normproc=' + str(options.normproc) + ' --sym=' + str(options.symali) + ' --breaksym'
 	
 	if options.radius:
 		alicmd += ' --radius=' + str(options.radius)
 	
 	else:
-		alicmd += ' --align=' + str(options.align) + ' --ralign=' + str(options.ralign)
+		alicmd += ' --align=' + str(options.align) + ' --falign=' + str(options.falign)
 	
 	
 	print "\n\n\n\n\n\nThe alig command to run is", alicmd
