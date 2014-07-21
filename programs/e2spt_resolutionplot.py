@@ -117,9 +117,6 @@ def main():
 	
 	parser.add_argument("--postprocess",type=str,help="A processor to be applied to the volume after averaging the raw volumes, before subsequent iterations begin.",default=None)
 		
-	parser.add_argument("--shrink", type=int,default=1,help="Optionally shrink the input volumes by an integer amount for coarse alignment.")
-	parser.add_argument("--shrinkfine", type=int,default=1,help="Optionally shrink the input volumes by an integer amount for refine alignment.")
-	
 	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default="thread:2")
 	
 	parser.add_argument("--apix", type=float, help="Provide --apix for automatic FSC calculation if you supply --plotonly and no volumes for --input and --ref, or if the apix of these is wrong.", default=1.0)
