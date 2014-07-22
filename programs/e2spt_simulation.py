@@ -52,10 +52,19 @@ def main():
 	#	to use for reconstruction. Options are 'nearest_neighbor', 'gauss_2', 'gauss_3', 'gauss_5', 
 	#	'gauss_5_slow', 'gypergeom_5', experimental""")
 	
-	parser.add_argument("--path",type=str,default=None,help="Directory to store results in. The default is a numbered series of directories containing the prefix 'sptsim'; for example, sptsim_02 will be the directory by default if 'sptsim_01' already exists.")
+	
+	parser.add_argument("--fillwedge",action='store_true',default=False,help="""This option will
+		fill the region of the missing wedge with evenly spaced images of Gaussian noise
+		with the same tiltstep used to simulate the particles (as determined through the
+		parameter --nslices).""")
+	
+	parser.add_argument("--path",type=str,default='',help="""Directory to store results in. 
+		The default is a numbered series of directories containing the prefix 'sptsim'; 
+		for example, sptsim_02 will be the directory by default if 'sptsim_01' already exists.""")
+	
 	#parser.add_argument("--output",type=str,default=None,help="Name of the output stack for the simulated subtomograms.")
-	parser.add_argument("--randstack",type=str,default=None,help="If you already have a stack of particles (presumably in random orientations) you can supply it here.")
-	parser.add_argument("--tomogramoutput",type=str,default=None,help="This will generate a simulated tilt series and tomogram containing the entire set of subtomograms.")
+	parser.add_argument("--randstack",type=str,default='',help="If you already have a stack of particles (presumably in random orientations) you can supply it here.")
+	parser.add_argument("--tomogramoutput",type=str,default='',help="This will generate a simulated tilt series and tomogram containing the entire set of subtomograms.")
 
 	parser.add_argument("--input", type=str, help="""The name of the input volume from which simulated subtomograms will be generated. 
 							The output will be in HDF format, since volume stack support is required. The input CAN be PDB, MRC or and HDF stack. 
@@ -67,14 +76,13 @@ def main():
 							Type 'e2help.py processors' at the command line and find the options availbale from the processors list)""",default=None)
 	
 	parser.add_argument("--shrink", type=int,default=0,help="Optionally shrink the input volume before the simulation if you want binned/down-sampled subtomograms.")
-	parser.add_argument("--verbose", "-v", type=int, dest="verbose", action="store", metavar="n", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	parser.add_argument("--nptcls", type=int,default=10,help="Number of simulated subtomograms tu generate per referece.")
-	parser.add_argument("--txrange", type=int,default=None,help="""Maximum number of pixels to randomly translate each subtomogram in X. The random translation will be picked between -txrange and +txrange. 
+	parser.add_argument("--txrange", type=int,default=0,help="""Maximum number of pixels to randomly translate each subtomogram in X. The random translation will be picked between -txrange and +txrange. 
 								     Default value is set by --transrange, but --txrange will overwrite it if specified.""")
-	parser.add_argument("--tyrange", type=int,default=None,help="""Maximum number of pixels to randomly translate each subtomogram in Y. The random translation will be picked between -tyrange and +tyrange.
+	parser.add_argument("--tyrange", type=int,default=0,help="""Maximum number of pixels to randomly translate each subtomogram in Y. The random translation will be picked between -tyrange and +tyrange.
 								     Default value is set by --transrange, but --txrange will overwrite it if specified.""")
-	parser.add_argument("--tzrange", type=int,default=None,help="""Maximum number of pixels to randomly translate each subtomogram in Z. The random translation will be picked between -tzrange and +tzrange.
+	parser.add_argument("--tzrange", type=int,default=0,help="""Maximum number of pixels to randomly translate each subtomogram in Z. The random translation will be picked between -tzrange and +tzrange.
 								     Default value is set by --transrange, but --txrange will overwrite it if specified.""")
 	parser.add_argument("--transrange", type=int,default=0,help="""Maximum number of pixels to randomly translate each subtomogram in all X, Y and Z. 
 									The random translation will be picked between -transrage and +transrange; --txrange, --tyrange and --tzrange overwrite --transrange for each specified direction.""")
@@ -157,6 +165,9 @@ def main():
 									For example, to simulate a 2 deg tilt step supply --nslices=61 --tiltrange=60.
 									Recall that --tiltrange goes from - to + the supplied value, and that there is a central slice or projection at 0 deg,
 									for symmetrical tilt series.""")	
+
+	
+	parser.add_argument("--verbose", "-v", type=int, dest="verbose", action="store", metavar="n", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default='thread:1')
@@ -804,6 +815,11 @@ class SubtomoSimTask(JSTask):
 		nslices = options.nslices
 		tiltstep = round(( float(upper_bound) - float(lower_bound) )/ float(nslices - 1),2)	
 	
+		extraslices = 0
+		if options.fillwedge:
+			extraslices = int( ( 90.0 - float( upper_bound ) ) / tiltstep )
+			
+			
 		#nslices = int(round((upper_bound - lower_bound)/ options.tiltstep))	
 		
 		#print "\n\nBBBBBBBBBB\n\nThe apix of the simulated ptcl is", apix
@@ -828,7 +844,7 @@ class SubtomoSimTask(JSTask):
 		print "The 3d image is", image
 		print "Its size is",image['nx'],image['ny'],image['nz']
 			
-		for j in range(nslices):
+		for j in range(nslices + extraslices):						#Extra 'noise' slices are 0 if --fillwedge is off. Calculated above if on.
 			realalt = alt + j*tiltstep
 		
 			#print "Real alt is", realalt
@@ -847,6 +863,23 @@ class SubtomoSimTask(JSTask):
 			#prj = image.process("misc.directional_sum",{"axis":"z"})
 				
 			prj = image.project("standard",t)
+			
+			if options.fillwedge and j > nslices:
+	 			
+	 			print "\n(e2spt_simulation.py) I'm adding an extra slice with just noise" + str(j-nslices) + '/' + str(extraslices)
+				nx = image['nx']
+				ny = image['ny']
+			
+				noise = test_image(1,size=(nx,ny))			
+				noise2 = noise.process("filter.lowpass.gauss",{"cutoff_abs":.25})
+				noise.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.75})
+				
+				finalnoise = ( noise*3 + noise2*3 )
+			
+				prj = finalnoise
+				
+				
+			
 			prj.set_attr('xform.projection',t)
 			prj['apix_x']=apix
 			prj['apix_y']=apix
@@ -909,9 +942,9 @@ class SubtomoSimTask(JSTask):
 					
 					fractionationfactor = 61.0/nslices		#At snr = 10, simulated subtomograms look like empirical ones for +-60 deg data collection range
 															#using 2 deg tilt step. If 61 slices go into each subtomo, then fractionation factor
-															#Will be 1. If nslices is > 61 the signal in each slice will be diluted.
+															#Will be 1. Otherwise, if nslices is > 61 the signal in each slice will be diluted.
 															#If nslices < 1, the signal in each slice will be enhanced. In the end, regardless of the nslices value, 
-															#subtomograms will always have the same amount of signal.
+															#subtomograms will always have the same amount of signal instead of signal depending on number of images.
 					prj_r.mult( fractionationfactor )
 					prj_r.add(noise)
 			
