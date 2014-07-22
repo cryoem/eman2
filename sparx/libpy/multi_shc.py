@@ -2545,7 +2545,7 @@ def do_volume(data, options, mpi_comm):
 #  Add reduction
 def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, log = None, nsoft=2 ):
 
-	from alignment       import Numrinit, prepare_refrings, proj_ali_incore_local, shc
+	from alignment       import Numrinit, prepare_refrings, proj_ali_incore,  proj_ali_incore_local, shc
 	from utilities       import bcast_number_to_all, bcast_EMData_to_all, 	wrap_mpi_gatherv, wrap_mpi_bcast, model_blank
 	from utilities       import get_im, file_type, model_circle, get_input_from_string, get_params_proj, set_params_proj
 	from mpi             import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier, mpi_reduce, MPI_INT, MPI_SUM
@@ -2605,7 +2605,7 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 	max_iter    = int(ali3d_options.maxit)
 	center      = int(center)
 		
-
+	"""
 	if( type(ref_vol) is types.StringType ):
 		if(myid == main_node):
 			vol = get_im(ref_vol)
@@ -2637,6 +2637,7 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 
 	numr	= Numrinit(first_ring, last_ring, rstep, "F")
 	mask2D  = model_circle(last_ring,nx,nx) - model_circle(first_ring,nx,nx)
+	"""
 
 	if( type(stack) is types.StringType ):
 		if myid == main_node:
@@ -2664,13 +2665,36 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 	total_nima = wrap_mpi_bcast(total_nima, main_node, mpi_comm)
 	list_of_particles = wrap_mpi_bcast(list_of_particles, main_node, mpi_comm)
 	if myid == main_node:
-		log.add("  %5d     %5d     %5d     %5d     %6.3f\n"%(nx, onx, first_ring, last_ring, shrinkage))
 		particle_ids = [0]*total_nima
 		for i in xrange(total_nima):  particle_ids[i] = list_of_particles[i]
 	image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
 	# create a list of images for each node
 	list_of_particles = list_of_particles[image_start: image_end]
 	nima = len(list_of_particles)
+
+
+	if(myid == main_node):
+		if( type(stack) is types.StringType ):  data = get_im(stack, list_of_particles[0])
+		else:                                   data = stack[list_of_particles[0]]
+		onx      = data.get_xsize()
+		if(shrinkage == 1.0):  nx = onx
+		else:		
+			st = resample(data, shrinkage)
+			nx = st.get_xsize()
+	else:
+		nx = 0
+		onx = 0
+	nx  = bcast_number_to_all(nx, source_node = main_node)
+	onx = bcast_number_to_all(onx, source_node = main_node)
+	if last_ring < 0:	last_ring = int(onx/2) - 2
+	if(shrinkage < 1.0):
+		first_ring = max(1, int(first_ring*shrinkage))
+		last_ring  = int(last_ring*shrinkage)
+		ali3d_options.ou = last_ring
+		ali3d_options.ir = first_ring
+	numr	= Numrinit(first_ring, last_ring, rstep, "F")
+	mask2D  = model_circle(last_ring,nx,nx) - model_circle(first_ring,nx,nx)
+
 
 	data = [None]*nima
 	for im in xrange(nima):
@@ -2693,6 +2717,19 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 			sx *= shrinkage
 			sy *= shrinkage
 			set_params_proj(data[im], [phi,theta,psi,sx,sy])
+
+	# Reference volume reconstruction
+	mpi_barrier(mpi_comm)
+	if myid == main_node:
+		start_time = time()
+	vol = do_volume(data, ali3d_options, mpi_comm)
+	#if myid == main_node:  vol.write_image('soft/smvol%04d.hdf'%total_iter)
+	# log
+	if myid == main_node:
+		log.add("Dimensions used (nx, onx, first_ring, last_ring, shrinkage)  %5d     %5d     %5d     %5d     %6.3f\n"%(nx, onx, first_ring, last_ring, shrinkage))
+		log.add("Reference 3D reconstruction time = %f\n"%(time()-start_time))
+		start_time = time()
+
 
 	pixer = [0.0]*nima
 	historyofchanges = [0.0, 0.5, 1.0]
@@ -2732,7 +2769,7 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 				for im in xrange(nima):
 					previousmax = data[im].get_attr_default("previousmax", -1.0e23)
 					if(previousmax == -1.0e23):
-						peak, pixer[im] = proj_ali_incore_local(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], 10.0)
+						peak, pixer[im] = proj_ali_incore_local(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], 10.0, sym = sym)
 						data[im].set_attr("previousmax", peak*0.9)
 				if myid == main_node:
 					log.add("Time to calculate first psi+shifts+previousmax: %f\n" % (time()-start_time))
@@ -2747,12 +2784,17 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 			#number_of_checked_refs = 0
 			par_r = [0]*(nsoft+1)
 			for im in xrange(nima):
-				if(nsoft == 1):
+				if(nsoft == 0):
+					if(an[N_step] == -1): peak, pixer[im] = proj_ali_incore(data[im], refrings, numr, \
+														xrng[N_step], yrng[N_step], step[N_step])
+					else:                 peak, pixer[im] = proj_ali_incore_local(data[im], refrings, numr, \
+														xrng[N_step], yrng[N_step], step[N_step], an[N_step], sym = sym)
+					if(pixer[im] == 0.0):  par_r[0] += 1
+				elif(nsoft == 1):
 					peak, pixer[im], number_of_checked_refs, iref = \
 						shc(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], an[N_step], sym)
 					if(pixer[im] == 0.0):  par_r[0] += 1
-					#peak, pixer[im] = proj_ali_incore(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step])
-				else:
+				elif(nsoft > 1):
 					peak, pixer[im], checked_refs, number_of_peaks = shc_multi(data[im], refrings, numr, \
 												xrng[N_step], yrng[N_step], step[N_step], an[N_step], nsoft, sym)
 					par_r[number_of_peaks] += 1
