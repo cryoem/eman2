@@ -278,22 +278,16 @@ def main():
 		from e2spt_classaverage import calcAliStep
 		options = calcAliStep(options)
 		
-		
 	
 	if options.align:
-		
-		print "\n\n)))))))))))))))))))))))))))))))))))))))))))\nThere's options.align", options.align
 		if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align and 'grid' not in options.align:
 			if 'rotate_translate_3d' in options.align or 'rotate_symmetry_3d' in options.align: 
 				options.align += ':sym=' + str( options.sym )
-			
-				print "\n\nP******************************************************And there's sym", options.sym
-			
+						
 		if 'search' not in options.align:
 			if 'rotate_translate_3d' in options.align:		
 				options.align += ':search=' + str( options.search )
 			
-				print "\n\nP******************************************************ADDING search!"
 			#sys.exit()
 			
 		elif 'rotate_translate_3d' in options.align:
