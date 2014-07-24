@@ -13999,7 +13999,7 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, phiwobble, psi_max, search
 		refproj = [None]*nphi
 		if( not Dsym):  rotproj = [None]*nphi
 		else:           rotproj = []
-
+		print "number of reference images  ",nphi
 		for iphi in xrange(nphi):
 			refproj[iphi] = prgs( volft, kbz, [delta*iphi, 90.0, 90.0, 0.0, 0.0])
 			st = Util.infomask(refproj[iphi] , segmask, True)
