@@ -199,18 +199,15 @@ map to the center of the volume."""
 	# bounding box:
 	amin=[atoms[0][1],atoms[0][2],atoms[0][3]]
 	amax=[atoms[0][1],atoms[0][2],atoms[0][3]]
-	for i in xrange(len(atoms)):
-		amin[0]=min(atoms[i][1],amin[0])
-		amin[1]=min(atoms[i][2],amin[1])
-		amin[2]=min(atoms[i][3],amin[2])
-		amax[0]=max(atoms[i][1],amax[0])
-		amax[1]=max(atoms[i][2],amax[1])
-		amax[2]=max(atoms[i][3],amax[2])
+	for i in xrange(1,len(atoms)):
+		for k in xrange(3):
+			amin[k]=min(atoms[i][k+1],amin[k])
+			amax[k]=max(atoms[i][k+1],amax[k])
 
 	if not options.quiet:
-		print "Bounding box: x: %7.2f - %7.2f"%(amin[0],amax[0])
-		print "              y: %7.2f - %7.2f"%(amin[1],amax[1])
-		print "              z: %7.2f - %7.2f"%(amin[2],amax[2])
+		print "Range of coordinates [A]: x: %7.2f - %7.2f"%(amin[0],amax[0])
+		print "                          y: %7.2f - %7.2f"%(amin[1],amax[1])
+		print "                          z: %7.2f - %7.2f"%(amin[2],amax[2])
 	
 	# find the output box size, either user specified or from bounding box
 	box=[0,0,0]
@@ -226,8 +223,14 @@ map to the center of the volume."""
 			box[i]=int(2*max(fabs(amax[i]), fabs(amin[i]))/options.apix)
 			#  Increase the box size by 1/4.
 			box[i]+=box[i]//4
+
+	if not options.quiet:
+		print "Bounding box [pixels]: x: %5d "%box[0]
+		print "                       y: %5d "%box[1]
+		print "                       z: %5d "%box[2]
+
 	# figure oversampled box size
-	bigb = max(box[0],box[1],box[2])
+	#bigb = max(box[0],box[1],box[2])
 	fcbig = 1
 	"""
 	while(bigb*fcbig <= 512):   # maximum boxsize = 512

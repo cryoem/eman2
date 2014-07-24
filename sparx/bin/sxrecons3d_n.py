@@ -74,7 +74,7 @@ def main():
 		prj_stack = args[0]
 		vol_stack = args[1]
 		nimage = EMUtil.get_image_count( prj_stack )
-		pid_list = range(0, nimage) 
+		pid_list = range(0, nimage)
 	elif len(args) == 5:
 		prj_stack = args[0]
 		vol_stack = args[1]
