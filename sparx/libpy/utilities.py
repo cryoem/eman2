@@ -2995,17 +2995,23 @@ def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 	lookup = range(len(projangles))
 	if( sym == "c1"):
 		from utilities import getvec
-		refnormal = [None]*len(projangles)
+		refnormal = [None]*(len(projangles)*3)
 		for i in xrange(len(projangles)):
-			refnormal[i] = getvec(projangles[i][0], projangles[i][1])
+			ref = getvec(projangles[i][0], projangles[i][1])
+			for k in xrange(3):
+				refnormal[3*i+k] = ref[k]
 		# remove the reference projection from the list
-		ref = refnormal[whichone]
-		del refnormal[whichone], lookup[whichone]
+		ref = [0.0,0.0,0.0]
+		for k in xrange(3):
+			ref[k] = refnormal[3*whichone+k]
+		for k in xrange(3): del refnormal[3*whichone+2-k]
+		del lookup[whichone]
 		assignments = [-1]*howmany
 		for i in xrange(howmany):
 			k = Util.nearest_ang(refnormal, ref[0],ref[1],ref[2])
 			assignments[i] = lookup[k]
-			del refnormal[k], lookup[k]
+			for l in xrange(3): del refnormal[3*k+2-l]
+			del lookup[k]
 
 	elif( sym[:1] == "d" ):
 		from utilities import get_symt, getvec
