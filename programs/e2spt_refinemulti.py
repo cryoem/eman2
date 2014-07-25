@@ -110,7 +110,7 @@ def main():
 	#parser.add_argument("--refinemultireftag", type=str, help="DO NOT USE THIS PARAMETER. It is passed on from e2spt_refinemulti.py if needed.", default='')
 	
 	
-	parser.add_argument("--radius", type=float, help="""Will make --align and --ralign None. Hydrodynamic radius of the particle in Angstroms. 
+	parser.add_argument("--radius", type=float, help="""Will make --align and --falign None. Hydrodynamic radius of the particle in Angstroms. 
 													This will be used to automatically calculate the angular steps to use in search of the best alignment.
 													Make sure the apix is correct on the particles' headers, sine the radius will be converted from Angstroms to pixels.
 													Then, the fine angular step is equal to 360/(2*pi*radius), and the coarse angular step 4 times that""", default=0)
@@ -146,8 +146,8 @@ def main():
 	parser.add_argument("--npeakstorefine", type=int, help="The number of best coarse alignments to refine in search of the best final alignment. Default=4.", default=4, guitype='intbox', row=9, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym[1]')
 	parser.add_argument("--align",type=str,help="This is the aligner used to align particles to the previous class average. Default is rotate_translate_3d:search=10:delta=15:dphi=15, specify 'None' to disable", returnNone=True, default="rotate_translate_3d:search=10:delta=15:dphi=15", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'3d\')', row=12, col=0, rowspan=1, colspan=3, nosharedb=True, mode="alignment,breaksym['rotate_symmetry_3d']")
 	parser.add_argument("--aligncmp",type=str,help="The comparator used for the --align aligner. Default is the internal tomographic ccc. Do not specify unless you need to use another specific aligner.",default="ccc.tomo", guitype='comboparambox',choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=13, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
-	parser.add_argument("--ralign",type=str,help="This is the second stage aligner used to refine the first alignment. Default is refine.3d, specify 'None' to disable", default="refine_3d", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine.*3d\')', row=14, col=0, rowspan=1, colspan=3, nosharedb=True, mode='alignment,breaksym[None]')
-	parser.add_argument("--raligncmp",type=str,help="The comparator used by the second stage aligner. Default is the internal tomographic ccc",default="ccc.tomo", guitype='comboparambox',choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=15, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
+	parser.add_argument("--falign",type=str,help="This is the second stage aligner used to refine the first alignment. Default is refine.3d, specify 'None' to disable", default="refine_3d", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine.*3d\')', row=14, col=0, rowspan=1, colspan=3, nosharedb=True, mode='alignment,breaksym[None]')
+	parser.add_argument("--faligncmp",type=str,help="The comparator used by the second stage aligner. Default is the internal tomographic ccc",default="ccc.tomo", guitype='comboparambox',choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=15, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
 	parser.add_argument("--averager",type=str,help="The type of averager used to produce the class average. Default=mean",default="mean")
 	parser.add_argument("--keep",type=float,help="The fraction of particles to keep in each class.",default=1.0, guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode='alignment,breaksym')
 
@@ -165,7 +165,7 @@ def main():
 	#parser.add_argument('--reverse_contrast', action="store_true", default=False, help=""" This multiplies the input particles by -1. Remember that EMAN2 **MUST** work with 'white protein' """)
 	
 	parser.add_argument("--shrink", type=int,default=0,help="Optionally shrink the input volumes by an integer amount for coarse alignment.")
-	parser.add_argument("--shrinkrefine", type=int,default=0,help="Optionally shrink the input volumes by an integer amount for fine alignment.")
+	parser.add_argument("--shrinkfine", type=int,default=0,help="Optionally shrink the input volumes by an integer amount for fine alignment.")
 	
 	#parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default='', guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 
@@ -178,19 +178,6 @@ def main():
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
-	'''
-	Parameters to compensate for the missing wedge using --cpm=fsc.tomo
-	'''
-	parser.add_argument("--wedgeangle",type=float,help="""Missing wedge angle, calculated as 90 minus the value yo provide, times 2. 
-														For example, --wedgeangle=60 will represent a wedge of size (90-60)*2=60.
-														--wedgeangle=70, results in a narrower wedge of size (90-70)*2=40.
-														In reality, you should enter here the range of your DATA COLLECTION.
-														I.e., if you collected your tiltseries from -60 to 60, enter --wedgeangle=60.""",default=None)
-	parser.add_argument("--wedgei",type=float,help="Missingwedge begining (in terms of its 'height' along Z. If you specify 0, the wedge will start right at the origin.", default=None)
-	parser.add_argument("--wedgef",type=float,help="Missingwedge ending (in terms of its 'height' along Z. If you specify 1, the wedge will go all the way to the edge of the box.", default=None)
-	#parser.add_argument("--fitwedgepost", action="store_true", help="Fit the missing wedge AFTER preprocessing the subvolumes, not before, IF using the fsc.tomo comparator for --aligncmp or --raligncmp.", default=False)
-	parser.add_argument("--writewedge", action="store_true", help="Write a subvolume with the shape of the fitted missing wedge if --raligncmp or --aligncmp are fsc.tomo. Default is 'True'. To turn on supply --writewedge", default=False)		
-	
 	parser.add_argument("--plotccc", action='store_true', help="""Turn this option on to generate
 		a plot of the ccc scores both during model generation with e2spt_classaverage.py or
 		e2spt_hac.py and for refinement results of e2spt_refinemulti.py.
@@ -206,7 +193,7 @@ def main():
 
 	if options.radius:
 		options.align = None
-		options.ralign = None
+		options.falign = None
 	
 		
 	#print "\n\n\n(e2spt_refinemulti.py) options.refpreprocess is", options.refpreprocess
