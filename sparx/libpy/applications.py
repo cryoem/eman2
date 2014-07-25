@@ -9525,14 +9525,11 @@ def ali_vol_M(vol, refv, ang_scale, shift_scale, mask=None, discrepancy = "ccc")
 	from alignment    import ali_vol_func
 	from utilities    import get_image, model_circle
 	from utilities    import amoeba, get_params3D, set_params3D
-	from utilities    import get_arb_params, set_arb_params
 	
 	ref = get_image(refv)
 	nx = ref.get_xsize()
 	ny = ref.get_ysize()
 	nz = ref.get_zsize()
-
-	names_params = ["phi", "theta", "psi", "s3x", "s3y", "s3z"]
 
 	e = get_image(vol)
 
@@ -9547,7 +9544,8 @@ def ali_vol_M(vol, refv, ang_scale, shift_scale, mask=None, discrepancy = "ccc")
 	else:
 		minval = None
 
-	params = get_arb_params(e, names_params)
+	params = get_params3D(e)
+	params = [params[i] for i in xrange(6)]
 	data = [e, ref, mask, minval, discrepancy]
 	
 	maxiter = 500
@@ -9556,7 +9554,7 @@ def ali_vol_M(vol, refv, ang_scale, shift_scale, mask=None, discrepancy = "ccc")
 	if new_params[2]>=maxiter:
 		print "Warning: amoeba reached the max number of iterations allowed."
 
-	set_arb_params(e, [new_params[0][0], new_params[0][1], new_params[0][2], new_params[0][3], new_params[0][4], new_params[0][5]], names_params)
+	set_params3D(e, [new_params[0][0], new_params[0][1], new_params[0][2], new_params[0][3], new_params[0][4], new_params[0][5], 0, 1.0])
 	if type(vol)==type(""):
 		from utilities import write_headers
 		write_headers( vol, [e], [0])

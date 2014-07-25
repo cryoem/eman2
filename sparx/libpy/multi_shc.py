@@ -2687,13 +2687,13 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 	nx  = bcast_number_to_all(nx, source_node = main_node)
 	onx = bcast_number_to_all(onx, source_node = main_node)
 	if last_ring < 0:	last_ring = int(onx/2) - 2
+	mask2D  = model_circle(last_ring,onx,onx) - model_circle(first_ring,onx,onx)
 	if(shrinkage < 1.0):
 		first_ring = max(1, int(first_ring*shrinkage))
 		last_ring  = int(last_ring*shrinkage)
 		ali3d_options.ou = last_ring
 		ali3d_options.ir = first_ring
 	numr	= Numrinit(first_ring, last_ring, rstep, "F")
-	mask2D  = model_circle(last_ring,nx,nx) - model_circle(first_ring,nx,nx)
 
 
 	data = [None]*nima
@@ -2717,6 +2717,7 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 			sx *= shrinkage
 			sy *= shrinkage
 			set_params_proj(data[im], [phi,theta,psi,sx,sy])
+	del mask2D
 
 	# Reference volume reconstruction
 	mpi_barrier(mpi_comm)
