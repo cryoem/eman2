@@ -20,6 +20,8 @@ High priority
 6/14/14		e2markbadptcl
 7/7/14		scale box locations
 7/7/14		per-particle subunit subtraction for Chris
+7/27/14		ctf interactive seems to autosave parameters without button press
+7/27/14		ctf struct factor determination with oversampling messed up!!!
 
 2/24/14		Save sets in imagemx control panel error (updateGL, update not defined ?)
 2/20/14		Save plots as images, more features in 2-D plotting
