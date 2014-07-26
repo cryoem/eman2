@@ -2845,7 +2845,7 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 					msg = "          %10.3f     %7d"%(region[lhx], histo[lhx])
 					log.add(msg)
 				log.add("____________________________________________________")
-				if(nsoft<2 and terminate = 0):
+				if(nsoft<2 and terminate == 0):
 					lhx = 0
 					for msg in all_pixer:
 						if(msg < 2.0): lhx += 1
