@@ -2816,6 +2816,7 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 			terminate = 0
 			if myid == main_node:
 				#total_checked_refs = sum(total_checked_refs)
+				if(nsoft < 2):  par_r[0] = total_nima - par_r[0]
 				log.add("=========== Number of better peaks found ==============")
 				for lhx in xrange(nsoft+1):
 					msg = "            %5d     %7d"%(lhx, par_r[lhx])
