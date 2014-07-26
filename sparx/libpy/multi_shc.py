@@ -2816,7 +2816,6 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 			terminate = 0
 			if myid == main_node:
 				#total_checked_refs = sum(total_checked_refs)
-				if(nsoft < 2):  par_r[0] = total_nima - par_r[0]
 				log.add("=========== Number of better peaks found ==============")
 				for lhx in xrange(nsoft+1):
 					msg = "            %5d     %7d"%(lhx, par_r[lhx])
@@ -2846,6 +2845,15 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 					msg = "          %10.3f     %7d"%(region[lhx], histo[lhx])
 					log.add(msg)
 				log.add("____________________________________________________")
+				if(nsoft<2 and terminate = 0):
+					lhx = 0
+					for msg in all_pixer:
+						if(msg < 2.0): lhx += 1
+					if(float(lhx)/float(total_nima) > saturatecrit):
+						terminate = 1
+						log.add("...............")
+						log.add(">>>>>>>>>>>>>>>   Will terminate as %4.2f images had pixel error <2.0"%saturatecrit)
+					
 				"""
 				if (max(all_pixer) < 0.5) and (sum(all_pixer)/total_nima < 0.05):
 					terminate = 1
