@@ -2534,7 +2534,18 @@ def do_volume(data, options, mpi_comm):
 		vol = threshold(vol)
 		Util.mul_img(vol, mask3D)
 		del mask3D
-		vol = filt_tanl(vol, options.fl, options.aa)
+		if( options.pwreference ):
+			from utilities    import read_text_file
+			from fundamentals import rops_table, fftip, fft
+			from filter       import filt_table
+			rt = read_text_file( options.pwreference )
+			fftip(vol)
+			ro = rops_table(vol)
+			from math import sqrt
+			#  Here unless I am mistaken it is enough to take the beginning of the reference pw.
+			for i in xrange(1,len(ro)):  ro[i] = sqrt(rt[i]/ro[i])
+			vol = fft( filt_table( filt_tanl(vol, options.fl, options.aa), ro) )
+		else:  vol = filt_tanl(vol, options.fl, options.aa)
 	# broadcast volume
 	bcast_EMData_to_all(vol, myid, 0, comm=mpi_comm)
 	#=========================================================================
