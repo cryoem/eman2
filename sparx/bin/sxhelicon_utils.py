@@ -46,7 +46,7 @@ def main():
         Functionalities:
 
         1. Helicise input volume and save the result to output volume:
-            sxhelicon_utils.py input_vol.hdf output_vol.hdf --helicise --dp=27.6 --dphi=166.5 --fract=0.65 --rmax=70 --rmin=1 --apix=1.84         
+            sxhelicon_utils.py input_vol.hdf output_vol.hdf --helicise --dp=27.6 --dphi=166.5 --fract=0.65 --rmax=70 --rmin=1 --apix=1.84 --sym=D1        
 
         2. Helicise pdb file and save the result to a new pdb file:
             sxhelicon_utils.py input.pdb output.pdb --helicisepdb --dp=27.6 --dphi=166.5 --nrepeats --apix=1.84         

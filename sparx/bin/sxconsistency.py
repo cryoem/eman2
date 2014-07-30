@@ -287,7 +287,7 @@ def main():
 				ll+=1
 
 		thesame = 0
-		
+
 		for ll in xrange(len(qt[0])):
 			rw = []
 			for j in xrange(6):
