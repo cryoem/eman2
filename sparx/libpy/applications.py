@@ -14396,7 +14396,7 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 					print_msg("\n (localhelicon_MPI) ITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.4f, xrange (Pixels) = %5.4f,stepx (Pixels) = %5.4f, yrng (Pixels) = %5.4f,  stepy (Pixels) = %5.4f, y_restrict (Pixels)=%5.4f, ynumber = %3d\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],stepx[N_step],yrng[N_step],stepy,y_restrict[N_step], ynumber[N_step]))
 
 				volft,kb = prep_vol( vol )
-				#  What about cusion for an neighborhood?  PAP 06/04/2014
+				#  What about cushion for a neighborhood?  PAP 06/04/2014
 				refrings = prepare_refrings2(  volft, kb, nmax, segmask, delta[N_step], ref_a, symref, numr, MPI = True, phiEqpsi = "Zero", initial_theta =initial_theta, delta_theta = delta_theta)
 				del volft,kb
 
@@ -14944,7 +14944,7 @@ def prepare_refrings2( volft, kb, nz, segmask, delta, ref_a, sym, numr, MPI=Fals
 			Util.Applyws(cimage, numr, wr_four)
 			refrings[i] = cimage
 	else:
-		print "don't handle this case"
+		print "do not handle this case"
 		sys.exit()
 	if MPI:
 		from utilities import bcast_EMData_to_all
