@@ -14167,11 +14167,11 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 	else:
 		finfo = None
 
+	sym = sym.lower()
 	symref = "s"+sym
 
 	ref_a= "P"
-	symmetryLower = sym.lower()
-	symmetry_string = split(symmetryLower)[0]
+	symmetry_string = split(sym)[0]
 
 	xrng        = get_input_from_string(xr)
 	y_restrict       = get_input_from_string(y_restrict)
