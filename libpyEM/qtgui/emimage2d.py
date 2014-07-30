@@ -789,7 +789,111 @@ class EMImage2DWidget(EMGLWidget):
 
 		return False
 
-	def render_bitmap(self):
+	def render_bitmap (self) :
+		"""This will render the current bitmap into a string and
+			return a tuple with 1 or 3 (grey vs RGB), width, height,
+			and the raw data string, with optional histogram data appended
+			(1024 bytes)."""
+
+		if self.invert :
+			pixden = (255, 0)
+		else :
+			pixden = (0, 255)
+
+		use_fft = (self.curfft in (1,2,3))
+
+		have_textures = (not self.glflags.npt_textures_unsupported ( ))
+
+		if self.curfft == 1 :
+			# doing a 24-bit color FFT:
+
+			if not self.display_fft.is_complex ( ) :
+				print "Error, the FFT is not complex; internal error"
+				return None
+
+			value_size = 3  # 3 8-bit bytes
+			flags = 3       # 2 (histogram) + 1 (an R,G,B flag)
+		else :
+			value_size = 1  # 1 8-bit byte
+
+			if self.curfft in (2,3) :
+				# doing a grey scale FFT (of amplitude or phase):
+
+#				if have_textures :
+					flags = 2  # histogram
+#				else :
+#					flags = 6  # 2 (histogram) + 4 (invert y)
+			else :
+#				if have_textures :
+					# doing a histogram:
+
+					if self.histogram == 1 :
+						# flat histogram:
+
+						flags = 34  # 2 (histogram) + 32 (not ordinary histogram)
+					elif self.histogram == 2 :
+						# Gaussian histogram:
+
+						flags = 98  # 2 + 32 + 64 (Gaussian histogram)
+					else :  ## self.histogram == 0
+						# ordinary histogram:
+
+						flags = 2   # 2 (histogram)
+#				else :
+#					flags = 6  # 2 (histogram) + 4 (invert y)
+
+		if use_fft :
+			# doing an FFT:
+
+			if value_size != 3 :
+				values = self.display_fft
+
+			min_val = self.fcurmin
+			max_val = self.fcurmax
+			gam_val = self.fgamma
+		else :
+			# using real data
+
+			values  = self.data
+			min_val = self.curmin
+			max_val = self.curmax
+			gam_val = self.gamma
+
+		wid = (self.width() * value_size - 1) / 4 * 4 + 4
+		wdt =  self.width()
+		hgt =  self.height()
+
+		x0  = 1 + int(self.origin[0] / self.scale)
+		y0  = 1 + int(self.origin[1] / self.scale)
+	
+#		print "--------------------------------------------------------------"
+#		print "invert, curfft, histogram:", \
+#				 self.invert, self.curfft, self.histogram
+#		print "size, x0, y0, wdt, hgt, wid, flags:", \
+#				 value_size, x0, y0, wdt, hgt, wid, flags
+#		print "scl, pix0, pix1, min, max, gam:", \
+#				 self.scale, pixden[0], pixden[1], min_val, max_val, gam_val
+
+		if value_size == 3 :
+			# get color FFT data:
+
+			return_data = (value_size, wid, hgt,
+								self.display_fft.render_ap24 (
+								x0, y0, wdt, hgt, wid,
+								self.scale, pixden[0], pixden[1],
+								min_val, max_val, gam_val, flags))
+		else :
+			# get grey scale data:
+
+			return_data = (value_size, wid, hgt,
+								GLUtil.render_amp8 (values,
+								x0, y0, wdt, hgt, wid,
+								self.scale, pixden[0], pixden[1],
+								min_val, max_val, gam_val, flags))
+
+		return return_data
+
+	def render_bitmap_old(self):   # no longer used - use new render_bitmap
 		"""This will render the current bitmap into a string and return a tuple with 1 or 3 (grey vs RGB), width, height, and the raw data string"""
 		if not self.invert : pixden=(0,255)
 		else: pixden=(255,0)
