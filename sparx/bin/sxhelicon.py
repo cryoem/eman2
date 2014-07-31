@@ -66,7 +66,7 @@ def main():
 	parser.add_option("--debug",              action="store_true",   default=False,               help="debug")
 	parser.add_option("--seg_ny",             type="int",            default= 45,                 help="Desired y dimension of segments.  Only central part of segments nseg_ny pixels long will be used in calculations.")
 	parser.add_option("--searchxshift",       type="float",		     default= 0.0,                help="search range for x-shift determination: +/- searchxshift (Angstroms)")
-	parser.add_option("--xwobble",            type="float",		     default=0.0,                 help="wobble in y-directions (default = 0.0) (Angstroms)")
+	parser.add_option("--xwobble",            type="float",		     default=0.0,                 help="wobble in x-directions (default = 0.0) (Angstroms)")
 	parser.add_option("--ywobble",            type="float",          default=0.0,                 help="wobble in y-directions (default = 0.0) (Angstroms)")
 	parser.add_option("--ystep",              type="float",          default=0.0,                 help="step is in y-directions (default = pixel size) (Angstroms)")
 	parser.add_option("--phiwobble",          type="float",          default=0.0,                 help="wobble of azimuthal angle (default = 0.0) (degrees)")
