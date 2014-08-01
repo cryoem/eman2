@@ -210,6 +210,12 @@ def main():
 		
 	randptcls = {}
 	
+	
+	modelhdr = EMData(options.input,0,True)
+	dimension = 3
+	if int(modelhdr['nz']) < 2:
+		dimension = 2
+	
 	if options.randstack:
 		print "\n\nI will not generate a randstack but will read it from", options.randstack
 
@@ -260,24 +266,8 @@ def main():
 				#>>randptcls.append(a)
 				randptcls.update({np:a})
 			
-			subtomosim(options, randptcls, simptclsname )
+			subtomosim(options, randptcls, simptclsname, dimension )
 		
-		
-		#if options.simref and options.input and not options.nosim:
-		#	model = EMData(options.input,0)
-		#	
-		#	name = options.path + '/' + options.input.replace('.hdf','_SIM.hdf').split('/')[-1]
-		#	model['sptsim_randT'] = Transform()
-		#	model['xform.align3d'] = Transform()
-		#	ret = subtomosim(options,[model],name)
-		#
-		#	if ret == 1:
-		#		#os.system('e2proc3d.py ' + name + ' ' + name + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))
-		#		
-		#		clip3cmd = 'e2proc3d.py ' + name + ' ' + name + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(0) + ' --last=' + str(0)
-		#		p=subprocess.Popen( clip3cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		#		text=p.communicate()	
-		#		p.stdout.close()	
 	
 	elif options.input:
 	
@@ -332,15 +322,21 @@ def main():
 					tag = str(i).zfill(len(str(nrefs)))
 				
 				
-				modelhdr = EMData(options.input,0,True)
+				
 	
 				'''
 				Make model's box cubical if it isn't
 				'''
-			
-				if modelhdr['nx'] != modelhdr['ny'] or modelhdr['nx'] != modelhdr['nz'] or modelhdr['ny'] != modelhdr['nz']:	
-					sptmakecube( options )
-					modelhdr = EMData(options.input,0,True)	
+				
+					
+				if dimension == 3:
+					
+					if modelhdr['nx'] != modelhdr['ny'] or modelhdr['nx'] != modelhdr['nz'] or modelhdr['ny'] != modelhdr['nz']:	
+						print "\nNOT Making the img a 3d cube"
+						sptmakecube( options )
+						modelhdr = EMData(options.input,0,True)
+				else:
+					print "\nThe image is 2D"	
 			
 				'''
 				Preprocess model if necessary
@@ -381,7 +377,7 @@ def main():
 				print "\n\n\n\n\n\(e2spt_simulation) before subtomosim, simptclsname is", simptclsname
 				print "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS\n\n\n\n\n\n\n\n"
 				if not options.nosim:
-					subtomosim(options,randptcls,simptclsname)		
+					subtomosim(options,randptcls,simptclsname,dimension)		
 				else:
 					os.system('cp ' + randstackname + ' ' + simptclsname)
 					
@@ -397,26 +393,9 @@ def main():
 					
 					if not options.nosim:
 						simorthoptclsname = options.path + '/orthoptcls.hdf'
-						subtomosim(options,orthoptcls,simorthoptclsname)		
+						subtomosim(options,orthoptcls,simorthoptclsname,dimension)		
 
-				#if ret == 1:
-				#	os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))	
-
-				#if options.simref and not options.nosim:
-				#	#name = options.input.replace('.hdf','_SIM.hdf').split('/')[-1]
-				#	
-				#	simmodelname = options.path + '/simmodel.hdf'
-				#	model['sptsim_randT'] = Transform()
-				#	model['xform.align3d'] = Transform()
-				#	ret = subtomosim(options,[model],simmodelname)
-				#
-				#	if ret == 1:
-				#		#os.system('e2proc3d.py ' + name + ' ' + name + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i))
-				#		
-				#		clip3cmd = 'e2proc3d.py ' + simmodelname + ' ' + simmodelname + ' --clip=' + str(options.finalboxsize) + ' --first=' + str(i) + ' --last=' + str(i)
-				#		p=subprocess.Popen( clip3cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-				#		text=p.communicate()	
-				#		p.stdout.close()
+				
 				kkk+=1
 	
 	E2end(logger)
@@ -465,7 +444,7 @@ def sptfixformat( options ):
 
 
 def sptmakecube( options ):
-	
+	modelhdr = EMData(options.input,0,True)
 	newsize = max( int(modelhdr['nx']), int(modelhdr['ny']), int(modelhdr['nz']) )
 	print "\n\n\n\nNEWSIZE will be", newsize
 
@@ -558,7 +537,9 @@ def randomizer(options, model, tag):
 		random_transform = Transform()	
 		
 		if not options.notrandomize:
+			
 			if i > 0:
+				print "\nGenerating random orientation"
 				rand_orient = OrientGens.get("rand",{"n":1, "phitoo":1})						#Generate a random orientation (randomizes all 3 euler angles)
 				c1_sym = Symmetries.get("c1")
 				random_transform = rand_orient.gen_orientations(c1_sym)[0]
@@ -578,7 +559,9 @@ def randomizer(options, model, tag):
 			
 				if randtx or randty or randtz:
 					random_transform.translate(randtx, randty, randtz)
-
+			else:
+				print "\nFirst particle is NEVER randomized"
+			
 			b.transform(random_transform)		
 
 		b['sptsim_randT'] = random_transform
@@ -596,10 +579,12 @@ def randomizer(options, model, tag):
 			
 			b['origin_x'] = 0									#Make sure the origin is set to zero, to avoid display issues with Chimera
 			b['origin_y'] = 0
+	
+			#if dimension == 3:
 			b['origin_z'] = 0
 			
 			b.write_image(randstackname,i)
-			print "Actually, particle written to", randstackname
+			print "Actually, particle %d written to %s" % ( i, randstackname )
 
 		#>>randptcls.append(b)
 
@@ -664,7 +649,7 @@ adds noise and ctf to each projection, randomizes the position of each particle 
 and recounstructs a new 3D volume from the simulated tilt series.
 ====================
 '''	
-def subtomosim(options,ptcls,outname):
+def subtomosim(options,ptcls,outname,dimension):
 	#print "INSIDE SUBTOMOSIM"
 	
 	print "\n\n\n\n\n(e2spt_simulation) Outname received in subtomosim", outname
@@ -682,20 +667,7 @@ def subtomosim(options,ptcls,outname):
 		
 		print "(e2spt_simulation) There are these many slices to produce to simulate each subtomogram", options.nslices
 	
-	#outname = stackname.replace('.hdf','_ptcls.hdf')
-		
-	#
-	#if options.output:
-	#	outname = options.path + '/' + options.output.replace('.hdf','_ptcls.hdf')
 	
-		
-	#if len(ptcls) == 1 and '_SIM.hdf' in stackname:
-	#	outname = stackname.split('/')[-1]
-	
-	#tomogramdata=[]
-	
-	#print "\n\n\n%%%%%%%%%%%%%%%%The number of particles are", len(ptcls)
-	#print "\n\n\n"
 	
 	tasks=[]
 	#>>for i in range(len(ptcls)):
@@ -730,7 +702,6 @@ def subtomosim(options,ptcls,outname):
 		#print "And its index is", pn
 		
 		if i==0:
-			#>>print "\n\n(subtomosim) The size of the final particle is",results[pn]['nx'],results[pn]['ny'],results[pn]['nz']
 			print "\n\n(subtomosim) The size of the final particle is",result[key]['nx'],result[key]['ny'],result[key]['nz']
 
 		result[key]['origin_x'] = 0									#Make sure the origin is set to zero, to avoid display issues with Chimera
@@ -742,7 +713,9 @@ def subtomosim(options,ptcls,outname):
 		#pn+=1
 		ii+=1
 	
-	if options.finalboxsize:
+	
+	
+	if options.finalboxsize and dimension == 3:
 		box = int(options.finalboxsize)
 		print "\nActually, because of finalboxsize$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n options.finalboxsize is", options.finalboxsize
 		print "Therefore, box of final simulated stack is", box
@@ -801,6 +774,10 @@ class SubtomoSimTask(JSTask):
 		
 		print "\n\n(SubtomoSimTask) Size of the particle for simulation is", image['nx'],image['ny'],image['nz']
 		
+		dimension = 3
+		if int(image['nz']) < 2:
+			dimension = 2
+		
 		outname = self.classoptions['outname']
 		
 		if options.verbose:
@@ -850,8 +827,13 @@ class SubtomoSimTask(JSTask):
 			#print "Real alt is", realalt
 			#print "Iterating over slices. Am in tiltstep, slice, alt", tiltstep,j,realalt
 		
+			
 			t = Transform({'type':'eman','az':90,'alt':realalt,'phi':0})				#Generate the projection orientation for each picture in the tilt series
 		
+			if dimension == 2:
+			
+				t = Transform({'type':'eman','az':realalt,'alt':0,'phi':0})
+			
 			dz = -1 * px * numpy.sin(realalt)							#Calculate the defocus shift per picture, per particle, depending on the 
 																	#particle's position relative to the tilt axis. For particles left of the tilt axis,
 																	#px is negative. With negative alt [left end of the ice down, right end up], 
@@ -861,6 +843,7 @@ class SubtomoSimTask(JSTask):
 			
 			
 			#prj = image.process("misc.directional_sum",{"axis":"z"})
+			print "\nProjecting from",t,realalt
 				
 			prj = image.project("standard",t)
 			
@@ -902,6 +885,7 @@ class SubtomoSimTask(JSTask):
 			raw_projections.append(prj)
 				
 			prj_fft = prj.do_fft()
+			prj_r = prj
 			
 			#print "Sizes of prj and prj_ftt are", prj['nx'],prj['ny'],prj_fft['nx'],prj_fft['ny']
 		
@@ -915,10 +899,12 @@ class SubtomoSimTask(JSTask):
 				ctf.compute_2d_complex(prj_ctf,Ctf.CtfType.CTF_AMP)
 				prj_fft.mult(prj_ctf)
 		
-			prj_r = prj_fft.do_ift()							#Go back to real space
+				prj_r = prj_fft.do_ift()							#Go back to real space
+			
+			
 			noise = ''
 		
-			if options.snr and options.snr != 0.0 and options.snr != '0.0' and options.snr != '0':
+			if options.snr and options.snr != 0.0 and options.snr != '0.0' and options.snr != '0' and dimension == 3:
 				nx=prj_r['nx']
 				ny=prj_r['ny']
 			
@@ -965,12 +951,12 @@ class SubtomoSimTask(JSTask):
 	
 	
 	
-		print "The box for IMAGE is with image.get_xsize", image.get_xsize()
-		print "Whereas with image['nx']", image['nx']
+		#print "The box for IMAGE is with image.get_xsize", image.get_xsize()
+		#print "Whereas with image['nx']", image['nx']
 
 		box = max(int(image['nx']),int(image['ny']),int(image['nz']))
 		
-		print "!!!!!!!!!!!!!!!Therefore, box is", box
+		#print "!!!!!!!!!!!!!!!Therefore, box is", box
 		
 		mode='gauss_2'
 		if options.reconstructor:
@@ -981,7 +967,14 @@ class SubtomoSimTask(JSTask):
 					print "\nThe reconstructor mode has been changed from default to", mode
 					#sys.exit()
 					
+		
 		r = Reconstructors.get(options.reconstructor[0],{'size':(box,box,box),'sym':'c1','verbose':True,'mode':'gauss_2'})
+		
+		if dimension == 2:
+			print "Boxsize to set up 2D reconstructor is", box,box
+			r = Reconstructors.get(options.reconstructor[0],{'size':(box,box,1),'sym':'c1','verbose':True,'mode':'gauss_2'})
+
+		#
 		#r = Reconstructors.get(options.reconstructor[0],options.reconstructor[1])
 		r.setup()
 	
@@ -989,8 +982,8 @@ class SubtomoSimTask(JSTask):
 	
 		k=0
 		for p in ctfed_projections:
-			#print "Adding projection k", k
-			#print "Whose min and max are", p['minimum'], p['maximum']
+			print "Adding projection k", k
+			print "Whose min and max are", p['minimum'], p['maximum']
 			#print "The size of the prj to insert is", p['nx']
 			p = r.preprocess_slice(p,p['xform.projection'])
 			r.insert_slice(p,p['xform.projection'],1.0)
