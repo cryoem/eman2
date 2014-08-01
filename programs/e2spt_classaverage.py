@@ -165,8 +165,8 @@ def main():
 	
 	parser.add_argument("--postprocess",type=str,help="A processor to be applied to the FINAL volume after averaging the raw volumes in their FINAL orientations, after all iterations are done.",default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=16, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
-	parser.add_argument("--notprocfinelikecoarse",action='store_true',default=False,help="""
-		If you supply this parameters, particles for fine alignment will NOT be preprocessed
+	parser.add_argument("--procfinelikecoarse",action='store_true',default=False,help="""
+		If you supply this parameters, particles for fine alignment will be preprocessed
 		identically to particles for coarse alignment by default.  
 		If you supply this, but want specific parameters for preprocessing particles for 
 		also supply: fine alignment, nd supply fine alignment parameters, such as 
@@ -870,6 +870,10 @@ def main():
 			if options.savesteps and not options.donotaverage:
 				refname = options.path + '/class_' + str(ic).zfill( len( str(ic) )) + '.hdf'
 				ref['xform.align3d']=Transform()
+				ref['origin_x'] = 0
+				ref['origin_y'] = 0
+				ref['origin_z'] = 0
+				
 				ref.write_image(refname,it)
 				
 				print "\n\nFor the final avg going into class_x.hdf, ali params are", ref['xform.align3d']
@@ -2132,8 +2136,7 @@ def alignment(fixedimage,image,label,options,xformslabel,iter,transform,prog='e2
 	#Preprocess the reference or "fixed image"
 	#########################################
 	sfixedimage = fixedimage.copy()
-	
-	s2fixedimage = sfixedimage.copy()
+	s2fixedimage = fixedimage.copy()
 	
 	
 	#print "received reference image in alignment and values are", fixedimage, fixedimage['minimum'],fixedimage['maximum'],fixedimage['sigma'],fixedimage['mean']
@@ -2154,12 +2157,12 @@ def alignment(fixedimage,image,label,options,xformslabel,iter,transform,prog='e2
 		
 		if options.shrink and int(options.shrink) > 1:
 			sfixedimage = sfixedimage.process('math.meanshrink',{'n':options.shrink})
-			
-		if options.shrinkfine and int(options.shrinkfine) > 1:
+		
+		if options.procfinelikecoarse:
+			s2fixedimage = sfixedimage.copy()	
+		
+		elif options.shrinkfine and int(options.shrinkfine) > 1:
 			s2fixedimage = s2fixedimage.process('math.meanshrink',{'n':options.shrinkfine})
-	
-		elif not options.notprocfinelikecoarse:
-			s2fixedimage = sfixedimage.copy()
 	
 	elif refpreprocess:
 		if options.clipali or options.threshold or options.normproc or options.mask or options.preprocess or options.lowpass or options.highpass or int(options.shrink) > 1:
@@ -2167,14 +2170,14 @@ def alignment(fixedimage,image,label,options,xformslabel,iter,transform,prog='e2
 			sfixedimage = preprocessing(fixedimage,options,options.mask,options.clipali,options.normproc,options.shrink,options.lowpass,options.highpass,options.preprocess,options.threshold,refindx,'ref','yes',round)
 		
 		#Only preprocess again if there's fine alignment, AND IF the parameters for fine alignment are different
-		if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none' and (options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1):
-			s2fixedimage = preprocessing(fixedimage,options,options.mask,options.clipali,options.normproc,options.shrinkfine,options.lowpassfine,options.highpassfine,options.preprocessfine,options.threshold,refindx,'ref','no',round)
-		
-		elif not options.notprocfinelikecoarse:
-			s2fixedimage = sfixedimage.copy()
-		#else:
-		#	s2fixedimage = image.copy()
+		if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
+			if options.procfinelikecoarse:
+				s2fixedimage = sfixedimage.copy()
+				print "REFERENCE fine preprocessing is equal to coarse"
 	
+			elif options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1:
+				s2fixedimage = preprocessing(fixedimage,options,options.mask,options.clipali,options.normproc,options.shrinkfine,options.lowpassfine,options.highpassfine,options.preprocessfine,options.threshold,refindx,'ref','no',round)
+		
 	
 	#########################################
 	#Preprocess the particle or "moving image"
@@ -2190,18 +2193,14 @@ def alignment(fixedimage,image,label,options,xformslabel,iter,transform,prog='e2
 	
 	#Only preprocess again if there's fine alignment, AND IF the parameters for fine alignment are different
 	
-	if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none' and (options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1):
-		s2image = preprocessing(image,options,options.mask,options.clipali,options.normproc,options.shrinkfine,options.lowpassfine,options.highpassfine,options.preprocessfine,options.threshold,ptclindx,'ptcls','no',round)
-		print "There was fine preprocessing"
+	if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none': 
+		if options.procfinelikecoarse:
+			s2image = simage.copy()
+			print "PARTICLE fine preprocessing is equal to coarse"
+		elif options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1:
+			s2image = preprocessing(image,options,options.mask,options.clipali,options.normproc,options.shrinkfine,options.lowpassfine,options.highpassfine,options.preprocessfine,options.threshold,ptclindx,'ptcls','no',round)
+			print "There was fine preprocessing"
 		#sys.exit()
-	
-	elif not options.notprocfinelikecoarse:
-		s2image = simage.copy()
-		print "Fine preprocessing is equal to coarse"
-		#sys.exit()
-		
-	#else:
-	#	s2image = image.copy()
 	
 	if transform:
 		#print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nThere WAS a transform, see", transform
@@ -2289,7 +2288,7 @@ def alignment(fixedimage,image,label,options,xformslabel,iter,transform,prog='e2
 		# Now loop over the individual peaks and refine each
 		bestfinal=[]
 		peaknum=0
-		print "options.falign is", options.falign, type(options.falign)
+		print "\n(e2spt_classaverage.py)(alignment) options.falign is", options.falign, type(options.falign)
 		for bc in bestcoarse:
 			options.falign[1]["xform.align3d"] = bc["xform.align3d"]
 			
@@ -2298,12 +2297,12 @@ def alignment(fixedimage,image,label,options,xformslabel,iter,transform,prog='e2
 			#ali = s2image.align(options.falign[0],s2fixedimage,options.falign[1],options.faligncmp[0],options.faligncmp[1])
 			
 			
-			print s2image['nx'] == s2fixedimage['nx'],  s2image['nx'], type(s2image['nx']), s2fixedimage['nx'], type(s2fixedimage['nx'])
-			print s2image['ny'] == s2fixedimage['ny'],  s2image['ny'], type(s2image['ny']), s2fixedimage['ny'], type(s2fixedimage['ny'])
-			print s2image['nz'] == s2fixedimage['nz'],  s2image['nz'], type(s2image['nz']), s2fixedimage['nz'], type(s2fixedimage['nz'])
+			print "\n(e2spt_classaverage.py)(alignment) s2image['nx'] == s2fixedimage['nx']", s2image['nx'] == s2fixedimage['nx'],  s2image['nx'], type(s2image['nx']), s2fixedimage['nx'], type(s2fixedimage['nx'])
+			print "\n(e2spt_classaverage.py)(alignment) s2image['ny'] == s2fixedimage['ny']", s2image['ny'] == s2fixedimage['ny'],  s2image['ny'], type(s2image['ny']), s2fixedimage['ny'], type(s2fixedimage['ny'])
+			print "\n(e2spt_classaverage.py)(alignment) s2image['nz'] == s2fixedimage['nz']", s2image['nz'] == s2fixedimage['nz'],  s2image['nz'], type(s2image['nz']), s2fixedimage['nz'], type(s2fixedimage['nz'])
 			
 			if int(s2image['nx']) != int(s2fixedimage['nx']) or int(s2image['ny']) != int(s2fixedimage['ny']) or int(s2image['nz']) != int(s2fixedimage['nz']):
-				print "ERROR: FINE alignment images not the same size"
+				print "\n(e2spt_classaverage.py)(alignment) ERROR: FINE alignment images not the same size"
 				print "\nThe particle's FINE size is", s2image['nx'],s2image['ny'],s2image['nz']
 				print "\nThe reference's FINE size is", s2fixedimage['nx'],s2fixedimage['ny'],s2fixedimage['nz']
 				sys.exit('MIE')
