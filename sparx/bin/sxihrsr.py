@@ -57,7 +57,7 @@ def main():
 	parser.add_option("--maxit",              type="int",            default= 30,                 help="maximum number of iterations performed for each angular step (default 30) ")
 	parser.add_option("--CTF",                action="store_true",   default=False,      		  help="CTF correction")
 	parser.add_option("--snr",                type="float",          default= 1.0,                help="Signal-to-Noise Ratio of the data (default 1)")	
-	parser.add_option("--MPI",                action="store_true",   default=False,               help="use MPI version")
+	parser.add_option("--MPI",                action="store_true",   default=True,               help="use MPI version")
 	#parser.add_option("--fourvar",           action="store_true",   default=False,               help="compute Fourier variance")
 	parser.add_option("--apix",               type="float",			 default= -1.0,               help="pixel size in Angstroms")   
 	parser.add_option("--dp",                 type="float",			 default= -1.0,               help="delta z - translation in Angstroms")   

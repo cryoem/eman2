@@ -777,9 +777,11 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 		if theta1 == 0.0: theta1 =90.0
 		theta_number = int((90.0 - theta1)/theta2)
 		#for helical, symmetry = s or scn
-		cn = int(symmetry_string[2:])
+		#cn = int(symmetry_string[2:])
 		for j in xrange(theta_number,-1, -1):
-
+			#  Helicon requires all angles are present
+			k=int(359.99/delta)
+			"""
 			if( j == 0):
 				if (symmetry_string[1] =="c"):
 					if cn%2 == 0:
@@ -799,7 +801,7 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 					k=int(359.99/cn/delta)
 				elif (symmetry_string[1] =="d"):
 					k=int(359.99/2/cn/delta)
-						
+			"""
 			for i in xrange(k+1):
 					angles.append([i*delta,90.0-j*theta2,90.0])
 

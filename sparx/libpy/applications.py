@@ -7386,9 +7386,9 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 			if myid == main_node:
 				start_time = time()
 				if an[N_step] == -1:
-					print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.4f, xrange (Pixels) = %5.4f,stepx (Pixels) = %5.4f, yrng (Pixels) = %5.4f,  stepy (Pixels) = %5.4f, ynumber = %3d\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],stepx[N_step],yrng[N_step],stepy, ynumber[N_step]))
+					print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %5.2f, an = %5.4f, xrange (Pixels) = %5.4f,stepx (Pixels) = %5.4f, yrng (Pixels) = %5.4f,  stepy (Pixels) = %5.4f, ynumber = %3d\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],stepx[N_step],yrng[N_step],stepy, ynumber[N_step]))
 				else:
-					print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.4f, xrange (Pixels) = %5.4f,stepx (Pixels) = %5.4f, yrng (Pixels) = %5.4f,  stepy (Pixels) = %5.4f, y_restrict (Pixels)=%5.4f, ynumber = %3d\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],stepx[N_step],yrng[N_step],stepy,y_restrict[N_step], ynumber[N_step]))
+					print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %5.2f, an = %5.4f, xrange (Pixels) = %5.4f,stepx (Pixels) = %5.4f, yrng (Pixels) = %5.4f,  stepy (Pixels) = %5.4f, y_restrict (Pixels)=%5.4f, ynumber = %3d\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],stepx[N_step],yrng[N_step],stepy,y_restrict[N_step], ynumber[N_step]))
 			if( xysize == -1 and zsize==-1 ):
 				volft,kb = prep_vol( vol )
 				refrings = prepare_refrings( volft, kb, nmax, delta[N_step], ref_a, symref, numr, MPI = True, phiEqpsi = "Zero", initial_theta =initial_theta, delta_theta = delta_theta, ant = max(an[N_step],0.0)*1.1)
@@ -7431,7 +7431,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 						refrings1 (even point-group symmetry AND theta = 90.), and refrings2 ( odd point-group symmetry AND any theta (including theta=90), OR even point-group symmetry AND theta <> 90.)
 						an == -1 exhaustive search
 						psi_max - how far rotation in plane can can deviate from 90 or 270 degrees
-						psi_max -s used in both exhaustive and local searches
+						psi_max - is used in both exhaustive and local searches
 						:::
 						>even point-group symmetry AND theta = 90. 
 							exhaustive   proj_ali_helical_90   psi_max
@@ -14136,7 +14136,7 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 	from string         import lower,split
 	from math           import cos, pi
 	from copy           import copy
-	
+
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
 	main_node = 0
@@ -14175,7 +14175,7 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 	symmetry_string = split(sym)[0]
 
 	xrng        = get_input_from_string(xr)
-	y_restrict       = get_input_from_string(y_restrict)
+	y_restrict  = get_input_from_string(y_restrict)
 	ynumber	    = get_input_from_string(ynumber)
 	for i in xrange(len(ynumber)):
 		if ynumber[i] > 0:
@@ -14327,7 +14327,7 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 	
 	if last_ring < 0:
 		last_ring = (max(seg_ny, 2*int(rmax)))//2 - 2
-	
+
 	numr	= Numrinit(first_ring, last_ring, rstep, "F")
 
 	#if fourvar:  original_data = []
@@ -14404,20 +14404,7 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 				if myid== main_node:
 					print_msg( "Time to prepare rings: %d\n" % (time()-start_time) )
 					start_time = time()
-				#split refrings to two list: refrings1 (even point-group symmetry AND theta = 90. ), 
-				#   or refrings2 ( odd point-group symmetry AND any theta (including theta=90), OR even point-group symmetry AND theta <> 90.
-				refrings1= []
-				refrings2= []
-				sn = int(symmetry_string[1:])
-				for i in xrange( len(refrings) ):
-					if( sn%2 ==0 and abs( refrings[i].get_attr('n3') ) <1.0e-6 ):
-						#  even point-group symmetry AND theta = 90.0
-						refrings1.append( refrings[i] )
-					else:
-						# odd point-group symmetry AND any theta (including theta=90), OR even point-group symmetry AND theta <> 90.
-						refrings2.append( refrings[i] )
 
-				del refrings
 			from numpy import float32
 			dpp = float32(float(dp)/pixel_size)
 			dpp = float( dpp )
@@ -14430,159 +14417,28 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 				Torg = []
 				for im in xrange( seg_start, seg_end ):
 					Torg.append(data[im].get_attr('xform.projection'))
-					
+
+				#  Fit predicted locations as new starting points					
 				if (seg_end - seg_start) > 1:
 					setfilori_SP(data[seg_start: seg_end], pixel_size, dp, dphi)
 
 				for im in xrange( seg_start, seg_end ):
-					peak1 = None
-					peak2 = None
 
-					if( len(refrings1) > 0):
-						peak1, phihi1, theta1, psi1, sxi1, syi1 = \
-							proj_ali_helicon_90_local(data[im], refrings1, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], an[N_step], psi_max, finfo, yrnglocal=y_restrict[N_step])
-
-					if( len(refrings2) > 0):
-						peak2, phihi2, theta2, psi2, sxi2, syi2 = \
-							proj_ali_helicon_local(data[im], refrings2, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], an[N_step], psi_max, finfo, yrnglocal=y_restrict[N_step])
-
-					if peak1 is None:
-						peak = peak2
-						phihi = phihi2
-						theta = theta2
-						psi = psi2
-						sxi = sxi2
-						syi = syi2
-					elif peak2 is None:
-						peak = peak1
-						phihi = phihi1
-						theta = theta1
-						psi = psi1
-						sxi = sxi1
-						syi = syi1
-					else:
-						if(peak1 >= peak2):
-							peak = peak1
-							phihi = phihi1
-							theta = theta1
-							psi = psi1
-							sxi = sxi1
-							syi = syi1
-						else:
-							peak = peak2
-							phihi = phihi2
-							theta = theta2
-							psi = psi2
-							sxi = sxi2
-							syi = syi2
+					peak, phihi, theta, psi, sxi, syi = \
+				proj_ali_helicon_90_local(data[im], refrings, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], \
+					an[N_step], psi_max, finfo, yrnglocal=y_restrict[N_step])
 
 					if(peak > -1.0e23):
 
-						# unique ranges of azimuthal angle for ortho-axial and non-ortho-axial projection directions are identified by [k0,k1) and [k2,k3), where k0, k1, k2, k3 are floats denoting azimuthal angles.
-						# Eulerian angles whose azimuthal angles are mapped into [k2, k3) are related to Eulerian angles whose azimuthal angles are mapped into [k0, k1) by an in-plane mirror operaton along the x-axis.
-
 						tp = Transform({"type":"spider","phi":phihi,"theta":theta,"psi":psi})
 						tp.set_trans( Vec2f( -sxi, -syi ) )
-
-						k0 =   0.0
-						k2 = 180.0
-						if( abs( tp.at(2,2) )<1.0e-6 ):
-							if (symmetry_string[0] =="c"):
-								if sn%2 == 0:  k1=360.0/sn
-								else:          k1=360.0/2/sn
-							elif (symmetry_string[0] =="d"):
-								if sn%2 == 0:  k1=360.0/2/sn
-								else:          k1=360.0/4/sn
-						else:
-							if (symmetry_string[0] =="c"):  k1=360.0/sn
-							if (symmetry_string[0] =="d"):  k1=360.0/2/sn
-						k3 = k1 +180.0
-
-						from utilities import get_sym
-						T = get_sym(symmetry_string[0:])
-	
-						d1tp = tp.get_params('spider')
-						sxnew    = -d1tp["tx"]
-						synew    = -d1tp["ty"]
-						phinew   =  d1tp['phi']
-						thetanew =  d1tp["theta"]
-						psinew   =  d1tp["psi"]
-						del d1tp
-
-						for i in xrange( len(T) ):
-							ttt = tp*Transform({"type":"spider","phi":T[i][0],"theta":T[i][1],"psi":T[i][2]})
-							d1  = ttt.get_params("spider")
-
-							if ( abs( tp.at(2,2) )<1.0e-6 ):
-								if( sn%2==1 ): # theta=90 and n odd, only one of the two region match
-
-									if( ( d1['phi'] >= k0 and d1['phi'] < k1 ) or ( d1['phi'] >= k2 and d1['phi'] < k3 )):
-
-										sxnew    = -d1["tx"]
-										synew    = -d1["ty"]
-										phinew   =  d1['phi']
-										thetanew =  d1["theta"]
-										psinew   =  d1["psi"]
-
-										# For boundary cases where phihi is exactly on the boundary of the unique range, there may be two symmetry related Eulerian angles which are both in the unique 
-										# range but whose psi differ by 180. 
-										# For example, (180,90,270) has two symmetry related angles in unique range: (180,90,270) and (180, 90, 90)
-										# In local search, psi should stay within neighborhood of original value, so take the symmetry related
-										# Eulerian angles in unique range which does not change psi by 180.
-										if an[N_step] != -1:
-											if abs(psinew - psi) < 90:
-												break
-								else: #for theta=90 and n even, there is no mirror version during aligment, so only consider region [k0,k1]
-
-									if( d1['phi'] >= float(k0) and d1['phi'] < float(k1)  ) :
-
-										sxnew    = -d1["tx"]
-										synew    = -d1["ty"]
-										phinew   =  d1['phi']
-										thetanew =  d1["theta"]
-										psinew   =  d1["psi"]
-
-							else: #theta !=90, # if theta >90, put the projection into [k2,k3]. Otherwise put it into the region [k0,k1]
-
-								if( sn==1):
-									sxnew    = sxi
-									synew    = syi
-									phinew   = phihi
-									thetanew = theta
-									psinew   = psi
-								else:
-
-									if (tp.at(2,2) >0.0): #theta <90
-
-										if(  d1['phi'] >= float(k0) and d1['phi'] < float(k1)):
-											if( cos( pi*float( d1['theta'] )/180.0 )>0.0 ):
-
-												sxnew    = -d1["tx"]
-												synew    = -d1["ty"]
-												phinew   =  d1['phi']
-												thetanew =  d1["theta"]
-												psinew   =  d1["psi"]
-
-									else:
-										if(  d1['phi'] >= float(k2) and d1['phi'] < float(k3)):
-											if( cos( pi*float( d1['theta'] )/180.0 )<0.0 ):
-
-												sxnew    = -d1["tx"]
-												synew    = -d1["ty"]
-												phinew   =  d1['phi']
-												thetanew =  d1["theta"]
-												psinew   =  d1["psi"]
-
-							del ttt,d1
-
-						t2 = Transform({"type":"spider","phi":phinew,"theta":thetanew,"psi":psinew})
-						t2.set_trans(Vec2f(-sxnew, -synew))
-						data[im].set_attr("xform.projection", t2)
-						pixer[im]  = max_3D_pixel_error(Torg[im-seg_start], t2, numr[-3])
+						data[im].set_attr("xform.projection", tp)
+						pixer[im]  = max_3D_pixel_error(Torg[im-seg_start], tp, numr[-3])
 						data[im].set_attr("pixerr", pixer[im])
 
 					else:
 						# peak not found, parameters not modified
+						print " peak not found, something's wrong!"
 						pixer[im]  = 0.0
 						data[im].set_attr("pixerr", pixer[im])
 						data[im].set_attr('xform.projection', Torg[im-seg_start])
@@ -14624,8 +14480,7 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 
 				# delete old refrings2 since the next iteration will generate new ones
 				# using current volume
-				del refrings2
-				del refrings1
+				del refrings
 				bcast_EMData_to_all(vol, myid, main_node)
 			
 			mpi_barrier(MPI_COMM_WORLD)
@@ -14897,23 +14752,35 @@ def setfilori_SP(fildata, pixel_size, dp, dphi):
 def prepare_refrings2( volft, kb, nz, segmask, delta, ref_a, sym, numr, MPI=False, phiEqpsi = "Minus", kbx = None, kby = None, initial_theta = None, delta_theta = None):
 
 	from projection   import prep_vol, prgs
-	from math         import sin, cos, pi
+	from math         import sin, cos, radians
 	from applications import MPI_start_end
 	from utilities    import even_angles
 	from alignment	  import ringwe
-	
+
 	# generate list of Eulerian angles for reference projections
 	#  phi, theta, psi
 	mode = "F"
+	ref_angles = []
 	if initial_theta is None:
-		ref_angles = even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
+		#ref_angles = even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
+		phiphi = 0.0
+		while( phiphi < 360.0 ):
+			ref_angles.append([phiphi, 90.0, 90.0])
+			phiphi += delta
 	else:
 		if delta_theta is None: delta_theta = 1.0
-		ref_angles = even_angles(delta, theta1 = initial_theta, theta2 = delta_theta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
+		#ref_angles = even_angles(delta, theta1 = initial_theta, theta2 = delta_theta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
+		ththt = 90.0
+		while(ththt >= initial_theta ):
+			phiphi = 0.0
+			while( phiphi < 360.0 ):
+				ref_angles.append([phiphi, ththt, 90.0])
+				if(ththt != 90.0): ref_angles.append([phiphi, 180.0 - ththt, 90.0])
+				phiphi += delta
+			ththt -= delta_theta
 	wr_four  = ringwe(numr, mode)
 	cnx = nz//2 + 1
 	cny = nz//2 + 1
-	qv = pi/180.
 	num_ref = len(ref_angles)
 
 	if MPI:
@@ -14956,9 +14823,12 @@ def prepare_refrings2( volft, kb, nz, segmask, delta, ref_a, sym, numr, MPI=Fals
 			bcast_EMData_to_all(refrings[i], myid, rootid)
 
 	for i in xrange(len(ref_angles)):
-		n1 = sin(ref_angles[i][1]*qv)*cos(ref_angles[i][0]*qv)
-		n2 = sin(ref_angles[i][1]*qv)*sin(ref_angles[i][0]*qv)
-		n3 = cos(ref_angles[i][1]*qv)
+		q0 = radians(ref_angles[i][0])
+		q1 = radians(ref_angles[i][1])
+		sq1 = sin(q1)
+		n1 = sq1*cos(q0)
+		n2 = sq1*sin(q0)
+		n3 = cos(q1)
 		refrings[i].set_attr_dict( {"n1":n1, "n2":n2, "n3":n3} )
 		refrings[i].set_attr("phi",   ref_angles[i][0])
 		refrings[i].set_attr("theta", ref_angles[i][1])
@@ -14971,7 +14841,7 @@ def symsearch_MPI(ref_vol, outdir, maskfile, dp, ndp, dp_step, dphi, ndphi, dphi
 	rmin, rmax, fract, sym, user_func_name, datasym,\
 	pixel_size, debug):
 
-	from alignment      import Numrinit, prepare_refrings, proj_ali_helical, proj_ali_helical_90, proj_ali_helical_local, proj_ali_helical_90_local, helios,helios7
+	from alignment      import helios, helios7
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string, pad, model_blank, sym_vol
 	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all
 	from utilities      import send_attr_dict
