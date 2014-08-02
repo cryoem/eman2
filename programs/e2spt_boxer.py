@@ -167,19 +167,15 @@ def main():
 
 	else:	
 	
-		# Lets save our subtomograms to a diectory called 'subtomogRAMS', ONLY if they are single files
-		#subtomosdir = os.path.join(".",options.path)
-		#if not os.access(subtomosdir, os.R_OK) and options.format == 'single':
-		#	os.mkdir(options.path)
 		
 		if options.path and options.verbose:
 			print "OPTIONS.PATH IS!!!!\n\n\n", options.path
 	
 		img = args[0]
-					
+			
 		app = EMApp()
 		if options.inmemory: 
-			if options.shrink > 1:
+			if options.shrink and int(options.shrink) > 1:
 
 				# The new shrinking scheme
 				print "Shrinking, please wait :)"
@@ -200,15 +196,23 @@ def main():
 				
 			print "Done !"
 			
-			boxer = EMTomoBoxer(app,data=img,yshort=options.yshort,boxsize=options.boxsize,shrink=options.shrink,contrast=options.invert,center=options.centerbox,mod=None,normalize=options.normproc)
+			thisapix = EMData(img,0,True)['apix_x']
+			
+			if options.apix:
+				thisapix = options.apix
+			
+			boxer = EMTomoBoxer(app,data=img,datafile=None,yshort=options.yshort,apix=thisapix,boxsize=options.boxsize,shrink=options.shrink,contrast=options.invert,center=options.centerbox,mod=None,normalize=options.normproc)
 		else : 
 	#		boxer=EMTomoBoxer(app,datafile=args[0],yshort=options.yshort,apix=options.apix,boxsize=options.boxsize)		
 			img=args[0]
 			
 			
-			'''The modd variable is used as a "filter" that determines whether a "modified" tomogram needs to be deleted prior to extracting boxes from disk.
-			Because boxing from disk does NOT open the whole tomogram, a modified copy needs to be generated and written to file when you want to find
-			particles in a shrunk or pre-low pass filtered tomogram, BUT still extract from the raw tomogram'''
+			'''The modd variable is used as a check that determines whether a "modified" 
+			tomogram needs to be deleted prior to extracting boxes from disk.
+			Because boxing from disk does NOT open the whole tomogram, a modified copy 
+			needs to be generated and written to file when you want to find
+			particles in a shrunk or pre-low pass filtered tomogram, BUT still extract 
+			from the raw tomogram'''
 			modd = False
 			if options.shrink > 1:
 				
@@ -252,8 +256,20 @@ def main():
 				modd = True
 			
 			#print "The shrink factor default is", options.shrink
-			boxer=EMTomoBoxer(app,datafile=img,yshort=options.yshort,apix=options.apix,boxsize=options.boxsize,shrink=options.shrink,contrast=options.invert,center=options.centerbox,mod=modd)
 			
+			
+			print "\nDatabfile and type of datafile are", img, type(img)
+			
+			
+			thisapix = EMData(img,0,True)['apix_x']
+			
+			if options.apix:
+				thisapix = options.apix
+			
+			boxer=EMTomoBoxer(app,data=None,datafile=img,yshort=options.yshort,apix=thisapix,boxsize=options.boxsize,shrink=options.shrink,contrast=options.invert,center=options.centerbox,mod=modd,normalize=options.normproc)
+			
+			#boxer=EMTomoBoxer(app,datafile=img,yshort=options.yshort,apix=options.apix,boxsize=options.boxsize,shrink=options.shrink,contrast=options.invert,center=options.centerbox,mod=None,normalize=options.normproc)
+
 		boxer.show()
 		app.execute()
 	return()
@@ -267,10 +283,13 @@ a coordinates file
 """
 def unbinned_extractor(options,boxsize,x,y,z,cshrink,invert,center,tomogram=argv[1]):
 	
-	print "\n\nUnbinned extractor received this center", center
+	if options.verbose:
+		print "\n\nUnbinned extractor received this center", center
 	
 	tomo_header=EMData(tomogram,0,True)
-	print "Which has a size of", tomo_header['nx'],tomo_header['ny'],tomo_header['nz']
+	
+	if options.verbose:
+		print "Which has a size of", tomo_header['nx'],tomo_header['ny'],tomo_header['nz']
 	#print cbin, tomogram
 	
 	#boxsize=boxsize*cbin	#THE BOXSIZE SHOULD BE THE FINAL BOXSIZE! No binning compensation applied.
@@ -279,7 +298,9 @@ def unbinned_extractor(options,boxsize,x,y,z,cshrink,invert,center,tomogram=argv
 	y=round(y*cshrink)
 	z=round(z*cshrink)
 	
-	print "The actual coordinates used for extraction are", x, y, z
+	if options.verbose:
+		print "The actual coordinates used for extraction are", x, y, z
+	
 	r = Region((2*x-boxsize)/2,(2*y-boxsize)/2, (2*z-boxsize)/2, boxsize, boxsize, boxsize)
 	e = EMData()
 	e.read_image(tomogram,0,False,r)
@@ -296,7 +317,8 @@ def unbinned_extractor(options,boxsize,x,y,z,cshrink,invert,center,tomogram=argv
 		e['xform.align3d'] = Transform() #Make sure the default alignment parameters are zero
 		
 		
-		print "\n\n\n\nCENTER is",center
+		if options.verbose:
+			print "\n\n\n\nCENTER is",center
 		
 		if center:			
 			ec = e.copy()
@@ -355,9 +377,9 @@ def unbinned_extractor(options,boxsize,x,y,z,cshrink,invert,center,tomogram=argv
 		e['origin_x'] = 0
 		e['origin_y'] = 0
 		e['origin_z'] = 0
-		
 		e['spt_originalstack'] = options.output
 		
+			
 		#Make sure the transform parameter on the header is "clean", so that any later processing transformations are meaningful
 		e['xform.align3d'] = Transform({"type":'eman','az':0,'alt':0,'phi':0,'tx':0,'ty':0,'tz':0})
 			
@@ -406,7 +428,7 @@ def unbinned_extractor(options,boxsize,x,y,z,cshrink,invert,center,tomogram=argv
 			Your coordinates file and/or the shrinking factors specified might be MESSED UP, or you might need to swap Y and Z, or
 			the particles are being normalized before they should 
 			"""
-		return()
+		return
 	
 
 """
@@ -759,7 +781,7 @@ class EMBoxViewer(QtGui.QWidget):
 			return
 		
 		if self.wfilt.getValue()!=0.0 :
-			self.fdata=self.data.process("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue(),"apix":self.data['apix_x']}) #JESUS
+			self.fdata=self.data.process("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue(),"apix":self.apix}) #JESUS
 		
 		xyd=self.fdata.process("misc.directional_sum",{"axis":"z"})
 		xzd=self.fdata.process("misc.directional_sum",{"axis":"y"})
@@ -778,6 +800,7 @@ class EMBoxViewer(QtGui.QWidget):
 		
 	def closeEvent(self, event):
 		self.d3view.close()
+
 
 class EMTomoBoxer(QtGui.QMainWindow):
 	"""This class represents the EMTomoBoxer application instance.  """
@@ -918,8 +941,12 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("set_scale"),self.zy_scale)
 		QtCore.QObject.connect(self.zyview,QtCore.SIGNAL("origin_update"),self.zy_origin)
 		
-		if datafile!=None : self.set_datafile(datafile)		# This triggers a lot of things to happen, so we do it last
-		if data!=None : self.set_data(data)
+		if datafile!=None: 
+			print "\nIn ETomoBoxer, datafile is", datafile
+			self.set_datafile(datafile)		# This triggers a lot of things to happen, so we do it last
+		
+		if data!=None: 
+			self.set_data(data)
 		
 		# Boxviewer subwidget (details of a single box)
 		self.boxviewer=EMBoxViewer()
@@ -944,6 +971,7 @@ class EMTomoBoxer(QtGui.QMainWindow):
 #	def menu_win_average(self) : self.averageviewer.show()
 		
 	def set_datafile(self,datafile):
+		print "\nIn set_datafile, received datafile", datafile
 		if datafile==None :
 			self.datafile=None
 			self.data=None
@@ -954,9 +982,16 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 		self.data=None
 		self.datafile=datafile
+		
+		print "\nDatafile set, see!", self.datafile, type(self.datafile)
+		
 		imgh=EMData(datafile,0,1)
-		if self.yshort : self.datasize=(imgh["nx"],imgh["nz"],imgh["ny"])
-		else: self.datasize=(imgh["nx"],imgh["ny"],imgh["nz"])
+		
+		if self.yshort: 
+			self.datasize=(imgh["nx"],imgh["nz"],imgh["ny"])
+		else:
+			self.datasize=(imgh["nx"],imgh["ny"],imgh["nz"])
+		
 		self.wdepth.setRange(0,self.datasize[2]-1)
 		self.boxes=[]
 		self.curbox=-1
@@ -975,8 +1010,12 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 		self.data=data
 		self.datafile=None
-		if self.yshort: self.datasize=(data["nx"],data["nz"],data["ny"])
-		else: self.datasize=(data["nx"],data["ny"],data["nz"])
+		
+		if self.yshort: 
+			self.datasize=(data["nx"],data["nz"],data["ny"])
+		else: 
+			self.datasize=(data["nx"],data["ny"],data["nz"])
+		
 		self.wdepth.setRange(0,self.datasize[2]-1)
 		self.boxes=[]
 		self.curbox=-1
@@ -1020,7 +1059,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		return r
 
 	def get_slice(self,n,xyz):
-		"""Reads a slice either from a file or the preloaded memory array. xyz is the axis along which 'n' runs, 0=x (yz), 1=y (xz), 2=z (xy)"""
+		"""Reads a slice either from a file or the preloaded memory array. 
+		xyz is the axis along which 'n' runs, 0=x (yz), 1=y (xz), 2=z (xy)"""
 		if self.yshort:
 			if self.data!=None :
 				if xyz==0:
@@ -1045,7 +1085,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				else:
 					r=EMData()
 					r.read_image(self.datafile,0,0,Region(0,0,n,self.datasize[0],self.datasize[2],1))
-			else: return None
+			else: 
+				return None
 			
 		else :
 			if self.data!=None :
@@ -1071,7 +1112,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 					r=EMData()
 					r.read_image(self.datafile,0,0,Region(0,0,n,self.datasize[0],self.datasize[1],1))
 
-			else : return None
+			else : 
+				return None
 
 		if self.apix!=0 : 
 			r["apix_x"]=self.apix
@@ -1080,11 +1122,13 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		return r
 
 	def event_boxsize(self):
-		if self.boxsize()==self.oldboxsize : return
+		if self.boxsize()==self.oldboxsize: 
+			return
 		self.oldboxsize=self.boxsize()
 		
 		cb=self.curbox
-		for i in range(len(self.boxes)) : self.update_box(i)
+		for i in range(len(self.boxes)): 
+			self.update_box(i)
 		self.update_box(cb)
 		
 	def event_projmode(self,state):
@@ -1336,7 +1380,11 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	def update_sides(self):
 		"""updates xz and yz views due to a new center location"""
 		
-		if self.datafile==None and self.data==None : return
+		print "\n\n\n\n\nIn update sides, self.datafile is", self.datafile
+		print "\n\n\n\n"
+		
+		if self.datafile==None and self.data==None: 
+			return
 		
 		if self.curbox==-1 :
 			x=self.datasize[0]/2
@@ -1414,15 +1462,18 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 		# yz
 		avgr=self.get_averager()
-
+			
 		for x in range(x-self.nlayers()/2,x+(self.nlayers()+1)/2):
 			slc=self.get_slice(x,0)
 			avgr.add_image(slc)
 			
 		av=avgr.finish()
-		if not self.yshort: av.process_inplace("xform.transpose")
+		if not self.yshort: 
+			av.process_inplace("xform.transpose")
 		
-		if self.wfilt.getValue()!=0.0 : av.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue(),"apix":self.data['apix_x']})
+		if self.wfilt.getValue()!=0.0: 
+			av.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue(),"apix":self.apix})
+		
 		self.zyview.set_data(av)
 		
 		# xz
@@ -1433,14 +1484,21 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			avgr.add_image(slc)
 			
 		av=avgr.finish()
-		if self.wfilt.getValue()!=0.0 : av.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue(),"apix":self.data['apix_x']})
+		if self.wfilt.getValue()!=0.0: 
+			av.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue(),"apix":self.apix})
+		
 		self.xzview.set_data(av)
 
 
 	def update_xy(self):
 		"""updates xy view due to a new slice range"""
 		
-		if self.datafile==None and self.data==None: return
+		print "\n\n\n\n\nIn update_xy, self.datafile is", self.datafile
+		print "\n\n\n\n"
+		
+		if self.datafile==None and self.data==None: 
+			return
+		
 		
 		
 		# Boxes should also be limited by default in the XY view
@@ -1474,8 +1532,11 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		
 			self.xyview.shapechange=1
 		
-		if self.wmaxmean.isChecked() : avgr=Averagers.get("minmax",{"max":1})
-		else : avgr=Averagers.get("mean")
+		if self.wmaxmean.isChecked(): 
+			avgr=Averagers.get("minmax",{"max":1})
+		
+		else: 
+			avgr=Averagers.get("mean")
 
 		slc=EMData()
 		for z in range(self.wdepth.value()-self.nlayers()/2,self.wdepth.value()+(self.nlayers()+1)/2):
@@ -1483,12 +1544,23 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			avgr.add_image(slc)
 		
 		av=avgr.finish()
-		if self.wfilt.getValue()!=0.0 : av.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue(),"apix":self.data['apix_x']})
+		
+		print "\n\nIn update xy, av and type are", av, type(av)
+		
+		if self.wfilt.getValue()!=0.0:
+		
+			av.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue(),"apix":self.apix})
 		self.xyview.set_data(av)
 
 	def update_all(self):
 		"""redisplay of all widgets"""
-		if self.datafile==None and self.data==None: return
+		
+		print "\n\n\n\n\nIn update all, self.datafile is", self.datafile
+		print "\n\n\n\n"
+		if self.datafile==None and self.data==None: 
+			return
+		
+		
 		
 		self.update_xy()
 		self.update_sides()
