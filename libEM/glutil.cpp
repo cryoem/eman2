@@ -262,15 +262,27 @@ void GLUtil::mx_bbox(const vector<float>& data,
 }
 
 std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
-		 int iysize, int bpl, float scale, int mingray, int maxgray,
+		 int iysize, int bpl, float scale, int min_gray, int max_gray,
 		 float render_min, float render_max, float gamma, int flags)
 {
 	ENTERFUNC;
 	
 //	printf("%f\t%f\t",(float)emdata->get_attr("sigma"),(float)emdata->get_attr("mean"));
 //	printf("%d %d %d %d %d %f %d %d %f %f %f %d\n",x0,y0,ixsize,iysize,bpl,
-// scale,mingray,maxgray,render_min,render_max,gamma,flags);
-	
+// scale,min_gray,max_gray,render_min,render_max,gamma,flags);
+
+	bool invert = (min_gray > max_gray);
+	int mingray, maxgray;
+
+	if (invert) {
+		mingray = max_gray;
+		maxgray = min_gray;
+	}
+	else {
+		mingray = min_gray;
+		maxgray = max_gray;
+	}
+
 	int asrgb;
 	int hist = (flags & 2)/2;
 	int invy = (flags & 4)?1:0;
@@ -326,10 +338,11 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 
 	std::string ret=std::string();
 //	ret.resize(iysize*bpl);
-	ret.assign(iysize*bpl+hist*1024,char(mingray));
+
+	ret.assign(iysize*bpl + hist*1024, char(invert ? maxgray : mingray));
 
 	unsigned char *data = (unsigned char *)ret.data();
-	unsigned int *histd = (unsigned int *)(data+iysize*bpl);
+	unsigned int *histd = (unsigned int *)(data + iysize*bpl);
 
 	if (hist) {
 		for (int i=0; i<256; i++) histd[i]=0;
@@ -524,9 +537,9 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 						graypdf[(int)(ceil((rangemax-2)*(t - render_min)/(render_max-render_min)))]++;
 					}
 
-					data[i * asrgb + j * bpl] = p;
+//					data[i * asrgb + j * bpl] = p;
 
-					if (hist) histd[p]++;
+//					if (hist) histd[p]++;
 
 					l += addi;
 					remx += addr;
@@ -856,8 +869,15 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 						
 						p += mingray;
 					}
+
+					if (invert) {
+						p = mingray + maxgray - p;
+					}
+
 					data[i * asrgb + j * bpl] = p;
+
 					if (hist) histd[p]++;
+
 					l += dsx;
 				}
 
@@ -930,6 +950,10 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 						}
 						
 						p += mingray;
+					}
+
+					if (invert) {
+						p = mingray + maxgray - p;
 					}
 
 					data[i * asrgb + j * bpl] = p;
