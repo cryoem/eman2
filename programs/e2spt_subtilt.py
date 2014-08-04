@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Author: Jesus Galaz, 02/Feb/2013, last update 24/July/2013
+# Author: Jesus Galaz, 02/Feb/2013, last update 24/July/2014
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -51,27 +51,73 @@ def main():
 	'''
 	Parameters for adding ctf and noise
 	'''
-	parser.add_argument('--tiltseries',type=str,default='',help='File in .ali, .mrc or .hdf format of the aligned tiltseries.')
-	parser.add_argument('--tiltangles',type=str,default='',help='File in .tlt or .txt format containing the tilt angle of each tilt image in the tiltseries.')
-	parser.add_argument('--coords',type=str,default='',help='File in .txt format containing the coordinates of particles determined from the reconstructed tomogram of the supplied tiltseries.')
-	parser.add_argument('--path',type=str,default='spt_subtilt',help='Directory to save the results.')
-	parser.add_argument('--boxsize',type=int,default=128,help='Size of the 2D "tiles" or images for each particle from each image in the tiltseries.')
-	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument('--tiltseries',type=str,default='',help="""File in .ali, .mrc or .hdf 
+		format of the aligned tiltseries.""")
+		
+	parser.add_argument('--tiltangles',type=str,default='',help="""File in .tlt or .txt format 
+		containing the tilt angle of each tilt image in the tiltseries.""")
+		
+	parser.add_argument('--coords',type=str,default='',help="""File in .txt format containing 
+		the coordinates of particles determined from the reconstructed tomogram of the 
+		supplied tiltseries.""")
+	
+	parser.add_argument('--path',type=str,default='spt_subtilt',help="""Directory to save 
+		the results.""")
+	
+	parser.add_argument('--boxsize',type=int,default=128,help="""Size of the 2D "tiles" or 
+		images for each particle from each image in the tiltseries.""")
+	
+	parser.add_argument("--ppid", type=int, help="""Set the PID of the parent process, 
+		used for cross platform PPID""",default=-1)
+	
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	parser.add_argument('--subset', type=int, default=0, help='''Specify how many sub-tiltseries (or particles) from the coordinates file you want to extract; e.g, if you specify 10, the first 10 particles will be boxed.\n0 means "box them all" because it makes no sense to box none''')
+	
+	parser.add_argument('--subset', type=int, default=0, help='''Specify how many sub-tiltseries 
+		(or particles) from the coordinates file you want to extract; e.g, if you specify 10, 
+		the first 10 particles will be boxed.\n0 means "box them all" because it makes no 
+		sense to box none''')
+	
 	#parser.add_argument('--tomogramthickness',type=int,default=None,help='Z dimension of the reconstructed tomogram.')
-	parser.add_argument('--tomosides',type=str,default='',help='Comma separated values for the tomogram dimensions. Alternatively, provide the path to the tomogram itself through --tomogram.')
+	
+	parser.add_argument('--tomosides',type=str,default='',help="""Comma separated values 
+		for the tomogram dimensions. Alternatively, provide the path to the tomogram itself 
+		through --tomogram.""")
+	
 	parser.add_argument('--tomogram',type=str,default='',help='Path to the tomogram.')
-	parser.add_argument("--shrink", type=int,default=1,help="Optionally shrink the coordinates by a factor of --shrink=N to speed up the process. Might compromise accuracy if two points in the coordinates file are very close to eachother.")
-	parser.add_argument('--cshrink', type=int, default=1, help='''Specifies the factor by which to multiply the coordinates in the coordinates file, so that they can be at the same scale as the tomogram.\n
-																For example, provide 2 if the coordinates are on a 2K x 2K scale,\nbut you want to extract the sub-volumes from the UN-shrunk 4K x 4K tomogram.''')
-	parser.add_argument("--everyother", type=int, help="Pick every other tilt. For example, --tilt=3 would pick every third tilt only.",default=-1)
+	
+	parser.add_argument("--shrink", type=int,default=1,help="""Optionally shrink the coordinates 
+		by a factor of --shrink=N to speed up the process. Might compromise accuracy if two 
+		points in the coordinates file are very close to eachother.""")
+	
+	parser.add_argument('--cshrink', type=int, default=1, help='''Specifies the factor by 
+		which to multiply the coordinates in the coordinates file, so that they can be at 
+		the same scale as the tomogram. For example, provide 2 if the coordinates are on a 
+		2K x 2K scale, but you want to extract the sub-volumes from the UN-shrunk 4K x 4K
+		tomogram.''')
+	
+	parser.add_argument("--everyother", type=int, help="""Pick every other tilt. For example, 
+		--tilt=3 would pick every third tilt only.""",default=-1)
+
+	parser.add_argument("--subtractbackground",action='store_true',default=False,help="""
+		This will extract a box from the tomogram much larger than the subtomogram.
+		Projections will be generated. You MUST provide --tomogram for this.""")
+
+	parser.add_argument("--normproc",type=str,help="""Not used anywhere yet. Default=None""", default='None')
+	
+	parser.add_argument("--thresh",type=str,help="""Not used anywhere yet. Default=None""", default='None')
+
+	parser.add_argument("--yshort",action='store_true',help="""Not used anywhere yet. Default=False""", default=False)
+
 
 	(options, args) = parser.parse_args()
 	logger = E2init(sys.argv, options.ppid)
 	
+	if options.thresh == 'None' or options.thresh == 'none':
+		options.thresh = None
 	
-	
+	if options.normproc == 'None' or options.normproc == 'none':
+		options.normproc = None
+		
 	from e2spt_classaverage import sptmakepath
 	
 	options = sptmakepath(options,'sptSubtilt')
@@ -149,6 +195,9 @@ def main():
 	Some people might manually make ABERRANT coordinates files with commas, tabs, or more than once space in between coordinates.
 	Each line needs to be parsed.
 	'''
+	
+	ptclNum=0
+	
 	cleanlines=[]
 	for line in clines:
 		
@@ -172,9 +221,11 @@ def main():
 
 		if line and len(finallineelements) ==3:
 			cleanlines.append(line)
+			ptclNum += 1
 		else:
-			print "Bad line removed", line
-			
+			print "\nBad line removed", line
+	
+	ptclNum=0		
 	'''
 	Iterate over the correct number of viable lines from the coordinates file.
 	'''
@@ -197,8 +248,22 @@ def main():
 	everyotherfactor = 1
 	if options.everyother > 1:
 		everyotherfactor = options.everyother
+	
+	
+	maxtilt=0
+	if options.subtractbackground:
+		tiltanglesfloat = [ math.fabs( float( alines[i].replace('\n','') ) ) for i in range(len(alines)) ]
+		maxtilt = max( tiltanglesfloat )
+		print "\n(e2spt_subtilt.py) maxtilt is", maxtilt
 		
-	ptclNum=0
+		from e2spt_boxer import unbinned_extractor
+		
+		bgboxsize = (2 * options.boxsize / math.cos( math.radians(maxtilt+5)  )) + 10
+		invert=0
+		center=0
+	
+	
+	
 	for line in cleanlines:
 	
 		line = line.split()	
@@ -210,8 +275,9 @@ def main():
 			print "\n\n\n\n\n+=================\nAnalyzing particle number+================\n", ptclNum
 			print "\nRead these coordinates", xc,yc,zc
 		else:
-			print "There's an aberrant line in your file, see", line
+			print "\nThere's an aberrant line in your file, see", line
 			sys.exit()
+		
 		
 		if options.cshrink:
 			xc*=options.cshrink
@@ -221,11 +287,14 @@ def main():
 			print "\nThe real coordinates after multiplying cshrink are", xc,yc,zc
 		
 		outIndx=0
+		ret=0
+		wholebox=0
+		
 		for k in range(len(tiltangles)):
 		
 			
 			if k % everyotherfactor:
-				print "Skipping tilt",k
+				print "\nSkipping tilt",k
 					
 			else:
 				
@@ -310,7 +379,9 @@ def main():
 				r = Region( (2*xt-options.boxsize)/2, (2*yt-options.boxsize)/2, k, options.boxsize, options.boxsize, 1)
 				print "\n\n\nRRRRRRRRRR\nThe region to extract is", r
 				
-				print "\n\n"
+				
+				
+				print "\n(e2spt_subtilt.py) Extracting image for tilt angle", angle
 				e = EMData()
 				e.read_image(options.tiltseries,0,False,r)
 				#print "After reading it, nz is", e['nz']
@@ -321,16 +392,148 @@ def main():
 				e['origin_y']=e['ny']/2.0
 				e['origin_z']=0
 				
-				if float( options.shrink ) > 1.0:
+				if int( options.shrink ) > 1:
 					e.process_inplace('math.meanshrink',{'n':options.shrink})
+				
 				#print "After shrinking, nz is", e['nz']
-				e.process_inplace('normalize')
+				#e.process_inplace('normalize')
 			
 				#print "I've read the 2D particle into the region, resulting in type", type(e)
 				#print "The mean and sigma are", e['mean'], e['sigma']
+				
+				e.process_inplace('normalize')
 				e.write_image(options.path + '/subtiltPtcl_' + str(ptclNum) + '.hdf',outIndx)
+				if k==0:
+					e.write_image(options.path + 'prj0.hdf',0)
+				
+				if options.subtractbackground and maxtilt:
+					
+					"""
+					rbg =  Region( (2*xt-bgboxsize)/2, (2*yt-bgboxsize)/2, k, bgboxsize, bgboxsize, 1)
+					ebg = EMData()
+					ebg.read_image(options.tiltseries,0,False,rbg)
+					ebg['tiltAngle']=angle
+					ebg['xt']=xt
+					ebg['yt']=yt
+					ebg['origin_x']=ebg['nx']/2.0
+					ebg['origin_y']=ebg['ny']/2.0
+					ebg['origin_z']=0
+					
+					print "(e2spt_subtilt.py) Extracted larger image for tilt angle " + str(angle) + " and mean " + str(ebg['mean']) + " for particle " + str(ptclNum)
+					
+					
+					if float( options.shrink ) > 1.0:
+						ebg.process_inplace('math.meanshrink',{'n':options.shrink})
+						
+					ebg.write_image(options.path + '/subtiltPtcl_' + str(ptclNum) + '_whole.hdf',outIndx)
+					"""
+									
+					'''
+					Extract a large volume around each particle (only for k==0), to distinguish ptcl from background
+					and generate background-substracted re-projections (for each tilt angle)
+					'''
+					if k == 0:			
+						#ret = unbinned_extractor(options,bgboxsize,xc,yc,zc,options.cshrink,invert,center,options.tomogram)
+						rw =  Region( (2*xc-bgboxsize)/2, (2*yc-bgboxsize)/2, (2*zc-bgboxsize)/2, bgboxsize, bgboxsize, bgboxsize)
+						
+						wholebox = EMData()
+						wholebox.to_zero()
+						wholebox.read_image(options.tomogram,0,False,rw)
+						
+						if int( options.shrink ) > 1:
+							wholebox.process_inplace('math.meanshrink',{'n':options.shrink})
+						
+						#wholebox.process_inplace('normalize.edgemean')
+						
+						print "(e2spt_subtilt.py) Extracted whole 3D box " + str(angle) + " and mean " + str(wholebox['mean']) + " for particle " + str(ptclNum)
+						wholebox.write_image(options.path + '/subtiltPtcl_' + str(ptclNum) + '_whole3D.hdf',0)
+
+					if wholebox:
+						
+						#e.process_inplace('normalize')
+						
+						'''
+						Rotate the larger box extracted and then clip into prism
+						to avoid density gradient (a rotated cube rotates the data inside)
+						causing higher density in projections along the diagonal of the cube
+						'''
+						#angle = angle *-1
+						t= Transform({'type':'eman','az':90,'alt':angle,'phi':-90})
+						#t= Transform({'type':'eman','az':90,'alt':angle})
+						#t= Transform({'type':'eman','alt':angle})
+
+
+						print "\nTransform to ROTATE volume is", t
+						
+						wholeboxRot = wholebox.copy()
+						wholeboxRot.transform(t)
+						
+						finalbox = options.boxsize
+						finalbgbox = bgboxsize
+						if int( options.shrink ) > 1:
+							finalbox = options.boxsize / options.shrink
+							finalbgbox = bgboxsize / options.shrink
+											
+						rbgprism =  Region( (wholebox['nx'] - finalbox)/2, (wholebox['ny'] - finalbox)/2, (wholebox['nz'] - finalbgbox)/2, finalbox, finalbox, finalbgbox)
+						wholeboxRot.clip_inplace( rbgprism )
+						print "\nSizes of prism are", wholeboxRot['nx'],wholeboxRot['ny'],wholeboxRot['nz']
+						
+						if k == 0 :
+							wholeboxRot.write_image(options.path + '/subtiltPtcl_' + str(ptclNum) + '_whole3DROT.hdf',0)
+						
+						ptclreprj = wholeboxRot.project("standard",Transform())
+						print "\nGenerated ptclreprj with mean and XY sizes", ptclreprj['mean'],type(ptclreprj), ptclreprj['nx'],ptclreprj['ny'],ptclreprj['nz']
+						
+						ptclreprj.mult( math.cos( math.radians(angle) ) )
+						ptclreprj.process_inplace('normalize')
+						
+						if k==0:
+							ptclreprj.write_image(options.path + 'reprj0nomatch.hdf',0)
+						ptclreprj.process_inplace('filter.matchto',{'to':e})
+						
+						if k==0:
+							ptclreprj.write_image(options.path + 'reprj0yesmatch.hdf',0)
+						#ptclreprj.rotate(90,0,0)
+						ptclreprj.write_image(options.path + '/subtiltPtcl_' + str(ptclNum) + '_reprj.hdf',outIndx)
+					
+						
+						'''
+						Generate projections of the background density by masking out the particle
+						'''
+						maskrad = finalbox/3.0
+						
+						bgbox = wholeboxRot.process('mask.sharp',{'inner_radius':maskrad})
+												
+						print "\nMasked bgbox with inner_radius, and ptclbox with outer_radius", maskrad
+						
+						bgprj = bgbox.project("standard",Transform())
+						
+						bgprj.mult( math.cos( math.radians(angle) ) )
+						
+						print "\nGenerated ptclreprj with mean and XY sizes", bgprj['mean'],type(bgprj), bgprj['nx'],bgprj['ny'],bgprj['nz']
+						
+						bgprj.process_inplace('normalize')
+						
+						
+						bgprj.process_inplace('filter.matchto',{'to':e})
+						bgprj.rotate(90,0,0)
+						bgprj.write_image(options.path + '/subtiltPtcl_' + str(ptclNum) + '_bgprj.hdf',outIndx)
+						
+						clean = e - bgprj
+						clean.write_image(options.path + '/subtiltPtcl_' + str(ptclNum) + '_clean.hdf',outIndx)
+						print "\nComputed clean. Max e and Max bgprj are",e['maximum'], bgprj['maximum']
+					
+						cleanreprj = ptclreprj - bgprj
+						print "\nComputed cleanprj"
+						
+						cleanreprj.write_image(options.path + '/subtiltPtcl_' + str(ptclNum) + '_cleanreprj.hdf',outIndx)
+				
 				outIndx+=1
+						
 				print "\n\n\n"
+					
+					
+					
 		
 		#r = Region( (2*xm-box)/2, (2*ym-box)/2, 0, box, box,1)
 
