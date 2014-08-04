@@ -2501,7 +2501,7 @@ def get_softy(im):
 # data - projections (scattered between cpus)
 # options - the same for all cpus
 # return - volume the same for all cpus
-def do_volume(data, options, mpi_comm):
+def do_volume(data, options, iter, mpi_comm):
 	from EMAN2          import Util
 	from mpi            import mpi_comm_rank
 	from reconstruction import recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
@@ -2528,12 +2528,11 @@ def do_volume(data, options, mpi_comm):
 		elif(options.mask3D == "auto"):
 			pass
 		else:						mask3D = get_im(options.mask3D)
-		stat = Util.infomask(vol, mask3D, False)
+		stat = Util.infomask(vol, mask3D, True)
 		vol -= stat[0]
 		Util.mul_scalar(vol, 1.0/stat[1])
 		vol = threshold(vol)
 		Util.mul_img(vol, mask3D)
-		del mask3D
 		if( options.pwreference ):
 			from utilities    import read_text_file
 			from fundamentals import rops_table, fftip, fft
@@ -2545,7 +2544,13 @@ def do_volume(data, options, mpi_comm):
 			#  Here unless I am mistaken it is enough to take the beginning of the reference pw.
 			for i in xrange(1,len(ro)):  ro[i] = sqrt(rt[i]/ro[i])
 			vol = fft( filt_table( filt_tanl(vol, options.fl, options.aa), ro) )
+			stat = Util.infomask(vol, mask3D, True)
+			vol -= stat[0]
+			Util.mul_scalar(vol, 1.0/stat[1])
+			Util.mul_img(vol, mask3D)
 		else:  vol = filt_tanl(vol, options.fl, options.aa)
+		del mask3D
+		vol.write_image('toto%03d.hdf'%iter)
 	# broadcast volume
 	bcast_EMData_to_all(vol, myid, 0, comm=mpi_comm)
 	#=========================================================================
@@ -2734,7 +2739,7 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 	mpi_barrier(mpi_comm)
 	if myid == main_node:
 		start_time = time()
-	vol = do_volume(data, ali3d_options, mpi_comm)
+	vol = do_volume(data, ali3d_options, 0, mpi_comm)
 	#if myid == main_node:  vol.write_image('soft/smvol%04d.hdf'%total_iter)
 	# log
 	if myid == main_node:
@@ -2782,7 +2787,7 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 					previousmax = data[im].get_attr_default("previousmax", -1.0e23)
 					if(previousmax == -1.0e23):
 						peak, pixer[im] = proj_ali_incore_local(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], 10.0, sym = sym)
-						data[im].set_attr("previousmax", peak*0.9)
+						data[im].set_attr("previousmax", peak)#*0.9)
 				if myid == main_node:
 					log.add("Time to calculate first psi+shifts+previousmax: %f\n" % (time()-start_time))
 					start_time = time()
@@ -2811,7 +2816,7 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 												xrng[N_step], yrng[N_step], step[N_step], an[N_step], nsoft, sym)
 					par_r[number_of_peaks] += 1
 					#number_of_checked_refs += checked_refs
-				
+
 			#=========================================================================
 			mpi_barrier(mpi_comm)
 			if myid == main_node:
@@ -2902,7 +2907,7 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 			mpi_barrier(mpi_comm)
 			if myid == main_node:
 				start_time = time()
-			vol = do_volume(data, ali3d_options, mpi_comm)
+			vol = do_volume(data, ali3d_options, total_iter, mpi_comm)
 			#if myid == main_node:  vol.write_image('soft/smvol%04d.hdf'%total_iter)
 			# log
 			if myid == main_node:
