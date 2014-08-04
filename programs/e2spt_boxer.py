@@ -1,7 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/evn python
 
 #
-# Author: Steven Ludtke  2/8/2011 (rewritten), Jesus Galaz-Montoya (updates/enhancements/fixes), LAST: November/21/2013
+# Author: Steven Ludtke  2/8/2011 (rewritten), Jesus Galaz-Montoya (updates/enhancements/fixes), LAST: August/04/2013
 # Author: John Flanagan  9/7/2011 (helixboxer)
 # Copyright (c) 2011- Baylor College of Medicine
 #
@@ -175,6 +175,11 @@ def main():
 			
 		app = EMApp()
 		if options.inmemory: 
+			
+			
+			imghdr = EMData(img,0,True)
+			thisapix = imghdr['apix_x']
+			
 			if options.shrink and int(options.shrink) > 1:
 
 				# The new shrinking scheme
@@ -196,8 +201,6 @@ def main():
 				
 			print "Done !"
 			
-			thisapix = EMData(img,0,True)['apix_x']
-			
 			if options.apix:
 				thisapix = options.apix
 			
@@ -206,6 +209,8 @@ def main():
 	#		boxer=EMTomoBoxer(app,datafile=args[0],yshort=options.yshort,apix=options.apix,boxsize=options.boxsize)		
 			img=args[0]
 			
+			imghdr = EMData(img,0,True)
+			thisapix = imghdr['apix_x']
 			
 			'''The modd variable is used as a check that determines whether a "modified" 
 			tomogram needs to be deleted prior to extracting boxes from disk.
@@ -245,7 +250,7 @@ def main():
 					imgnew = img.split('/')[-1].replace('.','_editedtemp.')
 				filt=1.0/options.lowpass
 				
-				imghdr = EMData(img,1,True)
+				imghdr = EMData(img,0,True)
 				tapix = imghdr['apix_x']
 				if options.apix:
 					tapix = options.apix
@@ -261,7 +266,6 @@ def main():
 			print "\nDatabfile and type of datafile are", img, type(img)
 			
 			
-			thisapix = EMData(img,0,True)['apix_x']
 			
 			if options.apix:
 				thisapix = options.apix
@@ -781,7 +785,7 @@ class EMBoxViewer(QtGui.QWidget):
 			return
 		
 		if self.wfilt.getValue()!=0.0 :
-			self.fdata=self.data.process("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue(),"apix":self.apix}) #JESUS
+			self.fdata=self.data.process("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue(),"apix":self.data['apix_x']}) #JESUS
 		
 		xyd=self.fdata.process("misc.directional_sum",{"axis":"z"})
 		xzd=self.fdata.process("misc.directional_sum",{"axis":"y"})
