@@ -65,6 +65,9 @@ def main():
 		pixels from the edge.""", returnNone=True, default="mask.sharp:outer_radius=-2", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=11, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
 	
+	parser.add_argument("--maskfile",type=str,default=None,help="""Mask file (3D IMAGE) applied to particles 
+		before alignment. Must be in HDF format. Default is None.""")
+	
 	parser.add_argument("--normproc",type=str,default='',help="Normalization processor applied to particles before alignment. Default is to use normalize. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'")
 	
 	parser.add_argument("--threshold",default='',type=str,help="""A threshold applied to the subvolumes after normalization. 
