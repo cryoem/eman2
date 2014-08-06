@@ -184,7 +184,7 @@ def main():
 			
 			print "\nWill call preprocessing on ptcl",i
 			#preprocvol = preprocessing(options, preprocvol)		
-			preprocvol = preprocessing(options,options.mask,options.clipali,options.normproc,options.shrink,options.lowpass,options.highpass,options.preprocess,options.threshold,preprocvol,i)
+			preprocvol = preprocessing(preprocvol,options,options.mask,options.clipali,options.normproc,options.shrink,options.lowpass,options.highpass,options.preprocess,options.threshold,i)
 			
 			print "\nDone preprocessing on ptcl",i
 			preproc = 1
