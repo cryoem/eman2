@@ -237,7 +237,13 @@ def main():
 		if output:
 			print "\nWrittng to output ptcl",i
 			output.write_image(options.path + '/' + options.output,-1)
-		
+	
+	
+	
+	
+	
+	
+	"""	
 	if options.mask:
 		volume.mult(mask)
 	if options.shrink:
@@ -268,8 +274,9 @@ def main():
 	else:
 		print "WHT%sZZZ"%inimodeldir
 		output.write_image(os.path.join(inimodeldir, options.output))
+	"""
 	
-		E2end(logid)
+	E2end(logid)
 	
 	return
 
