@@ -124,6 +124,7 @@ ligand/no-ligand contrast in individual images:
 	out=file(options.plotout,"w")
 	statall={}	# keyed by particle number, contains (statm,statr,statr2) for each particle, with Null if the right options weren't specified
 	for i in range(nref-1,-1,-1):
+		if options.tstcls>=0 and i!=options.tstcls : continue
 		if options.verbose>1 : print "--- Class %d"%i
 
 		proj=ref1.project("standard",{"transform":eulers[i]})
@@ -211,7 +212,9 @@ ligand/no-ligand contrast in individual images:
 				cmp5=ptcl3.cmp(simcmp[0],projc2,simcmp[1])
 
 				if options.tstcls==i :
-					if cmp5>cmp4:
+					ptcl2=ptcl.process("xform",{"transform":ptclxf.inverse()})
+					ptcl2.mult(projmask)
+					if cmp5<cmp4:
 						try: avgim1.add(ptcl2)
 						except: avgim1=ptcl2
 					else:
@@ -220,7 +223,7 @@ ligand/no-ligand contrast in individual images:
 
 				if options.verbose>1 : print j,cmp1+cmp2,cmp2-cmp1,cmp3,cmp5-cmp4
 				statr.append(cmp3)
-				statr2.append((cmp1+cmp2,cmp3,cmp5-cmp4))
+				statr2.append((cmp1+cmp2,cmp3,cmp4-cmp5))
 #				statr2.append((cmp1+cmp2,cmp2-cmp1,cmp5-cmp4)
 
 			else:
@@ -249,6 +252,17 @@ ligand/no-ligand contrast in individual images:
 						projc2.write_image("aligned_{}.hdf".format(i),1)
 
 					nalis+=1
+
+				if options.tstcls==i :
+					ptcl2=ptcl.process("xform",{"transform":ptclxf.inverse()})
+					ptcl2.mult(projmask)
+					if cmp1>cmp2:
+						try: avgim1.add(ptcl2)
+						except: avgim1=ptcl2
+					else:
+						try: avgim2.add(ptcl2)
+						except: avgim2=ptcl2
+
 
 		if options.tstcls==i :
 			try:

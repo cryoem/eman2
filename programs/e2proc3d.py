@@ -152,6 +152,7 @@ def main():
 	parser.add_option("--append", action="store_true", help="Append output image, i.e., do not write inplace.")
 	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_option("--unstacking", action="store_true", help="Process a stack of 3D images, then output a a series of numbered single image files", default=False)
+	parser.add_option("--tomoprep", action="store_true", help="Produces a special HDF file designed for rapid interactive tomography annotation. This option should be used alone.", default=False)
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_option("--step",type=str,default=None,help="Specify <init>,<step>. Processes only a subset of the input data. For example, 0,2 would process only the even numbered particles")
 
@@ -230,6 +231,25 @@ def main():
 		print "Complete !"
 		sys.exit(0)
 
+	if options.tomoprep>0:
+		print "Tomography processing preparation mode. No other processing will be performed."
+		hdr=EMData(infile,0,True)
+		nx,ny,nz=hdr["nx"],hdr["ny"],hdr["nz"]
+
+		# If this is a "y-short" tomogram convert it to z-short
+		if min(nx,ny,nz)==ny :
+			for z in xrange(ny):
+				slice=EMData(infile,0,False,Region(0,z,0,nx,1,nz))
+				slice.write_image(outfile,0,IMAGE_UNKNOWN,False,Region(0,0,ny-z-1,nx,nz,1),EM_UCHAR)
+		else:
+			for z in xrange(ny):
+				slice=EMData(infile,0,False,Region(0,0,z,nx,nz,1))
+				slice.write_image(outfile,0,IMAGE_UNKNOWN,False,Region(0,0,z,nx,nz,1),EM_UCHAR)
+
+		print "Complete !"
+		sys.exit(0)
+
+
 	n0 = options.first
 	n1 = options.last
 	nimg = EMUtil.get_image_count(infile)
@@ -249,11 +269,11 @@ def main():
 		for i in range(n0,n1,n2):
 			ptcls.append(EMData(infile,i))
 		avg = sum(ptcls)/len(ptcls)
-		try : 
+		try :
 			avg["ptcl_repr"]=sum([i["ptcl_repr"] for i in ptcls])
 		except:
 			pass
-			
+
 #		avg.process_inplace('normalize.edgemean')
 		avg.write_image(outfile,0)
 		sys.exit()
@@ -309,7 +329,7 @@ def main():
 	for data in datlst:
 		if options.inputto1 : data.to_one()			# replace all voxel values with 1.0
 		if options.resetxf : data["xform.align3d"]=Transform()
-		
+
 		for option1 in optionlist:
 			if option1 == "origin":
 				if(len(options.origin)==3):

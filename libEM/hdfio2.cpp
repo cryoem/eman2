@@ -495,7 +495,7 @@ void HdfIO2::init()
 				EMObject val=read_attr(attr);
 				meta_attr_dict["DDD."+string(name)]=val;
 			}
-			
+
 			H5Aclose(attr);
 		}
 
@@ -1031,10 +1031,6 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 					  EMUtil::EMDataType dt, bool)
 {
 	ENTERFUNC;
-	if(!data) {
-		std::cerr << "Warning:blank image written!!! " << std::endl;
-		return 0;
-	}
 
 #ifdef DEBUGHDF
 	printf("HDF: write_data %d\n",image_index);
@@ -1082,6 +1078,13 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		hid_t spc_file = H5Dget_space(ds);
 		rank = H5Sget_simple_extent_ndims(spc_file);
 		H5Sclose(spc_file);
+	}
+
+	if(!data) {
+		H5Dclose(ds);
+		H5Sclose(spc);
+		std::cerr << "Warning:blank image written!!! " << std::endl;
+		return 0;
 	}
 
 	//convert data to unsigned short, unsigned char...
