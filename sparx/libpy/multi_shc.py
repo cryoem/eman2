@@ -1973,13 +1973,22 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 	cny  = ny//2 + 1
 
 	ant = cos(an*pi/180.0)
-	#phi, theta, psi, sxo, syo = get_params_proj(data)
-	t1 = data.get_attr("xform.projection")
-	dp = t1.get_params("spider")
+
 	if finfo:
+		t1 = data.get_attr("xform.projection")
+		dp = t1.get_params("spider")
 		finfo.write("Image id: %6d\n"%(ID))
-		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
-		finfo.flush()
+		finfo.write("Old parameters: %9.4f %9.4f %9.4f %5.2f %5.2f   %10.3f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"], \
+					data.get_attr("previousmax")))
+		
+		i = 1
+		while data.has_attr("xform.projection" + str(i)):
+			t1 = data.get_attr("xform.projection" + str(i))
+			dp = t1.get_params("spider")
+			finfo.write("Add parameters: %9.4f %9.4f %9.4f %5.2f %5.2f   %10.3f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
+			i += 1
+
+	t1 = data.get_attr("xform.projection")
 
 	#[ang, sxs, sys, mir, iref, peak, checked_refs] = Util.shc(data, refrings, xrng, yrng, step, ant, mode, numr, cnx+dp["tx"], cny+dp["ty"])
 	#peaks = Util.shc_multipeaks(data, refrings, xrng, yrng, step, ant, mode, numr, cnx+dp["tx"], cny+dp["ty"], nsoft)
@@ -2050,9 +2059,6 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 				data.set_attr("weight" + str(i), params[i][0]/ws)
 			from pixel_error import max_3D_pixel_error
 			pixel_error += max_3D_pixel_error(t1, t2, numr[-3])
-			if finfo:
-				finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
-				finfo.flush()
 			#  preserve params, they might be needed if peaks_count<nsoft
 			params[i] = [params[i][0], phi, theta, psi, s2x, s2y, iref]
 
@@ -2060,7 +2066,7 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 		data.set_attr("previousmax", params[peaks_count//2][0])
 
 		#  Add orientations around the main peak with exclusion of those already taken
-		#  Allow matching to bsoft>nsoft, but still keep nsoft.  This should allow elongated neighberhood
+		#  Allow matching to bsoft>nsoft, but still keep nsoft.  This should allow elongated neighborhood
 		bsoft = 2*nsoft
 		if(peaks_count<nsoft):
 			tempref = [refrings[i] for i in xrange(len(refrings))]
@@ -2180,6 +2186,20 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 					data.set_attr("xform.projection" + str(i), t2)
 					data.set_attr("weight" + str(i), params[i][0]/ws)
 
+		if finfo:
+			t1 = data.get_attr("xform.projection")
+			dp = t1.get_params("spider")
+			#finfo.write("Image id: %6d\n"%(ID))
+			finfo.write("New parameters: %9.4f %9.4f %9.4f %5.2f %5.2f  %10.3f  %5.3f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"], \
+						data.get_attr("previousmax"), data.get_attr("weight")))
+			i = 1
+			while data.has_attr("xform.projection" + str(i)):
+				t1 = data.get_attr("xform.projection" + str(i))
+				dp = t1.get_params("spider")
+				finfo.write("Add parameters: %9.4f %9.4f %9.4f %5.2f %5.2f         %5.3f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"], \
+						data.get_attr("weight" + str(i)) ) )
+				finfo.flush()
+				i += 1
 		"""
 		# remove old xform.projection
 		i = max(peaks_count, 1)
@@ -2688,6 +2708,13 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 	list_of_particles = list_of_particles[image_start: image_end]
 	nima = len(list_of_particles)
 
+	if myid == 7:
+		import os
+		outdir = "./"
+		info_file = os.path.join(outdir, "progress%04d"%myid)
+		finfo = open(info_file, 'w')
+	else:
+		finfo = None
 
 	if(myid == main_node):
 		if( type(stack) is types.StringType ):  data = get_im(stack, list_of_particles[0])
@@ -2799,13 +2826,13 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 			#=========================================================================
 			# alignment
 			#number_of_checked_refs = 0
-			par_r = [0]*(nsoft+1)
+			par_r = [0]*max(2,(nsoft+1))
 			for im in xrange(nima):
 				if(nsoft == 0):
 					if(an[N_step] == -1): peak, pixer[im] = proj_ali_incore(data[im], refrings, numr, \
 														xrng[N_step], yrng[N_step], step[N_step])
 					else:                 peak, pixer[im] = proj_ali_incore_local(data[im], refrings, numr, \
-														xrng[N_step], yrng[N_step], step[N_step], an[N_step], sym = sym)
+														xrng[N_step], yrng[N_step], step[N_step], an[N_step], sym = sym, finfo = finfo)
 					if(pixer[im] == 0.0):  par_r[0] += 1
 				elif(nsoft == 1):
 					peak, pixer[im], number_of_checked_refs, iref = \
@@ -2813,7 +2840,7 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 					if(pixer[im] == 0.0):  par_r[0] += 1
 				elif(nsoft > 1):
 					peak, pixer[im], checked_refs, number_of_peaks = shc_multi(data[im], refrings, numr, \
-												xrng[N_step], yrng[N_step], step[N_step], an[N_step], nsoft, sym)
+												xrng[N_step], yrng[N_step], step[N_step], an[N_step], nsoft, sym, finfo)
 					par_r[number_of_peaks] += 1
 					#number_of_checked_refs += checked_refs
 
