@@ -2777,7 +2777,6 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 
 	pixer = [0.0]*nima
 	historyofchanges = [0.0, 0.5, 1.0]
-	#par_r = [[] for im in list_of_particles ]
 	cs = [0.0]*3
 	total_iter = 0
 	# do the projection matching
@@ -2854,14 +2853,14 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 			#=========================================================================
 			#output pixel errors, check stop criterion
 			all_pixer = wrap_mpi_gatherv(pixer, 0, mpi_comm)
-			par_r = mpi_reduce(par_r, nsoft+1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
+			par_r = mpi_reduce(par_r, len(par_r), MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
 			#total_checked_refs = wrap_mpi_gatherv([number_of_checked_refs], main_node, mpi_comm)
 			terminate = 0
 			if myid == main_node:
 				#total_checked_refs = sum(total_checked_refs)
 				if(nsoft < 2):  par_r[1] = total_nima - par_r[0]
 				log.add("=========== Number of better peaks found ==============")
-				for lhx in xrange(nsoft+1):
+				for lhx in xrange(len(par_r)):
 					msg = "            %5d     %7d"%(lhx, par_r[lhx])
 					log.add(msg)
 				log.add("_______________________________________________________")
