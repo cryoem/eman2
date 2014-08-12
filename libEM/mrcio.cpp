@@ -211,12 +211,14 @@ bool MrcIO::is_valid(const void *first_block, off_t file_size)
 	const int max_dim = 1 << 20;
 
 	if ((mrcmode >= MRC_UCHAR && mrcmode < MRC_UNKNOWN) &&
-		(nx > 1 && nx < max_dim) && (ny > 0 && ny < max_dim) && (nz > 0 && nz < max_dim)) {
+		(nx > 1 && nx < max_dim) && (ny > 0 && ny < max_dim)
+		 && (nz > 0 && nz < max_dim)) {
 
 //#ifndef SPIDERMRC // Spider MRC files don't satisfy the following test
 
 		if (file_size > 0) {
-			off_t file_size1 = (off_t)nx * (off_t)ny * (off_t)nz * (off_t)get_mode_size(mrcmode) +
+			off_t file_size1 = (off_t)nx * (off_t)ny * (off_t)nz *
+				(off_t)get_mode_size(mrcmode) +
 				(off_t)sizeof(MrcHeader) + nsymbt;
 
 			if (file_size == file_size1) {
@@ -225,7 +227,9 @@ bool MrcIO::is_valid(const void *first_block, off_t file_size)
 
 //			return false;
 
-			LOGWARN("image size check fails, still try to read it...");	// when size doesn't match, print error message instead of make it fail
+         // when size doesn't match, print error message instead of make it fail
+
+			LOGWARN("image size check fails, still try to read it...");
 		}
 		else {
 			return true;
@@ -397,11 +401,13 @@ int MrcIO::read_mrc_header(Dict & dict, int image_index, const Region * area, bo
 
 	if (is_transpose) {
 		trans->set_trans(mrch.nystart, mrch.nxstart, mrch.nzstart);
-		trans->set_rotation(Dict("type", "imagic", "alpha", mrch.alpha, "beta", mrch.beta, "gamma", mrch.gamma));
+		trans->set_rotation(Dict("type", "imagic", "alpha", mrch.alpha,
+										 "beta", mrch.beta, "gamma", mrch.gamma));
 	}
 	else {
 		trans->set_trans(mrch.nxstart, mrch.nystart, mrch.nzstart);
-		trans->set_rotation(Dict("type", "imagic", "alpha", mrch.alpha, "beta", mrch.beta, "gamma", mrch.gamma));
+		trans->set_rotation(Dict("type", "imagic", "alpha", mrch.alpha,
+										 "beta", mrch.beta, "gamma", mrch.gamma));
 	}
 	
 	if (zlen <= 1) {
@@ -707,17 +713,13 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 			stack_size = nz;
 			image_index = 0;
 		}
-		else if (append) {
-			if (is_new_file) {
-				stack_size = 0;
-			}
-
-			stack_size++;
+		else if (is_new_file) {
+			stack_size = 1;
 			image_index = stack_size - 1;
 		}
-		else if (is_new_file) {
-			stack_size = nz;
-			image_index = 0;
+		else if (append) {
+			stack_size++;
+			image_index = stack_size - 1;
 		}
 		else if (image_index >= stack_size) {
 			stack_size = image_index + 1;
@@ -814,6 +816,10 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 
 	mode_size = get_mode_size(mrch.mode);
 	is_new_file = false;
+
+	if (is_stack  &&  ! got_one_image) {
+		mrch.nz = 1;
+	}
 
 	// Do not write ctf to mrc header in EMAN2
 
@@ -936,7 +942,9 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 {
 	ENTERFUNC;
 
-	if (is_stack  &&  image_index == -1) {
+	bool append = (image_index == -1);
+
+	if (is_stack  &&  append) {
 		image_index = stack_size - 1;
 	}
 
