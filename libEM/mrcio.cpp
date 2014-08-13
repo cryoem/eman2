@@ -1021,6 +1021,10 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 	short          *  sdata  = NULL;
 	unsigned short *  usdata = NULL;
 
+	if (is_stack  &&  ! got_one_image) {
+		mrch.nz = stack_size;
+	}
+
 	if (mrch.mode == MRC_UCHAR) {
 		cdata = new unsigned char[size];
 
@@ -1077,6 +1081,10 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 		ptr_data = usdata;
 
 		update_stats((void *)usdata, size);
+	}
+
+	if (is_stack  &&  ! got_one_image) {
+		mrch.nz = 1;
 	}
 
 	// New way to write data which includes region writing.
