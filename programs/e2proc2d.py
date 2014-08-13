@@ -589,8 +589,8 @@ def main():
 
 				#print_iminfo(data, "Final")
 				if options.outmode!="float":
-					if outfile[-4:]!=".hdf" :
-						print "WARNING: outmode is not working correctly for non HDF images in 2.1beta3. We expect to have this fixed in the next few days."
+#					if outfile[-4:]!=".hdf" :
+#						print "WARNING: outmode is not working correctly for non HDF images in 2.1beta3. We expect to have this fixed in the next few days."
 					if options.outnorescale :
 						# This sets the minimum and maximum values to the range for the specified type, which should result in no rescaling
 						outmode=file_mode_map[options.outmode]
