@@ -34,7 +34,7 @@
 # $Id$
 import	global_def
 from	global_def 	import *
-from	EMAN2 		import EMUtil, parsemodopt
+from	EMAN2 		import EMUtil, parsemodopt, EMAN2Ctf
 from    EMAN2jsondb import js_open_dict
 
 def main():
