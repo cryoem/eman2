@@ -858,6 +858,7 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 		return 1;
 	}
 
+	signed char *    scdata = (signed char *)    rdata;
 	unsigned char *  cdata  = (unsigned char *)  rdata;
 	short *          sdata  = (short *)          rdata;
 	unsigned short * usdata = (unsigned short *) rdata;
@@ -890,7 +891,7 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 		size = (size_t)xlen * ylen * zlen;
 	}
 
-	if (mrch.mode != MRC_UCHAR) {
+	if (mrch.mode != MRC_UCHAR  &&  mrch.mode != MRC_CHAR) {
 		if (mode_size == sizeof(short)) {
 			become_host_endian < short >(sdata, size);
 		}
@@ -906,7 +907,14 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 			rdata[j] = static_cast < float >(cdata[j]);
 		}
 	}
-	else if (mrch.mode == MRC_SHORT ) {
+	else if (mrch.mode == MRC_CHAR) {
+		for (size_t i = 0; i < size; ++i) {
+			size_t j = size - 1 - i;
+			// rdata[i] = static_cast<float>(cdata[i]/100.0f - 1.28f);
+			rdata[j] = static_cast < float >(scdata[j]);
+		}
+	}
+	else if (mrch.mode == MRC_SHORT) {
 		for (size_t i = 0; i < size; ++i) {
 			size_t j = size - 1 - i;
 			rdata[j] = static_cast < float >(sdata[j]);
@@ -994,7 +1002,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 	portable_fseek(mrcfile, sizeof(MrcHeader), SEEK_SET);
 
 	if ((is_big_endian != ByteOrder::is_host_big_endian()) || ! use_host_endian) {
-		if (mrch.mode != MRC_UCHAR) {
+		if (mrch.mode != MRC_UCHAR  &&  mrch.mode != MRC_CHAR) {
 			if (mode_size == sizeof(short)) {
 				ByteOrder::swap_bytes((short*) data, size);
 			}
@@ -1017,6 +1025,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, nz);
 
+	signed char    *  scdata = NULL;
 	unsigned char  *  cdata  = NULL;
 	short          *  sdata  = NULL;
 	unsigned short *  usdata = NULL;
@@ -1036,13 +1045,36 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 				cdata[i] = UCHAR_MAX;
 			}
 			else {
-				cdata[i] = (unsigned char)((data[i]-rendermin)/(rendermax-rendermin)*UCHAR_MAX);
+				cdata[i] = (unsigned char)((data[i] - rendermin) /
+								(rendermax - rendermin) *
+								UCHAR_MAX);
 			}
 		}
 
 		ptr_data = cdata;
 
-		update_stats((void *)cdata, size);
+		update_stats(ptr_data, size);
+	}
+	else if (mrch.mode == MRC_CHAR) {
+		scdata = new signed char[size];
+
+		for (size_t i = 0; i < size; ++i) {
+			if (data[i] <= rendermin) {
+				scdata[i] = SCHAR_MIN;
+			}
+			else if (data[i] >= rendermax){
+				scdata[i] = SCHAR_MAX;
+			}
+			else {
+				scdata[i] = (signed char)((data[i] - rendermin) /
+								(rendermax - rendermin) *
+								(SCHAR_MAX - SCHAR_MIN) + SCHAR_MIN);
+			}
+		}
+
+		ptr_data = scdata;
+
+		update_stats(ptr_data, size);
 	}
 	else if (mrch.mode == MRC_SHORT || mrch.mode == MRC_SHORT_COMPLEX) {
 		sdata = new short[size];
@@ -1055,13 +1087,15 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 				sdata[i] = SHRT_MAX;
 			}
 			else {
-				sdata[i] = (short)(((data[i]-rendermin)/(rendermax-rendermin))*(SHRT_MAX-SHRT_MIN) - SHRT_MAX);
+				sdata[i] = (short)(((data[i] - rendermin) /
+								(rendermax - rendermin)) *
+								(SHRT_MAX - SHRT_MIN) + SHRT_MIN);
 			}
 		}
 
 		ptr_data = sdata;
 
-		update_stats((void *)sdata, size);
+		update_stats(ptr_data, size);
 	}
 	else if (mrch.mode == MRC_USHORT) {
 		usdata = new unsigned short[size];
@@ -1074,13 +1108,15 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 				usdata[i] = USHRT_MAX;
 			}
 			else {
-				usdata[i] = (unsigned short)((data[i]-rendermin)/(rendermax-rendermin)*USHRT_MAX);
+				usdata[i] = (unsigned short)((data[i] - rendermin) /
+								(rendermax - rendermin) *
+								USHRT_MAX);
 			}
 		}
 
 		ptr_data = usdata;
 
-		update_stats((void *)usdata, size);
+		update_stats(ptr_data, size);
 	}
 
 	if (is_stack  &&  ! got_one_image) {
@@ -1095,6 +1131,7 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 							  mode_size, mrch.nx, mrch.ny, mrch.nz, area);
 
 	if (cdata)  {delete [] cdata;  cdata  = NULL;}
+	if (scdata) {delete [] scdata; scdata = NULL;}
 	if (sdata)  {delete [] sdata;  sdata  = NULL;}
 	if (usdata) {delete [] usdata; usdata = NULL;}
 
@@ -1178,10 +1215,12 @@ void MrcIO::update_stats(void * data, size_t size)
 	double vv;
 	float  min, max;
 	
+	signed char    *  scdata = NULL;
 	unsigned char  *  cdata  = NULL;
 	short          *  sdata  = NULL;
 	unsigned short *  usdata = NULL;
 
+	bool use_schar  = (mrch.mode == MRC_CHAR);
 	bool use_uchar  = (mrch.mode == MRC_UCHAR);
 	bool use_short  = (mrch.mode == MRC_SHORT || mrch.mode == MRC_SHORT_COMPLEX);
 	bool use_ushort = (mrch.mode == MRC_USHORT);
@@ -1190,6 +1229,11 @@ void MrcIO::update_stats(void * data, size_t size)
 		max    = 0.0;
 		min    = UCHAR_MAX;
 		cdata  = (unsigned char *) data;
+	}
+	else if (use_schar) {
+		max    = SCHAR_MIN;
+		min    = SCHAR_MAX;
+		scdata = (signed char *) data;
 	}
 	else if (use_short) {
 		max    = (float) SHRT_MIN;
@@ -1210,6 +1254,9 @@ void MrcIO::update_stats(void * data, size_t size)
 	for (size_t i = 0; i < size; i++) {
 		if (use_uchar) {
 			v = (float) (cdata[i]);
+		}
+		else if (use_schar) {
+			v = (float) (scdata[i]);
 		}
 		else if (use_short) {
 			v = (float) (sdata[i]);
@@ -1236,6 +1283,9 @@ void MrcIO::update_stats(void * data, size_t size)
 	for (size_t i = 0; i < size; i++) {
 		if (use_uchar) {
 			v = (float) (cdata[i]);
+		}
+		else if (use_schar) {
+			v = (float) (scdata[i]);
 		}
 		else if (use_short) {
 			v = (float) (sdata[i]);
@@ -1352,6 +1402,7 @@ int MrcIO::get_mode_size(int mm)
 
 	int msize = 0;
 	switch (m) {
+	case MRC_CHAR:
 	case MRC_UCHAR:
 		msize = sizeof(char);
 		break;
@@ -1376,6 +1427,9 @@ int MrcIO::to_em_datatype(int m)
 	EMUtil::EMDataType e = EMUtil::EM_UNKNOWN;
 
 	switch (m) {
+	case MRC_CHAR:
+		e = EMUtil::EM_CHAR;
+		break;
 	case MRC_UCHAR:
 		e = EMUtil::EM_UCHAR;
 		break;
@@ -1407,6 +1461,10 @@ int MrcIO::to_mrcmode(int e, int is_complex)
 	EMUtil::EMDataType em_type = static_cast < EMUtil::EMDataType > (e);
 
 	switch (em_type) {
+	case EMUtil::EM_CHAR:
+		m = MRC_CHAR;
+
+		break;
 	case EMUtil::EM_UCHAR:
 		m = MRC_UCHAR;
 
@@ -1434,7 +1492,6 @@ int MrcIO::to_mrcmode(int e, int is_complex)
 		m = MRC_SHORT_COMPLEX;
 
 		break;
-	case EMUtil::EM_CHAR:
 	case EMUtil::EM_INT:
 	case EMUtil::EM_UINT:
 	case EMUtil::EM_FLOAT:

@@ -72,6 +72,7 @@ namespace EMAN
 			MRC_FLOAT_COMPLEX,
 			MRC_USHORT = 6,		//non-standard
 			MRC_UCHAR3 = 16,	//unsigned char * 3, for rgb data, non-standard
+			MRC_CHAR,
 			MRC_UNKNOWN
 		};
 
@@ -259,7 +260,6 @@ namespace EMAN
 
 		static const char *CTF_MAGIC;
 		static const char *SHORT_CTF_MAGIC;
-
 
 	private:
 		string filename;
