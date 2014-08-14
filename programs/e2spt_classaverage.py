@@ -951,6 +951,7 @@ def main():
 			classmxPhis.write_image(classmxFile,7)	
 			classmxScales.write_image(classmxFile,8)
 		
+		
 		if options.plotccc:
 			#classScoresList.reverse()
 			maxY = max(classScoresList) + 1
@@ -970,18 +971,22 @@ def main():
 			
 			from e2spt_hac import plotter
 			plotter(plotX, classScoresList, options, plotName, maxX, maxY)
+		
 			
 		if options.verbose: 
 			print "Preparing final average"
+		
 		
 		if type(ref) is list:
 			print "You supplied a reference file that has more than one reference in it! EXITING."
 			sys.exit()
 		
+		
 		elif not options.donotaverage:									
 			ref['origin_x']=0
 			ref['origin_y']=0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
 			ref['origin_z']=0
+			ref['xform.align3d'] = Transform()
 			
 			outdir = options.path
 			#if 'bdb:' in options.path:
@@ -992,12 +997,12 @@ def main():
 			
 			finaloutput = outdir + options.output
 
-			print "\n\n\n\n\n\nBefore writing out the average, its ali params are", ref['xform.align3d']
+			#print "\n\n\n\n\n\nBefore writing out the average, its ali params are", ref['xform.align3d']
 			
 			if options.verbose:
 				print "The file to write the final output to is", finaloutput
 			
-			print "\n\n\n\n\n\nBefore writing out the average, its ali params are", ref['xform.align3d']
+			#print "\n\n\n\n\n\nBefore writing out the average, its ali params are", ref['xform.align3d']
 			
 			ref.write_image(finaloutput,0)
 			
