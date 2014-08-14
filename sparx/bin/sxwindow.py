@@ -82,51 +82,60 @@ def window(data):
 
 
 def main():
-	parser = OptionParser()
+	arglist = []
+	for arg in sys.argv:
+		arglist.append( arg )
+	progname = os.path.basename(arglist[0])
+	usage = progname + " micrograph_info_file -c=coord  -f=ctf_file  -m=mic_dir  -i=input_pixel  -o=output_pixel"
+	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option('-c', '--coord', dest='coord', help='location where coordinates are located')
 	parser.add_option('-f', '--ctf', dest='ctf_file', help='ctf information file')
 	parser.add_option('-m', '--mic_dir', dest='mic_dir', help='micrograph location')
 	parser.add_option('-i', '--input_pixel', dest='input_pixel', help='input pixel size', default=1)
 	parser.add_option('-o', '--output_pixel', dest='output_pixel', help='output pixel size', default=1)
-	(options, args) = parser.parse_args()
-
-	if options.coord and os.path.exists(options.coord):
-		coordinates = read_coordinates(options.coord)
+	(options, args) = parser.parse_args(arglist[1:])
+	print "WOW"
+	if len(args) < 12 or len(args) > 6:
+		print "usage: " + usage
+		print "Please run '" + progname + " -h' for detailed options"
 	else:
-		parser.error('Invalid location for coordinates file')
+		if options.coord and os.path.exists(options.coord):
+			coordinates = read_coordinates(options.coord)
+		else:
+			parser.error('Invalid location for coordinates file')
 
-	if options.ctf_file and os.path.exists(options.ctf_file):
-		ctf = read_text_row(options.ctf_file)
-		# Unfortunately, you get 'list of list' that also contains file name.
-		ctf_dir = {}
-		for x in ctf:
-			ctf_dir[os.path.basename(x[-1])] = x[:-1]
-	else:
-		parser.error('Invalid file path for CTF information')
+		if options.ctf_file and os.path.exists(options.ctf_file):
+			ctf = read_text_row(options.ctf_file)
+			# Unfortunately, you get 'list of list' that also contains file name.
+			ctf_dir = {}
+			for x in ctf:
+				ctf_dir[os.path.basename(x[-1])] = x[:-1]
+		else:
+			parser.error('Invalid file path for CTF information')
 
-	if not options.mic_dir or not os.path.exists(options.mic_dir):
-		parser.error('Invalid location for micrographs.')
+		if not options.mic_dir or not os.path.exists(options.mic_dir):
+			parser.error('Invalid location for micrographs.')
 
-	# Process coordinates and ctf information into one data structure for easy access
-	if len(coordinates) and len(ctf) and len(coordinates) == len(ctf):
-		# I think we have same number of micrograph
-		data = {}
-		for mic_name, coordinates in coordinates.items():
-			# Add coordinates
-			mic_path = os.path.join(options.mic_dir, mic_name)
-			data[mic_path] = coordinates
+		# Process coordinates and ctf information into one data structure for easy access
+		if len(coordinates) and len(ctf) and len(coordinates) == len(ctf):
+			# I think we have same number of micrograph
+			data = {}
+			for mic_name, coordinates in coordinates.items():
+				# Add coordinates
+				mic_path = os.path.join(options.mic_dir, mic_name)
+				data[mic_path] = coordinates
 
-			# Add CTF information
-			data[mic_path]['ctf'] = ctf_dir[mic_name]
+				# Add CTF information
+				data[mic_path]['ctf'] = ctf_dir[mic_name]
 
-			# Add input output pixel size
-			data[mic_path]['input_pixel'], data[mic_path]['output_pixel'] = options.input_pixel, options.output_pixel
+				# Add input output pixel size
+				data[mic_path]['input_pixel'], data[mic_path]['output_pixel'] = options.input_pixel, options.output_pixel
 
-		# Now that data contains information about each micrographs, let's window particles.
-		window(data)
-	else:
-		print 'Error: Different number of coordinates and ctf information.'
-		return 1
+				# Now that data contains information about each micrographs, let's window particles.
+				window(data)
+		else:
+			print 'Error: Different number of coordinates and ctf information.'
+			return 1
 
 
 if __name__=='__main__':
