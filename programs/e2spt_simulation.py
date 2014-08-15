@@ -878,6 +878,7 @@ class SubtomoSimTask(JSTask):
 			prj['apix_x']=apix
 			prj['apix_y']=apix
 			prj['sptsim_tiltangle']=realalt
+			prj['sptsim_tiltaxis']=options.tiltaxis
 		
 			#print "\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\nThe size of the prj is", prj['nx']
 			#print "\n"
@@ -1017,6 +1018,7 @@ class SubtomoSimTask(JSTask):
 		rec['origin_y']=0
 		rec['origin_z']=0
 		rec['sptsim_tiltangles'] = tiltangles
+		rec['sptsim_tiltaxis'] = options.tiltaxis
 
 		#print "The apix of rec is", rec['apix_x']
 		
