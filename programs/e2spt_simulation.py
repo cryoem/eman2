@@ -66,6 +66,9 @@ def main():
 	parser.add_argument("--randstack",type=str,default='',help="If you already have a stack of particles (presumably in random orientations) you can supply it here.")
 	parser.add_argument("--tomogramoutput",type=str,default='',help="This will generate a simulated tilt series and tomogram containing the entire set of subtomograms.")
 
+	parser.add_argument("--tiltaxis",type=str,default='y',help="""Axis to produce projections 
+		about. Default is 'y'; the only other valid option is 'x'.""")
+
 	parser.add_argument("--input", type=str, help="""The name of the input volume from which simulated subtomograms will be generated. 
 							The output will be in HDF format, since volume stack support is required. The input CAN be PDB, MRC or and HDF stack. 
 							If the input file is PDB or MRC, a version of the supplied model will be written out in HDF format.
@@ -821,14 +824,22 @@ class SubtomoSimTask(JSTask):
 		print "The 3d image is", image
 		print "Its size is",image['nx'],image['ny'],image['nz']
 			
+		tiltangles = []
 		for j in range(nslices + extraslices):						#Extra 'noise' slices are 0 if --fillwedge is off. Calculated above if on.
 			realalt = alt + j*tiltstep
+		
+			tiltangles.append(realalt)
 		
 			#print "Real alt is", realalt
 			#print "Iterating over slices. Am in tiltstep, slice, alt", tiltstep,j,realalt
 		
+		
+			#Generate the projection orientation for each picture in the tilt series
 			
-			t = Transform({'type':'eman','az':90,'alt':realalt,'phi':0})				#Generate the projection orientation for each picture in the tilt series
+			t = Transform({'type':'eman','az':90,'alt':realalt,'phi':-90})
+	
+			if options.tiltaxis == 'x':
+				t = Transform({'type':'eman','az':0,'alt':realalt,'phi':0})				
 		
 			if dimension == 2:
 			
@@ -1005,6 +1016,7 @@ class SubtomoSimTask(JSTask):
 		rec['origin_x']=0
 		rec['origin_y']=0
 		rec['origin_z']=0
+		rec['sptsim_tiltangles'] = tiltangles
 
 		#print "The apix of rec is", rec['apix_x']
 		
