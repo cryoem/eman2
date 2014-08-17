@@ -10243,6 +10243,17 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 		"""
 
 def pca(input_stacks, subavg="", mask_radius=-1, nvec=3, incore=False, shuffle=False, genbuf=True, maskfile="", MPI=False, verbose=False):
+	"""
+		PCA of a set of images (can be 1-2-3-D).
+		input_stacks - 
+		subavg       - file name containing the average of the input stack.  If None, average will not be subtracted
+		mask_radius  - radius of a spherical mask, cannot be specified if maskfile provided
+		nvec         - number of egeinimages to be computed
+		incore       - do in-core calculations, preferable for small datasets (default False)
+		shuffle      - Shuffle test (default False)
+		genbuf       - generate disk buffer (default True), to use the disk buffer with data set to False
+		maskfile     - name of the mask file 
+	"""
 	from utilities import get_image, get_im, model_circle, model_blank
 	from statistics import pcanalyzer
 	import types
