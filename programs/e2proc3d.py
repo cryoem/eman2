@@ -233,15 +233,34 @@ def main():
 
 	if options.tomoprep>0:
 		print "Tomography processing preparation mode. No other processing will be performed."
+
+		if outfile[-4:]!=".hdf" :
+			print "Preprocessed tomograms can only be in HDF format"
+			sys.exit(1)
+
 		hdr=EMData(infile,0,True)
 		nx,ny,nz=hdr["nx"],hdr["ny"],hdr["nz"]
 
 		# If this is a "y-short" tomogram convert it to z-short
 		if min(nx,ny,nz)==ny :
+			# Create an empty file of the correct size
+			tmp=EMData()
+			tmp.set_size(nx,nz,ny)
+			tmp.write_image(outfile,0,IMAGE_UNKNOWN,False,None,EM_UCHAR)
+
+			# Write the output volume slice by slice
 			for z in xrange(ny):
 				slice=EMData(infile,0,False,Region(0,z,0,nx,1,nz))
 				slice.write_image(outfile,0,IMAGE_UNKNOWN,False,Region(0,0,ny-z-1,nx,nz,1),EM_UCHAR)
+
+			# Write
 		else:
+			# Create an empty file of the correct size
+			tmp=EMData()
+			tmp.set_size(nx,ny,nz)
+			tmp.write_image(outfile,0,IMAGE_UNKNOWN,False,None,EM_UCHAR)
+
+			# write the output volume slice by slice
 			for z in xrange(ny):
 				slice=EMData(infile,0,False,Region(0,0,z,nx,nz,1))
 				slice.write_image(outfile,0,IMAGE_UNKNOWN,False,Region(0,0,z,nx,nz,1),EM_UCHAR)

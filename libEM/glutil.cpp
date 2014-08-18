@@ -127,8 +127,8 @@ unsigned int GLUtil::gen_gl_texture(const EMData* const emdata, GLenum format)
 #ifdef _WIN32
 	PFNGLTEXIMAGE3DPROC glTexImage3D;
 #endif
-		glTexImage3D(GL_TEXTURE_3D, 0, format, 
-		emdata->nx, emdata->ny, emdata->nz, 0, format, GL_FLOAT, 
+		glTexImage3D(GL_TEXTURE_3D, 0, format,
+		emdata->nx, emdata->ny, emdata->nz, 0, format, GL_FLOAT,
 		(void*)(emdata->get_data()));
 	}
 
@@ -266,7 +266,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 		 float render_min, float render_max, float gamma, int flags)
 {
 	ENTERFUNC;
-	
+
 //	printf("%f\t%f\t",(float)emdata->get_attr("sigma"),(float)emdata->get_attr("mean"));
 //	printf("%d %d %d %d %d %f %d %d %f %f %f %d\n",x0,y0,ixsize,iysize,bpl,
 // scale,min_gray,max_gray,render_min,render_max,gamma,flags);
@@ -424,30 +424,30 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 	float* gaussianpdf   = NULL;
 	float* gaussiancdf   = NULL;
 	int* gaussianlookup  = NULL;
-	
+
 	unsigned int* graypdftwo = NULL;
-	
+
 	bool binflag = 0;
 	int binlocation = -1;
-	
+
 	if (flags & 32) {
 		int graypdf[rangemax]   = {0}; // 256
 		int graycdf[rangemax-2] = {0}; // 254
 
 		// unsigned int grayhe[rangemax-2]={0};//#number=254
-		
+
 		graypdftwo = new unsigned int[maxgray-mingray];
 		grayhe = new unsigned int[rangemax-2];
 		// unsigned char graylookup[(int)(render_max-render_min)];//render_max-render_min
-		
+
 		for (int i=0; i<(int)(rangemax-2); i++) {
 			grayhe[i] = 0; // Initialize all elements to zero.
 		}
-		
+
 		for (int i=0; i<(maxgray-mingray); i++) { // 0~253
 			graypdftwo[i] = 0;
 		}
-		
+
 		if (dsx != -1) {
 			int l = x0 + y0 * nx;
 
@@ -465,11 +465,11 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 					if (dsx == 1) t=image_data[l];
 					else { // This block does local pixel averaging for nicer reduced views
 						t=0;
-						
+
 						if ((l+dsx+dsy) > lmax) {
 							break;
 						}
-						
+
 						for (int iii=0; iii<dsx; iii++) {
 							for (int jjj=0; jjj<dsy; jjj+=nx) {
 								t += image_data[l+iii+jjj];
@@ -480,7 +480,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 					}
 
 					if (t <= rm) graypdf[0]++;
-					else if (t >= render_max) graypdf[rangemax-1]++;			
+					else if (t >= render_max) graypdf[rangemax-1]++;
 					else {
 						graypdf[(int)(ceil((rangemax-2)*(t - render_min)/(render_max-render_min)))]++;
 						graypdftwo[(unsigned char) (gs * (t - render_min))]++;
@@ -519,7 +519,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 					if (addi <= 1) t = image_data[l];
 					else { // This block does local pixel averaging for nicer reduced views
 						t = 0;
-						
+
 						for (int jjj=0; jjj<addj; jjj++) {
 							for (int iii=0; iii<addi; iii++) {
 								t += image_data[l+iii+jjj*nx];
@@ -555,30 +555,30 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 
 				if (remy > scale_n) {
 					remy -= scale_n;
-					l += nx; 
+					l += nx;
 				}
 			}
 		}
-		
+
 		for (int i=0; i<(rangemax-2); i++) { // 0~253
 			for (int j=0;j<(i+1);j++) {
 				graycdf[i]=graycdf[i]+graypdf[j+1];
 			}
 		}
-		
+
 		// graypdftwo binflag
 
 		binflag = 0;
 
-		for (int i=1; i<(maxgray-mingray); i++) { // 0~253	
+		for (int i=1; i<(maxgray-mingray); i++) { // 0~253
 			if (((float)graypdftwo[i]/graycdf[rangemax-3])>0.2) {
 				binflag = 1;
 				binlocation = i;
 
 				break;
 			}
-		}		
-		
+		}
+
 		if (binflag == 1) {
 			for (int i=(binlocation*16+1); i<((binlocation+1)*16); i++) {
 				graypdf[i] = 0;
@@ -588,7 +588,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 			for (int i=0; i<(rangemax-2); i++) { // 0~253
 				graycdf[i] = 0;
 			}
-			
+
 			for (int i=0; i<(rangemax-2); i++) { // 0~253
 				for (int j=0;j<(i+1);j++) {
 					graycdf[i] = graycdf[i]+graypdf[j+1];
@@ -604,10 +604,10 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 		gaussianpdf = new float[rangemax-2];
 		gaussiancdf = new float[rangemax-2];
 		gaussianlookup = new int[rangemax-2];
-		
+
 		for (int i=0; i<(rangemax-2); i++) {
 			gaussianpdf[i]=exp(-(i-mean)*(i-mean)/(2*standdv*standdv))/sqrt(standdv * standdv * 2 * M_PI);
-			
+
 			if (i != 0) {
 				gaussiancdf[i] = gaussiancdf[i-1]+gaussianpdf[i];
 			}
@@ -615,11 +615,11 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 				gaussiancdf[i] = gaussianpdf[i];
 			}
 		}
-		
+
 		for (int i=0; i<(rangemax-2); i++) {
 			gaussiancdf[i] = graycdf[rangemax-3]*gaussiancdf[i]/gaussiancdf[rangemax-3];
 		}
-		
+
 		for (int i=0; i<(rangemax-2); i++) {
 			for (int j=0; j<(rangemax-2); j++) {
 				if (graycdf[i] <= gaussiancdf[j]) {
@@ -629,14 +629,14 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 				}
 			}
 		}
-		
-		for (int i=0; i<(rangemax-2); i++) {			
+
+		for (int i=0; i<(rangemax-2); i++) {
 			grayhe[i] = floor(0.5+(((double)(rangemax-3)*graycdf[i])/graycdf[rangemax-3]));
 		}
-		
-	} 
 
-	////// End of Histogram Equalization ///////	
+	}
+
+	////// End of Histogram Equalization ///////
 
 	if (emdata->is_complex()) {
 		if (dsx != -1) {
@@ -826,11 +826,11 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 					if (dsx == 1) t=image_data[l];
 					else { // This block does local pixel averaging for nicer reduced views
 						t=0;
-						
+
 						if ((l+dsx+dsy) > lmax) {
 							break;
 						}
-						
+
 						for (int iii=0; iii<dsx; iii++) {
 							for (int jjj=0; jjj<dsy; jjj+=nx) {
 								t += image_data[l+iii+jjj];
@@ -866,7 +866,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 						{
 							p=(unsigned char) (gs * (t - render_min));
 						}
-						
+
 						p += mingray;
 					}
 
@@ -946,9 +946,9 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 							// p = (unsigned char)gaussianlookup[(int)(ceil)((t - render_min)*(rangemax-3)/(render_max-render_min))]+1;
 						}
 						else {
-							p = (unsigned char) (gs * (t - render_min));	
+							p = (unsigned char) (gs * (t - render_min));
 						}
-						
+
 						p += mingray;
 					}
 
@@ -1028,7 +1028,7 @@ std::string GLUtil::render_amp8(EMData* emdata, int x0, int y0, int ixsize,
 	delete [] gaussiancdf;
 	delete [] gaussianlookup;
 	delete [] graypdftwo;
-	
+
 	return ret;
 }
 
@@ -1041,7 +1041,7 @@ unsigned long GLUtil::get_isosurface_dl(MarchingCubes* mc,
 	if (recontour) mc->calculate_surface();
 	if (surface_face_z) mc->surface_face_z();
 	if (mc->getRGBmode()) mc->color_vertices();
-	
+
 #if MARCHING_CUBES_DEBUG
 	cout << "There are " << ff.elem()/3 << " faces and " << pp.elem() <<
 		 " points and " << nn.elem() << " normals to render in generate dl" << endl;
@@ -1088,18 +1088,18 @@ unsigned long GLUtil::get_isosurface_dl(MarchingCubes* mc,
 
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glVertexPointer(3, GL_FLOAT, 0,  mc->pp.get_data());
-	
+
 	if (mc->getRGBmode()) {
 		glEnableClientState(GL_COLOR_ARRAY);
 		glColorPointer(3, GL_FLOAT, 0,  mc->cc.get_data());
 	}
-	
+
 	mc->_isodl = glGenLists(1);
-	
+
 #if MARCHING_CUBES_DEBUG
 	int time0 = clock();
 #endif
-	
+
 	glNewList(mc->_isodl,GL_COMPILE);
 
 	if (tex_id != 0) {
@@ -1112,7 +1112,7 @@ unsigned long GLUtil::get_isosurface_dl(MarchingCubes* mc,
 		glTexParameterf(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	}
-	
+
 	// Drawing range elements based on the output of
 	// glGetIntegerv(GL_MAX_ELEMENTS_INDICES, & maxf);
 	// Saved about 60% of the time... drawRange should probably always be true
@@ -1141,7 +1141,7 @@ unsigned long GLUtil::get_isosurface_dl(MarchingCubes* mc,
 	if (tex_id != 0) glDisable(GL_TEXTURE_3D);
 
 	glEndList();
-	
+
 #if MARCHING_CUBES_DEBUG
 	int time1 = clock();
 
@@ -1169,7 +1169,7 @@ void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,
 		 bool surface_face_z)
 {
 	// In current version Texture is not supported b/c it is not used... EVER
-	
+
 #ifdef _WIN32
 	typedef void (APIENTRYP PFNGLGENBUFFERSPROC) (GLsizei n, GLuint *buffers);
 	PFNGLGENBUFFERSPROC glGenBuffers;
@@ -1181,11 +1181,13 @@ void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,
 #endif	//_WIN32
 
 	if (surface_face_z) mc->surface_face_z();
-	
+
 	// Bug in OpenGL, sometimes glGenBuffers doesn't work.
 	// Try again, if we still fail then return...
 
+//	printf("%d %d %d %d     ",mc->buffer[0],mc->buffer[1],mc->buffer[2],mc->buffer[3]);
 	if (!glIsBuffer(mc->buffer[0])) glGenBuffers(4, mc->buffer);
+//	printf("%d %d %d %d\n",mc->buffer[0],mc->buffer[1],mc->buffer[2],mc->buffer[3]);
 
 	// whenever something changes, like color mode or color scale (or threshold),
 	// we need to recolor
@@ -1252,7 +1254,7 @@ void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,
 
 		glColorPointer(3,GL_FLOAT,0, 0);
 	}
-	
+
 	// Indices
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mc->buffer[1]);
@@ -1269,7 +1271,7 @@ void GLUtil::render_using_VBOs(MarchingCubes* mc, unsigned int tex_id,
 
 		return;
 	}
-	
+
 	// finally draw the elemenets
 
 	glDrawElements(GL_TRIANGLES, mc->ff.elem(), GL_UNSIGNED_INT, 0);
@@ -1311,49 +1313,57 @@ void GLUtil::glMultMatrix (const Transform & xform)
 
 void GLUtil::glDrawBoundingBox(float width, float height, float depth)
 {
-	float w2 = width/2.0f;
-	float h2 = height/2.0f;
-	float d2 = depth/2.0f;
-	
-	float vertices[24] = {-w2,  h2,  d2, w2,  h2,  d2, w2, -h2,  d2, -w2,
-		 -h2,  d2, -w2,  h2, -d2, w2,  h2, -d2, w2, -h2, -d2, -w2, -h2, -d2};
-	int indices[24] = {0, 1, 1, 2, 2, 3, 3, 0, 4, 5, 5, 6,
-		 6, 7, 7, 4, 0, 4, 3, 7, 1, 5, 2, 6};
-	
-#ifdef _WIN32
-	typedef void (APIENTRYP PFNGLGENBUFFERSPROC) (GLsizei n, GLuint *buffers);
-	PFNGLGENBUFFERSPROC glGenBuffers;
-	glGenBuffers = (PFNGLGENBUFFERSPROC) wglGetProcAddress("glGenBuffers");
+	float x = width/2.0f;
+	float y = height/2.0f;
+	float z = depth/2.0f;
 
-	typedef GLboolean (APIENTRYP PFNGLISBUFFERPROC) (GLuint buffer);
-	PFNGLISBUFFERPROC glIsBuffer;
-	glIsBuffer = (PFNGLISBUFFERPROC) wglGetProcAddress("glIsBuffer");
+	float vertices[72] = {-x,-y,-z, x,-y,-z, x,-y,-z, x,y,-z, x,y,-z, -x,y,-z, -x,y,-z, -x,-y,-z,
+		-x,-y,-z, -x,-y,z, x,-y,-z, x,-y,z, x,y,-z, x,y,z, -x,y,-z, -x,y,z,
+		-x,-y,z, x,-y,z, x,-y,z, x,y,z, x,y,z, -x,y,z, -x,y,z, -x,-y,z };
 
-	typedef void (APIENTRYP PFNGLBINDBUFFERPROC) (GLenum target, GLuint buffer);
-	PFNGLBINDBUFFERPROC glBindBuffer;
-	glBindBuffer = (PFNGLBINDBUFFERPROC) wglGetProcAddress("glBindBuffer");
+	glBegin(GL_LINES);
+	for (int i=0; i<72; i+=3) glVertex3f(vertices[i],vertices[i+1],vertices[i+2]);
+	glEnd();
 
-	typedef void (APIENTRYP PFNGLBUFFERDATAPROC) (GLenum target, GLsizeiptr size,
-		 const GLvoid *data, GLenum usage);
-	PFNGLBUFFERDATAPROC glBufferData;
-	glBufferData = (PFNGLBUFFERDATAPROC) wglGetProcAddress("glBufferData");
-#endif	//_WIN32
-
-	if (glIsBuffer(GLUtil::buffer[0]) == GL_FALSE) {
-		glGenBuffers(2, GLUtil::buffer);
-	}
-	
-	// Could use dirty bit here but not worth my time to implment
-
-	glBindBuffer(GL_ARRAY_BUFFER, GLUtil::buffer[0]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glVertexPointer(3,GL_FLOAT,0,0);
-	
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GLUtil::buffer[1]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
-		 GL_STATIC_DRAW);
-	glDrawElements(GL_LINES,24,GL_UNSIGNED_INT,0);
+// 	float vertices[24] = {-w2,  h2,  d2, w2,  h2,  d2, w2, -h2,  d2, -w2,
+// 		 -h2,  d2, -w2,  h2, -d2, w2,  h2, -d2, w2, -h2, -d2, -w2, -h2, -d2};
+// 	int indices[24] = {0, 1, 1, 2, 2, 3, 3, 0, 4, 5, 5, 6,
+// 		 6, 7, 7, 4, 0, 4, 3, 7, 1, 5, 2, 6};
+//
+// #ifdef _WIN32
+// 	typedef void (APIENTRYP PFNGLGENBUFFERSPROC) (GLsizei n, GLuint *buffers);
+// 	PFNGLGENBUFFERSPROC glGenBuffers;
+// 	glGenBuffers = (PFNGLGENBUFFERSPROC) wglGetProcAddress("glGenBuffers");
+//
+// 	typedef GLboolean (APIENTRYP PFNGLISBUFFERPROC) (GLuint buffer);
+// 	PFNGLISBUFFERPROC glIsBuffer;
+// 	glIsBuffer = (PFNGLISBUFFERPROC) wglGetProcAddress("glIsBuffer");
+//
+// 	typedef void (APIENTRYP PFNGLBINDBUFFERPROC) (GLenum target, GLuint buffer);
+// 	PFNGLBINDBUFFERPROC glBindBuffer;
+// 	glBindBuffer = (PFNGLBINDBUFFERPROC) wglGetProcAddress("glBindBuffer");
+//
+// 	typedef void (APIENTRYP PFNGLBUFFERDATAPROC) (GLenum target, GLsizeiptr size,
+// 		 const GLvoid *data, GLenum usage);
+// 	PFNGLBUFFERDATAPROC glBufferData;
+// 	glBufferData = (PFNGLBUFFERDATAPROC) wglGetProcAddress("glBufferData");
+// #endif	//_WIN32
+//
+// 	if (glIsBuffer(GLUtil::buffer[0]) == GL_FALSE) {
+// 		glGenBuffers(2, GLUtil::buffer);
+// 	}
+//
+// 	// Could use dirty bit here but not worth my time to implment
+//
+// 	glBindBuffer(GL_ARRAY_BUFFER, GLUtil::buffer[0]);
+// 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+// 	glEnableClientState(GL_VERTEX_ARRAY);
+// 	glVertexPointer(3,GL_FLOAT,0,0);
+//
+// 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GLUtil::buffer[1]);
+// 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
+// 		 GL_STATIC_DRAW);
+// 	glDrawElements(GL_LINES,24,GL_UNSIGNED_INT,0);
 }
 
 void GLUtil::glDrawDisk(float radius, int spokes)
@@ -1380,32 +1390,32 @@ void GLUtil::glDrawDisk(float radius, int spokes)
 	//This code is experimental
 	int arraysize = 4*pow((double)2, (double)spokes);
 	int sideofarray = pow((double)2, (double)spokes);
-	
+
 //	float vertices[3*arraysize + 3];
 	vector<float> vertices(3*arraysize + 3);
-	
+
 	// last vertex is center
 
 	vertices[3*arraysize] = 0.0;
 	vertices[3*arraysize+1] = 0.0;
 	vertices[3*arraysize+2] = 0.0;
-	
+
 	vertices[0] = 0.0;
 	vertices[1] = radius;
 	vertices[2] = 0.0;
-		
+
 	vertices[sideofarray*3] = radius;
 	vertices[sideofarray*3 + 1] = 0.0;
 	vertices[sideofarray*3 + 2] = 0.0;
-	
+
 	vertices[sideofarray*6] = 0.0;
 	vertices[sideofarray*6 + 1] = -radius;
 	vertices[sideofarray*6 + 2] = 0.0;
-	
+
 	vertices[sideofarray*9] = -radius;
 	vertices[sideofarray*9 + 1] = 0.0;
 	vertices[sideofarray*9 + 2] = 0.0;
-	
+
 	// This could aslo be implemented recursively
 
 	for (int step = 0; step < spokes; step++) {
@@ -1420,7 +1430,7 @@ void GLUtil::glDrawDisk(float radius, int spokes)
 			int index_i = index - x;
 
 			cout << index << " " << index_f << " " << index_i << endl;
-			
+
 			// need to resclae length to that of radius
 
 			vertices[index_f*3] = (vertices[index_f*3] - vertices[index_i*3])/2.0f;
@@ -1428,13 +1438,13 @@ void GLUtil::glDrawDisk(float radius, int spokes)
 			vertices[index_f*3 + 2] = (vertices[index_f*3 + 2] - vertices[index_i*3 + 2])/2.0f;
 		}
 	}
-	
+
 	// GL stuff
 
 	if (glIsBuffer(GLUtil::buffer[0]) == GL_FALSE) {
 		glGenBuffers(2, GLUtil::buffer);
 	}
-	
+
 	// Could use dirty bit here but not worth my time to implement
 
 	glBindBuffer(GL_ARRAY_BUFFER, GLUtil::buffer[0]);
@@ -1445,7 +1455,7 @@ void GLUtil::glDrawDisk(float radius, int spokes)
 		 GL_STATIC_DRAW);
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glVertexPointer(3, GL_FLOAT, 0, 0);
-	
+
 	// Code to select indices
 }
 #endif // EMAN2_USING_OPENGL

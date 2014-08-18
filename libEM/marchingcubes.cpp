@@ -465,15 +465,15 @@ void ColorRGBGenerator::set_cmap_data(EMData* data)
 	cmap = data;
 	setMinMax(data->get_attr("minimum"), data->get_attr("maximum"));
 }
-	
+
 void ColorRGBGenerator::generateRadialColorMap()
 {
 
 	int size = int(sqrt((float)originx*originx + originy*originy + originz*originz));
-	
+
 	if(colormap) delete colormap;
 	colormap = new float[size*3];
-	
+
 	for(int i = 0; i < size; i++){
 		float normrad = 4.189f*(i - inner)/(outer - inner);
 		if(normrad < 2.094){
@@ -502,13 +502,13 @@ float* ColorRGBGenerator::getRGBColor(int x, int y, int z)
 #else
 		float rad = sqrt(float(pow(x-originx,2) + pow(y-originy,2) + pow(z-originz,2)));
 #endif	//_WIN32
-	
+
 		//This indicates that new color info needs to be bound (to the GPU)
-		if(needtorecolor){ 
+		if(needtorecolor){
 			generateRadialColorMap();
 			needtorecolor = false;
 		}
-		
+
 		return &colormap[int(rad)*3];
 	}
 	// Get data using color map
@@ -528,11 +528,11 @@ float* ColorRGBGenerator::getRGBColor(int x, int y, int z)
 			rgb[1] = 0.5f*(1 + cos(value)/cos(1.047f - value));
 			rgb[2] = 1.5f - rgb[1];
 		}
-		
+
 		return &rgb[0];
 	}
-	
-	return &colormap[0];	
+
+	return &colormap[0];
 }
 
 MarchingCubes::MarchingCubes()
@@ -542,13 +542,13 @@ MarchingCubes::MarchingCubes()
 if ((int(glGetString(GL_VERSION)[0])-48)>2){
 	rgbgenerator = ColorRGBGenerator();
 
-#ifdef _WIN32
-	typedef void (APIENTRYP PFNGLGENBUFFERSPROC) (GLsizei n, GLuint *buffers);
-	PFNGLGENBUFFERSPROC glGenBuffers;
-	glGenBuffers = (PFNGLGENBUFFERSPROC) wglGetProcAddress("glGenBuffers");
-#endif	//_WIN32
-
-	glGenBuffers(4, buffer);
+// #ifdef _WIN32
+// 	typedef void (APIENTRYP PFNGLGENBUFFERSPROC) (GLsizei n, GLuint *buffers);
+// 	PFNGLGENBUFFERSPROC glGenBuffers;
+// 	glGenBuffers = (PFNGLGENBUFFERSPROC) wglGetProcAddress("glGenBuffers");
+// #endif	//_WIN32
+//
+// 	glGenBuffers(4, buffer);
 }
 
 }
@@ -559,13 +559,13 @@ MarchingCubes::MarchingCubes(EMData * em)
 if ((int(glGetString(GL_VERSION)[0])-48)>2){
 	rgbgenerator = ColorRGBGenerator();
 
-#ifdef _WIN32
-	typedef void (APIENTRYP PFNGLGENBUFFERSPROC) (GLsizei n, GLuint *buffers);
-	PFNGLGENBUFFERSPROC glGenBuffers;
-	glGenBuffers = (PFNGLGENBUFFERSPROC) wglGetProcAddress("glGenBuffers");
-#endif	//_WIN32
-
-	glGenBuffers(4, buffer);		
+// #ifdef _WIN32
+// 	typedef void (APIENTRYP PFNGLGENBUFFERSPROC) (GLsizei n, GLuint *buffers);
+// 	PFNGLGENBUFFERSPROC glGenBuffers;
+// 	glGenBuffers = (PFNGLGENBUFFERSPROC) wglGetProcAddress("glGenBuffers");
+// #endif	//_WIN32
+//
+// 	glGenBuffers(4, buffer);
 	set_data(em);}
 else{
 	set_data(em);
@@ -634,13 +634,13 @@ MarchingCubes::~MarchingCubes() {
 	clear_min_max_vals();
 
 if ((int(glGetString(GL_VERSION)[0])-48)>2){
-#ifdef _WIN32
-	typedef void (APIENTRYP PFNGLDELETEBUFFERSPROC) (GLsizei n, const GLuint *buffers);
-	PFNGLDELETEBUFFERSPROC glDeleteBuffers;
-	glDeleteBuffers = (PFNGLDELETEBUFFERSPROC) wglGetProcAddress("glDeleteBuffers");
-#endif	//_WIN32
-
-	glDeleteBuffers(4, buffer);
+// #ifdef _WIN32
+// 	typedef void (APIENTRYP PFNGLDELETEBUFFERSPROC) (GLsizei n, const GLuint *buffers);
+// 	PFNGLDELETEBUFFERSPROC glDeleteBuffers;
+// 	glDeleteBuffers = (PFNGLDELETEBUFFERSPROC) wglGetProcAddress("glDeleteBuffers");
+// #endif	//_WIN32
+//
+// 	glDeleteBuffers(4, buffer);
 }
 }
 
@@ -665,7 +665,7 @@ void MarchingCubes::surface_face_z()
 		Vec3f z(0,0,1.0);
 		Vec3f axis(-n[i+1],n[i],0);
 		axis.normalize();
-	
+
 		Dict d;
 		d["type"] = "spin";
 		d["Omega"] =  90.f;
@@ -674,12 +674,12 @@ void MarchingCubes::surface_face_z()
 		d["n3"] = 0;
 		Transform t(d);
 		Vec3f delta = t*z;
-		
+
 		f[i] += delta[0]*.25f;
 		f[i+1] += delta[1]*.25f;
 		f[i+2] = 0.5;
 	}
-	
+
 	for (unsigned int i = 0; i < nn.elem(); i += 3 ) {
 		n[i] = 0;
 		n[i+1] = 0;
@@ -707,7 +707,7 @@ void MarchingCubes::calculate_surface() {
 
 	if ( _emdata == 0 ) throw NullPointerException("Error, attempt to generate isosurface, but the emdata image object has not been set");
 	if ( minvals.size() == 0 || maxvals.size() == 0 ) throw NotExistingObjectException("Vector of EMData pointers", "Error, the min and max val search trees have not been created");
-	
+
 	point_map.clear();
 	pp.clear();
 	nn.clear();
@@ -721,7 +721,7 @@ void MarchingCubes::calculate_surface() {
 	float min = minvals[minvals.size()-1]->get_value_at(0,0,0);
 	float max = maxvals[minvals.size()-1]->get_value_at(0,0,0);
 	if ( min < _surf_value &&  max > _surf_value) draw_cube(0,0,0,minvals.size()-1);
-	
+
 #if MARCHING_CUBES_DEBUG
 	int time1 = clock();
 	cout << "It took " << (time1-time0) << " " << (float)(time1-time0)/CLOCKS_PER_SEC << " to traverse the search tree and generate polygons" << endl;
@@ -852,7 +852,7 @@ void MarchingCubes::color_vertices()
 	int scaling = (int)pow(2.0,drawing_level + 1);		// Needed to account for sampling rate
 #else
 	int scaling = pow(2,drawing_level + 1);		// Needed to account for sampling rate
-#endif	//_WIN32	
+#endif	//_WIN32
 	//Color vertices. We don't need to rerun marching cubes on color vertices, so this method improves effciency
 	for(unsigned int i = 0; i < vv.elem(); i+=3){
 		float* color = rgbgenerator.getRGBColor(scaling*vv[i], scaling*vv[i+1], scaling*vv[i+2]);
@@ -860,7 +860,7 @@ void MarchingCubes::color_vertices()
 	}
 	rgbgenerator.setNeedToRecolor(false);
 }
-		
+
 void MarchingCubes::marching_cube(int fX, int fY, int fZ, int cur_level)
 {
 //	extern int aiCubeEdgeFlags[256];
@@ -938,10 +938,10 @@ void MarchingCubes::marching_cube(int fX, int fY, int fZ, int cur_level)
 			pointIndex[iEdge] = get_edge_num(fX+edgeLookUp[iEdge][0], fY+edgeLookUp[iEdge][1], fZ+edgeLookUp[iEdge][2], edgeLookUp[iEdge][3]);
 		}
 	}
-	
+
 	//Save voxel coords for later color processing
 	int vox[3] = {fX, fY, fZ};
-	
+
 	//Draw the triangles that were found.  There can be up to five per cube
 	for(iTriangle = 0; iTriangle < 5; iTriangle++)
 	{
@@ -955,14 +955,14 @@ void MarchingCubes::marching_cube(int fX, int fY, int fZ, int cur_level)
 			memcpy(&pts[iCorner][0],  &asEdgeVertex[iVertex][0], 3*sizeof(float));
 		}
 
-		
-		
+
+
 		float v1[3] = {pts[1][0]-pts[0][0],pts[1][1]-pts[0][1],pts[1][2]-pts[0][2]};
 		float v2[3] = {pts[2][0]-pts[1][0],pts[2][1]-pts[1][1],pts[2][2]-pts[1][2]};
-		
+
 		float n[3] = { v1[1]*v2[2] - v1[2]*v2[1], v1[2]*v2[0] - v1[0]*v2[2], v1[0]*v2[1] - v1[1]*v2[0] };
-			
-		
+
+
 		for(iCorner = 0; iCorner < 3; iCorner++)
 		{
 			// Without vertex normalization

@@ -1067,8 +1067,14 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		case EMUtil::EM_USHORT:
 			ds=H5Dcreate(file,ipath, H5T_NATIVE_USHORT, spc, H5P_DEFAULT );
 			break;
+		case EMUtil::EM_SHORT:
+			ds=H5Dcreate(file,ipath, H5T_NATIVE_SHORT, spc, H5P_DEFAULT );
+			break;
 		case EMUtil::EM_UCHAR:
 			ds=H5Dcreate(file,ipath, H5T_NATIVE_UCHAR, spc, H5P_DEFAULT );
+			break;
+		case EMUtil::EM_CHAR:
+			ds=H5Dcreate(file,ipath, H5T_NATIVE_CHAR, spc, H5P_DEFAULT );
 			break;
 		default:
 			throw ImageWriteException(filename,"HDF5 does not support this data format");
@@ -1083,14 +1089,16 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 	if(!data) {
 		H5Dclose(ds);
 		H5Sclose(spc);
-		std::cerr << "Warning:blank image written!!! " << std::endl;
+//		std::cerr << "Warning:blank image written!!! " << std::endl;
 		return 0;
 	}
 
 	//convert data to unsigned short, unsigned char...
 	hsize_t size = (hsize_t)nx*ny*nz;
-	unsigned char *cdata = 0;
+	unsigned char *ucdata = 0;
 	unsigned short *usdata = 0;
+	char *cdata = 0;
+	short *sdata = 0;
 	// float rendermin = 0.0f;
 	// float rendermax = 0.0f;
 	if (!rendermin && !rendermax) EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, nz);
@@ -1156,8 +1164,84 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 				std::cerr << "H5Dwrite error: " << err_no << std::endl;
 			}
 			break;
+		case EMUtil::EM_SHORT:
+			sdata = new short[size];
+			for (size_t i = 0; i < size; ++i) {
+				if(data[i] <= rendermin) {
+					sdata[i] = INT16_MIN;
+				}
+				else if(data[i] >= rendermax) {
+					sdata[i] = INT16_MAX;
+				}
+				else {
+					sdata[i]=(short)((data[i]-rendermin)/(rendermax-rendermin)*UINT16_MAX+INT16_MIN);
+				}
+			}
+			err_no = H5Dwrite(ds, H5T_NATIVE_SHORT, memoryspace, filespace, H5P_DEFAULT, sdata);
+			if(err_no<0) {
+				std::cerr << "H5Dwrite error: " << err_no << std::endl;
+			}
+			if(sdata) {delete [] sdata; sdata=0;}
+			break;
+		case EMUtil::EM_USHORT:
+			usdata = new unsigned short[size];
+			for (size_t i = 0; i < size; ++i) {
+				if(data[i] <= rendermin) {
+					usdata[i] = 0;
+				}
+				else if(data[i] >= rendermax) {
+					usdata[i] = INT16_MAX;
+				}
+				else {
+					usdata[i]=(unsigned short)((data[i]-rendermin)/(rendermax-rendermin)*INT16_MAX);
+				}
+			}
+			err_no = H5Dwrite(ds, H5T_NATIVE_USHORT, memoryspace, filespace, H5P_DEFAULT, usdata);
+			if(err_no<0) {
+				std::cerr << "H5Dwrite error: " << err_no << std::endl;
+			}
+			if(usdata) {delete [] usdata; usdata=0;}
+			break;
+		case EMUtil::EM_CHAR:
+			cdata = new char[size];
+			for (size_t i = 0; i < size; ++i) {
+				if(data[i] <= rendermin) {
+					cdata[i] = INT8_MIN;
+				}
+				else if(data[i] >= rendermax){
+					cdata[i] = INT8_MAX;
+				}
+				else {
+					cdata[i]=(unsigned char)((data[i]-rendermin)/(rendermax-rendermin)*INT8_MAX+INT8_MIN);
+				}
+			}
+			err_no = H5Dwrite(ds, H5T_NATIVE_CHAR, memoryspace, filespace, H5P_DEFAULT, cdata);
+			if(err_no<0) {
+				std::cerr << "H5Dwrite error: " << err_no << std::endl;
+			}
+			if(cdata) {delete [] cdata; cdata=0;}
+			break;
+		case EMUtil::EM_UCHAR:
+			ucdata = new unsigned char[size];
+			for (size_t i = 0; i < size; ++i) {
+				if(data[i] <= rendermin) {
+					ucdata[i] = 0;
+				}
+				else if(data[i] >= rendermax){
+					ucdata[i] = UCHAR_MAX;
+				}
+				else {
+					ucdata[i]=(unsigned char)((data[i]-rendermin)/(rendermax-rendermin)*UCHAR_MAX);
+				}
+			}
+			err_no = H5Dwrite(ds, H5T_NATIVE_UCHAR, memoryspace, filespace, H5P_DEFAULT, ucdata);
+			if(err_no<0) {
+				std::cerr << "H5Dwrite error: " << err_no << std::endl;
+			}
+			if(ucdata) {delete [] ucdata; ucdata=0;}
+			break;
 		default:
-			throw ImageWriteException(filename,"HDF5 does not support regional writing for this data format");
+			throw ImageWriteException(filename,"HDF5 does not support region writing for this data format");
 		}
 		H5Sclose(filespace);
 		H5Sclose(memoryspace);
@@ -1167,6 +1251,22 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 		case EMUtil::EM_FLOAT:
 			H5Dwrite(ds,H5T_NATIVE_FLOAT,spc,spc,H5P_DEFAULT,data);
 			break;
+		case EMUtil::EM_SHORT:
+			sdata = new short[size];
+			for (size_t i = 0; i < size; ++i) {
+				if(data[i] <= rendermin) {
+					sdata[i] = INT16_MIN;
+				}
+				else if(data[i] >= rendermax) {
+					sdata[i] = INT16_MAX;
+				}
+				else {
+					sdata[i]=(unsigned short)((data[i]-rendermin)/(rendermax-rendermin)*UINT16_MAX+INT16_MIN);
+				}
+			}
+			H5Dwrite(ds,H5T_NATIVE_SHORT,spc,spc,H5P_DEFAULT,usdata);
+			if(sdata) {delete [] sdata; sdata=0;}
+			break;
 		case EMUtil::EM_USHORT:
 			usdata = new unsigned short[size];
 			for (size_t i = 0; i < size; ++i) {
@@ -1174,30 +1274,46 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 					usdata[i] = 0;
 				}
 				else if(data[i] >= rendermax) {
-					usdata[i] = USHRT_MAX;
+					usdata[i] = INT16_MAX;
 				}
 				else {
-					usdata[i]=(unsigned short)((data[i]-rendermin)/(rendermax-rendermin)*USHRT_MAX);
+					usdata[i]=(unsigned short)((data[i]-rendermin)/(rendermax-rendermin)*INT16_MAX);
 				}
 			}
 			H5Dwrite(ds,H5T_NATIVE_USHORT,spc,spc,H5P_DEFAULT,usdata);
 			if(usdata) {delete [] usdata; usdata=0;}
 			break;
-		case EMUtil::EM_UCHAR:
-			cdata = new unsigned char[size];
+		case EMUtil::EM_CHAR:
+			cdata = new char[size];
 			for (size_t i = 0; i < size; ++i) {
 				if(data[i] <= rendermin) {
-					cdata[i] = 0;
+					cdata[i] = INT8_MIN;
 				}
 				else if(data[i] >= rendermax){
-					cdata[i] = UCHAR_MAX;
+					cdata[i] = INT8_MAX;
 				}
 				else {
-					cdata[i]=(unsigned char)((data[i]-rendermin)/(rendermax-rendermin)*UCHAR_MAX);
+					cdata[i]=(unsigned char)((data[i]-rendermin)/(rendermax-rendermin)*INT8_MAX+INT8_MIN);
+				}
+			}
+			H5Dwrite(ds,H5T_NATIVE_CHAR,spc,spc,H5P_DEFAULT,cdata);
+			if(cdata) {delete [] cdata; cdata=0;}
+			break;
+		case EMUtil::EM_UCHAR:
+			ucdata = new unsigned char[size];
+			for (size_t i = 0; i < size; ++i) {
+				if(data[i] <= rendermin) {
+					ucdata[i] = 0;
+				}
+				else if(data[i] >= rendermax){
+					ucdata[i] = UCHAR_MAX;
+				}
+				else {
+					ucdata[i]=(unsigned char)((data[i]-rendermin)/(rendermax-rendermin)*UCHAR_MAX);
 				}
 			}
 			H5Dwrite(ds,H5T_NATIVE_UCHAR,spc,spc,H5P_DEFAULT,cdata);
-			if(cdata) {delete [] cdata; cdata=0;}
+			if(ucdata) {delete [] ucdata; ucdata=0;}
 			break;
 		default:
 			throw ImageWriteException(filename,"HDF5 does not support this data format");
