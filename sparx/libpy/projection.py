@@ -33,7 +33,7 @@ from global_def import *
 def project(volume, params, radius=-1):
 	"""
 		Name
-			project - calculate 2-D projection of a 3-D volume
+			project - calculate 2-D projection of a 3-D volume using trilinear interpolation
 		Input
 			vol: input volume, all dimensions have to be the same
 			params: input parameters given as a list [phi, theta, psi, s2x, s2y], projection in calculated using the three Eulerian angles and then shifted by s2x,s2y
