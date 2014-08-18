@@ -822,6 +822,69 @@ def ave2dtransform(args, data, return_avg_pixel_error=False):
 	else:
 		return sqr_pixel_error, ave_params
 
+def pixel_error_angle_sets(agls1, agls2, Threshold=10.e23, r=1.0):
+	""" 	
+	  Input: Two lists, i-th element of each list is either a list of the three Eulerian angles [[phi1, theta1, psi1], [phi2, theta2, psi2], ...]
+	         as read by read_text_row(filename, "")
+	         Or, the two lists can be a list of Transform objects. The two lists have the same length and the i-th element of one list is assumed to correspond to the i-th element of the
+		 second list. 
+		 Threshold is a float.
+		 r is the radius of the object.
+	  Output: 1. Uses rotation_between_anglesets to find the overall 3D rotation between the two sets of Eulerian angles using second list as reference
+	  	  2. The overall rotation found by rotation_between_anglesets is applied to the first list (agls1) 
+		  3. Output is a list of lists: If the i-th corresponding pair of eulerian angles on agls2 and agls1 has pixel error (computed using max_3D_pixel_error) less than Threshold, then append the list 
+		     [i, p], where p is the pixel error, into the output list.
+	"""
+	from pixel_error import max_3D_pixel_error
+	from utilities  import read_text_file, rotation_between_anglesets
+	import types
+	
+	N = len(agls1)
+	if N != len(agls2):
+		print 'Both lists must have the same length'
+		return [-1]
+	if N < 2:
+		print 'At least two orientations are required in each list'
+		return [-1]
+
+
+	##############################################################################################
+	# Find overall rotation between two angle sets, and then apply it to one of the angle sets
+
+	# compute rotation between asg1 and asg2
+	phi12,theta12,psi12 = rotation_between_anglesets(agls1,agls2)
+	# apply rotation [phi12,theta12,psi12] to asg1
+	t12 = Transform({'type':'spider','phi':phi12,'theta':theta12,'psi':psi12})
+	agls12=[]
+	
+	# if agls1 is a list of list
+	if type(agls1[0]) == types.ListType:
+		for i in xrange(N):
+			t1= Transform({'type':'spider','phi':agls1[i][0],'theta':agls1[i][1],'psi':agls1[i][2]})
+			agls12.append(t1*t12)
+	else: # must be list of transform objects
+		for i in xrange(N):
+			agls12.append(agls1[i]*t12)
+	##############################################################################################
+	# Compute pixel error for each entry of asg12 and asg2 
+	# (asg13 and asg3, asg23 and asg3 respectively) and return a list of the pixel errors that are below a certain threshold
+
+	# Compute average pixel error for each entry of asg12 and asg2 
+	avgPixError12=[]
+	if type(agls2[0]) == types.ListType:
+		for i in xrange(N):
+			error = max_3D_pixel_error(agls12[i],Transform({'type':'spider','phi':agls2[i][0],'theta':agls2[i][1],'psi':agls2[i][2]}) , r)
+			if error < Threshold:
+				avgPixError12.append([i,error])
+	else:# agls2 is a list of transforms
+		for i in xrange(N):
+			error = max_3D_pixel_error(agls12[i],agls2[i] , r)
+			if error < Threshold:
+				avgPixError12.append([i,error])
+
+	return avgPixError12
+
+
 def ordersegments(infilaments, ptclcoords):
 	'''
 	Input:
