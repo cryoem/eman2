@@ -104,7 +104,7 @@ def main():
 # 	print options
 # 	print parser.parse_args(arglist[1:])
 	
-	if len(args) < 5: # or len(args) > 6:
+	if len(arglist) < 5: # or len(args) > 6:
 		print "\nusage: " + usage
 		print "Please run '" + progname + " -h' for detailed options\n"
 	else:
