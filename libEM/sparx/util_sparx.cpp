@@ -18843,7 +18843,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 			    	mirror = static_cast<int>( retvals["mirror"] );
 				    found_better = (peak > previousmax);
 				    //cout << found_better <<endl;
-    				if (found_better) break;
+					if (found_better) break;
 				}
 			}
 		}
@@ -19721,21 +19721,20 @@ vector<float> Util::multiref_polar_ali_helicon_90_local(EMData* image, const vec
 	if (ynumber == 0) {
 		ky = 0;
 	} else {
-		if (ynumber > 0) stepy=2*yrng/ynumber;
+		if (ynumber > 0) stepy = 2*yrng/ynumber;
 		else if (ynumber == -1) stepy = step;
-		
+
 		if (yrnglocal >= 0.0) {
 		   	ky = int(yrnglocal/stepy);
 		}
 		else { // search range is not restricted
 			if (ynumber > 0) {
-				ky = int(ynumber/2);	
+				ky = int(ynumber/2);
 			} else {
 				ky = int(2*yrng/stepy+0.5)/2;	
-			}			
+			}
 		}
 	}
-	
 	for (int i = -ky; i <= ky; i++) {
 		iy = i * stepy ;
 		for (int j = -kx; j <= kx; j++)  {
@@ -19748,7 +19747,8 @@ vector<float> Util::multiref_polar_ali_helicon_90_local(EMData* image, const vec
 			//  compare with all reference images
 			// for iref in xrange(len(crefim)):
 			for ( iref = 0; iref < (int)crefim_len; iref++) {
-				if(fabs(n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3)>=ant) {
+				//if(fabs(n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3)>=ant) {
+				if( (n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3) >= ant ) {
 					Dict retvals; 
 					retvals = Crosrng_sm_psi(crefim[iref], cimage, numr,  psi - 90.0f, 0, psi_max);
 

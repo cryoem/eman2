@@ -2380,7 +2380,8 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 			#number_of_checked_refs = 0
 			par_r = [0]*(nsoft+1)
 			for im in xrange(nima):
-				peak, pixer[im], checked_refs, number_of_peaks = shc_multi(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step], nsoft, sym)
+				peak, pixer[im], checked_refs, number_of_peaks = shc_multi(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step],\
+																			an[N_step], nsoft, sym)
 				#number_of_checked_refs += checked_refs
 				par_r[number_of_peaks] += 1
 				#print  myid,im,number_of_peaks
