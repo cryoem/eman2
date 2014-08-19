@@ -2105,7 +2105,7 @@ def ali_nvol(v, mask):
 	niter = 0
 	for l in xrange(len(v)):  set_params3D( v[l],   (0.0,0.0,0.0,0.0,0.0,0.0,0,1.0))
 	while(gogo):
-	        ave,var = ave_var(v, " ")
+	        ave,var = ave_var(v)
 	        p = Util.infomask(var, mask, True)
 	        crit = p[1]
 	        if((crit-ocrit)/(crit+ocrit)/2.0 > -1.0e-2 or niter > 10):  gogo = False
@@ -2113,14 +2113,15 @@ def ali_nvol(v, mask):
 	        ocrit = crit
 	        ref = alivol_mask_getref(ave, mask)
 	        for l in xrange(len(v)):
-			ophi,otht,opsi,os3x,os3y,os3z,dum, dum = get_params3D(v[l])
-			vor = rot_shift3D(v[l], ophi,otht,opsi,os3x,os3y,os3z )
-			phi,tht,psi,s3x,s3y,s3z = alivol_mask(vor, ref, mask)
-			phi,tht,psi,s3x,s3y,s3z,scale = compose_transform3(phi,tht,psi,s3x,s3y,s3z,1.0,ophi,otht,opsi,os3x,os3y,os3z,1.0)
-			set_params3D(v[l],  (phi,tht,psi,s3x,s3y,s3z,0,1.0))
-			#print "final align3d params: %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f" % (phi,tht,psi,s3x,s3y,s3z)
+				ophi,otht,opsi,os3x,os3y,os3z,dum, dum = get_params3D(v[l])
+				vor = rot_shift3D(v[l], ophi,otht,opsi,os3x,os3y,os3z )
+				phi,tht,psi,s3x,s3y,s3z = alivol_mask(vor, ref, mask)
+				phi,tht,psi,s3x,s3y,s3z,scale = compose_transform3(phi,tht,psi,s3x,s3y,s3z,1.0,ophi,otht,opsi,os3x,os3y,os3z,1.0)
+				set_params3D(v[l],  (phi,tht,psi,s3x,s3y,s3z,0,1.0))
+				#print "final align3d params: %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f" % (phi,tht,psi,s3x,s3y,s3z)
 	for l in xrange(len(v)):
 		ophi,otht,opsi,os3x,os3y,os3z,dum,dum = get_params3D(v[l])
+		print  l,ophi,otht,opsi,os3x,os3y,os3z
 		v[l] = rot_shift3D( v[l], ophi,otht,opsi,os3x,os3y,os3z )
 		v[l].del_attr("xform.align3d")
 	return v
@@ -2148,6 +2149,53 @@ def alivol_mask( v, vref, mask ):
 	phi,tht,psi,s3x,s3y,s3z,mirror,scale = get_params3D( v50S_i )
 	dun,dum,dum,cnx,cny,cnz,mirror,scale = get_params3D( vref )
 	phi,tht,psi,s3x,s3y,s3z,scale = compose_transform3(phi,tht,psi,s3x,s3y,s3z,1.0,0.0,0.0,0.0,-cnx,-cny,-cnz,1.0)
+	return phi,tht,psi,s3x,s3y,s3z
+
+def ali_mvol(v, mask):
+	from alignment    import alivol_m
+	from statistics   import ave_var
+	from utilities    import set_params3D, get_params3D ,compose_transform3
+
+	from fundamentals import rot_shift3D
+	ocrit = 1.0e20
+	gogo = True
+	niter = 0
+	for l in xrange(len(v)):  set_params3D( v[l],   (0.0,0.0,0.0,0.0,0.0,0.0,0,1.0))
+	while(gogo):
+	        ave,var = ave_var(v)
+	        set_params3D( ave,   (0.0,0.0,0.0,0.0,0.0,0.0,0,1.0))
+	        p = Util.infomask(var, mask, True)
+	        crit = p[1]
+	        if((crit-ocrit)/(crit+ocrit)/2.0 > -1.0e-2 or niter > 10):  gogo = False
+	        niter += 1
+	        ocrit = crit
+	        ave *= mask
+	        for l in xrange(len(v)):
+				ophi,otht,opsi,os3x,os3y,os3z,dum, dum = get_params3D(v[l])
+				vor = rot_shift3D(v[l], ophi,otht,opsi,os3x,os3y,os3z )
+				phi,tht,psi,s3x,s3y,s3z = alivol_m(vor, ave, mask)
+				phi,tht,psi,s3x,s3y,s3z,scale = compose_transform3(phi,tht,psi,s3x,s3y,s3z,1.0,ophi,otht,opsi,os3x,os3y,os3z,1.0)
+				set_params3D(v[l],  (phi,tht,psi,s3x,s3y,s3z,0,1.0))
+				#print "final align3d params: %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f" % (phi,tht,psi,s3x,s3y,s3z)
+	for l in xrange(len(v)):
+		ophi,otht,opsi,os3x,os3y,os3z,dum,dum = get_params3D(v[l])
+		print  i,ophi,otht,opsi,os3x,os3y,os3z
+		v[l] = rot_shift3D( v[l], ophi,otht,opsi,os3x,os3y,os3z )
+		v[l].del_attr("xform.align3d")
+	return v
+
+def alivol_m( v, vref, mask ):
+	from utilities    import set_params3D, get_params3D,compose_transform3
+	from applications import ali_vol_shift, ali_vol_rotate
+	vola = v.copy()
+	vola *= mask
+	set_params3D( vola,   (0.0,0.0,0.0,0.0,0.0,0.0,0,1.0) )
+
+	vola = ali_vol_shift( vola, vref, 1.0 )
+	vola = ali_vol_rotate(vola, vref, 5.0 )
+	vola = ali_vol_shift( vola, vref, 0.5 )
+	vola = ali_vol_rotate(vola, vref, 1.0 )
+	phi,tht,psi,s3x,s3y,s3z,mirror,scale = get_params3D( vola )
 	return phi,tht,psi,s3x,s3y,s3z
 
 
