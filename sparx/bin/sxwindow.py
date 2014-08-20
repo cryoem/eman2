@@ -136,8 +136,8 @@ def main():
 				# Add input output pixel size
 				data[mic_path]['input_pixel'], data[mic_path]['output_pixel'] = options.input_pixel, options.output_pixel
 
-				# Now that data contains information about each micrographs, let's window particles.
-				window(data)
+			# Now that data contains information about each micrographs, let's window particles.
+			window(data)
 		else:
 			print 'Error: Different number of coordinates and ctf information.'
 			return 1
