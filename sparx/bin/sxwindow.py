@@ -83,24 +83,20 @@ def window(data):
 
 
 def main():
-	arglist = []
-	for arg in sys.argv:
-		arglist.append( arg )
-	
-	progname = os.path.basename(arglist[0])
+	progname = os.path.basename(sys.argv[0])
 	usage = progname + " -c,--coord=coord  -f,--ctf=ctf_file  -m,--mic_dir=mic_dir  -i,--input_pixel=input_pixel  -o,--output_pixel=output_pixel"
 	
 	parser = OptionParser(usage, version=SPARXVERSION)
+
 	parser.add_option('-c', '--coord', dest='coord', help='location where coordinates are located')
 	parser.add_option('-f', '--ctf', dest='ctf_file', help='ctf information file')
 	parser.add_option('-m', '--mic_dir', dest='mic_dir', help='micrograph location')
 	parser.add_option('-i', '--input_pixel', dest='input_pixel', help='input pixel size', default=1)
 	parser.add_option('-o', '--output_pixel', dest='output_pixel', help='output pixel size', default=1)
 		
-	(options, args) = parser.parse_args(arglist[1:])
+	(options, args) = parser.parse_args()	
 	
-	
-	if len(args) < 5: # or len(args) > 6:
+	if len(args) < 1: # or len(args) > 6:
 		print "\nusage: " + usage
 		print "Please run '" + progname + " -h' for detailed options\n"
 	else:
