@@ -2681,7 +2681,7 @@ class GUIctf(QtGui.QWidget):
 		if n>1:
 			self.ptcldata=EMData.read_images(self.data[val][0],range(0,min(20,n)))
 			im=sum(self.ptcldata)
-			im.mult(1.0/len(self.ptcldata))
+			im.mult(4.0/len(self.ptcldata))	# 4 compensatess for noise averaging
 			self.ptcldata.insert(0,im)
 			self.guirealim.set_data(self.ptcldata)
 		else : self.guirealim.set_data([EMData()])

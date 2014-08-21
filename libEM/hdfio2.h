@@ -43,6 +43,7 @@
 #include "imageio.h"
 
 #include <hdf5.h>
+#include <stdint.h>
 #include <vector>
 
 using std::vector;

@@ -454,7 +454,7 @@ class EMPlot2DWidget(EMGLWidget):
 
 		if render:
 			fig=Figure((self.width()/72.0,self.height()/72.0),dpi=72.0)
-			ax=fig.add_axes((.08,.08,.9,.9),autoscale_on=False,xlim=self.xlimits,ylim=self.ylimits,xscale=self.axisparms[2],yscale=self.axisparms[3])
+			ax=fig.add_axes((.07,.1,.91,.88),autoscale_on=False,xlim=self.xlimits,ylim=self.ylimits,xscale=self.axisparms[2],yscale=self.axisparms[3])
 			#else : ax=fig.add_axes((.08,.08,.9,.9),autoscale_on=True,xscale=self.axisparms[2],yscale=self.axisparms[3])
 			if self.axisparms[0] and len(self.axisparms[0])>0 : ax.set_xlabel(self.axisparms[0],size="xx-large")
 			if self.axisparms[1] and len(self.axisparms[1])>0 : ax.set_ylabel(self.axisparms[1],size="xx-large")
