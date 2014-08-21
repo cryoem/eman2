@@ -2730,6 +2730,7 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 		onx = 0
 	nx  = bcast_number_to_all(nx, source_node = main_node)
 	onx = bcast_number_to_all(onx, source_node = main_node)
+
 	if last_ring < 0:	last_ring = int(onx/2) - 2
 	mask2D  = model_circle(last_ring,onx,onx) - model_circle(first_ring,onx,onx)
 	if(shrinkage < 1.0):
@@ -2746,21 +2747,22 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 		else:                                   data[im] = stack[list_of_particles[im]].copy()
 		data[im].set_attr('ID', list_of_particles[im])
 		ctf_applied = data[im].get_attr_default('ctf_applied', 0)
-		if CTF and ctf_applied == 0:
+		if CTF :
 			ctf_params = data[im].get_attr("ctf")
-			if(im == 0):
-				# preserve original ctf params
-				org_ctf_patams = ctf_params
-			st = Util.infomask(data[im], mask2D, False)
-			data[im] -= st[0]
-			data[im] = filt_ctf(data[im], ctf_params)
-			data[im].set_attr('ctf_applied', 1)
+			if ctf_applied == 0:
+				st = Util.infomask(data[im], mask2D, False)
+				data[im] -= st[0]
+				data[im] = filt_ctf(data[im], ctf_params)
+				data[im].set_attr('ctf_applied', 1)
 		if(shrinkage != 1.0):
 			phi,theta,psi,sx,sy = get_params_proj(data[im])
 			data[im] = resample(data[im], shrinkage)
 			sx *= shrinkage
 			sy *= shrinkage
 			set_params_proj(data[im], [phi,theta,psi,sx,sy])
+			if CTF :
+				ctf_params.apix /= shrinkage
+				data[im].set_attr('ctf', ctf_params)
 	del mask2D
 
 	# Reference volume reconstruction
