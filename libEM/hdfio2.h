@@ -43,6 +43,12 @@
 #include "imageio.h"
 
 #include <hdf5.h>
+#ifndef __STDC_LIMIT_MACROS
+	#define __STDC_LIMIT_MACROS 1
+#endif
+#ifndef __STDC_LIMIT_MACROS
+	#define __STDC_CONSTANT_MACROS 1
+#endif
 #include <stdint.h>
 #include <vector>
 
