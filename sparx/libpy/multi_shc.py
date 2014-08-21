@@ -2541,13 +2541,14 @@ def do_volume(data, options, iter, mpi_comm):
 
 	if myid == 0:
 		from morphology import threshold
-		from filter     import filt_tanl
+		from filter     import filt_tanl, filt_btwl
 		from utilities  import model_circle, get_im
 		nx = data[0].get_xsize()
 		last_ring   = int(options.ou)
 		if(options.mask3D == None):	mask3D = model_circle(last_ring, nx, nx, nx)
 		elif(options.mask3D == "auto"):
-			pass
+			from utilities import adaptive_mask
+			mask3D = adaptive_mask(vol)
 		else:						mask3D = get_im(options.mask3D)
 		stat = Util.infomask(vol, mask3D, True)
 		vol -= stat[0]
@@ -2561,15 +2562,16 @@ def do_volume(data, options, iter, mpi_comm):
 			rt = read_text_file( options.pwreference )
 			fftip(vol)
 			ro = rops_table(vol)
-			from math import sqrt
 			#  Here unless I am mistaken it is enough to take the beginning of the reference pw.
-			for i in xrange(1,len(ro)):  ro[i] = sqrt(rt[i]/ro[i])
+			for i in xrange(1,len(ro)):  ro[i] = (rt[i]/ro[i])**0.5
 			vol = fft( filt_table( filt_tanl(vol, options.fl, options.aa), ro) )
-			stat = Util.infomask(vol, mask3D, True)
-			vol -= stat[0]
-			Util.mul_scalar(vol, 1.0/stat[1])
-			Util.mul_img(vol, mask3D)
 		else:  vol = filt_tanl(vol, options.fl, options.aa)
+		stat = Util.infomask(vol, mask3D, True)
+		vol -= stat[0]
+		Util.mul_scalar(vol, 1.0/stat[1])
+		vol = threshold(vol)
+		volf = filt_btwl(volf, 0.38, 0.5)
+		Util.mul_img(vol, mask3D)
 		del mask3D
 		vol.write_image('toto%03d.hdf'%iter)
 	# broadcast volume
