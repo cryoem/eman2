@@ -1623,7 +1623,7 @@ class EMIsosurface(EMItem3D,EM3DModel):
 		if ( self.texture ):
 			glScalef(self.parent.data.get_xsize(),self.parent.data.get_ysize(),self.parent.data.get_zsize())
 
-		print "renderiso"
+#		print "renderiso"
 		GLUtil.render_using_VBOs(self.isorender, 0, 0)
 
 		glPopMatrix()
