@@ -6866,7 +6866,7 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 
 
 
-def local_ali3d_base_MPI(stack, ali3d_options, maxit = 10, chunk = -1.0, shrinkage = 1.0,
+def local_ali3d_base_MPI(stack, ali3d_options, chunk = -1.0, shrinkage = 1.0,
 		    	log= None, debug = False, mpi_comm = None):
 	"""
 		
@@ -6890,6 +6890,7 @@ def local_ali3d_base_MPI(stack, ali3d_options, maxit = 10, chunk = -1.0, shrinka
 	import sys
 	import types
 
+	maxit  = ali3d_options.maxit
 	ou     = ali3d_options.ou
 	ts     = ali3d_options.ts
 	sym    = ali3d_options.sym
