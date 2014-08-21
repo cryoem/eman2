@@ -45,7 +45,9 @@
 #include "ctf.h"
 #include <iostream>
 #include <cstring>
-
+#ifndef __STDC_LIMIT_MACROS
+	#define __STDC_LIMIT_MACROS 1
+#endif
 #ifndef WIN32
 	#include <sys/param.h>
 #else
