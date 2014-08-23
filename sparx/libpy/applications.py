@@ -6866,7 +6866,7 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 
 
 
-def local_ali3d_base_MPI(stack, ali3d_options, chunk = -1.0, shrinkage = 1.0,
+def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0, shrinkage = 1.0,
 		    	log= None, debug = False, mpi_comm = None):
 	"""
 		
@@ -6874,6 +6874,7 @@ def local_ali3d_base_MPI(stack, ali3d_options, chunk = -1.0, shrinkage = 1.0,
 	from alignment        import eqproj_cascaded_ccc
 	from filter           import filt_ctf
 	from projection       import prep_vol
+	from fundamentals     import resample
 	from utilities        import bcast_string_to_all, bcast_number_to_all, model_circle, get_params_proj, set_params_proj
 	from utilities        import bcast_EMData_to_all, bcast_list_to_all, send_attr_dict
 	from utilities        import get_image, drop_image, file_type
@@ -7062,6 +7063,22 @@ def local_ali3d_base_MPI(stack, ali3d_options, chunk = -1.0, shrinkage = 1.0,
 	else:
 		mask3D = model_circle(last_ring, nx, nx, nx)
 
+	#  Read	template volume if provided
+	if templatevol:
+		if myid == main_node:
+			i = templatevol.get_xsize()
+			if( shrinkage != 1.0 ):
+				if( i != nx ):
+					vol = resample(templatevol, shrinkage)
+			else:
+				vol = templatevol.copy()
+		else:
+			vol = model_blank(nx, nx, nx)
+		bcast_EMData_to_all(vol, myid, main_node)
+		del templatevol
+	else:
+		vol = None
+
 	if debug:
 		finfo.write( "image_start, image_end: %d %d\n" %(image_start, image_end) )
 		finfo.flush()
@@ -7103,7 +7120,8 @@ def local_ali3d_base_MPI(stack, ali3d_options, chunk = -1.0, shrinkage = 1.0,
 	r = M/2
 	v = K/2.0/N
 	params = {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE, "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
-
+	# support of the window
+	kb = Util.KaiserBessel(alpha, K, M/2, K/(2.*N), N)
 
 	disps = []
 	recvcount = []
@@ -7116,6 +7134,7 @@ def local_ali3d_base_MPI(stack, ali3d_options, chunk = -1.0, shrinkage = 1.0,
 	#  this is needed for gathering of pixel errors
 	pixer = [0.0]*nima
 	data = [None]*7
+	data[1] = kb
 	data[3] = mask2D
 	cs = [0.0]*3
 
@@ -7128,48 +7147,58 @@ def local_ali3d_base_MPI(stack, ali3d_options, chunk = -1.0, shrinkage = 1.0,
 			finfo.write("\n")
 			finfo.flush()
 		for ic in xrange(n_of_chunks):
-			if(center == -1):
+			# In the very first step the volume has to be computed if it was not provided by the user
+			if( ((iteration > 0) and (ic > 0)) or vol == None):
+				if(center == -1):
+					if debug:
+						finfo.write("  begin centering \n")
+						finfo.flush()
+					cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(data, total_nima, myid, number_of_proc, main_node)
+					cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, mpi_comm)
+					cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
+					rotate_3D_shift(data, cs)
+					if myid == main_node:
+						msg = "Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
+						log.add(msg)
+						log.add("Time to center = %d\n"%(time()-start_time))
+						start_time = time()
+				# compute updated 3D before each chunk
+					# resolution
 				if debug:
-					finfo.write("  begin centering \n")
+					finfo.write("  begin reconstruction = "+str(image_start))
+					finfo.write("\n")
 					finfo.flush()
-				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(data, total_nima, myid, number_of_proc, main_node)
-				cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, mpi_comm)
-				cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
-				rotate_3D_shift(data, cs)
+
+				#  Do the 3D
+				vol = do_volume(data, ali3d_options, 0, mpi_comm)
+
 				if myid == main_node:
-					msg = "Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
-					log.add(msg)
-					log.add("Time to center = %d\n"%(time()-start_time))
+					#drop_image(vol, os.path.join(outdir, "vol%03d_%03d.hdf"%(iteration, ic) ))
+					log.add("3D reconstruction time = %d\n"%(time()-start_time))
 					start_time = time()
-			# compute updated 3D before each chunk
- 	    		# resolution
-			if debug:
-				finfo.write("  begin reconstruction = "+str(image_start))
-				finfo.write("\n")
-				finfo.flush()
+				if debug:
+					finfo.write("  done reconstruction = "+str(image_start))
+					finfo.write("\n")
+					finfo.flush()
 
-			#  Do the 3D
-			vol = do_volume(data, ali3d_options, 0, mpi_comm)
+				if fourvar:
+				#  Compute Fourier variance
+					varf = varf3d_MPI(data, ssnr_text_file = os.path.join(outdir, "ssnr%03d_%03d"%(iteration, ic)), mask2D = None, reference_structure = vol, ou = ou, rw = 1.0, npad = 1, CTF = CTF, sign = 1, sym =sym, myid = myid)
+					if myid == main_node:
+						varf = 1.0/varf
+						print_msg("Time to calculate 3D Fourier variance= %d\n"%(time()-start_time))
+						start_time = time()
+				else:  varf = None
 
-			if myid == main_node:
-				#drop_image(vol, os.path.join(outdir, "vol%03d_%03d.hdf"%(iteration, ic) ))
-				log.add("3D reconstruction time = %d\n"%(time()-start_time))
-				start_time = time()
-			if debug:
-				finfo.write("  done reconstruction = "+str(image_start))
-				finfo.write("\n")
-				finfo.flush()
+			if CTF:
+				previous_defocus = -1.0
+				volft = vol
+				volft.divkbsinh(kb)
+				volft = volft.norm_pad(False, npad)
+				volft.do_fft_inplace()
 
-			if fourvar:
-			#  Compute Fourier variance
-				varf = varf3d_MPI(data, ssnr_text_file = os.path.join(outdir, "ssnr%03d_%03d"%(iteration, ic)), mask2D = None, reference_structure = vol, ou = ou, rw = 1.0, npad = 1, CTF = CTF, sign = 1, sym =sym, myid = myid)
-				if myid == main_node:
-					varf = 1.0/varf
-					print_msg("Time to calculate 3D Fourier variance= %d\n"%(time()-start_time))
-					start_time = time()
-			else:  varf = None
-
-			if not CTF:
+				#vol = fft(pad(vol, N, N, N))
+			else:
 				data[0], data[1] = prep_vol(vol)
 
 			image_start_in_chunk = image_start + ic*nima/n_of_chunks
@@ -7178,13 +7207,16 @@ def local_ali3d_base_MPI(stack, ali3d_options, chunk = -1.0, shrinkage = 1.0,
 				finfo.write("Chunk "+str(ic)+"   Number of images in this chunk: "+str(image_end_in_chunk-image_start_in_chunk)+"\n")
 				finfo.write("First image in this chunk: "+str(image_start_in_chunk)+"   Last image in this chunk: "+str(image_end_in_chunk-1)+"\n")
 				finfo.flush()
-			if CTF:  previous_defocus = -1.0
 			for imn in xrange(image_start_in_chunk, image_end_in_chunk):
 				if CTF:
 					ctf_params = data[imn-image_start].get_attr( "ctf" )
 					if ctf_params.defocus != previous_defocus:
 						previous_defocus = ctf_params.defocus
-						data[0], data[1] = prep_vol(filt_ctf(vol, ctf_params))
+						data[0] = filt_ctf(volft, ctf_params)
+						data[0].center_origin_fft()
+		                data[0].fft_shuffle()
+
+						#data[0], data[1] = prep_vol(filt_ctf(vol, ctf_params))
 
 				data[2] = data[imn-image_start]
 				if ts > 0.0:
@@ -7195,7 +7227,7 @@ def local_ali3d_base_MPI(stack, ali3d_options, chunk = -1.0, shrinkage = 1.0,
 				t1 = data[imn-image_start].get_attr("xform.projection")
 				dp = t1.get_params("spider")
 				atparams = [dp["phi"], dp["theta"], dp["psi"]]
-				data[5] = [dp["tx"], dp["ty"]]
+				data[5]  = [dp["tx"], dp["ty"]]
 				if debug:
 					# we have to distiguish between no shift situation, which is done through ccc, and shift, which is done using gridding in 2D
 					if(ts == 0.0):  data[6] = 0.0
@@ -7233,6 +7265,7 @@ def local_ali3d_base_MPI(stack, ali3d_options, chunk = -1.0, shrinkage = 1.0,
 				start_time = time()
 
 			# release memory of volft
+			del volft
 			data[0] = None
 
 
