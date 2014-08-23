@@ -6865,7 +6865,6 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 		terminate = int(terminate[0])
 
 
-
 def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0, shrinkage = 1.0,
 		    	log= None, debug = False, mpi_comm = None):
 	"""
@@ -6987,12 +6986,12 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 	nima = len(list_of_particles)
 
 	if(myid == main_node):
-		if( type(stack) is types.StringType ):  data = get_im(stack, list_of_particles[0])
-		else:                                   data = stack[list_of_particles[0]]
-		onx      = data.get_xsize()
+		if( type(stack) is types.StringType ):  dataim = get_im(stack, list_of_particles[0])
+		else:                                   dataim = stack[list_of_particles[0]]
+		onx      = dataim.get_xsize()
 		if(shrinkage == 1.0):  nx = onx
 		else:		
-			st = resample(data, shrinkage)
+			st = resample(dataim, shrinkage)
 			nx = st.get_xsize()
 	else:
 		nx = 0
@@ -7009,28 +7008,28 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 		#ali3d_options.ir = first_ring
 
 
-	data = [None]*nima
+	dataim = [None]*nima
 	for im in xrange(nima):
-		if( type(stack) is types.StringType ):  data[im] = get_im(stack, list_of_particles[im])
-		else:                                   data[im] = stack[list_of_particles[im]].copy()
-		data[im].set_attr('ID', list_of_particles[im])
-		ctf_applied = data[im].get_attr_default('ctf_applied', 0)
+		if( type(stack) is types.StringType ):  dataim[im] = get_im(stack, list_of_particles[im])
+		else:                                   dataim[im] = stack[list_of_particles[im]].copy()
+		dataim[im].set_attr('ID', list_of_particles[im])
+		ctf_applied = dataim[im].get_attr_default('ctf_applied', 0)
 		if CTF :
-			ctf_params = data[im].get_attr("ctf")
+			ctf_params = dataim[im].get_attr("ctf")
 			if ctf_applied == 0:
-				st = Util.infomask(data[im], mask2D, False)
-				data[im] -= st[0]
+				st = Util.infomask(dataim[im], mask2D, False)
+				dataim[im] -= st[0]
 			else:
 				ERROR("Projection data cannot be CTF-applied","local_ali3d_base",1,myid)
 		if(shrinkage != 1.0):
-			phi,theta,psi,sx,sy = get_params_proj(data[im])
-			data[im] = resample(data[im], shrinkage)
+			phi,theta,psi,sx,sy = get_params_proj(dataim[im])
+			dataim[im] = resample(dataim[im], shrinkage)
 			sx *= shrinkage
 			sy *= shrinkage
-			set_params_proj(data[im], [phi,theta,psi,sx,sy])
+			set_params_proj(dataim[im], [phi,theta,psi,sx,sy])
 			if CTF :
 				ctf_params.apix /= shrinkage
-				data[im].set_attr('ctf', ctf_params)
+				dataim[im].set_attr('ctf', ctf_params)
 
 
 	if chunk <= 0.0:  chunk = 1.0
@@ -7107,7 +7106,7 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 
 	from time import time	
 	if myid == main_node:
-		log.add("Dimensions used (nx, onx, first_ring, last_ring, shrinkage)  %5d     %5d     %5d     %5d     %6.3f\n"%(nx, onx, first_ring, last_ring, shrinkage))
+		log.add("Dimensions used (nx, onx, last_ring, shrinkage)  %5d    %5d     %5d     %6.3f\n"%(nx, onx, last_ring, shrinkage))
 		start_time = time()
 
 
@@ -7153,10 +7152,10 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 					if debug:
 						finfo.write("  begin centering \n")
 						finfo.flush()
-					cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(data, total_nima, myid, number_of_proc, main_node)
+					cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(dataim, total_nima, myid, number_of_proc, main_node)
 					cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, mpi_comm)
 					cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
-					rotate_3D_shift(data, cs)
+					rotate_3D_shift(dataim, cs)
 					if myid == main_node:
 						msg = "Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
 						log.add(msg)
@@ -7170,7 +7169,7 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 					finfo.flush()
 
 				#  Do the 3D
-				vol = do_volume(data, ali3d_options, 0, mpi_comm)
+				vol = do_volume(dataim, ali3d_options, 0, mpi_comm)
 
 				if myid == main_node:
 					#drop_image(vol, os.path.join(outdir, "vol%03d_%03d.hdf"%(iteration, ic) ))
@@ -7183,7 +7182,7 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 
 				if fourvar:
 				#  Compute Fourier variance
-					varf = varf3d_MPI(data, ssnr_text_file = os.path.join(outdir, "ssnr%03d_%03d"%(iteration, ic)), mask2D = None, reference_structure = vol, ou = ou, rw = 1.0, npad = 1, CTF = CTF, sign = 1, sym =sym, myid = myid)
+					varf = varf3d_MPI(dataim, ssnr_text_file = os.path.join(outdir, "ssnr%03d_%03d"%(iteration, ic)), mask2D = None, reference_structure = vol, ou = ou, rw = 1.0, npad = 1, CTF = CTF, sign = 1, sym =sym, myid = myid)
 					if myid == main_node:
 						varf = 1.0/varf
 						print_msg("Time to calculate 3D Fourier variance= %d\n"%(time()-start_time))
@@ -7209,7 +7208,7 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 				finfo.flush()
 			for imn in xrange(image_start_in_chunk, image_end_in_chunk):
 				if CTF:
-					ctf_params = data[imn-image_start].get_attr( "ctf" )
+					ctf_params = dataim[imn-image_start].get_attr( "ctf" )
 					if ctf_params.defocus != previous_defocus:
 						previous_defocus = ctf_params.defocus
 						data[0] = filt_ctf(volft, ctf_params)
@@ -7218,13 +7217,13 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 
 						#data[0], data[1] = prep_vol(filt_ctf(vol, ctf_params))
 
-				data[2] = data[imn-image_start]
+				data[2] = dataim[imn-image_start]
 				if ts > 0.0:
-					refi = data[imn-image_start].FourInterpol(nx*2, nx*2, 0, True)
+					refi = dataim[imn-image_start].FourInterpol(nx*2, nx*2, 0, True)
 					data[4] = Processor.EMFourierFilter(refi, params)
 
-				#phi, theta, psi, tx, ty = get_params_proj(data[imn-image_start])
-				t1 = data[imn-image_start].get_attr("xform.projection")
+				#phi, theta, psi, tx, ty = get_params_proj(dataim[imn-image_start])
+				t1 = dataim[imn-image_start].get_attr("xform.projection")
 				dp = t1.get_params("spider")
 				atparams = [dp["phi"], dp["theta"], dp["psi"]]
 				data[5]  = [dp["tx"], dp["ty"]]
@@ -7256,10 +7255,10 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 				#exit()
 				t2 = Transform({"type":"spider","phi":optm_params[0][0],"theta":optm_params[0][1],"psi":optm_params[0][2]})
 				t2.set_trans(Vec2f(-optm_params[0][3], -optm_params[0][4]))
-				data[imn-image_start].set_attr("xform.projection", t2)
+				dataim[imn-image_start].set_attr("xform.projection", t2)
 				from pixel_error import max_3D_pixel_error
 				pixer[imn-image_start] = max_3D_pixel_error(t1, t2, last_ring)
-				#set_params_proj(data[imn-image_start], optm_params[0])
+				#set_params_proj(dataim[imn-image_start], optm_params[0])
 			if( myid == main_node ):
 				log.add( "Time to process %6d particles : %d\n" % (image_end_in_chunk-image_start_in_chunk, time()-start_time) )
 				start_time = time()
@@ -7300,7 +7299,7 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 
 	# gather parameters
 	params = []
-	for im in data:
+	for im in dataim:
 		t = get_params_proj(im)
 		params.append( [t[0], t[1], t[2], t[3]/shrinkage, t[4]/shrinkage] )
 	params = wrap_mpi_gatherv(params, main_node, mpi_comm)
