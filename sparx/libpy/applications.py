@@ -6876,8 +6876,8 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 	from projection       import prep_vol
 	from fundamentals     import resample
 	from utilities        import bcast_string_to_all, bcast_number_to_all, model_circle, get_params_proj, set_params_proj
-	from utilities        import bcast_EMData_to_all, bcast_list_to_all, send_attr_dict
-	from utilities        import get_image, drop_image, file_type
+	from utilities        import bcast_EMData_to_all, bcast_list_to_all, send_attr_dict, wrap_mpi_bcast
+	from utilities        import get_image, drop_image, file_type, get_im
 	from utilities        import amoeba_multi_level, rotate_3D_shift, estimate_3D_center_MPI
 	from utilities        import print_begin_msg, print_end_msg, print_msg
 	from multi_shc        import do_volume
@@ -6900,7 +6900,7 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 	center = ali3d_options.center
 	CTF    = ali3d_options.CTF
 	ref_a  = ali3d_options.ref_a
-	maskfile = options.mask3D
+	maskfile = ali3d_options.mask3D
 	fourvar = False
 
 
@@ -6963,7 +6963,7 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 			for im in xrange(len(active)):
 				if(active[im]):  list_of_particles.append(im)
 			del active
-			nima = len(list_of_particles)
+			total_nima = len(list_of_particles)
 		else:
 			list_of_particles = None
 			total_nima = 0
