@@ -162,7 +162,7 @@ EMData *EMData::do_fft_inplace()
 	update();
 
 	EXITFUNC;
-	return this;
+	//return this;
 }
 
 #ifdef EMAN2_USING_CUDA
