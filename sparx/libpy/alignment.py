@@ -176,13 +176,13 @@ def eqproj_cascaded_ccc(args, data):
 	from statistics    import ccc
 	from EMAN2 import Processor
 
-	volft 	= data[0]
-	kb	= data[1]
-	prj	= data[2]
-	mask2D	= data[3]
-	refi	= data[4]
-	shift	= data[5]
-	ts	= data[6]
+	volft   = data[0]
+	kb	    = data[1]
+	prj	    = data[2]
+	mask2D  = data[3]
+	refi    = data[4]
+	shift   = data[5]
+	ts      = data[6]
 	#print  "Input shift ",shift
 	R = Transform({"type":"spider", "phi":args[0], "theta":args[1], "psi":args[2], "tx":0.0, "ty":0.0, "tz":0.0, "mirror":0, "scale":1.0})
 	refprj = volft.extract_plane(R, kb)

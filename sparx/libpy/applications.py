@@ -6876,7 +6876,7 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 	from fundamentals     import resample
 	from utilities        import bcast_string_to_all, bcast_number_to_all, model_circle, get_params_proj, set_params_proj
 	from utilities        import bcast_EMData_to_all, bcast_list_to_all, send_attr_dict, wrap_mpi_bcast
-	from utilities        import get_image, drop_image, file_type, get_im
+	from utilities        import get_image, drop_image, file_type, get_im, get_input_from_string
 	from utilities        import amoeba_multi_level, rotate_3D_shift, estimate_3D_center_MPI
 	from utilities        import print_begin_msg, print_end_msg, print_msg
 	from multi_shc        import do_volume
@@ -6892,13 +6892,12 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 
 	maxit  = ali3d_options.maxit
 	ou     = ali3d_options.ou
-	ts     = ali3d_options.ts
+	ts     = get_input_from_string(ali3d_options.ts)[0]
+	delta  = get_input_from_string(ali3d_options.delta)[0]
 	sym    = ali3d_options.sym
 	sym    = sym[0].lower() + sym[1:]
-	delta  = ali3d_options.delta
 	center = ali3d_options.center
 	CTF    = ali3d_options.CTF
-	ref_a  = ali3d_options.ref_a
 	maskfile = ali3d_options.mask3D
 	fourvar = False
 
@@ -7194,7 +7193,8 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 				volft = vol
 				volft.divkbsinh(kb)
 				volft = volft.norm_pad(False, npad)
-				volft.do_fft_inplace()
+				junk = volft.do_fft_inplace()
+				del junk
 
 				#vol = fft(pad(vol, N, N, N))
 			else:
