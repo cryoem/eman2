@@ -6876,7 +6876,7 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 	from fundamentals     import resample
 	from utilities        import bcast_string_to_all, bcast_number_to_all, model_circle, get_params_proj, set_params_proj
 	from utilities        import bcast_EMData_to_all, bcast_list_to_all, send_attr_dict, wrap_mpi_bcast
-	from utilities        import get_image, drop_image, file_type, get_im, get_input_from_string
+	from utilities        import get_image, drop_image, file_type, get_im, get_input_from_string, model_blank
 	from utilities        import amoeba_multi_level, rotate_3D_shift, estimate_3D_center_MPI
 	from utilities        import print_begin_msg, print_end_msg, print_msg
 	from multi_shc        import do_volume
@@ -6885,7 +6885,7 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 	from mpi              import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
 	from mpi              import mpi_reduce, MPI_INT, MPI_SUM
 	from EMAN2 import Processor
-	from EMAN2 import Vec2f
+	from EMAN2 import Vec2f, Transform
 	import os
 	import sys
 	import types
