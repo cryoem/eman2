@@ -6875,7 +6875,7 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 	from projection       import prep_vol
 	from fundamentals     import resample
 	from utilities        import bcast_string_to_all, bcast_number_to_all, model_circle, get_params_proj, set_params_proj
-	from utilities        import bcast_EMData_to_all, bcast_list_to_all, send_attr_dict, wrap_mpi_bcast
+	from utilities        import bcast_EMData_to_all, bcast_list_to_all, send_attr_dict, wrap_mpi_bcast, wrap_mpi_gatherv
 	from utilities        import get_image, drop_image, file_type, get_im, get_input_from_string, model_blank
 	from utilities        import amoeba_multi_level, rotate_3D_shift, estimate_3D_center_MPI
 	from utilities        import print_begin_msg, print_end_msg, print_msg
@@ -6948,7 +6948,6 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 		finfo = None
 
 	last_ring   = int(ou)
-	max_iter    = int(maxit)
 	center      = int(center)
 
 	if( type(stack) is types.StringType ):
@@ -7168,7 +7167,7 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 					finfo.flush()
 
 				#  Do the 3D
-				vol = do_volume(dataim, ali3d_options, 0, mpi_comm)
+				vol = do_volume(dataim, ali3d_options, iteration, mpi_comm)
 
 				if myid == main_node:
 					#drop_image(vol, os.path.join(outdir, "vol%03d_%03d.hdf"%(iteration, ic) ))
