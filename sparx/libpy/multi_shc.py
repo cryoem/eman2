@@ -2378,7 +2378,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 			#=========================================================================
 			# alignment
 			#number_of_checked_refs = 0
-			par_r = [0]*(nsoft+1)
+			par_r = [0]*max(2,(nsoft+1))
 			for im in xrange(nima):
 				peak, pixer[im], checked_refs, number_of_peaks = shc_multi(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step],\
 																			an[N_step], nsoft, sym)
@@ -2398,7 +2398,7 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 			#=========================================================================
 			#output pixel errors, check stop criterion
 			all_pixer = wrap_mpi_gatherv(pixer, 0, mpi_comm)
-			par_r = mpi_reduce(par_r, nsoft+1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
+			par_r = mpi_reduce(par_r, len(par_r), MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
 			#total_checked_refs = wrap_mpi_gatherv([number_of_checked_refs], main_node, mpi_comm)
 			terminate = 0
 			if myid == main_node:
@@ -2554,7 +2554,7 @@ def do_volume(data, options, iter, mpi_comm):
 		vol -= stat[0]
 		Util.mul_scalar(vol, 1.0/stat[1])
 		vol = threshold(vol)
-		Util.mul_img(vol, mask3D)
+		#Util.mul_img(vol, mask3D)
 		if( options.pwreference ):
 			from utilities    import read_text_file
 			from fundamentals import rops_table, fftip, fft
@@ -2732,7 +2732,6 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 		onx = 0
 	nx  = bcast_number_to_all(nx, source_node = main_node)
 	onx = bcast_number_to_all(onx, source_node = main_node)
-
 	if last_ring < 0:	last_ring = int(onx/2) - 2
 	mask2D  = model_circle(last_ring,onx,onx) - model_circle(first_ring,onx,onx)
 	if(shrinkage < 1.0):
@@ -2782,6 +2781,7 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 
 	pixer = [0.0]*nima
 	historyofchanges = [0.0, 0.5, 1.0]
+	#par_r = [[] for im in list_of_particles ]
 	cs = [0.0]*3
 	total_iter = 0
 	# do the projection matching
