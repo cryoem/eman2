@@ -198,7 +198,7 @@ EMData *EMData::do_fft_cuda()
 	return dat;
 }
 
-EMData *EMData::do_fft_inplace_cuda()
+void EMData::do_fft_inplace_cuda()
 {
 	ENTERFUNC;
 
@@ -232,7 +232,7 @@ EMData *EMData::do_fft_inplace_cuda()
 	update();
 
 	EXITFUNC;
-	return this;
+//	return this;
 }
 
 EMData *EMData::do_ift_cuda()
@@ -285,7 +285,7 @@ EMData *EMData::do_ift_cuda()
    use
 */
 
-EMData *EMData::do_ift_inplace_cuda()
+void EMData::do_ift_inplace_cuda()
 {
 	ENTERFUNC;
 
@@ -325,7 +325,7 @@ EMData *EMData::do_ift_inplace_cuda()
 	update();
 	
 	EXITFUNC;
-	return this;
+//	return this;
 }
 
 #endif //EMAN2_USING_CUDA
@@ -391,7 +391,7 @@ EMData *EMData::do_ift()
    FFT in place does not depad, return real x-extended image (needs to be depadded before use as PAP does in CCF routines)
    use
 */
-EMData *EMData::do_ift_inplace()
+void EMData::do_ift_inplace()
 {
 	ENTERFUNC;
 
@@ -423,7 +423,7 @@ EMData *EMData::do_ift_inplace()
 	update();
 
 	EXITFUNC;
-	return this;
+//	return this;
 }
 #undef rdata
 

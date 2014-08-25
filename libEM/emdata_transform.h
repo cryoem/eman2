@@ -65,7 +65,7 @@ EMData *do_fft_cuda(); // I am not using const b/c this function does modify cud
  * @return The FFT of the current image in real/imaginary format, existing on the GPU.
  * @ingroup CUDA_ENABLED
  */
-EMData *do_fft_inplace_cuda();
+void do_fft_inplace_cuda();
 
 /**  return the inverse fourier transform (IFT) image of the current
  * image. The result exists only on the GPU
@@ -81,7 +81,7 @@ EMData *do_ift_cuda();
  * @return The FFT of the current image in real/imaginary format, existing on the GPU.
  * @ingroup CUDA_ENABLED
  */
-EMData *do_ift_inplace_cuda();
+void do_ift_inplace_cuda();
 #endif //EMAN2_USING_CUDA
 
 
@@ -106,7 +106,7 @@ EMData *do_ift();
 /* Do IFT inplace. And return the IFT image.
  * @return The IFT image.
  */
-EMData* do_ift_inplace();
+void do_ift_inplace();
 
 
 /** Render the image into an 8-bit image. 2D images only.
