@@ -1228,7 +1228,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 					cdata[i] = INT8_MAX;
 				}
 				else {
-					cdata[i]=(unsigned char)((data[i]-rendermin)/(rendermax-rendermin)*INT8_MAX+INT8_MIN);
+					cdata[i]=(char)((data[i]-rendermin)/(rendermax-rendermin)*INT8_MAX+INT8_MIN);
 				}
 			}
 			err_no = H5Dwrite(ds, H5T_NATIVE_CHAR, memoryspace, filespace, H5P_DEFAULT, cdata);
@@ -1328,7 +1328,7 @@ int HdfIO2::write_data(float *data, int image_index, const Region* area,
 					ucdata[i]=(unsigned char)((data[i]-rendermin)/(rendermax-rendermin)*UCHAR_MAX);
 				}
 			}
-			H5Dwrite(ds,H5T_NATIVE_UCHAR,spc,spc,H5P_DEFAULT,cdata);
+			H5Dwrite(ds,H5T_NATIVE_UCHAR,spc,spc,H5P_DEFAULT,ucdata);
 			if(ucdata) {delete [] ucdata; ucdata=0;}
 			break;
 		default:
