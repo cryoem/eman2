@@ -2570,7 +2570,7 @@ def do_volume(data, options, iter, mpi_comm):
 		vol -= stat[0]
 		Util.mul_scalar(vol, 1.0/stat[1])
 		vol = threshold(vol)
-		volf = filt_btwl(volf, 0.38, 0.5)
+		vol = filt_btwl(vol, 0.38, 0.5)
 		Util.mul_img(vol, mask3D)
 		del mask3D
 		vol.write_image('toto%03d.hdf'%iter)
