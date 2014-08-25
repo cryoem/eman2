@@ -118,7 +118,7 @@ EMData *EMData::do_fft() const
 	}
 }
 
-EMData *EMData::do_fft_inplace()
+void EMData::do_fft_inplace()
 {
 	ENTERFUNC;
 

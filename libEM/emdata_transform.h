@@ -89,7 +89,7 @@ EMData *do_ift_inplace_cuda();
 /** Do FFT inplace. And return the FFT image.
  * @return The FFT of the current image in real/imaginary format.
  */
-EMData* do_fft_inplace();
+void do_fft_inplace();
 
 
 /** return the inverse fourier transform (IFT) image of the current
