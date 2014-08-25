@@ -7135,7 +7135,7 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 	data[3] = mask2D
 	cs = [0.0]*3
 
-	for iteration in xrange(maxit+1):
+	for iteration in xrange(maxit):
 		if myid == main_node:
 			start_time = time()
 			log.add("ITERATION #%3d\n"%(iteration+1))
@@ -7192,8 +7192,7 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 				volft = vol
 				volft.divkbsinh(kb)
 				volft = volft.norm_pad(False, npad)
-				junk = volft.do_fft_inplace()
-				del junk
+				volft.do_fft_inplace()
 
 				#vol = fft(pad(vol, N, N, N))
 			else:

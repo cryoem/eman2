@@ -2543,14 +2543,15 @@ def do_volume(data, options, iter, mpi_comm):
 		from morphology import threshold
 		from filter     import filt_tanl, filt_btwl
 		from utilities  import model_circle, get_im
-		nx = data[0].get_xsize()
-		last_ring   = int(options.ou)
-		if(options.mask3D == None):	mask3D = model_circle(last_ring, nx, nx, nx)
+		if(options.mask3D == None):
+			nx = data[0].get_xsize()
+			last_ring   = int(options.ou)
+			mask3D = model_circle(last_ring, nx, nx, nx)
 		elif(options.mask3D == "auto"):
 			from utilities import adaptive_mask
 			mask3D = adaptive_mask(vol)
 		else:						mask3D = get_im(options.mask3D)
-		stat = Util.infomask(vol, mask3D, True)
+		stat = Util.infomask(vol, mask3D, False)
 		vol -= stat[0]
 		Util.mul_scalar(vol, 1.0/stat[1])
 		vol = threshold(vol)
@@ -2565,8 +2566,9 @@ def do_volume(data, options, iter, mpi_comm):
 			#  Here unless I am mistaken it is enough to take the beginning of the reference pw.
 			for i in xrange(1,len(ro)):  ro[i] = (rt[i]/ro[i])**0.5
 			vol = fft( filt_table( filt_tanl(vol, options.fl, options.aa), ro) )
+			print  Util.infomask(vol, None, True)
 		else:  vol = filt_tanl(vol, options.fl, options.aa)
-		stat = Util.infomask(vol, mask3D, True)
+		stat = Util.infomask(vol, mask3D, False)
 		vol -= stat[0]
 		Util.mul_scalar(vol, 1.0/stat[1])
 		vol = threshold(vol)
