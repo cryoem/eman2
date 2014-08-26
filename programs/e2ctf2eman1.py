@@ -77,11 +77,10 @@ models are not completely compatible."""
 	pid = E2init(sys.argv, options.ppid)
 	
 	# Get a list of all images
-	db_parms = db_open_dict( "bdb:e2ctf.parms" )
-	ptcls = db_parms.keys( )
+	ptcls=["particles/"+i for i in os.listdir("particles") if "__" not in i and i[0]!="." and ".hed" not in i ]
+	ptcls.sort()
 	if len( ptcls ) < 1 :
 		parser.error( "No particles found in bdb:e2ctf.parms in the current directory." )
-	db_close_dict( "bdb:e2ctf.parms" )
 	
 	# Convert CTF parameters for all images
 	sf = [ ]
@@ -247,15 +246,9 @@ def loadctf( filename ) :
 	  bg            1D background
 	"""
 	
-	# Load EMAN2 parameters
-	db_parms = db_open_dict( "bdb:e2ctf.parms" )
-	[ ctfstring, im_1d, bg_1d, dummy ] = db_parms[filename]
-	e2ctf = EMAN2Ctf( )
-	e2ctf.from_string( ctfstring )
-	
-	# Return result
-	return ( e2ctf, im_1d, e2ctf.background )
-
+	js_parms=js_open_dict(info_name(filename))
+	ctf=js_parms["ctf"]
+	return ctf[:3]
 
 def calcnoise( n0, n1, n2, n3, ds, e2bg ) :
 	"""
