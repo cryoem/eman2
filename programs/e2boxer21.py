@@ -814,5 +814,50 @@ class GUIBoxer(QtGui.QWidget):
 		"mousedown in plot"
 #		m=self.guiim.scr_to_img((event.x(),event.y()))
 
+def detect(img,box):
+	img.process_inplace("normalize.edgemean")
+	
+	radius=box/2.6
+	zro=img["ctf"].zero(0)*img["ctf"].apix*box
+	wvlen=box*2.0/zro	# 1/2 the wavelength of the 1st zero
+#	wvlen=box/zro	# the wavelength of the 1st zero
+
+	mask1c=EMData(box,box,1)
+	mask1c.process_inplace("testimage.sinewave.circular",{"wavelength":wvlen,"phase":0.0})
+	mask1c.process_inplace("mask.gaussian",{"outer_radius":radius,"exponent":4.0})
+#	mask1c.process_inplace("normalize.unitlen")
+	mask1c.process_inplace("normalize")
+	mask1c/=box*box
+	print mask1c["mean"],mask1c["sigma"],wvlen,zro
+	mask1c.clip_inplace(Region(-(img["nx"]-box)/2.0,-(img["ny"]-box)/2.0,img["nx"],img["ny"]))
+	mask1c.process_inplace("xform.phaseorigin.tocorner")
+
+	mask1s=EMData(box,box,1)
+	mask1s.process_inplace("testimage.sinewave.circular",{"wavelength":wvlen,"phase":pi/2.0})
+	mask1s.process_inplace("mask.gaussian",{"outer_radius":radius,"exponent":4.0})
+#	mask1s.process_inplace("normalize.unitlen")
+	mask1s.process_inplace("normalize")
+	mask1s/=box*box
+	print mask1c["mean"],mask1c["sigma"],wvlen,zro
+	mask1s.clip_inplace(Region(-(img["nx"]-box)/2.0,-(img["ny"]-box)/2.0,img["nx"],img["ny"]))
+	mask1s.process_inplace("xform.phaseorigin.tocorner")
+
+	c1=img.calc_ccf(mask1c)
+	c1.process_inplace("math.squared")
+	s1=img.calc_ccf(mask1s)
+	s1.process_inplace("math.squared")
+	c1.add(s1)
+	c1.process_inplace("normalize")
+	
+
+	display((c1,img),True)
+	# Mask 2 is the 'inverse' (1.0-val) of mask1, with the addition of a soft outer edge to reduce periodic boundary condition issues
+	#mask2=mask1.copy()*-1+1
+##		mask1.process_inplace("mask.decayedge2d",{"width":4})
+	#mask2.process_inplace("mask.decayedge2d",{"width":4})
+	#mask1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
+	#mask2.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
+
+
 if __name__ == "__main__":
 	main()
