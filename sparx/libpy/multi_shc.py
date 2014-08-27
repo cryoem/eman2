@@ -2566,7 +2566,6 @@ def do_volume(data, options, iter, mpi_comm):
 			#  Here unless I am mistaken it is enough to take the beginning of the reference pw.
 			for i in xrange(1,len(ro)):  ro[i] = (rt[i]/ro[i])**0.5
 			vol = fft( filt_table( filt_tanl(vol, options.fl, options.aa), ro) )
-			print  Util.infomask(vol, None, True)
 		else:  vol = filt_tanl(vol, options.fl, options.aa)
 		stat = Util.infomask(vol, mask3D, False)
 		vol -= stat[0]
