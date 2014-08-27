@@ -7117,8 +7117,6 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 	r = M/2
 	v = K/2.0/N
 	params = {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE, "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
-	# support of the window
-	kb = Util.KaiserBessel(alpha, K, M/2, K/(2.*N), N)
 
 	disps = []
 	recvcount = []
@@ -7131,7 +7129,6 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 	#  this is needed for gathering of pixel errors
 	pixer = [0.0]*nima
 	data = [None]*7
-	data[1] = kb
 	data[3] = mask2D
 	cs = [0.0]*3
 
@@ -7189,11 +7186,6 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 
 			if CTF:
 				previous_defocus = -1.0
-				volft = vol
-				volft.divkbsinh(kb)
-				volft = volft.norm_pad(False, npad)
-				volft.do_fft_inplace()
-
 				#vol = fft(pad(vol, N, N, N))
 			else:
 				data[0], data[1] = prep_vol(vol)
@@ -7209,11 +7201,7 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 					ctf_params = dataim[imn-image_start].get_attr( "ctf" )
 					if ctf_params.defocus != previous_defocus:
 						previous_defocus = ctf_params.defocus
-						data[0] = filt_ctf(volft, ctf_params)
-						data[0].center_origin_fft()
-		                data[0].fft_shuffle()
-
-						#data[0], data[1] = prep_vol(filt_ctf(vol, ctf_params))
+						data[0], data[1] = prep_vol(filt_ctf(vol, ctf_params))
 
 				data[2] = dataim[imn-image_start]
 				if ts > 0.0:
