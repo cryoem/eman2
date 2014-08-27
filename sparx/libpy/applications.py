@@ -7249,8 +7249,7 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 				log.add( "Time to process %6d particles : %d\n" % (image_end_in_chunk-image_start_in_chunk, time()-start_time) )
 				start_time = time()
 
-			# release memory of volft
-			del volft
+			# release memory
 			data[0] = None
 
 
