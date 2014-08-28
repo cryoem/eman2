@@ -152,7 +152,7 @@ def main():
 
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:n=<proc>:option:option",default=None)
 
-	append_options = ["clip", "process", "meanshrink", "medianshrink", "scale", "randomize", "rotate","translate","multfile"]
+	append_options = ["clip", "process", "meanshrink", "medianshrink", "scale", "randomize", "rotate", "translate", "multfile"]
 
 	optionlist = pyemtbx.options.get_optionlist(sys.argv[1:])
 
@@ -165,12 +165,12 @@ def main():
 
 	logid = E2init(sys.argv,options.ppid)
 
-	try : options.step=int(options.step.split(",")[0]),int(options.step.split(",")[1])	# convert strings to tuple
+	try : options.step = int(options.step.split(",")[0]),int(options.step.split(",")[1])	# convert strings to tuple
 	except:
 		print "Invalid --step specification"
 		sys.exit(1)
 
-	if options.step!=(0,1) and options.first:
+	if options.step != (0,1) and options.first:
 		print 'Invalid options. You used --first and --step.'
 		print 'The --step option contains both a step size and the first image to step from.'
 		print 'Please use only the --step option rather than --step and --first.'
@@ -178,11 +178,11 @@ def main():
 
 	if options.mrc16bit:
 		print "Deprecated option mrc16bit, please use outmode=int16"
-		options.outmode="int16"
+		options.outmode = "int16"
 
 	if options.mrc8bit:
 		print "Deprecated option mrc8bit, please use outmode=int8|uint8"
-		options.outmode="int8"
+		options.outmode = "int8"
 
 	if not file_mode_map.has_key(options.outmode) :
 		print "Invalid output mode, please specify one of :\n",str(file_mode_map.keys()).translate(None,'"[]')
@@ -205,7 +205,7 @@ def main():
 		else :
 			num_inp_images = -1
 
-		if out_ext == ".mrcs" :
+		if out_ext == ".mrcs"  or  out_ext == ".tiff" :
 			num_out_images = 2
 		else :
 			num_out_images = 1
@@ -231,13 +231,13 @@ def main():
 #		continue
 
 		if options.parallel :
-			r=doparallel(sys.argv,options.parallel,args)
+			r = doparallel(sys.argv,options.parallel,args)
 			E2end(logid)
 			sys.exit(r)
 
 		if options.average:
-			averager=parsemodopt(options.averager)
-			average=Averagers.get(averager[0], averager[1])
+			averager = parsemodopt(options.averager)
+			average = Averagers.get(averager[0], averager[1])
 		else : average = None
 
 		fftavg = None
@@ -253,7 +253,7 @@ def main():
 		defocus_val = [0] * MAXMICROCTF
 		bfactor_val = [0] * MAXMICROCTF
 
-		if options.verbose>2:
+		if options.verbose > 2:
 			Log.logger().set_level(options.verbose-2)
 
 		d = EMData()
@@ -268,14 +268,14 @@ def main():
 				print 'Error: need 3D image to use this option'
 				return
 			else:
-				if options.verbose>0:
+				if options.verbose > 0:
 					print "Process 3D as a stack of %d 2D images" % d.get_zsize()
 
 				nimg = d.get_zsize()
 
 				if n1 > nimg:
 					print 'The value for --last is greater than the number of images in the input stack. Exiting'
-					n1=options.last
+					n1 = options.last
 
 				if options.step[0] > n0:
 					n0 = options.step[0]
@@ -322,46 +322,46 @@ def main():
 		ld = EMData()
 
 		if options.step[0] > options.first:
-			n0=options.step[0]
+			n0 = options.step[0]
 
-		if options.verbose>0:
+		if options.verbose > 0:
 			print "%d images, processing %d-%d stepping by %d"%(nimg,n0,n1,options.step[1])
 
 		# Now we deal with inclusion/exclusion lists
 
 		if options.list or options.select :
-			imagelist=[0]*nimg
+			imagelist = [0]*nimg
 
 			if options.list:
-				for i in read_number_file(options.list) : imagelist[i]=1
+				for i in read_number_file(options.list) : imagelist[i] = 1
 
 			if options.select:
-				db=db_open_dict("bdb:.#select",ro=True)
+				db = db_open_dict("bdb:.#select",ro=True)
 
-				for i in db[options.select]: imagelist[i]=1
+				for i in db[options.select]: imagelist[i] = 1
 		else:
-			imagelist=[1]*nimg
+			imagelist = [1]*nimg
 
 		if options.exclude :
-			for i in read_number_file(options.exclude) : imagelist[i]=0
+			for i in read_number_file(options.exclude) : imagelist[i] = 0
 
 		sfcurve1 = None
 
-		lasttime=time.time()
+		lasttime = time.time()
 		outfilename_no_ext = outfile[:-4]
 		outfilename_ext = outfile[-3:]
 
 		if outfilename_ext == "rcs" and outfile[-4:] == "mrcs":
 			outfilename_ext = outfile[-4:]
 
-		dummy=0										#JESUS
+		dummy = 0										#JESUS
 
 		for i in range(n0, n1+1, options.step[1]):
 			if options.verbose >= 1:
-				if time.time()-lasttime>3 or options.verbose>2 :
+				if time.time()-lasttime > 3 or options.verbose > 2 :
 					sys.stdout.write(" %7d\r" %i)
 					sys.stdout.flush()
-					lasttime=time.time()
+					lasttime = time.time()
 
 			if imagelist and (not imagelist[i]):
 				continue
@@ -378,17 +378,17 @@ def main():
 					d.read_image(infile, i)
 			else:
 				if plane in xyplanes:
-					roi=Region(0,0,i,tomo_nx,tomo_ny,1)
+					roi = Region(0,0,i,tomo_nx,tomo_ny,1)
 					d = threed.get_clip(roi)
 					#d.read_image(infile,0, HEADER_AND_DATA, roi)
 					d.set_size(tomo_nx,tomo_ny,1)
 				elif plane in xzplanes:
-					roi=Region(0,i,0,tomo_nx,1,tomo_nz)
+					roi = Region(0,i,0,tomo_nx,1,tomo_nz)
 					d = threed.get_clip(roi)
 					#d.read_image(infile,0, HEADER_AND_DATA, roi)
 					d.set_size(tomo_nx,tomo_nz,1)
 				elif plane in yzplanes:
-					roi=Region(i,0,0,1,tomo_ny,tomo_nz)
+					roi = Region(i,0,0,1,tomo_ny,tomo_nz)
 					d = threed.get_clip(roi)
 					#d.read_image(infile,0, HEADER_AND_DATA, roi)
 					d.set_size(tomo_ny,tomo_nz,1)
@@ -399,11 +399,11 @@ def main():
 				if options.threed2threed or options.threed2twod:
 					pass
 				else:
-					if options.verbose>0:
+					if options.verbose > 0:
 						print "Warning: sigma = 0 for image ",i
 
 					if options.writejunk == False:
-						if options.verbose>0:
+						if options.verbose > 0:
 							print "Use the writejunk option to force writing this image to disk"
 
 						continue
@@ -427,18 +427,18 @@ def main():
 					d.set_attr('apix_z', apix)
 
 					try:
-						if i==n0 and d["ctf"].apix!=apix :
-							if options.verbose>0:
+						if i == n0 and d["ctf"].apix != apix :
+							if options.verbose > 0:
 								print "Warning: A/pix value in CTF was %1.2f, changing to %1.2f. May impact CTF parameters."%(d["ctf"].apix,apix)
 
-						d["ctf"].apix=apix
+						d["ctf"].apix = apix
 					except: pass
 
 				if option1 == "process":
 					fi = index_d[option1]
 					(processorname, param_dict) = parsemodopt(options.process[fi])
 
-					if not param_dict : param_dict={}
+					if not param_dict : param_dict = {}
 
 					# Parse the options to convert the image file name to EMData object
 					# (for both plain image file and bdb file)
@@ -446,7 +446,7 @@ def main():
 					for key in param_dict.keys():
 						#print str(param_dict[key])
 
-						if str(param_dict[key]).find('bdb:')!=-1 or not str(param_dict[key]).isdigit():
+						if str(param_dict[key]).find('bdb:') != -1 or not str(param_dict[key]).isdigit():
 							try:
 								param_dict[key] = EMData(param_dict[key])			
 							except:
@@ -459,29 +459,29 @@ def main():
 					d.mult(options.mult)
 
 				elif option1 == "multfile":
-					mf=EMData(options.multfile[index_d[option1]],0)
+					mf = EMData(options.multfile[index_d[option1]],0)
 					d.mult(mf)
-					mf=None
+					mf = None
 					index_d[option1] += 1
 
 				elif option1 == "calccont":
-					dd=d.process("math.rotationalsubtract")
-					f=dd.do_fft()
-					#f=d.do_fft()
+					dd = d.process("math.rotationalsubtract")
+					f = dd.do_fft()
+					#f = d.do_fft()
 
-					if d["apix_x"]<=0 : raise Exception,"Error: 'calccont' requires an A/pix value, which is missing in the input images"
+					if d["apix_x"] <= 0 : raise Exception,"Error: 'calccont' requires an A/pix value, which is missing in the input images"
 
-					lopix=int(d["nx"]*d["apix_x"]/200.0)
-					hipix=int(d["nx"]*d["apix_x"]/25.0)
+					lopix = int(d["nx"]*d["apix_x"]/200.0)
+					hipix = int(d["nx"]*d["apix_x"]/25.0)
 
-					if lopix==hipix : lopix,hipix=3,d["nx"]/5	# in case the A/pix value is drastically out of range
+					if lopix == hipix : lopix,hipix = 3,d["nx"]/5	# in case the A/pix value is drastically out of range
 
-					r=f.calc_radial_dist(d["ny"]/2,0,1.0,1)
-					lo=sum(r[lopix:hipix])/(hipix-lopix)
-					hi=sum(r[hipix+1:-1])/(len(r)-hipix-2)
+					r = f.calc_radial_dist(d["ny"]/2,0,1.0,1)
+					lo = sum(r[lopix:hipix])/(hipix-lopix)
+					hi = sum(r[hipix+1:-1])/(len(r)-hipix-2)
 
 					print lopix, hipix, lo, hi
-					d["eval_contrast_lowres"]=lo/hi
+					d["eval_contrast_lowres"] = lo/hi
 	#				print lopix,hipix,lo,hi,lo/hi
 
 				elif option1 == "norefs" and d["ptcl_repr"] <= 0:
@@ -525,23 +525,23 @@ def main():
 				elif option1 == "rotate":
 					rotatef = options.rotate[index_d[option1]]
 
-					if rotatef!=0.0 : d.rotate(rotatef,0,0)
+					if rotatef != 0.0 : d.rotate(rotatef,0,0)
 
 					index_d[option1] += 1
 
 				elif option1 == "translate":
-					tdx,tdy=options.translate[index_d[option1]].split(",")
-					tdx,tdy=float(tdx),float(tdy)
+					tdx,tdy = options.translate[index_d[option1]].split(",")
+					tdx,tdy = float(tdx),float(tdy)
 
-					if tdx !=0.0 or tdy != 0.0 :
+					if tdx != 0.0 or tdy != 0.0 :
 						d.translate(tdx,tdy,0.0)
 
 					index_d[option1] += 1
 
 				elif option1 == "clip":
 					ci = index_d[option1]
-					clipcx=nx/2
-					clipcy=ny/2
+					clipcx = nx/2
+					clipcy = ny/2
 
 					try: clipx,clipy,clipcx,clipcy = options.clip[ci].split(",")
 					except: clipx, clipy = options.clip[ci].split(",")
@@ -560,11 +560,11 @@ def main():
 				elif option1 == "randomize" :
 					ci = index_d[option1]
 					rnd = options.randomize[ci].split(",")
-					rnd[0]=float(rnd[0])
-					rnd[1]=float(rnd[1])
-					rnd[2]=int(rnd[2])
+					rnd[0] = float(rnd[0])
+					rnd[1] = float(rnd[1])
+					rnd[2] = int(rnd[2])
 
-					t=Transform()
+					t = Transform()
 					t.set_params({"type":"2d", "alpha":random.uniform(-rnd[0],rnd[0]), \
 									"mirror":random.randint(0,rnd[2]), "tx":random.uniform(-rnd[1],rnd[1]), \
 									"ty":random.uniform(-rnd[1],rnd[1])})
@@ -603,7 +603,7 @@ def main():
 						elif sclmd == 2:
 							sc.common_lines(e, e, sclmd, scl, true)
 						else:
-							if options.verbose>0:
+							if options.verbose > 0:
 								print "Error: invalid common-line mode '" + sclmd + "'"
 
 							sys.exit(1)
@@ -670,7 +670,7 @@ def main():
 					if not options.outtype:
 						options.outtype = "unknown"
 
-					if i==0:
+					if i == 0:
 						original_outfile = outfile
 
 					if options.outtype in ["mrc", "pif", "png", "pgm"]:
@@ -678,8 +678,8 @@ def main():
 							outfile = "%03d." % (i + 100) + original_outfile
 					elif options.outtype == "spidersingle":
 						if n1 != 0:
-							if i==0:
-								if outfile.find('.spi')>0:
+							if i == 0:
+								if outfile.find('.spi') > 0:
 									nameprefix = outfile[:-4]
 								else:
 									nameprefix = outfile
@@ -693,27 +693,27 @@ def main():
 							#outfile = outfile + "%04d" % i + ".lst"
 							#options.outtype = "lst"
 
-					if options.fixintscaling!=None :
-						if options.fixintscaling=="sane" :
-							d["render_min"]=d["mean"]-d["sigma"]*2.5
-							d["render_max"]=d["mean"]+d["sigma"]*2.5
-						elif options.fixintscaling=="noscale":
-							d["render_min"]=0.0
+					if options.fixintscaling != None :
+						if options.fixintscaling == "sane" :
+							d["render_min"] = d["mean"]-d["sigma"]*2.5
+							d["render_max"] = d["mean"]+d["sigma"]*2.5
+						elif options.fixintscaling == "noscale":
+							d["render_min"] = 0.0
 
-							if "mrc16bit" in optionlist : d["render_max"]=65535.0
-							else : d["render_max"]=255.0
+							if "mrc16bit" in optionlist : d["render_max"] = 65535.0
+							else : d["render_max"] = 255.0
 						else:
 							try:
-								sca=int(options.fixintscaling)
-								d["render_min"]=d["mean"]-d["sigma"]*sca
-								d["render_max"]=d["mean"]+d["sigma"]*sca
+								sca = int(options.fixintscaling)
+								d["render_min"] = d["mean"]-d["sigma"]*sca
+								d["render_max"] = d["mean"]+d["sigma"]*sca
 							except:
 								print "Warning: bad fixintscaling option"
 
 					#print_iminfo(data, "Final")
 
-					if options.outmode!="float":
-	#					if outfile[-4:]!=".hdf" :
+					if options.outmode != "float":
+	#					if outfile[-4:] != ".hdf" :
 	#						print "WARNING: outmode is not working correctly for non HDF images in"
 	#						print "2.1beta3. We expect to have this fixed in the next few days."
 
@@ -721,13 +721,13 @@ def main():
 							# This sets the minimum and maximum values to the range
 							# for the specified type, which should result in no rescaling
 
-							outmode=file_mode_map[options.outmode]
+							outmode = file_mode_map[options.outmode]
 
-							d["render_min"]=file_mode_range[outmode][0]
-							d["render_max"]=file_mode_range[outmode][1]
+							d["render_min"] = file_mode_range[outmode][0]
+							d["render_max"] = file_mode_range[outmode][1]
 						else:
-							d["render_min"]=d["minimum"]
-							d["render_max"]=d["maximum"]
+							d["render_min"] = d["minimum"]
+							d["render_max"] = d["maximum"]
 
 					if not options.average:	# skip writing the input image to output file
 						# write processed image to file
@@ -735,7 +735,7 @@ def main():
 						if options.threed2threed or options.twod2threed:    # output a single 3D image
 							#shift = 0
 
-							if dummy==0:	# The "dummy" volume, as termed by Grant, only needs to be created once
+							if dummy == 0:	# The "dummy" volume, as termed by Grant, only needs to be created once
 												# This dummy variable changes to dummy=1 after that happens.
 								#print "\n\n\n\nTOMO OPTION IS ON!"
 								#print "And this is i", i
@@ -745,7 +745,7 @@ def main():
 								#print "Z should be equal to nimg, lets see: nimg,z",nimg,z
 
 								if options.list:
-									f=open(options.list,'r')
+									f = open(options.list,'r')
 									lines = f.read().split(',')
 									#print "Lines are", lines
 									f.close()
@@ -753,8 +753,8 @@ def main():
 									#shift = nimg - z
 									#print "If --list, z should be the length of lines in list; lines,z", len(lines),z
 								elif options.exclude:
-									f=open(options.exclude,'r')
-									lines=f.read().split(',')
+									f = open(options.exclude,'r')
+									lines = f.read().split(',')
 									#print "lines are", lines
 									f.close()
 									z = nimg - len(lines)
@@ -767,18 +767,18 @@ def main():
 								if 'mrc8bit' in optionlist:
 									#print "Writing dummy mrc8bit"
 									out3d_img.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
-									dummy=1		
+									dummy = 1		
 									#print "Wrote dummy mrc8bit"			
 								elif 'mrc16bit' in optionlist:
 									#print "Writting dummy mrc16bit"
 									out3d_img.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
-									dummy=1
+									dummy = 1
 									#print "Wrote dummy mrc16bit"
 								else:
 									#print "Writting dummy float"
 	#								out3d_img.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
 									out3d_img.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, None, file_mode_map[options.outmode], not(options.swap))
-									dummy=1
+									dummy = 1
 									#print "Wrote dummy float"
 
 							#print "imagelist is", imagelist
@@ -820,10 +820,10 @@ def main():
 							# optionally replace the output image with its rotational average
 
 							if options.rotavg:
-								rd=d.calc_radial_dist(d["nx"],0,0.5,0)
-								d=EMData(len(rd),1,1)
+								rd = d.calc_radial_dist(d["nx"],0,0.5,0)
+								d = EMData(len(rd),1,1)
 
-								for x in xrange(len(rd)): d[x]=rd[x]
+								for x in xrange(len(rd)): d[x] = rd[x]
 
 							if 'mrc8bit' in optionlist:
 								d.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
@@ -840,8 +840,8 @@ def main():
 		#end of image loop
 
 		if average:
-			avg=average.finish()
-			avg["ptcl_repr"]=(n1-n0+1)
+			avg = average.finish()
+			avg["ptcl_repr"] = (n1-n0+1)
 	#		avg.mult(1.0/(n1-n0+1.0))
 	#		average.process_inplace("normalize");
 
@@ -861,7 +861,7 @@ def main():
 		try:
 			n_outimg = EMUtil.get_image_count(outfile)
 
-			if options.verbose>0:
+			if options.verbose > 0:
 				print str(n_outimg) + " images"
 		except:
 			pass
