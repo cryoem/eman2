@@ -216,6 +216,7 @@ def main():
 	
 	modelhdr = EMData(options.input,0,True)
 	dimension = 3
+	
 	if int(modelhdr['nz']) < 2:
 		dimension = 2
 	
@@ -238,7 +239,7 @@ def main():
 		options.input = randstackcopy
 		
 		if options.filter or float(options.pad) > 1.0 or int(options.shrink) > 1:
-			ret = preprocess(options,randstackcopy) 
+			ret = preprocess(options,randstackcopy,dimension) 
 			randstackcopy = ret[-1]
 
 		print "Randstackcopy to read particles from is", randstackcopy
@@ -333,6 +334,8 @@ def main():
 				
 					
 				if dimension == 3:
+					#print "ERROR!"
+					#sys.exit()
 					
 					if modelhdr['nx'] != modelhdr['ny'] or modelhdr['nx'] != modelhdr['nz'] or modelhdr['ny'] != modelhdr['nz']:	
 						print "\nNOT Making the img a 3d cube"
@@ -345,12 +348,15 @@ def main():
 				Preprocess model if necessary
 				'''
 				if options.filter or options.pad or options.shrink:
-					ret = preprocess(options,options.input)
+					ret = preprocess(options,options.input,dimension)
 					options = ret[0]
 					
 				newsize = max( int(modelhdr['nx']), int(modelhdr['ny']), int(modelhdr['nz']) )
+				
+				print "\n\n\n\nFINALBOZXSIZE IS",options.finalboxsize
+	
 				if options.finalboxsize:
-					if 'x' not in options.finalboxsize:
+					if 'x' not in str(options.finalboxsize):
 						print "\nThere is no x factor in finalboxsize"
 						finalboxsize = int( float(options.finalboxsize) )
 					else:
@@ -368,7 +374,8 @@ def main():
 					
 				else:
 					options.finalboxsize = max( int(modelhdr['nx']), int(modelhdr['ny']), int(modelhdr['nz']) )
-
+				
+				print "\n(e2spt_simulation.py)(main) Model to read is", options.input
 				model = EMData(options.input,0)
 							
 				retrand = randomizer(options, model,tag)
@@ -459,7 +466,98 @@ def sptmakecube( options ):
 	return
 
 
-def preprocess(options,stack):
+def clip3D( vol, size ):
+	
+	volxc = vol['nx']/2
+	volyc = vol['ny']/2
+	volzc = vol['nz']/2
+	
+	Rvol =  Region( (2*volxc - size)/2, (2*volyc - size)/2, (2*volzc - size)/2, size , size , size)
+	vol.clip_inplace( Rvol )
+	#vol.process_inplace('mask.sharp',{'outer_radius':-1})
+	
+	return vol
+
+
+def clip2D( img, size ):
+	
+	imgxc = img['nx']/2
+	imgyc = img['ny']/2
+	#imgzc = img['nz']/2
+	
+	Rimg =  Region( (2*imgxc - size)/2, (2*imgyc - size)/2, 0, size , size , 1)
+	img.clip_inplace( Rimg )
+	#img.process_inplace('mask.sharp',{'outer_radius':-1})
+	
+	return img
+
+
+def preprocess(options,stack,dimension):
+	
+	print "\n(e2spt_simulation.py)(preprocess), dimension is", dimension
+	
+	preprocessed = stack.replace('.hdf','_preproc.hdf')
+	
+	#cmd = 'e2proc3d.py ' + stack + ' ' + preprocessed
+	
+	#if dimension == 2:
+	#	cmd = 'e2proc2d.py ' + stack + ' ' + preprocessed
+	
+	cmd = 'cp ' + stack + ' ' + preprocessed
+	
+	
+	print "Cmd to run is",cmd
+	os.system( cmd )
+
+	
+	hdr = EMData(stack,0,True)
+	newsize=hdr['nx']
+	nf = EMUtil.get_image_count(stack)
+	
+	print "Read header. nf is", nf
+	if options.shrink and int(options.shrink) > 1:
+		newsize = newsize/options.shrink	
+		if newsize % 2:
+			newsize += 1
+	
+		shrinkcmd='e2proc3d.py ' + preprocessed + ' ' + preprocessed + ' --process=math.meanshrink:n=' + str(options.shrink)
+		if dimension == 2:
+			preproctmp = preprocessed.replace('.hdf','_tmp.hdf')	
+			shrinkcmd='e2proc2d.py ' + preprocessed + ' ' + preproctmp + ' --process=math.meanshrink:n=' + str(options.shrink)
+			shrinkcmd += ' rm ' + preprocessed + ' && mv ' + preproctmp + ' ' + preprocessed
+			 
+		p=subprocess.Popen( shrinkcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		text=p.communicate()	
+		p.stdout.close()
+	
+	if options.pad and float(options.pad) > 1.0:
+		newsize *= options.pad
+		newsize = int( round( newsize ) )
+	
+		if newsize % 2:
+			newsize += 1
+		
+		clipcmd = 'e2proc3d.py ' + preprocessed + ' ' + preprocessed + ' --clip=' + str(newsize)
+		clipcmd += '&& e2fixheaderparam.py --input=' + preprocessed + ' --stem=origin --stemval=0.0'
+		if dimension == 2:
+			preproctmp = preprocessed.replace('.hdf','_tmp.hdf')	
+			clipcmd ='e2proc2d.py ' + preprocessed + ' ' + preproctmp + ' --clip' + str( newsize ) + ',' + str( newsize )
+			clipcmd += ' rm ' + preprocessed + ' && mv ' + preproctmp + ' ' + preprocessed
+		
+		p=subprocess.Popen( clipcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		text=p.communicate()	
+		p.stdout.close()
+	
+		options.input = preprocessed
+		
+	if options.filter:
+		pass #Filter not working for now
+	
+	print "\n(e2spt_simulation.py)(preprocess) Exiting function preprocess"
+	return [options,preprocessed]
+	
+
+def preprocess2D(options,stack):
 		
 	preprocessed = stack.replace('.hdf','_preproc.hdf')
 	
@@ -480,27 +578,6 @@ def preprocess(options,stack):
 		p=subprocess.Popen( shrinkcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		text=p.communicate()	
 		p.stdout.close()
-
-	if options.pad and float(options.pad) > 1.0:
-		newsize *= options.pad
-		newsize = int( round( newsize ) )
-		
-		clipcmd = 'e2proc3d.py ' + preprocessed + ' ' + preprocessed + ' --clip=' + str(newsize)
-		p=subprocess.Popen( clipcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		text=p.communicate()	
-		p.stdout.close()
-	
-		fixcmd = 'e2fixheaderparam.py --input=' + preprocessed + ' --stem=origin --stemval=0.0'
-		p=subprocess.Popen( fixcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		text=p.communicate()	
-		p.stdout.close()
-		
-		options.input = preprocessed
-		
-	if options.filter:
-		pass #Filter not working for now
-		
-	
 
 	return [options,preprocessed]
 	
@@ -842,13 +919,16 @@ class SubtomoSimTask(JSTask):
 				t = Transform({'type':'eman','az':0,'alt':realalt,'phi':0})				
 		
 			if dimension == 2:
-			
+				
 				t = Transform({'type':'eman','az':realalt,'alt':0,'phi':0})
+				#print "\n\nUSING 2D transform!!!!", t
+				#sys.exit()
+			
 			
 			dz = -1 * px * numpy.sin(realalt)							#Calculate the defocus shift per picture, per particle, depending on the 
-																	#particle's position relative to the tilt axis. For particles left of the tilt axis,
-																	#px is negative. With negative alt [left end of the ice down, right end up], 
-																	#dz should be negative.
+																		#particle's position relative to the tilt axis. For particles left of the tilt axis,
+																		#px is negative. With negative alt [left end of the ice down, right end up], 
+																		#dz should be negative.
 			defocus = options.defocus + dz
 			
 			
@@ -877,8 +957,8 @@ class SubtomoSimTask(JSTask):
 			prj.set_attr('xform.projection',t)
 			prj['apix_x']=apix
 			prj['apix_y']=apix
-			prj['sptsim_tiltangle']=realalt
-			prj['sptsim_tiltaxis']=options.tiltaxis
+			prj['spt_tiltangle']=realalt
+			prj['spt_tiltaxis']=options.tiltaxis
 		
 			#print "\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\nThe size of the prj is", prj['nx']
 			#print "\n"
@@ -980,11 +1060,11 @@ class SubtomoSimTask(JSTask):
 					#sys.exit()
 					
 		
-		r = Reconstructors.get(options.reconstructor[0],{'size':(box,box,box),'sym':'c1','verbose':True,'mode':'gauss_2'})
+		r = Reconstructors.get(options.reconstructor[0],{'size':(box,box,box),'sym':'c1','verbose':True,'mode':mode})
 		
 		if dimension == 2:
 			print "Boxsize to set up 2D reconstructor is", box,box
-			r = Reconstructors.get(options.reconstructor[0],{'size':(box,box,1),'sym':'c1','verbose':True,'mode':'gauss_2'})
+			r = Reconstructors.get(options.reconstructor[0],{'size':(box,box,1),'sym':'c1','verbose':True,'mode':mode})
 
 		#
 		#r = Reconstructors.get(options.reconstructor[0],options.reconstructor[1])
@@ -997,8 +1077,8 @@ class SubtomoSimTask(JSTask):
 			print "Adding projection k", k
 			print "Whose min and max are", p['minimum'], p['maximum']
 			#print "The size of the prj to insert is", p['nx']
-			p = r.preprocess_slice(p,p['xform.projection'])
-			r.insert_slice(p,p['xform.projection'],1.0)
+			pm = r.preprocess_slice(p,p['xform.projection'])
+			r.insert_slice(pm,pm['xform.projection'],1.0)
 			k+=1
 		
 		#print "\n\n!!!!!!Will reconstruct the volume for particle i",i
