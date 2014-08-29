@@ -155,8 +155,6 @@ def main():
 	# Get Tomogram data
 	img, dim, options = get_tomo_data( options, imgnum )
 	xlen = dim[0]
-	#ylen = dim[1]
-	#zlen = dim[2]
 	
 	# Projection operator and projections data, with noise
 	projection_operator = build_projection_operator( options, xlen, nslices, None, subpix, 0, None)
