@@ -88,7 +88,7 @@ def main():
 		exit(1)
 	if options.tiltseries : 
 		infile = options.tiltseries
-		if options.imgnum : imgnum = options.imgnum
+		if options.imgnum != 0: imgnum = options.imgnum
 		else:
 			if options.verbose > 0: print "No image number specified. Using the 0th image tiltseries."
 			imgnum = 0
