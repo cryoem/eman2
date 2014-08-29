@@ -30,6 +30,8 @@
 #
 #
 
+#  VERSION 2  08/29/2014
+
 from EMAN2 import *
 from sparx import *
 import os
@@ -238,22 +240,22 @@ def main():
 		nn = EMUtil.get_image_count(inputbdb)
 		t = range(nn)
 		shuffle(t)
-		n4 = nn//4
-		nn = 4*n4
-		t = t[:nn]
-
+		chunks = []
 		for i in xrange(4):
-			temp = t[i*n4:(i+1)*n4]
-			temp.sort()
-			t[i*n4:(i+1)*n4] = temp
+			#  I use the MPI function here just to easily get the balanced load
+			j,k = = MPI_start_end(t, 4, i)
+			chunks.append(t[j:k])
+			chunks[i].sort()
+			write_text_file(chunks[i],os.path.join(outdir,'chunk%1d.txt'%i))
 
-		del temp
+		del t
+		write_text_file([ len(chunks[i]) for i in xrange(4) ],os.path.join(outdir,'chunklengths.txt'))
 
 		pt = [[None]]*6
 		ll=0
 		for i in xrange(3):
 			for j in xrange(i+1,4):
-				pt[ll]=t[i*n4:(i+1)*n4]+t[j*n4:(j+1)*n4]
+				pt[ll] = chunks[i]+chunks[j]
 				ll+=1
 
 		for i in xrange(6):
@@ -320,205 +322,102 @@ def main():
 		sym = int(options.sym[1:])
 		qsym = 360.0/sym
 
+		pairs = [[0,1],[3,4],[1,5],[2,4]]
+		bpair = [[0,0],[0,0],[1,0],[1,1]]
+
 		prms = []
 		for i in xrange(6):
 			prms.append(read_text_row(os.path.join(outdir,options.params+"%1d.txt"%i)))
+		chunks = []
+		chunklengths = []
+		for i in xrange(4):
+			chunks.append(map(int,read_text_row(os.path.join(outdir,"chunk"+"%1d.txt"%i))))
+			chunklengths.append(len(chunks[i]))
 
-			if  False:
-				# perturb params
-				for k in xrange(len(prms[-1])):
-					from random import randint, random
-					prms[-1][k][1] += (random()-0.5)*12
-					prms[-1][k][-1] += randint(-3,3)
-					prms[-1][k][-2] += randint(-3,3)
+		bpair[2][0] = chunklengths[0]
+		bpair[3][0] = chunklengths[0]
+		bpair[3][1] = chunklengths[1]
 
-
-
-		nn = 2*len(prms[0])
-		n4 = nn//4
-		qt=[[[-1.0]]*nn for i in xrange(6)]
-		ll=0
-		for i in xrange(3):
-			for j in xrange(i+1,4):
-				qt[ll][i*n4:(i+1)*n4]=prms[ll][:n4]
-				qt[ll][j*n4:(j+1)*n4]=prms[ll][n4:]
-				ll+=1
-		asi = [[-10 for i in xrange(6)] for j in xrange(4)]
-		ll=0
-		for i in xrange(3):
-			for j in xrange(i+1,4):
-				asi[i][ll]=i
-				asi[j][ll]=j
-				ll+=1
-		#for i in xrange(len(asi)):  print asi[i]
-
-		proci = [[True for i in xrange(6)] for j in xrange(4)]
-		for lin in xrange(4):
-				for j in xrange(6):
-					if(asi[lin][j] == -10):  proci[lin][j] = False
-				#print proci[lin]
 
 		"""
-		#compoundrotations = [[[Transform({"type":"spider"}), False]] for i in xrange(6)]
-		
+		#  These are beginnings of A,B,C,D if put consecutively
+		chunkbrackets = []
+		nn = 0
+		for i in xrange(4):
+			eb = nn+chunklengths[i]
+			chunkbrackets.append([nn,eb])
+			nn = eb
+		"""
 
-		print  "  ALIGNMENT"
-		for lin in xrange(3):
-			#  Align to the first one in a row, apply to other rows
-			#   last row does not have to be processed as it is implied
-			fifi = []
-			for j in xrange(6):
-				if(asi[lin][j] != -10):
-					fifi.append(qt[j][lin*n4:(lin+1)*n4])
-					break
-			#  Set corresponding entries in subsequent lines to False
-			#  This could be done AFTER the alignment of the current row
-			k=j
-			#print  "  next fifi ", k
-			whichone = [k]
-			for j in xrange(k+1,6):
-				if(proci[lin][j]):
-					fifi.append(qt[j][lin*n4:(lin+1)*n4])
-					whichone.append(j)
-			for nlin in xrange(lin+1,4):
-				for j in xrange(6):
-					if(asi[lin][j] != -10 and asi[nlin][j] != -10):
-						proci[nlin][j] = False
+		#  Compute average projection params and pixel errors
+		avgtrans = [0.0]*nn
+		pixer    = [0.0]*nn
+		l = 0
+		for i in xrange(4):
+			for j in xrange(chunklengths[i]):
+				fifi = [ prms[pairs[i][0]][bpair[i][0]+j], prms[pairs[i][1]][bpair[i][1]+j] ]
+				pixer[l] = max_3D_pixel_error(p1, p2, r=radius)
 
-			#print len(fifi)
-			for j in xrange(1,len(fifi)):
-				if( sym == 1 ):
-					t1, t2, t3 = rotation_between_anglesets(fifi[j], fifi[0])
-					print "Rotation_between_anglesets  ",whichone[j],t1,t2,t3
-					#compoundrotations[whichone[j]][0] = [Transform({"type":"spider","phi":t1,"theta":t2,"psi":t3}), False]
-					#for ll in xrange(nn):  print  qt[whichone[j]][ll]
-					apply_rotation_gaps(qt[whichone[j]],[t1,t2,t3])
-					#for ll in xrange(nn):  print  qt[whichone[j]][ll]
+				nas = [0.0,0.0,0.0]
+				if( sym == 1):
+					for i in xrange(2):
+						n1,n2,n3 = getfvec(fifi[i][0],fifi[i][1])
+						nas[0] += n1
+						nas[1] += n2
+						nas[2] += n3
 				else:
-					#  For higher symmetry only phi angle, rotation around z-axis
-					t1 = angle_diff_sym(fifi[j], fifi[0], sym)
-					print "angle_diff_sym  ",whichone[0],whichone[j],t1
-					#print  ' 0 ',fifi[0][:7]
-					#print  ' j ',j,fifi[j][:7]
-					#for ll in xrange(nn):  
-					#if(j == 2):  print  "BB  ",j, whichone[j],qt[whichone[j]][ll]
-					for ll in xrange(nn):
-						if(len(qt[whichone[j]][ll]) > 1):
-							if(qt[whichone[j]][ll][1] > 90.0):
-								qt[whichone[j]][ll][0] = (qt[whichone[j]][ll][0] + t1 - 180.0)%qsym + 180.0
-							else:
-								qt[whichone[j]][ll][0] = (qt[whichone[j]][ll][0] + t1)%qsym
+					m1,m2,m3 = getfvec(fifi[0][0],fifi[0][1])
+					nas[0] = m1
+					nas[1] = m2
+					nas[2] = m3
+					#if(k == 2):
+					#	print  "XXXX"
+					#	print fifi[0],nas
+					for i in xrange(1,2):
+						qnom = -1.e10
+						for j in xrange(-1,2,1):
+							t1,t2,t3 = getfvec(fifi[i][0]+j*qsym,fifi[i][1])
+							nom = t1*m1 + t2*m2 + t3*m3
+							if(nom > qnom):
+								qnom = nom
+								n1=t1
+								n2=t2
+								n3=t3
+							#if(k == 2):
+							#	print '  t1,t2,t3 ',fifi[i][0]+j*qsym,fifi[i][1],t1,t2,t3,nom,qnom
+						nas[0] += n1
+						nas[1] += n2
+						nas[2] += n3
+						print qnom, n1,n2,n3,nas
 
-					#for ll in xrange(nn):
-					#if(j == 2):  print  "AA  ",j,whichone[j],qt[whichone[j]][ll]
-		print
-		#  Check mirroring
-		#    [column of qt as template,  block of qt for comparison]
-		refc = [[],[0,0],[0,0], [0,1], [0,1], [1,2]]
-		for j in xrange(1,6):
-			psi_diff = angle_diff( \
-			[ qt[refc[j][0]][i+n4*refc[j][1]][2] for i in xrange(n4)], [qt[j][i+n4*refc[j][1]][2] for i in xrange(n4)] )
-			if(abs(psi_diff-180.0) <90.0):
-				#mirror
-				#compoundrotations[j][-1][-1] = not compoundrotations[j][-1][-1]
-				for i in xrange(nn):
-					if(len(qt[j][i]) > 1):  qt[j][i][2] = (qt[j][i][2] + 180.0) % 360.0
-		"""
+				nom = sqrt(nas[0]**2 + nas[1]**2 + nas[2]**2)
 
-		#  Compute average projection params
-		avgtrans = [[0.0 for i in xrange(5)] for j in xrange(nn)]
-		from math import sqrt, acos, degrees
-		for k in xrange(nn):
-			fifi = []
-			twod = []
-			for i in xrange(6):
-				if(len(qt[i][k]) > 1):
-					fifi.append(qt[i][k][:2])
-					twod.append(qt[i][k][2:])
-			assert(len(fifi) == 3)
-			#print fifi
-			nas = [0.0,0.0,0.0]
-			if( sym == 1):
-				for i in xrange(3):
-					n1,n2,n3 = getfvec(fifi[i][0],fifi[i][1])
-					nas[0] += n1
-					nas[1] += n2
-					nas[2] += n3
-			else:
-				m1,m2,m3 = getfvec(fifi[0][0],fifi[0][1])
-				nas[0] = m1
-				nas[1] = m2
-				nas[2] = m3
-				#if(k == 2):
-				#	print  "XXXX"
-				#	print fifi[0],nas
-				for i in xrange(1,3):
-					qnom = -1.e10
-					for j in xrange(-1,2,1):
-						t1,t2,t3 = getfvec(fifi[i][0]+j*qsym,fifi[i][1])
-						nom = t1*m1 + t2*m2 + t3*m3
-						if(nom > qnom):
-							qnom = nom
-							n1=t1
-							n2=t2
-							n3=t3
-						#if(k == 2):
-						#	print '  t1,t2,t3 ',fifi[i][0]+j*qsym,fifi[i][1],t1,t2,t3,nom,qnom
-					nas[0] += n1
-					nas[1] += n2
-					nas[2] += n3
-					print qnom, n1,n2,n3,nas
+				if(nom < 1.e-6):
+					nphi   = 0.0
+					ntheta = 0.0
+				else:
+					ntheta = degrees(acos(nas[2]/nom))%360.0
+					if(sym>1 and ntheta>90.0):  nphi   = (degrees(atan2( nas[1], nas[0] ))-180.0)%qsym + 180.0
+					else:                       nphi   = degrees(atan2( nas[1], nas[0] ))%qsym
 
-			nom = sqrt(nas[0]**2 + nas[1]**2 + nas[2]**2)
+				#print   "FIFI     %4d     %7.2f     %7.2f    %7.2f    %7.2f     %7.2f     %7.2f    %7.2f    %7.2f"%(k,fifi[0][0],fifi[0][1],fifi[1][0],fifi[1][1],fifi[2][0],fifi[2][1],nphi,ntheta)
+				twod = average2dtransform(twod)
+				avgtrans[k] = [nphi, ntheta, twod[0], twod[1], twod[2]]
 
-			if(nom < 1.e-6):
-				nphi   = 0.0
-				ntheta = 0.0
-			else:
-				ntheta = degrees(acos(nas[2]/nom))%360.0
-				if(sym>1 and ntheta>90.0):  nphi   = (degrees(atan2( nas[1], nas[0] ))-180.0)%qsym + 180.0
-				else:                       nphi   = degrees(atan2( nas[1], nas[0] ))%qsym
+				l += 1
 
-			#print   "FIFI     %4d     %7.2f     %7.2f    %7.2f    %7.2f     %7.2f     %7.2f    %7.2f    %7.2f"%(k,fifi[0][0],fifi[0][1],fifi[1][0],fifi[1][1],fifi[2][0],fifi[2][1],nphi,ntheta)
-			twod = average2dtransform(twod)
-			avgtrans[k] = [nphi, ntheta, twod[0], twod[1], twod[2]]
 
-		"""
-		print
-		for k in xrange(nn):
-			for j in xrange(6):
-				print j,qt[j][k]
-				print "     %4d     %7.2f     %7.2f       %7.2f     %7.2f     %7.2f"%(j,qt[j][k][0],qt[j][k][1],qt[j][k][2],qt[j][k][3],qt[j][k][4])
-			print "AVGTRANS     %4d     %7.2f     %7.2f       %7.2f     %7.2f     %7.2f"%(k,avgtrans[k][0],avgtrans[k][1],avgtrans[k][2],avgtrans[k][3],avgtrans[k][4])
-			print
-		"""
 
-		#perr = errors_per_image(nn, qt, asi, avgtrans, thresherr, radius)
-		#os.system('mv per.txt  fper.txt')
-		#exit()
 		perr = [True]*nn
-		ngood = nn
-
-		#  Align columns to the average, apply
-		for j in xrange(6):
-			fifi = []
-			tavgtrans = []
-			for lin in xrange(4):
-				if(asi[lin][j] != -10):
-					for k in xrange(lin*n4,(lin+1)*n4,1):
-						if  perr[k]:
-							fifi.append( qt[j][k] )
-							tavgtrans.append(avgtrans[k])
-
-		perr = errors_per_image(nn, qt, asi, avgtrans, thresherr, radius)
 		tgood = 0
 		for k in xrange(nn):
+			if(pixer[k] > threshold):  perr[k] = False
 			if  perr[k]: tgood += 1
 		print tgood,ngood
 		elif(tgood < 4):
-			print "  No good images within the pixel error threshold specified (within trimming)"
+			print "  No good images within the pixel error threshold specified"
 			exit()
-		else:                  ngood = tgood
+		else:     ngood = tgood
 
 		#  Finished, store average orientation params and table of good images
 
@@ -562,7 +461,7 @@ def main():
 		qt = []
 		for i in xrange(nt):
 			if perr[i]: qt.append(i)
-	
+
 		if(len(qt)  >  0):
 			write_text_file(qt, os.path.join(outdir,outgoody) )
 			if(len(qt)<nt):
@@ -580,440 +479,8 @@ def main():
 		=   =   D   =   D   D
 
 		"""
-	"""
-	#  WHAT FOLLOWS IS THE THE ORIGINAL VERSION WITH ALIGNMENT OF PARAMETERS
-	elif options.phase == 3 and len(args) == 7:
-		inputbdb    = args[0]
-		outdir      = args[1]
-		outavgtrans = args[2]
-		outgoody    = args[3]
-		outbad      = args[4]
-		outgrouparms= args[5]
-		goodpergroup= args[6]
-		radius = options.ou
-		thresherr = options.thresherr  #for chc5 1, for ribo 4#4.0
-		sym = int(options.sym[1:])
-		qsym = 360.0/sym
-
-		prms = []
-		for i in xrange(6):
-			prms.append(read_text_row(os.path.join(outdir,options.params+"%1d.txt"%i)))
-
-			if  False:
-				# perturb params
-				for k in xrange(len(prms[-1])):
-					from random import randint, random
-					prms[-1][k][1] += (random()-0.5)*12
-					prms[-1][k][-1] += randint(-3,3)
-					prms[-1][k][-2] += randint(-3,3)
-
-		#for i in xrange(3):
-		#	prms[i][0][0] += 23.*i
-		#	prms[i][0][1] += 17.*i
-		"""
-		cmd = '{}'.format('rm -f jnkxyyt.txt')
-		subprocess.call(cmd, shell=True)
-		"""
-
-		"""########################  Test of rotation of angles
-		temp = prms[0][:10]
-		for i in xrange(len(temp)):   print "     %7.2f     %7.2f     %7.2f     %7.2f     %7.2f"%(temp[i][0],temp[i][1],temp[i][2],temp[i][3],temp[i][4])
-		print
-		rot = Transform({"type":"spider","phi":33.,"theta":77.,"psi":19.})
-		apply_rotation(temp, rot)
-		for i in xrange(len(temp)):   print "     %7.2f     %7.2f     %7.2f     %7.2f     %7.2f"%(temp[i][0],temp[i][1],temp[i][2],temp[i][3],temp[i][4])
-		print
-		t1,t2,t3 = rotation_between_anglesets(temp, prms[0][:10])
-		print  t1,t2,t3
-		print
-		apply_rotation(temp, [t1,t2,t3])
-		for i in xrange(len(temp)):   print "     %7.2f     %7.2f     %7.2f     %7.2f     %7.2f"%(temp[i][0],temp[i][1],temp[i][2],temp[i][3],temp[i][4])
-		exit()
-		#############################"""
 
 
-		nn = 2*len(prms[0])
-		n4 = nn//4
-		qt=[[[-1.0]]*nn for i in xrange(6)]
-		ll=0
-		for i in xrange(3):
-			for j in xrange(i+1,4):
-				qt[ll][i*n4:(i+1)*n4]=prms[ll][:n4]
-				qt[ll][j*n4:(j+1)*n4]=prms[ll][n4:]
-				ll+=1
-		asi = [[-10 for i in xrange(6)] for j in xrange(4)]
-		ll=0
-		for i in xrange(3):
-			for j in xrange(i+1,4):
-				asi[i][ll]=i
-				asi[j][ll]=j
-				ll+=1
-		#for i in xrange(len(asi)):  print asi[i]
-
-		proci = [[True for i in xrange(6)] for j in xrange(4)]
-		for lin in xrange(4):
-				for j in xrange(6):
-					if(asi[lin][j] == -10):  proci[lin][j] = False
-				#print proci[lin]
-
-		#compoundrotations = [[[Transform({"type":"spider"}), False]] for i in xrange(6)]
-		
-
-		print  "  ALIGNMENT"
-		for lin in xrange(3):
-			#  Align to the first one in a row, apply to other rows
-			#   last row does not have to be processed as it is implied
-			fifi = []
-			for j in xrange(6):
-				if(asi[lin][j] != -10):
-					fifi.append(qt[j][lin*n4:(lin+1)*n4])
-					break
-			#  Set corresponding entries in subsequent lines to False
-			#  This could be done AFTER the alignment of the current row
-			k=j
-			#print  "  next fifi ", k
-			whichone = [k]
-			for j in xrange(k+1,6):
-				if(proci[lin][j]):
-					fifi.append(qt[j][lin*n4:(lin+1)*n4])
-					whichone.append(j)
-			for nlin in xrange(lin+1,4):
-				for j in xrange(6):
-					if(asi[lin][j] != -10 and asi[nlin][j] != -10):
-						proci[nlin][j] = False
-
-			#print len(fifi)
-			for j in xrange(1,len(fifi)):
-				if( sym == 1 ):
-					t1, t2, t3 = rotation_between_anglesets(fifi[j], fifi[0])
-					print "Rotation_between_anglesets  ",whichone[j],t1,t2,t3
-					#compoundrotations[whichone[j]][0] = [Transform({"type":"spider","phi":t1,"theta":t2,"psi":t3}), False]
-					#for ll in xrange(nn):  print  qt[whichone[j]][ll]
-					apply_rotation_gaps(qt[whichone[j]],[t1,t2,t3])
-					#for ll in xrange(nn):  print  qt[whichone[j]][ll]
-				else:
-					#  For higher symmetry only phi angle, rotation around z-axis
-					t1 = angle_diff_sym(fifi[j], fifi[0], sym)
-					print "angle_diff_sym  ",whichone[0],whichone[j],t1
-					#print  ' 0 ',fifi[0][:7]
-					#print  ' j ',j,fifi[j][:7]
-					#for ll in xrange(nn):  
-					#if(j == 2):  print  "BB  ",j, whichone[j],qt[whichone[j]][ll]
-					for ll in xrange(nn):
-						if(len(qt[whichone[j]][ll]) > 1):
-							if(qt[whichone[j]][ll][1] > 90.0):
-								qt[whichone[j]][ll][0] = (qt[whichone[j]][ll][0] + t1 - 180.0)%qsym + 180.0
-							else:
-								qt[whichone[j]][ll][0] = (qt[whichone[j]][ll][0] + t1)%qsym
-
-					#for ll in xrange(nn):
-					#if(j == 2):  print  "AA  ",j,whichone[j],qt[whichone[j]][ll]
-		print
-		#  Check mirroring
-		#    [column of qt as template,  block of qt for comparison]
-		refc = [[],[0,0],[0,0], [0,1], [0,1], [1,2]]
-		for j in xrange(1,6):
-			psi_diff = angle_diff( \
-			[ qt[refc[j][0]][i+n4*refc[j][1]][2] for i in xrange(n4)], [qt[j][i+n4*refc[j][1]][2] for i in xrange(n4)] )
-			if(abs(psi_diff-180.0) <90.0):
-				#mirror
-				#compoundrotations[j][-1][-1] = not compoundrotations[j][-1][-1]
-				for i in xrange(nn):
-					if(len(qt[j][i]) > 1):  qt[j][i][2] = (qt[j][i][2] + 180.0) % 360.0
-
-		#  Compute average projection params
-		avgtrans = [[0.0 for i in xrange(5)] for j in xrange(nn)]
-		from math import sqrt, acos, degrees
-		for k in xrange(nn):
-			fifi = []
-			twod = []
-			for i in xrange(6):
-				if(len(qt[i][k]) > 1):
-					fifi.append(qt[i][k][:2])
-					twod.append(qt[i][k][2:])
-			assert(len(fifi) == 3)
-			#print fifi
-			nas = [0.0,0.0,0.0]
-			if( sym == 1):
-				for i in xrange(3):
-					n1,n2,n3 = getfvec(fifi[i][0],fifi[i][1])
-					nas[0] += n1
-					nas[1] += n2
-					nas[2] += n3
-			else:
-				m1,m2,m3 = getfvec(fifi[0][0],fifi[0][1])
-				nas[0] = m1
-				nas[1] = m2
-				nas[2] = m3
-				#if(k == 2):
-				#	print  "XXXX"
-				#	print fifi[0],nas
-				for i in xrange(1,3):
-					qnom = -1.e10
-					for j in xrange(-1,2,1):
-						t1,t2,t3 = getfvec(fifi[i][0]+j*qsym,fifi[i][1])
-						nom = t1*m1 + t2*m2 + t3*m3
-						if(nom > qnom):
-							qnom = nom
-							n1=t1
-							n2=t2
-							n3=t3
-						#if(k == 2):
-						#	print '  t1,t2,t3 ',fifi[i][0]+j*qsym,fifi[i][1],t1,t2,t3,nom,qnom
-					nas[0] += n1
-					nas[1] += n2
-					nas[2] += n3
-					print qnom, n1,n2,n3,nas
-
-			nom = sqrt(nas[0]**2 + nas[1]**2 + nas[2]**2)
-
-			if(nom < 1.e-6):
-				nphi   = 0.0
-				ntheta = 0.0
-			else:
-				ntheta = degrees(acos(nas[2]/nom))%360.0
-				if(sym>1 and ntheta>90.0):  nphi   = (degrees(atan2( nas[1], nas[0] ))-180.0)%qsym + 180.0
-				else:                       nphi   = degrees(atan2( nas[1], nas[0] ))%qsym
-
-			#print   "FIFI     %4d     %7.2f     %7.2f    %7.2f    %7.2f     %7.2f     %7.2f    %7.2f    %7.2f"%(k,fifi[0][0],fifi[0][1],fifi[1][0],fifi[1][1],fifi[2][0],fifi[2][1],nphi,ntheta)
-			twod = average2dtransform(twod)
-			avgtrans[k] = [nphi, ntheta, twod[0], twod[1], twod[2]]
-
-		"""
-		print
-		for k in xrange(nn):
-			for j in xrange(6):
-				print j,qt[j][k]
-				print "     %4d     %7.2f     %7.2f       %7.2f     %7.2f     %7.2f"%(j,qt[j][k][0],qt[j][k][1],qt[j][k][2],qt[j][k][3],qt[j][k][4])
-			print "AVGTRANS     %4d     %7.2f     %7.2f       %7.2f     %7.2f     %7.2f"%(k,avgtrans[k][0],avgtrans[k][1],avgtrans[k][2],avgtrans[k][3],avgtrans[k][4])
-			print
-		"""
-
-		#perr = errors_per_image(nn, qt, asi, avgtrans, thresherr, radius)
-		#os.system('mv per.txt  fper.txt')
-		#exit()
-		#  Repeat from here after trimming outliers
-		trimming = True
-		perr = [True]*nn
-		ngood = nn
-		while(trimming):
-			#  Given first set of average parameters, keep refining transformations and updating the average parameters
-			print  "  REFINEMENT  "
-			changes = True
-			while(changes):
-				#  Align columns to the average, apply 
-				for j in xrange(6):
-					fifi = []
-					tavgtrans = []
-					for lin in xrange(4):
-						if(asi[lin][j] != -10):
-							for k in xrange(lin*n4,(lin+1)*n4,1):
-								if  perr[k]:
-									fifi.append( qt[j][k] )
-									tavgtrans.append(avgtrans[k])
-					if(len(fifi)< 4):
-						print "  No good images within the pixel error threshold specified (within changes)"
-						exit()
-
-					if( sym == 1 ):
-						t1, t2, t3 = rotation_between_anglesets(fifi, tavgtrans)
-						print "Rotation between angleset and average orientation ",j,t1,t2,t3
-						#compoundrotations[j].append([Transform({"type":"spider","phi":t1,"theta":t2,"psi":t3}), False])
-						#d = compoundrotations[j][-1][0].get_params("spider")
-						#print "Compound Rotation between angleset and average orientation ",j,d["phi"], d["theta"], d["psi"]
-						apply_rotation_gaps(qt[j],[t1,t2,t3])
-					else:
-						#  For higher symmetry only phi angle, rotation around z-axis
-						t1 = angle_diff_sym(fifi, tavgtrans, sym)
-						print " rot  ",t1
-						for ll in xrange(nn):
-							if(len(qt[j][ll]) > 1):
-								if(qt[j][ll][1] > 90.0):
-									qt[j][ll][0] = (qt[j][ll][0] + t1 - 180.0)%qsym + 180.0
-								else:
-									qt[j][ll][0] = (qt[j][ll][0] + t1)%qsym
-				#check mirror
-				for j in xrange(6):
-					fifi = []
-					tavgtrans = []
-					for lin in xrange(4):
-						if(asi[lin][j] != -10):
-							for k in xrange(lin*n4,(lin+1)*n4,1):
-								if  perr[k]:
-									fifi.append( qt[j][k] )
-									tavgtrans.append(avgtrans[k])
-					psi_diff = angle_diff( \
-								[ fifi[i][2] for i in xrange(len(fifi))], [tavgtrans[i][2] for i in xrange(len(fifi))] )
-					if(abs(psi_diff-180.0) <90.0):
-						#mirror
-						#compoundrotations[j][-1][-1] = not compoundrotations[j][-1][-1]
-						for i in xrange(nn):
-							if(len(qt[j][i]) > 1):  qt[j][i][2] = (qt[j][i][2] + 180.0) % 360.0
-
-				#  Compute average projection params
-				from math import sqrt, acos, degrees
-				tavgtrans = [[0.0 for i in xrange(5)] for j in xrange(nn)]
-				for k in xrange(nn):
-					fifi = []
-					twod = []
-					for i in xrange(6):
-						if(len(qt[i][k]) > 1):
-							fifi.append(qt[i][k][:2])
-							twod.append(qt[i][k][2:])
-					assert(len(fifi) == 3)
-					#print fifi
-					nas = [0.0,0.0,0.0]
-					if( sym == 1):
-						for i in xrange(3):
-							n1,n2,n3 = getfvec(fifi[i][0],fifi[i][1])
-							nas[0] += n1
-							nas[1] += n2
-							nas[2] += n3
-					else:
-						m1,m2,m3 = getfvec(fifi[0][0],fifi[0][1])
-						nas[0] = m1
-						nas[1] = m2
-						nas[2] = m3
-						for i in xrange(1,3):
-							qnom = -1.e10
-							for j in xrange(-1,2,1):
-								t1,t2,t3 = getfvec(fifi[i][0]+j*qsym,fifi[i][1])
-								nom = t1*m1 + t2*m2 + t3*m3
-								if(nom > qnom):
-									qnom = nom
-									n1=t1
-									n2=t2
-									n3=t3
-							nas[0] += n1
-							nas[1] += n2
-							nas[2] += n3
-
-					nom = sqrt(nas[0]**2 + nas[1]**2 + nas[2]**2)
-
-					if(nom < 1.e-6):
-						nphi   = 0.0
-						ntheta = 0.0
-					else:
-						ntheta = degrees(acos(nas[2]/nom))%360.0
-						if(sym>1 and ntheta>90.0):  nphi   = (degrees(atan2( nas[1], nas[0] ))-180.0)%qsym + 180.0
-						else:                       nphi   = degrees(atan2( nas[1], nas[0] ))%qsym
-
-
-					#print   "     %4d     %7.2f     %7.2f    %7.2f    %7.2f     %7.2f     %7.2f    %7.2f    %7.2f"%(k,fifi[0][0],fifi[0][1],fifi[1][0],fifi[1][1],fifi[2][0],fifi[2][1],nphi,ntheta)
-
-					twod = average2dtransform(twod)
-					tavgtrans[k] = [nphi, ntheta, twod[0], twod[1], twod[2]]
-				"""
-				#exit()
-				for k in xrange(nn//2):
-					for j in xrange(3):
-						print "     %4d     %7.2f     %7.2f       %7.2f     %7.2f     %7.2f"%(j,qt[j][k][0],qt[j][k][1],qt[j][k][2],qt[j][k][3],qt[j][k][4])
-					print "     %4d     %7.2f     %7.2f       %7.2f     %7.2f     %7.2f"%(k,avgtrans[k][0],avgtrans[k][1],avgtrans[k][2],avgtrans[k][3],avgtrans[k][4])
-					print
-				"""
-				apd = 0.0
-				ll = 0
-				for k in xrange(nn):
-					if  perr[k]:
-						ll += 1
-						for u in xrange(5):
-							apd += abs(tavgtrans[k][u]-avgtrans[k][u])
-
-				apd/=(5*ll)
-				if(apd/5<1.0e-3):  changes=False
-				print "CHANGES:    ",apd/5,changes
-				for k in xrange(nn):  avgtrans[k] = tavgtrans[k]
-
-			"""
-			for k in xrange(nn):
-				for j in xrange(6):
-					if(len(qt[j][k]) > 1):
-						print "     %4d     %7.2f     %7.2f       %7.2f     %7.2f     %7.2f"%(j,qt[j][k][0],qt[j][k][1],qt[j][k][2],qt[j][k][3],qt[j][k][4])
-				print "     %4d     %7.2f     %7.2f       %7.2f     %7.2f     %7.2f"%(k,avgtrans[k][0],avgtrans[k][1],avgtrans[k][2],avgtrans[k][3],avgtrans[k][4])
-				print
-			"""
-			perr = errors_per_image(nn, qt, asi, avgtrans, thresherr, radius)
-			tgood = 0
-			for k in xrange(nn):
-				if  perr[k]: tgood += 1
-			print tgood,ngood
-			if( tgood == ngood ):  trimming = False
-			elif(tgood < 4):
-				print "  No good images within the pixel error threshold specified (within trimming)"
-				exit()
-			else:                  ngood = tgood
-
-		#  Finished, store average orientation params and table of good images
-
-		#  store lists of good images for each group
-		ll=0
-		for i in xrange(3):
-			for j in xrange(i+1,4):
-				pt = perr[i*n4:(i+1)*n4]+perr[j*n4:(j+1)*n4]
-				missing = []
-				for k in xrange(len(pt)):
-					if(pt[k]):  missing.append(k)
-				if(len(missing)>0):  write_text_file(missing,os.path.join(outdir,goodpergroup+'%1d.txt'%ll))
-				ll+=1
-
-
-
-		nt = EMUtil.get_image_count(inputbdb)
-		#  First restore the original ordering based on lili files, it is enough to concatenate first and last one.
-		lili = map(int,read_text_file(os.path.join(outdir,'lili0.txt'))) + map(int,read_text_file(os.path.join(outdir,'lili5.txt')))
-		for i in xrange(nn):
-			avgtrans[i] = [lili[i],avgtrans[i],perr[i]]
-		avgtrans.sort()
-		missing = []
-		for i in xrange(nt):
-			try:  k = lili.index(i)
-			except:  missing.append(k)
-		missing.sort()
-		print "missing  "  , missing
-		for i in xrange(nn):
-			perr[i] = avgtrans[i][-1]
-			avgtrans[i] = avgtrans[i][1] +  [perr[i]]  + [lili[i]]
-		for i in xrange(len(missing)):
-			avgtrans.insert(missing[i],[0,0,0,0,0,0,-1])
-			perr.insert(missing[i],False)
-		write_text_row(avgtrans, os.path.join(outdir,outavgtrans) )
-
-		#  Apply rotations found to full data sets and store the results:
-		for j in xrange(6):
-			'''
-			for i in xrange(len(compoundrotations[j])):
-				print j,i,compoundrotations[j][i]
-				apply_rotation(prms[j],compoundrotations[j][i][0])
-				if(compoundrotations[j][i][1]):
-					for k in xrange(len(prms[j])):  prms[j][k][2] = (prms[j][k][2]+180.)%360.0
-			write_text_row(prms[j],"cr%1d.txt"%j)
-			'''
-			for i in xrange(len(qt[j])-1,-1,-1):
-				if(len(qt[j][i]) == 1):  del qt[j][i]
-			write_text_row( qt[j],os.path.join(outdir,outgrouparms+"%1d.txt"%j) )
-
-		qt = []
-		for i in xrange(nt):
-			if perr[i]: qt.append(i)
-	
-		if(len(qt)  >  0):
-			write_text_file(qt, os.path.join(outdir,outgoody) )
-			if(len(qt)<nt):
-				missing = set(range(nt)) - set(qt)
-				missing = [i for i in missing]
-				missing.sort()
-				write_text_file(missing, os.path.join(outdir,outbad) )
-		else:  print  "  No good images within the pixel error threshold specified"
-		"""
-		0   1   2   3   4   5
-
-		A   A   A   =   =   =
-		B   =   =   B   B   =
-		=   C   =   C   =   C
-		=   =   D   =   D   D
-
-		"""
-	"""
 	else:
 		print "Usage: "
 		print """

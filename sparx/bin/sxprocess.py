@@ -76,8 +76,8 @@ def main():
 
     7.  Adjust rotationally averaged power spectrum of an image to that of a reference image or a reference 1D power spectrum stored in an ASCII file.
     	Optionally use a tangent low-pass filter.  Also works for a stack of images, in which case the output is also a stack.
-    sxprocess.py  vol.hdf ref.hdf  avol.hf < 0.25 0.2> --adjpw
-    sxprocess.py  vol.hdf pw.txt  avol.hf < 0.25 0.2> --adjpw
+    sxprocess.py  vol.hdf ref.hdf  avol.hdf < 0.25 0.2> --adjpw
+    sxprocess.py  vol.hdf pw.txt   avol.hdf < 0.25 0.2> --adjpw
 
 	8.  Generate a 1D rotationally averaged power spectrum of an image.
     sxprocess.py  vol.hdf --rotwp=rotpw.txt
