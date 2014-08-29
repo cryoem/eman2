@@ -35,6 +35,7 @@ import os
 import sys
 import scipy
 import time
+import ntpath
 import numpy as np
 import matplotlib.pyplot as plt
 from numpy import loadtxt
@@ -139,7 +140,11 @@ def main():
 	
 	# Link original data file to output directory
 	if options.testdata != None:
-		os.symlink(infile, options.path + "/input.hdf")
+		pathname = os.path.dirname(os.path.abspath( options.testdata ))
+		filename = ntpath.basename( options.testdata )
+		linkfrom = pathname "/" + filename
+		linkto = options.path + "/input.hdf"
+		os.symlink( linkfrom, linkto )
 	
 	#if options.crossval != None:
 	#	betas = get_best_betas( infile, nslices, niters)
