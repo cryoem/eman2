@@ -52,8 +52,8 @@ def get_usage():
 	For the original 2D implementation of this algorithm, visit https://github.com/emmanuelle/tomo-tv
 	"""
 	return usage
-	
-	
+
+
 def print_usage():
 	usage = get_usage()
 	print "usage " + usage;
@@ -80,8 +80,7 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID", default=-1)
 	(options, args) = parser.parse_args()
-
-	# parse options
+	
 	if options.output : outfile = options.output
 	if options.tiltseries and options.testdata:
 		print "A tiltseries and testdata may not be specified simultaneously."
@@ -101,14 +100,14 @@ def main():
 	if options.tiltrange == None: options.tiltrange = np.pi / 3.0
 	else:
 		options.tiltrange = map(float, options.tiltrange.split(','))
-			
+	
 	if options.niters : niters = int(options.niters)
 	if options.beta : 
 		beta = float(options.beta)
 		if beta == 0:
 			print "Parameter beta cannot equal 0."
 			exit(1)
-			
+	
 	if options.subpix : subpix = int(options.subpix)
 	else: subpix = 1
 		
@@ -116,7 +115,7 @@ def main():
 	
 	if options.noisiness : noisiness = options.noisiness
 	else: noisiness = 2.
-		
+	
 	if options.nslices: nslices = options.nslices
 	elif options.tlt:
 		angles = get_angles( tiltfile )
@@ -126,7 +125,7 @@ def main():
 	else:
 		print "You must specify --nslices explicitly or implicitly by supplying a tiltseries or tlt file"
 		exit(1)
-		
+	
 	if options.output : outfile = options.output
 	
 	if options.verbose > 1: print "e2tvrecon.py"
@@ -164,7 +163,7 @@ def main():
 	outpath = options.path + "/prjs.hdf"
 	for i in range( nslices ):
 		from_numpy(projections[i*dim[0]:(i+1)*dim[0]]).write_image( outpath, i )
-
+	
 	if options.noise != False:	# add Noise to Projections
 		projections += 2*np.random.randn(*projections.shape)
 		# Generate stack of noisy projections	
@@ -216,58 +215,57 @@ def fista_tv(y, beta, niter, H, verbose=0, mask=None):
 	"""
 	TV regression using FISTA algorithm
 	(Fast Iterative Shrinkage/Thresholding Algorithm)
-
+	
 	Parameters
 	----------
-
+	
 	y : ndarray of floats
 		Measures (tomography projection). If H is given, y is a column
 		vector. If H is not given, y is a 2-D array where each line
 		is a projection along a different angle
-
+	
 	beta : float
 		weight of TV norm
-
+	
 	niter : number of forward-backward iterations to perform
-
+	
 	H : sparse matrix
 		tomography design matrix. Should be in csr format.
-
+	
 	mask : array of bools
-
+	
 	Returns
 	-------
-
+	
 	res : list
 		list of iterates of the reconstructed images
-
+	
 	energies : list
 		values of the function to be minimized at the different
 		iterations. Its values should be decreasing.
-
+	
 	Notes
 	-----
 	This algorithm minimizes iteratively the energy
-
+	
 	E(x) = 1/2 || H x - y ||^2 + beta TV(x) = f(x) + beta TV(x)
-
+	
 	by forward - backward iterations:
-
+	
 	u_n = prox_{gamma beta TV}(x_n - gamma nabla f(x_n)))
 	t_{n+1} = 1/2 * (1 + sqrt(1 + 4 t_n^2))
 	x_{n+1} = u_n + (t_n - 1)/t_{n+1} * (u_n - u_{n-1})
-
+	
 	References
 	----------
-
+	
 	A. Beck and M. Teboulle (2009). A fast iterative
 	shrinkage-thresholding algorithm for linear inverse problems.
 	SIAM J. Imaging Sci., 2(1):183-202.
-
+	
 	Nelly Pustelnik's thesis (in French),
 	http://tel.archives-ouvertes.fr/tel-00559126_v4/
 	Paragraph 3.3.1-c p. 69 , FISTA
-
 	"""
 	n_meas, n_pix = H.shape
 	if mask is not None:
@@ -332,7 +330,7 @@ def make_tlt( options ):
 	while angle < lower_bound:		# generate angles below data
 		lower_angles.append( angle )
 		angle = angle + tltstep
-		
+	
 	upper_angles=[]
 	angle = upper_bound + 1.0	
 	while angle <= 90.0:			# generate angles above data
@@ -406,7 +404,7 @@ def makepath(options, stem=''):
 				components[-1] = str(int(components[-1])+1).zfill(2)
 			else:
 				components.append('00')
-						
+			
 			options.path = '_'.join(components)
 	if options.verbose > 5: print "The new options.path is", options.path
 	if options.path not in files:
@@ -440,7 +438,7 @@ def build_projection_operator( options, l_x, n_dir=None, l_det=None, subpix=1, o
 	
 	l_x : int
 		linear size of image array
-
+	
 	n_dir : int, default l_x
 		number of angles at which projections are acquired. n_dir projection angles are regularly spaced between 0 and 180.
 		
@@ -449,14 +447,14 @@ def build_projection_operator( options, l_x, n_dir=None, l_det=None, subpix=1, o
 	
 	subpix : int, default 1
 		number of linear subdivisions used to compute the projection of one image pixel onto a detector pixel.
-    
+	
 	offset : int, default 0
 		width of the strip of image pixels not covered by the detector.
-
+	
 	pixels_mask : 1-d ndarray of size l_x**2
 		mask of pixels to keep in the matrix (useful for to removeing pixels inside or outside of a circle, for example)
-    
-    Returns
+		
+	Returns
 	-------
 	p : sparse matrix of shape (n_dir l_x, l_x**2), in csr format Tomography design matrix. The csr (compressed sparse row) allows for efficient subsequent matrix multiplication. The dtype of the elements is float32, in order to save memory.	
 	"""
@@ -617,19 +615,19 @@ def _generate_center_coordinates(l_x):
 def back_projection(projections):
 	"""
 	Back-projection (without filtering)
-
+	
 	Parameters
 	----------
 	projections: ndarray of floats, of shape n_dir x l_x
 		Each line of projections is the projection of a data image
 		acquired at a different angle. The projections angles are
 		supposed to be regularly spaced between 0 and 180.
-
+	
 	Returns
 	-------
 	recons: ndarray of shape l_x x l_x
 		Reconstructed array
-
+	
 	Notes
 	-------
 	A linear interpolation is used when rotating the back-projection.
@@ -650,25 +648,25 @@ def back_projection(projections):
 def projection(im, n_dir=None, interpolation='nearest'):
 	"""
 	Tomography projection of an image along n_dir directions.
-
+	
 	Parameters
 	----------
 	im : ndarray of square shape l_x x l_x
 		Image to be projected
-
+	
 	n_dir : int
 		Number of projection angles. Projection angles are regularly spaced
 		between 0 and 180.
-
+	
 	interpolation : str, {'interpolation', 'nearest'}
 		Interpolation method used during the projection. Default is
 		'nearest'.
-
+	
 	Returns
 	-------
 	projections: ndarray of shape n_dir x l_x
 		Array of projections.
-
+	
 	Notes
 	-----
 	The centers of the data pixels are projected onto the detector, then
@@ -706,21 +704,21 @@ def filter_projections(proj_set, reg=False):
 	"""
 	Ramp filter used in the filtered back projection.
 	We use zero padding.
-
+	
 	Parameters
 	----------
 	proj_set: 2-d ndarray
 		each line is one projection (1 line of the detector) to be filtered
-
+	
 	Returns
 	-------
-
+	
 	res: 2-d ndarray
 		filtered projections
-
+	
 	Notes
 	-----
-
+	
 	We use zero padding. However, we do not use any filtering (hanning, etc.)
 	in the FFT yet.
 	"""
@@ -788,12 +786,12 @@ def div(grad):
 def gradient(img):
 	""" 
 	Compute gradient of an image
-
+	
 	Parameters
 	===========
 	img: ndarray
 		N-dimensional image
-
+	
 	Returns
 	=======
 	gradient: ndarray
@@ -824,7 +822,8 @@ def _projector_on_dual(grad):
 def dual_gap(im, new, gap, weight):
 	"""
 	dual gap of total variation denoising
-	see "Total variation regularization for fMRI-based prediction of behavior", by Michel et al. (2011) for a derivation of the dual gap
+	see "Total variation regularization for fMRI-based prediction of behavior", 
+	by Michel et al. (2011) for a derivation of the dual gap
 	"""
 	im_norm = (im**2).sum()
 	gx, gy = np.zeros_like(new), np.zeros_like(new)
@@ -843,47 +842,47 @@ def dual_gap(im, new, gap, weight):
 def tv_denoise_fista(im, weight=50, eps=5.e-5, n_iter_max=200, check_gap_frequency=3):
 	"""
 	Perform total-variation denoising on 2-d and 3-d images
-
+	
 	Find the argmin `res` of
 		1/2 * ||im - res||^2 + weight * TV(res),
-
+	
 	where TV is the isotropic l1 norm of the gradient.
-
+	
 	Parameters
 	----------
 	im: ndarray of floats (2-d or 3-d)
 		input data to be denoised. `im` can be of any numeric type,
 		but it is cast into an ndarray of floats for the computation
 		of the denoised image.
-
+	
 	weight: float, optional
 		denoising weight. The greater ``weight``, the more denoising (at
 		the expense of fidelity to ``input``)
-
+	
 	eps: float, optional
 		precision required. The distance to the exact solution is computed
 		by the dual gap of the optimization problem and rescaled by the l2
 		norm of the image (for contrast invariance).
-
+	
 	n_iter_max: int, optional
 		maximal number of iterations used for the optimization.
-
+	
 	Returns
 	-------
 	out: ndarray
 		denoised array
-
+	
 	Notes
 	-----
 	The principle of total variation denoising is explained in
 	http://en.wikipedia.org/wiki/Total_variation_denoising
-
+	
 	The principle of total variation denoising is to minimize the
 	total variation of the image, which can be roughly described as
 	the integral of the norm of the image gradient. Total variation
 	denoising tends to produce "cartoon-like" images, that is,
 	piecewise-constant images.
-
+	
 	This function implements the FISTA (Fast Iterative Shrinkage
 	Thresholding Algorithm) algorithm of Beck et Teboulle, adapted to
 	total variation denoising in "Fast gradient-based algorithms for
@@ -909,11 +908,11 @@ def tv_denoise_fista(im, weight=50, eps=5.e-5, n_iter_max=200, check_gap_frequen
 		grad_im = grad_tmp
 		t = t_new
 		if (i % check_gap_frequency) == 0:
-		    gap = weight * div(grad_im)
-		    new = im - gap
-		    dgap = dual_gap(im, new, gap, weight)
-		    if dgap < eps:
-		        break
+			gap = weight * div(grad_im)
+			new = im - gap
+			dgap = dual_gap(im, new, gap, weight)
+			if dgap < eps:
+				break
 		i += 1
 	return new
 	
@@ -939,7 +938,7 @@ def make_tlt( options ):
 	while angle < lower_bound:		# generate angles below data
 		lower_angles.append( angle )
 		angle = angle + tltstep
-		
+	
 	upper_angles=[]
 	angle = upper_bound + 1.0	
 	while angle <= 90.0:			# generate angles above data
@@ -1021,23 +1020,24 @@ def makepath(options, stem=''):
 			print "Creating the following path: ", options.path
 		os.system('mkdir ' + options.path)
 	return options
-	
 
-# BROKEN! Sorry... :(
-def get_best_betas( imgpath, nslices=None, niters=400 ):
+
+#######################################################
+# get_best_betas is BROKEN! Sorry... :(
+def get_best_ks( imgpath, nslices=None, niters=400 ):
 	x, dim = get_tomo_data( imgpath )
 	l = dim[0]
 	if nslices == None:
 		n_dir = l / 3.
 	else: 
 		n_dir = nslices
-		
+	
 	def rec_error(beta, niters):
 		"""cross-validation"""
 		res, energies = fista_tv(y1, beta, niters, H)
 		yres = H * res[-1].ravel()[:, np.newaxis]
 		return (((yres - y2)**2).mean()), res[-1], energies
-
+	
 	# Projection operator and projections data, with 2 realizations of the noise
 	H = build_projection_operator(l, n_dir)
 	y = H * x.ravel()[:, np.newaxis]
@@ -1046,9 +1046,9 @@ def get_best_betas( imgpath, nslices=None, niters=400 ):
 	y2 = y + 2*np.random.randn(*y.shape)  # 2nd realization
 	
 	# Range of beta parameter
-	betas = 2**np.arange(2, 6, 0.25)
-
-	results = Parallel(n_jobs=-1)(delayed(rec_error)(beta, niters) for beta in betas)
+	ks = 2**np.arange(2, 6, 0.25)
+	
+	results = Parallel(n_jobs=-1)(delayed(rec_error)(k, niters) for k in ks)
 	errors = [res[0] for res in results]
 	images = [res[1] for res in results]
 	energies = [res[2] for res in results]
@@ -1056,11 +1056,11 @@ def get_best_betas( imgpath, nslices=None, niters=400 ):
 	# Segmentation compared to ground truth
 	segmentation_error = [np.abs((image > 0.5) - x).mean() for image in images]
 	
-	print "best beta from cross-validation %f" %(betas[np.argmin(errors)])
-	print "best beta for segmentation compared to ground truth %f"%(betas[np.argmin(segmentation_error)])
-	best_betas = [betas[np.argmin(errors)], betas[np.argmin(segmentation_error)]]
-	return best_betas
-	
+	print "best k from cross-validation %f" %(ks[np.argmin(errors)])
+	print "best k for segmentation compared to ground truth %f"%(ks[np.argmin(segmentation_error)])
+	best_ks = [ks[np.argmin(errors)], ks[np.argmin(segmentation_error)]]
+	return best_ks
+
 
 if __name__=="__main__":
 	main()
