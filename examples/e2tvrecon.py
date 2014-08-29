@@ -69,7 +69,7 @@ def main():
 	parser.add_argument("--tiltrange", default='60.0', type=str, help="Specify the range of degrees over which data was collected. If two comma-separated numbers are specified, they will act as a lower and upper bound respectively. For example --tiltrange=50.5 OR --tiltrange=-30.3,65.0.")
 	parser.add_argument("--output", default="recon.hdf", help="Output reconstructed tomogram file name.")
 	parser.add_argument("--noise",action="store_true",default=False, help="If true, noise will be added to projections.")
-	parser.add_argument("--noisyness",default=2, type=int, help="Multiply noise by a specified factor.")
+	parser.add_argument("--noisiness",default=2, type=int, help="Multiply noise by a specified factor.")
 	parser.add_argument("--path",type=str,default='recon',help="Directory in which results will be stored.")
 	parser.add_argument("--niters", default=100, type=int, help="Specify the number of iterative reconstructions to complete before returning the final reconstructed volume.")
 	#parser.add_argument("--crossval", default=None, help="Use cross validaton to specify the parameter 'beta'. Input 0 for the best beta as determined by cross-validation or 1 for the best beta for segmentation as compared to a complete data set (i.e. for use with test data).")
@@ -113,8 +113,8 @@ def main():
 		
 	if options.tlt: tltfile = options.tlt
 	
-	if options.noisyness : noisyness = options.noisyness
-	else: noisyness = 2.
+	if options.noisiness : noisiness = options.noisiness
+	else: noisiness = 2.
 		
 	if options.nslices: nslices = options.nslices
 	elif options.tlt:
@@ -165,7 +165,7 @@ def main():
 	if options.noise != False:	# add Noise to Projections
 		projections += 2*np.random.randn(*projections.shape)
 		# Generate stack of noisy projections	
-		outpath = options.path + "/noisyprjs.hdf"
+		outpath = options.path + "/noisy-prjs.hdf"
 		for i in range( nslices ):
 			from_numpy(projections[i*dim[0]:(i+1)*dim[0]]).write_image( outpath, i )
 			
