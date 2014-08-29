@@ -142,7 +142,7 @@ def main():
 	if options.testdata != None:
 		pathname = os.path.dirname(os.path.abspath( options.testdata ))
 		filename = ntpath.basename( options.testdata )
-		linkfrom = pathname "/" + filename
+		linkfrom = pathname + "/" + filename
 		linkto = options.path + "/input.hdf"
 		os.symlink( linkfrom, linkto )
 	
