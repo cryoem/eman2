@@ -742,7 +742,7 @@ def filter_projections(proj_set, reg=False):
 	in the FFT yet.
 	"""
 	nb_angles, l_x = proj_set.shape
-	Assum l is even for now
+	#Assume l is even for now
 	ramp = 1./l_x * np.hstack((np.arange(l_x), np.arange(l_x, 0, -1)))
 	return fftpack.ifft(ramp * fftpack.fft(proj_set, 2*l_x, axis=1), axis=1)[:,:l_x]
 
