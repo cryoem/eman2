@@ -29,29 +29,56 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 import os, sys
 import json
-from optparse import OptionParser
-
-from EMAN2 import EMData, Region, Util
-from utilities import read_text_row, set_ctf
-from filter import filt_gaussh
+from optparse import *
+from EMAN2 import *
+from utilities import *
+from filter import *
 from EMAN2jsondb import *
-
 from global_def import *
-from emboxerbase import *
+
+def window(data):
+	"""
+	Using coordinates window particles, and add ctf information to it.
+	"""
+	for k, info in data.items():
+		print 'Processing {0}'.format(k)
+		box_size = data[k]['box_size']
+		pixel_ratio = float(data[k]['input_pixel'])/float(data[k]['output_pixel'])
+		img = EMData()
+		img.read_image(k)
+		img_filt = filt_gaussh(img, pixel_ratio/box_size)
+
+
+		if pixel_ratio != 1.0:
+			print "Generating downsampled image\n"
+			sb = Util.sincBlackman(15, .5 * pixel_ratio,1999) # 1999 taken directly from util_sparx.h
+			img_filt = img_filt.downsample(sb, pixel_ratio)
+			box_size = box_size / pixel_ratio
+
+		output_file_name = 'out_' + os.path.basename(k)
+		clip = EMData()
+		for i, (x, y) in enumerate(data[k]['coordinates']):
+			reg = Region((x * pixel_ratio)-box_size//2, (y * pixel_ratio)-box_size//2, box_size, box_size)
+			clip = img_filt.get_clip(reg)
+			clip.write_image(output_file_name, i)
+		# Set ctf
+		set_ctf(clip, data[k]['ctf'])
+		print 'Windowed prticles for {0} -> {1}'.format(k, output_file_name)
+
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " -c,--coord=coord  -f,--ctf=ctf_file  -m,--mic_dir=mic_dir  -i,--input_pixel=input_pixel  -o,--output_pixel=output_pixel"
+	usage = progname + " --coords_dir=coords_dir  --importctf=ctf_file  --topdir=topdir  --input_pixel=input_pixel  --output_pixel=output_pixel"
 	
 	parser = OptionParser(usage, version=SPARXVERSION)
 
-	parser.add_option('-c', '--coord', dest='coord', help='location where coordinates are located')
-	parser.add_option('-f', '--ctf', dest='ctf_file', help='ctf information file')
-	parser.add_option('-m', '--mic_dir', dest='mic_dir', help='micrograph location')
-	parser.add_option('-i', '--input_pixel', dest='input_pixel', help='input pixel size', default=1)
-	parser.add_option('-o', '--output_pixel', dest='output_pixel', help='output pixel size', default=1)
-		
-	(options, args) = parser.parse_args()	
+	parser.add_option('--coords_dir',   dest='coordsdir',                help='Directory containing particle coordinates')
+	parser.add_option('--importctf',    dest='ctffile',                  help='File name with CTF parameters produced by sxcter.')
+	parser.add_option('--topdir',       dest='topdir',       default='', help='Path name of directory containing relevant micrograph directories')
+	parser.add_option('--input_pixel',  dest='input_pixel',  default=1,  help='input pixel size')
+	parser.add_option('--output_pixel', dest='output_pixel', default=1,  help='output pixel size')
+
+	(options, args) = parser.parse_args()
 	
 	if len(args) > 1:
 		print "\nusage: " + usage
@@ -60,11 +87,11 @@ def main():
 		json_suffix='_info.json'
 		fParticle_suffix = '_ptcls.hdf'
 		
-		for f in os.listdir(options.coord):
+		for f in os.listdir(options.coordsdir):
 			if f.endswith(json_suffix):
-				fName =  os.path.join(options.coord,f)
+				fName =  os.path.join(options.coordsdir,f)
 				fRoot =  f.strip(json_suffix)
-				ff    = os.path.join(options.coord, fRoot + json_suffix)
+				ff    = os.path.join(options.coordsdir, fRoot + json_suffix)
 		
 				im = EMData(fRoot + '.hdf')
 				js = js_open_dict(ff)["boxes"]
