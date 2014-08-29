@@ -200,12 +200,18 @@ def main():
 		inp_ext = os.path.splitext(infile)[1]
 		out_ext = os.path.splitext(outfile)[1]
 
+		if out_ext == "" :
+			out_ext = inp_ext
+			outfile = outfile + out_ext
+
 		if os.path.isfile(infile) :
 			num_inp_images = EMUtil.get_image_count(infile)
 		else :
 			num_inp_images = -1
 
-		if out_ext == ".mrcs"  or  out_ext == ".tiff" :
+		if out_ext == inp_ext :
+			num_out_images = num_inp_images
+		elif out_ext == ".mrcs"  or  out_ext == ".tiff" :
 			num_out_images = 2
 		else :
 			num_out_images = 1
