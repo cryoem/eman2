@@ -27,7 +27,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 2111-1307 USA
 #
 
 from EMAN2 import *
@@ -70,7 +70,7 @@ def main():
 	parser.add_argument("--tiltrange", default='60.0', type=str, help="Specify the range of degrees over which data was collected. If two comma-separated numbers are specified, they will act as a lower and upper bound respectively. For example --tiltrange=50.5 OR --tiltrange=-30.3,65.0.")
 	parser.add_argument("--output", default="recon.hdf", help="Output reconstructed tomogram file name.")
 	parser.add_argument("--noise",action="store_true",default=False, help="If true, noise will be added to projections.")
-	parser.add_argument("--noisiness",default=2, type=int, help="Multiply noise by a specified factor.")
+	parser.add_argument("--noisiness",default=2.0, type=float, help="Multiply noise by a specified factor.")
 	parser.add_argument("--path",type=str,default='recon',help="Directory in which results will be stored.")
 	parser.add_argument("--niters", default=100, type=int, help="Specify the number of iterative reconstructions to complete before returning the final reconstructed volume.")
 	#parser.add_argument("--crossval", default=None, help="Use cross validaton to specify the parameter 'beta'. Input 0 for the best beta as determined by cross-validation or 1 for the best beta for segmentation as compared to a complete data set (i.e. for use with test data).")
@@ -82,6 +82,7 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	if options.output : outfile = options.output
+	
 	if options.tiltseries and options.testdata:
 		print "A tiltseries and testdata may not be specified simultaneously."
 		exit(1)
@@ -93,38 +94,58 @@ def main():
 		print "You must speficy either --testdata OR --tiltseries"
 		exit(1)
 	
-	if options.imgnum != None: imgnum = options.imgnum
+	if options.imgnum != None: 
+		imgnum = options.imgnum
 	else:
 		imgnum = 0
 	
-	if options.tiltrange == None: options.tiltrange = np.pi / 3.0
+	if options.nslices: 
+		nslices = options.nslices
+	elif options.tiltseries: 
+		nslices = EMUtil.get_image_count( infile )
+	elif options.tlt != None:
+		pass
 	else:
-		options.tiltrange = map(float, options.tiltrange.split(','))
+		print "You must specify --nslices explicitly or implicitly by supplying a tiltseries or tlt file"
+		exit(1)
 	
-	if options.niters : niters = int(options.niters)
+	if options.tlt != None:
+		tltfile = options.tlt
+		tiltangles = get_angles( tltfile )
+		angles = np.radians( tiltangles )
+		nslices = len( angles )
+	else:
+		if options.tiltrange != None:
+			anglerange = options.tiltrange
+			tiltrange = map( float, anglerange.split(','))
+			if len( tiltrange ) > 1:
+				tiltangles = np.linspace(tiltrange[0], tiltrange[-1], nslices, endpoint=False)
+			else:
+				tiltanglesangles = np.linspace(-1*tiltrange[0], tiltrange[0], nslices, endpoint=False)
+			angles = np.radians( tiltangles )
+		else:
+			tiltrange = [-1 * np.pi / 3.0, np.pi / 3.0]
+			angles = np.linspace(-1*tiltrange[0], tiltrange[-1])
+			print "no tiltrange specified. Using -60 to 60 degrees by default."
+	
+	if options.niters : 
+		niters = int(options.niters)
+		
 	if options.beta : 
 		beta = float(options.beta)
 		if beta == 0:
 			print "Parameter beta cannot equal 0."
 			exit(1)
 	
-	if options.subpix : subpix = int(options.subpix)
-	else: subpix = 1
-		
-	if options.tlt: tltfile = options.tlt
+	if options.subpix : 
+		subpix = int(options.subpix)
+	else: 
+		subpix = 1
 	
-	if options.noisiness : noisiness = options.noisiness
-	else: noisiness = 2.
-	
-	if options.nslices: nslices = options.nslices
-	elif options.tlt:
-		angles = get_angles( tiltfile )
-		nslices = len( angles )
-	elif options.tiltseries and not options.tlt:
-		nslices = EMUtil.get_image_count( infile )
-	else:
-		print "You must specify --nslices explicitly or implicitly by supplying a tiltseries or tlt file"
-		exit(1)
+	if options.noisiness : 
+		noisiness = options.noisiness
+	else: 
+		noisiness = 2.
 	
 	if options.output : outfile = options.output
 	
@@ -156,7 +177,7 @@ def main():
 	xlen = dim[0]
 	
 	# Projection operator and projections data, with noise
-	projection_operator = build_projection_operator( options, xlen, nslices, None, subpix, 0, None)
+	projection_operator = build_projection_operator( options, angles, xlen, nslices, None, subpix, 0, None)
 	projections = projection_operator * img.ravel()[:, np.newaxis]
 	
 	# Generate stack of projections
@@ -170,7 +191,7 @@ def main():
 		outpath = options.path + "/noisy-prjs.hdf"
 		for i in range( nslices ):
 			from_numpy(projections[i*dim[0]:(i+1)*dim[0]]).write_image( outpath, i )
-			
+	
 	# Reconstruction
 	t1 = time.time()
 	recon, energies = fista_tv(projections, beta, niters, projection_operator) 
@@ -192,7 +213,8 @@ def main():
 	E2end(logger)
 	if options.verbose > 1: print "Exiting"
 	return
-	
+
+
 def tv_norm(im):
 	"""Compute the (isotropic) TV norm of an image"""
 	grad_x1 = np.diff(im, axis=0)
@@ -323,10 +345,10 @@ def get_tomo_data( options, imgnum=0 ):
 	return tomo_array.astype(np.float32), dim, options
 
 
-def make_tlt( options ):	
+def make_tlt( options ):
 	# form a 'complete' list of tilt angles
-	options.range
-	lower_angles=[]
+	options.tiltrange
+	angles=[]
 	while angle < lower_bound:		# generate angles below data
 		lower_angles.append( angle )
 		angle = angle + tltstep
@@ -338,7 +360,7 @@ def make_tlt( options ):
 		angle = angle + tltstep
 	
 	new_angles = lower_angles + angles + upper_angles
-	# generate a new tilt angles file in wedgecomp_0# directory
+	# generate a new tilt angles file in recon_0# directory
 	
 	options.tlt = options.path + "/" + os.path.splitext(options.tlt)[0] + "_new.tlt"
 	
@@ -429,7 +451,7 @@ def get_angles( options ):
 
 
 # --------------- Data projection operator  --------------------
-def build_projection_operator( options, l_x, n_dir=None, l_det=None, subpix=1, offset=0, pixels_mask=None ):
+def build_projection_operator( options, angles, l_x, n_dir=None, l_det=None, subpix=1, offset=0, pixels_mask=None ):
 	"""
 	Compute the tomography design matrix.
 		
@@ -473,13 +495,6 @@ def build_projection_operator( options, l_x, n_dir=None, l_det=None, subpix=1, o
 		labels = (l_x * (Xlab / subpix) + Ylab / subpix).ravel()
 	if n_dir is None:
 		n_dir = l_x
-	tiltrange = options.tiltrange
-	if options.tlt != None:
-		angles = get_angles( options )
-	elif len(tiltrange) > 1:
-		angles = np.linspace(tiltrange[0], tiltrange[1], n_dir, endpoint=False)
-	else:
-		angles = np.linspace(-1*tiltrange[0], tiltrange[0], n_dir, endpoint=False)
 	weights, data_inds, detector_inds = [], [], []
 	# Indices for data pixels. For each data, one data pixel
 	# will contribute to the value of two detector pixels.
