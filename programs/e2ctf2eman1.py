@@ -80,7 +80,7 @@ models are not completely compatible."""
 	ptcls=["particles/"+i for i in os.listdir("particles") if "__" not in i and i[0]!="." and ".hed" not in i ]
 	ptcls.sort()
 	if len( ptcls ) < 1 :
-		parser.error( "No particles found in bdb:e2ctf.parms in the current directory." )
+		parser.error( "No particles found in the particles folder" )
 	
 	# Convert CTF parameters for all images
 	sf = [ ]

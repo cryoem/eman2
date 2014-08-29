@@ -814,6 +814,11 @@ class GUIBoxer(QtGui.QWidget):
 		"mousedown in plot"
 #		m=self.guiim.scr_to_img((event.x(),event.y()))
 
+def tiled(img,box):
+	imgc=img.process("math.meanshrink",{"n":2})
+	boxc=good_boxsize(box/2,larger=True)
+	
+
 def detect(img,box):
 	img.process_inplace("normalize.edgemean")
 	

@@ -37,6 +37,7 @@ High priority
 9/6/12		--maxshift seems to cause segfaults sometimes
 
 10/5/12		Doesn't handle projects with >1000 files very gracefully (slow, ryr-open)
+8/28/14		Background updater for metadata in file-browser
 
 10/23/12	Euler display in refine_multi
 10/24/12	Azimuthal filtering to remove 'hair'. "How to legally give a molecule a shave"

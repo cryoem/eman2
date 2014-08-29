@@ -2254,6 +2254,8 @@ class GUIctf(QtGui.QWidget):
 			self.sdefocus.setValue(self.sdefocus.getValue()-0.01)
 		elif event.key() == Qt.Key_Right:
 			self.sdefocus.setValue(self.sdefocus.getValue()+0.01)
+		elif event.key() == Qt.Key_B:
+			self.sbfactor.setValue(100.0)
 		elif event.key()==Qt.Key_S :
 			print "Save Parms ",str(self.setlist.item(self.curset).text())
 			self.on_save_params()
