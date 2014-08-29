@@ -99,13 +99,14 @@ NOTE: This program should be run from the project directory, not from within the
 	parser.add_argument("--curdefocusfix",action="store_true",help="Fixes the defocus at the current determined value (if any) (+-.001um)",default=False)
 	parser.add_argument("--bgmask",type=int,help="Background is computed using a soft mask of the center/edge of each particle with the specified radius. Default radius is boxsize/2.6.",default=0)
 	parser.add_argument("--fixnegbg",action="store_true",help="Will perform a final background correction to avoid slight negative values near zeroes")
-	parser.add_argument("--computesf",action="store_true",help="Will determine the structure factor*envelope for the aggregate set of images", default=False, nosharedb=True, guitype='boolbox', row=9, col=0, rowspan=1, colspan=1, mode="autofit,tuning,gensf[True]")
+	parser.add_argument("--computesf",action="store_true",help="Will determine the structure factor*envelope for the aggregate set of images", default=False, nosharedb=True, guitype='boolbox', row=9, col=0, rowspan=1, colspan=1, mode="gensf[True]")
 	parser.add_argument("--apix",type=float,help="Angstroms per pixel for all images",default=0, guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="autofit['self.pm().getAPIX()']")
 	parser.add_argument("--voltage",type=float,help="Microscope voltage in KV",default=0, guitype='floatbox', row=4, col=1, rowspan=1, colspan=1, mode="autofit['self.pm().getVoltage()']")
 	parser.add_argument("--cs",type=float,help="Microscope Cs (spherical aberation)",default=0, guitype='floatbox', row=5, col=0, rowspan=1, colspan=1, mode="autofit['self.pm().getCS()']")
 	parser.add_argument("--ac",type=float,help="Amplitude contrast (percentage, default=10)",default=10, guitype='floatbox', row=5, col=1, rowspan=1, colspan=1, mode='autofit')
 	parser.add_argument("--defocusmin",type=float,help="Minimum autofit defocus",default=0.6, guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode="autofit[0.6]")
 	parser.add_argument("--defocusmax",type=float,help="Maximum autofit defocus",default=4, guitype='floatbox', row=6, col=1, rowspan=1, colspan=1, mode='autofit[4.0]')
+	parser.add_argument("--constbfactor",type=float,help="Set B-factor to fixed specified value, negative value autofits",default=-1.0, guitype='floatbox', row=9, col=0, rowspan=1, colspan=1, mode='autofit[-1.0],tuning[-1.0],genoutp[-1.0]')
 	parser.add_argument("--autohp",action="store_true",help="Automatic high pass filter of the SNR only to remove initial sharp peak, phase-flipped data is not directly affected (default false)",default=False, guitype='boolbox', row=7, col=0, rowspan=1, colspan=1, mode='autofit[True]')
 	parser.add_argument("--invert",action="store_true",help="Invert the contrast of the particles in output files (default false)",default=False, guitype='boolbox', row=5, col=1, rowspan=1, colspan=1, mode='genoutp')
 	parser.add_argument("--nonorm",action="store_true",help="Suppress per image real-space normalization",default=False)
@@ -201,9 +202,15 @@ NOTE: This program should be run from the project directory, not from within the
 	if options.autofit:
 		img_sets=pspec_and_ctf_fit(options,debug) # converted to a function so to work with the workflow
 
+		if options.constbfactor>0:
+			for i in img_sets: i[1].bfactor=options.constbfactor
+		
 	### GUI - user can update CTF parameters interactively
 	if options.gui :
 		if img_sets==None : img_sets = get_gui_arg_img_sets(options.filenames)
+		
+		if options.constbfactor>0:
+			for i in img_sets: i[1].bfactor=options.constbfactor
 
 		if options.sortdefocus:
 			img_sets.sort(key=get_df)
@@ -231,6 +238,8 @@ NOTE: This program should be run from the project directory, not from within the
 
 	if options.computesf :
 		img_sets = get_gui_arg_img_sets(options.filenames)
+		if options.constbfactor>0:
+			for i in img_sets: i[1].bfactor=options.constbfactor
 		print "Recomputing structure factor"
 		envelope=compute_envelope(img_sets)
 
@@ -346,6 +355,7 @@ def write_e2ctf_output(options):
 			except:
 				print "No CTF parameters found in {}, skipping {}.".format(info_name(filename),filename)
 				continue
+			if options.constbfactor>0: ctf.bfactor=options.constbfactor
 
 			if phaseout : print "Phase image out: ",phaseout,"\t",
 			if phaseprocout : print "Processesd phase image out: ",phaseprocout[0],"\t",
@@ -512,7 +522,9 @@ def pspec_and_ctf_fit(options,debug=False):
 			if options.astigmatism : ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1)
 
 			im_1d,bg_1d=calc_1dfrom2d(ctf,im_2d,bg_2d)
-			ctf.bfactor=ctf_fit_bfactor(list(array(im_1d)-array(bg_1d)),ds,ctf)
+			if options.constbfactor>0 : ctf.bfactor=options.constbfactor
+			else: ctf.bfactor=ctf_fit_bfactor(list(array(im_1d)-array(bg_1d)),ds,ctf)
+
 
 			if debug:
 				Util.save_data(0,ds,im_1d,"ctf.fg.txt")
