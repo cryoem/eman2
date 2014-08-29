@@ -99,7 +99,7 @@ def main():
 	
 	if options.tiltrange == None: options.tiltrange = np.pi / 3.0
 	else:
-		options.tiltrange = map(int, options.tiltrange.strip().split(','))
+		options.tiltrange = map(float, options.tiltrange.split(','))
 			
 	if options.niters : niters = int(options.niters)
 	if options.beta : 
