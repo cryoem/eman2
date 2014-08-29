@@ -62,7 +62,7 @@ def print_usage():
 def main():
 	parser = EMArgumentParser(usage=get_usage())
 	parser.add_argument("--tiltseries", default=None, help="The input projections. Project should usually have the xform.projection header attribute, which is used for slice insertion")
-	parser.add_argument("--imgnum", default=0, type=int, help="The image number which will be read from the stack when reconstructing an image from a user specified tiltseries.")
+	parser.add_argument("--imgnum", default=None, type=int, help="The image number which will be read from the stack when reconstructing an image from a user specified tiltseries.")
 	parser.add_argument("--testdata", default=None, help="A 2D image to project a number of times (specified by --nslices) and then reconstructed via compressed sensing.")
 	parser.add_argument("--tlt", default=None, type=str, help="An imod tlt file containing alignment angles. If specified slices will be inserted using these angles in the IMOD convention")
 	parser.add_argument("--nslices", default=120, type=int, help="Specify the number slices into which an image will be projected. Only applicable when using the --testdata option.")
@@ -86,16 +86,17 @@ def main():
 	if options.tiltseries and options.testdata:
 		print "A tiltseries and testdata may not be specified simultaneously."
 		exit(1)
+	
 	if options.tiltseries : 
 		infile = options.tiltseries
-		if options.imgnum != 0: imgnum = options.imgnum
-		else:
-			if options.verbose > 0: print "No image number specified. Using the 0th image tiltseries."
-			imgnum = 0
 	elif options.testdata : infile = options.testdata
 	else: 
 		print "You must speficy either --testdata OR --tiltseries"
 		exit(1)
+	
+	if options.imgnum != None: imgnum = options.imgnum
+	else:
+		imgnum = 0
 	
 	if options.tiltrange == None: options.tiltrange = np.pi / 3.0
 	else:
