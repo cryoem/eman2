@@ -219,8 +219,6 @@ def tv_norm(im):
 	"""Compute the (isotropic) TV norm of an image"""
 	grad_x1 = np.diff(im, axis=0)
 	grad_x2 = np.diff(im, axis=1)
-	#grad_x3 = np.diff(im, axis=2)
-	#return np.sqrt(grad_x1[:, :-1, :-1]**2 + grad_x2[:-1, :, :-1]**2 + grad_x3[:-1,:-1,:]**2).sum()
 	return np.sqrt(grad_x1[:, :-1]**2 + grad_x2[:-1, :]**2).sum()
 
 
@@ -228,8 +226,6 @@ def tv_norm_anisotropic(im):
 	"""Compute the anisotropic TV norm of an image"""
 	grad_x1 = np.diff(im, axis=0)
 	grad_x2 = np.diff(im, axis=1)
-	#grad_x3 = np.diff(im, axis=2)
-	#return np.abs(grad_x1[:, :-1, :-1]).sum() + np.abs(grad_x2[:-1, :, :-1]).sum() + np.abs(grad_x3[:-1, :-1, :]).sum()
 	return np.abs(grad_x1[:, :-1]).sum() + np.abs(grad_x2[:-1, :]).sum()
 
 
