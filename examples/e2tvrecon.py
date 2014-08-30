@@ -187,7 +187,7 @@ def main():
 	
 	if options.noise != False:	# add Noise to Projections
 		projections += 2*np.random.randn(*projections.shape)
-		# Generate stack of noisy projections	
+		# Generate stack of noisy projections
 		outpath = options.path + "/noisy-prjs.hdf"
 		for i in range( nslices ):
 			from_numpy(projections[i*dim[0]:(i+1)*dim[0]]).write_image( outpath, i )
@@ -341,32 +341,6 @@ def get_tomo_data( options, imgnum=0 ):
 	return tomo_array.astype(np.float32), dim, options
 
 
-def make_tlt( options ):
-	# form a 'complete' list of tilt angles
-	options.tiltrange
-	angles=[]
-	while angle < lower_bound:		# generate angles below data
-		lower_angles.append( angle )
-		angle = angle + tltstep
-	
-	upper_angles=[]
-	angle = upper_bound + 1.0	
-	while angle <= 90.0:			# generate angles above data
-		upper_angles.append( angle )
-		angle = angle + tltstep
-	
-	new_angles = lower_angles + angles + upper_angles
-	# generate a new tilt angles file in recon_0# directory
-	
-	options.tlt = options.path + "/" + os.path.splitext(options.tlt)[0] + "_new.tlt"
-	
-	with open( options.tlt ,"w") as newtlt:
-		for a in angles:
-			newtlt.write( str( a ) + "\n")
-			
-	return options, lower_bound, upper_bound
-
-
 def tv_l0_norm( img ):
 	"""Compute the (isotropic) TV norm of a 2D image"""
 	grad_x1 = np.diff(im, axis=0)
@@ -447,7 +421,7 @@ def get_angles( options ):
 
 
 # --------------- Data projection operator  --------------------
-def build_projection_operator( options, angles, l_x, n_dir=None, l_det=None, subpix=1, offset=0, pixels_mask=None ):
+def build_projection_operator( angles, l_x, n_dir=None, l_det=None, subpix=1, offset=0, pixels_mask=None ):
 	"""
 	Compute the tomography design matrix.
 		
@@ -596,8 +570,8 @@ def _generate_center_coordinates_3d(dim):
 	linear size l_x
 	"""
 	lx = float(dim[0])
-	lx = float(dim[1])
-	lx = float(dim[2])
+	ly = float(dim[1])
+	lz = float(dim[2])
 	X, Y, Z= np.mgrid[:lx, :ly, :lz]
 	center_x = lx / 2.
 	center_y = ly / 2.
@@ -926,46 +900,6 @@ def tv_denoise_fista(im, weight=50, eps=5.e-5, n_iter_max=200, check_gap_frequen
 				break
 		i += 1
 	return new
-	
-	
-def get_tomo_data( options, imgnum=0 ):
-	"""Read a tomogram as a numpy array return its dimensions"""
-	if options.tiltseries != None:
-		tomo = EMData( options.tiltseries , imgnum )
-		outpath = options.path + "/input.hdf"
-		tomo.write_image( outpath )
-		options.testdata = outpath
-	else:
-		tomo = EMData( options.testdata , imgnum )
-	dim = [tomo.get_xsize(), tomo.get_ysize(), tomo.get_zsize()]
-	tomo_array = tomo.numpy()
-	return tomo_array.astype(np.float32), dim, options
-
-
-def make_tlt( options ):	
-	# form a 'complete' list of tilt angles
-	options.range
-	lower_angles=[]
-	while angle < lower_bound:		# generate angles below data
-		lower_angles.append( angle )
-		angle = angle + tltstep
-	
-	upper_angles=[]
-	angle = upper_bound + 1.0	
-	while angle <= 90.0:			# generate angles above data
-		upper_angles.append( angle )
-		angle = angle + tltstep
-	
-	new_angles = lower_angles + angles + upper_angles
-	# generate a new tilt angles file in wedgecomp_0# directory
-	
-	options.tlt = options.path + "/" + os.path.splitext(options.tlt)[0] + "_new.tlt"
-	
-	with open( options.tlt ,"w") as newtlt:
-		for a in angles:
-			newtlt.write( str( a ) + "\n")
-			
-	return options, lower_bound, upper_bound
 
 
 def tv_l0_norm( img ):
