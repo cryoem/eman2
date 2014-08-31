@@ -136,7 +136,7 @@ def main():
 	# Make tiltstacks
 	xsize = EMData( options.tiltseries , 0 ).get_xsize()
 	ysize = EMData( options.tiltseries , 0 ).get_ysize()
-	tiltstack_filenames = make_tiltstacks( options, xsize, ysize )
+	tiltstacks = make_tiltstacks( options, xsize, ysize )
 	
 	# Generate ONE projection operator for ALL tiltstacks
 	projection_operator = build_projection_operator( tiltangles, xlen, nslices, None, subpix, 0, None)
@@ -190,8 +190,8 @@ def make_tiltstacks( options, xpix, ypix ):
 	Generates a 2D tiltseries for each pixel along the y axis of a 3D tiltseries.
 	Returns a list of files corresponding to all of the 2D tiltseries generated.
 	"""
-	filename = options.tiltseries
-	num_imgs = EMUtil.get_image_count( filename )
+	fname = options.tiltseries
+	num_imgs = EMUtil.get_image_count( fname )
 	stackname = options.path + "/tiltstack_%04i.hdf"
 	stackname = it.imap(stackname.__mod__, it.count(0))
 	files=[]
@@ -203,10 +203,32 @@ def make_tiltstacks( options, xpix, ypix ):
 				r = Region(xpix/2, y, 0, xpix, 1, 1)
 			else:
 				r = Region((xpix-1)/2, y, 0, xpix, 1, 1)
-			img = tiltseries.read_image( filename, ypix, False, r )
+			img = tiltseries.read_image( fname, y, False, r )
 			img.write_image(stackname, imgnum)
 		files.append( stackname )
 	return files
+
+
+def generate_tiltstacks( options, xlen, ylen ):
+	"""
+	Generates a 2D tiltseries for each pixel along the y axis of a 3D tiltseries.
+	Returns a list of files corresponding to all of the 2D tiltseries generated.
+	"""
+	tiltseries = EMData()
+	num_imgs = EMUtil.get_image_count( options.tiltseries )
+	stackname = options.path + "/tiltstack_%04i.hdf"
+	stackname = it.imap(stackname.__mod__, it.count( 0 ))
+	fnames=[]
+	for y in range( ylen ):
+		next( stackname )
+		for imgnum in range( num_imgs ):
+			tiltseries.read_image( options.tiltseries, imgnum )
+			np_tiltseries = tiltseries.numpy()
+			rows = np.vsplit( np_tiltseries, ylen )
+			thisrow = rows[y]
+			from_numpy( thisrow ).write_image( stackname, imgnum )
+		fnames.append( stackname )
+	return fnames
 
 
 def fista_tv(y, beta, niter, H, verbose=0, mask=None):
