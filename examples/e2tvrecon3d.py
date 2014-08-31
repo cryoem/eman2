@@ -142,16 +142,16 @@ def main():
 	projection_operator = build_projection_operator( tiltangles, xlen, nslices, None, subpix, 0, None)
 	
 	# Reconstruct each 2D tiltstack
-	reconstructions = []
+	twod_recons = []
 	#pool = Pool(processes = parallel)
 	for filename in tiltstack_filenames:
-		projections = filename
+		projections = EMData( filename ).numpy().ravel()
 		# The Actual 2D Reconstrucion
 		tic = time.time()
 		recon, energies = fista_tv( projections, beta, niters, projection_operator )
 		toc = time.time()
 		if options.verbose > 2: print "reconstruction completed in %f s" %( toc - tic )
-		reconstructions.append(recon[-1])
+		twod_recons.append(recon[-1])
 		# Write each 2D reconstruction to current working directory
 		outpath = options.path + "/recon_2D_%04i.hdf"
 		outpath = it.imap(outpath.__mod__, it.count(0))
