@@ -425,7 +425,7 @@ def main():
 			if(pixer[k] > threshold):  perr[k] = False
 			if  perr[k]: tgood += 1
 		print tgood,ngood
-		elif(tgood < 4):
+		if(tgood < 4):
 			print "  No good images within the pixel error threshold specified"
 			exit()
 		else:     ngood = tgood
