@@ -182,8 +182,7 @@ def get_tiltstacks( options, xlen, ylen ):
 	# Calculate the number of images (slices) in the tilt series
 	num_imgs = EMUtil.get_image_count( options.tiltseries )
 	# Generate iteratively increasing file name
-	stackname = options.path + "/tiltstack_%04i.hdf"
-	stackname = it.imap(stackname.__mod__, it.count( 0 ))
+	stackname = it.imap("tiltstack_%04i.hdf".__mod__, it.count( 0 ))
 	# Create empty list in which to store the numpy arrays
 	tiltstacks=[]
 	for y in range( ylen ):
@@ -193,7 +192,7 @@ def get_tiltstacks( options, xlen, ylen ):
 			tiltseries.read_image( options.tiltseries, imgnum )
 			np_tiltseries = tiltseries.numpy()
 			slices.append(np_tiltseries[0:xlen][imgnum])
-		from_numpy(np.vstack(slices)).write_image(stackname)
+		from_numpy(np.vstack(slices)).write_image( str(stackname) )
 		tiltstacks.append(np.vstack(slices))
 	# RETURN: list of 2D numpy arrays, each corresponding to a tilt series along the tilt axis
 	return tiltstacks
