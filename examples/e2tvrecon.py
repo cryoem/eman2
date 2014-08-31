@@ -47,9 +47,7 @@ from scipy import fftpack
 def get_usage():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + """ [options]
-	e2tvrecon.py reconstructs an image from its tomographic projections with an incomplete set of projections. In addition, noise may be added to the projections. In order to reconstruct the original image, we minimize a function that is the sum of a L2 data fit term and the total variation of the image. Proximal iterations using the FISTA scheme are used.
-	
-	For the original 2D implementation of this algorithm, visit https://github.com/emmanuelle/tomo-tv
+	e2tvrecon.py reconstructs an image from its tomographic projections with an incomplete set of projections. In addition, noise may be added to the projections. In order to reconstruct the original image, we minimize a function that is the sum of a L2 data fit term and the total variation of the image. Proximal iterations using the FISTA scheme are used. For the original 2D implementation of this algorithm, visit https://github.com/emmanuelle/tomo-tv
 	"""
 	return usage
 

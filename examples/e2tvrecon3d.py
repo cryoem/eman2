@@ -49,9 +49,7 @@ import itertools as it
 def get_usage():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + """ [options]
-	e2tvrecon.py reconstructs an image from its tomographic projections with an incomplete set of projections. In addition, noise may be added to the projections. In order to reconstruct the original image, we minimize a function that is the sum of a L2 data fit term and the total variation of the image. Proximal iterations using the FISTA scheme are used.
-	
-	For the original 2D implementation of this algorithm, visit https://github.com/emmanuelle/tomo-tv
+	e2tvrecon3d.py reconstructs a 3D tomogram from a tilt series and tlt tilt angles file. In order to reconstruct the original image, we minimize a function that is the sum of a L2 data fit term and the total variation of the image. Proximal iterations using the FISTA scheme are used. For the original 2D implementation of this algorithm, visit https://github.com/emmanuelle/tomo-tv.
 	"""
 	return usage
 
@@ -134,7 +132,7 @@ def main():
 	tiltstack_filenames = make_tiltstacks( options, xsize, ysize )
 	
 	# Generate ONE projection operator for ALL tiltstacks
-	projection_operator = build_tomo_proj_operator( tiltangles, xlen, nslices, None, subpix, 0, None)
+	projection_operator = build_projection_operator( tiltangles, xlen, nslices, None, subpix, 0, None)
 	
 	# Reconstruct each 2D tiltstack
 	reconstructions = []
@@ -373,55 +371,6 @@ def get_angles( options ):
 		print "You must specify --tlt or --tiltseries."
 		exit(1)
 	return angles
-
-
-def build_tomo_proj_operator( angles, l_x, nslices, subpix ):
-	"""
-	Compute the tomography design matrix given a tilt series and tilt angles.
-		
-	Parameters
-	----------
-	
-	l_x : int
-		linear size of image array
-	
-	nslices : int, default l_x
-		number of angles at which projections are acquired.
-	
-	subpix : int, default 1
-		number of linear subdivisions used to compute the projection of one image pixel onto a detector pixel.
-	
-	Returns
-	-------
-	p : sparse matrix of shape (n_dir l_x, l_x**2), in csr format Tomography design matrix. The csr (compressed sparse row) allows for efficient subsequent matrix multiplication. The dtype of the elements is float32, in order to save memory.
-	"""
-	X, Y = _generate_center_coordinates(subpix*l_x)
-	X *= 1./subpix
-	Y *= 1./subpix
-	Xbig, Ybig = _generate_center_coordinates(l_x)
-	orig = Xbig.min()
-	labels = None
-	if subpix > 1:
-		# Block-group subpixels
-		Xlab, Ylab = np.mgrid[:subpix * l_x, :subpix * l_x]
-		labels = (l_x * (Xlab / subpix) + Ylab / subpix).ravel()
-	weights, data_inds, detector_inds = [], [], []
-	for i, angle in enumerate(angles):
-		# rotate data pixels centers
-		Xrot = np.cos(angle) * X - np.sin(angle) * Y
-		# compute linear interpolation weights
-		inds, dat_inds, w = _weights_fast(Xrot, dx=1.0, orig=orig, labels=labels)
-		# crop projections outside the detector
-		mask = np.logical_and(inds >= 0, inds < l_x)
-		weights.append(w[mask])
-		detector_inds.append((inds[mask] + i * l_x).astype(np.int32))
-		data_inds.append(dat_inds[mask])
-	weights = np.concatenate(weights)
-	weights /= subpix**2
-	detector_inds = np.concatenate(detector_inds)
-	data_inds = np.concatenate(data_inds)
-	proj_operator = sparse.coo_matrix((weights, (detector_inds, data_inds)))
-	return sparse.csr_matrix(proj_operator)
 
 
 def build_projection_operator( angles, l_x, n_dir=None, l_det=None, subpix=1, offset=0, pixels_mask=None ):
