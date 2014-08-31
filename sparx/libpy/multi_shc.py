@@ -2542,7 +2542,7 @@ def do_volume(data, options, iter, mpi_comm):
 	if myid == 0:
 		from morphology import threshold
 		from filter     import filt_tanl, filt_btwl
-		from utilities  import model_circle, get_im
+		from utilities  import model_circle, get_image
 		if(options.mask3D == None):
 			nx = data[0].get_xsize()
 			last_ring   = int(options.ou)
@@ -2550,7 +2550,7 @@ def do_volume(data, options, iter, mpi_comm):
 		elif(options.mask3D == "auto"):
 			from utilities import adaptive_mask
 			mask3D = adaptive_mask(vol)
-		else:						mask3D = get_im(options.mask3D)
+		else:						mask3D = get_image(options.mask3D)
 		stat = Util.infomask(vol, mask3D, False)
 		vol -= stat[0]
 		Util.mul_scalar(vol, 1.0/stat[1])

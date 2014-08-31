@@ -7053,24 +7053,45 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 		print_msg("User function               : %s\n"%(user_func_name))
 	"""
 
+	import  types
 	if maskfile:
-		import  types
-		if type(maskfile) is types.StringType:  mask3D = get_image(maskfile)
-		else:                                   mask3D = maskfile
+		if type(maskfile) is types.StringType:
+			if myid == main_node:
+				mask3D = get_im(maskfile)
+				i = mask3D.get_xsize()
+				if( shrinkage != 1.0 ):
+					if( i != nx ):
+						mask3D = resample(mask3D, shrinkage)
+			else:
+				mask3D = model_blank(nx, nx, nx)
+			bcast_EMData_to_all(mask3D, myid, main_node)
+		else:
+			mask3D = maskfile
 	else:
 		mask3D = model_circle(last_ring, nx, nx, nx)
+	ali3d_options.mask3D = mask3D
 
 	#  Read	template volume if provided
 	if templatevol:
-		if myid == main_node:
-			i = templatevol.get_xsize()
-			if( shrinkage != 1.0 ):
-				if( i != nx ):
-					vol = resample(templatevol, shrinkage)
+		if type(templatevol) is types.StringType:
+			if myid == main_node:
+				vol = get_im(templatevol)
+				i = vol.get_xsize()
+				if( shrinkage != 1.0 ):
+					if( i != nx ):
+						vol = resample(vol, shrinkage)
 			else:
-				vol = templatevol.copy()
+				vol = model_blank(nx, nx, nx)
 		else:
-			vol = model_blank(nx, nx, nx)
+			if myid == main_node:
+				i = templatevol.get_xsize()
+				if( shrinkage != 1.0 ):
+					if( i != nx ):
+						vol = resample(templatevol, shrinkage)
+				else:
+					vol = templatevol.copy()
+			else:
+				vol = model_blank(nx, nx, nx)
 		bcast_EMData_to_all(vol, myid, main_node)
 		del templatevol
 	else:

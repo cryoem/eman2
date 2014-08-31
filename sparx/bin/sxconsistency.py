@@ -243,7 +243,7 @@ def main():
 		chunks = []
 		for i in xrange(4):
 			#  I use the MPI function here just to easily get the balanced load
-			j,k = = MPI_start_end(t, 4, i)
+			j,k = MPI_start_end(t, 4, i)
 			chunks.append(t[j:k])
 			chunks[i].sort()
 			write_text_file(chunks[i],os.path.join(outdir,'chunk%1d.txt'%i))
@@ -322,21 +322,33 @@ def main():
 		sym = int(options.sym[1:])
 		qsym = 360.0/sym
 
-		pairs = [[0,1],[3,4],[1,5],[2,4]]
-		bpair = [[0,0],[0,0],[1,0],[1,1]]
+		blocks = ['A','B','C','D']
+		params = {}
+		ll = 0
+		for i in xrange(3):
+			for j in xrange(i+1,4):
+				params[chr(65+i)+chr(48+ll)]=[]
+				params[chr(65+j)+chr(48+ll)]=[]
+				ll+=1
 
-		prms = []
-		for i in xrange(6):
-			prms.append(read_text_row(os.path.join(outdir,options.params+"%1d.txt"%i)))
-		chunks = []
-		chunklengths = []
+
+
+		chunks = {}
+		chunklengths = {}
 		for i in xrange(4):
-			chunks.append(map(int,read_text_row(os.path.join(outdir,"chunk"+"%1d.txt"%i))))
-			chunklengths.append(len(chunks[i]))
+			chunks[chr(65+i)] = map(int,read_text_row(os.path.join(outdir,"chunk"+"%1d.txt"%i)))
+			chunklengths[chr(65+i)] = len(chunks[chr(65+i)])
 
-		bpair[2][0] = chunklengths[0]
-		bpair[3][0] = chunklengths[0]
-		bpair[3][1] = chunklengths[1]
+
+		for i in xrange(6):
+			prms = read_text_row(os.path.join(outdir,options.params+"%1d.txt"%i))
+			for q in blocks:
+				if params.has_key(q+chr(48+i)):
+					params[q+chr(48+i)] = prms[:chunklengths[q]]
+					del prms[:chunklengths[q]]
+
+
+		pairs = [["A0","A1"],["B3","B4"],["C1","C5"],["D2","D4"]]
 
 
 		"""
@@ -350,13 +362,14 @@ def main():
 		"""
 
 		#  Compute average projection params and pixel errors
-		avgtrans = [0.0]*nn
-		pixer    = [0.0]*nn
-		l = 0
-		for i in xrange(4):
-			for j in xrange(chunklengths[i]):
-				fifi = [ prms[pairs[i][0]][bpair[i][0]+j], prms[pairs[i][1]][bpair[i][1]+j] ]
-				pixer[l] = max_3D_pixel_error(p1, p2, r=radius)
+		avgtrans = {}
+		pixer    = {}
+		for i,q in enumerate(pairs):
+			avgtrans[q[0][0]] = [0.0]*chunklengths[q[0][0]]
+			pixer[q[0][0]]    = [0.0]*chunklengths[q[0][0]]
+			for j in xrange(chunklengths[q[0][0]]):
+				fifi = [ params[q[0]][j], params[q[1]][j] ]
+				pixer[q[0][0]][j] = max_3D_pixel_error(fifi[0], fifi[1], r=radius)
 
 				nas = [0.0,0.0,0.0]
 				if( sym == 1):
@@ -402,9 +415,7 @@ def main():
 
 				#print   "FIFI     %4d     %7.2f     %7.2f    %7.2f    %7.2f     %7.2f     %7.2f    %7.2f    %7.2f"%(k,fifi[0][0],fifi[0][1],fifi[1][0],fifi[1][1],fifi[2][0],fifi[2][1],nphi,ntheta)
 				twod = average2dtransform(twod)
-				avgtrans[k] = [nphi, ntheta, twod[0], twod[1], twod[2]]
-
-				l += 1
+				avgtrans[q[0][0]][j] = [nphi, ntheta, twod[0], twod[1], twod[2]]
 
 
 
