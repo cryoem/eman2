@@ -144,8 +144,8 @@ def main():
 	# Reconstruct each 2D tiltstack
 	twod_recons = []
 	#pool = Pool(processes = parallel)
-	for i, tiltstack in enumerate(tiltstacks):
-		projections = tiltstack[i]
+	for tiltstack in tiltstacks:
+		projections = tiltstack.ravel()
 		# The Actual 2D Reconstrucion
 		tic = time.time()
 		recon, energies = fista_tv( projections, beta, niters, projection_operator )
@@ -177,19 +177,25 @@ def get_tiltstacks( options, xlen, ylen ):
 	Generates a 2D tiltseries for each pixel along the y axis of a 3D tiltseries.
 	Returns a list of files corresponding to all of the 2D tiltseries generated.
 	"""
+	# Read a tilt series
 	tiltseries = EMData()
+	# Calculate the number of images (slices) in the tilt series
 	num_imgs = EMUtil.get_image_count( options.tiltseries )
+	# Generate iteratively increasing file name
 	stackname = options.path + "/tiltstack_%04i.hdf"
 	stackname = it.imap(stackname.__mod__, it.count( 0 ))
+	# Create empty list in which to store the numpy arrays
 	tiltstacks=[]
 	for y in range( ylen ):
-		stack = []
+		slices = []
 		next( stackname )
 		for imgnum in range( num_imgs ):
 			tiltseries.read_image( options.tiltseries, imgnum )
 			np_tiltseries = tiltseries.numpy()
-			stack.append(np.vsplit( np_tiltseries, ylen )[y])
-		tiltstacks.append(np.sum(stack))
+			slices.append(np_tiltseries[0:xlen][imgnum])
+		from_numpy(np.vstack(slices)).write_image(stackname)
+		tiltstacks.append(np.vstack(slices))
+	# RETURN: list of 2D numpy arrays, each corresponding to a tilt series along the tilt axis
 	return tiltstacks
 
 
@@ -204,52 +210,6 @@ def get_tiltstacks( options, xlen, ylen ):
 #	outpath = it.imap(options.path + "/recon_2D_%04i.hdf".__mod__, it.count(0))
 #	from_numpy(recon[-1]).write_image( outpath )
 #	return recon[-1], pid
-
-
-#def make_tiltstacks( options, xpix, ypix ):
-#	"""
-#	Generates a 2D tiltseries for each pixel along the y axis of a 3D tiltseries.
-#	Returns a list of files corresponding to all of the 2D tiltseries generated.
-#	"""
-#	fname = options.tiltseries
-#	num_imgs = EMUtil.get_image_count( fname )
-#	stackname = options.path + "/tiltstack_%04i.hdf"
-#	stackname = it.imap(stackname.__mod__, it.count(0))
-#	files=[]
-#	for y in range(ypix):
-#		next(stackname)
-#		for imgnum in range(num_imgs):
-#			tiltseries = EMData( filename, imgnum )
-#			if xpix % 2 == 0:
-#				r = Region(xpix/2, y, 0, xpix, 1, 1)
-#			else:
-#				r = Region((xpix-1)/2, y, 0, xpix, 1, 1)
-#			img = tiltseries.read_image( fname, y, False, r )
-#			img.write_image(stackname, imgnum)
-#		files.append( stackname )
-#	return files
-
-
-#def make_tiltstacks( options, xlen, ylen ):
-#	"""
-#	Generates a 2D tiltseries for each pixel along the y axis of a 3D tiltseries.
-#	Returns a list of files corresponding to all of the 2D tiltseries generated.
-#	"""
-#	tiltseries = EMData()
-#	num_imgs = EMUtil.get_image_count( options.tiltseries )
-#	stackname = options.path + "/tiltstack_%04i.hdf"
-#	stackname = it.imap(stackname.__mod__, it.count( 0 ))
-#	fnames=[]
-#	for y in range( ylen ):
-#		next( stackname )
-#		for imgnum in range( num_imgs ):
-#			tiltseries.read_image( options.tiltseries, imgnum )
-#			np_tiltseries = tiltseries.numpy()
-#			rows = np.vsplit( np_tiltseries, ylen )
-#			thisrow = rows[y]
-#			from_numpy( thisrow ).write_image( stackname, imgnum )
-#		fnames.append( stackname )
-#	return fnames
 
 
 def fista_tv(y, beta, niter, H, verbose=0, mask=None):
