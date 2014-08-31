@@ -185,31 +185,31 @@ def main():
 #	return recon[-1], pid
 
 
-def make_tiltstacks( options, xpix, ypix ):
-	"""
-	Generates a 2D tiltseries for each pixel along the y axis of a 3D tiltseries.
-	Returns a list of files corresponding to all of the 2D tiltseries generated.
-	"""
-	fname = options.tiltseries
-	num_imgs = EMUtil.get_image_count( fname )
-	stackname = options.path + "/tiltstack_%04i.hdf"
-	stackname = it.imap(stackname.__mod__, it.count(0))
-	files=[]
-	for y in range(ypix):
-		next(stackname)
-		for imgnum in range(num_imgs):
-			tiltseries = EMData( filename, imgnum )
-			if xpix % 2 == 0:
-				r = Region(xpix/2, y, 0, xpix, 1, 1)
-			else:
-				r = Region((xpix-1)/2, y, 0, xpix, 1, 1)
-			img = tiltseries.read_image( fname, y, False, r )
-			img.write_image(stackname, imgnum)
-		files.append( stackname )
-	return files
+#def make_tiltstacks( options, xpix, ypix ):
+#	"""
+#	Generates a 2D tiltseries for each pixel along the y axis of a 3D tiltseries.
+#	Returns a list of files corresponding to all of the 2D tiltseries generated.
+#	"""
+#	fname = options.tiltseries
+#	num_imgs = EMUtil.get_image_count( fname )
+#	stackname = options.path + "/tiltstack_%04i.hdf"
+#	stackname = it.imap(stackname.__mod__, it.count(0))
+#	files=[]
+#	for y in range(ypix):
+#		next(stackname)
+#		for imgnum in range(num_imgs):
+#			tiltseries = EMData( filename, imgnum )
+#			if xpix % 2 == 0:
+#				r = Region(xpix/2, y, 0, xpix, 1, 1)
+#			else:
+#				r = Region((xpix-1)/2, y, 0, xpix, 1, 1)
+#			img = tiltseries.read_image( fname, y, False, r )
+#			img.write_image(stackname, imgnum)
+#		files.append( stackname )
+#	return files
 
 
-def generate_tiltstacks( options, xlen, ylen ):
+def make_tiltstacks( options, xlen, ylen ):
 	"""
 	Generates a 2D tiltseries for each pixel along the y axis of a 3D tiltseries.
 	Returns a list of files corresponding to all of the 2D tiltseries generated.
