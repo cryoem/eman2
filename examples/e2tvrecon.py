@@ -562,24 +562,6 @@ def _weights_nn(x, dx=1, orig=0, ravel=True):
 	return floor_x.astype(np.float32)
 
 
-def _generate_center_coordinates_3d(dim):
-	"""
-	Compute the coordinates of pixels centers for an image of
-	linear size l_x
-	"""
-	lx = float(dim[0])
-	ly = float(dim[1])
-	lz = float(dim[2])
-	X, Y, Z= np.mgrid[:lx, :ly, :lz]
-	center_x = lx / 2.
-	center_y = ly / 2.
-	center_z = lz / 2.
-	X += 0.5 - center_x
-	Y += 0.5 - center_y
-	Z += 0.5 - center_z
-	return X, Y, Z
-
-
 def _generate_center_coordinates(l_x):
 	"""
 	Compute the coordinates of pixels centers for an image of
