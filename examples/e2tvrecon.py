@@ -44,7 +44,7 @@ import matplotlib.pyplot as plt
 from numpy import loadtxt
 from scipy import sparse
 from scipy import ndimage
-#from scipy import fftpack
+from scipy import fftpack
 
 
 def get_usage():
@@ -111,14 +111,10 @@ def main():
 		exit(1)
 	
 	if options.tlt:
-		tltfile = options.tlt
-		tiltangles = [ float( i ) for i in file( tltfile , "r" ) ]
+		tiltangles = np.asarray([ float( i ) for i in file( options.tlt , "r" ) ])
 		nslices = len( tiltangles )
 	elif options.tiltrange:
-		tiltrange = float(options.tiltrange)
-		lower_bound = -1 * tiltrange
-		upper_bound = tiltrange
-		tiltangles = np.linspace(lower_bound, upper_bound, nslices, endpoint=False)
+		tiltangles = np.linspace(-1*float(options.tiltrange), float(options.tiltrange), nslices, endpoint=False)
 	else:
 		print "You must specify --tlt and/or --tiltrange."
 		exit(1)
@@ -131,6 +127,13 @@ def main():
 		if beta == 0:
 			print "Parameter beta cannot equal 0."
 			exit(1)
+	
+#	if options.crossval != None:
+#		betas = get_best_betas( options, nslices, niters)
+#		if options.crossval == 1:
+#			beta = betas[1]
+#		else:
+#			beta = betas[0]
 	
 	if options.subpix : 
 		subpix = int(options.subpix)
@@ -160,15 +163,8 @@ def main():
 		linkto = options.path + "/input.hdf"
 		os.symlink( linkfrom, linkto )
 	
-#	if options.crossval != None:
-#		betas = get_best_betas( infile, nslices, niters)
-#		if options.crossval == 1:
-#			beta = betas[1]
-#		else:
-#			beta = betas[0]
-	
-	# Get Tomogram data
-	img, dim, options = get_tomo_data( options, imgnum )
+	# Get image data
+	img, dim, options = get_img_data( options, imgnum )
 	xlen = dim[0]
 	
 	if options.noise != False:	# add Noise to Image
@@ -320,7 +316,7 @@ def fista_tv(y, beta, niter, H, verbose=0, mask=None):
 	return res, energies
 
 
-def get_tomo_data( options, imgnum=0 ):
+def get_img_data( options, imgnum=0 ):
 	"""Read a tomogram as a numpy array return its dimensions"""
 	if options.tiltseries != None:
 		tomo = EMData( options.tiltseries , imgnum )
@@ -556,121 +552,121 @@ def _generate_center_coordinates(l_x):
 
 
 ## ----------------- Direct projection method -------------------------
-## (without computing explicitely the design matrix)
-#def back_projection(projections):
-#	"""
-#	Back-projection (without filtering)
-#	
-#	Parameters
-#	----------
-#	projections: ndarray of floats, of shape n_dir x l_x
-#		Each line of projections is the projection of a data image
-#		acquired at a different angle. The projections angles are
-#		supposed to be regularly spaced between 0 and 180.
-#	
-#	Returns
-#	-------
-#	recons: ndarray of shape l_x x l_x
-#		Reconstructed array
-#	
-#	Notes
-#	-------
-#	A linear interpolation is used when rotating the back-projection.
-#	This function uses ``scipy.ndimage.rotate`` for the rotation.
-#	"""
-#	n_dir, l_x = projections.shape
-#	recons = np.zeros((l_x, l_x), dtype=np.float)
-#	angles = np.linspace(0, 180, n_dir, endpoint=False)
-#	for angle, line in zip(angles, projections):
-#		# BP: repeat the detector line along the direction of the beam
-#		tmp = np.tile(line[:, np.newaxis], (1, l_x))
-#		# Rotate the back-projection of the detector line, and add
-#		# it to the reconstructed image
-#		recons += ndimage.rotate(tmp, -angle, order=1, reshape=False)
-#	return recons
+# (without computing explicitely the design matrix)
+def back_projection(projections):
+	"""
+	Back-projection (without filtering)
+	
+	Parameters
+	----------
+	projections: ndarray of floats, of shape n_dir x l_x
+		Each line of projections is the projection of a data image
+		acquired at a different angle. The projections angles are
+		supposed to be regularly spaced between 0 and 180.
+	
+	Returns
+	-------
+	recons: ndarray of shape l_x x l_x
+		Reconstructed array
+	
+	Notes
+	-------
+	A linear interpolation is used when rotating the back-projection.
+	This function uses ``scipy.ndimage.rotate`` for the rotation.
+	"""
+	n_dir, l_x = projections.shape
+	recons = np.zeros((l_x, l_x), dtype=np.float)
+	angles = np.linspace(0, 180, n_dir, endpoint=False)
+	for angle, line in zip(angles, projections):
+		# BP: repeat the detector line along the direction of the beam
+		tmp = np.tile(line[:, np.newaxis], (1, l_x))
+		# Rotate the back-projection of the detector line, and add
+		# it to the reconstructed image
+		recons += ndimage.rotate(tmp, -angle, order=1, reshape=False)
+	return recons
 
 
-#def projection(im, n_dir=None, interpolation='nearest'):
-#	"""
-#	Tomography projection of an image along n_dir directions.
-#	
-#	Parameters
-#	----------
-#	im : ndarray of square shape l_x x l_x
-#		Image to be projected
-#	
-#	n_dir : int
-#		Number of projection angles. Projection angles are regularly spaced
-#		between 0 and 180.
-#	
-#	interpolation : str, {'interpolation', 'nearest'}
-#		Interpolation method used during the projection. Default is
-#		'nearest'.
-#	
-#	Returns
-#	-------
-#	projections: ndarray of shape n_dir x l_x
-#		Array of projections.
-#	
-#	Notes
-#	-----
-#	The centers of the data pixels are projected onto the detector, then
-#	the contribution of a data pixel to detector pixels is computed
-#	by nearest neighbor or linear interpolation. The function 
-#	np.bincount`` is used to compute the projection, with weights
-#	corresponding to the values of data pixels, multiplied by interpolation
-#	weights in the case of linear interpolation.
-#	"""
-#	l_x = len(im)
-#	if n_dir is None:
-#		n_dir = l_x
-#	im = im.ravel()
-#	projections = np.empty((n_dir, l_x))
-#	X, Y = _generate_center_coordinates(l_x)
-#	angles = np.linspace(0, np.pi, n_dir, endpoint=False)
-#	for i, angle in enumerate(angles):
-#		Xrot = np.cos(angle) * X - np.sin(angle) * Y 
-#		if interpolation == 'nearest':
-#			inds = _weights_nn(Xrot, dx=1, orig=X.min())
-#			mask = inds>= 0
-#			w = im[mask]
-#		elif interpolation == 'linear':
-#			inds, _, w = _weights(Xrot, dx=1, orig=X.min())
-#			w[:l_x**2] *= im
-#			w[l_x**2:] *= im
-#			mask = inds >= 0
-#			w = w[mask]
-#		projections[i] = np.bincount(inds[mask].astype(np.int), weights=w)[:l_x]
-#	return projections
+def projection(im, n_dir=None, interpolation='nearest'):
+	"""
+	Tomography projection of an image along n_dir directions.
+	
+	Parameters
+	----------
+	im : ndarray of square shape l_x x l_x
+		Image to be projected
+	
+	n_dir : int
+		Number of projection angles. Projection angles are regularly spaced
+		between 0 and 180.
+	
+	interpolation : str, {'interpolation', 'nearest'}
+		Interpolation method used during the projection. Default is
+		'nearest'.
+	
+	Returns
+	-------
+	projections: ndarray of shape n_dir x l_x
+		Array of projections.
+	
+	Notes
+	-----
+	The centers of the data pixels are projected onto the detector, then
+	the contribution of a data pixel to detector pixels is computed
+	by nearest neighbor or linear interpolation. The function 
+	np.bincount`` is used to compute the projection, with weights
+	corresponding to the values of data pixels, multiplied by interpolation
+	weights in the case of linear interpolation.
+	"""
+	l_x = len(im)
+	if n_dir is None:
+		n_dir = l_x
+	im = im.ravel()
+	projections = np.empty((n_dir, l_x))
+	X, Y = _generate_center_coordinates(l_x)
+	angles = np.linspace(0, np.pi, n_dir, endpoint=False)
+	for i, angle in enumerate(angles):
+		Xrot = np.cos(angle) * X - np.sin(angle) * Y 
+		if interpolation == 'nearest':
+			inds = _weights_nn(Xrot, dx=1, orig=X.min())
+			mask = inds>= 0
+			w = im[mask]
+		elif interpolation == 'linear':
+			inds, _, w = _weights(Xrot, dx=1, orig=X.min())
+			w[:l_x**2] *= im
+			w[l_x**2:] *= im
+			mask = inds >= 0
+			w = w[mask]
+		projections[i] = np.bincount(inds[mask].astype(np.int), weights=w)[:l_x]
+	return projections
 
 
-## -----------------Filtered back-projection----------------------
-#def filter_projections(proj_set, reg=False):
-#	"""
-#	Ramp filter used in the filtered back projection.
-#	We use zero padding.
-#	
-#	Parameters
-#	----------
-#	proj_set: 2-d ndarray
-#		each line is one projection (1 line of the detector) to be filtered
-#	
-#	Returns
-#	-------
-#	
-#	res: 2-d ndarray
-#		filtered projections
-#	
-#	Notes
-#	-----
-#	
-#	We use zero padding. However, we do not use any filtering (hanning, etc.)
-#	in the FFT yet.
-#	"""
-#	nb_angles, l_x = proj_set.shape
-#	#Assume l is even for now
-#	ramp = 1./l_x * np.hstack((np.arange(l_x), np.arange(l_x, 0, -1)))
-#	return fftpack.ifft(ramp * fftpack.fft(proj_set, 2*l_x, axis=1), axis=1)[:,:l_x]
+# -----------------Filtered back-projection----------------------
+def filter_projections(proj_set, reg=False):
+	"""
+	Ramp filter used in the filtered back projection.
+	We use zero padding.
+	
+	Parameters
+	----------
+	proj_set: 2-d ndarray
+		each line is one projection (1 line of the detector) to be filtered
+	
+	Returns
+	-------
+	
+	res: 2-d ndarray
+		filtered projections
+	
+	Notes
+	-----
+	
+	We use zero padding. However, we do not use any filtering (hanning, etc.)
+	in the FFT yet.
+	"""
+	nb_angles, l_x = proj_set.shape
+	#Assume l is even for now
+	ramp = 1./l_x * np.hstack((np.arange(l_x), np.arange(l_x, 0, -1)))
+	return fftpack.ifft(ramp * fftpack.fft(proj_set, 2*l_x, axis=1), axis=1)[:,:l_x]
 
 
 def rank_order(image):
