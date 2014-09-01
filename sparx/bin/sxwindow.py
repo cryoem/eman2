@@ -104,27 +104,25 @@ def main():
 				name_info     = info_name(name_im)
 				
 				im = EMData(name_im)
-				x0 = int(im.get_xsize())/2
+				x0 = int(im.get_xsize())/2  #  IMAGE SIZE IS ALWYAS AN integer,  in addition please look up "//" in python, what does it mean?
 				y0 = int(im.get_ysize())/2
 				
 				coords = js_open_dict(name_info)["boxes"]
 				for i in range(len(coords)):
 					x = int(coords[i][0])
 					y = int(coords[i][1])
-					imn=Util.window(im, box_size-2, box_size, 1, x-x0, y-y0) # Util.window() produces an image with nx+2 instead of nx,
+					imn=Util.window(im, box_size-2, box_size, 1, x-x0, y-y0) # Util.window() produces an image with nx+2 instead of nx,  #  WHO SAYS SO??
 					# so I just subtract 2 to make the program not crash
-					fftip(imn)
+					fftip(imn)  #  WHAT DOES IT DO HERE?  WHAT WOULD BE THE OURCOME?
 					imn = ramp(imn)
 					#	normalize under the mask
-					mask2D   = model_circle(box_size/2, box_size, box_size)
-					[avg, sig, imin, imax] = Util.infomask(imn, mask2D, True)
+					mask2D   = model_circle(box_size/2, box_size, box_size)  # THIS IS BEGINNER'S WASTE, WHICH OF THE PARAMETERS CHANGE IN THE LOOP?
+					[avg, sig, imin, imax] = Util.infomask(imn, mask2D, True)   #  STATISTICS HAS TO BE CALCULATED OUTSIDE OF THE MASK
 					imn -= avg
 					Util.mul_scalar(imn, 1.0/sig)
-					Util.mul_img(imn, mask2D) # I am not sure about this. It is not in my notes, 
+					Util.mul_img(imn, mask2D) # I am not sure about this. It is not in my notes, #  WHY THAT WOULD BE NECESSARY?
 					# but it was in the code where I found this procedure
 
-					imn.write_image(name_num_base + suffix + extension, -1) # -1: appending to the image stack
-
-
+					imn.write_image(name_num_base + suffix + extension, -1) # -1: appending to the image stack#  WHAT IS HTHE FILE FORMAT OF THE OUTPUT FILE?  I KEEP SAYING IT HAS TO BE BDB
 if __name__=='__main__':
 	main()
