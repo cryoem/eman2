@@ -104,8 +104,8 @@ def main():
 				name_info     = info_name(name_im)
 				
 				im = EMData(name_im)
-				x0 = im.get_xsize()/2
-				y0 = im.get_ysize()/2
+				x0 = int(im.get_xsize())/2
+				y0 = int(im.get_ysize())/2
 				
 				coords = js_open_dict(name_info)["boxes"]
 				for i in range(len(coords)):
