@@ -224,7 +224,7 @@ def main():
 	for arg in sys.argv:	arglist.append( arg )
 
 	progname = os.path.basename(arglist[0])
-	usage = progname + " stack outdir --phase=1 --ou=outer_radius"
+	usage = progname + " stack outdir --phase=1 --ou=outer_radius|sxconsistency.py --phase=3 newlocal/main000 --ou=133 --thresherr=3.0 --params=paramsa outgrouparms"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--phase",     type= "int",         default= 1,       help="Phase =1 prepares resampled stacks, =2 analyzes consistency of orientation parameters")
 	parser.add_option("--ou",        type= "int",         default= -1,      help="outer radius for calculation of pixel error")
@@ -309,14 +309,9 @@ def main():
 		print "Proportion of the same orientations ",qt
 		write_text_file([qt], os.path.join(outdir,howmanythesame) )
 
-	elif options.phase == 3 and len(args) == 7:
-		inputbdb    = args[0]
-		outdir      = args[1]
-		outavgtrans = args[2]
-		outgoody    = args[3]
-		outbad      = args[4]
-		outgrouparms= args[5]
-		goodpergroup= args[6]
+	elif options.phase == 3 and len(args) == 2:
+		outdir      = args[0]
+		outgrouparms= args[1]
 		radius = options.ou
 		thresherr = options.thresherr  #for chc5 1, for ribo 4#4.0
 		sym = int(options.sym[1:])
@@ -331,12 +326,10 @@ def main():
 				params[chr(65+j)+chr(48+ll)]=[]
 				ll+=1
 
-
-
 		chunks = {}
 		chunklengths = {}
 		for i in xrange(4):
-			chunks[chr(65+i)] = map(int,read_text_row(os.path.join(outdir,"chunk"+"%1d.txt"%i)))
+			chunks[chr(65+i)] = map(int,read_text_file(os.path.join(outdir,"chunk"+"%1d.txt"%i)))
 			chunklengths[chr(65+i)] = len(chunks[chr(65+i)])
 
 
@@ -349,17 +342,7 @@ def main():
 
 
 		pairs = [["A0","A1"],["B3","B4"],["C1","C5"],["D2","D4"]]
-
-
-		"""
-		#  These are beginnings of A,B,C,D if put consecutively
-		chunkbrackets = []
-		nn = 0
-		for i in xrange(4):
-			eb = nn+chunklengths[i]
-			chunkbrackets.append([nn,eb])
-			nn = eb
-		"""
+		lefts = ["A2","B0","C3","D5"]
 
 		#  Compute average projection params and pixel errors
 		avgtrans = {}
@@ -369,10 +352,10 @@ def main():
 			pixer[q[0][0]]    = [0.0]*chunklengths[q[0][0]]
 			for j in xrange(chunklengths[q[0][0]]):
 				fifi = [ params[q[0]][j], params[q[1]][j] ]
-				pixer[q[0][0]][j] = max_3D_pixel_error(fifi[0], fifi[1], r=radius)
 
 				nas = [0.0,0.0,0.0]
 				if( sym == 1):
+					pixer[q[0][0]][j] = max_3D_pixel_error(fifi[0], fifi[1], r=radius)
 					for i in xrange(2):
 						n1,n2,n3 = getfvec(fifi[i][0],fifi[i][1])
 						nas[0] += n1
@@ -402,6 +385,8 @@ def main():
 						nas[1] += n2
 						nas[2] += n3
 						print qnom, n1,n2,n3,nas
+					#  To get the correct pixer phi angle as to be taken from the above!!
+					pixer[q[0][0]][j] = max_3D_pixel_error(fifi[0], fifi[1], r=radius)
 
 				nom = sqrt(nas[0]**2 + nas[1]**2 + nas[2]**2)
 
@@ -414,73 +399,52 @@ def main():
 					else:                       nphi   = degrees(atan2( nas[1], nas[0] ))%qsym
 
 				#print   "FIFI     %4d     %7.2f     %7.2f    %7.2f    %7.2f     %7.2f     %7.2f    %7.2f    %7.2f"%(k,fifi[0][0],fifi[0][1],fifi[1][0],fifi[1][1],fifi[2][0],fifi[2][1],nphi,ntheta)
-				twod = average2dtransform(twod)
+				twod = average2dtransform([fifi[0][2:],fifi[1][2:]])
 				avgtrans[q[0][0]][j] = [nphi, ntheta, twod[0], twod[1], twod[2]]
 
 
-
-		perr = [True]*nn
+		perr = {}
 		tgood = 0
-		for k in xrange(nn):
-			if(pixer[k] > threshold):  perr[k] = False
-			if  perr[k]: tgood += 1
-		print tgood,ngood
-		if(tgood < 4):
-			print "  No good images within the pixel error threshold specified"
-			exit()
-		else:     ngood = tgood
-
+		for q in blocks:
+			perr[q] = [True]*chunklengths[q]
+			for k in xrange(chunklengths[q]):
+				if(pixer[q][k] > thresherr):  perr[q][k] = False
+				if  perr[q][k]: tgood += 1
+			if(tgood < 4):
+				print "  No good images within the pixel error threshold specified"
+				exit()
+		print  " tgood ", tgood
+		hi = hist_list([pixer[q][k] for q in blocks for k in xrange(chunklengths[q])  ],16)
+		for i in xrange(len(hi[0])):
+			print  "%4d   %12.3f    %12.0f "%(i,hi[0][i],hi[1][i])
 		#  Finished, store average orientation params and table of good images
 
 		#  store lists of good images for each group
-		ll=0
-		for i in xrange(3):
-			for j in xrange(i+1,4):
-				pt = perr[i*n4:(i+1)*n4]+perr[j*n4:(j+1)*n4]
-				missing = []
-				for k in xrange(len(pt)):
-					if(pt[k]):  missing.append(k)
-				if(len(missing)>0):  write_text_file(missing,os.path.join(outdir,goodpergroup+'%1d.txt'%ll))
-				ll+=1
+		#  blocks is indexed by first letter
+		for i,q in enumerate(blocks):
+			good = []
+			bad  = []
+			for k in xrange(chunklengths[q]):
+				deprt = max_3D_pixel_error(params[lefts[i]][k],avgtrans[q][k],r=radius)
+				if  perr[q][k]:
+					good.append([chunks[q][k],pixer[q][k],deprt, params[pairs[i][0]][k],params[pairs[i][1]][k],params[lefts[i]][k],avgtrans[q][k] ])
+				else:
+					bad.append([chunks[q][k],pixer[q][k],deprt, params[pairs[i][0]][k],params[pairs[i][1]][k],params[lefts[i]][k],avgtrans[q][k]])
+			write_text_row(good,os.path.join(outdir,"newgood"+"%1d.txt"%i))
+			write_text_row(bad,os.path.join(outdir,"newbad"+"%1d.txt"%i))
+		del good,bad
+		#  write out parameters, for those in pairs write out average, for leftouts leave them as they were
+		for i in xrange(6):
+			prms = []
+			for q in blocks:
+				if params.has_key(q+chr(48+i)):
+					try:
+						j = lefts.index(q+chr(48+i))
+						prms += params[q+chr(48+i)]
+					except:
+						prms += avgtrans[q]
+			write_text_row(prms, os.path.join(outdir,outgrouparms+"%1d.txt"%i))
 
-		nt = EMUtil.get_image_count(inputbdb)
-		#  First restore the original ordering based on lili files, it is enough to concatenate first and last one.
-		lili = map(int,read_text_file(os.path.join(outdir,'lili0.txt'))) + map(int,read_text_file(os.path.join(outdir,'lili5.txt')))
-		for i in xrange(nn):
-			avgtrans[i] = [lili[i],avgtrans[i],perr[i]]
-		avgtrans.sort()
-		missing = []
-		for i in xrange(nt):
-			try:  k = lili.index(i)
-			except:  missing.append(k)
-		missing.sort()
-		print "missing  "  , missing
-		for i in xrange(nn):
-			perr[i] = avgtrans[i][-1]
-			avgtrans[i] = avgtrans[i][1] +  [perr[i]]  + [lili[i]]
-		for i in xrange(len(missing)):
-			avgtrans.insert(missing[i],[0,0,0,0,0,0,-1])
-			perr.insert(missing[i],False)
-		write_text_row(avgtrans, os.path.join(outdir,outavgtrans) )
-
-		#  Apply rotations found to full data sets and store the results:
-		for j in xrange(6):
-			for i in xrange(len(qt[j])-1,-1,-1):
-				if(len(qt[j][i]) == 1):  del qt[j][i]
-			write_text_row( qt[j],os.path.join(outdir,outgrouparms+"%1d.txt"%j) )
-
-		qt = []
-		for i in xrange(nt):
-			if perr[i]: qt.append(i)
-
-		if(len(qt)  >  0):
-			write_text_file(qt, os.path.join(outdir,outgoody) )
-			if(len(qt)<nt):
-				missing = set(range(nt)) - set(qt)
-				missing = [i for i in missing]
-				missing.sort()
-				write_text_file(missing, os.path.join(outdir,outbad) )
-		else:  print  "  No good images within the pixel error threshold specified"
 		"""
 		0   1   2   3   4   5
 
@@ -510,17 +474,17 @@ def main():
 				                                            to the total number of images
 
 
-		Phase 3:   sxconsistency.py  --phase=2   --ou=outer_radius  --sym=c1  --thresherr=1.0  --params=params  
-		                           bdb:data  outdir averagetransforms  goodimages badimages outgrouparms goodpergroup
+		Phase 3:   sxconsistency.py --phase=3 outdir --ou=133 --thresherr=3.0 --params=paramsa outgrouparms
+
 			input files:
-			  bdb:data - original input file
 			  outdir - directory containing files lili0.txt to lili5.txt produced in phase 1
 			  --params=master/main/params - Root of of six parameter file names with refinement results, the actual names should be
 											  master/main/params0.txt  to master/main/params5.txt
 			output files:
-			  averagetransforms - Text file with average 3D orientation parameters computed from six runs, can be imported into bdb:data
-			  goodimages          - Text file with indices of images whose orientation parameters arrors are below specified thresherr (to be kept)
-			  badimages           - Text file with indices of images whose orientation parameters arrors are above specified thresherr (to be rejected)
+			  outgrouparms*.txt - Root of of six parameters files with average 3D orientation parameters computed from six runs, can be imported into bdb:data
+                   The next two files contain the original image numbers refering to the top bdb.
+			  outdir/newgood.txt    - Text file with indices of images whose orientation parameters arrors are below specified thresherr (to be kept)
+			  outdir/bad.txt        - Text file with indices of images whose orientation parameters arrors are above specified thresherr (to be rejected)
 		"""
 		print "Please run '" + progname + " -h' for detailed options"
 
