@@ -37,9 +37,9 @@ from EMAN2jsondb import *
 from emboxerbase import *
 
 from utilities import *
+from fundamentals import *
 from filter import *
 from global_def import *
-
 
 def window(data):
 	"""
@@ -91,19 +91,10 @@ def main():
 		print "\nusage: " + usage
 		print "Please run '" + progname + " -h' for detailed options\n"
 	else:
-# 		params = {}  # In this case you do not need dictionary.  It just confuses the code.
-# # 		# the next line seems to be incorrect.  args is a list of arguments, the first one is the name of the program itself
-# # 		#  In addition, the way you are trying to do it the user would have to give the list of actual name
-# # 		#  Please check how this is done in sxhelixoboxer!!
-# 		params["filenames"] = args
-# 		params["format"] = 'json'
-# 		params["coordsdir"] = options.coordsdir
-# 		params["ctffile"]   = options.ctffile
-
 		database = "e2boxercache"
 		db = js_open_dict(os.path.join(database,"quality.json"))
-		suffix    = str(db['suffix'])
-		extension = str(db['extension'])
+		suffix    = str(db['suffix'])    # db['suffix'] is unicode, so need to call str()
+		extension = str(db['extension']) # db['extension'] is unicode, so need to call str()
 		info_suffix = '_info.json'
 		
 		for f in os.listdir(options.coordsdir):
@@ -120,7 +111,18 @@ def main():
 				for i in range(len(coords)):
 					x = coords[i][0]
 					y = coords[i][1]
-					imn=Util.window(im, box_size, box_size, 1, int(x-x0),int(y-y0))					
+					imn=Util.window(im, box_size-2, box_size, 1, int(x-x0),int(y-y0)) # Util.window() produces an image with nx+2 instead of nx,
+					# so I just subtract 2 to make the program not crash
+					fftip(imn)
+					imn = ramp(imn)
+					#	normalize under the mask
+					mask2D   = model_circle(box_size/2, box_size, box_size)
+					[avg, sig, imin, imax] = Util.infomask(imn, mask2D, True)
+					imn -= avg
+					Util.mul_scalar(imn, 1.0/sig)
+					Util.mul_img(imn, mask2D) # I am not sure about this. It is not in my notes, 
+					# but it was in the code where I found this procedure
+
 					imn.write_image(name_num_base + suffix + extension, -1) # -1: appending to the image stack
 
 
