@@ -109,9 +109,9 @@ def main():
 				
 				coords = js_open_dict(name_info)["boxes"]
 				for i in range(len(coords)):
-					x = coords[i][0]
-					y = coords[i][1]
-					imn=Util.window(im, box_size-2, box_size, 1, int(x-x0),int(y-y0)) # Util.window() produces an image with nx+2 instead of nx,
+					x = int(coords[i][0])
+					y = int(coords[i][1])
+					imn=Util.window(im, box_size-2, box_size, 1, x-x0, y-y0) # Util.window() produces an image with nx+2 instead of nx,
 					# so I just subtract 2 to make the program not crash
 					fftip(imn)
 					imn = ramp(imn)
