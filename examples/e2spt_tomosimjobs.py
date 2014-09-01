@@ -374,7 +374,7 @@ def main():
 			
 		else:
 			randstack=options.ptclstack
-			print "You've provided randstack via ptclstack", options.ptclstack
+			#print "You've provided randstack via ptclstack", options.ptclstack
 			
 		
 		if randstack and (options.testsampling or options.testboxsize or options.testlowpassfreq or options.testmaskradius):
@@ -405,7 +405,7 @@ def main():
 			
 			if options.ptclstack:
 				randstack=options.ptclstack
-				print "You've provided randstack via ptclstack", options.ptclstack
+				#print "You've provided randstack via ptclstack", options.ptclstack
 			
 			os.system( 'e2proc3d.py ' + randstack + ' ' + rootpath + '/randstack.hdf')
 						
@@ -427,7 +427,7 @@ def main():
 				print "ERROR: You have to supply either tiltrange parameters including --tiltstep, or nslices parameters"
 			
 			if not nslices:
-				print "ERROR: Couldn't figureout nslices"
+				print "ERROR: Couldn't figure out nslices"
 				sys.exit()
 			
 			
@@ -460,9 +460,9 @@ def main():
 				elif boxstep > 0:
 					boxes = [ x for x in xrange( currentbox, limit + 1*boxstep, int(math.fabs( boxstep )) ) ]
 				
-				print "\n\n\n\nThe boxes to use are", boxes
-				print "Current box is", currentbox
-				print "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBVVVVBVVVVBBBBBBBBBBBBBB\n\n\n\n"
+				#print "\n\n\n\nThe boxes to use are", boxes
+				#print "Current box is", currentbox
+				#print "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBVVVVBVVVVBBBBBBBBBBBBBB\n\n\n\n"
 				if boxes:
 					for box in boxes:
 						
@@ -573,7 +573,11 @@ def simloop(options,rootpath,randstack,wildcard=''):
 
 	rootpathOrig = rootpath
 	
+	compsPATHS = {}
 	comps = options.comparators.split(',')
+	
+	for c in comps:
+		compsPATHS.update( { c:'' } )
 	
 	#compIDS={}
 	#if comps and len(comps) >1:
@@ -601,10 +605,7 @@ def simloop(options,rootpath,randstack,wildcard=''):
 		
 				pass
 				
-	print "\nInside simloop, options.path is", options.path
-	#if options.testalignment:	
-	#	resultsdir = 'results_ali_errors'
-	#	os.system('cd ' + options.path + ' && mkdir ' + resultsdir)
+	#print "\nInside simloop, options.path is", options.path
 
 	snrl = options.snrlowerlimit
 	snru = options.snrupperlimit
@@ -613,10 +614,6 @@ def simloop(options,rootpath,randstack,wildcard=''):
 	tiltrangel = options.tiltrangelowerlimit
 	tiltrangeu = options.tiltrangeupperlimit
 	tiltrangech = options.tiltrangechange
-
-	#tiltstepl = options.tiltsteplowerlimit
-	#tiltstepu = options.tiltstepupperlimit
-	#tiltstepch = options.tiltstepchange
 	
 	tiltstep = options.tiltstep
 	
@@ -635,7 +632,7 @@ def simloop(options,rootpath,randstack,wildcard=''):
 		print """ERROR: You must supply parameters EITHER for --nslices change and lower and upper limits, OR --tiltstep."""
 		sys.exit()
 	
-	print "\n\nORIGINAL options.model is", options.model
+	#print "\n\nORIGINAL options.model is", options.model
 	
 	nrefs = 1
 	
@@ -672,22 +669,11 @@ def simloop(options,rootpath,randstack,wildcard=''):
 			#print "nslices is", nslices
 			#if not options.tiltstep:
 			nslicestag = ("%d" %(nslices)).zfill(3)
-			
-			#tiltstep = round(2.0 * tiltrange / tiltstep,1)
-			#if options.nsliceschange and options.nsliceslowerlimit and options.nslicesupperlimit:
-			#	#print "The number of slices is", tiltstep
-			#	#tiltsteptag = str( round(2.0 * tiltrange / tiltstep,1) ).zfill(5)
-			#	tiltsteptag = ("%.2f" %( round(2.0 * tiltrange / tiltstep,1) ) ).zfill(5)
-			#else:
-			#	t=1
-			#	#print "The tilt step is", tiltstep
-
 			snr=snrl
 			
 			while snr < snru:
 				#print "The conditions to simulate are tiltrange=%d, nslices=%d, snr=%.2f" % (tiltrange,nslices,snr)
 				#print "Snr is", snr
-				#rootpath = os.getcwd()
 				
 				snrtag = ("%.2f" %(snr) ).zfill(5).replace('.','p')
 				
@@ -701,9 +687,13 @@ def simloop(options,rootpath,randstack,wildcard=''):
 					sys.exit()
 				
 				if options.comparators:
+					print "\nComparators are",options.comparators
 					if len(comps) > 1:
+						print "len(comps) is", len(comps)
 						for comp in comps:
-							#print "Comparator is", comp
+							print "Comparator is", comp
+							print "Snr is", snr
+							print "Simround is", simround
 							#print "Whereas root is", originalpath
 							
 							options.aligncmp = comp
@@ -718,33 +708,32 @@ def simloop(options,rootpath,randstack,wildcard=''):
 							if simround == 0 or (simround == 1 and options.randstack):										#In the first round, the original path
 								#pathstem = options.path
 								
-								
 								rootpath = rootpathOrig + compID
 								options.path = originalpath + compID
-							
-								options = sptmakepath( options, options.path )
-								print "\n\n\n\n\n\n\n\nSimround is 0 and therefore I made path", options.path
-
+								
+								try:
+									options = sptmakepath( options, options.path )
+									print "\n\n\n\n\n\n\n\nSimround is 0 and therefore I made path", options.path
+								except:
+									pass
+									
 								rootpath = rootpathOrig + options.path.replace(originalpath,'')
-
+								
+								compsPATHS.update( { comp: options.path } )
+							else:
+								options.path = compsPATHS[comp]
+								rootpath = rootpathOrig + options.path.replace(originalpath,'')
+								
 							if options.randstack:
 								os.system('e2proc3d.py ' + options.randstack + ' ' + rootpath + '/model.hdf --first=0 --last=0')
 								options.model = rootpath + '/model.hdf'			
 							
 							if not options.randstack and options.model:
 								os.system('cp ' + options.model + ' ' + rootpath)
-							
-								#if "/" not in options.model:								
-									
+								
 								options.model = rootpath + "/" + options.model.split('/')[-1]
 						
-						
 							nrefs = EMUtil.get_image_count( options.model )
-
-						
-							#if rootpath not in options.path:
-							#	options.path = rootpath + '/' + options.path
-							
 							
 							#compPATHS.update({ compID : options.path })
 							
@@ -759,10 +748,9 @@ def simloop(options,rootpath,randstack,wildcard=''):
 							
 							#print "\n\n$$$$$$$$$$\nThe stack thestack BEFORE sending is", thestack
 
-							#simloop(options,rootpath)
-							#print "\n\n\nPPPPPPPPPPPPPP\nAnd path is", options.path
-							
 							itersMode=0
+							
+							#ret=['    ','    ','    ']
 							ret=gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snrtag,snr,simround,firstrandstack,samestackformany,thestack,themodel,itersMode,wildcard)
 						
 							if samestackformany == 0:
@@ -912,6 +900,7 @@ def simloop(options,rootpath,randstack,wildcard=''):
 					#	thestack = ret[0]
 				
 				simround+= 1
+				
 				snr += snrch
 				print "\n\nThe snr has increased by", snrch
 				print "And thus will be for the next round", snr
@@ -952,8 +941,8 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 	
 	finalAvgs=[]
 	
-	print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n(e2spt_tomosimjobs.py)(gencmds)\nSSSSSSSSSSSSSSSSS\nsamestackformany is", samestackformany
-	print "SSSSSSSSSSSSSSSSS\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+	#print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n(e2spt_tomosimjobs.py)(gencmds)\nSSSSSSSSSSSSSSSSS\nsamestackformany is", samestackformany
+	#print "SSSSSSSSSSSSSSSSS\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
 	
 	#modeldir = options.path
 	#if rootpath not in modeldir:
@@ -975,8 +964,8 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 	
 	resultsdir = rootpath + '/results'
 
-	#print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n ! ! ! ! ! ! ! ! ! ! ! ! ! ! \n The results dir to make should be", resultsdir
-	#print "(e2spt_tomosimjobs) (function gencmds) Options path is", options.path
+	print "\n\n! ! ! ! ! ! ! ! ! ! ! ! ! ! \n The results dir to make should be", resultsdir
+	print "(e2spt_tomosimjobs) (function gencmds) Options path is", options.path
 	#print"\n ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
 	
 	inputdata = options.model
@@ -1010,7 +999,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			subpath = options.path
 		
 		print "\n\n\n\nSUBPATH IS!!!!!!!!!!!!!!!!!!!!!!", subpath
-		print "\n\n\n"
+		#print "\n\n\n"
 		#>>subdirs = os.listdir(rootpath + '/' + options.path)
 		
 		if wildcard:
@@ -1071,7 +1060,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			print "\nModel is here", newname
 			print '\n'
 			
-		#print "\n\nHowever, for this specific model, the resultsdir to make should be", resultsdir
+		print "\n\nHowever, for this specific model, the resultsdir to make should be", resultsdir
 		#print "And it should be amongst subdirs", subdirs
 		
 		if resultsbase not in subdirs:
@@ -1119,11 +1108,11 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 				
 				firstrandstack =  subpath + '/randstack.hdf'
 				
-				print "\n\nThe firstrandstack name in e2spt_tomosimjobs when simround is 0, is", firstrandstack
+				#print "\n\nThe firstrandstack name in e2spt_tomosimjobs when simround is 0, is", firstrandstack
 			
 			if simround > 0 and firstrandstack:
-				print "\n\nRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR\nThe randstack to PROVIDE because simround > 1 is", firstrandstack
-				print "\nRRRRRRRRRRRRRRRRRRRR\n\n"
+				#print "\n\nRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR\nThe randstack to PROVIDE because simround > 1 is", firstrandstack
+				#print "\nRRRRRRRRRRRRRRRRRRRR\n\n"
 				randstackcmd = ' --randstack=' + firstrandstack
 				
 				if options.randstack:
@@ -1158,9 +1147,9 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			
 			cmd1a = 'cd ' + modeldir + ' && ' + jobcmd
 			
-			print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n ! ! ! ! ! ! ! ! ! ! ! ! ! ! \n "
+			print "\n\n ! ! ! ! ! ! ! ! ! ! ! ! ! ! \n "
 			print "e2spt_simulation job, or cmd1a is",cmd1a
-			print "\n ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+			print "\n ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !\n\n"
 			
 			runcmd( cmd1a )
 	
@@ -1170,7 +1159,10 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			#print "THEMODEL, thesemodels[d], would be", thesemodels[d]
 			#print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nMMMMMMMMMMM\n"
 			
-			os.system('mkdir ' + subpath)
+			try:
+				os.system('mkdir ' + subpath)
+			except:
+				pass
 			#>>cmd1b = 'cp ' + str(thesestacks[d]) + ' ' + subpath+ '/' + subtomos.replace('.hdf','_ptcls.hdf')
 			
 			cmd1b = 'cp ' + str(thesestacks[d]) + ' ' + subpath+ '/simptcls.hdf'
@@ -1183,6 +1175,10 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 				simmodel = subpath + '/' + thesemodels[d].split('/')[-1].replace('.hdf','_previousITER.hdf')
 			
 			cmd1b = cmd1b + ' && cp ' + str(thesemodels[d]) + ' ' + simmodel
+			
+			print "\n\n ! ! ! ! ! ! ! ! ! ! ! ! ! ! \n "
+			print "e2spt_simulation job, or cmd1b is",cmd1b
+			print "\n ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! ! !\n\n"
 			
 			runcmd( cmd1b )
 			
@@ -1226,7 +1222,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 				#print "\n\n\nRRRRRRRRRRRRRRRRRRRRRRRR\n\n\n REFPREP command was", refprepcmd
 				#print "\nRRRRRRRRRRRRRRRRRRRRRRRRRRRR\n\n"
 			
-			print "\n\n\n\n\n\n\n\n\n\n\n rrrrrrrrrrrrrrrrrrrrrr THERE WAS SIMMREF, therefore, ref is", ref			
+			#print "\n\n\n\n\n\n\n\n\n\n\n rrrrrrrrrrrrrrrrrrrrrr THERE WAS SIMMREF, therefore, ref is", ref			
 			if samestackformany > 0:
 				ref = thesemodels[d].split('/')[-1]
 	
@@ -1234,8 +1230,8 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 					#ref = subpath + '/' + thesemodels[d].split('/')[-1].replace('.hdf','_previousITER.hdf')
 					ref = thesemodels[d].split('/')[-1].replace('.hdf','_previousITER.hdf')
 
-				print "BUT THERE is ALSO SAMESTACK FOR MANY!, so ref is", ref
-				print "rrrrrrrrrrrrrrrr\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+				#print "BUT THERE is ALSO SAMESTACK FOR MANY!, so ref is", ref
+				#print "rrrrrrrrrrrrrrrr\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
 				
 			output = subtomos.replace('.hdf', '_avg.hdf')
 			#print "\n\n$$$$$$$$$$$$$$$$$$$$$$\nRef name is\n$$$$$$$$$$$$$$$$$$$\n", ref
@@ -1285,6 +1281,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			cmd2 = cmd2 + alicmd
 			runcmd( cmd2 )	
 			
+			print "\nCmd2+alicmd is", cmd2
 			
 			aliptcls = output.replace('_avg.hdf','_ali.hdf')
 			
@@ -1342,7 +1339,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 						extractcmd2 += ' --refpreprocess'
 				
 				elif options.quicktest:
-					extractcmd2 = "cd " + alipath2 + " && e2spt_classaverage.py --path=finalRef_vs_OriginalRef --input=" + finalrefname + " --output=finalrefali.hdf --ref=" + refToCompensate + " -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_symmetry_3d:sym=c1:verbose=0 --parallel=" + options.parallel + " --falign=None --averager=mean.tomo --aligncmp=" + options.aligncmp + " --faligncmp=" + options.faligncmp + " --shrink=3 --normproc=" + str(options.normproc) + " --iter=1 --npeakstorefine=1 --savesteps --saveali --refpreprocess"
+					extractcmd2 = "cd " + alipath2 + " && e2spt_classaverage.py --clipali=32 --path=finalRef_vs_OriginalRef --input=" + finalrefname + " --output=finalrefali.hdf --ref=" + refToCompensate + " -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_symmetry_3d:sym=c1:verbose=0 --parallel=" + options.parallel + " --falign=None --averager=mean.tomo --aligncmp=" + options.aligncmp + " --faligncmp=" + options.faligncmp + " --shrink=3 --normproc=" + str(options.normproc) + " --iter=1 --npeakstorefine=1 --savesteps --saveali --refpreprocess"
 				
 				runcmd( extractcmd2 )
 			
@@ -1399,14 +1396,19 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 				print "\n\ncmd1a (jobcmd) was:\n", cmd1a
 			elif cmd1b:
 				print "\n\ncmd1b (to copy randstack before simulation) was:\n", cmd1b
+			
 			print "\n\ncmd2 (alicmd) was:\n", cmd2
+			
 			if not options.simref and int(options.iter) >1:
 				print "\n\nrefprepcmd was:\n",refprepcmd
+			
 			print "\n\nextractcmd0 was:\n", extractcmd0
+			
 			if extractcmd1:
 				print "\n\nextractcmd1 was:\n",extractcmd1
 			if extractcmd2:
 				print "\n\nextractcmd2 was:\n",extractcmd2
+			
 			print "\n\nsolutioncmd was:\n", solutioncmd
 
 			#print "rfilecmd was:", rfilecmd
@@ -1484,14 +1486,16 @@ def analyzeresults(options,rootpath,nrefs,iterPATHS,extra=''):
 		comps = options.comparators.split(',')
 		#iters = str(options.iter).split(',')
 		
-		print "\n\n\n\n\n\nCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCn\nCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\nCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\nCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\nIn analyze results, comaprators are", comps
+		print "\n\nCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCn\nIn analyze results, comaprators are", comps
 
 		if options.comparators and len(comps) >1 :
 			originalpath = rootpath
 			compFilts = []
 			for comp in comps:
 			
-				compID = comp.split(':')[0].replace('.','P')
+				compID = comp.split(':')[0].replace('.','P') 
+				if len(options.path.split('_')) > 1:
+					compID += '_' + options.path.split('_')[-1]
 			
 				#if 'fsc.tomo' in comp:
 				#	compID = comp.split(':')[0].replace('.','P') +  comp.split(':')[1].replace('sigmas=','Sigmas').replace('.','P')
@@ -1506,7 +1510,8 @@ def analyzeresults(options,rootpath,nrefs,iterPATHS,extra=''):
 				rootpath = filt
 				print "\nComparator filt and refnum are", filt,i
 				print "Whereas originalpath, refnum are", originalpath,i
-				print "\n"
+				print "But CURRENT path is", options.path
+				print "And ROOTPATH is", rootpath
 			
 				otherFilts = compFilts - set(filt)
 				#options.aligncmp = comp
@@ -1553,7 +1558,11 @@ def analyzeresults(options,rootpath,nrefs,iterPATHS,extra=''):
 	
 				resfiles = []
 			
-				os.system('mkdir ' + resultsdir)
+				try:
+					os.system('mkdir ' + resultsdir)
+				except:
+					pass
+								
 				findir = os.listdir(resultsdir)
 				for f in findir:
 					if 'error.txt' in f:
