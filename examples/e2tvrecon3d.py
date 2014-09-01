@@ -325,36 +325,6 @@ def compute_sparsity( img ):
 	return (grad1[mask] > 0).mean(), (grad2[mask] > 0).mean()
 
 
-def makepath(options, stem=''):
-	if options.verbose > 5: print "makepath function called"
-	if options.path and ("/" in options.path or "#" in options.path):
-		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. Please edit your --path argument accordingly."
-		sys.exit(1)
-	if not options.path:
-		options.path = stem + '_01'
-		if options.verbose > 5:
-			print "--path was not specified, therefore it will have the default value"
-	files=os.listdir(os.getcwd())
-	while options.path in files:
-		if '_' not in options.path:
-			options.path = options.path + '_00'
-		else:
-			jobtag=''
-			components=options.path.split('_')
-			if components[-1].isdigit():
-				components[-1] = str(int(components[-1])+1).zfill(2)
-			else:
-				components.append('00')
-			
-			options.path = '_'.join(components)
-	if options.verbose > 5: print "The new options.path is", options.path
-	if options.path not in files:
-		if options.verbose > 5:
-			print "Creating the following path: ", options.path
-		os.system('mkdir ' + options.path)
-	return options
-
-
 # --------------- Data projection operator  --------------------
 def build_projection_operator( angles, l_x, n_dir=None, l_det=None, subpix=1, offset=0, pixels_mask=None ):
 	"""
