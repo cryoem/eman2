@@ -111,7 +111,7 @@ def main():
 		exit(1)
 	
 	if options.tlt:
-		tiltangles = np.asarray([ float( i ) for i in file( options.tlt , "r" ) ])
+		tiltangles = np.asarray([ float( i ) for i in file( options.tlt , "r" ) ],dtype=np.float32)
 		nslices = len( tiltangles )
 	elif options.tiltrange:
 		tiltangles = np.linspace(-1*float(options.tiltrange), float(options.tiltrange), nslices, endpoint=False)

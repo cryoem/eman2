@@ -85,7 +85,7 @@ def main():
 		exit(1)
 	
 	if options.tlt:
-		tiltangles = np.asarray([ float( i ) for i in file( options.tlt , "r" ) ])
+		tiltangles = np.asarray([ float( i ) for i in file( options.tlt , "r" ) ], dtype=np.float32)
 		nslices = len(tiltangles)
 	else:
 		print "You must speficy --tlt"
