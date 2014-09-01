@@ -29,12 +29,17 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 import os, sys
 import json
+
 from optparse import *
 from EMAN2 import *
+from EMAN2db import *
+from EMAN2jsondb import *
+from emboxerbase import *
+
 from utilities import *
 from filter import *
-from EMAN2jsondb import *
 from global_def import *
+
 
 def window(data):
 	"""
@@ -72,39 +77,39 @@ def main():
 	
 	parser = OptionParser(usage, version=SPARXVERSION)
 
-	parser.add_option('--coords_dir',   dest='coordsdir',                help='Directory containing particle coordinates')
-	parser.add_option('--importctf',    dest='ctffile',                  help='File name with CTF parameters produced by sxcter.')
-	parser.add_option('--topdir',       dest='topdir',       default='', help='Path name of directory containing relevant micrograph directories')
-	parser.add_option('--input_pixel',  dest='input_pixel',  default=1,  help='input pixel size')
-	parser.add_option('--output_pixel', dest='output_pixel', default=1,  help='output pixel size')
+# 	parser.add_option('--coords_dir',   dest='coordsdir',                help='Directory containing particle coordinates')
+# 	parser.add_option('--importctf',    dest='ctffile',                  help='File name with CTF parameters produced by sxcter.')
+# 	parser.add_option('--topdir',       dest='topdir',       default='', help='Path name of directory containing relevant micrograph directories')
+# 	parser.add_option('--input_pixel',  dest='input_pixel',  default=1,  help='input pixel size')
+# 	parser.add_option('--output_pixel', dest='output_pixel', default=1,  help='output pixel size')
 
 	(options, args) = parser.parse_args()
 	
-	if len(args) > 1:
+	if len(args) < 1:
 		print "\nusage: " + usage
 		print "Please run '" + progname + " -h' for detailed options\n"
-	else:		
-		json_suffix='_info.json'
-		fParticle_suffix = '_ptcls.hdf'
-		
-		for f in os.listdir(options.coordsdir):
-			if f.endswith(json_suffix):
-				fName =  os.path.join(options.coordsdir,f)
-				fRoot =  f.strip(json_suffix)
-				ff    = os.path.join(options.coordsdir, fRoot + json_suffix)
-		
-				im = EMData(fRoot + '.hdf')
-				js = js_open_dict(ff)["boxes"]
-				
-				x0=im.get_xsize()/2
-				y0=im.get_ysize()/2				
-				box_size = 64
-				
-				for i in range(len(js)):
-					x = js[i][0]
-					y = js[i][1]
-					imn=Util.window(im,box_size, box_size, 1, int(x-x0),int(y-y0))
-					imn.write_image(fRoot + fParticle_suffix, -1) #appending to the image stack
+	else:
+		params = {}
+		params["filenames"] = args
+		params["format"] = 'json'
+# 		params["coordsdir"] = options.coordsdir
+# 		params["ctffile"]   = options.ctffile
+		database = "e2boxercache"
+		db = js_open_dict(os.path.join(database,"quality.json"))
+		box_size = js_open_dict(os.path.join(database, 'base.json'))["box_size"]
+
+		for f in params["filenames"]:
+			im = EMData(f)
+			x0=im.get_xsize()/2
+			y0=im.get_ysize()/2				
+			
+			coords = js_open_dict(info_name(f))["boxes"]
+			for i in range(len(coords)):
+				x = coords[i][0]
+				y = coords[i][1]
+				imn=Util.window(im, box_size, box_size, 1, int(x-x0),int(y-y0))
+				imn.write_image(str(base_name(f) + db['suffix'] + db['extension']), -1) # -1: appending to the image stack
+
 
 if __name__=='__main__':
 	main()
