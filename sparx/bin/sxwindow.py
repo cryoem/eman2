@@ -89,25 +89,30 @@ def main():
 		print "\nusage: " + usage
 		print "Please run '" + progname + " -h' for detailed options\n"
 	else:
-		params = {}
+		params = {}  # In this case you do not need dictionary.  It just confuses the code.
+		# the next line seems to be incorrect.  args is a list of arguments, the first one is the name of the program itself
+		#  In addition, the way you are trying to do it the user would have to give the list of actual name
+		#  Please check how this is done in sxhelixoboxer!!
 		params["filenames"] = args
 		params["format"] = 'json'
 # 		params["coordsdir"] = options.coordsdir
 # 		params["ctffile"]   = options.ctffile
 		database = "e2boxercache"
 		db = js_open_dict(os.path.join(database,"quality.json"))
-		box_size = js_open_dict(os.path.join(database, 'base.json'))["box_size"]
+		box_size = # box size is a user-defined parameter
 
 		for f in params["filenames"]:
 			im = EMData(f)
 			x0=im.get_xsize()/2
-			y0=im.get_ysize()/2				
-			
+			y0=im.get_ysize()/2
+
 			coords = js_open_dict(info_name(f))["boxes"]
 			for i in range(len(coords)):
 				x = coords[i][0]
 				y = coords[i][1]
 				imn=Util.window(im, box_size, box_size, 1, int(x-x0),int(y-y0))
+				# next line - why str?  the variables you use are laready strings.
+				#  where suffix and extension are defined?
 				imn.write_image(str(base_name(f) + db['suffix'] + db['extension']), -1) # -1: appending to the image stack
 
 
