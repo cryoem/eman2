@@ -77,43 +77,51 @@ def main():
 	
 	parser = OptionParser(usage, version=SPARXVERSION)
 
-# 	parser.add_option('--coords_dir',   dest='coordsdir',                help='Directory containing particle coordinates')
+	parser.add_option('--coords_dir',   dest='coordsdir',                help='Directory containing particle coordinates')
 # 	parser.add_option('--importctf',    dest='ctffile',                  help='File name with CTF parameters produced by sxcter.')
 # 	parser.add_option('--topdir',       dest='topdir',       default='', help='Path name of directory containing relevant micrograph directories')
 # 	parser.add_option('--input_pixel',  dest='input_pixel',  default=1,  help='input pixel size')
 # 	parser.add_option('--output_pixel', dest='output_pixel', default=1,  help='output pixel size')
+	parser.add_option('--box_size',     dest='box_size',     type=int,   help='box size')
 
 	(options, args) = parser.parse_args()
+	box_size = options.box_size
 	
-	if len(args) < 1:
+	if len(args) > 0:
 		print "\nusage: " + usage
 		print "Please run '" + progname + " -h' for detailed options\n"
 	else:
-		params = {}  # In this case you do not need dictionary.  It just confuses the code.
-		# the next line seems to be incorrect.  args is a list of arguments, the first one is the name of the program itself
-		#  In addition, the way you are trying to do it the user would have to give the list of actual name
-		#  Please check how this is done in sxhelixoboxer!!
-		params["filenames"] = args
-		params["format"] = 'json'
+# 		params = {}  # In this case you do not need dictionary.  It just confuses the code.
+# # 		# the next line seems to be incorrect.  args is a list of arguments, the first one is the name of the program itself
+# # 		#  In addition, the way you are trying to do it the user would have to give the list of actual name
+# # 		#  Please check how this is done in sxhelixoboxer!!
+# 		params["filenames"] = args
+# 		params["format"] = 'json'
 # 		params["coordsdir"] = options.coordsdir
 # 		params["ctffile"]   = options.ctffile
+
 		database = "e2boxercache"
 		db = js_open_dict(os.path.join(database,"quality.json"))
-		box_size = # box size is a user-defined parameter
-
-		for f in params["filenames"]:
-			im = EMData(f)
-			x0=im.get_xsize()/2
-			y0=im.get_ysize()/2
-
-			coords = js_open_dict(info_name(f))["boxes"]
-			for i in range(len(coords)):
-				x = coords[i][0]
-				y = coords[i][1]
-				imn=Util.window(im, box_size, box_size, 1, int(x-x0),int(y-y0))
-				# next line - why str?  the variables you use are laready strings.
-				#  where suffix and extension are defined?
-				imn.write_image(str(base_name(f) + db['suffix'] + db['extension']), -1) # -1: appending to the image stack
+		suffix    = str(db['suffix'])
+		extension = str(db['extension'])
+		info_suffix = '_info.json'
+		
+		for f in os.listdir(options.coordsdir):
+			if f.endswith(info_suffix):
+				name_num_base = f.strip(info_suffix)
+				name_im       = name_num_base + '.hdf'
+				name_info     = info_name(name_im)
+				
+				im = EMData(name_im)
+				x0 = im.get_xsize()/2
+				y0 = im.get_ysize()/2
+				
+				coords = js_open_dict(name_info)["boxes"]
+				for i in range(len(coords)):
+					x = coords[i][0]
+					y = coords[i][1]
+					imn=Util.window(im, box_size, box_size, 1, int(x-x0),int(y-y0))					
+					imn.write_image(name_num_base + suffix + extension, -1) # -1: appending to the image stack
 
 
 if __name__=='__main__':
