@@ -48,6 +48,7 @@ from scipy import ndimage
 from itertools import count
 from scipy import fftpack
 
+import pdb
 
 def get_usage():
 	progname = os.path.basename(sys.argv[0])
@@ -76,7 +77,11 @@ def main():
 	parser.add_argument("--subpix", default=1, type=int, help="Specify the number of linear subdivisions used to compute the projection of one image pixel onto a detector pixel.")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID", default=-1)
+	parser.add_argument("--debug", action="store_true",default=False, help="Start pdb, a cli python debugger.", default=-1)
 	(options, args) = parser.parse_args()
+	
+	if options.debug != False:
+		pdb.set_trace()
 	
 	if options.tiltseries: 
 		nslices = EMUtil.get_image_count( options.tiltseries )
