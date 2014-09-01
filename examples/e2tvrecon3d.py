@@ -129,8 +129,9 @@ def main():
 	ysize = EMData( options.tiltseries , 0 ).get_ysize()
 	tiltstacks = get_tiltstacks( options, xsize, ysize )
 	
-	# Generate one projection operator for all tiltstacks
+	# Generate ONE projection operator for ALL tiltstacks
 	projection_operator = build_projection_operator( tiltangles, xsize, nslices, None, subpix, 0, None)
+	
 	# Reconstruct each 2D tiltstack
 	twod_recons = []
 	twod_recon_fname = gen_filenames( "recon_2D_",".hdf", 4 )
