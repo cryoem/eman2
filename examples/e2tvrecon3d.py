@@ -45,9 +45,9 @@ import matplotlib.pyplot as plt
 from numpy import loadtxt
 from scipy import sparse
 from scipy import ndimage
+from itertools import count
 #from scipy import fftpack
-import itertools as it
-#from multiprocessing import Pool
+
 
 def get_usage():
 	progname = os.path.basename(sys.argv[0])
@@ -74,13 +74,9 @@ def main():
 	parser.add_argument("--beta", default=20.0, type=float, help="Specify the total-variation regularization weight parameter 'beta' without performing cross validation.")
 #	parser.add_argument("--crossval", default=None, help="Use cross validaton to specify the parameter 'beta'. Input 0 for the best beta as determined by cross-validation or 1 for the best beta for segmentation as compared to a complete data set (i.e. for use with test data).")
 	parser.add_argument("--subpix", default=1, type=int, help="Specify the number of linear subdivisions used to compute the projection of one image pixel onto a detector pixel.")
-#	parser.add_argument("--parallel", default=4, type=int, help="Specify the number reconstructions you want to complete simultaneously. This typically corresponds to the number of cores on your computer.")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID", default=-1)
 	(options, args) = parser.parse_args()
-	
-	if options.output: 
-		outfile = options.output
 	
 	if options.tiltseries: 
 		nslices = EMUtil.get_image_count( options.tiltseries )
@@ -115,11 +111,6 @@ def main():
 	else: 
 		subpix = 1
 	
-#	if options.parallel:
-#		parallel = options.parallel
-#	else:
-#		parallel = 4
-	
 	if options.output: 
 		outfilename = options.output
 	else:
@@ -138,13 +129,13 @@ def main():
 	ysize = EMData( options.tiltseries , 0 ).get_ysize()
 	tiltstacks = get_tiltstacks( options, xsize, ysize )
 	
-	# Generate ONE projection operator for ALL tiltstacks
-	projection_operator = build_projection_operator( tiltangles, xlen, nslices, None, subpix, 0, None)
-	
+	# Generate one projection operator for all tiltstacks
+	projection_operator = build_projection_operator( tiltangles, xsize, nslices, None, subpix, 0, None)
 	# Reconstruct each 2D tiltstack
 	twod_recons = []
+	twod_recon_fname = gen_filenames( "recon_2D_",".hdf", 4 )
 	#pool = Pool(processes = parallel)
-	for tiltstack in tiltstacks:
+	for stacknum, tiltstack in enumerate(tiltstacks):
 		projections = tiltstack.ravel()
 		# The Actual 2D Reconstrucion
 		tic = time.time()
@@ -153,14 +144,12 @@ def main():
 		if options.verbose > 2: print "reconstruction completed in %f s" %( toc - tic )
 		twod_recons.append(recon[-1])
 		# Write each 2D reconstruction to current working directory
-		outpath = options.path + "/recon_2D_%04i.hdf"
-		outpath = it.imap(outpath.__mod__, it.count(0))
-		from_numpy(recon[-1]).write_image( outpath )
+		twod_recon_path = next( twod_recon_fname )
+		from_numpy(recon[-1]).write_image( options.path + "/" + twod_recon_path )
 	# Stack each 2D reconstruction together
 	reconstack = np.dstack( reconstructions )
 	# Write volume to file
-	final_reconstruction_path = options.path + "/" + outfilename
-	from_numpy(reconstack).write_image( final_reconstruction_path )
+	from_numpy(reconstack).write_image( options.path + "/" + outfilename )
 	
 	if options.noclean != True:
 		if options.verbose > 1: print "Cleaning up current working directory..."
@@ -170,6 +159,16 @@ def main():
 	E2end(logger)
 	if options.verbose > 1: print "Exiting"
 	return
+
+
+def gen_filenames( prefix, suffix, places ):
+	"""
+	Generate sequential filenames with the format <prefix><index><suffix>
+	The index field is padded with leading zeroes to the specified number of places
+	"""
+	pattern = "{}{{:0{}d}}{}".format(prefix, places, suffix)
+	for i in count(1):
+		yield pattern.format(i)
 
 
 def get_tiltstacks( options, xlen, ylen ):
@@ -182,33 +181,21 @@ def get_tiltstacks( options, xlen, ylen ):
 	# Calculate the number of images (slices) in the tilt series
 	num_imgs = EMUtil.get_image_count( options.tiltseries )
 	# Generate iteratively increasing file name
-	stackname = it.imap("tiltstack_%04i.hdf".__mod__, it.count( 0 ))
+	fname = gen_filenames( "tiltstack_",".hdf", 4 )
 	# Create empty list in which to store the numpy arrays
 	tiltstacks=[]
 	for y in range( ylen ):
 		slices = []
-		next( stackname )
+		# increment file name by 1
+		stackpath = next( fname )
 		for imgnum in range( num_imgs ):
 			tiltseries.read_image( options.tiltseries, imgnum )
 			np_tiltseries = tiltseries.numpy()
-			slices.append(np_tiltseries[0:xlen][imgnum])
-		from_numpy(np.vstack(slices)).write_image( str(stackname) )
-		tiltstacks.append(np.vstack(slices))
+			slices.append( np_tiltseries[0:xlen][imgnum] )
+		from_numpy(np.vstack( slices )).write_image( options.path + "/" + stackpath )
+		tiltstacks.append(np.vstack( slices ))
 	# RETURN: list of 2D numpy arrays, each corresponding to a tilt series along the tilt axis
 	return tiltstacks
-
-
-#def recon2D_par( fname, pid ):
-#	projections = fname
-#	# The Actual 2D Reconstruction
-#	tic = time.time()
-#	recon, energies = fista_tv( projections, beta, niters, projection_operator )
-#	toc = time.time()
-#	if options.verbose > 2: print "reconstruction completed in %f s" %( toc - tic ))
-#	# Write 2D reconstruction to current working directory
-#	outpath = it.imap(options.path + "/recon_2D_%04i.hdf".__mod__, it.count(0))
-#	from_numpy(recon[-1]).write_image( outpath )
-#	return recon[-1], pid
 
 
 def fista_tv(y, beta, niter, H, verbose=0, mask=None):
@@ -369,10 +356,11 @@ def makepath(options, stem=''):
 	return options
 
 
+# --------------- Data projection operator  --------------------
 def build_projection_operator( angles, l_x, n_dir=None, l_det=None, subpix=1, offset=0, pixels_mask=None ):
 	"""
 	Compute the tomography design matrix.
-		
+	
 	Parameters
 	----------
 	
@@ -381,7 +369,7 @@ def build_projection_operator( angles, l_x, n_dir=None, l_det=None, subpix=1, of
 	
 	n_dir : int, default l_x
 		number of angles at which projections are acquired. n_dir projection angles are regularly spaced between 0 and 180.
-		
+	
 	l_det : int, default is l_x
 		number of pixels in the detector. If l_det is not specified, we suppose that l_det = l_x.
 	
@@ -393,7 +381,7 @@ def build_projection_operator( angles, l_x, n_dir=None, l_det=None, subpix=1, of
 	
 	pixels_mask : 1-d ndarray of size l_x**2
 		mask of pixels to keep in the matrix (useful for to removeing pixels inside or outside of a circle, for example)
-		
+	
 	Returns
 	-------
 	p : sparse matrix of shape (n_dir l_x, l_x**2), in csr format Tomography design matrix. The csr (compressed sparse row) allows for efficient subsequent matrix multiplication. The dtype of the elements is float32, in order to save memory.	

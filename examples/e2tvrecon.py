@@ -68,13 +68,13 @@ def main():
 	parser.add_argument("--testdata", default=None, help="A 2D image to project a number of times (specified by --nslices) and then reconstructed via compressed sensing.")
 	parser.add_argument("--tlt", default=None, type=str, help="An imod tlt file containing alignment angles. If specified slices will be inserted using these angles in the IMOD convention")
 	parser.add_argument("--nslices", default=120, type=int, help="Specify the number slices into which an image will be projected. Only applicable when using the --testdata option.")
-	parser.add_argument("--tiltrange", default='60.0', type=str, help="Specify the range of degrees over which data was collected. If two comma-separated numbers are specified, they will act as a lower and upper bound respectively. For example --tiltrange=50.5 OR --tiltrange=-30.3,65.0.")
+	parser.add_argument("--tiltrange", default='60.0', type=str, help="Specify the range of degrees over which data was collected. This defaults to 60 degrees, resulting in the generation of projections from -60.0 to 60.0 degrees.")
 	parser.add_argument("--output", default="recon.hdf", help="Output reconstructed tomogram file name.")
 	parser.add_argument("--noise",action="store_true",default=False, help="If true, noise will be added to the image before reconstruction.")
-	parser.add_argument("--noisiness",default=2.0, type=float, help="Multiply noise by a specified factor. The default value is 2.0")
+	parser.add_argument("--noisiness",default=0.1, type=float, help="Multiply noise by a specified factor. The default value is 0.1")
 	parser.add_argument("--path",type=str,default='recon',help="Directory in which results will be stored.")
 	parser.add_argument("--niters", default=100, type=int, help="Specify the number of iterative reconstructions to complete before returning the final reconstructed volume.")
-	#parser.add_argument("--crossval", default=None, help="Use cross validaton to specify the parameter 'beta'. Input 0 for the best beta as determined by cross-validation or 1 for the best beta for segmentation as compared to a complete data set (i.e. for use with test data).")
+#	parser.add_argument("--crossval", default=None, help="Use cross validaton to specify the parameter 'beta'. Input 0 for the best beta as determined by cross-validation or 1 for the best beta for segmentation as compared to a complete data set (i.e. for use with test data).")
 	parser.add_argument("--beta", default=20.0, type=float, help="Specify the total-variation regularization weight parameter 'beta' without performing cross validation.")
 	parser.add_argument("--subpix", default=1, type=int, help="Specify the number of linear subdivisions used to compute the projection of one image pixel onto a detector pixel.")
 	parser.add_argument("--fsc",action="store_true",default=False, help="If true, an fourier shell correlation plot will be generated comparing the input and output data.")
@@ -107,25 +107,21 @@ def main():
 	elif options.tlt != None:
 		pass
 	else:
-		print "You must specify --nslices explicitly or implicitly by supplying a tiltseries or tlt file"
+		print "You must specify the number of projections explicitly via --nslices or implicitly by supplying a tiltseries or tlt file."
 		exit(1)
 	
-	if options.tlt != None:
+	if options.tlt:
 		tltfile = options.tlt
-		tiltangles = get_angles( tltfile )
-		angles = np.radians( tiltangles )
-		nslices = len( angles )
+		tiltangles = [ float( i ) for i in file( tltfile , "r" ) ]
+		nslices = len( tiltangles )
+	elif options.tiltrange:
+		tiltrange = float(options.tiltrange)
+		lower_bound = -1 * tiltrange
+		upper_bound = tiltrange
+		tiltangles = np.linspace(lower_bound, upper_bound, nslices, endpoint=False)
 	else:
-		if options.tiltrange != None:
-			anglerange = options.tiltrange
-			tiltrange = map( float, anglerange.split(','))
-			if len( tiltrange ) > 1:
-				tiltangles = np.linspace(tiltrange[0], tiltrange[-1], nslices, endpoint=False)
-			else:
-				tiltanglesangles = np.linspace(-1*tiltrange[0], tiltrange[0], nslices, endpoint=False)
-		else:
-			tiltangles = np.linspace(0, np.pi, nslices, endpoint=False)
-			print "No --tiltrange specified. Using 0 to 180 degrees by default."
+		print "You must specify --tlt and/or --tiltrange."
+		exit(1)
 	
 	if options.niters : 
 		niters = int(options.niters)
@@ -144,7 +140,7 @@ def main():
 	if options.noisiness : 
 		noisiness = options.noisiness
 	else: 
-		noisiness = 2.
+		noisiness = 0.1
 	
 	if options.output : outfile = options.output
 	
@@ -164,26 +160,25 @@ def main():
 		linkto = options.path + "/input.hdf"
 		os.symlink( linkfrom, linkto )
 	
-	#if options.crossval != None:
-	#	betas = get_best_betas( infile, nslices, niters)
-	#	if options.crossval == 1:
-	#		beta = betas[1]
-	#	else:
-	#		beta = betas[0]
+#	if options.crossval != None:
+#		betas = get_best_betas( infile, nslices, niters)
+#		if options.crossval == 1:
+#			beta = betas[1]
+#		else:
+#			beta = betas[0]
 	
 	# Get Tomogram data
 	img, dim, options = get_tomo_data( options, imgnum )
 	xlen = dim[0]
 	
-	# Projection operator and projections data, with noise
-	projection_operator = build_projection_operator( options, angles, xlen, nslices, None, subpix, 0, None)
-	projections = projection_operator * img.ravel()[:, np.newaxis]
-	
 	if options.noise != False:	# add Noise to Image
-		noisy = img.ravel()[:np.newaxis] += noisiness * np.random.randn(*projections.shape)
-		outpath = options.path + "/noise_added.hdf"
-		from_numpy(noisy).write_image( outpath, i )
-		projections = projection_operator * noisy
+		img += noisiness * np.random.randn(*img.shape)
+		outpath = options.path + "/noisy_input.hdf"
+		from_numpy(img).write_image( outpath )
+	
+	# Projection operator and projections data
+	projection_operator = build_projection_operator( tiltangles, xlen, nslices, None, subpix, 0, None)
+	projections = projection_operator * img.ravel()[:, np.newaxis]
 	
 	# Generate stack of projections
 	outpath = options.path + "/prjs.hdf"
@@ -404,21 +399,6 @@ def makepath(options, stem=''):
 	return options
 
 
-def get_angles( options ):
-	angles = []
-	if options.tlt:
-		angles=[ float( i ) for i in file( options.tlt , "r" ) ]
-	elif options.tiltseries:
-		n = EMUtil.get_image_count( options.tiltseries )
-		for i in range( n ):
-			headderangle = EMData( options.tiltseries, i, True )['tiltangle']
-			angles.append( headderangle )
-	else:
-		print "No tlt file or tiltseries. Returning empty array."
-	return angles
-
-
-# --------------- Data projection operator  --------------------
 def build_projection_operator( angles, l_x, n_dir=None, l_det=None, subpix=1, offset=0, pixels_mask=None ):
 	"""
 	Compute the tomography design matrix.
