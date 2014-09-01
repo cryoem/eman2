@@ -80,7 +80,9 @@ def main():
 	
 	parser.add_argument("--shrink", type=int,default=0,help="Optionally shrink the input volume before the simulation if you want binned/down-sampled subtomograms.")
 	
-	parser.add_argument("--nptcls", type=int,default=10,help="Number of simulated subtomograms tu generate per referece.")
+	parser.add_argument("--nptcls", type=int,default=10,help="""Number of simulated subtomograms 
+		to generate per reference model supplied.""")
+		
 	parser.add_argument("--txrange", type=int,default=0,help="""Maximum number of pixels to randomly translate each subtomogram in X. The random translation will be picked between -txrange and +txrange. 
 								     Default value is set by --transrange, but --txrange will overwrite it if specified.""")
 	parser.add_argument("--tyrange", type=int,default=0,help="""Maximum number of pixels to randomly translate each subtomogram in Y. The random translation will be picked between -tyrange and +tyrange.
@@ -95,6 +97,10 @@ def main():
 									For example, if simulating a tilt series collected from -60 to 60 degrees, enter a --tiltrange value of 60. 
 									Note that this parameter will determine the size of the missing wedge.""")
 	parser.add_argument("--applyctf", action="store_true",default=False,help="If on, it applies ctf to the projections in the simulated tilt series based on defocus, cs, and voltage parameters.")
+	
+	parser.add_argument("--savenoise", action="store_true",default=False,help="""If on,
+		it saves the noise stack for each particle. This can be useful for testing alignment
+		under varying SNR, so that the same noise (just at a different ratio/level) is tested.""")
 	
 	parser.add_argument("--saveorthostack", action="store_true",default=False,help="If on, --nptcls is ignored and you get 3 subtomograms (simulated from the model supplied) which are orthogonal to each other.")
 
@@ -126,7 +132,7 @@ def main():
 		Save the stack of randomly oriented particles, before subtomogram simulation 
 		(before the missing wedge and noise are added).""")
 
-	parser.add_argument("--nosim", action="store_true",default=False,help="""If on
+	parser.add_argument("--nosim", action="store_true",default=False,help="""If on,
 		the program will generate stacks of "perfect particles" in different random 
 		orientations, but with no missing wedge, no noise, no ctf parameters, etc.
 		The output randstack.hdf will be identical to simptcls.hdf""") 
@@ -162,8 +168,13 @@ def main():
 
 	parser.add_argument("--notrandomize",action="store_true",default=False,help="This will prevent the simulated particles from being rotated and translated into random orientations.")
 	parser.add_argument("--simref",action="store_true",default=False,help="This will make a simulated particle in the same orientation as the original input (or reference).")
-	parser.add_argument("--negativecontrast",action="store_true",default=False,help="This will make the simulated particles be like real EM data before contrast reversal. Otherwise, 'white protein' (positive density values) will be used.")
-
+	
+	parser.add_argument("--invert",action="store_true",default=False,help=""""This 
+		will multiply the pixel values by -1. 
+		This is intended to make the simulated particles be like real EM data before 
+		contrast reversal, assuming that they're being generated from a PDB model. 
+		Otherwise, 'white protein' (positive density values) will be used.""")
+		
 	parser.add_argument("--nslices", type=int,default=61,help="""This will determine the tilt step between slices, depending on tiltrange.
 									For example, to simulate a 2 deg tilt step supply --nslices=61 --tiltrange=60.
 									Recall that --tiltrange goes from - to + the supplied value, and that there is a central slice or projection at 0 deg,
@@ -179,7 +190,7 @@ def main():
 	
 	logger = E2init(sys.argv, options.ppid)
 
-	print "e2spt_simulation received these many slices", options.nslices
+	#print "e2spt_simulation received these many slices", options.nslices
 
 	'''
 	Parse the options
@@ -221,7 +232,8 @@ def main():
 		dimension = 2
 	
 	if options.randstack:
-		print "\n\nI will not generate a randstack but will read it from", options.randstack
+		if options.verbose > 3:
+			print "\n\nI will not generate a randstack but will read it from", options.randstack
 
 		randstackbase = os.path.basename( options.randstack )
 		randstackcopy = options.path + '/' + randstackbase
@@ -234,18 +246,15 @@ def main():
 		
 		
 		nr=EMUtil.get_image_count(randstackcopy)
-		print "There are these many particles in the randstack", nr							#ATTENTION: Randstack might still need box size changes and padding...
+		if options.verbose > 3:
+			print "There are these many particles in the randstack", nr							#ATTENTION: Randstack might still need box size changes and padding...
 		
 		options.input = randstackcopy
 		
 		if options.filter or float(options.pad) > 1.0 or int(options.shrink) > 1:
 			ret = preprocess(options,randstackcopy,dimension) 
 			randstackcopy = ret[-1]
-
-		print "Randstackcopy to read particles from is", randstackcopy
-		
-		#stackname = rootpath + '/' + os.path.basename(options.randstack)
-		
+				
 		simptclsname = options.path + '/simptcls.hdf'
 		if options.nosim:
 			
@@ -324,9 +333,6 @@ def main():
 	
 					options.input = options.path + '/' + modelfilename
 					tag = str(i).zfill(len(str(nrefs)))
-				
-				
-				
 	
 				'''
 				Make model's box cubical if it isn't
@@ -413,8 +419,6 @@ def main():
 	return()
 
 
-
-
 def sptfixformat( options ):
 	check=0	
 	
@@ -492,6 +496,32 @@ def clip2D( img, size ):
 	return img
 
 
+def clip3D( vol, size ):
+	
+	volxc = vol['nx']/2
+	volyc = vol['ny']/2
+	volzc = vol['nz']/2
+	
+	Rvol =  Region( (2*volxc - size)/2, (2*volyc - size)/2, (2*volzc - size)/2, size , size , size)
+	vol.clip_inplace( Rvol )
+	#vol.process_inplace('mask.sharp',{'outer_radius':-1})
+	
+	return vol
+
+
+def clip2D( img, size ):
+	
+	imgxc = img['nx']/2
+	imgyc = img['ny']/2
+	#imgzc = img['nz']/2
+	
+	Rimg =  Region( (2*imgxc - size)/2, (2*imgyc - size)/2, 0, size , size , 1)
+	img.clip_inplace( Rimg )
+	#img.process_inplace('mask.sharp',{'outer_radius':-1})
+	
+	return img
+
+
 def preprocess(options,stack,dimension):
 	
 	print "\n(e2spt_simulation.py)(preprocess), dimension is", dimension
@@ -514,7 +544,7 @@ def preprocess(options,stack,dimension):
 	newsize=hdr['nx']
 	nf = EMUtil.get_image_count(stack)
 	
-	print "Read header. nf is", nf
+	print "\n(e2pt_simulation.py)(preprocess) Read header. nf is", nf
 	if options.shrink and int(options.shrink) > 1:
 		newsize = newsize/options.shrink	
 		if newsize % 2:
@@ -537,19 +567,33 @@ def preprocess(options,stack,dimension):
 		if newsize % 2:
 			newsize += 1
 		
-		clipcmd = 'e2proc3d.py ' + preprocessed + ' ' + preprocessed + ' --clip=' + str(newsize)
-		clipcmd += '&& e2fixheaderparam.py --input=' + preprocessed + ' --stem=origin --stemval=0.0'
+		if dimension == 3:
+			clipcmd = 'e2proc3d.py ' + preprocessed + ' ' + preprocessed + ' --clip=' + str(newsize)
+			clipcmd += '&& e2fixheaderparam.py --input=' + preprocessed + ' --stem=origin --stemval=0.0'
+		
+			print "\n(e2spt_simulation.py)(preprocess) cmd to run for clipping is", clipcmd
+			p=subprocess.Popen( clipcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			text=p.communicate()	
+			p.stdout.close()
+		
 		if dimension == 2:
 			preproctmp = preprocessed.replace('.hdf','_tmp.hdf')	
-			clipcmd ='e2proc2d.py ' + preprocessed + ' ' + preproctmp + ' --clip' + str( newsize ) + ',' + str( newsize )
-			clipcmd += ' rm ' + preprocessed + ' && mv ' + preproctmp + ' ' + preprocessed
+			
+			n = EMUtil.get_image_count( preprocessed )
+			for ii in range(n):
+				img = EMData( preprocessed, ii )
+				img = clip2D( img, newsize )
+				img.write_image( preprocessed, ii )
+					
+			#clipcmd ='e2proc2d.py ' + preprocessed + ' ' + preproctmp + ' --clip' + str( newsize ) + ',' + str( newsize )
+			#clipcmd += ' rm ' + preprocessed + ' && mv ' + preproctmp + ' ' + preprocessed
 		
-		p=subprocess.Popen( clipcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		text=p.communicate()	
-		p.stdout.close()
-	
+		#sys.exit()
 		options.input = preprocessed
 		
+	
+	print "\nOptions.input has changed to",	preprocessed
+	#sys.exit()	
 	if options.filter:
 		pass #Filter not working for now
 	
@@ -557,29 +601,7 @@ def preprocess(options,stack,dimension):
 	return [options,preprocessed]
 	
 
-def preprocess2D(options,stack):
-		
-	preprocessed = stack.replace('.hdf','_preproc.hdf')
-	
-	os.system('e2proc3d.py	' + stack + ' ' + preprocessed)
-	
-	hdr = EMData(stack,0,True)
-	newsize=hdr['nx']
-	nf = EMUtil.get_image_count(stack)
-	
-	if options.shrink and int(options.shrink) > 1:
-		newsize = newsize/options.shrink	
-		if newsize % 2:
-			newsize += 1
 
-		#os.system('e2proc3d.py ' + options.input + ' ' + options.input + ' --process=math.meanshrink:n=' + str(options.shrink))
-		
-		shrinkcmd='e2proc3d.py ' + preprocessed + ' ' + preprocessed + ' --process=math.meanshrink:n=' + str(options.shrink)
-		p=subprocess.Popen( shrinkcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		text=p.communicate()	
-		p.stdout.close()
-
-	return [options,preprocessed]
 	
 
 '''
@@ -981,7 +1003,7 @@ class SubtomoSimTask(JSTask):
 			
 			#print "Sizes of prj and prj_ftt are", prj['nx'],prj['ny'],prj_fft['nx'],prj_fft['ny']
 		
-			if options.negativecontrast:
+			if options.invert:
 				prj_fft.mult(-1)								#Reverse the contrast, as in "authentic" cryoEM data		
 		
 			if options.applyctf:
@@ -994,40 +1016,49 @@ class SubtomoSimTask(JSTask):
 				prj_r = prj_fft.do_ift()							#Go back to real space
 			
 			
-			noise = ''
+			noise = EMData()
 		
 			if options.snr and options.snr != 0.0 and options.snr != '0.0' and options.snr != '0' and dimension == 3:
 				nx=prj_r['nx']
 				ny=prj_r['ny']
 			
 				#print "I will make noise"
-			
 				#noise = 'noise string'
 				#print "Noise is", noise
+				
 				noise = test_image(1,size=(nx,ny))
 				#print "noise now is img", noise
 			
 				noise2 = noise.process("filter.lowpass.gauss",{"cutoff_abs":.25})
 				noise.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.75})
-				noise = ( noise*3 + noise2*3 ) * int(options.snr)
+				
+				noise = ( noise*3 + noise2*3 )
+				
+				if options.savenoise:
+					noiseStackName = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_NOISE.hdf')
+					noise.write_image( noiseStackName, -1 )
+				
+				noise *= float( options.snr )
 			
-				if noise:
-					#print "I will add noise"
-					#noise.process_inplace('normalize')
-					
-					prj_r.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.25})
-					prj_r.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.75})
-					
-					fractionationfactor = 61.0/nslices		#At snr = 10, simulated subtomograms look like empirical ones for +-60 deg data collection range
-															#using 2 deg tilt step. If 61 slices go into each subtomo, then fractionation factor
-															#Will be 1. Otherwise, if nslices is > 61 the signal in each slice will be diluted.
-															#If nslices < 1, the signal in each slice will be enhanced. In the end, regardless of the nslices value, 
-															#subtomograms will always have the same amount of signal instead of signal depending on number of images.
-					prj_r.mult( fractionationfactor )
-					prj_r.add(noise)
-			
-				elif options.snr:
-					print "WARNING: You specified snr but there's no noise to add, apparently!"
+				#if noise:
+				#print "I will add noise"
+				#noise.process_inplace('normalize')
+				
+				prj_r.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.25})
+				prj_r.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.75})
+				
+				fractionationfactor = 61.0/nslices		#At snr = 10, simulated subtomograms look like empirical ones for +-60 deg data collection range
+														#using 2 deg tilt step. If 61 slices go into each subtomo, then the fractionation factor
+														#Will be 1. Otherwise, if nslices is > 61 the signal in each slice will be diluted.
+														#If nslices < 1, the signal in each slice will be enhanced. In the end, regardless of the nslices value, 
+														#subtomograms will always have the same amount of signal instead of signal depending on number of images.
+				prj_r.mult( fractionationfactor )
+				prj_r.add(noise)
+				
+				
+				
+				#elif options.snr:
+				#	print "WARNING: You specified snr but there's no noise to add, apparently!"
 
 			ctfed_projections.append(prj_r)
 			#print "Appended ctfed prj in slice j", j
@@ -1074,8 +1105,8 @@ class SubtomoSimTask(JSTask):
 	
 		k=0
 		for p in ctfed_projections:
-			print "Adding projection k", k
-			print "Whose min and max are", p['minimum'], p['maximum']
+			#print "Adding projection k", k
+			#print "Whose min and max are", p['minimum'], p['maximum']
 			#print "The size of the prj to insert is", p['nx']
 			pm = r.preprocess_slice(p,p['xform.projection'])
 			r.insert_slice(pm,pm['xform.projection'],1.0)
@@ -1084,6 +1115,7 @@ class SubtomoSimTask(JSTask):
 		#print "\n\n!!!!!!Will reconstruct the volume for particle i",i
 	
 		rec = r.finish(True)
+		
 		print "\n(e2spt_simulation) I have finished simulating particle number", i
 		print "\n"
 		#print "The mean of the reconstructed particle is", rec['mean']

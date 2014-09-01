@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Jesus Galaz-Montoya, 2012. Last update: dec/9/2013.
+# Author: Jesus Galaz-Montoya, 2012. Last update: july/24/2014.
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -112,6 +112,11 @@ def main():
 	#parser.add_argument("--interpolator",default='',help="""What interpolation scheme 
 	#	to use for reconstruction. Options are 'nearest_neighbor', 'gauss_2', 'gauss_3', 'gauss_5', 
 	#	'gauss_5_slow', 'gypergeom_5', 'experimental' """)
+	
+	parser.add_argument("--fillwedge",action='store_true',default=False,help="""This option will
+		fill the region of the missing wedge with evenly spaced images of Gaussian noise
+		with the same tiltstep used to simulate the particles (as determined through the
+		parameter --nslices).""")
 		
 	parser.add_argument("--model", type=str, default='',help="""The name of the input volume from which 
 							simulated subtomograms will be generated. 
@@ -528,7 +533,12 @@ def main():
 		Make the directory where to store the results. Sptakepath exists in e2spt_classaverage.py
 		'''
 		
-		options = sptmakepath(options,'spt_tomosimjobs')
+		
+		
+		if options.filesdir:
+			options.path = options.filesdir
+		else:
+			options = sptmakepath(options,'spt_tomosimjobs')
 		
 		files=[]
 		if options.files:
@@ -679,7 +689,7 @@ def simloop(options,rootpath,randstack,wildcard=''):
 				#print "Snr is", snr
 				#rootpath = os.getcwd()
 				
-				snrtag = ("%.2f" %(snr) ).zfill(5)
+				snrtag = ("%.2f" %(snr) ).zfill(5).replace('.','p')
 				
 				samestackformany=0
 				thestack=[]
@@ -972,8 +982,6 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 	inputdata = options.model
 	
 	
-
-	
 	for d in range(nrefs):
 		modeltag = ''
 		#subpath = rootpath + '/' + options.path + '/' +'TR' + str(tiltrange).zfill(5) + '_TS' + tiltsteptag + '_SNR' + str(snr).zfill(5)
@@ -1088,20 +1096,16 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			
 			#jobcmd = 'e2spt_simulation.py --input=' + inputdata + ' --output=' + subtomos + ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --nslices=' + str(nslices) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --finalboxsize=' + str(options.finalboxsize) + ' --verbose=' + str(options.verbose) + ' --parallel=' + str(options.parallel) + ' --path=' + subpath.split('/')[-1]
 			
+			
+			
+			
 			jobcmd = 'e2spt_simulation.py --input=' + inputdata +  ' --snr=' + str(snr) + ' --nptcls=' + str(options.nptcls) + ' --nslices=' + str(nslices) + ' --tiltrange=' + str(tiltrange) + ' --transrange=' + str(options.transrange) + ' --pad=' + str(options.pad) + ' --finalboxsize=' + str(options.finalboxsize) + ' --verbose=' + str(options.verbose) + ' --parallel=' + str(options.parallel) 
 			
-			#if not wildcard:
 			jobcmd += ' --path=' + subpath.split('/')[-1]
 			
-			#else:
-			#	jobcmd += ' && mv sptsim_01/* ' + modeldir
-			
-			
-			
-			#snrl = options.snrlowerlimit
-			#snru = options.snrupperlimit
-			#snrch = options.snrchange
-			  
+			if float(snr) > 0.0:
+				jobcmd += ' --savenoise'
+		
 			if simround < 1:
 				jobcmd += ' --saverandstack' + ' --shrink=' + str(options.shrinksim)
 				
@@ -1147,7 +1151,9 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			
 			if options.reconstructor:
 				jobcmd += ' --reconstructor=' + options.reconstructor
-		
+			
+			if options.fillwedge:
+				jobcmd += ' --fillwedge'
 
 			
 			cmd1a = 'cd ' + modeldir + ' && ' + jobcmd
@@ -1747,7 +1753,7 @@ def resfiles_analysis(options,resfiles,resultsdir,extra,modelnum=0):
 			tr = float(ff.split('TR')[-1].split('_')[0])
 			trs.append(tr)
 
-			snr = float(ff.split('SNR')[-1].split('_')[0])
+			snr = float( ff.split('SNR')[-1].split('_')[0].replace('p','.') )
 			snrs.append(snr)
 		
 			ts = float(ff.split('NS')[-1].split('_')[0])

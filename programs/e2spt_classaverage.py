@@ -1358,18 +1358,20 @@ def postprocess(img,mask,normproc,postprocess):
 
 def sptmakepath(options, stem='spt'):
 	if options.verbose:
-		print "Sptmakepath function called"
+		print "\n(e2spt_classaverage.py)(sptmakepath), stem is", stem
 	
-	if options.path and ("/" in options.path or "#" in options.path):
-		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
-		sys.exit(1)
+	#if options.path and ("/" in options.path or "#" in options.path):
+	#	print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
+	#	sys.exit(1)
+
+
+	files=os.listdir(os.getcwd())
 
 	if not options.path:		
 		options.path = stem + '_01'
 		if options.verbose:
-			print "--path was not specified, therefore it will have the default value", options.path 
-
-	files=os.listdir(os.getcwd())
+			print """\n(e2spt_classaverage.py)(sptmakepath)--path was not specified, 
+			therefore it will have the default value""", options.path 	
 
 	while options.path in files:
 		if '_' not in options.path:

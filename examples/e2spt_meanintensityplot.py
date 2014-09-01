@@ -306,7 +306,7 @@ def plotintensities( intensities, options, datafile, onefile='yes' ):
 	
 	
 	#calcbins=50
-	plt.hist(intensities, calcbins, alpha=0.75)	
+	plt.hist(intensities, calcbins, alpha=0.30)	
 	
 	intensities.sort()
 	#hmean = np.mean(h)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Author: Jesus Galaz, 02/Feb/2013, last update 24/July/2014
+# Author: Jesus Galaz-Montoya, 02/Feb/2013, last update 24/July/2014
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -32,13 +32,7 @@
 import os
 from EMAN2 import *
 import sys
-import time
 import numpy
-import pylab
-#from operator import itemgetter
-from matplotlib.ticker import MaxNLocator
-from pylab import figure, show	
-import matplotlib.pyplot as plt
 import math
 
 
@@ -299,64 +293,23 @@ def main():
 			else:
 				
 				angle = float( tiltangles[k] )
-				#print "\n\n\nTilt %d, ANGLE %f" %( k, angle )
-				#print "XC", xc
+				
 				tAxisShift = tomox/2.0
-				#print "tAxisShift is", tAxisShift
 				xcToAxis = xc - tAxisShift
-				#print "Therefore, xcToAxis is", xcToAxis
-				#if k==0:
-				#	print "\nThe tilt axis goes through the middle, so xcoordinates need to be shifted by", xcshift
-			
-				#print "\nTilt axis shift (should be constant; first time applied it is negative", -tAxisShift
-				#print "Because TOMOX is", tomox
-				#print "Therefore, XC with respect TO tilt AXIS is", xcToAxis
-				#print "\n\nZC", zc
+				
 				zSectionShift = tomoz/2.0
-				#print "zSectionShift", zSectionShift
 				zcToMidSection = zc - zSectionShift
-				#print "zcToMidSection",zcToMidSection
-			
-				#print "ZC (constant)", zc
-				#print "Therefore zSectionShift is", zSectionShift
-				#print "Therefore, zcToMidSection", zcToMidSection
-			
-				#RY = math.array( [ [math.cos(tilt),0, -1 * math.sin(tilt), 0], [0,1,0,0], [math.sin(tilt), 0, math.cos(tilt), 0], [0,0,0,1] ] )
-				#zt = zc* math.cos(tiltangles[k]) - xcshift * math.sin(tiltangles[k])
 				
-				
-			
-				
-				#print "sin(angle)", math.sin( math.radians(angle) )
-				#print "cos(angle)", math.cos( math.radians(angle) )
 				
 				cosTerm=xcToAxis * math.cos( math.radians(angle)  )
 				sinTerm=zcToMidSection * math.sin( math.radians(angle)  )
 				
-				#print "Cos term is", cosTerm
-				#print "Sin term is", sinTerm
-				
 				xtToAxis = zcToMidSection * math.sin( math.radians(angle)  ) + xcToAxis * math.cos( math.radians(angle)  )
-				
-				#print "Therefore the NEW coordinate is", xtToAxis
-				
-				#print "math.sin(angle) is", math.sin(angle)
-				#print "math.cos(angle) is", math.cos(angle)
-			
-				#print "\nTherefore, the TILTED X respect TO AXIS is", xtToAxis
 				
 				yt = yc
 				
-				#print "yt,yc", yt,yc
-				
 				xt = xtToAxis + tAxisShift
-				#print "The new corrected coordinate is", xt
-			
-				#zt = zcToMidSection + zSectionShift
-			
-				#print "\nHowever, after +tAxisShift, XT is", xt
-				##print "\n\n@@@@@@@@@\nTherefore the final coordinates of the tilt view to extract in 2D are xt,yt", xt,yt
-				#print "\n\n"
+				
 			
 				if float(xt) < 0.0:
 					print "Something went awfully wrong; you have a negative X coordinate",xt
@@ -408,25 +361,6 @@ def main():
 				
 				if options.subtractbackground and maxtilt:
 					
-					"""
-					rbg =  Region( (2*xt-bgboxsize)/2, (2*yt-bgboxsize)/2, k, bgboxsize, bgboxsize, 1)
-					ebg = EMData()
-					ebg.read_image(options.tiltseries,0,False,rbg)
-					ebg['tiltAngle']=angle
-					ebg['xt']=xt
-					ebg['yt']=yt
-					ebg['origin_x']=ebg['nx']/2.0
-					ebg['origin_y']=ebg['ny']/2.0
-					ebg['origin_z']=0
-					
-					print "(e2spt_subtilt.py) Extracted larger image for tilt angle " + str(angle) + " and mean " + str(ebg['mean']) + " for particle " + str(ptclNum)
-					
-					
-					if float( options.shrink ) > 1.0:
-						ebg.process_inplace('math.meanshrink',{'n':options.shrink})
-						
-					ebg.write_image(options.path + '/subtiltPtcl_' + str(ptclNum) + '_whole.hdf',outIndx)
-					"""
 									
 					'''
 					Extract a large volume around each particle (only for k==0), to distinguish ptcl from background
@@ -444,6 +378,13 @@ def main():
 							wholebox.process_inplace('math.meanshrink',{'n':options.shrink})
 						
 						#wholebox.process_inplace('normalize.edgemean')
+						
+						nsz = wholebox['sigma_nonzero']
+						
+						img.process_inplace("threshold.belowtozero",{"minval":snz*-1.5})
+						
+						#img.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.5})
+						#img.process_inplace("threshold.belowtozero",{"minval":snz/100.0})
 						
 						print "(e2spt_subtilt.py) Extracted whole 3D box " + str(angle) + " and mean " + str(wholebox['mean']) + " for particle " + str(ptclNum)
 						wholebox.write_image(options.path + '/subtiltPtcl_' + str(ptclNum) + '_whole3D.hdf',0)
@@ -485,7 +426,12 @@ def main():
 						print "\nGenerated ptclreprj with mean and XY sizes", ptclreprj['mean'],type(ptclreprj), ptclreprj['nx'],ptclreprj['ny'],ptclreprj['nz']
 						
 						ptclreprj.mult( math.cos( math.radians(angle) ) )
-						ptclreprj.process_inplace('normalize')
+						
+						mask = EMData(ptclreprj['nx'],ptclreprj['ny'],ptclreprj['nz'])
+						mask.to_one()
+						mask.process_inplace('mask.sharp',{'outer_radius':-2})
+						
+						ptclreprj.process_inplace('normalize.mask',{'mask':mask})
 						
 						if k==0:
 							ptclreprj.write_image(options.path + 'reprj0nomatch.hdf',0)
@@ -613,6 +559,10 @@ def main():
 			
 			name = 'particle#' + str(k).zfill(len(pcoords)) + '_slice' + str(j).zfill(len(pcoords)) + '.mrc'
 	'''
+	E2end(logger)
+	
+	return
+	
 		
 if __name__ == '__main__':
 	
