@@ -119,6 +119,7 @@ def main():
 	if options.verbose > 1: print "e2tvrecon.py"
 	
 	# Create new output directory for this instance
+	if options.verbose > 2: print "Generating instance directory..."
 	options = makepath( options, options.path)
 	rootpath = os.getcwd()
 	options.path = rootpath + "/" + options.path
@@ -126,6 +127,7 @@ def main():
 	# Make tiltstacks
 	xsize = EMData( options.tiltseries , 0 ).get_xsize()
 	ysize = EMData( options.tiltseries , 0 ).get_ysize()
+	if options.verbose > 2: print "Generating tiltstacks..."
 	tiltstacks = get_tiltstacks( options, xsize, ysize )
 	
 	# Generate one projection operator for all tiltstacks
@@ -158,7 +160,9 @@ def main():
 			if "tiltstack" in fname:
 				os.remove( path + "/" + fname )
 			if "recon_2d" in fname:
-				os.remove( path + "/" + fname)
+				os.remove( path + "/" + fname )
+			if "stack_" in fname:
+				os.remove( path + "/" + fname )
 	
 	E2end(logger)
 	if options.verbose > 1: print "Exiting"
@@ -180,25 +184,28 @@ def get_tiltstacks( options, xlen, ylen ):
 	Generates a 2D tiltseries for each pixel along the y axis of a 3D tiltseries.
 	Returns a list of files corresponding to all of the 2D tiltseries generated.
 	"""
-	# Read a tilt series
-	tiltseries = EMData()
 	# Calculate the number of images (slices) in the tilt series
 	num_imgs = EMUtil.get_image_count( options.tiltseries )
 	# Generate iteratively increasing file name
-	fname = gen_filenames( "tiltstack_",".hdf", 4 )
+	stack_fname = gen_filenames( "tiltstack_",".hdf", 4 )
+	slice_fname = gen_filenames( "stack_",".hdf", 4 )
 	# Create empty list in which to store the numpy arrays
 	tiltstacks=[]
-	for y in range( ylen ):
+	for y in range( ylen -1 ):
+		# Read the tilt series
+		tiltseries = EMData()
 		slices = []
+		slice_path = next(slice_fname)
 		# increment file name by 1
-		stackpath = next( fname )
+		stack_path = next( stack_fname )
 		for imgnum in range( num_imgs ):
-			tiltseries.read_image( options.tiltseries, imgnum )
-			np_tiltseries = tiltseries.numpy()
-			slices.append( np_tiltseries[0:xlen][y] )
+			r =  Region( 0, y, xlen , 1)
+			tiltseries.read_image(options.tiltseries, imgnum, False, r)
+			tiltseries.write_image( options.path + "/" + slice_path, imgnum )
+			slices.append( tiltseries.numpy() )
 		# write each tiltstack to disk
-		stack = np.vstack( slices )
-		from_numpy( stack ).write_image( options.path + "/" + stackpath )
+		stack = np.hstack( slices )
+		from_numpy( stack ).write_image( options.path + "/" + stack_path )
 		tiltstacks.append( stack )
 	# RETURN: list of 2D numpy arrays, each corresponding to a tilt series along the tilt axis
 	return tiltstacks
