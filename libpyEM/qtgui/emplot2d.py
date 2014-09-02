@@ -235,7 +235,7 @@ class EMPlot2DWidget(EMGLWidget):
 				self.visibility.pop(key)
 
 		if symtype==-2 and linetype==-2:
-			if (diff(data[0])>=0).all() : doline,linetype=1,0
+			if (diff(self.data[key][0])>=0).all() : doline,linetype=1,0
 			else : dosym,symtype=1,0
 		if color<0 : color=len(self.data)%len(colortypes)			# Automatic color setting
 		if color >len(colortypes): color = 0 # there are only a certain number of colors

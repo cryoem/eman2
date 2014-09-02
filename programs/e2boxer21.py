@@ -815,9 +815,61 @@ class GUIBoxer(QtGui.QWidget):
 #		m=self.guiim.scr_to_img((event.x(),event.y()))
 
 def tiled(img,box):
-	imgc=img.process("math.meanshrink",{"n":2})
-	boxc=good_boxsize(box/2,larger=True)
+	imgc=img.process("math.meanshrink",{"n":2})		# shrink image by 2 for boxing
+	boxc=good_boxsize(box/2,larger=True)			# box size in reduced image
+	nxb=4*imgc["nx"]/boxc-2		# number of boxes along x direction
+	nyb=4*imgc["ny"]/boxc-2
+	radius=boxc/2.6
 	
+	mask1=EMData(boxc,boxc,1)
+	mask1.to_one()
+	mask1.process_inplace("mask.gaussian",{"outer_radius":radius,"exponent":4.0})
+	# Mask 2 is the 'inverse' (1.0-val) of mask1, with the addition of a soft outer edge to reduce periodic boundary condition issues
+	mask2=mask1.copy()*-1+1
+#		mask1.process_inplace("mask.decayedge2d",{"width":4})
+	mask2.process_inplace("mask.decayedge2d",{"width":2})
+	#mask1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
+	#mask2.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
+	
+	# ratio1,2 give us info about how much of the image the mask covers for normalization purposes
+	ratio1=mask1.get_attr("square_sum")/(boxc*boxc)	#/1.035
+	ratio2=mask2.get_attr("square_sum")/(boxc*boxc)
+
+	cor=EMData(nxb,nyb)
+
+	vecs=[]
+	for y in xrange(nyb):
+		for x in xrange(nxb):
+			im1=imgc.get_clip(Region(boxc/8+x*boxc/4,boxc/8+y*boxc/4,boxc,boxc))
+			
+			im2=im1.copy()
+
+	#		print im2.get_size(), im1.get_size()
+
+			# now we compute power spectra for the 2 regions defined by the masks
+			im1.mult(mask1)
+			imf=im1.do_fft()
+			imf.ri2inten()
+			imf/=(imf["nx"]*imf["ny"]*ratio1)
+			cen_1d=imf.calc_radial_dist(imf.get_ysize()/2,0.0,1.0,1)
+			
+			im2.mult(mask2)
+			imf=im2.do_fft()
+			imf.ri2inten()
+			imf/=(imf["nx"]*imf["ny"]*ratio2)
+			edg_1d=imf.calc_radial_dist(imf.get_ysize()/2,0.0,1.0,1)
+
+			vec=EMData(imf["ny"]/4-2,1,1)		# We skip the first 2 points and only go to 1/2 Nyquist
+			for i in xrange(2,imf["ny"]/4):
+				vec[i]=sqrt(cen_1d[i])/sqrt(edg_1d[i])
+			
+			vecs.append(vec)
+			
+			img[(5*boxc/8+x*boxc/4)*2,(5*boxc/8+y*boxc/4)*2]=(vec["mean"]+0.5)*10.0
+			cor[x,y]=vec["mean"]
+	
+	cor.update()
+	return vecs,cor
 
 def detect(img,box):
 	img.process_inplace("normalize.edgemean")
