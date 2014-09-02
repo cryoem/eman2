@@ -209,6 +209,12 @@ def main():
 
 		if os.path.isfile(infile) :
 			num_inp_images = EMUtil.get_image_count(infile)
+
+			if num_inp_images == 1 :
+				[nxinp, nyinp, nzinp] = gimme_image_dimensions3D(infile)
+
+				if nzinp == 1 :
+					num_inp_images = 2
 		else :
 			num_inp_images = -1
 
