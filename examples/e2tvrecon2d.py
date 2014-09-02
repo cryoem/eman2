@@ -385,7 +385,6 @@ def makepath(options, stem=''):
 				components[-1] = str(int(components[-1])+1).zfill(2)
 			else:
 				components.append('00')
-			
 			options.path = '_'.join(components)
 	if options.verbose > 5: print "The new options.path is", options.path
 	if options.path not in files:
