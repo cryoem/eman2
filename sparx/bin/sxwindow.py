@@ -83,6 +83,7 @@ def main():
 # 	parser.add_option('--input_pixel',  dest='input_pixel',  default=1,  help='input pixel size')
 # 	parser.add_option('--output_pixel', dest='output_pixel', default=1,  help='output pixel size')
 	parser.add_option('--box_size',     dest='box_size',     type=int,   help='box size')
+	parser.add_option('--outdir',     dest='outdir',      help='Output directory')
 
 	(options, args) = parser.parse_args()
 	box_size = options.box_size
@@ -97,6 +98,8 @@ def main():
 		extension = str(db['extension']) # db['extension'] is unicode, so need to call str()
 		info_suffix = '_info.json'
 		
+		mask = pad(model_circle(box_size//2, box_size, box_size), box_size, box_size, 1, 0.0)
+
 		for f in os.listdir(options.coordsdir):
 			if f.endswith(info_suffix):
 				name_num_base = f.strip(info_suffix)
@@ -108,21 +111,19 @@ def main():
 				y0 = im.get_ysize()//2
 				
 				coords = js_open_dict(name_info)["boxes"]
-				#	normalize under the mask
-				[avg, sig, imin, imax] = Util.infomask(imn, mask2D, True)   
-				#  :FIXME: STATISTICS HAS TO BE CALCULATED OUTSIDE OF THE MASK
-				mask2D   = model_circle(box_size/2, box_size, box_size)  
 				for i in range(len(coords)):
+					otcl_images  = "bdb:%s/"%options.outdir + name_num_base + suffix
+
 					x = int(coords[i][0])
 					y = int(coords[i][1])
 					imn=Util.window(im, box_size, box_size, 1, x-x0, y-y0)
+					stat = Util.infomask(imn, mask, False)   
 # 					:FIXME: Needs sigma
 # 					im = filt_gaussh(im)
 					imn = ramp(imn)
-					imn -= avg
-					Util.mul_scalar(imn, 1.0/sig)
+					imn -= stat[0]
+					Util.mul_scalar(imn, 1.0/stat[1])
 					
-# :FIXME:			Need to be bdb format
-					imn.write_image(name_num_base + suffix + extension, -1) # -1: appending to the image stack#  
+					imn.write_image(otcl_images, i)
 if __name__=='__main__':
 	main()
