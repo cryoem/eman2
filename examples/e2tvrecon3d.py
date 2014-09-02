@@ -135,7 +135,7 @@ def main():
 	twod_recons = []
 	twod_recon_fname = gen_filenames( "recon_2D_",".hdf", 4 )
 	for tiltstack in tiltstacks:
-		projections = tiltstack.ravel()
+		projections = tiltstack.ravel()[:, np.newaxis]
 		# The Actual 2D Reconstrucion
 		tic = time.time()
 		recon, energies = fista_tv( projections, beta, niters, projection_operator )
@@ -146,14 +146,19 @@ def main():
 		twod_recon_path = next( twod_recon_fname )
 		from_numpy(recon[-1]).write_image( options.path + "/" + twod_recon_path )
 	# Stack each 2D reconstruction together
-	reconstack = np.dstack( reconstructions )
+	reconstack = np.dstack( twod_recons )
 	# Write volume to file
 	from_numpy(reconstack).write_image( options.path + "/" + outfilename )
 	
 	if options.noclean != True:
 		if options.verbose > 1: print "Cleaning up current working directory..."
-		os.popen("rm %s/tiltstack_*.hdf")%(options.path)
-		os.popen("rm %s/recon_2D_*.hdf")%(options.path)
+		path = options.path
+		flist = os.listdir( path )
+		for fname in flist:
+			if "tiltstack" in fname:
+				os.remove( path + "/" + fname )
+			if "recon_2d" in fname:
+				os.remove( path + "/" + fname)
 	
 	E2end(logger)
 	if options.verbose > 1: print "Exiting"
@@ -191,9 +196,10 @@ def get_tiltstacks( options, xlen, ylen ):
 			tiltseries.read_image( options.tiltseries, imgnum )
 			np_tiltseries = tiltseries.numpy()
 			slices.append( np_tiltseries[0:xlen][y] )
-		# write each tiltstack to disk 
-		from_numpy(np.vstack( slices )).write_image( options.path + "/" + stackpath )
-		tiltstacks.append(np.vstack( slices ))
+		# write each tiltstack to disk
+		stack = np.vstack( slices )
+		from_numpy( stack ).write_image( options.path + "/" + stackpath )
+		tiltstacks.append( stack )
 	# RETURN: list of 2D numpy arrays, each corresponding to a tilt series along the tilt axis
 	return tiltstacks
 
@@ -353,7 +359,7 @@ def build_projection_operator( angles, l_x, n_dir=None, l_det=None, subpix=1, of
 	
 	Returns
 	-------
-	p : sparse matrix of shape (n_dir l_x, l_x**2), in csr format Tomography design matrix. The csr (compressed sparse row) allows for efficient subsequent matrix multiplication. The dtype of the elements is float32, in order to save memory.	
+	p : sparse matrix of shape (n_dir l_x, l_x**2), in csr format Tomography design matrix. The csr (compressed sparse row) allows for efficient subsequent matrix multiplication. The dtype of the elements is float32, in order to save memory.
 	"""
 	if l_det is None:
 		l_det = l_x

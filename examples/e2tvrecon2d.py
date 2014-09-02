@@ -183,9 +183,9 @@ def main():
 	
 	# Reconstruction
 	t1 = time.time()
-	recon, energies = fista_tv(projections, beta, niters, projection_operator) 
+	recon, energies = fista_tv( projections, beta, niters, projection_operator )
 	t2 = time.time()
-	if options.verbose > 2: print "reconstruction completed in %f s" %(t2 - t1)
+	if options.verbose > 2: print "reconstruction completed in %f s" %( t2 - t1 )
 
 	# Fraction of errors of segmented image wrt 'complete' data set
 	err = [np.abs(img - (reconstruction > 0.5)).mean() for reconstruction in recon]
@@ -197,7 +197,7 @@ def main():
 	if options.fsc != False:
 		fscpath = options.path + "/fsc.txt"
 		datapath = options.testdata
-		os.popen("e2proc3d.py %s %s --calcfsc %s"%(outpath, fscpath, datapath))
+		os.popen("e2proc3d.py %s %s --calcfsc %s"%( outpath, fscpath, datapath ))
 	
 	E2end(logger)
 	if options.verbose > 1: print "Exiting"
