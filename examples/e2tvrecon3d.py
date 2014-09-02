@@ -130,11 +130,11 @@ def main():
 	
 	# Generate one projection operator for all tiltstacks
 	projection_operator = build_projection_operator( tiltangles, xsize, nslices, None, subpix, 0, None)
-	# Reconstruct each 2D tiltstack
+	
+	# Reconstruct each 2D tiltstack via FISTA-TV algorithm
 	twod_recons = []
 	twod_recon_fname = gen_filenames( "recon_2D_",".hdf", 4 )
-	#pool = Pool(processes = parallel)
-	for stacknum, tiltstack in enumerate(tiltstacks):
+	for tiltstack in tiltstacks:
 		projections = tiltstack.ravel()
 		# The Actual 2D Reconstrucion
 		tic = time.time()
@@ -190,7 +190,8 @@ def get_tiltstacks( options, xlen, ylen ):
 		for imgnum in range( num_imgs ):
 			tiltseries.read_image( options.tiltseries, imgnum )
 			np_tiltseries = tiltseries.numpy()
-			slices.append( np_tiltseries[0:xlen][imgnum] )
+			slices.append( np_tiltseries[0:xlen][y] )
+		# write each tiltstack to disk 
 		from_numpy(np.vstack( slices )).write_image( options.path + "/" + stackpath )
 		tiltstacks.append(np.vstack( slices ))
 	# RETURN: list of 2D numpy arrays, each corresponding to a tilt series along the tilt axis
@@ -325,7 +326,6 @@ def compute_sparsity( img ):
 	return (grad1[mask] > 0).mean(), (grad2[mask] > 0).mean()
 
 
-# --------------- Data projection operator  --------------------
 def build_projection_operator( angles, l_x, n_dir=None, l_det=None, subpix=1, offset=0, pixels_mask=None ):
 	"""
 	Compute the tomography design matrix.
@@ -482,96 +482,39 @@ def _generate_center_coordinates(l_x):
 	return X, Y
 
 
-# ----------------- Direct projection method -------------------------
-# (without computing explicitely the design matrix)
-def back_projection(projections):
-	"""
-	Back-projection (without filtering)
-	
-	Parameters
-	----------
-	projections: ndarray of floats, of shape n_dir x l_x
-		Each line of projections is the projection of a data image
-		acquired at a different angle. The projections angles are
-		supposed to be regularly spaced between 0 and 180.
-	
-	Returns
-	-------
-	recons: ndarray of shape l_x x l_x
-		Reconstructed array
-	
-	Notes
-	-------
-	A linear interpolation is used when rotating the back-projection.
-	This function uses ``scipy.ndimage.rotate`` for the rotation.
-	"""
-	n_dir, l_x = projections.shape
-	recons = np.zeros((l_x, l_x), dtype=np.float)
-	angles = np.linspace(0, 180, n_dir, endpoint=False)
-	for angle, line in zip(angles, projections):
-		# BP: repeat the detector line along the direction of the beam
-		tmp = np.tile(line[:, np.newaxis], (1, l_x))
-		# Rotate the back-projection of the detector line, and add
-		# it to the reconstructed image
-		recons += ndimage.rotate(tmp, -angle, order=1, reshape=False)
-	return recons
+#def back_projection(projections):
+#	"""
+#	Back-projection (without filtering)
+#	
+#	Parameters
+#	----------
+#	projections: ndarray of floats, of shape n_dir x l_x
+#		Each line of projections is the projection of a data image
+#		acquired at a different angle. The projections angles are
+#		supposed to be regularly spaced between 0 and 180.
+#	
+#	Returns
+#	-------
+#	recons: ndarray of shape l_x x l_x
+#		Reconstructed array
+#	
+#	Notes
+#	-------
+#	A linear interpolation is used when rotating the back-projection.
+#	This function uses ``scipy.ndimage.rotate`` for the rotation.
+#	"""
+#	n_dir, l_x = projections.shape
+#	recons = np.zeros((l_x, l_x), dtype=np.float)
+#	angles = np.linspace(0, 180, n_dir, endpoint=False)
+#	for angle, line in zip(angles, projections):
+#		# BP: repeat the detector line along the direction of the beam
+#		tmp = np.tile(line[:, np.newaxis], (1, l_x))
+#		# Rotate the back-projection of the detector line, and add
+#		# it to the reconstructed image
+#		recons += ndimage.rotate(tmp, -angle, order=1, reshape=False)
+#	return recons
 
 
-def projection(im, n_dir=None, interpolation='nearest'):
-	"""
-	Tomography projection of an image along n_dir directions.
-	
-	Parameters
-	----------
-	im : ndarray of square shape l_x x l_x
-		Image to be projected
-	
-	n_dir : int
-		Number of projection angles. Projection angles are regularly spaced
-		between 0 and 180.
-	
-	interpolation : str, {'interpolation', 'nearest'}
-		Interpolation method used during the projection. Default is
-		'nearest'.
-	
-	Returns
-	-------
-	projections: ndarray of shape n_dir x l_x
-		Array of projections.
-	
-	Notes
-	-----
-	The centers of the data pixels are projected onto the detector, then
-	the contribution of a data pixel to detector pixels is computed
-	by nearest neighbor or linear interpolation. The function 
-	np.bincount`` is used to compute the projection, with weights
-	corresponding to the values of data pixels, multiplied by interpolation
-	weights in the case of linear interpolation.
-	"""
-	l_x = len(im)
-	if n_dir is None:
-		n_dir = l_x
-	im = im.ravel()
-	projections = np.empty((n_dir, l_x))
-	X, Y = _generate_center_coordinates(l_x)
-	angles = np.linspace(0, np.pi, n_dir, endpoint=False)
-	for i, angle in enumerate(angles):
-		Xrot = np.cos(angle) * X - np.sin(angle) * Y 
-		if interpolation == 'nearest':
-			inds = _weights_nn(Xrot, dx=1, orig=X.min())
-			mask = inds>= 0
-			w = im[mask]
-		elif interpolation == 'linear':
-			inds, _, w = _weights(Xrot, dx=1, orig=X.min())
-			w[:l_x**2] *= im
-			w[l_x**2:] *= im
-			mask = inds >= 0
-			w = w[mask]
-		projections[i] = np.bincount(inds[mask].astype(np.int), weights=w)[:l_x]
-	return projections
-
-
-# -----------------Filtered back-projection----------------------
 def filter_projections(proj_set, reg=False):
 	"""
 	Ramp filter used in the filtered back projection.
@@ -684,7 +627,7 @@ def gradient(img):
 
 def _projector_on_dual(grad):
 	"""
-	modifies in place the gradient to project iton the L2 unit ball
+	Modifies in place the gradient to project iton the L2 unit ball
 	"""
 	norm = np.maximum(np.sqrt(np.sum(grad**2, 0)), 1.)
 	for grad_comp in grad:
@@ -804,25 +747,6 @@ def compute_sparsity( img ):
 	grad1 = ndimage.morphological_gradient(img, footprint=np.ones((3, 3)))
 	grad2 = ndimage.morphological_gradient(img, footprint=ndimage.generate_binary_structure(2, 1))
 	return (grad1[mask] > 0).mean(), (grad2[mask] > 0).mean()
-
-
-def generate_synthetic_data(l_x=128, seed=None, crop=True, n_pts=25):
-	if seed is None:
-		seed = 0
-	# Fix the seed for reproducible results
-	rs = np.random.RandomState(seed)
-	x, y = np.ogrid[:l_x, :l_x]
-	mask = np.zeros((l_x, l_x))
-	points = l_x * rs.rand(2, n_pts)
-	mask[(points[0]).astype(np.int), (points[1]).astype(np.int)] = 1
-	mask = ndimage.gaussian_filter(mask, sigma=l_x / (4. * np.sqrt(n_pts)))
-	# Limit the non-zero data to a central circle
-	if crop:
-		mask_outer = (x - l_x / 2) ** 2 + (y - l_x / 2) ** 2 < (l_x / 2) ** 2
-		mask = np.logical_and(mask > mask.mean(), mask_outer)
-	else:
-		mask = mask > mask.mean()
-	return mask.astype(np.float32)
 
 
 def makepath(options, stem=''):

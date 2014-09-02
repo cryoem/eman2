@@ -77,7 +77,7 @@ def main():
 #	parser.add_argument("--crossval", default=None, help="Use cross validaton to specify the parameter 'beta'. Input 0 for the best beta as determined by cross-validation or 1 for the best beta for segmentation as compared to a complete data set (i.e. for use with test data).")
 	parser.add_argument("--beta", default=20.0, type=float, help="Specify the total-variation regularization weight parameter 'beta' without performing cross validation.")
 	parser.add_argument("--subpix", default=1, type=int, help="Specify the number of linear subdivisions used to compute the projection of one image pixel onto a detector pixel.")
-	parser.add_argument("--fsc",action="store_true",default=False, help="If true, an fourier shell correlation plot will be generated comparing the input and output data.")
+	parser.add_argument("--fsc",action="store_true",default=False, help="Generate a fourier shell correlation plot comparing the input and output data.")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID", default=-1)
 	(options, args) = parser.parse_args()
