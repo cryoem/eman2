@@ -195,7 +195,10 @@ def main():
 	outpattern = args[num_input_files]
 
 	for infile in args[0 : num_input_files] :
-		outfile = changed_file_name(infile, outpattern)
+		if num_input_files == 1 :
+			outfile = outpattern
+		else :
+			outfile = changed_file_name(infile, outpattern)
 
 		inp_ext = os.path.splitext(infile)[1]
 		out_ext = os.path.splitext(outfile)[1]
@@ -211,10 +214,10 @@ def main():
 
 		if out_ext == inp_ext :
 			num_out_images = num_inp_images
-		elif out_ext == ".mrcs"  or  out_ext == ".tiff" :
-			num_out_images = 2
-		else :
+		elif out_ext == ".mrc" :
 			num_out_images = 1
+		else :
+			num_out_images = 2
 
 		inp3d = (num_inp_images == 1)
 		out3d = (num_out_images == 1)
