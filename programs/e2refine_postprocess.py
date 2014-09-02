@@ -53,6 +53,7 @@ def main():
 	parser.add_argument("--odd", dest="odd", type=str,default=None, help="The filename of the map from the odd 1/2 of the data")
 	parser.add_argument("--output", dest="output", type=str,default=None, help="Filename for the final averaged/filtered result.")
 	parser.add_argument("--mass", default=0, type=float,help="The rough mass of the particle in kilodaltons, used to run normalize.bymass. Due to resolution effects, not always the true mass.")
+	parser.add_argument("--restarget", default=5, type=float,help="The specified target resolution to avoid underfiltering artifacts.")
 	parser.add_argument("--iter", dest = "iter", type = int, default=6, help = "Iteration number to generate FSC filenames")
 	parser.add_argument("--align",action="store_true",default=False,help="Will do o to e alignment and test for handedness flips. Should not be repeated as it overwrites the odd file with the aligned result.")
 	parser.add_argument("--m3dpostprocess", type=str, default=None, help="Default=none. An arbitrary post-processor to run after all other automatic processing.")
@@ -72,6 +73,8 @@ def main():
 	if options.m3dpostprocess==None or len(options.m3dpostprocess.strip())==0 : m3dpostproc=""
 	else : m3dpostproc="--process "+options.m3dpostprocess
 
+	lpfilt=1.15/max(15.0,options.restarget)	# low-pass for alignment
+
 	### Post-processing ###
 	### Even/Odd Alignment
 	evenfile=options.even
@@ -84,12 +87,12 @@ def main():
 		elif options.sym[0].lower()=="c" and options.sym[1]!="1" : align=align=" --ralignz={path}tmp0.hdf".format(path=path)		# z alignment only
 		else: align="--alignref={path}tmp0.hdf --align=refine_3d".format(path=path)	# full 3-D alignment for C1
 
-		cmd="e2proc3d.py {evenfile} {path}tmp0.hdf --process=filter.lowpass.gauss:cutoff_freq=.05".format(path=path,evenfile=evenfile)
+		cmd="e2proc3d.py {evenfile} {path}tmp0.hdf --process=filter.lowpass.gauss:cutoff_freq={lpfilt}".format(path=path,evenfile=evenfile,lpfilt=lpfilt)
 		run(cmd)
-		cmd="e2proc3d.py {oddfile} {path}tmp1.hdf --process=filter.lowpass.gauss:cutoff_freq=.05 {align}".format(path=path,oddfile=oddfile,align=align)
+		cmd="e2proc3d.py {oddfile} {path}tmp1.hdf --process=filter.lowpass.gauss:cutoff_freq={lpfilt} {align}".format(path=path,oddfile=oddfile,align=align,lpfilt=lpfilt)
 		run(cmd)
 		# in case the handedness got swapped due to too much randomization, we need to double-check the inverted handedness in the alignment
-		cmd="e2proc3d.py {oddfile} {path}tmp2.hdf --process=filter.lowpass.gauss:cutoff_freq=.05 --process=xform.flip:axis=z {align}".format(path=path,oddfile=oddfile,align=align)
+		cmd="e2proc3d.py {oddfile} {path}tmp2.hdf --process=filter.lowpass.gauss:cutoff_freq={lpfilt} --process=xform.flip:axis=z {align}".format(path=path,oddfile=oddfile,align=align,lpfilt=lpfilt)
 		run(cmd)
 		# now we have to check which of the two handednesses produced the better alignment
 		# Pick the best handedness
@@ -130,8 +133,8 @@ def main():
 	combined.write_image(combfile,0)
 
 	nx,ny,nz=combined["nx"],combined["ny"],combined["nz"]
-	run("e2proc3d.py {combfile} {combfile} --process=filter.wiener.byfsc:fscfile={path}fsc_unmasked_{itr:02d}.txt:snrmult=2 --process=normalize.bymass:thr=1:mass={mass}".format(
-		path=path,itr=options.iter,mass=options.mass,combfile=combfile))
+	run("e2proc3d.py {combfile} {combfile} --process=filter.wiener.byfsc:fscfile={path}fsc_unmasked_{itr:02d}.txt:snrmult=2:maxfreq={maxfreq} --process=normalize.bymass:thr=1:mass={mass}".format(
+		path=path,itr=options.iter,mass=options.mass,combfile=combfile,maxfreq=1.0/options.restarget))
 
 	combined2=EMData(combfile,0)
 	sigmanz=combined2["sigma_nonzero"]
@@ -139,8 +142,22 @@ def main():
 
 	### Masking
 	if options.automask3d==None or len(options.automask3d.strip())==0 :
+		# This loop runs automatic masking with real parameters to test if the mask is extending to the edge of the box
+		# if it is, it adjusts the threshold and seed parameters to make the mask smaller
+		# This is a bit of a hack, and unfortunately a slow way of handling the problem
+		radav=1.0
+		seeds=17
+		while radav>.02:
+			sigmanz*=1.1
+			seeds=max(0,seeds-1)
+			vol=EMData(combfile,0)
+			vol.process_inplace("mask.auto3d",{"threshold":sigmanz*.75,"radius":nx/10,"nshells":int(nx*0.08+.5),"nshellsgauss":int(nx*.06),"nmaxseed":seeds})
+			dis=vol.calc_radial_dist(vol["nx"]/2,0,1,0)
+			radav=sum(dis[-7:])
+			
+		# Final automasking parameters
 		amask3d="--process mask.auto3d:threshold={thresh}:radius={radius}:nshells={shells}:nshellsgauss={gshells}:nmaxseed={seed}".format(
-			thresh=sigmanz*.85,radius=nx/10,shells=int(nx*.08+.5),gshells=int(nx*.06),seed=16)
+			thresh=sigmanz*.75,radius=nx/10,shells=int(nx*.08+.5),gshells=int(nx*.06),seed=seeds)
 	else:
 		amask3d="--process "+options.automask3d
 
@@ -171,12 +188,12 @@ def main():
 	os.rename(oddfile ,"{path}threed_odd_unmasked.hdf".format(path=path))
 
 	# Technically snrmult should be 1 here, but we use 2 to help speed convergence
-	cmd="e2proc3d.py {path}threed_even_unmasked.hdf {evenfile} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter} --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass}".format(
-	evenfile=evenfile,path=path,itr=options.iter,mass=options.mass,underfilter=underfilter)
+	cmd="e2proc3d.py {path}threed_even_unmasked.hdf {evenfile} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass}".format(
+	evenfile=evenfile,path=path,itr=options.iter,mass=options.mass,underfilter=underfilter,maxfreq=1.0/options.restarget)
 	run(cmd)
 
-	cmd="e2proc3d.py {path}threed_odd_unmasked.hdf {oddfile} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter} --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass}".format(
-	oddfile=oddfile,path=path,itr=options.iter,mass=options.mass,underfilter=underfilter)
+	cmd="e2proc3d.py {path}threed_odd_unmasked.hdf {oddfile} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass}".format(
+	oddfile=oddfile,path=path,itr=options.iter,mass=options.mass,underfilter=underfilter,maxfreq=1.0/options.restarget)
 	run(cmd)
 
 	### Refilter/mask
@@ -189,8 +206,8 @@ def main():
 	if options.sym=="c1" : symopt=""
 	else: symopt="--sym {}".format(options.sym)
 	
-	run("e2proc3d.py {combfile} {combfile} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter} --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass} {symopt} {postproc}".format(
-		combfile=combfile,path=path,itr=options.iter,mass=options.mass,postproc=m3dpostproc,symopt=symopt,underfilter=underfilter))
+	run("e2proc3d.py {combfile} {combfile} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass} {symopt} {postproc}".format(
+		combfile=combfile,path=path,itr=options.iter,mass=options.mass,postproc=m3dpostproc,symopt=symopt,underfilter=underfilter,maxfreq=1.0/options.restarget))
 
 	try:
 		os.unlink("{path}tmp_even.hdf".format(path=path))

@@ -5502,6 +5502,7 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 			TypeDict d;
 			d.put("snrmult", EMObject::FLOAT, "This multiplier is applied to the computed SNR before Wiener filtration. This permits the filter to be applied to 1/2 images, etc. Default=2.0");
 			d.put("sscale", EMObject::FLOAT, "This rescales the S axis to produce empirical under/overfiltration. sscale=1.1 for example will extend the resolution (underfilter) by 10%. Default=1.0");
+			d.put("maxfreq", EMObject::FLOAT, "This acts as a high resolution limit to prevent FSC artifacts from iteratively reinforcing themselves. Above this spatial frequency, the FSC is forced to decrease monotonically. Default=1.0");
 			d.put("fscfile", EMObject::STRING, "filename of a file containing the FSC curve to use for the SNR computation");
 			return d;
 		}

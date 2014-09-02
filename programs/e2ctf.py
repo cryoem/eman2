@@ -93,6 +93,7 @@ NOTE: This program should be run from the project directory, not from within the
 	parser.add_argument("--chunk",type=str,help="<chunksize>,<nchunk>. Will process files in groups of chunksize, and process the <nchunk>th group. eg - 100,3 will read files 300-399 ",default=None,guitype='strbox',row=1,col=1, mode='autofit,tuning,genoutp,gensf')
 	parser.add_argument("--gui",action="store_true",help="Start the GUI for interactive fitting",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="tuning[True]")
 	parser.add_argument("--autofit",action="store_true",help="Runs automated CTF fitting on the input images",default=False, guitype='boolbox', row=8, col=0, rowspan=1, colspan=1, mode='autofit[True]')
+	parser.add_argument("--wholeimage",action="store_true",help="Will use the entire micrograph (if available) for fitting. This can cause serious problems. Highly experimental. Contact sludtke@bcm.edu before using.",default=False)
 	parser.add_argument("--zerook",action="store_true",help="Normally particles with zero value on the edge are considered to be bad. This overrides that behavior, primarily for simulated data.",default=False)
 	parser.add_argument("--astigmatism",action="store_true",help="Includes astigmatism in automatic fitting",default=False, guitype='boolbox', row=8, col=1, rowspan=1, colspan=1, mode='autofit[False]')
 	parser.add_argument("--curdefocushint",action="store_true",help="Rather than doing the defocus from scratch, use existing values in the project as a starting point",default=False, guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, mode='autofit[True]')
@@ -483,7 +484,7 @@ def pspec_and_ctf_fit(options,debug=False):
 		
 		# After this, PS contains a list of (im_1d,bg_1d,im_2d,bg_2d,bg_1d_low) tuples. If classify is <2 then this list will have only 1 tuple in it
 		if options.classify>1 : ps=split_powspec_with_bg(filename,options.source_image,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp,apix=apix,nclasses=options.classify,zero_ok=options.zerook)
-		else: ps=list((powspec_with_bg(filename,options.source_image,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp,apix=apix,zero_ok=options.zerook),))
+		else: ps=list((powspec_with_bg(filename,options.source_image,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp,apix=apix,zero_ok=options.zerook,wholeimage=options.wholeimage),))
 		# im_1d,bg_1d,im_2d,bg_2d,bg_1d_low
 		if ps==None : 
 			print "Error fitting CTF on ",filename
@@ -867,7 +868,7 @@ def powspec(stackfile,source_image=None,mask=None,edgenorm=True):
 	return av
 
 masks={}		# mask cache for background/foreground masking
-def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=1,apix=2,ptclns=None,zero_ok=False):
+def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=1,apix=2,ptclns=None,zero_ok=False,wholeimage=False):
 	"""This routine will read the images from the specified file, optionally edgenormalize,
 	then apply a gaussian mask with the specified radius then compute the average 2-D power
 	spectrum for the stack. It will also compute the average 2-D power spectrum using 1-mask + edge
@@ -963,6 +964,13 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 		av2+=imf
 
 	if nn==0 : return None
+
+	if wholeimage:
+		try: micro=EMData("micrographs/{}.hdf".format(base_name(stackfile)))
+		except:
+			print "Error: --wholeimage specified, but could not find ","micrographs/{}.hdf".format(base_name(stackfile))
+			sys.exit(1)
+		
 
 	# normalize the 2 curves
 	av1/=(float(nn)*av1.get_ysize()*av1.get_ysize()*ratio1)

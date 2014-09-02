@@ -5981,10 +5981,13 @@ EMData *FSCFourierProcessor::process(EMData const *image)
 	const char *fsp = params["fscfile"];
 	float snrmult = params.set_default("snrmult",2.0f);
 	float sscale = params.set_default("sscale",1.0f);
+	float maxfreq = params.set_default("sscale",1.0f);
 
 	XYData fsc;
 	fsc.read_file(fsp);
+	float nyquist=1.0/(2.0f*(float)image->get_attr("apix_x"));
 
+	float lf=1.0f;
 	int N=(int)fsc.get_size();
 	int localav=0;				// once triggered, this uses a local average of 5 points instead of the point itself
 	// While this could all be in one equation, the compiler will optimize it, and this is much more transparent
@@ -5994,8 +5997,10 @@ EMData *FSCFourierProcessor::process(EMData const *image)
 			continue;
 		}
 
+		float s=i*nyquist/N;
 		float f=fsc.get_y(i);
 		float snr;
+		if (s>=maxfreq && lf<f) f=lf;
 		if (f<0 && i>2) localav=1;
 		if (localav) f=(fsc.get_y(i-2)+fsc.get_y(i-1)+fsc.get_y(i)+fsc.get_y(i+1)+fsc.get_y(i+2))/5.0f;
 		if (f>=1.0) snr=1000.0;
@@ -6004,11 +6009,11 @@ EMData *FSCFourierProcessor::process(EMData const *image)
 		float wiener=snr*snr/(snr*snr+1);
 		if (wiener<.00001) wiener=.00001;	// we don't want to go all the way to zero. We leave behind just just a touch to preserve potential phase info
 		fsc.set_y(i,wiener);
+		lf=f;
 	}
 	fsc.set_x(0,0);		// just to make sure we have values to the origin.
 //	fsc.write_file("wiener.txt");
 	FILE *out=fopen("wiener.txt","w");
-	float nyquist=1.0/(2.0f*(float)image->get_attr("apix_x"));
 	vector<float> wienerary(image->get_ysize());
 	for (int i=0; i<image->get_ysize(); i++) {
 		wienerary[i]=fsc.get_yatx(i*nyquist/image->get_ysize());
