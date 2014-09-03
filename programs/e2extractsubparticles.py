@@ -133,50 +133,43 @@ will be examined automatically to extract the corresponding particles and projec
 				if classmx[eo][0,j]!=i : continue		# only proceed if the particle is in this class
 
 				ptcl=EMData(args[0],j)
-				if options.process!=None :
-					popt=parsemodopt(options.process)
-					ptcl.process_inplace(popt[0],popt[1])
 				ptclxf=Transform({"type":"2d","alpha":cmxalpha[0,j],"mirror":int(cmxmirror[0,j]),"tx":cmxtx[0,j],"ty":cmxty[0,j]}).inverse()
 
-				statn.append(j)
+				ptcl2=ptcl.process("filter.matchto",{"to":proj+proj2})
+				projc=proj.process("xform",{"transform":ptclxf})		# we transform the projection, not the particle (as in the original classification)
+				projc2=proj2.process("xform",{"transform":ptclxf})
+				projc.process_inplace("normalize.toimage",{"to":ptcl2})
+				projc2.process_inplace("normalize.toimage",{"to":ptcl2})
+				cmp1=ptcl2.cmp(simcmp[0],projc, simcmp[1])
+				cmp2=ptcl2.cmp(simcmp[0],projc2,simcmp[1])
+				result=cmp1-cmp2
+				if options.debug: display((ptcl2,projc,projc2,proj))
 
+				statr.append(result)
+				statr2.append((cmp1+cmp2,cmp1-cmp2,0))
 
-				else:
-					ptcl2=ptcl.process("filter.matchto",{"to":proj+proj2})
-					projc=proj.process("xform",{"transform":ptclxf})		# we transform the projection, not the particle (as in the original classification)
-					projc2=proj2.process("xform",{"transform":ptclxf})
-					projc.process_inplace("normalize.toimage",{"to":ptcl2})
-					projc2.process_inplace("normalize.toimage",{"to":ptcl2})
-					cmp1=ptcl2.cmp(simcmp[0],projc, simcmp[1])
-					cmp2=ptcl2.cmp(simcmp[0],projc2,simcmp[1])
-					result=cmp1-cmp2
-					if options.debug: display((ptcl2,projc,projc2,proj))
+				if cmp1+cmp2<options.alistacks :
+					ptcl2=ptcl.process("xform",{"transform":ptclxf.inverse()})
+					ptcl2.mult(projmask)
+					ptcl2.write_image("aligned_{}.hdf".format(i),nalis+2)
 
-					statr.append(result)
-					statr2.append((cmp1+cmp2,cmp1-cmp2,0))
+					if nalis==0 :
+						projc=proj.process("normalize.toimage",{"to":ptcl2})
+						projc2=proj2.process("normalize.toimage",{"to":ptcl2})
+						projc.write_image("aligned_{}.hdf".format(i),0)
+						projc2.write_image("aligned_{}.hdf".format(i),1)
 
-					if cmp1+cmp2<options.alistacks :
-						ptcl2=ptcl.process("xform",{"transform":ptclxf.inverse()})
-						ptcl2.mult(projmask)
-						ptcl2.write_image("aligned_{}.hdf".format(i),nalis+2)
+					nalis+=1
 
-						if nalis==0 :
-							projc=proj.process("normalize.toimage",{"to":ptcl2})
-							projc2=proj2.process("normalize.toimage",{"to":ptcl2})
-							projc.write_image("aligned_{}.hdf".format(i),0)
-							projc2.write_image("aligned_{}.hdf".format(i),1)
-
-						nalis+=1
-
-					if options.tstcls==i :
-						ptcl2=ptcl.process("xform",{"transform":ptclxf.inverse()})
-						ptcl2.mult(projmask)
-						if cmp1>cmp2:
-							try: avgim1.add(ptcl2)
-							except: avgim1=ptcl2
-						else:
-							try: avgim2.add(ptcl2)
-							except: avgim2=ptcl2
+				if options.tstcls==i :
+					ptcl2=ptcl.process("xform",{"transform":ptclxf.inverse()})
+					ptcl2.mult(projmask)
+					if cmp1>cmp2:
+						try: avgim1.add(ptcl2)
+						except: avgim1=ptcl2
+					else:
+						try: avgim2.add(ptcl2)
+						except: avgim2=ptcl2
 
 
 

@@ -620,11 +620,14 @@ void FourierAnlProcessor::process_inplace(EMData * image)
 //
 // 	vector < float >yarray(array_size);
 
+	bool return_radial=(bool)params.set_default("return_radial",0);
+
 
 	if (image->is_complex()) {
 		vector <float>yarray = image->calc_radial_dist(image->get_ysize()/2,0,1.0,1);
 		create_radial_func(yarray,image);
 		image->apply_radial_func(0, 0.5f/yarray.size(), yarray);
+		if (return_radial) image->set_attr("filter_curve",yarray);
 	}
 	else {
 		EMData *fft = image->do_fft();
@@ -634,6 +637,7 @@ void FourierAnlProcessor::process_inplace(EMData * image)
 		EMData *ift = fft->do_ift();
 
 		memcpy(image->get_data(),ift->get_data(),ift->get_xsize()*ift->get_ysize()*ift->get_zsize()*sizeof(float));
+		if (return_radial) image->set_attr("filter_curve",yarray);
 
 		//ift->update(); Unecessary
 

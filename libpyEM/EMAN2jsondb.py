@@ -687,7 +687,9 @@ of the path is stored as self.normpath"""
 			### We do the updates and prepare the string in-ram. If someone else tries a write while we're doing this, it should raise the above exception
 			self.data.update(self.changes)		# update the internal copy of the data
 			self.changes={}
-			for k in self.delkeys: del self.data[k]
+			for k in self.delkeys: 
+				try: del self.data[k]
+				except: pass
 			self.delkeys=set()
 			jss=json.dumps(self.data,indent=0,sort_keys=True,default=obj_to_json,encoding="ascii")			# write the whole dictionary back to disk
 			jss=re.sub(listrex,denl,jss)

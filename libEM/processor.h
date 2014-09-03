@@ -407,6 +407,7 @@ The basic design of EMAN Processors: <br>\
 			d.put("cutoff_pixels", EMObject::FLOAT, " Width in Fourier pixels (0 - size()/2)");
 			d.put("cutoff_freq", EMObject::FLOAT, "1/Resolution in 1/A (0 - 1 / 2*apix). eg - a 20 A filter is cutoff_freq=0.05");
 			d.put("apix", EMObject::FLOAT, " Override A/pix in the image header (changes x,y and z)");
+			d.put("return_radial", EMObject::BOOL, "Return the radial filter function as an attribute (filter_curve)");
 			return d;
 		}
 
