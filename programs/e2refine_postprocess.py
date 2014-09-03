@@ -147,13 +147,13 @@ def main():
 		# This is a bit of a hack, and unfortunately a slow way of handling the problem
 		radav=1.0
 		seeds=17
-		while radav>.02:
+		while radav>0.001:
 			sigmanz*=1.1
 			seeds=max(0,seeds-1)
 			vol=EMData(combfile,0)
 			vol.process_inplace("mask.auto3d",{"threshold":sigmanz*.75,"radius":nx/10,"nshells":int(nx*0.08+.5),"nshellsgauss":int(nx*.06),"nmaxseed":seeds})
 			dis=vol.calc_radial_dist(vol["nx"]/2,0,1,0)
-			radav=sum(dis[-7:])
+			radav=sum(dis[-4:])
 			
 		# Final automasking parameters
 		amask3d="--process mask.auto3d:threshold={thresh}:radius={radius}:nshells={shells}:nshellsgauss={gshells}:nmaxseed={seed}".format(

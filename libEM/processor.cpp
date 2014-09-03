@@ -574,6 +574,7 @@ void FourierProcessor::process_inplace(EMData * image)
 	int array_size = FFTRADIALOVERSAMPLE * image->get_ysize();
 	float step=0.5f/array_size;
 
+	bool return_radial=(bool)params.set_default("return_radial",0);
 	vector < float >yarray(array_size);
 
 	create_radial_func(yarray);
@@ -602,6 +603,7 @@ void FourierProcessor::process_inplace(EMData * image)
 			ift = 0;
 		}
 	}
+	if (return_radial) image->set_attr("filter_curve",yarray);
 
 	image->update();
 }

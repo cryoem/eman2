@@ -350,6 +350,7 @@ The basic design of EMAN Processors: <br>\
 			d.put("cutoff_pixels", EMObject::FLOAT, " Width in Fourier pixels (0 - size()/2)");
 			d.put("cutoff_freq", EMObject::FLOAT, "1/Resolution in 1/A (0 - 1 / 2*apix). eg - a 20 A filter is cutoff_freq=0.05");
 			d.put("apix", EMObject::FLOAT, " Override A/pix in the image header (changes x,y and z)");
+			d.put("return_radial", EMObject::BOOL, "Return the radial filter function as an attribute (filter_curve)");
 			return d;
 		}
 
@@ -1005,6 +1006,7 @@ The basic design of EMAN Processors: <br>\
 			d.put("bfactor", EMObject::FLOAT, "B-factor in terms of e^-(B s^2/4)");
 			d.put("noisecutoff", EMObject::FLOAT, "Spatial frequency past which inverse-B will not be applied, default=1/6A");
 //			d.put("adaptnoise", EMObject::INT, "Dual linear fit separating lower resolution signal from higher resolution noise. Noise region not upweighted.");
+			d.put("return_radial", EMObject::BOOL, "Return the radial filter function as an attribute (filter_curve)");
 			d.put("verbose", EMObject::INT, "Print information about the determined B-factor");
 			return d;
 		}
@@ -6049,6 +6051,7 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 		{
 			TypeDict d;
 			d.put("to", EMObject::EMDATA, "The image to match with. Make sure apix values are correct.");
+			d.put("return_radial", EMObject::BOOL, "Return the radial filter function as an attribute (filter_curve)");
 			return d;
 		}
 

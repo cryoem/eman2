@@ -136,8 +136,9 @@ will be examined automatically to extract the corresponding particles and projec
 				ptclxf=Transform({"type":"2d","alpha":cmxalpha[0,j],"mirror":int(cmxmirror[0,j]),"tx":cmxtx[0,j],"ty":cmxty[0,j]}).inverse()
 
 				ptcl2=ptcl.process("filter.matchto",{"to":proj+proj2})
-				projc=proj.process("xform",{"transform":ptclxf})		# we transform the projection, not the particle (as in the original classification)
-				projc2=proj2.process("xform",{"transform":ptclxf})
+				projc=[i.process("xform",{"transform":ptclxf}) for i in projs]		# we transform the projection, not the particle (as in the original classification)
+				
+				
 				projc.process_inplace("normalize.toimage",{"to":ptcl2})
 				projc2.process_inplace("normalize.toimage",{"to":ptcl2})
 				cmp1=ptcl2.cmp(simcmp[0],projc, simcmp[1])
