@@ -93,7 +93,7 @@ NOTE: This program should be run from the project directory, not from within the
 	parser.add_argument("--chunk",type=str,help="<chunksize>,<nchunk>. Will process files in groups of chunksize, and process the <nchunk>th group. eg - 100,3 will read files 300-399 ",default=None,guitype='strbox',row=1,col=1, mode='autofit,tuning,genoutp,gensf')
 	parser.add_argument("--gui",action="store_true",help="Start the GUI for interactive fitting",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="tuning[True]")
 	parser.add_argument("--autofit",action="store_true",help="Runs automated CTF fitting on the input images",default=False, guitype='boolbox', row=8, col=0, rowspan=1, colspan=1, mode='autofit[True]')
-	parser.add_argument("--wholeimage",action="store_true",help="Will use the entire micrograph (if available) for fitting. This can cause serious problems. Highly experimental. Contact sludtke@bcm.edu before using.",default=False)
+	parser.add_argument("--wholeimage",action="store_true",help="Display an additional curve using the whole micrograph, not just particles.",default=False,guitype='boolbox',row=8,col=2, mode='autofit')
 	parser.add_argument("--zerook",action="store_true",help="Normally particles with zero value on the edge are considered to be bad. This overrides that behavior, primarily for simulated data.",default=False)
 	parser.add_argument("--astigmatism",action="store_true",help="Includes astigmatism in automatic fitting",default=False, guitype='boolbox', row=8, col=1, rowspan=1, colspan=1, mode='autofit[False]')
 	parser.add_argument("--curdefocushint",action="store_true",help="Rather than doing the defocus from scratch, use existing values in the project as a starting point",default=False, guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, mode='autofit[True]')
@@ -316,6 +316,8 @@ def get_gui_arg_img_sets(filenames):
 			img_set.append(5)
 
 		img_set.append(low_bg_curve(img_set[2],img_set[0].dsbg))
+		try: img_set.append(js_parms["ctf_microbox"])
+		except: pass
 		img_sets.append([fsp]+img_set)
 
 	return img_sets
@@ -463,7 +465,7 @@ def fixnegbg(bg_1d,im_1d,ds):
 
 def pspec_and_ctf_fit(options,debug=False):
 	"""Power spectrum and CTF fitting. Returns an 'image sets' list. Each item in this list contains
-	filename,EMAN2CTF,im_1d,bg_1d,im_2d,bg_2d,qual,bg_1d_low"""
+	filename,EMAN2CTF,im_1d,bg_1d,im_2d,bg_2d,qual,bg_1d_low,micro_1d/None"""
 	global logid
 	img_sets=[]
 	#db_parms=db_open_dict("bdb:e2ctf.parms")
@@ -485,14 +487,16 @@ def pspec_and_ctf_fit(options,debug=False):
 		# After this, PS contains a list of (im_1d,bg_1d,im_2d,bg_2d,bg_1d_low) tuples. If classify is <2 then this list will have only 1 tuple in it
 		if options.classify>1 : ps=split_powspec_with_bg(filename,options.source_image,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp,apix=apix,nclasses=options.classify,zero_ok=options.zerook)
 		else: ps=list((powspec_with_bg(filename,options.source_image,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp,apix=apix,zero_ok=options.zerook,wholeimage=options.wholeimage),))
-		# im_1d,bg_1d,im_2d,bg_2d,bg_1d_low
+		# im_1d,bg_1d,im_2d,bg_2d,bg_1d_low,micro_1d/none
 		if ps==None : 
 			print "Error fitting CTF on ",filename
 			continue
 		ds=1.0/(apix*ps[0][2].get_ysize())
 		for j,p in enumerate(ps):
-			im_1d,bg_1d,im_2d,bg_2d,bg_1d_low=p
-			
+			try: im_1d,bg_1d,im_2d,bg_2d,bg_1d_low,micro_1d=p
+			except: 
+				im_1d,bg_1d,im_2d,bg_2d,bg_1d_low=p
+				micro_1d=None
 			if not options.nosmooth : bg_1d=smooth_bg(bg_1d,ds)
 			if options.fixnegbg :
 				bg_1d=fixnegbg(bg_1d,im_1d,ds)		# This insures that we don't have unreasonable negative values
@@ -536,11 +540,13 @@ def pspec_and_ctf_fit(options,debug=False):
 			except :
 				qual=5
 				js_parms["quality"]=5
-			if j==0: img_sets.append([filename,ctf,im_1d,bg_1d,im_2d,bg_2d,qual,bg_1d_low])
-			else: img_sets.append([filename+"_"+str(j),ctf,im_1d,bg_1d,im_2d,bg_2d,qual,bg_1d_low])
+			if j==0: img_sets.append([filename,ctf,im_1d,bg_1d,im_2d,bg_2d,qual,bg_1d_low,micro_1d])
+			else: img_sets.append([filename+"_"+str(j),ctf,im_1d,bg_1d,im_2d,bg_2d,qual,bg_1d_low,micro_1d])
 
 		# store the results back in the database. We omit the filename, quality and bg_1d_low (which can be easily recomputed)
-		js_parms["ctf"]=img_sets[-1][1:-2]
+		if img_sets[-1][-1]==None: js_parms.delete("ctf_microbox")
+		else: js_parms["ctf_microbox"]=img_sets[-1][-1]
+		js_parms["ctf"]=img_sets[-1][1:-3]
 
 		if logid : E2progress(logid,float(i+1)/len(options.filenames))
 
@@ -876,7 +882,7 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 	intensity/0 image. 1-D results returned as a list of floats. If source_image is provided, then it
 	will only read particles with ptcl_source_image set to the specified value.
 
-	returns a 5-tuple with spectra for (1d particle,1d background,2d particle,2d background,1d background non-convex)
+	returns a 5-tuple with spectra for (1d particle,1d background,2d particle,2d background,1d background non-convex,1d foreground from wholeimage or None)
 	"""
 
 	global masks
@@ -965,13 +971,6 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 
 	if nn==0 : return None
 
-	if wholeimage:
-		try: micro=EMData("micrographs/{}.hdf".format(base_name(stackfile)))
-		except:
-			print "Error: --wholeimage specified, but could not find ","micrographs/{}.hdf".format(base_name(stackfile))
-			sys.exit(1)
-		
-
 	# normalize the 2 curves
 	av1/=(float(nn)*av1.get_ysize()*av1.get_ysize()*ratio1)
 	av1.set_value_at(0,0,0.0)
@@ -988,6 +987,38 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 	# These now should represent the FG+BG and BG curves
 	av1_1d=av1.calc_radial_dist(av1.get_ysize()/2,0.0,1.0,1)
 	av2_1d=av2.calc_radial_dist(av2.get_ysize()/2,0.0,1.0,1)
+
+	# in this mode we box out "particles" from the original micrograph to get the smoothest curve for defocus fitting
+	# must not be use for (for example) structure factor
+	av3_1d=None
+	if wholeimage:
+		try: micro=EMData("micrographs/{}.hdf".format(base_name(stackfile)))
+		except:
+			print "Error: --wholeimage specified, but could not find ","micrographs/{}.hdf".format(base_name(stackfile))
+			sys.exit(1)
+		
+		bs=av1["ny"]
+		av3=av1.copy()
+		av3.to_zero()
+		nrg=0
+		# overlapping regions
+		for y in xrange(bs/2,micro["ny"]-bs,bs/2):
+			for x in xrange(bs/2,micro["nx"]-bs,bs/2):
+				im1=micro.get_clip(Region(x,y,bs,bs))
+				im1.process_inplace("normalize.edgemean")
+				im1*=mask1
+				imf=im1.do_fft()
+				imf.ri2inten()
+				av3+=imf
+				nrg+=1
+
+		print nrg
+		av3/=(float(nrg)*av1.get_ysize()*av1.get_ysize()*ratio1)
+		av3.set_value_at(0,0,0.0)
+		av3.set_complex(1)
+		av3["is_intensity"]=1
+		av3_1d=av3.calc_radial_dist(av3["ny"]/2,0.0,1.0,1)
+		
 
 	# added to make the 2D display look better. Should have no other impact at the time
 	# it's being added, though autofitting may rely on it in future, so it shouldn't be removed --steve (8/3/11)
@@ -1008,8 +1039,7 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 	
 	if avc==0 :
 		print "Failed to readjust background in {}. Returning what I can..."
-		return (av1_1d,av2_1d,av1,av2,low_bg_curve(av2_1d,ds))
-		
+		return (av1_1d,av2_1d,av1,av2,low_bg_curve(av2_1d,ds),av3_1d)
 		
 	avsnr/=avc
 
@@ -1018,7 +1048,7 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 
 	#db_close_dict(stackfile)	# safe for non-bdb files
 
-	return (av1_1d,av2_1d,av1,av2,low_bg_curve(av2_1d,ds))
+	return (av1_1d,av2_1d,av1,av2,low_bg_curve(av2_1d,ds),av3_1d)
 
 # img_sets : filename,ctf,im_1d,bg_1d,im_2d,bg_2d,qual,bg_1d_low
 def split_powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=1,apix=2,nclasses=2,zero_ok=False):
@@ -2475,6 +2505,8 @@ class GUIctf(QtGui.QWidget):
 		if self.plotmode==1:
 			self.guiplot.set_data((s,self.data[val][2]),"fg",True,True,color=1)
 			self.guiplot.set_data((s,self.data[val][7]),"bg(concave)",quiet=True,color=0,linetype=2)
+			if len(self.data[val])>8:
+				self.guiplot.set_data((s,self.data[val][8]),"Micrograph",quiet=True,color=2,linetype=2)
 			self.guiplot.set_data((s,self.data[val][3]),"bg",color=0)
 			self.guiplot.setAxisParms("s (1/"+ "$\AA$" +")","Intensity (a.u)")
 		elif self.plotmode==0:
@@ -2485,6 +2517,10 @@ class GUIctf(QtGui.QWidget):
 			lowbgsub=[self.data[val][2][i]-lowbg[i] for i in range(len(self.data[val][2]))]
 			self.guiplot.set_data((s,lowbgsub),"fg-lowbg",False,True,color=0,linetype=2)
 
+			# This means we have a whole micrograph curve
+			if len(self.data[val])>8:
+				bgsub2=[self.data[val][8][i]-self.data[val][3][i] for i in range(len(self.data[val][2]))]
+				self.guiplot.set_data((s,bgsub2),"micro-bg",False,True,color=2,linetype=2)
 
 			fit=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)		# The fit curve
 			fit=[sfact2(s[i])*fit[i]**2 for i in range(len(s))]		# squared * structure factor

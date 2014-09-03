@@ -841,6 +841,7 @@ def tiled(img,box):
 	for y in xrange(nyb):
 		for x in xrange(nxb):
 			im1=imgc.get_clip(Region(boxc/8+x*boxc/4,boxc/8+y*boxc/4,boxc,boxc))
+			im1.process_inplace("normalize.edgemean")
 			
 			im2=im1.copy()
 
@@ -861,12 +862,12 @@ def tiled(img,box):
 
 			vec=EMData(imf["ny"]/4-2,1,1)		# We skip the first 2 points and only go to 1/2 Nyquist
 			for i in xrange(2,imf["ny"]/4):
-				vec[i]=sqrt(cen_1d[i])/sqrt(edg_1d[i])
+				vec[i]=(cen_1d[i]-edg_1d[i])/edg_1d[i]		# expressed as a SSRN
 			
 			vecs.append(vec)
 			
 			img[(5*boxc/8+x*boxc/4)*2,(5*boxc/8+y*boxc/4)*2]=(vec["mean"]+0.5)*10.0
-			cor[x,y]=vec["mean"]
+			cor[x,y]=vec["sigma"]
 	
 	cor.update()
 	return vecs,cor
