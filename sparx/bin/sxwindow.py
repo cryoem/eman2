@@ -105,18 +105,20 @@ def main():
 				name_num_base = f.strip(info_suffix)
 				name_im       = name_num_base + '.hdf'
 				name_info     = info_name(name_im)
+				otcl_images  = "bdb:%s/"%options.outdir + name_num_base + suffix
 				
-				im = EMData(name_im)
+				im = get_im(name_im)
 				x0 = im.get_xsize()//2  #  Floor division or integer division
 				y0 = im.get_ysize()//2
 				
 				coords = js_open_dict(name_info)["boxes"]
 				for i in range(len(coords)):
-					otcl_images  = "bdb:%s/"%options.outdir + name_num_base + suffix
 
 					x = int(coords[i][0])
 					y = int(coords[i][1])
 					imn=Util.window(im, box_size, box_size, 1, x-x0, y-y0)
+					imn.set_attr('ptcl_source_image',name_im)
+					imn.set_attr('ptcl_source_coord',[coords[i][0],coords[i][1]])
 					stat = Util.infomask(imn, mask, False)   
 # 					:FIXME: Needs sigma
 # 					im = filt_gaussh(im)
