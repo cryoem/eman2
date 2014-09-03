@@ -127,7 +127,7 @@ def main():
 	# Make tiltstacks
 	xsize = EMData( options.tiltseries , 0 ).get_xsize()
 	ysize = EMData( options.tiltseries , 0 ).get_ysize()
-	if options.verbose > 2: print "Generating tiltstacks..."
+	if options.verbose > 2: print "Generating %i tiltstacks..."%(ysize)
 	tiltstacks = get_tiltstacks( options, xsize, ysize )
 	
 	# Generate one projection operator for all tiltstacks
@@ -136,17 +136,19 @@ def main():
 	# Reconstruct each 2D tiltstack via FISTA-TV algorithm
 	twod_recons = []
 	twod_recon_fname = gen_filenames( "recon_2D_",".hdf", 4 )
+	count = 1
 	for tiltstack in tiltstacks:
-		projections = tiltstack.ravel()[:, np.newaxis]
-		# The Actual 2D Reconstrucion
+		projections = tiltstack.ravel()[:,np.newaxis]
+		# The 2D Reconstrucion
 		tic = time.time()
 		recon, energies = fista_tv( projections, beta, niters, projection_operator )
 		toc = time.time()
-		if options.verbose > 2: print "reconstruction completed in %f s" %( toc - tic )
+		if options.verbose > 7: print "reconstruction %i of %i completed in %s s"%(count, ysize,str(toc-tic))
 		twod_recons.append(recon[-1])
 		# Write each 2D reconstruction to current working directory
 		twod_recon_path = next( twod_recon_fname )
 		from_numpy(recon[-1]).write_image( options.path + "/" + twod_recon_path )
+		count += 1
 	# Stack each 2D reconstruction together
 	reconstack = np.dstack( twod_recons )
 	# Write volume to file
@@ -186,27 +188,24 @@ def get_tiltstacks( options, xlen, ylen ):
 	"""
 	# Calculate the number of images (slices) in the tilt series
 	num_imgs = EMUtil.get_image_count( options.tiltseries )
-	# Generate iteratively increasing file name
+	# Generate iteratively increasing file names
 	stack_fname = gen_filenames( "tiltstack_",".hdf", 4 )
-	slice_fname = gen_filenames( "stack_",".hdf", 4 )
 	# Create empty list in which to store the numpy arrays
 	tiltstacks=[]
-	for y in range( ylen -1 ):
-		# Read the tilt series
-		tiltseries = EMData()
-		slices = []
-		slice_path = next(slice_fname)
-		# increment file name by 1
+	for y in range( ylen ):
 		stack_path = next( stack_fname )
+		output = EMData( xlen, num_imgs,1 )
 		for imgnum in range( num_imgs ):
-			r =  Region( 0, y, xlen , 1)
-			tiltseries.read_image(options.tiltseries, imgnum, False, r)
-			tiltseries.write_image( options.path + "/" + slice_path, imgnum )
-			slices.append( tiltseries.numpy() )
+			r =  Region( 0, y, xlen, 1 )
+			tiltseries=EMData( options.tiltseries, imgnum, False, r )
+			tiltseries.set_size( 1, xlen, 1 )
+			#tiltseries_fft = tiltseries.do_fft()
+			output.insert_clip( tiltseries, (imgnum,0) )
+		if options.verbose > 2: print "Generated %s" %(stack_path)
 		# write each tiltstack to disk
-		stack = np.hstack( slices )
-		from_numpy( stack ).write_image( options.path + "/" + stack_path )
-		tiltstacks.append( stack )
+		output.write_image( options.path + "/" + stack_path )
+		tiltstack = output.numpy()[np.newaxis,:]
+		tiltstacks.append(tiltstack)
 	# RETURN: list of 2D numpy arrays, each corresponding to a tilt series along the tilt axis
 	return tiltstacks
 
