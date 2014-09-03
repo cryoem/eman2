@@ -447,14 +447,15 @@ def main():
 		ll = 0
 		for i in xrange(3):
 			firstblock = []
-			for k in xrange(chunklengths[i]):
+			l = len(perr[blocks[i]])
+			for k in xrange(l):
 				if  perr[blocks[i]][k]:
 					firstblock.append(k)
 			for j in xrange(i+1,4):
 				secondblock = []
-				for k in xrange(chunklengths[j]):
+				for k in xrange(len(perr[blocks[j]])):
 					if  perr[blocks[j]][k]:
-						secondblock.append(k+chunklengths[i])
+						secondblock.append(k+l)
 
 				write_text_file( firstblock + secondblock, os.path.join(outdir,"goodX%1d.txt"%ll) )
 				ll += 1
