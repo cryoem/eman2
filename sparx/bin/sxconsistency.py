@@ -421,18 +421,44 @@ def main():
 
 		#  store lists of good images for each group
 		#  blocks is indexed by first letter
+		good = [[] for i in xrange(4)]
+		bad  = [[] for i in xrange(4)]
 		for i,q in enumerate(blocks):
-			good = []
-			bad  = []
 			for k in xrange(chunklengths[q]):
-				deprt = max_3D_pixel_error(params[lefts[i]][k],avgtrans[q][k],r=radius)
+				#deprt = max_3D_pixel_error(params[lefts[i]][k],avgtrans[q][k],r=radius)
 				if  perr[q][k]:
-					good.append([chunks[q][k],pixer[q][k],deprt, params[pairs[i][0]][k],params[pairs[i][1]][k],params[lefts[i]][k],avgtrans[q][k] ])
+					good[i].append(chunks[q][k])
+					#[chunks[q][k],pixer[q][k],deprt, params[pairs[i][0]][k],params[pairs[i][1]][k],params[lefts[i]][k],avgtrans[q][k] ])
 				else:
-					bad.append([chunks[q][k],pixer[q][k],deprt, params[pairs[i][0]][k],params[pairs[i][1]][k],params[lefts[i]][k],avgtrans[q][k]])
-			write_text_row(good,os.path.join(outdir,"newgood"+"%1d.txt"%i))
-			write_text_row(bad,os.path.join(outdir,"newbad"+"%1d.txt"%i))
-		del good,bad
+					bad[i].append(chunks[q][k])
+					#[chunks[q][k],pixer[q][k],deprt, params[pairs[i][0]][k],params[pairs[i][1]][k],params[lefts[i]][k],avgtrans[q][k]])
+			write_text_file( good[i], os.path.join(outdir,"newgood%1d.txt"%i) )
+			write_text_file( bad[i],  os.path.join(outdir,"newbad%1d.txt"%i) )
+		#  Write chunklengths
+		chunklengths = [len(good[i]) for i in xrange(4)]
+		write_text_file(chunklengths, os.path.join(outdir,"chunklengths.txt") )
+		#  Generate newlili files from newgood, these contain original numbering of the total single file
+		ll = 0
+		for i in xrange(3):
+			for j in xrange(i+1,4):
+				write_text_file( good[i] + good[j], os.path.join(outdir,"newlili%1d.txt"%ll) )
+				ll += 1
+		#  Generate newx files from newgood, these contain consecutive (with gaps) numbering that allows to generate truncated X files from the previous X files
+		ll = 0
+		for i in xrange(3):
+			firstblock = []
+			for k in xrange(chunklengths[i]):
+				if  perr[blocks[i]][k]:
+					firstblock.append(k)
+			for j in xrange(i+1,4):
+				secondblock = []
+				for k in xrange(chunklengths[j]):
+					if  perr[blocks[j]][k]:
+						secondblock.append(k+chunklengths[i])
+
+				write_text_file( firstblock + secondblock, os.path.join(outdir,"goodX%1d.txt"%ll) )
+				ll += 1
+		del good,bad,firstblock,secondblock,perr
 		#  write out parameters, for those in pairs write out average, for leftouts leave them as they were
 		for i in xrange(6):
 			prms = []
