@@ -204,7 +204,7 @@ def get_tiltstacks( options, xlen, ylen ):
 		if options.verbose > 2: print "Generated %s" %(stack_path)
 		# write each tiltstack to disk
 		output.write_image( options.path + "/" + stack_path )
-		tiltstack = output.numpy()[np.newaxis,:]
+		tiltstack = output.numpy()
 		tiltstacks.append(tiltstack)
 	# RETURN: list of 2D numpy arrays, each corresponding to a tilt series along the tilt axis
 	return tiltstacks
