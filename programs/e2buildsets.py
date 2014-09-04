@@ -58,12 +58,14 @@ def main():
 #	parser.add_header(name="buildheader", help='Options below this label are specific to e2buildsets', title="### e2buildsets options ###", row=1, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--setname",type=str,help="Name of the stack to build", default='my_stack', guitype='strbox',row=2, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--excludebad",action="store_true",help="Exclude bad particles.",default=False, guitype='boolbox',row=4,col=0,rowspan=1,colspan=1)
-	parser.add_argument("--allparticles",action="store_true",help="Will process all particle stacks stored in the particles subdirectory (if specified, list of files will be ignored)",default=False, guitype='boolbox',row=1, col=0, mode='autofit,tuning,genoutp,gensf')
-	parser.add_argument("--withflipped",action="store_true",help="Only include images with phase-flipped counterparts!",default=False,guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode='genoutp[True]')
-	parser.add_argument("--minptcl",type=int,help="Files with fewer than the specified number of particles will be skipped",default=0,guitype='intbox', row=5, col=0, mode='autofit,tuning,genoutp,gensf')
-	parser.add_argument("--minqual",type=int,help="Files with a quality value lower than specified will be skipped",default=0,guitype='intbox', row=5, col=1, mode='autofit,tuning,genoutp,gensf')
-	parser.add_argument("--mindf",type=float,help="Files with a defocus lower than specified will be skipped",default=0,guitype='floatbox', row=6, col=0, mode='autofit,tuning,genoutp,gensf')
-	parser.add_argument("--maxdf",type=float,help="Files with a defocus higher than specified will be skipped",default=20.0,guitype='floatbox', row=6, col=1, mode='autofit,tuning,genoutp,gensf')
+	parser.add_argument("--allparticles",action="store_true",help="Will process all particle stacks stored in the particles subdirectory (if specified, list of files will be ignored)",default=False, guitype='boolbox',row=1, col=0)
+	parser.add_argument("--withflipped",action="store_true",help="Only include images with phase-flipped counterparts!",default=False,guitype='boolbox', row=4, col=1, rowspan=1, colspan=1)
+	parser.add_argument("--minptcl",type=int,help="Files with fewer than the specified number of particles will be skipped",default=0,guitype='intbox', row=5, col=0)
+	parser.add_argument("--minqual",type=int,help="Files with a quality value lower than specified will be skipped",default=0,guitype='intbox', row=5, col=1)
+	parser.add_argument("--mindf",type=float,help="Files with a defocus lower than specified will be skipped",default=0,guitype='floatbox', row=6, col=0)
+	parser.add_argument("--maxdf",type=float,help="Files with a defocus higher than specified will be skipped",default=20.0,guitype='floatbox', row=6, col=1)
+	parser.add_argument("--minbfactor",type=float,help="Files with a B-factor lower than specified will be skipped",default=0.0,guitype='floatbox', row=7, col=0)
+	parser.add_argument("--maxbfactor",type=float,help="Files with a B-factor higher than specified will be skipped",default=5000.0,guitype='floatbox', row=7, col=1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
@@ -117,19 +119,21 @@ def main():
 		ptcls=[i for i in os.listdir("particles") if i[0]!="."]
 		args=[i for i in args if i+"__ctf_flip_hp.hdf"in ptcls or i+"__ctf_flip.hdf" in ptcls]	# Not super-efficient, but functional
 
-	print "Filtering by defocus"
+	print "Filtering by Defocus and B-factor"
 	outargs=[]
 	for i in args:
 		try:
-			defocus=js_open_dict(info_name(i+".hdf"))["ctf"][0].defocus
-			if defocus>=options.mindf and defocus<=options.maxdf : outargs.append(i)
+			ctf=js_open_dict(info_name(i+".hdf"))["ctf"][0]
+			if ctf.defocus>=options.mindf and ctf.defocus<=options.maxdf and ctf.bfactor>=options.minbfactor and ctf.bfactor<=options.maxbfactor: outargs.append(i)
 		except:
 			traceback.print_exc()
-			print "Unknown defocus for {},{}, including it".format(i,info_name(i+".hdf"))
+			print "Unknown CTF for {},{}, including it".format(i,info_name(i+".hdf"))
 			outargs.append(i)
 	
 	args=outargs
-	
+	if len(args)==0 :
+		print "ERROR: No images left to include after applying filters!"
+		sys.exit(1)
 
 	print "%d files to include in processing after filters"%len(args)
 	
