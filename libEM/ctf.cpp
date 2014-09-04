@@ -894,6 +894,24 @@ vector <float> EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * sf
 			s += ds;
 		}
 		break;
+	case CTF_NOISERATIO:
+		for (int i = 0; i < np; i++) {
+			float gam=-g1*s*s*s*s+g2*s*s;
+			if (sf) {
+				r[i] = cos(gam-acac)*exp(-(bfactor/4.0f * s*s));
+				r[i] = r[i] * r[i] * sf->get_yatx(s);
+				r[i] = r[i]/(r[i]+calc_noise(s));
+			}
+			else {
+				r[i] = cos(gam-acac)*exp(-(bfactor/4.0f * s*s));
+				r[i] = r[i] * r[i];
+				r[i] = r[i]/(r[i]+calc_noise(s));
+			}
+			
+			s+=ds;
+		}
+			
+		break;
 	default:
 		break;
 	}

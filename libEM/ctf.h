@@ -73,7 +73,8 @@ namespace EMAN
 			CTF_SNR_SMOOTH,		// Signal to noise ratio, smoothed, algorithm may vary, but this should be more suitable for weighting
 			CTF_WIENER_FILTER,	// Weiner Filter = 1/(1+1/snr)
 			CTF_TOTAL,			// AMP*AMP+NOISE
-			CTF_FITREF			// CTF amplitude squared without B-factor and low resolution zeroed
+			CTF_FITREF,			// CTF amplitude squared without B-factor and low resolution zeroed
+			CTF_NOISERATIO		// 1-Noise/Total, when a particle is filtered with this it will still have noise, but the structure factor will look as if it's noise-free
 		};
 	  public:
 		virtual ~ Ctf()

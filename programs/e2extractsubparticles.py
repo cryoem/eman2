@@ -133,10 +133,17 @@ will be examined automatically to extract the corresponding particles and projec
 				if classmx[eo][0,j]!=i : continue		# only proceed if the particle is in this class
 
 				ptcl=EMData(args[0],j)
+				
+				# Find the transform for this particle (2d) and apply it to the unmasked/masked projections
 				ptclxf=Transform({"type":"2d","alpha":cmxalpha[0,j],"mirror":int(cmxmirror[0,j]),"tx":cmxtx[0,j],"ty":cmxty[0,j]}).inverse()
+				projc=[i.process("xform",{"transform":ptclxf}) for i in projs]		# we transform the projections, not the particle (as in the original classification)
 
-				ptcl2=ptcl.process("filter.matchto",{"to":proj+proj2})
-				projc=[i.process("xform",{"transform":ptclxf}) for i in projs]		# we transform the projection, not the particle (as in the original classification)
+				# make a filtered particle with 
+				ctf=ptcl["ctf"]
+				ds=1.0/(ctf.apix*ptcl["ny"])
+				ssnr=ctf.compute_1d(ptcl["ny"],ds,Ctf.CtfType.CTF_SNR_SMOOTH,None)		# The smoothed curve
+				plot(ssnr)
+
 				
 				
 				projc.process_inplace("normalize.toimage",{"to":ptcl2})
