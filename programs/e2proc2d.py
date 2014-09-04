@@ -38,6 +38,8 @@ import os.path
 import math
 import random
 import pyemtbx.options
+import os
+import datetime
 import time
 
 # constants
@@ -50,20 +52,40 @@ xzplanes = ['xz', 'zx']
 yzplanes = ['yz', 'yz']
 threedplanes = xyplanes + xzplanes + yzplanes
 
-def changed_file_name (input_name, output_pattern) :
+def changed_file_name (input_name, output_pattern, input_number, multiple_inputs) :
 	# convert an input file name to an output file name
 	# by replacing every @ or * in output_pattern with
 	# the input file base name (no extension)
 
-	base_name = os.path.basename(os.path.splitext(input_name)[0])
-
 	outname = output_pattern
 
-	if '@' in output_pattern :
-		outname = output_pattern.replace('@', base_name)
+	if multiple_inputs or 'FILL_ONE_FILE' in os.environ :
+		base_name = os.path.basename(os.path.splitext(input_name)[0])
 
-	if '*' in output_pattern :
-		outname = output_pattern.replace('*', base_name)
+		if '@' in outname :
+			outname = outname.replace('@', base_name)
+
+		if '*' in outname :
+			outname = outname.replace('*', base_name)
+
+		if '%i' in outname :
+			outname = outname.replace('%i', str(input_number))
+
+		if '%j' in outname :
+			outname = outname.replace('%j', str(input_number-1))
+
+		if '%d' in outname :
+			dt = datetime.datetime.now()
+			date_str = str(dt.year) + '_' + str(dt.month) + '_' + str(dt.day)
+			outname = outname.replace('%d', date_str)
+
+		if '%t' in outname :
+			dt = datetime.datetime.now()
+			time_str = str(dt.hour) + '_' + str(dt.minute) + '_' + str(dt.second)
+			outname = outname.replace('%t', time_str)
+
+		if '%%' in outname :
+			outname = outname.replace('%%', '%')
 
 	return outname
 
@@ -194,11 +216,14 @@ def main():
 
 	outpattern = args[num_input_files]
 
+	multiple_files = (num_input_files > 1)
+
+	inp_num = 0
+
 	for infile in args[0 : num_input_files] :
-		if num_input_files == 1 :
-			outfile = outpattern
-		else :
-			outfile = changed_file_name(infile, outpattern)
+		inp_num = inp_num + 1
+		
+		outfile = changed_file_name(infile, outpattern, inp_num, multiple_files)
 
 		inp_ext = os.path.splitext(infile)[1]
 		out_ext = os.path.splitext(outfile)[1]
@@ -747,6 +772,10 @@ def main():
 					if not options.average:	# skip writing the input image to output file
 						# write processed image to file
 
+						out_type = EMUtil.get_image_ext_type(options.outtype)
+						out_mode = file_mode_map[options.outmode]
+						not_swap = not(options.swap)
+
 						if options.threed2threed or options.twod2threed:    # output a single 3D image
 							#shift = 0
 
@@ -763,38 +792,32 @@ def main():
 									f = open(options.list,'r')
 									lines = f.read().split(',')
 									#print "Lines are", lines
+
 									f.close()
-									z = len( lines )
+									z = len(lines)
+
 									#shift = nimg - z
 									#print "If --list, z should be the length of lines in list; lines,z", len(lines),z
 								elif options.exclude:
 									f = open(options.exclude,'r')
 									lines = f.read().split(',')
 									#print "lines are", lines
+
 									f.close()
 									z = nimg - len(lines)
+
 									#shift = len(lines)
 									#print "If --exclude, z should be z size of input minus lines in exclude;"
 									#print "nimg, len lines, zout", nimg, len(lines), z
 
 								out3d_img = EMData(d.get_xsize(), d.get_ysize(), z)
 
-								if 'mrc8bit' in optionlist:
-									#print "Writing dummy mrc8bit"
-									out3d_img.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
-									dummy = 1		
-									#print "Wrote dummy mrc8bit"			
-								elif 'mrc16bit' in optionlist:
-									#print "Writting dummy mrc16bit"
-									out3d_img.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
-									dummy = 1
-									#print "Wrote dummy mrc16bit"
-								else:
-									#print "Writting dummy float"
-	#								out3d_img.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
-									out3d_img.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, None, file_mode_map[options.outmode], not(options.swap))
-									dummy = 1
-									#print "Wrote dummy float"
+								#print "Writing dummy"
+
+								out3d_img.write_image(outfile, 0, out_type, False, None, out_mode, not_swap)
+								dummy = 1
+
+								#print "Wrote dummy"
 
 							#print "imagelist is", imagelist
 
@@ -803,35 +826,27 @@ def main():
 									#if options.twod2threed:
 									#	region = Region(0, 0, imagelist[0:i].count(1), d.get_xsize(), d.get_ysize(), 1)
 									#elif options.threed2threed:
+
 									region = Region(0, 0, imagelist[0:i].count(1), d.get_xsize(), d.get_ysize(), 1)
 							else:
 								#if options.twod2threed:
 								#	region = Region(0, 0, i, d.get_xsize(), d.get_ysize(), 1)
 								#elif options.threed2threed:
+
 								region = Region(0, 0, i, d.get_xsize(), d.get_ysize(), 1)
 
 							#print "outtype is", options.outtype
 
-							if 'mrc8bit' in optionlist:
-								d.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, region, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
-							elif 'mrc16bit' in optionlist:
-								d.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, region, EMUtil.EMDataType.EM_SHORT, not(options.swap))
-							else:
-	#							d.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, region, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
-								d.write_image(outfile, 0, EMUtil.get_image_ext_type(options.outtype), False, region, file_mode_map[options.outmode], not(options.swap))
+							d.write_image(outfile, 0, out_type, False, region, out_mode, not_swap)
 
-						elif options.unstacking:	#output a series numbered single image files
-							if 'mrc8bit' in optionlist:
-								d.write_image(outfile.split('.')[0]+'-'+str(i+1).zfill(len(str(nimg)))+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
-							elif 'mrc16bit' in optionlist:
-								d.write_image(outfile.split('.')[0]+'-'+str(i+1).zfill(len(str(nimg)))+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
-							else:
-								#d.write_image(outfile.split('.')[0]+'-'+str(i+1).zfill(len(str(nimg)))+'.'+outfile.split('.')[-1])
-	#							d.write_image(outfile.split('.')[0]+'-'+str(i+1).zfill(len(str(nimg)))+'.'+outfile.split('.')[-1], 0, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
-								d.write_image(outfile.split('.')[0]+'-'+str(i+1).zfill(len(str(nimg)))+'.'+outfile.split('.')[-1], 0, EMUtil.get_image_ext_type(options.outtype), False, None, file_mode_map[options.outmode], not(options.swap))
-								#print "I will unstack to HDF" #JESUS
+						elif options.unstacking:	# output a series numbered single image files
+							out_name = outfile.split('.')[0]+'-'+str(i+1).zfill(len(str(nimg)))+'.'+outfile.split('.')[-1]
 
-						else:   #output a single 2D image or a 2D stack			
+							d.write_image(out_name, 0, out_type, False, None, out_mode, not_swap)
+
+							#print "I will unstack to HDF" # JESUS
+
+						else:   # output a single 2D image or a 2D stack			
 							# optionally replace the output image with its rotational average
 
 							if options.rotavg:
@@ -840,19 +855,12 @@ def main():
 
 								for x in xrange(len(rd)): d[x] = rd[x]
 
-							if 'mrc8bit' in optionlist:
-								d.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_UCHAR, not(options.swap))
-							elif 'mrc16bit' in optionlist:
-								d.write_image(outfile.split('.')[0]+'.mrc', -1, EMUtil.ImageType.IMAGE_MRC, False, None, EMUtil.EMDataType.EM_SHORT, not(options.swap))
-							else:
-								if options.inplace:
-	#								d.write_image(outfile, i, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
-									d.write_image(outfile, i, EMUtil.get_image_ext_type(options.outtype), False, None, file_mode_map[options.outmode], not(options.swap))
-								else:
-	#								d.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype), False, None, EMUtil.EMDataType.EM_FLOAT, not(options.swap))
-									d.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype), False, None, file_mode_map[options.outmode], not(options.swap))
+							if options.inplace:
+								d.write_image(outfile, i, out_type, False, None, out_mode, not_swap)
+							else: # append the image
+								d.write_image(outfile, -1, out_type, False, None, out_mode, not_swap)
 
-		#end of image loop
+		# end of image loop
 
 		if average:
 			avg = average.finish()
