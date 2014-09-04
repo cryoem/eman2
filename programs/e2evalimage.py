@@ -282,6 +282,9 @@ class GUIEvalImage(QtGui.QWidget):
 		self.brefit=QtGui.QPushButton("Refit")
 		self.gbl.addWidget(self.brefit,7,2)
 
+		self.cbgadj=CheckBox(None,"CTF BG Adj",0)
+		self.gbl.addWidget(self.cbgadj,7,3)
+
 
 #		self.sapix=ValSlider(self,(.2,10),"A/Pix:",2,90)
 #		self.vbl.addWidget(self.sapix)
@@ -327,6 +330,7 @@ class GUIEvalImage(QtGui.QWidget):
 
 		QtCore.QObject.connect(self.bimport, QtCore.SIGNAL("clicked(bool)"),self.doImport)
 		QtCore.QObject.connect(self.brefit, QtCore.SIGNAL("clicked(bool)"),self.doRefit)
+		QtCore.QObject.connect(self.cbgadj, QtCore.SIGNAL("valueChanged"),self.newCTF)
 		QtCore.QObject.connect(self.sdefocus, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.sbfactor, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.sdfdiff, QtCore.SIGNAL("valueChanged"), self.newCTF)
@@ -897,6 +901,31 @@ class GUIEvalImage(QtGui.QWidget):
 		parms[1].ampcont=self.sampcont.value
 		parms[1].voltage=self.svoltage.value
 		parms[1].cs=self.scs.value
+		
+		if self.cbgadj.getValue() :
+			parms=self.parms[self.curset]
+			apix=self.sapix.getValue()
+			ds=1.0/(apix*parms[0]*parms[5])
+			ctf=parms[1]
+#			bg_1d=e2ctf.low_bg_curve(self.fft1d,ds)
+			bg_1d=list(self.fft1d)
+			
+#			lz=int(ctf.zero(0)/ds)
+			for lz in xrange(1,int(ctf.zero(0)/ds)):
+				if self.fft1d[lz-1]<self.fft1d[lz] : break
+				
+			for i in xrange(20):
+				z=int(ctf.zero(i)/ds)
+				if z>len(bg_1d): break
+				v1=min(self.fft1d[lz-1:lz+2])
+				v2=min(self.fft1d[z-1:z+2])
+				for j in xrange(lz,z):
+					r=float(j-lz)/(z-lz)
+					bg_1d[j]=v1*(1.0-r)+v2*r
+				lz=z
+			
+			parms[1].background=list(bg_1d)
+			
 		self.needredisp=True
 
 
