@@ -1136,7 +1136,9 @@ float EMAN2Ctf::zero(int n) const {
 vector <float>zeroes;
 float lam=lambda();
 
-for (int i=-15; i<16; i++) {
+int m=n*2;
+if (m<15) m=15;		// A bit arbitrary. I believe this will always get us the zeroes we need in any practical situation
+for (int i=-m; i<m; i++) {
 	float r1=defocus*defocus*1.0e8 + cs*lam*1.0e7 - 2.0*cs*i*lam*1.0e7 - 2*cs*1.0e7*lam*acos(ampcont/100.0)/M_PI;
 //	printf("%f\n",r1);
 	if (r1<0) continue;

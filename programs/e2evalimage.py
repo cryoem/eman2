@@ -330,7 +330,7 @@ class GUIEvalImage(QtGui.QWidget):
 
 		QtCore.QObject.connect(self.bimport, QtCore.SIGNAL("clicked(bool)"),self.doImport)
 		QtCore.QObject.connect(self.brefit, QtCore.SIGNAL("clicked(bool)"),self.doRefit)
-		QtCore.QObject.connect(self.cbgadj, QtCore.SIGNAL("valueChanged"),self.newCTF)
+		QtCore.QObject.connect(self.cbgadj, QtCore.SIGNAL("valueChanged"),self.bgAdj)
 		QtCore.QObject.connect(self.sdefocus, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.sbfactor, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.sdfdiff, QtCore.SIGNAL("valueChanged"), self.newCTF)
@@ -800,6 +800,8 @@ class GUIEvalImage(QtGui.QWidget):
 		self.incalc=False
 		time.sleep(.2)			# help make sure update has a chance
 		self.procthread=None
+		
+		self.bgAdj()
 #		dbquality = self.db[os.path.basename(self.curfilename)]
 #		print dbquality
 # 		item=item_name(self.curfilename)
@@ -890,6 +892,36 @@ class GUIEvalImage(QtGui.QWidget):
 		parms=self.parms[self.curset]
 		parms[4]=self.squality.value
 
+	def bgAdj(self):
+		
+		if self.cbgadj.getValue() :
+			parms=self.parms[self.curset]
+			apix=self.sapix.getValue()
+#			ds=1.0/(apix*parms[0]*parms[5])
+			ds=parms[1].dsbg
+			ctf=parms[1]
+#			bg_1d=e2ctf.low_bg_curve(self.fft1d,ds)
+			bg_1d=list(parms[1].background)
+			
+#			lz=int(ctf.zero(0)/ds)
+			for lz in xrange(1,int(ctf.zero(0)/ds)):
+				if self.fft1d[lz-1]<self.fft1d[lz] : break
+				
+			for i in xrange(100):
+				z=int(ctf.zero(i)/ds)
+#				print i,z,len(bg_1d),z*ds
+				if z>len(bg_1d): break
+				v1=min(self.fft1d[lz-1:lz+2])
+				v2=min(self.fft1d[z-1:z+2])
+				for j in xrange(lz,z):
+					r=float(j-lz)/(z-lz)
+					bg_1d[j]=v1*(1.0-r)+v2*r
+				lz=z
+			
+			parms[1].background=list(bg_1d)
+
+		self.needredisp=True
+
 
 	def newCTF(self) :
 		parms=self.parms[self.curset]
@@ -900,32 +932,9 @@ class GUIEvalImage(QtGui.QWidget):
 		parms[1].apix=self.sapix.value
 		parms[1].ampcont=self.sampcont.value
 		parms[1].voltage=self.svoltage.value
-		parms[1].cs=self.scs.value
+		parms[1].cs=self.scs.value		
+		self.bgAdj()
 		
-		if self.cbgadj.getValue() :
-			parms=self.parms[self.curset]
-			apix=self.sapix.getValue()
-			ds=1.0/(apix*parms[0]*parms[5])
-			ctf=parms[1]
-#			bg_1d=e2ctf.low_bg_curve(self.fft1d,ds)
-			bg_1d=list(self.fft1d)
-			
-#			lz=int(ctf.zero(0)/ds)
-			for lz in xrange(1,int(ctf.zero(0)/ds)):
-				if self.fft1d[lz-1]<self.fft1d[lz] : break
-				
-			for i in xrange(20):
-				z=int(ctf.zero(i)/ds)
-				if z>len(bg_1d): break
-				v1=min(self.fft1d[lz-1:lz+2])
-				v2=min(self.fft1d[z-1:z+2])
-				for j in xrange(lz,z):
-					r=float(j-lz)/(z-lz)
-					bg_1d[j]=v1*(1.0-r)+v2*r
-				lz=z
-			
-			parms[1].background=list(bg_1d)
-			
 		self.needredisp=True
 
 

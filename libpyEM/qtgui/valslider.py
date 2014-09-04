@@ -558,7 +558,7 @@ class CheckBox(QtGui.QWidget):
 		self.check.setChecked(value)
 		self.hboxlayout.addWidget(self.check)
 		
-		QtCore.QObject.connect(self.check, QtCore.SIGNAL("stateChanged(bool)"), self.boolChanged)
+		QtCore.QObject.connect(self.check, QtCore.SIGNAL("stateChanged(int)"), self.boolChanged)
 		
 		if showenable>=0 : self.setEnabled(showenable)
 
@@ -589,7 +589,7 @@ class CheckBox(QtGui.QWidget):
 		
 	def boolChanged(self,newv):
 		if self.ignore : return
-		self.emit(QtCore.SIGNAL("valueChanged"),self.value)
+		self.emit(QtCore.SIGNAL("valueChanged"),bool(self.check.isChecked()))
 				
 	def setLabel(self,label):
 		self.label.setText(label)
