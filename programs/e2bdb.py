@@ -255,33 +255,34 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 		try: maxname=max([len(s) for s in dbs])
 		except: 
 			print "Error reading ",path
-			continue
 
 		if options.restore :
 			nima = EMUtil.get_image_count(options.restore)
 			IB = db_open_dict(options.restore)
-			data_old = None
+			source_old = None
 			if len(options.step)==3 : nima=min(options.step[2],nima)
 			for i in xrange(options.step[0],nima,options.step[1]):
 				source = IB.get_header(i)
-				data_source = source["data_source"]
-				ID = source["data_n"]
-				if( data_old != data_source):
-					if( data_old != None):  DB.close()
-					DB = db_open_dict(data_source,ro=True)
-					data_old = data_source
+				source_path = source["source_path"]
+				ID = source["source_n"]
+				if( source_old != source_path):
+					if( source_old != None):  DB.close()
+					DB = db_open_dict(source_path,ro=True)
+					source_old = source_path
 				target = DB.get_header( ID )
 				try:
-					source["data_source"] = target["data_source"]
-					source["data_n"]      = target["data_n"]
+					source["data_path"] = target["data_path"]
+					source["data_n"]    = target["data_n"]
+					source["source_path"] = target["source_path"]
+					source["source_n"]    = target["source_n"]
 				except:
-					del source['data_source']
+					#  top level does not have data_path
+					del source['data_path']
 					del source['data_n']
-					#del source['data_path']
-
+					source["source_path"] = target["source_path"]
+					source["source_n"]    = target["source_n"]
 				DB.set_header(ID, source)
 			DB.close()
-			continue
 
 		if options.extractplots :
 			for db in dbs:
