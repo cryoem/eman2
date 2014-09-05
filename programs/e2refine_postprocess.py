@@ -146,14 +146,21 @@ def main():
 		# if it is, it adjusts the threshold and seed parameters to make the mask smaller
 		# This is a bit of a hack, and unfortunately a slow way of handling the problem
 		radav=1.0
-		seeds=17
+		seeds=24
+		itr=0
 		while radav>0.001:
 			sigmanz*=1.1
-			seeds=max(0,seeds-1)
+			seeds=max(0,seeds-8)
 			vol=EMData(combfile,0)
-			vol.process_inplace("mask.auto3d",{"threshold":sigmanz*.75,"radius":nx/10,"nshells":int(nx*0.08+.5),"nshellsgauss":int(nx*.06),"nmaxseed":seeds})
+			vol.process_inplace("mask.auto3d",{"threshold":sigmanz*.75,"radius":nx/10,"nshells":int(nx*0.08+.5),"nshellsgauss":int(nx*.06),"nmaxseed":seeds,"return_mask":1})
 			dis=vol.calc_radial_dist(vol["nx"]/2,0,1,0)
 			radav=sum(dis[-4:])
+			itr+=1
+			if itr>5 :
+				print "WARNING: failed to achieve a properly isolated volume, FSC artifacts may occur. Box size too small ?"
+				sigmanz=combined2["sigma_nonzero"]*1.1
+				seeds=0
+				break
 			
 		# Final automasking parameters
 		amask3d="--process mask.auto3d:threshold={thresh}:radius={radius}:nshells={shells}:nshellsgauss={gshells}:nmaxseed={seed}".format(

@@ -5335,6 +5335,40 @@ Next, the mask is expanded by 'nshells'+'nshellsgauss'/2 voxels. Finally a gauss
 		static const string NAME;
 	};
 
+	/** This expands a multilevel mask volume so inter-mask boundaries are preserved
+	 * @param nshells   number of shells to add
+	*/
+	class IterMultiMaskProcessor:public Processor
+	{
+	  public:
+		virtual void process_inplace(EMData * image);
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual string get_desc() const
+		{
+			return "A multilevel mask has an integer value at each pixel location. -1 indicates unmasked regions. 0-n-1 are individual masks. Expands the masked regions into unmasked areas by nshells.";
+		}
+
+		static Processor *NEW()
+		{
+			return new IterMultiMaskProcessor();
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("nshells", EMObject::INT, "number of shells to add");
+			return d;
+		}
+
+		static const string NAME;
+	};
+
+	
 	/**Add additional shells/rings to an existing 1/0 mask image
 	 * @param nshells   number of shells to add
 	*/

@@ -180,6 +180,8 @@ const string AutoMask3DProcessor::NAME = "mask.auto3d.thresh";
 const string AutoMask3D2Processor::NAME = "mask.auto3d";
 const string AutoMaskDustProcessor::NAME = "mask.dust3d";
 const string AddMaskShellProcessor::NAME = "mask.addshells";
+const string IterMultiMaskProcessor::NAME = "mask.addshells.multilevel";
+const string IterBinMaskProcessor::NAME = "mask.addshells.gauss";
 const string PhaseToMassCenterProcessor::NAME = "xform.phasecenterofmass";
 const string ToMassCenterProcessor::NAME = "xform.centerofmass";
 const string ACFCenterProcessor::NAME = "xform.centeracf";
@@ -200,7 +202,6 @@ const string MinPixelOperator::NAME = "math.min";
 const string MatchSFProcessor::NAME = "filter.matchto";
 const string SetSFProcessor::NAME = "filter.setstrucfac";
 const string SmartMaskProcessor::NAME = "mask.smart";
-const string IterBinMaskProcessor::NAME = "mask.addshells.gauss";
 const string TestImagePureGaussian::NAME = "testimage.puregaussian";
 const string TestImageFourierNoiseGaussian::NAME = "testimage.noise.fourier.gaussian";
 const string TestImageFourierNoiseProfile::NAME = "testimage.noise.fourier.profile";
@@ -407,6 +408,8 @@ template <> Factory < Processor >::Factory()
 	force_add<AutoMask3D2Processor>();
 	force_add<AutoMaskDustProcessor>();
 	force_add<AddMaskShellProcessor>();
+	force_add<IterMultiMaskProcessor>();
+	force_add<IterBinMaskProcessor>();
 	force_add<AutoMaskAsymUnit>();
 
 	force_add<CTFSNRWeightProcessor>();
@@ -433,7 +436,6 @@ template <> Factory < Processor >::Factory()
 	force_add<MatchSFProcessor>();
 
 	force_add<SmartMaskProcessor>();
-	force_add<IterBinMaskProcessor>();
 
 	force_add<TestImageGaussian>();
 	force_add<TestImagePureGaussian>();
@@ -4009,6 +4011,7 @@ void NormalizeToLeastSquareProcessor::process_inplace(EMData * image)
 				count++;
 				sum_x += refp[i];
 				sum_y += rawp[i];
+//				printf("%f\t%f\n",refp[i],rawp[i]);
 			}
 		}
 
@@ -5762,6 +5765,75 @@ void AddRandomNoiseProcessor::process_inplace(EMData * image)
 
 	image->update();
 }
+
+void IterMultiMaskProcessor::process_inplace(EMData * image)
+{
+	if (!image) {
+		LOGWARN("NULL Image");
+		return;
+	}
+
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+
+	if (ny == 1) {
+		LOGERR("Tried to add mask shell to 1d image");
+		return;
+	}
+
+	int num_shells = params.set_default("nshells",1);
+
+	// there are other strategies which might allow us to avoid the extra copy, but this will have to do for now
+	EMData *image1=image;
+	EMData *image2=image->copy();
+	if (nz == 1) {
+		for (int i = 0; i < num_shells; i++) {
+			for (int y = 1; y < ny - 1; y++) {
+				for (int x = 1; x < nx - 1; x++) {
+					if (image1->get_value_at(x,y)>=0) continue;		// already part of a masked region
+					
+					// Note that this produces a directional bias in the case of ambiguous pixels
+					// While this could be improved upon slightly, there can be truly ambiguous cases
+					// and at least this method is deterministic
+					if      (image1->get_value_at(x-1,y)>=0) image2->set_value_at_fast(x,y,image1->get_value_at(x-1,y));
+					else if (image1->get_value_at(x+1,y)>=0) image2->set_value_at_fast(x,y,image1->get_value_at(x+1,y));
+					else if (image1->get_value_at(x,y-1)>=0) image2->set_value_at_fast(x,y,image1->get_value_at(x,y-1));
+					else if (image1->get_value_at(x,y+1)>=0) image2->set_value_at_fast(x,y,image1->get_value_at(x,y+1));
+					
+				}
+			}
+			memcpy(image1->get_data(),image2->get_data(),image1->get_size()*sizeof(float));
+		}
+	}
+	else {
+		for (int i = 0; i < num_shells; i++) {
+			for (int z = 1; z < nz - 1; z++) {
+				for (int y = 1; y < ny - 1; y++) {
+					for (int x = 1; x < nx - 1; x++) {
+						if (image1->get_value_at(x,y,z)>=0) continue;		// already part of a masked region
+						
+						// Note that this produces a directional bias in the case of ambiguous pixels
+						// While this could be improved upon slightly, there can be truly ambiguous cases
+						// and at least this method is deterministic
+						if      (image1->get_value_at(x-1,y,z)>=0) image2->set_value_at_fast(x,y,z,image1->get_value_at(x-1,y,z));
+						else if (image1->get_value_at(x+1,y,z)>=0) image2->set_value_at_fast(x,y,z,image1->get_value_at(x+1,y,z));
+						else if (image1->get_value_at(x,y-1,z)>=0) image2->set_value_at_fast(x,y,z,image1->get_value_at(x,y-1,z));
+						else if (image1->get_value_at(x,y+1,z)>=0) image2->set_value_at_fast(x,y,z,image1->get_value_at(x,y+1,z));
+						else if (image1->get_value_at(x,y,z-1)>=0) image2->set_value_at_fast(x,y,z,image1->get_value_at(x,y,z-1));
+						else if (image1->get_value_at(x,y,z+1)>=0) image2->set_value_at_fast(x,y,z,image1->get_value_at(x,y,z+1));
+						
+					}
+				}
+			}
+			memcpy(image1->get_data(),image2->get_data(),image1->get_size()*sizeof(float));
+		}
+	}
+
+	delete image2;
+	image->update();
+}
+
 
 void AddMaskShellProcessor::process_inplace(EMData * image)
 {

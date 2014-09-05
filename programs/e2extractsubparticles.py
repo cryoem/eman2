@@ -40,6 +40,7 @@ import math
 from os import system
 from os import unlink
 from sys import argv
+import traceback
 from EMAN2 import *
 from EMAN2db import db_open_dict
 
@@ -65,13 +66,14 @@ will be examined automatically to extract the corresponding particles and projec
 	#parser.add_argument("--average","-A",action="store_true",help="Average the particles within each class",default=False)
 
 	(options, args) = parser.parse_args()
+	args[1]=int(args[1])
 #	if len(args)<4 : parser.error("Please specify <raw particle file> <class mx> <projections> <mask> <output file> ")
 
 	# each of these classmx variables becomes a 2 element list with even and odd particles respectively
 	try:
 		pathmx="{}/classmx_{:02d}_even.hdf".format(args[0],args[1])
 		classmx=[EMData(pathmx,0)]
-		nptcl=[classmx["ny"]]
+		nptcl=[classmx[0]["ny"]]
 		cmxtx=[EMData(pathmx,2)]
 		cmxty=[EMData(pathmx,3)]
 		cmxalpha=[EMData(pathmx,4)]
@@ -79,14 +81,19 @@ will be examined automatically to extract the corresponding particles and projec
 
 		pathmx="{}/classmx_{:02d}_odd.hdf".format(args[0],args[1])
 		classmx.append(EMData(pathmx,0))
-		nptcl.append(classmx["ny"])
+		nptcl.append(classmx[1]["ny"])
 		cmxtx.append(EMData(pathmx,2))
 		cmxty.append(EMData(pathmx,3))
 		cmxalpha.append(EMData(pathmx,4))
 		cmxmirror.append(EMData(pathmx,5))
 	except:
-		print "Error reading classification matrix. Must be full classification matrix with alignments"
+		traceback.print_exc()
+		print "====\nError reading classification matrix. Must be full classification matrix with alignments"
 		sys.exit(1)
+
+	# path to the even/odd particles used for the refinement
+	cptcl=js_open_dict("{}/0_refine_parms.json".format(args[0]))["input"]
+	cptcl=[str(i) for i in cptcl]
 
 	# this reads all of the EMData headers from the projections, should be same for even and odd
 	pathprj="{}/projections_{:02d}_even.hdf".format(args[0],args[1])
@@ -98,6 +105,9 @@ will be examined automatically to extract the corresponding particles and projec
 
 	# The mask in "neutral" orientation
 	mask=EMData(args[2],0)
+	
+	# The mask applied to the reference volume, used for 2-D masking of particles for better power spectrum matching
+	ptclmask=EMData(args[0]+"/mask.hdf",0)
 
 	logid=E2init(sys.argv, options.ppid)
 
@@ -108,23 +118,22 @@ will be examined automatically to extract the corresponding particles and projec
 	nsym=xf.get_nsym(options.sym)
 	symxfs=[xf.get_sym(options.sym,i) for i in xrange(nsym)]
 
-	# now we loop over each class, and assess the masked region for each particle in terms of
-	# sigma of the image. Note that we don't have a list of which particle is in each class,
+	# now we loop over the classes, and subtract away a projection of the reference with the exclusion mask in
+	# each symmetry-related orientation, after careful scaling. Note that we don't have a list of which particle is in each class,
 	# but rather a list of which class each particle is in, so we do this a bit inefficiently for now
 	for i in xrange(nref):
 		if options.verbose>1 : print "--- Class %d"%i
-
-		# projection with the correct overall Euler angles for particles in one class
-		proj=threed.project("standard",{"transform":eulers[i]})
 		
+		# The first projection is unmasked, used for scaling
 		# We regenerate the masked volumes for each class to avoid using too much RAM
-		projs=[]
+		projs=[threed.project("standard",{"transform":eulers[i]})]
 		for xf in symxfs:
 			maskx=mask.process("xform",{"transform":xf})
 			masked=threed.copy()
 			masked.mult(maskx)
 			projs.append(masked.project("standard",{"transform":eulers[i]}))
-			
+		
+		projmask=ptclmask.project("standard",eulers[i])		# projection of the 3-D mask for the reference volume to apply to particles
 #		proj.process_inplace("normalize.circlemean")
 #		proj.mult(softmask)
 
@@ -132,52 +141,33 @@ will be examined automatically to extract the corresponding particles and projec
 			for j in range(nptcl[eo]):
 				if classmx[eo][0,j]!=i : continue		# only proceed if the particle is in this class
 
-				ptcl=EMData(args[0],j)
+				ptcl=EMData(cptcl[eo],j)
 				
 				# Find the transform for this particle (2d) and apply it to the unmasked/masked projections
-				ptclxf=Transform({"type":"2d","alpha":cmxalpha[0,j],"mirror":int(cmxmirror[0,j]),"tx":cmxtx[0,j],"ty":cmxty[0,j]}).inverse()
+				ptclxf=Transform({"type":"2d","alpha":cmxalpha[eo][0,j],"mirror":int(cmxmirror[eo][0,j]),"tx":cmxtx[eo][0,j],"ty":cmxty[eo][0,j]}).inverse()
 				projc=[i.process("xform",{"transform":ptclxf}) for i in projs]		# we transform the projections, not the particle (as in the original classification)
+				projmaskc=projmask.process("xform",{"transform":ptclxf})
 
-				# make a filtered particle with 
+				# we make a filtered copy of the particle filtered such that it's power spectrum is roughly that of a noise-free particle
+				# we do this using an approximate filter from the particle set based CTF estimate, but apply this filter to the actual
+				# particle image, so it will retain some of the detailed features of the actual particle power spectrum
+				# The filter is basically (1-N/(N+S))
 				ctf=ptcl["ctf"]
 				ds=1.0/(ctf.apix*ptcl["ny"])
-				ssnr=ctf.compute_1d(ptcl["ny"],ds,Ctf.CtfType.CTF_SNR_SMOOTH,None)		# The smoothed curve
-				plot(ssnr)
-
+				filt=ctf.compute_1d(ptcl["ny"],ds,Ctf.CtfType.CTF_NOISERATIO,None)
+				plot(filt)
+				ptclr=ptcl.process("filter.radialtable",{"table":filt})		# reference particle for scaling
+				ptclr.mult(projmaskc)
 				
+				# Now we match the radial structure factor of the total projection to the filtered particle, then scale
+				# we will use the filter curve returned by this process to scale the masked projections, since theoretically
+				# they should not match the whole particle
+				projf=projc[0].process("filter.matchto",{"to":ptclr,"return_radial":1})
+#				projf.process_inplace("normalize.toimage",{"to":ptcl})
+				ptcl2=ptcl-projf
 				
-				projc.process_inplace("normalize.toimage",{"to":ptcl2})
-				projc2.process_inplace("normalize.toimage",{"to":ptcl2})
-				cmp1=ptcl2.cmp(simcmp[0],projc, simcmp[1])
-				cmp2=ptcl2.cmp(simcmp[0],projc2,simcmp[1])
-				result=cmp1-cmp2
-				if options.debug: display((ptcl2,projc,projc2,proj))
+				display((projc[0],projf,ptclr,ptcl,ptcl2),True)
 
-				statr.append(result)
-				statr2.append((cmp1+cmp2,cmp1-cmp2,0))
-
-				if cmp1+cmp2<options.alistacks :
-					ptcl2=ptcl.process("xform",{"transform":ptclxf.inverse()})
-					ptcl2.mult(projmask)
-					ptcl2.write_image("aligned_{}.hdf".format(i),nalis+2)
-
-					if nalis==0 :
-						projc=proj.process("normalize.toimage",{"to":ptcl2})
-						projc2=proj2.process("normalize.toimage",{"to":ptcl2})
-						projc.write_image("aligned_{}.hdf".format(i),0)
-						projc2.write_image("aligned_{}.hdf".format(i),1)
-
-					nalis+=1
-
-				if options.tstcls==i :
-					ptcl2=ptcl.process("xform",{"transform":ptclxf.inverse()})
-					ptcl2.mult(projmask)
-					if cmp1>cmp2:
-						try: avgim1.add(ptcl2)
-						except: avgim1=ptcl2
-					else:
-						try: avgim2.add(ptcl2)
-						except: avgim2=ptcl2
 
 
 
