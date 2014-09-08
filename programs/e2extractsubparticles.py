@@ -50,9 +50,9 @@ def main():
 
 This program modifies raw particle data to subtract-away undesired portions of the density on a per-particle basis.
 For example, one could take GroEL particles with D7 symmetry and extract the top and bottom heptamers as separate
-particles for reconstruction. In this example there would be 2x as many output particles as input particles. The 
+particles for reconstruction. In this example there would be 2x as many output particles as input particles. The
 portion of the map identified by the excluded region mask will be subtracted from each particle as optimally as
-possible, taking CTF, normalization and other factors into account. 
+possible, taking CTF, normalization and other factors into account.
 
 To use this program you should first run a complete refinement to the best possible resolution. Refinement parameters
 will be examined automatically to extract the corresponding particles and projections.
@@ -105,7 +105,7 @@ will be examined automatically to extract the corresponding particles and projec
 
 	# The mask in "neutral" orientation
 	mask=EMData(args[2],0)
-	
+
 	# The mask applied to the reference volume, used for 2-D masking of particles for better power spectrum matching
 	ptclmask=EMData(args[0]+"/mask.hdf",0)
 
@@ -123,7 +123,7 @@ will be examined automatically to extract the corresponding particles and projec
 	# but rather a list of which class each particle is in, so we do this a bit inefficiently for now
 	for i in xrange(nref):
 		if options.verbose>1 : print "--- Class %d"%i
-		
+
 		# The first projection is unmasked, used for scaling
 		# We regenerate the masked volumes for each class to avoid using too much RAM
 		projs=[threed.project("standard",{"transform":eulers[i]})]
@@ -132,7 +132,7 @@ will be examined automatically to extract the corresponding particles and projec
 			masked=threed.copy()
 			masked.mult(maskx)
 			projs.append(masked.project("standard",{"transform":eulers[i]}))
-		
+
 		projmask=ptclmask.project("standard",eulers[i])		# projection of the 3-D mask for the reference volume to apply to particles
 #		proj.process_inplace("normalize.circlemean")
 #		proj.mult(softmask)
@@ -142,7 +142,7 @@ will be examined automatically to extract the corresponding particles and projec
 				if classmx[eo][0,j]!=i : continue		# only proceed if the particle is in this class
 
 				ptcl=EMData(cptcl[eo],j)
-				
+
 				# Find the transform for this particle (2d) and apply it to the unmasked/masked projections
 				ptclxf=Transform({"type":"2d","alpha":cmxalpha[eo][0,j],"mirror":int(cmxmirror[eo][0,j]),"tx":cmxtx[eo][0,j],"ty":cmxty[eo][0,j]}).inverse()
 				projc=[i.process("xform",{"transform":ptclxf}) for i in projs]		# we transform the projections, not the particle (as in the original classification)
@@ -158,14 +158,14 @@ will be examined automatically to extract the corresponding particles and projec
 				plot(filt)
 				ptclr=ptcl.process("filter.radialtable",{"table":filt})		# reference particle for scaling
 				ptclr.mult(projmaskc)
-				
+
 				# Now we match the radial structure factor of the total projection to the filtered particle, then scale
 				# we will use the filter curve returned by this process to scale the masked projections, since theoretically
 				# they should not match the whole particle
 				projf=projc[0].process("filter.matchto",{"to":ptclr,"return_radial":1})
-#				projf.process_inplace("normalize.toimage",{"to":ptcl})
+				projf.process_inplace("normalize.toimage",{"to":ptcl})
 				ptcl2=ptcl-projf
-				
+
 				display((projc[0],projf,ptclr,ptcl,ptcl2),True)
 
 

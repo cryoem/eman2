@@ -62,21 +62,24 @@ def main():
 	parser.add_argument("--apix",type=float,help="Override the A/pix value stored in the file header",default=0.0)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	
+
 	(options, args) = parser.parse_args()
-		
+
 	if len(args) != 1: parser.error("You must specify a single data file on the command-line.")
 	if not file_exists(args[0]): parser.error("%s does not exist" %args[0])
 #	if options.boxsize < 2: parser.error("The boxsize you specified is too small")
 #	# The program will not run very rapidly at such large box sizes anyhow
 #	if options.boxsize > 2048: parser.error("The boxsize you specified is too large.\nCurrently there is a hard coded max which is 2048.\nPlease contact developers if this is a problem.")
-	
+
 #	logid=E2init(sys.argv,options.ppid)
-	
+
 	app = EMApp()
 	pix_init()
 	control=EMFilterTool(datafile=args[0],apix=options.apix,verbose=options.verbose)
 	control.show()
+	try: control.raise_()
+	except: pass
+
 	app.execute()
 #	E2end(logid)
 
@@ -85,14 +88,14 @@ def filtchange(name,value):
 
 class EMProcessorWidget(QtGui.QWidget):
 	"""A single processor with parameters"""
-	
+
 	plist=dump_processors_list()
-	
+
 	# Sorted list of the stuff before the first '.'
 	cats=set([i.split(".")[0] for i in plist.keys()])
 	cats=list(cats)
 	cats.sort()
-	
+
 	# For some parameters we will try to assign sensible default values and ranges. This information should probably be a part
 	# of the processor objects themselves, but isn't at present.
 	# (start enabled, range, default value, change callback)
@@ -104,29 +107,29 @@ class EMProcessorWidget(QtGui.QWidget):
 		"sigma":(0,(0,3.0),.5,None),
 		"apix":(0,(0.2,10.0),2.0,None)
 	}
-	
+
 	def __init__(self,parent=None,tag=None):
 		app=QtGui.qApp
-		
+
 		QtGui.QWidget.__init__(self,parent)
 		self.gbl = QtGui.QGridLayout(self)
 		self.gbl.setColumnStretch(0,0)
 		self.gbl.setColumnStretch(1,0)
 		self.gbl.setColumnStretch(2,1)
 		self.gbl.setColumnStretch(3,3)
-		
+
 		# Enable checkbox
 		self.wenable=QtGui.QCheckBox(self)
 		self.wenable.setChecked(False)			# disable new processors by default to permit their values to be set
 		self.gbl.addWidget(self.wenable,0,1)
-		
+
 		# List of processor categories
 		self.wcat=QtGui.QComboBox(self)
 		self.wcat.addItem("")
 		for i in self.cats: self.wcat.addItem(i)
 #		self.wcat.setCurrentindex(self.wcat.findText("processor"))
 		self.gbl.addWidget(self.wcat,0,2)
-		
+
 		# List of processor subcategories
 		self.wsubcat=QtGui.QComboBox(self)
 		self.gbl.addWidget(self.wsubcat,0,3)
@@ -137,29 +140,29 @@ class EMProcessorWidget(QtGui.QWidget):
 		self.gbl.addLayout(self.gbl2,0,0,1,1)
 		if get_platform().lower()=="darwin": self.gbl2.setSpacing(10)
 		else: self.gbl2.setSpacing(1)
-		
+
 #		self.gbl2.setColumnStretch(0,1)
 #		self.gbl2.setColumnStretch(1,1)
-		
+
 #		self.wup = QtGui.QPushButton(app.style().standardIcon(QtGui.QStyle.SP_ArrowUp),"")
 		self.wup = QtGui.QPushButton(pix_up,"",self)
 		self.wup.setMaximumSize(QtCore.QSize(17, 17))
 #		self.wup.setSizePolicy(QtGui.QSizePolicy.Fixed,QtGui.QSizePolicy.Fixed)
 		self.gbl2.addWidget(self.wup,0,0)
-		
+
 		self.wdown = QtGui.QPushButton(pix_down,"",self)
 		self.wdown.setMaximumSize(QtCore.QSize(17, 17))
 		self.gbl2.addWidget(self.wdown,1,0)
-		
+
 		self.wplus = QtGui.QPushButton(pix_plus,"",self)
 		self.wplus.setMaximumSize(QtCore.QSize(17, 17))
 		self.gbl2.addWidget(self.wplus,1,1)
-		
+
 		self.wminus= QtGui.QPushButton(pix_minus,"",self)
 		self.wminus.setMaximumSize(QtCore.QSize(17, 17))
 		self.gbl2.addWidget(self.wminus,0,1)
-		
-		
+
+
 		QtCore.QObject.connect(self.wcat,QtCore.SIGNAL("currentIndexChanged(int)"),self.eventCatSel)
 		QtCore.QObject.connect(self.wsubcat,QtCore.SIGNAL("currentIndexChanged(int)"),self.eventSubcatSel)
 		QtCore.QObject.connect(self.wup,QtCore.SIGNAL("clicked(bool)"),self.butUp)
@@ -169,10 +172,10 @@ class EMProcessorWidget(QtGui.QWidget):
 		QtCore.QObject.connect(self.wenable,QtCore.SIGNAL("clicked(bool)"),self.updateFilt)
 
 		self.parmw=[]
-		
+
 		self.setTag(tag)
 #		print "Alloc processor ",self.tag
-	
+
 #	def __del__(self):
 #		print "Free processor ",self.tag
 #		QtGui.QWidget.__del__(self)
@@ -180,40 +183,40 @@ class EMProcessorWidget(QtGui.QWidget):
 	def __getstate__(self):
 		"used when pickling"
 		proc=self.processorName()
-		if not self.plist.has_key(proc) : return None		# invalid processor selection 
+		if not self.plist.has_key(proc) : return None		# invalid processor selection
 		if self.wenable.isChecked() : proc=(proc,True)		# disabled, so we return None
 		else: proc=(proc,False)
-		
+
 		parms={}
 		for w in self.parmw:
 			parms[w.getLabel()]=(w.getValue(),w.getEnabled())
-			
-		return (proc,parms) 
+
+		return (proc,parms)
 
 # TODO - incomplete
 	def __setstate__(self,state):
 		"used when unpickling"
 		self.init()
 		if state==None : return
-		
+
 		proc,parms=state
 		proc,enabled=proc
-		
+
 		try: proc_cat,proc_scat=proc.split(".",1)
 		except:
 			proc_cat=proc
 			proc_scat="---"
-		
+
 		self.wcat.setCurrentIndex(self.wcat.findText(proc_cat))
 		self.wsubcat.setCurrentIndex(self.wsubcat.findText(proc_scat))
-		
+
 	def getAsProc(self):
 		"Returns the currently defined processor as a --process string for use in commands"
 
 		if not self.wenable.isChecked() : return ""
 
 		proc=self.processorName()
-		if not self.plist.has_key(proc) : return ""		# invalid processor selection 
+		if not self.plist.has_key(proc) : return ""		# invalid processor selection
 
 		enabled=[]
 		for w in self.parmw:
@@ -225,7 +228,7 @@ class EMProcessorWidget(QtGui.QWidget):
 		"Returns the currently defined processor as a 3 line string for persistence"
 
 		proc=self.processorName()
-		if not self.plist.has_key(proc) : return None		# invalid processor selection 
+		if not self.plist.has_key(proc) : return None		# invalid processor selection
 
 		if self.wenable.isChecked() : ret="#$ enabled\n"
 		else: ret="#$ disabled\n"
@@ -237,9 +240,9 @@ class EMProcessorWidget(QtGui.QWidget):
 			else : disabled.append("%s=%s"%(w.getLabel(),str(w.getValue())))
 
 		ret+="# %s\n--process=%s:%s\n\n"%(":".join(disabled),self.processorName(),":".join(enabled))
-			
+
 		return ret
-	
+
 
 	def setFromText(self,text):
 		"""Sets the GUI from the text written to disk for persistent storage
@@ -262,13 +265,13 @@ class EMProcessorWidget(QtGui.QWidget):
 		except:
 			proc_cat=proc
 			proc_scat="---"
-		
+
 		self.wcat.setCurrentIndex(self.wcat.findText(proc_cat))
 #		self.eventCatSel(0)
 		self.wsubcat.setCurrentIndex(self.wsubcat.findText(proc_scat))
 #		self.eventSubcatSel(0)
-		
-		
+
+
 		for w in self.parmw:
 			lbl=w.getLabel()
 			if lbl in enabled:
@@ -277,13 +280,13 @@ class EMProcessorWidget(QtGui.QWidget):
 			elif lbl in disabled:
 				w.setValue(disabled[lbl])
 				w.setEnabled(0)
-		
+
 		if "enabled" in text[0] : self.wenable.setChecked(True)
 		else : self.wenable.setChecked(False)
 
 #		print proc_cat,proc_scat,enabled,disabled
 		return
-		
+
 	def setTag(self,tag):
 		self.tag=tag
 
@@ -318,19 +321,19 @@ class EMProcessorWidget(QtGui.QWidget):
 		proc=self.processorName()
 		#print "subcatsel ",proc
 		#traceback.print_stack(limit=2)
-		
+
 		try: parms=self.plist[proc]
 		except: parms=["Please select a processor"]
-		
+
 		self.wsubcat.setToolTip(parms[0])
-		
+
 		# Remove old parameter widgets
 		for w in self.parmw:
 			self.gbl.removeWidget(w)
 			w.close()				# get it off the screen
 			w.setParent(None)		# do this before we can actually delete the widget
 			del(w)					# finally, get it deleted (may not take effect until parmw=[] below
-		
+
 		# Iterate over the parameters
 		# parms[i] - name of the parameter
 		# parms[i+1] - type of parameter
@@ -338,27 +341,27 @@ class EMProcessorWidget(QtGui.QWidget):
 		self.parmw=[]
 		self.ninput=0
 		for i in range(1,len(parms),3):
-			self.ninput+=1  
+			self.ninput+=1
 			try: dflt=self.parmdefault[parms[i]]		# contains (start enabled, range, default value, change callback)
 			except: dflt=(1,(0,5.0),None,None)			# default parameter settings if we don't have anything predefined
-			
+
 			if parms[i+1] in ("FLOAT","INT"):
 				self.parmw.append(ValSlider(self,dflt[1],parms[i],dflt[2],100,dflt[0]))
-				if parms[i+1]=="INT" : 
+				if parms[i+1]=="INT" :
 					self.parmw[-1].setIntonly(1)
 	#			self.parmw[-1].hboxlayout.setContentsMargins ( 11.0,5.0,5.0,5.0 )
 			elif parms[i+1]=="BOOL" :
 				self.parmw.append(CheckBox(self,parms[i],dflt[2],100,dflt[0]))
-				
+
 			elif parms[i+1]=="STRING" :
 				self.parmw.append(StringBox(self,parms[i],dflt[2],100,dflt[0]))
-				
+
 			elif parms[i+1]=="TRANSFORM" :
 				self.parmw.append(StringBox(self,parms[i],dflt[2],100,dflt[0]))
-			
+
 			elif parms[i+1]=="EMDATA" :
 				self.parmw.append(StringBox(self,parms[i],dflt[2],100,dflt[0]))
-				
+
 			elif parms[i+1]=="FLOATARRAY" :
 				self.parmw.append(StringBox(self,parms[i],dflt[2],100,dflt[0]))
 
@@ -366,50 +369,50 @@ class EMProcessorWidget(QtGui.QWidget):
 				self.parmw.append(StringBox(self,parms[i],dflt[2],100,dflt[0]))
 
 			else: print "Unknown parameter type",parms[i+1],parms
-			
+
 			self.parmw[-1].setToolTip(parms[i+2])
 			self.gbl.addWidget(self.parmw[-1],self.ninput,1,1,4)
 			QtCore.QObject.connect(self.parmw[-1], QtCore.SIGNAL("valueChanged"), self.updateFilt)
 			QtCore.QObject.connect(self.parmw[-1], QtCore.SIGNAL("enableChanged"), self.updateFilt)
-		
+
 		self.updateFilt()
-	
+
 	def updateFilt(self,val=None):
 		"Called whenever the processor changes"
-		#if self.wenable.isChecked() : 
+		#if self.wenable.isChecked() :
 		self.emit(QtCore.SIGNAL("processorChanged"),self.tag)
-	
+
 	def processorName(self):
 		"Returns the name of the currently selected processor"
 		cat=str(self.wcat.currentText())
 		scat=str(self.wsubcat.currentText())
 		if scat=="" :  return cat
 		else : return cat+"."+scat
-		
+
 	def processorParms(self):
 		"Returns the currently defined processor as (name,dict) or None if not set to a valid state"
 		if not self.wenable.isChecked() : return None		# disabled, so we return None
-		
+
 		proc=self.processorName()
-		if not self.plist.has_key(proc) : return None		# invalid processor selection 
-		
+		if not self.plist.has_key(proc) : return None		# invalid processor selection
+
 
 		parms={}
 		for w in self.parmw:
 			if w.getEnabled() : parms[w.getLabel()]=w.getValue()
-			
+
 		return (proc,parms)
-	
+
 class EMFilterTool(QtGui.QMainWindow):
 	"""This class represents the EMFilterTool application instance.  """
-	
+
 	def __init__(self,datafile=None,apix=0.0,verbose=0):
 		QtGui.QMainWindow.__init__(self)
-		
+
 		app=QtGui.qApp
 		self.apix=apix
 		self.setWindowTitle("e2filtertool.py")
-		
+
 		# Menu Bar
 		self.mfile=self.menuBar().addMenu("File")
 #		self.mfile_save_processor=self.mfile.addAction("Save Processor Param")
@@ -419,7 +422,7 @@ class EMFilterTool(QtGui.QMainWindow):
 
 		self.setCentralWidget(QtGui.QWidget())
 		self.vblm = QtGui.QVBoxLayout(self.centralWidget())		# The contents of the main window
-		
+
 		# List of processor sets
 		self.wsetname=QtGui.QComboBox()
 		self.wsetname.setEditable(True)
@@ -429,11 +432,11 @@ class EMFilterTool(QtGui.QMainWindow):
 		psetnames.insert(0,"default")     # add it back at the top of the list
 		for i in psetnames : self.wsetname.addItem(i)
 		self.vblm.addWidget(self.wsetname)
-		
+
 		# scrollarea for processor widget
 		self.processorsa=QtGui.QScrollArea()
 		self.vblm.addWidget(self.processorsa)
-		
+
 		# Actual widget contianing processors being scrolled
 		self.processorpanel=QtGui.QWidget()
 		self.processorsa.setWidget(self.processorpanel)
@@ -442,7 +445,7 @@ class EMFilterTool(QtGui.QMainWindow):
 
 		self.processorlist=[]
 		self.addProcessor()
-		
+
 		# file menu
 #		QtCore.QObject.connect(self.mfile_save_processor,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_save_processor  )
 		QtCore.QObject.connect(self.mfile_save_stack,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_save_stack  )
@@ -463,7 +466,7 @@ class EMFilterTool(QtGui.QMainWindow):
 		self.oldset=None	# currently selected processor set name
 
 		if datafile!=None : self.setData(datafile)
-		
+
 		self.needupdate=1
 		self.needredisp=0
 		self.procthread=None
@@ -485,7 +488,7 @@ class EMFilterTool(QtGui.QMainWindow):
 		newset=str(self.wsetname.currentText())
 
 		if newset==self.oldset : return
-		
+
 		self.save_current_processorset(self.oldset)
 		self.restore_processorset(newset)
 
@@ -510,7 +513,7 @@ class EMFilterTool(QtGui.QMainWindow):
 		self.vbl.removeWidget(self.processorlist[idx])
 		self.processorlist[idx].close()
 		del self.processorlist[idx]
-		
+
 		# Make sure all the tags are correct
 		for i in range(len(self.processorlist)): self.processorlist[i].setTag(i)
 
@@ -520,34 +523,34 @@ class EMFilterTool(QtGui.QMainWindow):
 		self.processorlist[tag-1],self.processorlist[tag]=self.processorlist[tag],self.processorlist[tag-1]
 		self.vbl.removeWidget(w)
 		self.vbl.insertWidget(tag-1,w)
-		
+
 		# Make sure all the tags are correct
 		for i in range(len(self.processorlist)): self.processorlist[i].setTag(i)
 
 	def upPress(self,tag):
 		if tag==0 : return
 		self.swapProcessors(tag)
-	
+
 	def downPress(self,tag):
 		if tag==len(self.processorlist)-1 : return
 
 		self.swapProcessors(tag+1)
-	
+
 	def plusPress(self,tag):
 		self.addProcessor(tag)
-		
+
 	def minusPress(self,tag):
 		if len(self.processorlist)==1 : return		# Can't delete the last processor
 		self.delProcessor(tag)
-		
+
 	def timeOut(self):
 		if self.busy : return
-		
+
 		# Spawn a thread to reprocess the data
-		if self.needupdate and self.procthread==None: 
+		if self.needupdate and self.procthread==None:
 			self.procthread=threading.Thread(target=self.reprocess)
 			self.procthread.start()
-		
+
 		if self.errors:
 			QtGui.QMessageBox.warning(None,"Error","The following processors encountered errors during processing of 1 or more images:"+"\n".join(self.errors))
 			self.errors=None
@@ -557,67 +560,67 @@ class EMFilterTool(QtGui.QMainWindow):
 			self.needredisp=0
 			self.viewer.show()
 			if self.nz==1: self.viewer.set_data(self.procdata)
-			else : 
+			else :
 				self.sgdata.setData(self.procdata[0])
 				self.viewer.updateSG()
-		
+
 	def procChange(self,tag):
 #		print "change"
 		self.needupdate=1
-		
+
 	def reprocess(self):
 		"Called when something about a processor changes (or when the data changes)"
-		
+
 		if self.busy: return
 		self.needupdate=0		# we set this immediately so we reprocess again if an update happens while we're processing
 		self.procdata=[im.copy() for im in self.origdata]
-		
+
 		errors=[]
 		for p in self.processorlist:
 			pp=p.processorParms()				# processor parameters
 			if pp==None: continue				# disabled processor
 			proc=Processors.get(pp[0],pp[1])	# the actual processor object
 #			print pp
-			
+
 			errflag=False
 			for im in self.procdata:
 				try: proc.process_inplace(im)
 				except: errflag=True
-			
+
 			if errflag: errors.append(str(pp))
-		
+
 		if len(errors)>0 :
 			self.errors=errors
-		
+
 		self.needredisp=1
 		self.procthread=None					# This is a reference to ourselves (the thread doing the processing). we reset it ourselves before returning
-		
-	
+
+
 	def setData(self,data):
 		if data==None :
 			self.data=None
 			return
-		
+
 		elif isinstance(data,str) :
 			self.datafile=data
 			self.nimg=EMUtil.get_image_count(data)
-			
+
 			self.origdata=EMData(data,0)
-			
+
 			if self.origdata["nz"]==1:
-				if self.nimg>20 : 
+				if self.nimg>20 :
 					self.origdata=EMData.read_images(data,range(0,self.nimg,self.nimg/20))		# read regularly separated images from the file totalling ~20
 				elif self.nimg>1 :
 					self.origdata=EMData.read_images(data,range(self.nimg))
 				else: self.origdata=[self.origdata]
 			else :
 				self.origdata=[self.origdata]
-		
+
 		else :
 			self.datafile=None
 			if isinstance(data,EMData) : self.origdata=[data]
 			else : self.origdata=data
-			
+
 		self.nx=self.origdata[0]["nx"]
 		self.ny=self.origdata[0]["ny"]
 		self.nz=self.origdata[0]["nz"]
@@ -625,12 +628,12 @@ class EMFilterTool(QtGui.QMainWindow):
 		EMProcessorWidget.parmdefault["apix"]=(0,(0.2,10.0),self.apix,None)
 
 		if self.viewer!=None : self.viewer.close()
-		if self.nz==1 : 
-			if len(self.origdata)>1 : 
+		if self.nz==1 :
+			if len(self.origdata)>1 :
 				self.viewer=EMImageMXWidget()
 				self.mfile_save_stack.setEnabled(True)
 				self.mfile_save_map.setEnabled(False)
-			else : 
+			else :
 				self.viewer=EMImage2DWidget()
 				self.mfile_save_stack.setEnabled(False)
 				self.mfile_save_map.setEnabled(True)
@@ -642,7 +645,7 @@ class EMFilterTool(QtGui.QMainWindow):
 			isosurface = EMIsosurface(self.sgdata, transform=Transform())
 			self.viewer.insertNewNode('Data', self.sgdata, parentnode=self.viewer)
 			self.viewer.insertNewNode("Iso", isosurface, parentnode=self.sgdata)
-		
+
 		E2loadappwin("e2filtertool","image",self.viewer.qt_parent)
 
 		self.procChange(-1)
@@ -650,28 +653,28 @@ class EMFilterTool(QtGui.QMainWindow):
 	def save_current_processorset(self,name):
 		"""Saves the current processor and parameters to a text file"""
 #		print "saveset ",name
-		
+
 		try: out=file("filtertool_%s.txt"%(name.replace(" ","_")),"w")	# overwrite the current contents
 		except:
 			traceback.print_exc()
 			print "No permission to store processorset info"
 			return
-			
+
 		out.write("# This file contains the parameters for the processor set named\n# %s\n# Each of the --process lines below is in the correct syntax for use with e2proc2d.py or e2proc3d.py.\n# Use the full set sequentially in a single command to replicate the processor set\n\n"%name)
 
 		for filt in self.processorlist:
 			ftext=filt.getAsText()
 			if ftext!=None : out.write(ftext)
-			
+
 		out.close()
-	
+
 	def restore_processorset(self,name):
 		"""This restores a processorset that has been written to a text file"""
 		# Erase all existing processors
 #		print "loadset ",name
-		
+
 		self.oldset=name
-		
+
 		self.busy=True
 		while len(self.processorlist)>0 : self.delProcessor(0)
 
@@ -681,7 +684,7 @@ class EMFilterTool(QtGui.QMainWindow):
 			self.addProcessor()
 			self.busy=False
 			return		# file can't be read, must be a new set (or we'll assume that)
-		
+
 		while 1:
 			l=infile.readline()
 			if l=="" : break
@@ -708,19 +711,19 @@ class EMFilterTool(QtGui.QMainWindow):
 			#out.write("\n")
 		#out.write("\n")
 		#out.close()
-		
+
 		#QtGui.QMessageBox.warning(None,"Saved","The processor parameters have been added to the end of 'processor.txt'")
-		
+
 		self.save_current_processorset(str(self.wsetname.currentText()))
 
 	def menu_file_save_stack(self):
 		"Processes the entire current stack, and saves as a new name"
-		
+
 		name=QtGui.QInputDialog.getText(None,"Enter Filename","Enter an output filename for the entire processed particle stack (not just the displayed images).")
 		if not name[1] : return		# canceled
-		
+
 		allfilt=" ".join([i.getAsProc() for i in self.processorlist])
-		
+
 		n=EMUtil.get_image_count(self.datafile)
 		from PyQt4.QtGui import QProgressDialog
 		progressdialog=QProgressDialog("Processing Images","Abort",0,n,self)
@@ -736,7 +739,7 @@ class EMFilterTool(QtGui.QMainWindow):
 			for p in pp: im.process_inplace(p[0],p[1])
 			im.write_image(str(name[0]),i)
 			progressdialog.setValue(i+1)
-			if progressdialog.wasCanceled() : 
+			if progressdialog.wasCanceled() :
 				print "Processing Cancelled"
 				break
 
@@ -746,8 +749,8 @@ class EMFilterTool(QtGui.QMainWindow):
 
 	def menu_file_save_map(self):
 		"saves the current processored map"
-		
-		if len(self.procdata)==1 and self.procdata[0]["nz"]>1 : 
+
+		if len(self.procdata)==1 and self.procdata[0]["nz"]>1 :
 			try: os.unlink("processed_map.hdf")
 			except : pass
 			self.procdata[0].write_image("processed_map.hdf",0)
@@ -760,13 +763,13 @@ class EMFilterTool(QtGui.QMainWindow):
 
 	def menu_file_quit(self):
 		self.close()
-		
+
 	def closeEvent(self,event):
 		E2saveappwin("e2filtertool","main",self)
 		self.save_current_processorset(str(self.wsetname.currentText()))
-		
+
 #		print "Exiting"
-		if self.viewer!=None : 
+		if self.viewer!=None :
 			E2saveappwin("e2filtertool","image",self.viewer.qt_parent)
 			self.viewer.close()
 		event.accept()
@@ -784,7 +787,7 @@ pix_minus=None
 
 def pix_init():
 	global pix_plus,pix_minus,pix_up,pix_down
-	
+
 	pix_plus=QtGui.QIcon(QtGui.QPixmap(["15 15 3 1",
 	" 	c None",
 	".	c black",
@@ -871,6 +874,6 @@ def pix_init():
 
 if __name__ == "__main__":
 	main()
-		
-		
-		
+
+
+

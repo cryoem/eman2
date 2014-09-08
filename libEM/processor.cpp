@@ -776,7 +776,7 @@ void Axis0FourierProcessor::process_inplace(EMData * image)
 	if (params.set_default("y",1)) {
 		for (int y=1; y<ny; y++) { fftd[y*nx]=0; fftd[y*nx+1]=0; }
 	}
-	
+
 	if (f) {
 		fft->update();
 		EMData *ift=fft->do_ift();
@@ -1021,19 +1021,19 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 	int ny=image->get_ysize();
 	int nz=image->get_zsize();
 //	int nxy=nx*ny;
-	
+
 	// seed
 	vector<float> centers(nseg*3);
 	vector<float> count(nseg);
 	// Alternative seeding method for paudoatom generation. Seed on the gird.
-	if (psudoatom){  
+	if (psudoatom){
 		float ax=image->get_attr("apix_x");
 		sep/=ax;
 		if (verbose) printf("Seeding .....\n");
 		int sx=int(nx/sep)+1,sy=int(ny/sep)+1,sz=int(nz/sep)+1;
 		EMData m(sx,sy,sz);
 		EMData mcount(sx,sy,sz);
-		
+
 		for (int i=0; i<nx; i++){
 			for (int j=0; j<ny; j++){
 				for (int k=0; k<nz; k++){
@@ -1081,7 +1081,7 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 		}
 	}
 	// Default: random seeding.
-	else{	
+	else{
 		for (int i=0; i<nseg*3; i+=3) {
 			centers[i]=  Util::get_frand(0.0f,(float)nx);
 			centers[i+1]=Util::get_frand(0.0f,(float)ny);
@@ -3843,20 +3843,20 @@ float NormalizeCircleMeanProcessor::calc_mean(EMData * image) const
 	int nz=image->get_zsize();
 
 	float radius = params.set_default("radius",((float)ny/2-2));
-	
+
 	static bool busy = false;
 	static EMData *mask = 0;
-		
+
 	if (!mask || !EMUtil::is_same_size(image, mask)) {
 		if (!mask) {
 			mask = new EMData();
 		}
 		mask->set_size(nx, ny, nz);
 		mask->to_one();
-		
+
 		mask->process_inplace("mask.sharp", Dict("inner_radius", radius - 1,
 							 "outer_radius", radius + 1));
-		
+
 	}
 	double n = 0,s=0;
 	float *d = mask->get_data();
@@ -3865,13 +3865,13 @@ float NormalizeCircleMeanProcessor::calc_mean(EMData * image) const
 	for (size_t i = 0; i < size; ++i) {
 		if (d[i]) { n+=1.0; s+=data[i]; }
 	}
-	
-	
+
+
 	float result = (float)(s/n);
-	
+
 	return result;
-	
-	
+
+
 }
 
 
@@ -4006,14 +4006,16 @@ void NormalizeToLeastSquareProcessor::process_inplace(EMData * image)
 
 	// This is really inefficient, who coded it ?   --steve
 	if (ignore_zero) {
+	FILE *dbug = fopen("dbug.txt","w");
 		for (size_t i = 0; i < size; ++i) {
 			if (refp[i] >= low_threshold && refp[i] <= high_threshold && refp[i] != 0.0f && rawp[i] != 0.0f) {
 				count++;
 				sum_x += refp[i];
 				sum_y += rawp[i];
-//				printf("%f\t%f\n",refp[i],rawp[i]);
+				fprintf(dbug,"%f\t%f\n",refp[i],rawp[i]);
 			}
 		}
+		fclose(dbug);
 
 		sum_x_mean = sum_x / count;
 		sum_tt = 0;
@@ -5792,7 +5794,7 @@ void IterMultiMaskProcessor::process_inplace(EMData * image)
 			for (int y = 1; y < ny - 1; y++) {
 				for (int x = 1; x < nx - 1; x++) {
 					if (image1->get_value_at(x,y)>=0) continue;		// already part of a masked region
-					
+
 					// Note that this produces a directional bias in the case of ambiguous pixels
 					// While this could be improved upon slightly, there can be truly ambiguous cases
 					// and at least this method is deterministic
@@ -5800,7 +5802,7 @@ void IterMultiMaskProcessor::process_inplace(EMData * image)
 					else if (image1->get_value_at(x+1,y)>=0) image2->set_value_at_fast(x,y,image1->get_value_at(x+1,y));
 					else if (image1->get_value_at(x,y-1)>=0) image2->set_value_at_fast(x,y,image1->get_value_at(x,y-1));
 					else if (image1->get_value_at(x,y+1)>=0) image2->set_value_at_fast(x,y,image1->get_value_at(x,y+1));
-					
+
 				}
 			}
 			memcpy(image1->get_data(),image2->get_data(),image1->get_size()*sizeof(float));
@@ -5812,7 +5814,7 @@ void IterMultiMaskProcessor::process_inplace(EMData * image)
 				for (int y = 1; y < ny - 1; y++) {
 					for (int x = 1; x < nx - 1; x++) {
 						if (image1->get_value_at(x,y,z)>=0) continue;		// already part of a masked region
-						
+
 						// Note that this produces a directional bias in the case of ambiguous pixels
 						// While this could be improved upon slightly, there can be truly ambiguous cases
 						// and at least this method is deterministic
@@ -5822,7 +5824,7 @@ void IterMultiMaskProcessor::process_inplace(EMData * image)
 						else if (image1->get_value_at(x,y+1,z)>=0) image2->set_value_at_fast(x,y,z,image1->get_value_at(x,y+1,z));
 						else if (image1->get_value_at(x,y,z-1)>=0) image2->set_value_at_fast(x,y,z,image1->get_value_at(x,y,z-1));
 						else if (image1->get_value_at(x,y,z+1)>=0) image2->set_value_at_fast(x,y,z,image1->get_value_at(x,y,z+1));
-						
+
 					}
 				}
 			}
@@ -6953,10 +6955,10 @@ void AutoMaskDustProcessor::process_inplace(EMData * imagein)
 							i--;
 							continue;
 						}
-						
+
 						// mask out the points in the volume
 						mask->set_value_at(pvec[i],0.0f);
-						
+
 						int x=pvec[i][0];
 						int y=pvec[i][1];
 						int z=pvec[i][2];
@@ -6968,8 +6970,8 @@ void AutoMaskDustProcessor::process_inplace(EMData * imagein)
 						if (image->sget_value_at(x,y,z-1)>threshold && mask->get_value_at(x,y,z-1)==1.0) pvec.push_back(Vec3i(x,y,z-1));
 						if (image->sget_value_at(x,y,z+1)>threshold && mask->get_value_at(x,y,z+1)==1.0) pvec.push_back(Vec3i(x,y,z+1));
 					}
-					
-					// If the blob is too big, then we don't mask it out after all, but we set the value 
+
+					// If the blob is too big, then we don't mask it out after all, but we set the value
 					// to 2.0 so we know the voxels have already been examined, and don't check them again
 					if (pvec.size()>voxels) {
 						if (verbose) printf("%d\t%d\t%d\tvoxels: %d\n",xx,yy,zz,pvec.size());
@@ -6981,7 +6983,7 @@ void AutoMaskDustProcessor::process_inplace(EMData * imagein)
 	}
 
 	mask->process_inplace("threshold.binary",Dict("value",0.5));
-	
+
 	// Now we expand the mask by 1 pixel and blur the edge
 	mask->mult(-1.0f);
 	mask->add(1.0f);

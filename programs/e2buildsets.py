@@ -129,14 +129,14 @@ def main():
 			traceback.print_exc()
 			print "Unknown CTF for {},{}, including it".format(i,info_name(i+".hdf"))
 			outargs.append(i)
-	
+
 	args=outargs
 	if len(args)==0 :
 		print "ERROR: No images left to include after applying filters!"
 		sys.exit(1)
 
 	print "%d files to include in processing after filters"%len(args)
-	
+
 	logid=E2init(sys.argv)
 
 	# identify particle groups present
@@ -154,6 +154,7 @@ def main():
 	print ""
 
 	totptcl=0
+	totbad=0
 	lsx={}
 	for t in groups:
 		try: os.unlink("sets/{}{}.lst".format(options.setname,t))		# we remake each set from scratch
@@ -171,13 +172,16 @@ def main():
 		else : bad=set()
 		if options.verbose>1 : print "File: {} -> {} particles - {} bad".format(f,nimg,len(bad))
 		totptcl+=nimg-len(bad)
+		totbad+=len(bad)
 
 		for t in groups:
 			for i in xrange(nimg):
 				if i not in bad : lsx[t].write(-1,i,"particles/{}{}.hdf".format(f,t))
 
-	print "Done - {} particles total".format(totptcl)
-	
+	print "Done - {} particles included".format(totptcl),
+	if totbad>0 : print ". {} excluded as bad.".format(totbad)
+	else: print ""
+
 	E2end(logid)
 
 def imcount(fsp):

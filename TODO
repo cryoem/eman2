@@ -18,6 +18,7 @@ High priority
 6/12/14		new particle picker
 6/13/14		Fix internationalization bug with Qt
 6/14/14		e2markbadptcl
+
 7/7/14		scale box locations
 7/7/14		per-particle subunit subtraction for Chris
 7/27/14		ctf interactive seems to autosave parameters without button press

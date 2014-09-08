@@ -692,9 +692,14 @@ def display(img,force_2d=False,force_plot=False):
 		if isinstance(img,tuple) : img=list(img)
 		image = emimage.EMImageWidget(img,None,app,force_2d,force_plot)
 		image.show()
+
 		try:
 			image.optimally_resize()
 		except: pass
+
+		try: image.raise_()
+		except: pass
+
 		return image
 	else:
 		# In non interactive GUI mode, this will display an image or list of images with e2display
@@ -780,6 +785,8 @@ def plot(data,data2=None,data3=None,show=1,size=(800,600),path="plot.png"):
 		if data3!=None : plotw.set_data(data3,"interactive3")
 		plotw.setWindowTitle("2D Plot")
 		plotw.show()
+		try: plotw.raise_()
+		except: pass
 #		app.show_specific(plotw)
 		return plotw
 	else :
@@ -1305,9 +1312,9 @@ def base_name( file_name,extension=False,bdb_keep_dir=False,nodir=False ):
 		apath=os.path.relpath(file_name).replace("\\","/").split("/")
 		# for specific directories, we want any references to the same micrograph to share an id
 		if nodir or (len(apath)>1 and apath[-2] in ("sets","particles","micrographs","ddd","raw")) :
-			if extension : 
+			if extension :
 				return os.path.basename(file_name)
-			else : 
+			else :
 				return os.path.splitext(os.path.basename(file_name))[0].split("__")[0].replace("_ptcls","")		# double underscore is used to mark tags added to micrograph names
 
 		# but for other files, like classes_xx which users might make selection lists on, we want to include the

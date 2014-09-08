@@ -82,7 +82,7 @@ power spectrum in various ways."""
 	parser.add_argument("--voltage",type=float,help="Microscope voltage in KV",default=None, guitype='floatbox', row=3, col=1, rowspan=1, colspan=1, mode="eval['self.pm().getVoltage()']")
 	parser.add_argument("--cs",type=float,help="Microscope Cs (spherical aberation)",default=None, guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="eval['self.pm().getCS()']")
 	parser.add_argument("--ac",type=float,help="Amplitude contrast (percentage, default=10)",default=10, guitype='floatbox', row=4, col=1, rowspan=1, colspan=1, mode="eval")
-	parser.add_argument("--box",type=int,help="Box size in grid mode ",default=512, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="eval")
+	parser.add_argument("--box",type=int,help="Forced box size in grid mode. Overrides any previous setting. ",default=-1, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="eval")
 	parser.add_argument("--usefoldername",action="store_true",help="If you have the same image filename in multiple folders, and need to import into the same project, this will prepend the folder name on each image name",default=False,guitype='boolbox',row=5, col=1, rowspan=1, colspan=1, mode="eval")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -95,6 +95,16 @@ power spectrum in various ways."""
 	app=EMApp()
 	gui=GUIEvalImage(args,options.voltage,options.apix,options.cs,options.ac,options.box,options.usefoldername)
 	gui.show()
+
+	try:
+		gui.wimage.raise_()
+		gui.wfft.raise_()
+		gui.wplot.raise_()
+		gui.raise_()
+	except: pass
+
+# 	try: gui.raise_()
+# 	except: pass
 	app.execute()
 
 	E2end(logid)
@@ -166,6 +176,9 @@ class GUIEvalImage(QtGui.QWidget):
 				pd=js_open_dict(info_name(i,nodir=self.nodir))
 				parms=pd["ctf_frame"]
 				parms[4]=pd["quality"]
+				if box>=64 and parms[0]!=box:
+					parms[0]=box
+					parms[3]=set()
 #				if parms==None : raise Exception
 			except:
 				ctf = EMAN2Ctf()
@@ -175,6 +188,10 @@ class GUIEvalImage(QtGui.QWidget):
 				if self.defaultapix!=None : ctf.apix=self.defaultapix
 				parms=[int(box),ctf,(256,256),set(),5,1]
 				print "Initialize new parms for: ",base_name(i)
+
+			if parms[0]<64 :
+				parms[0]=512
+				parms[3]=set()
 
 			self.parms.append(parms)
 
@@ -186,6 +203,7 @@ class GUIEvalImage(QtGui.QWidget):
 
 		self.wplot=EMPlot2DWidget()
 		self.wplot.setWindowTitle("e2evalimage - Plot")
+
 
 		self.wimage.connect(self.wimage,QtCore.SIGNAL("mousedown"),self.imgmousedown)
 		self.wimage.connect(self.wimage,QtCore.SIGNAL("mousedrag"),self.imgmousedrag)
@@ -267,7 +285,7 @@ class GUIEvalImage(QtGui.QWidget):
 
 		self.sdfang=ValSlider(self,(0,180),"Df Angle:",0,90)
 		self.gbl.addWidget(self.sdfang,3,2,1,3)
-		
+
 		self.sampcont=ValSlider(self,(0,100),"% AC",10.0,90)
 		if self.defaultac!=None : self.sampcont.setValue(self.defaultac)
 		self.gbl.addWidget(self.sampcont,4,2,1,3)
@@ -301,7 +319,7 @@ class GUIEvalImage(QtGui.QWidget):
 		if self.defaultcs!=None : self.scs.setValue(self.defaultcs)
 		self.gbl.addWidget(self.scs,12,2)
 
-		self.sboxsize=ValBox(self,(0,500),"Box Size:",256,90)
+		self.sboxsize=ValBox(self,(128,1024),"Box Size:",512,90)
 		self.sboxsize.intonly=True
 		self.gbl.addWidget(self.sboxsize,13,2)
 
@@ -598,7 +616,7 @@ class GUIEvalImage(QtGui.QWidget):
 		parms=self.parms[self.curset]
 		apix=self.sapix.getValue()
 		ds=1.0/(apix*parms[0]*parms[5])
-		
+
 		try:
 			parms[1]=e2ctf.ctf_fit(self.fft1d,parms[1].background,parms[1].background,self.fft,self.fftbg,parms[1].voltage,parms[1].cs,parms[1].ampcont,apix,bgadj=False,autohp=True,verbose=1)
 		except:
@@ -609,7 +627,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.sdefocus.setValue(parms[1].defocus,True)
 		self.sbfactor.setValue(parms[1].bfactor,True)
 		self.sampcont.setValue(parms[1].ampcont,True)
-		
+
 		self.update_plot()
 
 
@@ -635,7 +653,7 @@ class GUIEvalImage(QtGui.QWidget):
 
 		#db=db_open_dict("bdb:micrographs#%s"%item)
 		self.data["ctf"]=self.parms[self.curset][1]
-		
+
 		if self.cinvert.getValue()!=0 : self.data.mult(-1)
 		if self.cxray.getValue() : self.data.process_inplace("threshold.clampminmax.nsigma",{"nsigma":4,"tomean":1})
 		self.data.write_image("micrographs/%s.hdf"%item)
@@ -800,7 +818,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.incalc=False
 		time.sleep(.2)			# help make sure update has a chance
 		self.procthread=None
-		
+
 		self.bgAdj()
 #		dbquality = self.db[os.path.basename(self.curfilename)]
 #		print dbquality
@@ -829,6 +847,11 @@ class GUIEvalImage(QtGui.QWidget):
 		self.wimage.show()
 		self.wfft.show()
 		self.wplot.show()
+		try:
+			self.wimage.raise_()
+			self.wfft.raise_()
+			self.wplot.raise_()
+		except: pass
 
 		self.update_plot()
 
@@ -893,7 +916,7 @@ class GUIEvalImage(QtGui.QWidget):
 		parms[4]=self.squality.value
 
 	def bgAdj(self):
-		
+
 		if self.cbgadj.getValue() :
 			parms=self.parms[self.curset]
 			apix=self.sapix.getValue()
@@ -902,11 +925,11 @@ class GUIEvalImage(QtGui.QWidget):
 			ctf=parms[1]
 #			bg_1d=e2ctf.low_bg_curve(self.fft1d,ds)
 			bg_1d=list(parms[1].background)
-			
+
 #			lz=int(ctf.zero(0)/ds)
 			for lz in xrange(1,int(ctf.zero(0)/ds)):
 				if self.fft1d[lz-1]<self.fft1d[lz] : break
-				
+
 			for i in xrange(100):
 				z=int(ctf.zero(i)/ds)
 #				print i,z,len(bg_1d),z*ds
@@ -917,7 +940,7 @@ class GUIEvalImage(QtGui.QWidget):
 					r=float(j-lz)/(z-lz)
 					bg_1d[j]=v1*(1.0-r)+v2*r
 				lz=z
-			
+
 			parms[1].background=list(bg_1d)
 
 		self.needredisp=True
@@ -932,9 +955,9 @@ class GUIEvalImage(QtGui.QWidget):
 		parms[1].apix=self.sapix.value
 		parms[1].ampcont=self.sampcont.value
 		parms[1].voltage=self.svoltage.value
-		parms[1].cs=self.scs.value		
+		parms[1].cs=self.scs.value
 		self.bgAdj()
-		
+
 		self.needredisp=True
 
 
