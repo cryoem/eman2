@@ -84,6 +84,7 @@ def main():
 # 	parser.add_option('--output_pixel', dest='output_pixel', default=1,  help='output pixel size')
 	parser.add_option('--box_size',     dest='box_size',     type=int,   help='box size')
 	parser.add_option('--outdir',     dest='outdir',      help='Output directory')
+	parser.add_option('--outstack',     dest='outstack',      help='Output stack name')
 
 	(options, args) = parser.parse_args()
 	box_size = options.box_size
@@ -99,13 +100,14 @@ def main():
 		info_suffix = '_info.json'
 		
 		mask = pad(model_circle(box_size//2, box_size, box_size), box_size, box_size, 1, 0.0)
-
+		
+		otcl_images  = "bdb:%s/"%options.outdir + options.outstack + suffix
+		iImg=0
 		for f in os.listdir(options.coordsdir):
 			if f.endswith(info_suffix):
 				name_num_base = f.strip(info_suffix)
-				name_im       = name_num_base + '.hdf'
+				name_im       = name_num_base + extension
 				name_info     = info_name(name_im)
-				otcl_images  = "bdb:%s/"%options.outdir + name_num_base + suffix
 				
 				im = get_im(name_im)
 				x0 = im.get_xsize()//2  #  Floor division or integer division
@@ -120,12 +122,13 @@ def main():
 					imn.set_attr('ptcl_source_image',name_im)
 					imn.set_attr('ptcl_source_coord',[coords[i][0],coords[i][1]])
 					stat = Util.infomask(imn, mask, False)   
-# 					:FIXME: Needs sigma
-# 					im = filt_gaussh(im)
+
 					imn = ramp(imn)
 					imn -= stat[0]
 					Util.mul_scalar(imn, 1.0/stat[1])
 					
-					imn.write_image(otcl_images, i)
+					imn.write_image(otcl_images, iImg)
+					iImg = iImg + 1
+
 if __name__=='__main__':
 	main()
