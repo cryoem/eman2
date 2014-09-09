@@ -30,6 +30,7 @@ print "Running e2refinetorelion3d.py"
 parser = EMArgumentParser(usage, version=EMANVERSION)
 parser.add_pos_argument(name="input_star", type=str, help="The name of the input star file", default="")
 parser.add_pos_argument(name="output_lst", type=str, help="The name of the output .lst file", default="")
+parser.add_argument("--path", type=str, default=None, help="Path for the files. Use this if you want to change the output path for the files in the .lst file. For example, instead of the file being located at /raid1/myaccount/data/image.hdf you could do --path=data/particles and the new path written into the .lst file will be data/particles/image.hdf")
 optionList = pyemtbx.options.get_optionlist(sys.argv[1:])
 (options, args) = parser.parse_args()
 
@@ -45,8 +46,14 @@ else:
 lstfile = LSXFile(args[1])
 
 # in the below line, -1 tells it to append the line, the next value is the image number in that image, and the final value is the image name
+
 for i in range(len(starf[starf.keys()[0]])):
-	lstfile.write(-1,str(int(starf['rlnImageName'][i].split("@")[0])) , starf['rlnImageName'][i].split("@")[1])
+	if options.path:
+		filepath1=starf['rlnImageName'][i].split("@")[1].replace(".mrcs",".hdf").split("/")
+		filepath = options.path + "/" + filepath1[len(filepath1)-1]
+	else:
+		filepath = starf['rlnImageName'][i].split("@")[1].replace(".mrcs",".hdf")
+	lstfile.write(-1,str(int(starf['rlnImageName'][i].split("@")[0])) ,filepath )
 
 
 # normalize the length of the lines in the LST file
