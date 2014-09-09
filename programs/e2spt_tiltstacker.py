@@ -1,7 +1,7 @@
 #!/usr/bin/python2.7
 
 #====================
-#Author: Jesus Galaz-Montoya 2/20/2013 , Last update: September/06/2014
+#Author: Jesus Galaz-Montoya 2/20/2013 , Last update: September/09/2014
 #====================
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -37,13 +37,20 @@ import math
 def main():
 
 	usage = """e2spt_tiltstacker.py <options> . 
-	WARNING: At this point, some functions in this program REQUIRE having IMOD installed
-	with its program 'newstack' being executable from the command line.
 	The options should be supplied in "--option=value" format, 
 	replacing "option" for a valid option name, and "value" for an acceptable value for that option. 
-	This program stacks individual .dm3, .tiff or .hdf images into an .mrc (or .st) stack. 
+	
+	This program operates in 3 different modes:
+	1) It can STACK individual .dm3, .tiff or .hdf images into an .mrc (or .st) stack,
+	by supplying a common string to all the images to stack via --stem2stack.
 	It must be run in a directory containing the numbered images only.
-	It also generates a .rawtlt file with tilt angle values if --lowerend, --upperend and --tiltstep are provided.	
+	It also generates a .rawtlt file with tilt angle values if --lowerend, --upperend and --tiltstep are provided.
+	
+	2) It can UNSTACK a tilt series into individual files (either all the images, or selected
+	images, controlled through the --exclude or --include parameters).
+	
+	3) It can RESTACK a tilt series; that is, put together a new tilt series that excludes/includes
+	specific images
 	"""
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)	
@@ -53,8 +60,8 @@ def main():
 		for example, sptstacker_02 will be the directory by default if 'sptstacker_01' 
 		already exists.""")
 
-	parser.add_argument("--inputstem", type=str, default='', help="""String common to all the files to 
-		put into an .st (MRC) stack; for example, '.hdf' will process all .hdf files in the
+	parser.add_argument("--stem2stack", type=str, default='', help="""String common to all 
+		the files to put into an .st (MRC) stack; for example, '.hdf' will process all .hdf files in the
 		current directory.
 		If not specified, all valid EM imagefiles in the current directory will be put into 
 		an .st (MRC) stack.""")
@@ -99,14 +106,33 @@ def main():
 		written on final stack.""")
 	
 	parser.add_argument("--unstack",type=str,default='',help=""".hdf, or 3D .st, .mrc, 
-		.ali, or .mrcs stack file to unstack .""")
+		.ali, or .mrcs stack file to unstack.
+		This option can be used with --include or --exclude to unstack only specific images.
+		Recall that the FIRST image INDEX is 0 (but unstacked image will be numbered from 1). 
+		--exclude=1,5-7,10,12,15-19 will exclude images 1,5,6,7,10,12,15,16,17,18,19""""")
 	
-	parser.add_argument("--imodstack",action='store_true',default=False,help="""
-		Supply this option if your goal is to produce an MRCS stack, such as an IMOD tilt 
-		series. NOT necessary to produce an EMAN2 HDF stack""")
+	parser.add_argument("--restack",type=str,default='',help=""".hdf, or 3D .st, .mrc, 
+		.ali, or .mrcs stack file to restack.
+		This option can be used with --include or --exclude to unstack only specific images.
+		Recall that the FIRST image INDEX is 0 (but unstacked image will be numbered from 1). 
+		--exclude=1,5-7,10,12,15-19 will exclude images 1,5,6,7,10,12,15,16,17,18,19""""")
 	
 	parser.add_argument("--mirroraxis",type=str,default='',help="""Options are x or y, and the
 		mirrored copy of the 2-D images will be generated before being put into the tilt series.""")
+	
+	parser.add_argument("--exclude",type=str,default='',help="""Comma separated list of numbers
+		corresponding to images to exclude. --unstack or --restack must be supplied. 
+		You can also exclude by ranges. For example:
+		Recall that the FIRST image INDEX is 0. 
+		--exclude=1,5-7,10,12,15-19 will exclude images 1,5,6,7,10,12,15,16,17,18,19""")
+		
+	parser.add_argument("--include",type=str,default='',help="""Comma separated list of numbers
+		corresponding to images to include (all others will be excluded). 
+		--unstack or --restack must be supplied. 
+		Recall that the FIRST image INDEX is 0. 
+		--include=1,5-7,10,12,15-19 will include images 1,5,6,7,10,12,15,16,17,18,19""")
+
+	
 	
 	#parser.add_argument("--stack",action='store_false',default=True,help="If on, projections will be in an hdf stack; otherwise, they'll be their own separate file. On by default. Supply --stack=None to turn off.")
 
@@ -116,6 +142,10 @@ def main():
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()	
+	
+	if options.exclude and options.include:
+		print "\nERROR: Supplied either exclude or include. Cannot supply both at the same time."
+		sys.exit()
 	
 	print "\nLogging"
 	logger = E2init(sys.argv, options.ppid)
@@ -136,8 +166,11 @@ def main():
 	
 
 	if options.unstack:
-	
-		usntack( options )
+		usntacker( options )
+
+
+	elif options.restack:
+		restacker( options )
 
 	else:
 		kk=0
@@ -229,55 +262,7 @@ def main():
 				print text
 				p.stdout.close()
 	
-	"""
-		if options.imodstack:
-			print "Converting 2-D hdf stack to 3-D mrc stack"
-			mrcout = options.path + '/' + options.output.split('.')[0] + '.mrc'
-			stout = options.path + '/' + options.output.split('.')[0] + '.st'
-			cmdst = 'newstack ' + options.path + '/*.mrc ' + stout
-		
-			print "\n\n\n\nNEWSTACK cmdst is",cmdst
-		
-			p = subprocess.Popen( cmdst , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-			text = p.communicate()	
-			p.stdout.close()
-		
-			if options.verbose > 9:
-				print "Feedback from cmd was", text
-	
-			#print "Done", text
-	
-			if options.mirroraxis:
-				print "Converting 2-D hdf mirror stack to 3-D mrc mirror stack"
-
-				mrcoutmirror = options.path + '/' + options.output.split('.')[0] + '_mirror.mrc'
-				stoutmirror = options.path + '/' + options.output.split('.')[0] + '_mirror.st'
-			
-				cmdstmirror = 'newstack ' + options.path + '/*mirror*mrc ' + stoutmirror
-				#cmdstmirror = 'e2proc2d.py tmpmirror.hdf ' + mrcoutmirror + ' --twod2threed' + ' --mrc16bit' + ' --fixintscaling=sane' + ' && mv ' + mrcoutmirror + ' ' + stoutmirror + ' && rm tmpmirror.hdf' 
-				print "cmdstmirror is", cmdstmirror
-		
-				print "\n\nNEWSTACK cmdst for MIRROR is",cmdst
-		
-				p = subprocess.Popen( cmdstmirror , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-				text = p.communicate()	
-				p.stdout.close()
-		
-				if options.verbose > 9:
-					print "Feedback from cmd was", text
-	
-		if options.lowerend and options.upperend and options.tiltstep:
-			print "Generating .rawtlt file"
-			tltfile = options.output.split('.')[0] + '.rawtlt'
-			f = open(tltfile,'w')
-
-			generate=floatrange(options.lowerend, options.upperend, options.tiltstep)
-			tilts=["%g\n" % x for x in generate]
-				
-			f.writelines(tilts)
-			f.close()
-	"""
-	
+	E2end( logger )
 	return
 
 
@@ -295,8 +280,8 @@ def findtiltimgfiles( options ):
 		intilt = ''	
 		if '.dm3' in f or '.DM3' in f or '.tif' in f or '.TIF' in f or '.MRC' in f: 
 			if '.txt' not in f and '.db' not in f and 'mirror' not in f:
-				if options.inputstem:
-					if options.inputstem in f:
+				if options.stem2stack:
+					if options.stem2stack in f:
 						print "\nFound file", f
 						intilt = f
 				else:
@@ -427,31 +412,129 @@ def organizetilts( intilts, options ):
 	return intiltsdict
 
 
-def usntack( options ):
-	if '.hdf' in options.input:
+def usntacker( options ):
 	
-		n=EMUtil.get_image_count(options.unstack)
-		print "\nThe number of images to unstack is", n
-		for i in range(n):
-			outname = options.path + '/' + options.output.split('.')[0] + '_' + str(i).zfill( len( str(n))) + '.hdf'
-			print "Outname of unstacked tilt will be", outname
-			cmd = 'e2proc2d.py ' + options.unstack + ' ' + outname + ' --first=' + str(i) + ' --last=' + str(i) + ' && e2proc2d.py ' + outname + ' ' + outname.replace('.hdf','.mrc') + ' --mrc16bit'
-			p = subprocess.Popen( cmd , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-			text = p.communicate()	
-			p.stdout.close()
-			print "Unstacked image", i
+	outname = options.path + '/' + options.unstack.replace('.mrc','.hdf')
+	outname = options.path + '/' + options.unstack.replace('.mrcs','.hdf')
+	outname = options.path + '/' + options.unstack.replace('.st','.hdf')	
+	outname = options.path + '/' + options.unstack.replace('.ali','.hdf')
+	
+	outname = options.path + '/' + options.unstack.replace('.hdf','_UNSTACKED.hdf')
+	
+	print "\nOutname of unstacked tilt will be", outname
+	
+	cmdun = 'e2proc2d.py ' + options.unstack + ' ' + outname + ' --unstacking '
+	if options.outmode:
+		cmdun += ' --outmode=' + options.outmode
+	
+	if options.exclude or options.include:
+		lst = makeimglist( options.unstack, options ) 
+		cmdun += ' --list=' + lst
+	
+	print "\ncmdun is", cmdun	
+	p = subprocess.Popen( cmdun , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	text = p.communicate()	
+	p.stdout.close()
 
+	return outname
+		
+
+def restacker( options ):
+
+	outname = options.path + '/' + options.restack.replace('.mrc','.hdf')
+	outname = options.path + '/' + options.restack.replace('.mrcs','.hdf')
+	outname = options.path + '/' + options.restack.replace('.st','.hdf')	
+	outname = options.path + '/' + options.restack.replace('.ali','.hdf')
 	
-	elif '.st' or'.mrc'	in options.input:
-		n = EMData( options.input )['nz']
-		for i in range(n):
-			cmd = 'newstack ' + options.input + ' ' + options.path + '/tilt' + str(i).zfill( len( str(n)) )  + '.mrc --secs ' + str(i)
+	outname = options.path + '/' + options.restack.replace('.hdf','_RESTACKED.hdf')
+	
+	tmp = options.path + '/tmp.hdf'
+	cmdre = 'e2proc2d.py ' + options.restack + ' ' + tmp
+	
+	if options.outmode:
+		cmdre += ' --outmode=' + options.outmode
+	
+	if options.exclude or options.include:
+		lst = makeimglist( options.restack, options )
+		cmdre += ' --list=' + lst
 		
-			print "Cmd to extract tilt is", cmd		
-			p = subprocess.Popen( cmd , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-			text = p.communicate()	
-			p.stdout.close()
+	cmdre += ' && mv ' + tmp + ' ' + outname
+	
+	print "\ncmdre is", cmdre
+	p = subprocess.Popen( cmdre , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	text = p.communicate()	
+	p.stdout.close()
+	
+	return
+
+
+def getindxs( string ):
+	
+	parsedindxs = set([])
+	stringList = list( string.split(',') )
+	#print "\nstringList is", stringList
+	
+	for i in range( len(stringList) ):
+		print "\n\nstringList[i] is", stringList[i]
+		if '-' in stringList[i]:
+			stringList[i] = stringList[i].split('-')
+			
+			x1 = int( stringList[i][0] )
+			x2 = int( stringList[i][-1] ) + 1
+			
+			stringList[i] = [ str( ele ) for ele in xrange( x1, x2 ) ]
 		
+		parsedindxs = parsedindxs.union( set( list( stringList[i] ) ) )
+	
+	parsedindxs = list( parsedindxs )
+	parsedindxs.sort()
+	
+	print "\nParsed indexes are", parsedindxs
+	return parsedindxs
+	
+
+def makeimglist( input, options ):
+	
+	n = EMUtil.get_image_count( input )
+	
+	allindxs = set( [ str(i) for i in range(n) ] )
+	finalindxs = set( list( allindxs ) )
+	
+	if options.exclude:
+		print "\nPrint there's EXCLUDE!!"
+		eindxs = getindxs( options.exclude )
+		finalindxs = list( allindxs.difference( eindxs ) )
+		
+	elif options.include:
+		print "\nPrint there's INCLUDE!!"
+		iindxs = getindxs( options.include )
+		finalindxs = list( iindxs )
+	
+	ints = []
+	for id in finalindxs:
+		ints.append( int( id ) )
+	
+	ints.sort()
+	
+	#final = []
+	#for fi in ints:
+	#	final.append( str( fi ) )
+	
+	
+	print "\nFinalindxs are", finalindxs
+	
+	lines = []
+	for indx in ints:
+		lines.append( str(indx) + '\n' )
+		
+	listfile = options.path + '/list.lst'
+	f= open( listfile,'w' )
+	f.writelines( lines )
+	f.close()
+	
+	print "\nlistfile is", listfile
+	return listfile
+
 
 def floatrange(start, stop, step):
 	#print "\nInside floatrange, start, stop and step are", start, stop, step
@@ -461,7 +544,16 @@ def floatrange(start, stop, step):
 		yield r
 		#print "r is", r
 		r += step
-		
+
+
+#n = EMData( options.input )['nz']
+#for i in range(n):
+#	cmd = 'newstack ' + options.input + ' ' + options.path + '/tilt' + str(i).zfill( len( str(n)) )  + '.mrc --secs ' + str(i)
+#
+#	print "Cmd to extract tilt is", cmd		
+#	p = subprocess.Popen( cmd , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+#	text = p.communicate()	
+#	p.stdout.close()		
 
 if __name__ == "__main__":
 	print "\nCalling main"
