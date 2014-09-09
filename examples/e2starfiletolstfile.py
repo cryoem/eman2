@@ -53,7 +53,7 @@ for i in range(len(starf[starf.keys()[0]])):
 		filepath = options.path + "/" + filepath1[len(filepath1)-1]
 	else:
 		filepath = starf['rlnImageName'][i].split("@")[1].replace(".mrcs",".hdf")
-	lstfile.write(-1,str(int(starf['rlnImageName'][i].split("@")[0])) ,filepath )
+	lstfile.write(-1,str(int(starf['rlnImageName'][i].split("@")[0])-1) ,filepath )
 
 
 # normalize the length of the lines in the LST file
