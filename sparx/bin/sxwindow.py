@@ -70,6 +70,28 @@ def window(data):
 		set_ctf(clip, data[k]['ctf'])
 		print 'Windowed prticles for {0} -> {1}'.format(k, output_file_name)
 
+def ctf(options):
+	"""
+	Read ctf information.
+	"""
+
+	ctfs = read_text_row(options.importctf)
+	cterr = [options.defocuserror/100.0, options.astigmatismerror]
+
+	for i in xrange(len(ctfs)):
+		smic = ctfs[i][-1].split('/')
+		ctfilename = (smic[-1].split('.'))[0]
+# 		if(ctfs[i][8]/ctfs[i][0] > cterr[0]):
+# 			print_msg('Defocus error %f exceeds the threshold. Micrograph %s rejected.\n'%(ctfs[i][8]/ctfs[i][0], ctfilename))
+# 			ctfs[i][0]=10.0
+# 			continue
+		if(ctfs[i][10] > cterr[1] ):
+			ctfs[i][6] = 0.0
+			ctfs[i][7] = 0.0
+		
+	return ctfs
+
+
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -86,6 +108,12 @@ def main():
 	parser.add_option('--outdir',     dest='outdir',      help='Output directory')
 	parser.add_option('--outstack',     dest='outstack',      help='Output stack name')
 
+	# import ctf estimates done using cter
+	parser.add_option("--input",              type="string",	default= None,     		  help="Input particles.")
+	parser.add_option("--importctf",          type="string",	default= None,     		  help="Name of the file containing CTF parameters produced by sxcter.")
+	parser.add_option("--defocuserror",       type="float",  	default=1000000.0,        help="Exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent.  The error is computed as (std dev defocus)/defocus*100%")
+	parser.add_option("--astigmatismerror",   type="float",  	default=360.0,            help="Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees.")
+
 	(options, args) = parser.parse_args()
 	box_size = options.box_size
 	
@@ -101,6 +129,15 @@ def main():
 		
 		mask = pad(model_circle(box_size//2, box_size, box_size), box_size, box_size, 1, 0.0)
 		
+		micnames = []
+		for f in os.listdir(options.coordsdir):
+			if f.endswith(info_suffix):
+				name_num_base = f.strip(info_suffix)
+				name_im       = name_num_base + extension
+				micnames.append(name_im)
+		
+		ctfs = ctf(options)
+
 		otcl_images  = "bdb:%s/"%options.outdir + options.outstack + suffix
 		iImg=0
 		for f in os.listdir(options.coordsdir):
@@ -108,6 +145,9 @@ def main():
 				name_num_base = f.strip(info_suffix)
 				name_im       = name_num_base + extension
 				name_info     = info_name(name_im)
+				ind = int(name_num_base[3:])
+				
+# 				otcl_images  = "bdb:%s/"%options.outdir + name_num_base + suffix + extension
 				
 				im = get_im(name_im)
 				x0 = im.get_xsize()//2  #  Floor division or integer division
@@ -127,6 +167,11 @@ def main():
 					imn -= stat[0]
 					Util.mul_scalar(imn, 1.0/stat[1])
 					
+					ctff=generate_ctf(ctfs[ind])
+					print ctff
+					imn.set_attr("ctf",ctff)
+					imn.set_attr("ctf_applied", 0)
+# 					imn.write_image(otcl_images, i)
 					imn.write_image(otcl_images, iImg)
 					iImg = iImg + 1
 
