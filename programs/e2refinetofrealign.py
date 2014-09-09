@@ -195,7 +195,7 @@ for i in range(len(all_set_data)):
    apix_shift = ctf_dict['apix']
    class_num = cls_class_list[i]
    if i%2==0:
-      #az=classes_even[int(class_num)].get_attr_dict()['xform.projection'].get_rotation("eman")['az']
+      az=classes_even[int(class_num)].get_attr_dict()['xform.projection'].get_rotation("eman")['az']
       alt=classes_even[int(class_num)].get_attr_dict()['xform.projection'].get_rotation("eman")['alt']
    else:
       az=classes_odd[int(class_num)].get_attr_dict()['xform.projection'].get_rotation("eman")['az']
