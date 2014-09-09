@@ -108,7 +108,10 @@ def main():
 
 	parser.add_argument('--cshrink', type=float, default=1.0, help='''Specifies the factor by which to multiply the coordinates in the coordinates file, so that they can be at the same scale as the tomogram.\nFor example, provide 2 if the coordinates are on a 2K x 2K scale,\nbut you want to extract the sub-volumes from the UN-shrunk 4K x 4K tomogram.''')
 
-	parser.add_argument('--subset', type=int, default=0, help='''Specify how many sub-volumes from the coordinates file you want to extract; e.g, if you specify 10, the first 10 particles will be boxed.\n0 means "box them all" because it makes no sense to box none''')
+	parser.add_argument('--subset', type=int, default=0, help='''Specify how many sub-volumes 
+		from the coordinates file you want to extract; e.g, if you specify 10, the first 10 
+		particles will be boxed.\n0 means "box them all" because it makes no sense to box none''')
+		
 	parser.add_argument('--output', type=str, default='stack.hdf', help="Specify the name of the stack file where to write the extracted sub-volumes")
 	parser.add_argument('--output_format', type=str, default='stack', help='''Specify 'single' if you want the sub-volumes to be written to individual files. You MUST still provide an output name in the regular way.\nFor example, if you specify --output=myparticles.hdf\nbut also specify --output_format=single\nthen the particles will be written as individual files named myparticles_000.hdf myparticles_001.hdf...etc''')
 
@@ -481,9 +484,9 @@ def commandline_tomoboxer(tomogram,options):
 		clines[i] = clines[i].replace("  ",' ')
 		clines[i] = clines[i].split()
 
-		x = int(clines[i][0])
-		y = int(clines[i][1])
-		z = int(clines[i][2])
+		x = int( float(clines[i][0]) )
+		y = int( float(clines[i][1]) )
+		z = int( float(clines[i][2]) )
 
 		print "The raw coordinates from the coordinates file provided for particle#%d are x=%d, y=%d, z=%d " % (i,x,y,z)
 
