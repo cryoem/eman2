@@ -40,6 +40,43 @@ from utilities import *
 from fundamentals import *
 from filter import *
 from global_def import *
+from distutils.extension import Extension
+
+def get_suffix_and_extension(db_dir, db_file):
+	db = js_open_dict(os.path.join(db_dir, db_file))
+	suffix    = str(db['suffix'])    # db['suffix'] is unicode, so need to call str()
+	extension = str(db['extension']) # db['extension'] is unicode, so need to call str()
+	
+	return suffix, extension
+
+def get_mic_base_names(options):
+	micnames = []
+	import glob
+	
+	for f in glob.glob(os.path.join(options.topdir, '*.hdf')):   # currently handles only hdf formatted micrographs
+			micnames.append(base_name(f))
+	return micnames
+
+def ctf(options):
+	"""
+	Read ctf information.
+	"""
+
+	ctfs = read_text_row(options.importctf)
+	cterr = [options.defocuserror/100.0, options.astigmatismerror]
+
+	for i in xrange(len(ctfs)):
+		smic = ctfs[i][-1].split('/')
+		ctfilename = (smic[-1].split('.'))[0]
+# 		if(ctfs[i][8]/ctfs[i][0] > cterr[0]):
+# 			print_msg('Defocus error %f exceeds the threshold. Micrograph %s rejected.\n'%(ctfs[i][8]/ctfs[i][0], ctfilename))
+# 			ctfs[i][0]=10.0
+# 			continue
+		if(ctfs[i][10] > cterr[1] ):
+			ctfs[i][6] = 0.0
+			ctfs[i][7] = 0.0
+		
+	return ctfs
 
 def window(data):
 	"""
@@ -70,28 +107,6 @@ def window(data):
 		set_ctf(clip, data[k]['ctf'])
 		print 'Windowed prticles for {0} -> {1}'.format(k, output_file_name)
 
-def ctf(options):
-	"""
-	Read ctf information.
-	"""
-
-	ctfs = read_text_row(options.importctf)
-	cterr = [options.defocuserror/100.0, options.astigmatismerror]
-
-	for i in xrange(len(ctfs)):
-		smic = ctfs[i][-1].split('/')
-		ctfilename = (smic[-1].split('.'))[0]
-# 		if(ctfs[i][8]/ctfs[i][0] > cterr[0]):
-# 			print_msg('Defocus error %f exceeds the threshold. Micrograph %s rejected.\n'%(ctfs[i][8]/ctfs[i][0], ctfilename))
-# 			ctfs[i][0]=10.0
-# 			continue
-		if(ctfs[i][10] > cterr[1] ):
-			ctfs[i][6] = 0.0
-			ctfs[i][7] = 0.0
-		
-	return ctfs
-
-
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -101,7 +116,7 @@ def main():
 
 	parser.add_option('--coords_dir',   dest='coordsdir',                help='Directory containing particle coordinates')
 # 	parser.add_option('--importctf',    dest='ctffile',                  help='File name with CTF parameters produced by sxcter.')
-# 	parser.add_option('--topdir',       dest='topdir',       default='', help='Path name of directory containing relevant micrograph directories')
+	parser.add_option('--topdir',       dest='topdir',       default='./', help='Path name of directory containing relevant micrograph directories')
 # 	parser.add_option('--input_pixel',  dest='input_pixel',  default=1,  help='input pixel size')
 # 	parser.add_option('--output_pixel', dest='output_pixel', default=1,  help='output pixel size')
 	parser.add_option('--box_size',     dest='box_size',     type=int,   help='box size')
@@ -121,59 +136,51 @@ def main():
 		print "\nusage: " + usage
 		print "Please run '" + progname + " -h' for detailed options\n"
 	else:
-		database = "e2boxercache"
-		db = js_open_dict(os.path.join(database,"quality.json"))
-		suffix    = str(db['suffix'])    # db['suffix'] is unicode, so need to call str()
-		extension = str(db['extension']) # db['extension'] is unicode, so need to call str()
 		info_suffix = '_info.json'
+		suffix, extension = get_suffix_and_extension("e2boxercache","quality.json")
 		
-		mask = pad(model_circle(box_size//2, box_size, box_size), box_size, box_size, 1, 0.0)
-		
-		micnames = []
-		for f in os.listdir(options.coordsdir):
-			if f.endswith(info_suffix):
-				name_num_base = f.strip(info_suffix)
-				name_im       = name_num_base + extension
-				micnames.append(name_im)
-		
+		micnames = get_mic_base_names(options)
+# 		print micnames		
 		ctfs = ctf(options)
 
-		otcl_images  = "bdb:%s/"%options.outdir + options.outstack + suffix
-		iImg=0
-		for f in os.listdir(options.coordsdir):
-			if f.endswith(info_suffix):
-				name_num_base = f.strip(info_suffix)
-				name_im       = name_num_base + extension
-				name_info     = info_name(name_im)
-				ind = int(name_num_base[3:])
+		mask = pad(model_circle(box_size//2, box_size, box_size), box_size, box_size, 1, 0.0)
+		
+# 		otcl_images  = "bdb:%s/"%options.outdir + options.outstack + suffix
+# 		iImg=0
+		for i in range(len(micnames)):
+			basename = micnames[i]
+			f_mic = os.path.join(options.topdir, basename + extension)
+			f_info = info_name(f_mic)
+			
+			otcl_images  = "bdb:%s/"%options.outdir + basename + suffix
+# 			print basename, f_info, f_mic
 				
-# 				otcl_images  = "bdb:%s/"%options.outdir + name_num_base + suffix + extension
+			im = get_im(f_mic)
+			x0 = im.get_xsize()//2  #  Floor division or integer division
+			y0 = im.get_ysize()//2
 				
-				im = get_im(name_im)
-				x0 = im.get_xsize()//2  #  Floor division or integer division
-				y0 = im.get_ysize()//2
-				
-				coords = js_open_dict(name_info)["boxes"]
-				for i in range(len(coords)):
+			coords = js_open_dict(f_info)["boxes"]
+			for j in range(len(coords)):
 
-					x = int(coords[i][0])
-					y = int(coords[i][1])
-					imn=Util.window(im, box_size, box_size, 1, x-x0, y-y0)
-					imn.set_attr('ptcl_source_image',name_im)
-					imn.set_attr('ptcl_source_coord',[coords[i][0],coords[i][1]])
-					stat = Util.infomask(imn, mask, False)   
+				x = int(coords[j][0])
+				y = int(coords[j][1])
 
-					imn = ramp(imn)
-					imn -= stat[0]
-					Util.mul_scalar(imn, 1.0/stat[1])
+				imn=Util.window(im, box_size, box_size, 1, x-x0, y-y0)
+				imn.set_attr('ptcl_source_image',f_mic)
+				imn.set_attr('ptcl_source_coord',[x,y])
+				stat = Util.infomask(imn, mask, False)   
+
+				imn = ramp(imn)
+				imn -= stat[0]
+				Util.mul_scalar(imn, 1.0/stat[1])
 					
-					ctff=generate_ctf(ctfs[ind])
-					print ctff
-					imn.set_attr("ctf",ctff)
-					imn.set_attr("ctf_applied", 0)
-# 					imn.write_image(otcl_images, i)
-					imn.write_image(otcl_images, iImg)
-					iImg = iImg + 1
+				ctff=generate_ctf(ctfs[i])
+# 				print ctff
+				imn.set_attr("ctf",ctff)
+				imn.set_attr("ctf_applied", 0)
+				imn.write_image(otcl_images, j)
+# 				imn.write_image(otcl_images, iImg)
+# 				iImg = iImg + 1
 
 if __name__=='__main__':
 	main()
