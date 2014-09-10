@@ -141,7 +141,7 @@ def window(data):
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " --coords_dir=coords_dir  --importctf=ctf_file  --topdir=topdir  --input_pixel=input_pixel  --output_pixel=output_pixel"
+	usage = progname + " --coords_dir=coords_dir  --importctf=ctf_file  --topdir=topdir  --box_size=box_size  --outdir=outdir  --outstack=outstack  --defocuserror=defocuserror  --astigmatismerror=astigmatismerror"
 	
 	parser = OptionParser(usage, version=SPARXVERSION)
 
@@ -155,7 +155,7 @@ def main():
 	parser.add_option('--outstack',     dest='outstack',      help='Output stack name')
 
 	# import ctf estimates done using cter
-	parser.add_option("--input",              type="string",	default= None,     		  help="Input particles.")
+# 	parser.add_option("--input",              type="string",	default= None,     		  help="Input particles.")
 	parser.add_option("--importctf",          type="string",	default= None,     		  help="Name of the file containing CTF parameters produced by sxcter.")
 	parser.add_option("--defocuserror",       type="float",  	default=1000000.0,        help="Exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent.  The error is computed as (std dev defocus)/defocus*100%")
 	parser.add_option("--astigmatismerror",   type="float",  	default=360.0,            help="Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees.")
