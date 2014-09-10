@@ -57,33 +57,31 @@ def get_mic_base_names(options):
 			micnames.append(base_name(f))
 	return micnames
 
-def ctf(options):
-	"""
-	Read ctf information.
-	"""
+def get_ctfs(options):
 
 	ctfs = read_text_row(options.importctf)
 	cterr = [options.defocuserror/100.0, options.astigmatismerror]
 
+	ctfp = [-1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
 	for i in xrange(len(ctfs)):
 		smic = ctfs[i][-1].split('/')
 		ctfilename = (smic[-1].split('.'))[0]
-# 		if(ctfs[i][8]/ctfs[i][0] > cterr[0]):
-# 			print_msg('Defocus error %f exceeds the threshold. Micrograph %s rejected.\n'%(ctfs[i][8]/ctfs[i][0], ctfilename))
-# 			ctfs[i][0]=10.0
-# 			continue
+		if(ctfs[i][8]/ctfs[i][0] > cterr[0]):
+			print_msg('Defocus error %f exceeds the threshold. Micrograph %s rejected.\n'%(ctfs[i][8]/ctfs[i][0], ctfilename))
+			ctfs[i]=ctfp			
 		if(ctfs[i][10] > cterr[1] ):
 			ctfs[i][6] = 0.0
 			ctfs[i][7] = 0.0
-		
+		ctfs[i] = generate_ctf(ctfs[i])
+
 	return ctfs
 
-def window_micrograph(options, basename, ctf, suffix, extension):
+def window_micrograph(options, basename, ctf):
+	suffix, extension = get_suffix_and_extension("e2boxercache","quality.json")
 	f_mic = os.path.join(options.topdir, basename + extension)
 	f_info = info_name(f_mic)
 			
 	otcl_images  = "bdb:%s/"%options.outdir + basename + suffix
-# 	print basename, f_info, f_mic
 
 	box_size = options.box_size
 	mask = pad(model_circle(box_size//2, box_size, box_size), box_size, box_size, 1, 0.0)
@@ -106,14 +104,10 @@ def window_micrograph(options, basename, ctf, suffix, extension):
 		imn = ramp(imn)
 		imn -= stat[0]
 		Util.mul_scalar(imn, 1.0/stat[1])
-			
-		ctff=generate_ctf(ctf)
-# 		print ctff
-		imn.set_attr("ctf",ctff)
+		
+		imn.set_attr("ctf", ctf)
 		imn.set_attr("ctf_applied", 0)
 		imn.write_image(otcl_images, j)
-# 		imn.write_image(otcl_images, iImg)
-# 		iImg = iImg + 1
 
 def window(data):
 	"""
@@ -172,48 +166,11 @@ def main():
 		print "\nusage: " + usage
 		print "Please run '" + progname + " -h' for detailed options\n"
 	else:
-		ctfs = ctf(options)
 		
-# 		otcl_images  = "bdb:%s/"%options.outdir + options.outstack + suffix
-# 		iImg=0
-		suffix, extension = get_suffix_and_extension("e2boxercache","quality.json")
 		micnames = get_mic_base_names(options)
-# 		print micnames		
+		ctfs = get_ctfs(options)
 		for i in range(len(micnames)):
-			window_micrograph(options, micnames[i], ctfs[i], suffix, extension)
-# 			basename = micnames[i]
-# 			f_mic = os.path.join(options.topdir, basename + extension)
-# 			f_info = info_name(f_mic)
-# 			
-# 			otcl_images  = "bdb:%s/"%options.outdir + basename + suffix
-# # 			print basename, f_info, f_mic
-# 				
-# 			im = get_im(f_mic)
-# 			x0 = im.get_xsize()//2  #  Floor division or integer division
-# 			y0 = im.get_ysize()//2
-# 				
-# 			coords = js_open_dict(f_info)["boxes"]
-# 			for j in range(len(coords)):
-# 
-# 				x = int(coords[j][0])
-# 				y = int(coords[j][1])
-# 
-# 				imn=Util.window(im, box_size, box_size, 1, x-x0, y-y0)
-# 				imn.set_attr('ptcl_source_image',f_mic)
-# 				imn.set_attr('ptcl_source_coord',[x,y])
-# 				stat = Util.infomask(imn, mask, False)   
-# 
-# 				imn = ramp(imn)
-# 				imn -= stat[0]
-# 				Util.mul_scalar(imn, 1.0/stat[1])
-# 					
-# 				ctff=generate_ctf(ctfs[i])
-# # 				print ctff
-# 				imn.set_attr("ctf",ctff)
-# 				imn.set_attr("ctf_applied", 0)
-# 				imn.write_image(otcl_images, j)
-# # 				imn.write_image(otcl_images, iImg)
-# # 				iImg = iImg + 1
+			window_micrograph(options, micnames[i], ctfs[i])
 
 if __name__=='__main__':
 	main()
