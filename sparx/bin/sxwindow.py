@@ -78,6 +78,43 @@ def ctf(options):
 		
 	return ctfs
 
+def window_micrograph(options, basename, ctf, suffix, extension):
+	f_mic = os.path.join(options.topdir, basename + extension)
+	f_info = info_name(f_mic)
+			
+	otcl_images  = "bdb:%s/"%options.outdir + basename + suffix
+# 	print basename, f_info, f_mic
+
+	box_size = options.box_size
+	mask = pad(model_circle(box_size//2, box_size, box_size), box_size, box_size, 1, 0.0)
+
+	im = get_im(f_mic)
+	x0 = im.get_xsize()//2  #  Floor division or integer division
+	y0 = im.get_ysize()//2
+		
+	coords = js_open_dict(f_info)["boxes"]
+	for j in range(len(coords)):
+
+		x = int(coords[j][0])
+		y = int(coords[j][1])
+
+		imn=Util.window(im, box_size, box_size, 1, x-x0, y-y0)
+		imn.set_attr('ptcl_source_image',f_mic)
+		imn.set_attr('ptcl_source_coord',[x,y])
+		stat = Util.infomask(imn, mask, False)   
+
+		imn = ramp(imn)
+		imn -= stat[0]
+		Util.mul_scalar(imn, 1.0/stat[1])
+			
+		ctff=generate_ctf(ctf)
+# 		print ctff
+		imn.set_attr("ctf",ctff)
+		imn.set_attr("ctf_applied", 0)
+		imn.write_image(otcl_images, j)
+# 		imn.write_image(otcl_images, iImg)
+# 		iImg = iImg + 1
+
 def window(data):
 	"""
 	Using coordinates window particles, and add ctf information to it.
@@ -130,57 +167,53 @@ def main():
 	parser.add_option("--astigmatismerror",   type="float",  	default=360.0,            help="Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees.")
 
 	(options, args) = parser.parse_args()
-	box_size = options.box_size
 	
 	if len(args) > 0:
 		print "\nusage: " + usage
 		print "Please run '" + progname + " -h' for detailed options\n"
 	else:
-		info_suffix = '_info.json'
-		suffix, extension = get_suffix_and_extension("e2boxercache","quality.json")
-		
-		micnames = get_mic_base_names(options)
-# 		print micnames		
 		ctfs = ctf(options)
-
-		mask = pad(model_circle(box_size//2, box_size, box_size), box_size, box_size, 1, 0.0)
 		
 # 		otcl_images  = "bdb:%s/"%options.outdir + options.outstack + suffix
 # 		iImg=0
+		suffix, extension = get_suffix_and_extension("e2boxercache","quality.json")
+		micnames = get_mic_base_names(options)
+# 		print micnames		
 		for i in range(len(micnames)):
-			basename = micnames[i]
-			f_mic = os.path.join(options.topdir, basename + extension)
-			f_info = info_name(f_mic)
-			
-			otcl_images  = "bdb:%s/"%options.outdir + basename + suffix
-# 			print basename, f_info, f_mic
-				
-			im = get_im(f_mic)
-			x0 = im.get_xsize()//2  #  Floor division or integer division
-			y0 = im.get_ysize()//2
-				
-			coords = js_open_dict(f_info)["boxes"]
-			for j in range(len(coords)):
-
-				x = int(coords[j][0])
-				y = int(coords[j][1])
-
-				imn=Util.window(im, box_size, box_size, 1, x-x0, y-y0)
-				imn.set_attr('ptcl_source_image',f_mic)
-				imn.set_attr('ptcl_source_coord',[x,y])
-				stat = Util.infomask(imn, mask, False)   
-
-				imn = ramp(imn)
-				imn -= stat[0]
-				Util.mul_scalar(imn, 1.0/stat[1])
-					
-				ctff=generate_ctf(ctfs[i])
-# 				print ctff
-				imn.set_attr("ctf",ctff)
-				imn.set_attr("ctf_applied", 0)
-				imn.write_image(otcl_images, j)
-# 				imn.write_image(otcl_images, iImg)
-# 				iImg = iImg + 1
+			window_micrograph(options, micnames[i], ctfs[i], suffix, extension)
+# 			basename = micnames[i]
+# 			f_mic = os.path.join(options.topdir, basename + extension)
+# 			f_info = info_name(f_mic)
+# 			
+# 			otcl_images  = "bdb:%s/"%options.outdir + basename + suffix
+# # 			print basename, f_info, f_mic
+# 				
+# 			im = get_im(f_mic)
+# 			x0 = im.get_xsize()//2  #  Floor division or integer division
+# 			y0 = im.get_ysize()//2
+# 				
+# 			coords = js_open_dict(f_info)["boxes"]
+# 			for j in range(len(coords)):
+# 
+# 				x = int(coords[j][0])
+# 				y = int(coords[j][1])
+# 
+# 				imn=Util.window(im, box_size, box_size, 1, x-x0, y-y0)
+# 				imn.set_attr('ptcl_source_image',f_mic)
+# 				imn.set_attr('ptcl_source_coord',[x,y])
+# 				stat = Util.infomask(imn, mask, False)   
+# 
+# 				imn = ramp(imn)
+# 				imn -= stat[0]
+# 				Util.mul_scalar(imn, 1.0/stat[1])
+# 					
+# 				ctff=generate_ctf(ctfs[i])
+# # 				print ctff
+# 				imn.set_attr("ctf",ctff)
+# 				imn.set_attr("ctf_applied", 0)
+# 				imn.write_image(otcl_images, j)
+# # 				imn.write_image(otcl_images, iImg)
+# # 				iImg = iImg + 1
 
 if __name__=='__main__':
 	main()
