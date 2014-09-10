@@ -46,10 +46,10 @@ import EMAN2db
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] <image file> ...
-	
+
 	This program can be used to visualize most files used in EMAN2. Running it without arguments
 	will open a browser window with more flexible functionality than the command-line.
-	
+
 """
 	global app,win,options
 
@@ -66,7 +66,7 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
-	
+
 
 #	logid=E2init(sys.argv)
 
@@ -76,12 +76,14 @@ def main():
 	win=[]
 	if options.fullrange:
 		fullrangeparms = set_full_range()
-		
-		
-		
+
+
+
 	if len(args)<1 :
 		dialog = embrowser.EMBrowserWidget(withmodal=False,multiselect=False)
 		dialog.show()
+		try: dialog.raise_()
+		except: pass
 		#QtCore.QObject.connect(dialog,QtCore.SIGNAL("ok"),on_browser_done)
 		#QtCore.QObject.connect(dialog,QtCore.SIGNAL("cancel"),on_browser_cancel)
 		dialog.show()
@@ -93,7 +95,7 @@ def main():
 		options.classes=options.classes.split(",")
 		imgs=EMData.read_images(args[0])
 		display(imgs,app,args[0])
-		
+
 		QtCore.QObject.connect(win[0].child,QtCore.SIGNAL("mousedown"),lambda a,b:selectclass(options.classes[0],options.classes[1],a,b))
 		try:
 			out=file("selected.lst","w")
@@ -111,14 +113,14 @@ def main():
 				print "%s doesn't exist" %i
 				sys.exit(1)
 			display_file(i,app,options.singleimage,usescenegraph=options.newwidget)
-			
+
 	if options.fullrange:
 		revert_full_range(fullrangeparms)
-	
+
 	app.exec_()
 
 #	E2end(logid)
-	
+
 def set_full_range():
 	'''
 	Turns all auto contrasting flags to False etc.
@@ -138,20 +140,20 @@ def set_full_range():
 	#db["display_2d_auto_contrast"] = False
 	#current_settings["display_2d_auto_contrast"] = auto_contrast
 	current_settings["display_2d_auto_contrast"] = True
-	
+
 	#stack_auto_contrast = db.get("display_stack_auto_contrast",dfl=True)
 	#stack_np_for_auto = db.get("display_stack_np_for_auto",dfl=5)
-	
+
 	#db["display_stack_auto_contrast"] = False
 	#current_settings["display_stack_auto_contrast"] = stack_auto_contrast
 	current_settings["display_stack_auto_contrast"] = True
-	
+
 	#db["display_stack_np_for_auto"] = -1
 	#current_settings["display_stack_np_for_auto"] = stack_np_for_auto
 	current_settings["display_stack_np_for_auto"] = -1
-	
+
 	return current_settings
-	
+
 def revert_full_range(d):
 	'''
 	Reverts the call to set_full_range.
@@ -161,12 +163,12 @@ def revert_full_range(d):
 	#HOMEDB=EMAN2db.EMAN2DB.open_db()
 	#HOMEDB.open_dict("display_preferences")
 	#db = HOMEDB.display_preferences
-	
+
 	#for key,value in d.items():
 		#db[key] = d[key]
-		
+
 	pass
-	
+
 def on_browser_done(string_list):
 	if len(string_list) != 0:
 		for s in string_list:
@@ -178,15 +180,15 @@ def on_browser_cancel():
 def selectclass(rawfsp,mxfsp,event,lc):
 	"""Used in 'classes' mode when the user selects a particular class-average"""
 	global win
-	
+
 	clsnum=lc[0]
-	
+
 	if event.modifiers()==Qt.ShiftModifier :
 		ptcls=getmxinfo(rawfsp,mxfsp,clsnum)
 		out=file("selected.lst","a")
 		for i in ptcls: i.write("%d\t%s\n"%(i[1],i[0]))
 		out.close()
-	else:	
+	else:
 		ptcls=getmxim(rawfsp,mxfsp,clsnum)
 		if len(win)==1:
 			display(ptcls)
@@ -209,7 +211,7 @@ def getmxim(fsp,fsp2,clsnum):
 	da=EMData(fsp2,4)
 	imgs=[(EMData(fsp,i),dx.get(0,i),dy.get(0,i),da.get(0,i)) for i in range(mx.get_ysize()) if mx.get(0,i)==clsnum]
 	for i in imgs :
-		print i 
+		print i
 		i[0].rotate_translate(i[3],0,0,i[1],i[2],0)
 	imgs=[i[0] for i in imgs]
 	return imgs
@@ -217,7 +219,7 @@ def getmxim(fsp,fsp2,clsnum):
 def display_file(filename,app,force_2d=False,usescenegraph=False):
 	w = EMWidgetFromFile(filename,application=app,force_2d=force_2d)
 	w.setWindowTitle(base_name(filename))
-	
+
 	app.show_specific(w)
 	try: w.optimally_resize()
 	except: pass
@@ -258,4 +260,4 @@ def plot_3d(files,app):
 
 # If executed as a program
 if __name__ == '__main__':
-	main()	
+	main()

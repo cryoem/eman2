@@ -47,6 +47,7 @@
 #include <gsl/gsl_wavelet2d.h>
 #include <gsl/gsl_multimin.h>
 #include <algorithm>
+#include <gsl/gsl_fit.h>
 #include <ctime>
 
 #ifdef __APPLE__
@@ -3975,102 +3976,63 @@ void NormalizeToLeastSquareProcessor::process_inplace(EMData * image)
 	EMData *to = params["to"];
 
 	bool ignore_zero = params.set_default("ignore_zero",true);
+	float ignore_lowsig = params.set_default("ignore_lowsig",-1.0);
+	float low_threshold = params.set_default("low_threshold",-FLT_MAX);
+	float high_threshold = params.set_default("high_threshold",FLT_MAX);
 
-	float low_threshold = FLT_MIN;
-	string low_thr_name = "low_threshold";
-	if (params.has_key(low_thr_name)) {
-		low_threshold = params[low_thr_name];
-	}
-
-	float high_threshold = FLT_MAX;
-	string high_thr_name = "high_threshold";
-	if (params.has_key(high_thr_name)) {
-		high_threshold = params[high_thr_name];
-	}
-
-	float *rawp = image->get_data();
-	float *refp = to->get_data();
+	float *dimage = image->get_data();
+	float *dto = to->get_data();
 
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 	size_t size = (size_t)nx * ny * nz;
 
-	float sum_x = 0;
-	float sum_y = 0;
-	size_t count = 0;
+	// rewrote this to just use GSL and get rid of David's old code.
+	// The two passes are just to make sure we don't eat too much RAM if we do 3D
+	if (ignore_lowsig<0) ignore_lowsig=0;
+//	FILE *dbug = fopen("dbug.txt","w");
 
-	float sum_x_mean = 0;
-	float sum_tt = 0;
-	float b = 0;
-
-	// This is really inefficient, who coded it ?   --steve
-	if (ignore_zero) {
-	FILE *dbug = fopen("dbug.txt","w");
-		for (size_t i = 0; i < size; ++i) {
-			if (refp[i] >= low_threshold && refp[i] <= high_threshold && refp[i] != 0.0f && rawp[i] != 0.0f) {
-				count++;
-				sum_x += refp[i];
-				sum_y += rawp[i];
-				fprintf(dbug,"%f\t%f\n",refp[i],rawp[i]);
-			}
-		}
-		fclose(dbug);
-
-		sum_x_mean = sum_x / count;
-		sum_tt = 0;
-		b = 0;
-
-		float t;
-		for (size_t i = 0; i < size; ++i) {
-			if (refp[i] >= low_threshold && refp[i] <= high_threshold && refp[i] != 0.0f && rawp[i] != 0.0f) {
-				t = refp[i] - sum_x_mean;
-				sum_tt += t * t;
-				b += t * rawp[i];
-			}
-		}
-	}
-	else {
-			for (size_t i = 0; i < size; ++i) {
-			if (refp[i] >= low_threshold && refp[i] <= high_threshold) {
-				count++;
-				sum_x += refp[i];
-				sum_y += rawp[i];
-			}
-		}
-
-		sum_x_mean = sum_x / count;
-		sum_tt = 0;
-		b = 0;
-
-		float t;
-		for (size_t i = 0; i < size; ++i) {
-			if (refp[i] >= low_threshold && refp[i] <= high_threshold) {
-				t = refp[i] - sum_x_mean;
-				sum_tt += t * t;
-				b += t * rawp[i];
-			}
-		}
-	}
-
-	b /= sum_tt;
-
-	float a = (sum_y - sum_x * b) / count;
-	float scale = 1 / b;
-	float shift = -a / b;
-
+	size_t count=0;
+	float meani=(float)image->get_attr("mean");
+	float meant=(float)to->get_attr("mean");
+	float sigi=(float)image->get_attr("sigma")*ignore_lowsig;
+	float sigt=(float)to->get_attr("sigma")*ignore_lowsig;
 	for (size_t i = 0; i < size; ++i) {
-		rawp[i] = (rawp[i] - a) / b;
+		if (dimage[i] >= low_threshold && dimage[i] <= high_threshold
+			&& (dto[i]>=meant+sigt || dto[i]<=meant-sigt)
+			&& (dimage[i]>=meani+sigi || dimage[i]<=meani-sigi)
+			&& (!ignore_zero ||(dto[i] != 0.0f && dimage[i] != 0.0f))) {
+			count++;
+//			fprintf(dbug,"%f\t%f\n",dimage[i],dto[i]);
+		}
 	}
+//	fclose(dbug);
 
+	double *x=(double *)malloc(count*sizeof(double));
+	double *y=(double *)malloc(count*sizeof(double));
+	count=0;
+	for (size_t i = 0; i < size; ++i) {
+		if (dto[i] >= low_threshold && dto[i] <= high_threshold
+			&& (dto[i]>=meant+sigt || dto[i]<=meant-sigt)
+			&& (dimage[i]>=meani+sigi || dimage[i]<=meani-sigi)
+			&& (!ignore_zero ||(dto[i] != 0.0f && dimage[i] != 0.0f))) {
+			x[count]=dimage[i];
+			y[count]=dto[i];
+			count++;
+		}
+	}
+	double c0,c1;
+	double cov00,cov01,cov11,sumsq;
+	gsl_fit_linear (x, 1, y, 1, count, &c0, &c1, &cov00, &cov01, &cov11, &sumsq);
+
+	free(x);
+	free(y);
+
+	for (size_t i = 0; i < size; ++i) dimage[i]=dimage[i]*c1+c0;
+	image->set_attr("norm_mult",c1);
+	image->set_attr("norm_add",c0);
 	image->update();
-
-	params["scale"] = scale;
-	params["shift"] = shift;
-
-	image->set_attr("norm_mult",scale);
-	image->set_attr("norm_add",shift);
-
 }
 
 void BinarizeFourierProcessor::process_inplace(EMData* image) {

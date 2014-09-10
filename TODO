@@ -58,6 +58,7 @@ Low priority
 
 
 Complete
+9/8/14		--box in e2evalimage now forces size
 8/29/14		Fixed B-factor option in e2ctf
 4/7/14		Make e2.py work with current ipython versions, finally
 2/20/14		Added --speed option

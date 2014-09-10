@@ -502,7 +502,7 @@ The basic design of EMAN Processors: <br>\
 		protected:
 	};
 
-	
+
 	/**Multiplies each Fourier pixel by its amplitude
 	 *@param sum Adds the weights to sum for normalization
 	 *@param sqrt Weights using sqrt of the amplitude if set
@@ -830,7 +830,7 @@ The basic design of EMAN Processors: <br>\
 
 	};
 
-	
+
 	/** CTF simulation processor. Takes individual CTF parameters, suitable for use with programs like
 	 * e2filtertool.py. Can use an internal noise profile or an external profile from a text file.
 	 *@param defocus[in]	Defocus in microns (underfocus positive)
@@ -1543,14 +1543,14 @@ The basic design of EMAN Processors: <br>\
 			d.put("maxval", EMObject::FLOAT, "Everything above this value is set to zero");
 			return d;
 		}
-		
+
 		string get_desc() const
 		{
 			return "f(x) = x if x <= maxval; f(x) = 0 if x > maxval.";
 		}
-		
+
 		static const string NAME;
-		
+
 	protected:
 		inline void process_pixel(float *x) const
 		{
@@ -1559,7 +1559,7 @@ The basic design of EMAN Processors: <br>\
 			}
 		}
 	};
-	
+
 	/**Rotate by 180 using pixel swapping, works for 2D only
 	 * @author David Woolford
 	 * @date March 21, 2014
@@ -1571,7 +1571,7 @@ The basic design of EMAN Processors: <br>\
 			{
 				return NAME;
 			}
-			
+
 			static Processor *NEW()
 			{
 				return new AddShapeProcessor();
@@ -1591,10 +1591,10 @@ The basic design of EMAN Processors: <br>\
 				d.put("size3", EMObject::FLOAT, "3rd axis size of the object. Meaning varies by shape.");
 				d.put("val1", EMObject::FLOAT, "First pixel value. Meaning varies by shape.");
 				d.put("val2", EMObject::FLOAT, "2nd pixel value. Meaning varies with shape");
-				
+
 				return d;
 			}
-			
+
 			string get_desc() const
 			{
 				return "Adds a specified shape to a volume.";
@@ -1603,7 +1603,7 @@ The basic design of EMAN Processors: <br>\
 			static const string NAME;
 	};
 
-	
+
 	/**Rotate by 180 using pixel swapping, works for 2D only
 	 * @author David Woolford
 	 * @date July 29th 2008
@@ -4550,7 +4550,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return "normalizes an image, mean value equals to mean of 2 pixel circular radius or of the circular border if no radius is set.";
 		}
-		
+
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
@@ -4667,6 +4667,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			TypeDict d;
 			d.put("to", EMObject::EMDATA, "reference image normalize to");
 			d.put("ignore_zero", EMObject::BOOL, "If set, ignores any pixels which are exactly zero in either image. Defaut = True.");
+			d.put("ignore_lowsig", EMObject::FLOAT, "If >0, then any pixels closer to the mean than val*sigma in either image excluded");
 			d.put("low_threshold", EMObject::FLOAT, "only take into account the reference image's pixel value between high and low threshold (zero is always ignored)");
 			d.put("high_threshold", EMObject::FLOAT, "only take into account the reference image's pixel value between high and low threshold (zero is always ignored)");
 			return d;
@@ -5368,7 +5369,7 @@ Next, the mask is expanded by 'nshells'+'nshellsgauss'/2 voxels. Finally a gauss
 		static const string NAME;
 	};
 
-	
+
 	/**Add additional shells/rings to an existing 1/0 mask image
 	 * @param nshells   number of shells to add
 	*/

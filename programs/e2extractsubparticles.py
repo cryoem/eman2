@@ -147,6 +147,7 @@ will be examined automatically to extract the corresponding particles and projec
 				ptclxf=Transform({"type":"2d","alpha":cmxalpha[eo][0,j],"mirror":int(cmxmirror[eo][0,j]),"tx":cmxtx[eo][0,j],"ty":cmxty[eo][0,j]}).inverse()
 				projc=[i.process("xform",{"transform":ptclxf}) for i in projs]		# we transform the projections, not the particle (as in the original classification)
 				projmaskc=projmask.process("xform",{"transform":ptclxf})
+#				projmaskc.process_inplace("threshold.notzero")
 
 				# we make a filtered copy of the particle filtered such that it's power spectrum is roughly that of a noise-free particle
 				# we do this using an approximate filter from the particle set based CTF estimate, but apply this filter to the actual
@@ -155,18 +156,26 @@ will be examined automatically to extract the corresponding particles and projec
 				ctf=ptcl["ctf"]
 				ds=1.0/(ctf.apix*ptcl["ny"])
 				filt=ctf.compute_1d(ptcl["ny"],ds,Ctf.CtfType.CTF_NOISERATIO,None)
-				plot(filt)
+#				plot(filt)
 				ptclr=ptcl.process("filter.radialtable",{"table":filt})		# reference particle for scaling
+#				ptclr=ptcl.copy()
 				ptclr.mult(projmaskc)
 
 				# Now we match the radial structure factor of the total projection to the filtered particle, then scale
 				# we will use the filter curve returned by this process to scale the masked projections, since theoretically
 				# they should not match the whole particle
 				projf=projc[0].process("filter.matchto",{"to":ptclr,"return_radial":1})
-				projf.process_inplace("normalize.toimage",{"to":ptcl})
+				projf.mult(projmaskc)
+				projf.process_inplace("normalize.toimage",{"to":ptcl,"ignore_lowsig":1.0})
+				print projf["norm_add"],projf["norm_mult"]
 				ptcl2=ptcl-projf
 
-				display((projc[0],projf,ptclr,ptcl,ptcl2),True)
+				# now subtract the masked versions
+				for i in projc[1:]:
+
+
+#				display((projc[0],ptclr,ptcl,projf,ptcl2),True)
+#				sys.exit(0)
 
 
 
