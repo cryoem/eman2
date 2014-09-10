@@ -40,8 +40,6 @@ import scipy
 import time
 import ntpath
 import numpy as np
-import matplotlib.pyplot as plt
-from numpy import loadtxt
 from scipy import sparse
 from scipy import ndimage
 from scipy import fftpack
@@ -74,7 +72,6 @@ def main():
 	parser.add_argument("--noisiness",default=0.1, type=float, help="Multiply noise by a specified factor. The default value is 0.1")
 	parser.add_argument("--path",type=str,default='recon',help="Directory in which results will be stored.")
 	parser.add_argument("--niters", default=100, type=int, help="Specify the number of iterative reconstructions to complete before returning the final reconstructed volume.")
-#	parser.add_argument("--crossval", default=None, help="Use cross validaton to specify the parameter 'beta'. Input 0 for the best beta as determined by cross-validation or 1 for the best beta for segmentation as compared to a complete data set (i.e. for use with test data).")
 	parser.add_argument("--beta", default=20.0, type=float, help="Specify the total-variation regularization weight parameter 'beta' without performing cross validation.")
 	parser.add_argument("--subpix", default=1, type=int, help="Specify the number of linear subdivisions used to compute the projection of one image pixel onto a detector pixel.")
 	parser.add_argument("--fsc",action="store_true",default=False, help="Generate a fourier shell correlation plot comparing the input and output data.")
@@ -128,13 +125,6 @@ def main():
 			print "Parameter beta cannot equal 0."
 			exit(1)
 	
-#	if options.crossval != None:
-#		betas = get_best_betas( options, nslices, niters)
-#		if options.crossval == 1:
-#			beta = betas[1]
-#		else:
-#			beta = betas[0]
-	
 	if options.subpix : 
 		subpix = int(options.subpix)
 	else: 
@@ -173,7 +163,7 @@ def main():
 		from_numpy(img).write_image( outpath )
 	
 	# Projection operator and projections data
-	projection_operator = build_projection_operator( tiltangles, xlen, nslices, None, subpix, 0, None)
+	projection_operator = build_projection_operator( tiltangles, xlen, nslices, None, subpix, 0, None )
 	projections = projection_operator * img.ravel()[:, np.newaxis]
 	
 	# Generate stack of projections
@@ -186,9 +176,6 @@ def main():
 	recon, energies = fista_tv( projections, beta, niters, projection_operator )
 	t2 = time.time()
 	if options.verbose > 2: print "reconstruction completed in %f s" %( t2 - t1 )
-
-	# Fraction of errors of segmented image wrt 'complete' data set
-	err = [np.abs(img - (reconstruction > 0.5)).mean() for reconstruction in recon]
 	
 	# Store reconstruction in instance outfile directory
 	outpath = options.path + "/" + outfile
@@ -890,46 +877,6 @@ def generate_synthetic_data(l_x=128, seed=None, crop=True, n_pts=25):
 	else:
 		mask = mask > mask.mean()
 	return mask.astype(np.float32)
-
-
-#######################################################
-# get_best_betas is BROKEN! Sorry... :(
-def get_best_ks( imgpath, nslices=None, niters=400 ):
-	x, dim = get_tomo_data( imgpath )
-	l = dim[0]
-	if nslices == None:
-		n_dir = l / 3.
-	else: 
-		n_dir = nslices
-	
-	def rec_error(beta, niters):
-		"""cross-validation"""
-		res, energies = fista_tv(y1, beta, niters, H)
-		yres = H * res[-1].ravel()[:, np.newaxis]
-		return (((yres - y2)**2).mean()), res[-1], energies
-	
-	# Projection operator and projections data, with 2 realizations of the noise
-	H = build_projection_operator(l, n_dir)
-	y = H * x.ravel()[:, np.newaxis]
-	np.random.seed(0)
-	y1 = y + 2*np.random.randn(*y.shape)  # 1st realization
-	y2 = y + 2*np.random.randn(*y.shape)  # 2nd realization
-	
-	# Range of beta parameter
-	ks = 2**np.arange(2, 6, 0.25)
-	
-	results = Parallel(n_jobs=-1)(delayed(rec_error)(k, niters) for k in ks)
-	errors = [res[0] for res in results]
-	images = [res[1] for res in results]
-	energies = [res[2] for res in results]
-	
-	# Segmentation compared to ground truth
-	segmentation_error = [np.abs((image > 0.5) - x).mean() for image in images]
-	
-	print "best k from cross-validation %f" %(ks[np.argmin(errors)])
-	print "best k for segmentation compared to ground truth %f"%(ks[np.argmin(segmentation_error)])
-	best_ks = [ks[np.argmin(errors)], ks[np.argmin(segmentation_error)]]
-	return best_ks
 
 
 if __name__=="__main__":
