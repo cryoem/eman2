@@ -107,6 +107,10 @@ def window_micrograph(options, basename, ctf):
 		
 		imn.set_attr("ctf", ctf)
 		imn.set_attr("ctf_applied", 0)
+		
+		if options.output_pixel != options.input_pixel:
+			imn = resample(imn, options.input_pixel/options.output_pixel)
+		
 		imn.write_image(otcl_images, j)
 
 def window(data):
@@ -148,8 +152,8 @@ def main():
 	parser.add_option('--coords_dir',   dest='coordsdir',                help='Directory containing particle coordinates')
 # 	parser.add_option('--importctf',    dest='ctffile',                  help='File name with CTF parameters produced by sxcter.')
 	parser.add_option('--topdir',       dest='topdir',       default='./', help='Path name of directory containing relevant micrograph directories')
-# 	parser.add_option('--input_pixel',  dest='input_pixel',  default=1,  help='input pixel size')
-# 	parser.add_option('--output_pixel', dest='output_pixel', default=1,  help='output pixel size')
+	parser.add_option('--input_pixel',  type='float', dest='input_pixel',  default=1,  help='input pixel size')
+	parser.add_option('--output_pixel', type='float', dest='output_pixel', default=1,  help='output pixel size')
 	parser.add_option('--box_size',     dest='box_size',     type=int,   help='box size')
 	parser.add_option('--outdir',     dest='outdir',      help='Output directory')
 	parser.add_option('--outstack',     dest='outstack',      help='Output stack name')
