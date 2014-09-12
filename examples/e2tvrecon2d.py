@@ -48,7 +48,13 @@ from scipy import fftpack
 def get_usage():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + """ [options]
-	e2tvrecon.py reconstructs a 2D image from a incomplete set of projections. In addition, noise may be added to the projections. In order to reconstruct the original image, we minimize a function that is the sum of a L2 data fit term and the total variation of the image. Proximal iterations using the FISTA scheme are used.
+	e2tvrecon.py reconstructs a 2D image from a incomplete set of projections. 
+	In addition, gaussian noise may be added to the image before projections are
+	made to more accurately simulate experimentally collected data. In order to 
+	reconstruct the original image, we minimize a function that is the sum of a 
+	L2 data fit and the total variation of the image. Proximal iterations using 
+	the FISTA scheme are used. The original source of FISTA implemented can be 
+	found at https://github.com/emmanuelle/tomo-tv.
 	"""
 	return usage
 
@@ -75,8 +81,8 @@ def main():
 	parser.add_argument("--beta", default=20.0, type=float, help="Specify the total-variation regularization weight parameter 'beta' without performing cross validation.")
 	parser.add_argument("--subpix", default=1, type=int, help="Specify the number of linear subdivisions used to compute the projection of one image pixel onto a detector pixel.")
 	parser.add_argument("--fsc",action="store_true",default=False, help="Generate a fourier shell correlation plot comparing the input and output data.")
+	parser.add_argument("--norm",default=None, type=str, help="Choose between 'regular', 'anisotropic', and 'l0' TV norms. The default is 'regular'.")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID", default=-1)
 	(options, args) = parser.parse_args()
 	
 	if options.output : outfile = options.output
@@ -85,17 +91,28 @@ def main():
 		print "A tiltseries and testdata may not be specified simultaneously."
 		exit(1)
 	
-	if options.tiltseries : 
+	if options.tiltseries :
 		infile = options.tiltseries
 	elif options.testdata : infile = options.testdata
-	else: 
+	else:
 		print "You must speficy either --testdata OR --tiltseries"
 		exit(1)
 	
-	if options.imgnum != None: 
+	if options.imgnum != None:
 		imgnum = options.imgnum
 	else:
 		imgnum = 0
+	
+	if options.norm:
+		if options.norm == 'regular':
+			print "This instance will utilize the regular (default) TV norm"
+		elif options.norm == 'anisotropic':
+			print "This instance will utilize an anisotropic TV norm"
+		elif options.norm == 'l0':
+			print "This instance will utilize an l0 TV norm"
+		else:
+			print "The option --norm was specified improperly. Please specify either anisotropic, l0, or regular. Regular is specified by default."
+			exit(1)
 	
 	if options.nslices: 
 		nslices = options.nslices
@@ -104,25 +121,31 @@ def main():
 	elif options.tlt != None:
 		pass
 	else:
-		print "You must specify the number of projections explicitly via --nslices or implicitly by supplying a tiltseries or tlt file."
+		print "You must specify the number of projections."
+		print "This is accomplished via specifying --nslices explicitly"
+		print "or by supplying a tiltseries or tlt file."
 		exit(1)
 	
 	if options.tlt:
-		tiltangles = np.asarray([ float( i ) for i in file( options.tlt , "r" ) ],dtype=np.float32)
+		fangles = np.asarray([ float( i ) for i in file( options.tlt , "r" ) ])
+		tiltangles = fangles.tolist()
 		nslices = len( tiltangles )
-	elif options.tiltrange:
-		tiltangles = np.linspace(-1*float(options.tiltrange), float(options.tiltrange), nslices, endpoint=False)
+	elif options.nslices and options.tiltrange:
+		tiltrange = float(options.tiltrange)
+		nslice = int(options.nslices)
+		print "Using tiltrange -%s, %s with %i slices."%(options.tiltrange, options.tiltrange, options.nslices)
+		tiltangles = np.linspace(tiltrange,-1.*tiltrange,nslices).tolist()
 	else:
-		print "You must specify --tlt and/or --tiltrange."
+		print "You must specify either --tlt or both --nslices and --tiltrange."
 		exit(1)
 	
-	if options.niters : 
+	if options.niters :
 		niters = int(options.niters)
-		
+	
 	if options.beta : 
 		beta = float(options.beta)
-		if beta == 0:
-			print "Parameter beta cannot equal 0."
+		if beta <= 0:
+			print "Parameter beta must be greater than 0."
 			exit(1)
 	
 	if options.subpix : 
@@ -133,12 +156,13 @@ def main():
 	if options.noisiness : 
 		noisiness = options.noisiness
 	else: 
+		print "--noisiness option not specified. Using the default value of 0.1."
 		noisiness = 0.1
 	
 	if options.output : outfile = options.output
 	
 	if options.verbose > 1: print "e2tvrecon.py"
-	logger=E2init(sys.argv,options.ppid)
+	logger=E2init(sys.argv)
 	
 	# Create new output directory for this instance
 	options = makepath( options, options.path)
@@ -161,19 +185,22 @@ def main():
 		img += noisiness * np.random.randn(*img.shape)
 		outpath = options.path + "/noisy_input.hdf"
 		from_numpy(img).write_image( outpath )
-	
+
 	# Projection operator and projections data
 	projection_operator = build_projection_operator( tiltangles, xlen, nslices, None, subpix, 0, None )
 	projections = projection_operator * img.ravel()[:, np.newaxis]
 	
-	# Generate stack of projections
-	outpath = options.path + "/prjs.hdf"
-	for i in range( nslices ):
-		from_numpy(projections[i*dim[0]:(i+1)*dim[0]]).write_image( outpath, i )
+	# Write projections to disk
+	#prjs = np.split(projections,xlen)
+	#from_numpy(prjs).write_image(options.path + "prjs.hdf")
+	#
+	#outpath = options.path + "/" + "stacked_prjs.hdf"
+	#for i in range( nslices ):
+	#	from_numpy(projections[i*dim[0]:(i+1)*dim[0]]).write_image( outpath, i )
 	
 	# Reconstruction
 	t1 = time.time()
-	recon, energies = fista_tv( projections, beta, niters, projection_operator )
+	recon, energies = fista_tv( options, tiltangles, projections, beta, niters, projection_operator )
 	t2 = time.time()
 	if options.verbose > 2: print "reconstruction completed in %f s" %( t2 - t1 )
 	
@@ -182,7 +209,7 @@ def main():
 	from_numpy(recon[-1]).write_image( outpath )
 	
 	if options.fsc != False:
-		fscpath = options.path + "/fsc.txt"
+		fscpath = options.path + "/" + "fsc.txt"
 		datapath = options.testdata
 		os.popen("e2proc3d.py %s %s --calcfsc %s"%( outpath, fscpath, datapath ))
 	
@@ -191,21 +218,153 @@ def main():
 	return
 
 
-def tv_norm(im):
-	"""Compute the (isotropic) TV norm of an image"""
-	grad_x1 = np.diff(im, axis=0)
-	grad_x2 = np.diff(im, axis=1)
-	return np.sqrt(grad_x1[:, :-1]**2 + grad_x2[:-1, :]**2).sum()
+def get_img_data( options, imgnum=0 ):
+	"""Read an input image as a numpy array return its dimensions"""
+	if options.tiltseries != None:
+		img = EMData( options.tiltseries , imgnum )
+		outpath = options.path + "/input.hdf"
+		img.write_image( outpath )
+		options.testdata = outpath
+	else:
+		img = EMData( options.testdata , imgnum )
+	dim = [img.get_xsize(), img.get_ysize(), img.get_zsize()]
+	img_array = img.numpy()
+	return img_array.astype(np.float32), dim, options
 
 
-def tv_norm_anisotropic(im):
-	"""Compute the anisotropic TV norm of an image"""
-	grad_x1 = np.diff(im, axis=0)
-	grad_x2 = np.diff(im, axis=1)
-	return np.abs(grad_x1[:, :-1]).sum() + np.abs(grad_x2[:-1, :]).sum()
+def build_projection_operator( angles, l_x, n_dir=None, l_det=None, subpix=1, offset=0, pixels_mask=None ):
+	"""
+	Compute the tomography design matrix.
+		
+	Parameters
+	----------
+	angles : array of floats
+		angles at which projections will be taken
+	
+	l_x : int
+		linear size of image array
+	
+	n_dir : int, default l_x
+		number of angles at which projections are acquired. n_dir projection 
+		angles are regularly spaced between 0 and 180.
+		
+	l_det : int, default is l_x
+		number of pixels in the detector. If l_det is not specified, we suppose 
+		that l_det = l_x.
+	
+	subpix : int, default 1
+		number of linear subdivisions used to compute the projection of one 
+		image pixel onto a detector pixel.
+	
+	offset : int, default 0
+		width of the strip of image pixels not covered by the detector.
+	
+	pixels_mask : 1-d ndarray of size l_x**2
+		mask of pixels to keep in the matrix (useful for to removeing pixels 
+		inside or outside of a circle, for example)
+		
+	Returns
+	-------
+	p : sparse matrix of shape (n_dir l_x, l_x**2), in csr format Tomography 
+	design matrix. The csr (compressed sparse row) allows for efficient 
+	subsequent matrix multiplication. The dtype of the elements is float32, in 
+	order to save memory.	
+	"""
+	if l_det is None:
+		l_det = l_x
+	X, Y = _generate_center_coordinates(subpix*l_x)
+	X *= 1./subpix
+	Y *= 1./subpix
+	Xbig, Ybig = _generate_center_coordinates(l_det)
+	Xbig *= (l_x - 2*offset) / float(l_det)
+	orig = Xbig.min()
+	labels = None
+	if subpix > 1:
+		# Block-group subpixels
+		Xlab, Ylab = np.mgrid[:subpix * l_x, :subpix * l_x]
+		labels = (l_x * (Xlab / subpix) + Ylab / subpix).ravel()
+	if n_dir is None:
+		n_dir = l_x
+	weights, data_inds, detector_inds = [], [], []
+	# Indices for data pixels. For each data, one data pixel
+	# will contribute to the value of two detector pixels.
+	for i, angle in enumerate(angles):
+		# rotate data pixels centers
+		Xrot = np.cos(angle) * X - np.sin(angle) * Y
+		# compute linear interpolation weights
+		inds, dat_inds, w = _weights_fast(Xrot, dx=(l_x - 2*offset)/float(l_det), orig=orig, labels=labels)
+		# crop projections outside the detector
+		mask = np.logical_and(inds >= 0, inds < l_det)
+		weights.append(w[mask])
+		detector_inds.append((inds[mask] + i * l_det).astype(np.int32))
+		data_inds.append(dat_inds[mask])
+	weights = np.concatenate(weights)
+	weights /= subpix**2
+	detector_inds = np.concatenate(detector_inds)
+	data_inds = np.concatenate(data_inds)
+	if pixels_mask is not None:
+		if pixels_mask.ndim > 1:
+			pixels_mask = pixels_mask.ravel()
+		mask = pixels_mask[data_inds]
+		data_inds = data_inds[mask]
+		data_inds = rank_order(data_inds)[0]
+		detector_inds = detector_inds[mask]
+		weights = weights[mask]
+	proj_operator = sparse.coo_matrix((weights, (detector_inds, data_inds)))
+	return sparse.csr_matrix(proj_operator)
 
 
-def fista_tv(y, beta, niter, H, verbose=0, mask=None):
+def _generate_center_coordinates(l_x):
+	"""
+	Compute the coordinates of pixels centers for an image of
+	linear size l_x
+	"""
+	l_x = float(l_x)
+	X, Y = np.mgrid[:l_x, :l_x]
+	center = l_x / 2.
+	X += 0.5 - center
+	Y += 0.5 - center
+	return X, Y
+
+
+def _weights_fast(x, dx=1, orig=0, labels=None):
+	"""
+	Compute linear interpolation weights for projection array `x`
+	and regularly spaced detector pixels separated by `dx` and
+	starting at `orig`.
+	"""
+	x = np.ravel(x)
+	floor_x = np.floor((x - orig) / dx).astype(np.int32)
+	alpha = ((x - orig - floor_x * dx) / dx).astype(np.float32)
+	inds = np.hstack((floor_x, floor_x + 1))
+	weights = np.hstack((1 - alpha, alpha))
+	data_inds = np.arange(x.size, dtype=np.int32)
+	data_inds = np.hstack((data_inds, data_inds))
+	if labels is not None:
+		data_inds = np.hstack((labels, labels))
+		order = np.argsort(inds)
+		inds, data_inds, weights = inds[order], data_inds[order], weights[order]
+		steps = np.nonzero(np.diff(inds) > 0)[0] + 1
+		steps = np.concatenate(([0], steps))
+		inds_s, data_inds_s, weights_s = [], [], []
+		for i in range(len(steps) - 1):
+			d, w = data_inds[steps[i]:steps[i+1]], weights[steps[i]:steps[i+1]]
+			count = np.bincount(d, weights=w)
+			mask = count>0
+			w = count[mask]
+			weights_s.append(w)
+			datind = np.arange(len(mask))[mask] 
+			data_inds_s.append(datind)
+			detind = inds[steps[i]]*np.ones(mask.sum()) 
+			inds_s.append(detind)
+		inds = np.concatenate(inds_s)
+		data_inds = np.concatenate(data_inds_s)
+		weights = np.concatenate(weights_s)
+	return inds, data_inds, weights
+
+
+# FISTA ALGORITHM
+def fista_tv(options, angles, y, beta, niter, H, verbose=0, mask=None):
 	"""
 	TV regression using FISTA algorithm
 	(Fast Iterative Shrinkage/Thresholding Algorithm)
@@ -266,7 +425,7 @@ def fista_tv(y, beta, niter, H, verbose=0, mask=None):
 		l = len(mask)
 	else:
 		l = int(np.sqrt(n_pix))
-	n_angles = n_meas / l
+	n_angles = len(angles)
 	Ht = sparse.csr_matrix(H.transpose())
 	x0 = np.zeros(n_pix)[:, np.newaxis]
 	res, energies = [], []
@@ -293,7 +452,12 @@ def fista_tv(y, beta, niter, H, verbose=0, mask=None):
 		u_old = u_n
 		res.append(x)
 		data_fidelity_err = 1./2 * (err**2).sum()
-		tv_value = beta * tv_norm(x)
+		if options.norm == 'anisotropic':
+			tv_value = beta * tv_norm_anisotropic(x)
+		elif options.norm == 'l0':
+			tv_value = beta * tv_l0_norm(x)
+		else:
+			tv_value = beta * tv_norm(x)
 		energy = data_fidelity_err + tv_value
 		energies.append(energy)
 		if mask is not None:
@@ -301,469 +465,6 @@ def fista_tv(y, beta, niter, H, verbose=0, mask=None):
 		else:
 			x = x.ravel()[:, np.newaxis]
 	return res, energies
-
-
-def get_img_data( options, imgnum=0 ):
-	"""Read a tomogram as a numpy array return its dimensions"""
-	if options.tiltseries != None:
-		tomo = EMData( options.tiltseries , imgnum )
-		outpath = options.path + "/input.hdf"
-		tomo.write_image( outpath )
-		options.testdata = outpath
-	else:
-		tomo = EMData( options.testdata , imgnum )
-	dim = [tomo.get_xsize(), tomo.get_ysize(), tomo.get_zsize()]
-	tomo_array = tomo.numpy()
-	return tomo_array.astype(np.float32), dim, options
-
-
-def tv_l0_norm( img ):
-	"""Compute the (isotropic) TV norm of a 2D image"""
-	grad_x1 = np.diff(im, axis=0)
-	grad_x2 = np.diff(im, axis=1)
-	return (grad_x1[:, :-1]**2 + grad_x2[:-1, :]**2 > 0).mean()
-
-
-def compute_sparsity( img ):
-	l_x = len(img)
-	X, Y = np.ogrid[:l_x, :l_x]
-	mask = ((X - l_x/2)**2 + (Y - l_x/2)**2 <= (l_x/2)**2)
-	grad1 = ndimage.morphological_gradient(img, footprint=np.ones((3, 3)))
-	grad2 = ndimage.morphological_gradient(img, footprint=ndimage.generate_binary_structure(2, 1))
-	return (grad1[mask] > 0).mean(), (grad2[mask] > 0).mean()
-
-
-def generate_synthetic_data(l_x=128, seed=None, crop=True, n_pts=25):
-	if seed is None:
-		seed = 0
-	# Fix the seed for reproducible results
-	rs = np.random.RandomState(seed)
-	x, y = np.ogrid[:l_x, :l_x]
-	mask = np.zeros((l_x, l_x))
-	points = l_x * rs.rand(2, n_pts)
-	mask[(points[0]).astype(np.int), (points[1]).astype(np.int)] = 1
-	mask = ndimage.gaussian_filter(mask, sigma=l_x / (4. * np.sqrt(n_pts)))
-	# Limit the non-zero data to a central circle
-	if crop:
-		mask_outer = (x - l_x / 2) ** 2 + (y - l_x / 2) ** 2 < (l_x / 2) ** 2
-		mask = np.logical_and(mask > mask.mean(), mask_outer)
-	else:
-		mask = mask > mask.mean()
-	return mask.astype(np.float32)
-
-
-def makepath(options, stem=''):
-	if options.verbose > 5: print "makepath function called"
-	if options.path and ("/" in options.path or "#" in options.path):
-		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. Please edit your --path argument accordingly."
-		sys.exit(1)
-	if not options.path:
-		options.path = stem + '_01'
-		if options.verbose > 5:
-			print "--path was not specified, therefore it will have the default value"
-	files=os.listdir(os.getcwd())
-	while options.path in files:
-		if '_' not in options.path:
-			options.path = options.path + '_00'
-		else:
-			jobtag=''
-			components=options.path.split('_')
-			if components[-1].isdigit():
-				components[-1] = str(int(components[-1])+1).zfill(2)
-			else:
-				components.append('00')
-			options.path = '_'.join(components)
-	if options.verbose > 5: print "The new options.path is", options.path
-	if options.path not in files:
-		if options.verbose > 5:
-			print "Creating the following path: ", options.path
-		os.system('mkdir ' + options.path)
-	return options
-
-
-def build_projection_operator( angles, l_x, n_dir=None, l_det=None, subpix=1, offset=0, pixels_mask=None ):
-	"""
-	Compute the tomography design matrix.
-		
-	Parameters
-	----------
-	
-	l_x : int
-		linear size of image array
-	
-	n_dir : int, default l_x
-		number of angles at which projections are acquired. n_dir projection angles are regularly spaced between 0 and 180.
-		
-	l_det : int, default is l_x
-		number of pixels in the detector. If l_det is not specified, we suppose that l_det = l_x.
-	
-	subpix : int, default 1
-		number of linear subdivisions used to compute the projection of one image pixel onto a detector pixel.
-	
-	offset : int, default 0
-		width of the strip of image pixels not covered by the detector.
-	
-	pixels_mask : 1-d ndarray of size l_x**2
-		mask of pixels to keep in the matrix (useful for to removeing pixels inside or outside of a circle, for example)
-		
-	Returns
-	-------
-	p : sparse matrix of shape (n_dir l_x, l_x**2), in csr format Tomography design matrix. The csr (compressed sparse row) allows for efficient subsequent matrix multiplication. The dtype of the elements is float32, in order to save memory.	
-	"""
-	if l_det is None:
-		l_det = l_x
-	X, Y = _generate_center_coordinates(subpix*l_x)
-	X *= 1./subpix
-	Y *= 1./subpix
-	Xbig, Ybig = _generate_center_coordinates(l_det)
-	Xbig *= (l_x - 2*offset) / float(l_det)
-	orig = Xbig.min()
-	labels = None
-	if subpix > 1:
-		# Block-group subpixels
-		Xlab, Ylab = np.mgrid[:subpix * l_x, :subpix * l_x]
-		labels = (l_x * (Xlab / subpix) + Ylab / subpix).ravel()
-	if n_dir is None:
-		n_dir = l_x
-	weights, data_inds, detector_inds = [], [], []
-	# Indices for data pixels. For each data, one data pixel
-	# will contribute to the value of two detector pixels.
-	for i, angle in enumerate(angles):
-		# rotate data pixels centers
-		Xrot = np.cos(angle) * X - np.sin(angle) * Y
-		# compute linear interpolation weights
-		inds, dat_inds, w = _weights_fast(Xrot, dx=(l_x - 2*offset)/float(l_det), orig=orig, labels=labels)
-		# crop projections outside the detector
-		mask = np.logical_and(inds >= 0, inds < l_det)
-		weights.append(w[mask])
-		detector_inds.append((inds[mask] + i * l_det).astype(np.int32))
-		data_inds.append(dat_inds[mask])
-	weights = np.concatenate(weights)
-	weights /= subpix**2
-	detector_inds = np.concatenate(detector_inds)
-	data_inds = np.concatenate(data_inds)
-	if pixels_mask is not None:
-		if pixels_mask.ndim > 1:
-			pixels_mask = pixels_mask.ravel()
-		mask = pixels_mask[data_inds]
-		data_inds = data_inds[mask]
-		data_inds = rank_order(data_inds)[0]
-		detector_inds = detector_inds[mask]
-		weights = weights[mask]
-	proj_operator = sparse.coo_matrix((weights, (detector_inds, data_inds)))
-	return sparse.csr_matrix(proj_operator)
-
-
-def _weights_fast(x, dx=1, orig=0, labels=None):
-	"""
-	Compute linear interpolation weights for projection array `x`
-	and regularly spaced detector pixels separated by `dx` and
-	starting at `orig`.
-	"""
-	x = np.ravel(x)
-	floor_x = np.floor((x - orig) / dx).astype(np.int32)
-	alpha = ((x - orig - floor_x * dx) / dx).astype(np.float32)
-	inds = np.hstack((floor_x, floor_x + 1))
-	weights = np.hstack((1 - alpha, alpha))
-	data_inds = np.arange(x.size, dtype=np.int32)
-	data_inds = np.hstack((data_inds, data_inds))
-	if labels is not None:
-		data_inds = np.hstack((labels, labels))
-		order = np.argsort(inds)
-		inds, data_inds, weights = inds[order], data_inds[order], weights[order]
-		steps = np.nonzero(np.diff(inds) > 0)[0] + 1
-		steps = np.concatenate(([0], steps))
-		inds_s, data_inds_s, weights_s = [], [], []
-		for i in range(len(steps) - 1):
-			d, w = data_inds[steps[i]:steps[i+1]], weights[steps[i]:steps[i+1]]
-			count = np.bincount(d, weights=w)
-			mask = count>0
-			w = count[mask]
-			weights_s.append(w)
-			datind = np.arange(len(mask))[mask] 
-			data_inds_s.append(datind)
-			detind = inds[steps[i]]*np.ones(mask.sum()) 
-			inds_s.append(detind)
-		inds = np.concatenate(inds_s)
-		data_inds = np.concatenate(data_inds_s)
-		weights = np.concatenate(weights_s)
-	return inds, data_inds, weights
-
-
-def _weights(x, dx=1, orig=0, ravel=True, labels=None):
-	"""
-	Compute linear interpolation weights for projection array `x`
-	and regularly spaced detector pixels separated by `dx` and
-	starting at `orig`.
-	"""
-	if ravel:
-		x = np.ravel(x)
-	floor_x = np.floor((x - orig) / dx).astype(np.int32)
-	alpha = ((x - orig - floor_x * dx) / dx).astype(np.float32)
-	inds = np.hstack((floor_x, floor_x + 1))
-	weights = np.hstack((1 - alpha, alpha))
-	data_inds = np.arange(x.size, dtype=np.int32)
-	data_inds = np.hstack((data_inds, data_inds))
-	if labels is not None:
-		data_inds = np.hstack((labels, labels))
-		w = np.histogram2d(data_inds, inds,
-			bins=(np.arange(data_inds.max()+1.5), np.arange(inds.max()+1.5)),
-			weights=weights)[0]
-		data_inds, inds = np.argwhere(w>0).T
-		weights = w[w>0]
-	return inds, data_inds, weights
-
-
-def _weights_nn(x, dx=1, orig=0, ravel=True):
-	"""
-	Nearest-neighbour interpolation
-	"""
-	if ravel:
-		x = np.ravel(x)
-	floor_x = np.floor(x - orig)
-	return floor_x.astype(np.float32)
-
-
-def _generate_center_coordinates(l_x):
-	"""
-	Compute the coordinates of pixels centers for an image of
-	linear size l_x
-	"""
-	l_x = float(l_x)
-	X, Y = np.mgrid[:l_x, :l_x]
-	center = l_x / 2.
-	X += 0.5 - center
-	Y += 0.5 - center
-	return X, Y
-
-
-## ----------------- Direct projection method -------------------------
-# (without computing explicitely the design matrix)
-def back_projection(projections):
-	"""
-	Back-projection (without filtering)
-	
-	Parameters
-	----------
-	projections: ndarray of floats, of shape n_dir x l_x
-		Each line of projections is the projection of a data image
-		acquired at a different angle. The projections angles are
-		supposed to be regularly spaced between 0 and 180.
-	
-	Returns
-	-------
-	recons: ndarray of shape l_x x l_x
-		Reconstructed array
-	
-	Notes
-	-------
-	A linear interpolation is used when rotating the back-projection.
-	This function uses ``scipy.ndimage.rotate`` for the rotation.
-	"""
-	n_dir, l_x = projections.shape
-	recons = np.zeros((l_x, l_x), dtype=np.float)
-	angles = np.linspace(0, 180, n_dir, endpoint=False)
-	for angle, line in zip(angles, projections):
-		# BP: repeat the detector line along the direction of the beam
-		tmp = np.tile(line[:, np.newaxis], (1, l_x))
-		# Rotate the back-projection of the detector line, and add
-		# it to the reconstructed image
-		recons += ndimage.rotate(tmp, -angle, order=1, reshape=False)
-	return recons
-
-
-def projection(im, n_dir=None, interpolation='nearest'):
-	"""
-	Tomography projection of an image along n_dir directions.
-	
-	Parameters
-	----------
-	im : ndarray of square shape l_x x l_x
-		Image to be projected
-	
-	n_dir : int
-		Number of projection angles. Projection angles are regularly spaced
-		between 0 and 180.
-	
-	interpolation : str, {'interpolation', 'nearest'}
-		Interpolation method used during the projection. Default is
-		'nearest'.
-	
-	Returns
-	-------
-	projections: ndarray of shape n_dir x l_x
-		Array of projections.
-	
-	Notes
-	-----
-	The centers of the data pixels are projected onto the detector, then
-	the contribution of a data pixel to detector pixels is computed
-	by nearest neighbor or linear interpolation. The function 
-	np.bincount`` is used to compute the projection, with weights
-	corresponding to the values of data pixels, multiplied by interpolation
-	weights in the case of linear interpolation.
-	"""
-	l_x = len(im)
-	if n_dir is None:
-		n_dir = l_x
-	im = im.ravel()
-	projections = np.empty((n_dir, l_x))
-	X, Y = _generate_center_coordinates(l_x)
-	angles = np.linspace(0, np.pi, n_dir, endpoint=False)
-	for i, angle in enumerate(angles):
-		Xrot = np.cos(angle) * X - np.sin(angle) * Y 
-		if interpolation == 'nearest':
-			inds = _weights_nn(Xrot, dx=1, orig=X.min())
-			mask = inds>= 0
-			w = im[mask]
-		elif interpolation == 'linear':
-			inds, _, w = _weights(Xrot, dx=1, orig=X.min())
-			w[:l_x**2] *= im
-			w[l_x**2:] *= im
-			mask = inds >= 0
-			w = w[mask]
-		projections[i] = np.bincount(inds[mask].astype(np.int), weights=w)[:l_x]
-	return projections
-
-
-# -----------------Filtered back-projection----------------------
-def filter_projections(proj_set, reg=False):
-	"""
-	Ramp filter used in the filtered back projection.
-	We use zero padding.
-	
-	Parameters
-	----------
-	proj_set: 2-d ndarray
-		each line is one projection (1 line of the detector) to be filtered
-	
-	Returns
-	-------
-	
-	res: 2-d ndarray
-		filtered projections
-	
-	Notes
-	-----
-	
-	We use zero padding. However, we do not use any filtering (hanning, etc.)
-	in the FFT yet.
-	"""
-	nb_angles, l_x = proj_set.shape
-	#Assume l is even for now
-	ramp = 1./l_x * np.hstack((np.arange(l_x), np.arange(l_x, 0, -1)))
-	return fftpack.ifft(ramp * fftpack.fft(proj_set, 2*l_x, axis=1), axis=1)[:,:l_x]
-
-
-def rank_order(image):
-	"""Return an image of the same shape where each pixel is the index of the pixel value in the ascending order of the unique values of `image`, aka the rank-order value.
-	
-	Parameters
-	----------
-	image: ndarray
-	
-	Returns
-	-------
-	labels: ndarray of type np.uint32, of shape image.shape
-		New array where each pixel has the rank-order value of the corresponding pixel in `image`. Pixel values are between 0 and n - 1, where n is the number of distinct unique values in ''image`.
-	
-	original_values: 1-d ndarray
-		Unique original values of `image`
-	
-	Examples
-	--------
-	>>> a = np.array([[1, 4, 5], [4, 4, 1], [5, 1, 1]])
-	>>> a
-	array([[1, 4, 5],
-		[4, 4, 1],
-		[5, 1, 1]])
-	>>> rank_order(a)
-	(array([[0, 1, 2],
-		[1, 1, 0],
-		[2, 0, 0]], dtype=uint32), array([1, 4, 5]))
-	>>> b = np.array([-1., 2.5, 3.1, 2.5])
-	>>> rank_order(b)
-	(array([0, 1, 2, 1], dtype=uint32), array([-1. ,  2.5,  3.1]))
-	"""
-	flat_image = image.ravel()
-	sort_order = flat_image.argsort().astype(numpy.uint32)
-	flat_image = flat_image[sort_order]
-	sort_rank = numpy.zeros_like(sort_order)
-	is_different = flat_image[:-1] != flat_image[1:]
-	numpy.cumsum(is_different, out=sort_rank[1:])
-	original_values = numpy.zeros((sort_rank[-1] + 1,), image.dtype)
-	original_values[0] = flat_image[0]
-	original_values[1:] = flat_image[1:][is_different]
-	int_image = numpy.zeros_like(sort_order)
-	int_image[sort_order] = sort_rank
-	return (int_image.reshape(image.shape), original_values)
-
-def div(grad):
-	""" Compute divergence of image gradient """
-	res = np.zeros(grad.shape[1:])
-	for d in range(grad.shape[0]):
-		this_grad = np.rollaxis(grad[d], d)
-		this_res = np.rollaxis(res, d)
-		this_res[:-1] += this_grad[:-1]
-		this_res[1:-1] -= this_grad[:-2]
-		this_res[-1] -= this_grad[-2]
-	return res
-
-
-def gradient(img):
-	""" 
-	Compute gradient of an image
-	
-	Parameters
-	===========
-	img: ndarray
-		N-dimensional image
-	
-	Returns
-	=======
-	gradient: ndarray
-		Gradient of the image: the i-th component along the first axis is the gradient along the i-th axis of the original array img
-	"""
-	shape = [img.ndim, ] + list(img.shape)
-	gradient = np.zeros(shape, dtype=img.dtype)
-	# 'Clever' code to have a view of the gradient with dimension i stop
-	# at -1
-	slice_all = [0, slice(None, -1),]
-	for d in range(img.ndim):
-		gradient[slice_all] = np.diff(img, axis=d)
-		slice_all[0] = d + 1
-		slice_all.insert(1, slice(None))
-	return gradient
-
-
-def _projector_on_dual(grad):
-	"""
-	modifies in place the gradient to project iton the L2 unit ball
-	"""
-	norm = np.maximum(np.sqrt(np.sum(grad**2, 0)), 1.)
-	for grad_comp in grad:
-		grad_comp /= norm
-	return grad
-
-
-def dual_gap(im, new, gap, weight):
-	"""
-	dual gap of total variation denoising
-	see "Total variation regularization for fMRI-based prediction of behavior", 
-	by Michel et al. (2011) for a derivation of the dual gap
-	"""
-	im_norm = (im**2).sum()
-	gx, gy = np.zeros_like(new), np.zeros_like(new)
-	gx[:-1] = np.diff(new, axis=0)
-	gy[:, :-1] = np.diff(new, axis=1)
-	if im.ndim == 3:
-		gz = np.zeros_like(new)
-		gz[..., :-1] = np.diff(new, axis=2)
-		tv_new = 2 * weight * np.sqrt(gx**2 + gy**2 + gz**2).sum()
-	else:
-		tv_new = 2 * weight * np.sqrt(gx**2 + gy**2).sum()
-	dual_gap = (gap**2).sum() + tv_new - im_norm + (new**2).sum()
-	return 0.5 / im_norm * dual_gap
 
 
 def tv_denoise_fista(im, weight=50, eps=5.e-5, n_iter_max=200, check_gap_frequency=3):
@@ -844,40 +545,339 @@ def tv_denoise_fista(im, weight=50, eps=5.e-5, n_iter_max=200, check_gap_frequen
 	return new
 
 
+# TV NORMS
+def tv_norm(img):
+	"""Compute the (isotropic) TV norm of an image"""
+	grad_x1 = np.diff(img, axis=0)
+	grad_x2 = np.diff(img, axis=1)
+	return np.sqrt(grad_x1[:, :-1]**2 + grad_x2[:-1, :]**2).sum()
+
 def tv_l0_norm( img ):
 	"""Compute the (isotropic) TV norm of a 2D image"""
-	grad_x1 = np.diff(im, axis=0)
-	grad_x2 = np.diff(im, axis=1)
+	grad_x1 = np.diff(img, axis=0)
+	grad_x2 = np.diff(img, axis=1)
 	return (grad_x1[:, :-1]**2 + grad_x2[:-1, :]**2 > 0).mean()
 
-
-def compute_sparsity( img ):
-	l_x = len(img)
-	X, Y = np.ogrid[:l_x, :l_x]
-	mask = ((X - l_x/2)**2 + (Y - l_x/2)**2 <= (l_x/2)**2)
-	grad1 = ndimage.morphological_gradient(img, footprint=np.ones((3, 3)))
-	grad2 = ndimage.morphological_gradient(img, footprint=ndimage.generate_binary_structure(2, 1))
-	return (grad1[mask] > 0).mean(), (grad2[mask] > 0).mean()
+def tv_norm_anisotropic( img ):
+	"""Compute the anisotropic TV norm of an image"""
+	grad_x1 = np.diff(img, axis=0)
+	grad_x2 = np.diff(img, axis=1)
+	return np.abs(grad_x1[:, :-1]).sum() + np.abs(grad_x2[:-1, :]).sum()
 
 
-def generate_synthetic_data(l_x=128, seed=None, crop=True, n_pts=25):
-	if seed is None:
-		seed = 0
-	# Fix the seed for reproducible results
-	rs = np.random.RandomState(seed)
-	x, y = np.ogrid[:l_x, :l_x]
-	mask = np.zeros((l_x, l_x))
-	points = l_x * rs.rand(2, n_pts)
-	mask[(points[0]).astype(np.int), (points[1]).astype(np.int)] = 1
-	mask = ndimage.gaussian_filter(mask, sigma=l_x / (4. * np.sqrt(n_pts)))
-	# Limit the non-zero data to a central circle
-	if crop:
-		mask_outer = (x - l_x / 2) ** 2 + (y - l_x / 2) ** 2 < (l_x / 2) ** 2
-		mask = np.logical_and(mask > mask.mean(), mask_outer)
+def rank_order(image):
+	"""Return an image of the same shape where each pixel is the index of the 
+	pixel value in the ascending order of the unique values of `image`, aka the 
+	rank-order value.
+	
+	Parameters
+	----------
+	image: ndarray
+	
+	Returns
+	-------
+	labels: ndarray of type np.uint32, of shape image.shape
+		New array where each pixel has the rank-order value of the corresponding 
+		pixel in `image`. Pixel values are between 0 and n - 1, where n is the 
+		number of distinct unique values in ''image`.
+	
+	original_values: 1-d ndarray
+		Unique original values of `image`
+	
+	Examples
+	--------
+	>>> a = np.array([[1, 4, 5], [4, 4, 1], [5, 1, 1]])
+	>>> a
+	array([[1, 4, 5],
+		[4, 4, 1],
+		[5, 1, 1]])
+	>>> rank_order(a)
+	(array([[0, 1, 2],
+		[1, 1, 0],
+		[2, 0, 0]], dtype=uint32), array([1, 4, 5]))
+	>>> b = np.array([-1., 2.5, 3.1, 2.5])
+	>>> rank_order(b)
+	(array([0, 1, 2, 1], dtype=uint32), array([-1. ,  2.5,  3.1]))
+	"""
+	flat_image = image.ravel()
+	sort_order = flat_image.argsort().astype(numpy.uint32)
+	flat_image = flat_image[sort_order]
+	sort_rank = numpy.zeros_like(sort_order)
+	is_different = flat_image[:-1] != flat_image[1:]
+	numpy.cumsum(is_different, out=sort_rank[1:])
+	original_values = numpy.zeros((sort_rank[-1] + 1,), image.dtype)
+	original_values[0] = flat_image[0]
+	original_values[1:] = flat_image[1:][is_different]
+	int_image = numpy.zeros_like(sort_order)
+	int_image[sort_order] = sort_rank
+	return (int_image.reshape(image.shape), original_values)
+
+
+def div(grad):
+	""" Compute divergence of image gradient """
+	res = np.zeros(grad.shape[1:])
+	for d in range(grad.shape[0]):
+		this_grad = np.rollaxis(grad[d], d)
+		this_res = np.rollaxis(res, d)
+		this_res[:-1] += this_grad[:-1]
+		this_res[1:-1] -= this_grad[:-2]
+		this_res[-1] -= this_grad[-2]
+	return res
+
+
+def gradient(img):
+	""" 
+	Compute gradient of an image
+	
+	Parameters
+	===========
+	img: ndarray
+		N-dimensional image
+	
+	Returns
+	=======
+	gradient: ndarray
+		Gradient of the image: the i-th component along the first axis is the 
+		gradient along the i-th axis of the original array img
+	"""
+	shape = [img.ndim, ] + list(img.shape)
+	gradient = np.zeros(shape, dtype=img.dtype)
+	# 'Clever' code to have a view of the gradient with dimension i stop at -1
+	slice_all = [0, slice(None, -1),]
+	for d in range(img.ndim):
+		gradient[slice_all] = np.diff(img, axis=d)
+		slice_all[0] = d + 1
+		slice_all.insert(1, slice(None))
+	return gradient
+
+
+def _projector_on_dual(grad):
+	"""
+	Modifies in place the gradient to project iton the L2 unit ball
+	"""
+	norm = np.maximum(np.sqrt(np.sum(grad**2, 0)), 1.)
+	for grad_comp in grad:
+		grad_comp /= norm
+	return grad
+
+
+def dual_gap(im, new, gap, weight):
+	"""
+	dual gap of total variation denoising
+	see "Total variation regularization for fMRI-based prediction of behavior", 
+	by Michel et al. (2011) for a derivation of the dual gap
+	"""
+	im_norm = (im**2).sum()
+	gx, gy = np.zeros_like(new), np.zeros_like(new)
+	gx[:-1] = np.diff(new, axis=0)
+	gy[:, :-1] = np.diff(new, axis=1)
+	if im.ndim == 3:
+		gz = np.zeros_like(new)
+		gz[..., :-1] = np.diff(new, axis=2)
+		tv_new = 2 * weight * np.sqrt(gx**2 + gy**2 + gz**2).sum()
 	else:
-		mask = mask > mask.mean()
-	return mask.astype(np.float32)
+		tv_new = 2 * weight * np.sqrt(gx**2 + gy**2).sum()
+	dual_gap = (gap**2).sum() + tv_new - im_norm + (new**2).sum()
+	return 0.5 / im_norm * dual_gap
+
+
+def makepath(options, stem=''):
+	if options.verbose > 5: print "makepath function called"
+	if options.path and ("/" in options.path or "#" in options.path):
+		print "Path specifier should be the name of a subdirectory to use in the current directory."
+		print "Neither '/' or '#' can be included. Please edit your --path argument accordingly."
+		sys.exit(1)
+	if not options.path:
+		options.path = stem + '_01'
+		if options.verbose > 5:
+			print "--path was not specified, therefore it will have the default value"
+	files=os.listdir(os.getcwd())
+	while options.path in files:
+		if '_' not in options.path:
+			options.path = options.path + '_00'
+		else:
+			jobtag=''
+			components=options.path.split('_')
+			if components[-1].isdigit():
+				components[-1] = str(int(components[-1])+1).zfill(2)
+			else:
+				components.append('00')
+			options.path = '_'.join(components)
+	if options.verbose > 5: print "The new options.path is", options.path
+	if options.path not in files:
+		if options.verbose > 5:
+			print "Creating the following path: ", options.path
+		os.system('mkdir ' + options.path)
+	return options
 
 
 if __name__=="__main__":
 	main()
+
+
+# def compute_sparsity( img ):
+# 	l_x = len(img)
+# 	X, Y = np.ogrid[:l_x, :l_x]
+# 	mask = ((X - l_x/2)**2 + (Y - l_x/2)**2 <= (l_x/2)**2)
+# 	grad1 = ndimage.morphological_gradient(img, footprint=np.ones((3, 3)))
+# 	grad2 = ndimage.morphological_gradient(img, footprint=ndimage.generate_binary_structure(2, 1))
+# 	return (grad1[mask] > 0).mean(), (grad2[mask] > 0).mean()
+
+
+# def back_projection(projections, options):
+# 	"""
+# 	Back-projection (without filtering)
+# 	
+# 	Parameters
+# 	----------
+# 	projections: ndarray of floats, of shape n_dir x l_x
+# 		Each line of projections is the projection of a data image
+# 		acquired at a different angle. The projections angles are
+# 		supposed to be regularly spaced between 0 and 180.
+# 	
+# 	Returns
+# 	-------
+# 	recons: ndarray of shape l_x x l_x
+# 		Reconstructed array
+# 	
+# 	Notes
+# 	-------
+# 	A linear interpolation is used when rotating the back-projection.
+# 	This function uses ``scipy.ndimage.rotate`` for the rotation.
+# 	"""
+# 	n_dir, l_x = projections.shape
+# 	recons = np.zeros((l_x, l_x), dtype=np.float)
+# 	angles = get_angles(options)
+# 	for angle, line in zip(angles, projections):
+# 		# BP: repeat the detector line along the direction of the beam
+# 		tmp = np.tile(line[:, np.newaxis], (1, l_x))
+# 		# Rotate the back-projection of the detector line, and add
+# 		# it to the reconstructed image
+# 		recons += ndimage.rotate(tmp, -angle, order=1, reshape=False)
+# 	return recons
+
+
+# def projection(options, im, n_dir=None, interpolation='nearest'):
+# 	"""
+# 	Tomography projection of an image along n_dir directions.
+# 	
+# 	Parameters
+# 	----------
+# 	im : ndarray of square shape l_x x l_x
+# 		Image to be projected
+# 	
+# 	n_dir : int
+# 		Number of projection angles. Projection angles are regularly spaced
+# 		between 0 and 180.
+# 	
+# 	interpolation : str, {'interpolation', 'nearest'}
+# 		Interpolation method used during the projection. Default is
+# 		'nearest'.
+# 	
+# 	Returns
+# 	-------
+# 	projections: ndarray of shape n_dir x l_x
+# 		Array of projections.
+# 	
+# 	Notes
+# 	-----
+# 	The centers of the data pixels are projected onto the detector, then
+# 	the contribution of a data pixel to detector pixels is computed
+# 	by nearest neighbor or linear interpolation. The function 
+# 	np.bincount`` is used to compute the projection, with weights
+# 	corresponding to the values of data pixels, multiplied by interpolation
+# 	weights in the case of linear interpolation.
+# 	"""
+# 	l_x = len(im)
+# 	if n_dir is None:
+# 		n_dir = l_x
+# 	im = im.ravel()
+# 	projections = np.empty((n_dir, l_x))
+# 	X, Y = _generate_center_coordinates(l_x)
+# 	angles = get_angles(options)
+# 	for i, angle in enumerate(angles):
+# 		Xrot = np.cos(angle) * X - np.sin(angle) * Y 
+# 		if interpolation == 'nearest':
+# 			inds = _weights_nn(Xrot, dx=1, orig=X.min())
+# 			mask = inds>= 0
+# 			w = im[mask]
+# 		elif interpolation == 'linear':
+# 			inds, _, w = _weights(Xrot, dx=1, orig=X.min())
+# 			w[:l_x**2] *= im
+# 			w[l_x**2:] *= im
+# 			mask = inds >= 0
+# 			w = w[mask]
+# 		projections[i] = np.bincount(inds[mask].astype(np.int), weights=w)[:l_x]
+# 	return projections
+
+
+# # -----------------Filtered back-projection----------------------
+# def filter_projections(proj_set, reg=False):
+# 	"""
+# 	Ramp filter used in the filtered back projection.
+# 	We use zero padding.
+# 	
+# 	Parameters
+# 	----------
+# 	proj_set: 2-d ndarray
+# 		each line is one projection (1 line of the detector) to be filtered
+# 	
+# 	Returns
+# 	-------
+# 	
+# 	res: 2-d ndarray
+# 		filtered projections
+# 	
+# 	Notes
+# 	-----
+# 	
+# 	We use zero padding. However, we do not use any filtering (hanning, etc.)
+# 	in the FFT yet.
+# 	"""
+# 	nb_angles, l_x = proj_set.shape
+# 	#Assume l is even for now
+# 	ramp = 1./l_x * np.hstack((np.arange(l_x), np.arange(l_x, 0, -1)))
+# 	return fftpack.ifft(ramp * fftpack.fft(proj_set, 2*l_x, axis=1), axis=1)[:,:l_x]
+
+
+# def _weights(x, dx=1, orig=0, ravel=True, labels=None):
+# 	"""
+# 	Compute linear interpolation weights for projection array `x`
+# 	and regularly spaced detector pixels separated by `dx` and
+# 	starting at `orig`.
+# 	"""
+# 	if ravel:
+# 		x = np.ravel(x)
+# 	floor_x = np.floor((x - orig) / dx).astype(np.int32)
+# 	alpha = ((x - orig - floor_x * dx) / dx).astype(np.float32)
+# 	inds = np.hstack((floor_x, floor_x + 1))
+# 	weights = np.hstack((1 - alpha, alpha))
+# 	data_inds = np.arange(x.size, dtype=np.int32)
+# 	data_inds = np.hstack((data_inds, data_inds))
+# 	if labels is not None:
+# 		data_inds = np.hstack((labels, labels))
+# 		w = np.histogram2d(data_inds, inds,
+# 			bins=(np.arange(data_inds.max()+1.5), np.arange(inds.max()+1.5)),
+# 			weights=weights)[0]
+# 		data_inds, inds = np.argwhere(w>0).T
+# 		weights = w[w>0]
+# 	return inds, data_inds, weights
+
+
+# def _weights_nn(x, dx=1, orig=0, ravel=True):
+# 	"""
+# 	Nearest-neighbour interpolation
+# 	"""
+# 	if ravel:
+# 		x = np.ravel(x)
+# 	floor_x = np.floor(x - orig)
+# 	return floor_x.astype(np.float32)
+
+
+# def get_angles(options):
+# 	"""
+# 	Take a tilt angles file and return an array of its content as a numpy array 
+# 	of type float32.
+# 	"""
+# 	angles = np.asarray([ float( i ) for i in file( options.tlt , "r" ) ])
+# 	return angles.tolist()
