@@ -2519,7 +2519,7 @@ def get_softy(im):
 	return w,x
 
 
-# data - projections (scattered between cpus)
+# data - projections (scattered between cpus) or the volume.  If volume, just do the volume processing
 # options - the same for all cpus
 # return - volume the same for all cpus
 def do_volume(data, options, iter, mpi_comm):
@@ -2527,6 +2527,7 @@ def do_volume(data, options, iter, mpi_comm):
 	from mpi            import mpi_comm_rank
 	from reconstruction import recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
 	from utilities      import bcast_EMData_to_all
+	import types
 	
 	myid = mpi_comm_rank(mpi_comm)
 	sym  = options.sym
@@ -2536,15 +2537,18 @@ def do_volume(data, options, iter, mpi_comm):
 	snr       = options.snr
 	#=========================================================================
 	# volume reconstruction
-	if CTF: vol = recons3d_4nn_ctf_MPI(myid, data, snr, symmetry=sym, npad=npad, mpi_comm=mpi_comm)
-	else:   vol = recons3d_4nn_MPI    (myid, data,      symmetry=sym, npad=npad, mpi_comm=mpi_comm)
+	if( type(data) == types.ListType ):
+		if CTF: vol = recons3d_4nn_ctf_MPI(myid, data, snr, symmetry=sym, npad=npad, mpi_comm=mpi_comm)
+		else:   vol = recons3d_4nn_MPI    (myid, data,      symmetry=sym, npad=npad, mpi_comm=mpi_comm)
+	else:
+		vol = data
 
 	if myid == 0:
 		from morphology import threshold
 		from filter     import filt_tanl, filt_btwl
 		from utilities  import model_circle, get_image
 		if(options.mask3D == None):
-			nx = data[0].get_xsize()
+			nx = vol.get_xsize()
 			last_ring   = int(options.ou)
 			mask3D = model_circle(last_ring, nx, nx, nx)
 		elif(options.mask3D == "auto"):
@@ -2581,9 +2585,14 @@ def do_volume(data, options, iter, mpi_comm):
 	return vol
 
 
-# parameters: list of (all) projections | reference volume | ...
+# parameters: list of (all) projections | reference volume is not used, it is computed by the command from shrank data| ...
+#  The alignment done depends on nsoft:
+# 			 nsoft = 0 & an = -1: exhaustive deterministic
+# 			 nsoft = 0 & an > 0 : local deterministic
+# 			 nsoft = 1 shc
+# 			 nsoft >1  shc_multi
 #  Add reduction
-def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, log = None, nsoft = 3 ):
+def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi_comm = None, log = None, nsoft = 3 ):
 
 	from alignment       import Numrinit, prepare_refrings, proj_ali_incore,  proj_ali_incore_local, shc
 	from utilities       import bcast_number_to_all, bcast_EMData_to_all, 	wrap_mpi_gatherv, wrap_mpi_bcast, model_blank
@@ -2644,40 +2653,6 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 	last_ring   = int(ou)
 	max_iter    = int(ali3d_options.maxit)
 	center      = int(center)
-		
-	"""
-	if( type(ref_vol) is types.StringType ):
-		if(myid == main_node):
-			vol = get_im(ref_vol)
-	else:
-		vol = ref_vol
-
-	if(myid == main_node):
-		onx      = vol.get_xsize()
-		if(shrinkage == 1.0):  nx = onx
-		else:		
-			vol = resample(vol, shrinkage)
-			nx = vol.get_xsize()
-		from filter import filt_tanl
-		vol = filt_tanl(vol, 0.45, 0.1)  #  PREFILTER!!
-	else:
-		nx = 0
-		onx = 0
-	nx  = bcast_number_to_all(nx, source_node = main_node)
-	onx = bcast_number_to_all(onx, source_node = main_node)
-	if last_ring < 0:	last_ring = int(onx/2) - 2
-	if(shrinkage < 1.0):
-		first_ring = max(1, int(first_ring*shrinkage))
-		last_ring  = int(last_ring*shrinkage)
-		ali3d_options.ou = last_ring
-		ali3d_options.ir = first_ring
-	if(myid != main_node):  vol = model_blank(nx, nx, nx)
-	mpi_barrier(mpi_comm)
-	bcast_EMData_to_all(vol, myid, main_node)
-
-	numr	= Numrinit(first_ring, last_ring, rstep, "F")
-	mask2D  = model_circle(last_ring,nx,nx) - model_circle(first_ring,nx,nx)
-	"""
 
 	if( type(stack) is types.StringType ):
 		if myid == main_node:
@@ -2713,10 +2688,13 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 	nima = len(list_of_particles)
 
 	if myid == 7:
+		finfo = None
+		"""
 		import os
 		outdir = "./"
 		info_file = os.path.join(outdir, "progress%04d"%myid)
 		finfo = open(info_file, 'w')
+		"""
 	else:
 		finfo = None
 
@@ -2767,12 +2745,38 @@ def ali3d_base(stack, ref_vol, ali3d_options, shrinkage = 1.0, mpi_comm = None, 
 				data[im].set_attr('ctf', ctf_params)
 	del mask2D
 
+
+		
 	# Reference volume reconstruction
 	mpi_barrier(mpi_comm)
 	if myid == main_node:
 		start_time = time()
-	vol = do_volume(data, ali3d_options, 0, mpi_comm)
-	#if myid == main_node:  vol.write_image('soft/smvol%04d.hdf'%total_iter)
+	if( ref_vol is None):
+		vol = do_volume(data, ali3d_options, 0, mpi_comm)
+
+	else:
+		if( type(ref_vol) is types.StringType ):
+			if(myid == main_node):
+				vol = get_im(ref_vol)
+		else:
+			vol = ref_vol
+		if(myid == main_node):
+			i = vol.get_xsize()
+			if(i != nx):
+				terminate = float(i)/float(nx)
+			else:
+				terminate = 0.0
+		else:
+			terminate = 0.0
+		terminate = bcast_number_to_all(terminate, source_node = main_node)
+		if(terminate > 0.0):
+			if(myid == main_node):
+				#  this will work for both larger and smaller volume
+				vol = resample(vol, terminate)
+			else:
+				if(myid != main_node):  vol = model_blank(nx, nx, nx)
+		do_volume(vol, ali3d_options, total_iter, mpi_comm)
+
 	# log
 	if myid == main_node:
 		log.add("Dimensions used (nx, onx, first_ring, last_ring, shrinkage)  %5d     %5d     %5d     %5d     %6.3f\n"%(nx, onx, first_ring, last_ring, shrinkage))
