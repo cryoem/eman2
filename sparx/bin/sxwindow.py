@@ -40,78 +40,6 @@ from utilities import *
 from fundamentals import *
 from filter import *
 from global_def import *
-from distutils.extension import Extension
-
-def get_suffix_and_extension(db_dir, db_file):
-	db = js_open_dict(os.path.join(db_dir, db_file))
-	suffix    = str(db['suffix'])    # db['suffix'] is unicode, so need to call str()
-	extension = str(db['extension']) # db['extension'] is unicode, so need to call str()
-	
-	return suffix, extension
-
-def get_mic_base_names(options):
-	micnames = []
-	import glob
-	
-	for f in glob.glob(os.path.join(options.topdir, '*.hdf')):   # currently handles only hdf formatted micrographs
-			micnames.append(base_name(f))
-	return micnames
-
-def get_ctfs(options):
-
-	ctfs = read_text_row(options.importctf)
-	cterr = [options.defocuserror/100.0, options.astigmatismerror]
-
-	ctfp = [-1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]
-	for i in xrange(len(ctfs)):
-		smic = ctfs[i][-1].split('/')
-		ctfilename = (smic[-1].split('.'))[0]
-		if(ctfs[i][8]/ctfs[i][0] > cterr[0]):
-			print_msg('Defocus error %f exceeds the threshold. Micrograph %s rejected.\n'%(ctfs[i][8]/ctfs[i][0], ctfilename))
-			ctfs[i]=ctfp			
-		if(ctfs[i][10] > cterr[1] ):
-			ctfs[i][6] = 0.0
-			ctfs[i][7] = 0.0
-		ctfs[i] = generate_ctf(ctfs[i])
-
-	return ctfs
-
-def window_micrograph(options, basename, ctf):
-	suffix, extension = get_suffix_and_extension("e2boxercache","quality.json")
-	f_mic = os.path.join(options.topdir, basename + extension)
-	f_info = info_name(f_mic)
-			
-	otcl_images  = "bdb:%s/"%options.outdir + basename + suffix
-
-	box_size = options.box_size
-	mask = pad(model_circle(box_size//2, box_size, box_size), box_size, box_size, 1, 0.0)
-
-	im = get_im(f_mic)
-	x0 = im.get_xsize()//2  #  Floor division or integer division
-	y0 = im.get_ysize()//2
-		
-	coords = js_open_dict(f_info)["boxes"]
-	for j in range(len(coords)):
-
-		x = int(coords[j][0])
-		y = int(coords[j][1])
-
-		imn=Util.window(im, box_size, box_size, 1, x-x0, y-y0)
-		imn.set_attr('ptcl_source_image',f_mic)
-		imn.set_attr('ptcl_source_coord',[x,y])
-		stat = Util.infomask(imn, mask, False)   
-
-		imn = ramp(imn)
-		imn -= stat[0]
-		Util.mul_scalar(imn, 1.0/stat[1])
-		
-		imn.set_attr("ctf", ctf)
-		imn.set_attr("ctf_applied", 0)
-		
-		if options.output_pixel != options.input_pixel:
-			imn = resample(imn, options.input_pixel/options.output_pixel)
-		
-		imn.write_image(otcl_images, j)
 
 def window(data):
 	"""
@@ -145,95 +73,62 @@ def window(data):
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " --coords_dir=coords_dir  --importctf=ctf_file  --topdir=topdir  --box_size=box_size  --outdir=outdir  --outstack=outstack  --defocuserror=defocuserror  --astigmatismerror=astigmatismerror"
+	usage = progname + " --coords_dir=coords_dir  --importctf=ctf_file  --topdir=topdir  --input_pixel=input_pixel  --output_pixel=output_pixel"
 	
 	parser = OptionParser(usage, version=SPARXVERSION)
 
 	parser.add_option('--coords_dir',   dest='coordsdir',                help='Directory containing particle coordinates')
 # 	parser.add_option('--importctf',    dest='ctffile',                  help='File name with CTF parameters produced by sxcter.')
-	parser.add_option('--topdir',       dest='topdir',       default='./', help='Path name of directory containing relevant micrograph directories')
-	parser.add_option('--input_pixel',  type='float', dest='input_pixel',  default=1,  help='input pixel size')
-	parser.add_option('--output_pixel', type='float', dest='output_pixel', default=1,  help='output pixel size')
-# 	parser.add_option('--box_size',     dest='box_size',     type=int,   help='box size')
-	parser.add_option("--boxsize","-B",type=int,help="Box size in pixels",default=-1)
+# 	parser.add_option('--topdir',       dest='topdir',       default='', help='Path name of directory containing relevant micrograph directories')
+# 	parser.add_option('--input_pixel',  dest='input_pixel',  default=1,  help='input pixel size')
+# 	parser.add_option('--output_pixel', dest='output_pixel', default=1,  help='output pixel size')
+	parser.add_option('--box_size',     dest='box_size',     type=int,   help='box size')
 	parser.add_option('--outdir',     dest='outdir',      help='Output directory')
 	parser.add_option('--outstack',     dest='outstack',      help='Output stack name')
 
-	# import ctf estimates done using cter
-# 	parser.add_option("--input",              type="string",	default= None,     		  help="Input particles.")
-	parser.add_option("--importctf",          type="string",	default= None,     		  help="Name of the file containing CTF parameters produced by sxcter.")
-	parser.add_option("--defocuserror",       type="float",  	default=1000000.0,        help="Exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent.  The error is computed as (std dev defocus)/defocus*100%")
-	parser.add_option("--astigmatismerror",   type="float",  	default=360.0,            help="Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees.")
-
-	parser.add_option("--suffix",type='str',help="suffix which is appended to the names of output particle and coordinate files",default="_ptcls")
-	parser.add_option("--format", help="Format of the output particle images. For EMAN2 refinement must be HDF.", default="hdf")
-	parser.add_option("--write_ptcls",help="Write particles to disk",default=True)
-	parser.add_option("--write_dbbox",help="Write coordinate file (eman1 dbbox) files",default=True)
-	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_option("--invert",help="If writing outputt inverts pixel intensities",default=False)
-	parser.add_option("--norm", type=str,help="Normalization processor to apply to written particle images. Should be normalize, normalize.edgemean,etc.Specifc \"None\" to turn this off", default="normalize.edgemean")
-	parser.add_option("--exclude_edges",action="store_true",help="Don't generate output for any particles extending outside the micrograph",default=False)
-
 	(options, args) = parser.parse_args()
+	box_size = options.box_size
 	
-	if len(args) < 1:
+	if len(args) > 0:
 		print "\nusage: " + usage
 		print "Please run '" + progname + " -h' for detailed options\n"
 	else:
-		logid=E2init(sys.argv,options.ppid)
-		database="e2boxercache"
-		params = {}
-		params["filenames"] = args
-		params["suffix"] = options.suffix
-		params["format"] = options.format
-		db = js_open_dict(database+"/quality.json")
-		db['suffix'] = options.suffix
-		db['extension'] = os.path.splitext(args[0])[-1]
-	
-		total_progress = 0
-		if options.write_ptcls:total_progress += len(args)
-		if options.write_dbbox:total_progress += len(args)
-		progress = 0.0
-		E2progress(logid,0.0)
-	
-# 		if options.write_ptcls:
-		if True:
-			names = get_particle_outnames(params)
-			for i,output in enumerate(names):
-				input = args[i]
-				box_list = EMBoxList()
-				box_list.load_boxes_from_database(input)
-	
-				# if box type is GaussBoxer.AUTO_NAME, the pre-process and possibly decimate image using params in db
-				# only need to do this if write_ptcls is called on its own
-				if (len(box_list) > 0):
-					bx = box_list[0]
-	
-				# if box type is GaussBoxer.AUTO_NAME, the pre-process and possibly decimate image using params in db
-				# only need to do this if write_ptcls is called on its own
-				if (len(box_list) > 0):
-					bx = box_list[0]
-					
-	
-				box_list.write_particles(input,output,options.boxsize,options.invert,options.norm,options.exclude_edges)
-	
-	
-				progress += 1.0
-				E2progress(logid,progress/total_progress)
-	
-		if True:
-# 		if options.write_dbbox:
-			names = get_coord_outnames(params)
-	
-			for i,output in enumerate(names):
-				input = args[i]
-				box_list = EMBoxList()
-				box_list.load_boxes_from_database(input)
-				box_list.write_coordinates(input,output,options.boxsize) # input is redundant but it makes output interfaces generic
-	
-				progress += 1.0
-				E2progress(logid,progress/total_progress)
+		database = "e2boxercache"
+		db = js_open_dict(os.path.join(database,"quality.json"))
+		suffix    = str(db['suffix'])    # db['suffix'] is unicode, so need to call str()
+		extension = str(db['extension']) # db['extension'] is unicode, so need to call str()
+		info_suffix = '_info.json'
+		
+		mask = pad(model_circle(box_size//2, box_size, box_size), box_size, box_size, 1, 0.0)
+		
+		otcl_images  = "bdb:%s/"%options.outdir + options.outstack + suffix
+		iImg=0
+		for f in os.listdir(options.coordsdir):
+			if f.endswith(info_suffix):
+				name_num_base = f.strip(info_suffix)
+				name_im       = name_num_base + extension
+				name_info     = info_name(name_im)
+				
+				im = get_im(name_im)
+				x0 = im.get_xsize()//2  #  Floor division or integer division
+				y0 = im.get_ysize()//2
+				
+				coords = js_open_dict(name_info)["boxes"]
+				for i in range(len(coords)):
 
+					x = int(coords[i][0])
+					y = int(coords[i][1])
+					imn=Util.window(im, box_size, box_size, 1, x-x0, y-y0)
+					imn.set_attr('ptcl_source_image',name_im)
+					imn.set_attr('ptcl_source_coord',[coords[i][0],coords[i][1]])
+					stat = Util.infomask(imn, mask, False)   
+
+					imn = ramp(imn)
+					imn -= stat[0]
+					Util.mul_scalar(imn, 1.0/stat[1])
+					
+					imn.write_image(otcl_images, iImg)
+					iImg = iImg + 1
 
 if __name__=='__main__':
 	main()
