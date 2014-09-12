@@ -154,7 +154,8 @@ def main():
 	parser.add_option('--topdir',       dest='topdir',       default='./', help='Path name of directory containing relevant micrograph directories')
 	parser.add_option('--input_pixel',  type='float', dest='input_pixel',  default=1,  help='input pixel size')
 	parser.add_option('--output_pixel', type='float', dest='output_pixel', default=1,  help='output pixel size')
-	parser.add_option('--box_size',     dest='box_size',     type=int,   help='box size')
+# 	parser.add_option('--box_size',     dest='box_size',     type=int,   help='box size')
+	parser.add_option("--boxsize","-B",type=int,help="Box size in pixels",default=-1)
 	parser.add_option('--outdir',     dest='outdir',      help='Output directory')
 	parser.add_option('--outstack',     dest='outstack',      help='Output stack name')
 
@@ -164,17 +165,75 @@ def main():
 	parser.add_option("--defocuserror",       type="float",  	default=1000000.0,        help="Exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent.  The error is computed as (std dev defocus)/defocus*100%")
 	parser.add_option("--astigmatismerror",   type="float",  	default=360.0,            help="Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees.")
 
+	parser.add_option("--suffix",type='str',help="suffix which is appended to the names of output particle and coordinate files",default="_ptcls")
+	parser.add_option("--format", help="Format of the output particle images. For EMAN2 refinement must be HDF.", default="hdf")
+	parser.add_option("--write_ptcls",help="Write particles to disk",default=True)
+	parser.add_option("--write_dbbox",help="Write coordinate file (eman1 dbbox) files",default=True)
+	parser.add_option("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_option("--invert",help="If writing outputt inverts pixel intensities",default=False)
+	parser.add_option("--norm", type=str,help="Normalization processor to apply to written particle images. Should be normalize, normalize.edgemean,etc.Specifc \"None\" to turn this off", default="normalize.edgemean")
+	parser.add_option("--exclude_edges",action="store_true",help="Don't generate output for any particles extending outside the micrograph",default=False)
+
 	(options, args) = parser.parse_args()
 	
-	if len(args) > 0:
+	if len(args) < 1:
 		print "\nusage: " + usage
 		print "Please run '" + progname + " -h' for detailed options\n"
 	else:
-		
-		micnames = get_mic_base_names(options)
-		ctfs = get_ctfs(options)
-		for i in range(len(micnames)):
-			window_micrograph(options, micnames[i], ctfs[i])
+		logid=E2init(sys.argv,options.ppid)
+		database="e2boxercache"
+		params = {}
+		params["filenames"] = args
+		params["suffix"] = options.suffix
+		params["format"] = options.format
+		db = js_open_dict(database+"/quality.json")
+		db['suffix'] = options.suffix
+		db['extension'] = os.path.splitext(args[0])[-1]
+	
+		total_progress = 0
+		if options.write_ptcls:total_progress += len(args)
+		if options.write_dbbox:total_progress += len(args)
+		progress = 0.0
+		E2progress(logid,0.0)
+	
+# 		if options.write_ptcls:
+		if True:
+			names = get_particle_outnames(params)
+			for i,output in enumerate(names):
+				input = args[i]
+				box_list = EMBoxList()
+				box_list.load_boxes_from_database(input)
+	
+				# if box type is GaussBoxer.AUTO_NAME, the pre-process and possibly decimate image using params in db
+				# only need to do this if write_ptcls is called on its own
+				if (len(box_list) > 0):
+					bx = box_list[0]
+	
+				# if box type is GaussBoxer.AUTO_NAME, the pre-process and possibly decimate image using params in db
+				# only need to do this if write_ptcls is called on its own
+				if (len(box_list) > 0):
+					bx = box_list[0]
+					
+	
+				box_list.write_particles(input,output,options.boxsize,options.invert,options.norm,options.exclude_edges)
+	
+	
+				progress += 1.0
+				E2progress(logid,progress/total_progress)
+	
+		if True:
+# 		if options.write_dbbox:
+			names = get_coord_outnames(params)
+	
+			for i,output in enumerate(names):
+				input = args[i]
+				box_list = EMBoxList()
+				box_list.load_boxes_from_database(input)
+				box_list.write_coordinates(input,output,options.boxsize) # input is redundant but it makes output interfaces generic
+	
+				progress += 1.0
+				E2progress(logid,progress/total_progress)
+
 
 if __name__=='__main__':
 	main()
