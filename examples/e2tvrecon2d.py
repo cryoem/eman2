@@ -82,6 +82,7 @@ def main():
 	parser.add_argument("--subpix", default=1, type=int, help="Specify the number of linear subdivisions used to compute the projection of one image pixel onto a detector pixel.")
 	parser.add_argument("--fsc",action="store_true",default=False, help="Generate a fourier shell correlation plot comparing the input and output data.")
 	parser.add_argument("--norm",default=None, type=str, help="Choose between 'regular', 'anisotropic', and 'l0' TV norms. The default is 'regular'.")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID", default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	(options, args) = parser.parse_args()
 	
@@ -135,6 +136,7 @@ def main():
 		nslice = int(options.nslices)
 		print "Using tiltrange -%s, %s with %i slices."%(options.tiltrange, options.tiltrange, options.nslices)
 		tiltangles = np.linspace(tiltrange,-1.*tiltrange,nslices).tolist()
+		print tiltangles
 	else:
 		print "You must specify either --tlt or both --nslices and --tiltrange."
 		exit(1)
@@ -162,7 +164,7 @@ def main():
 	if options.output : outfile = options.output
 	
 	if options.verbose > 1: print "e2tvrecon.py"
-	logger=E2init(sys.argv)
+	logger=E2init(sys.argv,options.ppid)
 	
 	# Create new output directory for this instance
 	options = makepath( options, options.path)
@@ -290,7 +292,7 @@ def build_projection_operator( angles, l_x, n_dir=None, l_det=None, subpix=1, of
 	# will contribute to the value of two detector pixels.
 	for i, angle in enumerate(angles):
 		# rotate data pixels centers
-		Xrot = np.cos(angle) * X - np.sin(angle) * Y
+		Xrot = np.cos(angle*np.pi/180.) * X - np.sin(angle*np.pi/180.) * Y
 		# compute linear interpolation weights
 		inds, dat_inds, w = _weights_fast(Xrot, dx=(l_x - 2*offset)/float(l_det), orig=orig, labels=labels)
 		# crop projections outside the detector
