@@ -116,25 +116,30 @@ def main():
 			
 			otcl_images  = "bdb:%s/"%options.outdir + basename + suffix
 # 			print basename, f_info, f_mic
-			
+
 			im = get_im(f_mic)
+			im = ramp(im)
+				
 			x0 = im.get_xsize()//2  #  Floor division or integer division
 			y0 = im.get_ysize()//2
-				
+
 			coords = js_open_dict(f_info)["boxes"]
 			for i in range(len(coords)):
 
 				x = int(coords[i][0])
 				y = int(coords[i][1])
-				imn=Util.window(im, box_size, box_size, 1, x-x0, y-y0)
-				imn.set_attr('ptcl_source_image',f_mic)
-				imn.set_attr('ptcl_source_coord',[x,y])
-				stat = Util.infomask(imn, mask, False)   
 
-				imn = ramp(imn)
+				imn=Util.window(im, box_size, box_size, 1, x-x0, y-y0)
+
+				if options.output_pixel != options.input_pixel:
+					imn = resample(imn, options.input_pixel/options.output_pixel)
+			
+				stat = Util.infomask(imn, mask, False)   
 				imn -= stat[0]
 				Util.mul_scalar(imn, 1.0/stat[1])
 				
+				imn.set_attr('ptcl_source_image',f_mic)
+				imn.set_attr('ptcl_source_coord',[x,y])
 # 				ctfs = read_text_row(options.importctf)
 # 				cterr = [options.defocuserror/100.0, options.astigmatismerror]
 # 
@@ -151,9 +156,6 @@ def main():
 # 				
 # 				imn.set_attr("ctf",ctff)
 # 				imn.set_attr("ctf_applied", 0)
-				
-# 				if options.output_pixel != options.input_pixel:
-# 					imn = resample(imn, options.input_pixel/options.output_pixel)
 
 				imn.write_image(otcl_images, i)
 # 				imn.write_image(otcl_images, iImg)
