@@ -80,8 +80,8 @@ def main():
 	parser.add_option('--coords_dir',   dest='coordsdir',                help='Directory containing particle coordinates')
 # 	parser.add_option('--importctf',    dest='ctffile',                  help='File name with CTF parameters produced by sxcter.')
  	parser.add_option('--topdir',       dest='topdir',       default='./', help='Path name of directory containing relevant micrograph directories')
-# 	parser.add_option('--input_pixel',  dest='input_pixel',  default=1,  help='input pixel size')
-# 	parser.add_option('--output_pixel', dest='output_pixel', default=1,  help='output pixel size')
+	parser.add_option('--input_pixel',  dest='input_pixel',  default=1,  help='input pixel size')
+	parser.add_option('--output_pixel', dest='output_pixel', default=1,  help='output pixel size')
 	parser.add_option('--box_size',     dest='box_size',     type=int,   help='box size')
 	parser.add_option('--outdir',     dest='outdir',      help='Output directory')
 	parser.add_option('--outstack',     dest='outstack',      help='Output stack name')
@@ -135,6 +135,26 @@ def main():
 				imn -= stat[0]
 				Util.mul_scalar(imn, 1.0/stat[1])
 				
+# 				ctfs = read_text_row(options.importctf)
+# 				cterr = [options.defocuserror/100.0, options.astigmatismerror]
+# 
+# 				for i in xrange(len(ctfs)):
+# 					smic = ctfs[i][-1].split('/')
+# 					ctfilename = (smic[-1].split('.'))[0]
+# # 					if(ctfs[i][8]/ctfs[i][0] > cterr[0]):
+# # 						print_msg('Defocus error %f exceeds the threshold. Micrograph %s rejected.\n'%(ctfs[i][8]/ctfs[i][0], ctfilename))
+# # 						ctfs[i][0]=10.0
+# # 						continue
+# 					if(ctfs[i][10] > cterr[1] ):
+# 						ctfs[i][6] = 0.0
+# 						ctfs[i][7] = 0.0
+# 				
+# 				imn.set_attr("ctf",ctff)
+# 				imn.set_attr("ctf_applied", 0)
+				
+# 				if options.output_pixel != options.input_pixel:
+# 					imn = resample(imn, options.input_pixel/options.output_pixel)
+
 				imn.write_image(otcl_images, i)
 # 				imn.write_image(otcl_images, iImg)
 # 				iImg = iImg + 1
