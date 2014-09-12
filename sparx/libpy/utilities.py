@@ -2475,7 +2475,16 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 			del  dis
 	del  value
 	for im in xrange(image_start, image_end):
-		data[im-image_start].write_image(stack, data[im-image_start].get_attr_default('ID', im), EMUtil.ImageType.IMAGE_HDF, True)
+		#data[im-image_start].write_image(stack, data[im-image_start].get_attr_default('ID', im), EMUtil.ImageType.IMAGE_HDF, True)
+		nvalue = get_arb_params(data[im-image_start], list_params)
+		ISID = list_params.count('ID')
+		if(ISID == 0): imm = im
+		else:          imm = nvalue[list_params.index('ID')]
+		# read head, set params, and write it
+		dummy = EMData()
+		dummy.read_image(stack, imm, True)
+		set_arb_params(dummy, nvalue, list_params)
+		dummy.write_image(stack, dummy.get_attr_default('ID', im), EMUtil.ImageType.IMAGE_HDF, True)
 
 	for n in xrange(len(ldis)):
 		img_begin = ldis[n][0]
@@ -2502,10 +2511,8 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 					ilis += 12
 					nvalue.append(t)
 			ISID = list_params.count('ID')
-			if(ISID == 0):
-				imm = im
-			else:
-				imm = nvalue[list_params.index('ID')]
+			if(ISID == 0): imm = im
+			else:          imm = nvalue[list_params.index('ID')]
 			# read head, set params, and write it
 			dummy = EMData()
 			dummy.read_image(stack, imm, True)
