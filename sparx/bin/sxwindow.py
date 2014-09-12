@@ -79,7 +79,7 @@ def main():
 
 	parser.add_option('--coords_dir',   dest='coordsdir',                help='Directory containing particle coordinates')
 # 	parser.add_option('--importctf',    dest='ctffile',                  help='File name with CTF parameters produced by sxcter.')
-# 	parser.add_option('--topdir',       dest='topdir',       default='', help='Path name of directory containing relevant micrograph directories')
+ 	parser.add_option('--topdir',       dest='topdir',       default='./', help='Path name of directory containing relevant micrograph directories')
 # 	parser.add_option('--input_pixel',  dest='input_pixel',  default=1,  help='input pixel size')
 # 	parser.add_option('--output_pixel', dest='output_pixel', default=1,  help='output pixel size')
 	parser.add_option('--box_size',     dest='box_size',     type=int,   help='box size')
@@ -99,39 +99,45 @@ def main():
 		extension = str(db['extension']) # db['extension'] is unicode, so need to call str()
 		info_suffix = '_info.json'
 		
+		micnames = []
+		import glob
+		
+		for f in glob.glob(os.path.join(options.topdir, '*.hdf')):   # currently handles only hdf formatted micrographs
+			micnames.append(base_name(f))
+		
 		mask = pad(model_circle(box_size//2, box_size, box_size), box_size, box_size, 1, 0.0)
 		
 # 		otcl_images  = "bdb:%s/"%options.outdir + options.outstack + suffix
 # 		iImg=0
-		for f in os.listdir(options.coordsdir):
-			if f.endswith(info_suffix):
-				name_num_base = f.strip(info_suffix)
-				name_im       = name_num_base + extension
-				name_info     = info_name(name_im)
+		for i in range(len(micnames)):
+			basename = micnames[i]
+			f_mic = os.path.join(options.topdir, basename + extension)
+			f_info = info_name(f_mic)
+			
+			otcl_images  = "bdb:%s/"%options.outdir + basename + suffix
+# 			print basename, f_info, f_mic
+			
+			im = get_im(f_mic)
+			x0 = im.get_xsize()//2  #  Floor division or integer division
+			y0 = im.get_ysize()//2
 				
-				otcl_images  = "bdb:%s/"%options.outdir + name_num_base + suffix
-				
-				im = get_im(name_im)
-				x0 = im.get_xsize()//2  #  Floor division or integer division
-				y0 = im.get_ysize()//2
-				
-				coords = js_open_dict(name_info)["boxes"]
-				for i in range(len(coords)):
+			coords = js_open_dict(f_info)["boxes"]
+			for i in range(len(coords)):
 
-					x = int(coords[i][0])
-					y = int(coords[i][1])
-					imn=Util.window(im, box_size, box_size, 1, x-x0, y-y0)
-					imn.set_attr('ptcl_source_image',name_im)
-					imn.set_attr('ptcl_source_coord',[coords[i][0],coords[i][1]])
-					stat = Util.infomask(imn, mask, False)   
+				x = int(coords[i][0])
+				y = int(coords[i][1])
+				imn=Util.window(im, box_size, box_size, 1, x-x0, y-y0)
+				imn.set_attr('ptcl_source_image',f_mic)
+				imn.set_attr('ptcl_source_coord',[x,y])
+				stat = Util.infomask(imn, mask, False)   
 
-					imn = ramp(imn)
-					imn -= stat[0]
-					Util.mul_scalar(imn, 1.0/stat[1])
-					
-					imn.write_image(otcl_images, i)
-# 					imn.write_image(otcl_images, iImg)
-# 					iImg = iImg + 1
+				imn = ramp(imn)
+				imn -= stat[0]
+				Util.mul_scalar(imn, 1.0/stat[1])
+				
+				imn.write_image(otcl_images, i)
+# 				imn.write_image(otcl_images, iImg)
+# 				iImg = iImg + 1
 
 if __name__=='__main__':
 	main()
