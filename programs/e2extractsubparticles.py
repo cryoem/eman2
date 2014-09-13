@@ -43,6 +43,7 @@ from sys import argv
 import traceback
 from EMAN2 import *
 from EMAN2db import db_open_dict
+from numpy import arange
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -121,7 +122,7 @@ will be examined automatically to extract the corresponding particles and projec
 	# now we loop over the classes, and subtract away a projection of the reference with the exclusion mask in
 	# each symmetry-related orientation, after careful scaling. Note that we don't have a list of which particle is in each class,
 	# but rather a list of which class each particle is in, so we do this a bit inefficiently for now
-	for i in xrange(nref):
+	for i in xrange(95,nref):
 		if options.verbose>1 : print "--- Class %d"%i
 
 		# The first projection is unmasked, used for scaling
@@ -142,12 +143,17 @@ will be examined automatically to extract the corresponding particles and projec
 				if classmx[eo][0,j]!=i : continue		# only proceed if the particle is in this class
 
 				ptcl=EMData(cptcl[eo],j)
+				lowth=ptcl["mean"]-ptcl["sigma"]*3.0
+				highth=ptcl["mean"]+ptcl["sigma"]*3.0
 
 				# Find the transform for this particle (2d) and apply it to the unmasked/masked projections
 				ptclxf=Transform({"type":"2d","alpha":cmxalpha[eo][0,j],"mirror":int(cmxmirror[eo][0,j]),"tx":cmxtx[eo][0,j],"ty":cmxty[eo][0,j]}).inverse()
 				projc=[i.process("xform",{"transform":ptclxf}) for i in projs]		# we transform the projections, not the particle (as in the original classification)
 				projmaskc=projmask.process("xform",{"transform":ptclxf})
 #				projmaskc.process_inplace("threshold.notzero")
+
+				ptcl.write_image("tst.hdf",0)
+				projc[0].write_image("tst.hdf",1)
 
 				# we make a filtered copy of the particle filtered such that it's power spectrum is roughly that of a noise-free particle
 				# we do this using an approximate filter from the particle set based CTF estimate, but apply this filter to the actual
@@ -162,17 +168,39 @@ will be examined automatically to extract the corresponding particles and projec
 				ptclr.mult(projmaskc)
 
 				# Now we match the radial structure factor of the total projection to the filtered particle, then scale
-				# we will use the filter curve returned by this process to scale the masked projections, since theoretically
+				# we will use the filter curve returned by this process to scale the masked projections, since
 				# they should not match the whole particle
-				projf=projc[0].process("filter.matchto",{"to":ptclr,"return_radial":1})
+				projf=projc[0].process("filter.matchto",{"to":ptclr,"interpolate":1,"return_radial":1})
 				projf.mult(projmaskc)
-				projf.process_inplace("normalize.toimage",{"to":ptcl,"ignore_lowsig":1.0})
+				projf.process_inplace("normalize.toimage",{"to":ptcl,"ignore_lowsig":0.75,"high_threshold":highth})
 				print projf["norm_add"],projf["norm_mult"]
+
+				# This block is a test to see if normalize.toimage is producing the optimal subtraction in terms of
+				# standard deviation of the post-subtraction image. Unfortunately it seems not to in most cases, though
+				# visually the normalize.toimage value does seem to give close to optimal particle erasure. This may
+				# be an issue with CTF correction, and leaving a bit of residual black ring behind after subtracting
+				# TODO : investigate further
+# 				sseq=[]
+# 				for s in arange(0,1.5,0.05):
+# 					projf2=projf*s
+# 					ptcl2=ptcl-projf2
+# 					sseq.append(ptcl2)
+# 					print "{}\t{}".format(s,ptcl2["sigma"])
+#				display(sseq)
+
 				ptcl2=ptcl-projf
 
-				# now subtract the masked versions
-				for i in projc[1:]:
-
+				# now subtract the masked versions processed using the scaling/normalization
+				# we got from the whole/unmasked particle
+				for pr in projc:
+					projm=pr.process("filter.radialtable",{"table":projf["filter_curve"]})
+					projm.mult(projmaskc)
+					projm.process_inplace("math.linear",{"scale":projf["norm_mult"],"shift":projf["norm_add"]})
+					projm.process_inplace("normalize.toimage",{"to":ptcl,"ignore_lowsig":0.75,"high_threshold":highth})
+					print projm["norm_add"],projm["norm_mult"]
+					ptcl3=ptcl-projm
+#					display((projc[0],projf,pr,projm))
+					display((ptcl,ptcl3,projm,pr))
 
 #				display((projc[0],ptclr,ptcl,projf,ptcl2),True)
 #				sys.exit(0)

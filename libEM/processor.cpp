@@ -88,6 +88,7 @@ const string KmeansSegmentProcessor::NAME = "segment.kmeans";
 const string DistanceSegmentProcessor::NAME = "segment.distance";
 const string WatershedProcessor::NAME = "segment.watershed";
 const string RecipCarefullyProcessor::NAME = "math.reciprocal";
+const string SubtractOptProcessor::NAME = "math.sub.optimal";
 const string ValuePowProcessor::NAME = "math.pow";
 const string ValueSquaredProcessor::NAME = "math.squared";
 const string ValueSqrtProcessor::NAME = "math.sqrt";
@@ -298,6 +299,7 @@ template <> Factory < Processor >::Factory()
 	force_add<ApplySymProcessor>();
 	force_add<IntTranslateProcessor>();
 	force_add<RecipCarefullyProcessor>();
+	force_add<SubtractOptProcessor>();
 
 	force_add<ClampingProcessor>();
 	force_add<NSigmaClampingProcessor>();
@@ -626,7 +628,7 @@ void FourierAnlProcessor::process_inplace(EMData * image)
 // 	vector < float >yarray(array_size);
 
 	bool return_radial=(bool)params.set_default("return_radial",0);
-
+	bool interpolate=(bool)params.set_default("interpolate",0);
 
 	if (image->is_complex()) {
 		vector <float>yarray = image->calc_radial_dist(image->get_ysize()/2,0,1.0,1);
@@ -638,7 +640,9 @@ void FourierAnlProcessor::process_inplace(EMData * image)
 		EMData *fft = image->do_fft();
 		vector <float>yarray = fft->calc_radial_dist(fft->get_ysize()/2,0,1.0,1);
 		create_radial_func(yarray,image);
-		fft->apply_radial_func(0, 0.5f/yarray.size(), yarray,0);		// 4/30/10 stevel turned off interpolation to fix problem with matched filter
+		// 4/30/10 stevel turned off interpolation to fix problem with matched filter
+		// 9/12/14 stevel, not sure why I turned off interp. Seems to cause rather than fix problems. Adding option to enable. Afraid to turn it on
+		fft->apply_radial_func(0, 0.5f/yarray.size(), yarray,0);
 		EMData *ift = fft->do_ift();
 
 		memcpy(image->get_data(),ift->get_data(),ift->get_xsize()*ift->get_ysize()*ift->get_zsize()*sizeof(float));
@@ -3964,6 +3968,46 @@ float NormalizeStdProcessor::calc_mean(EMData * image) const
 	return image->get_attr("mean");
 }
 
+void SubtractOptProcessor::process_inplace(EMData * image)
+{
+	if (!image) {
+		LOGWARN("NULL Image");
+		return;
+	}
+
+	EMData *ref = params["ref"];
+	bool return_radial = params.set_default("return_radial",false);
+
+	EMData *imf;
+	if (image->is_complex()) imf=image->copy();
+	else imf=image->do_fft();
+
+	// Make sure ref is complex and a copy we can modify
+	if (ref->is_complex()) ref=ref->copy();
+	else ref=ref->do_fft();
+
+	int ny2=image->get_ysize()/2;
+	vector <float>rad(ny2+1);
+	vector <float>norm(ny2+1);
+
+	// We are essentially computing an FSC here, but while the reference (the image
+	// we plan to subtract) is normalized, the other image is not. This gives us a filter
+	// to apply to the reference to optimally eliminate its contents from 'image'.
+	for (int y=-ny2; y<ny2; y++) {
+		for (int x=0; x<ny2; x++) {
+			int r=int(Util::hypot_fast(x,y));
+			if (r>ny2) continue;
+			std::complex<float> v1=imf->get_complex_at(x,y);
+			std::complex<float> v2=ref->get_complex_at(x,y);
+			rad[r]+=v1.real()*v2.real()+v1.imag()*v2.imag();
+			norm[r]+=v2.real()*v2.real()+v2.imag()*v2.imag()+v1.real()*v1.real()+v1.imag()*v1.imag();
+		}
+	}
+	for (int i=0; i<ny2; i++) rad[i]/=norm[i];
+
+	FILE *out=fopen("dbug.txt","w");
+	for (int i=0; i<ny2; i++) fprintf(out,"%f\t%f\n",(float)i,rad[i]);
+}
 
 
 void NormalizeToLeastSquareProcessor::process_inplace(EMData * image)
@@ -3999,7 +4043,7 @@ void NormalizeToLeastSquareProcessor::process_inplace(EMData * image)
 	float sigi=(float)image->get_attr("sigma")*ignore_lowsig;
 	float sigt=(float)to->get_attr("sigma")*ignore_lowsig;
 	for (size_t i = 0; i < size; ++i) {
-		if (dimage[i] >= low_threshold && dimage[i] <= high_threshold
+		if (dto[i] >= low_threshold && dto[i] <= high_threshold
 			&& (dto[i]>=meant+sigt || dto[i]<=meant-sigt)
 			&& (dimage[i]>=meani+sigi || dimage[i]<=meani-sigi)
 			&& (!ignore_zero ||(dto[i] != 0.0f && dimage[i] != 0.0f))) {

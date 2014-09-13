@@ -409,6 +409,7 @@ The basic design of EMAN Processors: <br>\
 			d.put("cutoff_freq", EMObject::FLOAT, "1/Resolution in 1/A (0 - 1 / 2*apix). eg - a 20 A filter is cutoff_freq=0.05");
 			d.put("apix", EMObject::FLOAT, " Override A/pix in the image header (changes x,y and z)");
 			d.put("return_radial", EMObject::BOOL, "Return the radial filter function as an attribute (filter_curve)");
+			d.put("interpolate", EMObject::BOOL, "Whether or not to interpolate the radial scaling function. Default=false. Prb should be true.");
 			return d;
 		}
 
@@ -4642,6 +4643,49 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		void process_inplace(EMData * image);
 	};
 
+	/**Sorry for the pun. This processor will take a second image and try to filter/scale it to optimally subtract it
+	from the original image. The idea here is that if you have an image with noise plus a linear-filter modified projection,
+	that a good measure of the similarity of the image to the projection would be to try and remove the projection from
+	the image as optimally as possible, then compute the standard deviation of what's left.
+
+	Now you might say that if the total energy in the noisy image is normalized then this should be equivalent to just
+	integrating the FSC, which is what we use to do the optimal subtraction in the first place. This would be true, but
+	this "optimal subtraction" has other purposes as well, such as the e2extractsubparticles program.
+	 * @param ref Reference image to subtract
+	 * @param return_radial Will return the radial filter function applied to ref as filter_curve
+	 */
+	class SubtractOptProcessor:public Processor
+	{
+	  public:
+		void process_inplace(EMData * image);
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		static Processor *NEW()
+		{
+			return new SubtractOptProcessor();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("ref", EMObject::EMDATA, "Reference image to subtract");
+			d.put("return_radial", EMObject::BOOL, "Return the radial filter function as an attribute (filter_curve)");
+			return d;
+		}
+
+		string get_desc() const
+		{
+			return "This will filter/scale 'ref' optimally and subtract it from image.";
+		}
+
+		static const string NAME;
+	};
+
+
 	/**use least square method to normalize
 	 * @param to reference image normalize to
 	 * @param low_threshold only take into account the reference image's pixel value between high and low threshold (zero is ignored)
@@ -6087,6 +6131,7 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 			TypeDict d;
 			d.put("to", EMObject::EMDATA, "The image to match with. Make sure apix values are correct.");
 			d.put("return_radial", EMObject::BOOL, "Return the radial filter function as an attribute (filter_curve)");
+			d.put("interpolate", EMObject::BOOL, "Whether or not to interpolate the radial scaling function. Default=false. Prb should be true.");
 			return d;
 		}
 

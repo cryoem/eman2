@@ -223,6 +223,8 @@ def display_file(filename,app,force_2d=False,usescenegraph=False):
 	app.show_specific(w)
 	try: w.optimally_resize()
 	except: pass
+	try: w.raise_()
+	except: pass
 	return w
 
 
