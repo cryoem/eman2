@@ -46,7 +46,7 @@ from numpy import loadtxt
 from scipy import sparse
 from scipy import ndimage
 from itertools import count
-from scipy import fftpack
+#from scipy import fftpack
 
 import pdb
 
@@ -171,6 +171,9 @@ def main():
 	return
 
 
+# TILTSTACK GENERATION
+# Here, a tilt stack refers to a collection of 1D projections from XZ plane images.
+# Such stacks are generated for each y pixel to form a complete 3D volume.
 def get_numpy_tiltstacks( options, xlen, ylen ):
 	"""
 	Generates a 2D tiltseries for each pixel along the y axis of a 3D tilt series. 
@@ -203,7 +206,9 @@ def get_numpy_tiltstacks( options, xlen, ylen ):
 	# RETURN: list of 2D numpy arrays, each corresponding to a tilt series along the tilt axis
 	return tiltstacks
 
-
+# EMAN tiltstacks are generated via EMData manipulation instead of NumPy methods.
+# The results SHOULD be the same, but they are not. If you have any guesses why
+# please send them to jmbell@bcm.edu. Thanks!
 def get_eman_tiltstacks( options, xlen, ylen ):
 	"""
 	Generates a 2D tiltseries for each pixel along the y axis of a 3D tiltseries.
@@ -222,7 +227,6 @@ def get_eman_tiltstacks( options, xlen, ylen ):
 			r =  Region( 0, y, xlen, 1 )
 			tiltseries=EMData( options.tiltseries, imgnum, False, r )
 			tiltseries.set_size( 1, xlen, 1 )
-			#tiltseries_fft = tiltseries.do_fft()
 			output.insert_clip( tiltseries, (imgnum,0) )
 		if options.verbose > 2: print "Generated %s" %(stack_path)
 		# write each tiltstack to disk

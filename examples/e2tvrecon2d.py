@@ -42,7 +42,7 @@ import ntpath
 import numpy as np
 from scipy import sparse
 from scipy import ndimage
-from scipy import fftpack
+#from scipy import fftpack
 
 
 def get_usage():
