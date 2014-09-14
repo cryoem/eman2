@@ -136,7 +136,6 @@ def main():
 		nslice = int(options.nslices)
 		print "Using tiltrange -%s, %s with %i slices."%(options.tiltrange, options.tiltrange, options.nslices)
 		tiltangles = np.linspace(tiltrange,-1.*tiltrange,nslices).tolist()
-		print tiltangles
 	else:
 		print "You must specify either --tlt or both --nslices and --tiltrange."
 		exit(1)
