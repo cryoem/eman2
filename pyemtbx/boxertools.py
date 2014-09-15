@@ -36,6 +36,7 @@ from copy import copy
 import EMAN2db
 from EMAN2db import db_open_dict, db_close_dict, db_remove_dict, db_check_dict
 from EMAN2 import *
+import traceback
 
 class EMProjectDB:
 	"""
@@ -1064,6 +1065,7 @@ class BigImage:
 	def __init__(self, image_name):
 		self.image_name = image_name		
 		self.image = None
+		self.lastnorm="normalize.edgemean"
 		self.alternate = None
 	
 	def get_construction_argument(self):
@@ -1072,14 +1074,18 @@ class BigImage:
 	def get_image_name(self):
 		return self.image_name
 	
-	def get_image(self,use_alternate=False):
+	def get_image(self,use_alternate=False,norm="normalize.edgemean"):
+		#print self.image_name,norm
+		#traceback.print_stack()
 		if use_alternate and self.alternate != None:
 			return self.alternate
 		
-		if self.image == None:		
+		if self.image == None or self.lastnorm!=norm:
 			self.image = EMData()
 			self.image.read_image(self.image_name, 0) # doing it this way makes it work with db terminology
-			self.image.process_inplace("normalize.edgemean") # this seams to be the normal behavior
+			if str(norm)!="None" : 
+				self.image.process_inplace(norm) # this seams to be the normal behavior
+			self.lastnorm=norm
 			
 		return self.image
 		

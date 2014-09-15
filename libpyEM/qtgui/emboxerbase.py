@@ -330,10 +330,10 @@ class EMBox:
 
 		if self.image == None or self.image.get_xsize() != box_size or self.image.get_ysize() != box_size:
 			global BigImageCache
-			data=BigImageCache.get_object(image_name).get_image(use_alternate=True) # use alternate is a red herring
+			data=BigImageCache.get_object(image_name).get_image(use_alternate=True,norm=norm) # use alternate is a red herring
 			r = Region(self.x-box_size/2,self.y-box_size/2,box_size,box_size)
 			self.image = data.get_clip(r)
-			if norm != None:
+			if norm != None and str(norm) != "None":
 				self.image.process_inplace(norm)
 
 			self.image.set_attr("ptcl_source_coord",[self.x,self.y])
@@ -1439,7 +1439,7 @@ class EMBoxList:
 			if noedges :
 				if box[0]-box_size/2<0 or box[1]-box_size/2<0 or box[0]+box_size/2>=xsize or box[1]+box_size/2>=ysize : continue
 				
-			image = box.get_image(input_file_name,box_size)
+			image = box.get_image(input_file_name,box_size,norm=normproc)
 			if invert: image.mult(-1)
 			if str(normproc) != "None": image.process_inplace(normproc)
 			try:
