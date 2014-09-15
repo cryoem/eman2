@@ -11,8 +11,8 @@
 # This script will convert a relion star file to an eman2 lst file, looking specifically for the particle number in the image and the image name
 
 from EMAN2 import *
-from sys import *
-from os import *
+import sys
+import os
 from EMAN2star import *
 import pyemtbx.options
 
