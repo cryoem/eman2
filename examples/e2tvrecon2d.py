@@ -69,7 +69,7 @@ def main():
 	parser = EMArgumentParser(usage=get_usage())
 	parser.add_argument("--tiltseries", default=None, help="The input projections. Project should usually have the xform.projection header attribute, which is used for slice insertion")
 	parser.add_argument("--imgnum", default=None, type=int, help="The image number which will be read from the stack when reconstructing an image from a user specified tiltseries.")
-	parser.add_argument("--testdata", default=None, help="A 2D image to project a number of times (specified by --nslices) and then reconstructed via compressed sensing.")
+	parser.add_argument("--testdata", default=None, help="A 2D image to project a number of times (specified by --nslices and --tiltrange) and then reconstructed via compressed sensing.")
 	parser.add_argument("--tlt", default=None, type=str, help="An imod tlt file containing alignment angles. If specified slices will be inserted using these angles in the IMOD convention")
 	parser.add_argument("--nslices", default=120, type=int, help="Specify the number slices into which an image will be projected. Only applicable when using the --testdata option.")
 	parser.add_argument("--tiltrange", default='60.0', type=str, help="Specify the range of degrees over which data was collected. This defaults to 60 degrees, resulting in the generation of projections from -60.0 to 60.0 degrees.")
@@ -86,22 +86,25 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	(options, args) = parser.parse_args()
 	
-	if options.output : outfile = options.output
-	
-	if options.tiltseries and options.testdata:
-		print "A tiltseries and testdata may not be specified simultaneously."
-		exit(1)
-	
-	if options.tiltseries :
+	if options.output:
+		outfile = options.output
+
+	if options.tiltseries:
 		infile = options.tiltseries
-	elif options.testdata : infile = options.testdata
+	elif options.testdata:
+		infile = options.testdata
+		nslices = options.nslices
+		tiltrange = options.tiltrange
 	else:
-		print "You must speficy either --testdata OR --tiltseries"
+		print "ERROR: You must speficy either --testdata OR --tiltseries."
 		exit(1)
 	
-	if options.imgnum != None:
-		imgnum = options.imgnum
-	else:
+	if options.imgnum:
+		imgnum = int(options.imgnum)
+	else: 
+		if options.testdata:
+			if EMUtil.get_image_count(options.testdata) != 1:
+				print "Using the 0th image by default."
 		imgnum = 0
 	
 	if options.norm:
@@ -115,52 +118,45 @@ def main():
 			print "The option --norm was specified improperly. Please specify either anisotropic, l0, or regular. Regular is specified by default."
 			exit(1)
 	
-	if options.nslices: 
-		nslices = options.nslices
-	elif options.tiltseries: 
-		nslices = EMUtil.get_image_count( infile )
-	elif options.tlt != None:
-		pass
-	else:
-		print "You must specify the number of projections."
-		print "This is accomplished via specifying --nslices explicitly"
-		print "or by supplying a tiltseries or tlt file."
-		exit(1)
-	
-	if options.tlt:
+	if options.tlt != None:
 		fangles = np.asarray([ float( i ) for i in file( options.tlt , "r" ) ])
 		tiltangles = fangles.tolist()
 		nslices = len( tiltangles )
 	elif options.nslices and options.tiltrange:
 		tiltrange = float(options.tiltrange)
-		nslice = int(options.nslices)
-		print "Using tiltrange -%s, %s with %i slices."%(options.tiltrange, options.tiltrange, options.nslices)
+		nslices = int(options.nslices)
+		print "Using tiltrange from -%s, %s degrees consisting of %i slices."%(options.tiltrange, options.tiltrange, options.nslices)
 		tiltangles = np.linspace(tiltrange,-1.*tiltrange,nslices).tolist()
-	else:
-		print "You must specify either --tlt or both --nslices and --tiltrange."
+	elif options.testdata:
+		print "You must specify --nslices AND --tiltrange when using --testdata."
 		exit(1)
-	
-	if options.niters :
+	else:
+		print "You must specify --tlt when using --tiltseries"
+		exit(1)
+		
+	if options.niters:
 		niters = int(options.niters)
 	
-	if options.beta : 
+	if options.beta:
 		beta = float(options.beta)
 		if beta <= 0:
-			print "Parameter beta must be greater than 0."
+			print "Parameter beta (--beta) must be greater than 0."
 			exit(1)
 	
-	if options.subpix : 
+	if options.subpix:
 		subpix = int(options.subpix)
 	else: 
 		subpix = 1
 	
-	if options.noisiness : 
-		noisiness = options.noisiness
-	else: 
-		print "--noisiness option not specified. Using the default value of 0.1."
-		noisiness = 0.1
+	if options.noise:
+		if options.noisiness :
+			noisiness = options.noisiness
+		else:
+			print "--noisiness option not specified. Using the default value of 0.1."
+			noisiness = 0.1
 	
-	if options.output : outfile = options.output
+	if options.output:
+		outfile = options.output
 	
 	if options.verbose > 1: print "e2tvrecon.py"
 	logger=E2init(sys.argv,options.ppid)
@@ -178,20 +174,31 @@ def main():
 		linkto = options.path + "/input.hdf"
 		os.symlink( linkfrom, linkto )
 	
-	# Get image data
-	img, dim, options = get_img_data( options, imgnum )
-	xlen = dim[0]
+	# Get image/projection data
+	data, xlen = get_data( options, nslices, imgnum )
 	
 	if options.noise != False:	# add Noise to Image
-		img += noisiness * np.random.randn(*img.shape)
+		data += noisiness * np.random.randn(*data.shape)
 		outpath = options.path + "/noisy_input.hdf"
-		from_numpy(img).write_image( outpath )
+		from_numpy(data).write_image( outpath )
 
 	# Projection operator and projections data
 	projection_operator = build_projection_operator( tiltangles, xlen, nslices, None, subpix, 0, None )
-	projections = projection_operator * img.ravel()[:, np.newaxis]
+
+	if options.tiltseries:
+		projections = data.ravel()[:, np.newaxis]
+		print " * * * PROJECTIONS OF INPUT TILTSERIES FOR DEBUGGING * * * "
+		print projections.shape
+		print projections
+		print type(projections)
+	else:
+		projections = projection_operator * data.ravel()[:, np.newaxis]
+		print " * * * REFERENCE TILTSERIES PROJECTIONS FOR DEBUGGING * * * "
+		print projections.shape
+		print projections
+		print type(projections)
 	
-	# Write projections to disk
+	#Write projections to disk
 	#prjs = np.split(projections,xlen)
 	#from_numpy(prjs).write_image(options.path + "prjs.hdf")
 	#
@@ -219,18 +226,24 @@ def main():
 	return
 
 
-def get_img_data( options, imgnum=0 ):
+def get_data( options, nslices, imgnum=0 ):
 	"""Read an input image as a numpy array return its dimensions"""
-	if options.tiltseries != None:
-		img = EMData( options.tiltseries , imgnum )
-		outpath = options.path + "/input.hdf"
-		img.write_image( outpath )
-		options.testdata = outpath
-	else:
-		img = EMData( options.testdata , imgnum )
-	dim = [img.get_xsize(), img.get_ysize(), img.get_zsize()]
-	img_array = img.numpy()
-	return img_array.astype(np.float32), dim, options
+	if options.testdata:
+		testdata = EMData( options.testdata, imgnum )
+		xlen = testdata.get_xsize()
+		data = testdata.numpy()
+	elif options.tiltseries:
+		npstack = []
+		for i in range( nslices ):
+			img = EMData( options.tiltseries, i )
+			np_img = img.numpy()
+			npstack.append(np_img)
+		data = np.asarray(npstack)
+		xlen = img.get_xsize()
+	print EMData(options.tiltseries,0).get_value_at(0,0)
+	print npstack[0][0]
+	print data.astype(np.float32).ravel()[0]
+	return data.astype(np.float32), xlen
 
 
 def build_projection_operator( angles, l_x, n_dir=None, l_det=None, subpix=1, offset=0, pixels_mask=None ):
@@ -697,7 +710,7 @@ def makepath(options, stem=''):
 		if '_' not in options.path:
 			options.path = options.path + '_00'
 		else:
-			jobtag=''
+			#jobtag=''
 			components=options.path.split('_')
 			if components[-1].isdigit():
 				components[-1] = str(int(components[-1])+1).zfill(2)
