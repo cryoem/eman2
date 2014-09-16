@@ -74,9 +74,10 @@ def main():
 	parser.add_argument("--nslices", default=120, type=int, help="Specify the number slices into which an image will be projected. Only applicable when using the --testdata option.")
 	parser.add_argument("--tiltrange", default='60.0', type=str, help="Specify the range of degrees over which data was collected. This defaults to 60 degrees, resulting in the generation of projections from -60.0 to 60.0 degrees.")
 	parser.add_argument("--output", default="recon.hdf", help="Output reconstructed tomogram file name.")
+	parser.add_argument("--fft",action="store_true",default=False, help="If true, projections supplied by --tiltseries will be fourier transformed. This is an experimental feature for exploratory purposes only.")
 	parser.add_argument("--noise",action="store_true",default=False, help="If true, noise will be added to the image before reconstruction.")
 	parser.add_argument("--noisiness",default=0.1, type=float, help="Multiply noise by a specified factor. The default value is 0.1")
-	parser.add_argument("--path",type=str,default='recon',help="Directory in which results will be stored.")
+	parser.add_argument("--path",type=str,default='tvrecon',help="Directory in which results will be stored.")
 	parser.add_argument("--niters", default=100, type=int, help="Specify the number of iterative reconstructions to complete before returning the final reconstructed volume.")
 	parser.add_argument("--beta", default=20.0, type=float, help="Specify the total-variation regularization weight parameter 'beta' without performing cross validation.")
 	parser.add_argument("--subpix", default=1, type=int, help="Specify the number of linear subdivisions used to compute the projection of one image pixel onto a detector pixel.")
@@ -171,7 +172,7 @@ def main():
 		pathname = os.path.dirname(os.path.abspath( options.testdata ))
 		filename = ntpath.basename( options.testdata )
 		linkfrom = pathname + "/" + filename
-		linkto = options.path + "/input.hdf"
+		linkto = options.path + "/image.hdf"
 		os.symlink( linkfrom, linkto )
 	
 	if options.tiltseries != None:
@@ -191,19 +192,15 @@ def main():
 	
 	# Projection operator and projections data
 	projection_operator = build_projection_operator( tiltangles, xlen, nslices, None, subpix, 0, None )
-
+	
 	if options.tiltseries:
 		projections = data.ravel()[:, np.newaxis]
 	else:
 		projections = projection_operator * data.ravel()[:, np.newaxis]
-
-	############################################################################
-	print " * * * PROJECTION DATA FOR DEBUGGING * * * "
-	debug_printer(projections)
 	
-	#Write projections to disk
-	#prjs = np.split(projections,xlen)
-	#from_numpy(prjs).write_image(options.path + "prjs.hdf")
+	############################################################################
+	print " * * * PROJECTIONS DATA FOR DEBUGGING * * * "
+	debug_printer(projections)
 	
 	outpath = options.path + "/" + "stacked_prjs.hdf"
 	for i in range( nslices ):
@@ -218,8 +215,12 @@ def main():
 	
 	# Store reconstruction in instance outfile directory
 	outpath = options.path + "/" + outfile
-	fft_outpath = options.path + "/fft_" + outfile
 	from_numpy( recon[-1] ).write_image( outpath )
+	
+	#if options.fft:
+	#	fft_outpath = options.path + "/fft_" + outfile
+	#	ift = from_numpy(recon[-1].do_ift()
+	#	ift.write_image( fft_outpath )
 	
 	if options.fsc != False:
 		fscpath = options.path + "/" + "fsc.txt"
@@ -250,6 +251,8 @@ def get_data( options, nslices, imgnum=0 ):
 		npstack = []
 		for i in range( nslices ):
 			img = EMData( options.tiltseries, i )
+			#if options.fft:
+			#	img = img.do_fft()
 			np_img = img.numpy()
 			npstack.append( np_img )
 		data = np.asarray( npstack )
