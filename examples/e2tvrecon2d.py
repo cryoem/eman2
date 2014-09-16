@@ -174,6 +174,13 @@ def main():
 		linkto = options.path + "/input.hdf"
 		os.symlink( linkfrom, linkto )
 	
+	if options.tiltseries != None:
+		pathname = os.path.dirname(os.path.abspath( options.tiltseries ))
+		filename = ntpath.basename( options.tiltseries )
+		linkfrom = pathname + "/" + filename
+		linkto = options.path + "/tiltseries.hdf"
+		os.symlink( linkfrom, linkto )
+	
 	# Get image/projection data
 	data, xlen = get_data( options, nslices, imgnum )
 	
@@ -181,30 +188,27 @@ def main():
 		data += noisiness * np.random.randn(*data.shape)
 		outpath = options.path + "/noisy_input.hdf"
 		from_numpy(data).write_image( outpath )
-
+	
 	# Projection operator and projections data
 	projection_operator = build_projection_operator( tiltangles, xlen, nslices, None, subpix, 0, None )
 
 	if options.tiltseries:
 		projections = data.ravel()[:, np.newaxis]
-		print " * * * PROJECTIONS OF INPUT TILTSERIES FOR DEBUGGING * * * "
-		print projections.shape
-		print projections
-		print type(projections)
 	else:
 		projections = projection_operator * data.ravel()[:, np.newaxis]
-		print " * * * REFERENCE TILTSERIES PROJECTIONS FOR DEBUGGING * * * "
-		print projections.shape
-		print projections
-		print type(projections)
+
+	############################################################################
+	print " * * * PROJECTION DATA FOR DEBUGGING * * * "
+	debug_printer(projections)
 	
 	#Write projections to disk
 	#prjs = np.split(projections,xlen)
 	#from_numpy(prjs).write_image(options.path + "prjs.hdf")
-	#
-	#outpath = options.path + "/" + "stacked_prjs.hdf"
-	#for i in range( nslices ):
-	#	from_numpy(projections[i*dim[0]:(i+1)*dim[0]]).write_image( outpath, i )
+	
+	outpath = options.path + "/" + "stacked_prjs.hdf"
+	for i in range( nslices ):
+		from_numpy(projections[i*xlen:(i+1)*xlen]).write_image( outpath, i )
+	############################################################################
 	
 	# Reconstruction
 	t1 = time.time()
@@ -214,7 +218,8 @@ def main():
 	
 	# Store reconstruction in instance outfile directory
 	outpath = options.path + "/" + outfile
-	from_numpy(recon[-1]).write_image( outpath )
+	fft_outpath = options.path + "/fft_" + outfile
+	from_numpy( recon[-1] ).write_image( outpath )
 	
 	if options.fsc != False:
 		fscpath = options.path + "/" + "fsc.txt"
@@ -224,6 +229,15 @@ def main():
 	E2end(logger)
 	if options.verbose > 1: print "Exiting"
 	return
+
+
+############################################################################
+def debug_printer( variable ):
+	print "Shape: \n %s" %(str(variable.shape))
+	print "Object: \n %s"%(str(variable))
+	print "Type: \n %s"%(type(variable))
+	return
+############################################################################
 
 
 def get_data( options, nslices, imgnum=0 ):
@@ -237,13 +251,10 @@ def get_data( options, nslices, imgnum=0 ):
 		for i in range( nslices ):
 			img = EMData( options.tiltseries, i )
 			np_img = img.numpy()
-			npstack.append(np_img)
-		data = np.asarray(npstack)
+			npstack.append( np_img )
+		data = np.asarray( npstack )
 		xlen = img.get_xsize()
-	print EMData(options.tiltseries,0).get_value_at(0,0)
-	print npstack[0][0]
-	print data.astype(np.float32).ravel()[0]
-	return data.astype(np.float32), xlen
+	return data.astype( np.float32 ), xlen
 
 
 def build_projection_operator( angles, l_x, n_dir=None, l_det=None, subpix=1, offset=0, pixels_mask=None ):
