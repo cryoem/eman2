@@ -74,13 +74,12 @@ def main():
 	parser.add_argument("--nslices", default=120, type=int, help="Specify the number slices into which an image will be projected. Only applicable when using the --testdata option.")
 	parser.add_argument("--tiltrange", default='60.0', type=str, help="Specify the range of degrees over which data was collected. This defaults to 60 degrees, resulting in the generation of projections from -60.0 to 60.0 degrees.")
 	parser.add_argument("--output", default="recon.hdf", help="Output reconstructed tomogram file name.")
-	parser.add_argument("--fft",action="store_true",default=False, help="If true, projections supplied by --tiltseries will be fourier transformed. This is an experimental feature for exploratory purposes only.")
 	parser.add_argument("--noise",action="store_true",default=False, help="If true, noise will be added to the image before reconstruction.")
 	parser.add_argument("--noisiness",default=0.1, type=float, help="Multiply noise by a specified factor. The default value is 0.1")
-	parser.add_argument("--path",type=str,default='tvrecon',help="Directory in which results will be stored.")
+	parser.add_argument("--path",type=str,default='recon',help="Directory in which results will be stored.")
 	parser.add_argument("--niters", default=100, type=int, help="Specify the number of iterative reconstructions to complete before returning the final reconstructed volume.")
-	parser.add_argument("--beta", default=20.0, type=float, help="Specify the total-variation regularization weight parameter 'beta' without performing cross validation.")
-	parser.add_argument("--subpix", default=1, type=int, help="Specify the number of linear subdivisions used to compute the projection of one image pixel onto a detector pixel.")
+	parser.add_argument("--beta", default=0.2, type=float, help="Specify the total-variation regularization weight parameter 'beta'. The default value is 0.2. Note that this parameter must be greater than 0, but values much greater than 1 will produce cartoon-like reconstructions as a result of the total variation denoising procedure.")
+	parser.add_argument("--subpix", default=1, type=int, help="Specify the number of linear subdivisions used to compute the projection of one image pixel onto a detector pixel. Note that this parameter must be a positive integer.")
 	parser.add_argument("--fsc",action="store_true",default=False, help="Generate a fourier shell correlation plot comparing the input and output data.")
 	parser.add_argument("--norm",default=None, type=str, help="Choose between 'regular', 'anisotropic', and 'l0' TV norms. The default is 'regular'.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID", default=-1)
@@ -168,6 +167,8 @@ def main():
 	options.path = rootpath + "/" + options.path
 	
 	# Link original data file to output directory
+	if options.verbose > 7: print "Linking input data to instance directory..."
+	
 	if options.testdata != None:
 		pathname = os.path.dirname(os.path.abspath( options.testdata ))
 		filename = ntpath.basename( options.testdata )
@@ -183,35 +184,37 @@ def main():
 		os.symlink( linkfrom, linkto )
 	
 	# Get image/projection data
+	if options.verbose > 3: 
+		if options.testdata : print "Generating Projections of %s"%(options.testdata)
+		if options.tiltseries : print "Reading Projections from %s"%(options.tiltseries)
 	data, xlen = get_data( options, nslices, imgnum )
 	
 	if options.noise != False:	# add Noise to Image
+		if options.verbose > 2: print "Adding Noise to Input Data..."
 		data += noisiness * np.random.randn(*data.shape)
-		outpath = options.path + "/noisy_input.hdf"
-		from_numpy(data).write_image( outpath )
+		noisy_outpath = options.path + "/noisy_input.hdf"
+		from_numpy(data).write_image( noisy_outpath )
 	
 	# Projection operator and projections data
+	if options.verbose > 2: print "Building Projection Operator..."
 	projection_operator = build_projection_operator( tiltangles, xlen, nslices, None, subpix, 0, None )
 	
 	if options.tiltseries:
 		projections = data.ravel()[:, np.newaxis]
 	else:
 		projections = projection_operator * data.ravel()[:, np.newaxis]
-	
-	############################################################################
-	print " * * * PROJECTIONS DATA FOR DEBUGGING * * * "
-	debug_printer(projections)
-	
+
+	if options.verbose > 9: print "Writing Projections to Disk... "
 	outpath = options.path + "/" + "stacked_prjs.hdf"
 	for i in range( nslices ):
 		from_numpy(projections[i*xlen:(i+1)*xlen]).write_image( outpath, i )
-	############################################################################
 	
 	# Reconstruction
+	if options.verbose > 2: print "Starting Reconstruction..."
 	t1 = time.time()
 	recon, energies = fista_tv( options, tiltangles, projections, beta, niters, projection_operator )
 	t2 = time.time()
-	if options.verbose > 2: print "reconstruction completed in %f s" %( t2 - t1 )
+	if options.verbose > 3: print "Reconstruction completed in %s s"%(str(t2-t1))
 	
 	# Store reconstruction in instance outfile directory
 	outpath = options.path + "/" + outfile
@@ -223,6 +226,7 @@ def main():
 	#	ift.write_image( fft_outpath )
 	
 	if options.fsc != False:
+		if options.verbose > 3: print "Generating an FSC plot..."
 		fscpath = options.path + "/" + "fsc.txt"
 		datapath = options.testdata
 		os.popen("e2proc3d.py %s %s --calcfsc %s"%( outpath, fscpath, datapath ))
@@ -232,17 +236,8 @@ def main():
 	return
 
 
-############################################################################
-def debug_printer( variable ):
-	print "Shape: \n %s" %(str(variable.shape))
-	print "Object: \n %s"%(str(variable))
-	print "Type: \n %s"%(type(variable))
-	return
-############################################################################
-
-
 def get_data( options, nslices, imgnum=0 ):
-	"""Read an input image as a numpy array return its dimensions"""
+	"""Read an input image as a numpy array return its length in x"""
 	if options.testdata:
 		testdata = EMData( options.testdata, imgnum )
 		xlen = testdata.get_xsize()
@@ -251,9 +246,7 @@ def get_data( options, nslices, imgnum=0 ):
 		npstack = []
 		for i in range( nslices ):
 			img = EMData( options.tiltseries, i )
-			#if options.fft:
-			#	img = img.do_fft()
-			np_img = img.numpy()
+			np_img = img.numpy().copy()
 			npstack.append( np_img )
 		data = np.asarray( npstack )
 		xlen = img.get_xsize()
