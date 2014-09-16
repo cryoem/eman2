@@ -67,14 +67,6 @@ def main():
 	if not os.access(microdir, os.R_OK):
 		os.mkdir("micrographs")
 
-	# If we do not do any filtering and keep the micorgpahs in the same format, only need to move micros.
-	if not options.invert and not options.edgenorm and not options.xraypixel and (os.path.splitext(args[0])[1] == ("."+options.format)):
-		for arg in args:
-			os.rename(arg,os.path.join(microdir,os.path.basename(arg)))
-		print "exiting...."
-		exit(0)
-
-
 	logid=E2init(sys.argv,options.ppid)
 
 	# After filtration we move micrographs to a directory 'raw_micrographs', if desired
