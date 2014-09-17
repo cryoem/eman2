@@ -243,7 +243,7 @@ def main():
 		chunks = []
 		for i in xrange(4):
 			#  I use the MPI function here just to easily get the balanced load
-			j,k = MPI_start_end(t, 4, i)
+			j,k = MPI_start_end(nn, 4, i)
 			chunks.append(t[j:k])
 			chunks[i].sort()
 			write_text_file(chunks[i],os.path.join(outdir,'chunk%1d.txt'%i))
@@ -251,6 +251,7 @@ def main():
 		del t
 		write_text_file([ len(chunks[i]) for i in xrange(4) ],os.path.join(outdir,'chunklengths.txt'))
 
+		"""
 		pt = [[None]]*6
 		ll=0
 		for i in xrange(3):
@@ -264,7 +265,7 @@ def main():
 			outbdb = "bdb:"+ os.path.join(outdir,"X%1d"%i)
 			cmd = '{} {} {} {}'.format('e2bdb.py', inputbdb, '--makevstack='+outbdb, '--list='+listfile)
 			subprocess.call(cmd, shell=True)
-
+		"""
 		#  Run 6 programs
 
 	elif options.phase == 2 and len(args) == 2:

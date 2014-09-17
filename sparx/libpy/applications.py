@@ -6998,8 +6998,8 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 	onx = bcast_number_to_all(onx, source_node = main_node)
 
 
-	if last_ring < 0:	last_ring = int(nx/2) - 2
-	mask2D  = model_circle(last_ring,onx,onx)
+	if last_ring < 0:	last_ring = int(onx/2) - 2
+	mask2D  = model_circle(last_ring, onx, onx)
 	if(shrinkage < 1.0):
 		last_ring  = int(last_ring*shrinkage)
 		#ali3d_options.ou = last_ring
@@ -7028,6 +7028,8 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 			if CTF :
 				ctf_params.apix /= shrinkage
 				dataim[im].set_attr('ctf', ctf_params)
+
+	mask2D  = model_circle(last_ring, nx, nx)
 
 
 	if chunk <= 0.0:  chunk = 1.0
