@@ -2,7 +2,7 @@
 
 #
 # Author: Jesus Galaz-Montoya 03/2011, (based on Steven Ludtke's initial implementation [02/15/2011] of Jesus's older scripts).
-# Last modification: 05/February/2013
+# Last modification: 16/Sept/2014
 #
 # Copyright (c) 2011 Baylor College of Medicine
 #
@@ -233,8 +233,6 @@ def main():
 	
 	#print "options are", options
 	
-	print "\n\n\n(e2spt_classaverage.py) options.refpreprocess is", options.refpreprocess
-	print "\n\n\n"
 		
 	#print help 
 	if not options.input:
@@ -1432,7 +1430,9 @@ def sptmakepath(options, stem='spt'):
 
 
 def preprocessing(image,options,mask,clipali,normproc,shrink,lowpass,highpass,preprocess,threshold,ptclindx,tag='ptcls',coarse='yes',round=-1):
-	
+
+	print "\n(e2spt_classaverage.py) preprocessing"
+	print "Mask and its type are", mask, type(mask)
 	if mask == 'None' or mask == 'none':
 		mask = None
 	if lowpass == 'None' or lowpass == 'none':
