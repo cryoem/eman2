@@ -304,7 +304,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.brefit=QtGui.QPushButton("Refit")
 		self.gbl.addWidget(self.brefit,7,2)
 
-		self.cbgadj=CheckBox(None,"CTF BG Adj",0)
+		self.cbgadj=CheckBox(None,"CTF BG Adj",1)
 		self.gbl.addWidget(self.cbgadj,7,3)
 
 
@@ -415,6 +415,8 @@ class GUIEvalImage(QtGui.QWidget):
 			self.doImport()
 		elif event.key()==Qt.Key_U :
 			self.unImport()
+		elif event.key()==Qt.Key_F :
+			self.doRefit()
 
 
 	def closeEvent(self,event):
