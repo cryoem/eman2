@@ -167,6 +167,20 @@ def main():
 	parser.add_argument("--shrink", type=int,default=0,help="Optionally shrink the input volumes by an integer amount for coarse alignment.")
 	parser.add_argument("--shrinkfine", type=int,default=0,help="Optionally shrink the input volumes by an integer amount for fine alignment.")
 	
+	parser.add_argument("--search", type=int,default=8,help=""""During COARSE alignment
+		translational search in X, Y and Z, in pixels. Default=8.
+		This WILL overwrite any search: provided through --align,
+		EXCEPT if you provide --search=8, which is the default. In general, just avoid
+		providing search twice (through here and through the aligner, --align). If you do,
+		just be careful to make them consistent to minimize misinterpretation and error.""")
+	
+	parser.add_argument("--searchfine", type=int,default=2,help=""""During FINE alignment
+		translational search in X, Y and Z, in pixels. Default=2.
+		This WILL overwrite any search: provided through --falign,
+		EXCEPT if you provide --searchfine=2, which is the default. In general, just avoid
+		providing search twice (through here and through the fine aligner --falign). If you do,
+		just be careful to make them consistent to minimize misinterpretation and error.""")
+	
 	#parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default='', guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 
 	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default="thread:1", guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
