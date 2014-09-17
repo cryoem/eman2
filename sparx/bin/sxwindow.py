@@ -101,7 +101,7 @@ def main():
 	parser.add_option('--outstack',     dest='outstack',      help='Output stack name')
 	
 	parser.add_option("--invert",     help="If writing outputt inverts pixel intensities",default=False)
-	parser.add_option("--norm", type=str,help="Normalization processor to apply to written particle images. Should be normalize, normalize.edgemean,etc.Specifc \"None\" to turn this off", default="normalize.edgemean")
+	???parser.add_option("--norm", type=str,help="Normalization processor to apply to written particle images. Should be normalize, normalize.edgemean,etc.Specifc \"None\" to turn this off", default="normalize.edgemean")
 
 	(options, args) = parser.parse_args()
 	box_size = options.box_size
@@ -111,22 +111,22 @@ def main():
 		print "Please run '" + progname + " -h' for detailed options\n"
 	else:
 		database = "e2boxercache"
-		db = js_open_dict(os.path.join(database,"quality.json"))
+		??db = js_open_dict(os.path.join(database,"quality.json"))
 		suffix    = str(db['suffix'])    # db['suffix'] is unicode, so need to call str()
 		extension = str(db['extension']) # db['extension'] is unicode, so need to call str()
 		
-		dbGAUSS = js_open_dict(os.path.join(database,"gauss_box_DB.json"))
-		use_variance = str(dbGAUSS['demoparms']['use_variance'])
+		??dbGAUSS = js_open_dict(os.path.join(database,"gauss_box_DB.json"))
+		??use_variance = str(dbGAUSS['demoparms']['use_variance'])
 		
 		info_suffix = '_info.json'
 		
 		micnames = []
 		import glob
 		
-		for f in glob.glob(os.path.join(options.topdir, '*.hdf')):   # currently handles only hdf formatted micrographs
+		for f in glob.glob(os.path.join(options.topdir, ???'*.hdf')):   # currently handles only hdf formatted micrographs
 			micnames.append(base_name(f))
 		
-		mask = pad(model_circle(box_size//2, box_size, box_size), box_size, box_size, 1, 0.0)
+		mask = pad(model_circle(box_size//2, box_size, box_size),??? box_size, box_size, 1, 0.0)
 		
 # 		otcl_images  = "bdb:%s/"%options.outdir + options.outstack + suffix
 # 		iImg=0
@@ -149,24 +149,24 @@ def main():
 				im += avg
 			
 # 			im = ramp(im)
-			img_filt = filt_gaussh( im, 0.015625)
+			img_filt = filt_gaussh( im, ??0.015625)
 			
 			subsample_rate = options.input_pixel / options.output_pixel
 			if subsample_rate != 1.0:
 				print "Generating downsampled image\n"
-				sb = Util.sincBlackman(template_min, frequency_cutoff,1999) # 1999 taken directly from util_sparx.h
+				????sb = Util.sincBlackman(template_min, frequency_cutoff,1999) # 1999 taken directly from util_sparx.h
 				small_img = img_filt.downsample(sb,subsample_rate)
 				del sb
 			else:
-				small_img = img_filt.copy()
+				small_img = ???img_filt.copy()
 		
 			[avg,sigma,fmin,fmax] = Util.infomask( small_img, None, True )
-			small_img -= avg
+			??small_img -= avg
 			small_img /= sigma
 			
 			if(use_variance):
 				from morphology import power
-				small_img = power(small_img, 2.0)
+				???small_img = power(small_img, 2.0)
 				print "using variance"
 
 			x0 = small_img.get_xsize()//2  #  Floor division or integer division
@@ -181,8 +181,8 @@ def main():
 				
 				image = Util.window(small_img, box_size, box_size, 1, x-x0, y-y0)
 
-				if options.invert: image.mult(-1)
-				if str(options.norm) != "None": image.process_inplace(options.norm)
+				???if options.invert: image.mult(-1)
+				???if str(options.norm) != "None": image.process_inplace(options.norm)
 
 				image.write_image(otcl_images, i)
 # 				imn.write_image(otcl_images, iImg)
