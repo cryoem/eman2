@@ -79,6 +79,7 @@ power spectrum in various ways."""
 
 	parser.add_argument("--gui",action="store_true",help="This is a GUI-only program. This option is provided for self-consistency",default=True)
 	parser.add_argument("--apix",type=float,help="Angstroms per pixel for all images",default=None, guitype='floatbox', row=3, col=0, rowspan=1, colspan=1, mode="eval['self.pm().getAPIX()']")
+	parser.add_argument("--constbfactor",type=float,help="Set B-factor to fixed specified value, negative value autofits",default=-1.0, guitype='floatbox', row=9, col=0, rowspan=1, colspan=1, mode='autofit[-1.0],tuning[-1.0],genoutp[-1.0]')
 	parser.add_argument("--voltage",type=float,help="Microscope voltage in KV",default=None, guitype='floatbox', row=3, col=1, rowspan=1, colspan=1, mode="eval['self.pm().getVoltage()']")
 	parser.add_argument("--cs",type=float,help="Microscope Cs (spherical aberation)",default=None, guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="eval['self.pm().getCS()']")
 	parser.add_argument("--ac",type=float,help="Amplitude contrast (percentage, default=10)",default=10, guitype='floatbox', row=4, col=1, rowspan=1, colspan=1, mode="eval")
@@ -93,7 +94,7 @@ power spectrum in various ways."""
 
 	from emapplication import EMApp
 	app=EMApp()
-	gui=GUIEvalImage(args,options.voltage,options.apix,options.cs,options.ac,options.box,options.usefoldername)
+	gui=GUIEvalImage(args,options.voltage,options.apix,options.cs,options.ac,options.box,options.usefoldername,options.constbfactor)
 	gui.show()
 
 	try:
@@ -112,7 +113,7 @@ power spectrum in various ways."""
 
 
 class GUIEvalImage(QtGui.QWidget):
-	def __init__(self,images,voltage=None,apix=None,cs=None,ac=10.0,box=512,usefoldername=False):
+	def __init__(self,images,voltage=None,apix=None,cs=None,ac=10.0,box=512,usefoldername=False,constbfactor=-1):
 		"""Implements the CTF fitting dialog using various EMImage and EMPlot2D widgets
 		'data' is a list of (filename,ctf,im_1d,bg_1d,quality)
 		'parms' is [box size,ctf,box coord,set of excluded boxnums,quality,oversampling]
@@ -149,6 +150,7 @@ class GUIEvalImage(QtGui.QWidget):
 		self.defaultapix=apix
 		self.defaultcs=cs
 		self.defaultac=ac
+		self.constbfactor=constbfactor
 
 		# Per image parameters to keep track of
 		# for each image [box size,ctf,box coord,set of excluded boxnums,quality,oversampling]
@@ -188,6 +190,8 @@ class GUIEvalImage(QtGui.QWidget):
 				if self.defaultapix!=None : ctf.apix=self.defaultapix
 				parms=[int(box),ctf,(256,256),set(),5,1]
 				print "Initialize new parms for: ",base_name(i)
+
+			if self.constbfactor>0 : parms[1].bfactor=self.constbfactor
 
 			if parms[0]<64 :
 				parms[0]=512
@@ -619,11 +623,16 @@ class GUIEvalImage(QtGui.QWidget):
 
 		try:
 			parms[1]=e2ctf.ctf_fit(self.fft1d,parms[1].background,parms[1].background,self.fft,self.fftbg,parms[1].voltage,parms[1].cs,parms[1].ampcont,apix,bgadj=False,autohp=True,verbose=1)
+			if self.cbgadj.getValue() :
+				self.bgAdj()
+				parms[1]=e2ctf.ctf_fit(self.fft1d,parms[1].background,parms[1].background,self.fft,self.fftbg,parms[1].voltage,parms[1].cs,parms[1].ampcont,apix,bgadj=False,autohp=True,verbose=1)
+				self.bgAdj()
 		except:
 			print "CTF Autofit Failed"
 			traceback.print_exc()
 			parms[1].defocus=1.0
 
+		if self.constbfactor>0 : parms[1].bfactor=self.constbfactor
 		self.sdefocus.setValue(parms[1].defocus,True)
 		self.sbfactor.setValue(parms[1].bfactor,True)
 		self.sampcont.setValue(parms[1].ampcont,True)
@@ -718,6 +727,8 @@ class GUIEvalImage(QtGui.QWidget):
 			ctf.defocus=0.0		#triggers fitting
 			ctf.bfactor=200.0
 			ctf.ampcont=self.defaultac
+
+		if self.constbfactor>0 : ctf.bfactor=self.constbfactor
 
 		self.sdefocus.setValue(ctf.defocus,True)
 		self.sbfactor.setValue(ctf.bfactor,True)
@@ -926,22 +937,39 @@ class GUIEvalImage(QtGui.QWidget):
 #			bg_1d=e2ctf.low_bg_curve(self.fft1d,ds)
 			bg_1d=list(parms[1].background)
 
+			xyd=XYData()
 #			lz=int(ctf.zero(0)/ds)
-			for lz in xrange(1,int(ctf.zero(0)/ds)):
-				if self.fft1d[lz-1]<self.fft1d[lz] : break
 
+			# Find the minimum value near the origin, which we'll use as a zero (though it likely should not be)
+			mv=(self.fft1d[1],1)
+			fz=int(ctf.zero(0)/(ds*2))
+			for lz in xrange(1,fz):
+				mv=min(mv,(self.fft1d[lz],lz))
+
+#			print mv,int(ctf.zero(0)/(ds*2)),min(self.fft1d[1:int(ctf.zero(0)/(ds*2))])
+			xyd.insort(mv[1],mv[0])
+
+			# now we add all of the zero locations to our XYData object
 			for i in xrange(100):
 				z=int(ctf.zero(i)/ds)
-#				print i,z,len(bg_1d),z*ds
-				if z>len(bg_1d): break
-				v1=min(self.fft1d[lz-1:lz+2])
-				v2=min(self.fft1d[z-1:z+2])
-				for j in xrange(lz,z):
-					r=float(j-lz)/(z-lz)
-					bg_1d[j]=v1*(1.0-r)+v2*r
-				lz=z
+				if z>=len(bg_1d)-1: break
+				if self.fft1d[z-1]<self.fft1d[z] and self.fft1d[z-1]<self.fft1d[z+1]: mv=(z-1,self.fft1d[z-1])
+				elif self.fft1d[z]<self.fft1d[z+1] : mv=(z,self.fft1d[z])
+				else : mv=(z+1,self.fft1d[z+1])
+				xyd.insort(mv[0],mv[1])
 
-			parms[1].background=list(bg_1d)
+			# new background is interpolated XYData
+			parms[1].background=[xyd.get_yatx_smooth(i,1) for i in xrange(len(bg_1d))]
+
+			# if our first point (between the origin and the first 0) is too high, we readjust it once
+			bs=[self.fft1d[i]-parms[1].background[i] for i in xrange(fz)]
+			if min(bs)<0 :
+				mv=(bs[0],self.fft1d[0],0)
+				for i in xrange(1,fz): mv=min(mv,(bs[i],self.fft1d[i],i))
+				xyd.set_x(0,mv[2])
+				xyd.set_y(0,mv[1])
+				
+				parms[1].background=[xyd.get_yatx_smooth(i,1) for i in xrange(len(bg_1d))]
 
 		self.needredisp=True
 
