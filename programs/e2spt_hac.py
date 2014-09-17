@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Jesus Galaz-Montoya, 07/2011; modified 02/June/2014
+# Author: Jesus Galaz-Montoya, 07/2011; modified 16/Sep/2014
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -225,7 +225,7 @@ def main():
 	
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="""verbose level [0-9], higner number means higher level of verboseness""")
 
-	parser.add_argument("--notprocfinelikecoarse",action='store_true',default=False,help="""
+	parser.add_argument("--procfinelikecoarse",action='store_true',default=False,help="""
 		If you supply this parameters, particles for fine alignment will NOT be preprocessed
 		identically to particles for coarse alignment by default.  
 		If you supply this, but want specific parameters for preprocessing particles for 
@@ -1613,6 +1613,9 @@ class Align3DTaskAVSA(JSTask):
 		
 		print "\n(e2spt_hac.py)(Align3DTaskAVSA) Will call alignment function"
 		ret=alignment( fixedimage, image, options['label'], options['classoptions'],xformslabel,options['round'],None,'e2spt_hac',refpreprocess)
+				
+		#ret=alignment(fixedimage,image,classoptions['label'],classoptions['options'],xformslabel,classoptions['currentIter'],classoptions['transform'],'e2spt_classaverage',refpreprocess)
+
 		print "\n(e2spt_hac.py)(Align3DTaskAVSA) Done with alignment, back in e2spt_hac.py."
 		
 		bestfinal=ret[0]
