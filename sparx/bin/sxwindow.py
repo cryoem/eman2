@@ -99,6 +99,9 @@ def main():
 	parser.add_option('--box_size',     dest='box_size',     type=int,   help='box size')
 	parser.add_option('--outdir',     dest='outdir',      help='Output directory')
 	parser.add_option('--outstack',     dest='outstack',      help='Output stack name')
+	
+	parser.add_option("--invert",     help="If writing outputt inverts pixel intensities",default=False)
+	parser.add_option("--norm", type=str,help="Normalization processor to apply to written particle images. Should be normalize, normalize.edgemean,etc.Specifc \"None\" to turn this off", default="normalize.edgemean")
 
 	(options, args) = parser.parse_args()
 	box_size = options.box_size
@@ -111,6 +114,10 @@ def main():
 		db = js_open_dict(os.path.join(database,"quality.json"))
 		suffix    = str(db['suffix'])    # db['suffix'] is unicode, so need to call str()
 		extension = str(db['extension']) # db['extension'] is unicode, so need to call str()
+		
+		dbGAUSS = js_open_dict(os.path.join(database,"gauss_box_DB.json"))
+		use_variance = str(dbGAUSS['demoparms']['use_variance'])
+		
 		info_suffix = '_info.json'
 		
 		micnames = []
@@ -134,80 +141,50 @@ def main():
 			print basename, f_info, f_mic
 
 			im = get_im(f_mic)
-# 			imname = basename + "_orig.hdf"
-# 			im.write_image(imname)
+			
+			if options.invert:
+				[avg,sigma,fmin,fmax] = Util.infomask( im, None, True )
+				im -= avg
+				im *= -1
+				im += avg
+			
 # 			im = ramp(im)
 			img_filt = filt_gaussh( im, 0.015625)
-# 			img_filt.write_image(f_mic+"_sxw.hdf")
-			imn = img_filt.copy()
-			imn.write_image(f_mic+"_sxw.hdf")
-# 			imname = basename + "_ramp.hdf"
-# 			im.write_image(imname)
-	 		ref_val = imn.get_value_at(3401, 3638)
- 			print ref_val
+			
+			subsample_rate = options.input_pixel / options.output_pixel
+			if subsample_rate != 1.0:
+				print "Generating downsampled image\n"
+				sb = Util.sincBlackman(template_min, frequency_cutoff,1999) # 1999 taken directly from util_sparx.h
+				small_img = img_filt.downsample(sb,subsample_rate)
+				del sb
+			else:
+				small_img = img_filt.copy()
+		
+			[avg,sigma,fmin,fmax] = Util.infomask( small_img, None, True )
+			small_img -= avg
+			small_img /= sigma
+			
+			if(use_variance):
+				from morphology import power
+				small_img = power(small_img, 2.0)
+				print "using variance"
 
-			x0 = imn.get_xsize()//2  #  Floor division or integer division
-			y0 = imn.get_ysize()//2
+			x0 = small_img.get_xsize()//2  #  Floor division or integer division
+			y0 = small_img.get_ysize()//2
 
 			coords = js_open_dict(f_info)["boxes"]
-			[avg,sigma,fmin,fmax] = Util.infomask( imn, None, True )
-			imn -= avg
-			imn /= sigma
-			imn.write_image(f_mic+"_sxw_after_mask.hdf")
-			from morphology import power
-			imn = power(imn, 2.0)
-# 			print coords
+
 			for i in range(len(coords)):
-# 				if i>0: continue
 
 				x = int(coords[i][0])
 				y = int(coords[i][1])
-
-# 				imnn=Util.window(imn, box_size, box_size, 1, x-x0, y-y0)
-# 				reg = Region(x-box_size/2, y-box_size/2, box_size, box_size)
-# 				imn = im.get_clip(reg)
-
-# 				imname = basename + "_" + str(i) + "_wind.hdf"
-# 				imn.write_image(imname)
-# 
-# 				if options.output_pixel != options.input_pixel:
-# 					imn = resample(imn, options.input_pixel/options.output_pixel)
-# 			
-# 				[avg,sigma,fmin,fmax] = Util.infomask( imn, None, True )
-# 				imn -= avg
-# 				imn /= sigma
-				imnn=Util.window(imn, box_size, box_size, 1, x-x0, y-y0)
-				if i<1:
-					imnn.write_image(f_mic + "_" + str(i) + "_sxw_wind.hdf")
-# 				stat = Util.infomask(imnn, mask, False)   
-# 				imnn -= stat[0]
-# 				print stat[0], basename + "_" + str(i)+ " : STATS"
-# 				imname = basename + "_" + str(i)+ "_min_stat.hdf"
-# 				imn.write_image(imname)
-# 				Util.mul_scalar(imnn, 1.0/stat[1])
-# 				imname = basename + "_" + str(i)+ "_mul_scal.hdf"
-# 				imn.write_image(imname)
 				
-# 				imn.set_attr('ptcl_source_image',f_mic)
-# 				imn.set_attr('ptcl_source_coord',[x,y])
-# 				ctfs = read_text_row(options.importctf)
-# 				cterr = [options.defocuserror/100.0, options.astigmatismerror]
-# 
-# 				for i in xrange(len(ctfs)):
-# 					smic = ctfs[i][-1].split('/')
-# 					ctfilename = (smic[-1].split('.'))[0]
-# # 					if(ctfs[i][8]/ctfs[i][0] > cterr[0]):
-# # 						print_msg('Defocus error %f exceeds the threshold. Micrograph %s rejected.\n'%(ctfs[i][8]/ctfs[i][0], ctfilename))
-# # 						ctfs[i][0]=10.0
-# # 						continue
-# 					if(ctfs[i][10] > cterr[1] ):
-# 						ctfs[i][6] = 0.0
-# 						ctfs[i][7] = 0.0
-# 				
-# 				imn.set_attr("ctf",ctff)
-# 				imn.set_attr("ctf_applied", 0)
+				image = Util.window(small_img, box_size, box_size, 1, x-x0, y-y0)
 
-				imnn.write_image(otcl_images, i)
+				if options.invert: image.mult(-1)
+				if str(options.norm) != "None": image.process_inplace(options.norm)
+
+				image.write_image(otcl_images, i)
 # 				imn.write_image(otcl_images, iImg)
 # 				iImg = iImg + 1
 
