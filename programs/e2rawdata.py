@@ -119,7 +119,12 @@ def main():
 			# Compute 1-D curve and background
 			bg_1d=e2ctf.low_bg_curve(fft1d,ds)
 
+			#initial fit, background adjustment, refine fit, final background adjustment
 			ctf=e2ctf.ctf_fit(fft1d,bg_1d,bg_1d,ffta,fftbg,options.voltage,options.cs,options.ac,options.apix,1,dfhint=(options.defocusmin,options.defocusmax))
+			bgAdj(ctf,fft1d)
+			ctf=e2ctf.ctf_fit(fft1d,ctf.background,ctf.background,ffta,fftbg,options.voltage,options.cs,options.ac,options.apix,1,dfhint=(options.defocusmin,options.defocusmax))
+			bgAdj(ctf,fft1d)
+			
 			if options.astigmatism : e2ctf.ctf_fit_stig(ffta,fftbg,ctf)
 			
 			#ctf.background=bg_1d
@@ -131,6 +136,45 @@ def main():
 		E2progress(logid,(float(i)/float(len(args))))
 
 	E2end(logid)
+
+def bgAdj(ctf,fg_1d):
+	"""Smooths the background based on the values of the foreground near the CTF zeroes and puts the
+	smoothed background into the CTF object"""
+	ds=ctf.dsbg
+	ctf=ctf
+	bg_1d=list(ctf.background)
+
+	xyd=XYData()
+
+	# Find the minimum value near the origin, which we'll use as a zero (though it likely should not be)
+	mv=(fg_1d[1],1)
+	fz=int(ctf.zero(0)/(ds*2))
+	for lz in xrange(1,fz):
+		mv=min(mv,(fg_1d[lz],lz))
+
+	xyd.insort(mv[1],mv[0])
+
+	# now we add all of the zero locations to our XYData object
+	for i in xrange(100):
+		z=int(ctf.zero(i)/ds)
+		if z>=len(bg_1d)-1: break
+		if fg_1d[z-1]<fg_1d[z] and fg_1d[z-1]<fg_1d[z+1]: mv=(z-1,fg_1d[z-1])
+		elif fg_1d[z]<fg_1d[z+1] : mv=(z,fg_1d[z])
+		else : mv=(z+1,fg_1d[z+1])
+		xyd.insort(mv[0],mv[1])
+
+	# new background is interpolated XYData
+	ctf.background=[xyd.get_yatx_smooth(i,1) for i in xrange(len(bg_1d))]
+
+	# if our first point (between the origin and the first 0) is too high, we readjust it once
+	bs=[fg_1d[i]-ctf.background[i] for i in xrange(fz)]
+	if min(bs)<0 :
+		mv=(bs[0],fg_1d[0],0)
+		for i in xrange(1,fz): mv=min(mv,(bs[i],fg_1d[i],i))
+		xyd.set_x(0,mv[2])
+		xyd.set_y(0,mv[1])
+		
+		ctf.background=[xyd.get_yatx_smooth(i,1) for i in xrange(len(bg_1d))]
 
 
 if __name__ == "__main__":
