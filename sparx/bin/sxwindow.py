@@ -27,6 +27,21 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+
+# import os, sys
+# import json
+# 
+# from optparse import *
+# from EMAN2 import *
+# from EMAN2db import *
+# from EMAN2jsondb import *
+# from emboxerbase import *
+# 
+# from utilities import *
+# from fundamentals import *
+# from filter import *
+# from global_def import *
+
 import os, sys
 import json
 
@@ -40,6 +55,7 @@ from utilities import *
 from fundamentals import *
 from filter import *
 from global_def import *
+
 
 def read_coordinates(location):
 	"""
@@ -100,8 +116,9 @@ def main():
 	parser.add_option('--outdir',     dest='outdir',      help='Output directory')
 	parser.add_option('--outstack',     dest='outstack',      help='Output stack name')
 	
+	parser.add_option("--micsuffix",  type=str,	default=".hdf", help="A string denoting micrograph type. Currently only handles suffix types, e.g. 'hdf', 'ser' etc.")
+
 	parser.add_option("--invert",     help="If writing outputt inverts pixel intensities",default=False)
-	???parser.add_option("--norm", type=str,help="Normalization processor to apply to written particle images. Should be normalize, normalize.edgemean,etc.Specifc \"None\" to turn this off", default="normalize.edgemean")
 
 	(options, args) = parser.parse_args()
 	box_size = options.box_size
@@ -110,29 +127,19 @@ def main():
 		print "\nusage: " + usage
 		print "Please run '" + progname + " -h' for detailed options\n"
 	else:
-		database = "e2boxercache"
-		??db = js_open_dict(os.path.join(database,"quality.json"))
-		suffix    = str(db['suffix'])    # db['suffix'] is unicode, so need to call str()
-		extension = str(db['extension']) # db['extension'] is unicode, so need to call str()
-		
-		??dbGAUSS = js_open_dict(os.path.join(database,"gauss_box_DB.json"))
-		??use_variance = str(dbGAUSS['demoparms']['use_variance'])
-		
-		info_suffix = '_info.json'
+		box_size = options.box_size
+		extension = options.micsuffix
+		suffix    = "_ptcls"
 		
 		micnames = []
 		import glob
-		
-		for f in glob.glob(os.path.join(options.topdir, ???'*.hdf')):   # currently handles only hdf formatted micrographs
+		for f in glob.glob(os.path.join(options.topdir, "*" + extension)):
 			micnames.append(base_name(f))
-		
-		mask = pad(model_circle(box_size//2, box_size, box_size),??? box_size, box_size, 1, 0.0)
-		
-# 		otcl_images  = "bdb:%s/"%options.outdir + options.outstack + suffix
-# 		iImg=0
 
+		# ???
+		mask = pad(model_circle(box_size//2, box_size, box_size), box_size, box_size, 1, 0.0)
+		
 		for i in range(len(micnames)):
-			if i>0: continue
 			basename = micnames[i]
 			f_mic = os.path.join(options.topdir, basename + extension)
 			f_info = info_name(f_mic)
@@ -148,30 +155,21 @@ def main():
 				im *= -1
 				im += avg
 			
-# 			im = ramp(im)
-			img_filt = filt_gaussh( im, ??0.015625)
+# 			img_filt = filt_gaussh( im, ??0.015625)
 			
 			subsample_rate = options.input_pixel / options.output_pixel
 			if subsample_rate != 1.0:
 				print "Generating downsampled image\n"
-				????sb = Util.sincBlackman(template_min, frequency_cutoff,1999) # 1999 taken directly from util_sparx.h
-				small_img = img_filt.downsample(sb,subsample_rate)
-				del sb
-			else:
-				small_img = ???img_filt.copy()
+				im = resample(im,subsample_rate)
 		
-			[avg,sigma,fmin,fmax] = Util.infomask( small_img, None, True )
-			??small_img -= avg
-			small_img /= sigma
-			
-			if(use_variance):
-				from morphology import power
-				???small_img = power(small_img, 2.0)
-				print "using variance"
-
-			x0 = small_img.get_xsize()//2  #  Floor division or integer division
-			y0 = small_img.get_ysize()//2
-
+# 			[avg,sigma,fmin,fmax] = Util.infomask( small_img, None, True )
+# 			:FIXME:
+# 			??small_img -= avg
+# 			small_img /= sigma
+# 			
+			x0 = im.get_xsize()//2  #  Floor division or integer division
+			y0 = im.get_ysize()//2
+ 
 			coords = js_open_dict(f_info)["boxes"]
 
 			for i in range(len(coords)):
@@ -179,10 +177,9 @@ def main():
 				x = int(coords[i][0])
 				y = int(coords[i][1])
 				
-				image = Util.window(small_img, box_size, box_size, 1, x-x0, y-y0)
-
-				???if options.invert: image.mult(-1)
-				???if str(options.norm) != "None": image.process_inplace(options.norm)
+				image = Util.window(im, box_size, box_size, 1, x-x0, y-y0)
+				
+				im = ramp(im)
 
 				image.write_image(otcl_images, i)
 # 				imn.write_image(otcl_images, iImg)
