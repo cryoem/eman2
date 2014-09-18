@@ -5,12 +5,14 @@ set echo on
 gunzip ../tteftu_with_tRNA.pdb.gz
 
 sxpdb2em.py ../tteftu_with_tRNA.pdb tmp.hdf --apix=5.2 --box=64
+# --apix: pixel size (Angstroms)
+# --box:  box size (voxels)
 ###################################################################
 # To run gui version, enter the following in the command line:
-# 	sxgui.py --demo=mpibdbctf &
-# and then press the 'sxpdb2em' button in the main menu. A separate window will pop up with the input fields already initialized to the proper values. 
+#        sxgui.py --demo=mpibdbctf &
+# and then press the 'sxpdb2em' button in the main menu. A separate window will pop up with the input fields already initialized to the proper values.
 # Press the green 'Run sxpdb2em' button to execute the command.
-# Note thatif sxgui.py is invoked without the --demo option, the input fields will not be automatically initialized with the approprite values, in 
+# Note thatif sxgui.py is invoked without the --demo option, the input fields will not be automatically initialized with the approprite values, in
 # which case the proper values must be entered manually.
 ###################################################################
 
@@ -24,23 +26,23 @@ rm tmp.hdf
 # It simulates the procedure of EM image acquisition process.
 # The output projections were disturbed with Gaussian noise.
 # Each output file was computed with regard to various CTF settings.
-sxprocess.py ../model_structure.hdf particles mic --generate_projections apix=5.2:CTF=True 
+sxprocess.py ../model_structure.hdf particles mic --generate_projections apix=5.2:CTF=True
 
-# Before proceeding to automated particle picking mode, it is suggested that the user 
+# Before proceeding to automated particle picking mode, it is suggested that the user
 # first use e2boxer in the interactive mode to determine the desired parameters by
 # first invoking e2boxer with the --gui option and a micrograph file name:
 
 #e2boxer.py --gui mic0.hdf &
 
-# Choose "Gauss" in the drop down menu for "Current Boxing Tool," set desired parameters, and 
+# Choose "Gauss" in the drop down menu for "Current Boxing Tool," set desired parameters, and
 # click on "Run" to pick particles.
-# There should be a window displaying the picked particles. To reset or "unpick" the 
+# There should be a window displaying the picked particles. To reset or "unpick" the
 # particles, click on "Clear Boxes".
-# Click on the "Write output" button to save the particles selected for mic0.hdf. 
-# By default the particles file will be saved to bdb:particles/mic0_ptcls. 
+# Click on the "Write output" button to save the particles selected for mic0.hdf.
+# By default the particles file will be saved to bdb:particles/mic0_ptcls.
  
-# Note that if you saved any particles file under its default name in e2boxer, 
-# make sure to delete it to avoid conflict later in the automated mode. 
+# Note that if you saved any particles file under its default name in e2boxer,
+# make sure to delete it to avoid conflict later in the automated mode.
 # For example, if the particles selected for mic0.hdf was
 # saved to bdb:particles/mic0_ptcls, delete it as follows:
 
@@ -50,29 +52,89 @@ sxprocess.py ../model_structure.hdf particles mic --generate_projections apix=5.
 
 # Create and initialize database
 # Input: name of the key under which the parameters will be saved in the database
-# Output: database with input parameters
-sxprocess.py demoparms --makedb 'gauss_width'=1.0:'pixel_input'=5.2:'pixel_output'=5.2:'thr_low'=1.0:'thr_hi'=30.0:"invert_contrast"=False:"use_variance"=True:"boxsize"=64:"ctf_cs"=2.0:"ctf_fstart"=0.02:"ctf_fstop"=0.5:"ctf_ampcont"=10:"ctf_volt"=120:"ctf_window"=512:"ctf_edge"=0:"ctf_overlap"=50 
+# Output: database with input parameters in JSON format
+sxprocess.py demoparms --makedb 'gauss_width'=1.0:'pixel_input'=5.2:'pixel_output'=5.2:'thr_low'=1.0:'thr_hi'=30.0:"invert_contrast"=False:"use_variance"=True:"boxsize"=64:"ctf_cs"=2.0:"ctf_fstart"=0.02:"ctf_fstop"=0.5:"ctf_ampcont"=10:"ctf_volt"=120:"ctf_window"=512:"ctf_edge"=0:"ctf_overlap"=50
+# 'gauss_width'     = 1.0
+# 'pixel_input'     = 5.2
+# 'pixel_output'    = 5.2
+# 'thr_low'         = 1.0
+# 'thr_hi'          = 30.0
+# "invert_contrast" = False
+# "use_variance"    = True
+# "boxsize"         = 64
+# "ctf_cs"          = 2.0
+# "ctf_fstart"      = 0.02
+# "ctf_fstop"       = 0.5
+# "ctf_ampcont"     = 10
+# "ctf_volt"        = 120
+# "ctf_window"      = 512
+# "ctf_edge"        = 0
+# "ctf_overlap"     = 50
+
 
 # Pick particles and estimate CTF
 # Input: simulated micrographs mic*.hdf
 # Output: particles from the input micrographs mic*_ptcls.bdb
+# Output: more detailed
+#      procpw.txt                           : ?
+#      e2boxercache/base.json               : box_size,ptcl_display_shape
+#      e2boxercache/quality.json            : extension, suffix
+#      info/mic*_info.json                  : list of boxed particles and their coordinates
+#      info/project.json                    :  empty file
+#      particles/EMAN2DB/00image_counts.bdb : ? information about particles
+#      particles/EMAN2DB/mic*_ptcls.bdb     : ? information about particles
+#      particles/EMAN2DB/mic*_ptcls_64x64x1 : ? information about particles
 e2boxer.py --gauss_autoboxer=demoparms --do_ctf=demoparms --write_ptcl --boxsize=64 --norm=normalize.ramp.normvar mic*.hdf --format=bdb
+# --gauss_autoboxer = demoparms : key with autoboxing parameters obtained from Gauss autoboxer
+# --do_ctf          = demoparms : key with ctf estimation parameters obtained from Gauss autoboxer
+# --write_ptcl                  : Write particles to disk
+# --boxsize         = 64        : box size in pixels
+# --norm            = normalize.ramp.normvar : Normalization processor (normalize, normalize.edgemean, "None") to apply to written particle images
+# --format          = bdb       : Format of the output particle images
+
+# Input: binary data files in the form of bdb:particles\#mic*_ptcls
+# Output: new stack
+# Output: more detailed
+#      EMAN2DB/data.bdb : stack file specified from command-line
 e2bdb.py bdb:particles\#mic0_ptcls bdb:particles\#mic1_ptcls bdb:particles\#mic2_ptcls bdb:particles\#mic3_ptcls bdb:particles\#mic4_ptcls --makevstack=bdb:data
+# --makevstack=bdb:data : makes a 'virtual' BDB stack with its own metadata from the binary data given as input, in this case, bdb:particles\#mic*_ptcls
 
 #  phase flip the data set before processing with sxisac since bdb:data has CTF but sxisac currently does not correct for CTF.
-
+# Input:  bdb:data
+# Output: bdb:flip_data
+# Output: more detailed
+#      EMAN2DB/flip_data.bdb
+#      EMAN2DB/flip_data_64x64x1
 sxprocess.py bdb:data bdb:flip_data --phase_flip
+# --phase_flip : Phase flip the input stack
 
 # sxheader.py bdb:data --params=active --one
 # sxheader.py bdb:data --params=xform.align2d --zero
 # set attibute of active to 1 and xform.align2d to zero (not necessary to do it with no-phase-flipped data at this point)
 
+# Input: hdf or bdb file
+# Output: Updated input files, only the headers are modified
 sxheader.py bdb:flip_data --params=active --one
 sxheader.py bdb:flip_data --params=xform.align2d --zero
+# --params=active        : ?
+# --one                  : set all parameters to one
+# --params=xform.align2d : perform operations on the parameters "alpha", "sx", "sy", "mirror" and "scale"
+# --zero                 : set all parameters to zero
+
 
 # pre-align particles with sxali2d.py
-
+# Input:  stack
+# Output: 
+# Output: more detailed
+#      logfile_21_Aug_2014_17_14_02 : file with information about iterations
+#      EMAN2DB/flip_data.bdb        : modified input file after 2-D reference-free alignment
 sxali2d.py bdb:flip_data None --ou=28 --xr="2 1" --ts="1 0.5" --maxit=33 --dst=90
+# None          : ? output_directory maybe ?
+# --ou=28       : outer radius for rotational correlation < nx/2-1 (set to the radius of the particle)
+# --xr="2 1"    : range for translation search in x direction, search is +/xr (is set to "4 2 1 1", if set to "0" it corresponds to rotational alignment only)
+# --ts="1 0.5"  : step of translation search in both directions, (set to "2 1 0.5 0.25", larger value increase the speed, but decrease the accuracy)
+# --maxit=33    : maximum number of iterations (0 means the maximum iterations is 10, but it will automatically stop should the criterion falls
+# --dst=90      : delta
 
 # apply the results from sxali2d.py to the data:
 
@@ -86,10 +148,10 @@ mpirun -np 16 sxisac.py bdb:stack_ali --stab_ali=2 --init_iter=1 --main_iter=1 -
 # ISAC run with parameters given above is not sufficiently restrictive for EM data. Instead, one may try to use default parameters, in which case
 #  the program will be more stringent, but will run significantly longer.
 # In particular, parameters --ou and --thld_err should be adjusted according to the data.
-# The ISAC program is designed to run in multiple generations: we first run the first generation on the data set, which will generate initial class averages. 
-# We call the particles that are assigned to these class averages accounted for and set them aside. We will make a stack of the unaccounted for particles and run the second 
-# generation on this stack. Then we set aside the particles that are accounted for in the second generation and make a new stack for the particles that are still unaccounted for. 
-# The program is designed to use four generation for the full run. The process repeated until no or very few class averages can be generated in one generation. The parameter 
+# The ISAC program is designed to run in multiple generations: we first run the first generation on the data set, which will generate initial class averages.
+# We call the particles that are assigned to these class averages accounted for and set them aside. We will make a stack of the unaccounted for particles and run the second
+# generation on this stack. Then we set aside the particles that are accounted for in the second generation and make a new stack for the particles that are still unaccounted for.
+# The program is designed to use four generation for the full run. The process repeated until no or very few class averages can be generated in one generation. The parameter
 # generation is used to tell the program which generation is currently used.
 #
 # mpirun -np 4 sxisac.py bdb:flip_data --ou=30 --thld_err=1.0 --generation=1 --MPI
@@ -101,10 +163,10 @@ mpirun -np 16 sxisac.py bdb:stack_ali --stab_ali=2 --init_iter=1 --main_iter=1 -
 # mpirun -np 4 sxisac.py bdb:flip_data_4 --ou=30 --thld_err=1.0 --generation=4 --MPI
 #
 # To run gui version of sxisac, enter the following in the command line:
-# 	sxgui.py --demo=mpibdbctf &
-# and then press the 'sxisac' button in the main menu. A separate window will pop up with the input fields already initialized to the proper values. 
+#        sxgui.py --demo=mpibdbctf &
+# and then press the 'sxisac' button in the main menu. A separate window will pop up with the input fields already initialized to the proper values.
 # Press the green 'Run sxisac' button to execute the command.
-# Note thatif sxgui.py is invoked without the --demo option, the input fields will not be automatically initialized with the approprite values, in 
+# Note thatif sxgui.py is invoked without the --demo option, the input fields will not be automatically initialized with the approprite values, in
 # which case the proper values must be entered manually.
 ###################################################################
 
@@ -137,19 +199,22 @@ mpirun -np 12 sxviper.py bdb:class_averages outdirshc --ou=28 --xr=3.0 --delta=2
 
 # 3D projection alignment - refinement of the initial structure
 sxheader.py bdb:data --params=xform.projection --zero    || exit
+sxheader.py bdb:data --params=active --one
 #  establish initial orientations of all projection data
-mpirun -np 12 sxali3d.py  bdb:data  outdirshc/volume_filt.hdf  outmatch --CTF --maxit=1  --ou=28 --xr=3.0 --delta=2.0 --MPI   || exit
+#mpirun -np 12 sxali3d.py  bdb:data  outdirshc/volume_filt.hdf  outmatch --CTF --maxit=1  --ou=28 --xr=3.0 --delta=2.0 --MPI   || exit
+mpirun -np 12 sxali3d.py  bdb:data  outdirshc/refvol2.hdf outmatch --CTF --maxit=1  --ou=28 --xr=3.0 --delta=2.0 --MPI   || exit
 sxheader.py bdb:data --params=xform.projection --export=outmatch/matchparams.txt    || exit
-mpirun -np 12 sxali3d.py bdb:data poutdirshc —shc --CTF  --ou=28 --xr=2.0 --delta=2.0 --maxit=100  --function="[..,demo_user_funcs,ali3d_reference3]" || exit
+#mpirun -np 12 sxali3d.py bdb:data poutdirshc --shc --CTF  --ou=28 --xr=2.0 --delta=2.0 --maxit=100  --function="[..,demo_user_funcs,ali3d_reference3]" --MPI || exit
+mpirun -np 12 sxali3d.py bdb:data poutdirshc --CTF  --ou=28 --xr=2.0 --delta=2.0 --maxit=100  --function="[..,demo_user_funcs,ali3d_reference3]" --MPI || exit
 
 
 # Refinement of the 3D structure using high accuracy alignment
 mpirun -np 12 sxlocal_ali3d.py bdb:data ali3d_e --ou=30 --delta=2 --ts=2 --maxit=3 --chunk=0.25 --function="[..,demo_user_funcs,localali3d_reference3]" --center=0 --MPI --CTF --debug || exit
 ###################################################################
 # To run gui version, enter the following in the command line:
-# 	sxgui.py --demo=mpibdbctf &
-# and then press the 'sxlocal_ali3d' button in the main menu. A separate window will pop up with the input fields already initialized to the proper values. 
+#        sxgui.py --demo=mpibdbctf &
+# and then press the 'sxlocal_ali3d' button in the main menu. A separate window will pop up with the input fields already initialized to the proper values.
 # Press the green 'Run sxlocal_ali3d' button to execute the command.
-# Note thatif sxgui.py is invoked without the --demo option, the input fields will not be automatically initialized with the approprite values, in 
+# Note thatif sxgui.py is invoked without the --demo option, the input fields will not be automatically initialized with the approprite values, in
 # which case the proper values must be entered manually.
 ###################################################################
