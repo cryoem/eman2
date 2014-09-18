@@ -151,7 +151,7 @@ def main():
 			
 			if options.invert:
 				[avg,sigma,fmin,fmax] = Util.infomask( im, None, True )
-				im -= avg
+				???im -= avg
 				im *= -1
 				im += avg
 			
@@ -161,12 +161,7 @@ def main():
 			if subsample_rate != 1.0:
 				print "Generating downsampled image\n"
 				im = resample(im,subsample_rate)
-		
-# 			[avg,sigma,fmin,fmax] = Util.infomask( small_img, None, True )
-# 			:FIXME:
-# 			??small_img -= avg
-# 			small_img /= sigma
-# 			
+
 			x0 = im.get_xsize()//2  #  Floor division or integer division
 			y0 = im.get_ysize()//2
  
@@ -180,6 +175,7 @@ def main():
 				image = Util.window(im, box_size, box_size, 1, x-x0, y-y0)
 				
 				im = ramp(im)
+				?? normalizaton
 
 				image.write_image(otcl_images, i)
 # 				imn.write_image(otcl_images, iImg)
