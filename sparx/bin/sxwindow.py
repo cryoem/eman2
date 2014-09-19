@@ -220,7 +220,8 @@ def main():
 					imw.set_attr("ctf_applied", 0)
 				
 				imw.set_attr("subsample_rate",    resample_ratio)
-				imw.set_attr("ptcl_source_coord", [x,y])
+				imw.set_attr("ptcl_source_coord_resampled", [float(x),float(y)])
+				imw.set_attr("ptcl_source_coord_original", [x/resample_ratio,y/resample_ratio])
 				imw.set_attr("ptcl_source_image", f_mic)
 
 				imw.write_image(otcl_images, i)
