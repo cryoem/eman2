@@ -197,7 +197,7 @@ def main():
 		projections = projection_operator * data.ravel()[:, np.newaxis]
 	
 	if options.verbose > 9: print "Writing Projections to Disk... "
-	outpath = options.path + "/" + "stacked_prjs.hdf"
+	outpath = options.path + "/" + "projections.hdf"
 	for i in range( nslices ):
 		from_numpy(projections[i*xlen:(i+1)*xlen]).write_image( outpath, i )
 	

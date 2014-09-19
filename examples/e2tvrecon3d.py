@@ -137,7 +137,7 @@ def main():
 	
 	# Make tilt stacks
 	if options.verbose > 2: print "Generating %i tiltstacks..."%(ysize)
-	tiltstacks = get_prj_stacks( options, xsize, ysize )
+	sinograms = get_sinograms( options, xsize, ysize )
 	
 	# Generate one projection operator for all tiltstacks
 	projection_operator = build_projection_operator( tiltangles, xsize, nslices, None, subpix, 0, None)
@@ -145,8 +145,8 @@ def main():
 	# Reconstruct each 2D tiltstack via FISTA-TV algorithm
 	twod_recons = []
 	#twod_recon_fname = gen_filenames( "recon_2D_",".hdf", 4 )
-	for i, tiltstack in enumerate(tiltstacks):
-		projections = tiltstack.ravel()[:,np.newaxis]
+	for i, sinogram in enumerate(sinograms):
+		projections = sinogram.ravel()[:,np.newaxis]
 		# The 2D Reconstruction
 		tic = time.time()
 		recon, energies = fista_tv( projections, beta, niters, projection_operator )
@@ -163,47 +163,38 @@ def main():
 	
 	if options.noclean != True:
 		if options.verbose > 1: print "Cleaning up current working directory..."
-		if options.verbose > 5: print "Removing all files containing 'stack_' and 'recon_2D_'"
 		path = options.path
-		flist = os.listdir( options.path )
-		for fname in flist:
-			if "stack_" in fname:
-				os.remove( path + "/" + fname )
-			if "recon_2D_" in fname:
-				os.remove( path + "/" + fname )
+		os.remove( path + "/twod_recons.hdf" )
+		os.remove( path + "/sinogram.hdf" )
 	
 	E2end(logger)
 	if options.verbose > 1: print "Exiting"
 	return
 
 
-# PROJECTION STACK GENERATION
-# Here, a projection stack refers to a collection of 1D projections from XZ 
-# plane images. Such a stack is generated for each y pixel.
-def get_prj_stacks( options, xlen, ylen ):
+# SINOGRAM GENERATION
+# Here, a sinogram refers to a stacked collection of 1D projections. 
+# Such a stack is generated for each y pixel.
+def get_sinograms( options, xlen, ylen ):
 	"""
-	Generates a 2D tiltseries for each pixel along the y axis of a 3D tiltseries.
-	Returns a list of files corresponding to all of the 2D tiltseries generated.
+	Generates a 2D sinogram for each pixel along the y axis of a tiltseries.
+	Returns a list whose enteies correspond to all of the sinograms generated.
 	"""
-	# Calculate the number of images (slices) in the tilt series
 	num_imgs = EMUtil.get_image_count( options.tiltseries )
-	# Generate iteratively increasing file names
-	stack_path = "prj_stack.hdf"
-	# Create empty list in which to store the numpy arrays
-	prj_stacks=[]
+	sinogram_fname = "sinogram.hdf"
+	sinograms=[]
 	for y in range( ylen ):
-		prj_stack = EMData( num_imgs, xlen, 1 )
-		#r = Region( 0, y, xlen, 1 )
+		sinogram = EMData( num_imgs, xlen, 1 )
 		r = Region( 0, y, xlen, 1 )
 		for imgnum in range( num_imgs ):
 			prj = EMData( options.tiltseries, imgnum, False, r )
 			prj.set_size( 1, xlen, 1 )
-			prj_stack.insert_clip( prj, ( imgnum, 0 ))
-		if options.verbose > 2: print "Generated projection stack %i of %i" %( y+1, ylen )
-		prj_stack.write_image( options.path + "/" + stack_path, y )
-		np_prj_stack = prj_stack.numpy().copy()
-		prj_stacks.append( np_prj_stack )
-	return prj_stacks
+			sinogram.insert_clip( prj, ( imgnum, 0 ))
+		if options.verbose > 2: print "Generated sinogram %i of %i" %( y+1, ylen )
+		sinogram.write_image( options.path + "/" + sinogram_fname, y )
+		np_sinogram = prj_stack.numpy().copy()
+		sinograms.append( np_prj_stack )
+	return sinograms
 
 
 # PROJECTION OPERATOR
