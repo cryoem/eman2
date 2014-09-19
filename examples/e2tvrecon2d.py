@@ -148,12 +148,12 @@ def main():
 	else: 
 		subpix = 1
 	
+	noisiness = 0.1
 	if options.noise:
 		if options.noisiness :
 			noisiness = options.noisiness
 		else:
 			print "--noisiness option not specified. Using the default value of 0.1."
-			noisiness = 0.1
 	
 	if options.output:
 		outfile = options.output
@@ -184,16 +184,8 @@ def main():
 		os.symlink( linkfrom, linkto )
 	
 	# Get image/projection data
-	if options.verbose > 3: 
-		if options.testdata : print "Generating Projections of %s"%(options.testdata)
-		if options.tiltseries : print "Reading Projections from %s"%(options.tiltseries)
-	data, xlen = get_data( options, nslices, imgnum )
-	
-	if options.noise != False:	# add Noise to Image
-		if options.verbose > 2: print "Adding Noise to Input Data..."
-		data += noisiness * np.random.randn(*data.shape)
-		noisy_outpath = options.path + "/noisy_input.hdf"
-		from_numpy(data).write_image( noisy_outpath )
+	data, dim = get_data( options, nslices, noisiness, imgnum )
+	xlen = dim[0]
 	
 	# Projection operator and projections data
 	if options.verbose > 2: print "Building Projection Operator..."
@@ -203,7 +195,7 @@ def main():
 		projections = data.ravel()[:, np.newaxis]
 	else:
 		projections = projection_operator * data.ravel()[:, np.newaxis]
-
+	
 	if options.verbose > 9: print "Writing Projections to Disk... "
 	outpath = options.path + "/" + "stacked_prjs.hdf"
 	for i in range( nslices ):
@@ -220,11 +212,6 @@ def main():
 	outpath = options.path + "/" + outfile
 	from_numpy( recon[-1] ).write_image( outpath )
 	
-	#if options.fft:
-	#	fft_outpath = options.path + "/fft_" + outfile
-	#	ift = from_numpy(recon[-1].do_ift()
-	#	ift.write_image( fft_outpath )
-	
 	if options.fsc != False:
 		if options.verbose > 3: print "Generating an FSC plot..."
 		fscpath = options.path + "/" + "fsc.txt"
@@ -236,21 +223,28 @@ def main():
 	return
 
 
-def get_data( options, nslices, imgnum=0 ):
+def get_data( options, nslices, noisiness, imgnum=0 ):
 	"""Read an input image as a numpy array return its length in x"""
 	if options.testdata:
+		if options.verbose > 3:
+			print "Generating Projections of %s"%(options.testdata)
 		testdata = EMData( options.testdata, imgnum )
-		xlen = testdata.get_xsize()
+		dim = [testdata.get_xsize(), testdata.get_ysize(), testdata.get_zsize()]
 		data = testdata.numpy()
 	elif options.tiltseries:
+		if options.verbose > 3:
+			print "Reading Projections from %s"%(options.tiltseries)
 		npstack = []
 		for i in range( nslices ):
 			img = EMData( options.tiltseries, i )
 			np_img = img.numpy().copy()
+			if options.noise != False:	# Add Noise to Projections
+				if options.verbose > 2: print "Adding Noise to Input Data..."
+				np_img += noisiness * np.random.randn(*np_img.shape)
 			npstack.append( np_img )
 		data = np.asarray( npstack )
-		xlen = img.get_xsize()
-	return data.astype( np.float32 ), xlen
+		dim = [img.get_xsize(),img.get_yzize(),img.get_zsize()]
+	return data.astype( np.float32 ), dim
 
 
 def build_projection_operator( angles, l_x, n_dir=None, l_det=None, subpix=1, offset=0, pixels_mask=None ):
@@ -734,171 +728,3 @@ def makepath(options, stem=''):
 
 if __name__=="__main__":
 	main()
-
-
-# def compute_sparsity( img ):
-# 	l_x = len(img)
-# 	X, Y = np.ogrid[:l_x, :l_x]
-# 	mask = ((X - l_x/2)**2 + (Y - l_x/2)**2 <= (l_x/2)**2)
-# 	grad1 = ndimage.morphological_gradient(img, footprint=np.ones((3, 3)))
-# 	grad2 = ndimage.morphological_gradient(img, footprint=ndimage.generate_binary_structure(2, 1))
-# 	return (grad1[mask] > 0).mean(), (grad2[mask] > 0).mean()
-
-
-# def back_projection(projections, options):
-# 	"""
-# 	Back-projection (without filtering)
-# 	
-# 	Parameters
-# 	----------
-# 	projections: ndarray of floats, of shape n_dir x l_x
-# 		Each line of projections is the projection of a data image
-# 		acquired at a different angle. The projections angles are
-# 		supposed to be regularly spaced between 0 and 180.
-# 	
-# 	Returns
-# 	-------
-# 	recons: ndarray of shape l_x x l_x
-# 		Reconstructed array
-# 	
-# 	Notes
-# 	-------
-# 	A linear interpolation is used when rotating the back-projection.
-# 	This function uses ``scipy.ndimage.rotate`` for the rotation.
-# 	"""
-# 	n_dir, l_x = projections.shape
-# 	recons = np.zeros((l_x, l_x), dtype=np.float)
-# 	angles = get_angles(options)
-# 	for angle, line in zip(angles, projections):
-# 		# BP: repeat the detector line along the direction of the beam
-# 		tmp = np.tile(line[:, np.newaxis], (1, l_x))
-# 		# Rotate the back-projection of the detector line, and add
-# 		# it to the reconstructed image
-# 		recons += ndimage.rotate(tmp, -angle, order=1, reshape=False)
-# 	return recons
-
-
-# def projection(options, im, n_dir=None, interpolation='nearest'):
-# 	"""
-# 	Tomography projection of an image along n_dir directions.
-# 	
-# 	Parameters
-# 	----------
-# 	im : ndarray of square shape l_x x l_x
-# 		Image to be projected
-# 	
-# 	n_dir : int
-# 		Number of projection angles. Projection angles are regularly spaced
-# 		between 0 and 180.
-# 	
-# 	interpolation : str, {'interpolation', 'nearest'}
-# 		Interpolation method used during the projection. Default is
-# 		'nearest'.
-# 	
-# 	Returns
-# 	-------
-# 	projections: ndarray of shape n_dir x l_x
-# 		Array of projections.
-# 	
-# 	Notes
-# 	-----
-# 	The centers of the data pixels are projected onto the detector, then
-# 	the contribution of a data pixel to detector pixels is computed
-# 	by nearest neighbor or linear interpolation. The function 
-# 	np.bincount`` is used to compute the projection, with weights
-# 	corresponding to the values of data pixels, multiplied by interpolation
-# 	weights in the case of linear interpolation.
-# 	"""
-# 	l_x = len(im)
-# 	if n_dir is None:
-# 		n_dir = l_x
-# 	im = im.ravel()
-# 	projections = np.empty((n_dir, l_x))
-# 	X, Y = _generate_center_coordinates(l_x)
-# 	angles = get_angles(options)
-# 	for i, angle in enumerate(angles):
-# 		Xrot = np.cos(angle) * X - np.sin(angle) * Y 
-# 		if interpolation == 'nearest':
-# 			inds = _weights_nn(Xrot, dx=1, orig=X.min())
-# 			mask = inds>= 0
-# 			w = im[mask]
-# 		elif interpolation == 'linear':
-# 			inds, _, w = _weights(Xrot, dx=1, orig=X.min())
-# 			w[:l_x**2] *= im
-# 			w[l_x**2:] *= im
-# 			mask = inds >= 0
-# 			w = w[mask]
-# 		projections[i] = np.bincount(inds[mask].astype(np.int), weights=w)[:l_x]
-# 	return projections
-
-
-# # -----------------Filtered back-projection----------------------
-# def filter_projections(proj_set, reg=False):
-# 	"""
-# 	Ramp filter used in the filtered back projection.
-# 	We use zero padding.
-# 	
-# 	Parameters
-# 	----------
-# 	proj_set: 2-d ndarray
-# 		each line is one projection (1 line of the detector) to be filtered
-# 	
-# 	Returns
-# 	-------
-# 	
-# 	res: 2-d ndarray
-# 		filtered projections
-# 	
-# 	Notes
-# 	-----
-# 	
-# 	We use zero padding. However, we do not use any filtering (hanning, etc.)
-# 	in the FFT yet.
-# 	"""
-# 	nb_angles, l_x = proj_set.shape
-# 	#Assume l is even for now
-# 	ramp = 1./l_x * np.hstack((np.arange(l_x), np.arange(l_x, 0, -1)))
-# 	return fftpack.ifft(ramp * fftpack.fft(proj_set, 2*l_x, axis=1), axis=1)[:,:l_x]
-
-
-# def _weights(x, dx=1, orig=0, ravel=True, labels=None):
-# 	"""
-# 	Compute linear interpolation weights for projection array `x`
-# 	and regularly spaced detector pixels separated by `dx` and
-# 	starting at `orig`.
-# 	"""
-# 	if ravel:
-# 		x = np.ravel(x)
-# 	floor_x = np.floor((x - orig) / dx).astype(np.int32)
-# 	alpha = ((x - orig - floor_x * dx) / dx).astype(np.float32)
-# 	inds = np.hstack((floor_x, floor_x + 1))
-# 	weights = np.hstack((1 - alpha, alpha))
-# 	data_inds = np.arange(x.size, dtype=np.int32)
-# 	data_inds = np.hstack((data_inds, data_inds))
-# 	if labels is not None:
-# 		data_inds = np.hstack((labels, labels))
-# 		w = np.histogram2d(data_inds, inds,
-# 			bins=(np.arange(data_inds.max()+1.5), np.arange(inds.max()+1.5)),
-# 			weights=weights)[0]
-# 		data_inds, inds = np.argwhere(w>0).T
-# 		weights = w[w>0]
-# 	return inds, data_inds, weights
-
-
-# def _weights_nn(x, dx=1, orig=0, ravel=True):
-# 	"""
-# 	Nearest-neighbour interpolation
-# 	"""
-# 	if ravel:
-# 		x = np.ravel(x)
-# 	floor_x = np.floor(x - orig)
-# 	return floor_x.astype(np.float32)
-
-
-# def get_angles(options):
-# 	"""
-# 	Take a tilt angles file and return an array of its content as a numpy array 
-# 	of type float32.
-# 	"""
-# 	angles = np.asarray([ float( i ) for i in file( options.tlt , "r" ) ])
-# 	return angles.tolist()
