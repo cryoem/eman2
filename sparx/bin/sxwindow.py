@@ -189,6 +189,8 @@ def main():
 				for i in range(len(coords)):
 					coords[i][0] *= resample_ratio
 					coords[i][1] *= resample_ratio
+			else:
+				resample_ratio = 1.0
 			
 			if options.invert:
 				stt = Util.infomask(immic, None, True)
