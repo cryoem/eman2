@@ -177,7 +177,6 @@ def main():
 			if new_pixel_size != options.input_pixel:
 				# Resample micrograph, map coordinates, and window segments from resampled micrograph using new coordinates
 				# Set ctf along with new pixel size in resampled micrograph
-				# set hcoordsname to name of new coordinates file, and set micname to resampled micrograph name
 				print_msg('Resample micrograph to pixel size %f and window segments from resampled micrograph\n'%new_pixel_size)
 				resample_ratio = options.input_pixel/new_pixel_size
 				# after resampling by resample_ratio, new pixel size will be pixel_size/resample_ratio = new_pixel_size
@@ -204,7 +203,6 @@ def main():
 			y0 = immic.get_ysize()//2
  
 # 			coords = js_open_dict(f_info)["boxes"]
-
 			for i in range(len(coords)):
 
 				x = int(coords[i][0])
@@ -218,6 +216,11 @@ def main():
 				if options.importctf:
 					imw.set_attr("ctf",ctfs)
 					imw.set_attr("ctf_applied", 0)
+				
+				imw.set_attr("subsample_rate",    resample_ratio)
+				imw.set_attr("ptcl_source_coord", [x,y])
+				imw.set_attr("ptcl_source_image", f_mic)
+
 				imw.write_image(otcl_images, i)
 # 				imn.write_image(otcl_images, iImg)
 # 				iImg = iImg + 1
