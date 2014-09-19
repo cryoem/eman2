@@ -108,13 +108,14 @@ def main():
 	parser = OptionParser(usage, version=SPARXVERSION)
 
 	parser.add_option('--coords_dir',   dest='coordsdir',                help='Directory containing particle coordinates')
-# 	parser.add_option('--importctf',    dest='ctffile',                  help='File name with CTF parameters produced by sxcter.')
- 	parser.add_option('--topdir',       dest='topdir',       default='./', help='Path name of directory containing relevant micrograph directories')
-	parser.add_option('--input_pixel',  dest='input_pixel',  default=1,  help='input pixel size')
-	parser.add_option('--output_pixel', dest='output_pixel', default=1,  help='output pixel size')
-	parser.add_option('--box_size',     dest='box_size',     type=int,   help='box size')
-	parser.add_option('--outdir',     dest='outdir',      help='Output directory')
-	parser.add_option('--outstack',     dest='outstack',      help='Output stack name')
+	parser.add_option('--importctf',                    help='File name with CTF parameters produced by sxcter.')
+ 	parser.add_option('--topdir',              default='./', help='Path name of directory containing relevant micrograph directories')
+	parser.add_option('--input_pixel',    default=1,  help='input pixel size')
+# 	parser.add_option('--output_pixel',  default=1,  help='output pixel size')
+	parser.add_option("--new_apix",    type=float, 			 default=-1.0, help="New target pixel size to which the micrograph should be resampled. Default is -1, in which case there is no resampling.")
+	parser.add_option('--box_size',    type=int,   help='box size')
+	parser.add_option('--outdir',           help='Output directory')
+	parser.add_option('--outstack',        help='Output stack name')
 	
 	parser.add_option("--micsuffix",  type=str,	default=".hdf", help="A string denoting micrograph type. Currently only handles suffix types, e.g. 'hdf', 'ser' etc.")
 
@@ -131,15 +132,19 @@ def main():
 		extension = options.micsuffix
 		suffix    = "_ptcls"
 		
+		new_pixel_size = options.new_apix
+		if new_pixel_size < 0: new_pixel_size = options.input_pixel
+		
 		micnames = []
 		import glob
 		for f in glob.glob(os.path.join(options.topdir, "*" + extension)):
 			micnames.append(base_name(f))
 
-		# ???
-		mask = pad(model_circle(box_size//2, box_size, box_size), box_size, box_size, 1, 0.0)
+# 		mask = pad(model_circle(box_size//2, box_size, box_size), box_size, box_size, 1, 0.0)
+		mask = model_circle(box_size//4, box_size, box_size)
 		
 		for i in range(len(micnames)):
+			# basename is name of micrograph minus the path and extension
 			basename = micnames[i]
 			f_mic = os.path.join(options.topdir, basename + extension)
 			f_info = info_name(f_mic)
@@ -147,23 +152,39 @@ def main():
 			otcl_images  = "bdb:%s/"%options.outdir + basename + suffix
 			print basename, f_info, f_mic
 
-			im = get_im(f_mic)
+			if options.importctf:
+				ctfs = read_text_row(options.importctf)
+				nx = True
+				for i in xrange(len(ctfs)):
+					smic = ctfs[i][-1].split('/')
+					ctfilename = (smic[-1].split('.'))[0]
+					if(ctfilename == basename):
+						ctfs = ctfs[i]
+						nx = False
+						break
+				if nx:
+					print "Micrograph %s"%filename,"  not listed in CTER results, skipping ...."
+					return
+				if(ctfs[8]/ctfs[0] > cterr[0]):
+					print_msg('Defocus error %f exceeds the threshold. Micrograph %s rejected.\n'%(ctfs[8]/ctfs[0], filename))
+					return
+				if(ctfs[10] > cterr[1] ):
+					ctfs[6] = 0.0
+					ctfs[7] = 0.0
+			
+			immic = get_im(f_mic)
 			
 			if options.invert:
-				[avg,sigma,fmin,fmax] = Util.infomask( im, None, True )
-				???im -= avg
-				im *= -1
-				im += avg
+				stt = Util.infomask(immic, None, True)
+				Util.mul_scalar(immic, -1.0)
+				immic += 2*stt[0]
 			
-# 			img_filt = filt_gaussh( im, ??0.015625)
-			
-			subsample_rate = options.input_pixel / options.output_pixel
-			if subsample_rate != 1.0:
-				print "Generating downsampled image\n"
-				im = resample(im,subsample_rate)
+			if options.importctf:
+				from utilities import generate_ctf
+				ctfs = generate_ctf(ctfs)
 
-			x0 = im.get_xsize()//2  #  Floor division or integer division
-			y0 = im.get_ysize()//2
+			x0 = immic.get_xsize()//2  #  Floor division or integer division
+			y0 = immic.get_ysize()//2
  
 			coords = js_open_dict(f_info)["boxes"]
 
@@ -172,12 +193,15 @@ def main():
 				x = int(coords[i][0])
 				y = int(coords[i][1])
 				
-				image = Util.window(im, box_size, box_size, 1, x-x0, y-y0)
+				imw = Util.window(immic, box_size, box_size, 1, x-x0, y-y0)
 				
-				im = ramp(im)
-				?? normalizaton
-
-				image.write_image(otcl_images, i)
+				imw = ramp(imw)
+				stat = Util.infomask( imw, mask, False )
+				imw -= stat[0]
+				if options.importctf:
+					imw.set_attr("ctf",ctfs)
+					imw.set_attr("ctf_applied", 0)
+				imw.write_image(otcl_images, i)
 # 				imn.write_image(otcl_images, iImg)
 # 				iImg = iImg + 1
 
