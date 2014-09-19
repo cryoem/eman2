@@ -167,7 +167,7 @@ def main():
 					return
 				if(ctfs[8]/ctfs[0] > cterr[0]):
 					print_msg('Defocus error %f exceeds the threshold. Micrograph %s rejected.\n'%(ctfs[8]/ctfs[0], filename))
-					return
+					break
 				if(ctfs[10] > cterr[1] ):
 					ctfs[6] = 0.0
 					ctfs[7] = 0.0
@@ -219,9 +219,9 @@ def main():
 					imw.set_attr("ctf",ctfs)
 					imw.set_attr("ctf_applied", 0)
 				
-				imw.set_attr("subsample_rate",    resample_ratio)
-				imw.set_attr("ptcl_source_coord_resampled", [float(x),float(y)])
-				imw.set_attr("ptcl_source_coord_original", [x/resample_ratio,y/resample_ratio])
+# 				imw.set_attr("subsample_rate",    resample_ratio)
+				imw.set_attr("ptcl_source_coord", [x/resample_ratio,y/resample_ratio])
+				imw.set_attr("pixel_size_orig", options.input_pixel)
 				imw.set_attr("ptcl_source_image", f_mic)
 
 				imw.write_image(otcl_images, i)
