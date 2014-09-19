@@ -110,7 +110,7 @@ def main():
 	parser.add_option('--coords_dir',   dest='coordsdir',                help='Directory containing particle coordinates')
 	parser.add_option('--importctf',                    help='File name with CTF parameters produced by sxcter.')
  	parser.add_option('--topdir',              default='./', help='Path name of directory containing relevant micrograph directories')
-	parser.add_option('--input_pixel',    default=1,  help='input pixel size')
+	parser.add_option('--input_pixel',  type=float,  default=1.0,  help='input pixel size')
 # 	parser.add_option('--output_pixel',  default=1,  help='output pixel size')
 	parser.add_option("--new_apix",    type=float, 			 default=-1.0, help="New target pixel size to which the micrograph should be resampled. Default is -1, in which case there is no resampling.")
 	parser.add_option('--box_size',    type=int,   help='box size')
@@ -143,9 +143,9 @@ def main():
 # 		mask = pad(model_circle(box_size//2, box_size, box_size), box_size, box_size, 1, 0.0)
 		mask = model_circle(box_size//4, box_size, box_size)
 		
-		for i in range(len(micnames)):
+		for k in range(len(micnames)):
 			# basename is name of micrograph minus the path and extension
-			basename = micnames[i]
+			basename = micnames[k]
 			f_mic = os.path.join(options.topdir, basename + extension)
 			f_info = info_name(f_mic)
 			
@@ -172,7 +172,24 @@ def main():
 					ctfs[6] = 0.0
 					ctfs[7] = 0.0
 			
+			coords = js_open_dict(f_info)["boxes"]
 			immic = get_im(f_mic)
+			if new_pixel_size != options.input_pixel:
+				# Resample micrograph, map coordinates, and window segments from resampled micrograph using new coordinates
+				# Set ctf along with new pixel size in resampled micrograph
+				# set hcoordsname to name of new coordinates file, and set micname to resampled micrograph name
+				print_msg('Resample micrograph to pixel size %f and window segments from resampled micrograph\n'%new_pixel_size)
+				resample_ratio = options.input_pixel/new_pixel_size
+				# after resampling by resample_ratio, new pixel size will be pixel_size/resample_ratio = new_pixel_size
+# 				immic = get_im(f_mic)
+				nx = immic.get_xsize()
+				ny = immic.get_ysize()
+				immic = resample(immic, resample_ratio)
+				if options.importctf: ctfs[3] = new_pixel_size
+				# New coords
+				for i in range(len(coords)):
+					coords[i][0] *= resample_ratio
+					coords[i][1] *= resample_ratio
 			
 			if options.invert:
 				stt = Util.infomask(immic, None, True)
@@ -186,13 +203,13 @@ def main():
 			x0 = immic.get_xsize()//2  #  Floor division or integer division
 			y0 = immic.get_ysize()//2
  
-			coords = js_open_dict(f_info)["boxes"]
+# 			coords = js_open_dict(f_info)["boxes"]
 
 			for i in range(len(coords)):
 
 				x = int(coords[i][0])
 				y = int(coords[i][1])
-				
+# 				print i, x, y, x0, y0, box_size, x-x0, y-y0
 				imw = Util.window(immic, box_size, box_size, 1, x-x0, y-y0)
 				
 				imw = ramp(imw)
