@@ -280,10 +280,10 @@ def build_projection_operator( angles, l_x, n_dir=None, l_det=None, subpix=1, of
 		
 	Returns
 	-------
-	p : sparse matrix of shape (n_dir l_x, l_x**2), in csr format Tomography 
-	design matrix. The csr (compressed sparse row) allows for efficient 
-	subsequent matrix multiplication. The dtype of the elements is float32, in 
-	order to save memory.	
+	p : sparse matrix of shape (n_dir l_x, l_x**2), in csr format
+		Tomography design matrix. The csr (compressed sparse row) allows for 
+		efficient subsequent matrix multiplication. The dtype of the elements is 
+		float32, in order to save memory.	
 	"""
 	if l_det is None:
 		l_det = l_x
