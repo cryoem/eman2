@@ -5,8 +5,6 @@ set echo on
 gunzip ../tteftu_with_tRNA.pdb.gz
 
 sxpdb2em.py ../tteftu_with_tRNA.pdb tmp.hdf --apix=5.2 --box=64
-# --apix: pixel size (Angstroms)
-# --box:  box size (voxels)
 ###################################################################
 # To run gui version, enter the following in the command line:
 #        sxgui.py --demo=mpibdbctf &
@@ -54,59 +52,20 @@ sxprocess.py ../model_structure.hdf particles mic --generate_projections apix=5.
 # Input: name of the key under which the parameters will be saved in the database
 # Output: database with input parameters in JSON format
 sxprocess.py demoparms --makedb 'gauss_width'=1.0:'pixel_input'=5.2:'pixel_output'=5.2:'thr_low'=1.0:'thr_hi'=30.0:"invert_contrast"=False:"use_variance"=True:"boxsize"=64:"ctf_cs"=2.0:"ctf_fstart"=0.02:"ctf_fstop"=0.5:"ctf_ampcont"=10:"ctf_volt"=120:"ctf_window"=512:"ctf_edge"=0:"ctf_overlap"=50
-# 'gauss_width'     = 1.0
-# 'pixel_input'     = 5.2
-# 'pixel_output'    = 5.2
-# 'thr_low'         = 1.0
-# 'thr_hi'          = 30.0
-# "invert_contrast" = False
-# "use_variance"    = True
-# "boxsize"         = 64
-# "ctf_cs"          = 2.0
-# "ctf_fstart"      = 0.02
-# "ctf_fstop"       = 0.5
-# "ctf_ampcont"     = 10
-# "ctf_volt"        = 120
-# "ctf_window"      = 512
-# "ctf_edge"        = 0
-# "ctf_overlap"     = 50
 
 
 # Pick particles and estimate CTF
 # Input: simulated micrographs mic*.hdf
 # Output: particles from the input micrographs mic*_ptcls.bdb
-# Output: more detailed
-#      procpw.txt                           : ?
-#      e2boxercache/base.json               : box_size,ptcl_display_shape
-#      e2boxercache/quality.json            : extension, suffix
-#      info/mic*_info.json                  : list of boxed particles and their coordinates
-#      info/project.json                    :  empty file
-#      particles/EMAN2DB/00image_counts.bdb : ? information about particles
-#      particles/EMAN2DB/mic*_ptcls.bdb     : ? information about particles
-#      particles/EMAN2DB/mic*_ptcls_64x64x1 : ? information about particles
 e2boxer.py --gauss_autoboxer=demoparms --do_ctf=demoparms --write_ptcl --boxsize=64 --norm=normalize.ramp.normvar mic*.hdf --format=bdb
-# --gauss_autoboxer = demoparms : key with autoboxing parameters obtained from Gauss autoboxer
-# --do_ctf          = demoparms : key with ctf estimation parameters obtained from Gauss autoboxer
-# --write_ptcl                  : Write particles to disk
-# --boxsize         = 64        : box size in pixels
-# --norm            = normalize.ramp.normvar : Normalization processor (normalize, normalize.edgemean, "None") to apply to written particle images
-# --format          = bdb       : Format of the output particle images
 
 # Input: binary data files in the form of bdb:particles\#mic*_ptcls
 # Output: new stack
-# Output: more detailed
-#      EMAN2DB/data.bdb : stack file specified from command-line
 e2bdb.py bdb:particles\#mic0_ptcls bdb:particles\#mic1_ptcls bdb:particles\#mic2_ptcls bdb:particles\#mic3_ptcls bdb:particles\#mic4_ptcls --makevstack=bdb:data
 # --makevstack=bdb:data : makes a 'virtual' BDB stack with its own metadata from the binary data given as input, in this case, bdb:particles\#mic*_ptcls
 
 #  phase flip the data set before processing with sxisac since bdb:data has CTF but sxisac currently does not correct for CTF.
-# Input:  bdb:data
-# Output: bdb:flip_data
-# Output: more detailed
-#      EMAN2DB/flip_data.bdb
-#      EMAN2DB/flip_data_64x64x1
 sxprocess.py bdb:data bdb:flip_data --phase_flip
-# --phase_flip : Phase flip the input stack
 
 # sxheader.py bdb:data --params=active --one
 # sxheader.py bdb:data --params=xform.align2d --zero
@@ -116,25 +75,11 @@ sxprocess.py bdb:data bdb:flip_data --phase_flip
 # Output: Updated input files, only the headers are modified
 sxheader.py bdb:flip_data --params=active --one
 sxheader.py bdb:flip_data --params=xform.align2d --zero
-# --params=active        : ?
-# --one                  : set all parameters to one
-# --params=xform.align2d : perform operations on the parameters "alpha", "sx", "sy", "mirror" and "scale"
-# --zero                 : set all parameters to zero
-
 
 # pre-align particles with sxali2d.py
 # Input:  stack
 # Output: 
-# Output: more detailed
-#      logfile_21_Aug_2014_17_14_02 : file with information about iterations
-#      EMAN2DB/flip_data.bdb        : modified input file after 2-D reference-free alignment
 sxali2d.py bdb:flip_data None --ou=28 --xr="2 1" --ts="1 0.5" --maxit=33 --dst=90
-# None          : ? output_directory maybe ?
-# --ou=28       : outer radius for rotational correlation < nx/2-1 (set to the radius of the particle)
-# --xr="2 1"    : range for translation search in x direction, search is +/xr (is set to "4 2 1 1", if set to "0" it corresponds to rotational alignment only)
-# --ts="1 0.5"  : step of translation search in both directions, (set to "2 1 0.5 0.25", larger value increase the speed, but decrease the accuracy)
-# --maxit=33    : maximum number of iterations (0 means the maximum iterations is 10, but it will automatically stop should the criterion falls
-# --dst=90      : delta
 
 # apply the results from sxali2d.py to the data:
 
