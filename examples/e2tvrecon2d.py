@@ -42,7 +42,6 @@ import ntpath
 import numpy as np
 from scipy import sparse
 from scipy import ndimage
-#from scipy import fftpack
 
 
 def get_usage():
@@ -78,7 +77,7 @@ def main():
 	parser.add_argument("--noisiness",default=0.1, type=float, help="Multiply noise by a specified factor. The default value is 0.1")
 	parser.add_argument("--path",type=str,default='recon',help="Directory in which results will be stored.")
 	parser.add_argument("--niters", default=100, type=int, help="Specify the number of iterative reconstructions to complete before returning the final reconstructed volume.")
-	parser.add_argument("--beta", default=0.2, type=float, help="Specify the total-variation regularization weight parameter 'beta'. The default value is 0.2. Note that this parameter must be greater than 0, but values much greater than 1 will produce cartoon-like reconstructions as a result of the total variation denoising procedure.")
+	parser.add_argument("--beta", default=0.2, type=float, help="Specify the total-variation regularization/penalization weight parameter 'beta'. The default value is 0.2. Note that this parameter must be greater than 0, but values much greater than 1 will produce cartoon-like reconstructions as a result of the total variation denoising procedure.")
 	parser.add_argument("--subpix", default=1, type=int, help="Specify the number of linear subdivisions used to compute the projection of one image pixel onto a detector pixel. Note that this parameter must be a positive integer.")
 	parser.add_argument("--fsc",action="store_true",default=False, help="Generate a fourier shell correlation plot comparing the input and output data.")
 	parser.add_argument("--norm",default=None, type=str, help="Choose between 'regular', 'anisotropic', and 'l0' TV norms. The default is 'regular'.")
@@ -139,7 +138,7 @@ def main():
 	
 	if options.beta:
 		beta = float(options.beta)
-		if beta <= 0:
+		if beta < 0:
 			print "Parameter beta (--beta) must be greater than 0."
 			exit(1)
 	
@@ -241,6 +240,7 @@ def get_data( options, nslices, noisiness, imgnum=0 ):
 			if options.noise != False:	# Add Noise to Projections
 				if options.verbose > 2: print "Adding Noise to Input Data..."
 				np_img += noisiness * np.random.randn(*np_img.shape)
+				from_numpy(np_img).write_image(options.path + "noisy_img.hdf")
 			npstack.append( np_img )
 		data = np.asarray( npstack )
 		dim = [img.get_xsize(),img.get_yzize(),img.get_zsize()]
