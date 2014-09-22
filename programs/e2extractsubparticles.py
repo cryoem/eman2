@@ -42,7 +42,6 @@ from os import unlink
 from sys import argv
 import traceback
 from EMAN2 import *
-from EMAN2db import db_open_dict
 from numpy import arange
 
 def main():
@@ -59,8 +58,10 @@ To use this program you should first run a complete refinement to the best possi
 will be examined automatically to extract the corresponding particles and projections.
 """
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--output",type=str,default="sets/subparticles.hdf",help="Specify output filename, which will contain nptcl*sym particles. Default=sets/subparticles.hdf")
 	parser.add_argument("--sym", dest = "sym", default="c1",help = "Specify symmetry - choices are: c<n>, d<n>, tet, oct, icos.", guitype='strbox', row=10, col=1, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--masked",action="store_true",default=False,help="If specified, each particle will be masked based on the projection mask.")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--debug",action="store_true",default=False,help="Enable debugging mode with verbose output and image display. Not suitable for real runs.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	#parser.add_argument("--ncls","-N",type=int,help="Number of classes to generate",default=-1)
@@ -92,6 +93,8 @@ will be examined automatically to extract the corresponding particles and projec
 		print "====\nError reading classification matrix. Must be full classification matrix with alignments"
 		sys.exit(1)
 
+	if options.verbose: print "{} even and {} odd particles in classmx".format(nptcl[0],nptcl[1])
+
 	# path to the even/odd particles used for the refinement
 	cptcl=js_open_dict("{}/0_refine_parms.json".format(args[0]))["input"]
 	cptcl=[str(i) for i in cptcl]
@@ -119,10 +122,14 @@ will be examined automatically to extract the corresponding particles and projec
 	nsym=xf.get_nsym(options.sym)
 	symxfs=[xf.get_sym(options.sym,i) for i in xrange(nsym)]
 
+	# clean up the output file
+	try: os.unlink(options.output)
+	except: pass
+
 	# now we loop over the classes, and subtract away a projection of the reference with the exclusion mask in
 	# each symmetry-related orientation, after careful scaling. Note that we don't have a list of which particle is in each class,
 	# but rather a list of which class each particle is in, so we do this a bit inefficiently for now
-	for i in xrange(134,nref):
+	for i in xrange(nref):
 		if options.verbose>1 : print "--- Class %d"%i
 
 		# The first projection is unmasked, used for scaling
@@ -139,8 +146,11 @@ will be examined automatically to extract the corresponding particles and projec
 #		proj.mult(softmask)
 
 		for eo in range(2):
-			for j in range(nptcl[eo]):
-				if classmx[eo][0,j]!=i : continue		# only proceed if the particle is in this class
+			for j in xrange(nptcl[eo]):
+				if classmx[eo][0,j]!=i : 
+					if options.debug: print "XXX {}\t{}\t{}\t{}".format(i,("even","odd")[eo],j,classmx[eo][0,j])
+					continue		# only proceed if the particle is in this class
+				if options.verbose: print "{}\t{}\t{}".format(i,("even","odd")[eo],j)
 
 				ptcl=EMData(cptcl[eo],j)
 				lowth=ptcl["mean"]-ptcl["sigma"]*3.0
@@ -148,9 +158,11 @@ will be examined automatically to extract the corresponding particles and projec
 
 				# Find the transform for this particle (2d) and apply it to the unmasked/masked projections
 				ptclxf=Transform({"type":"2d","alpha":cmxalpha[eo][0,j],"mirror":int(cmxmirror[eo][0,j]),"tx":cmxtx[eo][0,j],"ty":cmxty[eo][0,j]}).inverse()
-				projc=[i.process("xform",{"transform":ptclxf}) for i in projs]		# we transform the projections, not the particle (as in the original classification)
-				projmaskc=projmask.process("xform",{"transform":ptclxf})
-#				ptcl.mult(projmaskc)
+				projc=[im.process("xform",{"transform":ptclxf}) for im in projs]		# we transform the projections, not the particle (as in the original classification)
+				if options.masked : 
+					projmaskc=projmask.process("xform",{"transform":ptclxf})
+					ptcl.mult(projmaskc)
+					for pr in projc: pr.mult(projmaskc)
 #				projmaskc.process_inplace("threshold.notzero")
 
 				#ptcl.write_image("tst.hdf",0)
@@ -158,12 +170,13 @@ will be examined automatically to extract the corresponding particles and projec
 
 				# now subtract the masked versions processed using the scaling/normalization
 				# we got from the whole/unmasked particle
-				for pr in projc:
-#					projm=pr*projmaskc
+				for pr in projc[1:]:
 					ptcl3=ptcl.process("math.sub.optimal",{"ref":projc[0],"actual":pr})
-#					display((projc[0],projf,pr,projm))
-					display((ptcl,ptcl3,pr,projc[0]))
+					if options.masked : ptcl3.mult(projmaskc)
+					if options.debug: display((ptcl,ptcl3,pr,projc[0]))
+					ptcl3.write_image(options.output,-1)
 
+	E2end(logid)
 
 
 				## we make a filtered copy of the particle filtered such that it's power spectrum is roughly that of a noise-free particle
