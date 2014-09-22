@@ -57,7 +57,7 @@ def main():
  	parser.add_option('--topdir',      default='./', help='Path name of directory containing relevant micrograph directories')
 	parser.add_option('--input_pixel', type=float,  default=1.0,  help='input pixel size')
 	parser.add_option("--new_apix",    type=float, 	default=-1.0, help="New target pixel size to which the micrograph should be resampled. Default is -1, in which case there is no resampling.")
-	parser.add_option('--box_size',    type=int,   help='box size')
+	parser.add_option('--box_size',    type=int,   help='x and y dimension in pixels of square area to be windowed. Pixel size is assumed to be new_pixel_size.')
 	parser.add_option('--outdir',      help='Output directory')
 	parser.add_option('--outstack',    help='Output stack name')	
 	parser.add_option("--micsuffix",   type=str,	default=".hdf", help="A string denoting micrograph type. Currently only handles suffix types, e.g. 'hdf', 'ser' etc.")
@@ -120,13 +120,14 @@ def main():
 		coords = js_open_dict(f_info)["boxes"]
 		
 		immic = get_im(f_mic)
-		immic = filt_gaussh( immic, 1.0/box_size )
+		
+		resample_ratio = options.input_pixel/new_pixel_size
+		immic = filt_gaussh( immic, resample_ratio/box_size )
 		
 		if new_pixel_size != options.input_pixel:
 			# Resample micrograph, map coordinates, and window segments from resampled micrograph using new coordinates
 			# Set ctf along with new pixel size in resampled micrograph
 			print_msg('Resample micrograph to pixel size %f and window segments from resampled micrograph\n'%new_pixel_size)
-			resample_ratio = options.input_pixel/new_pixel_size
 			# after resampling by resample_ratio, new pixel size will be pixel_size/resample_ratio = new_pixel_size
 			nx = immic.get_xsize()
 			ny = immic.get_ysize()
