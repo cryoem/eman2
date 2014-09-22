@@ -679,7 +679,7 @@ void LowpassAutoBProcessor::create_radial_func(vector < float >&radial_mask,EMDa
 
 	FILE *out=NULL;
 	if (verbose>2)  {
-		printf("Autob -> %d - %d  ds=%g apix=%g rdlmsk=%d\n",start,end,ds,apix,radial_mask.size());
+		printf("Autob -> %d - %d  ds=%g apix=%g rdlmsk=%d\n",start,end,ds,apix,int(radial_mask.size()));
 		out=fopen("fitplot.txt","w");
 	}
 	int N=(radial_mask.size()-start-2);
@@ -1211,8 +1211,8 @@ EMData * Wiener2DAutoAreaProcessor::process(const EMData * image)
 // TODO NOT IMPLEMENTED YET !!!
 	EMData *ret = 0;
 	const EMData *fft;
-	float *fftd;
-	int f=0;
+// 	float *fftd;
+// 	int f=0;
 
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -1220,15 +1220,15 @@ EMData * Wiener2DAutoAreaProcessor::process(const EMData * image)
 	}
 	throw NullPointerException("Processor not yet implemented");
 
-	if (!image->is_complex()) {
-		fft = image->do_fft();
-		fftd = fft->get_data();
-		f=1;
-	}
-	else {
-		fft=image;
-		fftd=image->get_data();
-	}
+// 	if (!image->is_complex()) {
+// 		fft = image->do_fft();
+// 		fftd = fft->get_data();
+// 		f=1;
+// 	}
+// 	else {
+// 		fft=image;
+// 		fftd=image->get_data();
+// 	}
 
 	return ret;
 }
@@ -3849,7 +3849,7 @@ float NormalizeCircleMeanProcessor::calc_mean(EMData * image) const
 
 	float radius = params.set_default("radius",((float)ny/2-2));
 
-	static bool busy = false;
+// 	static bool busy = false;
 	static EMData *mask = 0;
 
 	if (!mask || !EMUtil::is_same_size(image, mask)) {
@@ -3968,27 +3968,36 @@ float NormalizeStdProcessor::calc_mean(EMData * image) const
 	return image->get_attr("mean");
 }
 
-void SubtractOptProcessor::process_inplace(EMData * image)
+EMData *SubtractOptProcessor::process(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
-		return;
+		return NULL;
 	}
 
-	EMData *ref = params["ref"];
-	bool return_radial = params.set_default("return_radial",false);
+	EMData *refr = params["ref"];
+	EMData *actual = params.set_default("actual",(EMData*)NULL);
+	EMData *ref;
+// 	bool return_radial = params.set_default("return_radial",false);
 
 	EMData *imf;
-	if (image->is_complex()) imf=image->copy();
+	if (image->is_complex()) imf=image;
 	else imf=image->do_fft();
-
+	
 	// Make sure ref is complex and a copy we can modify
-	if (ref->is_complex()) ref=ref->copy();
-	else ref=ref->do_fft();
+	if (refr->is_complex()) ref=refr;
+	else ref=refr->do_fft();
 
-	int ny2=image->get_ysize()/2;
-	vector <float>rad(ny2+1);
-	vector <float>norm(ny2+1);
+	EMData *actf;
+	if (actual==NULL) actf=ref;
+	else {
+		if (actual->is_complex()) actf=actual;
+		else actf=actual->do_fft();
+	}
+		
+	int ny2=(int)(image->get_ysize()*sqrt(2.0)/2);
+	vector <double>rad(ny2+1);
+	vector <double>norm(ny2+1);
 
 	// We are essentially computing an FSC here, but while the reference (the image
 	// we plan to subtract) is normalized, the other image is not. This gives us a filter
@@ -3999,14 +4008,52 @@ void SubtractOptProcessor::process_inplace(EMData * image)
 			if (r>ny2) continue;
 			std::complex<float> v1=imf->get_complex_at(x,y);
 			std::complex<float> v2=ref->get_complex_at(x,y);
-			rad[r]+=v1.real()*v2.real()+v1.imag()*v2.imag();
-			norm[r]+=v2.real()*v2.real()+v2.imag()*v2.imag()+v1.real()*v1.real()+v1.imag()*v1.imag();
+			rad[r]+=(double)(v1.real()*v2.real()+v1.imag()*v2.imag());
+//			norm[r]+=v2.real()*v2.real()+v2.imag()*v2.imag()+v1.real()*v1.real()+v1.imag()*v1.imag();
+			norm[r]+=(double)(v2.real()*v2.real()+v2.imag()*v2.imag());
 		}
 	}
 	for (int i=0; i<ny2; i++) rad[i]/=norm[i];
 
 	FILE *out=fopen("dbug.txt","w");
-	for (int i=0; i<ny2; i++) fprintf(out,"%f\t%f\n",(float)i,rad[i]);
+	for (int i=0; i<ny2; i++) fprintf(out,"%lf\t%lf\t%lf\n",(float)i,rad[i],norm[i]);
+	fclose(out);
+	
+	for (int y=-ny2; y<ny2; y++) {
+		for (int x=0; x<ny2; x++) {
+			int r=int(Util::hypot_fast(x,y));
+			if (r>=ny2) {
+				imf->set_complex_at(x,y,0);
+				continue;
+			}
+			std::complex<float> v1=imf->get_complex_at(x,y);
+			std::complex<float> v2=actf->get_complex_at(x,y);
+			v2*=(float)rad[r];
+			imf->set_complex_at(x,y,v1-v2);
+		}
+	}
+	
+	EMData *ret=imf->do_ift();
+	
+	if (!image->is_complex()) delete imf;
+	if (!ref->is_complex()) delete ref;
+	if (actual!=NULL and !actual->is_complex()) delete actf;
+	
+	return ret;
+}
+
+void SubtractOptProcessor::process_inplace(EMData * image)
+{
+	if (!image) {
+		LOGWARN("NULL image");
+		return;
+	}
+
+	EMData *tmp=process(image);
+	memcpy(image->get_data(),tmp->get_data(),(size_t)image->get_xsize()*image->get_ysize()*image->get_zsize()*sizeof(float));
+	delete tmp;
+	image->update();
+	return;
 }
 
 
@@ -6941,7 +6988,7 @@ void AutoMaskDustProcessor::process_inplace(EMData * imagein)
 	int nz = image->get_zsize();
 
 	int verbose=params.set_default("verbose",0);
-	int voxels=params.set_default("voxels",27);
+	unsigned int voxels=params.set_default("voxels",27);
 	float threshold=params.set_default("threshold",1.5);
 
 	mask = new EMData();
@@ -6980,7 +7027,7 @@ void AutoMaskDustProcessor::process_inplace(EMData * imagein)
 					// If the blob is too big, then we don't mask it out after all, but we set the value
 					// to 2.0 so we know the voxels have already been examined, and don't check them again
 					if (pvec.size()>voxels) {
-						if (verbose) printf("%d\t%d\t%d\tvoxels: %d\n",xx,yy,zz,pvec.size());
+						if (verbose) printf("%d\t%d\t%d\tvoxels: %d\n",xx,yy,zz,(int)pvec.size());
 						for (uint i=0; i<pvec.size(); i++) mask->set_value_at(pvec[i],2.0);
 					}
 				}
@@ -9189,7 +9236,7 @@ void WatershedProcessor::process_inplace(EMData *image) {
 }
 
 EMData *WatershedProcessor::process(const EMData* const image) {
-	int nseg = params.set_default("nseg",12);
+	unsigned int nseg = params.set_default("nseg",12);
 	float thr = params.set_default("thr",0.5f);
 	int segbymerge = params.set_default("segbymerge",0);
 	int verbose = params.set_default("verbose",0);
@@ -9356,7 +9403,8 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 			}
 			float mv=0;
 			int mvl=0;
-			for (i=nsegstart+1; i<nsegstart*nsegstart; i+=nsegstart+1) if (mxd[i]>mv) { mv=mxd[i]; mvl=i/nsegstart; }
+			for (i=nsegstart+1; i<nsegstart*nsegstart; i+=nsegstart+1) 
+				if (mxd[i]>mv) { mv=mxd[i]; mvl=i/nsegstart; }
 			if (verbose) printf("Merging %d to %d (%1.0f, %d)\n",sub2,sub1,mv,mvl);
 			if (sub1==-1) {
 				if (verbose) printf("Unable to find segments to merge, aborting\n");

@@ -4658,6 +4658,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	{
 	  public:
 		void process_inplace(EMData * image);
+		EMData *process(EMData * image);
 
 		string get_name() const
 		{
@@ -4673,13 +4674,14 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			TypeDict d;
 			d.put("ref", EMObject::EMDATA, "Reference image to subtract");
-			d.put("return_radial", EMObject::BOOL, "Return the radial filter function as an attribute (filter_curve)");
+			d.put("actual", EMObject::EMDATA, "If specified, ref is used for normalization, but actual is subtracted.");
+// 			d.put("return_radial", EMObject::BOOL, "Return the radial filter function as an attribute (filter_curve)");
 			return d;
 		}
 
 		string get_desc() const
 		{
-			return "This will filter/scale 'ref' optimally and subtract it from image.";
+			return "This will filter/scale 'ref' optimally and subtract it from image using ring dot products in Fourier space for normalization.";
 		}
 
 		static const string NAME;
