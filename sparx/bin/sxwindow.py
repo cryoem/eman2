@@ -140,8 +140,7 @@ def main():
 		for f in glob.glob(os.path.join(options.topdir, "*" + extension)):
 			micnames.append(base_name(f))
 
-# 		mask = pad(model_circle(box_size//2, box_size, box_size), box_size, box_size, 1, 0.0)
-		mask = model_circle(box_size//4, box_size, box_size)
+		mask = model_circle(box_size//2, box_size, box_size)
 		
 		for k in range(len(micnames)):
 			# basename is name of micrograph minus the path and extension
@@ -164,7 +163,7 @@ def main():
 						break
 				if nx:
 					print "Micrograph %s"%filename,"  not listed in CTER results, skipping ...."
-					return
+					break
 				if(ctfs[8]/ctfs[0] > cterr[0]):
 					print_msg('Defocus error %f exceeds the threshold. Micrograph %s rejected.\n'%(ctfs[8]/ctfs[0], filename))
 					break
@@ -173,14 +172,16 @@ def main():
 					ctfs[7] = 0.0
 			
 			coords = js_open_dict(f_info)["boxes"]
+			
 			immic = get_im(f_mic)
+			immic = filt_gaussh( immic, 1.0/box_size )
+			
 			if new_pixel_size != options.input_pixel:
 				# Resample micrograph, map coordinates, and window segments from resampled micrograph using new coordinates
 				# Set ctf along with new pixel size in resampled micrograph
 				print_msg('Resample micrograph to pixel size %f and window segments from resampled micrograph\n'%new_pixel_size)
 				resample_ratio = options.input_pixel/new_pixel_size
 				# after resampling by resample_ratio, new pixel size will be pixel_size/resample_ratio = new_pixel_size
-# 				immic = get_im(f_mic)
 				nx = immic.get_xsize()
 				ny = immic.get_ysize()
 				immic = resample(immic, resample_ratio)
@@ -201,15 +202,13 @@ def main():
 				from utilities import generate_ctf
 				ctfs = generate_ctf(ctfs)
 
-			x0 = immic.get_xsize()//2  #  Floor division or integer division
+			x0 = immic.get_xsize()//2
 			y0 = immic.get_ysize()//2
  
-# 			coords = js_open_dict(f_info)["boxes"]
 			for i in range(len(coords)):
 
 				x = int(coords[i][0])
 				y = int(coords[i][1])
-# 				print i, x, y, x0, y0, box_size, x-x0, y-y0
 				imw = Util.window(immic, box_size, box_size, 1, x-x0, y-y0)
 				
 				imw = ramp(imw)
@@ -219,14 +218,11 @@ def main():
 					imw.set_attr("ctf",ctfs)
 					imw.set_attr("ctf_applied", 0)
 				
-# 				imw.set_attr("subsample_rate",    resample_ratio)
 				imw.set_attr("ptcl_source_coord", [x/resample_ratio,y/resample_ratio])
 				imw.set_attr("pixel_size_orig", options.input_pixel)
 				imw.set_attr("ptcl_source_image", f_mic)
 
 				imw.write_image(otcl_images, i)
-# 				imn.write_image(otcl_images, iImg)
-# 				iImg = iImg + 1
 
 if __name__=='__main__':
 	main()
