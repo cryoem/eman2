@@ -62,11 +62,16 @@ def main():
 	parser.add_option('--outstack',    help='Output stack name')	
 	parser.add_option("--micsuffix",   type=str,	default="hdf", help="A string denoting micrograph type. Currently only handles suffix types, e.g. 'hdf', 'ser' etc.")
 	parser.add_option("--invert",      help="If writing output inverts pixel intensities",default=False)
+	
+	parser.add_option("--defocuserror",       type="float",  	default=1000000.0,        help="Exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent.  The error is computed as (std dev defocus)/defocus*100%")
+	parser.add_option("--astigmatismerror",   type="float",  	default=360.0,            help="Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees.")
+
 
 	(options, args) = parser.parse_args()
 	box_size = options.box_size
 	suffix    = "_ptcls"
 	extension = "." + options.micsuffix
+	cterr = [options.defocuserror/100.0, options.astigmatismerror]
 	
 	new_pixel_size = options.new_apix
 	if new_pixel_size < 0: new_pixel_size = options.input_pixel
