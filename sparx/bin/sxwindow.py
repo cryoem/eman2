@@ -161,6 +161,8 @@ def main():
 			imw = ramp(imw)
 			stat = Util.infomask( imw, mask, False )
 			imw -= stat[0]
+			imw /= stat[1]
+			
 			if options.importctf:
 				imw.set_attr("ctf",ctfs)
 				imw.set_attr("ctf_applied", 0)
