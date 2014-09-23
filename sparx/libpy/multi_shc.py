@@ -2585,13 +2585,12 @@ def do_volume(data, options, iter, mpi_comm):
 	return vol
 
 
-# parameters: list of (all) projections | reference volume is not used, it is computed by the command from shrank data| ...
+# parameters: list of (all) projections | reference volume is optional, if provided might be shrank| ...
 #  The alignment done depends on nsoft:
 # 			 nsoft = 0 & an = -1: exhaustive deterministic
 # 			 nsoft = 0 & an > 0 : local deterministic
 # 			 nsoft = 1 shc
 # 			 nsoft >1  shc_multi
-#  Add reduction
 def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi_comm = None, log = None, nsoft = 3 ):
 
 	from alignment       import Numrinit, prepare_refrings, proj_ali_incore,  proj_ali_incore_local, shc
@@ -2622,6 +2621,7 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 	center = ali3d_options.center
 	CTF    = ali3d_options.CTF
 	ref_a  = ali3d_options.ref_a
+	maskfile = ali3d_options.mask3D
 
 	if mpi_comm == None:
 		mpi_comm = MPI_COMM_WORLD
@@ -2746,36 +2746,51 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 	del mask2D
 
 
-		
-	# Reference volume reconstruction
 	mpi_barrier(mpi_comm)
-	if myid == main_node:
-		start_time = time()
-	if( ref_vol is None):
+	if maskfile:
+		if type(maskfile) is types.StringType:
+			if myid == main_node:
+				mask3D = get_im(maskfile)
+				i = mask3D.get_xsize()
+				if( shrinkage != 1.0 ):
+					if( i != nx ):
+						mask3D = resample(mask3D, shrinkage)
+			else:
+				mask3D = model_blank(nx, nx, nx)
+			bcast_EMData_to_all(mask3D, myid, main_node)
+		else:
+			mask3D = maskfile
+	else:
+		mask3D = model_circle(last_ring, nx, nx, nx)
+	ali3d_options.mask3D = mask3D
+
+	#  Read	template volume if provided or reconstruct it
+	if ref_vol:
+		if type(ref_vol) is types.StringType:
+			if myid == main_node:
+				vol = get_im(ref_vol)
+				i = vol.get_xsize()
+				if( shrinkage != 1.0 ):
+					if( i != nx ):
+						vol = resample(vol, shrinkage)
+			else:
+				vol = model_blank(nx, nx, nx)
+		else:
+			if myid == main_node:
+				i = ref_vol.get_xsize()
+				if( shrinkage != 1.0 ):
+					if( i != nx ):
+						vol = resample(ref_vol, shrinkage)
+				else:
+					vol = ref_vol.copy()
+			else:
+				vol = model_blank(nx, nx, nx)
+		bcast_EMData_to_all(vol, myid, main_node)
+		del ref_vol
+		vol = do_volume(vol, ali3d_options, 0, mpi_comm)
+	else:
 		vol = do_volume(data, ali3d_options, 0, mpi_comm)
 
-	else:
-		if( type(ref_vol) is types.StringType ):
-			if(myid == main_node):
-				vol = get_im(ref_vol)
-		else:
-			vol = ref_vol
-		if(myid == main_node):
-			i = vol.get_xsize()
-			if(i != nx):
-				terminate = float(i)/float(nx)
-			else:
-				terminate = 0.0
-		else:
-			terminate = 0.0
-		terminate = bcast_number_to_all(terminate, source_node = main_node)
-		if(terminate > 0.0):
-			if(myid == main_node):
-				#  this will work for both larger and smaller volume
-				vol = resample(vol, terminate)
-			else:
-				if(myid != main_node):  vol = model_blank(nx, nx, nx)
-		do_volume(vol, ali3d_options, total_iter, mpi_comm)
 
 	# log
 	if myid == main_node:
