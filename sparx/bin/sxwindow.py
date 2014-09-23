@@ -60,13 +60,13 @@ def main():
 	parser.add_option('--box_size',    type=int,   help='x and y dimension in pixels of square area to be windowed. Pixel size is assumed to be new_pixel_size.')
 	parser.add_option('--outdir',      help='Output directory')
 	parser.add_option('--outstack',    help='Output stack name')	
-	parser.add_option("--micsuffix",   type=str,	default=".hdf", help="A string denoting micrograph type. Currently only handles suffix types, e.g. 'hdf', 'ser' etc.")
+	parser.add_option("--micsuffix",   type=str,	default="hdf", help="A string denoting micrograph type. Currently only handles suffix types, e.g. 'hdf', 'ser' etc.")
 	parser.add_option("--invert",      help="If writing output inverts pixel intensities",default=False)
 
 	(options, args) = parser.parse_args()
 	box_size = options.box_size
 	suffix    = "_ptcls"
-	extension = options.micsuffix
+	extension = "." + options.micsuffix
 	
 	new_pixel_size = options.new_apix
 	if new_pixel_size < 0: new_pixel_size = options.input_pixel
@@ -165,7 +165,7 @@ def main():
 				imw.set_attr("ctf",ctfs)
 				imw.set_attr("ctf_applied", 0)
 			
-			imw.set_attr("ptcl_source_coord", [x/resample_ratio,y/resample_ratio])
+			imw.set_attr("ptcl_source_coord", [int(round(x/resample_ratio)),int(round(y/resample_ratio))])
 			imw.set_attr("pixel_size_orig", options.input_pixel)
 			imw.set_attr("ptcl_source_image", f_mic)
 
