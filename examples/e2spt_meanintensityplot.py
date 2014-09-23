@@ -1,4 +1,33 @@
 #!/usr/bin/env python
+#
+# Author: Jesus Galaz, 2011?2012? - Last change 16/Sep/2014
+# Copyright (c) 2011 Baylor College of Medicine
+#
+# This software is issued under a joint BSD/GNU license. You may use the
+# source code in this file under either license. However, note that the
+# complete EMAN2 and SPARX software packages have some GPL dependencies,
+# so you are responsible for compliance with the licenses of these packages
+# if you opt to use BSD licensing. The warranty disclaimer below holds
+# in either instance.
+#
+# This complete copyright notice must be included in any revised version of the
+# source code. Additional authorship citations may be added, but existing
+# author citations must be preserved.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
+#
 
 import os
 from EMAN2 import *
@@ -7,14 +36,15 @@ from optparse import OptionParser
 import sys
 
 import numpy as np
-import pylab
-import matplotlib.mlab as mlab
-import matplotlib.pyplot as plt
+
 
 from scipy.stats import norm
 
 
 def main():
+	#import pylab
+	#import matplotlib.mlab as mlab
+	import matplotlib.pyplot as plt
 
 	progname = os.path.basename(sys.argv[0])
 	usage = """Produces mean intensity histograms of stack of sub-volumes"""
@@ -30,7 +60,8 @@ def main():
 		two populations or more.""")
 	
 	parser.add_argument("--shrink", type=int,default=1,help="Optionally shrink the input volumes by an integer amount.")
-	#parser.add_argument("--bins", type=int,default=5,help="Number of bins for histogram.")
+	parser.add_argument("--bins", type=int,default=0,help="""Number of bins for histogram.
+		If not provided, the optimal bin number will be calculated.""")
 	
 	#parser.add_argument("--sym", type=str, default='c1', help = "Symmetry to enforce before computing mean intensity in the box. Note that this should only be used if the particles are properly aligned to the symmetry axis.")
 	
@@ -62,7 +93,13 @@ def main():
 	parser.add_argument("--savepreprocessed",action="store_true", help="""Will save image stacks 
 		after preprocessing options (lowpass, highpass, preprocess, masking, etc) have been 
 		applied.""", default=False)
-
+		
+	parser.add_argument("--normalizeplot",action="store_true",help="""This will normalize the
+		intensity values of the distribution to be between 0 and 1""")
+	parser.add_argument("--removesigma",type=int,default=0,help="""Provide a value for the
+		number of standard deviations away from the mean to consider values to exclude.
+		For example, if --removesigma=3, values further than 3 standard deviations away from the 
+		mean will be excluded.""")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	parser.add_argument("--verbose", "-v", type=int, dest="verbose", action="store", metavar="n", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -99,13 +136,17 @@ def main():
 	intensitiesSeveral = []
 	means = []
 	stds = []
+	
 	for datafile in datafiles:
 	
-		intensities = calcintensities( options, datafile )
+		intensitiesSingle = calcintensities( options, datafile )
 	
-		intensitiesSeveral.append( intensities )
-	
-		ret = plotintensities( intensities, options, datafile )
+		intensitiesSeveral.append( [ datafile, list(intensitiesSingle) ] )
+		
+		if options.normalizeplot:
+			intensitiesSingleNorm = normintensities( intensitiesSingle, 0, 0 )
+		
+		ret = plotintensities( intensitiesSingleNorm, options, datafile )
 		mean = ret[0]
 		std = ret[1]
 		means.append(mean)
@@ -114,19 +155,48 @@ def main():
 	print "\nIntensities several len is", len( intensitiesSeveral )
 	if len( intensitiesSeveral ) > 1:
 		
-		n1 = len( intensitiesSeveral[0] )
-		n2 = len( intensitiesSeveral[1] )
+		datafile1 = intensitiesSeveral[0][0]
+		datafile2 = intensitiesSeveral[1][0]
+		
+		intensities1 = intensitiesSeveral[0][1]
+		intensities2 = intensitiesSeveral[1][1]
+		n1 = len( intensities1 )
+		n2 = len( intensities2 )
 		
 		zscore = ( means[0]-means[1] )/ np.sqrt( (stds[0]*stds[0])/n1 + (stds[1]*stds[1])/n2 )
 		
-		g = open(options.path + '/zscore.txt','w')
-		lines=['zscore=' + str(zscore)+'\n']
+		g = open(options.path + '/MIboth_INFO.txt','w')
+		zscoreline = 'zscore=' + str(zscore)+' for ' + datafile1 + ' vs ' + datafile2 + ' \n'
+		lines=[ zscoreline ]
 		g.writelines(lines)
 		g.close()
 		
-		print "\nzzzzzzzzz\nZ-score is", zscore
-		for inten in intensitiesSeveral:	
-			plotintensities( inten, options, datafile, 'no' )
+		print "\nzzzzzzz\n%s" %( zscoreline )
+		
+		absmax = absmin = 0
+		if options.normalizeplot:
+		
+			minses = []
+			maxes = []
+			for intenS in intensitiesSeveral:
+				minS = float(min( intenS[1] ))
+				maxS = float(max( intenS[1] ))
+				
+				minses.append( minS )
+				maxes.append( maxS )
+	
+			absmin = min( minses )
+			absmax = max( maxes ) - absmin
+		
+		
+		for intensities in intensitiesSeveral:	
+			print "Type and len of intensities is", type(intensities[1]), len(intensities[1])
+						
+			if options.normalizeplot:
+				print "normalize on"	
+				intensitiesNorm = normintensities( intensities[1], absmin, absmax )
+				
+			plotintensities( intensitiesNorm, options, datafile, 'no' )
 	
 		plt.savefig(options.path + '/MIbothPlot.png')
 		plt.clf()
@@ -134,9 +204,51 @@ def main():
 	E2end(logger)
 
 
+def normintensities( intensitiesR, minval=0, maxval=0 ):
+	print "normalize function"
+	intensitiesNormalizedMin = []
+	
+	print "Intensities R type and length are", type(intensitiesR), len(intensitiesR)
+	imin = min( intensitiesR )
+	if minval:
+		imin = minval
+	
+	print "\nMin is", imin
+	
+	for x in range(len( intensitiesR )):
+		intenNormMin = ( float(intensitiesR[x]) - imin )
+		intensitiesNormalizedMin.append( intenNormMin )
+	
+	print "After minnorm, intensitiesNormalizedMin[10] is", intensitiesNormalizedMin[10]
+	print "Len of intensitiesNormalizedMin is", len(intensitiesNormalizedMin)
+	imax = float(max( intensitiesNormalizedMin ))
+	print "max is", imax
+	
+	if maxval:
+		imax = maxval
+	
+	#print "intensitiesNoramlizedMin are", intensitiesNormalizedMin
+	
+	intensitiesNormalizedMax = []
+	i=0
+	for x in range(len(intensitiesNormalizedMin)):
+		intenNormMax = float(intensitiesNormalizedMin[x]) / imax
+		#print "for intenNorm %d value is %f" %(i,intenNormMax)
+		intensitiesNormalizedMax.append( intenNormMax )
+		i+=1
+	
+	#print "intensitiesNormalizedMax are", intensitiesNormalizedMax
+
+	finalIntensities = list( intensitiesNormalizedMax )
+	#print "After maxnorm, Intensities[10] is", finalIntensities[10]
+	
+	#print "normalized intensities are", finalIntensities
+	return finalIntensities
+
+
 def calcintensities( options, datafile ):
 
-	print "\nI am in the intensity scanner"
+	print "\n(e2spt_meanintensityplot) (calcintensities)"
 	intensities = []
 	
 	n = EMUtil.get_image_count( datafile )
@@ -159,7 +271,7 @@ def calcintensities( options, datafile ):
 	
 	for i in range(n):
 		a=EMData(datafile,i)
-		print "\nI am analyzing particle number %d of %d for stack %s" % (i,n,datafile)
+		print "\nAnalyzing particle number %d of %d for stack %s" % (i,n,datafile)
 
 		# Make the mask first, use it to normalize (optionally), then apply it 
 		# normalize
@@ -172,9 +284,7 @@ def calcintensities( options, datafile ):
 		#print "Mask size",mask['nx']
 		
 		
-		if options.clip:				
-			#sys.exit()
-		
+		if options.clip:						
 			sx = a['nx']
 			sy = a['ny']
 			sz = a['nz']
@@ -238,25 +348,53 @@ def calcintensities( options, datafile ):
 		
 		if options.savepreprocessed:
 			a.write_image(options.path + '/' + datafile.replace('.','_EDITED.'),i)
+
+	finalvalues = []
+	stddin = np.std( intensities )
+	meanin = np.mean( intensities )
 	
-	intensitiestxt = options.path + '/' + datafile.replace('.hdf','_Intensities.txt')
+	for val in intensities:
+		if not options.removesigma:
+			finalvalues.append( val )
+		elif options.removesigma:
+			topthreshold = float( options.removesigma ) * stddin + meanin
+			bottomthreshold = meanin - float( options.removesigma ) * stddin
+			if float( val ) < topthreshold and float(val) > bottomthreshold:
+				finalvalues.append( val )
+			else:
+				print """Value %f excluded because bottom and top thresholds to include are bottomthresh=%f, topthresh=%f
+				""" %( float(val), bottomthreshold, topthreshold )	
+	
+	intensitiestxt = options.path + '/' + datafile.replace('.hdf','_INTENSITIES.txt')
+	
+	
+	#if options.normalizeplot:
+	#	intensitiesNormalized = []
+	#	imax = max( intensities )
+	#	imin = min( intensities )
+	#	for inten in intensities:
+	#		intenNorm = ( inten - imin ) / imax
+	#		intensitiesNormalized.append( intenNorm )
+	#	
+	#	intensities = list( intensitiesNormalized )
 	
 	f=open( intensitiestxt, 'w')
 	lines = []
 	k=0
-	for inten in intensities:
+	for inten in finalvalues:
 		lines.append( str(k) + ' ' + str(inten) + '\n')
 		k+=1
 		
 	f.writelines(lines)
 	f.close()
 	
-	plotintensities( intensities, options, datafile, 'yes' )
+	plotintensities( finalvalues, options, datafile, 'yes' )
 	
-	return intensities
+	return finalvalues
 	
 	
 def plotintensities( intensities, options, datafile, onefile='yes' ):	
+	import matplotlib.pyplot as plt
 	
 	#msktag=''
 	#if options.mask:	
@@ -277,41 +415,46 @@ def plotintensities( intensities, options, datafile, onefile='yes' ):
 
 	std = np.std(intensities)
 	mean = np.mean(intensities)
-	statistics = 'mean='+str(mean) + ' std='+str(std) + '\n'
+	statistics = ['mean='+str(mean) + ' std='+str(std) + '\n']
+
+	#intensitiesfile = plotname.replace('.png','_INTENSITIES.txt')
 	
-	statsfile = plotname.replace('.png','_STATS.txt')
-	f=open(options.path + '/' + statsfile,'w')
-	f.writelines(statistics)
-	f.close()
+	#intensitieslines = []
+	#for i in intensities:	
+	#	intensitieslines.append(str(i)+'\n')
 
-	intensitiesfile = plotname.replace('.png','_INTENSITIES.txt')
-	
-	intensitieslines = []
-	for i in intensities:	
-		intensitieslines.append(str(i)+'\n')
-
-	g=open(options.path + '/' + intensitiesfile,'w')
-	g.writelines(statistics)
-	g.close()
+	#g=open(options.path + '/' + intensitiesfile,'w')
+	#g.writelines(statistics)
+	#g.close()
 
 
-	
-	print "The standard deviation is", std
+	print "\nThe standard deviation is", std
 	cuberoot = np.power(len(intensities),1.0/3.0)
 	print "The cuberoot of n is", cuberoot
 	width = (3.5*std)/cuberoot
 	print "Therefore the bin width according to Scott's normal reference rule is", width
+	
 	calcbins = (max(intensities) - min(intensities)) / width
-	print "And the number of bins should be", calcbins
+	
+	if options.bins:
+		calcbins = options.bins
+	
+	print "\nAnd the number of bins should be", calcbins
+	
+	statistics.append( 'bins=' + str( calcbins ) + ' , binwidth=' + str( width ) + '\n')
+	
+	statsfile = plotname.replace('.png','_INFO.txt')
+	f=open(options.path + '/' + statsfile,'w')
+	f.writelines(statistics)
+	f.close()
 	
 	
 	#calcbins=50
-	plt.hist(intensities, calcbins, alpha=0.30)	
+	plt.hist(intensities, calcbins, alpha=0.30, label=datafile)	
 	
 	intensities.sort()
 	#hmean = np.mean(h)
 	#hstd = np.std(h)
-	
 	
 	pdf = norm.pdf(intensities, mean, std)
 	plt.plot(intensities, pdf)
