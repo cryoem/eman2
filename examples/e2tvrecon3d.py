@@ -4,7 +4,7 @@
 # Author: James Michael Bell, 2014 (jmbell@bcm.edu)
 # Copyright (c) 2014 Baylor College of Medicine
 #
-# For the original implementation of this FISTA TV algorithm, see:
+# For the original implementation of this FISTA TV algorithm, see: 
 # https://github.com/emmanuelle/tomo-tv.
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -197,6 +197,20 @@ def get_sinograms( options, xlen, ylen ):
 		np_sinogram = sinogram.numpy().copy()
 		sinograms.append( np_sinogram )
 	return np.asarray(sinograms).astype( np.float32 )
+
+
+def return_sinograms( options, threed_recons ):
+	""" Returns X,Z plane reconstructions to original X,Y orientation """
+	num_imgs = EMUtil.get_image_count( options.tiltseries )
+	data = from_numpy( threed_recons )
+	for n in range( num_imgs ):
+		inv_sinograms = EMData( xlen, ylen, 1 )
+		r = Region( 0, 0, n, xlen, ylen, 1 )
+		for imgnum in range( num_imgs ):
+			prj = EMData( options.tiltseries, imgnum, False, r )
+			prj.set_size( 1, 1, num_imgs )
+			inv_sinogram.insert_clip( prj, ( imgnum, 0 ))
+	return inv_sinograms
 
 
 # PROJECTION OPERATOR
@@ -618,35 +632,9 @@ def gradient(img):
 	return gradient
 
 
-def gradient_3d(img):
-	""" 
-	Compute gradient of an image
-	
-	Parameters
-	----------
-	img: ndarray
-		N-dimensional image
-	
-	Returns
-	-------
-	gradient: ndarray
-		Gradient of the image: the i-th component along the first axis is the 
-		gradient along the i-th axis of the original array img
-	"""
-	shape = [img.ndim, ] + list(img.shape)
-	gradient = np.zeros(shape, dtype=img.dtype)
-	# 'Clever' code to have a view of the gradient with dimension i stop at -1
-	slice_all = [0, slice(None, -1),]
-	for d in range(img.ndim):
-		gradient[slice_all] = np.diff(img, axis=d)
-		slice_all[0] = d + 1
-		slice_all.insert(1, slice(None))
-	return gradient
-
-
 def _projector_on_dual(grad):
 	"""
-	Modifies in place the gradient to project iton the L2 unit ball
+	Modifies in place the gradient to project it onto the L2 unit ball
 	"""
 	norm = np.maximum(np.sqrt(np.sum(grad**2, 0)), 1.)
 	for grad_comp in grad:
