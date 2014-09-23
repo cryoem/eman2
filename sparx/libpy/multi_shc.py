@@ -2764,6 +2764,9 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 		mask3D = model_circle(last_ring, nx, nx, nx)
 	ali3d_options.mask3D = mask3D
 
+	if myid == main_node:
+		start_time = time()
+
 	#  Read	template volume if provided or reconstruct it
 	if ref_vol:
 		if type(ref_vol) is types.StringType:
