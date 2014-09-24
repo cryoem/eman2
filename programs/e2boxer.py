@@ -285,6 +285,9 @@ def autobox(args,options,logid):
 		E2progress(logid,float(i+1)/len(args))
 
 def write_output(args,options,logid, database="e2boxercache"):
+	if options.gauss_autoboxer != None:
+		print "\n\n --write_ptcl option has been deactivated for Gauss mode.\n\nPlease use sxwindow.py for windowing!\n\n"
+		return
 	params = {}
 	params["filenames"] = args
 	params["suffix"] = options.suffix

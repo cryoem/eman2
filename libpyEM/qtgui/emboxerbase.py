@@ -1872,6 +1872,10 @@ class EMBoxerModule(EMBoxerModuleVitals, PyQt4.QtCore.QObject):
 		self.emit(PyQt4.QtCore.SIGNAL("module_closed"))
 
 	def run_output_dialog(self):
+		if self.current_tool=='Gauss':
+			print "\n\nThis operation has been deactivated for Gauss mode.\n\nPlease use sxwindow.py for windowing!\n\n"
+			error("This operation has been deactivated for Gauss mode.\n\nPlease use sxwindow.py for windowing!","Error")
+			return
 		from emsprworkflow import E2BoxerProgramOutputTask
 		if self.output_task != None: return
 		from PyQt4 import QtCore
