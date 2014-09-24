@@ -161,7 +161,7 @@ def main():
 				reconpath = "sinogram_recon_0" + str(i)
 			if i >= 10:
 				reconpath = "sinogram_recon_" + str(i)
-			p = subprocess.Popen("e2tvrecon2d.py --tiltseries %s --tlt %s --path %s --output %s --beta %s -v %s"%(inputpath, tlt, reconpath, twodpath, inputbeta, verbosity),shell=True)
+			p = subprocess.Popen("e2tvrecon2d.py --tiltseries %s --tlt %s --path %s --output %s --beta %s -v %s"%(inputpath, tlt, reconpath, twodpath, inputbeta, verbosity), shell=True)
 			if options.verbose > 1:
 				print "Sinogram Reconstruction %i complete"%(i)
 			i += 1
@@ -205,10 +205,14 @@ def gen_sinograms( options, xlen, ylen ):
 		r = Region( 0, y, xlen, 1 )
 		for imgnum in range( num_imgs ):
 			prj = EMData( options.tiltseries, imgnum, False, r )
-			if y < 10:
-				prj.write_image(options.path + "/sinogram_0"+str(y)+".hdf", imgnum)
-			if y >= 10:
+			if y >= 1000:
 				prj.write_image(options.path + "/sinogram_"+str(y)+".hdf", imgnum)
+			elif y >= 100:
+				prj.write_image(options.path + "/sinogram_0"+str(y)+".hdf", imgnum)
+			elif y >= 10:
+				prj.write_image(options.path + "/sinogram_00"+str(y)+".hdf", imgnum)
+			else:
+				prj.write_image(options.path + "/sinogram_000"+str(y)+".hdf", imgnum)
 		if options.verbose > 2:
 			print "Generated sinogram %i of %i" %( y+1, ylen )
 	return
