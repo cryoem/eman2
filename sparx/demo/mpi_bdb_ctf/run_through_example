@@ -50,7 +50,7 @@ sxprocess.py ../model_structure.hdf particles mic --generate_projections apix=5.
 
 # Create and initialize database
 # Input: name of the key under which the parameters will be saved in the database
-# Output: database with input parameters in JSON format
+# Output: database with input parameters
 sxprocess.py demoparms --makedb 'gauss_width'=1.0:'pixel_input'=5.2:'pixel_output'=5.2:'thr_low'=1.0:'thr_hi'=30.0:"invert_contrast"=False:"use_variance"=True:"boxsize"=64:"ctf_cs"=2.0:"ctf_fstart"=0.02:"ctf_fstop"=0.5:"ctf_ampcont"=10:"ctf_volt"=120:"ctf_window"=512:"ctf_edge"=0:"ctf_overlap"=50
 
 
@@ -77,8 +77,6 @@ sxheader.py bdb:flip_data --params=active --one
 sxheader.py bdb:flip_data --params=xform.align2d --zero
 
 # pre-align particles with sxali2d.py
-# Input:  stack
-# Output: 
 sxali2d.py bdb:flip_data None --ou=28 --xr="2 1" --ts="1 0.5" --maxit=33 --dst=90
 
 # apply the results from sxali2d.py to the data:
@@ -139,17 +137,15 @@ sxheader.py bdb:class_averages --params=active --one    || exit
 
 # Second, more advanced version.  Note this one requires number of CPUs to be multiplicity of 3.
 sxheader.py bdb:class_averages --params=stable --zero   || exit
-mpirun -np 12 sxviper.py bdb:class_averages outdirshc --ou=28 --xr=3.0 --delta=2.0 --maxit=100 --function="[..,demo_user_funcs,ali3d_reference2]"
+mpirun -np 12 sxviper.py bdb:class_averages outdirshc --ou=28 --xr=3.0 --delta=2.0 --function="[..,demo_user_funcs,ali3d_reference3]"
 
 
 # 3D projection alignment - refinement of the initial structure
 sxheader.py bdb:data --params=xform.projection --zero    || exit
 sxheader.py bdb:data --params=active --one
 #  establish initial orientations of all projection data
-#mpirun -np 12 sxali3d.py  bdb:data  outdirshc/volume_filt.hdf  outmatch --CTF --maxit=1  --ou=28 --xr=3.0 --delta=2.0 --MPI   || exit
 mpirun -np 12 sxali3d.py  bdb:data  outdirshc/refvol2.hdf outmatch --CTF --maxit=1  --ou=28 --xr=3.0 --delta=2.0 --MPI   || exit
 sxheader.py bdb:data --params=xform.projection --export=outmatch/matchparams.txt    || exit
-#mpirun -np 12 sxali3d.py bdb:data poutdirshc --shc --CTF  --ou=28 --xr=2.0 --delta=2.0 --maxit=100  --function="[..,demo_user_funcs,ali3d_reference3]" --MPI || exit
 mpirun -np 12 sxali3d.py bdb:data poutdirshc --CTF  --ou=28 --xr=2.0 --delta=2.0 --maxit=100  --function="[..,demo_user_funcs,ali3d_reference3]" --MPI || exit
 
 
