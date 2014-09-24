@@ -253,7 +253,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 				dct.close()
 
 		try: maxname=max([len(s) for s in dbs])
-		except: 
+		except:
 			print "Error reading ",path
 
 		if options.restore :

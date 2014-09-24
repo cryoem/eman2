@@ -3016,14 +3016,14 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 					i+=1
 
 
-			if terminate:
+			if( terminate or (Iter == max_iter) ):
 				# gather parameters
 				params = []
 				for im in data:
 					t = get_params_proj(im)
 					params.append( [t[0], t[1], t[2], t[3]/shrinkage, t[4]/shrinkage] )
 				params = wrap_mpi_gatherv(params, main_node, mpi_comm)
-			if( terminate and (myid == main_node) ):
+			if( ( terminate or (Iter == max_iter) ) and (myid == main_node) ):
 				if( type(stack) is types.StringType ):
 					from EMAN2 import Vec2f, Transform
 					from EMAN2db import db_open_dict
