@@ -4675,7 +4675,8 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			TypeDict d;
 			d.put("ref", EMObject::EMDATA, "Reference image to subtract");
 			d.put("actual", EMObject::EMDATA, "If specified, ref is used for normalization, but actual is subtracted.");
-// 			d.put("return_radial", EMObject::BOOL, "Return the radial filter function as an attribute (filter_curve)");
+			d.put("return_fft",EMObject::BOOL, "Skips the final IFT, and returns the FFT of the subtracted image");
+ 			d.put("return_radial", EMObject::BOOL, "Return the radial filter function as an attribute (filter_curve)");
 			return d;
 		}
 

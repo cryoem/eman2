@@ -826,7 +826,13 @@ phase randomization resolution of {:1.1f} &Aring; for the 'gold standard' resolu
 You must rerun the refinement with a more conservative initial target resolution (suggest ~{:1.1f}).</p>""".format(1.0/lastres,randomres,1.0/lastres*0.9))
 			else:
 				append_html("""<p>Congratulations, your refinement is complete, and you have a gold standard resolution of {:1.1f} &Aring;. 
-If you wish to continue this refinement to further improve resolution, the most efficient approach is to use the --startfrom {} option
+Note that there is always some variability in these determined values based on masking of the map. If the map is masked too tightly,
+the FSC curve will not remain near zero at high resolution and will rise again. If you see an FSC curve that falls to zero then rises again,
+it is an indication that something may have gone wrong with the masking. In general, EMAN2.1 is very conservative in its masking to try and
+avoid these problems. This means that the resolution may be as much as 10% better with somewhat tighter masking, without getting into 
+artifact territory. </p>
+
+<p>If you wish to continue this refinement to further improve resolution, the most efficient approach is to use the --startfrom {} option
 rather than specifying --input and --model. When you use --startfrom, it will not re-randomize the phases. Since you have already achieved
 sufficient resolution to validate the gold-standard approach, continuing to extend this resolution is valid, and more efficient.""".format(1.0/lastres,options.path))
 		except:

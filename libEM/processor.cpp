@@ -3978,13 +3978,15 @@ EMData *SubtractOptProcessor::process(EMData * image)
 	EMData *refr = params["ref"];
 	EMData *actual = params.set_default("actual",(EMData*)NULL);
 	EMData *ref;
-// 	bool return_radial = params.set_default("return_radial",false);
+ 	bool return_radial = params.set_default("return_radial",false);
+ 	bool return_fft = params.set_default("return_fft",false);
 
+	// We will be modifying imf, so it needs to be a copy
 	EMData *imf;
-	if (image->is_complex()) imf=image;
+	if (image->is_complex()) imf=image->copy();
 	else imf=image->do_fft();
 	
-	// Make sure ref is complex and a copy we can modify
+	// Make sure ref is complex
 	if (refr->is_complex()) ref=refr;
 	else ref=refr->do_fft();
 
@@ -4015,9 +4017,9 @@ EMData *SubtractOptProcessor::process(EMData * image)
 	}
 	for (int i=0; i<ny2; i++) rad[i]/=norm[i];
 
-	FILE *out=fopen("dbug.txt","w");
-	for (int i=0; i<ny2; i++) fprintf(out,"%lf\t%lf\t%lf\n",(float)i,rad[i],norm[i]);
-	fclose(out);
+// 	FILE *out=fopen("dbug.txt","w");
+// 	for (int i=0; i<ny2; i++) fprintf(out,"%lf\t%lf\t%lf\n",(float)i,rad[i],norm[i]);
+// 	fclose(out);
 	
 	for (int y=-ny2; y<ny2; y++) {
 		for (int x=0; x<ny2; x++) {
@@ -4033,14 +4035,24 @@ EMData *SubtractOptProcessor::process(EMData * image)
 		}
 	}
 	
-	EMData *ret=imf->do_ift();
-	
-	if (!image->is_complex()) delete imf;
 	if (!ref->is_complex()) delete ref;
 	if (actual!=NULL and !actual->is_complex()) delete actf;
-	
-	return ret;
-}
+
+	vector <float>radf;
+	if (return_radial) {
+		radf.resize(ny2);
+		for (int i=0; i<ny2; i++) radf[i]=(float)rad[i];
+	}
+		
+	if (!return_fft) {
+		EMData *ret=imf->do_ift();
+		delete imf;
+		if (return_radial) ret->set_attr("filter_curve",radf);
+		return ret;
+	}
+	if (return_radial) imf->set_attr("filter_curve",radf);
+	return imf;
+	}
 
 void SubtractOptProcessor::process_inplace(EMData * image)
 {

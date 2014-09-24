@@ -138,7 +138,6 @@ def main():
 
 	combined2=EMData(combfile,0)
 	sigmanz=combined2["sigma_nonzero"]
-	combined2=0
 
 	### Masking
 	if options.automask3d==None or len(options.automask3d.strip())==0 :
@@ -168,6 +167,7 @@ def main():
 	else:
 		amask3d="--process "+options.automask3d
 
+	combined2=0
 	if options.automask3d2==None or len(options.automask3d2.strip())==0 : amask3d2=""
 	else : amask3d2="--process "+options.automask3d2
 
