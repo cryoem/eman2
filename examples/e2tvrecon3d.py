@@ -44,7 +44,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import sparse
 from scipy import ndimage
-
+import subprocess
 
 def get_usage():
 	progname = os.path.basename(sys.argv[0])
@@ -146,29 +146,33 @@ def main():
 	
 	if options.verbose > 1:
 		print "Performing 2D Reconstruction of All Generated Sinograms"
+	
 	os.chdir(options.path)
 	i = 1
+	
 	for fname in os.listdir(options.path):
 		if "sinogram" in fname:
+			inputpath = fname
+			twodpath = "twod.hdf"
+			verbosity = str(options.verbose)
+			tlt = options.tlt
+			inputbeta = str(beta)
 			if i < 10:
 				reconpath = "sinogram_recon_0" + str(i)
 			if i >= 10:
 				reconpath = "sinogram_recon_" + str(i)
-			inputpath = fname
-			twodpath = "twod.hdf"
-			tlt = options.tlt
-			inputbeta = str(beta)
-			os.popen("e2tvrecon2d.py --tiltseries %s --tlt %s --path %s --output %s --beta %s"%(inputpath, tlt, reconpath, twodpath, inputbeta))
+			p = subprocess.Popen("e2tvrecon2d.py --tiltseries %s --tlt %s --path %s --output %s --beta %s -v %s"%(inputpath, tlt, reconpath, twodpath, inputbeta, verbosity),shell=True)
 			if options.verbose > 1:
 				print "Sinogram Reconstruction %i complete"%(i)
 			i += 1
+	p_status = p.wait()
 	
 	i = 0
 	np_recons=[]
 	for pname in os.listdir('.'):
 		if "sinogram_recon" in pname:
 			for fname in os.listdir(pname):
-				if output in fname:
+				if twodpath in fname:
 					recon = EMData(pname + "/" + fname, 0)
 					np_recon = recon.numpy().copy()
 					np_recons.append(np_recon)
