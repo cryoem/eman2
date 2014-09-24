@@ -4,7 +4,7 @@
 # Author: James Michael Bell, 2014 (jmbell@bcm.edu)
 # Copyright (c) 2014 Baylor College of Medicine
 #
-# For the original implementation of this FISTA TV algorithm, see: 
+# For the original implementation of this FISTA TV algorithm, see:
 # https://github.com/emmanuelle/tomo-tv.
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -42,10 +42,8 @@ import ntpath
 import copy
 import numpy as np
 import matplotlib.pyplot as plt
-from numpy import loadtxt
 from scipy import sparse
 from scipy import ndimage
-from itertools import count
 
 
 def get_usage():
@@ -124,9 +122,16 @@ def main():
 	rootpath = os.getcwd()
 	options.path = rootpath + "/" + options.path
 	
-	if options.verbose > 2: print "Linking input file to instance directory..."
+	if options.verbose > 2: print "Linking tilt series file to instance directory..."
 	pathname = os.path.dirname(os.path.abspath( options.tiltseries ))
 	filename = ntpath.basename( options.tiltseries )
+	linkfrom = pathname + "/" + filename
+	linkto = options.path + "/" + filename
+	os.symlink( linkfrom, linkto )
+	
+	if options.verbose > 2: print "Linking tilt angles file to instance directory..."
+	pathname = os.path.dirname(os.path.abspath( options.tlt ))
+	filename = ntpath.basename( options.tlt )
 	linkfrom = pathname + "/" + filename
 	linkto = options.path + "/" + filename
 	os.symlink( linkfrom, linkto )
@@ -135,38 +140,48 @@ def main():
 	xsize = EMData( options.tiltseries , 0 ).get_xsize()
 	ysize = EMData( options.tiltseries , 0 ).get_ysize()
 	
-	# Make tilt stacks
+	# Generate sinograms
 	if options.verbose > 2: print "Generating %i tiltstacks..."%(ysize)
-	sinograms = get_sinograms( options, xsize, ysize )
+	sinograms = gen_sinograms(options, xsize, ysize)
 	
-	# Generate one projection operator for all tiltstacks
-	projection_operator = build_projection_operator( tiltangles, xsize, nslices, None, subpix, 0, None)
+	if options.verbose > 1:
+		print "Performing 2D Reconstruction of All Generated Sinograms"
+	os.chdir(options.path)
+	i = 1
+	for fname in os.listdir(options.path):
+		if "sinogram" in fname:
+			if i < 10:
+				reconpath = "sinogram_recon_0" + str(i)
+			if i >= 10:
+				reconpath = "sinogram_recon_" + str(i)
+			inputpath = fname
+			twodpath = "twod.hdf"
+			tlt = options.tlt
+			inputbeta = str(beta)
+			os.popen("e2tvrecon2d.py --tiltseries %s --tlt %s --path %s --output %s --beta %s"%(inputpath, tlt, reconpath, twodpath, inputbeta))
+			if options.verbose > 1:
+				print "Sinogram Reconstruction %i complete"%(i)
+			i += 1
 	
-	# Reconstruct each 2D tiltstack via FISTA-TV algorithm
-	twod_recons = []
-	for i, sinogram in enumerate(sinograms):
-		projections = sinogram.ravel()[:,np.newaxis]
-		# The 2D Reconstruction
-		tic = time.time()
-		recon, energies = fista_tv( projections, beta, niters, projection_operator )
-		toc = time.time()
-		if options.verbose > 7: 
-			print "Reconstruction %i of %i completed in %s s"%(i+1, ysize,str(toc-tic))
-		twod_recons.append(recon[-1])
-		# Write each 2D reconstruction to current working directory
-		twod_recon_path = "twod_recons.hdf"
-		from_numpy(recon[-1]).write_image( options.path + "/" + twod_recon_path, i )
-	# Stack each 2D reconstruction together
-	reconstack = np.dstack( twod_recons )
-	# Write volume to file
-	from_numpy(reconstack).write_image( options.path + "/" + outfilename )
+	i = 0
+	np_recons=[]
+	for pname in os.listdir('.'):
+		if "sinogram_recon" in pname:
+			for fname in os.listdir(pname):
+				if output in fname:
+					recon = EMData(pname + "/" + fname, 0)
+					np_recon = recon.numpy().copy()
+					np_recons.append(np_recon)
+					i += 1
+	reconstack = np.dstack( np_recons )
+	from_numpy(reconstack).write_image("threed_tv_recon.hdf")
 	
 	if options.noclean != True:
 		if options.verbose > 1: 
 			print "Cleaning up current working directory..."
-		path = options.path
-		os.remove( path + "/twod_recons.hdf" )
-		os.remove( path + "/sinogram.hdf" )
+		for pname in os.listdir(options.path):
+			if "sinogram" in pname:
+				os.remove( pname )
 	
 	E2end(logger)
 	if options.verbose > 1: print "Exiting"
@@ -176,493 +191,25 @@ def main():
 # SINOGRAM GENERATION
 # Here, a sinogram refers to a stacked collection of 1D projections. 
 # Such a stack is generated for each y pixel.
-def get_sinograms( options, xlen, ylen ):
+def gen_sinograms( options, xlen, ylen ):
 	"""
 	Generates one 2D sinogram for each pixel along the y axis of a tiltseries.
 	Returns a list whose enteies correspond to all of the sinograms generated.
 	"""
 	num_imgs = EMUtil.get_image_count( options.tiltseries )
-	sinogram_fname = "sinograms.hdf"
-	sinograms=[]
 	for y in range( ylen ):
-		sinogram = EMData( num_imgs, xlen, 1 )
 		r = Region( 0, y, xlen, 1 )
 		for imgnum in range( num_imgs ):
 			prj = EMData( options.tiltseries, imgnum, False, r )
-			prj.set_size( 1, xlen, 1 )
-			sinogram.insert_clip( prj, ( imgnum, 0 ))
-		if options.verbose > 2: 
+			if y < 10:
+				prj.write_image(options.path + "/sinogram_0"+str(y)+".hdf", imgnum)
+			if y >= 10:
+				prj.write_image(options.path + "/sinogram_"+str(y)+".hdf", imgnum)
+		if options.verbose > 2:
 			print "Generated sinogram %i of %i" %( y+1, ylen )
-		sinogram.write_image( options.path + "/" + sinogram_fname, y )
-		np_sinogram = sinogram.numpy().copy()
-		sinograms.append( np_sinogram )
-	return np.asarray(sinograms).astype( np.float32 )
+	return
 
 
-def return_sinograms( options, threed_recons ):
-	""" Returns X,Z plane reconstructions to original X,Y orientation """
-	num_imgs = EMUtil.get_image_count( options.tiltseries )
-	data = from_numpy( threed_recons )
-	for n in range( num_imgs ):
-		inv_sinograms = EMData( xlen, ylen, 1 )
-		r = Region( 0, 0, n, xlen, ylen, 1 )
-		for imgnum in range( num_imgs ):
-			prj = EMData( options.tiltseries, imgnum, False, r )
-			prj.set_size( 1, 1, num_imgs )
-			inv_sinogram.insert_clip( prj, ( imgnum, 0 ))
-	return inv_sinograms
-
-
-# PROJECTION OPERATOR
-def build_projection_operator( angles, l_x, n_dir=None, l_det=None, subpix=1, offset=0, pixels_mask=None ):
-	"""
-	Compute the tomography design matrix.
-	
-	Parameters
-	----------
-	
-	l_x : int
-		linear size of image array
-	
-	n_dir : int, default l_x
-		number of angles at which projections are acquired. n_dir projection 
-		angles are regularly spaced between 0 and 180.
-	
-	l_det : int, default is l_x
-		number of pixels in the detector. If l_det is not specified, we suppose 
-		that l_det = l_x.
-	
-	subpix : int, default 1
-		number of linear subdivisions used to compute the projection of one 
-		image pixel onto a detector pixel.
-	
-	offset : int, default 0
-		width of the strip of image pixels not covered by the detector.
-	
-	pixels_mask : 1-d ndarray of size l_x**2
-		mask of pixels to keep in the matrix (useful for to removeing pixels 
-		inside or outside of a circle, for example)
-	
-	Returns
-	-------
-	p : sparse matrix of shape (n_dir l_x, l_x**2), in csr format Tomography 
-	design matrix. The csr (compressed sparse row) allows for efficient 
-	subsequent matrix multiplication. The dtype of the elements is float32, in 
-	order to save memory.
-	"""
-	if l_det is None:
-		l_det = l_x
-	X, Y = _generate_center_coordinates(subpix*l_x)
-	X *= 1./subpix
-	Y *= 1./subpix
-	Xbig, Ybig = _generate_center_coordinates(l_det)
-	Xbig *= (l_x - 2*offset) / float(l_det)
-	orig = Xbig.min()
-	labels = None
-	if subpix > 1:
-		# Block-group subpixels
-		Xlab, Ylab = np.mgrid[:subpix * l_x, :subpix * l_x]
-		labels = (l_x * (Xlab / subpix) + Ylab / subpix).ravel()
-	if n_dir is None:
-		n_dir = l_x
-	weights, data_inds, detector_inds = [], [], []
-	# Indices for data pixels. For each data, one data pixel
-	# will contribute to the value of two detector pixels.
-	for i, angle in enumerate(angles):
-		# rotate data pixels centers
-		Xrot = np.cos(angle) * X - np.sin(angle) * Y
-		# compute linear interpolation weights
-		inds, dat_inds, w = _weights_fast(Xrot, dx=(l_x - 2*offset)/float(l_det), orig=orig, labels=labels)
-		# crop projections outside the detector
-		mask = np.logical_and(inds >= 0, inds < l_det)
-		weights.append(w[mask])
-		detector_inds.append((inds[mask] + i * l_det).astype(np.int32))
-		data_inds.append(dat_inds[mask])
-	weights = np.concatenate(weights)
-	weights /= subpix**2
-	detector_inds = np.concatenate(detector_inds)
-	data_inds = np.concatenate(data_inds)
-	if pixels_mask is not None:
-		if pixels_mask.ndim > 1:
-			pixels_mask = pixels_mask.ravel()
-		mask = pixels_mask[data_inds]
-		data_inds = data_inds[mask]
-		data_inds = rank_order(data_inds)[0]
-		detector_inds = detector_inds[mask]
-		weights = weights[mask]
-	proj_operator = sparse.coo_matrix((weights, ( detector_inds, data_inds )))
-	return sparse.csr_matrix( proj_operator )
-
-
-# FISTA Algorithm
-def fista_tv(y, beta, niter, H, verbose=0, mask=None):
-	"""
-	TV regression using FISTA algorithm
-	(Fast Iterative Shrinkage/Thresholding Algorithm)
-	
-	Parameters
-	----------
-	
-	y : ndarray of floats
-		Measures (tomography projection). If H is given, y is a column
-		vector. If H is not given, y is a 2-D array where each line
-		is a projection along a different angle
-	
-	beta : float
-		weight of TV norm
-	
-	niter : number of forward-backward iterations to perform
-	
-	H : sparse matrix
-		tomography design matrix. Should be in csr format.
-	
-	mask : array of bools
-	
-	Returns
-	-------
-	
-	res : list
-		list of iterates of the reconstructed images
-	
-	energies : list
-		values of the function to be minimized at the different
-		iterations. Its values should be decreasing.
-	
-	Notes
-	-----
-	This algorithm minimizes iteratively the energy
-	
-	E(x) = 1/2 || H x - y ||^2 + beta TV(x) = f(x) + beta TV(x)
-	
-	by forward - backward iterations:
-	
-	u_n = prox_{gamma beta TV}(x_n - gamma nabla f(x_n)))
-	t_{n+1} = 1/2 * (1 + sqrt(1 + 4 t_n^2))
-	x_{n+1} = u_n + (t_n - 1)/t_{n+1} * (u_n - u_{n-1})
-	
-	References
-	----------
-	
-	A. Beck and M. Teboulle (2009). A fast iterative
-	shrinkage-thresholding algorithm for linear inverse problems.
-	SIAM J. Imaging Sci., 2(1):183-202.
-	http://mechroom.technion.ac.il/~becka/papers/71654.pdf
-	
-	Nelly Pustelnik's thesis (in French),
-	http://tel.archives-ouvertes.fr/tel-00559126_v4/
-	Paragraph 3.3.1-c p. 69 , FISTA
-	"""
-	n_meas, n_pix = H.shape
-	if mask is not None:
-		l = len(mask)
-	else:
-		l = int(np.sqrt(n_pix))
-	n_angles = n_meas / l
-	Ht = sparse.csr_matrix(H.transpose())
-	x0 = np.zeros(n_pix)[:, np.newaxis]
-	res, energies = [], []
-	gamma = .9/ (l * n_angles)
-	x = x0
-	u_old = np.zeros((l, l))
-	t_old = 1
-	for i in range(niter):
-		if verbose:
-			print i
-		eps = 1.e-4
-		err = H * x - y
-		back_proj = Ht * err
-		tmp = x - gamma * back_proj
-		if mask is not None:
-			tmp2d = np.zeros((l, l))
-			tmp2d[mask] = tmp.ravel()
-		else:
-			tmp2d = tmp.reshape((l, l))
-		u_n = tv_denoise_fista(tmp2d, weight=beta*gamma, eps=eps)
-		t_new = (1 + np.sqrt(1 + 4 * t_old**2))/2.
-		t_old = t_new
-		x = u_n + (t_old - 1)/t_new * (u_n - u_old)
-		u_old = u_n
-		res.append(x)
-		data_fidelity_err = 1./2 * (err**2).sum()
-		tv_value = beta * tv_norm(x)
-		energy = data_fidelity_err + tv_value
-		energies.append(energy)
-		if mask is not None:
-			x = x[mask][:, np.newaxis]
-		else:
-			x = x.ravel()[:, np.newaxis]
-	return res, energies
-
-
-# FISTA Denoising
-def tv_denoise_fista(im, weight=50, eps=5.e-5, n_iter_max=200, check_gap_frequency=3):
-	"""
-	Perform total-variation denoising on 2-d and 3-d images
-	
-	Find the argmin `res` of
-		1/2 * ||im - res||^2 + weight * TV(res),
-	
-	where TV is the isotropic l1 norm of the gradient.
-	
-	Parameters
-	----------
-	im: ndarray of floats (2-d or 3-d)
-		input data to be denoised. `im` can be of any numeric type,
-		but it is cast into an ndarray of floats for the computation
-		of the denoised image.
-	
-	weight: float, optional
-		denoising weight. The greater ``weight``, the more denoising (at
-		the expense of fidelity to ``input``)
-	
-	eps: float, optional
-		precision required. The distance to the exact solution is computed
-		by the dual gap of the optimization problem and rescaled by the l2
-		norm of the image (for contrast invariance).
-	
-	n_iter_max: int, optional
-		maximal number of iterations used for the optimization.
-	
-	Returns
-	-------
-	out: ndarray
-		denoised array
-	
-	Notes
-	-----
-	The principle of total variation denoising is explained in
-	http://en.wikipedia.org/wiki/Total_variation_denoising
-	
-	The principle of total variation denoising is to minimize the
-	total variation of the image, which can be roughly described as
-	the integral of the norm of the image gradient. Total variation
-	denoising tends to produce "cartoon-like" images, that is,
-	piecewise-constant images.
-	
-	This function implements the FISTA (Fast Iterative Shrinkage
-	Thresholding Algorithm) algorithm of Beck et Teboulle, adapted to
-	total variation denoising in "Fast gradient-based algorithms for
-	constrained total variation image denoising and deblurring problems"
-	(2009).
-	"""
-	if not im.dtype.kind == 'f':
-		im = im.astype(np.float)
-	shape = [im.ndim, ] + list(im.shape)
-	grad_im = np.zeros(shape)
-	grad_aux = np.zeros(shape)
-	t = 1.
-	i = 0
-	while i < n_iter_max:
-		error = weight * div(grad_aux) - im
-		grad_tmp = gradient(error)
-		grad_tmp *= 1./ (8 * weight)
-		grad_aux += grad_tmp
-		grad_tmp = _projector_on_dual(grad_aux)
-		t_new = 1. / 2 * (1 + np.sqrt(1 + 4 * t**2))
-		t_factor = (t - 1) / t_new
-		grad_aux = (1 + t_factor) * grad_tmp - t_factor * grad_im
-		grad_im = grad_tmp
-		t = t_new
-		if (i % check_gap_frequency) == 0:
-			gap = weight * div(grad_im)
-			new = im - gap
-			dgap = dual_gap(im, new, gap, weight)
-			if dgap < eps:
-				break
-		i += 1
-	return new
-
-
-# TV NORMS
-def tv_norm( img ):
-	"""Compute the (isotropic) TV norm of an image"""
-	grad_x1 = np.diff( img, axis=0 )
-	grad_x2 = np.diff( img, axis=1 )
-	return np.sqrt(grad_x1[:, :-1]**2 + grad_x2[:-1, :]**2).sum()
-
-
-def tv_norm_anisotropic( img ):
-	"""Compute the anisotropic TV norm of an image"""
-	grad_x1 = np.diff( img, axis=0 )
-	grad_x2 = np.diff( img, axis=1 )
-	return np.abs(grad_x1[:, :-1]).sum() + np.abs(grad_x2[:-1, :]).sum()
-
-
-def tv_l0_norm( img ):
-	"""Compute the (isotropic) TV norm of a 2D image"""
-	grad_x1 = np.diff(img, axis=0)
-	grad_x2 = np.diff(img, axis=1)
-	return (grad_x1[:, :-1]**2 + grad_x2[:-1, :]**2 > 0).mean()
-
-
-# INTERPOLATION WEIGHTING SCHEME
-def _weights_fast(x, dx=1, orig=0, labels=None):
-	"""
-	Compute linear interpolation weights for projection array `x`
-	and regularly spaced detector pixels separated by `dx` and
-	starting at `orig`.
-	"""
-	x = np.ravel(x)
-	floor_x = np.floor((x - orig) / dx).astype(np.int32)
-	alpha = ((x - orig - floor_x * dx) / dx).astype(np.float32)
-	inds = np.hstack((floor_x, floor_x + 1))
-	weights = np.hstack((1 - alpha, alpha))
-	data_inds = np.arange(x.size, dtype=np.int32)
-	data_inds = np.hstack((data_inds, data_inds))
-	if labels is not None:
-		data_inds = np.hstack((labels, labels))
-		order = np.argsort(inds)
-		inds, data_inds, weights = inds[order], data_inds[order], weights[order]
-		steps = np.nonzero(np.diff(inds) > 0)[0] + 1
-		steps = np.concatenate(([0], steps))
-		inds_s, data_inds_s, weights_s = [], [], []
-		for i in range(len(steps) - 1):
-			d, w = data_inds[steps[i]:steps[i+1]], weights[steps[i]:steps[i+1]]
-			count = np.bincount(d, weights=w)
-			mask = count>0
-			w = count[mask]
-			weights_s.append(w)
-			datind = np.arange(len(mask))[mask] 
-			data_inds_s.append(datind)
-			detind = inds[steps[i]]*np.ones(mask.sum()) 
-			inds_s.append(detind)
-		inds = np.concatenate(inds_s)
-		data_inds = np.concatenate(data_inds_s)
-		weights = np.concatenate(weights_s)
-	return inds, data_inds, weights
-
-
-def _generate_center_coordinates(l_x):
-	"""
-	Compute the coordinates of pixels centers for an image of
-	linear size l_x
-	"""
-	l_x = float(l_x)
-	X, Y = np.mgrid[:l_x, :l_x]
-	center = l_x / 2.
-	X += 0.5 - center
-	Y += 0.5 - center
-	return X, Y
-
-
-def rank_order(image):
-	"""Return an image of the same shape where each pixel is the index of the 
-	pixel value in the ascending order of the unique values of `image`, aka the 
-	rank-order value.
-	
-	Parameters
-	----------
-	image: ndarray
-	
-	Returns
-	-------
-	labels: ndarray of type np.uint32, of shape image.shape
-		New array where each pixel has the rank-order value of the corresponding 
-		pixel in `image`. Pixel values are between 0 and n - 1, where n is the 
-		number of distinct unique values in ''image`.
-	
-	original_values: 1-d ndarray
-		Unique original values of `image`
-	
-	Examples
-	--------
-	>>> a = np.array([[1, 4, 5], [4, 4, 1], [5, 1, 1]])
-	>>> a
-	array([[1, 4, 5],
-		[4, 4, 1],
-		[5, 1, 1]])
-	>>> rank_order(a)
-	(array([[0, 1, 2],
-		[1, 1, 0],
-		[2, 0, 0]], dtype=uint32), array([1, 4, 5]))
-	>>> b = np.array([-1., 2.5, 3.1, 2.5])
-	>>> rank_order(b)
-	(array([0, 1, 2, 1], dtype=uint32), array([-1. ,  2.5,  3.1]))
-	"""
-	flat_image = image.ravel()
-	sort_order = flat_image.argsort().astype(numpy.uint32)
-	flat_image = flat_image[sort_order]
-	sort_rank = numpy.zeros_like(sort_order)
-	is_different = flat_image[:-1] != flat_image[1:]
-	numpy.cumsum(is_different, out=sort_rank[1:])
-	original_values = numpy.zeros((sort_rank[-1] + 1,), image.dtype)
-	original_values[0] = flat_image[0]
-	original_values[1:] = flat_image[1:][is_different]
-	int_image = numpy.zeros_like(sort_order)
-	int_image[sort_order] = sort_rank
-	return (int_image.reshape(image.shape), original_values)
-
-
-# MATHEMATICAL TOOLS
-def div(grad):
-	""" Compute divergence of image gradient """
-	res = np.zeros(grad.shape[1:])
-	for d in range(grad.shape[0]):
-		this_grad = np.rollaxis(grad[d], d)
-		this_res = np.rollaxis(res, d)
-		this_res[:-1] += this_grad[:-1]
-		this_res[1:-1] -= this_grad[:-2]
-		this_res[-1] -= this_grad[-2]
-	return res
-
-
-def gradient(img):
-	""" 
-	Compute gradient of an image
-	
-	Parameters
-	----------
-	img: ndarray
-		N-dimensional image
-	
-	Returns
-	-------
-	gradient: ndarray
-		Gradient of the image: the i-th component along the first axis is the 
-		gradient along the i-th axis of the original array img
-	"""
-	shape = [img.ndim, ] + list(img.shape)
-	gradient = np.zeros(shape, dtype=img.dtype)
-	# 'Clever' code to have a view of the gradient with dimension i stop at -1
-	slice_all = [0, slice(None, -1),]
-	for d in range(img.ndim):
-		gradient[slice_all] = np.diff(img, axis=d)
-		slice_all[0] = d + 1
-		slice_all.insert(1, slice(None))
-	return gradient
-
-
-def _projector_on_dual(grad):
-	"""
-	Modifies in place the gradient to project it onto the L2 unit ball
-	"""
-	norm = np.maximum(np.sqrt(np.sum(grad**2, 0)), 1.)
-	for grad_comp in grad:
-		grad_comp /= norm
-	return grad
-
-
-def dual_gap(img, new, gap, weight):
-	"""
-	Dual Gap of Total Variation Denoising
-	see "Total variation regularization for fMRI-based prediction of behavior", 
-	by Michel et al. (2011) for a derivation of the dual gap
-	"""
-	img_norm = (img**2).sum()
-	gx, gy = np.zeros_like(new), np.zeros_like(new)
-	gx[:-1] = np.diff(new, axis=0)
-	gy[:, :-1] = np.diff(new, axis=1)
-	if img.ndim == 3:
-		gz = np.zeros_like(new)
-		gz[..., :-1] = np.diff(new, axis=2)
-		tv_new = 2 * weight * np.sqrt(gx**2 + gy**2 + gz**2).sum()
-	else:
-		tv_new = 2 * weight * np.sqrt(gx**2 + gy**2).sum()
-	dual_gap = (gap**2).sum() + tv_new - img_norm + (new**2).sum()
-	return 0.5 / img_norm * dual_gap
-
-
-# UTILITIES
 def makepath(options, stem=''):
 	if options.verbose > 5: print "makepath function called"
 	if options.path and ("/" in options.path or "#" in options.path):
@@ -678,7 +225,7 @@ def makepath(options, stem=''):
 		if '_' not in options.path:
 			options.path = options.path + '_00'
 		else:
-			jobtag=''
+			#jobtag=''
 			components=options.path.split('_')
 			if components[-1].isdigit():
 				components[-1] = str(int(components[-1])+1).zfill(2)

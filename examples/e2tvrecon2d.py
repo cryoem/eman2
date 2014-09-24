@@ -121,18 +121,20 @@ def main():
 		fangles = np.asarray([ float( i ) for i in file( options.tlt , "r" ) ])
 		tiltangles = fangles.tolist()
 		nslices = len( tiltangles )
-	elif options.nslices and options.tiltrange:
+		pass
+	elif ( options.nslices and options.tiltrange ):
 		tiltrange = float(options.tiltrange)
 		nslices = int(options.nslices)
 		print "Using tiltrange from -%s, %s degrees consisting of %i slices."%(options.tiltrange, options.tiltrange, options.nslices)
-		tiltangles = np.linspace(tiltrange,-1.*tiltrange,nslices).tolist()
 	elif options.testdata:
 		print "You must specify --nslices AND --tiltrange when using --testdata."
 		exit(1)
+		tiltangles = np.linspace(tiltrange,-1.*tiltrange,nslices).tolist()
 	else:
 		print "You must specify --tlt when using --tiltseries"
 		exit(1)
-		
+	
+	
 	if options.niters:
 		niters = int(options.niters)
 	
@@ -172,14 +174,21 @@ def main():
 		pathname = os.path.dirname(os.path.abspath( options.testdata ))
 		filename = ntpath.basename( options.testdata )
 		linkfrom = pathname + "/" + filename
-		linkto = options.path + "/image.hdf"
+		linkto = options.path + "/" + filename
 		os.symlink( linkfrom, linkto )
 	
 	if options.tiltseries != None:
 		pathname = os.path.dirname(os.path.abspath( options.tiltseries ))
 		filename = ntpath.basename( options.tiltseries )
 		linkfrom = pathname + "/" + filename
-		linkto = options.path + "/tiltseries.hdf"
+		linkto = options.path + "/" + filename
+		os.symlink( linkfrom, linkto )
+	
+	if options.tlt != None:
+		pathname = os.path.dirname(os.path.abspath( options.tlt ))
+		filename = ntpath.basename( options.tlt )
+		linkfrom = pathname + "/" + filename
+		linkto = options.path + "/" + filename
 		os.symlink( linkfrom, linkto )
 	
 	# Get image/projection data
@@ -243,7 +252,7 @@ def get_data( options, nslices, noisiness, imgnum=0 ):
 				from_numpy(np_img).write_image(options.path + "noisy_img.hdf")
 			npstack.append( np_img )
 		data = np.asarray( npstack )
-		dim = [img.get_xsize(),img.get_yzize(),img.get_zsize()]
+		dim = [img["nx"],img["ny"],img["nz"]]
 	return data.astype( np.float32 ), dim
 
 
@@ -416,7 +425,7 @@ def fista_tv(options, angles, y, beta, niter, H, verbose=0, mask=None):
 	-----
 	This algorithm minimizes iteratively the energy
 	
-	E(x) = 1/2 || H x - y ||^2 + beta TV(x) = f(x) + beta TV(x)
+	E(x) = 1/2 || H x - y ||^2 + beta TV bet(x) = f(x) + beta TV(x)
 	
 	by forward - backward iterations:
 	
