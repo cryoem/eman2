@@ -246,12 +246,11 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 					vstackn+=1
 					if vstackn%100==0:
 						try:
-							if options.verbose>0 : print "\r  ",vstackn,"     ",
-							if options.verbose>0 : sys.stdout.flush()
-						except: pass
-				if options.verbose>0 : print "\r  ",vstackn,"     "
+							print "\r  ",vstackn,"     ",
+							sys.stdout.flush()
+						except: pass	
+				print "\r  ",vstackn,"     "
 				dct.close()
-				return
 
 		try: maxname=max([len(s) for s in dbs])
 		except: 
@@ -284,7 +283,6 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 					source["source_n"]    = target["source_n"]
 				DB.set_header(ID, source)
 			DB.close()
-			return
 
 		if options.extractplots :
 			for db in dbs:
@@ -477,7 +475,7 @@ e2bdb.py <database> --dump    Gives a mechanism to dump all of the metadata in a
 			for db in dbs: db_remove_dict(path+db)
 			
 
-	if logid and options.verbose>0 : E2end(logid)
+	if logid : E2end(logid)
 
 def makerelpath(p1,p2):
 	"""Takes a pair of paths /a/b/c/d and /a/b/e/f/g and returns a relative path to b from a, ../../e/f/g"""
