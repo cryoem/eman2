@@ -45,6 +45,8 @@ import matplotlib.pyplot as plt
 from scipy import sparse
 from scipy import ndimage
 import subprocess
+import shutil
+
 
 def get_usage():
 	progname = os.path.basename(sys.argv[0])
@@ -149,7 +151,6 @@ def main():
 	
 	os.chdir(options.path)
 	i = 1
-	
 	for fname in os.listdir(options.path):
 		if "sinogram" in fname:
 			inputpath = fname
@@ -157,20 +158,27 @@ def main():
 			verbosity = str(options.verbose)
 			tlt = options.tlt
 			inputbeta = str(beta)
-			if i < 10:
-				reconpath = "sinogram_recon_0" + str(i)
+			if i >= 1000:
+				reconpath = "recon_" + str(i)
+			if i >= 100:
+				reconpath = "recon_0" + str(i)
 			if i >= 10:
-				reconpath = "sinogram_recon_" + str(i)
+				reconpath = "recon_00" + str(i)
+			else:
+				reconpath = "recon_000" + str(i)
+			## PARALLELls
 			p = subprocess.Popen("e2tvrecon2d.py --tiltseries %s --tlt %s --path %s --output %s --beta %s -v %s"%(inputpath, tlt, reconpath, twodpath, inputbeta, verbosity), shell=True)
-			if options.verbose > 1:
-				print "Sinogram Reconstruction %i complete"%(i)
+			## UNPARALLEL
+			#os.popen("e2tvrecon2d.py --tiltseries %s --tlt %s --path %s --output %s --beta %s -v %s"%(inputpath, tlt, reconpath, twodpath, inputbeta, verbosity))
+			#if options.verbose > 1:
+			#	print "Sinogram Reconstruction %i complete"%(i)
 			i += 1
 	p_status = p.wait()
 	
-	i = 0
+	i = 1
 	np_recons=[]
 	for pname in os.listdir('.'):
-		if "sinogram_recon" in pname:
+		if "recon_" in pname:
 			for fname in os.listdir(pname):
 				if twodpath in fname:
 					recon = EMData(pname + "/" + fname, 0)
@@ -178,14 +186,16 @@ def main():
 					np_recons.append(np_recon)
 					i += 1
 	reconstack = np.dstack( np_recons )
-	from_numpy(reconstack).write_image("threed_tv_recon.hdf")
+	from_numpy(reconstack).write_image("threed.hdf")
 	
 	if options.noclean != True:
 		if options.verbose > 1: 
 			print "Cleaning up current working directory..."
-		for pname in os.listdir(options.path):
-			if "sinogram" in pname:
-				os.remove( pname )
+		for fname in os.listdir(options.path):
+			if "sinogram_" in fname:
+				os.remove( fname )
+			if "recon_" in fname:
+				shutil.rmtree( fname )
 	
 	E2end(logger)
 	if options.verbose > 1: print "Exiting"
