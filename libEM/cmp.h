@@ -431,7 +431,47 @@ namespace EMAN
 		static const string NAME;
 	};
 
+	/** Uses math.sub.optimal to remove the density of the reference from the image as much as possible.
+	 * What is left should be pure noise if there is a good match. If the match is not as good there should
+	 * be additional residual power. This comparator returns the average residual power after subtraction
+	 * weighted in various ways
+	*/
+	class OptSubCmp:public Cmp
+	{
+	  public:
+		OptSubCmp() {}
 
+		float cmp(EMData * image, EMData * with) const;
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		string get_desc() const
+		{
+			return "Residual power left in the image after optimally subtracting the reference with math.sub.optimal. Smaller values indicate a closer match.";
+		}
+
+		static Cmp *NEW()
+		{
+			return new OptSubCmp();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("minres", EMObject::FLOAT, "Lowest resolution to use in comparison (soft cutoff). Requires accurate A/pix in image. <0 disables. Default=200");
+			d.put("maxres", EMObject::FLOAT, "Highest resolution to use in comparison (soft cutoff). Requires accurate A/pix in image. <0 disables.  Default=10");
+			d.put("mask", EMObject::EMDATA, "Real space mask. Only computes the residual power under the mask. Significant speed penalty if specified. Default=None.");
+			return d;
+		}
+		
+		static const string NAME;
+
+	};
+
+	
 	/** Variance between two data sets after various modifications.
 	* Generally, 'this' should be noisy and 'with' should be less noisy.
 	* linear scaling (mx + b) of the densities in 'this' is performed
@@ -494,6 +534,7 @@ namespace EMAN
 		mutable float scale;
 		mutable float shift;
 	};
+	
 	/** Amplitude weighted mean phase difference (radians) with optional
      * SNR weight. SNR should be an array as returned by ctfcurve()
      * 'with' should be the less noisy image, since it's amplitudes

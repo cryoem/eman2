@@ -400,6 +400,28 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 		self.emit(QtCore.SIGNAL("setsChanged"))
 
+	def save_set(self,name):
+		"""Saves the particles in a named set to a file"""
+		outset=self.get_set(name)
+		if len(outset)==None :
+			QtGui.QMessageBox.warning(None,"Error","The set: %s is empty"%(name))
+			return
+		
+		# Get the output filespec
+		fsp=QtGui.QFileDialog.getSaveFileName(self, "Image Output File")
+		fsp=str(fsp)
+		
+		badimg=[]
+		for i in sorted(outset):
+			try: self.data[i].write_image(fsp,-1)
+			except: badimg.append(i)
+
+		if len(badimg)>0 :
+			QtGui.QMessageBox.warning(None,"Error","Could not save images: %s"%(str(badimg)))
+		else:
+			QtGui.QMessageBox.information(None,"Save Succesful","%d images appended to %s"%(len(outset),fsp))
+		
+
 	def get_set(self,name):
 		"""Returns the actual set object for the named set. Creates a new empty set of that
 		name if it doesn't exist. The user can actually muck about with this set if they like,
@@ -1725,7 +1747,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			self.lc = None
 
 	def __drag_mode_mouse_down(self,event):
-		return
+#		return
 	   	# this is currently disabled because it causes seg faults on MAC. FIXME investigate and establish the functionality that we want for mouse dragging and dropping
 		if event.button()==Qt.LeftButton:
 			lc= self.scr_to_img((event.x(),event.y()))

@@ -470,6 +470,7 @@ class EMSimTaskDC(JSTask):
 					t =  aligned.get_attr("xform.align2d")
 					t.invert()
 					data[ref_idx] = (ptcl.cmp(options["cmp"][0],aligned,options["cmp"][1]),t)
+					
 			else:
 				data[ref_idx] = (ptcl.cmp(options["cmp"][0],ref,options["cmp"][1]),None)
 
@@ -830,6 +831,14 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 			else:
 				ret[i]=(target.cmp(cmp[0],ta,cmp[1]),scale_correction*p["tx"],scale_correction*p["ty"],p["alpha"],p["mirror"],p["scale"])
 #			ta.write_image("dbug.hdf",-1)
+
+#				print ta["source_n"],target["source_n"]
+				psub=target.process("math.sub.optimal",{"ref":ta})
+				nout=ta["source_n"]*3
+				ta.write_image("dbug_%d.hdf"%target["source_n"],nout)
+				target.write_image("dbug_%d.hdf"%target["source_n"],nout+1)
+				psub.write_image("dbug_%d.hdf"%target["source_n"],nout+2)
+
 
 		else :
 			ret[i]=(target.cmp(cmp[0],r[0],cmp[1]),0,0,0,1.0,False)

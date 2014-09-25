@@ -599,12 +599,15 @@ def parsemodopt(optstr):
 			print "must have the form name:key=value:key=value"
 			return(None,None)
 
-		v=v.replace("bdb%","bdb:")
-		try: v=int(v)
-		except:
-			try: v=float(v)
+#		v=v.replace("bdb%","bdb:")
+		if v=="true" : v=1
+		elif v=="false" : v=0
+		else:
+			try: v=int(v)
 			except:
-				if len(v)>2 and v[0]=='"' and v[-1]=='"' : v=v[1:-1]
+				try: v=float(v)
+				except:
+					if len(v)>2 and v[0]=='"' and v[-1]=='"' : v=v[1:-1]
 		r2[k]=v
 
 	return (op2[0],r2)

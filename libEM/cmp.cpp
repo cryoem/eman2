@@ -52,6 +52,7 @@ const string TomoCccCmp::NAME = "ccc.tomo";
 const string TomoFscCmp::NAME = "fsc.tomo";
 const string QuadMinDotCmp::NAME = "quadmindot";
 const string OptVarianceCmp::NAME = "optvariance";
+const string OptSubCmp::NAME = "optsub";
 const string PhaseCmp::NAME = "phase";
 const string FRCCmp::NAME = "frc";
 
@@ -65,6 +66,7 @@ template <> Factory < Cmp >::Factory()
 	force_add<TomoFscCmp>();
 	force_add<QuadMinDotCmp>();
 	force_add<OptVarianceCmp>();
+	force_add<OptSubCmp>();
 	force_add<PhaseCmp>();
 	force_add<FRCCmp>();
 //	force_add<XYZCmp>();
@@ -1398,6 +1400,60 @@ float FRCCmp::cmp(EMData * image, EMData * with) const
 	// this enables comparitors to be used in a generic fashion.
 	return (float)-sum;
 }
+
+float OptSubCmp::cmp(EMData * image, EMData * with) const
+{
+	ENTERFUNC;
+	validate_input_args(image, with);
+
+// 	int snrweight = params.set_default("snrweight", 0);
+// 	int ampweight = params.set_default("ampweight", 0);
+// 	int sweight = params.set_default("sweight", 1);
+// 	int nweight = params.set_default("nweight", 0);
+// 	int zeromask = params.set_default("zeromask",0);
+	float minres = params.set_default("minres",200.0f);
+	float maxres = params.set_default("maxres",10.0f);
+	EMData *mask = params.set_default("mask",(EMData *)NULL);
+	
+	float ds=1.0f/((float)image->get_attr("apix_x")*(int)image->get_ysize());
+
+	EMData *diff=image->process("math.sub.optimal",Dict("ref",with));
+	diff->process_inplace("filter.highpass.tophat",Dict("cutoff_freq",(float)1.0/minres));
+	diff->process_inplace("filter.lowpass.tophat",Dict("cutoff_freq",(float)1.0/maxres));
+	
+	float ret=diff->get_attr("sigma");
+	delete diff;
+	return ret;
+	
+	
+// 	EMData *diff=image->process("math.sub.optimal",Dict("ref",with,"return_fft",1));
+// 	
+// 	// Very expensive to use a mask, since it requires another ift/fft pair
+// 	if (mask!=NULL) {
+// 		EMData *tmp = diff->do_ift();
+// 		tmp->mult(*mask);
+// 		delete diff;
+// 		diff=tmp->do_fft();
+// 		delete tmp;
+// 	}
+// 	
+// 	// This gives us basically the 1-D power spectrum of what's left after subtraction (and masking)
+// 	vector<float> dist=diff->calc_radial_dist(diff->get_ysize()/2,0.0f,1.0f,1);
+// 	int s0=int(floor(1.0/(minres*ds)));
+// 	int s1=int(ceil(1.0/(maxres*ds)));
+// 	if (s0<2) s0=2;
+// 	
+// 	if (s1<=s0) throw InvalidCallException("OptSubCmp error. minres must be greater than maxres.");
+// //	printf("%d %d\n",s0,s1);
+// 	
+// 	double sum=0.0f,sum2=0.0f;
+// 	for (int i=s0; i<s1; i++) sum+=dist[i]*i;
+// 	sum/=image->get_size()*s1;
+// 	
+// 	delete diff;
+// 	return sum;
+}
+
 
 void EMAN::dump_cmps()
 {
