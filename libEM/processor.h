@@ -4675,14 +4675,17 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			TypeDict d;
 			d.put("ref", EMObject::EMDATA, "Reference image to subtract");
 			d.put("actual", EMObject::EMDATA, "If specified, ref is used for normalization, but actual is subtracted.");
+			d.put("low_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] low cut-off frequency.");
+			d.put("high_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] high cut-off frequency.");
 			d.put("return_fft",EMObject::BOOL, "Skips the final IFT, and returns the FFT of the subtracted image");
- 			d.put("return_radial", EMObject::BOOL, "Return the radial filter function as an attribute (filter_curve)");
+			d.put("return_radial", EMObject::BOOL, "Return the radial filter function as an attribute (filter_curve)");
+			d.put("return_presigma", EMObject::BOOL, "Return the sigma of the pre-subtracted image in real-space with the specified filter applied as sigma_presub. This is an expensive option.");
 			return d;
 		}
 
 		string get_desc() const
 		{
-			return "This will filter/scale 'ref' optimally and subtract it from image using ring dot products in Fourier space for normalization.";
+			return "This will filter/scale 'ref' optimally and subtract it from image using ring dot products in Fourier space for normalization. Cutoff frequencies apply a bandpass tophat filter to the output.";
 		}
 
 		static const string NAME;

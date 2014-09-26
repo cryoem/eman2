@@ -1415,13 +1415,14 @@ float OptSubCmp::cmp(EMData * image, EMData * with) const
 	float maxres = params.set_default("maxres",10.0f);
 	EMData *mask = params.set_default("mask",(EMData *)NULL);
 	
-	float ds=1.0f/((float)image->get_attr("apix_x")*(int)image->get_ysize());
+//	float ds=1.0f/((float)image->get_attr("apix_x")*(int)image->get_ysize());
+	float apix=(float)image->get_attr("apix_x");
 
-	EMData *diff=image->process("math.sub.optimal",Dict("ref",with));
-	diff->process_inplace("filter.highpass.tophat",Dict("cutoff_freq",(float)1.0/minres));
-	diff->process_inplace("filter.lowpass.tophat",Dict("cutoff_freq",(float)1.0/maxres));
+	EMData *diff=image->process("math.sub.optimal",Dict("ref",with,"return_presigma",1,"low_cutoff_frequency",apix/minres ,"high_cutoff_frequency",apix/maxres));
+// 	diff->process_inplace("filter.highpass.tophat",Dict("cutoff_freq",(float)1.0/minres));
+// 	diff->process_inplace("filter.lowpass.tophat",Dict("cutoff_freq",(float)1.0/maxres));
 	
-	float ret=diff->get_attr("sigma");
+	float ret=(float)diff->get_attr("sigma")/(float)diff->get_attr("sigma_presub");
 	delete diff;
 	return ret;
 	

@@ -3980,7 +3980,10 @@ EMData *SubtractOptProcessor::process(EMData * image)
 	EMData *ref;
  	bool return_radial = params.set_default("return_radial",false);
  	bool return_fft = params.set_default("return_fft",false);
-
+ 	bool return_presigma = params.set_default("return_presigma",false);
+	int si0=(int)floor(params.set_default("low_cutoff_frequency",0.0f)*image->get_ysize());
+	int si1=(int)ceil(params.set_default("high_cutoff_frequency",0.7071f)*image->get_ysize());		// include the corners unless explicitly excluded
+	
 	// We will be modifying imf, so it needs to be a copy
 	EMData *imf;
 	if (image->is_complex()) imf=image->copy();
@@ -4021,10 +4024,30 @@ EMData *SubtractOptProcessor::process(EMData * image)
 // 	for (int i=0; i<ny2; i++) fprintf(out,"%lf\t%lf\t%lf\n",(float)i,rad[i],norm[i]);
 // 	fclose(out);
 	
+	float oldsig=-1.0;
+	// This option computes the real-space sigma on the input-image after the specified filter
+	// This is an expensive option, but more efficient than computing the same using other means
+	if (return_presigma) {
+		for (int y=-ny2; y<ny2; y++) {
+			for (int x=0; x<imf->get_xsize()/2; x++) {
+				int r=int(Util::hypot_fast(x,y));
+				if (r>=ny2 || r>=si1 || r<si0) {
+					imf->set_complex_at(x,y,0);
+					continue;
+				}
+				std::complex<float> v1=imf->get_complex_at(x,y);
+				imf->set_complex_at(x,y,v1);
+			}
+		}
+		EMData *tmp=imf->do_ift();
+		oldsig=(float)tmp->get_attr("sigma");
+		delete tmp;
+	}
+	
 	for (int y=-ny2; y<ny2; y++) {
-		for (int x=0; x<ny2; x++) {
+		for (int x=0; x<imf->get_xsize()/2; x++) {
 			int r=int(Util::hypot_fast(x,y));
-			if (r>=ny2) {
+			if (r>=ny2 || r>=si1 || r<si0) {
 				imf->set_complex_at(x,y,0);
 				continue;
 			}
@@ -4046,11 +4069,13 @@ EMData *SubtractOptProcessor::process(EMData * image)
 		
 	if (!return_fft) {
 		EMData *ret=imf->do_ift();
-		delete imf;
+		ret->set_attr("test",1);
 		if (return_radial) ret->set_attr("filter_curve",radf);
+		if (return_presigma) ret->set_attr("sigma_presub",oldsig);
 		return ret;
 	}
 	if (return_radial) imf->set_attr("filter_curve",radf);
+	if (return_presigma) imf->set_attr("sigma_presub",oldsig);
 	return imf;
 	}
 

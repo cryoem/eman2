@@ -769,7 +769,7 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,phaseproc=No
 				out2["apix_x"] = ctf.apix
 				out2["apix_y"] = ctf.apix
 				out2["apix_z"] = ctf.apix
-				out2.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys2,ys2))
+#				out2.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys2,ys2))
 
 #				print fft2.get_ysize(),len(hpfilt)
 
