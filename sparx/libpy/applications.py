@@ -7313,6 +7313,7 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 	params = wrap_mpi_gatherv(params, main_node, mpi_comm)
 
 	if( myid == main_node ):
+		"""
 		if( type(stack) is types.StringType ):
 			from EMAN2 import Vec2f, Transform
 			from EMAN2db import db_open_dict
@@ -7326,10 +7327,10 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 			for im in xrange(len(params)): set_params_proj(stack[particle_ids[im]], params[im])
 
 		log.add("Time to write header information= %d\n"%(time()-start_time))
+		"""
 		log.add("Finish local_ ali3d_base")
 
-	i = 1
-	return  i
+	return  params
 
 def autowin(indir,outdir, noisedoc, noisemic, templatefile, deci, CC_method, p_size, sigma, hf_p, n_peak_max, contrast_invert=1, CTF = False, prm = "micrograph", MPI=False):
 	""" 

@@ -3023,6 +3023,7 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 					t = get_params_proj(im)
 					params.append( [t[0], t[1], t[2], t[3]/shrinkage, t[4]/shrinkage] )
 				params = wrap_mpi_gatherv(params, main_node, mpi_comm)
+			"""
 			if( ( terminate or (Iter == max_iter) ) and (myid == main_node) ):
 				if( type(stack) is types.StringType ):
 					from EMAN2 import Vec2f, Transform
@@ -3035,11 +3036,11 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 					DB.close()
 				else:
 					for im in xrange(len(params)): set_params_proj(stack[particle_ids[im]], params[im])
+			"""
 
 
 	if myid == main_node:
 		log.add("Finish ali3d_base")
-	i = 1
-	return i   #params, vol, previousmax, par_r
+	return params  #, vol, previousmax, par_r
 	#else:
 	#	return #None, None, None, None  # results for the other processes
