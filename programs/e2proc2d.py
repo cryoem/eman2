@@ -246,7 +246,10 @@ def main():
 		if out_ext == inp_ext :
 			num_out_images = num_inp_images
 		elif out_ext == ".mrc" :
-			num_out_images = 1
+			if num_inp_images > 1 :
+				num_out_images = 2
+			else :
+				num_out_images = 1
 		else :
 			num_out_images = 2
 
