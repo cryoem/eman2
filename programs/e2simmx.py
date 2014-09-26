@@ -833,11 +833,11 @@ def cmponetomany(reflist,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ral
 #			ta.write_image("dbug.hdf",-1)
 
 #				print ta["source_n"],target["source_n"]
-				psub=target.process("math.sub.optimal",{"ref":ta})
-				nout=ta["source_n"]*3
-				ta.write_image("dbug_%d.hdf"%target["source_n"],nout)
-				target.write_image("dbug_%d.hdf"%target["source_n"],nout+1)
-				psub.write_image("dbug_%d.hdf"%target["source_n"],nout+2)
+				#psub=target.process("math.sub.optimal",{"ref":ta})
+				#nout=ta["source_n"]*3
+				#ta.write_image("dbug_%d.hdf"%target["source_n"],nout)
+				#target.write_image("dbug_%d.hdf"%target["source_n"],nout+1)
+				#psub.write_image("dbug_%d.hdf"%target["source_n"],nout+2)
 
 
 		else :
