@@ -3574,7 +3574,7 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	        	else:	       send_attr_dict(main_node, data, par_str, image_start, image_end)
 
 			if CTF: vol, fscc = rec3D_MPI(data, snr, sym, fscmask, os.path.join(outdir, "resolution%04d"%(total_iter)), myid, main_node, npad = npad)
-			else:    vol, fscc = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution%04d"%(total_iter)), myid, main_node, npad = npad)
+			else:   vol, fscc = rec3D_MPI_noCTF(data, sym, fscmask, os.path.join(outdir, "resolution%04d"%(total_iter)), myid, main_node, npad = npad)
 
 			if myid == main_node:
 				print_msg("3D reconstruction time = %d\n"%(time()-start_time))
@@ -8242,7 +8242,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 				print_msg("Time to write parameters = %d\n"%(time()-start_time))
 				start_time = time()
 
-			if CTF: vol = recons3d_4nn_ctf_MPI(myid, data, symmetry=sym, snr = snr, npad = npad, xysize = nx, zsize = zsize)
+			if CTF:  vol = recons3d_4nn_ctf_MPI(myid, data, symmetry=sym, snr = snr, npad = npad, xysize = nx, zsize = zsize)
 			else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, npad = npad, xysize = nx, zsize = zsize)
 
 			if myid == main_node:
