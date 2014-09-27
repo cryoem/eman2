@@ -26,6 +26,9 @@ rm tmp.hdf
 # Each output file was computed with regard to various CTF settings.
 sxprocess.py ../model_structure.hdf particles mic --generate_projections apix=5.2:CTF=True
 
+# Estimate CTF
+mpirun -np 5 sxcter.py pwrot partres --indir=. --nameroot=mic --micsuffix=hdf --wn=512 --apix=5.2 --Cs=2.0 --voltage=120 --ac=10.0 --f_start=0.02 --f_stop=0.5 --MPI
+
 # Before proceeding to automated particle picking mode, it is suggested that the user
 # first use e2boxer in the interactive mode to determine the desired parameters by
 # first invoking e2boxer with the --gui option and a micrograph file name:
@@ -49,30 +52,19 @@ sxprocess.py ../model_structure.hdf particles mic --generate_projections apix=5.
 #cd ..
 
 # Create and initialize database
-# Input: name of the key under which the parameters will be saved in the database
-# Output: database with input parameters
 sxprocess.py demoparms --makedb 'gauss_width'=1.0:'pixel_input'=5.2:'pixel_output'=5.2:'thr_low'=1.0:'thr_hi'=30.0:"invert_contrast"=False:"use_variance"=True:"boxsize"=64:"ctf_cs"=2.0:"ctf_fstart"=0.02:"ctf_fstop"=0.5:"ctf_ampcont"=10:"ctf_volt"=120:"ctf_window"=512:"ctf_edge"=0:"ctf_overlap"=50
 
 
-# Pick particles and estimate CTF
-# Input: simulated micrographs mic*.hdf
-# Output: particles from the input micrographs mic*_ptcls.bdb
-e2boxer.py --gauss_autoboxer=demoparms --do_ctf=demoparms --write_ptcl --boxsize=64 --norm=normalize.ramp.normvar mic*.hdf --format=bdb
+# Pick particles
+e2boxer.py --gauss_autoboxer=demoparms --boxsize=64 --norm=normalize.ramp.normvar mic*.hdf
 
-# Input: binary data files in the form of bdb:particles\#mic*_ptcls
-# Output: new stack
+sxwindow.py --coords_dir=info --importctf=partres/partres --box_size=64 --outdir=particles
+
 e2bdb.py bdb:particles\#mic0_ptcls bdb:particles\#mic1_ptcls bdb:particles\#mic2_ptcls bdb:particles\#mic3_ptcls bdb:particles\#mic4_ptcls --makevstack=bdb:data
-# --makevstack=bdb:data : makes a 'virtual' BDB stack with its own metadata from the binary data given as input, in this case, bdb:particles\#mic*_ptcls
 
 #  phase flip the data set before processing with sxisac since bdb:data has CTF but sxisac currently does not correct for CTF.
 sxprocess.py bdb:data bdb:flip_data --phase_flip
 
-# sxheader.py bdb:data --params=active --one
-# sxheader.py bdb:data --params=xform.align2d --zero
-# set attibute of active to 1 and xform.align2d to zero (not necessary to do it with no-phase-flipped data at this point)
-
-# Input: hdf or bdb file
-# Output: Updated input files, only the headers are modified
 sxheader.py bdb:flip_data --params=active --one
 sxheader.py bdb:flip_data --params=xform.align2d --zero
 
@@ -80,7 +72,6 @@ sxheader.py bdb:flip_data --params=xform.align2d --zero
 sxali2d.py bdb:flip_data None --ou=28 --xr="2 1" --ts="1 0.5" --maxit=33 --dst=90
 
 # apply the results from sxali2d.py to the data:
-
 sxtransform2d.py bdb:flip_data bdb:stack_ali
 
 # run sxisac.py
@@ -143,10 +134,11 @@ mpirun -np 12 sxviper.py bdb:class_averages outdirshc --ou=28 --xr=3.0 --delta=2
 # 3D projection alignment - refinement of the initial structure
 sxheader.py bdb:data --params=xform.projection --zero    || exit
 sxheader.py bdb:data --params=active --one
+
 #  establish initial orientations of all projection data
-mpirun -np 12 sxali3d.py  bdb:data  outdirshc/refvol2.hdf outmatch --CTF --maxit=1  --ou=28 --xr=3.0 --delta=2.0 --MPI   || exit
+mpirun -np 12 sxali3d.py bdb:data outdirshc/refvol2.hdf outmatch --CTF --maxit=1 --ou=28 --xr=3.0 --delta=2.0 --MPI
 sxheader.py bdb:data --params=xform.projection --export=outmatch/matchparams.txt    || exit
-mpirun -np 12 sxali3d.py bdb:data poutdirshc --CTF  --ou=28 --xr=2.0 --delta=2.0 --maxit=100  --function="[..,demo_user_funcs,ali3d_reference3]" --MPI || exit
+mpirun -np 12 sxali3d.py bdb:data outmatch/vol0001.hdf poutdirshc --CTF --ou=28 --xr=2.0 --delta=2.0 --maxit=100 --function="[..,demo_user_funcs,ali3d_reference3]" --MPI
 
 
 # Refinement of the 3D structure using high accuracy alignment
