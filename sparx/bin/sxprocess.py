@@ -37,6 +37,8 @@ from	global_def 	import *
 from	EMAN2 		import EMUtil, parsemodopt, EMAN2Ctf
 from    EMAN2jsondb import js_open_dict
 
+from	utilities 	import *
+
 def main():
 	import sys
 	import os
@@ -467,8 +469,12 @@ def main():
 			mic = model_blank(4096, 4096)
 			defocus = idef * 0.2
 			if parm_CTF:
-				ctf = EMAN2Ctf()
-				ctf.from_dict({"defocus": defocus, "cs": Cs, "voltage": voltage, "apix": pixel, "ampcont": ampcont, "bfactor": 0.0})
+# 				ctf = EMAN2Ctf()
+# 				ctf.from_dict({"defocus": defocus, "cs": Cs, "voltage": voltage, "apix": pixel, "ampcont": ampcont, "bfactor": 0.0})
+				astampl=defocus*0.15
+				astangl=50.0
+				ctf = generate_ctf([defocus, Cs, voltage,  pixel, ampcont, 0.0, astampl, astangl])
+# 				print {"defocus":defocus, "astampl":astampl, "astangl":astangl}
 
 			for i in xrange(nangle):
 				for k in xrange(12):
