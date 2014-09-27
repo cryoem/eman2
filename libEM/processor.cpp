@@ -3968,7 +3968,7 @@ float NormalizeStdProcessor::calc_mean(EMData * image) const
 	return image->get_attr("mean");
 }
 
-EMData *SubtractOptProcessor::process(EMData * image)
+EMData *SubtractOptProcessor::process(const EMData * const image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -4069,15 +4069,17 @@ EMData *SubtractOptProcessor::process(EMData * image)
 		
 	if (!return_fft) {
 		EMData *ret=imf->do_ift();
-		ret->set_attr("test",1);
 		if (return_radial) ret->set_attr("filter_curve",radf);
-		if (return_presigma) ret->set_attr("sigma_presub",oldsig);
+		if (return_presigma) {
+			ret->set_attr("sigma_presub",oldsig);
+//			printf("Set %f\n",(float)image->get_attr("sigma_presub"));
+		}
 		return ret;
 	}
 	if (return_radial) imf->set_attr("filter_curve",radf);
 	if (return_presigma) imf->set_attr("sigma_presub",oldsig);
 	return imf;
-	}
+}
 
 void SubtractOptProcessor::process_inplace(EMData * image)
 {

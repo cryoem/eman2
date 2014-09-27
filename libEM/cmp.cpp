@@ -1410,7 +1410,7 @@ float OptSubCmp::cmp(EMData * image, EMData * with) const
 // 	int ampweight = params.set_default("ampweight", 0);
 // 	int sweight = params.set_default("sweight", 1);
 // 	int nweight = params.set_default("nweight", 0);
-// 	int zeromask = params.set_default("zeromask",0);
+ 	int zeromask = params.set_default("zeromask",0);
 	float minres = params.set_default("minres",200.0f);
 	float maxres = params.set_default("maxres",10.0f);
 	EMData *mask = params.set_default("mask",(EMData *)NULL);
@@ -1419,6 +1419,13 @@ float OptSubCmp::cmp(EMData * image, EMData * with) const
 	float apix=(float)image->get_attr("apix_x");
 
 	EMData *diff=image->process("math.sub.optimal",Dict("ref",with,"return_presigma",1,"low_cutoff_frequency",apix/minres ,"high_cutoff_frequency",apix/maxres));
+	if (mask!=NULL) diff->mult(*mask);
+	if (zeromask) {
+		EMData *tmp=with->process("threshold.notzero");
+		diff->mult(*tmp);
+		delete tmp;
+	}
+	
 // 	diff->process_inplace("filter.highpass.tophat",Dict("cutoff_freq",(float)1.0/minres));
 // 	diff->process_inplace("filter.lowpass.tophat",Dict("cutoff_freq",(float)1.0/maxres));
 	

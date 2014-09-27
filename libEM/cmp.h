@@ -463,6 +463,7 @@ namespace EMAN
 			TypeDict d;
 			d.put("minres", EMObject::FLOAT, "Lowest resolution to use in comparison (soft cutoff). Requires accurate A/pix in image. <0 disables. Default=200");
 			d.put("maxres", EMObject::FLOAT, "Highest resolution to use in comparison (soft cutoff). Requires accurate A/pix in image. <0 disables.  Default=10");
+			d.put("zeromask", EMObject::BOOL, "Treat zero regions in 'with' as a mask");
 			d.put("mask", EMObject::EMDATA, "Real space mask. Only computes the residual power under the mask. Significant speed penalty if specified. Default=None.");
 			return d;
 		}

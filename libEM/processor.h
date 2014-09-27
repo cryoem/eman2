@@ -4657,8 +4657,8 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 	class SubtractOptProcessor:public Processor
 	{
 	  public:
-		void process_inplace(EMData * image);
-		EMData *process(EMData * image);
+		virtual void process_inplace(EMData *image);
+		virtual EMData* process(const EMData * const image);
 
 		string get_name() const
 		{
