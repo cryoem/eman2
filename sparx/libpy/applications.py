@@ -6964,24 +6964,22 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 		else:
 			list_of_particles = None
 			total_nima = 0
+		total_nima = wrap_mpi_bcast(total_nima, main_node, mpi_comm)
+		list_of_particles = wrap_mpi_bcast(list_of_particles, main_node, mpi_comm)
+		if myid == main_node:
+			particle_ids = [0]*total_nima
+			for i in xrange(total_nima):  particle_ids[i] = list_of_particles[i]
+		image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
+		# create a list of images for each node
+		list_of_particles = list_of_particles[image_start: image_end]
+		nima = len(list_of_particles)
 
 	else:
-		if myid == main_node:
-			list_of_particles = range(len(stack))
-			total_nima = len(list_of_particles)
-		else:
-			list_of_particles = None
-			total_nima = None
+		list_of_particles = range(len(stack))
+		nima = len(list_of_particles)
+		total_nima = len(list_of_particles)
+		total_nima = mpi_reduce(total_nima, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
 	
-	total_nima = wrap_mpi_bcast(total_nima, main_node, mpi_comm)
-	list_of_particles = wrap_mpi_bcast(list_of_particles, main_node, mpi_comm)
-	if myid == main_node:
-		particle_ids = [0]*total_nima
-		for i in xrange(total_nima):  particle_ids[i] = list_of_particles[i]
-	image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
-	# create a list of images for each node
-	list_of_particles = list_of_particles[image_start: image_end]
-	nima = len(list_of_particles)
 
 	if(myid == main_node):
 		if( type(stack) is types.StringType ):  dataim = get_im(stack, list_of_particles[0])
@@ -7009,7 +7007,7 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 	dataim = [None]*nima
 	for im in xrange(nima):
 		if( type(stack) is types.StringType ):  dataim[im] = get_im(stack, list_of_particles[im])
-		else:                                   dataim[im] = stack[list_of_particles[im]].copy()
+		else:                                   dataim[im] = stack[list_of_particles[im]]
 		dataim[im].set_attr('ID', list_of_particles[im])
 		ctf_applied = dataim[im].get_attr_default('ctf_applied', 0)
 		if CTF :
