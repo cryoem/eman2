@@ -2173,7 +2173,7 @@ def bcast_EMData_to_all(tavg, myid, source_node = 0, comm = -1):
 	if(myid != source_node):
 		tavg_data1d = reshape(tavg_data,(ntot,))
 		tavg_data1d[0:ntot] = tavg_tmp[0:ntot]
-	
+
 '''
 def bcast_EMData_to_all(img, myid, main_node = 0, comm = -1):
 
@@ -4082,7 +4082,7 @@ def pack_message(data):
 def unpack_message(msg):
 	"""Unpack a data payload prepared by pack_message"""
 	
-	if msg[0]=="C" : return decompress((msg[1:]).tostring())
+	if   msg[0]=="C" : return decompress((msg[1:]).tostring())
 	elif msg[0]=="S" : return (msg[1:]).tostring()
 	elif msg[0]=="Z" : return loads(decompress((msg[1:]).tostring()))
 	elif msg[0]=="O" : return loads((msg[1:]).tostring())
@@ -4122,7 +4122,7 @@ def wrap_mpi_recv(source, communicator = None):
 
 	if communicator == None:
 		communicator = MPI_COMM_WORLD
-	
+
 	tag = update_tag(communicator, source)
 	#from mpi import mpi_comm_rank
 	#print communicator, mpi_comm_rank(communicator), "recv from", source, tag
@@ -4134,19 +4134,19 @@ def wrap_mpi_recv(source, communicator = None):
 
 def wrap_mpi_bcast(data, root, communicator = None):
 	from mpi import mpi_bcast, MPI_COMM_WORLD, mpi_comm_rank, MPI_CHAR
-	
+
 	if communicator == None:
 		communicator = MPI_COMM_WORLD
-	
+
 	rank = mpi_comm_rank(communicator)
-	
+
 	if rank == root:
 		msg = pack_message(data)
 		n = pack("I",len(msg))
 	else:
 		msg = None
 		n = None
-		
+
 	n = mpi_bcast(n, 4, MPI_CHAR, root, communicator)  # int MPI_Bcast ( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm ) 
 	n=unpack("I",n)[0]
 	msg = mpi_bcast(msg, n, MPI_CHAR, root, communicator)  # int MPI_Bcast ( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm ) 
