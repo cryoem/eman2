@@ -111,6 +111,11 @@ def main():
 	else: 
 		subpix = 1
 	
+	if options.noisiness: 
+		noisiness = str(options.options.noisiness)
+	else: 
+		noisiness = 0.0
+	
 	if options.output: 
 		outfilename = options.output
 	else:
@@ -169,15 +174,9 @@ def main():
 			else:
 				reconpath = "recon_000" + str(i)
 			## PARALLELIZED
-			p = subprocess.Popen("e2tvrecon2d.py --tiltseries %s --tlt %s --path %s --output %s --beta %s -v %s --noise --noisiness %s"%(inputpath, tlt, reconpath, twodpath, inputbeta, verbosity, noisiness), shell=True)
+			p = subprocess.Popen("e2tvrecon2d.py --tiltseries %s --tlt %s --path %s --output %s --beta %s -v %s --noise --noisiness %s --subpix %s"%(inputpath, tlt, reconpath, twodpath, inputbeta, verbosity, noisiness, str(subpix)), shell=True)
 			i += 1
 	p_status = p.wait()
-	
-			## UNPARALLELIZED
-			#os.popen("e2tvrecon2d.py --tiltseries %s --tlt %s --path %s --output %s --beta %s -v %s"%(inputpath, tlt, reconpath, twodpath, inputbeta, verbosity))
-			#if options.verbose > 1:
-			#	print "Sinogram Reconstruction %i complete"%(i)
-			#i += 1
 	
 	i = 1
 	np_recons=[]
