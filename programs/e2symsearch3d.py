@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 #
-# Author: John Flanagan Sept 2011 (jfflanag@bcm.edu); last update by Jesus Galaz-Montoya on March/20/2014
-# Modified by Jesus Galaz-Montoya to enable iteration over particle stacks and particle preprocessing
+# Author: John Flanagan Sept 2011 (jfflanag@bcm.edu); last update 09/27/2014
+# Modified by Jesus Galaz-Montoya (jgalaz@gmail.com)
 # Copyright (c) 2000-2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -107,6 +107,12 @@ def main():
 
 	#parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
 	
+	parser.add_argument("--nopath",action='store_true',default=False,help="""If supplied,
+		this option will save results in the directory where the command is run. A directory
+		to store the results will not be made""")
+		
+	parser.add_argument("--nolog",action='store_true',default=False,help="""If supplied,
+		this option will prevent logging the command run in .eman2log.txt.""")
 
 	(options, args) = parser.parse_args()
 
@@ -121,7 +127,9 @@ def main():
 		sys.exit(0)
 	
 	#If no failures up until now, initialize logger
-	logid=E2init(sys.argv,options.ppid)
+	log = 0
+	if not options.nolog:
+		logid=E2init(sys.argv,options.ppid)
 	
 	#inimodeldir = os.path.join(".",options.path)
 	#if not os.access(inimodeldir, os.R_OK):
@@ -130,6 +138,9 @@ def main():
 	#Make directory to save results
 	from e2spt_classaverage import sptmakepath
 	options = sptmakepath(options,'symsearch')
+	
+	if options.nopath:
+		options.path = '.'
 	
 	#Import preprocessing function
 	from e2spt_classaverage import preprocessing	
@@ -276,7 +287,8 @@ def main():
 		output.write_image(os.path.join(inimodeldir, options.output))
 	"""
 	
-	E2end(logid)
+	if log:
+		E2end(logid)
 	
 	return
 
