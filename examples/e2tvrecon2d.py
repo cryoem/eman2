@@ -149,12 +149,10 @@ def main():
 	else: 
 		subpix = 1
 	
-	noisiness = 0.1
+	noisiness = 0.0
 	if options.noise:
-		if options.noisiness :
+		if options.noisiness != 0.0:
 			noisiness = options.noisiness
-		else:
-			print "--noisiness option not specified. Using the default value of 0.1."
 	
 	if options.output:
 		outfile = options.output
@@ -246,7 +244,7 @@ def get_data( options, nslices, noisiness, imgnum=0 ):
 		for i in range( nslices ):
 			img = EMData( options.tiltseries, i )
 			np_img = img.numpy().copy()
-			if options.noise != False:	# Add Noise to Projections
+			if (options.noise != False) and (noisiness != 0.0):	# Add Noise to Projections
 				if options.verbose > 2: print "Adding Noise to Input Data..."
 				np_img += noisiness * np.random.randn(*np_img.shape)
 				from_numpy(np_img).write_image(options.path + "noisy_img.hdf")
