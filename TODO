@@ -16,14 +16,11 @@ High priority
 6/12/14		isosurface color on mac (and other machines with older opengl). Why no newer opengl working on mac?
 6/12/14		per particle movie mode alignment
 6/12/14		new particle picker
-6/13/14		Fix internationalization bug with Qt
 6/14/14		e2markbadptcl
 
 7/7/14		scale box locations
-7/7/14		per-particle subunit subtraction for Chris
 7/27/14		ctf interactive seems to autosave parameters without button press
 7/27/14		ctf struct factor determination with oversampling messed up!!!
-9/1/14		Use whole micrograph for per-particle defocus determination (option)
 
 2/24/14		Save sets in imagemx control panel error (updateGL, update not defined ?)
 2/20/14		Save plots as images, more features in 2-D plotting
@@ -58,8 +55,12 @@ Low priority
 
 
 Complete
+9/28/14		9/25/14		Aligned class particle extraction
+9/25/14		7/7/14		per-particle subunit subtraction for Chris
 9/8/14		--box in e2evalimage now forces size
 8/29/14		Fixed B-factor option in e2ctf
+8/14		9/1/14		Use whole micrograph for per-particle defocus determination (option)
+???		Fix internationalization bug with Qt
 4/7/14		Make e2.py work with current ipython versions, finally
 2/20/14		Added --speed option
 2/12/14		Fixed e2evalparticles finally !

@@ -123,8 +123,8 @@ There are 3 mutually exclusive modes in this program:
 			if options.verbose>1 : print "--- Class %d"%i
 
 			for eo in range(len(classmx)):
-				if len(classmx)==1 : outname="classptcl_{:04d}.hdf".format(i)
-				else : outname="classptcl_{:04d}_{}.hdf".format(i,("even","odd")[eo])
+				outname="classptcl_{:04d}.hdf".format(i)
+#				else : outname="classptcl_{:04d}_{}.hdf".format(i,("even","odd")[eo])
 				
 				for j in xrange(nptcl[eo]):
 					if classmx[eo][0,j]!=i : continue		# only proceed if the particle is in this class
