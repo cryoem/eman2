@@ -7139,16 +7139,6 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 	v = K/2.0/N
 	params = {"filter_type": Processor.fourier_filter_types.KAISER_SINH_INVERSE, "alpha":alpha, "K":K, "r":r, "v":v, "N":N}
 
-	disps = []
-	recvcount = []
-	for im in xrange(number_of_proc):
-		if( im == main_node ):  disps.append(0)
-		else:                   disps.append(disps[im-1] + recvcount[im-1])
-		ib, ie = MPI_start_end(total_nima, number_of_proc, im)
-		recvcount.append( ie - ib )
-
-	#  this is needed for gathering of pixel errors
-	pixer = [0.0]*nima
 	data = [None]*7
 	data[3] = mask2D
 	cs = [0.0]*3
@@ -7161,6 +7151,7 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 			finfo.write("  iteration = "+str(iteration)+"   ")
 			finfo.write("\n")
 			finfo.flush()
+		pixer = [0.0]*nima
 		for ic in xrange(n_of_chunks):
 			# In the very first step the volume has to be computed if it was not provided by the user
 			if( ((iteration > 0) and (ic > 0)) or vol == None):
@@ -7211,26 +7202,26 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 			else:
 				data[0], data[1] = prep_vol(vol)
 
-			image_start_in_chunk = image_start + ic*nima/n_of_chunks
-			image_end_in_chunk   = image_start + (ic+1)*nima/n_of_chunks
+			image_start_in_chunk = ic*nima/n_of_chunks
+			image_end_in_chunk   = (ic+1)*nima/n_of_chunks
 			if debug:
 				finfo.write("Chunk "+str(ic)+"   Number of images in this chunk: "+str(image_end_in_chunk-image_start_in_chunk)+"\n")
 				finfo.write("First image in this chunk: "+str(image_start_in_chunk)+"   Last image in this chunk: "+str(image_end_in_chunk-1)+"\n")
 				finfo.flush()
 			for imn in xrange(image_start_in_chunk, image_end_in_chunk):
 				if CTF:
-					ctf_params = dataim[imn-image_start].get_attr( "ctf" )
+					ctf_params = dataim[imn].get_attr( "ctf" )
 					if ctf_params.defocus != previous_defocus:
 						previous_defocus = ctf_params.defocus
 						data[0], data[1] = prep_vol(filt_ctf(vol, ctf_params))
 
-				data[2] = dataim[imn-image_start]
+				data[2] = dataim[imn]
 				if ts > 0.0:
-					refi = dataim[imn-image_start].FourInterpol(nx*2, nx*2, 0, True)
+					refi = dataim[imn].FourInterpol(nx*2, nx*2, 0, True)
 					data[4] = Processor.EMFourierFilter(refi, params)
 
-				#phi, theta, psi, tx, ty = get_params_proj(dataim[imn-image_start])
-				t1 = dataim[imn-image_start].get_attr("xform.projection")
+				#phi, theta, psi, tx, ty = get_params_proj(dataim[imn])
+				t1 = dataim[imn].get_attr("xform.projection")
 				dp = t1.get_params("spider")
 				atparams = [dp["phi"], dp["theta"], dp["psi"]]
 				data[5]  = [dp["tx"], dp["ty"]]
@@ -7262,12 +7253,12 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 				#exit()
 				t2 = Transform({"type":"spider","phi":optm_params[0][0],"theta":optm_params[0][1],"psi":optm_params[0][2]})
 				t2.set_trans(Vec2f(-optm_params[0][3], -optm_params[0][4]))
-				dataim[imn-image_start].set_attr("xform.projection", t2)
+				dataim[imn].set_attr("xform.projection", t2)
 				from pixel_error import max_3D_pixel_error
-				pixer[imn-image_start] = max_3D_pixel_error(t1, t2, last_ring)
-				#set_params_proj(dataim[imn-image_start], optm_params[0])
+				pixer[imn] = max_3D_pixel_error(t1, t2, last_ring)
+				#set_params_proj(dataim[imn], optm_params[0])
 			if( myid == main_node ):
-				log.add( "Time to process %6d particles : %d\n" % (image_end_in_chunk-image_start_in_chunk, time()-start_time) )
+				log.add( "Time to process %6d particles : %d\n" % (image_end_in_chunk, time()-start_time) )
 				start_time = time()
 
 			# release memory
@@ -7276,14 +7267,14 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 
 		#output pixel errors after all headers were processed
 		from mpi import mpi_gatherv
-		recvbuf = mpi_gatherv(pixer, nima, MPI_FLOAT, recvcount, disps, MPI_FLOAT, main_node, mpi_comm)
+		pixer = wrap_mpi_gatherv(pixer, main_node, mpi_comm)
 		mpi_barrier(mpi_comm)
 		terminate = 0
 		if(myid == main_node):
-			recvbuf = map(float, recvbuf)
+			pixer = map(float, pixer)
 			from statistics import hist_list
 			lhist = 20
-			region, histo = hist_list(recvbuf, lhist)
+			region, histo = hist_list(pixer, lhist)
 			if(region[0] < 0.0):  region[0] = 0.0
 			msg = "      Histogram of pixel errors\n      ERROR       number of particles\n"
 			log.add(msg)
@@ -7297,7 +7288,7 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 				im += histo[lhx]
 			if(im/float(total_nima) > 0.95):  terminate = 1
 			del region, histo
-		del recvbuf
+		del pixer
 		terminate = mpi_bcast(terminate, 1, MPI_INT, 0, mpi_comm)
 		terminate = int(terminate[0])
 		if terminate:  break
