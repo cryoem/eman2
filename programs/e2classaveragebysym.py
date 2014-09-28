@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 #
-# Author: John Flanagan Feb 2012 (jfflanag@bcm.edu)
+# Author: John Flanagan Feb 2012 (jfflanag@bcm.edu), modified by Jesus Galaz (jgmontoy@bcm.edu).
+# Last modification: 9/27/2014
 # Copyright (c) 2012- Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -60,6 +61,13 @@ def main():
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
+	parser.add_argument("--nopath",action='store_true',default=False,help="""If supplied,
+		this option will save results in the directory where the command is run. A directory
+		to store the results will not be made""")
+		
+	parser.add_argument("--nolog",action='store_true',default=False,help="""If supplied,
+		this option will prevent logging the command run in .eman2log.txt.""")
+
 	(options, args) = parser.parse_args()
 	
 	if options.averager: 
@@ -85,10 +93,12 @@ def main():
 		print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
 		sys.exit(1)
 	
+	
 	from e2spt_classaverage import sptmakepath
-	
-	options = sptmakepath(options,'sptbysym')
-	
+	options = sptmakepath(options,'sptbysym')	
+
+	if options.nopath:
+		options.path = '.'
 
 	# Get the averager
 	avgr=Averagers.get(options.averager[0], options.averager[1])
@@ -130,7 +140,7 @@ def main():
 		model3d.write_image(inputfile)
 		#exit(1)
 		
-		command = "e2symsearch3d.py --input=%s --output=%s --sym=%s --shrink=%d --steps=%d --cmp=%s --path=''"%(inputfile, outputfile, options.sym, options.shrink, options.steps, options.cmp)
+		command = "e2symsearch3d.py --input=%s --output=%s --sym=%s --shrink=%d --steps=%d --cmp=%s --nopath"%(inputfile, outputfile, options.sym, options.shrink, options.steps, options.cmp)
 		
 		if options.symmetrize:
 			command += " --symmetrize"
