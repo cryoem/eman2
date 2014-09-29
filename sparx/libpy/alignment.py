@@ -1964,32 +1964,6 @@ def align2d(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rst
 	Util.Applyws(crefim, numr, wr)
 	return ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny)
 
-# def myfunct(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rstep=1, mode = "F"):
-def align_new_test(image, refim, xrng=0, yrng=0):
-	from utilities import *
-	from fundamentals import *
-	
-	ccf_im    = scf(image)
-	ccf_refim = scf(refim)
-	
-	[angle, x_shft, y_shft, mirror, ccv] = get_inplane_angle(image,refim)
-	
-	image.rotate_deg(angle)	
-	ccf1 = ccf(image, refim)
-	# window ????
-	p1 = peak_search(ccf1) 
-	
-	
-	angle += 180
-	image.rotate_deg(angle)
-	ccf2 = ccf(image, refim)
-	# window ????
-	p2 = peak_search(ccf1)
-	
-	return max() 
-	
-	
-	return ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny)
 
 def align2d_no_mirror(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rstep=1, mode = "F"):
 	"""  Determine shift and rotation between image and reference image
