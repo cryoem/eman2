@@ -132,8 +132,12 @@ def main():
 	parser.add_argument("--maxres", type=float, help="How far in resolution to extend the FSC curve on the x axis; for example, to see up to 20anstroms, provide --maxres=1.0. Default=15", default=1.0)
 	parser.add_argument("--cutoff", type=str, help="Comma separated values of cutoff thresholds to plot as horizontal lines. Default=0.5, to turn of supply 'None'. ", default='0.5')
 	
-	parser.add_argument("--smooth",action="store_true", help="Smooth out FSC curves by ignoring dips or local minima.", default=False)
+	parser.add_argument("--smooth",action="store_true", help="""Smooth out FSC curves 
+		by taking the average of a low value with a subsequent maxima.""", default=False)
 	
+	parser.add_argument("--smooththresh",type=float, help="""If --smooth is provided
+		the curve will be smoothed only up to this resolution. Default is 100.""", default=100)
+
 	#parser.add_argument("--fit",action="store_true", help="Smooth out FSC curves.", default=False)
 	
 	parser.add_argument("--polydegree",type=int, help="Degree of the polynomial to fit.", default=None)
@@ -471,7 +475,7 @@ def sigmoidfit(x,values):
 	return(xsig,ysig)
 	
 
-def maxima(xaxis,yaxis):
+def maxima(xaxis,yaxis,smooththresh):
 	print "\n\nI have entered maxima!!!!!!!!!!!!!!!!!!!!!\n\n"
 	print "At this point xaxis and yaxis len are", len(xaxis), len(yaxis)
 	#xaxis=list(set(xaxis))
@@ -487,22 +491,28 @@ def maxima(xaxis,yaxis):
 	
 	for i in xrange(0,len(yaxis) -1):
 		val=yaxis[i]
-		print 'currrent value is', val
-		print 'and next is', yaxis[i+1]
-		if val - yaxis[i+1] < 0.0:
-			val = yaxis[i+1]
-			print 'therefore new val is', val
+		#print 'currrent value is', val
+		#print 'and next is', yaxis[i+1]
+		#print "options.smooththresh is", smooththresh
+		if val < max(yaxis[i+1:]) and 1.0/xaxis[i+1] > smooththresh:
+			val = ( val+ max(yaxis[i+1:]) )/ 2.0
+			print '\nNew max smoothing value is', val
+
+		if val > min(yaxis[i+1:]) and 1.0/xaxis[i+1] < smooththresh:
+			val = val/ 2.0
+			print '\nNew min smoothing value is', val
+		
 		#print "Therfore final val is", val
 			
 		
 		ymaxes.append(val)
-		xes.append(xaxis[i])
+		xes.append(i)
 	
 	#ymaxes.append(yamxes[-2])
 	ymaxes.append(ymaxes[-1])
 			
 	#xes.append(xes[-2])
-	xes.append(xes[-1])
+	xes.append(i+1)
 	
 	'''
 	for i in xrange(0,len(yaxis) - 1 - 1 ):
@@ -654,7 +664,7 @@ def fscplotter(fscs,options,apix=0.0):
 		'''
 		
 		if options.smooth:
-			ret=maxima(x,values)
+			ret=maxima(inversefreqs,values,options.smooththresh)
 			x=ret[0]
 			values=ret[1]
 		
