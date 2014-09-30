@@ -6898,7 +6898,6 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 	sym    = sym[0].lower() + sym[1:]
 	center = ali3d_options.center
 	CTF    = ali3d_options.CTF
-	maskfile = ali3d_options.mask3D
 	fourvar = False
 
 
@@ -7040,7 +7039,7 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 
 		print_msg("Input stack                 : %s\n"%(stack))
 		print_msg("Output directory            : %s\n"%(outdir))
-		print_msg("Maskfile                    : %s\n"%(maskfile))
+		print_msg("Maskfile                    : %s\n"%(ali3d_options.mask3D))
 		print_msg("Outer radius                : %i\n"%(last_ring))
 		print_msg("Angular search range        : %s\n"%(delta))
 		print_msg("Shift search range          : %f\n"%(ts))
@@ -7054,19 +7053,20 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 	"""
 
 	import  types
-	if maskfile:
-		if type(maskfile) is types.StringType:
+	if ali3d_options.mask3D:
+		if type(ali3d_options.mask3D) is types.StringType:
 			if myid == main_node:
-				mask3D = get_im(maskfile)
-				i = mask3D.get_xsize()
-				if( shrinkage != 1.0 ):
-					if( i != nx ):
-						mask3D = resample(mask3D, shrinkage)
+				mask3D = get_im(ali3d_options.mask3D)
 			else:
 				mask3D = model_blank(nx, nx, nx)
-			bcast_EMData_to_all(mask3D, myid, main_node)
 		else:
-			mask3D = maskfile
+			mask3D = ali3d_options.mask3D.copy()
+		if myid == main_node:
+			i = mask3D.get_xsize()
+			if( shrinkage != 1.0 ):
+				if( i != nx ):
+					mask3D = resample(mask3D, shrinkage)
+		bcast_EMData_to_all(mask3D, myid, main_node)
 	else:
 		mask3D = model_circle(last_ring, nx, nx, nx)
 
