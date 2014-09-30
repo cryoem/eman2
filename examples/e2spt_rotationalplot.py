@@ -63,8 +63,13 @@ def main():
 	parser.add_argument("--lowpass",type=str,help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.", default=None)
 	parser.add_argument("--highpass",type=str,help="A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to alignment. Not applied to aligned particles before averaging.", default=None)
 		
+	parser.add_argument("--normproc",type=str,help="""Normalization processor applied to 
+		particles before alignment. Default is 'normalize.edgemean'. 
+		If normalize.mask is used, results of the mask option will be passed in automatically. 
+		If you want to turn this option off specify \'None\'""", default='normalize.edgemean')	
+		
 	parser.add_argument("--shrink", type=int,default=1,help="Optionally shrink the input volumes by an integer amount for coarse alignment.")
-	parser.add_argument("--shrinkrefine", type=int,default=1,help="Optionally shrink the input volumes by an integer amount for refine alignment.")
+	parser.add_argument("--shrinkefine", type=int,default=1,help="Optionally shrink the input volumes by an integer amount for refine alignment.")
 	
 	parser.add_argument("--daz", type=int,default=3,help="Step size to vary azimuth.")
 	parser.add_argument("--icosvertices", action="store_true",help="Will produce an azimutal plot at each vertex of an icosahedron.", default=False)
@@ -92,6 +97,53 @@ def main():
 	
 	(options, args) = parser.parse_args()
 
+	
+	
+	print "Loaded mask is", options.mask
+	
+	
+	
+	'''
+	Parse options
+	'''
+	if options.mask:
+		if 'None' in options.mask:
+			options.mask = 'None'
+		if options.mask != 'None' and options.mask != 'none':
+			print "\noptions.mask before parsing is",  options.mask
+			options.mask = parsemodopt(options.mask)
+		else:
+			options.mask = None
+		print "\nmask after parsing is", options.mask
+	
+	if options.preprocess:
+		if options.preprocess != 'None' and options.preprocess != 'none': 
+			options.preprocess = parsemodopt(options.preprocess)
+		else:
+			options.preprocess = None
+		print "\nPreprocessor is", options.preprocess
+	
+	if options.lowpass: 
+		if options.lowpass != 'None' and options.lowpass != 'none': 
+			options.lowpass = parsemodopt(options.lowpass)
+		else:
+			options.lowpass = None
+		print "\nlowpass is", options.lowpass
+		
+	if options.highpass: 
+		if options.highpass != 'None' and options.highpass != 'none': 
+			options.highpass = parsemodopt(options.highpass)
+		else:
+			options.highpass = None
+		print "\nHighpass is", options.highpass
+	
+	if options.normproc: 
+		if options.normproc != 'None' and options.normproc != 'none':
+			options.normproc=parsemodopt(options.normproc)
+		else:
+			options.normproc = None
+		print "\nNormproc is", options.normproc
+	
 	print "args are", args	
 	logger = E2init(sys.argv, options.ppid)
 	
@@ -102,26 +154,19 @@ def main():
 		options.plot2d = True	
 	
 	
-	if options.mask: 
-		print "options.mask before parsing is", 
-		options.mask = parsemodopt(options.mask)
-		print "mask is", options.mask
-	
-	if options.preprocess: 
-		options.preprocess = parsemodopt(options.preprocess)
-		print "Preprocessor is", options.preprocess
-	
-	if options.lowpass: 
-		options.lowpass = parsemodopt(options.lowpass)
-		print "lowpass is", options.lowpass
-		
-	if options.highpass: 
-		options.highpass = parsemodopt(options.highpass)
-		print "Highpass is", options.highpass
-	
 	if options.icosvertices and options.vols2:
 			print "ERROR: You can only use --icosvertices for volumes in --vols1. You must NOT supply --vols2."
 			sys.exit()
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 	
 	if not options.plotonly:
@@ -183,7 +228,10 @@ def main():
 		
 			values.update({k:valuesforthisfile})
 			k+=1
-		plotter(options,azs,values,options.output.replace('.txt',''),None,k)
+		absMIN=1000000
+		absMAX=-1
+		
+		plotter(options,azs,values,options.output.replace('.txt',''),None,k,absMIN,absMAX)
 		print "I have returned from the plotter"
 			
 		if options.singleplot:	
@@ -197,11 +245,13 @@ def main():
 				pylab.ylabel('Correlation')
 				pylab.xlabel('Azimuth')	
 				pylab.savefig(plotname)
-				clf()
+				#clf()
 		
 			if not options.icosvertices and options.plot2d:
 				print "I will call 2dplot"
 				twoD_plot(plotname,values,options)
+		if not options.singleplot:
+			clf()
 			
 	E2end(logger)
 			
@@ -229,21 +279,27 @@ def rotcccplot(v1,v2,options):
 	absMAX=-1.0
 	absMIN=1000000.0
 	#mastervalues=[]
+	
 	for ni in range(nimg1):
 		vol1 = EMData(v1,ni)
-		vol1 = preprocess(vol1,options)
+		
+		if options.mask or options.normproc or options.lowpass or options.highpass or options.preprocess:
+			vol1 = preprocess(vol1,options)
 		title = v1
 		
-		if v1 != v2:
-			vol2 = EMData(v2,0)
+		#if v1 != v2:
+		vol2 = EMData(v2,0)
+		
+		if options.mask or options.normproc or options.lowpass or options.highpass or options.preprocess:
 			vol2 = preprocess(vol2,options)
-			if nimg1 > 1:
-				title = v1 + '_ptcl' + str(ni).zfill(len(str(nimg1)))+'_VS_' + v2
-			else:
-				title = v1 + ' VS ' + v2
-				
+
+		if nimg1 > 1:
+			title = v1 + '_ptcl' + str(ni).zfill(len(str(nimg1)))+'_VS_' + v2
 		else:
-			vol2 = vol1.copy()
+			title = v1 + ' VS ' + v2
+			
+		#else:
+		#	vol2 = vol1.copy()
 	
 		loops = 1
 		ts=[]
@@ -291,11 +347,17 @@ def rotcccplot(v1,v2,options):
 				pylab.ylabel('Correlation')
 				pylab.xlabel('Azimuth')	
 				pylab.savefig(plotname)
-				clf()
+				#clf()
+		
 		
 			if not options.icosvertices and options.plot2d:
 				print "I will call 2dplot"
 				twoD_plot(plotname,values,options)
+		
+		if not options.singleplot:
+			clf()
+		
+	
 	return()
 	
 
@@ -446,7 +508,9 @@ def plotter(options,azs,values,title,ts,loop,absMIN,absMAX):
 	
 	
 def preprocess(vol,options):
-	print "Entering preprocessing function"
+	print "\n\n\n\n\n\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\nEntering preprocessing function!!!!!!!!!!!!!!!!!!"
+
+
 
 	apix = vol['apix_x']
 	boxsize = vol['nx']
@@ -462,10 +526,17 @@ def preprocess(vol,options):
 
 	# normalize
 	print "Normalizing and masking"
-	vol.process_inplace('normalize.edgemean')
-	vol.mult(mask)
-	vol.process_inplace('normalize.edgemean')
-	vol.mult(mask)
+	if options.normproc and options.normproc != 'None' and options.normproc != 'none':
+		vol.process_inplace(options.normproc[0],options.normproc[1])
+	
+	if options.mask and options.mask != 'None' and options.mask != 'none':
+		vol.mult(mask)
+	
+	if options.normproc and options.normproc != 'None' and options.normproc != 'none':
+		vol.process_inplace(options.normproc[0],options.normproc[1])
+	
+	if options.mask and options.mask != 'None' and options.mask != 'none':
+		vol.mult(mask)
 
 	# preprocess
 	if options.preprocess != None:
@@ -487,13 +558,13 @@ def preprocess(vol,options):
 		print "Shrinking"
 		vol=vol.process("math.meanshrink",{"n":options.shrink})
 	
-		mask = EMData(vol["nx"],vol["ny"],vol["nz"])
-		mask.to_one()
-		radius =  vol['nx']/2 - 2
-		print "The radius is",
-		if options.mask:
-			#print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options["mask"][0],options["mask"][1]) 
-			mask.process_inplace( 'mask.sharp' , { 'outer_radius' : radius})
+		#mask = EMData(vol["nx"],vol["ny"],vol["nz"])
+		#mask.to_one()
+		#radius =  vol['nx']/2 - 2
+		#print "The radius is",
+		#if options.mask:
+		#	#print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options["mask"][0],options["mask"][1]) 
+		#	mask.process_inplace( 'mask.sharp' , { 'outer_radius' : radius})
 
 	
 	if options.sym and options.sym!= 'c1' and options.sym != 'C1':
@@ -501,7 +572,7 @@ def preprocess(vol,options):
 		
 	
 	print "Leaving preprocessing function"
-	
+	vol.write_image('rotplotpreprocvols.hdf',-1)
 	
 	
 	return(vol)
@@ -521,14 +592,23 @@ def azimuthalccc(vol1,vol2,options):
 		#	alt = 180
 		az=0
 		valuesforthisalt=[]
+		
+		#movingpreproc = vol2.copy()
+		#if options.mask or options.normproc or options.lowpass or options.highpass or options.preprocess:
+		#		movingpreproc = preprocess(movingpreproc,options)
+		
 		while az <= 360:
-			moving = EMData()
+			#moving = EMData()
 			moving = vol2.copy()
+			
+			#if options.mask or options.normproc or options.lowpass or options.highpass or options.preprocess:
+			#	moving = preprocess(moving,options)
 			
 			#print "I will rotate by this alt and az", alt, az
 			moving.rotate(az,alt,0)
 			#if alt == 180:
-				#print "In theory, I have flipped the molecule now!!!!", alt, az
+				
+			#print "In theory, I have flipped the molecule now!!!!", az,alt
 			
 			ccf = vol1.calc_ccf(moving)
 			ccf.process_inplace("xform.phaseorigin.tocorner") 
@@ -616,8 +696,10 @@ def genicosvertices():
 		syms.append(t.get_sym('icos',i))
 	
 	ts = []
+	azs = set([])
 	alts = set([])
 	phis = set([])
+	
 	for s in syms:
 		rot=s.get_rotation()
 		az=rot['az']
