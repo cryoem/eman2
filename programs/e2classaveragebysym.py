@@ -67,20 +67,11 @@ def main():
 		
 	parser.add_argument("--nolog",action='store_true',default=False,help="""If supplied,
 		this option will prevent logging the command run in .eman2log.txt.""")
-
+	
 	(options, args) = parser.parse_args()
 	
 	if options.averager: 
 		options.averager=parsemodopt(options.averager)
-		
-	# Check for errors
-	hdr = EMData(options.input,0,True)
-	nx = hdr["nx"]
-	ny = hdr["ny"]
-	nz = hdr["nz"]
-	if nx!=ny or ny!=nz :
-		print "ERROR, input volumes are not cubes"
-		sys.exit(1)
 		
 	if options.mask: 
 		options.mask=parsemodopt(options.mask)
@@ -95,33 +86,52 @@ def main():
 	
 	
 	from e2spt_classaverage import sptmakepath
-	options = sptmakepath(options,'sptbysym')	
-
-	if options.nopath:
+	options = sptmakepath(options,'sptbysym')
+	
+	if otpions.nopath:
 		options.path = '.'
-
+	
 	# Get the averager
 	avgr=Averagers.get(options.averager[0], options.averager[1])
-	
-	# generate the mask
-	mask=EMData(nx,ny,nz)
-	mask.to_one()
-	if options.mask != None:
-		print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
-		mask.process_inplace(options.mask[0],options.mask[1])
-	
+
 	# open transfrom DB
 	js = js_open_dict(options.path + '/tomo_xforms.json')
 	
 	# Align each particle to its symmetry axis
-	for i in xrange(EMUtil.get_image_count(options.input)):
+	
+	nptcls = EMUtil.get_image_count(options.input)
+	for i in xrange( nptcls ):
 		# Copy image
 		inputfile = "%s/ptcl_to_align_%d.hdf"%(options.path,i)
 		outputfile = "%s/aligned_ptcl_%d.hdf"%(options.path,i)
-		model3d = EMData(options.input, i)
+		model3d = EMData( options.input, i )
 		
-		# apply mask if desired
-		model3d.mult(mask)
+	
+		# Check for errors
+		hdr = EMData(options.input,0,True)
+		nx = hdr["nx"]
+		ny = hdr["ny"]
+		nz = hdr["nz"]
+	
+		if nx!=ny or ny!=nz or nx!=nz:
+			print "ERROR, input volumes are not cubes"
+			sys.exit(1)
+		
+		# generate and apply mask if desired
+		
+		if options.mask != None:
+			mask=EMData(nx,ny,nz)
+			mask.to_one()
+			print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
+			mask.process_inplace(options.mask[0],options.mask[1])
+	
+			#if options.shrink:
+			#	mask.process_inplace("math.meanshrink",{ "n":options.shrink })
+			
+			print "Size of model3d is", model3d['nx'],model3d['ny'],model3d['nz'] 
+			print "Size of mask is", mask['nx'],mask['ny'],mask['nz'] 
+
+			model3d.mult(mask)
 		
 		# preprocess
 		if options.preprocess != None:

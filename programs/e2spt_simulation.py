@@ -513,12 +513,8 @@ def clip2D( img, size ):
 	
 	imgxc = img['nx']/2
 	imgyc = img['ny']/2
-	#imgzc = img['nz']/2
-	
 	Rimg =  Region( (2*imgxc - size)/2, (2*imgyc - size)/2, 0, size , size , 1)
 	img.clip_inplace( Rimg )
-	#img.process_inplace('mask.sharp',{'outer_radius':-1})
-	
 	return img
 
 
@@ -957,7 +953,7 @@ class SubtomoSimTask(JSTask):
 			
 			#prj = image.process("misc.directional_sum",{"axis":"z"})
 			print "\nProjecting from",t,realalt
-				
+				s
 			prj = image.project("standard",t)
 			
 			if options.fillwedge and j > nslices:
