@@ -325,7 +325,7 @@ def main():
 					#if options.boxsize:
 										
 					extra = math.fabs( math.sqrt(2.0) * ( box/2.0 - 1.0 ) - ( box/2.0 - 1 ) )	
-					paddedbox = int( round( float(box) + extra ) )
+					paddedbox = int( math.ceil( float(box) + extra ) )
 					
 					t = masks[key][1]
 					sx = masks[key][-1][0]
@@ -339,6 +339,8 @@ def main():
 					bigr = Region( (sx*2 - paddedbox)/2 ,  (sy*2 - paddedbox)/2 ,  (sz*2 - paddedbox)/2, paddedbox,paddedbox,paddedbox)
 					bigscoop = ptcl.get_clip(bigr)
 					
+					#bigscoop.write_image( options.path + '/bigscoops.hdf', key)
+					
 					bigscoop['origin_x'] = 0
 					bigscoop['origin_y'] = 0
 					bigscoop['origin_z'] = 0
@@ -347,18 +349,24 @@ def main():
 					ti = t.inverse()
 					bigscoop.transform(ti)
 					
-					sxB = bigscoop['nx']
-					syB = bigscoop['ny']
-					szB = bigscoop['nz']
+					#bigscoop.write_image( options.path + '/bigscoopsOriented.hdf', key)
+					
+					sxB = bigscoop['nx']/2
+					syB = bigscoop['ny']/2
+					szB = bigscoop['nz']/2
+					
+					print "\nCenter of bigs scoops is", sxB,syB,szB
 					
 					r = Region( (sxB*2 - box)/2 ,  (syB*2 - box)/2 ,  (szB*2 - box)/2, box,box,box)
 					scoop = bigscoop.get_clip(r)
+					
+					print "\nTherefore region for small scopp is", r
 					
 					print "\nClipping the extracted and oriented scoop back to the desired boxsize", box
 					
 					defaultmask = EMData( scoop['nx'], scoop['ny'],scoop['nz'])
 					defaultmask.to_one()
-					defaultmask.process_inplace('mask.sharp',{'outer_radius':-2})
+					defaultmask.process_inplace('mask.sharp',{'outer_radius':-1})
 					
 					scoop.mult(defaultmask)
 					scoop.process_inplace('normalize')
