@@ -953,7 +953,7 @@ class SubtomoSimTask(JSTask):
 			
 			#prj = image.process("misc.directional_sum",{"axis":"z"})
 			print "\nProjecting from",t,realalt
-				s
+				
 			prj = image.project("standard",t)
 			
 			if options.fillwedge and j > nslices:
