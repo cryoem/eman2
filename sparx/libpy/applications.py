@@ -7069,7 +7069,6 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 			mask3D = maskfile
 	else:
 		mask3D = model_circle(last_ring, nx, nx, nx)
-	ali3d_options.mask3D = mask3D
 
 	#  Read	template volume if provided
 	if templatevol:
@@ -11462,15 +11461,14 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 							EMUtil.write_hdf_attribute(stack, "xform.align2d", t, i)	
 					elif p[:16] == "xform.projection":
 						#set_params_proj(img, [0.0, 0.0, 0.0, 0.0, 0.0], p)
-						t = Transform({"type":"spider","phi":0.0,"theta":0.0,"psi":0.0})
-						t.set_trans(Vec2f(0.0, 0.0))
+						t = Transform({"type":"spider"})
 						if ext == "bdb":
 							DB.set_attr(i, "xform.projection", t)
 						elif ext == "hdf":
 							EMUtil.write_hdf_attribute(stack, "xform.projection", t, i)	
 					elif p[:13] == "xform.align3d":
 						#set_params3D(img, [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0, 1.0], p)
-						t = Transform({"type":"spider","phi":0.0,"theta":0.0,"psi":0.0,"tx":0.0,"ty":0.0,"tz":0.0,"mirror":0,"scale":1.0})
+						t = Transform({"type":"spider"})
 						if ext == "bdb":
 							DB.set_attr(i, "xform.align3d", t)
 						elif ext == "hdf":

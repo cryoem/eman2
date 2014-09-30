@@ -2546,15 +2546,24 @@ def do_volume(data, options, iter, mpi_comm):
 	if myid == 0:
 		from morphology import threshold
 		from filter     import filt_tanl, filt_btwl
-		from utilities  import model_circle, get_image
+		from utilities  import model_circle, get_im
+		import types
+		nx = vol.get_xsize()
 		if(options.mask3D == None):
-			nx = vol.get_xsize()
 			last_ring   = int(options.ou)
 			mask3D = model_circle(last_ring, nx, nx, nx)
 		elif(options.mask3D == "auto"):
 			from utilities import adaptive_mask
 			mask3D = adaptive_mask(vol)
-		else:						mask3D = get_image(options.mask3D)
+		else:
+			if( type(options.mask3D) == types.StringType ):  mask3D = get_im(options.mask3D)
+			else:  mask3D = (options.mask3D).copy()
+			nxm = mask3D.get_xsize()
+			if( nxm != nx ):
+				mask3D = resample(mask3D, float(nx)/float(nxm))
+				nxm = mask3D.get_xsize()
+				assert(nx == nxm)
+
 		stat = Util.infomask(vol, mask3D, False)
 		vol -= stat[0]
 		Util.mul_scalar(vol, 1.0/stat[1])

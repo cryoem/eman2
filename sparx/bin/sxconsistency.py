@@ -264,6 +264,7 @@ def main():
 	parser.add_option("--sym",       type="string",       default= "c1",    help="symmetry of the refined structure")
 	parser.add_option("--thresherr", type="float",        default=1.0,      help="Threshold for accpetable orientation errors (in pixels)")
 	parser.add_option("--ndigits",   type="int",          default=1,        help="Accuracy for checking whether parameters are identical")
+	parser.add_option("--chunk",     type="string",       default="",       help="Root of of four chunk files with indeces")
 	parser.add_option("--params",    type="string",       default="",       help="Root of of six parameter file names with refinement results")
 	(options, args) = parser.parse_args(arglist[1:])
 	global_def.BATCH = True
@@ -343,6 +344,7 @@ def main():
 		print "Proportion of the same orientations ",qt
 		write_text_file([qt], os.path.join(outdir,howmanythesame) )
 
+	#########     PHASE 3
 	elif options.phase == 3 and len(args) == 2:
 		outdir      = args[0]
 		outgrouparms= args[1]
@@ -363,7 +365,7 @@ def main():
 		chunks = {}
 		chunklengths = {}
 		for i in xrange(4):
-			chunks[chr(65+i)] = map(int,read_text_file(os.path.join(outdir,"chunk"+"%01d.txt"%i)))
+			chunks[chr(65+i)] = map(int,read_text_file(os.path.join(outdir,options.chunk+"%01d.txt"%i)))
 			chunklengths[chr(65+i)] = len(chunks[chr(65+i)])
 
 
@@ -453,6 +455,8 @@ def main():
 			print  "%4d   %12.3f    %12.0f "%(i,hi[0][i],hi[1][i])
 		#  Finished, store average orientation params and table of good images
 
+
+
 		#  store lists of good images for each group
 		#  blocks is indexed by first letter
 		good = [[] for i in xrange(4)]
@@ -468,15 +472,60 @@ def main():
 					#[chunks[q][k],pixer[q][k],deprt, params[pairs[i][0]][k],params[pairs[i][1]][k],params[lefts[i]][k],avgtrans[q][k]])
 			write_text_file( good[i], os.path.join(outdir,"newgood%01d.txt"%i) )
 			write_text_file( bad[i],  os.path.join(outdir,"newbad%01d.txt"%i) )
-		#  Write chunklengths
-		chunklengths = [len(good[i]) for i in xrange(4)]
-		write_text_file(chunklengths, os.path.join(outdir,"chunklengths.txt") )
+
+			#  write out parameters, for those in pairs write out average, for leftouts leave them as they were
+			#  These parameters refer to the original X files.
+			ll = 0
+			for m in xrange(6):
+				if params.has_key(q+chr(48+m)):
+					prmsgood = []
+					prmsbad  = []
+					try:
+						j = lefts.index(q+chr(48+m))
+						for k in xrange(chunklengths[q]):
+							if  perr[q][k]:
+								prmsgood.append(params[q+chr(48+m)][k])
+							else:
+								prmsbad.append(params[q+chr(48+m)][k])
+					except:
+						for k in xrange(chunklengths[q]):
+							if  perr[q][k]:
+								prmsgood.append(avgtrans[q][k])
+							else:
+								prmsbad.append(avgtrans[q][k])
+					write_text_row(prmsgood, os.path.join(outdir,"params-newgood%01d%01d.txt"%(i,ll)))
+					write_text_row(prmsbad, os.path.join(outdir, "params-newbad%01d%01d.txt"%(i,ll)))
+					ll += 1
+
+
+
+
 		#  Generate newlili files from newgood, these contain original numbering of the total single file
 		ll = 0
 		for i in xrange(3):
 			for j in xrange(i+1,4):
 				write_text_file( good[i] + good[j], os.path.join(outdir,"newlili%01d.txt"%ll) )
 				ll += 1
+
+		#  write out parameters, for those in pairs write out average, for leftouts leave them as they were
+		#  These parameters refer to the original X files.
+		for i in xrange(6):
+			prms = []
+			for q in blocks:
+				if params.has_key(q+chr(48+i)):
+					try:
+						j = lefts.index(q+chr(48+i))
+						prms += params[q+chr(48+i)]
+					except:
+						prms += avgtrans[q]
+			write_text_row(prms, os.path.join(outdir,outgrouparms+"%01d.txt"%i))
+
+
+		#  Write chunklengths
+		chunklengths = [len(good[i]) for i in xrange(4)]
+		write_text_file(chunklengths, os.path.join(outdir,"chunklengths.txt") )
+		"""
+		#  We do not use consecutive numbering anymore
 		#  Generate newx files from newgood, these contain consecutive (with gaps) numbering that allows to generate truncated X files from the previous X files
 		ll = 0
 		for i in xrange(3):
@@ -494,17 +543,7 @@ def main():
 				write_text_file( firstblock + secondblock, os.path.join(outdir,"goodX%01d.txt"%ll) )
 				ll += 1
 		del good,bad,firstblock,secondblock,perr
-		#  write out parameters, for those in pairs write out average, for leftouts leave them as they were
-		for i in xrange(6):
-			prms = []
-			for q in blocks:
-				if params.has_key(q+chr(48+i)):
-					try:
-						j = lefts.index(q+chr(48+i))
-						prms += params[q+chr(48+i)]
-					except:
-						prms += avgtrans[q]
-			write_text_row(prms, os.path.join(outdir,outgrouparms+"%01d.txt"%i))
+		"""
 
 		"""
 		0   1   2   3   4   5
@@ -590,10 +629,16 @@ def main():
 				#print  chr(65+jj),j,perr[j][0],[[params[m][j][i] for i in xrange(2)] for m in xrange(ll)]
 				if( perr[j][0] <= thresherr ):  rescued.append([newbad[j],j])
 				else:							rejects.append([newbad[j],j])
-			if( len(rescued) == 0 ):    write_text_row([-1,-1],  os.path.join(outdir,'rescued'+"%01d.txt"%jj))
-			else:                  		write_text_row(rescued,  os.path.join(outdir,'rescued'+"%01d.txt"%jj))
+			if( len(rescued) == 0 ):    write_text_row([-1,-1],  os.path.join(outdir,"rescued%01d.txt"%jj))
+			else:                  		write_text_row(rescued,  os.path.join(outdir,"rescued%01d.txt"%jj))
+			#  We also have to write params.
+			if( len(rescued) != 0 ):
+				for ii in xrange(ll):  write_text_row([params[ii][rescued[k][1]] for k in xrange(len(rescued))]  ,  os.path.join(outdir,"params-rescued%01d%01d.txt"%(jj,ii)))
 			if( len(rejects) == 0 ):    write_text_row([-1,-1],  os.path.join(outdir,'rejects'+"%01d.txt"%jj))
 			else:                  		write_text_row(rejects,  os.path.join(outdir,'rejects'+"%01d.txt"%jj))
+			if( len(rejects) != 0 ):
+				for ii in xrange(ll):  write_text_row([params[ii][rejects[k][1]] for k in xrange(len(rejects))]  ,  os.path.join(outdir,"params-rejects%01d%01d.txt"%(jj,ii)))
+
 			hi = hist_list([perr[j][0]  for j in xrange(nn)  ], 16)
 			print  "Pixel errors for BAD GROUP  ",chr(65+jj)
 			for ii in xrange(len(hi[0])):
