@@ -51,6 +51,7 @@ There are 3 mutually exclusive modes in this program:
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_argument("--refinemulti",action="store_true",help="Extracts particles based on the model_id header value in each class-average, normally produced by e2refinemulti",default=False)
+	parser.add_argument("--input_set",type=str,help="Normally the set used to create the class-averages is used as input. Use this with another version of the same set of particles, for example '__ctf_flip_proc' instead of '__ctf_flip' ", default=None)
 	parser.add_argument("--setname",type=str,help="Name of the stack to build", default=None)
 	parser.add_argument("--classlist",type=str,help="Filename of a text file containing a (comma or whitespace separated) list of class average numbers to operate on. ", default=None)
 	parser.add_argument("--orientedparticles",type=str,help="Filename of the set (.lst file) used when creating --orientcls file", default=None)
@@ -159,7 +160,9 @@ There are 3 mutually exclusive modes in this program:
 			except : continue
 
 		# find the existing set/stack containing the particle data used to make the averages
-		inset=hdr["class_ptcl_src"]		# theoretically this could be different for different class-averages, but in practice no program does that
+		if options.input_set==None : 
+			inset=hdr["class_ptcl_src"]		# theoretically this could be different for different class-averages, but in practice no program does that
+		else : inset=options.input_set
 
 		if inset.lower()[:4]=="bdb:" :
 			print "Sorry, this program only works with EMAN2.1+, and cannot deal with BDB style sets"
