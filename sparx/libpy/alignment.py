@@ -1973,34 +1973,33 @@ def align_new_test(image, refim, xrng=0, yrng=0):
 	
 	[angle, x_shft, y_shft, mirror, ccv] = get_inplane_angle(ccf_im, ccf_refim)
 	
-	image = rtshg(image, angle)
-	ccf1 = ccf(image,refim)
-# 	correlation coeff = ?
+	im1 = rtshg(image, angle)
+	ccf1 = ccf(im1,refim)
 	
-	nx=ccf1.get_xsize()//2+1
-	ny=ccf1.get_ysize()//2+1
+	im2 = rtshg(image, angle+180)
+	ccf2 = ccf(im2,refim)
 	
-	ccfw=Util.window(ccf1,nx,ny,1,-nx/2+1,-ny/2+1)
+	nx1=ccf1.get_xsize()//2+1
+	ny1=ccf1.get_ysize()//2+1
 	
-	res = peak_search(ccfw)
-	peak_val1 = res[0]
-	xpeak1    = res[1]
-	ypeak1    = res[2]
+	ccfw1=Util.window(ccf1,nx1,ny1,1,-nx1/2+1,-ny1/2+1)
 	
-	angle += 180
-	image = rtshg(image, angle)
-	ccf2 = ccf(image,refim)
-# 	correlation coeff = ?
-
-	nx=ccf2.get_xsize()//2+1
-	ny=ccf2.get_ysize()//2+1
-
-	ccfw=Util.window(ccf2,nx,ny,1,-nx/2+1,-ny/2+1)
+	nx2=ccf2.get_xsize()//2+1
+	ny2=ccf2.get_ysize()//2+1
 	
-	res = peak_search(ccfw)
-	peak_val2 = res[0]
-	xpeak2    = res[1]
-	ypeak2    = res[2]
+	ccfw2=Util.window(ccf2,nx2,ny2,1,-nx2/2+1,-ny2/2+1)
+	
+	res1 = peak_search(ccfw1)
+	peak_val1 = res1[0]
+	xpeak1    = res1[1]
+	ypeak1    = res1[2]
+	ccv1      = res1[4]
+	
+	res2 = peak_search(ccfw2)
+	peak_val2 = res2[0]
+	xpeak2    = res2[1]
+	ypeak2    = res2[2]
+	ccv2      = res2[4]
 
 # 	return max()
 # 	return ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny)
