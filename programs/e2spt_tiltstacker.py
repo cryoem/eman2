@@ -1,4 +1,4 @@
-#!/usr/bin/python2.7
+#!/usr/bin/env python																																																																																																																																																																																																																																																																																																																			#!/usr/bin/python2.7
 
 #====================
 #Author: Jesus Galaz-Montoya 2/20/2013 , Last update: September/09/2014
@@ -30,9 +30,12 @@
 
 
 from optparse import OptionParser
+
 from EMAN2 import *
 import sys
 import math
+
+print "imported stuff"
 
 def main():
 
@@ -61,24 +64,22 @@ def main():
 		already exists.""")
 
 	parser.add_argument("--stem2stack", type=str, default='', help="""String common to all 
-		the files to put into an .st (MRC) stack; for example, '.hdf' will process all .hdf files in the
-		current directory.
+		the files to put into an .st stack, which is in .MRC format; for example, --stem2stack=.hdf 
+		will process all .hdf files in the current directory.
 		If not specified, all valid EM imagefiles in the current directory will be put into 
-		an .st (MRC) stack.""")
+		an .st stack.""")
 	
 	parser.add_argument("--tltfile",type=str,default='',help="""".tlt file IF unstacking an
 		aligned tilt series with --unstack=<stackfile> or restacking a tiltseries with
 		--restack=<stackfile>""")
-	
-	#parser.add_argument("--output", type=str, help="""File name to store the stacked tiltseries, or common string to save unstacked individual images if --unstack is provided.""", default='')
-	
+		
 	parser.add_argument("--invert",action="store_true",default=False,help=""""This 
 		will multiply the pixel values by -1.""")
 	
 	parser.add_argument("--outmode", type=str, default="float", help="""All EMAN2 programs 
 		write images with 4-byte floating point values when possible by default. This allows 
-		specifying an alternate format when supported (float, int8, int16, int32, uint8, 
-		uint16, uint32). Values are rescaled to fill MIN-MAX range.""")
+		specifying an alternate format when supported: float, int8, int16, int32, uint8, 
+		uint16, uint32. Values are rescaled to fill MIN-MAX range.""")
 	
 	parser.add_argument("--bidirectional",action='store_true',default=False,help="""This will
 		assume the first image is at 0 degrees and will stack images from --lowerend through 0, 
@@ -90,14 +91,19 @@ def main():
 		This indicates that the tilt series goes from -tiltrange to +tiltrange, or
 		0 to -tiltrange, then +tiltstep to +tiltrange if --bidirectional is specified.""")
 	
-	parser.add_argument("--lowesttilt",type=float,default=0.0,help="Lowest tilt angle.")
-	parser.add_argument("--highesttilt",type=float,default=0.0,help="Highest tilt angle.")
+	parser.add_argument("--lowesttilt",type=float,default=0.0,help="""Lowest tilt angle.
+		If not supplied, it will be assumed to be -1* --tiltrange.""")
+	
+	parser.add_argument("--highesttilt",type=float,default=0.0,help="""Highest tilt angle.
+		If not supplied, it will be assumed to be 1* --tiltrange.""")
 	
 	parser.add_argument("--tiltrange",type=float,default=0.0,help="""If provided, this
 		will make --lowesttilt=-1*tiltrange and --highesttilt=tiltrage.
 		If the range is asymmetric, supply --lowesttilt and --highesttilt directly.""")
 	
-	parser.add_argument("--tiltstep",type=float,default=0.0,help="Step between tilts.")
+	parser.add_argument("--tiltstep",type=float,default=0.0,help="""Step between tilts.
+		Required if using --stem2stack.""")
+	
 	parser.add_argument("--clip",type=str,default='',help="""Resize the 2-D images in the
 		tilt series. If one number is provided, then x and y dimensions will be made the same.
 		To specify both dimensions, supply two numbers, --clip=x,y.""")
@@ -132,10 +138,6 @@ def main():
 		Recall that the FIRST image INDEX is 0. 
 		--include=1,5-7,10,12,15-19 will include images 1,5,6,7,10,12,15,16,17,18,19""")
 
-	
-	
-	#parser.add_argument("--stack",action='store_false',default=True,help="If on, projections will be in an hdf stack; otherwise, they'll be their own separate file. On by default. Supply --stack=None to turn off.")
-
 
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
 
@@ -160,17 +162,29 @@ def main():
 
 	options.path = os.getcwd() + '/' + options.path
 	
-	if options.tiltrange:
-		options.lowesttilt = -1 * options.lowesttilt
-		options.highesttilt = options.tiltrange
+	if options.stem2stack and options.tiltstep == 0.0:
+		print "ERROR: --tiltstep required when using --stem2stack"
+		sys.exit()
 	
+	if options.lowesttilt == 0.0 and options.tiltrange:
+		options.lowesttilt = -1 * options.tiltrange
+		
+	if options.highesttilt == 0.0 and options.tiltrange:
+		options.highesttilt = options.tiltrange
 
 	if options.unstack:
-		usntacker( options )
-
+		if options.tltfile:
+			usntacker( options )
+		else:
+			print "ERROR: --tltfile required when using --unstack"
+			sys.exit()
 
 	elif options.restack:
-		restacker( options )
+		if options.tltfile:
+			restacker( options )
+		else:
+			print "ERROR: --tltfile required when using --restack"
+			sys.exit()
 
 	else:
 		kk=0
@@ -313,6 +327,7 @@ def getangles( options ):
 	else:
 		#angles = [a for a in xrange( options.lowesttilt, options.highesttilt, options.tiltstep )]
 		
+		
 		print "There was no .tlt file so I'll generate the angles using lowesttilt=%f, highesttilt=%f, tiltstep=%f" % (options.lowesttilt, options.highesttilt, options.tiltstep)
 		generate = floatrange( options.lowesttilt, options.highesttilt, options.tiltstep )
 		angles=[ x for x in generate ]
@@ -353,18 +368,18 @@ def organizetilts( intilts, options ):
 		
 		writetlt( angles, options )
 		if options.bidirectional:
-			zeroangle = min( [ math.fabs(a) for a in angles] )
+			zeroangle = min( [ math.fabs(a) for a in angles] )		#Find the angle closest to 0 tilt, in the middle of the tiltseries
 			indexminangle = None
 			try:
-				indexminangle = angles.index( zeroangle )
+				indexminangle = angles.index( zeroangle )			#The middle angle (0 tilt) could have been positive
 				zeroangle = angles[ indexminangle ]
 			except:
-				indexminangle = angles.index( -1*zeroangle )
+				indexminangle = angles.index( -1*zeroangle )		#Or negative. Either way, we find its index in the list of angles
 				zeroangle = angles[ indexminangle ]
 			
 			print "\nzeroangle=%f, indexminangle=%d" %( zeroangle, indexminangle )
-			if options.negativetiltseries:
-				print "\nNegative tilt series is on"
+			if not options.negativetiltseries:
+				print "\nNegative tilt series is OFF. This is a POSITIVE tilt series"
 				firsthalf = angles[ indexminangle: len(angles) ]	#This goes from zero to highest tilt angle, that is, +tiltrange
 				#print "Firsthalf is", firsthalf
 				#print "because angles are", angles
@@ -372,10 +387,11 @@ def organizetilts( intilts, options ):
 				secondhalf.sort()									#We order this list to go from 0-tiltstep to the most negative angle, -tiltrange
 				secondhalf.reverse()
 			
-			else:
+			elif options.negativetiltseries:
+				print "T\nhis is a NEGATIVE tiltseries"
 				firsthalf = angles[ 0:indexminangle+1 ]				#This goes from the most negative angle to zero (INCLUDING it)
 				firsthalf.sort()									#We order this list to go from 0 to -tiltrange
-				firstalf.reverse()
+				firsthalf.reverse()
 				
 				secondhalf = angles[ indexminangle+1: len(angles) ]	#This goes from 0+tiltstep to the most positive angle, that is, +tiltrange
 			
@@ -537,24 +553,22 @@ def makeimglist( input, options ):
 
 
 def floatrange(start, stop, step):
-	#print "\nInside floatrange, start, stop and step are", start, stop, step
+	print "\nInside floatrange, start, stop and step are", start, stop, step
 	
 	r = start
+	kkk=0
 	while r <= stop:
 		yield r
-		#print "r is", r
+		print "r is", r
 		r += step
+		kkk+=1
+		
+		if kkk > 180:
+			print "ERROR: Something is wrong with your tiltrange, lowesttilt or highesttilt"
+			sys.exit()
+	
+	return
 
-
-#n = EMData( options.input )['nz']
-#for i in range(n):
-#	cmd = 'newstack ' + options.input + ' ' + options.path + '/tilt' + str(i).zfill( len( str(n)) )  + '.mrc --secs ' + str(i)
-#
-#	print "Cmd to extract tilt is", cmd		
-#	p = subprocess.Popen( cmd , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-#	text = p.communicate()	
-#	p.stdout.close()		
 
 if __name__ == "__main__":
-	print "\nCalling main"
 	main()
