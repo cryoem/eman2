@@ -1999,7 +1999,11 @@ def align_new_test(image, refim, xrng=0, yrng=0):
 	xpeak2    = res2[1]
 	ypeak2    = res2[2]
 
-# 	return max()
+# 	if peak_val1>peak_val2:
+# 		image = im1
+# 	else:
+# 		image = im2
+# 	
 # 	return ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny)
 
 def align2d_no_mirror(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rstep=1, mode = "F"):
