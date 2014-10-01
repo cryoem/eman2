@@ -2630,7 +2630,7 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 	center = ali3d_options.center
 	CTF    = ali3d_options.CTF
 	ref_a  = ali3d_options.ref_a
-	maskfile = ali3d_options.mask3D
+	#maskfile = ali3d_options.mask3D
 
 	if mpi_comm == None:
 		mpi_comm = MPI_COMM_WORLD
@@ -2753,6 +2753,7 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 
 
 	mpi_barrier(mpi_comm)
+	"""
 	if maskfile:
 		if type(maskfile) is types.StringType:
 			if myid == main_node:
@@ -2769,6 +2770,7 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 	else:
 		mask3D = model_circle(last_ring, nx, nx, nx)
 	ali3d_options.mask3D = mask3D
+	"""
 
 	if myid == main_node:
 		start_time = time()
