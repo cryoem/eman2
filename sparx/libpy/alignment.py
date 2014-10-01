@@ -1968,31 +1968,36 @@ def align_new_test(image, refim, xrng=0, yrng=0):
 	from utilities import *
 	from fundamentals import *
 	
-	scf_im    = scf(image)
-	ccf_refim = scf(refim)
+	scf_image = scf(image)
+	scf_refim = scf(refim)
 	# where is the mirror?
-	angle, x_shft, y_shft, mirror, ccv = usecorrectone(ccf_im, ccf_refim)
+	alpha, sxs, sys, mirror, peak = align2d(scf_image, scf_refim, mode="H")
 	
-	im1 = rot_shift2D(image, angle)
+	im1 = rot_shift2D(image, alpha)
+	im2 = rot_shift2D(image, alpha+180.0)
+	
 	ccf1 = ccf(im1,refim)
-	
-	im2 = rot_shift2D(image, angle+180.0)
 	ccf2 = ccf(im2,refim)
 
-	ccfw1=Util.window(ccf1,nx1,ny1,1,-nx1/2+1,-ny1/2+1)#wrong
+	nx=image.get_xsize()
+	ny=image.get_ysize()
 	
-	ccfw2=Util.window(ccf2,nx2,ny2,1,-nx2/2+1,-ny2/2+1)
+	ccfw1=Util.window(ccf1, nx//2, ny//2)
+	ccfw2=Util.window(ccf2, nx//2, ny//2)
 	
-	res1 = peak_search(ccfw1)#  number of peaks?
-	peak_val1 = res1[0]
-	xpeak1    = res1[1]
-	ypeak1    = res1[2]
-	
+	res1 = peak_search(ccfw1)#  default number of peaks = 1
 	res2 = peak_search(ccfw2)
+	
+	peak_val1 = res1[0]
 	peak_val2 = res2[0]
-	xpeak2    = res2[1]
-	ypeak2    = res2[2]
-	return corre,c2,c5
+	
+	if peak_val1 < peak_val2:
+		alpha += 180.0
+		peak = peak_val2
+	else:
+		peak = peak_val1
+
+	return alpha, sxs, sys, mirror, peak
 
 def align2d_no_mirror(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rstep=1, mode = "F"):
 	"""  Determine shift and rotation between image and reference image
