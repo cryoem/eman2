@@ -1993,13 +1993,11 @@ def align_new_test(image, refim, xrng=0, yrng=0):
 	peak_val1 = res1[0]
 	xpeak1    = res1[1]
 	ypeak1    = res1[2]
-	ccv1      = res1[4]
 	
 	res2 = peak_search(ccfw2)
 	peak_val2 = res2[0]
 	xpeak2    = res2[1]
 	ypeak2    = res2[2]
-	ccv2      = res2[4]
 
 # 	return max()
 # 	return ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny)
