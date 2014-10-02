@@ -141,8 +141,8 @@ mpirun -np 12 sxali3d.py bdb:data outdirshc/refvol2.hdf outmatch --CTF --maxit=1
 #                                     FIXME ^^^^^^^^^^^
 sxheader.py bdb:data --params=xform.projection --export=outmatch/matchparams.txt    || exit
 #mpirun -np 12 sxali3d.py bdb:data poutdirshc —shc --CTF  --ou=28 --xr=2.0 --delta=2.0 --maxit=100  --function="[..,demo_user_funcs,ali3d_reference3]" || exit
-mpirun -np 12 sxali3d.py bdb:data outmatch/vol0001.hdf poutdirshc --CTF --ou=28 --xr=2.0 --delta=2.0 --maxit=100 --function="[..,demo_user_funcs,ali3d_reference3]" --MPI
-#                           CHECK ^^^^^^^^^^^^^^^^^^^^
+mpirun -np 12 sxali3d.py bdb:data outdirshc/refvol2.hdf poutdirshc --CTF --ou=28 --xr=2.0 --delta=2.0 --maxit=100 --function="[..,demo_user_funcs,ali3d_reference3]" --MPI
+#                           CHECK ^^^^^^^^^^^^^^^^^^^^^
 
 
 # Refinement of the 3D structure using high accuracy alignment
