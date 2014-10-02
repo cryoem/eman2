@@ -2040,7 +2040,8 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, boxsize=256, minse
 				if( os.path.exists(hcoordsname) ):
 					micname = os.path.join(v1, v2)
 					print_msg("\n\nPreparing to window helices from micrograph %s with box coordinate file %s\n\n"%(micname, hcoordsname))
-					windowmic(outstacknameall, coutdir, micname, hcoordsname, pixel_size, boxsize, ptcl_dst, minseg, inv_contrast, new_pixel_size, rmaxp, freq, do_rotation, do_gridding, importctf, cterr)
+					#windowmic(outstacknameall, coutdir, micname, hcoordsname, pixel_size, boxsize, ptcl_dst, minseg, inv_contrast, new_pixel_size, rmaxp, freq, do_rotation, do_gridding, importctf, cterr)
+					windowmic(outstacknameall, v1, coutdir, micname, hcoordsname, pixel_size, boxsize, ptcl_dst, minseg, inv_contrast, new_pixel_size, rmaxp, freq, do_rotation, do_gridding, importctf, cterr)  ##changed by @ming 
 	# If not debug mode, then remove all output directories 
 	if debug == 0:
 		from subprocess import call
