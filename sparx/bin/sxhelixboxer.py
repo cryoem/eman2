@@ -2040,8 +2040,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, boxsize=256, minse
 				if( os.path.exists(hcoordsname) ):
 					micname = os.path.join(v1, v2)
 					print_msg("\n\nPreparing to window helices from micrograph %s with box coordinate file %s\n\n"%(micname, hcoordsname))
-					#windowmic(outstacknameall, coutdir, micname, hcoordsname, pixel_size, boxsize, ptcl_dst, minseg, inv_contrast, new_pixel_size, rmaxp, freq, do_rotation, do_gridding, importctf, cterr)
-					windowmic(outstacknameall, v1, coutdir, micname, hcoordsname, pixel_size, boxsize, ptcl_dst, minseg, inv_contrast, new_pixel_size, rmaxp, freq, do_rotation, do_gridding, importctf, cterr)  ## @ming
+					windowmic(outstacknameall, coutdir, micname, hcoordsname, pixel_size, boxsize, ptcl_dst, minseg, inv_contrast, new_pixel_size, rmaxp, freq, do_rotation, do_gridding, importctf, cterr)
 	# If not debug mode, then remove all output directories 
 	if debug == 0:
 		from subprocess import call
@@ -2195,7 +2194,6 @@ def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size
 		print "Number of rows in helix coordinates file %s should be even!"%hcoordsname
 		return
 	nhelices = len(a)/2
-	##print "nhelices=%d i=%d"%(nhelices,i)       ## for checking @ming
 	#try:      iseg = EMUtil.get_image_count(outstacknameall)
 	#except:   iseg = 0
 	if importctf:
@@ -2206,7 +2204,6 @@ def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size
 	for coords in helices_dict:                                   ## added by@ming
 		helix = helices_dict[coords]                              ## added by@ming
 		ctfs.dfang -= helix["astig_jiao"]          ## added by@ming
-		#print "ctf.defocus %f ctf.cs %f ctf.dfang %f "%(ctfs.defocus,ctfs.cs,ctfs.dfang)
 		ptcl_images  = imgs_0+"_%i.hdf"%h                         # This is what sxhelixboxer outputs, only 'hdf' format is handled.
 		otcl_images  = "bdb:%s/QT"%outdir+ ptcl_images[:-4]
 		ptcl_images  = os.path.join(outdir,ptcl_images)
