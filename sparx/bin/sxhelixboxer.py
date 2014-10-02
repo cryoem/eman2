@@ -228,12 +228,6 @@ def get_helix_from_coords(micrograph, x1, y1, x2, y2, width):
 	helix["xform.align2d"]     = Transform()
 	helix["xform.projection"]  = Transform()   
 	helix["astig_jiao"]        = rot_angle                ##  add the rotation angle to astigmatism angle @ming
-	#helix["lvex_x"]=l_vect[0]/length
-	#helix["lvex_y"]=l_vect[1]/length
-	#helix["x1"]=x1
-	#helix["y1"]=y1
-	#helix["x2"]=x2
-	#helix["y2"]=y2
 	return helix
 
 def get_helix_rotation_angle(x1, y1, x2, y2, width):
@@ -245,12 +239,9 @@ def get_helix_rotation_angle(x1, y1, x2, y2, width):
 	#Rotate so that the length is parallel to the y-axis
 	#Angle between l_uvect and y-axis: l_uvect (dot) j_hat = cos (rot_angle)
 	rot_angle = degrees(acos( l_uvect[1]))       #180/pi*acos( l_uvect[1] )                  ## positive angle for counterclockwise rotation @ming
-	print "rotang before change the sign = %f"%rot_angle
- 	#Whether we rotate clockwise or counterclockwise depends on the sign of l_uvect[0] (the x-component)
+	#Whether we rotate clockwise or counterclockwise depends on the sign of l_uvect[0] (the x-component)
 	if l_uvect[0] < 0:
 		rot_angle *= -1 #rotate the box clockwise
-	#rot_angle = (rot_angle+360.0)%180                            ##@ming
-	print "rotang = %f"%rot_angle
 	return rot_angle
 	
 def get_particle_centroids(helix_coords, px_overlap, px_length, px_width, is_rotated = False):
@@ -2187,12 +2178,12 @@ def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size
 	helices_dict = win_get_helices_dict(tmpfile, boxsize)                ##@ming
 
     ## set a tag to save or unsave filaments  @ming 
-	i = 0
-	for coords in helices_dict:
-		helix = helices_dict[coords]
-		save_helix(helix, helix_filepath, i)
-		i+=1
-	print "i=%d"%i	
+	#i = 0
+	#for coords in helices_dict:
+	#	helix = helices_dict[coords]
+	#	save_helix(helix, helix_filepath, i)
+	#	i+=1
+		
 	db_save_particle_coords(tmpfile, fptcl_coords, ptcl_dst, boxsize, boxsize, do_rotation)
 	db_save_particles(tmpfile, fimgs_0, ptcl_dst, boxsize, boxsize, do_rotation, True, do_gridding, "multiple", do_filt = True, filt_freq = freq)
 	os.remove(tmpfile)
