@@ -119,7 +119,6 @@ def main():
 	
 	# invert meaning of gridding
 	options.gridding = not options.gridding
-
 	# Window filaments 
 	if options.window:
 		if len(args) < 1:
@@ -216,7 +215,7 @@ def get_helix_from_coords(micrograph, x1, y1, x2, y2, width):
 	@param width: the width in pixels of the rectangle
 	@return: the rectangular EMData helix specified by the coordinates and width 
 	"""
-	rot_angle = get_helix_rotation_angle(x1, y1, x2, y2, width)
+	rot_angle = get_helix_rotation_angle(x1, y1, x2, y2, width)     ## rot_angle   @ming
 	centroid = ( (x1+x2)/2.0,(y1+y2)/2.0 )
 	l_vect = (x2-x1, y2-y1)
 	length = sqrt(l_vect[0]**2+l_vect[1]**2)
@@ -227,7 +226,14 @@ def get_helix_from_coords(micrograph, x1, y1, x2, y2, width):
 	helix = micrograph.get_rotated_clip( tr, helix_dimensions )
 	helix["ptcl_helix_coords"] = (x1, y1, x2, y2, width)
 	helix["xform.align2d"]     = Transform()
-	helix["xform.projection"]  = Transform()
+	helix["xform.projection"]  = Transform()   
+	helix["astig_jiao"]        = rot_angle                ##  add the rotation angle to astigmatism angle @ming
+	#helix["lvex_x"]=l_vect[0]/length
+	#helix["lvex_y"]=l_vect[1]/length
+	#helix["x1"]=x1
+	#helix["y1"]=y1
+	#helix["x2"]=x2
+	#helix["y2"]=y2
 	return helix
 
 def get_helix_rotation_angle(x1, y1, x2, y2, width):
@@ -238,10 +244,13 @@ def get_helix_rotation_angle(x1, y1, x2, y2, width):
 	
 	#Rotate so that the length is parallel to the y-axis
 	#Angle between l_uvect and y-axis: l_uvect (dot) j_hat = cos (rot_angle)
-	rot_angle = 180/pi*acos( l_uvect[1] )
-	#Whether we rotate clockwise or counterclockwise depends on the sign of l_uvect[0] (the x-component)
+	rot_angle = degrees(acos( l_uvect[1]))       #180/pi*acos( l_uvect[1] )                  ## positive angle for counterclockwise rotation @ming
+	print "rotang before change the sign = %f"%rot_angle
+ 	#Whether we rotate clockwise or counterclockwise depends on the sign of l_uvect[0] (the x-component)
 	if l_uvect[0] < 0:
 		rot_angle *= -1 #rotate the box clockwise
+	#rot_angle = (rot_angle+360.0)%180                            ##@ming
+	print "rotang = %f"%rot_angle
 	return rot_angle
 	
 def get_particle_centroids(helix_coords, px_overlap, px_length, px_width, is_rotated = False):
@@ -597,6 +606,34 @@ def db_get_helices_dict(micrograph_filepath, helix_width = None):
 		helices_dict[tuple(coords)] = helix
 	return helices_dict
 
+def win_get_helices_dict(micrograph_filepath, helix_width = None):     #new function ##@ming
+	"""
+	gets a dictionary of helices
+	@param micrograph_filepath: the path to the image file for the micrograph
+	@param helix_width: if specified, it replaces the widths in the database as the width for each helix
+	@return: a dictionary formed like {(x1, y1, x2, y2, width): particle_EMData_object, ...}
+	"""
+	micrograph = EMData(micrograph_filepath)
+	db = db_open_dict(SXHELIXBOXER_DB + "helixboxes")
+	box_coords_list = db[micrograph_filepath]
+	if not box_coords_list:
+		return {}
+	helices_dict = {}
+	#if helix_width:
+	#	coords = [tuple( list(coords[:4]) + [helix_width] ) for coords in box_coords_list]
+	for coords in box_coords_list:
+		if helix_width:
+			#coords = [tuple( list(coords[:4]) + [helix_width] )]
+			coords=list(coords)
+			coords[4]=helix_width
+			coords=tuple(coords)
+		#	coords[4] = helix_width
+		helix = get_helix_from_coords(micrograph, *coords)
+		helix["ptcl_source_image"] = micrograph_filepath
+		helices_dict[tuple(coords)] = helix
+	return helices_dict
+	
+	
 def db_load_helix_coords(micrograph_filepath, coords_filepath, keep_current_boxes = True, specified_width=None):
 	"""
 	@param micrograph_filepath: the path to the image file for the micrograph
@@ -689,7 +726,8 @@ def db_save_particles(micrograph_filepath, ptcl_filepath = None, px_dst = None, 
 		else:
 			helix_particles = get_unrotated_particles(micrograph, coords, px_dst, px_length, px_width,mic_name = micrograph_filename)
 		for ii in xrange(len(helix_particles)):
-			(helix_particles[ii]).set_attr("filament", micrograph_filename+"%04d"%nhelix)
+			(helix_particles[ii]).set_attr("filament", micrograph_filename+"%04d"%nhelix)	
+			#(helix_particles[ii]).set_attr("astig_jiao", helix["astig_jiao"])	## @ming   works		
 		nhelix = nhelix + 1
 		all_particles.append(helix_particles)
 
@@ -1449,7 +1487,6 @@ if ENABLE_GUI:
 			self.main_image.shapes = EMShapeDict()
 			self.main_image.shapechange=1
 			get_application().show_specific(self.main_image)
-			
 			self.helices_dict = db_get_helices_dict(self.micrograph_filepath) #Will be like {(x1,y1,x2,y2,width): emdata}
 			
 			if self.get_db_item("helixboxes") == None:
@@ -2012,8 +2049,8 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, boxsize=256, minse
 				if( os.path.exists(hcoordsname) ):
 					micname = os.path.join(v1, v2)
 					print_msg("\n\nPreparing to window helices from micrograph %s with box coordinate file %s\n\n"%(micname, hcoordsname))
-					windowmic(outstacknameall, coutdir, micname, hcoordsname, pixel_size, boxsize, ptcl_dst, minseg, inv_contrast, new_pixel_size, rmaxp, freq, do_rotation, do_gridding, importctf, cterr)
-
+					#windowmic(outstacknameall, coutdir, micname, hcoordsname, pixel_size, boxsize, ptcl_dst, minseg, inv_contrast, new_pixel_size, rmaxp, freq, do_rotation, do_gridding, importctf, cterr)
+					windowmic(outstacknameall, v1, coutdir, micname, hcoordsname, pixel_size, boxsize, ptcl_dst, minseg, inv_contrast, new_pixel_size, rmaxp, freq, do_rotation, do_gridding, importctf, cterr)  ## @ming
 	# If not debug mode, then remove all output directories 
 	if debug == 0:
 		from subprocess import call
@@ -2022,7 +2059,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, boxsize=256, minse
 			print_msg("cmd: %s"%cmd)
 			call(cmd, shell=True)
 
-def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize, ptcl_dst, minseg, inv_contrast, new_pixel_size, rmaxp, freq, do_rotation, do_gridding, importctf, cterr):
+def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size, boxsize, ptcl_dst, minseg, inv_contrast, new_pixel_size, rmaxp, freq, do_rotation, do_gridding, importctf, cterr):
 	'''
 	
 	INPUT
@@ -2088,8 +2125,8 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 			print_msg('Defocus error %f exceeds the threshold. Micrograph %s rejected.\n'%(ctfs[8]/ctfs[0], filename))
 			return
 		if(ctfs[10] > cterr[1] ):
-			ctfs[6] = 0.0
-			ctfs[7] = 0.0
+			ctfs[6] = 0.0      ##astigmatism amplitude     comment by@ming
+			ctfs[7] = 0.0      ##astigmatism angle         comment by@ming
 
 	dummy = EMData()
 	dummy.read_image(micname, 0, True)
@@ -2139,7 +2176,23 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 
 	# Set box coordinates in sxhelixboxer database
 	db_load_helix_coords(tmpfile, hcoordsname, False, boxsize)
+	
+	#db_save_helices(tmpfile, options.helix_images, boxsize)            ##@ming
+	micrograph_filename = os.path.join(micpath,'%s.hdf'%filename)                     ##@ming
+	print "mic file name=%s"%micrograph_filename
+	print "mic file path=%s"%micpath
+	micrograph_name = os.path.splitext( micrograph_filename )[0]        ##@ming 
+	##if not helix_filepath:                                             ##@ming
+	helix_filepath = "%s_helix.hdf" % ( os.path.join(micpath, filename) )   ##@ming
+	helices_dict = win_get_helices_dict(tmpfile, boxsize)                ##@ming
 
+    ## set a tag to save or unsave filaments  @ming 
+	i = 0
+	for coords in helices_dict:
+		helix = helices_dict[coords]
+		save_helix(helix, helix_filepath, i)
+		i+=1
+	print "i=%d"%i	
 	db_save_particle_coords(tmpfile, fptcl_coords, ptcl_dst, boxsize, boxsize, do_rotation)
 	db_save_particles(tmpfile, fimgs_0, ptcl_dst, boxsize, boxsize, do_rotation, True, do_gridding, "multiple", do_filt = True, filt_freq = freq)
 	os.remove(tmpfile)
@@ -2151,13 +2204,18 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 		print "Number of rows in helix coordinates file %s should be even!"%hcoordsname
 		return
 	nhelices = len(a)/2
-
+	##print "nhelices=%d i=%d"%(nhelices,i)       ## for checking @ming
 	#try:      iseg = EMUtil.get_image_count(outstacknameall)
 	#except:   iseg = 0
 	if importctf:
 		from utilities import generate_ctf
 		ctfs = generate_ctf(ctfs)
-	for h in xrange(nhelices):
+	#for h in xrange(nhelices):
+	h=0                                                           ## added by@ming
+	for coords in helices_dict:                                   ## added by@ming
+		helix = helices_dict[coords]                              ## added by@ming
+		ctfs.dfang -= helix["astig_jiao"]          ## added by@ming
+		#print "ctf.defocus %f ctf.cs %f ctf.dfang %f "%(ctfs.defocus,ctfs.cs,ctfs.dfang)
 		ptcl_images  = imgs_0+"_%i.hdf"%h                         # This is what sxhelixboxer outputs, only 'hdf' format is handled.
 		otcl_images  = "bdb:%s/QT"%outdir+ ptcl_images[:-4]
 		ptcl_images  = os.path.join(outdir,ptcl_images)
@@ -2175,10 +2233,11 @@ def windowmic(outstacknameall, outdir, micname, hcoordsname, pixel_size, boxsize
 					prj -= stat[0]
 					if importctf:
 						prj.set_attr("ctf",ctfs)
+						#prj.set_attr("astig_jiao",ctfs.dfang)     ##@ming
 						prj.set_attr("ctf_applied", 0)
 					prj.write_image(otcl_images, j)
 					#prj.write_image(outstacknameall, iseg)
 					#iseg += 1
-
+		h+=1			
 if __name__ == '__main__':
 	main()
