@@ -4069,6 +4069,7 @@ EMData *SubtractOptProcessor::process(const EMData * const image)
 		
 	if (!return_fft) {
 		EMData *ret=imf->do_ift();
+		delete imf;
 		if (return_radial) ret->set_attr("filter_curve",radf);
 		if (return_presigma) {
 			ret->set_attr("sigma_presub",oldsig);
