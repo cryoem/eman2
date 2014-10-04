@@ -1965,37 +1965,35 @@ def align2d(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rst
 	return ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny)
 
 def align_new_test(image, refim, xrng=0, yrng=0):
-	from utilities import *
-	from fundamentals import *
-	
-	scf_image = scf(image)
-	scf_refim = scf(refim)
-	# where is the mirror?
-	alpha, sxs, sys, mirror, peak = align2d(scf_image, scf_refim, mode="H")
-	
-	im1 = rot_shift2D(image, alpha)
-	im2 = rot_shift2D(image, alpha+180.0)
-	
-	ccf1 = ccf(im1,refim)
-	ccf2 = ccf(im2,refim)
+	from fundamentals import scf, rot_shift2D, ccf
+	from utilities import peak_search
+	nx = image.get_xsize()
+	ou = nx//2-1
 
-	nx=image.get_xsize()
-	ny=image.get_ysize()
+	alpha, sxs, sys, mirror, peak = align2d(scf(image), scf(refim), last_ring=ou, mode="H")
 	
-	ccfw1=Util.window(ccf1, nx//2, ny//2)
-	ccfw2=Util.window(ccf2, nx//2, ny//2)
+	nrx = 2*(xrng+1)+1
+	nry = 2*(yrng+1)+1
+
+	ccf1 = Util.window(ccf(rot_shift2D(image, alpha, 0.0, 0.0, mirror),refim),nrx,nry)
+	p1 = peak_search(ccf1)
 	
-	res1 = peak_search(ccfw1)#  default number of peaks = 1
-	res2 = peak_search(ccfw2)
+	ccf2 = Util.window(ccf(rot_shift2D(image, alpha+180.0, 0.0, 0.0, mirror),refim),nrx,nry)
+	p2 = peak_search(ccf2)
+
 	
-	peak_val1 = res1[0]
-	peak_val2 = res2[0]
+	peak_val1 = p1[0][0]
+	peak_val2 = p2[0][0]
 	
-	if peak_val1 < peak_val2:
-		alpha += 180.0
-		peak = peak_val2
-	else:
+	if peak_val1 > peak_val2:
+		sxs = -p1[0][4]
+		sys = -p1[0][5]
 		peak = peak_val1
+	else:
+		alpha += 180.0
+		sxs = -p2[0][4]
+		sys = -p2[0][5]
+		peak = peak_val2
 
 	return alpha, sxs, sys, mirror, peak
 
