@@ -200,7 +200,7 @@ def main():
 		for fname in os.listdir(options.path):
 			if "sinogram_" in fname:
 				os.remove( fname )
-			if "recon_" in fname:
+			if "slice_" in fname:
 				shutil.rmtree( fname )
 	
 	E2end(logger)
