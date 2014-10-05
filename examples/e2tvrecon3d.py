@@ -184,7 +184,7 @@ def main():
 	i = 1
 	np_recons=[]
 	for pname in os.listdir('.'):
-		if "2Drecon_" in pname:
+		if "slice_" in pname:
 			for fname in os.listdir(pname):
 				if twodpath in fname:
 					recon = EMData( pname + "/" + fname, 0 )
