@@ -40,7 +40,6 @@ import copy
 import numpy as np
 from scipy import sparse
 from scipy import ndimage
-import subprocess
 import shutil
 from joblib import Parallel, delayed
 import multiprocessing
@@ -313,7 +312,7 @@ def twod_recon(sinogram, y, beta, subpix, projection_operator, tiltangles, nslic
 	# Store reconstruction in instance outfile directory
 	cwd = os.getcwd()
 	outpath = cwd + "/" + twodpath
-	from_numpy( recon[-1] ).write_image( outpath, y )
+	from_numpy( recon[-1] ).write_image( outpath, 0 )
 	return
 
 
