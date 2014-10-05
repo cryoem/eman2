@@ -42,6 +42,8 @@ from scipy import sparse
 from scipy import ndimage
 import subprocess
 import shutil
+from joblib import Parallel, delayed
+import multiprocessing
 
 
 def get_usage():
@@ -73,12 +75,17 @@ def main():
 	parser.add_argument("--beta", default=1.0, type=float, help="Specify the total-variation penalization/regularization weight parameter 'beta'. The default is 5.0.")
 	parser.add_argument("--subpix", default=2, type=int, help="Specify the number of linear subdivisions used to compute the projection of one image pixel onto a detector pixel.")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	parser.add_argument("--parallel", action="store_true", default=False, help="Run all 2D reconstructions in parallel. This will become threaded parallel processing at some point.")
+	parser.add_argument("--parallel", action="store_true", default=False, help="If specified, reconstruction computations will be performed in parallel.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID", default=-1)
 	(options, args) = parser.parse_args()
 	
-	if options.tiltseries: 
-		nslices = EMUtil.get_image_count( options.tiltseries )
+	if options.tiltseries:
+		hdr=EMData( options.tiltseries, 0 , True)
+		#nslices = EMUtil.get_image_count( options.tiltseries )
+		apix=hdr['apix_x']
+		xsize=hdr['nx']
+		ysize=hdr['ny']
+		nslices=hdr['nz']
 	else: 
 		print "You must specficy --tiltseries"
 		exit(1)
@@ -112,10 +119,12 @@ def main():
 		outfilename = "threed.hdf"
 	
 	if options.parallel:
-		options.parallel = True
+		num_cores = multiprocessing.cpu_count()
+		if options.verbose > 1:
+			print "Parallel processing across %i cores"%(num_cores)
 	
 	logger=E2init(sys.argv,options.ppid)
-	if options.verbose > 1: print "e2tvrecon.py"
+	if options.verbose > 1: print "e2tvrecon3d.py"
 	
 	# Create new output directory for this instance
 	if options.verbose > 2: print "Generating instance directory..."
@@ -136,11 +145,7 @@ def main():
 	linkfrom = pathname + "/" + filename
 	linkto = options.path + "/" + filename
 	os.symlink( linkfrom, linkto )
-	
-	hdr = EMData( options.tiltseries, 0 , True)
-	xsize = hdr['nx']
-	ysize = hdr['ny']
-	
+
 	# Need to generate projection operator here. 
 	# In the current scheme, it must be stored as a file,
 	# but this may be an efficient storage technique 
@@ -148,7 +153,10 @@ def main():
 	
 	# Generate sinograms
 	if options.verbose > 2: print "Generating %i tiltstacks..."%(ysize)
-	sinograms = gen_sinograms(options, xsize, ysize)
+	if options.parallel:
+		Parallel( n_jobs = num_cores )( delayed( make_sinogram )( options, y, ysize, xsize, nslices ) for y in range( ysize ))
+	else:
+		gen_sinograms(options, xsize, ysize)
 	
 	if options.verbose > 1:
 		print "Performing 2D Reconstruction of All Generated Sinograms"
@@ -170,29 +178,30 @@ def main():
 				reconpath = "slice_00" + str(i)
 			else:
 				reconpath = "slice_000" + str(i)
-			## PARALLELIZED
-			if options.parallel:
+			if not options.parallel:
 				p = subprocess.Popen("e2tvrecon2d.py --tiltseries %s --tlt %s --path %s --output %s --beta %s -v %s --subpix %s"%(inputpath, tlt, reconpath, twodpath, inputbeta, verbosity, str(subpix)), shell=True)
-			## UNPARALLELIZED
 			else:
 				p = subprocess.Popen("e2tvrecon2d.py --tiltseries %s --tlt %s --path %s --output %s --beta %s -v %s --subpix %s"%(inputpath, tlt, reconpath, twodpath, inputbeta, verbosity, str(subpix)), shell=True)
 				p_status = p.wait()
 			i += 1
-	if options.parallel:
+	if not options.parallel:
 		p_status = p.wait()
 	
-	i = 1
 	np_recons=[]
-	for pname in os.listdir('.'):
+	for pname in os.listdir( '.' ):
 		if "slice_" in pname:
-			for fname in os.listdir(pname):
-				if twodpath in fname:
+			for fname in os.listdir( pname ):
+				if "twod" in fname:
 					recon = EMData( pname + "/" + fname, 0 )
 					np_recon = recon.numpy().copy()
 					np_recons.append(np_recon)
-					i += 1
 	reconstack = np.dstack( np_recons )
 	from_numpy(reconstack).write_image( outfilename )
+	
+	recon_hdr=EMData( outfilename, 0 , True)
+	recon_hdr['apix_x']=apix
+	recon_hdr['apix_y']=apix
+	recon_hdr['apix_z']=apix
 	
 	if options.noclean != True:
 		if options.verbose > 1: 
@@ -208,7 +217,27 @@ def main():
 	return
 
 
-# SINOGRAM GENERATION
+def make_sinogram( options, y, xlen, ylen, num_imgs ):
+	"""
+	Generates one 2D sinogram for each pixel along the y axis of a tiltseries.
+	Returns a list whose enteies correspond to all of the sinograms generated.
+	"""
+	r = Region( 0, y, xlen, 1 )
+	for imgnum in range( num_imgs ):
+		prj = EMData( options.tiltseries, imgnum, False, r )
+		if y >= 1000:
+			prj.write_image(options.path + "/sinogram_"+str(y)+".hdf", imgnum)
+		elif y >= 100:
+			prj.write_image(options.path + "/sinogram_0"+str(y)+".hdf", imgnum)
+		elif y >= 10:
+			prj.write_image(options.path + "/sinogram_00"+str(y)+".hdf", imgnum)
+		else:
+			prj.write_image(options.path + "/sinogram_000"+str(y)+".hdf", imgnum)
+	if options.verbose > 2:
+		print "Generated sinogram %i of %i" %( y+1, ylen )
+	return
+
+
 def gen_sinograms( options, xlen, ylen ):
 	"""
 	Generates one 2D sinogram for each pixel along the y axis of a tiltseries.
