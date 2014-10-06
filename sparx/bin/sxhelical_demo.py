@@ -278,7 +278,7 @@ def generate_helimic(refvol, outdir, pixel, CTF=False, Cs=2.0,voltage = 200.0, a
 			#ctf = EMAN2Ctf()
 			#ctf.from_dict( {"defocus":defocus, "cs":Cs, "voltage":voltage, "apix":pixel, "ampcont":ampcont, "bfactor":0.0} )
 			from utilities import generate_ctf
-			ctf = generate_ctf([defocus,2,200,1.84,0,0.1,defocus*0.2,80])   ##@ming   the range of astigmatism amplitude is between 10 percent and 22 percent. 20 percent is a good choice.
+			ctf = generate_ctf([defocus,2,200,1.84,0.0,ampcont,defocus*0.2,80])   ##@ming   the range of astigmatism amplitude is between 10 percent and 22 percent. 20 percent is a good choice.
 		i = idef - 4
 		for k in xrange(1):
 			psi  = 90 + 10*i			
