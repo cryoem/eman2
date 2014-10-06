@@ -6999,8 +6999,7 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 	mask2D  = model_circle(last_ring, onx, onx)
 	if(shrinkage < 1.0):
 		last_ring  = int(last_ring*shrinkage)
-		#ali3d_options.ou = last_ring
-		#ali3d_options.ir = first_ring
+		ali3d_options.ou = last_ring
 
 
 	dataim = [None]*nima
@@ -7256,6 +7255,9 @@ def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0,
 				from pixel_error import max_3D_pixel_error
 				pixer[imn] = max_3D_pixel_error(t1, t2, last_ring)
 				#set_params_proj(dataim[imn], optm_params[0])
+				if( myid == main_node and imn%4 == 0):
+					log.add( "Time to process %6d particles : %d\n" % (imn, time()-start_time) )
+					start_time = time()
 			if( myid == main_node ):
 				log.add( "Time to process %6d particles : %d\n" % (image_end_in_chunk, time()-start_time) )
 				start_time = time()
