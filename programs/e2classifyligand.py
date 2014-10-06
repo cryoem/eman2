@@ -327,7 +327,7 @@ ligand/no-ligand contrast in individual images:
 					write_particle(args[0],"_ref1"+options.postfix,i)		# if the particle was more similar to ref1
 					counts[0]+=1
 				else :
-					write_particle(args[0],"_ref2"+options.postfix,i)						# if the particle was more similar to ref2
+					write_particle(args[0],"_ref2"+options.postfix,i)		# if the particle was more similar to ref2
 					counts[1]+=1
 		#if options.maskfile:
 			#for i in statall:
@@ -345,7 +345,7 @@ ligand/no-ligand contrast in individual images:
 
 # silly hack
 glob_inls=None
-glob_outls=None
+glob_outls={}
 
 def write_particle(source,postfix,n):
 	"""Writes the output file correctly regardless of initial file type. For databases it makes virtual stacks."""
@@ -354,10 +354,12 @@ def write_particle(source,postfix,n):
 		
 		if glob_inls==None:
 			glob_inls=LSXFile(source)
-			glob_outls=LSXFile(source[:-4]+postfix+".lst")
+			
+		if not glob_outls.has_key(postfix):
+			glob_outls[postfix]=LSXFile(source[:-4]+postfix+".lst")
 		
 		ent=glob_inls.read(n)
-		glob_outls.write(-1,ent[0],ent[1],ent[2])
+		glob_outls[postfix].write(-1,ent[0],ent[1],ent[2])
 	else:
 		im=EMData(source,n)
 		im.write_image(source[:-4]+postfix+source[-4:],-1)
