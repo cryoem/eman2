@@ -172,7 +172,10 @@ ligand/no-ligand contrast in individual images:
 		for j in range(nptcl):
 			if classmx[0,j]!=i : continue		# only proceed if the particle is in this class
 
-			ptcl=EMData(args[0],j)
+			try: ptcl=EMData(args[0],j)
+			except: 
+				print "Cannot read particle {} from {}. This should not happen. Using correct input file?".format(j,args[0])
+				continue
 			if options.process!=None :
 				popt=parsemodopt(options.process)
 				ptcl.process_inplace(popt[0],popt[1])
@@ -326,28 +329,35 @@ ligand/no-ligand contrast in individual images:
 				else :
 					write_particle(args[0],"_ref2"+options.postfix,i)						# if the particle was more similar to ref2
 					counts[1]+=1
-		if options.maskfile:
-			for i in statall:
-				if statall[i][0]==None : continue
-				if statall[i][0]<0:
-					write_particle(args[0],"_low"+options.postfix,i)		# low mask density
-					counts[6]+=1
-				else :
-					write_particle(args[0],"_high"+options.postfix,i)		# high mask density
-					counts[7]+=1
+		#if options.maskfile:
+			#for i in statall:
+				#if statall[i][0]==None : continue
+				#if statall[i][0]<0:
+					#write_particle(args[0],"_low"+options.postfix,i)		# low mask density
+					#counts[6]+=1
+				#else :
+					#write_particle(args[0],"_high"+options.postfix,i)		# high mask density
+					#counts[7]+=1
 
 		print counts
 
 	E2end(logid)
 
+# silly hack
+glob_inls=None
+glob_outls=None
+
 def write_particle(source,postfix,n):
 	"""Writes the output file correctly regardless of initial file type. For databases it makes virtual stacks."""
-	if source[:4].lower()=="bdb:" :
-		indb=db_open_dict(source,ro=True)
-		outdb=db_open_dict(source+postfix)
-		im=indb.get_header(n)
-		im["data_path"]=indb.get_data_path(n)		# this makes the file virtual
-		outdb[len(outdb)]=im
+	if source[-4:].lower()==".lst" :
+		global glob_inls,glob_outls
+		
+		if glob_inls==None:
+			glob_inls=LSXFile(source)
+			glob_outls=LSXFile(source[:-4]+postfix+".lst")
+		
+		ent=glob_inls.read(n)
+		glob_outls.write(-1,ent[0],ent[1],ent[2])
 	else:
 		im=EMData(source,n)
 		im.write_image(source[:-4]+postfix+source[-4:],-1)

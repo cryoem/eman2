@@ -331,7 +331,7 @@ gold standard resolution assessment is not valid, and you need to re-refine, sta
 	# Fill in optional parameters
 
 	if hasctf and apix<6.5:
-		if os.path.exists("strucfac.fromdata.txt") :
+		if os.path.exists("strucfac.txt") :
 # 			append_html("<p>Using the standard 3-stage filter on the reconstruction: 'filter.lowpass.autob' which flattens the overall falloff of the structure factor in the 4-15 A range, \
 # 'setsf strucfac.fromdata.txt' which will force the low resolution structure factor to match the profile determined from the data, and filter.wiener.byfsc which performs a low-pass Wiener \
 # filter based on the computed FSC curve between even/odd maps. Combined, this process produces properly resolution-limited maps with very accurate structure factors. The only real free \

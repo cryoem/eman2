@@ -1900,11 +1900,16 @@ The file begins with
 number<\t>filename<\t>comment
 ...
 """
-	def __init__(self,path):
+	def __init__(self,path,ifexists=False):
+		"""Initialize the object using the .lst file in 'path'. If 'ifexists' is set, an exception will be raised
+if the lst file does not exist."""
+
 		self.path=path
 
 		try: self.ptr=file(path,"r+")		# file exists
 		except:
+			if ifexists: raise Exception,"Error: lst file {} does not exist".format(path)
+		
 			try: os.makedirs(os.path.dirname(path))
 			except: pass
 			self.ptr=file(path,"w+")	# file doesn't exist
@@ -1968,6 +1973,8 @@ but this method prevents multiple open/close operations on the #LSX file."""
 		if cmt!=None and len(cmt)>0 : ret["lst_comment"]=cmt
 
 		return ret
+
+	def __len__(self): return self.n
 
 	def normalize(self):
 		"""This will read the entire file and insure that the line-length parameter is valid. If it is not,
