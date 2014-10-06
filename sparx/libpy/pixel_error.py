@@ -64,8 +64,8 @@ def pixel_error_2D(ali_params1, ali_params2, r = 1.0):
 	"""
 	Compute average squared 2D pixel error
 	"""
-	from math import sin, pi, sqrt
-	return (sin((ali_params1[0]-ali_params2[0])/180.0*pi/2)*(2*r+1))**2 / 2 + (ali_params1[1]-ali_params2[1])**2 + (ali_params1[2]-ali_params2[2])**2
+	from math import radians, sin, pi, sqrt
+	return (sin(radians(ali_params1[0]-ali_params2[0])/2)*(2*r+1))**2 / 2 + (ali_params1[1]-ali_params2[1])**2 + (ali_params1[2]-ali_params2[2])**2
 
 
 def max_3D_pixel_error(t1, t2, r=1.0):

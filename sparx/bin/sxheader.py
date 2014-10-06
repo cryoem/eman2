@@ -57,7 +57,7 @@ def main():
 	parser.add_option("--suffix",	   type="string",       default="_backup",    help="suffix for xform name in backup")
 	parser.add_option("--restore",     action="store_true", default=False,   help="restore parameters")
 	parser.add_option("--delete",      action="store_true", default=False,   help="delete parameters")
-	parser.add_option("--consequtive", action="store_true", default=False,   help="set selected parameter to consequtive integers starting from 0")
+	parser.add_option("--consecutive", action="store_true", default=False,   help="set selected parameter to consecutive integers starting from 0")
 
 	(options,args) = parser.parse_args( arglist[1:] )
 
@@ -73,7 +73,8 @@ def main():
 		from utilities import disable_bdb_cache
 		disable_bdb_cache()
         from applications import header
-	header(args[0], options.params, options.zero, options.one, options.set, options.randomize, options.rand_alpha, options.fimport, options.fexport, options.fprint, options.backup, options.suffix, options.restore, options.delete, options.consequtive)
+	header(args[0], options.params, options.zero, options.one, options.set, options.randomize, options.rand_alpha, options.fimport, options.fexport, \
+	options.fprint, options.backup, options.suffix, options.restore, options.delete, options.consecutive)
 
 if __name__ == "__main__":
 	main()

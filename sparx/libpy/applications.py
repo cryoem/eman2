@@ -11318,7 +11318,7 @@ def extract_value( s ):
 	return s 
 
 def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, rand_alpha=False, fimport=None, 
-	   fexport=None, fprint=False, backup=False, suffix='_backup', restore=False, delete=False, consequtive=False):
+	   fexport=None, fprint=False, backup=False, suffix='_backup', restore=False, delete=False, consecutive=False):
 	from string    import split
 	from utilities import write_header, file_type, generate_ctf
 	from random    import random, randint
@@ -11328,7 +11328,7 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 	if set == 0.0: doset = False
 	else:          doset = True
 
-	op = zero+one++consequtive+randomize+rand_alpha+(fimport!=None)+(fexport!=None)+fprint+backup+restore+delete+doset
+	op = zero+one++consecutive+randomize+rand_alpha+(fimport!=None)+(fexport!=None)+fprint+backup+restore+delete+doset
 	if op == 0:
 		print "Error: no operation selected!"
 		return
@@ -11504,7 +11504,7 @@ def header(stack, params, zero=False, one=False, set = 0.0, randomize=False, ran
 							DB.set_attr(i, p, set)
 						elif ext == "hdf":
 							EMUtil.write_hdf_attribute(stack, p, set, i)
-				elif consequtive:
+				elif consecutive:
 					if ext == "bdb":
 						DB.set_attr(i, p, i)
 					elif ext == "hdf":
