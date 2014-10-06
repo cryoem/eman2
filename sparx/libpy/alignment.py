@@ -1967,6 +1967,7 @@ def align2d(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rst
 def align_new_test(image, refim, xrng=0, yrng=0):
 	from fundamentals import scf, rot_shift2D, ccf
 	from utilities import peak_search
+	from math import radians, sin, cos
 	nx = image.get_xsize()
 	ou = nx//2-1
 
@@ -1980,6 +1981,8 @@ def align_new_test(image, refim, xrng=0, yrng=0):
 	
 	ccf2 = Util.window(ccf(rot_shift2D(image, alpha+180.0, 0.0, 0.0, mirror),refim),nrx,nry)
 	p2 = peak_search(ccf2)
+	print p1
+	print p2
 
 	
 	peak_val1 = p1[0][0]
@@ -1988,14 +1991,64 @@ def align_new_test(image, refim, xrng=0, yrng=0):
 	if peak_val1 > peak_val2:
 		sxs = -p1[0][4]
 		sys = -p1[0][5]
+		cx = int(p1[0][1])
+		cy = int(p1[0][2])
 		peak = peak_val1
 	else:
 		alpha += 180.0
 		sxs = -p2[0][4]
 		sys = -p2[0][5]
 		peak = peak_val2
+		cx = int(p2[0][1])
+		cy = int(p2[0][2])
+		ccf1 = ccf2
+	from utilities import model_blank
+	print cx,cy
+	z = model_blank(4,4)
+	for i in xrange(3):
+		for j in xrange(3):
+			z[i+1,j+1] = ccf1[i+cx-1,j+cy-1]
+	print  ccf1[cx,cy],z[2,2]
+	XSH, YSH, PEAKV = parabl(z)
+	print sxs, sys, XSH, YSH, PEAKV, peak
 
-	return alpha, sxs, sys, mirror, peak
+	co =  cos(radians(alpha))
+	so = -sin(radians(alpha))
+	sx = sxs*co - sys*so
+	sy = sxs*so + sys*co
+	
+	return alpha, sx+XSH, sy+YSH, mirror, PEAKV
+
+def parabl(Z):
+
+	C1 = (26.*Z[1,1] - Z[1,2] + 2*Z[1,3] - Z[2,1] - 19.*Z[2,2] - 7.*Z[2,3] + 2.*Z[3,1] - 7.*Z[3,2] + 14.*Z[3,3])/9.
+
+	C2 = (8.* Z[1,1] - 8.*Z[1,2] + 5.*Z[2,1] - 8.*Z[2,2] + 3.*Z[2,3] +2.*Z[3,1] - 8.*Z[3,2] + 6.*Z[3,3])/(-6.)
+
+	C3 = (Z[1,1] - 2.*Z[1,2] + Z[1,3] + Z[2,1] -2.*Z[2,2] + Z[2,3] + Z[3,1] - 2.*Z[3,2] + Z[3,3])/6.
+
+	C4 = (8.*Z[1,1] + 5.*Z[1,2] + 2.*Z[1,3] -8.*Z[2,1] -8.*Z[2,2] - 8.*Z[2,3] + 3.*Z[3,2] + 6.*Z[3,3])/(-6.)
+
+	C5 = (Z[1,1] - Z[1,3] - Z[3,1] + Z[3,3])/4.
+
+	C6 = (Z[1,1] + Z[1,2] + Z[1,3] - 2.*Z[2,1] - 2.*Z[2,2] -2.*Z[2,3] + Z[3,1] + Z[3,2] + Z[3,3])/6.
+
+	DENOM = 4. * C3 * C6 - C5 * C5
+	if(DENOM == 0.):
+		return 0.0, 0.0, 0.0
+
+	YSH   = (C4*C5 - 2.*C2*C6) / DENOM - 2.
+	XSH   = (C2*C5 - 2.*C4*C3) / DENOM - 2.
+
+	PEAKV = 4.*C1*C3*C6 - C1*C5*C5 - C2*C2*C6 + C2*C4*C5 - C4*C4*C3
+	PEAKV = PEAKV / DENOM
+	print  "  in PARABL  ",XSH,YSH,Z[2,2],PEAKV
+
+	XSH = min(max( XSH, -1.0), 1.0)
+	YSH = min(max( YSH, -1.0), 1.0)
+
+	return XSH, YSH, PEAKV
+
 
 def align2d_no_mirror(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rstep=1, mode = "F"):
 	"""  Determine shift and rotation between image and reference image
