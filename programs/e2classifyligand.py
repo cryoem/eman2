@@ -61,6 +61,9 @@ ligand/no-ligand contrast in individual images:
 <raw particle file> should be the same file used in the refinement
 <class mx> is one of the classification matrix files from the refinement
 <projections> contains the projections used for class mx
+
+Typical usage:
+e2classifyligand.py sets/myset_even.lst refine_01/classmx_04_even.hdf refine_01/projections_04_even.hdf --ref1 ref3d1.hdf --ref2 ref3d2.hdf --cmp=ccc --plotout=cmp.txt --pairmask --splitparticles -v 1
 """
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
