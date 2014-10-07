@@ -122,7 +122,7 @@ def main():
 		# basename is name of micrograph minus the path and extension
 		basename = micnames[k]
 		f_mic    = os.path.join(os.path.abspath(options.indir), basename + extension)
-		f_info   = os.path.join('info', basename + '_info.json')
+		f_info   = os.path.join(options.coordsdir, basename + '_info.json')
 		
 # 		CHECKS: BEGIN
 # 		IF micrograph exists
