@@ -123,7 +123,7 @@ ligand/no-ligand contrast in individual images:
 	# but rather a list of which class each particle is in, so we do this a bit inefficiently for now
 	out=file(options.plotout,"w")
 	statall={}	# keyed by particle number, contains (statm,statr,statr2) for each particle, with Null if the right options weren't specified
-	for i in range(nref-1,-1,-1):
+	for i in range(nref):
 		if options.tstcls>=0 and i!=options.tstcls : continue
 		if options.verbose>1 : print "--- Class %d"%i
 
@@ -179,7 +179,7 @@ ligand/no-ligand contrast in individual images:
 			if options.process!=None :
 				popt=parsemodopt(options.process)
 				ptcl.process_inplace(popt[0],popt[1])
-			ptclxf=Transform({"type":"2d","alpha":cmxalpha[0,j],"mirror":int(cmxmirror[0,j]),"tx":cmxtx[0,j],"ty":cmxty[0,j]}).inverse()
+			ptclxf=Transform({"type":"2d","alpha":cmxalpha[0,j],"mirror":int(cmxmirror[0,j]),"tx":cmxtx[0,j],"ty":cmxty[0,j]})
 
 			statn.append(j)
 
@@ -191,21 +191,29 @@ ligand/no-ligand contrast in individual images:
 				# While the original classification moved the reference, not the particle, in this case
 				# doing that proves not to work very well due to edge artifacts
 				ptcl2=ptcl.process("normalize.edgemean")
-				ptcl2.process_inplace("xform",{"transform":ptclxf.inverse()})
+				ptcl2.process_inplace("xform",{"transform":ptclxf})
+#				ptcl2.process_inplace("xform",{"transform":ptclxf.inverse()})
 				ptcl2.mult(softmask)
-				ptcl2.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.2})
-				ptcl2.process_inplace("filter.matchto",{"to":projref})
-				ptcl2.process_inplace("normalize.toimage",{"to":proj,"high_threshold":proj["mean"]+proj["sigma"]*4.0,"low_threshold":proj["mean"]+proj["sigma"]})
-				ptcl3=ptcl2.copy()
-				ptcl3.sub(proj)
+				ptcl2.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1})
+#				ptcl2.process_inplace("filter.matchto",{"to":projref})
+##				ptcl2.process_inplace("normalize.toimage",{"to":proj,"high_threshold":proj["mean"]+proj["sigma"]*4.0,"low_threshold":proj["mean"]+proj["sigma"]})		# worked with the old normalize.toimage
+				#ptcl2.process_inplace("normalize.toimage",{"to":proj,"high_threshold":proj["mean"]+proj["sigma"]*4.0,"low_threshold":proj["mean"]-proj["sigma"]/2.0})	# test for the new normalize.toimage
+				#ptcl3=ptcl2.copy()
+				#ptcl3.sub(proj)
+				ptcl3=ptcl2.process("math.sub.optimal",{"ref":projref})		# use the new Fourier subtract instead of the rigamarole above
+
 
 				if options.tstcls==i :
+					proj["xform.align2d"]=ptclxf			# just so it shows up in the display options
 					proj.write_image("tst.hdf",-1)
 					proj2.write_image("tst.hdf",-1)
 					ptcl.write_image("tst.hdf",-1)
+					ptcl2["xform.align2d"]=ptclxf
 					ptcl2.write_image("tst.hdf",-1)
 					ptcl3.write_image("tst.hdf",-1)
 					projm.write_image("tst.hdf",-1)
+					try: sump.add(ptcl2)
+					except: sump=ptcl2.copy()
 
 				cmp1=ptcl2.cmp(simcmp[0],proj, simcmp[1])
 				cmp2=ptcl2.cmp(simcmp[0],proj2,simcmp[1])
@@ -275,6 +283,9 @@ ligand/no-ligand contrast in individual images:
 			try:
 				avgim2.process_inplace("normalize.edgemean")
 				avgim2.write_image("tst2.hdf",1)
+			except: pass
+
+			try: sump.write_image("tst3.hdf",0)
 			except: pass
 
 
