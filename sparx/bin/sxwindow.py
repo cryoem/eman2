@@ -56,8 +56,8 @@ def main():
 	parser = OptionParser(usage, version=SPARXVERSION)
 
 	parser.add_option('--coords_dir',       dest='coordsdir',                 help='Directory containing files with particle coordinates')
-	parser.add_option('--importctf',                                          help='File name with CTF parameters produced by sxcter.')
 	parser.add_option("--indir",            type="string", default= ".",      help="Directory containing micrographs to be processed.")
+	parser.add_option('--importctf',                                          help='File name with CTF parameters produced by sxcter.')
 	parser.add_option('--input_pixel',      type=float,    default=1.0,       help='input pixel size')
 	parser.add_option("--new_apix",         type=float,    default=-1.0,      help="New target pixel size to which the micrograph should be resampled. Default is -1, in which case there is no resampling.")
 	parser.add_option('--box_size',         type=int,      default=256,       help='x and y dimension in pixels of square area to be windowed. Pixel size is assumed to be new_pixel_size.')
@@ -81,17 +81,17 @@ def main():
 	if new_pixel_size < 0: new_pixel_size = options.input_pixel
 
 # 	Build micrograph basename list
-	micnames = []
 	if len(args) > 0:
-		for s in args:
-			micnames.append(s.split('.')[0])
+		micnames = args
 	else:
 		import glob
-		for f in glob.glob(os.path.join(options.indir, options.nameroot + "*" + extension)):
-			mic = f.split('/')[-1]
-			bmic=mic.split('.')[0]
-			micnames.append(bmic)
+		micnames = glob.glob(os.path.join(options.indir, options.nameroot + "*" + extension))
 
+	for i in range(len(micnames)):
+		word = micnames[i]
+		bname = word[:-len(extension)]
+		micnames[i] = bname
+	
 # 	If there is no micrographs, exit
 	if len(micnames) == 0:
 		print usage
