@@ -195,15 +195,14 @@ e2classifyligand.py sets/myset_even.lst refine_01/classmx_04_even.hdf refine_01/
 				# doing that proves not to work very well due to edge artifacts
 				ptcl2=ptcl.process("normalize.edgemean")
 				ptcl2.process_inplace("xform",{"transform":ptclxf})
-#				ptcl2.process_inplace("xform",{"transform":ptclxf.inverse()})
 				ptcl2.mult(softmask)
-				ptcl2.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1})
-#				ptcl2.process_inplace("filter.matchto",{"to":projref})
+#				ptcl2.process_inplace("filter.lowpass.gauss",{"cutoff_freq":0.05})
+				ptcl2.process_inplace("filter.matchto",{"to":projref})
 ##				ptcl2.process_inplace("normalize.toimage",{"to":proj,"high_threshold":proj["mean"]+proj["sigma"]*4.0,"low_threshold":proj["mean"]+proj["sigma"]})		# worked with the old normalize.toimage
 				#ptcl2.process_inplace("normalize.toimage",{"to":proj,"high_threshold":proj["mean"]+proj["sigma"]*4.0,"low_threshold":proj["mean"]-proj["sigma"]/2.0})	# test for the new normalize.toimage
 				#ptcl3=ptcl2.copy()
 				#ptcl3.sub(proj)
-				ptcl3=ptcl2.process("math.sub.optimal",{"ref":projref})		# use the new Fourier subtract instead of the rigamarole above
+				ptcl3=ptcl2.process("math.sub.optimal",{"ref":proj})		# use the new Fourier subtract instead of the rigamarole above
 
 
 				if options.tstcls==i :
