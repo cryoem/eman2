@@ -4,9 +4,6 @@
 # Author: James Michael Bell, 2014 (jmbell@bcm.edu)
 # Copyright (c) 2014 Baylor College of Medicine
 #
-# For the original implementation of this algorithm, see:
-# https://github.com/emmanuelle/tomo-tv
-#
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
 # complete EMAN2 and SPARX software packages have some GPL dependencies,
