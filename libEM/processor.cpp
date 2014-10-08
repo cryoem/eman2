@@ -4058,7 +4058,7 @@ EMData *SubtractOptProcessor::process(const EMData * const image)
 		}
 	}
 	
-	if (!ref->is_complex()) delete ref;
+	if (!refr->is_complex()) delete ref;
 	if (actual!=NULL && !actual->is_complex()) delete actf;
 
 	vector <float>radf;

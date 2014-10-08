@@ -156,7 +156,7 @@ def main():
 			radav=sum(dis[-4:])
 			itr+=1
 			if itr>5 :
-				print "WARNING: failed to achieve a properly isolated volume, FSC artifacts may occur. Box size too small ?"
+				print "WARNING: failed to achieve a properly isolated volume, FSC artifacts may occur. Often this is caused by an incorrect A/pix value or specifying too large a mask. It could also indicate that the box size is too small."
 				sigmanz=combined2["sigma_nonzero"]*1.1
 				seeds=0
 				break
