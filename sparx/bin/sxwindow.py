@@ -32,6 +32,7 @@ import os, sys
 import json
 
 from optparse import *
+# from argparse import *
 from EMAN2 import *
 from EMAN2db import *
 from EMAN2jsondb import *
@@ -46,7 +47,80 @@ from global_def import *
 This program is used to window particles from a micrograph. The coordinates of the particles are given as input.
 """
 
+def build_micnames(options, args):
+	# 	Build micrograph basename list
+	extension = options.micsuffix
+	if len(args) > 0:
+		micnames = args
+	else:
+		import glob
+		micnames = glob.glob(os.path.join(options.indir, options.nameroot + "*" + extension))
+
+	for i in range(len(micnames)):
+		word = micnames[i]
+		bname = word[:-len(extension)]
+		micnames[i] = bname
+
+	return micnames
+
+def check_options(options, progname):
+	if options.outdir == None:
+		print "\nOutput directory must be specified with option --outdir. Type %s -h for help.\n" % progname
+		sys.exit()
+		
+	if  options.coordsdir == None:
+		print "\nCoordinates directory must be specified with option --coords_dir. Type %s -h for help.\n" % progname
+		sys.exit()
+		
+	if options.coords_format == None:
+		print "\nCoordinate file format must be specified with option --coords_format. Type %s -h for help.\n" % progname
+		sys.exit()
+	else:
+		if options.coords_format.lower() == 'json' and options.coords_keys == None:
+			print "\nKey must be specified with option --coords_keys for JSON format. Type %s -h for help.\n" % progname
+			sys.exit()
+	
+		if options.coords_format.lower() == 'textrow' and options.coords_keys.split() != 2:
+			print "\nPair of column numbers must be specified with option --coords_keys for textrow format. Type %s -h for help.\n" % progname
+			sys.exit()
+
+
+class CoordHandler:
+	def __init__(self, str):
+		pass
+	def get_coords(self, fname):
+		pass
+	
+class JSONCoord(CoordHandler):
+	def __init__(self,str):
+		self.key = str
+	def get_coords(self, fname):
+		coords = js_open_dict(fname)[self.key]
+		
+		for i in range(len(coords)):
+			coords[i] = coords[i][0],coords[i][1]
+		
+		return coords
+		
+class TXTCoord(CoordHandler):
+	def __init__(self,str):
+		spl = str.split()
+		self.iX = int(spl[0]) - 1
+		self.iY = int(spl[1]) - 1
+		
+	def get_coords(self, fname):
+		lines = read_text_row(fname)
+		coords=[]
+		for i in range(len(lines)):
+			coords.append([lines[i][self.iX],lines[i][self.iY]])
+			
+		return coords	
+
+
 def main():
+# 	parser1 = argparse.ArgumentParser(description='This program is used to window particles from a micrograph. The coordinates of the particles are given as input.')
+# 	parser1.add_argument()
+
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " [micrographs list] ...  --coords_dir=coords_dir  --importctf=ctf_file  --indir=input_dir" + \
 	                                          "  --input_pixel=input_pixel  --new_apix=new_apix --box_size=box_size" + \
@@ -55,7 +129,14 @@ def main():
 
 	parser = OptionParser(usage, version=SPARXVERSION)
 
-	parser.add_option('--coords_dir',       dest='coordsdir',                 help='Directory containing files with particle coordinates')
+	parser.add_option('--coords_dir',       dest='coordsdir',                 help='Directory containing files with particle coordinates.')
+	parser.add_option('--coords_suffix',                   default="",        help='Suffix of coordinate files. For example "_ptcls".')
+	parser.add_option('--coords_extension',                default="",        help='File extension of coordinate files. For example "json", "box" ...')
+	parser.add_option('--coords_format',                                      help='Format of coordinates file, "json" or "textrow". Also, see suboptions specified by option --coords_keys\n' +
+																					'All files must have the same basename with their corresponing micrographs.')
+	parser.add_option('--coords_keys',                                        help='If --coords_format is json, key must be provided via --coords_keys.\n' +
+																		           'If --coords_format is textrow, column numbers of x and y must be provided via --coords_keys. Ex. "1 2"')
+	
 	parser.add_option("--indir",            type="string", default= ".",      help="Directory containing micrographs to be processed.")
 	parser.add_option('--importctf',                                          help='File name with CTF parameters produced by sxcter.')
 	parser.add_option('--input_pixel',      type=float,    default=1.0,       help='input pixel size')
@@ -74,24 +155,23 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	box_size = options.box_size
-	extension = "." + options.micsuffix
+	options.micsuffix = "." + options.micsuffix
 	cterr = [options.defocuserror/100.0, options.astigmatismerror]
 	
 	new_pixel_size = options.new_apix
 	if new_pixel_size < 0: new_pixel_size = options.input_pixel
-
-# 	Build micrograph basename list
-	if len(args) > 0:
-		micnames = args
-	else:
-		import glob
-		micnames = glob.glob(os.path.join(options.indir, options.nameroot + "*" + extension))
-
-	for i in range(len(micnames)):
-		word = micnames[i]
-		bname = word[:-len(extension)]
-		micnames[i] = bname
 	
+	check_options(options, progname)
+	
+	if options.coords_format.lower() == 'json':
+		coord=JSONCoord(options.coords_keys)
+	if options.coords_format.lower() == 'textrow':
+		coord=TXTCoord(options.coords_keys)
+
+	extension_coord = options.coords_suffix + "." + options.coords_extension
+	
+# 	Build micrograph basename list
+	micnames = build_micnames(options, args)
 # 	If there is no micrographs, exit
 	if len(micnames) == 0:
 		print usage
@@ -121,9 +201,9 @@ def main():
 	for k in range(len(micnames)):
 		# basename is name of micrograph minus the path and extension
 		basename = micnames[k]
-		f_mic    = os.path.join(os.path.abspath(options.indir), basename + extension)
-		f_info   = os.path.join(options.coordsdir, basename + '_info.json')
-		
+		f_mic    = os.path.join(os.path.abspath(options.indir), basename + options.micsuffix)
+		f_info   = os.path.join(options.coordsdir, basename + extension_coord)
+
 # 		CHECKS: BEGIN
 # 		IF micrograph exists
 		if not os.path.exists(f_mic):
@@ -136,16 +216,18 @@ def main():
 			continue
 		
 # 		IF micrograph is in CTER results
-		if basename not in ctfs:
-			print "\nMicrograph %s not listed in CTER results, skipping ....\n" % basename
-			continue
-		else:
-			ctf = ctfs[basename]
+		if options.importctf:
+			if basename not in ctfs:
+				print "\nMicrograph %s not listed in CTER results, skipping ....\n" % basename
+				continue
+			else:
+				ctf = ctfs[basename]
 # 		CHECKS: END
 
 		print "\nProcessing micrograph %s... Path: %s... Coordinates file %s" % (basename, f_mic, f_info)
 	
-		coords = js_open_dict(f_info)["boxes"]
+# 		coords = js_open_dict(f_info)["boxes"]
+		coords = coord.get_coords(f_info)
 		
 		immic = get_im(f_mic)
 		
