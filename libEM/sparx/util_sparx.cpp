@@ -3276,7 +3276,6 @@ c       automatic arrays
 		  qn = q(j); jtot = j;
 	   }
 	}
-
 	for (k=-3; k<=3; k++) {
 		j = (jtot+k+maxrin-1)%maxrin + 1;
 		t7(k+4) = q(j);
@@ -3290,7 +3289,7 @@ c       automatic arrays
 	if (t) free(t);
 
 	Dict retvals;
-	retvals["qn"] = qn;
+	retvals["qn"]  = qn;
 	retvals["tot"] = tot;
 	return  retvals;
 }

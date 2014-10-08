@@ -2581,7 +2581,6 @@ EMData *EMData::unwrap(int r1, int r2, int xs, int dx, int dy, bool do360, bool 
 	const float *const d = get_const_data();
 	float *dd = ret->get_data();
 	float pfac = (float)p/(float)xs;
-
 	int nxon2 = nx/2;
 	int nyon2 = ny/2;
 	for (int x = 0; x < xs; x++) {

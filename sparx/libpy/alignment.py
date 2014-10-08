@@ -355,7 +355,6 @@ def Numrinit(first_ring, last_ring, skip=1, mode="F"):
 
 	if (mode == 'f' or mode == 'F'): dpi = 2*pi
 	else:                            dpi = pi
-
 	numr = []
 	lcirc = 1
 	for k in xrange(first_ring, last_ring+1, skip):
@@ -363,15 +362,43 @@ def Numrinit(first_ring, last_ring, skip=1, mode="F"):
 		jp = int(dpi * k+0.5)
 		ip = 2**(log2(jp)+1)  # two times oversample each ring
 		if (k+skip <= last_ring and jp > ip+ip//2): ip=min(MAXFFT,2*ip)
-		if (k+skip  > last_ring and jp > ip+ip//5):  ip=min(MAXFFT,2*ip)
+		if (k+skip  > last_ring and jp > ip+ip//5): ip=min(MAXFFT,2*ip)
 
 		numr.append(lcirc)
 		numr.append(ip)
 		lcirc += ip
 
-	lcirc -= 1
 	return  numr
-	
+'''
+def Numrinit(first_ring, last_ring, skip=1, mode="F"):
+	#  This is to test equal length rings
+	"""This function calculates the necessary information for the 2D 
+	   polar interpolation. For each ring, three elements are recorded:
+	   numr[i*3]:  Radius of this ring
+	   numr[i*3+1]: Total number of samples of all inner rings+1
+	   		(Or, the beginning point of this ring)
+	   numr[i*3+2]: Number of samples of this ring. This number is an 
+	   		FFT-friendly power of the 2.
+			
+	   "F" means a full circle interpolation
+	   "H" means a half circle interpolation
+	"""
+	MAXFFT=32768
+	from math import pi
+
+	if (mode == 'f' or mode == 'F'): dpi = 2*pi
+	else:                            dpi = pi
+	numr = []
+	lcirc = 1
+	#  This is for testing equal length rings
+	ip = 128
+	for k in xrange(first_ring, last_ring+1, skip):
+		numr.append(k)
+		numr.append(lcirc)
+		numr.append(ip)
+		lcirc += ip		
+	return  numr
+'''	
 def ringwe(numr, mode="F"):
 	"""
 	   Calculate ring weights for rotational alignment
@@ -2020,12 +2047,12 @@ def align_new_test(image, refim, xrng=0, yrng=0):
 """
 
 
-def align_new_test(image, refim, xrng=0, yrng=0):
+def align_new_test(image, refim, xrng=0, yrng=0, ou = -1):
 	from fundamentals import scf, rot_shift2D, ccf, mirror
 	from utilities import peak_search
 	from math import radians, sin, cos
 	nx = image.get_xsize()
-	ou = nx//2-1
+	if(ou<0):  ou = nx//2-1
 	#sci = scf(image)
 	scr = scf(refim)
 
