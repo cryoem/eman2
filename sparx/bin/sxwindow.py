@@ -134,7 +134,7 @@ def main():
 	parser.add_option('--coords_extension',                default="",        help='File extension of coordinate files. For example "json", "box" ...')
 	parser.add_option('--coords_format',                                      help='Format of coordinates file, "json" or "textrow". Also, see suboptions specified by option --coords_keys\n' +
 																					'All files must have the same basename with their corresponing micrographs.')
-	parser.add_option('--coords_keys',                                        help='If --coords_format is json, key must be provided via --coords_keys.\n' +
+	parser.add_option('--coords_keys',                                        help='If --coords_format is json, key must be provided via --coords_keys. Typically, it is "boxes" if coordinates were produced by e2boxer\n' +
 																		           'If --coords_format is textrow, column numbers of x and y must be provided via --coords_keys. Ex. "1 2"')
 	
 	parser.add_option("--indir",            type="string", default= ".",      help="Directory containing micrographs to be processed.")
