@@ -47,6 +47,9 @@ from global_def import *
 This program is used to window particles from a micrograph. The coordinates of the particles are given as input.
 """
 
+def baseroot(path):
+	return os.path.splitext(os.path.basename(path))[0]
+
 def build_micnames(options, args):
 	# 	Build micrograph basename list
 	extension = options.micsuffix
@@ -56,10 +59,7 @@ def build_micnames(options, args):
 		import glob
 		micnames = glob.glob(os.path.join(options.indir, options.nameroot + "*" + extension))
 
-	for i in range(len(micnames)):
-		word = micnames[i]
-		bname = word[:-len(extension)]
-		micnames[i] = bname
+	micnames = [ baseroot(m) for m in micnames]
 
 	return micnames
 
@@ -98,7 +98,7 @@ class JSONCoord(CoordHandler):
 		coords = js_open_dict(fname)[self.key]
 		
 		for i in range(len(coords)):
-			coords[i] = coords[i][0],coords[i][1]
+			coords[i] = [coords[i][0],coords[i][1]]
 		
 		return coords
 		
@@ -184,8 +184,7 @@ def main():
 		ctfs={}
 		for i in xrange(len(ctfs0)):
 			ctf=ctfs0[i]
-			fmic = ctf[-1].split('/')
-			basemic = fmic[-1].split('.')[0]
+			basemic = baseroot(ctf[-1])
 
 			if(ctf[8]/ctf[0] > cterr[0]):
 				print_msg('Defocus error %f exceeds the threshold. Micrograph %s rejected.\n'%(ctf[8]/ctf[0], basemic))
@@ -196,7 +195,7 @@ def main():
 				ctfs[basemic] = ctf
 
 	mask = model_circle(box_size//2, box_size, box_size)
-	
+
 # 	Loop over micrographs
 	for k in range(len(micnames)):
 		# basename is name of micrograph minus the path and extension
