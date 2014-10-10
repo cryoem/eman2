@@ -455,10 +455,10 @@ important to use an angular step which is 90/integer.</p>")
 	if options.simralign==None and options.speed<7 :
 		if options.targetres>=11.0 or options.speed==6:
 			options.simralign="refine"
-			options.simraligncmp="ccc"
+			if options.simraligncmp==None : options.simraligncmp="ccc"
 		else :
 			options.simralign="refine"
-			options.simraligncmp="frc:zeromask=1:snrweight=1"
+			if options.simraligncmp==None : options.simraligncmp="frc:zeromask=1:snrweight=1"
 		simralign="--ralign {} --raligncmp {}".format(options.simralign,options.simraligncmp)
 	elif options.speed==7 or options.simralign.lower()=="none" :
 		simralign=" "
@@ -482,10 +482,10 @@ important to use an angular step which is 90/integer.</p>")
 	if options.classralign==None:
 		if options.targetres>15 or not hasctf or options.speed>5:
 			options.classralign="refine"
-			options.classraligncmp="ccc"
+			if options.classraligncmp==None : options.classraligncmp="ccc"
 		else :
 			options.classralign="refine"
-			options.classraligncmp="frc:snrweight=1:zeromask=1"
+			if options.classraligncmp==None : options.classraligncmp="frc:snrweight=1:zeromask=1"
 		classralign="--ralign {ralign} --raligncmp {raligncmp}".format(ralign=options.classralign,raligncmp=options.classraligncmp)
 	elif options.classralign.lower()=="none":
 		classralign=" "
