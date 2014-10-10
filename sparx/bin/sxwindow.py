@@ -89,18 +89,23 @@ class CoordHandler:
 	def __init__(self, str):
 		pass
 	def get_coords(self, fname):
+		coords = self.get_raw(fname)
+		for i in range(len(coords)):
+			coords[i] = self.get_pair(coords[i])
+		return coords
+
+	def get_raw(self, fname):
+		pass
+	def get_pair(self,coord):
 		pass
 	
 class JSONCoord(CoordHandler):
 	def __init__(self,str):
 		self.key = str
-	def get_coords(self, fname):
-		coords = js_open_dict(fname)[self.key]
-		
-		for i in range(len(coords)):
-			coords[i] = [coords[i][0],coords[i][1]]
-		
-		return coords
+	def get_raw(self, fname):
+		return js_open_dict(fname)[self.key]
+	def get_pair(self,coord):
+		return [coord[0],coord[1]]
 		
 class TXTCoord(CoordHandler):
 	def __init__(self,str):
@@ -108,14 +113,10 @@ class TXTCoord(CoordHandler):
 		self.iX = int(spl[0]) - 1
 		self.iY = int(spl[1]) - 1
 		
-	def get_coords(self, fname):
-		lines = read_text_row(fname)
-		coords=[]
-		for i in range(len(lines)):
-			coords.append([lines[i][self.iX],lines[i][self.iY]])
-			
-		return coords	
-
+	def get_raw(self, fname):
+		return read_text_row(fname)
+	def get_pair(self,coord):
+		return [coord[self.iX],coord[self.iY]]
 
 def main():
 # 	parser1 = argparse.ArgumentParser(description='This program is used to window particles from a micrograph. The coordinates of the particles are given as input.')
@@ -227,7 +228,8 @@ def main():
 	
 # 		coords = js_open_dict(f_info)["boxes"]
 		coords = coord.get_coords(f_info)
-		
+		print coords
+		sys.exit()
 		immic = get_im(f_mic)
 		
 		resample_ratio = options.input_pixel/new_pixel_size
