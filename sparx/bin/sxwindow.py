@@ -80,7 +80,7 @@ def check_options(options, progname):
 			print "\nKey must be specified with option --coords_keys for JSON format. Type %s -h for help.\n" % progname
 			sys.exit()
 	
-		if options.coords_format.lower() == 'textrow' and options.coords_keys.split() != 2:
+		if options.coords_format.lower() == 'textrow' and len(options.coords_keys.split()) != 2:
 			print "\nPair of column numbers must be specified with option --coords_keys for textrow format. Type %s -h for help.\n" % progname
 			sys.exit()
 
