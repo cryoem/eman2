@@ -1410,7 +1410,9 @@ float OptSubCmp::cmp(EMData * image, EMData * with) const
 // 	int ampweight = params.set_default("ampweight", 0);
 // 	int sweight = params.set_default("sweight", 1);
 // 	int nweight = params.set_default("nweight", 0);
- 	int zeromask = params.set_default("zeromask",0);
+	int ctfweight = params.set_default("ctfweight",0);
+	int zeromask = params.set_default("zeromask",0);
+//	int swap = params.set_default("swap",0);
 	float minres = params.set_default("minres",200.0f);
 	float maxres = params.set_default("maxres",10.0f);
 	EMData *mask = params.set_default("mask",(EMData *)NULL);
@@ -1418,7 +1420,12 @@ float OptSubCmp::cmp(EMData * image, EMData * with) const
 //	float ds=1.0f/((float)image->get_attr("apix_x")*(int)image->get_ysize());
 	float apix=(float)image->get_attr("apix_x");
 
-	EMData *diff=image->process("math.sub.optimal",Dict("ref",with,"return_presigma",1,"low_cutoff_frequency",apix/minres ,"high_cutoff_frequency",apix/maxres));
+	// Sometimes we will get the "raw" image with CTF as image and sometimes as with, we always want to subtract the less noisy
+	// reference, so if one has CTF parameters (even if ctfweight isn't used) we always pass it in as the primary
+	EMData *diff;
+	if (image->has_attr("ctf")) diff=image->process("math.sub.optimal",Dict("ref",with,"return_presigma",1,"low_cutoff_frequency",apix/minres ,"high_cutoff_frequency",apix/maxres,"ctfweight",ctfweight));
+	else diff=with->process("math.sub.optimal",Dict("ref",image,"return_presigma",1,"low_cutoff_frequency",apix/minres ,"high_cutoff_frequency",apix/maxres,"ctfweight",ctfweight));
+
 	if (mask!=NULL) diff->mult(*mask);
 	if (zeromask) {
 		EMData *tmp=with->process("threshold.notzero");

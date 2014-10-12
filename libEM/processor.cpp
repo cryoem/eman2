@@ -3978,9 +3978,10 @@ EMData *SubtractOptProcessor::process(const EMData * const image)
 	EMData *refr = params["ref"];
 	EMData *actual = params.set_default("actual",(EMData*)NULL);
 	EMData *ref;
- 	bool return_radial = params.set_default("return_radial",false);
- 	bool return_fft = params.set_default("return_fft",false);
- 	bool return_presigma = params.set_default("return_presigma",false);
+	bool return_radial = params.set_default("return_radial",false);
+	bool return_fft = params.set_default("return_fft",false);
+	bool ctfweight = params.set_default("ctfweight",false);
+	bool return_presigma = params.set_default("return_presigma",false);
 	int si0=(int)floor(params.set_default("low_cutoff_frequency",0.0f)*image->get_ysize());
 	int si1=(int)ceil(params.set_default("high_cutoff_frequency",0.7071f)*image->get_ysize());		// include the corners unless explicitly excluded
 	
@@ -3988,6 +3989,17 @@ EMData *SubtractOptProcessor::process(const EMData * const image)
 	EMData *imf;
 	if (image->is_complex()) imf=image->copy();
 	else imf=image->do_fft();
+
+	if (ctfweight) {
+		EMData *ctfi=imf->copy_head();
+		Ctf *ctf;
+//		if (image->has_attr("ctf")) 
+			ctf=(Ctf *)(image->get_attr("ctf"));
+//		else ctf=(Ctf *)(ref->get_attr("ctf"));
+		ctf->compute_2d_complex(ctfi,Ctf::CTF_INTEN);
+		imf->mult(*ctfi);
+		delete ctfi;
+	}
 	
 	// Make sure ref is complex
 	if (refr->is_complex()) ref=refr;
@@ -3996,6 +4008,7 @@ EMData *SubtractOptProcessor::process(const EMData * const image)
 	EMData *actf;
 	if (actual==NULL) actf=ref;
 	else {
+		if (ctfweight) throw InvalidCallException("math.sub.optimal: Sorry, cannot use ctfweight in combination with actual");
 		if (actual->is_complex()) actf=actual;
 		else actf=actual->do_fft();
 	}

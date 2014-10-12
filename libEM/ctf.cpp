@@ -737,6 +737,15 @@ vector <float> EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * sf
 		}
 		break;
 
+	case CTF_INTEN:
+		for (int i = 0; i < np; i++) {
+			float gam=-g1*s*s*s*s+g2*s*s;
+			r[i] = cos(gam-acac)*exp(-(bfactor/4.0f * s * s));
+			r[i]*=r[i];
+			s += ds;
+		}
+		break;
+		
 	case CTF_SIGN:
 		for (int i = 0; i < np; i++) {
 			float gam=-g1*s*s*s*s+g2*s*s;
@@ -981,6 +990,22 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				else gam=-g1*s*s*s*s+g2*df(atan2((float)y,(float)x))*s*s;
 				float v = cos(gam-acac)*exp(-(bfactor/4.0f * s*s));
 				d[x * 2 + ynx] = v;
+				d[x * 2 + ynx + 1] = 0;
+			}
+		}
+	}
+	else if (type == CTF_INTEN) {
+		for (int y = -ny/2; y < ny/2; y++) {
+			int y2=(y+ny)%ny;
+			int ynx = y2 * nx;
+
+			for (int x = 0; x < nx / 2; x++) {
+				float s = (float)Util::hypot_fast(x,y ) * ds;
+				float gam;
+				if (dfdiff==0) gam=-g1*s*s*s*s+g2*defocus*s*s;
+				else gam=-g1*s*s*s*s+g2*df(atan2((float)y,(float)x))*s*s;
+				float v = cos(gam-acac)*exp(-(bfactor/4.0f * s*s));
+				d[x * 2 + ynx] = v*v;
 				d[x * 2 + ynx + 1] = 0;
 			}
 		}

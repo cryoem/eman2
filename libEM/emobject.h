@@ -435,6 +435,21 @@ namespace EMAN
 			dict[key4] = val4;
 		}
 
+		/** Construct a Dict object from 5 key/value pairs
+		 */
+		Dict(const string & key1, EMObject val1,
+			 const string & key2, EMObject val2,
+			 const string & key3, EMObject val3,
+			 const string & key4, EMObject val4,
+			 const string & key5, EMObject val5)
+		{
+			dict[key1] = val1;
+			dict[key2] = val2;
+			dict[key3] = val3;
+			dict[key4] = val4;
+			dict[key5] = val5;
+		}
+
 		/** Construct a Dict object from a map object
 		 * Calls the generic algorithm "copy".
 		 */

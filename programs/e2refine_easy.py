@@ -219,7 +219,7 @@ not need to specify any of the following other than the ones already listed abov
 	(options, args) = parser.parse_args()
 
 	if options.threads<=1 :
-		if options.parallel[:6]=="thread" : 
+		if options.parallel!=None and options.parallel[:6]=="thread" : 
 			options.threads=int(options.parallel[7:])
 			print "Note: automatically setting --threads:{}".format(options.threads)
 		else: print "WARNING: specifying --threads=<N> (where N is the number of cores to use on a single processor) is strongly recommended, even if already specifying --parallel"
