@@ -75,7 +75,7 @@ namespace EMAN
 			CTF_TOTAL,			// AMP*AMP+NOISE
 			CTF_FITREF,			// CTF amplitude squared without B-factor and low resolution zeroed
 			CTF_NOISERATIO,		// 1-Noise/Total, when a particle is filtered with this it will still have noise, but the structure factor will look as if it's noise-free
-			CTF_INTEN			// ctf & envelope intensity only (no background)
+			CTF_INTEN			// ctf intensity only (no background or envelope)
 		};
 	  public:
 		virtual ~ Ctf()

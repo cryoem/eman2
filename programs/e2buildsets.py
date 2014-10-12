@@ -64,6 +64,8 @@ def main():
 	parser.add_argument("--minqual",type=int,help="Files with a quality value lower than specified will be skipped",default=0,guitype='intbox', row=5, col=1)
 	parser.add_argument("--mindf",type=float,help="Files with a defocus lower than specified will be skipped",default=0,guitype='floatbox', row=6, col=0)
 	parser.add_argument("--maxdf",type=float,help="Files with a defocus higher than specified will be skipped",default=20.0,guitype='floatbox', row=6, col=1)
+	parser.add_argument("--minlosnr",type=float,help="Integrated SNR from 1/200-1/20 1/A must be larger than this",default=0,guitype='floatbox', row=8, col=0)
+	parser.add_argument("--minhisnr",type=float,help="Integrated SNR from 1/10-1/4 1/A must be larger than this",default=0,guitype='floatbox', row=8, col=1)
 	parser.add_argument("--minbfactor",type=float,help="Files with a B-factor lower than specified will be skipped",default=0.0,guitype='floatbox', row=7, col=0)
 	parser.add_argument("--maxbfactor",type=float,help="Files with a B-factor higher than specified will be skipped",default=5000.0,guitype='floatbox', row=7, col=1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -120,15 +122,24 @@ def main():
 		args=[i for i in args if i+"__ctf_flip_hp.hdf"in ptcls or i+"__ctf_flip.hdf" in ptcls]	# Not super-efficient, but functional
 
 	print "Filtering by Defocus and B-factor"
+	ctfmsg=0
 	outargs=[]
 	for i in args:
 		try:
 			ctf=js_open_dict(info_name(i+".hdf"))["ctf"][0]
-			if ctf.defocus>=options.mindf and ctf.defocus<=options.maxdf and ctf.bfactor>=options.minbfactor and ctf.bfactor<=options.maxbfactor: outargs.append(i)
+			r1=int(floor(1.0/(200.0*ctf.dsbg)))
+			r2=int(ceil(1.0/(20.0*ctf.dsbg)))
+			r3=int(floor(1.0/(10.0*ctf.dsbg)))
+			r4=int(ceil(1.0/(4.0*ctf.dsbg)))
+			losnr=sum(ctf.snr[r1:r2])/(r2-r1)
+			hisnr=sum(ctf.snr[r3:r4])/(r4-r3)
+			if ctf.defocus>=options.mindf and ctf.defocus<=options.maxdf and ctf.bfactor>=options.minbfactor and ctf.bfactor<=options.maxbfactor and losnr>options.minlosnr and hisnr>options.minhisnr : outargs.append(i)
 		except:
 			traceback.print_exc()
-			print "Unknown CTF for {},{}, including it".format(i,info_name(i+".hdf"))
+			ctfmsg+=1
 			outargs.append(i)
+	
+	if ctfmsg: print "Included {} images with undefined CTF".format(ctfmsg)
 
 	args=outargs
 	if len(args)==0 :

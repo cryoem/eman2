@@ -740,7 +740,7 @@ vector <float> EMAN2Ctf::compute_1d(int size,float ds, CtfType type, XYData * sf
 	case CTF_INTEN:
 		for (int i = 0; i < np; i++) {
 			float gam=-g1*s*s*s*s+g2*s*s;
-			r[i] = cos(gam-acac)*exp(-(bfactor/4.0f * s * s));
+			r[i] = cos(gam-acac);
 			r[i]*=r[i];
 			s += ds;
 		}
@@ -1004,7 +1004,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				float gam;
 				if (dfdiff==0) gam=-g1*s*s*s*s+g2*defocus*s*s;
 				else gam=-g1*s*s*s*s+g2*df(atan2((float)y,(float)x))*s*s;
-				float v = cos(gam-acac)*exp(-(bfactor/4.0f * s*s));
+				float v = cos(gam-acac);
 				d[x * 2 + ynx] = v*v;
 				d[x * 2 + ynx + 1] = 0;
 			}
