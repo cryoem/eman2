@@ -50,10 +50,14 @@ def main():
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
+	parser.add_argument("--path",type=str,default='',help="""Directory to store results in. 
+		The default is a numbered series of directories containing the prefix 'rotplot'; 
+		for example, rotplot_02 will be the directory by default if 'rotplot_01' already exists.""")
+	
 	parser.add_argument("--vols1", type=str, help="Comma-separated filenames of the .hdf volumes whose self-rotational correlation plot you want to compute.", default=None)
 	parser.add_argument("--vols2", type=str, help="Comma-separated filenames of the .hdf volumes whose rotational correlation plot you want to compute against the volumes provided through --vols1.", default=None)
 
-	parser.add_argument("--output", type=str, help="Name for the .txt file with the results and the corresponding .png plot")
+	#parser.add_argument("--output", type=str, help="Name for the .txt file with the results and the corresponding .png plot")
 	parser.add_argument("--sym", type=str, help="Symmetry to apply after all preprocessing.",default='c1')
 
 	
@@ -91,15 +95,20 @@ def main():
 
 	parser.add_argument("--plotonly",type=str, help="""If you already have the correlation variation with azimuth (for a particular altitude) in a text file in rows of 'az,ccc', 
 												provide the txt file(s) separated by commas --plotonly=file1.txt,file2.txt,file3.txt etc...""", default=None)
-	parser.add_argument("--singleplot",action="store_true", help="Plot all alts, or each vertex of --icosvertices is on, in a single .png file.", default=False)
+	
+	parser.add_argument("--singleplot",action="store_true", help="""Plot all alts, 
+		or each vertex of --icosvertices is on, in a single .png file.""", default=False)
+		
+	parser.add_argument("--offset",type=float,default=0.0, help="""Default=0. Rotation in azimuth
+		to apply to one of the models before computing the entire rotational correlation plot.""")
+		
 
 
 	
 	(options, args) = parser.parse_args()
 
 	
-	
-	print "Loaded mask is", options.mask
+	#print "Loaded mask is", options.mask
 	
 	
 	
@@ -143,12 +152,8 @@ def main():
 		else:
 			options.normproc = None
 		print "\nNormproc is", options.normproc
-	
-	print "args are", args	
-	logger = E2init(sys.argv, options.ppid)
-	
+
 	#print "plotonly is", options.plotonly
-	
 	
 	if options.only2dplot:
 		options.plot2d = True	
@@ -158,15 +163,12 @@ def main():
 			print "ERROR: You can only use --icosvertices for volumes in --vols1. You must NOT supply --vols2."
 			sys.exit()
 	
+	#print "args are", args	
+	logger = E2init(sys.argv, options.ppid)
 	
-	
-	
-	
-	
-	
-	
-	
-	
+		
+	from e2spt_classaverage import sptmakepath
+	options = sptmakepath(options,'rotplot')
 	
 	
 	if not options.plotonly:
@@ -240,11 +242,11 @@ def main():
 			plotname = options.output.replace('.txt','')
 			if not options.only2dplot:
 				print "While only 2D plot is off"
-				pylab.savefig(plotname)	
+				#pylab.savefig(plotname)	
 				#pylab.title(title)
 				pylab.ylabel('Correlation')
 				pylab.xlabel('Azimuth')	
-				pylab.savefig(plotname)
+				pylab.savefig( options.path + '/' + plotname )
 				#clf()
 		
 			if not options.icosvertices and options.plot2d:
@@ -284,23 +286,24 @@ def rotcccplot(v1,v2,options):
 		vol1 = EMData(v1,ni)
 		
 		if options.mask or options.normproc or options.lowpass or options.highpass or options.preprocess:
-			vol1 = preprocess(vol1,options)
+			vol1 = preprocessRotPlot(vol1,options)
 		title = v1
 		
 		#if v1 != v2:
 		vol2 = EMData(v2,0)
 		
 		if options.mask or options.normproc or options.lowpass or options.highpass or options.preprocess:
-			vol2 = preprocess(vol2,options)
-
+			vol2 = preprocessRotPlot(vol2,options)
+		
 		if nimg1 > 1:
 			title = v1 + '_ptcl' + str(ni).zfill(len(str(nimg1)))+'_VS_' + v2
 		else:
 			title = v1 + ' VS ' + v2
 			
-		#else:
-		#	vol2 = vol1.copy()
-	
+		if options.offset:
+			t=Transform({'type':'eman','az':options.offset,'alt':0,'phi':0})
+			vol1.transform( t )
+		
 		loops = 1
 		ts=[]
 	
@@ -323,6 +326,8 @@ def rotcccplot(v1,v2,options):
 		
 			if not options.normalizeplot or not options.singleplot:
 				plotter(options,azs,values,title,ts,loop,0,0)
+				
+				
 				print "I have returned from the plotter"
 			else:
 				#mastervalues.append(values)
@@ -335,18 +340,19 @@ def rotcccplot(v1,v2,options):
 					if maxv > absMAX:
 						absMAX = maxv
 
-				plotter(options,azs,values,title,ts,loop,absMIN,absMAX)	
+				plotter(options,azs,values,title,ts,loop,absMIN,absMAX)
 		
 		if options.singleplot:	
 			print "And single plot is on"
 			plotname=options.output.replace('.txt','.png')
 			if not options.only2dplot:
 				print "While only 2D plot is off"
-				pylab.savefig(plotname)	
+				
+				#pylab.savefig(options.path + '/' + plotname)	
 				#pylab.title(title)
 				pylab.ylabel('Correlation')
 				pylab.xlabel('Azimuth')	
-				pylab.savefig(plotname)
+				pylab.savefig( options.path + '/' + plotname)
 				#clf()
 		
 		
@@ -429,7 +435,7 @@ def plotter(options,azs,values,title,ts,loop,absMIN,absMAX):
 			
 			#print "txtname is", txtname
 				
-			f = open(txtname,'w')
+			f = open(options.path + '/' + txtname,'w')
 			for i in range(len(values[ele])):
 				line = str(azs[i]) + ' ' + str(values[ele][i]) + '\n'
 				lines.append(line)
@@ -497,7 +503,7 @@ def plotter(options,azs,values,title,ts,loop,absMIN,absMAX):
 			#pylab.title(title)
 			pylab.ylabel('Correlation')
 			pylab.xlabel('Azimuth')
-			pylab.savefig(plotname)
+			pylab.savefig( options.path + '/' + plotname)
 			print "I have saved the figure"
 			clf()	
 	
@@ -507,7 +513,7 @@ def plotter(options,azs,values,title,ts,loop,absMIN,absMAX):
 	
 	
 	
-def preprocess(vol,options):
+def preprocessRotPlot(vol,options):
 	print "\n\n\n\n\n\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\nEntering preprocessing function!!!!!!!!!!!!!!!!!!"
 
 
@@ -572,7 +578,7 @@ def preprocess(vol,options):
 		
 	
 	print "Leaving preprocessing function"
-	vol.write_image('rotplotpreprocvols.hdf',-1)
+	vol.write_image(options.path +'/rotplotpreprocvols.hdf',-1)
 	
 	
 	return(vol)
@@ -684,7 +690,7 @@ def twoD_plot(plotname,values,options):
 	pylab.ylim([-widthy,max(alts)+ markerwidth*2])
 	#for i in range(len(finalpoints)):
 	#	plt.plot(*zip(*[finalpoints[i]]),marker='o',markersize=4,color=color(ang_errors[i]))	
-	plt.savefig(plotname,bbox_inches=0)
+	plt.savefig(options.path + '/' + plotname,bbox_inches=0)
 	clf()
 	return()
 
@@ -733,6 +739,7 @@ def genicosvertices():
 	ts.append(Transform({'type':'eman','alt':180}))
 
 	return(ts)
+
 
 	
 if __name__ == "__main__":

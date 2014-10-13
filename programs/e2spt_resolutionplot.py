@@ -844,15 +844,15 @@ def fscplotter(fscs,options,apix=0.0):
 				print "\nCurrent cutoff thresh is", thresh
 				if float(thresh) == 0.5:
 					yy1=[0.500]*len(values)	
-					pylab.plot(x, yy1, 'k--', linewidth=1)
+					pylab.plot(x, yy1, 'k--', linewidth=3)
 				
 				if float(thresh) == 0.143:
 					yy2=[0.143]*len(values)
-					pylab.plot(x, yy2, 'k--', linewidth=1)
+					pylab.plot(x, yy2, 'k--', linewidth=3)
 				
 				if float(thresh) == 0.33 or float(thresh) == 0.3 or float(thresh) == 0.333:
 					yy3=[0.333]*len(values)
-					pylab.plot(x,yy3, 'k--', linewidth=1)
+					pylab.plot(x,yy3, 'k--', linewidth=3)
 						
 		#fit = pylab.plot(x, yfit, 'r-')
 
