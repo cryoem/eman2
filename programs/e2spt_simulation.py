@@ -37,6 +37,7 @@ from EMAN2jsondb import JSTask,jsonclasses
 
 import sys
 import numpy
+import math
 
 def main():
 
@@ -53,10 +54,10 @@ def main():
 	#	'gauss_5_slow', 'gypergeom_5', experimental""")
 	
 	
-	parser.add_argument("--fillwedge",action='store_true',default=False,help="""This option will
-		fill the region of the missing wedge with evenly spaced images of Gaussian noise
-		with the same tiltstep used to simulate the particles (as determined through the
-		parameter --nslices).""")
+	#parser.add_argument("--fillwedge",action='store_true',default=False,help="""This option will
+	#	fill the region of the missing wedge with evenly spaced images of Gaussian noise
+	#	with the same tiltstep used to simulate the particles (as determined through the
+	#	parameter --nslices).""")
 	
 	parser.add_argument("--path",type=str,default='',help="""Directory to store results in. 
 		The default is a numbered series of directories containing the prefix 'sptsim'; 
@@ -108,12 +109,12 @@ def main():
 	#parser.add_argument("--voltage", type=int,default=200,help="Voltage of the microscope, used to simulate the ctf added to the subtomograms.")
 	#parser.add_argument("--cs", type=float,default=2.1,help="Cs of the microscope, used to simulate the ctf added to the subtomograms.")
 
-	parser.add_argument("--defocus", type=float,default=3.0,help="""Intended defocus at 
-		the tilt axis (in microns) for the simulated tilt series.""")
+	parser.add_argument("--defocus", type=float,default=3.0,help="""Target defocus at 
+		the tilt axis (in microns) for the simulated tilt series. Default is 3.0.""")
 	parser.add_argument("--voltage", type=int,default=200,help="""Voltage of the microscope, 
-		used to simulate the ctf added to the subtomograms.""")
+		used to simulate the ctf added to the subtomograms. Default is 200 KV.""")
 	parser.add_argument("--cs", type=float,default=2.1,help="""Cs of the microscope, used 
-		to simulate the ctf added to the subtomograms.""")
+		to simulate the ctf added to the subtomograms. Default is 2.1.""")
 	parser.add_argument("--apix",type=float,default=0.0,help="""Provide accurate apix in case
 		the header has the wrong apix info.""")	
 	parser.add_argument("--bfactor",type=int,default=400,help="""Bfactor to use for CTF correction
@@ -121,9 +122,12 @@ def main():
 	parser.add_argument("--ampcont",type=float,default=0.05,help="""Amplitude contrast to use for CTF
 		correction phase flipping. Default is 0.05.""")
 
-	parser.add_argument("--gridholesize", type=float,default=0.5,help="""Size of the carbon hole in micrometers for the simulated grid (this will determine the shifts in defocus for each particle at 
-									each tilt step, depending on the position of the particle respect to the tilt axis; the tilt axis by convention goes parallel to Y through the middle of the tomogram.
-									of the subvolumes within the tomogram are assigned randomly.""")
+	parser.add_argument("--gridholesize", type=float,default=1.0,help="""Default=1.0. 
+		Size of the carbon hole in micrometers for the simulated grid (this will determine 
+		the shifts in defocus for each particle at each tilt step, depending on the position 
+		of the particle respect to the tilt axis; the tilt axis by convention goes parallel 
+		to Y through the middle of the tomogram.""")
+	
 	parser.add_argument("--icethickness", type=float,default=100,help="If --tomogramoutput is supplied, this will define the size of Z in PIXELS for the simulated tomogram.")
 
 	parser.add_argument("--saverandstack", action="store_true",default=True,help="""DEPREPCATED.
@@ -137,7 +141,12 @@ def main():
 		orientations, but with no missing wedge, no noise, no ctf parameters, etc.
 		The output randstack.hdf will be identical to simptcls.hdf""") 
 	
-	parser.add_argument("--saveprjs", action="store_true",default=False,help="Save the projections (the 'tilt series') for each simulated subtomogram.")
+	parser.add_argument("--saveprjs", action="store_true",default=False,help="""Save the 
+		projections (the 'tilt series') for each simulated subtomogram.""")
+	
+	parser.add_argument("--savetlt",action="store_true",default=False,help="""Save a text file
+		with .tlt extension (as in IMOD) containing the tilt angles for the simulated
+		tomogram and/or subtomograms.""")
 
 	parser.add_argument("--reconstructor", type=str,default="fourier",help="""The reconstructor 
 		to use to reconstruct the tilt series into a tomogram. Type 'e2help.py reconstructors' 
@@ -184,7 +193,8 @@ def main():
 	parser.add_argument("--verbose", "-v", type=int, dest="verbose", action="store", metavar="n", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default='thread:1')
+	parser.add_argument("--parallel",type=str,default='thread:1',help="""Default=thread:1. 
+		See http://blake.bcm.edu/emanwiki/EMAN2/Parallel""")
 	
 	(options, args) = parser.parse_args()	
 	
@@ -496,28 +506,6 @@ def clip2D( img, size ):
 	return img
 
 
-def clip3D( vol, size ):
-	
-	volxc = vol['nx']/2
-	volyc = vol['ny']/2
-	volzc = vol['nz']/2
-	
-	Rvol =  Region( (2*volxc - size)/2, (2*volyc - size)/2, (2*volzc - size)/2, size , size , size)
-	vol.clip_inplace( Rvol )
-	#vol.process_inplace('mask.sharp',{'outer_radius':-1})
-	
-	return vol
-
-
-def clip2D( img, size ):
-	
-	imgxc = img['nx']/2
-	imgyc = img['ny']/2
-	Rimg =  Region( (2*imgxc - size)/2, (2*imgyc - size)/2, 0, size , size , 1)
-	img.clip_inplace( Rimg )
-	return img
-
-
 def preprocess(options,stack,dimension):
 	
 	print "\n(e2spt_simulation.py)(preprocess), dimension is", dimension
@@ -598,7 +586,6 @@ def preprocess(options,stack,dimension):
 	
 
 
-	
 
 '''
 ====================
@@ -769,9 +756,11 @@ def subtomosim(options,ptcls,outname,dimension):
 	
 	tasks=[]
 	#>>for i in range(len(ptcls)):
+	
+	tangles = getangles( options )
 	for i in ptcls:	
 		#if options.parallel:			
-		task=SubtomoSimTask(ptcls[i],i,options,outname)
+		task=SubtomoSimTask(ptcls[i],i,options,outname,tangles)
 		tasks.append(task)
 	
 	tids=etc.send_tasks(tasks)
@@ -811,8 +800,6 @@ def subtomosim(options,ptcls,outname,dimension):
 		#pn+=1
 		ii+=1
 	
-	
-	
 	if options.finalboxsize and dimension == 3:
 		box = int(options.finalboxsize)
 		print "\nActually, because of finalboxsize$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n options.finalboxsize is", options.finalboxsize
@@ -841,11 +828,39 @@ def subtomosim(options,ptcls,outname,dimension):
 	return
 	
 	
+def getangles( options ):
+
+	angles = []
+	lower_bound = -1 * options.tiltrange
+	alt = lower_bound
+	upper_bound = options.tiltrange
+	nslices = options.nslices
+	tiltstep = round(( float(upper_bound) - float(lower_bound) )/ float(nslices - 1),2)	
+	
+	lines = []
+	
+	for j in range( nslices ):
+		realalt = alt + j*tiltstep
+		angles.append( realalt )
+		if options.savetlt:
+			line = str( realalt ) +'\n'
+			lines.append( line )
+	
+	if options.savetlt:
+		tiltfile = options.path + '/tiltangles.tlt'
+		print "\n\n\n\nPath to save angles in is", tiltfile
+		
+		f = open( tiltfile, 'w' )
+		f.writelines( lines )
+		f.close()
+	
+	return	angles
+	
 	
 class SubtomoSimTask(JSTask):
 	"""This is a task object for the parallelism system. It is responsible for generating a simulated subtomogram."""	
 	
-	def __init__(self,image,ptclnum,options,outname):
+	def __init__(self,image,ptclnum,options,outname,tiltangles):
 	
 		"""fixedimage and image may be actual EMData objects, or ["cache",path,number]
 		label is a descriptive string, not actually used in processing
@@ -858,13 +873,15 @@ class SubtomoSimTask(JSTask):
 		
 		JSTask.__init__(self,"SubTomoSim",data,{},"")
 
-		self.classoptions={"options":options,"ptclnum":ptclnum,"outname":outname}
+		self.classoptions={"options":options,"ptclnum":ptclnum,"outname":outname,"tiltangles":tiltangles}
 	
 	def execute(self,callback=None):
 		"""This simulates a subtomogram and saves projections before and after adding noise if instructed to."""
 		classoptions=self.classoptions
 		options=self.classoptions['options']
 		outname = self.classoptions['outname']
+		tiltangles = self.classoptions['tiltangles']
+		tiltangles.sort()
 		
 		i = self.classoptions['ptclnum']
 		
@@ -890,9 +907,9 @@ class SubtomoSimTask(JSTask):
 		nslices = options.nslices
 		tiltstep = round(( float(upper_bound) - float(lower_bound) )/ float(nslices - 1),2)	
 	
-		extraslices = 0
-		if options.fillwedge:
-			extraslices = int( ( 90.0 - float( upper_bound ) ) / tiltstep )
+		#extraslices = 0
+		#if options.fillwedge:
+		#	extraslices = int( ( 90.0 - float( upper_bound ) ) / tiltstep )
 			
 			
 		#nslices = int(round((upper_bound - lower_bound)/ options.tiltstep))	
@@ -901,9 +918,9 @@ class SubtomoSimTask(JSTask):
 		#print "\n\nBBBBBBBBBB\n\n"
 	
 		import random
-		px = random.uniform(-1* options.gridholesize/2 + image['nx']/2, options.gridholesize/2 - image['nx']/2)			#random distance in X of the particle's center from the tilt axis, at tilt=0
-																																#The center of a particle cannot be right at the edge of the tomogram; it has to be
-																																#at least ptcl_size/2 away from it
+		px = random.uniform(-1* options.gridholesize/2.0 + (apix*image['nx']/2.0)/10000, options.gridholesize/2.0 - (apix*image['nx']/2.0)/10000)			#random distance in X of the particle's center from the tilt axis, at tilt=0
+																														#The center of a particle cannot be right at the edge of the tomogram; it has to be
+																														#at least ptcl_size/2 away from it
 		alt = lower_bound
 		raw_projections = []
 		ctfed_projections = []
@@ -919,11 +936,12 @@ class SubtomoSimTask(JSTask):
 		print "The 3d image is", image
 		print "Its size is",image['nx'],image['ny'],image['nz']
 			
-		tiltangles = []
-		for j in range(nslices + extraslices):						#Extra 'noise' slices are 0 if --fillwedge is off. Calculated above if on.
-			realalt = alt + j*tiltstep
+		#tiltangles = []
+		#for j in range( nslices ):						#Extra 'noise' slices are 0 if --fillwedge is off. Calculated above if on.
+		for realalt in tiltangles:	
+			#realalt = alt + j*tiltstep
 		
-			tiltangles.append(realalt)
+			#tiltangles.append(realalt)
 		
 			#print "Real alt is", realalt
 			#print "Iterating over slices. Am in tiltstep, slice, alt", tiltstep,j,realalt
@@ -943,11 +961,17 @@ class SubtomoSimTask(JSTask):
 				#sys.exit()
 			
 			
-			dz = -1 * px * numpy.sin(realalt)							#Calculate the defocus shift per picture, per particle, depending on the 
-																		#particle's position relative to the tilt axis. For particles left of the tilt axis,
-																		#px is negative. With negative alt [left end of the ice down, right end up], 
-																		#dz should be negative.
-			defocus = options.defocus + dz
+			dz = -1 * px * numpy.sin( math.radians(realalt) )				#Calculate the defocus shift per picture, per particle, depending on the 
+																			#particle's position relative to the tilt axis. For particles left of the tilt axis,
+																			#px is negative. With negative alt [left end of the ice down, right end up], 
+																			#dz should be negative.
+			
+			print "Px is", px
+			print "And angle is", realalt
+			print "Therefore sin(alt) is", numpy.sin(realalt)
+			print "And thus dz is", dz
+			defocus = -1*options.defocus + dz
+			print "So the final defocus to use is", defocus
 			
 			
 			
@@ -956,6 +980,7 @@ class SubtomoSimTask(JSTask):
 	
 			prj = image.project("standard",t)
 			
+			'''
 			if options.fillwedge and j > nslices:
 	 			
 	 			print "\n(e2spt_simulation.py) I'm adding an extra slice with just noise" + str(j-nslices) + '/' + str(extraslices)
@@ -969,7 +994,7 @@ class SubtomoSimTask(JSTask):
 				finalnoise = ( noise*3 + noise2*3 )
 			
 				prj = finalnoise
-				
+			'''	
 				
 			
 			prj.set_attr('xform.projection',t)
@@ -981,7 +1006,7 @@ class SubtomoSimTask(JSTask):
 			#print "\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\nThe size of the prj is", prj['nx']
 			#print "\n"
 			
-			prj.process_inplace('normalize')
+			prj.process_inplace('normalize.edgemean')
 		
 			if options.saveprjs:
 				finalprjsRAW = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsRAW.hdf')
@@ -1004,13 +1029,13 @@ class SubtomoSimTask(JSTask):
 		
 			if options.applyctf:
 				ctf = EMAN2Ctf()
-				ctf.from_dict({'defocus':options.defocus,'bfactor':100,'ampcont':0.05,'apix':apix,'voltage':options.voltage,'cs':options.cs})	
+				ctf.from_dict({ 'defocus': defocus, 'bfactor': options.bfactor ,'ampcont': options.ampcont ,'apix':apix, 'voltage':options.voltage, 'cs':options.cs })	
 				prj_ctf = prj_fft.copy()	
 				ctf.compute_2d_complex(prj_ctf,Ctf.CtfType.CTF_AMP)
 				prj_fft.mult(prj_ctf)
 		
 				prj_r = prj_fft.do_ift()							#Go back to real space
-			
+				prj_r['ctf'] = ctf
 			
 			noise = EMData()
 		
@@ -1125,8 +1150,8 @@ class SubtomoSimTask(JSTask):
 		rec['origin_x']=0
 		rec['origin_y']=0
 		rec['origin_z']=0
-		rec['sptsim_tiltangles'] = tiltangles
-		rec['sptsim_tiltaxis'] = options.tiltaxis
+		rec['spt_tiltangles'] = tiltangles
+		rec['spt_tiltaxis'] = options.tiltaxis
 
 		#print "The apix of rec is", rec['apix_x']
 		
@@ -1208,12 +1233,12 @@ def get_results(etc,tids,options):
 		for i,prog in enumerate(proglist):
 			if prog==-1 : nwait+=1
 			if prog==100 :
-				r=etc.get_results(tidsleft[i])					# results for a completed task
+				r=etc.get_results(tidsleft[i])				#Results for a completed task
 				
 				if r:
 					#print "r is", r
-					ptcl=r[0].classoptions["ptclnum"]		# get the particle number from the task rather than trying to work back to it
-					results[ptcl] = r[1]						# this will be a list of (qual,Transform)
+					ptcl=r[0].classoptions["ptclnum"]		#Get the particle number from the task rather than trying to work back to it
+					results[ptcl] = r[1]					
 				ncomplete+=1
 		
 		tidsleft=[j for i,j in enumerate(tidsleft) if proglist[i]!=100]		# remove any completed tasks from the list we ask about
