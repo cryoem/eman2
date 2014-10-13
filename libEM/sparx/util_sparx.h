@@ -58,6 +58,10 @@ static void BPCQ(EMData* B, EMData *CUBE, const int radius);
 
 static vector<float> infomask(EMData* Vol, EMData* mask, bool);
 
+static vector<float> helixshiftali(vector<EMData*> ctx, vector<vector<float> > pcoords, int nsegms, float maxincline, int kang, int search_rng, int nxc);
+
+static vector<float> curhelixshiftali(vector<EMData*> ctx, vector<vector<float> > pcoords, int nsegms,  int search_rng, int nx, int ny);
+
 static void colreverse(float* beg, float* end, int nx);
 
 static void slicereverse(float* beg, float* end, int nx,int ny);
@@ -170,6 +174,7 @@ static void splint( float *xa, float *ya, float *y2a, int n,
  */
 static void Radialize(int *PermMatTr,  float * kValsSorted,
             float *weightofkvalsSorted, int Size, int *SizeReturned);
+
 
 
 

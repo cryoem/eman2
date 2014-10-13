@@ -147,6 +147,172 @@ vector<float> Util::infomask(EMData* Vol, EMData* mask, bool flip = false)
 }
 
 
+vector<float> Util::helixshiftali(vector<EMData*> ctx, vector<vector<float> > pcoords, int nsegms, float maxincline, int kang, int search_rng, int nxc)
+{
+	int cents, six, incline, kim, ixl, sib;
+	float q0, qt, qu, tang, dst, xl, dxl, qm, bang;
+	vector<float> result;
+	cents = nsegms/2;
+	qm = -1.0e23;  
+	for ( six =-search_rng; six <= search_rng; six++ ) {
+		q0 = ctx[cents]->get_value_at(six+nxc);
+		for ( incline = 0; incline <= kang; incline++ ) {
+			qt = q0;
+			qu = q0;
+			if ( kang > 0 ) tang = tan(maxincline/kang*incline);
+			else tang = 0.0;
+			for ( kim = cents+1; kim < nsegms; kim++ ) {
+				dst = sqrt((pcoords[cents][0] - pcoords[kim][0])*(pcoords[cents][0] - pcoords[kim][0])+
+				(pcoords[cents][1] - pcoords[kim][1])*(pcoords[cents][1] - pcoords[kim][1]));
+				xl = dst * tang + six + nxc;
+				ixl = floor(xl);
+				dxl = xl - ixl;
+				qt += (1.0-dxl)*ctx[kim]->get_value_at(ixl) + dxl*ctx[kim]->get_value_at(ixl+1);
+				xl = -dst*tang+six+nxc;
+				ixl = floor(xl);
+				dxl = xl - ixl;
+				qu += (1.0-dxl)*ctx[kim]->get_value_at(ixl) + dxl*ctx[kim]->get_value_at(ixl+1);
+			}
+			for ( kim = 0; kim < cents; kim++ ) {
+			 	dst = sqrt((pcoords[cents][0] - pcoords[kim][0])*(pcoords[cents][0] - pcoords[kim][0])+
+				(pcoords[cents][1] - pcoords[kim][1])*(pcoords[cents][1] - pcoords[kim][1]));
+				xl = -dst*tang+six+nxc;
+				ixl = floor(xl);
+				dxl = xl - ixl;
+				qt += (1.0-dxl)*ctx[kim]->get_value_at(ixl) + dxl*ctx[kim]->get_value_at(ixl+1);
+				xl = dst * tang + six + nxc;
+				ixl = floor(xl);
+				dxl = xl - ixl;
+				qu += (1.0-dxl)*ctx[kim]->get_value_at(ixl) + dxl*ctx[kim]->get_value_at(ixl+1);
+			}
+			if ( qt > qm ) {
+				qm = qt;
+				sib = six;
+				bang = tang;}
+			if ( qu > qm ) {
+				qm = qu;
+				sib = six;
+				bang = -tang;}	
+		}
+		
+	
+	
+	}
+	//printf("\nqm sib bang=%f %f %f", qm, sib, bang);    
+    result.push_back((float)sib); 
+    result.push_back(bang);
+    result.push_back(qm);
+    return result;    
+}
+
+
+vector<float> Util::curhelixshiftali(vector<EMData*> ctx, vector<vector<float> > pcoords, int nsegms, int search_rng, int nx, int ny)
+{
+	int cents, six, incline, kim, ixl, sib, circnum, circ, nxc, kang;
+	float q0, qt, qu, tang, dst, xl, dxl, qm, bang, circd, circR, CircR, x1, x2;
+	float dst0, dst1, dst2, xmax, xmin, maxincline, Rsinang, Rcosang, RSinang, RCosang;
+	vector<float> result;
+	
+	nxc = nx/2;
+	cents = nsegms/2;
+	circnum = nxc;
+	qm = -1.0e23; 
+	dst1 = sqrt((pcoords[cents][0] - pcoords[0][0])*(pcoords[cents][0] - pcoords[0][0]) + (pcoords[cents][1] - pcoords[0][1])*(pcoords[cents][1] - pcoords[0][1]));
+	dst2 = sqrt((pcoords[cents][0] - pcoords[nsegms-1][0])*(pcoords[cents][0] - pcoords[nsegms-1][0]) + (pcoords[cents][1] - pcoords[nsegms-1][1])*(pcoords[cents][1] - pcoords[nsegms-1][1]));
+	
+	for ( circ= 0; circ < circnum; circ++ ) {	
+		circd = 4*(circ+1.0);
+		circR = circd/2.0 + ((ny*nsegms)*(ny*nsegms))/(8.0*circd);
+		x1 = circR - sqrt(circR*circR-dst1*dst1);
+		x2 = circR - sqrt(circR*circR-dst2*dst2);
+		xmax = (x1>x2)?x1:x2;
+		if ( xmax == x1 ) dst0 = dst1;
+		else dst0 = dst2;
+				 
+		for ( six =-search_rng; six <= search_rng; six++ ) {
+			if (nx-(six+nxc+xmax)-2 <= 0) continue;
+			xmin = (nx-(six+nxc+xmax)-2<six+nxc-2)?(nx-(six+nxc+xmax)-2):(six+nxc-2);
+			maxincline = atan2(xmin,dst0);
+			kang = (int)(dst0*tan(maxincline)+0.5);
+			q0 = ctx[cents]->get_value_at(six+nxc);
+			for ( incline = -kang; incline <= kang; incline++ ) {
+				qt = q0;
+				//qu = q0;
+				if ( kang > 0 ) {
+					tang = tan(maxincline/kang*incline);
+					Rsinang = circR*sin(maxincline/kang*incline);
+					Rcosang = circR*cos(maxincline/kang*incline);}
+				else {
+					tang = 0.0;
+					Rsinang = 0.0;
+					Rcosang = 1.0;}
+				for ( kim = cents+1; kim < nsegms; kim++ ) {
+					dst = sqrt((pcoords[cents][0] - pcoords[kim][0])*(pcoords[cents][0] - pcoords[kim][0])+
+					(pcoords[cents][1] - pcoords[kim][1])*(pcoords[cents][1] - pcoords[kim][1]));
+					if ( tang >= 0 ) {                     //case 1 and 4.
+						xl = Rcosang - sqrt(Rcosang*Rcosang-2*dst*Rsinang-dst*dst)+six+nxc;
+						ixl = (int) xl;
+						dxl = xl - ixl;
+						qt += (1.0-dxl)*ctx[kim]->get_value_at(ixl) + dxl*ctx[kim]->get_value_at(ixl+1);}
+						
+					if ( tang < 0 ) {
+						if ( -dst*tang > circR - sqrt(circR*circR-dst*dst)) {	             //## case 3
+							if ( Rcosang*Rcosang+2*dst*Rsinang-dst*dst <0 )
+							printf("Rcosang**2+2*dst*Rsinang-dst**2 less than 0 in curhelicalshiftali_MPI"); 
+							xl = -Rcosang + sqrt(Rcosang*Rcosang+2*dst*Rsinang-dst*dst)+six+nxc;
+							ixl = (int) xl;
+							dxl = xl - ixl;
+							if ( ixl < 0 ) printf("kim=%d, cents=%d nsegms=%d incline=%d ixl=%d", kim, cents,nsegms, incline,ixl); 
+							qt += (1.0-dxl)*ctx[kim]->get_value_at(ixl) + dxl*ctx[kim]->get_value_at(ixl+1);}
+						else {                                           //## case 2
+							xl = Rcosang - sqrt(Rcosang*Rcosang+2*dst*Rsinang-dst*dst)+six+nxc;
+							ixl = (int) xl;
+							dxl = xl - ixl;
+							qt += (1.0-dxl)*ctx[kim]->get_value_at(ixl) + dxl*ctx[kim]->get_value_at(ixl+1);}}
+				}
+				for ( kim = 0; kim < cents; kim++ ) {
+					dst = sqrt((pcoords[cents][0] - pcoords[kim][0])*(pcoords[cents][0] - pcoords[kim][0])+
+					(pcoords[cents][1] - pcoords[kim][1])*(pcoords[cents][1] - pcoords[kim][1]));
+					if ( tang >= 0 ) {
+						if ( dst*tang > circR - sqrt(circR*circR-dst*dst)) {             
+							xl = -Rcosang + sqrt(Rcosang*Rcosang+2*dst*Rsinang-dst*dst)+six+nxc;
+							ixl = (int) xl;
+							dxl = xl - ixl;
+							qt += (1.0-dxl)*ctx[kim]->get_value_at(ixl) + dxl*ctx[kim]->get_value_at(ixl+1);}
+						else {                      
+							xl = Rcosang - sqrt(Rcosang*Rcosang+2*dst*Rsinang-dst*dst)+six+nxc;
+							ixl = (int) xl;
+							dxl = xl - ixl;
+							qt += (1.0-dxl)*ctx[kim]->get_value_at(ixl) + dxl*ctx[kim]->get_value_at(ixl+1);}}
+					if ( tang < 0 ) {	
+						xl = Rcosang - sqrt(Rcosang*Rcosang-2*dst*Rsinang-dst*dst)+six+nxc;
+						ixl = (int) xl;
+						dxl = xl - ixl;
+						qt += (1.0-dxl)*ctx[kim]->get_value_at(ixl) + dxl*ctx[kim]->get_value_at(ixl+1);}
+				}
+				if ( qt > qm ) {
+					qm = qt;
+					sib = six;
+					bang = tang;
+					CircR = circR;
+					RSinang = Rsinang;
+					RCosang = Rcosang;}
+			}
+		
+		}
+	}	
+	//printf("\nqm sib bang=%f %f %f", qm, sib, bang);    
+    result.push_back((float)sib); 
+    result.push_back(bang);
+    result.push_back(CircR);
+    result.push_back(RSinang);
+    result.push_back(RCosang);
+    result.push_back(qm);
+    return result;    
+}
+
+
+
 //----------------------------------------------------------------------------------------------------------
 
 Dict Util::im_diff(EMData* V1, EMData* V2, EMData* mask)
