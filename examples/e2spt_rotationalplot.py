@@ -102,6 +102,9 @@ def main():
 	parser.add_argument("--offset",type=float,default=0.0, help="""Default=0. Rotation in azimuth
 		to apply to one of the models before computing the entire rotational correlation plot.""")
 		
+	parser.add_argument("--histogram",type=int, default=0, help="""Default=0 (won't save
+		histogram). Number of bins to use to save plot as a histogram
+		in addition to the normal, continuous curve.""")
 
 
 	
@@ -326,7 +329,9 @@ def rotcccplot(v1,v2,options):
 		
 			if not options.normalizeplot or not options.singleplot:
 				plotter(options,azs,values,title,ts,loop,0,0)
-				
+				if options.histogram:
+					histogramBins = options.histogram
+					histogramPlot( title, options, values, histogramBins )
 				
 				print "I have returned from the plotter"
 			else:
@@ -741,6 +746,23 @@ def genicosvertices():
 	return(ts)
 
 
+def histogramPlot( name, options, intensities, bins ):
+
+	plt.hist(intensities, bins, label=name)	
+	#mean = numpy.mean( intensities )
+	#std = numpy.std( intensities )
+	
+	#pdf = norm.pdf(intensities, mean, std)
+	#plt.plot(intensities, pdf)
+
+	plt.title("Rotational correlation histogram")
+	plt.ylabel("Azimuth")
+	plt.xlabel("Correlation")
+	
+	plt.savefig(options.path + '/' + name + '.png')
+	plt.clf()
+
+	return
 	
 if __name__ == "__main__":
 	main()
