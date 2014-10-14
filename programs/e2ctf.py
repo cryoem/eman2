@@ -362,7 +362,7 @@ def write_e2ctf_output(options):
 			if options.constbfactor>0: ctf.bfactor=options.constbfactor
 
 			if phaseout : print "Phase image out: ",phaseout,"\t",
-			if phaseprocout : print "Processesd phase image out: ",phaseprocout[0],"\t",
+			if phaseprocout : print "Processed phase image out: ",phaseprocout[0],"\t",
 			if phasehpout : print "Phase-hp image out: ",phasehpout,"\t",
 			if wienerout : print "Wiener image out: ",wienerout,
 			print "  defocus=",ctf.defocus
