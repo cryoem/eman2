@@ -79,7 +79,7 @@ def main():
 
 	parser.add_argument("--normproc",type=str,help="""Normalization processor applied to particles before alignment. 
 													Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. 
-													If you want to turn this option off specify \'None\'""", default="normalize.mask")
+													If you want to turn this option off specify \'None\'""", default="normalize.edgemean")
 
 
 	(options, args) = parser.parse_args()	
