@@ -461,10 +461,11 @@ def commandline_tomoboxer(tomogram,options):
 	if options.path and options.path not in name:
 		name = options.path + '/' + name
 
-	if ".hdf" not in name and '.mrc' not in name:
-		print "Format ERROR: Only .hdf and .mrc supported."
+	if ".hdf" not in name:
+		print "Format ERROR: Only .hdf fomart supported."
 		sys.exit()
-
+	
+	avgr=None
 	if options.bruteaverage:
 		avgr=Averagers.get('mean.tomo')
 
@@ -541,7 +542,7 @@ def commandline_tomoboxer(tomogram,options):
 					#e['spt_originalstack']= nameSingle
 					e.write_image(nameSingle,0)
 
-				if options.bruteaverage:
+				if options.bruteaverage and avgr:
 					avgr.add_image(e)
 
 				jj+=1
@@ -563,13 +564,17 @@ def commandline_tomoboxer(tomogram,options):
 		else:
 			print "\n(e2spt_boxer.py) WARNING: unbinned_extractor function returned NOTHING for this box",x,y,z
 
-	if options.bruteaverage:
-		avg=avgr.finish()
+	if options.bruteaverage and avgr:
+		avg = avgr.finish()
 		if avg:
-			avg['spt_originalstack']=name.split('/')[-1]
-			avg.write_image(options.path + '/' + options.output.split('.')[0] + '_AVG.' + options.output.split('.')[-1])
+			avg['spt_originalstack'] = os.path.basename( name )
+			avgout = options.output.replace( '.hdf', '_AVG.hdf' )
+			if options.path:
+				avgout = options.path + '/' + avgout
+			avg.process_inplace('normalize')
+			avg.write_image( avgout, 0 )
 		else:
-			print "The particles averaged into nothing; see", type(avg)
+			print "\nThe particles averaged into nothing; see", type(avg)
 
 	return()
 
