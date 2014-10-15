@@ -354,6 +354,9 @@ def write_e2ctf_output(options):
 				
 				if options.phaseflipproc2!=None:
 					phaseprocout.append(parsemodopt(options.phaseflipproc2))
+					
+				if options.phaseflipproc3!=None:
+					phaseprocout.append(parsemodopt(options.phaseflipproc3))
 
 			try: ctf=js_open_dict(info_name(filename))["ctf"][0]		# EMAN2CTF object from disk
 			except:
