@@ -147,11 +147,11 @@ vector<float> Util::infomask(EMData* Vol, EMData* mask, bool flip = false)
 }
 
 
-vector<float> Util::helixshiftali(vector<EMData*> ctx, vector<vector<float> > pcoords, int nsegms, float maxincline, int kang, int search_rng, int nxc)
+vector<double> Util::helixshiftali(vector<EMData*> ctx, vector<vector<float> > pcoords, int nsegms, float maxincline, int kang, int search_rng, int nxc)
 {
 	int cents, six, incline, kim, ixl, sib;
-	float q0, qt, qu, tang, dst, xl, dxl, qm, bang;
-	vector<float> result;
+	double q0, qt, qu, tang, dst, xl, dxl, qm, bang;
+	vector<double> result;
 	cents = nsegms/2;
 	qm = -1.0e23;  
 	for ( six =-search_rng; six <= search_rng; six++ ) {
@@ -162,8 +162,9 @@ vector<float> Util::helixshiftali(vector<EMData*> ctx, vector<vector<float> > pc
 			if ( kang > 0 ) tang = tan(maxincline/kang*incline);
 			else tang = 0.0;
 			for ( kim = cents+1; kim < nsegms; kim++ ) {
-				dst = sqrt((pcoords[cents][0] - pcoords[kim][0])*(pcoords[cents][0] - pcoords[kim][0])+
-				(pcoords[cents][1] - pcoords[kim][1])*(pcoords[cents][1] - pcoords[kim][1]));
+				dst = sqrt(((double)pcoords[cents][0] - (double)pcoords[kim][0])*((double)pcoords[cents][0] - (double)pcoords[kim][0])+
+				((double)pcoords[cents][1] - (double)pcoords[kim][1])*((double)pcoords[cents][1] - (double)pcoords[kim][1]));
+				//printf("\ndst=%5.6f", dst); fflush(stdout);//cout <<"dst="<< setprecision(4) << dst<< endl;
 				xl = dst * tang + six + nxc;
 				ixl = floor(xl);
 				dxl = xl - ixl;
@@ -174,8 +175,8 @@ vector<float> Util::helixshiftali(vector<EMData*> ctx, vector<vector<float> > pc
 				qu += (1.0-dxl)*ctx[kim]->get_value_at(ixl) + dxl*ctx[kim]->get_value_at(ixl+1);
 			}
 			for ( kim = 0; kim < cents; kim++ ) {
-			 	dst = sqrt((pcoords[cents][0] - pcoords[kim][0])*(pcoords[cents][0] - pcoords[kim][0])+
-				(pcoords[cents][1] - pcoords[kim][1])*(pcoords[cents][1] - pcoords[kim][1]));
+			 	dst = sqrt(((double)pcoords[cents][0] - (double)pcoords[kim][0])*((double)pcoords[cents][0] - (double)pcoords[kim][0])+
+				((double)pcoords[cents][1] - (double)pcoords[kim][1])*((double)pcoords[cents][1] - (double)pcoords[kim][1]));
 				xl = -dst*tang+six+nxc;
 				ixl = floor(xl);
 				dxl = xl - ixl;
@@ -199,7 +200,7 @@ vector<float> Util::helixshiftali(vector<EMData*> ctx, vector<vector<float> > pc
 	
 	}
 	//printf("\nqm sib bang=%f %f %f", qm, sib, bang);    
-    result.push_back((float)sib); 
+    result.push_back((double)sib); 
     result.push_back(bang);
     result.push_back(qm);
     return result;    

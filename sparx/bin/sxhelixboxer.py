@@ -717,8 +717,7 @@ def db_save_particles(micrograph_filepath, ptcl_filepath = None, px_dst = None, 
 		else:
 			helix_particles = get_unrotated_particles(micrograph, coords, px_dst, px_length, px_width,mic_name = micrograph_filename)
 		for ii in xrange(len(helix_particles)):
-			(helix_particles[ii]).set_attr("filament", micrograph_filename+"%04d"%nhelix)	
-			#(helix_particles[ii]).set_attr("astig_jiao", helix["astig_jiao"])	## @ming   works		
+			(helix_particles[ii]).set_attr("filament", micrograph_filename+"%04d"%nhelix)
 		nhelix = nhelix + 1
 		all_particles.append(helix_particles)
 
@@ -2168,12 +2167,10 @@ def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size
 	# Set box coordinates in sxhelixboxer database
 	db_load_helix_coords(tmpfile, hcoordsname, False, boxsize)
 	
-	#db_save_helices(tmpfile, options.helix_images, boxsize)            ##@ming
 	micrograph_filename = os.path.join(micpath,'%s.hdf'%filename)                     ##@ming
 	print "mic file name=%s"%micrograph_filename
 	print "mic file path=%s"%micpath
 	micrograph_name = os.path.splitext( micrograph_filename )[0]        ##@ming 
-	##if not helix_filepath:                                             ##@ming
 	helix_filepath = "%s_helix.hdf" % ( os.path.join(micpath, filename) )   ##@ming
 	helices_dict = win_get_helices_dict(tmpfile, boxsize)                ##@ming
 
@@ -2221,8 +2218,7 @@ def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size
 					stat = Util.infomask( prj, mask, False )
 					prj -= stat[0]
 					if importctf:
-						prj.set_attr("ctf",ctfs)
-						#prj.set_attr("astig_jiao",ctfs.dfang)     ##@ming
+						prj.set_attr("ctf",ctfs)						
 						prj.set_attr("ctf_applied", 0)
 					prj.write_image(otcl_images, j)
 					#prj.write_image(outstacknameall, iseg)

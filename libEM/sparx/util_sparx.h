@@ -58,7 +58,7 @@ static void BPCQ(EMData* B, EMData *CUBE, const int radius);
 
 static vector<float> infomask(EMData* Vol, EMData* mask, bool);
 
-static vector<float> helixshiftali(vector<EMData*> ctx, vector<vector<float> > pcoords, int nsegms, float maxincline, int kang, int search_rng, int nxc);
+static vector<double> helixshiftali(vector<EMData*> ctx, vector<vector<float> > pcoords, int nsegms, float maxincline, int kang, int search_rng, int nxc);
 
 static vector<float> curhelixshiftali(vector<EMData*> ctx, vector<vector<float> > pcoords, int nsegms,  int search_rng, int nx, int ny);
 
