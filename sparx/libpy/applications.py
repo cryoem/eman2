@@ -14944,9 +14944,7 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 					print_msg("Symmetry enforcement and user function time = %d\n"%(time()-start_time))
 					start_time = time()
 
-				# delete old refrings2 since the next iteration will generate new ones
 				# using current volume
-				del refrings
 				bcast_EMData_to_all(vol, myid, main_node)
 			
 			mpi_barrier(MPI_COMM_WORLD)
