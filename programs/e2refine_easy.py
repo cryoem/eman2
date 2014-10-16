@@ -396,15 +396,15 @@ are really required to achieve the targeted resolution, you may consider manuall
 			options.orientgen="eman:delta={:1.5f}:inc_mirror=0:perturb=0".format(astep)
 			if options.classiter<0 :
 				if options.targetres>12.0 :
-					options.classiter=3
+					classiter=3
 					append_html("<p>Your desired resolution is below 1/2 Nyquist, and you requested a resolution of <12 A, so we will initially set --classiter to 3. This will help \
 low resolution refinements converge more rapidly. If you run more than 2 iterations and the map seems to have converged fairly well, this will be decreased.</p>")
 				elif options.targetres>8.0 :
-					options.classiter=2
+					classiter=2
 					append_html("<p>Your desired resolution is below 1/2 Nyquist, and you requested a resolution of <8 A, so we will initially set --classiter to 2. This balances \
 rapid convergence with the subnanometer resolution goal. If you run more than 2 iterations and the map seems to have converged fairly well, this will be decreased.</p>")
 				else :
-					options.classiter=1
+					classiter=1
 					append_html("<p>Your desired resolution is below 1/2 Nyquist, and you requested a high resolution, so we will initially set --classiter to 1. This balances \
 rapid convergence with the resolution goal. If you run more than 2 iterations and the map seems to have converged fairly well, this will be decreased.</p>")
 
@@ -421,14 +421,14 @@ even lead to worse structures. Based on your requested resolution and box-size, 
 			append_html("<p>Based on your requested resolution and box-size, modified by --speed,  I will use an angular sampling of {:1.2f} deg. For details, please see \
 <a href=http://blake.bcm.edu/emanwiki/EMAN2/AngStep>http://blake.bcm.edu/emanwiki/EMAN2/AngStep</a></p>".format(astep))
 			if options.classiter<0 :
-				options.classiter=1
+				classiter=1
 				append_html("<p>Your desired resolution is between 1/2 and 3/4 Nyquist, so we will set --classiter to 1. Leaving this above 0 \
 will help avoid noise bias in early rounds, but it may be reduced to zero if convergence seems to have been achieved.</p>")
 
 		# target resolution is beyond 3/4 Nyquist
 		else :
 			if options.classiter<0 :
-				options.classiter=1
+				classiter=1
 				append_html("<p>Your desired resolution is beyond 3/4 Nyquist. Regardless, we will set --classiter to 1 initially. Leaving this above 0 \
 will help avoid noise bias, but it may be reduced to zero if convergence seems to have been achieved.</p>")
 			astep=89.99/ceil(90.0*9.0/((options.speed+3.0)*sqrt(4300/nx)))		# This rounds to the best angular step divisible by 90 degrees
@@ -447,7 +447,7 @@ important to use an angular step which is 90/integer.</p>")
 		except:
 			append_html("<p>Could not extract an angular step from your orientation generator. This means I won't be able to use it for optimal rotational averaging during reconstruction</p>")
 			astep=0
-		if options.classiter<0 : options.classiter=1
+		if options.classiter<0 : classiter=1
 	if options.breaksym : options.orientgen=options.orientgen+":breaksym=1"
 
 
@@ -591,9 +591,18 @@ overinterpret these plots. The FSC plots themselves contain some noise, so there
 	yticklocs2=(0.0,.125,.25,.375,.5,.625,.75,.875,1.0)
 	yticklbl2=("0"," ","0.25"," ","0.5"," ","0.75"," ","1.0")
 	
+	initclassiter=classiter
 	### Actual refinement loop ###
 	for it in range(1,options.iter+1) :
 		append_html("<h4>Beginning iteration {} at {}</h4>".format(it,time.ctime(time.time())),True)
+
+		# adjustments to classiter
+		if options.classiter<0 and classiter==initclassiter:
+			if (options.iter>3 and it==options.iter-2) or (options.iter>2 and it==options.iter-1) or (options.iter==2 and it==2):
+				if initclassiter>1 : classiter=1
+				elif initclassiter==1 : classiter=0
+			append_html("<p>*** Changing classiter from {} to {} ***</p>".format(initclassiter,classiter),True)
+
 
 		### 3-D Projections
 		# Note that projections are generated on a single node only as specified by --threads
@@ -655,14 +664,14 @@ overinterpret these plots. The FSC plots themselves contain some noise, so there
 		cmd="e2classaverage.py --input {inputfile} --classmx {path}/classmx_{itr:02d}_even.hdf --storebad --output {path}/classes_{itr:02d}_even.hdf --ref {path}/projections_{itr:02d}_even.hdf --iter {classiter} \
 -f --resultmx {path}/cls_result_{itr:02d}_even.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
 --align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} {verbose} {parallel}".format(
-			inputfile=options.input[0], path=options.path, itr=it, classiter=options.classiter, normproc=options.classnormproc, averager=options.classaverager, classrefsf=classrefsf,
+			inputfile=options.input[0], path=options.path, itr=it, classiter=classiter, normproc=options.classnormproc, averager=options.classaverager, classrefsf=classrefsf,
 			classautomask=classautomask,classkeep=options.classkeep, classkeepsig=classkeepsig, classcmp=options.classcmp, classalign=options.classalign, classaligncmp=options.classaligncmp,
 			classralign=classralign, prefilt=prefilt, verbose=verbose, parallel=parallel)
 		run(cmd)
 		cmd="e2classaverage.py --input {inputfile} --classmx {path}/classmx_{itr:02d}_odd.hdf --storebad --output {path}/classes_{itr:02d}_odd.hdf --ref {path}/projections_{itr:02d}_odd.hdf --iter {classiter} \
 -f --resultmx {path}/cls_result_{itr:02d}_odd.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
 --align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} {verbose} {parallel}".format(
-			inputfile=options.input[1], path=options.path, itr=it, classiter=options.classiter, normproc=options.classnormproc, averager=options.classaverager, classrefsf=classrefsf,
+			inputfile=options.input[1], path=options.path, itr=it, classiter=classiter, normproc=options.classnormproc, averager=options.classaverager, classrefsf=classrefsf,
 			classautomask=classautomask,classkeep=options.classkeep, classkeepsig=classkeepsig, classcmp=options.classcmp, classalign=options.classalign, classaligncmp=options.classaligncmp,
 			classralign=classralign, prefilt=prefilt, verbose=verbose, parallel=parallel)
 		run(cmd)
