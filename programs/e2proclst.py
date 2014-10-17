@@ -52,7 +52,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	
 	if len(args)<1 : 
 		parser.error("At least one lst file required")
-		sys.eixt(1)
+		sys.exit(1)
 
 	if options.retype != None:
 		
