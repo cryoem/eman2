@@ -766,13 +766,13 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,phaseproc=No
 
 			if phaseproc!=None:
 				out2=out.copy()				# processor may or may not be in Fourier space
-				# we take a sequence of processor option 2-tuples
-				for op in phaseproc[1:]:
-					out2.process_inplace(op[0],op[1])
 				out2["ctf"]=ctf
 				out2["apix_x"] = ctf.apix
 				out2["apix_y"] = ctf.apix
 				out2["apix_z"] = ctf.apix
+				# we take a sequence of processor option 2-tuples
+				for op in phaseproc[1:]:
+					out2.process_inplace(op[0],op[1])
 #				out2.clip_inplace(Region(int(ys2*(oversamp-1)/2.0),int(ys2*(oversamp-1)/2.0),ys2,ys2))
 
 #				print fft2.get_ysize(),len(hpfilt)
