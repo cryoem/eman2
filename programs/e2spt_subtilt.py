@@ -79,6 +79,9 @@ def main():
 	parser.add_argument('--boxsize',type=int,default=128,help="""Size of the 2D "tiles" or 
 		images for each particle from each image in the tiltseries.""")
 	
+	parser.add_argument('--apix',type=float,default=0.0,help="""If provided, this value will
+		be used for apix instead of the one read from the header of --tiltseries""")
+		
 	parser.add_argument("--ppid", type=int, help="""Set the PID of the parent process, 
 		used for cross platform PPID""",default=-1)
 	
@@ -162,15 +165,22 @@ def main():
 	'''
 	serieshdr = EMData(options.tiltseries,0,True)
 	nslices = serieshdr['nz']
-	nx = serieshdr['nx']
-	ny = serieshdr['ny']
 	
 	if int( nslices ) != int( ntiltangles ):
 		print """ERROR: The tiltangles file doesn't seem to correspond to the tiltseries provided.
 				The number of images in --tiltseries (z dimension of MRC stack) must be equal to the number
 				of lines in --tiltangles."""
 		sys.exit()
-
+	
+	'''
+	Get apix
+	'''
+	nx = serieshdr['nx']
+	ny = serieshdr['ny']
+	apix = serieshdr['apix_x']
+	if options.apix:
+		apix=options.apix
+	
 	'''
 	If error free up to this point, make path to store results
 	'''
@@ -218,7 +228,7 @@ def main():
 		clines = cfile.readlines()						#Read its lines
 		cfile.close()									#Close the file
 	
-	elif options.coord3d:
+	elif options.coords3d:
 		cfile = open(options.coords3d,'r')				#Open coordinates file
 		clines = cfile.readlines()						#Read its lines
 		cfile.close()									#Close the file
@@ -229,6 +239,7 @@ def main():
 	Some people might manually make ABERRANT coordinates files with commas, tabs, or more 
 	than one space in between coordinates. Then, parse each clean line.
 	'''
+	ptclNum=0	
 	cleanlines=[]
 	for line in clines:
 		
@@ -263,7 +274,7 @@ def main():
 			else:
 				print "\nBad line removed", line
 			
-	ptclNum=0		
+	
 	'''
 	Iterate over the correct number of viable lines from the coordinates file.
 	'''
