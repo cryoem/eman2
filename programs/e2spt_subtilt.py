@@ -239,12 +239,12 @@ def main():
 	Some people might manually make ABERRANT coordinates files with commas, tabs, or more 
 	than one space in between coordinates. Then, parse each clean line.
 	'''
-	ptclNum=0	
+	ppp = 0	
 	cleanlines=[]
 	for line in clines:
 		
 		if options.subset:
-			if int(ptclNum) >= (options.subset):
+			if int( ppp ) >= (options.subset):
 				break
 			
 		line =line.replace(", ",' ')	
@@ -263,14 +263,14 @@ def main():
 		if options.coords3d:
 			if line and len(finallineelements) == 3:
 				cleanlines.append(line)
-				ptclNum += 1
+				ppp += 1
 			else:
 				print "\nBad line removed", line
 	
 		elif options.coords2d:
 			if line and len(finallineelements) == 2:
 				cleanlines.append(line)
-				ptclNum += 1
+				ppp += 1
 			else:
 				print "\nBad line removed", line
 			
@@ -312,9 +312,8 @@ def main():
 		invert=0
 		center=0
 	
-	
+	ptclNum=0
 	for line in cleanlines:
-	
 		line = line.split()	
 		
 		print "\n\n\n\n\n+=================\nAnalyzing particle number+================\n", ptclNum
@@ -550,8 +549,7 @@ def main():
 				print "\n\n\n"		
 		
 		#r = Region( (2*xm-box)/2, (2*ym-box)/2, 0, box, box,1)
-
-					
+						
 		ptclNum+=1
 		
 		#		(cos q  0  -sin q   0)
