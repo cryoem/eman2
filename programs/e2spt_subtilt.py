@@ -38,7 +38,9 @@ import math
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """UNDER DEVELOPOMENT. Extracts particles from each image in an aligned tilt series based on their position in the reconstructed tomogram."""
+	usage = """UNDER DEVELOPOMENT. Extracts particles from each image in an aligned tilt 
+		series based on A) their position in the reconstructed tomogram
+		or B) their position in the 0 degrees tilt image of a tilt series."""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
@@ -51,9 +53,25 @@ def main():
 	parser.add_argument('--tiltangles',type=str,default='',help="""File in .tlt or .txt format 
 		containing the tilt angle of each tilt image in the tiltseries.""")
 		
-	parser.add_argument('--coords',type=str,default='',help="""File in .txt format containing 
+	parser.add_argument('--coords3d',type=str,default='',help="""File in .txt format containing 
 		the coordinates of particles determined from the reconstructed tomogram of the 
 		supplied tiltseries.""")
+	
+	parser.add_argument('--coords2d',type=str,default='',help="""File in .txt format containing 
+		the coordinates of particles determined from the aligned 0 tilt image in the 
+		supplied tiltseries.""")
+	
+	parser.add_argument('--cshrink', type=int, default=1, help='''Specifies the factor by 
+		which to multiply the coordinates in the coordinates file, so that they can be at 
+		the same scale as the tomogram. For example, provide 2 if the coordinates are on a 
+		2K x 2K scale, but you want to extract the sub-volumes from the UN-shrunk 4K x 4K
+		tomogram.''')
+	
+	parser.add_argument('--tomogram',type=str,default='',help='Path to raw, unbinned tomogram.')
+
+	parser.add_argument('--tomosides',type=str,default='',help="""Comma separated values 
+		for the tomogram dimensions. Alternatively, provide the path to the tomogram itself 
+		through --tomogram.""")
 	
 	parser.add_argument('--path',type=str,default='spt_subtilt',help="""Directory to save 
 		the results.""")
@@ -73,21 +91,9 @@ def main():
 	
 	#parser.add_argument('--tomogramthickness',type=int,default=None,help='Z dimension of the reconstructed tomogram.')
 	
-	parser.add_argument('--tomosides',type=str,default='',help="""Comma separated values 
-		for the tomogram dimensions. Alternatively, provide the path to the tomogram itself 
-		through --tomogram.""")
-	
-	parser.add_argument('--tomogram',type=str,default='',help='Path to the tomogram.')
-	
 	parser.add_argument("--shrink", type=int,default=1,help="""Optionally shrink the coordinates 
 		by a factor of --shrink=N to speed up the process. Might compromise accuracy if two 
 		points in the coordinates file are very close to eachother.""")
-	
-	parser.add_argument('--cshrink', type=int, default=1, help='''Specifies the factor by 
-		which to multiply the coordinates in the coordinates file, so that they can be at 
-		the same scale as the tomogram. For example, provide 2 if the coordinates are on a 
-		2K x 2K scale, but you want to extract the sub-volumes from the UN-shrunk 4K x 4K
-		tomogram.''')
 	
 	parser.add_argument("--everyother", type=int, help="""Pick every other tilt. For example, 
 		--tilt=3 would pick every third tilt only.""",default=-1)
@@ -104,7 +110,6 @@ def main():
 
 
 	(options, args) = parser.parse_args()
-	logger = E2init(sys.argv, options.ppid)
 	
 	if options.thresh == 'None' or options.thresh == 'none':
 		options.thresh = None
@@ -112,47 +117,74 @@ def main():
 	if options.normproc == 'None' or options.normproc == 'none':
 		options.normproc = None
 		
-	from e2spt_classaverage import sptmakepath
 	
-	options = sptmakepath(options,'sptSubtilt')
+	print "\nI've read the options"	
 	
-	print "I've read the options"	
-	
-	#def subtiltextractor(parameters):
-	
-	if not options.tiltseries or not options.tiltangles or not options.coords:
-		print "ERROR: You must provide ALL of the following options: --tiltseries, --tiltangles, --coords and --tomogramthickness."
+	'''
+	Check that all needed parameters are properly supplied
+	'''
+	if not options.tiltseries:  
+		print "ERROR: You must provide --tiltseries."
 		sys.exit()
 	
-
+	if not options.tiltangles:
+		print "ERROR: You must provide --tiltangles."
+		sys.exit()
 	
-	#k=-1
-	#name = options.output
+	if not options.coords2d and not options.coords3d:
+		print "ERROR: You must provide EITHER --coords2d OR --coords3d." 
+		sys.exit()
 	
-	serieshdr = EMData(options.tiltseries,0,True)
-	nslices = serieshdr['nz']
-	nx = serieshdr['nx']
-	ny = serieshdr['ny']
+	if options.coords2d and options.coords3d:
+		print "ERROR: You must provide EITHER --coords2d OR --coords3d, not both." 
+		sys.exit()
 	
+	if not options.tomogram and not options.tomosides:
+		print "ERROR: You must provide EITHER --tomogram OR --tomosides." 
+		sys.exit()
+		
+	if options.tomogram and options.tomosides:
+		print "ERROR: You must provide EITHER --tomogram OR --tomosides, not both." 
+		sys.exit()
+	
+	'''
+	Parse tilt angles from file supplied via --tiltangles
+	'''
 	anglesfile = open(options.tiltangles,'r')				#Open tilt angles file
 	alines = anglesfile.readlines()							#Read its lines
 	anglesfile.close()										#Close the file
 	
 	tiltangles = [ alines[i].replace('\n','') for i in range(len(alines)) ]	#Eliminate trailing return character, '\n', for each line in the tiltangles file
-	
-	#for i in range(len(alines)):
-	#	alines[i]=alines[i].replace('\n')					#Eliminate
-	
 	ntiltangles = len(tiltangles)
 	
-	if int(nslices) != int(ntiltangles):
+	'''
+	Check that there are as many images in --tiltseries as angles in --tiltangles
+	'''
+	serieshdr = EMData(options.tiltseries,0,True)
+	nslices = serieshdr['nz']
+	nx = serieshdr['nx']
+	ny = serieshdr['ny']
+	
+	if int( nslices ) != int( ntiltangles ):
 		print """ERROR: The tiltangles file doesn't seem to correspond to the tiltseries provided.
 				The number of images in --tiltseries (z dimension of MRC stack) must be equal to the number
 				of lines in --tiltangles."""
 		sys.exit()
+
+	'''
+	If error free up to this point, make path to store results
+	'''
+	from e2spt_classaverage import sptmakepath
+	options = sptmakepath(options,'sptSubtilt')
+	
+	'''
+	Start logging this run of the program at this point
+	'''
+	logger = E2init(sys.argv, options.ppid)
 	
 	
 	#"""
+	#(CRAZY)
 	#You do not need to keep track of the mathematics of tilting and rotating and find the correspondence between
 	#tomogram and each image in the tilt series.
 	#Instead, let's make a simple 3D model, containing a bright dot at the position of each particle.
@@ -177,21 +209,26 @@ def main():
 	#	tomoy = int(tomoy)/options.shrink
 	#	tomoz = int(tomoz)/options.shrink
 	
-	#tomovol = EMData(tomox,tomoy,tomoz)				#Create empty volume for the MODEL to build
+	#tomovol = EMData(tomox,tomoy,tomoz)			#Create empty volume for the MODEL to build
 	#tomovol.to_zero()								#Make sure it's empty
 	
-	cfile = open(options.coords,'r')				#Open coordinates file
-	clines = cfile.readlines()						#Read its lines
-	cfile.close()									#Close the file
+	clines=[]
+	if options.coords2d:
+		cfile = open(options.coords2d,'r')				#Open coordinates file
+		clines = cfile.readlines()						#Read its lines
+		cfile.close()									#Close the file
+	
+	elif options.coord3d:
+		cfile = open(options.coords3d,'r')				#Open coordinates file
+		clines = cfile.readlines()						#Read its lines
+		cfile.close()									#Close the file
+		
 	
 	'''
-	"Clean the coordinate files lines (clines) if there's garbage in them.
-	Some people might manually make ABERRANT coordinates files with commas, tabs, or more than once space in between coordinates.
-	Each line needs to be parsed.
+	Clean the coordinate file lines (clines) if there's garbage in them.
+	Some people might manually make ABERRANT coordinates files with commas, tabs, or more 
+	than one space in between coordinates. Then, parse each clean line.
 	'''
-	
-	ptclNum=0
-	
 	cleanlines=[]
 	for line in clines:
 		
@@ -211,33 +248,41 @@ def main():
 		line = line.replace("  ",' ')
 		
 		finallineelements=line.split(' ')
-
-
-		if line and len(finallineelements) ==3:
-			cleanlines.append(line)
-			ptclNum += 1
-		else:
-			print "\nBad line removed", line
+		
+		if options.coords3d:
+			if line and len(finallineelements) == 3:
+				cleanlines.append(line)
+				ptclNum += 1
+			else:
+				print "\nBad line removed", line
 	
+		elif options.coords2d:
+			if line and len(finallineelements) == 2:
+				cleanlines.append(line)
+				ptclNum += 1
+			else:
+				print "\nBad line removed", line
+			
 	ptclNum=0		
 	'''
 	Iterate over the correct number of viable lines from the coordinates file.
 	'''
 	
-	nptcls=len(cleanlines)
-	if int(options.subset) > 0:
-		if int(options.subset) > len(cleanlines):
-			print """WARNING: The total amount of lines in the coordinates files is LESS than the subset of particles to box you specified; 
-							therefore, ALL particles will be extracted."""
+	nptcls = len(cleanlines)
+	if int( options.subset ) > 0:
+		if int( options.subset ) > len(cleanlines):
+			print """WARNING: The total amount of lines in the coordinates files is LESS 
+				than the --subset of particles to box you specified; therefore, ALL particles 
+				will be extracted."""
 		else:
-			nptcls - int(options.subset)
-			print "The SUBSET of particles to work with is", nptcls
+			nptcls = int(options.subset)
+			print "\nThe SUBSET of particles to work with is", nptcls
 	else:
-		print "The size of the ENTIRE SET of sub-tiltseries to extract is", nptcls
-
+		print """\nBased on the number of coordinates, the size of the ENTIRE SET of 
+			subtiltseries to extract is""", nptcls
 	
-	print "There are these many clean lines", len(cleanlines)
-	print "Clean lines are", cleanlines
+	#print "There are these many clean lines", len(cleanlines)
+	#print "Clean lines are", cleanlines
 	
 	everyotherfactor = 1
 	if options.everyother > 1:
@@ -257,28 +302,38 @@ def main():
 		center=0
 	
 	
-	
 	for line in cleanlines:
 	
 		line = line.split()	
 		
+		print "\n\n\n\n\n+=================\nAnalyzing particle number+================\n", ptclNum
+		xc = 0
+		yc = 0
+		zc = 0
 		if len(line) == 3:
 			xc = float(line[0])				#Determine x y z coordinates for each line
 			yc = float(line[1])
 			zc = float(line[2])	
-			print "\n\n\n\n\n+=================\nAnalyzing particle number+================\n", ptclNum
-			print "\nRead these coordinates", xc,yc,zc
-		else:
+		elif len(line) == 2:
+			xc = float(line[0])				#Determine x y coordinates for each line, and default zc to 0
+			yc = float(line[1])
+			zc = 0
+		else:	
 			print "\nThere's an aberrant line in your file, see", line
 			sys.exit()
 		
-		
+		if options.verbose:
+			print "\nRead these coordinates", xc,yc,zc
+	
 		if options.cshrink:
 			xc*=options.cshrink
 			yc*=options.cshrink
 			zc*=options.cshrink
 			
-			print "\nThe real coordinates after multiplying cshrink are", xc,yc,zc
+			if options.verbose:
+				print "\nThe real coordinates after multiplying cshrink are", xc,yc,zc
+		
+		sptcoords = ( xc, yc, zc )
 		
 		outIndx=0
 		ret=0
@@ -286,12 +341,10 @@ def main():
 		
 		for k in range(len(tiltangles)):
 		
-			
 			if k % everyotherfactor:
 				print "\nSkipping tilt",k
 					
 			else:
-				
 				angle = float( tiltangles[k] )
 				
 				tAxisShift = tomox/2.0
@@ -332,18 +385,26 @@ def main():
 				r = Region( (2*xt-options.boxsize)/2, (2*yt-options.boxsize)/2, k, options.boxsize, options.boxsize, 1)
 				print "\n\n\nRRRRRRRRRR\nThe region to extract is", r
 				
-				
-				
 				print "\n(e2spt_subtilt.py) Extracting image for tilt angle", angle
 				e = EMData()
 				e.read_image(options.tiltseries,0,False,r)
+				
 				#print "After reading it, nz is", e['nz']
-				e['tiltAngle']=angle
-				e['xt']=xt
-				e['yt']=yt
+				
+				e['spt_tiltangle']=angle
+				e['spt_tiltaxis']='y'
+				e['spt_subtilt_x']=xt
+				e['spt_subtilt_y']=yt
 				e['origin_x']=e['nx']/2.0
 				e['origin_y']=e['ny']/2.0
 				e['origin_z']=0
+				
+				e['apix_x']=apix
+				e['apix_y']=apix
+				e['apix_z']=apix
+				
+				if options.coords3d:
+					e['ptcl_source_coord']=sptcoords
 				
 				if int( options.shrink ) > 1:
 					e.process_inplace('math.meanshrink',{'n':options.shrink})
@@ -360,7 +421,6 @@ def main():
 					e.write_image(options.path + 'prj0.hdf',0)
 				
 				if options.subtractbackground and maxtilt:
-					
 									
 					'''
 					Extract a large volume around each particle (only for k==0), to distinguish ptcl from background
@@ -476,10 +536,7 @@ def main():
 				
 				outIndx+=1
 						
-				print "\n\n\n"
-					
-					
-					
+				print "\n\n\n"		
 		
 		#r = Region( (2*xm-box)/2, (2*ym-box)/2, 0, box, box,1)
 
