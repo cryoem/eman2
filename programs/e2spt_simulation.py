@@ -38,6 +38,7 @@ from EMAN2jsondb import JSTask,jsonclasses
 import sys
 import numpy
 import math
+import random
 
 def main():
 
@@ -65,7 +66,7 @@ def main():
 	
 	#parser.add_argument("--output",type=str,default=None,help="Name of the output stack for the simulated subtomograms.")
 	parser.add_argument("--randstack",type=str,default='',help="If you already have a stack of particles (presumably in random orientations) you can supply it here.")
-	parser.add_argument("--tomogramoutput",type=str,default='',help="This will generate a simulated tilt series and tomogram containing the entire set of subtomograms.")
+	parser.add_argument("--writetomogram",type=str,default='',help="This will generate a simulated tilt series and tomogram containing the entire set of subtomograms.")
 
 	parser.add_argument("--tiltaxis",type=str,default='y',help="""Axis to produce projections 
 		about. Default is 'y'; the only other valid option is 'x'.""")
@@ -110,7 +111,8 @@ def main():
 	#parser.add_argument("--cs", type=float,default=2.1,help="Cs of the microscope, used to simulate the ctf added to the subtomograms.")
 
 	parser.add_argument("--defocus", type=float,default=3.0,help="""Target defocus at 
-		the tilt axis (in microns) for the simulated tilt series. Default is 3.0.""")
+		the tilt axis (in microns) for the simulated tilt series. Default is 3.0.
+		Notice that DEFOCUS (underfocus) values are POSITIVE, by convention.""")
 	parser.add_argument("--voltage", type=int,default=200,help="""Voltage of the microscope, 
 		used to simulate the ctf added to the subtomograms. Default is 200 KV.""")
 	parser.add_argument("--cs", type=float,default=2.1,help="""Cs of the microscope, used 
@@ -124,11 +126,15 @@ def main():
 
 	parser.add_argument("--gridholesize", type=float,default=1.0,help="""Default=1.0. 
 		Size of the carbon hole in micrometers for the simulated grid (this will determine 
-		the shifts in defocus for each particle at each tilt step, depending on the position 
+		the shifts in defocus for each particle at each tilt angle, depending on the position 
 		of the particle respect to the tilt axis; the tilt axis by convention goes parallel 
 		to Y through the middle of the tomogram.""")
 	
-	parser.add_argument("--icethickness", type=float,default=100,help="If --tomogramoutput is supplied, this will define the size of Z in PIXELS for the simulated tomogram.")
+	parser.add_argument("--icethickness", type=float,default=0.5,help="""Thickness of the specimen
+		to simulate, in microns. If --writetomogram is supplied, --icethickness will be used to calculate 
+		the size of the tomogram in Z in PIXELS for the simulated tomogram. 
+		This parameter will also be used to assign a random coordinate in Z to 
+		each subtomogram.""")
 
 	parser.add_argument("--saverandstack", action="store_true",default=True,help="""DEPREPCATED.
 		[This option is on by default and there's no way to turn it off. The stack of 
@@ -181,8 +187,10 @@ def main():
 	parser.add_argument("--invert",action="store_true",default=False,help=""""This 
 		will multiply the pixel values by -1. 
 		This is intended to make the simulated particles be like real EM data before 
-		contrast reversal, assuming that they're being generated from a PDB model. 
-		Otherwise, 'white protein' (positive density values) will be used.""")
+		contrast reversal (black, negative contrast), assuming that they're being generated 
+		from a model/image where the protein has positive values.
+		It not supplied, 'white protein' (positive density values) will be used by default
+		(or whatever the original contrast is of the image supplied as a model).""")
 		
 	parser.add_argument("--nslices", type=int,default=61,help="""This will determine the tilt step between slices, depending on tiltrange.
 									For example, to simulate a 2 deg tilt step supply --nslices=61 --tiltrange=60.
@@ -821,7 +829,7 @@ def subtomosim(options,ptcls,outname,dimension):
 		text=p.communicate()	
 		p.stdout.close()
 	
-	if options.tomogramoutput:
+	if options.writetomogram:
 		tomogramsim(options,results)
 
 	
@@ -917,10 +925,42 @@ class SubtomoSimTask(JSTask):
 		#print "\n\nBBBBBBBBBB\n\nThe apix of the simulated ptcl is", apix
 		#print "\n\nBBBBBBBBBB\n\n"
 	
-		import random
-		px = random.uniform(-1* options.gridholesize/2.0 + (apix*image['nx']/2.0)/10000, options.gridholesize/2.0 - (apix*image['nx']/2.0)/10000)			#random distance in X of the particle's center from the tilt axis, at tilt=0
-																														#The center of a particle cannot be right at the edge of the tomogram; it has to be
-																														#at least ptcl_size/2 away from it
+		
+		'''
+		Random distance 'px' of the particle to the tilt axis at tilt=0, used for CTF simulation.
+		Units in microns since it will be used to simulate the effects of having a "defocus gradient"
+		with tilt angle, in microns.
+		The center of a particle cannot be right at the edge of the tomogram; it has to be
+		at least ptcl_size/2 away from it.
+		'''
+		px = random.uniform(-1* options.gridholesize/2.0 + (apix*image['nx']/2.0)/10000, options.gridholesize/2.0 - (apix*image['nx']/2.0)/10000)			
+	
+		'''
+		Calculate coordx from px since it's shifted by half the gridholesize (the position of the tilt axis)
+		and convert to pixels.
+		For coordy, generate a random coordinate afresh.
+		For coordz, generate a random coordinate within --icethickness range
+		'''
+		coordx = int( round( 10000*(px + options.gridholesize/2)/apix ))
+		coordy = random.randint(0 + image['nx']/2, int(round(options.gridholesize*10000/apix - image['nx']/2 )) )									#random distance in Y of the particle's center from the bottom edge in the XY plane, at tilt=0
+		
+		'''
+		Beware, --icethickness supplied in microns
+		'''
+		coordz = random.randint(0 + image['nx']/2, int(round(options.icethickness*10000/apix - image['nx']/2 )) )
+		
+		sptcoords = tuple([coordx, coordy, coordz])
+		
+		print "Spt coords are", sptcoords	
+
+		'''
+		Calculate the particle's distance 'pz' in microns to the mid section of the tomogram in Z 
+		(1/2 of 'nz' or --icethickness). If in-focus occurs at nz/2, then the relative position of 
+		a particle to this plane (above or below in the ice) will affect its defocus.
+		'''
+		
+		pz = coordz*apix/10000 - options.icethickness/2
+																
 		alt = lower_bound
 		raw_projections = []
 		ctfed_projections = []
@@ -928,6 +968,7 @@ class SubtomoSimTask(JSTask):
 		randT = image['sptsim_randT']
 	
 		print "\n\nWill process particle i", i
+		print "Which was been assigned coordinates"
 		print "Nslices are", nslices
 		print "Lower bound is", lower_bound
 	
@@ -960,17 +1001,34 @@ class SubtomoSimTask(JSTask):
 				#print "\n\nUSING 2D transform!!!!", t
 				#sys.exit()
 			
+			'''			
+			Calculate the defocus shift 'dz' per tilt image, per particle, depending on the 
+			particle's position relative to the tilt axis (located at half of the Y dimension
+			of an image frame; in this case, 1/2 of --gridholesize), and to the tomograms midsection
+			in Z (in this case 1/2 of --icethickness or 'nz').
+			There's a dz component coming from px, 'dzx'. 
+			There's a dz component coming from pz, 'dzz'.
 			
-			dz = -1 * px * numpy.sin( math.radians(realalt) )				#Calculate the defocus shift per picture, per particle, depending on the 
-																			#particle's position relative to the tilt axis. For particles left of the tilt axis,
-																			#px is negative. With negative alt [left end of the ice down, right end up], 
-																			#dz should be negative.
+			For particles left of the tilt axis dzx is positive with negative tilt angles (i.e., defocus increases; the particle gets more defocused) 
+			For particles right of the tilt axis dzx is negative with negative tilt angles (i.e., defocus decreases; the particle is less defocused) 
+			For particles left of the tilt axis dzx is negative with positive tilt angles (i.e., defocus decreases; the particle gets less defocused) 
+			For particles right of the tilt axis dzx is positive with positive tilt angles (i.e., defocus increases; the particle gets more defocused) 
 			
-			print "Px is", px
-			print "And angle is", realalt
-			print "Therefore sin(alt) is", numpy.sin(realalt)
+			Particles above midZ will always be less defocused than if they were exactly at midZ, but this -dzz factor decreases with tilt angle.
+				Therefore, for positive pz, dzz is negative (less defocused). 
+			Particles above midZ will always be more defocused than if they were exactly at midZ, but this +dzz factor decreases with tilt angle.
+				Therefore, for negative pz, dzz is positive (more defocused).
+			'''
+			dzx = px * numpy.sin( math.radians(realalt) )	
+			dzz = -1 * pz * numpy.cos( math.radians(realalt) )			
+			
+			dz = dzx + dzz
+			
+			#print "Px is", px
+			#print "And angle is", realalt
+			#print "Therefore sin(alt) is", numpy.sin(realalt)
 			print "And thus dz is", dz
-			defocus = -1*options.defocus + dz
+			defocus = options.defocus + dz
 			print "So the final defocus to use is", defocus
 			
 			
@@ -1150,6 +1208,10 @@ class SubtomoSimTask(JSTask):
 		rec['origin_x']=0
 		rec['origin_y']=0
 		rec['origin_z']=0
+	
+		print "sptcoords for header are", sptcoords
+		rec['ptcl_source_coord']=sptcoords
+		
 		rec['spt_tiltangles'] = tiltangles
 		rec['spt_tiltaxis'] = options.tiltaxis
 
@@ -1291,7 +1353,7 @@ def tomogramsim(options,tomogramdata):
 	
 	T=sum(ptcls)/len(ptcls)	
 	T.process_inplace('math.addnoise',{'noise':1})
-	tomogrampath = options.path + '/' + options.tomogramoutput
+	tomogrampath = options.path + '/' + options.writetomogram
 	T.write_image(tomogrampath,0)
 	
 	return
