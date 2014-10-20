@@ -316,7 +316,7 @@ def main():
 	for line in cleanlines:
 		line = line.split()	
 		
-		print "\n\n\n\n\n+=================\nAnalyzing particle number+================\n", ptclNum
+		print "\n\n\n\n\n+=================+\nAnalyzing particle number\n+=================+\n", ptclNum
 		xc = 0
 		yc = 0
 		zc = 0
@@ -395,7 +395,7 @@ def main():
 				r = Region( (2*xt-options.boxsize)/2, (2*yt-options.boxsize)/2, k, options.boxsize, options.boxsize, 1)
 				print "\n\n\nRRRRRRRRRR\nThe region to extract is", r
 				
-				print "\n(e2spt_subtilt.py) Extracting image for tilt angle", angle
+				print "\n(e2spt_subtilt.py) Extracting image for tilt angle %f and particle %d" %( angle, ptclNum )
 				e = EMData()
 				e.read_image(options.tiltseries,0,False,r)
 				
