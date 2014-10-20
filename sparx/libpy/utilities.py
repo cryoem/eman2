@@ -750,18 +750,24 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 		else:
 			angles = even_angles_cd(delta, theta1, theta2, phi1, phi2, method, phiEqpsi)
 		n = len(angles)
-		badb = 360.0/int(symmetry_string[1:])/4 + ant
-		bade = 2*badb -ant
-		bbdb = badb + 360.0/int(symmetry_string[1:])/2 + ant
-		bbde = bbdb + 360.0/int(symmetry_string[1:])/4 - ant
-		for i in xrange(n):
-			t = n-i-1
-			qt = angles[t][0]
-			if((qt>=badb and qt<bade) or (qt>=bbdb and qt<bbde)):  del angles[t]
-			
+
 		if (int(symmetry_string[1:])%2 == 0):
+			badb = 360.0/2/int(symmetry_string[1:])
+			for i in xrange(n):
+				t = n-i-1
+				qt = angles[t][0]
+				if( qt>badb ):  del angles[t]
 			qt = 360.0/2/int(symmetry_string[1:])
 		else:
+			badb = 360.0/int(symmetry_string[1:])/4 + ant
+			bade = 2*badb -ant
+			bbdb = badb + 360.0/int(symmetry_string[1:])/2 + ant
+			bbde = bbdb + 360.0/int(symmetry_string[1:])/4 - ant
+			for i in xrange(n):
+				t = n-i-1
+				qt = angles[t][0]
+				if((qt>=badb and qt<bade) or (qt>=bbdb and qt<bbde)):  del angles[t]
+
 			qt = 180.0/2/int(symmetry_string[1:])
 		n = len(angles)
 		for i in xrange(n):
