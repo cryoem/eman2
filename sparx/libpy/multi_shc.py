@@ -1439,7 +1439,7 @@ def mirror_and_reduce_dsym(params, sym):
 		psi_diff = angle_diff( [temp[j][2] for j in xrange(ns)], [params[0][j][2] for j in xrange(ns)] )
 		if(abs(psi_diff-180.0) <90.0): temp[j][2] = (temp[j][2]+180.0)%360.0
 		for j in xrange(ns):  params[i][j] = solvs[0][1][j]
-	
+
 def get_dsym_angles(p1, sym):
 	#  works only for d symmetry
 	from utilities import get_symt

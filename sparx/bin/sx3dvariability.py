@@ -208,14 +208,14 @@ def main():
 			print_msg("%-70s:  %d\n"%("Number of neighboring projections", img_per_grp))
 			print_msg("...... Finding neighboring projections\n")
 			if options.VERBOSE:
-				print "Number of images per group: ", img_per_grp	
-				print "Now grouping projections"				
+				print "Number of images per group: ", img_per_grp
+				print "Now grouping projections"
 			proj_angles.sort()
 
 		proj_angles_list = [0.0]*(nima*4)
 		if myid == main_node:
 			for i in xrange(nima):
-				proj_angles_list[i*4] = proj_angles[i][1] 
+				proj_angles_list[i*4]   = proj_angles[i][1] 
 				proj_angles_list[i*4+1] = proj_angles[i][2] 
 				proj_angles_list[i*4+2] = proj_angles[i][3] 
 				proj_angles_list[i*4+3] = proj_angles[i][4]

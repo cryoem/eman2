@@ -1099,7 +1099,7 @@ namespace EMAN
 			d.put("snr",		EMObject::FLOAT);
 			d.put("fftvol",		EMObject::EMDATA);
 			d.put("weight",		EMObject::EMDATA);
-			d.put("weighting",      EMObject::INT);
+			d.put("weighting",  EMObject::INT);
 			return d;
 		}
 
@@ -1455,7 +1455,7 @@ namespace EMAN
 			return d;
 		}
 
-		void setup( const string& symmetry, int size, int npad, float snr, int sign );
+		void setup( const string& symmetry, int sizeprojection, int npad, float snr, int sign );
 
 		int insert_padfft_slice( EMData* padfft, const Transform& trans, float mult=1);
 

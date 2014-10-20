@@ -3729,11 +3729,11 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 		from math import acos, pi
 
 		v = v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]
-		if v > 1: v = 1
+		if v > 1:  v = 1
 		if v < -1: v = -1
 		if v >= 0: return acos(v)*180/pi, 0
 		else:  return acos(-v)*180/pi, 1
-	
+
 	def get_ref_ang_list(delta, sym):
 		ref_ang = even_angles(delta, symmetry=sym)
 		ref_ang_list = [0.0]*(len(ref_ang)*2)
@@ -3741,7 +3741,7 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 			ref_ang_list[2*i] = ref_ang[i][0]
 			ref_ang_list[2*i+1] = ref_ang[i][1]
 		return ref_ang_list, len(ref_ang)
-	
+
 	def binary_search(a, x):
 		N = len(a)
 		begin = 0
@@ -3752,7 +3752,7 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 			if a[mid] < x: begin = mid+1
 			else: end = mid-1
 		return -1
-	
+
 	def binary_search_l(a, x):
 		# This function returns an index i such that i is the smallest number 
 		# such that when t >= i, a[t] >= x
@@ -3772,7 +3772,7 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 				if x < a[mid]: end = mid-1
 				else: begin = mid+1
 			return mid+1
-	
+
 	def binary_search_r(a, x):
 		# This function returns an index i such that i is the largest number
 		# such that when t <= i, a[t] <= x
@@ -3820,7 +3820,7 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 	for i in xrange(N):
 		theta_list_l[i] = theta_list[i][0]
 		phi_list_l[i] = phi_list[i][0]
-	
+
 	g = [[360.0, 0, 0] for i in xrange(N)]
 	proj_list = []
 	mirror_list = []
