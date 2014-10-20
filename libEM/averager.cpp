@@ -49,6 +49,7 @@ const string AbsMaxMinAverager::NAME = "absmaxmin";
 const string IterationAverager::NAME = "iteration";
 const string CtfCWautoAverager::NAME = "ctfw.auto";
 const string CtfCAutoAverager::NAME = "ctf.auto";
+const string CtfWtAverager::NAME = "ctf.weight";
 const string FourierWeightAverager::NAME = "weightedfourier";
 
 template <> Factory < Averager >::Factory()
@@ -59,6 +60,7 @@ template <> Factory < Averager >::Factory()
 	force_add<IterationAverager>();
 	force_add<CtfCWautoAverager>();
 	force_add<CtfCAutoAverager>();
+	force_add<CtfWtAverager>();
 	force_add<TomoAverager>();
 	force_add<FourierWeightAverager>();
 //	force_add<XYZAverager>();
@@ -955,6 +957,95 @@ EMData * CtfCAutoAverager::finish()
 	result=NULL;
 	return ret;
 }
+
+CtfWtAverager::CtfWtAverager()
+	: nimg(0)
+{
+
+}
+
+
+void CtfWtAverager::add_image(EMData * image)
+{
+	if (!image) {
+		return;
+	}
+
+
+
+	EMData *fft=image->do_fft();
+
+	if (nimg >= 1 && !EMUtil::is_same_size(fft, result)) {
+		LOGERR("%s Averager can only process images of the same size", get_name().c_str());
+		return;
+	}
+
+	nimg++;
+	if (nimg == 1) {
+		result = fft->copy_head();
+		result->to_zero();
+	}
+
+	Ctf *ctf = (Ctf *)image->get_attr("ctf");
+
+	EMData *ctfi = result-> copy();
+	float b=ctf->bfactor;
+	ctf->bfactor=0;		// no B-factor used in weight
+	ctf->compute_2d_complex(ctfi,Ctf::CTF_INTEN);
+	ctf->bfactor=b;	// return to its original value
+
+	float *outd = result->get_data();
+	float *ind = fft->get_data();
+	float *ctfd = ctfi->get_data();
+
+	size_t sz=ctfi->get_xsize()*ctfi->get_ysize();
+	for (size_t i = 0; i < sz; i+=2) {
+		
+		// CTF weight
+		outd[i]+=ind[i]*ctfd[i];
+		outd[i+1]+=ind[i+1]*ctfd[i];
+	}
+
+	if (nimg==1) {
+		ctfsum=ctfi->copy_head();
+		ctfsum->to_zero();
+	}
+	ctfsum->add(*ctfi);
+
+	delete ctf;
+	delete fft;
+	delete ctfi;
+}
+
+EMData * CtfWtAverager::finish()
+{
+	int nx=result->get_xsize();
+	int ny=result->get_ysize();	
+	float *ctfsd=ctfsum->get_data();
+	float *outd=result->get_data();
+
+	for (int j=0; j<ny; j++) {
+		for (int i=0; i<nx; i+=2) {
+			size_t ii=i+j*nx;
+			outd[ii]/=ctfsd[ii];		// snrsd contains total SNR
+			outd[ii+1]/=ctfsd[ii];
+		}
+	}
+	result->update();
+	result->set_attr("ptcl_repr",nimg);
+//	result->set_attr("ctf_total",ctfsum->calc_radial_dist(ctfsum->get_ysize()/2,0,1,false));
+	result->set_attr("ctf_wiener_filtered",0);
+	
+/*	snrsum->write_image("snr.hdf",-1);
+	result->write_image("avg.hdf",-1);*/
+	
+	delete ctfsum;
+	EMData *ret=result->do_ift();
+	delete result;
+	result=NULL;
+	return ret;
+}
+
 
 #if 0
 EMData *IterationAverager::average(const vector < EMData * >&image_list) const
