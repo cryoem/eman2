@@ -591,7 +591,8 @@ overinterpret these plots. The FSC plots themselves contain some noise, so there
 	yticklocs2=(0.0,.125,.25,.375,.5,.625,.75,.875,1.0)
 	yticklbl2=("0"," ","0.25"," ","0.5"," ","0.75"," ","1.0")
 	
-	initclassiter=classiter
+	try: initclassiter=classiter
+	except: classiter=options.classiter
 	### Actual refinement loop ###
 	for it in range(1,options.iter+1) :
 		append_html("<h4>Beginning iteration {} at {}</h4>".format(it,time.ctime(time.time())),True)
