@@ -43,8 +43,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	####################
 	parser.add_argument("--fscxml2txt",action="store_true",help="Convert the input XML FSC file into a text file")
-	parser.add_argument("--fsctxt2xml",action="store_true",help="Convert the input text FSC file into an xml file")
-	parser.add_argument("--graphlabels", type=str,help="The values for the graph labels in the XML file. The first value is the title of the graph, the second value is the x-axis label, and the third value is the y-axis label. For example: --graphlabels=title=\"Title of Plot\":xaxis=\"X-axis Label of Plot\":yaxis=\"Y-axis Label of Plot\"",default=None)
+	parser.add_argument("--fsctxt2xml",type=str,help="Convert the input text FSC file into an xml file. The value provided is the title of the graph. For example: --fsctxt2xml=\"My Graph Title\"", default="FSC Plot")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higner number means higher level of verboseness",default=1)
 
 	(options, args) = parser.parse_args()
@@ -57,26 +56,19 @@ def main():
 	if options.fscxml2txt and options.fsctxt2xml:
 		print "Invalid Options: Either --fscxml2txt or --fsctxt2xml can be used but not both"
 		sys.exit(-1)
-		
+
 	if options.fsctxt2xml:
 		#not ideal to do it by hand - should use the xml parser....
 		input_file = open(str(input_file),'r')
 		output_file = open(str(output_file),'w')
-		output_file.write("<fsc")
-		if options.graphlabels != None:
-			for label in options.graphlabels.split(":"):
-				if label.split("=")[0] != "title" and label.split("=")[0] != "xaxis" and label.split("=")[0] != "yaxis":
-					print "Invalid Graph Label: " + label.split("=")[0] + ". Please use title, xaxis, or yaxis"
-				else:
-					output_file.write(" " + label.split("=")[0] + "=\"" + label.split("=")[1] + "\"")
-		output_file.write(">\n")
+		output_file.write("<fsc title=\"" + options.fsctxt2xml+"\" xaxis=\"Resolution (A-1)\" yaxis=\"Correlation Coefficient\">\n")
 		data = input_file.readlines()
 		for i in range(len(data)):
 			output_file.write("  <coordinate>\n    <x>"+str(data[i].split()[0])+"</x>\n    <y>"+str(data[i].split()[1])+"</y>\n  </coordinate>\n")
 		output_file.write("</fsc>\n")
 		input_file.close()
 		output_file.close()
-		
+
 	if options.fscxml2txt:
 		output_file = open(str(output_file),'w')
 		element = ET.parse(input_file)
