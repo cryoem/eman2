@@ -3717,14 +3717,14 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 	from random import randint
 
 	def gv(phi, theta):
-		from math import pi, cos, sin
-		angle_to_rad = pi/180.0
+		from math import pi, cos, sin, radians
 
-		theta *= angle_to_rad
-		phi *= angle_to_rad
+		theta  = radians(theta)
+		phi    = radians(phi)
+		sint   = sin(theta)
 
-		x = sin(theta)*cos(phi) 
-		y = sin(theta)*sin(phi)
+		x = sint*cos(phi) 
+		y = sint*sin(phi)
 		z = cos(theta)
 
 		return (x, y, z)
@@ -3732,19 +3732,19 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 	def ang_diff(v1, v2):
 		# The first return value is the angle between two vectors
 		# The second return value is whether we need to mirror one of them (0 - no need, 1 - need)
-		from math import acos, pi
+		from math import acos, degrees
 
 		v = v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]
-		if v > 1:  v = 1
-		if v < -1: v = -1
-		if v >= 0: return acos(v)*180/pi, 0
-		else:  return acos(-v)*180/pi, 1
+		v = max(min(v, 1.0), -1.0)
+		if v >= 0: return degrees( acos(v) ), 0
+		else:      return degrees( acos(-v) ), 1
 
 	def get_ref_ang_list(delta, sym):
+		from utilities import even_angles
 		ref_ang = even_angles(delta, symmetry=sym)
 		ref_ang_list = [0.0]*(len(ref_ang)*2)
 		for i in xrange(len(ref_ang)):
-			ref_ang_list[2*i] = ref_ang[i][0]
+			ref_ang_list[2*i]   = ref_ang[i][0]
 			ref_ang_list[2*i+1] = ref_ang[i][1]
 		return ref_ang_list, len(ref_ang)
 
@@ -3867,10 +3867,10 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 					max_phi_mir = phi_mir + dphi
 					if min_phi_mir < 0.0: min_phi_mir += 360.0
 					if max_phi_mir > 360.0: max_phi_mir -= 360.0
-				
-			phi_left_bound = binary_search_l(phi_list_l, min_phi)
-			phi_right_bound = binary_search_r(phi_list_l, max_phi)
-			theta_left_bound = binary_search_l(theta_list_l, min_theta)
+
+			phi_left_bound    = binary_search_l(phi_list_l, min_phi)
+			phi_right_bound   = binary_search_r(phi_list_l, max_phi)
+			theta_left_bound  = binary_search_l(theta_list_l, min_theta)
 			theta_right_bound = binary_search_r(theta_list_l, max_theta)
 			if theta+delta > 90.0:
 				phi_mir_left_bound = binary_search_l(phi_list_l, min_phi_mir)

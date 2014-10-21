@@ -215,9 +215,9 @@ def main():
 		proj_angles_list = [0.0]*(nima*4)
 		if myid == main_node:
 			for i in xrange(nima):
-				proj_angles_list[i*4]   = proj_angles[i][1] 
-				proj_angles_list[i*4+1] = proj_angles[i][2] 
-				proj_angles_list[i*4+2] = proj_angles[i][3] 
+				proj_angles_list[i*4]   = proj_angles[i][1]
+				proj_angles_list[i*4+1] = proj_angles[i][2]
+				proj_angles_list[i*4+2] = proj_angles[i][3]
 				proj_angles_list[i*4+3] = proj_angles[i][4]
 		proj_angles_list = bcast_list_to_all(proj_angles_list)
 		proj_angles = []
