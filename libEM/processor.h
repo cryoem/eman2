@@ -6125,7 +6125,7 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 
 		virtual string get_desc() const
 		{
-			return "Filters the image so its 1-D power spectrum matches a second image";
+			return "Filters the image so its 1-D power spectrum matches a second image. Optionally can incorporate a dot product to better match noise.";
 		}
 
 		static Processor *NEW()
@@ -6137,8 +6137,9 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 		{
 			TypeDict d;
 			d.put("to", EMObject::EMDATA, "The image to match with. Make sure apix values are correct.");
+			d.put("bydot", EMObject::EMDATA, "Rather than matching the intensity profile, uses the complex dot product as a function of resolution to match only the portion that agrees.");
 			d.put("return_radial", EMObject::BOOL, "Return the radial filter function as an attribute (filter_curve)");
-			d.put("interpolate", EMObject::BOOL, "Whether or not to interpolate the radial scaling function. Default=false. Prb should be true.");
+			d.put("interpolate", EMObject::BOOL, "Whether or not to interpolate the radial scaling function. Default=true");
 			return d;
 		}
 

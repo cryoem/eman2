@@ -628,26 +628,32 @@ void FourierAnlProcessor::process_inplace(EMData * image)
 // 	vector < float >yarray(array_size);
 
 	bool return_radial=(bool)params.set_default("return_radial",0);
-	bool interpolate=(bool)params.set_default("interpolate",0);
+	bool interpolate=(bool)params.set_default("interpolate",1);
 
+	float cornerscale;
+	if (image->get_zsize()>1) cornerscale=sqrt(3.0);
+	else cornerscale=sqrt(2.0);
+	
 	if (image->is_complex()) {
-		vector <float>yarray = image->calc_radial_dist(image->get_ysize()/2,0,1.0,1);
+		vector <float>yarray = image->calc_radial_dist(floor(image->get_ysize()*cornerscale/2),0,1.0,1);
 		create_radial_func(yarray,image);
-		image->apply_radial_func(0, 0.5f/yarray.size(), yarray);
+		image->apply_radial_func(0, 0.5f/image->get_ysize(), yarray,interpolate);
 		if (return_radial) image->set_attr("filter_curve",yarray);
 	}
 	else {
 		EMData *fft = image->do_fft();
-		vector <float>yarray = fft->calc_radial_dist(fft->get_ysize()/2,0,1.0,1);
-		create_radial_func(yarray,image);
+		vector <float>yarray = fft->calc_radial_dist((int)floor(fft->get_ysize()*cornerscale/2.0),0,1.0,1);
+		create_radial_func(yarray,fft);
 		// 4/30/10 stevel turned off interpolation to fix problem with matched filter
 		// 9/12/14 stevel, not sure why I turned off interp. Seems to cause rather than fix problems. Adding option to enable. Afraid to turn it on
-		fft->apply_radial_func(0, 0.5f/yarray.size(), yarray,0);
+		fft->apply_radial_func(0, 1.0f/image->get_ysize(), yarray,interpolate);
 		EMData *ift = fft->do_ift();
 
 		memcpy(image->get_data(),ift->get_data(),ift->get_xsize()*ift->get_ysize()*ift->get_zsize()*sizeof(float));
 		if (return_radial) image->set_attr("filter_curve",yarray);
 
+//		for (int i=0; i<yarray.size(); i++) printf("%d\t%f\n",i,yarray[i]);
+		
 		//ift->update(); Unecessary
 
 		delete fft;
@@ -664,7 +670,7 @@ void LowpassAutoBProcessor::create_radial_func(vector < float >&radial_mask,EMDa
 //	int adaptnoise=params.set_default("adaptnoise",0);
 	float noisecutoff=(float)params.set_default("noisecutoff",1.0/6.0);
 	if (apix<=0 || apix>7.0f) throw ImageFormatException("apix_x > 7.0 or <0");
-	float ds=1.0f/(apix*image->get_xsize());	// 0.5 is because radial mask is 2x oversampled
+	float ds=1.0f/(apix*image->get_ysize());	// 0.5 is because radial mask is 2x oversampled
 	unsigned int start=(int)floor(1.0/(15.0*ds));
 	unsigned int end=radial_mask.size()-2;
 	if (noisecutoff>0) end=(int)floor(noisecutoff/ds);
@@ -1392,7 +1398,7 @@ void HighpassAutoPeakProcessor::preprocess(EMData * image)
 		highpass = params["cutoff_abs"];
 	}
 	else if( params.has_key("cutoff_freq") ) {
-		highpass = (float)params["cutoff_freq"] * (float)dict["apix_x"] * (float)dict["nx"] / 2.0f;
+		highpass = (float)params["cutoff_freq"] * (float)dict["apix_x"] * (float)dict["ny"] / 2.0f;
 	}
 	else if( params.has_key("cutoff_pixels") ) {
 		highpass = (float)params["cutoff_pixels"] / (float)dict["nx"];
@@ -6671,46 +6677,66 @@ void CoordinateMaskFileProcessor::process_inplace(EMData * image)
 	}
 }
 
-void MatchSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *image) const {
+void MatchSFProcessor::create_radial_func(vector < float >&rad,EMData *image) const {
 	// The radial mask comes in with the existing radial image profile
 	// The radial mask runs from 0 to the 1-D Nyquist (it leaves out the corners in Fourier space)
 
 	EMData *to = params["to"];
-	XYData *sf = new XYData();
 	float apixto = to->get_attr("apix_x");
+	bool bydot = params.set_default("bydot",false);
+	
+	if (to->get_ysize() != image->get_ysize()) throw ImageDimensionException("Fatal Error: filter.matchto - image sizes must match");
+	
+	// This method is similar to that used by math.sub.optimal
+	// It scales such that the average dot product at each resolution is matched,
+	// but negative values (phase flips) are set to zero.
+	if (bydot) {
+		// Note that 'image' is guaranteed to be the FFT already
+		EMData *tofft;
+		if (to->is_complex()) tofft=to;
+		else tofft=to->do_fft();
+		
+		float cornerscale;
+		if (image->get_zsize()>1) cornerscale=sqrt(3.0);
+		else cornerscale=sqrt(2.0);
+		
+		int ny=image->get_ysize();
+		int ny2=(int)floor(image->get_ysize()*cornerscale/2);
+		vector <float>norm(ny2+1);
+		for (int i=0; i<ny2; i++) norm[i]=rad[i]=0;
+		
+		for (int y=-ny; y<ny; y++) {
+			for (int x=0; x<ny; x++) {					// intentionally skipping the final pixel in x
+				int r=int(Util::hypot_fast(x,y));
+				if (r>ny2) continue;
+				std::complex<float> v1=image->get_complex_at(x,y);
+				std::complex<float> v2=tofft->get_complex_at(x,y);
+				rad[r]+=(double)(v1.real()*v2.real()+v1.imag()*v2.imag());
+				norm[r]+=(double)(v2.real()*v2.real()+v2.imag()*v2.imag());
+			}
+		}
+		for (int i=0; i<ny2; i++) rad[i]=(rad[i]/norm[i]<0)?0.0:rad[i]/norm[i];
+		
+		if (!to->is_complex()) delete tofft;
+		return;
+	}
 
-
+	// This simply divides one radial intensity profile by the other
 	if (to->is_complex()) {
-		vector<float> rd=to->calc_radial_dist(to->get_ysize()/2.0f,0,1.0f,1);
+		vector<float> rd=to->calc_radial_dist(rad.size(),0,1.0f,1);
 		for (size_t i=0; i<rd.size(); ++i) {
-			sf->set_x(i,i/(apixto*2.0f*rd.size()));
-			sf->set_y(i,rd[i]);
+			if (rad[i]>0) rad[i]=sqrt(rd[i]/rad[i]);
 		}
 	}
 	else {
 		EMData *tmp=to->do_fft();
-		vector<float> rd=tmp->calc_radial_dist(to->get_ysize()/2,0,1.0,1);
+		vector<float> rd=tmp->calc_radial_dist(rad.size(),0,1.0f,1);
 		for (size_t i=0; i<rd.size(); ++i) {
-			sf->set_x(i,i/(apixto*2.0f*rd.size()));
-			sf->set_y(i,rd[i]);
+			if (rad[i]>0) rad[i]=sqrt(rd[i]/rad[i]);
 		}
 		delete tmp;
 	}
 
-	float apix=image->get_attr("apix_x");
-
-//	sf->write_file("a.txt");
-//	Util::save_data(0,sf->get_x(1),radial_mask,"b.txt");
-
-	int n = radial_mask.size();
-	for (int i=0; i<n; i++) {
-		if (radial_mask[i]>0) radial_mask[i]= sqrt(sf->get_yatx(i/(apix*2.0f*n),false)/radial_mask[i]);
-		else if (i>0) radial_mask[i]=radial_mask[i-1];
-	}
-
-//	Util::save_data(0,sf->get_x(1),radial_mask,"c.txt");
-
-	delete sf;
 }
 
 void SetSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *image) const {
@@ -6725,8 +6751,9 @@ void SetSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *ima
 	}
 
 	float apix=image->get_attr("apix_x");
+	int ny=image->get_ysize();
 	int n = radial_mask.size();
-	int nmax=(int)floor(sf->get_x(sf->get_size()-1)*apix*2.0f*n);		// This is the radius at which we have our last valid value from the curve
+	int nmax=(int)floor(sf->get_x(sf->get_size()-1)*apix*ny);		// This is the radius at which we have our last valid value from the curve
 	if (nmax>n) nmax=n;
 
 	if ((nmax)<3) throw InvalidParameterException("Insufficient structure factor data for SetSFProcessor to be meaningful");
@@ -6738,7 +6765,7 @@ void SetSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *ima
 //			radial_mask[i]= sqrt(n*sf->get_yatx(i/(apix*2.0f*n),false)/radial_mask[i]);
 //		}
 		if (radial_mask[i]>0) {
-			radial_mask[i]= sqrt((n*n*n)*sf->get_yatx(i/(apix*2.0f*n))/radial_mask[i]);
+			radial_mask[i]= sqrt((ny*ny*ny)*sf->get_yatx(i/(apix*ny))/radial_mask[i]);
 		}
 		else if (i>0) radial_mask[i]=radial_mask[i-1];	// For points where the existing power spectrum was 0
 	}

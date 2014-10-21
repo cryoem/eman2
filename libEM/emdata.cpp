@@ -2725,8 +2725,8 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 {
 	ENTERFUNC;
 
-	vector<float>ret(n);
-	vector<float>norm(n);
+	vector<double>ret(n);
+	vector<double>norm(n);
 
 	int x,y,z,i;
 	int step=is_complex()?2:1;
@@ -2826,7 +2826,7 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 
 	EXITFUNC;
 
-	return ret;
+	return vector<float>(ret.begin(),ret.end());
 }
 
 vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, float offset, bool inten)
@@ -2842,8 +2842,8 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, fl
 	if (isinten&&!inten) { throw InvalidParameterException("Must set inten for calc_radial_dist with intensity image"); }
 
 
-	vector<float>ret(n*nwedge);
-	vector<float>norm(n*nwedge);
+	vector<double>ret(n*nwedge);
+	vector<double>norm(n*nwedge);
 
 	int x,y,i;
 	int step=is_complex()?2:1;
@@ -2909,7 +2909,7 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, fl
 	for (i=0; i<n*nwedge; i++) ret[i]/=norm[i]?norm[i]:1.0f;	// Normalize
 	EXITFUNC;
 
-	return ret;
+	return vector<float>(ret.begin(),ret.end());
 }
 
 void EMData::cconj() {

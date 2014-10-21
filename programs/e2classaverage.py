@@ -162,7 +162,7 @@ def main():
 			if options.even: ptcls=[i for i in ptcls if i%2==0]
 			tasks.append(ClassAvTask(options.input,ptcls,options.usefilt,options.ref,options.iter,options.normproc,options.prefilt,
 			  options.align,options.aligncmp,options.ralign,options.raligncmp,options.averager,options.cmp,options.keep,options.keepsig,
-			  options.automask,options.saveali,options.verbose,cl))
+			  options.automask,options.saveali,options.setsfref,options.verbose,cl))
 
 	else:
 		ptcls=range(nptcl)
@@ -171,7 +171,7 @@ def main():
 		if options.even: ptcls=[i for i in ptcls if i%2==0]
 		tasks.append(ClassAvTask(options.input,range(nptcl),options.usefilt,options.ref,options.iter,options.normproc,options.prefilt,
 			  options.align,options.aligncmp,options.ralign,options.raligncmp,options.averager,options.cmp,options.keep,options.keepsig,
-			  options.automask,options.saveali,options.verbose,0))
+			  options.automask,options.saveali,options.setsfref,options.verbose,0))
 
 	# execute task list
 	if options.parallel:				# run in parallel
@@ -293,7 +293,7 @@ class ClassAvTask(JSTask):
 	"""This task will create a single task-average"""
 
 	def __init__(self,imagefile,imagenums,usefilt=None,ref=None,niter=1,normproc=("normalize.edgemean",{}),prefilt=0,align=("rotate_translate_flip",{}),
-		  aligncmp=("ccc",{}),ralign=None,raligncmp=None,averager=("mean",{}),scmp=("ccc",{}),keep=1.5,keepsig=1,automask=0,saveali=0,verbose=0,n=0):
+		  aligncmp=("ccc",{}),ralign=None,raligncmp=None,averager=("mean",{}),scmp=("ccc",{}),keep=1.5,keepsig=1,automask=0,saveali=0,setsfref=0,verbose=0,n=0):
 		if usefilt==None : usefilt=imagefile
 		data={"images":["cache",imagefile,imagenums],"usefilt":["cache",usefilt,imagenums]}
 		if ref!=None : data["ref"]=["cache",ref,n]
@@ -301,7 +301,7 @@ class ClassAvTask(JSTask):
 
 		self.options={"niter":niter, "normproc":normproc, "prefilt":prefilt, "align":align, "aligncmp":aligncmp,
 			"ralign":ralign,"raligncmp":raligncmp,"averager":averager,"scmp":scmp,"keep":keep,"keepsig":keepsig,
-			"automask":automask,"saveali":saveali,"verbose":verbose,"n":n}
+			"automask":automask,"saveali":saveali,"setsfref":setsfref,"verbose":verbose,"n":n}
 
 	def execute(self,callback=None):
 		"""This does the actual class-averaging, and returns the result"""
@@ -344,7 +344,7 @@ class ClassAvTask(JSTask):
 			if options["verbose"]>0 : print "Final realign:",fxf
 #			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,Transform(),options["averager"],options["normproc"],options["verbose"])
 #			avg.write_image("bdb:xf",-1)
-			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,fxf,ref,options["averager"],options["normproc"],options["verbose"])
+			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,fxf,ref,options["averager"],options["normproc"],options["setsfref"],options["verbose"])
 #			avg.write_image("bdb:xf",-1)
 
 			#self.data["ref"].write_image("tst.hdf",-1)
@@ -356,7 +356,7 @@ class ClassAvTask(JSTask):
 			fxf=ali["xform.align2d"]
 			if options["verbose"]>0 : print "Final center:",fxf
 			avg1=avg
-			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,Transform(),None,options["averager"],options["normproc"],options["verbose"])
+			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,Transform(),None,options["averager"],options["normproc"],options["setsfref"],options["verbose"])
 
 		try:
 			avg["class_ptcl_qual"]=avg1["class_ptcl_qual"]
@@ -399,7 +399,7 @@ def align_one(ptcl,ref,prefilt,align,aligncmp,ralign,raligncmp):
 
 	return ali
 
-def class_average_withali(images,ptcl_info,xform,ref,averager=("mean",{}),normproc=("normalize.edgemean",{}),verbose=0):
+def class_average_withali(images,ptcl_info,xform,ref,averager=("mean",{}),normproc=("normalize.edgemean",{}),setsfref=0,verbose=0):
 	"""This will generate a final class-average, given a ptcl_info list as returned by class_average,
 	and a final transform to be applied to each of the relative transforms in ptcl_info. ptcl_info will
 	be modified in-place to contain the aggregate transformations, and the final aligned average will be returned"""
@@ -429,7 +429,9 @@ def class_average_withali(images,ptcl_info,xform,ref,averager=("mean",{}),normpr
 	
 	# normalize to the reference, this should make make3dpar work better as we can skip the normalization step
 	if ref!=None : 
-		avg.process_inplace("normalize.toimage",{"to":ref})		
+		if setsfref: avg.process_inplace("filter.matchto",{"to":ref})
+		else : avg.process_inplace("normalize.toimage",{"to":ref})
+		
 		avg["class_qual"]=avg.cmp("ccc",ref)
 
 	# set some useful attributes

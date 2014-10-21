@@ -55,6 +55,8 @@ Low priority
 
 
 Complete
+10/21/14	10/21/14	FourierAnl now fills corners. Added improved matchto option. calc_rad_dist double
+10/20/14	10/20/14	ctf.weight averager added
 10/16/14	10/16/14	e2refine_easy classiter -> 0 or 1 when it makes sense. This was limiting resolution in some cases
 9/28/14		9/25/14		Aligned class particle extraction
 9/25/14		7/7/14		per-particle subunit subtraction for Chris
