@@ -18052,7 +18052,9 @@ void Util::set_freq(EMData* freqvol, EMData* temp, EMData* mask, float cutoff, f
 
 	for (size_t i=0;i<size;++i) {
 		if(mask_ptr[i] >0.5f) {
-			if(temp_ptr[i] < cutoff) freqvol_ptr[i] = freq;
+			if(freqvol_ptr[i]  == 0.0f) {
+				if(temp_ptr[i] < cutoff) freqvol_ptr[i] = freq;
+			}
 		}
 	}
 
