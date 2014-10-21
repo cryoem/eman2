@@ -3739,6 +3739,8 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 		if v >= 0: return degrees( acos(v) ), 0
 		else:      return degrees( acos(-v) ), 1
 
+	"""
+	# Not used here
 	def get_ref_ang_list(delta, sym):
 		from utilities import even_angles
 		ref_ang = even_angles(delta, symmetry=sym)
@@ -3747,6 +3749,7 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 			ref_ang_list[2*i]   = ref_ang[i][0]
 			ref_ang_list[2*i+1] = ref_ang[i][1]
 		return ref_ang_list, len(ref_ang)
+	"""
 
 	def binary_search(a, x):
 		N = len(a)
