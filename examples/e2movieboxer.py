@@ -52,6 +52,7 @@ indicating its position in the movie.
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_argument("--boxsize", type=int, help="Box size for particle extraction, may be larger than the standard size for the project to compensate for motion",default=-1)
+	parser.add_argument("--set", type=str, help="If a set is specified as input, only the specific particles in that set will be extracted. Warning, the resulting movie-particle stacks will have missing images.",default=None)
 	parser.add_argument("--invert",action="store_true",help="Extracted images are multiplied by -1 ",default=False)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -67,11 +68,19 @@ indicating its position in the movie.
 	try: os.mkdir("movieparticles")
 	except: pass
 
-	uniq=set()
-	for i in os.listdir("particles"):
-		if ".hdf" in i: uniq.add(base_name(i,nodir=True))
+	uniq={}
+	
+	if set == None :
+		for i in os.listdir("particles"):
+			if ".hdf" in i: uniq[base_name(i,nodir=True)]=[]
+	else :
+		lsx=LSXFile(options.set,True)
+		for i in len(lsx): 
+			ln=lsx.read(i)
+			try: uniq[base_name(ln[1],nodir=True)].append(int(ln[0]))
+			except: uniq[base_name(ln[1],nodir=True)]=[int(ln[0])]
 
-	for u in sorted(uniq):
+	for u in sorted(uniq.keys()):
 		if os.path.exists("movie/{}_raw_proc_align.hdf".format(u)): m="{}_raw_proc_align.hdf".format(u)
 		elif os.path.exists("movie/{}.hdf".format(u.replace("_aliavg","_align"))): m="{}.hdf".format(u.replace("_aliavg","_align"))
 		elif os.path.exists("movie/{}.hdf".format(u)): m="{}_proc_align.hdf".format(u)
@@ -111,10 +120,11 @@ indicating its position in the movie.
 			print "no particles found :",u
 			continue
 
+		if len(uniq[u])==0 : uniq[u]=xrange(nptcl)
 		
 		for i in xrange(n):
 			fm=EMData(fsp,i)
-			for ib in xrange(nptcl):
+			for ib in uniq[u]:
 				b=EMData(ptclfile,ib,True)["ptcl_source_coord"]
 				ptcl=fm.get_clip(Region(b[0]-box/2,b[1]-box/2,box,box))
 				if options.invert : ptcl.mult(-1.0)
