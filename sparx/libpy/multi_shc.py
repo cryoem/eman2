@@ -1316,7 +1316,7 @@ def mirror_and_reduce_dsym(params, sym):
 	for j in xrange(ns):
 		#vt0[j] = getfvec(params[0][j][0], params[0][j][1])
 		vt0[j] = Transform({"type":"spider","phi":params[0][j][0], "theta":params[0][j][1], "psi":params[0][j][2]})
-		#t0[j].set_trans(Vec2f(-params[0][j][3], -params[0][j][4]))
+		#vt0[j].set_trans(Vec2f(-params[0][j][3], -params[0][j][4]))
 	#  get sym transforms
 	ts = get_symt(sym)
 	ks = len(ts)
@@ -1365,9 +1365,9 @@ def mirror_and_reduce_dsym(params, sym):
 						else:            mp = tp
 						if( (mp>=badb and mp<bade) or (mp>=bbdb and mp<bbde) ): k = ks
 						else: k += 1
-					temp[j][0] = bt["phi"]
-					temp[j][1] = bt["theta"]
-					temp[j][2] = bt["psi"]
+					temp[j][0] =  bt["phi"]
+					temp[j][1] =  bt["theta"]
+					temp[j][2] =  bt["psi"]
 					temp[j][3] = -bt["tx"]
 					temp[j][4] = -bt["ty"]
 				solvs.append([discangset(temp, vt0, sym), temp, [rphi,"psidiff"]])

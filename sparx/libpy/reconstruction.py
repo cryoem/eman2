@@ -693,7 +693,8 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", info=N
 			rx = 1.0
 			ry = 1.0
 			rz = float(zsize)/imgsize
-		params = {"sizeprojection":imgsize, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "fftvol":fftvol, "weight":weight,"xratio":rx,"yratio":ry,"zratio":rz}
+		#  There is an error here with sizeprojection  PAP 10/22/2014
+		params = {"size":sizeprojection, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "fftvol":fftvol, "weight":weight,"xratio":rx,"yratio":ry,"zratio":rz}
 		r = Reconstructors.get( "nn4_ctf_rect", params )
 	r.setup()
 

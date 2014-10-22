@@ -155,7 +155,7 @@ def angle_diff_sym(angle1, angle2, simi=1):
 	'''
 	from math import cos, sin, pi, atan2, degrees, radians
 	
-	nima = len(angle1)
+	nima  = len(angle1)
 	nima2 = len(angle2)
 	if nima2 != nima:
 		print "Error: List lengths do not agree!"
@@ -1289,6 +1289,90 @@ def helical_params_err(params1, params2, fil_list):
 		i = iend+1
 
 	return phierr_byfil,prot,pref
+
+def reduce_angles_sym(ang, sym = 'c1'):
+	from utilities import get_symt
+	from EMAN2 import Vec2f, Transform, EMData
+	ts = get_symt(sym)
+	ks = len(ts)
+	if(sym[0] == 'c'):
+		if(ks == 1):  return
+		dt = 360.0/int(sym[1:])
+		for q in ang:
+			if(q[1] <= 90.):  q[0] = q[0]%dt
+			else:			  q[0] = (q[0]%360)%dt+180.0
+	elif(sym[0] == 'd'):
+		#for i in xrange(ks):  ts[i] = ts[i].inverse()
+		dn = 360.0/(2*int(sym[1:]))
+		if(int(sym[1:])%2 == 1):  # D odd
+			ane = 360.0/int(sym[1:])/4
+			ana = 2*ane
+			ans = ane + 360.0/int(sym[1:])/2
+			for q in ang:
+				qt = Transform({"type":"spider","phi":q[0], "theta":q[1], "psi":q[2]})
+				qt.set_trans(Vec2f(-q[3], -q[4]))
+				#fifi = True
+				for k in xrange(ks):
+					ut = qt*ts[k]
+					bt = ut.get_params("spider")
+					tp = bt["phi"]
+					tm = tp - 180.0
+					tt = bt["theta"]
+					if(((tp>=0.0 and tp<ane) or (tp>=ana and tp<ans) and tt <= 90.0) or (( tm>=0.0 and tm<ane) or (tm>=ana and tm<ans)and tt > 90.0)):
+						#print  "%6d   %6.2f   %6.2f   %6.2f   %6.2f"%(k,q[0],q[1],tp,tt)
+						q[0] = tp
+						q[1] = tt
+						q[2] = bt["psi"]
+						q[3] = -bt["tx"]
+						q[4] = -bt["ty"]
+						#fifi = False
+						break
+				#if fifi:  print "FAILED     ", "%6d   %6.2f   %6.2f   %6.2f   %6.2f"%(k,q[0],q[1],tp,tt)
+		else:  #  D even
+			for q in ang:
+				#print  #"%6d   %6.2f   %6.2f"%(12,q[0],q[1])
+				qt = Transform({"type":"spider","phi":q[0], "theta":q[1], "psi":q[2]})
+				qt.set_trans(Vec2f(-q[3], -q[4]))
+				for k in xrange(ks):
+					ut = qt*ts[k]
+					bt = ut.get_params("spider")
+					tp = round(bt["phi"],3)%360.0
+					tm = tp - 180.0
+					tt = round(bt["theta"],3)%360.0
+					#print  "%6d   %6.2f   %6.2f   %6.2f   %6.2f"%(k,q[0],q[1],tp,tt)
+
+					if( (tp >= 0.0 and tp<=dn and tt<= 90.0) or ( tm>=0.0 and tm<=dn and tt>90.0  )):
+						#print  "%6d   %6.2f   %6.2f   %6.2f   %6.2f"%(k,q[0],q[1],tp,tt)
+						q[0] = tp
+						q[1] = tt
+						q[2] = bt["psi"]
+						q[3] = -bt["tx"]
+						q[4] = -bt["ty"]
+						break
+	else:
+		ERROR("Only C and D symmetries supported","reduce_angles_sym",1)
+
+def apply_sym_angles(ang, sym = 'c1'):
+	from utilities import get_symt
+	from EMAN2 import Vec2f, Transform, EMData
+	na = len(ang)
+	ts = get_symt(sym)
+	ks = len(ts)
+	angsa = [None]*ks*na
+	if(sym == 'c1'):
+		for i in xrange(na):
+			angsa[i] = ang[i]
+	else:
+		la = 0
+		for k in xrange(ks):
+			for i in xrange(na):
+				qt = Transform({"type":"spider","phi":ang[i][0], "theta":ang[i][1], "psi":ang[i][2]})
+				qt.set_trans(Vec2f(-ang[i][3], -ang[i][4]))
+				ut = qt*ts[k]
+				bt = ut.get_params("spider")
+				angsa[la] = [round(bt["phi"],3)%360.0, round(bt["theta"],3)%360.0, bt["psi"], -bt["tx"], -bt["ty"]]
+				la += 1
+	return  angsa
 
 # These are some obsolete codes, we retain them just in case.
 '''

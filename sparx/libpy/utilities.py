@@ -744,6 +744,13 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 				t = n-i-1
 				if(angles[t][1] == 90.0):
 					if(angles[t][0] >= qt+ant):  del angles[t]
+			qt = 360.0/int(symmetry_string[1:])+180.0
+			n = len(angles)
+			for i in xrange(n):
+				t = n-i-1
+				if(angles[t][1] > 90.0):
+					angles[t][0] = (angles[t][0] + 180.0)%360.0
+
 	elif(symmetry_string[0]  == "d"):
 		if(phi2 == 359.99):
 			angles = even_angles_cd(delta, theta1, theta2, phi1, 360.0/int(symmetry_string[1:]), method, phiEqpsi)
@@ -3801,7 +3808,7 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 				if x < a[mid]: end = mid-1
 				else: begin = mid+1
 			return mid
-	
+
 	N = len(proj_ang)
 	if len(List) == 0: List = range(N)
 	if N < img_per_grp:
