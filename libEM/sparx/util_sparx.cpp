@@ -2393,8 +2393,109 @@ c
 	}
 	return  out;
 }
+/*
+ * 10/22/2014
+ * Replacement for the previous version which is commented out after this function
+ * Optimized:
+ * 	*Sin and Cos functions are tabulated for the largest ring
+ * 	*Bilinear interpolation
+ */
+EMData* Util::Polar2Dm(EMData* image, float cnx2, float cny2, vector<int> numr, string cmode){
+	int nring = numr.size()/3;
+	int r1 = numr(1,1);
+	int r2 = numr(1,nring);
+	int maxPoints = numr(3,nring);
 
-EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, string cmode){
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+
+	int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
+	EMData* out = new EMData();
+	out->set_size(lcirc,1, 1);
+
+	char mode = (cmode == "F" || cmode == "f") ? 'F' : 'H';
+	int div = (mode == 'F' ? 4 : 2);
+
+	maxPoints = maxPoints /div - 1;
+
+	const float dpi = 2*atan(1.0);
+//	Table for sin & cos
+	vector<float> vsin(maxPoints);
+	vector<float> vcos(maxPoints);
+	for (int x = 0; x < maxPoints; x++) {
+		float ang = (x+1) * dpi / (maxPoints +1);
+		vsin[x] = sin(ang);
+		vcos[x] = cos(ang);
+	}
+
+	float xold, yold;
+
+	float *xim  = image->get_data();
+	float* circ = out->get_data();
+	for (int r = 0; r < r2 - r1+1; r++) {
+
+		int it = r+1;
+		int inr = numr(1,it);
+
+		int iRef = numr(3,it)/div;
+
+		int kcirc = numr(2,it);
+
+		xold  = 0.0f+cnx2;
+		yold  = inr+cny2;
+		circ(kcirc) = bilinear(xold,yold,nx,ny,xim);    // Sampling on 90 degree
+
+		xold  = inr+cnx2;
+		yold  = 0.0f+cny2;
+		circ(iRef+kcirc) = bilinear(xold,yold,nx,ny,xim);  // Sampling on 0 degree
+
+		if (mode == 'F') {
+			xold = 0.0f+cnx2;
+			yold = -inr+cny2;
+			circ(2*iRef+kcirc) = bilinear(xold,yold,nx,ny,xim);  // Sampling on 270 degree
+
+			xold = -inr+cnx2;
+			yold = 0.0f+cny2;
+			circ(3*iRef+kcirc) = bilinear(xold,yold,nx,ny,xim); // Sampling on 180 degree
+		}
+
+		int nPoints = iRef-1;
+		int mult = (maxPoints+1)/(nPoints+1);
+		for (int x = 0; x < nPoints; x++) {
+			int jt = x+1;
+			int ind = (x+1)*mult - 1;
+			float xnew    = vsin[ind] * inr;
+			float ynew    = vcos[ind] * inr;
+
+			xold = xnew+cnx2;
+			yold = ynew+cny2;
+			circ(jt+kcirc) = bilinear(xold,yold,nx,ny,xim);      // Sampling on the first quadrant
+
+			xold = ynew+cnx2;
+			yold = -xnew+cny2;
+			circ(jt+iRef+kcirc) = bilinear(xold,yold,nx,ny,xim);	// Sampling on the fourth quadrant
+
+			if (mode == 'F') {
+				xold = -xnew+cnx2;
+				yold = -ynew+cny2;
+
+				circ(jt+2*iRef+kcirc) = bilinear(xold,yold,nx,ny,xim); // Sampling on the third quadrant
+
+				xold = -ynew+cnx2;
+				yold = xnew+cny2;
+
+				circ(jt+3*iRef+kcirc) = bilinear(xold,yold,nx,ny,xim);  // Sampling on the second quadrant
+			}
+		}
+	}
+	return out;
+}
+
+/*
+ * 10/22/2014
+ * Previous version
+ * Quadratic interpolation
+ EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, string cmode){
 	int nsam = image->get_xsize();
 	int nrow = image->get_ysize();
 	int nring = numr.size()/3;
@@ -2428,23 +2529,23 @@ EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, 
 		xold  = 0.0f+cns2;
 		yold  = inr+cnr2;
 
-		Assert( kcirc <= lcirc );
+//		Assert( kcirc <= lcirc );
 		circ(kcirc) = quadri(xold,yold,nsam,nrow,xim);    // Sampling on 90 degree
 
 		xold  = inr+cns2;
 		yold  = 0.0f+cnr2;
-		Assert( lt+kcirc <= lcirc );
+//		Assert( lt+kcirc <= lcirc );
 		circ(lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);  // Sampling on 0 degree
 
 		if ( mode == 'f' || mode == 'F' ) {
 			xold = 0.0f+cns2;
 			yold = -inr+cnr2;
-			Assert( lt+lt+kcirc <= lcirc );
+//			Assert( lt+lt+kcirc <= lcirc );
 			circ(lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);  // Sampling on 270 degree
 
 			xold = -inr+cns2;
 			yold = 0.0f+cnr2;
-			Assert(lt+lt+lt+kcirc <= lcirc );
+//			Assert(lt+lt+lt+kcirc <= lcirc );
 			circ(lt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim); // Sampling on 180 degree
 		}
 
@@ -2456,32 +2557,33 @@ EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, 
 			xold = x+cns2;
 			yold = y+cnr2;
 
-			Assert( jt+kcirc <= lcirc );
+//			Assert( jt+kcirc <= lcirc );
 			circ(jt+kcirc) = quadri(xold,yold,nsam,nrow,xim);      // Sampling on the first quadrant
 
 			xold = y+cns2;
 			yold = -x+cnr2;
 
-			Assert( jt+lt+kcirc <= lcirc );
+//			Assert( jt+lt+kcirc <= lcirc );
 			circ(jt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);	// Sampling on the fourth quadrant
 
 			if ( mode == 'f' || mode == 'F' ) {
 				xold = -x+cns2;
 				yold = -y+cnr2;
 
-				Assert( jt+lt+lt+kcirc <= lcirc );
+//				Assert( jt+lt+lt+kcirc <= lcirc );
 				circ(jt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim); // Sampling on the third quadrant
 
 				xold = -y+cns2;
 				yold = x+cnr2;
 
-				Assert( jt+lt+lt+lt+kcirc <= lcirc );
+//				Assert( jt+lt+lt+lt+kcirc <= lcirc );
 				circ(jt+lt+lt+lt+kcirc) = quadri(xold,yold,nsam,nrow,xim);  // Sampling on the second quadrant
 			}
 		} // end for jt
 	} //end for it
 	return out;
 }
+*/
 
 float Util::bilinear(float xold, float yold, int nsam, int, float* xim)
 {
