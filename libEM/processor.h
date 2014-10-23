@@ -6137,7 +6137,8 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 		{
 			TypeDict d;
 			d.put("to", EMObject::EMDATA, "The image to match with. Make sure apix values are correct.");
-			d.put("bydot", EMObject::EMDATA, "Rather than matching the intensity profile, uses the complex dot product as a function of resolution to match only the portion that agrees.");
+			d.put("bydot", EMObject::BOOL, "Rather than matching the intensity profile, uses the complex dot product as a function of resolution to match only the portion that agrees.");
+			d.put("keephires", EMObject::BOOL, "If the reference being matched is heavily filtered, total information loss may occur at some resolutions. This insures that some information is kept at all resolutions.");
 			d.put("return_radial", EMObject::BOOL, "Return the radial filter function as an attribute (filter_curve)");
 			d.put("interpolate", EMObject::BOOL, "Whether or not to interpolate the radial scaling function. Default=true");
 			return d;

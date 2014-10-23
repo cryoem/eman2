@@ -429,7 +429,9 @@ def class_average_withali(images,ptcl_info,xform,ref,averager=("mean",{}),normpr
 	
 	# normalize to the reference, this should make make3dpar work better as we can skip the normalization step
 	if ref!=None : 
-		if setsfref: avg.process_inplace("filter.matchto",{"to":ref})
+		if setsfref: 
+			avg.process_inplace("filter.matchto",{"to":ref,"interpolate":0,"keephires":1})
+			avg-=avg.get_edge_mean()
 		else : avg.process_inplace("normalize.toimage",{"to":ref})
 		
 		avg["class_qual"]=avg.cmp("ccc",ref)

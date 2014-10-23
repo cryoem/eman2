@@ -6684,6 +6684,7 @@ void MatchSFProcessor::create_radial_func(vector < float >&rad,EMData *image) co
 	EMData *to = params["to"];
 	float apixto = to->get_attr("apix_x");
 	bool bydot = params.set_default("bydot",false);
+	float keephires = params.set_default("keephires",false);
 	
 	if (to->get_ysize() != image->get_ysize()) throw ImageDimensionException("Fatal Error: filter.matchto - image sizes must match");
 	
@@ -6715,8 +6716,19 @@ void MatchSFProcessor::create_radial_func(vector < float >&rad,EMData *image) co
 				norm[r]+=(double)(v2.real()*v2.real()+v2.imag()*v2.imag());
 			}
 		}
-		for (int i=0; i<ny2; i++) rad[i]=(rad[i]/norm[i]<0)?0.0:rad[i]/norm[i];
+		float radmean=0.0f;
+		for (int i=0; i<ny2; i++) {
+			rad[i]=(rad[i]/norm[i]<0)?0.0:rad[i]/norm[i];
+			radmean+=rad[i];
+		}
+		radmean/=ny2;
 		
+		if (keephires) {
+			for (int i=0; i<ny2; i++) {
+				if (rad[i]<radmean/100.0) rad[i]=radmean/100.0;
+			}
+		}
+			
 		if (!to->is_complex()) delete tofft;
 		return;
 	}
@@ -6736,6 +6748,17 @@ void MatchSFProcessor::create_radial_func(vector < float >&rad,EMData *image) co
 		}
 		delete tmp;
 	}
+	
+	// This makes sure that the filter never falls below 0.01 of the mean filter value so we keep something at all resolutions
+	if (keephires) {
+		float radmean=0.0f;
+		for (int i=0; i<rad.size(); i++) radmean+=rad[i];
+		radmean/=rad.size();
+		for (int i=0; i<rad.size(); i++) {
+			if (rad[i]<radmean/100.0) rad[i]=radmean/100.0;
+		}
+	}
+		
 
 }
 
