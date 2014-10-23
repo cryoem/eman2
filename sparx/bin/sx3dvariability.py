@@ -251,7 +251,7 @@ def main():
 		if myid == main_node:
 			print_msg("...... calculating the stack of 2D variances \n")
 			if options.VERBOSE:
-				print "Now calculating a stack of 2D variances"
+				print "Now calculating the stack of 2D variances"
 
 		proj_params = [0.0]*(nima*5)
 		aveList = []

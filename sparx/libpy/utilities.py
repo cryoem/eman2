@@ -4149,7 +4149,7 @@ def wrap_mpi_recv(source, communicator = None):
 	return unpack_message(msg)
 
 
-def wrap_mpi_bcast(data, root, communicator = None):
+def wrap_mpi_bcast(data, root = 0, communicator = None):
 	from mpi import mpi_bcast, MPI_COMM_WORLD, mpi_comm_rank, MPI_CHAR
 
 	if communicator == None:
