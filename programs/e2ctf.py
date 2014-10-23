@@ -187,7 +187,9 @@ NOTE: This program should be run from the project directory, not from within the
 		outargs=[]
 		for i in args:
 			try:
-				if js_open_dict(info_name(i))["quality"]>=options.minqual : outargs.append(i)
+				js=js_open_dict(info_name(i))
+				if js["quality"]>=options.minqual : outargs.append(i)
+				js.close()
 			except:
 #				traceback.print_exc()
 				print "Unknown quality for {}, including it".format(info_name(i))
@@ -358,7 +360,10 @@ def write_e2ctf_output(options):
 				if options.phaseflipproc3!=None:
 					phaseprocout.append(parsemodopt(options.phaseflipproc3))
 
-			try: ctf=js_open_dict(info_name(filename))["ctf"][0]		# EMAN2CTF object from disk
+			try:
+				js=js_open_dict(info_name(filename))
+				ctf=js["ctf"][0]		# EMAN2CTF object from disk
+				js.close()
 			except:
 				print "No CTF parameters found in {}, skipping {}.".format(info_name(filename),filename)
 				continue
@@ -551,6 +556,7 @@ def pspec_and_ctf_fit(options,debug=False):
 		if img_sets[-1][-1]==None: js_parms.delete("ctf_microbox")
 		else: js_parms["ctf_microbox"]=img_sets[-1][-1]
 		js_parms["ctf"]=img_sets[-1][1:-3]
+		js_parms.close()
 
 		if logid : E2progress(logid,float(i+1)/len(options.filenames))
 
@@ -703,6 +709,8 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,phaseproc=No
 
 #		print hpfilt[:c+4]
 
+	js_parms.close()
+	
 	for i in range(n):
 		if source_image!=None :
 			im1=EMData()
