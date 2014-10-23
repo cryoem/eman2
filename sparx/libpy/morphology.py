@@ -1537,7 +1537,7 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 	for ifi in xrange(set_start,set_end):
 		
 		
-		numFM = EMUtil.get_image_count(namics[ifi]))
+		numFM = EMUtil.get_image_count(namics[ifi])
 		pw2 = []
 		print  " ifi, tilemic numFM", ifi,namics[ifi],numFM
 		for nf in xrange(numFM):
