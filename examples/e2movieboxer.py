@@ -68,6 +68,9 @@ indicating its position in the movie.
 	try: os.mkdir("movieparticles")
 	except: pass
 
+	logid=E2init(sys.argv)
+
+
 	uniq={}
 	
 	if set == None :
@@ -75,7 +78,7 @@ indicating its position in the movie.
 			if ".hdf" in i: uniq[base_name(i,nodir=True)]=[]
 	else :
 		lsx=LSXFile(options.set,True)
-		for i in len(lsx): 
+		for i in xrange(len(lsx)): 
 			ln=lsx.read(i)
 			try: uniq[base_name(ln[1],nodir=True)].append(int(ln[0]))
 			except: uniq[base_name(ln[1],nodir=True)]=[int(ln[0])]
@@ -131,7 +134,9 @@ indicating its position in the movie.
 				ptcl["movie_frames"]=n
 				ptcl["movie_n"]=i
 				ptcl.write_image(outfsp,i+ib*n)
-		
+	
+	E2end(logid)
+
 
 
 if __name__ == "__main__":
