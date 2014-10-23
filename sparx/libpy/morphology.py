@@ -1535,10 +1535,15 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 
 	totresi = []
 	for ifi in xrange(set_start,set_end):
-		#print  " tilemic ", ifi,namics[ifi]
-
-		if stack == None:
-			pw2 = tilemic(get_im(namics[ifi]), win_size=wn, overlp_x=overlap_x, overlp_y=overlap_y, edge_x=edge_x, edge_y=edge_y)
+		
+		
+		numFM = EMUtil.get_image_count(namics[ifi]))
+		pw2 = []
+		print  " ifi, tilemic numFM", ifi,namics[ifi],numFM
+		for nf in xrange(numFM):
+			if stack == None:
+				pw2 += tilemic(get_im(namics[ifi]), win_size=wn, overlp_x=overlap_x, overlp_y=overlap_y, edge_x=edge_x, edge_y=edge_y)
+	
 		nimi = len(pw2)
 		adefocus = [0.0]*kboot
 		aamplitu = [0.0]*kboot
