@@ -158,11 +158,11 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_header(name="optional", help='Just a visual separation', title="Optional:", row=14, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--apix", default=0, type=float,help="The angstrom per pixel of the input particles. This argument is required if you specify the --mass argument. If unspecified (set to 0), the convergence plot is generated using either the project apix, or if not an apix of 1.", guitype='floatbox', row=16, col=0, rowspan=1, colspan=1, mode="refinement['self.pm().getAPIX()']")
 	parser.add_argument("--sep", type=int, help="The number of classes each particle can contribute towards (normally 1). Increasing will improve SNR, but produce rotational blurring.", default=-1)
-	parser.add_argument("--classkeep",type=float,help="The fraction of particles to keep in each class, based on the similarity score. (default=0.9 -> 90%%)", default=0.9, guitype='floatbox', row=16, col=2, rowspan=1, colspan=2, mode="refinement")
-	parser.add_argument("--classautomask",default=False, action="store_true", help="This will apply an automask to the class-average during iterative alignment for better accuracy. The final class averages are unmasked.",guitype='boolbox', row=18, col=0, rowspan=1, colspan=1, mode="refinement")
-	parser.add_argument("--prethreshold",default=False, action="store_true", help="Applies a threshold to the volume just before generating projections. A sort of aggressive solvent flattening for the reference.",guitype='boolbox', row=18, col=2, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--classkeep",type=float,help="The fraction of particles to keep in each class, based on the similarity score. (default=0.9 -> 90%%)", default=0.9, guitype='floatbox', row=18, col=0, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--classautomask",default=False, action="store_true", help="This will apply an automask to the class-average during iterative alignment for better accuracy. The final class averages are unmasked.",guitype='boolbox', row=20, col=1, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--prethreshold",default=False, action="store_true", help="Applies a threshold to the volume just before generating projections. A sort of aggressive solvent flattening for the reference.",guitype='boolbox', row=20, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--m3dkeep", type=float, help="The fraction of slices to keep in e2make3d.py. Default=0.8 -> 80%%", default=0.8, guitype='floatbox', row=18, col=1, rowspan=1, colspan=1, mode="refinement")
-	parser.add_argument("--m3dpostprocess", type=str, default=None, help="Default=none. An arbitrary post-processor to run after all other automatic processing. Maps are autofiltered, so a low-pass filter should not normally be used here.", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter.lowpass|filter.highpass\')', row=20, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--m3dpostprocess", type=str, default=None, help="Default=none. An arbitrary post-processor to run after all other automatic processing. Maps are autofiltered, so a low-pass filter should not normally be used here.", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter.lowpass|filter.highpass\')', row=22, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel",default=None, guitype='strbox', row=24, col=0, rowspan=1, colspan=2, mode="refinement[thread:4]")
 	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement[4]")
 	parser.add_argument("--path", default=None, type=str,help="The name of a directory where results are placed. Default = create new refine_xx")
@@ -201,7 +201,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--classaverager",type=str,help="Default=auto. The averager used to generate the class averages. Default is \'mean\'.",default=None)
 	parser.add_argument("--classcmp",type=str,help="Default=auto. The name and parameters of the comparitor used to generate similarity scores, when class averaging.", default=None)
 	parser.add_argument("--classnormproc",type=str,default="normalize.edgemean",help="Default=auto. Normalization applied during class averaging")
-	parser.add_argument("--classrefsf",default=False, action="store_true", help="Default=False. Use the setsfref option in class averaging to produce better filtered averages.")
+	parser.add_argument("--classrefsf",default=False, action="store_true", help="Use the setsfref option in class averaging. This matches the filtration of the class-averages to the projections for easier comparison. May also improve convergence.",guitype='boolbox', row=20, col=0, rowspan=1, colspan=1, mode="refinement[True]")
 
 
 	#options associated with e2make3d.py
@@ -492,7 +492,8 @@ important to use an angular step which is 90/integer.</p>")
 	else: classralign="--ralign {ralign} --raligncmp {raligncmp}".format(ralign=options.classralign,raligncmp=options.classraligncmp)
 
 	if options.classaverager==None :
-		if hasctf and options.targetres<15 : options.classaverager="ctfw.auto"
+#		if hasctf and options.targetres<15 : options.classaverager="ctfw.auto"
+		if hasctf and options.targetres<15 : options.classaverager="ctf.weight"		# changed default on 10/23/14
 		else : options.classaverager="mean"
 
 	if options.classcmp==None :
