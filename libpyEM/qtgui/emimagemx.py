@@ -791,7 +791,8 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		stp = max(len(self.data)/32, 1)
 
 		for i in range(0, len(self.data), stp) : # we check ~32 images randomly spaced in the set
-			d = self.data.get_image_header(i)
+			try: d = self.data.get_image_header(i)
+			except: pass
 			
 			#print "\n"
 			#print d["maximum"]

@@ -127,9 +127,11 @@ indicating its position in the movie.
 		
 		for i in xrange(n):
 			fm=EMData(fsp,i)
+			fm.process_inplace("normalize.edgemean")
 			for ib in uniq[u]:
 				b=EMData(ptclfile,ib,True)["ptcl_source_coord"]
 				ptcl=fm.get_clip(Region(b[0]-box/2,b[1]-box/2,box,box))
+				ptcl.process_inplace("mask.zeroedgefill")
 				if options.invert : ptcl.mult(-1.0)
 				ptcl["movie_frames"]=n
 				ptcl["movie_n"]=i
