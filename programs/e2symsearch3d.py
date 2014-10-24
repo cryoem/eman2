@@ -52,13 +52,7 @@ def main():
 	parser.add_argument("--input", dest="input", default=None,type=str, help="The name of input volume or hdf stack of volumes", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=0, col=0, rowspan=1, colspan=2, mode="align")
 	parser.add_argument("--output", dest="output", default="e2symsearch3d_OUTPUT.hdf",type=str, help="The name of the output volume", guitype='strbox', filecheck=False, row=1, col=0, rowspan=1, colspan=2, mode="align")
 	parser.add_argument("--path",type=str,help="Name of path for output file",default='', guitype='strbox', row=2, col=0, rowspan=1, colspan=2, mode="align['initial_models']")
-	
-	parser.add_argument("--nopath",action='store_true',default=False,help="""If supplied,
-		this option will save results in the directory where the command is run. A directory
-		to store the results will not be made""")
-		
-	parser.add_argument("--nolog",action='store_true',default=False,help="""If supplied,
-		this option will prevent logging the command run in .eman2log.txt.""")
+
 	
 	parser.add_argument("--sym", dest = "sym", default="c1", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos. For asymmetric reconstruction omit this option or specify c1.", guitype='symbox', row=4, col=0, rowspan=1, colspan=2, mode="align")
 	
@@ -111,14 +105,15 @@ def main():
 
 
 	#parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
+
 	
 	parser.add_argument("--nopath",action='store_true',default=False,help="""If supplied,
 		this option will save results in the directory where the command is run. A directory
-		to store the results will not be made""")
+		to store the results will not be made.""")
 		
 	parser.add_argument("--nolog",action='store_true',default=False,help="""If supplied,
 		this option will prevent logging the command run in .eman2log.txt.""")
-
+		
 	(options, args) = parser.parse_args()
 
 
@@ -151,7 +146,7 @@ def main():
 		options.path = '.'
 	
 	#Import preprocessing function
-	from e2spt_hac import preprocessing	
+	from e2spt_classaverage import preprocessing	
 	
 	#Import parallelization class
 	from EMAN2PAR import EMTaskCustomer
