@@ -53,11 +53,11 @@ def main():
 		sys.exit(1)
 	input_file, output_file = args[0],args[1]
 
-	if options.fscxml2txt and options.fsctxt2xml:
+	if options.fscxml2txt and options.fsctxt2xml != "FSC Plot":
 		print "Invalid Options: Either --fscxml2txt or --fsctxt2xml can be used but not both"
 		sys.exit(-1)
 
-	if options.fsctxt2xml:
+	if options.fsctxt2xml != "FSC Plot":
 		#not ideal to do it by hand - should use the xml parser....
 		input_file = open(str(input_file),'r')
 		output_file = open(str(output_file),'w')
