@@ -719,7 +719,7 @@ def main():
 			cmdhac=cmdhac.replace('e2spt_classaverage','e2spt_hac')
 			cmdhac+=' --path=hacref'
 			cmdhac+=' --iter='+str(niterhac)
-			cmdhac+= ' && mv hacref ' + options.path
+			cmdhac+= ' && mv hacref ' + options.path + '/'
 			if options.verbose:
 				print "\nCommand to generate hacref is", cmdhac
 	
