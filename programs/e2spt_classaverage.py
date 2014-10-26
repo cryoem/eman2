@@ -190,7 +190,9 @@ def main():
 		choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=15, col=0, rowspan=1, 
 		colspan=3,mode="alignment,breaksym")		
 		
-	parser.add_argument("--averager",type=str,help="The type of averager used to produce the class average. Default=mean",default="mean")
+	parser.add_argument("--averager",type=str,help="""The type of averager used to produce 
+		the class average. Default=mean.tomo""",default="mean.tomo")
+		
 	parser.add_argument("--keep",type=float,help="The fraction of particles to keep in each class.",default=1.0, guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode='alignment,breaksym')
 	parser.add_argument("--inixforms",type=str,help="directory containing a dict of transform to apply before reference generation", default="", guitype='dirbox', dirbasename='spt_|sptsym_', row=7, col=0,rowspan=1, colspan=2, nosharedb=True, mode='breaksym')
 	parser.add_argument("--breaksym",action="store_true", help="Break symmetry. Do not apply symmetrization after averaging", default=False, guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, nosharedb=True, mode=',breaksym[True]')
@@ -708,11 +710,27 @@ def main():
 			
 			hacelements = []
 			for ele in elements:
-				if '--output' not in ele and '--ref' not in ele:
+				if '--output' not in ele and 'ref' not in ele and '--path' not in ele and 'keep' not in ele and 'iter' not in ele:
 					hacelements.append(ele)
+			
+			niterhac = options.hacref-1
 					
 			cmdhac = ' '.join(hacelements)
-			cmdhac.replace('e2spt_classaverage','e2spt_hac')
+			cmdhac=cmdhac.replace('e2spt_classaverage','e2spt_hac')
+			cmdhac+=' --path=hacref'
+			cmdhac+=' --iter='+str(niterhac)
+			cmdhac+= ' && mv hacref ' + options.path
+			if options.verbose:
+				print "\nCommand to generate hacref is", cmdhac
+	
+			p=subprocess.Popen( cmdhac, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			text=p.communicate()	
+			p.stdout.close()
+			
+			#options.ref = 'hacref/finalAvg.hdf'
+			ref = EMData(options.path +'/hacref/finalAvg.hdf',0)
+			
+			
 			#cmdhac.replace(
 			#pass
 		
@@ -783,11 +801,6 @@ def main():
 					print "ERROR: emtpy ref after clip ali, region", r
 					print "sizes", ref['nx']
 					sys.exit()
-			
-			
-			
-			
-			
 			
 			
 			
@@ -1780,7 +1793,10 @@ def make_average(options,ic,ptcl_file,path,align_parms,averager,saveali,savealla
 	if verbose: 
 		print "Kept %d / %d particles in average"%(len(included),len(align_parms))
 
+	print "Will finalize average"
 	avg=avgr.finish()
+	print "done"
+		
 	if symmetry and not breaksym:
 		avg=avg.process('xform.applysym',{'sym':symmetry})
 	avg["class_ptcl_idxs"]=included
@@ -1824,7 +1840,8 @@ def make_average_pairs(options,ptcl_file,outfile,align_parms,averager,nocenterof
 		#ptcl1.process_inplace("xform",{"transform":align_parms[0]["xform.align3d"]})
 	
 		# While this is only 2 images, we still use the averager in case something clever is going on
-		avgr=Averagers.get(averager[0], averager[1])
+		print "averager is", averager
+		avgr = Averagers.get(averager[0], averager[1])
 		avgr.add_image(ptcl0)
 		avgr.add_image(ptcl1)
 	
