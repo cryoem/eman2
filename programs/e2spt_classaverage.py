@@ -731,7 +731,7 @@ def main():
 			cmdhac+=' --input='+subsetForHacRef
 			
 			
-			cmdhac+= ' && mv hacref ' + options.path + '/'	
+			cmdhac+= ' && mv hacref ' + options.path + '/' + ' && mv ' + subsetForHacRef + ' ' + options.path
 			
 			if options.verbose:
 				print "\nCommand to generate hacref is", cmdhac
