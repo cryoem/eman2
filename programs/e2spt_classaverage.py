@@ -710,16 +710,29 @@ def main():
 			
 			hacelements = []
 			for ele in elements:
-				if '--output' not in ele and 'ref' not in ele and '--path' not in ele and 'keep' not in ele and 'iter' not in ele:
+				if '--output' not in ele and 'input' not in ele and 'ref' not in ele and '--path' not in ele and 'keep' not in ele and 'iter' not in ele:
 					hacelements.append(ele)
 			
 			niterhac = options.hacref-1
 					
+			subsetForHacRef = 'subsetForHacRef.hdf'
+			subsetCmd = 'e2proc3d.py ' + options.input + ' ' + subsetForHacRef + ' --first=0 --last=' + str( options.hacref -1 ) 
+			
+			print "\nCommand to extract subset for hacref is", subsetCmd
+			
+			p=subprocess.Popen( subsetCmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			text=p.communicate()	
+			p.stdout.close()
+			
 			cmdhac = ' '.join(hacelements)
 			cmdhac=cmdhac.replace('e2spt_classaverage','e2spt_hac')
 			cmdhac+=' --path=hacref'
 			cmdhac+=' --iter='+str(niterhac)
-			cmdhac+= ' && mv hacref ' + options.path + '/'
+			cmdhac+=' --input='+subsetForHacRef
+			
+			
+			cmdhac+= ' && mv hacref ' + options.path + '/'	
+			
 			if options.verbose:
 				print "\nCommand to generate hacref is", cmdhac
 	
