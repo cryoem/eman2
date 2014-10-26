@@ -481,25 +481,6 @@ def main():
 	
 	logger = E2init(sys.argv,options.ppid)
 
-
-
-
-	if options.savepreprocessed:
-		dummy = EMData(8,8,8)
-		dummy.to_one()
-		
-		preprocnameCoarse = options.path + '/' + options.input.replace('.hdf','_preprocCoarse.hdf')
-		preprocnameFine = options.path + '/' + options.input.replace('.hdf','_preprocFine.hdf')
-
-		for i in range(nptcl):
-			dummy.write_image( preprocnameCoarse ,i)
-			
-			if options.falign and options.falign != 'None' and options.falign != 'none':
-				dummy.write_image( preprocnameFine ,i)
-
-
-
-
 	for i in range(options.groups):	
 		#if options.groups > 1:
 		if options.groups * 3 > nptcl:
@@ -515,6 +496,7 @@ def main():
 				top_range = nptcl
 			
 			groupPATH = entirestack
+			options.input = groupPATH
 			if options.groups > 1:
 				groupDIR = originalpath + '/group' + str(i+1).zfill(len(str(options.groups)))
 				groupID = 'group' + str(i+1).zfill(len(str(options.groups))) + 'ptcls.hdf'
@@ -526,11 +508,32 @@ def main():
 				#groupStack = options.input.replace('.hdf','group' + str(i+1).zfill(len(str(options.nrefs))) + 'ptcls.hdf'
 
 				options.path = groupDIR
-
+				options.input = groupPATH
 				print "\n************************************\n(e2spt_hac.py) I will start ALL vs ALL on group number", i+1
 				print "For which options.input is", options.input
+				print "And uodated options.path is", options.path
 				print "************************************"
 
+			if options.savepreprocessed:
+				dummy = EMData(8,8,8)
+				dummy.to_one()
+				
+				preprocnameCoarse = options.input.replace('.hdf','_preprocCoarse.hdf')
+				if options.path not in preprocnameCoarse:
+					preprocnameCoarse = options.path + '/' + options.input.replace('.hdf','_preprocCoarse.hdf')
+				
+				preprocnameFine = options.input.replace('.hdf','_preprocFine.hdf')
+				if options.path not in preprocnameFine:
+					preprocnameFine = options.path + '/' + options.input.replace('.hdf','_preprocFine.hdf')
+				
+				print "\n\nPreprocname coarse and fine are", preprocnameCoarse, preprocnameFine
+				for i in range(nptcl):
+					dummy.write_image( preprocnameCoarse ,i)
+		
+					if options.falign and options.falign != 'None' and options.falign != 'none':
+						dummy.write_image( preprocnameFine ,i)
+			
+			
 			mm = 0
 			for jj in xrange(bottom_range,top_range):
 				#print "I am rewritting the spt_ptcl_indxs header parameter for every particle in the stack"
@@ -554,7 +557,7 @@ def main():
 
 				mm += 1
 
-			options.input = groupPATH
+			
 		
 		#print "\nTHe len of options is ", len(options)
 		#print "\n\nAnd options are", options
@@ -701,7 +704,7 @@ def allvsall(options):
 		
 		
 	oldptcls = {}									#'Unused' particles (those that weren't part of any unique-best-pair) join the 'oldptcls' dictionary onto the next round
-	surviving_results = []								#This list stores the results for previous alignment pairs that weren't used, so you don't have to recompute them
+	surviving_results = []							#This list stores the results for previous alignment pairs that weren't used, so you don't have to recompute them
 		
 	allptclsMatrix = []								#Massive matrix listing all the allptclsRound dictionaries produced after each iteration
 	allptclsMatrix.append(allptclsRound)
