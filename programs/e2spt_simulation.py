@@ -130,8 +130,8 @@ def main():
 		of the particle respect to the tilt axis; the tilt axis by convention goes parallel 
 		to Y through the middle of the tomogram.""")
 	
-	parser.add_argument("--icethickness", type=float,default=0.5,help="""Thickness of the specimen
-		to simulate, in microns. If --writetomogram is supplied, --icethickness will be used to calculate 
+	parser.add_argument("--icethickness", type=float,default=0.4,help="""Thickness of the specimen
+		to simulate, in microns. Default=0.4. If --writetomogram is supplied, --icethickness will be used to calculate 
 		the size of the tomogram in Z in PIXELS for the simulated tomogram. 
 		This parameter will also be used to assign a random coordinate in Z to 
 		each subtomogram.""")
@@ -1060,6 +1060,7 @@ class SubtomoSimTask(JSTask):
 			prj['apix_y']=apix
 			prj['spt_tiltangle']=realalt
 			prj['spt_tiltaxis']=options.tiltaxis
+			prj['ptcl_source_coord']=sptcoords
 		
 			#print "\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\nThe size of the prj is", prj['nx']
 			#print "\n"
@@ -1074,17 +1075,22 @@ class SubtomoSimTask(JSTask):
 				finalprjsRAW = finalprjsRAW.replace('_preproc','')	
 				prj.write_image( finalprjsRAW , -1)					#Write projections stack for particle i
 				
-			
 			raw_projections.append(prj)
+			
+			if options.invert:
+				prj.mult(-1)
+			
+			prj_r = prj
+			
+			if options.snr and options.snr != 0.0 and options.snr != '0.0' and options.snr != '0' and dimension == 3:
+				prj_r = noiseit( prj_r, options, nslices ) 
 				
 			prj_fft = prj.do_fft()
-			prj_r = prj
+			
 			
 			#print "Sizes of prj and prj_ftt are", prj['nx'],prj['ny'],prj_fft['nx'],prj_fft['ny']
 		
-			if options.invert:
-				prj_fft.mult(-1)								#Reverse the contrast, as in "authentic" cryoEM data		
-		
+											#Reverse the contrast, as in "authentic" cryoEM data		
 			if options.applyctf:
 				ctf = EMAN2Ctf()
 				ctf.from_dict({ 'defocus': defocus, 'bfactor': options.bfactor ,'ampcont': options.ampcont ,'apix':apix, 'voltage':options.voltage, 'cs':options.cs })	
@@ -1094,50 +1100,9 @@ class SubtomoSimTask(JSTask):
 		
 				prj_r = prj_fft.do_ift()							#Go back to real space
 				prj_r['ctf'] = ctf
-			
-			noise = EMData()
 		
 			if options.snr and options.snr != 0.0 and options.snr != '0.0' and options.snr != '0' and dimension == 3:
-				nx=prj_r['nx']
-				ny=prj_r['ny']
-			
-				#print "I will make noise"
-				#noise = 'noise string'
-				#print "Noise is", noise
-				
-				noise = test_image(1,size=(nx,ny))
-				#print "noise now is img", noise
-			
-				noise2 = noise.process("filter.lowpass.gauss",{"cutoff_abs":.25})
-				noise.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.75})
-				
-				noise = ( noise*3 + noise2*3 )
-				
-				if options.savenoise:
-					noiseStackName = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_NOISE.hdf')
-					noise.write_image( noiseStackName, -1 )
-				
-				noise *= float( options.snr )
-			
-				#if noise:
-				#print "I will add noise"
-				#noise.process_inplace('normalize')
-				
-				prj_r.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.25})
-				prj_r.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.75})
-				
-				fractionationfactor = 61.0/nslices		#At snr = 10, simulated subtomograms look like empirical ones for +-60 deg data collection range
-														#using 2 deg tilt step. If 61 slices go into each subtomo, then the fractionation factor
-														#Will be 1. Otherwise, if nslices is > 61 the signal in each slice will be diluted.
-														#If nslices < 1, the signal in each slice will be enhanced. In the end, regardless of the nslices value, 
-														#subtomograms will always have the same amount of signal instead of signal depending on number of images.
-				prj_r.mult( fractionationfactor )
-				prj_r.add(noise)
-				
-				
-				
-				#elif options.snr:
-				#	print "WARNING: You specified snr but there's no noise to add, apparently!"
+				prj_r = noiseit( prj_r, options, nslices )
 
 			ctfed_projections.append(prj_r)
 			#print "Appended ctfed prj in slice j", j
@@ -1277,6 +1242,51 @@ class SubtomoSimTask(JSTask):
 
 jsonclasses["SubtomoSimTask"]=SubtomoSimTask.from_jsondict
 
+
+def noiseit( prj_r, options, nslices ):
+	
+	noise = EMData()
+	nx=prj_r['nx']
+	ny=prj_r['ny']
+
+	#print "I will make noise"
+	#noise = 'noise string'
+	#print "Noise is", noise
+	
+	noise = test_image(1,size=(nx,ny))
+	#print "noise now is img", noise
+
+	noise2 = noise.process("filter.lowpass.gauss",{"cutoff_abs":.25})
+	noise.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.75})
+	
+	noise = ( noise*3 + noise2*3 )
+	
+	if options.savenoise:
+		noiseStackName = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_NOISE.hdf')
+		noise.write_image( noiseStackName, -1 )
+	
+	noise *= float( options.snr )/2.0
+
+	#if noise:
+	#print "I will add noise"
+	#noise.process_inplace('normalize')
+	
+	#prj_r.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.25})
+	#prj_r.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.75})
+	
+	fractionationfactor = 61.0/nslices		#At snr = 10, simulated subtomograms look like empirical ones for +-60 deg data collection range
+											#using 2 deg tilt step. If 61 slices go into each subtomo, then the fractionation factor
+											#Will be 1. Otherwise, if nslices is > 61 the signal in each slice will be diluted.
+											#If nslices < 1, the signal in each slice will be enhanced. In the end, regardless of the nslices value, 
+											#subtomograms will always have the same amount of signal instead of signal depending on number of images.
+	prj_r.mult( fractionationfactor )
+	prj_r.add(noise)
+	
+	
+	
+	#elif options.snr:
+	#	print "WARNING: You specified snr but there's no noise to add, apparently!"
+	return prj_r
 
 
 def get_results(etc,tids,options):
