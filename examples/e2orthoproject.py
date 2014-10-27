@@ -134,53 +134,36 @@ def main():
 	from e2spt_classaverage import sptmakepath
 	options = sptmakepath(options,'orthoprjs')
 	
-	#if options.path and ("/" in options.path or "#" in options.path) :
-	#	print "Path specifier should be the name of a subdirectory to use in the current directory. Neither '/' or '#' can be included. "
-	#	sys.exit(1)
-	#
-	#if not options.path: 
-	#	options.path = "orthoproject_01"
-	#
-	#files=os.listdir(os.getcwd())
-	#while options.path in files:
-	#	if '_' not in options.path:
-	#		options.path = options.path + '_00'
-	#	else:
-	#		jobtag=''
-	#		components=options.path.split('_')
-	#		if components[-1].isdigit():
-	#			components[-1] = str(int(components[-1])+1).zfill(2)
-	#		else:
-	#			components.append('00')
-	#					
-	#		options.path = '_'.join(components)
-	#		#options.path = path
-
-	#if options.path not in files:
-	#	
-	#	os.system('mkdir ' + options.path)
-	
+	if options.onlyz and options.onlyx:
+		print "ERROR: Cannot supply --onlyz and --onlyx at the same time"
+		sys.exit()
+	if options.onlyz and options.onlyy:
+		print "ERROR: Cannot supply --onlyz and --onlyy at the same time"
+		sys.exit()
+	if options.onlyy and options.onlyx:
+		print "ERROR: Cannot supply --onlyy and --onlyx at the same time"
+		sys.exit()
 	
 	'''
 	Generate projection transforms
 	'''
 	
 	projectiondirections = []
+	
 	if options.onlyz:
 		pz = Transform({'type':'eman','az':0,'alt':0,'phi':0})
 		projectiondirections={'pz':pz}
 	elif options.onlyx:
-		px = Transform({'type':'eman','az':0,'alt':-90,'phi':0})
+		px = Transform({'type':'eman','az':90,'alt':-90,'phi':0})
 		projectiondirections={'px':px}
 	elif options.onlyy:
-		#py = Transform({'type':'eman','az':-90,'alt':-90,'phi':0})
-		py = Transform({'type':'eman','az':90,'alt':-90,'phi':-90})
+		py = Transform({'type':'eman','az':0,'alt':90,'phi':0})
 
 		projectiondirections={'py':py}
 	else:	
 		pz = Transform({'type':'eman','az':0,'alt':0,'phi':0})
-		px = Transform({'type':'eman','az':0,'alt':-90,'phi':0})
-		py = Transform({'type':'eman','az':90,'alt':-90,'phi':-90})
+		px = Transform({'type':'eman','az':90,'alt':-90,'phi':0})
+		py = Transform({'type':'eman','az':0,'alt':90,'phi':0})
 		projectiondirections = {'pz':pz,'px':px,'py':py}
 
 	if options.transformsfile:
