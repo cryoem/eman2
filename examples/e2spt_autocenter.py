@@ -515,7 +515,7 @@ def acpreprocessing(options,image):
 	if options.threshold:
 		simage.process_inplace(options.threshold[0],options.threshold[1])	
 	
-	return	simage
+	return simage
 
 
 if __name__ == "__main__":

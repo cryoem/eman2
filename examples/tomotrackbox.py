@@ -385,7 +385,7 @@ class TrackerControl(QtGui.QWidget):
 			av.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.1})
 			av.process_inplace("filter.highpass.gauss",{"cutoff_abs":.02})
 			av.process_inplace("xform.centeracf")
-#			display((av,av2))
+			#display((av,av2))
 			
 			# align to the average
 			for i,im in enumerate(stack):

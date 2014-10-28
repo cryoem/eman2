@@ -53,12 +53,15 @@ def main():
 
 	parser.add_argument("--path",default='',type=str,help="Name of directory where to save the output file.")
 	parser.add_argument("--alifile",default='',type=str,help=".json file with alingment parameters, if raw stack supplied via --input.")
+	parser.add_argument("--extractcoords",default=False,action='store_true',help="""If you
+		provide this option, a coordinates file can be written with the original coordinates
+		stored on the header of a subtomogram stack""")
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
 
 	parser.add_argument("--saveali",action="store_true", default=False,help="""If set, will save the 
-		aligned particle volumes in class_ptcl.hdf. Overwrites existing file.""")
+		aligned particle volumes.""")
 
 	(options, args) = parser.parse_args()
 
@@ -85,6 +88,33 @@ def main():
 	
 	n = EMUtil.get_image_count( os.getcwd() + '/' + options.input )
 	
+	if options.extractcoords:
+		lines=[]
+		tomograms={}
+		for i in range(n):
+			#You only need to load the ptcl header
+			a=EMData( options.input , i ,True )
+			
+			coords=a['ptcl_source_coord']
+			tomogram=a['ptcl_source_image']
+			
+			if tomogram not in tomograms:
+				print "Indentified a new tomogram",tomogram
+				tomograms.update({tomogram:[]})
+				
+			line = str(coords[0]) + ' ' + str(coords[1]) + ' ' + str(coords[2]) + '\n'
+			#lines.append(line)
+			print "Line of coordinates to add",line
+			tomograms[tomogram].append(line)
+			
+		for tomogram in tomograms.keys():
+			#coordsfile = options.path + '/' + options.input.replace('.hdf','_coords.txt')
+			coordsfile = options.path + '/' + tomogram.split('.')[0] + '_coords.txt'
+
+			f=open(coordsfile,'w')
+			f.writelines(tomograms[tomogram])
+			f.close()
+	
 	if not options.alifile:
 		a=Transform({"type":"eman","alt":1.0})
 		#k=list(a.get_rotation(sys.argv[2]).keys())
@@ -98,7 +128,8 @@ def main():
 			print "#{},{},{},{}".format(k)
 
 		for i in range(n):
-			im=EMData( options.input ,i)
+			#You only need to load the header
+			im=EMData( options.input ,i, True)
 			#xf=im["spt_ali_param"]
 			
 			xf=im['xform.align3d']
@@ -113,24 +144,26 @@ def main():
 			
 		avgr=Averagers.get(options.averager[0], options.averager[1])
 	
-		for i in range(n):			
+		for i in range(n):	
+			print "reading particle"		
 			a=EMData( options.input, i)
 			
 			ptcl = a.copy()
-			ID=unicode(i)
-			t = preOrientationsDict[0][ID]
 			
-			#t=''
-			#for key in ts.keys():
-			#	print "Key is", key,type(key)
-			#	if ID in key:
-			#		t = ts[unicode(0)][unicode(key]
+			#The forst case works with .json files from e2spt_hac.py
+			#The second works for .json files from e2spt_classaverage.py
+			try:
+				ID=unicode(i)
+				#print "ID is", ID
+				t = preOrientationsDict[0][ID]
+				#print "t 1 is",t
+			except:
+				ID='tomo_' + str(i)
+				#print "ID is", ID
+				t = preOrientationsDict[ID][0]
+				#print "t 2 is", t
 					
-			
 			print "Transform is",t
-			
-			
-			
 			
 			ptcl['origin_x'] = 0
 			ptcl['origin_y'] = 0
