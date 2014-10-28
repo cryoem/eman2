@@ -84,7 +84,7 @@ def main():
 	if (path=="/") : path="./"
 	if options.align :
 		if options.sym.lower() in ("icos","tet","oct") or options.sym[0].lower()=="d" : align="" 	# no alignment with higher symmetries
-		elif options.sym[0].lower()=="c" and options.sym[1]!="1" : align=align=" --ralignz={path}tmp0.hdf".format(path=path)		# z alignment only
+		elif options.sym[0].lower()=="c" and options.sym[1]!="1" : align=align=" --ralignzphi={path}tmp0.hdf".format(path=path)		# z/phi alignment only
 		else: align="--alignref={path}tmp0.hdf --align=refine_3d".format(path=path)	# full 3-D alignment for C1
 
 		cmd="e2proc3d.py {evenfile} {path}tmp0.hdf --process=filter.lowpass.gauss:cutoff_freq={lpfilt}".format(path=path,evenfile=evenfile,lpfilt=lpfilt)

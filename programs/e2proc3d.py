@@ -47,6 +47,7 @@ import pyemtbx.options
 from pyemtbx.options import intvararg_callback
 from pyemtbx.options import floatvararg_callback
 from time import time
+from numpy import arange
 
 def print_iminfo(data, label):
 	print "%s image : %dx%dx%d Mean=%1.3g Sigma=%1.3g Min=%1.3g Max=%1.3g" % \
@@ -137,8 +138,8 @@ def main():
 	parser.add_option("--resetxf",action="store_true",help="Reset an existing transform matrix to the identity matrix")
 	parser.add_option("--align", metavar="aligner_name:param1=value1:param2=value2", type="string", action="append",
 								help="Align input map to reference specified with --alignref. As with processors, a sequence of aligners is permitted")
-	parser.add_option("--ralignz", type=str ,action="append",
-								help="Refine Z alignment within +-10 pixels (for C symmetries), specify name of alignment reference here not with --alignref")
+	parser.add_option("--ralignzphi", type=str ,action="append",
+								help="Refine Z alignment within +-10 pixels  and phi +-15 degrees (for C symmetries), specify name of alignment reference here not with --alignref")
 	parser.add_option("--alignref", metavar="filename", type="string", default=None, help="Alignment reference volume. May only be specified once.")
 
 	parser.add_option("--rot",type=str,metavar="az,alt,phi or convention:par=val:...",help="Rotate map. Specify az,alt,phi or convention:par=val:par=val:...  eg - mrc:psi=22:theta=15:omega=7", action="append",default=None)
@@ -156,7 +157,7 @@ def main():
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_option("--step",type=str,default=None,help="Specify <init>,<step>. Processes only a subset of the input data. For example, 0,2 would process only the even numbered particles")
 
-	append_options = ["clip", "fftclip", "process", "filter", "meanshrink", "medianshrink", "scale", "sym", "multfile", "trans", "rot", "align","ralignz"]
+	append_options = ["clip", "fftclip", "process", "filter", "meanshrink", "medianshrink", "scale", "sym", "multfile", "trans", "rot", "align","ralignzphi"]
 
 	optionlist = pyemtbx.options.get_optionlist(sys.argv[1:])
 
@@ -412,17 +413,24 @@ def main():
 				data.process_inplace(filtername, param_dict)
 				index_d[option1] += 1
 
-			elif option1 == "ralignz":
-#				print "ralignz ",options.ralignz[index_d[option1]]
-				zalignref=EMData(options.ralignz[index_d[option1]],0)
-				ary=[]
-				for z in xrange(-10,11):
-					zimg=data.process("xform.translate.int",{"trans":(0,0,z)})
-					ary.append((zalignref.cmp("ccc",zimg),z))
+			elif option1 == "ralignzphi":
+#				print "ralignzphi ",options.ralignzphi[index_d[option1]]
+				zalignref=EMData(options.ralignzphi[index_d[option1]],0)
+				dang=80.0/data["ny"];		# 1 pixel at ~3/4 radius
+				best=(1000,0,0,data)
+				for it in xrange(2):
+					for z in xrange(best[1]-10,best[1]+11):
+						zimg=data.process("xform",{"transform":Transform({"type":"eman","tz":z,"phi":best[2]})})
+						best=min(best,(zalignref.cmp("ccc",zimg),z,best[2],zimg))
+	
+					for phi in arange(best[2]-10.0,best[2]+10.0,dang):
+						zimg=data.process("xform",{"transform":Transform({"type":"eman","tz":best[1],"phi":best[2]})})
+						best=min(best,(zalignref.cmp("ccc",zimg),best[1],phi,zimg))
 
-				data=data.process("xform.translate.int",{"trans":(0,0,min(ary)[1])})
-				data["xform.align3d"]=Transform({"type":"eman","tz":min(ary)[1]})
-				if options.verbose>0 : print "Z alignment: ",min(ary)[1]
+
+				data=best[3]
+				data["xform.align3d"]=Transform({"type":"eman","tz":best[1],"phi":best[2]})
+				if options.verbose>0 : print "Alignment: tz = ",best[1],"  dphi=",best[2]
 
 			elif option1 == "align":
 				if alignref==None :
