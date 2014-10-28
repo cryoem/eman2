@@ -1930,6 +1930,13 @@ if the lst file does not exist."""
 	def __del__(self):
 		self.normalize()
 
+	def __getitem__(self,n):
+		return self.read(n)
+
+	def __setitem__(self,n,tupl):
+		if len(tupl)==3 : self.write(n,tupl[0],tupl[1],tupl[2])
+		else : self.write(n,tupl[0],tupl[1])
+
 	def write(self,n,nextfile,extfile,comment=None):
 		"""Writes a record to any location in a valid #LSX file.
 n : image number in #LSX file, -1 appends, as does n>= current file len

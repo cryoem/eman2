@@ -33,17 +33,21 @@
 import pprint
 from EMAN2 import *
 import sys
+import os
 from numpy import *
 import numpy.linalg as LA
+import threading
 
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] <refine_xx folder>
 
 	Based on a completed refinement, this will perform per-particle alignment using reference projections from the reconstruction.
-	It will only perform alignments on particles used in the specified refinement run. Warning, this will replace the non ctf-corrected
-	particles in the particles directory in-place, overwriting the originals. You may wish to consider making a backup of the project
-	before running this program.
+	It will only perform alignments on particles used in the specified refinement run. 
+	
+	This will make an attempt to rename the original particles as *__orig before writing the new particles with the original particle
+	names. It will do this only the first time. If __orig files already exist, it will not replace them. This way if you run this
+	program multiple times, you can produce new versions of the aligned particles without destroying the true originals.
 	"""
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
@@ -70,12 +74,13 @@ def main():
 		print usage
 		parser.error("Specify refine_xx folder")
 
-	if options.parallel!=None :
+	if options.threads : nthreads=options.threads
+	elif options.parallel!=None :
 		if options.parallel[:7]!="thread:":
 			print "ERROR: only thread:<n> parallelism supported by this program. It is i/o limited."
 			sys.exit(1)
-		threads=int(options.parallel[7:])
-	else: threads=1
+		nthreads=int(options.parallel[7:])
+	else: nthreads=1
 
 	pid=E2init(sys.argv)
 
@@ -89,13 +94,37 @@ def main():
 
 	if options.verbose: print "running on:",clsout
 
-	newproj="../"+os.getcwd().split("/")[-1]+"_m"
-	try: os.makedirs(newproj+"/particles")
-	except: pass
+	#newproj="../"+os.getcwd().split("/")[-1]+"_m"
+	#try: os.makedirs(newproj+"/particles")
+	#except: pass
 
 	lastloc=None
 	lst=(LSXFile(inlst[0]),LSXFile(inlst[1]))	# Input particle "sets" in LSX files
 	cls=(EMData.read_images(clsout[0]),EMData.read_images(clsout[1]))	# Generally small enough we can just read the whole thing
+	
+	# Move the original files out of the way
+	if options.verbose : print "Renaming original particle stacks"
+	allnames=set()
+	for eo in xrange(2):
+		for i in xrange(len(lst[eo])):
+			allnames.add(lst[eo][i][1])
+			
+	n=0
+	for name in allnames:
+		base=base_name(name)
+		if   os.path.exists("particles/{}.hdf".format(base)) : src="particles/{}.hdf".format(base)
+		elif os.path.exists("particles/{}_ptcls.hdf".format(base)) : src="particles/{}_ptcls.hdf".format(base)
+		dest="particles/{}__orig.hdf".format(base)
+		try: 
+			os.rename(src,dest)
+			if options.verbose>1: print "Renaming {} to {}".format(src,dest)
+			n+=1
+		except: 
+			if options.verbose>1: print "Failed to rename ",name
+			pass
+	
+	if options.verbose==1: print n," stacks renamed to __orig"
+	
 	
 	neo=max(lst[0].n,lst[1].n)
 	
@@ -125,14 +154,26 @@ def main():
 			proj=EMData(projfsp,int(cls[eo][0][0,i]))	# projection image for this particle
 #			orient=Transform({"type":"2d","tx":cls[2][0,i],"ty":cls[3][0,i],"alpha":cls[4][0,i],"mirror":int(cls[5][0,i])})
 			orient=Transform({"type":"2d","tx":0,"ty":0,"alpha":cls[eo][4][0,i],"mirror":int(cls[eo][5][0,i])})		# we want the alignment reference in the middle of the box
-			proj.transform(orient.inverse())
 			
 			stack=EMData.read_images(movie,xrange(movien*ptloc[0],movien*(ptloc[0]+1)))
+			ptcl=EMData(ptloc[1],ptloc[0])		# the original particle image, should have CTF info too
+			outname="particles/{}_ptcls.hdf".format(base_name(ptloc[1]))
+			outnum=ptloc[0]
+			
+			# launch thread to do work
+			if options.verbose>1 : print "*****    ",threading.active_count()-1," threads running"
+			while (threading.active_count()>nthreads) : time.sleep(0.1)
+			t=threading.Thread(target=alignthread,args=(stack,ptcl,flipim,proj,orient,outname,outnum,options.verbose))
+			t.start()
+			
+	E2end(pid)
+
+def alignthread(stack, ptcl, flipim, proj, orient, outname, outnum, verbose):
+			proj.transform(orient.inverse())
 			for im in stack: im.process_inplace("normalize.edgemean")
 			avg=sum(stack)
 			avg.mult(1.0/len(stack))
 
-			ptcl=EMData(ptloc[1],ptloc[0])		# the original particle image, should have CTF info too
 			ptcl.process_inplace("normalize.edgemean")
 			
 			oldbox=proj["nx"]
@@ -148,15 +189,15 @@ def main():
 			proj=pfft.do_ift()
 			
 #			if proj["nx"]!=ptcl["nx"] : proj=proj.get_clip
-			if options.verbose>3 : proj.write_image("tmp.hdf",-1)
+			if verbose>3 : proj.write_image("tmp.hdf",-1)
 			#ptcl.process_inplace("normalize.toimage",{"to":proj})
-			if options.verbose>3 :ptcl.write_image("tmp.hdf",-1)
+			if verbose>3 :ptcl.write_image("tmp.hdf",-1)
 			avg.process_inplace("normalize.edgemean")
-			if options.verbose>3 :avg.write_image("tmp.hdf",-1)
+			if verbose>3 :avg.write_image("tmp.hdf",-1)
 			
 			# This function is the actual stack alignment to the reference, producing the aligned average
-			newpt=alignstack(proj,stack,options.verbose-1)
-			if options.verbose>3 :
+			newpt=alignstack(proj,stack,verbose-1)
+			if verbose>3 :
 				newpt.process_inplace("normalize.edgemean")
 				newpt.write_image("tmp.hdf",-1)
 			if newpt["nx"]!=oldbox : newpt=newpt.window_center(oldbox)
@@ -165,11 +206,10 @@ def main():
 			newpt.process_inplace("normalize.edgemean")
 			#newpt.write_image("{}/particles/{}_ptcls.hdf".format(newproj,base_name(ptloc[1])),ptloc[0])
 			# We're appending here to avoid the problem with missing "bad" particles in the original set. not a perfect solution
-			newpt.write_image("{}/particles/{}_ptcls.hdf".format(newproj,base_name(ptloc[1])),-1)
+			newpt.write_image(outname,outnum)
 			
-			if options.verbose>1 : print i,movie,ptloc[0],int(cls[eo][0][0,i])
-			
-	E2end(pid)
+			if verbose>1 : print "Completed: ",outname,outnum
+
 
 def alignstack(refo,stack,verbose=0):
 	"""aligns a movie stack to a reference image, with some constraints forcing the relative alignments to follow a pattern
