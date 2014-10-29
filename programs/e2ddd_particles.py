@@ -63,8 +63,10 @@ def main():
 	#parser.add_argument("--movie", type=int,help="Display an n-frame averaged 'movie' of the stack, specify number of frames to average",default=0)
 	#parser.add_argument("--simpleavg", action="store_true",help="Will save a simple average of the dark/gain corrected frames (no alignment or weighting)",default=False)
 	#parser.add_argument("--avgs", action="store_true",help="Testing",default=False)
+	parser.add_argument("--noalign",action="store_true",help="Regenerates unaligned particle averages into __orig"),default=False)
+	parser.add_argument("--invert",action="store_true",help="Invert the contrast of the particles in output files (default false)",default=False)
 	parser.add_argument("--parallel", default=None, help="parallelism argument. This program supports only thread:<n>")
-	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement[4]")
+	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
@@ -156,10 +158,23 @@ def main():
 			orient=Transform({"type":"2d","tx":0,"ty":0,"alpha":cls[eo][4][0,i],"mirror":int(cls[eo][5][0,i])})		# we want the alignment reference in the middle of the box
 			
 			stack=EMData.read_images(movie,xrange(movien*ptloc[0],movien*(ptloc[0]+1)))
+			if options.invert : 
+				for i in stack: i.mult(-1.0)
 			ptcl=EMData(ptloc[1],ptloc[0])		# the original particle image, should have CTF info too
 			outname="particles/{}_ptcls.hdf".format(base_name(ptloc[1]))
 			outnum=ptloc[0]
-			
+
+			# here we just regenerate control_data
+			if options.noalign :
+				av=sum(stack)
+				av.mult(1.0/len(stack))
+				nx=ptcl["nx"]
+				nx2=av["nx"]
+				av=av.get_clip(Region((nx2-nx)/2,(nx2-nx)/2,nx,nx))
+				outname.replace("_ptcls","__orig")
+				av.write_image(outname,outnum)
+				continue
+				
 			# launch thread to do work
 			if options.verbose>1 : print "*****    ",threading.active_count()-1," threads running"
 			while (threading.active_count()>nthreads) : time.sleep(0.1)
@@ -220,15 +235,17 @@ def alignstack(refo,stack,verbose=0):
 	ny=refo["ny"]
 	
 	# a little preprocessing on the stack
-	outim=[i.get_clip(Region(-nx/2,-ny/2,nx*2,ny*2)) for i in stack]
+#	outim=[i.get_clip(Region(-nx/2,-ny/2,nx*2,ny*2)) for i in stack]
+	outim=[i.process("xform.scale",{"clip":ny*2,"scale":2.0}) for i in stack]
 	
 	for i in outim:
-		i.scale(2.0)
+#		i.scale(2.0)
 		i.process_inplace("filter.highpass.gauss",{"cutoff_abs":.002})
 		i.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
-	
-	ref=refo.get_clip(Region(-nx/2,-ny/2,nx*2,ny*2))
-	ref.scale(2.0)
+
+	ref=refo.process("xform.scale",{"clip":ny*2,"scale":2.0})
+	#ref=refo.get_clip(Region(-nx/2,-ny/2,nx*2,ny*2))
+	#ref.scale(2.0)
 
 	nx*=2
 	ny*=2
