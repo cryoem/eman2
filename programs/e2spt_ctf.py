@@ -274,6 +274,7 @@ def main():
 		autoIcethickness = max( zs ) -  min( zs )
 		
 		icefile=options.path+'/autoicethickness.txt'
+		os.system( 'touch ' + icefile )
 		f=open(icefile,'w')
 		line=[str(autoIcethickness)+'\n']
 		f.writelines(line)
