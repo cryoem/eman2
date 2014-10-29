@@ -34,8 +34,6 @@
 	
 import os, sys, commands
 from EMAN2 import *
-import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator
 from pylab import figure, show	
 import math
 
@@ -49,28 +47,64 @@ def main():
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_argument("--vols", type=str, help="Volume whose radial density plot you want to compute. For multiple volumes, either provide them as an .hdf stack, or separate them by commas --vols=first.hdf,second.hdf,etc...", default=None)
-	#parser.add_argument("--output", type=str, help="Name for the output .png and .txt files that contain the plots and the numeric values for them. Must be specified if --singleplot is on.", default='')
-	parser.add_argument("--mode", type=str, help="""provide --mode=x, y, or z to get the average density per slice in the indicated direction. 
-	--mode=cylinder for concentric cylindrical shell; default is --mode=sphere. For MULTIPLE modes, separate them by commas, for example --mode=x,y,z,cylinder""", default='sphere')
-	parser.add_argument("--fixedcylinderheight", type=int, help="Works only if --mode=cylinder, and keeps the height of the cylinder at a constant value, while varying the radius.", default=0)
+	parser.add_argument("--vols", type=str, help="""Volume whose radial density plot you 
+		want to compute. For multiple volumes, either provide them as an .hdf stack, or 
+		separate them by commas --vols=first.hdf,second.hdf,etc...""", default=None)
+	
+	parser.add_argument("--mode", type=str, help="""provide --mode=x, y, or z to get the 
+		average density per slice in the indicated direction. 
+		--mode=cylinder for concentric cylindrical shell; default is --mode=sphere.
+		For MULTIPLE modes, separate them by commas, for example --mode=x,y,z,cylinder""", default='sphere')
+	
+	parser.add_argument("--fixedcylinderheight", type=int, help="""Works only if --mode=cylinder, 
+		and keeps the height of the cylinder at a constant value, while varying the radius.""", default=0)
 
-	parser.add_argument("--mask",type=str,help="Mask processor applied to volumes before alignment. Default is None.", default=None)
-	parser.add_argument("--normproc",type=str,help="""Normalization processor applied to volumes before computing density values. Default is None.
-													If normalize.mask is used, results of the mask option will be passed in automatically.""", default=None)
-	parser.add_argument("--preprocess",type=str,help="Any processor (as in e2proc3d.py) to be applied to each volume prior to radial density plot computation.", default=None)
-	parser.add_argument("--lowpass",type=str,help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to radial density plot computation.", default=None)
-	parser.add_argument("--highpass",type=str,help="A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to radial density plot computation.", default=None)	
-	parser.add_argument("--shrink", type=int,default=1,help="Optionally shrink the input volumes by an integer amount.")	
+	
+	parser.add_argument("--mask",type=str,help="""Mask processor applied to volumes before alignment. 
+		Default is None.""", default=None)
+	
+	parser.add_argument("--normproc",type=str,help="""Normalization processor applied to 
+		volumes before computing density values. Default is None.
+		If normalize.mask is used, results of the mask option will be passed in automatically.""", default=None)
+	
+	parser.add_argument("--preprocess",type=str,help="""Any processor (as in e2proc3d.py) 
+		to be applied to each volume prior to radial density plot computation.""", default=None)
+	
+	parser.add_argument("--lowpass",type=str,help="""A lowpass filtering processor (as in e2proc3d.py) 
+		to be applied to each volume prior to radial density plot computation.""", default=None)
+	
+	parser.add_argument("--highpass",type=str,help="""A highpass filtering processor (as in e2proc3d.py) 
+		to be applied to each volume prior to radial density plot computation.""", default=None)	
+	
+	parser.add_argument("--shrink", type=int,default=1,help="""Optionally shrink the input 
+		volumes by an integer amount.""")	
+	
 	#parser.add_argument("--apix", type=float, help="Provide --apix to overrride the value found in the volumes' header paramter.", default=0)
-	parser.add_argument("--singleplotperfile", action="store_true",default=False,help="Plot all the Radial Density Profiles of the volumes provided in each .hdf stack in one single plot.")	
-	parser.add_argument("--singlefinalplot", action="store_true",default=False,help="Plot all the Radial Density Profiles of the volumes provided in all .hdf stacks in one FINAL single 'master' plot.")	
-	parser.add_argument("--threshold", action="store_true",default=False,help="If on, this will turn all negative pixel values into 0.")	
-	parser.add_argument("--normalizeplot", action="store_true",default=False,help="This will make the maximum density in each plot or curve equal to 1.")
-	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	
+	parser.add_argument("--singleplotperfile", action="store_true",default=False,help="""
+		Plot all the Radial Density Profiles of the volumes provided in each .hdf stack in 
+		one single plot.""")	
+	
+	parser.add_argument("--singlefinalplot", action="store_true",default=False,help="""Plot 
+		all the Radial Density Profiles of the volumes provided in all .hdf stacks in one 
+		FINAL single 'master' plot.""")	
+	
+	parser.add_argument("--threshold", action="store_true",default=False,help="""If on, 
+		this will turn all negative pixel values into 0.""")	
+	
+	parser.add_argument("--normalizeplot", action="store_true",default=False,help="""This 
+		will make the maximum density in each plot or curve equal to 1.""")
+	
+	parser.add_argument("--ppid", type=int, help="""Set the PID of the parent process, 
+		used for cross platform PPID""",default=-1)
+	
+	parser.add_argument("--verbose", "-v", default=0, help="""Verbose level [0-9], higner 
+		number means higher level of verboseness""",dest="verbose", action="store", metavar="n",type=int)
 	
 	(options, args) = parser.parse_args()
+	
+	import matplotlib.pyplot as plt
+	from matplotlib.ticker import MaxNLocator
 	
 	logger = E2init(sys.argv, options.ppid)
 
