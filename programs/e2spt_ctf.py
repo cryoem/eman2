@@ -630,6 +630,7 @@ def correctsubtilt( options, subtilts, angles, ctfs, apix, nangles, nimgs, frame
 		
 		flippedsts = options.path + '/' + os.path.basename( sts ).replace('.hdf','_PHFLIP.hdf')
 		phfimgs = []
+		defocuserrors=[]
 		for m in range( n ):
 			img = EMData( sts, m )
 			angle = angles[ m ]
@@ -663,6 +664,9 @@ def correctsubtilt( options, subtilts, angles, ctfs, apix, nangles, nimgs, frame
 			try:
 				actualctf = img['ctf']
 				print "\nactual defocus is", actualctf.defocus
+				defocuserror = actual.defocus - newdefocus
+				print "\nTherefore, defocus error is", defocuserror
+				defocuserrors.append(defocuserror)
 				
 			except:
 				pass
@@ -679,7 +683,10 @@ def correctsubtilt( options, subtilts, angles, ctfs, apix, nangles, nimgs, frame
 			phfimgs.append( imgflipped )
 		
 		sts3d = options.path + '/' + os.path.basename( sts ).replace('.hdf','_PHFLIP3D.hdf')
+		defocuserrorsAvg=sum(defocuserrors)/len(defocuserros)
 		rec = reconstruct3d( options, phfimgs, apix )
+		rec['spt_avgDefocusError']=defocuserrorsAvg
+		
 		if options.save3d:
 			rec.write_image( sts3d , 0 )
 			
