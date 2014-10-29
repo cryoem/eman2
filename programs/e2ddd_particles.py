@@ -134,7 +134,7 @@ def main():
 	for i in xrange(neo):
 		# eo is 0/1 for even/odd files
 		for eo in xrange(2):
-			if i>=lst[eo].n : continue
+			if i>=len(lst[eo]) : continue
 		
 			projfsp=clsout[eo].replace("cls_result","projections")
 			ptloc=lst[eo].read(i)		# ptloc is n,filename for the source image
@@ -159,7 +159,7 @@ def main():
 			
 			stack=EMData.read_images(movie,xrange(movien*ptloc[0],movien*(ptloc[0]+1)))
 			if options.invert : 
-				for i in stack: i.mult(-1.0)
+				for inv in stack: inv.mult(-1.0)
 			ptcl=EMData(ptloc[1],ptloc[0])		# the original particle image, should have CTF info too
 			outname="particles/{}_ptcls.hdf".format(base_name(ptloc[1]))
 			outnum=ptloc[0]
