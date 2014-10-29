@@ -285,9 +285,6 @@ def autobox(args,options,logid):
 		E2progress(logid,float(i+1)/len(args))
 
 def write_output(args,options,logid, database="e2boxercache"):
-	if options.gauss_autoboxer != None:
-		print "\n\n --write_ptcl option has been deactivated for Gauss mode.\n\nPlease use sxwindow.py for windowing!\n\n"
-		return
 	params = {}
 	params["filenames"] = args
 	params["suffix"] = options.suffix
@@ -303,62 +300,65 @@ def write_output(args,options,logid, database="e2boxercache"):
 	E2progress(logid,0.0)
 
 	if options.write_ptcls:
-		names = get_particle_outnames(params)
-		for i,output in enumerate(names):
-			input = args[i]
-			box_list = EMBoxList()
-			box_list.load_boxes_from_database(input)
-
-			# if box type is GaussBoxer.AUTO_NAME, the pre-process and possibly decimate image using params in db
-			# only need to do this if write_ptcls is called on its own
-			if (len(box_list) > 0) and (options.gauss_autoboxer == None):
-				bx = box_list[0]
-				if bx.type == GaussBoxer.AUTO_NAME and options.gauss_autoboxer == None:
-					print 'For automatic boxing using Gauss Boxer, particles should be written at the time of autoboxing either by 1) activating "Write Output" button in GUI mode, or 2) adding --write_ptcls when autoboxing in command line mode'
-					print 'I will continue and write particles, but results may not be as expected.'
-
-			# if box type is GaussBoxer.AUTO_NAME, the pre-process and possibly decimate image using params in db
-			# only need to do this if write_ptcls is called on its own
-			if (len(box_list) > 0) and (options.gauss_autoboxer != None):
-				bx = box_list[0]
-				boxkey = options.gauss_autoboxer
-				if bx.type == GaussBoxer.AUTO_NAME:
-					# these were boxed in gauss mode, so we have to process and possibly decimate image before writing
-
-					gdb_name = GaussPanel.GDB_NAME
-					if not js_check_dict(gdb_name):
-						print "no gauss mode autoboxing parameters were found in database...this should not happen"
-						print 'exiting...'
-						return
-					gbdb = js_open_dict(gdb_name)
-					if not gbdb.has_key(boxkey):
-						print "no gauss mode autoboxing parameters were found in database for %s...this should not happen"%boxkey
-						print 'exiting...'
-						return
-					autoboxdict = gbdb[boxkey]
-
-					gboxer = GaussBoxer()
-					boxsize=int(options.boxsize)
-					try:
-						gboxer.set_pixel_input(float(autoboxdict['pixel_input']))
-						gboxer.set_pixel_output(float(autoboxdict['pixel_output']))
-						gboxer.set_invert_contrast(autoboxdict['invert_contrast'])
-						gboxer.set_use_variance(autoboxdict['use_variance'])
-						gboxer.set_gauss_width(float(autoboxdict['gauss_width']))
-						gboxer.set_thr_low(float(autoboxdict['thr_low']))
-						gboxer.set_thr_hi(float(autoboxdict['thr_hi']))
-					except:
-						print 'no gauss mode autoboxing parameters were found in database...this should not happen'
-						print 'exiting...'
-						return
-
-					gboxer.get_small_image(input,modecmd=True,boxsize=boxsize,ret_dummy=True)
-
-			box_list.write_particles(input,output,options.boxsize,options.invert,options.norm,options.exclude_edges)
-
-
-			progress += 1.0
-			E2progress(logid,progress/total_progress)
+		if options.gauss_autoboxer != None:
+			print "\n\n --write_ptcl option has been deactivated for Gauss mode.\n\nPlease use sxwindow.py for windowing!\n\n"
+		else:
+			names = get_particle_outnames(params)
+			for i,output in enumerate(names):
+				input = args[i]
+				box_list = EMBoxList()
+				box_list.load_boxes_from_database(input)
+	
+				# if box type is GaussBoxer.AUTO_NAME, the pre-process and possibly decimate image using params in db
+				# only need to do this if write_ptcls is called on its own
+				if (len(box_list) > 0) and (options.gauss_autoboxer == None):
+					bx = box_list[0]
+					if bx.type == GaussBoxer.AUTO_NAME and options.gauss_autoboxer == None:
+						print 'For automatic boxing using Gauss Boxer, particles should be written at the time of autoboxing either by 1) activating "Write Output" button in GUI mode, or 2) adding --write_ptcls when autoboxing in command line mode'
+						print 'I will continue and write particles, but results may not be as expected.'
+	
+				# if box type is GaussBoxer.AUTO_NAME, the pre-process and possibly decimate image using params in db
+				# only need to do this if write_ptcls is called on its own
+				if (len(box_list) > 0) and (options.gauss_autoboxer != None):
+					bx = box_list[0]
+					boxkey = options.gauss_autoboxer
+					if bx.type == GaussBoxer.AUTO_NAME:
+						# these were boxed in gauss mode, so we have to process and possibly decimate image before writing
+	
+						gdb_name = GaussPanel.GDB_NAME
+						if not js_check_dict(gdb_name):
+							print "no gauss mode autoboxing parameters were found in database...this should not happen"
+							print 'exiting...'
+							return
+						gbdb = js_open_dict(gdb_name)
+						if not gbdb.has_key(boxkey):
+							print "no gauss mode autoboxing parameters were found in database for %s...this should not happen"%boxkey
+							print 'exiting...'
+							return
+						autoboxdict = gbdb[boxkey]
+	
+						gboxer = GaussBoxer()
+						boxsize=int(options.boxsize)
+						try:
+							gboxer.set_pixel_input(float(autoboxdict['pixel_input']))
+							gboxer.set_pixel_output(float(autoboxdict['pixel_output']))
+							gboxer.set_invert_contrast(autoboxdict['invert_contrast'])
+							gboxer.set_use_variance(autoboxdict['use_variance'])
+							gboxer.set_gauss_width(float(autoboxdict['gauss_width']))
+							gboxer.set_thr_low(float(autoboxdict['thr_low']))
+							gboxer.set_thr_hi(float(autoboxdict['thr_hi']))
+						except:
+							print 'no gauss mode autoboxing parameters were found in database...this should not happen'
+							print 'exiting...'
+							return
+	
+						gboxer.get_small_image(input,modecmd=True,boxsize=boxsize,ret_dummy=True)
+	
+				box_list.write_particles(input,output,options.boxsize,options.invert,options.norm,options.exclude_edges)
+	
+	
+				progress += 1.0
+				E2progress(logid,progress/total_progress)
 
 	if options.write_dbbox:
 		names = get_coord_outnames(params)
