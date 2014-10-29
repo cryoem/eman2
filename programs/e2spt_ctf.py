@@ -308,14 +308,23 @@ def main():
 	if options.framexsize:
 		framexsize = options.framexsize
 	
+	'''
+	If no crashes till now, make the directory where to create the database where the results will be stored
+	'''
+	from e2spt_classaverage import sptmakepath
+	options = sptmakepath (options, 'sptctf')
+	
+	
 	if options.icethickness and options.icethickness > nx:
 		icethickness = options.icethickness
 	else:
 		options.icethickness = autoIcethickness
 		icethickness = autoIcethickness
 		
-		f=open(options.path+'/icethickness.txt','w')
-		f.write(str(icethickness)+'\n')
+		icefile=options.path+'/icethickness.txt'
+		f=open(,'w')
+		line=[str(icethickness)+'\n'\
+		f.writelines(line)
 		f.close()
 	
 	angles = []
@@ -333,12 +342,7 @@ def main():
 	'''
 	ctfs = genctfparamlines( options, apix, nimgs, angles )
 	
-	'''
-	If no crashes till now, make the directory where to create the database where the results will be stored
-	'''
-	from e2spt_classaverage import sptmakepath
-	options = sptmakepath (options, 'sptctf')
-	
+
 	'''
 	Log current run of the program
 	'''
@@ -610,6 +614,7 @@ def correctsubtilt( options, subtilts, angles, ctfs, apix, nangles, nimgs, frame
 	for sts in subtilts:
 		imghdr = EMData( sts, 0, True )
 		
+		print "Options icethickness is", options.icethickness
 		if options.icethickness and int(options.icethickness) < int(imghdr['nx']):
 			print """\nThe ice must be thick enough to contain a layer of molecules and will be set
 			to half the X and  Y sides of the images. It must be => than %d pixels.""" %( imghdr['nx'] )
@@ -683,8 +688,11 @@ def correctsubtilt( options, subtilts, angles, ctfs, apix, nangles, nimgs, frame
 			phfimgs.append( imgflipped )
 		
 		sts3d = options.path + '/' + os.path.basename( sts ).replace('.hdf','_PHFLIP3D.hdf')
-		defocuserrorsAvg=sum(defocuserrors)/len(defocuserros)
+		
+		defocuserrorsAvg=sum(defocuserrors)/len(defocuserrors)
+		
 		rec = reconstruct3d( options, phfimgs, apix )
+		
 		rec['spt_avgDefocusError']=defocuserrorsAvg
 		
 		if options.save3d:
