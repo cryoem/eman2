@@ -322,7 +322,7 @@ def main():
 		icethickness = autoIcethickness
 		
 		icefile=options.path+'/icethickness.txt'
-		f=open(,'w')
+		f=open(icefile,'w')
 		line=[str(icethickness)+'\n'\
 		f.writelines(line)
 		f.close()
