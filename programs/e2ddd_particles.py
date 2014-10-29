@@ -63,7 +63,7 @@ def main():
 	#parser.add_argument("--movie", type=int,help="Display an n-frame averaged 'movie' of the stack, specify number of frames to average",default=0)
 	#parser.add_argument("--simpleavg", action="store_true",help="Will save a simple average of the dark/gain corrected frames (no alignment or weighting)",default=False)
 	#parser.add_argument("--avgs", action="store_true",help="Testing",default=False)
-	parser.add_argument("--noalign",action="store_true",help="Regenerates unaligned particle averages into __orig"),default=False)
+	parser.add_argument("--noalign",action="store_true",help="Regenerates unaligned particle averages into __orig",default=False)
 	parser.add_argument("--invert",action="store_true",help="Invert the contrast of the particles in output files (default false)",default=False)
 	parser.add_argument("--parallel", default=None, help="parallelism argument. This program supports only thread:<n>")
 	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful")
