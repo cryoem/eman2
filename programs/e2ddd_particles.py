@@ -173,6 +173,7 @@ def main():
 				av=av.get_clip(Region((nx2-nx)/2,(nx2-nx)/2,nx,nx))
 				outname.replace("_ptcls","__orig")
 				av.write_image(outname,outnum)
+				if options.verbose : print "rewrote ",outnum, outname 
 				continue
 				
 			# launch thread to do work

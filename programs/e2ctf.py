@@ -44,6 +44,7 @@ import weakref
 import traceback
 from numpy import array,arange
 import numpy
+import threading
 
 from Simplex import Simplex
 
@@ -124,6 +125,8 @@ NOTE: This program should be run from the project directory, not from within the
 	parser.add_argument("--oversamp",type=int,help="Oversampling factor",default=1, guitype='intbox', row=3, col=0, rowspan=1, colspan=2, mode='autofit')
 	parser.add_argument("--classify",type=int,help="Highly experimental ! Subclassify particles (hopefully by defocus) into n groups.",default=0)
 	parser.add_argument("--sf",type=str,help="The name of a file containing a structure factor curve. Specify 'none' to use the built in generic structure factor. Default=auto",default="auto",guitype='strbox',nosharedb=True,returnNone=True,row=9,col=1,rowspan=1,colspan=1, mode='autofit,tuning')
+	parser.add_argument("--parallel", default=None, help="parallelism argument. This program supports only thread:<n>")
+	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful",guitype='intbox', row=9, col=2, rowspan=1, colspan=1, mode='autofit[1]')
 	parser.add_argument("--debug",action="store_true",default=False)
 	parser.add_argument("--dbds",type=str,default=None,help="Obsolete option for old e2workflow. Present only to provide warning messages.")
 	parser.add_argument("--source_image",type=str,default=None,help="Filters particles only with matching ptcl_source_image parameters in the header")
@@ -136,17 +139,28 @@ NOTE: This program should be run from the project directory, not from within the
 		print "--dbds no longer supported, as this was part of the retired e2workflow interface. Exiting."
 		sys.exit(1)
 
+	if options.threads : nthreads=options.threads
+	elif options.parallel!=None :
+		if options.parallel[:7]!="thread:":
+			print "ERROR: only thread:<n> parallelism supported by this program. It is i/o limited."
+			sys.exit(1)
+		nthreads=int(options.parallel[7:])
+	else: nthreads=1
+
 	if options.allparticles:
 		args=["particles/"+i for i in os.listdir("particles") if "__" not in i and i[0]!="." and ".hed" not in i ]
 		args.sort()
 		if options.verbose : print "%d particle stacks identified"%len(args)
 
 	if options.chunk!=None:
+		print sys.argv
 		ninchunk,nchunk=options.chunk.split(",")
 		ninchunk=int(ninchunk)
 		nchunk=int(nchunk)
+		if options.verbose : print "{} stacks with chunks of {}".format(len(args),ninchunk)
 		args=args[ninchunk*nchunk:ninchunk*(nchunk+1)]
 		if options.verbose: print "{} stacks in specified chunk".format(len(args))
+		nthreads=1		# no threading with chunks
 
 	if options.onlynew:
 		print "%d files to process"%len(args)
@@ -202,12 +216,21 @@ NOTE: This program should be run from the project directory, not from within the
 	options.filenames = args
 
 	### Power spectrum and CTF fitting
-	img_sets=None
-	if options.autofit:
-		img_sets=pspec_and_ctf_fit(options,debug) # converted to a function so to work with the workflow
+	if nthreads>1:
+		print "Fitting in parallel with ",nthreads," threads"
+		chunksize=int(ceil(float(len(args))/nthreads))
+		print " ".join(sys.argv+["--chunk={},{}".format(chunksize,0)])
+		threads=[threading.Thread(target=os.system,args=[" ".join(sys.argv+["--chunk={},{}".format(chunksize,i)])]) for i in xrange(nthreads)]
+		for t in threads: t.start()
+		for t in threads: t.join()
+		print "Parallel fitting complete"
+	else:
+		img_sets=None
+		if options.autofit:
+			img_sets=pspec_and_ctf_fit(options,debug) # converted to a function so to work with the workflow
 
-		if options.constbfactor>0:
-			for i in img_sets: i[1].bfactor=options.constbfactor
+			if options.constbfactor>0:
+				for i in img_sets: i[1].bfactor=options.constbfactor
 		
 	### GUI - user can update CTF parameters interactively
 	if options.gui :
