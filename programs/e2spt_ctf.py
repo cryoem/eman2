@@ -103,7 +103,7 @@ def main():
 		'gauss_5_slow', 'gypergeom_5', 'experimental'.
 		For example --reconstructor=fourier:mode=gauss_5 """)
 	
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
@@ -135,7 +135,10 @@ def main():
 		to the Z dimension in pixels of the reconstructed raw tomogram (uncropped), at the same binning
 		(sampling) as the provided tiltseries, images or subtiltseries.
 		This value MUST be provided, except if --subtiltsdir is given.
-		In the latter case (and if --icethickness is *not* provided), the thickness of the 
+		""")
+	
+	parser.add_argument("--icethicknessauto",action='store_true',default=False,help="""
+		If --subtiltsdir is provided (and if --icethickness is *not* provided), the thickness of the 
 		specimen in Z will be calculated by computing the difference between the largest 
 		and the smallest Z coordinate found in the header of the subtiltseries.""")
 	
@@ -270,6 +273,12 @@ def main():
 		
 		autoIcethickness = max( zs ) -  min( zs )
 		
+		icefile=options.path+'/autoicethickness.txt'
+		f=open(icefile,'w')
+		line=[str(autoIcethickness)+'\n']
+		f.writelines(line)
+		f.close()
+		
 		nimgs = EMUtil.get_image_count( subtilts[0] )
 		apix = EMData( subtilts[0], 0, True)['apix_x']
 				
@@ -314,18 +323,15 @@ def main():
 	from e2spt_classaverage import sptmakepath
 	options = sptmakepath (options, 'sptctf')
 	
+	icethickness=0
+	if options.icethickness: 
+		if int(options.icethickness) < int(nx):
+			icethickness = int(nx)
+		else:
+			icethickness = options.icethickness
 	
-	if options.icethickness and options.icethickness > nx:
-		icethickness = options.icethickness
-	else:
-		options.icethickness = autoIcethickness
+	elif options.icethicknessauto:
 		icethickness = autoIcethickness
-		
-		icefile=options.path+'/icethickness.txt'
-		f=open(icefile,'w')
-		line=[str(icethickness)+'\n'\
-		f.writelines(line)
-		f.close()
 	
 	angles = []
 	if options.tltfile:
@@ -611,11 +617,16 @@ def main():
 def correctsubtilt( options, subtilts, angles, ctfs, apix, nangles, nimgs, framexsize, icethickness ):
 	
 	ii = 0
+	globalAvgDefErrors=[]
 	for sts in subtilts:
 		imghdr = EMData( sts, 0, True )
 		
-		print "Options icethickness is", options.icethickness
-		if options.icethickness and int(options.icethickness) < int(imghdr['nx']):
+		#print " icethickness is", icethickness
+		#print "ice < int(imghdr['nx'])", int(icethickness) < int(imghdr['nx'])
+		#print "ice and type are", type(options.icethickness), icethickness
+		#print "imghdrnx and type are",type(imghdr['nx']),imghdr['nx']
+		
+		if icethickness and int(icethickness) < int(imghdr['nx']):
 			print """\nThe ice must be thick enough to contain a layer of molecules and will be set
 			to half the X and  Y sides of the images. It must be => than %d pixels.""" %( imghdr['nx'] )
 			sys.exit()
@@ -669,9 +680,9 @@ def correctsubtilt( options, subtilts, angles, ctfs, apix, nangles, nimgs, frame
 			try:
 				actualctf = img['ctf']
 				print "\nactual defocus is", actualctf.defocus
-				defocuserror = actual.defocus - newdefocus
+				defocuserror = actualctf.defocus - newdefocus
 				print "\nTherefore, defocus error is", defocuserror
-				defocuserrors.append(defocuserror)
+				defocuserrors.append( math.fabs(defocuserror) )			#The average error needs to sum all positive errors
 				
 			except:
 				pass
@@ -689,16 +700,36 @@ def correctsubtilt( options, subtilts, angles, ctfs, apix, nangles, nimgs, frame
 		
 		sts3d = options.path + '/' + os.path.basename( sts ).replace('.hdf','_PHFLIP3D.hdf')
 		
-		defocuserrorsAvg=sum(defocuserrors)/len(defocuserrors)
-		
 		rec = reconstruct3d( options, phfimgs, apix )
 		
-		rec['spt_avgDefocusError']=defocuserrorsAvg
+		if defocuserrors:
+			defocuserrorsAvg=sum(defocuserrors)/len(defocuserrors)
+			rec['spt_avgDefocusError']=defocuserrorsAvg
+			
+			globalAvgDefErrors.append(defocuserrorsAvg)
+		else:
+			print "Defocus errors is empty!", defocuserrors
+			sys.exit()
 		
 		if options.save3d:
 			rec.write_image( sts3d , 0 )
 			
 		ii+=1
+	
+	lines=[]	
+	if globalAvgDefErrors:
+		globalAvgDefError=sum(globalAvgDefErrors)/len(globalAvgDefErrors)
+		lines.append('Global average error = '+str(globalAvgDefError)+'\n')
+		for error in globalAvgDefErrors:
+			line = str(error)+'\n'
+			lines.append(line)
+		
+		defErrorsFile=options.path+'/defocusErrorAvg.txt'
+		g=open(defErrorsFile,'w')
+		#line=[str(globalAvgDefError)+'\n']
+		g.writelines(lines)
+		g.close()
+	
 	return
 
 
