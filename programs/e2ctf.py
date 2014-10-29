@@ -219,7 +219,7 @@ NOTE: This program should be run from the project directory, not from within the
 	if nthreads>1:
 		print "Fitting in parallel with ",nthreads," threads"
 		chunksize=int(ceil(float(len(args))/nthreads))
-		print " ".join(sys.argv+["--chunk={},{}".format(chunksize,0)])
+#		print " ".join(sys.argv+["--chunk={},{}".format(chunksize,0)])
 		threads=[threading.Thread(target=os.system,args=[" ".join(sys.argv+["--chunk={},{}".format(chunksize,i)])]) for i in xrange(nthreads)]
 		for t in threads: t.start()
 		for t in threads: t.join()
