@@ -424,7 +424,7 @@ def main():
 						best=min(best,(zalignref.cmp("ccc",zimg),z,best[2],zimg))
 	
 					for phi in arange(best[2]-10.0,best[2]+10.0,dang):
-						zimg=data.process("xform",{"transform":Transform({"type":"eman","tz":best[1],"phi":best[2]})})
+						zimg=data.process("xform",{"transform":Transform({"type":"eman","tz":best[1],"phi":phi})})
 						best=min(best,(zalignref.cmp("ccc",zimg),best[1],phi,zimg))
 
 
