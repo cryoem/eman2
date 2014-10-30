@@ -195,12 +195,12 @@ def main():
 	os.rename(oddfile ,"{path}threed_odd_unmasked.hdf".format(path=path))
 
 	# Technically snrmult should be 1 here, but we use 2 to help speed convergence
-	cmd="e2proc3d.py {path}threed_even_unmasked.hdf {evenfile} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass}".format(
-	evenfile=evenfile,path=path,itr=options.iter,mass=options.mass,underfilter=underfilter,maxfreq=1.0/options.restarget)
+	cmd="e2proc3d.py {path}threed_even_unmasked.hdf {evenfile} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass} {postproc}".format(
+	evenfile=evenfile,path=path,itr=options.iter,mass=options.mass,underfilter=underfilter,maxfreq=1.0/options.restarget,postproc=m3dpostproc)
 	run(cmd)
 
-	cmd="e2proc3d.py {path}threed_odd_unmasked.hdf {oddfile} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass}".format(
-	oddfile=oddfile,path=path,itr=options.iter,mass=options.mass,underfilter=underfilter,maxfreq=1.0/options.restarget)
+	cmd="e2proc3d.py {path}threed_odd_unmasked.hdf {oddfile} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} --multfile {path}mask.hdf --process normalize.bymass:thr=1:mass={mass} {postproc}".format(
+	oddfile=oddfile,path=path,itr=options.iter,mass=options.mass,underfilter=underfilter,maxfreq=1.0/options.restarget,postproc=m3dpostproc)
 	run(cmd)
 
 	### Refilter/mask
