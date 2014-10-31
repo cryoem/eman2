@@ -45,7 +45,10 @@ def main():
 	on a single machine, you will need enough memory to hold ~5 copies of a 3-D map + whatever is required
 	by e2classaverage.py. It may be best-used on downsampled data (also for speed)."""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-		
+	
+	print "Sorry, this program has not yet been updated for EMAN2.1"
+	sys.exit(1)
+	
 	#options associated with e2refinevariance.py
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--input", dest="input", default=None,type=str, help="The name of the image containing the particle data")
