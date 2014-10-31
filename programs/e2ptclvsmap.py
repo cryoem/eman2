@@ -151,7 +151,6 @@ gold-standard refinement."""
 		allptcl=[]		
 		for iptcl in xrange(nptcl):
 			if classmx[0,iptcl]!=iref : continue		# only proceed if the particle is in this class
-			if options.verbose: print "{}\t{}\t{}".format(i,("even","odd")[eo],j)
 
 			ptcl=EMData(options.input,iptcl)
 			ptcl.process_inplace("normalize.edgemean")
