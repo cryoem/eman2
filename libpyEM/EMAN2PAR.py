@@ -51,14 +51,16 @@ from EMAN2 import test_image,EMData,abs_path,local_datetime,EMUtil,Util,get_plat
 from EMAN2db import e2filemodtime
 from EMAN2jsondb import JSTask,JSTaskQueue,js_open_dict
 from e2classaverage import ClassAvTask
-from e2spt_classaverage import Align3DTask
+
 from e2tiltvalidate import CompareToTiltTask
-from e2symsearch3d import SymAlignTask
 from e2simmx import EMSimTaskDC
 from e2project3d import EMProject3DTaskDC
 
+from e2spt_classaverage import Align3DTask
 from e2spt_hac import Align3DTaskAVSA
 from e2spt_simulation import SubtomoSimTask
+from e2symsearch3d import SymAlignTask
+from e2tvrecon import TVReconTask
 
 from e2initialmodel import InitMdlTask
 import SocketServer
