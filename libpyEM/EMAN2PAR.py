@@ -60,7 +60,7 @@ from e2spt_classaverage import Align3DTask
 from e2spt_hac import Align3DTaskAVSA
 from e2spt_simulation import SubtomoSimTask
 from e2symsearch3d import SymAlignTask
-from e2tvrecon import TVReconTask
+#from e2tvrecon import TVReconTask
 
 from e2initialmodel import InitMdlTask
 import SocketServer
