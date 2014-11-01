@@ -4679,6 +4679,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 			d.put("high_cutoff_frequency", EMObject::FLOAT, "Absolute [0,0.5] high cut-off frequency.");
 			d.put("ctfweight",EMObject::BOOL, "Filter the image by CTF before subtraction");
 			d.put("return_fft",EMObject::BOOL, "Skips the final IFT, and returns the FFT of the subtracted image");
+			d.put("return_subim", EMObject::BOOL, "Instead of returning the image after subtraction, returns the filtered image which would have been subtracted from the image.");
 			d.put("return_radial", EMObject::BOOL, "Return the radial filter function as an attribute (filter_curve)");
 			d.put("return_presigma", EMObject::BOOL, "Return the sigma of the pre-subtracted image in real-space with the specified filter applied as sigma_presub. This is an expensive option.");
 			return d;

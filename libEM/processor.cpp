@@ -3988,6 +3988,7 @@ EMData *SubtractOptProcessor::process(const EMData * const image)
 	bool return_fft = params.set_default("return_fft",false);
 	bool ctfweight = params.set_default("ctfweight",false);
 	bool return_presigma = params.set_default("return_presigma",false);
+	bool return_subim = params.set_default("return_subim",false);
 	int si0=(int)floor(params.set_default("low_cutoff_frequency",0.0f)*image->get_ysize());
 	int si1=(int)ceil(params.set_default("high_cutoff_frequency",0.7071f)*image->get_ysize());		// include the corners unless explicitly excluded
 	
@@ -4073,7 +4074,8 @@ EMData *SubtractOptProcessor::process(const EMData * const image)
 			std::complex<float> v1=imf->get_complex_at(x,y);
 			std::complex<float> v2=actf->get_complex_at(x,y);
 			v2*=(float)rad[r];
-			imf->set_complex_at(x,y,v1-v2);
+			if (return_subim) imf->set_complex_at(x,y,v2);
+			else imf->set_complex_at(x,y,v1-v2);
 		}
 	}
 	
