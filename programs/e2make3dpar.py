@@ -385,10 +385,12 @@ def get_processed_image(filename,nim,nsl,preprocess,pad,nx=0,ny=0):
 	nx and ny are the x and y dimensions of a single image on disk, required only for slice reading.
 	preprocess takes a list of command-line processor strings. pad is a 2-tuple with
 	the dimensions the image should be zero-padded to."""
+	
+	if nsl>=0 : ret=EMData(filename,nim,False,Region(0,0,nsl,nx,ny,1))
+	else : ret=EMData(filename,nim)
 
-	ret=EMData()
-	if nsl>=0 : ret.read_image(filename,nim,False,Region(0,0,nsl,nx,ny,1))
-	else : ret.read_image(filename,nim)
+	ret-=ret.get_edge_mean()			# It is critical that the edges be zero, even if we aren't changing the scaling
+
 
 	# Apply any preprocessing (like normalize.edgemean)
 	if isinstance(preprocess,str) : preprocess=[preprocess]

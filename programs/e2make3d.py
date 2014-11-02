@@ -62,9 +62,10 @@ def get_usage():
 
 	e2make3d.py --input=classes.img --sym=c3 --output=recon.mrc --pad=128 --keep=1 --recon=fourier --iter=3
 
-	Because the padding is always done using zeroes it is best if your data (or preferably
-	the edge pixels of your data) have mean zero. If you are unsure whether your data are
-	appropriately normalized you can add the --preprocess flag
+	Because the padding is always done using zeroes it is critical your data (or preferably
+	the edge pixels of your data) have mean zero. This will be done automatically when the data is read, but without
+	any amplitude scaling. If you wish to do additional preprocessing, you can use the --preprocess
+	modifier to perform additional preprocessing, eg - 
 
 	e2make3d.py --input=classes.img --sym=c3 --output=recon.mrc --pad=128 --preprocess=normalize.edgemean
 
@@ -363,9 +364,10 @@ def get_processed_image(filename,nim,nsl,preprocess,pad,nx=0,ny=0):
 	preprocess takes a list of command-line processor strings. pad is a 2-tuple with
 	the dimensions the image should be zero-padded to."""
 
-	ret=EMData()
-	if nsl>=0 : ret.read_image(filename,nim,False,Region(0,0,nsl,nx,ny,1))
-	else : ret.read_image(filename,nim)
+	if nsl>=0 : ret=EMData(filename,nim,False,Region(0,0,nsl,nx,ny,1))
+	else : ret=EMData(filename,nim)
+
+	ret-=ret.get_edge_mean()			# It is critical that the edges be zero, even if we aren't changing the scaling
 
 	# Apply any preprocessing (like normalize.edgemean)
 	if isinstance(preprocess,str) : preprocess=[preprocess]
