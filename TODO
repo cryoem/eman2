@@ -55,6 +55,7 @@ Low priority
 
 
 Complete
+11/01/14	11/01/14	Fixed problem with 3D reconstruction. Was a normalization issue
 10/29/14	10/29/14	Threaded parallelism for e2ctf autofitting
 10/21/14	10/21/14	FourierAnl now fills corners. Added improved matchto option. calc_rad_dist double
 10/20/14	10/20/14	ctf.weight averager added
