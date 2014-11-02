@@ -56,6 +56,8 @@ gold-standard refinement."""
 	#parser.add_header(name="multimodelheader", help='Options below this label are specific to e2refinemulti Model', title="### e2refinemulti model options ###", row=4, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--input", dest="input", default=None,type=str, help="The name of the image file containing the particle data", guitype='filebox', browser='EMSetsTable(withmodal=True,multiselect=False)', filecheck=False, row=1, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--model", dest="model", type=str,default=None, help="The map to use as a starting point for refinement", guitype='filebox', browser='EMModelsTable(withmodal=True,multiselect=False)', filecheck=False, row=3, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--filterout", action="store_true", help="Filters output particles to match projections")
+ 
 	parser.add_argument("--angstep",type=float,default=9.0,help="Angular separation of projections. Default 9.0 degrees.")
 	parser.add_argument("--sym", dest = "sym", default="c1",help = "Specify symmetry - choices are: c<n>, d<n>, tet, oct, icos.", guitype='strbox', row=10, col=1, rowspan=1, colspan=1, mode="refinement")
 
@@ -144,8 +146,9 @@ gold-standard refinement."""
 
 	for iref in xrange(nref):
 		if options.verbose==1 : print "Class ",iref
-		outname="class_{:04d}.hdf".format(iref)
+		outname="{}/class_{:04d}.hdf".format(options.path,iref)
 		ref=EMData("{path}/projections.hdf".format(path=options.path),iref)
+		ref.process_inplace("normalize.edgemean")
 		ref.write_image(outname,0)
 
 		allptcl=[]		
@@ -156,11 +159,13 @@ gold-standard refinement."""
 			ptcl.process_inplace("normalize.edgemean")
 
 			# Find the transform for this particle (2d) and apply it to the unmasked/masked projections
-			ptclxf=Transform({"type":"2d","alpha":cmxalpha[0,j],"mirror":int(cmxmirror[0,j]),"tx":cmxtx[0,j],"ty":cmxty[0,j]})
+			ptclxf=Transform({"type":"2d","alpha":cmxalpha[0,iptcl],"mirror":int(cmxmirror[0,iptcl]),"tx":cmxtx[0,iptcl],"ty":cmxty[0,iptcl]})
 			ptclx=ptcl.process("xform",{"transform":ptclxf})
 			ptclx.process_inplace("mask.sharp",{"outer_radius":ptcl["ny"]/2.5})
+			c=ptclx.cmp("optsub",ref,{"maxres":18.0})
+			if options.filterout : ptclx=ref.process("math.sub.optimal",{"return_subim":1,"ref":ptclx})
 
-			allptcl.append(ptclx.cmp("optsub",{"maxres":18.0}),ptclx)
+			allptcl.append((c,ptclx))
 		
 		for q,p in sorted(allptcl):
 			p["qual"]=q
