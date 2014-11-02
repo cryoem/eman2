@@ -71,7 +71,11 @@ def check_options(options, progname):
 	if  options.coordsdir == None:
 		print "\nCoordinates directory must be specified with option --coords_dir. Type %s -h for help.\n" % progname
 		sys.exit()
-		
+
+	if  options.coords_extension == None:
+		print "\nExtension of coordinates file must be specified with option --coords_extension. Type %s -h for help.\n" % progname
+		sys.exit()
+
 	if options.coords_format == None:
 		print "\nCoordinate file format must be specified with option --coords_format. Type %s -h for help.\n" % progname
 		sys.exit()
@@ -131,7 +135,7 @@ def main():
 
 	parser.add_option('--coords_dir',       dest='coordsdir',                 help='Directory containing files with particle coordinates.')
 	parser.add_option('--coords_suffix',                   default="",        help='Suffix of coordinate files. For example "_ptcls".')
-	parser.add_option('--coords_extension',                default="",        help='File extension of coordinate files. For example "json", "box" ...')
+	parser.add_option('--coords_extension',                                   help='File extension of coordinate files. For example "json", "box" ...') # required
 	parser.add_option('--coords_format',                                      help='Format of coordinates file, "json" or "textrow". Also, see suboptions specified by option --coords_keys\n' +
 																					'All files must have the same basename with their corresponing micrographs.')
 	parser.add_option('--coords_keys',                                        help='If --coords_format is json, key must be provided via --coords_keys. Typically, it is "boxes" if coordinates were produced by e2boxer\n' +
@@ -143,7 +147,7 @@ def main():
 	parser.add_option("--new_apix",         type=float,    default=-1.0,      help="New target pixel size to which the micrograph should be resampled. Default is -1, in which case there is no resampling.")
 	parser.add_option('--box_size',         type=int,      default=256,       help='x and y dimension in pixels of square area to be windowed. Pixel size is assumed to be new_pixel_size.')
 	parser.add_option('--outdir',                                             help='Output directory')
-	parser.add_option('--outsuffix',        type=str,      default="",        help="Suffix for output stack, e.g. '_ptcls' etc.")	
+	parser.add_option('--outsuffix',        type=str,      default="_ptcls",  help="Suffix for output stack, e.g. '_ptcls' etc.")	
 	parser.add_option("--micsuffix",        type=str,      default="hdf",     help="A string denoting micrograph type. For example 'mrc', 'hdf', 'ser' ...")
 	parser.add_option("--nameroot",         type="string", default="",        help="Prefix of micrographs to be processed.")
 	parser.add_option("--invert",                          default=False,     help="If writing output inverts pixel intensities")
