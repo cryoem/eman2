@@ -3492,7 +3492,7 @@ def ali3d_MPI_chunks(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, r
 				print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f, delta psi = %5.2f, start psi = %5.2f\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],yrng[N_step],step[N_step],deltapsi[N_step],startpsi[N_step]))
 
 			volft, kb = prep_vol(vol)
-			refrings = prepare_refrings_scf(volft, kb, nx, delta[N_step], ref_a, sym, numr, True, ant = max(an[N_step],0.0)*1.1)  # 1.1 is to have extra safety
+			refrings = prepare_refrings_chunks(volft, kb, nx, delta[N_step], ref_a, sym, numr, True, ant = max(an[N_step],0.0)*1.1)  # 1.1 is to have extra safety
 			del volft, kb
 			if myid == main_node:
 				print_msg("Time to prepare rings: %d\n" % (time()-start_time))

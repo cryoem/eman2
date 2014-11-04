@@ -1047,7 +1047,7 @@ def prep_vol_kb(vol, kb, npad=2):
 	volft.fft_shuffle()
 	return  volft
 
-def prepare_refrings_scf( volft, kb, nz, delta, ref_a, sym = "c1", numr = None, MPI=False, \
+def prepare_refrings_chunks( volft, kb, nz, delta, ref_a, sym = "c1", numr = None, MPI=False, \
 						phiEqpsi = "Minus", kbx = None, kby = None, initial_theta = None, \
 						delta_theta = None, ant = -1.0):
 	"""
@@ -1092,26 +1092,29 @@ def prepare_refrings_scf( volft, kb, nz, delta, ref_a, sym = "c1", numr = None, 
 	ref_start, ref_end = MPI_start_end(num_ref, ncpu, myid)
 
 	refrings = []     # list of (image objects) reference projections in Fourier representation
+	num_chunks = 10
 
 	sizex = numr[len(numr)-2] + numr[len(numr)-1]-1
 
 	for i in xrange(num_ref):
-		prjref = EMData()
-		prjref.set_size(sizex, 1, 1)
-		refrings.append(prjref)
-		refrings.append(prjref)
+		refrings.append(list())
+		for j in xrange(num_chunks):
+			prjref = EMData()
+			prjref.set_size(sizex, 1, 1)
+			refrings[i].append(prjref)
 
 	if kbx is None:
-		for i in xrange(ref_start, ref_end):
-			prjref = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
-			cimage = Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
-			Util.Normalize_ring(cimage, numr)
-			Util.Frngs(cimage, numr)
-			Util.Applyws(cimage, numr, wr_four)
-			
-			fftim = fft(prjref)
-			refrings[i] = cimage
-			refrings[i+num_ref] = fftim
+		for i in xrange(ref_start/num_chunks, ref_end/num_chunks):
+			for j in xrange(num_chunks):
+				# :FIX: index math for ref_angles
+				ind = i*num_chunks + j
+				prjref = prgs(volft, kb, [ref_angles[ind][0], ref_angles[ind][1], ref_angles[ind][2], 0.0, 0.0])
+				cimage = Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
+				Util.Normalize_ring(cimage, numr)
+				Util.Frngs(cimage, numr)
+				Util.Applyws(cimage, numr, wr_four)
+				
+				refrings[i][j] = cimage
 	else:
 		for i in xrange(ref_start, ref_end):
 			prjref = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0], kbx, kby)
@@ -1258,14 +1261,14 @@ def proj_ali_incore_chunks(data, refrings, numr, xrng, yrng, step, finfo=None):
 	t1 = data.get_attr("xform.projection")
 	dp = t1.get_params("spider")
 	#[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
-# 	sChunks = len(refrings)
-	sChunks = 4
-	maxPeak=0
-	for i in range(0,len(refrings),sChunks):
-		[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_chunks(data, refrings, i, i+sChunks, xrng, yrng, step, mode, numr, cnx+dp["tx"], cny+dp["ty"])
-		if peak > maxPeak:
-			res = [ang, sxs, sys, mirror, iref, peak]
-			maxPeak = peak
+
+	max_peak = 0
+	num_refrings = len(refrings)
+	for i in xrange(num_refrings):
+		[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings[i], xrng, yrng, step, mode, numr, cnx+dp["tx"], cny+dp["ty"])
+		if peak > max_peak:
+ 			res = [ang, sxs, sys, mirror, iref, peak]
+ 			max_peak = peak
 	[ang, sxs, sys, mirror, iref, peak] = res
 	#print ang, sxs, sys, mirror, iref, peak
 	iref = int(iref)
@@ -1453,7 +1456,17 @@ def proj_ali_incore_local_chunks(data, refrings, numr, xrng, yrng, step, an, fin
 		finfo.flush()
 
 	#[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data, refrings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
-	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data, refrings, xrng, yrng, step, ant, mode, numr, cnx+dp["tx"], cny+dp["ty"])
+# 	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data, refrings, xrng, yrng, step, ant, mode, numr, cnx+dp["tx"], cny+dp["ty"])
+	
+	max_peak = 0
+	num_refrings = len(refrings)
+	for i in xrange(num_refrings):
+		[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings[i], xrng, yrng, step, mode, numr, cnx+dp["tx"], cny+dp["ty"])
+		if peak > max_peak:
+ 			res = [ang, sxs, sys, mirror, iref, peak]
+ 			max_peak = peak
+	[ang, sxs, sys, mirror, iref, peak] = res
+
 	iref=int(iref)
 	#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
 	#ang = (ang+360.0)%360.0
