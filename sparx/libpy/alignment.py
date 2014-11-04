@@ -1047,6 +1047,94 @@ def prep_vol_kb(vol, kb, npad=2):
 	volft.fft_shuffle()
 	return  volft
 
+def prepare_refrings_scf( volft, kb, nz, delta, ref_a, sym = "c1", numr = None, MPI=False, \
+						phiEqpsi = "Minus", kbx = None, kby = None, initial_theta = None, \
+						delta_theta = None, ant = -1.0):
+	"""
+	10/22/2014
+	"""
+	from projection   import prep_vol, prgs
+	from applications import MPI_start_end
+	from utilities    import even_angles, getfvec
+	from types import BooleanType
+	from fundamentals import *
+
+	# mpi communicator can be sent by the MPI parameter
+	if type(MPI) is BooleanType:
+		if MPI:
+			from mpi import MPI_COMM_WORLD
+			mpi_comm = MPI_COMM_WORLD
+	else:
+		mpi_comm = MPI
+		MPI = True
+
+	# generate list of Eulerian angles for reference projections
+	#  phi, theta, psi
+	mode = "H"
+	if initial_theta is None:
+		ref_angles = even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
+	else:
+		if delta_theta is None: delta_theta = 1.0
+		ref_angles = even_angles(delta, theta1 = initial_theta, theta2 = delta_theta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
+	wr_four  = ringwe(numr, mode)
+	cnx = nz//2 + 1
+	cny = nz//2 + 1
+	num_ref = len(ref_angles)
+
+	if MPI:
+		from mpi import mpi_comm_rank, mpi_comm_size
+		myid = mpi_comm_rank( mpi_comm )
+		ncpu = mpi_comm_size( mpi_comm )
+	else:
+		ncpu = 1
+		myid = 0
+	
+	ref_start, ref_end = MPI_start_end(num_ref, ncpu, myid)
+
+	refrings = []     # list of (image objects) reference projections in Fourier representation
+
+	sizex = numr[len(numr)-2] + numr[len(numr)-1]-1
+
+	for i in xrange(num_ref):
+		prjref = EMData()
+		prjref.set_size(sizex, 1, 1)
+		refrings.append(prjref)
+		refrings.append(prjref)
+
+	if kbx is None:
+		for i in xrange(ref_start, ref_end):
+			prjref = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
+			cimage = Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
+			Util.Normalize_ring(cimage, numr)
+			Util.Frngs(cimage, numr)
+			Util.Applyws(cimage, numr, wr_four)
+			
+			fftim = fft(prjref)
+			refrings[i] = cimage
+			refrings[i+num_ref] = fftim
+	else:
+		for i in xrange(ref_start, ref_end):
+			prjref = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0], kbx, kby)
+			cimage = Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
+			Util.Normalize_ring(cimage, numr)
+			Util.Frngs(cimage, numr)
+			Util.Applyws(cimage, numr, wr_four)
+			refrings[i] = cimage
+
+	if MPI:
+		from utilities import bcast_EMData_to_all
+		for i in xrange(num_ref):
+			for j in xrange(ncpu):
+				ref_start, ref_end = MPI_start_end(num_ref, ncpu, j)
+				if i >= ref_start and i < ref_end: rootid = j
+			bcast_EMData_to_all(refrings[i], myid, rootid, comm=mpi_comm)
+
+	for i in xrange(len(ref_angles)):
+		n1,n2,n3 = getfvec(ref_angles[i][0], ref_angles[i][1])
+		refrings[i].set_attr_dict( {"phi":ref_angles[i][0], "theta":ref_angles[i][1], "psi":ref_angles[i][2], "n1":n1, "n2":n2, "n3":n3} )
+
+	return refrings
+
 def prepare_refrings( volft, kb, nz, delta, ref_a, sym = "c1", numr = None, MPI=False, \
 						phiEqpsi = "Minus", kbx = None, kby = None, initial_theta = None, \
 						delta_theta = None, ant = -1.0):
@@ -1147,6 +1235,71 @@ def refprojs( volft, kb, ref_angles, last_ring, mask2D, cnx, cny, numr, mode, wr
 
 	return ref_proj_rings
 
+def proj_ali_incore_chunks(data, refrings, numr, xrng, yrng, step, finfo=None):
+	from utilities    import compose_transform2
+	from EMAN2 import Vec2f
+
+	ID = data.get_attr("ID")
+	if finfo:
+		from utilities    import get_params_proj
+		phi, theta, psi, s2x, s2y = get_params_proj(data)
+		finfo.write("Image id: %6d\n"%(ID))
+		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, s2x, s2y))
+		finfo.flush()
+
+	mode = "F"
+	#  center is in SPIDER convention
+	nx   = data.get_xsize()
+	ny   = data.get_ysize()
+	cnx  = nx//2 + 1
+	cny  = ny//2 + 1
+
+	#phi, theta, psi, sxo, syo = get_params_proj(data)
+	t1 = data.get_attr("xform.projection")
+	dp = t1.get_params("spider")
+	#[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
+# 	sChunks = len(refrings)
+	sChunks = 4
+	maxPeak=0
+	for i in range(0,len(refrings),sChunks):
+		[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_chunks(data, refrings, i, i+sChunks, xrng, yrng, step, mode, numr, cnx+dp["tx"], cny+dp["ty"])
+		if peak > maxPeak:
+			res = [ang, sxs, sys, mirror, iref, peak]
+			maxPeak = peak
+	[ang, sxs, sys, mirror, iref, peak] = res
+	#print ang, sxs, sys, mirror, iref, peak
+	iref = int(iref)
+	#[ang,sxs,sys,mirror,peak,numref] = apmq(projdata[imn], ref_proj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
+	#ang = (ang+360.0)%360.0
+	# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
+	#  What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
+	angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+	if mirror:
+		phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
+		theta = 180.0-refrings[iref].get_attr("theta")
+		psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
+		s2x   = sxb - dp["tx"]
+		s2y   = syb - dp["ty"]
+	else:
+		phi   = refrings[iref].get_attr("phi")
+		theta = refrings[iref].get_attr("theta")
+		psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
+		s2x   = sxb - dp["tx"]
+		s2y   = syb - dp["ty"]
+	#set_params_proj(data, [phi, theta, psi, s2x, s2y])
+	t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
+	t2.set_trans(Vec2f(-s2x, -s2y))
+	data.set_attr("xform.projection", t2)
+	data.set_attr("referencenumber", iref)
+	from pixel_error import max_3D_pixel_error
+	pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
+
+	if finfo:
+		finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
+		finfo.flush()
+
+	return peak, pixel_error
+
 def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 	from utilities    import compose_transform2
 	from EMAN2 import Vec2f
@@ -1205,6 +1358,75 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 	return peak, pixel_error
 
 def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None, sym='c1'):
+	from utilities    import compose_transform2
+	#from utilities    import set_params_proj, get_params_proj
+	from math         import cos, sin, pi, radians
+	from EMAN2        import Vec2f
+
+	ID = data.get_attr("ID")
+
+	mode = "F"
+	nx   = data.get_xsize()
+	ny   = data.get_ysize()
+	#  center is in SPIDER convention
+	cnx  = nx//2 + 1
+	cny  = ny//2 + 1
+
+	ant = cos(radians(an))
+	#phi, theta, psi, sxo, syo = get_params_proj(data)
+	t1 = data.get_attr("xform.projection")
+	dp = t1.get_params("spider")
+	#print  dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]
+	if finfo:
+		finfo.write("Image id: %6d\n"%(ID))
+		#finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, sxo, syo))
+		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
+		finfo.flush()
+
+	#[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data, refrings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data, refrings, xrng, yrng, step, ant, mode, numr, cnx+dp["tx"], cny+dp["ty"])
+	iref=int(iref)
+	#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
+	#ang = (ang+360.0)%360.0
+	#print  ang, sxs, sys, mirror, iref, peak
+	if iref > -1:
+		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
+		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
+		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+		isym = int(sym[1:])
+		phi   = refrings[iref].get_attr("phi")
+		if(isym > 1 and an > 0.0):
+			qsym = 360.0/isym
+			if(phi < 0.0 or phi >= qsym ):  phi = phi%qsym
+		if  mirror:
+			phi   = (phi+540.0)%360.0
+			theta = 180.0-refrings[iref].get_attr("theta")
+			psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
+			s2x   = sxb - dp["tx"]
+			s2y   = syb - dp["ty"]
+		else:			
+			theta = refrings[iref].get_attr("theta")
+			psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
+			s2x   = sxb - dp["tx"]
+			s2y   = syb - dp["ty"]
+			
+			
+
+		#set_params_proj(data, [phi, theta, psi, s2x, s2y])
+		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
+		t2.set_trans(Vec2f(-s2x, -s2y))
+		data.set_attr("xform.projection", t2)
+		from pixel_error import max_3D_pixel_error
+		pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
+		#print phi, theta, psi, s2x, s2y, peak, pixel_error
+		if finfo:
+			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
+			finfo.flush()
+		return peak, pixel_error
+	else:
+		return -1.0e23, 0.0
+
+def proj_ali_incore_local_chunks(data, refrings, numr, xrng, yrng, step, an, finfo=None, sym='c1'):
 	from utilities    import compose_transform2
 	#from utilities    import set_params_proj, get_params_proj
 	from math         import cos, sin, pi, radians

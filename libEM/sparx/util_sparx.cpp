@@ -18291,6 +18291,67 @@ void Util::Normalize_ring( EMData* ring, const vector<int>& numr )
     ring->update();
 }
 
+vector<float> Util::multiref_polar_ali_2d_chunks(EMData* image, const vector< EMData* >& crefim,
+				int ind_beg, int ind_end,
+                float xrng, float yrng, float step, string mode,
+                vector<int>numr, float cnx, float cny) {
+
+	const float qv = static_cast<float>( pi/180.0 );
+	size_t crefim_len = crefim.size();
+
+	int   ky = int(2*yrng/step+0.5)/2;
+	int   kx = int(2*xrng/step+0.5)/2;
+	int   iref, nref=0, mirror=0;
+	float iy, ix, sx=0, sy=0;
+	float peak = -1.0E23f;
+	float ang=0.0f;
+	for (int i = -ky; i <= ky; i++) {
+		iy = i * step ;
+		for (int j = -kx; j <= kx; j++) {
+			ix = j*step ;
+			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+
+			Normalize_ring( cimage, numr );
+
+			Frngs(cimage, numr);
+			//  compare with specified range of images
+			for ( iref = ind_beg; iref < ind_end; iref++) {
+				Dict retvals = Crosrng_ms(crefim[iref], cimage, numr);
+				double qn = retvals["qn"];
+				double qm = retvals["qm"];
+				if(qn >= peak || qm >= peak) {
+					sx = -ix;
+					sy = -iy;
+					nref = iref;
+					if (qn >= qm) {
+						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+						peak = static_cast<float>(qn);
+						mirror = 0;
+					} else {
+						ang = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
+						peak = static_cast<float>(qm);
+						mirror = 1;
+					}
+				}
+			}  delete cimage; cimage = 0;
+		}
+	}
+
+	float co, so, sxs, sys;
+	co = static_cast<float>(  cos(ang*qv) );
+	so = static_cast<float>( -sin(ang*qv) );
+	sxs = sx*co - sy*so;
+	sys = sx*so + sy*co;
+	vector<float> res;
+	res.push_back(ang);
+	res.push_back(sxs);
+	res.push_back(sys);
+	res.push_back(static_cast<float>(mirror));
+	res.push_back(static_cast<float>(nref));
+	res.push_back(peak);
+	return res;
+}
+
 vector<float> Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, string mode,
                 vector<int>numr, float cnx, float cny) {
@@ -18958,6 +19019,88 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 		//  compare with all reference images
 		// for iref in xrange(len(crefim)):
 		for ( iref = 0; iref < (int)crefim_len; iref++) {
+			if(abs(n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3)>=ant) {
+		    		Dict retvals = Crosrng_ms(crefim[iref], cimage, numr);
+		    		double qn = retvals["qn"];
+		    		double qm = retvals["qm"];
+		    		if(qn >= peak || qm >= peak) {
+                        sx = -ix;
+                        sy = -iy;
+                        nref = iref;
+                        if (qn >= qm) {
+                            ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+                            peak = static_cast<float>( qn );
+                            mirror = 0;
+                        } else {
+                            ang = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
+                            peak = static_cast<float>( qm );
+                            mirror = 1;
+                        }
+				    }
+		        }
+		    }  delete cimage; cimage = 0;
+	    }
+	}
+	float co, so, sxs, sys;
+	if(peak == -1.0E23) {
+		ang=0.0; sxs=0.0; sys=0.0; mirror=0;
+		nref = -1;
+	} else {
+		co  =  cos(ang*qv);
+		so  = -sin(ang*qv);
+		sxs = sx*co - sy*so;
+		sys = sx*so + sy*co;
+	}
+	vector<float> res;
+	res.push_back(ang);
+	res.push_back(sxs);
+	res.push_back(sys);
+	res.push_back(static_cast<float>(mirror));
+	res.push_back(static_cast<float>(nref));
+	res.push_back(peak);
+	return res;
+}
+
+
+vector<float> Util::multiref_polar_ali_2d_local_chunks(EMData* image, const vector< EMData* >& crefim,
+				int ind_beg, int ind_end,
+                float xrng, float yrng, float step, float ant, string mode,
+                vector<int>numr, float cnx, float cny) {
+
+	size_t crefim_len = crefim.size();
+	const float qv = static_cast<float>( pi/180.0 );
+
+	Transform * t = image->get_attr("xform.projection");
+	Dict d = t->get_params("spider");
+	if(t) {delete t; t=0;}
+	float phi   = d["phi"];
+	float theta = d["theta"];
+	int   ky    = int(2*yrng/step+0.5)/2;
+	int   kx    = int(2*xrng/step+0.5)/2;
+	int   iref, nref=0, mirror=0;
+	float iy, ix, sx=0, sy=0;
+	float peak = -1.0E23f;
+	float ang  = 0.0f;
+	float imn1 = sin(theta*qv)*cos(phi*qv);
+	float imn2 = sin(theta*qv)*sin(phi*qv);
+	float imn3 = cos(theta*qv);
+	vector<float> n1(crefim_len);
+	vector<float> n2(crefim_len);
+	vector<float> n3(crefim_len);
+	for ( iref = 0; iref < (int)crefim_len; iref++) {
+		n1[iref] = crefim[iref]->get_attr("n1");
+		n2[iref] = crefim[iref]->get_attr("n2");
+		n3[iref] = crefim[iref]->get_attr("n3");
+	}
+	for (int i = -ky; i <= ky; i++) {
+	    iy = i * step ;
+	    for (int j = -kx; j <= kx; j++) {
+		ix = j*step;
+		EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+		Normalize_ring( cimage, numr );
+		Frngs(cimage, numr);
+		//  compare with specified range of images
+		for ( iref = ind_beg; iref < ind_end; iref++) {
 			if(abs(n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3)>=ant) {
 		    		Dict retvals = Crosrng_ms(crefim[iref], cimage, numr);
 		    		double qn = retvals["qn"];

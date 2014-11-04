@@ -845,6 +845,12 @@ private:
 	static float ang_n(float peakp, string mode, int maxrin); //this function is used by apmq()
 public:
 
+
+	static vector<float> multiref_polar_ali_2d_chunks(EMData* image, const vector< EMData* >& crefim,
+					int ind_beg, int ind_end,
+	                float xrng, float yrng, float step, string mode,
+	                vector< int >numr, float cnx, float cny);
+
 	/** formerly known as apmq
 	 * Determine shift and rotation between image and many reference
 	 * images (crefim, weights have to be applied) quadratic
@@ -926,6 +932,13 @@ public:
 	 * */
 	static vector<float> multiref_polar_ali_2d_nom(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, string mode,
+                vector< int >numr, float cnx, float cny);
+	/** Chunks
+	 *
+	 */
+	static vector<float> multiref_polar_ali_2d_local_chunks(EMData* image, const vector< EMData* >& crefim,
+				int ind_beg, int ind_end,
+                float xrng, float yrng, float step, float ant, string mode,
                 vector< int >numr, float cnx, float cny);
 
 	/** formerly known as apmq
