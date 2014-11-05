@@ -138,6 +138,7 @@ def main():
 
 	combined2=EMData(combfile,0)
 	sigmanz=combined2["sigma_nonzero"]
+	apix=combined["apix_x"]
 
 	### Masking
 	if options.automask3d==None or len(options.automask3d.strip())==0 :
@@ -151,7 +152,7 @@ def main():
 			sigmanz*=1.1
 			seeds=max(0,seeds-8)
 			vol=EMData(combfile,0)
-			vol.process_inplace("mask.auto3d",{"threshold":sigmanz*.75,"radius":nx/10,"nshells":int(nx*0.08+.5),"nshellsgauss":int(nx*.06),"nmaxseed":seeds,"return_mask":1})
+			vol.process_inplace("mask.auto3d",{"threshold":sigmanz*.85,"radius":nx/10,"nshells":int(nx*0.05+.5),"nshellsgauss":int(options.restarget*1.5/apix),"nmaxseed":seeds,"return_mask":1})
 			dis=vol.calc_radial_dist(vol["nx"]/2,0,1,0)
 			radav=sum(dis[-4:])
 			itr+=1
@@ -163,9 +164,12 @@ def main():
 			
 		# Final automasking parameters
 		amask3d="--process mask.auto3d:threshold={thresh}:radius={radius}:nshells={shells}:nshellsgauss={gshells}:nmaxseed={seed}".format(
-			thresh=sigmanz*.75,radius=nx/10,shells=int(nx*.08+.5),gshells=int(nx*.06),seed=seeds)
+			thresh=sigmanz*.75,radius=nx/10,shells=int(nx*0.05+.5),gshells=int(options.restarget*1.5/apix),seed=seeds)
+		amask3dtight="--process mask.auto3d:threshold={thresh}:radius={radius}:nshells={shells}:nshellsgauss={gshells}:nmaxseed={seed}".format(
+			thresh=sigmanz,radius=nx/10,shells=int(options.restarget/apix),gshells=int(options.restarget/apix),seed=seeds)
 	else:
 		amask3d="--process "+options.automask3d
+		amask3dtight=amask3d
 
 	combined2=0
 	if options.automask3d2==None or len(options.automask3d2.strip())==0 : amask3d2=""
@@ -176,7 +180,16 @@ def main():
 	else: maskopt=" --inputto1"
 	
 	run("e2proc3d.py {cfile} {path}mask.hdf {mask}{maskopt} {amask3d2}".format(path=path,cfile=combfile,mask=amask3d,amask3d2=amask3d2,maskopt=maskopt))
+	run("e2proc3d.py {cfile} {path}mask_tight.hdf {mask}{maskopt} {amask3d2}".format(path=path,cfile=combfile,mask=amask3dtight,amask3d2=amask3d2,maskopt=maskopt))
 	
+	### Masked FSC
+	run("e2proc3d.py {evenfile} {path}tmp_even.hdf --multfile {path}mask_tight.hdf".format(evenfile=evenfile,path=path))
+	run("e2proc3d.py {oddfile} {path}tmp_odd.hdf --multfile {path}mask_tight.hdf".format(oddfile=oddfile,path=path))
+
+	# New FSC between the two masked volumes, which we will use for the final filter
+	cmd="e2proc3d.py {path}tmp_even.hdf {path}fsc_maskedtight_{itr:02d}.txt --calcfsc {path}tmp_odd.hdf".format(path=path,itr=options.iter)
+	run(cmd)
+
 	### Masked FSC
 	run("e2proc3d.py {evenfile} {path}tmp_even.hdf --multfile {path}mask.hdf".format(evenfile=evenfile,path=path))
 	run("e2proc3d.py {oddfile} {path}tmp_odd.hdf --multfile {path}mask.hdf".format(oddfile=oddfile,path=path))
@@ -219,6 +232,8 @@ def main():
 	try:
 		os.unlink("{path}tmp_even.hdf".format(path=path))
 		os.unlink("{path}tmp_odd.hdf".format(path=path))
+		#os.system("gzip {path}mask.hdf".format(path=path)
+		#os.system("gzip {path}mask_tight.hdf".format(path=path)
 	except:
 		pass
 
