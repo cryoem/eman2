@@ -81,6 +81,11 @@ def main():
 			nx = vi.get_xsize()
 			ny = vi.get_ysize()
 			nz = vi.get_zsize()
+			#  Round all resolution numbers to two digits
+			for x in xrange(nx):
+				for y in xrange(ny):
+					for z in xrange(nz):
+						ui.set_value_at_fast( x,y,z, round(ui.get_value_at(x,y,z), 2) )
 			falloff = options.falloff
 			radius  = options.radius
 			if(radius == -1):  radius = nx//2-1
@@ -118,15 +123,22 @@ def main():
 
 		fftip(vi)  #  volume to be filtered
 
-		filteredvol = model_blank(nx, ny, nz)
+		st = Util.infomask(ui, m, True)
+		
 
-		for z in xrange(myid,nz,number_of_proc):
-			print myid,z
-			for x in xrange(nx):
-				for y in xrange(ny):
-					if(m.get_value_at(x,y,z) > 0.5):
-						cutoff = max(0.01, min(0.49, ui.get_value_at(x,y,z)))
-						filteredvol.set_value_at_fast(x,y,z,fft(filt_tanl(vi, cutoff, falloff) ).get_value_at(x,y,z))
+		filteredvol = model_blank(nx,ny,nz)
+		cutoff = st[2] - 0.01
+		while(cutoff < st[3] ):
+			cutoff = round(cutoff + 0.01, 2)
+			pt = Util.infomask( threshold_outside(ui, cutoff - 0.05, cutoff + 0.05), m, True)  # Ideally, one would want to check only slides in question...
+			if(pt[0] != 0.0):
+				vovo = fft(filt_tanl(vi, cutoff, falloff) )
+				for z in xrange(myid, nz, number_of_proc):
+					for x in xrange(nx):
+						for y in xrange(ny):
+							if(m.get_value_at(x,y,z) > 0.5):
+								if(round(ui.get_value_at(x,y,z),2) == cutoff):
+									filteredvol.set_value_at_fast(x,y,z,vovo.get_value_at(x,y,z))
 
 		mpi_barrier(MPI_COMM_WORLD)
 		reduce_EMData_to_root(filteredvol, myid, main_node, MPI_COMM_WORLD)
@@ -141,7 +153,7 @@ def main():
 
 		nn = vi.get_xsize()
 
-		falloff = options.falloff	
+		falloff = options.falloff
 
 		if len(args) == 3:
 			radius = options.radius
@@ -153,18 +165,29 @@ def main():
 			m = binarize(get_im(args[2]), 0.5)
 			outvol = args[3]
 
-		mc = model_blank(nn,nn,nn,1.0)-m
+		fftip(vi)  # this is the volume to be filtered
 
-		fft(vi)  # this is volume to be filtered
-
-		filteredvol = model_blank(nn,nn,nn)
+		#  Round all resolution numbers to two digits
 		for x in xrange(nn):
-			print x
 			for y in xrange(nn):
 				for z in xrange(nn):
-					if(m.get_value_at(x,y,z) > 0.5):
-						cutoff = max(0.01, min(0.49, ui.get_value_at(x,y,z)))
-						filteredvol.set_value_at_fast(x,y,z,fft(filt_tanl(vi, cutoff, falloff) ).get_value_at(x,y,z))
+					ui.set_value_at_fast( x,y,z, round(ui.get_value_at(x,y,z), 2) )
+		st = Util.infomask(ui, m, True)
+		
+
+		filteredvol = model_blank(nn,nn,nn)
+		cutoff = st[2] - 0.01
+		while(cutoff < st[3] ):
+			cutoff = round(cutoff + 0.01, 2)
+			pt = Util.infomask( threshold_outside(ui, cutoff - 0.05, cutoff + 0.05), m, True)
+			if(pt[0] != 0.0):
+				vovo = fft(filt_tanl(vi, cutoff, falloff) )
+				for x in xrange(nn):
+					for y in xrange(nn):
+						for z in xrange(nn):
+							if(m.get_value_at(x,y,z) > 0.5):
+								if(round(ui.get_value_at(x,y,z),2) == cutoff):
+									filteredvol.set_value_at_fast(x,y,z,vovo.get_value_at(x,y,z))
 
 		filteredvol.write_image(outvol)
 
