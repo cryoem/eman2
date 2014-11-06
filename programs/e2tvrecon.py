@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# Author: James Michael Bell, 09/2014 (jmbell@bcm.edu), modified Jesus Galaz-Montoya (jgmontoy@bcm.edu)
-# Last modified 13/Oct/2014
+# Author: James Michael Bell, 09/2014 (jmbell@bcm.edu), modified by Jesus Galaz-Montoya (jgmontoy@bcm.edu)
+# Last modified 03/Nov/2014
 # Copyright (c) 2014 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -35,7 +35,7 @@ import sys
 import time
 import copy
 import numpy as np
-from scipy import sparse
+
 from EMAN2jsondb import JSTask,jsonclasses
 
 
@@ -65,7 +65,7 @@ def main():
 	parser.add_argument("--tiltseries", default=None, help="""The input projections. 
 		Project should usually have the xform.projection header attribute, which is 
 		used for slice insertion""")
-	parser.add_argument("--tlt", type=str, default=None, help="""An IMOD-like .tlt file containing 
+	parser.add_argument("--tltfile", type=str, default=None, help="""An IMOD-like .tlt file containing 
 		alignment angles. If specified slices will be inserted using these angles in the 
 		IMOD convention""")	
 	parser.add_argument("--output", default="threed.hdf", help="""Output reconstructed 
@@ -82,6 +82,11 @@ def main():
 	parser.add_argument("--savesinograms", action="store_true", default=False,help="""If provided,
 		this option will save the sinogram for each 2-D slice (along Y) in the reconstruction 
 		to disk.""")
+	
+	parser.add_argument("--inmemory",action='store_true',default=False,help="""If provided,
+		this option will keep certain files open in memory instead of writing them and
+		reading from disk every time. While this can be faster, it is very memory-intensive.""")
+		
 	parser.add_argument("--saveslices", action="store_true", default=False,help="""If provided,
 		this option will save each reconstructed 2-D slice (along Y) to disk.""")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="""
@@ -97,7 +102,7 @@ def main():
 	if not options.tiltseries:
 		print "\nERROR: You must specficy --tiltseries"
 		sys.exit(1)
-	if not options.tlt:
+	if not options.tltfile:
 		print "\nERROR: You must specficy --tlt"
 		sys.exit(1)
 	if options.beta < 0.0:
@@ -105,7 +110,7 @@ def main():
 		sys.exit(1)
 		
 	#Parse and count tilt angles	
-	tiltangles = np.asarray([ float( i ) for i in file( options.tlt , "r" ) ])
+	tiltangles = np.asarray([ float( i ) for i in file( options.tltfile , "r" ) ])
 	tiltangles = tiltangles.tolist()	
 	
 	nimgs = EMUtil.get_image_count( options.tiltseries )
@@ -199,7 +204,7 @@ class TVReconTask(JSTask):
 		sinogram = make_sinogram( classoptions['options'], classoptions['y'], classoptions['xsize'], classoptions['ysize'], classoptions['nimgs'] )			
 	
 		#Reconstruct sinogram into 2D image
-		recon = twod_recon( classoptions['options'], sinogram, classoptions['y'], classoptions['projection_operator'], classoptions['tiltangles'] )
+		recon = twod_recon( classoptions['options'], sinogram, classoptions['y'], classoptions['projection_operator'], classoptions['tiltangles'], classoptions['ysize'] )
 
 		return [ classoptions['y'], recon ]
 	
@@ -250,29 +255,39 @@ def make_sinogram( options, y, xlen, ylen, num_imgs ):
 	
 	r = Region( 0, y, xlen, 1 )
 	sinogram = []
+	sinogramname = options.path + "/sinogram_" + str(y).zfill( len( str( ylen ))) + ".hdf"
 	for imgnum in range( num_imgs ):
 		prj = EMData() 
 		prj.read_image( options.tiltseries, imgnum, False, r )
 		
 		if options.savesinograms:
-			sinogramname = options.path + "/sinogram_" + str(y).zfill( len( str( ylen ))) + ".hdf"
 			prj.write_image( sinogramname , imgnum)
-		
-		sinogram.append( prj )
+		if options.inmemory:
+			sinogram.append( prj )
 		
 	if options.verbose > 2:
 		print "\n(e2tvrecon3d.py)(make_sinogram) Generated sinogram %i of %i" %( y+1, ylen )
-		
-	return sinogram
+	if options.inmemory:
+		return sinogram
+	else:
+		return sinogramname
 	
 
-def twod_recon( options, sinogram, y, projection_operator, tiltangles ):
+def twod_recon( options, sinogram, y, projection_operator, tiltangles, ylen ):
 
 	npstack = []
-	for img in sinogram:
-		np_img = img.numpy().copy()
-		npstack.append( np_img )
 	
+	if options.inmemory:
+		for img in sinogram:
+			np_img = img.numpy().copy()
+			npstack.append( np_img )
+	else:
+		n = EMUtil.get_image_count( sinogram )
+		for i in range(n):
+			img = EMData( sinogram, i )
+			np_img = img.numpy().copy()
+			npstack.append( np_img )
+			
 	data = np.asarray( npstack ).astype( np.float32 )
 	xlen = img["nx"]
 	
@@ -280,7 +295,7 @@ def twod_recon( options, sinogram, y, projection_operator, tiltangles ):
 	
 	if options.savesinograms:
 		for i in range(len(tiltangles)):
-			from_numpy(projections[i*xlen:(i+1)*xlen]).write_image(options.path + '/projections' + str( y ).zfill( len(str(len(tiltangles)))) + '.hdf',i)
+			from_numpy(projections[i*xlen:(i+1)*xlen]).write_image(options.path + '/projections' + str(y).zfill( len( str( ylen ))) + '.hdf',i)
 	
 	if options.verbose > 2: 
 		print "\nStarting reconstruction for slice", y
@@ -296,6 +311,11 @@ def twod_recon( options, sinogram, y, projection_operator, tiltangles ):
 
 
 def build_projection_operator( options, angles, l_x, n_dir=None, l_det=None, offset=0, pixels_mask=None ):
+	try:
+		from scipy import sparse
+	except:
+		print "\nERROR: SciPy not found. Must be installed to run e2tvrecon.py"
+	
 	"""
 	Compute the tomography design matrix.
 		
@@ -428,6 +448,10 @@ def _weights_fast(x, dx=1, orig=0, labels=None):
 
 # FISTA ALGORITHM
 def fista_tv( options, angles, y, H, mask=None):
+	try:
+		from scipy import sparse
+	except:
+		print "\nERROR: SciPy not found. Must be installed to run e2tvrecon.py"
 	"""
 	TV regression using FISTA algorithm
 	(Fast Iterative Shrinkage/Thresholding Algorithm)
