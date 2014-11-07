@@ -568,6 +568,7 @@ important to use an angular step which is 90/integer.</p>")
 	db = js_open_dict(options.path+"/0_refine_parms.json")
 	db.update(vars(options))
 	db["commandline"]=" ".join(sys.argv)
+	db["timestamp"]=str(time.ctime())
 
 	print "NOTE: you can check the progress of the refinement at any time by opening this URL in your web-browser:  file://{}/index.html".format(os.path.abspath(output_path))
 
