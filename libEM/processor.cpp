@@ -6766,7 +6766,7 @@ void MatchSFProcessor::create_radial_func(vector < float >&rad,EMData *image) co
 
 void SetSFProcessor::create_radial_func(vector < float >&radial_mask,EMData *image) const {
 	// The radial mask comes in with the existing radial image profile
-	// The radial mask runs from 0 to the 1-D Nyquist (it leaves out the corners in Fourier space)
+	// The radial mask runs from 0 to the corner in Fourier space
 
 	XYData *sf = params["strucfac"];
 	if(params.has_key("apix")) {

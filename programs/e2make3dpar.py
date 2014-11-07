@@ -90,6 +90,7 @@ def main():
 	parser.add_argument("--pad", metavar="x or x,y", default=None,type=str, help="Will zero-pad images to the specifed size (x,y) or (x,x) prior to reconstruction. If not specified no padding occurs.")
 	parser.add_argument("--padvol", metavar="x or x,y,z", default=None,type=str, help="Defines the dimensions (x,y,z) or (x,x,x) of the reconstructed volume. If ommitted, implied value based on padded 2D images is used.")
 	parser.add_argument("--outsize", metavar="x or x,y,z", default=None, type=str, help="Defines the dimensions (x,y,z) or (x,x,x) of the final volume written to disk, if ommitted, size will be based on unpadded input size")
+	parser.add_argument("--savenorm", default=None, type=str, help="If set, will save the normalization volume showing Fourier space filling to the specified file")
 
 	parser.add_argument("--keep", type=float, dest="keep", help="The fraction of slices to keep, based on quality scores (1.0 = use all slices). See keepsig.",default=1.0)
 	parser.add_argument("--keepsig",action="store_true",default=False, dest="keepsig", help="If set, keep will be interpreted as a standard deviation coefficient instead of as a percentage.")
@@ -205,6 +206,7 @@ def main():
 
 	# Get the reconstructor and initialize it correctly
 	a = {"size":padvol,"sym":options.sym,"mode":"gauss_2","verbose":options.verbose-1}
+	if options.savenorm!=None : a["savenorm"]=options.savenorm
 	recon=Reconstructors.get("fourier", a)
 
 	#########################################################

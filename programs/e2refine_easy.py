@@ -628,10 +628,10 @@ browser) rather than using isosurfaces, so any internal features of the mask can
 		### 3-D Projections
 		# Note that projections are generated on a single node only as specified by --threads
 		append_html("<p>* Generating 2-D projections of even/odd 3-D maps",True)
-		cmd = "e2project3d.py {path}/threed_{itrm1:02d}_even.hdf  --outfile {path}/projections_{itr:02d}_even.hdf -f --projector {projector} --orientgen {orient} --sym {sym} --postprocess normalize.circlemean {prethr} --parallel thread:{threads} {verbose}".format(
+		cmd = "e2project3d.py {path}/threed_{itrm1:02d}_even.hdf  --outfile {path}/projections_{itr:02d}_even.hdf -f --projector {projector} --orientgen {orient} --sym {sym} {prethr} --parallel thread:{threads} {verbose}".format(
 			path=options.path,itrm1=it-1,itr=it,projector=options.projector,orient=options.orientgen,sym=options.sym,prethr=prethreshold,threads=options.threads,verbose=verbose)
 		run(cmd)
-		cmd = "e2project3d.py  {path}/threed_{itrm1:02d}_odd.hdf --outfile {path}/projections_{itr:02d}_odd.hdf -f --projector {projector} --orientgen {orient} --sym {sym} --postprocess normalize.circlemean {prethr} --parallel thread:{threads} {verbose}".format(
+		cmd = "e2project3d.py  {path}/threed_{itrm1:02d}_odd.hdf --outfile {path}/projections_{itr:02d}_odd.hdf -f --projector {projector} --orientgen {orient} --sym {sym} {prethr} --parallel thread:{threads} {verbose}".format(
 			path=options.path,itrm1=it-1,itr=it,projector=options.projector,orient=options.orientgen,sym=options.sym,prethr=prethreshold,threads=options.threads,verbose=verbose)
 		run(cmd)
 		progress += 1.0

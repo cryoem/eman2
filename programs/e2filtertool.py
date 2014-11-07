@@ -575,6 +575,7 @@ class EMFilterTool(QtGui.QMainWindow):
 		self.needupdate=0		# we set this immediately so we reprocess again if an update happens while we're processing
 		self.procdata=[im.copy() for im in self.origdata]
 
+		needredisp=0
 		errors=[]
 		for p in self.processorlist:
 			pp=p.processorParms()				# processor parameters
@@ -588,13 +589,13 @@ class EMFilterTool(QtGui.QMainWindow):
 				except: errflag=True
 
 			if errflag: errors.append(str(pp))
+			needredisp=1					# if all processors are disabled, we don't want a redisplay
 
 		if len(errors)>0 :
 			self.errors=errors
 
-		self.needredisp=1
 		self.procthread=None					# This is a reference to ourselves (the thread doing the processing). we reset it ourselves before returning
-
+		self.needredisp=needredisp
 
 	def setData(self,data):
 		if data==None :
