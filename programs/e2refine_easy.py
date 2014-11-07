@@ -878,8 +878,8 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
 					frac=(0.143-d[1][si])/(d[1][si-1]-d[1][si])		# 1.0 if 0.143 at si-1, 0.0 if .143 at si
 					lastres.append(d[0][si]*(1.0-frac)+d[0][si-1]*frac)
 					try:
-						plt.annotate(r"{:1.1f} $\AA$".format(1.0/lastres),xy=(lastres,0.143),
-							xytext=((lastres*4+d[0][-1])/5.0,0.2),arrowprops={"width":1,"frac":.1,"headwidth":7,"shrink":.05})
+						plt.annotate(r"{:1.1f} $\AA$".format(1.0/lastres[-1]),xy=(lastres[-1],0.143),
+							xytext=((lastres[-1]*4+d[0][-1])/5.0,0.2),arrowprops={"width":1,"frac":.1,"headwidth":7,"shrink":.05})
 					except: pass
 					break
 			
@@ -903,7 +903,8 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
 		if len(lastres)==0 : 
 			append_html("<p>No valid resolution found for iteration {}".format(it))
 		else:
-			append_html("<p>Iteration {}: Resolution with different masks = {:1.1f}, {:1.1f}, {:1.1f} &Aring;</p>".format(it,1.0/lastres[0],1.0/lastres[1],1.0/lastres[2]))
+			try :append_html("<p>Iteration {}: Resolution with different masks = {:1.1f}, {:1.1f}, {:1.1f} &Aring;</p>".format(it,1.0/lastres[0],1.0/lastres[1],1.0/lastres[2]))
+			except: append_html("<p>Iteration {}: Didn't find resolutions for all 3 curves".format(it))
 
 		E2progress(logid,progress/total_procs)
 

@@ -89,8 +89,10 @@ indicating its position in the movie.
 		elif os.path.exists("movie/{}.hdf".format(u)): m="{}_proc_align.hdf".format(u)
 		elif os.path.exists("movie/{}.mrcs".format(u)): m="{}.mrcs".format(u)
 		elif os.path.exists("movie/"+ u.replace("aliavg","align")+".hdf"):m=u.replace("aliavg","align")+".hdf"
+		elif os.path.exists("movie/"+ u.replace("_aliavg","").replace("_proc","")+".mrcs"):m=u.replace("_aliavg","").replace("_proc","")+".mrcs"
 		else :
 			print "Couldn't find movie for ",u
+			print "Tried: ","{}_raw_proc_align.hdf".format(u), "{}.hdf".format(u.replace("_aliavg","_align")), "{}_proc_align.hdf".format(u), "{}.mrcs".format(u), u.replace("aliavg","align")+".hdf",u.replace("_aliavg","").replace("_proc","")+".mrcs"
 			continue
 		print "Movie found {} -> {}".format(u,m)
 
