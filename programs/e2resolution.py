@@ -44,6 +44,9 @@ import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] <volume> <mask> <output>
+
+	WARNING: Do not use this program. The whole concept has been replaced by "gold standard" refinement.
+
 	Note that this method has not yet been published, and is not yet a reliable
 	scheme for resolution determination. DO NOT EXPECT RELIABLE ANSWERS AT THIS POINT !
 

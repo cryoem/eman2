@@ -40,7 +40,7 @@ import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] 
-	THIS PROGRAM IS NOT YET COMPLETE
+	WARNING: THIS PROGRAM IS NOT YET COMPLETE
 
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)

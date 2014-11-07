@@ -50,7 +50,8 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog <classes file> <output> [options]
 	
-Extracts particles associated with specific class-averages and combines them into a new stack/vstack"""
+Extracts particles associated with specific class-averages and combines them into a new stack/vstack
+"""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--vstack",action="store_true",help="Will output to a bdb virtual stack instead of copying the image data. Input images must have been BDB for this to work.",default=False)

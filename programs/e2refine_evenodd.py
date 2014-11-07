@@ -43,6 +43,8 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] 
 	
+	WARNING: THIS PROGRAM IS OBSOLETE. E2REFINE_EASY SHOULD ALWAYS BE USED INSTEAD.
+
 	This program is used for robust resolution evaluation. It avoids noise and initial 
 	model bias by using an initial model with phases randomized beyond some specified 
 	resolution, splitting the data into even/odd halves, then refining to near convergence

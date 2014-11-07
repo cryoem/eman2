@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Steven Ludtke, 10/29/2008 (sludtke@bcm.edu)
+# Author: Steven Ludtke, 09/04/2014 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -31,7 +31,7 @@
 #
 #
 
-# e2ctf.py  10/29/2008 Steven Ludtke
+# e2ctf.py  09/04/2014 Steven Ludtke
 # This is a program for determining CTF parameters and (optionally) phase flipping images
 
 from EMAN2 import *

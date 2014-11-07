@@ -42,6 +42,8 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] <refine_xx folder>
 
+	WARNING: this program is still considered experimental!
+
 	Based on a completed refinement, this will perform per-particle alignment using reference projections from the reconstruction.
 	It will only perform alignments on particles used in the specified refinement run. 
 	

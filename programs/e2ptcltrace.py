@@ -45,6 +45,8 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] <classify_xx> <classify_yy> ...
 
+	WARNING: experimental program
+
 	This program traces the orientation of particles through multiple iterations. Specify a list of classify_xx files for the comparison. 
 """
 

@@ -43,7 +43,10 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] <classes> <projection stack or 3Dmap> <output>
 	Compares each class-average (or particle) in the classes input stack to each projection in the 'projection stack'. If a
-	3-D map is provided as the second input, then projections are generated using the specified angular spacing."""
+	3-D map is provided as the second input, then projections are generated using the specified angular spacing.
+
+	e2ptclvsmap.py is similar, but also sorts the results """
+
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 

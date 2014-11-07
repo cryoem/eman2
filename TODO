@@ -56,15 +56,23 @@ Low priority
 
 Complete
 11/01/14	11/01/14	Fixed problem with 3D reconstruction. Was a normalization issue
+10/31/14	added e2ptclvsmap for finding the best individual particles for each projection
 10/29/14	10/29/14	Threaded parallelism for e2ctf autofitting
 10/21/14	10/21/14	FourierAnl now fills corners. Added improved matchto option. calc_rad_dist double
 10/20/14	10/20/14	ctf.weight averager added
+10/17/14	e2procxml.py added for FSC processing
 10/16/14	10/16/14	e2refine_easy classiter -> 0 or 1 when it makes sense. This was limiting resolution in some cases
+10/6/14		Added e2proclst.py
 9/28/14		9/25/14		Aligned class particle extraction
 9/25/14		7/7/14		per-particle subunit subtraction for Chris
 9/8/14		--box in e2evalimage now forces size
+9/4/14		Added e2ctfsim
 8/29/14		Fixed B-factor option in e2ctf
+8/29/14		e2extractsubparticles for accurately eliminating part of a particle based on projections
 8/14		9/1/14		Use whole micrograph for per-particle defocus determination (option)
+7/2/14		e2runresmap added
+6/18/14		e2ddd_particles added
+5/15/14		e2emx for EMX support
 ???		Fix internationalization bug with Qt
 4/7/14		Make e2.py work with current ipython versions, finally
 2/20/14		Added --speed option

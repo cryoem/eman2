@@ -48,6 +48,8 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [classfile]
 
+	THIS PROGRAM IS NOT YET COMPLETE
+
 	This program allows you to manually mark bad particles via a graphical interface.
 
 """

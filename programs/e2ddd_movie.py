@@ -41,6 +41,10 @@ def main():
 	usage = """prog [options] <ddd_movie_stack>
 
 	This (still experimental) program will do various processing operations on "movies" recorded on direct detection cameras.
+	It is primarily used to do whole-frame alignment of movies. This program uses a binary tree approach, first computing the
+	alignment of the 1st half vs the second half, then gradually reducing the set size. 
+
+	See e2ddd_particles for per-particle alignment.
 	"""
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)

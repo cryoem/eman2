@@ -38,6 +38,8 @@ import math
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options]
+	
+	WARNING: While functional, this program is not well tested, and likely needs development before being useful
 
 	This program is designed to generate an initial reconstruction via monte carlo methodology.
 	Basically, this just reads in class averages and assigns them random Euler angles. Next it computes how

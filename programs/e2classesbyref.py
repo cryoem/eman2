@@ -41,6 +41,8 @@ def main():
 	
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog <references> <particles> <classmx> [options]
+	
+	*** THIS PROGRAM IS NOT YET FUNCTIONAL ***
 
 	This program classifies a set of particles based on a set of references (usually projections). Historically this
 	was done in two steps, first by e2simmx.py or e2simmx2stage.py then by e2classify. However, this approach produced

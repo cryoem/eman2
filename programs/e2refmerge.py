@@ -42,6 +42,8 @@ import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] <ref imgs> <ref self-simmx> <merged>
+	
+	THIS PROGRAM IS OBSOLETE
 
 	This program is used by e2simmx2stage.py
 
