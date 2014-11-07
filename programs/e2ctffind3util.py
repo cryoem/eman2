@@ -42,10 +42,11 @@ import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] 
+For more information on ctffind3 please see: Mindell, JA, Grigorieff N.  2003.  Accurate determination of local defocus and specimen tilt in electron microscopy. J Struct Biol. 142:334-47.
 
 """
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_header(name="ctffind3header", help='Options below this label are specific to e2ctffind3util.py', title="### e2ctffind3util options ###", row=0, col=0, rowspan=1, colspan=2, mode="import,run")
+	parser.add_header(name="ctffind3header", help='Options below this label are specific to e2ctffind3util.py', title="### e2ctffind3util options (requires that ctffind3 be installed)###", row=0, col=0, rowspan=1, colspan=2, mode="import,run")
 
 	#options associated with e2ctffind3.py
 	parser.add_argument("--apix", default=0.0, type=float,help="The angstrom per pixel of the micrographs", guitype='floatbox', row=3, col=0, rowspan=1, colspan=1, mode="import,run")
@@ -95,6 +96,7 @@ def main():
 
 	import_ctf(options.voltage, options.cs, options.ac, options.apix, options.verbose)
 	
+	print "e2ctffind3util.py complete!"
 	E2end(logid)
 
 def import_ctf(voltage, cs, ac, apix, verbose):
@@ -145,6 +147,7 @@ def run_ctffind3(apix, args, cs, voltage, ac, windowsize, minres, maxres, defocu
 			created = True
 		card.write(image.split(".")[0] + ".mrc\nctffind3/" + base_name(image) + "_ctffind3.ctf\n" + str(cs) + "," + str(voltage) + "," + str(ac) + "," + str(mag) + "," + str(dstep) + "\n" + str(windowsize) + "," + str(minres) + "," + str(maxres) + "," + str(defocusmin) + "," + str(defocusmax) + "," + str(defocusstep))
 		card.close()
+		print "running ctffind3 on: " + image
 		s = "`which ctffind3.exe` < card.txt >ctffind3/" + base_name(image) + "_ctffind3.log"
 		call(s,shell=True)
 		#launch_childprocess("`which ctffind3.exe` < card.txt >ctffind3/" + base_name(image) + "_ctffind3.log")
