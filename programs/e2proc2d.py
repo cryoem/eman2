@@ -240,6 +240,10 @@ def main():
 
 				if nzinp == 1 :
 					num_inp_images = 2
+
+					if out_ext == ".mrc" :
+						if os.path.isfile(outfile) :
+							os.remove(outfile)
 		else :
 			num_inp_images = -1
 
