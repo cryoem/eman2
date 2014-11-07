@@ -246,6 +246,8 @@ def main():
 							os.remove(outfile)
 		else :
 			num_inp_images = -1
+			print "Input file '" + infile + "' does not exist."
+			continue
 
 		if out_ext == inp_ext :
 			num_out_images = num_inp_images
