@@ -595,12 +595,14 @@ curve here, please check the next plot, and see if the curve with a looser mask 
 <br><a href=resolution.pdf><img src=resolution.png></a><br>""")
 
 	append_html("""<h4>Mask Comparison</h4> <p>As mentioned in the previous section, masking can have a significant impact on cited 
-resolution. One reason Relion resolution values historically seemed somewhat better than EMAN2 resolution values was the suggested 
-use of a very aggressive mask in Relion. EMAN2.1 now generates 3 FSC curves automatically: 1) completely unmasked, 2) a loose, 
-"conservative" mask and 3) a tighter mask which should be somewhat similar to Relion 1.3 using its suggested parameters. This plot
-compares these three FSC curves for the last iteration. The relevant mask files are also stored in the refinement folder as
-mask.hdf and mask_tight.hdf. When viewing masks, it is generally a good idea to look at it using 2-D slices (single image view in
-browser) rather than isosurfaces.</p>
+resolution. For a while users who followed Relion's suggested procedure would find resolution values slightly better than those 
+produced by EMAN. This was due to Relion's use of a very tight mask, often extending into the core of the structure.  EMAN2.1 now 
+generates 3 FSC curves automatically: 1) completely unmasked, 2) a loose, "conservative" mask and 3) a tighter mask which should be 
+somewhat similar to Relion 1.3 using its suggested parameters (though EMAN may remain slightly more conservative). The plot below
+compares these three FSC curves for the last completed iteration. The relevant mask files are also stored in the refinement folder as
+mask.hdf and mask_tight.hdf. Note: if visualizing 3-D masks, it is generally a good idea to display as 2-D slices (single image view in
+browser) rather than using isosurfaces, so any internal features of the mask can be readily observed.</p>
+<br><a href=resolution_masks.pdf><img src=resolution_masks.png></a><br>
 	""")
 	xticklocs=[i for i in (.01,.05,.0833,.125,.1667,.2,.25,.3333,.4,.5) if i<1.0/(2.0*apix)]
 	xticklbl=["1/100","1/20","1/12","1/8","1/6","1/5","1/4","1/3","1/2.5","1/2"][:len(xticklocs)]
@@ -858,14 +860,14 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
 		lastres=[]
 		
 		# iterate over fsc curves
-		for f in fscs:
+		for i,f in enumerate(fscs):
 			num=int(f.split("_")[2][:2])
 			
 			# read the fsc curve
 			d=np.loadtxt("{}/{}".format(options.path,f)).transpose()
 			
 			# plot the curve
-			try: plt.plot(d[0],d[1],label=f[4:],color=pltcolors[(nummx-num)%12])
+			try: plt.plot(d[0],d[1],label=f[4:],color=pltcolors[i])
 			except: pass
 			maxx=max(maxx,max(d[0]))
 		
