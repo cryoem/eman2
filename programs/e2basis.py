@@ -60,7 +60,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 
 	parser.add_argument("--normproj",action="store_true",help="Normalize the projections resulting from 'project', such that the length of each vector is 1",default=False)
 	parser.add_argument("--normcomponent",action="store_true",help="Normalize the dot product for each component of the output vector. If the basis spans the input vector, then the projected vector length will be 1, otherwise it will be less than 1.",default=False)
-	parser.add_argument("--normalize",type=str,help="Normalize the input images using the named processor",default="normalize.unitlen")
+	parser.add_argument("--normalize",type=str,help="Normalize the input images using the named processor. Specify None to disable.",default="normalize.unitlen")
 	parser.add_argument("--maskfile","-M",type=str,help="File containing a mask to apply to the particles before normalization", default=None)
 	parser.add_argument("--mean1",action="store_true",help="Indicates that the first image in the basis set is actually the mean image, which should be subtracted prior to projection. Output from e2msa requires this flag.")
 	parser.add_argument("--recalcmean",action="store_true",help="This will recompute the mean from the input set and subtract before projection. Useful if a different normalization is used than in the original basis file.")
