@@ -584,8 +584,23 @@ processing. This curve is also used as a basis for filtering the maps. Resolutio
 below a value of 0.143. Note that when computing FSCs in other situations, for example, when comparing the final map produced with 
 all of the particle data to a higher resolution crystal structure, the more stringent 0.5 (actually 0.4) criterion must be used. Don't
 overinterpret these plots. The FSC plots themselves contain some noise, so there is some uncertainty in any resolution value.</p>
+<p>Also note that these curves are highly dependent on the mask used prior to FSC computation. See the next plot for more information
+on this. This iteration comparison plot uses a relatively tight mask designed to be somewhat comparable to that used in Relion.</p>
+<p>These resolution curves should start at ~1 at low resolution, fall smoothly to ~0, then remain at roughly zero. The vertical range
+of an FSC plot is -1 to 1. Some negative oscillations after reaching zero are normal. If the FSC curve falls towards zero, but then 
+rises again at high resolution this is an indication of an artifact, and the resolution values may not be trustworthy. Possible sources
+include, but are not limited to: mask too tight, box size too small, reconstruction artifacts, ...  If you observe an "unhealthy" FSC
+curve here, please check the next plot, and see if the curve with a looser mask appears "healthier".</p>
 <br><a href=resolution.pdf><img src=resolution.png></a><br>""")
 
+	append_html("""<h4>Mask Comparison</h4> <p>As mentioned in the previous section, masking can have a significant impact on cited 
+resolution. One reason Relion resolution values historically seemed somewhat better than EMAN2 resolution values was the suggested 
+use of a very aggressive mask in Relion. EMAN2.1 now generates 3 FSC curves automatically: 1) completely unmasked, 2) a loose, 
+"conservative" mask and 3) a tighter mask which should be somewhat similar to Relion 1.3 using its suggested parameters. This plot
+compares these three FSC curves for the last iteration. The relevant mask files are also stored in the refinement folder as
+mask.hdf and mask_tight.hdf. When viewing masks, it is generally a good idea to look at it using 2-D slices (single image view in
+browser) rather than isosurfaces.</p>
+	""")
 	xticklocs=[i for i in (.01,.05,.0833,.125,.1667,.2,.25,.3333,.4,.5) if i<1.0/(2.0*apix)]
 	xticklbl=["1/100","1/20","1/12","1/8","1/6","1/5","1/4","1/3","1/2.5","1/2"][:len(xticklocs)]
 	yticklocs=(0.0,.125,.143,.25,.375,.5,.625,.75,.875,1.0)
@@ -766,13 +781,13 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
 		### Resolution plot
 		### broken up into multiple try/except blocks because we need some of the info, even if plotting fails
 		try:
-			plt.title("Gold Standard Resolution")
+			plt.title("Gold Standard Resolution (tight mask)")
 			plt.xlabel(r"Spatial Frequency (1/$\AA$)")
 			plt.ylabel("FSC")
 		except:
 			pass
 		
-		fscs=[i for i in os.listdir(options.path) if "fsc_masked" in i and i[-4:]==".txt"]
+		fscs=[i for i in os.listdir(options.path) if "fsc_maskedtight" in i and i[-4:]==".txt"]
 		fscs.sort(reverse=True)
 		nummx=int(fscs[0].split("_")[2][:2])
 		maxx=0.01
@@ -791,6 +806,7 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
 		
 			# find the resolution from the first curve (the highest numbered one)
 			if f==fscs[0]:
+				lastnum=num
 				# find the 0.143 crossing
 				for si in xrange(2,len(d[0])-2):
 					if d[1][si-1]>0.143 and d[1][si]<=0.143 :
@@ -823,7 +839,68 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
 		if lastres==0 : 
 			append_html("<p>No valid resolution found for iteration {}".format(it))
 		else:
-			append_html("<p>Iteration {}: Resolution = {:1.1f} &Aring; (gold standard refinement, FSC @0.143)</p>".format(it,1.0/lastres))
+			append_html("<p>Iteration {}: Resolution = {:1.1f} &Aring; (gold standard refinement with tight mask, FSC @0.143)</p>".format(it,1.0/lastres))
+			
+		######################
+		### Resolution plot 2
+		### broken up into multiple try/except blocks because we need some of the info, even if plotting fails
+		try:
+			plt.title("Gold Standard Resolution (tight mask)")
+			plt.xlabel(r"Spatial Frequency (1/$\AA$)")
+			plt.ylabel("FSC")
+		except:
+			pass
+		
+		fscs=["fsc_maskedtight_{:02d}.txt".format(lastnum),"fsc_masked_{:02d}.txt".format(lastnum),"fsc_unmasked_{:02d}.txt".format(lastnum)]
+		nummx=int(fscs[0].split("_")[2][:2])
+		maxx=0.01
+		lastres=[]
+		
+		# iterate over fsc curves
+		for f in fscs:
+			num=int(f.split("_")[2][:2])
+			
+			# read the fsc curve
+			d=np.loadtxt("{}/{}".format(options.path,f)).transpose()
+			
+			# plot the curve
+			try: plt.plot(d[0],d[1],label=f[4:],color=pltcolors[(nummx-num)%12])
+			except: pass
+			maxx=max(maxx,max(d[0]))
+		
+			# find the resolutions
+			# find the 0.143 crossing
+			for si in xrange(2,len(d[0])-2):
+				if d[1][si-1]>0.143 and d[1][si]<=0.143 :
+					frac=(0.143-d[1][si])/(d[1][si-1]-d[1][si])		# 1.0 if 0.143 at si-1, 0.0 if .143 at si
+					lastres=.append(d[0][si]*(1.0-frac)+d[0][si-1]*frac)
+					try:
+						plt.annotate(r"{:1.1f} $\AA$".format(1.0/lastres),xy=(lastres,0.143),
+							xytext=((lastres*4+d[0][-1])/5.0,0.2),arrowprops={"width":1,"frac":.1,"headwidth":7,"shrink":.05})
+					except: pass
+					break
+			
+		try:
+			plt.axhline(0.0,color="k")
+			plt.axhline(0.143,color="#306030",linestyle=":")
+			plt.axis((0,maxx,-.02,1.02))
+#			plt.legend(loc="lower left")
+			plt.legend(loc="upper right",fontsize="x-small")
+#			plt.minorticks_on()
+			plt.xticks(xticklocs,xticklbl)
+			plt.yticks(yticklocs,yticklbl)
+			plt.savefig("{}/report/resolution_masks.png".format(options.path))
+			try: plt.savefig("{}/report/resolution_masks.pdf".format(options.path))
+			except: pass
+			plt.clf()
+		except:
+			traceback.print_exc()
+			append_html("<p>Error generating resolution plot in report. Please look at fsc* files in the refine_xx folder</p>")
+
+		if len(lastres)==0 : 
+			append_html("<p>No valid resolution found for iteration {}".format(it))
+		else:
+			append_html("<p>Iteration {}: Resolution with different masks = {:1.1f}, {:1.1f}, {:1.1f} &Aring;</p>".format(it,1.0/lastres[0],1.0/lastres[1],1.0/lastres[2]))
 
 		E2progress(logid,progress/total_procs)
 
