@@ -556,7 +556,7 @@ def pspec_and_ctf_fit(options,debug=False):
 						print "No existing defocus to start with"
 			else: dfhint=(options.defocusmin,options.defocusmax)
 			ctf=ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,options.voltage,options.cs,options.ac,apix,bgadj=not options.nosmooth,autohp=options.autohp,dfhint=dfhint,verbose=options.verbose)
-			if options.astigmatism : ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1)
+			if options.astigmatism and not options.curdefocusfix : ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1)
 
 			im_1d,bg_1d=calc_1dfrom2d(ctf,im_2d,bg_2d)
 			if options.constbfactor>0 : ctf.bfactor=options.constbfactor
