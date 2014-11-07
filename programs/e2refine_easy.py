@@ -874,7 +874,7 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
 			for si in xrange(2,len(d[0])-2):
 				if d[1][si-1]>0.143 and d[1][si]<=0.143 :
 					frac=(0.143-d[1][si])/(d[1][si-1]-d[1][si])		# 1.0 if 0.143 at si-1, 0.0 if .143 at si
-					lastres=.append(d[0][si]*(1.0-frac)+d[0][si-1]*frac)
+					lastres.append(d[0][si]*(1.0-frac)+d[0][si-1]*frac)
 					try:
 						plt.annotate(r"{:1.1f} $\AA$".format(1.0/lastres),xy=(lastres,0.143),
 							xytext=((lastres*4+d[0][-1])/5.0,0.2),arrowprops={"width":1,"frac":.1,"headwidth":7,"shrink":.05})
