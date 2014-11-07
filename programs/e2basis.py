@@ -81,6 +81,8 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 
 	logid=E2init(sys.argv,options.ppid)
 	
+	if options.normalize.lower()=="none" : options.normalize=None
+	
 	# second parameter is always the input basis set
 	if options.basislist:
 		basislist=options.basislist.split(",")
@@ -117,14 +119,18 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 				mean=EMData(args[2],0)
 				for i in range(1,n):
 					im=EMData(args[2],i)
+					if options.normalize!=None:
+						try: im.process_inplace(options.normalize)
+						except: print "Warning: Normalization failed"
 					mean+=im
 				mean/=float(n)
 			
 			for i in range(n):
 				im=EMData(args[2],i)
 				if maskfile : im*=maskfile
-				try: im.process_inplace(options.normalize)
-				except: print "Warning: Normalization failed"
+				if options.normalize!=None:
+					try: im.process_inplace(options.normalize)
+					except: print "Warning: Normalization failed"
 				if mean : im-=mean
 			
 				# inner loop over the basis images
@@ -152,8 +158,9 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 			for i in range(n):
 				im=EMData(args[2],i)
 				if maskfile!=None : im*=maskfile
-				try: im.process_inplace(options.normalize)
-				except: print "Warning: Normalization failed"
+				if options.normalize!=None:
+					try: im.process_inplace(options.normalize)
+					except: print "Warning: Normalization failed"
 				if mean!=None : im-=mean
 
 				proj=EMData(len(basis),1,1)
@@ -215,8 +222,9 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 #				im.write_image("alib.hdf",i)
 
 				if maskfile!=None : im*=maskfile
-				try: im.process_inplace(options.normalize)
-				except: print "Warning: Normalization failed"
+				if options.normalize!=None:
+					try: im.process_inplace(options.normalize)
+					except: print "Warning: Normalization failed"
 				if mean!=None : im-=mean
 				
 				# inner loop over the basis images to generate the components of the projection vector
@@ -267,8 +275,9 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 				im.transform(Transform({"type":"2d","alpha":best[3],"tx":best[1],"ty":best[2],"mirror":int(best[4])}))
 
 				if maskfile!=None : im*=maskfile
-				try: im.process_inplace(options.normalize)
-				except: print "Warning: Normazation failed"
+				if options.normalize!=None:
+					try: im.process_inplace(options.normalize)
+					except: print "Warning: Normazation failed"
 				if mean!=None : im-=mean
 				
 				proj=EMData(len(basis),1,1)
