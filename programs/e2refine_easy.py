@@ -928,9 +928,9 @@ artifact territory. </p>
 rather than specifying --input and --model. When you use --startfrom, it will not re-randomize the phases. Since you have already achieved
 sufficient resolution to validate the gold-standard approach, continuing to extend this resolution is valid, and more efficient.""".format(1.0/lastres,options.path))
 		except:
-			append_html("""<p>Congratulations, your refinement is complete, and you have a gold standard resolution of {:1.1f} &Aring;. 
+			append_html("""<p>Congratulations, your refinement is complete, and you have a gold standard resolution of {:1.1f} &Aring (or {:1.1f} &Aring with a more conservative mask);. 
 Since this refinement continued from an existing refinement, it is impossible to tell if the gold-standard criteria have been met, but
-if they were met in the refinement this run continued, then your resolution should still be valid.""".format(1.0/lastres,options.path))
+if they were met in the refinement this run continued, then your resolution should still be valid.""".format(1.0/lastres[0],1.0/lastres[1],options.path))
 
 	append_html("""<h2>Explore your results</h2><p>Here are some useful output files to look at:</p><ul>
 <li>Your final 3-D map from this run is {path}/threed_{iter:02d}.hdf</li>
