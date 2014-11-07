@@ -124,7 +124,21 @@
         "NAME": "Generate Output - e2ctf",
 	"NOTELEVEL": "1",
         "CHILDREN": []
-      }
+      },
+      {
+        "ICON": "ctf",
+        "PROGRAM": "e2ctffind3util.py",
+        "MODE": "run",
+        "NAME": "Run and Import Ctffind3 Results - e2ctf",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "ctf",
+        "PROGRAM": "e2ctffind3util.py",
+        "MODE": "import",
+        "NAME": "Import Ctffind3 Results - e2ctf",
+        "CHILDREN": []
+      }      
     ]
   },
   {
