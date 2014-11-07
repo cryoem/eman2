@@ -541,6 +541,8 @@ def pspec_and_ctf_fit(options,debug=False):
 				try:
 					ctf=js_parms["ctf"][0]
 					curdf=ctf.defocus
+					curdfdiff=ctf.dfdiff
+					curdfang=ctf.dfang
 					if options.curdefocushint: dfhint=(curdf-0.1,curdf+0.1)
 					else: dfhint=(curdf-.001,curdf+.001)
 					print "Using existing defocus as hint :",dfhint
@@ -548,6 +550,8 @@ def pspec_and_ctf_fit(options,debug=False):
 					try:
 						ctf=js_parms["ctf_frame"][1]
 						curdf=ctf.defocus
+						curdfdiff=ctf.dfdiff
+						curdfang=ctf.dfang
 						if options.curdefocushint: dfhint=(curdf-0.1,curdf+0.1)
 						else: dfhint=(curdf-.001,curdf+.001)
 						print "Using existing defocus from frame as hint :",dfhint
@@ -557,6 +561,9 @@ def pspec_and_ctf_fit(options,debug=False):
 			else: dfhint=(options.defocusmin,options.defocusmax)
 			ctf=ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,options.voltage,options.cs,options.ac,apix,bgadj=not options.nosmooth,autohp=options.autohp,dfhint=dfhint,verbose=options.verbose)
 			if options.astigmatism and not options.curdefocusfix : ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1)
+			elif options.astigmatism:
+				ctf.dfdiff=curdfdiff
+				ctf.dfang=curdfang
 
 			im_1d,bg_1d=calc_1dfrom2d(ctf,im_2d,bg_2d)
 			if options.constbfactor>0 : ctf.bfactor=options.constbfactor
