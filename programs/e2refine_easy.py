@@ -848,7 +848,7 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
 		### Resolution plot 2
 		### broken up into multiple try/except blocks because we need some of the info, even if plotting fails
 		try:
-			plt.title("Gold Standard Resolution (tight mask)")
+			plt.title("Gold Standard Resolution (mask comparison)")
 			plt.xlabel(r"Spatial Frequency (1/$\AA$)")
 			plt.ylabel("FSC")
 		except:
