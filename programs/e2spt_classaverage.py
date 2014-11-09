@@ -205,8 +205,25 @@ def main():
 	parser.add_argument("--savepreprocessed",action="store_true", help="Will save stacks of preprocessed particles (one for coarse alignment and one for fine alignment if preprocessing options are different).", default=False)
 	parser.add_argument("--keepsig", action="store_true", help="Causes the keep argument to be interpreted in standard deviations.",default=False, guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
 	
-	parser.add_argument("--nocenterofmass", default=False, action="store_true", help="""Disable Centering 
-		of mass of the subtomogram every iteration.""", guitype='boolbox', row=6, col=2, rowspan=1, colspan=1, mode='alignment,breaksym')
+	#parser.add_argument("--nocenterofmass", default=False, action="store_true", help="""Disable Centering 
+	#	of mass of the subtomogram every iteration.""", guitype='boolbox', row=6, col=2, rowspan=1, colspan=1, mode='alignment,breaksym')
+	
+	parser.add_argument("--autocenter",type=str, default='',help="""Autocenters each averaged pair 
+		during initial average generation with --btref and --hacref. 
+		Will also autocenter the average of all particles after each iteration of iterative 
+		refinement. 
+		Options are --autocenter=xform.centerofmass (self descriptive), or
+		--autocenter=xform.centeracf, which applies auto-convolution on the average.
+		Default=None.""")
+	
+	parser.add_argument("--autocentermask",type=str, default='',help="""Masking processor 
+		to apply before autocentering. Default=None.
+		See 'e2help.py processors -v 10' at the command line.""")
+	
+	parser.add_argument("--autocenterpreprocess",action='store_true', default=False,help="""This 
+		will apply a highpass filter at a frequency of half the box size times the apix, 
+		shrink by 2, and apply a low pass filter at half nyquist frequency to any computed
+		average for autocentering purposes if --autocenter is provided. Default=False.""")
 	
 	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default="thread:1", guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
@@ -224,8 +241,23 @@ def main():
 															on the first iteration the program will complete the file by working ONLY on particle indexes that are missing.
 															For subsequent iterations, all the particles will be used.""")
 															
-	parser.add_argument("--hacref",type=int,default=0,help="""Size of the SUBSET of particles to use to build an initial reference by calling e2spt_hac.py
-															which does Hierarchical Ascendant Classification (HAC) or 'all vs all' alignments.""") 
+	parser.add_argument("--hacref",type=int,default=0,help="""Size of the SUBSET 
+		of particles to use to build an initial reference by calling e2spt_hac.py
+		which does Hierarchical Ascendant Classification (HAC) or 'all vs all' alignments.""") 
+		
+	parser.add_argument("--ssaref",type=int,default=0,help="""Size of the SUBSET
+		of particles to use to build an initial reference by calling e2symsearch3d.py,
+		which does self-symmetry alignments. You must provide --sym different
+		than c1 for this to make any sense.""")
+		
+	parser.add_argument("--btref",type=int,default=0,help="""Size of the SUBSET
+		of particles to use to build an initial reference by calling e2spt_binarytree.py.
+		By default, the largest power of two smaller than the number of particles in --input
+		will be used.
+		For example, if you supply a stack with 150 subtomograms, the program will
+		automatically select 128 as the limit to use because it's the largest power of 2 that is
+		smaller than 150. But if you provide, say --btref=100, then the number of particles
+		used will be 64, because it's the largest power of 2 that is still smaller than 100.""")
 	
 	parser.add_argument("--plotccc", action='store_true', help="""Turn this option on to generate
 		a plot of the ccc scores during each iteration.
@@ -385,7 +417,13 @@ def main():
 	
 	if options.averager: 
 		options.averager=parsemodopt(options.averager)
-
+	
+	if options.autocenter:
+		options.autocenter=parsemodopt(options.autocenter)
+		
+	if options.autocentermask:
+		options.autocentermask=parsemodopt(options.autocentermask)
+	
 	if options.normproc and options.normproc != 'None' and options.normproc != 'none':
 		options.normproc=parsemodopt(options.normproc)
 	
@@ -701,10 +739,6 @@ def main():
 			
 			#sys.exit()
 			
-		elif not options.hacref:
-			nptclForRef = len(ptclnums)
-			ref = binaryTreeRef(options,nptclForRef,ptclnums,ic,etc,classize)
-		
 		elif options.hacref:
 			elements = cmdwp.split(' ')
 			
@@ -747,7 +781,31 @@ def main():
 			#cmdhac.replace(
 			#pass
 		
-		
+		elif options.ssaref:
+			print """\nSelf-symmetry alignment not implemented yet.
+				You can manually run e2symsearch3d.py."""
+			
+			if options.sym == 'c1' or options.sym == 'C1':
+				print """\nERROR: You must provide at least c2 or higher symmetry to use
+				--ssaref"""
+			sys.exit(1)
+				
+		elif not options.hacref and not options.ssaref:
+			nptclForRef = len(ptclnums)
+			
+			from e2spt_binarytree import binaryTreeRef
+			
+			nseed=2**int(floor(log(len(ptclnums),2)))
+			
+			if options.btref:
+				nseed=2**int(floor(log( options.btref, 2 )))			
+			
+			ref = binaryTreeRef(options,nptclForRef,nseed,ic,etc)
+			
+			if options.savesteps:
+				refname = options.path + '/class_' + str(ic).zfill( len( str(ic) )) + '.hdf'
+			
+				ref.write_image(refname,-1)
 		
 		'''
 		Now we iteratively refine a single class
@@ -778,9 +836,6 @@ def main():
 			print "(e2spt_classaverage.py) This is the .json file to write", jsAliParamsPath
 
 			jsA = js_open_dict(jsAliParamsPath) #Write particle orientations to json database.
-		
-			
-			
 			
 			
 			if options.clipali:
@@ -887,8 +942,9 @@ def main():
 						
 			
 			if not options.donotaverage:					
-				ref = make_average(options,ic,options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.sym,options.groups,options.breaksym,options.nocenterofmass,options.verbose,it)
-	
+				#ref = make_average(options,ic,options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.sym,options.groups,options.breaksym,options.nocenterofmass,options.verbose,it)
+				ref = makeAverage(options,ic,results,it)
+
 			
 			
 			if options.savesteps and not options.donotaverage:
@@ -1243,7 +1299,7 @@ def calcAliStep(options):
 	
 	return options
 	
-
+"""
 def binaryTreeRef(options,nptclForRef,ptclnums,ic,etc,classize):
 	
 	factor=ic * classize
@@ -1327,7 +1383,7 @@ def binaryTreeRef(options,nptclForRef,ptclnums,ic,etc,classize):
 			if options.verbose: 
 				print "%d tasks queued in seedtree level %d"%(len(tids),i) 
 
-			"""Wait for alignments to finish and get results"""
+			'''Wait for alignments to finish and get results'''
 			results=get_results(etc,tids,options.verbose,{},len(ptclnums),0,'binarytree')
 
 			#results=get_results(etc,tids,options.verbose,{},nptclForRef,0)
@@ -1354,11 +1410,11 @@ def binaryTreeRef(options,nptclForRef,ptclnums,ic,etc,classize):
 		ref.write_image(refname,-1)
 	
 	return ref
-	
+"""	
 
 
 def postprocess(img,mask,normproc,postprocess):
-	"""Postprocesses a volume in-place"""
+	'''Postprocesses a volume in-place'''
 	
 	# Make a mask, use it to normalize (optionally), then apply it 
 	maskimg=EMData(img["nx"],img["ny"],img["nz"])
@@ -1696,12 +1752,28 @@ def preprocessing(image,options,mask,clipali,normproc,shrink,lowpass,highpass,pr
 	return simage
 	
 
-def make_average(options,ic,ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,keepsig,symmetry,groups,breaksym,nocenterofmass,verbose=1,it=1):
-	"""Will take a set of alignments and an input particle stack filename and produce a new class-average.
-	Particles may be excluded based on the keep and keepsig parameters. If keepsig is not set, then keep represents
-	an absolute fraction of particles to keep (0-1). Otherwise it represents a sigma multiplier akin to e2classaverage.py"""
+#def makeAverage(options,ic,ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,keepsig,symmetry,groups,breaksym,nocenterofmass,verbose=1,it=1):
+def makeAverage(options,ic,align_parms,it=1):
+	ptcl_file=options.input
+	path=options.path
+	#align_params=results
+	averager=options.averager
+	saveali=options.saveali
+	saveallalign=options.saveallalign
+	keep=options.keep
+	keepsig=options.keepsig
+	symmetry=options.sym
+	groups=options.groups
+	breaksym=options.breaksym
+	#options.nocenterofmass
+	verbose=options.verbose
+
+	'''Will take a set of alignments and an input particle stack filename and produce a 
+	new class-average. Particles may be excluded based on the keep and keepsig parameters. 
+	If keepsig is not set, then keep represents an absolute fraction of particles to keep (0-1). 
+	Otherwise it represents a sigma multiplier akin to e2classaverage.py.'''
 	
-	print "(e2pt_classaverage.py)(make_average) The results to parse are", align_parms
+	print "(e2pt_classaverage.py)(makeAverage) The results to parse are", align_parms
 	
 	#else:
 	if keepsig:
@@ -1819,14 +1891,42 @@ def make_average(options,ic,ptcl_file,path,align_parms,averager,saveali,savealla
 		varmapname = path + '/class_' + str(ic).zfill( len( str(ic) )) + '_varmap.hdf'
 		variance.write_image( varmapname , it)
 				
-	if not nocenterofmass:
-		avg.process_inplace("xform.centerofmass")
+	#if not nocenterofmass:
+	#	avg.process_inplace("xform.centerofmass")
+	
+	
+	if options.autocenter:
+		print "\n\n\n\nYou have selected to autocenter!\n", options.autocenter
+		
+		avgac = avg.copy()
+		if options.autocentermask:
+			avgac.process_inplace( options.autocentermask[0],options.autocentermask[1] )
+			
+		if options.autocenterpreprocess:
+			apix = avg['apix_x']
+			halfnyquist = apix*4
+			highpassf = apix*a['nx']/2.0
+			
+			avgac.process_inplace( 'filter.highpass.gauss',{'cutoff_freq':highpassf,'apix':apix})
+			avgac.process_inplace( 'filter.lowpass.gauss',{'cutoff_freq':halfnyquist,'apix':apix})
+			avgac.process_inplace( 'math.meanshrink',{'n':2})
+			
+		avgac.process_inplace(options.autocenter[0],options.autocenter[1])
+		
+		tcenter = avgac['xform.align3d']
+		print "Thus the average HAS BEEN be translated like this", tcenter
+
+	avg['origin_x']=0
+	avg['origin_y']=0
+	avg['origin_z']=0
 	
 	return avg
 		
 
+"""
 def make_average_pairs(options,ptcl_file,outfile,align_parms,averager,nocenterofmass):
-	"""Will take a set of alignments and an input particle stack filename and produce a new set of class-averages over pairs"""
+	'''Will take a set of alignments and an input particle stack filename and produce a 
+	new set of class-averages over pairs'''
 	
 	current = os.getcwd()
 	print "\n(e2spt_classaverage.py) (make_average_pairs) current directory is", current
@@ -1870,11 +1970,11 @@ def make_average_pairs(options,ptcl_file,outfile,align_parms,averager,nocenterof
 	
 		avg.write_image(outfile,i)
 	return
-		
+"""		
 
 def get_results(etc,tids,verbose,jsA,nptcls,savealiparams=0,ref=''):
-	"""This will get results for a list of submitted tasks. Won't return until it has all requested results.
-	aside from the use of options["ptcl"] this is fairly generalizable code. """
+	'''This will get results for a list of submitted tasks. Won't return until it has all requested results.
+	aside from the use of options["ptcl"] this is fairly generalizable code.'''
 	
 	# wait for them to finish and get the results
 	# results for each will just be a list of (qual,Transform) pairs
@@ -2042,11 +2142,18 @@ class Align3DTask(JSTask):
 		refpreprocess=0
 		options=classoptions['options']
 		
-		if not options.ref:
-			print "\n\n\n\n(e2spt_classaverage.py)(Align3DTask) There is no reference; therfore, refpreprocess should be turned on", refpreprocess
+		try:	
+			if not options.ref:
+				print "\n\n\n\n(e2spt_classaverage.py)(Align3DTask) There is no reference; therfore, refpreprocess should be turned on", refpreprocess
+				refpreprocess=1
+		except:
 			refpreprocess=1
 		
-		if options.refpreprocess:
+		
+		try:	
+			if options.refpreprocess:
+				refpreprocess=1
+		except:
 			refpreprocess=1
 		
 		currentIter=self.classoptions['currentIter']
