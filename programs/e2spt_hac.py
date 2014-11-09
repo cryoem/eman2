@@ -84,10 +84,10 @@ def main():
 	#	 to apply before autocentering. Default=None. 
 	#	 See processors by typing 'e2help.py processors -v 10' at the command line.""")
 		 
-	parser.add_argument("--autocenterpreprocess",action='store_true', default=False,help="""This will apply
-		a highpass filter at a frequency of half the box size times the apix, and will shrink
-		the average by 2 for autocentering, and will apply a low pass filter at half nyquist
-		frequency. Default=False.""")
+	parser.add_argument("--autocenterpreprocess",action='store_true', default=False,help="""This 
+		will apply a highpass filter at a frequency of half the box size times the apix, 
+		shrink by 2, and apply a low pass filter at half nyquist frequency to any computed
+		average for autocentering purposes if --autocenter is provided. Default=False.""")
 
 	parser.add_argument("--input", type=str, help="""The name of the input volume stack. 
 		MUST be HDF or BDB, since volume stack support is required.""", default='')
