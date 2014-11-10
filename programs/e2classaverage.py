@@ -64,6 +64,7 @@ def main():
 	parser.add_argument("--classmx", type=str, help="The name of the classification matrix specifying how particles in 'input' should be grouped. If omitted, all particles will be averaged.", default=None)
 	parser.add_argument("--ref", type=str, help="Reference image(s). Used as an initial alignment reference and for final orientation adjustment if present. Also used to assign euler angles to the generated classes. This is typically the projections that were used for classification.", default=None)
 	parser.add_argument("--storebad", action="store_true", help="Even if a class-average fails, write to the output. Forces 1->1 numbering in output",default=False)
+	parser.add_argument("--decayedge", action="store_true", help="Applies an edge decay to zero on the output class-averages. A very good idea if you plan on 3-D reconstruction.",default=False)
 	parser.add_argument("--resultmx",type=str,help="Specify an output image to store the result matrix. This contains 5 images where row is particle number. Rows in the first image contain the class numbers and in the second image consist of 1s or 0s indicating whether or not the particle was included in the class. The corresponding rows in the third, fourth and fifth images are the refined x, y and angle (respectively) used in the final alignment, these are updated and accurate, even if the particle was excluded from the class.", default=None)
 	parser.add_argument("--iter", type=int, help="The number of iterations to perform. Default is 1.", default=1)
 	parser.add_argument("--prefilt",action="store_true",help="Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison",default=False)
@@ -185,6 +186,10 @@ def main():
 					rslt=etc.get_results(taskids[i])
 					if rslt[1]["average"]!=None:
 						rslt[1]["average"]["class_ptcl_src"]=options.input
+						if options.decayedge:
+							nx=rslt[1]["average"]["nx"]
+							rslt[1]["average"].process_inplace("mask.gaussian",{"inner_radius":nx/2-nx/15,"outer_radius":nx/20})
+
 						if options.ref!=None : rslt[1]["average"]["projection_image"]=options.ref
 						if options.storebad : rslt[1]["average"].write_image(options.output,rslt[1]["n"])
 						else: rslt[1]["average"].write_image(options.output,-1)
@@ -244,6 +249,9 @@ def main():
 
 			if rslt["average"]!=None :
 				rslt["average"]["class_ptcl_src"]=options.input
+				if options.decayedge:
+					nx=rslt["average"]["nx"]
+					rslt["average"].process_inplace("mask.gaussian",{"inner_radius":nx/2-nx/15,"outer_radius":nx/20})
 				if options.ref!=None : rslt["average"]["projection_image"]=options.ref
 				if options.storebad : rslt["average"].write_image(options.output,t.options["n"])
 				else: rslt["average"].write_image(options.output,-1)
@@ -426,14 +434,14 @@ def class_average_withali(images,ptcl_info,xform,ref,averager=("mean",{}),normpr
 		elif img.has_attr("source_n") : excl.append(img["source_n"])
 
 	avg=avgr.finish()
-	
+
 	# normalize to the reference, this should make make3dpar work better as we can skip the normalization step
-	if ref!=None : 
-		if setsfref: 
+	if ref!=None :
+		if setsfref:
 			avg.process_inplace("filter.matchto",{"to":ref,"interpolate":0,"keephires":1})
 			avg-=avg.get_edge_mean()
 		else : avg.process_inplace("normalize.toimage",{"to":ref})
-		
+
 		avg["class_qual"]=avg.cmp("ccc",ref)
 
 	# set some useful attributes
