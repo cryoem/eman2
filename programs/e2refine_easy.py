@@ -113,7 +113,7 @@ To run this program, you would normally specify only the following options:
   --threads=<ncpu>       For some algorithms, processing in parallel over the network (MPI) works poorly.
                          Running on multiple processors on a single machine may still be worthwhile. If you specify this
                          option, in specific cases it will replace your specified --parallel option. Specify
-                         the number of cores that can be used on a single machine. 
+                         the number of cores that can be used on a single machine.
 
   Optional:
   --apix=<A/pix>         The value will normally come from the particle data if present. You can override with this.
@@ -219,7 +219,7 @@ not need to specify any of the following other than the ones already listed abov
 	(options, args) = parser.parse_args()
 
 	if options.threads<=1 :
-		if options.parallel!=None and options.parallel[:6]=="thread" : 
+		if options.parallel!=None and options.parallel[:6]=="thread" :
 			options.threads=int(options.parallel[7:])
 			print "Note: automatically setting --threads:{}".format(options.threads)
 		else: print "WARNING: specifying --threads=<N> (where N is the number of cores to use on a single processor) is strongly recommended, even if already specifying --parallel"
@@ -290,7 +290,7 @@ satisfied with the results with speed=5 you may consider reducing this number as
 	append_html("<h1>e2refine_easy.py report</h1>\n")
 
 	append_html("""<h4>Note - This is a beta release version of EMAN2.1</h4> <p>This program is fully functional, but we will continue
-to add new features and refinements as we approach the final release. If you are curious to see a list of the exact refinement parameters 
+to add new features and refinements as we approach the final release. If you are curious to see a list of the exact refinement parameters
 used, browse to the 0_refine_parms.json file in the refinement directory. You can use 'Info' in the file browser or just read the file directly
 (.json files are plain text)""")
 	append_html("""<h3>Explantion of Refinement Parameters</h3>""")
@@ -311,10 +311,10 @@ used, browse to the 0_refine_parms.json file in the refinement directory. You ca
 		try:
 			if options.targetres>12 : randomres=options.targetres*1.5
 			else : randomres=options.targetres*2.0
-			
+
 			run("e2proc3d.py {model} {path}/threed_00_even.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix}".format(model=options.model,path=options.path,freq=1.0/(randomres),apix=apix))
 			run("e2proc3d.py {model} {path}/threed_00_odd.hdf --process=filter.lowpass.randomphase:cutoff_freq={freq} --apix={apix}" .format(model=options.model,path=options.path,freq=1.0/(randomres),apix=apix))
-			append_html("""<p>Randomizing the Fourier phases of <i>{model}</i> at resolutions higher than {res:1.1f} &Aring;. If the final achieved resolution is not at least ~{resb:1.1f} &Aring;, then the 
+			append_html("""<p>Randomizing the Fourier phases of <i>{model}</i> at resolutions higher than {res:1.1f} &Aring;. If the final achieved resolution is not at least ~{resb:1.1f} &Aring;, then the
 gold standard resolution assessment is not valid, and you need to re-refine, starting with a lower resolution target.</p>
 <p>Input particles are from <i>{infile}</i></p>""".format(model=options.model,infile=options.input,res=randomres,resb=randomres*0.9))
 			options.input=image_eosplit(options.input)
@@ -346,8 +346,8 @@ gold standard resolution assessment is not valid, and you need to re-refine, sta
  and the high resolution portion (generally past 14-18 A) is an empirical structure factor for proteins in general with a mix of alpha and beta components.\
  This works quite well for most proteins, however is not completely appropriate for hybrid molecules with nucleotides (like ribosomes), but will generally\
  still produce reasonable structures. Note that this is just a standard linear filter, which is not really changing the 3-D structure at all, it's really\
- just changing how that structure is portrayed.</p> 
- <p>The structure factor produced when CTF fitting is stored in <i>strucfac.txt</i> in the project directory. If you replace this file with a structure factor from 
+ just changing how that structure is portrayed.</p>
+ <p>The structure factor produced when CTF fitting is stored in <i>strucfac.txt</i> in the project directory. If you replace this file with a structure factor from
  some other source, it will be used to process all subsequent particles.</p>""")
 			postprocess=""
 			m3dsetsf="--setsf strucfac.txt"
@@ -439,7 +439,7 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 <a href=http://blake.bcm.edu/emanwiki/EMAN2/AngStep>http://blake.bcm.edu/emanwiki/EMAN2/AngStep</a></p>".format(astep))
 	else :
 		append_html("<p>Using your specified orientation generator with angular step. You may consider reading this page: <a href=http://blake.bcm.edu/emanwiki/EMAN2/AngStep>http://blake.bcm.edu/emanwiki/EMAN2/AngStep</a></p></p>")
-		try: 
+		try:
 			astep=float(parsemodopt(options.orientgen)[1]["delta"])
 			if astep*floor(90.0/astep)<89.9:
 				append_html("<p>WARNING: your specified angular step would not quite reach the equator when generating angles. For higher symmetries (icos or oct) this may not be a problem, but for lower symmetries, it is \
@@ -553,14 +553,14 @@ important to use an angular step which is 90/integer.</p>")
 
 	if options.automask3d==None : amask3d=""
 	else : amask3d="--automask3d "+options.automask3d
-	
+
 	if options.automask3d2==None : amask3d2=""
 	else : amask3d2="--automask3d2 "+options.automask3d2
 
 
 	if options.m3dpostprocess==None : m3dpostproc=""
 	else : m3dpostproc="--m3dpostprocess "+options.m3dpostprocess
-	
+
 	if options.prethreshold : prethreshold="--prethreshold"
 	else : prethreshold=""
 
@@ -573,31 +573,31 @@ important to use an angular step which is 90/integer.</p>")
 	print "NOTE: you can check the progress of the refinement at any time by opening this URL in your web-browser:  file://{}/index.html".format(os.path.abspath(output_path))
 
 	append_html("""<h3>Analysis of Refinement Results</h3>""")
-	
+
 	append_html("""<h4>Convergence Analysis</h4> <p>The plot below shows the FSC computed between iterations for both even and
 odd particle subsets. It is not a measure of resolution, but is a measure of how much the individual even/odd maps are changing
 from one iteration to the next. In a perfect world, this plot would eventually be 1.0 indicating no change from one iteration
 to the next after the refinement converges. In reality we normally expect only a pseudoconvergence, where the curves approach a
 final shape but do not actually become 1.0. This plot is automatically updated after each iteration.</p><br><a href=converge.pdf><img src=converge.png></a><br>""")
-	
+
 	append_html("""<h4>Gold Standard Resolution</h4> <p>e2refine_easy computes a true gold-standard resolution as part of its stanard
 processing. This curve is also used as a basis for filtering the maps. Resolution can be gagued as the point at which this curve falls
-below a value of 0.143. Note that when computing FSCs in other situations, for example, when comparing the final map produced with 
+below a value of 0.143. Note that when computing FSCs in other situations, for example, when comparing the final map produced with
 all of the particle data to a higher resolution crystal structure, the more stringent 0.5 (actually 0.4) criterion must be used. Don't
 overinterpret these plots. The FSC plots themselves contain some noise, so there is some uncertainty in any resolution value.</p>
 <p>Also note that these curves are highly dependent on the mask used prior to FSC computation. See the next plot for more information
 on this. This iteration comparison plot uses a relatively tight mask designed to be somewhat comparable to that used in Relion.</p>
 <p>These resolution curves should start at ~1 at low resolution, fall smoothly to ~0, then remain at roughly zero. The vertical range
-of an FSC plot is -1 to 1. Some negative oscillations after reaching zero are normal. If the FSC curve falls towards zero, but then 
+of an FSC plot is -1 to 1. Some negative oscillations after reaching zero are normal. If the FSC curve falls towards zero, but then
 rises again at high resolution this is an indication of an artifact, and the resolution values may not be trustworthy. Possible sources
 include, but are not limited to: mask too tight, box size too small, reconstruction artifacts, ...  If you observe an "unhealthy" FSC
 curve here, please check the next plot, and see if the curve with a looser mask appears "healthier".</p>
 <br><a href=resolution.pdf><img src=resolution.png></a><br>""")
 
-	append_html("""<h4>Mask Comparison</h4> <p>As mentioned in the previous section, masking can have a significant impact on cited 
-resolution. For a while users who followed Relion's suggested procedure would find resolution values slightly better than those 
-produced by EMAN. This was due to Relion's use of a very tight mask, often extending into the core of the structure.  EMAN2.1 now 
-generates 3 FSC curves automatically: 1) completely unmasked, 2) a loose, "conservative" mask and 3) a tighter mask which should be 
+	append_html("""<h4>Mask Comparison</h4> <p>As mentioned in the previous section, masking can have a significant impact on cited
+resolution. For a while users who followed Relion's suggested procedure would find resolution values slightly better than those
+produced by EMAN. This was due to Relion's use of a very tight mask, often extending into the core of the structure.  EMAN2.1 now
+generates 3 FSC curves automatically: 1) completely unmasked, 2) a loose, "conservative" mask and 3) a tighter mask which should be
 somewhat similar to Relion 1.3 using its suggested parameters (though EMAN may remain slightly more conservative). The plot below
 compares these three FSC curves for the last completed iteration. The relevant mask files are also stored in the refinement folder as
 mask.hdf and mask_tight.hdf. Note: if visualizing 3-D masks, it is generally a good idea to display as 2-D slices (single image view in
@@ -610,7 +610,7 @@ browser) rather than using isosurfaces, so any internal features of the mask can
 	yticklbl=("0"," ","0.143","0.25"," ","0.5"," ","0.75"," ","1.0")
 	yticklocs2=(0.0,.125,.25,.375,.5,.625,.75,.875,1.0)
 	yticklbl2=("0"," ","0.25"," ","0.5"," ","0.75"," ","1.0")
-	
+
 	try: initclassiter=classiter
 	except: classiter=options.classiter
 	### Actual refinement loop ###
@@ -682,14 +682,14 @@ browser) rather than using isosurfaces, so any internal features of the mask can
 
 		### Class-averaging
 		append_html("<p>* Iteratively align and average all of the particles within each class, discarding the worst fraction</p>",True)
-		cmd="e2classaverage.py --input {inputfile} --classmx {path}/classmx_{itr:02d}_even.hdf --storebad --output {path}/classes_{itr:02d}_even.hdf --ref {path}/projections_{itr:02d}_even.hdf --iter {classiter} \
+		cmd="e2classaverage.py --input {inputfile} --classmx {path}/classmx_{itr:02d}_even.hdf --decayedge --storebad --output {path}/classes_{itr:02d}_even.hdf --ref {path}/projections_{itr:02d}_even.hdf --iter {classiter} \
 -f --resultmx {path}/cls_result_{itr:02d}_even.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
 --align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} {verbose} {parallel}".format(
 			inputfile=options.input[0], path=options.path, itr=it, classiter=classiter, normproc=options.classnormproc, averager=options.classaverager, classrefsf=classrefsf,
 			classautomask=classautomask,classkeep=options.classkeep, classkeepsig=classkeepsig, classcmp=options.classcmp, classalign=options.classalign, classaligncmp=options.classaligncmp,
 			classralign=classralign, prefilt=prefilt, verbose=verbose, parallel=parallel)
 		run(cmd)
-		cmd="e2classaverage.py --input {inputfile} --classmx {path}/classmx_{itr:02d}_odd.hdf --storebad --output {path}/classes_{itr:02d}_odd.hdf --ref {path}/projections_{itr:02d}_odd.hdf --iter {classiter} \
+		cmd="e2classaverage.py --input {inputfile} --classmx {path}/classmx_{itr:02d}_odd.hdf --decayedge --storebad --output {path}/classes_{itr:02d}_odd.hdf --ref {path}/projections_{itr:02d}_odd.hdf --iter {classiter} \
 -f --resultmx {path}/cls_result_{itr:02d}_odd.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
 --align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} {verbose} {parallel}".format(
 			inputfile=options.input[1], path=options.path, itr=it, classiter=classiter, normproc=options.classnormproc, averager=options.classaverager, classrefsf=classrefsf,
@@ -704,7 +704,7 @@ browser) rather than using isosurfaces, so any internal features of the mask can
 		if options.breaksym : m3dsym="c1"
 		else : m3dsym=options.sym
 		append_html("<p>* Using the known orientations, reconstruct the even/odd 3-D maps from the even/odd 2-D class-averages.</p>",True)
-		if not options.m3dold : 
+		if not options.m3dold :
 			cmd="e2make3dpar.py --input {path}/classes_{itr:02d}_even.hdf --sym {sym} --output {path}/threed_{itr:02d}_even.hdf {preprocess} \
  --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --fillangle {fillangle} --threads {threads} {setsf} {verbose}".format(
 			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=m3dpreprocess,  m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
@@ -716,7 +716,7 @@ browser) rather than using isosurfaces, so any internal features of the mask can
 			m3dpad=options.pad, setsf=m3dsetsf, apix=apix, verbose=verbose)
 		run(cmd)
 
-		if not options.m3dold : 
+		if not options.m3dold :
 			cmd="e2make3dpar.py --input {path}/classes_{itr:02d}_odd.hdf --sym {sym} --output {path}/threed_{itr:02d}_odd.hdf {preprocess} \
  --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --fillangle {fillangle} --threads {threads} {setsf} {verbose}".format(
 			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=m3dpreprocess, m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
@@ -743,7 +743,7 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
 
 		##################################################################
 		### Generating FSC plots and other output for the report files ###
-		
+
 		### Convergenece plot
 		if it>0:
 			cmd="e2proc3d.py {path}/threed_{itr:02d}_even.hdf {path}/converge_even_{itrm1:02d}_{itr:02d}.txt --calcfsc {path}/threed_{itrm1:02d}_even.hdf".format(path=options.path,itr=it,itrm1=it-1)
@@ -775,11 +775,11 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
 			try: plt.savefig("{}/report/converge.pdf".format(options.path))
 			except: pass
 			plt.clf()
-			
+
 		except:
 			traceback.print_exc()
 			append_html("<p>Error generating convergence plot in report. Please look at fsc* files in the refine_xx folder</p>")
-		
+
 		######################
 		### Resolution plot
 		### broken up into multiple try/except blocks because we need some of the info, even if plotting fails
@@ -789,24 +789,24 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
 			plt.ylabel("FSC")
 		except:
 			pass
-		
+
 		fscs=[i for i in os.listdir(options.path) if "fsc_maskedtight" in i and i[-4:]==".txt"]
 		fscs.sort(reverse=True)
 		nummx=int(fscs[0].split("_")[2][:2])
 		maxx=0.01
-		
+
 		# iterate over fsc curves
 		for f in fscs:
 			num=int(f.split("_")[2][:2])
-			
+
 			# read the fsc curve
 			d=np.loadtxt("{}/{}".format(options.path,f)).transpose()
-			
+
 			# plot the curve
 			try: plt.plot(d[0],d[1],label=f[4:],color=pltcolors[(nummx-num)%12])
 			except: pass
 			maxx=max(maxx,max(d[0]))
-		
+
 			# find the resolution from the first curve (the highest numbered one)
 			if f==fscs[0]:
 				lastnum=num
@@ -821,7 +821,7 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
 						except: pass
 						break
 				else : lastres=0
-			
+
 		try:
 			plt.axhline(0.0,color="k")
 			plt.axhline(0.143,color="#306030",linestyle=":")
@@ -839,11 +839,11 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
 			traceback.print_exc()
 			append_html("<p>Error generating resolution plot in report. Please look at fsc* files in the refine_xx folder</p>")
 
-		if lastres==0 : 
+		if lastres==0 :
 			append_html("<p>No valid resolution found for iteration {}".format(it))
 		else:
 			append_html("<p>Iteration {}: Resolution = {:1.1f} &Aring; (gold standard refinement with tight mask, FSC @0.143)</p>".format(it,1.0/lastres))
-			
+
 		######################
 		### Resolution plot 2
 		### broken up into multiple try/except blocks because we need some of the info, even if plotting fails
@@ -853,24 +853,24 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
 			plt.ylabel("FSC")
 		except:
 			pass
-		
+
 		fscs=["fsc_maskedtight_{:02d}.txt".format(lastnum),"fsc_masked_{:02d}.txt".format(lastnum),"fsc_unmasked_{:02d}.txt".format(lastnum)]
 		nummx=int(fscs[0].split("_")[2][:2])
 		maxx=0.01
 		lastres=[]
-		
+
 		# iterate over fsc curves
 		for i,f in enumerate(fscs):
 			num=int(f.split("_")[2][:2])
-			
+
 			# read the fsc curve
 			d=np.loadtxt("{}/{}".format(options.path,f)).transpose()
-			
+
 			# plot the curve
 			try: plt.plot(d[0],d[1],label=f[4:],color=pltcolors[i])
 			except: pass
 			maxx=max(maxx,max(d[0]))
-		
+
 			# find the resolutions
 			# find the 0.143 crossing
 			for si in xrange(2,len(d[0])-2):
@@ -882,7 +882,7 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
 							xytext=((lastres[-1]*4+d[0][-1])/5.0,0.2),arrowprops={"width":1,"frac":.1,"headwidth":7,"shrink":.05})
 					except: pass
 					break
-			
+
 		try:
 			plt.axhline(0.0,color="k")
 			plt.axhline(0.143,color="#306030",linestyle=":")
@@ -900,7 +900,7 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
 			traceback.print_exc()
 			append_html("<p>Error generating resolution plot in report. Please look at fsc* files in the refine_xx folder</p>")
 
-		if len(lastres)==0 : 
+		if len(lastres)==0 :
 			append_html("<p>No valid resolution found for iteration {}".format(it))
 		else:
 			try :append_html("<p>Iteration {}: Resolution with different masks = {:1.1f}, {:1.1f}, {:1.1f} &Aring;</p>".format(it,1.0/lastres[0],1.0/lastres[1],1.0/lastres[2]))
@@ -914,22 +914,22 @@ You may consider consulting the EMAN2 mailing list if you cannot figure out what
 	else:
 		try:
 			if 1.0/lastres>randomres*.9 :
-				append_html("""<p>Unfortunately your final determined resolution of {:1.1f} &Aring; is not sufficiently better than the 
+				append_html("""<p>Unfortunately your final determined resolution of {:1.1f} &Aring; is not sufficiently better than the
 phase randomization resolution of {:1.1f} &Aring; for the 'gold standard' resolution method to be valid. Please do not trust this result.
 You must rerun the refinement with a more conservative initial target resolution (suggest ~{:1.1f}).</p>""".format(1.0/lastres,randomres,1.0/lastres*0.9))
 			else:
-				append_html("""<p>Congratulations, your refinement is complete, and you have a gold standard resolution of {:1.1f} &Aring;. 
+				append_html("""<p>Congratulations, your refinement is complete, and you have a gold standard resolution of {:1.1f} &Aring;.
 Note that there is always some variability in these determined values based on masking of the map. If the map is masked too tightly,
 the FSC curve will not remain near zero at high resolution and will rise again. If you see an FSC curve that falls to zero then rises again,
 it is an indication that something may have gone wrong with the masking. In general, EMAN2.1 is very conservative in its masking to try and
-avoid these problems. This means that the resolution may be as much as 10% better with somewhat tighter masking, without getting into 
+avoid these problems. This means that the resolution may be as much as 10% better with somewhat tighter masking, without getting into
 artifact territory. </p>
 
 <p>If you wish to continue this refinement to further improve resolution, the most efficient approach is to use the --startfrom {} option
 rather than specifying --input and --model. When you use --startfrom, it will not re-randomize the phases. Since you have already achieved
 sufficient resolution to validate the gold-standard approach, continuing to extend this resolution is valid, and more efficient.""".format(1.0/lastres,options.path))
 		except:
-			append_html("""<p>Congratulations, your refinement is complete, and you have a gold standard resolution of {:1.1f} &Aring (or {:1.1f} &Aring with a more conservative mask);. 
+			append_html("""<p>Congratulations, your refinement is complete, and you have a gold standard resolution of {:1.1f} &Aring (or {:1.1f} &Aring with a more conservative mask);.
 Since this refinement continued from an existing refinement, it is impossible to tell if the gold-standard criteria have been met, but
 if they were met in the refinement this run continued, then your resolution should still be valid.""".format(1.0/lastres[0],1.0/lastres[1],options.path))
 
@@ -939,7 +939,7 @@ if they were met in the refinement this run continued, then your resolution shou
 two files should match extremely well, other than more noise being present in the class-averages.</li>
 <li>Run <i>e2eulerxplor.py</i> to look at the distribution of particle orientations and interactively compare projections to
 class-averages. Click on a specific peak to see the projection and corresponding filtered class-average for any specific orientation.</li>
-<li>If you wish to make a single stack where you can look at all projections/averages side-by-side: 
+<li>If you wish to make a single stack where you can look at all projections/averages side-by-side:
 <br><i>e2proc2d.py {path}/classes_{iter:02d}.hdf clsvsproj.hdf --interlv {path}/projections_{iter:02d}.hdf</i></li>
 <li>It may also be worthwhile to compare {path}/threed_{iter:02d}_even.hdf to {path}/threed_{iter:02d}_odd.hdf to observe
 the differences responsible for the assessed resolution.</li>
@@ -950,7 +950,7 @@ For the final completed iteration, the unmasked even and odd volumes are also re
 
 
 	E2end(logid)
-	
+
 	print """
 ***********************************************************{stars}
 * REFINEMENT COMPLETE - Please look at {path}/report/index.html *

@@ -90,7 +90,7 @@ To run this program, you would normally specify only the following options:
                          to ~12, only after that try for high (3-8 A). Data permitting, of course. Low resolution
                          attempts will run MUCH faster due to more efficient parameters.
   --speed=<1-7>          Default=5. Larger values will run faster, with a coarser angular step. Smaller values will
-                         sample the angular step more finely than strictly required and increase sep=. Usually a 
+                         sample the angular step more finely than strictly required and increase sep=. Usually a
                          larger value here combined with a smaller value in the subsequent single-model refinements
                          will produce good results.
   --sym=<symmetry>       Symmetry to enforce during refinement (Cn, Dn, icos, oct, cub).
@@ -105,7 +105,7 @@ To run this program, you would normally specify only the following options:
   --threads=<ncpu>       For some algorithms, processing in parallel over the network (MPI) works poorly.
                          Running on multiple processors on a single machine may still be worthwhile. If you specify this
                          option, in specific cases it will replace your specified --parallel option. Specify
-                         the number of cores that can be used on a single machine. 
+                         the number of cores that can be used on a single machine.
 
   Optional:
   --apix=<A/pix>         The value will normally come from the particle data if present. You can override with this.
@@ -404,7 +404,7 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 	else :
 		append_html("<p>Using your specified orientation generator with angular step. You may consider reading this page: <a href=http://blake.bcm.edu/emanwiki/EMAN2/AngStep>http://blake.bcm.edu/emanwiki/EMAN2/AngStep</a></p></p>")
 		if options.classiter<0 : options.classiter=1
-		
+
 	if options.breaksym : options.orientgen=options.orientgen+":breaksym=1"
 
 	if options.simaligncmp==None : options.simaligncmp="ccc"
@@ -454,7 +454,7 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 
 	# deal with symmetry and alignment
 	sym=options.sym.split(",")
-	if len(sym)==1 or len(set(sym))==1: 
+	if len(sym)==1 or len(set(sym))==1:
 		if len(sym)==1 : sym=sym*options.nmodels
 		if sym[0].lower() in ("icos","tet","oct") or sym[0][0].lower()=="d" : align="" 	# no alignment with higher symmetries
 		elif sym[0][0].lower()=="c" and sym[0][1]!="1" : align=align=" --ralignz={path}/tmp0.hdf".format(path=options.path)		# z alignment only
@@ -560,7 +560,7 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 		E2progress(logid,progress/total_procs)
 
 		### Class-averaging
-		cmd="e2classaverage.py --input {inputfile} --classmx {path}/classmx_{itr:02d}.hdf --storebad --output {path}/classes_{itr:02d}.hdf --ref {path}/projections_{itr:02d}.hdf --iter {classiter} \
+		cmd="e2classaverage.py --input {inputfile} --classmx {path}/classmx_{itr:02d}.hdf --decayedge --storebad --output {path}/classes_{itr:02d}.hdf --ref {path}/projections_{itr:02d}.hdf --iter {classiter} \
 -f --resultmx {path}/cls_result_{itr:02d}.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
 --align {classalign} --aligncmp {classaligncmp} {classralign} {prefilt} {verbose} {parallel}".format(
 			inputfile=options.input, path=options.path, itr=it, classiter=options.classiter, normproc=options.classnormproc, averager=options.classaverager, classrefsf=classrefsf,
@@ -572,11 +572,11 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 
 		### 3-D Reconstruction
 		# FIXME - --lowmem removed due to some tricky bug in e2make3d
-		
+
 		for mdl in xrange(options.nmodels):
 			if options.breaksym : m3dsym="c1"
 			else : m3dsym=sym[mdl]
-			
+
 			cmd="e2make3d.py --input {path}/classes_{itr:02d}.hdf --iter 2 -f --sym {sym} --output {path}/threed_{itr:02d}_{mdl:02d}.hdf --recon {recon} --preprocess {preprocess} \
 {postprocess} --keep={m3dkeep} {keepsig} --apix={apix} --pad={m3dpad} {setsf} {verbose} --input_model {mdl}".format(
 				path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=options.m3dpreprocess, postprocess=postprocess, m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
@@ -587,7 +587,7 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 
 		#######################
 		### postprocessing, a bit different than e2refine_postprocess, and we need a lot of info, so we do it in-place
-		
+
 		# alignment
 
 		run("e2proc3d.py {path}/threed_{itr:02d}_{mdl:02d}.hdf {path}/tmp0.hdf --process=filter.lowpass.gauss:cutoff_freq=.05".format(path=options.path,itr=it,mdl=1))
@@ -597,7 +597,7 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 			map2="{path}/threed_{itr:02d}_{mdl:02d}.hdf".format(path=options.path,itr=it,mdl=mdl+1)
 			run("e2proc3d.py {map2} {path}/tmp1.hdf --process=filter.lowpass.gauss:cutoff_freq=.05 {align}".format(path=options.path,map2=map2,align=align))
 			run("e2proc3d.py {map2} {path}/tmp1f.hdf --process=filter.lowpass.gauss:cutoff_freq=.05 --process=xform.flip:axis=z {align}".format(path=options.path,map2=map2,align=align))
-			
+
 			# now we have to check which of the two handednesses produced the better alignment
 			# Pick the best handedness
 			a=EMData("{path}/tmp1.hdf".format(path=options.path),0)
@@ -623,7 +623,7 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 				os.unlink("{path}/tmp1.hdf".format(path=options.path))
 				os.unlink("{path}/tmp1f.hdf".format(path=options.path))
 			except : pass
-			
+
 			# now compute FSC
 			f=o0.calc_fourier_shell_correlation(o)
 			if mdl==1 : fm=array(f)
@@ -636,14 +636,14 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 		fsc = fm[third:2*third]
 		saxis = [x/apix for x in xaxis]
 		Util.save_data(float(saxis[1]),float(saxis[1]-saxis[0]),list(fsc[1:]),"{path}/fsc_mutual_avg_{it:02d}.txt".format(path=options.path,it=it))
-		
+
 		models=["threed_{itr:02d}_{mdl:02d}.hdf".format(itr=it,mdl=mdl+1) for mdl in xrange(options.nmodels)]
-		
+
 		# we filter the maps, to a resolution ~20% higher than the inter-map FSC, so we don't hide the relative differences
 		for ii,m in enumerate(models):
 			run("e2proc3d.py {path}/{mod} {path}/{mod} {m3dsetsf} --process filter.wiener.byfsc:fscfile={path}/fsc_mutual_avg_{it:02d}.txt:sscale=1.2 --process normalize.bymass:thr=1:mass={mass}".format(
 	m3dsetsf=m3dsetsf,mod=m,path=options.path,it=it,mass=options.mass[ii]))
-		
+
 		try : os.unlink("{path}/tmp0.hdf".format(path=options.path))
 		except: pass
 
@@ -656,7 +656,7 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 		setname="{}_mul{}_it{:02d}".format(options.input[:-4],options.path[-2:],it)
 	else :
 		setname="sets/{}_mul{}_it{:02d}".format(options.input.split("/")[-1].replace(".","-"),options.path[-2:],it)
-		
+
 	# Now we split the data into sets for individual model refinements
 	run("e2classextract.py {path}/classes_{itr:02d}.hdf --refinemulti --sort --verbose=1 --setname={set}".format(path=options.path,itr=it,set=setname))
 
