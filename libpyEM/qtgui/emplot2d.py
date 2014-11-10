@@ -214,12 +214,6 @@ class EMPlot2DWidget(EMGLWidget):
 			data = input_data.get_data_as_vector()
 		else: data = input_data
 
-		try:
-			if len(data)>1 : self.axes[key]=(0,1,-2,-2)
-			else : self.axes[key]=(-1,0,-2,-2)
-		except: return
-
-
 		if not isinstance(data[0],list) and not isinstance(data[0],tuple) and not isinstance(data[0],ndarray):
 			x_axis = arange(len(data))
 			rdata = [ x_axis,array(data) ]
@@ -234,8 +228,16 @@ class EMPlot2DWidget(EMGLWidget):
 				self.data.pop(key)
 				self.visibility.pop(key)
 
+		try:
+			if len(data)>1 :
+				if len(data)>2:
+					if data[0][2]-data[0][1]==1 : self.axes[key]=(1,2,-2,-2)	# if it looks like the first axis is a boring count
+				else : self.axes[key]=(0,1,-2,-2)
+			else : self.axes[key]=(-1,0,-2,-2)
+		except: return
+
 		if symtype==-2 and linetype==-2:
-			if (diff(self.data[key][0])>=0).all() : doline,linetype=1,0
+			if len(data)<3 and (diff(self.data[key][0])>=0).all() : doline,linetype=1,0
 			else : dosym,symtype=1,0
 		if color<0 : color=len(self.data)%len(colortypes)			# Automatic color setting
 		if color >len(colortypes): color = 0 # there are only a certain number of colors

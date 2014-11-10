@@ -67,12 +67,12 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 
 	usage = """prog [options] <input stack/image> ...
-Various CTF-related operations on images, including automatic fitting.Input particles should be unmasked and unfiltered. A 
-minimum of ~20 percent padding around the particles is required for background extraction, even if this brings the edge 
-of another particle into the box in some cases. Particles should be reasonably well centered. Can also optionally phase 
+Various CTF-related operations on images, including automatic fitting.Input particles should be unmasked and unfiltered. A
+minimum of ~20 percent padding around the particles is required for background extraction, even if this brings the edge
+of another particle into the box in some cases. Particles should be reasonably well centered. Can also optionally phase
 flip and Wiener filter particles. Wiener filtration comes after phase-flipping, so if phase flipping is performed Wiener
-filtered particles will also be phase-flipped. Note that both operations are performed on oversampled images if specified, 
-but this will produce phase-flipped images which are irreversable, so, while oversampling can be useful for fitting, it 
+filtered particles will also be phase-flipped. Note that both operations are performed on oversampled images if specified,
+but this will produce phase-flipped images which are irreversable, so, while oversampling can be useful for fitting, it
 is not recommended for phase-flipping.
 
 Increasing padding during the particle picking process will improve the accuracy of phase-flipping, particularly for
@@ -95,10 +95,11 @@ NOTE: This program should be run from the project directory, not from within the
 	parser.add_argument("--gui",action="store_true",help="Start the GUI for interactive fitting",default=False, guitype='boolbox', row=3, col=0, rowspan=1, colspan=1, mode="tuning[True]")
 	parser.add_argument("--autofit",action="store_true",help="Runs automated CTF fitting on the input images",default=False, guitype='boolbox', row=8, col=0, rowspan=1, colspan=1, mode='autofit[True]')
 	parser.add_argument("--wholeimage",action="store_true",help="Display an additional curve using the whole micrograph, not just particles.",default=False,guitype='boolbox',row=8,col=2, mode='autofit')
+	parser.add_argument("--highdensity",action="store_true",help="If particles are very close together, this will interfere with SSNR estimation. If set uses an alternative strategy, but may over-estimate SSNR.",default=False, guitype='boolbox', row=9, col=2, rowspan=1, colspan=1, mode='autofit[False]')
 	parser.add_argument("--zerook",action="store_true",help="Normally particles with zero value on the edge are considered to be bad. This overrides that behavior, primarily for simulated data.",default=False)
 	parser.add_argument("--astigmatism",action="store_true",help="Includes astigmatism in automatic fitting",default=False, guitype='boolbox', row=8, col=1, rowspan=1, colspan=1, mode='autofit[False]')
-	parser.add_argument("--curdefocushint",action="store_true",help="Rather than doing the defocus from scratch, use existing values in the project as a starting point",default=False, guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, mode='autofit[True]')
-	parser.add_argument("--curdefocusfix",action="store_true",help="Fixes the defocus at the current determined value (if any) (+-.001um)",default=False)
+	parser.add_argument("--curdefocushint",action="store_true",help="Rather than doing the defocus from scratch, use existing values in the project as a starting point",default=False, guitype='boolbox', row=9, col=0, rowspan=1, colspan=1, mode='autofit[True]')
+	parser.add_argument("--curdefocusfix",action="store_true",help="Fixes the defocus at the current determined value (if any) (+-.001 um), but recomputes SSNR, etc.",default=False, guitype='boolbox', row=9, col=1, rowspan=1, colspan=1, mode='autofit[False]')
 	parser.add_argument("--bgmask",type=int,help="Background is computed using a soft mask of the center/edge of each particle with the specified radius. Default radius is boxsize/2.6.",default=0)
 	parser.add_argument("--fixnegbg",action="store_true",help="Will perform a final background correction to avoid slight negative values near zeroes")
 	parser.add_argument("--computesf",action="store_true",help="Will determine the structure factor*envelope for the aggregate set of images", default=False, nosharedb=True, guitype='boolbox', row=9, col=0, rowspan=1, colspan=1, mode="gensf[True]")
@@ -108,7 +109,7 @@ NOTE: This program should be run from the project directory, not from within the
 	parser.add_argument("--ac",type=float,help="Amplitude contrast (percentage, default=10)",default=10, guitype='floatbox', row=5, col=1, rowspan=1, colspan=1, mode='autofit')
 	parser.add_argument("--defocusmin",type=float,help="Minimum autofit defocus",default=0.6, guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode="autofit[0.6]")
 	parser.add_argument("--defocusmax",type=float,help="Maximum autofit defocus",default=4, guitype='floatbox', row=6, col=1, rowspan=1, colspan=1, mode='autofit[4.0]')
-	parser.add_argument("--constbfactor",type=float,help="Set B-factor to fixed specified value, negative value autofits",default=-1.0, guitype='floatbox', row=9, col=0, rowspan=1, colspan=1, mode='autofit[-1.0],tuning[-1.0],genoutp[-1.0]')
+	parser.add_argument("--constbfactor",type=float,help="Set B-factor to fixed specified value, negative value autofits",default=-1.0, guitype='floatbox', row=12, col=0, rowspan=1, colspan=1, mode='autofit[-1.0],tuning[-1.0],genoutp[-1.0]')
 	parser.add_argument("--autohp",action="store_true",help="Automatic high pass filter of the SNR only to remove initial sharp peak, phase-flipped data is not directly affected (default false)",default=False, guitype='boolbox', row=7, col=0, rowspan=1, colspan=1, mode='autofit[True]')
 	parser.add_argument("--invert",action="store_true",help="Invert the contrast of the particles in output files (default false)",default=False, guitype='boolbox', row=5, col=1, rowspan=1, colspan=1, mode='genoutp')
 	parser.add_argument("--nonorm",action="store_true",help="Suppress per image real-space normalization",default=False)
@@ -124,9 +125,9 @@ NOTE: This program should be run from the project directory, not from within the
 	parser.add_argument("--storeparm",action="store_true",help="Output files will include CTF info. CTF parameters are used from the database, rather than values that may be present in the input image header. Critical to use this when generating output !",default=False,guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode='genoutp[True]')
 	parser.add_argument("--oversamp",type=int,help="Oversampling factor",default=1, guitype='intbox', row=3, col=0, rowspan=1, colspan=2, mode='autofit')
 	parser.add_argument("--classify",type=int,help="Highly experimental ! Subclassify particles (hopefully by defocus) into n groups.",default=0)
-	parser.add_argument("--sf",type=str,help="The name of a file containing a structure factor curve. Specify 'none' to use the built in generic structure factor. Default=auto",default="auto",guitype='strbox',nosharedb=True,returnNone=True,row=9,col=1,rowspan=1,colspan=1, mode='autofit,tuning')
+	parser.add_argument("--sf",type=str,help="The name of a file containing a structure factor curve. Specify 'none' to use the built in generic structure factor. Default=auto",default="auto",guitype='strbox',nosharedb=True,returnNone=True,row=12,col=1,rowspan=1,colspan=1, mode='autofit,tuning')
 	parser.add_argument("--parallel", default=None, help="parallelism argument. This program supports only thread:<n>")
-	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful",guitype='intbox', row=9, col=2, rowspan=1, colspan=1, mode='autofit[1]')
+	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful",guitype='intbox', row=12, col=2, rowspan=1, colspan=1, mode='autofit[1]')
 	parser.add_argument("--debug",action="store_true",default=False)
 	parser.add_argument("--dbds",type=str,default=None,help="Obsolete option for old e2workflow. Present only to provide warning messages.")
 	parser.add_argument("--source_image",type=str,default=None,help="Filters particles only with matching ptcl_source_image parameters in the header")
@@ -231,11 +232,11 @@ NOTE: This program should be run from the project directory, not from within the
 
 			if options.constbfactor>0:
 				for i in img_sets: i[1].bfactor=options.constbfactor
-		
+
 	### GUI - user can update CTF parameters interactively
 	if options.gui :
 		if img_sets==None : img_sets = get_gui_arg_img_sets(options.filenames)
-		
+
 		if options.constbfactor>0:
 			for i in img_sets: i[1].bfactor=options.constbfactor
 
@@ -376,10 +377,10 @@ def write_e2ctf_output(options):
 			phaseprocout=None
 			if options.phaseflipproc!=None:
 				phaseprocout=["particles/{}__ctf_flip_proc.hdf".format(name),parsemodopt(options.phaseflipproc)]
-				
+
 				if options.phaseflipproc2!=None:
 					phaseprocout.append(parsemodopt(options.phaseflipproc2))
-					
+
 				if options.phaseflipproc3!=None:
 					phaseprocout.append(parsemodopt(options.phaseflipproc3))
 
@@ -515,18 +516,18 @@ def pspec_and_ctf_fit(options,debug=False):
 		if options.verbose or debug : print "Processing ",filename
 		apix=options.apix
 		if apix<=0 : apix=EMData(filename,0,1)["apix_x"]
-		
+
 		# After this, PS contains a list of (im_1d,bg_1d,im_2d,bg_2d,bg_1d_low) tuples. If classify is <2 then this list will have only 1 tuple in it
 		if options.classify>1 : ps=split_powspec_with_bg(filename,options.source_image,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp,apix=apix,nclasses=options.classify,zero_ok=options.zerook)
-		else: ps=list((powspec_with_bg(filename,options.source_image,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp,apix=apix,zero_ok=options.zerook,wholeimage=options.wholeimage),))
+		else: ps=list((powspec_with_bg(filename,options.source_image,radius=options.bgmask,edgenorm=not options.nonorm,oversamp=options.oversamp,apix=apix,zero_ok=options.zerook,wholeimage=options.wholeimage,highdensity=options.highdensity),))
 		# im_1d,bg_1d,im_2d,bg_2d,bg_1d_low,micro_1d/none
-		if ps==None : 
+		if ps==None :
 			print "Error fitting CTF on ",filename
 			continue
 		ds=1.0/(apix*ps[0][2].get_ysize())
 		for j,p in enumerate(ps):
 			try: im_1d,bg_1d,im_2d,bg_2d,bg_1d_low,micro_1d=p
-			except: 
+			except:
 				im_1d,bg_1d,im_2d,bg_2d,bg_1d_low=p
 				micro_1d=None
 			if not options.nosmooth : bg_1d=smooth_bg(bg_1d,ds)
@@ -559,7 +560,7 @@ def pspec_and_ctf_fit(options,debug=False):
 						dfhint=None
 						print "No existing defocus to start with"
 			else: dfhint=(options.defocusmin,options.defocusmax)
-			ctf=ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,options.voltage,options.cs,options.ac,apix,bgadj=not options.nosmooth,autohp=options.autohp,dfhint=dfhint,verbose=options.verbose)
+			ctf=ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,options.voltage,options.cs,options.ac,apix,bgadj=not options.nosmooth,autohp=options.autohp,dfhint=dfhint,highdensity=options.highdensity,verbose=options.verbose)
 			if options.astigmatism and not options.curdefocusfix : ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1)
 			elif options.astigmatism:
 				ctf.dfdiff=curdfdiff
@@ -740,7 +741,7 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,phaseproc=No
 #		print hpfilt[:c+4]
 
 	js_parms.close()
-	
+
 	for i in range(n):
 		if source_image!=None :
 			im1=EMData()
@@ -835,7 +836,7 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,phaseproc=No
 				#process_inplace("filter.highpass.autopeak")
 				out.write_image(phasehp,i)
 
-				
+
 
 		if wiener :
 			if not lctf or not lctf.equal(ctf):
@@ -916,13 +917,15 @@ def powspec(stackfile,source_image=None,mask=None,edgenorm=True):
 	return av
 
 masks={}		# mask cache for background/foreground masking
-def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=1,apix=2,ptclns=None,zero_ok=False,wholeimage=False):
+def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=1,apix=2,ptclns=None,zero_ok=False,wholeimage=False,highdensity=False):
 	"""This routine will read the images from the specified file, optionally edgenormalize,
 	then apply a gaussian mask with the specified radius then compute the average 2-D power
 	spectrum for the stack. It will also compute the average 2-D power spectrum using 1-mask + edge
 	apotization to get an appoximate 'background' power spectrum. 2-D results returned as a 2-D FFT
 	intensity/0 image. 1-D results returned as a list of floats. If source_image is provided, then it
 	will only read particles with ptcl_source_image set to the specified value.
+
+	At present, highdensity does nothing here, that is implemented in ctf_fit
 
 	returns a 5-tuple with spectra for (1d particle,1d background,2d particle,2d background,1d background non-convex,1d foreground from wholeimage or None)
 	"""
@@ -951,7 +954,7 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 		mask2.process_inplace("mask.decayedge2d",{"width":4})
 		mask1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
 		mask2.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
-		
+
 		# ratio1,2 give us info about how much of the image the mask covers for normalization purposes
 		ratio1=mask1.get_attr("square_sum")/(ys*ys)	#/1.035
 		ratio2=mask2.get_attr("square_sum")/(ys*ys)
@@ -971,9 +974,9 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 				continue
 
 		im1.read_image(stackfile,i)
-		
+
 		# Images with flat edges due to boxing too close to the edge can adversely impact the power spectrum
-		if not zero_ok : 
+		if not zero_ok :
 			im1.process_inplace("mask.zeroedgefill",{"nonzero":1})		# This tries to deal with particles that were boxed off the edge of the micrograph
 			if im1.has_attr("hadzeroedge") and im1["hadzeroedge"]!=0:
 				print "Skipped particle with bad edge ({}:{})".format(stackfile,i)
@@ -1038,7 +1041,7 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 		except:
 			print "Error: --wholeimage specified, but could not find ","micrographs/{}.hdf".format(base_name(stackfile))
 			sys.exit(1)
-		
+
 		bs=av1["ny"]
 		av3=av1.copy()
 		av3.to_zero()
@@ -1060,7 +1063,7 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 		av3.set_complex(1)
 		av3["is_intensity"]=1
 		av3_1d=av3.calc_radial_dist(av3["ny"]/2,0.0,1.0,1)
-		
+
 
 	# added to make the 2D display look better. Should have no other impact at the time
 	# it's being added, though autofitting may rely on it in future, so it shouldn't be removed --steve (8/3/11)
@@ -1078,11 +1081,11 @@ def powspec_with_bg(stackfile,source_image=None,radius=0,edgenorm=True,oversamp=
 		if av1_1d[i]>av2_1d[i] :
 			avsnr+=(av1_1d[i]-av2_1d[i])/av2_1d[i]
 			avc+=1
-	
+
 	if avc==0 :
 		print "Failed to readjust background in {}. Returning what I can..."
 		return (av1_1d,av2_1d,av1,av2,low_bg_curve(av2_1d,ds),av3_1d)
-		
+
 	avsnr/=avc
 
 	for i in xrange(maxpix) :
@@ -1156,7 +1159,7 @@ Rather than returning a single tuple, returns a list of nclasses tuples.
 			av1=EMData(imf["nx"],imf["ny"],imf["nz"])	# we make a new object to avoid copying the header of imf
 			av1.set_complex(True)
 			av1.to_zero()
-		
+
 		av_1d=imf.calc_radial_dist(av1.get_ysize()/2,0.0,1.0,1)
 		av_1d_n.append(av_1d)
 		av1+=imf
@@ -1189,13 +1192,13 @@ Rather than returning a single tuple, returns a list of nclasses tuples.
 	n0=int(0.05/ds)		# N at 20 A. We ignore low resolution information due to interference of structure factor
 	bg=EMData(len(av2_1d)-n0,1,1)
 	for i in xrange(n0,len(av2_1d)): bg[i-n0]=av2_1d[i]
-	
+
 	nvec=10
 	nxl=len(av2_1d)-n0
 	mask=EMData(nxl,1,1)
 	mask.to_one()
 #	pca=Analyzers.get("pca_large",{"mask":mask,"nvec":nvec})
-	
+
 	# now BG subtract each particle 1-D average
 	for j in range(n):
 		# converts each list of radial values into an image
@@ -1211,7 +1214,7 @@ Rather than returning a single tuple, returns a list of nclasses tuples.
 #		im.write_image("postsub.hdf",j)
 		av_1d_n[j]=im
 #		pca.insert_image(im)
-		
+
 #	result=pca.analyze()		# this gives us a basis for decomposing and classifying the images
 #	for j in range(nvec): result[j].process_inplace("normalize.unitlen")
 
@@ -1240,7 +1243,7 @@ Rather than returning a single tuple, returns a list of nclasses tuples.
 		for k in range(nvec): im[k]=av_1d_n[j].cmp("ccc",result[k])
 		im.write_image("postsub.proj.hdf",j)
 		prj_1d.append(im)
-	
+
 	#out=file("projs.txt","w")
 	#for y in range(n):
 		#for x in range(nvec):
@@ -1259,7 +1262,7 @@ Rather than returning a single tuple, returns a list of nclasses tuples.
 
 #	print plists
 
-	return [powspec_with_bg(stackfile,source_image,radius,edgenorm,oversamp,apix,plists[p]) for p in plists] 
+	return [powspec_with_bg(stackfile,source_image,radius,edgenorm,oversamp,apix,plists[p]) for p in plists]
 
 	sys.exit(1)
 	# added to make the 2D display look better. Should have no other impact at the time
@@ -1360,7 +1363,7 @@ def smooth_by_ctf(curve,ds,ctf):
 		lcf/=(lcf**2).sum()			# unit length
 		ret.append(lc.mean()+lcf[4]*lcf.dot(lc))
 		print i*ds,lcf.dot(lc)
-		
+
 	ret+=curve[-4:]
 	Util.save_data(0,ds,curve,"a.txt")
 	Util.save_data(0,ds,ret,"b.txt")
@@ -1375,7 +1378,7 @@ def ctf_fit_bfactor(curve,ds,ctf):
 	ccurv=ctf.compute_1d(len(curve)*2,ds,Ctf.CtfType.CTF_AMP)
 	ccurv=[f*f for f in ccurv]
 	ctf.bfactor=bf
-	
+
 	# We compute a windowed normalized running correlation coefficient between the data and the fit CTF
 	# window size depends on curve length
 	if len(curve)<64 : wdw=4
@@ -1383,24 +1386,24 @@ def ctf_fit_bfactor(curve,ds,ctf):
 	elif len(curve)<256 : wdw=8
 	else : wdw=10
 	sim=Util.windowdot(curve,ccurv,wdw,1)
-	
+
 	#for i in xrange(len(curve)):
 		#print i*ds,a[i],curve[i],ccurv[i]
-	
+
 	risethr=0.75*max(sim[int(0.04/ds):])
 	# find the last point where the curve rises above 0.75 its max value
 	for i in xrange(len(curve)-wdw,int(0.04/ds),-1):
 		if sim[i]>risethr : break
-	
+
 	# now find the first place where it falls below 0.1
 	for i in xrange(i,len(curve)-wdw):
 		if sim[i]<0.1 : break
-	
+
 	maxres=1.0/(i*ds)
 	print "maxres ",maxres," B -> ",maxres*maxres*6.0
-	
+
 	return maxres*maxres*6.0
-	
+
 
 def least_square(data):
 	"simple linear regression for y=mx+b on a list of (x,y) points. Use the C routine if you need speed."
@@ -1476,7 +1479,7 @@ def elambda(V):
 	"""returns relativistic electron wavelength. V in KV. Wavelength in A"""
 	return 12.3/sqrt(1000*V+0.97845*V*V)
 
-# This isn't really right, a correct version is now implemented in the EMAN2Ctf object 
+# This isn't really right, a correct version is now implemented in the EMAN2Ctf object
 #def zero(N,V,Cs,Z,AC):
 	#"""Return the spatial frequency of the order N zero of the CTF with Voltage V, Cs in mm, Defocus Z (positive underfocus) and amplitude contrast AC (0-100)"""
 	#acshift=-acos(sqrt(1-AC*AC/10000.0))	# phase shift in radians due to amplitude contrast
@@ -1503,7 +1506,7 @@ returns (fg1d,bg1d)"""
 	#Util.save_data(0,ds,list(fg),"av1.txt")
 	#Util.save_data(0,ds,list(bg),"av2.txt")
 
-	
+
 	# here we adjust the background to make the zeroes zero
 	n=2
 #	lz=int(zero(1,ctf.voltage,ctf.cs,ctf.defocus,ctf.ampcont)/ds+.5)
@@ -1522,9 +1525,9 @@ returns (fg1d,bg1d)"""
 		if n==2 : lwd,lwz=d1,lz
 		lz=z
 		n+=1
-	
+
 	# deal with the points from the origin to the first zero
-	try : 
+	try :
 		bg[:lwz]+=lwd
 		bg[:lwz]=numpy.minimum(bg[:lwz],fg[:lwz])	# this makes sure the bg subtracted curve isn't negative before the first zero
 	except:
@@ -1533,18 +1536,18 @@ returns (fg1d,bg1d)"""
 
 
 	# deal with the points from where the zeroes got too close together, just to make a smooth curve
-	for x in xrange(lz,len(ctf.background)) : 
+	for x in xrange(lz,len(ctf.background)) :
 		bg[x]+=fg[x-2:x+3].mean()-bgc[x-2:x+3].mean()
-	
+
 	return (list(fg),list(bg))
 
 
 def ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1):
 	"""Refines the astigmatism parameters given a good initial fit. Modifies CTF object in-place !!!  No return value."""
-	
+
 	## we start with some astigmatism or the process may not converge well
 	#if ctf.dfdiff==0 : ctf.dfdiff=0.1
-	
+
 	bgsub=im_2d-bg_2d
 	bgcp=bgsub.copy()
 	#sim=Simplex(ctf_stig_cmp,[ctf.dfdiff,ctf.dfang],[0.01,15.0],data=(bgsub,bgcp,ctf))
@@ -1553,7 +1556,7 @@ def ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1):
 
 	# Give a little arbitrary astigmatism for the angular search
 	if ctf.dfdiff==0 : ctf.dfdiff=ctf.defocus/20.0
-	
+
 	oldb=ctf.bfactor
 	# coarse angular alignment
 	besta=(1.0e15,0)
@@ -1578,13 +1581,13 @@ def ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1):
 	oparm=sim.minimize(epsilon=.00000001,monitor=0)
 	dfmaj,dfmin,ctf.dfang=oparm[0]		# final fit result
 	print "  Fine refine: defocus={:1.4f} dfdiff={:1.5f} dfang={:3.2f} defocusU={:1.4f} defocusV={:1.4f}".format((dfmaj+dfmin)/2.0,(dfmaj-dfmin),ctf.dfang,dfmaj,dfmin)
-	
+
 	ctf.bfactor=oldb
 	ctf.defocus=(dfmaj+dfmin)/2.0
 	ctf.dfdiff=dfmaj-dfmin
-	
 
-	## extract points at maxima for B-factor estimation	
+
+	## extract points at maxima for B-factor estimation
 	#ds=ctf.dsbg
 	#fg,bg=calc_1dfrom2d(ctf,im_2d,bg_2d)
 	#bglow=low_bg_curve(bg,ds)
@@ -1600,7 +1603,7 @@ def ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1):
 		#n+=1
 
 	#print oparm
-	
+
 	## Print out smoothed fit values
 	#smooth_by_ctf(list(array(fg)-array(bg)),ds,ctf)
 
@@ -1632,15 +1635,15 @@ def ctf_fit_stig(im_2d,bg_2d,ctf,verbose=1):
 
 def ctf_stig_cmp(parms,data):
 	"""energy function for fitting astigmatism, parms is (dfmaj, dfmin, dfang) instead of using the internal defocus/dfdiff"""
-	
+
 	bgsub,bgcp,ctf=data
 
 	dfmaj,dfmin,ctf.dfang=parms
 	ctf.defocus=(dfmaj+dfmin)/2.0
 	ctf.dfdiff=dfmaj-dfmin
-	
+
 	ctf.compute_2d_complex(bgcp,Ctf.CtfType.CTF_FITREF,None)
-	
+
 	#bgcp.write_image("a.hdf",-1)
 	#bgsub.write_image("b.hdf",0)
 
@@ -1649,11 +1652,11 @@ def ctf_stig_cmp(parms,data):
 	#if ctf.dfdiff>ctf.defocus : penalty+=ctf.dfdiff-ctf.defocus
 	if dfmaj<0 : penalty-=dfmaj
 	if dfmin<0 : penalty-=dfmin
-	
+
 #	print parms,ctf.defocus,ctf.dfdiff,bgcp.cmp("dot",bgsub,{"normalize":1}),penalty
 	return bgcp.cmp("dot",bgsub,{"normalize":1})+penalty
 
-def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhint=None,verbose=1):
+def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhint=None,highdensity=False,verbose=1):
 	"""Determines CTF parameters given power spectra produced by powspec_with_bg()
 	The bgadj option will result in adjusting the bg_1d curve to better match the zeroes
 	of the CTF (in which case bg_1d is modified in place)."""
@@ -1665,7 +1668,7 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=
 	if dfhint==None : dfhint = (0.5,5.5,0.05)
 	elif isinstance(dfhint,float) : dfhint=(dfhint-.2, dfhint+.2,0.02)
 	else: dfhint=(dfhint[0],dfhint[1],min(0.05,(dfhint[1]-dfhint[0])/5))
-	
+
 	ys=im_2d.get_ysize()
 	ds=1.0/(apix*ys)
 	if ac<0 or ac>100 :
@@ -1681,24 +1684,24 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=
 	elif len(curve)<128 : wdw=6
 	elif len(curve)<256 : wdw=8
 	else : wdw=10
-	
+
 	best=(-1,1.0)
 
 	# we might get better results if we readjusted the bg correction after each try, but it's reaaaaly slow
 	# so we compute an unadjusted bg one time, then do one local correction once the defocus is close
 	im=im_1d
 	bg=ctf.compute_1d_fromimage(len(ctf.background)*2, ds, bg_2d)
-	
+
 	for rng in (0,1):
 		# second pass is +-0.1 unless the original hint range was narrower
 		if rng==1: dfhint=(max(dfhint[0],ctf.defocus-0.1),min(dfhint[1],ctf.defocus+0.1),min(dfhint[2]/2.0,0.005))
-		
+
 		curve=[im[i]-bg[i] for i in xrange(len(im_1d))]
 		for df in arange(dfhint[0],dfhint[1],dfhint[2]):
 			ctf.defocus=df
 			ccurv=ctf.compute_1d(len(curve)*2,ds,Ctf.CtfType.CTF_AMP)
 			ccurv=[sfact2(ds*i)*ccurv[i]**2 for i in range(len(ccurv))]		# squared * structure factor
-			
+
 			## Recompute the background assuming the defocus is correct
 			#im,bg=calc_1dfrom2d(ctf,im_2d,bg_2d)
 			#curve=[im[i]-bg[i] for i in xrange(len(im_1d))]
@@ -1713,19 +1716,19 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=
 
 		# determine a good B-factor now that the defocus is pretty good
 		ctf.bfactor=ctf_fit_bfactor(curve,ds,ctf)
-	
+
 		im,bg=calc_1dfrom2d(ctf,im_2d,bg_2d)
-		
-	if bgadj : 
+
+	if bgadj :
 		for i in xrange(len(bg)): bg_1d[i]=bg[i]		# overwrite the input background with our final adjusted curve
 		bglow=low_bg_curve(bg,ds)
 		for i in xrange(len(bg)): bg_1d_low[i]=bglow[i]
 	ctf.background=bg_1d
-	
+
 	ctf.snr=[snr_safe(im[i],bg[i]) for i in range(len(im_1d))]
 
 	return ctf
-	
+
 #def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=False,dfhint=None,verbose=1):
 	#"""Determines CTF parameters given power spectra produced by powspec_with_bg()
 	#The bgadj option will result in adjusting the bg_1d curve to better match the zeroes
@@ -1753,11 +1756,11 @@ def ctf_fit(im_1d,bg_1d,bg_1d_low,im_2d,bg_2d,voltage,cs,ac,apix,bgadj=0,autohp=
 
 ##	plot(bglowsub)
 	## We find the first minimum (also <1/50 max) after the value has fallen to 1/5 max
-	#if isinstance(dfhint,float) : 
+	#if isinstance(dfhint,float) :
 ##		s0=max(2,int(zero(1,voltage,cs,dfhint,ac)/ds-3))
 		#s0=max(2,int(ctf.zero(0)/ds-3))
 		#while (bglowsub[s0]>bglowsub[s0+1] or bglowsub[s0]>bglowsub[s0-1]) and s0<s1: s0+=1	# look for a minimum in the data curve
-	#elif isinstance(dfhint,tuple) : 
+	#elif isinstance(dfhint,tuple) :
 ##		s0=max(2,int(zero(1,voltage,cs,(dfhint[0]+dfhint[1])/2.0,ac)/ds-3))
 		#s0=max(2,int(ctf.zero(0)/ds-3))
 		#while (bglowsub[s0]>bglowsub[s0+1] or bglowsub[s0]>bglowsub[s0-1]) and s0<s1: s0+=1	# look for a minimum in the data curve
@@ -2180,7 +2183,7 @@ class MyListWidget(QtGui.QListWidget):
 
 
 class GUIctf(QtGui.QWidget):
-	def __init__(self,application,data,autohp=True,nosmooth=False):
+	def __init__(self,application,data,autohp=True,nosmooth=False,highdensity=False):
 		"""Implements the CTF fitting dialog using various EMImage and EMPlot2D widgets
 		'data' is a list of (filename,EMAN2CTF,im_1d,bg_1d,im_2d,bg_2d,qual,bg_1d_low)
 		"""
@@ -2198,6 +2201,7 @@ class GUIctf(QtGui.QWidget):
 		self.app = weakref.ref(application)
 		self.autohp=autohp
 		self.nosmooth=nosmooth
+		self.highdensity=highdensity
 
 		QtGui.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
@@ -2397,17 +2401,17 @@ class GUIctf(QtGui.QWidget):
 	def on_refit(self):
 		# self.data[n] contains filename,EMAN2CTF,im_1d,bg_1d,im_2d,bg_2d,qual
 		tmp=list(self.data[self.curset])
-		
+
 		dfdiff=self.sdfdiff.value
 		dfang=self.sdfang.value
-		ctf=ctf_fit(tmp[2],tmp[3],tmp[7],tmp[4],tmp[5],tmp[1].voltage,tmp[1].cs,tmp[1].ampcont,tmp[1].apix,bgadj=not self.nosmooth,autohp=self.autohp,dfhint=self.sdefocus.value)
+		ctf=ctf_fit(tmp[2],tmp[3],tmp[7],tmp[4],tmp[5],tmp[1].voltage,tmp[1].cs,tmp[1].ampcont,tmp[1].apix,bgadj=not self.nosmooth,autohp=self.autohp,dfhint=self.sdefocus.value,highdensity=self.highdensity)
 		ctf.dfdiff=dfdiff
 		ctf.dfang=dfang
-		if ctf.dfdiff!=0 : 
+		if ctf.dfdiff!=0 :
 			ctf_fit_stig(tmp[4],tmp[5],ctf,True)
-			
+
 		tmp[2],tmp[3]=calc_1dfrom2d(ctf,tmp[4],tmp[5])			# update 1-D curves (impacted if astigmatism changed)
-			
+
 		ctf.bfactor=ctf_fit_bfactor(list(array(tmp[2])-array(tmp[3])),ctf.dsbg,ctf)
 		ctf.snr=[snr_safe(tmp[2][i],tmp[3][i]) for i in range(len(tmp[2]))]
 
@@ -2499,12 +2503,12 @@ class GUIctf(QtGui.QWidget):
 			self.data[val][2],self.data[val][3]=calc_1dfrom2d(ctf,self.data[val][4],self.data[val][5])
 			self.data[val][7]=low_bg_curve(self.data[val][3],ds)
 			ctf.snr=[snr_safe(self.data[val][2][i],self.data[val][3][i]) for i in range(r)]
-			
+
 		# This updates the image circles
 		fit=ctf.compute_1d(len(s)*2,ds,Ctf.CtfType.CTF_AMP)
 		shp={}
-		
-		# Old way of finding zeroes from the 1-d curve dynamically 
+
+		# Old way of finding zeroes from the 1-d curve dynamically
 		#nz=0
 		#for i in range(1,len(fit)):
 			#if fit[i-1]*fit[i]<=0.0:
@@ -2533,7 +2537,7 @@ class GUIctf(QtGui.QWidget):
 				z2=ctf.zero(i-1)/ctf.dsbg
 				ctf.defocus=d
 				if z2>len(s) : break
-				shp["z%d"%i]=EMShape(("ellipse",0,0,.75,r,r,z2,z1,ctf.dfang,1.0))				
+				shp["z%d"%i]=EMShape(("ellipse",0,0,.75,r,r,z2,z1,ctf.dfang,1.0))
 			else:
 #				z=zero(i,ctf.voltage,ctf.cs,ctf.defocus,ctf.ampcont)/ctf.dsbg
 				z=ctf.zero(i-1)/ctf.dsbg
@@ -2714,13 +2718,13 @@ class GUIctf(QtGui.QWidget):
 			else : wdw=10
 			sim=Util.windowdot(bgsub,fit,wdw,1)
 			self.guiplot.set_data((s,sim),"Local Sim",color=2)
-			
+
 			print sum(sim),sum(sim[int(.04/ds):int(.12/ds)])
 
 #			print ctf_cmp((self.sdefocus.value,self.sbfactor.value,rto),(ctf,bgsub,int(.04/ds)+1,min(int(0.15/ds),len(s)-1),ds,self.sdefocus.value))
 
 			self.guiplot.setAxisParms("s (1/"+ "$\AA$" + ")","Intensity (a.u)")
-			
+
 
 		# SNR Scaling
 		elif self.plotmode==8:
@@ -2792,7 +2796,7 @@ class GUIctf(QtGui.QWidget):
 
 	def newCTF(self) :
 		if self.data[self.curset][1].dfdiff!=0 or self.data[self.curset][1].dfdiff!=self.sdfdiff.value:
-			if self.data[self.curset][1].dfdiff!=self.sdfdiff.value or self.data[self.curset][1].dfang!=self.sdfang.value or self.data[self.curset][1].defocus!=self.sdefocus.value : 
+			if self.data[self.curset][1].dfdiff!=self.sdfdiff.value or self.data[self.curset][1].dfang!=self.sdfang.value or self.data[self.curset][1].defocus!=self.sdefocus.value :
 				self.neednewps=True
 		self.data[self.curset][1].defocus=self.sdefocus.value
 		self.data[self.curset][1].bfactor=self.sbfactor.value

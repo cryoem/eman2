@@ -60,6 +60,7 @@ def main():
 #	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=64)
 #	parser.add_argument("--shrink",type=int,help="Shrink factor for full-frame view, default=0 (auto)",default=0)
 	parser.add_argument("--apix",type=float,help="Override the A/pix value stored in the file header",default=0.0)
+#	parser.add_argument("--force2d",action="store_true",help="Display 3-D data as 2-D slices",default=False)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
@@ -75,7 +76,8 @@ def main():
 
 	app = EMApp()
 	pix_init()
-	control=EMFilterTool(datafile=args[0],apix=options.apix,verbose=options.verbose)
+	control=EMFilterTool(datafile=args[0],apix=options.apix,force2d=False,verbose=options.verbose)
+#	control=EMFilterTool(datafile=args[0],apix=options.apix,force2d=options.force2d,verbose=options.verbose)
 	control.show()
 	try: control.raise_()
 	except: pass
@@ -406,11 +408,12 @@ class EMProcessorWidget(QtGui.QWidget):
 class EMFilterTool(QtGui.QMainWindow):
 	"""This class represents the EMFilterTool application instance.  """
 
-	def __init__(self,datafile=None,apix=0.0,verbose=0):
+	def __init__(self,datafile=None,apix=0.0,force2d=False,verbose=0):
 		QtGui.QMainWindow.__init__(self)
 
 		app=QtGui.qApp
 		self.apix=apix
+		self.force2d=force2d
 		self.setWindowTitle("e2filtertool.py")
 
 		# Menu Bar
@@ -559,7 +562,7 @@ class EMFilterTool(QtGui.QMainWindow):
 		if self.needredisp :
 			self.needredisp=0
 			self.viewer.show()
-			if self.nz==1: self.viewer.set_data(self.procdata)
+			if self.nz==1 or self.force2d: self.viewer.set_data(self.procdata)
 			else :
 				self.sgdata.setData(self.procdata[0])
 				self.viewer.updateSG()
@@ -629,7 +632,7 @@ class EMFilterTool(QtGui.QMainWindow):
 		EMProcessorWidget.parmdefault["apix"]=(0,(0.2,10.0),self.apix,None)
 
 		if self.viewer!=None : self.viewer.close()
-		if self.nz==1 :
+		if self.nz==1 or self.force2d:
 			if len(self.origdata)>1 :
 				self.viewer=EMImageMXWidget()
 				self.mfile_save_stack.setEnabled(True)
