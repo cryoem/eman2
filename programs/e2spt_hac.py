@@ -273,8 +273,8 @@ def main():
 		a plot of the ccc scores for all comparisons for the FIRST iteration of all vs all.
 		Running on a cluster or via ssh remotely might not support plotting.""",default=False)
 
-	parser.add_argument("--subset",type=int,default=0,help="""Refine only this substet
-		of particles from the stack provided through --input""")
+	parser.add_argument("--subset",type=int,default=0,help="""An n-particle substet from
+		--input to use.""")
 		
 	(options, args) = parser.parse_args()
 	

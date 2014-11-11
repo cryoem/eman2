@@ -207,8 +207,8 @@ def main():
 	parser.add_argument("--shrinkfine", type=int,default=1,help="""Optionally shrink the input volumes 
 		by an integer amount for refine alignment.""")
 	
-	parser.add_argument("--subset",type=int,default=0,help="""Refine only this substet
-		of particles from the stack provided through --input""")
+	parser.add_argument("--subset",type=int,default=0,help="""An n-subset of particles from
+		--input to use.""")
 		
 	parser.add_argument("--threshold",type=str,help="""A threshold applied to the subvolumes after normalization. 
 		For example, --threshold=threshold.belowtozero:minval=0 makes all negative pixels equal 0, so that they do not contribute to the correlation score.""", default=None)
