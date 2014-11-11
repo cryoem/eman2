@@ -270,7 +270,7 @@ def main():
 					txtf.writelines(lines)
 					txtf.close()
 				
-				plt.plot(x,values,linewidth=2,alpha=0.8)
+				plt.plot(x,values,linewidth=2,alpha=0.5)
 				
 				if not options.singleplotperfile and not options.singlefinalplot:
 					#plotname=i.split('.')[0]+str(kk).zfill(len(str(n))) + '.png'
