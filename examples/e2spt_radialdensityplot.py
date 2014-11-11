@@ -379,6 +379,7 @@ def classifymax( options, maxsall ):
 				radiusAngs = float(radius)*float(apix)
 				#print "radiusAngs is", radiusAngs
 				print "\nFound a particle at radius in pixels%d which is %f in angstroms" % ( radius, radiusAngs )
+				ptcl['spt_radialplot_radius']=radius
 				ptcl.write_image( outStack, -1 )
 	
 	return
