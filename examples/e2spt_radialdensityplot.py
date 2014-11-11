@@ -414,6 +414,25 @@ def calcmaxima( values ):
 				
 
 def calcvalues(a,options):
+	
+	a = preprocRadPlot( a, options )
+	
+	if options.mode == 'sphere':
+		print "I will calculate the radial density"
+		values = a.calc_radial_dist(a['nx']/2, 0, 1, 1)
+		return(values)
+	
+	elif options.mode == 'cylinder':
+		values = cylinder(a,options)
+		return(values)
+		
+	elif options.mode == 'x' or options.mode == 'y' or options.mode == 'z':
+		values = direction(a,options)
+		
+		return values
+
+
+def preprocRadPlot( a, options):
 	# Make the mask first, use it to normalize (optionally), then apply it 
 	mask=EMData(a["nx"],a["ny"],a["nz"])
 	mask.to_one()
@@ -482,20 +501,8 @@ def calcvalues(a,options):
 		if options.verbose > 5:
 			print "\nApplying symmetry to average", options.sym
 		a=a.process('xform.applysym',{'sym':options.sym})
-	
-	if options.mode == 'sphere':
-		print "I will calculate the radial density"
-		values = a.calc_radial_dist(a['nx']/2, 0, 1, 1)
-		return(values)
-	
-	elif options.mode == 'cylinder':
-		values = cylinder(a,options)
-		return(values)
-		
-	elif options.mode == 'x' or options.mode == 'y' or options.mode == 'z':
-		values = direction(a,options)
-		
-		return values
+
+	return a
 
 
 def cylinder(a,options):
