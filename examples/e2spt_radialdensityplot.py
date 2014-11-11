@@ -36,6 +36,7 @@ import os, sys, commands
 from EMAN2 import *
 from pylab import figure, show	
 import math
+import numpy as np
 
 def main():
 
@@ -47,9 +48,12 @@ def main():
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_argument("--vols", type=str, help="""Volume whose radial density plot you 
+	parser.add_argument('--path',type=str,default='spt_radialplot',help="""Directory to save 
+		the results.""")
+		
+	parser.add_argument("--input", type=str, help="""Volume whose radial density plot you 
 		want to compute. For multiple volumes, either provide them as an .hdf stack, or 
-		separate them by commas --vols=first.hdf,second.hdf,etc...""", default=None)
+		separate them by commas --vols=first.hdf,second.hdf,etc...""", default='')
 	
 	parser.add_argument("--mode", type=str, help="""provide --mode=x, y, or z to get the 
 		average density per slice in the indicated direction. 
@@ -58,25 +62,32 @@ def main():
 	
 	parser.add_argument("--fixedcylinderheight", type=int, help="""Works only if --mode=cylinder, 
 		and keeps the height of the cylinder at a constant value, while varying the radius.""", default=0)
-
 	
-	parser.add_argument("--mask",type=str,help="""Mask processor applied to volumes before alignment. 
-		Default is None.""", default=None)
+	parser.add_argument("--mask",type=str,help="""Masking processor (see e2help.py --verbose=10) 
+		applied to each volume prior to radial density plot computation. Default=None.""", default='')
 	
-	parser.add_argument("--normproc",type=str,help="""Normalization processor applied to 
-		volumes before computing density values. Default is None.
-		If normalize.mask is used, results of the mask option will be passed in automatically.""", default=None)
+	parser.add_argument("--normproc",type=str,help="""Normalization processor 
+		(see e2help.py --verbose=10) applied to each volume prior to radial density plot 
+		computation. Default is None.
+		If normalize.mask is used, results of the mask option will be passed in automatically.""", default='')
 	
-	parser.add_argument("--preprocess",type=str,help="""Any processor (as in e2proc3d.py) 
-		to be applied to each volume prior to radial density plot computation.""", default=None)
+	parser.add_argument("--preprocess",type=str,help="""Any processor 
+		(see e2help.py --verbose=10) applied to each volume prior to radial density plot 
+		computation.""", default='')
 	
-	parser.add_argument("--lowpass",type=str,help="""A lowpass filtering processor (as in e2proc3d.py) 
-		to be applied to each volume prior to radial density plot computation.""", default=None)
+	parser.add_argument("--lowpass",type=str,help="""Default=None. A lowpass filtering processor 
+		(see e2help.py --verbose=10) applied to each volume prior to radial density plot 
+		computation.""", default='')
 	
-	parser.add_argument("--highpass",type=str,help="""A highpass filtering processor (as in e2proc3d.py) 
-		to be applied to each volume prior to radial density plot computation.""", default=None)	
+	parser.add_argument("--highpass",type=str,help="""Default=None. A highpass filtering processor 
+		(see e2help.py --verbose=10) applied to each volume prior to radial density plot 
+		computation.""", default='')	
+		
+	parser.add_argument("--threshold",type=str,help="""Default=None. A threshold  processor 
+		(see e2help.py --verbose=10) applied to each volume prior to radial density plot 
+		computation.""", default='')
 	
-	parser.add_argument("--shrink", type=int,default=1,help="""Optionally shrink the input 
+	parser.add_argument("--shrink", type=int,default=1,help="""Default=1 (no shrinking). Optionally shrink the input 
 		volumes by an integer amount.""")	
 	
 	#parser.add_argument("--apix", type=float, help="Provide --apix to overrride the value found in the volumes' header paramter.", default=0)
@@ -88,12 +99,12 @@ def main():
 	parser.add_argument("--singlefinalplot", action="store_true",default=False,help="""Plot 
 		all the Radial Density Profiles of the volumes provided in all .hdf stacks in one 
 		FINAL single 'master' plot.""")	
-	
-	parser.add_argument("--threshold", action="store_true",default=False,help="""If on, 
-		this will turn all negative pixel values into 0.""")	
-	
+
 	parser.add_argument("--normalizeplot", action="store_true",default=False,help="""This 
 		will make the maximum density in each plot or curve equal to 1.""")
+	
+	parser.add_argument("--savetxt", action="store_true",default=False,help="""Save plot
+		files as .txt, so that they can be replotted with other software if necessary.""")
 	
 	parser.add_argument("--ppid", type=int, help="""Set the PID of the parent process, 
 		used for cross platform PPID""",default=-1)
@@ -101,10 +112,40 @@ def main():
 	parser.add_argument("--verbose", "-v", default=0, help="""Verbose level [0-9], higner 
 		number means higher level of verboseness""",dest="verbose", action="store", metavar="n",type=int)
 	
+	parser.add_argument("--classifymaxpeaks",type=int,default=0, help="""Number of highest 
+		peaks to consider for classification. Amongst the n peaks provided, --classifymaxpeaks=n,
+		the peak occurring at the largest radius will be used as the classifier.
+		If --classifymaxpeaks=1, the highest peak will be the classifier.
+		To smooth the radial density curve consider low pass filtering through --lowpass.
+		To remove aberrant peaks consider masking with --mask.""")
+	
+	parser.add_argument("--subset",type=int,default=0,help="""An n-subset of particles from
+		--input to use.""")
+	
 	(options, args) = parser.parse_args()
 	
 	import matplotlib.pyplot as plt
 	from matplotlib.ticker import MaxNLocator
+	
+	from e2spt_classaverage import sptmakepath
+	options = sptmakepath(options,'spt_radialplot')
+	
+	if not options.input:
+		parser.print_help()
+		exit(0)
+	elif options.subset:
+		subsetStack = options.path + '/subset' + str( options.subset ).zfill( len( str( options.subset))) + '.hdf' 
+		print "\nSubset to be written to", subsetStack
+		
+		subsetcmd = 'e2proc3d.py ' + options.input + ' ' + subsetStack + ' --first=0 --last=' + str(options.subset-1) 
+		print "Subset cmd is", subsetcmd
+		
+		p=subprocess.Popen( subsetcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+		text=p.communicate()	
+		p.stdout.close()
+		
+		options.input = subsetStack
+	
 	
 	logger = E2init(sys.argv, options.ppid)
 
@@ -122,8 +163,11 @@ def main():
 	
 	if options.highpass: 
 		options.highpass=parsemodopt(options.highpass)
+	
+	if options.threshold: 
+		options.threshold=parsemodopt(options.threshold)
 			
-	files = options.vols
+	files = options.input
 	files = files.split(',')
 	
 	for i in xrange(0,len(files)):
@@ -140,8 +184,10 @@ def main():
 		imgsperstack=1
 		
 		names=[]
-		
 		finalvalues=[]
+		maxsall={}
+		minsall={}
+		
 		for i in files:	
 			n = EMUtil.get_image_count(i)
 			
@@ -157,7 +203,15 @@ def main():
 					suffix = modetag + str(kk).zfill(len(str(n)))
 				
 				values = calcvalues(ptcl,options)
-					
+				
+				ret = calcmaxima( values )
+				maxima=ret[0]				#These are a list of lists [[pixel,value],[pixel,value],...] with all maxima and minima
+				minima=ret[-1]
+				
+				uniquetag = i+'_indxtag'+str(j)
+				maxsall.update({ uniquetag:maxima })
+				minsall.update({ uniquetag:minima })	
+
 				print "For file %s img number %d the max is %f" %(i,j,max(values))
 				
 				if options.normalizeplot:
@@ -180,6 +234,9 @@ def main():
 		plotname = 'finalplot_MODE' + m + '.png'
 		fileid=''
 		
+		if options.classifymaxpeaks:
+			classifymax( options, maxsall )
+	
 		cc=0
 		for ele in finalvalues:
 			i = ele.keys()[0]
@@ -202,15 +259,16 @@ def main():
 					
 				for j in range(len(x)):
 					x[j] = int(round(x[j] * apix))				
-				txtname = i.split('.')[0] + modetag + str(kk).zfill(len(str(n))) + '.txt'
-				txtf = open(txtname,'w')
-				lines = []
-					
-				for v in range(len(values)):
-					line = str(v) +  ' ' + str(values[v]) + '\n'
-					lines.append(line)
-				txtf.writelines(lines)
-				txtf.close()
+				
+				if options.savetxt:
+					txtname = options.path + '/' + i.split('.')[0] + modetag + str(kk).zfill(len(str(n))) + '.txt'
+					txtf = open(txtname,'w')
+					lines = []	
+					for v in range(len(values)):
+						line = str(v) +  ' ' + str(values[v]) + '\n'
+						lines.append(line)
+					txtf.writelines(lines)
+					txtf.close()
 				
 				plt.plot(x,values,linewidth=2)
 				
@@ -245,22 +303,107 @@ def main():
 					plt.ylabel("Density (arbitrary units)")			
 								
 				if not options.singleplotperfile and not options.singlefinalplot:
-					plt.savefig(plotname)
+					if options.path not in plotname:
+						plotname = options.path + '/' + plotname
+					plt.savefig( plotname )
 					plt.clf()
 				else:
 					pass
 				kk+=1
 				cc+=1
-			if options.singleplotperfile and not options.singlefinalplot:
-				plt.savefig(plotname)
+			
+			if options.singleplotperfile:
+				if options.path not in plotname:
+					plotname = options.path + '/' + plotname
+				plt.savefig( plotname )
 				plt.clf()
-			else:
-				pass
 	
 		if options.singlefinalplot:
-			plt.savefig(plotname)
+			if options.path not in plotname:
+				plotname = options.path + '/' + plotname
+			plt.savefig( plotname )
 			plt.clf()
-	return()				
+	return			
+
+
+def classifymax( options, maxsall ):
+	from operator import itemgetter							
+	
+	sizeClasses=set()
+	particlesByRadius={}
+	#print "\nMaxsall are", maxsall
+	#print "\n\n\n"
+	
+	for f in maxsall:
+		imgfile = f.split('_indxtag')[0]
+		
+		apix = EMData( imgfile, 0, True)['apix_x']
+		#print "\nimgfile is", imgfile
+		
+		ptclindx = int(f.split('_indxtag')[-1])
+		#print "ptclindx is", ptclindx
+		
+		maxs = maxsall[f]
+		print "maxs are", maxs
+		
+		maxsSortedScore = sorted(maxs, key=itemgetter(1)) 					#first sort by score, which is the second element in the list of lists, [[pixel,value],[pixel,value],...]
+		print "Sorted peaks are", maxsSortedScore
+		
+		twoPeaks = maxsSortedScore[ -options.classifymaxpeaks:  ]			#keep n highest peaks provided through --classifymaxpeaks;
+		print "\nTherefore twoPeaks are", twoPeaks							#because they are sorted, the highest peaks are at the end
+		
+		pixelvals = []									  #find the peak at the largest radius
+		for p in twoPeaks:
+			pixelvals.append(p[0])
+		
+		print "therefore pixelvals are", pixelvals
+		
+		maxRadPixel = max(pixelvals)
+		
+		#print "And maxRadPixel is", maxRadPixel
+		
+		sizeClasses.add( maxRadPixel )
+		particlesByRadius.update( { f:maxRadPixel } )
+	
+	for radius in sizeClasses:
+		#print "radius is", radius
+		radiusTag = str( radius ).zfill( len( str( radius)))
+		outStack = options.path + '/classRadius' + radiusTag + '.hdf' 
+		for ele in particlesByRadius:
+			#print "ele is", ele
+			#print "particlesByRadius[ele] is", particlesByRadius[ele]
+			if int(particlesByRadius[ele]) == int(radius):
+				ptclfile = f.split('_indxtag')[0]
+				ptclindx = int(f.split('_indxtag')[-1])
+				ptcl=EMData(ptclfile,ptclindx)
+				radiusAngs = float(radius)*float(apix)
+				#print "radiusAngs is", radiusAngs
+				print "\nFound a particle at radius in pixels%d which is %f in angstroms" % ( radius, radiusAngs )
+				ptcl.write_image( outStack, -1 )
+	
+	return
+
+
+def calcmaxima( values ):
+	print "\n(e2spt_radialdensityplot.py)(calcmaxima)"
+	valuesnp = np.asarray( values )
+	minimaBool = list( np.r_[True, valuesnp[1:] < valuesnp[:-1]] & np.r_[valuesnp[:-1] < valuesnp[1:], True] )
+	maximaBool = list( np.r_[True, valuesnp[1:] > valuesnp[:-1]] & np.r_[valuesnp[:-1] > valuesnp[1:], True] )
+	
+	maxima = []
+	minima = []
+	
+	for i in range(len(values)):
+		if minimaBool[i]:
+			minimumVal=values[i]
+			minimumPix=i
+			minima.append([minimumPix,minimumVal])
+		if maximaBool[i]:
+			maximumVal=values[i]
+			maximumPix=i
+			maxima.append([maximumPix,maximumVal])
+	
+	return maxima,minima
 				
 
 def calcvalues(a,options):
@@ -268,35 +411,39 @@ def calcvalues(a,options):
 	mask=EMData(a["nx"],a["ny"],a["nz"])
 	mask.to_one()
 
-	if options.mask != None:
+	if options.mask:
 		mask.process_inplace(options.mask[0],options.mask[1])
 
 	# normalize
-	if options.normproc != None:
+	if options.normproc:
 		if options.normproc[0]=="normalize.mask": 
 			options.normproc[1]["mask"]=mask
 		a.process_inplace(options.normproc[0],options.normproc[1])
 
 	a.mult(mask)
 
-	if options.normproc != None:
+	if options.normproc:
 		if options.normproc[0]=="normalize.mask": 
 			options.normproc[1]["mask"]=mask
 		a.process_inplace(options.normproc[0],options.normproc[1])
 
 	a.mult(mask)
+
+	# highpass
+	if options.highpass:
+		a.process_inplace(options.highpass[0],options.highpass[1])
 
 	# preprocess
-	if options.preprocess != None:
+	if options.preprocess:
 		a.process_inplace(options.preprocess[0],options.preprocess[1])
 
 	# lowpass
-	if options.lowpass != None:
+	if options.lowpass:
 		a.process_inplace(options.lowpass[0],options.lowpass[1])
 
-	# highpass
-	if options.highpass != None:
-		a.process_inplace(options.highpass[0],options.highpass[1])
+	# threshold
+	if options.threshold:
+		a.process_inplace(options.threshold[0],options.threshold[1])
 
 	# Shrink
 	if options.shrink>1 :
@@ -326,7 +473,8 @@ def calcvalues(a,options):
 		
 	elif options.mode == 'x' or options.mode == 'y' or options.mode == 'z':
 		values = direction(a,options)
-		return(values)
+		
+		return values
 
 
 def cylinder(a,options):
