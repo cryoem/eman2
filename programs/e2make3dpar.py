@@ -48,7 +48,7 @@ import numpy as np
 def get_usage():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + """ [options]
-	Reconstructs 3D volumes using a set of 2D images. Euler angles are extracted from the 2D image headers and symmetry is imposed. 
+	Reconstructs 3D volumes using a set of 2D images. Euler angles are extracted from the 2D image headers and symmetry is imposed.
 	This is an optimized version with fewer options than e2make3d, but can run in parallel using threads, and has a number of other changes.
 
 	A simple example of usage is:
@@ -193,15 +193,15 @@ def main():
 			if options.keepsig:
 				thr=np.mean(quals)+options.keep*np.std(quals)
 			else:
-				try: 
+				try:
 					thr=quals[int(floor(len(quals)*options.keep))]
 				except: thr=max(quals)+1.0
-	
+
 	excluded=[max(i["fileslice"],i["filenum"]) for i in data if i["quality"]>thr]
 	included=[max(i["fileslice"],i["filenum"]) for i in data if i["quality"]<=thr]
 	data=[i for i in data if i["quality"]<=thr]
 	ptclcount=sum([i["weight"] for i in data])
-	
+
 	if options.verbose: print "After filter, %d images"%len(data)
 
 	# Get the reconstructor and initialize it correctly
@@ -211,21 +211,21 @@ def main():
 
 	#########################################################
 	# The actual reconstruction
-	
+
 	threads=[threading.Thread(target=reconstruct,args=(data[i::options.threads],recon,options.preprocess,options.pad,
 			options.fillangle,options.verbose-1)) for i in xrange(options.threads)]
-	
+
 	recon.setup()
-	for i,t in enumerate(threads): 
+	for i,t in enumerate(threads):
 		if options.verbose>1: print "started thread ",i
 		t.start()
-	
+
 	for t in threads: t.join()
-	
+
 	output = recon.finish(True)
 
 	if options.verbose>0 : print "Finished Reconstruction"
-	
+
 	try:
 		output.set_attr("ptcl_repr",ptclcount)
 		if len(included)>0 : output.set_attr("threed_ptcl_idxs",included)
@@ -276,6 +276,9 @@ def main():
 		if sfcurve==None:
 			print "ERROR : Structure factor read failed. Not applying structure factor"
 		else:
+			# need to be really careful about the corners
+			for i in range(sfcurve.get_size()):
+				if sfcurve.get_x(i)>1.0/(2.0*apix) : sfcurve.set_y(i,0.0f)
 			output.process_inplace("filter.setstrucfac",{"apix":apix,"strucfac":sfcurve})
 
 	if options.postprocess != None:
@@ -366,7 +369,7 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,preprocess):
 					#elem["weight"]=1.0
 
 			try: elem["quality"]=float(tmp["class_qual"])
-			except: 
+			except:
 				try: elem["quality"]=1.0/(elem["weight"]+.00001)
 				except: elem["quality"]=1.0
 			elem["filename"]=inputfile
@@ -387,7 +390,7 @@ def get_processed_image(filename,nim,nsl,preprocess,pad,nx=0,ny=0):
 	nx and ny are the x and y dimensions of a single image on disk, required only for slice reading.
 	preprocess takes a list of command-line processor strings. pad is a 2-tuple with
 	the dimensions the image should be zero-padded to."""
-	
+
 	if nsl>=0 : ret=EMData(filename,nim,False,Region(0,0,nsl,nx,ny,1))
 	else : ret=EMData(filename,nim)
 
@@ -423,10 +426,10 @@ def reconstruct(data,recon,preprocess,pad,fillangle,verbose=0):
 	if den>9 :
 		den=9
 		if verbose>0 : print "Note: Reducing oversampling in make3dpar for speed, this will make higher resolution 'smearing' less effective"
-	if den==0: 
+	if den==0:
 		fillangle=0
 		if verbose: print "No filling"
-	else: 
+	else:
 		astep=fillangle/(den-1)-.00001
 		if verbose: print "Filling %dx%d, %1.2f deg  %1.3f step"%(den,den,fillangle,astep)
 
@@ -467,8 +470,8 @@ def reconstruct(data,recon,preprocess,pad,fillangle,verbose=0):
 					newxf=Transform({"type":"eman","alt":alt+dalt,"az":az+daz})
 #					print i,elem["filenum"],newxf
 					recon.insert_slice(img,newxf,elem["weight"]*weightmod)
-			
-	
+
+
 	return
 
 if __name__=="__main__":
