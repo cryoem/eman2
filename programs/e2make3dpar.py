@@ -277,9 +277,11 @@ def main():
 			print "ERROR : Structure factor read failed. Not applying structure factor"
 		else:
 			# need to be really careful about the corners
-			for i in range(sfcurve.get_size()):
-				if sfcurve.get_x(i)>1.0/(2.0*apix) : sfcurve.set_y(i,0.0f)
+#			for i in range(sfcurve.get_size()):
+#				if sfcurve.get_x(i)>1.0/(2.0*apix) : sfcurve.set_y(i,0.0)
 			output.process_inplace("filter.setstrucfac",{"apix":apix,"strucfac":sfcurve})
+			output.process_inplace("filter.lowpass.tophat",{"apix":apix,"cutoff_abs":0.49})
+
 
 	if options.postprocess != None:
 		for p in options.postprocess:

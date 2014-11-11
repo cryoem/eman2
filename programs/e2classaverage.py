@@ -189,6 +189,7 @@ def main():
 						if options.decayedge:
 							nx=rslt[1]["average"]["nx"]
 							rslt[1]["average"].process_inplace("mask.gaussian",{"inner_radius":nx/2-nx/15,"outer_radius":nx/20})
+							#rslt[1]["average"].process_inplace("mask.decayedge2d",{"width":nx/15})
 
 						if options.ref!=None : rslt[1]["average"]["projection_image"]=options.ref
 						if options.storebad : rslt[1]["average"].write_image(options.output,rslt[1]["n"])
@@ -252,6 +253,7 @@ def main():
 				if options.decayedge:
 					nx=rslt["average"]["nx"]
 					rslt["average"].process_inplace("mask.gaussian",{"inner_radius":nx/2-nx/15,"outer_radius":nx/20})
+					#rslt["average"].process_inplace("mask.decayedge2d",{"width":nx/15})
 				if options.ref!=None : rslt["average"]["projection_image"]=options.ref
 				if options.storebad : rslt["average"].write_image(options.output,t.options["n"])
 				else: rslt["average"].write_image(options.output,-1)
