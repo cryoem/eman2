@@ -35,6 +35,7 @@ from EMAN2 import *
 import os
 import sys
 from EMAN2jsondb import JSTask,jsonclasses
+from pprint import pprint
 
 
 def main():
@@ -206,6 +207,9 @@ def main():
 	parser.add_argument("--shrinkfine", type=int,default=1,help="""Optionally shrink the input volumes 
 		by an integer amount for refine alignment.""")
 	
+	parser.add_argument("--subset",type=int,default=0,help="""Refine only this substet
+		of particles from the stack provided through --input""")
+		
 	parser.add_argument("--threshold",type=str,help="""A threshold applied to the subvolumes after normalization. 
 		For example, --threshold=threshold.belowtozero:minval=0 makes all negative pixels equal 0, so that they do not contribute to the correlation score.""", default=None)
 	
@@ -216,6 +220,31 @@ def main():
 		preprocessing options are different).""", default=False)	
 
 	(options, args) = parser.parse_args()
+	
+	
+	'''
+	Make the directory where to create the database where the results will be stored
+	'''
+	from e2spt_classaverage import sptmakepath
+	options = sptmakepath(options,'spt_bt')
+	
+	
+	if not options.input:
+		parser.print_help()
+		exit(0)
+	elif options.subset:
+		subsetStack = options.path + '/subset' + str( options.subset ).zfill( len( str( options.subset))) + '.hdf' 
+		print "\nSubset to be written to", subsetStack
+		
+		subsetcmd = 'e2proc3d.py ' + options.input + ' ' + subsetStack + ' --first=0 --last=' + str(options.subset-1) 
+		print "Subset cmd is", subsetcmd
+		
+		p=subprocess.Popen( subsetcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+		text=p.communicate()	
+		p.stdout.close()
+		
+		options.input = subsetStack
+	
 	
 	'''
 	If --radius of the particle is provided, we calculate the optimal alignment steps for 
@@ -336,12 +365,7 @@ def main():
 				
 			elif options.searchfine == searchfinedefault:
 				options.searchfine = searchF
-	
-	'''
-	Make the directory where to create the database where the results will be stored
-	'''
-	from e2spt_classaverage import sptmakepath
-	options = sptmakepath(options,'spt_bt')
+
 	
 	'''
 	Store parameters in parameters.txt file inside --path
@@ -473,7 +497,7 @@ def main():
 
 def binaryTreeRef(options,nptclForRef,nseed,ic,etc):
 	
-	from e2spt_classaverage import *
+	from e2spt_classaverage import Align3DTask,align3Dfunc,get_results
 	
 	if nptclForRef==1: 
 		print "Error: More than 1 particle required if no reference provided through --ref."

@@ -179,8 +179,15 @@ def main():
 	parser.add_argument("--highpassfine",type=str,help="""A highpass filtering processor (as in e2proc3d.py) 
 		to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.""", default=None)
 		
-	parser.add_argument("--sym", dest = "sym", default='c1', help = """Symmetry to impose - choices are: c<n>, d<n>, h<n>, tet, oct, icos""")
-
+	parser.add_argument("--sym", dest = "sym", default='c1', help = """Symmetry to impose 
+		- choices are: c<n>, d<n>, h<n>, tet, oct, icos.
+		For this to make any sense in the context of this program, the particles need to be
+		aligned to the symmetry axis first, which can be accomplished by running them 
+		through e2symsearch3d.py.""")
+		
+	parser.add_argument("--breaksym",action="store_true", default=False,help="""If supplied,
+		symmetry will not be applied to the average, even if only searching the asymmetric 
+		unit provided through --sym for alignment. Default=False.""")
 
 	parser.add_argument("--clipali",type=int,default=0,help="""Boxsize to clip particles as part of preprocessing
 		to speed up alignment. For example, the boxsize of the particles might be 100 pixels, but the particles are only 50 pixels 
@@ -262,13 +269,38 @@ def main():
 		take up raw particles or new averages (between single raw particles) might emerge;
 		but "large averages" never inter-merge""")		
 
-
 	parser.add_argument("--plotccc", action='store_true', help="""Turn this option on to generate
 		a plot of the ccc scores for all comparisons for the FIRST iteration of all vs all.
 		Running on a cluster or via ssh remotely might not support plotting.""",default=False)
 
-
+	parser.add_argument("--subset",type=int,default=0,help="""Refine only this substet
+		of particles from the stack provided through --input""")
+		
 	(options, args) = parser.parse_args()
+	
+	
+	'''
+	Make the directory where to create the database where the results will be stored
+	'''
+	from e2spt_classaverage import sptmakepath
+	options = sptmakepath(options,'spt_hac')
+	
+	if not options.input:
+		parser.print_help()
+		exit(0)
+	elif options.subset:
+		subsetStack = options.path + '/subset' + str( options.subset ).zfill( len( str( options.subset))) + '.hdf' 
+		print "\nSubset to be written to", subsetStack
+		
+		subsetcmd = 'e2proc3d.py ' + options.input + ' ' + subsetStack + ' --first=0 --last=' + str(options.subset-1) 
+		print "Subset cmd is", subsetcmd
+		
+		p=subprocess.Popen( subsetcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+		text=p.communicate()	
+		p.stdout.close()
+		
+		options.input = subsetStack
+	
 	
 	'''
 	If --radius of the particle is provided, we calculate the optimal alignment steps for 
@@ -389,12 +421,6 @@ def main():
 				
 			elif options.searchfine == searchfinedefault:
 				options.searchfine = searchF
-	
-	'''
-	Make the directory where to create the database where the results will be stored
-	'''
-	from e2spt_classaverage import sptmakepath
-	options = sptmakepath(options,'spt_hac')
 	
 	'''
 	Store parameters in parameters.txt file inside --path
@@ -1217,11 +1243,10 @@ def allvsall(options):
 								
 				avg=avgr.finish()
 				
-				
-				print "THe average was successfully finished"
+				print "\nTHe average was successfully finished"
 
 				if options.autocenter:
-					print "\n\n\n\nYou have selected to autocenter!\n"
+					print "\nYou have selected to autocenter!\n"
 					#avg = avg.process('xform.centerofmass')
 					
 					avgac = avg.copy()
@@ -1285,12 +1310,10 @@ def allvsall(options):
 							FinalAliStack.update({int(p):subp2_forFinalAliStack})		#But let's keep track of them, and write them out only when the LAST iteration has been reached
 							print "After AUTOCENTER I have CHANGED a particle2 in finalAliStack to have this transform", totalt
 				
-				
-				
-				
-				
-				
-				
+				if options.sym != 'c1' and options.sym !='C1' and not options.breaksym:
+					if options.verbose > 5:
+						print "\nApplying symmetry to average", options.sym
+					avg=avg.process('xform.applysym',{'sym':options.sym})
 				
 				print "I will set the multiplicity of the average"
 				avgmultiplicity = ptcl1['spt_multiplicity'] + ptcl2['spt_multiplicity']		#Define and set the multiplicity of the average

@@ -195,7 +195,9 @@ def main():
 		
 	parser.add_argument("--keep",type=float,help="The fraction of particles to keep in each class.",default=1.0, guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode='alignment,breaksym')
 	parser.add_argument("--inixforms",type=str,help="directory containing a dict of transform to apply before reference generation", default="", guitype='dirbox', dirbasename='spt_|sptsym_', row=7, col=0,rowspan=1, colspan=2, nosharedb=True, mode='breaksym')
-	parser.add_argument("--breaksym",action="store_true", help="Break symmetry. Do not apply symmetrization after averaging", default=False, guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, nosharedb=True, mode=',breaksym[True]')
+	parser.add_argument("--breaksym",action="store_true", default=False,help="""Break symmetry. Do not 
+		apply symmetrization after averaging, even if searching the asymmetric unit provided 
+		through --sym only for alignment. Default=False""", guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, nosharedb=True, mode=',breaksym[True]')
 	
 	parser.add_argument("--groups",type=int,help="""This parameter will 
 		split the data into a user defined number of groups. For purposes of gold-standard FSC
@@ -263,16 +265,51 @@ def main():
 		a plot of the ccc scores during each iteration.
 		Running on a cluster or via ssh remotely might not support plotting.""",default=False)
 
+	parser.add_argument("--subset",type=int,default=0,help="""Refine only this substet
+		of particles from the stack provided through --input""")
+	
 	(options, args) = parser.parse_args()
-	
-	#print "options are", options
-	
 		
-	#print help 
+	
+	'''
+	Get rootpath to provide absoulute paths to files.
+	Make the directory where to create the database where the results will be stored, if --resume is not provided.
+	'''
+	
+	rootpath = os.getcwd()
+	#print "I am trying to open from here", rootpath
+	#print "And the path is", options.path
+
+	if not options.resume:
+		options = sptmakepath(options,'spt')	
+	else:
+		if rootpath not in options.resume:
+			options.resume = rootpath + '/' + options.resume
+	
+		if not options.path:
+			print """\nERROR: If you provide --resume, you need to specify which working 
+			directory needs to be resumed. Provide it through --path"""			
+			sys.exit()
+
+	abspath= rootpath + '/' + options.path
+	#print "\nThus the abs path could be", abspath
+	
+	
 	if not options.input:
 		parser.print_help()
 		exit(0)
+	elif options.subset:
+		subsetStack = options.path + '/subset' + str( options.subset ).zfill( len( str( options.subset))) + '.hdf' 
+		print "\nSubset to be written to", subsetStack
 		
+		subsetcmd = 'e2proc3d.py ' + options.input + ' ' + subsetStack + ' --first=0 --last=' + str(options.subset-1) 
+		print "Subset cmd is", subsetcmd
+		
+		p=subprocess.Popen( subsetcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+		text=p.communicate()	
+		p.stdout.close()
+		
+		options.input = subsetStack
 
 	if options.radius and float(options.radius) > 0.0:
 		#print "(e2spt_classaverage.py)(main) before calling calcAliStep, options.input is", options.input
@@ -485,31 +522,6 @@ def main():
 			sys.exit(1)
 		
 	logger = E2init(sys.argv, options.ppid)
-	
-	
-	
-	
-	'''
-	Get rootpath to provide absoulute paths to files.
-	Make the directory where to create the database where the results will be stored, if --resume is not provided.
-	'''
-	
-	rootpath = os.getcwd()
-	print "I am trying to open from here", rootpath
-	print "And the path is", options.path
-
-	if not options.resume:
-		options = sptmakepath(options,'spt')	
-	else:
-		if rootpath not in options.resume:
-			options.resume = rootpath + '/' + options.resume
-	
-		if not options.path:
-			print "ERROR: If you provide --resume, I need to know what working directory needs to be resumed. Provide it through --path"
-			sys.exit()
-
-	abspath= rootpath + '/' + options.path
-	print "Thus the abs path could be", abspath
 	
 	'''
 	Store parameters in parameters.txt file inside --path
@@ -2128,13 +2140,15 @@ class Align3DTask(JSTask):
 		if isinstance(self.data["image"],EMData) :
 			image=self.data["image"]
 		else: 
+			print "\nImage to align is", self.data["image"][1], self.data["image"][2]
+			print "Inside path", classoptions['options'].path
 			image=EMData(self.data["image"][1],self.data["image"][2])
-		
+			
 		"""
 		CALL the alignment function
 		"""
 		nptcls = EMUtil.get_image_count(classoptions['options'].input)
-		
+		print "\n(e2spt_classaverage.py)(Align3DTaks)(execute) nptcls is", nptcls
 		#print "classoptions are", classoptions
 		
 		xformslabel = 'tomo_' + str(classoptions['ptclnum']).zfill( len( str(nptcls) ) )
