@@ -3,8 +3,6 @@
 # Author: Jesus Galaz, 06/05/2012 - Last change 12/17/2012
 # Copyright (c) 2011 Baylor College of Medicine
 #
-# ******** CHANGES FOR DONGHUA INCLUDED *********
-#
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
 # complete EMAN2 and SPARX software packages have some GPL dependencies,
@@ -29,12 +27,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
-#
-#
-	
+
 import os, sys, commands
 from EMAN2 import *
-from pylab import figure, show	
 import math
 import numpy as np
 
@@ -112,6 +107,12 @@ def main():
 	parser.add_argument("--verbose", "-v", default=0, help="""Verbose level [0-9], higner 
 		number means higher level of verboseness""",dest="verbose", action="store", metavar="n",type=int)
 	
+	parser.add_argument("--sym", dest = "sym", default='c1', help = """Symmetry to impose 
+		- choices are: c<n>, d<n>, h<n>, tet, oct, icos.
+		For this to make any sense in the context of this program, the particles need to be
+		aligned to the symmetry axis first, which can be accomplished by running them 
+		through e2symsearch3d.py.""")
+	
 	parser.add_argument("--classifymaxpeaks",type=int,default=0, help="""Number of highest 
 		peaks to consider for classification. Amongst the n peaks provided, --classifymaxpeaks=n,
 		the peak occurring at the largest radius will be used as the classifier.
@@ -125,7 +126,7 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	import matplotlib.pyplot as plt
-	from matplotlib.ticker import MaxNLocator
+	#from matplotlib.ticker import MaxNLocator
 	
 	from e2spt_classaverage import sptmakepath
 	options = sptmakepath(options,'spt_radialplot')
@@ -344,7 +345,7 @@ def classifymax( options, maxsall ):
 		#print "ptclindx is", ptclindx
 		
 		maxs = maxsall[f]
-		print "maxs are", maxs
+		print "\nmaxs are", maxs
 		
 		maxsSortedScore = sorted(maxs, key=itemgetter(1)) 					#first sort by score, which is the second element in the list of lists, [[pixel,value],[pixel,value],...]
 		print "Sorted peaks are", maxsSortedScore
@@ -359,13 +360,18 @@ def classifymax( options, maxsall ):
 		print "therefore pixelvals are", pixelvals
 		
 		maxRadPixel = max(pixelvals)
-		
+		if options.shrink:
+			maxRadPixel *= options.shrink
 		#print "And maxRadPixel is", maxRadPixel
 		
 		sizeClasses.add( maxRadPixel )
 		particlesByRadius.update( { f:maxRadPixel } )
 	
+	print "There are these many sizeClasses", len (sizeClasses), sizeClasses
 	for radius in sizeClasses:
+		
+		print "Analyzing class of size", radius
+		
 		#print "radius is", radius
 		radiusTag = str( radius ).zfill( len( str( radius)))
 		outStack = options.path + '/classRadius' + radiusTag + '.hdf' 
@@ -378,7 +384,7 @@ def classifymax( options, maxsall ):
 				ptcl=EMData(ptclfile,ptclindx)
 				radiusAngs = float(radius)*float(apix)
 				#print "radiusAngs is", radiusAngs
-				print "\nFound a particle at radius in pixels%d which is %f in angstroms" % ( radius, radiusAngs )
+				print "\nFound a particle at radius in pixels %d which is %f in angstroms" % ( radius, radiusAngs )
 				ptcl['spt_radialplot_radius']=radius
 				ptcl.write_image( outStack, -1 )
 	
@@ -432,14 +438,26 @@ def calcvalues(a,options):
 
 	# highpass
 	if options.highpass:
+		#if options.shrink:
+		#	options.highpass[1].update({'apix':a['apix_x']})
+			
 		a.process_inplace(options.highpass[0],options.highpass[1])
 
 	# preprocess
 	if options.preprocess:
+		#try:
+		#	if options.shrink:
+	 	#		options.highpass[1].update({'apix':a['apix_x']})
+		#	
+		#	a.process_inplace(options.preprocess[0],options.preprocess[1])
+		#except:
 		a.process_inplace(options.preprocess[0],options.preprocess[1])
-
+			
 	# lowpass
 	if options.lowpass:
+		#if options.shrink:
+		#	options.highpass[1].update({'apix':a['apix_x']})
+			
 		a.process_inplace(options.lowpass[0],options.lowpass[1])
 
 	# threshold
@@ -460,9 +478,11 @@ def calcvalues(a,options):
 			
 		a=a.process("math.meanshrink",{"n":shrinkfactor})
 	
-	if options.threshold:
-		a=a.process("threshold.belowtozero",{"minval":0.0})
-
+	if options.sym != 'c1' and options.sym !='C1':
+		if options.verbose > 5:
+			print "\nApplying symmetry to average", options.sym
+		a=a.process('xform.applysym',{'sym':options.sym})
+	
 	if options.mode == 'sphere':
 		print "I will calculate the radial density"
 		values = a.calc_radial_dist(a['nx']/2, 0, 1, 1)
