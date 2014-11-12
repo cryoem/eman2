@@ -310,11 +310,6 @@ def main():
 		p.stdout.close()
 		
 		options.input = subsetStack
-
-	if options.radius and float(options.radius) > 0.0:
-		#print "(e2spt_classaverage.py)(main) before calling calcAliStep, options.input is", options.input
-		options = calcAliStep(options)
-	
 		
 	if options.align:
 		#print "There's options.align", options.align
@@ -425,72 +420,16 @@ def main():
 			elif options.searchfine == searchfinedefault:
 				options.searchfine = searchF	
 	
+	if options.radius and float(options.radius) > 0.0:
+		#print "(e2spt_classaverage.py)(main) before calling calcAliStep, options.input is", options.input
+		options = calcAliStep(options)
+	
 	
 	'''
 	Parse parameters
 	'''
-	if options.align:
-		print "(e2spt_classaverage.py) --align to parse is", options.align
-		options.align=parsemodopt(options.align)
 	
-	#if options.falign and not options.faligncmp:
-	#	options.faligncmp = options.aligncmp	
-			
-	#print "(e2spt_classaverage.py) --falign before parsing is", options.falign, type(options.falign)
-
-	if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none': 
-		options.falign=parsemodopt(options.falign)
-		#print "(e2spt_classaverage.py) --falign parsed is", options.falign, type(options.falign)
-		
-	#sys.exit()
-	
-	#print "\n\nTHE ALIGNERS ARE ", options.falign, options.align
-	
-	if options.aligncmp: 
-		options.aligncmp=parsemodopt(options.aligncmp)
-	
-	if options.faligncmp: 
-		options.faligncmp=parsemodopt(options.faligncmp)
-	
-	if options.averager: 
-		options.averager=parsemodopt(options.averager)
-	
-	if options.autocenter:
-		options.autocenter=parsemodopt(options.autocenter)
-		
-	if options.autocentermask:
-		options.autocentermask=parsemodopt(options.autocentermask)
-	
-	if options.normproc and options.normproc != 'None' and options.normproc != 'none':
-		options.normproc=parsemodopt(options.normproc)
-	
-	if options.mask and options.mask != 'None' and options.mask != 'none':
-		#print "parsing mask", sys.exit()
-		options.mask=parsemodopt(options.mask)
-	
-	if options.preprocess and options.preprocess != 'None' and options.preprocess != 'none': 
-		options.preprocess=parsemodopt(options.preprocess)
-		
-	if options.threshold and options.threshold != 'None' and options.threshold != 'none': 
-		options.threshold=parsemodopt(options.threshold)
-		
-	if options.preprocessfine and options.preprocessfine != 'None' and options.preprocessfine != 'none': 
-		options.preprocessfine=parsemodopt(options.preprocessfine)
-		
-	if options.lowpass and options.lowpass != 'None' and options.lowpass != 'none': 
-		options.lowpass=parsemodopt(options.lowpass)
-		
-	if options.lowpassfine and options.lowpassfine != 'None' and options.lowpassfine != 'none': 
-		options.lowpassfine=parsemodopt(options.lowpassfine)
-	
-	if options.highpass and options.highpass != 'None' and options.highpass != 'none': 
-		options.highpass=parsemodopt(options.highpass)
-		
-	if options.highpassfine and options.highpassfine != 'None' and options.highpassfine != 'none': 
-		options.highpassfine=parsemodopt(options.highpassfine)
-		
-	if options.postprocess and options.postprocess != 'None' and options.postprocess != 'none': 
-		options.postprocess=parsemodopt(options.postprocess)
+	options = sptOptionsParser( options )
 
 	if options.resultmx: 
 		print "Sorry, resultmx not implemented yet"
@@ -527,10 +466,6 @@ def main():
 	Store parameters in parameters.txt file inside --path
 	'''
 	cmdwp = writeParameters(options,'e2spt_classaverage.py', 'sptclassavg')
-	
-	
-	
-	
 	
 	
 	try: 
@@ -1064,15 +999,12 @@ def main():
 			from e2spt_hac import plotter
 			plotter(plotX, classScoresList, options, plotName, maxX, maxY)
 		
-			
 		if options.verbose: 
 			print "Preparing final average"
-		
 		
 		if type(ref) is list:
 			print "You supplied a reference file that has more than one reference in it! EXITING."
 			sys.exit()
-		
 		
 		elif not options.donotaverage:									
 			ref['origin_x']=0
@@ -1102,17 +1034,8 @@ def main():
 				resumeDict.close()
 			
 			actualNums = [] 		#Reset this so that when --resume is provided the incomplete jason file is 'fixed' considering the info in actualNums only once
-		
-		
-			
-				
-				#sys.exit()
 
-		
-		
 		ic+=1	
-		 
-		
 		
 	if options.inixforms: 
 		preOrientationsDict.close()
@@ -1123,6 +1046,132 @@ def main():
 	sys.stdout.flush()
 	
 	return
+
+
+def sptOptionsParser( options ):
+	try:
+		if options.align:
+			#print "(e2spt_classaverage.py) --align to parse is", options.align
+			options.align=parsemodopt(options.align)
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --align not provided"
+		
+	try:
+		if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none': 
+			options.falign=parsemodopt(options.falign)
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --falign not provided"
+	
+	try:
+		if options.aligncmp: 
+			options.aligncmp=parsemodopt(options.aligncmp)
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --aligncmp not provided"
+	
+	try:	
+		if options.faligncmp: 
+			options.faligncmp=parsemodopt(options.faligncmp)
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --faligncmp not provided"
+		
+	try:
+		if options.averager: 
+			options.averager=parsemodopt(options.averager)
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --averager not provided"
+		
+	try:
+		if options.autocenter:
+			options.autocenter=parsemodopt(options.autocenter)
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --autocenter not provided"
+		
+	try:
+		if options.autocentermask:
+			options.autocentermask=parsemodopt(options.autocentermask)
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --autocentermask not provided"
+	
+	try:
+		if options.normproc and options.normproc != 'None' and options.normproc != 'none':
+			options.normproc=parsemodopt(options.normproc)
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --normproc not provided"
+	
+	try:
+		if options.mask and options.mask != 'None' and options.mask != 'none':
+			#print "parsing mask", sys.exit()
+			options.mask=parsemodopt(options.mask)
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --mask not provided"
+	
+	try:	
+		if options.preprocess and options.preprocess != 'None' and options.preprocess != 'none': 
+			options.preprocess=parsemodopt(options.preprocess)
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --preprocess not provided"
+	
+	try:	
+		if options.threshold and options.threshold != 'None' and options.threshold != 'none': 
+			options.threshold=parsemodopt(options.threshold)
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --threshold not provided"
+	
+	try:
+		if options.preprocessfine and options.preprocessfine != 'None' and options.preprocessfine != 'none': 
+			options.preprocessfine=parsemodopt(options.preprocessfine)
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --preprocessfine not provided"
+	
+	try:	
+		if options.lowpass and options.lowpass != 'None' and options.lowpass != 'none': 
+			options.lowpass=parsemodopt(options.lowpass)
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --lowpass not provided"
+	
+	try:
+		if options.lowpassfine and options.lowpassfine != 'None' and options.lowpassfine != 'none': 
+			options.lowpassfine=parsemodopt(options.lowpassfine)
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --lowpassfine not provided"
+	
+	try:
+		if options.highpass and options.highpass != 'None' and options.highpass != 'none': 
+			options.highpass=parsemodopt(options.highpass)
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --highpass not provided"
+	
+	try:
+		if options.highpassfine and options.highpassfine != 'None' and options.highpassfine != 'none': 
+			options.highpassfine=parsemodopt(options.highpassfine)
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --highpassfine not provided"
+	
+	
+	try:
+		if options.postprocess and options.postprocess != 'None' and options.postprocess != 'none': 
+			options.postprocess=parsemodopt(options.postprocess)
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --postprocess not provided"
+		
+	return options
 
 
 '''
@@ -1546,8 +1595,10 @@ def preprocessing(image,options,mask,clipali,normproc,shrink,lowpass,highpass,pr
 	'''
 	Make the mask first 
 	'''
+	print "masking"
 	maskimg = EMData( int(image["nx"]), int(image["ny"]), int(image["nz"]) )
 	maskimg.to_one()
+	print "Donde creating mask"
 	
 	#mask['origin_x']=0
 	#mask['origin_y']=0
@@ -1596,7 +1647,7 @@ def preprocessing(image,options,mask,clipali,normproc,shrink,lowpass,highpass,pr
 	
 	if mask and mask != 'None' and mask != 'none':
 		#if options.verbose:
-			#print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
+		print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
 		maskimg.process_inplace(mask[0],mask[1])
 		
 		print "(e2spt_classaverage.py)(preprocessing) --mask provided:", mask
@@ -1760,7 +1811,8 @@ def preprocessing(image,options,mask,clipali,normproc,shrink,lowpass,highpass,pr
 		#print "To this ptclst", preproclst
 		#print "\n******************\n*******************\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
 		#sys.exit()
-		
+	
+	print "Done preprocessing"	
 	return simage
 	
 
@@ -1838,6 +1890,7 @@ def makeAverage(options,ic,align_parms,it=1):
 	if averager[0] == 'mean':
 		averager[1]['sigma'] = variance
 	
+	print "averager is", averager
 	avgr=Averagers.get(averager[0], averager[1])
 	included=[]
 	
