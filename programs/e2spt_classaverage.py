@@ -1960,7 +1960,7 @@ def makeAverage(options,ic,align_parms,it=1):
 
 	print "Will finalize average"
 	
-	avg['spt_multiplicity']=len(included)
+	
 	avg=avgr.finish()
 	print "done"
 		
@@ -1968,6 +1968,8 @@ def makeAverage(options,ic,align_parms,it=1):
 		avg=avg.process('xform.applysym',{'sym':symmetry})
 	avg["class_ptcl_idxs"]=included
 	avg["class_ptcl_src"]=ptcl_file
+	avg['spt_multiplicity']=len(included)
+	avg['spt_ptcl_indxs']=included
 	
 	if averager[0] == 'mean':
 		varmapname = path + '/class_' + str(ic).zfill( len( str(ic) )) + '_varmap.hdf'
