@@ -193,8 +193,15 @@ def main():
 	parser.add_argument("--averager",type=str,help="""The type of averager used to produce 
 		the class average. Default=mean.tomo""",default="mean.tomo")
 		
-	parser.add_argument("--keep",type=float,help="The fraction of particles to keep in each class.",default=1.0, guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode='alignment,breaksym')
+	parser.add_argument("--keep",type=float,default=1.0,help="""The fraction of particles to keep in each class.""", 
+		guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode='alignment,breaksym')
+	
+	parser.add_argument("--keepsig", action="store_true", help="""
+		Causes the keep argument to be interpreted in standard deviations.""",
+		default=False, guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
+
 	parser.add_argument("--inixforms",type=str,help="directory containing a dict of transform to apply before reference generation", default="", guitype='dirbox', dirbasename='spt_|sptsym_', row=7, col=0,rowspan=1, colspan=2, nosharedb=True, mode='breaksym')
+	
 	parser.add_argument("--breaksym",action="store_true", default=False,help="""Break symmetry. Do not 
 		apply symmetrization after averaging, even if searching the asymmetric unit provided 
 		through --sym only for alignment. Default=False""", guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, nosharedb=True, mode=',breaksym[True]')
@@ -205,7 +212,6 @@ def main():
 		
 	parser.add_argument("--randomizewedge",action="store_true", help="This parameter is EXPERIMENTAL. It randomizes the position of the particles BEFORE alignment, to minimize missing wedge bias and artifacts during symmetric alignment where only a fraction of space is scanned", default=False)
 	parser.add_argument("--savepreprocessed",action="store_true", help="Will save stacks of preprocessed particles (one for coarse alignment and one for fine alignment if preprocessing options are different).", default=False)
-	parser.add_argument("--keepsig", action="store_true", help="Causes the keep argument to be interpreted in standard deviations.",default=False, guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
 	
 	#parser.add_argument("--nocenterofmass", default=False, action="store_true", help="""Disable Centering 
 	#	of mass of the subtomogram every iteration.""", guitype='boolbox', row=6, col=2, rowspan=1, colspan=1, mode='alignment,breaksym')
@@ -560,6 +566,9 @@ def main():
 		print "Which converted into set is", actualNums
 		
 		resumeDict.close()
+	
+	
+	
 				
 	groupsize = nptcl
 	ngroups = options.groups
@@ -645,6 +654,12 @@ def main():
 	originalOutput = options.output
 	
 	for ic in range(int(ncls)):
+		
+		
+		
+		
+		
+		
 		classize=nptcl
 		if ncls==1: 
 			ptclnums=range(nptcl)						# Start with a list of particle numbers in this class
@@ -1944,6 +1959,8 @@ def makeAverage(options,ic,align_parms,it=1):
 		print "Kept %d / %d particles in average"%(len(included),len(align_parms))
 
 	print "Will finalize average"
+	
+	avg['spt_multiplicity']=len(included)
 	avg=avgr.finish()
 	print "done"
 		
