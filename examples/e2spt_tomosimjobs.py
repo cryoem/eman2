@@ -1251,7 +1251,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			#>>alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --radius=" + str(options.radius) + " --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_translate_3d:search=" + str(options.transrange) + ":delta=12:dphi=12:verbose=0 --parallel=" + options.parallel + " --falign=refine_3d_grid:delta=3:range=12:search=2 --averager=mean.tomo --aligncmp=" + options.aligncmp + " --faligncmp=" + options.faligncmp + " --shrink=" + str(options.shrinkalign) + " --shrinkfine=" + str(options.shrinkalign) +" --savesteps --saveali --normproc=" + str(options.normproc)  + ' --iter=' + str(options.iter) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose)
 			
 			alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos + " --output=" + output + " --ref=" + ref + " --radius=" + str(options.radius) + " --precision=" + str(options.precision) + " --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_translate_3d:search=" + str(options.search) + ":delta=12:dphi=12:verbose=0 --parallel=" + options.parallel + " --falign=refine_3d_grid:delta=3:range=12:search=2 --averager=mean.tomo --aligncmp=" + options.aligncmp + " --faligncmp=" + options.faligncmp + " --shrink=" + str(options.shrinkalign) + " --shrinkfine=" + str(options.shrinkalign) +" --savesteps --saveali --normproc=" + str(options.normproc)  + ' --iter=' + str(options.iter) + ' --npeakstorefine=' + str(options.npeakstorefine) + ' --verbose=' + str(options.verbose)
-			alicmd += " --nocenterofmass"
+			#alicmd += " --nocenterofmass"
 			
 			
 			if options.shrinkalign or options.lowpass or options.highpass:
@@ -1260,7 +1260,7 @@ def gencmds(options,rootpath,nrefs,tiltrangetag,tiltrange,nslicestag,nslices,snr
 			if options.quicktest:
 				#>>alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos.replace('.hdf','_ptcls.hdf') + " --output=" + output + " --ref=" + ref + " --radius=" + str(options.radius) + " -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_symmetry_3d:sym=c1:verbose=0 --parallel=" + options.parallel + " --falign=None --averager=mean.tomo --aligncmp=" + options.aligncmp + " --faligncmp=" + options.faligncmp + " --shrink=3 --normproc=" + str(options.normproc) + ' --iter=' + str(options.iter) + ' --npeakstorefine=1 --savesteps --saveali --refpreprocess'
 				alicmd = " && e2spt_classaverage.py --path=" + alipath1 + " --input=" + subtomos + " --output=" + output + " --ref=" + ref + " --radius=" + str(options.radius) + " -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=" + options.lowpass + " --highpass=" + options.highpass + " --align=rotate_symmetry_3d:sym=c1:verbose=0 --parallel=" + options.parallel + " --falign=None --averager=mean.tomo --aligncmp=" + options.aligncmp + " --faligncmp=" + options.faligncmp + " --shrink=3 --normproc=" + str(options.normproc) + ' --iter=' + str(options.iter) + ' --npeakstorefine=1 --savesteps --saveali --refpreprocess'
-				alicmd += " --nocenterofmass"
+				#alicmd += " --nocenterofmass"
 			
 			#You want --wedgeangle (or data collection range) to be a bit bigger than it actually is
 			#so that the missing wedge is smaller than it actually is, to ensure there will be no overlap with any data.
@@ -1652,10 +1652,18 @@ def runcmd(cmd):
 	if cmd:
 		p=subprocess.Popen( cmd , shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	
-		for line in iter(p.stdout.readline, ''):
-			print line.replace('\n','')
-
-		p.communicate()	
+		#for line in iter(p.stdout.readline, ''):
+		#	print line.replace('\n','')
+		
+		while True:
+			out = p.stdout.read(1)
+			if out == '' and p.poll() != None:
+				break
+			if out != '':
+				sys.stdout.write(out)
+				sys.stdout.flush()
+		
+		#p.communicate()	
 		p.stdout.close()
 	else:
 		print "Command to run was empty!"
