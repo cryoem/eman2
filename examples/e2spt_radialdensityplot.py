@@ -342,7 +342,7 @@ def classifymax( options, maxsall ):
 		#print "\nimgfile is", imgfile
 		
 		ptclindx = int(f.split('_indxtag')[-1])
-		#print "ptclindx is", ptclindx
+		print "ptclindx is", ptclindx
 		
 		maxs = maxsall[f]
 		print "\nmaxs are", maxs
@@ -379,12 +379,13 @@ def classifymax( options, maxsall ):
 			#print "ele is", ele
 			#print "particlesByRadius[ele] is", particlesByRadius[ele]
 			if int(particlesByRadius[ele]) == int(radius):
-				ptclfile = f.split('_indxtag')[0]
-				ptclindx = int(f.split('_indxtag')[-1])
-				ptcl=EMData(ptclfile,ptclindx)
+				ptclfile = ele.split('_indxtag')[0]
+				ptclindx = int(ele.split('_indxtag')[-1])
+				ptcl = EMData(ptclfile,ptclindx)
 				radiusAngs = float(radius)*float(apix)
 				#print "radiusAngs is", radiusAngs
 				print "\nFound a particle at radius in pixels %d which is %f in angstroms" % ( radius, radiusAngs )
+				print "To be extracted from file %s and index %d" %(ptclfile,ptclindx)
 				ptcl['spt_radialplot_radius']=radius
 				ptcl.write_image( outStack, -1 )
 	
@@ -482,7 +483,10 @@ def preprocRadPlot( a, options):
 	# threshold
 	if options.threshold:
 		a.process_inplace(options.threshold[0],options.threshold[1])
-
+	
+	# mask yet again
+	a.mult(mask)
+	
 	# Shrink
 	if options.shrink>1 :
 		shrinkfactor = options.shrink
