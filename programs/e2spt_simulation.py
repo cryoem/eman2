@@ -1082,8 +1082,12 @@ class SubtomoSimTask(JSTask):
 			
 			prj_r = prj
 			
+			ctffactor=1.0
+			if options.applyctf:
+				ctffactor=2.0
+			
 			if options.snr and options.snr != 0.0 and options.snr != '0.0' and options.snr != '0' and dimension == 3:
-				prj_r = noiseit( prj_r, options, nslices ) 
+				prj_r = noiseit( prj_r, options, nslices, outname, i, ctffactor ) 
 				
 			prj_fft = prj.do_fft()
 			
@@ -1101,8 +1105,8 @@ class SubtomoSimTask(JSTask):
 				prj_r = prj_fft.do_ift()							#Go back to real space
 				prj_r['ctf'] = ctf
 		
-			if options.snr and options.snr != 0.0 and options.snr != '0.0' and options.snr != '0' and dimension == 3:
-				prj_r = noiseit( prj_r, options, nslices )
+				if options.snr and options.snr != 0.0 and options.snr != '0.0' and options.snr != '0' and dimension == 3:
+					prj_r = noiseit( prj_r, options, nslices, outname, i, ctffactor )
 
 			ctfed_projections.append(prj_r)
 			#print "Appended ctfed prj in slice j", j
@@ -1243,7 +1247,7 @@ class SubtomoSimTask(JSTask):
 jsonclasses["SubtomoSimTask"]=SubtomoSimTask.from_jsondict
 
 
-def noiseit( prj_r, options, nslices ):
+def noiseit( prj_r, options, nslices, outname, i, ctffactor ):
 	
 	noise = EMData()
 	nx=prj_r['nx']
@@ -1265,7 +1269,7 @@ def noiseit( prj_r, options, nslices ):
 		noiseStackName = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_NOISE.hdf')
 		noise.write_image( noiseStackName, -1 )
 	
-	noise *= float( options.snr )/2.0
+	noise *= float( options.snr )/ ctffactor
 
 	#if noise:
 	#print "I will add noise"
