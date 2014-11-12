@@ -328,7 +328,7 @@ def initialize_data(inputfile,inputmodel,tltfile,pad,no_weights,preprocess):
 		f=file(tltfile,'r')
 		lines=f.readlines()
 		for i,line in enumerate(lines):
-			elem={"xform":Transform({"type":"eman","az":90,"alt":float(line),"phi":90}),"weight":1.0}
+			elem={"xform":Transform({"type":"eman","az":90,"alt":float(line),"phi":-90}),"weight":1.0}
 			elem["filename"]=inputfile
 			if nslice>1 :
 				elem["filenum"]=0
