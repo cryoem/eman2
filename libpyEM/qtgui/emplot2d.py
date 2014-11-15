@@ -456,10 +456,12 @@ class EMPlot2DWidget(EMGLWidget):
 
 		if render:
 			fig=Figure((self.width()/72.0,self.height()/72.0),dpi=72.0)
-			ax=fig.add_axes((.07,.1,.91,.88),autoscale_on=False,xlim=self.xlimits,ylim=self.ylimits,xscale=self.axisparms[2],yscale=self.axisparms[3])
-			#else : ax=fig.add_axes((.08,.08,.9,.9),autoscale_on=True,xscale=self.axisparms[2],yscale=self.axisparms[3])
+			ax=fig.add_axes((.1,.1,.88,.88),autoscale_on=False,xlim=self.xlimits,ylim=self.ylimits,xscale=self.axisparms[2],yscale=self.axisparms[3])
+			#else : ax=fig.add_axes((.18,.18,.9,.9),autoscale_on=True,xscale=self.axisparms[2],yscale=self.axisparms[3])
 			if self.axisparms[0] and len(self.axisparms[0])>0 : ax.set_xlabel(self.axisparms[0],size="xx-large")
 			if self.axisparms[1] and len(self.axisparms[1])>0 : ax.set_ylabel(self.axisparms[1],size="xx-large")
+			ax.tick_params(axis='x', labelsize="x-large")
+			ax.tick_params(axis='y', labelsize="x-large")
 			canvas=FigureCanvasAgg(fig)
 
 			for i in self.axes.keys():
@@ -1605,10 +1607,10 @@ class EMPlot2DInspector(QtGui.QWidget):
 		hbl0.addWidget(self.concatb)
 
 
-		self.loadb=QtGui.QPushButton(self)
-		self.loadb.setText("Load")
-		self.loadb.setEnabled(False)
-		hbl0.addWidget(self.loadb)
+		self.pdfb=QtGui.QPushButton(self)
+		self.pdfb.setText("PDF")
+#		self.pdfb.setEnabled(False)
+		hbl0.addWidget(self.pdfb)
 
 
 		hbl1 = QtGui.QHBoxLayout()
@@ -1828,6 +1830,7 @@ class EMPlot2DInspector(QtGui.QWidget):
 		QtCore.QObject.connect(self.xlabel,QtCore.SIGNAL("textChanged(QString)"),self.updPlot)
 		QtCore.QObject.connect(self.ylabel,QtCore.SIGNAL("textChanged(QString)"),self.updPlot)
 		QtCore.QObject.connect(self.saveb,QtCore.SIGNAL("clicked()"),self.savePlot)
+		QtCore.QObject.connect(self.pdfb,QtCore.SIGNAL("clicked()"),self.savePdf)
 		QtCore.QObject.connect(self.concatb,QtCore.SIGNAL("clicked()"),self.saveConcatPlot)
 		QtCore.QObject.connect(self.wxmin,QtCore.SIGNAL("valueChanged"),self.newLimits)
 		QtCore.QObject.connect(self.wxmax,QtCore.SIGNAL("valueChanged"),self.newLimits)
@@ -1968,6 +1971,10 @@ class EMPlot2DInspector(QtGui.QWidget):
 				out.write("%g\t%g\n"%(data[0][i],data[1][i]))
 
 			print "Wrote ",name2
+
+	def savePdf(self):
+		"""Saves the contents of the current plot to a pdf"""
+		plt.savefig("plot.pdf")
 
 	def updPlot(self,s=None):
 		if self.quiet : return
