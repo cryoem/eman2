@@ -3280,7 +3280,7 @@ void OutlierProcessor::process_inplace(EMData * image)
 						for (int yy=y0; yy<y1; yy++) {
 							for (int xx=x0; xx<x1; xx++) {
 								float lpix=im[src]->get_value_at(xx,yy);
-								if (pix>hithr || pix<lothr || (pix==0 && fix_zero)) continue;
+								if (lpix>hithr || lpix<lothr || (lpix==0 && fix_zero)) continue;
 								c+=lpix;
 								nc++;
 							}
