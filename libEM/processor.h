@@ -4058,6 +4058,41 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		static const string NAME;
 	};
 
+	/** This processor will try and remove outliers (and optionally exactly zero values), replacing any identified values with the local mean value
+	 * @param sigma outliers are defined as mean+-x*sigma where x is the specified value
+	 * @param fix_zero if set, any values that are exactly zero will be treated as outliers)
+	 */
+	class OutlierProcessor:public Processor
+	{
+	  public:
+		void process_inplace(EMData * image);
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		static Processor *NEW()
+		{
+			return new OutlierProcessor();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("fix_zero", EMObject::BOOL, "If set, any pixels that are exactly zero are considered to be outliers, default=false");
+			d.put("sigma", EMObject::FLOAT, "outliers are defined as mean+-x*sigma where x is the specified value, default=3.0");
+			return d;
+		}
+
+		string get_desc() const
+		{
+			return "Identifies any pixels that are outliers and adjusts them to be the average of any nearby non-outlier pixels. Operates iteratively when required, so large 'outlier' areas can be corrected.";
+		}
+
+		static const string NAME;
+	};
+
 	/**Try to eliminate beamstop in electron diffraction patterns. If value1<0 also does radial subtract.
 	 *@param value1 sig multiplier
 	 *@param value2 x of center
@@ -4693,7 +4728,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		static const string NAME;
 	};
 
-
+	
 	/**use least square method to normalize
 	 * @param to reference image normalize to
 	 * @param low_threshold only take into account the reference image's pixel value between high and low threshold (zero is ignored)

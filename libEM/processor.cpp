@@ -94,6 +94,7 @@ const string ValueSquaredProcessor::NAME = "math.squared";
 const string ValueSqrtProcessor::NAME = "math.sqrt";
 const string ToZeroProcessor::NAME = "threshold.belowtozero";
 const string AboveToZeroProcessor::NAME="threshold.abovetozero";
+const string OutlierProcessor::NAME="threshold.outlier.localmean";
 const string Rotate180Processor::NAME = "math.rotate.180";
 const string TransformProcessor::NAME = "xform";
 const string IntTranslateProcessor::NAME = "xform.translate.int";
@@ -306,6 +307,7 @@ template <> Factory < Processor >::Factory()
 
 	force_add<ToZeroProcessor>();
 	force_add<AboveToZeroProcessor>();
+	force_add<OutlierProcessor>();
 	force_add<ToMinvalProcessor>();
 	force_add<CutToZeroProcessor>();
 	force_add<BinarizeProcessor>();
@@ -3235,6 +3237,67 @@ void SigmaZeroEdgeProcessor::process_inplace(EMData * image)
 	image->update();
 }
 
+void OutlierProcessor::process_inplace(EMData * image)
+{
+	if (!image) {
+		LOGWARN("NULL Image");
+		return;
+	}
+
+	bool fix_zero=(bool)params.set_default("fix_zero",0);
+	float sigmamult=(float)params.set_default("sigma",3.0);
+	
+	if (sigmamult<=0.0) throw InvalidValueException(sigmamult,"threshold.outlier.localmean: sigma must be >0");
+	
+	float hithr=(float)image->get_attr("mean")+(float)(image->get_attr("sigma"))*sigmamult;
+	float lothr=(float)image->get_attr("mean")-(float)(image->get_attr("sigma"))*sigmamult;
+
+	int nx=image->get_xsize();
+	int ny=image->get_ysize();
+	int nz=image->get_zsize();
+	
+	// This isn't optimally efficient, but is better than copying each cycle at least
+	EMData *im[2];
+	im[0]=image;
+	im[1]=image->copy();
+	int src=0;
+	
+	if (nz==1) {
+		int repeat=1;
+		while (repeat) {
+			repeat=0;
+			src^=1;
+			for (int y=0; y<ny; y++) {
+				for (int x=0; x<nx; x++) {
+					// if the pixel is an outlier
+					float pix=im[src]->get_value_at(x,y);
+					if (pix>hithr || pix<lothr || (pix==0 && fix_zero)) {
+						int y0=0>y-1?0:y-1;
+						int y1=y>=ny?ny:y+1;
+						int x0=0>x-1?0:x-1;
+						int x1=x>=nx?nx:x+1;
+						float c=0.0f,nc=0.0f;
+						for (int yy=y0; yy<y1; yy++) {
+							for (int xx=x0; xx<x1; xx++) {
+								float lpix=im[src]->get_value_at(xx,yy);
+								if (pix>hithr || pix<lothr || (pix==0 && fix_zero)) continue;
+								c+=lpix;
+								nc++;
+							}
+						}
+						if (nc!=0) im[src^1]->set_value_at(x,y,c/nc);
+						else repeat=1;
+					}
+				}
+			}
+		}
+	}
+	else {
+		throw ImageDimensionException("threshold.outlier.localmean: 3D not yet implemented");
+	}
+	if (src==0) memcpy(im[1]->get_data(),im[0]->get_data(),image->get_xsize()*image->get_ysize()*image->get_zsize()*sizeof(float));
+	delete im[1];
+}
 
 
 void BeamstopProcessor::process_inplace(EMData * image)
