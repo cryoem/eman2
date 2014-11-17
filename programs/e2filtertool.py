@@ -472,6 +472,7 @@ class EMFilterTool(QtGui.QMainWindow):
 
 		self.needupdate=1
 		self.needredisp=0
+		self.lastredisp=1
 		self.procthread=None
 		self.errors=None		# used to communicate errors back from the reprocessing thread
 
@@ -593,12 +594,14 @@ class EMFilterTool(QtGui.QMainWindow):
 
 			if errflag: errors.append(str(pp))
 			needredisp=1					# if all processors are disabled, we don't want a redisplay
+			self.lastredisp=1
 
 		if len(errors)>0 :
 			self.errors=errors
 
 		self.procthread=None					# This is a reference to ourselves (the thread doing the processing). we reset it ourselves before returning
-		self.needredisp=needredisp
+		self.needredisp=max(needredisp,self.lastredisp)
+		self.lastredisp=needredisp
 
 	def setData(self,data):
 		if data==None :
