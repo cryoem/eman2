@@ -57,6 +57,7 @@ def main():
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
 	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.")
 	parser.add_argument("--step",type=str,default="1,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 1,1 (first image skipped)")
+	parser.add_argument("--fixbadpixels",action="store_true",default=False,help="Tries to identify bad pixels in the dark/gain reference, and fills images in with sane values instead")
 	parser.add_argument("--frames",action="store_true",default=False,help="Save the dark/gain corrected frames")
 	parser.add_argument("--normalize",action="store_true",default=False,help="Apply edgenormalization to input images after dark/gain")
 	parser.add_argument("--movie", type=int,help="Display an n-frame averaged 'movie' of the stack, specify number of frames to average",default=0)
@@ -104,8 +105,11 @@ def main():
 				t.process_inplace("threshold.clampminmax",{"minval":0,"maxval":t["mean"]+t["sigma"]*3.5,"tozero":1})
 				a.add_image(t)
 			dark=a.finish()
-			dark.write_image(options.dark.rsplit(".",1)[0]+"_sum.hdf")
 			sigd.write_image(options.dark.rsplit(".",1)[0]+"_sig.hdf")
+			if options.fixbadpixels:
+				sigd.process_inplace("threshold.binary",{"value":sigd["sigma"]/10.0})		# Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
+				dark.mult(sigd)
+			dark.write_image(options.dark.rsplit(".",1)[0]+"_sum.hdf")
 		#else: dark.mult(1.0/99.0)
 		dark.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
 		dark2=dark.process("normalize.unitlen")
@@ -127,14 +131,19 @@ def main():
 				t.process_inplace("threshold.clampminmax",{"minval":0,"maxval":t["mean"]+t["sigma"]*3.5,"tozero":1})
 				a.add_image(t)
 			gain=a.finish()
-			gain.write_image(options.gain.rsplit(".",1)[0]+"_sum.hdf")
 			sigg.write_image(options.gain.rsplit(".",1)[0]+"_sig.hdf")
+			if options.fixbadpixels:
+				sigg.process_inplace("threshold.binary",{"value":sigg["sigma"]/10.0})		# Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
+				if dark!=None : sigg.mult(sigd)
+				gain.mult(sigg)
+			gain.write_image(options.gain.rsplit(".",1)[0]+"_sum.hdf")
 		#else: gain.mult(1.0/99.0)
-		gain.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
+#		gain.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
+
 		
 		if dark!=None : gain.sub(dark)												# dark correct the gain-reference
 		gain.mult(1.0/gain["mean"])									# normalize so gain reference on average multiplies by 1.0
-		gain.process_inplace("math.reciprocal",{"zero_to":1.0})		 
+		gain.process_inplace("math.reciprocal",{"zero_to":0.0})		# setting zero values to zero helps identify bad pixels
 	elif options.gaink2 :
 		gain=EMData(options.gaink2)
 	else : gain=None
@@ -205,9 +214,10 @@ def process_movie(fsp,dark,gain,first,flast,step,options):
 			
 			if dark!=None : im.sub(dark)
 			if gain!=None : im.mult(gain)
+			im.process_inplace("threshold.clampminmax",{"minval":0,"maxval":im["mean"]+im["sigma"]*3.5,"tozero":1})
+			if options.fixbadpixels : im.process_inplace("threshold.outlier.localmean",{"sigma":3.5,"fix_zero":1})		# fixes clear outliers as well as values which were exactly zero
 
 			#im.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
-			im.process_inplace("threshold.clampminmax",{"minval":0,"maxval":im["mean"]+im["sigma"]*3.5,"tozero":1})		# TODO - not sure if 2 is really safe here, even on the high end
 #			im.mult(-1.0)
 			if options.normalize : im.process_inplace("normalize.edgemean")
 			

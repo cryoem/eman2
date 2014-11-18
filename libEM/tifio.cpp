@@ -478,7 +478,7 @@ int TiffIO::write_data(float * data, int image_index, const Region* , EMUtil::EM
 
 	if(bitspersample == CHAR_BIT) {
 		unsigned char *cdata = new unsigned char[nx*ny];
-
+		
 		int src_idx, dst_idx;
 		for (unsigned int i = 0; i < ny; ++i) {
 			for (unsigned int j = 0; j < nx; ++j) {

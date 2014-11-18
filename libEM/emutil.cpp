@@ -1658,7 +1658,7 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny, float& re
 	if (rendermax<=rendermin || std::isnan(rendermin) || std::isnan(rendermax)) {
 #endif
 
-		float m = 0.0f, s = 0.0f;
+		double m = 0.0f, s = 0.0f;
 
 		size_t size = (size_t)nx*ny*nz;
 		float min = data[0], max = data[0];
@@ -1669,6 +1669,7 @@ void EMUtil::getRenderMinMax(float * data, const int nx, const int ny, float& re
 
 			min = data[i] < min ? data[i] : min;
 			max = data[i] > max ? data[i] : max;
+//			if (!Util::goodf(&data[i])) printf("NAN in image at pixel %ld\n",i);
 		}
 
 		m /= (float)(size);

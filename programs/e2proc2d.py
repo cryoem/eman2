@@ -753,7 +753,7 @@ def main():
 							else : d["render_max"] = 255.0
 						else:
 							try:
-								sca = int(options.fixintscaling)
+								sca = float(options.fixintscaling)
 								d["render_min"] = d["mean"]-d["sigma"]*sca
 								d["render_max"] = d["mean"]+d["sigma"]*sca
 							except:

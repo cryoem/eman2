@@ -3256,21 +3256,20 @@ void OutlierProcessor::process_inplace(EMData * image)
 	int ny=image->get_ysize();
 	int nz=image->get_zsize();
 	
-	// This isn't optimally efficient, but is better than copying each cycle at least
+	// This isn't optimally efficient
 	EMData *im[2];
 	im[0]=image;
-	im[1]=image->copy();
-	int src=0;
+	im[1]=image->copy_head();
 	
 	if (nz==1) {
 		int repeat=1;
 		while (repeat) {
+			memcpy(im[1]->get_data(),im[0]->get_data(),image->get_xsize()*image->get_ysize()*image->get_zsize()*sizeof(float));
 			repeat=0;
-			src^=1;
 			for (int y=0; y<ny; y++) {
 				for (int x=0; x<nx; x++) {
 					// if the pixel is an outlier
-					float pix=im[src]->get_value_at(x,y);
+					float pix=im[1]->get_value_at(x,y);
 					if (pix>hithr || pix<lothr || (pix==0 && fix_zero)) {
 						int y0=0>y-1?0:y-1;
 						int y1=y>=ny-1?ny-1:y+1;
@@ -3279,13 +3278,13 @@ void OutlierProcessor::process_inplace(EMData * image)
 						float c=0.0f,nc=0.0f;
 						for (int yy=y0; yy<=y1; yy++) {
 							for (int xx=x0; xx<=x1; xx++) {
-								float lpix=im[src]->get_value_at(xx,yy);
+								float lpix=im[1]->get_value_at(xx,yy);
 								if (lpix>hithr || lpix<lothr || (lpix==0 && fix_zero)) continue;
 								c+=lpix;
 								nc++;
 							}
 						}
-						if (nc!=0) im[src^1]->set_value_at(x,y,c/nc);
+						if (nc!=0) im[0]->set_value_at(x,y,c/nc);
 						else repeat=1;
 					}
 				}
@@ -3295,7 +3294,6 @@ void OutlierProcessor::process_inplace(EMData * image)
 	else {
 		throw ImageDimensionException("threshold.outlier.localmean: 3D not yet implemented");
 	}
-	if (src==0) memcpy(im[1]->get_data(),im[0]->get_data(),image->get_xsize()*image->get_ysize()*image->get_zsize()*sizeof(float));
 	delete im[1];
 }
 
