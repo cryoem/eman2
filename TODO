@@ -1,12 +1,10 @@
 High priority
 2.1
-6/27/13		Deal with shrunk particles
 6/27/13		DDD movies, allow 'usefilt'-like behavior for low/high dose particles
 7/22/12		Counting in filename entry in GUI (was taking a LOOONG time). Fix with new caching system.
 8/2/12		More dimensions in tilt validate
 7/13/13		Gauss boxer can't be run from GUI on second image without funny button series
 2/20/14		Problem with pickling particles and MPI transport  :^((((
-2/20/14		DDD movies, reference based alignment
 2/20/14		Bootstrapping in e2classaverage not working well tolc project
 2/20/14		Finish e2motion
 2/20/14		Eliminate simmx files

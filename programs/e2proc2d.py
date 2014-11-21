@@ -106,14 +106,12 @@ def main():
 	convert IMAGIC format test.hed to HDF format:
 	e2proc2d.py test.hed test.hdf
 
-	convert all MRC format files in current directory to MRCS format:
-	e2proc2d.py *.mrc @.mrcs
+	convert all MRC format files in current directory to HDF format:
+	e2proc2d.py *.mrc @.hdf
 
-	apply a 10 A low-pass filter to a stack of particles and write output to a new file.
-	e2proc2d.py ptcl.hdf ptcl.filt.hdf --process=filter.lowpass.gauss:cutoff_freq=0.1
-
-	invert the contrast in a BDB database. Overwrite the original images
-	e2proc2d.py bdb:particles#set1 bdb:particles#set1 --inplace --mult=-1
+	apply a 10 A low-pass filter to a stack of particles downsample the particles by a factor of 2
+	and write output to a new file.
+	e2proc2d.py ptcl.hdf ptcl.filt.hdf --process filter.lowpass.gauss:cutoff_freq=0.1 --meanshrink 2
 
 	'e2help.py processors -v 2' for a detailed list of available procesors
 	"""

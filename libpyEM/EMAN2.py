@@ -1314,11 +1314,11 @@ def base_name( file_name,extension=False,bdb_keep_dir=False,nodir=False ):
 	else:
 		apath=os.path.relpath(file_name).replace("\\","/").split("/")
 		# for specific directories, we want any references to the same micrograph to share an id
-		if nodir or (len(apath)>1 and apath[-2] in ("sets","particles","micrographs","ddd","raw")) :
+		if nodir or (len(apath)>1 and apath[-2] in ("sets","particles","micrographs","ddd","raw","info")) :
 			if extension :
 				return os.path.basename(file_name)
 			else :
-				return os.path.splitext(os.path.basename(file_name))[0].split("__")[0].replace("_ptcls","")		# double underscore is used to mark tags added to micrograph names
+				return os.path.splitext(os.path.basename(file_name))[0].split("__")[0].replace("_ptcls","").replace("_info","")		# double underscore is used to mark tags added to micrograph names
 
 		# but for other files, like classes_xx which users might make selection lists on, we want to include the
 		# subdirectory name, to prevent mixing between different refinement directories
