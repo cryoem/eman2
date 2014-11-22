@@ -74,7 +74,7 @@ def main():
 	parser.add_option("--iter", 		type="int"         ,	default=30,                 help="number of iterations within alignment (default = 30)" )
 	parser.add_option("--num_ali",      type="int"     	   ,    default=5,         			help="number of alignments performed for stability (default = 5)" )
 	parser.add_option("--thld_err",     type="float"       ,    default=1.0,         		help="threshold of pixel error (default = 1.732)" )
-	parser.add_option("--grouping" , 	type="string"      ,	default="GRP",				help="do grouping of projections: PPR - per projection (default), GRP - different size groups, exclusive, GEV - grouping equal size")
+	parser.add_option("--grouping" , 	type="string"      ,	default="GRP",				help="do grouping of projections: PPR - per projection, GRP - different size groups, exclusive (default), GEV - grouping equal size")
 	parser.add_option("--delta",        type="float"       ,    default=-1.0,         		help="angular step for reference projections (required for GEV method)")
 	parser.add_option("--fl",           type="float"       ,    default=0.3,                help="cut-off frequency of hyperbolic tangent low-pass Fourier filter")
 	parser.add_option("--aa",           type="float"       ,    default=0.2,                help="fall-off of hyperbolic tangent low-pass Fourier filter")
