@@ -139,7 +139,7 @@ sxheader.py bdb:data --params=active --one
 mpirun -np 12 sxali3d.py bdb:data outdirshc/volf.hdf outmatch --CTF --maxit=1 --ou=28 --xr=3.0 --delta=2.0 --MPI   || exit
 
 sxheader.py bdb:data --params=xform.projection --export=outmatch/matchparams.txt    || exit
-mpirun -np 12 sxali3d.py bdb:data outdirshc/volf.hdf poutdirshc --CTF --ou=28 --xr=2.0 --delta=2.0 --maxit=100 --function="[..,demo_user_funcs,ali3d_reference3]" --MPI
+mpirun -np 12 sxali3d.py bdb:data outdirshc/volf.hdf poutdirshc --shc --CTF --ou=28 --xr=2.0 --delta=2.0 --maxit=100 --function="[..,demo_user_funcs,ali3d_reference3]" --MPI
 
 
 # Refinement of the 3D structure using high accuracy alignment
