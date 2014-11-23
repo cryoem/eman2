@@ -45,7 +45,16 @@ e2bdb.py bdb:particles\#mic0_ptcls bdb:particles\#mic1_ptcls bdb:particles\#mic2
 
 sxheader.py bdb:data --params=active --one
 sxheader.py bdb:data --params=xform.align2d --zero
-mpirun -np 16 sxisac.py bdb:data --stab_ali=2 --init_iter=1 --main_iter=1 --match_second=1 --ou=30 --max_round=5 --img_per_grp=60 --thld_err=0.75 --generation=1 --MPI    || exit
+# pre-align particles with sxali2d.py
+sxali2d.py bdb:data None --ou=28 --xr="2 1" --ts="1 0.5" --maxit=33 --dst=90mpirun -np 16 sxisac.py bdb:data --stab_ali=2 --init_iter=1 --main_iter=1 --match_second=1 --ou=30 --max_round=5 --img_per_grp=60 --thld_err=0.75 --generation=1 --MPI    || exit
+
+# apply the results from sxali2d.py to the data:
+sxtransform2d.py bdb:data bdb:stack_ali
+
+# run sxisac.py
+mpirun -np 16 sxisac.py bdb:stack_ali --stab_ali=2 --init_iter=1 --main_iter=1 --match_second=1 --ou=30 --max_round=5 --img_per_grp=60 --thld_err=1.75 --generation=1 --MPI
+
+
 ###################################################################<<<<<<< run_through_example
 # ISAC run with parameters given above is not sufficiently restrictive for EM data. Instead, one may try to use default parameters, in which case
 #   the program will be more stringent, but will run significantly longer.
@@ -100,19 +109,21 @@ sxheader.py bdb:class_averages --params=active --one    || exit
 
 # Second, more advanced version.  Note this one requires number of CPUs to be multiplicity of 3.
 sxheader.py bdb:class_averages --params=stable --zero   || exit
-mpirun -np 12 sxviper.py bdb:class_averages outdirshc --ou=28 --xr=3.0 --delta=2.0 --maxit2=20 --function="[..,demo_user_funcs,ali3d_reference2]"
+mpirun -np 12 sxviper.py bdb:class_averages outdirshc --ou=28 --xr=3.0 --delta=2.0 --function="[..,demo_user_funcs,ali3d_reference2]"
 
 
 # 3D projection alignment - refinement of the initial structure
 sxheader.py bdb:data --params=xform.projection --zero    || exit
+sxheader.py bdb:data --params=active --one
+
 #  establish initial orientations of all projection data
-mpirun -np 12 sxali3d.py  bdb:data  outdirshc/volf.hdf  outmatch --maxit=1  --ou=28 --xr=3.0 --delta=2.0 --MPI   || exit
+mpirun -np 12 sxali3d.py bdb:data outdirshc/volf.hdf outmatch --maxit=1 --ou=28 --xr=3.0 --delta=2.0 --MPI   || exit
 sxheader.py bdb:data --params=xform.projection --export=outmatch/matchparams.txt    || exit
-mpirun -np 12 sxali3d.py bdb:data poutdirshc --shc --ou=28 --xr=2.0 --delta=2.0 --maxit=100 --ref_a=S --function="[..,demo_user_funcs,ali3d_reference3]" --MPI   || exit
+mpirun -np 12 sxali3d.py bdb:data outdirshc/volf.hdf poutdirshc --shc --ou=28 --xr=2.0 --delta=2.0 --maxit=100 --function="[..,demo_user_funcs,ali3d_reference3]" --MPI   || exit
 
 
 # Refinement of the 3D structure using high accuracy "local" alignment
-mpirun -np 12 sxlocal_ali3d.py bdb:data ali3d_e --ou=30 --delta=2 --maxit=3 --chunk=0.25 --function="[..,demo_user_funcs,localali3d_reference4]" --MPI  || exit
+mpirun -np 12 sxlocal_ali3d.py bdb:data ali3d_e --ou=30 --delta=2 --ts=2 --maxit=3 --chunk=0.25 --function="[..,demo_user_funcs,localali3d_reference3]" --center=0 --MPI --debug || exit
 ###################################################################
 # To run gui version, enter the following in the command line:
 # 	sxgui.py --demo=mpibdb &
