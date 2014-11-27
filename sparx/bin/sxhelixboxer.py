@@ -2200,8 +2200,9 @@ def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size
 	#for h in xrange(nhelices):
 	h=0                                                           ## added by@ming
 	for coords in helices_dict:                                   ## added by@ming
-		helix = helices_dict[coords]                              ## added by@ming
-		ctfs.dfang -= helix["astig_jiao"]          ## added by@ming
+		helix = helices_dict[coords]
+		if importctf:			                         ## added by@ming
+			ctfs.dfang -= helix["astig_jiao"]          ## added by@ming
 		ptcl_images  = imgs_0+"_%i.hdf"%h                         # This is what sxhelixboxer outputs, only 'hdf' format is handled.
 		otcl_images  = "bdb:%s/QT"%outdir+ ptcl_images[:-4]
 		ptcl_images  = os.path.join(outdir,ptcl_images)
