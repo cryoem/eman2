@@ -15035,18 +15035,18 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 		print_msg("Pixel size [A]                            : %f\n"%(pixel_size))
 		print_msg("Point-group symmetry group                : %s\n"%(sym))
 		print_msg("Segment height seg_ny                     : %s\n\n"%(seg_ny))
-		
+
 	if maskfile:
 		if type(maskfile) is types.StringType: mask3D = get_image(maskfile)
 		else:                                  mask3D = maskfile
 	else: mask3D = None
 	#else: mask3D = model_circle(last_ring, nx, nx, nx)
-	
+
 	if CTF:
 		from reconstruction import recons3d_4nn_ctf_MPI
 		from filter         import filt_ctf
 	else:	 from reconstruction import recons3d_4nn_MPI
-	
+
 	if( myid == 0):
 		infils = EMUtil.get_all_attributes(stack, "filament")
 		ptlcoords = EMUtil.get_all_attributes(stack, 'ptcl_source_coord')
@@ -15102,7 +15102,7 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 	if ((nx < data_nx) or (data_nx != data_ny)):
 		ERROR('Images should be square with nx and ny equal to nz of reference volume', "localhelicon_MPI", 1, myid)
 	data_nn = max(data_nx, data_ny)
-	
+
 	segmask = pad(model_blank(2*rmax+1, seg_ny, 1, 1.0), data_nx, data_ny, 1, 0.0)
 	
 	if last_ring < 0:
@@ -15132,13 +15132,13 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 	if myid == main_node:
 		print_msg("Pixel size in Angstroms                   : %5.4f\n"%(pixel_size))
 		print_msg("Y search range (pix) initialized as       : %s\n\n"%(yrng))
-	
+
 	#  set attribute updown for each filament, up will be 0, down will be 1
 	for ivol in xrange(nfils):
 		seg_start = indcs[ivol][0]
 		seg_end   = indcs[ivol][1]
 		filamentupdown(data[seg_start: seg_end], pixel_size, dp, dphi)
-		
+
 
 	if debug:
 		finfo.write("seg_start, seg_end: %d %d\n" %(seg_start, seg_end))
@@ -15222,20 +15222,20 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 						pixer[im]  = 0.0
 						data[im].set_attr("pixerr", pixer[im])
 						data[im].set_attr('xform.projection', Torg[im-seg_start])
-					
+
 			if myid == main_node:
 				print_msg("Time of alignment = %d\n"%(time()-start_time))
 				start_time = time()
 
 			mpi_barrier(MPI_COMM_WORLD)
-			
+
 			terminate = mpi_bcast(terminate, 1, MPI_INT, 0, MPI_COMM_WORLD)
 			terminate = int(terminate[0])
 
 			mpi_barrier(MPI_COMM_WORLD)
-			
+
 			if (Iter-1) % search_iter == 0:
-				
+
 				if CTF:  vol = recons3d_4nn_ctf_MPI(myid, data, symmetry=sym, snr = snr, npad = npad)
 				else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, npad = npad)
 
@@ -15244,7 +15244,7 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 					start_time = time()
 
 					#drop_image(vol, os.path.join(outdir, "vol%04d.hdf"%(total_iter)))
-			
+
 					#  symmetry is imposed
 					vol = vol.helicise(pixel_size, dp, dphi, fract, rmax, rmin)
 					print_msg("Imposed delta z and delta phi      : %s,    %s\n"%(dp,dphi))
@@ -15260,7 +15260,7 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 
 				# using current volume
 				bcast_EMData_to_all(vol, myid, main_node)
-			
+
 			mpi_barrier(MPI_COMM_WORLD)
 
 			# write out headers, under MPI writing has to be done sequentially
@@ -15275,7 +15275,7 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 					recv_attr_dict(main_node, stack, data, par_str, 0, nima, number_of_proc)
 			else:
 				send_attr_dict(main_node, data, par_str, 0, nima)
-			
+
 			if myid == main_node:
 				# write params to text file
 				header(stack, params='xform.projection', fexport=os.path.join(outdir, "parameters%04d.txt"%(ooiter)))
@@ -15313,7 +15313,7 @@ def filamentupdown(fildata, pixel_size, dp, dphi):
 	#print " ERRORS :",terr," \n        ",serr
 	if(terr[0] > terr[1]):  updown = 0
 	else:                   updown = 1
-	
+
 	for i in xrange(ns):  fildata[i].set_attr("updown",updown)
 	return
 """
