@@ -291,7 +291,16 @@ namespace EMAN
 		 * @exception InvalidCallException when call this function for a non-stack image */
 		static vector<EMObject> get_all_attributes(const string & file_name, const string & attr_name);
 
-		/** Calculate the min and max pixel value acceptedfor image nomalization,
+		/** Get the min and max pixel value accepted for image nomalization
+		 * from image attribute dictionary, or return zeroes if not present
+		 *
+		 * @param[in] dict image attribute dictionary
+		 * @param[out] rendermin the minimum value for normalization
+		 * @param[out] rendermax the maximum value for normalization
+		 * */
+		static void getRenderLimits(const Dict & dict, float & rendermin, float & rendermax);
+
+		/** Calculate the min and max pixel value accepted for image nomalization,
 		 * if we did not get them from image attribute dictionary, or they are not
 		 * valid values
 		 * rendermin = mean - 3*sigma
@@ -300,11 +309,11 @@ namespace EMAN
 		 * @param[in] data 2D image's data array
 		 * @param[in] nx x dimension size
 		 * @param[in] ny y dimension size
-		 * @param[out] rendermin the minmal value for normalization
+		 * @param[out] rendermin the minimum value for normalization
 		 * @param[out] rendermax the maximum value for normalization
 		 * @param[in] nz z dimension size
 		 * */
-		static void getRenderMinMax(float * data, const int nx, const int ny, float& rendermin, float& rendermax, const int nz = 1);
+		static void getRenderMinMax(float * data, const int nx, const int ny, float & rendermin, float & rendermax, const int nz = 1);
 		
 #ifdef EM_HDF5
 		/** Retrive a single attribute value from a HDF5 image file.
