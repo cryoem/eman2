@@ -67,6 +67,7 @@ def main():
 	#parser.add_argument("--avgs", action="store_true",help="Testing",default=False)
 	parser.add_argument("--noalign",action="store_true",help="Regenerates unaligned particle averages into __orig",default=False)
 	parser.add_argument("--invert",action="store_true",help="Invert the contrast of the particles in output files (default false)",default=False)
+	parser.add_argument("--filefilt",type=str,help="Only processes image stacks where the filename contains the specified string. Mostly used for debugging.",default=None)
 	parser.add_argument("--parallel", default=None, help="parallelism argument. This program supports only thread:<n>")
 	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
@@ -145,6 +146,8 @@ def main():
 			
 			# if the input particle file changed, we need some new info
 			if lastloc!=ptloc[1]:
+				if options.filefilt!= None and not options.filefilt in ptloc[1] : continue
+			
 				movie="movieparticles/{}_ptcls.hdf".format(base_name(ptloc[1]))		# movie particle stack
 				movieim=EMData(movie,0)		# number of frames in each movie for this stack
 				movien=movieim["movie_frames"]
