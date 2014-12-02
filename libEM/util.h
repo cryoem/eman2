@@ -72,7 +72,6 @@ using std::ostream;
 using std::cout;
 using std::endl;
 
-
 namespace EMAN
 {
 	class EMData;
@@ -88,13 +87,24 @@ namespace EMAN
 		/** For those util function developed by Pawel's group */
 		#include "sparx/util_sparx.h"
 		
-		
 	  public:
 
 		//Functions do Cross-Platform Mutex 
 		static int MUTEX_INIT(MUTEX *mutex);
 		static int MUTEX_LOCK(MUTEX *mutex);
 		static int MUTEX_UNLOCK(MUTEX *mutex);
+
+		/** tell whether a float value is a NaN
+		 * @param number float value
+		 */
+		static inline bool is_nan(const float number)
+		{
+#ifdef _WIN32
+			return _isnan(number);
+#else
+			return std::isnan(number);
+#endif
+		}
 
 		/** convert complex data array from Amplitude/Phase format
 		 * into Real/Imaginary format.
@@ -154,7 +164,6 @@ namespace EMAN
 		**/
 		static vector<EMData *> svdcmp(const vector<EMData *> &data,int nvec);
 
-
 		/** Return a lower case version of the argument string
 		 * @param s the string you want to convert to lower case
 		 * @return the lower case converted version s
@@ -199,7 +208,6 @@ namespace EMAN
 		 *         extraction fails.
 		 */
 		static bool get_str_float(const char *str, const char *float_var, float *p_val);
-
 
 		/** Extract the float values from a variable=value1,value2 string
 		 * with format like "XYZ=1.1,1.2",
@@ -384,7 +392,6 @@ namespace EMAN
 		static void save_data(float x0, float dx, float *y_array,
 							  size_t array_size, const string & filename);
 
-
 		/** does a sort as in Matlab. Carries along the Permutation
 		 * matrix
 		 * @param[in] left The array [left .. right] is sorted
@@ -395,7 +402,6 @@ namespace EMAN
 		 */
 		static void sort_mat(float *left, float *right, int *leftPerm,
 							 int *rightPerm);
-
 
 		/** Get the seed for Randnum class
 		 * @return 	the seed for current random number generator
@@ -459,7 +465,7 @@ namespace EMAN
 		 * @param[in] x Given float number.
 		 * @return Ceiling round of x.
 		 */
-	   	static inline int round(double x)
+	   static inline int round(double x)
 		{
 			if (x < 0) {
 				return (int) (x - 0.5);
@@ -541,7 +547,6 @@ namespace EMAN
 		static void find_min_and_max(const float *data, size_t nitems,
 									 float *p_max_val, float *p_min_val,
 									 int *p_max_index = 0, int *p_min_index = 0);
-
 
 		/** Get the mean, standard deviation, skewness and kurtosis of the input data
 		* @param data the vector of input data
@@ -726,6 +731,7 @@ namespace EMAN
 			}
 			return (int) x;
 		}
+
 		/** Returns an approximate of exp(x) using a cached table
 		 * uses actual exp(x) outside the cached range
 		 * @param[in] f argument to exp(f)
@@ -806,7 +812,6 @@ namespace EMAN
 			}
 			return f3;
 		}
-
 
 		/** Get the minimum of 4 numbers.
 		 * @param[in] f1 The first number.
@@ -1043,8 +1048,6 @@ namespace EMAN
 		* @date May 2008
 		*/
 		static void equation_of_plane(const Vec3f& p1, const Vec3f& p2, const Vec3f& p3, float * plane );
-
-
 
 		/** Determines if a point is in a 2D convex polygon described by 4 points using
 		 * the Barycentric method, which is a fast way of performing the query.
