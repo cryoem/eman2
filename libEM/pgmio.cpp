@@ -194,20 +194,16 @@ int PgmIO::write_header(const Dict & dict, int image_index, const Region*,
 		nx = dict["nx"];
 		ny = dict["ny"];
 
-		if(dict.has_key("min_grey")) minval = dict["min_gray"];
-		if(dict.has_key("max_grey")) maxval = dict["max_gray"];
+		if (dict.has_key("min_grey")) minval = dict["min_gray"];
+		if (dict.has_key("max_grey")) maxval = dict["max_gray"];
 
-		//if we didn't get any good values from attributes, assign to 255 by default
-#ifdef _WIN32
-		if (maxval<=minval || _isnan(minval) || _isnan(maxval)) {
-#else
-			if (maxval<=minval || std::isnan(minval) || std::isnan(maxval)) {
-#endif	//_WIN32
+		// if we didn't get any good values from attributes, assign to 255 by default
+
+		if (maxval <= minval || Util::is_nan(minval) || Util::is_nan(maxval)) {
 			maxval = 255;
 		}
 
-		if(dict.has_key("render_min")) rendermin=(float)dict["render_min"];	// float value representing black in the output
-		if(dict.has_key("render_max")) rendermax=(float)dict["render_max"];	// float value representign white in the output
+		EMUtil::getRenderLimits(dict, rendermin, rendermax);
 
 		fprintf(pgm_file, "%s\n%d %d\n%d\n", MAGIC_BINARY, nx, ny, maxval);
 	}
