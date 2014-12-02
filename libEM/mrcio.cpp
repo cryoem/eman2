@@ -53,7 +53,8 @@ const char *MrcIO::SHORT_CTF_MAGIC = "!$";
 MrcIO::MrcIO(const string & mrc_filename, IOMode rw)
 :	filename(mrc_filename), rw_mode(rw), mrcfile(0), mode_size(0),
 		isFEI(false), is_ri(0), is_new_file(false), initialized(false),
-		is_transpose(false), is_stack(false), stack_size(1)
+		is_transpose(false), is_stack(false), stack_size(1),
+		rendermin(0.0), rendermax(0.0)
 {
 	memset(&mrch, 0, sizeof(MrcHeader));
 	is_big_endian = ByteOrder::is_host_big_endian();
@@ -821,6 +822,8 @@ int MrcIO::write_header(const Dict & dict, int image_index, const Region* area,
 		mrch.nz = 1;
 	}
 
+	EMUtil::getRenderLimits(dict, rendermin, rendermax);
+
 	// Do not write ctf to mrc header in EMAN2
 
 //	if( dict.has_key("ctf") ) {
@@ -1020,10 +1023,10 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 
 	void * ptr_data = data;
 
-	float rendermin = 0.0f;
-	float rendermax = 0.0f;
+	float rmin = rendermin;
+	float rmax = rendermax;
 
-	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax, nz);
+	EMUtil::getRenderMinMax(data, nx, ny, rmin, rmax, nz);
 
 	signed char    *  scdata = NULL;
 	unsigned char  *  cdata  = NULL;
@@ -1038,15 +1041,15 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 		cdata = new unsigned char[size];
 
 		for (size_t i = 0; i < size; ++i) {
-			if (data[i] <= rendermin) {
+			if (data[i] <= rmin) {
 				cdata[i] = 0;
 			}
-			else if (data[i] >= rendermax){
+			else if (data[i] >= rmax){
 				cdata[i] = UCHAR_MAX;
 			}
 			else {
-				cdata[i] = (unsigned char)((data[i] - rendermin) /
-								(rendermax - rendermin) *
+				cdata[i] = (unsigned char)((data[i] - rmin) /
+								(rmax - rmin) *
 								UCHAR_MAX);
 			}
 		}
@@ -1059,15 +1062,15 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 		scdata = new signed char[size];
 
 		for (size_t i = 0; i < size; ++i) {
-			if (data[i] <= rendermin) {
+			if (data[i] <= rmin) {
 				scdata[i] = SCHAR_MIN;
 			}
-			else if (data[i] >= rendermax){
+			else if (data[i] >= rmax){
 				scdata[i] = SCHAR_MAX;
 			}
 			else {
-				scdata[i] = (signed char)((data[i] - rendermin) /
-								(rendermax - rendermin) *
+				scdata[i] = (signed char)((data[i] - rmin) /
+								(rmax - rmin) *
 								(SCHAR_MAX - SCHAR_MIN) + SCHAR_MIN);
 			}
 		}
@@ -1080,15 +1083,15 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 		sdata = new short[size];
 
 		for (size_t i = 0; i < size; ++i) {
-			if (data[i] <= rendermin) {
+			if (data[i] <= rmin) {
 				sdata[i] = SHRT_MIN;
 			}
-			else if (data[i] >= rendermax) {
+			else if (data[i] >= rmax) {
 				sdata[i] = SHRT_MAX;
 			}
 			else {
-				sdata[i] = (short)(((data[i] - rendermin) /
-								(rendermax - rendermin)) *
+				sdata[i] = (short)(((data[i] - rmin) /
+								(rmax - rmin)) *
 								(SHRT_MAX - SHRT_MIN) + SHRT_MIN);
 			}
 		}
@@ -1101,15 +1104,15 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 		usdata = new unsigned short[size];
 
 		for (size_t i = 0; i < size; ++i) {
-			if (data[i] <= rendermin) {
+			if (data[i] <= rmin) {
 				usdata[i] = 0;
 			}
-			else if (data[i] >= rendermax) {
+			else if (data[i] >= rmax) {
 				usdata[i] = USHRT_MAX;
 			}
 			else {
-				usdata[i] = (unsigned short)((data[i] - rendermin) /
-								(rendermax - rendermin) *
+				usdata[i] = (unsigned short)((data[i] - rmin) /
+								(rmax - rmin) *
 								USHRT_MAX);
 			}
 		}
