@@ -223,6 +223,8 @@ def alignthread(stack, ptcl, flipim, proj, orient, outname, outnum, verbose):
 			if verbose>3 :
 				newpt.process_inplace("normalize.edgemean")
 				newpt.write_image("tmp.hdf",-1)
+				proj.write_image("tmp2.hdf",-1)
+				for s in stack: s.write_image("tmp2.hdf",-1)
 			if newpt["nx"]!=oldbox : newpt=newpt.window_center(oldbox)
 
 			# write the aligned, clipped average to the output file
