@@ -50,7 +50,7 @@ def main():
 	parser = OptionParser(usage,version=SPARXVERSION)
 
 	parser.add_option("--radius",	type="int",		        default=-1, 	help="if there is no maskfile, sphere with r=radius will be used, by default the radius is nx/2-1")
-	parser.add_option("--falloff",	type="real",		    default=0.1,    help="falloff of tanl filter (default 0.1)")
+	parser.add_option("--falloff",	type="float",		    default=0.1,    help="falloff of tanl filter (default 0.1)")
 	parser.add_option("--MPI",      action="store_true",   	default=False,  help="use MPI version")
 
 	(options, args) = parser.parse_args(arglist[1:])
