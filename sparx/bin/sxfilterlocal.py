@@ -114,12 +114,12 @@ def main():
 		
 		elif len(args) == 4:
 			if(myid == main_node): m = binarize(get_im(args[2]), 0.5)
+			bcast_EMData_to_all(m,  myid, main_node)
 			outvol = args[3]
 
 
 		bcast_EMData_to_all(vi, myid, main_node)
 		bcast_EMData_to_all(ui, myid, main_node)
-		bcast_EMData_to_all(m,  myid, main_node)
 
 		fftip(vi)  #  volume to be filtered
 
