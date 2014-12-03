@@ -216,11 +216,11 @@ class EMPlot2DWidget(EMGLWidget):
 
 		if not isinstance(data[0],list) and not isinstance(data[0],tuple) and not isinstance(data[0],ndarray):
 			x_axis = arange(len(data))
-			rdata = [ x_axis,array(data) ]
-			self.data[key]= rdata
+			data = [ x_axis,array(data) ]		# replace data with our refactored version
+			self.data[key]= data
 			self.visibility.setdefault(key,True)
 		else:
-			if data :
+			if data!=None :
 				self.data[key]=[array(i) for i in data]
 				self.visibility.setdefault(key,True)
 			else :
@@ -2099,7 +2099,12 @@ class EMPlot2DInspector(QtGui.QWidget):
 		for i,j in enumerate(keys) :
 			a = QtGui.QListWidgetItem(j)
 			a.setFlags(flags)
-			a.setTextColor(qt_color_map[colortypes[parms[j][0]]])
+			try: a.setTextColor(qt_color_map[colortypes[parms[j][0]]])
+			except:
+				print "Color error"
+				print parms[j][0]
+				print colortypes[parms[j][0]]
+				print qt_color_map[colortypes[parms[j][0]]]
 			if visible[j]: a.setCheckState(Qt.Checked)
 			else: a.setCheckState(Qt.Unchecked)
 
