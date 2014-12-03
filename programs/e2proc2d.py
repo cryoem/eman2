@@ -226,7 +226,7 @@ def main():
 		inp_ext = os.path.splitext(infile)[1]
 		out_ext = os.path.splitext(outfile)[1]
 
-		if out_ext == "" :
+		if out_ext == "" and multiple_files :
 			out_ext = inp_ext
 			outfile = outfile + out_ext
 
