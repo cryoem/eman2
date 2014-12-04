@@ -132,19 +132,26 @@ mpirun -np 12 sxviper.py bdb:class_averages outdirshc --ou=28 --xr=3.0 --delta=2
 
 
 # 3D projection alignment - refinement of the initial structure
-sxheader.py bdb:data --params=xform.projection --zero    || exit
+sxheader.py bdb:data --params=xform.projection --zero
 sxheader.py bdb:data --params=active --one
+sxheader.py bdb:data --params=previousmax --export=outmatch/previousmax.txt
 
 #  establish initial orientations of all projection data
-mpirun -np 12 sxali3d.py bdb:data outdirshc/volf.hdf outmatch --CTF --maxit=1 --ou=28 --xr=3.0 --delta=2.0 --MPI   || exit
+mpirun -np 12 sxali3d.py bdb:data outdirshc/volf.hdf outmatch --CTF --maxit=1 --ou=28 --xr=3.0 --delta=2.0  --function="[..,demo_user_funcs,ali3d_reference3]" --MPI
 
-sxheader.py bdb:data --params=xform.projection --export=outmatch/matchparams.txt    || exit
-mpirun -np 12 sxali3d.py bdb:data outdirshc/volf.hdf poutdirshc --shc --CTF --ou=28 --xr=2.0 --delta=2.0 --maxit=100 --function="[..,demo_user_funcs,ali3d_reference3]" --MPI
+sxheader.py bdb:data --params=xform.projection --export=outmatch/matchparams.txt 
+sxheader.py bdb:data --params=previousmax --export=outmatch/previousmax.txt
+
+sxali3d.py bdb:data outmatch/volf0001.hdf poutdirshc --shc --CTF --ou=28 --xr=2.0 --delta=2.0 --maxit=100 --stoprnct=2.5  --function="[..,demo_user_funcs,ali3d_reference3]" --MPI
+
+
+sxheader.py bdb:data --params=xform.projection --export=poutdirshc/shcparams.txt 
+sxheader.py bdb:data --params=previousmax --export=poutdirshc/previousmax.txt
+
 
 
 # Refinement of the 3D structure using high accuracy alignment
-mpirun -np 12 sxlocal_ali3d.py bdb:data ali3d_e --ou=30 --delta=2 --ts=2 --maxit=3 --chunk=0.25 --function="[..,demo_user_funcs,localali3d_reference3]" --center=0 --MPI --CTF --debug || exit
-###################################################################
+mpirun -np 12 sxlocal_ali3d.py bdb:data ali3d_e --ou=28 --delta=2 --ts=2 --maxit=10 --chunk=0.25 --function="[..,demo_user_funcs,localali3d_reference4]" --center=0 --MPI --CTF###################################################################
 # To run gui version, enter the following in the command line:
 #        sxgui.py --demo=mpibdbctf &
 # and then press the 'sxlocal_ali3d' button in the main menu. A separate window will pop up with the input fields already initialized to the proper values.
