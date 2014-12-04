@@ -286,7 +286,7 @@ def main():
 	if options.average:
 		print "Averaging particles from %d to %d stepping by %d. All other options ignored !"%(n0,n1,n2)
 		ptcls = []
-		for i in range(n0,n1,n2):
+		for i in range(n0,n1+1,n2):
 			ptcls.append(EMData(infile,i))
 		avg = sum(ptcls)/len(ptcls)
 		try :

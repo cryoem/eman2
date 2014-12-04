@@ -158,6 +158,7 @@ def main():
 				ctf=ptcl["ctf"]
 				flipim=movieim.do_fft()		# we're just getting a complex image of the right size, a bit stupid way to handle it 
 				ctf.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
+				flipim["ctf"]=ctf
 				lastloc=ptloc[1]
 			
 			proj=EMData(projfsp,int(cls[eo][0][0,i]))	# projection image for this particle
@@ -210,6 +211,7 @@ def alignthread(stack, ptcl, flipim, proj, orient, outname, outnum, verbose):
 			pfft=proj.do_fft()
 			pfft.mult(flipim)
 			proj=pfft.do_ift()
+			proj["ctf"]=flipim["ctf"]		# this may be a waste, but there are cases in development where it is useful
 			
 #			if proj["nx"]!=ptcl["nx"] : proj=proj.get_clip
 			if verbose>3 : proj.write_image("tmp.hdf",-1)

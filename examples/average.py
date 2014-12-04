@@ -10,7 +10,7 @@ from sys import argv
 
 av=EMData(argv[1],0)
 for i in argv[2:]:
-	im=EMData(argv[i],0)
+	im=EMData(i,0)
 	av.add(im)
 
 av.mult(1.0/(len(argv)-1))
