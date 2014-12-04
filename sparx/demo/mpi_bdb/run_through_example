@@ -6,9 +6,9 @@ gunzip ../tteftu_with_tRNA.pdb.gz
 
 sxpdb2em.py ../tteftu_with_tRNA.pdb tmp.hdf --apix=5.2 --box=64
 
-e2proc3d.py tmp.hdf ../fmodel_structure.hdf --process=filter.lowpass.tanh:cutoff_abs=0.15:fall_off=0.2 || exit
+e2proc3d.py tmp.hdf ../fmodel_structure.hdf --process=filter.lowpass.tanh:cutoff_abs=0.15:fall_off=0.2
 
-e2proc3d.py tmp.hdf ../model_structure.hdf --process=filter.lowpass.tanh:cutoff_abs=0.45:fall_off=0.1 || exit
+e2proc3d.py tmp.hdf ../model_structure.hdf --process=filter.lowpass.tanh:cutoff_abs=0.45:fall_off=0.1
 
 rm tmp.hdf
 
@@ -86,7 +86,7 @@ mpirun -np 16 sxisac.py bdb:stack_ali --stab_ali=2 --init_iter=1 --main_iter=1 -
 #  will not be automatically initialized with the approprite values, in 
 #  which case the proper values must be entered manually.
 ###################################################################
-sxcpy.py class_averages_generation_*.hdf bdb:class_averages    || exit
+sxcpy.py class_averages_generation_*.hdf bdb:class_averages
 
 
 
@@ -98,32 +98,31 @@ sxcpy.py class_averages_generation_*.hdf bdb:class_averages    || exit
 #  here shortly), please repeat the sequence of commands starting from sxheader.py.
 ###################################################################
 
-sxheader.py bdb:class_averages --params=active --one    || exit
+sxheader.py bdb:class_averages --params=active --one
 #  First version, so-so
-#sxheader.py bdb:class_averages --params=xform.projection --rand_alpha    || exit
-#sxrecons3d_n.py  bdb:class_averages  junk.hdf    || exit
-#e2proc3d.py junk.hdf init1.hdf --process=filter.lowpass.tanh:cutoff_abs=0.15:fall_off=0.2    || exit
+#sxheader.py bdb:class_averages --params=xform.projection --rand_alpha
+#sxrecons3d_n.py  bdb:class_averages  junk.hdf
+#e2proc3d.py junk.hdf init1.hdf --process=filter.lowpass.tanh:cutoff_abs=0.15:fall_off=0.2
 #rm -f junk.hdf
 #rm -rf outdirshc
-#mpirun -np 12 sxali3d.py bdb:class_averages init1.hdf outdirshc --shc --ou=28 --xr=3.0 --delta=2.0 --maxit=100 --function="[..,demo_user_funcs,ali3d_reference2]" --MPI   || exit
+#mpirun -np 12 sxali3d.py bdb:class_averages init1.hdf outdirshc --shc --ou=28 --xr=3.0 --delta=2.0 --maxit=100 --function="[..,demo_user_funcs,ali3d_reference2]" --MPI
 
 # Second, more advanced version.  Note this one requires number of CPUs to be multiplicity of 3.
-sxheader.py bdb:class_averages --params=stable --zero   || exit
+sxheader.py bdb:class_averages --params=stable --zero
 mpirun -np 12 sxviper.py bdb:class_averages outdirshc --ou=28 --xr=3.0 --delta=2.0 --function="[..,demo_user_funcs,ali3d_reference2]"
 
 
 # 3D projection alignment - refinement of the initial structure
-sxheader.py bdb:data --params=xform.projection --zero    || exit
+sxheader.py bdb:data --params=xform.projection --zero
 sxheader.py bdb:data --params=active --one
 
 #  establish initial orientations of all projection data
-mpirun -np 12 sxali3d.py bdb:data outdirshc/volf.hdf outmatch --maxit=1 --ou=28 --xr=3.0 --delta=2.0 --MPI   || exit
-sxheader.py bdb:data --params=xform.projection --export=outmatch/matchparams.txt    || exit
-mpirun -np 12 sxali3d.py bdb:data outdirshc/volf.hdf poutdirshc --shc --ou=28 --xr=2.0 --delta=2.0 --maxit=100 --function="[..,demo_user_funcs,ali3d_reference3]" --MPI   || exit
-
+mpirun -np 12 sxali3d.py bdb:data outdirshc/volf.hdf outmatch --maxit=1 --ou=28 --xr=3.0 --delta=2.0 --MPI
+sxheader.py bdb:data --params=xform.projection --export=outmatch/matchparams.txt
+mpirun -np 12 sxali3d.py bdb:data outdirshc/volf.hdf poutdirshc --shc --ou=28 --xr=2.0 --delta=2.0 --maxit=100 --function="[..,demo_user_funcs,ali3d_reference3]" --MPI
 
 # Refinement of the 3D structure using high accuracy "local" alignment
-mpirun -np 12 sxlocal_ali3d.py bdb:data ali3d_e --ou=30 --delta=2 --ts=2 --maxit=3 --chunk=0.25 --function="[..,demo_user_funcs,localali3d_reference3]" --center=0 --MPI --debug || exit
+mpirun -np 12 sxlocal_ali3d.py bdb:data ali3d_e --ou=30 --delta=2 --ts=2 --maxit=3 --chunk=0.25 --function="[..,demo_user_funcs,localali3d_reference3]" --center=0 --MPI
 ###################################################################
 # To run gui version, enter the following in the command line:
 # 	sxgui.py --demo=mpibdb &
