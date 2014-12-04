@@ -151,7 +151,8 @@ sxheader.py bdb:data --params=previousmax --export=poutdirshc/previousmax.txt
 
 
 # Refinement of the 3D structure using high accuracy alignment
-mpirun -np 12 sxlocal_ali3d.py bdb:data ali3d_e --ou=28 --delta=2 --ts=2 --maxit=10 --chunk=0.25 --function="[..,demo_user_funcs,localali3d_reference4]" --center=0 --MPI --CTF###################################################################
+mpirun -np 12 sxlocal_ali3d.py bdb:data ali3d_e --ou=28 --delta=2 --ts=2 --maxit=10 --chunk=0.25 --function="[..,demo_user_funcs,localali3d_reference4]" --center=0 --MPI --CTF
+###################################################################
 # To run gui version, enter the following in the command line:
 #        sxgui.py --demo=mpibdbctf &
 # and then press the 'sxlocal_ali3d' button in the main menu. A separate window will pop up with the input fields already initialized to the proper values.
