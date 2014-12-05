@@ -5,6 +5,14 @@ set echo on
 gunzip ../tteftu_with_tRNA.pdb.gz
 
 sxpdb2em.py ../tteftu_with_tRNA.pdb tmp.hdf --apix=5.2 --box=64
+###################################################################
+# To run gui version, enter the following in the command line:
+#        sxgui.py --demo=mpibdb &
+# and then press the 'sxpdb2em' button in the main menu. A separate window will pop up with the input fields already initialized to the proper values.
+# Press the green 'Run sxpdb2em' button to execute the command.
+# Note thatif sxgui.py is invoked without the --demo option, the input fields will not be automatically initialized with the approprite values, in
+# which case the proper values must be entered manually.
+###################################################################
 
 e2proc3d.py tmp.hdf ../fmodel_structure.hdf --process=filter.lowpass.tanh:cutoff_abs=0.15:fall_off=0.2
 
@@ -17,21 +25,22 @@ rm tmp.hdf
 # The output projections were disturbed with Gaussian noise.
 sxprocess.py ../model_structure.hdf particles mic --generate_projections apix=5.2
 
-# Before proceeding to automated particle picking mode, it is suggested that the user 
+
+# Before proceeding to automated particle picking mode, it is suggested that the user
 # first use e2boxer in the interactive mode to determine the desired parameters by
 # first invoking e2boxer with the --gui option and a micrograph file name:
 
 #e2boxer.py --gui mic0.hdf &
 
-# Choose "Gauss" in the drop down menu for "Current Boxing Tool," set desired parameters, and 
+# Choose "Gauss" in the drop down menu for "Current Boxing Tool," set desired parameters, and
 # click on "Run" to pick particles.
-# There should be a window displaying the picked particles. To reset or "unpick" the 
+# There should be a window displaying the picked particles. To reset or "unpick" the
 # particles, click on "Clear Boxes".
-# Click on the "Write output" button to save the particles selected for mic0.hdf. 
-# By default the particles file will be saved to bdb:particles/mic0_ptcls. 
+# Click on the "Write output" button to save the particles selected for mic0.hdf.
+# By default the particles file will be saved to bdb:particles/mic0_ptcls.
  
-# Note that if you saved any particles file under its default name in e2boxer, 
-# make sure to delete it to avoid conflict later in the automated mode. 
+# Note that if you saved any particles file under its default name in e2boxer,
+# make sure to delete it to avoid conflict later in the automated mode.
 # For example, if the particles selected for mic0.hdf was
 # saved to bdb:particles/mic0_ptcls, delete it as follows:
 
@@ -39,14 +48,21 @@ sxprocess.py ../model_structure.hdf particles mic --generate_projections apix=5.
 #e2bdb.py bdb:mic0_ptcls --delete
 #cd ..
 
+# Create and initialize database
 sxprocess.py demoparms --makedb 'gauss_width'=1.0:'pixel_input'=5.2:'pixel_output'=5.2:'thr_low'=4.0:'thr_hi'=60.0:"invert_contrast"=False:"use_variance"=True:"boxsize"=64
-e2boxer.py --gauss_autoboxer=demoparms --write_ptcl --boxsize=64 --norm=normalize.ramp.normvar mic*.hdf --format=bdb
+
+
+# Pick particles
+e2boxer.py --gauss_autoboxer=demoparms --boxsize=64 --norm=normalize.ramp.normvar mic*.hdf
+
+sxwindow.py --coords_dir=info --importctf=partres/partres --box_size=64 --outdir=particles
+
 e2bdb.py bdb:particles\#mic0_ptcls bdb:particles\#mic1_ptcls bdb:particles\#mic2_ptcls bdb:particles\#mic3_ptcls bdb:particles\#mic4_ptcls --makevstack=bdb:data
 
 sxheader.py bdb:data --params=active --one
 sxheader.py bdb:data --params=xform.align2d --zero
 # pre-align particles with sxali2d.py
-sxali2d.py bdb:data None --ou=28 --xr="2 1" --ts="1 0.5" --maxit=33 --dst=90mpirun -np 16 sxisac.py bdb:data --stab_ali=2 --init_iter=1 --main_iter=1 --match_second=1 --ou=30 --max_round=5 --img_per_grp=60 --thld_err=0.75 --generation=1 --MPI    || exit
+sxali2d.py bdb:data None --ou=28 --xr="2 1" --ts="1 0.5" --maxit=33 --dst=90
 
 # apply the results from sxali2d.py to the data:
 sxtransform2d.py bdb:data bdb:stack_ali
@@ -60,13 +76,13 @@ mpirun -np 16 sxisac.py bdb:stack_ali --stab_ali=2 --init_iter=1 --main_iter=1 -
 #   the program will be more stringent, but will run significantly longer.
 # In particular, parameters --ou and --thld_err should be adjusted according to the data.
 # The ISAC program is designed to run in multiple generations: we first run the first generation on the data set, 
-#   which will generate initial class averages. 
+#   which will generate initial class averages.
 # We call the particles that are assigned to these class averages accounted for and set them aside. 
-# We will make a stack of the unaccounted for particles and run the second 
+# We will make a stack of the unaccounted for particles and run the second
 #   generation on this stack. Then we set aside the particles that are accounted for 
-#   in the second generation and make a new stack for the particles that are still unaccounted for. 
+#   in the second generation and make a new stack for the particles that are still unaccounted for.
 # The program is designed to use four generation for the full run. The process repeated 
-#   until no or very few class averages can be generated in one generation. The parameter 
+#   until no or very few class averages can be generated in one generation. The parameter
 #   generation is used to tell the program which generation is currently used.
 #
 # mpirun -np 4 sxisac.py bdb:data --ou=30 --thld_err=1.0 --generation=1 --MPI
@@ -78,16 +94,16 @@ mpirun -np 16 sxisac.py bdb:stack_ali --stab_ali=2 --init_iter=1 --main_iter=1 -
 # mpirun -np 4 sxisac.py bdb:data_4 --ou=30 --thld_err=1.0 --generation=4 --MPI
 #
 # To run gui version of sxisac, enter the following in the command line:
-# 	sxgui.py --demo=mpibdb &
+#        sxgui.py --demo=mpibdb &
 # and then press the 'sxisac' button in the main menu. A separate window will pop up 
-#  with the input fields already initialized to the proper values. 
+#  with the input fields already initialized to the proper values.
 # Press the green 'Run sxisac' button to execute the command.
 # Note that if sxgui.py is invoked without the --demo option, the input fields 
-#  will not be automatically initialized with the approprite values, in 
+#  will not be automatically initialized with the approprite values, in
 #  which case the proper values must be entered manually.
 ###################################################################
-sxcpy.py class_averages_generation_*.hdf bdb:class_averages
 
+sxcpy.py class_averages_generation_*.hdf bdb:class_averages
 
 
 ###################################################################
@@ -115,20 +131,29 @@ mpirun -np 12 sxviper.py bdb:class_averages outdirshc --ou=28 --xr=3.0 --delta=2
 # 3D projection alignment - refinement of the initial structure
 sxheader.py bdb:data --params=xform.projection --zero
 sxheader.py bdb:data --params=active --one
+sxheader.py bdb:data --params=previousmax --export=outmatch/previousmax.txt
 
 #  establish initial orientations of all projection data
-mpirun -np 12 sxali3d.py bdb:data outdirshc/volf.hdf outmatch --maxit=1 --ou=28 --xr=3.0 --delta=2.0 --MPI
+mpirun -np 12 sxali3d.py bdb:data outdirshc/volf.hdf outmatch --maxit=1 --ou=28 --xr=3.0 --delta=2.0 --function="[..,demo_user_funcs,ali3d_reference3]" --MPI
+
 sxheader.py bdb:data --params=xform.projection --export=outmatch/matchparams.txt
-mpirun -np 12 sxali3d.py bdb:data outdirshc/volf.hdf poutdirshc --shc --ou=28 --xr=2.0 --delta=2.0 --maxit=100 --function="[..,demo_user_funcs,ali3d_reference3]" --MPI
+sxheader.py bdb:data --params=previousmax --export=outmatch/previousmax.txt
+
+sxali3d.py bdb:data outmatch/volf0001.hdf poutdirshc --shc --ou=28 --xr=2.0 --delta=2.0 --maxit=100 --stoprnct=2.5 --function="[..,demo_user_funcs,ali3d_reference3]" --MPI
+
+
+sxheader.py bdb:data --params=xform.projection --export=poutdirshc/shcparams.txt 
+sxheader.py bdb:data --params=previousmax --export=poutdirshc/previousmax.txt
+
+
 
 # Refinement of the 3D structure using high accuracy "local" alignment
-mpirun -np 12 sxlocal_ali3d.py bdb:data ali3d_e --ou=30 --delta=2 --ts=2 --maxit=3 --chunk=0.25 --function="[..,demo_user_funcs,localali3d_reference3]" --center=0 --MPI
+mpirun -np 12 sxlocal_ali3d.py bdb:data ali3d_e --ou=28 --delta=2 --ts=2 --maxit=10 --chunk=0.25 --function="[..,demo_user_funcs,localali3d_reference4]" --center=0 --MPI
 ###################################################################
 # To run gui version, enter the following in the command line:
-# 	sxgui.py --demo=mpibdb &
-# and then press the 'sxlocal_ali3d' button in the main menu. A separate window will pop up with the input fields already initialized to the proper values. 
+#        sxgui.py --demo=mpibdb &
+# and then press the 'sxlocal_ali3d' button in the main menu. A separate window will pop up with the input fields already initialized to the proper values.
 # Press the green 'Run sxlocal_ali3d' button to execute the command.
-# Note that if sxgui.py is invoked without the --demo option, the input fields will not be automatically initialized with the approprite values, in 
+# Note that if sxgui.py is invoked without the --demo option, the input fields will not be automatically initialized with the approprite values, in
 # which case the proper values must be entered manually.
 ###################################################################
-

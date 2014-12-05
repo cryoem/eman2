@@ -80,13 +80,17 @@ mpirun -np 16 sxisac.py bdb:stack_ali --stab_ali=2 --init_iter=1 --main_iter=1 -
 
 ###################################################################<<<<<<< run_through_example
 # ISAC run with parameters given above is not sufficiently restrictive for EM data. Instead, one may try to use default parameters, in which case
-#  the program will be more stringent, but will run significantly longer.
+#   the program will be more stringent, but will run significantly longer.
 # In particular, parameters --ou and --thld_err should be adjusted according to the data.
-# The ISAC program is designed to run in multiple generations: we first run the first generation on the data set, which will generate initial class averages.
-# We call the particles that are assigned to these class averages accounted for and set them aside. We will make a stack of the unaccounted for particles and run the second
-# generation on this stack. Then we set aside the particles that are accounted for in the second generation and make a new stack for the particles that are still unaccounted for.
-# The program is designed to use four generation for the full run. The process repeated until no or very few class averages can be generated in one generation. The parameter
-# generation is used to tell the program which generation is currently used.
+# The ISAC program is designed to run in multiple generations: we first run the first generation on the data set, 
+#   which will generate initial class averages.
+# We call the particles that are assigned to these class averages accounted for and set them aside. 
+# We will make a stack of the unaccounted for particles and run the second
+#   generation on this stack. Then we set aside the particles that are accounted for 
+#   in the second generation and make a new stack for the particles that are still unaccounted for.
+# The program is designed to use four generation for the full run. The process repeated 
+#   until no or very few class averages can be generated in one generation. The parameter
+#   generation is used to tell the program which generation is currently used.
 #
 # mpirun -np 4 sxisac.py bdb:flip_data --ou=30 --thld_err=1.0 --generation=1 --MPI
 # e2bdb.py bdb:flip_data --makevstack=bdb:flip_data_2 --list="generation_1_unaccounted.txt"
@@ -98,10 +102,12 @@ mpirun -np 16 sxisac.py bdb:stack_ali --stab_ali=2 --init_iter=1 --main_iter=1 -
 #
 # To run gui version of sxisac, enter the following in the command line:
 #        sxgui.py --demo=mpibdbctf &
-# and then press the 'sxisac' button in the main menu. A separate window will pop up with the input fields already initialized to the proper values.
+# and then press the 'sxisac' button in the main menu. A separate window will pop up 
+#  with the input fields already initialized to the proper values.
 # Press the green 'Run sxisac' button to execute the command.
-# Note thatif sxgui.py is invoked without the --demo option, the input fields will not be automatically initialized with the approprite values, in
-# which case the proper values must be entered manually.
+# Note that if sxgui.py is invoked without the --demo option, the input fields 
+#  will not be automatically initialized with the approprite values, in
+#  which case the proper values must be entered manually.
 ###################################################################
 
 sxcpy.py class_averages_generation_*.hdf bdb:class_averages_raw
@@ -137,12 +143,12 @@ sxheader.py bdb:data --params=active --one
 sxheader.py bdb:data --params=previousmax --export=outmatch/previousmax.txt
 
 #  establish initial orientations of all projection data
-mpirun -np 12 sxali3d.py bdb:data outdirshc/volf.hdf outmatch --CTF --maxit=1 --ou=28 --xr=3.0 --delta=2.0  --function="[..,demo_user_funcs,ali3d_reference3]" --MPI
+mpirun -np 12 sxali3d.py bdb:data outdirshc/volf.hdf outmatch --CTF --maxit=1 --ou=28 --xr=3.0 --delta=2.0 --function="[..,demo_user_funcs,ali3d_reference3]" --MPI
 
-sxheader.py bdb:data --params=xform.projection --export=outmatch/matchparams.txt 
+sxheader.py bdb:data --params=xform.projection --export=outmatch/matchparams.txt
 sxheader.py bdb:data --params=previousmax --export=outmatch/previousmax.txt
 
-sxali3d.py bdb:data outmatch/volf0001.hdf poutdirshc --shc --CTF --ou=28 --xr=2.0 --delta=2.0 --maxit=100 --stoprnct=2.5  --function="[..,demo_user_funcs,ali3d_reference3]" --MPI
+sxali3d.py bdb:data outmatch/volf0001.hdf poutdirshc --shc --CTF --ou=28 --xr=2.0 --delta=2.0 --maxit=100 --stoprnct=2.5 --function="[..,demo_user_funcs,ali3d_reference3]" --MPI
 
 
 sxheader.py bdb:data --params=xform.projection --export=poutdirshc/shcparams.txt 
@@ -157,6 +163,6 @@ mpirun -np 12 sxlocal_ali3d.py bdb:data ali3d_e --ou=28 --delta=2 --ts=2 --maxit
 #        sxgui.py --demo=mpibdbctf &
 # and then press the 'sxlocal_ali3d' button in the main menu. A separate window will pop up with the input fields already initialized to the proper values.
 # Press the green 'Run sxlocal_ali3d' button to execute the command.
-# Note thatif sxgui.py is invoked without the --demo option, the input fields will not be automatically initialized with the approprite values, in
+# Note that if sxgui.py is invoked without the --demo option, the input fields will not be automatically initialized with the approprite values, in
 # which case the proper values must be entered manually.
 ###################################################################
