@@ -38,6 +38,7 @@
 #include "tifio.h"
 #include "util.h"
 #include "geometry.h"
+
 #include <tiffio.h>
 #include <climits>
 
@@ -54,7 +55,7 @@ namespace {
 TiffIO::TiffIO(string tiff_filename, IOMode rw)
 :	filename(tiff_filename), rw_mode(rw), tiff_file(0),
 	bitspersample(0), photometric(0), initialized(false),
-	rendermin(0.0f), rendermax(0.0f), nimg(1)
+	rendermin(0.0), rendermax(0.0), nimg(1)
 {
 	is_big_endian = ByteOrder::is_host_big_endian();
 }
@@ -71,14 +72,18 @@ TiffIO::~TiffIO()
 void TiffIO::init()
 {
 	ENTERFUNC;
+
 	if (initialized) {
 		return;
 	}
+
 	initialized = true;
 
 	bool is_new_file = false;
-	FILE *tmp_in = sfopen(filename, rw_mode, &is_new_file, true);
-	if (!tmp_in) {
+
+	FILE * tmp_in = sfopen(filename, rw_mode, & is_new_file, true);
+
+	if (! tmp_in) {
 		throw ImageReadException(filename, "open TIFF");
 	}
 
@@ -155,10 +160,12 @@ bool TiffIO::is_valid(const void *first_block)
 	else {
 		const char *data = static_cast < const char *>(first_block);
 
-		if ((data[0] == data[1]) && (data[0] == TIFF_LITTLE_ENDIAN || data[1] == TIFF_BIG_ENDIAN)) {
+		if ((data[0] == data[1]) && (data[0] == TIFF_LITTLE_ENDIAN ||
+			  data[1] == TIFF_BIG_ENDIAN)) {
 			result = true;
 		}
 	}
+
 	EXITFUNC;
 	return result;
 }
@@ -184,6 +191,7 @@ int TiffIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 
 	int nx = 0;
 	int ny = 0;
+
 	TIFFGetField(tiff_file, TIFFTAG_IMAGEWIDTH, &nx);
 	TIFFGetField(tiff_file, TIFFTAG_IMAGELENGTH, &ny);
 
@@ -191,7 +199,9 @@ int TiffIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 
 	float min = 0;
 	float max = 0;
+
 	TIFFDataType data_type = TIFF_NOTYPE;
+
 	float resolution_x = 0;
 	float resolution_y = 0;
 
@@ -205,6 +215,7 @@ int TiffIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	TIFFGetField(tiff_file, TIFFTAG_YRESOLUTION, &resolution_y);
 
 	int xlen = 0, ylen = 0;
+
 	EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen);
 
 	dict["nx"] = xlen;
@@ -228,6 +239,7 @@ int TiffIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	dict["TIFF.bitspersample"] = bitspersample;
 	dict["TIFF.resolution_x"] = resolution_x;
 	dict["TIFF.resolution_y"] = resolution_y;
+
 	EXITFUNC;
 	return 0;
 }
@@ -239,19 +251,22 @@ int TiffIO::read_data(float *rdata, int image_index, const Region * area, bool)
 	check_read_access(image_index, rdata);
 
 	TIFFSetDirectory(tiff_file, image_index);
+
 	int nx = 0;
 	int ny = 0;
-	TIFFGetField(tiff_file, TIFFTAG_IMAGEWIDTH, &nx);
-	TIFFGetField(tiff_file, TIFFTAG_IMAGELENGTH, &ny);
+
+	TIFFGetField(tiff_file, TIFFTAG_IMAGEWIDTH,  & nx);
+	TIFFGetField(tiff_file, TIFFTAG_IMAGELENGTH, & ny);
 
 	int err = 0;
 
 	/* for grey scale image, use TIFFReadEncodedStrip() and TIFFReadEncodedTile()
-	 * because the reading of strip image is twice time faster than TIFFReadRGBAImage -Grant*/
-	if(photometric == PHOTOMETRIC_MINISWHITE || photometric == PHOTOMETRIC_MINISBLACK) {
+	 * because the reading of strip image is twice time faster than TIFFReadRGBAImage -Grant */
+
+	if (photometric == PHOTOMETRIC_MINISWHITE || photometric == PHOTOMETRIC_MINISBLACK) {
 		unsigned char *cdata;	//buffer for strip or tile
 
-		if(TIFFIsTiled(tiff_file)) {
+		if (TIFFIsTiled(tiff_file)) {
 			tsize_t tileSize = TIFFTileSize(tiff_file);
 			tsize_t tileMax = TIFFNumberOfTiles(tiff_file);
 			tsize_t tileCount;
@@ -260,37 +275,38 @@ int TiffIO::read_data(float *rdata, int image_index, const Region * area, bool)
 			TIFFGetField(tiff_file, TIFFTAG_TILEWIDTH, &tileWidth);
 			TIFFGetField(tiff_file, TIFFTAG_TILELENGTH, &tileLength);
 
-			if((cdata=(unsigned char*)_TIFFmalloc(tileSize))==NULL){
+			if ((cdata=(unsigned char*)_TIFFmalloc(tileSize))==NULL){
 				fprintf(stderr,"Error: Could not allocate enough memory\n");
 				return(-1);
 			}
 
 			int tilePerLine = nx/tileWidth + 1;
-			int NX, NY;	//(NX, NY) is the cordinates of tile
-			int xpos, ypos; //(xpos, ypos) is the actual coordinates of pixel (j,i) in image
+			int NX, NY;	// (NX, NY) is the cordinates of tile
+			int xpos, ypos; // (xpos, ypos) is the actual coordinates of pixel (j,i) in image
 
-			for(tileCount=0; tileCount<tileMax; tileCount++) {
-				if(TIFFReadEncodedTile(tiff_file, tileCount, cdata, tileSize) == -1) {
+			for (tileCount=0; tileCount<tileMax; tileCount++) {
+				if (TIFFReadEncodedTile(tiff_file, tileCount, cdata, tileSize) == -1) {
 					fprintf(stderr,"Error reading tiled image\n");return(-1);
 				}
 				else {
 					NX = tileCount%tilePerLine;
 					NY = tileCount/tilePerLine;
 					uint32 i, j;
-					for(i=0; i<tileLength; i++) {
-						for(j=0; j<tileWidth; j++) {
+
+					for (i=0; i<tileLength; i++) {
+						for (j=0; j<tileWidth; j++) {
 							xpos = NX*tileWidth + j;
 							ypos = NY*tileLength + i;
 
-							if(bitspersample == CHAR_BIT) {
-								if(xpos<nx && ypos<ny) {	//discard those pixel in tile which is out of actual image's boundary
+							if (bitspersample == CHAR_BIT) {
+								if (xpos<nx && ypos<ny) {	// discard those pixel in tile which is out of actual image's boundary
 									photometric == PHOTOMETRIC_MINISWHITE ?
 										rdata[nx*(ny-1)-(ypos*nx)+xpos] = -(float) ((unsigned char*)cdata)[i*tileWidth+j] :
 										rdata[nx*(ny-1)-(ypos*nx)+xpos] = (float) ((unsigned char*)cdata)[i*tileWidth+j];
 								}
 							}
-							else if(bitspersample == sizeof(unsigned short) * CHAR_BIT) {
-								if(xpos<nx && ypos<ny) {	//discard those pixel in tile which is out of actual image's boundary
+							else if (bitspersample == sizeof(unsigned short) * CHAR_BIT) {
+								if(xpos<nx && ypos<ny) {	// discard those pixel in tile which is out of actual image's boundary
 									photometric == PHOTOMETRIC_MINISWHITE ?
 										rdata[nx*(ny-1)-(ypos*nx)+xpos] = -(float) ((unsigned short*)cdata)[i*tileWidth+j] :
 										rdata[nx*(ny-1)-(ypos*nx)+xpos] = (float) ((unsigned short*)cdata)[i*tileWidth+j];
@@ -314,13 +330,14 @@ int TiffIO::read_data(float *rdata, int image_index, const Region * area, bool)
 		else {
 			check_region(area, IntSize(nx, ny));
 			int xlen = 0, ylen = 0, x0 = 0, y0 = 0;
+
 			EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen);
 			EMUtil::get_region_origins(area, &x0, &y0);
 
 			int strip_size = TIFFStripSize(tiff_file);
 			uint32 num_strips = TIFFNumberOfStrips(tiff_file);
 
-			if((cdata = static_cast < unsigned char *>(_TIFFmalloc(strip_size)))==NULL) {
+			if ((cdata = static_cast < unsigned char *>(_TIFFmalloc(strip_size)))==NULL) {
 				fprintf(stderr,"Error: Could not allocate enough memory\n");
 				return(-1);
 			}
@@ -377,17 +394,21 @@ int TiffIO::read_data(float *rdata, int image_index, const Region * area, bool)
 					}
 				}
 			}
+
 			Util::flip_image(rdata, xlen, ylen);
 		}
+
 		_TIFFfree(cdata);
 	}
-	else {	//process color image, convert to greyscale
+	else { // process color image, convert to greyscale
 		size_t npixels = nx * ny;
 		uint32 * raster = (uint32*) _TIFFmalloc(npixels * sizeof(uint32));
-		if(raster != NULL) {
-			if(TIFFReadRGBAImage(tiff_file, nx, ny, raster, 0)) {
-				int abgr = 0;	//raw ABGR pixel value
+
+		if (raster != NULL) {
+			if (TIFFReadRGBAImage(tiff_file, nx, ny, raster, 0)) {
+				int abgr = 0;	// raw ABGR pixel value
 				int red=0, green=0, blue=0;
+
 				for (int i=0; i<nx; ++i) {
 					for (int j=0; j<ny; ++j) {
 						abgr 	= raster[j+ny*i];
@@ -397,6 +418,7 @@ int TiffIO::read_data(float *rdata, int image_index, const Region * area, bool)
 						rdata[j+ny*i] = static_cast<float>(red*RED+green*GREEN+blue*BLUE);
 					}
 				}
+
 				_TIFFfree(raster);
 			}
 		}
@@ -406,8 +428,8 @@ int TiffIO::read_data(float *rdata, int image_index, const Region * area, bool)
 	return err;
 }
 
-
-int TiffIO::write_header(const Dict & dict, int image_index, const Region*, EMUtil::EMDataType datatype, bool)
+int TiffIO::write_header(const Dict & dict, int image_index, const Region *,
+				EMUtil::EMDataType datatype, bool)
 {
 	ENTERFUNC;
 
@@ -424,6 +446,7 @@ int TiffIO::write_header(const Dict & dict, int image_index, const Region*, EMUt
 	nx = (unsigned int) (int) dict["nx"];
 	ny = (unsigned int) (int) dict["ny"];
 	nz = (unsigned int) (int)dict["nz"];
+
 	if (nz != 1) {
 		LOGERR("Only support 2D TIFF file write");
 		return 1;
@@ -434,10 +457,10 @@ int TiffIO::write_header(const Dict & dict, int image_index, const Region*, EMUt
 	if (datatype == EMUtil::EM_UCHAR) {
 		bitspersample = CHAR_BIT;
 	}
-	else if(datatype == EMUtil::EM_USHORT) {
+	else if (datatype == EMUtil::EM_USHORT) {
 		bitspersample = CHAR_BIT * sizeof(short);
 	}
-	else if(datatype == EMUtil::EM_FLOAT) {
+	else if (datatype == EMUtil::EM_FLOAT) {
 		bitspersample = CHAR_BIT * sizeof(float);
 	}
 	else {
@@ -459,11 +482,14 @@ int TiffIO::write_header(const Dict & dict, int image_index, const Region*, EMUt
 	// TIFFSetField(tiff_file, TIFFTAG_COMPRESSION, NO_COMPRESSION);
 	// TIFFSetField(tiff_file, TIFFTAG_FILLORDER, FILLORDER_MSB2LSB);
 
+	EMUtil::getRenderLimits(dict, rendermin, rendermax);
+
 	EXITFUNC;
 	return 0;
 }
 
-int TiffIO::write_data(float * data, int image_index, const Region* , EMUtil::EMDataType, bool)
+int TiffIO::write_data(float * data, int image_index, const Region *,
+				EMUtil::EMDataType, bool)
 {
 	ENTERFUNC;
 
@@ -476,60 +502,79 @@ int TiffIO::write_data(float * data, int image_index, const Region* , EMUtil::EM
 
 	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax);
 
-	if(bitspersample == CHAR_BIT) {
+	if (bitspersample == CHAR_BIT) {
 		unsigned char *cdata = new unsigned char[nx*ny];
 		
 		int src_idx, dst_idx;
+
 		for (unsigned int i = 0; i < ny; ++i) {
 			for (unsigned int j = 0; j < nx; ++j) {
 				src_idx = i*nx+j;
 				dst_idx = nx*(ny-1) - (i*nx) +j;
-				if(data[src_idx] < rendermin){
+
+				if (data[src_idx] < rendermin){
 					cdata[dst_idx] = 0;
 				}
-				else if(data[src_idx] > rendermax) {
+				else if (data[src_idx] > rendermax) {
 					cdata[dst_idx] = UCHAR_MAX;
 				}
 				else {
-					cdata[dst_idx] = (unsigned char)((data[src_idx] - rendermin) / (rendermax - rendermin) * UCHAR_MAX);
+					cdata[dst_idx] = (unsigned char)((data[src_idx] - rendermin) /
+								(rendermax - rendermin) * UCHAR_MAX);
 				}
 			}
 		}
 
-		if(TIFFWriteEncodedStrip(tiff_file, 0, cdata, nx*ny) == -1)
-			{ printf("Fail to write tiff file.\n"); return -1; }
+		if (TIFFWriteEncodedStrip(tiff_file, 0, cdata, nx*ny) == -1) {
+			printf("Fail to write tiff file.\n");
 
-		if( cdata )	{ delete[] cdata; cdata = 0; }
+			return -1;
+		}
+
+		if (cdata) {
+			delete [] cdata;
+			cdata = NULL;
+		}
 	}
-	else if(bitspersample == CHAR_BIT*sizeof(short)) {
+	else if (bitspersample == CHAR_BIT*sizeof(short)) {
 		unsigned short *sdata = new unsigned short[nx*ny];
 
 		int src_idx, dst_idx;
+
 		for (unsigned int i = 0; i < ny; ++i) {
 			for (unsigned int j = 0; j < nx; ++j) {
 				src_idx = i*nx+j;
 				dst_idx = nx*(ny-1) - (i*nx) +j;
-				if(data[src_idx] < rendermin){
+
+				if (data[src_idx] < rendermin){
 					sdata[dst_idx] = 0;
 				}
-				else if(data[src_idx] > rendermax) {
+				else if (data[src_idx] > rendermax) {
 					sdata[dst_idx] = USHRT_MAX;
 				}
 				else {
-					sdata[dst_idx] = (unsigned short)((data[src_idx] - rendermin) / (rendermax - rendermin) * USHRT_MAX);
+					sdata[dst_idx] = (unsigned short)((data[src_idx] - rendermin) /
+								(rendermax - rendermin) * USHRT_MAX);
 				}
 			}
 		}
 
-		if(TIFFWriteEncodedStrip(tiff_file, 0, sdata, nx*ny*sizeof(short)) == -1)
-			{ printf("Fail to write tiff file.\n"); return -1; }
+		if (TIFFWriteEncodedStrip(tiff_file, 0, sdata, nx*ny*sizeof(short)) == -1) {
+			printf("Fail to write tiff file.\n");
 
-		if( sdata )	{ delete[] sdata; sdata = 0; }
+			return -1;
+		}
+
+		if (sdata) {
+			delete [] sdata;
+			sdata = NULL;
+		}
 	}
-	else if(bitspersample == CHAR_BIT*sizeof(float)) {
+	else if (bitspersample == CHAR_BIT*sizeof(float)) {
 		float *fdata = new float[nx*ny];
 
 		int src_idx, dst_idx;
+
 		for (unsigned int i = 0; i < ny; ++i) {
 			for (unsigned int j = 0; j < nx; ++j) {
 				src_idx = i*nx+j;
@@ -538,10 +583,16 @@ int TiffIO::write_data(float * data, int image_index, const Region* , EMUtil::EM
 			}
 		}
 
-		if(TIFFWriteEncodedStrip(tiff_file, 0, fdata, nx*ny*sizeof(float)) == -1)
-					{ printf("Fail to write tiff file.\n"); return -1; }
+		if (TIFFWriteEncodedStrip(tiff_file, 0, fdata, nx*ny*sizeof(float)) == -1) {
+			printf("Fail to write tiff file.\n");
 
-		if( fdata )	{ delete[] fdata; fdata = 0; }
+			return -1;
+		}
+
+		if (fdata) {
+			delete[] fdata;
+			fdata = NULL;
+		}
 	}
 	else {
 		LOGWARN("TIFF in EMAN2 only support data type 8 bit, 16 bit or 32 bit.");
