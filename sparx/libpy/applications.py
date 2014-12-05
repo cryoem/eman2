@@ -4416,10 +4416,10 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 			shuffle(iter_indexes)
 			for im in iter_indexes:
 				from utilities import get_params_proj
-				#print im,get_params_proj(data[im])
+				#print "  IN  ",im,get_params_proj(data[im]),data[im].get_attr("previousmax")
 				peak, pixer[im], number_of_checked_refs, iref = \
 					shc(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], an[N_step], sym, finfo)
-				#print im,get_params_proj(data[im]),data[im].get_attr("previousmax")
+				#print "  OU  ",im,get_params_proj(data[im]),data[im].get_attr("previousmax")
 				if gamma > 0:
 					n1 = refrings[iref].get_attr("n1")
 					n2 = refrings[iref].get_attr("n2")

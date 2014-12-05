@@ -1057,7 +1057,7 @@ def prepare_refrings_chunks( volft, kb, nz, delta, ref_a, sym = "c1", numr = Non
 	from applications import MPI_start_end
 	from utilities    import even_angles, getfvec
 	from types import BooleanType
-	from fundamentals import *
+	#from fundamentals import *
 
 	# mpi communicator can be sent by the MPI parameter
 	if type(MPI) is BooleanType:
