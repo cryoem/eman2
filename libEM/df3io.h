@@ -70,6 +70,8 @@ namespace EMAN
 		FILE *df3file;
 		bool initialized;
 		bool is_new_file;
+		float rendermin;
+		float rendermax;
 	};
 }
 
