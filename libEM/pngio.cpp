@@ -40,13 +40,13 @@
 #include "geometry.h"
 #include "util.h"
 
-
 using namespace EMAN;
 
 PngIO::PngIO(const string & file, IOMode rw)
 :	filename(file), rw_mode(rw), png_file(0), initialized(false),
 	png_ptr(0), info_ptr(0), end_info(0), nx(0), ny(0),
-	depth_type(PNG_INVALID_DEPTH), number_passes(0), rendermin(0), rendermax(0)
+	depth_type(PNG_INVALID_DEPTH), number_passes(0),
+	rendermin(0.0), rendermax(0.0)
 {}
 
 PngIO::~PngIO()
@@ -171,13 +171,14 @@ int PngIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 {
 	ENTERFUNC;
 
-	//single image format, index can only be zero
-	if(image_index == -1) {
+	// single image format, index can only be zero
+	if (image_index == -1) {
 		image_index = 0;
 	}
 
-	if(image_index != 0) {
-		throw ImageReadException(filename, "no stack allowed for MRC image. For take 2D slice out of 3D image, read the 3D image first, then use get_clip().");
+	if (image_index != 0) {
+		throw ImageReadException(filename,
+		"no stack allowed for MRC image. For take 2D slice out of 3D image, read the 3D image first, then use get_clip().");
 	}
 
 	init();
@@ -186,6 +187,7 @@ int PngIO::read_header(Dict & dict, int image_index, const Region * area, bool)
 	int ny1 = static_cast < int >(ny);
 	check_region(area, IntSize(nx1, ny1));
 	int xlen = 0, ylen = 0;
+
 	EMUtil::get_region_dims(area, nx1, &xlen, ny1, &ylen);
 
 	dict["nx"] = xlen;
@@ -254,10 +256,8 @@ int PngIO::write_header(const Dict & dict, int image_index, const Region*,
 		png_set_swap(png_ptr);
 	}
 
-	if(dict.has_key("render_min")) rendermin=(float)dict["render_min"];
-	else rendermin=0;
-	if(dict.has_key("render_max")) rendermax=(float)dict["render_max"];
-	else rendermax=0;
+	EMUtil::getRenderLimits(dict, rendermin, rendermax);
+
 	EXITFUNC;
 	return 0;
 }
@@ -331,8 +331,11 @@ int PngIO::write_data(float *data, int image_index, const Region*,
 	image_index = 0;
 	check_write_access(rw_mode, image_index, 1, data);
 
-	// If we didn't get any parameters in 'render_min' or 'render_max', we need to find some good ones
-	if (!rendermin && !rendermax) EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax);
+	// If we didn't get any parameters in 'render_min' or 'render_max',
+	// we need to find some good ones
+
+	EMUtil::getRenderMinMax(data, nx, ny, rendermin, rendermax);
+
 //	printf("render %f %f \n",rendermin,rendermax);
 
 	/**Flip the image vertically, since EMAN use top-left corner as image origin
@@ -349,7 +352,8 @@ int PngIO::write_data(float *data, int image_index, const Region*,
 					cdata[x] = UCHAR_MAX;
 				}
 				else {
-					cdata[x] = (unsigned char)((data[y * nx + x] - rendermin) / (rendermax - rendermin) * 256);
+					cdata[x] = (unsigned char)((data[y * nx + x] - rendermin) /
+								(rendermax - rendermin) * 256);
 				}
 			}
 			png_write_row(png_ptr, (png_byte *) cdata);
@@ -373,7 +377,8 @@ int PngIO::write_data(float *data, int image_index, const Region*,
 					sdata[x] = USHRT_MAX;
 				}
 				else {
-					sdata[x] = (unsigned short)((data[y * nx + x] - rendermin) / (rendermax - rendermin) * 65536);
+					sdata[x] = (unsigned short)((data[y * nx + x] - rendermin) /
+								(rendermax - rendermin) * 65536);
 				}
 			}
 
@@ -408,6 +413,5 @@ bool PngIO::is_image_big_endian()
 {
 	return true;
 }
-
 
 #endif	//EM_PNG
