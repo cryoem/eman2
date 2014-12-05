@@ -449,7 +449,7 @@ important to use an angular step which is 90/integer.</p>")
 			astep=0
 		if options.classiter<0 : classiter=1
 	if options.breaksym : options.orientgen=options.orientgen+":breaksym=1"
-
+	db["astep"]=astep
 
 	if options.simaligncmp==None : options.simaligncmp="ccc"
 	if options.simralign==None and options.speed<7 :

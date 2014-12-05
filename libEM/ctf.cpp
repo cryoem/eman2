@@ -1010,6 +1010,28 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 			}
 		}
 	}
+	else if (type == CTF_POWEVAL) {
+		for (int y = -ny/2; y < ny/2; y++) {
+			int y2=(y+ny)%ny;
+			int ynx = y2 * nx;
+
+			for (int x = 0; x < nx / 2; x++) {
+				float s = (float)Util::hypot_fast(x,y ) * ds;
+				float gam;
+				// mf is used to gradually "turn on" the curve as we approach 20 A
+				float mf=1.0;
+				if (s<.04) mf=0.0;
+				else if (s<.05) mf=1.0-exp(-pow((s-.04f)*300.0f,2.0f));
+				if (dfdiff==0) gam=-g1*s*s*s*s+g2*defocus*s*s;
+				else gam=-g1*s*s*s*s+g2*df(atan2((float)y,(float)x))*s*s;
+				float v = cos(gam-acac);
+				if (v>0.9) v=exp(-(50.0f/4.0f * s*s));
+				else v=0;
+				d[x * 2 + ynx] = mf*v*v;
+				d[x * 2 + ynx + 1] = 0;
+			}
+		}
+	}
 	else if (type == CTF_SIGN) {
 		for (int y = -ny/2; y < ny/2; y++) {
 			int y2=(y+ny)%ny;

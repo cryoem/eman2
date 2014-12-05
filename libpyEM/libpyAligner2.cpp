@@ -500,6 +500,8 @@ BOOST_PYTHON_MODULE(libpyAligner2)
         .value("CTF_WIENER_FILTER", EMAN::Ctf::CTF_WIENER_FILTER)
         .value("CTF_TOTAL", EMAN::Ctf::CTF_TOTAL)
 	.value("CTF_FITREF", EMAN::Ctf::CTF_FITREF)
+	.value("CTF_POWEVAL", EMAN::Ctf::CTF_POWEVAL)
+	.value("CTF_INTEN", EMAN::Ctf::CTF_INTEN)
 	.value("CTF_NOISERATIO", EMAN::Ctf::CTF_NOISERATIO)
     ;
 
