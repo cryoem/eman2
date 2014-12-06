@@ -68,6 +68,8 @@ def main():
 	parser.add_argument("--noalign",action="store_true",help="Regenerates unaligned particle averages into __orig",default=False)
 	parser.add_argument("--invert",action="store_true",help="Invert the contrast of the particles in output files (default false)",default=False)
 	parser.add_argument("--filefilt",type=str,help="Only processes image stacks where the filename contains the specified string. Mostly used for debugging.",default=None)
+	parser.add_argument("--frac",type=str,help="Processes a fraction of the data, used automatically by --threads. <n>,<ntot>",default=None)
+	parser.add_argument("--step",type=str,default="0,-1,1",help="Specify <first>,<last>,<step>. Processes only a subset of the input data. For example, 0,6,2 would process only particles 0,2,4. first is inclusive, last exclusive")
 	parser.add_argument("--parallel", default=None, help="parallelism argument. This program supports only thread:<n>")
 	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
@@ -79,23 +81,43 @@ def main():
 		print usage
 		parser.error("Specify refine_xx folder")
 
-	if options.threads : nthreads=options.threads
-	elif options.parallel!=None :
-		if options.parallel[:7]!="thread:":
-			print "ERROR: only thread:<n> parallelism supported by this program. It is i/o limited."
+	# If called with parallelism, the program calls itself with frac. If both were specified, bad things would happen
+	if options.frac!=None:
+		try: 
+			options.frac=[int(i) for i in options.frac.split(",")]
+			if len(options.frac)!=2 : raise Exception
+		except: 
+			print "--frac should not be specified manually"
 			sys.exit(1)
-		nthreads=int(options.parallel[7:])
-	else: nthreads=1
+	else:
+		if options.threads : nthreads=options.threads
+		elif options.parallel!=None :
+			if options.parallel[:7]!="thread:":
+				print "ERROR: only thread:<n> parallelism supported by this program. It is i/o limited."
+				sys.exit(1)
+			nthreads=int(options.parallel[7:])
+		else: nthreads=1
+		
+		options.frac=0,1
+
+	try: options.step=[int(i) for i in options.step.split(",")]
+	except:
+		print "ERROR: Specify step as <first>,<last>,<step>"
+		sys.exit(1)
 
 	pid=E2init(sys.argv)
 
+	# find the input files
 	refineparms=js_open_dict(args[0]+"/0_refine_parms.json")
 	inlst=refineparms["input"]
 	if inlst[0][-4:]!=".lst" :
 		print "Error: refine_xx must be run with a 'set' as --input following canonical EMAN2.1 guidelines"
 		sys.exit(1)
-		
+	
 	clsout=sorted([args[0]+"/"+i for i in os.listdir(args[0]) if "cls_result" in i])[-2:]
+	if not "even" in clsout[0] : 
+		print "ERROR: last 2 cls_result files not even/odd pair. Delete any incomplete iterations from refine folder!"
+		sys.exit(1)
 
 	if options.verbose: print "running on:",clsout
 
@@ -105,283 +127,139 @@ def main():
 
 	lastloc=None
 	lst=(LSXFile(inlst[0]),LSXFile(inlst[1]))	# Input particle "sets" in LSX files
+	
+	# This contains the classification results, which includes the orientation of the projection for each particle
 	cls=(EMData.read_images(clsout[0]),EMData.read_images(clsout[1]))	# Generally small enough we can just read the whole thing
 	
-	# Move the original files out of the way
-	if options.verbose : print "Renaming original particle stacks"
+	# lstmap  maps (filename,n) to (e/o,set n)
+	# allnames lists all files referenced in the sets. We make it a list so we can iterate sensibly
+	lstmap={}
 	allnames=set()
-	for eo in xrange(2):
-		for i in xrange(len(lst[eo])):
-			allnames.add(lst[eo][i][1])
-			
-	n=0
-	for name in allnames:
+	for i in xrange(len(lst[0])): 
+		lstmap[(lst[0][i][1],lst[0][i][0])]=(0,i)
+		allnames.add(lst[0][i][1])
+	for i in xrange(len(lst[1])): 
+		lstmap[(lst[1][i][1],lst[1][i][0])]=(1,i)
+		allnames.add(lst[0][i][1])
+	
+	allnames=list(allnames)
+	allnames.sort()
+	lst=None		# free up resources
+	
+	# Move the original files out of the way in the main thread
+	if options.frac=0,1 :
+		n=0
+		for name in allnames:
+			if options.filefilt!=None and not options.filefilt in name : continue
+		
+			base=base_name(name)
+			if   os.path.exists("particles/{}.hdf".format(base)) : src="particles/{}.hdf".format(base)
+			elif os.path.exists("particles/{}_ptcls.hdf".format(base)) : src="particles/{}_ptcls.hdf".format(base)
+			dest="particles/{}__orig.hdf".format(base)
+			try: 
+				if os.path.exists(dest) : raise Exception
+				os.rename(src,dest)
+				if options.verbose>1: print "Renaming {} to {}".format(src,dest)
+				file(src,"w").write(file(dest,"r").read())			# copy the original data back to the source file so we don't have gaps for unaligned particles, but only if the rename worked
+				n+=1
+			except: 
+				if options.verbose>1: print "Failed to rename ",name
+				pass
+	
+		if options.verbose==1: print n," stacks renamed to __orig"
+	
+	### Deal with threads (spawn more instances of ourselves as separate processes)
+	if nthreads>1:
+		print "Running in parallel with ",nthreads," threads"
+		threads=[threading.Thread(target=os.system,args=[" ".join(sys.argv+["--frac={},{}".format(i,nthreads)])]) for i in xrange(nthreads)]
+		for t in threads: t.start()
+		for t in threads: t.join()
+		print "Parallel fitting complete"
+		sys.exit(0)
+	
+	### iterate over the particle files. We just skip any that aren't in the set that was refined
+	for name in allnames[options.frac[0]:len(allnames):options.frac[1]]:
 		base=base_name(name)
-		if   os.path.exists("particles/{}.hdf".format(base)) : src="particles/{}.hdf".format(base)
-		elif os.path.exists("particles/{}_ptcls.hdf".format(base)) : src="particles/{}_ptcls.hdf".format(base)
-		dest="particles/{}__orig.hdf".format(base)
-		try: 
-			if os.path.exists(dest) : raise Exception
-			os.rename(src,dest)
-			if options.verbose>1: print "Renaming {} to {}".format(src,dest)
-			file(src,"w").write(file(dest,"r").read())			# copy the original data back to the source file so we don't have gaps for unaligned particles, but only if the rename worked
-			n+=1
-		except: 
-			if options.verbose>1: print "Failed to rename ",name
-			pass
-	
-	if options.verbose==1: print n," stacks renamed to __orig"
-	
-	
-	neo=max(lst[0].n,lst[1].n)
-	
-	# i is particle number in the cls file
-	for i in xrange(neo):
-		# eo is 0/1 for even/odd files
-		for eo in xrange(2):
-			if i>=len(lst[eo]) : continue
+		db=js_open_dict(info_name(name))
+		if options.verbose : print "### Processing {} ({})".format(base,options.frac[0]+1)
 		
-			projfsp=clsout[eo].replace("cls_result","projections")
-			ptloc=lst[eo].read(i)		# ptloc is n,filename for the source image
-			if options.verbose: print "{}/{}   ({})".format(i,lst[eo].n,ptloc)
-			
-			# if the input particle file changed, we need some new info
-			if lastloc!=ptloc[1]:
-				if options.filefilt!= None and not options.filefilt in ptloc[1] : continue
-			
-				movie="movieparticles/{}_ptcls.hdf".format(base_name(ptloc[1]))		# movie particle stack
-				movieim=EMData(movie,0)		# number of frames in each movie for this stack
-				movien=movieim["movie_frames"]
-				
-				# we construct a phase flipping image from the first particle CTF info
-				ptcl=EMData(ptloc[1],ptloc[0])		# the original particle image, should have CTF info too
-				ctf=ptcl["ctf"]
-				flipim=movieim.do_fft()		# we're just getting a complex image of the right size, a bit stupid way to handle it 
-				ctf.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
-				flipim["ctf"]=ctf
-				lastloc=ptloc[1]
-			
-			proj=EMData(projfsp,int(cls[eo][0][0,i]))	# projection image for this particle
-#			orient=Transform({"type":"2d","tx":cls[2][0,i],"ty":cls[3][0,i],"alpha":cls[4][0,i],"mirror":int(cls[5][0,i])})
-			orient=Transform({"type":"2d","tx":0,"ty":0,"alpha":cls[eo][4][0,i],"mirror":int(cls[eo][5][0,i])})		# we want the alignment reference in the middle of the box
-			
-			stack=EMData.read_images(movie,xrange(movien*ptloc[0],movien*(ptloc[0]+1)))
-			if options.invert : 
-				for inv in stack: inv.mult(-1.0)
-			ptcl=EMData(ptloc[1],ptloc[0])		# the original particle image, should have CTF info too
-			outname="particles/{}_ptcls.hdf".format(base_name(ptloc[1]))
-			outnum=ptloc[0]
-
-			# here we just regenerate control_data
-			if options.noalign :
-				av=sum(stack)
-				av.mult(1.0/len(stack))
-				nx=ptcl["nx"]
-				nx2=av["nx"]
-				av=av.get_clip(Region((nx2-nx)/2,(nx2-nx)/2,nx,nx))
-				outname.replace("_ptcls","__orig")
-				av.write_image(outname,outnum)
-				if options.verbose : print "rewrote ",outnum, outname 
+		movie="movieparticles/{}_ptcls.hdf".format(base)
+		movieim=EMData(movie,0)
+		movienfr=movieim["movie_frames"]  # number of frames in each movie for this stack
+		movienptcl=EMUtil.get_image_count(movie)/movienfr		# number of particles in the frame
+		
+		# get CTF info for this micrograph. First try particle based, then resort to frame if necessary
+		try: ctf=db["ctf"][0]
+		except:
+			try: ctf=db["ctf_frame"][1]
+			except:
+				print "ERROR: no CTF info for {}. Skipping file".format(name)
 				continue
-				
-			# launch thread to do work
-			if options.verbose>1 : print "*****    ",threading.active_count()-1," threads running"
-			while (threading.active_count()>nthreads) : time.sleep(0.1)
-			t=threading.Thread(target=alignthread,args=(stack,ptcl,flipim,proj,orient,outname,outnum,options.verbose))
-			t.start()
-			
-	E2end(pid)
-
-def alignthread(stack, ptcl, flipim, proj, orient, outname, outnum, verbose):
-			proj.transform(orient.inverse())
-			for im in stack: im.process_inplace("normalize.edgemean")
-			avg=sum(stack)
-			avg.mult(1.0/len(stack))
-
-			ptcl.process_inplace("normalize.edgemean")
-			
-			oldbox=proj["nx"]
-			moviebox=stack[0]["nx"]
-			
-			# CTF phase flipping of the projection so the alignment works
-			proj.process_inplace("normalize.edgemean")
-			if oldbox!=moviebox : 
-				proj=proj.get_clip(Region(-(moviebox-oldbox)/2,-(moviebox-oldbox)/2,moviebox,moviebox))
-				ptcl=ptcl.get_clip(Region(-(moviebox-oldbox)/2,-(moviebox-oldbox)/2,moviebox,moviebox))
-			pfft=proj.do_fft()
-			pfft.mult(flipim)
-			proj=pfft.do_ift()
-			proj["ctf"]=flipim["ctf"]		# this may be a waste, but there are cases in development where it is useful
-			
-#			if proj["nx"]!=ptcl["nx"] : proj=proj.get_clip
-			if verbose>3 : proj.write_image("tmp.hdf",-1)
-			#ptcl.process_inplace("normalize.toimage",{"to":proj})
-			if verbose>3 :ptcl.write_image("tmp.hdf",-1)
-			avg.process_inplace("normalize.edgemean")
-			if verbose>3 :avg.write_image("tmp.hdf",-1)
-			
-			# This function is the actual stack alignment to the reference, producing the aligned average
-			newpt=alignstack(proj,stack,verbose-1)
-			if verbose>3 :
-				newpt.process_inplace("normalize.edgemean")
-				newpt.write_image("tmp.hdf",-1)
-				proj.write_image("tmp2.hdf",-1)
-				for s in stack: s.write_image("tmp2.hdf",-1)
-			if newpt["nx"]!=oldbox : newpt=newpt.window_center(oldbox)
-
-			# write the aligned, clipped average to the output file
-			newpt.process_inplace("normalize.edgemean")
-			#newpt.write_image("{}/particles/{}_ptcls.hdf".format(newproj,base_name(ptloc[1])),ptloc[0])
-			# We're appending here to avoid the problem with missing "bad" particles in the original set. not a perfect solution
-			newpt.write_image(outname,outnum)
-			
-			if verbose>1 : print "Completed: ",outname,outnum
-
-
-def alignstack(refo,stack,verbose=0):
-	"""aligns a movie stack to a reference image, with some constraints forcing the relative alignments to follow a pattern
-	Returns the aligned average."""
-	
-	global cnt
-	nx=refo["nx"]
-	ny=refo["ny"]
-	
-	# a little preprocessing on the stack
-#	outim=[i.get_clip(Region(-nx/2,-ny/2,nx*2,ny*2)) for i in stack]
-	outim=[i.process("xform.scale",{"clip":ny*2,"scale":2.0}) for i in stack]
-	
-	for i in outim:
-#		i.scale(2.0)
-		i.process_inplace("filter.highpass.gauss",{"cutoff_abs":.002})
-		i.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.05})
-
-	ref=refo.process("xform.scale",{"clip":ny*2,"scale":2.0})
-	#ref=refo.get_clip(Region(-nx/2,-ny/2,nx*2,ny*2))
-	#ref.scale(2.0)
-
-	nx*=2
-	ny*=2
-	
-	xali=XYData()			# this will contain the alignments which are hierarchically estimated and improved
-	yali=XYData()			# x is time in both cases, y is x or y
-	for it in xrange(1):
-		step=len(outim)
-		Zs=[]
-		Zthr=0
 		
-		while step>1:
-			step/=2
-			i0=0
-			while i0<len(outim):
-				i1=min(i0+step,len(outim))
-				if i1-i0<step/2 : 
-					i0+=step
-					continue
-#				av=sum([outim[i].process("xform.translate.int",{"trans":(int(xali.get_yatx_smooth(i,1)),int(yali.get_yatx_smooth(i,1)))}) for i in xrange(i0,i1)])
-				av=sum(outim[i0:i1])
-
-				tloc=(i0+i1-1)/2.0		# the "time" of the current average
-				if step>=len(outim)/2 : lrange=nx/4
-				else: lrange=hypot(xali.get_yatx_smooth(i1,1)-xali.get_yatx_smooth(i0,1),yali.get_yatx_smooth(i1,1)-yali.get_yatx_smooth(i0,1))
-				if lrange<6 : lrange=6	
-				
-				guess=(xali.get_yatx_smooth(tloc,1),yali.get_yatx_smooth(tloc,1))
-				
-				if verbose :print step,i0,guess,lrange,
-
-				ccf=av.calc_ccf(ref,fp_flag.CIRCULANT,1)		# centered CCF
-				ccf.process_inplace("normalize.edgemean")
-				csig=ccf["sigma"]
-				cmean=ccf["mean"]
-#				ccf.write_image("xyz.hdf",-1)
-				ccf=ccf.get_clip(Region(nx/2-lrange-guess[0],ny/2-lrange-guess[1],lrange*2,lrange*2))
-				dx,dy,dz=ccf.calc_max_location()
-				try: Z=(ccf[dx,dy]-cmean)/csig
-				except: 
-					print "\nBad alignment {},{} on {} to {}".format(dx,dy,i0,i1)
-					i0+=step
-					continue
-				
-				if verbose: print "###",dx-lrange,dy-lrange,
-				
-				if dx>0 and dy>0 and dx<lrange*2-1 and dy<lrange*2-1 :
-					wx=(ccf[dx-1,dy-1]+ccf[dx-1,dy]+ccf[dx-1,dy+1],ccf[dx,dy-1]+ccf[dx,dy]+ccf[dx,dy+1],ccf[dx+1,dy-1]+ccf[dx+1,dy]+ccf[dx+1,dy+1]) # peak weights in x around peak
-					wy=(ccf[dx-1,dy-1]+ccf[dx,dy-1]+ccf[dx+1,dy-1],ccf[dx-1,dy-1]+ccf[dx,dy-1]+ccf[dx+1,dy-1],ccf[dx-1,dy-1]+ccf[dx,dy-1]+ccf[dx+1,dy-1]) # peak weights in y around peak
-					dx=((dx-1)*wx[0]+dx*wx[1]+(dx+1)*wx[2])/sum(wx)
-					dy=((dy-1)*wy[0]+dy*wy[1]+(dy+1)*wy[2])/sum(wy)
-				
-				
-				
-				dx-=lrange
-				dy-=lrange
-				if verbose: print dx,dy,Z
-				
-				Zs.append(Z)
-				
-				# we only include points where the alignment seems reliable
-				if step>=len(outim)/2 or Z>Zthr :
-					xali.insort(tloc,guess[0]-dx)
-					yali.insort(tloc,guess[1]-dy)
-					xali.dedupx()
-					yali.dedupx()
-									
-				i0+=step
-				
-			if Zthr==0:
-				Zthr=max((Zs[0]+Zs[1])/3.0,3.0)
-				if verbose : print "Z threshold: ",Zthr
-			# Smoothing
-			# we just do a very simplistic smoothing at each step
-
-			for i in xrange(xali.get_size()-2):
-				xali.set_y(i+1,(xali.get_y(i)+xali.get_y(i+1)*2.0+xali.get_y(i+2))/4.0)
-				yali.set_y(i+1,(yali.get_y(i)+yali.get_y(i+1)*2.0+yali.get_y(i+2))/4.0)
-				
-			if xali.get_size()>=4:
-				# smooth first point
-				lp=xali.get_size()-1
-				sx0=xali.get_x(1)-xali.get_x(0)
-				sx1=xali.get_x(lp-1)-xali.get_x(1)
-				sl=(xali.get_y(lp-1)-xali.get_y(1))/sx1
-				xali.set_y(0,(xali.get_y(1)-sl*sx0+xali.get_y(0))/2.0)
-				sl=(yali.get_y(lp-1)-yali.get_y(1))/sx1
-				yali.set_y(0,(yali.get_y(1)-sl*sx0+yali.get_y(0))/2.0)
-
-				# smooth last point
-#				print xali.get_y(lp),yali.get_y(lp),"->",
-				sx1=xali.get_x(lp-1)-xali.get_x(1)
-				sx0=xali.get_x(lp)-xali.get_x(lp-1)
-				sl=(xali.get_y(lp-1)-xali.get_y(1))/sx1
-				xali.set_y(lp,(xali.get_y(lp-1)+sl*sx0+xali.get_y(lp))/2.0)
-				sl=(yali.get_y(lp-1)-yali.get_y(1))/sx1
-				yali.set_y(lp,(yali.get_y(lp-1)+sl*sx0+yali.get_y(lp))/2.0)
-#				print xali.get_y(lp),yali.get_y(lp)
-			   
-
-			if verbose>1 :
-				print ["%6.1f"%i for i in xali.get_xlist()]
-				print ["%6.2f"%i for i in xali.get_ylist()]
-				print ["%6.2f"%i for i in yali.get_ylist()]
-
-			#out=file("path_{}_{}.txt".format(cnt,step),"w")
-			#for i in xrange(len(outim)): out.write("{}\t{}\t{}\n".format(i,xali.get_yatx_smooth(i,1),yali.get_yatx_smooth(i,1)))
-
-	#cnt+=1
+		# We need this to filter the projections
+		#ctfflip=movieim.do_fft()		# we're just getting a complex image of the right size, a bit stupid way to handle it 
+		#ctf.compute_2d_complex(ctfflip,Ctf.CtfType.CTF_FLIP)
+		ctfim=movieim.do_fft()		# we're just getting a complex image of the right size, a bit stupid way to handle it 
+		ctf.bfactor=50
+		ctf.compute_2d_complex(ctfim,Ctf.CtfType.CTF_AMP)		# used to be _INTEN
+		#ctfim.mult(ctfflip)		# an intensity image with phase flipping!
+	
+		# loop over the particles in this frame
+		for n in xrange(movienptcl):
+			# if we can't find the particle in the lst file
+			try: eo,lstn=lstmap[(name,n)]
+			except:
+				if options.verbose>1 : print "skipping",name,n
+				continue
 			
-		
-	av=sum([stack[i].process("xform.translate.int",{"trans":(int(xali.get_yatx_smooth(i,1)/2.0),int(yali.get_yatx_smooth(i,1)/2.0))}) for i in xrange(len(outim))])
-	av.mult(1.0/len(outim))
-	
-	
-	if verbose :
-		print ["%6.1f"%i for i in xali.get_xlist()]
-		print ["%6.2f"%i for i in xali.get_ylist()]
-		print ["%6.2f"%i for i in yali.get_ylist()]
-	
+			# read the frames for this particle, limited by --step
+			if options.step[1]<=0 : end=movienfr+options.step[1]
+			else: end=options.step[1]
+			stack=EMData.read_images(movie,range(n*movienfr+options.step[0],n*movienfr+end,options.step[2]))
+			if options.invert:
+				for i in stack: i.mult(-1)
+			
+			# now find the correct reference projection
+			projfsp=clsout[eo].replace("cls_result","projections")
+			proj=EMData(projfsp,int(cls[eo][0][0,lstn]))	# projection image for this particle
+			orient=Transform({"type":"2d","tx":0,"ty":0,"alpha":cls[eo][4][0,lstn],"mirror":int(cls[eo][5][0,lstn])})		# we want the alignment reference in the middle of the box
+			proj.transform(orient)
+			projf=proj.do_fft()
+			projf.mult(ctfim)
+			proj=projf.do_ift()		# now the projection has been filtered and has been rotated/flipped
+			
+			# We compute the CCF for the unaligned average, then filter out values close to the max
+			# to define a region of permissible translation for individual frames
+			unaliavg=sum(stack)
+			ccfmask=unaliavg.calc_ccf(reff,EMAN2.fp_flag.CIRCULANT,True)
+			ccfmask.process_inplace("normalize.edgemean")
+			ccfmask.process_inplace("threshold.binary",{"value":ccfmask["maximum"]*.8})
+			ccfmask.process_inplace("mask.addshells",{"nshells":2})
+			
+			avg=None
+			atx=[]
+			aty=[]
+			atc=[]
+			for i,im in enumerate(stack):
+				ccf=im.calc_ccf(proj,EMAN2.fp_flag.CIRCULANT,True)
+				ccf.mult(ccfmask)
+				pk=ccf.calc_max_location()
+				dx=-(pk[0]-nx/2)
+				dy=-(pk[1]-ny/2)
+				if options.verbose>1 : print base,i,dx,dy
 
-	return av
+				try: avg.add(im.process("xform.translate.int",{"trans":(dx,dy)}))
+				except: avg=im.process("xform.translate.int",{"trans":(dx,dy)})
+				
+				atx.append(dx)
+				aty.append(dy)
+				atc.append(pk["maximum"])
+
+			avg["movie_tx"]=atx
+			avg["movie_ty"]=aty
+			avg["movie_cc"]=atc
+			avg.write_image("particles/{}_ptcls.hdf".format(base),n)
 	
-cnt=1
 
 if __name__ == "__main__":
 	main()
