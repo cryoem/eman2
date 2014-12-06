@@ -90,9 +90,10 @@ indicating its position in the movie.
 		elif os.path.exists("movie/{}.mrcs".format(u)): m="{}.mrcs".format(u)
 		elif os.path.exists("movie/"+ u.replace("aliavg","align")+".hdf"):m=u.replace("aliavg","align")+".hdf"
 		elif os.path.exists("movie/"+ u.replace("_aliavg","").replace("_proc","")+".mrcs"):m=u.replace("_aliavg","").replace("_proc","")+".mrcs"
+		elif os.path.exists("movie/"+ u.split(".")[0]+"_raw_proc_corr.hdf") : m= u.split(".")[0]+"_raw_proc_corr.hdf"
 		else :
 			print "Couldn't find movie for ",u
-			print "Tried: ","{}_raw_proc_align.hdf".format(u), "{}.hdf".format(u.replace("_aliavg","_align")), "{}_proc_align.hdf".format(u), "{}.mrcs".format(u), u.replace("aliavg","align")+".hdf",u.replace("_aliavg","").replace("_proc","")+".mrcs"
+			print "Tried: ","{}_raw_proc_align.hdf".format(u), "{}.hdf".format(u.replace("_aliavg","_align")), "{}_proc_align.hdf".format(u), "{}.mrcs".format(u), u.replace("aliavg","align")+".hdf",u.replace("_aliavg","").replace("_proc","")+".mrcs","movie/"+ u.split(".")[0]+"_raw_proc_corr.hdf"
 			continue
 		print "Movie found {} -> {}".format(u,m)
 
@@ -120,7 +121,11 @@ indicating its position in the movie.
 			#continue
 
 		ptclfile="particles/{}_ptcls.hdf".format(u)
-		nptcl=EMUtil.get_image_count(ptclfile)
+		try: nptcl=EMUtil.get_image_count(ptclfile)
+		except: 
+			ptclfile="particles/{}.hdf".format(u)
+			nptcl=EMUtil.get_image_count(ptclfile)
+
 		if nptcl==0 : 
 			print "no particles found :",u
 			continue

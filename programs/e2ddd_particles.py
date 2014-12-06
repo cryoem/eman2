@@ -89,6 +89,7 @@ def main():
 		except: 
 			print "--frac should not be specified manually"
 			sys.exit(1)
+		nthreads=1
 	else:
 		if options.threads : nthreads=options.threads
 		elif options.parallel!=None :
@@ -147,7 +148,7 @@ def main():
 	lst=None		# free up resources
 	
 	# Move the original files out of the way in the main thread
-	if options.frac=0,1 :
+	if options.frac==(0,1) :
 		n=0
 		for name in allnames:
 			if options.filefilt!=None and not options.filefilt in name : continue
@@ -187,6 +188,7 @@ def main():
 		movieim=EMData(movie,0)
 		movienfr=movieim["movie_frames"]  # number of frames in each movie for this stack
 		movienptcl=EMUtil.get_image_count(movie)/movienfr		# number of particles in the frame
+		nx=movieim["nx"]
 		
 		# get CTF info for this micrograph. First try particle based, then resort to frame if necessary
 		try: ctf=db["ctf"][0]
@@ -218,10 +220,14 @@ def main():
 			stack=EMData.read_images(movie,range(n*movienfr+options.step[0],n*movienfr+end,options.step[2]))
 			if options.invert:
 				for i in stack: i.mult(-1)
+			for i in stack: i.process_inplace("normalize.edgemean")
 			
 			# now find the correct reference projection
 			projfsp=clsout[eo].replace("cls_result","projections")
 			proj=EMData(projfsp,int(cls[eo][0][0,lstn]))	# projection image for this particle
+			proj.process_inplace("normalize.edgemean")	# avoid issues when we resize
+			pnx=proj["nx"]
+			proj=proj.get_clip(Region((pnx-nx)/2,(pnx-nx)/2,nx,nx))	# same size as particle data
 			orient=Transform({"type":"2d","tx":0,"ty":0,"alpha":cls[eo][4][0,lstn],"mirror":int(cls[eo][5][0,lstn])})		# we want the alignment reference in the middle of the box
 			proj.transform(orient)
 			projf=proj.do_fft()
@@ -231,21 +237,30 @@ def main():
 			# We compute the CCF for the unaligned average, then filter out values close to the max
 			# to define a region of permissible translation for individual frames
 			unaliavg=sum(stack)
-			ccfmask=unaliavg.calc_ccf(reff,EMAN2.fp_flag.CIRCULANT,True)
+			if options.verbose>3 :
+				proj.write_image("tst.hdf",-1)
+			ccfmask=unaliavg.calc_ccf(proj,fp_flag.CIRCULANT,True)
 			ccfmask.process_inplace("normalize.edgemean")
+			if options.verbose>3 : ccfmask.write_image("tst.hdf",-1)
+			ccfmask.process_inplace("mask.gaussian",{"inner_radius":nx/8,"outer_radius":nx/8})	# this limits maximum translation
 			ccfmask.process_inplace("threshold.binary",{"value":ccfmask["maximum"]*.8})
 			ccfmask.process_inplace("mask.addshells",{"nshells":2})
-			
+			ccfmask.process_inplace("mask.sharp",{"outer_radius":nx/4})	# this limits maximum translation
+			if options.verbose>3 : 
+				ccfmask.write_image("tst.hdf",-1)
+				unaliavg.process_inplace("normalize.edgemean")
+				unaliavg.write_image("tst.hdf",-1)
+
 			avg=None
 			atx=[]
 			aty=[]
 			atc=[]
 			for i,im in enumerate(stack):
-				ccf=im.calc_ccf(proj,EMAN2.fp_flag.CIRCULANT,True)
+				ccf=im.calc_ccf(proj,fp_flag.CIRCULANT,True)
 				ccf.mult(ccfmask)
 				pk=ccf.calc_max_location()
 				dx=-(pk[0]-nx/2)
-				dy=-(pk[1]-ny/2)
+				dy=-(pk[1]-nx/2)
 				if options.verbose>1 : print base,i,dx,dy
 
 				try: avg.add(im.process("xform.translate.int",{"trans":(dx,dy)}))
@@ -253,8 +268,14 @@ def main():
 				
 				atx.append(dx)
 				aty.append(dy)
-				atc.append(pk["maximum"])
+				atc.append(ccf["maximum"])
 
+			if options.verbose>3 : 
+				avg.process_inplace("normalize.edgemean")
+				avg.write_image("tst.hdf",-1)
+
+			avg=avg.get_clip(Region((nx-pnx)/2,(nx-pnx)/2,pnx,pnx))		# resize to original particle size
+			avg.process_inplace("normalize.edgemean")
 			avg["movie_tx"]=atx
 			avg["movie_ty"]=aty
 			avg["movie_cc"]=atc
