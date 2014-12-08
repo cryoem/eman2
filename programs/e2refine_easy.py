@@ -449,7 +449,6 @@ important to use an angular step which is 90/integer.</p>")
 			astep=0
 		if options.classiter<0 : classiter=1
 	if options.breaksym : options.orientgen=options.orientgen+":breaksym=1"
-	db["astep"]=astep
 
 	if options.simaligncmp==None : options.simaligncmp="ccc"
 	if options.simralign==None and options.speed<7 :
@@ -569,6 +568,7 @@ important to use an angular step which is 90/integer.</p>")
 	db.update(vars(options))
 	db["commandline"]=" ".join(sys.argv)
 	db["timestamp"]=str(time.ctime())
+	db["astep"]=astep
 
 	print "NOTE: you can check the progress of the refinement at any time by opening this URL in your web-browser:  file://{}/index.html".format(os.path.abspath(output_path))
 
