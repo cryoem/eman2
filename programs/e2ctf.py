@@ -752,7 +752,8 @@ def process_stack(stackfile,phaseflip=None,phasehp=None,wiener=None,phaseproc=No
 				print "Image %d doesn't have the ptcl_source_image parameter. Skipping."%i
 				continue
 
-		im1 = EMData(stackfile,i)
+		try: im1 = EMData(stackfile,i)
+		except: im1.to_zero()
 		im1.process_inplace("mask.zeroedgefill",{"nonzero":1})		# This tries to deal with particles that were boxed off the edge of the micrograph
 
 		# If we detected a zero edge, we mark the particle as bad
@@ -2300,12 +2301,14 @@ class GUIctf(QtGui.QWidget):
 		self.recallparms = QtGui.QPushButton("Recall")
 		self.refit = QtGui.QPushButton("Refit")
 		self.show2dfit = CheckBox(label="Show 2D Sim:",value=False)
+		self.showzerorings = CheckBox(label="Show Zeroes:",value=False)
 		self.output = QtGui.QPushButton("Output")
 		self.hbl_buttons.addWidget(self.refit)
 		self.hbl_buttons.addWidget(self.saveparms)
 		self.hbl_buttons.addWidget(self.recallparms)
 		self.hbl_buttons2 = QtGui.QHBoxLayout()
 		self.hbl_buttons2.addWidget(self.show2dfit)
+		self.hbl_buttons2.addWidget(self.showzerorings)
 		self.hbl_buttons2.addWidget(self.output)
 		self.vbl.addLayout(self.hbl_buttons)
 		self.vbl.addLayout(self.hbl_buttons2)
@@ -2319,6 +2322,7 @@ class GUIctf(QtGui.QWidget):
 		QtCore.QObject.connect(self.svoltage, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.scs, QtCore.SIGNAL("valueChanged"), self.newCTF)
 		QtCore.QObject.connect(self.squality, QtCore.SIGNAL("valueChanged"), self.newQual)
+		QtCore.QObject.connect(self.showzerorings, QtCore.SIGNAL("valueChanged"), self.update_plot)
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("currentRowChanged(int)"),self.newSet)
 		QtCore.QObject.connect(self.setlist,QtCore.SIGNAL("keypress"),self.listkey)
 		QtCore.QObject.connect(self.splotmode,QtCore.SIGNAL("currentIndexChanged(int)"),self.newPlotMode)
@@ -2526,26 +2530,27 @@ class GUIctf(QtGui.QWidget):
 			self.guiim.set_data(self.data[val][4])
 
 		# We draw the first 5 zeroes with computed zero locations
-		for i in range(1,10):
-			if ctf.dfdiff>0 :
-				#z1=zero(i,ctf.voltage,ctf.cs,ctf.defocus-ctf.dfdiff/2,ctf.ampcont)/ctf.dsbg
-				#z2=zero(i,ctf.voltage,ctf.cs,ctf.defocus+ctf.dfdiff/2,ctf.ampcont)/ctf.dsbg
-				d=ctf.defocus
-				ctf.defocus=d-ctf.dfdiff/2
-				z1=ctf.zero(i-1)/ctf.dsbg
-				ctf.defocus=d+ctf.dfdiff/2
-				z2=ctf.zero(i-1)/ctf.dsbg
-				ctf.defocus=d
-				if z2>len(s) : break
-				shp["z%d"%i]=EMShape(("ellipse",0,0,.75,r,r,z2,z1,ctf.dfang,1.0))
-			else:
-#				z=zero(i,ctf.voltage,ctf.cs,ctf.defocus,ctf.ampcont)/ctf.dsbg
-				z=ctf.zero(i-1)/ctf.dsbg
-				if z>len(s) : break
-				shp["z%d"%i]=EMShape(("circle",0,0,.75,r,r,z,1.0))
+		if self.showzerorings.getValue():
+			for i in range(1,10):
+				if ctf.dfdiff>0 :
+					#z1=zero(i,ctf.voltage,ctf.cs,ctf.defocus-ctf.dfdiff/2,ctf.ampcont)/ctf.dsbg
+					#z2=zero(i,ctf.voltage,ctf.cs,ctf.defocus+ctf.dfdiff/2,ctf.ampcont)/ctf.dsbg
+					d=ctf.defocus
+					ctf.defocus=d-ctf.dfdiff/2
+					z1=ctf.zero(i-1)/ctf.dsbg
+					ctf.defocus=d+ctf.dfdiff/2
+					z2=ctf.zero(i-1)/ctf.dsbg
+					ctf.defocus=d
+					if z2>len(s) : break
+					shp["z%d"%i]=EMShape(("ellipse",0,0,.75,r,r,z2,z1,ctf.dfang,1.0))
+				else:
+	#				z=zero(i,ctf.voltage,ctf.cs,ctf.defocus,ctf.ampcont)/ctf.dsbg
+					z=ctf.zero(i-1)/ctf.dsbg
+					if z>len(s) : break
+					shp["z%d"%i]=EMShape(("circle",0,0,.75,r,r,z,1.0))
 
 		self.guiim.del_shapes()
-		self.guiim.add_shapes(shp)
+		if len(shp)>0 : self.guiim.add_shapes(shp)
 		self.guiim.updateGL()
 
 		if self.plotmode==1:
