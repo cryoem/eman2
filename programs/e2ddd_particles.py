@@ -205,7 +205,8 @@ def main():
 		#ctfflip=movieim.do_fft()		# we're just getting a complex image of the right size, a bit stupid way to handle it 
 		#ctf.compute_2d_complex(ctfflip,Ctf.CtfType.CTF_FLIP)
 		ctfim=movieim.do_fft()		# we're just getting a complex image of the right size, a bit stupid way to handle it 
-		ctf.bfactor=50
+#		ctf.bfactor=50
+		ctf.bfactor=100		# a bit less aggressive in fitting that 50
 		ctf.compute_2d_complex(ctfim,Ctf.CtfType.CTF_AMP)		# used to be _INTEN
 		#ctfim.mult(ctfflip)		# an intensity image with phase flipping!
 	
@@ -260,7 +261,7 @@ def main():
 				unaliavg.process_inplace("normalize.edgemean")
 				unaliavg.write_image("tst.hdf",-1)
 
-			avg=None
+			# Finally we loop over the movie frames for one particle an align them to the reference
 			atx=[]
 			aty=[]
 			atc=[]
@@ -276,13 +277,31 @@ def main():
 					print base,n, "failed"
 					bad=1
 					break
-
-				try: avg.add(im.process("xform.translate.int",{"trans":(dx,dy)}))
-				except: avg=im.process("xform.translate.int",{"trans":(dx,dy)})
 				
+				# store the translations and correlation values
 				atx.append(dx)
 				aty.append(dy)
 				atc.append(ccf["maximum"])
+
+			# we do a little ad-hoc smoothing on the alignment vectors
+			natx=[atx[0]]
+			naty=[aty[0]]
+			for i in xrange(1,len(atx)-1):
+				natx.append((atx[i-1]+2.0*atx[i]+atx[i+1])/4.0)
+				naty.append((aty[i-1]+2.0*aty[i]+aty[i+1])/4.0)
+			natx.append(atx[-1])
+			naty.append(aty[-1])
+			
+			# use the smoothed version
+			atx=natx
+			aty=naty
+				
+
+			# A Final loop to make the actual average once we have smoothed out the translations a bit
+			avg=None
+			for i,im in enumerate(stack):
+				try: avg.add(im.process("xform.translate.int",{"trans":(atx[i],aty[i])}))
+				except: avg=im.process("xform.translate.int",{"trans":(atx[i],aty[i])})
 
 			if options.verbose>3 : 
 				avg.process_inplace("normalize.edgemean")

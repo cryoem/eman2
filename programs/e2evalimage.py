@@ -79,10 +79,11 @@ power spectrum in various ways."""
 
 	parser.add_argument("--gui",action="store_true",help="This is a GUI-only program. This option is provided for self-consistency",default=True)
 	parser.add_argument("--apix",type=float,help="Angstroms per pixel for all images",default=None, guitype='floatbox', row=3, col=0, rowspan=1, colspan=1, mode="eval['self.pm().getAPIX()']")
-	parser.add_argument("--constbfactor",type=float,help="Set B-factor to fixed specified value, negative value autofits",default=-1.0, guitype='floatbox', row=9, col=0, rowspan=1, colspan=1, mode='autofit[-1.0],tuning[-1.0],genoutp[-1.0]')
+	parser.add_argument("--constbfactor",type=float,help="Set B-factor to fixed specified value, negative value autofits",default=-1.0, guitype='floatbox', row=8, col=0, rowspan=1, colspan=1, mode='eval[-1.0]')
 	parser.add_argument("--voltage",type=float,help="Microscope voltage in KV",default=None, guitype='floatbox', row=3, col=1, rowspan=1, colspan=1, mode="eval['self.pm().getVoltage()']")
 	parser.add_argument("--cs",type=float,help="Microscope Cs (spherical aberation)",default=None, guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="eval['self.pm().getCS()']")
 	parser.add_argument("--ac",type=float,help="Amplitude contrast (percentage, default=10)",default=10, guitype='floatbox', row=4, col=1, rowspan=1, colspan=1, mode="eval")
+	parser.add_argument("--astigmatism",action="store_true",help="Includes astigmatism in automatic fitting",default=False, guitype='boolbox', row=8, col=1, rowspan=1, colspan=1, mode='eval')
 	parser.add_argument("--box",type=int,help="Forced box size in grid mode. Overrides any previous setting. ",default=-1, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="eval")
 	parser.add_argument("--usefoldername",action="store_true",help="If you have the same image filename in multiple folders, and need to import into the same project, this will prepend the folder name on each image name",default=False,guitype='boolbox',row=5, col=1, rowspan=1, colspan=1, mode="eval")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -628,7 +629,11 @@ class GUIEvalImage(QtGui.QWidget):
 			if self.cbgadj.getValue() :
 				self.bgAdj()
 				parms[1]=e2ctf.ctf_fit(self.fft1d,parms[1].background,parms[1].background,self.fft,self.fftbg,parms[1].voltage,parms[1].cs,parms[1].ampcont,apix,bgadj=False,autohp=True,verbose=1)
+				if options.astigmatism : ctf_fit_stig(self.fft,self.fftbg,parms[1],verbose=1)
 				self.bgAdj()
+			else:
+				if options.astigmatism : ctf_fit_stig(self.fft,self.fftbg,parms[1],verbose=1)
+
 		except:
 			print "CTF Autofit Failed"
 			traceback.print_exc()
