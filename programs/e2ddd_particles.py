@@ -101,7 +101,9 @@ def main():
 		
 		options.frac=0,1
 
-	try: options.step=[int(i) for i in options.step.split(",")]
+	try: 
+		options.step=[int(i) for i in options.step.split(",")]
+		if len(options.step)==2 : options.step.append(1)
 	except:
 		print "ERROR: Specify step as <first>,<last>,<step>"
 		sys.exit(1)
@@ -180,6 +182,7 @@ def main():
 	
 	### iterate over the particle files. We just skip any that aren't in the set that was refined
 	for name in allnames[options.frac[0]:len(allnames):options.frac[1]]:
+		if options.filefilt!=None and not options.filefilt in name : continue
 		base=base_name(name)
 		db=js_open_dict(info_name(name))
 		if options.verbose : print "### Processing {} ({})".format(base,options.frac[0]+1)
@@ -208,12 +211,6 @@ def main():
 	
 		# loop over the particles in this frame
 		for n in xrange(movienptcl):
-			# if we can't find the particle in the lst file
-			try: eo,lstn=lstmap[(name,n)]
-			except:
-				if options.verbose>1 : print "skipping",name,n
-				continue
-			
 			# read the frames for this particle, limited by --step
 			if options.step[1]<=0 : end=movienfr+options.step[1]
 			else: end=options.step[1]
@@ -221,6 +218,18 @@ def main():
 			if options.invert:
 				for i in stack: i.mult(-1)
 			for i in stack: i.process_inplace("normalize.edgemean")
+			
+			# if we can't find the particle in the lst file
+			try: eo,lstn=lstmap[(name,n)]
+			except:
+				if options.verbose>1 : print "skipping",name,n
+				unaliavg=sum(stack)
+				avg=unaliavg		# on failure we just use the straight average
+				try: avg=avg.get_clip(Region((nx-pnx)/2,(nx-pnx)/2,pnx,pnx))		# resize to original particle size
+				except: pass
+				avg.to_zero()		# let's actually clear out these bad particles
+				avg.write_image("particles/{}_ptcls.hdf".format(base),n)
+				continue
 			
 			# now find the correct reference projection
 			projfsp=clsout[eo].replace("cls_result","projections")
@@ -255,13 +264,18 @@ def main():
 			atx=[]
 			aty=[]
 			atc=[]
+			bad=0
 			for i,im in enumerate(stack):
 				ccf=im.calc_ccf(proj,fp_flag.CIRCULANT,True)
 				ccf.mult(ccfmask)
 				pk=ccf.calc_max_location()
 				dx=-(pk[0]-nx/2)
 				dy=-(pk[1]-nx/2)
-				if options.verbose>1 : print base,i,dx,dy
+				if options.verbose>1 : print base,n,i,dx,dy
+				if dx==nx/2 or dy==nx/2 :
+					print base,n, "failed"
+					bad=1
+					break
 
 				try: avg.add(im.process("xform.translate.int",{"trans":(dx,dy)}))
 				except: avg=im.process("xform.translate.int",{"trans":(dx,dy)})
@@ -273,6 +287,13 @@ def main():
 			if options.verbose>3 : 
 				avg.process_inplace("normalize.edgemean")
 				avg.write_image("tst.hdf",-1)
+
+			if bad: 
+				avg=unaliavg		# on failure we just use the straight average
+				avg=avg.get_clip(Region((nx-pnx)/2,(nx-pnx)/2,pnx,pnx))		# resize to original particle size
+				avg.to_zero()		# let's actually clear out these bad particles
+				avg.write_image("particles/{}_ptcls.hdf".format(base),n)
+				continue
 
 			avg=avg.get_clip(Region((nx-pnx)/2,(nx-pnx)/2,pnx,pnx))		# resize to original particle size
 			avg.process_inplace("normalize.edgemean")
