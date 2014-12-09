@@ -283,20 +283,29 @@ def main():
 				aty.append(dy)
 				atc.append(ccf["maximum"])
 
+			# If we had a failed alignment, we just write a blank image
+			if bad: 
+				avg=unaliavg		# on failure we just use the straight average
+				avg=avg.get_clip(Region((nx-pnx)/2,(nx-pnx)/2,pnx,pnx))		# resize to original particle size
+				avg.to_zero()		# let's actually clear out these bad particles
+				avg.write_image("particles/{}_ptcls.hdf".format(base),n)
+				continue
+
+
 			# we do a little ad-hoc smoothing on the alignment vectors
 			natx=[atx[0]]
 			naty=[aty[0]]
 			for i in xrange(1,len(atx)-1):
-				natx.append((atx[i-1]+2.0*atx[i]+atx[i+1])/4.0)
-				naty.append((aty[i-1]+2.0*aty[i]+aty[i+1])/4.0)
+				natx.append(int((atx[i-1]+2.0*atx[i]+atx[i+1])/4.0))
+				naty.append(int((aty[i-1]+2.0*aty[i]+aty[i+1])/4.0))
 			natx.append(atx[-1])
 			naty.append(aty[-1])
+#			print len(atx),len(natx),len(aty),len(naty),len(stack)
 			
 			# use the smoothed version
 			atx=natx
 			aty=naty
 				
-
 			# A Final loop to make the actual average once we have smoothed out the translations a bit
 			avg=None
 			for i,im in enumerate(stack):
@@ -306,13 +315,6 @@ def main():
 			if options.verbose>3 : 
 				avg.process_inplace("normalize.edgemean")
 				avg.write_image("tst.hdf",-1)
-
-			if bad: 
-				avg=unaliavg		# on failure we just use the straight average
-				avg=avg.get_clip(Region((nx-pnx)/2,(nx-pnx)/2,pnx,pnx))		# resize to original particle size
-				avg.to_zero()		# let's actually clear out these bad particles
-				avg.write_image("particles/{}_ptcls.hdf".format(base),n)
-				continue
 
 			avg=avg.get_clip(Region((nx-pnx)/2,(nx-pnx)/2,pnx,pnx))		# resize to original particle size
 			avg.process_inplace("normalize.edgemean")
