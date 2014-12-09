@@ -790,7 +790,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None 
 	from projection      import prep_vol
 	from statistics      import hist_list
 	from applications    import MPI_start_end
-	from filter         import filt_ctf
+	from filter          import filt_ctf
 	from global_def import Util
 	from time import time
 
