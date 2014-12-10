@@ -264,9 +264,16 @@ def main():
 
 			# A serious diagnostic file if verbose is set really high
 			if options.verbose>4:
+				proj["render_min"]=proj["minimum"]-proj["sigma"]*4.0
+				proj["render_max"]=proj["maximum"]+proj["sigma"]*4.0
 				proj.write_image("diag.hdf",-1,IMAGE_HDF,False,None,EM_UCHAR)
+				unaliavg["render_min"]=unaliavg["minimum"]-unaliavg["sigma"]*4.0
+				unaliavg["render_max"]=unaliavg["maximum"]+unaliavg["sigma"]*4.0
 				unaliavg.write_image("diag.hdf",-1,IMAGE_HDF,False,None,EM_UCHAR)
-				for im in stack: im.write_image("diag.hdf",-1,IMAGE_HDF,False,None,EM_UCHAR)
+				for im in stack: 
+					im["render_min"]=im["minimum"]-im["sigma"]*4.0
+					im["render_max"]=im["maximum"]+im["sigma"]*4.0
+					im.write_image("diag.hdf",-1,IMAGE_HDF,False,None,EM_UCHAR)
 
 			# Finally we loop over the movie frames for one particle an align them to the reference
 			atx=[]
