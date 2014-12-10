@@ -223,14 +223,19 @@ def main():
 		
 		outfile = changed_file_name(infile, outpattern, inp_num, multiple_files)
 
+		is_inp_bdb = (len (infile)  >= 4 and infile [0:4] == "bdb:")
+		is_out_bdb = (len (outfile) >= 4 and outfile[0:4] == "bdb:")
+
 		inp_ext = os.path.splitext(infile)[1]
 		out_ext = os.path.splitext(outfile)[1]
 
-		if out_ext == "" and multiple_files :
+		if out_ext == "" and multiple_files and not is_out_bdb :
 			out_ext = inp_ext
 			outfile = outfile + out_ext
 
-		if os.path.isfile(infile) :
+		if is_inp_bdb :
+			num_inp_images = -1
+		elif os.path.isfile(infile) :
 			num_inp_images = EMUtil.get_image_count(infile)
 
 			if num_inp_images == 1 :
