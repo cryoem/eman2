@@ -264,9 +264,9 @@ def main():
 
 			# A serious diagnostic file if verbose is set really high
 			if options.verbose>4:
-				proj.write_image("diag.hdf",-1)
-				unaliavg.write_image("diag.hdf",-1)
-				for im in stack: im.write_image("diag.hdf",-1)
+				proj.write_image("diag.hdf",-1,IMAGE_HDF,False,None,EM_UCHAR)
+				unaliavg.write_image("diag.hdf",-1,IMAGE_HDF,False,None,EM_UCHAR)
+				for im in stack: im.write_image("diag.hdf",-1,IMAGE_HDF,False,None,EM_UCHAR)
 
 			# Finally we loop over the movie frames for one particle an align them to the reference
 			atx=[]
