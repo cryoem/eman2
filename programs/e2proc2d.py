@@ -223,8 +223,8 @@ def main():
 		
 		outfile = changed_file_name(infile, outpattern, inp_num, multiple_files)
 
-		is_inp_bdb = (len (infile)  >= 4 and infile [0:4] == "bdb:")
-		is_out_bdb = (len (outfile) >= 4 and outfile[0:4] == "bdb:")
+		is_inp_bdb = (len (infile)  >= 4 and infile.lower() [0:4] == "bdb:")
+		is_out_bdb = (len (outfile) >= 4 and outfile.lower()[0:4] == "bdb:")
 
 		inp_ext = os.path.splitext(infile)[1]
 		out_ext = os.path.splitext(outfile)[1]
@@ -234,6 +234,13 @@ def main():
 			outfile = outfile + out_ext
 
 		if is_inp_bdb :
+			if os.path.isdir("EMAN2DB") :
+				if not os.path.isfile("EMAN2DB"+"/"+infile[4:]+".bdb") :
+					print "Input BDB file '" + infile[4:] + "' does not exist."
+					continue
+			else :
+				print "BDB directory EMAN2DB does not exist."
+				continue
 			num_inp_images = -1
 		elif os.path.isfile(infile) :
 			num_inp_images = EMUtil.get_image_count(infile)
