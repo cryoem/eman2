@@ -218,7 +218,8 @@ def main():
 			stack=EMData.read_images(movie,range(n*movienfr+options.step[0],n*movienfr+end,options.step[2]))
 			if options.invert:
 				for i in stack: i.mult(-1)
-			for i in stack: i.process_inplace("normalize.edgemean")
+			for i in stack: 
+				i.process_inplace("normalize.edgemean")
 			
 			# if we can't find the particle in the lst file
 			try: eo,lstn=lstmap[(name,n)]
@@ -260,6 +261,12 @@ def main():
 				ccfmask.write_image("tst.hdf",-1)
 				unaliavg.process_inplace("normalize.edgemean")
 				unaliavg.write_image("tst.hdf",-1)
+
+			# A serious diagnostic file if verbose is set really high
+			if options.verbose>4:
+				proj.write_image("diag.hdf",-1)
+				unaliavg.write_image("diag.hdf",-1)
+				for im in stack: im.write_image("diag.hdf",-1)
 
 			# Finally we loop over the movie frames for one particle an align them to the reference
 			atx=[]
