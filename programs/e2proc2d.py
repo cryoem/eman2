@@ -234,13 +234,13 @@ def main():
 			outfile = outfile + out_ext
 
 		if is_inp_bdb :
-			if os.path.isdir("EMAN2DB") :
-				if not os.path.isfile("EMAN2DB"+"/"+infile[4:]+".bdb") :
-					print "Input BDB file '" + infile[4:] + "' does not exist."
-					continue
-			else :
-				print "BDB directory EMAN2DB does not exist."
-				continue
+#			if os.path.isdir("EMAN2DB") :
+#				if not os.path.isfile("EMAN2DB"+"/"+infile[4:]+".bdb") :
+#					print "Input BDB file '" + infile[4:] + "' does not exist."
+#					continue
+#			else :
+#				print "BDB directory EMAN2DB does not exist."
+#				continue
 			num_inp_images = -1
 		elif os.path.isfile(infile) :
 			num_inp_images = EMUtil.get_image_count(infile)
