@@ -55,7 +55,7 @@ sxprocess.py demoparms --makedb 'gauss_width'=1.0:'pixel_input'=5.2:'pixel_outpu
 # Pick particles
 e2boxer.py --gauss_autoboxer=demoparms --boxsize=64 --norm=normalize.ramp.normvar mic*.hdf
 
-sxwindow.py --coords_dir=info --importctf=partres/partres --box_size=64 --outdir=particles
+sxwindow.py --coords_dir=info --coords_extension=json --coords_format=json --coords_suffix=_info --coords_keys=boxes --box_size=64 --outdir=particles
 
 e2bdb.py bdb:particles\#mic0_ptcls bdb:particles\#mic1_ptcls bdb:particles\#mic2_ptcls bdb:particles\#mic3_ptcls bdb:particles\#mic4_ptcls --makevstack=bdb:data
 
