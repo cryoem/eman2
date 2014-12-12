@@ -37,6 +37,7 @@
 #define eman__serio_h__ 1
 
 #include "imageio.h"
+#include "stdint.h"
 
 namespace EMAN
 {
@@ -95,7 +96,7 @@ namespace EMAN
 			int		TagTypeID;
 			int 	TotalNumberElements;
 			int		ValidNumberElements;
-			int		OffsetArrayOffset;
+			int		OffsetArrayOffset;		// could also be 64 bits in new version, we don't actually use this header
 			int		NumberDimensions;
 		};
 
@@ -107,8 +108,8 @@ namespace EMAN
 
 		SerHeader serh;
 
-		int * data_offset_array;
-		int * tag_offset_array;
+		uint64_t * data_offset_array;
+		uint64_t * tag_offset_array;
 		int nimg;	//total image number in this file
 		int nx;
 		int ny;

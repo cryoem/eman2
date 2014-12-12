@@ -43,7 +43,7 @@ using namespace EMAN;
 
 static const short SER_BYTE_ORDER		= 0x4949;
 static const short SER_SERIES_ID 		= 0x0197;
-static const short SER_SERIES_VERSION 	= 0x0210;
+//static const short SER_SERIES_VERSION 	= 0x0210;		// can also be 0x220 now
 static const int   ValidNumberElementsOffset = 18;	//the offset to ValidNumberElements, which is the number of images in the file
 
 SerIO::SerIO(const string & file, IOMode rw) :
@@ -130,22 +130,35 @@ int SerIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 	dict["SER.SeriesID"]		= hitem1[1];
 	dict["SER.SeriesVersion"] 	= hitem1[2];
 
-	if((hitem1[0]!=SER_BYTE_ORDER) || (hitem1[1]!=SER_SERIES_ID) || (hitem1[2]!=SER_SERIES_VERSION) ) {
+	if((hitem1[0]!=SER_BYTE_ORDER) || (hitem1[1]!=SER_SERIES_ID) || (hitem1[2]!=0x210 && hitem1[2]!=0x220) ) {
 		throw ImageReadException(filename, "SER header");
 	}
-
+	
 	int hitem2[6];
-	if (fread(hitem2, sizeof(int), 6, serfile) != 6) {
-		throw ImageReadException(filename, "SER header");
+	uint64_t offset_array;
+	if (hitem1[2]==0x210) {
+		if (fread(hitem2, sizeof(int), 6, serfile) != 6) {
+			throw ImageReadException(filename, "SER header");
+		}
+		dict["SER.OffsetArrayOffset"]	= hitem2[4];
+		offset_array=(uint64_t)hitem2[4];
 	}
-
+	else {
+		if (fread(hitem2, sizeof(int), 4, serfile) != 4) {
+			throw ImageReadException(filename, "SER header");
+		}
+		fread(&offset_array, 8,1,serfile);
+		fread(&hitem1[5],4,1,serfile);
+	}
+		
+	
+	
 	dict["SER.DataTypeID"]		= hitem2[0];
 	dict["SER.TagTypeID"]		= hitem2[1];
 	dict["SER.TotalNumberElements"] = hitem2[2];
 	dict["SER.ValidNumberElements"] = hitem2[3];
-	dict["SER.OffsetArrayOffset"]	= hitem2[4];
 	dict["SER.NumberDimensions"]	= hitem2[5];
-
+	
 	nimg = (int)dict["SER.ValidNumberElements"];
 
 	if(image_index >= (int)dict["SER.ValidNumberElements"]) {
@@ -156,30 +169,43 @@ int SerIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 		read_dim_arr(dict, idx);
 	}
 
-	long pos = ftell(serfile);
-	assert(pos == (int)dict["SER.OffsetArrayOffset"]);
+// 	long pos = ftell(serfile);
+// 	assert(pos == (int)dict["SER.OffsetArrayOffset"]);
+	portable_fseek(serfile,(off_t)offset_array,SEEK_SET);
 
 	int tot = (int)dict["SER.TotalNumberElements"];
 
-	data_offset_array = new int[tot];
-	if (fread(data_offset_array, sizeof(int), tot, serfile) != (unsigned int)tot) {
-		throw ImageReadException(filename, "SER header");
+	data_offset_array = new uint64_t[tot];
+	tag_offset_array = new uint64_t[tot];
+	if (hitem1[2]==0x210) {
+		int *off=new int[tot*2];
+		if (fread(off, 4, tot*2, serfile) != (unsigned int)tot) {
+			throw ImageReadException(filename, "SER header");
+		}
+		for (int i=0; i<tot; i++) {
+			data_offset_array[i]=(uint64_t)off[i];
+			tag_offset_array[i]=(uint64_t)off[i+tot];
+		}
+		delete[] off;
 	}
-
-	tag_offset_array = new int[tot];
-	if (fread(tag_offset_array, sizeof(int), tot, serfile) != (unsigned int)tot) {
-		throw ImageReadException(filename, "SER header");
+	else {
+		if (fread(data_offset_array, sizeof(uint64_t), tot, serfile) != (unsigned int)tot) {
+			throw ImageReadException(filename, "SER header");
+		}
+		if (fread(tag_offset_array, sizeof(uint64_t), tot, serfile) != (unsigned int)tot) {
+			throw ImageReadException(filename, "SER header");
+		}
 	}
 
 	this->datatypeid = (int)dict["SER.DataTypeID"];
 
-	int dataoffset = data_offset_array[image_index];
+	off_t dataoffset = data_offset_array[image_index];
 	portable_fseek(serfile, dataoffset, SEEK_SET);
 
 	//To read the attribute in data element(not the actual data)
 	read_data_element(dict);
 
-	int tagoffset = tag_offset_array[image_index];
+	off_t tagoffset = tag_offset_array[image_index];
 	portable_fseek(serfile, tagoffset, SEEK_SET);
 
 	//To read the data tag appended after data values
@@ -209,7 +235,7 @@ int SerIO::read_data(float *rdata, int image_index, const Region *, bool )
 	}
 
 	size_t size = (size_t)nx * ny * nz;
-	int data_offset = data_offset_array[image_index];
+	off_t data_offset = data_offset_array[image_index];
 
 	size_t i;	//loop index
 	unsigned char * puchar = 0;

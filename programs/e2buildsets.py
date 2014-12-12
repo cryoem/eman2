@@ -136,6 +136,7 @@ def main():
 			if ctf.defocus>=options.mindf and ctf.defocus<=options.maxdf and ctf.bfactor>=options.minbfactor and ctf.bfactor<=options.maxbfactor and losnr>options.minlosnr and hisnr>options.minhisnr : outargs.append(i)
 		except:
 			traceback.print_exc()
+			print "Error with CTF parameters for: ",i
 			ctfmsg+=1
 			outargs.append(i)
 	
