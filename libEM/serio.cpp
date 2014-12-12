@@ -133,7 +133,6 @@ int SerIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 	if((hitem1[0]!=SER_BYTE_ORDER) || (hitem1[1]!=SER_SERIES_ID) || (hitem1[2]!=0x210 && hitem1[2]!=0x220) ) {
 		throw ImageReadException(filename, "SER header");
 	}
-	
 	int hitem2[6];
 	uint64_t offset_array;
 	if (hitem1[2]==0x210) {
@@ -148,7 +147,7 @@ int SerIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 			throw ImageReadException(filename, "SER header");
 		}
 		fread(&offset_array, 8,1,serfile);
-		fread(&hitem1[5],4,1,serfile);
+		fread(&hitem2[5],4,1,serfile);
 	}
 		
 	
@@ -158,7 +157,7 @@ int SerIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 	dict["SER.TotalNumberElements"] = hitem2[2];
 	dict["SER.ValidNumberElements"] = hitem2[3];
 	dict["SER.NumberDimensions"]	= hitem2[5];
-	
+
 	nimg = (int)dict["SER.ValidNumberElements"];
 
 	if(image_index >= (int)dict["SER.ValidNumberElements"]) {

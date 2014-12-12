@@ -53,6 +53,7 @@ Low priority
 
 
 Complete
+12/12/14	Added support for new FEI SER format revision
 11/01/14	11/01/14	Fixed problem with 3D reconstruction. Was a normalization issue
 10/31/14	added e2ptclvsmap for finding the best individual particles for each projection
 10/29/14	10/29/14	Threaded parallelism for e2ctf autofitting
