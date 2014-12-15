@@ -108,7 +108,8 @@ def main():
 		print "ERROR: Specify step as <first>,<last>,<step>"
 		sys.exit(1)
 
-	pid=E2init(sys.argv)
+	if options.frac==None : pid=E2init(sys.argv)
+	else : pid=0
 
 	# find the input files
 	refineparms=js_open_dict(args[0]+"/0_refine_parms.json")
@@ -336,7 +337,9 @@ def main():
 			avg["movie_ty"]=aty
 			avg["movie_cc"]=atc
 			avg.write_image("particles/{}_ptcls.hdf".format(base),n)
-	
+			
+	if pid>0 : E2end(pid)
+
 
 if __name__ == "__main__":
 	main()
