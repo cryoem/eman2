@@ -868,45 +868,45 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 		## ---------------------------------------------- ##
 		## step 1: find a straight line for initial guess ##
 		## ---------------------------------------------- ##
-		for Iter in xrange(max_iter):
-			if myid == main_node:
-				start_time = time()
-				print_msg("Iteration #%4d\n"%(total_iter))
-			total_iter += 1
-			avg = EMData(nx, ny, 1, False)
-			for im in xrange(ldata):
-				Util.add_img(avg, fshift(data[im], shift_x[im]))
-
-			reduce_EMData_to_root(avg, myid, main_node)
-
-			if myid == main_node:
-				if CTF:  tavg = Util.divn_filter(avg, ctf_2_sum)
-				else:    tavg = Util.mult_scalar(avg, 1.0/float(nima))
-			else:
-				tavg = model_blank(nx,ny)
-
-			if Fourvar:
-				bcast_EMData_to_all(tavg, myid, main_node)
-				vav, rvar = varf2d_MPI(myid, data, tavg, mask, "a", CTF)
-
-			if myid == main_node:
-				if Fourvar:
-					tavg    = fft(Util.divn_img(fft(tavg), vav))
-					vav_r	= Util.pack_complex_to_real(vav)
-				# normalize and mask tavg in real space
-				tavg = fft(tavg)
-				stat = Util.infomask( tavg, mask, False )
-				tavg -= stat[0]
-				Util.mul_img(tavg, mask)
-				tavg.write_image("tavg.hdf",-1)
-				# For testing purposes: shift tavg to some random place and see if the centering is still correct
-				#tavg = rot_shift3D(tavg,sx=3,sy=-4)
-
-			if Fourvar:  del vav
-			bcast_EMData_to_all(tavg, myid, main_node)
-			tavg = fft(tavg)
-		
-			# nxc = nx//2
+		# for Iter in xrange(15):
+# 			if myid == main_node:
+# 				start_time = time()
+# 				print_msg("Iteration #%4d\n"%(total_iter))
+# 			total_iter += 1
+# 			avg = EMData(nx, ny, 1, False)
+# 			for im in xrange(ldata):
+# 				Util.add_img(avg, fshift(data[im], shift_x[im]))
+# 
+# 			reduce_EMData_to_root(avg, myid, main_node)
+# 
+# 			if myid == main_node:
+# 				if CTF:  tavg = Util.divn_filter(avg, ctf_2_sum)
+# 				else:    tavg = Util.mult_scalar(avg, 1.0/float(nima))
+# 			else:
+# 				tavg = model_blank(nx,ny)
+# 
+# 			if Fourvar:
+# 				bcast_EMData_to_all(tavg, myid, main_node)
+# 				vav, rvar = varf2d_MPI(myid, data, tavg, mask, "a", CTF)
+# 
+# 			if myid == main_node:
+# 				if Fourvar:
+# 					tavg    = fft(Util.divn_img(fft(tavg), vav))
+# 					vav_r	= Util.pack_complex_to_real(vav)
+# 				# normalize and mask tavg in real space
+# 				tavg = fft(tavg)
+# 				stat = Util.infomask( tavg, mask, False )
+# 				tavg -= stat[0]
+# 				Util.mul_img(tavg, mask)
+# 				tavg.write_image("tavg.hdf",-1)
+# 				# For testing purposes: shift tavg to some random place and see if the centering is still correct
+# 				#tavg = rot_shift3D(tavg,sx=3,sy=-4)
+# 
+# 			# if Fourvar:  del vav
+# # 			bcast_EMData_to_all(tavg, myid, main_node)
+# # 			tavg = fft(tavg)
+# 		
+# 			nxc = nx//2
 # 			sx_sum  = 0
 # 			CCF = [] ##added@ming
 # 			for ifil in xrange(nfils):
@@ -916,7 +916,11 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 #  				ctx = [None]*nsegms
 #  				pcoords = [None]*nsegms
 #  				for im in xrange(indcs[ifil][0], indcs[ifil][1]):
-#  					ctx[im-indcs[ifil][0]] = Util.window(ccf(tavg, data[im]), nx, 1)
+#  					ttavg = get_im("bdb:vdata",im)
+#  					stat = Util.infomask( ttavg, mask, False )
+#  					ttavg -= stat[0]
+#  					ttavg = fft(ttavg)
+#  					ctx[im-indcs[ifil][0]] = Util.window(ccf(ttavg, data[im]), nx, 1)
 #  					#sccf.append(ctx[im-indcs[ifil][0]])
 #  					pcoords[im-indcs[ifil][0]] = data[im].get_attr('ptcl_source_coord')
 #  					#ctx[im-indcs[ifil][0]].write_image("ctx.hdf",im-indcs[ifil][0])
@@ -1128,62 +1132,76 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 		#use straight line as the initial guess to refine the snake.
 		paramsline = shift_x
 		total_iter = 0
-		tavg = fft(tavg)                                       #transform tavg    into real space.
+		##tavg = fft(tavg)                                       #transform tavg    into real space.
 		tttt = EMData(nx, ny, 1, False)
-		for Iter in xrange(max_iter):
-			## compute 2D ccfs.
-			crefim = Util.Polar2Dm(tavg, cnx, cny, numr, mode)
-			Util.Frngs(crefim, numr)
-			##Util.Applyws(crefim, numr, wr)
-			CCF2d = []
-			for ifil in xrange(nfils):
-				# test Calculate 2D ccf between each segment and filament average
-				nsegms = indcs[ifil][1]-indcs[ifil][0]
-				ccf2d = [None]*vol
-				ctx2d = [None]*nsegms
-				resamp_ccf2d = [None]*resamp_vol
-				for im in xrange(indcs[ifil][0], indcs[ifil][1]):
-					tttt = fft(data[im])             # transform data[im] into real space.
-					ccf2d = Util.ali2d_ccf_list_snake(tttt, crefim,  xrng, yrng, rstep, mode, numr, cnx, cny, T)
-					for i in xrange(2*kx+1):
-						for j in xrange(resamp_maxrin):
-							j_old = int(j * resamp_dang/dang + 0.5)
-							resamp_ccf2d[i*resamp_maxrin+j] = ccf2d[i*maxrin+j_old]
-					# aaaa=resamp_ccf2d.index(max(resamp_ccf2d))
+		
+		## compute 2D ccfs.
+		#crefim = Util.Polar2Dm(tavg, cnx, cny, numr, mode)
+		#Util.Frngs(crefim, numr)
+		##Util.Applyws(crefim, numr, wr)
+		CCF2d = []
+		for ifil in xrange(nfils):
+			# test Calculate 2D ccf between each segment and filament average
+			nsegms = indcs[ifil][1]-indcs[ifil][0]
+			ccf2d = [None]*vol
+			ctx2d = [None]*nsegms
+			resamp_ccf2d = [None]*resamp_vol
+			for im in xrange(indcs[ifil][0], indcs[ifil][1]):
+				ttavg = get_im("bdb:vdata",im)
+				stat = Util.infomask( ttavg, mask, False )
+				ttavg -= stat[0]
+				Util.mul_img(ttavg, mask)
+				crefim = Util.Polar2Dm(ttavg, cnx, cny, numr, mode)
+				Util.Frngs(crefim, numr)
+				tttt = fft(data[im])             # transform data[im] into real space.
+				ccf2d = Util.ali2d_ccf_list_snake(tttt, crefim,  xrng, yrng, rstep, mode, numr, cnx, cny, T)
+				for i in xrange(2*kx+1):
+					for j in xrange(resamp_maxrin):
+						j_old = int(j * resamp_dang/dang + 0.5)
+						resamp_ccf2d[i*resamp_maxrin+j] = ccf2d[i*maxrin+j_old]
+				# aaaa=resamp_ccf2d.index(max(resamp_ccf2d))
 # 					iaaa = aaaa/resamp_maxrin
 # 					jaaa = aaaa%resamp_maxrin
 # 					shift_x[im] = iaaa-(2*kx+1)//2
 # 					shift_ang[im] = jaaa
 # 					print "im=%d rotang=%d  maxrin=%d shift=%f"%(im, jaaa, resamp_maxrin, -shift_x[im] )	
-					# if im == 7 :
+				# if im == 7 :
 # 						print "rotang=%f  shift=%f"%(jaaa*resamp_dang*180/pi, -shift_x[im] )	
 # 						tttt = fft(data[im])
 # 						tttt.write_image("image7.hdf")
 # 						tttt=rot_shift2D(tttt, jaaa*resamp_dang*180/pi, -shift_x[im], 0, 0, 1)
 # 						tttt.write_image("imagerot7.hdf")
-					ccf2dimg = model_blank(2*kx+1, resamp_maxrin) ##EMData(2*kx+1, resamp_maxrin, 1, False)			
-					for i in xrange(2*kx+1):
-						for j in xrange(resamp_maxrin):
-							ccf2dimg.set_value_at(i,j,resamp_ccf2d[i*resamp_maxrin+j])
-					ctx2d[im-indcs[ifil][0]] = 	ccf2dimg	 
-				CCF2d.append(ctx2d)
-			## refine using amoeba
-			from utilities import amoeba
+				ccf2dimg = model_blank(2*kx+1, resamp_maxrin) ##EMData(2*kx+1, resamp_maxrin, 1, False)			
+				for i in xrange(2*kx+1):
+					for j in xrange(resamp_maxrin):
+						ccf2dimg.set_value_at(i,j,resamp_ccf2d[i*resamp_maxrin+j])
+				ctx2d[im-indcs[ifil][0]] = 	ccf2dimg	 
+			CCF2d.append(ctx2d)
+		## refine using amoeba
+		from utilities import amoeba
+		
+		for Iter in xrange(max_iter):
 			for ifil in xrange(nfils):
 				sccf=CCF2d[ifil]
 				xparams=shift_x[indcs[ifil][0]:indcs[ifil][1]]
 				angpams=shift_ang[indcs[ifil][0]:indcs[ifil][1]] 
+				# for im in xrange (indcs[ifil][0], indcs[ifil][1]):
+# 					angpams[im] = (2*pi-2.81/180*pi)/resamp_dang
 							##method 2. maximize the sum
 				if ifil == 0:
-					print "before im=%d shift_x=%f  rotang=%f"%(7,-shift_x[7], shift_ang[7]*resamp_dang*180/pi)
+				#	for im in xrange (indcs[ifil][0], indcs[ifil][1]):
+					im = 32
+					print "before im=%d shift_x=%f  rotang=%f"%(im,shift_x[im], angpams[im]*resamp_dang*180/pi)
 				params0 = paramsline[indcs[ifil][0]:indcs[ifil][1]]
 				nsegs = len(xparams)
 				params = xparams+angpams 
 				fval0 = snakehelicalali(params,[sccf,params0, 0.0,2*kx+1,resamp_maxrin])
 				#print "len x =%d len ang = %d len param0=%d"%(nsegs, len(angpams), len(params0))
-				scale = [1.0]*nsegs+[0.5]*nsegs
-				newparams,fval, numit=amoeba(params, scale, snakehelicalali, 1.e-8, 1.e-8, 700, [sccf,params0, 0.0,2*kx+1,resamp_maxrin])
-				print "ifil=%d Iter: %d before  amoeba: %f, after amoeba: %f"%(ifil,Iter,fval0, fval)
+				scale = [1.5]*nsegs+[1.5]*nsegs
+				newparams,fval, numit=amoeba(params, scale, snakehelicalali, 1.e-4, 1.e-8, 500, [sccf,params0, 0.0,2*kx+1,resamp_maxrin])
+				print "ifil=%d Iter: %d before  amoeba: %f, after amoeba: %f  max_it=%d"%(ifil,Iter,fval0, fval,numit)
+				im = 32
+				print "after im=%d shift_x=%f  rotang=%f"%(im,shift_x[im], shift_ang[im]*resamp_dang*180/pi)
 				newxpar = newparams[0:nsegs]
 				for iseg in xrange(nsegs):
 					if newxpar[iseg] > search_rng or newxpar[iseg] < -search_rng:
@@ -1191,55 +1209,54 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 				shift_x[indcs[ifil][0]:indcs[ifil][1]] = newxpar
 				shift_ang[indcs[ifil][0]:indcs[ifil][1]] = newparams[nsegs:2*nsegs]
 
-			for im in xrange(ldata):
-				if im == 7:
-					tttt = fft(data[im])
-					tttt.write_image("image0.hdf")
-					print "after im=%d shift_x=%f  rotang=%f"%(im,-shift_x[im], shift_ang[im]*resamp_dang*180/pi)
+			
 					
-			## compute new average.	
-			if myid == main_node:
-				start_time = time()
-				print_msg("Iteration #%4d\n"%(total_iter))
-			total_iter += 1
-			########
-			avg = model_blank(nx,ny)     #EMData(nx, ny, 1, False)
-			for im in xrange(ldata):
-				tttt = fft(data[im])
-				#tttt.write_image("image%03d.hdf"%im)
-				tttt = rot_shift2D(tttt, shift_ang[im]*resamp_dang*180/pi, -shift_x[im], 0, 0, 1)
-				Util.add_img(avg, tttt)
-				#tttt.write_image("rot_image%03d.hdf"%im)
-			reduce_EMData_to_root(avg, myid, main_node)
-			if myid == main_node:
-				if CTF:  tavg = Util.divn_filter(avg, ctf_2_sum)
-				else:
-					tavg = model_blank(nx,ny)    
-					tavg = Util.mult_scalar(avg, 1.0/float(nima))
+		# ## compute new average.	
+		if myid == main_node:
+			start_time = time()
+			print_msg("Iteration #%4d\n"%(total_iter))
+		total_iter += 1
+		########
+		avg = model_blank(nx,ny)     #EMData(nx, ny, 1, False)
+		for im in xrange(ldata):
+			tttt = fft(data[im])
+			#tttt.write_image("image%03d.hdf"%im)
+			tttt = rot_shift2D(tttt, shift_ang[im]*resamp_dang*180/pi, -shift_x[im], 0, 0, 1)
+			Util.add_img(avg, tttt)
+			#tttt.write_image("rot_image%03d.hdf"%im)
+		reduce_EMData_to_root(avg, myid, main_node)
+		if myid == main_node:
+			if CTF:  tavg = Util.divn_filter(avg, ctf_2_sum)
 			else:
-				tavg = model_blank(nx,ny)
-			if Fourvar:
-				bcast_EMData_to_all(tavg, myid, main_node)
-				vav, rvar = varf2d_MPI(myid, data, tavg, mask, "a", CTF)
-			if myid == main_node:
-				if Fourvar:
-					tavg    = fft(Util.divn_img(fft(tavg), vav))
-					vav_r	= Util.pack_complex_to_real(vav)
-				# normalize and mask tavg in real space
-				#tavg = fft(tavg)
-				stat = Util.infomask( tavg, mask, False )
-				tavg -= stat[0]
-				Util.mul_img(tavg, mask)
-				#print "Iter=%d"%(Iter+20)
-				tavg.write_image("tavgttt.hdf",-1)
-				#tavg.write_image("tavg_%d.hdf"%(Iter+20))
-				# For testing purposes: shift tavg to some random place and see if the centering is still correct
-				#tavg = rot_shift3D(tavg,sx=3,sy=-4)
-			if Fourvar:  del vav
+				tavg = model_blank(nx,ny)    
+				tavg = Util.mult_scalar(avg, 1.0/float(nima))
+		else:
+			tavg = model_blank(nx,ny)
+		if Fourvar:
 			bcast_EMData_to_all(tavg, myid, main_node)
+			vav, rvar = varf2d_MPI(myid, data, tavg, mask, "a", CTF)
+		if myid == main_node:
+			if Fourvar:
+				tavg    = fft(Util.divn_img(fft(tavg), vav))
+				vav_r	= Util.pack_complex_to_real(vav)
+			# normalize and mask tavg in real space
+			#tavg = fft(tavg)
+			stat = Util.infomask( tavg, mask, False )
+			tavg -= stat[0]
+			Util.mul_img(tavg, mask)
+			#print "Iter=%d"%(Iter+20)
+			tavg.write_image("tavgttt.hdf",-1)
+			#tavg.write_image("tavg_%d.hdf"%(Iter+20))
+			# For testing purposes: shift tavg to some random place and see if the centering is still correct
+			#tavg = rot_shift3D(tavg,sx=3,sy=-4)
+		if Fourvar:  del vav
+		bcast_EMData_to_all(tavg, myid, main_node)
 			###########
 			#tavg=get_im("tavg97.hdf")
 			##tavg = fft(tavg)
+
+		# for im in xrange(ldata):
+# 			shift_x[im] = -1* shift_x[im]	
 		
 ## ----------------------------- ##		
 ## snake method for x-shift case ##
@@ -1363,7 +1380,7 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 		##import random
 		##shix=random.randint(-10, 10)
 		##t1.set_params({"type":"2D","tx":shix})
-		t1.set_params({"type":"2D","tx":-shift_x[im]})
+		t1.set_params({"type":"2D","tx":shift_x[im]})
 		t1.set_rotation({"type":"2d", "alpha":shift_ang[im]*resamp_dang*180.0/pi})
 		# combine t0 and t1
 		tt = t1 #*init_params[im] ##@ming
@@ -1471,7 +1488,7 @@ def snakehelicalali(params,data):
 	for id in xrange(sccfn):
 		part2_sum += lambw*(xparam0[id]-xparam[id])**2 
 	#print "part 2", part2_sum	
-	sx_sum -= part2_sum 	
+	sx_sum -= part2_sum 
 	return sx_sum
 					
 def curhelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=False, search_rng=-1):
