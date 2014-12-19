@@ -100,10 +100,10 @@ def amoeba(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itmax=500, data
 		  iterations = the number of iterations used.
 
 	   - Setting itmax to zero disables the itmax check and the routine will run
-	     until convergence, even if it takes forever.
+		 until convergence, even if it takes forever.
 	   - Setting ftolerance or xtolerance to 0.0 turns that convergence criterion
-	     off.  But do not set both ftolerance and xtolerance to zero or the routine
-	     will exit immediately without finding the maximum.
+		 off.  But do not set both ftolerance and xtolerance to zero or the routine
+		 will exit immediately without finding the maximum.
 	   - To check for convergence, check if (iterations < itmax).
 		  
 	   The function should be defined like func(var,data) where
@@ -111,9 +111,9 @@ def amoeba(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itmax=500, data
 
 	   Example:
 	   
-	       import amoeba
-	       def afunc(var,data=None): return 1.0-var[0]*var[0]-var[1]*var[1]
-	       print amoeba.amoeba([0.25,0.25],[0.5,0.5],afunc)
+		   import amoeba
+		   def afunc(var,data=None): return 1.0-var[0]*var[0]-var[1]*var[1]
+		   print amoeba.amoeba([0.25,0.25],[0.5,0.5],afunc)
 
 	   Version 1.0 2005-March-28 T. Metcalf
 		   1.1 2005-March-29 T. Metcalf - Use scale in simsize calculation.
@@ -124,7 +124,7 @@ def amoeba(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itmax=500, data
 						  simplex.
 	   '''
 
-	nvar = len(var)       # number of variables in the minimization
+	nvar = len(var)	   # number of variables in the minimization
 	nsimplex = nvar + 1   # number of vertices in the simplex
 
 	# first set up the simplex
@@ -152,7 +152,7 @@ def amoeba(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itmax=500, data
 				ssbest = i
 			if fvalue[i] < fvalue[ssworst]:
 				ssworst = i
-		    
+			
 		# get the average of the nsimplex-1 best vertices in the simplex
 		pavg = [0.0]*nvar
 		for i in xrange(nsimplex):
@@ -172,9 +172,9 @@ def amoeba(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itmax=500, data
 			frange = 0.0  # all the fvalues are zero in this case
 		
 		# have we converged?
-		if (((ftolerance <= 0.0 or frange < ftolerance) and    # converged to maximum
+		if (((ftolerance <= 0.0 or frange < ftolerance) and	# converged to maximum
 		 (xtolerance <= 0.0 or simscale < xtolerance)) or  # simplex contracted enough
-		 (itmax and iteration >= itmax)):	     # ran out of iterations
+		 (itmax and iteration >= itmax)):		 # ran out of iterations
 			return simplex[ssbest],fvalue[ssbest],iteration
 
 		# reflect the worst vertex
@@ -221,7 +221,7 @@ def amoeba_multi_level(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itm
 	of lower level refinement.
 	"""
 	#print " ENTER AMOEBA MULTI LEVEL"
-	nvar = len(var)       # number of variables in the minimization
+	nvar = len(var)	   # number of variables in the minimization
 	nsimplex = nvar + 1   # number of vertices in the simplex
 
 	# first set up the simplex
@@ -229,86 +229,86 @@ def amoeba_multi_level(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itm
 	simplex = [0]*(nvar+1)  # set the initial simplex
 	simplex[0] = var[:]
 	for i in xrange(nvar):
-	    simplex[i+1] = var[:]
-	    simplex[i+1][i] += scale[i]
+		simplex[i+1] = var[:]
+		simplex[i+1][i] += scale[i]
 
 	fvalue = []
 	for i in xrange(nsimplex):  # set the function values for the simplex
-	    result, passout = func(simplex[i], data=data)
-	    #print  " amoeba setting ",i,simplex[i],result, passout
-	    fvalue.append([result, passout])
+		result, passout = func(simplex[i], data=data)
+		#print  " amoeba setting ",i,simplex[i],result, passout
+		fvalue.append([result, passout])
 
 	# Ooze the simplex to the maximum
 
 	iteration = 0
 
 	while 1:
-	    # find the index of the best and worst vertices in the simplex
-	    ssworst = 0
-	    ssbest  = 0
-	    for i in xrange(nsimplex):
+		# find the index of the best and worst vertices in the simplex
+		ssworst = 0
+		ssbest  = 0
+		for i in xrange(nsimplex):
 		if fvalue[i][0] > fvalue[ssbest][0]:
-		    ssbest = i
+			ssbest = i
 		if fvalue[i][0] < fvalue[ssworst][0]:
-		    ssworst = i
-		    
-	    # get the average of the nsimplex-1 best vertices in the simplex
-	    pavg = [0.0]*nvar
-	    for i in xrange(nsimplex):
+			ssworst = i
+			
+		# get the average of the nsimplex-1 best vertices in the simplex
+		pavg = [0.0]*nvar
+		for i in xrange(nsimplex):
 		if i != ssworst:
-		    for j in range(nvar): pavg[j] += simplex[i][j]
-	    for j in xrange(nvar): pavg[j] = pavg[j]/nvar # nvar is nsimplex-1
-	    simscale = 0.0
-	    for i in range(nvar):
+			for j in range(nvar): pavg[j] += simplex[i][j]
+		for j in xrange(nvar): pavg[j] = pavg[j]/nvar # nvar is nsimplex-1
+		simscale = 0.0
+		for i in range(nvar):
 		simscale += abs(pavg[i]-simplex[ssworst][i])/scale[i]
-	    simscale = simscale/nvar
+		simscale = simscale/nvar
 
-	    # find the range of the function values
-	    fscale = (abs(fvalue[ssbest][0])+abs(fvalue[ssworst][0]))/2.0
-	    if fscale != 0.0:
+		# find the range of the function values
+		fscale = (abs(fvalue[ssbest][0])+abs(fvalue[ssworst][0]))/2.0
+		if fscale != 0.0:
 		frange = abs(fvalue[ssbest][0]-fvalue[ssworst][0])/fscale
-	    else:
+		else:
 		frange = 0.0  # all the fvalues are zero in this case
 		
-	    # have we converged?
-	    if (((ftolerance <= 0.0 or frange < ftolerance) and    # converged to maximum
+		# have we converged?
+		if (((ftolerance <= 0.0 or frange < ftolerance) and	# converged to maximum
 		 (xtolerance <= 0.0 or simscale < xtolerance)) or  # simplex contracted enough
-		(itmax and iteration >= itmax)):	     # ran out of iterations
+		(itmax and iteration >= itmax)):		 # ran out of iterations
 		return simplex[ssbest],fvalue[ssbest][0],iteration,fvalue[ssbest][1]
 
-	    # reflect the worst vertex
-	    pnew = [0.0]*nvar
-	    for i in xrange(nvar):
+		# reflect the worst vertex
+		pnew = [0.0]*nvar
+		for i in xrange(nvar):
 		pnew[i] = 2.0*pavg[i] - simplex[ssworst][i]
-	    fnew = func(pnew,data=data)
-	    if fnew[0] <= fvalue[ssworst][0]:
+		fnew = func(pnew,data=data)
+		if fnew[0] <= fvalue[ssworst][0]:
 		# the new vertex is worse than the worst so shrink
 		# the simplex.
 		for i in xrange(nsimplex):
-		    if i != ssbest and i != ssworst:
+			if i != ssbest and i != ssworst:
 			for j in xrange(nvar):
-			    simplex[i][j] = 0.5*simplex[ssbest][j] + 0.5*simplex[i][j]
-	    		fvalue[i]  = func(simplex[i],data=data)
+				simplex[i][j] = 0.5*simplex[ssbest][j] + 0.5*simplex[i][j]
+				fvalue[i]  = func(simplex[i],data=data)
 		for j in xrange(nvar):
-		    pnew[j] = 0.5*simplex[ssbest][j] + 0.5*simplex[ssworst][j]  	    
+			pnew[j] = 0.5*simplex[ssbest][j] + 0.5*simplex[ssworst][j]  		
 		fnew = func(pnew, data=data)
-	    elif fnew[0] >= fvalue[ssbest][0]:
+		elif fnew[0] >= fvalue[ssbest][0]:
 		# the new vertex is better than the best so expand
 		# the simplex.
 		pnew2 = [0.0]*nvar
 		for i in xrange(nvar):
-		    pnew2[i] = 3.0*pavg[i] - 2.0*simplex[ssworst][i]
+			pnew2[i] = 3.0*pavg[i] - 2.0*simplex[ssworst][i]
 		fnew2 = func(pnew2,data=data)
 		if fnew2[0] > fnew[0]:
-		    # accept the new vertex in the simplexe
-		    pnew = pnew2
-		    fnew = fnew2
-	    # replace the worst vertex with the new vertex
-	    for i in xrange(nvar):
+			# accept the new vertex in the simplexe
+			pnew = pnew2
+			fnew = fnew2
+		# replace the worst vertex with the new vertex
+		for i in xrange(nvar):
 		simplex[ssworst][i] = pnew[i]
-	    fvalue[ssworst] = fnew
-	    iteration += 1
-	    #print "Iteration:",iteration,"  ",ssbest,"  ",fvalue[ssbest]
+		fvalue[ssworst] = fnew
+		iteration += 1
+		#print "Iteration:",iteration,"  ",ssbest,"  ",fvalue[ssbest]
 
 def golden(func, args=(), brack=None, tol=1.e-4, full_output=0):
 	""" Given a function of one-variable and a possible bracketing interval,
@@ -381,61 +381,61 @@ def bracket(func, xa=0.0, xb=1.0, args=(), grow_limit=110.0, maxiter=1000):
 	fa = apply(func, (xa,)+args)
 	fb = apply(func, (xb,)+args)
 	if (fa < fb):			   # Switch so fa > fb
-	    dum = xa; xa = xb; xb = dum
-	    dum = fa; fa = fb; fb = dum
+		dum = xa; xa = xb; xb = dum
+		dum = fa; fa = fb; fb = dum
 	xc = xb + _gold*(xb-xa)
 	fc = apply(func, (xc,)+args)
 	funcalls = 3
 	iter = 0
 	while (fc < fb):
-	    tmp1 = (xb - xa)*(fb-fc)
-	    tmp2 = (xb - xc)*(fb-fa)
-	    val = tmp2-tmp1
-	    if abs(val) < _verysmall_num:
+		tmp1 = (xb - xa)*(fb-fc)
+		tmp2 = (xb - xc)*(fb-fa)
+		val = tmp2-tmp1
+		if abs(val) < _verysmall_num:
 		denom = 2.0*_verysmall_num
-	    else:
+		else:
 		denom = 2.0*val
-	    w = xb - ((xb-xc)*tmp2-(xb-xa)*tmp1)/denom
-	    wlim = xb + grow_limit*(xc-xb)
-	    if iter > maxiter:
+		w = xb - ((xb-xc)*tmp2-(xb-xa)*tmp1)/denom
+		wlim = xb + grow_limit*(xc-xb)
+		if iter > maxiter:
 		raise RuntimeError, "Too many iterations."
-	    iter += 1
-	    if (w-xc)*(xb-w) > 0.0:
+		iter += 1
+		if (w-xc)*(xb-w) > 0.0:
 		fw = apply(func, (w,)+args)
 		funcalls += 1
 		if (fw < fc):
-		    xa = xb; xb=w; fa=fb; fb=fw
-		    return xa, xb, xc, fa, fb, fc, funcalls
+			xa = xb; xb=w; fa=fb; fb=fw
+			return xa, xb, xc, fa, fb, fc, funcalls
 		elif (fw > fb):
-		    xc = w; fc=fw
-		    return xa, xb, xc, fa, fb, fc, funcalls
+			xc = w; fc=fw
+			return xa, xb, xc, fa, fb, fc, funcalls
 		w = xc + _gold*(xc-xb)
 		fw = apply(func, (w,)+args)
 		funcalls += 1
-	    elif (w-wlim)*(wlim-xc) >= 0.0:
+		elif (w-wlim)*(wlim-xc) >= 0.0:
 		w = wlim
 		fw = apply(func, (w,)+args)
 		funcalls += 1
-	    elif (w-wlim)*(xc-w) > 0.0:
+		elif (w-wlim)*(xc-w) > 0.0:
 		fw = apply(func, (w,)+args)
 		funcalls += 1
 		if (fw < fc):
-		    xb=xc; xc=w; w=xc+_gold*(xc-xb)
-		    fb=fc; fc=fw; fw=apply(func, (w,)+args)
-		    funcalls += 1
-	    else:
+			xb=xc; xc=w; w=xc+_gold*(xc-xb)
+			fb=fc; fc=fw; fw=apply(func, (w,)+args)
+			funcalls += 1
+		else:
 		w = xc + _gold*(xc-xb)
 		fw = apply(func, (w,)+args)
 		funcalls += 1
-	    xa=xb; xb=xc; xc=w
-	    fa=fb; fb=fc; fc=fw
+		xa=xb; xb=xc; xc=w
+		fa=fb; fb=fc; fc=fw
 	return xa, xb, xc, fa, fb, fc, funcalls
 
 def ce_fit(inp_image, ref_image, mask_image):
 	""" Fit the histogram of the input image under mask with the reference image.
-		    
-	     Usage : ce_fit(inp_image,ref_image,mask_image):
-	    	 A and B, number of iterations and the chi-square
+			
+		 Usage : ce_fit(inp_image,ref_image,mask_image):
+			 A and B, number of iterations and the chi-square
 	"""
 	hist_res = Util.histc(ref_image, inp_image, mask_image)
 	args = hist_res["args"]
@@ -456,13 +456,13 @@ def center_2D(image_to_be_centered, center_method = 1, searching_range = -1, Gau
 		3. cross-correlate with donut shape image
 		4. cross-correlate with reference image provided by user
 		5. cross-correlate with self-rotated average
-	        The function will return centered_image, and shifts
+			The function will return centered_image, and shifts
 	"""
 	from   utilities import peak_search
 	from   fundamentals import fshift
 	import types
 	if type(image_to_be_centered) == types.StringType: image_to_be_centered = get_im(image_to_be_centered)
-	if    center_method == 0 :  return  image_to_be_centered,0.,0.
+	if	center_method == 0 :  return  image_to_be_centered,0.,0.
 	elif  center_method == 1 :
 		cs = image_to_be_centered.phase_cog()
 		if searching_range > 0 :
@@ -525,7 +525,7 @@ def center_2D(image_to_be_centered, center_method = 1, searching_range = -1, Gau
 
 def common_line_in3D(phiA,thetaA,phiB,thetaB):
 	"""Find the position of the commone line in 3D
-           Formula is   (RB^T zhat)   cross  (RA^T zhat)
+		   Formula is   (RB^T zhat)   cross  (RA^T zhat)
 	   Returns phi, theta of the common line in degrees. theta always < 90
 	   Notice you don't need to enter psi's; they are irrelevant
 	"""
@@ -556,7 +556,7 @@ def common_line_in3D(phiA,thetaA,phiB,thetaB):
 	if nz<0: nx=-nx; ny=-ny; nz=-nz;
 
 	#thetaCom = asin(nz/sqrt(norm))
-	phiCom    = asin(nz/sqrt(norm))
+	phiCom	= asin(nz/sqrt(norm))
 	#phiCom   = atan2(ny,nx)
 	thetaCom  = atan2(ny, nx)
 	
@@ -565,10 +565,10 @@ def common_line_in3D(phiA,thetaA,phiB,thetaB):
 def compose_transform2(alpha1, sx1, sy1, scale1, alpha2, sx2, sy2, scale2):
 	"""Print the composition of two transformations  T2*T1
 		Here  if v's are vectors:   vnew = T2*T1 vold
-		     with T1 described by alpha1, sx1, scale1 etc.
+			 with T1 described by alpha1, sx1, scale1 etc.
 
-	    Usage: compose_transform2(alpha1,sx1,sy1,scale1,alpha2,sx2,sy2,scale2)
-	       angles in degrees
+		Usage: compose_transform2(alpha1,sx1,sy1,scale1,alpha2,sx2,sy2,scale2)
+		   angles in degrees
 	"""
 
 	t1 = Transform({"type":"2D","alpha":alpha1,"tx":sx1,"ty":sy1,"mirror":0,"scale":scale1})
@@ -581,10 +581,10 @@ def compose_transform2(alpha1, sx1, sy1, scale1, alpha2, sx2, sy2, scale2):
 def compose_transform2m(alpha1=0.0, sx1=0., sy1=0.0, mirror1=0, scale1=1.0, alpha2=0.0, sx2=0.0, sy2=0.0, mirror2=0, scale2=1.0):
 	"""Print the composition of two transformations  T2*T1
 		Here  if v's are vectors:   vnew = T2*T1 vold
-		     with T1 described by alpha1, sx1, scale1 etc.
+			 with T1 described by alpha1, sx1, scale1 etc.
 
-	    Usage: compose_transform2(alpha1,sx1,sy1,scale1,alpha2,sx2,sy2,scale2)
-	       angles in degrees
+		Usage: compose_transform2(alpha1,sx1,sy1,scale1,alpha2,sx2,sy2,scale2)
+		   angles in degrees
 	"""
 
 	t1 = Transform({"type":"2D","alpha":alpha1,"tx":sx1,"ty":sy1,"mirror":mirror1,"scale":scale1})
@@ -645,7 +645,7 @@ def drop_image(imagename, destination, itype="h"):
 	"""
 
 	if type(destination) == type(""):
-		if(itype == "h"):    imgtype = EMUtil.ImageType.IMAGE_HDF
+		if(itype == "h"):	imgtype = EMUtil.ImageType.IMAGE_HDF
 		elif(itype == "s"):  imgtype = EMUtil.ImageType.IMAGE_SINGLE_SPIDER
 		else:  ERROR("unknown image type","drop_image",1)
 		imagename.write_image(destination, 0, imgtype)
@@ -672,7 +672,7 @@ def drop_spider_doc(filename, data, comment = None):
 
 	   filename: name of the Doc file
 	   data: List of lists, with the inner list being a list of floats
-	         and is written as a line into the doc file.
+			 and is written as a line into the doc file.
 	"""
 	outf = open(filename, "w")
 	from datetime import datetime
@@ -682,7 +682,7 @@ def drop_spider_doc(filename, data, comment = None):
 		try:
 			nvals = len(dat)
 			if nvals <= 5: datstrings = ["%5d %d" % (count, nvals)]
-			else         : datstrings = ["%6d %d" % (count, nvals)]
+			else		 : datstrings = ["%6d %d" % (count, nvals)]
 			for num in dat:
 				datstrings.append("%12.5g" % (num))
 		except TypeError:
@@ -698,7 +698,7 @@ def dump_row(input, fname, ix=0, iz=0):
 
 	Usage: dump_row(image, ix, iz)
 	   or
-	       dump_row("path/to/image", ix, iz)
+		   dump_row("path/to/image", ix, iz)
 	"""
 	fout = open(fname, "w")
 	image=get_image(input)
@@ -715,17 +715,17 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 				method = 'S', phiEqpsi = "Minus", symmetry='c1', ant = 0.0):
 	"""Create a list of Euler angles suitable for projections.
 	   method is either 'S' - for Saff algorithm
-	               or   'P' - for Penczek '94 algorithm
-			         'S' assumes phi1<phi2 and phi2-phi1>> delta ;
+				   or   'P' - for Penczek '94 algorithm
+					 'S' assumes phi1<phi2 and phi2-phi1>> delta ;
 	   symmetry  - if this is set to point-group symmetry (cn or dn) or helical symmetry with point-group symmetry (scn or sdn), \
-	                 it will yield angles from the asymmetric unit, not the specified range;
+					 it will yield angles from the asymmetric unit, not the specified range;
 	   ant - neighborhood for local searches.  I believe the fastest way to deal with it in case of point-group symmetry
-		        it to generate cushion projections within an/2 of the border of unique zone
+				it to generate cushion projections within an/2 of the border of unique zone
 	"""
 
-	from math      import pi, sqrt, cos, acos, tan, sin
+	from math	  import pi, sqrt, cos, acos, tan, sin
 	from utilities import even_angles_cd
-	from string    import lower,split
+	from string	import lower,split
 	angles = []
 	symmetryLower = symmetry.lower()
 	symmetry_string = split(symmetry)[0]
@@ -837,7 +837,7 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 		# symmetry ='tet';   delta  = 6;
 
 		scrunch = 0.9  # closeness factor to eliminate oversampling corners
-		#nVec=[]       # x,y,z triples
+		#nVec=[]	   # x,y,z triples
 
 		piOver = pi/180.0
 		Count=0   # used to count the number of angles
@@ -857,9 +857,9 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 		NumPoints = int(Area/(deltaRad*deltaRad))
 		fheight = 1/sqrt(3)/ (tan(OmegaR/2.0))
 
-		z0      = costhetac  # initialize loop	
-		z       = z0
-		phi     = 0
+		z0	  = costhetac  # initialize loop	
+		z	   = z0
+		phi	 = 0
 		Deltaz  = (1-costhetac)/(NumPoints-1)
 
 		#[1, phi,180.0*acos(z)/pi,0.]
@@ -883,7 +883,7 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 			phi = (phi + angleJump)%(phiMax)
 			anglesNew = [phi,180.0*acos(z)/pi,0.];
 			nNew = [ sin(acos(z))*cos(phi*piOver) ,  sin(acos(z))*sin(phi*piOver) , z]
-			diffangleVec = [acos(nNew[0]*nVec[k][0] +   nNew[1]*nVec[k][1] +    nNew[2]*nVec[k][2] ) for k in xrange(Count)] 
+			diffangleVec = [acos(nNew[0]*nVec[k][0] +   nNew[1]*nVec[k][1] +	nNew[2]*nVec[k][2] ) for k in xrange(Count)] 
 			diffMin = min(diffangleVec)
 			if (diffMin>angleJump*piOver *scrunch):
 				Count +=1
@@ -905,7 +905,7 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 		
 #		look at the distribution
 #		Count =len(angles); piOver= pi/180.0;
-#		phiVec    =  [ angles[k][0] for k in range(Count)] ;
+#		phiVec	=  [ angles[k][0] for k in range(Count)] ;
 #		thetaVec  =  [ angles[k][1] for k in range(Count)] ;
 #		xVec = [sin(piOver * angles[k][1]) * cos(piOver * angles[k][0]) for k in range(Count) ]
 #		yVec = [sin(piOver * angles[k][1])* sin(piOver * angles[k][0]) for k in range(Count) ]
@@ -918,7 +918,7 @@ def even_angles(delta = 15.0, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, \
 def even_angles_cd(delta, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, method = 'P', phiEQpsi='Minus'):
 	"""Create a list of Euler angles suitable for projections.
 	   method is either 'S' - for Saff algorithm
-	                  or   'P' - for Penczek '94 algorithm
+					  or   'P' - for Penczek '94 algorithm
 			  'S' assumes phi1<phi2 and phi2-phi1>> delta ;
 	   phiEQpsi  - set this to 'Minus', if you want psi=-phi;
 	"""
@@ -926,16 +926,16 @@ def even_angles_cd(delta, theta1=0.0, theta2=90.0, phi1=0.0, phi2=359.99, method
 	angles = []
 	if (method == 'P'):
 		temp = Util.even_angles(delta, theta1, theta2, phi1, phi2)
-		#		                                              phi, theta, psi
+		#													  phi, theta, psi
 		for i in xrange(len(temp)/3): angles.append([temp[3*i],temp[3*i+1],temp[3*i+2]]);
-	else:              #elif (method == 'S'):
+	else:			  #elif (method == 'S'):
 		Deltaz  = cos(theta2*pi/180.0)-cos(theta1*pi/180.0)
-		s       = delta*pi/180.0
+		s	   = delta*pi/180.0
 		NFactor = 3.6/s
 		wedgeFactor = abs(Deltaz*(phi2-phi1)/720.0)
 		NumPoints   = int(NFactor*NFactor*wedgeFactor)
 		angles.append([phi1, theta1, 0.0])
-		z1 = cos(theta1*pi/180.0); 	phi=phi1            # initialize loop
+		z1 = cos(theta1*pi/180.0); 	phi=phi1			# initialize loop
 		for k in xrange(1,(NumPoints-1)):
 			z=z1 + Deltaz*k/(NumPoints-1)
 			r= sqrt(1-z*z)
@@ -967,7 +967,7 @@ def eigen_images_get(stack, eigenstack, mask, num, avg):
 		a.insert_image(e)
 		if( avg==1):
 			if(im==0): s  = a
-			else:      s += a
+			else:	  s += a
 	if(avg == 1): a -= s/nima
 	eigenimg = a.analyze()
 	if(num>= EMUtil.get_image_count(eigenimg)):
@@ -976,8 +976,8 @@ def eigen_images_get(stack, eigenstack, mask, num, avg):
 		
 def find_inplane_to_match(phiA,thetaA,phiB,thetaB,psiA=0,psiB=0):
 	"""Find the z rotation such that
-	    ZA  RA is as close as possible to RB
-	        this maximizes trace of ( RB^T ZA RA) = trace(ZA RA RB^T)
+		ZA  RA is as close as possible to RB
+			this maximizes trace of ( RB^T ZA RA) = trace(ZA RA RB^T)
 	"""
 	#from math import pi, sqrt, cos, acos, sin
 
@@ -1005,19 +1005,19 @@ def find(vv, cmp_str, n):
 	for jFound in xrange(len(vv)):
 		if (cmp_str=='lt'):
 			if (vv[jFound]<n):
-				jFoundVec.append(jFound);    
+				jFoundVec.append(jFound);	
 		if (cmp_str=='le'):
 			if (vv[jFound]<=n):
-				jFoundVec.append(jFound);    
+				jFoundVec.append(jFound);	
 		if (cmp_str=='eq'):
 			if (vv[jFound]==n):
-				jFoundVec.append(jFound);    
+				jFoundVec.append(jFound);	
 		if (cmp_str=='ge'):
 			if (vv[jFound]>=n):
-				jFoundVec.append(jFound);    
+				jFoundVec.append(jFound);	
 		if (cmp_str=='gt'):
 			if (vv[jFound]>n):
-				jFoundVec.append(jFound);    
+				jFoundVec.append(jFound);	
 	return jFoundVec;
 
 def gauss_edge(sharp_edge_image, kernel_size = 7, gauss_standard_dev =3):
@@ -1031,7 +1031,7 @@ def gauss_edge(sharp_edge_image, kernel_size = 7, gauss_standard_dev =3):
 	nz = sharp_edge_image.get_ndim()
 	if(nz == 3):   kern = model_gauss(gauss_standard_dev, kernel_size , kernel_size, kernel_size)
 	elif(nz == 2):  kern = model_gauss(gauss_standard_dev, kernel_size , kernel_size)
-	else:          kern = model_gauss(gauss_standard_dev, kernel_size)
+	else:		  kern = model_gauss(gauss_standard_dev, kernel_size)
 	aves = Util.infomask(kern, None, False)
 	nx = kern.get_xsize()
 	ny = kern.get_ysize()
@@ -1044,16 +1044,16 @@ def get_image(imagename, nx = 0, ny = 1, nz = 1, im = 0):
 	"""Read an image from the disk or assign existing object to the output.
 
 	Usage: myimage = readImage("path/to/image")
-	or     myimage = readImage(name_of_existing_image)
+	or	 myimage = readImage(name_of_existing_image)
 	"""
 	if type(imagename) == type(""):
-	    e = EMData()
-	    e.read_image(imagename, im)
+		e = EMData()
+		e.read_image(imagename, im)
 	elif not imagename:
-	    e = EMData()
-	    if (nx > 0): e.set_size(nx, ny, nz)
+		e = EMData()
+		if (nx > 0): e.set_size(nx, ny, nz)
 	else:
-	    e = imagename
+		e = imagename
 	return e
 
 def get_im(stackname, im = 0):
@@ -1115,8 +1115,8 @@ def get_textimage(fname):
 		and val is the floating point value of that point.  All points
 		not explicitly listed are set to zero.
 	"""
-    	from string import atoi,atof
-    	infile = open(fname)
+		from string import atoi,atof
+		infile = open(fname)
 	lines = infile.readlines()
 	infile.close()
 	data = lines[0].split()
@@ -1148,13 +1148,13 @@ def get_input_from_string(str_input):
 def hist_func(args, data):
 	#Util.hist_comp_freq(float PA,float PB,int size_img, int hist_len, float *img_ptr, float *ref_freq_bin, float *mask_ptr, float ref_h_diff, float ref_h_min)
 	return Util.hist_comp_freq(args[0],args[1],data[4],data[5],data[1],data[2],data[3],data[0][0],data[0][1])
-    	
+		
 def info(image, mask=None, Comment=""):
 	"""Calculate and print the descriptive statistics of an image.
 
 	Usage: [mean, sigma, xmin, xmax, nx, ny, nz =] info(image object)
-	       or
-	       [mean, sigma, xmin, xmax, nx, ny, nz =] info("path/image")
+		   or
+		   [mean, sigma, xmin, xmax, nx, ny, nz =] info("path/image")
 
 	Purpose: calculate basic statistical characteristics of an image.
 	"""
@@ -1187,8 +1187,8 @@ def image_decimate(img, decimation=2, fit_to_fft=1,frequency_low=0, frequency_hi
 		Window image to FFT-friendly size, apply Butterworth low pass filter,
 		and decimate 2D image 
 	"""
-	if type(img)     == str :	img=get_image(img)
-	if decimation    <= 1   :  	ERROR("Improper decimation ratio", "image_decimation", 1)
+	if type(img)	 == str :	img=get_image(img)
+	if decimation	<= 1   :  	ERROR("Improper decimation ratio", "image_decimation", 1)
 	if frequency_low <= 0   :	
 		frequency_low  = .5/decimation- .05
 		if frequency_low <= 0: ERROR("Butterworth passband frequency is too low", "image_decimation", 1)
@@ -1212,7 +1212,7 @@ def image_decimate(img, decimation=2, fit_to_fft=1,frequency_low=0, frequency_hi
 def inverse_transform2(alpha, tx = 0.0, ty = 0.0, mirror = 0):
 	"""Returns the inverse of the 2d rot and trans matrix
 
-	    Usage: nalpha, ntx, nty, mirror = inverse_transform2(alpha,tx,ty,mirror)
+		Usage: nalpha, ntx, nty, mirror = inverse_transform2(alpha,tx,ty,mirror)
 	"""
 
 	t = Transform({"type":"2D","alpha":alpha,"tx":tx,"ty":ty,"mirror":mirror,"scale":1.0})
@@ -1223,8 +1223,8 @@ def inverse_transform2(alpha, tx = 0.0, ty = 0.0, mirror = 0):
 def inverse_transform3(phi, theta=0.0, psi=0.0, tx=0.0, ty=0.0, tz=0.0, mirror = 0, scale=1.0):
 	"""Returns the inverse of the 3d rot and trans matrix
 
-	    Usage: nphi,ntheta,npsi,ntx,nty,ntz,nmirror,nscale = inverse_transform3(phi,theta,psi,tx,ty,tz,mirror,scale)
-	       angles in degrees
+		Usage: nphi,ntheta,npsi,ntx,nty,ntz,nmirror,nscale = inverse_transform3(phi,theta,psi,tx,ty,tz,mirror,scale)
+		   angles in degrees
 	"""
 
 	d = Transform({'type': 'spider', 'phi': phi, 'theta': theta, 'psi': psi, 'tx': tx, 'ty': ty, 'tz': tz, "mirror":mirror,"scale":scale})
@@ -1375,7 +1375,7 @@ def parse_spider_fname(mystr, *fieldvals):
 			# check validity
 			asterisks = mystr[begin+1:end]
 			if asterisks.strip("*") != "":
-			    raise ValueError, "Malformed {*...*} field: %s" % \
+				raise ValueError, "Malformed {*...*} field: %s" % \
 				mystr[begin:end+1]
 			fields.append(Fieldloc(begin, end))
 			loc = end
@@ -1404,17 +1404,17 @@ def parse_spider_fname(mystr, *fieldvals):
 	return "".join(newstrfrags)
 
 def peak_search(e, npeak = 1, invert = 1, print_screen = 0):
-	peaks    = e.peak_search(npeak, invert)
-	ndim     = peaks[0]
-	nlist    = int((len(peaks)-1)/((ndim+1)*2))
+	peaks	= e.peak_search(npeak, invert)
+	ndim	 = peaks[0]
+	nlist	= int((len(peaks)-1)/((ndim+1)*2))
 	if(nlist > 0):
 		outpeaks = []
 		if(print_screen):
 			if  ndim == 1 : 
-				print		      '%10s%10s%10s%10s%10s'%("Index  "," Peak_value","X   ",		     "Peak/P_max", "X-NX/2")
+				print			  '%10s%10s%10s%10s%10s'%("Index  "," Peak_value","X   ",			 "Peak/P_max", "X-NX/2")
 				print_list_format(peaks[1:], 4)
 			elif ndim == 2 :
-				print	      '%10s%10s%10s%10s%10s%10s%10s'%("Index  ", "Peak_value","X   ","Y   ",	     "Peak/P_max", "X-NX/2", "Y-NY/2")
+				print		  '%10s%10s%10s%10s%10s%10s%10s'%("Index  ", "Peak_value","X   ","Y   ",		 "Peak/P_max", "X-NX/2", "Y-NY/2")
 				print_list_format(peaks[1:], 6)
 			elif ndim == 3 : 
 				print '%10s%10s%10s%10s%10s%10s%10s%10s%10s'%("Index  ", "Peak_value","X   ","Y   ","Z   ", "Peak/P_max", "X-NX/2", "Y-NY/2", "Z-NZ/2")
@@ -1449,7 +1449,7 @@ def print_row(input, ix=0, iz=0):
 
 	Usage: print_row(image, ix, iz)
 	   or
-	       print_row("path/to/image", ix, iz)
+		   print_row("path/to/image", ix, iz)
 	"""
 	image=get_image(input)
 	nx = image.get_xsize()
@@ -1467,7 +1467,7 @@ def print_col(input, iy=0, iz=0):
 	"""Print the data in slice iz, column iy of an image to standard out.
 
 	   Usage: print_col(image, iy, iz)
-	      or
+		  or
 		  print_col("path/to/image", iy, iz)
 	"""
 	image=get_image(input)
@@ -1487,7 +1487,7 @@ def print_slice(input, iz=0):
 
 	Usage: print_image(image, int)
 	   or
-	       print_image("path/to/image", int)
+		   print_image("path/to/image", int)
 	"""
 	image=get_image(input)
 	nx = image.get_xsize()
@@ -1502,9 +1502,9 @@ def print_slice(input, iz=0):
 			line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
 			if ((ix + 1) % 5 == 0): 
 				line.append("\n   ")
-				line.append("      ")
-	    	line.append("\n")
-	    	if(nx%5 != 0): line.append("\n")
+				line.append("	  ")
+			line.append("\n")
+			if(nx%5 != 0): line.append("\n")
 	print "".join(line)
 
 def print_image(input):
@@ -1512,7 +1512,7 @@ def print_image(input):
 
 	Usage: print_image(image)
 	   or
-	       print_image("path/to/image")
+		   print_image("path/to/image")
 	"""
 	image=get_image(input)
 	nz = image.get_zsize()
@@ -1524,7 +1524,7 @@ def print_image_col(input, ix=0, iz=0):
 
 	Usage: print_image_col(image, ix, iz)
 	   or
-	       print_image_col("path/to/image", ix, iz)
+		   print_image_col("path/to/image", ix, iz)
 	"""
 	image=get_image(input)
 	nx = image.get_xsize()
@@ -1542,7 +1542,7 @@ def print_image_row(input, iy=0, iz=0):
 	"""Print the data in slice iz, column iy of an image to standard out.
 
 	   Usage: print_image_row(image, iy, iz)
-	      or
+		  or
 		  print_image_row("path/to/image", iy, iz)
 	"""
 	image=get_image(input)
@@ -1562,7 +1562,7 @@ def print_image_slice(input, iz=0):
 
 	Usage: print_image_slice(image, int)
 	   or
-	       print_image_slice("path/to/image", int)
+		   print_image_slice("path/to/image", int)
 	"""
 	image=get_image(input)
 	nx = image.get_xsize()
@@ -1577,9 +1577,9 @@ def print_image_slice(input, iz=0):
 			line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
 			if ((ix + 1) % 5 == 0): 
 				line.append("\n   ")
-				line.append("      ")
-	    	line.append("\n")
-	    	if(nx%5 != 0): line.append("\n")
+				line.append("	  ")
+			line.append("\n")
+			if(nx%5 != 0): line.append("\n")
 	print "".join(line)
 	
 def print_image_slice_3d(input, num=0,direction="z"):
@@ -1587,7 +1587,7 @@ def print_image_slice_3d(input, num=0,direction="z"):
 
 	Usage: print_image_slice(image, int)
 	   or
-	       print_image_slice("path/to/image", int)
+		   print_image_slice("path/to/image", int)
 	"""
 	#print "print slice at 3 directions"
 	image=get_image(input)
@@ -1606,9 +1606,9 @@ def print_image_slice_3d(input, num=0,direction="z"):
 				line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
 				if ((iy + 1) % 5 == 0): 
 					line.append("\n   ")
-					line.append("      ")
-	    		line.append("\n")
-	    		if(ny%5 != 0): line.append("\n")
+					line.append("	  ")
+				line.append("\n")
+				if(ny%5 != 0): line.append("\n")
 		print "".join(line)
 	elif(direction=="y"):
 		#print "yyy"
@@ -1622,9 +1622,9 @@ def print_image_slice_3d(input, num=0,direction="z"):
 				line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
 				if ((ix + 1) % 5 == 0): 
 					line.append("\n   ")
-					line.append("      ")
-	    		line.append("\n")
-	    		if(nx%5 != 0): line.append("\n")
+					line.append("	  ")
+				line.append("\n")
+				if(nx%5 != 0): line.append("\n")
 		print "".join(line)
 	else:
 		#print "zzzz"
@@ -1638,9 +1638,9 @@ def print_image_slice_3d(input, num=0,direction="z"):
 				line.append("%12.5g  " % (image.get_value_at(ix,iy,iz)))
 				if ((ix + 1) % 5 == 0): 
 					line.append("\n   ")
-					line.append("      ")
-	    		line.append("\n")
-	    		if(nx%5 != 0): line.append("\n")
+					line.append("	  ")
+				line.append("\n")
+				if(nx%5 != 0): line.append("\n")
 		print "".join(line)
 		
 
@@ -1685,9 +1685,9 @@ def print_list_format(m, narray = 0):
 def pad(image_to_be_padded, new_nx, new_ny = 1,	new_nz = 1, background = "average", off_center_nx = 0, off_center_ny = 0, off_center_nz = 0):
 	import types
 	if type(background) != types.StringType: background = str(background)
-	if   background == "average"       :     image_padded = Util.pad(image_to_be_padded, new_nx, new_ny, new_nz, off_center_nx, off_center_ny, off_center_nz, "average")
-	elif background == "circumference" :     image_padded = Util.pad(image_to_be_padded, new_nx, new_ny, new_nz, off_center_nx, off_center_ny, off_center_nz, "circumference")
-	else:                                    image_padded = Util.pad(image_to_be_padded, new_nx, new_ny, new_nz, off_center_nx, off_center_ny, off_center_nz,  background  )
+	if   background == "average"	   :	 image_padded = Util.pad(image_to_be_padded, new_nx, new_ny, new_nz, off_center_nx, off_center_ny, off_center_nz, "average")
+	elif background == "circumference" :	 image_padded = Util.pad(image_to_be_padded, new_nx, new_ny, new_nz, off_center_nx, off_center_ny, off_center_nz, "circumference")
+	else:									image_padded = Util.pad(image_to_be_padded, new_nx, new_ny, new_nz, off_center_nx, off_center_ny, off_center_nz,  background  )
 	return  image_padded
 
 def read_spider_doc(fnam):
@@ -1695,14 +1695,14 @@ def read_spider_doc(fnam):
 	"""
 		spider doc file format:
 		key nrec record ...
-		5   2    12     ...(when key <=99999)
-		6   2    12     ...(when key >99999)
+		5   2	12	 ...(when key <=99999)
+		6   2	12	 ...(when key >99999)
 	"""
 	inf = file(fnam, "r")
 	comment_line=inf.readline() # assume there is only one comment line
 	docf_in = []
-	data    = []
-	line    = inf.readline()
+	data	= []
+	line	= inf.readline()
 	while len(line) > 0:
 		line_data=[]
 		if(line[11:12]==" " and line[8:10] != " "):			# new data format
@@ -1735,15 +1735,15 @@ def read_text_row(fnam, format="", skip=";"):
 	 	Read a column-listed txt file.
 		INPUT: filename: name of the Doc file
 	 	OUTPUT:
-	    	nc : number of entries in each lines (number of columns)
-	    	len(data)/nc : number of lines (rows)
-	    	data: List of numbers from the doc file
+			nc : number of entries in each lines (number of columns)
+			len(data)/nc : number of lines (rows)
+			data: List of numbers from the doc file
  	"""
 	from string import split
 
 	inf  = file(fnam, "r")
 	strg = inf.readline()
-	x    = []
+	x	= []
 	data = []
 	while (len(strg) > 0):
 		com_line = False
@@ -1759,7 +1759,7 @@ def read_text_row(fnam, format="", skip=";"):
 					word.append(strg[0 : 5])
 					word.append(strg[6 : 7])
 					for k in xrange(key):
-						k_start = 7       + k*13
+						k_start = 7	   + k*13
 						k_stop  = k_start + 13
 						word.append(strg[k_start : k_stop])				
 			line=[]
@@ -1778,7 +1778,7 @@ def write_text_row(data, file_name):
 
 	   filename: name of the text file
 	   data: List of lists, with the inner list being a list of floats, i.e., [ [first list], [second list], ...]
-	         First list will be written as a first line, second as a second, and so on...
+			 First list will be written as a first line, second as a second, and so on...
 		 If only one list is given, the file will contain one line
 	"""
 	import types
@@ -1824,7 +1824,7 @@ def read_text_file(file_name, ncol = 0):
 			vdata = split(line)
 			if data == []:
 				for i in xrange(len(vdata)):
-					try:     data.append([float(vdata[i])])
+					try:	 data.append([float(vdata[i])])
 					except:  data.append([vdata[i]])
 			else:
 				for i in xrange(len(vdata)):
@@ -1832,7 +1832,7 @@ def read_text_file(file_name, ncol = 0):
 					except:  data[i].append(vdata[i])
 		else:
 			vdata = split(line)[ncol]
-			try:     data.append(float(vdata))
+			try:	 data.append(float(vdata))
 			except:  data.append(vdata)
 		line = inf.readline()
 	return data
@@ -1843,7 +1843,7 @@ def write_text_file(data, file_name):
 
 	   filename: name of the text file
 	   data: List of lists, with the inner list being a list of floats, i.e., [ [first list], [second list], ...]
-	         First list will be written as a first column, second as a second, and so on...
+			 First list will be written as a first column, second as a second, and so on...
 		 If only one list is given, the file will contain one column
 	"""
 	import types
@@ -1890,9 +1890,9 @@ def reconstitute_mask(image_mask_applied_file, new_mask_file, save_file_on_disk 
 	elif  type(image_mask_applied_file) == types.ListType:   
 		nima =  len( image_mask_applied )
 		image_mask_applied = image_mask_applied_file
-	if type(new_mask_file) == types.StringType:     
+	if type(new_mask_file) == types.StringType:	 
 		new_mask = get_im( new_mask_file )
-        elif type(new_mask_file) == types.IntType or type( new_mask_file ) == types.floatType:
+		elif type(new_mask_file) == types.IntType or type( new_mask_file ) == types.floatType:
 		if nima > 1:
 			e = image_mask_applied[0]
 			nx = e.get_xsize()
@@ -1919,8 +1919,8 @@ def reconstitute_mask(image_mask_applied_file, new_mask_file, save_file_on_disk 
 def rotate_about_center(alpha, cx, cy):
 	"""Rotate about a different center
 
-	    Usage: rotate_about_center(alpha,cx,cy):
-	       angles in degrees
+		Usage: rotate_about_center(alpha,cx,cy):
+		   angles in degrees
 	"""
 
 	cmp1 = compose_transform2(0, -cx, -cy, 1, alpha, 0, 0, 1)
@@ -2072,7 +2072,7 @@ def rotate_3D_shift(data, shift3d):
 def sym_vol(image, symmetry="c1"):
 	" Symmetrize a volume"
 	if(symmetry == "c1"):  return  image.copy()
-	else:                  return  image.symvol(symmetry)
+	else:				  return  image.symvol(symmetry)
 
 ##----------------------------------HDF headers related code --------------------------
 def set_arb_params(img, params, par_str):
@@ -2135,18 +2135,18 @@ def reduce_array_to_root(data, myid, main_node = 0, comm = -1):
 	n = shape(data)
 	ntot = 1
 	for i in xrange(len(n)):  ntot *= n[i]
-        count = 500000
-        array1d = reshape(data, (ntot,))
-        ntime = (ntot-1) /count + 1
-        for i in xrange(ntime):
-        	block_begin = i*count
-        	block_end   = i*count + count
-        	if block_end > ntot: block_end = ntot
-        	block_size  = block_end - block_begin
-        	tmpsum = mpi_reduce(array1d[block_begin], block_size, MPI_FLOAT, MPI_SUM, main_node, comm)
+		count = 500000
+		array1d = reshape(data, (ntot,))
+		ntime = (ntot-1) /count + 1
+		for i in xrange(ntime):
+			block_begin = i*count
+			block_end   = i*count + count
+			if block_end > ntot: block_end = ntot
+			block_size  = block_end - block_begin
+			tmpsum = mpi_reduce(array1d[block_begin], block_size, MPI_FLOAT, MPI_SUM, main_node, comm)
 		mpi_barrier(comm)
-        	if myid == main_node:
-        		array1d[block_begin:block_end] = tmpsum[0:block_size]
+			if myid == main_node:
+				array1d[block_begin:block_end] = tmpsum[0:block_size]
 '''
 
 def reduce_EMData_to_root(data, myid, main_node = 0, comm = -1):
@@ -2156,7 +2156,7 @@ def reduce_EMData_to_root(data, myid, main_node = 0, comm = -1):
 	if comm == -1 or comm == None:  comm = MPI_COMM_WORLD
 
 	array = get_image_data(data)
-	n     = shape(array)
+	n	 = shape(array)
 	ntot  = 1
 	for i in n: ntot *= i
 	count = (75*4+2)*(75*4)**2
@@ -2227,7 +2227,7 @@ def bcast_EMData_to_all(img, myid, main_node = 0, comm = -1):
 	img_data = EMNumPy.em2numpy(img)
 	img_data = mpi_bcast(img_data, ntot, MPI_FLOAT, main_node, comm)
 	if nz != 1:
-		img_data = reshape(img_data, (nz, ny, nx))     # For some reason, the order should be like this -- Zhengfan Yang
+		img_data = reshape(img_data, (nz, ny, nx))	 # For some reason, the order should be like this -- Zhengfan Yang
 	elif ny != 1:
 		img_data = reshape(img_data, (ny, nx))
 	else:
@@ -2315,7 +2315,7 @@ def send_EMData(img, dst, tag, comm=-1):
 		block_begin = i*count
 		block_end   = i*count + count
 		if block_end > ntot:
-		    block_end = ntot
+			block_end = ntot
 		block_size  = block_end - block_begin
 		mpi_send(data1d[block_begin], block_size, MPI_FLOAT, dst, data_tag*ntime+i, comm)
 	'''
@@ -2369,9 +2369,9 @@ def recv_EMData(src, tag, comm=-1):
 
 	data1d = reshape( get_image_data(img), (ntot,) )
 	tmp_data = mpi_recv(ntot, MPI_FLOAT, src, data_tag, comm)
-        data1d[0:ntot] = tmp_data[0:ntot] 
-        
-        
+		data1d[0:ntot] = tmp_data[0:ntot] 
+		
+		
 	count = 100000
 	ntime = (ntot-1)/count + 1
 
@@ -2379,11 +2379,11 @@ def recv_EMData(src, tag, comm=-1):
 		block_begin = i*count
 		block_end   = i*count + count
 		if block_end > ntot:
-		    block_end = ntot
+			block_end = ntot
 		block_size  = block_end - block_begin
 		tmp_data = mpi_recv(block_size, MPI_FLOAT, src, data_tag*ntime+i, comm)
 		data1d[block_begin:block_end] = tmp_data[0:block_size]
-        
+		
 	return img
 	'''
 
@@ -2449,7 +2449,7 @@ def bcast_list_to_all(list_to_send, source_node = 0):
 	list_to_bcast = []
 	for i in xrange(len(list_to_send)):
 		if (type(list_to_send[i]) == types.IntType ): list_to_bcast.append( int(  list_tmp[i] ) )
-		else:                                        list_to_bcast.append( float( list_tmp[i] ) )
+		else:										list_to_bcast.append( float( list_tmp[i] ) )
 	return list_to_bcast
 
 def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, number_of_proc, comm = -1):
@@ -2469,7 +2469,7 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 	ink = []
 	len_list = 0
 	for il in xrange(len(list_params)):
-		if type(value[il]) is types.IntType:     
+		if type(value[il]) is types.IntType:	 
 			ink.append(1)
 			len_list += 1
 		elif type(value[il]) is types.FloatType:  
@@ -2493,7 +2493,7 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 		nvalue = get_arb_params(data[im-image_start], list_params)
 		ISID = list_params.count('ID')
 		if(ISID == 0): imm = im
-		else:          imm = nvalue[list_params.index('ID')]
+		else:		  imm = nvalue[list_params.index('ID')]
 		# read head, set params, and write it
 		dummy = EMData()
 		dummy.read_image(stack, imm, True)
@@ -2526,7 +2526,7 @@ def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, 
 					nvalue.append(t)
 			ISID = list_params.count('ID')
 			if(ISID == 0): imm = im
-			else:          imm = nvalue[list_params.index('ID')]
+			else:		  imm = nvalue[list_params.index('ID')]
 			# read head, set params, and write it
 			dummy = EMData()
 			dummy.read_image(stack, imm, True)
@@ -2548,7 +2548,7 @@ def send_attr_dict(main_node, data, list_params, image_start, image_end, comm = 
 	for im in xrange(image_start, image_end):
 		value = get_arb_params(data[im-image_start], list_params)
 		for il in xrange(len(value)):
-			if    type(value[il]) is types.IntType:  nvalue.append(float(value[il]))
+			if	type(value[il]) is types.IntType:  nvalue.append(float(value[il]))
 			elif  type(value[il]) is types.FloatType: nvalue.append(value[il])
 			elif  type(value[il]) is TransType: 
 				m = value[il].get_matrix()
@@ -2743,7 +2743,7 @@ def write_headers(filename, data, lima):
 	  write headers from files in data into a disk file called filename.
 	  The filename has to be either hdf or bdb.
 	  lima - list with positions in the disk files into which headers will be written,
-	    i.e., header from data[k] will be written into file number lima[k]
+		i.e., header from data[k] will be written into file number lima[k]
 	  WARNING: this function will open and close DB library!
 	"""
 	from utilities import file_type
@@ -2769,7 +2769,7 @@ def write_header(filename, data, lima):
 	  write header from a single file data into a disk file called filename.
 	  The filename has to be either hdf or bdb.
 	  lima - position in the disk files into which header will be written,
-	    i.e., header from data will be written into file number lima
+		i.e., header from data will be written into file number lima
 	  WARNING: this function assums DB library is opened and will NOT close it!
 	"""
 	from utilities import file_type
@@ -2844,7 +2844,7 @@ def get_ctf(ima):
 	"""
 	  recover numerical values of CTF parameters from EMAN2 CTF object stored in a header of the input image
 	  order of returned parameters:
-        [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism amplitude, astigmatism angle]
+		[defocus, cs, voltage, apix, bfactor, ampcont, astigmatism amplitude, astigmatism angle]
 	"""
 	from EMAN2 import EMAN2Ctf
 	ctf_params = ima.get_attr("ctf")	
@@ -2854,16 +2854,16 @@ def generate_ctf(p):
 	"""
 	  generate EMAN2 CTF object using values of CTF parameters given in the list p
 	  order of parameters:
-        [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism_amplitude, astigmatism_angle]
-	    [ microns, mm, kV, Angstroms, A^2, microns, radians]
+		[defocus, cs, voltage, apix, bfactor, ampcont, astigmatism_amplitude, astigmatism_angle]
+		[ microns, mm, kV, Angstroms, A^2, microns, radians]
 	"""
 	from EMAN2 import EMAN2Ctf
 
-	defocus      = p[0]
-	cs           = p[1]
-	voltage      = p[2]
+	defocus	  = p[0]
+	cs		   = p[1]
+	voltage	  = p[2]
 	pixel_size   = p[3]
-	bfactor      = p[4]
+	bfactor	  = p[4]
 	amp_contrast = p[5]
 	
 	if defocus > 100:  # which means it is very likely in Angstrom, therefore we are using the old convention
@@ -2885,7 +2885,7 @@ def set_ctf(ima, p):
 	"""
 	  set EMAN2 CTF object in the header of input image using values of CTF parameters given in the list p
 	  order of parameters:
-        [defocus, cs, voltage, apix, bfactor, ampcont, astigmatism amplitude, astigmatism angle]
+		[defocus, cs, voltage, apix, bfactor, ampcont, astigmatism amplitude, astigmatism angle]
 	"""
 	from utilities import generate_ctf
 	ctf = generate_ctf( p )
@@ -2901,9 +2901,9 @@ def delete_bdb(name):
 
 
 # parse user function parses the --function option. this option
-#    can be either a single function name (i.e. --function=ali3d_e)
-#    or a list of names, specifying the location of a user-defined
-#    function; this will have the form --function=/path/module/function
+#	can be either a single function name (i.e. --function=ali3d_e)
+#	or a list of names, specifying the location of a user-defined
+#	function; this will have the form --function=/path/module/function
 
 def parse_user_function(opt_string):
 	# check if option string is a string and return None if not. this
@@ -3206,7 +3206,7 @@ def rotation_between_anglesets(agls1, agls2):
 	  list corresponds to the k'th element on the second list.
 	  Input: two lists [[phi1, theta1, psi1], [phi2, theta2, psi2], ...].  Second list is considered reference.
 	  Output: overall rotation phi, theta, psi that has to be applied to the first list (agls1) so resulting
-	    angles will agree with the second list.
+		angles will agree with the second list.
 	  Note: all angles have to be in spider convention.
 	  For details see: Appendix in Penczek, P., Marko, M., Buttle, K. and Frank, J.:  Double-tilt electron tomography.  Ultramicroscopy 60:393-410, 1995.
 	"""
@@ -3255,7 +3255,7 @@ def rotation_between_anglesets(agls1, agls2):
 
 	# compute all Suv with uv = {xx, xy, xz, yx, ..., zz}
 	Suv   = [0] * 9
-	c     = 0
+	c	 = 0
 	nbori = len(U1)
 	for i in xrange(3):
 		for j in xrange(3):
@@ -3263,20 +3263,20 @@ def rotation_between_anglesets(agls1, agls2):
 				Suv[c] += (U2[s][i] * U1[s][j])
 			c += 1
 
-        # create matrix N
-	N = array([[Suv[0]+Suv[4]+Suv[8], Suv[5]-Suv[7],        Suv[6]-Suv[2],                 Suv[1]-Suv[3]], 
-		   [Suv[5]-Suv[7],        Suv[0]-Suv[4]-Suv[8], Suv[1]+Suv[3],                 Suv[6]+Suv[2]], 
-		   [Suv[6]-Suv[2],        Suv[1]+Suv[3],        -Suv[0]+Suv[4]-Suv[8],         Suv[5]+Suv[7]],
-		   [Suv[1]-Suv[3],        Suv[6]+Suv[2],        Suv[5]+Suv[7],         -Suv[0]-Suv[4]+Suv[8]]])
+		# create matrix N
+	N = array([[Suv[0]+Suv[4]+Suv[8], Suv[5]-Suv[7],		Suv[6]-Suv[2],				 Suv[1]-Suv[3]], 
+		   [Suv[5]-Suv[7],		Suv[0]-Suv[4]-Suv[8], Suv[1]+Suv[3],				 Suv[6]+Suv[2]], 
+		   [Suv[6]-Suv[2],		Suv[1]+Suv[3],		-Suv[0]+Suv[4]-Suv[8],		 Suv[5]+Suv[7]],
+		   [Suv[1]-Suv[3],		Suv[6]+Suv[2],		Suv[5]+Suv[7],		 -Suv[0]-Suv[4]+Suv[8]]])
 
-        # eigenvector corresponding to the most positive eigenvalue
+		# eigenvector corresponding to the most positive eigenvalue
 	val, vec = linalg.eig(N)
 	q0, qx, qy, qz = vec[:, val.argmax()]
 
-        # create quaternion Rot matrix 
-	r = [q0*q0-qx*qx+qy*qy-qz*qz,         2*(qy*qx+q0*qz),          2*(qy*qz-q0*qx),          0.0,
-	     2*(qx*qy-q0*qz),                 q0*q0+qx*qx-qy*qy-qz*qz,  2*(qx*qz+q0*qy),          0.0,
-	     2*(qz*qy+q0*qx),                 2*(qz*qx-q0*qy),          q0*q0-qx*qx-qy*qy+qz*qz,  0.0]
+		# create quaternion Rot matrix 
+	r = [q0*q0-qx*qx+qy*qy-qz*qz,		 2*(qy*qx+q0*qz),		  2*(qy*qz-q0*qx),		  0.0,
+		 2*(qx*qy-q0*qz),				 q0*q0+qx*qx-qy*qy-qz*qz,  2*(qx*qz+q0*qy),		  0.0,
+		 2*(qz*qy+q0*qx),				 2*(qz*qx-q0*qy),		  q0*q0-qx*qx-qy*qy+qz*qz,  0.0]
 	
 	R = Transform(r)
 	dictR = R.get_rotation('SPIDER')
@@ -3461,22 +3461,22 @@ def group_proj_by_phitheta_slow(proj_ang, symmetry = "c1", img_per_grp = 100, ve
 	proj_list = []   
 	angles_list = []
 	N = len(proj_ang)
-	if len(proj_ang[0]) == 3:       # determine whether it has shifts provided, make the program more robust
+	if len(proj_ang[0]) == 3:	   # determine whether it has shifts provided, make the program more robust
 		for i in xrange(N):
 			proj_ang[i].append(i)
 			proj_ang[i].append(True)
-			vec = gv(proj_ang[i][0], proj_ang[i][1])     # pre-calculate the vector for each projection angles
+			vec = gv(proj_ang[i][0], proj_ang[i][1])	 # pre-calculate the vector for each projection angles
 			proj_ang[i].append(vec)
 	else:
 		for i in xrange(N):
 			proj_ang[i][3] = i
 			proj_ang[i][4] = True
-			vec = gv(proj_ang[i][0], proj_ang[i][1])     # pre-calculate the vector for each projection angles
+			vec = gv(proj_ang[i][0], proj_ang[i][1])	 # pre-calculate the vector for each projection angles
 			proj_ang[i].append(vec)
 
 	ref_ang_list1, nref1 = get_ref_ang_list(20.0, sym = symmetry)   
 	ref_ang_list2, nref2 = get_ref_ang_list(10.0, sym = symmetry)   
-	ref_ang_list3, nref3 = get_ref_ang_list(5.0, sym = symmetry)    
+	ref_ang_list3, nref3 = get_ref_ang_list(5.0, sym = symmetry)	
 	ref_ang_list4, nref4 = get_ref_ang_list(2.5, sym = symmetry)
 
 	c = 100
@@ -3665,7 +3665,7 @@ def group_proj_by_phitheta(proj_ang, symmetry = "c1", img_per_grp = 100, verbose
 	
 	ref_ang_list1, nref1 = get_ref_ang_list(20.0, sym = symmetry)   
 	ref_ang_list2, nref2 = get_ref_ang_list(10.0, sym = symmetry)   
-	ref_ang_list3, nref3 = get_ref_ang_list(5.0, sym = symmetry)    
+	ref_ang_list3, nref3 = get_ref_ang_list(5.0, sym = symmetry)	
 	ref_ang_list4, nref4 = get_ref_ang_list(2.5, sym = symmetry)
 
 	ref_ang_list = []
@@ -3727,7 +3727,7 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 		from math import pi, cos, sin, radians
 
 		theta  = radians(theta)
-		phi    = radians(phi)
+		phi	= radians(phi)
 		sint   = sin(theta)
 
 		x = sint*cos(phi) 
@@ -3744,7 +3744,7 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 		v = v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]
 		v = max(min(v, 1.0), -1.0)
 		if v >= 0: return degrees( acos(v) ), 0
-		else:      return degrees( acos(-v) ), 1
+		else:	  return degrees( acos(-v) ), 1
 
 	"""
 	# Not used here
@@ -3842,9 +3842,9 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 	mirror_list = []
 	neighbor  = [0]*img_per_grp
 	#neighbor2 = [0]*img_per_grp
-	dis       = [0.0]*img_per_grp
-	#dis2      = [0.0]*img_per_grp
-	mirror    = [0]*img_per_grp
+	dis	   = [0.0]*img_per_grp
+	#dis2	  = [0.0]*img_per_grp
+	mirror	= [0]*img_per_grp
 	S = Set()
 	T = Set()
 	#tt1 = time()
@@ -3878,7 +3878,7 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 					if min_phi_mir < 0.0: min_phi_mir += 360.0
 					if max_phi_mir > 360.0: max_phi_mir -= 360.0
 
-			phi_left_bound    = binary_search_l(phi_list_l, min_phi)
+			phi_left_bound	= binary_search_l(phi_list_l, min_phi)
 			phi_right_bound   = binary_search_r(phi_list_l, max_phi)
 			theta_left_bound  = binary_search_l(theta_list_l, min_theta)
 			theta_right_bound = binary_search_r(theta_list_l, max_theta)
@@ -3987,7 +3987,7 @@ def chunks_distribution(chunks, procs):
 	# sort chunks in descending order
 	chunks.sort(reverse=True)
 
-	# create heap and list with solution    
+	# create heap and list with solution	
 	results = []
 	heap = []
 	for p in xrange(procs):
@@ -4167,8 +4167,25 @@ def wrap_mpi_bcast(data, root = 0, communicator = None):
 	n = mpi_bcast(n, 4, MPI_CHAR, root, communicator)  # int MPI_Bcast ( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm ) 
 	n=unpack("I",n)[0]
 	msg = mpi_bcast(msg, n, MPI_CHAR, root, communicator)  # int MPI_Bcast ( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm ) 
-	return unpack_message(msg)
+ 	return unpack_message(msg)
 
+ 
+def wrap_mpi_split(comm, no_of_groups):
+	"""
+	Takes the processes of a comunicator (comm) and splits them in groups (no_of_groups).
+	Each subgroup of processes have ids generated from 0 to number of processes per group - 1.
+	Consecutive global process ids have consecutive subgroup process ids. 
+	"""
+	from mpi import mpi_comm_size, mpi_comm_rank, mpi_comm_split
+	nproc = mpi_comm_size(comm)
+	myid = mpi_comm_rank(comm) 
+
+	no_of_proc_per_group = nproc / no_of_groups
+
+	color = myid / no_of_proc_per_group 
+	key = myid % no_of_proc_per_group
+ 
+	return mpi_comm_split(comm, color, key)
 
 # data must be a python list (numpy array also should be implemented)
 def wrap_mpi_gatherv(data, root, communicator = None):
