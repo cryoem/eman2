@@ -863,39 +863,10 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 	resamp_maxrin = int(2*pi / resamp_dang+0.5)
 	resamp_vol = resamp_maxrin * (2*kx+1)
 	resamp_angnxc = resamp_maxrin//2
-	print "dang=%f resamp_dfang=%f"%(dang,resamp_dang)
+	print "dang=%f resamp_dfang=%f resamp_maxrin=%d"%(dang,resamp_dang, resamp_maxrin)
 	
-
-	##  --------------------------  ##
-	##  step 1. - fitting a snake.  ##
-	##  --------------------------- ##
-	# center in SPIDER convention
-	cnx = nx//2+1
-	cny = ny//2+1
-	rstep=1
-	mode = "F"
-	T = 1.0
-	xrng = search_rng
-	yrng = search_rng
-	first_ring=1
-	last_ring = nx/2-2-int(max(xrng,yrng))
-	from alignment import Numrinit, ringwe
-	numr = Numrinit(first_ring, last_ring, rstep, mode)
-	wr   = ringwe(numr, mode)
-	maxrin = numr[(last_ring-first_ring)*3+2]
-	dang = 2*pi/maxrin
-	kx = int(2*xrng/rstep+0.5)/2
-	vol = maxrin*(2*kx+1)
-	angnxc = maxrin//2
-	resamp_dang = 2*asin(1.0/nx)
-	resamp_maxrin = int(2*pi / resamp_dang+0.5)
-	resamp_vol = resamp_maxrin * (2*kx+1)
-	resamp_angnxc = resamp_maxrin//2
-	print "dang=%f resamp_dfang=%f"%(dang,resamp_dang)
-	ccf2dimg = EMData(2*kx+1, resamp_maxrin, 1, False)	
 	print "max ring points=%d"%numr[len(numr)-1]
-	#use straight line as the initial guess to refine the snake.
-	paramsline = shift_x
+	
 	total_iter = 0
 	##tavg = fft(tavg)                                       #transform tavg    into real space.
 	tttt = EMData(nx, ny, 1, False)
@@ -918,8 +889,9 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 			Util.mul_img(ttavg, mask)
 			crefim = Util.Polar2Dm(ttavg, cnx, cny, numr, mode)
 			Util.Frngs(crefim, numr)
+			#Util.Applyws(crefim, numr, wr)
 			tttt = fft(data[im])             # transform data[im] into real space.
-			ccf2d = Util.ali2d_ccf_list_snake(tttt, crefim,  xrng, yrng, rstep, mode, numr, cnx, cny, T)
+			ccf2d = Util.ali2d_ccf_list_snake(tttt, crefim,  wr, xrng, yrng, rstep, mode, numr, cnx, cny, T)
 			for i in xrange(2*kx+1):
 				for j in xrange(resamp_maxrin):
 					j_old = int(j * resamp_dang/dang + 0.5)
@@ -942,39 +914,138 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 					ccf2dimg.set_value_at(i,j,resamp_ccf2d[i*resamp_maxrin+j])
 			ctx2d[im-indcs[ifil][0]] = 	ccf2dimg	 
 		CCF2d.append(ctx2d)
+			
+	
+	## ---------------------------------------------- ##
+	## step 1: find a straight line for initial guess ##
+	## ---------------------------------------------- ##
+	# for Iter in xrange(max_iter):
+# 		nxc = nx//2
+# 		sx_sum  = 0
+# 		CCF = [] ##added@ming
+# 		for ifil in xrange(nfils):
+# 			# Calculate 1D ccf between each segment and filament average
+# 			nsegms = indcs[ifil][1]-indcs[ifil][0]
+# 			#sccf = []      ##added@ming
+# 			ctx = [None]*nsegms
+# 			pcoords = [None]*nsegms
+# 			for im in xrange(indcs[ifil][0], indcs[ifil][1]):
+# 				ttavg = get_im("bdb:vdata",im)
+# 				stat = Util.infomask( ttavg, mask, False )
+# 				ttavg -= stat[0]
+# 				Util.mul_img(ttavg, mask)
+# 				ttavg = fft(ttavg)
+# 				ctx[im-indcs[ifil][0]] = Util.window(ccf(ttavg, data[im]), nx, 1)
+# 				#sccf.append(ctx[im-indcs[ifil][0]])
+# 				pcoords[im-indcs[ifil][0]] = data[im].get_attr('ptcl_source_coord')
+# 				#ctx[im-indcs[ifil][0]].write_image("ctx.hdf",im-indcs[ifil][0])
+# 				#print "  CTX  ",myid,im,Util.infomask(ctx[im-indcs[ifil][0]], None, True)
+# 			CCF.append(ctx)	
+# 			# search for best x-shift
+# 			cents = nsegms//2
+# 		
+# 			dst = sqrt(max((pcoords[cents][0] - pcoords[0][0])**2 + (pcoords[cents][1] - pcoords[0][1])**2, (pcoords[cents][0] - pcoords[-1][0])**2 + (pcoords[cents][1] - pcoords[-1][1])**2))
+# 			maxincline = atan2(ny//2-2-float(search_rng),dst)
+# 			kang = int(dst*tan(maxincline)+0.5)
+# 			#print  "  settings ",nsegms,cents,dst,search_rng,maxincline,kang
+# 		
+# 			# ## C code for alignment. @ming
+# 			results = [0.0]*3;
+# 			results = Util.helixshiftali(ctx, pcoords, nsegms, maxincline, kang, search_rng,nxc)
+# 			sib = int(results[0])
+# 			bang = results[1]
+# 			qm = results[2]
+# 			#print qm, sib, bang
+# 		
+# 			# qm = -1.e23	
+# 
+# 			#print qm,six,sib,bang
+# 			#print " got results   ",indcs[ifil][0], indcs[ifil][1], ifil,myid,qm,sib,tang,bang,len(ctx),Util.infomask(ctx[0], None, True)
+# 			for im in xrange(indcs[ifil][0], indcs[ifil][1]):
+# 				kim = im-indcs[ifil][0]
+# 				dst = sqrt((pcoords[cents][0] - pcoords[kim][0])**2 + (pcoords[cents][1] - pcoords[kim][1])**2)
+# 				if(kim < cents):  xl = -dst*bang+sib
+# 				else:             xl =  dst*bang+sib
+# 				shift_x[im] = xl
+# 			# Average shift
+# 			sx_sum += shift_x[indcs[ifil][0]+cents]
+# 		
+# 		
+# 		# #print myid,sx_sum,total_nfils
+# 		sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+# 		if myid == main_node:
+# 			sx_sum = float(sx_sum[0])/total_nfils
+# 			print_msg("Average shift  %6.2f\n"%(sx_sum))
+# 		else:
+# 			sx_sum = 0.0
+# 		sx_sum = 0.0
+# 		sx_sum = bcast_number_to_all(sx_sum, source_node = main_node)
+# 		for im in xrange(ldata):
+# 			shift_x[im] -= sx_sum
+			#print  "   %3d  shift_x=%6.3f rotang=%f"%(im,shift_x[im],shift_ang[im]*resamp_dang*180/pi)
+
+		
+
+	##  --------------------------  ##
+	##  step 2. - fitting a snake.  ##
+	##  --------------------------- ##
+	#use straight line as the initial guess to refine the snake.
+	paramsline = shift_x
+	
+	porder = 20
+	a0=[[0.0]*(porder+1)]*nfils
+	b0=[[0.0]*(porder+1)]*nfils
+	a=[[0.0]*(porder+1)]*nfils
+	b=[[0.0]*(porder+1)]*nfils
+	for ifil in xrange(nfils):
+		a0[ifil],b0[ifil] = interpoLinecoeffs([paramsline[indcs[ifil][0]], 0], [paramsline[indcs[ifil][0]+1],0],porder, indcs[ifil][1]-indcs[ifil][0])
+		a = a0
+		b = b0
+			
 	## refine using amoeba
 	from utilities import amoeba
-	
 	for Iter in xrange(max_iter):
 		for ifil in xrange(nfils):
 			sccf=CCF2d[ifil]
-			xparams=shift_x[indcs[ifil][0]:indcs[ifil][1]]
-			angpams=shift_ang[indcs[ifil][0]:indcs[ifil][1]] 
-			# for im in xrange (indcs[ifil][0], indcs[ifil][1]):
-# 					angpams[im] = (2*pi-2.81/180*pi)/resamp_dang
-						##method 2. maximize the sum
-			if ifil == 0:
-			#	for im in xrange (indcs[ifil][0], indcs[ifil][1]):
-				im = 32
-				print "before im=%d shift_x=%f  rotang=%f"%(im,shift_x[im], angpams[im]*resamp_dang*180/pi)
-			params0 = paramsline[indcs[ifil][0]:indcs[ifil][1]]
-			nsegs = len(xparams)
-			params = xparams+angpams 
+			params0 = a0[ifil]+b0[ifil]   #[paramsline[indcs[ifil][0]:indcs[ifil][1]]
+			nsegs = len(sccf)
+			params =  a[ifil]+b[ifil] 
 			fval0 = snakehelicalali(params,[sccf,params0, 0.0,2*kx+1,resamp_maxrin])
-			#print "len x =%d len ang = %d len param0=%d"%(nsegs, len(angpams), len(params0))
-			scale = [1.5]*nsegs+[1.5]*nsegs
-			newparams,fval, numit=amoeba(params, scale, snakehelicalali, 1.e-4, 1.e-8, 500, [sccf,params0, 0.0,2*kx+1,resamp_maxrin])
-			print "ifil=%d Iter: %d before  amoeba: %f, after amoeba: %f  max_it=%d"%(ifil,Iter,fval0, fval,numit)
-			im = 32
-			print "after im=%d shift_x=%f  rotang=%f"%(im,shift_x[im], shift_ang[im]*resamp_dang*180/pi)
-			newxpar = newparams[0:nsegs]
-			for iseg in xrange(nsegs):
-				if newxpar[iseg] > search_rng or newxpar[iseg] < -search_rng:
-					newxpar[iseg] = xparams[iseg]
-			shift_x[indcs[ifil][0]:indcs[ifil][1]] = newxpar
-			shift_ang[indcs[ifil][0]:indcs[ifil][1]] = newparams[nsegs:2*nsegs]
-
+			print params0
+			im = 24
+			print "Iter=%d nsegs=%d"%(Iter, nsegs)
+			print "before amoeba im=%d shift_x=%f  rotang=%f "%(im,-shift_x[im], shift_ang[im]*resamp_dang*180/pi)
+			
+			im = 40
+			print "before amoeba im=%d shift_x=%f  rotang=%f fval=%f "%(im,-shift_x[im], shift_ang[im]*resamp_dang*180/pi, fval0)
+			
+			ftol = 1.e-12
+			xtol = 1.e-12
+			maxi = 500
+			scale = [10.0]*(porder+1)+[10.0]*(porder+1)
+			newparams,fval, numit=amoeba(params, scale, snakehelicalali, ftol, xtol, maxi, [sccf,params0, 0.0,2*kx+1,resamp_maxrin])
+			
+			# if Iter == 20 or 100:
+# 				scale = [0.5*scale[i] for i in xrange(len(scale))]
+# 				ftol = 0.001*ftol
+# 				xtol = 0.001*xtol
+# 				maxi = 500
+			a[ifil] = newparams[0:porder+1]
+			b[ifil] = newparams[porder+1:2*(porder+1)]
+			for iseg in xrange(indcs[ifil][0], indcs[ifil][1]):
+				point=parabolaf(a[ifil],b[ifil],(iseg-indcs[ifil][0])*1.0/nsegs, porder)
+				shift_x[iseg] = point[0]
+				shift_ang[iseg] = point[1]
+				
+				if shift_ang[iseg] < 0.0:
+					shift_ang[iseg] = resamp_maxrin - 1.0 + shift_ang[iseg]
+					
+			im = 24
+			print "after amoeba i m=%d shift_x=%f  rotang=%f max_it=%d angid=%f"%(im,-shift_x[im], shift_ang[im]*resamp_dang*180/pi, numit, shift_ang[im])
+			im = 40
+			print "after amoeba i m=%d shift_x=%f  rotang=%f  max_it=%d angid=%f fval=%f"%(im,-shift_x[im], shift_ang[im]*resamp_dang*180/pi, numit, shift_ang[im], fval)
 		
+			print newparams
 				
 	# ## compute new average.	
 	if myid == main_node:
@@ -1011,20 +1082,16 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 		Util.mul_img(tavg, mask)
 		#print "Iter=%d"%(Iter+20)
 		tavg.write_image("tavgttt.hdf",-1)
-		#tavg.write_image("tavg_%d.hdf"%(Iter+20))
-		# For testing purposes: shift tavg to some random place and see if the centering is still correct
-		#tavg = rot_shift3D(tavg,sx=3,sy=-4)
+		
 	if Fourvar:  del vav
-	bcast_EMData_to_all(tavg, myid, main_node)
-			
- 							
+	 							
 	# combine shifts found with the original parameters
 	for im in xrange(ldata):		
 		t1 = Transform()
 		##import random
 		##shix=random.randint(-10, 10)
 		##t1.set_params({"type":"2D","tx":shix})
-		t1.set_params({"type":"2D","tx":shift_x[im]})
+		t1.set_params({"type":"2D","tx":-shift_x[im]})
 		t1.set_rotation({"type":"2d", "alpha":shift_ang[im]*resamp_dang*180.0/pi})
 		# combine t0 and t1
 		tt = t1 #*init_params[im] ##@ming
@@ -1045,31 +1112,38 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 
 
 
-	
 def snakehelicalali(params,data):
 	sccf    = data[0]
-	xparam0 = data[1]
+	lena = len(data[1])//2
+	sccfn = len(sccf)
+	
+	a0 = data[1][0:lena]
+	b0 = data[1][lena:2*lena]
+	
 	lambw   = data[2]
 	nx     = data[3]
 	angnx  = data[4]
 	nxc = nx//2
 	angnxc = angnx//2
-	sccfn=len(xparam0)
 	
-	xparam = params[0:sccfn]
-	angpar = params[sccfn:2*sccfn]
+	
+	a = params[0:lena]
+	b = params[lena:2*lena]
 	#print "lambw", lambw
 	sx_sum=0.0
 	
 	for id in xrange(sccfn):
-		xl = xparam[id]+nxc
+		point=parabolaf(a,b,id*1.0/sccfn, lena-1)
+		xl = point[0]+nxc
 		ixl = int(xl)
 		dxl = xl - ixl
-		al = angpar[id]
-		if al < 0:
+		al = point[1]
+		bl = al
+		if al < 0.0:
 			al = (angnx-1+al)
 		ial = int(al)
 		dal = al - ial
+		if al < 0.0: print "bl=%f al=%f ial=%d "%(bl, al, ial)
 		#print "sx_sum, xl, ixl, dxl", sx_sum, xl,ixl,dxl
 		if ixl < 0:
 			ixl = 0          
@@ -1081,387 +1155,47 @@ def snakehelicalali(params,data):
 		# if ial >= angnx-1:
 # 			ial = angnx-2 	
 # 			dal = 0
-		sx_sum += (1.0-dxl)*(1.0-dal)*sccf[id].get_value_at(ixl,ial) + dxl*(1.0-dal)*sccf[id].get_value_at(ixl+1,ial) + (1.0-dxl)*dal*sccf[id].get_value_at(ixl,ial+1) + dxl*dal*sccf[id].get_value_at(ixl+1,ial+1)  
+		if ixl < 0 or ixl+1 > nx -1 or ial < 0 or (ial +1)%angnx > angnx-1:
+			print "AAAAA ixl=%d ial=%d"%(ixl, ial)
+		sx_sum += (1.0-dxl)*(1.0-dal)*sccf[id].get_value_at(ixl,ial%angnx) + dxl*(1.0-dal)*sccf[id].get_value_at(ixl+1,ial%angnx) + (1.0-dxl)*dal*sccf[id].get_value_at(ixl,(ial+1)%angnx) + dxl*dal*sccf[id].get_value_at(ixl+1,(ial+1)%angnx)  
 		#print "ixl=%d maxia=%d ial=%d get_value_at(ixl,ial)=%f  get_value_at(ixl+1,ial)=%f  get_value_at(ixl,ial+1)=%f  get_value_at(ixl+1,ial+1)=%f"%(ixl, angnx, ial, sccf[id].get_value_at(ixl,ial),sccf[id].get_value_at(ixl+1,ial),sccf[id].get_value_at(ixl,ial+1),sccf[id].get_value_at(ixl+1,ial+1))	
 	#print "part 1", sx_sum
+	
 	part2_sum=0	
 	for id in xrange(sccfn):
-		part2_sum += lambw*(xparam0[id]-xparam[id])**2 
-	#print "part 2", part2_sum	
+		point0=parabolaf(a0,b0,id*1.0/sccfn, lena-1)
+		point1=parabolaf(a,b,id*1.0/sccfn, lena-1)
+		part2_sum += lambw*((point0[0]-point1[0])**2+(point0[1]-point1[1])**2)
+				
 	sx_sum -= part2_sum 
+	
+	# part3_sum = 0
+# 	for id in xrange(sccfn-1):
+# 		part3_sum += abs(angpar[id]-angpar[id+1])  # + abs(xparam[id] - xparam[id+1])
+# 		
+# 	sx_sum -= 10.0 * part3_sum
 	return sx_sum
 					
-def curhelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=False, search_rng=-1):
-	from applications import MPI_start_end
-	from utilities    import model_circle, model_blank, get_image, peak_search, get_im, pad
-	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
-	from statistics   import varf2d_MPI
-	from fundamentals import fft, ccf, rot_shift3D, rot_shift2D, fshift
-	from utilities    import get_params2D, set_params2D, chunks_distribution
-	from utilities    import print_msg, print_begin_msg, print_end_msg
-	import os
-	import sys
-	from mpi 	  	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
-	from mpi 	  	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_gatherv
-	from mpi 	  	  import MPI_SUM, MPI_FLOAT, MPI_INT
-	from time         import time	
-	from pixel_error  import ordersegments
-	from math         import sqrt, atan2, tan, sin, cos
+def interpoLinecoeffs(p0,p1, porder, m):
+	a=[0.0]*(porder+1)
+	b=[0.0]*(porder+1)
+	#z=0
+	a[0] = p0[0]
+	b[0] = p0[1]
+	#z=1
+	a[1] = (p1[0] - a[0])*m
+	b[1] = (p1[1] - b[0])*m
+
+	return a, b 
+
+def parabolaf(a,b,z, porder):
+	point=[0.0]*2
+	for i in xrange(porder+1):
+		point[0] += a[i]*pow(z,i)
+		point[1] += b[i]*pow(z,i)
 	
-	nproc = mpi_comm_size(MPI_COMM_WORLD)
-	myid = mpi_comm_rank(MPI_COMM_WORLD)
-	main_node = 0
-		
-	ftp = file_type(stack)
-
-	if myid == main_node:
-		print_begin_msg("curhelical-shiftali_MPI")
-
-	max_iter=int(maxit)
-	if( myid == main_node):
-		infils = EMUtil.get_all_attributes(stack, "filament")
-		ptlcoords = EMUtil.get_all_attributes(stack, 'ptcl_source_coord')
-		filaments = ordersegments(infils, ptlcoords)
-		total_nfils = len(filaments)
-		inidl = [0]*total_nfils
-		for i in xrange(total_nfils):  inidl[i] = len(filaments[i])
-		linidl = sum(inidl)
-		nima = linidl
-		tfilaments = []
-		for i in xrange(total_nfils):  tfilaments += filaments[i]
-		del filaments
-	else:
-		total_nfils = 0
-		linidl = 0
-	total_nfils = bcast_number_to_all(total_nfils, source_node = main_node)
-	if myid != main_node:
-		inidl = [-1]*total_nfils
-	inidl = bcast_list_to_all(inidl, source_node = main_node)
-	linidl = bcast_number_to_all(linidl, source_node = main_node)
-	if myid != main_node:
-		tfilaments = [-1]*linidl
-	tfilaments = bcast_list_to_all(tfilaments, source_node = main_node)
-	filaments = []
-	iendi = 0
-	for i in xrange(total_nfils):
-		isti = iendi
-		iendi = isti+inidl[i]
-		filaments.append(tfilaments[isti:iendi])
-	del tfilaments,inidl
-
-	if myid == main_node:
-		print "total number of filaments: ", total_nfils
-	if total_nfils< nproc:
-		ERROR('number of CPUs (%i) is larger than the number of filaments (%i), please reduce the number of CPUs used'%(nproc, total_nfils), "ehelix_MPI", 1,myid)
-
-	#  balanced load
-	temp = chunks_distribution([[len(filaments[i]), i] for i in xrange(len(filaments))], nproc)[myid:myid+1][0]
-	filaments = [filaments[temp[i][1]] for i in xrange(len(temp))]
-	nfils     = len(filaments)
-
-	#filaments = [[0,1]]
-	#print "filaments",filaments
-	list_of_particles = []
-	indcs = []
-	k = 0
-	for i in xrange(nfils):
-		list_of_particles += filaments[i]
-		k1 = k+len(filaments[i])
-		indcs.append([k,k1])
-		k = k1
-	data = EMData.read_images(stack, list_of_particles)
-	ldata = len(data)
+	return point
 	
-	nx = data[0].get_xsize()
-	ny = data[0].get_ysize()
-	if maskfile == None:
-		mrad = min(nx, ny)//2-2
-		mask = pad( model_blank(2*mrad+1, ny, 1, 1.0), nx, ny, 1, 0.0)
-	else:
-		mask = get_im(maskfile)
-
-	# apply initial xform.align2d parameters stored in header
-	init_params = []
-	for im in xrange(ldata):
-		t = data[im].get_attr('xform.align2d')
-		init_params.append(t)
-		p = t.get_params("2d")
-		data[im] = rot_shift2D(data[im], p['alpha'], p['tx'], p['ty'], p['mirror'], p['scale'])
-
-	if CTF:
-		from filter import filt_ctf
-		from morphology   import ctf_img
-		ctf_abs_sum = EMData(nx, ny, 1, False)
-		ctf_2_sum = EMData(nx, ny, 1, False)
-	else:
-		ctf_2_sum = None
-		ctf_abs_sum = None
-
-
-
-	from utilities import info
-
-	for im in xrange(ldata):
-		data[im].set_attr('ID', list_of_particles[im])
-		st = Util.infomask(data[im], mask, False)
-		data[im] -= st[0]
-		if CTF:
-			ctf_params = data[im].get_attr("ctf")
-			qctf = data[im].get_attr("ctf_applied")
-			if qctf == 0:
-				data[im] = filt_ctf(fft(data[im]), ctf_params)
-				data[im].set_attr('ctf_applied', 1)
-			elif qctf != 1:
-				ERROR('Incorrectly set qctf flag', "curhelicalshiftali_MPI", 1,myid)
-			ctfimg = ctf_img(nx, ctf_params, ny=ny)
-			Util.add_img2(ctf_2_sum, ctfimg)
-			Util.add_img_abs(ctf_abs_sum, ctfimg)
-		else:  data[im] = fft(data[im])
-
-	del list_of_particles		
-
-	if CTF:
-		reduce_EMData_to_root(ctf_2_sum, myid, main_node)
-		reduce_EMData_to_root(ctf_abs_sum, myid, main_node)
-	if CTF:
-		if myid != main_node:
-			del ctf_2_sum
-			del ctf_abs_sum
-		else:
-			temp = EMData(nx, ny, 1, False)
-			tsnr = 1./snr
-			for i in xrange(0,nx+2,2):
-				for j in xrange(ny):
-					temp.set_value_at(i,j,tsnr)
-					temp.set_value_at(i+1,j,0.0)
-			#info(ctf_2_sum)
-			Util.add_img(ctf_2_sum, temp)
-			#info(ctf_2_sum)
-			del temp
-
-	total_iter = 0
-	shift_x = [0.0]*ldata
-
-	for Iter in xrange(max_iter):
-		if myid == main_node:
-			start_time = time()
-			print_msg("Iteration #%4d\n"%(total_iter))
-		total_iter += 1
-		avg = EMData(nx, ny, 1, False)
-		for im in xrange(ldata):
-			Util.add_img(avg, fshift(data[im], shift_x[im]))
-
-		reduce_EMData_to_root(avg, myid, main_node)
-
-		if myid == main_node:
-			if CTF:  tavg = Util.divn_filter(avg, ctf_2_sum)
-			else:    tavg = Util.mult_scalar(avg, 1.0/float(nima))
-		else:
-			tavg = model_blank(nx,ny)
-
-		if Fourvar:
-			bcast_EMData_to_all(tavg, myid, main_node)
-			vav, rvar = varf2d_MPI(myid, data, tavg, mask, "a", CTF)
-
-		if myid == main_node:
-			if Fourvar:
-				tavg    = fft(Util.divn_img(fft(tavg), vav))
-				vav_r	= Util.pack_complex_to_real(vav)
-			# normalize and mask tavg in real space
-			tavg = fft(tavg)
-			stat = Util.infomask( tavg, mask, False )
-			tavg -= stat[0]
-			Util.mul_img(tavg, mask)
-			tavg.write_image("tavg.hdf",Iter)
-			# For testing purposes: shift tavg to some random place and see if the centering is still correct
-			#tavg = rot_shift3D(tavg,sx=3,sy=-4)
-
-		if Fourvar:  del vav
-		bcast_EMData_to_all(tavg, myid, main_node)
-		tavg = fft(tavg)
-
-		sx_sum = 0.0
-		nxc = nx//2
-		circnum = nx//2         #number of circles.  
-		for ifil in xrange(nfils):
-			"""
-			# Calculate filament average
-			avg = EMData(nx, ny, 1, False)
-			filnima = 0
-			for im in xrange(indcs[ifil][0], indcs[ifil][1]):
-				Util.add_img(avg, data[im])
-				filnima += 1
-			tavg = Util.mult_scalar(avg, 1.0/float(filnima))
-			"""
-			# Calculate 1D ccf between each segment and filament average
-			nsegms = indcs[ifil][1]-indcs[ifil][0]
-			ctx = [None]*nsegms
-			pcoords = [None]*nsegms
-			for im in xrange(indcs[ifil][0], indcs[ifil][1]):
-				ctx[im-indcs[ifil][0]] = Util.window(ccf(tavg, data[im]), nx, 1)
-				pcoords[im-indcs[ifil][0]] = data[im].get_attr('ptcl_source_coord')
-				#ctx[im-indcs[ifil][0]].write_image("ctx.hdf",im-indcs[ifil][0])
-				#print "  CTX  ",myid,im,Util.infomask(ctx[im-indcs[ifil][0]], None, True)
-			# search for best x-shift
-			cents = nsegms//2
-			
-			## C code for alignment. @ming
- 			results = [0.0]*6;
- 			results = Util.curhelixshiftali(ctx, pcoords, nsegms, search_rng, nx, ny)
- 			sib = int(results[0])
- 			bang = results[1]
- 			CircR = results[2]
- 			RSinang = results[3]
- 			RCosang = results[4]
- 			qm = results[5]
-# 			print "in C", sib, bang, CircR, RSinang, RCosang, qm
-#  			dst1 = sqrt((pcoords[cents][0] - pcoords[0][0])**2 + (pcoords[cents][1] - pcoords[0][1])**2)
-#  			dst2 = sqrt((pcoords[cents][0] - pcoords[-1][0])**2 + (pcoords[cents][1] - pcoords[-1][1])**2)
-#  			qm = -1.e23
-#  			for circ in xrange(circnum):
-#  				circd = 4*(circ+1)           ## circd = n*(circ+1), by adjusting n to obtain different number of circles. 
-#  				circR = circd/2.0 + (ny*nsegms)**2/(8.0*circd)
-#  				x1 = circR - sqrt(circR**2-dst1**2)
-#  				x2 = circR - sqrt(circR**2-dst2**2)
-#  				xmax = max(x1,x2)
-#  				if ( xmax == x1 ):
-#  					dst0 = dst1
-#  				else:
-#  					dst0 = dst2
-#  				for six in xrange(-search_rng, search_rng+1,1):
-#  					if (nx-(six+nxc+xmax)-2 <= 0): continue
-#  					xmin = min(nx-(six+nxc+xmax)-2, six+nxc-2)
-#  					maxincline = atan2(xmin,dst0)
-#  					kang = int(dst0*tan(maxincline)+0.5)
-#  					q0 = ctx[cents].get_value_at(six+nxc)
-#  					#for incline in xrange(kang+1):
-#  					for incline in xrange(-kang,kang+1):
-#  						qt = q0
-#  						#qu = q0
-#  						if(kang>0):  
-#  							tang = tan(maxincline/kang*incline)
-#  							Rsinang = circR*sin(maxincline/kang*incline)
-#  							Rcosang = circR*cos(maxincline/kang*incline) 
-#  						else:        
-#  							tang = 0.0
-#  							Rsinang = 0.0
-#  							Rcosang = 1.0
-#  						for kim in xrange(cents+1,nsegms):
-#  							dst = sqrt((pcoords[cents][0] - pcoords[kim][0])**2 + (pcoords[cents][1] - pcoords[kim][1])**2)
-#  							if ( tang >= 0 ):                                   ## case 1 and 4.								
-#  								#xl = dst*tang+six+nxc
-#  								xl = Rcosang - sqrt(Rcosang**2-2*dst*Rsinang-dst**2)+six+nxc
-#  								ixl = int(xl)
-#  								dxl = xl - ixl
-#  								#print "  A  ", ifil,six,incline,kim,xl,ixl,dxl
-#  								qt += (1.0-dxl)*ctx[kim].get_value_at(ixl) + dxl*ctx[kim].get_value_at(ixl+1)
-#  							if ( tang < 0 ):
-#  								if ( -dst*tang > circR - sqrt(circR**2-dst**2)):	             ## case 3
-#  									#xl = -dst*tang+six+nxc
-#  									if ( Rcosang**2+2*dst*Rsinang-dst**2 <0 ):
-#  										ERROR('Rcosang**2+2*dst*Rsinang-dst**2 less than 0', "curhelicalshiftali_MPI", 1,myid) 
-#  									xl = -Rcosang + sqrt(Rcosang**2+2*dst*Rsinang-dst**2)+six+nxc
-#  									#print "incline=%f Rcos=%f Rsin=%f dst=%f ny=%f nxc=%f circd=%f circR=%f kim=%f cents+1=%d xl=%f six=%d"%(incline, Rcosang, Rsinang, dst, ny, nxc, circd, circR, kim, cents+1, xl,six)
-#  									ixl = int(xl)
-#  									dxl = xl - ixl
-#  									if ( ixl < 0 ):
-#  										print "kim=%d, cents=%d nsegms=%d incline=%d ixl=%f"%(kim, cents,nsegms, incline,ixl) 
-#  									qt += (1.0-dxl)*ctx[kim].get_value_at(ixl) + dxl*ctx[kim].get_value_at(ixl+1)
-#  								else:                                           ## case 2
-#  									xl = Rcosang - sqrt(Rcosang**2+2*dst*Rsinang-dst**2)+six+nxc
-#  									ixl = int(xl)
-#  									dxl = xl - ixl
-#  									qt += (1.0-dxl)*ctx[kim].get_value_at(ixl) + dxl*ctx[kim].get_value_at(ixl+1)										
-#  						for kim in xrange(cents):
-#  							dst = sqrt((pcoords[cents][0] - pcoords[kim][0])**2 + (pcoords[cents][1] - pcoords[kim][1])**2)
-#  							if ( tang >= 0 ):  
-#  								if ( dst*tang > circR - sqrt(circR**2-dst**2)):	             
-#  									#xl = -dst*tang+six+nxc
-# 									xl = -Rcosang + sqrt(Rcosang**2+2*dst*Rsinang-dst**2)+six+nxc
-# 									#print "incline=%f Rcos=%f Rsin=%f dst=%f ny=%f nxc=%f circd=%f circR=%f kim=%f cents+1=%d xl=%f six=%d"%(incline, Rcosang, Rsinang, dst, ny, nxc, circd, circR, kim, cents+1, xl,six)
-#  									ixl = int(xl)
-#  									dxl = xl - ixl
-#  									qt += (1.0-dxl)*ctx[kim].get_value_at(ixl) + dxl*ctx[kim].get_value_at(ixl+1)
-#  								else:                                           
-#  									xl = Rcosang - sqrt(Rcosang**2+2*dst*Rsinang-dst**2)+six+nxc
-#  									ixl = int(xl)
-#  									dxl = xl - ixl
-#  									qt += (1.0-dxl)*ctx[kim].get_value_at(ixl) + dxl*ctx[kim].get_value_at(ixl+1)	
-#  							if ( tang < 0 ):
-#  								xl = Rcosang - sqrt(Rcosang**2-2*dst*Rsinang-dst**2)+six+nxc
-#  								ixl = int(xl)
-#  								dxl = xl - ixl
-#  								#print "  A  ", ifil,six,incline,kim,xl,ixl,dxl
-#  								qt += (1.0-dxl)*ctx[kim].get_value_at(ixl) + dxl*ctx[kim].get_value_at(ixl+1)															
-#  						if( qt > qm ):
-#  							qm = qt
-#  							sib = six
-#  							bang = tang
-#  							CircR = circR
-#  							RSinang = Rsinang
-#  							RCosang = Rcosang
-#  						#if incline == 0:  print  "incline = 0  ",six,tang,qt,qu
-#  					#print qm,six,sib,bang
-#  				#print " got results   ",indcs[ifil][0], indcs[ifil][1], ifil,myid,qm,sib,tang,bang,len(ctx),Util.infomask(ctx[0], None, True)
-#  			print "in python", sib, bang, CircR, RSinang, RCosang, qm
-			for im in xrange(indcs[ifil][0], indcs[ifil][1]):
-				kim = im-indcs[ifil][0]
-				dst = sqrt((pcoords[cents][0] - pcoords[kim][0])**2 + (pcoords[cents][1] - pcoords[kim][1])**2)
-				if(kim < cents):  
-					if ( bang >= 0 ):
-						if ( dst*bang > CircR - sqrt(CircR**2-dst**2)):
-							xl = -RCosang + sqrt(RCosang**2+2*dst*RSinang-dst**2)+sib
-						else:
-							xl = RCosang - sqrt(RCosang**2+2*dst*RSinang-dst**2)+sib
-					if ( bang < 0 ):
-							xl = RCosang - sqrt(RCosang**2-2*dst*RSinang-dst**2)+sib
-				else:
-					if ( bang >= 0 ):					
-						xl = RCosang - sqrt(RCosang**2-2*dst*RSinang-dst**2)+sib
-					if ( bang < 0 ):
-						if ( -dst*bang > CircR - sqrt(CircR**2-dst**2)):	             ## case 3
-							xl = -RCosang + sqrt(RCosang**2+2*dst*RSinang-dst**2)+sib
-						else:
-							xl = RCosang - sqrt(RCosang**2+2*dst*RSinang-dst**2)+sib				 
-				shift_x[im] = xl
-			# Average shift
-			sx_sum += shift_x[indcs[ifil][0]+cents]
-		#print myid,sx_sum,total_nfils
-		sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-		if myid == main_node:
-			sx_sum = float(sx_sum[0])/total_nfils
-			print_msg("Average shift  %6.2f\n"%(sx_sum))
-		else:
-			sx_sum = 0.0
-		sx_sum = 0.0
-		sx_sum = bcast_number_to_all(sx_sum, source_node = main_node)
-		for im in xrange(ldata):
-			shift_x[im] -= sx_sum
-			#print  "   %3d  %6.3f"%(im,shift_x[im])
-		#exit()
-
-
-	# combine shifts found with the original parameters
-	for im in xrange(ldata):		
-		t1 = Transform()
-		t1.set_params({"type":"2D","tx":shift_x[im]})
-		# combine t0 and t1
-		tt = t1*init_params[im]
-		data[im].set_attr("xform.align2d", tt)
-	# write out headers and STOP, under MPI writing has to be done sequentially
-	mpi_barrier(MPI_COMM_WORLD)
-	par_str = ["xform.align2d", "ID"]
-	if myid == main_node:
-		from utilities import file_type
-		if(file_type(stack) == "bdb"):
-			from utilities import recv_attr_dict_bdb
-			recv_attr_dict_bdb(main_node, stack, data, par_str, 0, ldata, nproc)
-		else:
-			from utilities import recv_attr_dict
-			recv_attr_dict(main_node, stack, data, par_str, 0, ldata, nproc)
-	else:           send_attr_dict(main_node, data, par_str, 0, ldata)
-	if myid == main_node: print_end_msg("curhelical-shiftali_MPI")				
-
 					
 
 
