@@ -111,7 +111,7 @@ def main():
 		options.user_func = user_functions.factory[options.function]
 
 		#out_params, out_vol, out_peaks = multi_shc(all_projs, subset, number_of_subruns, options, mpi_comm=MPI_COMM_WORLD, log=log, ref_vol=ref_vol)
-		out_params, out_vol, out_peaks = multi_shc(all_projs, subset, number_of_subruns, options, mpi_comm=mpi_subcomm,D log=log, ref_vol=ref_vol)
+		out_params, out_vol, out_peaks = multi_shc(all_projs, subset, number_of_subruns, options, mpi_comm=mpi_subcomm, log=log, ref_vol=ref_vol)
 
 	mpi_finalize()
 
