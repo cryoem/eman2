@@ -992,7 +992,7 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 	#use straight line as the initial guess to refine the snake.
 	paramsline = shift_x
 	
-	porder = 20
+	porder = 40
 	a0=[[0.0]*(porder+1)]*nfils
 	b0=[[0.0]*(porder+1)]*nfils
 	a=[[0.0]*(porder+1)]*nfils
