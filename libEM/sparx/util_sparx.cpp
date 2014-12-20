@@ -4211,7 +4211,7 @@ Dict Util::Crosrng_sm_psi(EMData* circ1p, EMData* circ2p, vector<int> numr, floa
 	free(q);
 
 	Dict retvals;
-	retvals["qn"] = qn;
+	retvals["qn"]  = qn;
 	retvals["tot"] = tot;
 	return retvals;
 }
@@ -4328,9 +4328,9 @@ Dict Util::Crosrng_psi(EMData* circ1p, EMData* circ2p, vector<int> numr, float p
 	free(t);
 
 	Dict retvals;
-	retvals["qn"] = qn;
+	retvals["qn"]  = qn;
 	retvals["tot"] = tot;
-	retvals["qm"] = qm;
+	retvals["qm"]  = qm;
 	retvals["tmt"] = tmt;
 	return retvals;
 }
@@ -4425,7 +4425,7 @@ c
 	free(q);
 
 	Dict retvals;
-	retvals["qn"] = qn;
+	retvals["qn"]  = qn;
 	retvals["tot"] = tot;
 	return retvals;
 }
