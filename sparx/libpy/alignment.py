@@ -2592,6 +2592,115 @@ def align2d_g(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, r
 	return ormy2(image,refim,crefim,xrng,yrng,step,mode,numr,cnx,cny,"gridding")
 
 
+def directali(inima, refs, psimax, psistep, search_range, updown = "both"):
+	"""
+	Direct 2D alignment within a predefined angular range.  If the range is large the method will be very slow.
+	refs - a stack of reference images.  If a single image, the stack will be created.
+	updown - one of three keywords: both, up, down, indicating which angle to consider, 0, 180, or both.
+	PAP 12/20/2014
+	"""
+	from fundamentals import fft, rot_shift2D, ccf
+	from utilities    import peak_search, model_blank, inverse_transform2, compose_transform2
+	from alignment    import parabl
+
+	nr = int(2*psimax/psistep)+1
+	nc = nr//2
+
+	try:
+		wn = len(refs)
+		if(wn != nr):
+			ERROR("Incorrect number of reference images","directali",1)
+		ref = refs
+	except:
+		ref = [None]*nr
+		for i in xrange(nr):  ref[i] = fft(rot_shift2D(refs,(i-nc)*psistep))
+
+
+	wn = 2*search_range + 1
+
+	if updown == "both" or updown == "up" :    ima = fft(inima)
+	if updown == "both" or updown == "down" :  imm = fft(rot_shift2D(inima,180.0, interpolation_method = 'linear'))
+
+
+	ma1 = -1.e23
+	ma2 = -1.e23
+	ma3 = -1.e23
+	ma4 = -1.e23
+	oma2 = [-1.e23, -1.e23, -1.e23]
+	oma4 = [-1.e23, -1.e23, -1.e23]
+
+	for i in xrange(nr):
+		if updown == "both" or updown == "up" :
+			c = ccf(ima,ref[i])
+			w = Util.window(c, wn, wn)
+			pp = peak_search(w)[0]
+			px = int(pp[4])
+			py = int(pp[5])
+			if( pp[0] == 1.0 and px == 0 and py == 0):
+				XSH, YSH, PEAKV = 0.,0.,0.
+				del pp
+			else:
+				ww = model_blank(4,4)
+				px = int(pp[1])
+				py = int(pp[2])
+				for k in xrange(3):
+					for l in xrange(3):
+						ww[k+1,l+1] = w[k+px-1,l+py-1]
+				XSH, YSH, PEAKV = parabl(ww)
+				#print ["S %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
+				if(pp[0]>ma1):
+					ma1 = pp[0]
+					oma1 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
+				if(PEAKV>ma2):
+					ma2 = PEAKV
+					oma2 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
+		if updown == "both" or updown == "down" :
+			c = ccf(imm,ref[i])
+			w = Util.window(c, wn, wn)
+			pp = peak_search(w)[0]
+			px = int(pp[4])
+			py = int(pp[5])
+			if( pp[0] == 1.0 and px == 0 and py == 0):
+				XSH, YSH, PEAKV = 0.,0.,0.
+				del pp
+			else:
+				ww = model_blank(4,4)
+				px = int(pp[1])
+				py = int(pp[2])
+				for k in xrange(3):
+					for l in xrange(3):
+						ww[k+1,l+1] = w[k+px-1,l+py-1]
+				XSH, YSH, PEAKV = parabl(ww)
+				#print ["R %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
+				if(pp[0]>ma3):
+					ma3 = pp[0]
+					oma3 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
+				if(PEAKV>ma4):
+					ma4 = PEAKV
+					oma4 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
+
+	print ""
+	if( oma2[-2] > oma4[-2] ):
+		"""
+		print oma1
+		print oma2
+		print  "        %6.2f %6.2f  %6.2f"%(oma2[-1],oma2[-4],oma2[-3])
+		"""
+		nalpha, ntx, nty, mirror = inverse_transform2(oma2[-1],oma2[-4],oma2[-3],0)
+		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
+	else:
+		"""
+		print oma3
+		print oma4
+		"""
+		nalpha, ntx, nty, junk = compose_transform2(oma4[-1],oma4[-4],oma4[-3],1.0,180.,0,0,1)
+		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
+		nalpha, ntx, nty, mirror = inverse_transform2(nalpha, ntx, nty,0)
+		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
+	return  nalpha, ntx, nty
+
+
+
 def ali_nvol(v, mask):
 	from alignment    import alivol_mask_getref, alivol_mask
 	from statistics   import ave_var
