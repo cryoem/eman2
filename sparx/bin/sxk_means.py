@@ -69,6 +69,10 @@ def main():
 		if options.K < 2:
 			sys.stderr.write('ERROR: K must be > 1 group\n\n')
 			sys.exit()
+		
+		if  options.CTF:
+			sys.stderr.write('ERROR: CTF option not implemented\n\n')
+			sys.exit()
 
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache

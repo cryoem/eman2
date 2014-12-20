@@ -171,7 +171,7 @@ def main():
 
 		# Number of groups, actually there could be one or two more groups, since the size of the remaining group varies
 		# we will simply assign them to main node.
-		n_grp = nima/img_per_grp-1  
+		n_grp = nima/img_per_grp-1
 
 		# Divide proj_list_all equally to all nodes, and becomes proj_list
 		proj_list = []
