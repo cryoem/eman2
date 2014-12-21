@@ -219,16 +219,26 @@ class EMClassPtclTool(QtGui.QWidget):
 			except: ptcls[origfile]=[orign]			# creates the list for this filename if it's new
 
 		#now mark the particles as bad
+		newbad=0
+		totbad=0
 		for origfile in ptcls:
 			js=js_open_dict(info_name(origfile))	# get the info dict for this file
+
+			try: sets=js["sets"]
+			except: sets={"bad_particles":[]}
+			try: badset=set(sets["bad_particles"])
+			except: badset=set()
+
 			try:
-				badset=set(js["sets"]["bad_particles"])
-				js["sets"]["bad_particles"]=list(set(ptcls[origfile])|badset)	# update the set of bad particles for this image file
-			except:
-				try: sets=js["sets"]					# retreive any existing, non "bad particle" sets
-				except: sets={}
-				sets["bad_particles"]=ptcls[origfile]
+				newset=list(set(ptcls[origfile])|badset)
+				sets["bad_particles"]=newset	# update the set of bad particles for this image file
 				js["sets"]=sets
+				totbad+=len(badset)
+				newbad+=len(newset)-len(badset)
+			except:
+				print "Error setting bad particles in ",origfile
+				
+		print newbad, " new particles marked as bad. Total of ",totbad," in affected micrographs"
 
 	def markGoodPtcl(self,x):
 		"Mark particles from the selected class-averages as good in the set interface"
@@ -249,7 +259,9 @@ class EMClassPtclTool(QtGui.QWidget):
 			try: ptcls[origfile].append(orign)		# try to add to a list for an existing filename
 			except: ptcls[origfile]=[orign]			# creates the list for this filename if it's new
 
-		#now mark the particles as bad
+		#now mark the particles as good
+		badafter=0
+		badbefore=0
 		for origfile in ptcls:
 			js=js_open_dict(info_name(origfile))	# get the info dict for this file
 			try:
@@ -257,6 +269,22 @@ class EMClassPtclTool(QtGui.QWidget):
 				js["sets"]["bad_particles"]=list(badset-set(ptcls[origfile]))	# update the set of bad particles for this image file
 			except:
 				pass		# since marking as good is the same as removing from the bad list, if there is no bad list, there is nothing to do
+
+			try: sets=js["sets"]
+			except: continue	# if no current bad particles, nothing to mark good
+			try: badset=sets["bad_particles"]
+			except: continue
+
+			try:
+				newset=list(badset-set(ptcls[origfile]))
+				sets["bad_particles"]=newset	# update the set of bad particles for this image file
+				js["sets"]=sets
+				badbefore+=len(badset)
+				badafter+=len(newset)
+			except:
+				continue
+		
+		print badbefore," bad particles before processing, now ",badafter
 
 	def savePtclNum(self,x):
 		"Saves a list of particles from marked classes into a text file"

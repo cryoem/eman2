@@ -198,7 +198,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--classaligncmp",type=str,help="Default=auto. This is the name and parameters of the comparitor used by the fist stage aligner.",default=None)
 	parser.add_argument("--classralign",type=str,help="Default=auto. The second stage aligner which refines the results of the first alignment in class averaging.", default=None)
 	parser.add_argument("--classraligncmp",type=str,help="Default=auto. The comparitor used by the second stage aligner in class averageing.",default=None)
-	parser.add_argument("--classaverager",type=str,help="Default=auto. The averager used to generate the class averages. Default is \'mean\'.",default=None)
+	parser.add_argument("--classaverager",type=str,help="Default=auto. The averager used to generate the class averages. Default is auto.",default=None)
 	parser.add_argument("--classcmp",type=str,help="Default=auto. The name and parameters of the comparitor used to generate similarity scores, when class averaging.", default=None)
 	parser.add_argument("--classnormproc",type=str,default="normalize.edgemean",help="Default=auto. Normalization applied during class averaging")
 	parser.add_argument("--classrefsf",default=False, action="store_true", help="Use the setsfref option in class averaging. This matches the filtration of the class-averages to the projections for easier comparison. May also improve convergence.",guitype='boolbox', row=20, col=0, rowspan=1, colspan=1, mode="refinement[True]")
