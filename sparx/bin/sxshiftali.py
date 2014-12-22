@@ -991,18 +991,33 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 	##  --------------------------- ##
 	#use straight line as the initial guess to refine the snake.
 	paramsline = shift_x
-	
+
+	## for polynomial
 	pordera = 3
 	porderb = pordera-1
-	a0=[[0.0]*(pordera+1)]*nfils
-	a=[[0.0]*(pordera+1)]*nfils
+	#a0=[[0.0]*(pordera+1)]*nfils
+	#a=[[0.0]*(pordera+1)]*nfils
 	b0=[[0.0]*(porderb+1)]*nfils
 	b=[[0.0]*(porderb+1)]*nfils
+	
+	
+	#for b-spline
+	a0=[]
+	a=[]
+	#b0=[]
+	#b=[]
 	for ifil in xrange(nfils):
 		nsegs =  indcs[ifil][1]-indcs[ifil][0]
-		a0[ifil],b0[ifil] = interpoLinecoeffs([paramsline[indcs[ifil][0]], 0], [paramsline[indcs[ifil][0]+1],0], pordera, porderb, nsegs)
-		a = a0
-		b = b0
+		#a0[ifil],b0[ifil] = interpoLinecoeffs([paramsline[indcs[ifil][0]], 0], [paramsline[indcs[ifil][0]+1],0], pordera, porderb, nsegs)
+		
+		#for b-spline
+		at=[0.0]*nsegs
+		at=paramsline[indcs[ifil][0]:indcs[ifil][1]]
+		Util.convertTocubicbsplineCoeffs(at, nsegs, 1.e-10)
+		a0.append(at)
+		a.append(at)
+		#a = a0
+		#b = b0
 			
 	## refine using amoeba
 	from utilities import amoeba
@@ -1011,6 +1026,7 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 			sccf=CCF2d[ifil]
 			params0 = a0[ifil]+b0[ifil]   #[paramsline[indcs[ifil][0]:indcs[ifil][1]]
 			nsegs =  indcs[ifil][1]-indcs[ifil][0]
+			pordera = nsegs-1
 			nsegsc = nsegs//2
 			params =  a[ifil]+b[ifil] 
 			fval0 = snakehelicalali(params,[sccf,params0, pordera, porderb, 0.0,2*kx+1,resamp_maxrin])
@@ -1028,20 +1044,26 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 # 			maxi = 500
 # 			scale = [8.0]*(pordera+1)+[4.0]*(porderb+1)
 			
-			## work for cubic filament. pordera=3			
-			ftol = 1.e-16
-			xtol = 1.e-16
+			# ## work for cubic filament. pordera=3			
+# 			ftol = 1.e-16
+# 			xtol = 1.e-16
+# 			maxi = 500
+# 			scale = [0.001, 0.001, 0.001, 500.0, 0.001,0.001,50.0]
+			#newparams,fval, numit=amoeba(params, scale, snakehelicalali, ftol, xtol, maxi, [sccf,params0, pordera, porderb, 0.0,2*kx+1,resamp_maxrin])		
+			## for b-spline
+			ftol = 1.e-6
+			xtol = 1.e-6
 			maxi = 500
-			#scale = [500.0]*(pordera+1)+[5.0]*(porderb+1)
-			scale = [0.001, 0.001, 0.001, 500.0, 0.001,0.001,50.0]
+			scale=[10.0]*nsegs+[4.0]*(porderb+1)
+			
 			newparams,fval, numit=amoeba(params, scale, snakehelicalali, ftol, xtol, maxi, [sccf,params0, pordera, porderb, 0.0,2*kx+1,resamp_maxrin])
 			
 			a[ifil] = newparams[0:pordera+1]
 			b[ifil] = newparams[pordera+1:pordera+1+porderb+1]
 			for iseg in xrange(indcs[ifil][0], indcs[ifil][1]):
-				point=parabolaf(a[ifil],b[ifil],(iseg-indcs[ifil][0])*1.0/nsegs-nsegsc*1.0/nsegs, pordera, porderb)
-				shift_x[iseg] = point[0]
-				shift_ang[iseg] = point[1]
+				point=bspline(a[ifil],iseg-indcs[ifil][0]-nsegsc)		#parabolaf(a[ifil],b[ifil],(iseg-indcs[ifil][0])*1.0/nsegs-nsegsc*1.0/nsegs, pordera, porderb)
+				shift_x[iseg] = point
+				shift_ang[iseg] = parabolafb(b[ifil],iseg-indcs[ifil][0], porderb)			#   point[1]
 				
 				if shift_ang[iseg] < 0.0:
 					shift_ang[iseg] = resamp_maxrin - 1.0 + shift_ang[iseg]
@@ -1140,11 +1162,11 @@ def snakehelicalali(params,data):
 	sx_sum=0.0
 	
 	for id in xrange(sccfn):
-		point=parabolaf(a,b,id*1.0/sccfn-sccfnc*1.0/sccfn, pordera, porderb)
-		xl = point[0]+nxc
+		point=bspline(a,id-sccfnc)	#parabolaf(a,b,id*1.0/sccfn-sccfnc*1.0/sccfn, pordera, porderb)
+		xl = point+nxc
 		ixl = int(xl)
 		dxl = xl - ixl
-		al = point[1]
+		al = parabolafb(b,id*1.0/sccfn-sccfnc*1.0/sccfn, porderb)		# point[1]
 		bl = al
 		if al < 0.0:
 			al = (angnx-1+al)
@@ -1169,10 +1191,10 @@ def snakehelicalali(params,data):
 	#print "part 1", sx_sum
 	
 	part2_sum=0	
-	for id in xrange(sccfn):
-		point0=parabolaf(a0,b0,id*1.0/sccfn-sccfnc*1.0/sccfn, pordera, porderb)
-		point1=parabolaf(a,b,id*1.0/sccfn-sccfnc*1.0/sccfn, pordera, porderb)
-		part2_sum += lambw*((point0[0]-point1[0])**2+(point0[1]-point1[1])**2)
+	# for id in xrange(sccfn):
+# 		point0=parabolaf(a0,b0,id*1.0/sccfn-sccfnc*1.0/sccfn, pordera, porderb)
+# 		point1=parabolaf(a,b,id*1.0/sccfn-sccfnc*1.0/sccfn, pordera, porderb)
+# 		part2_sum += lambw*((point0[0]-point1[0])**2+(point0[1]-point1[1])**2)
 				
 	sx_sum -= part2_sum 
 	
@@ -1204,9 +1226,24 @@ def parabolaf(a,b,z, pordera, porderb):
 		point[1] += b[i]*pow(z,i)
 	
 	return point
+
+def parabolafb(b,z, porderb):
+	point=0.0
+	for i in xrange(porderb+1):	
+		point += b[i]*pow(z,i)
 	
+	return point
+		
 					
+def bspline(coefs,z):
+	ncpoints = len(coefs)
+	ncpointsc = ncpoints//2
+	
+	val = 0.0
+	for i in xrange(ncpoints):
+		val += coefs[i]*Util.bsplineBase(z-ncpointsc)   #  (z,len(coefs),i,3,U)
 
-
+	return val
+	
 if __name__ == "__main__":
 	main()
