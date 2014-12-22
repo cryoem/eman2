@@ -897,11 +897,11 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 					j_old = int(j * resamp_dang/dang + 0.5)
 					resamp_ccf2d[i*resamp_maxrin+j] = ccf2d[i*maxrin+j_old]
 			# aaaa=resamp_ccf2d.index(max(resamp_ccf2d))
-# 					iaaa = aaaa/resamp_maxrin
-# 					jaaa = aaaa%resamp_maxrin
-# 					shift_x[im] = iaaa-(2*kx+1)//2
-# 					shift_ang[im] = jaaa
-# 					print "im=%d rotang=%d  maxrin=%d shift=%f"%(im, jaaa, resamp_maxrin, -shift_x[im] )	
+# 			iaaa = aaaa/resamp_maxrin
+# 			jaaa = aaaa%resamp_maxrin
+# 			shift_x[im] = iaaa-(2*kx+1)//2
+# 			shift_ang[im] = jaaa
+# 			print "im=%d rotang=%d  maxrin=%d shift=%f"%(im, jaaa, resamp_maxrin, -shift_x[im] )	
 			# if im == 7 :
 # 						print "rotang=%f  shift=%f"%(jaaa*resamp_dang*180/pi, -shift_x[im] )	
 # 						tttt = fft(data[im])
@@ -992,13 +992,15 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 	#use straight line as the initial guess to refine the snake.
 	paramsline = shift_x
 	
-	porder = 40
-	a0=[[0.0]*(porder+1)]*nfils
-	b0=[[0.0]*(porder+1)]*nfils
-	a=[[0.0]*(porder+1)]*nfils
-	b=[[0.0]*(porder+1)]*nfils
+	pordera = 3
+	porderb = pordera-1
+	a0=[[0.0]*(pordera+1)]*nfils
+	a=[[0.0]*(pordera+1)]*nfils
+	b0=[[0.0]*(porderb+1)]*nfils
+	b=[[0.0]*(porderb+1)]*nfils
 	for ifil in xrange(nfils):
-		a0[ifil],b0[ifil] = interpoLinecoeffs([paramsline[indcs[ifil][0]], 0], [paramsline[indcs[ifil][0]+1],0],porder, indcs[ifil][1]-indcs[ifil][0])
+		nsegs =  indcs[ifil][1]-indcs[ifil][0]
+		a0[ifil],b0[ifil] = interpoLinecoeffs([paramsline[indcs[ifil][0]], 0], [paramsline[indcs[ifil][0]+1],0], pordera, porderb, nsegs)
 		a = a0
 		b = b0
 			
@@ -1008,41 +1010,45 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 		for ifil in xrange(nfils):
 			sccf=CCF2d[ifil]
 			params0 = a0[ifil]+b0[ifil]   #[paramsline[indcs[ifil][0]:indcs[ifil][1]]
-			nsegs = len(sccf)
+			nsegs =  indcs[ifil][1]-indcs[ifil][0]
+			nsegsc = nsegs//2
 			params =  a[ifil]+b[ifil] 
-			fval0 = snakehelicalali(params,[sccf,params0, 0.0,2*kx+1,resamp_maxrin])
+			fval0 = snakehelicalali(params,[sccf,params0, pordera, porderb, 0.0,2*kx+1,resamp_maxrin])
 			print params0
-			im = 24
+			im = 0
 			print "Iter=%d nsegs=%d"%(Iter, nsegs)
 			print "before amoeba im=%d shift_x=%f  rotang=%f "%(im,-shift_x[im], shift_ang[im]*resamp_dang*180/pi)
 			
-			im = 40
+			im = 45
 			print "before amoeba im=%d shift_x=%f  rotang=%f fval=%f "%(im,-shift_x[im], shift_ang[im]*resamp_dang*180/pi, fval0)
+
+			## work for parabola filament. pordera=2
+			# ftol = 1.e-6
+# 			xtol = 1.e-6
+# 			maxi = 500
+# 			scale = [8.0]*(pordera+1)+[4.0]*(porderb+1)
 			
-			ftol = 1.e-12
-			xtol = 1.e-12
+			## work for cubic filament. pordera=3			
+			ftol = 1.e-16
+			xtol = 1.e-16
 			maxi = 500
-			scale = [10.0]*(porder+1)+[10.0]*(porder+1)
-			newparams,fval, numit=amoeba(params, scale, snakehelicalali, ftol, xtol, maxi, [sccf,params0, 0.0,2*kx+1,resamp_maxrin])
+			#scale = [500.0]*(pordera+1)+[5.0]*(porderb+1)
+			scale = [0.001, 0.001, 0.001, 500.0, 0.001,0.001,50.0]
+			newparams,fval, numit=amoeba(params, scale, snakehelicalali, ftol, xtol, maxi, [sccf,params0, pordera, porderb, 0.0,2*kx+1,resamp_maxrin])
 			
-			# if Iter == 20 or 100:
-# 				scale = [0.5*scale[i] for i in xrange(len(scale))]
-# 				ftol = 0.001*ftol
-# 				xtol = 0.001*xtol
-# 				maxi = 500
-			a[ifil] = newparams[0:porder+1]
-			b[ifil] = newparams[porder+1:2*(porder+1)]
+			a[ifil] = newparams[0:pordera+1]
+			b[ifil] = newparams[pordera+1:pordera+1+porderb+1]
 			for iseg in xrange(indcs[ifil][0], indcs[ifil][1]):
-				point=parabolaf(a[ifil],b[ifil],(iseg-indcs[ifil][0])*1.0/nsegs, porder)
+				point=parabolaf(a[ifil],b[ifil],(iseg-indcs[ifil][0])*1.0/nsegs-nsegsc*1.0/nsegs, pordera, porderb)
 				shift_x[iseg] = point[0]
 				shift_ang[iseg] = point[1]
 				
 				if shift_ang[iseg] < 0.0:
 					shift_ang[iseg] = resamp_maxrin - 1.0 + shift_ang[iseg]
 					
-			im = 24
+			im = 0
 			print "after amoeba i m=%d shift_x=%f  rotang=%f max_it=%d angid=%f"%(im,-shift_x[im], shift_ang[im]*resamp_dang*180/pi, numit, shift_ang[im])
-			im = 40
+			im = 45
 			print "after amoeba i m=%d shift_x=%f  rotang=%f  max_it=%d angid=%f fval=%f"%(im,-shift_x[im], shift_ang[im]*resamp_dang*180/pi, numit, shift_ang[im], fval)
 		
 			print newparams
@@ -1114,26 +1120,27 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 
 def snakehelicalali(params,data):
 	sccf    = data[0]
-	lena = len(data[1])//2
 	sccfn = len(sccf)
+	sccfnc = sccfn//2
+	pordera = data[2]
+	porderb = data[3]
+	a0 = data[1][0:pordera+1]
+	b0 = data[1][pordera+1:pordera+1+porderb+1]
 	
-	a0 = data[1][0:lena]
-	b0 = data[1][lena:2*lena]
-	
-	lambw   = data[2]
-	nx     = data[3]
-	angnx  = data[4]
+	lambw   = data[4]
+	nx     = data[5]
+	angnx  = data[6]
 	nxc = nx//2
 	angnxc = angnx//2
 	
 	
-	a = params[0:lena]
-	b = params[lena:2*lena]
+	a = params[0:pordera+1]
+	b = params[pordera+1:pordera+1+porderb+1]
 	#print "lambw", lambw
 	sx_sum=0.0
 	
 	for id in xrange(sccfn):
-		point=parabolaf(a,b,id*1.0/sccfn, lena-1)
+		point=parabolaf(a,b,id*1.0/sccfn-sccfnc*1.0/sccfn, pordera, porderb)
 		xl = point[0]+nxc
 		ixl = int(xl)
 		dxl = xl - ixl
@@ -1163,8 +1170,8 @@ def snakehelicalali(params,data):
 	
 	part2_sum=0	
 	for id in xrange(sccfn):
-		point0=parabolaf(a0,b0,id*1.0/sccfn, lena-1)
-		point1=parabolaf(a,b,id*1.0/sccfn, lena-1)
+		point0=parabolaf(a0,b0,id*1.0/sccfn-sccfnc*1.0/sccfn, pordera, porderb)
+		point1=parabolaf(a,b,id*1.0/sccfn-sccfnc*1.0/sccfn, pordera, porderb)
 		part2_sum += lambw*((point0[0]-point1[0])**2+(point0[1]-point1[1])**2)
 				
 	sx_sum -= part2_sum 
@@ -1176,22 +1183,24 @@ def snakehelicalali(params,data):
 # 	sx_sum -= 10.0 * part3_sum
 	return sx_sum
 					
-def interpoLinecoeffs(p0,p1, porder, m):
-	a=[0.0]*(porder+1)
-	b=[0.0]*(porder+1)
-	#z=0
-	a[0] = p0[0]
-	b[0] = p0[1]
-	#z=1
-	a[1] = (p1[0] - a[0])*m
-	b[1] = (p1[1] - b[0])*m
-
+def interpoLinecoeffs(p0,p1, pordera, porderb, m):
+	a=[0.0]*(pordera+1)
+	b=[0.0]*(porderb+1)
+	c = m//2
+	#z=0/m-c, z=1/m-c
+	a[1] = (p1[0] - p0[0])*m
+	a[0] = p0[0] + a[1]*c
+	
+	b[1] = (p1[1] - p0[1])*m
+	b[0] = p0[1] + b[1]*c
+	
 	return a, b 
 
-def parabolaf(a,b,z, porder):
+def parabolaf(a,b,z, pordera, porderb):
 	point=[0.0]*2
-	for i in xrange(porder+1):
+	for i in xrange(pordera+1):
 		point[0] += a[i]*pow(z,i)
+	for i in xrange(porderb+1):	
 		point[1] += b[i]*pow(z,i)
 	
 	return point
