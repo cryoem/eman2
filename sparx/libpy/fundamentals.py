@@ -893,17 +893,19 @@ def rot_shift2D(img, angle = 0.0, sx = 0.0, sy = 0.0, mirror = 0, scale = 1.0, i
 		if  mirror: img.process_inplace("xform.mirror", {"axis":'x'})
 		return img
 	elif(use_method == "gridding" and mode == "cyclic"): # previous rtshg
-		from math import pi
+		from math import radians
+		from fundamentals import prepi
 		o, kb = prepi(img)
 		# gridding rotation
-		o = o.rot_scale_conv_new(angle*pi/180.0, sx, sy, kb, scale)
+		o = o.rot_scale_conv_new(radians(angle), sx, sy, kb, scale)
 		if  mirror: o.process_inplace("xform.mirror", {"axis":'x'})
 		return o
 	elif(use_method == "gridding" and mode == "background"): # previous rtshg
-		from math import pi
+		from math import radians
+		from fundamentals import prepi
 		o, kb = prepi(img)
 		# gridding rotation
-		o = o.rot_scale_conv_new_background(angle*pi/180.0, sx, sy, kb, scale)
+		o = o.rot_scale_conv_new_background(radians(angle), sx, sy, kb, scale)
 		if  mirror: o.process_inplace("xform.mirror", {"axis":'x'})
 		return o	
 	elif(use_method == "ftgridding"): # previous rtshg
@@ -949,25 +951,23 @@ def rot_shift3D_grid(img, phi=0.0, theta=0.0, psi=0.0, sx=0.0, sy=0.0, sz=0.0, s
 	if scale == 0.0 :  ERROR("scale=0 not allowed", "rot_shift3D_grid", 1)
 
 	if mode == "cyclic":
-		from math import pi
+		from math import radians
 		if kb == None:
 			o, kb = prepi3D(img)
 		else:
-			o = img.copy()
+			o = img
 		# gridding rotation/shift:
-		o = o.rot_scale_conv_new_3D(phi*pi/180.0, theta*pi/180.0, psi*pi/180.0, sx, sy, sz, kb, scale, wrap)
 		#if  mirror: o.process_inplace("xform.mirror", {"axis":'x'})
-		return o
+		return o.rot_scale_conv_new_3D(radians(phi), radians(theta), radians(psi), sx, sy, sz, kb, scale, wrap)
 	elif mode == "background":
-		from math import pi
+		from math import radians
 		if kb == None:
 			o, kb = prepi3D(img)
 		else:
-			o = img.copy()
+			o = img
 		# gridding rotation
-		o = o.rot_scale_conv_new_background_3D(phi*pi/180.0, theta*pi/180.0, psi*pi/180.0, sx, sy, sz, kb, scale, wrap)
 		#if  mirror: o.process_inplace("xform.mirror", {"axis":'x'})
-		return o	
+		return o.rot_scale_conv_new_background_3D(radians(phi), radians(theta), radians(psi), sx, sy, sz, kb, scale, wrap)	
 	else: ERROR("rot_shift3D_grid mode not valid", "rot_shift3D_grid", 1)
 
 
@@ -984,10 +984,10 @@ def rtshg(image, angle = 0.0, sx=0.0, sy=0.0, scale = 1.0):
 		Output
 			the output rotated and shifted image
 	"""
-	from math import pi
+	from math import radians
 	o,kb = prepi(image)
 	# gridding rotation
-	return o.rot_scale_conv_new(angle*pi/180., sx, sy, kb, scale)
+	return o.rot_scale_conv_new(radians(angle), sx, sy, kb, scale)
 
 def rtshgkb(image, angle, sx, sy, kb, scale = 1.0):
 	"""
@@ -1000,23 +1000,9 @@ def rtshgkb(image, angle, sx, sy, kb, scale = 1.0):
 		Output
 			the output rotated and shifted image
 	"""
-	from math import pi
+	from math import radians
 	# gridding rotation
-	return image.rot_scale_conv_new(angle*pi/180., sx, sy, kb, scale)
-
-def shift2d(image, dx=0, dy=0):
-	"""Shift a 2-d image."""
-	# split shift into integer and fractional parts  DOES NOT SEEM TO MAKE MUCH SENSE
-	from fundamentals import fshift
-	from fundamentals import cyclic_shift
-	idx = int(dx)
-	fdx = dx - idx
-	idy = int(dy)
-	fdy = dy - idy
-	# perform cyclic integer shift 
-	rimage=cyclic_shift(image, idx, idy)
-	# perform fractional shift in Fourier space and return
-	return fshift(rimage, fdx, fdy)
+	return image.rot_scale_conv_new(radians(angle)., sx, sy, kb, scale)
 	
 def smallprime(arbit_num, numprime=3):
 	primelist = [2,3,5,7,11,13,17,19,23]
