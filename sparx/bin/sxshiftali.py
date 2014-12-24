@@ -997,25 +997,28 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 	porderb = pordera-1
 	#a0=[[0.0]*(pordera+1)]*nfils
 	#a=[[0.0]*(pordera+1)]*nfils
-	b0=[[0.0]*(porderb+1)]*nfils
-	b=[[0.0]*(porderb+1)]*nfils
+	#b0=[[0.0]*(porderb+1)]*nfils
+	#b=[[0.0]*(porderb+1)]*nfils
 	
 	
 	#for b-spline
+	nknots = 23
 	a0=[]
 	a=[]
-	#b0=[]
-	#b=[]
+	b0=[]
+	b=[]
 	for ifil in xrange(nfils):
 		nsegs =  indcs[ifil][1]-indcs[ifil][0]
 		#a0[ifil],b0[ifil] = interpoLinecoeffs([paramsline[indcs[ifil][0]], 0], [paramsline[indcs[ifil][0]+1],0], pordera, porderb, nsegs)
 		
 		#for b-spline
-		at=[0.0]*nsegs
-		at=paramsline[indcs[ifil][0]:indcs[ifil][1]]
-		Util.convertTocubicbsplineCoeffs(at, nsegs, 1.e-10)
+		at=[0.0]*nknots
+		#at=paramsline[indcs[ifil][0]:indcs[ifil][1]]
+		Util.convertTocubicbsplineCoeffs(at, nknots, 1.e-10)
 		a0.append(at)
 		a.append(at)
+		b0.append(at)
+		b.append(at)
 		#a = a0
 		#b = b0
 			
@@ -1024,11 +1027,12 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 	for Iter in xrange(max_iter):
 		for ifil in xrange(nfils):
 			sccf=CCF2d[ifil]
-			params0 = a0[ifil]+b0[ifil]   #[paramsline[indcs[ifil][0]:indcs[ifil][1]]
+			params0 = a0[ifil]	+b0[ifil]   #[paramsline[indcs[ifil][0]:indcs[ifil][1]]
 			nsegs =  indcs[ifil][1]-indcs[ifil][0]
-			pordera = nsegs-1
+			pordera = nknots-1
+			porderb = pordera
 			nsegsc = nsegs//2
-			params =  a[ifil]+b[ifil] 
+			params =  a[ifil]	+b[ifil] 
 			fval0 = snakehelicalali(params,[sccf,params0, pordera, porderb, 0.0,2*kx+1,resamp_maxrin])
 			print params0
 			im = 0
@@ -1053,17 +1057,17 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 			## for b-spline
 			ftol = 1.e-6
 			xtol = 1.e-6
-			maxi = 500
-			scale=[10.0]*nsegs+[4.0]*(porderb+1)
+			maxi = 100
+			scale=[80.0]*(nknots//2)+[0.01]+[-80.0]*(nknots//2)+[50.0]*nknots		#+[0.001,0.001,50.0] #[4.0]*(porderb+1)
 			
 			newparams,fval, numit=amoeba(params, scale, snakehelicalali, ftol, xtol, maxi, [sccf,params0, pordera, porderb, 0.0,2*kx+1,resamp_maxrin])
 			
 			a[ifil] = newparams[0:pordera+1]
 			b[ifil] = newparams[pordera+1:pordera+1+porderb+1]
 			for iseg in xrange(indcs[ifil][0], indcs[ifil][1]):
-				point=bspline(a[ifil],iseg-indcs[ifil][0]-nsegsc)		#parabolaf(a[ifil],b[ifil],(iseg-indcs[ifil][0])*1.0/nsegs-nsegsc*1.0/nsegs, pordera, porderb)
+				point=bspline(a[ifil],iseg-indcs[ifil][0]-nsegsc, nsegs)		#parabolaf(a[ifil],b[ifil],(iseg-indcs[ifil][0])*1.0/nsegs-nsegsc*1.0/nsegs, pordera, porderb)
 				shift_x[iseg] = point
-				shift_ang[iseg] = parabolafb(b[ifil],iseg-indcs[ifil][0], porderb)			#   point[1]
+				shift_ang[iseg] = bsplinedu(b[ifil],iseg-indcs[ifil][0]-nsegsc, nsegs) #parabolafb(b[ifil],iseg-indcs[ifil][0], porderb)			#   point[1]
 				
 				if shift_ang[iseg] < 0.0:
 					shift_ang[iseg] = resamp_maxrin - 1.0 + shift_ang[iseg]
@@ -1146,8 +1150,8 @@ def snakehelicalali(params,data):
 	sccfnc = sccfn//2
 	pordera = data[2]
 	porderb = data[3]
-	a0 = data[1][0:pordera+1]
-	b0 = data[1][pordera+1:pordera+1+porderb+1]
+	a0 = data[1] 	#[0:pordera+1]
+	#b0 = data[1][pordera+1:pordera+1+porderb+1]
 	
 	lambw   = data[4]
 	nx     = data[5]
@@ -1162,11 +1166,11 @@ def snakehelicalali(params,data):
 	sx_sum=0.0
 	
 	for id in xrange(sccfn):
-		point=bspline(a,id-sccfnc)	#parabolaf(a,b,id*1.0/sccfn-sccfnc*1.0/sccfn, pordera, porderb)
+		point=bspline(a,id-sccfnc, sccfn)	#parabolaf(a,b,id*1.0/sccfn-sccfnc*1.0/sccfn, pordera, porderb)
 		xl = point+nxc
 		ixl = int(xl)
 		dxl = xl - ixl
-		al = parabolafb(b,id*1.0/sccfn-sccfnc*1.0/sccfn, porderb)		# point[1]
+		al = bsplinedu(b,id-sccfnc, sccfn) #parabolafb(b,id*1.0/sccfn-sccfnc*1.0/sccfn, porderb)		# point[1]
 		bl = al
 		if al < 0.0:
 			al = (angnx-1+al)
@@ -1235,15 +1239,29 @@ def parabolafb(b,z, porderb):
 	return point
 		
 					
-def bspline(coefs,z):
+def bspline(coefs,z,m):
 	ncpoints = len(coefs)
-	ncpointsc = ncpoints//2
-	
+	cents = m//2
+	h = m*1.0/ncpoints
+		
 	val = 0.0
 	for i in xrange(ncpoints):
-		val += coefs[i]*Util.bsplineBase(z-ncpointsc)   #  (z,len(coefs),i,3,U)
+		val += coefs[i]*Util.bsplineBase((z+cents)/h-i)   #  (z,len(coefs),i,3,U)
+
+	return val
+
+def bsplinedu(coefs,z,m):
+	ncpoints = len(coefs)
+	cents = m//2
+	h = m*1.0/ncpoints
+		
+	val = 0.0
+	for i in xrange(ncpoints):
+		val += coefs[i]*Util.bsplineBase((z+cents)/h-i)   #  (z,len(coefs),i,3,U)
 
 	return val
 	
+	
+		
 if __name__ == "__main__":
 	main()
