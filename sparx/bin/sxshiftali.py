@@ -1027,12 +1027,11 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 	for Iter in xrange(max_iter):
 		for ifil in xrange(nfils):
 			sccf=CCF2d[ifil]
-			params0 = a0[ifil]	+b0[ifil]   #[paramsline[indcs[ifil][0]:indcs[ifil][1]]
+			params0 = a0[ifil]	#+b0[ifil]   #[paramsline[indcs[ifil][0]:indcs[ifil][1]]
 			nsegs =  indcs[ifil][1]-indcs[ifil][0]
 			pordera = nknots-1
-			porderb = pordera
 			nsegsc = nsegs//2
-			params =  a[ifil]	+b[ifil] 
+			params =  a[ifil]	#+b[ifil] 
 			fval0 = snakehelicalali(params,[sccf,params0, pordera, porderb, 0.0,2*kx+1,resamp_maxrin])
 			print params0
 			im = 0
@@ -1057,17 +1056,17 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 			## for b-spline
 			ftol = 1.e-6
 			xtol = 1.e-6
-			maxi = 100
-			scale=[80.0]*(nknots//2)+[0.01]+[-80.0]*(nknots//2)+[50.0]*nknots		#+[0.001,0.001,50.0] #[4.0]*(porderb+1)
+			maxi = 200
+			scale=[100.0]*nknots		#+[0.001,0.001,50.0] #[4.0]*(porderb+1)
 			
 			newparams,fval, numit=amoeba(params, scale, snakehelicalali, ftol, xtol, maxi, [sccf,params0, pordera, porderb, 0.0,2*kx+1,resamp_maxrin])
 			
-			a[ifil] = newparams[0:pordera+1]
-			b[ifil] = newparams[pordera+1:pordera+1+porderb+1]
+			a[ifil] = newparams#[0:pordera+1]
+			#b[ifil] = newparams[pordera+1:pordera+1+porderb+1]
 			for iseg in xrange(indcs[ifil][0], indcs[ifil][1]):
 				point=bspline(a[ifil],iseg-indcs[ifil][0]-nsegsc, nsegs)		#parabolaf(a[ifil],b[ifil],(iseg-indcs[ifil][0])*1.0/nsegs-nsegsc*1.0/nsegs, pordera, porderb)
 				shift_x[iseg] = point
-				shift_ang[iseg] = bsplinedu(b[ifil],iseg-indcs[ifil][0]-nsegsc, nsegs) #parabolafb(b[ifil],iseg-indcs[ifil][0], porderb)			#   point[1]
+				shift_ang[iseg] = bsplinedu(a[ifil],iseg-indcs[ifil][0]-nsegsc, nsegs) #parabolafb(b[ifil],iseg-indcs[ifil][0], porderb)			#   point[1]
 				
 				if shift_ang[iseg] < 0.0:
 					shift_ang[iseg] = resamp_maxrin - 1.0 + shift_ang[iseg]
@@ -1160,8 +1159,8 @@ def snakehelicalali(params,data):
 	angnxc = angnx//2
 	
 	
-	a = params[0:pordera+1]
-	b = params[pordera+1:pordera+1+porderb+1]
+	a = params	#[0:pordera+1]
+	#b = params[pordera+1:pordera+1+porderb+1]
 	#print "lambw", lambw
 	sx_sum=0.0
 	
@@ -1170,7 +1169,7 @@ def snakehelicalali(params,data):
 		xl = point+nxc
 		ixl = int(xl)
 		dxl = xl - ixl
-		al = bsplinedu(b,id-sccfnc, sccfn) #parabolafb(b,id*1.0/sccfn-sccfnc*1.0/sccfn, porderb)		# point[1]
+		al = bsplinedu(a,id-sccfnc, sccfn) #parabolafb(b,id*1.0/sccfn-sccfnc*1.0/sccfn, porderb)		# point[1]
 		bl = al
 		if al < 0.0:
 			al = (angnx-1+al)
@@ -1257,7 +1256,7 @@ def bsplinedu(coefs,z,m):
 		
 	val = 0.0
 	for i in xrange(ncpoints):
-		val += coefs[i]*Util.bsplineBase((z+cents)/h-i)   #  (z,len(coefs),i,3,U)
+		val += coefs[i]*Util.bsplineBasedu((z+cents)/h-i)   #  (z,len(coefs),i,3,U)
 
 	return val
 	
