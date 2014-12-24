@@ -55,27 +55,28 @@ def main():
 	usage = progname + " prj_stack  --ave2D= --var2D=  --ave3D= --var3D= --img_per_grp= --freq= --fall_off=  --sym=symmetry --MPI --CTF"
 	parser = OptionParser(usage, version=SPARXVERSION)
 
-	parser.add_option("--radiuspca", 	type="int"         ,	default=-1   ,				help="radius for PCA" )
-	parser.add_option("--radiusvar", 	type="int"         ,	default=-1   ,				help="radius for 3D var" )
-	parser.add_option("--iter", 		type="int"         ,	default=40   ,				help="maximum number of iterations (stop criterion of reconstruction process)" )
-	parser.add_option("--abs", 			type="float"       ,	default=0.0  ,				help="minimum average absolute change of voxels' values (stop criterion of reconstruction process)" )
-	parser.add_option("--squ", 			type="float"       ,	default=0.0  ,				help="minimum average squared change of voxels' values (stop criterion of reconstruction process)" )
-	parser.add_option("--sym" , 		type="string"      ,	default="c1" ,				help="symmetry")
-	parser.add_option("--VAR" , 		action="store_true",	default=False,				help="stack on input consists of 2D variances")
-	parser.add_option("--SND",			action="store_true",	default=False,				help="compute squared normalized differences")
-	parser.add_option("--CTF",			action="store_true",	default=False,				help="use CFT correction")
-	parser.add_option("--VERBOSE",		action="store_true",	default=False,				help="comments")
-	parser.add_option("--img_per_grp",	type="int"         ,	default=10   ,				help="number of neighbouring projections")
-	parser.add_option("--nvec",			type="int"         ,	default=0    ,				help="number of eigenvectors, default = 0 meaning no PCA calculated")
-	parser.add_option("--npad",			type="int"         ,	default=2    ,				help="number of time to pad the original images")
-	parser.add_option("--freq",			type="float"       ,	default=0.0  ,				help="stop-band frequency")
-	parser.add_option("--fall_off",		type="float"       ,	default=0.0  ,				help="fall off of the filter")
 	parser.add_option("--ave2D",		type="string"	   ,	default=False,				help="write to the disk a stack of 2D averages")
 	parser.add_option("--var2D",		type="string"	   ,	default=False,				help="write to the disk a stack of 2D variances")
 	parser.add_option("--ave3D",		type="string"	   ,	default=False,				help="write to the disk reconstructed 3D average")
 	parser.add_option("--var3D",		type="string"	   ,	default=False,				help="compute 3D variability (time consuming!)")
+	parser.add_option("--img_per_grp",	type="int"         ,	default=10   ,				help="number of neighbouring projections")
 	parser.add_option("--no_norm",		action="store_true",	default=False,				help="do not use normalization")
+	parser.add_option("--radiusvar", 	type="int"         ,	default=-1   ,				help="radius for 3D var" )
+	parser.add_option("--npad",			type="int"         ,	default=2    ,				help="number of time to pad the original images")
+	parser.add_option("--sym" , 		type="string"      ,	default="c1" ,				help="symmetry")
+	parser.add_option("--freq",			type="float"       ,	default=0.0  ,				help="stop-band frequency")
+	parser.add_option("--fall_off",		type="float"       ,	default=0.0  ,				help="fall off of the filter")
+	parser.add_option("--CTF",			action="store_true",	default=False,				help="use CFT correction")
+	parser.add_option("--VERBOSE",		action="store_true",	default=False,				help="comments")
 	parser.add_option("--MPI" , 		action="store_true",	default=False,				help="use MPI version")
+
+	parser.add_option("--radiuspca", 	type="int"         ,	default=-1   ,				help="radius for PCA" )
+	parser.add_option("--iter", 		type="int"         ,	default=40   ,				help="maximum number of iterations (stop criterion of reconstruction process)" )
+	parser.add_option("--abs", 			type="float"       ,	default=0.0  ,				help="minimum average absolute change of voxels' values (stop criterion of reconstruction process)" )
+	parser.add_option("--squ", 			type="float"       ,	default=0.0  ,				help="minimum average squared change of voxels' values (stop criterion of reconstruction process)" )
+	parser.add_option("--VAR" , 		action="store_true",	default=False,				help="stack on input consists of 2D variances")
+	parser.add_option("--SND",			action="store_true",	default=False,				help="compute squared normalized differences")
+	parser.add_option("--nvec",			type="int"         ,	default=0    ,				help="number of eigenvectors, default = 0 meaning no PCA calculated")
 
 	(options,args) = parser.parse_args()
 	
@@ -85,7 +86,7 @@ def main():
 	from reconstruction import recons3d_em, recons3d_em_MPI
 	from reconstruction	import recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
 	from utilities import print_begin_msg, print_end_msg, print_msg
-	from utilities import read_text_row, get_image
+	from utilities import read_text_row, get_image, get_im
 	from utilities import bcast_EMData_to_all, bcast_number_to_all
 
 	sys.argv = mpi_init(len(sys.argv), sys.argv)
@@ -110,9 +111,14 @@ def main():
 	if options.SND and (options.ave2D or options.ave3D):
 		ERROR("When SND is set, the program cannot output ave2D or ave3D", "sx3dvariability", myid=myid)
 		exit()
-	if options.nvec > 0 and options.ave3D == None:
-		ERROR("When doing PCA analysis, one must set ave3D", "sx3dvariability", myid=myid)
+	if options.nvec > 0 :
+		ERROR("PCA option not implemented", "sx3dvariability", myid=myid)
 		exit()
+	#if options.nvec > 0 and options.ave3D == None:
+	#	ERROR("When doing PCA analysis, one must set ave3D", "sx3dvariability", myid=myid)
+	#	exit()
+	import string
+	options.sym = options.sym.lower()
 		 
 
 	if global_def.CACHE_DISABLE:
@@ -128,11 +134,25 @@ def main():
 	nvec = options.nvec
 	radiuspca = options.radiuspca
 
+	symbaselen = 0
 	if myid == main_node:
 		nima = EMUtil.get_image_count(stack)
 		img  = get_image(stack)
 		nx   = img.get_xsize()
 		ny   = img.get_ysize()
+		if options.sym != "c1" :
+			imgdata = get_im(stack)
+			try:
+				i = imgdata.get_attr("variabilitysymmetry")
+				if(i != options.sym):
+					ERROR("The symmetry provided does not agree with the symmetry of the input stack", "sx3dvariability", myid=myid)
+			except:
+				ERROR("Input stack is not prepared for symmetry, please follow instructions", "sx3dvariability", myid=myid)
+			from utilities import get_symt
+			i = len(get_symt(options.sym))
+			if((nima/i)*i != nima):
+				ERROR("The length of the input stack is incorrect for symmetry processing", "sx3dvariability", myid=myid)
+			symbaselen = nima/i
 	else:
 		nima = 0
 		nx = 0
@@ -140,6 +160,7 @@ def main():
 	nima = bcast_number_to_all(nima)
 	nx   = bcast_number_to_all(nx)
 	ny   = bcast_number_to_all(ny)
+	symbaselen = bcast_number_to_all(symbaselen)
 	if radiuspca == -1: radiuspca = nx/2-2
 
 	if myid == main_node:
@@ -196,11 +217,11 @@ def main():
 			aveList = []
 			tab = EMUtil.get_all_attributes(stack, 'xform.projection')
 			for i in xrange(nima):
-				t = tab[i].get_params('spider')
-				phi = t['phi']
+				t     = tab[i].get_params('spider')
+				phi   = t['phi']
 				theta = t['theta']
-				psi = t['psi']
-				x = theta
+				psi   = t['psi']
+				x     = theta
 				if x > 90.0: x = 180.0 - x
 				x = x*10000+psi
 				proj_angles.append([x, t['phi'], t['theta'], t['psi'], i])
@@ -242,7 +263,7 @@ def main():
 
 		if myid == main_node:
 			print_msg("%-70s:  %.2f\n"%("Finding neighboring projections lasted [s]", time()-t2))
-			print_msg("%-70s:  %d\n"%("Number of groups processed on main node", len(proj_list)))
+			print_msg("%-70s:  %d\n"%("Number of groups processed on the main node", len(proj_list)))
 			if options.VERBOSE:
 				print "Grouping projections took: ", (time()-t2)/60	, "[min]"
 				print "Number of groups on main node: ", len(proj_list)
@@ -285,7 +306,9 @@ def main():
 		from applications import prepare_2d_forPCA
 		from utilities import model_blank
 		for i in xrange(len(proj_list)):
-			mi = index[proj_angles[proj_list[i][0]][3]]
+			ki = proj_angles[proj_list[i][0]][3]
+			if ki >= symbaselen:  continue
+			mi = index[ki]
 			phiM, thetaM, psiM, s2xM, s2yM = get_params_proj(imgdata[mi])
 
 			grp_imgdata = []
