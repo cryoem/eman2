@@ -19337,9 +19337,9 @@ vector<float> Util::multiref_polar_ali_2d_local_psi(EMData* image, const vector<
 	}
 	bool nomirror = (theta<90.0) || (theta==90.0);
 	if (!nomirror) {
-		phi = fmod(phi+540.0f, 360.0f);
+		phi   = fmod(phi+540.0f, 360.0f);
 		theta = 180-theta;
-		psi = fmod(540.0f-psi, 360.0f);
+		psi   = fmod(540.0f-psi, 360.0f);
 	} else { psi = fmod(360.0f-psi, 360.0f); }
 	for (int i = -ky; i <= ky; i++) {
 	    iy = i * step ;

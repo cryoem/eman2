@@ -3124,14 +3124,16 @@ EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBessel& kb
 				int inxold = int(Util::round(xold)); int inyold = int(Util::round(yold));
 				     sum=0.0f;    w=0.0f;
 				if(inxold <= kbc || inxold >=nx-kbc-2 || inyold <= kbc || inyold >=ny-kbc-2 )  {
-                                  for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
-				  float q = kb.i0win_tab(xold - inxold-m1)*kb.i0win_tab(yold - inyold-m2);
-		                  sum += (*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny)*q; w+=q;}}
-		                }else{
-                                  for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
-				  float q =kb.i0win_tab(xold - inxold-m1)*kb.i0win_tab(yold - inyold-m2);
-		                  sum += (*this)(inxold+m1,inyold+m2)*q;w+=q;}}
-		                }
+					for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
+						float q = kb.i0win_tab(xold - inxold-m1)*kb.i0win_tab(yold - inyold-m2);
+						sum += (*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny)*q; w+=q;}
+					}
+		    	} else {
+		    		for (int m2 =kbmin; m2 <=kbmax; m2++){ for (int m1 =kbmin; m1 <=kbmax; m1++) {
+		    			float q =kb.i0win_tab(xold - inxold-m1)*kb.i0win_tab(yold - inyold-m2);
+		    			sum += (*this)(inxold+m1,inyold+m2)*q;w+=q;}
+		    		}
+		        }
 				(*ret)(ix,iy)=sum/w;
 			}
 		}
@@ -3147,10 +3149,10 @@ EMData* EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBe
 	float  scale = 0.5f*scale_input;
 	float  sum, w;
 	if (1 >= ny)
-		throw ImageDimensionException("Can't rotate 1D image");
+		throw ImageDimensionException("Cannot rotate 1D image");
 	if (1 < nz)
-		throw ImageDimensionException("Volume not currently supported");
-	nxn=nx/2;nyn=ny/2;nzn=nz/2;
+		throw ImageDimensionException("Volume currently not supported");
+	nxn=nx/2; nyn=ny/2; nzn=nz/2;
 
 	int K = kb.get_window_size();
 	int kbmin = -K/2;
@@ -3168,9 +3170,9 @@ EMData* EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBe
 	delx = restrict2(delx, nx);
 	dely = restrict2(dely, ny);
 	// center of big image,
-	int xc = nxn;
+	int xc  = nxn;
 	int ixs = nxn%2;  // extra shift on account of odd-sized images
-	int yc = nyn;
+	int yc  = nyn;
 	int iys = nyn%2;
 	// center of small image
 	int xcn = nxn/2;
@@ -3214,7 +3216,7 @@ EMData* EMData::rot_scale_conv(float ang, float delx, float dely, Util::KaiserBe
 						sum += (*this)((inxold+m1+nx)%nx,(inyold+m2+ny)%ny)*q; w+=q;
 					}
 				}
-		    	} else {
+		    } else {
 				for (int m2 =kbmin; m2 <=kbmax; m2++) {
 					float qt = kb.i0win_tab(yold - inyold-m2);
 			  		for (int m1 =kbmin; m1 <=kbmax; m1++) {
