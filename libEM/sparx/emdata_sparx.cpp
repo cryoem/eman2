@@ -3640,6 +3640,76 @@ EMData* EMData::rot_scale_conv_new_background(float ang, float delx, float dely,
 	return ret;
 }
 
+//  This function returns twice resampled image.  It is needed for gridding CCF applications
+//  It is slightly modified version of rot_scale_conv_new_background
+EMData* EMData::rot_scale_conv_new_background_twice(float ang, float delx, float dely, Util::KaiserBessel& kb, float scale_input) {
+
+	int nxn, nyn, nzn;
+
+	if (scale_input == 0.0f) scale_input = 1.0f;
+	float  scale = scale_input;
+
+	if (1 >= ny)
+		throw ImageDimensionException("Cannot rotate 1D image");
+	if (1 < nz)
+		throw ImageDimensionException("Use rot_scale_conv_new_background_3D for volumes");
+	nxn = nx; nyn = ny; nzn = nz;
+
+	vector<int> saved_offsets = get_array_offsets();
+	set_array_offsets(0,0,0);
+	EMData* ret = this->copy_head();
+#ifdef _WIN32
+	ret->set_size(nxn, _cpp_max(nyn,1), _cpp_max(nzn,1));
+#else
+	ret->set_size(nxn, std::max(nyn,1), std::max(nzn,1));
+#endif	//_WIN32
+	//ret->to_zero();  //we will leave margins zeroed.
+	delx = restrict2(delx, nx);
+	dely = restrict2(dely, ny);
+	// center of big image,
+	int xc = nxn/2;
+	int ixs = nxn%2;  // extra shift on account of odd-sized images
+	int yc = nyn/2;
+	int iys = nyn%2;
+	// center of small image
+	int xcn = nxn/2;
+	int ycn = nyn/2;
+	// shifted center for rotation
+	float shiftxc = xcn + delx;
+	float shiftyc = ycn + dely;
+	// bounds if origin at center
+	float ymin = -ny/2.0f;
+	float xmin = -nx/2.0f;
+	float ymax = -ymin;
+	float xmax = -xmin;
+	if (0 == nx%2) xmax--;
+	if (0 == ny%2) ymax--;
+
+	float* data = this->get_data();
+
+	// trig
+	float cang = cos(ang);
+	float sang = sin(ang);
+	for (int iy = 0; iy < nyn; iy++) {
+		float y = float(iy) - shiftyc;
+		float ycang = y*cang/scale + yc;
+		float ysang = -y*sang/scale + xc;
+		for (int ix = 0; ix < nxn; ix++) {
+			float x = float(ix) - shiftxc;
+			float xold = x*cang/scale + ysang-ixs;// have to add the fraction on account on odd-sized images for which Fourier zero-padding changes the center location
+			float yold = x*sang/scale + ycang-iys;
+
+			//(*ret)(ix,iy) = Util::get_pixel_conv_new_background(nx, ny, 1, xold, yold, 1, data, kb, ix, iy);
+//cout << "   "<<ix<< "   "<<iy<< "   "<<xold<< "   "<<yold<< "   "<<nx<< "   "<<ny<<endl;
+//cout << "   "<<xc<< "   "<<yc<< "   "<<xcn<< "   "<<ycn<< "   "<<shiftxc<< "   "<<shiftyc<<endl;
+			(*ret)(ix,iy) = Util::get_pixel_conv_new(nx, ny, 1, xold, yold, 1, data, kb);
+		}
+	}
+	set_array_offsets(saved_offsets);
+	return ret;
+}
+
+
 EMData* EMData::rot_scale_conv_new_background_3D(float phi, float theta, float psi, float delx, float dely, float delz, Util::KaiserBessel& kb, float scale_input, bool wrap) {
 
 	if (scale_input == 0.0f) scale_input = 1.0f;

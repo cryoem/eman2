@@ -953,8 +953,8 @@ float  Util::get_pixel_conv_new(int nx, int ny, int nz, float delx, float dely, 
 	int kbmax = -kbmin;
 	int kbc = kbmax+1;
 
-	float pixel =0.0f;
-	float w=0.0f;
+	float pixel = 0.0f;
+	float w = 0.0f;
 
 	delx = restrict1(delx, nx);
 	int inxold = int(round(delx));
@@ -988,8 +988,8 @@ float  Util::get_pixel_conv_new(int nx, int ny, int nz, float delx, float dely, 
 	 	}
 
 		pixel = data[x1]*tablex1 + data[x2]*tablex2 + data[x3]*tablex3 +
-			data[x4]*tablex4 + data[x5]*tablex5 + data[x6]*tablex6 +
-			data[x7]*tablex7 ;
+				data[x4]*tablex4 + data[x5]*tablex5 + data[x6]*tablex6 +
+				data[x7]*tablex7 ;
 
 		w = tablex1+tablex2+tablex3+tablex4+tablex5+tablex6+tablex7;
 	} else if ( nz < 2 ) {  // 2D
@@ -1049,25 +1049,25 @@ float  Util::get_pixel_conv_new(int nx, int ny, int nz, float delx, float dely, 
 
 		pixel    = ( data[x1+y1]*tablex1 + data[x2+y1]*tablex2 + data[x3+y1]*tablex3 +
 		             data[x4+y1]*tablex4 + data[x5+y1]*tablex5 + data[x6+y1]*tablex6 +
-		   	     data[x7+y1]*tablex7 ) * tabley1 +
-		   	   ( data[x1+y2]*tablex1 + data[x2+y2]*tablex2 + data[x3+y2]*tablex3 +
-		   	     data[x4+y2]*tablex4 + data[x5+y2]*tablex5 + data[x6+y2]*tablex6 +
-		   	     data[x7+y2]*tablex7 ) * tabley2 +
-		   	   ( data[x1+y3]*tablex1 + data[x2+y3]*tablex2 + data[x3+y3]*tablex3 +
-		   	     data[x4+y3]*tablex4 + data[x5+y3]*tablex5 + data[x6+y3]*tablex6 +
-		   	     data[x7+y3]*tablex7 ) * tabley3 +
-		   	   ( data[x1+y4]*tablex1 + data[x2+y4]*tablex2 + data[x3+y4]*tablex3 +
-		   	     data[x4+y4]*tablex4 + data[x5+y4]*tablex5 + data[x6+y4]*tablex6 +
-		   	     data[x7+y4]*tablex7 ) * tabley4 +
-		   	   ( data[x1+y5]*tablex1 + data[x2+y5]*tablex2 + data[x3+y5]*tablex3 +
-		   	     data[x4+y5]*tablex4 + data[x5+y5]*tablex5 + data[x6+y5]*tablex6 +
-		   	     data[x7+y5]*tablex7 ) * tabley5 +
-		   	   ( data[x1+y6]*tablex1 + data[x2+y6]*tablex2 + data[x3+y6]*tablex3 +
-		   	     data[x4+y6]*tablex4 + data[x5+y6]*tablex5 + data[x6+y6]*tablex6 +
-		   	     data[x7+y6]*tablex7 ) * tabley6 +
-		   	   ( data[x1+y7]*tablex1 + data[x2+y7]*tablex2 + data[x3+y7]*tablex3 +
-		   	     data[x4+y7]*tablex4 + data[x5+y7]*tablex5 + data[x6+y7]*tablex6 +
-		   	     data[x7+y7]*tablex7 ) * tabley7;
+					 data[x7+y1]*tablex7 ) * tabley1 +
+				   ( data[x1+y2]*tablex1 + data[x2+y2]*tablex2 + data[x3+y2]*tablex3 +
+					 data[x4+y2]*tablex4 + data[x5+y2]*tablex5 + data[x6+y2]*tablex6 +
+					 data[x7+y2]*tablex7 ) * tabley2 +
+				   ( data[x1+y3]*tablex1 + data[x2+y3]*tablex2 + data[x3+y3]*tablex3 +
+					 data[x4+y3]*tablex4 + data[x5+y3]*tablex5 + data[x6+y3]*tablex6 +
+					 data[x7+y3]*tablex7 ) * tabley3 +
+				   ( data[x1+y4]*tablex1 + data[x2+y4]*tablex2 + data[x3+y4]*tablex3 +
+					 data[x4+y4]*tablex4 + data[x5+y4]*tablex5 + data[x6+y4]*tablex6 +
+					 data[x7+y4]*tablex7 ) * tabley4 +
+				   ( data[x1+y5]*tablex1 + data[x2+y5]*tablex2 + data[x3+y5]*tablex3 +
+					 data[x4+y5]*tablex4 + data[x5+y5]*tablex5 + data[x6+y5]*tablex6 +
+					 data[x7+y5]*tablex7 ) * tabley5 +
+				   ( data[x1+y6]*tablex1 + data[x2+y6]*tablex2 + data[x3+y6]*tablex3 +
+					 data[x4+y6]*tablex4 + data[x5+y6]*tablex5 + data[x6+y6]*tablex6 +
+					 data[x7+y6]*tablex7 ) * tabley6 +
+				   ( data[x1+y7]*tablex1 + data[x2+y7]*tablex2 + data[x3+y7]*tablex3 +
+					 data[x4+y7]*tablex4 + data[x5+y7]*tablex5 + data[x6+y7]*tablex6 +
+					 data[x7+y7]*tablex7 ) * tabley7;
 
 		w = (tablex1+tablex2+tablex3+tablex4+tablex5+tablex6+tablex7) *
 		    (tabley1+tabley2+tabley3+tabley4+tabley5+tabley6+tabley7);
@@ -1155,151 +1155,151 @@ float  Util::get_pixel_conv_new(int nx, int ny, int nz, float delx, float dely, 
 
 		pixel  = ( ( data[x1+y1+z1]*tablex1 + data[x2+y1+z1]*tablex2 + data[x3+y1+z1]*tablex3 +
 		             data[x4+y1+z1]*tablex4 + data[x5+y1+z1]*tablex5 + data[x6+y1+z1]*tablex6 +
-		   	     data[x7+y1+z1]*tablex7 ) * tabley1 +
-		   	   ( data[x1+y2+z1]*tablex1 + data[x2+y2+z1]*tablex2 + data[x3+y2+z1]*tablex3 +
-		   	     data[x4+y2+z1]*tablex4 + data[x5+y2+z1]*tablex5 + data[x6+y2+z1]*tablex6 +
-		   	     data[x7+y2+z1]*tablex7 ) * tabley2 +
-		   	   ( data[x1+y3+z1]*tablex1 + data[x2+y3+z1]*tablex2 + data[x3+y3+z1]*tablex3 +
-		   	     data[x4+y3+z1]*tablex4 + data[x5+y3+z1]*tablex5 + data[x6+y3+z1]*tablex6 +
-		   	     data[x7+y3+z1]*tablex7 ) * tabley3 +
-		   	   ( data[x1+y4+z1]*tablex1 + data[x2+y4+z1]*tablex2 + data[x3+y4+z1]*tablex3 +
-		   	     data[x4+y4+z1]*tablex4 + data[x5+y4+z1]*tablex5 + data[x6+y4+z1]*tablex6 +
-		   	     data[x7+y4+z1]*tablex7 ) * tabley4 +
-		   	   ( data[x1+y5+z1]*tablex1 + data[x2+y5+z1]*tablex2 + data[x3+y5+z1]*tablex3 +
-		   	     data[x4+y5+z1]*tablex4 + data[x5+y5+z1]*tablex5 + data[x6+y5+z1]*tablex6 +
-		   	     data[x7+y5+z1]*tablex7 ) * tabley5 +
-		   	   ( data[x1+y6+z1]*tablex1 + data[x2+y6+z1]*tablex2 + data[x3+y6+z1]*tablex3 +
-		   	     data[x4+y6+z1]*tablex4 + data[x5+y6+z1]*tablex5 + data[x6+y6+z1]*tablex6 +
-		   	     data[x7+y6+z1]*tablex7 ) * tabley6 +
-		   	   ( data[x1+y7+z1]*tablex1 + data[x2+y7+z1]*tablex2 + data[x3+y7+z1]*tablex3 +
-		   	     data[x4+y7+z1]*tablex4 + data[x5+y7+z1]*tablex5 + data[x6+y7+z1]*tablex6 +
-		   	     data[x7+y7+z1]*tablex7 ) * tabley7 ) *tablez1 +
+					 data[x7+y1+z1]*tablex7 ) * tabley1 +
+				   ( data[x1+y2+z1]*tablex1 + data[x2+y2+z1]*tablex2 + data[x3+y2+z1]*tablex3 +
+					 data[x4+y2+z1]*tablex4 + data[x5+y2+z1]*tablex5 + data[x6+y2+z1]*tablex6 +
+					 data[x7+y2+z1]*tablex7 ) * tabley2 +
+				   ( data[x1+y3+z1]*tablex1 + data[x2+y3+z1]*tablex2 + data[x3+y3+z1]*tablex3 +
+					 data[x4+y3+z1]*tablex4 + data[x5+y3+z1]*tablex5 + data[x6+y3+z1]*tablex6 +
+					 data[x7+y3+z1]*tablex7 ) * tabley3 +
+				   ( data[x1+y4+z1]*tablex1 + data[x2+y4+z1]*tablex2 + data[x3+y4+z1]*tablex3 +
+					 data[x4+y4+z1]*tablex4 + data[x5+y4+z1]*tablex5 + data[x6+y4+z1]*tablex6 +
+					 data[x7+y4+z1]*tablex7 ) * tabley4 +
+				   ( data[x1+y5+z1]*tablex1 + data[x2+y5+z1]*tablex2 + data[x3+y5+z1]*tablex3 +
+					 data[x4+y5+z1]*tablex4 + data[x5+y5+z1]*tablex5 + data[x6+y5+z1]*tablex6 +
+					 data[x7+y5+z1]*tablex7 ) * tabley5 +
+				   ( data[x1+y6+z1]*tablex1 + data[x2+y6+z1]*tablex2 + data[x3+y6+z1]*tablex3 +
+					 data[x4+y6+z1]*tablex4 + data[x5+y6+z1]*tablex5 + data[x6+y6+z1]*tablex6 +
+					 data[x7+y6+z1]*tablex7 ) * tabley6 +
+				   ( data[x1+y7+z1]*tablex1 + data[x2+y7+z1]*tablex2 + data[x3+y7+z1]*tablex3 +
+					 data[x4+y7+z1]*tablex4 + data[x5+y7+z1]*tablex5 + data[x6+y7+z1]*tablex6 +
+					 data[x7+y7+z1]*tablex7 ) * tabley7 ) *tablez1 +
 		         ( ( data[x1+y1+z2]*tablex1 + data[x2+y1+z2]*tablex2 + data[x3+y1+z2]*tablex3 +
 		             data[x4+y1+z2]*tablex4 + data[x5+y1+z2]*tablex5 + data[x6+y1+z2]*tablex6 +
-		   	     data[x7+y1+z2]*tablex7 ) * tabley1 +
-		   	   ( data[x1+y2+z2]*tablex1 + data[x2+y2+z2]*tablex2 + data[x3+y2+z2]*tablex3 +
-		   	     data[x4+y2+z2]*tablex4 + data[x5+y2+z2]*tablex5 + data[x6+y2+z2]*tablex6 +
-		   	     data[x7+y2+z2]*tablex7 ) * tabley2 +
-		   	   ( data[x1+y3+z2]*tablex1 + data[x2+y3+z2]*tablex2 + data[x3+y3+z2]*tablex3 +
-		   	     data[x4+y3+z2]*tablex4 + data[x5+y3+z2]*tablex5 + data[x6+y3+z2]*tablex6 +
-		   	     data[x7+y3+z2]*tablex7 ) * tabley3 +
-		   	   ( data[x1+y4+z2]*tablex1 + data[x2+y4+z2]*tablex2 + data[x3+y4+z2]*tablex3 +
-		   	     data[x4+y4+z2]*tablex4 + data[x5+y4+z2]*tablex5 + data[x6+y4+z2]*tablex6 +
-		   	     data[x7+y4+z2]*tablex7 ) * tabley4 +
-		   	   ( data[x1+y5+z2]*tablex1 + data[x2+y5+z2]*tablex2 + data[x3+y5+z2]*tablex3 +
-		   	     data[x4+y5+z2]*tablex4 + data[x5+y5+z2]*tablex5 + data[x6+y5+z2]*tablex6 +
-		   	     data[x7+y5+z2]*tablex7 ) * tabley5 +
-		   	   ( data[x1+y6+z2]*tablex1 + data[x2+y6+z2]*tablex2 + data[x3+y6+z2]*tablex3 +
-		   	     data[x4+y6+z2]*tablex4 + data[x5+y6+z2]*tablex5 + data[x6+y6+z2]*tablex6 +
-		   	     data[x7+y6+z2]*tablex7 ) * tabley6 +
-		   	   ( data[x1+y7+z2]*tablex1 + data[x2+y7+z2]*tablex2 + data[x3+y7+z2]*tablex3 +
-		   	     data[x4+y7+z2]*tablex4 + data[x5+y7+z2]*tablex5 + data[x6+y7+z2]*tablex6 +
-		   	     data[x7+y7+z2]*tablex7 ) * tabley7 ) *tablez2 +
+					 data[x7+y1+z2]*tablex7 ) * tabley1 +
+				   ( data[x1+y2+z2]*tablex1 + data[x2+y2+z2]*tablex2 + data[x3+y2+z2]*tablex3 +
+					 data[x4+y2+z2]*tablex4 + data[x5+y2+z2]*tablex5 + data[x6+y2+z2]*tablex6 +
+					 data[x7+y2+z2]*tablex7 ) * tabley2 +
+				   ( data[x1+y3+z2]*tablex1 + data[x2+y3+z2]*tablex2 + data[x3+y3+z2]*tablex3 +
+					 data[x4+y3+z2]*tablex4 + data[x5+y3+z2]*tablex5 + data[x6+y3+z2]*tablex6 +
+					 data[x7+y3+z2]*tablex7 ) * tabley3 +
+				   ( data[x1+y4+z2]*tablex1 + data[x2+y4+z2]*tablex2 + data[x3+y4+z2]*tablex3 +
+					 data[x4+y4+z2]*tablex4 + data[x5+y4+z2]*tablex5 + data[x6+y4+z2]*tablex6 +
+					 data[x7+y4+z2]*tablex7 ) * tabley4 +
+				   ( data[x1+y5+z2]*tablex1 + data[x2+y5+z2]*tablex2 + data[x3+y5+z2]*tablex3 +
+					 data[x4+y5+z2]*tablex4 + data[x5+y5+z2]*tablex5 + data[x6+y5+z2]*tablex6 +
+					 data[x7+y5+z2]*tablex7 ) * tabley5 +
+				   ( data[x1+y6+z2]*tablex1 + data[x2+y6+z2]*tablex2 + data[x3+y6+z2]*tablex3 +
+					 data[x4+y6+z2]*tablex4 + data[x5+y6+z2]*tablex5 + data[x6+y6+z2]*tablex6 +
+					 data[x7+y6+z2]*tablex7 ) * tabley6 +
+				   ( data[x1+y7+z2]*tablex1 + data[x2+y7+z2]*tablex2 + data[x3+y7+z2]*tablex3 +
+					 data[x4+y7+z2]*tablex4 + data[x5+y7+z2]*tablex5 + data[x6+y7+z2]*tablex6 +
+					 data[x7+y7+z2]*tablex7 ) * tabley7 ) *tablez2 +
 		         ( ( data[x1+y1+z3]*tablex1 + data[x2+y1+z3]*tablex2 + data[x3+y1+z3]*tablex3 +
 		             data[x4+y1+z3]*tablex4 + data[x5+y1+z3]*tablex5 + data[x6+y1+z3]*tablex6 +
-		   	     data[x7+y1+z3]*tablex7 ) * tabley1 +
-		   	   ( data[x1+y2+z3]*tablex1 + data[x2+y2+z3]*tablex2 + data[x3+y2+z3]*tablex3 +
-		   	     data[x4+y2+z3]*tablex4 + data[x5+y2+z3]*tablex5 + data[x6+y2+z3]*tablex6 +
-		   	     data[x7+y2+z3]*tablex7 ) * tabley2 +
-		   	   ( data[x1+y3+z3]*tablex1 + data[x2+y3+z3]*tablex2 + data[x3+y3+z3]*tablex3 +
-		   	     data[x4+y3+z3]*tablex4 + data[x5+y3+z3]*tablex5 + data[x6+y3+z3]*tablex6 +
-		   	     data[x7+y3+z3]*tablex7 ) * tabley3 +
-		   	   ( data[x1+y4+z3]*tablex1 + data[x2+y4+z3]*tablex2 + data[x3+y4+z3]*tablex3 +
-		   	     data[x4+y4+z3]*tablex4 + data[x5+y4+z3]*tablex5 + data[x6+y4+z3]*tablex6 +
-		   	     data[x7+y4+z3]*tablex7 ) * tabley4 +
-		   	   ( data[x1+y5+z3]*tablex1 + data[x2+y5+z3]*tablex2 + data[x3+y5+z3]*tablex3 +
-		   	     data[x4+y5+z3]*tablex4 + data[x5+y5+z3]*tablex5 + data[x6+y5+z3]*tablex6 +
-		   	     data[x7+y5+z3]*tablex7 ) * tabley5 +
-		   	   ( data[x1+y6+z3]*tablex1 + data[x2+y6+z3]*tablex2 + data[x3+y6+z3]*tablex3 +
-		   	     data[x4+y6+z3]*tablex4 + data[x5+y6+z3]*tablex5 + data[x6+y6+z3]*tablex6 +
-		   	     data[x7+y6+z3]*tablex7 ) * tabley6 +
-		   	   ( data[x1+y7+z3]*tablex1 + data[x2+y7+z3]*tablex2 + data[x3+y7+z3]*tablex3 +
-		   	     data[x4+y7+z3]*tablex4 + data[x5+y7+z3]*tablex5 + data[x6+y7+z3]*tablex6 +
-		   	     data[x7+y7+z3]*tablex7 ) * tabley7 ) *tablez3 +
+					 data[x7+y1+z3]*tablex7 ) * tabley1 +
+				   ( data[x1+y2+z3]*tablex1 + data[x2+y2+z3]*tablex2 + data[x3+y2+z3]*tablex3 +
+					 data[x4+y2+z3]*tablex4 + data[x5+y2+z3]*tablex5 + data[x6+y2+z3]*tablex6 +
+					 data[x7+y2+z3]*tablex7 ) * tabley2 +
+				   ( data[x1+y3+z3]*tablex1 + data[x2+y3+z3]*tablex2 + data[x3+y3+z3]*tablex3 +
+					 data[x4+y3+z3]*tablex4 + data[x5+y3+z3]*tablex5 + data[x6+y3+z3]*tablex6 +
+					 data[x7+y3+z3]*tablex7 ) * tabley3 +
+				   ( data[x1+y4+z3]*tablex1 + data[x2+y4+z3]*tablex2 + data[x3+y4+z3]*tablex3 +
+					 data[x4+y4+z3]*tablex4 + data[x5+y4+z3]*tablex5 + data[x6+y4+z3]*tablex6 +
+					 data[x7+y4+z3]*tablex7 ) * tabley4 +
+				   ( data[x1+y5+z3]*tablex1 + data[x2+y5+z3]*tablex2 + data[x3+y5+z3]*tablex3 +
+					 data[x4+y5+z3]*tablex4 + data[x5+y5+z3]*tablex5 + data[x6+y5+z3]*tablex6 +
+					 data[x7+y5+z3]*tablex7 ) * tabley5 +
+				   ( data[x1+y6+z3]*tablex1 + data[x2+y6+z3]*tablex2 + data[x3+y6+z3]*tablex3 +
+					 data[x4+y6+z3]*tablex4 + data[x5+y6+z3]*tablex5 + data[x6+y6+z3]*tablex6 +
+					 data[x7+y6+z3]*tablex7 ) * tabley6 +
+				   ( data[x1+y7+z3]*tablex1 + data[x2+y7+z3]*tablex2 + data[x3+y7+z3]*tablex3 +
+					 data[x4+y7+z3]*tablex4 + data[x5+y7+z3]*tablex5 + data[x6+y7+z3]*tablex6 +
+					 data[x7+y7+z3]*tablex7 ) * tabley7 ) *tablez3 +
 		         ( ( data[x1+y1+z4]*tablex1 + data[x2+y1+z4]*tablex2 + data[x3+y1+z4]*tablex3 +
 		             data[x4+y1+z4]*tablex4 + data[x5+y1+z4]*tablex5 + data[x6+y1+z4]*tablex6 +
-		   	     data[x7+y1+z4]*tablex7 ) * tabley1 +
-		   	   ( data[x1+y2+z4]*tablex1 + data[x2+y2+z4]*tablex2 + data[x3+y2+z4]*tablex3 +
-		   	     data[x4+y2+z4]*tablex4 + data[x5+y2+z4]*tablex5 + data[x6+y2+z4]*tablex6 +
-		   	     data[x7+y2+z4]*tablex7 ) * tabley2 +
-		   	   ( data[x1+y3+z4]*tablex1 + data[x2+y3+z4]*tablex2 + data[x3+y3+z4]*tablex3 +
-		   	     data[x4+y3+z4]*tablex4 + data[x5+y3+z4]*tablex5 + data[x6+y3+z4]*tablex6 +
-		   	     data[x7+y3+z4]*tablex7 ) * tabley3 +
-		   	   ( data[x1+y4+z4]*tablex1 + data[x2+y4+z4]*tablex2 + data[x3+y4+z4]*tablex3 +
-		   	     data[x4+y4+z4]*tablex4 + data[x5+y4+z4]*tablex5 + data[x6+y4+z4]*tablex6 +
-		   	     data[x7+y4+z4]*tablex7 ) * tabley4 +
-		   	   ( data[x1+y5+z4]*tablex1 + data[x2+y5+z4]*tablex2 + data[x3+y5+z4]*tablex3 +
-		   	     data[x4+y5+z4]*tablex4 + data[x5+y5+z4]*tablex5 + data[x6+y5+z4]*tablex6 +
-		   	     data[x7+y5+z4]*tablex7 ) * tabley5 +
-		   	   ( data[x1+y6+z4]*tablex1 + data[x2+y6+z4]*tablex2 + data[x3+y6+z4]*tablex3 +
-		   	     data[x4+y6+z4]*tablex4 + data[x5+y6+z4]*tablex5 + data[x6+y6+z4]*tablex6 +
-		   	     data[x7+y6+z4]*tablex7 ) * tabley6 +
-		   	   ( data[x1+y7+z4]*tablex1 + data[x2+y7+z4]*tablex2 + data[x3+y7+z4]*tablex3 +
-		   	     data[x4+y7+z4]*tablex4 + data[x5+y7+z4]*tablex5 + data[x6+y7+z4]*tablex6 +
-		   	     data[x7+y7+z4]*tablex7 ) * tabley7 ) *tablez4 +
+					 data[x7+y1+z4]*tablex7 ) * tabley1 +
+				   ( data[x1+y2+z4]*tablex1 + data[x2+y2+z4]*tablex2 + data[x3+y2+z4]*tablex3 +
+					 data[x4+y2+z4]*tablex4 + data[x5+y2+z4]*tablex5 + data[x6+y2+z4]*tablex6 +
+					 data[x7+y2+z4]*tablex7 ) * tabley2 +
+				   ( data[x1+y3+z4]*tablex1 + data[x2+y3+z4]*tablex2 + data[x3+y3+z4]*tablex3 +
+					 data[x4+y3+z4]*tablex4 + data[x5+y3+z4]*tablex5 + data[x6+y3+z4]*tablex6 +
+					 data[x7+y3+z4]*tablex7 ) * tabley3 +
+				   ( data[x1+y4+z4]*tablex1 + data[x2+y4+z4]*tablex2 + data[x3+y4+z4]*tablex3 +
+					 data[x4+y4+z4]*tablex4 + data[x5+y4+z4]*tablex5 + data[x6+y4+z4]*tablex6 +
+					 data[x7+y4+z4]*tablex7 ) * tabley4 +
+				   ( data[x1+y5+z4]*tablex1 + data[x2+y5+z4]*tablex2 + data[x3+y5+z4]*tablex3 +
+					 data[x4+y5+z4]*tablex4 + data[x5+y5+z4]*tablex5 + data[x6+y5+z4]*tablex6 +
+					 data[x7+y5+z4]*tablex7 ) * tabley5 +
+				   ( data[x1+y6+z4]*tablex1 + data[x2+y6+z4]*tablex2 + data[x3+y6+z4]*tablex3 +
+					 data[x4+y6+z4]*tablex4 + data[x5+y6+z4]*tablex5 + data[x6+y6+z4]*tablex6 +
+					 data[x7+y6+z4]*tablex7 ) * tabley6 +
+				   ( data[x1+y7+z4]*tablex1 + data[x2+y7+z4]*tablex2 + data[x3+y7+z4]*tablex3 +
+					 data[x4+y7+z4]*tablex4 + data[x5+y7+z4]*tablex5 + data[x6+y7+z4]*tablex6 +
+					 data[x7+y7+z4]*tablex7 ) * tabley7 ) *tablez4 +
 		         ( ( data[x1+y1+z5]*tablex1 + data[x2+y1+z5]*tablex2 + data[x3+y1+z5]*tablex3 +
 		             data[x4+y1+z5]*tablex4 + data[x5+y1+z5]*tablex5 + data[x6+y1+z5]*tablex6 +
-		   	     data[x7+y1+z5]*tablex7 ) * tabley1 +
-		   	   ( data[x1+y2+z5]*tablex1 + data[x2+y2+z5]*tablex2 + data[x3+y2+z5]*tablex3 +
-		   	     data[x4+y2+z5]*tablex4 + data[x5+y2+z5]*tablex5 + data[x6+y2+z5]*tablex6 +
-		   	     data[x7+y2+z5]*tablex7 ) * tabley2 +
-		   	   ( data[x1+y3+z5]*tablex1 + data[x2+y3+z5]*tablex2 + data[x3+y3+z5]*tablex3 +
-		   	     data[x4+y3+z5]*tablex4 + data[x5+y3+z5]*tablex5 + data[x6+y3+z5]*tablex6 +
-		   	     data[x7+y3+z5]*tablex7 ) * tabley3 +
-		   	   ( data[x1+y4+z5]*tablex1 + data[x2+y4+z5]*tablex2 + data[x3+y4+z5]*tablex3 +
-		   	     data[x4+y4+z5]*tablex4 + data[x5+y4+z5]*tablex5 + data[x6+y4+z5]*tablex6 +
-		   	     data[x7+y4+z5]*tablex7 ) * tabley4 +
-		   	   ( data[x1+y5+z5]*tablex1 + data[x2+y5+z5]*tablex2 + data[x3+y5+z5]*tablex3 +
-		   	     data[x4+y5+z5]*tablex4 + data[x5+y5+z5]*tablex5 + data[x6+y5+z5]*tablex6 +
-		   	     data[x7+y5+z5]*tablex7 ) * tabley5 +
-		   	   ( data[x1+y6+z5]*tablex1 + data[x2+y6+z5]*tablex2 + data[x3+y6+z5]*tablex3 +
-		   	     data[x4+y6+z5]*tablex4 + data[x5+y6+z5]*tablex5 + data[x6+y6+z5]*tablex6 +
-		   	     data[x7+y6+z5]*tablex7 ) * tabley6 +
-		   	   ( data[x1+y7+z5]*tablex1 + data[x2+y7+z5]*tablex2 + data[x3+y7+z5]*tablex3 +
-		   	     data[x4+y7+z5]*tablex4 + data[x5+y7+z5]*tablex5 + data[x6+y7+z5]*tablex6 +
-		   	     data[x7+y7+z5]*tablex7 ) * tabley7 ) *tablez5 +
+					 data[x7+y1+z5]*tablex7 ) * tabley1 +
+				   ( data[x1+y2+z5]*tablex1 + data[x2+y2+z5]*tablex2 + data[x3+y2+z5]*tablex3 +
+					 data[x4+y2+z5]*tablex4 + data[x5+y2+z5]*tablex5 + data[x6+y2+z5]*tablex6 +
+					 data[x7+y2+z5]*tablex7 ) * tabley2 +
+				   ( data[x1+y3+z5]*tablex1 + data[x2+y3+z5]*tablex2 + data[x3+y3+z5]*tablex3 +
+					 data[x4+y3+z5]*tablex4 + data[x5+y3+z5]*tablex5 + data[x6+y3+z5]*tablex6 +
+					 data[x7+y3+z5]*tablex7 ) * tabley3 +
+				   ( data[x1+y4+z5]*tablex1 + data[x2+y4+z5]*tablex2 + data[x3+y4+z5]*tablex3 +
+					 data[x4+y4+z5]*tablex4 + data[x5+y4+z5]*tablex5 + data[x6+y4+z5]*tablex6 +
+					 data[x7+y4+z5]*tablex7 ) * tabley4 +
+				   ( data[x1+y5+z5]*tablex1 + data[x2+y5+z5]*tablex2 + data[x3+y5+z5]*tablex3 +
+					 data[x4+y5+z5]*tablex4 + data[x5+y5+z5]*tablex5 + data[x6+y5+z5]*tablex6 +
+					 data[x7+y5+z5]*tablex7 ) * tabley5 +
+				   ( data[x1+y6+z5]*tablex1 + data[x2+y6+z5]*tablex2 + data[x3+y6+z5]*tablex3 +
+					 data[x4+y6+z5]*tablex4 + data[x5+y6+z5]*tablex5 + data[x6+y6+z5]*tablex6 +
+					 data[x7+y6+z5]*tablex7 ) * tabley6 +
+				   ( data[x1+y7+z5]*tablex1 + data[x2+y7+z5]*tablex2 + data[x3+y7+z5]*tablex3 +
+					 data[x4+y7+z5]*tablex4 + data[x5+y7+z5]*tablex5 + data[x6+y7+z5]*tablex6 +
+					 data[x7+y7+z5]*tablex7 ) * tabley7 ) *tablez5 +
 		         ( ( data[x1+y1+z6]*tablex1 + data[x2+y1+z6]*tablex2 + data[x3+y1+z6]*tablex3 +
 		             data[x4+y1+z6]*tablex4 + data[x5+y1+z6]*tablex5 + data[x6+y1+z6]*tablex6 +
-		   	     data[x7+y1+z6]*tablex7 ) * tabley1 +
-		   	   ( data[x1+y2+z6]*tablex1 + data[x2+y2+z6]*tablex2 + data[x3+y2+z6]*tablex3 +
-		   	     data[x4+y2+z6]*tablex4 + data[x5+y2+z6]*tablex5 + data[x6+y2+z6]*tablex6 +
-		   	     data[x7+y2+z6]*tablex7 ) * tabley2 +
-		   	   ( data[x1+y3+z6]*tablex1 + data[x2+y3+z6]*tablex2 + data[x3+y3+z6]*tablex3 +
-		   	     data[x4+y3+z6]*tablex4 + data[x5+y3+z6]*tablex5 + data[x6+y3+z6]*tablex6 +
-		   	     data[x7+y3+z6]*tablex7 ) * tabley3 +
-		   	   ( data[x1+y4+z6]*tablex1 + data[x2+y4+z6]*tablex2 + data[x3+y4+z6]*tablex3 +
-		   	     data[x4+y4+z6]*tablex4 + data[x5+y4+z6]*tablex5 + data[x6+y4+z6]*tablex6 +
-		   	     data[x7+y4+z6]*tablex7 ) * tabley4 +
-		   	   ( data[x1+y5+z6]*tablex1 + data[x2+y5+z6]*tablex2 + data[x3+y5+z6]*tablex3 +
-		   	     data[x4+y5+z6]*tablex4 + data[x5+y5+z6]*tablex5 + data[x6+y5+z6]*tablex6 +
-		   	     data[x7+y5+z6]*tablex7 ) * tabley5 +
-		   	   ( data[x1+y6+z6]*tablex1 + data[x2+y6+z6]*tablex2 + data[x3+y6+z6]*tablex3 +
-		   	     data[x4+y6+z6]*tablex4 + data[x5+y6+z6]*tablex5 + data[x6+y6+z6]*tablex6 +
-		   	     data[x7+y6+z6]*tablex7 ) * tabley6 +
-		   	   ( data[x1+y7+z6]*tablex1 + data[x2+y7+z6]*tablex2 + data[x3+y7+z6]*tablex3 +
-		   	     data[x4+y7+z6]*tablex4 + data[x5+y7+z6]*tablex5 + data[x6+y7+z6]*tablex6 +
-		   	     data[x7+y7+z6]*tablex7 ) * tabley7 ) *tablez6 +
+					 data[x7+y1+z6]*tablex7 ) * tabley1 +
+				   ( data[x1+y2+z6]*tablex1 + data[x2+y2+z6]*tablex2 + data[x3+y2+z6]*tablex3 +
+					 data[x4+y2+z6]*tablex4 + data[x5+y2+z6]*tablex5 + data[x6+y2+z6]*tablex6 +
+					 data[x7+y2+z6]*tablex7 ) * tabley2 +
+				   ( data[x1+y3+z6]*tablex1 + data[x2+y3+z6]*tablex2 + data[x3+y3+z6]*tablex3 +
+					 data[x4+y3+z6]*tablex4 + data[x5+y3+z6]*tablex5 + data[x6+y3+z6]*tablex6 +
+					 data[x7+y3+z6]*tablex7 ) * tabley3 +
+				   ( data[x1+y4+z6]*tablex1 + data[x2+y4+z6]*tablex2 + data[x3+y4+z6]*tablex3 +
+					 data[x4+y4+z6]*tablex4 + data[x5+y4+z6]*tablex5 + data[x6+y4+z6]*tablex6 +
+					 data[x7+y4+z6]*tablex7 ) * tabley4 +
+				   ( data[x1+y5+z6]*tablex1 + data[x2+y5+z6]*tablex2 + data[x3+y5+z6]*tablex3 +
+					 data[x4+y5+z6]*tablex4 + data[x5+y5+z6]*tablex5 + data[x6+y5+z6]*tablex6 +
+					 data[x7+y5+z6]*tablex7 ) * tabley5 +
+				   ( data[x1+y6+z6]*tablex1 + data[x2+y6+z6]*tablex2 + data[x3+y6+z6]*tablex3 +
+					 data[x4+y6+z6]*tablex4 + data[x5+y6+z6]*tablex5 + data[x6+y6+z6]*tablex6 +
+					 data[x7+y6+z6]*tablex7 ) * tabley6 +
+				   ( data[x1+y7+z6]*tablex1 + data[x2+y7+z6]*tablex2 + data[x3+y7+z6]*tablex3 +
+					 data[x4+y7+z6]*tablex4 + data[x5+y7+z6]*tablex5 + data[x6+y7+z6]*tablex6 +
+					 data[x7+y7+z6]*tablex7 ) * tabley7 ) *tablez6 +
 		         ( ( data[x1+y1+z7]*tablex1 + data[x2+y1+z7]*tablex2 + data[x3+y1+z7]*tablex3 +
 		             data[x4+y1+z7]*tablex4 + data[x5+y1+z7]*tablex5 + data[x6+y1+z7]*tablex6 +
-		   	     data[x7+y1+z7]*tablex7 ) * tabley1 +
-		   	   ( data[x1+y2+z7]*tablex1 + data[x2+y2+z7]*tablex2 + data[x3+y2+z7]*tablex3 +
-		   	     data[x4+y2+z7]*tablex4 + data[x5+y2+z7]*tablex5 + data[x6+y2+z7]*tablex6 +
-		   	     data[x7+y2+z7]*tablex7 ) * tabley2 +
-		   	   ( data[x1+y3+z7]*tablex1 + data[x2+y3+z7]*tablex2 + data[x3+y3+z7]*tablex3 +
-		   	     data[x4+y3+z7]*tablex4 + data[x5+y3+z7]*tablex5 + data[x6+y3+z7]*tablex6 +
-		   	     data[x7+y3+z7]*tablex7 ) * tabley3 +
-		   	   ( data[x1+y4+z7]*tablex1 + data[x2+y4+z7]*tablex2 + data[x3+y4+z7]*tablex3 +
-		   	     data[x4+y4+z7]*tablex4 + data[x5+y4+z7]*tablex5 + data[x6+y4+z7]*tablex6 +
-		   	     data[x7+y4+z7]*tablex7 ) * tabley4 +
-		   	   ( data[x1+y5+z7]*tablex1 + data[x2+y5+z7]*tablex2 + data[x3+y5+z7]*tablex3 +
-		   	     data[x4+y5+z7]*tablex4 + data[x5+y5+z7]*tablex5 + data[x6+y5+z7]*tablex6 +
-		   	     data[x7+y5+z7]*tablex7 ) * tabley5 +
-		   	   ( data[x1+y6+z7]*tablex1 + data[x2+y6+z7]*tablex2 + data[x3+y6+z7]*tablex3 +
-		   	     data[x4+y6+z7]*tablex4 + data[x5+y6+z7]*tablex5 + data[x6+y6+z7]*tablex6 +
-		   	     data[x7+y6+z7]*tablex7 ) * tabley6 +
-		   	   ( data[x1+y7+z7]*tablex1 + data[x2+y7+z7]*tablex2 + data[x3+y7+z7]*tablex3 +
-		   	     data[x4+y7+z7]*tablex4 + data[x5+y7+z7]*tablex5 + data[x6+y7+z7]*tablex6 +
-		   	     data[x7+y7+z7]*tablex7 ) * tabley7 ) *tablez7;
+					 data[x7+y1+z7]*tablex7 ) * tabley1 +
+				   ( data[x1+y2+z7]*tablex1 + data[x2+y2+z7]*tablex2 + data[x3+y2+z7]*tablex3 +
+					 data[x4+y2+z7]*tablex4 + data[x5+y2+z7]*tablex5 + data[x6+y2+z7]*tablex6 +
+					 data[x7+y2+z7]*tablex7 ) * tabley2 +
+				   ( data[x1+y3+z7]*tablex1 + data[x2+y3+z7]*tablex2 + data[x3+y3+z7]*tablex3 +
+					 data[x4+y3+z7]*tablex4 + data[x5+y3+z7]*tablex5 + data[x6+y3+z7]*tablex6 +
+					 data[x7+y3+z7]*tablex7 ) * tabley3 +
+				   ( data[x1+y4+z7]*tablex1 + data[x2+y4+z7]*tablex2 + data[x3+y4+z7]*tablex3 +
+					 data[x4+y4+z7]*tablex4 + data[x5+y4+z7]*tablex5 + data[x6+y4+z7]*tablex6 +
+					 data[x7+y4+z7]*tablex7 ) * tabley4 +
+				   ( data[x1+y5+z7]*tablex1 + data[x2+y5+z7]*tablex2 + data[x3+y5+z7]*tablex3 +
+					 data[x4+y5+z7]*tablex4 + data[x5+y5+z7]*tablex5 + data[x6+y5+z7]*tablex6 +
+					 data[x7+y5+z7]*tablex7 ) * tabley5 +
+				   ( data[x1+y6+z7]*tablex1 + data[x2+y6+z7]*tablex2 + data[x3+y6+z7]*tablex3 +
+					 data[x4+y6+z7]*tablex4 + data[x5+y6+z7]*tablex5 + data[x6+y6+z7]*tablex6 +
+					 data[x7+y6+z7]*tablex7 ) * tabley6 +
+				   ( data[x1+y7+z7]*tablex1 + data[x2+y7+z7]*tablex2 + data[x3+y7+z7]*tablex3 +
+					 data[x4+y7+z7]*tablex4 + data[x5+y7+z7]*tablex5 + data[x6+y7+z7]*tablex6 +
+					 data[x7+y7+z7]*tablex7 ) * tabley7 ) *tablez7;
 
 		w = (tablex1+tablex2+tablex3+tablex4+tablex5+tablex6+tablex7) *
 		    (tabley1+tabley2+tabley3+tabley4+tabley5+tabley6+tabley7) *

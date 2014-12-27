@@ -421,6 +421,8 @@ EMData* rot_scale_conv_new(float ang, float delx, float dely, Util::KaiserBessel
 
 EMData* rot_scale_conv_new_background(float ang, float delx, float dely, Util::KaiserBessel& kb, float scale = 1.0);
 
+EMData* rot_scale_conv_new_background_twice(float ang, float delx, float dely, Util::KaiserBessel& kb, float scale = 1.0);
+
 EMData* rot_scale_conv_new_3D(float phi, float theta, float psi, float delx, float dely, float delz, Util::KaiserBessel& kb, float scale = 1.0, bool wrap = false);
 
 EMData* rot_scale_conv_new_background_3D(float phi, float theta, float psi, float delx, float dely, float delz,	Util::KaiserBessel& kb, float scale = 1.0, bool wrap = false);
