@@ -3584,7 +3584,7 @@ EMData* EMData::rot_scale_conv_new_background(float ang, float delx, float dely,
 	float  scale = 0.5f*scale_input;
 
 	if (1 >= ny)
-		throw ImageDimensionException("Can't rotate 1D image");
+		throw ImageDimensionException("Cannot rotate 1D image");
 	if (1 < nz)
 		throw ImageDimensionException("Use rot_scale_conv_new_background_3D for volumes");
 	nxn = nx/2; nyn = ny/2; nzn = nz/2;
