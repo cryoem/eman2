@@ -14893,17 +14893,15 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 						rmin, rmax, fract,  npad, sym, user_func_name, \
 						pixel_size, debug, y_restrict, search_iter):
 
-	from alignment      import Numrinit, prepare_refrings
-	from alignment      import proj_ali_helicon_local, proj_ali_helicon_90_local
+	from alignment      import Numrinit, prepare_refffts
+	from alignment      import proj_ali_helicon_local, proj_ali_helicon_90_local_direct
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string, pad, model_blank
 	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all
 	from utilities      import send_attr_dict, read_text_row, sym_vol
 	from utilities      import get_params_proj, set_params_proj, file_type, chunks_distribution
 	from fundamentals   import rot_avg_image
-	from applications 	import setfilori_SP, prepare_refrings2, filamentupdown
+	from applications 	import setfilori_SP, filamentupdown
 	from pixel_error    import max_3D_pixel_error, ordersegments
-	import os
-	import types
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
 	from mpi            import mpi_recv,  mpi_send, MPI_TAG_UB
@@ -14913,9 +14911,10 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 	from statistics     import hist_list, varf3d_MPI
 	from applications   import MPI_start_end, header
 	from EMAN2          import Vec2f
-	from string         import lower,split
-	from math           import cos, pi
+	from string         import lower, split
 	from copy           import copy
+	import os
+	import types
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
@@ -14934,7 +14933,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 		os.mkdir(outdir)
 		import global_def
 		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
-		print_begin_msg("localhelicon_MPI")
+		print_begin_msg("localhelicon_MPI NEW")
 	mpi_barrier(MPI_COMM_WORLD)
 
 	if debug:
@@ -14948,10 +14947,10 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 	else:
 		finfo = None
 
-	sym = sym.lower()
+	sym    = sym.lower()
 	symref = "s"+sym
 
-	ref_a= "P"
+	ref_a           = "P"
 	symmetry_string = split(sym)[0]
 
 	xrng        = get_input_from_string(xr)
@@ -14968,7 +14967,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 	delta       = get_input_from_string(delta)
 	lstp = min(len(xrng), len(yrng), len(stepx), len(delta))
 	an = get_input_from_string(an)
-	
+
 	if len(an) == 1:
 		aan = an[0]
 		an = [aan for ii in xrange(lstp)]
@@ -15027,7 +15026,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 		print_msg("Helical symmetry - axial rise   [A]       : %5.4f\n"%(dp))
 		print_msg("Helical symmetry - angle                  : %5.4f\n"%(dphi))
 		print_msg("Maximum number of iterations              : %i\n"%(max_iter))
-		print_msg("Number of iterations to predict/search before doing reconstruction and updating of reference volume : %i\n"%(search_iter))
+		print_msg("Number of iterations to predict/search before doing reconstruction and updating reference volume : %i\n"%(search_iter))
 		print_msg("Data with CTF                             : %s\n"%(CTF))
 		print_msg("Signal-to-Noise Ratio                     : %5.4f\n"%(snr))
 		print_msg("npad                                      : %i\n"%(npad))
@@ -15213,7 +15212,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 				for im in xrange( seg_start, seg_end ):
 
 					peak, phihi, theta, psi, sxi, syi = \
-						proj_ali_helicon_90_local(data[im], refrings, xrng[N_step], yrng[N_step], \
+						proj_ali_helicon_90_local_direct(data[im], refrings, xrng[N_step], yrng[N_step], \
 						an[N_step], psi_max, psistep, stepx, stepy, finfo, yrnglocal=y_restrict[N_step])
 
 					if(peak > -1.0e23):
@@ -15304,8 +15303,6 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 	from fundamentals   import rot_avg_image
 	from applications 	import setfilori_SP, prepare_refrings2, filamentupdown
 	from pixel_error    import max_3D_pixel_error, ordersegments
-	import os
-	import types
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
 	from mpi            import mpi_recv,  mpi_send, MPI_TAG_UB
@@ -15316,8 +15313,9 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 	from applications   import MPI_start_end, header
 	from EMAN2          import Vec2f
 	from string         import lower,split
-	from math           import cos, pi
 	from copy           import copy
+	import os
+	import types
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
@@ -15429,7 +15427,7 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 		print_msg("Helical symmetry - axial rise   [A]       : %5.4f\n"%(dp))
 		print_msg("Helical symmetry - angle                  : %5.4f\n"%(dphi))
 		print_msg("Maximum number of iterations              : %i\n"%(max_iter))
-		print_msg("Number of iterations to predict/search before doing reconstruction and updating of reference volume : %i\n"%(search_iter))
+		print_msg("Number of iterations to predict/search before doing reconstruction and updating reference volume : %i\n"%(search_iter))
 		print_msg("Data with CTF                             : %s\n"%(CTF))
 		print_msg("Signal-to-Noise Ratio                     : %5.4f\n"%(snr))
 		print_msg("npad                                      : %i\n"%(npad))

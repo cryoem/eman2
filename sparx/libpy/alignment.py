@@ -1861,13 +1861,13 @@ def proj_ali_helicon_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	else:
 		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0\
 
-def proj_ali_helicon_90_local(data, refrings, xrng, yrng, \
+def proj_ali_helicon_90_local_direct(data, refrings, xrng, yrng, \
 		an, psi_max=180.0, psi_step=1.0, stepx = 1.0, stepy = 1.0, finfo=None, yrnglocal=-1.0):
 	"""
 	  psi_max - how much psi can differ from 90 or 270 degrees
 	"""
 	from utilities    import compose_transform2, get_params_proj
-	from lignment     import 
+	from alignment    import directaligridding
 	from math         import cos, sin, radians
 	
 	ID = data.get_attr("ID")
@@ -1922,8 +1922,6 @@ def proj_ali_helicon_90_local(data, refrings, xrng, yrng, \
 	else:
 		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0
 
-
-'''
 def proj_ali_helicon_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, an, psi_max=180.0, finfo=None, yrnglocal=-1.0):
 	"""
 	  psi_max - how much psi can differ from 90 or 270 degrees
@@ -1963,8 +1961,6 @@ def proj_ali_helicon_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 		return peak, phi, theta, psi, s2x, s2y
 	else:
 		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0
-'''
-
 
 def ali_vol_func(params, data):
 	from utilities    import model_gauss

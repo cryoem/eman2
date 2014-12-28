@@ -36,7 +36,7 @@ def main():
 	import os
 	import sys
 	from optparse import OptionParser
-	from global_def import SPARXVERSION
+	from global_def import SPARXVERSION, ERROR
 	import global_def
         arglist = []
         for arg in sys.argv:
@@ -85,14 +85,15 @@ def main():
 		print "usage: " + usage + "\n"
 		print "Please run '" + progname + " -h' for detailed options"
 	else:
-		
+		global_def.BATCH = True
 		# Convert input arguments in the units/format as expected by ihrsr_MPI in applications.
 		if options.apix < 0:
-			print "Please specify pixel size apix"
-			sys.exit()
+			ERROR("Please specify pixel size apix","sxheliconlocal",1)
 		if options.dp < 0 or options.dphi < 0:
-			print "Please specify helical symmetry parameters dp and dphi "
-			sys.exit()
+			ERROR("Please specify helical symmetry parameters dp and dphi","sxheliconlocal",1)
+
+		print  " This code is under development, some instabilities are possible 12/28/2014"
+
 		rminp = int((float(options.rmin)/options.apix) + 0.5)
 		rmaxp = int((float(options.rmax)/options.apix) + 0.5)
 		
@@ -125,7 +126,6 @@ def main():
 			disable_bdb_cache()
 
 		from applications import localhelicon_MPI
-		global_def.BATCH = True
 		if len(args) < 4:  mask = None
 		else:              mask = args[3]
 		if options.new:  localhelicon_MPInew(args[0], args[1], args[2], options.seg_ny, mask, irp, oup, options.rs, xrp, options.ynumber, \
