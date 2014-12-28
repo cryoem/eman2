@@ -102,12 +102,16 @@ indicating its position in the movie.
 		outfsp=os.path.join("movieparticles",u+"_ptcls.hdf")
 
 		try: 
-			n=EMUtil.get_image_count(fsp)
+			try: n=EMUtil.get_image_count(fsp)
+			except:
+				m=m.replace("_proc_align","")
+				fsp=os.path.join("movie",m)
+				n=EMUtil.get_image_count(fsp)
 			if n<=2 : 
-				print "skipping ",m
+				print "skipping ",m," (too few images)"
 				continue	
 		except:
-			print "skipping ",m
+			print "skipping ",m," (read error)"
 			continue
 
 		#if not os.path.exists("info/{}_info.json".format(u)) :
