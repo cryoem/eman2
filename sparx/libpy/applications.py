@@ -14893,14 +14893,13 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 						rmin, rmax, fract,  npad, sym, user_func_name, \
 						pixel_size, debug, y_restrict, search_iter):
 
-	from alignment      import Numrinit, prepare_refffts
 	from alignment      import proj_ali_helicon_local, proj_ali_helicon_90_local_direct
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string, pad, model_blank
 	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all
 	from utilities      import send_attr_dict, read_text_row, sym_vol
 	from utilities      import get_params_proj, set_params_proj, file_type, chunks_distribution
 	from fundamentals   import rot_avg_image
-	from applications 	import setfilori_SP, filamentupdown
+	from applications 	import setfilori_SP, filamentupdown, prepare_refffts
 	from pixel_error    import max_3D_pixel_error, ordersegments
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
@@ -14975,7 +14974,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 	for i in xrange(lstp):
 		if an[i] < 0 and y_restrict[i] < 0: 
 			ERROR('This is a local search, an and y_restrict should not both be -1', "localhelicon_MPI", 1,myid)
-		if y_restrict[i] < 0:  y_restrict[i] = (an[i]/dphi)*(dp/pixel_size)/2.0
+		if y_restrict[i] < 0:   y_restrict[i] = (an[i]/dphi)*(dp/pixel_size)/2.0
 	 	if an[i] < 0:           an[i] = ((2.0*y_restrict[i])/(dp/pixel_size)) * dphi
 
 	first_ring  = int(ir)
@@ -15107,8 +15106,6 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 	if last_ring < 0:
 		last_ring = (max(seg_ny, 2*int(rmax)))//2 - 2
 
-	numr	= Numrinit(first_ring, last_ring, rstep, "F")
-
 	#if fourvar:  original_data = []
 	for im in xrange(nima):
 		data[im].set_attr('ID', list_of_particles[im])
@@ -15164,9 +15161,10 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 		Iter = 0
  		while(Iter < totmax_iter and terminate == 0):
 			yrng[N_step]=float(dp)/(2*pixel_size) #will change it later according to dp
-			yrng[N_step]=max(int(yrng[N_step]+0.5),1)
+			#yrng[N_step]=max(int(yrng[N_step]+0.5),1)
 			if(ynumber[N_step]==0): stepy = 0.0
 			else:                   stepy = (2*yrng[N_step]/ynumber[N_step])
+			stepx = stepy
 
 			pixer  = [0.0]*nima
 			modphi = [0.0]*nima
@@ -15220,7 +15218,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 						tp = Transform({"type":"spider","phi":phihi,"theta":theta,"psi":psi})
 						tp.set_trans( Vec2f( -sxi, -syi ) )
 						data[im].set_attr("xform.projection", tp)
-						pixer[im]  = max_3D_pixel_error(Torg[im-seg_start], tp, numr[-3])
+						pixer[im]  = max_3D_pixel_error(Torg[im-seg_start], tp, last_ring)
 						data[im].set_attr("pixerr", pixer[im])
 
 					else:

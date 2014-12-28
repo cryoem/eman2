@@ -125,7 +125,7 @@ def main():
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
 
-		from applications import localhelicon_MPI
+		from applications import localhelicon_MPI, localhelicon_MPInew
 		if len(args) < 4:  mask = None
 		else:              mask = args[3]
 		if options.new:  localhelicon_MPInew(args[0], args[1], args[2], options.seg_ny, mask, irp, oup, options.rs, xrp, options.ynumber, \
