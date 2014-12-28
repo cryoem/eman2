@@ -210,8 +210,8 @@ def eqproj_cascaded_ccc(args, data):
 	sx = nx//2
 	sy = sx
 	# This is for debug purpose
-	if ts == -1.0:
-		return twoD_fine_search([sx, sy], [product, kb, -ts, sx]), shift
+	#if ts == -1.0:
+	#	return twoD_fine_search([sx, sy], [product, kb, -ts, sx]), shift
 
 	ts2 = 2*ts
 	data2 = [product, kb, 1.1*ts2, sx]
@@ -1861,6 +1861,69 @@ def proj_ali_helicon_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	else:
 		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0\
 
+def proj_ali_helicon_90_local(data, refrings, xrng, yrng, \
+		an, psi_max=180.0, psi_step=1.0, stepx = 1.0, stepy = 1.0, finfo=None, yrnglocal=-1.0):
+	"""
+	  psi_max - how much psi can differ from 90 or 270 degrees
+	"""
+	from utilities    import compose_transform2, get_params_proj
+	from lignment     import 
+	from math         import cos, sin, radians
+	
+	ID = data.get_attr("ID")
+
+	mode = "F"
+	nx   = data.get_xsize()
+	ny   = data.get_ysize()
+	#  center is in SPIDER convention
+	#cnx  = nx//2 + 1
+	#cny  = ny//2 + 1
+	ant = cos(radians(an))
+	phi, theta, psi, tx, ty = get_params_proj(data)
+	if finfo:
+		finfo.write("Image id: %6d\n"%(ID))
+		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
+		finfo.flush()
+	#  Determine whether segment is up and down and search for psi in one orientation only.
+	if psi < 180.0 :  direction = "up"
+	else:             direction = "down"
+	peak = -1.0e23
+	iref = -1
+	imn1 = sin(radians(theta))*cos(radians(phi))
+	imn2 = sin(radians(theta))*sin(radians(phi))
+	imn3 = cos(radians(theta))
+	print '  aaaaaa  ',psi_max, psi_step, xrng, yrng, direction
+	for i in xrange(len(refrings)):
+		if (abs(refrings[i][0].get_attr("n1")*imn1 + refrings[i][0].get_attr("n2")*imn2 + refrings[i][0].get_attr("n3")*imn3)>=ant):
+			#  directali will do fft of the input image and 180 degs rotation, if necessary.  Eventually, this would have to be pulled up.
+			a, tx,ty, tp = directaligridding(data, refrings[i], psi_max, psi_step, xrng, yrng, stepx, stepy, direction)
+			if(tp>peak):
+				peak = tp
+				iref = i
+				angb = a
+				sxb = tx
+				syb = ty
+	"""
+	[ang, sxs, sys, mirror, iref, peak] = \
+		Util.multiref_polar_ali_helicon_90_local(data, refrings, xrng, yrng, stepx, ant, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber), yrnglocal)
+	"""
+	if iref > -1:
+		#angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+		phi   = refrings[iref][0].get_attr("phi")
+		theta = refrings[iref][0].get_attr("theta")
+		psi   = (refrings[iref][0].get_attr("psi")+angb+360.0)%360.0
+		s2x   = sxb #+ tx
+		s2y   = syb #+ ty
+
+		if finfo:
+			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f\n\n" %(phi, theta, psi, s2x, s2y, peak))
+			finfo.flush()
+		return peak, phi, theta, psi, s2x, s2y
+	else:
+		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0
+
+
+'''
 def proj_ali_helicon_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, an, psi_max=180.0, finfo=None, yrnglocal=-1.0):
 	"""
 	  psi_max - how much psi can differ from 90 or 270 degrees
@@ -1900,7 +1963,7 @@ def proj_ali_helicon_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 		return peak, phi, theta, psi, s2x, s2y
 	else:
 		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0
-
+'''
 
 
 def ali_vol_func(params, data):
@@ -2592,7 +2655,7 @@ def align2d_g(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, r
 	return ormy2(image,refim,crefim,xrng,yrng,step,mode,numr,cnx,cny,"gridding")
 
 
-def directali(inima, refs, psimax, psistep, search_range, updown = "both"):
+def directali(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, updown = "both"):
 	"""
 	Direct 2D alignment within a predefined angular range.  If the range is large the method will be very slow.
 	refs - a stack of reference images.  If a single image, the stack will be created.
@@ -2615,30 +2678,41 @@ def directali(inima, refs, psimax, psistep, search_range, updown = "both"):
 		ref = [None]*nr
 		for i in xrange(nr):  ref[i] = fft(rot_shift2D(refs,(i-nc)*psistep))
 
-
-	wn = 2*search_range + 1
+	#  Have to add 1 as otherwise maximum on the edge of the window will not be found
+	wnx = 2*(xrng+1) + 1
+	wny = 2*(yrng+1) + 1
 
 	if updown == "both" or updown == "up" :    ima = fft(inima)
 	if updown == "both" or updown == "down" :  imm = fft(rot_shift2D(inima,180.0, interpolation_method = 'linear'))
 
-
-	ma1 = -1.e23
-	ma2 = -1.e23
-	ma3 = -1.e23
-	ma4 = -1.e23
+	print " in ali  ", psimax, psistep, xrng, yrng, wnx, wny, nr,updown 
+	ma1  = -1.e23
+	ma2  = -1.e23
+	ma3  = -1.e23
+	ma4  = -1.e23
 	oma2 = [-1.e23, -1.e23, -1.e23]
 	oma4 = [-1.e23, -1.e23, -1.e23]
-
+	"""
+	fft(ima).write_image('ima.hdf')
+	for i in xrange(nr):  fft(ref[i]).write_image('ref.hdf',i)
+	from sys import exit
+	exit()
+	"""
 	for i in xrange(nr):
 		if updown == "both" or updown == "up" :
 			c = ccf(ima,ref[i])
-			w = Util.window(c, wn, wn)
+			w = Util.window(c, wnx, wny)
 			pp = peak_search(w)[0]
 			px = int(pp[4])
 			py = int(pp[5])
+			print '  peak   ',i,pp
+			#  did not find a peak, find a maximum location instead
 			if( pp[0] == 1.0 and px == 0 and py == 0):
-				XSH, YSH, PEAKV = 0.,0.,0.
-				del pp
+				loc = w.calc_max_location()
+				PEAKV = w.get_value_at(loc[0],loc[1])
+				if(PEAKV>ma2):
+					ma2  = PEAKV
+					oma2 = pp+[loc[0], loc[1], loc[0], loc[1], PEAKV,(i-nc)*psistep]
 			else:
 				ww = model_blank(4,4)
 				px = int(pp[1])
@@ -2648,21 +2722,26 @@ def directali(inima, refs, psimax, psistep, search_range, updown = "both"):
 						ww[k+1,l+1] = w[k+px-1,l+py-1]
 				XSH, YSH, PEAKV = parabl(ww)
 				#print ["S %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
+				"""
 				if(pp[0]>ma1):
 					ma1 = pp[0]
 					oma1 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
+				"""
 				if(PEAKV>ma2):
-					ma2 = PEAKV
+					ma2  = PEAKV
 					oma2 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
 		if updown == "both" or updown == "down" :
 			c = ccf(imm,ref[i])
-			w = Util.window(c, wn, wn)
+			w = Util.window(c, wnx, wny)
 			pp = peak_search(w)[0]
 			px = int(pp[4])
 			py = int(pp[5])
 			if( pp[0] == 1.0 and px == 0 and py == 0):
-				XSH, YSH, PEAKV = 0.,0.,0.
-				del pp
+				loc = w.calc_max_location()
+				PEAKV = w.get_value_at(loc[0],loc[1])
+				if(PEAKV>ma4):
+					ma4  = PEAKV
+					oma4 = pp+[loc[0], loc[1], loc[0], loc[1], PEAKV,(i-nc)*psistep]
 			else:
 				ww = model_blank(4,4)
 				px = int(pp[1])
@@ -2672,14 +2751,18 @@ def directali(inima, refs, psimax, psistep, search_range, updown = "both"):
 						ww[k+1,l+1] = w[k+px-1,l+py-1]
 				XSH, YSH, PEAKV = parabl(ww)
 				#print ["R %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
+				"""
 				if(pp[0]>ma3):
 					ma3 = pp[0]
 					oma3 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
+				"""
 				if(PEAKV>ma4):
 					ma4 = PEAKV
 					oma4 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
 
-	print ""
+	print "  hoho ",updown
+	print "  oma2 ",oma2
+	print "  oma4 ",oma4
 	if( oma2[-2] > oma4[-2] ):
 		"""
 		print oma1
@@ -2688,6 +2771,7 @@ def directali(inima, refs, psimax, psistep, search_range, updown = "both"):
 		"""
 		nalpha, ntx, nty, mirror = inverse_transform2(oma2[-1],oma2[-4],oma2[-3],0)
 		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
+		peak = oma2[-2]
 	else:
 		"""
 		print oma3
@@ -2697,8 +2781,226 @@ def directali(inima, refs, psimax, psistep, search_range, updown = "both"):
 		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
 		nalpha, ntx, nty, mirror = inverse_transform2(nalpha, ntx, nty,0)
 		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
-	return  nalpha, ntx, nty
+		peak = oma4[-2]
+	return  nalpha, ntx, nty, peak
 
+
+def preparerefsgrid(refs, psimax=1.0, psistep=1.0):
+	from fundamentals import prepi
+
+	M = refs.get_xsize()
+	alpha = 1.75
+	K = 6
+	N = M*2  # npad*image size
+	r = M/2
+	v = K/2.0/N
+	params = {"filter_type" : Processor.fourier_filter_types.KAISER_SINH_INVERSE,
+	          "alpha" : alpha, "K":K,"r":r,"v":v,"N":N}
+	kb = Util.KaiserBessel(alpha, K, r, v, N)
+
+	nr = int(2*psimax/psistep)+1
+	nc = nr//2
+
+	ref = [None]*nr
+	ima,kb = prepi(refs)
+	from math import radians
+	psisteprad = radians(psistep)
+	for i in xrange(nr):
+		# gridding rotation
+		ref[i] = fft(ima.rot_scale_conv_new_background_twice((i-nc)*psisteprad, 0.,0., kb, 1.))
+
+	return  ref
+
+def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, stepx = 1.0, stepy = 1.0, updown = "both"):
+	"""
+	Direct 2D alignment within a predefined angular range.  If the range is large the method will be very slow.
+	refs - a stack of reference images.  If a single image, the stack will be created.
+	updown - one of three keywords: both, up, down, indicating which angle to consider, 0, 180, or both.
+	PAP 12/27/2014
+	"""
+	from fundamentals import fft, rot_shift2D, ccf, prepi
+	from utilities    import peak_search, model_blank, inverse_transform2, compose_transform2
+	from alignment    import parabl
+
+
+
+	M = inima.get_xsize()
+	alpha = 1.75
+	K = 6
+	N = M*2  # npad*image size
+	r = M/2
+	v = K/2.0/N
+	params = {"filter_type" : Processor.fourier_filter_types.KAISER_SINH_INVERSE,
+	          "alpha" : alpha, "K":K,"r":r,"v":v,"N":N}
+	kb = Util.KaiserBessel(alpha, K, r, v, N)
+
+
+
+	nr = int(2*psimax/psistep)+1
+	nc = nr//2
+
+	try:
+		wn = len(refs)
+		if(wn != nr):
+			ERROR("Incorrect number of reference images","directali",1)
+		"""
+		N = refs[0].get_ysize()  # assumed square image
+		# prepare 
+		#npad = 2
+		#N = nx*npad
+		K = 6
+		alpha = 1.75
+		r = nx/2
+		v = K/2.0/N
+		kb = Util.KaiserBessel(alpha, K, r, v, N)
+		"""
+		ref = refs
+	except:
+		ref = [None]*nr
+		ima,kb = prepi(refs)
+		from math import radians
+		psisteprad = radians(psistep)
+		for i in xrange(nr):
+			# gridding rotation
+			ref[i] = fft(ima.rot_scale_conv_new_background_twice((i-nc)*psisteprad, 0.,0., kb, 1.))
+			"""
+			ref[i] = rot_shift2D(refs,(i-nc)*psistep, interpolation_method = 'gridding')
+			ref[i] = ref[i].FourInterpol(N, N, 1,0)
+			#fft(ref[i]).write_image('refprep.hdf')
+			"""
+
+	#  Window for ccf smapled by gridding
+	wnx = 2*xrng + 1
+	wny = 2*yrng + 1
+	stepxx = 2*stepx
+	rnx   = 2*int((xrng/stepx+0.5))
+	stepyy = 2*stepy
+	rny   = 2*int((yrng/stepy+0.5))
+	wnx = 2*rnx + 1
+	wny = 2*rny + 1
+	w = model_blank( wnx, wny)
+	nic = N//2
+
+	if updown == "both" or updown == "up" :
+		ima = inima.FourInterpol(N, N, 1,0)
+		ima = Processor.EMFourierFilter(ima,params)
+
+	if updown == "both" or updown == "down" :
+		imm = rot_shift2D(inima,180.0, interpolation_method = 'linear')
+		imm = imm.FourInterpol(N, N, 1,0)
+		imm = Processor.EMFourierFilter(imm,params)
+
+	#fft(ima).write_image('imap.hdf')
+	#print " in ali  ", psimax, psistep, xrng, yrng, wnx, wny, nr,updown 
+	ma1  = -1.e23
+	ma2  = -1.e23
+	ma3  = -1.e23
+	ma4  = -1.e23
+	oma2 = [-1.e23, -1.e23, -1.e23]
+	oma4 = [-1.e23, -1.e23, -1.e23]
+	"""
+	fft(ima).write_image('ima.hdf')
+	for i in xrange(nr):  fft(ref[i]).write_image('ref.hdf',i)
+	from sys import exit
+	exit()
+	"""
+	for i in xrange(nr):
+		if updown == "both" or updown == "up" :
+			c = ccf(ima,ref[i])
+			#c.write_image('gcc.hdf')
+			#p = peak_search(window2d(c,4*xrng+1,4*yrng+1),5)
+			#for q in p: print q
+			for iy in xrange(-rny, rny + 1):
+				for ix in xrange(-rnx, rnx + 1):
+					w[ix+rnx,iy+rny] = c.get_pixel_conv7(ix*stepxx+nic, iy*stepyy+nic, 0.0, kb)
+
+			pp = peak_search(w)[0]
+			#print '  peak   ',i,pp
+			#from sys import exit
+			#exit()
+			
+			px = int(pp[4])
+			py = int(pp[5])
+			#print '  peak   ',i,pp,px*stepx,py*stepy
+			#  did not find a peak, find a maximum location instead
+			if( pp[0] == 1.0 and px == 0 and py == 0):
+				loc = w.calc_max_location()
+				PEAKV = w.get_value_at(loc[0],loc[1])
+				if(PEAKV>ma2):
+					ma2  = PEAKV
+					oma2 = pp+[loc[0], loc[1], loc[0], loc[1], PEAKV,(i-nc)*psistep]
+			else:
+				ww = model_blank(4,4)
+				px = int(pp[1])
+				py = int(pp[2])
+				for k in xrange(3):
+					for l in xrange(3):
+						ww[k+1,l+1] = w[k+px-1,l+py-1]
+				XSH, YSH, PEAKV = parabl(ww)
+				#print ["S %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
+				"""
+				if(pp[0]>ma1):
+					ma1 = pp[0]
+					oma1 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
+				"""
+				if(PEAKV>ma2):
+					ma2  = PEAKV
+					oma2 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
+		if updown == "both" or updown == "down" :
+			c = ccf(imm,ref[i])
+			for iy in xrange(-rny, rny + 1):
+				for ix in xrange(-rnx, rnx + 1):
+					w[ix+rnx,iy+rny] = c.get_pixel_conv7(ix*stepxx+nic, iy*stepyy+nic, 0.0, kb)
+			pp = peak_search(w)[0]
+			px = int(pp[4])
+			py = int(pp[5])
+			if( pp[0] == 1.0 and px == 0 and py == 0):
+				loc = w.calc_max_location()
+				PEAKV = w.get_value_at(loc[0],loc[1])
+				if(PEAKV>ma4):
+					ma4  = PEAKV
+					oma4 = pp+[loc[0], loc[1], loc[0], loc[1], PEAKV,(i-nc)*psistep]
+			else:
+				ww = model_blank(4,4)
+				px = int(pp[1])
+				py = int(pp[2])
+				for k in xrange(3):
+					for l in xrange(3):
+						ww[k+1,l+1] = w[k+px-1,l+py-1]
+				XSH, YSH, PEAKV = parabl(ww)
+				#print ["R %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
+				"""
+				if(pp[0]>ma3):
+					ma3 = pp[0]
+					oma3 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
+				"""
+				if(PEAKV>ma4):
+					ma4 = PEAKV
+					oma4 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
+
+	#print "  hoho ",updown
+	#print "  oma2 ",oma2
+	#print "  oma4 ",oma4
+	if( oma2[-2] > oma4[-2] ):
+		"""
+		print oma1
+		print oma2
+		print  "        %6.2f %6.2f  %6.2f"%(oma2[-1],oma2[-4],oma2[-3])
+		"""
+		nalpha, ntx, nty, mirror = inverse_transform2(oma2[-1],oma2[-4]*stepx,oma2[-3]*stepy,0)
+		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
+		peak = oma2[-2]
+	else:
+		"""
+		print oma3
+		print oma4
+		"""
+		nalpha, ntx, nty, junk = compose_transform2(oma4[-1],oma4[-4]*stepx,oma4[-3]*stepy,1.0,180.,0,0,1)
+		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
+		nalpha, ntx, nty, mirror = inverse_transform2(nalpha, ntx, nty,0)
+		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
+		peak = oma4[-2]
+	return  nalpha, ntx, nty, peak
 
 
 def ali_nvol(v, mask):

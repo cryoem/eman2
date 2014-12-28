@@ -3701,11 +3701,10 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 	from random import randint
 
 	def gv(phi, theta):
-		from math import pi, cos, sin
-		angle_to_rad = pi/180.0
+		from math import radians, cos, sin
 
-		theta *= angle_to_rad
-		phi *= angle_to_rad
+		theta = radians(theta)
+		phi   = radians(phi)
 
 		x = sin(theta)*cos(phi) 
 		y = sin(theta)*sin(phi)
@@ -3716,13 +3715,13 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 	def ang_diff(v1, v2):
 		# The first return value is the angle between two vectors
 		# The second return value is whether we need to mirror one of them (0 - no need, 1 - need)
-		from math import acos, pi
+		from math import acos, degrees
 
 		v = v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2]
 		if v > 1: v = 1
 		if v < -1: v = -1
-		if v >= 0: return acos(v)*180/pi, 0
-		else:  return acos(-v)*180/pi, 1
+		if v >= 0: return degrees(acos(v)), 0
+		else:  return degrees(acos(-v)), 1
 	
 	def get_ref_ang_list(delta, sym):
 		ref_ang = even_angles(delta, symmetry=sym)
@@ -3788,7 +3787,7 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 	if N < img_per_grp:
 		print "Error: image per group larger than the number of particles!"
 		exit()
-	phi_list = [[0.0, 0] for i in xrange(N)]
+	phi_list   = [[0.0, 0] for i in xrange(N)]
 	theta_list = [[0.0, 0] for i in xrange(N)]
 	vec = [None]*N
 	for i in xrange(N):
@@ -3797,10 +3796,10 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 		vec[i] = gv(phi, theta)
 		if theta > 90.0:
 			theta = 180.0-theta
-			phi += 180.0
+			phi  += 180.0
 		phi = phi%360.0
-		phi_list[i][0] = phi
-		phi_list[i][1] = i
+		phi_list[i][0]   = phi
+		phi_list[i][1]   = i
 		theta_list[i][0] = theta
 		theta_list[i][1] = i
 	theta_list.sort()
@@ -3814,11 +3813,11 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 	g = [[360.0, 0, 0] for i in xrange(N)]
 	proj_list = []
 	mirror_list = []
-	neighbor  = [0]*img_per_grp
+	neighbor   = [0]*img_per_grp
 	#neighbor2 = [0]*img_per_grp
-	dis       = [0.0]*img_per_grp
+	dis        = [0.0]*img_per_grp
 	#dis2      = [0.0]*img_per_grp
-	mirror    = [0]*img_per_grp
+	mirror     = [0]*img_per_grp
 	S = Set()
 	T = Set()
 	#tt1 = time()
@@ -3834,7 +3833,7 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 		phi = phi%360.0
 		delta = 0.01
 		while True:
-			min_theta = max(0.0, theta-delta)
+			min_theta = max( 0.0, theta-delta)
 			max_theta = min(90.0, theta+delta)
 			if min_theta == 0.0:
 				min_phi = 0.0
@@ -3852,9 +3851,9 @@ def nearest_proj(proj_ang, img_per_grp=100, List=[]):
 					if min_phi_mir < 0.0: min_phi_mir += 360.0
 					if max_phi_mir > 360.0: max_phi_mir -= 360.0
 				
-			phi_left_bound = binary_search_l(phi_list_l, min_phi)
-			phi_right_bound = binary_search_r(phi_list_l, max_phi)
-			theta_left_bound = binary_search_l(theta_list_l, min_theta)
+			phi_left_bound    = binary_search_l(phi_list_l, min_phi)
+			phi_right_bound   = binary_search_r(phi_list_l, max_phi)
+			theta_left_bound  = binary_search_l(theta_list_l, min_theta)
 			theta_right_bound = binary_search_r(theta_list_l, max_theta)
 			if theta+delta > 90.0:
 				phi_mir_left_bound = binary_search_l(phi_list_l, min_phi_mir)

@@ -578,7 +578,7 @@ def prepi(image):
 		Input
 			image: input image that is going to be rotated and shifted using rtshgkb
 		Output
-			imageft: image prepared for gridding rotation and shift
+			imageft: real space image prepared for gridding rotation and shift by convolution
 			kb: interpolants (tabulated Kaiser-Bessel function)
 	"""
 	from EMAN2 import Processor
@@ -662,7 +662,7 @@ def prepg(image, kb):
 	params = {"filter_type" : Processor.fourier_filter_types.KAISER_SINH_INVERSE,
 		  "alpha" : alpha, "K":K,"r":r,"v":v,"N":N}
 	q = Processor.EMFourierFilter(o,params)
-	return  fft(q) 
+	return  fft(q)
 	
 def ramp(inputimage):
 	"""
@@ -796,7 +796,7 @@ def rops_dir(indir, output_dir = "1dpw2_dir"):
 def rotshift2dg(image, ang, dx, dy, kb, scale = 1.0):
 	"""Rotate and shift an image using gridding
 	"""
-	from math import pi
+	from math import radians
 	from EMAN2 import Processor
 
 	M = image.get_xsize()
@@ -806,18 +806,18 @@ def rotshift2dg(image, ang, dx, dy, kb, scale = 1.0):
 	r = M/2
 	v = K/2.0/N
 	# first pad it with zeros in Fourier space
-	o = image.FourInterpol(2*M,2*M,1,0)
+	o = image.FourInterpol(N,N,1,0)
 	params = {"filter_type" : Processor.fourier_filter_types.KAISER_SINH_INVERSE,
 	          "alpha" : alpha, "K":K,"r":r,"v":v,"N":N}
 	q = Processor.EMFourierFilter(o,params)
 	o = fft(q)
 
 	# gridding rotation
-	return o.rot_scale_conv(ang*pi/180.0, dx, dy, kb, scale)
+	return o.rot_scale_conv(radians(ang), dx, dy, kb, scale)
 
 def gridrot_shift2D(image, ang = 0.0, sx = 0.0, sy = 0.0, scale = 1.0):
 	"""
-		Rotate and shift an image using gridding on Fourier space.
+		Rotate and shift an image using gridding in Fourier space.
 	"""
 	from EMAN2 import Processor
 	from fundamentals import fftip, fft
@@ -1002,7 +1002,7 @@ def rtshgkb(image, angle, sx, sy, kb, scale = 1.0):
 	"""
 	from math import radians
 	# gridding rotation
-	return image.rot_scale_conv_new(radians(angle)., sx, sy, kb, scale)
+	return image.rot_scale_conv_new(radians(angle), sx, sy, kb, scale)
 	
 def smallprime(arbit_num, numprime=3):
 	primelist = [2,3,5,7,11,13,17,19,23]
