@@ -54,6 +54,11 @@ from libpyUtils2 import EMUtil
 # larger numbers will increase the amount of output
 DBDEBUG=0
 
+def js_one_key(url,key):
+	"""Opens a JSON file and returns a single key before closing the file. Not really faster, but conserves memory by not leaving the file open"""
+
+	return JSDict.one_key(url,key)
+
 def js_open_dict(url):
 	"""Opens a JSON file as a dict-like database object. The interface is almost identical to the BDB db_* functions.
 If opened. Writes to JDB dictionaries may be somewhat inefficient due to the lack of a good model (as BDB has) for
@@ -254,7 +259,7 @@ class JSTaskQueue:
 		"""path should point to the directory where the disk-based task queue will reside without bdb:"""
 		if path==None or len(path)==0 :
 			path="tmp"
-			
+
 		if not os.path.isdir(path) : os.makedirs(path)
 		self.path=path
 		self.active=js_open_dict("%s/tasks_active.json"%path)		# active tasks keyed by id
@@ -549,7 +554,7 @@ JSDicts are open at one time."""
 		if cls.opendicts.has_key(normpath) :
 			cls.lock.release()
 			return cls.opendicts[normpath]
-		
+
 		try : ret=JSDict(path)
 		except:
 			cls.lock.release()
@@ -581,6 +586,20 @@ JSDicts are open at one time."""
 		cls.lock.release()
 		return ret
 
+	@classmethod
+	def one_key(cls,path,key):
+		"""Opens a JSDict for path, reads a single key (if present) then closes the JSDict, to reduce memory issues
+		when a large set of Dicts is iterated over in a large project"""
+
+		try:
+			db=JSDict.open_db(path)
+			ret=db[key]
+			db.close()
+		except:
+#			traceback.print_exc()
+			return None
+
+		return ret
 
 	def __init__(self,path=None):
 		"""This is a dict-like representation of a JSON file on disk. Warning, the entire file contents are parsed and held
@@ -597,7 +616,7 @@ of the path is stored as self.normpath"""
 		self.path=path
 		try: self.normpath=os.path.abspath(path)
 		except: self.normpath=path
-		self.filesize=0					# stores the size of the text file on disk for approximat memory management
+		self.filesize=0					# stores the size of the text file on disk for approximate memory management
 
 		self.data={}					# a cached copy of the actual data
 		self.changes={}					# a set of changes to merge when next committing to disk
@@ -610,12 +629,16 @@ of the path is stored as self.normpath"""
 	def __str__(self): return "<JSDict instance: %s>" % self.path
 
 	def __del__(self):
-		if len(self.changes)>0 : self.sync()
-
+		if len(self.changes)>0 or len(self.delkeys): self.sync()
 
 	def close(self):
-		if len(self.changes)>0 : self.sync()
-		del JSDict.opendicts[self.normpath]
+		"""This will free effectively all of the memory associated with the object. It doesn't actually eliminate
+		the object entirely since there may be multiple copies around. If the dictionary is accessed again, it will
+		be automatically reopened."""
+		if len(self.changes)>0 or len(self.delkeys): self.sync()
+		self.lasttime=0
+		self.data={}
+#		del JSDict.opendicts[self.normpath]
 
 	def sync(self):
 		"""This is where all of the JSON file access occurs. This one routine handles both reading and writing, with file locking"""
@@ -687,7 +710,7 @@ of the path is stored as self.normpath"""
 			### We do the updates and prepare the string in-ram. If someone else tries a write while we're doing this, it should raise the above exception
 			self.data.update(self.changes)		# update the internal copy of the data
 			self.changes={}
-			for k in self.delkeys: 
+			for k in self.delkeys:
 				try: del self.data[k]
 				except: pass
 			self.delkeys=set()
@@ -745,7 +768,7 @@ performance than many individual changes."""
 		key=str(key)
 
 		if noupdate:
-			if key in self.delkeys and key not in self.changes and key not in self.data : 
+			if key in self.delkeys and key not in self.changes and key not in self.data :
 				del self.delkeys[key]
 				self.changes[key]=dfl
 				return dfl

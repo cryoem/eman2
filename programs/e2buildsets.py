@@ -107,7 +107,7 @@ def main():
 		outargs=[]
 		for i in args:
 			try:
-				if js_open_dict(info_name(i+".hdf"))["quality"]>=options.minqual : outargs.append(i)
+				if js_one_key(info_name(i+".hdf"),"quality")>=options.minqual : outargs.append(i)
 			except:
 				traceback.print_exc()
 				print "Unknown quality for {},{}, including it".format(i,info_name(i+".hdf"))
@@ -126,7 +126,7 @@ def main():
 	outargs=[]
 	for i in args:
 		try:
-			ctf=js_open_dict(info_name(i+".hdf"))["ctf"][0]
+			ctf=js_one_key(info_name(i+".hdf"),"ctf")[0]
 			r1=int(floor(1.0/(200.0*ctf.dsbg)))
 			r2=int(ceil(1.0/(20.0*ctf.dsbg)))
 			r3=int(floor(1.0/(10.0*ctf.dsbg)))
@@ -134,12 +134,13 @@ def main():
 			losnr=sum(ctf.snr[r1:r2])/(r2-r1)
 			hisnr=sum(ctf.snr[r3:r4])/(r4-r3)
 			if ctf.defocus>=options.mindf and ctf.defocus<=options.maxdf and ctf.bfactor>=options.minbfactor and ctf.bfactor<=options.maxbfactor and losnr>options.minlosnr and hisnr>options.minhisnr : outargs.append(i)
+			if options.verbose > 1: print "{}<{}<{}   {}<{}<{}   {}>{}   {}>{}".format(options.mindf,ctf.defocus,options.maxdf,options.minbfactor,ctf.bfactor,options.maxbfactor, losnr,options.minlosnr,hisnr,options.minhisnr)
 		except:
 			traceback.print_exc()
 			print "Error with CTF parameters for: ",i
 			ctfmsg+=1
 			outargs.append(i)
-	
+
 	if ctfmsg: print "Included {} images with undefined CTF".format(ctfmsg)
 
 	args=outargs
@@ -177,7 +178,7 @@ def main():
 		nimg=EMUtil.get_image_count("particles/{}{}.hdf".format(f,basetype))
 
 		if options.excludebad :
-			try : bad=set(js_open_dict(info_name(f+".hdf"))["sets"]["bad_particles"])
+			try : bad=set(js_one_key(info_name(f+".hdf"),"sets")["bad_particles"])
 			except :
 				if options.verbose : print "No badlist for ",f
 				bad=set()
