@@ -768,6 +768,7 @@ performance than many individual changes."""
 		key=str(key)
 
 		if noupdate:
+			if self.lasttime==0 : self.sync()		# if DB is closed, sync anyway
 			if key in self.delkeys and key not in self.changes and key not in self.data :
 				del self.delkeys[key]
 				self.changes[key]=dfl
@@ -786,6 +787,7 @@ performance than many individual changes."""
 		key=str(key)
 
 		if noupdate:
+			if self.lasttime==0 : self.sync()		# if DB is closed, sync anyway
 			if key in self.delkeys and key not in self.changes and key not in self.data : return dfl
 			if key in self.changes : return self.changes[key]
 			return self.data[key]
@@ -801,6 +803,7 @@ performance than many individual changes."""
 		key=str(key)
 
 		if noupdate:
+			if self.lasttime==0 : self.sync()		# if DB is closed, sync anyway
 			if key in self.delkeys and key not in self.changes and key not in self.data : raise KeyError,key
 			if key in self.changes : return self.changes[key]
 			return self.data[key]
