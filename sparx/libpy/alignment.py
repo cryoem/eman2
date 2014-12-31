@@ -1894,7 +1894,8 @@ def proj_ali_helicon_90_local_direct(data, refrings, xrng, yrng, \
 	imn3 = cos(radians(theta))
 	print '  aaaaaa  ',psi_max, psi_step, xrng, yrng, direction
 	for i in xrange(len(refrings)):
-		if (abs(refrings[i][0].get_attr("n1")*imn1 + refrings[i][0].get_attr("n2")*imn2 + refrings[i][0].get_attr("n3")*imn3)>=ant):
+		if( (refrings[i][0].get_attr("n1")*imn1 + refrings[i][0].get_attr("n2")*imn2 + refrings[i][0].get_attr("n3")*imn3)>=ant ):
+			print  " Matching refring  ",i,phi, theta, psi, tx, ty
 			#  directali will do fft of the input image and 180 degs rotation, if necessary.  Eventually, this would have to be pulled up.
 			a, tx,ty, tp = directaligridding(data, refrings[i], psi_max, psi_step, xrng, yrng, stepx, stepy, direction)
 			if(tp>peak):
@@ -1914,12 +1915,13 @@ def proj_ali_helicon_90_local_direct(data, refrings, xrng, yrng, \
 		psi   = (refrings[iref][0].get_attr("psi")+angb+360.0)%360.0
 		s2x   = sxb #+ tx
 		s2y   = syb #+ ty
-
+		print   "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f" %(phi, theta, psi, s2x, s2y, peak)
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f\n\n" %(phi, theta, psi, s2x, s2y, peak))
 			finfo.flush()
 		return peak, phi, theta, psi, s2x, s2y
 	else:
+		print  "  NO PEAK"
 		return -1.0e23, 0.0, 0.0, 0.0, 0.0, 0.0
 
 def proj_ali_helicon_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, an, psi_max=180.0, finfo=None, yrnglocal=-1.0):
@@ -2782,7 +2784,8 @@ def directali(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, updown = "bo
 
 
 def preparerefsgrid(refs, psimax=1.0, psistep=1.0):
-	from fundamentals import prepi
+	from fundamentals import prepi, fft
+	from EMAN2 import Processor
 
 	M = refs.get_xsize()
 	alpha = 1.75
@@ -2817,9 +2820,8 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 	from fundamentals import fft, rot_shift2D, ccf, prepi
 	from utilities    import peak_search, model_blank, inverse_transform2, compose_transform2
 	from alignment    import parabl
-
-
-
+	from EMAN2 import Processor
+	print  "  directaligridding  ",psimax, psistep, xrng, yrng, stepx, stepy, updown
 	M = inima.get_xsize()
 	alpha = 1.75
 	K = 6
@@ -2865,17 +2867,17 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 			#fft(ref[i]).write_image('refprep.hdf')
 			"""
 
-	#  Window for ccf smapled by gridding
-	wnx = 2*xrng + 1
-	wny = 2*yrng + 1
-	stepxx = 2*stepx
-	rnx   = 2*int((xrng/stepx+0.5))
-	stepyy = 2*stepy
-	rny   = 2*int((yrng/stepy+0.5))
+	#  Window for ccf sampled by gridding
+	rnx   = int((xrng/stepx+0.5))
+	rny   = int((yrng/stepy+0.5))
 	wnx = 2*rnx + 1
 	wny = 2*rny + 1
 	w = model_blank( wnx, wny)
+	stepxx = 2*stepx
+	stepyy = 2*stepy
 	nic = N//2
+	wxc = wnx//2
+	wyc = wny//2
 
 	if updown == "both" or updown == "up" :
 		ima = inima.FourInterpol(N, N, 1,0)
@@ -2887,7 +2889,10 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 		imm = Processor.EMFourierFilter(imm,params)
 
 	#fft(ima).write_image('imap.hdf')
-	#print " in ali  ", psimax, psistep, xrng, yrng, wnx, wny, nr,updown 
+	from utilities import get_params_proj
+	e1 = ref[0]['phi']
+	f1,e2,e3,e4,e5 = get_params_proj(inima)
+	print " in ali  ", e1,f1,psimax, psistep, xrng, yrng, wnx, wny, rnx, rny, stepxx, stepyy, nr,updown 
 	ma1  = -1.e23
 	ma2  = -1.e23
 	ma3  = -1.e23
@@ -2914,7 +2919,7 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 			#print '  peak   ',i,pp
 			#from sys import exit
 			#exit()
-			
+
 			px = int(pp[4])
 			py = int(pp[5])
 			#print '  peak   ',i,pp,px*stepx,py*stepy
@@ -2922,9 +2927,10 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 			if( pp[0] == 1.0 and px == 0 and py == 0):
 				loc = w.calc_max_location()
 				PEAKV = w.get_value_at(loc[0],loc[1])
+				print "  Did not find a peak  :",i,loc[0]-wxc, loc[1]-wyc, PEAKV
 				if(PEAKV>ma2):
-					ma2  = PEAKV
-					oma2 = pp+[loc[0], loc[1], loc[0], loc[1], PEAKV,(i-nc)*psistep]
+						ma2  = PEAKV
+						oma2 = pp+[loc[0]-wxc, loc[1]-wyc, loc[0]-wxc, loc[1]-wyc, PEAKV,(i-nc)*psistep]
 			else:
 				ww = model_blank(4,4)
 				px = int(pp[1])
@@ -2933,7 +2939,7 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 					for l in xrange(3):
 						ww[k+1,l+1] = w[k+px-1,l+py-1]
 				XSH, YSH, PEAKV = parabl(ww)
-				#print ["S %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
+				print ["S %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
 				"""
 				if(pp[0]>ma1):
 					ma1 = pp[0]
@@ -2964,7 +2970,7 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 					for l in xrange(3):
 						ww[k+1,l+1] = w[k+px-1,l+py-1]
 				XSH, YSH, PEAKV = parabl(ww)
-				#print ["R %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
+				print ["R %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
 				"""
 				if(pp[0]>ma3):
 					ma3 = pp[0]

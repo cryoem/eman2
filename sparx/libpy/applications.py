@@ -15150,8 +15150,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 				ERROR('xrange step size cannot be zero', "localhelicon_MPI", 1,myid)
 			else:
 				stepx[ii] = 1.0 # this is to prevent division by zero in c++ code
-	print ' xrng ',xrng
-	print ' yrng ',yrng
+
 	#  TURN INTO PARAMETER OR COMPUTE FROM OU
 	psistep=0.5
 	# do the projection matching
@@ -15177,7 +15176,8 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 
 				if myid == main_node:
 					start_time = time()
-					print_msg("\n (localhelicon_MPI) ITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.4f, xrange (Pixels) = %5.4f,stepx (Pixels) = %5.4f, yrng (Pixels) = %5.4f,  stepy (Pixels) = %5.4f, y_restrict (Pixels)=%5.4f, ynumber = %3d\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],stepx[N_step],yrng[N_step],stepy,y_restrict[N_step], ynumber[N_step]))
+					print_msg("\n (localhelicon_MPI) ITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.4f, xrange (Pixels) = %5.4f,stepx (Pixels) = %5.4f, yrng (Pixels) = %5.4f,  stepy (Pixels) = %5.4f, y_restrict (Pixels)=%5.4f, ynumber = %3d\n"\
+					%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step], stepx, yrng[N_step], stepy, y_restrict[N_step], ynumber[N_step]))
 
 				volft,kb = prep_vol( vol )
 				#  What about cushion for a neighborhood?  PAP 06/04/2014
@@ -15203,9 +15203,10 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 				for im in xrange( seg_start, seg_end ):
 					Torg.append(data[im].get_attr('xform.projection'))
 
-				#  Fit predicted locations as new starting points					
-				if (seg_end - seg_start) > 1:
-					setfilori_SP(data[seg_start: seg_end], pixel_size, dp, dphi)
+				#  Fit predicted locations as new starting points
+				#  LOCKED FOR TESTUNGING  PAP 12/30/2014
+				#if (seg_end - seg_start) > 1:
+				#	setfilori_SP(data[seg_start: seg_end], pixel_size, dp, dphi)
 
 				for im in xrange( seg_start, seg_end ):
 
@@ -16045,7 +16046,7 @@ def prepare_refffts( volft, kb, nx,ny,nz, segmask, delta, ref_a, sym, \
 			ththt -= delta_theta
 
 	num_ref = len(ref_angles)
-
+	for q in ref_angles:  print q
 	if MPI:
 		from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
 		myid = mpi_comm_rank( MPI_COMM_WORLD )
@@ -16067,9 +16068,9 @@ def prepare_refffts( volft, kb, nx,ny,nz, segmask, delta, ref_a, sym, \
 		for i in xrange(ref_start, ref_end):
 			prjref = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
 			Util.mul_img(prjref, segmask )
-			refrings[i] = preprefsgridprj(ref, psimax, psistep)
+			refrings[i] = preparerefsgrid(prjref, psimax, psistep)
 	else:
-		print "do not handle this case"
+		ERROR("do not handle this case","prepare_refffts",1)
 		sys.exit()
 	if MPI:
 		from utilities import bcast_EMData_to_all
