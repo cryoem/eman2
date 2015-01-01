@@ -3046,19 +3046,20 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 	return  nalpha, ntx, nty, peak
 
 
-def directaligridding1(inima, kb, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, stepx = 1.0, stepy = 1.0, updown = "both"):
+def directaligridding1(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1, yrng=1, stepx = 1.0, stepy = 1.0, updown = "both"):
 	"""
 	Direct 2D alignment within a predefined angular range.  If the range is large the method will be very slow.
-	refs - a stack of reference images.  If a single image, the stack will be created.
+	ref - a stack of reference images. 
 	updown - one of three keywords: both, up, down, indicating which angle to consider, 0, 180, or both.
-	PAP 12/27/2014
+	PAP 01/01/2015
 	"""
-	#  Eventually will have to pass kb here
+
 	from fundamentals import fft, rot_shift2D, ccf, prepi
 	from utilities    import peak_search, model_blank, inverse_transform2, compose_transform2
 	from alignment    import parabl
 	from EMAN2 import Processor
 	print  "  directaligridding1  ",psimax, psistep, xrng, yrng, stepx, stepy, updown
+
 	"""
 	M = inima.get_xsize()
 	alpha = 1.75
@@ -3075,7 +3076,7 @@ def directaligridding1(inima, kb, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1,
 	nr = int(2*psimax/psistep)+1
 	nc = nr//2
 
-	
+	N = inima.get_ysize()  # assumed image is square, but because it is FT take y.
 	#  Window for ccf sampled by gridding
 	rnx   = int((xrng/stepx+0.5))
 	rny   = int((yrng/stepy+0.5))

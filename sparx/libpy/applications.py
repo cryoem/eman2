@@ -14893,7 +14893,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 						rmin, rmax, fract,  npad, sym, user_func_name, \
 						pixel_size, debug, y_restrict, search_iter):
 
-	from alignment      import proj_ali_helicon_local, proj_ali_helicon_90_local_direct
+	from alignment      import proj_ali_helicon_local, proj_ali_helicon_90_local_direct, directaligridding1
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string, pad, model_blank
 	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all
 	from utilities      import send_attr_dict, read_text_row, sym_vol
@@ -14909,12 +14909,12 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 	from projection     import prep_vol, prgs
 	from statistics     import hist_list, varf3d_MPI
 	from applications   import MPI_start_end, header, prepare_helical_refangles, prepare_reffft1
-	from EMAN2          import Vec2f
+	from EMAN2          import Vec2f, Processor
 	from math			import sin, cos, radians
 	from string         import lower, split
 	from copy           import copy
 	import  os
-	import types
+	import  types
 
 	number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
 	myid           = mpi_comm_rank(MPI_COMM_WORLD)
@@ -15120,7 +15120,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 				data[im].set_attr('ctf_applied', 1)
 
 
-	M = inima.get_xsize()
+	M = data_nn
 	alpha = 1.75
 	K = 6
 	N = M*2  # npad*image size
@@ -15267,12 +15267,13 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 						if( (n1*imn1 + n2*imn2 + n3*imn3)>=ant ):
 
 							if(refrings[0] == None):
-								refrings = prepare_reffft1( volft, kbv, segmask, psi_max, psistep)
+								refrings = prepare_reffft1( volft, kbv, refang, segmask, psi_max, psistep)
 
 							if psi < 180.0 :  direction = "up"
 							else:             direction = "down"
 
-							angb, tx, ty, pik = directaligridding1(dataft[im], kb, refrings, psi_max, psi_step, xrng, yrng, stepx, stepy, direction)
+							angb, tx, ty, pik = directaligridding1(dataft[im], kb, refrings, \
+								psi_max, psistep, xrng[N_step], yrng[N_step], stepx, stepy, direction)
 
 							if(pik > -1.0e23):
 								if(pik > neworient[im][-1]):
@@ -16586,9 +16587,10 @@ def prepare_helical_refangles(delta, initial_theta = None, delta_theta = None):
 			ththt -= delta_theta
 	return ref_angles
 
-def prepare_reffft1( volft, kb, segmask, psimax=1.0, psistep=1.0, kbx = None, kby = None):
+def prepare_reffft1( volft, kb, ref_angles, segmask, psimax=1.0, psistep=1.0, kbx = None, kby = None):
 
 	from projection   import prgs
+	from alignment    import preparerefsgrid
 	from math         import sin, cos, radians
 
 	#refrings = []     # list of (image objects) reference projections in Fourier representation
@@ -16598,6 +16600,7 @@ def prepare_reffft1( volft, kb, segmask, psimax=1.0, psistep=1.0, kbx = None, kb
 	if kbx is None:
 		prjref = prgs(volft, kb, [ref_angles[0], ref_angles[1], ref_angles[2], 0.0, 0.0])
 		Util.mul_img(prjref, segmask )
+		#  EVENTUALLY PASS kb inside
 		refrings = preparerefsgrid(prjref, psimax, psistep)
 	else:
 		ERROR("do not handle this case","prepare_refffts",1)
