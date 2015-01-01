@@ -91,6 +91,8 @@ def main():
 			ERROR("Please specify pixel size apix","sxheliconlocal",1)
 		if options.dp < 0 or options.dphi < 0:
 			ERROR("Please specify helical symmetry parameters dp and dphi","sxheliconlocal",1)
+		if options.an <= 0 :
+			ERROR("Angular search range (an) has to be given.  Only local searches are permitted.","sxheliconlocal",1)
 
 		print  " This code is under development, some instabilities are possible 12/28/2014"
 
