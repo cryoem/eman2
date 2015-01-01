@@ -15267,6 +15267,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 						if( (n1*imn1 + n2*imn2 + n3*imn3)>=ant ):
 
 							if(refrings[0] == None):
+								print  "  reffft1  ",im,refang
 								refrings = prepare_reffft1( volft, kbv, refang, segmask, psi_max, psistep)
 
 							if psi < 180.0 :  direction = "up"
@@ -15278,14 +15279,15 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 							if(pik > -1.0e23):
 								if(pik > neworient[im][-1]):
 									neworient[im][-1] = pik
-									neworient[im][:4] = [angb, tx, ty, [refang]]
+									neworient[im][:4] = [angb, tx, ty, refang]
 
 
 			for im in xrange(nima):
+				print " neworient  ",im,neworient[im]
 				if(neworient[im][-1] > -1.0e23):
 					#  psi is doubtful
 					tp = Transform({"type":"spider","phi":neworient[im][3][0],"theta":neworient[im][3][1],"psi":neworient[im][3][1]+neworient[im][0]})
-					tp.set_trans( Vec2f( -neworient[im][1], -neworient[im][2] ) )
+					tp.set_trans( Vec2f( neworient[im][1], neworient[im][2] ) )
 					data[im].set_attr("xform.projection", tp)
 					pixer[im]  = max_3D_pixel_error(Torg[im-seg_start], tp, last_ring)
 					data[im].set_attr("pixerr", pixer[im])
