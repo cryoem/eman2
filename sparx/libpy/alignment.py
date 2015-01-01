@@ -3212,10 +3212,10 @@ def directaligridding1(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1, yrng=1, 
 	else:
 		peak = oma4[-2]
 		if( peak == 1.0e-23 ):  return  0.0, 0.0, 0.0, peak
-		"""
-		print oma3
+
+		#print oma3
 		print oma4
-		"""
+
 		nalpha, ntx, nty, junk = compose_transform2(oma4[-1],oma4[-4]*stepx,oma4[-3]*stepy,1.0,180.,0,0,1)
 		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
 		nalpha, ntx, nty, mirror = inverse_transform2(nalpha, ntx, nty,0)
