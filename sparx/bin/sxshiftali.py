@@ -1033,8 +1033,8 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 			nsegsc = nsegs//2
 			params =  a[ifil]	#+b[ifil] 
 			fval0 = snakehelicalali(params,[sccf,params0, pordera, porderb, 0.0,2*kx+1,resamp_maxrin])
-			print params0
-			im = 0
+			#print params0
+			im = 1
 			print "Iter=%d nsegs=%d"%(Iter, nsegs)
 			print "before amoeba im=%d shift_x=%f  rotang=%f "%(im,-shift_x[im], shift_ang[im]*resamp_dang*180/pi)
 			
@@ -1056,8 +1056,10 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 			## for b-spline
 			ftol = 1.e-6
 			xtol = 1.e-6
+
 			maxi = 200
 			scale=[100.0]*nknots		#+[0.001,0.001,50.0] #[4.0]*(porderb+1)
+
 			
 			newparams,fval, numit=amoeba(params, scale, snakehelicalali, ftol, xtol, maxi, [sccf,params0, pordera, porderb, 0.0,2*kx+1,resamp_maxrin])
 			
@@ -1071,7 +1073,7 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 				if shift_ang[iseg] < 0.0:
 					shift_ang[iseg] = resamp_maxrin - 1.0 + shift_ang[iseg]
 					
-			im = 0
+			im = 1
 			print "after amoeba i m=%d shift_x=%f  rotang=%f max_it=%d angid=%f"%(im,-shift_x[im], shift_ang[im]*resamp_dang*180/pi, numit, shift_ang[im])
 			im = 45
 			print "after amoeba i m=%d shift_x=%f  rotang=%f  max_it=%d angid=%f fval=%f"%(im,-shift_x[im], shift_ang[im]*resamp_dang*180/pi, numit, shift_ang[im], fval)
@@ -1259,8 +1261,67 @@ def bsplinedu(coefs,z,m):
 		val += coefs[i]*Util.bsplineBasedu((z+cents)/h-i)   #  (z,len(coefs),i,3,U)
 
 	return val
-	
-	
+
+
+# get the interval index of u belonging to	
+def get_k(U, u):
+    for i in range(len(U)-1):
+        if U[i] <= u and U[i+1] > u:
+            return i
+            
+        if U[len(U)-2] == u:
+            return len(U)-2
+            
+    raise Exception("Bounding interval for knot not found.")
+
+def get_multiplicity(U, u, i):
+
+    multiplicity = 0
+    
+    for i in range(i+1,len(U)):
+        if U[i] == u:
+            multiplicity += 1
+        else:
+            break
+            
+    for i in range(i-1,0,-1):
+        if U[i] == u:
+            multiplicity += 1
+        else:
+            break
+        
+    return multiplicity
+
+# deBoor algorithm for parametric b-spline/Bezier curve
+# _P: control points sequence.
+# U: knot sequence.
+# u: compute the b-spline at point u
+# p: degree of the b-spline. For cubic b-spline, p=3.
+def deboor(_P, U, u, p):
+    k = get_k(U, u)
+    s = get_multiplicity(U, u, k)
+    
+    if u != U[k]:
+        h = p
+    else:
+        h = p - s
+    
+    P = []
+    for _p in _P:
+        P.append([_p])
+    
+    for r in range(1, h+1):
+        for i in range(k-p+r, k-s+1):
+            a = (u - U[i]) / (U[i+p-r+1] - U[i])
+            
+            # Each point is a tuple
+            x = (1 - a) * P[i-1][r-1][0] + a * P[i][r-1][0]
+            y = (1 - a) * P[i-1][r-1][1] + a * P[i][r-1][1]
+            z = (1 - a) * P[i-1][r-1][2] + a * P[i][r-1][2]     ## added.
+            
+            P[i].append((x,y,z))
+            
+    return P[k-s][p-s]	
 		
 if __name__ == "__main__":
 	main()
