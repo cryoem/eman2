@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-#
 # Author: Jesus Galaz  19/1/2012
 # Copyright (c) 2011- Baylor College of Medicine
 #
@@ -49,6 +48,10 @@ def main():
 	(options, args) = parser.parse_args()	
 	
 	data = argv[1]
+	
+	if options.input:
+		data = options.input
+	
 	n = EMUtil.get_image_count(data)
 	for i in range(n):
 		a = EMData(data,i)
@@ -56,7 +59,11 @@ def main():
 		b.ri2ap()
 		c = b.amplitude()
 		c.process_inplace('xform.phaseorigin.tocenter')
-		d = c.process('xform.mirror',{'axis':'x'})
+		#d = c.process('xform.mirror',{'axis':'x'})
+		c.rotate(0,-90,0)
+		d = c.copy()
+		d.rotate(0,0,180)
+		
 		e = c + d
 		e.write_image(data.replace('.','_fftamp.'),i)
 		
