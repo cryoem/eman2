@@ -1223,18 +1223,21 @@ def prepare_refrings( volft, kb, nz, delta, ref_a, sym = "c1", numr = None, MPI=
 
 	return refrings
 
-def refprojs( volft, kb, ref_angles, last_ring, mask2D, cnx, cny, numr, mode, wr ):
-        from projection import prgs
+def refprojs( volft, kb, ref_angles, cnx, cny, numr, mode, wr ):
+	from projection		import prgs
+	from utilities		import getfvec
 
 	ref_proj_rings = []     # list of (image objects) reference projections in Fourier representation
-        for i in xrange(len(ref_angles)):
+	for i in xrange(len(ref_angles)):
 		#prjref = project(volref, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0], last_ring)
 		prjref = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
-		prjref.process_inplace("normalize.mask", {"mask":mask2D, "no_sigma":1})  # (i-a)/s
 		cimage = Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
+		Util.Normalize_ring(cimage, numr)
 		Util.Frngs(cimage, numr)
 		Util.Applyws(cimage, numr, wr)
 		ref_proj_rings.append(cimage)
+		n1,n2,n3 = getfvec(ref_angles[i][0], ref_angles[i][1])
+		refrings[i].set_attr_dict( {"phi":ref_angles[i][0], "theta":ref_angles[i][1], "psi":ref_angles[i][2], "n1":n1, "n2":n2, "n3":n3} )
 
 	return ref_proj_rings
 

@@ -3101,7 +3101,9 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
 		DB.close_dict(ipath)
 	print_end_msg("ali2d_cross_res")
 
-def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
+
+'''
+def ali3d_abandoned(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
             xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an = "-1", apsi = "-1", deltapsi = "-1", startpsi = "-1",
 	    center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym = "c1",
 	    user_func_name = "ref_ali3d", fourvar = True, npad = 4, debug = False, MPI = False, termprec = 0.0):
@@ -3145,13 +3147,15 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	from utilities      import estimate_3D_center, rotate_3D_shift
 	from filter         import filt_params, fit_tanh, filt_tanl, filt_ctf
 	from statistics     import fsc_mask
-	import os
-	import types
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	from alignment      import Numrinit, prepare_refrings
 	from projection     import prep_vol
 
 	import user_functions
+	import os
+	import types
+	from math			import radians, sin, cos
+
 	user_func = user_functions.factory[user_func_name]
 
 	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali3d", 1)
@@ -3241,17 +3245,38 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	for N_step in xrange(lstp):
  		for Iter in xrange(max_iter):
 			print_msg("\nITERATION #%3d\n"%(N_step*max_iter+Iter+1))
+			ref_angles = even_angles(delta[N_step], symmetry=sym, method = ref_a, phiEqpsi = "Minus")
 
-			volft, kb = prep_vol(vol)
-			refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, sym, numr, MPI=False, ant = max(an[N_step],0.0)*1.1)  # 1.1 is to have extra safety
-			del volft, kb
+			pixer  = [0.0]*nima
+			neworient = [[0.0, 0.0, 0.0, 0.0, 0.0, -2.0e23] for i in xrange(nima)]
+			Torg = []
+			pikorg = [0.0]*nima
+			for im in xrange( nima ):
+				Torg.append(data[im].get_attr('xform.projection'))
+				pikorg[im] = data[im].get_attr_default("previousmax",-1.0e23)
 
-			for im in xrange(nima):
-				if an[N_step] == -1:	
-					peak, pixel_error = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
-				else:
-					peak, pixel_error = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],sym=sym)
-				data[im].set_attr("previousmax", peak)
+			for refang in ref_angles:
+				n1 = sin(radians(refang[1]))*cos(radians(refang[0]))
+				n2 = sin(radians(refang[1]))*sin(radians(refang[0]))
+				n3 = cos(radians(refang[1]))
+
+				for im in xrange(nima):
+					volft, kb = prep_vol(vol)
+					refrings = [None]
+				
+					if an[N_step] == -1:
+						if(refrings[0] == None): refrings = refprojs( volft, kb, [refang], numr, mode, wr )
+						peak, pixel_error = proj_ali_incore(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step])
+						if(peak > neworient[im][-1]):
+							# I stopped here realizing it would include conversion of data[im] to polar coords at the bottom of the loop,
+							#    thus significantly slowing down the code.
+							pass
+					else:
+						if(comparedirections):
+							if(refrings[0] == None):
+								refrings = refprojs( volft, kb, [refang], numr, mode, wr )
+						peak, pixel_error = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],sym=sym)
+					data[im].set_attr("previousmax", peak)
 			if center == -1 and sym[0] == 'c':
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center(data)
 				msg = "Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
@@ -3260,6 +3285,8 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 					cs[0] = cs[1] = 0.0
 					print_msg("For symmetry group cn (n>1), we only center the volume in z-direction\n")
 				rotate_3D_shift(data, [-cs[0], -cs[1], -cs[2]])
+
+			del volft, kb
 
 			if CTF:   vol1 = recons3d_4nn_ctf(data, range(0, nima, 2), snr, 1, sym)
 			else:	   vol1 = recons3d_4nn(data, range(0, nima, 2), sym)
@@ -3293,6 +3320,7 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 			if CTF:
 				for dat in data:  dat.set_attr('ctf_applied', 1)
 	print_end_msg("ali3d")
+'''
 
 def ali3d_MPI_chunks(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
             xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an = "-1", apsi = "-1", deltapsi = "-1", startpsi = "-1",
@@ -15243,7 +15271,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 				n3 = cos(radians(refang[1]))
 
 				refrings = [None]
-				
+
 				for ivol in xrange(nfils):
 
 					seg_start = indcs[ivol][0]
