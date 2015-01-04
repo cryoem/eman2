@@ -524,7 +524,11 @@ def pspec_and_ctf_fit(options,debug=False):
 		if ps==None :
 			print "Error fitting CTF on ",filename
 			continue
-		ds=1.0/(apix*ps[0][2].get_ysize())
+		try: ds=1.0/(apix*ps[0][2].get_ysize())
+		except:
+			print "Error fitting CTF (ds) on ",filename
+			continue
+		
 		for j,p in enumerate(ps):
 			try: im_1d,bg_1d,im_2d,bg_2d,bg_1d_low,micro_1d=p
 			except:
