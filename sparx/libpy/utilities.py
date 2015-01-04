@@ -310,20 +310,22 @@ def amoeba_multi_level(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itm
 	    iteration += 1
 	    #print "Iteration:",iteration,"  ",ssbest,"  ",fvalue[ssbest]
 
+'''
 def golden(func, args=(), brack=None, tol=1.e-4, full_output=0):
 	""" Given a function of one-variable and a possible bracketing interval,
 	return the minimum of the function isolated to a fractional precision of
 	tol. A bracketing interval is a triple (a,b,c) where (a<b<c) and
 	func(b) < func(a),func(c).  If bracket is two numbers then they are
 	assumed to be a starting interval for a downhill bracket search
-	(see bracket)
+	(see bracketing)
 
 	Uses analog of bisection method to decrease the bracketed interval.
 	"""
+	from utilities import bracketing
 	if brack is None:
-		xa,xb,xc,fa,fb,fc,funcalls = bracket(func, args=args)
+		xa,xb,xc,fa,fb,fc,funcalls = bracketing(func, args=args)
 	elif len(brack) == 2:
-		xa,xb,xc,fa,fb,fc,funcalls = bracket(func, xa=brack[0], xb=brack[1], args=args)
+		xa,xb,xc,fa,fb,fc,funcalls = bracketing(func, xa=brack[0], xb=brack[1], args=args)
 	elif len(brack) == 3:
 		xa,xb,xc = brack
 		if (xa > xc):  # swap so xa < xc can be assumed
@@ -370,7 +372,7 @@ def golden(func, args=(), brack=None, tol=1.e-4, full_output=0):
 		return xmin
 
 
-def bracket(func, xa=0.0, xb=1.0, args=(), grow_limit=110.0, maxiter=1000):
+def bracketing(func, xa=0.0, xb=1.0, args=(), grow_limit=110.0, maxiter=1000):
 	"""Given a function and distinct initial points, search in the downhill
 	direction (as defined by the initital points) and return new points
 	xa, xb, xc that bracket the minimum of the function:
@@ -430,6 +432,8 @@ def bracket(func, xa=0.0, xb=1.0, args=(), grow_limit=110.0, maxiter=1000):
 	    xa=xb; xb=xc; xc=w
 	    fa=fb; fb=fc; fc=fw
 	return xa, xb, xc, fa, fb, fc, funcalls
+'''
+
 
 def ce_fit(inp_image, ref_image, mask_image):
 	""" Fit the histogram of the input image under mask with the reference image.
