@@ -4174,6 +4174,24 @@ def wrap_mpi_gatherv(data, root, communicator = None):
 
 	return out_array
 
+def wrap_mpi_split(comm, no_of_groups):
+	"""
+
+	Takes the processes of a comunicator (comm) and splits them in groups (no_of_groups).
+	Each subgroup of processes have ids generated from 0 to number of processes per group - 1.
+	Consecutive global process ids have consecutive subgroup process ids.
+
+	"""
+	from mpi import mpi_comm_size, mpi_comm_rank, mpi_comm_split
+	nproc = mpi_comm_size(comm)
+	myid = mpi_comm_rank(comm)
+
+	no_of_proc_per_group = nproc / no_of_groups
+	color = myid / no_of_proc_per_group
+	key = myid % no_of_proc_per_group
+
+	return mpi_comm_split(comm, color, key)
+
 def get_dist(c1, c2):
 	from math import sqrt
 	d = sqrt((c1[0] - c2[0])**2 + (c1[1] - c2[1])**2)
