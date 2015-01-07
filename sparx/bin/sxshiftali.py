@@ -1002,27 +1002,29 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 	
 	
 	#for b-spline
-	nknots = 4
+	nknots = 9
 	a0=[]
 	a=[]
 	b0=[]
 	b=[]
-	tttt=[0.0]*46
+	
 	for ifil in xrange(nfils):
 		nsegs =  indcs[ifil][1]-indcs[ifil][0]
-		nperiod = 23
+		tttt=[0.0]*nsegs
+		nperiod = nsegs//2
 		for j in xrange(-nperiod,0):
 			a = 300.0/(nperiod*nperiod*nperiod) 
 			import random
-			shix=random.randint(-20, 20)
-			tttt[j+nperiod]= a * j*j*j  #+ shix
+			shix=random.randint(-15, 15)
+			tttt[j+nperiod]= a * j*j*j  + shix
 		for j in xrange(1, nperiod):
-			
-			tttt[j+nperiod] = 
+			import random
+			shix=random.randint(-15, 15)
+			tttt[j+nperiod] = 300.0/nperiod*j+shix
 			
 		out_file = open("initcubic.txt", "w")
 		
-		for i in xrange(46):
+		for i in xrange(nsegs):
 			out_file.write( "%f\n" % (tttt[i]) )
 		out_file.close()
 		
@@ -1040,24 +1042,24 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 		U=[0.0]*nknots
 		W=[0.0]*nknots
 		AT=[0.0]*nknots
-		# for i in xrange(nknots):
-# 			U[i]= -23+i*45
-# 			W[i]=1.0
-# 			AT[i]=at[i*45]
-		U[0] = -23 
-		U[1] = 0
-		U[2] = 22
-		W[0]=W[1]=W[2]=1.0
-		AT[0]= at[0]
-		AT[1]=at[23]
-		AT[2]=at[45]	
-		u=[i-nperiod for i in xrange(46)] 
+		for i in xrange(nknots):
+			U[i] = -nperiod+i*(nsegs-1)*1.0/(nknots-1)
+			id   = int(U[i]+nperiod)
+			idx  = U[i]+nperiod-id
+			if id < nsegs-1:
+				att = at[id+1]
+			else:
+				att = 0	
+			AT[i]= (1-idx)*at[id]+idx*att
+			W[i] = 1.0
 		
-		tck=interpolate.splrep(U,AT,W, k=2,s=1000)
+		u=[i-nperiod for i in xrange(nsegs)] 
+		
+		tck=interpolate.splrep(U,AT,W, k=3,s=100)
 		at=interpolate.splev(u, tck, der=0, ext=0)
 		out_file = open("approxbs.txt", "w")
 	
-		for i in xrange(46):
+		for i in xrange(nsegs):
 			out_file.write( "%f\n" % (at[i]) )
 		out_file.close()
 	
