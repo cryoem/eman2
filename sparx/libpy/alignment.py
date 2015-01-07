@@ -2364,10 +2364,10 @@ def align_new_test(image, refim, xrng=0, yrng=0):
 		ccf1 = ccf2
 	from utilities import model_blank
 	#print cx,cy
-	z = model_blank(4,4)
+	z = model_blank(3,3)
 	for i in xrange(3):
 		for j in xrange(3):
-			z[i+1,j+1] = ccf1[i+cx-1,j+cy-1]
+			z[i,j] = ccf1[i+cx-1,j+cy-1]
 	#print  ccf1[cx,cy],z[2,2]
 	XSH, YSH, PEAKV = parabl(z)
 	#print sxs, sys, XSH, YSH, PEAKV, peak
@@ -2427,11 +2427,11 @@ def align_new_test(image, refim, xrng=0, yrng=0, ou = -1):
 		ccf1 = ccf2
 	from utilities import model_blank
 	#print cx,cy
-	z = model_blank(4,4)
+	z = model_blank(3,3)
 	for i in xrange(3):
 		for j in xrange(3):
-			z[i+1,j+1] = ccf1[i+cx-1,j+cy-1]
-	#print  ccf1[cx,cy],z[2,2]
+			z[i,j] = ccf1[i+cx-1,j+cy-1]
+	#print  ccf1[cx,cy],z[1,1]
 	XSH, YSH, PEAKV = parabl(z)
 	#print sxs, sys, XSH, YSH, PEAKV, peak
 	if(mirr == 1):  	sx = -sxs+XSH
@@ -2440,6 +2440,37 @@ def align_new_test(image, refim, xrng=0, yrng=0, ou = -1):
 	#return alpha, sxs, sys, mirror, peak
 
 def parabl(Z):
+	#  parabolic fit to a peak, C indexing
+	C1 = (26.*Z[0,0] - Z[0,1] + 2*Z[0,2] - Z[1,0] - 19.*Z[1,1] - 7.*Z[1,2] + 2.*Z[2,0] - 7.*Z[2,1] + 14.*Z[2,2])/9.
+
+	C2 = (8.* Z[0,0] - 8.*Z[0,1] + 5.*Z[1,0] - 8.*Z[1,1] + 3.*Z[1,2] +2.*Z[2,0] - 8.*Z[2,1] + 6.*Z[2,2])/(-6.)
+
+	C3 = (Z[0,0] - 2.*Z[0,1] + Z[0,2] + Z[1,0] -2.*Z[1,1] + Z[1,2] + Z[2,0] - 2.*Z[2,1] + Z[2,2])/6.
+
+	C4 = (8.*Z[0,0] + 5.*Z[0,1] + 2.*Z[0,2] -8.*Z[1,0] -8.*Z[1,1] - 8.*Z[1,2] + 3.*Z[2,1] + 6.*Z[2,2])/(-6.)
+
+	C5 = (Z[0,0] - Z[0,2] - Z[2,0] + Z[2,2])/4.
+
+	C6 = (Z[0,0] + Z[0,1] + Z[0,2] - 2.*Z[1,0] - 2.*Z[1,1] -2.*Z[1,2] + Z[2,0] + Z[2,1] + Z[2,2])/6.
+
+	DENOM = 4. * C3 * C6 - C5 * C5
+	if(DENOM == 0.):
+		return 0.0, 0.0, 0.0
+
+	YSH   = (C4*C5 - 2.*C2*C6) / DENOM - 2.
+	XSH   = (C2*C5 - 2.*C4*C3) / DENOM - 2.
+
+	PEAKV = 4.*C1*C3*C6 - C1*C5*C5 - C2*C2*C6 + C2*C4*C5 - C4*C4*C3
+	PEAKV = PEAKV / DENOM
+	#print  "  in PARABL  ",XSH,YSH,Z[1,1],PEAKV
+
+	XSH = min(max( XSH, -1.0), 1.0)
+	YSH = min(max( YSH, -1.0), 1.0)
+
+	return XSH, YSH, PEAKV
+'''
+def parabl(Z):
+	#  Original with Fortran indexing
 
 	C1 = (26.*Z[1,1] - Z[1,2] + 2*Z[1,3] - Z[2,1] - 19.*Z[2,2] - 7.*Z[2,3] + 2.*Z[3,1] - 7.*Z[3,2] + 14.*Z[3,3])/9.
 
@@ -2468,7 +2499,7 @@ def parabl(Z):
 	YSH = min(max( YSH, -1.0), 1.0)
 
 	return XSH, YSH, PEAKV
-
+'''
 
 def align2d_direct2(image, refim, xrng=1, yrng=1, psimax=1, psistep=1, ou = -1):
 	from fundamentals import fft, rot_shift2D, ccf, mirror
@@ -2501,12 +2532,12 @@ def align2d_direct2(image, refim, xrng=1, yrng=1, psimax=1, psistep=1, ou = -1):
 		if( pp[0] == 1.0 and px == 0 and py == 0):
 			pass #XSH, YSH, PEAKV = 0.,0.,0.
 		else:
-			ww = model_blank(4,4)
+			ww = model_blank(3,3)
 			ux = int(pp[1])
 			uy = int(pp[2])
 			for k in xrange(3):
 				for l in xrange(3):
-					ww[k+1,l+1] = w[k+ux-1,l+uy-1]
+					ww[k,l] = w[k+ux-1,l+uy-1]
 			XSH, YSH, PEAKV = parabl(ww)
 			#print i,pp[-1],XSH, YSH,px+XSH, py+YSH, PEAKV
 			if(PEAKV >ama):
@@ -2550,12 +2581,12 @@ def align2d_direct(image, refim, xrng=1, yrng=1, psimax=1, psistep=1, ou = -1):
 		if( pp[0] == 1.0 and px == 0 and py == 0):
 			pass #XSH, YSH, PEAKV = 0.,0.,0.
 		else:
-			ww = model_blank(4,4)
+			ww = model_blank(3,3)
 			ux = int(pp[1])
 			uy = int(pp[2])
 			for k in xrange(3):
 				for l in xrange(3):
-					ww[k+1,l+1] = w[k+ux-1,l+uy-1]
+					ww[k,l] = w[k+ux-1,l+uy-1]
 			XSH, YSH, PEAKV = parabl(ww)
 			#print i,pp[-1],XSH, YSH,px+XSH, py+YSH, PEAKV
 			if(PEAKV >ama):
@@ -2575,12 +2606,12 @@ def align2d_direct(image, refim, xrng=1, yrng=1, psimax=1, psistep=1, ou = -1):
 		if( pp[0] == 1.0 and px == 0 and py == 0):
 			pass #XSH, YSH, PEAKV = 0.,0.,0.
 		else:
-			ww = model_blank(4,4)
+			ww = model_blank(3,3)
 			ux = int(pp[1])
 			uy = int(pp[2])
 			for k in xrange(3):
 				for l in xrange(3):
-					ww[k+1,l+1] = w[k+ux-1,l+uy-1]
+					ww[k,l] = w[k+ux-1,l+uy-1]
 			XSH, YSH, PEAKV = parabl(ww)
 			#print i,pp[-1],XSH, YSH,px+XSH, py+YSH, PEAKV
 			if(PEAKV >ama):
@@ -2747,12 +2778,12 @@ def directali(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, updown = "bo
 					ma2  = PEAKV
 					oma2 = pp+[loc[0], loc[1], loc[0], loc[1], PEAKV,(i-nc)*psistep]
 			else:
-				ww = model_blank(4,4)
+				ww = model_blank(3,3)
 				px = int(pp[1])
 				py = int(pp[2])
 				for k in xrange(3):
 					for l in xrange(3):
-						ww[k+1,l+1] = w[k+px-1,l+py-1]
+						ww[k,l] = w[k+px-1,l+py-1]
 				XSH, YSH, PEAKV = parabl(ww)
 				#print ["S %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
 				"""
@@ -2776,12 +2807,12 @@ def directali(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, updown = "bo
 					ma4  = PEAKV
 					oma4 = pp+[loc[0], loc[1], loc[0], loc[1], PEAKV,(i-nc)*psistep]
 			else:
-				ww = model_blank(4,4)
+				ww = model_blank(3,3)
 				px = int(pp[1])
 				py = int(pp[2])
 				for k in xrange(3):
 					for l in xrange(3):
-						ww[k+1,l+1] = w[k+px-1,l+py-1]
+						ww[k,l] = w[k+px-1,l+py-1]
 				XSH, YSH, PEAKV = parabl(ww)
 				#print ["R %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
 				"""
@@ -2972,12 +3003,12 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 						oma2 = pp+[loc[0]-wxc, loc[1]-wyc, loc[0]-wxc, loc[1]-wyc, PEAKV,(i-nc)*psistep]
 				"""
 			else:
-				ww = model_blank(4,4)
+				ww = model_blank(3,3)
 				px = int(pp[1])
 				py = int(pp[2])
 				for k in xrange(3):
 					for l in xrange(3):
-						ww[k+1,l+1] = w[k+px-1,l+py-1]
+						ww[k,l] = w[k+px-1,l+py-1]
 				XSH, YSH, PEAKV = parabl(ww)
 				print ["S %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
 				"""
@@ -3007,12 +3038,12 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 					oma4 = pp+[loc[0], loc[1], loc[0], loc[1], PEAKV,(i-nc)*psistep]
 				"""
 			else:
-				ww = model_blank(4,4)
+				ww = model_blank(3,3)
 				px = int(pp[1])
 				py = int(pp[2])
 				for k in xrange(3):
 					for l in xrange(3):
-						ww[k+1,l+1] = w[k+px-1,l+py-1]
+						ww[k,l] = w[k+px-1,l+py-1]
 				XSH, YSH, PEAKV = parabl(ww)
 				print ["R %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
 				"""
@@ -3149,12 +3180,12 @@ def directaligridding1(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1, yrng=1, 
 						oma2 = pp+[loc[0]-wxc, loc[1]-wyc, loc[0]-wxc, loc[1]-wyc, PEAKV,(i-nc)*psistep]
 				"""
 			else:
-				ww = model_blank(4,4)
+				ww = model_blank(3,3)
 				px = int(pp[1])
 				py = int(pp[2])
 				for k in xrange(3):
 					for l in xrange(3):
-						ww[k+1,l+1] = w[k+px-1,l+py-1]
+						ww[k,l] = w[k+px-1,l+py-1]
 				XSH, YSH, PEAKV = parabl(ww)
 				print ["S %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
 				"""
@@ -3184,12 +3215,12 @@ def directaligridding1(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1, yrng=1, 
 					oma4 = pp+[loc[0], loc[1], loc[0], loc[1], PEAKV,(i-nc)*psistep]
 				"""
 			else:
-				ww = model_blank(4,4)
+				ww = model_blank(3,3)
 				px = int(pp[1])
 				py = int(pp[2])
 				for k in xrange(3):
 					for l in xrange(3):
-						ww[k+1,l+1] = w[k+px-1,l+py-1]
+						ww[k,l] = w[k+px-1,l+py-1]
 				XSH, YSH, PEAKV = parabl(ww)
 				print ["R %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
 				"""
