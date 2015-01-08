@@ -428,7 +428,7 @@ def reconstruct(data,recon,preprocess,pad,fillangle,verbose=0):
 	if den>9 :
 		den=9
 		if verbose>0 : print "Note: Reducing oversampling in make3dpar for speed, this will make higher resolution 'smearing' less effective"
-	if den==0:
+	if den<=1:
 		fillangle=0
 		if verbose: print "No filling"
 	else:
