@@ -3203,9 +3203,9 @@ def rotation_between_anglesets(agls1, agls2):
 		else:
 			# it has to be Transformation object
 			d = ori.get_params("spider")
-			phi = d["phi"]
+			phi   = d["phi"]
 			theta = d["theta"]
-			psi = d["psi"]
+			psi   = d["psi"]
 		"""
 		#  This makes no sense here!  PAP 09/2011
 		if theta > 90.0:
@@ -3301,7 +3301,7 @@ def angles_between_anglesets(angleset1, angleset2, indexes=None):
 	  The third parameter (indexes) is optional and may be set to list of indexes. In that case only elements from given list are taken into account.
 	"""
 	from EMAN2 import Transform
-	
+
 	if indexes != None:
 		new_ang1 = []
 		new_ang2 = []
@@ -3310,15 +3310,15 @@ def angles_between_anglesets(angleset1, angleset2, indexes=None):
 			new_ang2.append(angleset2[i])
 		angleset1 = new_ang1
 		angleset2 = new_ang2
-	
+
 	rot = rotation_between_anglesets(angleset1, angleset2)
 	T2 = Transform({"type":"spider","phi":rot[0],"theta":rot[1],"psi":rot[2],"tx":0.0,"ty":0.0,"tz":0.0,"mirror":0,"scale":1.0})
 	angles = []
 	angle_errors = []
 	for i in xrange(len(angleset1)):
 		T1 = Transform({"type":"spider","phi":angleset1[i][0],"theta":angleset1[i][1],"psi":angleset1[i][2],"tx":0.0,"ty":0.0,"tz":0.0,"mirror":0,"scale":1.0})
-		T = T1*T2
-		d = T.get_params("spider")
+		T  = T1*T2
+		d  = T.get_params("spider")
 		angles.append([d["phi"], d["theta"], d["psi"]])
 		angle_errors.append( angle_between_projections_directions(angles[i], angleset2[i]) )
 	return angle_errors

@@ -822,7 +822,7 @@ def ave2dtransform(args, data, return_avg_pixel_error=False):
 	else:
 		return sqr_pixel_error, ave_params
 
-def pixel_error_angle_sets(agls1, agls2, Threshold=10.e23, r=1.0):
+def pixel_error_angle_sets(agls1, agls2, Threshold=1.0e23, r=1.0):
 	""" 	
 	  Input: Two lists, i-th element of each list is either a list of the three Eulerian angles [[phi1, theta1, psi1], [phi2, theta2, psi2], ...]
 	         as read by read_text_row(filename, "")
@@ -836,7 +836,7 @@ def pixel_error_angle_sets(agls1, agls2, Threshold=10.e23, r=1.0):
 		     [i, p], where p is the pixel error, into the output list.
 	"""
 	from pixel_error import max_3D_pixel_error
-	from utilities  import read_text_file, rotation_between_anglesets
+	from utilities   import read_text_file, rotation_between_anglesets
 	import types
 	
 	N = len(agls1)
@@ -852,7 +852,7 @@ def pixel_error_angle_sets(agls1, agls2, Threshold=10.e23, r=1.0):
 	# Find overall rotation between two angle sets, and then apply it to one of the angle sets
 
 	# compute rotation between asg1 and asg2
-	phi12,theta12,psi12 = rotation_between_anglesets(agls1,agls2)
+	phi12,theta12,psi12 = rotation_between_anglesets(agls1, agls2)
 	# apply rotation [phi12,theta12,psi12] to asg1
 	t12 = Transform({'type':'spider','phi':phi12,'theta':theta12,'psi':psi12})
 	agls12=[]
@@ -878,11 +878,11 @@ def pixel_error_angle_sets(agls1, agls2, Threshold=10.e23, r=1.0):
 				avgPixError12.append([i,error])
 	else:# agls2 is a list of transforms
 		for i in xrange(N):
-			error = max_3D_pixel_error(agls12[i],agls2[i] , r)
+			error = max_3D_pixel_error(agls12[i], agls2[i] , r)
 			if error < Threshold:
 				avgPixError12.append([i,error])
 
-	return avgPixError12
+	return avgPixError12,[phi12,theta12,psi12]
 
 
 def ordersegments(infilaments, ptclcoords):

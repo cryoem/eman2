@@ -1242,7 +1242,7 @@ def refprojs( volft, kb, ref_angles, cnx, cny, numr, mode, wr ):
 	return ref_proj_rings
 
 def proj_ali_incore_chunks(data, refrings, numr, xrng, yrng, step, finfo=None):
-	from utilities    import compose_transform2
+	from utilities    import inverse_transform2
 	from EMAN2 import Vec2f
 
 	ID = data.get_attr("ID")
@@ -1279,7 +1279,7 @@ def proj_ali_incore_chunks(data, refrings, numr, xrng, yrng, step, finfo=None):
 	#ang = (ang+360.0)%360.0
 	# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 	#  What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-	angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+	angb, sxb, syb, ct = inverse_transform2(ang, sxs, sys, 0)
 	if mirror:
 		phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 		theta = 180.0-refrings[iref].get_attr("theta")
@@ -1307,7 +1307,7 @@ def proj_ali_incore_chunks(data, refrings, numr, xrng, yrng, step, finfo=None):
 	return peak, pixel_error
 
 def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
-	from utilities    import compose_transform2
+	from utilities    import inverse_transform2
 	from EMAN2 import Vec2f
 
 	ID = data.get_attr("ID")
@@ -1336,7 +1336,7 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 	#ang = (ang+360.0)%360.0
 	# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 	#  What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-	angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+	angb, sxb, syb, ct = inverse_transform2(ang, sxs, sys, 0)
 	if mirror:
 		phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 		theta = 180.0-refrings[iref].get_attr("theta")
@@ -1364,7 +1364,7 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 	return peak, pixel_error
 
 def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None, sym='c1'):
-	from utilities    import compose_transform2
+	from utilities    import inverse_transform2
 	#from utilities    import set_params_proj, get_params_proj
 	from math         import cos, sin, pi, radians
 	from EMAN2        import Vec2f
@@ -1398,7 +1398,7 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 	if iref > -1:
 		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+		angb, sxb, syb, ct = inverse_transform2(ang, sxs, sys, 0)
 		isym = int(sym[1:])
 		phi   = refrings[iref].get_attr("phi")
 		if(isym > 1 and an > 0.0):
@@ -1433,7 +1433,7 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 		return -1.0e23, 0.0
 
 def proj_ali_incore_local_chunks(data, refrings, numr, xrng, yrng, step, an, finfo=None, sym='c1'):
-	from utilities    import compose_transform2
+	from utilities    import inverse_transform2
 	#from utilities    import set_params_proj, get_params_proj
 	from math         import cos, sin, pi, radians
 	from EMAN2        import Vec2f
@@ -1477,7 +1477,7 @@ def proj_ali_incore_local_chunks(data, refrings, numr, xrng, yrng, step, an, fin
 	if iref > -1:
 		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+		angb, sxb, syb, ct = inverse_transform2(ang, sxs, sys, 0)
 		isym = int(sym[1:])
 		phi   = refrings[iref].get_attr("phi")
 		if(isym > 1 and an > 0.0):
@@ -1512,7 +1512,7 @@ def proj_ali_incore_local_chunks(data, refrings, numr, xrng, yrng, step, an, fin
 		return -1.0e23, 0.0
 
 def proj_ali_incore_delta(data, refrings, numr, xrng, yrng, step, start, delta, finfo=None):
-	from utilities    import compose_transform2
+	from utilities    import inverse_transform2
 	from EMAN2 import Vec2f
 
 	ID = data.get_attr("ID")
@@ -1540,7 +1540,7 @@ def proj_ali_incore_delta(data, refrings, numr, xrng, yrng, step, start, delta, 
 	#ang = (ang+360.0)%360.0
 	# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 	#  What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-	angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+	angb, sxb, syb, ct = inverse_transform2(ang, sxs, sys, 0)
 	if mirror:
 		phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 		theta = 180.0-refrings[iref].get_attr("theta")
@@ -1570,7 +1570,7 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, dpsi=1
 	"""
 	  dpsi - how far psi can be from the original value.
 	"""
-	from utilities    import compose_transform2
+	from utilities    import inverse_transform2
 	#from utilities   import set_params_proj, get_params_proj
 	from EMAN2 import Vec2f
 	from math         import cos, sin, pi
@@ -1608,7 +1608,7 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, dpsi=1
 	if iref > -1:
 		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+		angb, sxb, syb, ct = inverse_transform2(ang, sxs, sys, 0)
 		if  mirror:
 			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 			theta = 180.0-refrings[iref].get_attr("theta")
@@ -1639,7 +1639,7 @@ def proj_ali_helical(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_max=1
 	"""
 	  psi_max - how much psi can differ from 90 or 270 degrees
 	"""
-	from utilities    import compose_transform2, get_params_proj
+	from utilities    import inverse_transform2, get_params_proj
 	from math         import cos, sin, pi
 	
 	ID = data.get_attr("ID")
@@ -1662,7 +1662,7 @@ def proj_ali_helical(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_max=1
 	if iref > -1:
 		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+		angb, sxb, syb, ct = inverse_transform2(ang, sxs, sys, 0)
 		if  mirror:
 			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 			theta = 180.0-refrings[iref].get_attr("theta")
@@ -1685,8 +1685,8 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	"""
 	  psi_max - how much psi can differ from 90 or 270 degrees
 	"""
-	from utilities    import compose_transform2, get_params_proj
-	from math         import cos, sin, pi
+	from utilities    import inverse_transform2, get_params_proj
+	from math         import cos, sin, radians
 	
 	ID = data.get_attr("ID")
 
@@ -1696,7 +1696,7 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	#  center is in SPIDER convention
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
-	ant = cos(an*pi/180.0)
+	ant = cos(radians(an))
 	phi, theta, psi, tx, ty = get_params_proj(data)
 	if finfo:
 		finfo.write("Image id: %6d\n"%(ID))
@@ -1711,7 +1711,7 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	if iref > -1:
 		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+		angb, sxb, syb, ct = inverse_transform2(ang, sxs, sys, 0)
 		if  mirror:
 			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 			theta = 180.0-refrings[iref].get_attr("theta")
@@ -1736,8 +1736,7 @@ def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_ma
 	"""
 	  psi_max - how much psi can differ from 90 or 270 degrees
 	"""
-	from utilities    import compose_transform2, get_params_proj
-	from math         import cos, sin, pi
+	from utilities    import inverse_transform2, get_params_proj
 
 	ID = data.get_attr("ID")
 
@@ -1758,7 +1757,7 @@ def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_ma
 	iref = int(iref)
 	#print  " IN ", ang, sxs, sys, mirror, iref, peak
 	if iref > -1:
-		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+		angb, sxb, syb, ct = inverse_transform2(ang, sxs, sys, 0)
 		phi   = refrings[iref].get_attr("phi")
 		theta = refrings[iref].get_attr("theta")
 		psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
@@ -1776,9 +1775,9 @@ def proj_ali_helical_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 	"""
 	  psi_max - how much psi can differ from 90 or 270 degrees
 	"""
-	from utilities    import compose_transform2, get_params_proj
-	from math         import cos, sin, pi
-	
+	from utilities    import inverse_transform2, get_params_proj
+	from math         import cos, sin, radians
+
 	ID = data.get_attr("ID")
 
 	mode = "F"
@@ -1787,7 +1786,7 @@ def proj_ali_helical_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 	#  center is in SPIDER convention
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
-	ant = cos(an*pi/180.0)
+	ant = cos(radians(an))
 	phi, theta, psi, tx, ty = get_params_proj(data)
 	if finfo:
 		finfo.write("Image id: %6d\n"%(ID))
@@ -1798,7 +1797,7 @@ def proj_ali_helical_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 		Util.multiref_polar_ali_helical_90_local(data, refrings, xrng, yrng, stepx, ant, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber), yrnglocal)
 	iref = int(iref)
 	if iref > -1:
-		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+		angb, sxb, syb, ct = inverse_transform2(ang, sxs, sys, 0)
 		phi   = refrings[iref].get_attr("phi")
 		theta = refrings[iref].get_attr("theta")
 		psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
@@ -1817,9 +1816,9 @@ def proj_ali_helicon_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	"""
 	  psi_max - how much psi can differ from 90 or 270 degrees
 	"""
-	from utilities    import compose_transform2, get_params_proj
-	from math         import cos, sin, pi
-	
+	from utilities    import inverse_transform2, get_params_proj
+	from math         import cos, sin, radians
+
 	ID = data.get_attr("ID")
 
 	mode = "F"
@@ -1828,7 +1827,7 @@ def proj_ali_helicon_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	#  center is in SPIDER convention
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
-	ant = cos(an*pi/180.0)
+	ant = cos(radians(an))
 	phi, theta, psi, tx, ty = get_params_proj(data)
 	if finfo:
 		finfo.write("Image id: %6d\n"%(ID))
@@ -1843,7 +1842,7 @@ def proj_ali_helicon_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	if iref > -1:
 		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+		angb, sxb, syb, ct = inverse_transform2(ang, sxs, sys, 0)
 		if  mirror:
 			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 			theta = 180.0-refrings[iref].get_attr("theta")
@@ -1872,7 +1871,7 @@ def proj_ali_helicon_90_local_direct(data, refrings, xrng, yrng, \
 	from utilities    import compose_transform2, get_params_proj
 	from alignment    import directaligridding
 	from math         import cos, sin, radians
-	
+
 	ID = data.get_attr("ID")
 
 	mode = "F"
@@ -1932,7 +1931,7 @@ def proj_ali_helicon_90_local_direct1(data, refrings, xrng, yrng, \
 	"""
 	  psi_max - how much psi can differ from either 90 or 270 degrees
 	"""
-	from utilities    import compose_transform2, get_params_proj
+	from utilities    import inverse_transform2, get_params_proj
 	from alignment    import directaligridding1
 	from math         import cos, sin, radians
 	
@@ -1948,7 +1947,7 @@ def proj_ali_helicon_90_local_direct1(data, refrings, xrng, yrng, \
 	angb, tx,ty, tp = directaligridding1(data, kb, refrings, psi_max, psi_step, xrng, yrng, stepx, stepy, direction)
 
 	if tp > -1.0e23:
-		#angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+		#angb, sxb, syb, ct = inverse_transform2(ang, sxs, sys, 0)
 		phi   = refrings[iref][0].get_attr("phi")
 		theta = refrings[iref][0].get_attr("theta")
 		psi   = (refrings[iref][0].get_attr("psi")+angb+360.0)%360.0
@@ -1963,7 +1962,7 @@ def proj_ali_helicon_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 	"""
 	  psi_max - how much psi can differ from 90 or 270 degrees
 	"""
-	from utilities    import compose_transform2, get_params_proj
+	from utilities    import inverse_transform2, get_params_proj
 	from math         import cos, sin, pi
 	
 	ID = data.get_attr("ID")
@@ -1985,7 +1984,7 @@ def proj_ali_helicon_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 		Util.multiref_polar_ali_helicon_90_local(data, refrings, xrng, yrng, stepx, ant, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber), yrnglocal)
 	iref = int(iref)
 	if iref > -1:
-		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+		angb, sxb, syb, ct = inverse_transform2(ang, sxs, sys, 0)
 		phi   = refrings[iref].get_attr("phi")
 		theta = refrings[iref].get_attr("theta")
 		psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
@@ -2551,12 +2550,11 @@ def align2d_direct2(image, refim, xrng=1, yrng=1, psimax=1, psistep=1, ou = -1):
 	bang, bsx, bsy, i = inverse_transform2(bang, bsx, bsy)
 	return bang, bsx, bsy, ama
 
-
 def align2d_direct(image, refim, xrng=1, yrng=1, psimax=1, psistep=1, ou = -1):
 	from fundamentals import fft, rot_shift2D, ccf
 	from utilities import model_blank, model_circle, peak_search, compose_transform2, inverse_transform2
 	from math import radians, sin, cos
-	
+
 	nx = image.get_xsize()
 	if(ou<0):  ou = nx//2-1
 	mask = model_circle(ou,nx,nx)
@@ -2568,10 +2566,10 @@ def align2d_direct(image, refim, xrng=1, yrng=1, psimax=1, psistep=1, ou = -1):
 		refs[i] = fft(rot_shift2D(refim, (i-nc)*psistep)*mask)
 	ims = fft(image)
 	imr = fft(rot_shift2D(image, 180.0))
-	ama = -1.e23
-	bang = 0.
-	bsx = 0.
-	bsy = 0.
+	ama  = -1.0e23
+	bang = 0.0
+	bsx  = 0.0
+	bsy  = 0.0
 	for i in xrange(nm):
 		c = ccf(ims, refs[i])
 		w = Util.window(c,2*xrng+1,2*yrng+1)
@@ -2953,7 +2951,7 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 	if updown == "both" or updown == "down" :
 		imm = rot_shift2D(inima,180.0, interpolation_method = 'linear')
 		imm = imm.FourInterpol(N, N, 1,0)
-		imm = Processor.EMFourierFilter(imm,params)
+		imm = Processor.EMFourierFilter(imm, params)
 
 	#fft(ima).write_image('imap.hdf')
 	from utilities import get_params_proj
@@ -3241,14 +3239,14 @@ def directaligridding1(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1, yrng=1, 
 		print oma2
 		print  "        %6.2f %6.2f  %6.2f"%(oma2[-1],oma2[-4],oma2[-3])
 		"""
-		nalpha, ntx, nty, mirror = inverse_transform2(oma2[-1],oma2[-4]*stepx,oma2[-3]*stepy,0)
+		nalpha, ntx, nty, mirror = inverse_transform2(oma2[-1], oma2[-4]*stepx, oma2[-3]*stepy, 0)
 		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
 	else:
 		peak = oma4[-2]
 		if( peak == -1.0e23 ):  return  0.0, 0.0, 0.0, peak
 
 		#print oma3
-		print oma4
+		#print oma4
 
 		nalpha, ntx, nty, junk = compose_transform2(oma4[-1],oma4[-4]*stepx,oma4[-3]*stepy,1.0,180.,0,0,1)
 		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
@@ -3365,7 +3363,7 @@ def alivol_m( v, vref, mask ):
 # =================== SHC
 
 def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=None):
-	from utilities    import compose_transform2
+	from utilities    import inverse_transform2
 	from math         import cos, sin, pi, degrees, radians
 	from EMAN2 import Vec2f
 
@@ -3416,7 +3414,7 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 	else:
 		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+		angb, sxb, syb, ct = inverse_transform2(ang, sxs, sys, 0)
 		if  mirror:
 			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 			theta = 180.0-refrings[iref].get_attr("theta")

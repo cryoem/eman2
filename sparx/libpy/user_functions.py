@@ -339,7 +339,7 @@ def helical( ref_data ):
 	#	volf.insert_clip(filt_tanl(volf.get_clip(Region(0,0,i,nx,ny,1)),0.4,0.1),[0,0,i])
 
 	volf = threshold(volf)
-	fl = 0.35#0.17
+	fl = 0.45#0.17
 	aa = 0.1
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
 	print_msg(msg)

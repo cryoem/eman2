@@ -16077,7 +16077,8 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 
 				volft,kb = prep_vol( vol )
 				#  What about cushion for a neighborhood?  PAP 06/04/2014
-				refrings = prepare_refrings2(  volft, kb, nmax, segmask, delta[N_step], ref_a, symref, numr, MPI = True, phiEqpsi = "Zero", initial_theta =initial_theta, delta_theta = delta_theta)
+				refrings = prepare_refrings2(  volft, kb, nmax, segmask, delta[N_step], ref_a, symref, numr, \
+							MPI = True, phiEqpsi = "Zero", initial_theta =initial_theta, delta_theta = delta_theta)
 				del volft,kb
 
 				if myid== main_node:
@@ -16104,8 +16105,8 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 				for im in xrange( seg_start, seg_end ):
 
 					peak, phihi, theta, psi, sxi, syi = \
-				proj_ali_helicon_90_local(data[im], refrings, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], \
-					an[N_step], psi_max, finfo, yrnglocal=y_restrict[N_step])
+						proj_ali_helicon_90_local(data[im], refrings, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], \
+						an[N_step], psi_max, finfo, yrnglocal=y_restrict[N_step])
 
 					if(peak > -1.0e23):
 
