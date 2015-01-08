@@ -418,6 +418,42 @@ The basic design of EMAN Processors: <br>\
 		  virtual void create_radial_func(vector < float >&radial_mask,EMData *image) const = 0;
 	};
 
+	/** Similar to FourierProcessor, but enhances or compresses azimuthal contrast rather than the
+	 * typical radial linear filter
+	 * @param az_scale Scale factor, >1 enhances contrast <1 decreases
+	 */
+	class AzContrastProcessor:public Processor
+	{
+	  public:
+		void process_inplace(EMData * image);
+		
+		string get_name() const
+		{
+			return NAME;
+		}
+		
+		static Processor *NEW()
+		{
+			return new AzContrastProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Typical linear filters are radial, but certain operations can lead to inhomogeneities so the balance between radial and azimuthal power is off. This processor permits enhancing or suppressing azimuthal contrast in Fourier space.";
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("az_scale", EMObject::FLOAT, "Scale factor, >1 enhances contrast <1 decreases");
+			return d;
+		}
+		
+		static const string NAME;
+
+	};
+
+	
 	/** Evaluate individual particle images using a tenchique similar to that used for CTF evaluation
 	 */
 	class SNREvalProcessor:public Processor
