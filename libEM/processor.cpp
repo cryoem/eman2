@@ -1050,7 +1050,7 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 {
 	EMData * result = image->copy();
 
-	int nseg = params.set_default("nseg",12);	// Muyuan, you cannot make major changes to default values without thorough testing! I returned this to 12
+	int nseg = params.set_default("nseg",12);
 	float thr = params.set_default("thr",-1.0e30f);
 	int ampweight = params.set_default("ampweight",1);
 	float maxsegsize = params.set_default("maxsegsize",10000.0f);
@@ -1075,53 +1075,61 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 		sep/=ax;
 		if (verbose) printf("Seeding .....\n");
 		int sx=int(nx/sep)+1,sy=int(ny/sep)+1,sz=int(nz/sep)+1;
-		EMData m(sx,sy,sz);
-		EMData mcount(sx,sy,sz);
-
-		for (int i=0; i<nx; i++){
-			for (int j=0; j<ny; j++){
-				for (int k=0; k<nz; k++){
-					int ni=(i/sep),nj=(j/sep),nk=(k/sep);
-					float v=image->get_value_at(i,j,k);
-					if (v>thr){
-						m.set_value_at(ni,nj,nk,(m.get_value_at(ni,nj,nk)+v));
-						mcount.set_value_at(ni,nj,nk,(mcount.get_value_at(ni,nj,nk)+1));
-					}
-				}
-			}
-		}
-		int nsum=0;
-		float l=0,r=2000,th=5;
-		while (abs(nsum-nseg)>0){
-			th=(l+r)/2;
-			nsum=0;
-			for (int i=0; i<sx; i++){
-				for (int j=0; j<sy; j++){
-					for (int k=0; k<sz; k++){
-						if (m.get_value_at(i,j,k)>th)  nsum+=1;
-					}
-				}
-			}
-			if (verbose) printf("%3f\t %3f\t %3f,\t %4d\t %4d\n", l,th,r,nsum,nseg);
-			if (nsum>nseg) l=th;
-			if (nsum<nseg) r=th;
-			if ((r-l)<.01) break;
-		}
-// 		nseg=nsum;
-		int q=0;
-		for (int i=0; i<sx; i++){
-			for (int j=0; j<sy; j++){
-				for (int k=0; k<sz; k++){
-					if (m.get_value_at(i,j,k)>th){
-						if(q<nseg*3){
-							centers[q]=  float(i+.5)*sep;
-							centers[q+1]=float(j+.5)*sep;
-							centers[q+2]=float(k+.5)*sep;
-							q+=3;
+		for(int setthr=0; setthr<10; setthr++){
+			EMData m(sx,sy,sz);
+			EMData mcount(sx,sy,sz);
+			for (int i=0; i<nx; i++){
+				for (int j=0; j<ny; j++){
+					for (int k=0; k<nz; k++){
+						int ni=(i/sep),nj=(j/sep),nk=(k/sep);
+						float v=image->get_value_at(i,j,k);
+						if (v>thr){
+							m.set_value_at(ni,nj,nk,(m.get_value_at(ni,nj,nk)+v));
+							mcount.set_value_at(ni,nj,nk,(mcount.get_value_at(ni,nj,nk)+1));
 						}
 					}
 				}
 			}
+			m.div((nx/sx)*(ny/sy)*(nz/sz));
+			int nsum=0;
+			float l=image->get_attr("minimum"),r=image->get_attr("maximum"),th=0;
+			while (abs(nsum-nseg)>0){
+				th=(l+r)/2;
+				nsum=0;
+				for (int i=0; i<sx; i++){
+					for (int j=0; j<sy; j++){
+						for (int k=0; k<sz; k++){
+							if (m.get_value_at(i,j,k)>th)  nsum+=1;
+						}
+					}
+				}
+				if (verbose) printf("%3f\t %3f\t %3f,\t %4d\t %4d\n", l,th,r,nsum,nseg);
+				if (nsum>nseg) l=th;
+				if (nsum<nseg) r=th;
+				if ((r-l)<.01) break;
+			}
+	// 		nseg=nsum;
+			int q=0;
+			for (int i=0; i<sx; i++){
+				for (int j=0; j<sy; j++){
+					for (int k=0; k<sz; k++){
+						if (m.get_value_at(i,j,k)>th){
+							if(q<nseg*3){
+								centers[q]=  float(i+.5)*sep;
+								centers[q+1]=float(j+.5)*sep;
+								centers[q+2]=float(k+.5)*sep;
+								q+=3;
+							}
+						}
+					}
+				}
+			}
+			if (thr==-1.0e30f){
+				printf("Estimated map threshold: %4f\n", th);
+				thr=th;
+			}
+			else
+				break;
 		}
 	}
 	// Default: random seeding.
