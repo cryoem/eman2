@@ -884,6 +884,39 @@ def pixel_error_angle_sets(agls1, agls2, Threshold=1.0e23, r=1.0):
 
 	return avgPixError12,[phi12,theta12,psi12]
 
+def mirror_angleset(agls):
+	agls_mir = copy.deepcopy(agls)
+	
+	for i in xrange(len(agls_mir)):
+		agls_mir[i][0] = -agls_mir[i][0]
+		agls_mir[i][1] = 180.0 - agls_mir[i][1]
+	
+	return agls_mir
+
+def rotate_angleset_to_match(agls1, agls2):
+	agls1_mir = mirror_angleset(agls1)
+	
+	err_angle1 = pixel_error_angle_sets(agls1,     agls2)
+	err_angle2 = pixel_error_angle_sets(agls1_mir, agls2)
+	
+	err1 = sum([i[1] for i in err_angle1][0])
+	err2 = sum([i[1] for i in err_angle2][0])
+	
+	if err1<err2:
+		torotate = agls1
+		t1,t2,t3 = err_angle1[1]
+	else:
+		torotate = agls1_mir
+		t1,t2,t3 = err_angle2[1]
+
+	#  Here you put angles by which you want to rotate
+	T1 = Transform({"type":"spider","phi":t1,"theta":t2,"psi":t3})
+	 	 
+	for i in xrange(len(torotate )):
+	    torotate [i] = mult_transform(torotate [i],T1)
+	    
+	return torotate
+
 
 def ordersegments(infilaments, ptclcoords):
 	'''
