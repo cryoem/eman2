@@ -1956,11 +1956,14 @@ def estimate_3D_center(data):
 	from math import cos, sin, pi
 	from numpy import matrix
 	from numpy import linalg
-	
-	ali_params = []
-	for im in data:
-		phi, theta, psi, s2x, s2y = get_params_proj(im)
-		ali_params.append([phi, theta, psi, s2x, s2y])
+	import types
+	if(type(data[0]) is types.ListType):
+		ali_params = data
+	else:
+		ali_params = []
+		for im in data:
+			phi, theta, psi, s2x, s2y = get_params_proj(im)
+			ali_params.append([phi, theta, psi, s2x, s2y])
 
 	N = len(ali_params)
 	A = []
