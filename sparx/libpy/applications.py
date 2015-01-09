@@ -15316,7 +15316,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 					#  psi is doubtful
 					from utilities import inverse_transform2
 					
-					t1, t2, t3 = inverse_transform2(neworient[im][3][1]+neworient[im][0])
+					t1, t2, t3, tp = inverse_transform2(neworient[im][3][1]+neworient[im][0])
 					tp = Transform({"type":"spider","phi":neworient[im][3][0],"theta":neworient[im][3][1],"psi":neworient[im][3][1]+neworient[im][0]})
 					tp.set_trans( Vec2f( neworient[im][1], neworient[im][2] ) )
 					data[im].set_attr("xform.projection", tp)

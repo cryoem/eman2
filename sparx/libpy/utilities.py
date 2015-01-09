@@ -1953,7 +1953,7 @@ def reshape_1d(input_object, length_current=0, length_interpolated=0, Pixel_size
 	return interpolated
 
 def estimate_3D_center(data):
-	from math import cos, sin, pi
+	from math import cos, sin, radians
 	from numpy import matrix
 	from numpy import linalg
 	import types
@@ -1970,9 +1970,9 @@ def estimate_3D_center(data):
 	b = []
 	
 	for i in xrange(N):
-		phi_rad = ali_params[i][0]/180*pi
-		theta_rad = ali_params[i][1]/180*pi
-		psi_rad = ali_params[i][2]/180*pi
+		phi_rad   = radians(ali_params[i][0])
+		theta_rad = radians(ali_params[i][1])
+		psi_rad   = radians(ali_params[i][2])
 		A.append([cos(psi_rad)*cos(theta_rad)*cos(phi_rad)-sin(psi_rad)*sin(phi_rad), 
 			cos(psi_rad)*cos(theta_rad)*sin(phi_rad)+sin(psi_rad)*cos(phi_rad), -cos(psi_rad)*sin(theta_rad), 1, 0])
 		A.append([-sin(psi_rad)*cos(theta_rad)*cos(phi_rad)-cos(psi_rad)*sin(phi_rad), 
@@ -1989,7 +1989,7 @@ def estimate_3D_center(data):
 
 
 def estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node, mpi_comm=None):
-	from math import cos, sin, pi
+	from math import cos, sin, radians
 	from numpy import matrix
 	from numpy import linalg
 	from mpi import MPI_COMM_WORLD
@@ -2024,12 +2024,11 @@ def estimate_3D_center_MPI(data, nima, myid, number_of_proc, main_node, mpi_comm
 
 		A = []
 		b = []
-		DEG_to_RAD = pi/180.0
 	
 		for i in xrange(N):
-			phi_rad = ali_params[i][0]*DEG_to_RAD
-			theta_rad = ali_params[i][1]*DEG_to_RAD
-			psi_rad = ali_params[i][2]*DEG_to_RAD
+			phi_rad   = radians(ali_params[i][0])
+			theta_rad = radians(ali_params[i][1])
+			psi_rad   = radians(ali_params[i][2])
 			A.append([cos(psi_rad)*cos(theta_rad)*cos(phi_rad)-sin(psi_rad)*sin(phi_rad), 
 				cos(psi_rad)*cos(theta_rad)*sin(phi_rad)+sin(psi_rad)*cos(phi_rad), -cos(psi_rad)*sin(theta_rad), 1, 0])
 			A.append([-sin(psi_rad)*cos(theta_rad)*cos(phi_rad)-cos(psi_rad)*sin(phi_rad), 
