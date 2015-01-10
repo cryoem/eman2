@@ -897,7 +897,7 @@ def rotate_angleset_to_match(agls1, agls2):
 	rot1 = [None]*n
 
 	for i in xrange(n):
-	    rot1[i] = mult_transform(agls1[i],T1)
+		rot1[i] = mult_transform(agls1[i],T1)
 	# mirror checking
 	psi_diff = angle_diff( [rot1[i][2] for i in xrange(n)], [agls2[i][2] for i in xrange(n)] )
 	if(abs(psi_diff-180.0) <90.0):
