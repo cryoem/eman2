@@ -1467,7 +1467,7 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 	import os
 	from   mpi  import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier
 	from   fundamentals import tilemic, rot_avg_table
-	from   morphology   import threshold, bracket_original, bracket_def, bracket, goldsearch_astigmatism
+	from   morphology   import threshold, bracket_def, bracket, goldsearch_astigmatism
 	from   morphology   import defocus_baseline_fit, simpw1d, movingaverage, localvariance, defocusgett
 	from   morphology   import defocus_guessn, defocusgett_, defocusget_from_crf, make_real
 	from   morphology   import fastigmatism, fastigmatism1, fastigmatism2, fastigmatism3, simctf, simctf2, simctf2out, fupw,ctf2_rimg
@@ -2652,7 +2652,7 @@ def getastcrfNOE(refvol, datfilesroot, voltage=300.0, Pixel_size= 1.264, Cs = 2.
 	import os
 	from mpi  import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, mpi_barrier
 	from fundamentals import tilemic, rot_avg_table
-	from morphology import threshold, bracket_original, bracket_def, bracket, goldsearch_astigmatism, defocus_baseline_fit, simpw1d, movingaverage, localvariance, defocusgett, defocus_guessn, defocusgett_, defocusget_from_crf, make_real, fastigmatism, fastigmatism1, fastigmatism2, fastigmatism3, simctf, simctf2, simctf2out, fupw,ctf2_rimg
+	from morphology import threshold, bracket_def, bracket, goldsearch_astigmatism, defocus_baseline_fit, simpw1d, movingaverage, localvariance, defocusgett, defocus_guessn, defocusgett_, defocusget_from_crf, make_real, fastigmatism, fastigmatism1, fastigmatism2, fastigmatism3, simctf, simctf2, simctf2out, fupw,ctf2_rimg
 	from alignment import Numrinit, ringwe
 	from statistics import table_stat
 	from pixel_error import angle_ave
