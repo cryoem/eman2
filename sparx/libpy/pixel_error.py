@@ -908,6 +908,8 @@ def rotate_angleset_to_match(agls1, agls2):
 	else:
 		torotate = agls1_mir
 		t1,t2,t3 = err_angle2[1]
+		t1 = -t1
+		t2 = 180.0 - t2
 
 	#  Here you put angles by which you want to rotate
 	T1 = Transform({"type":"spider","phi":t1,"theta":t2,"psi":t3})
