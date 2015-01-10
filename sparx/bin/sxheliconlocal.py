@@ -74,7 +74,7 @@ def main():
 	parser.add_option("--npad",               type="int",   		 default= 2,                  help="Padding size for 3D reconstruction (default=2)")
 	parser.add_option("--debug",              action="store_true",   default=False,               help="debug")
 	parser.add_option("--initial_theta",      type="float",		     default=90.0,                help="Intial theta for out-of-plane tilt search, the range will be (initial theta to 90.0 in steps of delta) (default = 90, no out-of-plane tilt)")
-	parser.add_option("--delta_theta",        type="float",		     default=1.0,                 help="Delta theta for out-of-plane tilt search (default =1 )")
+	parser.add_option("--delta_theta",        type="float",		     default=1.0,                 help="Delta theta for out-of-plane tilt search (default = 1)")
 	#parser.add_option("--boundaryavg",        action="store_true",   default=False,      		  help="boundaryavg")
 	#parser.add_option("--MA_WRAP",            type="int",            default= 0,                  help="do wrapping in MA if MA_WRAP=1, else no wrapping in MA. Default is 0.")
 	parser.add_option("--seg_ny",             type="int",            default= 256,                help="y dimension of desired segment size, should be related to fract in that fract ~ seg_ny/ny, where ny is dimension of input projections. (pixels)")

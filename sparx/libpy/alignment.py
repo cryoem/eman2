@@ -3090,7 +3090,7 @@ def directaligridding1(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1, yrng=1, 
 	from utilities    import peak_search, model_blank, inverse_transform2, compose_transform2
 	from alignment    import parabl
 	from EMAN2 import Processor
-	print  "  directaligridding1  ",psimax, psistep, xrng, yrng, stepx, stepy, updown
+	#print  "  directaligridding1  ",psimax, psistep, xrng, yrng, stepx, stepy, updown
 
 	"""
 	M = inima.get_xsize()
@@ -3185,7 +3185,7 @@ def directaligridding1(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1, yrng=1, 
 					for l in xrange(3):
 						ww[k,l] = w[k+px-1,l+py-1]
 				XSH, YSH, PEAKV = parabl(ww)
-				print ["S %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
+				#print ["S %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
 				"""
 				if(pp[0]>ma1):
 					ma1 = pp[0]
@@ -3220,7 +3220,7 @@ def directaligridding1(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1, yrng=1, 
 					for l in xrange(3):
 						ww[k,l] = w[k+px-1,l+py-1]
 				XSH, YSH, PEAKV = parabl(ww)
-				print ["R %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
+				#print ["R %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
 				"""
 				if(pp[0]>ma3):
 					ma3 = pp[0]
@@ -3239,18 +3239,25 @@ def directaligridding1(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1, yrng=1, 
 		print oma2
 		print  "        %6.2f %6.2f  %6.2f"%(oma2[-1],oma2[-4],oma2[-3])
 		"""
-		nalpha, ntx, nty, mirror = inverse_transform2(oma2[-1], oma2[-4]*stepx, oma2[-3]*stepy, 0)
+		#  The inversion would be needed for 2D alignment.  For 3D, the proper way is to return straight results.
+		#nalpha, ntx, nty, mirror = inverse_transform2(oma2[-1], oma2[-4]*stepx, oma2[-3]*stepy, 0)
+		nalpha = oma2[-1]
+		ntx    = oma2[-4]*stepx
+		nty    = oma2[-3]*stepy
 		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
 	else:
 		peak = oma4[-2]
 		if( peak == -1.0e23 ):  return  0.0, 0.0, 0.0, peak
-
+		#  This is still strange as why I would have to invert here but not for 90 degs.  PAP  01/09/2014
 		#print oma3
 		#print oma4
 
-		nalpha, ntx, nty, junk = compose_transform2(oma4[-1],oma4[-4]*stepx,oma4[-3]*stepy,1.0,180.,0,0,1)
+		nalpha, ntx, nty, junk = compose_transform2(-oma4[-1],oma4[-4]*stepx,oma4[-3]*stepy,1.0,180.,0,0,1)
+		#nalpha = oma4[-1] + 180.0
+		#ntx    = oma4[-4]*stepx
+		#nty    = oma4[-3]*stepy
 		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
-		nalpha, ntx, nty, mirror = inverse_transform2(nalpha, ntx, nty,0)
+		nalpha, ntx, nty, mirror = inverse_transform2(nalpha, ntx, nty, 0)
 		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
 	return  nalpha, ntx, nty, peak
 
