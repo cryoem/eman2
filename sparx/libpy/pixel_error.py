@@ -127,11 +127,10 @@ def angle_diff(angle1, angle2):
 	'''
 	from math import cos, sin, pi, atan2, degrees, radians
 	
-	nima = len(angle1)
+	nima  = len(angle1)
 	nima2 = len(angle2)
 	if nima2 != nima:
-		print "Error: List lengths do not agree!"
-		return 0
+		ERROR("Error: List lengths do not agree!","angle_diff",1)
 	else:
 		del nima2
 
@@ -884,41 +883,29 @@ def pixel_error_angle_sets(agls1, agls2, Threshold=1.0e23, r=1.0):
 
 	return avgPixError12,[phi12,theta12,psi12]
 
-def mirror_angleset(agls):
-	agls_mir = copy.deepcopy(agls)
-	
-	for i in xrange(len(agls_mir)):
-		agls_mir[i][0] = -agls_mir[i][0]
-		agls_mir[i][1] = 180.0 - agls_mir[i][1]
-	
-	return agls_mir
-
 def rotate_angleset_to_match(agls1, agls2):
-	agls1_mir = mirror_angleset(agls1)
-	
-	err_angle1 = pixel_error_angle_sets(agls1,     agls2)
-	err_angle2 = pixel_error_angle_sets(agls1_mir, agls2)
-	
-	err1 = sum([i[1] for i in err_angle1][0])
-	err2 = sum([i[1] for i in err_angle2][0])
-	
-	if err1<err2:
-		torotate = agls1
-		t1,t2,t3 = err_angle1[1]
-	else:
-		torotate = agls1_mir
-		t1,t2,t3 = err_angle2[1]
-		t1 = -t1
-		t2 = 180.0 - t2
+	from multi_shc    import mult_transform
+	from pixel_error  import mirror_angleset, angle_diff
+	from utilities    import rotation_between_anglesets, angle_between_projections_directions
+	from EMAN2        import Transform
 
-	#  Here you put angles by which you want to rotate
-	T1 = Transform({"type":"spider","phi":t1,"theta":t2,"psi":t3})
-	 	 
-	for i in xrange(len(torotate )):
-	    torotate [i] = mult_transform(torotate [i],T1)
-	    
-	return torotate
+	n = len(agls1)
 
+	t1 = rotation_between_anglesets(agls1,     agls2)
+
+	T1 = Transform({"type":"spider","phi":t1[0],"theta":t1[1],"psi":t1[2]})
+	rot1 = [None]*n
+
+	for i in xrange(n):
+	    rot1[i] = mult_transform(agls1[i],T1)
+	# mirror checking
+	psi_diff = angle_diff( [rot1[i][2] for i in xrange(n)], [agls2[i][2] for i in xrange(n)] )
+	if(abs(psi_diff-180.0) <90.0):
+		#mirror
+		for i in xrange(n):
+			rot1[i][2] = (rot1[i][2] + 180.0) % 360.0
+
+	return rot1
 
 def ordersegments(infilaments, ptclcoords):
 	'''

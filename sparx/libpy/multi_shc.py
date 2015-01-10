@@ -146,7 +146,7 @@ def find_common_subset_3(projs, target_threshold, minimal_subset_size=3, sym = "
 				#temp = reduce_dsym_angles(projs2[iConf], sym)
 				trans_vec[iConf] = []
 				for i in xrange(len(projs2[0])):
-					t1,t2,t3=getvec(projs2[iConf][i][0], projs2[iConf][i][1])
+					t1,t2,t3 = getvec(projs2[iConf][i][0], projs2[iConf][i][1])
 					trans_vec[iConf].append([t1,t2,t3])
 
 			avg_diff_per_image = []

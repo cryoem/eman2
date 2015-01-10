@@ -3273,11 +3273,11 @@ def angle_between_projections_directions(proj1, proj2):
 	  INPUT: two lists: [phi1, theta1] , [phi2, theta2]
 	  OUTPUT: angle (in degrees)
 	"""
-	from math import sin, cos, acos, pi
-	phi1 = proj1[0] * (pi/180.0)
-	phi2 = proj2[0] * (pi/180.0)
-	theta1 = proj1[1] * (pi/180.0)
-	theta2 = proj2[1] * (pi/180.0)
+	from math import sin, cos, acos, radians, degrees
+	phi1   = radians(proj1[0])
+	phi2   = radians(proj2[0])
+	theta1 = radians(proj1[1])
+	theta2 = radians(proj2[1])
 	st1 = sin(theta1)
 	st2 = sin(theta2)
 	ct1 = cos(theta1)
@@ -3288,7 +3288,7 @@ def angle_between_projections_directions(proj1, proj2):
 		temp = -1.0
 	if temp > 1.0:
 		temp = 1.0
-	return acos( temp ) * (180.0 / pi)
+	return degrees( acos( temp ) )
 
 
 def angles_between_anglesets(angleset1, angleset2, indexes=None):
