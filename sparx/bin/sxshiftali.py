@@ -1002,9 +1002,10 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 	
 	
 	#for b-spline
-	nknots = 6
-	nknots1 = 3
+	nknots = 4
+	nknots1 = 2
 	mknots = 1
+	
 	a0=[]
 	a=[]
 	b0=[]
@@ -1017,11 +1018,11 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 		for j in xrange(-nperiod,0):
 			a = 300.0/(nperiod*nperiod*nperiod) 
 			import random
-			shix=random.gauss(0, 5) #random.randint(-30, 30)
-			tttt[j+nperiod]= a * j*j*j  #+ shix
+			shix=random.gauss(0, 50) #random.randint(-30, 30)
+			tttt[j+nperiod]= a * j*j*j  + shix
 		for j in xrange(0, nperiod):
-			shix=random.gauss(0, 5)  #random.randint(-30, 30)
-			tttt[j+nperiod] = 300.0/nperiod*j #+shix
+			shix=random.gauss(0, 50)  #random.randint(-30, 30)
+			tttt[j+nperiod] = 300.0/nperiod*j +shix
 			
 		out_file = open("initcubic.txt", "w")
 		
@@ -1040,49 +1041,37 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 		#	at[i]=bspline(at,i-nperiod,46)
 		from scipy import interpolate
 		iii=0
-		U=[0.0]*(nknots+nknots1-1+mknots-1)
-		W=[0.0]*(nknots+nknots1-1+mknots-1)
-		AT=[0.0]*(nknots+nknots1-1+mknots-1)
+		T=[0.0]*(nknots+nknots1-1+mknots-1)
+		U=[0.0]*nsegs
+		W=[0.0]*nsegs
+		AT=[0.0]*nsegs
 		for i in xrange(0,nknots):
-			U[i] = -nperiod+i*nperiod*1.0/(nknots-1)
-			id   = int(U[i]+nperiod)
-			idx  = U[i]+nperiod-id
-			if id < nsegs-1:
-				att = at[id+1]
-			else:
-				att = 0	
-			AT[i]= (1-idx)*at[id]+idx*att
-			W[i] = 1.0
+			T[i] = -nperiod+i*nperiod*1.0/(nknots-1)
+		for i in xrange(-nperiod,nperiod):
+			U[i+nperiod] = i
+			AT[i+nperiod]= at[i+nperiod]
+			W[i+nperiod] = 1.0
 		
 		for i in xrange(mknots-1):
-			U[nknots+i]=U[nknots-1]
-			AT[nknots+i]=AT[nknots-1]
-			W[nknots+i]=1.0
-			
+			T[nknots+i]=T[nknots-1]
 		for i in xrange(nknots, nknots+nknots1-1):
-			U[i+mknots-1] = 0+(i-nknots+1)*(nsegs-1-nperiod)*1.0/(nknots1-1)
-			id   = int(U[i+mknots-1]+nperiod)
-			idx  = U[i+mknots-1]+nperiod-id
-			if id < nsegs-1:
-				att = at[id+1]
-			else:
-				att = 0	
-			AT[i+mknots-1]= (1-idx)*at[id]+idx*att
-			W[i+mknots-1] = 1.0	
+			T[i+mknots-1] = 0+(i-nknots+1)*(nsegs-1-nperiod)*1.0/(nknots1-1)
+			
 		u=[i-nperiod for i in xrange(nsegs)] 
 		
-		out_file = open("U.txt", "w")
+		out_file = open("T.txt", "w")
 		out_file1 = open("AT.txt", "w")
 		out_file2 = open("W.txt", "w")
-		for i in xrange(len(AT)):
-			out_file.write( "%f\n" % (U[i]) )
+		for i in xrange(len(T)):
+			out_file.write( "%f\n" % (T[i]) )
+		for i in xrange(len(AT)):	
 			out_file1.write( "%f\n" % (AT[i]) )
 			out_file2.write( "%f\n" % (W[i]) )
 		out_file.close()
 		out_file1.close()
 		out_file2.close()
 		
-		tck=interpolate.splrep(U,AT,W, k=3,s=0)
+		tck=interpolate.splrep(U,AT,W, t=T[1:nknots+nknots1-1+mknots-2], k=3,s=0)
 		print tck
 		at=interpolate.splev(u, tck, der=0, ext=0)
 		out_file = open("approxbs.txt", "w")
@@ -1098,127 +1087,127 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 		#a = a0
 		#b = b0
 			
-	## refine using amoeba
-	from utilities import amoeba
-	for Iter in xrange(max_iter):
-		for ifil in xrange(nfils):
-			sccf=CCF2d[ifil]
-			params0 = a0[ifil]+b0[ifil]   #[paramsline[indcs[ifil][0]:indcs[ifil][1]]
-			nsegs =  indcs[ifil][1]-indcs[ifil][0]
-			pordera = nknots-1
-			nsegsc = nsegs//2
-			params =  a[ifil]+b[ifil] 
-			fval0 = snakehelicalali(params,[sccf,params0, pordera, porderb, 0.0,2*kx+1,resamp_maxrin])
-			#print params0
-			im = 1
-			print "Iter=%d nsegs=%d"%(Iter, nsegs)
-			print "before amoeba im=%d shift_x=%f  rotang=%f "%(im,-shift_x[im], shift_ang[im]*resamp_dang*180/pi)
-			
-			im = 45
-			print "before amoeba im=%d shift_x=%f  rotang=%f fval=%f "%(im,-shift_x[im], shift_ang[im]*resamp_dang*180/pi, fval0)
-
-			## work for parabola filament. pordera=2
-			# ftol = 1.e-6
-# 			xtol = 1.e-6
-# 			maxi = 500
-# 			scale = [8.0]*(pordera+1)+[4.0]*(porderb+1)
-			
-			# ## work for cubic filament. pordera=3			
-# 			ftol = 1.e-16
-# 			xtol = 1.e-16
-# 			maxi = 500
-# 			scale = [0.001, 0.001, 0.001, 500.0, 0.001,0.001,50.0]
-			#newparams,fval, numit=amoeba(params, scale, snakehelicalali, ftol, xtol, maxi, [sccf,params0, pordera, porderb, 0.0,2*kx+1,resamp_maxrin])		
-			## for b-spline
-			ftol = 1.e-8
-			xtol = 1.e-8
-
-			maxi = 200
-			scale=[5.0]*(nknots//2)+[5.0]+[-5.0]*(nknots//2)+[1.0]*nknots		#+[0.001,0.001,50.0] #[4.0]*(porderb+1)
-
-			
-			newparams,fval, numit=amoeba(params, scale, snakehelicalali, ftol, xtol, maxi, [sccf,params0, pordera, porderb, 0.0,2*kx+1,resamp_maxrin])
-			
-			a[ifil] = newparams[0:pordera+1]
-			b[ifil] = newparams[pordera+1:pordera+1+porderb+1]
-			for iseg in xrange(indcs[ifil][0], indcs[ifil][1]):
-				point=bspline(a[ifil],iseg-indcs[ifil][0]-nsegsc, nsegs)		#parabolaf(a[ifil],b[ifil],(iseg-indcs[ifil][0])*1.0/nsegs-nsegsc*1.0/nsegs, pordera, porderb)
-				shift_x[iseg] = point
-				shift_ang[iseg] = bsplinedu(b[ifil],iseg-indcs[ifil][0]-nsegsc, nsegs) #parabolafb(b[ifil],iseg-indcs[ifil][0], porderb)			#   point[1]
-				
-				if shift_ang[iseg] < 0.0:
-					shift_ang[iseg] = resamp_maxrin - 1.0 + shift_ang[iseg]
-					
-			im = 1
-			print "after amoeba i m=%d shift_x=%f  rotang=%f max_it=%d angid=%f"%(im,-shift_x[im], shift_ang[im]*resamp_dang*180/pi, numit, shift_ang[im])
-			im = 45
-			print "after amoeba i m=%d shift_x=%f  rotang=%f  max_it=%d angid=%f fval=%f"%(im,-shift_x[im], shift_ang[im]*resamp_dang*180/pi, numit, shift_ang[im], fval)
-		
-			print newparams
-				
-	# ## compute new average.	
-	if myid == main_node:
-		start_time = time()
-		print_msg("Iteration #%4d\n"%(total_iter))
-	total_iter += 1
-	########
-	avg = model_blank(nx,ny)     #EMData(nx, ny, 1, False)
-	for im in xrange(ldata):
-		tttt = fft(data[im])
-		#tttt.write_image("image%03d.hdf"%im)
-		tttt = rot_shift2D(tttt, shift_ang[im]*resamp_dang*180/pi, -shift_x[im], 0, 0, 1)
-		Util.add_img(avg, tttt)
-		#tttt.write_image("rot_image%03d.hdf"%im)
-	reduce_EMData_to_root(avg, myid, main_node)
-	if myid == main_node:
-		if CTF:  tavg = Util.divn_filter(avg, ctf_2_sum)
-		else:
-			tavg = model_blank(nx,ny)    
-			tavg = Util.mult_scalar(avg, 1.0/float(nima))
-	else:
-		tavg = model_blank(nx,ny)
-	if Fourvar:
-		bcast_EMData_to_all(tavg, myid, main_node)
-		vav, rvar = varf2d_MPI(myid, data, tavg, mask, "a", CTF)
-	if myid == main_node:
-		if Fourvar:
-			tavg    = fft(Util.divn_img(fft(tavg), vav))
-			vav_r	= Util.pack_complex_to_real(vav)
-		# normalize and mask tavg in real space
-		#tavg = fft(tavg)
-		stat = Util.infomask( tavg, mask, False )
-		tavg -= stat[0]
-		Util.mul_img(tavg, mask)
-		#print "Iter=%d"%(Iter+20)
-		tavg.write_image("tavgttt.hdf",-1)
-		
-	if Fourvar:  del vav
-	 							
-	# combine shifts found with the original parameters
-	for im in xrange(ldata):		
-		t1 = Transform()
-		##import random
-		##shix=random.randint(-10, 10)
-		##t1.set_params({"type":"2D","tx":shix})
-		t1.set_params({"type":"2D","tx":-shift_x[im]})
-		t1.set_rotation({"type":"2d", "alpha":shift_ang[im]*resamp_dang*180.0/pi})
-		# combine t0 and t1
-		tt = t1 #*init_params[im] ##@ming
-		data[im].set_attr("xform.align2d", tt)
-	# write out headers and STOP, under MPI writing has to be done sequentially
-	mpi_barrier(MPI_COMM_WORLD)
-	par_str = ["xform.align2d", "ID"]
-	if myid == main_node:
-		from utilities import file_type
-		if(file_type(stack) == "bdb"):
-			from utilities import recv_attr_dict_bdb
-			recv_attr_dict_bdb(main_node, stack, data, par_str, 0, ldata, nproc)
-		else:
-			from utilities import recv_attr_dict
-			recv_attr_dict(main_node, stack, data, par_str, 0, ldata, nproc)
-	else:           send_attr_dict(main_node, data, par_str, 0, ldata)
-	if myid == main_node: print_end_msg("snakehelical-shiftali_MPI")				
-
+# 	## refine using amoeba
+# 	from utilities import amoeba
+# 	for Iter in xrange(max_iter):
+# 		for ifil in xrange(nfils):
+# 			sccf=CCF2d[ifil]
+# 			params0 = a0[ifil]+b0[ifil]   #[paramsline[indcs[ifil][0]:indcs[ifil][1]]
+# 			nsegs =  indcs[ifil][1]-indcs[ifil][0]
+# 			pordera = nknots-1
+# 			nsegsc = nsegs//2
+# 			params =  a[ifil]+b[ifil] 
+# 			fval0 = snakehelicalali(params,[sccf,params0, pordera, porderb, 0.0,2*kx+1,resamp_maxrin])
+# 			#print params0
+# 			im = 1
+# 			print "Iter=%d nsegs=%d"%(Iter, nsegs)
+# 			print "before amoeba im=%d shift_x=%f  rotang=%f "%(im,-shift_x[im], shift_ang[im]*resamp_dang*180/pi)
+# 			
+# 			im = 45
+# 			print "before amoeba im=%d shift_x=%f  rotang=%f fval=%f "%(im,-shift_x[im], shift_ang[im]*resamp_dang*180/pi, fval0)
+# 
+# 			## work for parabola filament. pordera=2
+# 			# ftol = 1.e-6
+# # 			xtol = 1.e-6
+# # 			maxi = 500
+# # 			scale = [8.0]*(pordera+1)+[4.0]*(porderb+1)
+# 			
+# 			# ## work for cubic filament. pordera=3			
+# # 			ftol = 1.e-16
+# # 			xtol = 1.e-16
+# # 			maxi = 500
+# # 			scale = [0.001, 0.001, 0.001, 500.0, 0.001,0.001,50.0]
+# 			#newparams,fval, numit=amoeba(params, scale, snakehelicalali, ftol, xtol, maxi, [sccf,params0, pordera, porderb, 0.0,2*kx+1,resamp_maxrin])		
+# 			## for b-spline
+# 			ftol = 1.e-8
+# 			xtol = 1.e-8
+# 
+# 			maxi = 200
+# 			scale=[5.0]*(nknots//2)+[5.0]+[-5.0]*(nknots//2)+[1.0]*nknots		#+[0.001,0.001,50.0] #[4.0]*(porderb+1)
+# 
+# 			
+# 			newparams,fval, numit=amoeba(params, scale, snakehelicalali, ftol, xtol, maxi, [sccf,params0, pordera, porderb, 0.0,2*kx+1,resamp_maxrin])
+# 			
+# 			a[ifil] = newparams[0:pordera+1]
+# 			b[ifil] = newparams[pordera+1:pordera+1+porderb+1]
+# 			for iseg in xrange(indcs[ifil][0], indcs[ifil][1]):
+# 				point=bspline(a[ifil],iseg-indcs[ifil][0]-nsegsc, nsegs)		#parabolaf(a[ifil],b[ifil],(iseg-indcs[ifil][0])*1.0/nsegs-nsegsc*1.0/nsegs, pordera, porderb)
+# 				shift_x[iseg] = point
+# 				shift_ang[iseg] = bsplinedu(b[ifil],iseg-indcs[ifil][0]-nsegsc, nsegs) #parabolafb(b[ifil],iseg-indcs[ifil][0], porderb)			#   point[1]
+# 				
+# 				if shift_ang[iseg] < 0.0:
+# 					shift_ang[iseg] = resamp_maxrin - 1.0 + shift_ang[iseg]
+# 					
+# 			im = 1
+# 			print "after amoeba i m=%d shift_x=%f  rotang=%f max_it=%d angid=%f"%(im,-shift_x[im], shift_ang[im]*resamp_dang*180/pi, numit, shift_ang[im])
+# 			im = 45
+# 			print "after amoeba i m=%d shift_x=%f  rotang=%f  max_it=%d angid=%f fval=%f"%(im,-shift_x[im], shift_ang[im]*resamp_dang*180/pi, numit, shift_ang[im], fval)
+# 		
+# 			print newparams
+# 				
+# 	# ## compute new average.	
+# 	if myid == main_node:
+# 		start_time = time()
+# 		print_msg("Iteration #%4d\n"%(total_iter))
+# 	total_iter += 1
+# 	########
+# 	avg = model_blank(nx,ny)     #EMData(nx, ny, 1, False)
+# 	for im in xrange(ldata):
+# 		tttt = fft(data[im])
+# 		#tttt.write_image("image%03d.hdf"%im)
+# 		tttt = rot_shift2D(tttt, shift_ang[im]*resamp_dang*180/pi, -shift_x[im], 0, 0, 1)
+# 		Util.add_img(avg, tttt)
+# 		#tttt.write_image("rot_image%03d.hdf"%im)
+# 	reduce_EMData_to_root(avg, myid, main_node)
+# 	if myid == main_node:
+# 		if CTF:  tavg = Util.divn_filter(avg, ctf_2_sum)
+# 		else:
+# 			tavg = model_blank(nx,ny)    
+# 			tavg = Util.mult_scalar(avg, 1.0/float(nima))
+# 	else:
+# 		tavg = model_blank(nx,ny)
+# 	if Fourvar:
+# 		bcast_EMData_to_all(tavg, myid, main_node)
+# 		vav, rvar = varf2d_MPI(myid, data, tavg, mask, "a", CTF)
+# 	if myid == main_node:
+# 		if Fourvar:
+# 			tavg    = fft(Util.divn_img(fft(tavg), vav))
+# 			vav_r	= Util.pack_complex_to_real(vav)
+# 		# normalize and mask tavg in real space
+# 		#tavg = fft(tavg)
+# 		stat = Util.infomask( tavg, mask, False )
+# 		tavg -= stat[0]
+# 		Util.mul_img(tavg, mask)
+# 		#print "Iter=%d"%(Iter+20)
+# 		tavg.write_image("tavgttt.hdf",-1)
+# 		
+# 	if Fourvar:  del vav
+# 	 							
+# 	# combine shifts found with the original parameters
+# 	for im in xrange(ldata):		
+# 		t1 = Transform()
+# 		##import random
+# 		##shix=random.randint(-10, 10)
+# 		##t1.set_params({"type":"2D","tx":shix})
+# 		t1.set_params({"type":"2D","tx":-shift_x[im]})
+# 		t1.set_rotation({"type":"2d", "alpha":shift_ang[im]*resamp_dang*180.0/pi})
+# 		# combine t0 and t1
+# 		tt = t1 #*init_params[im] ##@ming
+# 		data[im].set_attr("xform.align2d", tt)
+# 	# write out headers and STOP, under MPI writing has to be done sequentially
+# 	mpi_barrier(MPI_COMM_WORLD)
+# 	par_str = ["xform.align2d", "ID"]
+# 	if myid == main_node:
+# 		from utilities import file_type
+# 		if(file_type(stack) == "bdb"):
+# 			from utilities import recv_attr_dict_bdb
+# 			recv_attr_dict_bdb(main_node, stack, data, par_str, 0, ldata, nproc)
+# 		else:
+# 			from utilities import recv_attr_dict
+# 			recv_attr_dict(main_node, stack, data, par_str, 0, ldata, nproc)
+# 	else:           send_attr_dict(main_node, data, par_str, 0, ldata)
+# 	if myid == main_node: print_end_msg("snakehelical-shiftali_MPI")				
+# 
 
 
 def snakehelicalali(params,data):
