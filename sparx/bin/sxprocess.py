@@ -104,6 +104,7 @@ def main():
 
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--order", action="store_true", help="Two arguments are required: name of input stack and desired name of output stack. The output stack is the input stack sorted by similarity in terms of cross-correlation coefficent.", default=False)
+	parser.add_option("--ordernew", action="store_true", help="Two arguments are required: name of input stack and desired name of output stack. The output stack is the input stack sorted by similarity in terms of cross-correlation coefficent.", default=False)	
 	parser.add_option("--initial", type="int", default=0, help="Specifies which image will be used as an initial seed to form the chain. (default = 0, means the first image)")
 	parser.add_option("--changesize", action="store_true", help="resample (decimate or interpolate up) images (2D or 3D) in a stack to change the pixel size.", default=False)
 	parser.add_option("--ratio", type="float", default=1.0, help="The ratio of new to old image size (if <1 the pixel size will increase and image size decrease, if>1, the other way round")
@@ -149,7 +150,6 @@ def main():
 			d[i] = rot_shift2D(d[i], alpha, sx, sy, mirror)
 		m = model_circle(30, 64, 64)
 
-		'''
 		init = options.initial
 		temp = d[init].copy()
 		temp.write_image(new_stack, 0)
@@ -169,7 +169,24 @@ def main():
 			k += 1
 
 		d[0].write_image(new_stack, k)
-		'''
+		
+	if options.ordernew:
+		nargs = len(args)
+		if nargs != 2:
+			print "must provide name of input and output file!"
+			return
+		
+		from utilities import get_params2D, model_circle
+		from fundamentals import rot_shift2D
+		from statistics import ccc
+
+		stack = args[0]
+		new_stack = args[1]
+		
+		d = EMData.read_images(stack)
+		for i in xrange(len(d)):
+			alpha, sx, sy, mirror, scale = get_params2D(d[i])
+			d[i] = rot_shift2D(d[i], alpha, sx, sy, mirror)
 		
 		nima = len(d)
 		
@@ -180,7 +197,7 @@ def main():
 			sum=0.0
 			summax=-1.0
 			for j in xrange(nima):
-				cucu = ccc(d[i], d[j], m)
+				cucu = ccc(d[i], d[j])
 				ccl[j] = [cucu, j]
 				sum += cucu
 			if sum > summax:
@@ -192,7 +209,6 @@ def main():
 			d[cclmax[i][1]].write_image(new_stack,i)
 		write_text_row(cclmax, "ccc_sorted.txt")
 		
-
 			
 	if options.phase_flip:
 		nargs = len(args)
