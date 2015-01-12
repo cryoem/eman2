@@ -1047,98 +1047,7 @@ def prep_vol_kb(vol, kb, npad=2):
 	volft.fft_shuffle()
 	return  volft
 
-def prepare_refrings_chunks( volft, kb, nz, delta, ref_a, sym = "c1", numr = None, MPI=False, \
-						phiEqpsi = "Minus", kbx = None, kby = None, initial_theta = None, \
-						delta_theta = None, ant = -1.0):
-	"""
-	10/22/2014
-	"""
-	from projection   import prep_vol, prgs
-	from applications import MPI_start_end
-	from utilities    import even_angles, getfvec
-	from types import BooleanType
-	#from fundamentals import *
-
-	# mpi communicator can be sent by the MPI parameter
-	if type(MPI) is BooleanType:
-		if MPI:
-			from mpi import MPI_COMM_WORLD
-			mpi_comm = MPI_COMM_WORLD
-	else:
-		mpi_comm = MPI
-		MPI = True
-
-	# generate list of Eulerian angles for reference projections
-	#  phi, theta, psi
-	mode = "H"
-	if initial_theta is None:
-		ref_angles = even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
-	else:
-		if delta_theta is None: delta_theta = 1.0
-		ref_angles = even_angles(delta, theta1 = initial_theta, theta2 = delta_theta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
-	wr_four  = ringwe(numr, mode)
-	cnx = nz//2 + 1
-	cny = nz//2 + 1
-	num_ref = len(ref_angles)
-
-	if MPI:
-		from mpi import mpi_comm_rank, mpi_comm_size
-		myid = mpi_comm_rank( mpi_comm )
-		ncpu = mpi_comm_size( mpi_comm )
-	else:
-		ncpu = 1
-		myid = 0
-	
-	ref_start, ref_end = MPI_start_end(num_ref, ncpu, myid)
-
-	refrings = []     # list of (image objects) reference projections in Fourier representation
-	num_chunks = 10
-
-	sizex = numr[len(numr)-2] + numr[len(numr)-1]-1
-
-	for i in xrange(num_ref):
-		refrings.append(list())
-		for j in xrange(num_chunks):
-			prjref = EMData()
-			prjref.set_size(sizex, 1, 1)
-			refrings[i].append(prjref)
-
-	if kbx is None:
-		for i in xrange(ref_start/num_chunks, ref_end/num_chunks):
-			for j in xrange(num_chunks):
-				# :FIX: index math for ref_angles
-				ind = i*num_chunks + j
-				prjref = prgs(volft, kb, [ref_angles[ind][0], ref_angles[ind][1], ref_angles[ind][2], 0.0, 0.0])
-				cimage = Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
-				Util.Normalize_ring(cimage, numr)
-				Util.Frngs(cimage, numr)
-				Util.Applyws(cimage, numr, wr_four)
-				
-				refrings[i][j] = cimage
-	else:
-		for i in xrange(ref_start, ref_end):
-			prjref = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0], kbx, kby)
-			cimage = Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
-			Util.Normalize_ring(cimage, numr)
-			Util.Frngs(cimage, numr)
-			Util.Applyws(cimage, numr, wr_four)
-			refrings[i] = cimage
-
-	if MPI:
-		from utilities import bcast_EMData_to_all
-		for i in xrange(num_ref):
-			for j in xrange(ncpu):
-				ref_start, ref_end = MPI_start_end(num_ref, ncpu, j)
-				if i >= ref_start and i < ref_end: rootid = j
-			bcast_EMData_to_all(refrings[i], myid, rootid, comm=mpi_comm)
-
-	for i in xrange(len(ref_angles)):
-		n1,n2,n3 = getfvec(ref_angles[i][0], ref_angles[i][1])
-		refrings[i].set_attr_dict( {"phi":ref_angles[i][0], "theta":ref_angles[i][1], "psi":ref_angles[i][2], "n1":n1, "n2":n2, "n3":n3} )
-
-	return refrings
-
-def prepare_refrings( volft, kb, nz, delta, ref_a, sym = "c1", numr = None, MPI=False, \
+def prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", numr = None, MPI=False, \
 						phiEqpsi = "Minus", kbx = None, kby = None, initial_theta = None, \
 						delta_theta = None, ant = -1.0):
 	"""
@@ -1149,7 +1058,7 @@ def prepare_refrings( volft, kb, nz, delta, ref_a, sym = "c1", numr = None, MPI=
 	from projection   import prep_vol, prgs
 	from applications import MPI_start_end
 	from utilities    import even_angles, getfvec
-	from types import BooleanType
+	from types        import BooleanType
 
 	# mpi communicator can be sent by the MPI parameter
 	if type(MPI) is BooleanType:
@@ -1160,14 +1069,20 @@ def prepare_refrings( volft, kb, nz, delta, ref_a, sym = "c1", numr = None, MPI=
 		mpi_comm = MPI
 		MPI = True
 
-	# generate list of Eulerian angles for reference projections
-	#  phi, theta, psi
 	mode = "F"
-	if initial_theta is None:
-		ref_angles = even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
+
+	from types import ListType
+	if(type(ref_a) is ListType):
+		# if ref_a is  list, it has to be a list of projection directions, use it
+		ref_angles = ref_a
 	else:
-		if delta_theta is None: delta_theta = 1.0
-		ref_angles = even_angles(delta, theta1 = initial_theta, theta2 = delta_theta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
+		# generate list of Eulerian angles for reference projections
+		#  phi, theta, psi
+		if initial_theta is None:
+			ref_angles = even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
+		else:
+			if delta_theta is None: delta_theta = 1.0
+			ref_angles = even_angles(delta, theta1 = initial_theta, theta2 = delta_theta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
 	wr_four  = ringwe(numr, mode)
 	cnx = nz//2 + 1
 	cny = nz//2 + 1
@@ -1237,7 +1152,7 @@ def refprojs( volft, kb, ref_angles, cnx, cny, numr, mode, wr ):
 		Util.Applyws(cimage, numr, wr)
 		ref_proj_rings.append(cimage)
 		n1,n2,n3 = getfvec(ref_angles[i][0], ref_angles[i][1])
-		refrings[i].set_attr_dict( {"phi":ref_angles[i][0], "theta":ref_angles[i][1], "psi":ref_angles[i][2], "n1":n1, "n2":n2, "n3":n3} )
+		ref_proj_rings[-1].set_attr_dict( {"phi":ref_angles[i][0], "theta":ref_angles[i][1], "psi":ref_angles[i][2], "n1":n1, "n2":n2, "n3":n3} )
 
 	return ref_proj_rings
 
