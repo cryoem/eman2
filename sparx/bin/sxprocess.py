@@ -137,7 +137,7 @@ def main():
 			print "must provide name of input and output file!"
 			return
 		
-		from utilities import get_params2D, model_circle, write_text_row
+		from utilities import get_params2D, model_circle
 		from fundamentals import rot_shift2D
 		from statistics import ccc
 		stack = args[0]
@@ -149,6 +149,28 @@ def main():
 			d[i] = rot_shift2D(d[i], alpha, sx, sy, mirror)
 		m = model_circle(30, 64, 64)
 
+		'''
+		init = options.initial
+		temp = d[init].copy()
+		temp.write_image(new_stack, 0)
+		del d[init]
+		k = 1
+		while len(d) > 1:
+			maxcit = -111.
+			for i in xrange(len(d)):
+					cuc = ccc(d[i], temp, m)
+					if cuc > maxcit:
+							maxcit = cuc
+							qi = i
+			#print k, maxcit
+			temp = d[qi].copy()
+			del d[qi]
+			temp.write_image(new_stack, k)
+			k += 1
+
+		d[0].write_image(new_stack, k)
+		'''
+		
 		nima = len(d)
 		
  		ccl = [[0.0,-1]]*nima
