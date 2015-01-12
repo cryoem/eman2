@@ -885,6 +885,7 @@ def pixel_error_angle_sets(agls1, agls2, Threshold=1.0e23, r=1.0):
 
 def rotate_angleset_to_match(agls1, agls2):
 	from multi_shc    import mult_transform
+	from pixel_error  import angle_diff
 	from utilities    import rotation_between_anglesets, angle_between_projections_directions
 	from EMAN2        import Transform
 
