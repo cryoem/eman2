@@ -189,6 +189,7 @@ def main():
 			alpha, sx, sy, mirror, scale = get_params2D(d[i])
 			d[i] = rot_shift2D(d[i], alpha, sx, sy, mirror)
 		
+# 		m = model_circle(30, 64, 64)
  		ccl    = [[0.0,-1]]*nima
  		cclmax = [[0.0,-1]]*nima
  		
@@ -197,7 +198,8 @@ def main():
 		for i in xrange(nima):
 			sum=0.0
 			for j in xrange(nima):
-				cucu = ccc(d[i], d[j])
+				if i==j: continue
+				cucu = ccc(d[i], d[j], m)
 				ccl[j] = [cucu, j]
 				sum += cucu
 			if sum > summax:
