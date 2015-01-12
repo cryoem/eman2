@@ -176,7 +176,7 @@ def main():
 			print "must provide name of input and output file!"
 			return
 		
-		from utilities import get_params2D, model_circle
+		from utilities import get_params2D, model_circle, write_text_row
 		from fundamentals import rot_shift2D
 		from statistics import ccc
 
