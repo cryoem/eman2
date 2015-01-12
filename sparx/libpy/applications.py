@@ -4067,7 +4067,7 @@ def ali3dlocal_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs 
 	else: mask3D = model_circle(last_ring, nx, nx, nx)
 
 	numr	= Numrinit(first_ring, last_ring, rstep, "F")
-	wr_four = ringwe(numr, mode)
+	wr_four = ringwe(numr, "F")
 	cx = cy = nx//2
 	mask2D  = model_circle(last_ring,nx,nx) - model_circle(first_ring,nx,nx)
 
@@ -4153,27 +4153,50 @@ def ali3dlocal_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs 
 				print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f, delta psi = %5.2f, start psi = %5.2f\n"%\
 						(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],yrng[N_step],step[N_step],deltapsi[N_step],startpsi[N_step]))
 
+			totrefs = len(even_angles(delta[N_step], method = ref_a, symmetry = sym))
+			numberofcones = max(totrefs/numberofrefs,1)
+			if myid == main_node:
+				print_msg("\n   Number of references permitted in memory = %d  , total number of references = %d , number of cones = %d \n"%(numberofrefs, totrefs, numberofcones))
 
 
 			volft, kb = prep_vol(vol)
-			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, True, ant = max(an[N_step],0.0)*1.1)  # 1.1 is to have extra safety
-			#del volft, kb
-			if myid == main_node:
-				print_msg("Time to prepare rings: %d\n" % (time()-start_time))
-				start_time = time()
+			if( numberofcones == 1):
+				# One cone good enough, use the original code
+				refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, True, ant = max(an[N_step],0.0)*1.1)  # 1.1 is to have extra safety
 
-			for im in xrange(nima):
-				if deltapsi[N_step] > 0.0:
-					from alignment import proj_ali_incore_delta
-					peak, pixer[im] = proj_ali_incore_delta(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],startpsi[N_step],deltapsi[N_step],finfo)						
-				elif an[N_step] == -1:
-					peak, pixer[im] = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],finfo)
-				else:
-					if apsi[N_step] == -1:
-						peak, pixer[im] = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],finfo, sym = sym)
-					else:
-						peak, pixer[im] = proj_ali_incore_local_psi(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],apsi[N_step],finfo)
-				data[im].set_attr("previousmax", peak)
+				if myid == main_node:
+					print_msg("Time to prepare rings: %d\n" % (time()-start_time))
+					start_time = time()
+
+				for im in xrange(nima):
+					peak, pixer[im] = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],finfo, sym = sym)
+					data[im].set_attr("previousmax", peak)
+
+			else:
+				from morphology import  bracket_def
+				from utilities  import  assign_projangles, cone_ang
+				from alignment  import  refprojs
+
+				h = 1.0
+				dat = [sym, numberofcones, ref_a]
+				def1, def2 = bracket_def(computenumberofrefs,dat, rs, h)
+				def1, val  = goldsearch_astigmatism(computenumberofrefs, dat, def1, def2, tol=1.0)
+				coneangles = even_angles(def1, method = "S", symmetry = sym)
+				if myid == main_node:
+					print_msg("\n   Computed cone delta = %f  , and the number of cones = %d \n"%(def1, len(coneangles)))
+				assignments = assign_projangles(projangles, coneangles)
+				for k in xrange(len(coneangles)):
+					if(len(assignements[k]) > 0):
+						refsincone = even_angles(delta, method = ref_a, symmetry = sym)
+						ant = 1.5*an[N_step]
+						refsincone = cone_ang( refsincone, coneangles[k][0], coneangles[k][1], ant )
+						refrings = refprojs( volf, kb, refsincone, cnx, cny, numr, "F", wr_four )
+						#    match projections to its cone using an as a distance.
+						for im in assignments[k]:
+							peak, pixer[im] = proj_ali_incore_local(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], an[N_step], finfo, sym = sym)
+							data[im].set_attr("previousmax", peak)
+
+			del volft, kb
 
 			if myid == main_node:
 				print_msg("Time of alignment = %d\n"%(time()-start_time))
@@ -4269,6 +4292,12 @@ def ali3dlocal_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs 
 
 
 	if myid == main_node: print_end_msg("ali3dlocal_MPI")
+
+
+# Auxiliary function to compute number of cones in ali3dlocal
+def computenumberofrefs(x, dat):
+	#  dat = [sym, desired number of refs, ref_a]
+	return (len(even_angles(x, method = dat[2], symmetry = dat[0])) - dat[1])**2
 
 
 def ali3dpsi_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
