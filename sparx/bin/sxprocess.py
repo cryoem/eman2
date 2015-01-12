@@ -184,30 +184,28 @@ def main():
 		new_stack = args[1]
 		
 		d = EMData.read_images(stack)
-		for i in xrange(len(d)):
+		nima = len(d)
+		for i in xrange(nima):
 			alpha, sx, sy, mirror, scale = get_params2D(d[i])
 			d[i] = rot_shift2D(d[i], alpha, sx, sy, mirror)
 		
-		nima = len(d)
-		
- 		ccl = [[0.0,-1]]*nima
+ 		ccl    = [[0.0,-1]]*nima
  		cclmax = [[0.0,-1]]*nima
+ 		
+ 		summax=-1.0*nima
+ 		
 		for i in xrange(nima):
-			indmax=-1
 			sum=0.0
-			summax=-1.0
 			for j in xrange(nima):
 				cucu = ccc(d[i], d[j])
 				ccl[j] = [cucu, j]
 				sum += cucu
 			if sum > summax:
 				summax = sum
-				indmax=i
-				cclmax = sorted(ccl, reverse=True) 
+				cclmax = sorted(ccl, reverse=True)
 
 		for i in xrange(nima):
 			d[cclmax[i][1]].write_image(new_stack,i)
-		write_text_row(cclmax, "ccc_sorted.txt")
 		
 			
 	if options.phase_flip:
