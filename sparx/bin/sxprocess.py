@@ -67,8 +67,13 @@ def main():
 	sxprocess.py input_stack.hdf powerspectrum.hdf --pw [--wn=1024]
 
 	4.  Order a 2-D stack of image based on pair-wise similarity (computed as a cross-correlation coefficent).
-	    Option initial specifies which image will be used as an initial seed to form the chain.
-	sxprocess.py input_stack.hdf output_stack.hdf --order  --initial=23
+	    There are three ways to use the program
+	   4.1  Use option initial to specify which image will be used as an initial seed to form the chain.
+	        sxprocess.py input_stack.hdf output_stack.hdf --order  --initial=23 --radius=25
+	   4.2  If options initial is omitted, the program will determine which image best serves as initial seed to form the chain
+	        sxprocess.py input_stack.hdf output_stack.hdf --order  --radius=25
+	   4.3  Use option circular to form a circular chain.
+	        sxprocess.py input_stack.hdf output_stack.hdf --order  --circular--radius=25
 
 	5.  Generate a stack of projections bdb:data and micrographs with prefix mic (i.e., mic0.hdf, mic1.hdf etc) from structure input_structure.hdf, with CTF applied to both projections and micrographs:
 	sxprocess.py input_structure.hdf data mic --generate_projections format="bdb":apix=5.2:CTF=True:boxsize=64
@@ -105,7 +110,9 @@ def main():
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--order", action="store_true", help="Two arguments are required: name of input stack and desired name of output stack. The output stack is the input stack sorted by similarity in terms of cross-correlation coefficent.", default=False)
 	parser.add_option("--ordernew", action="store_true", help="Two arguments are required: name of input stack and desired name of output stack. The output stack is the input stack sorted by similarity in terms of cross-correlation coefficent.", default=False)	
-	parser.add_option("--initial", type="int", default=0, help="Specifies which image will be used as an initial seed to form the chain. (default = 0, means the first image)")
+	parser.add_option("--initial", type="int", default=-1, help="Specifies which image will be used as an initial seed to form the chain. (default = 0, means the first image)")
+	parser.add_option("--circular", action="store_true", help="Select circular ordering (fisr image has to be similar to the last", default=False)
+	parser.add_option("--radius", type="int", default=-1, help="Radius of a circular mask for similarity based ordering")
 	parser.add_option("--changesize", action="store_true", help="resample (decimate or interpolate up) images (2D or 3D) in a stack to change the pixel size.", default=False)
 	parser.add_option("--ratio", type="float", default=1.0, help="The ratio of new to old image size (if <1 the pixel size will increase and image size decrease, if>1, the other way round")
 	parser.add_option("--pw", action="store_true", help="compute average power spectrum of a stack of 2-D images with optional padding (option wn) with zeroes", default=False)
@@ -145,76 +152,125 @@ def main():
 		new_stack = args[1]
 		
 		d = EMData.read_images(stack)
-		for i in xrange(len(d)):
-			alpha, sx, sy, mirror, scale = get_params2D(d[i])
-			d[i] = rot_shift2D(d[i], alpha, sx, sy, mirror)
-		m = model_circle(30, 64, 64)
-
-		init = options.initial
-		temp = d[init].copy()
-		temp.write_image(new_stack, 0)
-		del d[init]
-		k = 1
-		while len(d) > 1:
-			maxcit = -111.
+		try:
+			ttt = d[0].get_attr('xform.params2d')
 			for i in xrange(len(d)):
-					cuc = ccc(d[i], temp, m)
-					if cuc > maxcit:
-							maxcit = cuc
-							qi = i
-# 			print k, maxcit
-			temp = d[qi].copy()
-			del d[qi]
-			temp.write_image(new_stack, k)
-			k += 1
+				alpha, sx, sy, mirror, scale = get_params2D(d[i])
+				d[i] = rot_shift2D(d[i], alpha, sx, sy, mirror)
+		except:
+			pass
 
-		d[0].write_image(new_stack, k)
-		
-	if options.ordernew:
-		nargs = len(args)
-		if nargs != 2:
-			print "must provide name of input and output file!"
-			return
-		
-		from utilities import get_params2D, model_circle, write_text_row
-		from fundamentals import rot_shift2D
-		from statistics import ccc
-
-		stack = args[0]
-		new_stack = args[1]
-		
-		d = EMData.read_images(stack)
-		nima = len(d)
-		for i in xrange(nima):
-			alpha, sx, sy, mirror, scale = get_params2D(d[i])
-			d[i] = rot_shift2D(d[i], alpha, sx, sy, mirror)
-		
 		nx = d[0].get_xsize()
 		ny = d[0].get_ysize()
-		m = model_circle(nx/2-2, nx, ny)
+		if options.radius < 1 : radius = nx//2-2
+		else:  radius = options.radius
+		mask = model_circle(radius, nx, ny)
 
- 		ccl    = [[0.0,-1]]*nima
- 		cclmax = [[0.0,-1]]*nima
- 		
- 		summax=-1.0*nima
- 		
- 		init = options.initial
-		for i in xrange(nima):
-			sum=0.0
-			for j in xrange(nima):
-				if i==j: continue
-				cucu = ccc(d[i], d[j], m)
-				ccl[j] = [cucu, j]
-				sum += cucu
-			if sum > summax:
-				summax = sum
-				cclmax = sorted(ccl, reverse=True)
+		init = options.initial
 
-		for i in xrange(nima):
-			d[cclmax[i][1]].write_image(new_stack,i)
-			print cclmax[i]
-		
+		if init > -1 :
+			temp = d[init].copy()
+			temp.write_image(new_stack, 0)
+			del d[init]
+			k = 1
+			lsum = 0.0
+			while len(d) > 1:
+				maxcit = -111.
+				for i in xrange(len(d)):
+						cuc = ccc(d[i], temp, mask)
+						if cuc > maxcit:
+								maxcit = cuc
+								qi = i
+				# 	print k, maxcit
+				lsum += maxcit
+				temp = d[qi].copy()
+				del d[qi]
+				temp.write_image(new_stack, k)
+				k += 1
+			print  lsum
+			d[0].write_image(new_stack, k)
+		else:
+			if options.circular :
+				#  figure the "best circular" starting image
+				maxsum = -1.023
+				for m in xrange(len(d)):
+					indc = range(len(d) )
+					lsnake = [-1]*(len(d)+1)
+					lsnake[0]  = m
+					lsnake[-1] = m
+					del indc[m]
+					temp = d[m].copy()
+					lsum = 0.0
+					direction = +1
+					k = 1
+					while len(indc) > 1:
+						maxcit = -111.
+						for i in xrange(len(indc)):
+								cuc = ccc(d[indc[i]], temp, mask)
+								if cuc > maxcit:
+										maxcit = cuc
+										qi = indc[i]
+						lsnake[k] = qi
+						lsum += maxcit
+						del indc[indc.index(qi)]
+						direction = -direction
+						for i in xrange( 1,len(d) ):
+							if( direction > 0 ):
+								if(lsnake[i] == -1):
+									temp = d[lsnake[i-1]].copy()
+									#print  "  forw  ",lsnake[i-1]
+									k = i
+									break
+							else:
+								if(lsnake[len(d) - i] == -1):
+									temp = d[lsnake[len(d) - i +1]].copy()
+									#print  "  back  ",lsnake[len(d) - i +1]
+									k = len(d) - i
+									break
+
+					lsnake[lsnake.index(-1)] = indc[-1]
+					#print  " initial image and lsum  ",m,lsum
+					#print lsnake
+					if(lsum > maxsum):
+						maxsum = lsum
+						init = m
+						snake = [lsnake[i] for i in xrange(len(d))]
+				print  "  Initial image selected : ",init,maxsum
+				print lsnake
+				for m in xrange(len(d)):  d[snake[m]].write_image(new_stack, m)
+			else:
+				#  figure the "best" starting image
+				maxsum = -1.023
+				for m in xrange(len(d)):
+					indc = range(len(d) )
+					lsnake = [m]
+					del indc[m]
+					temp = d[m].copy()
+					lsum = 0.0
+					while len(indc) > 1:
+						maxcit = -111.
+						for i in xrange(len(indc)):
+								cuc = ccc(d[indc[i]], temp, mask)
+								if cuc > maxcit:
+										maxcit = cuc
+										qi = indc[i]
+						lsnake.append(qi)
+						lsum += maxcit
+						temp = d[qi].copy()
+						del indc[indc.index(qi)]
+
+					lsnake.append(indc[-1])
+					#print  " initial image and lsum  ",m,lsum
+					#print lsnake
+					if(lsum > maxsum):
+						maxsum = lsum
+						init = m
+						snake = [lsnake[i] for i in xrange(len(d))]
+				print  "  Initial image selected : ",init,maxsum
+				print lsnake
+				for m in xrange(len(d)):  d[snake[m]].write_image(new_stack, m)
 			
+		
 	if options.phase_flip:
 		nargs = len(args)
 		if nargs != 2:
