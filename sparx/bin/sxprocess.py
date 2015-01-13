@@ -162,7 +162,7 @@ def main():
 					if cuc > maxcit:
 							maxcit = cuc
 							qi = i
-			#print k, maxcit
+# 			print k, maxcit
 			temp = d[qi].copy()
 			del d[qi]
 			temp.write_image(new_stack, k)
@@ -189,12 +189,16 @@ def main():
 			alpha, sx, sy, mirror, scale = get_params2D(d[i])
 			d[i] = rot_shift2D(d[i], alpha, sx, sy, mirror)
 		
-# 		m = model_circle(30, 64, 64)
+		nx = d[0].get_xsize()
+		ny = d[0].get_ysize()
+		m = model_circle(nx/2-2, nx, ny)
+
  		ccl    = [[0.0,-1]]*nima
  		cclmax = [[0.0,-1]]*nima
  		
  		summax=-1.0*nima
  		
+ 		init = options.initial
 		for i in xrange(nima):
 			sum=0.0
 			for j in xrange(nima):
@@ -208,6 +212,7 @@ def main():
 
 		for i in xrange(nima):
 			d[cclmax[i][1]].write_image(new_stack,i)
+			print cclmax[i]
 		
 			
 	if options.phase_flip:
