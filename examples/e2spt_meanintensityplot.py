@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Author: Jesus Galaz, 2011?2012? - Last change 16/Sep/2014
+# Author: Jesus Galaz, 2011?2012? - Last change 12/Jan/2015
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -34,12 +34,8 @@ from EMAN2 import *
 from sys import argv
 from optparse import OptionParser
 import sys
-
 import numpy as np
-
-
 from scipy.stats import norm
-
 
 def main():
 	#import pylab
@@ -51,58 +47,43 @@ def main():
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_argument("--input",type=str,default='',help="""Comma separated stacks of images
-		whose mean intensity distribution you want to plot.""")
+	parser.add_argument("--input",type=str,default='',help="""Comma separated stacks of images whose mean intensity distribution you want to plot.""")
 
 	parser.add_argument("--path",type=str,default='',help="Directory to store results in. The default is a numbered series of directories containing the prefix 'sptsim'; for example, sptsim_02 will be the directory by default if 'sptsim_01' already exists.")
 
-	parser.add_argument("--output",type=str,default='',help="""Name of output plot inf comparing
-		two populations or more.""")
+	parser.add_argument("--output",type=str,default='',help="""Name of output plot if comparing two populations or more.""")
 	
 	parser.add_argument("--shrink", type=int,default=1,help="Optionally shrink the input volumes by an integer amount.")
-	parser.add_argument("--bins", type=int,default=0,help="""Number of bins for histogram.
-		If not provided, the optimal bin number will be calculated.""")
+	
+	parser.add_argument("--bins", type=int,default=0,help="""Number of bins for histogram. If not provided, the optimal bin number will be calculated.""")
 	
 	#parser.add_argument("--sym", type=str, default='c1', help = "Symmetry to enforce before computing mean intensity in the box. Note that this should only be used if the particles are properly aligned to the symmetry axis.")
 	
-	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
+	parser.add_argument("--mask",type=str,default="mask.sharp:outer_radius=-2",help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2")
+	
 	parser.add_argument("--maskfile",type=str,default='',help="A maskfile that will be multiplied by the image.")
-	
-	#parser.add_argument("--normproc",type=str,help="Normalization processor applied to particles before alignment. Default is to use normalize.mask. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'", default="normalize.mask")
-	
-	parser.add_argument("--clip",type=int,default=0,help="""Boxsize to clip particles before 
-		computing mean and std values for each image. Default=0, which means no resizing.""")	
-	
-	parser.add_argument("--preprocess",type=str,help="""Any processor (as in e2proc3d.py) 
-		to be applied to each image before computing mean and std values.""", default=None)
-	
-	parser.add_argument("--lowpass",type=str,help="""A lowpass filtering processor (as in e2proc3d.py) 
-		to be applied before computing mean and std values for each image""", default=None)
-	
-	parser.add_argument("--highpass",type=str,help="""A highpass filtering processor (as in e2proc3d.py) 
-		to be applied before computing mean and std values for each image.""", default=None)
-
-	parser.add_argument("--threshold",type=str,help="""A thresholding processor (as in from e2proc3d.py) 
-		to be applied before computing mean and std values for each image.""", default=None)
 		
-	parser.add_argument("--normproc",type=str,help="""Normalization processor applied to particles 
-		before computing mean and std values for each iamge. Default is 'normalize.edgemean'.
-		If normalize.mask is used, results of the mask option will be passed in automatically. 
-		If you want to turn this option off specify \'None\'""", default="normalize.edgemean")
+	parser.add_argument("--clip",type=int,default=0,help="""Boxsize to clip particles before computing mean and std values for each image. Default=0, which means no resizing.""")	
+	
+	parser.add_argument("--preprocess",type=str,default='',help="""Any processor (as in e2proc3d.py) to be applied to each image before computing mean and std values.""")
+	
+	parser.add_argument("--lowpass",type=str,default='',help="""A lowpass filtering processor (as in e2proc3d.py) to be applied before computing mean and std values for each image""")
+	
+	parser.add_argument("--highpass",type=str,default='',help="""A highpass filtering processor (as in e2proc3d.py) to be applied before computing mean and std values for each image.""")
 
-	parser.add_argument("--savepreprocessed",action="store_true", help="""Will save image stacks 
-		after preprocessing options (lowpass, highpass, preprocess, masking, etc) have been 
-		applied.""", default=False)
+	parser.add_argument("--threshold",type=str,default='',help="""A thresholding processor (as in from e2proc3d.py) to be applied before computing mean and std values for each image.""")
 		
-	parser.add_argument("--normalizeplot",action="store_true",help="""This will normalize the
-		intensity values of the distribution to be between 0 and 1""")
-	parser.add_argument("--removesigma",type=int,default=0,help="""Provide a value for the
-		number of standard deviations away from the mean to consider values to exclude.
-		For example, if --removesigma=3, values further than 3 standard deviations away from the 
-		mean will be excluded.""")
-	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--normproc",type=str,default="normalize.edgemean",help="""Normalization processor applied to particles before computing mean and std values for each iamge. Default is 'normalize.edgemean'. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'""")
 
-	parser.add_argument("--verbose", "-v", type=int, dest="verbose", action="store", metavar="n", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--savepreprocessed",action="store_true",default=False,help="""Default=False. Will save image stacks after preprocessing options (lowpass, highpass, preprocess, masking, etc) have been applied.""")
+		
+	parser.add_argument("--normalizeplot",action="store_true",default=False,help="""Default=False. This will normalize the intensity values of the distribution to be between 0 and 1""")
+
+	parser.add_argument("--removesigma",type=int,default=0,help="""Default=0. Provide a value for the number of standard deviations away from the mean to consider values to exclude. For example, if --removesigma=3, values further than 3 standard deviations away from the mean will be excluded.""")
+	
+	parser.add_argument("--ppid", type=int, help="Default=1. Set the PID of the parent process, used for cross platform PPID",default=-1)
+
+	parser.add_argument("--verbose", "-v", type=int, default=0, help="Default 0. Verbose level [0-9], higner number means higher level of verboseness",dest="verbose", action="store", metavar="n")
 
 	(options, args) = parser.parse_args()
 	
@@ -138,13 +119,23 @@ def main():
 	stds = []
 	
 	for datafile in datafiles:
+		n = EMUtil.get_image_count(datafile)
+		if n < 3:
+			print "ERROR: All stacks must have at least 3 partilces. This one doesn't:", datafile
+			sys.exit(1)
 	
+	for datafile in datafiles:
 		intensitiesSingle = calcintensities( options, datafile )
 	
 		intensitiesSeveral.append( [ datafile, list(intensitiesSingle) ] )
 		
+		intensitiesSingleNorm = intensitiesSingle
+		
 		if options.normalizeplot:
 			intensitiesSingleNorm = normintensities( intensitiesSingle, 0, 0 )
+		
+		#print "\]n\\n\nIntensities before plotting are", intensitiesSingleNorm
+		#print "\n\n\n\n\n"
 		
 		ret = plotintensities( intensitiesSingleNorm, options, datafile )
 		mean = ret[0]
@@ -152,7 +143,7 @@ def main():
 		means.append(mean)
 		stds.append(std)
 		
-	print "\nIntensities several len is", len( intensitiesSeveral )
+	#print "\nIntensities several len is", len( intensitiesSeveral )
 	if len( intensitiesSeveral ) > 1:
 		
 		datafile1 = intensitiesSeveral[0][0]
@@ -188,12 +179,11 @@ def main():
 			absmin = min( minses )
 			absmax = max( maxes ) - absmin
 		
-		
 		for intensities in intensitiesSeveral:	
 			print "Type and len of intensities is", type(intensities[1]), len(intensities[1])
 						
 			if options.normalizeplot:
-				print "normalize on"	
+				print "normalizeplot on"	
 				intensitiesNorm = normintensities( intensities[1], absmin, absmax )
 				
 			plotintensities( intensitiesNorm, options, datafile, 'no' )
@@ -246,6 +236,32 @@ def normintensities( intensitiesR, minval=0, maxval=0 ):
 	return finalIntensities
 
 
+def clip3D( vol, size ):
+	
+	volxc = vol['nx']/2
+	volyc = vol['ny']/2
+	volzc = vol['nz']/2
+	
+	Rvol =  Region( (2*volxc - size)/2, (2*volyc - size)/2, (2*volzc - size)/2, size , size , size)
+	vol.clip_inplace( Rvol )
+	#vol.process_inplace('mask.sharp',{'outer_radius':-1})
+	
+	return vol
+
+
+def clip2D( img, size ):
+	
+	imgxc = img['nx']/2
+	imgyc = img['ny']/2
+	#imgzc = img['nz']/2
+	
+	Rimg =  Region( (2*imgxc - size)/2, (2*imgyc - size)/2, 0, size , size , 1)
+	img.clip_inplace( Rimg )
+	#img.process_inplace('mask.sharp',{'outer_radius':-1})
+	
+	return img
+
+
 def calcintensities( options, datafile ):
 
 	print "\n(e2spt_meanintensityplot) (calcintensities)"
@@ -255,96 +271,115 @@ def calcintensities( options, datafile ):
 	
 	hdr = EMData( datafile, 0, True)
 	dimensionality = 3
-	mask=EMData(hdr["nx"],hdr["ny"],hdr["nz"])
+	
+	mask = EMData(hdr["nx"],hdr["ny"],hdr["nz"])
+	mask.to_one()
 	
 	if int(hdr['nz']) <= 1:
 		dimensionality = 2
 		mask=EMData(hdr["nx"],hdr["ny"])
 	
-	mask.to_one()
-		
-	if options.mask:
-		#print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
-		mask.process_inplace(options.mask[0],options.mask[1])
-		#print "Options mask 0, and 1 are", options.mask[0], options.mask[1]
+	if options.clip:
+		if dimensionality == 3:
+			mask = clip3D( mask, options.clip)
+		if dimensionality == 2:
+			mask = clip2D( mask, options.clip)
 	
+	if options.mask:
+		mask.process_inplace(options.mask[0],options.mask[1])
 	
 	for i in range(n):
-		a=EMData(datafile,i)
-		print "\nAnalyzing particle number %d of %d for stack %s" % (i,n,datafile)
-
-		# Make the mask first, use it to normalize (optionally), then apply it 
-		# normalize
-		#if options["normproc"] != None:
-		#	if options["normproc"][0]=="normalize.mask" : options["normproc"][1]["mask"]=mask
-		#	fixedimage.process_inplace(options["normproc"][0],options["normproc"][1])
-		#	image.process_inplace(options["normproc"][0],options["normproc"][1])
+		a = EMData(datafile,i)
 		
-		#print "\nImg size", a['nx']
-		#print "Mask size",mask['nx']
+		print "\nAnalyzing particle number %d/%d for stack %s" % (i,n,datafile)
 		
+		if options.clip:
+			if options.verbose:
+				print "\nBEFORE CLIPPING, mean intensity is", a['mean_nonzero']
+			if dimensionality == 3:
+				a = clip3D( a, options.clip)
+			if dimensionality == 2:
+				a = clip2D( a, options.clip)
+			if options.verbose:
+				print "\nAFTER CLIPPING with clipsize=%d, mean intensity is %f" %( options.clip, a['mean_nonzero'] )
 		
-		if options.clip:						
-			sx = a['nx']
-			sy = a['ny']
-			sz = a['nz']
-	
-			xc = sx/2
-			yc = sy/2
-			zc = sz/2
-	
-			newsize = options.clip
-	
-			a['origin_x'] = 0
-			a['origin_y'] = 0
-			a['origin_z'] = 0
+		if options.normproc:
+			if options.verbose:
+				print "\nBEFORE NORMALIZING, mean intensity is", a['mean_nonzero']
 			
-			print "\nBEFORE CLIP, intensity is", a['mean_nonzero']
-	
-			r=Region( (2*xc - newsize)/2, (2*yc - newsize)/2, (2*zc - newsize)/2, newsize , newsize , newsize)		
+			if options.normproc[0]=="normalize.mask":
+				if options.mask:			
+					options.normproc[1]["mask"]=mask
+				else:
+					print "ERROR: To use normalize.mask you also need to specify a mask"
+					sys.exit(1)
 			
-			a.clip_inplace( r )
-			if i == 0:
-				mask.clip_inplace( r )
-		
-		print "BEFORE normalizing, intensity is", a['mean_nonzero']
-		#a.process_inplace('normalize.edgemean')
-		
-		if options.normproc != None:
 			a.process_inplace(options.normproc[0],options.normproc[1])
-			print "AFTER normalizing, intensity is", a['mean_nonzero']	
+			
+			if options.verbose:
+				print "\nAFTER NORMALIZING with %s, intensity is %f" %( options.normproc, a['mean_nonzero'])	
 
-		# preprocess
-		if options.preprocess != None:
+		if options.preprocess:
+			if options.verbose:
+				print "\nBEFORE PREPROCESS, intensity is", a['mean_nonzero']
 			a.process_inplace(options.preprocess[0],options.preprocess[1])
+			if options.verbose:
+					print "\nATER PREPROCESS, intensity is", a['mean_nonzero']
 		
-		# lowpass
-		if options.lowpass != None:
+		if options.lowpass:
+			if options.verbose:
+				print "\nBEFORE LOWPASSING, intensity is", a['mean_nonzero']
 			a.process_inplace(options.lowpass[0],options.lowpass[1])
-			print "After LOWPASS, intensity is", a['mean_nonzero']
+			if options.verbose:
+				print "\nAFTER LOWPASSING, intensity is", a['mean_nonzero']
 
-		# highpass
-		if options.highpass != None:
+		if options.highpass:
+			if options.verbose:
+				print "\nBEFORE HIGHPASSING, intensity is", a['mean_nonzero']
 			a.process_inplace(options.highpass[0],options.highpass[1])
-			print "After HIGHPASS, intensity is", a['mean_nonzero']
+			if options.verbose:
+				print "\nAFTER HIGHPASSING, intensity is", a['mean_nonzero']
 
-		if options.threshold != None:
+		if options.threshold:
+			if options.verbose:
+				print "\nBEFORE THRESHOLDING, intensity is", a['mean_nonzero']
 			a.process_inplace(options.threshold[0],options.threshold[1])
-			print "After THRESHOLD, intensity is", a['mean_nonzero']
+			if options.verbose:
+				print "\nAFTER THRESHOLDING, intensity is", a['mean_nonzero']
 		
-		a.mult(mask)
-		print "After MASKING, intensity is", a['mean_nonzero']
+		if options.mask:
+			if options.verbose:
+				print "\nBEFORE MASKING, intensity is", a['mean_nonzero']
+			a.mult(mask)
+			if options.verbose:
+				print "\nAFTER MASKING, intensity is", a['mean_nonzero']
 		
 		if options.maskfile:
-			m=EMData(options.maskfile,0)
-			a.mult(m)	
-		
-		# Shrink
-		if options.shrink !=None and options.shrink>1 :
+			m = EMData(options.maskfile,0)
+			if options.clip:
+				if dimensionality == 2:
+					m = clip2D( m, options.clip )
+				if dimensionality == 3:
+					m = clip3D( m, options.clip )
+	
+			if options.verbose:	
+				print "\nBEFORE MASKING with MASKFILE, intensity is", a['mean_nonzero']
+			a.mult(m)
+			if options.verbose:	
+				print "\nAFTER MASKING with MASKFILE, intensity is", a['mean_nonzero']
+			
+		if options.shrink and options.shrink > 1 :
+			if options.verbose:
+				print "\nBEFORE SHRINKING, intensity is", a['mean_nonzero']
 			a.process_inplace("math.meanshrink",{"n":options.shrink})
-			print "After SHRINKING, intensity is", a['mean_nonzero']
+			if options.verbose:
+				print "\nAFTER SHRINKING, intensity is", a['mean_nonzero']
 		
-		intensities.append(a['mean_nonzero']*1000)
+		#intensities.append(a['mean_nonzero']*1000)
+		finalval=1+a['mean_nonzero']
+		intensities.append(finalval)
+		
+		print "Value added to 1!!!!!",finalval
 		
 		if options.savepreprocessed:
 			a.write_image(options.path + '/' + datafile.replace('.','_EDITED.'),i)
@@ -354,8 +389,10 @@ def calcintensities( options, datafile ):
 	meanin = np.mean( intensities )
 	
 	for val in intensities:
+		
 		if not options.removesigma:
 			finalvalues.append( val )
+			print "finalval added", val
 		elif options.removesigma:
 			topthreshold = float( options.removesigma ) * stddin + meanin
 			bottomthreshold = meanin - float( options.removesigma ) * stddin
@@ -367,17 +404,6 @@ def calcintensities( options, datafile ):
 	
 	intensitiestxt = options.path + '/' + datafile.replace('.hdf','_INTENSITIES.txt')
 	
-	
-	#if options.normalizeplot:
-	#	intensitiesNormalized = []
-	#	imax = max( intensities )
-	#	imin = min( intensities )
-	#	for inten in intensities:
-	#		intenNorm = ( inten - imin ) / imax
-	#		intensitiesNormalized.append( intenNorm )
-	#	
-	#	intensities = list( intensitiesNormalized )
-	
 	f=open( intensitiestxt, 'w')
 	lines = []
 	k=0
@@ -388,7 +414,7 @@ def calcintensities( options, datafile ):
 	f.writelines(lines)
 	f.close()
 	
-	plotintensities( finalvalues, options, datafile, 'yes' )
+	#plotintensities( finalvalues, options, datafile, 'yes' )
 	
 	return finalvalues
 	
@@ -412,21 +438,14 @@ def plotintensities( intensities, options, datafile, onefile='yes' ):
 	print "The total number of particles is", len(intensities)
 
 	#plt.hist(y, bins=5)
-
+	
+	if options.verbose==10:
+		print "\n\n\nThe intensities to plot are", intensities
+		print "\n\n\n\n\n"
+	
 	std = np.std(intensities)
 	mean = np.mean(intensities)
 	statistics = ['mean='+str(mean) + ' std='+str(std) + '\n']
-
-	#intensitiesfile = plotname.replace('.png','_INTENSITIES.txt')
-	
-	#intensitieslines = []
-	#for i in intensities:	
-	#	intensitieslines.append(str(i)+'\n')
-
-	#g=open(options.path + '/' + intensitiesfile,'w')
-	#g.writelines(statistics)
-	#g.close()
-
 
 	print "\nThe standard deviation is", std
 	cuberoot = np.power(len(intensities),1.0/3.0)
@@ -456,8 +475,8 @@ def plotintensities( intensities, options, datafile, onefile='yes' ):
 	#hmean = np.mean(h)
 	#hstd = np.std(h)
 	
-	pdf = norm.pdf(intensities, mean, std)
-	plt.plot(intensities, pdf)
+	#pdf = norm.pdf(intensities, mean, std)
+	#plt.plot(intensities, pdf)
 
 	'''
 	FITTING A CURVE
