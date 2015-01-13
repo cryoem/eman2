@@ -89,6 +89,7 @@ def main():
 	
 	logger = E2init(sys.argv, options.ppid)
 	
+	'''
 	if options.mask: 
 		options.mask=parsemodopt(options.mask)
 	
@@ -106,6 +107,10 @@ def main():
 		
 	if options.normproc: 
 		options.normproc=parsemodopt(options.normproc)
+	'''
+	
+	from e2spt_classaverage import sptOptionsParser
+	options = sptOptionsParser( options )
 	
 	datafiles = options.input.split(',')
 	
@@ -181,9 +186,10 @@ def main():
 		
 		for intensities in intensitiesSeveral:	
 			print "Type and len of intensities is", type(intensities[1]), len(intensities[1])
-						
+			
+			intensitiesNorm = intensities[1]			
 			if options.normalizeplot:
-				print "normalizeplot on"	
+				print "Normalizeplot on"	
 				intensitiesNorm = normintensities( intensities[1], absmin, absmax )
 				
 			plotintensities( intensitiesNorm, options, datafile, 'no' )
@@ -376,20 +382,20 @@ def calcintensities( options, datafile ):
 				print "\nAFTER SHRINKING, intensity is", a['mean_nonzero']
 		
 		#intensities.append(a['mean_nonzero']*1000)
-		finalval=1+a['mean_nonzero']
-		intensities.append(finalval)
+		#finalval=1+a['mean_nonzero']
 		
-		print "Value added to 1!!!!!",finalval
+		#intensities.append(finalval)
+		
+		#print "Value added to 1!!!!!",finalval
+		
+		intensities.append(a['mean_nonzero'])
 		
 		if options.savepreprocessed:
 			a.write_image(options.path + '/' + datafile.replace('.','_EDITED.'),i)
 
 	finalvalues = []
-	stddin = np.std( intensities )
-	meanin = np.mean( intensities )
 	
 	for val in intensities:
-		
 		if not options.removesigma:
 			finalvalues.append( val )
 			print "finalval added", val
@@ -401,6 +407,10 @@ def calcintensities( options, datafile ):
 			else:
 				print """Value %f excluded because bottom and top thresholds to include are bottomthresh=%f, topthresh=%f
 				""" %( float(val), bottomthreshold, topthreshold )	
+	
+	print "Type of intensities is", type(finalvalues)
+	stddin = np.std( finalvalues )
+	meanin = np.mean( finalvalues )
 	
 	intensitiestxt = options.path + '/' + datafile.replace('.hdf','_INTENSITIES.txt')
 	
@@ -436,6 +446,7 @@ def plotintensities( intensities, options, datafile, onefile='yes' ):
 	plotname = datafile.replace('.hdf', '_MIplotMSK.png')
 
 	print "The total number of particles is", len(intensities)
+	print "because intensities are", intensities
 
 	#plt.hist(y, bins=5)
 	
