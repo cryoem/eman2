@@ -417,16 +417,18 @@ def main():
 #				print "ralignzphi ",options.ralignzphi[index_d[option1]]
 				zalignref=EMData(options.ralignzphi[index_d[option1]],0)
 				dang=80.0/data["ny"];		# 1 pixel at ~3/4 radius
+				dzmax=data["ny"]/20			# max +-z shift
 				best=(1000,0,0,data)
-				for it in xrange(2):
-					for z in xrange(best[1]-10,best[1]+11):
+				for it in xrange(3):
+					for z in xrange(best[1]-dzmax,best[1]+dzmax+1):
 						zimg=data.process("xform",{"transform":Transform({"type":"eman","tz":z,"phi":best[2]})})
 						best=min(best,(zalignref.cmp("ccc",zimg),z,best[2],zimg))
+					if options.verbose>1: print best
 	
 					for phi in arange(best[2]-10.0,best[2]+10.0,dang):
 						zimg=data.process("xform",{"transform":Transform({"type":"eman","tz":best[1],"phi":phi})})
 						best=min(best,(zalignref.cmp("ccc",zimg),best[1],phi,zimg))
-
+					if options.verbose>1: print best
 
 				data=best[3]
 				data["xform.align3d"]=Transform({"type":"eman","tz":best[1],"phi":best[2]})

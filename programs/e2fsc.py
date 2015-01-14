@@ -137,8 +137,8 @@ and this program should be regarded as experimental.
 	for oz,z in enumerate(zr):
 		for oy,y in enumerate(yr):
 			for ox,x in enumerate(xr):
-				if options.verbose : print "%d, %d, %d :"%(x,y,z),
-				else:
+				if options.verbose>1 : print "%d, %d, %d :"%(x,y,z),
+				elif options.verbose:
 					if time.time()-t>.5 :
 						print "  %3d,%3d,%3d / %d,%d,%d\r"%(ox,oy,oz,len(xr),len(yr),len(zr)),
 						sys.stdout.flush()
@@ -157,12 +157,12 @@ and this program should be regarded as experimental.
 				#v1m=v1*mask
 				#v2m=v2*mask
 
-				if options.verbose : print v1m["sigma_nonzero"], v2m["sigma_nonzero"],
+				if options.verbose>1 : print v1m["sigma_nonzero"], v2m["sigma_nonzero"],
 				if v1m["maximum"]<thresh1 or v2m["maximum"]<thresh2 :
-					if options.verbose : print " "
+					if options.verbose>1 : print " "
 					resvol[ox,oy,oz]=0.0
 					continue
-				if options.verbose : print " ***"
+				if options.verbose>1 : print " ***"
 #				display(v1m)
 				
 				fsc=v1m.calc_fourier_shell_correlation(v2m)

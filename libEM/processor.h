@@ -422,7 +422,7 @@ The basic design of EMAN Processors: <br>\
 	 * typical radial linear filter
 	 * @param az_scale Scale factor, >1 enhances contrast <1 decreases
 	 */
-	class AzContrastProcessor:public Processor
+	class AzSharpProcessor:public Processor
 	{
 	  public:
 		void process_inplace(EMData * image);
@@ -434,7 +434,7 @@ The basic design of EMAN Processors: <br>\
 		
 		static Processor *NEW()
 		{
-			return new AzContrastProcessor();
+			return new AzSharpProcessor();
 		}
 
 		string get_desc() const

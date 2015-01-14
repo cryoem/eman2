@@ -79,7 +79,7 @@ const string CtfSimProcessor::NAME = "math.simulatectf";
 const string LinearRampFourierProcessor::NAME = "filter.linearfourier";
 const string LoGFourierProcessor::NAME = "filter.LoG";
 const string DoGFourierProcessor::NAME = "filter.DoG";
-const string AzContrastProcessor::NAME = "filter.azimuthal.contrast";
+const string AzSharpProcessor::NAME = "filter.azimuthal.contrast";
 const string HighpassAutoPeakProcessor::NAME = "filter.highpass.autopeak";
 const string LinearRampProcessor::NAME = "eman1.filter.ramp";
 const string AbsoluateValueProcessor::NAME = "math.absvalue";
@@ -279,7 +279,7 @@ template <> Factory < Processor >::Factory()
 	force_add<LinearRampFourierProcessor>();
 	force_add<LoGFourierProcessor>();
 	force_add<DoGFourierProcessor>();
-	force_add<AzContrastProcessor>();
+	force_add<AzSharpProcessor>();
 
 	force_add<AmpweightFourierProcessor>();
 	force_add<Axis0FourierProcessor>();
@@ -668,29 +668,35 @@ void FourierAnlProcessor::process_inplace(EMData * image)
 	image->update();
 }
 
-void AzContrastProcessor::process_inplace(EMData * image)
+void AzSharpProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
 		LOGWARN("NULL Image");
 		return;
 	}
-
+	
 	float az_scale=(float)params.set_default("az_scale",1.0);
 	float cornerscale;
+	EMData *fft;
 	
-	if (image->is_complex()) {
+	if (image->is_complex()) fft=image;
+	else EMData *fft = image->do_fft();
 
+	int nx=fft->get_xsize();
+	int ny=fft->get_ysize();
+	int nz=fft->get_zsize();
+	if (nz!=1) {
 	}
 	else {
-		EMData *fft = image->do_fft();
-
+		
+	}
+	if (image->is_complex()) {
 		EMData *ift = fft->do_ift();
 
 		memcpy(image->get_data(),ift->get_data(),ift->get_xsize()*ift->get_ysize()*ift->get_zsize()*sizeof(float));
 
 		delete fft;
 		delete ift;
-
 	}
 
 	image->update();

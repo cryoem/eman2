@@ -532,6 +532,7 @@ def main():
 
 					lopix = int(d["nx"]*d["apix_x"]/200.0)
 					hipix = int(d["nx"]*d["apix_x"]/25.0)
+					if hipix>d["ny"]/2-6 : hipix=d["ny"]/2-6	# if A/pix is very large, this makes sure we get at least some info
 
 					if lopix == hipix : lopix,hipix = 3,d["nx"]/5	# in case the A/pix value is drastically out of range
 
@@ -539,7 +540,7 @@ def main():
 					lo = sum(r[lopix:hipix])/(hipix-lopix)
 					hi = sum(r[hipix+1:-1])/(len(r)-hipix-2)
 
-					print lopix, hipix, lo, hi
+#					print lopix, hipix, lo, hi
 					d["eval_contrast_lowres"] = lo/hi
 	#				print lopix,hipix,lo,hi,lo/hi
 

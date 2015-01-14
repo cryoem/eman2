@@ -445,6 +445,7 @@ class EMImage2DWidget(EMGLWidget):
 			#self.__load_display_settings_from_db(inspector_update=False,display_update=False)
 
 		self.inspector_update(use_fourier=fourier)
+		if self.curfft in [1,2,3] : self.redo_fft()
 		self.force_display_update()
 		self.updateGL()
 
