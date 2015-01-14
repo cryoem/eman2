@@ -871,79 +871,79 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 	##tavg = fft(tavg)                                       #transform tavg    into real space.
 	tttt = EMData(nx, ny, 1, False)
 	
-	## compute 2D ccfs.
-	#crefim = Util.Polar2Dm(tavg, cnx, cny, numr, mode)
-	#Util.Frngs(crefim, numr)
-	##Util.Applyws(crefim, numr, wr)
-	CCF2d = []
-	for ifil in xrange(nfils):
-		# test Calculate 2D ccf between each segment and filament average
-		nsegms = indcs[ifil][1]-indcs[ifil][0]
-		ccf2d = [None]*vol
-		ctx2d = [None]*nsegms
-		resamp_ccf2d = [None]*resamp_vol
-		for im in xrange(indcs[ifil][0], indcs[ifil][1]):
-			ttavg = get_im("bdb:vdata",im)
-			stat = Util.infomask( ttavg, mask, False )
-			ttavg -= stat[0]
-			Util.mul_img(ttavg, mask)
-			crefim = Util.Polar2Dm(ttavg, cnx, cny, numr, mode)
-			Util.Frngs(crefim, numr)
-			#Util.Applyws(crefim, numr, wr)
-			tttt = fft(data[im])             # transform data[im] into real space.
-			ccf2d = Util.ali2d_ccf_list_snake(tttt, crefim,  wr, xrng, yrng, rstep, mode, numr, cnx, cny, T)
-			for i in xrange(2*kx+1):
-				for j in xrange(resamp_maxrin):
-					j_old = int(j * resamp_dang/dang + 0.5)
-					resamp_ccf2d[i*resamp_maxrin+j] = ccf2d[i*maxrin+j_old]
-			# aaaa=resamp_ccf2d.index(max(resamp_ccf2d))
-# 			iaaa = aaaa/resamp_maxrin
-# 			jaaa = aaaa%resamp_maxrin
-# 			shift_x[im] = iaaa-(2*kx+1)//2
-# 			shift_ang[im] = jaaa
-# 			print "im=%d rotang=%d  maxrin=%d shift=%f"%(im, jaaa, resamp_maxrin, -shift_x[im] )	
-			# if im == 7 :
-# 						print "rotang=%f  shift=%f"%(jaaa*resamp_dang*180/pi, -shift_x[im] )	
-# 						tttt = fft(data[im])
-# 						tttt.write_image("image7.hdf")
-# 						tttt=rot_shift2D(tttt, jaaa*resamp_dang*180/pi, -shift_x[im], 0, 0, 1)
-# 						tttt.write_image("imagerot7.hdf")
-			ccf2dimg = model_blank(2*kx+1, resamp_maxrin) ##EMData(2*kx+1, resamp_maxrin, 1, False)			
-			for i in xrange(2*kx+1):
-				for j in xrange(resamp_maxrin):
-					ccf2dimg.set_value_at(i,j,resamp_ccf2d[i*resamp_maxrin+j])
-			ctx2d[im-indcs[ifil][0]] = 	ccf2dimg	 
-		CCF2d.append(ctx2d)
+# 	## compute 2D ccfs.
+# 	#crefim = Util.Polar2Dm(tavg, cnx, cny, numr, mode)
+# 	#Util.Frngs(crefim, numr)
+# 	##Util.Applyws(crefim, numr, wr)
+# 	CCF2d = []
+# 	for ifil in xrange(nfils):
+# 		# test Calculate 2D ccf between each segment and filament average
+# 		nsegms = indcs[ifil][1]-indcs[ifil][0]
+# 		ccf2d = [None]*vol
+# 		ctx2d = [None]*nsegms
+# 		resamp_ccf2d = [None]*resamp_vol
+# 		for im in xrange(indcs[ifil][0], indcs[ifil][1]):
+# 			ttavg = get_im("bdb:vdata",im)
+# 			stat = Util.infomask( ttavg, mask, False )
+# 			ttavg -= stat[0]
+# 			Util.mul_img(ttavg, mask)
+# 			crefim = Util.Polar2Dm(ttavg, cnx, cny, numr, mode)
+# 			Util.Frngs(crefim, numr)
+# 			#Util.Applyws(crefim, numr, wr)
+# 			tttt = fft(data[im])             # transform data[im] into real space.
+# 			ccf2d = Util.ali2d_ccf_list_snake(tttt, crefim,  wr, xrng, yrng, rstep, mode, numr, cnx, cny, T)
+# 			for i in xrange(2*kx+1):
+# 				for j in xrange(resamp_maxrin):
+# 					j_old = int(j * resamp_dang/dang + 0.5)
+# 					resamp_ccf2d[i*resamp_maxrin+j] = ccf2d[i*maxrin+j_old]
+# 			# aaaa=resamp_ccf2d.index(max(resamp_ccf2d))
+# # 			iaaa = aaaa/resamp_maxrin
+# # 			jaaa = aaaa%resamp_maxrin
+# # 			shift_x[im] = iaaa-(2*kx+1)//2
+# # 			shift_ang[im] = jaaa
+# # 			print "im=%d rotang=%d  maxrin=%d shift=%f"%(im, jaaa, resamp_maxrin, -shift_x[im] )	
+# 			# if im == 7 :
+# # 						print "rotang=%f  shift=%f"%(jaaa*resamp_dang*180/pi, -shift_x[im] )	
+# # 						tttt = fft(data[im])
+# # 						tttt.write_image("image7.hdf")
+# # 						tttt=rot_shift2D(tttt, jaaa*resamp_dang*180/pi, -shift_x[im], 0, 0, 1)
+# # 						tttt.write_image("imagerot7.hdf")
+# 			ccf2dimg = model_blank(2*kx+1, resamp_maxrin) ##EMData(2*kx+1, resamp_maxrin, 1, False)			
+# 			for i in xrange(2*kx+1):
+# 				for j in xrange(resamp_maxrin):
+# 					ccf2dimg.set_value_at(i,j,resamp_ccf2d[i*resamp_maxrin+j])
+# 			ctx2d[im-indcs[ifil][0]] = 	ccf2dimg	 
+# 		CCF2d.append(ctx2d)
 			
 	
 	## ---------------------------------------------- ##
 	## step 1: find a straight line for initial guess ##
 	## ---------------------------------------------- ##
-	# for Iter in xrange(max_iter):
-# 		nxc = nx//2
-# 		sx_sum  = 0
-# 		CCF = [] ##added@ming
-# 		for ifil in xrange(nfils):
-# 			# Calculate 1D ccf between each segment and filament average
-# 			nsegms = indcs[ifil][1]-indcs[ifil][0]
-# 			#sccf = []      ##added@ming
-# 			ctx = [None]*nsegms
-# 			pcoords = [None]*nsegms
-# 			for im in xrange(indcs[ifil][0], indcs[ifil][1]):
-# 				ttavg = get_im("bdb:vdata",im)
-# 				stat = Util.infomask( ttavg, mask, False )
-# 				ttavg -= stat[0]
-# 				Util.mul_img(ttavg, mask)
-# 				ttavg = fft(ttavg)
-# 				ctx[im-indcs[ifil][0]] = Util.window(ccf(ttavg, data[im]), nx, 1)
-# 				#sccf.append(ctx[im-indcs[ifil][0]])
-# 				pcoords[im-indcs[ifil][0]] = data[im].get_attr('ptcl_source_coord')
-# 				#ctx[im-indcs[ifil][0]].write_image("ctx.hdf",im-indcs[ifil][0])
-# 				#print "  CTX  ",myid,im,Util.infomask(ctx[im-indcs[ifil][0]], None, True)
-# 			CCF.append(ctx)	
-# 			# search for best x-shift
-# 			cents = nsegms//2
-# 		
+	for Iter in xrange(max_iter):
+		nxc = nx//2
+		sx_sum  = 0
+		CCF = [] ##added@ming
+		for ifil in xrange(nfils):
+			# Calculate 1D ccf between each segment and filament average
+			nsegms = indcs[ifil][1]-indcs[ifil][0]
+			#sccf = []      ##added@ming
+			ctx = [None]*nsegms
+			pcoords = [None]*nsegms
+			for im in xrange(indcs[ifil][0], indcs[ifil][1]):
+				ttavg = get_im("avgmodel.hdf")
+				stat = Util.infomask( ttavg, mask, False )
+				ttavg -= stat[0]
+				Util.mul_img(ttavg, mask)
+				ttavg = fft(ttavg)
+				ctx[im-indcs[ifil][0]] = Util.window(ccf(ttavg, data[im]), nx, 1)
+				#sccf.append(ctx[im-indcs[ifil][0]])
+				pcoords[im-indcs[ifil][0]] = data[im].get_attr('ptcl_source_coord')
+				#ctx[im-indcs[ifil][0]].write_image("ctx.hdf",im-indcs[ifil][0])
+				#print "  CTX  ",myid,im,Util.infomask(ctx[im-indcs[ifil][0]], None, True)
+			CCF.append(ctx)	
+			# search for best x-shift
+			cents = nsegms//2
+		
 # 			dst = sqrt(max((pcoords[cents][0] - pcoords[0][0])**2 + (pcoords[cents][1] - pcoords[0][1])**2, (pcoords[cents][0] - pcoords[-1][0])**2 + (pcoords[cents][1] - pcoords[-1][1])**2))
 # 			maxincline = atan2(ny//2-2-float(search_rng),dst)
 # 			kang = int(dst*tan(maxincline)+0.5)
@@ -1002,8 +1002,8 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 	
 	
 	#for b-spline
-	nknots = 4
-	nknots1 = 2
+	nknots = 10
+	nknots1 = 10
 	mknots = 1
 	
 	a0=[]
@@ -1014,16 +1014,18 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 	for ifil in xrange(nfils):
 		nsegs =  indcs[ifil][1]-indcs[ifil][0]
 		tttt=[0.0]*nsegs
-		nperiod = nsegs//2
-		for j in xrange(-nperiod,0):
-			a = 300.0/(nperiod*nperiod*nperiod) 
-			import random
-			shix=random.gauss(0, 50) #random.randint(-30, 30)
-			tttt[j+nperiod]= a * j*j*j  + shix
-		for j in xrange(0, nperiod):
-			shix=random.gauss(0, 50)  #random.randint(-30, 30)
-			tttt[j+nperiod] = 300.0/nperiod*j +shix
-			
+ 		nperiod = nsegs//2
+# 		for j in xrange(-nperiod,0):
+# 			a = 300.0/(nperiod*nperiod*nperiod) 
+# 			import random
+# 			shix=random.gauss(0, 50) #random.randint(-30, 30)
+# 			tttt[j+nperiod]= a * j*j*j  + shix
+# 		for j in xrange(0, nperiod):
+# 			shix=random.gauss(0, 50)  #random.randint(-30, 30)
+# 			tttt[j+nperiod] = 300.0/nperiod*j +shix
+		for i in xrange(nsegs):
+			tttt[i] = 0.0
+				
 		out_file = open("initcubic.txt", "w")
 		
 		for i in xrange(nsegs):
@@ -1073,13 +1075,160 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 		
 		tck=interpolate.splrep(U,AT,W, t=T[1:nknots+nknots1-1+mknots-2], k=3,s=0)
 		print tck
-		at=interpolate.splev(u, tck, der=0, ext=0)
-		out_file = open("approxbs.txt", "w")
+		#at=interpolate.splev(u, tck, der=0, ext=0)
+		
+	from utilities import amoeba
+	params0 = [0.0]*len(tck[1])
 	
+	
+	params=[0.0]*len(params0)
+	params = params0
+	
+	for ifil in xrange(nfils):
+		nsegs =  indcs[ifil][1]-indcs[ifil][0]	
+		ctx = CCF[ifil]
+		maxccf = [0.0]*nsegs
 		for i in xrange(nsegs):
-			out_file.write( "%f\n" % (at[i]) )
-		out_file.close()
+			maxx = -10000
+			maxid = -1
+			for j in xrange(nx):
+				if maxx < ctx[i].get_value_at(j):
+					maxx = ctx[i].get_value_at(j)
+					maxid = j
+			maxccf[i] = maxid - nx//2		
+		out_file = open("truesnake.txt", "w")
+		for i in xrange(nsegs):
+			out_file.write( "%f\n" % (maxccf[i]) )
+		out_file.close()	
+		
+		scale = [20.0]*len(params0)
+		
+		fval0 = flexhelicalali(params0, [ctx,params0, 0.0, nx//2, tck[0], 3, nsegs])
+		#print params
+		print "before  amoeba = %f"%fval0
+		params,fval, numit=amoeba(params, scale, flexhelicalali, 1.e-12, 1.e-12, 5000, [ctx,params0, 0.0, nx//2, tck[0], 3, nsegs])
+		print "after amoeba fval=%f numit=%d"%(fval,numit)
 	
+	tck = (tck[0], params,3)
+	#nsegs=nsegs+20
+	nperiod = nsegs//2
+	u=[i-nperiod for i in xrange(nsegs)] 
+	at=interpolate.splev(u, tck, der=0, ext=0)
+	out_file = open("approxbs.txt", "w")
+	for i in xrange(nsegs):
+		out_file.write( "%f\n" % (at[i]) )
+	out_file.close()
+	
+	at = maxccf
+	#do the right linear extrapolation.
+	nextr=5
+	x=u[nsegs-nextr:nsegs]
+	for ii in xrange(1):
+		at = at[0:nsegs]
+		y=at[nsegs-nextr:nsegs]
+		f=interpolate.UnivariateSpline(x, y, k=1, s=3)  # interpolate.interp1d(x,y,bounds_error=True)
+		import numpy as np
+		xnew=np.arange(nperiod,nperiod+nextr,1)
+		ynew=f(xnew)
+		print ynew
+		#refine the b-spline
+		AT=[0.0]*(len(at)+nextr)
+		AT[0:nsegs]=at
+		for  i in xrange(nextr):
+			AT[i+nsegs] = ynew[i]
+	
+		# U=[0.0]*(nsegs+nextr)
+# 		W=[0.0]*(nsegs+nextr)	
+# 		for i in xrange(-nperiod,nperiod+nextr):
+# 			U[i+nperiod] = i
+# 			#AT[i+nperiod]= at[i+nperiod]
+# 			W[i+nperiod] = 1.0
+# 		
+# 		tck=interpolate.splrep(U,AT,W, t=T[1:nknots+nknots1-1+mknots-2], k=3,s=0)
+# 		u=[i-nperiod for i in xrange(nsegs+nextr)] 
+# 		at=interpolate.splev(u, tck, der=0, ext=0)
+	at = AT	
+	print "len_at=%d"%len(at)
+	#do the left linear extrapolation.
+	x=u[0:nextr]
+	for ii in xrange(1):
+		if ii >= 1: at = at[nextr:len(at)]
+		y=at[0:nextr]
+		f=interpolate.UnivariateSpline(x, y, k=1, s=0)  # interpolate.interp1d(x,y,bounds_error=True)
+		import numpy as np
+		xnew=np.arange(-nperiod-nextr,-nperiod,1)
+		ynew=f(xnew)
+		print ynew
+		#refine the b-spline
+		AT=[0.0]*(len(at)+nextr)
+		AT[nextr:len(at)+nextr]=at
+		for  i in xrange(nextr):
+			AT[i] = ynew[i]
+	
+		# U=[0.0]*len(AT)
+# 		W=[0.0]*len(AT)
+# 		print "lenU=%d lenW=%d lenAT=%d n=%d"%(len(U),len(W),len(AT), 2*nperiod+2*nextr)
+# 		for i in xrange(-nperiod-nextr,nperiod+nextr):
+# 			U[i+nperiod+nextr] = i
+# 			W[i+nperiod+nextr] = 1.0
+# 		
+# 		tck=interpolate.splrep(U,AT,W, t=T[1:nknots+nknots1-1+mknots-2], k=3,s=0)
+# 		u=[i-nperiod-nextr for i in xrange(nsegs+2*nextr)] 
+# 		at=interpolate.splev(u, tck, der=0, ext=0)
+		out_file = open("approxbs%d.txt"%ii, "w")
+		for i in xrange(len(AT)):
+			out_file.write( "%d %f\n" % (i-nextr, AT[i]) )
+		out_file.close()
+				
+	## will be removed after testing.
+	#for b-spline
+	at = [0.0]*len(AT)
+	at = AT
+	nsegs = len(AT)
+	nperiod = nsegs//2
+	from scipy import interpolate
+	iii=0
+	T=[0.0]*(nknots+nknots1-1+mknots-1)
+	U=[0.0]*nsegs
+	W=[0.0]*nsegs
+	AT=[0.0]*nsegs
+	for i in xrange(0,nknots):
+			T[i] = -nperiod+i*nperiod*1.0/(nknots-1)
+	for i in xrange(-nperiod,nperiod):
+			U[i+nperiod] = i
+			AT[i+nperiod]= at[i+nperiod]
+			W[i+nperiod] = 1.0
+
+	for i in xrange(mknots-1):
+			T[nknots+i]=T[nknots-1]
+	for i in xrange(nknots, nknots+nknots1-1):
+			T[i+mknots-1] = 0+(i-nknots+1)*(nsegs-1-nperiod)*1.0/(nknots1-1)
+
+	u=[i-nperiod for i in xrange(nsegs)]
+
+	out_file = open("T.txt", "w")
+	out_file1 = open("AT.txt", "w")
+	out_file2 = open("W.txt", "w")
+	for i in xrange(len(T)):
+			out_file.write( "%f\n" % (T[i]) )
+	for i in xrange(len(AT)):
+			out_file1.write( "%f\n" % (AT[i]) )
+			out_file2.write( "%f\n" % (W[i]) )
+	out_file.close()
+	out_file1.close()
+	out_file2.close()
+
+	tck=interpolate.splrep(U,AT,W, t=T[1:nknots+nknots1-1+mknots-2], k=3,s=0)
+	print tck
+	at=interpolate.splev(u, tck, der=0, ext=0)
+	out_file = open("approxbsfitsnake.txt", "w")
+
+	for i in xrange(nsegs):
+			out_file.write( "%d %f\n" % (i-nextr, at[i]) )
+	out_file.close()
+	
+	
+		
 		# a0.append(at)
 # 		a.append(at)
 # 		b0.append(at)
@@ -1209,6 +1358,44 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 # 	if myid == main_node: print_end_msg("snakehelical-shiftali_MPI")				
 # 
 
+
+def flexhelicalali(params,data):
+	sccf    = data[0]
+	params0 = data[1]
+	lambw   = data[2]
+	nxc     = data[3]
+	tck0    = data[4]
+	tck2    = data[5]
+	nsegs   = data[6]
+        
+	tck = (tck0, params,tck2);
+	
+	from scipy import interpolate
+	#print "lambw", lambw
+	sx_sum=0.0
+	sccfn=nsegs
+	nperiod = nsegs//2
+	u=[i-nperiod for i in xrange(nsegs)]
+	val = interpolate.splev(u, tck, der=0, ext=0)
+	for id in xrange(sccfn):
+		xl = val[id]  #interpolate.splev([id-nperiod], tck, der=0, ext=0)
+		#print "xl=%f"%xl
+		xl = xl+nxc
+		ixl = int(xl)
+		dxl = xl - ixl
+		#print "sx_sum, xl, ixl, dxl", sx_sum, xl,ixl,dxl
+		if ixl < 0:
+			print "ixl=%d xl=%f params[id]=%f"%(ixl,xl,params[id])
+		sx_sum += (1.0-dxl)*sccf[id].get_value_at(ixl) + dxl*sccf[id].get_value_at(ixl+1)
+	#print "part 1", sx_sum
+	# part2_sum=0
+# 	for id in xrange(sccfn):
+# 		part2_sum += lambw*(params0[id]-params[id])**2
+# 	#print "part 2", part2_sum
+# 	sx_sum -= part2_sum
+	return sx_sum
+        
+        
 
 def snakehelicalali(params,data):
 	sccf    = data[0]
@@ -1387,6 +1574,27 @@ def deboor(_P, U, u, p):
             P[i].append((x,y,z))
             
     return P[k-s][p-s]	
+    
+    
+from scipy.interpolate import interp1d	
+from scipy import arange, array, exp
+
+def extrap1d(interpolator):
+	xs = interpolator.x
+	ys = interpolator.y
+
+	def pointwise(x):
+		if x < xs[0]:
+			return ys[0]+(x-xs[0])*(ys[1]-ys[0])/(xs[1]-xs[0])
+		elif x > xs[-1]:
+			return ys[-1]+(x-xs[-1])*(ys[-1]-ys[-2])/(xs[-1]-xs[-2])
+		else:
+			return interpolator(x)
+
+	def ufunclike(xs):
+		return array(map(pointwise, array(xs)))
+
+	return ufunclike
 		
 if __name__ == "__main__":
 	main()
