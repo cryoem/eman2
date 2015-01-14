@@ -1101,7 +1101,7 @@ double PointArray::sim_potential() {
 	sim_updategeom();
 	
 	if (map &&mapc) {
-		for (uint i=0; i<n; i++) ret+=sim_pointpotential(adist[i],aang[i],adihed[i])-mapc*map->sget_value_at_interp(points[i*4]/apix+map->get_xsize()/2,points[i*4+1]/apix+map->get_ysize()/2,points[i*4+2]/apix+map->get_zsize()/2);
+		for (uint i=0; i<n; i++) ret+=sim_pointpotential(adist[i],aang[i],adihed[i])-mapc*map->sget_value_at_interp(points[i*4]/apix+centx,points[i*4+1]/apix+centy,points[i*4+2]/apix+centz);
 	}
 	else {
 		for (uint i=0; i<n; i++) ret+=sim_pointpotential(adist[i],aang[i],adihed[i]);
@@ -1185,7 +1185,7 @@ double PointArray::sim_potentiald(int i) {
 //	if (isnan(dihed)) dihed=dihed0;
 //	if (isnan(ang)) ang=0;
 	if (map && mapc) {
-		return distpen+sim_pointpotential(dist,ang,dihed)-mapc*map->sget_value_at_interp(points[ii]/apix+map->get_xsize()/2,points[ii+1]/apix+map->get_ysize()/2,points[ii+2]/apix+map->get_zsize()/2);
+		return distpen+sim_pointpotential(dist,ang,dihed)-mapc*map->sget_value_at_interp(points[ii]/apix+centx,points[ii+1]/apix+centy,points[ii+2]/apix+centz);
 	}
 	return sim_pointpotential(dist,ang,dihed);
 }
@@ -1429,6 +1429,12 @@ void PointArray::sim_set_pot_parms(double pdist0,double pdistc,double pangc, dou
 		
 		map=pmap;
 		apix=map->get_attr("apix_x");
+// 		centx=map->get_xsize()/2;
+// 		centy=map->get_ysize()/2;
+// 		centz=map->get_zsize()/2;
+		centx=0;
+		centy=0;
+		centz=0;
 // 		gradx=map->process("math.edge.xgradient");  // we compute the gradient to make the minimization easier
 // 		grady=map->process("math.edge.ygradient");
 // 		gradz=map->process("math.edge.zgradient");
@@ -1496,7 +1502,7 @@ void PointArray::sim_add_point_one() {
 	// Find the highest potential point
 	for (int i=0; i<n; i++) {
 		meanpot+=sim_pointpotential(adist[i],aang[i],adihed[i]);
-		pot=/*sim_pointpotential(adist[i],aang[i],adihed[i])*/-mapc*map->sget_value_at_interp(points[i*4]/apix+map->get_xsize()/2,points[i*4+1]/apix+map->get_ysize()/2,points[i*4+2]/apix+map->get_zsize()/2);
+		pot=/*sim_pointpotential(adist[i],aang[i],adihed[i])*/-mapc*map->sget_value_at_interp(points[i*4]/apix+centx,points[i*4+1]/apix+centy,points[i*4+2]/apix+centz);
 		if (pot>maxpot){
 			maxpot=pot;
 			ipt=i;
@@ -1510,7 +1516,7 @@ void PointArray::sim_add_point_one() {
 		pt0=(points[k*4]+points[i*4])/2;
 		pt1=(points[k*4+1]+points[i*4+1])/2;
 		pt2=(points[k*4+2]+points[i*4+2])/2;
-		pot=/*meanpot*/-mapc*map->sget_value_at_interp(pt0/apix+map->get_xsize()/2,pt1/apix+map->get_ysize()/2,pt2/apix+map->get_zsize()/2);
+		pot=/*meanpot*/-mapc*map->sget_value_at_interp(pt0/apix+centx,pt1/apix+centy,pt2/apix+centz);
 		if (pot>maxpot){
 			maxpot=pot;
 			ipt=i;
@@ -1658,7 +1664,7 @@ vector<float> PointArray::do_filter(vector<float> pts, float *ft, int num){
 	
 }
 
-vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindensity=4, vector<int> edge=vector<int>(),int twodir=0)
+vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindensity=4, vector<int> edge=vector<int>(),int twodir=0,int minl=9)
 {
 	vector<float> hlxlen(n);
 	vector<int> helix;
@@ -1725,7 +1731,6 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 					helix.push_back(i);
 					helix.push_back(i+hlxlen[i]-5);
 				}
-				
 			}
 			else{
 				hlx--;
@@ -1752,7 +1757,7 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 	}	
 	printf("\n\n");
 #endif
-
+/*
 
 	// Combine the result from both side
 	for (uint i=0; i<helix.size()/2; i++){
@@ -1770,7 +1775,7 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 				}
 			}	
 		}
-	}
+	}*/
 	
 	vector<int> allhlx;
 	int minid=1;
@@ -1802,7 +1807,7 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 	// local search to decide the start and end point of each helix
 // 	vector<float> allscore(allhlx.size()/2);
 	for (uint i=0; i<allhlx.size()/2; i++){
-		int sz=10;
+		int sz=5;
 		int start=allhlx[i*2]-sz,end=allhlx[i*2+1]+sz;
 		start=start>0?start:0;
 		end=end<n?end:n;
@@ -1882,7 +1887,7 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 #endif
 	// create ideal helix
 	uint ia=0,ka=0;
-	bool dir;
+	int dir;
 	vector<double> finalhlx;
 	vector<double> hlxid;
 	printf("Confirming helix... \n");
@@ -1913,13 +1918,8 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 					}
 				}
 			}
-			for (int i=0; i<mi; i++){			
-				finalhlx.push_back(points[(i+ia)*4]);
-				finalhlx.push_back(points[(i+ia)*4+1]);
-				finalhlx.push_back(points[(i+ia)*4+2]);
-			}
 			int start=allhlx[ka*2]+mi,end=allhlx[ka*2+1]-mj;
-			printf("%d\t%d\t%f\t%d\t",start,end,maxscr,maxscr>mindensity);
+			printf("%d\t%d\t%f\tden %d\t",start,end,maxscr,maxscr>mindensity);
 			if (maxscr>mindensity){
 				phsscore=0;
 				for (float phs=-180; phs<180; phs+=10){ //search for phase
@@ -1931,9 +1931,15 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 				}
 				vector<double> pts=construct_helix(start,end,bestphs,score,dir);
 				int lendiff=end-start-pts.size()/3-2;
-				printf("%d\t",dir);
-				if (pts.size()/3-2>9 && lendiff>-5){
+				printf("dir %d\t",dir);
+				printf("len %d\t diff %d\t",pts.size()/3-2,lendiff);
+				if (pts.size()/3-2>minl && abs(lendiff)<15){
 					
+					for (int i=0; i<mi; i++){			
+						finalhlx.push_back(points[(i+ia)*4]);
+						finalhlx.push_back(points[(i+ia)*4+1]);
+						finalhlx.push_back(points[(i+ia)*4+2]);
+					}
 					hlxid.push_back(finalhlx.size()/3+1);
 					printf("%d\t",finalhlx.size()/3+1);
 					for (uint j=3; j<pts.size()-3; j++)
@@ -1947,15 +1953,18 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 					ia=end;
 				}
 				else{
-					printf("%d\t",pts.size()/3-2);
+					printf("\t *");
+					
 				}
+				
 			}
-			printf("\n");
+			printf("\n\n");
 			ka++;
 			while(allhlx[ka*2]<ia)
 				ka++;
 		}
 		else{
+// 			printf("%d\t",ia);
 			finalhlx.push_back(points[ia*4]);
 			finalhlx.push_back(points[ia*4+1]);
 			finalhlx.push_back(points[ia*4+2]);
@@ -1977,11 +1986,13 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 	return hlxid;
 }
 
-vector<double> PointArray::construct_helix(int start,int end, float phs, float &score, bool &dir){
+vector<double> PointArray::construct_helix(int start,int end, float phs, float &score, int &rtdir){
 	// calculate length
+	int dir=1;
+	rtdir=0;
 	Vec3f d(points[end*4]-points[start*4],points[end*4+1]-points[start*4+1],points[end*4+2]-points[start*4+2]);
 	double len=d.length();
-	int nh=int(len/1.54)+2;
+	int nh=int(round(len/1.54))+2;
 	vector<double> helix(nh*3);
 	vector<float> eigvec=do_pca(start,end);	
 	float eigval[3],vec[9];
@@ -1995,83 +2006,166 @@ vector<double> PointArray::construct_helix(int start,int end, float phs, float &
 			maxvi=i;
 		}
 	}
-	dir=eigval[maxvi]>0;
-// 	printf("%f\t",eigval[maxvi]);
-// 	vector<float> eigv(eigvec,eigvec+sizeof(eigvec)/sizeof(float));
-	// create helix
-	helix[0]=0;helix[1]=0;helix[2]=0;
-	helix[nh*3-3]=.0;helix[nh*3-2]=0;helix[nh*3-1]=len+.83;
-	
-	for (int i=0; i<nh-2; i++){
-		if(dir){
-			helix[(i+1)*3+0]=cos(((phs+(100*i))*M_PI)/180)*2.3;
-			helix[(i+1)*3+1]=sin(((phs+(100*i))*M_PI)/180)*2.3;
-		}
-		else{
-			helix[(i+1)*3+1]=cos(((phs+(100*i))*M_PI)/180)*2.3;
-			helix[(i+1)*3+0]=sin(((phs+(100*i))*M_PI)/180)*2.3;
-		}	
-		helix[(i+1)*3+2]=i*1.54+.83;
-	}
-	// transform to correct position
+// 	dir=eigval[maxvi]>0;
+	dir=1;
 	vector<double> pts(nh*3);
-	float mean[3];
-	for (int k=0; k<3; k++) mean[k]=0;
-	for (int k=0; k<nh; k++){
-		for (int l=0; l<3; l++){
-			pts[k*3+l]=helix[k*3+0]*eigvec[0*3+l]+helix[k*3+1]*eigvec[1*3+l]+helix[k*3+2]*eigvec[2*3+l];
-			mean[l]+=pts[k*3+l];
-		}
-	}
-	for (int k=0; k<3; k++) mean[k]/=nh;
-	for (int k=0; k<nh; k++){
-		for (int l=0; l<3; l++){
-			pts[k*3+l]-=mean[l];
-		}
-	}
-	for (int k=0; k<3; k++) mean[k]=0;
-	for (int k=start; k<end; k++){
-		for (int l=0; l<3; l++){
-			mean[l]+=points[k*4+l];
-		}
-	}
-	for (int k=0; k<3; k++) mean[k]/=(end-start);	
-	for (int k=0; k<nh; k++){
-		for (int l=0; l<3; l++){
-			pts[k*3+l]+=mean[l];
-		}
-	}
-	
-	// correct direction
-	Vec3f d1(pts[0]-points[start*4],pts[1]-points[start*4+1],pts[2]-points[start*4+2]);
-	Vec3f d2(pts[0]-points[end*4],pts[1]-points[end*4+1],pts[2]-points[end*4+2]);
+	for (int dd=0; dd<2; dd++){
+	// 	printf("%f\t",eigval[maxvi]);
+	// 	vector<float> eigv(eigvec,eigvec+sizeof(eigvec)/sizeof(float));
+		// create helix
+		helix[0]=0;helix[1]=0;helix[2]=0;
+		helix[nh*3-3]=.0;helix[nh*3-2]=0;helix[nh*3-1]=len;
 		
-	if (d1.length()>d2.length()) { //do reverse
-		double tmp;
-		for (int i=0; i<nh/2; i++){
-			for(int j=0; j<3; j++){
-				tmp=pts[i*3+j];
-				pts[i*3+j]=pts[(nh-i-1)*3+j];
-				pts[(nh-i-1)*3+j]=tmp;
+		for (int i=0; i<nh-2; i++){
+			if(dir>0){
+				helix[(i+1)*3+0]=cos(((phs+(100*i))*M_PI)/180)*2.3;
+				helix[(i+1)*3+1]=sin(((phs+(100*i))*M_PI)/180)*2.3;
+			}
+			else{
+				helix[(i+1)*3+1]=cos(((phs+(100*i))*M_PI)/180)*2.3;
+				helix[(i+1)*3+0]=sin(((phs+(100*i))*M_PI)/180)*2.3;
+			}	
+			helix[(i+1)*3+2]=i*1.54;
+		}
+		// transform to correct position
+		float mean[3];
+		for (int k=0; k<3; k++) mean[k]=0;
+		for (int k=0; k<nh; k++){
+			for (int l=0; l<3; l++){
+				pts[k*3+l]=helix[k*3+0]*eigvec[0*3+l]+helix[k*3+1]*eigvec[1*3+l]+helix[k*3+2]*eigvec[2*3+l];
+				mean[l]+=pts[k*3+l];
 			}
 		}
-	}
+		for (int k=0; k<3; k++) mean[k]/=nh;
+		for (int k=0; k<nh; k++){
+			for (int l=0; l<3; l++){
+				pts[k*3+l]-=mean[l];
+			}
+		}
+		for (int k=0; k<3; k++) mean[k]=0;
+		for (int k=start; k<end; k++){
+			for (int l=0; l<3; l++){
+				mean[l]+=points[k*4+l];
+			}
+		}
+		for (int k=0; k<3; k++) mean[k]/=(end-start);	
+		for (int k=0; k<nh; k++){
+			for (int l=0; l<3; l++){
+				pts[k*3+l]+=mean[l];
+			}
+		}
+		
+		
+		// correct direction
+		Vec3f d1(pts[0]-points[start*4],pts[1]-points[start*4+1],pts[2]-points[start*4+2]);
+		Vec3f d2(pts[0]-points[end*4],pts[1]-points[end*4+1],pts[2]-points[end*4+2]);
+		
+		if (d1.length()>d2.length()) { //do reverse
+			double tmp;
+			for (int i=0; i<nh/2; i++){
+				for(int j=0; j<3; j++){
+					tmp=pts[i*3+j];
+					pts[i*3+j]=pts[(nh-i-1)*3+j];
+					pts[(nh-i-1)*3+j]=tmp;
+				}
+			}
+		}
+		
+		// correct handness
+		
+		
+		float hel=calc_helicity(pts);
+		
+		rtdir=hel;
+// 		break;
+		if(hel>0)
+			break;
+		else
+			dir=0;
 	
+
+	}
 	// calculate score
 // 	int sx=map->get_xsize(),sy=map->get_ysize(),sz=map->get_zsize();
 	int sx=0,sy=0,sz=0;
 	float ax=map->get_attr("apix_x"),ay=map->get_attr("apix_y"),az=map->get_attr("apix_z");
 	score=0;
+	float aind=0;
 	for (int i=1; i<nh-1; i++){
-		score+=map->get_value_at(int(pts[i*3]/ax+sx/2),int(pts[i*3+1]/ay+sy/2),int(pts[i*3+2]/az+sz/2));
+		float ind=1;//(float(abs(i-nh/2))/float(nh))+.5;
+		score+=ind*map->get_value_at(int(pts[i*3]/ax+sx/2),int(pts[i*3+1]/ay+sy/2),int(pts[i*3+2]/az+sz/2));
+		aind+=ind;
 	}
-	score/=(nh-2);
+	score/=aind;//(nh-2);
+// 	float nsc=score;
+// 	score=0;
+// 	for (int i=1; i<nh-1; i++){
+// 		float ind=(float(abs(i-nh/2))/float(nh))+.5;
+// 		float mapden=map->get_value_at(int(pts[i*3]/ax+sx/2),int(pts[i*3+1]/ay+sy/2),int(pts[i*3+2]/az+sz/2));
+// 		if (mapden>nsc*1.2)
+// 			mapden=nsc*1.2;
+// 		if (mapden<nsc*.5)
+// 			mapden=0;
+// 		score+=ind*mapden;
+// 	}
+// 	score/=aind;//(nh-2);
+	
 		
 	return pts;
+}
 
+void PointArray::merge_to(PointArray &pa,float thr=3.5)
+{
+	printf("merging\n");
+	vector<double> result;
+	for (int i=0; i<pa.n; i++){
+		result.push_back(pa.points[i*4]);
+		result.push_back(pa.points[i*4+1]);
+		result.push_back(pa.points[i*4+2]);
+	}
+	for (int i=0; i<n; i++){
+		float dist=100;
+		for (int j=0; j<pa.n; j++){
+			Vec3f d(points[i*4]-pa.points[j*4],points[i*4+1]-pa.points[j*4+1],points[i*4+2]-pa.points[j*4+2]);
+			dist=d.length();
+			if (dist<thr)
+				break;
+		}
+		printf("%f\n",dist);
+		if (dist>thr){
+			result.push_back(points[i*4]);
+			result.push_back(points[i*4+1]);
+			result.push_back(points[i*4+2]);
+		}
+	}
+	set_number_points(result.size()/3);
+	for (int i=0; i<n; i++){
+		for (uint j=0; j<3; j++)
+			points[i*4+j]=result[i*3+j];
+		points[i*4+3]=0;
+	}
+	printf("done\n");
 	
 }
 
+float PointArray::calc_helicity(vector<double> pts){
+	int npt=pts.size();
+	vector<double> vpoint(npt-3);
+	for (int i=0; i<npt-3; i++){
+		vpoint[i]=pts[i+3]-pts[i];		
+	}
+	Vec3f hlxdir(pts[npt-3]-pts[0],pts[npt-2]-pts[1],pts[npt-1]-pts[2]);
+	Vec3f vcs(0,0,0);
+	for (int i=0; i<npt/3-2; i++){
+		Vec3f v0(vpoint[i*3],vpoint[i*3+1],vpoint[i*3+2]);
+		Vec3f v1(vpoint[i*3+3],vpoint[i*3+4],vpoint[i*3+5]);
+		vcs+=v0.cross(v1);
+	}
+	vcs/=(npt/3-2);
+
+	return hlxdir.dot(vcs);
+  
+}
 void PointArray::save_pdb_with_helix(const char *file, vector<float> hlxid)
 {
 
@@ -2131,6 +2225,82 @@ void PointArray::reverse_chain(){
 		}
 	}
 }
+
+void PointArray::delete_point(int id){
+	for (int i=id*4; i<n*4; i++){
+		points[i]=points[i+4];
+	}
+	set_number_points(n-1);
+	
+}
+
+
+bool PointArray::read_ca_from_pdb(const char *file)
+{
+	struct stat filestat;
+	stat(file, &filestat);
+	set_number_points(( int)(filestat.st_size / 80 + 1));
+
+	#ifdef DEBUG
+	printf("PointArray::read_from_pdb(): try %4lu atoms first\n", get_number_points());
+	#endif
+
+	FILE *fp = fopen(file, "r");
+	if(!fp) {
+		fprintf(stderr,"ERROR in PointArray::read_from_pdb(): cannot open file %s\n",file);
+		throw;
+	}
+	char s[200];
+	size_t count = 0;
+	
+	while ((fgets(s, 200, fp) != NULL)) {
+		if (strncmp(s, "ENDMDL", 6) == 0)
+			break;
+		if (strncmp(s, "ATOM", 4) != 0)
+			continue;
+
+		if (s[13] == ' ')
+			s[13] = s[14];
+		if (s[13] == ' ')
+			s[13] = s[15];
+
+		float e = 0;
+		char ctt, ctt2 = ' ';
+		if (s[13] == ' ')
+			ctt = s[14];
+		else if (s[12] == ' ') {
+			ctt = s[13];
+			ctt2 = s[14];
+		}
+		else {
+			ctt = s[12];
+			ctt2 = s[13];
+		}
+		if (ctt != 'C' || ctt2 != 'A')
+			continue;
+		
+		float x, y, z, q;
+		sscanf(&s[28], " %f %f %f", &x, &y, &z);
+		sscanf(&s[60], " %f", &q);
+
+		if (count + 1 > get_number_points())
+			set_number_points(2 * (count + 1));    //makes sure point array is big enough
+		
+#ifdef DEBUG
+		printf("Atom %4lu: x,y,z = %8g,%8g,%8g\te = %g\n", count, x, y, z, e);
+#endif
+		points[4 * count] = x;
+		points[4 * count + 1] = y;
+		points[4 * count + 2] = z;
+		points[4 * count + 3] = e;
+		bfactor[count] = q;
+		count++;
+	}
+	fclose(fp);
+	set_number_points(count);
+	return true;
+}
+
 
 void PointArray::sort_by_axis(int axis)
 {
