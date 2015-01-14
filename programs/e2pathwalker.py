@@ -102,30 +102,12 @@ def read_pdb(filename, atomtype=None, chain=None, noisemodel=None):
 	pdbfile = open(filename, "r")
 	lines = pdbfile.readlines()
 	pdbfile.close()
-	atomtypes = set()
-	chains = set()
-	for line in (i for i in lines if i.startswith("ATOM  ")):
-		atomtypes.add(line[12:15].strip() or None)
-		chains.add(line[21].strip() or None)
-		
-	print "Found chains %s and atomtypes %s"%(chains, atomtypes)
-	if len(atomtypes) == 1: # and not atomtype 
-		print "Only one atomtype present; using all atoms in PDB file"
-		atomtype = None
-		
-	if len(chains) == 1:
-		#print "One chain present"
-		chain = None	
 
+	
 	count = 1
 	for line in (i for i in lines if i.startswith("ATOM  ")):
-		latomtype = line[12:15].strip()
-		lchain = line[21].strip() or None			
-		if atomtype and atomtype != latomtype:
-			continue
-		if chain and chain != lchain:
-			continue
 
+		
 		atomnumber = int(line[22:27])
 		pos = [float(line[30:38].strip()), float(line[38:46].strip()), float(line[46:54].strip())]
 		points[atomnumber] = noisemodel(pos) # tuple([noisemodel(i) for i in x])
@@ -151,8 +133,8 @@ def write_pdbs(filename, paths, points=None, bfactors=None, tree=None):
 	points = points or {}
 	tree = tree or {}
 	out = open(filename,"w")
-	# Ian: TODO: Paths should be chains A-Z, 0-9
-	chain = "A"
+	nchn=97
+	chain = chr(nchn)
 
 	print "\n=== Writing %s ==="%filename
 
@@ -165,8 +147,12 @@ def write_pdbs(filename, paths, points=None, bfactors=None, tree=None):
 		)
 		
 		for atom in path:
-		
 			point = points.get(atom)
+			if (point[0]==-1 and point[1]==-1 and point[2]==-1):
+				out.write("""TER  %6d      ALA %s%4d\n"""%(count, chain, atom))
+				nchn+=1
+				chain=chr(nchn)
+				continue
 			out.write(
 				"ATOM %6d  CA  ALA %s%4d    %8.3f%8.3f%8.3f%6.2f%6.2f     S_00  0\n"
 				%(atom, chain, atom, point[0], point[1], point[2], 1, bfactors.get(atom, 0)) #len(self.itree.get(atom,[]))
@@ -200,12 +186,9 @@ def write_pdbs(filename, paths, points=None, bfactors=None, tree=None):
 
 
 
-
-
-
 class PathWalker(object):
 
-	def __init__(self, filename=None, outfile=None, start=None, end=None, edgefile=None, edges=None, dmin=2.0, dmax=4.2, average=3.78, atomtype='CA', chain=None, noise=0, solver=False, json=True, overwrite=False, mrcfile=None,  mrcweight=5000, mapthresh=3.0):
+	def __init__(self, filename=None, outfile=None, start=None, end=None, edgefile=None, edges=None, dmin=2.0, dmax=5.0, average=3.78, atomtype='CA', chain=None, noise=0, solver=False, json=True, overwrite=False, mrcfile=None,  mrcweight=1000, mapthresh=0, subunit=1):
 
 		# Run parameters
 		self.dmin = dmin
@@ -221,12 +204,18 @@ class PathWalker(object):
 		self.json = json
 		self.mrcfile=mrcfile
 		self.mrcweight=mrcweight
-		self.mrc=EMData(mrcfile)
-		self.mapthresh=mapthresh
+		if self.mrcfile:
+			self.mrc=EMData(mrcfile)
+			self.apix_x=self.mrc["apix_x"]
+			self.apix_y=self.mrc["apix_y"]
+			self.apix_z=self.mrc["apix_z"]
+		if mapthresh > 0:
+			self.mapthresh=mapthresh
+		else:
+			self.mapthresh=self.mrc["mean_nonzero"]
+			print self.mapthresh
 		
-		self.apix_x=self.mrc["apix_x"]
-		self.apix_y=self.mrc["apix_y"]
-		self.apix_z=self.mrc["apix_z"]
+		
 		if self.atomtype in ['all', 'None', '']:
 			self.atomtype = None
 			
@@ -246,7 +235,12 @@ class PathWalker(object):
 
 		for i in self.points.keys():
 			self.itree[i] = set()
-				
+		
+		
+		#d, w = self.calcweight(self.points[start],self.points[end])
+		#print d,w
+		#exit()
+		
 		for count1, point1 in self.points.items():
 			for count2, point2 in self.points.items():
 				#print count1,count2,
@@ -257,23 +251,60 @@ class PathWalker(object):
 					self.itree[count1].add(count2)
 				# print count1, count2, self.distances[(count1, count2)], self.weighted[(count1, count2)]
 
-		
 		# Read an edge fragment file... 1 string of points per line, separated space
 		self.fixededges = self.read_fixed(edgefile)
 		
 		# ... add any additional edges, and/or start+end
 		if edges:
 			self.fixededges.extend(edges)
-
+		self.nonstart=0
 		self.start = min(self.points)
 		self.end = max(self.points)
 		if start != None:
 			self.start = start
 		if end != None:
 			self.end = end
-
+		
+		if start==None and end== None:
+			self.nonstart=1
+			id1=max(self.points)+1
+			id2=max(self.points)+2
+			self.points[id1]=[0,0,0]
+			self.points[id2]=[0,0,0]
+			self.itree[id1]=set()
+			self.itree[id2]=set()
+			for ct, pt in self.points.items():
+				self.distances[(id1,ct)]=.1
+				self.distances[(id2,ct)]=.1
+				self.weighted[(id1,ct)]=0
+				self.weighted[(id2,ct)]=0
+				self.weighted[(ct,id1)]=0
+				self.weighted[(ct,id2)]=0
+				self.itree[id1].add(ct)
+				self.itree[id2].add(ct)
+				self.itree[ct].add(id1)
+				self.itree[ct].add(id2)
+			self.start=id1
+			self.end=id2
+		
 		print "Note: linking start/end: ", self.start, self.end
 		self.fixededges.append((self.start, self.end))
+		
+		#add phantom point
+		self.subunit=subunit
+		if (self.subunit>1):
+			for phnpt in range(self.subunit-1):
+				idn=max(self.points)+1
+				self.points[idn]=[-1,-1,-1]
+				self.itree[idn]=set()
+				for ct, pt in self.points.items():
+					self.distances[(idn,ct)]=.1
+					self.distances[(ct,idn)]=.1
+					self.weighted[(idn,ct)]=0
+					self.weighted[(ct,idn)]=0
+					self.itree[idn].add(ct)
+					self.itree[ct].add(idn)
+		#end adding phantom point
 		
 		print self.itree
 		# Process forced edges
@@ -329,6 +360,10 @@ class PathWalker(object):
 				ptmp=path[0]
 				path.remove(path[0])
 				path.append(ptmp)
+				
+			if self.nonstart==1:
+				path.remove(self.start)
+				path.remove(self.end)
 			d['path'] = list(path)
 		
 			# Evaluate path and calculate CA ramachandran angles
@@ -337,6 +372,9 @@ class PathWalker(object):
 
 
 		# Write output
+		if self.nonstart==1:
+			del self.points[self.start]
+			del self.points[self.end]
 		if check_exists(self.outfile, overwrite=self.overwrite):
 
 			write_pdbs(filename=self.outfile, paths=paths, points=self.points)
@@ -665,39 +703,49 @@ class PathWalker(object):
 			# w = 0
 		else:
 			w = int((math.fabs(d-self.average)*100)**2)
-		midp=7
-		a=[(x[1]-x[0])/midp for x in zip(point1, point2)]
-		mpt=0
-		p=point1
 		
-		SX=0#self.mrc.get_xsize()
-		SY=0#self.mrc.get_ysize()
-		SZ=0#self.mrc.get_zsize()
+		if self.cutoff(d):
+
+			midp=10
+			a=[(x[1]-x[0])/midp for x in zip(point1, point2)]
+			mpt=0
+			p=point1
+			
+			SX=0#self.mrc.get_xsize()
+			SY=0#self.mrc.get_ysize()
+			SZ=0#self.mrc.get_zsize()
+			
+			#p=[(x[0]+x[1]) for x in zip(p,a)]
+			count=0
+			#print point1,point2,
+			for i in range(3,midp-2):
+				np=[(x[0]+x[1]*i) for x in zip(p,a)]
+				#print np
+				#np=[(x[0]+x[1]) for x in zip(p,a)]
+				
+				if self.mrcfile:
+					mmm=self.mrc.get_value_at(int(round(np[0]/self.apix_x+SX/2)),int(round(np[1]/self.apix_y+SY/2)),int(round(np[2]/self.apix_z+SZ/2)))
+				mpt+=mmm
+				count+=1
+			#print mmm,
+			#p=np
+			
+			
+			mpt=mpt/count
+			#print mpt,
+			if mpt>self.mapthresh:
+				dst=self.mapthresh/(mpt+.0001)#mpt*10
+			else:
+				dst=(self.mapthresh/(mpt+.0001))*2
+			#w=w+dst*self.mrcweight
+			#dst=-mpt
+			w=w+dst*self.mrcweight
 		
-		#p=[(x[0]+x[1]) for x in zip(p,a)]
-		count=0
-		#print point1,point2,
-		for i in range(1,midp):
-		    np=[(x[0]+x[1]*i) for x in zip(p,a)]
-		    #print np,
-		    #np=[(x[0]+x[1]) for x in zip(p,a)]
-		    mmm=self.mrc.get_value_at(int(round(np[0]/self.apix_x+SX/2)),int(round(np[1]/self.apix_y+SY/2)),int(round(np[2]/self.apix_z+SZ/2)))
-		    mpt+=mmm
-		    count+=1
-		    #print mmm,
-		    #p=np
-		
-		
-		mpt=mpt/count
-		#print mpt,
-		if mpt<self.mapthresh:
-			mpt=0#mpt*10
-		dst=-(mpt)
-		w=w+dst*self.mrcweight
-		w=int(w+10000)
+		w=int(w+0)
 		#print self.mrc.get_value_at(int(a[0]),int(a[1]),int(a[2]))
-		if w > 1000000:
-			w = 1000000
+		wmax=100000
+		if w > wmax:
+			w = wmax
 		#print w
 		return d, w
 
@@ -901,14 +949,14 @@ def main():
 	"""
 	parser = EMAN2.EMArgumentParser(usage=usage,version=EMAN2.EMANVERSION)
 	parser.add_argument("--output", type=str,help="Output file")
-	parser.add_argument("--mapfile", type=str,help="Density file", default=None)
+	parser.add_argument("--mapfile", type=str,help="Density map file", default=None)
 	parser.add_argument("--start", type=int,help="Start ATOM")
 	parser.add_argument("--end", type=int,help="End ATOM")	
 	parser.add_argument("--average", type=float,help="Average Ca-Ca length", default=3.78)
-	parser.add_argument("--mapweight", type=float,help="Weight of density", default=5000)
-	parser.add_argument("--mapthresh", type=float,help="Density threshold", default=3.0)
+	parser.add_argument("--mapweight", type=float,help="Weight of density, to balance between geometry and density score", default=1000)
+	parser.add_argument("--mapthresh", type=float,help="Density threshold, bonds on density lower than threshold is not prefered", default=0)
 	parser.add_argument("--dmin", type=float,help="Mininum Ca-Ca length", default=2.0)
-	parser.add_argument("--dmax", type=float,help="Maximum Ca-Ca length", default=4.2)
+	parser.add_argument("--dmax", type=float,help="Maximum Ca-Ca length", default=10.0)
 	parser.add_argument("--noise", type=float,help="Add Gaussian Noise", default=0.0)
 	parser.add_argument("--solver", type=str ,help="Run TSP Solver: concorde or lkh")
 	parser.add_argument("--atomtype", type=str ,help="Load Atom Type. Default: 'CA'. Options: 'C' or 'all'", default="CA")	
@@ -921,6 +969,7 @@ def main():
 	parser.add_argument("--overwrite", action="store_true", help="Overwrite files without prompting")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help='verbose level [0-9], higher number means higher level of verboseness')
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--subunit", type=int, help="Number of subunits.",default=1)
 
 	(options, args) = parser.parse_args()
 
@@ -948,7 +997,8 @@ def main():
 			outfile=options.output,
 			mrcfile=options.mapfile,
 			mrcweight=options.mapweight,
-			mapthresh=options.mapthresh
+			mapthresh=options.mapthresh,
+			subunit=options.subunit
 		)
 		pw.run()
 

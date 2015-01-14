@@ -48,13 +48,14 @@ def main():
 				exit()
 			
 			print files
-
+			
 			for fname in files:
 				print join(mypath,fname)
 				shape=process_image(join(mypath,fname),fname)
 				#totalen=process_image(join(mypath,fname),fname)
 				
-				outfile=open("circlestat_m","a")
+				#outfile=open("circlestat_m","a")
+				outfile=open("circlestat_gr_all","a")
 				outfile.write("%s\t%1.3g\t%1.3g\t%1.3g\t%1.5g\n"%(fname,shape[0],shape[1],shape[2],shape[3]))
 				#outfile.write("%s\t%1.5g\n"%(fname,totalen))
 				outfile.close()
@@ -106,8 +107,8 @@ def process_image(imgname,imgprefix):
 			t=linalg.norm(p1[0]-p2[0])
 			d+=t
 		d=d/10
-		shp=append(shp.A1,d)
-		#shp=append(shp.A1,totalen)
+		#shp=append(shp.A1,d)
+		shp=append(shp.A1,totalen)
 		print shp
 		#for i in range(nn):
 			#pa.set_vector_at(i,Vec3f(pl[i,0],pl[i,1],pl[i,2]),1.0)
@@ -119,16 +120,19 @@ def process_image(imgname,imgprefix):
 		
 		finalimg=EMData(imgname,0)
 		finalimg.process_inplace("normalize.edgemean")
-		finalimg.process_inplace("threshold.belowtozero",{"minval":3})
-		finalimg.process_inplace("normalize.edgemean")
+		finalimg.process_inplace("threshold.belowtozero",{"minval":.5})
+		mnz=finalimg["mean_nonzero"]
+		finalimg.process_inplace("threshold.belowtozero",{"minval":mnz})
+		#finalimg.process_inplace("normalize.edgemean")
 		#wtname="m_"+imgprefix
 		#finalimg.write_image(wtname,0)
 		finalimg.process_inplace("xform.centerofmass",{"threshold":0})
+		
 		an=Analyzers.get("inertiamatrix",{"verbose":0})
 		an.insert_image(finalimg)
 		mxi=an.analyze()
 		mx=EMNumPy.em2numpy(mxi[0])
-
+		
 		# Compute the eigenvalues/vectors
 		eigvv=LA.eig(mx)		# a 3-vector with eigenvalues and a 3x3 with the vectors
 		eig=[(1.0/eigvv[0][i],eigvv[1][:,i]) for i in xrange(3)]  # extract for sorting
@@ -148,6 +152,9 @@ def process_image(imgname,imgprefix):
 		#shp=EMNumPy.em2numpy(shp)
 		
 		print shp[0],shp[1],shp[2],shp[3],shp[2]/shp[1],shp[1]/shp[0]
+		for i in range(4):
+			shp[i]=sqrt(shp[i]/finalimg["mean"])*finalimg["apix_x"]
+		
 		return shp
 		
 		##finalimg.transform(T)

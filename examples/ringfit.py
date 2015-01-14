@@ -58,6 +58,10 @@ def process_image(imgname,imgprefix):
 	##p.mult(10000.0)
 	##p.mult(30.0)
 	##p.write_image("bbb.mrc",0)
+	
+	
+	
+	
 	p.process_inplace("normalize.edgemean")
 	p.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1})
 	p.process_inplace("normalize.edgemean")
@@ -158,9 +162,19 @@ def process_image(imgname,imgprefix):
 		bestpintrail=100000	# Best potential score in this trail
 		
 		
-		for i in xrange(100000):
+		for i in xrange(200000):
 			if skipping==0:	# run one simulation step
 				pa.sim_minstep_seq(.1)
+				if random.uniform(0,1.0)>.9996 and nowbp>10:
+					print "swapping................"
+					sn=random.randint(0,9)
+					s=[sn,sn+9]
+					for ii in range(s[0],(s[0]+s[1])/2):
+						jj=s[1]+s[0]-ii
+						tmp=pa.get_vector_at(ii)
+						pa.set_vector_at(ii,pa.get_vector_at(jj),1.0)
+						pa.set_vector_at(jj,tmp,1.0)
+					pa.save_to_pdb("swap.pdb")
 
 			if isstable>5:
 				if nowbp*2<numofbp: # Add points when result is stable and number of current points is lower than the total number
@@ -171,8 +185,8 @@ def process_image(imgname,imgprefix):
 					plen=(nowbp*math.sin(math.pi/nowbp))/(math.pi)	# Recalculate the length penalty
 					totlen=336*3.3*plen
 					#totlen=2*336*3.3*plen
-					#pa.sim_set_pot_parms(totlen/nowbp, .5, 100, 35.9*pi/180.0, 0.0, 800.0,m,totlen/nowbp*.6,10000)
-					pa.sim_set_pot_parms(totlen/nowbp, 1, 150, 35.9*pi/180.0, 0.0, 8000.0,m,totlen/nowbp*.6,4000)
+					pa.sim_set_pot_parms(totlen/nowbp, .5, 100, 35.9*pi/180.0, 0.0, 800.0,m,totlen/nowbp*.6,10000)
+					#pa.sim_set_pot_parms(totlen/nowbp, 1, 150, 35.9*pi/180.0, 0.0, 8000.0,m,totlen/nowbp*.9,10000)
 					isstable=0
 				else:
 					skipping=1
@@ -196,24 +210,24 @@ def process_image(imgname,imgprefix):
 					bestpintrail=now_potential
 					bestpa=pa.copy()
 				
-				# output pdb file for md movies
-				fname="%d.pdb"%(i/stepsz)
-				pa.save_to_pdb(fname)
+				## output pdb file for md movies
+				#fname="%d.pdb"%(i/stepsz)
+				#pa.save_to_pdb(fname)
 				
-				pdbfile = open(fname, "r")
-				lines = pdbfile.readlines()
-				pdbfile.close()
+				#pdbfile = open(fname, "r")
+				#lines = pdbfile.readlines()
+				#pdbfile.close()
 				
-				panum=pa.get_number_points()
-				if panum<numofbp:
-					outfile=open(fname,"a")
-					for k in range(panum,numofbp):
-						ln=lines[0]
-						s=str(k)+' '
-						if (len(s)<3): s=' '+s
-						ln=ln.replace(' 0 ',s)
-						outfile.write(ln)
-					outfile.close()
+				#panum=pa.get_number_points()
+				#if panum<numofbp:
+					#outfile=open(fname,"a")
+					#for k in range(panum,numofbp):
+						#ln=lines[0]
+						#s=str(k)+' '
+						#if (len(s)<3): s=' '+s
+						#ln=ln.replace(' 0 ',s)
+						#outfile.write(ln)
+					#outfile.close()
 
 		if bestpintrail<bestres:
 			bestres=bestpintrail
