@@ -195,19 +195,38 @@ namespace EMAN
 		double calc_total_length();
 		
 		/** Fit helix from peptide chains**/
-		vector<double> fit_helix(EMData *pmap,int minlength,float mindensity,vector<int> edge,int twodir);
+		vector<double> fit_helix(EMData *pmap,int minlength,float mindensity,vector<int> edge,int twodir,int minl);
 		
-		/** Do principal component analysis to (a subset of) the point array**/
+		/** Do principal component analysis to (a subset of) the point array, used in helix fitting in pathwalker **/
 		vector<float> do_pca(int start, int end);
 		
+		/** Filter the point array to smooth the line, used in helix fitting in pathwalker **/
 		vector<float> do_filter(vector<float> pts, float *ft, int num);
 		
-		vector<double> construct_helix(int start,int end,float phs, float &score,bool &dir);
+		/** Construct an ideal helix between the start and end points given phase. **/
+		vector<double> construct_helix(int start,int end,float phs, float &score,int &dir);
+		
+		/** Reverse the pointarray chain **/
 		void reverse_chain();
-
+		
+		/** Merge to another point array. Combine close points **/
+		void merge_to(PointArray &pa, float thr);
+		
+		/** Calculate the helicity of some points. Used for correct the hand of the helices **/
+		float calc_helicity(vector<double> pts);
+		
+		/** Save the point array to pdb file, including helices information **/
 		void save_pdb_with_helix(const char *file, vector<float> hlxid);
 		
+		/** Delete one point in the array **/
+		void delete_point(int id);
+		
+		/** Remove the correponding density of the helix point from a density map**/
 		void remove_helix_from_map(EMData *m, vector<float> hlxid);
+		
+		/** Read only C-alpha atoms from a pdb file **/
+		bool read_ca_from_pdb(const char *file);
+		
 		private:
 		double *points;
 		size_t n;
@@ -236,6 +255,7 @@ namespace EMAN
 		EMData *map;
 		EMData *gradx,*grady,*gradz;
 		vector<Vec3f> oldshifts;
+		int centx,centy,centz;
 	};
 }
 
