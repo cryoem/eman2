@@ -419,17 +419,36 @@ def main():
 				dang=80.0/data["ny"];		# 1 pixel at ~3/4 radius
 				dzmax=data["ny"]/20			# max +-z shift
 				best=(1000,0,0,data)
+				
+				dsd=data.process("math.meanshrink",{"n":2})			# downsampled data
+				dsd.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.25})
+				
+				dsr=zalignref.process("math.meanshrink",{"n":2})	# downsampled reference
+				dsr.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.25})
+				
+				# coarse search on downsampled/filtered data
 				for it in xrange(3):
 					for z in xrange(best[1]-dzmax,best[1]+dzmax+1):
-						zimg=data.process("xform",{"transform":Transform({"type":"eman","tz":z,"phi":best[2]})})
-						best=min(best,(zalignref.cmp("ccc",zimg),z,best[2],zimg))
-					if options.verbose>1: print best
+						zimg=dsd.process("xform",{"transform":Transform({"type":"eman","tz":z,"phi":best[2]})})
+						best=min(best,(dsr.cmp("ccc",zimg),z,best[2],zimg))
+					if options.verbose>1: print best[:3]
 	
-					for phi in arange(best[2]-10.0,best[2]+10.0,dang):
-						zimg=data.process("xform",{"transform":Transform({"type":"eman","tz":best[1],"phi":phi})})
-						best=min(best,(zalignref.cmp("ccc",zimg),best[1],phi,zimg))
-					if options.verbose>1: print best
-
+					for phi in arange(best[2]-20.0,best[2]+20.0,dang*2.0):
+						zimg=dsd.process("xform",{"transform":Transform({"type":"eman","tz":best[1],"phi":phi})})
+						best=min(best,(dsr.cmp("ccc",zimg),best[1],phi,zimg))
+					if options.verbose>1: print best[:3]
+				
+				# Fix best() for full sampling
+				zimg=data.process("xform",{"transform":Transform({"type":"eman","tz":best[1]*2,"phi":best[2]})})
+				best=(1000.0,best[1]*2,best[2],zimg)
+				
+				# now we do a fine search only in the neighborhood on the original data
+				for z in xrange(best[1]-3,best[1]+4):
+					for phi in arange(best[2]-dang*3.0,best[2]+dang*3.5,dang):
+						zimg=data.process("xform",{"transform":Transform({"type":"eman","tz":z,"phi":phi})})
+						best=min(best,(zalignref.cmp("ccc",zimg),z,best[2],zimg))
+				if options.verbose>1: print best[:3]
+	
 				data=best[3]
 				data["xform.align3d"]=Transform({"type":"eman","tz":best[1],"phi":best[2]})
 				if options.verbose>0 : print "Alignment: tz = ",best[1],"  dphi=",best[2]
