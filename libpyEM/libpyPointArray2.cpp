@@ -121,6 +121,9 @@ BOOST_PYTHON_MODULE(libpyPointArray2)
         .def("reverse_chain", &EMAN::PointArray::reverse_chain)
         .def("save_pdb_with_helix", &EMAN::PointArray::save_pdb_with_helix)
         .def("remove_helix_from_map", &EMAN::PointArray::remove_helix_from_map)
+        .def("merge_to", &EMAN::PointArray::merge_to)
+        .def("delete_point", &EMAN::PointArray::delete_point)
+        .def("read_ca_from_pdb", &EMAN::PointArray::read_ca_from_pdb)
 		
     );
 
