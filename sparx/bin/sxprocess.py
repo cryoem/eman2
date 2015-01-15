@@ -109,7 +109,7 @@ def main():
 
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--order", action="store_true", help="Two arguments are required: name of input stack and desired name of output stack. The output stack is the input stack sorted by similarity in terms of cross-correlation coefficent.", default=False)
-	parser.add_option("--ordernew", action="store_true", help="Two arguments are required: name of input stack and desired name of output stack. The output stack is the input stack sorted by similarity in terms of cross-correlation coefficent.", default=False)	
+	parser.add_option("--ordernew", action="store_true", help="Test/Debug.", default=False)	
 	parser.add_option("--initial", type="int", default=-1, help="Specifies which image will be used as an initial seed to form the chain. (default = 0, means the first image)")
 	parser.add_option("--circular", action="store_true", help="Select circular ordering (fisr image has to be similar to the last", default=False)
 	parser.add_option("--radius", type="int", default=-1, help="Radius of a circular mask for similarity based ordering")
@@ -167,6 +167,42 @@ def main():
 		mask = model_circle(radius, nx, ny)
 
 		init = options.initial
+		
+		if options.ordernew:
+			from statistics import mono
+			lend=len(d)
+			lccc=[None]*(lend*(lend-1)/2)
+			
+			for i in xrange(lend):
+				for j in xrange(i+1,lend):
+					lccc[mono(i,j)] = ccc(d[i], d[j], mask)
+			
+			print lccc
+			
+			temp = d[init].copy()
+			temp.write_image(new_stack, 0)
+			del d[init]
+			k = 1
+			lsum = 0.0
+			while len(d) > 1:
+				print k, inds
+				maxcit = -111.
+				for i in xrange(len(d)):
+					cuc = ccc(d[i], temp, mask)
+# 					cuc = lccc[mono(ii,iinit)]
+					if cuc > maxcit:
+						maxcit = cuc
+						qi = i
+				# 	print k, maxcit
+				lsum += maxcit
+				temp = d[qi].copy()
+				del d[qi]
+				temp.write_image(new_stack, k)
+				k += 1
+			print  lsum
+			d[0].write_image(new_stack, k)
+			exit()		
+
 
 		if init > -1 :
 			temp = d[init].copy()
