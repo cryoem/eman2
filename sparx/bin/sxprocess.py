@@ -109,7 +109,7 @@ def main():
 
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--order", action="store_true", help="Two arguments are required: name of input stack and desired name of output stack. The output stack is the input stack sorted by similarity in terms of cross-correlation coefficent.", default=False)
-# 	parser.add_option("--ordernew", action="store_true", help="Two arguments are required: name of input stack and desired name of output stack. The output stack is the input stack sorted by similarity in terms of cross-correlation coefficent.", default=False)	
+	parser.add_option("--ordernew", action="store_true", help="Two arguments are required: name of input stack and desired name of output stack. The output stack is the input stack sorted by similarity in terms of cross-correlation coefficent.", default=False)	
 	parser.add_option("--initial", type="int", default=-1, help="Specifies which image will be used as an initial seed to form the chain. (default = 0, means the first image)")
 	parser.add_option("--circular", action="store_true", help="Select circular ordering (fisr image has to be similar to the last", default=False)
 	parser.add_option("--radius", type="int", default=-1, help="Radius of a circular mask for similarity based ordering")
@@ -147,7 +147,6 @@ def main():
 		
 		from utilities import get_params2D, model_circle
 		from fundamentals import rot_shift2D
-		from alignment import align2d
 		from statistics import ccc
 		stack = args[0]
 		new_stack = args[1]
@@ -167,39 +166,18 @@ def main():
 		else:  radius = options.radius
 		mask = model_circle(radius, nx, ny)
 
-		lccc=[]
-		for l in lccc:
-			print l
-		exit()
-		for i in xrange(len(d)):
-			lccc.append([])
-			for j in xrange(len(d)):
-				if i==j:
-					lccc[i].append([1.0,Transform()])
-					continue
-				cuc = ccc(d[i], d[j], mask)
-				ang, sxs, sys, mirror, peak = align2d(d[i], d[j])
-				
-				T = Transform({"type":"2D","alpha":ang,"tx":sxs,"ty":sys,"mirror":mirror,"scale":1.0})
-				lccc[i][j] = [cuc,T]
 		init = options.initial
 
 		if init > -1 :
 			temp = d[init].copy()
 			temp.write_image(new_stack, 0)
-
-			inds=[i for i in xrange(len(d))]
-			
 			del d[init]
-			del inds[init]
 			k = 1
 			lsum = 0.0
 			while len(d) > 1:
 				maxcit = -111.
 				for i in xrange(len(d)):
-# 						cuc = ccc(d[i], temp, mask)
-						# Lookup from table
-						cuc = lccc[inds[init]][inds[i]][0]
+						cuc = ccc(d[i], temp, mask)
 						if cuc > maxcit:
 								maxcit = cuc
 								qi = i
@@ -207,7 +185,6 @@ def main():
 				lsum += maxcit
 				temp = d[qi].copy()
 				del d[qi]
-				del inds[qi]
 				temp.write_image(new_stack, k)
 				k += 1
 			print  lsum
