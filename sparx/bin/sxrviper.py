@@ -80,6 +80,7 @@ def main():
 	parser.add_option("--n_v_runs",       type= "int",   default= 3,                  help="number of viper runs for each r_viper cycle")
 	parser.add_option("--doga",     type="float",  default= 0.3,                help="do GA when fraction of orientation changes less than 1.0 degrees is at least doga (default=0.3)")
 	parser.add_option("--npad",     type="int",    default= 2,                  help="padding size for 3D reconstruction (default=2)")
+	parser.add_option("--outlier_percentile",     type="float",    default= 95,                  help="percentile above which outliers are removed every iteration")
 	#parser.add_option("--MPI",      action="store_true", default=True,          help="whether to use MPI version - this is always set to True")
 
 	#options introduced for the do_volume function
@@ -109,7 +110,7 @@ def main():
 	number_of_rrr_viper_runs = options.n_rv_runs 
 	no_of_viper_runs_analyzed_together = options.n_v_runs 
 	no_of_shc_runs_analyzed_together = options.n_shc_runs 
-
+	outlier_percentile = options.outlier_percentile 
 	
 	main_node = 0
 	mpi_init(0, [])
@@ -274,7 +275,7 @@ def main():
 			dir_len = bcast_number_to_all(dir_len)
 			# in case all viper runs are done already for the current iteration, need to run identify_outliers program
 			if (dir_len == 0):
-				identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_together, masterdir, bdb_stack_location)
+				identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_together, masterdir, bdb_stack_location, outlier_percentile)
 				continue
 
 			# Main node sent info to skip this iteration
@@ -340,7 +341,7 @@ def main():
 
 		
 
-		identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_together, masterdir, bdb_stack_location)
+		identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_together, masterdir, bdb_stack_location, outlier_percentile)
 
 		# save current volumes, skip them if they are already there
 
@@ -362,12 +363,12 @@ def get_latest_directory_increment_value(directory_location, directory_name):
 	return dir_count - 1
 
 
-def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_together, masterdir, bdb_stack_location):
+def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_together, masterdir, bdb_stack_location, outlier_percentile):
 	from utilities import wrap_mpi_bcast
 	quit_program = 0
 	if (myid == main_node):
-		#if not found_outliers(outlier_percentile, rviper_iter, no_of_viper_runs_analyzed_together, masterdir):
-		if not found_outliers(95, rviper_iter, no_of_viper_runs_analyzed_together, masterdir, bdb_stack_location):
+		if not found_outliers(outlier_percentile, rviper_iter, no_of_viper_runs_analyzed_together, masterdir):
+		#if not found_outliers(95, rviper_iter, no_of_viper_runs_analyzed_together, masterdir, bdb_stack_location):
 			quit_program = 1
 			cmd = "{} {} {}".format("mkdir ", masterdir, "Converged")
 			cmdexecute(cmd)
@@ -443,12 +444,12 @@ def found_outliers(outlier_percentile, rviper_iter, no_of_viper_runs_analyzed_to
 
 
 	if (rviper_iter == 1):
-		cmd = "{} {} {} {}".format("e2bdb.py ", bdb_stack_location, "--makevstack=" + bdb_stack_location + "_%03d"%(rviper_iter + 1), "--list=" + mainoutputdir +  "index_outliers.txt")
+		cmd = "{} {} {} {}".format("e2bdb.py ", bdb_stack_location, "--makevstack=" + bdb_stack_location + "_outliers_%03d"%(rviper_iter + 1), "--list=" + mainoutputdir +  "index_outliers.txt")
 		cmdexecute(cmd)
 		cmd = "{} {} {} {}".format("e2bdb.py ", bdb_stack_location, "--makevstack=" + bdb_stack_location + "_%03d"%(rviper_iter + 1), "--list=" + mainoutputdir +  "index_keep_images.txt")
 		cmdexecute(cmd)
 	else:
-		cmd = "{} {} {} {}".format("e2bdb.py ", bdb_stack_location + "_%03d"%(rviper_iter), "--makevstack=" + bdb_stack_location + "_%03d"%(rviper_iter + 1), "--list=" + mainoutputdir  +  "index_outliers.txt")
+		cmd = "{} {} {} {}".format("e2bdb.py ", bdb_stack_location + "_%03d"%(rviper_iter), "--makevstack=" + bdb_stack_location + "_outliers_%03d"%(rviper_iter + 1), "--list=" + mainoutputdir  +  "index_outliers.txt")
 		cmdexecute(cmd)
 		cmd = "{} {} {} {}".format("e2bdb.py ", bdb_stack_location + "_%03d"%(rviper_iter), "--makevstack=" + bdb_stack_location + "_%03d"%(rviper_iter + 1), "--list=" + mainoutputdir +  "index_keep_images.txt")
 		cmdexecute(cmd)
