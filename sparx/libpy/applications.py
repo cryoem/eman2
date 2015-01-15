@@ -15465,7 +15465,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 						rmin, rmax, fract,  npad, sym, user_func_name, \
 						pixel_size, debug, y_restrict, search_iter):
 
-	from alignment      import proj_ali_helicon_local, proj_ali_helicon_90_local_direct, directaligridding1
+	from alignment      import proj_ali_helicon_local, proj_ali_helicon_90_local_direct, directaligridding1, directaligriddingconstrained
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string, pad, model_blank
 	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all
 	from utilities      import send_attr_dict, read_text_row, sym_vol
@@ -15843,8 +15843,17 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 							if psi < 180.0 :  direction = "up"
 							else:             direction = "down"
 
-							angb, tx, ty, pik = directaligridding1(dataft[im], kb, refrings, \
-								psi_max, psistep, xrng[N_step], yrng[N_step], stepx, stepy, direction)
+							#angb, tx, ty, pik = directaligridding1(dataft[im], kb, refrings, \
+							#	psi_max, psistep, xrng[N_step], yrng[N_step], stepx, stepy, direction)
+							#  Constrained search methodology
+							#		x - around previously found location tx +/- xrng[N_step] in stepx
+							#		y - around previously found location ty +/- yrng[N_step] in stepy
+							#		psi - around previously found position psi +/- psi_max in steps psistep
+							#		phi and theta are restricted by parameter an above.
+							#
+							#
+							angb, tx, ty, pik = directaligriddingconstrained(dataft[im], kb, refrings, \
+								psi_max, psistep, xrng[N_step], yrng[N_step], stepx, stepy, psi, tx, ty, direction)
 
 							if(pik > -1.0e23):
 								if(pik > neworient[im][-1]):
@@ -16651,7 +16660,7 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 
 					peak, phihi, theta, psi, sxi, syi = \
 						proj_ali_helicon_90_local(data[im], refrings, numr, xrng[N_step], yrng[N_step], stepx[N_step], ynumber[N_step], \
-						an[N_step], psi_max, finfo, yrnglocal=y_restrict[N_step])
+								an[N_step], psi_max, finfo, yrnglocal=y_restrict[N_step])
 
 					if(peak > -1.0e23):
 
@@ -16900,7 +16909,7 @@ def setfilori_SP(fildata, pixel_size, dp, dphi):
 	yg 		= [0.0]*ns # given y
 	xg 		= [0.0]*ns # given x
 	thetag	= [0.0]*ns # given theta
-	gxyz = [[0.0 for i in xrange(3)]for k in xrange(ns) ]
+	gxyz    = [[0.0 for i in xrange(3)]for k in xrange(ns) ]
 
 	dist = [0.0]*ns
 	coords0 = fildata[0].get_attr('ptcl_source_coord')

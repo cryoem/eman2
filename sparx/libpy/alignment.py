@@ -1896,7 +1896,7 @@ def proj_ali_helicon_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 		finfo.flush()
 
 	[ang, sxs, sys, mirror, iref, peak] = \
-		Util.multiref_polar_ali_helicon_90_local(data, refrings, xrng, yrng, stepx, ant, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber), yrnglocal)
+		Util.multiref_polar_ali_helicon_90_local(data, refrings, q, yrng, stepx, ant, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber), yrnglocal)
 	iref = int(iref)
 	if iref > -1:
 		angb, sxb, syb, ct = inverse_transform2(ang, sxs, sys, 0)
@@ -2994,6 +2994,191 @@ def directaligridding(inima, refs, psimax=1.0, psistep=1.0, xrng=1, yrng=1, step
 
 
 def directaligridding1(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1, yrng=1, stepx = 1.0, stepy = 1.0, updown = "both"):
+	"""
+	Direct 2D alignment within a predefined angular range.  If the range is large the method will be very slow.
+	ref - a stack of reference images. 
+	updown - one of three keywords: both, up, down, indicating which angle to consider, 0, 180, or both.
+	PAP 01/01/2015
+	"""
+
+	from fundamentals import fft, rot_shift2D, ccf, prepi
+	from utilities    import peak_search, model_blank, inverse_transform2, compose_transform2
+	from alignment    import parabl
+	from EMAN2 import Processor
+	#print  "  directaligridding1  ",psimax, psistep, xrng, yrng, stepx, stepy, updown
+
+	"""
+	M = inima.get_xsize()
+	alpha = 1.75
+	K = 6
+	N = M*2  # npad*image size
+	r = M/2
+	v = K/2.0/N
+	params = {"filter_type" : Processor.fourier_filter_types.KAISER_SINH_INVERSE,
+	          "alpha" : alpha, "K":K,"r":r,"v":v,"N":N}
+	kb = Util.KaiserBessel(alpha, K, r, v, N)
+	"""
+
+
+	nr = int(2*psimax/psistep)+1
+	nc = nr//2
+
+	N = inima.get_ysize()  # assumed image is square, but because it is FT take y.
+	#  Window for ccf sampled by gridding
+	rnx   = int((xrng/stepx+0.5))
+	rny   = int((yrng/stepy+0.5))
+	wnx = 2*rnx + 1
+	wny = 2*rny + 1
+	w = model_blank( wnx, wny)
+	stepxx = 2*stepx
+	stepyy = 2*stepy
+	nic = N//2
+	wxc = wnx//2
+	wyc = wny//2
+
+	if updown == "both" or updown == "up" :
+		ima = inima
+		#ima = inima.FourInterpol(N, N, 1,0)
+		#ima = Processor.EMFourierFilter(ima,params)
+
+	if updown == "both" or updown == "down" :
+		#  This yields rotation by 180 degrees.  There is no extra shift as the image was padded 2x, so it is even-sized, but two rows are incorrect
+		imm = inima.conjg()
+		#imm = rot_shift2D(inima,180.0, interpolation_method = 'linear')
+		#imm = imm.FourInterpol(N, N, 1,0)
+		#imm = Processor.EMFourierFilter(imm,params)
+
+	#fft(ima).write_image('imap.hdf')
+
+	ma1  = -1.e23
+	ma2  = -1.e23
+	ma3  = -1.e23
+	ma4  = -1.e23
+	oma2 = [-1.e23, -1.e23, -1.e23]
+	oma4 = [-1.e23, -1.e23, -1.e23]
+	"""
+	fft(ima).write_image('ima.hdf')
+	for i in xrange(nr):  fft(ref[i]).write_image('ref.hdf',i)
+	from sys import exit
+	exit()
+	"""
+	for i in xrange(nr):
+		if updown == "both" or updown == "up" :
+			c = ccf(ima,ref[i])
+			#c.write_image('gcc.hdf')
+			#p = peak_search(window2d(c,4*xrng+1,4*yrng+1),5)
+			#for q in p: print q
+			for iy in xrange(-rny, rny + 1):
+				for ix in xrange(-rnx, rnx + 1):
+					w[ix+rnx,iy+rny] = c.get_pixel_conv7(ix*stepxx+nic, iy*stepyy+nic, 0.0, kb)
+
+			pp = peak_search(w)[0]
+			#print '  peak   ',i,pp
+			#from sys import exit
+			#exit()
+
+			px = int(pp[4])
+			py = int(pp[5])
+			#print '  peak   ',i,pp,px*stepx,py*stepy
+			#  did not find a peak, find a maximum location instead
+			if( pp[0] == 1.0 and px == 0 and py == 0):
+				#  No peak!
+				pass
+				"""
+				loc = w.calc_max_location()
+				PEAKV = w.get_value_at(loc[0],loc[1])
+				print "  Did not find a peak  :",i,loc[0]-wxc, loc[1]-wyc, PEAKV
+				if(PEAKV>ma2):
+						ma2  = PEAKV
+						oma2 = pp+[loc[0]-wxc, loc[1]-wyc, loc[0]-wxc, loc[1]-wyc, PEAKV,(i-nc)*psistep]
+				"""
+			else:
+				ww = model_blank(3,3)
+				px = int(pp[1])
+				py = int(pp[2])
+				for k in xrange(3):
+					for l in xrange(3):
+						ww[k,l] = w[k+px-1,l+py-1]
+				XSH, YSH, PEAKV = parabl(ww)
+				#print ["S %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
+				"""
+				if(pp[0]>ma1):
+					ma1 = pp[0]
+					oma1 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
+				"""
+				if(PEAKV>ma2):
+					ma2  = PEAKV
+					oma2 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
+		if updown == "both" or updown == "down" :
+			c = ccf(imm,ref[i])
+			for iy in xrange(-rny, rny + 1):
+				for ix in xrange(-rnx, rnx + 1):
+					w[ix+rnx,iy+rny] = c.get_pixel_conv7(ix*stepxx+nic, iy*stepyy+nic, 0.0, kb)
+			pp = peak_search(w)[0]
+			px = int(pp[4])
+			py = int(pp[5])
+			if( pp[0] == 1.0 and px == 0 and py == 0):
+				#  No peak!
+				pass
+				"""
+				loc = w.calc_max_location()
+				PEAKV = w.get_value_at(loc[0],loc[1])
+				if(PEAKV>ma4):
+					ma4  = PEAKV
+					oma4 = pp+[loc[0], loc[1], loc[0], loc[1], PEAKV,(i-nc)*psistep]
+				"""
+			else:
+				ww = model_blank(3,3)
+				px = int(pp[1])
+				py = int(pp[2])
+				for k in xrange(3):
+					for l in xrange(3):
+						ww[k,l] = w[k+px-1,l+py-1]
+				XSH, YSH, PEAKV = parabl(ww)
+				#print ["R %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
+				"""
+				if(pp[0]>ma3):
+					ma3 = pp[0]
+					oma3 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
+				"""
+				if(PEAKV>ma4):
+					ma4 = PEAKV
+					oma4 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
+
+	if( oma2[-2] > oma4[-2] ):
+		peak = oma2[-2]
+		if( peak == -1.0e23 ):  return  0.0, 0.0, 0.0, peak
+	
+		"""
+		print oma1
+		print oma2
+		print  "        %6.2f %6.2f  %6.2f"%(oma2[-1],oma2[-4],oma2[-3])
+		"""
+		#  The inversion would be needed for 2D alignment.  For 3D, the proper way is to return straight results.
+		#nalpha, ntx, nty, mirror = inverse_transform2(oma2[-1], oma2[-4]*stepx, oma2[-3]*stepy, 0)
+		nalpha = oma2[-1]
+		ntx    = oma2[-4]*stepx
+		nty    = oma2[-3]*stepy
+		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
+	else:
+		peak = oma4[-2]
+		if( peak == -1.0e23 ):  return  0.0, 0.0, 0.0, peak
+		#  This is still strange as why I would have to invert here but not for 90 degs.  PAP  01/09/2014
+		#print oma3
+		#print oma4
+
+		nalpha, ntx, nty, junk = compose_transform2(-oma4[-1],oma4[-4]*stepx,oma4[-3]*stepy,1.0,180.,0,0,1)
+		#nalpha = oma4[-1] + 180.0
+		#ntx    = oma4[-4]*stepx
+		#nty    = oma4[-3]*stepy
+		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
+		nalpha, ntx, nty, mirror = inverse_transform2(nalpha, ntx, nty, 0)
+		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
+	return  nalpha, ntx, nty, peak
+
+
+def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1, yrng=1, \
+			stepx = 1.0, stepy = 1.0, psiref = 0., txref = 0., tyref = 0., updown = "both"):
 	"""
 	Direct 2D alignment within a predefined angular range.  If the range is large the method will be very slow.
 	ref - a stack of reference images. 
