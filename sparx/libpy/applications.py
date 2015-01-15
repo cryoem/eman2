@@ -3637,6 +3637,199 @@ def ali3d_MPI_chunks(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, r
 '''
 
 
+def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
+            xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an = "-1", apsi = "-1", deltapsi = "-1", startpsi = "-1",
+	    center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym = "c1",
+	    user_func_name = "ref_ali3d", fourvar = True, npad = 4, debug = False, MPI = False, termprec = 0.0):
+	"""
+		Name
+			ali3d - Perform 3-D projection matching given initial reference volume and image series
+		Input
+			stack: set of 2-D images in a stack file, images have to be squares
+			ref_vol: initial reference volume
+			outdir: directory name into which the results will be written
+			maskfile: filename of the file containing 3D mask.
+			ir: inner radius for rotational correlation > 0 
+			ou: outer radius for rotational correlation <int(nx/2)-1 
+			rs: steps between rings in rotational correlation >0
+			xr: range for translation search in x direction in each iteration, search is +/xr
+			yr: range for translation search in y direction in each iteration, search is +/yr
+			ts: step size of the translation search in both directions, search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional.
+			delta: angular step for the reference projections in respective iterations
+			an: angular neighborhood for local searches
+			center: average center method
+			max_iter: maximum iterations at each angle step
+			CTF: if the flag is present, program will use the CTF information stored in file headers
+			snr: signal noise ratio used in the 3D reconstruction
+			ref_a: method for creating quasi-uniform distribution of the projection directions of reference projections: "S" - spiral
+			sym: symmetry of the refined structure
+			function: name of the user-supplied-function
+			MPI: if presetm use MPI version
+		Output
+			output_directory: directory name into which the output files will be written.
+			header: the alignment parameters are stored in the headers of input files as Transform Object xform.proj
+	"""
+	if MPI:
+		ali3d_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, yr, ts,
+	        	delta, an, apsi, deltapsi, startpsi, center, maxit, CTF, snr, ref_a, sym, user_func_name,
+			fourvar, npad, debug, termprec)
+		return
+
+	from alignment      import proj_ali_incore, proj_ali_incore_local
+	from utilities      import model_circle, drop_image, get_image, get_input_from_string
+	from utilities      import get_params_proj
+	from utilities      import estimate_3D_center, rotate_3D_shift
+	from filter         import filt_params, fit_tanh, filt_tanl, filt_ctf
+	from statistics     import fsc_mask
+	import os
+	import types
+	from utilities      import print_begin_msg, print_end_msg, print_msg
+	from alignment      import Numrinit, prepare_refrings
+	from projection     import prep_vol
+
+	import user_functions
+	user_func = user_functions.factory[user_func_name]
+
+	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "ali3d", 1)
+	os.mkdir(outdir)
+	import global_def
+	global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+	print_begin_msg("ali3d")
+
+	xrng        = get_input_from_string(xr)
+	if  yr == "-1":  yrng = xrng
+	else          :  yrng = get_input_from_string(yr)
+	step        = get_input_from_string(ts)
+	delta       = get_input_from_string(delta)
+	lstp = min(len(xrng), len(yrng), len(step), len(delta))
+	if an == "-1":
+		an = [-1] * lstp
+	else:
+		an = get_input_from_string(an)
+	first_ring  = int(ir)
+	rstep       = int(rs)
+	last_ring   = int(ou)
+	max_iter    = int(maxit)
+	center      = int(center)
+
+	print_msg("Input stack                 : %s\n"%(stack))
+	print_msg("Reference volume            : %s\n"%(ref_vol))	
+	print_msg("Output directory            : %s\n"%(outdir))
+	print_msg("Maskfile                    : %s\n"%(maskfile))
+	print_msg("Inner radius                : %i\n"%(first_ring))
+
+	vol     = EMData()
+	vol.read_image(ref_vol)
+	nx      = vol.get_xsize()
+	if last_ring == -1:	last_ring = nx/2 - 2
+
+	print_msg("Outer radius                : %i\n"%(last_ring))
+	print_msg("Ring step                   : %i\n"%(rstep))
+	print_msg("X search range              : %s\n"%(xrng))
+	print_msg("Y search range              : %s\n"%(yrng))
+	print_msg("Translational step          : %s\n"%(step))
+	print_msg("Angular step                : %s\n"%(delta))
+	print_msg("Angular search range        : %s\n"%(an))
+	print_msg("Maximum iteration           : %i\n"%(max_iter))
+	print_msg("Center type                 : %i\n"%(center))
+	print_msg("CTF correction              : %s\n"%(CTF))
+	print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
+	print_msg("Reference projection method : %s\n"%(ref_a))
+	print_msg("Symmetry group              : %s\n\n"%(sym))
+	print_msg("User function               : %s\n"%(user_func_name))
+
+	if maskfile :
+		if type(maskfile) is types.StringType: mask3D = get_image(maskfile)
+		else                                  : mask3D = maskfile
+	else          :   mask3D = model_circle(last_ring, nx, nx, nx)
+	mask2D = model_circle(last_ring, nx, nx) - model_circle(first_ring, nx, nx)
+	numr   = Numrinit(first_ring, last_ring, rstep, "F")
+
+	if CTF:
+		from reconstruction import recons3d_4nn_ctf
+		from filter         import filt_ctf
+	else: from reconstruction import recons3d_4nn
+
+	if debug:  outf = file(os.path.join(outdir, "progress"), "w")
+	else:      outf = None
+
+	active = EMUtil.get_all_attributes(stack, 'active')
+	list_of_particles = []
+	for im in xrange(len(active)):
+		if(active[im]):  list_of_particles.append(im)
+	del active
+	data = EMData.read_images(stack, list_of_particles)
+        for im in xrange(len(data)):
+                data[im].set_attr('ID', list_of_particles[im])
+		if CTF:
+			ctf_params = data[im].get_attr("ctf")
+			st = Util.infomask(data[im], mask2D, False)
+			data[im] -= st[0]
+			data[im] = filt_ctf(data[im], ctf_params)
+			data[im].set_attr('ctf_applied', 1)
+
+	nima = len(data)
+	# initialize data for the reference preparation function
+	ref_data = [ mask3D, max(center,0), None, None ]#  for center -1 switch of centering by user function
+
+	cs = [0.0]*3
+	# do the projection matching
+	for N_step in xrange(lstp):
+ 		for Iter in xrange(max_iter):
+			print_msg("\nITERATION #%3d\n"%(N_step*max_iter+Iter+1))
+
+			volft, kb = prep_vol(vol)
+			refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, sym, numr, MPI=False, ant = max(an[N_step],0.0)*1.1)  # 1.1 is to have extra safety
+			del volft, kb
+
+			for im in xrange(nima):
+				if an[N_step] == -1:	
+					peak, pixel_error = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
+				else:
+					peak, pixel_error = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],sym=sym)
+				data[im].set_attr("previousmax", peak)
+			if center == -1 and sym[0] == 'c':
+				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center(data)
+				msg = "Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
+				print_msg(msg)
+				if int(sym[1]) > 1:
+					cs[0] = cs[1] = 0.0
+					print_msg("For symmetry group cn (n>1), we only center the volume in z-direction\n")
+				rotate_3D_shift(data, [-cs[0], -cs[1], -cs[2]])
+
+			if CTF:   vol1 = recons3d_4nn_ctf(data, range(0, nima, 2), snr, 1, sym)
+			else:	   vol1 = recons3d_4nn(data, range(0, nima, 2), sym)
+			if CTF:   vol2 = recons3d_4nn_ctf(data, range(1, nima, 2), snr, 1, sym)
+			else:	   vol2 = recons3d_4nn(data, range(1, nima, 2), sym)
+
+			fscc = fsc_mask(vol1, vol2, mask3D, 1.0, os.path.join(outdir, "resolution%04d"%(N_step*max_iter+Iter+1)))
+			del vol1
+			del vol2
+
+			# calculate new and improved 3D
+			if CTF:  vol = recons3d_4nn_ctf(data, range(nima), snr, 1, sym)
+			else:	 vol = recons3d_4nn(data, range(nima), sym)
+			# store the reference volume
+			drop_image(vol, os.path.join(outdir, "vol%04d.hdf"%(N_step*max_iter+Iter+1)))
+			ref_data[2] = vol
+			ref_data[3] = fscc
+
+			#  call user-supplied function to prepare reference image, i.e., center and filter it
+			vol, dummy = user_func(ref_data)
+
+			drop_image(vol, os.path.join(outdir, "volf%04d.hdf"%(N_step*max_iter+Iter+1)))
+			#  here we write header info
+			from utilities import write_headers
+			#from utilities import write_select_headers
+			if CTF:
+				for dat in data:  dat.set_attr('ctf_applied',0)
+			write_headers(stack, data, list_of_particles)
+			#list_params= ['ID','xform.projection']
+			#write_select_headers(stack, data, list_params)
+			if CTF:
+				for dat in data:  dat.set_attr('ctf_applied', 1)
+	print_end_msg("ali3d")
+
 def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
             xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an = "-1", apsi = "-1", deltapsi = "-1", startpsi = "-1",
 	    center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym = "c1",  user_func_name = "ref_ali3d",
@@ -15597,18 +15790,17 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 			dpp = float( dpp )
 			dpp_half = dpp/2.0
 
+			Torg = []
 			for ivol in xrange(nfils):
 
 				seg_start = indcs[ivol][0]
 				seg_end   = indcs[ivol][1]
-				Torg = []
 				for im in xrange( seg_start, seg_end ):
 					Torg.append(data[im].get_attr('xform.projection'))
 
 				#  Fit predicted locations as new starting points
 				if (seg_end - seg_start) > 1:
 					setfilori_SP(data[seg_start: seg_end], pixel_size, dp, dphi)
-
 
 			#  Generate list of reference angles, all nodes have the entire list
 			ref_angles = prepare_helical_refangles(delta[N_step], initial_theta =initial_theta, delta_theta = delta_theta)
@@ -15670,7 +15862,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 					data[im].set_attr("xform.projection", tp)
 					from utilities import get_params_proj
 					#print  "  PARAMS ",im,get_params_proj(data[im])
-					pixer[im]  = max_3D_pixel_error(Torg[im-seg_start], tp, last_ring)
+					pixer[im]  = max_3D_pixel_error(Torg[im], tp, last_ring)
 					data[im].set_attr("pixerr", pixer[im])
 
 				else:
