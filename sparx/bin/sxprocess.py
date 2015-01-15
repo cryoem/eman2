@@ -148,6 +148,10 @@ def main():
 		from utilities import get_params2D, model_circle
 		from fundamentals import rot_shift2D
 		from statistics import ccc
+		from time import time
+		from alignment import align2d
+		from multi_shc import mult_transform 
+		
 		stack = args[0]
 		new_stack = args[1]
 		
@@ -173,35 +177,17 @@ def main():
 			lend=len(d)
 			lccc=[None]*(lend*(lend-1)/2)
 			
+			t0 = time()
 			for i in xrange(lend):
-				for j in xrange(i+1,lend):
-					lccc[mono(i,j)] = ccc(d[i], d[j], mask)
-			
-			print lccc
-			
-			temp = d[init].copy()
-			temp.write_image(new_stack, 0)
-			del d[init]
-			k = 1
-			lsum = 0.0
-			while len(d) > 1:
-				print k, inds
-				maxcit = -111.
-				for i in xrange(len(d)):
-					cuc = ccc(d[i], temp, mask)
-# 					cuc = lccc[mono(ii,iinit)]
-					if cuc > maxcit:
-						maxcit = cuc
-						qi = i
-				# 	print k, maxcit
-				lsum += maxcit
-				temp = d[qi].copy()
-				del d[qi]
-				temp.write_image(new_stack, k)
-				k += 1
-			print  lsum
-			d[0].write_image(new_stack, k)
-			exit()		
+				for j in xrange(i+1, lend):
+					alpha, sx, sy, mir, peak = align2d(d[i],d[j], xrng=3, yrng=3, step=1, first_ring=1, last_ring=30, mode = "F")
+					T = Transform({"type":"2D","alpha":alpha,"tx":sx,"ty":sy,"mirror":mir,"scale":1.0})
+										
+					lccc[mono(i,j)] = ccc(d[i], d[j], mask), T
+					
+# 			print lccc
+			print "Time: %f" %(time() - t0)
+			sys.exit()		
 
 
 		if init > -1 :
