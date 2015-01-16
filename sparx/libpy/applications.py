@@ -15764,6 +15764,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 				start_time = time()
 				print_msg("\n (localhelicon_MPI) ITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.4f, xrange (Pixels) = %5.4f,stepx (Pixels) = %5.4f, yrng (Pixels) = %5.4f,  stepy (Pixels) = %5.4f, y_restrict (Pixels)=%5.4f, ynumber = %3d\n"\
 				%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step], stepx, yrng[N_step], stepy, y_restrict[N_step], ynumber[N_step]))
+				print  "ITERATION   ",total_iter
 
 			volft,kbv = prep_vol( vol )
 
@@ -15798,9 +15799,11 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 				for im in xrange( seg_start, seg_end ):
 					Torg.append(data[im].get_attr('xform.projection'))
 
+				'''
 				#  Fit predicted locations as new starting points
 				if (seg_end - seg_start) > 1:
 					setfilori_SP(data[seg_start: seg_end], pixel_size, dp, dphi)
+				'''
 
 			#  Generate list of reference angles, all nodes have the entire list
 			ref_angles = prepare_helical_refangles(delta[N_step], initial_theta =initial_theta, delta_theta = delta_theta)
@@ -15820,8 +15823,6 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 					seg_end   = indcs[ivol][1]
 
 					for im in xrange( seg_start, seg_end ):
-
-					
 
 						#  Here I have to figure for local search whether given image has to be matched with this refproj dir
 						ID = data[im].get_attr("ID")
@@ -15845,6 +15846,9 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 
 							#angb, tx, ty, pik = directaligridding1(dataft[im], kb, refrings, \
 							#	psi_max, psistep, xrng[N_step], yrng[N_step], stepx, stepy, direction)
+
+
+
 							#  Constrained search methodology
 							#		x - around previously found location tx +/- xrng[N_step] in stepx
 							#		y - around previously found location ty +/- yrng[N_step] in stepy
@@ -15852,6 +15856,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 							#		phi and theta are restricted by parameter an above.
 							#
 							#
+							print  "IMAGE  ",im
 							angb, tx, ty, pik = directaligriddingconstrained(dataft[im], kb, refrings, \
 								psi_max, psistep, xrng[N_step], yrng[N_step], stepx, stepy, psi, tx, ty, direction)
 
@@ -15894,7 +15899,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 
 			mpi_barrier(MPI_COMM_WORLD)
 
-			if (Iter-1) % search_iter == 0:
+			if (Iter-1) % search_iter == 0  and False:
 
 				if CTF:  vol = recons3d_4nn_ctf_MPI(myid, data, symmetry=sym, snr = snr, npad = npad)
 				else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, npad = npad)
