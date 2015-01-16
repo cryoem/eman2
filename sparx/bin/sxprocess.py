@@ -210,12 +210,8 @@ def main():
 				while len(indc) > 1:
 					maxcit = -111.
 					for i in xrange(len(indc)):
-							r=min(m,indc[i])
-							c=max(m,indc[i])
-							cuc1 = lcm[r][c][0]
-							cuc = ccc(d[indc[i]], temp, mask)
-							print cuc1, cuc
-# 							cuc = lccc[mono(indc[i], m)][0]
+# 							cuc = ccc(d[indc[i]], temp, mask)
+							cuc = lccc[mono(indc[i], m)][0]
 							if cuc > maxcit:
 									maxcit = cuc
 									qi = indc[i]
