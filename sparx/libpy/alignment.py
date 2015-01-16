@@ -2235,6 +2235,43 @@ def align2d(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rst
 	Util.Frngs(crefim, numr)
 	Util.Applyws(crefim, numr, wr)
 	return ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny)
+	
+
+def align2dshc(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rstep=1, mode = "F"):
+	"""  Determine shift and rotation between image and reference image
+	     quadratic interpolation
+	     Output: ang, sxs, sys, mirror, peak
+	"""
+	#from utilities import print_col
+	from alignment import Numrinit, ringwe
+	step = float(step)
+	nx = refim.get_xsize()
+	ny = refim.get_ysize()
+	MAX_XRNG = nx/2
+	MAX_YRNG=ny/2
+	if xrng >= MAX_XRNG:
+		ERROR('Translation search range in x is at most %d'%MAX_XRNG, "align2d ", 1)
+	if yrng >= MAX_YRNG:
+		ERROR('Translation search range in y is at most %d'%MAX_YRNG, "align2d ", 1)
+	if(last_ring == 0):  last_ring = nx/2-2-int(max(xrng,yrng))
+	# center in SPIDER convention
+	cnx = nx//2+1
+	cny = ny//2+1
+	#precalculate rings
+	numr = Numrinit(first_ring, last_ring, rstep, mode)
+	wr   = ringwe(numr, mode)
+	#cimage=Util.Polar2Dmi(refim, cnx, cny, numr, mode, kb)
+	crefim = Util.Polar2Dm(refim, cnx, cny, numr, mode)
+	#crefim = Util.Polar2D(refim, numr, mode)
+	#print_col(crefim)
+	Util.Frngs(crefim, numr)
+	Util.Applyws(crefim, numr, wr)
+	#return ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny)
+	return   Util.shc(image, [crefim], xrng, yrng, step, -1.0, mode, numr, cnx, cny, "c1")
+
+
+
+	
 """
 
 #MIRROR HAS A PROBLEM
