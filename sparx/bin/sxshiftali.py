@@ -1002,8 +1002,8 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 	
 	
 	#for b-spline
-	nknots = 10
-	nknots1 = 10
+	nknots =  9
+	nknots1 = 4
 	mknots = 1
 	
 	a0=[]
@@ -1015,16 +1015,18 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 		nsegs =  indcs[ifil][1]-indcs[ifil][0]
 		tttt=[0.0]*nsegs
  		nperiod = nsegs//2
-# 		for j in xrange(-nperiod,0):
-# 			a = 300.0/(nperiod*nperiod*nperiod) 
-# 			import random
-# 			shix=random.gauss(0, 50) #random.randint(-30, 30)
-# 			tttt[j+nperiod]= a * j*j*j  + shix
-# 		for j in xrange(0, nperiod):
-# 			shix=random.gauss(0, 50)  #random.randint(-30, 30)
-# 			tttt[j+nperiod] = 300.0/nperiod*j +shix
-		for i in xrange(nsegs):
-			tttt[i] = 0.0
+ 		
+ 		## construct a curve to do b-spline fitting.
+		for j in xrange(-nperiod,0):
+			a = nsegs*1.0/(nperiod*nperiod*nperiod) 
+			import random
+			shix=random.gauss(0, 50) #random.randint(-30, 30)
+			tttt[j+nperiod]= a * j*j*j # + shix
+		for j in xrange(0, nperiod):
+			shix=random.gauss(0, 50)  #random.randint(-30, 30)
+			tttt[j+nperiod] = nsegs*1.0/nperiod*j #+shix
+		#for i in xrange(nsegs):
+		#	tttt[i] = 0.0
 				
 		out_file = open("initcubic.txt", "w")
 		
@@ -1034,13 +1036,10 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 		
 		#a0[ifil],b0[ifil] = interpoLinecoeffs([paramsline[indcs[ifil][0]], 0], [paramsline[indcs[ifil][0]+1],0], pordera, porderb, nsegs)
 		
-		#for b-spline
+		#for b-spline fitting of tttt.
 		at = [0.0]*nsegs
 		at = tttt
-		#at=paramsline[indcs[ifil][0]:indcs[ifil][1]]
-		#Util.convertTocubicbsplineCoeffs(at, nknots, 1.e-10)
-		#for i in xrange(46):
-		#	at[i]=bspline(at,i-nperiod,46)
+		
 		from scipy import interpolate
 		iii=0
 		T=[0.0]*(nknots+nknots1-1+mknots-1)
@@ -1076,17 +1075,41 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 		tck=interpolate.splrep(U,AT,W, t=T[1:nknots+nknots1-1+mknots-2], k=3,s=0)
 		print tck
 		#at=interpolate.splev(u, tck, der=0, ext=0)
-		
+
+	## b-spline snake starting from a straight line. refine the coefficients of the b-spline.		
 	from utilities import amoeba
 	params0 = [0.0]*len(tck[1])
-	
-	
 	params=[0.0]*len(params0)
 	params = params0
+	from math import sin
 	
 	for ifil in xrange(nfils):
 		nsegs =  indcs[ifil][1]-indcs[ifil][0]	
+		##1.  using the true 1D ccfs.
 		ctx = CCF[ifil]
+		## track of the maximal value
+		maxccf = [0.0]*nsegs
+		for i in xrange(nsegs):
+			maxx = -10000
+			maxid = -1
+			for j in xrange(nx):
+				if maxx < ctx[i].get_value_at(j):
+					maxx = ctx[i].get_value_at(j)
+					maxid = j
+			maxccf[i] = maxid - nx//2	
+				
+		##2.   build ctx using gaussian function.
+		for im in xrange(indcs[ifil][0], indcs[ifil][1]):
+			for ix in xrange(-nxc, nxc):
+				#s = nsegs//2*sin((im-indcs[ifil][0]-nsegs//2)*1.0/nsegs*2*pi)
+				s = tttt[im-indcs[ifil][0]]  #maxccf[im-indcs[ifil][0]]
+				#print s
+				import random
+				sigma1=0.0001
+				ctx[im-indcs[ifil][0]].set_value_at(ix+nxc, gaussian(100, 100, s, ix)+random.gauss(0, sigma1)) 
+				print "signal=%f noise=%f"%(gaussian(100, 100, s, ix), random.gauss(0, sigma1))
+				#print s
+		## find the true snake.
 		maxccf = [0.0]*nsegs
 		for i in xrange(nsegs):
 			maxx = -10000
@@ -1101,8 +1124,8 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 			out_file.write( "%f\n" % (maxccf[i]) )
 		out_file.close()	
 		
+		## using amoeba to search the snake. starting from the straight line.
 		scale = [20.0]*len(params0)
-		
 		fval0 = flexhelicalali(params0, [ctx,params0, 0.0, nx//2, tck[0], 3, nsegs])
 		#print params
 		print "before  amoeba = %f"%fval0
@@ -1119,7 +1142,7 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 		out_file.write( "%f\n" % (at[i]) )
 	out_file.close()
 	
-	at = maxccf
+	#at = maxccf   #test for true snake.
 	#do the right linear extrapolation.
 	nextr=5
 	x=u[nsegs-nextr:nsegs]
@@ -1595,6 +1618,10 @@ def extrap1d(interpolator):
 		return array(map(pointwise, array(xs)))
 
 	return ufunclike
-		
+
+def gaussian(sigma, a, mu, x):
+	from math import sqrt, pi
+	return a*exp(-(x-mu)**2/(2.0*sigma**2))*1.0/(sigma*sqrt(2*pi))
+			
 if __name__ == "__main__":
 	main()
