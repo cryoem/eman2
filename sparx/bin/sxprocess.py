@@ -187,11 +187,6 @@ def main():
 					T = Transform({"type":"2D","alpha":alpha,"tx":sx,"ty":sy,"mirror":mir,"scale":1.0})
 
 					lccc[mono(i,j)] = [ccc(d[i], d[j], mask), T]
-					lcm[i][j] = [ccc(d[i], d[j], mask), T]
-					print i,j,mono(i,j)
-					
-			print lccc
-			print lcm
 			print "Time: %f" %(time() - t0)
 			
 # 			for k in xrange(lend-1,1,-1):
