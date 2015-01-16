@@ -176,24 +176,15 @@ def main():
 			from statistics import mono
 			lend=len(d)
 			lccc=[None]*(lend*(lend-1)/2)
-			lcm=[[[None] for i in xrange(lend)] for j in xrange(lend)]
-# 			print lcm
-# 			exit()
 			
-			t0 = time()
+# 			t0 = time()
 			for i in xrange(lend):				
 				for j in xrange(i+1, lend):
-					alpha, sx, sy, mir, peak = align2d(d[i],d[j], xrng=3, yrng=3, step=1, first_ring=1, last_ring=30, mode = "F")
+					alpha, sx, sy, mir, peak = align2d(d[i],d[j], xrng=3, yrng=3, step=1, first_ring=1, last_ring=radius, mode = "F")
 					T = Transform({"type":"2D","alpha":alpha,"tx":sx,"ty":sy,"mirror":mir,"scale":1.0})
 
-					lccc[mono(i,j)] = [ccc(d[i], d[j], mask), T]
-			print "Time: %f" %(time() - t0)
-			
-# 			for k in xrange(lend-1,1,-1):
-# 				for i in xrange(k):
-# 					h
-# 			
-			
+ 					lccc[mono(i,j)] = [ccc(d[i], d[j], mask), T]
+# 			print "Time: %f" %(time() - t0)
 			
 			maxsum = -1.023
 			for m in xrange(len(d)):
@@ -205,7 +196,6 @@ def main():
 				while len(indc) > 1:
 					maxcit = -111.
 					for i in xrange(len(indc)):
-# 							cuc = ccc(d[indc[i]], temp, mask)
 							cuc = lccc[mono(indc[i], m)][0]
 							if cuc > maxcit:
 									maxcit = cuc
@@ -224,6 +214,19 @@ def main():
 					snake = [lsnake[i] for i in xrange(len(d))]
 			print  "  Initial image selected : ",init,maxsum
 			print lsnake
+			
+			ltrans=[Transform()]*len(d)
+			for m in xrange(len(d)):  ltrans[m] = lccc[mono(snake[m],init)][1]
+
+			for k in xrange(len(d)-1,1,-1):
+				for i in xrange(k):
+					ltrans[i] = ltrans[i]*ltrans[k]
+			
+			for m in xrange(1,len(d)):
+				prms = ltrans[m].get_params("2D")			
+				print m, prms, ltrans[m]	
+				d[m] = rot_shift2D(d[m], prms["alpha"], prms["tx"], prms["ty"], prms["mirror"], prms["scale"])
+			
 			for m in xrange(len(d)):  d[snake[m]].write_image(new_stack, m)
 			
 			sys.exit()		
