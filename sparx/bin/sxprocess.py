@@ -176,17 +176,65 @@ def main():
 			from statistics import mono
 			lend=len(d)
 			lccc=[None]*(lend*(lend-1)/2)
+			lcm=[[[None] for i in xrange(lend)] for j in xrange(lend)]
+# 			print lcm
+# 			exit()
 			
 			t0 = time()
-			for i in xrange(lend):
+			for i in xrange(lend):				
 				for j in xrange(i+1, lend):
 					alpha, sx, sy, mir, peak = align2d(d[i],d[j], xrng=3, yrng=3, step=1, first_ring=1, last_ring=30, mode = "F")
 					T = Transform({"type":"2D","alpha":alpha,"tx":sx,"ty":sy,"mirror":mir,"scale":1.0})
-										
-					lccc[mono(i,j)] = ccc(d[i], d[j], mask), T
+
+					lccc[mono(i,j)] = [ccc(d[i], d[j], mask), T]
+					lcm[i][j] = [ccc(d[i], d[j], mask), T]
+					print i,j,mono(i,j)
 					
-# 			print lccc
+			print lccc
+			print lcm
 			print "Time: %f" %(time() - t0)
+			
+# 			for k in xrange(lend-1,1,-1):
+# 				for i in xrange(k):
+# 					h
+# 			
+			
+			
+			maxsum = -1.023
+			for m in xrange(len(d)):
+				indc = range(len(d) )
+				lsnake = [m]
+				del indc[m]
+				temp = d[m].copy()
+				lsum = 0.0
+				while len(indc) > 1:
+					maxcit = -111.
+					for i in xrange(len(indc)):
+							r=min(m,indc[i])
+							c=max(m,indc[i])
+							cuc1 = lcm[r][c][0]
+							cuc = ccc(d[indc[i]], temp, mask)
+							print cuc1, cuc
+# 							cuc = lccc[mono(indc[i], m)][0]
+							if cuc > maxcit:
+									maxcit = cuc
+									qi = indc[i]
+					lsnake.append(qi)
+					lsum += maxcit
+					temp = d[qi].copy()
+					del indc[indc.index(qi)]
+
+				lsnake.append(indc[-1])
+				#print  " initial image and lsum  ",m,lsum
+				#print lsnake
+				if(lsum > maxsum):
+					maxsum = lsum
+					init = m
+					snake = [lsnake[i] for i in xrange(len(d))]
+			print  "  Initial image selected : ",init,maxsum
+			print lsnake
+			for m in xrange(len(d)):  d[snake[m]].write_image(new_stack, m)
+			
 			sys.exit()		
 
 
