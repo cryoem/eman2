@@ -19021,7 +19021,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
     vector<float> n2;
     vector<float> n3;
  //cout << ant <<endl;
-     if( ant >= 0.0) {
+    if( ant >= 0.0) {
         t = image->get_attr("xform.projection");
         n1.resize((int)crefim_len);
         n2.resize((int)crefim_len);
@@ -20001,7 +20001,7 @@ vector<float> Util::multiref_polar_ali_helicon_90_local(EMData* image, const vec
 			if (ynumber > 0) {
 				ky = int(ynumber/2);
 			} else {
-				ky = int(2*yrng/stepy+0.5)/2;	
+				ky = int(2*yrng/stepy+0.5)/2;
 			}
 		}
 	}

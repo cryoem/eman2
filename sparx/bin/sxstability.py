@@ -83,7 +83,6 @@ def main():
 		from utilities import model_circle, get_params2D, set_params2D
 		mask = model_circle(ou, nx, nx)
 
-		print "%14s %20s %20s %20s %20s"%("", "Mirror stab rate", "Pixel error", "Size of stable set", "Size of set")
 		if options.CTF :
 			from filter import filt_ctf
 			for im in xrange(len(class_data)):
@@ -137,30 +136,32 @@ def main():
 		"""
 
 		stable_set, mir_stab_rate, pix_err = multi_align_stability(all_ali_params, 0.0, 10000.0, options.thld_err, options.verbose, 2*ou+1)
+		print "%14s %20s %20s %20s %20s"%("", "Mirror stab rate", "Pixel error", "Size of stable set", "Size of set")
 		print "Average stat: %20.3f %20.3f %20d %20d"%(mir_stab_rate, pix_err, len(stable_set), len(class_data))
-		if options.stables:
-			stab_mem = [[0,0.0,0] for j in xrange(len(stable_set))]
-			for j in xrange(len(stable_set)): stab_mem[j] = [int(stable_set[j][1]), stable_set[j][0], j]
-			write_text_row(stab_mem, "stable_particles.txt")
+		if( len(stable_set) > 0):
+			if options.stables:
+				stab_mem = [[0,0.0,0] for j in xrange(len(stable_set))]
+				for j in xrange(len(stable_set)): stab_mem[j] = [int(stable_set[j][1]), stable_set[j][0], j]
+				write_text_row(stab_mem, "stable_particles.txt")
 
-		stable_set_id = []
-		particle_pixerr = []
-		for s in stable_set:
-			stable_set_id.append(s[1])
-			particle_pixerr.append(s[0])
-		from fundamentals import rot_shift2D
-		avet.to_zero()
-		l = -1
-		print "average params"
-		for j in stable_set_id:
-			l += 1
-			print l,j, stable_set[l][2][0], stable_set[l][2][1], stable_set[l][2][2], stable_set[l][2][3]
-			avet += rot_shift2D(class_data[j], stable_set[l][2][0], stable_set[l][2][1], stable_set[l][2][2], stable_set[l][2][3] )
-		avet /= (l+1)
-		avet.set_attr('members', stable_set_id)
-		avet.set_attr('pix_err', pix_err)
-		avet.set_attr('pixerr', particle_pixerr)
-		avet.write_image(fofo)
+			stable_set_id = []
+			particle_pixerr = []
+			for s in stable_set:
+				stable_set_id.append(s[1])
+				particle_pixerr.append(s[0])
+			from fundamentals import rot_shift2D
+			avet.to_zero()
+			l = -1
+			print "average params"
+			for j in stable_set_id:
+				l += 1
+				print l,j, stable_set[l][2][0], stable_set[l][2][1], stable_set[l][2][2], stable_set[l][2][3]
+				avet += rot_shift2D(class_data[j], stable_set[l][2][0], stable_set[l][2][1], stable_set[l][2][2], stable_set[l][2][3] )
+			avet /= (l+1)
+			avet.set_attr('members', stable_set_id)
+			avet.set_attr('pix_err', pix_err)
+			avet.set_attr('pixerr', particle_pixerr)
+			avet.write_image(fofo)
 
 
 
