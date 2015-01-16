@@ -3195,7 +3195,7 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 	from alignment    import parabl
 	from EMAN2 import Processor
 	#print  "  directaligridding1  ",psimax, psistep, xrng, yrng, stepx, stepy, updown
-	print  "IN         %6.2f %6.2f  %6.2f"%(psiref, txref, tyref)
+	#print  "IN         %6.2f %6.2f  %6.2f"%(psiref, txref, tyref)
 
 	"""
 	M = inima.get_xsize()
@@ -3372,7 +3372,7 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
 		nalpha, ntx, nty, mirror = inverse_transform2(nalpha, ntx, nty, 0)
 		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
-	print  "OUT        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
+	#print  "OUT        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
 	return  nalpha, ntx, nty, peak
 
 

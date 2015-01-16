@@ -15856,7 +15856,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 							#		phi and theta are restricted by parameter an above.
 							#
 							#
-							print  "IMAGE  ",im
+							#print  "IMAGE  ",im
 							angb, tx, ty, pik = directaligriddingconstrained(dataft[im], kb, refrings, \
 								psi_max, psistep, xrng[N_step], yrng[N_step], stepx, stepy, psi, tx, ty, direction)
 
