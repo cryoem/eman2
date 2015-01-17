@@ -15799,11 +15799,9 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 				for im in xrange( seg_start, seg_end ):
 					Torg.append(data[im].get_attr('xform.projection'))
 
-				'''
 				#  Fit predicted locations as new starting points
 				if (seg_end - seg_start) > 1:
 					setfilori_SP(data[seg_start: seg_end], pixel_size, dp, dphi)
-				'''
 
 			#  Generate list of reference angles, all nodes have the entire list
 			ref_angles = prepare_helical_refangles(delta[N_step], initial_theta =initial_theta, delta_theta = delta_theta)
@@ -15899,7 +15897,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 
 			mpi_barrier(MPI_COMM_WORLD)
 
-			if (Iter-1) % search_iter == 0  and False:
+			if (Iter-1) % search_iter == 0 :
 
 				if CTF:  vol = recons3d_4nn_ctf_MPI(myid, data, symmetry=sym, snr = snr, npad = npad)
 				else:    vol = recons3d_4nn_MPI(myid, data, symmetry=sym, npad = npad)
