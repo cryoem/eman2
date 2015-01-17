@@ -61,12 +61,20 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomi
 		alphai, sxi, syi, scalei     = inverse_transform2(alpha, sx, sy)
 
 		# align current image to the reference
-		if random_method == "SA":
+		if random_method == "SA":# or True:
+			"""
 			peaks = ormq_peaks(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
 			[angt, sxst, syst, mirrort, peakt, select] = sim_anneal(peaks, T, step, mode, maxrin)
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
 			data[im].set_attr_dict({"select":select, "peak":peakt})
 			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
+			"""
+			olo = Util.shc(ima, [cimage], xrng, yrng, step, -1.0, mode, numr, cnx, cny, "c1")
+			mn = int(olo[3])
+			set_params2D(data[im], olo[:3]+[mn ,1.0], ali_params)
+			data[im].set_attr("previousmax",olo[5])
+			sxn = olo[1]
+			syn = olo[2]
 		else:
 			if nomirror:  [angt, sxst, syst, mirrort, peakt] = ornq(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
 			else:	      [angt, sxst, syst, mirrort, peakt] = ormq(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi, delta)

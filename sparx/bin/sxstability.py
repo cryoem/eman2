@@ -88,6 +88,7 @@ def main():
 			for im in xrange(len(class_data)):
 				class_data[im] = filt_ctf(class_data[im], class_data[im].get_attr("ctf"), binary=1)
 		for im in class_data:
+			im.set_attr("previousmax", -1.0e10)
 			try:
 				t = im.get_attr("xform.align2d") # if they are there, no need to set them!
 			except:
