@@ -31,7 +31,7 @@
 
 def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, init_iter, main_iter, iter_reali, \
 			  match_first, max_round, match_second, stab_ali, thld_err, indep_run, thld_grp, img_per_grp, \
-			  generation, candidatesexist = False, random_seed=None):
+			  generation, candidatesexist = False, random_seed=None, new = False):
 	from global_def   import ERROR, EMData, Transform
 	from pixel_error  import multi_align_stability
 	from utilities    import model_blank, write_text_file, get_params2D
@@ -73,6 +73,9 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	if os.path.exists(ali_params_dir):  
 		ERROR('Output directory %s for alignment parameters exists, please either change its name or delete it and restart the program'%ali_params_dir, "iter_isac", 1, myid)
 	mpi_barrier(MPI_COMM_WORLD)
+
+	if new: alimethod = "SHC"
+	else:   alimethod = ""
 
 	if myid == main_node:
 		print "****************************************************************************************************"
@@ -651,7 +654,8 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 			ali_params = [[] for j in xrange(stab_ali)]
 			for ii in xrange(stab_ali):
-				ave = within_group_refinement(class_data, None, True, ir, ou, rs, [xr], [yr], [ts], dst, maxit, FH, FF)
+				ave = within_group_refinement(class_data, None, True, ir, ou, rs, [xr], [yr], [ts], \
+												dst, maxit, FH, FF, method = alimethod)
 				for im in xrange(l_STB_PART):
 					alpha, sx, sy, mirror, scale = get_params2D(class_data[im])
 					ali_params[ii].extend([alpha, sx, sy, mirror])
@@ -920,7 +924,8 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 				set_params2D(refi[j], [0.0, 0.0, 0.0, 0, 1.0])	
 		
 		if myid == main_node:
-			dummy = within_group_refinement(refi, mask, True, first_ring, last_ring, rstep, [xrng], [yrng], [step], dst, maxit, FH, FF)
+			dummy = within_group_refinement(refi, mask, True, first_ring, last_ring, rstep, [xrng], [yrng], [step], \
+											dst, maxit, FH, FF, method = alimethod)
 			ref_ali_params = []
 			for j in xrange(numref):
 				alpha, sx, sy, mirror, scale = get_params2D(refi[j])
@@ -995,13 +1000,15 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 					randomize = True  # I think there is no reason not to be True
 					class_data = [alldata[im] for im in assign]
-					refi[j] = within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep, [xrng], [yrng], [step], dst, maxit, FH, FF)
+					refi[j] = within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep, [xrng], [yrng], [step], \
+														dst, maxit, FH, FF, method = alimethod)
 
 					if check_stability:
 						ali_params = [[] for qq in xrange(stab_ali)]
 						for ii in xrange(stab_ali):
 							if ii > 0:  # The first one does not have to be repeated
-								dummy = within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep, [xrng], [yrng], [step], dst, maxit, FH, FF)
+								dummy = within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep, [xrng], [yrng], [step], \
+																dst, maxit, FH, FF, method = alimethod)
 							for im in xrange(len(class_data)):
 								alpha, sx, sy, mirror, scale = get_params2D(class_data[im])
 								ali_params[ii].extend([alpha, sx, sy, mirror])
@@ -1050,7 +1057,8 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 			else:
 				# ================================================ more complicated approach is used - runs of within_group_refinement are scattered among MPI processes
-				refi = isac_stability_check_mpi(alldata, numref, belongsto, stab_ali, thld_err, mask, first_ring, last_ring, rstep, xrng, yrng, step, dst, maxit, FH, FF, comm)
+				refi = isac_stability_check_mpi(alldata, numref, belongsto, stab_ali, thld_err, mask, first_ring, last_ring, rstep, xrng, yrng, step, \
+												dst, maxit, FH, FF, alimethod, comm)
 
 			for j in xrange(numref):
 				bcast_EMData_to_all(refi[j], myid, j%number_of_proc, comm)
@@ -1101,7 +1109,8 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 # All MPI processes must have the same values of all parameters
 # This function returns list of references images with numref elements, elements with index holds (index % mpi_comm_size(comm) == mpi_comm_rank(comm)) contains corresponding reference images, 
 # rest of elements contains blank images
-def isac_stability_check_mpi(alldata, numref, belongsto, stab_ali, thld_err, mask, first_ring, last_ring, rstep, xrng, yrng, step, dst, maxit, FH, FF, comm):
+def isac_stability_check_mpi(alldata, numref, belongsto, stab_ali, thld_err, mask, first_ring, last_ring, rstep, xrng, yrng, step, \
+								dst, maxit, FH, FF, alimethod, comm):
 	from applications import within_group_refinement
 	from mpi		  import mpi_comm_size, mpi_comm_rank, mpi_barrier, mpi_bcast, mpi_send, mpi_recv, MPI_FLOAT, MPI_TAG_UB
 	from pixel_error  import multi_align_stability
@@ -1146,7 +1155,8 @@ def isac_stability_check_mpi(alldata, numref, belongsto, stab_ali, thld_err, mas
 	for ig in xrange(numref):
 		for ii in xrange(stab_ali):
 			if grp_run_to_mpi_id[ig][ii] == myid:
-				within_group_refinement(grp_images[ig], mask, True, first_ring, last_ring, rstep, [xrng], [yrng], [step], dst, maxit, FH, FF)
+				within_group_refinement(grp_images[ig], mask, True, first_ring, last_ring, rstep, [xrng], [yrng], [step], \
+											dst, maxit, FH, FF, method = alimethod)
 				for im in (grp_images[ig]):
 					alpha, sx, sy, mirror, scale = get_params2D(im)
 					grp_run_to_ali_params[ig][ii].extend([alpha, sx, sy, mirror])

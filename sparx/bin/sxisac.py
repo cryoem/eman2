@@ -71,6 +71,7 @@ def main():
 	parser.add_option("--generation",     type="int",          default=1,       help="the n-th approach on the dataset ")
 	parser.add_option("--candidatesexist",action="store_true", default=False,   help="Candidate class averages exist use them (default False)")
 	parser.add_option("--rand_seed",      type="int",          default=None,    help="random seed set before calculations, useful for testing purposes (default None - total randomness)")
+	parser.add_option("--new",            action="store_true", default=False,   help="use new code (default = False)")
 	parser.add_option("--MPI",            action="store_true", default=True,    help="use MPI version (default=True, currently False is not supported)")
 	(options, args) = parser.parse_args()
 
@@ -92,7 +93,7 @@ def main():
 	iter_isac(args[0], options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.maxit, options.CTF, options.snr, \
 		options.dst, options.FL, options.FH, options.FF, options.init_iter, options.main_iter, options.iter_reali, options.match_first, \
 		options.max_round, options.match_second, options.stab_ali, options.thld_err, options.indep_run, options.thld_grp, \
-		options.img_per_grp, options.generation, options.candidatesexist, random_seed=options.rand_seed)
+		options.img_per_grp, options.generation, options.candidatesexist, random_seed=options.rand_seed, options.new)
 	global_def.BATCH = False
 
 	if options.MPI:

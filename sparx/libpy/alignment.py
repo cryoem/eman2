@@ -49,6 +49,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomi
 	maxrin = numr[-1]
 	sx_sum = 0.0
 	sy_sum = 0.0
+	nope = 0
 	for im in xrange(len(data)):
 		if CTF:
 			#Apply CTF to image
@@ -61,7 +62,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomi
 		alphai, sxi, syi, scalei     = inverse_transform2(alpha, sx, sy)
 
 		# align current image to the reference
-		if random_method == "SA":# or True:
+		if random_method == "SHC":
 			"""
 			peaks = ormq_peaks(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
 			[angt, sxst, syst, mirrort, peakt, select] = sim_anneal(peaks, T, step, mode, maxrin)
@@ -69,12 +70,27 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomi
 			data[im].set_attr_dict({"select":select, "peak":peakt})
 			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
 			"""
-			olo = Util.shc(ima, [cimage], xrng, yrng, step, -1.0, mode, numr, cnx, cny, "c1")
-			mn = int(olo[3])
-			set_params2D(data[im], olo[:3]+[mn ,1.0], ali_params)
-			data[im].set_attr("previousmax",olo[5])
-			sxn = olo[1]
-			syn = olo[2]
+			#  For shc combining of shifts is problematic as the image may randomly slide away and never come back.
+			#  A possibility would be to reject moves that results in too large departure from the center.
+			#  On the other hand, one cannot simply do searches around the proper center all the time,
+			#    as if xr is decreased, the image cannot be brought back if the established shifts are further than new range
+			olo = Util.shc(ima, [cimage], xrng, yrng, step, -1.0, mode, numr, cnx+sxi, cny+syi, "c1")
+			if(data[im].get_attr("previousmax")<olo[5]):
+				angt = olo[0]
+				sxst = olo[1]
+				syst = olo[2]
+				mirrort = int(olo[3])
+				# combine parameters and set them to the header, ignore previous angle and mirror
+				[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
+				set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
+				data[im].set_attr("previousmax",olo[5])
+				sxn = olo[1]
+				syn = olo[2]
+				if mn == 0: sx_sum += sxn
+				else:       sx_sum -= sxn
+				sy_sum += syn
+			else:
+				nope += 1
 		else:
 			if nomirror:  [angt, sxst, syst, mirrort, peakt] = ornq(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
 			else:	      [angt, sxst, syst, mirrort, peakt] = ormq(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi, delta)
@@ -82,11 +98,11 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomi
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
 			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
 
-		if mn == 0: sx_sum += sxn
-		else:       sx_sum -= sxn
-		sy_sum += syn
+			if mn == 0: sx_sum += sxn
+			else:       sx_sum -= sxn
+			sy_sum += syn
 
-	return sx_sum, sy_sum
+	return sx_sum, sy_sum, nope
 
 
 def ali2d_single_iter_fast(data, dimage, params, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, maxrange, nomirror = False, mode="F", random_method="", T=1.0, ali_params="xform.align2d", delta = 0.0):

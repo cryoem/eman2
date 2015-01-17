@@ -348,7 +348,7 @@ def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 				sy_sum = all_ali_params[-1]
 				for im in xrange(len(data)):  all_ali_params[im*4+3] = int(all_ali_params[im*4+3])
 			else:
-				sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], nomirror=nomirror, mode=mode, CTF=CTF, delta=delta)
+				sx_sum, sy_sum, nope = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], nomirror=nomirror, mode=mode, CTF=CTF, delta=delta)
 
 			pixel_error = 0.0
 			mirror_consistent = 0
@@ -719,7 +719,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 					sy_sum = all_ali_params[-1]
 					for im in xrange(len(data)):  all_ali_params[im*4+3] = int(all_ali_params[im*4+3])
 				else:	
-					sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], nomirror=nomirror, mode=mode, CTF=CTF, delta=delta)
+					sx_sum, sy_sum, nope = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], nomirror=nomirror, mode=mode, CTF=CTF, delta=delta)
 					
 				sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 				sy_sum = mpi_reduce(sy_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
@@ -1301,7 +1301,7 @@ def ORGali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1"
 					sy_sum = all_ali_params[-1]
 					for im in xrange(len(data)):  all_ali_params[im*4+3] = int(all_ali_params[im*4+3])
 				else:	
-					sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF)
+					sx_sum, sy_sum, nope = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode, CTF)
 					
 				sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 				sy_sum = mpi_reduce(sy_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
@@ -3027,7 +3027,7 @@ def ali2d_cross_res(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1
 			frsc = []
 			ktavg = [None]*NG
 			for k in xrange(NG):
-				ali2d_single_iter(data[k], numr, wr, cs[k], tavg[k], cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode=mode)
+				sxsum, sysum, nope = ali2d_single_iter(data[k], numr, wr, cs[k], tavg[k], cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode=mode)
 				av1, av2 = add_oe_series(data[k])
 				if(CTF):
 					tavg[k] = filt_table(Util.addn_img(av1, av2), ctfb2[k])
@@ -13957,15 +13957,15 @@ def ave_ali(name_stack, name_out = None, ali = False, active = False, param_to_s
 		ave.write_image(name_out, 0)
 
 
-def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, step, dst, maxit, FH, FF):
+def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, step, dst, maxit, FH, FF, method = ""):
 
 	# Comment by Zhengfan Yang 03/11/11
 	# This is a simple version of ali2d_data (down to the bone), no output dir, no logfile, no CTF, no MPI or CUDA, no Fourvar, no auto stop, no user function
 	
 	from alignment    import Numrinit, ringwe, ali2d_single_iter
-	from filter	  import filt_tanl
+	from filter	      import filt_tanl
 	from fundamentals import fshift
-	from random	  import randint, random
+	from random	      import randint, random
 	from statistics   import ave_series
 	from utilities    import get_input_from_string, model_circle, set_params2D, get_params2D, combine_params2, inverse_transform2
 
@@ -13976,7 +13976,7 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 	if maskfile: mask = maskfile
 	else: mask = model_circle(last_ring, nx, nx)
 
-	if randomize:
+	if randomize :
 		for im in data:
 			alpha, sx, sy, mirror, scale = get_params2D(im)
 			alphai, sxi, syi, mirrori    = inverse_transform2(alpha, sx, sy)
@@ -13993,20 +13993,43 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 	sy_sum = 0.0
 	cs = [0.0]*2
 	total_iter = 0
-	for N_step in xrange(len(xrng)):
-		for Iter in xrange(max_iter):
-			total_iter += 1
-			tavg = ave_series(data)
-			if( FH > 0.0):
-				fl = 0.1+(FH-0.1)*Iter/float(max_iter-1)
-				tavg = filt_tanl(tavg, fl, FF)
-			if total_iter == len(xrng)*max_iter:  return tavg
-			if( xrng[0] > 0.0 ): cs[0] = sx_sum/float(nima)
-			if( yrng[0] > 0.0 ): cs[1] = sy_sum/float(nima)
-			tavg = fshift(tavg, -cs[0], -cs[1])
-			if Iter%4 != 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0
-			else:                                                 delta = dst
-			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode=mode, CTF=False, delta=delta)
+	if(method == "SHC"):
+		for im in data:  im.set_attr('previousmax', -1.0e23)
+		for N_step in xrange(len(xrng)):
+			nope = 0
+			Iter = 0
+			while(nope < len(data) and Iter < max_iter ):
+				total_iter += 1
+				Iter += 1
+				tavg = ave_series(data)
+				if( FH > 0.0):
+					tavg = filt_tanl(tavg, FH, FF)
+				if( xrng[0] > 0.0 ): cs[0] = sx_sum/float(nima)
+				if( yrng[0] > 0.0 ): cs[1] = sy_sum/float(nima)
+				tavg = fshift(tavg, -cs[0], -cs[1])
+				sx_sum, sy_sum, nope = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], \
+				mode=mode, CTF=False, random_method = method)
+				#print total_iter,nope
+				#for i in data:  print "  ",i.get_attr('previousmax'),
+				#print "  "
+				#tavg.write_image('tata.hdf',total_iter-1)
+		#print  " Number of iterations done in ali2d ",total_iter
+		return tavg
+	else:
+		for N_step in xrange(len(xrng)):
+			for Iter in xrange(max_iter):
+				total_iter += 1
+				tavg = ave_series(data)
+				if( FH > 0.0):
+					fl = 0.1+(FH-0.1)*Iter/float(max_iter-1)
+					tavg = filt_tanl(tavg, fl, FF)
+				if total_iter == len(xrng)*max_iter:  return tavg
+				if( xrng[0] > 0.0 ): cs[0] = sx_sum/float(nima)
+				if( yrng[0] > 0.0 ): cs[1] = sy_sum/float(nima)
+				tavg = fshift(tavg, -cs[0], -cs[1])
+				if Iter%4 != 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0
+				else:                                                 delta = dst
+				sx_sum, sy_sum, nope = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode=mode, CTF=False, delta=delta)
 
 def within_group_refinement_fast(data, dimage, maskfile, randomize, ir, ou, rs, xrng, yrng, step, maxrange, dst, maxit, FH, FF):
 

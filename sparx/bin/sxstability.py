@@ -48,11 +48,13 @@ def main():
 	parser.add_option("--ts",           type="string"      ,     default="1 0.5",     help="step size of the translation search in both directions, search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional")
 	parser.add_option("--thld_err",     type="float",            default=0.75,        help="threshld of pixel error (default = 1.732)")
 	parser.add_option("--num_ali",      type="int",              default=5,           help="number of alignments performed for stability (default = 5)")
-	parser.add_option("--fl",           type="float"       ,     default=0.3,         help="cut-off frequency of hyperbolic tangent low-pass Fourier filter")
-	parser.add_option("--aa",           type="float"       ,     default=0.2,         help="fall-off of hyperbolic tangent low-pass Fourier filter")
-	parser.add_option("--CTF",          action="store_true",     default=False,       help="Consider CTF correction during the alignment ")
+	parser.add_option("--maxit",        type="int",              default=30,          help="number of iterations for each xr (default = 30)")
+	parser.add_option("--fl",           type="float"       ,     default=0.3,         help="cut-off frequency of hyperbolic tangent low-pass Fourier filter (default = 0.3)")
+	parser.add_option("--aa",           type="float"       ,     default=0.2,         help="fall-off of hyperbolic tangent low-pass Fourier filter (default = 0.2)")
+	parser.add_option("--CTF",          action="store_true",     default=False,       help="Use CTF correction during the alignment ")
 	parser.add_option("--verbose",      action="store_true",     default=False,       help="print individual pixel error (default = False)")
 	parser.add_option("--stables",		action="store_true",	 default=False,	      help="output the stable particles number in file")
+	parser.add_option("--method",		type="string"      ,	 default=" ",	      help="SHC (default when ommitted is standard method")
 	(options, args) = parser.parse_args()
 	if len(args) != 1 and len(args) != 2:
     		print "usage: " + usage
@@ -108,9 +110,11 @@ def main():
 				SY = []
 				MIRROR = []
 			if( xrng[0] == 0.0 and yrng[0] == 0.0 ):
-				avet = ali2d_ras(class_data, randomize = True, ir = 1, ou = ou, rs = 1, step = 1.0, dst = 90.0, maxit = 30, check_mirror = True, FH=options.fl, FF=options.aa)
+				avet = ali2d_ras(class_data, randomize = True, ir = 1, ou = ou, rs = 1, step = 1.0, dst = 90.0, \
+						maxit = options.maxit, check_mirror = True, FH=options.fl, FF=options.aa)
 			else:
-				avet = within_group_refinement(class_data, mask, True, 1, ou, 1, xrng, yrng, step, 90.0, 30, options.fl, options.aa)
+				avet = within_group_refinement(class_data, mask, True, 1, ou, 1, xrng, yrng, step, 90.0, \
+						maxit = options.maxit, FH=options.fl, FF=options.aa, method = options.method)
 			for im in class_data:
 				alpha, sx, sy, mirror, scale = get_params2D(im)
 				ali_params.extend([alpha, sx, sy, mirror])
