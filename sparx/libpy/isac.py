@@ -1001,14 +1001,14 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 					randomize = True  # I think there is no reason not to be True
 					class_data = [alldata[im] for im in assign]
 					refi[j] = within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep, [xrng], [yrng], [step], \
-														dst, maxit, FH, FF, method = alimethod)
+														dst, maxit, FH, FF, method = method)
 
 					if check_stability:
 						ali_params = [[] for qq in xrange(stab_ali)]
 						for ii in xrange(stab_ali):
 							if ii > 0:  # The first one does not have to be repeated
 								dummy = within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep, [xrng], [yrng], [step], \
-																dst, maxit, FH, FF, method = alimethod)
+																dst, maxit, FH, FF, method = method)
 							for im in xrange(len(class_data)):
 								alpha, sx, sy, mirror, scale = get_params2D(class_data[im])
 								ali_params[ii].extend([alpha, sx, sy, mirror])
