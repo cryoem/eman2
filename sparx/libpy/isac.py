@@ -89,11 +89,11 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		print '*            Alignment and Clustering of 2D Transmission Electron Microscope Images",              *' 
 		print '*            Structure 20, 237-247, February 8, 2012.                                              *'
 		print "*                                                                                                  *"
-		print "* Last updated: 06/10/2014 PAP                                                                     *"
+		print "* Last updated: 01/17/2015 PAP                                                                     *"
 		print "****************************************************************************************************"
 		print "*                                       Generation %3d                                             *"%(generation)
 		print "****************************************************************************************************"
-		print ""
+		print " alignment method  ",alimethod
 
 	color = myid%indep_run
 	key = myid/indep_run
