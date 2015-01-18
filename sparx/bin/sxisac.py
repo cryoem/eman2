@@ -93,7 +93,7 @@ def main():
 	iter_isac(args[0], options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.maxit, options.CTF, options.snr, \
 		options.dst, options.FL, options.FH, options.FF, options.init_iter, options.main_iter, options.iter_reali, options.match_first, \
 		options.max_round, options.match_second, options.stab_ali, options.thld_err, options.indep_run, options.thld_grp, \
-		options.img_per_grp, options.generation, options.candidatesexist, random_seed=options.rand_seed, options.new)
+		options.img_per_grp, options.generation, options.candidatesexist, random_seed=options.rand_seed, new=options.new)
 	global_def.BATCH = False
 
 	if options.MPI:
