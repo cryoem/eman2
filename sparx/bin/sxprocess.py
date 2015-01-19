@@ -183,7 +183,7 @@ def main():
 					alpha, sx, sy, mir, peak = align2d(d[i],d[j], xrng=3, yrng=3, step=1, first_ring=1, last_ring=radius, mode = "F")
 					T = Transform({"type":"2D","alpha":alpha,"tx":sx,"ty":sy,"mirror":mir,"scale":1.0})
 
- 					lccc[mono(i,j)] = [ccc(d[i], d[j], mask), T]
+ 					lccc[mono(i,j)] = [ccc(d[j], rot_shift2D(d[i], alpha, sx, sy, mir, 1.0), mask), T]
 # 			print "Time: %f" %(time() - t0)
 			
 			maxsum = -1.023
@@ -191,18 +191,18 @@ def main():
 				indc = range(len(d) )
 				lsnake = [m]
 				del indc[m]
-				temp = d[m].copy()
+
 				lsum = 0.0
 				while len(indc) > 1:
 					maxcit = -111.
 					for i in xrange(len(indc)):
-							cuc = lccc[mono(indc[i], m)][0]
+							cuc = lccc[mono(indc[i], lsnake[-1])][0]
 							if cuc > maxcit:
 									maxcit = cuc
 									qi = indc[i]
 					lsnake.append(qi)
 					lsum += maxcit
-					temp = d[qi].copy()
+
 					del indc[indc.index(qi)]
 
 				lsnake.append(indc[-1])
@@ -213,18 +213,19 @@ def main():
 					init = m
 					snake = [lsnake[i] for i in xrange(len(d))]
 			print  "  Initial image selected : ",init,maxsum
-			print lsnake
+			print snake
 			
 			ltrans=[Transform()]*len(d)
-			for m in xrange(len(d)):  ltrans[m] = lccc[mono(snake[m],init)][1]
 
-			for k in xrange(len(d)-1,1,-1):
-				for i in xrange(k):
-					ltrans[i] = ltrans[i]*ltrans[k]
-			
 			for m in xrange(1,len(d)):
-				prms = ltrans[m].get_params("2D")			
-				print m, prms, ltrans[m]	
+				ltrans[m] = lccc[mono(snake[m-1], snake[m])][1]*ltrans[m-1]
+				mm=snake[m]
+				nn=snake[m-1]
+				print "snake[%d] = T%d%d * snake[%d]" %(m,mm,nn,m-1)
+
+			for m in xrange(1,len(d)):
+				prms = ltrans[m].get_params("2D")
+# 				print m, prms, ltrans[m]
 				d[m] = rot_shift2D(d[m], prms["alpha"], prms["tx"], prms["ty"], prms["mirror"], prms["scale"])
 			
 			for m in xrange(len(d)):  d[snake[m]].write_image(new_stack, m)
