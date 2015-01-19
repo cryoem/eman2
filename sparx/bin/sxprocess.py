@@ -109,7 +109,7 @@ def main():
 
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--order", action="store_true", help="Two arguments are required: name of input stack and desired name of output stack. The output stack is the input stack sorted by similarity in terms of cross-correlation coefficent.", default=False)
-	parser.add_option("--ordernew", action="store_true", help="Test/Debug.", default=False)	
+	parser.add_option("--order_lookup", action="store_true", help="Test/Debug.", default=False)	
 	parser.add_option("--initial", type="int", default=-1, help="Specifies which image will be used as an initial seed to form the chain. (default = 0, means the first image)")
 	parser.add_option("--circular", action="store_true", help="Select circular ordering (fisr image has to be similar to the last", default=False)
 	parser.add_option("--radius", type="int", default=-1, help="Radius of a circular mask for similarity based ordering")
@@ -172,67 +172,6 @@ def main():
 
 		init = options.initial
 		
-		if options.ordernew:
-			from statistics import mono
-			lend=len(d)
-			lccc=[None]*(lend*(lend-1)/2)
-			
-# 			t0 = time()
-			for i in xrange(lend):				
-				for j in xrange(i+1, lend):
-					alpha, sx, sy, mir, peak = align2d(d[i],d[j], xrng=3, yrng=3, step=1, first_ring=1, last_ring=radius, mode = "F")
-					T = Transform({"type":"2D","alpha":alpha,"tx":sx,"ty":sy,"mirror":mir,"scale":1.0})
-
- 					lccc[mono(i,j)] = [ccc(d[j], rot_shift2D(d[i], alpha, sx, sy, mir, 1.0), mask), T]
-# 			print "Time: %f" %(time() - t0)
-			
-			maxsum = -1.023
-			for m in xrange(len(d)):
-				indc = range(len(d) )
-				lsnake = [m]
-				del indc[m]
-
-				lsum = 0.0
-				while len(indc) > 1:
-					maxcit = -111.
-					for i in xrange(len(indc)):
-							cuc = lccc[mono(indc[i], lsnake[-1])][0]
-							if cuc > maxcit:
-									maxcit = cuc
-									qi = indc[i]
-					lsnake.append(qi)
-					lsum += maxcit
-
-					del indc[indc.index(qi)]
-
-				lsnake.append(indc[-1])
-				#print  " initial image and lsum  ",m,lsum
-				#print lsnake
-				if(lsum > maxsum):
-					maxsum = lsum
-					init = m
-					snake = [lsnake[i] for i in xrange(len(d))]
-			print  "  Initial image selected : ",init,maxsum
-			print snake
-			
-			ltrans=[Transform()]*len(d)
-
-			for m in xrange(1,len(d)):
-				ltrans[m] = lccc[mono(snake[m-1], snake[m])][1]*ltrans[m-1]
-				mm=snake[m]
-				nn=snake[m-1]
-				print "snake[%d] = T%d%d * snake[%d]" %(m,mm,nn,m-1)
-
-			for m in xrange(1,len(d)):
-				prms = ltrans[m].get_params("2D")
-# 				print m, prms, ltrans[m]
-				d[m] = rot_shift2D(d[m], prms["alpha"], prms["tx"], prms["ty"], prms["mirror"], prms["scale"])
-			
-			for m in xrange(len(d)):  d[snake[m]].write_image(new_stack, m)
-			
-			sys.exit()		
-
-
 		if init > -1 :
 			temp = d[init].copy()
 			temp.write_image(new_stack, 0)
@@ -255,75 +194,39 @@ def main():
 			print  lsum
 			d[0].write_image(new_stack, k)
 		else:
-			if options.circular :
-				#  figure the "best circular" starting image
-				maxsum = -1.023
-				for m in xrange(len(d)):
-					indc = range(len(d) )
-					lsnake = [-1]*(len(d)+1)
-					lsnake[0]  = m
-					lsnake[-1] = m
-					del indc[m]
-					temp = d[m].copy()
-					lsum = 0.0
-					direction = +1
-					k = 1
-					while len(indc) > 1:
-						maxcit = -111.
-						for i in xrange(len(indc)):
-								cuc = ccc(d[indc[i]], temp, mask)
-								if cuc > maxcit:
-										maxcit = cuc
-										qi = indc[i]
-						lsnake[k] = qi
-						lsum += maxcit
-						del indc[indc.index(qi)]
-						direction = -direction
-						for i in xrange( 1,len(d) ):
-							if( direction > 0 ):
-								if(lsnake[i] == -1):
-									temp = d[lsnake[i-1]].copy()
-									#print  "  forw  ",lsnake[i-1]
-									k = i
-									break
-							else:
-								if(lsnake[len(d) - i] == -1):
-									temp = d[lsnake[len(d) - i +1]].copy()
-									#print  "  back  ",lsnake[len(d) - i +1]
-									k = len(d) - i
-									break
-
-					lsnake[lsnake.index(-1)] = indc[-1]
-					#print  " initial image and lsum  ",m,lsum
-					#print lsnake
-					if(lsum > maxsum):
-						maxsum = lsum
-						init = m
-						snake = [lsnake[i] for i in xrange(len(d))]
-				print  "  Initial image selected : ",init,maxsum
-				print lsnake
-				for m in xrange(len(d)):  d[snake[m]].write_image(new_stack, m)
-			else:
-				#  figure the "best" starting image
+			if options.order_lookup:
+				from statistics import mono
+				lend=len(d)
+				lccc=[None]*(lend*(lend-1)/2)
+				
+	# 			t0 = time()
+				for i in xrange(lend):				
+					for j in xrange(i+1, lend):
+						alpha, sx, sy, mir, peak = align2d(d[i],d[j], xrng=3, yrng=3, step=1, first_ring=1, last_ring=radius, mode = "F")
+						T = Transform({"type":"2D","alpha":alpha,"tx":sx,"ty":sy,"mirror":mir,"scale":1.0})
+	
+	 					lccc[mono(i,j)] = [ccc(d[j], rot_shift2D(d[i], alpha, sx, sy, mir, 1.0), mask), T]
+	# 			print "Time: %f" %(time() - t0)
+				
 				maxsum = -1.023
 				for m in xrange(len(d)):
 					indc = range(len(d) )
 					lsnake = [m]
 					del indc[m]
-					temp = d[m].copy()
+	
 					lsum = 0.0
 					while len(indc) > 1:
 						maxcit = -111.
 						for i in xrange(len(indc)):
-								cuc = ccc(d[indc[i]], temp, mask)
+								cuc = lccc[mono(indc[i], lsnake[-1])][0]
 								if cuc > maxcit:
 										maxcit = cuc
 										qi = indc[i]
 						lsnake.append(qi)
 						lsum += maxcit
-						temp = d[qi].copy()
+	
 						del indc[indc.index(qi)]
-
+	
 					lsnake.append(indc[-1])
 					#print  " initial image and lsum  ",m,lsum
 					#print lsnake
@@ -332,8 +235,103 @@ def main():
 						init = m
 						snake = [lsnake[i] for i in xrange(len(d))]
 				print  "  Initial image selected : ",init,maxsum
-				print lsnake
+				print snake
+				
+				ltrans=[Transform()]*len(d)
+	
+				for m in xrange(1,len(d)):
+					ltrans[m] = lccc[mono(snake[m-1], snake[m])][1]*ltrans[m-1]
+	# 				mm=snake[m]
+	# 				nn=snake[m-1]
+	# 				print "snake[%d] = T%d%d * snake[%d]" %(m,mm,nn,m-1)
+	
+				for m in xrange(1,len(d)):
+					prms = ltrans[m].get_params("2D")
+	# 				print m, prms, ltrans[m]
+					d[m] = rot_shift2D(d[m], prms["alpha"], prms["tx"], prms["ty"], prms["mirror"], prms["scale"])
+				
 				for m in xrange(len(d)):  d[snake[m]].write_image(new_stack, m)
+
+			else:
+				if options.circular :
+					#  figure the "best circular" starting image
+					maxsum = -1.023
+					for m in xrange(len(d)):
+						indc = range(len(d) )
+						lsnake = [-1]*(len(d)+1)
+						lsnake[0]  = m
+						lsnake[-1] = m
+						del indc[m]
+						temp = d[m].copy()
+						lsum = 0.0
+						direction = +1
+						k = 1
+						while len(indc) > 1:
+							maxcit = -111.
+							for i in xrange(len(indc)):
+									cuc = ccc(d[indc[i]], temp, mask)
+									if cuc > maxcit:
+											maxcit = cuc
+											qi = indc[i]
+							lsnake[k] = qi
+							lsum += maxcit
+							del indc[indc.index(qi)]
+							direction = -direction
+							for i in xrange( 1,len(d) ):
+								if( direction > 0 ):
+									if(lsnake[i] == -1):
+										temp = d[lsnake[i-1]].copy()
+										#print  "  forw  ",lsnake[i-1]
+										k = i
+										break
+								else:
+									if(lsnake[len(d) - i] == -1):
+										temp = d[lsnake[len(d) - i +1]].copy()
+										#print  "  back  ",lsnake[len(d) - i +1]
+										k = len(d) - i
+										break
+	
+						lsnake[lsnake.index(-1)] = indc[-1]
+						#print  " initial image and lsum  ",m,lsum
+						#print lsnake
+						if(lsum > maxsum):
+							maxsum = lsum
+							init = m
+							snake = [lsnake[i] for i in xrange(len(d))]
+					print  "  Initial image selected : ",init,maxsum
+					print lsnake
+					for m in xrange(len(d)):  d[snake[m]].write_image(new_stack, m)
+				else:
+					#  figure the "best" starting image
+					maxsum = -1.023
+					for m in xrange(len(d)):
+						indc = range(len(d) )
+						lsnake = [m]
+						del indc[m]
+						temp = d[m].copy()
+						lsum = 0.0
+						while len(indc) > 1:
+							maxcit = -111.
+							for i in xrange(len(indc)):
+									cuc = ccc(d[indc[i]], temp, mask)
+									if cuc > maxcit:
+											maxcit = cuc
+											qi = indc[i]
+							lsnake.append(qi)
+							lsum += maxcit
+							temp = d[qi].copy()
+							del indc[indc.index(qi)]
+	
+						lsnake.append(indc[-1])
+						#print  " initial image and lsum  ",m,lsum
+						#print lsnake
+						if(lsum > maxsum):
+							maxsum = lsum
+							init = m
+							snake = [lsnake[i] for i in xrange(len(d))]
+					print  "  Initial image selected : ",init,maxsum
+					print lsnake
+					for m in xrange(len(d)):  d[snake[m]].write_image(new_stack, m)
 			
 		
 	if options.phase_flip:
