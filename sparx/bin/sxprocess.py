@@ -202,6 +202,7 @@ def main():
 	# 			t0 = time()
 				for i in xrange(lend):				
 					for j in xrange(i+1, lend):
+					#  parameters cannot be hardwired
 						alpha, sx, sy, mir, peak = align2d(d[i],d[j], xrng=3, yrng=3, step=1, first_ring=1, last_ring=radius, mode = "F")
 						T = Transform({"type":"2D","alpha":alpha,"tx":sx,"ty":sy,"mirror":mir,"scale":1.0})
 	
@@ -238,7 +239,7 @@ def main():
 				print snake
 				
 				ltrans=[Transform()]*len(d)
-	
+				# this is not what I dictated you.
 				for m in xrange(1,len(d)):
 					ltrans[m] = lccc[mono(snake[m-1], snake[m])][1]*ltrans[m-1]
 	# 				mm=snake[m]
