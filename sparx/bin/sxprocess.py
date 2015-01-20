@@ -493,10 +493,13 @@ def main():
 		
 		ltrans=[Transform()]*len(d)
 		
-		# this is not what I dictated you.
-		for m in xrange(1,len(d)):
-			ltrans[m] = lccc[mono(snake[m-1], snake[m])][1]*ltrans[m-1]
+		for k in xrange(len(d)-1):
+			ltrans[m] = lccc[mono(snake[k],snake[k+1])][1]
 
+			for k in xrange(len(d)-2,-1,-1):
+ 				for i in xrange(k):
+					ltrans[i] = ltrans[i]*ltrans[k]
+		
 		for m in xrange(1,len(d)):
 			prms = ltrans[m].get_params("2D")
 			d[m] = rot_shift2D(d[m], prms["alpha"], prms["tx"], prms["ty"], prms["mirror"], prms["scale"])
