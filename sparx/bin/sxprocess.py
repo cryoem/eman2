@@ -38,6 +38,150 @@ from	EMAN2 		import EMUtil, parsemodopt, EMAN2Ctf
 from    EMAN2jsondb import js_open_dict
 
 from	utilities 	import *
+from statistics import mono
+
+""" Traveling salesman problem solved using Simulated Annealing.
+"""
+from scipy import *
+from pylab import *
+
+def Distance(im1, im2, lccc):
+	i1=im1.get_attr("ID")
+	i2=im2.get_attr("ID")
+	
+	return lccc[mono(i1,i2)][0]
+# 	return sqrt((R1[0]-R2[0])**2+(R1[1]-R2[1])**2)
+
+def TotalDistance(city, R, lccc):
+    dist=0
+    for i in range(len(city)-1):
+        dist += Distance(R[city[i]],R[city[i+1]], lccc)
+    dist += Distance(R[city[-1]],R[city[0]], lccc)
+    return dist
+    
+def reverse(city, n):
+    nct = len(city)
+    nn = (1+ ((n[1]-n[0]) % nct))/2 # half the lenght of the segment to be reversed
+    # the segment is reversed in the following way n[0]<->n[1], n[0]+1<->n[1]-1, n[0]+2<->n[1]-2,...
+    # Start at the ends of the segment and swap pairs of cities, moving towards the center.
+    for j in range(nn):
+        k = (n[0]+j) % nct
+        l = (n[1]-j) % nct
+        (city[k],city[l]) = (city[l],city[k])  # swap
+    
+def transpt(city, n):
+    nct = len(city)
+    
+    newcity=[]
+    # Segment in the range n[0]...n[1]
+    for j in range( (n[1]-n[0])%nct + 1):
+        newcity.append(city[ (j+n[0])%nct ])
+    # is followed by segment n[5]...n[2]
+    for j in range( (n[2]-n[5])%nct + 1):
+        newcity.append(city[ (j+n[5])%nct ])
+    # is followed by segment n[3]...n[4]
+    for j in range( (n[4]-n[3])%nct + 1):
+        newcity.append(city[ (j+n[3])%nct ])
+    return newcity
+
+def Plot(city, R, dist):
+    # Plot
+    Pt = [R[city[i]] for i in range(len(city))]
+    Pt += [R[city[0]]]
+    Pt = array(Pt)
+    title('Total distance='+str(dist))
+    plot(Pt[:,0], Pt[:,1], '-o')
+    show()
+
+def tsp(stack, lccc):
+
+#     ncity = 100        # Number of cities to visit
+    ncity = len(stack)        # Number of cities to visit
+    maxTsteps = 100    # Temperature is lowered not more than maxTsteps
+    Tstart = 0.2       # Starting temperature - has to be high enough
+    fCool = 0.9        # Factor to multiply temperature at each cooling step
+    maxSteps = 100*ncity     # Number of steps at constant temperature
+    maxAccepted = 10*ncity   # Number of accepted steps at constant temperature
+
+    Preverse = 0.5      # How often to choose reverse/transpose trial move
+
+    # Choosing city coordinates
+    R=[]  # coordinates of cities are choosen randomly
+    for i in range(ncity):
+#         R.append( [rand(),rand()] )
+        R.append( stack[i] )
+    R = array(R)
+            
+
+    # The index table -- the order the cities are visited.
+    city = range(ncity)
+    # Distance of the travel at the beginning
+    dist = TotalDistance(city, R, lccc)
+
+    # Stores points of a move
+    n = zeros(6, dtype=int)
+    nct = len(R) # number of cities
+    
+    T = Tstart # temperature
+
+#     Plot(city, R, dist)
+    
+    for t in range(maxTsteps):  # Over temperature
+
+        accepted = 0
+        for i in range(maxSteps): # At each temperature, many Monte Carlo steps
+            
+            while True: # Will find two random cities sufficiently close by
+                # Two cities n[0] and n[1] are choosen at random
+                n[0] = int((nct)*rand())     # select one city
+                n[1] = int((nct-1)*rand())   # select another city, but not the same
+                if (n[1] >= n[0]): n[1] += 1   #
+                if (n[1] < n[0]): (n[0],n[1]) = (n[1],n[0]) # swap, because it must be: n[0]<n[1]
+                nn = (n[0]+nct -n[1]-1) % nct  # number of cities not on the segment n[0]..n[1]
+                if nn>=3: break
+        
+            # We want to have one index before and one after the two cities
+            # The order hence is [n2,n0,n1,n3]
+            n[2] = (n[0]-1) % nct  # index before n0  -- see figure in the lecture notes
+            n[3] = (n[1]+1) % nct  # index after n2   -- see figure in the lecture notes
+            
+            if Preverse > rand(): 
+                # Here we reverse a segment
+                # What would be the cost to reverse the path between city[n[0]]-city[n[1]]?
+                de = Distance(R[city[n[2]]],R[city[n[1]]], lccc) + Distance(R[city[n[3]]],R[city[n[0]]], lccc) - Distance(R[city[n[2]]],R[city[n[0]]], lccc) - Distance(R[city[n[3]]],R[city[n[1]]], lccc)
+                
+                if de<0 or exp(-de/T)>rand(): # Metropolis
+                    accepted += 1
+                    dist += de
+                    reverse(city, n)
+            else:
+                # Here we transpose a segment
+                nc = (n[1]+1+ int(rand()*(nn-1)))%nct  # Another point outside n[0],n[1] segment. See picture in lecture nodes!
+                n[4] = nc
+                n[5] = (nc+1) % nct
+        
+                # Cost to transpose a segment
+                de = -Distance(R[city[n[1]]],R[city[n[3]]], lccc) - Distance(R[city[n[0]]],R[city[n[2]]], lccc) - Distance(R[city[n[4]]],R[city[n[5]]], lccc)
+                de += Distance(R[city[n[0]]],R[city[n[4]]], lccc) + Distance(R[city[n[1]]],R[city[n[5]]], lccc) + Distance(R[city[n[2]]],R[city[n[3]]], lccc)
+                
+                if de<0 or exp(-de/T)>rand(): # Metropolis
+                    accepted += 1
+                    dist += de
+                    city = transpt(city, n)
+                    
+            if accepted > maxAccepted: break
+
+        # Plot
+#         Plot(city, R, dist)
+            
+        print "T=%10.5f , distance= %10.5f , accepted steps= %d" %(T, dist, accepted)
+        T *= fCool             # The system is cooled down
+        if accepted == 0: break  # If the path does not want to change any more, we can stop
+
+        
+#     Plot(city, R, dist)
+	return city
+
 
 def main():
 	import sys
@@ -109,7 +253,8 @@ def main():
 
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--order", action="store_true", help="Two arguments are required: name of input stack and desired name of output stack. The output stack is the input stack sorted by similarity in terms of cross-correlation coefficent.", default=False)
-	parser.add_option("--order_lookup", action="store_true", help="Test/Debug.", default=False)	
+	parser.add_option("--order_lookup", action="store_true", help="Test/Debug.", default=False)
+	parser.add_option("--order_metropolis", action="store_true", help="Test/Debug.", default=False)
 	parser.add_option("--initial", type="int", default=-1, help="Specifies which image will be used as an initial seed to form the chain. (default = 0, means the first image)")
 	parser.add_option("--circular", action="store_true", help="Select circular ordering (fisr image has to be similar to the last", default=False)
 	parser.add_option("--radius", type="int", default=-1, help="Radius of a circular mask for similarity based ordering")
@@ -193,41 +338,76 @@ def main():
 				k += 1
 			print  lsum
 			d[0].write_image(new_stack, k)
-		else:
-			if options.order_lookup:
-				from statistics import mono
-				lend=len(d)
-				lccc=[None]*(lend*(lend-1)/2)
-				
-	# 			t0 = time()
-				for i in xrange(lend):				
-					for j in xrange(i+1, lend):
-					#  parameters cannot be hardwired
-						alpha, sx, sy, mir, peak = align2d(d[i],d[j], xrng=3, yrng=3, step=1, first_ring=1, last_ring=radius, mode = "F")
-						T = Transform({"type":"2D","alpha":alpha,"tx":sx,"ty":sy,"mirror":mir,"scale":1.0})
-	
-	 					lccc[mono(i,j)] = [ccc(d[j], rot_shift2D(d[i], alpha, sx, sy, mir, 1.0), mask), T]
-	# 			print "Time: %f" %(time() - t0)
-				
+		else:			
+			if options.circular :
+				#  figure the "best circular" starting image
+				maxsum = -1.023
+				for m in xrange(len(d)):
+					indc = range(len(d) )
+					lsnake = [-1]*(len(d)+1)
+					lsnake[0]  = m
+					lsnake[-1] = m
+					del indc[m]
+					temp = d[m].copy()
+					lsum = 0.0
+					direction = +1
+					k = 1
+					while len(indc) > 1:
+						maxcit = -111.
+						for i in xrange(len(indc)):
+								cuc = ccc(d[indc[i]], temp, mask)
+								if cuc > maxcit:
+										maxcit = cuc
+										qi = indc[i]
+						lsnake[k] = qi
+						lsum += maxcit
+						del indc[indc.index(qi)]
+						direction = -direction
+						for i in xrange( 1,len(d) ):
+							if( direction > 0 ):
+								if(lsnake[i] == -1):
+									temp = d[lsnake[i-1]].copy()
+									#print  "  forw  ",lsnake[i-1]
+									k = i
+									break
+							else:
+								if(lsnake[len(d) - i] == -1):
+									temp = d[lsnake[len(d) - i +1]].copy()
+									#print  "  back  ",lsnake[len(d) - i +1]
+									k = len(d) - i
+									break
+
+					lsnake[lsnake.index(-1)] = indc[-1]
+					#print  " initial image and lsum  ",m,lsum
+					#print lsnake
+					if(lsum > maxsum):
+						maxsum = lsum
+						init = m
+						snake = [lsnake[i] for i in xrange(len(d))]
+				print  "  Initial image selected : ",init,maxsum
+				print lsnake
+				for m in xrange(len(d)):  d[snake[m]].write_image(new_stack, m)
+			else:
+				#  figure the "best" starting image
 				maxsum = -1.023
 				for m in xrange(len(d)):
 					indc = range(len(d) )
 					lsnake = [m]
 					del indc[m]
-	
+					temp = d[m].copy()
 					lsum = 0.0
 					while len(indc) > 1:
 						maxcit = -111.
 						for i in xrange(len(indc)):
-								cuc = lccc[mono(indc[i], lsnake[-1])][0]
+								cuc = ccc(d[indc[i]], temp, mask)
 								if cuc > maxcit:
 										maxcit = cuc
 										qi = indc[i]
 						lsnake.append(qi)
 						lsum += maxcit
-	
+						temp = d[qi].copy()
 						del indc[indc.index(qi)]
-	
+
 					lsnake.append(indc[-1])
 					#print  " initial image and lsum  ",m,lsum
 					#print lsnake
@@ -236,104 +416,139 @@ def main():
 						init = m
 						snake = [lsnake[i] for i in xrange(len(d))]
 				print  "  Initial image selected : ",init,maxsum
-				print snake
-				
-				ltrans=[Transform()]*len(d)
-				# this is not what I dictated you.
-				for m in xrange(1,len(d)):
-					ltrans[m] = lccc[mono(snake[m-1], snake[m])][1]*ltrans[m-1]
-	# 				mm=snake[m]
-	# 				nn=snake[m-1]
-	# 				print "snake[%d] = T%d%d * snake[%d]" %(m,mm,nn,m-1)
-	
-				for m in xrange(1,len(d)):
-					prms = ltrans[m].get_params("2D")
-	# 				print m, prms, ltrans[m]
-					d[m] = rot_shift2D(d[m], prms["alpha"], prms["tx"], prms["ty"], prms["mirror"], prms["scale"])
-				
+				print lsnake
 				for m in xrange(len(d)):  d[snake[m]].write_image(new_stack, m)
+					
+	if options.order_lookup:
+		nargs = len(args)
+		if nargs != 2:
+			print "must provide name of input and output file!"
+			return
+		
+		print "Using Lookup Table"
+		from utilities import get_params2D, model_circle
+		from fundamentals import rot_shift2D
+		from statistics import ccc
+		from time import time
+		from alignment import align2d
+		from multi_shc import mult_transform 
+		
+		stack = args[0]
+		new_stack = args[1]
+		
+		d = EMData.read_images(stack)
+		try:
+			ttt = d[0].get_attr('xform.params2d')
+			for i in xrange(len(d)):
+				alpha, sx, sy, mirror, scale = get_params2D(d[i])
+				d[i] = rot_shift2D(d[i], alpha, sx, sy, mirror)
+		except:
+			pass
 
-			else:
-				if options.circular :
-					#  figure the "best circular" starting image
-					maxsum = -1.023
-					for m in xrange(len(d)):
-						indc = range(len(d) )
-						lsnake = [-1]*(len(d)+1)
-						lsnake[0]  = m
-						lsnake[-1] = m
-						del indc[m]
-						temp = d[m].copy()
-						lsum = 0.0
-						direction = +1
-						k = 1
-						while len(indc) > 1:
-							maxcit = -111.
-							for i in xrange(len(indc)):
-									cuc = ccc(d[indc[i]], temp, mask)
-									if cuc > maxcit:
-											maxcit = cuc
-											qi = indc[i]
-							lsnake[k] = qi
-							lsum += maxcit
-							del indc[indc.index(qi)]
-							direction = -direction
-							for i in xrange( 1,len(d) ):
-								if( direction > 0 ):
-									if(lsnake[i] == -1):
-										temp = d[lsnake[i-1]].copy()
-										#print  "  forw  ",lsnake[i-1]
-										k = i
-										break
-								else:
-									if(lsnake[len(d) - i] == -1):
-										temp = d[lsnake[len(d) - i +1]].copy()
-										#print  "  back  ",lsnake[len(d) - i +1]
-										k = len(d) - i
-										break
+		nx = d[0].get_xsize()
+		ny = d[0].get_ysize()
+		if options.radius < 1 : radius = nx//2-2
+		else:  radius = options.radius
+		mask = model_circle(radius, nx, ny)
+		
+		from statistics import mono
+		lend=len(d)
+		lccc=[None]*(lend*(lend-1)/2)
+
+		for i in xrange(lend):				
+			for j in xrange(i+1, lend):
+				alpha, sx, sy, mir, peak = align2d(d[i],d[j], xrng=3, yrng=3, step=1, first_ring=1, last_ring=radius, mode = "F")
+				T = Transform({"type":"2D","alpha":alpha,"tx":sx,"ty":sy,"mirror":mir,"scale":1.0})
+
+				lccc[mono(i,j)] = [ccc(d[j], rot_shift2D(d[i], alpha, sx, sy, mir, 1.0), mask), T]
+		
+		maxsum = -1.023
+		for m in xrange(len(d)):
+			indc = range(len(d) )
+			lsnake = [m]
+			del indc[m]
+
+			lsum = 0.0
+			while len(indc) > 1:
+				maxcit = -111.
+				for i in xrange(len(indc)):
+						cuc = lccc[mono(indc[i], lsnake[-1])][0]
+						if cuc > maxcit:
+								maxcit = cuc
+								qi = indc[i]
+				lsnake.append(qi)
+				lsum += maxcit
+
+				del indc[indc.index(qi)]
+
+			lsnake.append(indc[-1])
+			#print  " initial image and lsum  ",m,lsum
+			#print lsnake
+			if(lsum > maxsum):
+				maxsum = lsum
+				init = m
+				snake = [lsnake[i] for i in xrange(len(d))]
+		print  "  Initial image selected : ",init,maxsum
+		print snake
+		
+		ltrans=[Transform()]*len(d)
+		
+		# this is not what I dictated you.
+		for m in xrange(1,len(d)):
+			ltrans[m] = lccc[mono(snake[m-1], snake[m])][1]*ltrans[m-1]
+
+		for m in xrange(1,len(d)):
+			prms = ltrans[m].get_params("2D")
+			d[m] = rot_shift2D(d[m], prms["alpha"], prms["tx"], prms["ty"], prms["mirror"], prms["scale"])
+		
+		for m in xrange(len(d)):  d[snake[m]].write_image(new_stack, m)
+
+	if options.order_metropolis:
+		nargs = len(args)
+		if nargs != 2:
+			print "must provide name of input and output file!"
+			return
+		
+		print "Using Metropolis Algorithm"
+		from utilities import get_params2D, model_circle
+		from fundamentals import rot_shift2D
+		from statistics import ccc
+		from time import time
+		from alignment import align2d
+		from multi_shc import mult_transform 
+		
+		stack = args[0]
+		new_stack = args[1]
+		
+		d = EMData.read_images(stack)
+		try:
+			ttt = d[0].get_attr('xform.params2d')
+			for i in xrange(len(d)):
+				alpha, sx, sy, mirror, scale = get_params2D(d[i])
+				d[i] = rot_shift2D(d[i], alpha, sx, sy, mirror)
+		except:
+			pass
+
+		nx = d[0].get_xsize()
+		ny = d[0].get_ysize()
+		if options.radius < 1 : radius = nx//2-2
+		else:  radius = options.radius
+		mask = model_circle(radius, nx, ny)
+		
+		from statistics import mono
+		lend=len(d)
+		lccc=[None]*(lend*(lend-1)/2)
+		
+		for i in xrange(lend):				
+			for j in xrange(i+1, lend):
+				alpha, sx, sy, mir, peak = align2d(d[i],d[j], xrng=3, yrng=3, step=1, first_ring=1, last_ring=radius, mode = "F")
+				T = Transform({"type":"2D","alpha":alpha,"tx":sx,"ty":sy,"mirror":mir,"scale":1.0})
+
+				lccc[mono(i,j)] = [1.0-ccc(d[j], rot_shift2D(d[i], alpha, sx, sy, mir, 1.0), mask), T]
+
+		snake = tsp(d, lccc)
+		print snake
 	
-						lsnake[lsnake.index(-1)] = indc[-1]
-						#print  " initial image and lsum  ",m,lsum
-						#print lsnake
-						if(lsum > maxsum):
-							maxsum = lsum
-							init = m
-							snake = [lsnake[i] for i in xrange(len(d))]
-					print  "  Initial image selected : ",init,maxsum
-					print lsnake
-					for m in xrange(len(d)):  d[snake[m]].write_image(new_stack, m)
-				else:
-					#  figure the "best" starting image
-					maxsum = -1.023
-					for m in xrange(len(d)):
-						indc = range(len(d) )
-						lsnake = [m]
-						del indc[m]
-						temp = d[m].copy()
-						lsum = 0.0
-						while len(indc) > 1:
-							maxcit = -111.
-							for i in xrange(len(indc)):
-									cuc = ccc(d[indc[i]], temp, mask)
-									if cuc > maxcit:
-											maxcit = cuc
-											qi = indc[i]
-							lsnake.append(qi)
-							lsum += maxcit
-							temp = d[qi].copy()
-							del indc[indc.index(qi)]
-	
-						lsnake.append(indc[-1])
-						#print  " initial image and lsum  ",m,lsum
-						#print lsnake
-						if(lsum > maxsum):
-							maxsum = lsum
-							init = m
-							snake = [lsnake[i] for i in xrange(len(d))]
-					print  "  Initial image selected : ",init,maxsum
-					print lsnake
-					for m in xrange(len(d)):  d[snake[m]].write_image(new_stack, m)
-			
 		
 	if options.phase_flip:
 		nargs = len(args)
