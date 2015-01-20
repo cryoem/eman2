@@ -494,7 +494,7 @@ def main():
 		ltrans=[Transform()]*len(d)
 		
 		for k in xrange(len(d)-1):
-			ltrans[m] = lccc[mono(snake[k],snake[k+1])][1]
+			ltrans[k] = lccc[mono(snake[k],snake[k+1])][1]
 
 			for k in xrange(len(d)-2,-1,-1):
  				for i in xrange(k):
@@ -551,6 +551,22 @@ def main():
 
 		snake = tsp(d, lccc)
 		print snake
+		
+		ltrans=[Transform()]*len(d)
+		
+		for k in xrange(len(d)-1):
+			ltrans[k] = lccc[mono(snake[k],snake[k+1])][1]
+
+			for k in xrange(len(d)-2,-1,-1):
+ 				for i in xrange(k):
+					ltrans[i] = ltrans[i]*ltrans[k]
+		
+		for m in xrange(1,len(d)):
+			prms = ltrans[m].get_params("2D")
+			d[m] = rot_shift2D(d[m], prms["alpha"], prms["tx"], prms["ty"], prms["mirror"], prms["scale"])
+		
+		for m in xrange(len(d)):  d[snake[m]].write_image(new_stack, m)
+
 	
 		
 	if options.phase_flip:
