@@ -255,6 +255,7 @@ def main():
 	parser.add_option("--order", action="store_true", help="Two arguments are required: name of input stack and desired name of output stack. The output stack is the input stack sorted by similarity in terms of cross-correlation coefficent.", default=False)
 	parser.add_option("--order_lookup", action="store_true", help="Test/Debug.", default=False)
 	parser.add_option("--order_metropolis", action="store_true", help="Test/Debug.", default=False)
+	parser.add_option("--order_pca", action="store_true", help="Test/Debug.", default=False)
 	parser.add_option("--initial", type="int", default=-1, help="Specifies which image will be used as an initial seed to form the chain. (default = 0, means the first image)")
 	parser.add_option("--circular", action="store_true", help="Select circular ordering (fisr image has to be similar to the last", default=False)
 	parser.add_option("--radius", type="int", default=-1, help="Radius of a circular mask for similarity based ordering")
@@ -285,6 +286,7 @@ def main():
 	global_def.BATCH = True
 
 	if options.order:
+		print "Using options.order"
 		nargs = len(args)
 		if nargs != 2:
 			print "must provide name of input and output file!"
@@ -318,6 +320,7 @@ def main():
 		init = options.initial
 		
 		if init > -1 :
+			print "      initial image: %d" % init
 			temp = d[init].copy()
 			temp.write_image(new_stack, 0)
 			del d[init]
@@ -340,6 +343,7 @@ def main():
 			d[0].write_image(new_stack, k)
 		else:			
 			if options.circular :
+				print "Using options.circular"
 				#  figure the "best circular" starting image
 				maxsum = -1.023
 				for m in xrange(len(d)):
@@ -388,6 +392,7 @@ def main():
 				print lsnake
 				for m in xrange(len(d)):  d[snake[m]].write_image(new_stack, m)
 			else:
+				print "     Using options.order: else block"
 				#  figure the "best" starting image
 				maxsum = -1.023
 				for m in xrange(len(d)):
@@ -567,7 +572,108 @@ def main():
 		
 		for m in xrange(len(d)):  d[snake[m]].write_image(new_stack, m)
 
-	
+	if options.order_pca:
+		nargs = len(args)
+		if nargs != 2:
+			print "must provide name of input and output file!"
+			return
+		
+		print "Using PCA"
+		from utilities import get_params2D, model_circle
+		from fundamentals import rot_shift2D
+		from statistics import ccc
+		from time import time
+		from alignment import align2d
+		from multi_shc import mult_transform 
+		
+		stack = args[0]
+		new_stack = args[1]
+		
+		d = EMData.read_images(stack)
+		try:
+			ttt = d[0].get_attr('xform.params2d')
+			for i in xrange(len(d)):
+				alpha, sx, sy, mirror, scale = get_params2D(d[i])
+				d[i] = rot_shift2D(d[i], alpha, sx, sy, mirror)
+		except:
+			pass
+
+		nx = d[0].get_xsize()
+		ny = d[0].get_ysize()
+		if options.radius < 1 : radius = nx//2-2
+		else:  radius = options.radius
+		mask = model_circle(radius, nx, ny)
+		
+		from statistics import mono
+		lend=len(d)
+# 		mccc = [[[0.0, Transform()] for i in xrange(lend)] for j in xrange(lend)]
+		mccc = [[[0.0] for i in xrange(lend)] for j in xrange(lend)]
+		
+		for i in xrange(lend):				
+			for j in xrange(i+1, lend):
+				alpha, sx, sy, mir, peak = align2d(d[i],d[j], xrng=3, yrng=3, step=1, first_ring=1, last_ring=radius, mode = "F")
+				T = Transform({"type":"2D","alpha":alpha,"tx":sx,"ty":sy,"mirror":mir,"scale":1.0})
+
+# 				mccc[i][j] = [ccc(d[j], rot_shift2D(d[i], alpha, sx, sy, mir, 1.0), mask), T]
+				mccc[i][j] = ccc(d[j], rot_shift2D(d[i], alpha, sx, sy, mir, 1.0), mask)
+				
+				alpha, sx, sy, mir, peak = align2d(d[j],d[i], xrng=3, yrng=3, step=1, first_ring=1, last_ring=radius, mode = "F")
+				T = Transform({"type":"2D","alpha":alpha,"tx":sx,"ty":sy,"mirror":mir,"scale":1.0})
+
+# 				mccc[j][i] = [ccc(d[j], rot_shift2D(d[j], alpha, sx, sy, mir, 1.0), mask), T]
+				mccc[j][i] = ccc(d[j], rot_shift2D(d[j], alpha, sx, sy, mir, 1.0), mask)
+
+
+		def pca(cov):
+			from numpy import  linalg, argsort
+			""" assume one sample per column """
+			values, vecs = linalg.eigh(cov)
+			perm = argsort(-values)  # sort in descending order
+			return values[perm], vecs[:, perm]
+
+
+		from numpy import outer, zeros, float32, sqrt
+# 		d = zeros(3,float32)
+# 		
+# 		d = outer(d, d)
+# 		
+# 		
+# 		d[0][0] =136.77
+# 		d[0][1] = 79.15
+# 		d[0][2] = 37.13
+# 		
+# 		d[1][0] = 79.15
+# 		d[2][0] = 37.13
+# 		
+# 		
+# 		d[1][1] = 50.04
+# 		d[1][2] = 21.65
+# 		
+# 		d[2][1] = 21.65
+# 		
+# 		
+# 		d[2][2] = 13.26
+		
+		
+		lamb, eigv =  pca(mccc)
+		print lamb
+		print  eigv
+		
+		v = zeros(len(mccc),float32)
+		
+		for i in xrange(len(v)):  v[i] = sqrt(mccc[i][i])
+		
+		for j in xrange(len(v)):
+			for i in xrange(len(v)):
+				mccc[i][j] /= (v[i]*v[j])
+				print i,j,mccc[i][j]
+		lamb, eigv =  pca(mccc)
+		print lamb
+		print  eigv
+		
+		
+		from sys import exit
+		exit()
 		
 	if options.phase_flip:
 		nargs = len(args)
