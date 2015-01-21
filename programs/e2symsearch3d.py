@@ -40,72 +40,136 @@ import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] 
-	This program aligns a paricle to its symmetry axis. There are two algorithmic modes. A coarse search followed by simplex
-	minimization(not yet implimented) OR monte carlo course search followed by simplex minimization. The Goal is to align the paricle to its 
-	symmetry axis so symmetry can be applied for avergaing and for alignment speed up(it is only necessary to search over the
-	assymetric unit!
+	This program aligns a paricle to its symmetry axis. There are two algorithmic modes. 
+	A coarse search followed by simplex minimization (not yet implimented) OR monte carlo course 
+	search followed by simplex minimization. The Goal is to align the paricle to its 
+	symmetry axis so symmetry can be applied for avergaing and for alignment speed up 
+	(it is only necessary to search over one asymmetric unit!
 	"""
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_header(name="refineheader", help='Options below this label are specific to e2refine', title="### e2refine options ###", row=3, col=0, rowspan=1, colspan=2, mode="align")
-	parser.add_argument("--input", dest="input", default=None,type=str, help="The name of input volume or hdf stack of volumes", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=0, col=0, rowspan=1, colspan=2, mode="align")
-	parser.add_argument("--output", dest="output", default="e2symsearch3d_OUTPUT.hdf",type=str, help="The name of the output volume", guitype='strbox', filecheck=False, row=1, col=0, rowspan=1, colspan=2, mode="align")
-	parser.add_argument("--path",type=str,help="Name of path for output file",default='', guitype='strbox', row=2, col=0, rowspan=1, colspan=2, mode="align['initial_models']")
+	parser.add_header(name="symsearch3dheader", help="""Options below this label are specific to e2symsearch3d""", title="### e2symsearch3d options ###", row=3, col=0, rowspan=1, colspan=2)
+	
+	parser.add_argument("--input", dest="input", default=None,type=str, help="""The name of input volume or hdf stack of volumes""", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=0, col=0, rowspan=1, colspan=2)
+	
+	parser.add_argument("--output", dest="output", default="""e2symsearch3d_OUTPUT.hdf""",
+		type=str, help="The name of the output volume", guitype='strbox', filecheck=False, 
+		row=1, col=0, rowspan=1, colspan=2)
+	
+	parser.add_argument("--path",type=str,help="""Name of path for output file""",
+		default='', guitype='strbox', row=2, col=0, rowspan=1, colspan=2)
 
+	parser.add_argument("--sym", dest = "sym", default="c1", help = """Specify symmetry 
+		-choices are: c<n>, d<n>, h<n>, tet, oct, icos. For asymmetric reconstruction omit 
+		this option or specify c1.""", guitype='symbox', row=4, col=0, rowspan=1, colspan=2)
 	
-	parser.add_argument("--sym", dest = "sym", default="c1", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos. For asymmetric reconstruction omit this option or specify c1.", guitype='symbox', row=4, col=0, rowspan=1, colspan=2, mode="align")
-	
-	
-	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes. Default=0, no shrinking", guitype='shrinkbox', row=5, col=0, rowspan=1, colspan=1, mode="align")
+	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="""Optionally 
+		shrink the input particles by an integer amount prior to computing similarity scores. 
+		For speed purposes. Default=0, no shrinking""", guitype='shrinkbox', row=5, col=0, 
+		rowspan=1, colspan=1)
 
 	parser.add_argument("--mask",type=str,help="""Mask processor applied to particles before alignment. 
 		Default is mask.sharp:outer_radius=-2. IF using --clipali, make sure to express outer mask radii as negative 
-		pixels from the edge.""", returnNone=True, default="mask.sharp:outer_radius=-2", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=11, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+		pixels from the edge.""", returnNone=True, default="mask.sharp:outer_radius=-2", guitype='comboparambox', 
+		choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=11, col=0, 
+		rowspan=1, colspan=3)
 	
+	parser.add_argument("--maskfile",type=str,default=None,help="""Mask file (3D IMAGE) 
+		applied to particles before alignment. Must be in HDF format. Default is None.""")
 	
-	parser.add_argument("--maskfile",type=str,default=None,help="""Mask file (3D IMAGE) applied to particles 
-		before alignment. Must be in HDF format. Default is None.""")
+	parser.add_argument("--normproc",type=str,default='',help="""Normalization processor 
+		applied to particles before alignment. Default is to use normalize. 
+		If normalize.mask is used, results of the mask option will be passed in automatically. 
+		If you want to turn this option off specify \'None\'""")
 	
-	parser.add_argument("--normproc",type=str,default='',help="Normalization processor applied to particles before alignment. Default is to use normalize. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'")
+	parser.add_argument("--threshold",default='',type=str,help="""A threshold applied to 
+		the subvolumes after normalization. For example, --threshold=threshold.belowtozero:minval=0 
+		makes all negative pixels equal 0, so that they do not contribute to the correlation score.""", 
+		guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', 
+		row=10, col=0, rowspan=1, colspan=3)
 	
-	parser.add_argument("--threshold",default='',type=str,help="""A threshold applied to the subvolumes after normalization. 
-													For example, --threshold=threshold.belowtozero:minval=0 makes all negative pixels equal 0, so that they do not contribute to the correlation score.""", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--preprocess",default='',type=str,help="""Any processor (as in e2proc3d.py) 
+		to be applied to each volume prior to COARSE alignment. Not applied to aligned particles 
+		before averaging.""", guitype='comboparambox', 
+		choicelist='re_filter_list(dump_processors_list(),\'filter\')', 
+		row=10, col=0, rowspan=1, colspan=3)
 	
-	parser.add_argument("--preprocess",default='',type=str,help="Any processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	#parser.add_argument("--preprocessfine",type=str,help="Any processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.", default=None)
 	
-	parser.add_argument("--lowpass",type=str,default='',help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=17, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--lowpass",type=str,default='',help="""A lowpass filtering processor 
+		(as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. 
+		Not applied to aligned particles before averaging.""", guitype='comboparambox', 
+		choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=17, col=0, 
+		rowspan=1, colspan=3)
+	
 	#parser.add_argument("--lowpassfine",type=str,help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.", default=None)
 
-	parser.add_argument("--highpass",type=str,default='',help="A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=18, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--highpass",type=str,default='',help="""A highpass filtering processor 
+		(as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. 
+		Not applied to aligned particles before averaging.""", guitype='comboparambox', 
+		choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=18, col=0, 
+		rowspan=1, colspan=3)
+	
 	#parser.add_argument("--highpassfine",type=str,help="A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.", default=None)
 
-	parser.add_argument("--clipali",type=int,default=0,help="""Boxsize to clip particles as part of preprocessing
-		to speed up alignment. For example, the boxsize of the particles might be 100 pixels, but the particles are only 50 pixels 
-		in diameter. Aliasing effects are not always as deleterious for all specimens, and sometimes 2x padding isn't necessary;
-		still, there are some benefits from 'oversampling' the data during averaging; so you might still want an average of size
-		2x, but perhaps particles in a box of 1.5x are sufficiently good for alignment. In this case, you would supply --clipali=75""")
+	parser.add_argument("--clipali",type=int,default=0,help="""Boxsize to clip particles 
+		as part of preprocessing to speed up alignment. For example, the boxsize of the 
+		particles might be 100 pixels, but the particles are only 50 pixels in diameter. 
+		Aliasing effects are not always as deleterious for all specimens, and sometimes 2x 
+		padding isn't necessary; still, there are some benefits from 'oversampling' the 
+		data during averaging; so you might still want an average of size 2x, but perhaps 
+		particles in a box of 1.5x are sufficiently good for alignment. In this case, 
+		you would supply --clipali=75""")
 	
 	#parser.add_argument("--postprocess",type=str,help="A processor to be applied to the FINAL volume after averaging the raw volumes in their FINAL orientations, after all iterations are done.",default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=16, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
 	
-	parser.add_argument("--savepreprocessed",action="store_true", help="Will save stacks of preprocessed particles (one for coarse alignment and one for fine alignment if preprocessing options are different).", default=False)
+	parser.add_argument("--savepreprocessed",action="store_true", help="""Will save stacks 
+		of preprocessed particles (one for coarse alignment and one for fine alignment 
+		if preprocessing options are different).""", default=False)
 
+	parser.add_argument("--average",action='store_true',default=False,help="""If supplied and a stack
+		is provided through --input, the aveage of the aligned and/or symmetrized stack will also be saved. 
+		Default=False.""")
 	
+	parser.add_argument("--keep",type=float,default=1.0,help="""Fraction of particles to
+		include if --average is on, after correlating the particles with the average.""")
 	
-	parser.add_argument("--steps", dest="steps", type = int, default=10, help="Number of steps (for the MC)", guitype='intbox', row=5, col=1, rowspan=1, colspan=1, mode="align")
-	parser.add_argument("--symmetrize", default=False, action="store_true", help="Symmetrize volume after alignment.", guitype='boolbox', row=6, col=0, rowspan=1, colspan=1, mode="align")
-	parser.add_argument("--cmp",type=str,help="The name of a 'cmp' to be used in comparing the symmtrized object to unsymmetrized", default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=7, col=0, rowspan=1, colspan=2, mode="align")
-	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None, guitype='strbox', row=8, col=0, rowspan=1, colspan=2, mode="align")
-	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--avgiter",type=int,default=1,help="""Default=1. If --keep is different from 1.0
+		and --average is on, the initial average will include all the particles, but then 
+		the percent specified by keep will be kept (the rest thrown away) and a new average
+		will be computed. If --avgiter > 1, this new average will be compared again against 
+		all the particles. The procedure will be repeated for however many iterations --avgiter
+		is given, or the process will stop automatically if in two consecutive rounds exactly
+		the same particles are kept""") 
+	
+	parser.add_argument('--subset',type=int,default=0,help="""Number of particles in a subset 
+		of particles from the --input stack of particles to run the alignments on.""")
+	
+	parser.add_argument("--steps", dest="steps", type = int, default=10, help="""Number of 
+		steps (for the MC). Default=10.""", guitype='intbox', row=5, col=1, rowspan=1, colspan=1)
+	
+	parser.add_argument("--symmetrize", default=False, action="store_true", help="""Symmetrize 
+		volume after alignment.""", guitype='boolbox', row=6, col=0, rowspan=1, colspan=1)
+	
+	parser.add_argument("--cmp",type=str,help="""The name of a 'cmp' to be used in comparing 
+		the symmtrized object to unsymmetrized""", default="ccc", guitype='comboparambox', 
+		choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=7, col=0, rowspan=1, 
+		colspan=2)
+	
+	parser.add_argument("--parallel","-P",type=str,help="""Run in parallel, 
+		specify type:<option>=<value>:<option>:<value>""",default=None, guitype='strbox', 
+		row=8, col=0, rowspan=1, colspan=2)
+	
+	parser.add_argument("--ppid", type=int, help="""Set the PID of the parent process, 
+		used for cross platform PPID.""",default=-1)
 
-
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
-
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",
+		type=int, default=0, help="""verbose level [0-9], higner number means higher 
+		level of verboseness.""")
 
 	#parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
-
 	
 	parser.add_argument("--nopath",action='store_true',default=False,help="""If supplied,
 		this option will save results in the directory where the command is run. A directory
