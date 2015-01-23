@@ -30,8 +30,10 @@
 
 from global_def import *
 
-def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", nomirror=False, dst=0.0, center=-1, maxit=0, \
-		CTF=False, snr=1.0, Fourvar=False, Ng=-1, user_func_name="ref_ali2d", CUDA=False, GPUID="", MPI=False, template=None):
+def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", \
+			nomirror=False, dst=0.0, center=-1, maxit=0, \
+			CTF=False, snr=1.0, Fourvar=False, Ng=-1, user_func_name="ref_ali2d", \
+			CUDA=False, GPUID="", MPI=False, template=None, random_method = ""):
 	"""
 		Name
 			ali2d - Perform 2-D reference-free alignment of an image series
@@ -57,7 +59,9 @@ def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1"
 			header: the alignment parameters are stored in the headers of input files as 'xform.align2d'.
 	"""
 	if MPI:
-		ali2d_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, nomirror, dst, center, maxit, CTF, snr, Fourvar, Ng, user_func_name, CUDA, GPUID)
+		ali2d_MPI(stack, outdir, maskfile, ir, ou, rs, xr, yr, ts, nomirror, dst, \
+					center, maxit, CTF, snr, Fourvar, Ng, user_func_name, CUDA, GPUID, \
+					random_method = random_method)
 		return
 
 	from utilities    import print_begin_msg, print_end_msg, print_msg
@@ -93,7 +97,9 @@ def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1"
 
 	print_msg("Input stack                 : %s\n"%(stack))
 
-	ali2d_data(data, outdir, maskfile, ir, ou, rs, xr, yr, ts, nomirror, dst, center, maxit, CTF, snr, Fourvar, Ng, user_func_name, CUDA, GPUID, True, template)
+	ali2d_data(data, outdir, maskfile, ir, ou, rs, xr, yr, ts, nomirror, dst, \
+				center, maxit, CTF, snr, Fourvar, Ng, user_func_name, \
+				CUDA, GPUID, True, template, random_method = random_method)
 
 	# write out headers
 	from utilities import write_headers
@@ -101,8 +107,10 @@ def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1"
 	print_end_msg("ali2d")
 
 
-def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", nomirror=False, dst=0.0, center=-1, maxit=0, \
-		CTF=False, snr=1.0, Fourvar=False, Ng=-1, user_func_name="ref_ali2d", CUDA=False, GPUID="", from_ali2d=False, template=None):
+def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", \
+				nomirror=False, dst=0.0, center=-1, maxit=0, \
+				CTF=False, snr=1.0, Fourvar=False, Ng=-1, user_func_name="ref_ali2d", \
+				CUDA=False, GPUID="", from_ali2d=False, template=None, random_method = ""):
 
 	# Comment by Zhengfan Yang 02/25/11
 	# This is where ali2d() actually runs, the reason I divided it into two parts is that
@@ -229,6 +237,7 @@ def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 		if CUDA:
 			alpha, sx, sy, mirror, scale = get_params2D(data[im])
 			all_ali_params.extend([alpha, sx, sy, mirror])
+		if( random_method == "SHC" ):  data[im].set_attr('previousmax',1.0e-23)
 	if CTF: 
 		adw_img = Util.mult_scalar(ctf_2_sum, snr)
 		Util.div_filter(adw_img, ctf_abs_sum)
@@ -348,8 +357,12 @@ def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 				sy_sum = all_ali_params[-1]
 				for im in xrange(len(data)):  all_ali_params[im*4+3] = int(all_ali_params[im*4+3])
 			else:
-				sx_sum, sy_sum, nope = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], nomirror=nomirror, mode=mode, CTF=CTF, delta=delta)
+				sx_sum, sy_sum, nope = ali2d_single_iter(data, numr, wr, cs, tavg, \
+												cnx, cny, xrng[N_step], yrng[N_step], step[N_step], \
+												nomirror=nomirror, mode=mode, CTF=CTF, delta=delta, \
+												random_method = random_method)
 
+			if( random_method == "SHC" and nope == nima):  break
 			pixel_error = 0.0
 			mirror_consistent = 0
 			pixel_error_list = []
@@ -384,11 +397,13 @@ def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 
 	if from_ali2d == False: print_end_msg("ali2d_data")
 
-def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", nomirror = False, dst=0.0, center=-1, maxit=0, CTF=False, snr=1.0, \
-			Fourvar=False, Ng=-1, user_func_name="ref_ali2d", CUDA=False, GPUID=""):
+def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", \
+			nomirror = False, dst=0.0, center=-1, maxit=0, CTF=False, snr=1.0, \
+			Fourvar=False, Ng=-1, user_func_name="ref_ali2d", CUDA=False, GPUID="", random_method = ""):
 
 	from utilities    import model_circle, model_blank, drop_image, get_image, get_input_from_string
-	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type, bcast_number_to_all, bcast_list_to_all
+	from utilities    import reduce_EMData_to_root, bcast_EMData_to_all, send_attr_dict, file_type
+	from utilities    import bcast_number_to_all, bcast_list_to_all
 	from statistics   import fsc_mask, sum_oe, hist_list, varf2d_MPI
 	from alignment    import Numrinit, ringwe, ali2d_single_iter
 	from pixel_error  import pixel_error_2D
@@ -568,6 +583,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 		if CUDA:
 			alpha, sx, sy, mirror, scale = get_params2D(data[im])
 			all_ali_params.extend([alpha, sx, sy, mirror])
+		if( random_method == "SHC" ):  data[im].set_attr('previousmax',1.0e-23)
 
 	if CTF:
 		reduce_EMData_to_root(ctf_2_sum, myid, main_node)
@@ -606,7 +622,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 	if CUDA:
 		from math import log, pi
 		RING_LENGTH = 2**(int(log(2*pi*last_ring)/log(2))+1)
-		NRING = 2**(int(log(last_ring)/log(2))+1)
+		NRING       = 2**(int(log(last_ring)/log(2))+1)
 
 	for N_step in xrange(len(xrng)):
 
@@ -682,7 +698,8 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 				if outdir:
 					tavg.write_image(os.path.join(outdir, "aqf.hdf"), total_iter-1)
 
-				# a0 should increase; stop algorithm when it decreases.    However, the result will depend on filtration, so it is not quite right.
+				# a0 should increase; stop algorithm when it decreases.    
+				#     However, the result will depend on filtration, so it is not quite right.
 				a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
 				msg = "Criterion %d = %15.8e\n"%(total_iter, a1)
 				print_msg(msg)
@@ -718,14 +735,22 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 					sx_sum = all_ali_params[-2]
 					sy_sum = all_ali_params[-1]
 					for im in xrange(len(data)):  all_ali_params[im*4+3] = int(all_ali_params[im*4+3])
-				else:	
-					sx_sum, sy_sum, nope = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], nomirror=nomirror, mode=mode, CTF=CTF, delta=delta)
-					
+				else:
+					sx_sum, sy_sum, nope = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
+												xrng[N_step], yrng[N_step], step[N_step], \
+												nomirror=nomirror, mode=mode, CTF=CTF, delta=delta, \
+												random_method = random_method)
+
 				sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
 				sy_sum = mpi_reduce(sy_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+				#  for SHC
+				if  random_method == "SHC":
+					nope   = mpi_reduce(nope, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
+					nope   = mpi_bcast(nope, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+					if int(nope[0]) == nima: break
 
-			        pixel_error       = 0.0
-			        mirror_consistent = 0
+				pixel_error       = 0.0
+				mirror_consistent = 0
 				pixel_error_list  = []
 			        for im in xrange(len(data)):
 			        	if CUDA:
@@ -13964,7 +13989,7 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 	
 	from alignment    import Numrinit, ringwe, ali2d_single_iter
 	from filter	      import filt_tanl
-	from fundamentals import fshift
+	from fundamentals import fshift, fft
 	from random	      import randint, random
 	from statistics   import ave_series
 	from utilities    import get_input_from_string, model_circle, set_params2D, get_params2D, combine_params2, inverse_transform2
@@ -13994,26 +14019,63 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 	cs = [0.0]*2
 	total_iter = 0
 	if(method == "SHC"):
+		#  This is my failed attempt to use SHC for 2D alignment.  
+		#    Inexplicably, it did not do all that well.  While initially it converges fast
+		#     and generally yields a very good solution, it converges to cluster of images scattered
+		#     around the 'best' solution, i.e., the shifts are within a fraction of a pixel of what they
+		#     should be and, as a result, some are in wrong positions and overall pixel error is large.
+		#     Overall, Yang's method works much better, so I am leaving it at that.  PAP 01/22/2015
 		for im in data:  im.set_attr('previousmax', -1.0e23)
 		for N_step in xrange(len(xrng)):
 			nope = 0
 			Iter = 0
-			while(nope < len(data) and Iter < max_iter ):
+			while(nope < len(data)//1 and Iter < max_iter ):
 				total_iter += 1
 				Iter += 1
 				tavg = ave_series(data)
 				if( FH > 0.0):
+					tavg = filt_tanl(fft(tavg), FH, FF)
+					if( xrng[0] > 0.0 ): cs[0] = sx_sum/float(nima)
+					if( yrng[0] > 0.0 ): cs[1] = sy_sum/float(nima)
+					tavg = fft(fshift(tavg, -cs[0], -cs[1]))
+				else:
 					tavg = filt_tanl(tavg, FH, FF)
-				if( xrng[0] > 0.0 ): cs[0] = sx_sum/float(nima)
-				if( yrng[0] > 0.0 ): cs[1] = sy_sum/float(nima)
-				tavg = fshift(tavg, -cs[0], -cs[1])
-				sx_sum, sy_sum, nope = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], \
-				mode=mode, CTF=False, random_method = method)
+				sx_sum, sy_sum, nope = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
+															xrng[N_step], yrng[N_step], step[N_step], \
+															mode=mode, CTF=False, random_method = method)
+				#print  "  iteration  shc   %03d   %03d   %7.2f    %7.2f  "%(total_iter,nope,cs[0],cs[1])
 				#print total_iter,nope
 				#for i in data:  print "  ",i.get_attr('previousmax'),
 				#print "  "
 				#tavg.write_image('tata.hdf',total_iter-1)
-		#print  " Number of iterations done in ali2d ",total_iter
+		"""
+		tavg.write_image('tata.hdf')
+		for Iter in xrange(0):#max_iter):  # large number
+			total_iter += 1
+			tavg = ave_series(data)
+			if( FH > 0.0):
+				fl = FH
+				tavg = filt_tanl(fft(tavg), fl, FF)
+				if total_iter == len(xrng)*max_iter:  return fft(tavg)
+				if( xrng[0] > 0.0 ): cs[0] = sx_sum/float(nima)
+				if( yrng[0] > 0.0 ): cs[1] = sy_sum/float(nima)
+				tavg = fft(fshift(tavg, -cs[0], -cs[1]))
+			else:
+				if total_iter == len(xrng)*max_iter:  return tavg
+				if( xrng[0] > 0.0 ): cs[0] = sx_sum/float(nima)
+				if( yrng[0] > 0.0 ): cs[1] = sy_sum/float(nima)
+				tavg = fshift(tavg, -cs[0], -cs[1])
+			
+			print  "  iteration  ***   %03d   %7.2f    %7.2f  "%(total_iter,cs[0],cs[1])
+			if Iter%4 != 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0
+			else:                                                 delta = dst
+			sx_sum, sy_sum, nope = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
+														xrng[N_step], yrng[N_step], step[N_step], \
+														mode=mode, CTF=False, delta=delta)
+			if( (abs(cs[0]) + abs(cs[1])) < 0.01 and Iter > 1):  break
+		"""
+
+
 		return tavg
 	else:
 		for N_step in xrange(len(xrng)):
@@ -14022,14 +14084,23 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 				tavg = ave_series(data)
 				if( FH > 0.0):
 					fl = 0.1+(FH-0.1)*Iter/float(max_iter-1)
-					tavg = filt_tanl(tavg, fl, FF)
-				if total_iter == len(xrng)*max_iter:  return tavg
-				if( xrng[0] > 0.0 ): cs[0] = sx_sum/float(nima)
-				if( yrng[0] > 0.0 ): cs[1] = sy_sum/float(nima)
-				tavg = fshift(tavg, -cs[0], -cs[1])
+					tavg = filt_tanl(fft(tavg), fl, FF)
+					if total_iter == len(xrng)*max_iter:  return fft(tavg)
+					if( xrng[0] > 0.0 ): cs[0] = sx_sum/float(nima)
+					if( yrng[0] > 0.0 ): cs[1] = sy_sum/float(nima)
+					tavg = fft(fshift(tavg, -cs[0], -cs[1]))
+				else:
+					if total_iter == len(xrng)*max_iter:  return tavg
+					if( xrng[0] > 0.0 ): cs[0] = sx_sum/float(nima)
+					if( yrng[0] > 0.0 ): cs[1] = sy_sum/float(nima)
+					tavg = fshift(tavg, -cs[0], -cs[1])
+				
+				#print  "  iteration  std   %03d   %7.2f    %7.2f  "%(total_iter,cs[0],cs[1])
 				if Iter%4 != 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0
 				else:                                                 delta = dst
-				sx_sum, sy_sum, nope = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode=mode, CTF=False, delta=delta)
+				sx_sum, sy_sum, nope = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
+															xrng[N_step], yrng[N_step], step[N_step], \
+															mode=mode, CTF=False, delta=delta)
 
 def within_group_refinement_fast(data, dimage, maskfile, randomize, ir, ou, rs, xrng, yrng, step, maxrange, dst, maxit, FH, FF):
 

@@ -30,7 +30,9 @@
 
 from global_def import *
 
-def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomirror = False, mode="F", CTF=False, random_method="", T=1.0, ali_params="xform.align2d", delta = 0.0):
+def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
+						xrng, yrng, step, nomirror = False, mode="F", CTF=False, \
+						random_method="", T=1.0, ali_params="xform.align2d", delta = 0.0):
 	"""
 		single iteration of 2D alignment using ormq
 		if CTF = True, apply CTF to data (not to reference!)
@@ -57,6 +59,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomi
 			ima = filt_ctf(data[im], ctf_params, True)
 		else:
 			ima = data[im]
+
 		alpha, sx, sy, mirror, dummy = get_params2D(data[im], ali_params)
 		alpha, sx, sy, mirror        = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
 		alphai, sxi, syi, scalei     = inverse_transform2(alpha, sx, sy)
@@ -75,7 +78,10 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomi
 			#  On the other hand, one cannot simply do searches around the proper center all the time,
 			#    as if xr is decreased, the image cannot be brought back if the established shifts are further than new range
 			olo = Util.shc(ima, [cimage], xrng, yrng, step, -1.0, mode, numr, cnx+sxi, cny+syi, "c1")
+			##olo = Util.shc(ima, [cimage], xrng, yrng, step, -1.0, mode, numr, cnx, cny, "c1")
 			if(data[im].get_attr("previousmax")<olo[5]):
+				#[angt, sxst, syst, mirrort, peakt] = ormq(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi, delta)
+				#print  angt, sxst, syst, mirrort, peakt,olo
 				angt = olo[0]
 				sxst = olo[1]
 				syst = olo[2]
@@ -83,15 +89,19 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomi
 				# combine parameters and set them to the header, ignore previous angle and mirror
 				[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
 				set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
+				##set_params2D(data[im], [angt, sxst, syst, mirrort, 1.0], ali_params)
 				data[im].set_attr("previousmax",olo[5])
-				sxn = olo[1]
-				syn = olo[2]
+				##mn = sxn = syn = 0
 				if mn == 0: sx_sum += sxn
+				##if mirrort == 0: sx_sum += sxn
 				else:       sx_sum -= sxn
 				sy_sum += syn
 			else:
+				# Did not find a better peak, but we have to set shifted parameters, as the average shifted
+				set_params2D(data[im], [alpha, sx, sy, mirror, 1.0], ali_params)
 				nope += 1
 		else:
+
 			if nomirror:  [angt, sxst, syst, mirrort, peakt] = ornq(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
 			else:	      [angt, sxst, syst, mirrort, peakt] = ormq(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi, delta)
 			# combine parameters and set them to the header, ignore previous angle and mirror
@@ -105,7 +115,9 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, nomi
 	return sx_sum, sy_sum, nope
 
 
-def ali2d_single_iter_fast(data, dimage, params, numr, wr, cs, tavg, cnx, cny, xrng, yrng, step, maxrange, nomirror = False, mode="F", random_method="", T=1.0, ali_params="xform.align2d", delta = 0.0):
+def ali2d_single_iter_fast(data, dimage, params, numr, wr, cs, tavg, cnx, cny, \
+							xrng, yrng, step, maxrange, nomirror = False, mode="F", \
+							random_method="", T=1.0, ali_params="xform.align2d", delta = 0.0):
 	"""
 		single iteration of 2D alignment using ormq
 		if CTF = True, apply CTF to data (not to reference!)
@@ -522,8 +534,8 @@ def ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0):
 		 		peak = qn
 		 		mirror = 0
 			'''
-	co =  cos(radians(ang))
-	so = -sin(radians(ang))
+	co  =  cos(radians(ang))
+	so  = -sin(radians(ang))
 	sxs = sx*co - sy*so
 	sys = sx*so + sy*co
 	return  ang, sxs, sys, mirror, peak

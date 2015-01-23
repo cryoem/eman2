@@ -43,9 +43,9 @@ def main():
 	usage = progname + " stack average --ou=ou --xr=xr --yr=yr --ts=ts --thld_err=thld_err --num_ali=num_ali --fl=fl --aa=aa --CTF --verbose --stables"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ou",           type="int",              default=-1,          help=" outer radius for alignment")
-	parser.add_option("--xr",           type="string"      ,     default="2 1",       help="range for translation search in x direction, search is +/xr")
+	parser.add_option("--xr",           type="string"      ,     default="2 1",       help="range for translation search in x direction, search is +/xr (default 2,1)")
 	parser.add_option("--yr",           type="string"      ,     default="-1",        help="range for translation search in y direction, search is +/yr (default = same as xr)")
-	parser.add_option("--ts",           type="string"      ,     default="1 0.5",     help="step size of the translation search in both directions, search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional")
+	parser.add_option("--ts",           type="string"      ,     default="1 0.5",     help="step size of the translation search in both directions, search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional (default: 1,0.5)")
 	parser.add_option("--thld_err",     type="float",            default=0.75,        help="threshld of pixel error (default = 1.732)")
 	parser.add_option("--num_ali",      type="int",              default=5,           help="number of alignments performed for stability (default = 5)")
 	parser.add_option("--maxit",        type="int",              default=30,          help="number of iterations for each xr (default = 30)")
@@ -53,8 +53,8 @@ def main():
 	parser.add_option("--aa",           type="float"       ,     default=0.2,         help="fall-off of hyperbolic tangent low-pass Fourier filter (default = 0.2)")
 	parser.add_option("--CTF",          action="store_true",     default=False,       help="Use CTF correction during the alignment ")
 	parser.add_option("--verbose",      action="store_true",     default=False,       help="print individual pixel error (default = False)")
-	parser.add_option("--stables",		action="store_true",	 default=False,	      help="output the stable particles number in file")
-	parser.add_option("--method",		type="string"      ,	 default=" ",	      help="SHC (default when ommitted is standard method")
+	parser.add_option("--stables",		action="store_true",	 default=False,	      help="output the stable particles number in file (default = False)")
+	parser.add_option("--method",		type="string"      ,	 default=" ",	      help="SHC (default when ommitted is standard method)")
 	(options, args) = parser.parse_args()
 	if len(args) != 1 and len(args) != 2:
     		print "usage: " + usage
@@ -142,7 +142,7 @@ def main():
 
 		stable_set, mir_stab_rate, pix_err = multi_align_stability(all_ali_params, 0.0, 10000.0, options.thld_err, options.verbose, 2*ou+1)
 		print "%14s %20s %20s %20s %20s"%("", "Mirror stab rate", "Pixel error", "Size of stable set", "Size of set")
-		print "Average stat: %20.3f %20.3f %20d %20d"%(mir_stab_rate, pix_err, len(stable_set), len(class_data))
+		print "Average stat: %20.2f %15.2f %20d %20d"%(mir_stab_rate, pix_err, len(stable_set), len(class_data))
 		if( len(stable_set) > 0):
 			if options.stables:
 				stab_mem = [[0,0.0,0] for j in xrange(len(stable_set))]
@@ -157,10 +157,10 @@ def main():
 			from fundamentals import rot_shift2D
 			avet.to_zero()
 			l = -1
-			print "average params"
+			print "average parameters:  angle, x-shift, y-shift, mirror"
 			for j in stable_set_id:
 				l += 1
-				print l,j, stable_set[l][2][0], stable_set[l][2][1], stable_set[l][2][2], stable_set[l][2][3]
+				print " %4d  %4d  %12.2f %12.2f %12.2f        %1d"%(l,j, stable_set[l][2][0], stable_set[l][2][1], stable_set[l][2][2], int(stable_set[l][2][3]))
 				avet += rot_shift2D(class_data[j], stable_set[l][2][0], stable_set[l][2][1], stable_set[l][2][2], stable_set[l][2][3] )
 			avet /= (l+1)
 			avet.set_attr('members', stable_set_id)

@@ -92,8 +92,8 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		print "* Last updated: 01/17/2015 PAP                                                                     *"
 		print "****************************************************************************************************"
 		print "*                                       Generation %3d                                             *"%(generation)
-		print "****************************************************************************************************"
 		print " alignment method  ",alimethod
+		print "****************************************************************************************************"
 
 	color = myid%indep_run
 	key = myid/indep_run
@@ -210,7 +210,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			#if myid == main_node: print "	 Generating initial averages ",localtime()[:5]
 			refi = isac_MPI(data, refim, maskfile=None, outname=None, ir=ir, ou=ou, rs=rs, xrng=xr, yrng=yr, step=ts, 
 					maxit=maxit, isac_iter=init_iter, CTF=CTF, snr=snr, rand_seed=-1, color=color, comm=group_comm, 
-					stability=False, FL=FL, FH=FH, FF=FF, dst=dst)
+					stability=False, FL=FL, FH=FH, FF=FF, dst=dst, method = alimethod)
 			del refim
 
 			# gather the data on main node
@@ -715,10 +715,10 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 	from alignment	  import Numrinit, ringwe
 	from applications import MPI_start_end, within_group_refinement
 	from filter	      import filt_tanl
-	from fundamentals import rot_shift2D, fshift
+	from fundamentals import rot_shift2D, fshift, fft
 	from pixel_error  import multi_align_stability
 	from statistics   import ave_series
-	from utilities	  import model_circle, combine_params2, inverse_transform2, get_image
+	from utilities	  import model_circle, model_blank, combine_params2, inverse_transform2, get_image
 	from utilities	  import reduce_EMData_to_root, bcast_EMData_to_all
 	from utilities	  import get_params2D, set_params2D
 	from random	      import seed, randint, jumpahead
@@ -726,6 +726,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 	from mpi		  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_recv, mpi_send
 	from mpi		  import MPI_SUM, MPI_FLOAT, MPI_INT, MPI_TAG_UB
 	from numpy        import zeros, float32
+	from time         import localtime, strftime
 	import os
 
 	if comm == -1: comm = MPI_COMM_WORLD		
@@ -744,7 +745,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		alldata = stack
 	nx = alldata[0].get_xsize()
 	# default value for the last ring
-	if last_ring == -1: last_ring = nx/2-2
+	if last_ring == -1: last_ring = nx//2-2
 
 	nima = len(alldata)
 	
@@ -760,6 +761,8 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 	else:
 		# It's safer to make a hard copy here. Although I am not sure, I believe a shallow copy
 		# has messed up the program.
+		#   This is really strange.  It takes much memory without any need.  PAP 01/17/2015
+		#      However, later I made changes so refi is deleted from time to time.  All to be checked.
 		# refi = refim
 		refi = [None for i in xrange(len(refim))]
 		for i in xrange(len(refim)):  refi[i] = refim[i].copy()
@@ -804,28 +807,28 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 	while main_iter < max_iter:
 		Iter += 1
-		#if my_abs_id == main_node: print "Iter = ", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start, localtime()[0:5], myid
-		ringref = []
+		if my_abs_id == main_node: print "Iteration within isac_MPI = ", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start, localtime()[0:5], myid
 		for j in xrange(numref):
 			refi[j].process_inplace("normalize.mask", {"mask":mask, "no_sigma":1}) # normalize reference images to N(0,1)
 			cimage = Util.Polar2Dm(refi[j] , cnx, cny, numr, mode)
 			Util.Frngs(cimage, numr)
 			Util.Applyws(cimage, numr, wr)
-			ringref.append(cimage)
+			refi[j] = cimage.copy()
+
 #		if CTF: ctf2 = [[[0.0]*lctf for k in xrange(2)] for j in xrange(numref)]
 		peak_list = [zeros(4*(image_end-image_start), dtype=float32) for i in xrange(numref)]
-		#  nima is the total number of images, not the one on this node, tha latter is (image_end-image_start)
+		#  nima is the total number of images, not the one on this node, the latter is (image_end-image_start)
+		#    d matrix required by EQ-Kmeans can be huge!!  PAP 01/17/2015
 		d = zeros(numref*nima, dtype=float32)
 		# begin MPI section
 		for im in xrange(image_start, image_end):
 			alpha, sx, sy, mirror, scale = get_params2D(alldata[im])
-			alphai, sxi, syi, scalei = inverse_transform2(alpha, sx, sy)
+			alphai, sxi, syi, scalei     = inverse_transform2(alpha, sx, sy)
 			# normalize
 			alldata[im].process_inplace("normalize.mask", {"mask":mask, "no_sigma":0}) # subtract average under the mask
 
-			# align current image to the reference
-			temp = Util.multiref_polar_ali_2d_peaklist(alldata[im],
-				ringref, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
+			# align current image to all references - THIS IS REALLY TIME CONSUMING PAP 01/17/2015
+			temp = Util.multiref_polar_ali_2d_peaklist(alldata[im], refi, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
 			for iref in xrange(numref):
 				[alphan, sxn, syn, mn] = \
 				   combine_params2(0.0, -sxi, -syi, 0, temp[iref*5+1], temp[iref*5+2], temp[iref*5+3], int(temp[iref*5+4]))
@@ -834,8 +837,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 				peak_list[iref][(im-image_start)*4+2] = syn
 				peak_list[iref][(im-image_start)*4+3] = mn
 				d[iref*nima+im] = temp[iref*5]
-		del ringref
-		del temp
+		del refi, temp
 
 		d = mpi_reduce(d, numref*nima, MPI_FLOAT, MPI_SUM, main_node, comm)  #  RETURNS numpy array
 		if myid != main_node:
@@ -862,20 +864,21 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		mpi_barrier(comm)
 		belongsto = mpi_bcast(belongsto, nima, MPI_INT, main_node, comm)
 		belongsto = map(int, belongsto)
+		if my_abs_id == main_node: print "Completed EQ-mref within isac_MPI = ", Iter, "	main_iter = ", main_iter , localtime()[0:5], myid
 
 		#  Compute partial averages
 		members = [0]*numref
 		sx_sum = [0.0]*numref
 		sy_sum = [0.0]*numref
-		for j in xrange(numref):  refi[j].to_zero()
+		refi = [model_blank(nx,nx) for j in xrange(numref)]
 		for im in xrange(image_start, image_end):
 			matchref = belongsto[im]
 			alphan = float(peak_list[matchref][(im-image_start)*4+0])
-			sxn = float(peak_list[matchref][(im-image_start)*4+1])
-			syn = float(peak_list[matchref][(im-image_start)*4+2])
-			mn = int(peak_list[matchref][(im-image_start)*4+3])
+			sxn    = float(peak_list[matchref][(im-image_start)*4+1])
+			syn    = float(peak_list[matchref][(im-image_start)*4+2])
+			mn     = int(peak_list[matchref][(im-image_start)*4+3])
 			if mn == 0: sx_sum[matchref] += sxn
-			else:	   sx_sum[matchref] -= sxn
+			else:	    sx_sum[matchref] -= sxn
 			sy_sum[matchref] += syn
 			# apply current parameters and add to the average
 			Util.add_img(refi[matchref], rot_shift2D(alldata[im], alphan, sxn, syn, mn))
@@ -883,18 +886,20 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 #				ctm = ctf_2(nx, ctf_params)
 #				for i in xrange(lctf):  ctf2[matchref][it][i] += ctm[i]
 			members[matchref] += 1
-		sx_sum = mpi_reduce(sx_sum, numref, MPI_FLOAT, MPI_SUM, main_node, comm)
-		sy_sum = mpi_reduce(sy_sum, numref, MPI_FLOAT, MPI_SUM, main_node, comm)
+		#  HERE SHIFTS ARE USED FOR CENTERING based on principle that original images are shifted randomly,
+		#    so after alignment sum of shifts should be zero PAP 01/17/2015
+		sx_sum  = mpi_reduce(sx_sum, numref, MPI_FLOAT, MPI_SUM, main_node, comm)
+		sy_sum  = mpi_reduce(sy_sum, numref, MPI_FLOAT, MPI_SUM, main_node, comm)
 		members = mpi_reduce(members, numref, MPI_INT, MPI_SUM, main_node, comm)
 		if myid != main_node:
-			sx_sum = [0.0]*numref
-			sy_sum = [0.0]*numref
+			sx_sum  = [0.0]*numref
+			sy_sum  = [0.0]*numref
 			members = [0.0]*numref
-		sx_sum = mpi_bcast(sx_sum, numref, MPI_FLOAT, main_node, comm)
-		sy_sum = mpi_bcast(sy_sum, numref, MPI_FLOAT, main_node, comm)
+		sx_sum  = mpi_bcast(sx_sum, numref, MPI_FLOAT, main_node, comm)
+		sy_sum  = mpi_bcast(sy_sum, numref, MPI_FLOAT, main_node, comm)
 		members = mpi_bcast(members, numref, MPI_INT, main_node, comm)
-		sx_sum = map(float, sx_sum)
-		sy_sum = map(float, sy_sum)
+		sx_sum  = map(float, sx_sum)
+		sy_sum  = map(float, sy_sum)
 		members = map(int, members)
 
 		for j in xrange(numref):
@@ -906,7 +911,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			alphan = float(peak_list[matchref][(im-image_start)*4+0])
 			sxn = float(peak_list[matchref][(im-image_start)*4+1])
 			syn = float(peak_list[matchref][(im-image_start)*4+2])
-			mn = int(peak_list[matchref][(im-image_start)*4+3])
+			mn  = int(peak_list[matchref][(im-image_start)*4+3])
 			if mn == 0:
 				set_params2D(alldata[im], [alphan, sxn-sx_sum[matchref], syn-sy_sum[matchref], mn, scale])
 			else:
@@ -917,13 +922,15 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		for j in xrange(numref):
 			reduce_EMData_to_root(refi[j], myid, main_node, comm)
 			if myid == main_node:
-				# Golden rule when to do within group refinement
+				# Golden rule when to do within-group refinement
 				Util.mul_scalar(refi[j], 1.0/float(members[j]))
-				refi[j] = filt_tanl(refi[j], fl, FF)
-				refi[j] = fshift(refi[j], -sx_sum[j], -sy_sum[j])
-				set_params2D(refi[j], [0.0, 0.0, 0.0, 0, 1.0])	
+				refi[j] = fft( fshift(filt_tanl( fft(refi[j]), fl, FF), -sx_sum[j], -sy_sum[j]) )
+				set_params2D(refi[j], [0.0, 0.0, 0.0, 0, 1.0])
 		
 		if myid == main_node:
+			#  this is most likely meant to center them, if so, it works poorly, 
+			#      it has to be checked and probably a better method used PAP 01/17/2015
+			#  There is additional inconsistency.  Above the lowpass is set to fl, here it is FH
 			dummy = within_group_refinement(refi, mask, True, first_ring, last_ring, rstep, [xrng], [yrng], [step], \
 											dst, maxit, FH, FF, method )
 			ref_ali_params = []
@@ -954,12 +961,12 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			do_within_group = 1
 
 		# Here stability does not need to be checked for each main iteration, it only needs to
-		# be done for every 'iter_reali' iterations. If one really want it to be checked each time
+		# be done for every 'iter_reali' iterations. If one really wants it to be checked each time
 		# simple set iter_reali to 1, which is the default value right now.
 		check_stability = (stability and (main_iter%iter_reali==0))
 
 		if do_within_group == 1:
-#			if my_abs_id == main_node: print "Doing within group alignment .......", localtime()[0:5]
+			if my_abs_id == main_node: print "Doing within group alignment .......", localtime()[0:5]
 
 			# Broadcast the alignment parameters to all nodes
 			for i in xrange(number_of_proc):
@@ -992,6 +999,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			# When there is no stability checking or estimated calculation time of new method is greater than 80% of estimated calculation time of original method 
 			# then the original method is used. In other case. the second (new) method is used.
 			if (not check_stability) or (stab_calc_time_method_2 > 0.80 * stab_calc_time_method_1):
+				if my_abs_id == main_node: print "Checking within group stability, original approach .......", localtime()[0:5]
 				# ====================================== standard approach is used, calculations are parallelized by scatter groups (averages) among MPI processes
 				for j in xrange(myid, numref, number_of_proc):
 					assign = []
@@ -1056,6 +1064,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 					set_params2D(alldata[im], [ali_params[0], ali_params[1], ali_params[2], int(ali_params[3]), 1.0])
 
 			else:
+				if my_abs_id == main_node: print "Checking within group stability, new approach .......", localtime()[0:5]
 				# ================================================ more complicated approach is used - runs of within_group_refinement are scattered among MPI processes
 				refi = isac_stability_check_mpi(alldata, numref, belongsto, stab_ali, thld_err, mask, first_ring, last_ring, rstep, xrng, yrng, step, \
 												dst, maxit, FH, FF, method, comm)
@@ -1118,6 +1127,7 @@ def isac_stability_check_mpi(alldata, numref, belongsto, stab_ali, thld_err, mas
 	from filter	   import filt_tanl
 	from random	   import randint
 	from statistics   import ave_series
+	from time         import localtime, strftime
 	
 	myid = mpi_comm_rank(comm)
 	number_of_proc = mpi_comm_size(comm)

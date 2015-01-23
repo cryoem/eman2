@@ -31,33 +31,30 @@
 #
 #
 
-# $Id$
 import	global_def
 from	global_def 	import *
 from	EMAN2 		import EMUtil, parsemodopt, EMAN2Ctf
 from    EMAN2jsondb import js_open_dict
 
 from	utilities 	import *
-from statistics import mono
+from    statistics import mono
+import  os
 
 """ Traveling salesman problem solved using Simulated Annealing.
 """
 from scipy import *
 from pylab import *
 
-def Distance(im1, im2, lccc):
-	i1=im1.get_attr("ID")
-	i2=im2.get_attr("ID")
-	
-	return lccc[mono(i1,i2)][0]
+def Distance(i1, i2, lccc):
+	return max(1.0 - lccc[mono(i1,i2)][0], 0.0)
 # 	return sqrt((R1[0]-R2[0])**2+(R1[1]-R2[1])**2)
 
-def TotalDistance(city, R, lccc):
-    dist=0
-    for i in range(len(city)-1):
-        dist += Distance(R[city[i]],R[city[i+1]], lccc)
-    dist += Distance(R[city[-1]],R[city[0]], lccc)
-    return dist
+def TotalDistance(city, lccc):
+	dist = 0.0
+	for i in range(len(city)-1):
+		dist += Distance(city[i], city[i+1], lccc)
+	dist += Distance(city[-1], city[0], lccc)
+	return dist
     
 def reverse(city, n):
     nct = len(city)
@@ -68,7 +65,7 @@ def reverse(city, n):
         k = (n[0]+j) % nct
         l = (n[1]-j) % nct
         (city[k],city[l]) = (city[l],city[k])  # swap
-    
+
 def transpt(city, n):
     nct = len(city)
     
@@ -84,6 +81,7 @@ def transpt(city, n):
         newcity.append(city[ (j+n[3])%nct ])
     return newcity
 
+"""
 def Plot(city, R, dist):
     # Plot
     Pt = [R[city[i]] for i in range(len(city))]
@@ -92,95 +90,107 @@ def Plot(city, R, dist):
     title('Total distance='+str(dist))
     plot(Pt[:,0], Pt[:,1], '-o')
     show()
+"""
 
-def tsp(stack, lccc):
+def tsp(lccc):
 
-#     ncity = 100        # Number of cities to visit
-    ncity = len(stack)        # Number of cities to visit
-    maxTsteps = 100    # Temperature is lowered not more than maxTsteps
-    Tstart = 0.2       # Starting temperature - has to be high enough
-    fCool = 0.9        # Factor to multiply temperature at each cooling step
-    maxSteps = 100*ncity     # Number of steps at constant temperature
-    maxAccepted = 10*ncity   # Number of accepted steps at constant temperature
+	#     ncity = 100        # Number of cities to visit
+	from math import sqrt
+	ncity = int( (1+sqrt(1+8*len(lccc)))/2 )        # Number of cities to visit
+    #  sanity check
+	if( ncity*(ncity-1)/2 != len(lccc) ): return [-1]
 
-    Preverse = 0.5      # How often to choose reverse/transpose trial move
+	maxTsteps = 100    # Temperature is lowered not more than maxTsteps
+	Tstart = 0.2       # Starting temperature - has to be high enough
+	fCool = 0.9        # Factor to multiply temperature at each cooling step
+	maxSteps = 100*ncity     # Number of steps at constant temperature
+	maxAccepted = 10*ncity   # Number of accepted steps at constant temperature
 
-    # Choosing city coordinates
-    R=[]  # coordinates of cities are choosen randomly
-    for i in range(ncity):
-#         R.append( [rand(),rand()] )
-        R.append( stack[i] )
-    R = array(R)
+	Preverse = 0.5      # How often to choose reverse/transpose trial move
+
+
+	# The index table -- the order the cities are visited.
+	city = range(ncity)
+	# Distance of the travel at the beginning
+	dist = TotalDistance(city, lccc)
+
+	#  Not clear what is nct
+	nct = ncity
+	# Stores points of a move
+	n = zeros(6, dtype=int)
+
+	T = Tstart # temperature
+
+	#     Plot(city, R, dist)
+
+	for t in range(maxTsteps):  # Over temperature
+
+		accepted = 0
+		for i in range(maxSteps): # At each temperature, many Monte Carlo steps
             
-
-    # The index table -- the order the cities are visited.
-    city = range(ncity)
-    # Distance of the travel at the beginning
-    dist = TotalDistance(city, R, lccc)
-
-    # Stores points of a move
-    n = zeros(6, dtype=int)
-    nct = len(R) # number of cities
-    
-    T = Tstart # temperature
-
-#     Plot(city, R, dist)
-    
-    for t in range(maxTsteps):  # Over temperature
-
-        accepted = 0
-        for i in range(maxSteps): # At each temperature, many Monte Carlo steps
-            
-            while True: # Will find two random cities sufficiently close by
-                # Two cities n[0] and n[1] are choosen at random
-                n[0] = int((nct)*rand())     # select one city
-                n[1] = int((nct-1)*rand())   # select another city, but not the same
-                if (n[1] >= n[0]): n[1] += 1   #
-                if (n[1] < n[0]): (n[0],n[1]) = (n[1],n[0]) # swap, because it must be: n[0]<n[1]
-                nn = (n[0]+nct -n[1]-1) % nct  # number of cities not on the segment n[0]..n[1]
-                if nn>=3: break
+			while True: # Will find two random cities sufficiently close by
+				# Two cities n[0] and n[1] are choosen at random
+				n[0] = int((nct)*rand())     # select one city
+				n[1] = int((nct-1)*rand())   # select another city, but not the same
+				if (n[1] >= n[0]): n[1] += 1   #
+				if (n[1] < n[0]): (n[0],n[1]) = (n[1],n[0]) # swap, because it must be: n[0]<n[1]
+				nn = (n[0]+nct -n[1]-1) % nct  # number of cities not on the segment n[0]..n[1]
+				if nn>=3: break
         
-            # We want to have one index before and one after the two cities
-            # The order hence is [n2,n0,n1,n3]
-            n[2] = (n[0]-1) % nct  # index before n0  -- see figure in the lecture notes
-            n[3] = (n[1]+1) % nct  # index after n2   -- see figure in the lecture notes
+			# We want to have one index before and one after the two cities
+			# The order hence is [n2,n0,n1,n3]
+			n[2] = (n[0]-1) % nct  # index before n0  -- see figure in the lecture notes
+			n[3] = (n[1]+1) % nct  # index after n2   -- see figure in the lecture notes
             
-            if Preverse > rand(): 
-                # Here we reverse a segment
-                # What would be the cost to reverse the path between city[n[0]]-city[n[1]]?
-                de = Distance(R[city[n[2]]],R[city[n[1]]], lccc) + Distance(R[city[n[3]]],R[city[n[0]]], lccc) - Distance(R[city[n[2]]],R[city[n[0]]], lccc) - Distance(R[city[n[3]]],R[city[n[1]]], lccc)
+			if Preverse > rand(): 
+				# Here we reverse a segment
+				# What would be the cost to reverse the path between city[n[0]]-city[n[1]]?
+				de = Distance(city[n[2]], city[n[1]], lccc) + Distance(city[n[3]], city[n[0]], lccc)\
+					 - Distance(city[n[2]], city[n[0]], lccc) - Distance(city[n[3]] ,city[n[1]], lccc)
                 
-                if de<0 or exp(-de/T)>rand(): # Metropolis
-                    accepted += 1
-                    dist += de
-                    reverse(city, n)
-            else:
-                # Here we transpose a segment
-                nc = (n[1]+1+ int(rand()*(nn-1)))%nct  # Another point outside n[0],n[1] segment. See picture in lecture nodes!
-                n[4] = nc
-                n[5] = (nc+1) % nct
-        
-                # Cost to transpose a segment
-                de = -Distance(R[city[n[1]]],R[city[n[3]]], lccc) - Distance(R[city[n[0]]],R[city[n[2]]], lccc) - Distance(R[city[n[4]]],R[city[n[5]]], lccc)
-                de += Distance(R[city[n[0]]],R[city[n[4]]], lccc) + Distance(R[city[n[1]]],R[city[n[5]]], lccc) + Distance(R[city[n[2]]],R[city[n[3]]], lccc)
-                
-                if de<0 or exp(-de/T)>rand(): # Metropolis
-                    accepted += 1
-                    dist += de
-                    city = transpt(city, n)
+				if de<0 or exp(-de/T)>rand(): # Metropolis
+					accepted += 1
+					dist += de
+					reverse(city, n)
+			else:
+				# Here we transpose a segment
+				nc = (n[1]+1+ int(rand()*(nn-1)))%nct  # Another point outside n[0],n[1] segment. See picture in lecture nodes!
+				n[4] = nc
+				n[5] = (nc+1) % nct
+
+				# Cost to transpose a segment
+				de = -Distance( city[n[1]], city[n[3]], lccc) - Distance( city[n[0]], city[n[2]], lccc) \
+						- Distance( city[n[4]], city[n[5]], lccc)
+				de += Distance( city[n[0]], city[n[4]], lccc) + Distance( city[n[1]], city[n[5]], lccc) \
+						+ Distance( city[n[2]], city[n[3]], lccc)
+
+				if de<0 or exp(-de/T)>rand(): # Metropolis
+					accepted += 1
+					dist += de
+					city = transpt(city, n)
                     
-            if accepted > maxAccepted: break
+			if accepted > maxAccepted: break
 
-        # Plot
-#         Plot(city, R, dist)
+		# Plot
+		#         Plot(city, R, dist)
             
-        print "T=%10.5f , distance= %10.5f , accepted steps= %d" %(T, dist, accepted)
-        T *= fCool             # The system is cooled down
-        if accepted == 0: break  # If the path does not want to change any more, we can stop
+		print "T=%10.5f , distance= %10.5f , accepted steps= %d" %(T, dist, accepted)
+		T *= fCool             # The system is cooled down
+		if accepted == 0: break  # If the path does not want to change any more, we can stop
 
         
 #     Plot(city, R, dist)
 	return city
+
+
+
+
+def pca(cov):
+	from numpy import  linalg, argsort
+	""" assume one sample per column """
+	values, vecs = linalg.eigh(cov)
+	perm = argsort(-values)  # sort in descending order
+	return values[perm], vecs[:, perm]
 
 
 def main():
@@ -279,6 +289,15 @@ def main():
 	parser.add_option("--importctf",          type="string",	default= None,     		  help="Name of the file containing CTF parameters produced by sxcter.")
 	parser.add_option("--defocuserror",       type="float",  	default=1000000.0,        help="Exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent.  The error is computed as (std dev defocus)/defocus*100%")
 	parser.add_option("--astigmatismerror",   type="float",  	default=360.0,            help="Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees.")
+	#  import params for 2D alignment
+	parser.add_option("--ir",       type="int",  default=1,             help="inner radius for rotational correlation > 0 (set to 1)")
+	parser.add_option("--ou",       type="int",  default=-1,            help="outer radius for rotational correlation < nx/2-1 (set to the radius of the particle)")
+	parser.add_option("--rs",       type="int",  default=1,             help="step between rings in rotational correlation > 0 (set to 1)" ) 
+	parser.add_option("--xr",       type="float",  default=-1.0,     help="range for translation search in x direction, search is +/xr (0.0)")
+	parser.add_option("--yr",       type="float",  default=-1.0,          help="range for translation search in y direction, search is +/yr (0.0)")
+	parser.add_option("--ts",       type="float",  default=1.0,  help="step of translation search in both directions (1.0)")
+	parser.add_option("--nomirror", action="store_true", default=False,   help="Disable checking mirror orientations of images (default False)")
+	parser.add_option("--pairwiseccc",              type="string",	default= None,     		  help="Input/output pairwise ccc file")
 
 
  	(options, args) = parser.parse_args()
@@ -286,7 +305,7 @@ def main():
 	global_def.BATCH = True
 
 	if options.order:
-		print "Using options.order"
+		print "Using options.order  "
 		nargs = len(args)
 		if nargs != 2:
 			print "must provide name of input and output file!"
@@ -442,6 +461,7 @@ def main():
 		new_stack = args[1]
 		
 		d = EMData.read_images(stack)
+
 		try:
 			ttt = d[0].get_attr('xform.params2d')
 			for i in xrange(len(d)):
@@ -450,67 +470,233 @@ def main():
 		except:
 			pass
 
+
 		nx = d[0].get_xsize()
 		ny = d[0].get_ysize()
-		if options.radius < 1 : radius = nx//2-2
-		else:  radius = options.radius
+		if options.ou < 1 : radius = nx//2-2
+		else:  radius = options.ou
 		mask = model_circle(radius, nx, ny)
-		
+
+		if(options.xr < 0.0):	xrng = 0.0
+		else:					xrng = options.xr
+		if(options.yr < 0.0):	yrng = xrng
+		else:					yrng = options.yr
+			
+		initial = max(options.initial, 0)
+
 		from statistics import mono
-		lend=len(d)
-		lccc=[None]*(lend*(lend-1)/2)
+		lend = len(d)
+		lccc = [None]*(lend*(lend-1)/2)
+		from utilities import read_text_row
 
-		for i in xrange(lend):				
-			for j in xrange(i+1, lend):
-				alpha, sx, sy, mir, peak = align2d(d[i],d[j], xrng=3, yrng=3, step=1, first_ring=1, last_ring=radius, mode = "F")
-				T = Transform({"type":"2D","alpha":alpha,"tx":sx,"ty":sy,"mirror":mir,"scale":1.0})
+		if  options.pairwiseccc == None or not os.path.exists(options.pairwiseccc) :
+			st = time()
+			for i in xrange(lend-1):
+				for j in xrange(i+1, lend):
+					#  j>i meaning mono entry (i,j) or (j,i) indicates T i->j (from smaller index to larger)
+					alpha, sx, sy, mir, peak = align2d(d[i],d[j], xrng, yrng, step=options.ts, first_ring=options.ir, last_ring=radius, mode = "F")
+					lccc[mono(i,j)] = [ccc(d[j], rot_shift2D(d[i], alpha, sx, sy, mir, 1.0), mask), alpha, sx, sy, mir]
+				#print "  %4d   %10.1f"%(i,time()-st)
 
-				lccc[mono(i,j)] = [ccc(d[j], rot_shift2D(d[i], alpha, sx, sy, mir, 1.0), mask), T]
-		
+			if(not os.path.exists(options.pairwiseccc)):
+				from utilities import write_text_row
+				write_text_row([[initial,0,0,0,0]]+lccc,options.pairwiseccc)
+		elif(os.path.exists(options.pairwiseccc)):
+			lccc = read_text_row(options.pairwiseccc)
+			initial = int(lccc[0][0] + 0.1)
+			del lccc[0]
+
+
+		for i in xrange(len(lccc)):
+			T = Transform({"type":"2D","alpha":lccc[i][1],"tx":lccc[i][2],"ty":lccc[i][3],"mirror":int(lccc[i][4]+0.1)})
+			lccc[i] = [lccc[i][0],T]
+
+		tdummy = Transform({"type":"2D"})
 		maxsum = -1.023
-		for m in xrange(len(d)):
-			indc = range(len(d) )
-			lsnake = [m]
+		for m in xrange(initial, initial+1):
+			indc = range( lend )
+			lsnake = [[m, tdummy, 0.0]]
 			del indc[m]
 
 			lsum = 0.0
 			while len(indc) > 1:
 				maxcit = -111.
 				for i in xrange(len(indc)):
-						cuc = lccc[mono(indc[i], lsnake[-1])][0]
+						cuc = lccc[mono(indc[i], lsnake[-1][0])][0]
 						if cuc > maxcit:
 								maxcit = cuc
 								qi = indc[i]
-				lsnake.append(qi)
+								#  Here we need transformation from the current to the previous,
+								#     meaning indc[i] -> lsnake[-1][0]
+								T = lccc[mono(indc[i], lsnake[-1][0])][1]
+								#  If direction is from larger to smaller index, the transformation has to be inverted
+								if( indc[i] > lsnake[-1][0] ):  T = T.inverse()
+								
+								
+				lsnake.append([qi,T, maxcit])
 				lsum += maxcit
 
 				del indc[indc.index(qi)]
 
-			lsnake.append(indc[-1])
+			T = lccc[mono(indc[-1], lsnake[-1][0])][1]
+			if( indc[-1] > lsnake[-1][0]):  T = T.inverse()
+			lsnake.append([indc[-1], T, lccc[mono(indc[-1], lsnake[-1][0])][0]])
 			#print  " initial image and lsum  ",m,lsum
 			#print lsnake
 			if(lsum > maxsum):
 				maxsum = lsum
 				init = m
-				snake = [lsnake[i] for i in xrange(len(d))]
-		print  "  Initial image selected : ",init,maxsum
-		print snake
-		
-		ltrans=[Transform()]*len(d)
-		
-		for k in xrange(len(d)-1):
-			ltrans[k] = lccc[mono(snake[k],snake[k+1])][1]
+				snake = [lsnake[i] for i in xrange(lend)]
+		print  "  Initial image selected : ",init,maxsum,"    ",TotalDistance([snake[m][0] for m in xrange(lend)], lccc)
+		#for q in snake: print q
 
-			for k in xrange(len(d)-2,-1,-1):
- 				for i in xrange(k):
-					ltrans[i] = ltrans[i]*ltrans[k]
-		
-		for m in xrange(1,len(d)):
-			prms = ltrans[m].get_params("2D")
-			d[m] = rot_shift2D(d[m], prms["alpha"], prms["tx"], prms["ty"], prms["mirror"], prms["scale"])
-		
-		for m in xrange(len(d)):  d[snake[m]].write_image(new_stack, m)
+		from copy import deepcopy
+		trans=deepcopy([snake[i][1] for i in xrange(len(snake))])
+		print  [snake[i][0] for i in xrange(len(snake))]
+		"""
+		for m in xrange(lend):
+			prms = trans[m].get_params("2D")
+			print " %3d   %7.1f   %7.1f   %7.1f   %2d  %6.2f"%(snake[m][0], prms["alpha"], prms["tx"], prms["ty"], prms["mirror"], snake[m][2])
+		"""
+		for k in xrange(lend-2,0,-1):
+			T = snake[k][1]
+			for i in xrange(k+1, lend):
+ 					trans[i] = T*trans[i]
 
+		for m in xrange(lend):
+			prms = trans[m].get_params("2D")
+			#print " %3d   %7.1f   %7.1f   %7.1f   %2d  %6.2f"%(snake[m][0], prms["alpha"], prms["tx"], prms["ty"], prms["mirror"], snake[m][2])
+			#rot_shift2D(d[snake[m][0]], prms["alpha"], prms["tx"], prms["ty"], prms["mirror"]).write_image(new_stack, m)
+			rot_shift2D(d[snake[m][0]], prms["alpha"], 0.0,0.0, prms["mirror"]).write_image(new_stack, m)
+
+		order = tsp(lccc)
+		if(len(order) != lend):
+			print  " problem with data length"
+			from sys import exit
+			exit()
+		print  TotalDistance(order, lccc)
+		print order
+		ibeg = order.index(initial)
+		order = [order[(i+ibeg)%lend] for i in xrange(lend)]
+		print  TotalDistance(order, lccc)
+		print order
+
+
+		snake = [tdummy]
+		for i in xrange(1,lend):
+			#  Here we need transformation from the current to the previous,
+			#     meaning order[i] -> order[i-1]]
+			T = lccc[mono(order[i], order[i-1])][1]
+			#  If direction is from larger to smaller index, the transformation has to be inverted
+			if( order[i] > order[i-1] ):  T = T.inverse()
+			snake.append(T)
+		assert(len(snake) == lend)
+		from copy import deepcopy
+		trans = deepcopy(snake)
+		for k in xrange(lend-2,0,-1):
+			T = snake[k]
+			for i in xrange(k+1, lend):
+ 					trans[i] = T*trans[i]
+
+		for m in xrange(lend):
+			prms = trans[m].get_params("2D")
+			#rot_shift2D(d[order[m]], prms["alpha"], prms["tx"], prms["ty"], prms["mirror"]).write_image("metro.hdf", m)
+			rot_shift2D(d[order[m]], prms["alpha"], 0.0,0.0, prms["mirror"]).write_image("metro.hdf", m)
+
+		"""
+		#  This was an effort to get number of loops, inconclusive, to say the least
+		from numpy import outer, zeros, float32, sqrt
+		lend = len(d)
+ 		cor = zeros(lend,float32)
+ 		cor = outer(cor, cor)
+		for i in xrange(lend):  cor[i][i] = 1.0
+		for i in xrange(lend-1):
+			for j in xrange(i+1, lend):
+				cor[i,j] = lccc[mono(i,j)][0]
+				cor[j,i] = cor[i,j]
+
+		lmbd, eigvec = pca(cor)
+
+		from utilities import write_text_file
+
+		nvec=20
+		print  [lmbd[j] for j in xrange(nvec)]
+		print  " G"
+		mm = [-1]*lend
+		for i in xrange(lend):  # row
+			mi = -1.0e23
+			for j in xrange(nvec):
+				qt = eigvec[j][i]
+				if(abs(qt)>mi):
+					mi = abs(qt)
+					mm[i] = j
+			for j in xrange(nvec):
+				qt = eigvec[j][i]
+				print  round(qt,3),   #  eigenvector
+			print  mm[i]
+		print
+		for j in xrange(nvec):
+			qt = []
+			for i in xrange(lend):
+				if(mm[i] == j):  qt.append(i)
+			if(len(qt)>0):  write_text_file(qt,"loop%02d.txt"%j)
+		"""
+		"""
+		print  [lmbd[j] for j in xrange(nvec)]
+		print  " B"
+		mm = [-1]*lend
+		for i in xrange(lend):  # row
+			mi = -1.0e23
+			for j in xrange(nvec):
+				qt = eigvec[j][i]/sqrt(lmbd[j])
+				if(abs(qt)>mi):
+					mi = abs(qt)
+					mm[i] = j
+			for j in xrange(nvec):
+				qt = eigvec[j][i]/sqrt(lmbd[j])
+				print  round(qt,3),   #  eigenvector
+			print  mm[i]
+		print
+		"""
+
+		"""
+		lend=3
+ 		cor = zeros(lend,float32)
+ 		
+ 		cor = outer(cor, cor)
+ 		
+ 		
+ 		cor[0][0] =136.77
+ 		cor[0][1] = 79.15
+ 		cor[0][2] = 37.13
+ 		
+ 		cor[1][0] = 79.15
+ 		cor[2][0] = 37.13
+ 		
+ 		
+ 		cor[1][1] = 50.04
+ 		cor[1][2] = 21.65
+ 		
+ 		cor[2][1] = 21.65
+ 		
+ 		
+ 		cor[2][2] = 13.26
+
+		lmbd, eigvec = pca(cor)
+		print  lmbd
+		print  eigvec
+		for i in xrange(lend):  # row
+			for j in xrange(lend):  print  eigvec[j][i],   #  eigenvector
+			print
+		print  " B"
+		for i in xrange(lend):  # row
+			for j in xrange(lend):  print  eigvec[j][i]/sqrt(lmbd[j]),   #  eigenvector
+			print
+		print  " G"
+		for i in xrange(lend):  # row
+			for j in xrange(lend):  print  eigvec[j][i]*sqrt(lmbd[j]),   #  eigenvector
+			print
+		"""
 	if options.order_metropolis:
 		nargs = len(args)
 		if nargs != 2:
@@ -524,7 +710,7 @@ def main():
 		from time import time
 		from alignment import align2d
 		from multi_shc import mult_transform 
-		
+
 		stack = args[0]
 		new_stack = args[1]
 		
@@ -623,13 +809,6 @@ def main():
 # 				mccc[j][i] = [ccc(d[j], rot_shift2D(d[j], alpha, sx, sy, mir, 1.0), mask), T]
 				mccc[j][i] = ccc(d[j], rot_shift2D(d[j], alpha, sx, sy, mir, 1.0), mask)
 
-
-		def pca(cov):
-			from numpy import  linalg, argsort
-			""" assume one sample per column """
-			values, vecs = linalg.eigh(cov)
-			perm = argsort(-values)  # sort in descending order
-			return values[perm], vecs[:, perm]
 
 
 		from numpy import outer, zeros, float32, sqrt

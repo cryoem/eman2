@@ -55,18 +55,21 @@ def main():
 	parser.add_option("--CTF",      action="store_true", default=False,   help="use CTF correction during alignment")
 	parser.add_option("--snr",      type="float",  default=1.0,           help="signal-to-noise ratio of the data (set to 1.0)")
 	parser.add_option("--Fourvar",  action="store_true", default=False,   help="compute Fourier variance")
-	parser.add_option("--Ng",       type="int",    default=-1,            help="number of groups in the new CTF filteration")
-	parser.add_option("--function", type="string", default="ref_ali2d",   help="name of the reference preparation function (default ref_ali2d)")
+	parser.add_option("--Ng",       type="int",          default=-1,      help="number of groups in the new CTF filteration")
+	parser.add_option("--function", type="string",       default="ref_ali2d",  help="name of the reference preparation function (default ref_ali2d)")
 	parser.add_option("--CUDA",     action="store_true", default=False,   help="use CUDA program")
 	parser.add_option("--GPUID",    type="string",    default="",         help="ID of GPUs available")
 	parser.add_option("--MPI",      action="store_true", default=False,   help="use MPI version ")
-	parser.add_option("--rotational",  action="store_true", default=False,   help="rotational alignment with optional limited in-plane angle, the parameters are: ir, ou, rs, psi_max, mode(F or H), maxit, orient, randomize")
-	parser.add_option("--psi_max",      type="float",  default=180.0,           help="psi_max")
-	parser.add_option("--mode",       type="string", default="F",     help="Full or Half rings, default F")
-	parser.add_option("--randomize",  action="store_true", default=False,   help="randomize initial rotations (suboption of friedel, default False)")
+	parser.add_option("--rotational", action="store_true", default=False, help="rotational alignment with optional limited in-plane angle, the parameters are: ir, ou, rs, psi_max, mode(F or H), maxit, orient, randomize")
+	parser.add_option("--psi_max",  type="float",        default=180.0,   help="psi_max")
+	parser.add_option("--mode",     type="string",       default="F",     help="Full or Half rings, default F")
+	parser.add_option("--randomize",action="store_true", default=False,   help="randomize initial rotations (suboption of friedel, default False)")
 	parser.add_option("--orient",   action="store_true", default=False,   help="orient images such that the average is symmetric about x-axis, for layer lines (suboption of friedel, default False)")
-	parser.add_option("--template",   type="string", default=None,   help="2D alignment will be initialized using the template provided (only non-MPI version, default None)")
+	parser.add_option("--template", type="string",       default=None,    help="2D alignment will be initialized using the template provided (only non-MPI version, default None)")
+	parser.add_option("--new",      action="store_true", default=False,   help="use new method ")
+
 	(options, args) = parser.parse_args()
+
 	if len(args) < 2 or len(args) > 3:
     		print "usage: " + usage
     		print "Please run '" + progname + " -h' for detailed options"
@@ -92,8 +95,13 @@ def main():
 			sys.argv = mpi_init(len(sys.argv),sys.argv)
 
 		global_def.BATCH = True
-		ali2d(args[0], outdir, mask, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.nomirror, options.dst, \
-			options.center, options.maxit, options.CTF, options.snr, options.Fourvar, options.Ng, options.function, options.CUDA, options.GPUID, options.MPI, options.template)
+		if options.new: random_method = "SHC"
+		else:			random_method = ""
+		ali2d(args[0], outdir, mask, options.ir, options.ou, options.rs, options.xr, options.yr, \
+			options.ts, options.nomirror, options.dst, \
+			options.center, options.maxit, options.CTF, options.snr, options.Fourvar, \
+			options.Ng, options.function, options.CUDA, options.GPUID, options.MPI, \
+			options.template, random_method = random_method)
 		global_def.BATCH = False
 
 		if options.MPI:
