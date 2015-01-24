@@ -839,6 +839,23 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 				d[iref*nima+im] = temp[iref*5]
 		del refi, temp
 
+		#  This is the main memory bottleneck that limits the usefulness of the program.  The array d is numref x nima,
+		#    in my experience it limits of what the program can handle to 50,000 images.  numref = nima/(numer of images per group),
+		#    the latter is 100-200, so the size is 4*nima^2/100 bytes
+		#    Assuming 3GB free memory, nima = sqrt(100/3.0*3.0e9), which gives me slightly over 300,000 images.
+		#    It would not be half bad if not for the fact that at this moment the program has other stuff in the memory.
+		#    First, the program unnecessarily create full d matrix on all threads, while threads 
+		#            fill ou only part of it (image_start, image_end), see loop above.  This simplifies the code as Yang could use reduce.
+		#       However, with some effort one could send back sections of d and assemble it on the destination thread
+		#    As for the overall size of d, I see only two options: 
+		#        1.  analyze the code carefully and make sure that the main thread has nothing in it - might be difficult if not impossible
+		#        2.  Assuming many threads, reserve one for processing of d.  This would be wasteful, as processing of d matrix does not take all that long
+		#                 In addition, one thread spinning idly may cause synchronization problems (die or something).
+		#    
+		#  Truth be told, there is a third option.  It would be slow, but it might be the best solution, which is to try to write
+		#    a || version of assign_groups, even taking significant speed hit.
+		#
+		#                    PAP 01/23/2015
 		d = mpi_reduce(d, numref*nima, MPI_FLOAT, MPI_SUM, main_node, comm)  #  RETURNS numpy array
 		if myid != main_node:
 			del d
@@ -1023,7 +1040,8 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 						stable_set, mirror_consistent_rate, err = multi_align_stability(ali_params, 0.0, 10000.0, thld_err, False, last_ring*2)
 
-						#print  "Color % d, class %d ...... Size of stable subset = %d,  Mirror consistent rate = %f,  Average error = %f"%(color, j, len(stable_set), mirror_consistent_rate, err)
+						print  "Color % d, class %d ...... Size of the group = %d and of the stable subset = %d, Pixer threshold = %f, Mirror consistent rate = %f,  Average pixel error = %f"\
+										%(color, j, len(class_data), len(stable_set),thld_err, mirror_consistent_rate, err)
 
 						# If the size of stable subset is too small (say 1, 2), it will cause many problems, so we manually increase it to 5
 						while len(stable_set) < 5:
@@ -1202,6 +1220,8 @@ def isac_stability_check_mpi(alldata, numref, belongsto, stab_ali, thld_err, mas
 	for j in xrange(myid, numref, number_of_proc):
 		
 		stable_set, mirror_consistent_rate, err = multi_align_stability(grp_run_to_ali_params[j], 0.0, 10000.0, thld_err, False, last_ring*2)
+		print  "Stability check, class %d ...... Size of the group = %d and of the stable subset = %d, Pixer threshold = %f, Mirror consistent rate = %f,  Average pixel error = %f"\
+					%(j, len(class_data), len(stable_set),thld_err, mirror_consistent_rate, err)
 
 		# If the size of stable subset is too small (say 1, 2), it will cause many problems, so we manually increase it to 5
 		while len(stable_set) < 5:

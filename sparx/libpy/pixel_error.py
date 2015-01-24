@@ -734,17 +734,18 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	for params in ali_params_cleaned: ali_params_cleaned_list.extend(params)
 	results = Util.multi_align_error(args, ali_params_cleaned_list, d)
 	ps_lp = results[:-1]
-	val = results[-1]
-	if val < 0.0:
-		# This will happen in some rare cases, it should be due to rounding errors, 
-		# because all results show the val is about 1e-13.
-		#print "Strange results"
-		#print "args =", args
-		#print "ali_params_cleaned_list =", ali_params_cleaned_list
-		#print "results = ", results
-		val = 0.0
+
+	# Negative val can happen in some rare cases, it should be due to rounding errors, 
+	# because all results show the val is about 1e-13.
+	#print "Strange results"
+	#print "args =", args
+	#print "ali_params_cleaned_list =", ali_params_cleaned_list
+	#print "results = ", results
+	val = max(0.0, results[-1])
+
 	del ali_params_cleaned_list
 
+	#  I would return sqrt(val) and print it for the user to get an impression of the overall quality of the data
 	if sqrt(val) > grp_err_thld: return [], mir_stab_rate, sqrt(val)
 
 	pixel_error_after, ave_params = func(ps_lp, data, return_avg_pixel_error=False)
