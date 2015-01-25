@@ -48,7 +48,10 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 	Util.Frngs(cimage, numr)
 	Util.Applyws(cimage, numr, wr)
 
-	maxrin = numr[-1]
+	maxrin = numr[-1]  #  length
+	ou = numr[-3]  #  maximum radius
+	sxilimt = cnx - ou - 2*xrng
+	syilimt = cny - ou - 2*yrng
 	sx_sum = 0.0
 	sy_sum = 0.0
 	nope = 0
@@ -101,9 +104,10 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 				set_params2D(data[im], [alpha, sx, sy, mirror, 1.0], ali_params)
 				nope += 1
 		else:
-
-			if nomirror:  [angt, sxst, syst, mirrort, peakt] = ornq(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
-			else:	      [angt, sxst, syst, mirrort, peakt] = ormq(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi, delta)
+			txrng = max(0, min(xrng, cnx - ou -sxi))
+			tyrng = max(0, min(yrng, cny - ou -syi))
+			if nomirror:  [angt, sxst, syst, mirrort, peakt] = ornq(ima, cimage, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi)
+			else:	      [angt, sxst, syst, mirrort, peakt] = ormq(ima, cimage, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi, delta)
 			# combine parameters and set them to the header, ignore previous angle and mirror
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
 			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
