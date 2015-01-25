@@ -709,11 +709,15 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 	# Do an initial analysis, purge all outlier particles, whose pixel error are larger than three times the threshold
 	data = [ali_params_mir_stab, d]
 	pixel_error_before, ave_params = func(array(args), data, return_avg_pixel_error=False)
-
+	#  We have to return mir_stab_rate (see above), even if the group does not survive it and the pixel error before cleaning,
+	#   see below, and in ISAC print the user the overall statistics (histograms?) 
+	#   so one can get on overall idea how good/bad data is.  PAP  01/25/2015
+	#print  " >>> ",sqrt(sum(pixel_error_before)/nima2)
 	ali_params_cleaned = [[] for i in xrange(num_ali)]
 	cleaned_part = []
 	for j in xrange(nima2):
-		if pixel_error_before[j] > 0 and sqrt(pixel_error_before[j]) > 3*err_thld:
+		pixel_error_before[j] = max(0.0, pixel_error_before[j])  # prevent sqrt of 0
+		if sqrt(pixel_error_before[j]) > 3*err_thld:
 			pass  #print "  removed ",3*err_thld,j,sqrt(pixel_error_before[j])
 		else:
 			cleaned_part.append(mir_stab_part[j])
@@ -745,7 +749,6 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 
 	del ali_params_cleaned_list
 
-	#  I would return sqrt(val) and print it for the user to get an impression of the overall quality of the data
 	if sqrt(val) > grp_err_thld: return [], mir_stab_rate, sqrt(val)
 
 	pixel_error_after, ave_params = func(ps_lp, data, return_avg_pixel_error=False)

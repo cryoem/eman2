@@ -141,8 +141,8 @@ def main():
 		"""
 
 		stable_set, mir_stab_rate, pix_err = multi_align_stability(all_ali_params, 0.0, 10000.0, options.thld_err, options.verbose, 2*ou+1)
-		print "%14s %20s %20s %20s %20s"%("", "Mirror stab rate", "Pixel error", "Size of stable set", "Size of set")
-		print "Average stat: %20.2f %15.2f %20d %20d"%(mir_stab_rate, pix_err, len(stable_set), len(class_data))
+		print "%14s %20s %20s %20s %20s"%("", "Size of stable set", "Size of set", "Mirror stab rate", "Pixel error")
+		print "Average stat: %20d %20d %20.2f      %15.2f"%( len(class_data), len(stable_set), mir_stab_rate, pix_err)
 		if( len(stable_set) > 0):
 			if options.stables:
 				stab_mem = [[0,0.0,0] for j in xrange(len(stable_set))]

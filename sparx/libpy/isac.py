@@ -28,6 +28,49 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
 
+"""
+PAP 01/25/2015
+Things to be done:
+
+1. introduce outputting sensible information.  The program rejects groups based on their
+mirror stability and pixel error.  However, it does not output them prior to reject, so the
+user is left in the dark what to improve (if mirror stability is too low, nothing could be done,
+the alignment is pretty much random, one can increase pixel error threshold, but this is dangerous).
+To do that: 
+in pixel_error.py function multi_align_stability computes necessary stuff, but it does not
+return it.  I left comments there.  After it does return numbers, they have to be gathered in
+correct places in ISAC and printed as histograms ro something
+
+2. memory problem: In EQK-means code in ISAC a huge matrix (nima x nref) has to be collected
+for clustering of images.  This is where program crashes on memory.  I left lengthy explanations
+and suggestion around line #865.  Something has to be done.
+
+3.  restarting:  two levels
+
+3a. the current code has to be done better.  It has two major phases: first, calculation of 'candidate'
+averages, 'proper' ISAC.  Each takes about the same time.  I added a trivial switch that allows the user
+to start the program from existing candidate averages, but of course it has to be automated.  In the
+second part, there are natural steps of 2-3-4-way matching, I would add restart points there.
+
+3b.  As explained in the documentation, the program works through 'geberations', which simply
+means it has to be started all over again on the subset of the data that did not go to averages
+(is unaccounted for).  This has to be automated with restarts.  Note the memory remains a problem.
+Python is generally reasonably good at garbage collection upon exiting a python function,
+but C objects are tricky and can cause problems, so they have to be coded with care.
+
+4. Add reusing of candidate averages.  Since calculation of candidates takes so much time,
+I had an idea of reusing them, i.e., instead of starting the program in the next generation all over from
+preparation of candidates, one could cycle phase two couple of times reusing existing candidates.
+I tested it with the program attached at the end of this file - it works.  The problem is handling
+of image numbers, Yang did it in some kind of manner and I do not know the details.  Note
+one has current numbering of images (the subset), but also has to know the original IDs, 
+the same problem as in VIPER.  How it is done in ISAC I do not know and it is also more complicated.
+However, my intuitive coding gave good results, so it cannot be too tough.
+
+Since all of the points here are very important to users, this is publishable.
+
+"""
+
 
 def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, init_iter, main_iter, iter_reali, \
 			  match_first, max_round, match_second, stab_ali, thld_err, indep_run, thld_grp, img_per_grp, \
