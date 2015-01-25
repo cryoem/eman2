@@ -82,6 +82,8 @@ def main():
 	except: chains=None
 	try: box=options.box
 	except: box=None	
+
+	logger = E2init(sys.argv,options.ppid)
 		
 	if (options.usenufft):
 		
@@ -176,6 +178,8 @@ def main():
 	else:
 		outmap = pdb_2_mrc(args[0],options.apix,options.res,options.het,box,chains,options.quiet)
 		outmap.write_image(args[1])
+
+	E2end(logger)
 						
 # this function originally added so that it could be accessed independently (for Junjie Zhang by David Woolford)
 def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,quiet=False):

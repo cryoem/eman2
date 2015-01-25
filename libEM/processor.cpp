@@ -6013,15 +6013,15 @@ void IterMultiMaskProcessor::process_inplace(EMData * image)
 		for (int i = 0; i < num_shells; i++) {
 			for (int y = 1; y < ny - 1; y++) {
 				for (int x = 1; x < nx - 1; x++) {
-					if (image1->get_value_at(x,y)>=0) continue;		// already part of a masked region
+					if (image1->get_value_at(x,y)>0) continue;		// already part of a masked region
 
 					// Note that this produces a directional bias in the case of ambiguous pixels
 					// While this could be improved upon slightly, there can be truly ambiguous cases
 					// and at least this method is deterministic
-					if      (image1->get_value_at(x-1,y)>=0) image2->set_value_at_fast(x,y,image1->get_value_at(x-1,y));
-					else if (image1->get_value_at(x+1,y)>=0) image2->set_value_at_fast(x,y,image1->get_value_at(x+1,y));
-					else if (image1->get_value_at(x,y-1)>=0) image2->set_value_at_fast(x,y,image1->get_value_at(x,y-1));
-					else if (image1->get_value_at(x,y+1)>=0) image2->set_value_at_fast(x,y,image1->get_value_at(x,y+1));
+					if      (image1->get_value_at(x-1,y)>0) image2->set_value_at_fast(x,y,image1->get_value_at(x-1,y));
+					else if (image1->get_value_at(x+1,y)>0) image2->set_value_at_fast(x,y,image1->get_value_at(x+1,y));
+					else if (image1->get_value_at(x,y-1)>0) image2->set_value_at_fast(x,y,image1->get_value_at(x,y-1));
+					else if (image1->get_value_at(x,y+1)>0) image2->set_value_at_fast(x,y,image1->get_value_at(x,y+1));
 
 				}
 			}
@@ -6033,17 +6033,17 @@ void IterMultiMaskProcessor::process_inplace(EMData * image)
 			for (int z = 1; z < nz - 1; z++) {
 				for (int y = 1; y < ny - 1; y++) {
 					for (int x = 1; x < nx - 1; x++) {
-						if (image1->get_value_at(x,y,z)>=0) continue;		// already part of a masked region
+						if (image1->get_value_at(x,y,z)>0) continue;		// already part of a masked region
 
 						// Note that this produces a directional bias in the case of ambiguous pixels
 						// While this could be improved upon slightly, there can be truly ambiguous cases
 						// and at least this method is deterministic
-						if      (image1->get_value_at(x-1,y,z)>=0) image2->set_value_at_fast(x,y,z,image1->get_value_at(x-1,y,z));
-						else if (image1->get_value_at(x+1,y,z)>=0) image2->set_value_at_fast(x,y,z,image1->get_value_at(x+1,y,z));
-						else if (image1->get_value_at(x,y-1,z)>=0) image2->set_value_at_fast(x,y,z,image1->get_value_at(x,y-1,z));
-						else if (image1->get_value_at(x,y+1,z)>=0) image2->set_value_at_fast(x,y,z,image1->get_value_at(x,y+1,z));
-						else if (image1->get_value_at(x,y,z-1)>=0) image2->set_value_at_fast(x,y,z,image1->get_value_at(x,y,z-1));
-						else if (image1->get_value_at(x,y,z+1)>=0) image2->set_value_at_fast(x,y,z,image1->get_value_at(x,y,z+1));
+						if      (image1->get_value_at(x-1,y,z)>0) image2->set_value_at_fast(x,y,z,image1->get_value_at(x-1,y,z));
+						else if (image1->get_value_at(x+1,y,z)>0) image2->set_value_at_fast(x,y,z,image1->get_value_at(x+1,y,z));
+						else if (image1->get_value_at(x,y-1,z)>0) image2->set_value_at_fast(x,y,z,image1->get_value_at(x,y-1,z));
+						else if (image1->get_value_at(x,y+1,z)>0) image2->set_value_at_fast(x,y,z,image1->get_value_at(x,y+1,z));
+						else if (image1->get_value_at(x,y,z-1)>0) image2->set_value_at_fast(x,y,z,image1->get_value_at(x,y,z-1));
+						else if (image1->get_value_at(x,y,z+1)>0) image2->set_value_at_fast(x,y,z,image1->get_value_at(x,y,z+1));
 
 					}
 				}
