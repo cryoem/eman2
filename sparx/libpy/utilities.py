@@ -587,7 +587,7 @@ def compose_transform2m(alpha1=0.0, sx1=0., sy1=0.0, mirror1=0, scale1=1.0, alph
 		Here  if v's are vectors:   vnew = T2*T1 vold
 		     with T1 described by alpha1, sx1, scale1 etc.
 
-	    Usage: compose_transform2(alpha1,sx1,sy1,scale1,alpha2,sx2,sy2,scale2)
+	    Usage: compose_transform2(alpha1,sx1,sy1,mirror1,scale1,alpha2,sx2,sy2,mirror2,scale2)
 	       angles in degrees
 	"""
 

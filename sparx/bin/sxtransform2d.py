@@ -44,6 +44,9 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack_in  stack_out"
 	parser = OptionParser(usage,version=SPARXVERSION)
+	parser.add_option("--shift",		action="store_true",	 default=False,	      help="Apply only translation, disregard rotation, useful for centering of data (default False)")
+	parser.add_option("--ignore_mirror",action="store_true",	 default=False,	      help="If centering data with CTF and astigmatism, use option ignore mirror (default False)")
+	parser.add_option("--method",		type="string"      ,	 default="quadratic", help="Interpolation method (default linear)")
 	(options, args) = parser.parse_args()
 	if len(args) != 2:
     		print "usage: " + usage
@@ -53,7 +56,7 @@ def main():
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
 		global_def.BATCH = True
-		transform2d(args[0], args[1])
+		transform2d(args[0], args[1], options.shift, options.ignore_mirror, options.method)
 		global_def.BATCH = False
 
 if __name__ == "__main__":

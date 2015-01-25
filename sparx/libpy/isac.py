@@ -92,7 +92,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		print "* Last updated: 01/17/2015 PAP                                                                     *"
 		print "****************************************************************************************************"
 		print "*                                       Generation %3d                                             *"%(generation)
-		print " alignment method  ",alimethod
+		#print " alignment method  ",alimethod
 		print "****************************************************************************************************"
 
 	color = myid%indep_run
@@ -807,7 +807,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 	while main_iter < max_iter:
 		Iter += 1
-		if my_abs_id == main_node: print "Iteration within isac_MPI = ", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start, localtime()[0:5], myid
+		#if my_abs_id == main_node: print "Iteration within isac_MPI = ", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start, localtime()[0:5], myid
 		for j in xrange(numref):
 			refi[j].process_inplace("normalize.mask", {"mask":mask, "no_sigma":1}) # normalize reference images to N(0,1)
 			cimage = Util.Polar2Dm(refi[j] , cnx, cny, numr, mode)
@@ -881,7 +881,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		mpi_barrier(comm)
 		belongsto = mpi_bcast(belongsto, nima, MPI_INT, main_node, comm)
 		belongsto = map(int, belongsto)
-		if my_abs_id == main_node: print "Completed EQ-mref within isac_MPI = ", Iter, "	main_iter = ", main_iter , localtime()[0:5], myid
+		#if my_abs_id == main_node: print "Completed EQ-mref within isac_MPI = ", Iter, "	main_iter = ", main_iter , localtime()[0:5], myid
 
 		#  Compute partial averages
 		members = [0]*numref
@@ -983,7 +983,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		check_stability = (stability and (main_iter%iter_reali==0))
 
 		if do_within_group == 1:
-			if my_abs_id == main_node: print "Doing within group alignment .......", localtime()[0:5]
+			#if my_abs_id == main_node: print "Doing within group alignment .......", localtime()[0:5]
 
 			# Broadcast the alignment parameters to all nodes
 			for i in xrange(number_of_proc):
@@ -1011,12 +1011,12 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			# Here we try to estimate the calculation time for both approaches.
 			stab_calc_time_method_1 = stab_ali * ((numref-1) // number_of_proc + 1)
 			stab_calc_time_method_2 = (numref * stab_ali - 1) // number_of_proc + 1
-#			if my_abs_id == main_node: print "Times estimation: ", stab_calc_time_method_1, stab_calc_time_method_2
-#	
+			#if my_abs_id == main_node: print "Times estimation: ", stab_calc_time_method_1, stab_calc_time_method_2
+	
 			# When there is no stability checking or estimated calculation time of new method is greater than 80% of estimated calculation time of original method 
 			# then the original method is used. In other case. the second (new) method is used.
 			if (not check_stability) or (stab_calc_time_method_2 > 0.80 * stab_calc_time_method_1):
-				if my_abs_id == main_node: print "Checking within group stability, original approach .......", localtime()[0:5]
+				#if my_abs_id == main_node: print "Checking within group stability, original approach .......", localtime()[0:5]
 				# ====================================== standard approach is used, calculations are parallelized by scatter groups (averages) among MPI processes
 				for j in xrange(myid, numref, number_of_proc):
 					assign = []
@@ -1040,8 +1040,8 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 						stable_set, mirror_consistent_rate, err = multi_align_stability(ali_params, 0.0, 10000.0, thld_err, False, last_ring*2)
 
-						print  "Color % d, class %d ...... Size of the group = %d and of the stable subset = %d, Pixer threshold = %f, Mirror consistent rate = %f,  Average pixel error = %f"\
-										%(color, j, len(class_data), len(stable_set),thld_err, mirror_consistent_rate, err)
+						#print  "Color % d, class %d ...... Size of the group = %d and of the stable subset = %d, Pixer threshold = %f, Mirror consistent rate = %f,  Average pixel error = %f"\
+						#				%(color, j, len(class_data), len(stable_set),thld_err, mirror_consistent_rate, err)
 
 						# If the size of stable subset is too small (say 1, 2), it will cause many problems, so we manually increase it to 5
 						while len(stable_set) < 5:
@@ -1082,7 +1082,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 					set_params2D(alldata[im], [ali_params[0], ali_params[1], ali_params[2], int(ali_params[3]), 1.0])
 
 			else:
-				if my_abs_id == main_node: print "Checking within group stability, new approach .......", localtime()[0:5]
+				#if my_abs_id == main_node: print "Checking within group stability, new approach .......", localtime()[0:5]
 				# ================================================ more complicated approach is used - runs of within_group_refinement are scattered among MPI processes
 				refi = isac_stability_check_mpi(alldata, numref, belongsto, stab_ali, thld_err, mask, first_ring, last_ring, rstep, xrng, yrng, step, \
 												dst, maxit, FH, FF, method, comm)
@@ -1220,8 +1220,8 @@ def isac_stability_check_mpi(alldata, numref, belongsto, stab_ali, thld_err, mas
 	for j in xrange(myid, numref, number_of_proc):
 		
 		stable_set, mirror_consistent_rate, err = multi_align_stability(grp_run_to_ali_params[j], 0.0, 10000.0, thld_err, False, last_ring*2)
-		print  "Stability check, class %d ...... Size of the group = %d and of the stable subset = %d, Pixer threshold = %f, Mirror consistent rate = %f,  Average pixel error = %f"\
-					%(j, len(class_data), len(stable_set),thld_err, mirror_consistent_rate, err)
+		#print  "Stability check, class %d ...... Size of the group = %d and of the stable subset = %d, Pixer threshold = %f, Mirror consistent rate = %f,  Average pixel error = %f"\
+		#			%(j, len(class_data), len(stable_set),thld_err, mirror_consistent_rate, err)
 
 		# If the size of stable subset is too small (say 1, 2), it will cause many problems, so we manually increase it to 5
 		while len(stable_set) < 5:
@@ -1474,8 +1474,8 @@ def get_unique_averages(data, indep_run, m_th=0.45):
 	return data_good
 
 
-
-
+"""
+#  Not used anywhere
 def prepref(data,maskfile, cnx, cny, numr, mode, maxrangex, maxrangey):
 	from EMAN2 import Util
 	#step = 1
@@ -1492,4 +1492,43 @@ def prepref(data,maskfile, cnx, cny, numr, mode, maxrangex, maxrangey):
 				dimage[im][i+maxrangex][j+maxrangey] = Util.Polar2Dm(data[im], cnx+i, cny+j, numr, mode)
 				print ' prepref  ',j,i,j+maxrangey,i+maxrangex
 				Util.Frngs(dimage[im][i+maxrangex][j+maxrangey], numr)
-	return dimage
+	return dimag
+"""
+
+"""
+#  This program removes from candidate averages numbers of accounted for images
+#  It seems to work but it would have to be tested should we decide to go with recycling of candidates.
+from EMAN2 import *
+from sparx import *
+la = map(int, read_text_file('generation_1_accounted.txt'))
+
+lu = map(int, read_text_file('generation_1_unaccounted.txt'))
+
+nn = max(max(la), max(lu))
+
+na = range(nn)
+for i in xrange(len(la)):
+	na[la[i]] = -1
+
+l = 0
+for i in xrange(nn):
+	if(na[i] > -1):
+		na[i] = l
+		l += 1
+
+d = EMData.read_images('class_averages_candidate_generation_1.hdf')
+
+l=0
+for i in xrange(len(d)):
+	li = d[i].get_attr('members')
+	ou = []
+	for k in xrange(len(li)):
+		m = na[li[k]]
+		if(m>-1):  ou.append(m)
+	if(len(ou)>0):
+		d[i].set_attr('members',ou)
+		d[i].write_image('class_averages_candidate_generation_2.hdf',l)
+		l += 1
+	else:
+		print ' Group  ',i,'  skipped'
+"""
