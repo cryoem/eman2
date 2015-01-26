@@ -65,6 +65,10 @@ def orient_params(params, indexes=None, sym = "c1"):
 					params[i][j] = temp[i][k]
 					k += 1
 		"""
+	elif(sym[0] == "c" and int(sym([1])>1):
+		#  C symmetry would have to be done by creating a cn copies of the data set and then finding the angles with rotation_between_anglesets
+		#  the rest as below
+		pass
 	else:
 		from EMAN2 import Transform
 		if indexes == None:   indexes = range(n)
@@ -136,6 +140,7 @@ def find_common_subset_3(projs, target_threshold, minimal_subset_size=3, sym = "
 			for i in subset:
 				projs2[iConf].append(projs[iConf][i][:])
 		if( sym[0] == "d"):
+			#  This code was only tested for D-odd symmetry.  I would have to check D-even
 			# have to figure whether anything has to be mirrored and then reduce the angles.
 			mirror_and_reduce_dsym(projs2, sym)
 			from utilities import getvec
@@ -159,7 +164,7 @@ def find_common_subset_3(projs, target_threshold, minimal_subset_size=3, sym = "
 						qt += degrees(acos(min(1.0,max(-1.0,zt))))
 				avg_diff_per_image.append(qt/sc/(sc-1)/2.0)
 
-		else:
+		else:  #  "c" symmetry
 			trans_projs = []
 			matrix_rot = calculate_matrix_rot(projs2)
 			for iConf in xrange(sc):
@@ -169,6 +174,8 @@ def find_common_subset_3(projs, target_threshold, minimal_subset_size=3, sym = "
 			for i in xrange(sc):
 				for j in xrange(i):
 					trans_matrix.extend(matrix_rot[i][j][0:3])
+			#  The C code below applies all transformations found and computes for each image sum acos between projection's normals
+			#  I am afraid the only way to cope with it is to pass the symmetry and compute acos between all symmetry related normals, choosing the smallest
 			avg_diff_per_image = Util.diff_between_matrix_of_3D_parameters_angles(trans_projs, trans_matrix)
 		#print  "  AAAA ",iIter
 		#print avg_diff_per_image

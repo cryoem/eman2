@@ -23266,37 +23266,6 @@ inline Transform create_transform(float phi, float theta, float psi, float tx = 
 	return t;
 }
 
-// Calculate angles between param1 and param2 rotated by phi, theta, psi
-// param1/2: (phi0, theta0, psi0, x0, y0, phi1, theta1, psi1, x1, y1, phi2, ... )
-// returns n vales for n given projections
-inline void diff_between_3D_parameters_angles( std::vector<float> & param1, std::vector<float> & param2, float phi, float theta, float psi, std::vector<float> & result)
-{
-	const unsigned n = param1.size() / 5;
-	const float deg2rad = 3.141592653592 / 180.0;
-	Transform rot = create_transform(phi, theta, psi);
-	for ( unsigned i = 0;  i < n;  ++i ) {
-		Transform temp = create_transform(param2[5*i+0], param2[5*i+1], param2[5*i+2], param2[5*i+3], param2[5*i+4]) * rot;
-		Dict out = temp.get_params("spider");
-		// calculate angle between positions on the sphere
-		const float phi2   = static_cast<float>(out["phi"  ]) * deg2rad;
-		const float theta2 = static_cast<float>(out["theta"]) * deg2rad;
-		const float phi1   = param1[5*i+0] * deg2rad;
-		const float theta1 = param1[5*i+1] * deg2rad;
-		const float st1 = sin(theta1);
-		const float st2 = sin(theta2);
-		const float ct1 = cos(theta1);
-		const float ct2 = cos(theta2);
-		const float cp1cp2_sp1sp2 = cos(phi1 - phi2);
-		float val = st1 * st2 * cp1cp2_sp1sp2 + ct1 * ct2;
-		if (val < -1.0) {
-			val = -1.0;
-		} else if (val > 1.0) {
-			val = 1.0;
-		}
-		result[i] += acos( val ) / deg2rad;
-	}
-}
-
 // Calculate average angle error per projection for given sets of configurations and theirs pair-wise rotations
 // all_params: [ phi0, theta0, psi0, sx0, sy0, phi1, theta1, psi1, sx1, sy1, phi2, .... ] - contains (5*number_of_projections) elements
 // rotations: (phi_1_0, theta_1_0, psi_1_0, phi_2_0, theta_2_0, psi_2_0, phi_2_1, theta_2_1, psi_2_1, ... ) - contains (3*number_of_projections*(number_of_projections-1)/2) elements
@@ -23331,6 +23300,40 @@ std::vector<float> Util::diff_between_matrix_of_3D_parameters_angles( std::vecto
 
 	return avg;
 }
+
+
+
+// Calculate angles between param1 and param2 rotated by phi, theta, psi
+// param1/2: (phi0, theta0, psi0, x0, y0, phi1, theta1, psi1, x1, y1, phi2, ... )
+// returns n vales for n given projections
+inline void diff_between_3D_parameters_angles( std::vector<float> & param1, std::vector<float> & param2, float phi, float theta, float psi, std::vector<float> & result)
+{
+	const unsigned n = param1.size() / 5;
+	const float deg2rad = 3.141592653592 / 180.0;
+	Transform rot = create_transform(phi, theta, psi);
+	for ( unsigned i = 0;  i < n;  ++i ) {
+		Transform temp = create_transform(param2[5*i+0], param2[5*i+1], param2[5*i+2], param2[5*i+3], param2[5*i+4]) * rot;
+		Dict out = temp.get_params("spider");
+		// calculate angle between positions on the sphere
+		const float phi2   = static_cast<float>(out["phi"  ]) * deg2rad;
+		const float theta2 = static_cast<float>(out["theta"]) * deg2rad;
+		const float phi1   = param1[5*i+0] * deg2rad;
+		const float theta1 = param1[5*i+1] * deg2rad;
+		const float st1 = sin(theta1);
+		const float st2 = sin(theta2);
+		const float ct1 = cos(theta1);
+		const float ct2 = cos(theta2);
+		const float cp1cp2_sp1sp2 = cos(phi1 - phi2);
+		float val = st1 * st2 * cp1cp2_sp1sp2 + ct1 * ct2;
+		if (val < -1.0) {
+			val = -1.0;
+		} else if (val > 1.0) {
+			val = 1.0;
+		}
+		result[i] += acos( val ) / deg2rad;
+	}
+}
+
 
 std::vector<int> Util::max_clique(std::vector<int> edges)
 {
