@@ -48,7 +48,7 @@ def main():
 	parser.add_argument("--importation",help="import particles",default='copy',guitype='combobox',choicelist='["move","copy","link"]',row=2,col=1,rowspan=1,colspan=1, mode='tomos')
 	parser.add_argument("--import_boxes",action="store_true",help="Import boxes",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='coords[True]')
 	parser.add_argument("--extension",type=str,help="Extension of the micrographs that the boxes match", default='dm3')
-	parser.add_argument("--box_type",help="Type of boxes to import, normally boxes, but for tilted data use tiltedboxes, and untiltedboxes for the tilted  particle partner",default="boxes",guitype='combobox',choicelist='["boxes","tiltedboxes","untiltedboxes"]',row=2,col=1,rowspan=1,colspan=1, mode="coords['boxes']")
+	parser.add_argument("--box_type",help="Type of boxes to import, normally boxes, but for tilted data use tiltedboxes, and untiltedboxes for the tilted  particle partner",default="boxes",guitype='combobox',choicelist='["boxes","coords","tiltedboxes","untiltedboxes"]',row=2,col=1,rowspan=1,colspan=1, mode="coords['boxes']")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -75,6 +75,21 @@ def main():
 				js_open_dict(info_name(filename,nodir=True))["boxes"]=boxlist
 				if not "{}.hdf".format(base_name(filename,nodir=True)) in micros:
 					print "Warning: Imported boxes for {}, but micrographs/{}.hdf does not exist".format(base_name(filename),base_name(filename,True))
+
+		if options.box_type == 'coords':
+			micros=os.listdir("micrographs")
+			for filename in args:
+				boxlist = []
+				fh = open(filename, 'r')
+				for line in fh.readlines():
+					if line[0]=="#" : continue
+					fields = line.split()
+					if len(fields)<2 : continue		# skip lines that don't work
+					boxlist.append([float(fields[0]), float(fields[1]), 'manual'])
+				js_open_dict(info_name(filename,nodir=True))["boxes"]=boxlist
+				if not "{}.hdf".format(base_name(filename,nodir=True)) in micros:
+					print "Warning: Imported boxes for {}, but micrographs/{}.hdf does not exist".format(base_name(filename),base_name(filename,True))
+
 
 		elif options.box_type == 'tiltedboxes':
 

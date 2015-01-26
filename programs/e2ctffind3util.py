@@ -54,6 +54,8 @@ For more information on ctffind3 please see: Mindell, JA, Grigorieff N.  2003.  
 	parser.add_argument("--voltage", default=0.0, type=float,help="The voltage (in kV) of the microscope", guitype='floatbox', row=4, col=0, rowspan=1, colspan=1, mode="import,run")
 	parser.add_argument("--ac", default=0.0, type=float,help="The amplitude contrast of the micrographs", guitype='floatbox', row=4, col=1, rowspan=1, colspan=1, mode="import,run")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness", guitype='intbox', row=5, col=0, rowspan=1, colspan=1, mode="import,run")
+	parser.add_argument("--importctffind3", default=False, action="store_true",help="Import ctffind3 data?", guitype='boolbox', row=6, col=0, rowspan=1, colspan=1, mode='import[True]')
+	parser.add_argument("--importctffind4", default=False, action="store_true",help="Import ctffind4 data?", guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='import[False]')
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	parser.add_pos_argument(name="micrographs",help="List the micrographs to run ctffind3 on here.", default="", guitype='filebox', browser="EMRawDataTable(withmodal=True,multiselect=True)", filecheck=False, row=1, col=0,rowspan=1, colspan=2, mode='run')
@@ -63,7 +65,8 @@ For more information on ctffind3 please see: Mindell, JA, Grigorieff N.  2003.  
 	parser.add_argument("--defocusmin", default=0.0, type=float,help="The starting defocus value for grid search (microns)", guitype='floatbox', row=7, col=0, rowspan=1, colspan=1, mode="run")
 	parser.add_argument("--defocusmax", default=0.0, type=float,help="The end defocus value for grid search (microns)", guitype='floatbox', row=7, col=1, rowspan=1, colspan=1, mode="run")
 	parser.add_argument("--defocusstep", default=0.0, type=float,help="The step width for grid search (microns)", guitype='floatbox', row=8, col=0, rowspan=1, colspan=1, mode="run")
-	parser.add_argument("--runctffind3", default=False, action="store_true",help="Run ctffind3 on the selected micrographs?", guitype='boolbox', row=9, col=1, rowspan=1, colspan=1, mode='run[True]')
+	parser.add_argument("--runctffind3", default=False, action="store_true",help="Run ctffind3 on the selected micrographs?", guitype='boolbox', row=9, col=0, rowspan=1, colspan=1, mode='run[True]')
+	parser.add_argument("--runctffind4", default=False, action="store_true",help="Run ctffind4 on the selected micrographs?", guitype='boolbox', row=9, col=1, rowspan=1, colspan=1, mode='run[False]')
 	parser.add_argument("--windowsize", default=0, type=int,help="The amplitude contrast of the micrographs", guitype='intbox', row=8, col=1, rowspan=1, colspan=1, mode="run")
 	
 	(options, args) = parser.parse_args()
@@ -90,23 +93,30 @@ For more information on ctffind3 please see: Mindell, JA, Grigorieff N.  2003.  
 			except:
 				pass
 	
-	
-	if options.runctffind3:
-		run_ctffind3(options.apix, args, options.cs, options.voltage, options.ac, options.windowsize, options.minres, options.maxres, options.defocusmin*10000, options.defocusmax*10000, options.defocusstep*10000, options.verbose)
+	if options.runctffind4:
+		version = "ctffind4"
+		run_ctffind(options.apix, args, options.cs, options.voltage, options.ac, options.windowsize, options.minres, options.maxres, options.defocusmin*10000, options.defocusmax*10000, options.defocusstep*10000, options.verbose,version)
+	elif options.runctffind3:
+		version = "ctffind3"
+		run_ctffind(options.apix, args, options.cs, options.voltage, options.ac, options.windowsize, options.minres, options.maxres, options.defocusmin*10000, options.defocusmax*10000, options.defocusstep*10000, options.verbose, version)
 
-	import_ctf(options.voltage, options.cs, options.ac, options.apix, options.verbose)
-	
+	if options.importctffind4 or options.runctffind4:
+		version = "ctffind4"
+	else:
+		version = "ctffind3"
+	import_ctf(options.voltage, options.cs, options.ac, options.apix, options.verbose, version)
+
 	print "e2ctffind3util.py complete!"
 	E2end(logid)
 
-def import_ctf(voltage, cs, ac, apix, verbose):
-	if not os.path.exists("ctffind3"):
-		print "no ctffind3 directory found. Please see usage instructions!"
+def import_ctf(voltage, cs, ac, apix, verbose, version):
+	if not os.path.exists(version):
+		print "no " + version + " directory found. Please see usage instructions!"
 		exit(-5)
 		
 	for filename in os.listdir("micrographs"):
-		if os.path.exists("ctffind3/" + base_name(filename)+"_ctffind3.log"):
-			f_log = open("ctffind3/" + base_name(filename) + "_ctffind3.log")
+		if os.path.exists(version + "/" + base_name(filename)+"_" + version + ".log"):
+			f_log = open(version + "/" + base_name(filename) + "_" + version + ".log")
 			for line in f_log.readlines():
 				if len(line) > 1:
 					if len(line.split()) == 6:
@@ -129,12 +139,12 @@ def import_ctf(voltage, cs, ac, apix, verbose):
 							#launch_childprocess("e2ctf.py --voltage {} --cs {} --ac {} --apix {} --autofit --curdefocusfix --verbose {} {}".format(voltage,cs,ac,apix,verbose-1,))
 	launch_childprocess("e2ctf.py --voltage {} --cs {} --ac {} --apix {} --allparticles --autofit --curdefocusfix --astigmatism --verbose {}".format(voltage,cs,ac,apix,verbose-1))
 
-def run_ctffind3(apix, args, cs, voltage, ac, windowsize, minres, maxres, defocusmin, defocusmax, defocusstep,verbose):
-	print "Running ctffind3"
+def run_ctffind(apix, args, cs, voltage, ac, windowsize, minres, maxres, defocusmin, defocusmax, defocusstep,verbose, version):
+	print "Running " + version
 	dstep = 10.0
 	mag = dstep / apix * 10000
 	
-	try: os.mkdir("ctffind3")
+	try: os.mkdir(version)
 	except: pass
 	created = False
 	for image in args:
@@ -145,16 +155,18 @@ def run_ctffind3(apix, args, cs, voltage, ac, windowsize, minres, maxres, defocu
 		if image.split(".")[1] != "mrc":
 			launch_childprocess("e2proc2d.py {} {}.mrc --verbose={}".format(image,image.split(".")[0],verbose-1))
 			created = True
-		card.write(image.split(".")[0] + ".mrc\nctffind3/" + base_name(image) + "_ctffind3.ctf\n" + str(cs) + "," + str(voltage) + "," + str(ac) + "," + str(mag) + "," + str(dstep) + "\n" + str(windowsize) + "," + str(minres) + "," + str(maxres) + "," + str(defocusmin) + "," + str(defocusmax) + "," + str(defocusstep))
+		card.write(image.split(".")[0] + ".mrc\n" + version + "/" + base_name(image) + "_" + version + ".ctf\n" + str(cs) + "," + str(voltage) + "," + str(ac) + "," + str(mag) + "," + str(dstep) + "\n" + str(windowsize) + "," + str(minres) + "," + str(maxres) + "," + str(defocusmin) + "," + str(defocusmax) + "," + str(defocusstep))
 		card.close()
-		print "running ctffind3 on: " + image
-		s = "`which ctffind3.exe` < card.txt >ctffind3/" + base_name(image) + "_ctffind3.log"
+		print "running " + version + " on: " + image
+		if version == "ctffind3":
+			s = "`which ctffind3.exe` < card.txt >ctffind3/" + base_name(image) + "_ctffind3.log"
+		else:
+			s = "`which ctffind` --old-school-input < card.txt >ctffind4/" + base_name(image) + "_ctffind4.log"
 		call(s,shell=True)
-		#launch_childprocess("`which ctffind3.exe` < card.txt >ctffind3/" + base_name(image) + "_ctffind3.log")
 		if created:
 			os.remove(image.split(".")[0] + ".mrc")
 			created = False
-	os.remove("card.txt")
+	#os.remove("card.txt")
 	
 if __name__=="__main__":
 	main()
