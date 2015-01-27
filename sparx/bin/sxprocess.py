@@ -40,7 +40,8 @@ from	utilities 	import *
 from    statistics import mono
 import  os
 
-""" Traveling salesman problem solved using Simulated Annealing.
+"""
+	Traveling salesman problem solved using Simulated Annealing.
 """
 from scipy import *
 from pylab import *
@@ -228,6 +229,8 @@ def main():
 	        sxprocess.py input_stack.hdf output_stack.hdf --order  --radius=25
 	   4.3  Use option circular to form a circular chain.
 	        sxprocess.py input_stack.hdf output_stack.hdf --order  --circular--radius=25
+		New circular code based on pairwise comparisons
+		sxprocess.py aclf.hdf oaclf.hdf --order_lookup  --circular --radius=25 --xr=2 --pairwiseccc=lcc.txt
 
 	5.  Generate a stack of projections bdb:data and micrographs with prefix mic (i.e., mic0.hdf, mic1.hdf etc) from structure input_structure.hdf, with CTF applied to both projections and micrographs:
 	sxprocess.py input_structure.hdf data mic --generate_projections format="bdb":apix=5.2:CTF=True:boxsize=64
@@ -411,7 +414,6 @@ def main():
 				print lsnake
 				for m in xrange(len(d)):  d[snake[m]].write_image(new_stack, m)
 			else:
-				print "     Using options.order: else block"
 				#  figure the "best" starting image
 				maxsum = -1.023
 				for m in xrange(len(d)):

@@ -42,8 +42,12 @@ def mult_transform(v1, v2):
 
 
 def orient_params(params, indexes=None, sym = "c1"):
+	#  The assumption here is that the angles are within the unique region
+	#  Since they come from projection refinement, why it would be otherwise
+	#  Any problems would be due to how even_angles generates reference angles
 	from utilities import rotation_between_anglesets
 	from pixel_error import angle_diff
+	from EMAN2 import Transform
 
 	m = len(params)
 	n = len(params[0])
@@ -67,18 +71,39 @@ def orient_params(params, indexes=None, sym = "c1"):
 		"""
 	elif(sym[0] == "c" and int(sym[1:])>1):
 		#  C symmetry would have to be done by creating a cn copies of the data set and then finding the angles with rotation_between_anglesets
-		#  the rest as below
-		pass
-	else:
-		from EMAN2 import Transform
+
 		if indexes == None:   indexes = range(n)
+		cmp_par_0 = []
+		for j in indexes:
+			cmp_par_0.append(params[0][j])
+		
 		for i in xrange(1,m):
 			cmp_par_i = []
-			cmp_par_0 = []
 			for j in indexes:
 				cmp_par_i.append(params[i][j])
-				cmp_par_0.append(params[0][j])
 			t1,t2,t3 = rotation_between_anglesets(cmp_par_i, cmp_par_0)
+			del cmp_par_i
+			rot = Transform({"type":"spider","phi":t1,"theta":t2,"psi":t3})
+			for j in xrange(n):
+				params[i][j] = mult_transform(params[i][j], rot)
+			#  Another problem, , the angles have to be brought back to the unique region.
+			# mirror checking
+			psi_diff = angle_diff( [params[i][j][2] for j in indexes], [params[0][j][2] for j in indexes] )
+			if(abs(psi_diff-180.0) <90.0):
+				#mirror
+				for j in indexes:
+					params[i][j][2] = (params[i][j][2] + 180.0) % 360.0
+	else:
+		if indexes == None:   indexes = range(n)
+		cmp_par_0 = []
+		for j in indexes:
+			cmp_par_0.append(params[0][j])
+		for i in xrange(1,m):
+			cmp_par_i = []
+			for j in indexes:
+				cmp_par_i.append(params[i][j])
+			t1,t2,t3 = rotation_between_anglesets(cmp_par_i, cmp_par_0)
+			del cmp_par_i
 			rot = Transform({"type":"spider","phi":t1,"theta":t2,"psi":t3})
 			for j in xrange(n):
 				params[i][j] = mult_transform(params[i][j], rot)
@@ -256,8 +281,16 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 		log.add("Start VIPER1")
 
 	if number_of_proc < number_of_runs:
-		ERROR("number_of_proc < number_of_runs","VIPER1")
-	
+		ERROR("number_of_proc < number_of_runs","VIPER1",1,myid)
+
+	if an != "-1":
+		ERROR("Option an not used","VIPER1",1,myid)
+	if sym[0] == "d" and int(sym[1:])%2 == 0:
+		ERROR("Symmetry d-even not implemented yet, please contact the developer","VIPER1",1,myid)
+	if sym[0] == "d" and int(sym[1:]) !=3 :
+		log.add("WARNING:  d-odd symmetries other than 3 were not tested!")
+
+
 	mpi_subcomm = mpi_comm_split(mpi_comm, myid % number_of_runs, myid / number_of_runs)
 	mpi_subrank = mpi_comm_rank(mpi_subcomm)
 	mpi_subsize = mpi_comm_size(mpi_subcomm)
@@ -269,11 +302,12 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 	step        = get_input_from_string(ts)
 	delta       = get_input_from_string(delta)
 	lstp = min(len(xrng), len(yrng), len(step), len(delta))
+	"""
 	if an == "-1":
 		an = [-1] * lstp
 	else:
 		an = get_input_from_string(an)
-
+	"""
 	first_ring  = int(ir)
 	rstep       = int(rs)
 	last_ring   = int(ou)
@@ -389,7 +423,8 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				if mpi_subrank < len(proj_ids):
 					# -------- alignment
 					im = proj_ids[mpi_subrank]
-					peak, pixel_error, checked_refs, iref = shc(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], an[N_step])
+					#  For symmetries pixel error is no doubt calculated incorrectly, as it has to be given as a minimum over symmetry transformations
+					peak, pixel_error, checked_refs, iref = shc(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step]) # this option should not be used here PAP, an[N_step])
 					# -------- gather results to root
 					vector_assigned_refs = wrap_mpi_gatherv([iref], 0, mpi_subcomm)
 					vector_previousmax   = wrap_mpi_gatherv([data[im].get_attr("previousmax")], 0, mpi_subcomm)
@@ -469,7 +504,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 			#=========================================================================
 
 			#=========================================================================
-			# centering
+			# centering, for d unnecessary, for cn, n>1 only z can move
 			if center == -1 and sym[0] == 'c':
 				from utilities      import estimate_3D_center_MPI, rotate_3D_shift
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(data[image_start:image_end], total_nima, mpi_subrank, mpi_subsize, 0, mpi_comm=mpi_subcomm) #estimate_3D_center_MPI(data, number_of_runs*total_nima, myid, number_of_proc, main_node, mpi_comm=mpi_comm)
@@ -511,8 +546,9 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				# ------ orientation - begin
 				params_0 = wrap_mpi_bcast(params, mpi_subroots[0], mpi_comm)
 				if mpi_subrank == 0:
-
+					#  Parameters will be oriented
 					subset_thr, subset_min, avg_diff_per_image = find_common_subset_3([params_0, params], 2.0, len(params)/3, sym)
+					#  outliers are removed
 					if len(subset_thr) < len(subset_min):
 						subset = subset_min
 					else:
@@ -521,6 +557,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 					from utilities import write_text_row
 					#write_text_row(params_0,"bparamszero%04d%04d.txt"%(myid,total_iter))
 					#write_text_row(params,"bparams%04d%04d.txt"%(myid,total_iter))
+					#  Orientation repeated for the selected subset
 					orient_params([params_0, params], subset, sym)
 					"""
 					if myid == 2:
