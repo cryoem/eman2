@@ -515,7 +515,7 @@ def main():
 
 		tdummy = Transform({"type":"2D"})
 		maxsum = -1.023
-		for m in xrange(initial, initial+1):
+		for m in xrange(0,lend):#initial, initial+1):
 			indc = range( lend )
 			lsnake = [[m, tdummy, 0.0]]
 			del indc[m]
@@ -543,7 +543,7 @@ def main():
 			T = lccc[mono(indc[-1], lsnake[-1][0])][1]
 			if( indc[-1] > lsnake[-1][0]):  T = T.inverse()
 			lsnake.append([indc[-1], T, lccc[mono(indc[-1], lsnake[-1][0])][0]])
-			#print  " initial image and lsum  ",m,lsum
+			print  " initial image and lsum  ",m,lsum
 			#print lsnake
 			if(lsum > maxsum):
 				maxsum = lsum

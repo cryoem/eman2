@@ -826,17 +826,23 @@ def ave2dtransform(args, data, return_avg_pixel_error=False):
 		return sqr_pixel_error, ave_params
 
 def pixel_error_angle_sets(agls1, agls2, Threshold=1.0e23, r=1.0):
-	""" 	
+	"""
+	  It will compute actual pixel errors using all five orientation parameters (including shifts)
+	  However, orientation is found using only the angles.
+		 
+		 INCORRECT FOR SYMMETRY
+	
 	  Input: Two lists, i-th element of each list is either a list of the three Eulerian angles [[phi1, theta1, psi1], [phi2, theta2, psi2], ...]
 	         as read by read_text_row(filename, "")
 	         Or, the two lists can be a list of Transform objects. The two lists have the same length and the i-th element of one list is assumed to correspond to the i-th element of the
 		 second list. 
 		 Threshold is a float.
 		 r is the radius of the object.
+		 
 	  Output: 1. Uses rotation_between_anglesets to find the overall 3D rotation between the two sets of Eulerian angles using second list as reference
-	  	  2. The overall rotation found by rotation_between_anglesets is applied to the first list (agls1) 
-		  3. Output is a list of lists: If the i-th corresponding pair of eulerian angles on agls2 and agls1 has pixel error (computed using max_3D_pixel_error) less than Threshold, then append the list 
-		     [i, p], where p is the pixel error, into the output list.
+	  	      2. The overall rotation found by rotation_between_anglesets is applied to the first list (agls1) 
+		      3. Output is a list of lists: If the i-th corresponding pair of eulerian angles on agls2 and agls1 has pixel error (computed using max_3D_pixel_error) less than Threshold, then append the list 
+		       [i, p], where p is the pixel error, into the output list.
 	"""
 	from pixel_error import max_3D_pixel_error
 	from utilities   import read_text_file, rotation_between_anglesets
@@ -888,6 +894,13 @@ def pixel_error_angle_sets(agls1, agls2, Threshold=1.0e23, r=1.0):
 	return avgPixError12,[phi12,theta12,psi12]
 
 def rotate_angleset_to_match(agls1, agls2):
+	"""
+	  Finds rotation between two sets of angles, agls2 is the template
+	  It will also establish whether mirror is required
+	  Rotation is applied to agsl1 and the set of rotated angles is returned
+	  Rotation itself is not returned.
+	  INCORRECT FOR SYMMETRY
+	"""
 	from multi_shc    import mult_transform
 	from pixel_error  import angle_diff
 	from utilities    import rotation_between_anglesets, angle_between_projections_directions
@@ -895,7 +908,7 @@ def rotate_angleset_to_match(agls1, agls2):
 
 	n = len(agls1)
 
-	t1 = rotation_between_anglesets(agls1,     agls2)
+	t1 = rotation_between_anglesets(agls1, agls2)
 
 	T1 = Transform({"type":"spider","phi":t1[0],"theta":t1[1],"psi":t1[2]})
 	rot1 = [None]*n

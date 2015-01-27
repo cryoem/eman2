@@ -3631,6 +3631,7 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 		t2.set_trans(Vec2f(-s2x, -s2y))
 		data.set_attr("xform.projection", t2)
 		data.set_attr("previousmax", peak)
+		#  Find the pixel error that is minimum over symmetry transformations
 		from pixel_error import max_3D_pixel_error
 		pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
 		if finfo:

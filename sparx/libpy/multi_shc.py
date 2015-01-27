@@ -42,9 +42,16 @@ def mult_transform(v1, v2):
 
 
 def orient_params(params, indexes=None, sym = "c1"):
+	#  This is in essence the same as rotate_angleset_to_match in pixel_error.
+	#   I believe only this one should be kept
+	#
 	#  The assumption here is that the angles are within the unique region
 	#  Since they come from projection refinement, why it would be otherwise
 	#  Any problems would be due to how even_angles generates reference angles
+	#
+	#  The role of indexes unclear.  
+	#   Should they be used to estimate the transformation/mirror and then the trans applied to the whole set,
+	#     or only to subset??
 	from utilities import rotation_between_anglesets
 	from pixel_error import angle_diff
 	from EMAN2 import Transform
@@ -113,23 +120,6 @@ def orient_params(params, indexes=None, sym = "c1"):
 				#mirror
 				for j in indexes:
 					params[i][j][2] = (params[i][j][2] + 180.0) % 360.0
-"""
-
-def shuffle_configurations(params):
-	from random import shuffle
-
-	m = len(params)
-	n = len(params[0])
-	new_params = [ ([0]*n) for i in xrange(m) ]
-
-	for i in xrange(n):
-		src = range(m)
-		shuffle(src)
-		for j in xrange(m):
-			new_params[j][i] = params[src[j]][i]
-
-	return new_params
-"""
 
 def calculate_matrix_rot(projs):
 	from utilities import rotation_between_anglesets
@@ -158,6 +148,7 @@ def find_common_subset_3(projs, target_threshold, minimal_subset_size=3, sym = "
 	error_thr_subset = -1
 	error_size_subset = -1
 
+	#  Start from the entire set and the slowly decrease it by rejecting worst data one by one.
 	for iIter in xrange(n-2):
 		projs2 = [0.0]*sc
 		for iConf in xrange(sc):
@@ -204,6 +195,8 @@ def find_common_subset_3(projs, target_threshold, minimal_subset_size=3, sym = "
 			avg_diff_per_image = Util.diff_between_matrix_of_3D_parameters_angles(trans_projs, trans_matrix)
 		#print  "  AAAA ",iIter
 		#print avg_diff_per_image
+		
+		#  Remove data whose avg_diff_per_image is larger than max_error
 		max_error = -1.0
 		the_worst_proj = -1
 		for i in xrange(len(avg_diff_per_image)):
@@ -219,6 +212,8 @@ def find_common_subset_3(projs, target_threshold, minimal_subset_size=3, sym = "
 			error_size_subset = max_error
 		subset.remove(the_worst_proj)
 
+	#  End of pruning loop
+
 	if res_thr_subset == None:
 		res_thr_subset   = subset
 		error_thr_subset = max_error
@@ -230,6 +225,24 @@ def find_common_subset_3(projs, target_threshold, minimal_subset_size=3, sym = "
 	if thresholds:
 		return res_thr_subset, res_size_subset, error_thr_subset, error_size_subset
 	return res_thr_subset, res_size_subset, avg_diff_per_image
+
+"""
+
+def shuffle_configurations(params):
+	from random import shuffle
+
+	m = len(params)
+	n = len(params[0])
+	new_params = [ ([0]*n) for i in xrange(m) ]
+
+	for i in xrange(n):
+		src = range(m)
+		shuffle(src)
+		for j in xrange(m):
+			new_params[j][i] = params[src[j]][i]
+
+	return new_params
+"""
 
 
 # parameters: list of (all) projections | reference volume | ...
@@ -434,7 +447,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 					# -------- alignment
 					im = proj_ids[mpi_subrank]
 					#  For symmetries pixel error is no doubt calculated incorrectly, as it has to be given as a minimum over symmetry transformations
-					peak, pixel_error, checked_refs, iref = shc(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step]) # this option should not be used here PAP, an[N_step])
+					peak, pixel_error, checked_refs, iref = shc(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], sym = sym) # this option should not be used here PAP, an[N_step])
 					# -------- gather results to root
 					vector_assigned_refs = wrap_mpi_gatherv([iref], 0, mpi_subcomm)
 					vector_previousmax   = wrap_mpi_gatherv([data[im].get_attr("previousmax")], 0, mpi_subcomm)
@@ -481,7 +494,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 			if myid == main_node:
 				log.add("Time of alignment = %f\n"%(time()-start_time))
 
-			storevol=False
+			storevol = False
 
 			#=========================================================================
 			#output pixel errors, check stop criterion
@@ -556,7 +569,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				# ------ orientation - begin
 				params_0 = wrap_mpi_bcast(params, mpi_subroots[0], mpi_comm)
 				if mpi_subrank == 0:
-					#  Parameters will be oriented
+					#  Parameters will be oriented based on a subset that agrees.  The knowledge of the subset itself is not used anywhere
 					subset_thr, subset_min, avg_diff_per_image = find_common_subset_3([params_0, params], 2.0, len(params)/3, sym)
 					#  outliers are removed
 					if len(subset_thr) < len(subset_min):
@@ -573,7 +586,6 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 					if myid == 2:
 						print  " subset  ",len(subset)#," ...  ",subset
 					"""
-					from utilities import write_text_row
 					#write_text_row(params_0,"aparamszero%04d%04d.txt"%(myid,total_iter))
 					#write_text_row(params,"aparams%04d%04d.txt"%(myid,total_iter))
 					# if myid == 2:  print  " params after orient  ",myid,params[:4],params[-4:]
