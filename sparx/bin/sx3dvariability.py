@@ -564,3 +564,66 @@ def main():
 
 if __name__=="__main__":
 	main()
+
+
+"""
+#  This is code for handling symmetries by the above program.  To be incorporated. PAP 01/27/2015
+from __future__ import print_function
+
+from EMAN2 import *
+from sparx import *
+from EMAN2db import db_open_dict
+
+
+def cmdexecute(cmd):
+	from   time import localtime, strftime
+	import subprocess
+	outcome = subprocess.call(cmd, shell=True)
+	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	if(outcome == 1):
+		print(  line,"ERROR!!   Command failed:  ", cmd)
+		from sys import exit
+		exit()
+	else:  print(line,"Executed successfully: ",cmd)
+
+#  Input
+instack = "Clean_NORM_CTF_start_wparams.hdf"
+instack = "bdb:data"
+sym = 'd3'
+
+if(instack[:4] !="bdb:"):
+	stack = "bdb:data"
+	delete_bdb(stack)
+	cmdexecute("sxcpy.py  "+instack+"  "+stack)
+else:
+	stack = instack
+
+qt = EMUtil.get_all_attributes(stack,'xform.projection')
+
+if True:
+	na = len(qt)
+	ts = get_symt(sym)
+	ks = len(ts)
+	angsa = [None]*na
+	for k in xrange(ks):
+		delete_bdb("bdb:Q%1d"%k)
+		cmdexecute("e2bdb.py  "+stack+"  --makevstack=bdb:Q%1d"%k)
+		DB = db_open_dict("bdb:Q%1d"%k)
+		for i in xrange(na):
+			ut = qt[i]*ts[k]
+			DB.set_attr(i, "xform.projection", ut)
+			#bt = ut.get_params("spider")
+			#angsa[i] = [round(bt["phi"],3)%360.0, round(bt["theta"],3)%360.0, bt["psi"], -bt["tx"], -bt["ty"]]
+		#write_text_row(angsa, 'ptsma%1d.txt'%k)
+		#cmdexecute("e2bdb.py  "+stack+"  --makevstack=bdb:Q%1d"%k)
+		#cmdexecute("sxheader.py  bdb:Q%1d  --params=xform.projection  --import=ptsma%1d.txt"%(k,k))
+		DB.close()
+	delete_bdb("bdb:sdata")
+	cmdexecute("e2bdb.py . --makevstack=bdb:sdata --filt=Q")
+        cmdexecute("ls  EMAN2DB/sdata*")
+	a = get_im("bdb:sdata")
+	a.set_attr("variabilitysymmetry","d3")
+	a.write_image("bdb:sdata")
+
+
+"""
