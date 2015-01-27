@@ -2163,6 +2163,60 @@ def reduce_EMData_to_root(data, myid, main_node = 0, comm = -1):
 			array1d[block_begin:block_end] = tmpsum[0:block_size]
 
 
+
+def bcast_compacted_EMData_to_all(refrings, myid, comm=-1):
+
+	from applications import MPI_start_end
+	from EMAN2 import EMNumPy
+	from numpy import concatenate, shape, array, split
+	from mpi import mpi_comm_size, mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
+
+	if comm == -1 or comm == None: comm = MPI_COMM_WORLD
+
+
+	num_ref = len(refrings)
+	ncpu = mpi_comm_size(comm)	# Total number of processes, passed by --np option.
+
+	ref_start, ref_end = MPI_start_end(num_ref, ncpu, myid)
+	my_ref_rings = range(ref_start, ref_end)
+
+	data = EMNumPy.em2numpy(refrings[my_ref_rings[0]])
+	size_of_one_refring_assumed_common_to_all = data.size
+
+	# n = shape(data)
+	# size_of_one_refring_assumed_common_to_all = 1
+	# for i in n: size_of_one_refring_assumed_common_to_all *= i
+
+	if size_of_one_refring_assumed_common_to_all*len(my_ref_rings) > (2**31-1):
+		print "Sending refrings: size of data to broadcast is greater than 2GB"
+
+	for sender_id in range(ncpu):
+		if sender_id == myid:
+			data = array([], dtype = 'float32')
+			for i in my_ref_rings:
+				data = concatenate([data, EMNumPy.em2numpy(refrings[i])])
+		else:
+			data = array([], dtype = 'float32')
+
+
+		sender_ref_start, sender_ref_end = MPI_start_end(num_ref, ncpu, sender_id)
+		sender_size_of_refrings = (sender_ref_end - sender_ref_start)*size_of_one_refring_assumed_common_to_all
+		sender_ref_rings = range(sender_ref_start, sender_ref_end)
+
+		# size_of_refrings = mpi_bcast(size_of_refrings, 1, MPI_INT, sender_id, comm)
+		data = mpi_bcast(data, sender_size_of_refrings, MPI_FLOAT, sender_id, comm)
+		# print "Just sent %d float32 elements"%data.size
+
+		if myid != sender_id:
+			for i in sender_ref_rings:
+				offset_ring = sender_ref_rings[0]
+				start_p = (i-offset_ring)*size_of_one_refring_assumed_common_to_all
+				end_p = (i+1-offset_ring)*size_of_one_refring_assumed_common_to_all
+				refrings[i] = EMNumPy.numpy2em(data[start_p:end_p])
+
+
+
+
 def bcast_EMData_to_all(tavg, myid, source_node = 0, comm = -1):
 	from EMAN2 import EMNumPy
 	from numpy import array, shape, reshape
