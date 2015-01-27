@@ -65,7 +65,7 @@ def orient_params(params, indexes=None, sym = "c1"):
 					params[i][j] = temp[i][k]
 					k += 1
 		"""
-	elif(sym[0] == "c" and int(sym([1])>1):
+	elif(sym[0] == "c" and int(sym[1:])>1):
 		#  C symmetry would have to be done by creating a cn copies of the data set and then finding the angles with rotation_between_anglesets
 		#  the rest as below
 		pass
