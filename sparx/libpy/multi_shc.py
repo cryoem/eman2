@@ -240,8 +240,8 @@ def find_common_subset_3(projs, target_threshold, minimal_subset_size=3, sym = "
 def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, number_of_runs=2 ):
 
 	from alignment    import Numrinit, prepare_refrings, proj_ali_incore_local, shc
-	from utilities    import model_circle, get_input_from_string, get_params_proj, set_params_proj, wrap_mpi_gatherv, wrap_mpi_bcast, wrap_mpi_send, wrap_mpi_recv
-	from mpi          import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier, mpi_comm_split, mpi_comm_free
+	from utilities    import model_circle, get_input_from_string, get_params_proj, set_params_proj, wrap_mpi_gatherv, wrap_mpi_bcast, wrap_mpi_send, wrap_mpi_recv, wrap_mpi_split
+	from mpi          import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier, mpi_comm_split, mpi_comm_free, mpi_finalize
 	from projection   import prep_vol
 	from statistics   import hist_list
 	from applications import MPI_start_end
@@ -249,6 +249,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 	from global_def   import Util, ERROR
 	from time         import time
 	from random       import shuffle
+
 
 	ir     = ali3d_options.ir
 	rs     = ali3d_options.rs
@@ -291,10 +292,21 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 		log.add("WARNING:  d-odd symmetries other than 3 were not tested!")
 
 
-	mpi_subcomm = mpi_comm_split(mpi_comm, myid % number_of_runs, myid / number_of_runs)
+	# mpi_subcomm = mpi_comm_split(mpi_comm, myid % number_of_runs, myid / number_of_runs)
+	# mpi_subrank = mpi_comm_rank(mpi_subcomm)
+	# mpi_subsize = mpi_comm_size(mpi_subcomm)
+	# mpi_subroots = range(number_of_runs)
+
+	mpi_subcomm = wrap_mpi_split(mpi_comm, number_of_runs)
 	mpi_subrank = mpi_comm_rank(mpi_subcomm)
 	mpi_subsize = mpi_comm_size(mpi_subcomm)
-	mpi_subroots = range(number_of_runs)
+	# do not make any assumptions about the subroots, collect the rank_id as they are already assigned
+	if mpi_subrank == 0:
+		mpi_subroots = wrap_mpi_gatherv([myid], 0, mpi_comm)
+	else:
+		mpi_subroots = wrap_mpi_gatherv([], 0, mpi_comm)
+	mpi_subroots = wrap_mpi_bcast(mpi_subroots, main_node, mpi_comm)
+
 
 	xrng        = get_input_from_string(xr)
 	if  yr == "-1":  yrng = xrng
@@ -373,9 +385,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 			#=========================================================================
 			# build references
 			volft, kb = prep_vol(vol)
-			#refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, MPI=mpi_subcomm)
-			#Due to comunication overload this function is executed with MPI=False
-			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, MPI=False)
+			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, MPI=mpi_subcomm)
 			del volft, kb
 			all_ref_dirs = []
 			for r in refrings:
@@ -1135,7 +1145,9 @@ def volume_reconstruction(data, options, mpi_comm):
 		ref_data[3] = None #fscc
 		ref_data[4] = None#varf
 		#  call user-supplied function to prepare reference image, i.e., center and filter it
-		vol, cs = user_func(ref_data)
+		# vol, cs = user_func(ref_data)
+
+	vol = do_volume(data, options, 0, mpi_comm)
 
 	# broadcast volume
 	bcast_EMData_to_all(vol, myid, 0, comm=mpi_comm)
