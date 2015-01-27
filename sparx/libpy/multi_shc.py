@@ -570,6 +570,8 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				params_0 = wrap_mpi_bcast(params, mpi_subroots[0], mpi_comm)
 				if mpi_subrank == 0:
 					#  Parameters will be oriented based on a subset that agrees.  The knowledge of the subset itself is not used anywhere
+					#  There is much nonsense going on here.  The rest of what is here should be incorporated into find_common_subset_3
+					#  Minimal length of the subset is set to 1/3 of the number of parameters
 					subset_thr, subset_min, avg_diff_per_image = find_common_subset_3([params_0, params], 2.0, len(params)/3, sym)
 					#  outliers are removed
 					if len(subset_thr) < len(subset_min):
@@ -896,10 +898,15 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None 
 	step        = get_input_from_string(ts)
 	delta       = get_input_from_string(delta)
 	lstp = min(len(xrng), len(yrng), len(step), len(delta))
+
+	if an != "-1":
+		ERROR("Option an not used","VIPER1",1,myid)
+	"""
 	if an == "-1":
 		an = [-1] * lstp
 	else:
 		an = get_input_from_string(an)
+	"""
 
 	first_ring  = int(ir)
 	rstep       = int(rs)
@@ -1045,7 +1052,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None 
 			for im in xrange(nima):
 				#peak, pixer[im], checked_refs, number_of_peaks = shc_multi(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step], number_of_runs=number_of_runs)
 				# previousmax is set in shc
-				peak, pixer[im], checked_refs, iref = shc(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], an[N_step])
+				peak, pixer[im], checked_refs, iref = shc(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], sym = sym) # cannot use 'an' here
 				number_of_checked_refs += checked_refs
 			#=========================================================================
 			mpi_barrier(mpi_comm)
@@ -1510,6 +1517,9 @@ def mirror_and_reduce_dsym(params, sym):
 		if(abs(psi_diff-180.0) <90.0): temp[j][2] = (temp[j][2]+180.0)%360.0
 		for j in xrange(ns):  params[i][j] = solvs[0][1][j]
 
+
+"""
+# Not used anywhere
 def get_dsym_angles(p1, sym):
 	#  works only for d symmetry
 	from utilities import get_symt
@@ -1537,7 +1547,7 @@ def get_dsym_angles(p1, sym):
 			q = a*t[l]
 			q = q.get_params("spider")
 			print  " m ",q["phi"], q["theta"], q["psi"],-q["tx"],-q["tx"]
-
+"""
 
 
 """

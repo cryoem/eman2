@@ -1196,6 +1196,8 @@ def refprojs( volft, kb, ref_angles, cnx, cny, numr, mode, wr ):
 
 	return ref_proj_rings
 
+"""
+#   This code is a nonsense.  I may come back to it one of these days...  PAP 01/27/2015
 def proj_ali_incore_chunks(data, refrings, numr, xrng, yrng, step, finfo=None):
 	from utilities    import inverse_transform2
 	from EMAN2 import Vec2f
@@ -1252,14 +1254,23 @@ def proj_ali_incore_chunks(data, refrings, numr, xrng, yrng, step, finfo=None):
 	t2.set_trans(Vec2f(-s2x, -s2y))
 	data.set_attr("xform.projection", t2)
 	data.set_attr("referencenumber", iref)
+	from utilities import get_symt
 	from pixel_error import max_3D_pixel_error
-	pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
+	ts = get_symt(sym)
+	if(len(ts) > 1):
+		# only do it if it is not c1
+		pixel_error = +1.0e23
+		for kts in ts:
+			ut = t2*kts
+			# we do not care which position minimizes the error
+			pixel_error = min(max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
 
 	if finfo:
 		finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 		finfo.flush()
 
 	return peak, pixel_error
+"""
 
 def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 	from utilities    import inverse_transform2
@@ -1345,6 +1356,7 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 		finfo.flush()
 
 	#[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data, refrings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
+	#  multiref_polar_ali_2d_local has to be modified to work properly with symmetries, i.e., to consider wrapping of refrings distribution PAP 01/27/2015
 	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data, refrings, xrng, yrng, step, ant, mode, numr, cnx+dp["tx"], cny+dp["ty"])
 	iref=int(iref)
 	#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
@@ -1377,8 +1389,16 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 		t2.set_trans(Vec2f(-s2x, -s2y))
 		data.set_attr("xform.projection", t2)
+		from utilities import get_symt
 		from pixel_error import max_3D_pixel_error
-		pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
+		ts = get_symt(sym)
+		if(len(ts) > 1):
+			# only do it if it is not c1
+			pixel_error = +1.0e23
+			for kts in ts:
+				ut = t2*kts
+				# we do not care which position minimizes the error
+				pixel_error = min(max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
 		#print phi, theta, psi, s2x, s2y, peak, pixel_error
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
@@ -1387,6 +1407,8 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 	else:
 		return -1.0e23, 0.0
 
+"""
+#  This code is a nonsense
 def proj_ali_incore_local_chunks(data, refrings, numr, xrng, yrng, step, an, finfo=None, sym='c1'):
 	from utilities    import inverse_transform2
 	#from utilities    import set_params_proj, get_params_proj
@@ -1456,8 +1478,16 @@ def proj_ali_incore_local_chunks(data, refrings, numr, xrng, yrng, step, an, fin
 		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 		t2.set_trans(Vec2f(-s2x, -s2y))
 		data.set_attr("xform.projection", t2)
+		from utilities import get_symt
 		from pixel_error import max_3D_pixel_error
-		pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
+		ts = get_symt(sym)
+		if(len(ts) > 1):
+			# only do it if it is not c1
+			pixel_error = +1.0e23
+			for kts in ts:
+				ut = t2*kts
+				# we do not care which position minimizes the error
+				pixel_error = min(max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
 		#print phi, theta, psi, s2x, s2y, peak, pixel_error
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
@@ -1465,18 +1495,13 @@ def proj_ali_incore_local_chunks(data, refrings, numr, xrng, yrng, step, an, fin
 		return peak, pixel_error
 	else:
 		return -1.0e23, 0.0
+"""
 
 def proj_ali_incore_delta(data, refrings, numr, xrng, yrng, step, start, delta, finfo=None):
 	from utilities    import inverse_transform2
 	from EMAN2 import Vec2f
 
 	ID = data.get_attr("ID")
-	if finfo:
-		from utilities    import get_params_proj
-		phi, theta, psi, s2x, s2y = get_params_proj(data)
-		finfo.write("Image id: %6d\n"%(ID))
-		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, s2x, s2y))
-		finfo.flush()
 
 	mode = "F"
 	#  center is in SPIDER convention
@@ -1488,7 +1513,12 @@ def proj_ali_incore_delta(data, refrings, numr, xrng, yrng, step, start, delta, 
 	#phi, theta, psi, sxo, syo = get_params_proj(data)
 	t1 = data.get_attr("xform.projection")
 	dp = t1.get_params("spider")
+	if finfo:
+		finfo.write("Image id: %6d\n"%(ID))
+		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
+		finfo.flush()
 	#[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
+	#  This function should be modified to work properly for refrings wrapping due to symmetries 01/27/2015
 	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_delta(data, refrings, xrng, yrng, step, mode, numr, cnx+dp["tx"], cny+dp["ty"], start, delta)
 	iref = int(iref)
 	#[ang,sxs,sys,mirror,peak,numref] = apmq(projdata[imn], ref_proj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
@@ -1512,8 +1542,16 @@ def proj_ali_incore_delta(data, refrings, numr, xrng, yrng, step, start, delta, 
 	t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 	t2.set_trans(Vec2f(-s2x, -s2y))
 	data.set_attr("xform.projection", t2)
+	from utilities import get_symt
 	from pixel_error import max_3D_pixel_error
-	pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
+	ts = get_symt(sym)
+	if(len(ts) > 1):
+		# only do it if it is not c1
+		pixel_error = +1.0e23
+		for kts in ts:
+			ut = t2*kts
+			# we do not care which position minimizes the error
+			pixel_error = min(max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
 
 	if finfo:
 		finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
@@ -1581,8 +1619,16 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, dpsi=1
 		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 		t2.set_trans(Vec2f(-s2x, -s2y))
 		data.set_attr("xform.projection", t2)
+		from utilities import get_symt
 		from pixel_error import max_3D_pixel_error
-		pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
+		ts = get_symt(sym)
+		if(len(ts) > 1):
+			# only do it if it is not c1
+			pixel_error = +1.0e23
+			for kts in ts:
+				ut = t2*kts
+				# we do not care which position minimizes the error
+				pixel_error = min(max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 			finfo.flush()
@@ -3588,6 +3634,7 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 		finfo.flush()
 
 	previousmax = data.get_attr("previousmax")
+	#  The code for shc does not work for local searches!  PAP 01/27/2015
 	[ang, sxs, sys, mirror, iref, peak, checked_refs] = Util.shc(data, refrings, xrng, yrng, step, ant, mode, numr, cnx, cny, sym)  #+dp["tx"], cny+dp["ty"])
 	iref=int(iref)
 	number_of_checked_refs += int(checked_refs)
@@ -3632,8 +3679,16 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 		data.set_attr("xform.projection", t2)
 		data.set_attr("previousmax", peak)
 		#  Find the pixel error that is minimum over symmetry transformations
+		from utilities import get_symt
 		from pixel_error import max_3D_pixel_error
-		pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
+		ts = get_symt(sym)
+		if(len(ts) > 1):
+			# only do it if it is not c1
+			pixel_error = +1.0e23
+			for kts in ts:
+				ut = t2*kts
+				# we do not care which position minimizes the error
+				pixel_error = min(max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 			finfo.flush()
