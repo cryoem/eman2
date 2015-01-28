@@ -1264,6 +1264,8 @@ def proj_ali_incore_chunks(data, refrings, numr, xrng, yrng, step, finfo=None):
 			ut = t2*kts
 			# we do not care which position minimizes the error
 			pixel_error = min(max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
+	else:
+		pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
 
 	if finfo:
 		finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
@@ -1399,6 +1401,8 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 				ut = t2*kts
 				# we do not care which position minimizes the error
 				pixel_error = min(max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
+		else:
+			pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
 		#print phi, theta, psi, s2x, s2y, peak, pixel_error
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
@@ -1488,6 +1492,8 @@ def proj_ali_incore_local_chunks(data, refrings, numr, xrng, yrng, step, an, fin
 				ut = t2*kts
 				# we do not care which position minimizes the error
 				pixel_error = min(max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
+		else:
+			pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
 		#print phi, theta, psi, s2x, s2y, peak, pixel_error
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
@@ -1552,6 +1558,8 @@ def proj_ali_incore_delta(data, refrings, numr, xrng, yrng, step, start, delta, 
 			ut = t2*kts
 			# we do not care which position minimizes the error
 			pixel_error = min(max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
+	else:
+		pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
 
 	if finfo:
 		finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
@@ -1629,6 +1637,8 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, dpsi=1
 				ut = t2*kts
 				# we do not care which position minimizes the error
 				pixel_error = min(max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
+		else:
+			pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 			finfo.flush()
@@ -3690,7 +3700,7 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 				# we do not care which position minimizes the error
 				pixel_error = min(max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
 		else:
-			pixel_error = min(max_3D_pixel_error(t1, t2, numr[-3]), pixel_error)
+			pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 			finfo.flush()
