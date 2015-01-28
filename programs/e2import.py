@@ -76,7 +76,7 @@ def main():
 				if not "{}.hdf".format(base_name(filename,nodir=True)) in micros:
 					print "Warning: Imported boxes for {}, but micrographs/{}.hdf does not exist".format(base_name(filename),base_name(filename,True))
 
-		if options.box_type == 'coords':
+		elif options.box_type == 'coords':
 			micros=os.listdir("micrographs")
 			for filename in args:
 				boxlist = []
