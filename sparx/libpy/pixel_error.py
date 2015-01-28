@@ -150,29 +150,25 @@ def angle_diff_sym(angle1, angle2, simi=1):
 	   taking into account point group symmetry with multiplicity simi.
 	The input has to be in the form [[phi0,theta0], [phi1,theta1], ...]
 	  Only sets that have theta in the same range (0,90), or (90,180) are included in calculation.
-	The resulting angle has to be added (modulo 360/i) to the first set.
+	The resulting angle has to be added (modulo 360/simi) to the first set.
 	'''
 	from math import cos, sin, pi, atan2, degrees, radians
 	
 	nima  = len(angle1)
-	nima2 = len(angle2)
-	if nima2 != nima:
-		print "Error: List lengths do not agree!"
-		return 0
-	else:
-		del nima2
+	if len(angle2) != nima:
+		ERROR( "List lengths do not agree!", "angle_diff_sym",1)
 
 	cosi = 0.0
 	sini = 0.0
+	agree = 0
 	for i in xrange(nima):
 		if( ( (angle2[i][1] <90.0) and (angle1[i][1] <90.0) ) or ( (angle2[i][1] >90.0) and (angle1[i][1] >90.0) ) ):
 			qt = radians((angle2[i][0]-angle1[i][0])*simi)
 			cosi += cos( qt )
 			sini += sin( qt )
-	alphai = degrees(atan2(sini, cosi)/simi)%(360.0/simi)
-
-	return alphai
-
+			agree += 1
+	if(agree == 0):  return 0.0
+	else:            return degrees(atan2(sini, cosi)/simi)%(360.0/simi)
 
 def angle_error(ang1, ang2, delta_ang=0.0):
 	'''

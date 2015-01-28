@@ -41,27 +41,23 @@ def mult_transform(v1, v2):
 	return [ T.get_params("spider")["phi"], T.get_params("spider")["theta"], T.get_params("spider")["psi"], T.get_params("spider")["tx"], T.get_params("spider")["ty"]  ]
 
 
-def orient_params(params, indexes=None, sym = "c1"):
-	#  This is in essence the same as rotate_angleset_to_match in pixel_error.
-	#   I believe only this one should be kept
+def orient_params(params, refparams, indexes=None, sym = "c1"):
 	#
 	#  The assumption here is that the angles are within the unique region
-	#  Since they come from projection refinement, why it would be otherwise
+	#  Since they come from projection refinement, why would it be otherwise?
 	#  Any problems would be due to how even_angles generates reference angles
 	#
-	#  The role of indexes unclear.  
-	#   Should they be used to estimate the transformation/mirror and then the trans applied to the whole set,
-	#     or only to subset??
+	#  The function returns rotation object and properly rotated/mirrored params
 	from utilities import rotation_between_anglesets
-	from pixel_error import angle_diff
+	from pixel_error import angle_diff, angle_diff_sym
 	from EMAN2 import Transform
 
-	m = len(params)
-	n = len(params[0])
+	n = len(params)
+	nsymc = int(sym[1:])
 
 	if(sym[0] == "d"):
 		# In this one the first params is taken as a reference
-		mirror_and_reduce_dsym(params, sym)
+		mirror_and_reduce_dsym([refparams,params], sym)
 		"""
 		if indexes == None:
 			mirror_and_reduce_dsym(params, sym)
@@ -76,50 +72,46 @@ def orient_params(params, indexes=None, sym = "c1"):
 					params[i][j] = temp[i][k]
 					k += 1
 		"""
-	elif(sym[0] == "c" and int(sym[1:])>1):
-		#  C symmetry would have to be done by creating a cn copies of the data set and then finding the angles with rotation_between_anglesets
-
-		if indexes == None:   indexes = range(n)
-		cmp_par_0 = []
-		for j in indexes:
-			cmp_par_0.append(params[0][j])
-		
-		for i in xrange(1,m):
-			cmp_par_i = []
-			for j in indexes:
-				cmp_par_i.append(params[i][j])
-			t1,t2,t3 = rotation_between_anglesets(cmp_par_i, cmp_par_0)
-			del cmp_par_i
-			rot = Transform({"type":"spider","phi":t1,"theta":t2,"psi":t3})
+	elif(sym[0] == "c" and nsymc>1):
+		from copy import deepcopy
+		divic = 360.0/nsymc
+		if indexes == None:
+			phi = angle_diff_sym([params[j] for j in xrange(n)], [refparams[j] for j in xrange(n)], nsymc)
+		else:
+			phi = angle_diff_sym([params[j] for j in indexes], [refparams[j] for j in indexes], nsymc)
+		rot = Transform({"type":"spider","phi":phi})  # needed for output
+		out = deepcopy(params)
+		for j in xrange(n):
+			out[j][0] = (out[j][0]+phi)%divic
+		# mirror checking
+		if indexes == None:
+			psi_diff = angle_diff( [out[j][2] for j in xrange(n)], [refparams[j][2] for j in xrange(n)] )
+		else:
+			psi_diff = angle_diff( [out[j][2] for j in indexes], [refparams[j][2] for j in indexes] )
+		if(abs(psi_diff-180.0) <90.0):
 			for j in xrange(n):
-				params[i][j] = mult_transform(params[i][j], rot)
-			#  Another problem, , the angles have to be brought back to the unique region.
-			# mirror checking
-			psi_diff = angle_diff( [params[i][j][2] for j in indexes], [params[0][j][2] for j in indexes] )
-			if(abs(psi_diff-180.0) <90.0):
-				#mirror
-				for j in indexes:
-					params[i][j][2] = (params[i][j][2] + 180.0) % 360.0
+				# apply mirror
+				out[j][2] = (out[j][2] + 180.0) % 360.0
 	else:
-		if indexes == None:   indexes = range(n)
-		cmp_par_0 = []
-		for j in indexes:
-			cmp_par_0.append(params[0][j])
-		for i in xrange(1,m):
-			cmp_par_i = []
-			for j in indexes:
-				cmp_par_i.append(params[i][j])
-			t1,t2,t3 = rotation_between_anglesets(cmp_par_i, cmp_par_0)
-			del cmp_par_i
-			rot = Transform({"type":"spider","phi":t1,"theta":t2,"psi":t3})
+		if indexes == None:
+			t1,t2,t3 = rotation_between_anglesets(params, refparams)
+		else:
+			t1,t2,t3 = rotation_between_anglesets([params[j] for j in indexes], [refparams[j] for j in indexes])
+		rot = Transform({"type":"spider","phi":t1,"theta":t2,"psi":t3})
+		out = [None]*n
+		for j in xrange(n):
+			out[j] = mult_transform(params[j], rot)
+		# mirror checking
+		if indexes == None:
+			psi_diff = angle_diff( [out[j][2] for j in xrange(n)], [refparams[j][2] for j in xrange(n)] )
+		else:
+			psi_diff = angle_diff( [out[j][2] for j in indexes], [refparams[j][2] for j in indexes] )
+		if(abs(psi_diff-180.0) <90.0):
 			for j in xrange(n):
-				params[i][j] = mult_transform(params[i][j], rot)
-			# mirror checking
-			psi_diff = angle_diff( [params[i][j][2] for j in indexes], [params[0][j][2] for j in indexes] )
-			if(abs(psi_diff-180.0) <90.0):
-				#mirror
-				for j in indexes:
-					params[i][j][2] = (params[i][j][2] + 180.0) % 360.0
+				# apply mirror
+				out[j][2] = (out[j][2] + 180.0) % 360.0
+	return  rot, out
+
 
 def calculate_matrix_rot(projs):
 	from utilities import rotation_between_anglesets
@@ -132,24 +124,27 @@ def calculate_matrix_rot(projs):
 	return matrix_rot
 
 
-# returns subset_for_threshold, subset_for_minimal_size[, threshold_for_thr_subset, threshold_for_min_subset]
-def find_common_subset_3(projs, target_threshold, minimal_subset_size=3, sym = "c1", thresholds=False):
-	from global_def import Util
+def find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, sym = "c1"):
+	#  projs - [reference set of angles, set of angles1, set of angles2, ... ]
+	# the function is written for multiple sets of angles
+	from utilities import getvec, getfvec
+	from math import acos, degrees
 
 	n  = len(projs[0])
 	sc = len(projs)
+	nsymc = int(sym[1:])
+	divic = 360.0/nsymc
 
 	subset = range(n)
 
 	minimal_subset_size = min( minimal_subset_size, n)
 
-	res_thr_subset  = None
-	res_size_subset = None
-	error_thr_subset = -1
-	error_size_subset = -1
-
 	#  Start from the entire set and the slowly decrease it by rejecting worst data one by one.
-	for iIter in xrange(n-2):
+	#  It will stop either when the subset reaches the minimum subset size 
+	#   or if there are no more angles with errors above target threshold
+	#
+	while(True):
+		#  extract images in common subset
 		projs2 = [0.0]*sc
 		for iConf in xrange(sc):
 			projs2[iConf] = []
@@ -159,8 +154,6 @@ def find_common_subset_3(projs, target_threshold, minimal_subset_size=3, sym = "
 			#  This code was only tested for D-odd symmetry.  I would have to check D-even
 			# have to figure whether anything has to be mirrored and then reduce the angles.
 			mirror_and_reduce_dsym(projs2, sym)
-			from utilities import getvec
-			from math import acos, degrees
 
 			trans_vec = [0.0]*sc
 			for iConf in xrange(sc):
@@ -180,51 +173,60 @@ def find_common_subset_3(projs, target_threshold, minimal_subset_size=3, sym = "
 						qt += degrees(acos(min(1.0,max(-1.0,zt))))
 				avg_diff_per_image.append(qt/sc/(sc-1)/2.0)
 
-		else:  #  "c" symmetry
-			trans_projs = []
-			matrix_rot = calculate_matrix_rot(projs2)
-			for iConf in xrange(sc):
-				for i in subset:
-					trans_projs.extend(projs[iConf][i][0:5])
-			trans_matrix = []
-			for i in xrange(sc):
-				for j in xrange(i):
-					trans_matrix.extend(matrix_rot[i][j][0:3])
-			#  The C code below applies all transformations found and computes for each image sum acos between projection's normals
-			#  I am afraid the only way to cope with it is to pass the symmetry and compute acos between all symmetry related normals, choosing the smallest
-			avg_diff_per_image = Util.diff_between_matrix_of_3D_parameters_angles(trans_projs, trans_matrix)
-		#print  "  AAAA ",iIter
-		#print avg_diff_per_image
+		elif(sym[0] == "c"):  #  c including cn symmetry
+			#  fill with I transformations.
+			matrix_rot  = [[Transform({"type":"spider"}) for i in xrange(sc)] for k in xrange(sc)]
+			avg_diff_per_image = [0.0]*n
+			from copy import deepcopy
+			outp = [deepcopy(projs[0])]
+			for i in xrange(sc-1,-1,-1):
+				tv = [None]*n
+				for k in xrange(n):
+					t1,t2,t3 = getfvec(projs[i][k][0], projs[i][k][1])
+					tv[k] = [t1,t2,t3]
+
+				for j in xrange(i+1,sc):
+					matrix_rot[i][j], out = orient_params_new(projs[j], projs[i], subset, sym = sym)
+					if(nsymc > 1):
+						for k in xrange(n):
+							mind = 1.0e23
+							for l in xrange(nsymc):
+								u1,u2,u3 = getfvec(out[k][0] + l*divic, out[k][1])
+								qt = degrees(acos(min(1.0,max(-1.0,(tv[k][0]*u1+tv[k][1]*u2+tv[k][2]*u3)))))
+								mind = min(mind, qt)
+							avg_diff_per_image[k] += mind
+							#print  "avg_diff_per_image  %3d  %8.2f="%(k,avg_diff_per_image[k]),\
+							#"  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f"%( projs[i][k][0],projs[i][k][1],projs[i][k][2],out[k][0],out[k][1],out[k][2])
+					else:
+						for k in xrange(n):
+							u1,u2,u3 = getfvec(out[k][0], out[k][1])
+							avg_diff_per_image[k] += degrees(acos(min(1.0,max(-1.0,(tv[k][0]*u1+tv[k][1]*u2+tv[k][2]*u3)))))
+							#print  "avg_diff_per_image  %3d  %8.2f="%(k,avg_diff_per_image[k]),\
+							#"  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f"%( projs[i][k][0],projs[i][k][1],projs[i][k][2],out[k][0],out[k][1],out[k][2])
+					if(i == 0):
+						outp.append(deepcopy(out))
+
+			for k in xrange(n):
+				avg_diff_per_image[k] /= (sc*(sc-1)/2.0)
+		else:
+			ERROR("Unsupported symmetry","find_common_subset",1)
+
+		if(len(subset) == minimal_subset_size):  break
 		
-		#  Remove data whose avg_diff_per_image is larger than max_error
+		#  Remove element whose avg_diff_per_image is larger than max_error, if none, break
 		max_error = -1.0
 		the_worst_proj = -1
-		for i in xrange(len(avg_diff_per_image)):
-			if avg_diff_per_image[i] > max_error:
-				max_error = avg_diff_per_image[i]
-				the_worst_proj = subset[i]
-		if max_error <= target_threshold:
-			res_thr_subset   = subset[:]
-			error_thr_subset = max_error
-			break
-		if len(subset) == minimal_subset_size:
-			res_size_subset   = subset[:]
-			error_size_subset = max_error
-		subset.remove(the_worst_proj)
+		for i in subset:
+			if(avg_diff_per_image[i] > target_threshold):
+				if(avg_diff_per_image[i]>max_error):
+					max_error = avg_diff_per_image[i]
+					the_worst_proj = i
+		if( the_worst_proj > -1):	subset.remove(the_worst_proj)
+		else:  break
 
 	#  End of pruning loop
 
-	if res_thr_subset == None:
-		res_thr_subset   = subset
-		error_thr_subset = max_error
-
-	if res_size_subset == None:
-		res_size_subset   = res_thr_subset
-		error_size_subset = error_thr_subset
-
-	if thresholds:
-		return res_thr_subset, res_size_subset, error_thr_subset, error_size_subset
-	return res_thr_subset, res_size_subset, avg_diff_per_image
+	return subset, avg_diff_per_image, outp
 
 """
 
@@ -569,30 +571,18 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				# ------ orientation - begin
 				#  Send solution from the main process of the first group to all processes in all groups
 				params_0 = wrap_mpi_bcast(params, mpi_subroots[0], mpi_comm)
-				if mpi_subrank == 0 and myid != 0:
+				if mpi_subrank == 0:
 					#  This is done on the main node of each group
-					#  Parameters will be oriented based on a subset that agrees.  The knowledge of the subset itself is not used anywhere
-					#  There is much nonsense going on here.  The rest of what is here should be incorporated into find_common_subset_3
 					#  Minimal length of the subset is set to 1/3 of the number of parameters
-					subset_thr, subset_min, avg_diff_per_image = find_common_subset_3([params_0, params], 2.0, len(params)/3, sym)
-					#  outliers are removed
-					if len(subset_thr) < len(subset_min):
-						subset = subset_min
-					else:
-						subset = subset_thr
+					#  Error threshold is set somewhat arbitrarily to 1,5 angular step of reference projections
+					#  oarams gets overwritten by rotated parameters,  subset is a list of indexes common
+					subset, avg_diff_per_image, params = find_common_subset([params_0, params], delta[N_step]*1.5, len(params)/3, sym)
+					#   neither is needed, I hope this is correct
+					del subset, avg_diff_per_image
 					# if myid == 2:  print  " params before orient  ",myid,params[:4],params[-4:]
 					from utilities import write_text_row
 					#write_text_row(params_0,"bparamszero%04d%04d.txt"%(myid,total_iter))
 					#write_text_row(params,"bparams%04d%04d.txt"%(myid,total_iter))
-					#  Orientation repeated for the selected subset
-					orient_params([params_0, params], subset, sym)
-					"""
-					if myid == 2:
-						print  " subset  ",len(subset)#," ...  ",subset
-					"""
-					#write_text_row(params_0,"aparamszero%04d%04d.txt"%(myid,total_iter))
-					#write_text_row(params,"aparams%04d%04d.txt"%(myid,total_iter))
-					# if myid == 2:  print  " params after orient  ",myid,params[:4],params[-4:]
 				params = wrap_mpi_bcast(params, 0, mpi_subcomm)
 				# if myid == 2:  print  " params after wrap_mpi_bcast  ",myid,params[:4],params[-4:]
 				# ------ orientation - end
@@ -2666,7 +2656,6 @@ def do_volume(data, options, iter, mpi_comm):
 		vol -= stat[0]
 		Util.mul_scalar(vol, 1.0/stat[1])
 		vol = threshold(vol)
-		# har
 		vol = filt_btwl(vol, 0.38, 0.5)
 		Util.mul_img(vol, mask3D)
 		del mask3D

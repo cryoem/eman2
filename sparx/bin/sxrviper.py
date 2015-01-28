@@ -73,7 +73,7 @@ def found_outliers(outlier_percentile, rviper_iter, no_of_viper_runs_analyzed_to
 	# sxheader.py bdb:nj  --consecutive  --params=OID
 	import numpy as np
 	from utilities import read_text_row, write_text_file, write_text_row
-	from multi_shc import find_common_subset_3
+	from multi_shc import find_common_subset
 	from pixel_error import rotate_angleset_to_match
 
 	# masterdir = "/Users/hvoicu/tmp/test078/master2015_01_20__18_15_07/"
@@ -105,47 +105,38 @@ def found_outliers(outlier_percentile, rviper_iter, no_of_viper_runs_analyzed_to
 			#projs[i1] = projs[i1][:len(dat)]
 ##########  just for testing
 
+
+	#  This is my new code, I might be wrong, though, PAP 01/28/2015
 	percentile_index = int(np.percentile(range(len(projs[0])), outlier_percentile))
 	th = 1.0e23
+
 	index_outliers = []
 	index_keep_images = range(len(projs[0]))
 
-	indi=find_common_subset_3(projs,th)
-	max_threshold = max(indi[2])
-	l = indi[2].index(max_threshold)
+	subset, avg_diff_per_image, outp = find_common_subset(projs, th)
+	max_threshold = max([avg_diff_per_image[klt] for klt in subset)
+	l = subset.index(max_threshold)
 	index_outliers.append(index_keep_images[l])
 	del index_keep_images[l]
 	for k in xrange(len(projs)):
 		del projs[k][l]
 
 	while( len(projs[0]) > percentile_index):
-		indi=find_common_subset_3(projs,th)
+		subset, avg_diff_per_image, outp = find_common_subset(projs, th)
 		m = max(indi[2])
-		l = indi[2].index(m)
+		l = subset.index(m)
 		index_outliers.append(index_keep_images[l])
 		del index_keep_images[l]
 		for k in xrange(len(projs)):
 			del projs[k][l]
+
+	del subset, avg_diff_per_image
 
 	index_outliers.sort()
 	index_keep_images.sort()
 
 	write_text_file(index_outliers, mainoutputdir + "this_iteration_index_outliers.txt")
 	write_text_file(index_keep_images, mainoutputdir + "this_iteration_index_keep_images.txt")
-
-	threshold_increment = max_threshold/100
-	th = threshold_increment
-	indi=[None,None,[None,None,None]]
-	oo=[]
-	while( len(indi[2]) < len(projs[0]) ):
-			indi=find_common_subset_3(projs,th)
-			oo.append([th,len(indi[2])])
-			th += threshold_increment
-
-	ou = [oo[i][0] for i in xrange(len(oo))]
-	ot = [oo[i][1] for i in xrange(len(oo))]
-	write_text_file([ou,ot], mainoutputdir + "pihis.txt")
-
 
 
 

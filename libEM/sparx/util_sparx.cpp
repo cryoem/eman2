@@ -19003,8 +19003,15 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, float ant, string mode,
                 vector<int>numr, float cnx, float cny, string sym) {
-
-    // Manually extract.
+//  This code supposedly has option ant for local shc searches, but it was not tested
+//   When I tried it it gave strange results.  PAP 01/27/2015
+//   Worse yet, it has a conceptual problem.  Since the search is local but random,
+//   after repeated searches a projection projection may drift away due to random walk effect.
+//   Most likely the code would have to be modified so the random search is done not around
+//   the current orientation, but around the original, the one the projection had when local searches
+//    started.  This could however be handled on a higher level by changing the current direction
+//    assigned to projection.
+// Manually extract.
 /*    vector< EMAN::EMData* > crefim;
     std::size_t crefim_len = PyObject_Length(crefim_list.ptr());
     crefim.reserve(crefim_len);
@@ -20954,7 +20961,7 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
-	cout <<"  VERSION  01/20/2015  04:00 pm"<<endl;
+	cout <<"  VERSION  01/27/2015  04:00 pm"<<endl;
 	float dummy;
 	dummy = ri;
 	cout <<  "   fmod   "<<fmod(qprob,dummy)<<endl;
