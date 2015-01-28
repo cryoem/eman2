@@ -113,14 +113,6 @@ def found_outliers(outlier_percentile, rviper_iter, no_of_viper_runs_analyzed_to
 	index_outliers = []
 	index_keep_images = range(len(projs[0]))
 
-	subset, avg_diff_per_image, outp = find_common_subset(projs, th)
-	max_threshold = max([avg_diff_per_image[klt] for klt in subset)
-	l = avg_diff_per_image.index(max_threshold)
-	index_outliers.append(index_keep_images[l])
-	del index_keep_images[l]
-	for k in xrange(len(projs)):
-		del projs[k][l]
-
 	while( len(projs[0]) > percentile_index):
 		subset, avg_diff_per_image, outp = find_common_subset(projs, th)
 		m = max([avg_diff_per_image[klt] for klt in subset)
