@@ -4233,7 +4233,7 @@ def wrap_mpi_gatherv(data, root, communicator = None):
 def wrap_mpi_split(comm, no_of_groups):
 	"""
 
-	Takes the processes of a comunicator (comm) and splits them in groups (no_of_groups).
+	Takes the processes of a communicator (comm) and splits them in groups (no_of_groups).
 	Each subgroup of processes have ids generated from 0 to number of processes per group - 1.
 	Consecutive global process ids have consecutive subgroup process ids.
 
