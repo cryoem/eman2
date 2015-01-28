@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-
 from mpi import MPI_SUM, mpi_reduce, mpi_init, mpi_finalize, MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size, mpi_barrier, mpi_bcast, MPI_INT, MPI_CHAR, MPI_FLOAT
 
 # from debug_mpi import mpi_bcast

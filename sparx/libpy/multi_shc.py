@@ -569,7 +569,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				# ------ orientation - begin
 				#  Send solution from the main process of the first group to all processes in all groups
 				params_0 = wrap_mpi_bcast(params, mpi_subroots[0], mpi_comm)
-				if mpi_subrank == 0:
+				if mpi_subrank == 0 and myid != 0:
 					#  This is done on the main node of each group
 					#  Parameters will be oriented based on a subset that agrees.  The knowledge of the subset itself is not used anywhere
 					#  There is much nonsense going on here.  The rest of what is here should be incorporated into find_common_subset_3
@@ -2666,6 +2666,7 @@ def do_volume(data, options, iter, mpi_comm):
 		vol -= stat[0]
 		Util.mul_scalar(vol, 1.0/stat[1])
 		vol = threshold(vol)
+		# har
 		vol = filt_btwl(vol, 0.38, 0.5)
 		Util.mul_img(vol, mask3D)
 		del mask3D
