@@ -188,12 +188,10 @@ def found_outliers(outlier_percentile, rviper_iter, no_of_viper_runs_analyzed_to
 
 	# apply rotation to params (reduced set) using volume#1 as a reference
 
-	for i1 in range(1,no_of_viper_runs_analyzed_together):
-		projs[i1] = rotate_angleset_to_match(projs[i1], projs[0])
 
 	# write param files
 	for i1 in range(0,no_of_viper_runs_analyzed_together):
-		write_text_row(projs[i1], mainoutputdir + "run%03d"%(i1) + "/rotated_reduced_params.txt")
+		write_text_row(outp[i1], mainoutputdir + "run%03d"%(i1) + "/rotated_reduced_params.txt")
 
 
 
