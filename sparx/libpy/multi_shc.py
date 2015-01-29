@@ -127,7 +127,6 @@ def find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, sym =
 	while(True):
 		#  extract images in common subset
 		if( sym[0] == "d"):
-			print " hoho "
 			#  This code was only tested for D-3 symmetry.  I would have to check D-even
 			# have to figure whether anything has to be mirrored and then reduce the angles.
 			projs2 = [0.0]*sc
@@ -154,10 +153,10 @@ def find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, sym =
 						for m in xrange(3):  zt += trans_vec[k][i][m]*trans_vec[l][i][m]
 						qt += degrees(acos(min(1.0,max(-1.0,zt))))
 				avg_diff_per_image[subset[i]] = (qt/sc/(sc-1)/2.0)
-				k = subset[i]
-				lml = 1
-				print  "avg_diff_per_image  %3d  %8.2f="%(k,avg_diff_per_image[k]),\
-				"  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f"%( projs2[0][k][0],projs2[0][k][1],projs2[0][k][2],projs2[lml][k][0],projs2[lml][k][1],projs2[lml][k][2])
+				#k = subset[i]
+				#lml = 1
+				#print  "avg_diff_per_image  %3d  %8.2f="%(k,avg_diff_per_image[k]),\
+				#"  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f"%( projs2[0][i][0],projs2[0][i][1],projs2[0][i][2],projs2[lml][i][0],projs2[lml][i][1],projs2[lml][i][2])
 
 		elif(sym[0] == "c"):  #  c including cn symmetry
 			#  fill with I transformations.
@@ -207,7 +206,7 @@ def find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, sym =
 					the_worst_proj = i
 		if( the_worst_proj > -1):	subset.remove(the_worst_proj)
 		else:  break
-		print  "the_worst_proj",the_worst_proj
+		#print  "the_worst_proj",the_worst_proj
 	#  End of pruning loop
 
 	if(sym[0] == "d"):
@@ -222,6 +221,7 @@ def find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, sym =
 			k+=1
 
 	return subset, avg_diff_per_image, outp
+
 
 """
 
@@ -1364,9 +1364,10 @@ def reduce_dsym_angles(p1, sym):
 	"""
 	return pr
 
+
 def mirror_and_reduce_dsym(params, sym):
 	# for the time being do it in a silly way, i.e., select first as a reference and run with it.
-	#
+	#  It seems to be mostly written for d3
 	
 	from utilities import get_symt, get_sym, getfvec
 	from EMAN2 import Vec2f, Transform, EMData
@@ -1408,17 +1409,18 @@ def mirror_and_reduce_dsym(params, sym):
 	mm = Transform({"type":"spider","phi":360./2/int(sym[1:]), "theta":0., "psi":0.})
 	symphi = 360./int(sym[1:])
 
-	#  Excluded values for phi
+	#  Ranges values for phi
 	badb = 0.0
 	bade = 360.0/int(sym[1:])/4
 	bbdb = 360.0/int(sym[1:])/2
 	bbde = bbdb + 360.0/int(sym[1:])/4
+
 	
 	for i in xrange(1,sc):
 		solvs = []
 		for rphi in xrange(0,61,60):
 			tpari = [None]*ns
-			for j in xrange(ns):  tpari[j] = params[i][j]
+			for j in xrange(ns):  tpari[j] = params[i][j][:]
 			if(rphi == 60):
 				for j in xrange(ns):  tpari[j][0] = (tpari[j][0]+60)%symphi
 
@@ -1452,13 +1454,18 @@ def mirror_and_reduce_dsym(params, sym):
 					temp[j][2] =  bt["psi"]
 					temp[j][3] = -bt["tx"]
 					temp[j][4] = -bt["ty"]
+					for l in xrange(3):  temp[j][l] = round(temp[j][l],2)
 				solvs.append([discangset(temp, vt0, sym), temp, [rphi,"psidiff"]])
 
 			#  check the other possibility of mirroring
 			p2 = [None]*ns
 			for j in xrange(ns):
 				p2[j] = [ (-tpari[j][0])%360.0, (180-tpari[j][1])%360.0, tpari[j][2] ,tpari[j][3], tpari[j][4]]
-			for j in xrange(ns):  p2[j] = mult_transform(p2[j], mm)
+
+			for j in xrange(ns):
+				p2[j] = mult_transform(p2[j], mm)
+				for l in xrange(3):  p2[j][l] = round(p2[j][l],2)
+
 			#  Now check whether p2 is closer to params[0] than tpari is.
 			per1 = discangset(tpari, vt0, sym)
 			per2 = discangset(p2, vt0, sym)
@@ -1486,6 +1493,8 @@ def mirror_and_reduce_dsym(params, sym):
 					temp[j][2] = bt["psi"]
 					temp[j][3] = -bt["tx"]
 					temp[j][4] = -bt["ty"]
+					for l in xrange(3):  temp[j][l] = round(temp[j][l],2)
+
 				solvs.append([discangset(temp, vt0, sym), temp, [rphi,"mirror"]])
 
 			# For each projection direction from the reference set (here zero) find the nearest reduced from the other set,
@@ -1501,8 +1510,8 @@ def mirror_and_reduce_dsym(params, sym):
 					ut = qt*ts[k]
 					bt = ut.get_params("spider")
 
-					tp = bt["phi"]
-					tt = bt["theta"]
+					tp = round(bt["phi"],2)
+					tt = round(bt["theta"],2)
 					if(tt > 90.0):   mp = (tp+180.0)%360.0
 					else:            mp = tp
 					if( (mp>=badb and mp<bade) or (mp>=bbdb and mp<bbde) ): k = ks
@@ -1512,15 +1521,21 @@ def mirror_and_reduce_dsym(params, sym):
 				temp[j][2] = bt["psi"]
 				temp[j][3] = -bt["tx"]
 				temp[j][4] = -bt["ty"]
+				for l in xrange(3):  temp[j][l] = round(temp[j][l],2)
 			solvs.append([discangset(temp, vt0, sym), temp, [rphi,"straight"]])
 
 		solvs.sort(reverse=False)
+
 		#for k in xrange(len(solvs)):
 		#	print  "  SOLVS  ",solvs[k][0],solvs[k][-1]
 		#	#for j in xrange(ns):  print solvs[0][1][j][:3]
-		psi_diff = angle_diff( [temp[j][2] for j in xrange(ns)], [params[0][j][2] for j in xrange(ns)] )
-		if(abs(psi_diff-180.0) <90.0): temp[j][2] = (temp[j][2]+180.0)%360.0
-		for j in xrange(ns):  params[i][j] = solvs[0][1][j]
+		#psi_diff = angle_diff( [temp[j][2] for j in xrange(ns)], [params[0][j][2] for j in xrange(ns)] )
+		#print " >>>> what??  ",j
+		#if(abs(psi_diff-180.0) <90.0):
+		#	print " >>>> never happened??  ",j
+		#	temp[j][2] = (temp[j][2]+180.0)%360.0
+
+		for j in xrange(ns): params[i][j] = solvs[0][1][j][:]
 
 
 """
