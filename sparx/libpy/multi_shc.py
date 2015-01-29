@@ -56,22 +56,10 @@ def orient_params(params, refparams, indexes=None, sym = "c1"):
 	nsymc = int(sym[1:])
 
 	if(sym[0] == "d"):
+		ERROR("No support for d symmetry in","orient_params",1)
 		# In this one the first params is taken as a reference
-		mirror_and_reduce_dsym([refparams,params], sym)
-		"""
-		if indexes == None:
-			mirror_and_reduce_dsym(params, sym)
-		else:
-			temp = []
-			for i in xrange(m):
-				temp.append([params[i][j] for j in indexes])
-			mirror_and_reduce_dsym(temp, sym)
-			for i in xrange(1,m):
-				k = 0
-				for j in indexes:
-					params[i][j] = temp[i][k]
-					k += 1
-		"""
+		#mirror_and_reduce_dsym([refparams,params], sym)
+
 	elif(sym[0] == "c" and nsymc>1):
 		from copy import deepcopy
 		divic = 360.0/nsymc
@@ -110,25 +98,15 @@ def orient_params(params, refparams, indexes=None, sym = "c1"):
 			for j in xrange(n):
 				# apply mirror
 				out[j][2] = (out[j][2] + 180.0) % 360.0
+
 	return  rot, out
-
-
-def calculate_matrix_rot(projs):
-	from utilities import rotation_between_anglesets
-	sc = len(projs)
-	matrix_rot  = [[[0.0,0.0,0.0,0.0,0.0] for i in xrange(sc)] for k in xrange(sc)]
-	for i in xrange(sc):
-		for j in xrange(i):
-			t1, t2, t3 = rotation_between_anglesets(projs[i], projs[j])
-			matrix_rot[i][j] = [t1, t2, t3, 0.0, 0.0]
-	return matrix_rot
-
 
 def find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, sym = "c1"):
 	#  projs - [reference set of angles, set of angles1, set of angles2, ... ]
 	# the function is written for multiple sets of angles
 	from utilities import getvec, getfvec
 	from math import acos, degrees
+	from copy import deepcopy
 
 	n  = len(projs[0])
 	sc = len(projs)
@@ -139,31 +117,35 @@ def find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, sym =
 
 	minimal_subset_size = min( minimal_subset_size, n)
 
+	avg_diff_per_image = [-1.0]*n
+
+
 	#  Start from the entire set and the slowly decrease it by rejecting worst data one by one.
 	#  It will stop either when the subset reaches the minimum subset size 
 	#   or if there are no more angles with errors above target threshold
 	#
 	while(True):
 		#  extract images in common subset
-		projs2 = [0.0]*sc
-		for iConf in xrange(sc):
-			projs2[iConf] = []
-			for i in subset:
-				projs2[iConf].append(projs[iConf][i][:])
 		if( sym[0] == "d"):
-			#  This code was only tested for D-odd symmetry.  I would have to check D-even
+			print " hoho "
+			#  This code was only tested for D-3 symmetry.  I would have to check D-even
 			# have to figure whether anything has to be mirrored and then reduce the angles.
-			mirror_and_reduce_dsym(projs2, sym)
+			projs2 = [0.0]*sc
+			for iConf in xrange(sc):
+				projs2[iConf] = []
+				for i in subset:
+					projs2[iConf].append(projs[iConf][i][:])
+
+			mirror_and_reduce_dsym(projs2, sym=sym)
 
 			trans_vec = [0.0]*sc
 			for iConf in xrange(sc):
-				#temp = reduce_dsym_angles(projs2[iConf], sym)
 				trans_vec[iConf] = []
+				# it looks like I have to incorporate symmetries here.
 				for i in xrange(len(projs2[0])):
 					t1,t2,t3 = getvec(projs2[iConf][i][0], projs2[iConf][i][1])
 					trans_vec[iConf].append([t1,t2,t3])
 
-			avg_diff_per_image = []
 			for i in xrange(len(trans_vec[0])):
 				qt = 0.0
 				for k in xrange(sc-1):
@@ -171,13 +153,15 @@ def find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, sym =
 						zt = 0.0
 						for m in xrange(3):  zt += trans_vec[k][i][m]*trans_vec[l][i][m]
 						qt += degrees(acos(min(1.0,max(-1.0,zt))))
-				avg_diff_per_image.append(qt/sc/(sc-1)/2.0)
+				avg_diff_per_image[subset[i]] = (qt/sc/(sc-1)/2.0)
+				k = subset[i]
+				lml = 1
+				print  "avg_diff_per_image  %3d  %8.2f="%(k,avg_diff_per_image[k]),\
+				"  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f"%( projs2[0][k][0],projs2[0][k][1],projs2[0][k][2],projs2[lml][k][0],projs2[lml][k][1],projs2[lml][k][2])
 
 		elif(sym[0] == "c"):  #  c including cn symmetry
 			#  fill with I transformations.
 			matrix_rot  = [[Transform({"type":"spider"}) for i in xrange(sc)] for k in xrange(sc)]
-			avg_diff_per_image = [0.0]*n
-			from copy import deepcopy
 			outp = [deepcopy(projs[0])]
 			for i in xrange(sc-1,-1,-1):
 				tv = [None]*n
@@ -223,8 +207,19 @@ def find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, sym =
 					the_worst_proj = i
 		if( the_worst_proj > -1):	subset.remove(the_worst_proj)
 		else:  break
-
+		print  "the_worst_proj",the_worst_proj
 	#  End of pruning loop
+
+	if(sym[0] == "d"):
+		# For d we will do something we should not:
+		#  we will put properly (?) oriented params from subset and the rest we will leave as it was
+		#  The reson we can get away with it is that in rrviper the remaining params are not used
+		outp = deepcopy(projs)
+		k = 0
+		for i in subset:
+			for j in xrange(sc):
+				outp[j][i] = projs2[j][k][:]
+			k+=1
 
 	return subset, avg_diff_per_image, outp
 
@@ -1217,19 +1212,37 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 	
 	projections = []
 	if mpi_rank == 0:
-		all_projs_params = generate_uneven_projections_directions(len(all_projs), half_sphere=False)
-		for i in subset:
-			all_projs_params[i][2] = random()*360.0
-			set_params_proj(all_projs[i], all_projs_params[i])
-			#all_projs[i].set_attr("stable", 0)
-			all_projs[i].set_attr("previousmax", -1.e23)
-			projections.append(all_projs[i])
-			"""
-			j = 1
-			while all_projs[i].has_attr("xform.projection" + str(j)):
-				all_projs[i].del_attr("xform.projection" + str(j))
-				j += 1
-			"""
+		sym    = ali3d_options.sym
+		sym = sym[0].lower() + sym[1:]
+		if(sym == "c1"):
+			all_projs_params = generate_uneven_projections_directions(len(all_projs), half_sphere=False)
+			for i in subset:
+				all_projs_params[i][2] = random()*360.0
+				set_params_proj(all_projs[i], all_projs_params[i])
+				#all_projs[i].set_attr("stable", 0)
+				all_projs[i].set_attr("previousmax", -1.e23)
+				projections.append(all_projs[i])
+				"""
+				j = 1
+				while all_projs[i].has_attr("xform.projection" + str(j)):
+					all_projs[i].del_attr("xform.projection" + str(j))
+					j += 1
+				"""
+			del all_projs_params
+		else:
+			from utilities import even_angles
+			prms = even_angles(ali3d_options.delta, theta2 = 180.0, symmetry = sym)
+			from random import shuffle
+			shuffle(prms)
+			assert(len(prms) > len(all_projs))
+			for i in subset:
+				prms[i][2] = random()*360.0
+				set_params_proj(all_projs[i], prms[i]+[0.,0.])
+				#all_projs[i].set_attr("stable", 0)
+				all_projs[i].set_attr("previousmax", -1.e23)
+				projections.append(all_projs[i])
+			del prms
+			
 	projections = wrap_mpi_bcast(projections, 0, mpi_comm)
 
 	n_projs = len(projections)
@@ -3124,3 +3137,19 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 	return params  #, vol, previousmax, par_r
 	#else:
 	#	return #None, None, None, None  # results for the other processes
+
+
+
+
+"""
+# Not used anymore
+def calculate_matrix_rot(projs):
+	from utilities import rotation_between_anglesets
+	sc = len(projs)
+	matrix_rot  = [[[0.0,0.0,0.0,0.0,0.0] for i in xrange(sc)] for k in xrange(sc)]
+	for i in xrange(sc):
+		for j in xrange(i):
+			t1, t2, t3 = rotation_between_anglesets(projs[i], projs[j])
+			matrix_rot[i][j] = [t1, t2, t3, 0.0, 0.0]
+	return matrix_rot
+"""
