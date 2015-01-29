@@ -1,5 +1,27 @@
 #!/usr/bin/env python
 
+# Making sure the correct version of the project is executed
+# Needs to be removed in production
+
+import sys, os
+sys.path.insert(0,os.path.dirname(os.path.realpath(__file__)) )
+sys.path.insert(1,os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/libpy")
+
+# print sys.path
+# print len(sys.path)
+# sys.exit()
+# /home/hvoicu/Analysis/test_rviper/eman2/sparx/bin/sxrviper.py
+"""
+
+start.sh mpirun --npernode 16 --host n6  -tag-output -np 8 \
+/home/hvoicu/Analysis/test_rviper/eman2/sparx/bin/sxrviper.py \
+bdb:keep --n_shc_runs=2 --outlier_percentile=95 --fl=0.1 --aa=0.1 \
+--doga=0.3   --L2threshold=0.05 --maxit2=50 --ou=25  --xr=2  --center=0
+
+"""
+
+
+
 from mpi import MPI_SUM, mpi_reduce, mpi_init, mpi_finalize, MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size, mpi_barrier, mpi_bcast, MPI_INT, MPI_CHAR, MPI_FLOAT
 
 # from debug_mpi import mpi_bcast
@@ -322,6 +344,7 @@ def if_error_all_processes_quit_program(error_status):
 
 
 def main():
+
 	from utilities import write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle
 	from logger import Logger, BaseLogger_Files
 	import sys
@@ -334,6 +357,9 @@ def main():
 	from global_def import SPARXVERSION
 	from EMAN2 import EMData
 	from multi_shc import multi_shc, do_volume
+
+
+
 
 	global f_counter
 	f_counter = 1
