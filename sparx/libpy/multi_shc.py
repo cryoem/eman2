@@ -389,7 +389,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 
 			mpi_barrier(mpi_comm)
 			if myid == main_node:
-				log.add("ITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],yrng[N_step],step[N_step]))
+				log.add("ITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, xrange = %5.2f, yrange = %5.2f, step = %5.2f\n"%(total_iter, Iter, delta[N_step], xrng[N_step],yrng[N_step],step[N_step]))
 				start_time = time()
 
 			#=========================================================================
