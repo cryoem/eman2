@@ -115,7 +115,7 @@ def found_outliers(outlier_percentile, rviper_iter, no_of_viper_runs_analyzed_to
 
 	while( len(projs[0]) > percentile_index):
 		subset, avg_diff_per_image, outp = find_common_subset(projs, th)
-		m = max([avg_diff_per_image[klt] for klt in subset)
+		m = max([avg_diff_per_image[klt] for klt in subset])
 		l = avg_diff_per_image.index(m)
 		index_outliers.append(index_keep_images[l])
 		del index_keep_images[l]
@@ -149,7 +149,6 @@ def found_outliers(outlier_percentile, rviper_iter, no_of_viper_runs_analyzed_to
 		cmdexecute(cmd)
 		cmd = "{} {} {} {}".format("e2bdb.py ", bdb_stack_location + "_%03d"%(rviper_iter), "--makevstack=" + bdb_stack_location + "_%03d"%(rviper_iter + 1), "--list=" + mainoutputdir +  "this_iteration_index_keep_images.txt")
 		cmdexecute(cmd)
-
 		dat = EMData.read_images(bdb_stack_location + "_%03d"%(rviper_iter))
 
 	write_text_file([dat[i].get_attr("original_image_index")  for i in index_outliers],mainoutputdir + "index_outliers.txt")

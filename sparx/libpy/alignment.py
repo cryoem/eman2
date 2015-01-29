@@ -1165,12 +1165,15 @@ def prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", 
 			refrings[i] = cimage
 
 	if MPI:
-		from utilities import bcast_EMData_to_all
-		for i in xrange(num_ref):
-			for j in xrange(ncpu):
-				ref_start, ref_end = MPI_start_end(num_ref, ncpu, j)
-				if i >= ref_start and i < ref_end: rootid = j
-			bcast_EMData_to_all(refrings[i], myid, rootid, comm=mpi_comm)
+		from utilities import bcast_compacted_EMData_to_all
+		bcast_compacted_EMData_to_all(refrings, myid, comm=mpi_comm)
+
+		#from utilities import bcast_EMData_to_all
+		#for i in xrange(num_ref):
+			#for j in xrange(ncpu):
+				#ref_start, ref_end = MPI_start_end(num_ref, ncpu, j)
+				#if i >= ref_start and i < ref_end: rootid = j
+			#bcast_EMData_to_all(refrings[i], myid, rootid, comm=mpi_comm)
 
 	for i in xrange(len(ref_angles)):
 		n1,n2,n3 = getfvec(ref_angles[i][0], ref_angles[i][1])
