@@ -56,10 +56,8 @@ def orient_params(params, refparams, indexes=None, sym = "c1"):
 	nsymc = int(sym[1:])
 
 	if(sym[0] == "d"):
-		ERROR("No support for d symmetry in","orient_params",1)
 		# In this one the first params is taken as a reference
-		#mirror_and_reduce_dsym([refparams,params], sym)
-
+		mirror_and_reduce_dsym([refparams,params], sym)
 	elif(sym[0] == "c" and nsymc>1):
 		from copy import deepcopy
 		divic = 360.0/nsymc
@@ -98,8 +96,8 @@ def orient_params(params, refparams, indexes=None, sym = "c1"):
 			for j in xrange(n):
 				# apply mirror
 				out[j][2] = (out[j][2] + 180.0) % 360.0
-
 	return  rot, out
+
 
 def find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, sym = "c1"):
 	#  projs - [reference set of angles, set of angles1, set of angles2, ... ]
@@ -107,6 +105,7 @@ def find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, sym =
 	from utilities import getvec, getfvec
 	from math import acos, degrees
 	from copy import deepcopy
+	from EMAN2 import Vec2f, Transform
 
 	n  = len(projs[0])
 	sc = len(projs)
@@ -169,7 +168,7 @@ def find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, sym =
 					tv[k] = [t1,t2,t3]
 
 				for j in xrange(i+1,sc):
-					matrix_rot[i][j], out = orient_params_new(projs[j], projs[i], subset, sym = sym)
+					matrix_rot[i][j], out = orient_params(projs[j], projs[i], subset, sym = sym)
 					if(nsymc > 1):
 						for k in xrange(n):
 							mind = 1.0e23
