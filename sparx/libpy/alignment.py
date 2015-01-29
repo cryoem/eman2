@@ -2332,7 +2332,7 @@ def align2d(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rst
 	Util.Applyws(crefim, numr, wr)
 	return ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny)
 	
-
+'''
 def align2dshc(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rstep=1, mode = "F"):
 	"""  Determine shift and rotation between image and reference image
 	     quadratic interpolation
@@ -2364,73 +2364,20 @@ def align2dshc(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, 
 	Util.Applyws(crefim, numr, wr)
 	#return ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny)
 	return   Util.shc(image, [crefim], xrng, yrng, step, -1.0, mode, numr, cnx, cny, "c1")
+'''
 
 
 
-	
-"""
-
-#MIRROR HAS A PROBLEM
-def align_new_test(image, refim, xrng=0, yrng=0):
-	from fundamentals import scf, rot_shift2D, ccf
-	from utilities import peak_search
-	from math import radians, sin, cos
-	nx = image.get_xsize()
-	ou = nx//2-1
-
-	alpha, sxs, sys, mirr, peak = align2d(scf(image), scf(refim), last_ring=ou, mode="H")
-	
-	nrx = 2*(xrng+1)+1
-	nry = 2*(yrng+1)+1
-
-	ccf1 = Util.window(ccf(rot_shift2D(image, alpha, 0.0, 0.0, mirr),refim),nrx,nry)
-	p1 = peak_search(ccf1)
-	
-	ccf2 = Util.window(ccf(rot_shift2D(image, alpha+180.0, 0.0, 0.0, mirr),refim),nrx,nry)
-	p2 = peak_search(ccf2)
-	#print p1
-	#print p2
-
-	
-	peak_val1 = p1[0][0]
-	peak_val2 = p2[0][0]
-	
-	if peak_val1 > peak_val2:
-		sxs = -p1[0][4]
-		sys = -p1[0][5]
-		cx = int(p1[0][1])
-		cy = int(p1[0][2])
-		peak = peak_val1
-	else:
-		alpha += 180.0
-		sxs = -p2[0][4]
-		sys = -p2[0][5]
-		peak = peak_val2
-		cx = int(p2[0][1])
-		cy = int(p2[0][2])
-		ccf1 = ccf2
-	from utilities import model_blank
-	#print cx,cy
-	z = model_blank(3,3)
-	for i in xrange(3):
-		for j in xrange(3):
-			z[i,j] = ccf1[i+cx-1,j+cy-1]
-	#print  ccf1[cx,cy],z[2,2]
-	XSH, YSH, PEAKV = parabl(z)
-	#print sxs, sys, XSH, YSH, PEAKV, peak
-	if(mirr == 1):  	sx = -sxs+XSH
-	else:               sx =  sxs-XSH
-	return alpha, sx, sys-YSH, mirr, PEAKV
-	#return alpha, sxs, sys, mirror, peak
-"""
-
-
-def align_new_test(image, refim, xrng=0, yrng=0, ou = -1):
+def align2d_scf(image, refim, xrng=-1, yrng=-1, ou = -1):
 	from fundamentals import scf, rot_shift2D, ccf, mirror
 	from utilities import peak_search
 	from math import radians, sin, cos
 	nx = image.get_xsize()
-	if(ou<0):  ou = nx//2-1
+	ny = image.get_xsize()
+	if(ou<0):  ou = min(nx//2-1,ny//2-1)
+	if(yrng < 0):  yrng = xrng
+	if(ou<2):
+		ERROR('Radius of the object (ou) has to be given','align2d_scf',1)
 	#sci = scf(image)
 	scr = scf(refim)
 
@@ -2443,8 +2390,8 @@ def align_new_test(image, refim, xrng=0, yrng=0, ou = -1):
 	else:
 		mirr = 1
 		alpha = -alpha2
-	nrx = 2*(xrng+1)+1
-	nry = 2*(yrng+1)+1
+	nrx = min( 2*(xrng+1)+1, (((nx-2)//2)*2+1) )
+	nry = min( 2*(yrng+1)+1, (((ny-2)//2)*2+1) )
 
 	ccf1 = Util.window(ccf(rot_shift2D(image, alpha, 0.0, 0.0, mirr),refim),nrx,nry)
 	p1 = peak_search(ccf1)
