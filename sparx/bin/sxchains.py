@@ -233,14 +233,11 @@ def main():
 	parser.add_option("--initial", type="int", default=-1, help="Specifies which image will be used as an initial seed to form the chain. (default = 0, means the first image)")
 	parser.add_option("--radius", type="int", default=-1, help="Radius of a circular mask for similarity based ordering")
 	#  import params for 2D alignment
-	parser.add_option("--ir",           type="int",  default=1,             help="inner radius for rotational correlation > 0 (set to 1)")
-	parser.add_option("--ou",           type="int",  default=-1,            help="outer radius for rotational correlation < nx/2-1 (set to the radius of the particle)")
-	parser.add_option("--rs",           type="int",  default=1,             help="step between rings in rotational correlation > 0 (set to 1)" ) 
-	parser.add_option("--xr",           type="int",  default=0,     		help="range for translation search in x direction, search is +/xr (0)")
-	parser.add_option("--yr",           type="int",  default=0,          	help="range for translation search in y direction, search is +/yr (0)")
-	parser.add_option("--ts",           type="float",  default=1.0,  help="step of translation search in both directions (1.0)")
-	parser.add_option("--nomirror",     action="store_true", default=False,   help="Disable checking mirror orientations of images (default False)")
-	parser.add_option("--pairwiseccc",  type="string",	default= None,     		  help="Input/output pairwise ccc file")
+	parser.add_option("--ou",           type="int",    default=-1,          help="outer radius for 2D alignment < nx/2-1 (set to the radius of the particle)")
+	parser.add_option("--xr",           type="int",    default=0,     		help="range for translation search in x direction, search is +/xr (0)")
+	parser.add_option("--yr",           type="int",    default=0,          	help="range for translation search in y direction, search is +/yr (0)")
+	#parser.add_option("--nomirror",     action="store_true", default=False,   help="Disable checking mirror orientations of images (default False)")
+	parser.add_option("--pairwiseccc",  type="string",	default= None,      help="Input/output pairwise ccc file")
 
 
  	(options, args) = parser.parse_args()
@@ -253,7 +250,7 @@ def main():
 		if nargs != 3:
 			print "must provide name of input and two output files!"
 			return
-				print "Using Lookup Table"
+
 		from utilities import get_params2D, model_circle
 		from fundamentals import rot_shift2D
 		from statistics import ccc
