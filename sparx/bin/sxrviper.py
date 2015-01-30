@@ -7,6 +7,8 @@ import sys, os
 sys.path.insert(0,os.path.dirname(os.path.realpath(__file__)) )
 sys.path.insert(1,os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/libpy")
 
+
+
 # print sys.path
 # print len(sys.path)
 # sys.exit()
@@ -17,6 +19,12 @@ start.sh mpirun --npernode 16 --host n6  -tag-output -np 8 \
 /home/hvoicu/Analysis/test_rviper/eman2/sparx/bin/sxrviper.py \
 bdb:keep --n_shc_runs=2 --outlier_percentile=95 --fl=0.1 --aa=0.1 \
 --doga=0.3   --L2threshold=0.05 --maxit2=50 --ou=25  --xr=2  --center=0
+
+start.sh mpirun --npernode 16 --host bmbpccl1,n0,n1,n6,n7,n8,n9,n10  -tag-output -np 128 \
+/home/hvoicu/Analysis/test_rviper/eman2/sparx/bin/sxrviper.py \
+bdb:g20 --n_shc_runs=8 --outlier_percentile=98 --fl=0.3 --aa=0.15 \
+--doga=0.3   --L2threshold=0.05 --maxit2=50 --ou=30  --xr=0  --center=0
+
 
 """
 
@@ -357,7 +365,6 @@ def main():
 	from global_def import SPARXVERSION
 	from EMAN2 import EMData
 	from multi_shc import multi_shc, do_volume
-
 
 
 
