@@ -16399,17 +16399,21 @@ def localhelicon_MPIming(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, x
 			for ivol in xrange(nfils):
 				seg_start = indcs[ivol][0]
 				seg_end   = indcs[ivol][1]
-				ctx = [None]*(seg_end-seg_start)	
+				ctx = [None]*(seg_end-seg_start)
+				txtol = [0.0]*(seg_end-seg_start)
+				tytol = [0.0]*(seg_end-seg_start)	
 				for im in xrange( seg_start, seg_end ):
 					#  Here I have to figure for local search whether given image has to be matched with this refproj dir
 					ID = data[im].get_attr("ID")
 					phi, theta, psi, tx, ty = get_params_proj(data[im])
+					txtol[im-seg_start] = tx
+					tytol[im-seg_start] = ty
 					if finfo:
 						finfo.write("Image id: %6d\n"%(ID))
 						finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 						finfo.flush()
 					#  Determine whether segment is up and down and search for psi in one orientation only.
-					print "im=%d"%im
+					
 						
 					for refang in ref_angles:
 						refrings = [None]
@@ -16430,19 +16434,24 @@ def localhelicon_MPIming(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, x
 						#
 						#print  "IMAGE  ",im
 						#print "AAAAAAAAAAA, refang=", refang
-						angb, tx, ty, pik, ccf3dimg = directaligriddingconstrained3dccf(dataft[im], kb, refrings, \
+						angb, newtx, newty, pik, ccf3dimg = directaligriddingconstrained3dccf(dataft[im], kb, refrings, \
 							psi_max, psistep, xrng[N_step], yrng[N_step], stepx, stepy, psi, tx, ty, direction)
-
+						
 						if(pik > -1.0e23):
 							if(pik > neworient[im][-1]):
 								neworient[im][-1] = pik
-								neworient[im][:4] = [angb, tx, ty, refang]
+								neworient[im][:4] = [angb, newtx, newty, refang]
+								print "im", im-seg_start
 								ctx[im-seg_start]=ccf3dimg
+					print "im peak", im, pik			
 				
 				##3D snake search.
 				#alignment3Dsnake(patitions[ivol], seg_end-seg_start, neworient[seg_start:seg_end])
-				alignment3Dsnake(1, seg_end-seg_start, neworient[seg_start:seg_end])
-				
+				print neworient[seg_start:seg_end]
+				neworientsnake=alignment3Dsnake(1, seg_end-seg_start, neworient[seg_start:seg_end], ctx, psistep, stepx, stepy, txtol, tytol, direction)
+				for im in xrange( seg_start, seg_end ):
+					neworient[im] = neworientsnake[im- seg_start]
+					
 			for im in xrange(nima):
 				if(neworient[im][-1] > -1.0e23):
 					#print " neworient  ",im,neworient[im]

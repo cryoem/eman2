@@ -3497,7 +3497,7 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 	#  Limit psi search to within psimax range
 	bnr = max(int(round(reduced_psiref/psistep)),0)
 	enr = min(int(round(reduced_psiref/psistep))+nr,nr)
-	print bnr, enr, nr
+	
 	N = inima.get_ysize()  # assumed image is square, but because it is FT take y.
 	#  Window for ccf sampled by gridding
 	#   We quietly assume the search range for translations is always much less than the ccf size,
@@ -3556,7 +3556,7 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 					ccf3dimg.set_value_at(j,k,i-bnr,w[j,k])
 
 			pp = peak_search(w)[0]
-			#print '  peak   ',i,pp
+			print '  peak   ',i,pp
 			#from sys import exit
 			#exit()
 
@@ -3591,7 +3591,10 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 				"""
 				if(PEAKV>ma2):
 					ma2  = PEAKV
-					oma2 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
+					#oma2 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
+					oma2 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,i-nc]
+					
+				#print "wnx, wny, pp, oma2", wnx, wny, pp, oma2	
 		if updown == "down" :
 			c = ccf(imm,ref[i])
 			for iy in xrange(-rny, rny + 1):
@@ -3631,7 +3634,8 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 				"""
 				if(PEAKV>ma4):
 					ma4 = PEAKV
-					oma4 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
+					#oma4 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
+					oma4 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)]
 
 	if( oma2[-2] > oma4[-2] ):
 		peak = oma2[-2]
@@ -3645,8 +3649,10 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 		#  The inversion would be needed for 2D alignment.  For 3D, the proper way is to return straight results.
 		#nalpha, ntx, nty, mirror = inverse_transform2(oma2[-1], oma2[-4]*stepx, oma2[-3]*stepy, 0)
 		nalpha = oma2[-1]
-		ntx    = oma2[-4]*stepx - txref
-		nty    = oma2[-3]*stepy - tyref
+		# ntx    = oma2[-4]*stepx - txref
+# 		nty    = oma2[-3]*stepy - tyref
+		ntx    = oma2[-4]
+		nty    = oma2[-3]
 		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
 	else:
 		peak = oma4[-2]
@@ -3655,20 +3661,24 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 		#print oma3
 		#print oma4
 
-		nalpha, ntx, nty, junk = compose_transform2(-oma4[-1], oma4[-4]*stepx - txref,oma4[-3]*stepy - tyref,1.0,180.,0,0,1)
-		#nalpha = oma4[-1] + 180.0
-		#ntx    = oma4[-4]*stepx
-		#nty    = oma4[-3]*stepy
-		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
-		nalpha, ntx, nty, mirror = inverse_transform2(nalpha, ntx, nty, 0)
-		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
-	#print  "OUT        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
+		nalpha = oma4[-1]
+		ntx    = oma4[-4]
+		nty    = oma4[-3]
+		
+# 		nalpha, ntx, nty, junk = compose_transform2(-oma4[-1], oma4[-4]*stepx - txref,oma4[-3]*stepy - tyref,1.0,180.,0,0,1)
+# 		#nalpha = oma4[-1] + 180.0
+# 		#ntx    = oma4[-4]*stepx
+# 		#nty    = oma4[-3]*stepy
+# 		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
+# 		nalpha, ntx, nty, mirror = inverse_transform2(nalpha, ntx, nty, 0)
+# 		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
+# 	#print  "OUT        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
 	
 	return  nalpha, ntx, nty, peak, ccf3dimg
 
-def alignment3Dsnake(partition, nsegs, initialori):
-	print "DDDDDDDDD"
+def alignment3Dsnake(partition, nsegs, initialori, ctx, psistep, stepx, stepy, txref, tyref, updown = "up"):
 	from scipy import interpolate
+	from utilities    import inverse_transform2, compose_transform2
 	#1. setting basis parameters for b-spline
 	#patitions[ivol] = 2        ##only for test. should be removed later.@ming
 	pt = partition
@@ -3681,7 +3691,7 @@ def alignment3Dsnake(partition, nsegs, initialori):
 	##2. get initial b-splines coefficients for initial alignment parameters(snake).
 	###2.1 for b-spline fitting of tttt.
 	#nsegs = seg_end-seg_start
-	tck=[]*3 
+	TCK=[] 
 	for repd in xrange(3):
 		T=[]      #b-spline knots.
 		U=[]	  #sampling points.	
@@ -3695,7 +3705,7 @@ def alignment3Dsnake(partition, nsegs, initialori):
 		nperiod=nsegs//pt
 		
 		for i in xrange(0,len(T)):
-			T[i] = -nperiod+i*nsegs*1.0/(len(T)-1)
+			T[i] = i*(nsegs-1)*1.0/(len(T)-1)
 			
 		for i in xrange(0,nsegs):
 			U[i] = i
@@ -3719,25 +3729,135 @@ def alignment3Dsnake(partition, nsegs, initialori):
 		out_file1.close()
 		out_file2.close()	 
 
-		tck[repd]=interpolate.splrep(U,AT,W, t=T[1:len(T)-1], k=3,s=0)
-		print tck[repd]	
-	
-# 	sx0    =[0.0]*nsegs
-# 	sy0    =[0.0]*nsegs
-# 	angrot0=[0.0]*nsegs
-# 	sx    =[0.0]*nsegs
-# 	sy    =[0.0]*nsegs
-# 	angrot=[0.0]*nsegs
-# 	##3. refine snake's b-spline coefficients using amoeba. added@ming
-# 	params0 = sx0+sy0+angrot0
-# 	params  = sx+sy+angrot
-# 	ftol = 1.e-16
-# 	xtol = 1.e-16
-# 	maxi = 500
-# 	scale = [20.0]*nsegs+[20.0]*nsegs+[20.0]*nsegs
-# 	params,fval, numit=amoeba(params, scale, flexhelicalali, ftol, xtol, maxi, [ctx,params0, 0.0, nx//2, tck[0], 3, nsegs])	
-	##4. get alignment parameters from refined b-spline coefficients.				
+		tck=interpolate.splrep(U,AT,W, t=T[1:len(T)-1], k=3,s=0)
+		TCK.append(tck)
+		print tck	
 
+	angrot0=list(TCK[0][1]) 	
+	sx0    =list(TCK[1][1])
+	sy0    =list(TCK[2][1])
+	
+	angrot=angrot0
+	sx    =sx0
+	sy    =sy0
+	
+	##3. refine snake's b-spline coefficients using amoeba. added@ming
+	from utilities import amoeba
+	params0 = sx0+sy0+angrot0
+	params  = sx+sy+angrot
+	ftol = 1.e-16
+	xtol = 1.e-16
+	maxi = 500
+	scale = [20.0]*len(TCK[0][1])+[20.0]*len(TCK[1][1])+[20.0]*len(TCK[2][1])
+	params,fval, numit=amoeba(params, scale, flexhelicalali, ftol, xtol, maxi, [ctx,params0, 0.0, TCK, nsegs])
+
+	##4. get alignment parameters from refined b-spline coefficients.
+	import numpy as np        
+	pang = np.array(params[0:len(TCK[0][1])])
+	px   = np.array(params[0:len(TCK[1][1])])
+	py   = np.array(params[0:len(TCK[2][1])])
+       
+	tckang = (TCK[0][0], pang,TCK[0][2])
+	tckx   = (TCK[1][0], px,TCK[1][2]) 
+	tcky   = (TCK[2][0], py,TCK[2][2])
+	
+	from scipy import interpolate
+	#print "lambw", lambw
+	sx_sum=0.0
+	
+	u=[i-nperiod for i in xrange(nsegs)]
+	valang = interpolate.splev(u, tckang, der=0, ext=0)
+	valx = interpolate.splev(u, tckx, der=0, ext=0)
+	valy = interpolate.splev(u, tcky, der=0, ext=0)	
+
+	for im in xrange(nsegs):	
+		if updown == "up" :				
+			initialori[im][0] = initialori[im][0]*psistep
+			initialori[im][1] =  initialori[im][1]*stepx - txref[im]
+			initialori[im][2] =  initialori[im][2]*stepy - tyref[im]	
+		if updown == "down" :
+			nalpha, ntx, nty, junk = compose_transform2(-initialori[im][0]*psistep, initialori[im][1]*stepx - txref[im],initialori[im][2]*stepy - tyref[im],1.0,180.,0,0,1)
+			nalpha, ntx, nty, mirror = inverse_transform2(nalpha, ntx, nty, 0)
+			initialori[im][0] = nalpha
+			initialori[im][1] = ntx
+			initialori[im][2] = nty			
+	return initialori
+
+def flexhelicalali(params,data):
+	sccf    = data[0]
+	params0 = data[1]
+	lambw   = data[2]
+	TCK     = data[3]
+	nsegs   = data[4]
+
+	import numpy as np        
+	pang = np.array(params[0:len(TCK[0][1])])
+	px   = np.array(params[0:len(TCK[1][1])])
+	py   = np.array(params[0:len(TCK[2][1])])
+       
+	tckang = (TCK[0][0], pang,TCK[0][2])
+	tckx   = (TCK[1][0], px,TCK[1][2]) 
+	tcky   = (TCK[2][0], py,TCK[2][2])
+	
+	nx = sccf[0].get_xsize()
+	ny = sccf[0].get_ysize()
+	na = sccf[0].get_zsize()
+	
+	print "nx ny nz, size(sccf), type(sccf[0]) get_value_at", nx, ny,na, len(sccf), type(sccf[1]), sccf[1].get_value_at(0,0,0)
+	nxc=nx//2
+	nyc=ny//2
+	nac=na//2
+	
+	from scipy import interpolate
+	#print "lambw", lambw
+	sx_sum=0.0
+		
+	u=[i for i in xrange(nsegs)]
+	valang = interpolate.splev(u, tckang, der=0, ext=0)
+	valx = interpolate.splev(u, tckx, der=0, ext=0)
+	valy = interpolate.splev(u, tcky, der=0, ext=0)
+	for id in xrange(nsegs):
+		al = valang[id]  #interpolate.splev([id-nperiod], tck, der=0, ext=0)
+		xl = valx[id]
+		yl = valy[id]
+		
+		#print "xl=%f"%xl
+		al = al+nac
+		ial = int(al)
+		dal = al - ial
+		
+		xl = xl+nxc
+		ixl = int(xl)
+		dxl = xl - ixl
+
+		yl = yl+nyc
+		iyl = int(yl)
+		dyl = yl - iyl
+				
+		#print "sx_sum, xl, ixl, dxl", sx_sum, xl,ixl,dxl
+		# if ixl < 0:
+# 			print "ixl=%d xl=%f params[id]=%f"%(ixl,xl,params[id])
+		#print "ix iy ia", ixl, iyl, ial
+		print "c00", sccf[1].get_value_at(ixl,iyl,ial)
+		# c00 = (1.0-dxl)*sccf[id].get_value_at(ixl,iyl,ial)+dxl*sccf[id].get_value_at(ixl+1,iyl,ial)
+# 		c10 = (1.0-dxl)*sccf[id].get_value_at(ixl,iyl+1,ial)+dxl*sccf[id].get_value_at(ixl+1,iyl+1,ial)
+# 		c01 = (1.0-dxl)*sccf[id].get_value_at(ixl,iyl,ial+1)+dxl*sccf[id].get_value_at(ixl+1,iyl,ial+1)
+# 		c11 = (1.0-dxl)*sccf[id].get_value_at(ixl,iyl+1,ial+1)+dxl*sccf[id].get_value_at(ixl+1,iyl+1,ial+1)
+# 		
+# 		c0 = (1-dyl)*c00 + dyl*c10
+# 		c1 = (1-dyl)*c01 + dyl*c11
+# 		
+# 		c  = (1-dal)*c0 + dal*c1
+# 			
+# 		sx_sum += c
+	#print "part 1", sx_sum
+	# part2_sum=0
+# 	for id in xrange(sccfn):
+# 		part2_sum += lambw*(params0[id]-params[id])**2
+# 	#print "part 2", part2_sum
+# 	sx_sum -= part2_sum
+	return sx_sum
+	
 def ali_nvol(v, mask):
 	from alignment    import alivol_mask_getref, alivol_mask
 	from statistics   import ave_var
