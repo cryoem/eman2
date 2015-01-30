@@ -3458,6 +3458,285 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 	#print  "OUT        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
 	return  nalpha, ntx, nty, peak
 
+def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1, yrng=1, \
+			stepx = 1.0, stepy = 1.0, psiref = 0., txref = 0., tyref = 0., updown = "up"):
+	"""
+	Direct 2D alignment within a predefined angular range.  If the range is large the method will be very slow.
+	ref - a stack of reference images. 
+	updown - one of two keywords:  up, down, indicating which angle to consider, 0, or 180.
+	
+	Usage of constrains:  Search is around the previous parameters (psiref, txref, tyref), 
+	                      but only within ranges specified by (psimax, xrng, yrng).
+	
+	PAP 01/16/2015
+	"""
+
+	from fundamentals import fft, rot_shift2D, ccf, prepi
+	from utilities    import peak_search, model_blank, inverse_transform2, compose_transform2
+	from alignment    import parabl
+	from EMAN2 import Processor
+	#print  "  directaligridding1  ",psimax, psistep, xrng, yrng, stepx, stepy, updown
+	#print  "IN         %6.2f %6.2f  %6.2f"%(psiref, txref, tyref)
+
+	"""
+	M = inima.get_xsize()
+	alpha = 1.75
+	K = 6
+	N = M*2  # npad*image size
+	r = M/2
+	v = K/2.0/N
+	params = {"filter_type" : Processor.fourier_filter_types.KAISER_SINH_INVERSE,
+	          "alpha" : alpha, "K":K,"r":r,"v":v,"N":N}
+	kb = Util.KaiserBessel(alpha, K, r, v, N)
+	"""
+
+	nr = int(2*psimax/psistep)+1
+	nc = nr//2
+	if updown == "up" :  reduced_psiref = psiref -  90.0
+	else:                reduced_psiref = psiref - 180.0
+	#  Limit psi search to within psimax range
+	bnr = max(int(round(reduced_psiref/psistep)),0)
+	enr = min(int(round(reduced_psiref/psistep))+nr,nr)
+	print bnr, enr, nr
+	N = inima.get_ysize()  # assumed image is square, but because it is FT take y.
+	#  Window for ccf sampled by gridding
+	#   We quietly assume the search range for translations is always much less than the ccf size,
+	#     so instead of restricting anything, we will just window out ccf around previous shift locations
+	rnx   = int(round(xrng/stepx))
+	rny   = int(round(yrng/stepy))
+	wnx = 2*rnx + 1
+	wny = 2*rny + 1
+	w = model_blank( wnx, wny)
+	stepxx = 2*stepx
+	stepyy = 2*stepy
+	nicx = N//2 - 2*txref #  here one would have to add or subtract the old value.
+	nicy = N//2 - 2*tyref
+	wxc = wnx//2
+	wyc = wny//2
+
+	if updown == "up" :
+		ima = inima
+		#ima = inima.FourInterpol(N, N, 1,0)
+		#ima = Processor.EMFourierFilter(ima,params)
+
+	if updown == "down" :
+		#  This yields rotation by 180 degrees.  There is no extra shift as the image was padded 2x, so it is even-sized, but two rows are incorrect
+		imm = inima.conjg()
+		#imm = rot_shift2D(inima,180.0, interpolation_method = 'linear')
+		#imm = imm.FourInterpol(N, N, 1,0)
+		#imm = Processor.EMFourierFilter(imm,params)
+
+	#fft(ima).write_image('imap.hdf')
+
+	ma1  = -1.e23
+	ma2  = -1.e23
+	ma3  = -1.e23
+	ma4  = -1.e23
+	oma2 = [-1.e23, -1.e23, -1.e23]
+	oma4 = [-1.e23, -1.e23, -1.e23]
+	"""
+	fft(ima).write_image('ima.hdf')
+	for i in xrange(nr):  fft(ref[i]).write_image('ref.hdf',i)
+	from sys import exit
+	exit()
+	"""
+	ccf3dimg = model_blank(wnx, wny, enr-bnr)
+	for i in xrange(bnr, enr, 1):
+		if updown == "up" :
+			c = ccf(ima,ref[i])
+			#c.write_image('gcc.hdf')
+			#p = peak_search(window2d(c,4*xrng+1,4*yrng+1),5)
+			#for q in p: print q
+			for iy in xrange(-rny, rny + 1):
+				for ix in xrange(-rnx, rnx + 1):
+					w[ix+rnx,iy+rny] = c.get_pixel_conv7(ix*stepxx+nicx, iy*stepyy+nicy, 0.0, kb)
+
+			for j in xrange(wnx):
+				for k in xrange(wny):
+					ccf3dimg.set_value_at(j,k,i-bnr,w[j,k])
+
+			pp = peak_search(w)[0]
+			#print '  peak   ',i,pp
+			#from sys import exit
+			#exit()
+
+			px = int(pp[4])
+			py = int(pp[5])
+			#print '  peak   ',i,pp,px*stepx,py*stepy
+			#  did not find a peak, find a maximum location instead
+			if( pp[0] == 1.0 and px == 0 and py == 0):
+				#  No peak!
+				pass
+				"""
+				loc = w.calc_max_location()
+				PEAKV = w.get_value_at(loc[0],loc[1])
+				print "  Did not find a peak  :",i,loc[0]-wxc, loc[1]-wyc, PEAKV
+				if(PEAKV>ma2):
+						ma2  = PEAKV
+						oma2 = pp+[loc[0]-wxc, loc[1]-wyc, loc[0]-wxc, loc[1]-wyc, PEAKV,(i-nc)*psistep]
+				"""
+			else:
+				ww = model_blank(3,3)
+				px = int(pp[1])
+				py = int(pp[2])
+				for k in xrange(3):
+					for l in xrange(3):
+						ww[k,l] = w[k+px-1,l+py-1]
+				XSH, YSH, PEAKV = parabl(ww)
+				#print ["S %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
+				"""
+				if(pp[0]>ma1):
+					ma1 = pp[0]
+					oma1 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
+				"""
+				if(PEAKV>ma2):
+					ma2  = PEAKV
+					oma2 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
+		if updown == "down" :
+			c = ccf(imm,ref[i])
+			for iy in xrange(-rny, rny + 1):
+				for ix in xrange(-rnx, rnx + 1):
+					w[ix+rnx,iy+rny] = c.get_pixel_conv7(ix*stepxx+nicx, iy*stepyy+nicy, 0.0, kb)
+
+			for j in xrange(wnx):
+				for k in xrange(wny):
+					 ccf3dimg.set_value_at(j,k,i-bnr,w[j,k])
+
+			pp = peak_search(w)[0]
+			px = int(pp[4])
+			py = int(pp[5])
+			if( pp[0] == 1.0 and px == 0 and py == 0):
+				#  No peak!
+				pass
+				"""
+				loc = w.calc_max_location()
+				PEAKV = w.get_value_at(loc[0],loc[1])
+				if(PEAKV>ma4):
+					ma4  = PEAKV
+					oma4 = pp+[loc[0], loc[1], loc[0], loc[1], PEAKV,(i-nc)*psistep]
+				"""
+			else:
+				ww = model_blank(3,3)
+				px = int(pp[1])
+				py = int(pp[2])
+				for k in xrange(3):
+					for l in xrange(3):
+						ww[k,l] = w[k+px-1,l+py-1]
+				XSH, YSH, PEAKV = parabl(ww)
+				#print ["R %10.1f"%pp[k] for k in xrange(len(pp))]," %6.2f %6.2f  %6.2f %6.2f %12.2f  %4.1f"%(XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep)
+				"""
+				if(pp[0]>ma3):
+					ma3 = pp[0]
+					oma3 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
+				"""
+				if(PEAKV>ma4):
+					ma4 = PEAKV
+					oma4 = pp+[XSH, YSH,int(pp[4])+XSH, int(pp[5])+YSH, PEAKV,(i-nc)*psistep]
+
+	if( oma2[-2] > oma4[-2] ):
+		peak = oma2[-2]
+		if( peak == -1.0e23 ):  return  0.0, 0.0, 0.0, peak, ccf3dimg
+	
+		"""
+		print oma1
+		print oma2
+		print  "        %6.2f %6.2f  %6.2f"%(oma2[-1],oma2[-4],oma2[-3])
+		"""
+		#  The inversion would be needed for 2D alignment.  For 3D, the proper way is to return straight results.
+		#nalpha, ntx, nty, mirror = inverse_transform2(oma2[-1], oma2[-4]*stepx, oma2[-3]*stepy, 0)
+		nalpha = oma2[-1]
+		ntx    = oma2[-4]*stepx - txref
+		nty    = oma2[-3]*stepy - tyref
+		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
+	else:
+		peak = oma4[-2]
+		if( peak == -1.0e23 ):  return  0.0, 0.0, 0.0, peak, ccf3dimg
+		#  This is still strange as why I would have to invert here but not for 90 degs.  PAP  01/09/2014
+		#print oma3
+		#print oma4
+
+		nalpha, ntx, nty, junk = compose_transform2(-oma4[-1], oma4[-4]*stepx - txref,oma4[-3]*stepy - tyref,1.0,180.,0,0,1)
+		#nalpha = oma4[-1] + 180.0
+		#ntx    = oma4[-4]*stepx
+		#nty    = oma4[-3]*stepy
+		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
+		nalpha, ntx, nty, mirror = inverse_transform2(nalpha, ntx, nty, 0)
+		#print  "        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
+	#print  "OUT        %6.2f %6.2f  %6.2f"%(nalpha, ntx, nty)
+	
+	return  nalpha, ntx, nty, peak, ccf3dimg
+
+def alignment3Dsnake(partition, nsegs, initialori):
+	print "DDDDDDDDD"
+	from scipy import interpolate
+	#1. setting basis parameters for b-spline
+	#patitions[ivol] = 2        ##only for test. should be removed later.@ming
+	pt = partition
+	nknots=[0]*pt
+	for ipt in xrange(pt):
+		nknots[ipt]  =  9   ##does not include the right end knots.
+		#nknots1 = 4
+	#mknots = 1	
+	
+	##2. get initial b-splines coefficients for initial alignment parameters(snake).
+	###2.1 for b-spline fitting of tttt.
+	#nsegs = seg_end-seg_start
+	tck=[]*3 
+	for repd in xrange(3):
+		T=[]      #b-spline knots.
+		U=[]	  #sampling points.	
+		AT=[]	  #values at U.	
+		W=[]				
+		for ipt in xrange(pt):
+			T +=[0.0]*nknots[ipt]
+		U=[0.0]*nsegs
+		AT=[0.0]*nsegs
+		W=[0.0]*nsegs
+		nperiod=nsegs//pt
+		
+		for i in xrange(0,len(T)):
+			T[i] = -nperiod+i*nsegs*1.0/(len(T)-1)
+			
+		for i in xrange(0,nsegs):
+			U[i] = i
+			AT[i]= initialori[i][repd]
+			W[i] = 1.0
+
+		# for i in xrange(mknots-1):
+# 			T[nknots+i]=T[nknots-1]
+# 		for i in xrange(nknots, nknots+nknots1-1):
+# 			T[i+mknots-1] = 0+(i-nknots+1)*(nsegs-1-nperiod)*1.0/(nknots1-1)
+
+			out_file = open("T%d.txt"%repd, "w")
+		out_file1 = open("AT%d.txt"%repd, "w")
+		out_file2 = open("W%d.txt"%repd, "w")
+		for i in xrange(len(T)):
+			out_file.write( "%f\n" % (T[i]) )
+		for i in xrange(len(AT)):	
+			out_file1.write( "%f\n" % (AT[i]) )
+			out_file2.write( "%f\n" % (W[i]) )
+		out_file.close()
+		out_file1.close()
+		out_file2.close()	 
+
+		tck[repd]=interpolate.splrep(U,AT,W, t=T[1:len(T)-1], k=3,s=0)
+		print tck[repd]	
+	
+# 	sx0    =[0.0]*nsegs
+# 	sy0    =[0.0]*nsegs
+# 	angrot0=[0.0]*nsegs
+# 	sx    =[0.0]*nsegs
+# 	sy    =[0.0]*nsegs
+# 	angrot=[0.0]*nsegs
+# 	##3. refine snake's b-spline coefficients using amoeba. added@ming
+# 	params0 = sx0+sy0+angrot0
+# 	params  = sx+sy+angrot
+# 	ftol = 1.e-16
+# 	xtol = 1.e-16
+# 	maxi = 500
+# 	scale = [20.0]*nsegs+[20.0]*nsegs+[20.0]*nsegs
+# 	params,fval, numit=amoeba(params, scale, flexhelicalali, ftol, xtol, maxi, [ctx,params0, 0.0, nx//2, tck[0], 3, nsegs])	
+	##4. get alignment parameters from refined b-spline coefficients.				
 
 def ali_nvol(v, mask):
 	from alignment    import alivol_mask_getref, alivol_mask

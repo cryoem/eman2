@@ -60,6 +60,8 @@ static vector<float> infomask(EMData* Vol, EMData* mask, bool);
 
 static vector<double> helixshiftali(vector<EMData*> ctx, vector<vector<float> > pcoords, int nsegms, float maxincline, int kang, int search_rng, int nxc);
 
+static vector<double> snakeshiftali(vector<EMData*> sccf,  vector<vector<float> > pcoords, int nsegms, float maxincline, int kang, int search_rng, int nxc, int angnxc);
+
 static vector<float> curhelixshiftali(vector<EMData*> ctx, vector<vector<float> > pcoords, int nsegms,  int search_rng, int nx, int ny);
 
 static void colreverse(float* beg, float* end, int nx);
@@ -146,6 +148,11 @@ static void spline_mat(float *x, float *y, int n,  float *xq, float *yq, int m);
  * @param[out]  y2 is the value of the second derivatives
 */
 static void spline(float *x, float *y, int n, float yp1, float ypn, float *y2);
+
+
+static float bsplineBase(float u);
+static float bsplineBasedu(float u);
+static void convertTocubicbsplineCoeffs(vector<float> s, int DataLength, float EPSILON);
 
 /** Given the arrays xa(ordered, ya of length n, which tabulate a function
  *  and given the array y2a which is the output of spline and an unordered array xq,
@@ -586,7 +593,7 @@ class FakeKaiserBessel : public KaiserBessel {
 	 * returns EM object with 1D ccf
 	*/
 	static void Crosrng_msg_vec(EMData* circ1, EMData* circ2, vector<int> numr, float *q, float *t);
-
+	static void Crosrng_msg_vec_snake(EMData* circ1, EMData* circ2, vector<int> numr, float *q);
 	/**
 	 * This program is half of the Crosrng_msg. It only checks straight position.
 	 * input - fourier transforms of rings!!
@@ -1009,6 +1016,9 @@ public:
 	 * */
 	static vector<float> ali2d_ccf_list(EMData* image, EMData* crefim, float xrng, float yrng,
 	     float step, string mode, vector<int>numr, float cnx, float cny, double T);
+
+	static vector<float> ali2d_ccf_list_snake(EMData* image, EMData* crefim, vector<float> wr, float xrng, float yrng,
+	     float step, string mode, vector<int>numr, float cnx, float cny, double T);			     
      /*
 	static void multiref_peaks_ali(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, string mode,

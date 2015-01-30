@@ -230,7 +230,35 @@ def helicise_pdb(inpdb, outpdb, dp, dphi):
 			t[0,0]=0.0
 			t[1,0]=0.0
 			t[2,0]=j*dp
-			X_new = dot(m, X) + t
+			##for curve filaments
+			RR = 50
+			distheta = j*1.0/RR
+			t[0,0]=0.0     
+			t[1,0]=RR*sin(j*1.0/nperiod*6.28)   
+			t[2,0]=j*dp
+			##end for curve filament.
+			
+			## for parabola filament.
+# 			t[0,0]=0.0
+# 			a = 100.0/(nperiod*nperiod)     
+#  			t[1,0]= a * j*j  
+# 			t[2,0]=j*dp
+
+# 			## for cubic filament
+# 			t[0,0]=0.0
+#  			a = 300.0/(nperiod*nperiod*nperiod) 
+#  			t[1,0]= a * j*j*j  
+# 			t[2,0]=j*dp
+
+# 			if  j>= -nperiod and j < 0:
+# 				a = 100.0/(nperiod*nperiod*nperiod) 
+# 				t[1,0]= a * j*j*j
+# 			else:
+# 				t[1,0] = 3.0/nperiod*j
+
+
+			
+			X_new = dot(m, X) + t 
 			for i in xrange( n ):
 				pnew[j*n+i] = pnew[j*n+i].replace( p[i][30:38], "%8.3f"%( float(X_new[0,i]) ) )
 				pnew[j*n+i] = pnew[j*n+i].replace( p[i][38:46], "%8.3f"%( float(X_new[1,i]) ) )

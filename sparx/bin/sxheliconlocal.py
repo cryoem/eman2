@@ -79,6 +79,7 @@ def main():
 	#parser.add_option("--MA_WRAP",            type="int",            default= 0,                  help="do wrapping in MA if MA_WRAP=1, else no wrapping in MA. Default is 0.")
 	parser.add_option("--seg_ny",             type="int",            default= 256,                help="y dimension of desired segment size, should be related to fract in that fract ~ seg_ny/ny, where ny is dimension of input projections. (pixels)")
 	parser.add_option("--new",                action="store_true",   default=False,               help="use new version")
+	parser.add_option("--snake",                action="store_true",   default=False,               help="use snake method")
 
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
@@ -127,7 +128,7 @@ def main():
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
 
-		from applications import localhelicon_MPI, localhelicon_MPInew
+		from applications import localhelicon_MPI, localhelicon_MPInew, localhelicon_MPIming
 		if len(args) < 4:  mask = None
 		else:              mask = args[3]
 		if options.new:  localhelicon_MPInew(args[0], args[1], args[2], options.seg_ny, mask, irp, oup, options.rs, xrp, options.ynumber, \
@@ -135,6 +136,11 @@ def main():
 				options.dp, options.dphi, options.psi_max, \
 			rminp, rmaxp, options.fract, options.npad,options.sym, options.function,\
 			options.apix, options.debug, y_restrict2, options.searchit)
+		elif options.snake:	localhelicon_MPIming(args[0], args[1], args[2], options.seg_ny, mask, irp, oup, options.rs, xrp, options.ynumber, \
+			txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, \
+				options.dp, options.dphi, options.psi_max, \
+			rminp, rmaxp, options.fract, options.npad,options.sym, options.function,\
+			options.apix, options.debug, y_restrict2, options.searchit)	
 		else:  localhelicon_MPI(args[0], args[1], args[2], options.seg_ny, mask, irp, oup, options.rs, xrp, options.ynumber, \
 			txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, \
 				options.dp, options.dphi, options.psi_max, \

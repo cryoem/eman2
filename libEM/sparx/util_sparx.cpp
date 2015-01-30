@@ -206,6 +206,105 @@ vector<double> Util::helixshiftali(vector<EMData*> ctx, vector<vector<float> > p
     return result;    
 }
 
+vector<double> Util::snakeshiftali(vector<EMData*> sccf, vector<vector<float> > pcoords, int nsegms, float resamp_dang, int kang, int search_rng, int nxc, int maxrin)
+{
+	int cents, six, inplane, kim, ixl, ial, sib, nx, ny;
+	double q0, qu0, qt, qu, tang, dst, xl, dxl, al, dal, qm, bang;
+	char fln[200];
+	vector<double> result;
+	nx = sccf[0]->get_xsize();
+	ny = sccf[0]->get_ysize();
+	printf("nx=%d ny=%d search_rng=%d nxc=%d", nx, ny, search_rng, nxc);fflush(stdout);
+	cents = nsegms/2;
+	qm = -1.0e23;  
+	// for ( int i = 0; i < nsegms; i++ ) {
+// 		sprintf(fln,"sccfimage%d.hdf",i);
+// 		sccf[i]->write_image(fln);}
+	for ( six =-search_rng; six <= search_rng; six++ ) {
+		for ( inplane = 0; inplane <= kang; inplane++ ) {
+			if ( six+nxc > nx-1 || six+nxc < 0) continue;
+			q0 = sccf[cents]->get_value_at(six+nxc,(maxrin-inplane)%maxrin);
+			qu0 = sccf[cents]->get_value_at(six+nxc,inplane);
+			qt = q0;
+			qu = qu0;
+			if ( kang > 0 ) tang = tan(resamp_dang*inplane);  //sin(resamp_dang*inplane);  //;
+			else tang = 0.0;
+			for ( kim = cents+1; kim < nsegms; kim++ ) {
+				dst = sqrt(((double)pcoords[cents][0] - (double)pcoords[kim][0])*((double)pcoords[cents][0] - (double)pcoords[kim][0])+
+				((double)pcoords[cents][1] - (double)pcoords[kim][1])*((double)pcoords[cents][1] - (double)pcoords[kim][1]));
+				//printf("\ndst=%5.6f", dst); fflush(stdout);//cout <<"dst="<< setprecision(4) << dst<< endl;
+				xl = -dst * tang + six + nxc;
+				ixl = floor(xl);
+				dxl = xl - ixl;
+				al = (maxrin-inplane)%maxrin ;
+				ial = floor(al);
+				if (ixl +1 <= nx-1 && ixl >= 0 ) 
+					qt += (1.0-dxl)*sccf[kim]->get_value_at(ixl,ial) + dxl*sccf[kim]->get_value_at(ixl+1,ial);
+				else 
+					qt = -1.0e23;
+				//if ( six == -10 && inplane == 0 ) printf("\nkim=%d xl=%f dst=%f coefs=%f", kim, xl, dst, (1.0-dxl)*sccf[kim]->get_value_at(ixl,ial) + dxl*sccf[kim]->get_value_at(ixl+1,ial));
+				
+				xl =  dst * tang + six + nxc;
+				ixl = floor(xl);
+				dxl = xl - ixl;
+				al = inplane ;
+				ial = floor(al);
+				if (ixl +1 <= nx-1 && ixl >= 0 ) 
+					qu += (1.0-dxl)*sccf[kim]->get_value_at(ixl,ial) + dxl*sccf[kim]->get_value_at(ixl+1,ial);
+				else qu = -1.0e23;	
+			}
+			for ( kim = 0; kim < cents; kim++ ) {
+			 	dst = sqrt(((double)pcoords[cents][0] - (double)pcoords[kim][0])*((double)pcoords[cents][0] - (double)pcoords[kim][0])+
+				((double)pcoords[cents][1] - (double)pcoords[kim][1])*((double)pcoords[cents][1] - (double)pcoords[kim][1]));
+				//printf("\ndst=%5.6f", dst); fflush(stdout);
+				xl = dst*tang+six+nxc;
+				ixl = floor(xl);
+				dxl = xl - ixl;
+				al = (maxrin-inplane)%maxrin;
+				ial = floor(al);
+				if (ixl +1 <= nx-1 && ixl >= 0 )
+					qt += (1.0-dxl)*sccf[kim]->get_value_at(ixl,ial) + dxl*sccf[kim]->get_value_at(ixl+1,ial);
+				else 
+					qt = -1.0e23;
+				if ( six == -20 && inplane == 0 ) printf("\nkim=%d xl=%f dst=%f  coefs=%f", kim, xl, dst, (1.0-dxl)*sccf[kim]->get_value_at(ixl,ial) + dxl*sccf[kim]->get_value_at(ixl+1,ial));
+				
+				xl = -dst * tang + six + nxc;
+				ixl = floor(xl);
+				dxl = xl - ixl;
+				al = inplane;
+				ial = floor(al);
+				if (ixl +1 <= nx-1 && ixl >= 0 )
+					qu += (1.0-dxl)*sccf[kim]->get_value_at(ixl,ial) + dxl*sccf[kim]->get_value_at(ixl+1,ial);
+				else 
+					qu = -1.0e23;	
+			}
+			cout << "six= " << six << "inplane= " << (maxrin-inplane)%maxrin << "qt=  " << qt   << endl;
+			if ( qt > qm ) {
+				cout << " six " << six << "  qm=  " <<qm <<"  qt=  "<< qt << "  inplane=  " << (maxrin-inplane)%maxrin << endl;
+				qm = qt;
+				sib = six;
+				bang = (maxrin-inplane)%maxrin;
+			}
+			if ( qu > qm ) {
+				cout << " six " << six << "qm=  " <<qm <<"  qu=  "<< qu << "  inplane=  " << inplane << endl;
+				qm = qu;
+				sib = six;
+				bang = inplane;
+			}
+			//cout << "bang" << bang <<endl;		
+		}
+		
+	
+	
+	}
+	//printf("\nqm sib bang=%f %f %f", qm, sib, bang);    
+    result.push_back((double)sib); 
+    result.push_back(bang);
+    result.push_back(qm);
+    return result;    
+}
+
+
 
 vector<float> Util::curhelixshiftali(vector<EMData*> ctx, vector<vector<float> > pcoords, int nsegms, int search_rng, int nx, int ny)
 {
@@ -577,6 +676,147 @@ void Util::spline(float *x, float *y, int n, float yp1, float ypn, float *y2) //
 		y2[k]=y2[k]*y2[k+1]+u[k];
 	}
 	delete [] u;
+}
+
+
+/***************************************************************************
+Description:
+  Compute the value at u of ith B_spline Base Function 
+  Spline  Knots: [u0,u1,..., u_(m+2k)]. 
+
+Arguments:
+  MM = m+k. the total number of B_spline Base Functions at the above interval.   
+  i = the ith B_spline Base Function.
+  k = The degree of B_spline Base Function.
+****************************************************************************/
+float Util::bsplineBase(float u)
+{
+  float ww1, ww2, ww3, sign;
+  float value = 0.0;
+  
+    ww1 = fabs(u);
+   if (ww1 >= 2.0) {
+        return value;
+   }
+   ww2 = ww1*ww1;
+   ww3 = ww2*ww1;
+
+ 
+   if (ww1 >=  0.0 && ww1 < 1.0) {
+        ww2 = ww1*ww1;
+        ww3 = ww2*ww1;
+    value = 2.0/3.0 - ww2 + 0.5*ww3;
+    return value;
+   }
+
+   if (ww1 >=  1.0 && ww1 <= 2.0) {
+        ww1 = 2.0 - ww1;
+        ww2 = ww1*ww1;
+        ww3 = ww2*ww1;
+        value = 1.0/6.0*ww3;
+
+   }
+	return value;
+
+}
+
+float Util::bsplineBasedu(float u)
+{  
+float ww1, ww2, ww3, sign;
+float values = 0;  
+/*
+  ww1 = fabs(u);
+  if (ww1 >= 2.0) {
+    return values;
+  }
+  ww2 = ww1*ww1;
+  
+  if (u >= 0.0) {
+     sign = 1.0;
+  }  else {
+     sign = -1.0;
+  }
+
+  if (ww1 >=  0.0 && ww1 < 1.0) {
+     ww2 = ww1*ww1;
+     values = -2.0*u + 1.5*sign*ww2;
+     return values;
+  }
+   
+  if (ww1 >=  1.0 && ww1 <= 2.0) {
+     ww1 = 2.0 - ww1;
+     ww2 = ww1*ww1;
+     values = -0.5*sign*ww2;
+  }
+  return values;
+*/
+  
+  ww1 = fabs(u);
+   if (ww1 >= 1.0) {
+     return values;
+   }
+
+   if ( u >=  -1.0 && u < 0.0) {
+     values = u+1.0;
+   }
+
+   if ( u >= 0.0 && u <= 1.0 ) {
+     values = 1.0 - u;
+   }
+   
+return values;
+}
+
+
+void Util::convertTocubicbsplineCoeffs(vector<float> s, int DataLength, float EPSILON)
+//              float   *s,             /* input samples --> output coefficients */
+//              int     DataLength,     /* number of samples or coefficients     */
+//              float   EPSILON         /* admissible relative error             */
+
+{
+int   i, n, ni, ni1, K;
+float sum, z1, w1, w2;
+
+n = DataLength + 1;
+z1 = sqrt(3.0) - 2.0;
+K = log(EPSILON)/log(fabs(z1));
+//printf("K = %i\n", K);
+
+// compute initial value s(0)
+sum = 0.0;
+w2 = pow(z1, 2*n);
+if (n < K) {
+   for (i = 1; i < n; i++){
+      w1 = pow(z1, i);
+      sum = sum + s[i-1]*(w1 - w2/w1);
+   }
+} else {
+   for (i = 1; i < n; i++){
+      sum = (sum + s[n- i-1])*z1;
+   }
+}
+sum = -sum/(1.0 - w2);
+
+// compute c^{+}
+n = DataLength;
+s[0]  = s[0] + z1*sum;
+for (i = 1; i < n; i++) {
+   s[i]  = s[i] + z1*s[i-1];
+   //printf("cp[%i] = %e, %f \n", i, cp[i], z1);
+}
+
+// compute c^- 
+s[n-1] = -z1*s[n-1];
+for (i = 1; i < n; i++) {
+   ni = n - i;
+   ni1 = ni - 1;
+   s[ni1]  = z1*(s[ni] - s[ni1]);
+}
+
+for (i = 0; i < n; i++) {
+   s[i]  = 6.0*s[i];
+}
+
 }
 
 
@@ -2399,7 +2639,7 @@ c
  * Optimized:
  * 	*Sin and Cos functions are tabulated for the largest ring
  * 	*Bilinear interpolation
- */
+ 
 EMData* Util::Polar2Dm(EMData* image, float cnx2, float cny2, vector<int> numr, string cmode){
 	int nring = numr.size()/3;
 	int r1 = numr(1,1);
@@ -2489,12 +2729,12 @@ EMData* Util::Polar2Dm(EMData* image, float cnx2, float cny2, vector<int> numr, 
 		}
 	}
 	return out;
-}
+}*/
 
 /*
  * 10/22/2014
  * Previous version
- * Quadratic interpolation
+ * Quadratic interpolation*/
  EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, string cmode){
 	int nsam = image->get_xsize();
 	int nrow = image->get_ysize();
@@ -2583,7 +2823,7 @@ EMData* Util::Polar2Dm(EMData* image, float cnx2, float cny2, vector<int> numr, 
 	} //end for it
 	return out;
 }
-*/
+
 
 float Util::bilinear(float xold, float yold, int nsam, int, float* xim)
 {
@@ -4607,6 +4847,72 @@ void Util::Crosrng_msg_vec(EMData* circ1, EMData* circ2, vector<int> numr, float
 	// mirrored
 	fftr_q(t,ip);
 }
+
+void Util::Crosrng_msg_vec_snake(EMData* circ1, EMData* circ2, vector<int> numr, float *q) {
+
+   // dimension         circ1(lcirc),circ2(lcirc)
+
+	int   ip, jc, numr3i, numr2i, i, j;
+	float t1, t2, t3, t4, c1, c2, d1, d2;
+
+	int nring = numr.size()/3;
+	//int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
+	int maxrin = numr[numr.size()-1];
+
+	float* circ1b = circ1->get_data();
+	float* circ2b = circ2->get_data();
+
+#ifdef _WIN32
+	ip = -(int)(log((float)maxrin)/log(2.0f));
+#else
+	ip = -(int)(log2(maxrin));
+#endif	//_WIN32
+	for (int i=1; i<=maxrin; i++)  {q(i) = 0.0f; }
+
+	//  q - straight  = circ1 * conjg(circ2)
+
+	//   t - mirrored  = conjg(circ1) * conjg(circ2)
+
+	for (i=1; i<=nring; i++) {
+
+		numr3i = numr(3,i);
+		numr2i = numr(2,i);
+		
+		t1   = circ1b(numr2i) * circ2b(numr2i);
+		q(1) += t1;
+		
+		t1   = circ1b(numr2i+1) * circ2b(numr2i+1);
+		if (numr3i == maxrin)  {
+			q(2) += t1;
+		} else {
+			q(numr3i+1) += t1;
+		}
+
+		for (j=3; j<=numr3i; j=j+2) {
+			jc     = j+numr2i-1;
+
+			c1     = circ1b(jc);
+			c2     = circ1b(jc+1);
+			d1     = circ2b(jc);
+			d2     = circ2b(jc+1);
+
+			t1     = c1 * d1;
+			t3     = c1 * d2;
+			t2     = c2 * d2;
+			t4     = c2 * d1;
+
+			q(j)   +=  t1 + t2;
+			q(j+1) += -t3 + t4;
+			
+		}
+	}
+	// straight
+	fftr_q(q,ip);
+	//for (int i=0; i<maxrin; i++) cout<<i<<"  B    "<<q[i]<<"       "<<t[i]<<endl;
+
+
+}
+
 
 
 
@@ -20242,6 +20548,69 @@ vector<float>  Util::ali2d_ccf_list(EMData* image, EMData* crefim,
 	a[5] = (float)select;
 	return a;
 }
+
+vector<float>  Util::ali2d_ccf_list_snake(EMData* image, EMData* crefim, vector<float> wr, 
+			float xrng, float yrng, float step, string mode,
+			vector< int >numr, float cnx, float cny, double T) {
+
+	int   maxrin = numr[numr.size()-1];
+	
+	int   kx = int(2*xrng/step+0.5)/2;
+	
+	float *p_ccf1ds = (float *)malloc(maxrin*sizeof(float));
+	int vol = maxrin*(2*kx+1);
+	vector<float> ccf(vol);
+	int index;
+	
+	for (int j = -kx; j <= kx; j++) {
+		float ix = j*step;
+		EMData* cimage = Polar2Dm(image, cnx+ix, cny, numr, mode);
+		Frngs(cimage, numr);
+		//Applyws(cimage, numr, wr);
+		Crosrng_msg_vec_snake(crefim, cimage, numr, p_ccf1ds);
+		for (int k=0; k<maxrin; k++) {
+			index = (j+kx)*maxrin+k;
+			ccf[index] = p_ccf1ds[k];
+		}
+		delete cimage; cimage = 0;
+	}
+	
+
+	delete p_ccf1ds;
+	return ccf;
+	// std::sort(ccf.begin(), ccf.end(), ccf_value());
+// 
+// 	double qt = (double)ccf[0].value;
+// 	vector <double> p(vol), cp(vol);
+// 
+// 	double sump = 0.0;
+// 	for (int i=0; i<vol; i++) {
+// 		p[i] = pow(double(ccf[i].value)/qt, 1.0/T);
+// 		sump += p[i];
+// 	}
+// 	for (int i=0; i<vol; i++) {
+// 		p[i] /= sump;
+// 	}
+// 	for (int i=1; i<vol; i++) {
+// 		p[i] += p[i-1];
+// 	}
+// 	p[vol-1] = 2.0;
+// 
+// 	float t = get_frand(0.0f, 1.0f);
+// 	int select = 0;
+// 	while (p[select] < t)	select += 1;
+// 
+// 	vector<float> a(6);
+// 	a[0] = ccf[select].value;
+// 	a[1] = (float)ccf[select].i;
+// 	a[2] = (float)ccf[select].j;
+// 	a[3] = (float)ccf[select].k;
+// 	a[4] = (float)ccf[select].mirror;
+// 	a[5] = (float)select;
+//	return a;
+}
+
+
 
 
 /*

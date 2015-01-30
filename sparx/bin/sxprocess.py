@@ -956,11 +956,14 @@ def main():
 		else:
 			if( (wn<nx) or (wn<ny) ):  ERROR("window size cannot be smaller than the image size","pw",1)
 		n = EMUtil.get_image_count(args[0])
-		from utilities import model_blank, pad
+		from utilities import model_blank, model_circle, pad
 		from EMAN2 import periodogram
 		p = model_blank(wn,wn)
+		mask=pad(model_blank(50,ny,1,1.0),nx,ny,1,0.0)
+		
 		for i in xrange(n):
 			d = get_im(args[0], i)
+			#Util.mul_img(d,mask)
 			st = Util.infomask(d, None, True)
 			d -= st[0]
 			p += periodogram(pad(d, wn, wn, 1, 0.))
