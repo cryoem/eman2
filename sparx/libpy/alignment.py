@@ -3679,7 +3679,7 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 	
 	return  nalpha, ntx, nty, peak, ccf3dimg
 
-def alignment3Dsnake(partition, nsegs, initialori, ctx, psistep, stepx, stepy, txref, tyref, updown = "up"):
+def alignment3Dsnake(partition, nsegs, initialori, ctx, psistep, stepx, stepy, txref, tyref, nc, rnx, rny, updown = "up"):
 	from scipy import interpolate
 	from utilities    import inverse_transform2, compose_transform2
 	#1. setting basis parameters for b-spline
@@ -3690,7 +3690,7 @@ def alignment3Dsnake(partition, nsegs, initialori, ctx, psistep, stepx, stepy, t
 		nknots[ipt]  =  9   ##does not include the right end knots.
 		#nknots1 = 4
 	#mknots = 1	
-	
+	print "begin snake refine...."
 	##2. get initial b-splines coefficients for initial alignment parameters(snake).
 	###2.1 for b-spline fitting of tttt.
 	#nsegs = seg_end-seg_start
@@ -3743,12 +3743,13 @@ def alignment3Dsnake(partition, nsegs, initialori, ctx, psistep, stepx, stepy, t
 	from utilities import amoeba
 	params0 = angrot0+sx0+sy0
 	params  = angrot+sx+sy
-	ftol = 1.e-16
-	xtol = 1.e-16
-	maxi = 500
-	scale = [20.0]*len(TCK[0][1])+[20.0]*len(TCK[1][1])+[20.0]*len(TCK[2][1])
+	ftol = 1.e-8
+	xtol = 1.e-8
+	maxi = 1000
+	scale = [nc*2.0]*len(TCK[0][1])+[rnx*2.0]*len(TCK[1][1])+[rny*2.0]*len(TCK[2][1])
+	print "begin amoeba refine..."
 	params,fval, numit=amoeba(params, scale, flexhelicalali, ftol, xtol, maxi, [ctx,params0, 0.0, TCK, nsegs])
-
+	print "amoeba iter_num=%d"%numit
 	##4. get alignment parameters from refined b-spline coefficients.
 	import numpy as np        
 	pang = np.array(params[0:len(TCK[0][1])])
@@ -3837,7 +3838,21 @@ def flexhelicalali(params,data):
 		# if ixl < 0:
 # 			print "ixl=%d xl=%f params[id]=%f"%(ixl,xl,params[id])
 		#print "ix iy ia", ixl, iyl, ial
-		
+		if ial < 0:
+			ial = 0
+			dal = 0
+		if ial > na-1:
+			ial = na-2
+			dal = 0
+		if ixl < 0:
+			ixl = 0
+			dxl = 0
+		if ixl > nx-1:
+			ixl = nx-2
+			dxl = 0
+		if iyl > ny-1:
+			iyl = ny-2
+			dyl = 0		
 		c00 = (1.0-dxl)*sccf[id].get_value_at(ixl,iyl,ial)+dxl*sccf[id].get_value_at(ixl+1,iyl,ial)
 		c10 = (1.0-dxl)*sccf[id].get_value_at(ixl,iyl+1,ial)+dxl*sccf[id].get_value_at(ixl+1,iyl+1,ial)
 		c01 = (1.0-dxl)*sccf[id].get_value_at(ixl,iyl,ial+1)+dxl*sccf[id].get_value_at(ixl+1,iyl,ial+1)

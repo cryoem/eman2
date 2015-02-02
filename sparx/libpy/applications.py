@@ -16446,9 +16446,11 @@ def localhelicon_MPIming(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, x
 					print "im peak", im, pik			
 				
 				##3D snake search.
-				#alignment3Dsnake(patitions[ivol], seg_end-seg_start, neworient[seg_start:seg_end])
 				print neworient[seg_start:seg_end]
-				neworientsnake=alignment3Dsnake(1, seg_end-seg_start, neworient[seg_start:seg_end], ctx, psistep, stepx, stepy, txtol, tytol, direction)
+				nc = (int(2*psi_max/psistep)+1)//2
+				rnx   = int(round(xrng[N_step]/stepx))
+				rny   = int(round(yrng[N_step]/stepy))
+				neworientsnake=alignment3Dsnake(1, seg_end-seg_start, neworient[seg_start:seg_end], ctx, psistep, stepx, stepy, txtol, tytol, nc, rnx, rny, direction)
 				for im in xrange( seg_start, seg_end ):
 					neworient[im] = neworientsnake[im- seg_start]
 					
