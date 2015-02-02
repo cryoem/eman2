@@ -57,36 +57,24 @@ def main():
 	
 	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=0)
 	
-	parser.add_argument("--normproc",type=str,help="""Normalization processor applied to 
-													particles before extraction. Default is None.
-													Use --normproc=normalize, --normproc=normalize.edgemean or --normalize.mask, depending on your specimen and purposes.
-													If using the latter, you must provide --masknorm, otherwise, a default --masknorm=mask.sharp:outer_radius=-2 will be used.""", default='')
+	parser.add_argument("--normproc",type=str,default='normalize.edgemean',help="""Normalization processor applied to particles before extraction. Default=normalize.edgemean. If using the latter, you must provide --masknorm, otherwise, a default --masknorm=mask.sharp:outer_radius=-2 will be used.""")
 	
-	parser.add_argument("--threshold",type=str,help="""Threshold processor to apply to particles 
-		before writing them out to get rid of too high and/or too low pixel values.""", default='')
+	parser.add_argument("--threshold",type=str,help="""Threshold processor to apply to particles before writing them out to get rid of too high and/or too low pixel values.""", default='')
 	
-	parser.add_argument('--shrink', type=int, default=1, help="""Shrink factor to shrink
-		particles before averaging. Default=1, which means no shrinking.""")
+	parser.add_argument('--shrink', type=int, default=1, help="""Shrink factor to shrink particles before averaging. Default=1, which means no shrinking.""")
 	
-	parser.add_argument("--lowpass",type=str,help="""Lowpass filtering processor to apply to 
-		particles before averaging. Default=None.""",default='')
+	parser.add_argument("--lowpass",type=str,help="""Lowpass filtering processor to apply to particles before averaging. Default=None.""",default='')
 	
 	parser.add_argument("--preprocess",type=str,help="""A processor (as in e2proc3d.py) to be applied to the tomogram before opening it. \nFor example, a specific filter with specific parameters you might like. \nType 'e2proc3d.py --processors' at the commandline to see a list of the available processors and their usage""",default=None)
 		
-	parser.add_argument('--invert', action="store_true", default=False, help='''This means 
-		you want the contrast to me inverted while boxing, AND for the extracted sub-volumes.
-		Remember that EMAN2 **MUST** work with "white" protein. You can very easily figure 
-		out what the original color\nof the protein is in your data by looking at the gold 
-		fiducials or the edge of the carbon hole in your tomogram.
-		If they look black you MUST specify this option''')
+	parser.add_argument('--invert', action="store_true", default=False, help='''Default=False. This parameer indicates you want the contrast to me inverted while boxing, AND for the extracted sub-volumes. Remember that EMAN2 **MUST** work with "white" protein. You can very easily figure out what the original color\nof the protein is in your data by looking at the gold fiducials or the edge of the carbon hole in your tomogram. If they look black you MUST specify this option''')
 
-	parser.add_argument("--averager",type=str,help="""The type of averager used to produce 
-		the class average. Default=mean.tomo""", default='mean.tomo')
+	parser.add_argument("--averager",type=str,help="""The type of averager used to produce the class average. Default=mean.tomo""", default='mean.tomo')
 	
-	parser.add_argument("--keep",type=float,help="""The fraction of particles to keep in 
-		each class. Default=1.0""",default=1.0)
+	parser.add_argument("--keep",type=float,help="""The fraction of particles to keep in each class. Default=1.0""",default=1.0)
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
 
 	#parser.add_argument("--saveali",action="store_true", default=False,help="""If set, will save the 
@@ -94,6 +82,11 @@ def main():
 
 	(options, args) = parser.parse_args()
 	
+	
+	from e2spt_classaverage import sptOptionsParser
+	options = sptOptionsParser( options )
+	
+	'''
 	if options.normproc: 
 		options.normproc=parsemodopt(options.normproc)
 		
@@ -108,6 +101,7 @@ def main():
 		
 	if options.averager: 
 		options.averager=parsemodopt(options.averager)
+	'''
 	
 	if not options.boxsize:
 		print "\n(e2spt_recompute.py) (main) ERROR: Boxsize must be greater than zero. It is:", options.boxsize
