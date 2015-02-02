@@ -3557,7 +3557,7 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 					ccf3dimg.set_value_at(j,k,i-bnr,w[j,k])
 
 			pp = peak_search(w)[0]
-			print '  peak   ',i,pp
+			#print '  peak   ',i,pp
 			#from sys import exit
 			#exit()
 
@@ -3567,15 +3567,16 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 			#  did not find a peak, find a maximum location instead
 			if( pp[0] == 1.0 and px == 0 and py == 0):
 				#  No peak!
-				pass
-				"""
+				#pass
+				
 				loc = w.calc_max_location()
 				PEAKV = w.get_value_at(loc[0],loc[1])
-				print "  Did not find a peak  :",i,loc[0]-wxc, loc[1]-wyc, PEAKV
+				#print "  Did not find a peak  :",i,wxc, wyc, loc[0]-wxc, loc[1]-wyc, PEAKV
 				if(PEAKV>ma2):
-						ma2  = PEAKV
-						oma2 = pp+[loc[0]-wxc, loc[1]-wyc, loc[0]-wxc, loc[1]-wyc, PEAKV,(i-nc)*psistep]
-				"""
+					ma2  = PEAKV
+					#oma2 = pp+[loc[0]-wxc, loc[1]-wyc, loc[0]-wxc, loc[1]-wyc, PEAKV,(i-nc)*psistep]
+					oma2 = pp+[loc[0]-wxc, loc[1]-wyc, loc[0]-wxc, loc[1]-wyc, PEAKV,(i-nc)]
+				
 			else:
 				ww = model_blank(3,3)
 				px = int(pp[1])
@@ -3611,14 +3612,15 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 			py = int(pp[5])
 			if( pp[0] == 1.0 and px == 0 and py == 0):
 				#  No peak!
-				pass
-				"""
+				#pass
+				
 				loc = w.calc_max_location()
 				PEAKV = w.get_value_at(loc[0],loc[1])
 				if(PEAKV>ma4):
 					ma4  = PEAKV
-					oma4 = pp+[loc[0], loc[1], loc[0], loc[1], PEAKV,(i-nc)*psistep]
-				"""
+					#oma4 = pp+[loc[0], loc[1], loc[0], loc[1], PEAKV,(i-nc)*psistep]
+					oma4 = pp+[loc[0]-wxc, loc[1]-wyc, loc[0]-wxc, loc[1]-wyc, PEAKV,(i-nc)]
+				
 			else:
 				ww = model_blank(3,3)
 				px = int(pp[1])
@@ -3694,7 +3696,7 @@ def alignment3Dsnake(partition, nsegs, initialori, ctx, psistep, stepx, stepy, t
 	#nsegs = seg_end-seg_start
 	TCK=[] 
 	for repd in xrange(3):
-		T=[]      #b-spline knots.
+		T=[0.0]      #b-spline knots.
 		U=[]	  #sampling points.	
 		AT=[]	  #values at U.	
 		W=[]				
@@ -3703,7 +3705,7 @@ def alignment3Dsnake(partition, nsegs, initialori, ctx, psistep, stepx, stepy, t
 		U=[0.0]*nsegs
 		AT=[0.0]*nsegs
 		W=[0.0]*nsegs
-		nperiod=nsegs//pt
+		
 		
 		for i in xrange(0,len(T)):
 			T[i] = i*(nsegs-1)*1.0/(len(T)-1)
@@ -3713,12 +3715,7 @@ def alignment3Dsnake(partition, nsegs, initialori, ctx, psistep, stepx, stepy, t
 			AT[i]= initialori[i][repd]
 			W[i] = 1.0
 
-		# for i in xrange(mknots-1):
-# 			T[nknots+i]=T[nknots-1]
-# 		for i in xrange(nknots, nknots+nknots1-1):
-# 			T[i+mknots-1] = 0+(i-nknots+1)*(nsegs-1-nperiod)*1.0/(nknots1-1)
-
-			out_file = open("T%d.txt"%repd, "w")
+		out_file = open("T%d.txt"%repd, "w")
 		out_file1 = open("AT%d.txt"%repd, "w")
 		out_file2 = open("W%d.txt"%repd, "w")
 		for i in xrange(len(T)):
@@ -3744,8 +3741,8 @@ def alignment3Dsnake(partition, nsegs, initialori, ctx, psistep, stepx, stepy, t
 	
 	##3. refine snake's b-spline coefficients using amoeba. added@ming
 	from utilities import amoeba
-	params0 = sx0+sy0+angrot0
-	params  = sx+sy+angrot
+	params0 = angrot0+sx0+sy0
+	params  = angrot+sx+sy
 	ftol = 1.e-16
 	xtol = 1.e-16
 	maxi = 500
@@ -3755,8 +3752,8 @@ def alignment3Dsnake(partition, nsegs, initialori, ctx, psistep, stepx, stepy, t
 	##4. get alignment parameters from refined b-spline coefficients.
 	import numpy as np        
 	pang = np.array(params[0:len(TCK[0][1])])
-	px   = np.array(params[0:len(TCK[1][1])])
-	py   = np.array(params[0:len(TCK[2][1])])
+	px   = np.array(params[len(TCK[0][1]):len(TCK[0][1])+len(TCK[1][1])])
+	py   = np.array(params[len(TCK[0][1])+len(TCK[1][1]):len(TCK[0][1])+len(TCK[1][1])+len(TCK[2][1])])
        
 	tckang = (TCK[0][0], pang,TCK[0][2])
 	tckx   = (TCK[1][0], px,TCK[1][2]) 
@@ -3766,7 +3763,7 @@ def alignment3Dsnake(partition, nsegs, initialori, ctx, psistep, stepx, stepy, t
 	#print "lambw", lambw
 	sx_sum=0.0
 	
-	u=[i-nperiod for i in xrange(nsegs)]
+	u=[i for i in xrange(nsegs)]
 	valang = interpolate.splev(u, tckang, der=0, ext=0)
 	valx = interpolate.splev(u, tckx, der=0, ext=0)
 	valy = interpolate.splev(u, tcky, der=0, ext=0)	
@@ -3791,11 +3788,12 @@ def flexhelicalali(params,data):
 	TCK     = data[3]
 	nsegs   = data[4]
 
-	import numpy as np        
+	import numpy as np  
 	pang = np.array(params[0:len(TCK[0][1])])
-	px   = np.array(params[0:len(TCK[1][1])])
-	py   = np.array(params[0:len(TCK[2][1])])
-       
+	px   = np.array(params[len(TCK[0][1]):len(TCK[0][1])+len(TCK[1][1])])
+	py   = np.array(params[len(TCK[0][1])+len(TCK[1][1]):len(TCK[0][1])+len(TCK[1][1])+len(TCK[2][1])])
+	      
+	    
 	tckang = (TCK[0][0], pang,TCK[0][2])
 	tckx   = (TCK[1][0], px,TCK[1][2]) 
 	tcky   = (TCK[2][0], py,TCK[2][2])
@@ -3804,7 +3802,7 @@ def flexhelicalali(params,data):
 	ny = sccf[0].get_ysize()
 	na = sccf[0].get_zsize()
 	
-	print "nx ny nz, size(sccf), type(sccf[0]) get_value_at", nx, ny,na, len(sccf), type(sccf[1]), sccf[1].get_value_at(0,0,0)
+	#print "nx ny nz, size(sccf), type(sccf[0]) get_value_at", nx, ny,na, len(sccf), type(sccf[1]), sccf[1].get_value_at(0,0,0)
 	nxc=nx//2
 	nyc=ny//2
 	nac=na//2
@@ -3839,18 +3837,18 @@ def flexhelicalali(params,data):
 		# if ixl < 0:
 # 			print "ixl=%d xl=%f params[id]=%f"%(ixl,xl,params[id])
 		#print "ix iy ia", ixl, iyl, ial
-		print "c00", sccf[1].get_value_at(ixl,iyl,ial)
-		# c00 = (1.0-dxl)*sccf[id].get_value_at(ixl,iyl,ial)+dxl*sccf[id].get_value_at(ixl+1,iyl,ial)
-# 		c10 = (1.0-dxl)*sccf[id].get_value_at(ixl,iyl+1,ial)+dxl*sccf[id].get_value_at(ixl+1,iyl+1,ial)
-# 		c01 = (1.0-dxl)*sccf[id].get_value_at(ixl,iyl,ial+1)+dxl*sccf[id].get_value_at(ixl+1,iyl,ial+1)
-# 		c11 = (1.0-dxl)*sccf[id].get_value_at(ixl,iyl+1,ial+1)+dxl*sccf[id].get_value_at(ixl+1,iyl+1,ial+1)
-# 		
-# 		c0 = (1-dyl)*c00 + dyl*c10
-# 		c1 = (1-dyl)*c01 + dyl*c11
-# 		
-# 		c  = (1-dal)*c0 + dal*c1
-# 			
-# 		sx_sum += c
+		
+		c00 = (1.0-dxl)*sccf[id].get_value_at(ixl,iyl,ial)+dxl*sccf[id].get_value_at(ixl+1,iyl,ial)
+		c10 = (1.0-dxl)*sccf[id].get_value_at(ixl,iyl+1,ial)+dxl*sccf[id].get_value_at(ixl+1,iyl+1,ial)
+		c01 = (1.0-dxl)*sccf[id].get_value_at(ixl,iyl,ial+1)+dxl*sccf[id].get_value_at(ixl+1,iyl,ial+1)
+		c11 = (1.0-dxl)*sccf[id].get_value_at(ixl,iyl+1,ial+1)+dxl*sccf[id].get_value_at(ixl+1,iyl+1,ial+1)
+		
+		c0 = (1-dyl)*c00 + dyl*c10
+		c1 = (1-dyl)*c01 + dyl*c11
+		
+		c  = (1-dal)*c0 + dal*c1
+			
+		sx_sum += c
 	#print "part 1", sx_sum
 	# part2_sum=0
 # 	for id in xrange(sccfn):

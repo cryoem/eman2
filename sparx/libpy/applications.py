@@ -16441,7 +16441,7 @@ def localhelicon_MPIming(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, x
 							if(pik > neworient[im][-1]):
 								neworient[im][-1] = pik
 								neworient[im][:4] = [angb, newtx, newty, refang]
-								print "im", im-seg_start
+								#print "im", im-seg_start
 								ctx[im-seg_start]=ccf3dimg
 					print "im peak", im, pik			
 				
