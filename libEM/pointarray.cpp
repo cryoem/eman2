@@ -1992,7 +1992,7 @@ vector<double> PointArray::construct_helix(int start,int end, float phs, float &
 	rtdir=0;
 	Vec3f d(points[end*4]-points[start*4],points[end*4+1]-points[start*4+1],points[end*4+2]-points[start*4+2]);
 	double len=d.length();
-	int nh=int(round(len/1.54))+2;
+	int nh=int(Util::round(len/1.54))+2;
 	vector<double> helix(nh*3);
 	vector<float> eigvec=do_pca(start,end);	
 	float eigval[3],vec[9];
