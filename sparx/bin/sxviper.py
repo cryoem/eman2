@@ -17,7 +17,7 @@ def main():
 	from multi_shc import multi_shc
 
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack  output_directory  [initial_volume]  --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood  --center=center_type --maxit1=max_iter1 --maxit2=max_iter2 --L2threshold=0.1  --CTF --snr=SNR  --ref_a=S --sym=c1 --function=user_function"
+	usage = progname + " stack  output_directory  [initial_volume]  --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --center=center_type --maxit1=max_iter1 --maxit2=max_iter2 --L2threshold=0.1 --ref_a=S --sym=c1"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",       type= "int",   default= 1,                  help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--ou",       type= "int",   default= -1,                 help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
@@ -36,10 +36,14 @@ def main():
 	parser.add_option("--nruns",    type="int",    default= 3,                  help="number of quasi-independent runs (default=3)")
 	parser.add_option("--doga",     type="float",  default= 0.3,                help="do GA when fraction of orientation changes less than 1.0 degrees is at least doga (default=0.3)")
 	parser.add_option("--npad",     type="int",    default= 2,                  help="padding size for 3D reconstruction (default=2)")
-	#parser.add_option("--MPI",      action="store_true", default=True,          help="whether to use MPI version - this is always set to True")
-	parser.add_option("--an",       type="string", default= "-1",               help="angular neighborhood for local searches (phi and theta)")
-	parser.add_option("--CTF",      action="store_true", default=False,         help="Consider CTF correction during the alignment ")
-	parser.add_option("--snr",      type="float",  default= 1.0,                help="Signal-to-Noise Ratio of the data (default 1.0)")
+	parser.add_option("--fl",      type="float",  default=0.12,    help="cut-off frequency of hyperbolic tangent low-pass Fourier filte (default 0.12)")
+	parser.add_option("--aa",      type="float",  default=0.1,    help="fall-off of hyperbolic tangent low-pass Fourier filter (default 0.1)")
+	parser.add_option("--pwreference",      type="string",  default="",    help="text file with a reference power spectrum (default no power spectrum adjustment)")
+	parser.add_option("--mask3D",      type="string",  default=None,    help="3D mask file (default a sphere)")
+	#  To be removed
+	parser.add_option("--an",       type="string", default= "-1",               help="NOT USED angular neighborhood for local searches (phi and theta)")
+	parser.add_option("--CTF",      action="store_true", default=False,         help="NOT USED Consider CTF correction during the alignment ")
+	parser.add_option("--snr",      type="float",  default= 1.0,                help="NOT USED Signal-to-Noise Ratio of the data (default 1.0)")
 	(options, args) = parser.parse_args(sys.argv[1:])
 	if len(args) < 2 or len(args) > 3:
 		print "usage: " + usage
