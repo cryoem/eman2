@@ -565,8 +565,8 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				# ------ orientation - begin
 				#  Send solution from the main process of the first group to all processes in all groups
 				params_0 = wrap_mpi_bcast(params, mpi_subroots[0], mpi_comm)
-				if mpi_subrank == 0:
-					#  This is done on the main node of each group
+				if (mpi_subrank == 0) and (myid != 0):
+					#  This is done on the main node of each group (master node for MPI_COMM_WORLD skips it)
 					#  Minimal length of the subset is set to 1/3 of the number of parameters
 					#  Error threshold is set somewhat arbitrarily to 1.5 angular step of reference projections
 					#  oarams gets overwritten by rotated parameters,  subset is a list of indexes common
