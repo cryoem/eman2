@@ -664,7 +664,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 
 					if not terminate and noimprovement == 0:
 						afterGAcounter = 3
-						#  Now do the mutations
+						#  Now do the crossover
 						all_params = []
 
 						from utilities import nearestk_projangles
@@ -705,6 +705,16 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 							all_params.append(newparms1)
 							all_params.append(newparms2)
 						all_params = all_params[:number_of_runs]
+						#  Try this 02/02/2015 PAP
+						"""
+						#
+						#  For 25% add mutation, which for half of projections 'mirrors' them by adding 180 to psi
+						ipl = range(number_of_runs)
+						shuffle(ipl)
+						ipl = ipl[:max(1,int(0.25*number_of_runs+0.5)
+						for ip in ipl:
+							for i in xrange(total_nima):  all_params[ip][i][2] += 180.0
+						"""
 
 				terminate = wrap_mpi_bcast(terminate, main_node, mpi_comm)
 				if not terminate:
