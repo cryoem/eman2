@@ -37,7 +37,10 @@
 #define eman__serio_h__ 1
 
 #include "imageio.h"
+
+#ifndef _WIN32
 #include "stdint.h"
+#endif
 
 namespace EMAN
 {
@@ -108,8 +111,14 @@ namespace EMAN
 
 		SerHeader serh;
 
-		uint64_t * data_offset_array;
-		uint64_t * tag_offset_array;
+#ifdef _WIN32
+		unsigned long long *  data_offset_array;
+		unsigned long long *  tag_offset_array;
+#else
+		uint64_t *  data_offset_array;
+		uint64_t *  tag_offset_array;
+#endif
+
 		int nimg;	//total image number in this file
 		int nx;
 		int ny;
