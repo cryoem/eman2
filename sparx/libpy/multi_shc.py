@@ -507,7 +507,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				region, histo = hist_list(all_pixer, lhist)
 				log.add("==Pixel error      Number of images in all runs==")
 				for lhx in xrange(lhist):
-					msg = " %10.3f     %7d"%(region[lhx], histo[lhx])msg = " %10.3f                  %7d"%(region[lhx], histo[lhx])
+					msg = " %10.3f                  %7d"%(region[lhx], histo[lhx])
 					log.add(msg)
 				temp = 0
 				for i in all_pixer:
