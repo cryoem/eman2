@@ -49,7 +49,7 @@ def main():
 	"""
 	parser = OptionParser(usage,version=SPARXVERSION)
 	
-	parser.add_option("--wn",		type="int",		default=7, 			help="Size of window wiyhin which local real-space FSC is computed")
+	parser.add_option("--wn",		type="int",		default=7, 			help="Size of window within which local real-space FSC is computed")
 	parser.add_option("--step",     type="float",	default= 1.0,       help="Shell step in Fourier size in pixels (default 1.0)")   
 	parser.add_option("--cutoff",   type="float",	default= 0.5,       help="resolution cut-off for FSC (default 0.5)")
 	parser.add_option("--radius",	type="int",		default=-1, 		help="if there is no maskfile, sphere with r=radius will be used, by default the radius is nx/2-wn")
