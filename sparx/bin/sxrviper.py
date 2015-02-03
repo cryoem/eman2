@@ -30,7 +30,8 @@ def copy_current_python_code_in_local_directory(masterdir):
 # sys.exit()
 # /home/hvoicu/Analysis/test_rviper/eman2/sparx/bin/sxrviper.py
 """
-start.sh mpirun --npernode 16 --host n0,n1 -tag-output -np 32 \
+
+start.sh mpirun --npernode 16 --host n9,n10 -tag-output -np 32 \
 /home/hvoicu/EMAN2/bin/sxrviper.py \
 bdb:aclf --n_shc_runs=4 --outlier_percentile=95 --fl=0.1 --aa=0.15 \
 --doga=0.3 --L2threshold=0.05 --maxit2=50 --ou=30 --xr=2 --center=0
@@ -717,8 +718,8 @@ def main():
 				#ref_vol = get_im(masterdir + "centered_%03d.hdf"%(rviper_iter))
 				ref_vol = None
 
-			#options.user_func = user_functions.factory[options.function]
-			options.user_func = do_volume 
+			options.user_func = user_functions.factory[options.function]
+			# options.user_func = do_volume
 
 			#################print_with_time_info("Starting independent iteration %02d, by myid = %02d" % (runs_iter, myid))
 			#time.sleep(10)
