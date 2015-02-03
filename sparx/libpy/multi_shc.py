@@ -591,7 +591,9 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				#temp = [None]*nima
 				#for i in xrange(nima): temp[i] = data[i].get_attr("xform.projection")
 				for i in xrange(nima):  set_params_proj(data[i], params[i])
-				vol = volume_reconstruction(data[image_start:image_end], ali3d_options, mpi_subcomm)
+				# vol = volume_reconstruction(data[image_start:image_end], ali3d_options, mpi_subcomm)
+				# 9here
+				vol = do_volume(data[image_start:image_end], ali3d_options, mpi_subcomm)
 				#for i in xrange(nima): data[i].set_attr("xform.projection",temp[i])
 				#del temp
 
@@ -753,7 +755,9 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				mpi_barrier(mpi_comm)
 				if myid == main_node:
 					start_time = time()
-				vol = volume_reconstruction(data[image_start:image_end], ali3d_options, mpi_subcomm)
+				# vol = volume_reconstruction(data[image_start:image_end], ali3d_options, mpi_subcomm)
+				# 9here
+				vol = do_volume(data[image_start:image_end], ali3d_options, mpi_subcomm)
 
 				if mpi_subrank == 0:
 					L2 = vol.cmp("dot", vol, dict(negative = 0, mask = model_circle(last_ring, nx, nx, nx)))
@@ -937,7 +941,9 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None 
 
 	#=========================================================================
 	# adjust params to references, calculate psi+shifts, calculate previousmax
-	qvol = volume_reconstruction(data, ali3d_options, mpi_comm)
+	#qvol = volume_reconstruction(data, ali3d_options, mpi_comm)
+	# 9here
+	qvol = do_volume(data, ali3d_options, mpi_comm)
 	# log
 	"""
 	if myid == main_node:
@@ -983,7 +989,9 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None 
 	mpi_barrier(mpi_comm)
 	if myid == main_node:
 		start_time = time()
-	ref_vol = volume_reconstruction(data, ali3d_options, mpi_comm)
+	# ref_vol = volume_reconstruction(data, ali3d_options, mpi_comm)
+	# 9here
+	ref_vol = do_volume(data, ali3d_options, mpi_comm)
 	# log
 	if myid == main_node:
 		##ref_vol.write_image("viterb.hdf")
@@ -1086,7 +1094,9 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None 
 			mpi_barrier(mpi_comm)
 			if myid == main_node:
 				start_time = time()
-			vol = volume_reconstruction(data, ali3d_options, mpi_comm)
+			# vol = volume_reconstruction(data, ali3d_options, mpi_comm)
+			# 9here
+			vol = do_volume(data, ali3d_options, mpi_comm)
 			# log
 			if myid == main_node:
 				#vol.write_image("viter%03d.hdf"%total_iter)
@@ -1150,9 +1160,8 @@ def volume_reconstruction(data, options, mpi_comm):
 		ref_data[3] = None #fscc
 		ref_data[4] = None#varf
 		#  call user-supplied function to prepare reference image, i.e., center and filter it
-		# vol, cs = user_func(ref_data)
+		vol, cs = user_func(ref_data)
 
-	vol = do_volume(data, options, 0, mpi_comm)
 
 	# broadcast volume
 	bcast_EMData_to_all(vol, myid, 0, comm=mpi_comm)
@@ -1248,7 +1257,9 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 
 	if ref_vol == None:
 		proj_begin, proj_end = MPI_start_end(n_projs, mpi_size, mpi_rank)
-		ref_vol = volume_reconstruction(projections[proj_begin:proj_end], ali3d_options, mpi_comm=mpi_comm)
+		# ref_vol = volume_reconstruction(projections[proj_begin:proj_end], ali3d_options, mpi_comm=mpi_comm)
+		# 9here
+		ref_vol = do_volume(projections[proj_begin:proj_end], ali3d_options, mpi_comm=mpi_comm)
 
 
 	# Each node keeps all projection data, this would not work for large datasets
@@ -1304,7 +1315,9 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 	projections = wrap_mpi_bcast(projections, 0, mpi_comm)
 	from utilities import get_params_proj
 	#print  " from mpi   ",mpi_rank,proj_begin,get_params_proj(projections[proj_begin])
-	ref_vol = volume_reconstruction(projections[proj_begin:proj_end], ali3d_options, mpi_comm=mpi_comm)
+	# ref_vol = volume_reconstruction(projections[proj_begin:proj_end], ali3d_options, mpi_comm=mpi_comm)
+	# 9here
+	ref_vol = do_volume(projections[proj_begin:proj_end], ali3d_options, mpi_comm=mpi_comm)
 	if mpi_rank == 0:
 		ref_vol.write_image(log.prefix + "refvol2.hdf")
 		from utilities import model_circle
@@ -2621,7 +2634,7 @@ def get_softy(im):
 # data - projections (scattered between cpus) or the volume.  If volume, just do the volume processing
 # options - the same for all cpus
 # return - volume the same for all cpus
-def do_volume(data, options, iter, mpi_comm):
+def do_volume(data, options, mpi_comm):
 	from EMAN2          import Util
 	from mpi            import mpi_comm_rank
 	from reconstruction import recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
@@ -2686,7 +2699,7 @@ def do_volume(data, options, iter, mpi_comm):
 		vol = filt_btwl(vol, 0.38, 0.5)
 		Util.mul_img(vol, mask3D)
 		del mask3D
-		vol.write_image('toto%03d.hdf'%iter)
+		# vol.write_image('toto%03d.hdf'%iter)
 	# broadcast volume
 	bcast_EMData_to_all(vol, myid, 0, comm=mpi_comm)
 	#=========================================================================

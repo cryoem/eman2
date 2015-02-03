@@ -1789,7 +1789,7 @@ def proj_ali_helical_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 	"""
 	  psi_max - how much psi can differ from 90 or 270 degrees
 	"""
-	ffrom utilities    import compose_transform2, get_params_proj
+	from utilities    import compose_transform2, get_params_proj
 	from math         import cos, sin, radians
 
 	ID = data.get_attr("ID")

@@ -3,9 +3,25 @@
 # Making sure the correct version of the project is executed
 # Needs to be removed in production
 
-import sys, os
-sys.path.insert(0,os.path.dirname(os.path.realpath(__file__)) )
-sys.path.insert(1,os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/libpy")
+# import sys, os
+# sys.path.insert(0,os.path.dirname(os.path.realpath(__file__)) )
+# if(not os.path.exists(os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/libpy")):
+# 	sys.path.insert(1,os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/libpy")
+# if(not os.path.exists(os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/lib")):
+# 	sys.path.insert(1,os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/lib")
+
+# Save current version of sxrviper project in local directory:
+def copy_current_python_code_in_local_directory(masterdir):
+
+	iteration_start = get_latest_directory_increment_value(masterdir, "python_code/version")
+	cmd = "{} {}".format("mkdir -p", masterdir + "/python_code/version%03d"%iteration_start)
+	main_iteration_start = get_latest_directory_increment_value(masterdir, "main")
+	cmd = "{} {}".format("mkdir -p", masterdir + "/python_code/version%03d/main_iteration_start_%03d"%(iteration_start, main_iteration_start))
+	cmdexecute(cmd)
+	cmd = "{} {}".format("cp -rp ~/EMAN2/bin", masterdir + "/python_code/version%03d/bin"%iteration_start)
+	cmdexecute(cmd)
+	cmd = "{} {}".format("cp -rp ~/EMAN2/lib", masterdir + "/python_code/version%03d/lib"%iteration_start)
+	cmdexecute(cmd)
 
 
 
@@ -14,9 +30,13 @@ sys.path.insert(1,os.path.dirname(os.path.dirname(os.path.realpath(__file__))) +
 # sys.exit()
 # /home/hvoicu/Analysis/test_rviper/eman2/sparx/bin/sxrviper.py
 """
+start.sh mpirun --npernode 16 --host n0,n1 -tag-output -np 32 \
+/home/hvoicu/EMAN2/bin/sxrviper.py \
+bdb:aclf --n_shc_runs=4 --outlier_percentile=95 --fl=0.1 --aa=0.15 \
+--doga=0.3 --L2threshold=0.05 --maxit2=50 --ou=30 --xr=2 --center=0
 
 start.sh mpirun --npernode 16 --host n6  -tag-output -np 8 \
-/home/hvoicu/Analysis/test_rviper/eman2/sparx/bin/sxrviper.py \
+/home/hvoicu/EMAN2/bin/sxrviper.py \
 bdb:keep --n_shc_runs=2 --outlier_percentile=95 --fl=0.1 --aa=0.1 \
 --doga=0.3   --L2threshold=0.05 --maxit2=50 --ou=25  --xr=2  --center=0
 
@@ -473,10 +493,15 @@ def main():
 
 			cmd = "{} {}".format("mkdir", masterdir)
 			cmdexecute(cmd)
+			copy_current_python_code_in_local_directory(masterdir)
+			# error_status = 1
 		else:
 			if not os.path.exists(masterdir):
 				ERROR('Output directory does not exist, please change the name and restart the program', "sxrviper", 1)
 				error_status = 1
+			else:
+				copy_current_python_code_in_local_directory(masterdir)
+				# error_status = 1
 
 		if mpi_size % no_of_shc_runs_analyzed_together != 0:
 			#print "LLL:",  mpi_size, no_of_viper_runs_analyzed_together
