@@ -38,7 +38,9 @@
 
 #include "imageio.h"
 
-#ifndef _WIN32
+#ifdef _WIN32
+typedef unsigned long long uint64_t;
+#else
 #include "stdint.h"
 #endif
 
@@ -111,13 +113,8 @@ namespace EMAN
 
 		SerHeader serh;
 
-#ifdef _WIN32
-		unsigned long long *  data_offset_array;
-		unsigned long long *  tag_offset_array;
-#else
 		uint64_t *  data_offset_array;
 		uint64_t *  tag_offset_array;
-#endif
 
 		int nimg;	//total image number in this file
 		int nx;
