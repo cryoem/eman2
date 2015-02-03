@@ -568,9 +568,10 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				if mpi_subrank == 0:
 					#  This is done on the main node of each group
 					#  Minimal length of the subset is set to 1/3 of the number of parameters
-					#  Error threshold is set somewhat arbitrarily to 1,5 angular step of reference projections
+					#  Error threshold is set somewhat arbitrarily to 1.5 angular step of reference projections
 					#  oarams gets overwritten by rotated parameters,  subset is a list of indexes common
 					subset, avg_diff_per_image, params = find_common_subset([params_0, params], delta[N_step]*1.5, len(params)/3, sym)
+					params = params[1]
 					#   neither is needed, I hope this is correct
 					del subset, avg_diff_per_image
 					# if myid == 2:  print  " params before orient  ",myid,params[:4],params[-4:]

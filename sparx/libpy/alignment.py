@@ -3299,8 +3299,9 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 	else:                reduced_psiref = psiref - 180.0
 
 	#  Limit psi search to within psimax range
-	bnr = max(-int(round(reduced_psiref/psistep))+nc  ,0)
-	enr = min( int(round(reduced_psiref/psistep))+nc+1,nr)
+	#  It makes no sense, as it still searches within the entire range of psi_max
+	bnr = max( int(round(reduced_psiref/psistep))+ nc-nr,  nc-nr)
+	enr = min( int(round(reduced_psiref/psistep))+ nc+1+nr, nc+nr+1)
 
 	N = inima.get_ysize()  # assumed image is square, but because it is FT take y.
 	#  Window for ccf sampled by gridding
