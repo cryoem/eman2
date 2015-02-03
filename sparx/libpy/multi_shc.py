@@ -389,7 +389,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 
 			mpi_barrier(mpi_comm)
 			if myid == main_node:
-				log.add("ITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, xrange = %5.2f, yrange = %5.2f, step = %5.2f\n"%(total_iter, Iter, delta[N_step], xrng[N_step],yrng[N_step],step[N_step]))
+				log.add("ITERATION #%3d"%(total_iter))
 				start_time = time()
 
 			#=========================================================================
@@ -404,7 +404,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 
 			mpi_barrier(mpi_comm)
 			if myid == main_node:
-				log.add("Time to prepare rings: %f\n" % (time()-start_time))
+				log.add("Time to prepare rings: %f" % (time()-start_time))
 				start_time = time()
 
 			#=========================================================================
@@ -505,9 +505,9 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				total_checked_refs = sum(total_checked_refs)
 				lhist = 20
 				region, histo = hist_list(all_pixer, lhist)
-				log.add("=========================")
+				log.add("==Pixel error      Number of images in all runs==")
 				for lhx in xrange(lhist):
-					msg = " %10.3f     %7d"%(region[lhx], histo[lhx])
+					msg = " %10.3f     %7d"%(region[lhx], histo[lhx])msg = " %10.3f                  %7d"%(region[lhx], histo[lhx])
 					log.add(msg)
 				temp = 0
 				for i in all_pixer:
@@ -518,7 +518,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				## if total_iter%3 == 0:  orient_and_shuffle = True
 				## else:   orient_and_shuffle = False
 				# terminate          = ( percent_of_pixerr_below_one > 0.9 )  #  TODO - parameter ?
-				log.add("=========================")
+				log.add("=================================================")
 				log.add("Percent of positions with pixel error below 1.0 = ", (int(percent_of_pixerr_below_one*100)), "%","   Mutations: ",orient_and_shuffle)
 			orient_and_shuffle = wrap_mpi_bcast(orient_and_shuffle, 0, mpi_comm)
 			#=========================================================================
