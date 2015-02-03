@@ -13,7 +13,7 @@
 # Save current version of sxrviper project in local directory:
 def copy_current_python_code_in_local_directory(masterdir):
 
-	iteration_start = get_latest_directory_increment_value(masterdir, "python_code/version")
+	iteration_start = get_latest_directory_increment_value(masterdir, "python_code/version") + 1
 	cmd = "{} {}".format("mkdir -p", masterdir + "/python_code/version%03d"%iteration_start)
 	main_iteration_start = get_latest_directory_increment_value(masterdir, "main")
 	cmd = "{} {}".format("mkdir -p", masterdir + "/python_code/version%03d/main_iteration_start_%03d"%(iteration_start, main_iteration_start))
@@ -31,9 +31,9 @@ def copy_current_python_code_in_local_directory(masterdir):
 # /home/hvoicu/Analysis/test_rviper/eman2/sparx/bin/sxrviper.py
 """
 
-start.sh mpirun --npernode 16 --host n9,n10 -tag-output -np 32 \
+start.sh mpirun --npernode 16 --host n4,n5 -tag-output -np 32 \
 /home/hvoicu/EMAN2/bin/sxrviper.py \
-bdb:aclf --n_shc_runs=4 --outlier_percentile=95 --fl=0.1 --aa=0.15 \
+bdb:aclf master2015_02_03__12_00_01 --n_shc_runs=4 --outlier_percentile=95 --fl=0.1 --aa=0.15 \
 --doga=0.3 --L2threshold=0.05 --maxit2=50 --ou=30 --xr=2 --center=0
 
 start.sh mpirun --npernode 16 --host n6  -tag-output -np 8 \
@@ -104,6 +104,7 @@ def get_latest_directory_increment_value(directory_location, directory_name):
 	if dir_count == 1:
 		return 1
 	return dir_count - 1
+
 
 
 def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_together, masterdir, bdb_stack_location, outlier_percentile):
