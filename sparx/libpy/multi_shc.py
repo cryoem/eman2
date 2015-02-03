@@ -373,9 +373,10 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 	# initialize GA data structure [ [L2, [params]], ...]
 	if myid == main_node:
 		GA = [ [0.0, [[0.0,0.,0.0,0.0,0.0] for j in xrange(total_nima)]] for i in xrange(number_of_runs)]
+		noimprovement = 0
+		firstcheck    = True
 
 	orient_and_shuffle = False
-	if myid == main_node:  noimprovement = 0
 	# do the projection matching
 	for N_step in xrange(lstp):  # At this point there is just one value here, it cannot loop.
 		if myid == 0:  afterGAcounter = 0
@@ -711,7 +712,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 						#  For 25% add mutation, which for half of projections 'mirrors' them by adding 180 to psi
 						ipl = range(number_of_runs)
 						shuffle(ipl)
-						ipl = ipl[:max(1,int(0.25*number_of_runs+0.5)
+						ipl = ipl[:max(1,int(0.25*number_of_runs+0.5))]
 						for ip in ipl:
 							for i in xrange(total_nima):  all_params[ip][i][2] += 180.0
 						"""
