@@ -2672,7 +2672,7 @@ def get_softy(im):
 # data - projections (scattered between cpus) or the volume.  If volume, just do the volume processing
 # options - the same for all cpus
 # return - volume the same for all cpus
-def do_volume(data, options, mpi_comm):
+def do_volume(data, options, iter, mpi_comm):
 	from EMAN2          import Util
 	from mpi            import mpi_comm_rank
 	from reconstruction import recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
