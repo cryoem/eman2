@@ -1995,7 +1995,7 @@ def proj_ali_helicon_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 		finfo.flush()
 
 	[ang, sxs, sys, mirror, iref, peak] = \
-		Util.multiref_polar_ali_helicon_90_local(data, refrings, q, yrng, stepx, ant, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber), yrnglocal)
+		Util.multiref_polar_ali_helicon_90_local(data, refrings, xrng, yrng, stepx, ant, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber), yrnglocal)
 	iref = int(iref)
 	if iref > -1:
 		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
@@ -3303,6 +3303,7 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 	bnr = max( int(round(reduced_psiref/psistep))+ nc-nr,  nc-nr)
 	enr = min( int(round(reduced_psiref/psistep))+ nc+1+nr, nc+nr+1)
 
+
 	N = inima.get_ysize()  # assumed image is square, but because it is FT take y.
 	#  Window for ccf sampled by gridding
 	#   We quietly assume the search range for translations is always much less than the ccf size,
@@ -3366,15 +3367,15 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 			#  did not find a peak, find a maximum location instead
 			if( pp[0] == 1.0 and px == 0 and py == 0):
 				#  No peak!
-				pass
-				"""
+				#pass
+				
 				loc = w.calc_max_location()
 				PEAKV = w.get_value_at(loc[0],loc[1])
-				print "  Did not find a peak  :",i,loc[0]-wxc, loc[1]-wyc, PEAKV
+				#print "  Did not find a peak  :",i,loc[0]-wxc, loc[1]-wyc, PEAKV
 				if(PEAKV>ma2):
 						ma2  = PEAKV
 						oma2 = pp+[loc[0]-wxc, loc[1]-wyc, loc[0]-wxc, loc[1]-wyc, PEAKV,(i-nc)*psistep]
-				"""
+				
 			else:
 				ww = model_blank(3,3)
 				px = int(pp[1])
