@@ -31,9 +31,9 @@ def copy_current_python_code_in_local_directory(masterdir):
 # /home/hvoicu/Analysis/test_rviper/eman2/sparx/bin/sxrviper.py
 """
 
-start.sh mpirun --npernode 16 --host n4,n5 -tag-output -np 32 \
+start.sh mpirun --npernode 16 --host n8,n9 -tag-output -np 32 \
 /home/hvoicu/EMAN2/bin/sxrviper.py \
-bdb:aclf master2015_02_03__12_00_01 --n_shc_runs=4 --outlier_percentile=95 --fl=0.1 --aa=0.15 \
+bdb:aclf --n_shc_runs=4 --outlier_percentile=95 --fl=0.1 --aa=0.15 \
 --doga=0.3 --L2threshold=0.05 --maxit2=50 --ou=30 --xr=2 --center=0
 
 start.sh mpirun --npernode 16 --host n6  -tag-output -np 8 \

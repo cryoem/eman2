@@ -1171,13 +1171,15 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None 
 
 	par_r = wrap_mpi_gatherv(par_r, 0, mpi_comm)
 
+
+	# if there are fewer images than processors then synchronize
+	# with the other group of processors that did not do any work
+	if (mpi_size > total_nima):
+		mpi_comm = old_mpi_comm
+		mpi_barrier(mpi_comm)
+
 	if myid == main_node: 
 		log.add("Finish VIPER2")
-		# if there are fewer images than processors then synchronize
-		# with the other group of processors that did not do any work
-		if (mpi_size > total_nima):
-			mpi_comm = old_mpi_comm
-			mpi_barrier(mpi_comm)
 		return params, vol, previousmax, par_r
 	else:
 		return None, None, None, None  # results for the other processes
