@@ -249,15 +249,17 @@ def shuffle_configurations(params):
 def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, number_of_runs=2 ):
 
 	from alignment    import Numrinit, prepare_refrings, proj_ali_incore_local, shc
-	from utilities    import model_circle, get_input_from_string, get_params_proj, set_params_proj, wrap_mpi_gatherv, wrap_mpi_bcast, wrap_mpi_send, wrap_mpi_recv, wrap_mpi_split
-	from mpi          import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier, mpi_comm_split, mpi_comm_free, mpi_finalize
+	from utilities    import model_circle, get_input_from_string, get_params_proj, set_params_proj
+	from utilities    import wrap_mpi_gatherv, wrap_mpi_bcast, wrap_mpi_send, wrap_mpi_recv, wrap_mpi_split
+	from mpi          import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD
+	from mpi          import mpi_barrier, mpi_comm_split, mpi_comm_free, mpi_finalize
 	from projection   import prep_vol
 	from statistics   import hist_list
 	from applications import MPI_start_end
 	from filter       import filt_ctf
 	from global_def   import Util, ERROR
 	from time         import time
-	from random       import shuffle
+	from random       import shuffle, random
 
 
 	ir     = ali3d_options.ir
@@ -628,7 +630,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 
 				# ---------------------------------
 
-				#  Add params to GA, sort, check termination and if not terminate do mutations and send back
+				#  Add params to GA, sort, check termination and if not terminate do crossover and send back
 				if myid == 0:
 					#  after GA move do 3 iterations to give the program a chance to improve mutated structures.
 					#all_params = shuffle_configurations(all_params)
@@ -638,7 +640,11 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 					all_L2s.sort(reverse=True)
 					#print " sorted terminate  ",all_L2s
 					#for i in xrange(number_of_runs): print GA[i][0]
+					
+					noreseeding = True
+					
 					if(all_L2s[0]<GA[number_of_runs-1][0]):
+						if firstcheck:  print  "  SHOULD NOT BE HERE"
 						noimprovement += 1
 						if(noimprovement == 2):  terminate = True
 						GA = GA[:number_of_runs]
@@ -656,14 +662,21 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 						q1,q2,q3,q4 = table_stat([GA[i][0] for i in xrange(number_of_runs)])
 						# Terminate if variation of L2 norms less than (L2threshold*100)% of their average
 						crit = sqrt(max(q2,0.0))/q1
-						terminate = Iter > max_iter or crit < L2threshold
-						##  if  total_iter > 17: terminate = True
-						##  else:  terminate=False
 						for i in xrange(number_of_runs):
 							log.add("L2 norm for volume %3d  = %f"%(i,GA[i][0]))
 						log.add("L2 norm std dev %f\n"%crit)
+						crit = crit < L2threshold
+						if (Iter < max_iter) and (firstcheck and crit):
+							noreseeding = False
+							terminate   = False
+							log.add("Insufficient initial variability, reseeding!\n")
+							all_params = [[[random()*360.0,random()*180.0,random()*360.0,0.0,0.0]\
+											 for j in xrange(total_nima)] for i in xrange(number_of_runs)]
+						else:  	terminate = Iter > max_iter or crit
 
-					if not terminate and noimprovement == 0:
+						firstcheck = False
+
+					if not terminate and noimprovement == 0 and noreseeding:
 						afterGAcounter = 3
 						#  Now do the crossover
 						all_params = []
