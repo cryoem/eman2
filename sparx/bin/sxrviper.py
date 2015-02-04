@@ -560,9 +560,9 @@ def main():
 		print "Number of projections:", len(all_projs)
 		print "XXXXXXXXXXXXXXXXX"
 		subset = range(len(all_projs))
-		if mpi_size > len(all_projs):
-			ERROR('Number of processes supplied by --np needs to be less than or equal to %d (total number of images) ' % len(all_projs), 'sxviper', 1)
-			error_status = 1
+		# if mpi_size > len(all_projs):
+		# 	ERROR('Number of processes supplied by --np needs to be less than or equal to %d (total number of images) ' % len(all_projs), 'sxviper', 1)
+		# 	error_status = 1
 
 	else:
 		all_projs = None
@@ -613,9 +613,9 @@ def main():
 				print "Number of projections (in loop):", len(all_projs)
 				print "XXXXXXXXXXXXXXXXX"
 				subset = range(len(all_projs))
-				if mpi_size > len(all_projs):
-					ERROR('Number of processes supplied by --np needs to be less than or equal to %d (current number of images) ' % len(all_projs), 'sxviper', 1)
-					error_status = 1
+				# if mpi_size > len(all_projs):
+				# 	ERROR('Number of processes supplied by --np needs to be less than or equal to %d (current number of images) ' % len(all_projs), 'sxviper', 1)
+				# 	error_status = 1
 			else:
 				all_projs = None
 				subset = None
