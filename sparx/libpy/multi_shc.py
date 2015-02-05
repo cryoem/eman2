@@ -260,6 +260,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 	from global_def   import Util, ERROR
 	from time         import time
 	from random       import shuffle, random
+	from copy         import deepcopy
 
 
 	ir     = ali3d_options.ir
@@ -595,6 +596,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				#temp = [None]*nima
 				#for i in xrange(nima): temp[i] = data[i].get_attr("xform.projection")
 				for i in xrange(nima):  set_params_proj(data[i], params[i])
+				# vol = volume_reconstruction(data[image_start:image_end], ali3d_options, mpi_subcomm)
 				# 9here
 				vol = do_volume(data[image_start:image_end], ali3d_options, 0, mpi_subcomm)
 				#for i in xrange(nima): data[i].set_attr("xform.projection",temp[i])
@@ -603,8 +605,6 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 
 				if mpi_subrank == 0:
 					L2 = vol.cmp("dot", vol, dict(negative = 0, mask = model_circle(last_ring, nx, nx, nx)))
-					from utilities import write_text_row
-					write_text_row(params+[L2,0.,0.,0.,0.], "params_used_for_L2_%03d_%03d.txt"%(total_iter,myid))
 					# if myid == 2:  print  " Right after reconstruction L2", myid, L2,[get_params_proj(data[i]) for i in xrange(4)]
 					#print  " Right after reconstruction of oriented parameters L2", myid, total_iter,L2
 					#vol.write_image("recvolf%04d%04d.hdf"%(myid,total_iter))
@@ -620,7 +620,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 					for sr in mpi_subroots:
 						if sr == myid:
 							all_L2s.append(L2)
-							all_params.append(params)
+							all_params.append(deepcopy(params))
 						else:
 							all_L2s.append(wrap_mpi_recv(sr, mpi_comm))
 							all_params.append(wrap_mpi_recv(sr, mpi_comm))
@@ -638,11 +638,9 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 
 					for i in xrange(number_of_runs):
 						log.add("L2 incoming norm for volume %3d  = %f"%(i,all_L2s[i]))
-						log.add("params   %6.2f   %6.2f   %6.2f"%(all_params[i][0][0],all_params[i][0][1],all_params[i][0][2]))
-					from utilities import write_text_row
+
 					for i in xrange(number_of_runs):
-						GA.append([all_L2s[i],all_params[i]])
-						write_text_row([GA[i][1]+[GA[i][0],0.,0.,0.,0.],"GA_%03d_%03d.txt"%(total_iter,i))
+						GA.append([all_L2s[i],deepcopy(all_params[i])])
 					#  check whether this move will improve anything
 					all_L2s.sort(reverse=True)
 					#print " sorted terminate  ",all_L2s
@@ -655,6 +653,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 						noimprovement += 1
 						if(noimprovement == 2):  terminate = True
 						GA = GA[:number_of_runs]
+						log.add("VIPER1 could not find better solutions, it will terminate now.")
 					else:
 						noimprovement = 0
 						GA.sort(reverse=True)
@@ -671,7 +670,6 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 						crit = sqrt(max(q2,0.0))/q1
 						for i in xrange(number_of_runs):
 							log.add("L2 norm for volume %3d  = %f"%(i,GA[i][0]))
-							log.add("params   %6.2f   %6.2f   %6.2f"%(GA[i][1][0][0], GA[i][1][0][1], GA[i][1][0][2]))
 						log.add("L2 norm std dev %f\n"%crit)
 						crit = crit < L2threshold
 						if (Iter < max_iter) and (firstcheck and crit):
@@ -707,11 +705,11 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 							newparms1 = [None]*total_nima
 							newparms2 = [None]*total_nima
 							for i in keepset:
-								newparms1[i] = GA[ipl[ip]][1][i]
-								newparms2[i] = GA[ipl[(ip+1)%number_of_runs]][1][i]
+								newparms1[i] = deepcopy(GA[ipl[ip]][1][i])
+								newparms2[i] = deepcopy(GA[ipl[(ip+1)%number_of_runs]][1][i])
 							for i in otherset:
-								newparms1[i] = GA[ipl[(ip+1)%number_of_runs]][1][i]
-								newparms2[i] = GA[ipl[ip]][1][i]
+								newparms1[i] = deepcopy(GA[ipl[(ip+1)%number_of_runs]][1][i])
+								newparms2[i] = deepcopy(GA[ipl[ip]][1][i])
 							#print "  PRINTOUT SHUFFLED   ",ipl[ip],ipl[ip+1]
 							"""
 							for i in xrange(total_nima):
@@ -724,8 +722,8 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 							"""
 
 							#  Put mutated params on one list
-							all_params.append(newparms1)
-							all_params.append(newparms2)
+							all_params.append(deepcopy(newparms1))
+							all_params.append(deepcopy(newparms2))
 						all_params = all_params[:number_of_runs]
 						#  Try this 02/03/2015 PAP
 						#  Always mutate the first one
@@ -870,7 +868,6 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 	
 	if myid == main_node:
 		log.add("Finish viper1")
-		log.add("Returned params   %6.2f   %6.2f   %6.2f"%(GA[0][1][0][0],GA[0][1][0][1],GA[0][1][0][2]))
 		return GA[0][1]
 	else:
 		return None  # results for the other processes
@@ -1357,8 +1354,6 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 		"""
 		temp = []
 		from utilities import get_params_proj
-		log.add("Incoming params (refparams2)   %6.2f   %6.2f   %6.2f"%(out_params[0][0], out_params[0][1], out_params[0][2]))
-		
 		for i in xrange(n_projs):
 			set_params_proj( projections[i], out_params[i] )
 		write_text_row(out_params, log.prefix + "refparams2.txt")
@@ -1390,10 +1385,7 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 		nx = ref_vol.get_xsize()
 		L2 = ref_vol.cmp("dot", ref_vol, dict(negative = 0, mask = model_circle(ali3d_options.ou, nx,nx,nx)))
 		log.add(" L2 norm of reference volume:  %f"%L2)
-	from mpi import mpi_finalize
-	mpi_finalize()
-	from sys import exit
-	exit()
+
 	"""
 	if mpi_rank == 17:
 		temp = []
@@ -1655,7 +1647,7 @@ def get_dsym_angles(p1, sym):
 
 
 # parameters: list of (all) projections | reference volume | ...
-def XXali3d_XXmultishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, number_of_runs=2 ):
+def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, number_of_runs=2 ):
 
 	from alignment    import Numrinit, prepare_refrings, proj_ali_incore_local, shc
 	from utilities    import model_circle, get_input_from_string, get_params_proj, set_params_proj, wrap_mpi_gatherv, wrap_mpi_bcast, wrap_mpi_send, wrap_mpi_recv
