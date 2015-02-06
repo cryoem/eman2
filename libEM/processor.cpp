@@ -6154,11 +6154,11 @@ void ToMassCenterProcessor::process_inplace(EMData * image)
 	int nz = image->get_zsize();
 
 	if (int_shift_only) {
-		int dx = -(int)(floor(com[0] + 0.5f) - nx / 2);
-		int dy = -(int)(floor(com[1] + 0.5f) - ny / 2);
-		int dz = 0;
+		float dx = -(floor(com[0] + 0.5f) - nx / 2);	// these used to be integers, but clip_inplace seems to be broken for dx<0, quick hack to avoid this routine
+		float dy = -(floor(com[1] + 0.5f) - ny / 2);
+		float dz = 0;
 		if (nz > 1) {
-			dz = -(int)(floor(com[2] + 0.5f) - nz / 2);
+			dz = -(floor(com[2] + 0.5f) - nz / 2);
 		}
 		if (abs(dx)>=nx-1 || abs(dy)>=ny-1 || abs(dz)>=nz) {
 			printf("ERROR, center of mass outside image\n");

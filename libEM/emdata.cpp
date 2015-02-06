@@ -892,15 +892,15 @@ void EMData::translate(int dx, int dy, int dz)
 void EMData::translate(float dx, float dy, float dz)
 {
 	ENTERFUNC;
-	int dx_ = Util::round(dx);
-	int dy_ = Util::round(dy);
-	int dz_ = Util::round(dz);
-	if( ( (dx-dx_) == 0 ) && ( (dy-dy_) == 0 ) && ( (dz-dz_) == 0 )) {
-		translate(dx_, dy_, dz_);
-	}
-	else {
+// 	int dx_ = Util::round(dx);
+// 	int dy_ = Util::round(dy);
+// 	int dz_ = Util::round(dz);
+// 	if( ( (dx-dx_) == 0 ) && ( (dy-dy_) == 0 ) && ( (dz-dz_) == 0 )) {
+// 		translate(dx_, dy_, dz_);		// steve: int clip_inplace broken!
+// 	}
+// 	else {
 		translate(Vec3f(dx, dy, dz));
-	}
+// 	}
 	EXITFUNC;
 }
 
