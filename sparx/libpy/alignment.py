@@ -1168,13 +1168,6 @@ def prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", 
 		from utilities import bcast_compacted_EMData_to_all
 		bcast_compacted_EMData_to_all(refrings, myid, comm=mpi_comm)
 
-		#from utilities import bcast_EMData_to_all
-		#for i in xrange(num_ref):
-			#for j in xrange(ncpu):
-				#ref_start, ref_end = MPI_start_end(num_ref, ncpu, j)
-				#if i >= ref_start and i < ref_end: rootid = j
-			#bcast_EMData_to_all(refrings[i], myid, rootid, comm=mpi_comm)
-
 	for i in xrange(len(ref_angles)):
 		n1,n2,n3 = getfvec(ref_angles[i][0], ref_angles[i][1])
 		refrings[i].set_attr_dict( {"phi":ref_angles[i][0], "theta":ref_angles[i][1], "psi":ref_angles[i][2], "n1":n1, "n2":n2, "n3":n3} )
@@ -1303,7 +1296,7 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings, xrng, yrng, step, mode, numr, cnx+dp["tx"], cny+dp["ty"])
 	#print ang, sxs, sys, mirror, iref, peak
 	iref = int(iref)
-	#[ang,sxs,sys,mirror,peak,numref] = apmq(projdata[imn], ref_proj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
+	#[ang,sxs,sys,mirror,peak,numref] = apmq(projdata[imn], ref_promulj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
 	#ang = (ang+360.0)%360.0
 	# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 	#  What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
