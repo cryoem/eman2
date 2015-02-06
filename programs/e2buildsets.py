@@ -124,6 +124,7 @@ def main():
 	print "Filtering by Defocus and B-factor"
 	ctfmsg=0
 	outargs=[]
+	errsets=[]
 	for i in args:
 		try:
 			ctf=js_one_key(info_name(i+".hdf"),"ctf")[0]
@@ -136,10 +137,14 @@ def main():
 			if ctf.defocus>=options.mindf and ctf.defocus<=options.maxdf and ctf.bfactor>=options.minbfactor and ctf.bfactor<=options.maxbfactor and losnr>options.minlosnr and hisnr>options.minhisnr : outargs.append(i)
 			if options.verbose > 1: print "{}<{}<{}   {}<{}<{}   {}>{}   {}>{}".format(options.mindf,ctf.defocus,options.maxdf,options.minbfactor,ctf.bfactor,options.maxbfactor, losnr,options.minlosnr,hisnr,options.minhisnr)
 		except:
-			traceback.print_exc()
-			print "Error with CTF parameters for: ",i
+			if options.verbose>2 : traceback.print_exc()
+			errsets.append(i)
 			ctfmsg+=1
 			outargs.append(i)
+
+	if len(errsets)>0 : 
+		print "Warning, ",len(errsets)," images were missing CTF information, and were included irrespective of specified CTF limits."
+		if options.verbse>1 : print "Missing CTF images were: ",errsets
 
 	if ctfmsg: print "Included {} images with undefined CTF".format(ctfmsg)
 

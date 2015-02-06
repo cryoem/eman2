@@ -362,11 +362,16 @@ class ClassAvTask(JSTask):
 			#avg.write_image("tst.hdf",-1)
 		else :
 			# Nothing to align to, so we just try to center the final average
+			gmw=max(5,avg["nx"]/16)		# gaussian mask width
+			avg.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2})	# A slight highpass to reduce gradient issues
+			avg.process_inplace("normalize.circlemean")
+			avg.process_inplace("mask.gaussian",{"inner_radius":avg["nx"]/2-gmw,"outer_radius":gmw/1.3})
+			avg.process_inplace("normalize.circlemean")
 			ali=avg.process("xform.centerofmass",{"threshold":avg["mean"]+avg["sigma"]})
 			fxf=ali["xform.align2d"]
 			if options["verbose"]>0 : print "Final center:",fxf
 			avg1=avg
-			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,Transform(),None,options["averager"],options["normproc"],options["setsfref"],options["verbose"])
+			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,fxf,None,options["averager"],options["normproc"],options["setsfref"],options["verbose"])
 
 		try:
 			avg["class_ptcl_qual"]=avg1["class_ptcl_qual"]
@@ -424,8 +429,8 @@ def class_average_withali(images,ptcl_info,xform,ref,averager=("mean",{}),normpr
 	avgr=Averagers.get(averager[0], averager[1])
 	for i in range(nimg):
 		img=get_image(images,i,normproc)
-#		ptcl_info[i]=(ptcl_info[i][0],xform*ptcl_info[i][1],ptcl_info[i][2])		# apply the new Transform to the existing one
-		ptcl_info[i]=(ptcl_info[i][0],ptcl_info[i][1]*xform,ptcl_info[i][2])		# apply the new Transform to the existing one
+		ptcl_info[i]=(ptcl_info[i][0],xform*ptcl_info[i][1],ptcl_info[i][2])		# apply the new Transform to the existing one
+#		ptcl_info[i]=(ptcl_info[i][0],ptcl_info[i][1]*xform,ptcl_info[i][2])		# apply the new Transform to the existing one
 		img.process_inplace("xform",{"transform":ptcl_info[i][1]})
 		try: use=ptcl_info[i][2]
 		except: use=1
@@ -512,8 +517,9 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 			ref.add(ali)
 
 		# A little masking and centering
-		ref.process_inplace("normalize.circlemean")
 		gmw=max(5,ref["nx"]/16)		# gaussian mask width
+		ref.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2})	# A slight highpass to reduce gradient issues
+		ref.process_inplace("normalize.circlemean")
 		ref.process_inplace("mask.gaussian",{"inner_radius":ref["nx"]/2-gmw,"outer_radius":gmw/1.3})
 		ref.process_inplace("normalize.circlemean")
 		ref.process_inplace("xform.centerofmass",{"threshold":ref["mean"]+ref["sigma"]})						# TODO: should probably check how well this works
