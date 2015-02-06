@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+
 # Making sure the correct version of the project is executed
 # Needs to be removed in production
 
@@ -31,10 +32,15 @@ def copy_current_python_code_in_local_directory(masterdir):
 # /home/hvoicu/Analysis/test_rviper/eman2/sparx/bin/sxrviper.py
 """
 
-start.sh mpirun --npernode 16 --host n8,n9 -tag-output -np 32 \
+start.sh mpirun --npernode 16 --host n2,n3 -tag-output -np 32 \
 /home/hvoicu/EMAN2/bin/sxrviper.py \
 bdb:aclf --n_shc_runs=4 --outlier_percentile=95 --fl=0.1 --aa=0.15 \
---doga=0.3 --L2threshold=0.05 --maxit2=50 --ou=30 --xr=2 --center=0
+--doga=0.1 --L2threshold=0.05 --maxit2=50 --ou=30 --xr=1 --center=0
+
+start.sh mpirun --npernode 16 --host n6,n7 -tag-output -np 32 \
+/home/hvoicu/EMAN2/bin/sxrviper.py \
+bdb:g20 --n_shc_runs=4 --outlier_percentile=95 --fl=0.1 --aa=0.15 \
+--doga=0.1 --L2threshold=0.05 --maxit2=50 --ou=30 --xr=1 --center=0 --n_rv_runs=3
 
 start.sh mpirun --npernode 16 --host n6  -tag-output -np 8 \
 /home/hvoicu/EMAN2/bin/sxrviper.py \
@@ -45,6 +51,12 @@ start.sh mpirun --npernode 16 --host bmbpccl1,n0,n1,n6,n7,n8,n9,n10  -tag-output
 /home/hvoicu/Analysis/test_rviper/eman2/sparx/bin/sxrviper.py \
 bdb:g20 --n_shc_runs=8 --outlier_percentile=98 --fl=0.3 --aa=0.15 \
 --doga=0.3   --L2threshold=0.05 --maxit2=50 --ou=30  --xr=0  --center=0
+
+
+start.sh mpirun --npernode 16 --host n0,n1  -tag-output -np 32 \
+/home/hvoicu/EMAN2/bin/sxrviper.py \
+"'aclf.hdf'" nrun21  --fl=0.1 --aa=0.15   --doga=0.1   \
+--L2threshold=0.05 --maxit2=50   --nruns=4  --ou=30  --xr=1 --center=0
 
 
 """
@@ -121,6 +133,28 @@ def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_to
 	if_error_all_processes_quit_program(error_status)
 
 
+def plot_errors_between_projections(projs, mainoutputdir):
+
+
+	return
+
+	import matplotlib.pyplot as plt
+	from multi_shc import find_common_subset
+
+	ti1, ti3, out = find_common_subset(projs,1.0)
+	u = []
+	for i in xrange(len(ti3)):
+		u.append([ti3[i],i])
+	u.sort()
+	# EMAN2.display([range(len(u)),[u[i][0] for i in xrange(len(u))]])
+	plt.plot(range(len(u)),[u[i][0] for i in xrange(len(u))])
+	plt.ylabel('Error')
+	plt.xlabel('Image index')
+	plt.title(ddd)
+	plt.savefig(mainoutputdir + '/sorted_errors_between_projections.png')
+
+
+
 def found_outliers(outlier_percentile, rviper_iter, no_of_viper_runs_analyzed_together, masterdir,  bdb_stack_location):
 	# sxheader.py bdb:nj  --consecutive  --params=OID
 	import numpy as np
@@ -145,6 +179,9 @@ def found_outliers(outlier_percentile, rviper_iter, no_of_viper_runs_analyzed_to
 	projs = []
 	for i1 in range(0,no_of_viper_runs_analyzed_together):
 		projs.append(read_text_row(mainoutputdir + "run%03d"%(i1) + "/params.txt"))
+
+	plot_errors_between_projections(projs, mainoutputdir)
+
 
 ##########  just for testing
 	#if (rviper_iter == 1):
@@ -531,13 +568,28 @@ def main():
 		#
 		# else:
 
-
 		if(not os.path.exists(os.path.join(masterdir,"EMAN2DB/"))):
 			cmd = "{} {}".format("cp -rp EMAN2DB", masterdir, "EMAN2DB/")
 			cmdexecute(cmd)
 
 			cmd = "{} {}".format("sxheader.py  --consecutive  --params=original_image_index", bdb_stack_location)
 			cmdexecute(cmd)
+
+
+
+		# if ':' in args[0]:
+		# 	if(os.path.exists(os.path.join("EMAN2DB/"))):
+		# 		cmd = "{} {}".format("cp -rp EMAN2DB", masterdir, "EMAN2DB/")
+		# 		cmdexecute(cmd)
+		# 	else:
+		# 		print "EMAN2DB does not exist"
+		# 		error_status = 1
+		# else:
+		# 	gdat = EMData.read_images(args[0])
+		# 	for i in xrange(len(gdat)):  gdat[i].write_image(bdb_stack_location,i)
+		#
+		# cmd = "{} {}".format("sxheader.py  --consecutive  --params=original_image_index", bdb_stack_location)
+		# cmdexecute(cmd)
 
 		# new way
 		# upload on cvs

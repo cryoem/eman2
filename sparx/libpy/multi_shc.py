@@ -954,20 +954,20 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None 
 	total_nima = wrap_mpi_bcast(total_nima, main_node, mpi_comm)
 	list_of_particles = wrap_mpi_bcast(list_of_particles, main_node, mpi_comm)
 
-	old_mpi_comm = mpi_comm
-	mpi_size = mpi_comm_size(mpi_comm)
+	#old_mpi_comm = mpi_comm
+	#mpi_size = mpi_comm_size(mpi_comm)
 
-	# if there are fewer images than processors then split processors in 2 groups
-	# one in which each processor analyzes one image, and another in which
-	# processors stay idle and wait for the other group to finish
-	if (mpi_size > total_nima):
-		if (myid < total_nima):
-			mpi_subcomm = mpi_comm_split(mpi_comm, 0, myid)
-			mpi_comm = mpi_subcomm
-		else:
-			mpi_subcomm = mpi_comm_split(mpi_comm, 1, myid - total_nima)
-			mpi_barrier(mpi_comm)
-			return None, None, None, None
+	## if there are fewer images than processors then split processors in 2 groups
+	## one in which each processor analyzes one image, and another in which
+	## processors stay idle and wait for the other group to finish
+	#if (mpi_size > total_nima):
+		#if (myid < total_nima):
+			#mpi_subcomm = mpi_comm_split(mpi_comm, 0, myid)
+			#mpi_comm = mpi_subcomm
+		#else:
+			#mpi_subcomm = mpi_comm_split(mpi_comm, 1, myid - total_nima)
+			#mpi_barrier(mpi_comm)
+			#return None, None, None, None
 
 
 	number_of_proc = mpi_comm_size(mpi_comm)
@@ -1178,12 +1178,12 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None 
 
 	par_r = wrap_mpi_gatherv(par_r, 0, mpi_comm)
 
-
-	# if there are fewer images than processors then synchronize
-	# with the other group of processors that did not do any work
-	if (mpi_size > total_nima):
-		mpi_comm = old_mpi_comm
-		mpi_barrier(mpi_comm)
+	## if there are fewer images than processors then synchronize
+	## with the other group of processors that did not do any work
+	#if (mpi_size > total_nima):
+		#if (myid < no_of_images):
+			#mpi_comm = old_mpi_comm
+			#mpi_barrier(mpi_comm)
 
 	if myid == main_node: 
 		log.add("Finish VIPER2")
@@ -1266,9 +1266,10 @@ def volume_recsp(data, options):
 # size of mpi_communicator must be >= runs_count
 def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, ref_vol=None):
 	from applications import MPI_start_end
-	from mpi import mpi_comm_rank, mpi_comm_size
+	from mpi import mpi_comm_rank, mpi_comm_size, mpi_finalize, mpi_comm_split, mpi_barrier
 	from utilities import set_params_proj, wrap_mpi_bcast, write_text_row, drop_image, write_text_file
 	from random import random
+	from utilities import bcast_EMData_to_all
 
 	mpi_rank = mpi_comm_rank(mpi_comm)
 	mpi_size = mpi_comm_size(mpi_comm)
@@ -1317,10 +1318,30 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 	n_projs = len(projections)
 
 	if ref_vol == None:
-		proj_begin, proj_end = MPI_start_end(n_projs, mpi_size, mpi_rank)
+		# proj_begin, proj_end = MPI_start_end(n_projs, mpi_size, mpi_rank)
 		# ref_vol = volume_reconstruction(projections[proj_begin:proj_end], ali3d_options, mpi_comm=mpi_comm)
 		# 9here
-		ref_vol = do_volume(projections[proj_begin:proj_end], ali3d_options, 0, mpi_comm=mpi_comm)
+
+
+		if (mpi_size > n_projs):
+			working = int(not(mpi_rank < n_projs))
+			mpi_subcomm = mpi_comm_split(mpi_comm, working,  mpi_rank - working*n_projs)
+			mpi_subsize = mpi_comm_size(mpi_subcomm)
+			mpi_subrank = mpi_comm_rank(mpi_subcomm)
+			if (mpi_rank < n_projs):
+				if (mpi_subsize != n_projs):
+					print  "OOOOOO(mpi_subsize != n_projs)"
+				proj_begin, proj_end = MPI_start_end(n_projs, mpi_subsize, mpi_subrank)
+				ref_vol = do_volume(projections[proj_begin:proj_end], ali3d_options, 0, mpi_comm=mpi_subcomm)
+			else:
+				proj_begin, proj_end = MPI_start_end(1, 1, 0)
+				ref_vol = do_volume(projections[proj_begin:proj_end], ali3d_options, 0, mpi_comm=mpi_subcomm)
+			bcast_EMData_to_all(ref_vol, mpi_rank, 0, comm=mpi_comm)
+		else:
+			proj_begin, proj_end = MPI_start_end(n_projs, mpi_size, mpi_rank)
+			ref_vol = do_volume(projections[proj_begin:proj_end], ali3d_options, 0, mpi_comm=mpi_subcomm)
+
+
 
 
 	# Each node keeps all projection data, this would not work for large datasets
@@ -1371,14 +1392,34 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 	else:
 		temp_projs = None
 	"""
-	proj_begin, proj_end  = MPI_start_end(n_projs, mpi_size, mpi_rank)
+	# proj_begin, proj_end  = MPI_start_end(n_projs, mpi_size, mpi_rank)
 
 	projections = wrap_mpi_bcast(projections, 0, mpi_comm)
 	from utilities import get_params_proj
 	#print  " from mpi   ",mpi_rank,proj_begin,get_params_proj(projections[proj_begin])
 	# ref_vol = volume_reconstruction(projections[proj_begin:proj_end], ali3d_options, mpi_comm=mpi_comm)
 	# 9here
-	ref_vol = do_volume(projections[proj_begin:proj_end], ali3d_options, 0, mpi_comm=mpi_comm)
+	# ref_vol = do_volume(projections[proj_begin:proj_end], ali3d_options, 0, mpi_comm=mpi_comm)
+
+
+	if (mpi_size > n_projs):
+		working = int(not(mpi_rank < n_projs))
+		mpi_subcomm = mpi_comm_split(mpi_comm, working,  mpi_rank - working*n_projs)
+		mpi_subsize = mpi_comm_size(mpi_subcomm)
+		mpi_subrank = mpi_comm_rank(mpi_subcomm)
+		if (mpi_rank < n_projs):
+			if (mpi_subsize != n_projs):
+				print  "OOOOOO(mpi_subsize != n_projs)"
+			proj_begin, proj_end = MPI_start_end(n_projs, mpi_subsize, mpi_subrank)
+			ref_vol = do_volume(projections[proj_begin:proj_end], ali3d_options, 0, mpi_comm=mpi_subcomm)
+		else:
+			proj_begin, proj_end = MPI_start_end(1, 1, 0)
+			ref_vol = do_volume(projections[proj_begin:proj_end], ali3d_options, 0, mpi_comm=mpi_subcomm)
+		bcast_EMData_to_all(ref_vol, mpi_rank, 0, comm=mpi_comm)
+	else:
+		proj_begin, proj_end = MPI_start_end(n_projs, mpi_size, mpi_rank)
+		ref_vol = do_volume(projections[proj_begin:proj_end], ali3d_options, 0, mpi_comm=mpi_subcomm)
+
 	if mpi_rank == 0:
 		ref_vol.write_image(log.prefix + "refvol2.hdf")
 		from utilities import model_circle
@@ -1399,7 +1440,28 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 		write_text_row(temp, log.prefix + "refparams17.txt")
 	"""
 
-	out_params, out_vol, previousmax, out_r = ali3d_multishc_2(projections, ref_vol, ali3d_options, mpi_comm=mpi_comm, log=log)
+
+
+	if (mpi_size > n_projs):
+		working = int(not(mpi_rank < n_projs))
+		mpi_subcomm = mpi_comm_split(mpi_comm, working,  mpi_rank - working*n_projs)
+		mpi_subsize = mpi_comm_size(mpi_subcomm)
+		mpi_subrank = mpi_comm_rank(mpi_subcomm)
+		if (mpi_rank < n_projs):
+			if (mpi_subsize != n_projs):
+				print  "OOOOOO(mpi_subsize != n_projs)"
+			out_params, out_vol, previousmax, out_r = ali3d_multishc_2(projections, ref_vol, ali3d_options, mpi_comm=mpi_subcomm, log=log)
+		else:
+			out_params, out_vol, previousmax, out_r = ali3d_multishc_2([projections[0]]*mpi_subsize, ref_vol, ali3d_options, mpi_comm=mpi_subcomm, log=log)
+		mpi_barrier(mpi_comm)
+		#bcast_EMData_to_all(out_params, mpi_rank, 0, comm=mpi_comm)
+		#bcast_EMData_to_all(out_vol, mpi_rank, 0, comm=mpi_comm)
+		#bcast_EMData_to_all(previousmax, mpi_rank, 0, comm=mpi_comm)
+		#bcast_EMData_to_all(out_r, mpi_rank, 0, comm=mpi_comm)
+	else:
+		out_params, out_vol, previousmax, out_r = ali3d_multishc_2(projections, ref_vol, ali3d_options, mpi_comm=mpi_comm, log=log)
+
+
 	if mpi_rank == 0:
 		write_text_file(out_params, log.prefix + "previousmax.txt")
 		write_text_row(out_params, log.prefix + "params.txt")
