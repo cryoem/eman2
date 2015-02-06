@@ -1318,10 +1318,6 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 	n_projs = len(projections)
 
 	if ref_vol == None:
-		# proj_begin, proj_end = MPI_start_end(n_projs, mpi_size, mpi_rank)
-		# ref_vol = volume_reconstruction(projections[proj_begin:proj_end], ali3d_options, mpi_comm=mpi_comm)
-		# 9here
-
 
 		if (mpi_size > n_projs):
 			working = int(not(mpi_rank < n_projs))
@@ -1329,13 +1325,12 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 			mpi_subsize = mpi_comm_size(mpi_subcomm)
 			mpi_subrank = mpi_comm_rank(mpi_subcomm)
 			if (mpi_rank < n_projs):
-				if (mpi_subsize != n_projs):
-					print  "OOOOOO(mpi_subsize != n_projs)"
 				proj_begin, proj_end = MPI_start_end(n_projs, mpi_subsize, mpi_subrank)
 				ref_vol = do_volume(projections[proj_begin:proj_end], ali3d_options, 0, mpi_comm=mpi_subcomm)
 			else:
-				proj_begin, proj_end = MPI_start_end(1, 1, 0)
-				ref_vol = do_volume(projections[proj_begin:proj_end], ali3d_options, 0, mpi_comm=mpi_subcomm)
+				from utilities import model_blank
+				nx = projections[0].get_xsize()
+				ref_vol = model_blank(nx,nx,nx)
 			bcast_EMData_to_all(ref_vol, mpi_rank, 0, comm=mpi_comm)
 		else:
 			proj_begin, proj_end = MPI_start_end(n_projs, mpi_size, mpi_rank)
@@ -1396,10 +1391,6 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 
 	projections = wrap_mpi_bcast(projections, 0, mpi_comm)
 	from utilities import get_params_proj
-	#print  " from mpi   ",mpi_rank,proj_begin,get_params_proj(projections[proj_begin])
-	# ref_vol = volume_reconstruction(projections[proj_begin:proj_end], ali3d_options, mpi_comm=mpi_comm)
-	# 9here
-	# ref_vol = do_volume(projections[proj_begin:proj_end], ali3d_options, 0, mpi_comm=mpi_comm)
 
 
 	if (mpi_size > n_projs):
@@ -1408,13 +1399,12 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 		mpi_subsize = mpi_comm_size(mpi_subcomm)
 		mpi_subrank = mpi_comm_rank(mpi_subcomm)
 		if (mpi_rank < n_projs):
-			if (mpi_subsize != n_projs):
-				print  "OOOOOO(mpi_subsize != n_projs)"
 			proj_begin, proj_end = MPI_start_end(n_projs, mpi_subsize, mpi_subrank)
 			ref_vol = do_volume(projections[proj_begin:proj_end], ali3d_options, 0, mpi_comm=mpi_subcomm)
 		else:
-			proj_begin, proj_end = MPI_start_end(1, 1, 0)
-			ref_vol = do_volume(projections[proj_begin:proj_end], ali3d_options, 0, mpi_comm=mpi_subcomm)
+			from utilities import model_blank
+			nx = projections[0].get_xsize()
+			ref_vol = model_blank(nx,nx,nx)
 		bcast_EMData_to_all(ref_vol, mpi_rank, 0, comm=mpi_comm)
 	else:
 		proj_begin, proj_end = MPI_start_end(n_projs, mpi_size, mpi_rank)
@@ -1448,16 +1438,10 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 		mpi_subsize = mpi_comm_size(mpi_subcomm)
 		mpi_subrank = mpi_comm_rank(mpi_subcomm)
 		if (mpi_rank < n_projs):
-			if (mpi_subsize != n_projs):
-				print  "OOOOOO(mpi_subsize != n_projs)"
 			out_params, out_vol, previousmax, out_r = ali3d_multishc_2(projections, ref_vol, ali3d_options, mpi_comm=mpi_subcomm, log=log)
 		else:
-			out_params, out_vol, previousmax, out_r = ali3d_multishc_2([projections[0]]*mpi_subsize, ref_vol, ali3d_options, mpi_comm=mpi_subcomm, log=log)
+			pass
 		mpi_barrier(mpi_comm)
-		#bcast_EMData_to_all(out_params, mpi_rank, 0, comm=mpi_comm)
-		#bcast_EMData_to_all(out_vol, mpi_rank, 0, comm=mpi_comm)
-		#bcast_EMData_to_all(previousmax, mpi_rank, 0, comm=mpi_comm)
-		#bcast_EMData_to_all(out_r, mpi_rank, 0, comm=mpi_comm)
 	else:
 		out_params, out_vol, previousmax, out_r = ali3d_multishc_2(projections, ref_vol, ali3d_options, mpi_comm=mpi_comm, log=log)
 
