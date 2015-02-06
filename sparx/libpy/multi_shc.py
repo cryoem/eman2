@@ -1334,7 +1334,7 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 			bcast_EMData_to_all(ref_vol, mpi_rank, 0, comm=mpi_comm)
 		else:
 			proj_begin, proj_end = MPI_start_end(n_projs, mpi_size, mpi_rank)
-			ref_vol = do_volume(projections[proj_begin:proj_end], ali3d_options, 0, mpi_comm=mpi_subcomm)
+			ref_vol = do_volume(projections[proj_begin:proj_end], ali3d_options, 0, mpi_comm=mpi_comm)
 
 
 	# Each node keeps all projection data, this would not work for large datasets
@@ -1406,7 +1406,7 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 		bcast_EMData_to_all(ref_vol, mpi_rank, 0, comm=mpi_comm)
 	else:
 		proj_begin, proj_end = MPI_start_end(n_projs, mpi_size, mpi_rank)
-		ref_vol = do_volume(projections[proj_begin:proj_end], ali3d_options, 0, mpi_comm=mpi_subcomm)
+		ref_vol = do_volume(projections[proj_begin:proj_end], ali3d_options, 0, mpi_comm=mpi_comm)
 
 	if mpi_rank == 0:
 		ref_vol.write_image(log.prefix + "refvol2.hdf")
