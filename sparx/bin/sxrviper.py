@@ -136,8 +136,6 @@ def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_to
 def plot_errors_between_projections(projs, mainoutputdir):
 
 
-	return
-
 	import matplotlib.pyplot as plt
 	from multi_shc import find_common_subset
 
@@ -150,7 +148,7 @@ def plot_errors_between_projections(projs, mainoutputdir):
 	plt.plot(range(len(u)),[u[i][0] for i in xrange(len(u))])
 	plt.ylabel('Error')
 	plt.xlabel('Image index')
-	plt.title(ddd)
+	plt.title(mainoutputdir.split("/")[int(not mainoutputdir.endswith("/")) - 2])
 	plt.savefig(mainoutputdir + '/sorted_errors_between_projections.png')
 
 

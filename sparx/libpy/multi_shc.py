@@ -1337,8 +1337,6 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 			ref_vol = do_volume(projections[proj_begin:proj_end], ali3d_options, 0, mpi_comm=mpi_subcomm)
 
 
-
-
 	# Each node keeps all projection data, this would not work for large datasets
 	out_params = ali3d_multishc(projections, ref_vol, ali3d_options, mpi_comm=mpi_comm, log=log, number_of_runs=runs_count)
 	"""
@@ -1440,7 +1438,8 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 		if (mpi_rank < n_projs):
 			out_params, out_vol, previousmax, out_r = ali3d_multishc_2(projections, ref_vol, ali3d_options, mpi_comm=mpi_subcomm, log=log)
 		else:
-			pass
+			out_params = None
+			out_vol = None
 		mpi_barrier(mpi_comm)
 	else:
 		out_params, out_vol, previousmax, out_r = ali3d_multishc_2(projections, ref_vol, ali3d_options, mpi_comm=mpi_comm, log=log)
