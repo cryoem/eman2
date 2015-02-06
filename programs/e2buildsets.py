@@ -144,7 +144,7 @@ def main():
 
 	if len(errsets)>0 : 
 		print "Warning, ",len(errsets)," images were missing CTF information, and were included irrespective of specified CTF limits."
-		if options.verbse>1 : print "Missing CTF images were: ",errsets
+		if options.verbose>1 : print "Missing CTF images were: ",errsets
 
 	if ctfmsg: print "Included {} images with undefined CTF".format(ctfmsg)
 
