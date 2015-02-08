@@ -4003,6 +4003,7 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 
 	previousmax = data.get_attr("previousmax")
 	#  The code for shc does not work for local searches!  PAP 01/27/2015
+	#  Do not use previous shifts so the image does not slide away
 	[ang, sxs, sys, mirror, iref, peak, checked_refs] = Util.shc(data, refrings, xrng, yrng, step, ant, mode, numr, cnx, cny, sym)  #+dp["tx"], cny+dp["ty"])
 	iref=int(iref)
 	number_of_checked_refs += int(checked_refs)

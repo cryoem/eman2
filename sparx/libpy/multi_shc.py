@@ -726,15 +726,16 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 							all_params.append(deepcopy(newparms2))
 						all_params = all_params[:number_of_runs]
 						#  Try this 02/03/2015 PAP
-						#  Always mutate the first one
+						#  Always mutate the first ones
 						#  for half of projections 'mirror' them by adding 180 to psi
-						ipl = range(total_nima)
-						shuffle(ipl)
-						ipl = ipl[:total_nima//2]
-						for i in ipl:  all_params[0][i][2] += 180.0
-
-						#  Always reseed the last one
-						all_params[-1] = [[random()*360.0,random()*180.0,random()*360.0,0.0,0.0]\
+						keepset = max(1,int(0.25*number_of_runs))
+						#ipl = range(total_nima)
+						#shuffle(ipl)
+						#ipl = ipl[:total_nima//2]
+						for i in xrange(keepset):
+							all_params[0][i][2] += 180.0
+							#  Always reseed the last ones
+							all_params[-1-i] = [[random()*360.0,random()*180.0,random()*360.0,0.0,0.0]\
 										 for j in xrange(total_nima)]
 
 				terminate = wrap_mpi_bcast(terminate, main_node, mpi_comm)

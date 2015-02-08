@@ -2639,7 +2639,7 @@ c
  * Optimized:
  * 	*Sin and Cos functions are tabulated for the largest ring
  * 	*Bilinear interpolation
- 
+NOT USED
 EMData* Util::Polar2Dm(EMData* image, float cnx2, float cny2, vector<int> numr, string cmode){
 	int nring = numr.size()/3;
 	int r1 = numr(1,1);
@@ -19317,6 +19317,29 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 //   the current orientation, but around the original, the one the projection had when local searches
 //    started.  This could however be handled on a higher level by changing the current direction
 //    assigned to projection.
+//
+//    Method:
+//      1. resample input image into polar with respect to all shifts.
+//      2.  shuffle order of refrings so they are processed in random order
+//      3.     shuffle shifts, process them in random order
+//      4.        get random angle/mirror for a postion with value>previousmax
+//                   Crosrng_rand_ms: it computes both 1D ccfs and then scans both in random order,
+//                    stops when ccf value > previousmax
+//
+//      In effect, the randomness is hierarchical: 
+//            the top level, projdirs, is fully random
+//             but for each projdir, all shifts are scanned
+//             and for each shift all angles and mirrors are scanned.
+//
+//        For SCF one would have to proceed as follows:
+//         1.  Pick up random projection direction
+//         2.  compute 1D half-ccfs for both straight and mirror
+//         3.    scan both curves in a random order, just as above, 
+//                  so one would pick up random angle and mirror, which would have to be larger than previousmax_scf
+//         4.      rotate image, compute ccf, scan shifts in a random order, pick up one better than previousmax_shift
+//        Conclusion: clearly, this is not very attractive and is certain to be slower than polar due to the need
+//                    to compute multiple rotations and 2D CCFs.  Abandon the plan.  PAP 02/08/2015
+//
 // Manually extract.
 /*    vector< EMAN::EMData* > crefim;
     std::size_t crefim_len = PyObject_Length(crefim_list.ptr());
