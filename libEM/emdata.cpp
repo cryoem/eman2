@@ -442,7 +442,7 @@ void EMData::clip_inplace(const Region & area,const float& fill_value)
 			Assert( dst_inc < new_size && src_inc < prev_size && dst_inc >= 0 && src_inc >= 0 );
 
 			// Finally copy the memory
-			EMUtil::em_memcpy(local_dst, local_src, clipped_row_size);
+			memmove(local_dst, local_src, clipped_row_size);
 		}
 	}
 
