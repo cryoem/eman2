@@ -95,7 +95,7 @@ power spectrum in various ways."""
 
 	from emapplication import EMApp
 	app=EMApp()
-	gui=GUIEvalImage(args,options.voltage,options.apix,options.cs,options.ac,options.box,options.usefoldername,options.constbfactor)
+	gui=GUIEvalImage(args,options.voltage,options.apix,options.cs,options.ac,options.box,options.usefoldername,options.constbfactor,options.astigmatism)
 	gui.show()
 
 	try:
@@ -114,7 +114,7 @@ power spectrum in various ways."""
 
 
 class GUIEvalImage(QtGui.QWidget):
-	def __init__(self,images,voltage=None,apix=None,cs=None,ac=10.0,box=512,usefoldername=False,constbfactor=-1):
+	def __init__(self,images,voltage=None,apix=None,cs=None,ac=10.0,box=512,usefoldername=False,constbfactor=-1,fitastig=False):
 		"""Implements the CTF fitting dialog using various EMImage and EMPlot2D widgets
 		'data' is a list of (filename,ctf,im_1d,bg_1d,quality)
 		'parms' is [box size,ctf,box coord,set of excluded boxnums,quality,oversampling]
@@ -133,6 +133,7 @@ class GUIEvalImage(QtGui.QWidget):
 		QtGui.QWidget.__init__(self,None)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() + "ctf.png"))
 
+		self.fitastig=fitastig
 		self.nodir=not usefoldername
 		self.data=None
 		self.curset=0
@@ -629,10 +630,10 @@ class GUIEvalImage(QtGui.QWidget):
 			if self.cbgadj.getValue() :
 				self.bgAdj()
 				parms[1]=e2ctf.ctf_fit(self.fft1d,parms[1].background,parms[1].background,self.fft,self.fftbg,parms[1].voltage,parms[1].cs,parms[1].ampcont,apix,bgadj=False,autohp=True,verbose=1)
-				if options.astigmatism : ctf_fit_stig(self.fft,self.fftbg,parms[1],verbose=1)
+				if self.fitastig : e2ctf.ctf_fit_stig(self.fft,self.fftbg,parms[1],verbose=1)
 				self.bgAdj()
 			else:
-				if options.astigmatism : ctf_fit_stig(self.fft,self.fftbg,parms[1],verbose=1)
+				if self.fitastig : e2ctf.ctf_fit_stig(self.fft,self.fftbg,parms[1],verbose=1)
 
 		except:
 			print "CTF Autofit Failed"
