@@ -900,7 +900,7 @@ void EMData::translate(float dx, float dy, float dz)
  	}
  	else {
 		translate(Vec3f(dx, dy, dz));
-// 	}
+ 	}
 	EXITFUNC;
 }
 
