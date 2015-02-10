@@ -2639,17 +2639,19 @@ c
  * Optimized:
  * 	*Sin and Cos functions are tabulated for the largest ring
  * 	*Bilinear interpolation
-NOT USED
+*/
 EMData* Util::Polar2Dm(EMData* image, float cnx2, float cny2, vector<int> numr, string cmode){
 	int nring = numr.size()/3;
 	int r1 = numr(1,1);
 	int r2 = numr(1,nring);
 	int maxPoints = numr(3,nring);
-
+	
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 
 	int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
+	float xold, yold, xnew, ynew;
+	
 	EMData* out = new EMData();
 	out->set_size(lcirc,1, 1);
 
@@ -2658,17 +2660,18 @@ EMData* Util::Polar2Dm(EMData* image, float cnx2, float cny2, vector<int> numr, 
 
 	maxPoints = maxPoints /div - 1;
 
-	const float dpi = 2*atan(1.0);
+	double dpi = 2*atan(1.0), dfi;
+	dfi = dpi / (maxPoints +1);
 //	Table for sin & cos
 	vector<float> vsin(maxPoints);
 	vector<float> vcos(maxPoints);
 	for (int x = 0; x < maxPoints; x++) {
-		float ang = (x+1) * dpi / (maxPoints +1);
+		float ang = static_cast<float>((x+1) * dfi);
 		vsin[x] = sin(ang);
 		vcos[x] = cos(ang);
 	}
 
-	float xold, yold;
+	
 
 	float *xim  = image->get_data();
 	float* circ = out->get_data();
@@ -2704,8 +2707,8 @@ EMData* Util::Polar2Dm(EMData* image, float cnx2, float cny2, vector<int> numr, 
 		for (int x = 0; x < nPoints; x++) {
 			int jt = x+1;
 			int ind = (x+1)*mult - 1;
-			float xnew    = vsin[ind] * inr;
-			float ynew    = vcos[ind] * inr;
+			xnew    = vsin[ind] * inr;
+			ynew    = vcos[ind] * inr;
 
 			xold = xnew+cnx2;
 			yold = ynew+cny2;
@@ -2729,12 +2732,12 @@ EMData* Util::Polar2Dm(EMData* image, float cnx2, float cny2, vector<int> numr, 
 		}
 	}
 	return out;
-}*/
+}
 
 /*
  * 10/22/2014
  * Previous version
- * Quadratic interpolation*/
+ * Quadratic interpolation*
  EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, string cmode){
 	int nsam = image->get_xsize();
 	int nrow = image->get_ysize();
@@ -2823,9 +2826,9 @@ EMData* Util::Polar2Dm(EMData* image, float cnx2, float cny2, vector<int> numr, 
 	} //end for it
 	return out;
 }
+*/
 
-
-float Util::bilinear(float xold, float yold, int nsam, int, float* xim)
+float Util::bilinear(float xold, float yold, int nsam, int nrow, float* xim)
 {
 /*
 c  purpose: linear interpolation
@@ -21353,7 +21356,7 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
-	cout <<"  VERSION  02/03/2015  06:00 am"<<endl;
+	cout <<"  VERSION  02/10/2015  12:00 PM"<<endl;
 	float dummy;
 	dummy = ri;
 	cout <<  "   fmod   "<<fmod(qprob,dummy)<<endl;
