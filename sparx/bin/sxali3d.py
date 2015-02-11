@@ -119,6 +119,12 @@ def main():
 					options.yr, options.ts, options.delta, options.an, options.apsi, options.deltapsi, options.startpsi,
 					options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
 					options.function, options.Fourvar, options.npad, options.debug, options.stoprnct, gamma=options.gamma)
+				elif(options.nsoft == 0):
+					from applications import ali3d_shcMPI
+					ali3d_shc0MPI(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
+					options.yr, options.ts, options.delta, options.an, options.apsi, options.deltapsi, options.startpsi,
+					options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
+					options.function, options.Fourvar, options.npad, options.debug, options.stoprnct, gamma=options.gamma)
 				else:
 					from multi_shc import ali3d_multishc_soft
 					import user_functions

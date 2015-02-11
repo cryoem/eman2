@@ -3974,6 +3974,100 @@ def alivol_m( v, vref, mask ):
 
 # =================== SHC
 
+def shc0(data, cimages, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=None):
+	from utilities    import compose_transform2
+	from math         import cos, sin, degrees, radians
+	from EMAN2 import Vec2f
+
+	ID = data.get_attr("ID")
+
+	number_of_checked_refs = 0
+
+	mode = "F"
+	nx   = data.get_xsize()
+	ny   = data.get_ysize()
+	#  center is in SPIDER convention
+	cnx  = nx//2 + 1
+	cny  = ny//2 + 1
+
+	if( an>= 0.0):  ant = cos(radians(an))
+	else:           ant = -1.0
+	#phi, theta, psi, sxo, syo = get_params_proj(data)
+	t1 = data.get_attr("xform.projection")
+	#dp = t1.get_params("spider")
+	if finfo:
+		finfo.write("Image id: %6d\n"%(ID))
+		#finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, sxo, syo))
+		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
+		finfo.flush()
+
+	previousmax = data.get_attr("previousmax")
+	cimages[0].set_attr("xform.projection", t1)
+	cimages[0].set_attr("previousmax", previousmax)
+	#  The code for shc does not work for local searches!  PAP 01/27/2015
+	#  Do not use previous shifts so the image does not slide away
+	[ang, sxs, sys, mirror, iref, peak, checked_refs] = Util.shc0(cimages, refrings, xrng, yrng, step, ant, mode, numr, cnx, cny, sym )  #+dp["tx"], cny+dp["ty"])
+	iref=int(iref)
+	number_of_checked_refs += int(checked_refs)
+	#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
+	#ang = (ang+360.0)%360.0
+
+	if peak <= previousmax:
+		return -1.0e23, 0.0, number_of_checked_refs, -1
+		"""
+		# there is no better solutions - if the current position is free, we don't change anything
+		last_phi = dp["phi"]
+		last_theta = dp["theta"]
+		found_current_location = False
+		for ir in xrange(len(refrings)):
+			r = refrings[ir]
+			if abs(last_phi - r.get_attr("phi")) < 0.1 and abs(last_theta - r.get_attr("theta")) < 0.1:
+				found_current_location = True
+				break
+		if found_current_location:
+			return -1.0e23, 0.0, number_of_checked_refs, ir
+		"""
+	else:
+		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
+		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
+		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+		if  mirror:
+			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
+			theta = 180.0-refrings[iref].get_attr("theta")
+			psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
+			s2x   = sxb #- dp["tx"]
+			s2y   = syb #- dp["ty"]
+		else:
+			phi   = refrings[iref].get_attr("phi")
+			theta = refrings[iref].get_attr("theta")
+			psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
+			s2x   = sxb #- dp["tx"]
+			s2y   = syb #- dp["ty"]
+
+		#set_params_proj(data, [phi, theta, psi, s2x, s2y])
+		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
+		t2.set_trans(Vec2f(-s2x, -s2y))
+		data.set_attr("xform.projection", t2)
+		data.set_attr("previousmax", peak)
+		#  Find the pixel error that is minimum over symmetry transformations
+		from utilities import get_symt
+		from pixel_error import max_3D_pixel_error
+		ts = get_symt(sym)
+		if(len(ts) > 1):
+			# only do it if it is not c1
+			pixel_error = +1.0e23
+			for kts in ts:
+				ut = t2*kts
+				# we do not care which position minimizes the error
+				pixel_error = min(max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
+		else:
+			pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
+		if finfo:
+			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
+			finfo.flush()
+		return peak, pixel_error, number_of_checked_refs, iref
+
+
 def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=None):
 	from utilities    import compose_transform2
 	from math         import cos, sin, degrees, radians

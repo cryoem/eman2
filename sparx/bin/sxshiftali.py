@@ -852,6 +852,7 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 	last_ring = nx/2-2-int(max(xrng,yrng))
 	from alignment import Numrinit, ringwe
 	numr = Numrinit(first_ring, last_ring, rstep, mode)
+	print numr
 	wr   = ringwe(numr, mode)
 	maxrin = numr[(last_ring-first_ring)*3+2]
 	dang = 2*pi/maxrin
@@ -871,49 +872,49 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 	##tavg = fft(tavg)                                       #transform tavg    into real space.
 	tttt = EMData(nx, ny, 1, False)
 	
-# 	## compute 2D ccfs.
-# 	#crefim = Util.Polar2Dm(tavg, cnx, cny, numr, mode)
-# 	#Util.Frngs(crefim, numr)
-# 	##Util.Applyws(crefim, numr, wr)
-# 	CCF2d = []
-# 	for ifil in xrange(nfils):
-# 		# test Calculate 2D ccf between each segment and filament average
-# 		nsegms = indcs[ifil][1]-indcs[ifil][0]
-# 		ccf2d = [None]*vol
-# 		ctx2d = [None]*nsegms
-# 		resamp_ccf2d = [None]*resamp_vol
-# 		for im in xrange(indcs[ifil][0], indcs[ifil][1]):
-# 			ttavg = get_im("bdb:vdata",im)
-# 			stat = Util.infomask( ttavg, mask, False )
-# 			ttavg -= stat[0]
-# 			Util.mul_img(ttavg, mask)
-# 			crefim = Util.Polar2Dm(ttavg, cnx, cny, numr, mode)
-# 			Util.Frngs(crefim, numr)
-# 			#Util.Applyws(crefim, numr, wr)
-# 			tttt = fft(data[im])             # transform data[im] into real space.
-# 			ccf2d = Util.ali2d_ccf_list_snake(tttt, crefim,  wr, xrng, yrng, rstep, mode, numr, cnx, cny, T)
-# 			for i in xrange(2*kx+1):
-# 				for j in xrange(resamp_maxrin):
-# 					j_old = int(j * resamp_dang/dang + 0.5)
-# 					resamp_ccf2d[i*resamp_maxrin+j] = ccf2d[i*maxrin+j_old]
-# 			# aaaa=resamp_ccf2d.index(max(resamp_ccf2d))
-# # 			iaaa = aaaa/resamp_maxrin
-# # 			jaaa = aaaa%resamp_maxrin
-# # 			shift_x[im] = iaaa-(2*kx+1)//2
-# # 			shift_ang[im] = jaaa
-# # 			print "im=%d rotang=%d  maxrin=%d shift=%f"%(im, jaaa, resamp_maxrin, -shift_x[im] )	
-# 			# if im == 7 :
-# # 						print "rotang=%f  shift=%f"%(jaaa*resamp_dang*180/pi, -shift_x[im] )	
-# # 						tttt = fft(data[im])
-# # 						tttt.write_image("image7.hdf")
-# # 						tttt=rot_shift2D(tttt, jaaa*resamp_dang*180/pi, -shift_x[im], 0, 0, 1)
-# # 						tttt.write_image("imagerot7.hdf")
-# 			ccf2dimg = model_blank(2*kx+1, resamp_maxrin) ##EMData(2*kx+1, resamp_maxrin, 1, False)			
-# 			for i in xrange(2*kx+1):
-# 				for j in xrange(resamp_maxrin):
-# 					ccf2dimg.set_value_at(i,j,resamp_ccf2d[i*resamp_maxrin+j])
-# 			ctx2d[im-indcs[ifil][0]] = 	ccf2dimg	 
-# 		CCF2d.append(ctx2d)
+	## compute 2D ccfs.
+	#crefim = Util.Polar2Dm(tavg, cnx, cny, numr, mode)
+	#Util.Frngs(crefim, numr)
+	##Util.Applyws(crefim, numr, wr)
+	CCF2d = []
+	for ifil in xrange(nfils):
+		# test Calculate 2D ccf between each segment and filament average
+		nsegms = indcs[ifil][1]-indcs[ifil][0]
+		ccf2d = [None]*vol
+		ctx2d = [None]*nsegms
+		resamp_ccf2d = [None]*resamp_vol
+		for im in xrange(indcs[ifil][0], indcs[ifil][1]):
+			ttavg = get_im("bdb:vdata",im)
+			stat = Util.infomask( ttavg, mask, False )
+			ttavg -= stat[0]
+			Util.mul_img(ttavg, mask)
+			crefim = Util.Polar2Dm(ttavg, cnx, cny, numr, mode)
+			Util.Frngs(crefim, numr)
+			#Util.Applyws(crefim, numr, wr)
+			tttt = fft(data[im])             # transform data[im] into real space.
+			ccf2d = Util.ali2d_ccf_list_snake(tttt, crefim,  wr, xrng, yrng, rstep, mode, numr, cnx, cny, T)
+			for i in xrange(2*kx+1):
+				for j in xrange(resamp_maxrin):
+					j_old = int(j * resamp_dang/dang + 0.5)
+					resamp_ccf2d[i*resamp_maxrin+j] = ccf2d[i*maxrin+j_old]
+			aaaa=resamp_ccf2d.index(max(resamp_ccf2d))
+			iaaa = aaaa/resamp_maxrin
+			jaaa = aaaa%resamp_maxrin
+			shift_x[im] = iaaa-(2*kx+1)//2
+			shift_ang[im] = jaaa
+			print "im=%d rotang=%d  maxrin=%d shift=%f"%(im, jaaa, resamp_maxrin, -shift_x[im] )	
+			# if im == 7 :
+# 						print "rotang=%f  shift=%f"%(jaaa*resamp_dang*180/pi, -shift_x[im] )	
+# 						tttt = fft(data[im])
+# 						tttt.write_image("image7.hdf")
+# 						tttt=rot_shift2D(tttt, jaaa*resamp_dang*180/pi, -shift_x[im], 0, 0, 1)
+# 						tttt.write_image("imagerot7.hdf")
+			ccf2dimg = model_blank(2*kx+1, resamp_maxrin) ##EMData(2*kx+1, resamp_maxrin, 1, False)			
+			for i in xrange(2*kx+1):
+				for j in xrange(resamp_maxrin):
+					ccf2dimg.set_value_at(i,j,resamp_ccf2d[i*resamp_maxrin+j])
+			ctx2d[im-indcs[ifil][0]] = 	ccf2dimg	 
+		CCF2d.append(ctx2d)
 			
 	
 	## ---------------------------------------------- ##
@@ -1107,7 +1108,7 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 				import random
 				sigma1=0.0001
 				ctx[im-indcs[ifil][0]].set_value_at(ix+nxc, gaussian(100, 100, s, ix)+random.gauss(0, sigma1)) 
-				print "signal=%f noise=%f"%(gaussian(100, 100, s, ix), random.gauss(0, sigma1))
+				#print "signal=%f noise=%f"%(gaussian(100, 100, s, ix), random.gauss(0, sigma1))
 				#print s
 		## find the true snake.
 		maxccf = [0.0]*nsegs

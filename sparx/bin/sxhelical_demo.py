@@ -231,15 +231,15 @@ def helicise_pdb(inpdb, outpdb, dp, dphi):
 			t[1,0]=0.0
 			t[2,0]=j*dp
 			##for curve filaments
-			RR = 50
-			distheta = j*1.0/RR
-			t[0,0]=0.0     
-			t[1,0]=RR*sin(j*1.0/nperiod*6.28)   
-			t[2,0]=j*dp
+			# RR = 50
+# 			distheta = j*1.0/RR
+# 			t[0,0]=0.0     
+# 			t[1,0]=RR*sin(j*1.0/nperiod*6.28)   
+# 			t[2,0]=j*dp
 			##end for curve filament.
 			
 			## for parabola filament.
-# 			t[0,0]=0.0
+			# t[0,0]=0.0
 # 			a = 100.0/(nperiod*nperiod)     
 #  			t[1,0]= a * j*j  
 # 			t[2,0]=j*dp
