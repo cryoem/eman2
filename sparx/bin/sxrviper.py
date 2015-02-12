@@ -343,6 +343,7 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 	goal = st[0]
 	going = True
 	while(going):
+		set_params3D(asa,[0.,0.,0.,0.,0.,0.,0,1.0])
 		for i in xrange(no_of_viper_runs_analyzed_together):
 			o = ali_vol(vls[i],asa,7.0,5.,radius)  # range of angles and shifts, maybe should be adjusted
 			p = get_params3D(o)
