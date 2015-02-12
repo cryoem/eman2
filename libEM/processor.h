@@ -5559,6 +5559,41 @@ Next, the mask is expanded by 'nshells'+'nshellsgauss'/2 voxels. Finally a gauss
 
 			static const string NAME;
 	};
+	
+	/**ToCenterProcessor centers image, ignores old dx, dy.
+	 * @ingroup tested3c
+	 */
+	class ToCenterProcessor:public Processor
+	{
+	  public:
+		virtual void process_inplace(EMData * image);
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		static Processor *NEW()
+		{
+			return new ToCenterProcessor();
+		}
+
+		virtual string get_desc() const
+		{
+			return "Centers similar to the way a human would, by identifying the shape of the object and centering its sillouette. May be inaccurate if sillouette cannot be clearly identified. ";
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+//			d.put("int_shift_only", EMObject::INT, "set to 1 only shift by integer, no interpolation");
+//			d.put("threshold", EMObject::FLOAT, "Only values larger than the threshold are included in the center of mass computation. Default is 0.");
+//			d.put("positive", EMObject::INT, "uses only densities >0 for the calculatton");
+			return d;
+		}
+
+		static const string NAME;
+	};
 
 	/**ToMassCenterProcessor centers image at center of mass, ignores old dx, dy.
 	 * @param int_shift_only set to 1 only shift by integer, no interpolation

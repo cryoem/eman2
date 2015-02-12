@@ -188,6 +188,7 @@ const string IterMultiMaskProcessor::NAME = "mask.addshells.multilevel";
 const string IterBinMaskProcessor::NAME = "mask.addshells.gauss";
 const string PhaseToMassCenterProcessor::NAME = "xform.phasecenterofmass";
 const string ToMassCenterProcessor::NAME = "xform.centerofmass";
+const string ToCenterProcessor::NAME = "xform.center";
 const string ACFCenterProcessor::NAME = "xform.centeracf";
 const string SNRProcessor::NAME = "eman1.filter.snr";
 const string FileFourierProcessor::NAME = "eman1.filter.byfile";
@@ -422,6 +423,7 @@ template <> Factory < Processor >::Factory()
 	force_add<CTFSNRWeightProcessor>();
 
 	force_add<ToMassCenterProcessor>();
+	force_add<ToCenterProcessor>();
 	force_add<PhaseToMassCenterProcessor>();
 	force_add<ACFCenterProcessor>();
 //	force_add<SNRProcessor>();
@@ -3961,10 +3963,13 @@ float NormalizeCircleMeanProcessor::calc_mean(EMData * image) const
 
 	float radius = params.set_default("radius",((float)ny/2-2));
 
-// 	static bool busy = false;
+ 	static bool busy = false;		// avoid problems with threads and different image sizes
 	static EMData *mask = 0;
-
-	if (!mask || !EMUtil::is_same_size(image, mask)) {
+	static int oldradius=radius;
+	
+	if (!mask || !EMUtil::is_same_size(image, mask)||radius!=oldradius) {
+		while (busy) ;
+		busy=true;
 		if (!mask) {
 			mask = new EMData();
 		}
@@ -3975,6 +3980,7 @@ float NormalizeCircleMeanProcessor::calc_mean(EMData * image) const
 							 "outer_radius", radius + 1));
 
 	}
+	busy=true;
 	double n = 0,s=0;
 	float *d = mask->get_data();
 	float * data = image->get_data();
@@ -3983,12 +3989,11 @@ float NormalizeCircleMeanProcessor::calc_mean(EMData * image) const
 		if (d[i]) { n+=1.0; s+=data[i]; }
 	}
 
-
 	float result = (float)(s/n);
-
+//	printf("cmean=%f\n",result);
+	busy=false;
+	
 	return result;
-
-
 }
 
 
@@ -5734,22 +5739,16 @@ void AutoMask2DProcessor::process_inplace(EMData * image)
 	}
 	*/
 
-	int radius=0;
-	if (params.has_key("radius")) {
-		radius = params["radius"];
-	}
-	int nmaxseed=0;
-	if (params.has_key("nmaxseed")) {
-		nmaxseed = params["nmaxseed"];
-	}
-
+	int radius=params.set_default("radius",0);
+	int nmaxseed=params.set_default("nmaxseed",0);
+	
 	float threshold=0.0;
-	if (params.has_key("sigma")) threshold=(float)(image->get_attr("mean"))+(float)(image->get_attr("sigma"))*(float)params["sigma"];
+	if (params.has_key("sigma") || !params.has_key("threshold")) threshold=(float)(image->get_attr("mean"))+(float)(image->get_attr("sigma"))*(float)params["sigma"];
 	else threshold=params["threshold"];
 
 
-	int nshells = params["nshells"];
-	int nshellsgauss = params["nshellsgauss"];
+	int nshells = params.set_default("nshells",0);
+	int nshellsgauss = params.set_default("nshellsgauss",0);
 	int verbose=params.set_default("verbose",0);
 
 	int nx = image->get_xsize();
@@ -5782,7 +5781,7 @@ void AutoMask2DProcessor::process_inplace(EMData * image)
 		for (j = -ny / 2; j < ny / 2; ++j) {
 			for (i = -nx / 2; i < nx / 2; ++i,++l) {
 				if ( abs(j) > radius || abs(i) > radius) continue;
-//				if ( (j * j + i * i) > (radius*radius) || dat[l] < threshold) continue;		// torn on the whole threshold issue here. Removing it prevents images from being totally masked out
+				if ( (j * j + i * i) > (radius*radius) || dat[l] < threshold) continue;		// torn on the whole threshold issue here. Removing it prevents images from being totally masked out
 				if ( (j * j + i * i) > (radius*radius) ) continue;
 				dat2[l] = 1.0f;
 			}
@@ -5811,7 +5810,7 @@ void AutoMask2DProcessor::process_inplace(EMData * image)
 	amask->update();
 
 	if (verbose) printf("extending mask\n");
-	amask->process_inplace("mask.addshells.gauss", Dict("val1", nshells, "val2", nshellsgauss));
+	if (nshells>0 || nshellsgauss>0) amask->process_inplace("mask.addshells.gauss", Dict("val1", nshells, "val2", nshellsgauss));
 
 	bool return_mask = params.set_default("return_mask",false);
 	if (return_mask) {
@@ -6129,6 +6128,93 @@ void AddMaskShellProcessor::process_inplace(EMData * image)
 
 	image->update();
 }
+
+void ToCenterProcessor::process_inplace(EMData * image)
+{
+	if (!image) {
+		LOGWARN("NULL Image");
+		return;
+	}
+
+	if ((float)image->get_attr("sigma")==0.0f) return;		// Can't center a constant valued image
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+
+	// Preprocess a copy of the image to better isolate the "bulk" of the object
+	float gmw=(nx/16)>5?nx/16:5;		// gaussian mask width
+	EMData *image2=image->process("filter.highpass.gauss",Dict("cutoff_pixels",nx<50?nx/10:5));		// clear out large scale gradients
+	image2->process_inplace("normalize.circlemean");
+	image2->process_inplace("mask.gaussian",Dict("inner_radius",nx/2-gmw,"outer_radius",gmw/1.3));	// get rid of peripheral garbage
+	image2->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.07));						// get rid of peripheral garbage
+	image2->process_inplace("normalize.circlemean");
+	
+	// We compute a histogram so we can decide on a good threshold value
+	float hmin=(float)image2->get_attr("mean");
+	float hmax=(float)image2->get_attr("mean")+(float)image2->get_attr("sigma")*4.0;
+	vector <float> hist = image2->calc_hist( 100,hmin,hmax);
+	double tot=0;
+	int i;
+	for (i=99; i>=0; i--) {
+		tot+=hist[i];
+		if (tot>nx*ny*nz/10) break;
+	}
+	float thr=(i*hmax+(99-i)*hmin)/99.0;		// this should now be a threshold encompasing ~1/10 of the area in the image
+//	printf("mean %f   sigma %f   thr %f\n",(float)image2->get_attr("mean"),(float)image2->get_attr("sigma"),thr);
+	
+	// threshold so we are essentially centering the object silhouette
+	image2->process_inplace("threshold.binary",Dict("value",thr));
+//	image2->write_image("dbg1.hdf",-1);
+
+	EMData *image3;
+	if (nz==1) image3=image2->process("mask.auto2d",Dict("radius",nx/10,"threshold",.5));
+	else image3=image2->process("mask.auto3d",Dict("radius",nx/10,"threshold",.5));
+
+	// if the mask failed, we revert to the thresholded, but unmasked image
+	if (nz==1 && (float)image3->get_attr("sigma")==0) {
+		delete image3;
+		image3=image2->process("math.linearpyramid");
+		image3->add(9.0f);		// we comress the pyramid from .9-1
+		image3->mult(0.9f);
+		image3->process_inplace("mask.auto2d",Dict("threshold",0.5,"nmaxseed",5));	// should find seed points with a central bias
+	}
+		
+	if ((float)image3->get_attr("sigma")==0) delete image3;
+	else {
+		delete image2;
+		image2=image3;
+	}
+	
+//	image2->write_image("dbg2.hdf",-1);
+	FloatPoint com = image2->calc_center_of_mass(0.5);
+	delete image2;
+	
+	// actual centering is int translate only
+	int dx = -(floor(com[0] + 0.5f) - nx / 2);
+	int dy = -(floor(com[1] + 0.5f) - ny / 2);
+	int dz = 0;
+	if (nz > 1) {
+		dz = -(floor(com[2] + 0.5f) - nz / 2);
+	}
+	if (abs(dx)>=nx-1 || abs(dy)>=ny-1 || abs(dz)>=nz) {
+		printf("ERROR, center of mass outside image\n");
+	}
+	else {
+		image->translate(dx, dy, dz);
+
+		Transform t;
+		t.set_trans((float)dx,(float)dy,(float)dz);
+
+		if (nz > 1) {
+			image->set_attr("xform.align3d",&t);
+		} else {
+			image->set_attr("xform.align2d",&t);
+		}
+	}
+
+	
+}
+
 
 void ToMassCenterProcessor::process_inplace(EMData * image)
 {

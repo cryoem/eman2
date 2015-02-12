@@ -53,6 +53,8 @@ Low priority
 
 
 Complete
+2/12/15		xform.tocenter processor added, with pretty complex centering heuristics
+1/15		Critical fix: 2D translate() was broken due to memcopy vs memmove use. was responsible for bad 2-d class averages
 12/20/14	Critical fix: bad particle marking was partially broken. Could only mark bad one time
 12/12/14	Added support for new FEI SER format revision
 11/01/14	11/01/14	Fixed problem with 3D reconstruction. Was a normalization issue

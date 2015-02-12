@@ -73,7 +73,7 @@ def main():
 	parser.add_argument("--naliref", default=5, type=int, help="Number of alignment references to when determining particle orientations", guitype='intbox', row=3, col=0, rowspan=1, colspan=1, mode="spr")
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None, guitype='strbox', row=4, col=0, rowspan=1, colspan=3, mode="spr")
 	parser.add_argument("--automask", default=False, action="store_true",help="This will perform a 2-D automask on class-averages to help with centering. May be useful for negative stain data particularly.")
-	parser.add_argument("--centeracf", default=False, action="store_true",help="This will use an alternative centering algorithm, which may work better with negative stain data. Alternative to --automask.",guitype='boolbox', row=2, col=2, rowspan=1, colspan=1, mode="spr")
+	parser.add_argument("--centeracf", default=False, action="store_true",help="This option has been removed in favor of a new centering algorithm")
 	parser.add_argument("--check", "-c",default=False, action="store_true",help="Checks the contents of the current directory to verify that e2refine2d.py command will work - checks for the existence of the necessary starting files and checks their dimensions. Performs no work ")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--maxshift", default=-1, type=int, help="Maximum particle translation in x and y")
@@ -150,9 +150,9 @@ def main():
 		try: os.mkdir(options.path)
 		except: pass
 
-	if options.centeracf : centerer="xform.centeracf" 
-	else : centerer="xform.centerofmass:threshold=1"
-
+	if options.centeracf : 
+		print "Warning: the --centeracf option has been removed from e2refine2d in favor of a new centering scheme. Ignoring option."
+		
 	logid=E2init(sys.argv,options.ppid)
 
 	fit=1
@@ -229,11 +229,11 @@ def main():
 	# this is the main refinement loop
 	for it in range(fit,options.iter+1) :
 		# first we sort and align the class-averages from the last step
-		run("e2proc2d.py %s %s/allrefs_%02d.hdf --inplace --calccont --process=filter.highpass.gauss:cutoff_pixels=2 --process=normalize.edgemean --process=%s"%(options.initial,options.path,it,centerer))
+		run("e2proc2d.py %s %s/allrefs_%02d.hdf --inplace --calccont --process=filter.highpass.gauss:cutoff_pixels=5 --process=normalize.edgemean --process xform.center"%(options.initial,options.path,it))
 		# now we try for mutual alignment of particle orientations
 		run("e2stacksort.py %s/allrefs_%02d.hdf %s/allrefs_%02d.hdf --simcmp=sqeuclidean:normto=1 --simalign=rotate_translate_flip --useali --iterative"%(options.path,it,options.path,it))
 		# however we don't want things off-center, so we do a final recentering
-		run("e2proc2d.py %s/allrefs_%02d.hdf %s/allrefs_%02d.hdf --inplace --process=filter.highpass.gauss:cutoff_pixels=2 --process=%s"%(options.path,it,options.path,it,centerer))
+		run("e2proc2d.py %s/allrefs_%02d.hdf %s/allrefs_%02d.hdf --inplace --process xform.center"%(options.path,it,options.path,it))
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)
 		# Compute a classification basis set

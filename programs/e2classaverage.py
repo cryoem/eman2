@@ -39,6 +39,7 @@ import os
 import sys
 import random
 from random import choice
+import traceback
 
 READ_HEADER_ONLY = True
 
@@ -362,17 +363,19 @@ class ClassAvTask(JSTask):
 			#avg.write_image("tst.hdf",-1)
 		else :
 			# Nothing to align to, so we just try to center the final average
-			gmw=max(5,avg["nx"]/16)		# gaussian mask width
-			avg.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2})	# A slight highpass to reduce gradient issues
-			avg.process_inplace("normalize.circlemean")
-			avg.process_inplace("mask.gaussian",{"inner_radius":avg["nx"]/2-gmw,"outer_radius":gmw/1.3})
-			avg.process_inplace("normalize.circlemean")
-			ali=avg.process("xform.centerofmass",{"threshold":avg["mean"]+avg["sigma"]})
+			#gmw=max(5,avg["nx"]/16)		# gaussian mask width
+			#avg.process_inplace("filter.highpass.gauss",{"cutoff_pixels":min(avg["nx"]/10,5)})	# highpass to reduce gradient issues
+			#avg.process_inplace("normalize.circlemean")
+			#avg.process_inplace("mask.gaussian",{"inner_radius":avg["nx"]/2-gmw,"outer_radius":gmw/1.3})
+			#avg.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.07})
+			#avg.process_inplace("normalize.circlemean")
+			#ali=avg.process("threshold.binary",{"value":avg["mean"]+avg["sigma"]*1.5})
+			#ali.process_inplace("xform.centerofmass",{"threshold":0.5})
+			ali=avg.process("xform.center")
 			fxf=ali["xform.align2d"]
-			if options["verbose"]>0 : print "Final center:",fxf
+			if options["verbose"]>0 : print "Final center:",fxf.get_trans_2d()
 			avg1=avg
 			avg=class_average_withali([self.data["images"][1]]+self.data["images"][2],ptcl_info,fxf,None,options["averager"],options["normproc"],options["setsfref"],options["verbose"])
-
 		try:
 			avg["class_ptcl_qual"]=avg1["class_ptcl_qual"]
 			avg["class_ptcl_qual_sigma"]=avg1["class_ptcl_qual_sigma"]
@@ -517,13 +520,23 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 			ref.add(ali)
 
 		# A little masking and centering
-		gmw=max(5,ref["nx"]/16)		# gaussian mask width
-		ref.process_inplace("filter.highpass.gauss",{"cutoff_pixels":2})	# A slight highpass to reduce gradient issues
-		ref.process_inplace("normalize.circlemean")
-		ref.process_inplace("mask.gaussian",{"inner_radius":ref["nx"]/2-gmw,"outer_radius":gmw/1.3})
-		ref.process_inplace("normalize.circlemean")
-		ref.process_inplace("xform.centerofmass",{"threshold":ref["mean"]+ref["sigma"]})						# TODO: should probably check how well this works
-		ref_orient=None
+		try:
+			gmw=max(5,ref["nx"]/16)		# gaussian mask width
+			#ref.process_inplace("filter.highpass.gauss",{"cutoff_pixels":min(ref["nx"]/10,5)})	# highpass to reduce gradient issues
+			#ref.process_inplace("normalize.circlemean")
+			#ref2=ref.process("mask.gaussian",{"inner_radius":ref["nx"]/2-gmw,"outer_radius":gmw/1.3})
+			#ref2.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.07})	# highpass to reduce gradient issues
+			#ref2.process_inplace("normalize.circlemean")
+			#ref2.process_inplace("threshold.binary",{"value":ref["mean"]+ref["sigma"]*1.5})
+			#ref2.process_inplace("xform.centerofmass",{"threshold":0.5})						# TODO: should probably check how well this works
+			#fxf=ref2["xform.align2d"]
+			#ref.translate(fxf.get_trans())
+			ref.process_inplace("xform.center")
+			ref.process_inplace("mask.gaussian",{"inner_radius":ref["nx"]/2-gmw,"outer_radius":gmw/1.3})
+			ref.process_inplace("normalize.circlemean")
+			ref_orient=None
+		except:
+			traceback.print_exc()
 	else:
 		try: ref_orient=ref["xform.projection"]
 		except: ref_orient=None
