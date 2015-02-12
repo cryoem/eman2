@@ -2738,6 +2738,9 @@ def get_softy(im):
 	return w,x
 
 
+
+
+
 # data - projections (scattered between cpus) or the volume.  If volume, just do the volume processing
 # options - the same for all cpus
 # return - volume the same for all cpus
@@ -2811,6 +2814,39 @@ def do_volume(data, options, iter, mpi_comm):
 	bcast_EMData_to_all(vol, myid, 0, comm=mpi_comm)
 	#=========================================================================
 	return vol
+
+
+
+def no_of_processors_restricted_by_data__do_volume(projections, ali3d_options, iter, mpi_comm):
+	from mpi import mpi_comm_rank, mpi_comm_size, mpi_finalize, mpi_comm_split, mpi_barrier, MPI_COMM_WORLD
+	from utilities      import bcast_EMData_to_all
+	from applications import MPI_start_end
+
+	mpi_size = mpi_comm_size(mpi_comm)
+	n_projs = len(projections)
+	mpi_rank = mpi_comm_rank(mpi_comm)
+
+	if (mpi_size > n_projs):
+		working = int(not(mpi_rank < n_projs))
+		mpi_subcomm = mpi_comm_split(mpi_comm, working,  mpi_rank - working*n_projs)
+		mpi_subsize = mpi_comm_size(mpi_subcomm)
+		mpi_subrank = mpi_comm_rank(mpi_subcomm)
+		if (mpi_rank < n_projs):
+			proj_begin, proj_end = MPI_start_end(n_projs, mpi_subsize, mpi_subrank)
+			ref_vol = do_volume(projections[proj_begin:proj_end], ali3d_options, 0, mpi_comm=mpi_subcomm)
+		else:
+			from utilities import model_blank
+			nx = projections[0].get_xsize()
+			ref_vol = model_blank(nx,nx,nx)
+		bcast_EMData_to_all(ref_vol, mpi_rank, 0, comm=mpi_comm)
+	else:
+		proj_begin, proj_end = MPI_start_end(n_projs, mpi_size, mpi_rank)
+		ref_vol = do_volume(projections[proj_begin:proj_end], ali3d_options, 0, mpi_comm=mpi_comm)
+
+	return ref_vol
+
+
+
 
 
 # parameters: list of (all) projections | reference volume is optional, if provided might be shrank| ...
