@@ -352,36 +352,37 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 
 	# =======
 	# 	"""  Added 02/12/2015 PAP
-	# 	# Align all rotated volumes, calculate their average and save as an overall result
-	# 	from utilities import get_params3D, set_params3D
-	# 	from statistics import ave_var
-	# 	from applications import ali_vol
-	# 	vls = [None]*no_of_viper_runs_analyzed_together
-	# 	for i in xrange(no_of_viper_runs_analyzed_together):
-	# 		vls[i] = get_im(mainoutputdir + "/run%03d"%(i) + "/rotated_volume.hdf")
-	# 		set_params3D(vls[i],[0.,0.,0.,0.,0.,0.,0,1.0])
-	# 	asa,sas = ave_var(vls)
-	# 	# do the alignment
-	# 	radius = 27   #  This is the radius of the structure, I do not know how to get it here PAP
-	# 	nx = asa.get_xsize()
-	# 	st = Util.infomask(asa*asa, model_circle(radius,nx,nx,nx), True)
-	# 	goal = st[0]
-	# 	going = True
-	# 	while(going):
-	# 		set_params3D(asa,[0.,0.,0.,0.,0.,0.,0,1.0])
-	# 		for i in xrange(no_of_viper_runs_analyzed_together):
-	# 			o = ali_vol(vls[i],asa,7.0,5.,radius)  # range of angles and shifts, maybe should be adjusted
-	# 			p = get_params3D(o)
-	# 			del o
-	# 			set_params3D(vls[i],p)
-	# 		asa,sas = ave_var(vls)
-	# 		st = Util.infomask(asa*asa, model_circle(radius,nx,nx,nx), True)
-	# 		if(st[0] > goal):  goal = st[0]
-	# 		else:  going = False
-	# 	# over and out
-	# 	asa.write_image(mainoutputdir + "/average_volume.hdf")
-	# 	sas.write_image(mainoutputdir + "/variance_volume.hdf")
-	# 	"""
+	if( mpi_rank == 0):
+		# Align all rotated volumes, calculate their average and save as an overall result
+		from utilities import get_params3D, set_params3D, get_im, model_circle
+		from statistics import ave_var
+		from applications import ali_vol
+		vls = [None]*no_of_viper_runs_analyzed_together
+		for i in xrange(no_of_viper_runs_analyzed_together):
+			vls[i] = get_im(mainoutputdir + "/run%03d"%(i) + "/rotated_volume.hdf")
+			set_params3D(vls[i],[0.,0.,0.,0.,0.,0.,0,1.0])
+		asa,sas = ave_var(vls)
+		# do the alignment
+		radius = 27   #  This is the radius of the structure, I do not know how to get it here PAP
+		nx = asa.get_xsize()
+		st = Util.infomask(asa*asa, model_circle(radius,nx,nx,nx), True)
+		goal = st[0]
+		going = True
+		while(going):
+			set_params3D(asa,[0.,0.,0.,0.,0.,0.,0,1.0])
+			for i in xrange(no_of_viper_runs_analyzed_together):
+				o = ali_vol(vls[i],asa,7.0,5.,radius)  # range of angles and shifts, maybe should be adjusted
+				p = get_params3D(o)
+				del o
+				set_params3D(vls[i],p)
+			asa,sas = ave_var(vls)
+			st = Util.infomask(asa*asa, model_circle(radius,nx,nx,nx), True)
+			if(st[0] > goal):  goal = st[0]
+			else:  going = False
+		# over and out
+		asa.write_image(mainoutputdir + "/average_volume.hdf")
+		sas.write_image(mainoutputdir + "/variance_volume.hdf")
+		# """
 	# >>>>>>> 1.23
 	return
 
