@@ -2855,7 +2855,7 @@ def no_of_processors_restricted_by_data__do_volume(projections, ali3d_options, i
 # 			 nsoft = 0 & an > 0 : local deterministic
 # 			 nsoft = 1 shc
 # 			 nsoft >1  shc_multi
-def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi_comm = None, log = None, nsoft = 3 ):
+def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi_comm = None, log = None, nsoft = 3, saturatecrit = 0.95 ):
 
 	from alignment       import Numrinit, prepare_refrings, proj_ali_incore,  proj_ali_incore_local, shc
 	from utilities       import bcast_number_to_all, bcast_EMData_to_all, 	wrap_mpi_gatherv, wrap_mpi_bcast, model_blank
@@ -2866,7 +2866,7 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 	from applications    import MPI_start_end
 	from filter          import filt_ctf
 	from global_def      import Util
-	from fundamentals    import resample
+	from fundamentals    import resample, fshift
 	from multi_shc       import do_volume, shc_multi
 	from EMAN2           import EMUtil, EMData
 	import types
@@ -2920,23 +2920,11 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 
 	if( type(stack) is types.StringType ):
 		if myid == main_node:
-			if(file_type(stack) == "bdb"):
-				from EMAN2db import db_open_dict
-				dummy = db_open_dict(stack, True)
-			active = EMUtil.get_all_attributes(stack, 'active')
-			list_of_particles = []
-			for im in xrange(len(active)):
-				if(active[im]):  list_of_particles.append(im)
-			del active
-			total_nima = len(list_of_particles)
+			total_nima = EMUtil.get_image_count( stack )
 		else:
-			list_of_particles = None
 			total_nima = 0
 		total_nima = wrap_mpi_bcast(total_nima, main_node, mpi_comm)
-		list_of_particles = wrap_mpi_bcast(list_of_particles, main_node, mpi_comm)
-		if myid == main_node:
-			particle_ids = [0]*total_nima
-			for i in xrange(total_nima):  particle_ids[i] = list_of_particles[i]
+		list_of_particles = range(total_nime)
 		image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
 		# create a list of images for each node
 		list_of_particles = list_of_particles[image_start: image_end]
@@ -2981,13 +2969,17 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 		ali3d_options.ir = first_ring
 	numr	= Numrinit(first_ring, last_ring, rstep, "F")
 
-
+	oldshifts = [None]*nima
 	data = [None]*nima
 	for im in xrange(nima):
 		if( type(stack) is types.StringType ):  data[im] = get_im(stack, list_of_particles[im])
 		else:                                   data[im] = stack[list_of_particles[im]]
 		data[im].set_attr('ID', list_of_particles[im])
 		ctf_applied = data[im].get_attr_default('ctf_applied', 0)
+		phi,tetha,psi,sx,sy = get_params_proj(data[im])
+		data[im] = fshift(data[im], sx, sy)
+		set_params_proj(data[im],[phi,tetha,psi,0.0,0.0])
+		oldshifts[im] = [sx,sy]
 		if CTF :
 			ctf_params = data[im].get_attr("ctf")
 			if ctf_applied == 0:
@@ -3155,7 +3147,6 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 					msg = "            %5d     %7d"%(lhx, par_r[lhx])
 					log.add(msg)
 				log.add("_______________________________________________________")
-				saturatecrit = 0.95
 				changes = par_r[0]/float(total_nima)
 				if(  changes > saturatecrit ):
 					terminate = 1
@@ -3282,9 +3273,9 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 			if( terminate or (Iter == max_iter) ):
 				# gather parameters
 				params = []
-				for im in data:
-					t = get_params_proj(im)
-					params.append( [t[0], t[1], t[2], t[3]/shrinkage, t[4]/shrinkage] )
+				for im in xrange(nima):
+					t = get_params_proj(data[im])
+					params.append( [t[0], t[1], t[2], t[3]/shrinkage + oldshifts[im][0], t[4]/shrinkage+ oldshifts[im][1]] )
 				params = wrap_mpi_gatherv(params, main_node, mpi_comm)
 			"""
 			if( ( terminate or (Iter == max_iter) ) and (myid == main_node) ):
