@@ -69,13 +69,13 @@ sxheader.py bdb:flip_data --params=active --one
 sxheader.py bdb:flip_data --params=xform.align2d --zero
 
 # pre-align particles with sxali2d.py
-sxali2d.py bdb:flip_data None --ou=28 --xr="2 1" --ts="1 0.5" --maxit=33 --dst=90
+mpirun -np 16 sxali2d.py bdb:flip_data jojo --ou=28 --xr="2 1" --ts="1 0.5" --maxit=33 --dst=90 --MPI
 
 # apply the results from sxali2d.py to the data:
 sxtransform2d.py bdb:flip_data bdb:stack_ali
 
 # run sxisac.py
-mpirun -np 16 sxisac.py bdb:stack_ali --stab_ali=2 --init_iter=1 --main_iter=1 --match_second=1 --ou=30 --max_round=5 --img_per_grp=60 --thld_err=1.75 --generation=1 --MPI
+mpirun -np 16 sxisac.py bdb:stack_ali --stab_ali=2 --init_iter=1 --main_iter=1 --match_second=1 --ou=30 --max_round=5 --img_per_grp=60 --thld_err=1.75 --generation=1
 
 
 ###################################################################<<<<<<< run_through_example
