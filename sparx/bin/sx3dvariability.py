@@ -153,6 +153,7 @@ def main():
 			if((nima/i)*i != nima):
 				ERROR("The length of the input stack is incorrect for symmetry processing", "sx3dvariability", myid=myid)
 			symbaselen = nima/i
+		else:  symbaselen = nima
 	else:
 		nima = 0
 		nx = 0
