@@ -586,45 +586,44 @@ def main():
 			cmd = "{} {}".format("mkdir", masterdir)
 			cmdexecute(cmd)
 			# error_status = 1
-		else:
-			if os.path.exists(masterdir):
-				if ':' in args[0]:
-					bdb_stack_location = args[0].split(":")[0] + ":" + masterdir + args[0].split(":")[1]
-					org_stack_location = args[0]
+		if os.path.exists(masterdir):
+			if ':' in args[0]:
+				bdb_stack_location = args[0].split(":")[0] + ":" + masterdir + args[0].split(":")[1]
+				org_stack_location = args[0]
 
-					if(not os.path.exists(os.path.join(masterdir,"EMAN2DB/"))):
-						# cmd = "{} {}".format("cp -rp EMAN2DB", masterdir, "EMAN2DB/")
-						# cmdexecute(cmd)
-						cmd = "{} {} {}".format("e2bdb.py", org_stack_location,"--makevstack=" + bdb_stack_location + "_000")
-						cmdexecute(cmd)
-						cmd = "{} {}".format("sxheader.py  --consecutive  --params=original_image_index", bdb_stack_location + "_000")
-						cmdexecute(cmd)
-				else:
-					filename = os.path.basename(args[0])
-					bdb_stack_location = "bdb:" + masterdir + os.path.splitext(filename)[0]
-					if(not os.path.exists(os.path.join(masterdir,"EMAN2DB/"))):
-						gdat = EMData.read_images(args[0])
-						for i in xrange(len(gdat)):  gdat[i].write_image(bdb_stack_location + "_000",i)
-						cmd = "{} {}".format("sxheader.py  --consecutive  --params=original_image_index", bdb_stack_location + "_000")
-						cmdexecute(cmd)
-
-				# all_projs = EMData.read_images(bdb_stack_location)
-				# print "bdb_stack_location:",  bdb_stack_location
-				# #mpi_finalize()
-				# #sys.exit()
-				#
-				# print "XXXXXXXXXXXXXXXXX"
-				# print "Number of projections:", len(all_projs)
-				# print "XXXXXXXXXXXXXXXXX"
-				# subset = range(len(all_projs))
-				# # if mpi_size > len(all_projs):
-				# # 	ERROR('Number of processes supplied by --np needs to be less than or equal to %d (total number of images) ' % len(all_projs), 'sxviper', 1)
-				# # 	error_status = 1
-
+				if(not os.path.exists(os.path.join(masterdir,"EMAN2DB/"))):
+					# cmd = "{} {}".format("cp -rp EMAN2DB", masterdir, "EMAN2DB/")
+					# cmdexecute(cmd)
+					cmd = "{} {} {}".format("e2bdb.py", org_stack_location,"--makevstack=" + bdb_stack_location + "_000")
+					cmdexecute(cmd)
+					cmd = "{} {}".format("sxheader.py  --consecutive  --params=original_image_index", bdb_stack_location + "_000")
+					cmdexecute(cmd)
 			else:
-				# os.path.exists(masterdir) does not exist
-				ERROR('Output directory does not exist, please change the name and restart the program', "sxrviper", 1)
-				error_status = 1
+				filename = os.path.basename(args[0])
+				bdb_stack_location = "bdb:" + masterdir + os.path.splitext(filename)[0]
+				if(not os.path.exists(os.path.join(masterdir,"EMAN2DB/"))):
+					gdat = EMData.read_images(args[0])
+					for i in xrange(len(gdat)):  gdat[i].write_image(bdb_stack_location + "_000",i)
+					cmd = "{} {}".format("sxheader.py  --consecutive  --params=original_image_index", bdb_stack_location + "_000")
+					cmdexecute(cmd)
+
+			# all_projs = EMData.read_images(bdb_stack_location)
+			# print "bdb_stack_location:",  bdb_stack_location
+			# #mpi_finalize()
+			# #sys.exit()
+			#
+			# print "XXXXXXXXXXXXXXXXX"
+			# print "Number of projections:", len(all_projs)
+			# print "XXXXXXXXXXXXXXXXX"
+			# subset = range(len(all_projs))
+			# # if mpi_size > len(all_projs):
+			# # 	ERROR('Number of processes supplied by --np needs to be less than or equal to %d (total number of images) ' % len(all_projs), 'sxviper', 1)
+			# # 	error_status = 1
+
+		else:
+			# os.path.exists(masterdir) does not exist
+			ERROR('Output directory does not exist, please change the name and restart the program', "sxrviper", 1)
+			error_status = 1
 	# else:
 	# 	all_projs = None
 	# 	subset = None
