@@ -2782,6 +2782,7 @@ def do_volume(data, options, iter, mpi_comm):
 			else:  mask3D = (options.mask3D).copy()
 			nxm = mask3D.get_xsize()
 			if( nxm != nx ):
+				from fundamentals import resample
 				mask3D = resample(mask3D, float(nx)/float(nxm))
 				nxm = mask3D.get_xsize()
 				assert(nx == nxm)
