@@ -6144,10 +6144,10 @@ void ToCenterProcessor::process_inplace(EMData * image)
 	// Preprocess a copy of the image to better isolate the "bulk" of the object
 	float gmw=(nx/16)>5?nx/16:5;		// gaussian mask width
 	EMData *image2=image->process("filter.highpass.gauss",Dict("cutoff_pixels",nx<50?nx/10:5));		// clear out large scale gradients
-	image2->process_inplace("normalize.circlemean");
+	image2->process_inplace("normalize.circlemean",Dict("radius",ny/2-4));
 	image2->process_inplace("mask.gaussian",Dict("inner_radius",nx/2-gmw,"outer_radius",gmw/1.3));	// get rid of peripheral garbage
-	image2->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.07));						// get rid of peripheral garbage
-	image2->process_inplace("normalize.circlemean");
+	image2->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.05));						// get rid of peripheral garbage
+	image2->process_inplace("normalize.circlemean",Dict("radius",ny/2-6));
 	
 	// We compute a histogram so we can decide on a good threshold value
 	float hmin=(float)image2->get_attr("mean");
@@ -6163,29 +6163,32 @@ void ToCenterProcessor::process_inplace(EMData * image)
 //	printf("mean %f   sigma %f   thr %f\n",(float)image2->get_attr("mean"),(float)image2->get_attr("sigma"),thr);
 	
 	// threshold so we are essentially centering the object silhouette
-	image2->process_inplace("threshold.binary",Dict("value",thr));
-//	image2->write_image("dbg1.hdf",-1);
+	image2->process_inplace("threshold.belowtozero",Dict("minval",thr));
+//	image2->process_inplace("threshold.binary",Dict("value",thr));
+	image2->write_image("dbg1.hdf",-1);
 
 	EMData *image3;
-	if (nz==1) image3=image2->process("mask.auto2d",Dict("radius",nx/10,"threshold",.5));
-	else image3=image2->process("mask.auto3d",Dict("radius",nx/10,"threshold",.5));
+	if (nz==1) image3=image2->process("mask.auto2d",Dict("radius",nx/10,"threshold",thr*0.9,"nmaxseed",5));
+	else image3=image2->process("mask.auto3d",Dict("radius",nx/10,"threshold",thr*0.9,"nmaxseed",5));
 
 	// if the mask failed, we revert to the thresholded, but unmasked image
 	if (nz==1 && (float)image3->get_attr("sigma")==0) {
 		delete image3;
-		image3=image2->process("math.linearpyramid");
+//		image3=image2->process("math.linearpyramid");
 		image3->add(9.0f);		// we comress the pyramid from .9-1
 		image3->mult(0.9f);
 		image3->process_inplace("mask.auto2d",Dict("threshold",0.5,"nmaxseed",5));	// should find seed points with a central bias
 	}
 		
+	image3->process_inplace("threshold.binary",Dict("value",thr));
+
 	if ((float)image3->get_attr("sigma")==0) delete image3;
 	else {
 		delete image2;
 		image2=image3;
 	}
 	
-//	image2->write_image("dbg2.hdf",-1);
+	image2->write_image("dbg2.hdf",-1);
 	FloatPoint com = image2->calc_center_of_mass(0.5);
 	delete image2;
 	
