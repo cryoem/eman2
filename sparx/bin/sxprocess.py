@@ -43,8 +43,8 @@ import  os
 """
 	Traveling salesman problem solved using Simulated Annealing.
 """
-from scipy import *
-from pylab import *
+#from scipy import *
+#from pylab import *
 
 def Distance(i1, i2, lccc):
 	return max(1.0 - lccc[mono(i1,i2)][0], 0.0)
