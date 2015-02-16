@@ -229,11 +229,11 @@ def main():
 	# this is the main refinement loop
 	for it in range(fit,options.iter+1) :
 		# first we sort and align the class-averages from the last step
-		run("e2proc2d.py %s %s/allrefs_%02d.hdf --inplace --calccont --process=filter.highpass.gauss:cutoff_pixels=5 --process=normalize.edgemean --process xform.center"%(options.initial,options.path,it))
+		run("e2proc2d.py %s %s/allrefs_%02d.hdf --inplace --calccont --process=filter.highpass.gauss:cutoff_pixels=5 --process=normalize.circlemean:radius=-5"%(options.initial,options.path,it))
 		# now we try for mutual alignment of particle orientations
 		run("e2stacksort.py %s/allrefs_%02d.hdf %s/allrefs_%02d.hdf --simcmp=sqeuclidean:normto=1 --simalign=rotate_translate_flip --useali --iterative"%(options.path,it,options.path,it))
 		# however we don't want things off-center, so we do a final recentering
-		run("e2proc2d.py %s/allrefs_%02d.hdf %s/allrefs_%02d.hdf --inplace --process xform.center"%(options.path,it,options.path,it))
+		#run("e2proc2d.py %s/allrefs_%02d.hdf %s/allrefs_%02d.hdf --inplace --process xform.center"%(options.path,it,options.path,it))
 		proc_tally += 1.0
 		if logid : E2progress(logid,proc_tally/total_procs)
 		# Compute a classification basis set
