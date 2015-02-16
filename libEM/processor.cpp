@@ -6147,7 +6147,8 @@ void ToCenterProcessor::process_inplace(EMData * image)
 	EMData *image2=image->process("filter.highpass.gauss",Dict("cutoff_pixels",nx<50?nx/10:5));		// clear out large scale gradients
 	image2->process_inplace("normalize.circlemean",Dict("radius",ny/2-4));
 	image2->process_inplace("mask.gaussian",Dict("inner_radius",nx/2-gmw,"outer_radius",gmw/1.3));	// get rid of peripheral garbage
-	image2->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.05));						// get rid of peripheral garbage
+	image2->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.04));						// get rid of peripheral garbage
+	image2->process_inplace("math.squared");		// exaggerate stronger density and includes strong negative density
 	image2->process_inplace("normalize.circlemean",Dict("radius",ny/2-6));
 	
 	// We compute a histogram so we can decide on a good threshold value
@@ -6158,7 +6159,7 @@ void ToCenterProcessor::process_inplace(EMData * image)
 	int i;
 	for (i=99; i>=0; i--) {
 		tot+=hist[i];
-		if (tot>nx*ny*nz/10) break;
+		if (tot>nx*ny*nz/10) break;		// find a threshold encompassing a specific fraction of the total area/volume
 	}
 	float thr=(i*hmax+(99-i)*hmin)/99.0;		// this should now be a threshold encompasing ~1/10 of the area in the image
 //	printf("mean %f   sigma %f   thr %f\n",(float)image2->get_attr("mean"),(float)image2->get_attr("sigma"),thr);
@@ -6166,7 +6167,7 @@ void ToCenterProcessor::process_inplace(EMData * image)
 	// threshold so we are essentially centering the object silhouette
 	image2->process_inplace("threshold.belowtozero",Dict("minval",thr));
 //	image2->process_inplace("threshold.binary",Dict("value",thr));
-	image2->write_image("dbg1.hdf",-1);
+//	image2->write_image("dbg1.hdf",-1);
 
 	EMData *image3;
 	if (nz==1) image3=image2->process("mask.auto2d",Dict("radius",nx/10,"threshold",thr*0.9,"nmaxseed",5));
@@ -6189,7 +6190,7 @@ void ToCenterProcessor::process_inplace(EMData * image)
 		image2=image3;
 	}
 	
-	image2->write_image("dbg2.hdf",-1);
+//	image2->write_image("dbg2.hdf",-1);
 	FloatPoint com = image2->calc_center_of_mass(0.5);
 	delete image2;
 	
