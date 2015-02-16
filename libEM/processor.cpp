@@ -6147,8 +6147,8 @@ void ToCenterProcessor::process_inplace(EMData * image)
 	EMData *image2=image->process("filter.highpass.gauss",Dict("cutoff_pixels",nx<50?nx/10:5));		// clear out large scale gradients
 	image2->process_inplace("normalize.circlemean",Dict("radius",ny/2-4));
 	image2->process_inplace("mask.gaussian",Dict("inner_radius",nx/2-gmw,"outer_radius",gmw/1.3));	// get rid of peripheral garbage
-	image2->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.04));						// get rid of peripheral garbage
 	image2->process_inplace("math.squared");		// exaggerate stronger density and includes strong negative density
+	image2->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.05));						// get rid of peripheral garbage
 	image2->process_inplace("normalize.circlemean",Dict("radius",ny/2-6));
 	
 	// We compute a histogram so we can decide on a good threshold value
