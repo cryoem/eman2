@@ -229,14 +229,17 @@ def main():
 			for it in range( options.avgiter ):
 				print "Averaging iteration", it
 	
+				avg = makeSsaAverage( options, scores, results, it )
+	
 				ret = calcScores( outputstack, avg, results )
 				scores = ret[0]
 				results = ret[1]
 				
 				meanscore = sum(scores)/len(scores)
-				print "Final mean score is", meanscore
+				
 								
 				if it == options.avgiter -1:
+					print "Final mean score is", meanscore
 					avg.write_image( options.path + '/finalAvg.hdf', 0)
 
 	if log:
