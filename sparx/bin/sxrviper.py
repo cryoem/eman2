@@ -510,6 +510,14 @@ def main():
 
 
 	(options, args) = parser.parse_args(sys.argv[1:])
+
+	options.CTF = False
+	options.snr = 1.0
+	options.an = -1
+
+
+
+
 	if len(args) < 1 or len(args) > 3:
 		print "usage: " + usage
 		print "Please run '" + progname + " -h' for detailed options"
@@ -585,27 +593,35 @@ def main():
 
 			cmd = "{} {}".format("mkdir", masterdir)
 			cmdexecute(cmd)
-			# error_status = 1
 		if os.path.exists(masterdir):
 			if ':' in args[0]:
 				bdb_stack_location = args[0].split(":")[0] + ":" + masterdir + args[0].split(":")[1]
 				org_stack_location = args[0]
+
+				# AAAAAAAAA
+				# cmd = "{} {} {}".format("sxheader.py  ", org_stack_location, " --consecutive  --params=original_image_index")
+				# cmdexecute(cmd)
 
 				if(not os.path.exists(os.path.join(masterdir,"EMAN2DB/"))):
 					# cmd = "{} {}".format("cp -rp EMAN2DB", masterdir, "EMAN2DB/")
 					# cmdexecute(cmd)
 					cmd = "{} {} {}".format("e2bdb.py", org_stack_location,"--makevstack=" + bdb_stack_location + "_000")
 					cmdexecute(cmd)
-					cmd = "{} {}".format("sxheader.py  --consecutive  --params=original_image_index", bdb_stack_location + "_000")
+
+					cmd = "{} {}".format("sxheader.py  ", bdb_stack_location + "_000 --consecutive  --params=original_image_index")
 					cmdexecute(cmd)
+
 			else:
 				filename = os.path.basename(args[0])
 				bdb_stack_location = "bdb:" + masterdir + os.path.splitext(filename)[0]
 				if(not os.path.exists(os.path.join(masterdir,"EMAN2DB/"))):
-					gdat = EMData.read_images(args[0])
-					for i in xrange(len(gdat)):  gdat[i].write_image(bdb_stack_location + "_000",i)
-					cmd = "{} {}".format("sxheader.py  --consecutive  --params=original_image_index", bdb_stack_location + "_000")
+					cmd = "{} {} {}".format("sxcpy.py  ", args[0], bdb_stack_location + "_000")
 					cmdexecute(cmd)
+					cmd = "{} {}".format("sxheader.py  ", bdb_stack_location + "_000 --consecutive  --params=original_image_index")
+					cmdexecute(cmd)
+				# else:
+				# 	ERROR('Conflicting information: EMAN2DB exists, but provided *.hdf file', "sxrviper", 1)
+				# 	error_status = 1
 
 			# all_projs = EMData.read_images(bdb_stack_location)
 			# print "bdb_stack_location:",  bdb_stack_location
@@ -619,6 +635,8 @@ def main():
 			# # if mpi_size > len(all_projs):
 			# # 	ERROR('Number of processes supplied by --np needs to be less than or equal to %d (total number of images) ' % len(all_projs), 'sxviper', 1)
 			# # 	error_status = 1
+
+			# error_status = 1
 
 		else:
 			# os.path.exists(masterdir) does not exist

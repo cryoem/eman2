@@ -296,8 +296,8 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 	if number_of_proc < number_of_runs:
 		ERROR("number_of_proc < number_of_runs","VIPER1",1,myid)
 
-	if an != "-1":
-		ERROR("Option an not used","VIPER1",1,myid)
+	# if an != "-1":
+	# 	ERROR("Option an not used","VIPER1",1,myid)
 	if sym[0] == "d" and int(sym[1:])%2 == 0:
 		ERROR("Symmetry d-even not implemented yet, please contact the developer","VIPER1",1,myid)
 	if sym[0] == "d" and int(sym[1:]) !=3 :
@@ -924,8 +924,8 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None 
 	delta       = get_input_from_string(delta)
 	lstp = min(len(xrng), len(yrng), len(step), len(delta))
 
-	if an != "-1":
-		ERROR("Option an not used","VIPER1",1,myid)
+	# if an != "-1":
+	# 	ERROR("Option an not used","VIPER1",1,myid)
 	"""
 	if an == "-1":
 		an = [-1] * lstp
@@ -2782,7 +2782,6 @@ def do_volume(data, options, iter, mpi_comm):
 			else:  mask3D = (options.mask3D).copy()
 			nxm = mask3D.get_xsize()
 			if( nxm != nx ):
-				from fundamentals import resample
 				mask3D = resample(mask3D, float(nx)/float(nxm))
 				nxm = mask3D.get_xsize()
 				assert(nx == nxm)
