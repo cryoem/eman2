@@ -51,140 +51,67 @@ def main():
 	
 	parser.add_header(name="symsearch3dheader", help="""Options below this label are specific to e2symsearch3d""", title="### e2symsearch3d options ###", row=3, col=0, rowspan=1, colspan=2)
 	
-	parser.add_argument("--input", dest="input", default=None,type=str, help="""The name of input volume or hdf stack of volumes""", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=0, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--input", dest="input", default='',type=str, help="""The name of input volume or hdf stack of volumes""", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", row=0, col=0, rowspan=1, colspan=2)
 	
-	parser.add_argument("--output", dest="output", default="""e2symsearch3d_OUTPUT.hdf""",
-		type=str, help="The name of the output volume", guitype='strbox', filecheck=False, 
-		row=1, col=0, rowspan=1, colspan=2)
+	#parser.add_argument("--output", dest="output", default="""e2symsearch3d_OUTPUT.hdf""", type=str, help="The name of the output volume", guitype='strbox', filecheck=False, row=1, col=0, rowspan=1, colspan=2)
 	
-	parser.add_argument("--path",type=str,help="""Name of path for output file""",
-		default='', guitype='strbox', row=2, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--path",type=str, default='', help="""Name of path for output file""", guitype='strbox', row=2, col=0, rowspan=1, colspan=2)
 
-	parser.add_argument("--sym", dest = "sym", default="c1", help = """Specify symmetry 
-		-choices are: c<n>, d<n>, h<n>, tet, oct, icos. For asymmetric reconstruction omit 
-		this option or specify c1.""", guitype='symbox', row=4, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--sym", dest = "sym", default="c1", help = """Specify symmetry -choices are: c<n>, d<n>, h<n>, tet, oct, icos. For asymmetric reconstruction ommit this option or specify c1.""", guitype='symbox', row=4, col=0, rowspan=1, colspan=2)
 	
-	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="""Optionally 
-		shrink the input particles by an integer amount prior to computing similarity scores. 
-		For speed purposes. Default=0, no shrinking""", guitype='shrinkbox', row=5, col=0, 
-		rowspan=1, colspan=1)
+	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="""Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes. Default=0, no shrinking""", guitype='shrinkbox', row=5, col=0, rowspan=1, colspan=1)
 
-	parser.add_argument("--mask",type=str,help="""Mask processor applied to particles before alignment. 
-		Default is mask.sharp:outer_radius=-2. IF using --clipali, make sure to express outer mask radii as negative 
-		pixels from the edge.""", returnNone=True, default="mask.sharp:outer_radius=-2", guitype='comboparambox', 
-		choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=11, col=0, 
-		rowspan=1, colspan=3)
+	parser.add_argument("--mask",type=str,help="""Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2. IF using --clipali, make sure to express outer mask radii as negative pixels from the edge.""", returnNone=True, default="mask.sharp:outer_radius=-2", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=11, col=0, rowspan=1, colspan=3)
 	
-	parser.add_argument("--maskfile",type=str,default=None,help="""Mask file (3D IMAGE) 
-		applied to particles before alignment. Must be in HDF format. Default is None.""")
+	parser.add_argument("--maskfile",type=str,default='',help="""Mask file (3D IMAGE) applied to particles before alignment. Must be in HDF format. Default is None.""")
 	
-	parser.add_argument("--normproc",type=str,default='',help="""Normalization processor 
-		applied to particles before alignment. Default is to use normalize. 
-		If normalize.mask is used, results of the mask option will be passed in automatically. 
-		If you want to turn this option off specify \'None\'""")
+	parser.add_argument("--normproc",type=str,default='',help="""Normalization processor applied to particles before alignment. Default is to use normalize. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'""")
 	
-	parser.add_argument("--threshold",default='',type=str,help="""A threshold applied to 
-		the subvolumes after normalization. For example, --threshold=threshold.belowtozero:minval=0 
-		makes all negative pixels equal 0, so that they do not contribute to the correlation score.""", 
-		guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', 
-		row=10, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--threshold",default='',type=str,help="""A threshold applied to the subvolumes after normalization. For example, --threshold=threshold.belowtozero:minval=0 makes all negative pixels equal 0, so that they do not contribute to the correlation score.""", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3)
 	
-	parser.add_argument("--preprocess",default='',type=str,help="""Any processor (as in e2proc3d.py) 
-		to be applied to each volume prior to COARSE alignment. Not applied to aligned particles 
-		before averaging.""", guitype='comboparambox', 
-		choicelist='re_filter_list(dump_processors_list(),\'filter\')', 
-		row=10, col=0, rowspan=1, colspan=3)
-	
-	#parser.add_argument("--preprocessfine",type=str,help="Any processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.", default=None)
-	
-	parser.add_argument("--lowpass",type=str,default='',help="""A lowpass filtering processor 
-		(as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. 
-		Not applied to aligned particles before averaging.""", guitype='comboparambox', 
-		choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=17, col=0, 
-		rowspan=1, colspan=3)
-	
-	#parser.add_argument("--lowpassfine",type=str,help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.", default=None)
-
-	parser.add_argument("--highpass",type=str,default='',help="""A highpass filtering processor 
-		(as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. 
-		Not applied to aligned particles before averaging.""", guitype='comboparambox', 
-		choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=18, col=0, 
-		rowspan=1, colspan=3)
-	
-	#parser.add_argument("--highpassfine",type=str,help="A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.", default=None)
-
-	parser.add_argument("--clipali",type=int,default=0,help="""Boxsize to clip particles 
-		as part of preprocessing to speed up alignment. For example, the boxsize of the 
-		particles might be 100 pixels, but the particles are only 50 pixels in diameter. 
-		Aliasing effects are not always as deleterious for all specimens, and sometimes 2x 
-		padding isn't necessary; still, there are some benefits from 'oversampling' the 
-		data during averaging; so you might still want an average of size 2x, but perhaps 
-		particles in a box of 1.5x are sufficiently good for alignment. In this case, 
-		you would supply --clipali=75""")
-	
-	#parser.add_argument("--postprocess",type=str,help="A processor to be applied to the FINAL volume after averaging the raw volumes in their FINAL orientations, after all iterations are done.",default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=16, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
-	
-	
-	parser.add_argument("--savepreprocessed",action="store_true", help="""Will save stacks 
-		of preprocessed particles (one for coarse alignment and one for fine alignment 
-		if preprocessing options are different).""", default=False)
-
-	parser.add_argument("--average",action='store_true',default=False,help="""If supplied and a stack
-		is provided through --input, the aveage of the aligned and/or symmetrized stack will also be saved. 
-		Default=False.""")
-	
-	parser.add_argument("--keep",type=float,default=1.0,help="""Fraction of particles to
-		include if --average is on, after correlating the particles with the average.""")
-	
-	parser.add_argument("--avgiter",type=int,default=1,help="""Default=1. If --keep is different from 1.0
-		and --average is on, the initial average will include all the particles, but then 
-		the percent specified by keep will be kept (the rest thrown away) and a new average
-		will be computed. If --avgiter > 1, this new average will be compared again against 
-		all the particles. The procedure will be repeated for however many iterations --avgiter
-		is given, or the process will stop automatically if in two consecutive rounds exactly
-		the same particles are kept""") 
-	
-	parser.add_argument('--subset',type=int,default=0,help="""Number of particles in a subset 
-		of particles from the --input stack of particles to run the alignments on.""")
-	
-	parser.add_argument("--steps", dest="steps", type = int, default=10, help="""Number of 
-		steps (for the MC). Default=10.""", guitype='intbox', row=5, col=1, rowspan=1, colspan=1)
-	
-	parser.add_argument("--symmetrize", default=False, action="store_true", help="""Symmetrize 
-		volume after alignment.""", guitype='boolbox', row=6, col=0, rowspan=1, colspan=1)
-	
-	parser.add_argument("--cmp",type=str,help="""The name of a 'cmp' to be used in comparing 
-		the symmtrized object to unsymmetrized""", default="ccc", guitype='comboparambox', 
-		choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=7, col=0, rowspan=1, 
-		colspan=2)
-	
-	parser.add_argument("--parallel","-P",type=str,help="""Run in parallel, 
-		specify type:<option>=<value>:<option>:<value>""",default=None, guitype='strbox', 
-		row=8, col=0, rowspan=1, colspan=2)
-	
-	parser.add_argument("--ppid", type=int, help="""Set the PID of the parent process, 
-		used for cross platform PPID.""",default=-1)
-
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",
-		type=int, default=0, help="""verbose level [0-9], higner number means higher 
-		level of verboseness.""")
-
-	#parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", default="mask.sharp:outer_radius=-2")
-	
-	parser.add_argument("--nopath",action='store_true',default=False,help="""If supplied,
-		this option will save results in the directory where the command is run. A directory
-		to store the results will not be made.""")
+	parser.add_argument("--preprocess",default='',type=str,help="""Any processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.""", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3)
 		
-	parser.add_argument("--nolog",action='store_true',default=False,help="""If supplied,
-		this option will prevent logging the command run in .eman2log.txt.""")
+	parser.add_argument("--lowpass",type=str,default='',help="""A lowpass filtering processor (from e2proc3d.py; see e2help.py processors) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.""", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=17, col=0, rowspan=1, colspan=3)
+	
+	parser.add_argument("--highpass",type=str,default='',help="""A highpass filtering processor (from e2proc3d.py, see e2help.py processors) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.""", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=18, col=0, rowspan=1, colspan=3)
+	
+	parser.add_argument("--clipali",type=int,default=0,help="""Boxsize to clip particles as part of preprocessing to speed up alignment. For example, the boxsize of the particles might be 100 pixels, but the particles are only 50 pixels in diameter. Aliasing effects are not always as deleterious for all specimens, and sometimes 2x padding isn't necessary; still, there are some benefits from 'oversampling' the data during averaging; so you might still want an average of size 2x, but perhaps particles in a box of 1.5x are sufficiently good for alignment. In this case, you would supply --clipali=75""")
 		
+	parser.add_argument("--savepreprocessed",action="store_true", default=False, help="""Default=False. Will save stacks of preprocessed particles (one for coarse alignment and one for fine alignment if preprocessing options are different).""")
+
+	parser.add_argument("--average",action='store_true',default=False,help="""Default=False. If supplied and a stack is provided through --input, the average of the aligned and/or symmetrized stack will also be saved.""")
+	
+	parser.add_argument("--averager",type=str,default="mean.tomo",help="""Default=mean.tomo. The type of averager used to produce the class average. Default=mean.tomo.""")
+	
+	parser.add_argument("--keep",type=float,default=1.0,help="""Fraction of particles to include if --average is on, after correlating the particles with the average.""")
+	
+	parser.add_argument("--keepsig", action="store_true", default=False,help="""Default=False. Causes theoptions.keep argument to be interpreted in standard deviations.""", guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
+	
+	parser.add_argument("--avgiter",type=int,default=1,help="""Default=1. If --keep is different from 1.0 and --average is on, the initial average will include all the particles, but then the percent specified byoptions.keep will be kept (the rest thrown away) and a new average will be computed. If --avgiter > 1, this new average will be compared again against all the particles. The procedure will be repeated for however many iterations --avgiter is given, or the process will stop automatically if in two consecutive rounds exactly the same particles are kept""") 
+	
+	parser.add_argument('--subset',type=int,default=0,help="""Number of particles in a subset of particles from the --input stack of particles to run the alignments on.""")
+	
+	parser.add_argument("--steps", dest="steps", type = int, default=10, help="""Number of steps (for the MC). Default=10.""", guitype='intbox', row=5, col=1, rowspan=1, colspan=1)
+	
+	parser.add_argument("--symmetrize", default=False, action="store_true", help="""Symmetrize volume after alignment.""", guitype='boolbox', row=6, col=0, rowspan=1, colspan=1)
+	
+	parser.add_argument("--cmp",type=str,help="""The name of a 'cmp' to be used in comparing the symmtrized object to unsymmetrized""", default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', True)', row=7, col=0, rowspan=1, colspan=2)
+	
+	parser.add_argument("--parallel","-P",type=str,help="""Run in parallel, specify type:<option>=<value>:<option>:<value>""",default=None, guitype='strbox', row=8, col=0, rowspan=1, colspan=2)
+	
+	parser.add_argument("--ppid", type=int, help="""Set the PID of the parent process, used for cross platform PPID.""",default=-1)
+
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="""verbose level [0-9], higner number means higher level ofoptions.verboseness.""")
+	
+	parser.add_argument("--nopath",action='store_true',default=False,help="""If supplied, this option will save results in the directory where the command is run. A directory to store the results will not be made.""")
+		
+	parser.add_argument("--nolog",action='store_true',default=False,help="""If supplied, this option will prevent logging the command run in .eman2log.txt.""")
+	
+	parser.add_argument("--saveali",action='store_true',default=False,help="""Save the stack of aligned/symmetrized particles.""")
+	
+	parser.add_argument("--savesteps",action='store_true',default=False,help="""If --avgiter > 1, save all intermediate averages and intermediate aligned kept stacks.""")
+	
 	(options, args) = parser.parse_args()
-
-
-	
-	if ".hdf" not in options.output and ".mrc" not in options.output:
-		print "ERROR. The output must contain a valid format ending, for example '.hdf.' TERMINATING!"
-		sys.exit()
 	
 	if not options.input:
 		parser.print_help()
@@ -196,87 +123,49 @@ def main():
 		logid=E2init(sys.argv,options.ppid)
 		log = 1
 
-	
 	#inimodeldir = os.path.join(".",options.path)
 	#if not os.access(inimodeldir, os.R_OK):
 	#	os.mkdir(options.path)
 	
 	#Make directory to save results
-	
 	from e2spt_classaverage import sptmakepath
 	options = sptmakepath(options,'symsearch')
 	
 	if options.nopath:
 		options.path = '.'
 	
-	#Import preprocessing function
-	from e2spt_classaverage import preprocessing	
-	
-	#Import parallelization class
+	from e2spt_classaverage import preprocessing		
 	from EMAN2PAR import EMTaskCustomer
+	from e2spt_classaverage import sptOptionsParser
+
+	options = sptOptionsParser( options )
+	
+	avgr = Averagers.get( options.averager[0], options.averager[1 ])
+	results = {}
+	scores=[]
+	
+	outputstack = options.path + '/allPtclsAli.hdf'
 	
 	#Determine number of particles in the stack
 	n = EMUtil.get_image_count( options.input )
-
-	#Iterate over particles in stack
+	if options.subset and options.subset < n:
+		n = options.subset
+	
 	for i in range(n):
 	
 		print "\nI'll look for symmetry in particle number",i
-		#Load particle
+		#Load particle and make a copy to modify if preprocessing options are specified
 		volume = EMData(options.input,i)
-		
-		preproc = 0
 		preprocvol = volume.copy()
 		
 		#Preprocess volume if any preprocessing options are specified
-		if options.shrink or options.mask or options.lowpass or options.highpass or options.normproc or options.preprocess or options.threshold or options.clipali:
+		if (options.shrink and options.shrink > 1) or options.mask or options.lowpass or options.highpass or options.normproc or options.preprocess or options.threshold or options.clipali:
 			print "\nHowever, I will first preprocess particle number",i
-			#Parse preprocessing parameters in a way that the preprocessing function will be able to apply them
-			
-			if options.normproc and i == 0: 
-				print "parsing normproc"
-				options.normproc=parsemodopt(options.normproc)
-	
-			if options.mask and i == 0: 
-				print "parsing mask"
-
-				options.mask=parsemodopt(options.mask)
-	
-			if options.preprocess and i == 0:
-				print "parsing preproc"
- 
-				options.preprocess=parsemodopt(options.preprocess)
-		
-			if options.threshold and i == 0: 
-				print "parsing thresh"
-
-				options.threshold=parsemodopt(options.threshold)
-
-			if options.lowpass and i == 0:
-				print "parsing lowpass"
- 
-				options.lowpass=parsemodopt(options.lowpass)
-	
-			if options.highpass and i == 0: 
-				print "parsing highpass"
-
-				options.highpass=parsemodopt(options.highpass)
-		
 			
 			print "\nWill call preprocessing on ptcl",i
-			#preprocvol = preprocessing(options, preprocvol)		
 			preprocvol = preprocessing(preprocvol,options,options.mask,options.clipali,options.normproc,options.shrink,options.lowpass,options.highpass,options.preprocess,options.threshold,i)
 			
 			print "\nDone preprocessing on ptcl",i
-			preproc = 1
-			
-			#Save the preprocessed volume for inspection if desired
-			#if options.savepreprocessed:
-			#	print "Saving preproc ptcl",i
-			#	outpreproc = options.path + '/' + options.input.replace('.hdf','_preproc.hdf')
-			#	preprocvol.write_image(outpreproc,-1)
-				
-		#Initialize parallelism if being used
 		
 		if options.parallel :
 			etc=EMTaskCustomer(options.parallel)
@@ -284,76 +173,174 @@ def main():
 			etc=EMTaskCustomer("thread:1")
 		
 		symalgorithm = SymALignStrategy( preprocvol, options.sym, options.steps, options.cmp, etc)
-		symxform = symalgorithm.execute()
+		ret = symalgorithm.execute()
+		symxform = ret[0]
+		score = ret[1]
+		scores.append( score )
+		results.update( { score:[symxform,i] } )
 	
-		print "\nWriting out put for best alignment found for particle number",i
+		print "\nWriting output for best alignment found for particle number",i
 		
-		output = None
-		if preproc:
+		if options.shrink and options.shrink > 1:
 			trans = symxform.get_trans()
-			symxform.set_trans(trans[0]*options.shrink, trans[1]*options.shrink, trans[2]*options.shrink)
-			output = EMData(options.input,i)
-			output.process_inplace('xform',{'transform':symxform})
-			print "\nApplying this transform to particle",symxform
-			output.set_attr('symxform', symxform)	# Obviously only HDF or BDB files will contain this metadata
-			if options.symmetrize:
-				output = output.process('xform.applysym',{'sym':options.sym})
-		else:
-			output = volume.process('xform',{'transform':symxform})
-			output.set_attr('symxform', symxform)	# Obviously only HDF or BDB files will contain this metadata
-			print "\nApplying this transform to particle",symxform
-			if options.symmetrize:
-				output = output.process('xform.applysym',{'sym':options.sym})
-			
-		#if inimodeldir =='./' or inimodeldir.upper == './NONE': # That is to say no directory is wanted (--path='')
-		#	output.write_image(options.output)
-		#else:
-		#	print "WHT%sZZZ"%inimodeldir
-		#	output.write_image(os.path.join(inimodeldir, options.output))
-		
-			
-		if output:
-			print "\nWrittng to output ptcl",i
-			output.write_image(options.path + '/' + options.output,-1)
+			symxform.set_trans(trans[0]*options.shrink, trans[1]*options.shrink, trans[2]*options.shrink)	
+				
+		print "\nWrittng to output ptcl",i
 	
-	
-	"""	
-	if options.mask:
-		volume.mult(mask)
-	if options.shrink:
-		volume.process_inplace("math.meanshrink",{"n":options.shrink})
-		
-	symalgorithm = SymALignStrategy(volume, options.sym, options.steps, options.cmp, etc)
-	symxform = symalgorithm.execute()
-	
-	print "Found Best alignment, now writting output..."
-	if options.shrink:
-		trans = symxform.get_trans()
-		symxform.set_trans(trans[0]*options.shrink, trans[1]*options.shrink, trans[2]*options.shrink)
-		output = EMData(options.input)
-		output.process_inplace('xform',{'transform':symxform})
-		output.set_attr('symxform', symxform)	# Obviously only HDF or BDB files will contain this metadata
-		if options.symmetrize:
-			print "symmetrize output"
-			output = output.process('xform.applysym',{'sym':options.sym})
-	else:
+		#Rotate volume to the best orientation found, set the orientation in the header, apply symmetry if specified and write out the aligned (and symmetrized) particle to the output stack
 		output = volume.process('xform',{'transform':symxform})
-		output.set_attr('symxform', symxform)	# Obviously only HDF or BDB files will contain this metadata
+		output.set_attr('symxform', symxform)
+		print "\nApplying this transform to particle",symxform
 		if options.symmetrize:
-			print "symmetrize output"
 			output = output.process('xform.applysym',{'sym':options.sym})
-			
-	if inimodeldir =='./' or inimodeldir.upper == './NONE': # That is to say no directory is wanted (--path='')
-		output.write_image(options.output)
-	else:
-		print "WHT%sZZZ"%inimodeldir
-		output.write_image(os.path.join(inimodeldir, options.output))
-	"""
 	
+		output.write_image( outputstack, -1)
+		
+		#Averaging here only makes sense if all particles are going to be kept. Otherwise, different code is needed (below)
+		if options.average and options.keep == 1.0 and not options.keepsig:
+			avgr.add_image( output )
+
+	#Finalize average of all particles if non were set to be excluded. Otherwise, determine the discrimination threshold and then average the particles that pass it.
+	if options.average: 
+		if options.keep == 1.0 and not options.keepsig:		
+			finalAvg = avgr.finish()
+	
+			finalAvg['origin_x']=0
+			finalAvg['origin_y']=0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
+			finalAvg['origin_z']=0
+			finalAvg['xform.align3d'] = Transform()
+	
+			finalAvg.write_image( options.path + '/finalAvg.hdf' , 0)
+			
+			if options.avgiter > 1:
+				print """WARNING: --avgiter > 1 must be accompanied by --keepsing, or by --keep < 1.0"""
+	
+		elif options.keep < 1.0 or options.keepsig:
+			#print "Keep is", options.keep
+			#print "Andoptions.keepsig", options.keepsig
+		
+			#currentscores = []
+			#print "Scores type is", type(scores)
+			#print "len is", len(scores)
+			#print "Initial scores are", scores
+			#meanscore = sum(scores)/len(scores)
+			#print "Mean score", meanscore
+						
+			for it in range( options.avgiter ):
+				print "Averaging iteration", it
+	
+				ret = calcScores( outputstack, avg, results )
+				scores = ret[0]
+				results = ret[1]
+				
+				meanscore = sum(scores)/len(scores)
+				print "Final mean score is", meanscore
+								
+				if it == options.avgiter -1:
+					avg.write_image( options.path + '/finalAvg.hdf', 0)
+
 	if log:
 		E2end(logid)
 	
 	return
+	
+
+def calcScores( stack, avg, results):
+	
+	newresults = {}
+	
+	scores = []
+	print "Stack is", stack
+	n = EMUtil.get_image_count( stack )
+	
+	i=0
+	for r in results:
+	
+		indx = results[r][-1]
+	
+		img = EMData( stack, indx )
+	
+		ccmap = avg.calc_ccf( img )
+		ccmap.process_inplace('normalize')
+		score = ccmap.get_value_at(0,0) * -1
+		scores.append( score )
+		
+		t = results[r][0]
+		
+		newresults.update( { score:[t,indx] } )
+	
+		i+=1
+		
+	return [ scores, newresults ]
+
+
+def makeSsaAverage( options, scores, results, it ):
+	thresh = 1.0
+	if options.keep < 1.0 and options.average:
+		#print "p[0]['score'] is", align_parms[0]['score']
+		print "Len of align_parms is", len(scores)
+	
+		vals=[]
+		for p in scores:
+			vals.append( p )
+	
+		vals.sort()
+		thresh = vals[ int(options.keep * len(vals) ) - 1]
+		if options.verbose: 
+			print "Keep threshold : %f (min=%f  max=%f)"%(thresh,vals[0],vals[-1])
+
+	if options.keepsig and options.average:		
+		vals=[]
+		vals2=[]
+		for p in scores:
+			vals.append( p )
+			vals2.append(p ** 2)
+		
+		val = sum(vals)
+		val2 = sum(vals2)
+
+		mean = val/len( scores )
+		sig = sqrt(val2/len( scores )-mean*mean )
+		thresh = mean+sig* options.keep
+		if options.verbose: 
+			print "\nKeep threshold : %f (mean=%f  sigma=%f)"%(thresh,mean,sig)	
+
+	if thresh < 0.0 :
+		avgr = Averagers.get( options.averager[0], options.averager[1 ])
+	
+		print "Threshold is", thresh
+		print "and scores are", scores
+		for s in scores:
+			if s < thresh:
+				print "Score kept", s
+			indx =  results[ s ][-1]
+			a = EMData( options.input, indx )
+			
+			if it == options.avgiter -1:
+				a.write_image( options.path + '/keptPtclsRaw_' + str(it).zfill( len( str( options.avgiter))) + '.hdf', -1 )
+			
+			t = results[ s ][0]
+			a.transform( t )
+			#a = a.process('xform',{'transform':symxform})
+			avgr.add_image( a )
+			
+			if options.symmetrize:
+				a = a.process('xform.applysym',{'sym':options.sym})
+			
+			if options.saveali and it == options.avgiter -1:
+				a.write_image( options.path + '/keptPtclsAli_' + str(it).zfill( len( str( options.avgiter))) + '.hdf', -1 )
+
+		ssaavg = avgr.finish()
+	
+		if options.symmetrize:
+			ssaavg = ssaavg.process('xform.applysym',{'sym':options.sym})
+	
+		ssaavg['origin_x']=0
+		ssaavg['origin_y']=0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
+		ssaavg['origin_z']=0
+		ssaavg['xform.align3d'] = Transform()
+	
+	return ssaavg
 
 
 # Use strategy pattern here. Any new stategy needs to inherit this
@@ -411,7 +398,7 @@ class SymALignStrategy(Strategy):
 				bestscore = soln.get_attr('score')
 				bestxform = soln.get_attr('xform.align3d')
 				
-		return bestxform
+		return [bestxform, bestscore]
 		
 		
 class SymAlignTask(JSTask):
@@ -431,3 +418,29 @@ jsonclasses["SymAlignTask"]=SymAlignTask.from_jsondict
 
 if __name__ == "__main__":
     main()
+    
+    
+    
+"""
+PROGRAM SCRAPS
+
+	'''
+		output = None
+		if preproc:
+			trans = symxform.get_trans()
+			symxform.set_trans(trans[0]*options.shrink, trans[1]*options.shrink, trans[2]*options.shrink)
+			output = EMData(options.input,i)
+			output.process_inplace('xform',{'transform':symxform})
+			print "\nApplying this transform to particle",symxform
+			output.set_attr('symxform', symxform)	# Only HDF files will contain this metadata
+			if options.symmetrize:
+				output = output.process('xform.applysym',{'sym':options.sym})
+		else:
+			output = volume.process('xform',{'transform':symxform})
+			output.set_attr('symxform', symxform)	# Only HDF files will contain this metadata
+			print "\nApplying this transform to particle",symxform
+			if options.symmetrize:
+				output = output.process('xform.applysym',{'sym':options.sym})
+		'''
+
+"""
