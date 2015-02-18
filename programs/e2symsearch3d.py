@@ -280,8 +280,7 @@ def calcScores( stack, avg, results):
 def makeSsaAverage( options, scores, results, it ):
 	thresh = 1.0
 	if options.keep < 1.0 and options.average:
-		#print "p[0]['score'] is", align_parms[0]['score']
-		print "Len of align_parms is", len(scores)
+		print "Len of scores is", len(scores)
 	
 		vals=[]
 		for p in scores:
