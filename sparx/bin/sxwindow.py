@@ -38,10 +38,7 @@ from EMAN2db import *
 from EMAN2jsondb import *
 from emboxerbase import *
 
-from utilities import *
-from fundamentals import *
-from filter import *
-from global_def import *
+from sparx import *
 
 """
 This program is used to window particles from a micrograph. The coordinates of the particles are given as input.
@@ -79,46 +76,15 @@ def check_options(options, progname):
 	if options.coords_format == None:
 		print "\nCoordinate file format must be specified with option --coords_format. Type %s -h for help.\n" % progname
 		sys.exit()
-	else:
-		if options.coords_format.lower() == 'json' and options.coords_keys == None:
-			print "\nKey must be specified with option --coords_keys for JSON format. Type %s -h for help.\n" % progname
-			sys.exit()
-	
-		if options.coords_format.lower() == 'textrow' and len(options.coords_keys.split()) != 2:
-			print "\nPair of column numbers must be specified with option --coords_keys for textrow format. Type %s -h for help.\n" % progname
-			sys.exit()
+	# else:
+	# 	if options.coords_format.lower() == 'json' and options.coords_keys == None:
+	# 		print "\nKey must be specified with option --coords_keys for JSON format. Type %s -h for help.\n" % progname
+	# 		sys.exit()
+	# 
+	# 	if options.coords_format.lower() == 'textrow' and len(options.coords_keys.split()) != 2:
+	# 		print "\nPair of column numbers must be specified with option --coords_keys for textrow format. Type %s -h for help.\n" % progname
+	# 		sys.exit()
 
-
-class CoordHandler:
-	def __init__(self, str):
-		pass
-	def get_coords(self, fname):
-		pass
-	
-class JSONCoord(CoordHandler):
-	def __init__(self,str):
-		self.key = str
-	def get_coords(self, fname):
-		coords = js_open_dict(fname)[self.key]
-		
-		for i in range(len(coords)):
-			coords[i] = [coords[i][0],coords[i][1]]
-		
-		return coords
-		
-class TXTCoord(CoordHandler):
-	def __init__(self,str):
-		spl = str.split()
-		self.iX = int(spl[0]) - 1
-		self.iY = int(spl[1]) - 1
-		
-	def get_coords(self, fname):
-		lines = read_text_row(fname)
-		coords=[]
-		for i in range(len(lines)):
-			coords.append([lines[i][self.iX],lines[i][self.iY]])
-			
-		return coords	
 
 
 def main():
@@ -127,30 +93,32 @@ def main():
 
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " [micrographs list] ...  --coords_dir=coords_dir  --importctf=ctf_file  --indir=input_dir" + \
-	                                          "  --input_pixel=input_pixel  --new_apix=new_apix --box_size=box_size" + \
+	                                          "  --input_pixel=input_pixel  --new_pixel=new_pixel --box_size=box_size" + \
 	                                          "  --outdir=outdir  --outsuffix=outsuffix  --micsuffix=micsuffix" + \
-	                                          "  --nameroot=nameroot  --invert=invert"
+	                                          "  --nameroot=nameroot --limitctf --invert"
 
 	parser = OptionParser(usage, version=SPARXVERSION)
 
 	parser.add_option('--coords_dir',       dest='coordsdir',                 help='Directory containing files with particle coordinates.')
 	parser.add_option('--coords_suffix',                   default="",        help='Suffix of coordinate files. For example "_ptcls".')
 	parser.add_option('--coords_extension',                                   help='File extension of coordinate files. For example "json", "box" ...') # required
-	parser.add_option('--coords_format',                                      help='Format of coordinates file, "json" or "textrow". Also, see suboptions specified by option --coords_keys\n' +
-																					'All files must have the same basename with their corresponing micrographs.')
-	parser.add_option('--coords_keys',                                        help='If --coords_format is json, key must be provided via --coords_keys. Typically, it is "boxes" if coordinates were produced by e2boxer\n' +
-																		           'If --coords_format is textrow, column numbers of x and y must be provided via --coords_keys. Ex. "1 2"')
+	# parser.add_option('--coords_format',                                      help='Format of coordinates file, "json" or "textrow". Also, see suboptions specified by option --coords_keys\n' +
+	# 																				'All files must have the same basename with their corresponing micrographs.')
+	parser.add_option('--coords_format',                                      help='Format of coordinates file, "sparx" or "eman2". Sparx format is two columns with coordinates of particle centers. Eman2 format has two columns. The first two are coordinates of particle box conner next to the original box size.')
+	# parser.add_option('--coords_keys',                                        help='If --coords_format is json, key must be provided via --coords_keys. Typically, it is "boxes" if coordinates were produced by e2boxer\n' +
+	# 																	           'If --coords_format is textrow, column numbers of x and y must be provided via --coords_keys. Ex. "1 2"')
 	
 	parser.add_option("--indir",            type="string", default= ".",      help="Directory containing micrographs to be processed.")
 	parser.add_option('--importctf',                                          help='File name with CTF parameters produced by sxcter.')
+	parser.add_option("--limitctf",         action="store_true", default=False,     help="Filter micrographs based on the CTF limit.")
 	parser.add_option('--input_pixel',      type=float,    default=1.0,       help='input pixel size')
-	parser.add_option("--new_apix",         type=float,    default=-1.0,      help="New target pixel size to which the micrograph should be resampled. Default is -1, in which case there is no resampling.")
+	parser.add_option("--new_pixel",         type=float,    default=-1.0,      help="New pixel size to which the micrograph should be resampled. Default is -1, in which case there is no resampling.")
 	parser.add_option('--box_size',         type=int,      default=256,       help='x and y dimension in pixels of square area to be windowed. Pixel size is assumed to be new_pixel_size.')
 	parser.add_option('--outdir',                                             help='Output directory')
 	parser.add_option('--outsuffix',        type=str,      default="_ptcls",  help="Suffix for output stack, e.g. '_ptcls' etc.")	
 	parser.add_option("--micsuffix",        type=str,      default="hdf",     help="A string denoting micrograph type. For example 'mrc', 'hdf', 'ser' ...")
 	parser.add_option("--nameroot",         type="string", default="",        help="Prefix of micrographs to be processed.")
-	parser.add_option("--invert",                          default=False,     help="If writing output inverts pixel intensities")
+	parser.add_option("--invert",           action="store_true", default=False, help="Invert image contrast (recommended for cryo data)")
 	                                        
 	parser.add_option("--defocuserror",     type="float",  default=1000000.0, help="Exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent.  The error is computed as (std dev defocus)/defocus*100%")
 	parser.add_option("--astigmatismerror", type="float",  default=360.0,     help="Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees.")
@@ -159,18 +127,22 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	box_size = options.box_size
+	box_half = box_size // 2
 	options.micsuffix = "." + options.micsuffix
 	cterr = [options.defocuserror/100.0, options.astigmatismerror]
 	
-	new_pixel_size = options.new_apix
+	new_pixel_size = options.new_pixel
 	if new_pixel_size < 0: new_pixel_size = options.input_pixel
 	
 	check_options(options, progname)
 	
-	if options.coords_format.lower() == 'json':
-		coord=JSONCoord(options.coords_keys)
-	if options.coords_format.lower() == 'textrow':
-		coord=TXTCoord(options.coords_keys)
+	
+	# if options.coords_format.lower() == 'eman2':
+	#	coord=JSONCoord(options.coords_keys)
+	#if options.coords_format.lower() == 'oldeman2':
+	#	coord=JSONCoord(options.coords_keys)
+	#if options.coords_format.lower() == 'sparx' :
+	#	coord=read_text_row(fname)
 
 	extension_coord = options.coords_suffix + "." + options.coords_extension
 	
@@ -229,13 +201,26 @@ def main():
 
 		print "\nProcessing micrograph %s... Path: %s... Coordinates file %s" % (basename, f_mic, f_info)
 	
-# 		coords = js_open_dict(f_info)["boxes"]
-		coords = coord.get_coords(f_info)
+## 		coords = js_open_dict(f_info)["boxes"]
+# 		coords = coord.get_coords(f_info)
+		
+		if options.coords_format.lower() == 'eman2':
+			coords = read_text_row(f_info)
+			for i in range(len(coords)):
+				coords[i] = [coords[i][0] + coords[i][2]//2  ,coords[i][1] + coords[i][3]//2]
+		elif options.coords_format.lower() == 'sparx' :
+			coords = read_text_row(f_info)
 		
 		immic = get_im(f_mic)
 		
 		resample_ratio = options.input_pixel/new_pixel_size
-		immic = filt_gaussh( immic, resample_ratio/box_size )
+		fftip(immic)
+		if options.limitctf:
+			q1, q2 = ctflimit(box_size,ctf[0],ctf[1],ctf[2],new_pixel_size)
+			# This is absolute frequency of the CTF limit in the scale of original micrograph
+			q1 = (ctf[3] / new_pixel_size) * q1/float(box_size)
+			immic = filt_tanl(immic, q1, 0.01)
+		immic = fft(filt_gaussh( immic, resample_ratio/box_size ))
 		
 		if new_pixel_size != options.input_pixel:
 			# Resample micrograph, map coordinates, and window segments from resampled micrograph using new coordinates
@@ -266,11 +251,15 @@ def main():
 		y0 = immic.get_ysize()//2
 
 		otcl_images  = "bdb:%s/" % options.outdir + basename + options.outsuffix
+		ind = 0
 		for i in range(len(coords)):
 
 			x = int(coords[i][0])
 			y = int(coords[i][1])
-			imw = Util.window(immic, box_size, box_size, 1, x-x0, y-y0)
+			if( (x-x0-box_half >= 0) and ( x-x0+box_half <= x0 ) and (y-y0-box_half >= 0) and ( y-y0+box_half <= y0 ) ):
+				imw = Util.window(immic, box_size, box_size, 1, x-x0, y-y0)
+			else:
+				continue
 			
 			imw = ramp(imw)
 			stat = Util.infomask( imw, mask, False )
@@ -285,7 +274,8 @@ def main():
 			imw.set_attr("pixel_size_orig", options.input_pixel)
 			imw.set_attr("ptcl_source_image", f_mic)
 
-			imw.write_image(otcl_images, i)
+			imw.write_image(otcl_images, ind)
+			ind += 1
 
 if __name__=='__main__':
 	main()
