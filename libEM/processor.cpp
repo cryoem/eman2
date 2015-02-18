@@ -5763,13 +5763,16 @@ void AutoMask2DProcessor::process_inplace(EMData * image)
 	int i,j;
 	size_t l = 0;
 
-	if (verbose) printf("%f\t%f\t%f\n",(float)image->get_attr("mean"),(float)image->get_attr("sigma"),threshold);
+	if (verbose) printf("%f\t%f\t%f\t%d\n",(float)image->get_attr("mean"),(float)image->get_attr("sigma"),threshold,nmaxseed);
 
 	// Seeds with the highest valued pixels
 	if (nmaxseed>0) {
-		vector<Pixel> maxs=image->calc_n_highest_locations(nmaxseed);
-
+		EMData *peaks=image->process("mask.onlypeaks",Dict("npeaks",0));		// only find true peak values (pixels surrounded by lower values)
+		vector<Pixel> maxs=peaks->calc_n_highest_locations(nmaxseed);
+		delete peaks;
+		
 		for (vector<Pixel>::iterator i=maxs.begin(); i<maxs.end(); i++) {
+			if ((*i).x==0 || (*i).y==0 ) continue;		// generally indicates a failed peak search, and regardless we don't really want edges
 			amask->set_value_at((*i).x,(*i).y,0,1.0);
 			if (verbose) printf("Seed at %d,%d,%d (%1.3f)\n",(*i).x,(*i).y,(*i).z,(*i).value);
 		}
@@ -6176,10 +6179,11 @@ void ToCenterProcessor::process_inplace(EMData * image)
 	// if the mask failed, we revert to the thresholded, but unmasked image
 	if (nz==1 && (float)image3->get_attr("sigma")==0) {
 		delete image3;
-//		image3=image2->process("math.linearpyramid");
+		image3=image2->process("math.linearpyramid");
 		image3->add(9.0f);		// we comress the pyramid from .9-1
 		image3->mult(0.9f);
 		image3->process_inplace("mask.auto2d",Dict("threshold",0.5,"nmaxseed",5));	// should find seed points with a central bias
+//		image3->write_image("dbg3.hdf",-1);
 	}
 		
 	image3->process_inplace("threshold.binary",Dict("value",thr));

@@ -60,11 +60,11 @@ def main():
 	parser.add_argument("--iter", type = int, default=8, help = "The total number of refinement iterations to perform, typically 5-10", guitype='intbox', row=2, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--tries", type=int, default=10, help="The number of different initial models to generate in search of a good one", guitype='intbox', row=2, col=1, rowspan=1, colspan=1)
 	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="Optionally shrink the input particles by an integer factor prior to reconstruction. Default=0, no shrinking", guitype='shrinkbox', row=2, col=2, rowspan=1, colspan=1)
-	parser.add_argument("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos",default="c1", guitype='symbox', row=4, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos",default="c1", guitype='symbox', row=4, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--maskproc", default=None, type=str,help="Default=none. If specified, this mask will be performed after the built-in automask, eg - mask.soft to remove the core of a virus", )
 #	parser.add_argument("--savemore",action="store_true",help="Will cause intermediate results to be written to flat files",default=False, guitype='boolbox', expert=True, row=5, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	parser.add_argument("--orientgen",type=str, default="eman",help="The type of orientation generator. Default is safe. See e2help.py orientgens", guitype='combobox', choicelist='dump_orientgens_list()', expert=True, row=2, col=2, rowspan=1, colspan=1)
+	parser.add_argument("--orientgen",type=str, default="eman:delta=9.0:inc_mirror=0:perturb=1",help="The type of orientation generator. Default is eman:delta=9.0:inc_mirror=0:perturb=1. See e2help.py orientgens", guitype='strbox', expert=True, row=4, col=2, rowspan=1, colspan=1)
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>=<value>. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel",default="thread:1", guitype='strbox', row=6, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -91,6 +91,8 @@ def main():
 	if verbose>0 : print "%d particles %dx%d"%(len(ptcls),boxsize,boxsize)
 	print "Models will be %1.3f A/pix"%apix
 
+	[og_name,og_args] = parsemodopt(options.orientgen)
+
 	try:
 			sfcurve=XYData()
 			sfcurve.read_file("strucfac.txt")
@@ -110,12 +112,7 @@ def main():
 
 	# angles to use for refinement
 	sym_object = parsesym(options.sym)
-#	orts = sym_object.gen_orientations("eman",{"delta":7.5})
-	#orts = sym_object.gen_orientations("rand",{"n":15})
-	if options.orientgen == "rand":
-		orts = sym_object.gen_orientations(options.orientgen,{"n":15})
-	else:
-   		orts = sym_object.gen_orientations(options.orientgen,{"delta":9.0})
+	orts = sym_object.gen_orientations(og_name,og_args)
 
 	logid=E2init(sys.argv,options.ppid)
 	results=[]
