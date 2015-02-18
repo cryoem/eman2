@@ -159,7 +159,7 @@ def main():
 		preprocvol = volume.copy()
 		
 		#Preprocess volume if any preprocessing options are specified
-		if (options.shrink and options.shrink > 1) or options.mask or options.lowpass or options.highpass or options.normproc or options.preprocess or options.threshold or options.clipali:
+		if (options.shrink and options.shrink > 1) or options.mask or options.maskfile or options.lowpass or options.highpass or options.normproc or options.preprocess or options.threshold or options.clipali:
 			print "\nHowever, I will first preprocess particle number",i
 			
 			print "\nWill call preprocessing on ptcl",i
