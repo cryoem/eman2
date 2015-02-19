@@ -55,7 +55,13 @@ def main():
 	
 	#parser.add_argument("--output", dest="output", default="""e2symsearch3d_OUTPUT.hdf""", type=str, help="The name of the output volume", guitype='strbox', filecheck=False, row=1, col=0, rowspan=1, colspan=2)
 	
+	parser.add_argument("--ref",type=str,default='',help="""Default=None. If provided and --average is also provided and --keep < 1.0 or --keepsig is specified, 'good particles' will be determined by correlation to --ref.""")
+	
+	parser.add_argument("--mirror",type=str,default='',help="""Axis across of which to generate a mirrored copy of --ref. All particles will be compared to it in addition to the unmirrored image in --ref if --keepsig is provided or if --keep < 1.0.""")
+	
 	parser.add_argument("--path",type=str, default='', help="""Name of path for output file""", guitype='strbox', row=2, col=0, rowspan=1, colspan=2)
+
+	parser.add_argument("--plots", action='store_true', default=False,help="""Default=False. Turn this option on to generate a plot of the ccc scores if --average is supplied. Running on a cluster or via ssh remotely might not support plotting.""")
 
 	parser.add_argument("--sym", dest = "sym", default="c1", help = """Specify symmetry -choices are: c<n>, d<n>, h<n>, tet, oct, icos. For asymmetric reconstruction ommit this option or specify c1.""", guitype='symbox', row=4, col=0, rowspan=1, colspan=2)
 	
@@ -202,51 +208,59 @@ def main():
 
 	#Finalize average of all particles if non were set to be excluded. Otherwise, determine the discrimination threshold and then average the particles that pass it.
 	if options.average: 
-		if options.keep == 1.0 and not options.keepsig:		
-			finalAvg = avgr.finish()
+			
+		finalAvg = avgr.finish()
+
+		finalAvg['origin_x']=0
+		finalAvg['origin_y']=0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
+		finalAvg['origin_z']=0
+		finalAvg['xform.align3d'] = Transform()
 	
-			finalAvg['origin_x']=0
-			finalAvg['origin_y']=0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
-			finalAvg['origin_z']=0
-			finalAvg['xform.align3d'] = Transform()
-	
+		if options.keep == 1.0 and not options.keepsig:	
 			finalAvg.write_image( options.path + '/finalAvg.hdf' , 0)
 			
 			if options.avgiter > 1:
 				print """WARNING: --avgiter > 1 must be accompanied by --keepsing, or by --keep < 1.0"""
-	
-		elif options.keep < 1.0 or options.keepsig:
-			#print "Keep is", options.keep
-			#print "Andoptions.keepsig", options.keepsig
 		
-			#currentscores = []
-			#print "Scores type is", type(scores)
-			#print "len is", len(scores)
-			#print "Initial scores are", scores
-			#meanscore = sum(scores)/len(scores)
-			#print "Mean score", meanscore
-						
-			for it in range( options.avgiter ):
-				print "Averaging iteration", it
-	
-				avg = makeSsaAverage( options, scores, results, it )
-	
-				ret = calcScores( outputstack, avg, results )
-				scores = ret[0]
-				results = ret[1]
+		elif options.keep < 1.0 or options.keepsig:
+			
+			if options.ref:
+				ref = EMData( options.ref, 0 )
+				refComp( options, outputstack, ref, results, '' )
 				
-				meanscore = sum(scores)/len(scores)
-				
-								
-				if it == options.avgiter -1:
-					print "Final mean score is", meanscore
-					avg.write_image( options.path + '/finalAvg.hdf', 0)
+				if options.mirror:
+					ref.process_inplace('xform.mirror',{'axis': options.mirror })
+					refComp( options, outputstack, ref, results, '_vsMirror')
+			else:
+				ref2compare =  finalAvg
+				refComp( options, outputstack, finalAvg, results, '')	
+			
 
 	if log:
 		E2end(logid)
 	
 	return
 	
+	
+def refComp( options, outputstack, ref2compare, results, mirrortag ):
+	
+	for it in range( options.avgiter ):
+		print "Averaging iteration", it
+		
+		ret = calcScores( outputstack, ref2compare, results )
+		scores = ret[0]
+		results = ret[1]
+		
+		ref2compare = makeSsaAverage( options, scores, results, it )
+		
+		meanscore = sum(scores)/len(scores)
+						
+		if it == options.avgiter -1:
+			print "Final mean score is", meanscore
+			ref2compare.write_image( options.path + '/finalAvg' + mirrotag + '.hdf', 0)
+	
+	return
+
 
 def calcScores( stack, avg, results):
 	
