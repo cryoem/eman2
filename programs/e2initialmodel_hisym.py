@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 #
-# Author: Steven Ludtke, 11/30/2008 (ludtke@bcm.edu)
-# Copyright (c) 2000-2007 Baylor College of Medicine
+# Author: Steven Ludtke, 2/18/15 (sludtke@bcm.edu)
+# Copyright (c) 2015 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -30,7 +30,6 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 #
-
 
 from EMAN2 import *
 import random
@@ -86,8 +85,8 @@ def main():
 	recon=Reconstructors.get("fourier",{"size":padsize,"sym":options.sym,"mode":"gauss_2","verbose":max(options.verbose-2,0)})
 	ptclsf=[]			# particles that have been preprocessed for reconstruction
 	for i in range(len(ptcls)):
-		ptcls[i]=ptcls[i].get_clip(Region((boxsize-padsize)/2,(boxsize-padsize)/2,padsize,padsize))
-		ptclsf.append(recon.preprocess_slice(ptcls[i],Transform()))
+		padded=ptcls[i].get_clip(Region((boxsize-padsize)/2,(boxsize-padsize)/2,padsize,padsize))
+		ptclsf.append(recon.preprocess_slice(padded,Transform()))
 
 	# angles to use for testing
 	[og_name,og_args] = parsemodopt(options.orientgen)
@@ -103,17 +102,39 @@ def main():
 	curmap=EMData(boxsize,boxsize,boxsize)
 	curmap.to_zero()
 	
-	daz=2.0*360.0/(boxsize*pi)		# 1 pixel step at r/2
+	#daz=2.0*360.0/(boxsize*pi)		# 1 pixel step at r/2
+	recon=Reconstructors.get("fourier",{"size":(padsize,padsize,padsize),"sym":options.sym,"mode":"gauss_2","verbose":max(options.verbose-3,0)})
+	daz=3.0							# matches default orientation generator, good enough for an initial model?
 	eulers=[]
-	for n in xrage(len(ptcls):
+	for n in xrange(len(ptcls)):
+		best=(1e100,None,None,None)
+		if options.verbose : print "Particle/average: ",n
 		for ort in orts:
 			for phi in arange(0,359.9,daz):
-				if options.verbose: print ort.get_rotation()["az"],ort.get_rotation()["alt"],phi
-				recon=Reconstructors.get("fourier",{"size":padsize,"sym":options.sym,"mode":"gauss_2","verbose":max(options.verbose-2,0)})
+				if options.verbose>1: print ort.get_rotation()["az"],ort.get_rotation()["alt"],phi, " : ",
+				
+				recon.setup()
+				
+				# we reconstruct the map using a single projection in some test orientation, with symmetry
 				ortins=Transform({"type":"eman","az":ort.get_rotation()["az"],"alt":ort.get_rotation()["alt"],"phi":phi})
 				recon.insert_slice(ptclsf[n],ortins,1.0)
-				
+				trymapf=recon.finish(False)
+				trymap=trymapf.do_ift()
+				trymap.process_inplace("xform.phaseorigin.tocenter")
+				trymap=trymap.get_clip(Region((padsize-boxsize)/2,(padsize-boxsize)/2,(padsize-boxsize)/2,boxsize,boxsize,boxsize))
 	
+				# then we reproject that map to see how well it matches the original image
+				# effectively this is just a very expensive way of doing self-common-lines until we add multiple projections
+				proj=trymap.project("standard",{"transform":ortins})
+#				display((proj,ptcls[n]))
+				sim=proj.cmp("optsub",ptcls[n])
+				
+				best=min((sim,ortins,trymap,trymapf),best)		# keep track of the best orientation
+				
+				if options.verbose>1 : print sim
+				
+	print best
+	best[2].write_image("best.hdf",0)
 
 	E2end(logid)
 

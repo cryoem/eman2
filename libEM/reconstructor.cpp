@@ -389,7 +389,8 @@ void FourierReconstructor::setup()
 {
 	// default setting behavior - does not override if the parameter is already set
 	params.set_default("mode","gauss_2");
-
+	params.set_default("verbose",(int)0);
+	
 	vector<int> size=params["size"];
 
 	nx = size[0];
@@ -455,7 +456,7 @@ void FourierReconstructor::setup()
 
 	load_inserter();
 
-	if ( (bool) params["quiet"] == false )
+	if ( (bool) params["verbose"] )
 	{
 		cout << "3D Fourier dimensions are " << nx << " " << ny << " " << nz << endl;
 		cout << "3D Fourier subvolume is " << subnx << " " << subny << " " << subnz << endl;
@@ -2097,7 +2098,7 @@ void nn4Reconstructor::setup()
 	if( params.has_key( "snr" ) )  m_osnr = 1.0f/float( params["snr"] );
 	else                           m_osnr = 0.0;
 
-	setup( symmetry, size, npad );
+// 	setup( symmetry, size, npad );
 }
 
 void nn4Reconstructor::setup( const string& symmetry, int size, int npad )
