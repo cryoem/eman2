@@ -106,8 +106,11 @@ def main():
 	recon=Reconstructors.get("fourier",{"size":(padsize,padsize,padsize),"sym":options.sym,"mode":"gauss_2","verbose":max(options.verbose-3,0)})
 	daz=3.0							# matches default orientation generator, good enough for an initial model?
 	eulers=[]
+	out=file("dbg.txt","w")
+	allbest=[]
 	for n in xrange(len(ptcls)):
 		best=(1e100,None,None,None)
+		best2=(1e100,None,None,None)
 		if options.verbose : print "Particle/average: ",n
 		for ort in orts:
 			for phi in arange(0,359.9,daz):
@@ -127,18 +130,105 @@ def main():
 				# effectively this is just a very expensive way of doing self-common-lines until we add multiple projections
 				proj=trymap.project("standard",{"transform":ortins})
 #				display((proj,ptcls[n]))
-				sim=proj.cmp("optsub",ptcls[n])
-				
-				best=min((sim,ortins,trymap,trymapf),best)		# keep track of the best orientation
+#				sim=proj.cmp("optsub",ptcls[n])
+				sim=proj.cmp("ccc",ptcls[n])
+			
+				if sim<best[0] :
+					if mapcmp(trymap,best[2])<-0.7:						# this means we have a better version of 'best'
+						best=(sim,ortins,trymap,trymapf,proj,ptcls[n])
+					else:												# the better map doesn't look like the existing map
+						best2=best
+						best=(sim,ortins,trymap,trymapf,proj,ptcls[n])
+				elif sim<best2[0]:
+					if mapcmp(trymap,best[2])>-0.7:						# better than the current second, but not similar to the first
+						best2=(sim,ortins,trymap,trymapf,proj,ptcls[n])
 				
 				if options.verbose>1 : print sim
-				
-	print best
-	best[2].write_image("best.hdf",0)
+				out.write("{}\t{}\t# {},{}\n".format(phi,sim,ort.get_rotation()["az"],ort.get_rotation()["alt"]))
+		if options.verbose: print best[:2]
+		
+		#per particle results
+		best[2].write_image("best.hdf",-1)
+		best[4].write_image("b.hdf",-1)
+		best[5].write_image("b.hdf",-1)
+		allbest.append(best)
+		if best2[2]!=None:
+			best2[2].write_image("best.hdf",-1)
+			best2[4].write_image("b.hdf",-1)
+			best2[5].write_image("b.hdf",-1)
+			allbest.append(best2)
 
+	# similarity matrix among per particle results (2 maps/particle)
+	simmap=EMData(len(allbest),len(allbest),1)
+	simmap.to_one()
+	for i in xrange(1,len(allbest)):
+		for j in xrange(i):
+			c=mapcmp(allbest[i][2],allbest[j][2])
+			simmap[i,j]=c
+			simmap[j,i]=c
+	
+	simmap.write_image("simmap.hdf")
+	
+	bi,bj,bk=simmap.calc_min_location()
+	cursum=mapsum(allbest[bi][2],allbest[bj][2])
+	used=[bi,bj]
+	
+	# we add in 1/3 more of the best matching volumes
+	for n in xrange(len(allbest)/3-2):
+		# Find the best match to the current sum and add it in
+		best=(1.0,None)
+		for i in xrange(len(allbest)):
+			if i in used : continue
+			best=min(best,(mapcmp(cursum,allbest[i][2]),allbest[i][2]))
+		
+		used.append(i)
+		cursum=mapsum(cursum,best[1])
+	
+	cursum.process_inplace("normalize.edgemean")
+	cursum.write_image("final.hdf")
+	
+	# write projection comparisons
+	for i in used:
+		ptcls[i].write_image("final_cmp.hdf",-1)
+		cursum.project("standard",{"transform":allbest[i][1]}).write_image("final_cmp.hdf",-1)
+	
 	E2end(logid)
 
+def mapsum(m1,m2):
+	"""Adds 2 maps taking into account handedness flips and 5-fold orientation uncertainty, picking the best solution for m2"""
+	if m1==None or m2==None : return 2.0
+	c1=m1.cmp("ccc",m2)
+	mb=m2
+	m3=m2.process("xform.flip",{"axis":"z"})
+	c2=m1.cmp("ccc",m3)
+	if c2<c1:
+		mb=m3.copy()
+		c1=c2
+	m3.rotate(180.0,0,0)
+	c2=m1.cmp("ccc",m3)
+	if c2<c1:
+		mb=m3.copy()
+		c1=c2
+	m3.process_inplace("xform.flip",{"axis":"z"})
+	c2=m1.cmp("ccc",m3)
+	if c2<c1:
+		mb=m3.copy()
+		c1=c2
 
+	return m1+mb
+
+def mapcmp(m1,m2):
+	"""Compares 2 maps taking into account handedness flips and 5-fold orientation uncertainty"""
+	if m1==None or m2==None : return 2.0
+	c1=m1.cmp("ccc",m2)
+	m3=m2.process("xform.flip",{"axis":"z"})
+	c1=min(c1,m1.cmp("ccc",m3))
+	m3.rotate(180.0,0,0)
+	c1=min(c1,m1.cmp("ccc",m3))
+	m3.process_inplace("xform.flip",{"axis":"z"})
+	c1=min(c1,m1.cmp("ccc",m3))
+
+	return c1
 
 if __name__ == "__main__":
     main()

@@ -6170,7 +6170,7 @@ void ToCenterProcessor::process_inplace(EMData * image)
 	// threshold so we are essentially centering the object silhouette
 	image2->process_inplace("threshold.belowtozero",Dict("minval",thr));
 //	image2->process_inplace("threshold.binary",Dict("value",thr));
-//	image2->write_image("dbg1.hdf",-1);
+	image2->write_image("dbg1.hdf",-1);
 
 	EMData *image3;
 	if (nz==1) image3=image2->process("mask.auto2d",Dict("radius",nx/10,"threshold",thr*0.9,"nmaxseed",5));
@@ -6183,7 +6183,7 @@ void ToCenterProcessor::process_inplace(EMData * image)
 		image3->add(9.0f);		// we comress the pyramid from .9-1
 		image3->mult(0.9f);
 		image3->process_inplace("mask.auto2d",Dict("threshold",0.5,"nmaxseed",5));	// should find seed points with a central bias
-//		image3->write_image("dbg3.hdf",-1);
+		image3->write_image("dbg3.hdf",-1);
 	}
 		
 	image3->process_inplace("threshold.binary",Dict("value",thr));
@@ -6194,7 +6194,7 @@ void ToCenterProcessor::process_inplace(EMData * image)
 		image2=image3;
 	}
 	
-//	image2->write_image("dbg2.hdf",-1);
+	image2->write_image("dbg2.hdf",-1);
 	FloatPoint com = image2->calc_center_of_mass(0.5);
 	delete image2;
 	
@@ -7558,11 +7558,33 @@ EMData* DirectionalSumProcessor::process(const EMData* const image ) {
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
-
+	EMData* ret = new EMData;
+	
+	if (nz==1) {
+		if (dir=="x") {
+			ret->set_size(ny,1,1);
+			for (int y=0; y<ny; y++) {
+				double sm=0;
+				for (int x=0; x<nx; x++) sm+=image->get_value_at(x,y);
+				ret->set_value_at(y,0,0,sm/nx);
+			}
+			return ret;
+		}
+		else if (dir=="y") {
+			ret->set_size(nx,1,1);
+			for (int x=0; x<nx; x++) {
+				double sm=0;
+				for (int y=0; y<ny; y++) sm+=image->get_value_at(x,y);
+				ret->set_value_at(x,0,0,sm/ny);
+			}
+			return ret;
+		}
+		else throw InvalidParameterException("The direction parameter must be either x, y for 2-D images");
+	}
+	
 	int a0 = params.set_default("first", 0);
 	int a1 = params.set_default("last", -1);
 
-	EMData* ret = new EMData;
 	// compress one of the dimensions
 	if ( dir == "x" ) {
 		ret->set_size(nz,ny);
