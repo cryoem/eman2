@@ -179,7 +179,16 @@ def main():
 	parser.add_argument("--subset",type=int,default=0,help="""Default=0 (not used). Refine only this substet of particles from the stack provided through --input""")
 
 	parser.add_argument("--apix",type=float,default=0.0,help="""Default=0.0 (not used). Use this apix value where relevant instead of whatever is in the header of the reference and the particles.""")
+	
+	parser.add_argument("--notmatchimgs",action='store_true',default=False,help="""Default=True. This option prevents applying filter.match.to to one image so that it matches the other's spectral profile during preprocessing for alignment purposes.""")
+	
+	parser.add_argument("--preavgproc1",type=str,default='',help="""Default=None. A processor (see 'e2help.py processors -v 10' at the command line) to be applied to the raw particle after alignment but before averaging (for example, a threshold to exclude extreme values, or a highphass filter if you have phaseplate data.)""")
+	
+	parser.add_argument("--preavgproc2",type=str,default='',help="""Default=None. A processor (see 'e2help.py processors -v 10' at the command line) to be applied to the raw particle after alignment but before averaging (for example, a threshold to exclude extreme values, or a highphass filter if you have phaseplate data.)""")
 
+	parser.add_argument("--weighbytiltaxis",type=int,default=0,help="""A,B, where A is an integer number and B a decimal. A represents the location of the tilt axis in the tomogram in pixels (eg.g, for a 4096x4096xZ tomogram, this value should be 2048), and B is the weight of the particles furthest from the tomogram. For example, --weighbytiltaxis=2048,0.5 means that praticles at the tilt axis (with an x coordinate of 2048) will have a weight of 1.0 during averaging, while the distance in the x coordinates of particles not-on the tilt axis will be used to weigh their contribution to the average, with particles at the edge(0+radius or 4096-radius) weighing 0.5, as specified by the value provided for B.""")
+
+	
 	#parser.add_argument("--automask",action="store_true",help="""Applies a 3-D automask before 
 	#	centering. Can help with negative stain data, and other cases where centering is poor.""")
 	
@@ -256,8 +265,15 @@ def main():
 			
 			if options.goldstandardoff:
 				print "goldstandard is off"
+				if options.subset < 2:
+					print "ERROR: You need at least 2 particles in --input to buidl a refernece if --ref is not provided."""
+					sys.exit()	
 			else:
 				print "goldstandard is on"
+				if options.subset < 4:
+					print "ERROR: You need at least 4 particles in --input for goldstandard refinement if --ref is not provided and --goldstandardoff not provided."""
+					sys.exit()
+				
 				if options.hacref and options.subset < options.hacref * 2:
 					print """WARNING: --subset=%d wasn't large enough to accommodate gold standard
 					refinement with two independent halves using the specified number of particles
@@ -265,14 +281,14 @@ def main():
 					to --subset/2.""" %( options.subset, options.hacref )				
 					options.hacref = options.subset / 2			
 			
-				if options.ssaref and options.subset < options.ssaref * 2:		
+				elif options.ssaref and options.subset < options.ssaref * 2:		
 					print """WARNING: --subset=%d wasn't large enough to accommodate gold standard
 					refinement with two independent halves using the specified number of particles
 					for initial model generation --ssaref=%d. Therefore, --ssaref will be reset
 					to --subset/2.""" %( options.subset, options.ssaref )
 					options.ssaref = options.subset / 2	
 			
-				if options.btref and options.subset < options.btref * 2:			
+				elif options.btref and options.subset < options.btref * 2:			
 					print """WARNING: --subset=%d wasn't large enough to accommodate gold standard
 					refinement with two independent halves using the specified number of particles
 					for initial model generation --btref=%d. Therefore, --btref has been reset
@@ -295,7 +311,22 @@ def main():
 		else:
 			print """WARNING: --subset was larger or equal to the number of particles in --input. 
 			Therefore, using all particles."""
+	else:
+		if not options.ref:
+			if not options.goldstandardoff:
+				if nptcl < 4:
+					print "ERROR: You need at least 4 particles in --input for goldstandard refinement if --ref is not provided and --goldstandardoff not provided."""
+					sys.exit()
+				else:
+					pass
+			else:
+				if nptcl < 2:
+					print "ERROR: You need at least 2 particles in --input to buidl a refernece if --ref is not provided."""
+					sys.exit()
+					
 		
+		
+			
 	if options.align:
 		#print "There's options.align", options.align
 		if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align and 'grid' not in options.align:
@@ -844,7 +875,6 @@ def main():
 				print "Results:" 
 				pprint(results)
 						
-			
 			if not options.donotaverage:					
 				#ref = make_average(options,ic,options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.sym,options.groups,options.breaksym,options.nocenterofmass,options.verbose,it)
 				ref = makeAverage(options,ic,results,it)
@@ -1565,6 +1595,24 @@ def sptOptionsParser( options ):
 		if options.verbose > 9:
 			print "\nWARNING (might not be relevant): --reconstructor not provided"
 	
+	try:
+		if options.preavgproc1 and options.preavgproc1 != 'None' and options.preavgproc1 != 'none': 
+			options.preavgproc1=parsemodopt(options.preavgproc1)
+		elif options.preavgproc1 == 'None' or  options.preavgproc1 == 'none':
+			options.preavgproc1=None
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --reconstructor not provided"
+		
+	try:
+		if options.preavgproc2 and options.preavgproc2 != 'None' and options.preavgproc2 != 'none': 
+			options.preavgproc2=parsemodopt(options.preavgproc2)
+		elif options.preavgproc2 == 'None' or  options.preavgproc2 == 'none':
+			options.preavgproc2=None
+	except:
+		if options.verbose > 9:
+			print "\nWARNING (might not be relevant): --reconstructor not provided"
+	
 	return options
 
 
@@ -2107,8 +2155,12 @@ def preprocessing(image,options,mask,clipali,normproc,shrink,lowpass,highpass,pr
 	return simage
 	
 
-#def makeAverage(options,ic,ptcl_file,path,align_parms,averager,saveali,saveallalign,keep,keepsig,symmetry,groups,breaksym,nocenterofmass,verbose=1,it=1):
 def makeAverage(options,ic,align_parms,it=1):
+	
+	klassid = '_even'
+	if ic == 1:
+		klassid = 'odd'
+		
 	ptcl_file = options.input
 	path = options.path
 	#align_params=results
@@ -2118,11 +2170,6 @@ def makeAverage(options,ic,align_parms,it=1):
 	keep = options.keep
 	keepsig = options.keepsig
 	symmetry = options.sym
-	#groups = options.groups
-	
-	groups =  1
-	if not options.goldstandardoff:
-		groups = 2
 	
 	breaksym = options.breaksym
 	#options.nocenterofmass
@@ -2196,17 +2243,57 @@ def makeAverage(options,ic,align_parms,it=1):
 	#jsdict = path + '/tomo_xforms.json'
 	#js = js_open_dict(jsdict)
 	
-	kk=0		
 	for i,ptcl_parms in enumerate(align_parms):
-		ptcl=EMData(ptcl_file,i)
+		
+		ptcl = EMData(ptcl_file,i)
+		weight = 1.0
 		
 		if ptcl_parms and ptcl_parms[0]:
 		
 			ptcl.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
 			#print "I have applied this transform before averaging", ptcl_parms[0]["xform.align3d"]			
 		
-			if ptcl_parms[0]["score"]<=thresh: 
-				avgr.add_image(ptcl)
+			if ptcl_parms[0]["score"]<=thresh:
+				
+				#print "preavgproc1 and len and type are", options.preavgproc1, len(options.preavgproc1), type(options.preavgproc1)
+				#print "preavgproc2 and len are", options.preavgproc2, len(options.preavgproc2),  type(options.preavgproc2)
+				
+				try:
+					if options.preavgproc1:
+						ptcl.process_inplace( options.preavgproc1[0], options.preavgproc1[1] )
+				except:
+					print """ERROR: Preavgproc1 probably requires parameters you did not specify.
+						For example, --preavgproc1=threshold.clampminmax.nsigma would fail.
+						You need to specify an integer for nsgima, e.g.:
+						--preavgproc1=threshold.clampminmax.nsigma:nsimga=2."""	
+					sys.exit()		 
+				try:
+					if options.preavgproc2:
+						ptcl.process_inplace( options.preavgproc2[0], options.preavgproc2[1] )
+				except:
+					print """ERROR: Preavgproc2 probably requires parameters you did not specify.
+						For example, --preavgproc2=threshold.clampminmax.nsigma would fail.
+						You need to specify an integer for nsgima, e.g.:
+						--preavgproc1=threshold.clampminmax.nsigma:nsimga=2."""
+					sys.exit()	
+						
+				if options.weighbytiltaxis:
+					px = int(ptcl['ptcl_source_coord'])
+					
+					tiltaxis = int( options.weightbytiltaxis.split(',')[0] )
+					minweight = float( options.weightbytiltaxis.split(',')[1] )
+					
+					X = tilaxis				#This models a line in 'weight space' (x, w), that passes through (0, minweight) and ( tiltaxis, maxweight ) 
+					W = 1.0 - minweight
+					slope = W/X
+											#Having the slope of the line and its y-axis (or w-axis in this case) crossing we predict the weight of any particle depending on its dx distance to the tiltaxis
+					
+					x = math.fabs( tiltaxis - px )
+					weight = slope * x + minweight
+					
+					ptcl.mult( weight )
+					
+				avgr.add_image( ptcl )
 				included.append(i)
 
 			#js["tomo_%04d"%i] = ptcl_parms[0]['xform.align3d']
@@ -2223,17 +2310,14 @@ def makeAverage(options,ic,align_parms,it=1):
 				#ptcl['spt_ali_param'] = ptcl_parms[0]['xform.align3d']
 				ptcl['xform.align3d'] = ptcl_parms[0]['xform.align3d']
 			
-				classname = path + "/class_" +  str(ic).zfill( len( str(ic) )) + "_ptcl.hdf"
+				#classname = path + "/class_" +  str(ic).zfill( len( str(ic) )) + "_ptcl.hdf"
 				#print "The class name is", classname
 				#sys.exit()
 				
-				indx=i
-				if groups > 1:
-					indx=kk
+				aliptcls = path + '/aliptcls' + klassid + '.hdf'
 					
-				ptcl.write_image(classname,indx)
+				ptcl.write_image(aliptcls,i)
 			
-			kk+=1
 			
 					
 	#js.close()
@@ -2462,7 +2546,14 @@ class Align3DTask(JSTask):
 			print "\nImage to align is", self.data["image"][1], self.data["image"][2]
 			print "Inside path", classoptions['options'].path
 			image=EMData(self.data["image"][1],self.data["image"][2])
-			
+		
+		
+		print "With image sizes img and fixeimg", image['nx'],fixedimage['nx']
+		if not classoptions['options'].notmatchimgs:
+			print "Matching images!"
+			print "Thhere is matchto because notmatch is False, see", classoptions['options'].notmatchimgs 
+			fixedimage.process_inplace( 'filter.matchto',{'to':image})
+		
 		"""
 		CALL the alignment function
 		"""
@@ -2550,7 +2641,9 @@ def align3Dfunc(fixedimage,image,ptclnum,label,options,transform,currentIter):
 	if type(image) is list:
 		image=EMData(image[1],image[2])
 	
-	
+	if not options.notmatchimgs:
+		fixedimage.process_inplace( 'filter.matchto',{'to':image})
+
 	"""
 	CALL the alignment function
 	"""
