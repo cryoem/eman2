@@ -32,6 +32,7 @@
 from sys import argv
 import os
 from EMAN2 import *
+from EMAN2jsondb import JSTask,jsonclasses
 
 from e2spt_classaverage import sptmakepath
 
@@ -68,15 +69,29 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
+	parser.add_header(name="sptrefinemultiheader", help="""Options below this label are 
+		specific to sptrefinemulti.""", title="### sptrefinemulti options ###", 
+		row=5, col=0, rowspan=1, colspan=3,mode="align")
+	
 	#parser.add_argument("--ncls", type=int, help="...", default=2)
 	#parser.add_argument("--nbasis", type=int, help="Basis vectors to use", default=3)
 
-	parser.add_argument("--refs", type=str, help="""This can either be an HDF stack, where each image will be treated as a separate model/reference, 
-													or a comma separatted list of individual images; e.g. --refs=ref1.hdf,ref2.hdf,ref3.hdf.
-													""", default='')
+	parser.add_argument("--input", type=str, help="""The name of the input volume stack. 
+		MUST be HDF since volume stack support is required.""", 
+		default=None, guitype='filebox', browser='EMSubTomosTable(withmodal=True,multiselect=False)', 
+		row=0, col=0, rowspan=1, colspan=3, mode="align")
 	
-	parser.add_argument("--nrefs", type=int, help="""Number of references to generate from the data for reference-free alignment. Default=1""", default=1)
-	parser.add_argument("--refsgenmethod", type=str, help="""Method for generating the initial reference(s). Options are 'binarytree' and 'hac'. Default=binarytree""", default='binarytree') 
+	parser.add_argument("--refs", type=str, help="""This can either be an HDF stack, 
+		where each image will be treated as a separate model/reference, or a comma separatted 
+		list of individual images; e.g. --refs=ref1.hdf,ref2.hdf,ref3.hdf.""", default='')
+	
+	parser.add_argument("--nrefs", type=int, help="""Number of references to generate from 
+		the data for reference-free alignment. Default=1""", default=1)
+	
+	parser.add_argument("--refsgenmethod", type=str, help="""Method for generating the 
+		initial reference(s). Options are 'binarytree' and 'hac'. Default=binarytree""", 
+		default='binarytree') 
+	
 	#parser.add_argument("--refpreprocess",action="store_true",default=False,help="""This 
 	#	will preprocess the reference identically to the particles. It is off by default, but it is internally turned on when no reference is supplied.""")
 	
@@ -85,20 +100,12 @@ def main():
 	PARAMETERS TO BE PASSED ON TO e2spt_classaverage.py
 	'''
 	
-	parser.add_header(name="caheader", help='Options below this label are specific to e2spt_classaverage', title="### e2spt_classaverage options ###", default=None, guitype='filebox', row=3, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_header(name="caheader", help="""Options below this label are specific to e2spt_classaverage""", title="### e2spt_classaverage options ###", default=None, guitype='filebox', row=3, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
-	parser.add_argument("--path",type=str,default='',help="""Directory to store results in. 
-		The default is a numbered series of directories containing the prefix 'spt_refinemulti'; 
-		for example, spt_refinemulti02 will be the directory by default if 'spt_refinemulti01' 
-		already exists.""")
+	parser.add_argument("--path",type=str,default='',help="""Directory to store results in. The default is a numbered series of directories containing the prefix 'spt_refinemulti'; for example, spt_refinemulti02 will be the directory by default if 'spt_refinemulti01' already exists.""")
 	
-	parser.add_argument("--syms", type=str, help="""List comma-separated symmetries to apply
-		separately on the different references. For example, if you provide --syms=d8,d7
-		and provide 2 references via --nrefs=2 or supply two references via --refs=r1.hdf,r2.hdf, 
-		d8 symmetry will be applied to the first reference and d7 to the second after each iteration
-		of refinement (the final average in one iteration becomes a reference for the next).""", default='')
+	parser.add_argument("--syms", type=str, help="""List comma-separated symmetries to apply separately on the different references. For example, if you provide --syms=d8,d7 and provide 2 references via --nrefs=2 or supply two references via --refs=r1.hdf,r2.hdf, d8 symmetry will be applied to the first reference and d7 to the second after each iteration of refinement (the final average in one iteration becomes a reference for the next).""", default='')
 	
-	parser.add_argument("--input", type=str, help="The name of the input volume stack. MUST be HDF or BDB, since volume stack support is required.", default=None, guitype='filebox', browser='EMSubTomosTable(withmodal=True,multiselect=False)', row=0, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	parser.add_argument("--output", type=str, help="The name of the output class-average stack. MUST be in  .hdf format, since volume stack support is required.", default=None, guitype='strbox', row=2, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	#parser.add_argument("--oneclass", type=int, help="Create only a single class-average. Specify the class number.",default=None)
 	#parser.add_argument("--classmx", type=str, help="The name of the classification matrix specifying how particles in 'input' should be grouped. If omitted, all particles will be averaged.", default='')
@@ -109,33 +116,34 @@ def main():
 	
 	#parser.add_argument("--refinemultireftag", type=str, help="DO NOT USE THIS PARAMETER. It is passed on from e2spt_refinemulti.py if needed.", default='')
 	
+	parser.add_argument("--radius", type=float, help="""Will make --align and --falign None. Hydrodynamic radius of the particle in Angstroms. This will be used to automatically calculate the angular steps to use in search of the best alignment. Make sure the apix is correct on the particles' headers, sine the radius will be converted from Angstroms to pixels. Then, the fine angular step is equal to 360/(2*pi*radius), and the coarse angular step 4 times that""", default=0)
 	
-	parser.add_argument("--radius", type=float, help="""Will make --align and --falign None. Hydrodynamic radius of the particle in Angstroms. 
-													This will be used to automatically calculate the angular steps to use in search of the best alignment.
-													Make sure the apix is correct on the particles' headers, sine the radius will be converted from Angstroms to pixels.
-													Then, the fine angular step is equal to 360/(2*pi*radius), and the coarse angular step 4 times that""", default=0)
+	parser.add_argument("--iter", type=int, help="""The number of iterations to perform. Default is 1.""", default=1, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym')
 	
-	parser.add_argument("--iter", type=int, help="The number of iterations to perform. Default is 1.", default=1, guitype='intbox', row=5, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym')
-	parser.add_argument("--savesteps",action="store_true", help="If set, will save the average after each iteration to class_#.hdf. Each class in a separate file. Appends to existing files.",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='alignment,breaksym')
-	parser.add_argument("--saveali",action="store_true", help="If set, will save the aligned particle volumes in class_ptcl.hdf. Overwrites existing file.",default=False, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
-	parser.add_argument("--saveallalign",action="store_true", help="If set, will save the alignment parameters after each iteration",default=False, guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode='alignment,breaksym')
-	parser.add_argument("--sym", dest = "sym", default=None, help = "Symmetry to impose - choices are: c<n>, d<n>, h<n>, tet, oct, icos", guitype='symbox', row=9, col=1, rowspan=1, colspan=2, mode='alignment,breaksym')
-	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2", returnNone=True, default="mask.sharp:outer_radius=-2", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=11, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
-	parser.add_argument("--normproc",type=str,help="Normalization processor applied to particles before alignment. Default is to use normalize. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'", default="normalize")
+	parser.add_argument("--savesteps",action="store_true", help="""If set, will save the average after each iteration to class_#.hdf. Each class in a separate file. Appends to existing files.""",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='alignment,breaksym')
 	
+	parser.add_argument("--saveali",action="store_true", help="""If set, will save the aligned particle volumes in class_ptcl.hdf. Overwrites existing file.""",default=False, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
 	
-	parser.add_argument("--threshold",type=str,help="""A threshold applied to the subvolumes after normalization. 
-													For example, --threshold=threshold.belowtozero:minval=0 makes all negative pixels equal 0, so that they do not contribute to the correlation score.""", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--saveallalign",action="store_true", help="""If set, will save the alignment parameters after each iteration""",default=False, guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode='alignment,breaksym')
 	
+	parser.add_argument("--sym", dest = "sym", default=None, help="""Symmetry to impose -choices are: c<n>, d<n>, h<n>, tet, oct, icos""", guitype='symbox', row=9, col=1, rowspan=1, colspan=2, mode='alignment,breaksym')
 	
+	parser.add_argument("--mask",type=str,help="""Mask processor applied to particles before alignment. Default is mask.sharp:outer_radius=-2""", returnNone=True, default="mask.sharp:outer_radius=-2", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=11, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	
+	parser.add_argument("--normproc",type=str,help="""Normalization processor applied to particles before alignment. Default is to use normalize. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'""", default="normalize")
+	
+	parser.add_argument("--threshold",type=str,help="""A threshold applied to the subvolumes after normalization. For example, --threshold=threshold.belowtozero:minval=0 makes all negative pixels equal 0, so that they do not contribute to the correlation score.""", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
 	parser.add_argument("--preprocess",type=str,help="Any processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=10, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+
 	parser.add_argument("--preprocessfine",type=str,help="Any processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.", default=None)
 	
 	parser.add_argument("--lowpass",type=str,help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=17, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+
 	parser.add_argument("--lowpassfine",type=str,help="A lowpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.", default=None)
 
 	parser.add_argument("--highpass",type=str,help="A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.", default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=18, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+
 	parser.add_argument("--highpassfine",type=str,help="A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.", default=None)
 
 	parser.add_argument("--postprocess",type=str,help="A processor to be applied to the FINAL volume after averaging the raw volumes in their FINAL orientations, after all iterations are done.",default=None, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=16, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
@@ -143,12 +151,19 @@ def main():
 	parser.add_argument("--procfinelikecoarse",type=bool,default=True,help="Turn on with --procfinelikecoarse=False, and supply fine alignment parameters, such as --lowpassfine, --highpassfine, etc; to preprocess the particles for FINE alignment differently than for COARSE alignment.")
 	
 	parser.add_argument("--ncoarse", type=int, help="Deprecated. Use --npeakstorefine instead.", default=None)
+
 	parser.add_argument("--npeakstorefine", type=int, help="The number of best coarse alignments to refine in search of the best final alignment. Default=4.", default=4, guitype='intbox', row=9, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym[1]')
+
 	parser.add_argument("--align",type=str,help="This is the aligner used to align particles to the previous class average. Default is rotate_translate_3d:search=10:delta=15:dphi=15, specify 'None' to disable", returnNone=True, default="rotate_translate_3d:search=10:delta=15:dphi=15", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'3d\')', row=12, col=0, rowspan=1, colspan=3, nosharedb=True, mode="alignment,breaksym['rotate_symmetry_3d']")
+
 	parser.add_argument("--aligncmp",type=str,help="The comparator used for the --align aligner. Default is the internal tomographic ccc. Do not specify unless you need to use another specific aligner.",default="ccc.tomo", guitype='comboparambox',choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=13, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
+
 	parser.add_argument("--falign",type=str,help="This is the second stage aligner used to refine the first alignment. Default is refine.3d, specify 'None' to disable", default="refine_3d", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine.*3d\')', row=14, col=0, rowspan=1, colspan=3, nosharedb=True, mode='alignment,breaksym[None]')
+
 	parser.add_argument("--faligncmp",type=str,help="The comparator used by the second stage aligner. Default is the internal tomographic ccc",default="ccc.tomo", guitype='comboparambox',choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=15, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
+
 	parser.add_argument("--averager",type=str,help="The type of averager used to produce the class average. Default=mean",default="mean")
+
 	parser.add_argument("--keep",type=float,help="The fraction of particles to keep in each class.",default=1.0, guitype='floatbox', row=6, col=0, rowspan=1, colspan=1, mode='alignment,breaksym')
 
 	parser.add_argument("--inixforms",type=str,help="directory containing a dict of transform to apply before reference generation", default="", guitype='dirbox', dirbasename='spt_|sptsym_', row=7, col=0,rowspan=1, colspan=2, nosharedb=True, mode='breaksym')
@@ -158,28 +173,22 @@ def main():
 #	parser.add_argument("--groups",type=int,help="WARNING: This parameter is EXPERIMENTAL, and will only work if --iter=1. It's the number of final averages you want from the set after ONE iteration of alignment. Particles will be separated in groups based on their correlation to the reference",default=0)
 
 	parser.add_argument("--randomizewedge",action="store_true", help="This parameter is EXPERIMENTAL. It randomizes the position of the particles BEFORE alignment, to minimize missing wedge bias and artifacts during symmetric alignment where only a fraction of space is scanned", default=False)
+	
 	parser.add_argument("--savepreprocessed",action="store_true", help="Will save stacks of preprocessed particles (one for coarse alignment and one for fine alignment if preprocessing options are different).", default=False)
+	
 	parser.add_argument("--keepsig", action="store_true", help="Causes the keep argument to be interpreted in standard deviations.",default=False, guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
+	
 	parser.add_argument("--nocenterofmass", action="store_true", help="Disable Centering of mass of the subtomogram every iteration.", default=False, guitype='boolbox', row=6, col=2, rowspan=1, colspan=1, mode='alignment,breaksym')
 	
 	#parser.add_argument('--reverse_contrast', action="store_true", default=False, help=""" This multiplies the input particles by -1. Remember that EMAN2 **MUST** work with 'white protein' """)
 	
 	parser.add_argument("--shrink", type=int,default=0,help="Optionally shrink the input volumes by an integer amount for coarse alignment.")
+	
 	parser.add_argument("--shrinkfine", type=int,default=0,help="Optionally shrink the input volumes by an integer amount for fine alignment.")
 	
-	parser.add_argument("--search", type=int,default=8,help=""""During COARSE alignment
-		translational search in X, Y and Z, in pixels. Default=8.
-		This WILL overwrite any search: provided through --align,
-		EXCEPT if you provide --search=8, which is the default. In general, just avoid
-		providing search twice (through here and through the aligner, --align). If you do,
-		just be careful to make them consistent to minimize misinterpretation and error.""")
+	parser.add_argument("--search", type=int,default=8,help=""""During COARSE alignment translational search in X, Y and Z, in pixels. Default=8. This WILL overwrite any search: provided through --align, EXCEPT if you provide --search=8, which is the default. In general, just avoid providing search twice (through here and through the aligner, --align). If you do, just be careful to make them consistent to minimize misinterpretation and error.""")
 	
-	parser.add_argument("--searchfine", type=int,default=2,help=""""During FINE alignment
-		translational search in X, Y and Z, in pixels. Default=2.
-		This WILL overwrite any search: provided through --falign,
-		EXCEPT if you provide --searchfine=2, which is the default. In general, just avoid
-		providing search twice (through here and through the fine aligner --falign). If you do,
-		just be careful to make them consistent to minimize misinterpretation and error.""")
+	parser.add_argument("--searchfine", type=int,default=2,help=""""During FINE alignment translational search in X, Y and Z, in pixels. Default=2. This WILL overwrite any search: provided through --falign, EXCEPT if you provide --searchfine=2, which is the default. In general, just avoid providing search twice (through here and through the fine aligner --falign). If you do, just be careful to make them consistent to minimize misinterpretation and error.""")
 	
 	#parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default='', guitype='strbox', row=19, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 
@@ -192,10 +201,17 @@ def main():
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
-	parser.add_argument("--plotccc", action='store_true', help="""Turn this option on to generate
-		a plot of the ccc scores both during model generation with e2spt_classaverage.py or
-		e2spt_hac.py and for refinement results of e2spt_refinemulti.py.
-		Running on a cluster or via ssh remotely might not support plotting.""",default=False)
+	parser.add_argument("--plots", action='store_true', help="""Turn this option on to generate a plot of the ccc scores both during model generation with e2spt_classaverage.py or e2spt_hac.py and for refinement results of e2spt_refinemulti.py. Running on a cluster or via ssh remotely might not support plotting.""",default=False)
+	
+	parser.add_argument("--notmatchimgs",action='store_true',default=False,help="""Default=True. This option prevents applying filter.match.to to one image so that it matches the other's spectral profile during preprocessing for alignment purposes.""")
+	
+	parser.add_argument("--preavgproc1",type=str,default='',help="""Default=None. A processor (see 'e2help.py processors -v 10' at the command line) to be applied to the raw particle after alignment but before averaging (for example, a threshold to exclude extreme values, or a highphass filter if you have phaseplate data.)""")
+	
+	parser.add_argument("--preavgproc2",type=str,default='',help="""Default=None. A processor (see 'e2help.py processors -v 10' at the command line) to be applied to the raw particle after alignment but before averaging (for example, a threshold to exclude extreme values, or a highphass filter if you have phaseplate data.)""")
+	
+	parser.add_argument("--weighbytiltaxis",type=int,default=0,help="""A,B, where A is an integer number and B a decimal. A represents the location of the tilt axis in the tomogram in pixels (eg.g, for a 4096x4096xZ tomogram, this value should be 2048), and B is the weight of the particles furthest from the tomogram. For example, --weighbytiltaxis=2048,0.5 means that praticles at the tilt axis (with an x coordinate of 2048) will have a weight of 1.0 during averaging, while the distance in the x coordinates of particles not-on the tilt axis will be used to weigh their contribution to the average, with particles at the edge(0+radius or 4096-radius) weighing 0.5, as specified by the value provided for B.""")
+
+	
 	
 	(options, args) = parser.parse_args()
 
@@ -209,7 +225,6 @@ def main():
 		options.align = None
 		options.falign = None
 	
-		
 	#print "\n\n\n(e2spt_refinemulti.py) options.refpreprocess is", options.refpreprocess
 	#print "\n\n\n"
 	
