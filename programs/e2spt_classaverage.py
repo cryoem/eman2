@@ -586,7 +586,7 @@ def main():
 	
 	classmxFile = options.path + '/classmx_' + str( 0 ).zfill( len (str (options.iter))) + '.hdf'
 	
-	if not options.goldstandardoff:
+	if not options.goldstandardoff and nptcl > 1:
 		ncls = 2
 	
 	#C: Read or initialize all classmx images as 2-D EMData files of 2 x N dimensions, where N is the number of particles.
