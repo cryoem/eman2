@@ -880,8 +880,33 @@ def main():
 						
 			if not options.donotaverage:					
 				#ref = make_average(options,ic,options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.sym,options.groups,options.breaksym,options.nocenterofmass,options.verbose,it)
-				ref = makeAverage(options,ic,results,it)
+				ref=''
+				if nptcl > 1:
+					ref = makeAverage(options,ic,results,it)
+				else:
+					ref = EMData( options.input, 0 )
+					ref.process_inplace("xform",{"transform":results[0][0]["xform.align3d"]})
+					
+					ref['origin_x'] = 0
+					ref['origin_y'] = 0
+					ref['origin_z'] = 0
+					
+					if options.postprocess:
+						ppref = ref.copy()
+						maskPP = "mask.sharp:outer_radius=-2"
+						maskPP=parsemodopt(maskPP)
+
+						ppref = postprocess(ppref,maskPP,options.normproc,options.postprocess)
+
+						refnamePP = refname.replace('.hdf', '_postproc.hdf')
 				
+						#ppref.write_image("%s/class_%02d.hdf"%(options.path,ic),it)
+						ppref.write_image(refnamePP,it)
+					
+					ref.write_image( options.path + '/finalAvg.hdf', 0)
+					print "Done alignig the only particle in --input to --ref"
+					sys.exit()
+			
 				ref['xform.align3d']=Transform()
 				ref['origin_x'] = 0
 				ref['origin_y'] = 0
@@ -892,12 +917,12 @@ def main():
 				if options.savesteps:
 				
 					#refname = options.path + '/class_' + str(ic).zfill( len( str(ic) )) + '.hdf'
-					refname = options.path + '/avgs_even.hdf'
-					if ic == 1:
-						refname = options.path + '/avgs_odd.hdf'
+					refname = options.path + '/avgs' + klassid + '.hdf'
+					#if ic == 1:
+					#	refname = options.path + '/avgs_odd.hdf'
 						
-					if options.goldstandardoff:
-						refname = options.path + '/avgs.hdf'
+					#if options.goldstandardoff:
+					#	refname = options.path + '/avgs.hdf'
 						
 					ref.write_image( refname, it )
 				
@@ -2193,8 +2218,9 @@ def makeAverage(options,ic,align_parms,it=1):
 	
 	#else:
 	
+	thresh=1.0
 	
-	if keep:
+	if keep < 1.0:
 		#print "p[0]['score'] is", align_parms[0]['score']
 		print "Len of align_parms is", len(align_parms)
 		
@@ -2242,6 +2268,7 @@ def makeAverage(options,ic,align_parms,it=1):
 	"""Make variance image if available"""
 	variance = EMData(ptcl_file,0).copy_head()
 	if averager[0] == 'mean':
+		print "Making variance map"
 		averager[1]['sigma'] = variance
 	
 	print "averager is", averager
@@ -2348,7 +2375,7 @@ def makeAverage(options,ic,align_parms,it=1):
 	avg['spt_ptcl_indxs']=included
 	
 	if averager[0] == 'mean':
-		varmapname = path + '/class_' + str(ic).zfill( len( str(ic) )) + '_varmap.hdf'
+		varmapname = path + '/class' + klassid + '_varmap.hdf'
 		variance.write_image( varmapname , it)
 				
 	#if not nocenterofmass:
