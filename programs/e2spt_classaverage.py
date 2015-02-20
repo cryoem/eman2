@@ -2314,7 +2314,7 @@ def makeAverage(options,ic,align_parms,it=1):
 					sys.exit()	
 						
 				if options.weighbytiltaxis:
-					px = int(ptcl['ptcl_source_coord'][0])
+					px = x = int(ptcl['ptcl_source_coord'][0])
 					
 					tiltaxis = int( options.weighbytiltaxis.split(',')[0] )
 					minweight = float( options.weighbytiltaxis.split(',')[1] )
@@ -2330,11 +2330,11 @@ def makeAverage(options,ic,align_parms,it=1):
 					print "W is", W
 					print "Therefore slope is", slope
 					
-					#dx = int(math.fabs( tiltaxis - px ))
+					dx = tiltaxis - px 
 					weight = slope * px + minweight
 					
 					ptcl.mult( weight )
-					print "The particle %i has been weighted by %f because it's distance from the tilt axis is %d, because it's x coordinate was %d" % (i, weight, x, px)
+					print "The particle %i has been weighted by %f because it's distance from the tilt axis is %d, because it's x coordinate was %d" % (i, weight, dx, x)
 					
 				avgr.add_image( ptcl )
 				included.append(i)
