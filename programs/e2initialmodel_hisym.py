@@ -161,30 +161,33 @@ def main():
 		if best2[2]!=None:
 			allbest.append(best2)
 
-	# similarity matrix among per particle results (2 maps/particle)
-	simmap=EMData(len(allbest),len(allbest),1)
-	simmap.to_one()
-	for i in xrange(1,len(allbest)):
-		for j in xrange(i):
-			c=mapcmp(allbest[i][2],allbest[j][2])
-			simmap[i,j]=c
-			simmap[j,i]=c
+	## similarity matrix among per particle results (2 maps/particle)
+	#simmap=EMData(len(allbest),len(allbest),1)
+	#simmap.to_one()
+	#for i in xrange(1,len(allbest)):
+		#for j in xrange(i):
+			#c=mapcmp(allbest[i][2],allbest[j][2])
+			#simmap[i,j]=c
+			#simmap[j,i]=c
 	
-	simmap.write_image("simmap.hdf")
+	#simmap.write_image("simmap.hdf")
 	
-	bi,bj,bk=simmap.calc_min_location()
-	cursum=mapsum(allbest[bi][2],allbest[bj][2])
-	used=[bi,bj]
+	#bi,bj,bk=simmap.calc_min_location()
+	#cursum=mapsum(allbest[bi][2],allbest[bj][2])
+	#used=[bi,bj]
+
+	cursum=min(allbest)[2]			# start with the best matching map we got
+	used=[allbest.index(min(allbest))]
 	
 	# we add in 1/3 more of the best matching volumes
-	for n in xrange(len(allbest)/3-2):
+	for n in xrange(len(allbest)/3):
 		# Find the best match to the current sum and add it in
 		best=(1.0,None)
 		for i in xrange(len(allbest)):
 			if i in used : continue
-			best=min(best,(mapcmp(cursum,allbest[i][2]),allbest[i][2]))
+			best=min(best,(mapcmp(cursum,allbest[i][2]),allbest[i][2],i))
 		
-		used.append(i)
+		used.append(best[2])
 		cursum=mapsum(cursum,best[1])
 	
 	cursum.process_inplace("normalize.edgemean")
