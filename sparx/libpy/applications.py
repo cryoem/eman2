@@ -16809,6 +16809,7 @@ def localhelicon_MPIming(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, x
 			#  Generate list of reference angles, all nodes have the entire list
 			ref_angles = prepare_helical_refangles(delta[N_step], initial_theta =initial_theta, delta_theta = delta_theta)
 			#  count how many projections did not have a peak.  If too many, something is wrong
+			print "finish generating list of reference angles."
 			nopeak = 0
 			#  DO ORIENTATION SEARCHES
 			for ivol in xrange(nfils):
@@ -16818,6 +16819,7 @@ def localhelicon_MPIming(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, x
 				txtol = [0.0]*(seg_end-seg_start)
 				tytol = [0.0]*(seg_end-seg_start)	
 				for im in xrange( seg_start, seg_end ):
+					print "for %dth segment"%im 
 					#  Here I have to figure for local search whether given image has to be matched with this refproj dir
 					ID = data[im].get_attr("ID")
 					phi, theta, psi, tx, ty = get_params_proj(data[im])

@@ -2098,7 +2098,7 @@ void nn4Reconstructor::setup()
 	if( params.has_key( "snr" ) )  m_osnr = 1.0f/float( params["snr"] );
 	else                           m_osnr = 0.0;
 
-// 	setup( symmetry, size, npad );
+ 	setup( symmetry, size, npad );
 }
 
 void nn4Reconstructor::setup( const string& symmetry, int size, int npad )
