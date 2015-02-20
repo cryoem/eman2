@@ -2,8 +2,7 @@
 
 #
 # Author: Jesus Galaz-Montoya 01/Nov/2014
-# Last modification: 05/Jan/2014
-#
+# Last modification: 19/Feb/2015
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
