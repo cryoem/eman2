@@ -792,16 +792,17 @@ def main():
 			jsA = js_open_dict(jsAliParamsPath) #Write particle orientations to json database.
 			
 			ref = refsdict[ ic ]
-			if options.clipali and ref['nx'] != options.clipali:
-				
-				ref = clip3D( ref, options.clipali )
-				
-				print "\n\n\nRef AFTER clip ali is", ref, ref['nx'], ref['minimum'],ref['maximum'], ref['sigma'],ref['mean']
-				
-				if not ref['minimum'] and not ref['maximum']:
-					print "ERROR: emtpy ref after clip ali, region", r
-					print "sizes", ref['nx']
-					sys.exit()
+			# ALL CLIPPING and preprocessing should happen inside the preprocessing function
+			#if options.clipali and ref['nx'] != options.clipali:
+			#	
+			#	ref = clip3D( ref, options.clipali )
+			#	
+			#	print "\n\n\nRef AFTER clip ali is", ref, ref['nx'], ref['minimum'],ref['maximum'], ref['sigma'],ref['mean']
+			#	
+			#	if not ref['minimum'] and not ref['maximum']:
+			#		print "ERROR: emtpy ref after clip ali, region", r
+			#		print "sizes", ref['nx']
+			#		sys.exit()
 			
 			'''
 			Code to 'resume' crashed jobs
@@ -2556,7 +2557,8 @@ class Align3DTask(JSTask):
 			image=EMData(self.data["image"][1],self.data["image"][2])
 		
 		
-		print "With image sizes img and fixeimg", image['nx'],fixedimage['nx']
+		print "With image sizes img and fixedimg", image['nx'],fixedimage['nx']
+		
 		if not classoptions['options'].notmatchimgs:
 			print "Matching images!"
 			print "Thhere is matchto because notmatch is False, see", classoptions['options'].notmatchimgs 
