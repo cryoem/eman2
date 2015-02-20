@@ -2316,16 +2316,22 @@ def makeAverage(options,ic,align_parms,it=1):
 				if options.weighbytiltaxis:
 					px = int(ptcl['ptcl_source_coord'][0])
 					
-					tiltaxis = int( options.weightbytiltaxis.split(',')[0] )
-					minweight = float( options.weightbytiltaxis.split(',')[1] )
+					tiltaxis = int( options.weighbytiltaxis.split(',')[0] )
+					minweight = float( options.weighbytiltaxis.split(',')[1] )
 					
-					X = tilaxis				#This models a line in 'weight space' (x, w), that passes through (0, minweight) and ( tiltaxis, maxweight ) 
+					if px > tiltaxis:
+						px = -1 *( px - 2*tiltaxis )
+					
+					X = tiltaxis				#This models a line in 'weight space' (x, w), that passes through (0, minweight) and ( tiltaxis, maxweight ) 
 					W = 1.0 - minweight
 					slope = W/X
 											#Having the slope of the line and its y-axis (or w-axis in this case) crossing we predict the weight of any particle depending on its dx distance to the tiltaxis
+					print "Tiltaxis is", X
+					print "W is", W
+					print "Therefore slope is", slope
 					
-					x = int(math.fabs( tiltaxis - px ))
-					weight = slope * x + minweight
+					#dx = int(math.fabs( tiltaxis - px ))
+					weight = slope * px + minweight
 					
 					ptcl.mult( weight )
 					print "The particle %i has been weighted by %f because it's distance from the tilt axis is %d, because it's x coordinate was %d" % (i, weight, x, px)
