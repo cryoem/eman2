@@ -2314,7 +2314,7 @@ def makeAverage(options,ic,align_parms,it=1):
 					sys.exit()	
 						
 				if options.weighbytiltaxis:
-					px = int(ptcl['ptcl_source_coord'])
+					px = int(ptcl['ptcl_source_coord'][0])
 					
 					tiltaxis = int( options.weightbytiltaxis.split(',')[0] )
 					minweight = float( options.weightbytiltaxis.split(',')[1] )
