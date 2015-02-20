@@ -614,7 +614,7 @@ def main():
 
 		classmxScores.to_zero()
 		
-		if not options.goldstandardoff:
+		if not options.goldstandardoff and ncls > 1 and nptcl > 1:
 			for i in range(nptcl):
 				klassid = 0
 				if i % 2:
@@ -686,7 +686,7 @@ def main():
 	
 	refsdict = sptRefGen( options, ptclnumsdict,cmdwp )
 	
-	if not options.goldstandardoff:
+	if not options.goldstandardoff and ncls > 1 and nptcl > 1:
 		
 		refeven = refsdict[0]
 		refodd = refsdict[1] 
@@ -724,7 +724,7 @@ def main():
 	
 	meanScores = { 0:[0] }
 	
-	if not options.goldstandardoff:
+	if not options.goldstandardoff and ncls > 1 and nptcl > 1:
 		avgshdrs.update({1:['']})
 		meanScores.update( { 1:[0] } )
 		print "Upon initial setup, avgshdrs[1] is",  avgshdrs[1], type( avgshdrs[1] )
