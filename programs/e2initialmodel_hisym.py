@@ -147,15 +147,18 @@ def main():
 				out.write("{}\t{}\t# {},{}\n".format(phi,sim,ort.get_rotation()["az"],ort.get_rotation()["alt"]))
 		if options.verbose: print best[:2]
 		
-		#per particle results
-		best[2].write_image("best.hdf",-1)
-		best[4].write_image("b.hdf",-1)
-		best[5].write_image("b.hdf",-1)
+		if (options.verbose>2) :
+			#per particle results
+			best[2].write_image("best.hdf",-1)
+			best[4].write_image("bestcmp.hdf",-1)
+			best[5].write_image("bestcmp.hdf",-1)
+			if best2[2]!=None:
+				best2[2].write_image("best.hdf",-1)
+				best2[4].write_image("bestcmp.hdf",-1)
+				best2[5].write_image("bestcmp.hdf",-1)
+
 		allbest.append(best)
 		if best2[2]!=None:
-			best2[2].write_image("best.hdf",-1)
-			best2[4].write_image("b.hdf",-1)
-			best2[5].write_image("b.hdf",-1)
 			allbest.append(best2)
 
 	# similarity matrix among per particle results (2 maps/particle)
@@ -189,8 +192,8 @@ def main():
 	
 	# write projection comparisons
 	for i in used:
-		ptcls[i].write_image("final_cmp.hdf",-1)
-		cursum.project("standard",{"transform":allbest[i][1]}).write_image("final_cmp.hdf",-1)
+		allbest[i][-1].write_image("final_cmp.hdf",-1)
+		cursum.project("standard",{"transform":allbest[i][1]}).process("normalize.edgemean").write_image("final_cmp.hdf",-1)
 	
 	E2end(logid)
 
