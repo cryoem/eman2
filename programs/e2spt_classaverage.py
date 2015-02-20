@@ -188,6 +188,8 @@ def main():
 
 	parser.add_argument("--weighbytiltaxis",type=str,default='',help="""Default=None. A,B, where A is an integer number and B a decimal. A represents the location of the tilt axis in the tomogram in pixels (eg.g, for a 4096x4096xZ tomogram, this value should be 2048), and B is the weight of the particles furthest from the tomogram. For example, --weighbytiltaxis=2048,0.5 means that praticles at the tilt axis (with an x coordinate of 2048) will have a weight of 1.0 during averaging, while the distance in the x coordinates of particles not-on the tilt axis will be used to weigh their contribution to the average, with particles at the edge(0+radius or 4096-radius) weighing 0.5, as specified by the value provided for B.""")
 
+	parser.add_argument("--weighbyscore",action='store_true',default=False,help="""Default=False. This option will weigh the contribution of each subtomogram to the average by score/bestscore.""")
+
 	
 	#parser.add_argument("--automask",action="store_true",help="""Applies a 3-D automask before 
 	#	centering. Can help with negative stain data, and other cases where centering is poor.""")
@@ -1010,18 +1012,19 @@ def main():
 			else:
 				meanScores[ic].append( meanScore )
 			
+			
+			#classScoresList.reverse()
+			maxY = max(classScoresList) + 1
+		
+			plotX = range( len(classScoresList) )
+			maxX = max(plotX) + 1
+		
+			plotName = 'spt_cccs_' + str( it ).zfill( len( str( options.iter ) )) + klassid + '.png'
+					
+			txtname = plotName.replace('.png','.txt')
+			textwriter(classScoresList,options,txtname, invert=1)
+				
 			if options.plots:
-				#classScoresList.reverse()
-				maxY = max(classScoresList) + 1
-			
-				plotX = range( len(classScoresList) )
-				maxX = max(plotX) + 1
-			
-				plotName = 'spt_cccs_' + str( it ).zfill( len( str( options.iter ) )) + klassid + '.png'
-						
-				txtname = plotName.replace('.png','.txt')
-				textwriter(classScoresList,options,txtname, invert=1)
-			
 				from e2spt_hac import plotter
 				plotter(plotX, classScoresList, options, plotName, maxX, maxY, 1, sort=1)
 			
@@ -1046,7 +1049,7 @@ def main():
 			#avgshdrs.update( { 0:avgshdrs[0].append( avgeven.get_attr_dict() ), 1:avgshdrs[1].append( avgodd.get_attr_dict() ) } )
 			
 			if it > 0 and len(avgshdrs[0]) > 1 and len(avgshdrs[1]) > 1:
-				if avgshdrs[0][-1] == avgshdrs[0][-2] and avgshdrs[1][-1] == avgshdrs[0][-2]:
+				if avgshdrs[0][-1]['mean'] == avgshdrs[0][-2]['mean'] and avgshdrs[1][-1]['mean'] == avgshdrs[0][-2]['mean']:
 					print "Both independent averages have converged!"
 					sys.exit()
 				
@@ -1084,46 +1087,49 @@ def main():
 			#avgshdrs.update( { 0:avgshdrs[0].append( avg.get_attr_dict() ) } )
 			
 			if it > 0 and len(avgshdrs[0]) > 1 :
-				if avgshdrs[0][1][-1] == avgshdrs[0][-2]:
+				if avgshdrs[0][-1]['mean'] == avgshdrs[0][-2]['mean']:
 					print "The average has converged!"
 					sys.exit()
 
-			originalref = EMData( options.ref )
+			originalref = EMData( options.ref, 0 )
 			
 			fscfile = options.path + '/fsc_' + str(it).zfill( len( str(options.iter))) + '.txt'
 
-			calcFsc( originalref, avg, fscfile )
+			#calcFsc( originalref, avg, fscfile )
+			
+			avgsDict = options.path + '/tomo_xforms_' + str(it).zfill( len( str(options.iter))) + '_avgAli2ref.json'
+			
+			jsAvgs = js_open_dict( avgsDict )
+			compareEvenOdd( options, originalref, avg, 2, etc, jsAvgs, fscfile, average=False ) #We pass on an "iteration number" > 1, that is 2 here, just so that both initial references are preprocessed and treated equally (this is required since --refpreprocessing is off when --ref is supplied 
+			jsAvgs.close()	
 			
 			if options.filterbyfsc:
 				print "Options.lowpass was and of type", options.lowpass, type( options.lowpass )
 				options.lowpass = ('filter.wiener.byfsc',{ 'fscfile':fscfile })
 				print "Now it is", options.lowpass, type(options.lowpass)
-
-		
+				
 		ic+=1	
-	
-	if options.plots:
 		#import matplotlib as plt
 		
-		for key in meanScores:
-			scores = meanScores[ key ]
-			klassid = '_even'
-			if key == 1:
-				klassid = '_odd'
+	for key in meanScores:
+		scores = meanScores[ key ]
+		klassid = '_even'
+		if key == 1:
+			klassid = '_odd'
+	
+		maxY = max(scores) + 1
 		
-			maxY = max(scores) + 1
-			
-			plotX = range( len(scores) )
-			maxX = max(plotX) + 1
-		
-			plotName = 'spt_meanccc' + klassid + '.png'
-		
-			txtname = plotName.replace('.png','.txt')
-			textwriter( scores ,options, txtname, invert=1 )
-		
-			from e2spt_hac import plotter
-
-			plotter(plotX, scores, options, plotName, maxX, maxY, 1, sort=0)
+		plotX = range( len(scores) )
+		maxX = max(plotX) + 1
+	
+		plotName = 'spt_meanccc' + klassid + '.png'
+	
+		txtname = plotName.replace('.png','.txt')
+		textwriter( scores ,options, txtname, invert=1 )
+	
+	if options.plots:
+		from e2spt_hac import plotter
+		plotter(plotX, scores, options, plotName, maxX, maxY, 1, sort=0)
 		
 		
 	if options.inixforms: 
@@ -1137,7 +1143,7 @@ def main():
 	return
 
 
-def compareEvenOdd( options, avgeven, avgodd, it, etc, jsAvgs, fscfile ):
+def compareEvenOdd( options, avgeven, avgodd, it, etc, jsAvgs, fscfile, average=True ):
 	tasks = []
 	
 	if not options.parallel:
@@ -1148,7 +1154,6 @@ def compareEvenOdd( options, avgeven, avgodd, it, etc, jsAvgs, fscfile ):
 	tasks.append( task )
 
 	tids = etc.send_tasks(tasks)
-
 	
 	resultsAvgs = get_results( etc, tids, options.verbose, jsAvgs, 1 , 1 )
 								#etc,tids,verbose,jsA,nptcls,savealiparams=0,ref=''
@@ -1156,22 +1161,24 @@ def compareEvenOdd( options, avgeven, avgodd, it, etc, jsAvgs, fscfile ):
 	transformAliOdd2even = resultsAvgs[0][0]['xform.align3d']
 	
 	avgodd.transform( transformAliOdd2even )
+	finalA = None
 	
-	avgr = Averagers.get( options.averager[0], options.averager[1 ])
-	avgr.add_image( avgodd )
-	avgr.add_image( avgeven )
-	finalAvg = avgr.finish()
+	if average:
+		avgr = Averagers.get( options.averager[0], options.averager[1 ])
+		avgr.add_image( avgodd )
+		avgr.add_image( avgeven )
+		finalA = avgr.finish()
 	
-	finalAvg['origin_x']=0
-	finalAvg['origin_y']=0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
-	finalAvg['origin_z']=0
-	finalAvg['xform.align3d'] = Transform()
+		finalA['origin_x']=0
+		finalA['origin_y']=0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
+		finalA['origin_z']=0
+		finalA['xform.align3d'] = Transform()
 
-	#apix = finalAvg['apix_x']
+		#apix = finalAvg['apix_x']
 	
 	calcFsc( avgeven, avgodd, fscfile )
 	
-	return finalAvg
+	return finalA
 
 
 def calcFsc( img1, img2, fscfile ):
@@ -2219,48 +2226,51 @@ def makeAverage(options,ic,align_parms,it=1):
 	#else:
 	
 	thresh=1.0
+	scores = []
 	
+	for p in align_parms:
+		if 'score' in p[0]:
+			pass
+			#print "\nscore!"
+		else:
+			if p and p[0]:
+				print "\nIn e2spt_classaverage.py, score not in a non-empty element of p, p[0]", p, p[0]
+				#print "see, p[0] is", p[0]
+				sys.exit()
+	
+		if p and p[0]:
+			score = p[0]['score']
+			scores.append( score )
+			#vals.append( score )
+				
 	if keep < 1.0:
 		#print "p[0]['score'] is", align_parms[0]['score']
 		print "Len of align_parms is", len(align_parms)
-		
-		vals=[]
-		for p in align_parms:
-			if 'score' in p[0]:
-				pass
-				#print "\nscore!"
-			else:
-				if p and p[0]:
-					print "\nIn e2spt_classaverage.py, score not in a non-empty element of p, p[0]", p, p[0]
-					#print "see, p[0] is", p[0]
-					sys.exit()
-		
-			if p and p[0]:
-				vals.append(p[0]['score'])
 			
 			#val=[p[0]["score"] for p in align_parms]
-		vals.sort()
-		thresh=vals[ int( keep * len(vals) ) - 1]
+		scores.sort()
+		thresh=scores[ int( keep * len(scores) ) - 1]
 		if verbose: 
-			print "Keep threshold : %f (min=%f  max=%f)"%(thresh,vals[0],vals[-1])
+			print "Keep threshold : %f (min=%f  max=%f)"%(thresh,scores[0],scores[-1])
 	
 	if keepsig:
 		# inefficient memory-wise
 		
-		vals=[]
-		vals2=[]
-		for p in align_params:
-			if p and p[0]:
-				vals.append(p[0]['score'])
-				vals2.append(p[0]['score']**2)
+		#vals=[]
+		scores2=[]
+		for score in scores:
+		#for p in align_params:
+			#if p and p[0]:
+				#vals.append(p[0]['score'])
+			scores2.append(score**2)
 			
-		val=sum(vals)
-		val2=sum(vals2)
+		val=sum(scores)
+		val2=sum(scores2)
 		#val=sum([p[0]["score"] for p in align_parms])
 		#val2=sum([p[0]["score"]**2 for p in align_parms])
 
-		mean=val/len(align_parms)
-		sig=sqrt(val2/len(align_parms)-mean*mean)
+		mean=val/len(scores)
+		sig=sqrt(val2/len(scores)-mean*mean)
 		thresh=mean+sig*keep
 		if verbose: 
 			print "Keep threshold : %f (mean=%f  sigma=%f)"%(thresh,mean,sig)
@@ -2279,6 +2289,12 @@ def makeAverage(options,ic,align_parms,it=1):
 	#jsdict = path + '/tomo_xforms.json'
 	#js = js_open_dict(jsdict)
 	
+	#maxscore = None
+	#try:
+	maxscore = min( scores )
+	#except:
+	#	print "There are no scores!", scores
+		
 	for i,ptcl_parms in enumerate(align_parms):
 		
 		ptcl = EMData(ptcl_file,i)
@@ -2288,8 +2304,11 @@ def makeAverage(options,ic,align_parms,it=1):
 		
 			ptcl.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
 			#print "I have applied this transform before averaging", ptcl_parms[0]["xform.align3d"]			
-		
-			if ptcl_parms[0]["score"]<=thresh:
+			
+			score = ptcl_parms[0]["score"]
+			
+			if score <= thresh:
+				print "Particle kept because its score %f is LOWER than the threshold %f, when the best score was %f" %( score, thresh, maxscore )
 				
 				#print "preavgproc1 and len and type are", options.preavgproc1, len(options.preavgproc1), type(options.preavgproc1)
 				#print "preavgproc2 and len are", options.preavgproc2, len(options.preavgproc2),  type(options.preavgproc2)
@@ -2331,11 +2350,18 @@ def makeAverage(options,ic,align_parms,it=1):
 					print "Therefore slope is", slope
 					
 					dx = tiltaxis - px 
-					weight = slope * px + minweight
+					taweight = slope * px + minweight 
+					weight = weight * ( taweight )
+					print "tiltaxis weight was %f because it's distance from the tilt axis is %d, because it's x coordinate was %d" % (taweight, dx, x)
+
+				if options.weighbyscore:
+					scoreweight = score / maxscore
+					print "the score weight is %f because score was %f and the best score was %f" % (scoreweight, score, maxscore )
+					weight = weight * scoreweight
 					
-					ptcl.mult( weight )
-					print "The particle %i has been weighted by %f because it's distance from the tilt axis is %d, because it's x coordinate was %d" % (i, weight, dx, x)
+				print "therefore the final weight for particle %d is %f" %( i, weight )
 					
+				ptcl.mult( weight )
 				avgr.add_image( ptcl )
 				included.append(i)
 
@@ -2344,7 +2370,7 @@ def makeAverage(options,ic,align_parms,it=1):
 				ptcl['origin_x'] = 0
 				ptcl['origin_y'] = 0		# jesus - the origin needs to be reset to ZERO to avoid display issues in Chimera
 				ptcl['origin_z'] = 0
-				ptcl['spt_score'] = ptcl_parms[0]['score']
+				ptcl['spt_score'] = score
 			
 				#print "\nThe score is", ptcl_parms[0]['score']
 				#print "Because the zero element is", ptcl_parms[0]
