@@ -138,11 +138,11 @@ def main():
 	
 	parser.add_argument("--npeakstorefine", type=int, help="""Default=1. The number of best coarse alignments to refine in search of the best final alignment. Default=1.""", default=4, guitype='intbox', row=9, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym[1]')
 	
-	parser.add_argument("--align",type=str,help="""This is the aligner used to align particles to the previous class average. Default is rotate_translate_3d:search=8:delta=12:dphi=12, specify 'None' (with capital N) to disable.""", returnNone=True, default="rotate_translate_3d:search=8:delta=12:dphi=12", guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'3d\')', row=12, col=0, rowspan=1, colspan=3, nosharedb=True, mode="alignment,breaksym['rotate_symmetry_3d']")
+	parser.add_argument("--align",type=str,default="rotate_translate_3d:search=8:delta=12:dphi=12",help="""This is the aligner used to align particles to the previous class average. Default is rotate_translate_3d:search=8:delta=12:dphi=12, specify 'None' (with capital N) to disable.""", returnNone=True,guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'3d\')', row=12, col=0, rowspan=1, colspan=3, nosharedb=True, mode="alignment,breaksym['rotate_symmetry_3d']")
 	
 	parser.add_argument("--aligncmp",type=str,default="ccc.tomo",help="""Default=ccc.tomo. The comparator used for the --align aligner. Do not specify unless you need to use anotherspecific aligner.""",guitype='comboparambox',choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=13, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
 	
-	parser.add_argument("--falign",type=str,help="""default="refine_3d_grid:delta=3:range=15:search=2". This is the second stage aligner used to fine-tune the first alignment. Default is refine_3d_grid:delta=3:range=15:search=2, specify 'None' to disable.""", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine.*3d\')', row=14, col=0, rowspan=1, colspan=3, nosharedb=True, mode='alignment,breaksym[None]')
+	parser.add_argument("--falign",type=str,default="refine_3d_grid:delta=3:range=15:search=2",help="""Default="refine_3d_grid:delta=3:range=15:search=2". This is the second stage aligner used to fine-tune the first alignment. Specify 'None' to disable.""", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine.*3d\')', row=14, col=0, rowspan=1, colspan=3, nosharedb=True, mode='alignment,breaksym[None]')
 		
 	parser.add_argument("--faligncmp",type=str,default="ccc.tomo",help="""Default=ccc.tomo. The comparator used by the second stage aligner.""", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=15, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")		
 	
@@ -408,7 +408,7 @@ def main():
 					az0=0:az1=1:daz=2."""
 					sys.exit()
 			
-	#print "\n\nBefore adding search, options.falign is", options.falign, type(options.falign)	
+	print "\n\nBefore adding and fixing searches, options.falign is", options.falign, type(options.falign)	
 	if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
 		if 'search' not in options.falign and 'refine_3d_grid' in options.falign:		
 			options.falign += ':search=' + str( options.searchfine )
@@ -436,6 +436,8 @@ def main():
 			elif options.searchfine == searchfinedefault:
 				options.searchfine = searchF	
 	
+	
+	print "after fixing searches but before calcali options.falign is", options.falign
 	if options.radius and float(options.radius) > 0.0:
 		#print "(e2spt_classaverage)(main) before calling calcAliStep, options.input is", options.input
 		options = calcAliStep(options)
@@ -1796,10 +1798,16 @@ def calcAliStep(options):
 	if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align:
 		options.align += ':sym=' + str(options.sym)
 	
+	
+	print "inside calcali options.falign received is", options.falign
 	if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
+		#if options.radius:
 		options.falign = 'refine_3d_grid:range=' + str(rangoRounded) + ':delta=' + str(fineStepRounded) + ':search=' + str(searchF)
 	else:
 		options.falign = 'None'
+		
+	print "and has been set to", options.falign
+	
 	
 	if options.verbose:
 		if options.verbose > 9:
@@ -2735,22 +2743,12 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	sfixedimage = fixedimage.copy()
 	s2fixedimage = fixedimage.copy()
 	
-	
-	#print "received reference image in alignment and values are", fixedimage, fixedimage['minimum'],fixedimage['maximum'],fixedimage['sigma'],fixedimage['mean']
-	#print "received particle image in alignment and values are", image, image['minimum'],image['maximum'],image['sigma'],image['mean']
-
-	
-	#if not image['maximum'] and not image['minimum']:
-	#	print "Error. Empty particle."
-	#	sys.exit()
-	
-	#if not fixedimage['maximum'] and not fixedimage['minimum']:
-	#	print "Error. Empty reference."
-	#	sys.exit()
-	
-	
 	if not refpreprocess:
 		print "\nThere is NO refpreprocess! But an external reference WAS provided", options.ref
+	
+		if options.clipali:
+			if sfixedimage['nx'] != options.clipali or sfixedimage['ny'] != options.clipali or sfixedimage['nz'] != options.clipali:
+				sfixedimage = clip3D( sfixedimage, options.clipali )
 		
 		if options.shrink and int(options.shrink) > 1:
 			sfixedimage = sfixedimage.process('math.meanshrink',{'n':options.shrink})
@@ -2758,8 +2756,11 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		if options.procfinelikecoarse:
 			s2fixedimage = sfixedimage.copy()	
 		
-		elif options.shrinkfine and int(options.shrinkfine) > 1:
-			s2fixedimage = s2fixedimage.process('math.meanshrink',{'n':options.shrinkfine})
+		elif options.falign:
+			if options.shrinkfine and int(options.shrinkfine) > 1:
+				s2fixedimage = s2fixedimage.process('math.meanshrink',{'n':options.shrinkfine})
+		else:
+			s2fixedimage = sfixedimage.copy()
 	
 	elif refpreprocess:
 		
@@ -2779,13 +2780,14 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	
 			elif options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1:
 				s2fixedimage = preprocessing(fixedimage,options,options.mask,options.clipali,options.normproc,options.shrinkfine,options.lowpassfine,options.highpassfine,options.preprocessfine,options.threshold,refindx, savetag ,'no',round)
-		
+		else:
+			s2fixedimage = sfixedimage.copy()	
 	
 	#########################################
 	#Preprocess the particle or "moving image"
 	#########################################
-	simage = image
-	s2image = image
+	simage = image.copy()
+	s2image = image.copy()
 	
 	savetagp = 'ptcls'
 	if 'odd' in label or 'eve' in label:
@@ -2793,11 +2795,15 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	
 	if options.clipali or options.threshold or options.normproc or options.mask or options.preprocess or options.lowpass or options.highpass or int(options.shrink) > 1:
 	
-		print "\n\n\n\n\n\n\n\n\n\n\nSending particle to preprocessing. It's size is", simage['nx'],simage['ny'],simage['nz']
+		print "\n\n\n\n\n\n\n\n\n\n\nSending moving particle to preprocessing. It's size is", simage['nx'],simage['ny'],simage['nz']
 	
 		simage = preprocessing(image,options,options.mask,options.clipali,options.normproc,options.shrink,options.lowpass,options.highpass,options.preprocess,options.threshold,ptclindx, savetagp ,'yes',round)
 	
+	print "preprocessed moving particle has size", simage['nx']
+	
 	#Only preprocess again if there's fine alignment, AND IF the parameters for fine alignment are different
+	
+	print "options.falign is", options.falign
 	
 	if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none': 
 		if options.procfinelikecoarse:
@@ -2807,6 +2813,17 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			s2image = preprocessing(image,options,options.mask,options.clipali,options.normproc,options.shrinkfine,options.lowpassfine,options.highpassfine,options.preprocessfine,options.threshold,ptclindx, savetagp ,'no',round)
 			print "There was fine preprocessing"
 		#sys.exit()
+	else:
+		s2image = simage.copy()
+	
+	if sfixedimage['nx'] != simage['nx']:
+		print "ERROR: preprocessed images for coarse alignment not the same size", sfixedimage['nx'], simage['nx']
+		sys.exit()
+		
+	elif options.falign:
+		if s2fixedimage['nx'] != s2image['nx']:
+			print "ERROR: preprocessed images for fine alignment not the same size", s2fixedimage['nx'], s2image['nx']
+			sys.exit()
 	
 	if transform:
 		#print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nThere WAS a transform, see", transform
