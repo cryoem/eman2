@@ -2584,13 +2584,6 @@ class Align3DTask(JSTask):
 		options=classoptions['options']
 		
 		#Need to use try/except because other alignment programs do not have the --ref option or --refpreprocess
-		try:	
-			if not options.ref:
-				print "\n\n\n\n(e2spt_classaverage)(Align3DTask) There is no reference; therfore, refpreprocess should be turned on", refpreprocess
-				refpreprocess=1
-		except:
-			refpreprocess=1
-		
 		
 		try:	
 			if options.refpreprocess:
@@ -2598,6 +2591,17 @@ class Align3DTask(JSTask):
 			else:
 				refpreprocess=0
 		except:
+			refpreprocess=1
+		
+		try:
+			print "inside class, options.ref and type and len are", options.ref, type(options.ref), len(str(options.ref))
+	
+			if not options.ref or options.ref == '':
+				refpreprocess=1
+				print "\n\n\n\n(e2spt_classaverage)(Align3DTask) There is no reference; therfore, refpreprocess should be turned on", refpreprocess
+				
+		except:
+			print "inside class options.ref doesnt exist therefore refpreprocess is 1"
 			refpreprocess=1
 		
 		#After the first iteration, refpreprocess is always on. It should be turned on manually by the user if a non-crystal structure reference is provided.
@@ -2663,7 +2667,9 @@ def align3Dfunc(fixedimage,image,ptclnum,label,options,transform,currentIter):
 	
 	refpreprocess=0
 	
-	if not options.ref:
+	
+	print "Inside func, options.ref and type and len are", options.ref, type(options.ref), len(str(options.ref))
+	if not options.ref or options.ref == '':
 		refpreprocess=1
 		print "\n(e2spt_classaverage)(align3Dfunc) There is no reference; therfore, refpreprocess should be turned on", refpreprocess
 
@@ -2746,7 +2752,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	s2fixedimage = fixedimage.copy()
 	
 	if not refpreprocess:
-		print "\nThere is NO refpreprocess! But an external reference WAS provided", options.ref, type( options.ref )
+		print "\nThere is NO refpreprocess! But an external reference WAS provided, type, len", options.ref, type( options.ref ), len( str( options.ref ))
 	
 		if options.clipali:
 			if sfixedimage['nx'] != options.clipali or sfixedimage['ny'] != options.clipali or sfixedimage['nz'] != options.clipali:
