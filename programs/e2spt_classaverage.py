@@ -186,7 +186,7 @@ def main():
 	
 	parser.add_argument("--preavgproc2",type=str,default='',help="""Default=None. A processor (see 'e2help.py processors -v 10' at the command line) to be applied to the raw particle after alignment but before averaging (for example, a threshold to exclude extreme values, or a highphass filter if you have phaseplate data.)""")
 
-	parser.add_argument("--weighbytiltaxis",type=int,default=0,help="""A,B, where A is an integer number and B a decimal. A represents the location of the tilt axis in the tomogram in pixels (eg.g, for a 4096x4096xZ tomogram, this value should be 2048), and B is the weight of the particles furthest from the tomogram. For example, --weighbytiltaxis=2048,0.5 means that praticles at the tilt axis (with an x coordinate of 2048) will have a weight of 1.0 during averaging, while the distance in the x coordinates of particles not-on the tilt axis will be used to weigh their contribution to the average, with particles at the edge(0+radius or 4096-radius) weighing 0.5, as specified by the value provided for B.""")
+	parser.add_argument("--weighbytiltaxis",type=str,default='',help="""Default=None. A,B, where A is an integer number and B a decimal. A represents the location of the tilt axis in the tomogram in pixels (eg.g, for a 4096x4096xZ tomogram, this value should be 2048), and B is the weight of the particles furthest from the tomogram. For example, --weighbytiltaxis=2048,0.5 means that praticles at the tilt axis (with an x coordinate of 2048) will have a weight of 1.0 during averaging, while the distance in the x coordinates of particles not-on the tilt axis will be used to weigh their contribution to the average, with particles at the edge(0+radius or 4096-radius) weighing 0.5, as specified by the value provided for B.""")
 
 	
 	#parser.add_argument("--automask",action="store_true",help="""Applies a 3-D automask before 
@@ -2324,10 +2324,11 @@ def makeAverage(options,ic,align_parms,it=1):
 					slope = W/X
 											#Having the slope of the line and its y-axis (or w-axis in this case) crossing we predict the weight of any particle depending on its dx distance to the tiltaxis
 					
-					x = math.fabs( tiltaxis - px )
+					x = int(math.fabs( tiltaxis - px ))
 					weight = slope * x + minweight
 					
 					ptcl.mult( weight )
+					print "The particle %i has been weighted by %f because it's distance from the tilt axis is %d, because it's x coordinate was %d" % (i, weight, x, px)
 					
 				avgr.add_image( ptcl )
 				included.append(i)
