@@ -178,6 +178,7 @@ def main():
 
 	cursum=min(allbest)[2]			# start with the best matching map we got
 	used=[allbest.index(min(allbest))]
+	if options.verbose : print "Best map: ",used[0]
 	
 	# we add in 1/3 more of the best matching volumes
 	for n in xrange(len(allbest)/3):
@@ -187,9 +188,11 @@ def main():
 			if i in used : continue
 			best=min(best,(mapcmp(cursum,allbest[i][2]),allbest[i][2],i))
 		
+		if options.verbose : print "{}.  {}\t{}".format(i,best[2],best[0])
 		used.append(best[2])
 		cursum=mapsum(cursum,best[1])
 	
+	if options.verbose: print used
 	cursum.process_inplace("normalize.edgemean")
 	cursum.write_image("final.hdf")
 	
