@@ -2639,7 +2639,7 @@ c
  * Optimized:
  * 	*Sin and Cos functions are tabulated for the largest ring
  * 	*Bilinear interpolation
-*/
+*
 EMData* Util::Polar2Dm(EMData* image, float cnx2, float cny2, vector<int> numr, string cmode){
 	int nring = numr.size()/3;
 	int r1 = numr(1,1);
@@ -2733,11 +2733,11 @@ EMData* Util::Polar2Dm(EMData* image, float cnx2, float cny2, vector<int> numr, 
 	}
 	return out;
 }
-
+*/
 /*
  * 10/22/2014
  * Previous version
- * Quadratic interpolation*
+ * Quadratic interpolation*/
  EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, string cmode){
 	int nsam = image->get_xsize();
 	int nrow = image->get_ysize();
@@ -2826,7 +2826,7 @@ EMData* Util::Polar2Dm(EMData* image, float cnx2, float cny2, vector<int> numr, 
 	} //end for it
 	return out;
 }
-*/
+
 
 float Util::bilinear(float xold, float yold, int nsam, int nrow, float* xim)
 {

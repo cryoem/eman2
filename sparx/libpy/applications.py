@@ -17777,7 +17777,7 @@ def filamentupdown(fildata, pixel_size, dp, dphi):
 	#print " ERRORS :",terr," \n        ",serr
 	if(terr[0] > terr[1]):  updown = 0
 	else:                   updown = 1
-
+	print "updown=%d"%updown	
 	for i in xrange(ns):  fildata[i].set_attr("updown",updown)
 	return
 """
@@ -17904,7 +17904,7 @@ def setfilori_SP(fildata, pixel_size, dp, dphi):
 	from applications	import filamentupdown
 	from copy 			import deepcopy
 	from math 			import atan2, sin, cos, pi, radians
-
+	
 	#if sym != 'c1':
 	#	ERROR("does not handle any point-group symmetry other than c1 for the time being.", 'setfilori_SP')
 
@@ -17926,13 +17926,13 @@ def setfilori_SP(fildata, pixel_size, dp, dphi):
 		coordsi = fildata[i].get_attr('ptcl_source_coord')
 		dist[i] = get_dist(coords0, coordsi)
 		phig[i], thetag[i], psig[i] , xg[i], yg[i] = get_params_proj(fildata[i])
-		#print "%3d  %5.1f   %5.1f   %5.1f   %5.1f   %5.1f"%(i,phig[i], thetag[i], psig[i] , xg[i], yg[i])
+		#print "before setfil_SP: %3d  %5.1f   %5.1f   %5.1f   %5.1f   %5.1f"%(i,phig[i], thetag[i], psig[i] , xg[i], yg[i])
 		gxyz [i][0] = cos(radians(phig[i]))
 		gxyz [i][1] = sin(radians(phig[i]))
 		gxyz [i][2] = yg[i]
 		if( abs(psig[i] - psig[0]) )> 90.0:
 			ERROR('PSI should be pointing in the same direction for all segments belonging to same filament', 'setfilori_SP',1)
-
+	
 	# Generate a spring starting from shift and phi equal zero
 	sgn = (1 - fildata[0].get_attr("updown")*2)
 	s2y = [0.0]*ns
@@ -17947,6 +17947,7 @@ def setfilori_SP(fildata, pixel_size, dp, dphi):
 	step = 0.1
 	qshift = -rise/2
 	toto = 1.0e23
+	qshifm = 0
 	while( qshift < rise/2 ):
 		#print qshift
 		i= 0
@@ -17964,14 +17965,14 @@ def setfilori_SP(fildata, pixel_size, dp, dphi):
 
 		for i in xrange(ns):
 			phi[i] = phi[i]+phidiff
-			temp = radians(bang[i])
+			temp = radians(phi[i])
 			cxyz [i][0] = cos(temp)
 			cxyz [i][1] = sin(temp)
 			cxyz [i][2] = s2y[i]
 
 		qdst = 0.0
 		for i in xrange(ns):
-			for k in xrange(3):
+			for k in xrange(2):
 				qdst += (gxyz[i][k]-cxyz[i][k])**2
 		#print qdst,toto
 		if(qdst<toto):
@@ -17979,6 +17980,7 @@ def setfilori_SP(fildata, pixel_size, dp, dphi):
 			for i in xrange(ns):
 				bys[i]   = cxyz[i][2]
 				bang[i]  = phi[i]%360.0
+				
 			#print "found better", phidiff,qshift
 		qshift += step
 
@@ -17989,6 +17991,7 @@ def setfilori_SP(fildata, pixel_size, dp, dphi):
 		set_params_proj(fildata[i], [bang[i], thetag[i], psig[i] , xg[i], bys[i]])
 		#print    "    %3d  %7.1f    %9.3f"%(i,bang[i]-phig[i],bys[i]-yg[i])
 	#print yer, per
+	
 	return
 
 def prepare_refrings2( volft, kb, nz, segmask, delta, ref_a, sym, numr, MPI=False, phiEqpsi = "Minus", kbx = None, kby = None, initial_theta = None, delta_theta = None):
