@@ -2746,11 +2746,14 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	s2fixedimage = fixedimage.copy()
 	
 	if not refpreprocess:
-		print "\nThere is NO refpreprocess! But an external reference WAS provided", options.ref
+		print "\nThere is NO refpreprocess! But an external reference WAS provided", options.ref, type( options.ref )
 	
 		if options.clipali:
 			if sfixedimage['nx'] != options.clipali or sfixedimage['ny'] != options.clipali or sfixedimage['nz'] != options.clipali:
 				sfixedimage = clip3D( sfixedimage, options.clipali )
+			
+			if s2fixedimage['nx'] != options.clipali or s2fixedimage['ny'] != options.clipali or s2fixedimage['nz'] != options.clipali:
+				s2fixedimage = clip3D( s2fixedimage, options.clipali )
 		
 		if options.shrink and int(options.shrink) > 1:
 			sfixedimage = sfixedimage.process('math.meanshrink',{'n':options.shrink})
