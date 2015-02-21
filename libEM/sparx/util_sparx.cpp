@@ -19256,7 +19256,43 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 		n1[iref] = crefim[iref]->get_attr("n1");
 		n2[iref] = crefim[iref]->get_attr("n2");
 		n3[iref] = crefim[iref]->get_attr("n3");
+/*
+need to fix multiref_polar_ali_2d_local and shc so they work properly for local searches:
+1. add here symmetry string sym
+2. convert all tsym to sets pf normal vectors (ims1 below).
+3. find indexes of reference images based on their n1 vectors (as above) that are within ant and
+put them on a short list.
+4. Only those from the list should be used in the matching list.
+
+As for mirror, we assume the images can be straight or mirror but templates only straight.
+So, when we check for neighboring templates, we use abs(inner product).
+
+Next, we have to use Crosrng_ew (instead of Crosrng_ms, check whether they are equivalent!!)
+and set mirror=1 if image comes in mirrored.
+
+
+
+		    bool gogo = false;
+		    vector<Transform> tsym = t->get_sym_proj(sym);
+		    int isym = 0;
+		    int nsym = tsym.size();
+		    //  There is something wrong here.  imn1 should be multiplied by tsym for all nysm symmetries
+		    //  and closest should be found.
+		    while ( isym < nsym && ! gogo ) {
+                Dict d = tsym[isym].get_params("spider");
+                float phi   = d["phi"];
+                float theta = d["theta"];
+                float ims1 = sin(theta*qv)*cos(phi*qv);
+                float ims2 = sin(theta*qv)*sin(phi*qv);
+                float ims3 = cos(theta*qv);
+		        if(abs(n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3)>=ant)  gogo = true;
+		        isym ++;
+		     }
+*/
+
+
 	}
+	//02162015PAP
 	for (int i = -ky; i <= ky; i++) {
 	    iy = i * step ;
 	    for (int j = -kx; j <= kx; j++) {
@@ -19534,6 +19570,16 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
     vector<float> n3;
  //cout << ant <<endl;
     if( ant >= 0.0) {
+    /*
+    Sequence of operations:
+    	1. image should have reference projection orientation in addition to current projection orientation
+    	2. find a subset of reference projections within ant of the reference projection orientation of image,
+    			the similarity should include the symmetry
+    	3. shuffle the indexes of the subset
+    	4. Do the random matching
+    With the above, local searches could be also used for randomization tests as it would be enough to call
+    shc with previousmax=-1.0e23 and reference projection direction set to the current angle.
+    */
         t = image->get_attr("xform.projection");
         n1.resize((int)crefim_len);
         n2.resize((int)crefim_len);
@@ -19552,6 +19598,14 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 	//if(t) {delete t; t=0;}
 	//float phi   = d["phi"];
 	//float theta = d["theta"];
+
+	vector<unsigned> listr(crefim_len);
+	for (unsigned i = 0; i < crefim_len; ++i) listr[i] = i;
+	for (unsigned i = 0; i < crefim_len; ++i) {
+		unsigned r = Util::get_irand(0,crefim_len-1);
+		swap( listr[r], listr[i] );
+	}
+
 	const int ky = int(2*yrng/step+0.5)/2;
 	const int kx = int(2*xrng/step+0.5)/2;
 
@@ -19566,13 +19620,6 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 			Frngs(cimage, numr);
 			cimages[i+ky][j+kx] = cimage;
 		}
-	}
-
-	vector<unsigned> listr(crefim_len);
-	for (unsigned i = 0; i < crefim_len; ++i) listr[i] = i;
-	for (unsigned i = 0; i < crefim_len; ++i) {
-		unsigned r = Util::get_irand(0,crefim_len-1);
-		swap( listr[r], listr[i] );
 	}
 
 	float sx=0.0f, sy=0.0f;
@@ -21529,7 +21576,7 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
-	cout <<"  VERSION  02/10/2015  12:00 PM"<<endl;
+	cout <<"  VERSION  02/21/2015  1:00 PM"<<endl;
 	float dummy;
 	dummy = ri;
 	cout <<  "   fmod   "<<fmod(qprob,dummy)<<endl;
