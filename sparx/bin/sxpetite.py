@@ -1,4 +1,6 @@
-#!/usr/bin/env python
+#!/home/pawel/EMAN2/extlib/bin/python
+
+
 #
 # Author: 
 # Copyright (c) 2012 The University of Texas - Houston Medical School
@@ -512,17 +514,18 @@ def metamove(paramsdict, partids, partstack, outputdir, procid, myid, main_node,
 def main():
 
 	from utilities import write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle
-	from logger import Logger, BaseLogger_Files
-	import sys
-	import os
-	import time
-	import socket
 	import user_functions
 	from applications import MPI_start_end
 	from optparse import OptionParser
 	from global_def import SPARXVERSION
 	from EMAN2 import EMData
 	from multi_shc import multi_shc, do_volume
+	from math import *
+	from logger import Logger, BaseLogger_Files
+	import sys
+	import os
+	import time
+	import socket
 
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack  [output_directory]  initial_volume  --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood  --center=center_type --maxit1=max_iter1 --maxit2=max_iter2 --L2threshold=0.1  --fl --aa --ref_a=S --sym=c1"
@@ -555,7 +558,7 @@ def main():
 
 	(options, args) = parser.parse_args(sys.argv[1:])
 
-	#print( args)
+	#print( "  args  ",args)
 	if( len(args) == 3):
 		volinit = args[2]
 		masterdir = args[1]
@@ -665,12 +668,10 @@ def main():
 
 	nxshrink = nxinit
 	shrink = float(nxshrink)/float(nnxo)
-	#  Randomize initial parameters (??)
-	#  cmd = "{} {} {}".format("sxheader.py", stack, "--rand_alpha  --params=xform.projection")
-	#  cmdexecute(cmd)
 
 	#  MASTER DIRECTORY
 	if(myid == main_node):
+		print( "   masterdir   ",masterdir)
 		if( masterdir == ""):
 			timestring = strftime("_%d_%b_%Y_%H_%M_%S", localtime())
 			masterdir = "master"+timestring
@@ -728,6 +729,10 @@ def main():
 	xr = min(8,(nnxo - (2*radi+1))//2)
 	if(xr > 3):  ts = "2"
 	else:  ts = "1"
+	
+	delta = int(options.delta)
+	if(delta <= 0.0):
+		delta = "%f"%round(degrees(atan(1.0/float(radi))), 2)	
 
 	paramsdict = {	"stack":stack,"delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":"-1", "center":options.center, "maxit":1, \
 					"currentres":0.4, "aa":0.1, "radius":radi, "nsoft":0, "delpreviousmax":True, "shrink":1.0, "saturatecrit":1.0, \
@@ -994,6 +999,7 @@ def main():
 		if  doit:
 			volf = (vol[0]+vol[1])*0.5
 			ali3d_options.fl = newres
+			ali3d_options.ou = radi
 			volf = do_volume(volf,ali3d_options, mainiteration, mpi_comm = MPI_COMM_WORLD)
 			if(myid == main_node): volf.write_image(os.path.join(mainoutputdir,"volf.hdf"))
 			del volf, vol
