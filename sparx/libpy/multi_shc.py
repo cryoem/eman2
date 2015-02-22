@@ -2934,7 +2934,10 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 		list_of_particles = range(len(stack))
 		nima = len(list_of_particles)
 		total_nima = len(list_of_particles)
-		total_nima = int(mpi_reduce(total_nima, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD))
+		total_nima = mpi_reduce(total_nima, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
+		total_nima = mpi_bcast(total_nima, 1, MPI_INT, 0, MPI_COMM_WORLD)
+		total_nima = int(total_nima[0])
+
 
 	if myid == 7:
 		finfo = None
