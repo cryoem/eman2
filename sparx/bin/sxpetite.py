@@ -803,7 +803,7 @@ def main():
 	nxshrink = min(max(32, int((currentres+paramsdict["aa"]/2.)*2*nnxo + 0.5)), nnxo)
 	shrink = float(nxshrink)/nnxo
 	tracker = {"previous-resolution":currentres, "movedup":False,"eliminated-outliers":False,\
-				"previous-nx":nxshrink, "previous-shrink":shrink, "extention":0, "bestsolution":0}
+				"previous-nx":nxshrink, "previous-shrink":shrink, "extension":0, "bestsolution":0}
 	
 	previousoutputdir = initdir
 	#  MAIN ITERATION
