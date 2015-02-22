@@ -240,10 +240,11 @@ def main():
 		simptclsname = options.path + '/simptcls.hdf'
 		if options.nosim:
 			
-			clip2cmd = 'e2proc3d.py ' + randstackcopy + ' ' + randstackcopy + ' --clip=' + str(options.clip)
-			p=subprocess.Popen( clip2cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-			text=p.communicate()	
-			p.stdout.close()
+			if options.clip:
+				clip2cmd = 'e2proc3d.py ' + randstackcopy + ' ' + randstackcopy + ' --clip=' + str(options.clip)
+				p=subprocess.Popen( clip2cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+				text=p.communicate()	
+				p.stdout.close()
 	
 			os.system('cp ' + options.input + ' ' + simptclsname)
 		
@@ -680,7 +681,7 @@ def orthostack(options, model):
 		if i==0:
 			b['sptsim_randT'] = Transform()
 			b['xform.align3d'] = Transform()
-			orthoptcls.append(b)
+			orthoptcls.update({2:b})
 		
 		#if i == 1:
 		#	b.rotate(90,0,0)
@@ -694,14 +695,14 @@ def orthostack(options, model):
 			t = Transform({'type':'eman','az':0,'alt':90,'phi':0})
 			b['sptsim_randT'] = t
 			b['xform.align3d'] = Transform()				
-			orthoptcls.append(b)
+			orthoptcls.update({1:b})
 			
 		if i == 2:
 			b.rotate(0,90,90)
 			t = Transform({'type':'eman','az':0,'alt':90,'phi':90})
 			b['sptsim_randT'] = t
 			b['xform.align3d'] = Transform()
-			orthoptcls.update({i:b})
+			orthoptcls.update({0:b})
 		
 		#orthostackname = options.path + '/orthostack.hdf'
 		
