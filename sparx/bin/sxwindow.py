@@ -76,53 +76,43 @@ def check_options(options, progname):
 	if options.coords_format == None:
 		print "\nCoordinate file format must be specified with option --coords_format. Type %s -h for help.\n" % progname
 		sys.exit()
-	# else:
-	# 	if options.coords_format.lower() == 'json' and options.coords_keys == None:
-	# 		print "\nKey must be specified with option --coords_keys for JSON format. Type %s -h for help.\n" % progname
-	# 		sys.exit()
-	# 
-	# 	if options.coords_format.lower() == 'textrow' and len(options.coords_keys.split()) != 2:
-	# 		print "\nPair of column numbers must be specified with option --coords_keys for textrow format. Type %s -h for help.\n" % progname
-	# 		sys.exit()
-
-
+		
+	if not(options.coords_format.lower() == 'sparx' or options.coords_format.lower() == 'eman1' or options.coords_format.lower() == 'eman2' or options.coords_format.lower() == 'spider') :
+		print "\nInvalid option value for --coords_format: %s Type %s -h for help.\n" % (options.coords_format.lower(), progname)
+		sys.exit()
 
 def main():
 # 	parser1 = argparse.ArgumentParser(description='This program is used to window particles from a micrograph. The coordinates of the particles are given as input.')
 # 	parser1.add_argument()
 
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " [micrographs list] ...  --coords_dir=coords_dir  --importctf=ctf_file  --indir=input_dir" + \
+	usage = progname + " [micrographs list] ...  --coords_dir=coords_dir  --coords_suffix=coords_suffix" + \
+	                                          "  --coords_extension=coords_extension  --coords_format=coords_format" + \
+	                                          "  --indir=input_dir  --importctf=ctf_file  --limitctf" + \
 	                                          "  --input_pixel=input_pixel  --new_pixel=new_pixel --box_size=box_size" + \
 	                                          "  --outdir=outdir  --outsuffix=outsuffix  --micsuffix=micsuffix" + \
-	                                          "  --nameroot=nameroot --limitctf --invert"
+	                                          "  --nameroot=nameroot  --invert" + \
+	                                          "  --defocuserror=defocuserror  --astigmatismerror=astigmatismerror"
 
 	parser = OptionParser(usage, version=SPARXVERSION)
 
 	parser.add_option('--coords_dir',       dest='coordsdir',                 help='Directory containing files with particle coordinates.')
 	parser.add_option('--coords_suffix',                   default="",        help='Suffix of coordinate files. For example "_ptcls".')
-	parser.add_option('--coords_extension',                                   help='File extension of coordinate files. For example "json", "box" ...') # required
-	# parser.add_option('--coords_format',                                      help='Format of coordinates file, "json" or "textrow". Also, see suboptions specified by option --coords_keys\n' +
-	# 																				'All files must have the same basename with their corresponing micrographs.')
-	parser.add_option('--coords_format',                                      help='Format of coordinates file, "sparx" or "eman2". Sparx format is two columns with coordinates of particle centers. Eman2 format has two columns. The first two are coordinates of particle box conner next to the original box size.')
-	# parser.add_option('--coords_keys',                                        help='If --coords_format is json, key must be provided via --coords_keys. Typically, it is "boxes" if coordinates were produced by e2boxer\n' +
-	# 																	           'If --coords_format is textrow, column numbers of x and y must be provided via --coords_keys. Ex. "1 2"')
-	
+	parser.add_option('--coords_extension',                                   help='File extension of coordinate files. e.g "box" for eman1, "json" for eman2, ...') # required
+	parser.add_option('--coords_format',                                      help='Format of coordinates file: "sparx", "eman1", "eman2", or "spider". The coordinates of sparx, eman2, and spider format is particle center. The coordinates of eman1 format is particle box corner associated with the original box size.')	
 	parser.add_option("--indir",            type="string", default= ".",      help="Directory containing micrographs to be processed.")
 	parser.add_option('--importctf',                                          help='File name with CTF parameters produced by sxcter.')
 	parser.add_option("--limitctf",         action="store_true", default=False,     help="Filter micrographs based on the CTF limit.")
 	parser.add_option('--input_pixel',      type=float,    default=1.0,       help='input pixel size')
-	parser.add_option("--new_pixel",         type=float,    default=-1.0,      help="New pixel size to which the micrograph should be resampled. Default is -1, in which case there is no resampling.")
+	parser.add_option("--new_pixel",        type=float,    default=-1.0,      help="New pixel size to which the micrograph should be resampled. Default is -1, in which case there is no resampling.")
 	parser.add_option('--box_size',         type=int,      default=256,       help='x and y dimension in pixels of square area to be windowed. Pixel size is assumed to be new_pixel_size.')
 	parser.add_option('--outdir',                                             help='Output directory')
 	parser.add_option('--outsuffix',        type=str,      default="_ptcls",  help="Suffix for output stack, e.g. '_ptcls' etc.")	
 	parser.add_option("--micsuffix",        type=str,      default="hdf",     help="A string denoting micrograph type. For example 'mrc', 'hdf', 'ser' ...")
 	parser.add_option("--nameroot",         type="string", default="",        help="Prefix of micrographs to be processed.")
 	parser.add_option("--invert",           action="store_true", default=False, help="Invert image contrast (recommended for cryo data)")
-	                                        
 	parser.add_option("--defocuserror",     type="float",  default=1000000.0, help="Exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent.  The error is computed as (std dev defocus)/defocus*100%")
 	parser.add_option("--astigmatismerror", type="float",  default=360.0,     help="Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees.")
-
 
 	(options, args) = parser.parse_args()
 	
@@ -136,14 +126,6 @@ def main():
 	
 	check_options(options, progname)
 	
-	
-	# if options.coords_format.lower() == 'eman2':
-	#	coord=JSONCoord(options.coords_keys)
-	#if options.coords_format.lower() == 'oldeman2':
-	#	coord=JSONCoord(options.coords_keys)
-	#if options.coords_format.lower() == 'sparx' :
-	#	coord=read_text_row(fname)
-
 	extension_coord = options.coords_suffix + "." + options.coords_extension
 	
 # 	Build micrograph basename list
@@ -201,15 +183,22 @@ def main():
 
 		print "\nProcessing micrograph %s... Path: %s... Coordinates file %s" % (basename, f_mic, f_info)
 	
-## 		coords = js_open_dict(f_info)["boxes"]
-# 		coords = coord.get_coords(f_info)
-		
-		if options.coords_format.lower() == 'eman2':
+		if options.coords_format.lower() == 'sparx' :
+			coords = read_text_row(f_info)
+		elif options.coords_format.lower() == 'eman1':
 			coords = read_text_row(f_info)
 			for i in range(len(coords)):
 				coords[i] = [coords[i][0] + coords[i][2]//2  ,coords[i][1] + coords[i][3]//2]
-		elif options.coords_format.lower() == 'sparx' :
+		elif options.coords_format.lower() == 'eman2':
+			coords = js_open_dict(f_info)["boxes"]
+			for i in range(len(coords)):
+				coords[i] = [coords[i][0],coords[i][1]]
+		elif options.coords_format.lower() == 'spider':
 			coords = read_text_row(f_info)
+			for i in range(len(coords)):
+				coords[i] = [coords[i][2] ,coords[i][3]]
+		else:
+			assert(False) # Unreachable code
 		
 		immic = get_im(f_mic)
 		
