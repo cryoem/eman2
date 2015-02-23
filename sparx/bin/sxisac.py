@@ -39,9 +39,9 @@ import sys, ConfigParser
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = ( progname + " stack_file --ir=ir --ou=ou --rs=rs --xr=xr --yr=yr --ts=ts --maxit=maxit --CTF --snr=snr --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --main_maxit=main_iter" +
+	usage = ( progname + " stack_file --ir=ir --ou=ou --rs=rs --xr=xr --yr=yr --ts=ts --maxit=maxit --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --main_maxit=main_iter" +
 			" --iter_reali=iter_reali --match_first=match_first --max_round=max_round --match_second=match_second --stab_ali=stab_ali --thld_err=thld_err --indep_run=indep_run --thld_grp=thld_grp" +
-			" --img_per_grp=img_per_grp --generation=generation --candidatesexist --rand_seed=rand_seed --MPI" )
+			" --img_per_grp=img_per_grp --generation=generation --candidatesexist --rand_seed=rand_seed" )
 
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",             type="int",          default=1,       help="inner ring of the resampling to polar coordinates (1)")
