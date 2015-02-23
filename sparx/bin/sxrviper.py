@@ -363,7 +363,7 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 			set_params3D(vls[i],[0.,0.,0.,0.,0.,0.,0,1.0])
 		asa,sas = ave_var(vls)
 		# do the alignment
-		radius = 27   #  This is the radius of the structure, I do not know how to get it here PAP
+CANNOT BE HARDWIRED!!		radius = 27   #  This is the radius of the structure, I do not know how to get it here PAP
 		nx = asa.get_xsize()
 		st = Util.infomask(asa*asa, model_circle(radius,nx,nx,nx), True)
 		goal = st[0]
