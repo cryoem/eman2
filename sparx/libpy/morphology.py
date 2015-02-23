@@ -2017,7 +2017,6 @@ def defocus_baseline_fit(roo, i_start, i_stop, nrank, iswi):
 	nroo = len(roo)
 	baseline   = np.zeros(nroo, np.float32)
 	ord = len(TMP[-1])
-	from math import exp
 	freqstep = TMP[0][1]
 	for i in xrange(len(roo)):
 		freq = freqstep*(i-i_start)

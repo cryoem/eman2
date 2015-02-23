@@ -585,7 +585,7 @@ def main():
 			icol = 0
 
 			mic = model_blank(4096, 4096)
-			defocus = idef * 0.2
+			defocus = idef * 0.5#0.2
 			if parm_CTF:
 # 				ctf = EMAN2Ctf()
 # 				ctf.from_dict({"defocus": defocus, "cs": Cs, "voltage": voltage, "apix": pixel, "ampcont": ampcont, "bfactor": 0.0})

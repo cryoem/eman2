@@ -520,7 +520,6 @@ def main():
 	from global_def import SPARXVERSION
 	from EMAN2 import EMData
 	from multi_shc import multi_shc, do_volume
-	from math import *
 	from logger import Logger, BaseLogger_Files
 	import sys
 	import os
@@ -1094,7 +1093,7 @@ def main():
 			keepgoing = 1
 		
 		elif(newres < currentres):
-			if(not tracker["movedup"] and tracker["extension"] < 2):
+			if(not tracker["movedup"] and tracker["extension"] < 2 and mainiteration > 1):
 				keepgoing = 0
 				if(myid == main_node):  print("  Cannot improve resolution, the best result is in the directory main%03d"%tracker["bestsolution"])
 			else:
@@ -1104,16 +1103,21 @@ def main():
 				elif( tracker["movedup"] and tracker["extension"] > 1 and mainiteration > 1):
 					if(myid == main_node):  print("  Resolution decreased.  Will decrease target resolution and will try starting from previous stage:  main%03d"%(mainiteration - 1))
 					bestoutputdir = os.path.join(masterdir,"main%03d"%(mainiteration-1))
+				elif( mainiteration == 1):
+					if(myid == main_node):  print("  Resolution decreased in the first iteration.  It is expected, not to worry")
+					bestoutputdir = mainoutputdir
+					tracker["extension"] += 1
 				else:  # missing something here?
 					if(myid == main_node):  print(" Should not be here, ERROR 175!")
 					break
 					mpi_finale()
 					exit()
 					
-				cmd = "{} {} {}".format("cp -p ",os.path.join(bestoutputdir,"chunk%01d.txt"%procid) , os.path.join(mainoutputdir,"chunk%01d.txt"%procid))
-				cmdexecute(cmd)
-				cmd = "{} {} {}".format("cp -p ",os.path.join(bestoutputdir,"params-chunk%01d.txt"%procid), os.path.join(mainoutputdir,"params-chunk%01d.txt"%procid))
-				cmdexecute(cmd)
+				if( bestoutputdir != mainoutputdir):
+					cmd = "{} {} {}".format("cp -p ",os.path.join(bestoutputdir,"chunk%01d.txt"%procid) , os.path.join(mainoutputdir,"chunk%01d.txt"%procid))
+					cmdexecute(cmd)
+					cmd = "{} {} {}".format("cp -p ",os.path.join(bestoutputdir,"params-chunk%01d.txt"%procid), os.path.join(mainoutputdir,"params-chunk%01d.txt"%procid))
+					cmdexecute(cmd)
 				if(myid == main_node):  currentres = read_text_file( os.path.join(bestoutputdir,"current_resolution.txt") )[0]	
 				currentres = bcast_number_to_all(currentres, source_node = main_node)	
 

@@ -27,7 +27,7 @@ rm tmp.hdf
 sxprocess.py ../model_structure.hdf particles mic --generate_projections apix=5.2:CTF=True
 
 # Estimate CTF
-mpirun -np 5 sxcter.py pwrot partres --indir=. --nameroot=mic --micsuffix=hdf --wn=512 --apix=5.2 --Cs=2.0 --voltage=120 --ac=10.0 --f_start=0.02 --f_stop=0.5 --MPI
+mpirun -np 5 sxcter.py pwrot partres --indir=. --nameroot=mic --micsuffix=hdf --wn=512 --apix=5.2 --Cs=2.0 --voltage=120 --ac=10.0 --f_start=0.02 --f_stop=0.1 --MPI
 
 # Before proceeding to automated particle picking mode, it is suggested that the user
 # first use e2boxer in the interactive mode to determine the desired parameters by
