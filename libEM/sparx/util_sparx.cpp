@@ -19240,15 +19240,17 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 	if(t) {delete t; t=0;}
 	float phi   = d["phi"];
 	float theta = d["theta"];
+	// normal of an image
+	float imn1 = sin(theta*qv)*cos(phi*qv);
+	float imn2 = sin(theta*qv)*sin(phi*qv);
+	float imn3 = cos(theta*qv);
+
 	int   ky    = int(2*yrng/step+0.5)/2;
 	int   kx    = int(2*xrng/step+0.5)/2;
 	int   iref, nref=0, mirror=0;
 	float iy, ix, sx=0, sy=0;
 	float peak = -1.0E23f;
 	float ang  = 0.0f;
-	float imn1 = sin(theta*qv)*cos(phi*qv);
-	float imn2 = sin(theta*qv)*sin(phi*qv);
-	float imn3 = cos(theta*qv);
 	vector<float> n1(crefim_len);
 	vector<float> n2(crefim_len);
 	vector<float> n3(crefim_len);
@@ -19259,7 +19261,7 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 /*
 need to fix multiref_polar_ali_2d_local and shc so they work properly for local searches:
 1. add here symmetry string sym
-2. convert all tsym to sets pf normal vectors (ims1 below).
+2. convert all tsym to sets of normal vectors (ims1 below).
 3. find indexes of reference images based on their n1 vectors (as above) that are within ant and
 put them on a short list.
 4. Only those from the list should be used in the matching list.
@@ -19279,13 +19281,15 @@ and set mirror=1 if image comes in mirrored.
 		    //  There is something wrong here.  imn1 should be multiplied by tsym for all nysm symmetries
 		    //  and closest should be found.
 		    while ( isym < nsym && ! gogo ) {
-                Dict d = tsym[isym].get_params("spider");
-                float phi   = d["phi"];
-                float theta = d["theta"];
+		    	u = t * tsym[isym];
+		    	
+                Dict u = tsym[isym].get_params("spider");
+                float phi   = u["phi"];
+                float theta = u["theta"];
                 float ims1 = sin(theta*qv)*cos(phi*qv);
                 float ims2 = sin(theta*qv)*sin(phi*qv);
                 float ims3 = cos(theta*qv);
-		        if(abs(n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3)>=ant)  gogo = true;
+		        if(abs(n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3)>=ant)  keep index of reference on a new list; break;
 		        isym ++;
 		     }
 */
@@ -19300,10 +19304,10 @@ and set mirror=1 if image comes in mirrored.
 		EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 		Normalize_ring( cimage, numr );
 		Frngs(cimage, numr);
-		//  compare with all reference images
+		//  compare with all reference images that are on a new list
 		// for iref in xrange(len(crefim)):
 		for ( iref = 0; iref < (int)crefim_len; iref++) {
-			if(abs(n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3)>=ant) {
+			if(abs(n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3)>=ant) { //  we do not need this check here, it was done above
 		    		Dict retvals = Crosrng_ms(crefim[iref], cimage, numr);
 		    		double qn = retvals["qn"];
 		    		double qm = retvals["qm"];
