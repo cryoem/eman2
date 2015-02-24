@@ -586,7 +586,7 @@ below a value of 0.143. Note that when computing FSCs in other situations, for e
 all of the particle data to a higher resolution crystal structure, the more stringent 0.5 (actually 0.4) criterion must be used. Don't
 overinterpret these plots. The FSC plots themselves contain some noise, so there is some uncertainty in any resolution value.</p>
 <p>Also note that these curves are highly dependent on the mask used prior to FSC computation. See the next plot for more information
-on this. This iteration comparison plot uses a relatively tight mask designed to be somewhat comparable to that used in Relion.</p>
+on this. This iteration comparison plot uses a relatively tight mask designed to be somewhat comparable to that used in Relion (though Relion is still more aggressive in masking).</p>
 <p>These resolution curves should start at ~1 at low resolution, fall smoothly to ~0, then remain at roughly zero. The vertical range
 of an FSC plot is -1 to 1. Some negative oscillations after reaching zero are normal. If the FSC curve falls towards zero, but then
 rises again at high resolution this is an indication of an artifact, and the resolution values may not be trustworthy. Possible sources
@@ -598,10 +598,18 @@ curve here, please check the next plot, and see if the curve with a looser mask 
 resolution. For a while users who followed Relion's suggested procedure would find resolution values slightly better than those
 produced by EMAN. This was due to Relion's use of a very tight mask, often extending into the core of the structure.  EMAN2.1 now
 generates 3 FSC curves automatically: 1) completely unmasked, 2) a loose, "conservative" mask and 3) a tighter mask which should be
-somewhat similar to Relion 1.3 using its suggested parameters (though EMAN may remain slightly more conservative). The plot below
+somewhat similar to Relion 1.3 using its suggested parameters (though EMAN is still slightly more conservative). The plot below
 compares these three FSC curves for the last completed iteration. The relevant mask files are also stored in the refinement folder as
 mask.hdf and mask_tight.hdf. Note: if visualizing 3-D masks, it is generally a good idea to display as 2-D slices (single image view in
 browser) rather than using isosurfaces, so any internal features of the mask can be readily observed.</p>
+<p>If you see an 'unheathly' looking unmasked curve (rising at high resolution, etc.), particularly if the masked curves look healthy, this can
+indicate that your box-size is too small, and you are getting Fourier artifacts at the edge. It could also indicate some other problem, so if 
+re-extracting your boxed particles with a somewhat larger box doesn't fix the problem, please contact us, and we will help you to debug the problem.</p>
+<p>If your goal is to compare EMAN2.1 results to Relion, the only way to reliably accomplish this is to extract the unmasked even and odd
+gold-standard maps from both EMAN and RELION, mask them with exactly the same mask, then compute the FSC. For visual comparison of the final 
+gold-standard maps from both packages, you must insure that they are both identically filtered. This can be done easily by matching the 1-D
+power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_eman.hdf map_eman_cmp.hdf --process filter.matchto:to=map_relion.mrc</i></p>
+
 <br><a href=resolution_masks.pdf><img src=resolution_masks.png></a><br>
 	""")
 	xticklocs=[i for i in (.01,.05,.0833,.125,.1667,.2,.25,.3333,.4,.5) if i<1.0/(2.0*apix)]

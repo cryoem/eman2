@@ -106,7 +106,7 @@ def main():
 	recon=Reconstructors.get("fourier",{"size":(padsize,padsize,padsize),"sym":options.sym,"mode":"gauss_2","verbose":max(options.verbose-3,0)})
 	daz=3.0							# matches default orientation generator, good enough for an initial model?
 	eulers=[]
-	out=file("dbg.txt","w")
+#	out=file("dbg.txt","w")
 	allbest=[]
 	for n in xrange(len(ptcls)):
 		best=(1e100,None,None,None)
@@ -144,7 +144,7 @@ def main():
 						best2=(sim,ortins,trymap,trymapf,proj,ptcls[n])
 				
 				if options.verbose>1 : print sim
-				out.write("{}\t{}\t# {},{}\n".format(phi,sim,ort.get_rotation()["az"],ort.get_rotation()["alt"]))
+#				out.write("{}\t{}\t# {},{}\n".format(phi,sim,ort.get_rotation()["az"],ort.get_rotation()["alt"]))
 		if options.verbose: print best[:2]
 		
 		if (options.verbose>2) :
