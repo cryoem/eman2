@@ -535,7 +535,7 @@ def main():
 	parser.add_option("--xr",       type="string", default= "-1",               help="range for translation search in x direction, search is +/xr (default 0)")
 	parser.add_option("--yr",       type="string", default= "-1",               help="range for translation search in y direction, search is +/yr (default = same as xr)")
 	parser.add_option("--ts",       type="string", default= "1",                help="step size of the translation search in both directions, search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional")
-	parser.add_option("--delta",    type="string", default= "2",                help="angular step of reference projections (default 2)")
+	parser.add_option("--delta",    type="string", default= "-1",                help="angular step of reference projections during initialization step (default automatically selected based on radius of the structure.)")
 	#parser.add_option("--an",       type="string", default= "-1",              help="angular neighborhood for local searches (phi and theta)")
 	parser.add_option("--center",   type="float",  default= -1,                 help="-1: average shift method; 0: no centering; 1: center of gravity (default=-1)")
 	parser.add_option("--maxit",    type="int",  default= 400,                  help="maximum number of iterations performed for the GA part (set to 400) ")
@@ -731,7 +731,7 @@ def main():
 	
 	delta = int(options.delta)
 	if(delta <= 0.0):
-		delta = "%f"%round(degrees(atan(1.0/float(radi))), 2)	
+		delta = "%f"%round(degrees(atan(1.0/float(radi))), 2)
 
 	paramsdict = {	"stack":stack,"delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":"-1", "center":options.center, "maxit":1, \
 					"currentres":0.4, "aa":0.1, "radius":radi, "nsoft":0, "delpreviousmax":True, "shrink":1.0, "saturatecrit":1.0, \
