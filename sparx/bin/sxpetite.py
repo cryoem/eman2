@@ -721,12 +721,21 @@ def main():
 	#  Run exhaustive projection matching to get initial orientation parameters
 	#  Estimate initial resolution
 	initdir = os.path.join(masterdir,"main000")
-		
+	#  make sure the initial volume is not set to zero outside of a mask, as if it is it will crach the program
+	if( myid == main_node ):
+		viv = get_im(volinit)
+		if(options.mask3D == None):  mask33d = model_circle(radi,nnxo,nnxo,nnxo)
+		else:  mask33d = (options.mask3D).copy()
+		st = Util.infomask(viv, mask33d, False)
+		if( st[0] == 0.0 ):
+			viv += (model_blank(nnxo,nnxo,nnxo) - mask33d)*model_gauss_noise(st[1]/1000.0,nnxo,nnxo,nnxo)
+			viv.write_image(volinit)
+		del mask33d, viv
 
 	xr = min(8,(nnxo - (2*radi+1))//2)
 	if(xr > 3):  ts = "2"
 	else:  ts = "1"
-	
+
 	delta = int(options.delta)
 	if(delta <= 0.0):
 		delta = "%f"%round(degrees(atan(1.0/float(radi))), 2)
