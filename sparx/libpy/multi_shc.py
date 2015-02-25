@@ -2900,7 +2900,7 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 	main_node      = 0
 
 	if myid == main_node:
-		log.add("Start ali3d_base")
+		log.add("Start ali3d_base, nsoft = %1d"%nsoft)
 
 	xrng        = get_input_from_string(xr)
 	if  yr == "-1":  yrng = xrng
@@ -3298,7 +3298,7 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 
 
 	if myid == main_node:
-		log.add("Finish ali3d_base")
+		log.add("Finish ali3d_base, nsoft = %1d,  an = 5.2f"%(nsoft,an))
 	return params  #, vol, previousmax, par_r
 	#else:
 	#	return #None, None, None, None  # results for the other processes
