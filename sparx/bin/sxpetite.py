@@ -1,6 +1,4 @@
-#!/home/pawel/EMAN2/extlib/bin/python
-
-
+#!/usr/bin/env python
 #
 # Author: 
 # Copyright (c) 2012 The University of Texas - Houston Medical School

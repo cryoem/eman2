@@ -98,6 +98,10 @@ def main():
 
 	options.user_func = user_functions.factory[options.function]
 
+	options.CTF = False
+	options.snr = 1.0
+	options.an  = -1.0
+
 	out_params, out_vol, out_peaks = multi_shc(all_projs, subset, runs_count, options, mpi_comm=MPI_COMM_WORLD, log=log, ref_vol=ref_vol)
 
 	mpi_finalize()
