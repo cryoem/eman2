@@ -728,7 +728,7 @@ def main():
 		else:  mask33d = (options.mask3D).copy()
 		st = Util.infomask(viv, mask33d, False)
 		if( st[0] == 0.0 ):
-			viv += (model_blank(nnxo,nnxo,nnxo) - mask33d)*model_gauss_noise(st[1]/1000.0,nnxo,nnxo,nnxo)
+			viv += (model_blank(nnxo,nnxo,nnxo,1.0) - mask33d)*model_gauss_noise(st[1]/1000.0,nnxo,nnxo,nnxo)
 			viv.write_image(volinit)
 		del mask33d, viv
 
