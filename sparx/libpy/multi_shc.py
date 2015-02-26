@@ -2099,9 +2099,20 @@ def proj_ali_incore_multi(data, refrings, numr, xrng = 0.0, yrng = 0.0, step=1.0
 		finfo.write("Image id: %6d\n"%(ID))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
 		finfo.flush()
+		
+	ou = numr[-3]
+	sxi = dp["tx"]
+	syi = dp["ty"]
+	txrng = [0.0]*2 
+	tyrng = [0.0]*2
+	txrng[0] = max(0,min(cnx+sxi-ou, xrng+sxi))
+	txrng[1] = max(0, min(nx-cnx-sxi-ou, xrng-sxi))
+	tyrng[0] = max(0,min(cny+syi-ou, yrng+syi))
+	tyrng[1] = max(0, min(ny-cny-syi-ou, yrng-syi))
+		
 	#print "Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"])
 	#[ang, sxs, sys, mirror, iref, peak, checked_refs] = Util.shc(data, refrings, xrng, yrng, step, ant, mode, numr, cnx+dp["tx"], cny+dp["ty"])
-	peaks = Util.multiref_polar_ali_2d_peaklist_local(data, refrings, xrng, yrng, step, ant, mode, numr, cnx+dp["tx"], cny+dp["ty"])
+	peaks = Util.multiref_polar_ali_2d_peaklist_local(data, refrings, txrng, tyrng, step, ant, mode, numr, cnx+dp["tx"], cny+dp["ty"])
 	peaks_count = len(peaks) / 5
 	#pixel_error = 0.0
 	peak = 0.0
@@ -2212,7 +2223,16 @@ def shc_multi(data, refrings, numr, xrng, yrng, step, an, nsoft, sym, finfo=None
 	#[ang, sxs, sys, mir, iref, peak, checked_refs] = Util.shc(data, refrings, xrng, yrng, step, ant, mode, numr, cnx+dp["tx"], cny+dp["ty"])
 	#peaks = Util.shc_multipeaks(data, refrings, xrng, yrng, step, ant, mode, numr, cnx+dp["tx"], cny+dp["ty"], nsoft)
 	#  Do not shift the image to prevent sliding away
-	peaks = Util.shc_multipeaks(data, refrings, xrng, yrng, step, ant, mode, numr, cnx, cny, nsoft)
+
+	ou = numr[-3]
+	txrng = [0.0]*2 
+	tyrng = [0.0]*2
+	txrng[0] = max(0,min(cnx-ou, xrng))
+	txrng[1] = max(0, min(nx-cnx-ou, xrng))
+	tyrng[0] = max(0,min(cny-ou, yrng))
+	tyrng[1] = max(0, min(ny-cny-ou, yrng))
+		
+	peaks = Util.shc_multipeaks(data, refrings, txrng, tyrng, step, ant, mode, numr, cnx, cny, nsoft)
 	peaks_count = len(peaks) / 7
 	pixel_error = 0.0
 	number_of_checked_refs = 0

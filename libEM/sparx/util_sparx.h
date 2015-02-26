@@ -867,17 +867,17 @@ public:
 	 * interpolation
 	 * */
 	static vector<float> multiref_polar_ali_2d(EMData* image, const vector< EMData* >& crefim,
-                float xrng, float yrng, float step, string mode,
+                vector<float> xrng, vector<float> yrng, float step, string mode,
                 vector< int >numr, float cnx, float cny);
 
 	/* In this version, we return a list of peaks for all reference images */
 	static vector<float> multiref_polar_ali_2d_peaklist(EMData* image, const vector< EMData* >& crefim,
-                float xrng, float yrng, float step, string mode,
+                vector<float> xrng, vector<float> yrng, float step, string mode,
                 vector< int >numr, float cnx, float cny);
 
 	/* In this version, we return a list of peaks for local subset of reference images */
 	static vector<float> multiref_polar_ali_2d_peaklist_local(EMData* image, const vector< EMData* >& crefim,
-                float xrng, float yrng, float step, float ant, string mode,
+                vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
                 vector< int >numr, float cnx, float cny);
 
 	/* This is used in ISAC program to assigning particles equally to grops */
@@ -932,7 +932,7 @@ public:
 	 * interpolation
 	 * */
 	static vector<float> multiref_polar_ali_2d_delta(EMData* image, const vector< EMData* >& crefim,
-                float xrng, float yrng, float step, string mode,
+                vector<float> xrng, vector<float> yrng, float step, string mode,
                 vector< int >numr, float cnx, float cny, float delta_start, float delta);
 
 	/** formerly known as apnq DO NOT CONSIDER MIRROR
@@ -950,8 +950,9 @@ public:
 	 * interpolation
 	 * */
 	static vector<float> multiref_polar_ali_2d_local(EMData* image, const vector< EMData* >& crefim,
-                float xrng, float yrng, float step, float ant, string mode,
+                vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
                 vector< int >numr, float cnx, float cny, string sym);
+
 	/* Returns first match with peak greater than previousmax or the best match in whole space (when there are no peaks > previousmax).
 	 * The reference rings are checked in random order.
 	 * */
@@ -959,10 +960,10 @@ public:
                 float xrng, float yrng, float step, float ant, string mode,
                 vector<int>numr, float cnx, float cny,  string sym);
 	static vector<float> shc(EMData* image, const vector< EMData* >& crefim,
-                float xrng, float yrng, float step, float ant, string mode,
+                vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
                 vector< int >numr, float cnx, float cny, string sym);
 	static vector<float> shc_multipeaks(EMData* image, const vector< EMData* >& crefim,
-	            float xrng, float yrng, float step, float ant, string mode,
+	            vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
 	            vector<int>numr, float cnx, float cny, int max_peaks_count);
 
 	/** formerly known as apmq
@@ -972,23 +973,23 @@ public:
 	 * Search for peaks only within +/-psi_max from 0 and 180 (helical)
 	 * */
 	static vector<float> multiref_polar_ali_helical(EMData* image, const vector< EMData* >& crefim,
-                float xrng, float yrng, float step, float psi_max, string mode,
+                vector<float> xrng, vector<float> yrng, float step, float psi_max, string mode,
                 vector< int >numr, float cnx, float cny, int ynumber=-1);
 	static vector<float> multiref_polar_ali_helical_local(EMData* image, const vector< EMData* >& crefim,
-                float xrng, float yrng, float step, float ant, float psi_max, string mode,
+                vector<float> xrng, vector<float> yrng, float step, float ant, float psi_max, string mode,
                 vector< int >numr, float cnx, float cny, int ynumber=-1, float yrnglocal=-1.0);
 	static vector<float> multiref_polar_ali_helical_90(EMData* image, const vector< EMData* >& crefim,
-                float xrng, float yrng, float step, float psi_max, string mode,
+                vector<float> xrng, vector<float> yrng, float step, float psi_max, string mode,
                 vector< int >numr, float cnx, float cny, int ynumber=-1);
 	static vector<float> multiref_polar_ali_helical_90_local(EMData* image, const vector< EMData* >& crefim,
-                float xrng, float yrng, float step, float ant, float psi_max, string mode,
+                vector<float> xrng, vector<float> yrng, float step, float ant, float psi_max, string mode,
                 vector< int >numr, float cnx, float cny, int ynumber=-1, float yrnglocal=-1.0);
     /**  Next two for helicon **/
 	static vector<float> multiref_polar_ali_helicon_local(EMData* image, const vector< EMData* >& crefim,
-                float xrng, float yrng, float step, float ant, float psi_max, string mode,
+                vector<float> xrng, vector<float> yrng, float step, float ant, float psi_max, string mode,
                 vector< int >numr, float cnx, float cny, int ynumber=-1, float yrnglocal=-1.0);
 	static vector<float> multiref_polar_ali_helicon_90_local(EMData* image, const vector< EMData* >& crefim,
-                float xrng, float yrng, float step, float ant, float psi_max, string mode,
+                vector<float> xrng, vector<float> yrng, float step, float ant, float psi_max, string mode,
                 vector< int >numr, float cnx, float cny, int ynumber=-1, float yrnglocal=-1.0);
 
 	/** formerly known as apmq
@@ -997,7 +998,7 @@ public:
 	 * interpolation
 	 * */
 	static vector<float> multiref_polar_ali_2d_local_psi(EMData* image, const vector< EMData* >& crefim,
-                float xrng, float yrng, float step, float ant, float psi_max, string mode,
+                vector<float> xrng, vector<float> yrng, float step, float ant, float psi_max, string mode,
                 vector< int >numr, float cnx, float cny);
 	/** Determine shift and rotation between image and one reference
 	 * image (crefim, weights have to be applied) using quadratic
@@ -1007,7 +1008,7 @@ public:
 	 * margin is needed for peak search and both arrays are initialized with -1.0e20
 	 * */
 	static void multiref_peaks_ali2d(EMData* image, EMData* crefim,
-                float xrng, float yrng, float step, string mode,
+                vector<float> xrng, vector<float> yrng, float step, string mode,
                 vector< int >numr, float cnx, float cny, EMData* peaks, EMData* peakm);
 
 	/** Determine shift and rotation between image and one reference
@@ -1017,7 +1018,7 @@ public:
 	 * ccf1d keeps 1d ccfs stored as (maxrin, -kx-1:kx+1, -ky-1:ky+1)
 	 * margin is needed for peak search and both arrays are initialized with -1.0e20
 	 * */
-	static void multiref_peaks_compress_ali2d(EMData* image, EMData* crefim, float xrng, float yrng,
+	static void multiref_peaks_compress_ali2d(EMData* image, EMData* crefim, vector<float> xrng, vector<float> yrng,
 	     float step, string mode, vector<int>numr, float cnx, float cny, EMData *peaks, EMData *peakm,
 	     EMData *peaks_compress, EMData *peakm_compress);
 
@@ -1025,7 +1026,7 @@ public:
 	 * image (crefim, weights have to be applied) using quadratic
 	 * interpolation
 	 * */
-	static vector<float> ali2d_ccf_list(EMData* image, EMData* crefim, float xrng, float yrng,
+	static vector<float> ali2d_ccf_list(EMData* image, EMData* crefim, vector<float> xrng, vector<float> yrng,
 	     float step, string mode, vector<int>numr, float cnx, float cny, double T);
 
 	static vector<float> ali2d_ccf_list_snake(EMData* image, EMData* crefim, vector<float> wr, float xrng, float yrng,

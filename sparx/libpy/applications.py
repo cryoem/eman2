@@ -2213,17 +2213,24 @@ def ali2d_ra(stack, maskfile = None, ir = 1, ou = -1, rs = 1, maxit = 10, check_
 			#tempg = prepg(temp, kb)
 			#cimage = Util.Polar2Dmi(tempg, cnx+sx, cny+sy, numr, mode, kb)
 			alphan, sxn, syn, mir = combine_params2(0, -sx, -sy, 0, -alpha_original, 0,0,0)
-			if(cnx+sxn > 10000.):  ERROR("ali2d_ra","Particle radius given too large for particle shifts found in the header",1)
-			cimage = Util.Polar2Dm(temp, cnx+sxn, cny+syn, numr, mode)
-			Util.Frngs(cimage, numr)
-			data.append(cimage)
 
-			#  Here alpha is position of the peak (i.e., starts from 1), just put as a place holder, will be determined in kmn
-			data[im].set_attr_dict({'alpha':1.0, 'alpha_original':alpha_original, 'sx':sx, 'sy':sy, 'mirror': 0})
-			cimage = Util.Polar2Dm(refc, cnx+sxn, cny+syn, numr, mode)
-			Util.Frngs(cimage, numr)
-			#  We do not need any attributes for ref_data, as they are going to be taken from data
-			ref_data.append(cimage)
+			nring = len(numr)/3
+			inr = numr[3*(nring-1)]
+			#here the centers of the image cny and cnx use Spider convention which means the index of the image array starts from 1 to nx (ny). 02-24-2015
+			if ((inr+int(cny+syn) <= ny-1 and -inr + int(cny+syn) >=1) and (inr+int(cnx+sxn) <= nx-1 and -inr + int(cnx+sxn) >=1)):
+				cimage = Util.Polar2Dm(temp, cnx+sxn, cny+syn, numr, mode)
+				Util.Frngs(cimage, numr)
+				data.append(cimage)
+				#  Here alpha is position of the peak (i.e., starts from 1), just put as a place holder, will be determined in kmn
+				data[im].set_attr_dict({'alpha':1.0, 'alpha_original':alpha_original, 'sx':sx, 'sy':sy, 'mirror': 0})
+				cimage = Util.Polar2Dm(refc, cnx+sxn, cny+syn, numr, mode)
+				Util.Frngs(cimage, numr)
+				#  We do not need any attributes for ref_data, as they are going to be taken from data
+				ref_data.append(cimage)
+			else:
+				ERROR("ali2d_ra","Particle radius given too large for particle shifts found in the header",1) 
+	
+
 
 		del temp
 		del refc
@@ -2240,12 +2247,18 @@ def ali2d_ra(stack, maskfile = None, ir = 1, ou = -1, rs = 1, maxit = 10, check_
 			#tempg = prepg(temp, kb)
 			#cimage = Util.Polar2Dmi(tempg, cnx+sx, cny+sy, numr, mode, kb)
 			alphan, sxn, syn, mir = combine_params2(0.0, -sx, -sy, 0, -alpha_original, 0.0, 0.0, 0)
-			if(cnx+sxn > 10000.):  ERROR("ali2d_ra","Particle radius given too large for particle shifts found in the header",1)
-			cimage = Util.Polar2Dm(temp, cnx+sxn, cny+syn, numr, mode)
-			Util.Frngs(cimage, numr)
-			data.append(cimage)
-			#  Here alpha is position of the peak (i.e., starts from 1), just put as a place holder, will be determined in kmn
-			data[im].set_attr_dict({'alpha':1.0, 'alpha_original':alpha_original, 'sx':sx, 'sy':sy, 'mirror':0})
+			nring = len(numr)/3
+			inr = numr[3*(nring-1)]
+			#here the centers of the image cny and cnx use Spider convention which means the index of the image array starts from 1 to nx (ny). 02-24-2015
+			if ((inr+int(cny+syn) <= ny-1 and -inr + int(cny+syn) >=1) and (inr+int(cnx+sxn) <= nx-1 and -inr + int(cnx+sxn) >=1)):
+				cimage = Util.Polar2Dm(temp, cnx+sxn, cny+syn, numr, mode)
+				Util.Frngs(cimage, numr)
+				data.append(cimage)
+				#  Here alpha is position of the peak (i.e., starts from 1), just put as a place holder, will be determined in kmn
+				data[im].set_attr_dict({'alpha':1.0, 'alpha_original':alpha_original, 'sx':sx, 'sy':sy, 'mirror':0})
+			else: 
+				ERROR("ali2d_ra","Particle radius given too large for particle shifts found in the header",1)
+			
 		del temp
 		#del tempg
 		del mask2D
@@ -2510,8 +2523,8 @@ def ali2d_rac(stack, maskfile = None, ir = 1, ou = -1, rs = 1, nclass = 2, maxit
 	data = []
 	org  = []
 	#  center 
-	cnx = int(nx/2)
-	cny = int(ny/2)
+	cnx = nx//2+1
+	cny = ny//2+1
 	
 	for im in xrange(nima):
 		if(im>0):
@@ -2524,11 +2537,17 @@ def ali2d_rac(stack, maskfile = None, ir = 1, ou = -1, rs = 1, nclass = 2, maxit
 		[mean, sigma, qn, qm] = Util.infomask(temp, mask2D, True)
 		temp = (temp - mean)/sigma
 		alpha_original_n,sxn,syn,mir = combine_params2(0, -sx, -sy, 0, -alpha_original,0,0,0)
-		cimage = Util.Polar2Dm(temp, cnx+sxn, cny+syn, numr, mode)
-		Util.Frngs(cimage, numr)
-		data.append(cimage)
-		#  Here alpha is postion of the pick (i.e., starts from 1)
-		data[im].set_attr_dict({'alpha':1.0, 'alpha_original':alpha_original, 'sx':sx, 'sy':sy, 'mirror': 0})
+		
+		nring = len(numr)/3
+		inr = numr[3*(nring-1)]
+		if ((inr+int(cny+syn) <= ny-1 and -inr + int(cny+syn) >=1) and (inr+int(cnx+sxn) <= nx-1 and -inr + int(cnx+sxn) >=1)):
+			cimage = Util.Polar2Dm(temp, cnx+sxn, cny+syn, numr, mode)
+			Util.Frngs(cimage, numr)
+			data.append(cimage)
+			#  Here alpha is postion of the pick (i.e., starts from 1)
+			data[im].set_attr_dict({'alpha':1.0, 'alpha_original':alpha_original, 'sx':sx, 'sy':sy, 'mirror': 0})
+		else: 
+			ERROR("ali2d_ra","Particle radius given too large for particle shifts found in the header",1)		
 
 	del temp
 	del mask2D
@@ -2759,10 +2778,16 @@ def ali2d_ras(data2d, randomize = False, ir = 1, ou = -1, rs = 1, step = 1.0, ds
 		#  Here we need inverse transformation shifts for resampling into polar
 		alphai, sxn, syn, mirrori = inverse_transform2(alphan, sxn, syn)
 		params.append([sxn, syn])
-		cimage = Util.Polar2Dm(data2d[im], cnx+sxn, cny+syn, numr, mode)
-		Util.Frngs(cimage, numr)
-		data.append(cimage)
-
+		nring = len(numr)/3
+		inr = numr[3*(nring-1)]
+		#here the centers of the image cny and cnx use Spider convention which means the index of the image array starts from 1 to nx (ny). 02-24-2015
+		if ((inr+int(cny+syn) <= ny-1 and -inr + int(cny+syn) >=1) and (inr+int(cnx+sxn) <= nx-1 and -inr + int(cnx+sxn) >=1)):
+			cimage = Util.Polar2Dm(data2d[im], cnx+sxn, cny+syn, numr, mode)
+			Util.Frngs(cimage, numr)
+			data.append(cimage)
+		else: 
+			ERROR("ali2d_ra","Particle radius given too large for particle shifts found in the header",1)
+			
 	total_iter = 0
 	for Iter in xrange(max_iter):
 		total_iter += 1
@@ -4977,14 +5002,19 @@ def ali3d_shc0MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs =
 			cnx  = nx//2 + 1
 			cny  = ny//2 + 1
 			ims = [None]*(2*ky+1)*(2*kx+1)
-			for i in xrange(-ky, ky+1):   
-				iy = i * step[N_step] 
-				for j in xrange(-kx, kx+1):			
-					ix = j*step[N_step]
-					cimage = Util.Polar2Dm(data[im], cnx+ix, cny+iy, numr, mode)
-					Util.Normalize_ring( cimage, numr )
-					Util.Frngs(cimage, numr)
-					ims[(i+ky)*(2*kx+1)+j+kx] = cimage
+			
+			nring = len(numr)/3
+			inr = numr[3*(nring-1)]
+			for i in xrange(-ky, ky+1):
+				iy = i*step[N_step]
+				if inr+int(cny+iy) <= ny-1 and -inr + int(cny+iy) >=1:
+					for j in xrange(-kx, kx+1):
+						ix = j*step[N_step]
+						if inr+int(cnx+ix) <= nx-1 and -inr + int(cnx+ix) >=1:
+							cimage = Util.Polar2Dm(data[im], cnx+ix, cny+iy, numr, mode)
+							Util.Normalize_ring( cimage, numr )
+							Util.Frngs(cimage, numr)
+							ims[(i+ky)*(2*kx+1)+j+kx] = cimage
 			cimages.append(ims)
 			
 	

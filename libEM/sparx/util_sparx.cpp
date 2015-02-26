@@ -2639,7 +2639,7 @@ c
  * Optimized:
  * 	*Sin and Cos functions are tabulated for the largest ring
  * 	*Bilinear interpolation
-*
+*/
 EMData* Util::Polar2Dm(EMData* image, float cnx2, float cny2, vector<int> numr, string cmode){
 	int nring = numr.size()/3;
 	int r1 = numr(1,1);
@@ -2733,11 +2733,11 @@ EMData* Util::Polar2Dm(EMData* image, float cnx2, float cny2, vector<int> numr, 
 	}
 	return out;
 }
-*/
+
 /*
  * 10/22/2014
  * Previous version
- * Quadratic interpolation*/
+ * Quadratic interpolation*
  EMData* Util::Polar2Dm(EMData* image, float cns2, float cnr2, vector<int> numr, string cmode){
 	int nsam = image->get_xsize();
 	int nrow = image->get_ysize();
@@ -2827,7 +2827,7 @@ EMData* Util::Polar2Dm(EMData* image, float cnx2, float cny2, vector<int> numr, 
 	return out;
 }
 
-
+*/
 float Util::bilinear(float xold, float yold, int nsam, int nrow, float* xim)
 {
 /*
@@ -2864,7 +2864,7 @@ c  purpose: linear interpolation
 	ixold   = (int) xold;
 	iyold   = (int) yold;
 	ydif = yold - iyold;
-
+	
 	//  May want to insert it?
 //              IF ((IYOLD .GE. 1 .AND. IYOLD .LE. NROW-1) .AND.
 //     &            (IXOLD .GE. 1 .AND. IXOLD .LE. NSAM-1)) THEN
@@ -18720,7 +18720,7 @@ void Util::Normalize_ring( EMData* ring, const vector<int>& numr )
 }
 
 vector<float> Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >& crefim,
-                float xrng, float yrng, float step, string mode,
+                vector<float> xrng, vector<float> yrng, float step, string mode,
                 vector<int>numr, float cnx, float cny) {
 
     // Manually extract.
@@ -18736,15 +18736,20 @@ vector<float> Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >
 	const float qv = static_cast<float>( pi/180.0 );
 	size_t crefim_len = crefim.size();
 
-	int   ky = int(2*yrng/step+0.5)/2;
-	int   kx = int(2*xrng/step+0.5)/2;
+// 	int   ky = int(2*yrng/step+0.5)/2;
+// 	int   kx = int(2*xrng/step+0.5)/2;
+	int lkx = int(xrng[0]/step);
+	int rkx = int(xrng[1]/step);
+	int lky = int(yrng[0]/step);
+	int rky = int(yrng[1]/step);
+	
 	int   iref, nref=0, mirror=0;
 	float iy, ix, sx=0, sy=0;
 	float peak = -1.0E23f;
 	float ang=0.0f;
-	for (int i = -ky; i <= ky; i++) {
+	for (int i = -lky; i <= rky; i++) {
 		iy = i * step ;
-		for (int j = -kx; j <= kx; j++) {
+		for (int j = -lkx; j <= rkx; j++) {
 			ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 
@@ -18772,7 +18777,7 @@ vector<float> Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >
 					}
 				}
 			}  delete cimage; cimage = 0;
-		}
+		}	
 	}
 
 	float co, so, sxs, sys;
@@ -18791,19 +18796,32 @@ vector<float> Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >
 }
 
 vector<float> Util::multiref_polar_ali_2d_peaklist(EMData* image, const vector< EMData* >& crefim,
-                float xrng, float yrng, float step, string mode,
+                vector<float> xrng, vector<float> yrng, float step, string mode,
                 vector<int>numr, float cnx, float cny) {
 
 	const float qv = static_cast<float>( pi/180.0 );
 	size_t crefim_len = crefim.size();
 
-	int   ky = int(2*yrng/step+0.5)/2;
-	int   kx = int(2*xrng/step+0.5)/2;
+//	int   ky = int(2*yrng/step+0.5)/2;
+//	int   kx = int(2*xrng/step+0.5)/2;
+	int lkx = int(xrng[0]/step);
+	int rkx = int(xrng[1]/step);
+	int lky = int(yrng[0]/step);
+	int rky = int(yrng[1]/step);
+		
 	float iy, ix;
-	vector<float> peak(crefim_len*5, -1.0e23f);
-	for (int i = -ky; i <= ky; i++) {
+	vector<float> peak(crefim_len*5);  //, -1.0e23f);
+	for (int iref = 0; iref < (int)crefim_len; iref++) {
+		peak[iref*5] = -1.0e23f;
+		peak[iref*5+1] = 0.0f;
+		peak[iref*5+2] = 0.0;
+		peak[iref*5+3] = 0.0;
+		peak[iref*5+4] = 0;
+	}
+	
+	for (int i = -lky; i <= rky; i++) {
 		iy = i * step ;
-		for (int j = -kx; j <= kx; j++) {
+		for (int j = -lkx; j <= rkx; j++) {
 			ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 			Normalize_ring( cimage, numr );
@@ -18846,7 +18864,7 @@ vector<float> Util::multiref_polar_ali_2d_peaklist(EMData* image, const vector< 
 }
 
 vector<float> Util::multiref_polar_ali_2d_peaklist_local(EMData* image, const vector< EMData* >& crefim,
-                float xrng, float yrng, float step, float ant, string mode,
+                vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
                 vector<int>numr, float cnx, float cny) {
 
 	size_t crefim_len = crefim.size();
@@ -18857,8 +18875,13 @@ vector<float> Util::multiref_polar_ali_2d_peaklist_local(EMData* image, const ve
 	if(t) {delete t; t=0;}
 	float phi   = d["phi"];
 	float theta = d["theta"];
-	int   ky    = int(2*yrng/step+0.5)/2;
-	int   kx    = int(2*xrng/step+0.5)/2;
+//	int   ky    = int(2*yrng/step+0.5)/2;
+//	int   kx    = int(2*xrng/step+0.5)/2;
+	int lkx = int(xrng[0]/step);
+	int rkx = int(xrng[1]/step);
+	int lky = int(yrng[0]/step);
+	int rky = int(yrng[1]/step);
+		
 	int   iref, nref=0, mirror=0;
 	float imn1 = sin(theta*qv)*cos(phi*qv);
 	float imn2 = sin(theta*qv)*sin(phi*qv);
@@ -18873,9 +18896,9 @@ vector<float> Util::multiref_polar_ali_2d_peaklist_local(EMData* image, const ve
 	}
 
 	vector<float> peak;
-	for (int i = -ky; i <= ky; i++) {
+	for (int i = -lky; i <= rky; i++) {
 		float iy = i * step ;
-		for (int j = -kx; j <= kx; j++) {
+		for (int j = -lkx; j <= rkx; j++) {
 			float ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 			Normalize_ring( cimage, numr );
@@ -19209,7 +19232,7 @@ vector<int> Util::group_proj_by_phitheta(const vector<float>& projangles, const 
 }
 
 vector<float> Util::multiref_polar_ali_2d_delta(EMData* image, const vector< EMData* >& crefim,
-                float xrng, float yrng, float step, string mode,
+                vector<float> xrng, vector<float> yrng, float step, string mode,
                 vector<int>numr, float cnx, float cny, float delta_start, float delta) {
 
     // Manually extract.
@@ -19226,15 +19249,20 @@ vector<float> Util::multiref_polar_ali_2d_delta(EMData* image, const vector< EMD
 	size_t crefim_len = crefim.size();
 	const float qv = static_cast<float>( pi/180.0 );
 
-	int   ky = int(2*yrng/step+0.5)/2;
-	int   kx = int(2*xrng/step+0.5)/2;
+// 	int   ky = int(2*yrng/step+0.5)/2;
+// 	int   kx = int(2*xrng/step+0.5)/2;
+	int lkx = int(xrng[0]/step);
+	int rkx = int(xrng[1]/step);
+	int lky = int(yrng[0]/step);
+	int rky = int(yrng[1]/step);
 	int   iref, nref=0, mirror=0;
 	float iy, ix, sx=0, sy=0;
 	float peak = -1.0E23f;
 	float ang=0.0f;
-	for (int i = -ky; i <= ky; i++) {
+	
+	for (int i = -lky; i <= rky; i++) {
 		iy = i * step ;
-		for (int j = -kx; j <= kx; j++) {
+		for (int j = -lkx; j <= rkx; j++) {
 			ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 
@@ -19302,25 +19330,34 @@ vector<float> Util::multiref_polar_ali_2d_nom(EMData* image, const vector< EMDat
 	float iy, ix, sx=0, sy=0;
 	float peak = -1.0E23f;
 	float ang=0.0f;
+	int nring = numr.size()/3;
+	int inr = numr[(nring-1)*3];
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
 	for (int i = -ky; i <= ky; i++) {
 		iy = i * step ;
-		for (int j = -kx; j <= kx; j++) {
-			ix = j*step ;
-			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
-			Frngs(cimage, numr);
-			//  compare with all reference images
-			// for iref in xrange(len(crefim)):
-			for ( iref = 0; iref < (int)crefim_len; iref++) {
-				Dict retvals = Crosrng_ns(crefim[iref], cimage, numr);
-				double qn = retvals["qn"];
-				if(qn >= peak) {
-					sx = -ix;
-					sy = -iy;
-					nref = iref;
-					ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-					peak = static_cast<float>(qn);
+		//here the centers of the image cny and cnx use Fortran convention which means the index of the image array starts from 1 to nx (ny). 02-23-2015.
+		if ( inr + (int)(cny+iy) <= ny - 1  &&  -inr + (int)(cny+iy) >= 1) {
+			for (int j = -kx; j <= kx; j++) {
+				ix = j*step ;
+				if ( inr + (int)(cnx+ix) <= nx - 1  &&  -inr + (int)(cnx+ix) >= 1) {
+					EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+					Frngs(cimage, numr);
+					//  compare with all reference images
+					// for iref in xrange(len(crefim)):
+					for ( iref = 0; iref < (int)crefim_len; iref++) {
+						Dict retvals = Crosrng_ns(crefim[iref], cimage, numr);
+						double qn = retvals["qn"];
+						if(qn >= peak) {
+							sx = -ix;
+							sy = -iy;
+							nref = iref;
+							ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+							peak = static_cast<float>(qn);
+						}
+					}  delete cimage; cimage = 0;
 				}
-			}  delete cimage; cimage = 0;
+			}		
 		}
 	}
 	float co, so, sxs, sys;
@@ -19338,7 +19375,7 @@ vector<float> Util::multiref_polar_ali_2d_nom(EMData* image, const vector< EMDat
 }
 
 vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMData* >& crefim,
-                float xrng, float yrng, float step, float ant, string mode,
+                vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
                 vector<int>numr, float cnx, float cny, string sym) {
 
     // Manually extract.
@@ -19352,8 +19389,12 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
     }
 */
 
-	int   ky    = int(2*yrng/step+0.5)/2;
-	int   kx    = int(2*xrng/step+0.5)/2;
+// 	int   ky    = int(2*yrng/step+0.5)/2;
+// 	int   kx    = int(2*xrng/step+0.5)/2;
+	int lkx = int(xrng[0]/step);
+	int rkx = int(xrng[1]/step);
+	int lky = int(yrng[0]/step);
+	int rky = int(yrng[1]/step);
 	int   iref, nref=0, mirror=0;
 	float iy, ix, sx=0, sy=0;
 	float peak = -1.0E23f;
@@ -19405,9 +19446,9 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
          }
 	}
 	//02162015PAP
-	for (int i = -ky; i <= ky; i++) {
+	for (int i = -lky; i <= rky; i++) {
 	    iy = i * step ;
-	    for (int j = -kx; j <= kx; j++) {
+	    for (int j = -lkx; j <= rkx; j++) {
             ix = j*step;
             EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
             Normalize_ring( cimage, numr );
@@ -19522,19 +19563,6 @@ vector<float> Util::shc0(const vector< EMData* >& cimages, const vector< EMData*
 	const int ky = int(2*yrng/step+0.5)/2;
 	const int kx = int(2*xrng/step+0.5)/2;
 
-	// vector< vector<EMData*> > cimages( 2*ky+1, vector<EMData*>(2*kx+1) );
-// 
-// 	for (int i = -ky; i <= ky; i++) {
-// 		const int iy = i * step ;
-// 		for (int j = -kx; j <= kx; j++) {
-// 			const int ix = j*step;
-// 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
-// 			Normalize_ring( cimage, numr );
-// 			Frngs(cimage, numr);
-// 			cimages[i+ky][j+kx] = cimage;
-// 		}
-// 	}
-
 	vector<unsigned> listr(crefim_len);
 	for (unsigned i = 0; i < crefim_len; ++i) listr[i] = i;
 	for (unsigned i = 0; i < crefim_len; ++i) {
@@ -19623,7 +19651,7 @@ vector<float> Util::shc0(const vector< EMData* >& cimages, const vector< EMData*
 }
 
 vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
-                float xrng, float yrng, float step, float ant, string mode,
+                vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
                 vector<int>numr, float cnx, float cny, string sym) {
 
 	const size_t crefim_len = crefim.size();
@@ -19674,21 +19702,29 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
             swap( listr[r], listr[i] );
         }
 
-        const int ky = int(2*yrng/step+0.5)/2;
-        const int kx = int(2*xrng/step+0.5)/2;
+  
+// 	const int ky = int(2*yrng/step+0.5)/2;
+// 	const int kx = int(2*xrng/step+0.5)/2;
+	
+	const int lkx = int(xrng[0]/step);
+	const int rkx = int(xrng[1]/step);
+	
+	const int lky = int(yrng[0]/step);
+	const int rky = int(yrng[1]/step);
 
-        vector< vector<EMData*> > cimages(2*ky+1, vector<EMData*>(2*kx+1) );
 
-        for (int i = -ky; i <= ky; i++) {
-            const int iy = i * step ;
-            for (int j = -kx; j <= kx; j++) {
-                const int ix = j*step;
-                EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
-                Normalize_ring( cimage, numr );
-                Frngs(cimage, numr);
-                cimages[i+ky][j+kx] = cimage;
-            }
-        }
+	vector< vector<EMData*> > cimages( lky+rky+1, vector<EMData*>(lkx+rkx+1) );
+	for (int i = -lky; i <= rky; i++) {
+		const int iy = i * step ;
+		for (int j = -lkx; j <= rkx; j++) {
+			const int ix = j*step ;
+			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+			Normalize_ring( cimage, numr );
+			Frngs(cimage, numr);
+			cimages[i+lky][j+lkx] = cimage;
+		}		
+	}
+
 
         float sx=0.0f, sy=0.0f;
         float peak = -1.0e23f;
@@ -19720,13 +19756,13 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 
             if (isym == nsym) continue;
 
-            std::vector<int> shifts = shuffled_range( 0, (2*kx+1) * (2*ky+1) - 1 );
+            std::vector<int> shifts = shuffled_range( 0, (lkx+rkx+1) * (lky+rky+1) - 1 );
             for ( unsigned nodeId = 0;  nodeId < shifts.size();  ++nodeId ) {
-                const int i = ( shifts[nodeId] % (2*ky+1) ) - ky;
-                const int j = ( shifts[nodeId] / (2*ky+1) ) - kx;
+                const int i = ( shifts[nodeId] % (lky+rky+1) ) - lky;
+                const int j = ( shifts[nodeId] / (lky+rky+1) ) - lkx;
                 const float iy = i * step;
                 const float ix = j * step;
-                EMData* cimage = cimages[i+ky][j+kx];
+                EMData* cimage = cimages[i+lky][j+lkx];
                 Dict retvals = Crosrng_rand_e(crefim[iref], cimage, numr, 0, previousmax);
                 const float new_peak = static_cast<float>( retvals["qn"] );
 
@@ -19792,19 +19828,21 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
             swap( listr[r], listr[i] );
         }
 
-        const int ky = int(2*yrng/step+0.5)/2;
-        const int kx = int(2*xrng/step+0.5)/2;
+		const int lkx = int(xrng[0]/step);
+		const int rkx = int(xrng[1]/step);
+		const int lky = int(yrng[0]/step);
+		const int rky = int(yrng[1]/step);
+	
+        vector< vector<EMData*> > cimages( lky+rky+1, vector<EMData*>(lkx+rkx+1) );
 
-        vector< vector<EMData*> > cimages( 2*ky+1, vector<EMData*>(2*kx+1) );
-
-        for (int i = -ky; i <= ky; i++) {
+        for (int i = -lky; i <= rky; i++) {
             const int iy = i * step ;
-            for (int j = -kx; j <= kx; j++) {
+            for (int j = -lkx; j <= rkx; j++) {
                 const int ix = j*step;
                 EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
                 Normalize_ring( cimage, numr );
                 Frngs(cimage, numr);
-                cimages[i+ky][j+kx] = cimage;
+                cimages[i+lky][j+rkx] = cimage;
             }
         }
 
@@ -19818,13 +19856,13 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
         for ( ;  (tiref < crefim_len) && (! found_better); tiref++) {
             const int iref = listr[tiref];
             //  Here check for neighbors
-            std::vector<int> shifts = shuffled_range( 0, (2*kx+1) * (2*ky+1) - 1 );
+            std::vector<int> shifts = shuffled_range( 0, (lkx+rkx+1) * (lky+rky+1) - 1 );
             for ( unsigned nodeId = 0;  nodeId < shifts.size();  ++nodeId ) {
-                const int i = ( shifts[nodeId] % (2*ky+1) ) - ky;
-                const int j = ( shifts[nodeId] / (2*ky+1) ) - kx;
+                const int i = ( shifts[nodeId] % (lky+rky+1) ) - lky;
+                const int j = ( shifts[nodeId] / (lky+rky+1) ) - lkx;
                 const float iy = i * step;
                 const float ix = j * step;
-                EMData* cimage = cimages[i+ky][j+kx];
+                EMData* cimage = cimages[i+lky][j+lkx];
 
                 Dict retvals = Crosrng_rand_ms(crefim[iref], cimage, numr, previousmax);
 
@@ -19845,10 +19883,8 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
                     if (found_better) break;
                 }
             }
-
         }
         //cout << "  JUMPED OUT " <<endl;
-
 
         for (unsigned i = 0; i < cimages.size(); ++i) {
             for (unsigned j = 0; j < cimages[i].size(); ++j) {
@@ -19876,7 +19912,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 
 }
 
-
+	
 static std::string toString(int i)
 {
 	std::ostringstream s;
@@ -19885,29 +19921,33 @@ static std::string toString(int i)
 }
 
 vector<float> Util::shc_multipeaks(EMData* image, const vector< EMData* >& crefim,
-                float xrng, float yrng, float step, float ant, string mode,
+                vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
                 vector<int>numr, float cnx, float cny, int max_peaks_count)
 {
 	size_t crefim_len = crefim.size();
 	const float qv = static_cast<float>( pi/180.0 );
 
 	const float previousmax = image->get_attr("previousmax");
-	const int   ky = int(2*yrng/step+0.5)/2;
-	const int   kx = int(2*xrng/step+0.5)/2;
+//	const int   ky = int(2*yrng/step+0.5)/2;
+//	const int   kx = int(2*xrng/step+0.5)/2;
+	const int lkx = int(xrng[0]/step);
+	const int rkx = int(xrng[1]/step);
+	const int lky = int(yrng[0]/step);
+	const int rky = int(yrng[1]/step);
+	
 	int   iref, nref=0, mirror=0;
 	float iy, ix, sx=0, sy=0;
 	float ang=0.0f;
 
-	vector< vector<EMData*> > cimages( 2*ky+1, vector<EMData*>(2*kx+1) );
-
-	for (int i = -ky; i <= ky; i++) {
-	    iy = i * step ;
-	    for (int j = -kx; j <= kx; j++) {
-			ix = j*step;
+	vector< vector<EMData*> > cimages( lky+rky+1, vector<EMData*>(lkx+rkx+1) );
+	for (int i = -lky; i <= rky; i++) {
+		iy = i * step ;
+		for (int j = -lkx; j <= rkx; j++) {
+			ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 			Normalize_ring( cimage, numr );
 			Frngs(cimage, numr);
-			cimages[i+ky][j+kx] = cimage;
+			cimages[i+lky][j+lkx] = cimage;
 		}
 	}
 
@@ -19924,16 +19964,16 @@ vector<float> Util::shc_multipeaks(EMData* image, const vector< EMData* >& crefi
 		iref = listr[tiref];
 		float peak = previousmax;
 
-		std::vector<int> shifts = shuffled_range( 0, (2*kx+1) * (2*ky+1) - 1 );
+		std::vector<int> shifts = shuffled_range( 0, (lkx+rkx+1) * (lky+rky+1) - 1 );
 		//for ( unsigned nodeId = 0;  nodeId < shifts.size();  ++nodeId ) {
 		unsigned nodeId = 0;
 		bool found_better = false;
 		while(nodeId < shifts.size()  &&  !found_better  && (results.size() / 7 < static_cast<unsigned>(max_peaks_count)) ) {
-			const int i = ( shifts[nodeId] % (2*ky+1) ) - ky;
-			const int j = ( shifts[nodeId] / (2*ky+1) ) - kx;
+			const int i = ( shifts[nodeId] % (lky+rky+1) ) - lky;
+			const int j = ( shifts[nodeId] / (lky+rky+1) ) - lkx;
 			const float iy = i * step;
 			const float ix = j * step;
-			EMData* cimage = cimages[i+ky][j+kx];
+			EMData* cimage = cimages[i+lky][j+lkx];
 			Dict retvals = Crosrng_rand_ms(crefim[iref], cimage, numr, previousmax);
 			const float new_peak = static_cast<float>( retvals["qn"] );
 			if (new_peak > peak) {
@@ -20029,7 +20069,7 @@ vector<float> Util::shc_multipeaks(EMData* image, const vector< EMData* >& crefi
 }
 
 vector<float> Util::multiref_polar_ali_2d_local_psi(EMData* image, const vector< EMData* >& crefim,
-                float xrng, float yrng, float step, float ant, float psi_max, string mode,
+                vector<float> xrng, vector<float> yrng, float step, float ant, float psi_max, string mode,
                 vector<int>numr, float cnx, float cny) {
 
     // Manually extract.
@@ -20051,8 +20091,12 @@ vector<float> Util::multiref_polar_ali_2d_local_psi(EMData* image, const vector<
 	float phi = d["phi"];
 	float theta = d["theta"];
 	float psi = d["psi"];
-	int ky = int(2*yrng/step+0.5)/2;
-	int kx = int(2*xrng/step+0.5)/2;
+// 	int ky = int(2*yrng/step+0.5)/2;
+// 	int kx = int(2*xrng/step+0.5)/2;
+	int lkx = int(xrng[0]/step);
+	int rkx = int(xrng[1]/step);
+	int lky = int(yrng[0]/step);
+	int rky = int(yrng[1]/step);
 	int iref, nref = 0, mirror = 0;
 	float iy, ix, sx = 0, sy = 0;
 	float peak = -1.0E23f;
@@ -20074,10 +20118,11 @@ vector<float> Util::multiref_polar_ali_2d_local_psi(EMData* image, const vector<
 		theta = 180-theta;
 		psi   = fmod(540.0f-psi, 360.0f);
 	} else { psi = fmod(360.0f-psi, 360.0f); }
-	for (int i = -ky; i <= ky; i++) {
-	    iy = i * step ;
-	    for (int j = -kx; j <= kx; j++) {
-			ix = j*step;
+	
+	for (int i = -lky; i <= rky; i++) {
+		iy = i * step ;
+		for (int j = -lkx; j <= rkx; j++) {
+			ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 
 			Normalize_ring(cimage, numr);
@@ -20137,7 +20182,7 @@ vector<float> Util::multiref_polar_ali_2d_local_psi(EMData* image, const vector<
 
 
 vector<float> Util::multiref_polar_ali_helical(EMData* image, const vector< EMData* >& crefim,
-                float xrng, float yrng, float step, float psi_max, string mode,
+                vector<float> xrng, vector<float> yrng, float step, float psi_max, string mode,
                 vector<int>numr, float cnx, float cny, int ynumber) {
 	
 	size_t crefim_len = crefim.size();
@@ -20147,31 +20192,41 @@ vector<float> Util::multiref_polar_ali_helical(EMData* image, const vector< EMDa
 	float iy, ix, sx=0, sy=0;
 	float peak = -1.0E23f;
 	float ang=0.0f;
-	int   kx = int(2*xrng/step+0.5)/2;
+// 	int   kx = int(2*xrng/step+0.5)/2;
+	int lkx = int(xrng[0]/step);
+	int rkx = int(xrng[1]/step);
+	int lky, rky;
+	
+		
 	//if ynumber==-1, use the old code which process x and y direction equally.
 	//if ynumber is given, it should be even. We need to check whether it is zero
 
-	int ky;
+//	int ky;
 	float stepy;
 	int kystart;
 	
 	if (ynumber == -1) {
-	    ky = int(2*yrng/step+0.5)/2;
+//	    ky = int(2*yrng/step+0.5)/2;
+		lky = int(yrng[0]/step);
+		rky = int(yrng[1]/step);
 	    stepy = step;
-	    kystart = -ky;
+	    kystart = -lky;
 	} else if(ynumber == 0) {
-	     ky = 0;
+	     rky = 0;
 	   	 stepy = 0.0f;
-	   	 kystart = ky;
+	   	 kystart = rky;
 	} else {
-	    ky = int(ynumber/2);		
-		stepy=2*yrng/ynumber;
-		kystart = -ky + 1;    
+//	    ky = int(ynumber/2);		
+		stepy=(yrng[0]+yrng[1])/ynumber;		//2-25-2015@ming 
+		lky = int(yrng[0]/stepy);
+		rky = int(yrng[1]/stepy);
+//		kystart = -lky + 1;  
+		kystart = -lky;   
 	}
 	//std::cout<<"yrng="<<yrng<<"ynumber="<<ynumber<<"stepy=="<<stepy<<"stepx=="<<step<<std::endl;
-	for (int i = kystart; i <= ky; i++) {
+	for (int i = kystart; i <= rky; i++) {
 		iy = i * stepy ;
-		for (int j = -kx; j <= kx; j++)	{
+		for (int j = -lkx; j <= rkx; j++) {
 			ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 
@@ -20244,7 +20299,7 @@ vector<float> Util::multiref_polar_ali_helical(EMData* image, const vector< EMDa
 }
 
 vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector< EMData* >& crefim,
-                float xrng, float yrng, float step, float ant, float psi_max, string mode,
+                vector<float> xrng, vector<float> yrng, float step, float ant, float psi_max, string mode,
                 vector<int>numr, float cnx, float cny, int ynumber, float yrnglocal) {
 	
 	size_t crefim_len = crefim.size();
@@ -20276,35 +20331,44 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 	float nbrinp_mirror;
 	bool  use_ref;
 	bool  use_ref_mirror;
-	int   kx = int(2*xrng/step+0.5)/2;
-	int   ky;
+//	int   kx = int(2*xrng/step+0.5)/2;
+//	int   ky;
+	int lkx = int(xrng[0]/step);
+	int rkx = int(xrng[1]/step);
+	int lky, rky;
+	
 	float stepy;
 	
 	if (ynumber == 0) {
-		ky = 0;
+		lky = rky = 0;
 	} else { 
 
-		if (ynumber > 0) stepy=2*yrng/ynumber;
+		if (ynumber > 0) stepy=(yrng[0]+yrng[1])/ynumber;	//2-25-2015@ming
 		else if (ynumber == -1) stepy = step;
 		
 		if (yrnglocal >= 0.0) {
-		   	ky = int(yrnglocal/stepy);
+//		   	ky = int(yrnglocal/stepy);
+		   	lky = min(int(yrng[0]/stepy), int(yrnglocal/stepy));    //2-25-2015@ming
+		   	rky = min(int(yrng[1]/stepy), int(yrnglocal/stepy));
 		} else { // search range is not restricted
-			if (ynumber > 0) {
-				ky = int(ynumber/2);	
-			} else {
-				ky = int(2*yrng/stepy+0.5)/2;	
-			}	
+				lky = int(yrng[0]/stepy);                   //2-25-2015@ming
+				rky = int(yrng[1]/stepy);
+//			if (ynumber > 0) {
+//				ky = int(ynumber/2);	
+//			} // else {
+// 				ky = int(2*yrng/stepy+0.5)/2;	
+// 			}	
 					
 		}
 	}
-	for (int i = -ky; i <= ky; i++) {
+
+	for (int i = -lky; i <= rky; i++) {
 		iy = i * stepy ;
-		for (int j = -kx; j <= kx; j++)  {
+		for (int j = -lkx; j <= rkx; j++) {
 			ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 			Normalize_ring( cimage, numr );
-			
+	
 			Frngs(cimage, numr);
 			//  Compare with All reference images within neighborhood ant
 			// for iref in xrange(len(crefim)):
@@ -20325,12 +20389,12 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 					Dict retvals;
 					Dict retvals_mirror;
 					if (use_ref_mirror == true) {
-					    if ((psi-90.0f) < 90.0f) retvals_mirror = Crosrng_sm_psi(crefim[iref], cimage, numr,   0.0f, 1, psi_max);
-					    else                     retvals_mirror = Crosrng_sm_psi(crefim[iref], cimage, numr, 180.0f, 1, psi_max);
+						if ((psi-90.0f) < 90.0f) retvals_mirror = Crosrng_sm_psi(crefim[iref], cimage, numr,   0.0f, 1, psi_max);
+						else                     retvals_mirror = Crosrng_sm_psi(crefim[iref], cimage, numr, 180.0f, 1, psi_max);
 					}
 					if (use_ref == true) {
-					    if ((psi-90.0f) < 90.0f) retvals = Crosrng_sm_psi(crefim[iref], cimage, numr,   0.0f, 0, psi_max);
-					    else                     retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, 180.0f, 0, psi_max);
+						if ((psi-90.0f) < 90.0f) retvals = Crosrng_sm_psi(crefim[iref], cimage, numr,   0.0f, 0, psi_max);
+						else                     retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, 180.0f, 0, psi_max);
 					}
 					double qn = jneginf;
 					if (use_ref) qn = retvals["qn"];
@@ -20374,7 +20438,7 @@ vector<float> Util::multiref_polar_ali_helical_local(EMData* image, const vector
 
 
 vector<float> Util::multiref_polar_ali_helical_90(EMData* image, const vector< EMData* >& crefim,
-                float xrng, float yrng, float step, float psi_max, string mode,
+                vector<float> xrng, vector<float> yrng, float step, float psi_max, string mode,
                 vector<int>numr, float cnx, float cny, int ynumber) {
 
 	size_t crefim_len = crefim.size();
@@ -20384,31 +20448,37 @@ vector<float> Util::multiref_polar_ali_helical_90(EMData* image, const vector< E
 	float iy, ix, sx=0, sy=0;
 	float peak = -1.0E23f;
 	float ang=0.0f;
-	int   kx = int(2*xrng/step+0.5)/2;
+//	int   kx = int(2*xrng/step+0.5)/2;
+	int lkx = int(xrng[0]/step);
+	int rkx = int(xrng[1]/step);
 	//if ynumber==-1, use the old code which process x and y direction equally.
 
-	int ky;
+	int lky, rky;
 	float stepy;
 	int kystart;
 
 	if (ynumber == -1) {
-	    ky = int(2*yrng/step+0.5)/2;
+//	    ky = int(2*yrng/step+0.5)/2;
+		lky = int(yrng[0]/step);
+		rky = int(yrng[1]/step);
 	    stepy = step;
-	    kystart = -ky;
+	    kystart = -lky;
 	} else if(ynumber == 0) {
-	     ky = 0;
+	     rky = 0;
 	   	 stepy = 0.0f;
-	   	 kystart = ky;
+	   	 kystart = rky;
 	} else {
-	    ky = int(ynumber/2);		
-		stepy=2*yrng/ynumber;
-		kystart = -ky + 1;    
+//	    ky = int(ynumber/2);	
+	    stepy=(yrng[0]+yrng[1])/ynumber;     //2-25-2015@ming
+   		lky = int(yrng[0]/stepy);
+		rky = int(yrng[1]/stepy); 	
+		kystart = -lky;   // + 1;    
 	}
 
 	//std::cout<<"yrng="<<yrng<<"ynumber="<<ynumber<<"stepy=="<<stepy<<"stepx=="<<step<<std::endl;
-	for (int i = kystart; i <= ky; i++) {
+	for (int i = kystart; i <= rky; i++) {
 		iy = i * stepy ;
-		for (int j = -kx; j <= kx; j++)	{
+		for (int j = -lkx; j <= rkx; j++) {
 			ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 
@@ -20424,7 +20494,7 @@ vector<float> Util::multiref_polar_ali_helical_90(EMData* image, const vector< E
 				double qn_180 = retvals_180["qn"];
 				double qn;
 				bool qn_is_zero = false;
-				
+		
 				if (qn_0 >= qn_180){
 					qn = qn_0;
 					qn_is_zero = true;
@@ -20437,7 +20507,7 @@ vector<float> Util::multiref_polar_ali_helical_90(EMData* image, const vector< E
 					sx = -ix;
 					sy = -iy;
 					nref = iref;
-					
+			
 					if (qn_is_zero){
 						ang = ang_n(retvals_0["tot"], mode, numr[numr.size()-1]);
 					} else {
@@ -20448,7 +20518,7 @@ vector<float> Util::multiref_polar_ali_helical_90(EMData* image, const vector< E
 				}
 			}
 			delete cimage; cimage = 0;
-		}
+		}	
 	}	
 	float co, so, sxs, sys;
 	co = static_cast<float>(  cos(ang*qv) );
@@ -20466,7 +20536,7 @@ vector<float> Util::multiref_polar_ali_helical_90(EMData* image, const vector< E
 }
 
 vector<float> Util::multiref_polar_ali_helical_90_local(EMData* image, const vector< EMData* >& crefim,
-                float xrng, float yrng, float step, float ant, float psi_max, string mode,
+                vector<float> xrng, vector<float> yrng, float step, float ant, float psi_max, string mode,
                 vector<int>numr, float cnx, float cny, int ynumber, float yrnglocal) {
 
 	size_t crefim_len = crefim.size();
@@ -20487,7 +20557,9 @@ vector<float> Util::multiref_polar_ali_helical_90_local(EMData* image, const vec
 	float iy, ix, sx=0, sy=0;
 	float peak = -1.0E23f;
 	float ang  = 0.0f;
-	int   kx   = int(2*xrng/step+0.5)/2;
+//	int   kx   = int(2*xrng/step+0.5)/2;
+	int lkx = int(xrng[0]/step);
+	int rkx = int(xrng[1]/step);
 
 	for ( iref = 0; iref < (int)crefim_len; iref++) {
 		n1[iref] = crefim[iref]->get_attr("n1");
@@ -20496,29 +20568,33 @@ vector<float> Util::multiref_polar_ali_helical_90_local(EMData* image, const vec
 	}
 	
 	float stepy;
-	int ky;
+	int lky, rky;
 	
 	if (ynumber == 0) {
-		ky = 0;
+		lky = rky = 0;
 	} else {
-		if (ynumber > 0) stepy=2*yrng/ynumber;
+		if (ynumber > 0) stepy=(yrng[0]+yrng[1])/ynumber;
 		else if (ynumber == -1) stepy = step;
 		
 		if (yrnglocal >= 0.0) {
-		   	ky = int(yrnglocal/stepy);
+//		   	ky = int(yrnglocal/stepy);
+			lky = min(int(yrng[0]/stepy),int(yrnglocal/stepy));
+			rky = min(int(yrng[1]/stepy),int(yrnglocal/stepy));
 		}
 		else { // search range is not restricted
-			if (ynumber > 0) {
-				ky = int(ynumber/2);	
-			} else {
-				ky = int(2*yrng/stepy+0.5)/2;	
-			}			
+			lky = int(yrng[0]/stepy);
+			rky = int(yrng[1]/stepy);
+//			if (ynumber > 0) {
+//				ky = int(ynumber/2);	
+//			} // else {
+// 				ky = int(2*yrng/stepy+0.5)/2;	
+// 			}			
 		}
 	}
-	
-	for (int i = -ky; i <= ky; i++) {
+
+	for (int i = -lky; i <= rky; i++) {
 		iy = i * stepy ;
-		for (int j = -kx; j <= kx; j++)  {
+		for (int j = -lkx; j <= rkx; j++) {
 			ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 
@@ -20565,7 +20641,7 @@ vector<float> Util::multiref_polar_ali_helical_90_local(EMData* image, const vec
 
 // HELICON
 vector<float> Util::multiref_polar_ali_helicon_local(EMData* image, const vector< EMData* >& crefim,
-                float xrng, float yrng, float step, float ant, float psi_max, string mode,
+                vector<float> xrng, vector<float> yrng, float step, float ant, float psi_max, string mode,
                 vector<int>numr, float cnx, float cny, int ynumber, float yrnglocal) {
 	
 	size_t crefim_len = crefim.size();
@@ -20597,33 +20673,42 @@ vector<float> Util::multiref_polar_ali_helicon_local(EMData* image, const vector
 	float nbrinp_mirror;
 	bool  use_ref;
 	bool  use_ref_mirror;
-	int   kx = int(2*xrng/step+0.5)/2;
-	int   ky;
+//	int   kx = int(2*xrng/step+0.5)/2;
+	int lkx = int(xrng[0]/step);
+	int rkx = int(xrng[1]/step);
+	int   lky, rky;
 	float stepy;
 	
 	if (ynumber == 0) {
-		ky = 0;
+		lky = rky = 0;
 	} else {
-		if (ynumber > 0) stepy=2*yrng/ynumber;
+		if (ynumber > 0) stepy=(yrng[0]+yrng[1])/ynumber;
 		else if (ynumber == -1) stepy = step;
 
 		if (yrnglocal >= 0.0) {
-		   	ky = int(yrnglocal/stepy);
+//		   	ky = int(yrnglocal/stepy);
+			lky = min(int(yrng[0]/stepy),int(yrnglocal/stepy));
+			rky = min(int(yrng[1]/stepy),int(yrnglocal/stepy));
+			
 		} else { // search range is not restricted
-			if (ynumber > 0) {
-				ky = int(ynumber/2);	
-			} else {
-				ky = int(2*yrng/stepy+0.5)/2;	
-			}	
+			lky = int(yrng[0]/stepy);
+			rky = int(yrng[1]/stepy);
+						
+//			if (ynumber > 0) {
+//				ky = int(ynumber/2);	
+//			} // else {
+// 				ky = int(2*yrng/stepy+0.5)/2;	
+// 			}	
 		}
 	}
-	for (int i = -ky; i <= ky; i++) {
+
+	for (int i = -lky; i <= rky; i++) {
 		iy = i * stepy ;
-		for (int j = -kx; j <= kx; j++)  {
+		for (int j = -lkx; j <= rkx; j++) {
 			ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 			Normalize_ring( cimage, numr );
-			
+	
 			Frngs(cimage, numr);
 			//  Compare with All reference images within neighborhood ant
 			// for iref in xrange(len(crefim)):
@@ -20688,7 +20773,7 @@ vector<float> Util::multiref_polar_ali_helicon_local(EMData* image, const vector
 //  HELICON
 
 vector<float> Util::multiref_polar_ali_helicon_90_local(EMData* image, const vector< EMData* >& crefim,
-                float xrng, float yrng, float step, float ant, float psi_max, string mode,
+                vector<float> xrng, vector<float> yrng, float step, float ant, float psi_max, string mode,
                 vector<int>numr, float cnx, float cny, int ynumber, float yrnglocal) {
 
 	size_t crefim_len = crefim.size();
@@ -20710,7 +20795,9 @@ vector<float> Util::multiref_polar_ali_helicon_90_local(EMData* image, const vec
 	float iy, ix, sx=0, sy=0;
 	float peak = -1.0E23f;
 	float ang  = 0.0f;
-	int   kx   = int(2*xrng/step+0.5)/2;
+//	int   kx   = int(2*xrng/step+0.5)/2;
+	int lkx = int(xrng[0]/step);
+	int rkx = int(xrng[1]/step);
 
 	for ( iref = 0; iref < (int)crefim_len; iref++) {
 		n1[iref] = crefim[iref]->get_attr("n1");
@@ -20719,28 +20806,33 @@ vector<float> Util::multiref_polar_ali_helicon_90_local(EMData* image, const vec
 	}
 
 	float stepy;
-	int ky;
+	int lky, rky;
 
 	if (ynumber == 0) {
-		ky = 0;
+		lky = rky = 0;
 	} else {
-		if (ynumber > 0) stepy = 2*yrng/ynumber;
+		if (ynumber > 0) stepy = (yrng[0]+yrng[1])/ynumber;
 		else if (ynumber == -1) stepy = step;
 
 		if (yrnglocal >= 0.0) {
-		   	ky = int(yrnglocal/stepy);
+//		   	ky = int(yrnglocal/stepy);
+			lky = min(int(yrng[0]/stepy), int(yrnglocal/stepy));
+			rky = min(int(yrng[1]/stepy), int(yrnglocal/stepy));
 		}
 		else { // search range is not restricted
-			if (ynumber > 0) {
-				ky = int(ynumber/2);
-			} else {
-				ky = int(2*yrng/stepy+0.5)/2;
-			}
+			lky = int(yrng[0]/stepy);
+			rky = int(yrng[1]/stepy);
+			// if (ynumber > 0) {
+// 				ky = int(ynumber/2);
+// 			} else {
+// 				ky = int(2*yrng/stepy+0.5)/2;
+// 			}
 		}
 	}
-	for (int i = -ky; i <= ky; i++) {
+	int nring = numr.size()/3;
+	for (int i = -lky; i <= rky; i++) {
 		iy = i * stepy ;
-		for (int j = -kx; j <= kx; j++)  {
+		for (int j = -lkx; j <= rkx; j++) {
 			ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 
@@ -20788,54 +20880,62 @@ vector<float> Util::multiref_polar_ali_helicon_90_local(EMData* image, const vec
 
 
 void  Util::multiref_peaks_ali2d(EMData* image, EMData* crefim,
-			float xrng, float yrng, float step, string mode,
+			vector<float> xrng, vector<float> yrng, float step, string mode,
 			vector< int >numr, float cnx, float cny,
 			EMData *peaks, EMData *peakm) {
 
 	int   maxrin = numr[numr.size()-1];
 
-	int   ky = int(2*yrng/step+0.5)/2;
-	int   kx = int(2*xrng/step+0.5)/2;
-
-	peaks->set_size(maxrin, 2*kx+3, 2*ky+3);
+// 	int   ky = int(2*yrng/step+0.5)/2;
+// 	int   kx = int(2*xrng/step+0.5)/2;
+	int lkx = int(xrng[0]/step);
+	int rkx = int(xrng[1]/step);
+	int lky = int(yrng[0]/step);
+	int rky = int(yrng[1]/step);
+	
+	peaks->set_size(maxrin, lkx+rkx+3, lky+rky+3);
 	float *p_ccf1ds = peaks->get_data();
 
-	peakm->set_size(maxrin, 2*kx+3, 2*ky+3);
+	peakm->set_size(maxrin, lkx+rkx+3, lky+rky+3);
 	float *p_ccf1dm = peakm->get_data();
 
-	for ( int i = 0; i<maxrin*(2*kx+3)*(2*ky+3); i++) {
+	for ( int i = 0; i<maxrin*(lkx+rkx+3)*(lky+rky+3); i++) {
 		p_ccf1ds[i] = -1.e20f;
 		p_ccf1dm[i] = -1.e20f;
 	}
 
-	for (int i = -ky; i <= ky; i++) {
-		float iy = i * step;
-		for (int j = -kx; j <= kx; j++) {
-			float ix = j*step;
+	for (int i = -lky; i <= rky; i++) {
+		float iy = i * step ;
+		for (int j = -lkx; j <= rkx; j++) {
+			float ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 			Frngs(cimage, numr);
 			Crosrng_msg_vec(crefim, cimage, numr,
-			  p_ccf1ds+(j+kx+1+((i+ky+1)*(2*kx+3)))*maxrin,
-			  p_ccf1dm+(j+kx+1+((i+ky+1)*(2*kx+3)))*maxrin);
+			  p_ccf1ds+(j+lkx+1+((i+lky+1)*(lkx+rkx+3)))*maxrin,
+			  p_ccf1dm+(j+lkx+1+((i+lky+1)*(lkx+rkx+3)))*maxrin);
 			delete cimage; cimage = 0;
 		}
 	}
 	return;
 }
 
-void  Util::multiref_peaks_compress_ali2d(EMData* image, EMData* crefim, float xrng, float yrng,
+void  Util::multiref_peaks_compress_ali2d(EMData* image, EMData* crefim, vector<float> xrng, vector<float> yrng,
      float step, string mode, vector<int>numr, float cnx, float cny, EMData *peaks, EMData *peakm,
      EMData *peaks_compress, EMData *peakm_compress) {
 
 	int   maxrin = numr[numr.size()-1];
 
-	int   ky = int(2*yrng/step+0.5)/2;
-	int   kx = int(2*xrng/step+0.5)/2;
-
-	peaks->set_size(maxrin, 2*kx+3, 2*ky+3);
+// 	int   ky = int(2*yrng/step+0.5)/2;
+// 	int   kx = int(2*xrng/step+0.5)/2;
+	int lkx = int(xrng[0]/step);
+	int rkx = int(xrng[1]/step);
+	int lky = int(yrng[0]/step);
+	int rky = int(yrng[1]/step);
+	
+	peaks->set_size(maxrin, lkx+rkx+3, lky+rky+3);
 	float *p_ccf1ds = peaks->get_data();
 
-	peakm->set_size(maxrin, 2*kx+3, 2*ky+3);
+	peakm->set_size(maxrin, lkx+rkx+3, lky+rky+3);
 	float *p_ccf1dm = peakm->get_data();
 
 	peaks_compress->set_size(maxrin, 1, 1);
@@ -20844,30 +20944,29 @@ void  Util::multiref_peaks_compress_ali2d(EMData* image, EMData* crefim, float x
 	peakm_compress->set_size(maxrin, 1, 1);
 	float *p_ccf1dm_compress = peakm_compress->get_data();
 
-	for ( int i = 0; i<maxrin*(2*kx+3)*(2*ky+3); i++) {
+	for ( int i = 0; i<maxrin*(lkx+rkx+3)*(lky+rky+3); i++) {
 		p_ccf1ds[i] = -1.e20f;
 		p_ccf1dm[i] = -1.e20f;
 	}
-
-	for (int i = -ky; i <= ky; i++) {
-		float iy = i * step;
-		for (int j = -kx; j <= kx; j++) {
-			float ix = j*step;
+	for (int i = -lky; i <= rky; i++) {
+		float iy = i * step ;
+		for (int j = -lkx; j <= rkx; j++) {
+			float ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 			Frngs(cimage, numr);
 			Crosrng_msg_vec(crefim, cimage, numr,
-			  p_ccf1ds+(j+kx+1+((i+ky+1)*(2*kx+3)))*maxrin,
-			  p_ccf1dm+(j+kx+1+((i+ky+1)*(2*kx+3)))*maxrin);
+			  p_ccf1ds+(j+lkx+1+((i+lky+1)*(lkx+rkx+3)))*maxrin,
+			  p_ccf1dm+(j+lkx+1+((i+lky+1)*(lkx+rkx+3)))*maxrin);
 			delete cimage; cimage = 0;
 		}
 	}
 	for (int x=0; x<maxrin; x++) {
 		float maxs = -1.0e22f;
 		float maxm = -1.0e22f;
-		for (int i=1; i<=2*ky+1; i++) {
-			for (int j=1; j<=2*kx+1; j++) {
-				if (p_ccf1ds[(i*(2*kx+3)+j)*maxrin+x] > maxs) maxs = p_ccf1ds[(i*(2*kx+3)+j)*maxrin+x];
-				if (p_ccf1dm[(i*(2*kx+3)+j)*maxrin+x] > maxm) maxm = p_ccf1dm[(i*(2*kx+3)+j)*maxrin+x];
+		for (int i=1; i<=lky+rky+1; i++) {
+			for (int j=1; j<=lkx+rkx+1; j++) {
+				if (p_ccf1ds[(i*(lkx+rkx+3)+j)*maxrin+x] > maxs) maxs = p_ccf1ds[(i*(lkx+rkx+3)+j)*maxrin+x];
+				if (p_ccf1dm[(i*(lkx+rkx+3)+j)*maxrin+x] > maxm) maxm = p_ccf1dm[(i*(lkx+rkx+3)+j)*maxrin+x];
 			}
 		}
 		p_ccf1ds_compress[x] = maxs;
@@ -20896,25 +20995,29 @@ struct ccf_value
 
 
 vector<float>  Util::ali2d_ccf_list(EMData* image, EMData* crefim,
-			float xrng, float yrng, float step, string mode,
+			vector<float> xrng, vector<float> yrng, float step, string mode,
 			vector< int >numr, float cnx, float cny, double T) {
 
 	int   maxrin = numr[numr.size()-1];
 
-	int   ky = int(2*yrng/step+0.5)/2;
-	int   kx = int(2*xrng/step+0.5)/2;
-
+// 	int   ky = int(2*yrng/step+0.5)/2;
+// 	int   kx = int(2*xrng/step+0.5)/2;
+	int lkx = int(xrng[0]/step);
+	int rkx = int(xrng[1]/step);
+	int lky = int(yrng[0]/step);
+	int rky = int(yrng[1]/step);
+	
 	float *p_ccf1ds = (float *)malloc(maxrin*sizeof(float));
 	float *p_ccf1dm = (float *)malloc(maxrin*sizeof(float));
-	int vol = maxrin*(2*kx+1)*(2*ky+1);
+	int vol = maxrin*(lkx+rkx+1)*(lky+rky+1);
 	vector<ccf_point> ccf(2*vol);
 	ccf_point temp;
 
 	int index = 0;
-	for (int i = -ky; i <= ky; i++) {
-		float iy = i * step;
-		for (int j = -kx; j <= kx; j++) {
-			float ix = j*step;
+	for (int i = -lky; i <= rky; i++) {
+		float iy = i * step ;
+		for (int j = -lkx; j <= rkx; j++) {
+			float ix = j*step ;
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 			Frngs(cimage, numr);
 			Crosrng_msg_vec(crefim, cimage, numr, p_ccf1ds, p_ccf1dm);
@@ -20981,18 +21084,26 @@ vector<float>  Util::ali2d_ccf_list_snake(EMData* image, EMData* crefim, vector<
 	int vol = maxrin*(2*kx+1);
 	vector<float> ccf(vol);
 	int index;
-	
+
+	int nring = numr.size()/3;
+	int inr = numr[(nring-1)*3];
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	//here the centers of the image cny and cnx use Fortran convention which means the index of the image array starts from 1 to nx (ny). 02-23-2015
 	for (int j = -kx; j <= kx; j++) {
-		float ix = j*step;
-		EMData* cimage = Polar2Dm(image, cnx+ix, cny, numr, mode);
-		Frngs(cimage, numr);
-		//Applyws(cimage, numr, wr);
-		Crosrng_msg_vec_snake(crefim, cimage, numr, p_ccf1ds);
-		for (int k=0; k<maxrin; k++) {
-			index = (j+kx)*maxrin+k;
-			ccf[index] = p_ccf1ds[k];
+		float ix = j*step ;
+		if ( inr + (int)(cnx+ix) <= nx - 1  &&  -inr + (int)(cnx+ix) >= 1) {
+			EMData* cimage = Polar2Dm(image, cnx+ix, cny, numr, mode);
+			Frngs(cimage, numr);
+			//Applyws(cimage, numr, wr);
+			Crosrng_msg_vec_snake(crefim, cimage, numr, p_ccf1ds);
+			for (int k=0; k<maxrin; k++) {
+				index = (j+kx)*maxrin+k;
+				ccf[index] = p_ccf1ds[k];
+			}
+			delete cimage; cimage = 0;
 		}
-		delete cimage; cimage = 0;
+				
 	}
 	
 
@@ -21080,20 +21191,29 @@ void Util::multiref_peaks_ali(EMData* image, const vector< EMData* >& crefim,
 	}
 
 	float  iy, ix;
+	int nring = numr.size()/3;
+	int inr = numr[(nring-1)*3];
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
 	for (int i = -ky; i <= ky; i++) {
 		iy = i * step ;
-		for (int j = -kx; j <= kx; j++) {
-			ix = j*step ;
-			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
-			Frngs(cimage, numr);
-			//  compare with all reference images
-			// for iref in xrange(len(crefim)):
-			for ( iref = 0; iref < (int)crefim_len; iref++) {
-				Crosrng_msg_vec(crefim[iref], cimage, numr,
-					p_ccf1ds+(iref + (j+kx+1+((i+ky+1)*tkx))*(int)crefim_len )*maxrin,
-					p_ccf1dm+(iref + (j+kx+1+((i+ky+1)*tkx))*(int)crefim_len )*maxrin);
-			}
-			delete cimage; cimage = 0;
+		//here the centers of the image cny and cnx use Fortran convention which means the index of the image array starts from 1 to nx (ny). 02-23-2015
+		if ( inr + (int)(cny+iy) <= ny - 1  &&  -inr + (int)(cny+iy) >= 1) {
+			for (int j = -kx; j <= kx; j++) {
+				ix = j*step ;
+				if ( inr + (int)(cnx+ix) <= nx - 1  &&  -inr + (int)(cnx+ix) >= 1) {
+					EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+					Frngs(cimage, numr);
+					//  compare with all reference images
+					// for iref in xrange(len(crefim)):
+					for ( iref = 0; iref < (int)crefim_len; iref++) {
+						Crosrng_msg_vec(crefim[iref], cimage, numr,
+							p_ccf1ds+(iref + (j+kx+1+((i+ky+1)*tkx))*(int)crefim_len )*maxrin,
+							p_ccf1dm+(iref + (j+kx+1+((i+ky+1)*tkx))*(int)crefim_len )*maxrin);
+					}
+					delete cimage; cimage = 0;
+				}
+			}		
 		}
 	}
 	return;
@@ -23988,7 +24108,8 @@ void Util::constrained_helix_exhaustive( vector<EMData*> data, vector<EMData*> f
 			float junk, nnsx, nnsy;
 			compose_transform2(0, psx, psy, -oalpha, 0, 0, junk, nnsx, nnsy);
 			//#cout << " 2D shift without angle ",nnsx, nnsy
-
+			
+			//this part below will be changed on a higher level later for Polar2Dm.     2-26-2015@ming
 			std::auto_ptr<EMData> cimage( Util::Polar2Dm(data[im], cnx+nnsx, cny+nnsy, numr, mode) );
 			Util::Frngs(cimage.get(), numr);
 			std::auto_ptr<EMData> temp( Util::Crosrng_msg_s( cimage.get(), crefim[iphi], numr) );

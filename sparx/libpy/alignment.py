@@ -67,6 +67,14 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 		alpha, sx, sy, mirror        = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
 		alphai, sxi, syi, scalei     = inverse_transform2(alpha, sx, sy)
 
+		nx = ima.get_xsize()
+		ny = ima.get_ysize()
+		txrng = [0.0]*2 
+		tyrng = [0.0]*2
+		txrng[0] = max(0,min(cnx+sxi-ou, xrng+sxi))
+		txrng[1] = max(0, min(nx-cnx-sxi-ou, xrng-sxi))
+		tyrng[0] = max(0,min(cny+syi-ou, yrng+syi))
+		tyrng[1] = max(0, min(ny-cny-syi-ou, yrng-syi))
 		# align current image to the reference
 		if random_method == "SHC":
 			"""
@@ -80,7 +88,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 			#  A possibility would be to reject moves that results in too large departure from the center.
 			#  On the other hand, one cannot simply do searches around the proper center all the time,
 			#    as if xr is decreased, the image cannot be brought back if the established shifts are further than new range
-			olo = Util.shc(ima, [cimage], xrng, yrng, step, -1.0, mode, numr, cnx+sxi, cny+syi, "c1")
+			olo = Util.shc(ima, [cimage], txrng, tyrng, step, -1.0, mode, numr, cnx+sxi, cny+syi, "c1")
 			##olo = Util.shc(ima, [cimage], xrng, yrng, step, -1.0, mode, numr, cnx, cny, "c1")
 			if(data[im].get_attr("previousmax")<olo[5]):
 				#[angt, sxst, syst, mirrort, peakt] = ormq(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi, delta)
@@ -104,8 +112,8 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 				set_params2D(data[im], [alpha, sx, sy, mirror, 1.0], ali_params)
 				nope += 1
 		else:
-			txrng = max(0, min(xrng, cnx - ou -sxi))
-			tyrng = max(0, min(yrng, cny - ou -syi))
+			#txrng = max(0, min(xrng, cnx - ou -sxi))
+			#tyrng = max(0, min(yrng, cny - ou -syi))
 			if nomirror:  [angt, sxst, syst, mirrort, peakt] = ornq(ima, cimage, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi)
 			else:	      [angt, sxst, syst, mirrort, peakt] = ormq(ima, cimage, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi, delta)
 			# combine parameters and set them to the header, ignore previous angle and mirror
@@ -466,12 +474,18 @@ def ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	#from utilities import info
 	#print "ORNQ"
 	peak = -1.0E23
-	ky = int(2*yrng/step+0.5)/2
-	kx = int(2*xrng/step+0.5)/2
+# 	ky = int(2*yrng/step+0.5)/2
+# 	kx = int(2*xrng/step+0.5)/2
+
+	lkx = int(xrng[0]/step)
+	rkx = int(xrng[1]/step)
 	
-	for i in xrange(-ky, ky+1):
+	lky = int(yrng[0]/step)
+	rky = int(yrng[1]/step)
+	
+	for i in xrange(-lky, rky+1):
 		iy = i*step
-		for j in xrange(-kx, kx+1):
+		for j in xrange(-lkx, rkx+1):
 			ix = j*step
 			cimage = Util.Polar2Dm(image, cnx+ix, cny+iy, numr, mode)
 			Util.Frngs(cimage, numr)
@@ -501,11 +515,19 @@ def ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0):
 	from math import pi, cos, sin, radians
 	#print "ORMQ"
 	peak = -1.0E23
-	ky = int(2*yrng/step+0.5)//2
-	kx = int(2*xrng/step+0.5)//2
-	for i in xrange(-ky, ky+1):
+# 	ky = int(2*yrng/step+0.5)//2
+# 	kx = int(2*xrng/step+0.5)//2
+
+
+	lkx = int(xrng[0]/step)
+	rkx = int(xrng[1]/step)
+	
+	lky = int(yrng[0]/step)
+	rky = int(yrng[1]/step)
+	
+	for i in xrange(-lky, rky+1):
 		iy = i*step
-		for j in xrange(-kx, kx+1):
+		for j in xrange(-lkx, rkx+1):
 			ix = j*step
 			cimage = Util.Polar2Dm(image, cnx+ix, cny+iy, numr, mode)
 			Util.Frngs(cimage, numr)
@@ -532,11 +554,11 @@ def ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0):
 			retvals = Util.Crosrng_e(crefim, cimage, numr, 0)
 			qn = retvals["qn"]
 			if qn >= peak:
-		 		sx = -ix
-		 		sy = -iy
-		 		ang = ang_n(retvals["tot"], mode, numr[-1])
-		 		peak = qn
-		 		mirror = 0
+				sx = -ix
+				sy = -iy
+				ang = ang_n(retvals["tot"], mode, numr[-1])
+				peak = qn
+				mirror = 0
 			'''
 	co  =  cos(radians(ang))
 	so  = -sin(radians(ang))
@@ -605,7 +627,16 @@ def ormq_peaks(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 
 	ccfs = EMData()
 	ccfm = EMData()
-	Util.multiref_peaks_ali2d(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, ccfs, ccfm)
+	ou = numr[-3]
+	nx = image.get_xsize()
+	ny = image.get_ysize()
+	txrng = [0.0]*2 
+	tyrng = [0.0]*2
+	txrng[0] = max(0,min(cnx-ou, xrng))
+	txrng[1] = max(0, min(nx-cnx-ou, xrng))
+	tyrng[0] = max(0,min(cny-ou, yrng))
+	tyrng[1] = max(0, min(ny-cny-ou, yrng))
+	Util.multiref_peaks_ali2d(image, crefim, txrng, tyrng, step, mode, numr, cnx, cny, ccfs, ccfm)
 
 	peaks = peak_search(ccfs, 1000)
 	for i in xrange(len(peaks)):	peaks[i].append(0)
@@ -1292,8 +1323,18 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 	#phi, theta, psi, sxo, syo = get_params_proj(data)
 	t1 = data.get_attr("xform.projection")
 	dp = t1.get_params("spider")
+	ou = numr[-3]
+	sxi = dp["tx"]
+	syi = dp["ty"]
+	txrng = [0.0]*2 
+	tyrng = [0.0]*2
+	txrng[0] = max(0,min(cnx+sxi-ou, xrng+sxi))
+	txrng[1] = max(0, min(nx-cnx-sxi-ou, xrng-sxi))
+	tyrng[0] = max(0,min(cny+syi-ou, yrng+syi))
+	tyrng[1] = max(0, min(ny-cny-syi-ou, yrng-syi))
+			
 	#[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
-	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings, xrng, yrng, step, mode, numr, cnx+dp["tx"], cny+dp["ty"])
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings, txrng, tyrng, step, mode, numr, cnx+dp["tx"], cny+dp["ty"])
 	#print ang, sxs, sys, mirror, iref, peak
 	iref = int(iref)
 	#[ang,sxs,sys,mirror,peak,numref] = apmq(projdata[imn], ref_promulj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
@@ -1353,9 +1394,20 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
 		finfo.flush()
 
+	ou = numr[-3]
+	sxi = dp["tx"]
+	syi = dp["ty"]
+	txrng = [0.0]*2 
+	tyrng = [0.0]*2
+	txrng[0] = max(0,min(cnx+sxi-ou, xrng+sxi))
+	txrng[1] = max(0, min(nx-cnx-sxi-ou, xrng-sxi))
+	tyrng[0] = max(0,min(cny+syi-ou, yrng+syi))
+	tyrng[1] = max(0, min(ny-cny-syi-ou, yrng-syi))
+	
 	#[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data, refrings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
 	#  multiref_polar_ali_2d_local has to be modified to work properly with symmetries, i.e., to consider wrapping of refrings distribution PAP 01/27/2015
-	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data, refrings, xrng, yrng, step, ant, mode, numr, cnx+dp["tx"], cny+dp["ty"], sym)
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data, refrings, txrng, tyrng, step, ant, mode, numr, cnx+dp["tx"], cny+dp["ty"], sym)
+
 	iref=int(iref)
 	#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
 	#ang = (ang+360.0)%360.0
@@ -1519,9 +1571,19 @@ def proj_ali_incore_delta(data, refrings, numr, xrng, yrng, step, start, delta, 
 		finfo.write("Image id: %6d\n"%(ID))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
 		finfo.flush()
+
+	ou = numr[-3]
+	sxi = dp["tx"]
+	syi = dp["ty"]
+	txrng = [0.0]*2 
+	tyrng = [0.0]*2
+	txrng[0] = max(0,min(cnx+sxi-ou, xrng+sxi))
+	txrng[1] = max(0, min(nx-cnx-sxi-ou, xrng-sxi))
+	tyrng[0] = max(0,min(cny+syi-ou, yrng+syi))
+	tyrng[1] = max(0, min(ny-cny-syi-ou, yrng-syi))
 	#[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
 	#  This function should be modified to work properly for refrings wrapping due to symmetries 01/27/2015
-	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_delta(data, refrings, xrng, yrng, step, mode, numr, cnx+dp["tx"], cny+dp["ty"], start, delta)
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_delta(data, refrings, txrng, tyrng, step, mode, numr, cnx+dp["tx"], cny+dp["ty"], start, delta)
 	iref = int(iref)
 	#[ang,sxs,sys,mirror,peak,numref] = apmq(projdata[imn], ref_proj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
 	#ang = (ang+360.0)%360.0
@@ -1595,9 +1657,18 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, dpsi=1
 		#finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, sxo, syo))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
 		finfo.flush()
-
+		
+	ou = numr[-3]
+	sxi = dp["tx"]
+	syi = dp["ty"]
+	txrng = [0.0]*2 
+	tyrng = [0.0]*2
+	txrng[0] = max(0,min(cnx+sxi-ou, xrng+sxi))
+	txrng[1] = max(0, min(nx-cnx-sxi-ou, xrng-sxi))
+	tyrng[0] = max(0,min(cny+syi-ou, yrng+syi))
+	tyrng[1] = max(0, min(ny-cny-syi-ou, yrng-syi))	
 	#[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local_psi(data, refrings, xrng, yrng, step, ant, 180.0, mode, numr, cnx-sxo, cny-syo)
-	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local_psi(data, refrings, xrng, yrng, step, ant, dpsi, mode, numr, cnx+dp["tx"], cny+dp["ty"])
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local_psi(data, refrings, txrng, tyrng, step, ant, dpsi, mode, numr, cnx+dp["tx"], cny+dp["ty"])
 	iref = int(iref)
 	#Util.multiref_peaks_ali(data[imn].process("normalize.mask", {"mask":mask2D, "no_sigma":1}), ref_proj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo, ccfs, ccfm, nphi, ntheta)
 	#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
@@ -1662,8 +1733,16 @@ def proj_ali_helical(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_max=1
 		finfo.write("Image id: %6d\n"%(ID))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
+
+	ou = numr[-3]
+	txrng = [0.0]*2 
+	tyrng = [0.0]*2
+	txrng[0] = max(0,min(cnx-tx-ou, xrng-tx))				#here tx is not spider format.@ming
+	txrng[1] = max(0, min(nx-cnx+tx-ou, xrng+tx))
+	tyrng[0] = max(0,min(cny-ty-ou, yrng-ty))
+	tyrng[1] = max(0, min(ny-cny+ty-ou, yrng+ty))	
 	[ang, sxs, sys, mirror, iref, peak] = \
-		Util.multiref_polar_ali_helical(data, refrings, xrng, yrng, stepx, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber))
+		Util.multiref_polar_ali_helical(data, refrings, txrng, tyrng, stepx, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber))
 	iref = int(iref)
 	#print  " IN ", ang, sxs, sys, mirror, iref, peak
 	if iref > -1:
@@ -1709,9 +1788,17 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 		finfo.write("Image id: %6d\n"%(ID))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
+	
+	ou = numr[-3]
+	txrng = [0.0]*2 
+	tyrng = [0.0]*2
+	txrng[0] = max(0,min(cnx-tx-ou, xrng-tx))				#here tx is not spider format.@ming
+	txrng[1] = max(0, min(nx-cnx+tx-ou, xrng+tx))
+	tyrng[0] = max(0,min(cny-ty-ou, yrng-ty))
+	tyrng[1] = max(0, min(ny-cny+ty-ou, yrng+ty))
 
 	[ang, sxs, sys, mirror, iref, peak] = \
-		Util.multiref_polar_ali_helical_local(data, refrings, xrng, yrng, stepx, ant, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber), yrnglocal)
+		Util.multiref_polar_ali_helical_local(data, refrings, txrng, tyrng, stepx, ant, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber), yrnglocal)
 
 	iref = int(iref)
 
@@ -1759,8 +1846,16 @@ def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_ma
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
 
+	ou = numr[-3]
+	txrng = [0.0]*2 
+	tyrng = [0.0]*2
+	txrng[0] = max(0,min(cnx-tx-ou, xrng-tx))				#here tx is not spider format.@ming
+	txrng[1] = max(0, min(nx-cnx+tx-ou, xrng+tx))
+	tyrng[0] = max(0,min(cny-ty-ou, yrng-ty))
+	tyrng[1] = max(0, min(ny-cny+ty-ou, yrng+ty))
+	
 	[ang, sxs, sys, mirror, iref, peak] = \
-		Util.multiref_polar_ali_helical_90(data, refrings, xrng, yrng, stepx, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber))
+		Util.multiref_polar_ali_helical_90(data, refrings, txrng, tyrng, stepx, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber))
 	iref = int(iref)
 	#print  " IN ", ang, sxs, sys, mirror, iref, peak
 	if iref > -1:
@@ -1800,8 +1895,16 @@ def proj_ali_helical_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
 
+	ou = numr[-3]
+	txrng = [0.0]*2 
+	tyrng = [0.0]*2
+	txrng[0] = max(0,min(cnx-tx-ou, xrng-tx))				#here tx is not spider format.@ming
+	txrng[1] = max(0, min(nx-cnx+tx-ou, xrng+tx))
+	tyrng[0] = max(0,min(cny-ty-ou, yrng-ty))
+	tyrng[1] = max(0, min(ny-cny+ty-ou, yrng+ty))
+	
 	[ang, sxs, sys, mirror, iref, peak] = \
-		Util.multiref_polar_ali_helical_90_local(data, refrings, xrng, yrng, stepx, ant, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber), yrnglocal)
+		Util.multiref_polar_ali_helical_90_local(data, refrings, txrng, tyrng, stepx, ant, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber), yrnglocal)
 	iref = int(iref)
 	if iref > -1:
 		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
@@ -1841,8 +1944,16 @@ def proj_ali_helicon_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
 
+	ou = numr[-3]
+	txrng = [0.0]*2 
+	tyrng = [0.0]*2
+	txrng[0] = max(0,min(cnx-tx-ou, xrng-tx))				#here tx is not spider format.@ming
+	txrng[1] = max(0, min(nx-cnx+tx-ou, xrng+tx))
+	tyrng[0] = max(0,min(cny-ty-ou, yrng-ty))
+	tyrng[1] = max(0, min(ny-cny+ty-ou, yrng+ty))
+	
 	[ang, sxs, sys, mirror, iref, peak] = \
-		Util.multiref_polar_ali_helicon_local(data, refrings, xrng, yrng, stepx, ant, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber), yrnglocal)
+		Util.multiref_polar_ali_helicon_local(data, refrings, txrng, tyrng, stepx, ant, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber), yrnglocal)
 
 	iref = int(iref)
 
@@ -1987,8 +2098,16 @@ def proj_ali_helicon_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
 
+	ou = numr[-3]
+	txrng = [0.0]*2 
+	tyrng = [0.0]*2
+	txrng[0] = max(0,min(cnx-tx-ou, xrng-tx))				#here tx is not spider format.@ming
+	txrng[1] = max(0, min(nx-cnx+tx-ou, xrng+tx))
+	tyrng[0] = max(0,min(cny-ty-ou, yrng-ty))
+	tyrng[1] = max(0, min(ny-cny+ty-ou, yrng+ty))
+	
 	[ang, sxs, sys, mirror, iref, peak] = \
-		Util.multiref_polar_ali_helicon_90_local(data, refrings, xrng, yrng, stepx, ant, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber), yrnglocal)
+		Util.multiref_polar_ali_helicon_90_local(data, refrings, txrng, tyrng, stepx, ant, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber), yrnglocal)
 	iref = int(iref)
 	if iref > -1:
 		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
@@ -3493,7 +3612,8 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 	#  Limit psi search to within psimax range
 	bnr = max(int(round(reduced_psiref/psistep)),0)
 	enr = min(int(round(reduced_psiref/psistep))+nr,nr)
-	
+	bnr = 0
+	enr = nr
 	N = inima.get_ysize()  # assumed image is square, but because it is FT take y.
 	#  Window for ccf sampled by gridding
 	#   We quietly assume the search range for translations is always much less than the ccf size,
@@ -3741,7 +3861,7 @@ def alignment3Dsnake(partition, nsegs, initialori, ctx, psistep, stepx, stepy, t
 	ftol = 1.e-8
 	xtol = 1.e-8
 	maxi = 1000
-	scale = [nc*2.0]*len(TCK[0][1])+[rnx*2.0]*len(TCK[1][1])+[rny*2.0]*len(TCK[2][1])
+	scale = [nc*1.0]*len(TCK[0][1])+[rnx*1.0]*len(TCK[1][1])+[rny*1.0]*len(TCK[2][1])
 	print "begin amoeba refine..."
 	params,fval, numit=amoeba(params, scale, flexhelicalali, ftol, xtol, maxi, [ctx,params0, 0.0, TCK, nsegs])
 	print "amoeba iter_num=%d"%numit

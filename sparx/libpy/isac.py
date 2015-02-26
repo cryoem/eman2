@@ -870,8 +870,17 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			# normalize
 			alldata[im].process_inplace("normalize.mask", {"mask":mask, "no_sigma":0}) # subtract average under the mask
 
+			
+			ny = nx
+			txrng = [0.0]*2 
+			tyrng = [0.0]*2
+			txrng[0] = max(0,min(cnx+sxi-ou, xrng+sxi))
+			txrng[1] = max(0, min(nx-cnx-sxi-ou, xrng-sxi))
+			tyrng[0] = max(0,min(cny+syi-ou, yrng+syi))
+			tyrng[1] = max(0, min(ny-cny-syi-ou, yrng-syi))
+		
 			# align current image to all references - THIS IS REALLY TIME CONSUMING PAP 01/17/2015
-			temp = Util.multiref_polar_ali_2d_peaklist(alldata[im], refi, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
+			temp = Util.multiref_polar_ali_2d_peaklist(alldata[im], refi, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi)
 			for iref in xrange(numref):
 				[alphan, sxn, syn, mn] = \
 				   combine_params2(0.0, -sxi, -syi, 0, temp[iref*5+1], temp[iref*5+2], temp[iref*5+3], int(temp[iref*5+4]))

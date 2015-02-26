@@ -873,9 +873,6 @@ def snakehelicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0
 	tttt = EMData(nx, ny, 1, False)
 	
 	## compute 2D ccfs.
-	#crefim = Util.Polar2Dm(tavg, cnx, cny, numr, mode)
-	#Util.Frngs(crefim, numr)
-	##Util.Applyws(crefim, numr, wr)
 	CCF2d = []
 	for ifil in xrange(nfils):
 		# test Calculate 2D ccf between each segment and filament average

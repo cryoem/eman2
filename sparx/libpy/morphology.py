@@ -2397,7 +2397,7 @@ def fastigmatism3(amp, data):
 	pc = ctf2_rimg(data[2], generate_ctf([data[3], data[4], data[5], data[6], 0.0, data[7], amp, 0.0]) )
 	#st = Util.infomask(pc, data[9], True)
 	#Util.mul_scalar(pc, 1.0/st[0])
-	ang, sxs, sys, mirror, peak = ornq(pc, data[0], 0.0, 0.0, 1, "H", data[1], cnx, cnx)
+	ang, sxs, sys, mirror, peak = ornq(pc, data[0], [0.0,0.0], [0.0,0.0], 1, "H", data[1], cnx, cnx)
 	#print  ang, sxs, sys, mirror, peak
 	#exit()
 	data[8] = ang
