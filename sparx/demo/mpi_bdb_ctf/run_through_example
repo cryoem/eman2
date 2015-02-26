@@ -58,7 +58,12 @@ sxprocess.py demoparms --makedb 'gauss_width'=1.0:'pixel_input'=5.2:'pixel_outpu
 # Pick particles
 e2boxer.py --gauss_autoboxer=demoparms --boxsize=64 --norm=normalize.ramp.normvar mic*.hdf
 
-sxwindow.py --importctf=partres/partres --coords_dir=info --coords_extension=json --coords_format=json --coords_suffix=_info --coords_keys=boxes --box_size=64 --outdir=particles
+# Window particle with optional change of pixel size and elimination of 'bad' mcirographs
+
+sxwindow.py mic* --micsuffix=hdf --nameroot=mic  --coords_dir=info --coords_extension=json --coords_format=eman2 --coords_suffix=_info  --box_size=64 --outdir=particles --importctf=partres/partres
+
+# sxwindow will store in directory particles bdb stacks with particles, each stack corresponding for a single micrographs.
+#  For further processing single stacks have to be concatenated into one virtual stack (only headers are merged)
 
 e2bdb.py bdb:particles\#mic0_ptcls bdb:particles\#mic1_ptcls bdb:particles\#mic2_ptcls bdb:particles\#mic3_ptcls bdb:particles\#mic4_ptcls --makevstack=bdb:data
 
@@ -75,7 +80,11 @@ mpirun -np 16 sxali2d.py bdb:flip_data jojo --ou=28 --xr="2 1" --ts="1 0.5" --ma
 sxtransform2d.py bdb:flip_data bdb:stack_ali
 
 # run sxisac.py
-mpirun -np 16 sxisac.py bdb:stack_ali --stab_ali=2 --init_iter=1 --main_iter=1 --match_second=1 --ou=30 --max_round=5 --img_per_grp=60 --thld_err=1.75 --generation=1
+mpirun -np 16 sxisac.py bdb:stack_ali --stab_ali=2 --init_iter=1 --main_iter=1 --match_second=1 --ou=30 --max_round=5 --img_per_grp=60 --thld_err=1.75 --generation=1 >outisac1
+
+e2bdb.py bdb:stack_ali --makevstack=bdb:stack_ali_2 --list=generation_1_unaccounted.txt
+
+mpirun -np 16 sxisac.py bdb:stack_ali_2 --stab_ali=2 --init_iter=1 --main_iter=1 --match_second=1 --ou=30 --max_round=5 --img_per_grp=60 --thld_err=1.75 --generation=2 >outisac2
 
 
 ###################################################################<<<<<<< run_through_example
@@ -123,36 +132,21 @@ e2proc2d.py bdb:class_averages_raw bdb:class_averages --process=filter.homomorph
 #  here shortly), please repeat the sequence of commands starting from sxheader.py.
 ###################################################################
 
-sxheader.py bdb:class_averages --params=active --one
-#  First version, so-so
-#sxheader.py bdb:class_averages --params=xform.projection --rand_alpha
-#sxrecons3d_n.py  bdb:class_averages  junk.hdf
-#e2proc3d.py junk.hdf init1.hdf --process=filter.lowpass.tanh:cutoff_abs=0.15:fall_off=0.2
-#rm -f junk.hdf
-#rm -rf outdirshc
-#mpirun -np 12 sxali3d.py bdb:class_averages init1.hdf outdirshc --shc --ou=28 --xr=3.0 --delta=2.0 --maxit=100 --function="[..,demo_user_funcs,ali3d_reference2]" --MPI
+# Note this program requires number of CPUs to be multiplicity of 3.
 
-# Second, more advanced version.  Note this one requires number of CPUs to be multiplicity of 3.
-sxheader.py bdb:class_averages --params=stable --zero
-mpirun -np 12 sxviper.py bdb:class_averages outdirshc --ou=28 --xr=3.0 --delta=2.0 --function="[..,demo_user_funcs,ali3d_reference2]"
+mpirun -np 12 sxviper.py bdb:class_averages outdirshc --ou=28 --xr=3.0 --delta=2.0 --fl=0.25
+
 
 
 # 3D projection alignment - refinement of the initial structure
-sxheader.py bdb:data --params=xform.projection --zero
-sxheader.py bdb:data --params=active --one
-sxheader.py bdb:data --params=previousmax --export=outmatch/previousmax.txt
+mpirun -np 16 sxpetite.py bdb:data refinementdir outdirshc/volf.hdf --CTF --ou=28 > cou &
 
-#  establish initial orientations of all projection data
-mpirun -np 12 sxali3d.py bdb:data outdirshc/volf.hdf outmatch --CTF --maxit=1 --ou=28 --xr=3.0 --delta=2.0 --function="[..,demo_user_funcs,ali3d_reference3]" --MPI
+mpirun -np 12 sx3dvariability.py bdb:master_25_Feb_2015_18_52_08/set01  --fl=0.3 --aa=0.1 --ave2D=groupdata.hdf  --ave3D=volg.hdf --var3D=farg.hdf  --CTF --img_per_grp=5
 
-sxheader.py bdb:data --params=xform.projection --export=outmatch/matchparams.txt
-sxheader.py bdb:data --params=previousmax --export=outmatch/previousmax.txt
+mpirun -np 12  sxlocres.py master_25_Feb_2015_18_52_08/main001/vol0.hdf  master_25_Feb_2015_18_52_08/main001/vol1.hdf    locres.hdf --cutoff=0.5  --radius=28  --fsc=fscvol.txt --MPI
 
-sxali3d.py bdb:data outmatch/volf0001.hdf poutdirshc --shc --CTF --ou=28 --xr=2.0 --delta=2.0 --maxit=100 --stoprnct=2.5 --function="[..,demo_user_funcs,ali3d_reference3]" --MPI
+mpirun -np 12  sxfilterlocal.py master_25_Feb_2015_18_52_08/main001/vol0.hdf  locres.hdf  locfilt.hdf --radius=28  --MPI
 
-
-sxheader.py bdb:data --params=xform.projection --export=poutdirshc/shcparams.txt 
-sxheader.py bdb:data --params=previousmax --export=poutdirshc/previousmax.txt
 
 
 
