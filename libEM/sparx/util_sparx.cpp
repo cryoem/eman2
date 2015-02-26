@@ -3806,6 +3806,125 @@ c       automatic arrays
 	return  retvals;
 }
 
+static std::vector<int> shuffled_range(int first, int last);
+
+Dict Util::Crosrng_rand_e(EMData*  circ1p, EMData* circ2p, vector<int> numr, int neg, float previous_max) {
+
+
+
+	//  neg = 0 straight,  neg = 1 mirrored
+	int nring = numr.size()/3;
+	//int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
+	int maxrin = numr[numr.size()-1];
+	double qn;   float  tot;
+	float *circ1 = circ1p->get_data();
+	float *circ2 = circ2p->get_data();
+/*
+c checks single position, neg is flag for checking mirrored position
+c
+c  input - fourier transforms of rings!
+c  first set is conjugated (mirrored) if neg
+c  circ1 already multiplied by weights!
+c       automatic arrays
+	dimension         t(maxrin)  removed +2 as it is only needed for other ffts
+	double precision  q(maxrin)
+	double precision  t7(-3:3)
+*/
+	float *t;
+	double t7[7], *q;
+	int    i, j, k, ip, jc, numr3i, numr2i, jtot = 0;
+	float  pos;
+
+#ifdef _WIN32
+	ip = -(int)(log((float)maxrin)/log(2.0f));
+#else
+	ip = -(int) (log2(maxrin));
+#endif	//_WIN32
+
+	q = (double*)calloc(maxrin, sizeof(double));
+	t = (float*)calloc(maxrin, sizeof(float));
+
+//   cout << *qn <<"  " <<*tot<<"  "<<ip<<endl;
+	for (i=1; i<=nring; i++) {
+		numr3i = numr(3,i);
+		numr2i = numr(2,i);
+
+		t(1) = (circ1(numr2i)) * circ2(numr2i);
+
+		if (numr3i != maxrin) {
+			 // test .ne. first for speed on some compilers
+			t(numr3i+1) = circ1(numr2i+1) * circ2(numr2i+1);
+			t(2)		= 0.0;
+
+			if (neg) {
+				// first set is conjugated (mirrored)
+				for (j=3;j<=numr3i;j=j+2) {
+					jc = j+numr2i-1;
+					t(j)   =  (circ1(jc))*circ2(jc)   - (circ1(jc+1))*circ2(jc+1);
+					t(j+1) = -(circ1(jc))*circ2(jc+1) - (circ1(jc+1))*circ2(jc);
+				}
+			} else {
+				for (j=3;j<=numr3i;j=j+2) {
+					jc = j+numr2i-1;
+					t(j)   =  (circ1(jc))*circ2(jc)   + (circ1(jc+1))*circ2(jc+1);
+					t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
+				}
+			}
+			for (j=1;j<=numr3i+1;j++) q(j) = q(j) + t(j);
+		} else {
+			t(2) = circ1(numr2i+1) * circ2(numr2i+1);
+			if (neg) {
+				// first set is conjugated (mirrored)
+				for (j=3;j<=maxrin;j=j+2) {
+					jc = j+numr2i-1;
+					t(j)   =  (circ1(jc))*circ2(jc)   - (circ1(jc+1))*circ2(jc+1);
+					t(j+1) = -(circ1(jc))*circ2(jc+1) - (circ1(jc+1))*circ2(jc);
+				}
+			} else {
+				for (j=3;j<=maxrin;j=j+2) {
+					jc = j+numr2i-1;
+					t(j)   =  (circ1(jc))*circ2(jc)   + (circ1(jc+1))*circ2(jc+1);
+					t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
+				}
+			}
+			for (j = 1; j <= maxrin; j++) q(j) += t(j);
+		}
+	}
+
+	fftr_d(q,ip);
+
+	qn = -1.0e20;
+
+    std::vector<int> rperm = shuffled_range(0, maxrin-1);
+	for (int j_j=1;j_j<=maxrin;j_j++) {
+		j = rperm[j_j - 1] + 1;
+
+	   if (q(j) >= qn) {
+		  qn = q(j); jtot = j;
+        if (qn > previous_max) {
+            break;
+        }
+
+	   }
+	}
+	for (k=-3; k<=3; k++) {
+		j = (jtot+k+maxrin-1)%maxrin + 1;
+		t7(k+4) = q(j);
+	}
+
+	prb1d(t7,7,&pos);
+
+	tot = (float)jtot + pos;
+
+	if (q) free(q);
+	if (t) free(t);
+
+	Dict retvals;
+	retvals["qn"]  = qn;
+	retvals["tot"] = tot;
+	return  retvals;
+}
+
 Dict Util::Crosrng_ew(EMData*  circ1p, EMData* circ2p, vector<int> numr, vector<float> w, int neg) {
    //  neg = 0 straight,  neg = 1 mirrored
 	int nring = numr.size()/3;
@@ -19220,7 +19339,7 @@ vector<float> Util::multiref_polar_ali_2d_nom(EMData* image, const vector< EMDat
 
 vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, float ant, string mode,
-                vector<int>numr, float cnx, float cny) {
+                vector<int>numr, float cnx, float cny, string sym) {
 
     // Manually extract.
 /*    vector< EMAN::EMData* > crefim;
@@ -19232,18 +19351,6 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
         crefim.push_back(proxy());
     }
 */
-	size_t crefim_len = crefim.size();
-	const float qv = static_cast<float>( pi/180.0 );
-
-	Transform * t = image->get_attr("xform.projection");
-	Dict d = t->get_params("spider");
-	if(t) {delete t; t=0;}
-	float phi   = d["phi"];
-	float theta = d["theta"];
-	// normal of an image
-	float imn1 = sin(theta*qv)*cos(phi*qv);
-	float imn2 = sin(theta*qv)*sin(phi*qv);
-	float imn3 = cos(theta*qv);
 
 	int   ky    = int(2*yrng/step+0.5)/2;
 	int   kx    = int(2*xrng/step+0.5)/2;
@@ -19251,82 +19358,74 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 	float iy, ix, sx=0, sy=0;
 	float peak = -1.0E23f;
 	float ang  = 0.0f;
-	vector<float> n1(crefim_len);
-	vector<float> n2(crefim_len);
-	vector<float> n3(crefim_len);
-	for ( iref = 0; iref < (int)crefim_len; iref++) {
-		n1[iref] = crefim[iref]->get_attr("n1");
-		n2[iref] = crefim[iref]->get_attr("n2");
-		n3[iref] = crefim[iref]->get_attr("n3");
-/*
-need to fix multiref_polar_ali_2d_local and shc so they work properly for local searches:
-1. add here symmetry string sym
-2. convert all tsym to sets of normal vectors (ims1 below).
-3. find indexes of reference images based on their n1 vectors (as above) that are within ant and
-put them on a short list.
-4. Only those from the list should be used in the matching list.
-
-As for mirror, we assume the images can be straight or mirror but templates only straight.
-So, when we check for neighboring templates, we use abs(inner product).
-
-Next, we have to use Crosrng_ew (instead of Crosrng_ms, check whether they are equivalent!!)
-and set mirror=1 if image comes in mirrored.
 
 
 
-		    bool gogo = false;
-		    vector<Transform> tsym = t->get_sym_proj(sym);
-		    int isym = 0;
-		    int nsym = tsym.size();
-		    //  There is something wrong here.  imn1 should be multiplied by tsym for all nysm symmetries
-		    //  and closest should be found.
-		    while ( isym < nsym && ! gogo ) {
-		    	u = t * tsym[isym];
-		    	
-                Dict u = tsym[isym].get_params("spider");
-                float phi   = u["phi"];
-                float theta = u["theta"];
-                float ims1 = sin(theta*qv)*cos(phi*qv);
-                float ims2 = sin(theta*qv)*sin(phi*qv);
-                float ims3 = cos(theta*qv);
-		        if(abs(n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3)>=ant)  keep index of reference on a new list; break;
-		        isym ++;
-		     }
-*/
+	size_t crefim_len = crefim.size();
+	const float qv = static_cast<float>( pi/180.0 );
+
+	Transform * t = image->get_attr("xform.projection");
+	Dict d = t->get_params("spider");
+	float theta1 = d["theta"];
+	mirror = (int)(theta1 > 90.0f);
+
+    vector<Transform> tsym = t->get_sym_proj(sym);
+
+    int isym = 0;
+    int nsym = tsym.size();
 
 
+    // Ims structure of 3 floats defined here  NXCt3rIDWnWrG2bj
+    vector<Ims> vIms(nsym);
+
+    for (isym = 0; isym < nsym; ++isym) {
+        Dict u = tsym[isym].get_params("spider");
+        float phi   = u["phi"];
+        float theta = u["theta"];
+        vIms[isym].ims1 = sin(theta*qv)*cos(phi*qv);
+        vIms[isym].ims2 = sin(theta*qv)*sin(phi*qv);
+        vIms[isym].ims3 = cos(theta*qv);
+    }
+
+
+    vector<int> index_crefim;
+
+	for (iref = 0; iref < crefim_len; iref++) {
+		float n1 = crefim[iref]->get_attr("n1");
+		float n2 = crefim[iref]->get_attr("n2");
+		float n3 = crefim[iref]->get_attr("n3");
+
+        for (isym = 0; isym < nsym; ++isym) {
+
+            if(abs(n1*vIms[isym].ims1 + n2*vIms[isym].ims2 + n3*vIms[isym].ims3)>=ant) {
+                index_crefim.push_back(iref);
+                break;
+            }
+
+         }
 	}
 	//02162015PAP
 	for (int i = -ky; i <= ky; i++) {
 	    iy = i * step ;
 	    for (int j = -kx; j <= kx; j++) {
-		ix = j*step;
-		EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
-		Normalize_ring( cimage, numr );
-		Frngs(cimage, numr);
-		//  compare with all reference images that are on a new list
-		// for iref in xrange(len(crefim)):
-		for ( iref = 0; iref < (int)crefim_len; iref++) {
-			if(abs(n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3)>=ant) { //  we do not need this check here, it was done above
-		    		Dict retvals = Crosrng_ms(crefim[iref], cimage, numr);
-		    		double qn = retvals["qn"];
-		    		double qm = retvals["qm"];
-		    		if(qn >= peak || qm >= peak) {
-                        sx = -ix;
-                        sy = -iy;
-                        nref = iref;
-                        if (qn >= qm) {
-                            ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-                            peak = static_cast<float>( qn );
-                            mirror = 0;
-                        } else {
-                            ang = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
-                            peak = static_cast<float>( qm );
-                            mirror = 1;
-                        }
-				    }
-		        }
-		    }  delete cimage; cimage = 0;
+            ix = j*step;
+            EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+            Normalize_ring( cimage, numr );
+            Frngs(cimage, numr);
+            //  compare with all reference images that are on a new list
+            for ( int i_iref = 0; i_iref < index_crefim.size() ; i_iref++) {
+                iref = index_crefim[i_iref];
+                Dict retvals = Crosrng_e(crefim[iref], cimage, numr, mirror);
+                double qn = retvals["qn"];
+
+                if(qn >= peak) {
+                    sx = -ix;
+                    sy = -iy;
+                    nref = iref;
+                    ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+                    peak = static_cast<float>( qn );
+                }
+            }  delete cimage; cimage = 0;
 	    }
 	}
 	float co, so, sxs, sys;
@@ -19338,6 +19437,7 @@ and set mirror=1 if image comes in mirrored.
 		so  = -sin(ang*qv);
 		sxs = sx*co - sy*so;
 		sys = sx*so + sy*co;
+
 	}
 	vector<float> res;
 	res.push_back(ang);
@@ -19525,55 +19625,21 @@ vector<float> Util::shc0(const vector< EMData* >& cimages, const vector< EMData*
 vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, float ant, string mode,
                 vector<int>numr, float cnx, float cny, string sym) {
-//  This code supposedly has option ant for local shc searches, but it was not tested
-//   When I tried it it gave strange results.  PAP 01/27/2015
-//   Worse yet, it has a conceptual problem.  Since the search is local but random,
-//   after repeated searches a projection projection may drift away due to random walk effect.
-//   Most likely the code would have to be modified so the random search is done not around
-//   the current orientation, but around the original, the one the projection had when local searches
-//    started.  This could however be handled on a higher level by changing the current direction
-//    assigned to projection.
-//
-//    Method:
-//      1. resample input image into polar with respect to all shifts.
-//      2.  shuffle order of refrings so they are processed in random order
-//      3.     shuffle shifts, process them in random order
-//      4.        get random angle/mirror for a postion with value>previousmax
-//                   Crosrng_rand_ms: it computes both 1D ccfs and then scans both in random order,
-//                    stops when ccf value > previousmax
-//
-//      In effect, the randomness is hierarchical: 
-//            the top level, projdirs, is fully random
-//             but for each projdir, all shifts are scanned
-//             and for each shift all angles and mirrors are scanned.
-//
-//        For SCF one would have to proceed as follows:
-//         1.  Pick up random projection direction
-//         2.  compute 1D half-ccfs for both straight and mirror
-//         3.    scan both curves in a random order, just as above, 
-//                  so one would pick up random angle and mirror, which would have to be larger than previousmax_scf
-//         4.      rotate image, compute ccf, scan shifts in a random order, pick up one better than previousmax_shift
-//        Conclusion: clearly, this is not very attractive and is certain to be slower than polar due to the need
-//                    to compute multiple rotations and 2D CCFs.  Abandon the plan.  PAP 02/08/2015
-//
-// Manually extract.
-/*    vector< EMAN::EMData* > crefim;
-    std::size_t crefim_len = PyObject_Length(crefim_list.ptr());
-    crefim.reserve(crefim_len);
 
-    for(std::size_t i=0;i<crefim_len;i++) {
-        boost::python::extract<EMAN::EMData*> proxy(crefim_list[i]);
-        crefim.push_back(proxy());
-    }
-*/
 	const size_t crefim_len = crefim.size();
 	const float qv = static_cast<float>( pi/180.0 );
     Transform * t = 0;
+
     vector<float> n1;
     vector<float> n2;
     vector<float> n3;
  //cout << ant <<endl;
-    if( ant >= 0.0) {
+    if( ant > 0.0f) {
+        /***********************************************************/
+        /***********************************************************/
+        /******************Local search*****************************/
+        /***********************************************************/
+        /***********************************************************/
     /*
     Sequence of operations:
     	1. image should have reference projection orientation in addition to current projection orientation
@@ -19584,7 +19650,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
     With the above, local searches could be also used for randomization tests as it would be enough to call
     shc with previousmax=-1.0e23 and reference projection direction set to the current angle.
     */
-        t = image->get_attr("xform.projection");
+        t = image->get_attr("xform.anchor");
         n1.resize((int)crefim_len);
         n2.resize((int)crefim_len);
         n3.resize((int)crefim_len);
@@ -19593,117 +19659,221 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
             n2[iref] = crefim[iref]->get_attr("n2");
             n3[iref] = crefim[iref]->get_attr("n3");
         }
-    }
+
+        //Transform * t = image->get_attr("xform.projection");
+        const float previousmax = image->get_attr("previousmax");
+        //Dict d = t->get_params("spider");
+        //if(t) {delete t; t=0;}
+        //float phi   = d["phi"];
+        //float theta = d["theta"];
+
+        vector<unsigned> listr(crefim_len);
+        for (unsigned i = 0; i < crefim_len; ++i) listr[i] = i;
+        for (unsigned i = 0; i < crefim_len; ++i) {
+            unsigned r = Util::get_irand(0,crefim_len-1);
+            swap( listr[r], listr[i] );
+        }
+
+        const int ky = int(2*yrng/step+0.5)/2;
+        const int kx = int(2*xrng/step+0.5)/2;
+
+        vector< vector<EMData*> > cimages(2*ky+1, vector<EMData*>(2*kx+1) );
+
+        for (int i = -ky; i <= ky; i++) {
+            const int iy = i * step ;
+            for (int j = -kx; j <= kx; j++) {
+                const int ix = j*step;
+                EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+                Normalize_ring( cimage, numr );
+                Frngs(cimage, numr);
+                cimages[i+ky][j+kx] = cimage;
+            }
+        }
+
+        float sx=0.0f, sy=0.0f;
+        float peak = -1.0e23f;
+        float ang = 0.0f;
+        int nref = 0, mirror = 0;
+        bool found_better = false;
+        size_t tiref = 0;
 
 
-	//Transform * t = image->get_attr("xform.projection");
-	const float previousmax = image->get_attr("previousmax");
-	//Dict d = t->get_params("spider");
-	//if(t) {delete t; t=0;}
-	//float phi   = d["phi"];
-	//float theta = d["theta"];
+        for ( ;  (tiref < crefim_len) && (! found_better); tiref++) {
+            const int iref = listr[tiref];
+            //  Here check for neighbors
+            vector<Transform> tsym = t->get_sym_proj(sym);
 
-	vector<unsigned> listr(crefim_len);
-	for (unsigned i = 0; i < crefim_len; ++i) listr[i] = i;
-	for (unsigned i = 0; i < crefim_len; ++i) {
-		unsigned r = Util::get_irand(0,crefim_len-1);
-		swap( listr[r], listr[i] );
-	}
-
-	const int ky = int(2*yrng/step+0.5)/2;
-	const int kx = int(2*xrng/step+0.5)/2;
-
-	vector< vector<EMData*> > cimages( 2*ky+1, vector<EMData*>(2*kx+1) );
-
-	for (int i = -ky; i <= ky; i++) {
-		const int iy = i * step ;
-		for (int j = -kx; j <= kx; j++) {
-			const int ix = j*step;
-			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
-			Normalize_ring( cimage, numr );
-			Frngs(cimage, numr);
-			cimages[i+ky][j+kx] = cimage;
-		}
-	}
-
-	float sx=0.0f, sy=0.0f;
-	float peak = -1.0e23f;
-	float ang = 0.0f;
-	int nref = 0, mirror = 0;
-	bool found_better = false;
-	size_t tiref = 0;
-	for ( ;  (tiref < crefim_len) && (! found_better); tiref++) {
-		const int iref = listr[tiref];
-		//  Here check for neighbors
-		bool gogo;
-		if( ant >= 0.0 )  {
-		    bool gogo = false;
-		    vector<Transform> tsym = t->get_sym_proj(sym);
-		    int isym = 0;
-		    int nsym = tsym.size();
-		    while ( isym < nsym && ! gogo ) {
+            int nsym = tsym.size();
+            int isym;
+            for (isym = 0; isym < nsym; ++isym) {
                 Dict d = tsym[isym].get_params("spider");
                 float phi   = d["phi"];
                 float theta = d["theta"];
                 float imn1 = sin(theta*qv)*cos(phi*qv);
                 float imn2 = sin(theta*qv)*sin(phi*qv);
                 float imn3 = cos(theta*qv);
-		        if(abs(n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3)>=ant)  gogo = true;
-		        isym ++;
-		     }
-		}
-        else    gogo = true;
+                if(abs(n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3)>=ant)
+                {
+                    break;
+                }
+             }
 
-        if( gogo ) {
-	    	std::vector<int> shifts = shuffled_range( 0, (2*kx+1) * (2*ky+1) - 1 );
-		    for ( unsigned nodeId = 0;  nodeId < shifts.size();  ++nodeId ) {
-			    const int i = ( shifts[nodeId] % (2*ky+1) ) - ky;
-    			const int j = ( shifts[nodeId] / (2*ky+1) ) - kx;
-	    		const float iy = i * step;
-		    	const float ix = j * step;
-			    EMData* cimage = cimages[i+ky][j+kx];
-    			Dict retvals = Crosrng_rand_ms(crefim[iref], cimage, numr, previousmax);
-	    		const float new_peak = static_cast<float>( retvals["qn"] );
+            if (isym == nsym) continue;
 
-	    		//cout << new_peak <<endl;
+            std::vector<int> shifts = shuffled_range( 0, (2*kx+1) * (2*ky+1) - 1 );
+            for ( unsigned nodeId = 0;  nodeId < shifts.size();  ++nodeId ) {
+                const int i = ( shifts[nodeId] % (2*ky+1) ) - ky;
+                const int j = ( shifts[nodeId] / (2*ky+1) ) - kx;
+                const float iy = i * step;
+                const float ix = j * step;
+                EMData* cimage = cimages[i+ky][j+kx];
+                Dict retvals = Crosrng_rand_e(crefim[iref], cimage, numr, 0, previousmax);
+                const float new_peak = static_cast<float>( retvals["qn"] );
 
-		    	if (new_peak > peak) {
-			    	sx = -ix;
-				    sy = -iy;
-    				nref = iref;
-	    			ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-		    		peak = new_peak;
-			    	mirror = static_cast<int>( retvals["mirror"] );
-				    found_better = (peak > previousmax);
-				    //cout << found_better <<endl;
-					if (found_better) break;
-				}
-			}
-		}
-	}
-	//cout << "  JUMPED OUT " <<endl;
+                //cout << new_peak <<endl;
 
-	for (unsigned i = 0; i < cimages.size(); ++i) {
-		for (unsigned j = 0; j < cimages[i].size(); ++j) {
-			delete cimages[i][j];
-			cimages[i][j] = NULL;
-		}
-	}
+                if (new_peak > peak) {
+                    sx = -ix;
+                    sy = -iy;
+                    nref = iref;
+                    ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+                    peak = new_peak;
+                    mirror = static_cast<int>( retvals["mirror"] );
+                    found_better = (peak > previousmax);
+                    //cout << found_better <<endl;
+                    // jump out from search in while
+                    if (found_better) break;
+                }
+            }
+        }
+        //cout << "  JUMPED OUT " <<endl;
 
-	const float co =  cos(ang*qv);
-	const float so = -sin(ang*qv);
-	const float sxs = sx*co - sy*so;
-	const float sys = sx*so + sy*co;
+        for (unsigned i = 0; i < cimages.size(); ++i) {
+            for (unsigned j = 0; j < cimages[i].size(); ++j) {
+                delete cimages[i][j];
+                cimages[i][j] = NULL;
+            }
+        }
 
-	vector<float> res;
-	res.push_back(ang);
-	res.push_back(sxs);
-	res.push_back(sys);
-	res.push_back(static_cast<float>(mirror));
-	res.push_back(static_cast<float>(nref));
-	res.push_back(peak);
-	res.push_back(static_cast<float>(tiref));
-	return res;
+        const float co =  cos(ang*qv);
+        const float so = -sin(ang*qv);
+        const float sxs = sx*co - sy*so;
+        const float sys = sx*so + sy*co;
+
+        vector<float> res;
+        res.push_back(ang);
+        res.push_back(sxs);
+        res.push_back(sys);
+        res.push_back(static_cast<float>(mirror));
+        res.push_back(static_cast<float>(nref));
+        res.push_back(peak);
+        res.push_back(static_cast<float>(tiref));
+        return res;
+
+    }
+    else {  //!( ant > 0.0f)
+        /***********************************************************/
+        /***********************************************************/
+        /******************Global search****************************/
+        /***********************************************************/
+        /***********************************************************/
+
+        //Transform * t = image->get_attr("xform.projection");
+        const float previousmax = image->get_attr("previousmax");
+        //Dict d = t->get_params("spider");
+        //if(t) {delete t; t=0;}
+        //float phi   = d["phi"];
+        //float theta = d["theta"];
+
+        vector<unsigned> listr(crefim_len);
+        for (unsigned i = 0; i < crefim_len; ++i) listr[i] = i;
+        for (unsigned i = 0; i < crefim_len; ++i) {
+            unsigned r = Util::get_irand(0,crefim_len-1);
+            swap( listr[r], listr[i] );
+        }
+
+        const int ky = int(2*yrng/step+0.5)/2;
+        const int kx = int(2*xrng/step+0.5)/2;
+
+        vector< vector<EMData*> > cimages( 2*ky+1, vector<EMData*>(2*kx+1) );
+
+        for (int i = -ky; i <= ky; i++) {
+            const int iy = i * step ;
+            for (int j = -kx; j <= kx; j++) {
+                const int ix = j*step;
+                EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+                Normalize_ring( cimage, numr );
+                Frngs(cimage, numr);
+                cimages[i+ky][j+kx] = cimage;
+            }
+        }
+
+        float sx=0.0f, sy=0.0f;
+        float peak = -1.0e23f;
+        float ang = 0.0f;
+        int nref = 0, mirror = 0;
+        bool found_better = false;
+        size_t tiref = 0;
+
+        for ( ;  (tiref < crefim_len) && (! found_better); tiref++) {
+            const int iref = listr[tiref];
+            //  Here check for neighbors
+            std::vector<int> shifts = shuffled_range( 0, (2*kx+1) * (2*ky+1) - 1 );
+            for ( unsigned nodeId = 0;  nodeId < shifts.size();  ++nodeId ) {
+                const int i = ( shifts[nodeId] % (2*ky+1) ) - ky;
+                const int j = ( shifts[nodeId] / (2*ky+1) ) - kx;
+                const float iy = i * step;
+                const float ix = j * step;
+                EMData* cimage = cimages[i+ky][j+kx];
+
+                Dict retvals = Crosrng_rand_ms(crefim[iref], cimage, numr, previousmax);
+
+                const float new_peak = static_cast<float>( retvals["qn"] );
+
+                //cout << new_peak <<endl;
+
+                if (new_peak > peak) {
+                    sx = -ix;
+                    sy = -iy;
+                    nref = iref;
+                    ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+                    peak = new_peak;
+                    mirror = static_cast<int>( retvals["mirror"] );
+                    found_better = (peak > previousmax);
+                    //cout << found_better <<endl;
+                    // jump out from search in while
+                    if (found_better) break;
+                }
+            }
+
+        }
+        //cout << "  JUMPED OUT " <<endl;
+
+
+        for (unsigned i = 0; i < cimages.size(); ++i) {
+            for (unsigned j = 0; j < cimages[i].size(); ++j) {
+                delete cimages[i][j];
+                cimages[i][j] = NULL;
+            }
+        }
+
+        const float co =  cos(ang*qv);
+        const float so = -sin(ang*qv);
+        const float sxs = sx*co - sy*so;
+        const float sys = sx*so + sy*co;
+
+        vector<float> res;
+        res.push_back(ang);
+        res.push_back(sxs);
+        res.push_back(sys);
+        res.push_back(static_cast<float>(mirror));
+        res.push_back(static_cast<float>(nref));
+        res.push_back(peak);
+        res.push_back(static_cast<float>(tiref));
+        return res;
+
+    }
+
 }
 
 
@@ -21580,7 +21750,9 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
-	cout <<"  VERSION  02/25/2015  10:00 AM"<<endl;
+
+	cout <<"  VERSION  02/26/2015  10:00 AM"<<endl;
+
 	float dummy;
 	dummy = ri;
 	cout <<  "   fmod   "<<fmod(qprob,dummy)<<endl;

@@ -183,6 +183,13 @@ static void Radialize(int *PermMatTr,  float * kValsSorted,
             float *weightofkvalsSorted, int Size, int *SizeReturned);
 
 
+typedef struct
+{
+    // data structure used here NXCt3rIDWnWrG2bj
+    float ims1;
+    float ims2;
+    float ims3;
+} Ims;
 
 
 class sincBlackman
@@ -551,6 +558,7 @@ class FakeKaiserBessel : public KaiserBessel {
 	        Crosrng_msg_m is same as Crosrng_msg except that it only checks mirrored position
 	  */
 	static Dict Crosrng_e(EMData* circ1, EMData* circ2, vector<int> numr, int neg);
+	static Dict Crosrng_rand_e(EMData* circ1, EMData* circ2, vector<int> numr, int neg, float previous_max);
 	static Dict Crosrng_ew(EMData* circ1, EMData* circ2, vector<int> numr, vector<float> w, int neg);
 
 	static Dict Crosrng_ms(EMData* circ1, EMData* circ2, vector<int> numr);
@@ -943,7 +951,7 @@ public:
 	 * */
 	static vector<float> multiref_polar_ali_2d_local(EMData* image, const vector< EMData* >& crefim,
                 float xrng, float yrng, float step, float ant, string mode,
-                vector< int >numr, float cnx, float cny);
+                vector< int >numr, float cnx, float cny, string sym);
 	/* Returns first match with peak greater than previousmax or the best match in whole space (when there are no peaks > previousmax).
 	 * The reference rings are checked in random order.
 	 * */
