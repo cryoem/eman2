@@ -36,6 +36,7 @@ import global_def
 from global_def import *
 from optparse import OptionParser
 import sys
+
 def main():
         arglist = []
         for arg in sys.argv:
@@ -49,7 +50,7 @@ def main():
 	parser.add_option("--xr",       type="string",       default= "4 2 1 1 1",        help="range for translation search in x direction, search is +/xr")
 	parser.add_option("--yr",       type="string",       default= "-1",               help="range for translation search in y direction, search is +/yr (default = same as xr)")
 	parser.add_option("--ts",       type="string",       default= "1 1 1 0.5 0.25",   help="step size of the translation search in both directions, search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional")
-	parser.add_option("--delta",    type="string",       default= "10 6 4 3 2",       help="angular step of reference projections")
+	parser.add_option("--delta",    type="string",       default= "10 6 4 3 2",       help="angular step of reference projections, (default is a sequence: 10 6 4 3 2")
 	parser.add_option("--an",       type="string",       default= "-1",               help="angular neighborhood for local searches (phi and theta)")
 	parser.add_option("--apsi",     type="string",       default= "-1",               help="angular neighborhood for local searches (psi)")
 	parser.add_option("--deltapsi", type="string",       default= "-1",               help="Delta psi for coarse search")

@@ -1355,7 +1355,7 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 
 	#[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data, refrings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
 	#  multiref_polar_ali_2d_local has to be modified to work properly with symmetries, i.e., to consider wrapping of refrings distribution PAP 01/27/2015
-	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data, refrings, xrng, yrng, step, ant, mode, numr, cnx+dp["tx"], cny+dp["ty"])
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data, refrings, xrng, yrng, step, ant, mode, numr, cnx+dp["tx"], cny+dp["ty"], sym)
 	iref=int(iref)
 	#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
 	#ang = (ang+360.0)%360.0
@@ -4073,6 +4073,7 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 	from math         import cos, sin, degrees, radians
 	from EMAN2 import Vec2f
 
+
 	ID = data.get_attr("ID")
 
 	number_of_checked_refs = 0
@@ -4088,7 +4089,7 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 	else:           ant = -1.0
 	#phi, theta, psi, sxo, syo = get_params_proj(data)
 	t1 = data.get_attr("xform.projection")
-	#dp = t1.get_params("spider")
+	dp = t1.get_params("spider")
 	if finfo:
 		finfo.write("Image id: %6d\n"%(ID))
 		#finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, sxo, syo))
