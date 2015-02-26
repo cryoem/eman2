@@ -52,7 +52,7 @@ def main():
 		return  alpha, sx, sy, m
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " prj_stack  --ave2D= --var2D=  --ave3D= --var3D= --img_per_grp= --freq= --fall_off=  --sym=symmetry --MPI --CTF"
+	usage = progname + " prj_stack  --ave2D= --var2D=  --ave3D= --var3D= --img_per_grp= --fl=0.2 --aa=0.1  --sym=symmetry --CTF"
 	parser = OptionParser(usage, version=SPARXVERSION)
 
 	parser.add_option("--ave2D",		type="string"	   ,	default=False,				help="write to the disk a stack of 2D averages")
@@ -64,19 +64,19 @@ def main():
 	parser.add_option("--radiusvar", 	type="int"         ,	default=-1   ,				help="radius for 3D var" )
 	parser.add_option("--npad",			type="int"         ,	default=2    ,				help="number of time to pad the original images")
 	parser.add_option("--sym" , 		type="string"      ,	default="c1" ,				help="symmetry")
-	parser.add_option("--freq",			type="float"       ,	default=0.0  ,				help="stop-band frequency")
-	parser.add_option("--fall_off",		type="float"       ,	default=0.0  ,				help="fall off of the filter")
+	parser.add_option("--fl",			type="float"       ,	default=0.0  ,				help="stop-band frequency (Default - no filtration)")
+	parser.add_option("--aa",			type="float"       ,	default=0.0  ,				help="fall off of the filter (Default - no filtration)")
 	parser.add_option("--CTF",			action="store_true",	default=False,				help="use CFT correction")
-	parser.add_option("--VERBOSE",		action="store_true",	default=False,				help="comments")
-	parser.add_option("--MPI" , 		action="store_true",	default=False,				help="use MPI version")
+	parser.add_option("--VERBOSE",		action="store_true",	default=False,				help="Long output for debugging")
+	#parser.add_option("--MPI" , 		action="store_true",	default=False,				help="use MPI version")
 
-	parser.add_option("--radiuspca", 	type="int"         ,	default=-1   ,				help="radius for PCA" )
-	parser.add_option("--iter", 		type="int"         ,	default=40   ,				help="maximum number of iterations (stop criterion of reconstruction process)" )
-	parser.add_option("--abs", 			type="float"       ,	default=0.0  ,				help="minimum average absolute change of voxels' values (stop criterion of reconstruction process)" )
-	parser.add_option("--squ", 			type="float"       ,	default=0.0  ,				help="minimum average squared change of voxels' values (stop criterion of reconstruction process)" )
-	parser.add_option("--VAR" , 		action="store_true",	default=False,				help="stack on input consists of 2D variances")
-	parser.add_option("--SND",			action="store_true",	default=False,				help="compute squared normalized differences")
-	parser.add_option("--nvec",			type="int"         ,	default=0    ,				help="number of eigenvectors, default = 0 meaning no PCA calculated")
+	#parser.add_option("--radiuspca", 	type="int"         ,	default=-1   ,				help="radius for PCA" )
+	#parser.add_option("--iter", 		type="int"         ,	default=40   ,				help="maximum number of iterations (stop criterion of reconstruction process)" )
+	#parser.add_option("--abs", 			type="float"       ,	default=0.0  ,				help="minimum average absolute change of voxels' values (stop criterion of reconstruction process)" )
+	#parser.add_option("--squ", 			type="float"       ,	default=0.0  ,				help="minimum average squared change of voxels' values (stop criterion of reconstruction process)" )
+	parser.add_option("--VAR" , 		action="store_true",	default=False,				help="stack on input consists of 2D variances (Default False)")
+	parser.add_option("--SND",			action="store_true",	default=False,				help="compute squared normalized differences (Default False)")
+	#parser.add_option("--nvec",			type="int"         ,	default=0    ,				help="number of eigenvectors, default = 0 meaning no PCA calculated")
 
 	(options,args) = parser.parse_args()
 	
@@ -97,22 +97,31 @@ def main():
 	if len(args) == 1:
 		stack = args[0]
 	else:
-		ERROR("Incomplete list of arguments", "sx3dvariability", 1, myid=myid)
-		exit()
-	if not options.MPI:
-		ERROR("Non-MPI not supported!", "sx3dvariability", myid=myid)
-		exit()
+		print( "usage: " + usage)
+		print( "Please run '" + progname + " -h' for detailed options")
+		return 1
+	
+	# oboslete flags
+	options.MPI = True
+	options.nvec = 0
+	options.radiuspca = -1
+	options.iter = 40
+	options.abs = 0.0
+	options.squ = 0.0
+
+	if options.fl > 0.0 and options.aa == 0.0:
+		ERROR("Fall off has to be given for the low-pass filter", "sx3dvariability", 1, myid)
 	if options.VAR and options.SND:
-		ERROR("Only one of var and SND can be set!", "sx3dvariability", myid=myid)
+		ERROR("Only one of var and SND can be set!", "sx3dvariability", myid)
 		exit()
 	if options.VAR and (options.ave2D or options.ave3D or options.var2D): 
-		ERROR("When VAR is set, the program cannot output ave2D, ave3D or var2D", "sx3dvariability", myid=myid)
+		ERROR("When VAR is set, the program cannot output ave2D, ave3D or var2D", "sx3dvariability", 1, myid)
 		exit()
 	if options.SND and (options.ave2D or options.ave3D):
-		ERROR("When SND is set, the program cannot output ave2D or ave3D", "sx3dvariability", myid=myid)
+		ERROR("When SND is set, the program cannot output ave2D or ave3D", "sx3dvariability", 1, myid)
 		exit()
 	if options.nvec > 0 :
-		ERROR("PCA option not implemented", "sx3dvariability", myid=myid)
+		ERROR("PCA option not implemented", "sx3dvariability", 1, myid)
 		exit()
 	#if options.nvec > 0 and options.ave3D == None:
 	#	ERROR("When doing PCA analysis, one must set ave3D", "sx3dvariability", myid=myid)
@@ -291,9 +300,9 @@ def main():
 
 		'''	
 		imgdata2 = EMData.read_images(stack, range(img_begin, img_end))
-		if options.freq > 0.0:
+		if options.fl > 0.0:
 			for k in xrange(len(imgdata2)):
-				imgdata2[k] = filt_tanl(imgdata2[k], options.freq, options.fall_off)
+				imgdata2[k] = filt_tanl(imgdata2[k], options.fl, options.aa)
 		if options.CTF:
 			vol = recons3d_4nn_ctf_MPI(myid, imgdata2, 1.0, symmetry=options.sym, npad=options.npad, xysize=-1, zsize=-1)
 		else:
@@ -334,7 +343,7 @@ def main():
 					grp_imgdata[k] /= std
 				del mask
 
-			if options.freq > 0.0:
+			if options.fl > 0.0:
 				from filter import filt_ctf, filt_table
 				from fundamentals import fft, window2d
 				nx2 = 2*nx
@@ -342,14 +351,14 @@ def main():
 				if options.CTF:
 					from utilities import pad
 					for k in xrange(img_per_grp):
-						grp_imgdata[k] = window2d(fft( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), options.freq, options.fall_off) ),nx,ny)
-						#grp_imgdata[k] = window2d(fft( filt_table( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), options.freq, options.fall_off), fifi) ),nx,ny)
-						#grp_imgdata[k] = filt_tanl(grp_imgdata[k], options.freq, options.fall_off)
+						grp_imgdata[k] = window2d(fft( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), options.fl, options.aa) ),nx,ny)
+						#grp_imgdata[k] = window2d(fft( filt_table( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), options.fl, options.aa), fifi) ),nx,ny)
+						#grp_imgdata[k] = filt_tanl(grp_imgdata[k], options.fl, options.aa)
 				else:
 					for k in xrange(img_per_grp):
-						grp_imgdata[k] = filt_tanl( grp_imgdata[k], options.freq, options.fall_off)
-						#grp_imgdata[k] = window2d(fft( filt_table( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), options.freq, options.fall_off), fifi) ),nx,ny)
-						#grp_imgdata[k] = filt_tanl(grp_imgdata[k], options.freq, options.fall_off)
+						grp_imgdata[k] = filt_tanl( grp_imgdata[k], options.fl, options.aa)
+						#grp_imgdata[k] = window2d(fft( filt_table( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), options.fl, options.aa), fifi) ),nx,ny)
+						#grp_imgdata[k] = filt_tanl(grp_imgdata[k], options.fl, options.aa)
 			else:
 				from utilities import pad, read_text_file
 				from filter import filt_ctf, filt_table
@@ -360,8 +369,8 @@ def main():
 					from utilities import pad
 					for k in xrange(img_per_grp):
 						grp_imgdata[k] = window2d( fft( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1) ) , nx,ny)
-						#grp_imgdata[k] = window2d(fft( filt_table( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), options.freq, options.fall_off), fifi) ),nx,ny)
-						#grp_imgdata[k] = filt_tanl(grp_imgdata[k], options.freq, options.fall_off)
+						#grp_imgdata[k] = window2d(fft( filt_table( filt_tanl( filt_ctf(fft(pad(grp_imgdata[k], nx2, ny2, 1,0.0)), grp_imgdata[k].get_attr("ctf"), binary=1), options.fl, options.aa), fifi) ),nx,ny)
+						#grp_imgdata[k] = filt_tanl(grp_imgdata[k], options.fl, options.aa)
 
 			'''
 			if i < 10 and myid == main_node:
@@ -478,8 +487,8 @@ def main():
 					#print "On node %d, iteration %d"%(myid, ITER)
 					eig3D = recons3d_4nn_MPI(myid, eigList[k], symmetry=options.sym, npad=options.npad)
 					bcast_EMData_to_all(eig3D, myid, main_node)
-					if options.freq > 0.0:
-						eig3D = filt_tanl(eig3D, options.freq, options.fall_off)
+					if options.fl > 0.0:
+						eig3D = filt_tanl(eig3D, options.fl, options.aa)
 					if myid == main_node:
 						eig3D.write_image("eig3d_%03d.hdf"%k, ITER)
 					Util.mul_img( eig3D, model_circle(radiuspca, nx, nx, nx) )

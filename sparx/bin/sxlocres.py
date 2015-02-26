@@ -45,7 +45,7 @@ def main():
 	progname = os.path.basename(arglist[0])
 	usage = progname + """ firstvolume  secondvolume maskfile outputfile --wn --step --cutoff  --radius  --fsc --MPI
 
-	    Compute local resolution in real space within are outlined by the maskfile and within regions wnxwnxwn
+	    Compute local resolution in real space within are outlined by the maskfile and within regions wn x wn x wn
 	"""
 	parser = OptionParser(usage,version=SPARXVERSION)
 	

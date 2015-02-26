@@ -107,9 +107,10 @@ def main():
 			vi = model_blank(nx,ny,nz)
 			ui = model_blank(nx,ny,nz)
 
-		m  = model_circle(min(nx,ny,nz)-1,nx,ny,nz)
-
 		if len(args) == 3:
+			radius = options.radius
+			if( radius == -1 ):  radius = nn//2 -1
+			m = model_circle( radius ,nx,ny,nz)
 			outvol = args[2]
 		
 		elif len(args) == 4:

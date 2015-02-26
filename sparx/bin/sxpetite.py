@@ -993,7 +993,7 @@ def main():
 		newres = 0.0
 		if  doit:
 			if(myid == main_node):
-				newres = compute_resolution(vol, radi, nnxo, mainoutputdir)		
+				newres = compute_resolution(vol, radi, nnxo, mainoutputdir)
 				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 				print(  line,"Current resolution %6.4f"%newres)
 				write_text_file([newres],os.path.join(mainoutputdir,"current_resolution.txt"))
@@ -1003,6 +1003,7 @@ def main():
 
 		doit, keepchecking = checkstep(os.path.join(mainoutputdir,"volf.hdf"), keepchecking, myid, main_node)
 		if  doit:
+			#  Here I should have code to generate presentable results.  IDs and params have to be merged and stored and an overall volume computed.
 			volf = (vol[0]+vol[1])*0.5
 			ali3d_options.fl = newres
 			ali3d_options.ou = radi
@@ -1076,16 +1077,13 @@ def main():
 					del badapples, oldp,ids,bad,newp,ts
 				else:  eli =0.0
 				eli = bcast_number_to_all(eli, source_node = main_node)	
-				if(eli > 0.0):  tracker["eliminated-outliers"] = True
-				else:  tracker["eliminated-outliers"] = False
+				if(eli > 0.0):  eliminated_outliers = True
+				else:  eliminated_outliers = False
 		else:
-			tracker["eliminated-outliers"] = False
-			#mpi_finalize()
-			#exit()
-
+			eliminated_outliers = False
 
 		keepgoing = 0
-		if( newres > currentres or tracker["eliminated-outliers"]):
+		if( newres > currentres or (eliminated_outliers and not tracker["eliminated-outliers"])):
 			if(myid == main_node):  print("  Resolution improved, full steam ahead!")
 
 			if( newres > currentres ):  tracker["movedup"] = True
@@ -1096,7 +1094,7 @@ def main():
 			tracker["previous-resolution"] = newres
 			currentres = newres
 			tracker["bestsolution"] = mainiteration
-			tracker["eliminated-outliers"] = False
+			tracker["eliminated-outliers"] = eliminated_outliers
 			keepgoing = 1
 		
 		elif(newres < currentres):
@@ -1133,7 +1131,7 @@ def main():
 				nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
 				tracker["previous-resolution"] = newres
 				currentres = newres
-				tracker["eliminated-outliers"] = False
+				tracker["eliminated-outliers"] = eliminated_outliers
 				tracker["movedup"] = False
 				keepgoing = 1
 			
@@ -1152,7 +1150,7 @@ def main():
 				nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
 				tracker["previous-resolution"] = newres
 				currentres = newres
-				tracker["eliminated-outliers"] = False
+				tracker["eliminated-outliers"] = eliminated_outliers
 				tracker["movedup"] = False
 				keepgoing = 1
 			else:
@@ -1184,6 +1182,32 @@ def main():
 	mpi_finalize()
 
 
+
+"""
+We need some mechanism to have presentable results
+a = map(int, read_text_file("main001/chunk0.txt") )
+p = read_text_row("main001/params-chunk0.txt")
+
+a += map(int, read_text_file("main001/chunk1.txt") ) 
+p += read_text_row("main001/params-chunk1.txt") 
+
+assert(len(a) == len(p))
+
+for i in xrange(len(a)):
+	a[i] = [ a[i], p[i] ]
+
+a.sort()
+
+write_text_file([a[i][0] for i in xrange(len(a))],"main001/indexes.txt")
+write_text_row([a[i][1] for i in xrange(len(a))],"main001/params.txt")
+
+del a,p
+
+#  In masterdir
+e2bdb.py  bdb:rdata  --makevstack=bdb:set01 --list=main001/indexes.txt
+sxheader.py  bdb:set01  --params=xform.projection --import=main001/params.txt
+
+"""
 
 
 
