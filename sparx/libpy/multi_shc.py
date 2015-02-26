@@ -3298,7 +3298,7 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 
 
 	if myid == main_node:
-		log.add("Finish ali3d_base, nsoft = %1d,  an = %5.2f"%(nsoft,an))
+		log.add("Finish ali3d_base, nsoft = %1d"%nsoft)
 	return params  #, vol, previousmax, par_r
 	#else:
 	#	return #None, None, None, None  # results for the other processes
