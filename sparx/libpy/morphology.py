@@ -1659,6 +1659,7 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 			cnx = wn//2+1
 			cny = cnx
 			mode = "H"
+			istop = min(wn//2-2, istop)    #2-26-2015@ming
 			numr = Numrinit(istart, istop, 1, mode)
 			wr   = ringwe(numr, mode)
 
