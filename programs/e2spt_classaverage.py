@@ -256,6 +256,9 @@ def main():
 	
 	nptcl = EMUtil.get_image_count(options.input)
 	
+	if nptcl < 2:
+		options.goldstandardoff = True
+	
 	if not options.input:
 		parser.print_help()
 		exit(0)
@@ -747,6 +750,8 @@ def main():
 			klassid = '_even'
 			if ic == 1:
 				klassid = '_odd'
+			if options.goldstandardoff:
+				klassid = ''
 				
 			#if options.savesteps:
 			#	refname = options.path + '/class_' + str(ic).zfill( len( str(ic) )) + '.hdf'
@@ -760,9 +765,7 @@ def main():
 			options.output = originalOutput
 			
 			if ncls > 1:
-				#options.output = originalOutput.replace('.hdf', '_even.hdf')
-				#if ic == 1:
-				#	options.output = originalOutput.replace('.hdf', '_odd.hdf')
+				
 			
 				options.output = originalOutput.replace('.hdf', klassid + '.hdf')	
 		
@@ -920,11 +923,7 @@ def main():
 				
 					#refname = options.path + '/class_' + str(ic).zfill( len( str(ic) )) + '.hdf'
 					refname = options.path + '/avgs' + klassid + '.hdf'
-					#if ic == 1:
-					#	refname = options.path + '/avgs_odd.hdf'
-						
-					#if options.goldstandardoff:
-					#	refname = options.path + '/avgs.hdf'
+				
 						
 					ref.write_image( refname, it )
 				
@@ -1116,6 +1115,8 @@ def main():
 		klassid = '_even'
 		if key == 1:
 			klassid = '_odd'
+		if options.goldstandardoff:
+			klassid = ''
 	
 		maxY = max(scores) + 1
 		
@@ -1176,16 +1177,23 @@ def compareEvenOdd( options, avgeven, avgodd, it, etc, jsAvgs, fscfile, average=
 
 		#apix = finalAvg['apix_x']
 	
-	calcFsc( avgeven, avgodd, fscfile )
+	calcFsc( options, avgeven, avgodd, fscfile )
 	
 	return finalA
 
 
-def calcFsc( img1, img2, fscfile ):
+def calcFsc( options, img1, img2, fscfile ):
+	
+	img1fsc = img1.copy()
+	img2fsc = img2.copy()
 	
 	apix = img1['apix_x']
 	
-	fsc = img1.calc_fourier_shell_correlation( img2 )
+	if options.clipali:
+		img1fsc = clip3D( img1fsc, options.clipali )
+		img2fsc = clip3D( img2fsc, options.clipali )
+		
+	fsc = img1fsc.calc_fourier_shell_correlation( img2fsc )
 	third = len( fsc )/3
 	xaxis = fsc[0:third]
 	fsc = fsc[third:2*third]
@@ -1264,7 +1272,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp ):
 					
 				ref.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":filterfreq,"apix":ref['apix_x']})
 				
-				refrandphfile = options.path + '/' + os.path.basename( options.ref ).replace('.hdf','_randPH' + klassidref +'.hdf')
+				refrandphfile = options.path + '/' + os.path.basename( options.ref ).replace('.hdf','_randPH' + klassidref +'.hdf').replace('finalAvg','ref')
 
 				ref['origin_x'] = 0
 				ref['origin_y'] = 0
@@ -2200,7 +2208,9 @@ def makeAverage(options,ic,align_parms,it=1):
 	
 	klassid = '_even'
 	if ic == 1:
-		klassid = 'odd'
+		klassid = '_odd'
+	if options.goldstandardoff:
+		klassid = ''
 		
 	ptcl_file = options.input
 	path = options.path
@@ -2861,7 +2871,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	s2image = image.copy()
 	
 	savetagp = 'ptcls'
-	if 'odd' in label or 'eve' in label:
+	if 'odd' in label or 'even' in label:
 		savetag = ''
 	
 	if options.clipali or options.threshold or options.normproc or options.mask or options.preprocess or options.lowpass or options.highpass or int(options.shrink) > 1:
