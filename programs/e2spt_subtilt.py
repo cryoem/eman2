@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Author: Jesus Galaz-Montoya, 02/Feb/2013, last update 24/July/2014
+# Author: Jesus Galaz-Montoya, 02/Feb/2013, last update 12/Feb/2015
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -47,80 +47,112 @@ def main():
 	'''
 	Parameters for adding ctf and noise
 	'''
-	parser.add_argument('--tiltseries',type=str,default='',help="""File in .ali, .mrc or .hdf 
-		format of the aligned tiltseries.""")
+	parser.add_argument('--tiltseries',type=str,default='',help="""File in .ali, .mrc or .hdf format of the aligned tiltseries.""")
 		
-	parser.add_argument('--tiltangles',type=str,default='',help="""File in .tlt or .txt format 
-		containing the tilt angle of each tilt image in the tiltseries.""")
+	parser.add_argument('--tiltangles',type=str,default='',help="""File in .tlt or .txt format containing the tilt angle of each tilt image in the tiltseries.""")
 		
-	parser.add_argument('--coords3d',type=str,default='',help="""File in .txt format containing 
-		the coordinates of particles determined from the reconstructed tomogram of the 
-		supplied tiltseries.""")
+	parser.add_argument('--coords3d',type=str,default='',help="""File in .txt format containing the coordinates of particles determined from the reconstructed tomogram of the supplied tiltseries.""")
 	
-	parser.add_argument('--coords2d',type=str,default='',help="""File in .txt format containing 
-		the coordinates of particles determined from the aligned 0 tilt image in the 
-		supplied tiltseries.""")
+	parser.add_argument('--coords2d',type=str,default='',help="""File in .txt format containing the coordinates of particles determined from the aligned 0 tilt image in the supplied tiltseries.""")
 	
-	parser.add_argument('--cshrink', type=int, default=1, help='''Specifies the factor by 
-		which to multiply the coordinates in the coordinates file, so that they can be at 
-		the same scale as the tomogram. For example, provide 2 if the coordinates are on a 
-		2K x 2K scale, but you want to extract the sub-volumes from the UN-shrunk 4K x 4K
-		tomogram.''')
+	parser.add_argument('--zerotiltindx',type=int,default=-1,help="""The default is the image at the middle of the stack. Since the stack might have more images to the left or the right of the actual 0-tilt (or lowest tilt) image, you can explicitly provide the index of the lowest tilt image here. This is used for tracking images.""")
 	
-	parser.add_argument('--tomogram',type=str,default='',help='Path to raw, unbinned tomogram.')
+	parser.add_argument('--centerzerotilt',action='store_true',default=False,help="""Default=False. If specified, this option will center the zerotilt (or least tilted image) for each particle by using as a reference a sharp-circle of radius=box/2 or the value specified through --radius.""")
+	
+	parser.add_argument('--excludeedge',type=float,default=0.0,help="""Integer number of pixels away from the edge of each image in the tilt series to not extract particles from. For example, if you specify 100, and the images are 4096x4096 pixels, any particle with its center lying between 0 and 200 or 3896 and 4096 will nto be extracted.""") 
+	
+	parser.add_argument('--cshrink', type=int, default=1, help="""Specifies the factor by which to multiply the coordinates in the coordinates file, so that they can be at the same scale as the tomogram. For example, provide 2 if the coordinates are on a 2K x 2K scale, but you want to extract the particles' subtiltseries from the UN-shrunk 4K x 4Ktiltseries.""")
+	
+	parser.add_argument('--tomogram',type=str,default='',help="""Path to raw, unbinned tomogram.""")
+	
+	parser.add_argument('--saveanglestacks',type=str,default='',help="""Default=None. Comma separated values of tilt angle indexes for which you want to save all particles as a stack. For example, if you want all particles from the 0 tilt image, you would provide the index for that image in the tilt series. In a tilt series with 61 images (1-61), the 0 tilt image is probably image number 31, so you would say --saveanglestakcs=31, and all the particles from the 0 tilt image would be put into a single HDF stack.""")
 
-	parser.add_argument('--tomosides',type=str,default='',help="""Comma separated values 
-		for the tomogram dimensions. Alternatively, provide the path to the tomogram itself 
-		through --tomogram.""")
+	parser.add_argument('--tiltaxislocation',type=int,default=-1,help="""By default, the tilt axis will be assumed to run through the middle of the tomogram in X, parallel to the Y axis. For example, if the dimensions of the tomogram are 4096x3000x500, the tilt axis will be assumed to be at X=2048. Provide a different integer number to change the location of the tilt axis (it will still be assumed to be parallel to Y though).""") 
 	
-	parser.add_argument('--path',type=str,default='spt_subtilt',help="""Directory to save 
-		the results.""")
+	parser.add_argument('--tiltaxisptcls',type=int,default=-1,help="""Specifies the distance from the tilt axis to consider particles for extraction. By default, all particles will be extracted. However, if you provide, for example, --tiltaxisptls=10, only particles with centers -10 to 10 pixels away from the tilt axis will be extracted.""")
 	
-	parser.add_argument('--boxsize',type=int,default=128,help="""Size of the 2D "tiles" or 
-		images for each particle from each image in the tiltseries.""")
+	parser.add_argument('--ntiltslow',type=int,default=0,help="""Default=0 (not used). If you supply an even number 1 will be added to it (for example, 4 will be turned into 5). If --ntiltslow>0, it specifies the number of tiltimages to keep in each subtiltseries, starting from the zero-tilt image and incorporating particles from right and left, one at a time. For example, in a tiltseries from -60 to 60 degress with a step size of 2 degrees, --ntiltslow=5 would keep tiltimages at angles 0,2,-2,-4,-4.""")
 	
-	parser.add_argument('--apix',type=float,default=0.0,help="""If provided, this value will
-		be used for apix instead of the one read from the header of --tiltseries""")
+	parser.add_argument('--ntiltslowneg',type=int,default=0,help="""Default=0 (not used). If --ntiltslowneg>0, it specifies the number of tiltimages to keep in each subtiltseries, starting from the zero-tilt image and progressively incorporating particles from negatively tilted images only. For example, in a tiltseries from -60 to 60 degress with a step size of 2 degrees, --ntiltslowneg=5 would keep tiltimages at angles 0,-2,-4,-6,-8.""")
+
+	parser.add_argument('--ntiltslowpos',type=int,default=0,help="""Default=0 (not used). If --ntiltslowpos>0, it specifies the number of tiltimages to keep in each subtiltseries, starting from the zero-tilt image and progressively incorporating particles from positively tilted images only. For example, in a tiltseries from -60 to 60 degress with a step size of 2 degrees, --ntiltslowpos=5 would keep tiltimages at angles 0,+2,+4,+6,+8.""")
+	
+	#parser.add_argument('--ntiltshighneg',type=int,default=0,help="""Default=0 (not used). If --ntiltshighneg>0, it specifies the number of tiltimages to keep in each subtiltseries, starting from the zero-tilt image and progressively incorporating particles from negatively tilted images only. For example, in a tiltseries from -60 to 60 degress with a step size of 2 degrees, --ntiltshighneg=5 would keep tiltimages at angles -60,-58,-56,-54,-52.""")
+
+	#parser.add_argument('--ntiltshighpos',type=int,default=0,help="""Default=0 (not used). If --ntiltshighpos>0, it specifies the number of tiltimages to keep in each subtiltseries, starting from the zero-tilt image and progressively incorporating particles from positvely tilted images only. For example, in a tiltseries from -60 to 60 degress with a step size of 2 degrees, --ntiltshighpos=5 would keep tiltimages at angles  +60,+58,+56,+54,+52.""")
+	
+	parser.add_argument('--tomosides',type=str,default='',help="""Comma separated values for the tomogram dimensions. Alternatively, provide the path to the tomogram itself through --tomogram.""")
 		
-	parser.add_argument("--ppid", type=int, help="""Set the PID of the parent process, 
-		used for cross platform PPID""",default=-1)
+	parser.add_argument("--icethicknessauto",action='store_true',default=False,help="""Default=False. If supplied, the thickness of the tomogram in Z will be calculated by computing the difference between the largest and the smallest Z coordinate found in the --coords3d coordinates file.""")
+	
+	parser.add_argument("--zshift",type=str,default='half',help="""By default, the tomogram will be shifted -half the ice thickness so that the middle of the tomogram is at z=0. Provide a positive or negative integer to shift the z position by a different amount""")
+	
+	parser.add_argument("--radius",type=int,default=0,help="""Default=0 (not used). Radius of the particle in pixels. 2*radius will be added to the icethickness if --radius AND --icethicknessauto are supplied.""") 
+	
+	parser.add_argument("--invertangles",action='store_true',default=False,help="""Default=False. If True, this will multiple all angles by -1, in case the directionality is messed up.""")
+	
+	parser.add_argument('--path',type=str,default='spt_subtilt',help="""Directory to save the results.""")
+	
+	parser.add_argument('--boxsize',type=int,default=128,help="""Size of the 2D "tiles" or images for each particle from each image in the tiltseries.""")
+	
+	parser.add_argument('--apix',type=float,default=0.0,help="""If provided, this value will be used for apix instead of the one read from the header of --tiltseries""")
+		
+	parser.add_argument("--ppid", type=int, help="""Set the PID of the parent process, used for cross platform PPID""",default=-1)
 	
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
-	parser.add_argument('--subset', type=int, default=0, help='''Specify how many sub-tiltseries 
-		(or particles) from the coordinates file you want to extract; e.g, if you specify 10, 
-		the first 10 particles will be boxed.\n0 means "box them all" because it makes no 
-		sense to box none''')
+	parser.add_argument('--subset', type=int, default=0, help='''Specify how many sub-tiltseries (or particles) from the coordinates file you want to extract; e.g, if you specify 10, the first 10 particles will be boxed.\n0 means "box them all" because it makes no sense to box none''')
 	
 	#parser.add_argument('--tomogramthickness',type=int,default=None,help='Z dimension of the reconstructed tomogram.')
+		
+	#parser.add_argument("--everyother", type=int, help="""Pick every other tilt. For example, --tilt=3 would pick every third tilt only.""",default=-1)
+
+	parser.add_argument("--subtractbackground",action='store_true',default=False,help="""(Experimental. Not working yet). This will extract a box from the tomogram much larger than the subtomogram. Projections will be generated. You MUST provide --tomogram for this.""")
+
+	parser.add_argument("--normproc",type=str,default='',help="""Not used anywhere yet. Default=None""")
 	
-	parser.add_argument("--shrink", type=int,default=1,help="""Optionally shrink the coordinates 
-		by a factor of --shrink=N to speed up the process. Might compromise accuracy if two 
-		points in the coordinates file are very close to eachother.""")
+	#parser.add_argument("--yshort",action='store_true',help="""Not used anywhere yet. Default=False""", default=False)
 	
-	parser.add_argument("--everyother", type=int, help="""Pick every other tilt. For example, 
-		--tilt=3 would pick every third tilt only.""",default=-1)
-
-	parser.add_argument("--subtractbackground",action='store_true',default=False,help="""
-		This will extract a box from the tomogram much larger than the subtomogram.
-		Projections will be generated. You MUST provide --tomogram for this.""")
-
-	parser.add_argument("--normproc",type=str,help="""Not used anywhere yet. Default=None""", default='None')
+	parser.add_argument("--shrink", type=int,default=1,help="""Default=1 (no shrinking). Integer shrinking factor, part of preprocessing to facilitate particle tracking.""")
 	
-	parser.add_argument("--thresh",type=str,help="""Not used anywhere yet. Default=None""", default='None')
+	parser.add_argument("--lowpass", type=str,default='filter.lowpass.gauss:cutoff_freq=0.02',help="""Default=filter.lowpass.gauss:cutoff_freq=0.02, which applies a 50 angstroms low pass gaussian filter. Type 'None' to turn off. Low pass filtering processor (see e2help.py processors at the command line), part of preprocessing to facilitate particle tracking.""")
 
-	parser.add_argument("--yshort",action='store_true',help="""Not used anywhere yet. Default=False""", default=False)
+	parser.add_argument("--highpass", type=str,default='',help="""Default=None (no highpass). High pass filtering processor (see e2help.py processors at the command line), part of preprocessing to facilitate particle tracking.""")
+	
+	parser.add_argument("--mask", type=str,default='mask.sharp:outer_radius=-2',help="""Default='mask.sharp:outer_radius=-2'. Type 'None' to turn off. Masking processor (see e2help.py processors at the command line), part of preprocessing to facilitate particle tracking.""")
 
+	parser.add_argument("--threshold", type=str,default='',help="""Default=None (no threshold). Thresholding processor (see e2help.py processors at the command line), part of preprocessing to facilitate particle tracking.""")
 
+	parser.add_argument("--preprocess", type=str,default='',help="""Default=None (no additional preprocessing). Any additional preprocessing processor (see e2help.py processors at the command line), part of preprocessing to facilitate particle tracking.""")
+
+	
 	(options, args) = parser.parse_args()
 	
-	if options.thresh == 'None' or options.thresh == 'none':
-		options.thresh = None
-	
-	if options.normproc == 'None' or options.normproc == 'none':
-		options.normproc = None
+	if options.ntiltslow:
+		if options.ntiltslowneg:
+			print "ERROR: Cannot specify --ntiltslow and --ntiltslowneg at the same time"
+			sys.exit()
+		if options.ntiltslowpos:
+			print "ERROR: Cannot specify --ntiltslow and --ntiltslowpos at the same time"
+			sys.exit()
 		
+	if options.ntiltslowneg:
+		if options.ntiltslow:
+			print "ERROR: Cannot specify --ntiltslowneg and --ntiltslow at the same time"
+			sys.exit()
+		if options.ntiltslowpos:
+			print "ERROR: Cannot specify --ntiltslowneg and --ntiltslowpos at the same time"
+			sys.exit()
 	
+	if options.ntiltslowpos:
+		if options.ntiltslow:
+			print "ERROR: Cannot specify --ntiltslowpos and --ntiltslow at the same time"
+			sys.exit()
+		if options.ntiltslowneg:
+			print "ERROR: Cannot specify --ntiltslowpos and --ntiltslowneg at the same time"
+			sys.exit()
+		
+		
 	print "\nI've read the options"	
 	
 	'''
@@ -157,8 +189,15 @@ def main():
 	alines = anglesfile.readlines()							#Read its lines
 	anglesfile.close()										#Close the file
 	
-	tiltangles = [ alines[i].replace('\n','') for i in range(len(alines)) ]	#Eliminate trailing return character, '\n', for each line in the tiltangles file
-	ntiltangles = len(tiltangles)
+	#tiltangles = [ alines[i].replace('\n','') for i in range(len(alines)) ]	#Eliminate trailing return character, '\n', for each line in the tiltangles file
+	
+
+	tiltanglesfloatabs = [ math.fabs( float( alines[i].replace('\n','') ) ) for i in range(len(alines)) ]
+
+	tiltanglesfloat = [ float( alines[i].replace('\n','') ) for i in range(len(alines)) ]
+
+
+	ntiltangles = len( tiltanglesfloat )
 	
 	'''
 	Check that there are as many images in --tiltseries as angles in --tiltangles
@@ -196,24 +235,28 @@ def main():
 	#"""
 	#(CRAZY)
 	#You do not need to keep track of the mathematics of tilting and rotating and find the correspondence between
-	#tomogram and each image in the tilt series.
+	#the tomogram and each image in the tilt series.
 	#Instead, let's make a simple 3D model, containing a bright dot at the position of each particle.
 	#Then, rotate that using the known tilt angles, generate a projection for each, and find the dots (maxima) in each.
 	#Use the location of these maxima, to extract each particle from each image in the tilt series.
+	#Would fail if they overlap though
 	#"""
 	
+	tomox=tomoy=tomoz=0
 	if options.tomosides:							#Read tomogram dimensions.
 		sides=options.tomosides.split(',')
 		tomox = int(sides[0])
 		tomoy = int(sides[1])
 		tomoz = int(sides[2])
 	
-	if options.tomogram:
+	elif options.tomogram:
 		tomohdr = EMData(options.tomogram,0,True)	#Read tomogram dimensions from tomogram header, if the tomogram is provided.
 		tomox = int(tomohdr['nx'])
 		tomoy = int(tomohdr['ny'])
 		tomoz = int(tomohdr['nz'])
 
+	icethickness = tomoz
+	
 	#if float( options.shrink ) > 1.0:								#The 'MODEL' to build for the coordinates need not use the full size of the tomogram.
 	#	tomox = int(tomox)/options.shrink
 	#	tomoy = int(tomoy)/options.shrink
@@ -241,6 +284,8 @@ def main():
 	'''
 	ppp = 0	
 	cleanlines=[]
+	zs = []
+	
 	for line in clines:
 		
 		if options.subset:
@@ -263,6 +308,7 @@ def main():
 		if options.coords3d:
 			if line and len(finallineelements) == 3:
 				cleanlines.append(line)
+				zs.append( int( line.split()[-1] ))		
 				ppp += 1
 			else:
 				print "\nBad line removed", line
@@ -273,7 +319,31 @@ def main():
 				ppp += 1
 			else:
 				print "\nBad line removed", line
-			
+	
+	if zs and options.icethicknessauto:
+	
+		icethicknessfile = options.path + '/icethickness_estimate.txt'
+	
+		itf = open( icethicknessfile, 'w' )
+	
+		autoIcethickness = max( zs ) -  min( zs )
+	
+		autoIceLine = 'max(z) - min(z) = ' + str( autoIcethickness ) + ' pixels '
+	
+		autoIcethicknessUnshrunk = autoIcethickness
+		if options.cshrink and options.cshrink > 1:
+			autoIcethicknessUnshrunk = autoIcethickness * options.cshrink
+			autoIceLine += ' , unshrunk = ' + str( autoIcethicknessUnshrunk ) + ' pixels'
+	
+		icethickness = autoIcethicknessUnshrunk
+		print "\nIce thickness has been estimated from z coordinates to be", icethickness
+	
+		autoIcethicknessInApix = autoIcethicknessUnshrunk*apix
+		autoIceLine += ' , ' + str( autoIcethicknessInApix ) + ' angstroms'
+		
+		itf.write( autoIceLine )
+	
+		itf.close()		
 	
 	'''
 	Iterate over the correct number of viable lines from the coordinates file.
@@ -295,14 +365,15 @@ def main():
 	#print "There are these many clean lines", len(cleanlines)
 	#print "Clean lines are", cleanlines
 	
-	everyotherfactor = 1
-	if options.everyother > 1:
-		everyotherfactor = options.everyother
+	#everyotherfactor = 1
+	#if options.everyother > 1:
+	#	everyotherfactor = options.everyother
 	
 	
 	maxtilt=0
+	
+	
 	if options.subtractbackground:
-		tiltanglesfloat = [ math.fabs( float( alines[i].replace('\n','') ) ) for i in range(len(alines)) ]
 		maxtilt = max( tiltanglesfloat )
 		print "\n(e2spt_subtilt.py) maxtilt is", maxtilt
 		
@@ -312,11 +383,77 @@ def main():
 		invert=0
 		center=0
 	
-	ptclNum=0
+	
+	
+	
+	tiltaxisloc = tomox/2.0 
+	if options.tiltaxislocation > -1:
+		tiltaxisloc = options.tiltaxislocation/2.0 
+	
+	xclowerthresh = 0
+	xcupperthresh = tomox
+	
+	if options.radius and options.tiltaxisptcls == -1:
+		xclowerthresh = options.radius
+		xcupperthresh = tomox - options.radius
+	
+	if options.tiltaxisptcls > -1:
+		xclowerthresh = tiltaxisloc - options.tiltaxisptcls
+		xcupperthresh = tiltaxisloc + options.tiltaxisptcls
+	
+	
+	'''
+	Divide the tiltangles into negative and positive ranges since iterations will progress
+	from the 0 tilt angle and then gradually 1 to the left, 1 to the right, etc, etc.
+	Figure out which side has the most angles too.
+	'''
+	nimgsOriginal = EMData( options.tiltseries, 0, True )['nz']
+	middleIndx = nimgsOriginal/2
+	
+	absangles = []	#absolute value of all angles
+	
+	for ang in tiltanglesfloat:
+		absangles.append( math.fabs( ang ) )
+	
+	zerotiltangleabs = min( absangles )
+	zerotiltindx = absangles.index( zerotiltangleabs )
+	zerotiltangle = tiltanglesfloat[ zerotiltindx ]
+	
+	print "\nBy middle tilt series index, and by smallest tilt angle index, zerotilt is at", middleIndx, zerotiltindx
+	print "And zerotiltangle is", zerotiltangle
+	
+	
+	anglesBelowZeroTilt = []
+	anglesAboveZeroTilt = []
+
+	for ang in tiltanglesfloat:
+		#print "\nAngle is", ang
+		if float(ang) < float(zerotiltangle):
+			anglesBelowZeroTilt.append( float(ang) )
+			#print "Therefore it was added to the below group"
+		elif float(ang) > float(zerotiltangle):
+			anglesAboveZeroTilt.append( float(ang) )
+			#print "Therefore it was added to the above group"
+	
+	nLangles = len( anglesBelowZeroTilt )
+	nUangles = len( anglesAboveZeroTilt )
+	mostangles = max( nLangles, nUangles )
+	
+	#print "nLangles and nUangles are", nLangles, nUangles
+	#sys.exit()
+	anglestackslist = options.saveanglestacks.split(',')
+
+
+	ptclNum3D = ptclNum = 0
+	
+	if options.ntiltslow:
+		if not options.ntiltslow %2:
+			options.ntiltslow += 1
+	
 	for line in cleanlines:
 		line = line.split()	
 		
-		print "\n\n\n\n\n+=================+\nAnalyzing particle number\n+=================+\n", ptclNum
+		print "\n\n\n\n\n+=================+\nAnalyzing particle number\n+=================+\n", ptclNum3D
 		xc = 0
 		yc = 0
 		zc = 0
@@ -325,11 +462,11 @@ def main():
 			yc = float(line[1])
 			zc = float(line[2])	
 		elif len(line) == 2:
-			xc = float(line[0])				#Determine x y coordinates for each line, and default zc to 0
+			xc = float(line[0])				#Determine x y coordinates for each line, and default zc to 0 if --coords2d supplied instead of coords3d
 			yc = float(line[1])
 			zc = 0
 		else:	
-			print "\nThere's an aberrant line in your file, see", line
+			print "\nThere's still an aberrant line in your file, see", line
 			sys.exit()
 		
 		if options.verbose:
@@ -341,217 +478,550 @@ def main():
 			zc*=options.cshrink
 			
 			if options.verbose:
-				print "\nThe real coordinates after multiplying cshrink are", xc,yc,zc
+				print "\nThe real coordinates after multiplying cshrink are", xc, yc, zc
 		
-		sptcoords = ( xc, yc, zc )
+		print "Before entering algorithm, xc, yc, zc are", xc,yc,zc
+		print "Both conditions xc > lowerth and xc < upperth together are", int(xc) > int( xclowerthresh ) and int(xc) < int( xcupperthresh )
 		
-		outIndx=0
-		ret=0
-		wholebox=0
+		if int(xc) > int( xclowerthresh ) and int(xc) < int( xcupperthresh ):
 		
-		for k in range(len(tiltangles)):
+			
 		
-			if k % everyotherfactor:
-				print "\nSkipping tilt",k
+			#outIndx=0
+			#ret=0
+			wholebox=0
+			
+			
+			'''
+			The middle or zero-tilt or lowest-tilt image will serve to align all the rest.
+			Find it, extract it, recenter it using autocentering based on mirror images, and reextract.
+			'''
+			
+			retm = extract2D( options, zerotiltangle, icethickness, tomox, xc, yc, zc, 0, 0, zerotiltindx )
+			middleslice = retm[0]
+
+			cumulativeLdx = cumulativeLdy = cumulativeUdx = cumulativeUdy = 0	
+			
+			ptclfile = options.path + '/subtiltPtcl_' + str(ptclNum) + '.hdf'
+				
+			print "Found least tilted image at index and angle ", zerotiltindx, zerotiltangle
+			
+			'''
+			print "Autocentering it"
+			
+			midslicemirrorX = middleslice.process('xform.mirror',{'axis':'x'})
+			midslicemirrorY = middleslice.process('xform.mirror',{'axis':'y'})
+			
+			
+			
+			ccfpmx = middleslice.calc_ccf( midslicemirrorX )
+			ccfpmy = middleslice.calc_ccf( midslicemirrorY )
+
+			ccfpmxC = ccfpmx.process('xform.phaseorigin.tocorner')
+			ccfpmyC = ccfpmy.process('xform.phaseorigin.tocorner')
+
+			maxccfpmxC = ccfpmxC.calc_max_location()
+			maxccfpmyC = ccfpmyC.calc_max_location()
+			
+			
+			
+			midsxt = -1 * ( middleslice['nx'] /2.0 - maxccfpmxC[0])/ 2.0
+			midsyt = -1 * ( middleslice['ny'] /2.0 - maxccfpmyC[1])/ 2.0
+			
+			print "Autocentering translations for tilt 0 are", midsxt, midsyt
+			retm2 = extract2D( options, zerotiltangle, icethickness, tomox, xc, yc, zc, midsxt, midsyt, zerotiltindx )
+			
+			middleslice = retm2[0]
+			'''
+			
+			if options.centerzerotilt:					
+				box = middleslice['nx']
+				radius = box / 4.0
+				
+				if options.radius:
+					radius = options.radius
+				else:
+					print """WARNING: --centerzerotilt requires --radius. Since the latter wasn't provided, it will be assumed to be 1/4 of the --boxsize"""
 					
-			else:
-				angle = float( tiltangles[k] )
+				template = EMData( box, box )
+				template.to_one()
+				template.process_inplace('mask.sharp',{'outer_radius':radius})
+				template.mult(-1)
+			
+				if options.lowpass or options.highpass or options.mask or options.shrink or options.preprocess or options.threshold:
+					middleslice = preprocImg( middleslice, options )
+			
+				ccft = middleslice.calc_ccf( template )
+				ccftC = ccft.process('xform.phaseorigin.tocorner')
+				maxccftC = ccftC.calc_max_location()
+			
+				midsxt = -1 * ( middleslice['nx'] /2.0 - maxccftC[0])			
+				midsyt = -1 * ( middleslice['nx'] /2.0 - maxccftC[1])
+				print "Autocentering translations for tilt 0 are", midsxt, midsyt
+				#cumulativeLdx += midsxt
+				#cumulativeLdy += midsyt
+			
+				retm2 = extract2D( options, zerotiltangle, icethickness, tomox, xc, yc, zc, midsxt, midsyt, zerotiltindx )
+			
+				middleslice = retm2[0]
+			
+			
+			#middleslice.process_inplace('normalize')	
+			middleslice.write_image( ptclfile, 0 )
+			
+			if str(zerotiltindx) in anglestackslist and options.saveanglestacks:	
+				zeroanglestackname = options.path + '/anglestack_' + str(zerotiltindx) + '_angle' + str(int(zerotiltangle)) + '.hdf' 
+				middleslice.write_image( zeroanglestackname, -1 )
+			
+			
+			print "Will now iterate over all other tilt angles"
+			
+			refL = middleslice.copy()
+			refU = middleslice.copy()
+			
+			for k in range( mostangles ):
 				
-				tAxisShift = tomox/2.0
-				xcToAxis = xc - tAxisShift
+				if options.ntiltslow:
+					if k == options.ntiltslow:
+						break
 				
-				zSectionShift = tomoz/2.0
-				zcToMidSection = zc - zSectionShift
+				elif options.ntiltslowneg:
+					if k == options.ntiltslowneg:
+						break
+				
+				elif options.ntiltslowpos:
+					if k == options.ntiltslowpos:
+						break
 				
 				
-				cosTerm=xcToAxis * math.cos( math.radians(angle)  )
-				sinTerm=zcToMidSection * math.sin( math.radians(angle)  )
+				if k < nLangles and not options.ntiltslowpos:
+					#print "\n k and nLangles are", k, nLangles
+					lowerindx = zerotiltindx - (k+1)
+					
+					#if options.ntiltslow:
+					#	lowerindx = zerotiltindx - (k+1) - zerotiltiltidx
+					
+					lowerangle = tiltanglesfloat[ lowerindx ]
+					if options.invertangles:
+						lowerangle *= -1
+					
+					print "Lower slice index to send is", lowerindx
+					retL = write2D( options, lowerangle, icethickness, tomox, tomoy, xc, yc, zc, cumulativeLdx, cumulativeLdy, refL, apix, 'lower', ptclfile, maxtilt, lowerindx )
+					if retL:
+						refL = retL[0]
+						cumulativeLdx = retL[1]
+						cumulativeLdy = retL[2]
 				
-				xtToAxis = zcToMidSection * math.sin( math.radians(angle)  ) + xcToAxis * math.cos( math.radians(angle)  )
+						if str(lowerindx) in anglestackslist and options.saveanglestacks:	
+							anglestackname = options.path + '/anglestack_' + str(lowerindx) + '_angle' + str(int(lowerangle)) + '.hdf' 
+							refL.write_image( anglestackname, -1 )
 				
-				yt = yc
+				if k < nUangles and not options.ntiltslowneg:
+					#print "\n k and nUangles are", k, nUangles
+					upperindx = zerotiltindx + (k+1)
+					upperangle = tiltanglesfloat[ upperindx ]
+					if options.invertangles:
+						upperangle *= -1
 				
-				xt = xtToAxis + tAxisShift
+					print "Upper slice index to send is", upperindx
+					retU = write2D( options, upperangle, icethickness, tomox, tomoy, xc, yc, zc, cumulativeUdx, cumulativeUdy, refU, apix, 'upper', ptclfile, maxtilt, upperindx )
+					if retU:
+						refU = retU[0]
+						cumulativeUdx = retU[1]
+						cumulativeUdy = retU[2]
+				
+						if str(upperindx) in anglestackslist and options.saveanglestacks:	
+							anglestackname = options.path + '/anglestack_' + str(upperindx) + '_angle' + str(int(upperangle)) + '.hdf' 
+							refU.write_image( anglestackname, -1 )
 				
 			
-				if float(xt) < 0.0:
-					print "Something went awfully wrong; you have a negative X coordinate",xt
-					print "tomox and tomox/2.0 are", tomox,tomox/2.0
-				
-				if float(yt) < 0.0:
-					print "Something went awfully wrong; you have a negative Y coordinate",yt
-					print "yc is", yc
-				
-				if float(xt) < 0.0 or float(yt) < 0.0:
-					print "Either X or Y are negative, see", xt, yt
-					sys.exit()
-				
-				if float(xt) < float(options.boxsize)/2.0 or float(yt) < float(options.boxsize)/2.0:
-					print "Pick a smaller boxsize; otherwise, some of your particles will contain empty regions outside the image"
-					print "Particle is centered at", xt,yt
-					print "And boxsize/2 is", options.boxsize/2.0
-					sys.exit()
-				
-				r = Region( (2*xt-options.boxsize)/2, (2*yt-options.boxsize)/2, k, options.boxsize, options.boxsize, 1)
-				print "\n\n\nRRRRRRRRRR\nThe region to extract is", r
-				
-				print "\n(e2spt_subtilt.py) Extracting image for tilt angle %f and particle %d" %( angle, ptclNum )
-				e = EMData()
-				e.read_image(options.tiltseries,0,False,r)
-				
-				#print "After reading it, nz is", e['nz']
-				
-				e['spt_tiltangle']=angle
-				e['spt_tiltaxis']='y'
-				e['spt_subtilt_x']=xt
-				e['spt_subtilt_y']=yt
-				e['origin_x']=e['nx']/2.0
-				e['origin_y']=e['ny']/2.0
-				e['origin_z']=0
-				
-				e['apix_x']=apix
-				e['apix_y']=apix
-				e['apix_z']=apix
-				
-				if options.coords3d:
-					e['ptcl_source_coord']=sptcoords
-				
-				if int( options.shrink ) > 1:
-					e.process_inplace('math.meanshrink',{'n':options.shrink})
-				
-				#print "After shrinking, nz is", e['nz']
-				#e.process_inplace('normalize')
+			ptclNum += 1	
 			
-				#print "I've read the 2D particle into the region, resulting in type", type(e)
-				#print "The mean and sigma are", e['mean'], e['sigma']
-				
-				e.process_inplace('normalize')
-				e.write_image(options.path + '/subtiltPtcl_' + str(ptclNum) + '.hdf',outIndx)
-				if k==0:
-					e.write_image(options.path + 'prj0.hdf',0)
-				
-				if options.subtractbackground and maxtilt:
-									
-					'''
-					Extract a large volume around each particle (only for k==0), to distinguish ptcl from background
-					and generate background-substracted re-projections (for each tilt angle)
-					'''
-					if k == 0:			
-						#ret = unbinned_extractor(options,bgboxsize,xc,yc,zc,options.cshrink,invert,center,options.tomogram)
-						rw =  Region( (2*xc-bgboxsize)/2, (2*yc-bgboxsize)/2, (2*zc-bgboxsize)/2, bgboxsize, bgboxsize, bgboxsize)
-						
-						wholebox = EMData()
-						wholebox.to_zero()
-						wholebox.read_image(options.tomogram,0,False,rw)
-						
-						if int( options.shrink ) > 1:
-							wholebox.process_inplace('math.meanshrink',{'n':options.shrink})
-						
-						#wholebox.process_inplace('normalize.edgemean')
-						
-						nsz = wholebox['sigma_nonzero']
-						
-						img.process_inplace("threshold.belowtozero",{"minval":snz*-1.5})
-						
-						#img.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.5})
-						#img.process_inplace("threshold.belowtozero",{"minval":snz/100.0})
-						
-						print "(e2spt_subtilt.py) Extracted whole 3D box " + str(angle) + " and mean " + str(wholebox['mean']) + " for particle " + str(ptclNum)
-						wholebox.write_image(options.path + '/subtiltPtcl_' + str(ptclNum) + '_whole3D.hdf',0)
-
-					if wholebox:
-						
-						#e.process_inplace('normalize')
-						
-						'''
-						Rotate the larger box extracted and then clip into prism
-						to avoid density gradient (a rotated cube rotates the data inside)
-						causing higher density in projections along the diagonal of the cube
-						'''
-						#angle = angle *-1
-						t= Transform({'type':'eman','az':90,'alt':angle,'phi':-90})
-						#t= Transform({'type':'eman','az':90,'alt':angle})
-						#t= Transform({'type':'eman','alt':angle})
-
-
-						print "\nTransform to ROTATE volume is", t
-						
-						wholeboxRot = wholebox.copy()
-						wholeboxRot.transform(t)
-						
-						finalbox = options.boxsize
-						finalbgbox = bgboxsize
-						if int( options.shrink ) > 1:
-							finalbox = options.boxsize / options.shrink
-							finalbgbox = bgboxsize / options.shrink
-											
-						rbgprism =  Region( (wholebox['nx'] - finalbox)/2, (wholebox['ny'] - finalbox)/2, (wholebox['nz'] - finalbgbox)/2, finalbox, finalbox, finalbgbox)
-						wholeboxRot.clip_inplace( rbgprism )
-						print "\nSizes of prism are", wholeboxRot['nx'],wholeboxRot['ny'],wholeboxRot['nz']
-						
-						if k == 0 :
-							wholeboxRot.write_image(options.path + '/subtiltPtcl_' + str(ptclNum) + '_whole3DROT.hdf',0)
-						
-						ptclreprj = wholeboxRot.project("standard",Transform())
-						print "\nGenerated ptclreprj with mean and XY sizes", ptclreprj['mean'],type(ptclreprj), ptclreprj['nx'],ptclreprj['ny'],ptclreprj['nz']
-						
-						ptclreprj.mult( math.cos( math.radians(angle) ) )
-						
-						mask = EMData(ptclreprj['nx'],ptclreprj['ny'],ptclreprj['nz'])
-						mask.to_one()
-						mask.process_inplace('mask.sharp',{'outer_radius':-2})
-						
-						ptclreprj.process_inplace('normalize.mask',{'mask':mask})
-						
-						if k==0:
-							ptclreprj.write_image(options.path + 'reprj0nomatch.hdf',0)
-						ptclreprj.process_inplace('filter.matchto',{'to':e})
-						
-						if k==0:
-							ptclreprj.write_image(options.path + 'reprj0yesmatch.hdf',0)
-						#ptclreprj.rotate(90,0,0)
-						ptclreprj.write_image(options.path + '/subtiltPtcl_' + str(ptclNum) + '_reprj.hdf',outIndx)
-					
-						
-						'''
-						Generate projections of the background density by masking out the particle
-						'''
-						maskrad = finalbox/3.0
-						
-						bgbox = wholeboxRot.process('mask.sharp',{'inner_radius':maskrad})
-												
-						print "\nMasked bgbox with inner_radius, and ptclbox with outer_radius", maskrad
-						
-						bgprj = bgbox.project("standard",Transform())
-						
-						bgprj.mult( math.cos( math.radians(angle) ) )
-						
-						print "\nGenerated ptclreprj with mean and XY sizes", bgprj['mean'],type(bgprj), bgprj['nx'],bgprj['ny'],bgprj['nz']
-						
-						bgprj.process_inplace('normalize')
-						
-						
-						bgprj.process_inplace('filter.matchto',{'to':e})
-						bgprj.rotate(90,0,0)
-						bgprj.write_image(options.path + '/subtiltPtcl_' + str(ptclNum) + '_bgprj.hdf',outIndx)
-						
-						clean = e - bgprj
-						clean.write_image(options.path + '/subtiltPtcl_' + str(ptclNum) + '_clean.hdf',outIndx)
-						print "\nComputed clean. Max e and Max bgprj are",e['maximum'], bgprj['maximum']
-					
-						cleanreprj = ptclreprj - bgprj
-						print "\nComputed cleanprj"
-						
-						cleanreprj.write_image(options.path + '/subtiltPtcl_' + str(ptclNum) + '_cleanreprj.hdf',outIndx)
-				
-				outIndx+=1
-						
-				print "\n\n\n"		
+		else:
+			print "Particle skipped because it's center in X, xc=%d, is outside the lower and upper boundaries to consider [%d,%d]; i.e., too far away from the tilt axis" % ( xc, xclowerthresh, xcupperthresh ) 
+			print "First condition, xc > lowerthresh", int(xc) > int( xclowerthresh )
+			print "First condition, xc < upperthresh", int(xc) < int( xcupperthresh )
 		
-		#r = Region( (2*xm-box)/2, (2*ym-box)/2, 0, box, box,1)
-						
-		ptclNum+=1
+			print "Both conditions", int(xc) > int( xclowerthresh ) and int(xc) < int( xcupperthresh )
+			print "IF all true you shouldn't be reading this message!"
 		
+		
+		
+		ptclNum3D += 1
+	
+	E2end(logger)
+	
+	return
+
+
+def write2D( options, angle, icethickness, tomox, tomoy, xc, yc, zc, cumulativedx, cumulativedy, ref, apix, tag, ptclfile, maxtilt, sliceindx ):
+
+	'''
+	Extract an image immediately to the left and another immediately to the right of the zero tilt image for k=0; 
+	then the next image to the left and the next to the right (in the tilt series) for k=1; so on and so forth...
+	'''
+
+	ret1 = extract2D( options, angle, icethickness, tomox, xc, yc, zc, cumulativedx, cumulativedy, sliceindx )
+	img = ret1[0]
+
+	'''
+	Preprocess the extracted images (for k) if necessary, then align them to the immediate previous image (from k-1); for k=0, the k-1 image is the zero tilt image
+	'''
+	#try:
+	#	if options.preproc2d:
+	#		img = preprocImg( img, options, False )
+	#except:
+	#	pass
+	#	#print "Preprocessing not implemented yet"
+		
+	ret2 = align2D( options, ref, img )
+	rdx = ret2[0]
+	rdy = ret2[1]
+
+	'''
+	Reextract better centered images taking into account accumulated x and y shifts
+	'''
+
+	cumulativedx += rdx
+	cumulativedy += rdy
+	
+	print "Cumulativedx", cumulativedx
+	print "Cumulativedy", cumulativedy
+
+	retf = extract2D( options, angle, icethickness, tomox, xc, yc, zc, cumulativedx, cumulativedy, sliceindx )
+	
+	#print "Slice index used for extraction was", sliceindx
+	
+	e = retf[0]
+	fx = retf[1]
+	fy = retf[2]
+	
+	threshy1 = float( options.excludeedge )
+	threshx1 = float( options.excludeedge )
+	
+	threshy2 = float( tomoy ) - options.excludeedge
+	threshx2 = float( tomox ) - options.excludeedge
+	
+	if float( fx ) > threshx1 and float( fx ) < threshx2 and float( fy ) > threshy1 and float( fy ) < threshy2:
+			
+		e['spt_tiltangle'] = angle
+		e['spt_tiltaxis'] = 'y'
+		e['spt_subtilt_x'] = fx
+		e['spt_subtilt_y'] = fy
+		e['origin_x'] = e['nx']/2.0
+		e['origin_y'] = e['ny']/2.0
+		e['origin_z'] = 0
+
+		e['apix_x'] = apix
+		e['apix_y'] = apix
+		e['apix_z'] = apix
+
+		if options.coords3d:
+			sptcoords = ( fx, fy, zc )
+			e['ptcl_source_coord']=sptcoords
+
+		e.process_inplace('normalize')
+	
+	
+		if options.subtractbackground and maxtilt:
+			print "WARNING: \nBackground subtraction not working yet!"			
+			#subtractBackground()	
+	
+		tmpimgfile = options.path + '/tmp.hdf'
+	 
+		e.write_image( tmpimgfile, 0 )
+	
+		cmd = 'e2proc2d.py ' + tmpimgfile + ' ' + ptclfile + ' && rm ' + tmpimgfile
+	
+		if tag == 'lower':
+			cmd = 'e2proc2d.py ' + ptclfile + ' ' + tmpimgfile + ' && mv ' + tmpimgfile + ' ' + ptclfile
+	
+		os.popen(cmd)
+	
+		return [e, cumulativedx, cumulativedy]
+	else:
+		print "\nParticle excluded from angle view %.2f since its center %.2f, %.2f is outside the --excludeedge limits x=[%.2f,%.2f] and y[%.2f,%.2f]" %(angle,fx,fy,threshx1,threshx2,threshy1,threshy2) 
+		return None
+
+def extract2D( options, angle, icethickness, tomox, xc, yc, zc, cumulativedx, cumulativedy, sliceindx ):
+
+	tAxisShift = tomox/2.0
+	xcToAxis = xc - tAxisShift
+
+	#zSectionShift = tomoz/2.0
+	zSectionShift = -1 * icethickness/2.0
+
+	if options.zshift != 'half':
+		#zSectionShift += icethickness/2.0 
+		zSectionShift = int( options.zshift )
+	
+	zcToMidSection = zc + zSectionShift
+
+
+	cosTerm = xcToAxis * math.cos( math.radians(angle)  )
+	sinTerm = zcToMidSection * math.sin( math.radians(angle)  )
+
+	xtToAxis = zcToMidSection * math.sin( math.radians(angle)  ) + xcToAxis * math.cos( math.radians(angle)  )
+
+	yt = yc
+
+	xt = xtToAxis + tAxisShift
+
+
+	if float(xt) < 0.0:
+		print "Something went awfully wrong; you have a negative X coordinate",xt
+		print "tomox and tomox/2.0 are", tomox, tomox/2.0
+
+	if float(yt) < 0.0:
+		print "Something went awfully wrong; you have a negative Y coordinate",yt
+		print "yc is", yc
+
+	if float(xt) < 0.0 or float(yt) < 0.0:
+		print "Either X or Y are negative, see", xt, yt
+		sys.exit()
+
+	if float(xt) < float(options.boxsize)/2.0 or float(yt) < float(options.boxsize)/2.0:
+		print "Pick a smaller boxsize; otherwise, some of your particles will contain empty regions outside the image"
+		print "Particle is centered at", xt, yt
+		print "And boxsize/2 is", options.boxsize/2.0
+		sys.exit()
+
+	xt += cumulativedx
+	yt += cumulativedy
+	
+	r = Region( (2*xt-options.boxsize)/2, (2*yt-options.boxsize)/2, sliceindx, options.boxsize, options.boxsize, 1)
+	#print "\n\n\nRRRRRRRRRR\nThe region to extract is", r
+
+	#print "\n(e2spt_subtilt.py) Extracting image for tilt angle %f and particle %d" %( angle, ptclNum )
+	e = EMData()
+	e.read_image(options.tiltseries,0,False,r)
+	e.process_inplace('normalize')
+
+	return [ e, xt, yt ]
+
+
+def align2D( options, ref, img ):
+	
+	refp = ref.copy()
+	imgp = img.copy()
+	if options.lowpass or options.highpass or options.preprocess or options.threshold or options.mask or options.shrink > 1:
+		refp = preprocImg( refp, options )
+		imgp = preprocImg( imgp, options )
+	
+	ccf = refp.calc_ccf( imgp )
+	ccf.process_inplace("xform.phaseorigin.tocorner") 
+	
+	locmax = ccf.calc_max_location()
+							
+	drecenterX = refp['nx']/2.0 - locmax[0]
+	drecenterY = refp['ny']/2.0 - locmax[1]
+	
+	if options.shrink:
+		print "On shrunk images, translation to recenter are", drecenterX, drecenterY
+
+	if options.shrink:
+		drecenterX *= options.shrink
+		drecenterY *= options.shrink
+	if options.shrink:
+		print "On the actual images, translation to recenter are", drecenterX, drecenterY
+	
+	return [drecenterX,drecenterY]
+
+
+
+def preprocImg( iimg, options ):
+	
+	img = iimg.copy()
+	
+	img.process_inplace('normalize')
+	
+	if options.threshold and options.threshold != 'None' and options.threshold != 'none': 
+		threshold=''
+		try:
+			threshold=parsemodopt(options.threshold)
+		except:
+			print "Failed to parse threshold"
+		print "Parsed threshold is", threshold
+		img.process_inplace( threshold[0], threshold[1] )
+
+	
+	if options.mask and options.mask != 'None' and options.mask != 'none':
+		mask=''
+		try:
+			mask=parsemodopt(options.mask)
+		except:
+			pass
+		img.process_inplace( mask[0], mask[1] )
+	
+	
+	print "Raw image size", img['nx'],img['ny']
+	if options.shrink and int(options.shrink) > 1:
+		img.process_inplace('math.meanshrink',{'n': options.shrink })
+	
+	print "Shrunk image size", img['nx'],img['ny']
+	
+	if options.highpass and options.highpass != 'None' and options.highpass != 'none': 
+		highpass=''
+		try:
+			highpass=parsemodopt(options.highpass)
+		except:
+			pass
+		img.process_inplace( highpass[0], highpass[1] )
+	
+	
+	if options.preprocess and options.preprocess != 'None' and options.preprocess != 'none': 
+		preprocess=''
+		try:
+			preprocess=parsemodopt(options.preprocess)
+		except:
+			pass
+		img.process_inplace( preprocess[0], preprocess[1] )
+	
+	
+	if options.lowpass and options.lowpass != 'None' and options.lowpass != 'none': 
+		lowpass=''
+		try:
+			lowpass=parsemodopt(options.lowpass)
+		except:
+			pass
+		img.process_inplace( lowpass[0], lowpass[1] )
+	
+	#img.write_image( options.path + '/preproc.hdf',-1 )
+	return img
+
+
+def subtractBackground():
+	
+	'''
+	Extract a large volume around each particle (only for k==0), to distinguish ptcl from background
+	and generate background-substracted re-projections (for each tilt angle)
+	'''
+	if k == 0:			
+		#ret = unbinned_extractor(options,bgboxsize,xc,yc,zc,options.cshrink,invert,center,options.tomogram)
+		rw =  Region( (2*xc-bgboxsize)/2, (2*yc-bgboxsize)/2, (2*zc-bgboxsize)/2, bgboxsize, bgboxsize, bgboxsize)
+	
+		wholebox = EMData()
+		wholebox.to_zero()
+		wholebox.read_image(options.tomogram,0,False,rw)
+	
+		if int( options.shrink ) > 1:
+			wholebox.process_inplace('math.meanshrink',{'n':options.shrink})
+	
+		#wholebox.process_inplace('normalize.edgemean')
+	
+		nsz = wholebox['sigma_nonzero']
+	
+		img.process_inplace("threshold.belowtozero",{"minval":snz*-1.5})
+	
+		#img.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.5})
+		#img.process_inplace("threshold.belowtozero",{"minval":snz/100.0})
+	
+		print "(e2spt_subtilt.py) Extracted whole 3D box " + str(angle) + " and mean " + str(wholebox['mean']) + " for particle " + str(ptclNum)
+		wholebox.write_image(options.path + '/subtiltPtcl_' + str(ptclNum) + '_whole3D.hdf',0)
+
+	if wholebox:
+	
+		#e.process_inplace('normalize')
+	
+		'''
+		Rotate the larger box extracted and then clip into prism
+		to avoid density gradient (a rotated cube rotates the data inside)
+		causing higher density in projections along the diagonal of the cube
+		'''
+		#angle = angle *-1
+		t= Transform({'type':'eman','az':90,'alt':angle,'phi':-90})
+		#t= Transform({'type':'eman','az':90,'alt':angle})
+		#t= Transform({'type':'eman','alt':angle})
+
+
+		print "\nTransform to ROTATE volume is", t
+	
+		wholeboxRot = wholebox.copy()
+		wholeboxRot.transform(t)
+	
+		finalbox = options.boxsize
+		finalbgbox = bgboxsize
+		if int( options.shrink ) > 1:
+			finalbox = options.boxsize / options.shrink
+			finalbgbox = bgboxsize / options.shrink
+						
+		rbgprism =  Region( (wholebox['nx'] - finalbox)/2, (wholebox['ny'] - finalbox)/2, (wholebox['nz'] - finalbgbox)/2, finalbox, finalbox, finalbgbox)
+		wholeboxRot.clip_inplace( rbgprism )
+		print "\nSizes of prism are", wholeboxRot['nx'],wholeboxRot['ny'],wholeboxRot['nz']
+	
+		if k == 0 :
+			wholeboxRot.write_image(options.path + '/subtiltPtcl_' + str(ptclNum) + '_whole3DROT.hdf',0)
+	
+		ptclreprj = wholeboxRot.project("standard",Transform())
+		print "\nGenerated ptclreprj with mean and XY sizes", ptclreprj['mean'],type(ptclreprj), ptclreprj['nx'],ptclreprj['ny'],ptclreprj['nz']
+	
+		ptclreprj.mult( math.cos( math.radians(angle) ) )
+	
+		mask = EMData(ptclreprj['nx'],ptclreprj['ny'],ptclreprj['nz'])
+		mask.to_one()
+		mask.process_inplace('mask.sharp',{'outer_radius':-2})
+	
+		ptclreprj.process_inplace('normalize.mask',{'mask':mask})
+	
+		if k==0:
+			ptclreprj.write_image(options.path + 'reprj0nomatch.hdf',0)
+		ptclreprj.process_inplace('filter.matchto',{'to':e})
+	
+		if k==0:
+			ptclreprj.write_image(options.path + 'reprj0yesmatch.hdf',0)
+		#ptclreprj.rotate(90,0,0)
+		ptclreprj.write_image(options.path + '/subtiltPtcl_' + str(ptclNum) + '_reprj.hdf',outIndx)
+
+	
+		'''
+		Generate projections of the background density by masking out the particle
+		'''
+		maskrad = finalbox/3.0
+	
+		bgbox = wholeboxRot.process('mask.sharp',{'inner_radius':maskrad})
+							
+		print "\nMasked bgbox with inner_radius, and ptclbox with outer_radius", maskrad
+	
+		bgprj = bgbox.project("standard",Transform())
+	
+		bgprj.mult( math.cos( math.radians(angle) ) )
+	
+		print "\nGenerated ptclreprj with mean and XY sizes", bgprj['mean'],type(bgprj), bgprj['nx'],bgprj['ny'],bgprj['nz']
+	
+		bgprj.process_inplace('normalize')
+	
+	
+		bgprj.process_inplace('filter.matchto',{'to':e})
+		bgprj.rotate(90,0,0)
+		bgprj.write_image(options.path + '/subtiltPtcl_' + str(ptclNum) + '_bgprj.hdf',outIndx)
+	
+		clean = e - bgprj
+		clean.write_image(options.path + '/subtiltPtcl_' + str(ptclNum) + '_clean.hdf',outIndx)
+		print "\nComputed clean. Max e and Max bgprj are",e['maximum'], bgprj['maximum']
+
+		cleanreprj = ptclreprj - bgprj
+		print "\nComputed cleanprj"
+	
+		cleanreprj.write_image(options.path + '/subtiltPtcl_' + str(ptclNum) + '_cleanreprj.hdf',outIndx)
+
+	outIndx+=1
+	
+
+	print "\n\n\n"	
+	
+	return
+
+
+if __name__ == '__main__':
+	
+	main()
+
+
+
+
+"""
+PROGRAM SRCRAPS
+
 		#		(cos q  0  -sin q   0)
 		#Ry(q) = (0      1    0      0)
 		#        (sin q  0  cos q    0)
@@ -576,9 +1046,7 @@ def main():
 	
 	'''
 	
-	"""
 	Old mathematical approach
-	"""	
 	for j in range(nslices):
 		
 		2Dregion = Region(0,0,j,nx,ny,j+1)
@@ -625,11 +1093,6 @@ def main():
 			
 			name = 'particle#' + str(k).zfill(len(pcoords)) + '_slice' + str(j).zfill(len(pcoords)) + '.mrc'
 	'''
-	E2end(logger)
-	
-	return
-	
-		
-if __name__ == '__main__':
-	
-	main()
+
+
+"""
