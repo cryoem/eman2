@@ -502,7 +502,7 @@ def main():
 
 			cumulativeLdx = cumulativeLdy = cumulativeUdx = cumulativeUdy = 0	
 			
-			ptclfile = options.path + '/subtiltPtcl_' + str(ptclNum) + '.hdf'
+			ptclfile = options.path + '/subtiltPtcl_' + str(ptclNum).zfill( len( str( len (cleanlines)))) + '.hdf'
 				
 			print "Found least tilted image at index and angle ", zerotiltindx, zerotiltangle
 			
@@ -702,7 +702,7 @@ def write2D( options, angle, icethickness, tomox, tomoy, xc, yc, zc, cumulatived
 	threshy2 = float( tomoy ) - options.excludeedge
 	threshx2 = float( tomox ) - options.excludeedge
 	
-	if float( fx ) > threshx1 and float( fx ) < threshx2 and float( fy ) > threshy1 and float( fy ) < threshy2:
+	if float( fx ) > threshx1 and float(xc) > threshx1 and float( fx ) < threshx2 and float (xc) < threshx2 and float( fy ) > threshy1 and float(yc) > threshy1 and float( fy ) < threshy2 and float(yc) < threshy2:
 			
 		e['spt_tiltangle'] = angle
 		e['spt_tiltaxis'] = 'y'
