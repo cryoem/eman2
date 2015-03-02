@@ -161,7 +161,7 @@ namespace EMAN
 		double sim_potential();
 		
 		/** Compute a single point potential value **/
-		double sim_potentiald(int i);
+		double sim_potentiald(uint i);
 
 		/** Compute a potential value for a perturbed point, including +-2 nearest neighbors which will also be impacted **/
 		double sim_potentialdxyz(int i,double dx, double dy, double dz);
@@ -195,7 +195,7 @@ namespace EMAN
 		double calc_total_length();
 		
 		/** Fit helix from peptide chains**/
-		vector<double> fit_helix(EMData *pmap,int minlength,float mindensity,vector<int> edge,int twodir,int minl);
+		vector<double> fit_helix(EMData *pmap,int minlength,float mindensity,vector<int> edge,int twodir,uint minl);
 		
 		/** Do principal component analysis to (a subset of) the point array, used in helix fitting in pathwalker **/
 		vector<float> do_pca(int start, int end);
@@ -227,6 +227,10 @@ namespace EMAN
 		/** Read only C-alpha atoms from a pdb file **/
 		bool read_ca_from_pdb(const char *file);
 		
+		/** Calculate the transform to another identical pointarray. 
+		 *(The rotation part is copied from a set_rotation in transform.cpp) **/
+		Transform calc_transform(PointArray *p);
+		
 		private:
 		double *points;
 		size_t n;
@@ -252,6 +256,7 @@ namespace EMAN
 		 *  @param distpenc - penalty for close points
 		 */
 		double dist0, distc, angc, dihed0, dihedc, mapc,apix, mindistc,distpenc;
+		bool map2d; // map is 2d
 		EMData *map;
 		EMData *gradx,*grady,*gradz;
 		vector<Vec3f> oldshifts;

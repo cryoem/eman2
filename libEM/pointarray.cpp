@@ -1118,7 +1118,7 @@ double PointArray::sim_potential() {
 }
 
 // potential for a single point. Note that if a point moves, it will impact energies +-2 from its position. This function computes only for the point i
-double PointArray::sim_potentiald(int i) {
+double PointArray::sim_potentiald(uint i) {
 	if (!adist) sim_updategeom();		// wasteful, but only once
 	
 //	if (i<0 || i>=n) throw InvalidParameterException("Point number out of range");
@@ -1163,7 +1163,7 @@ double PointArray::sim_potentiald(int i) {
 //*	Do not need for small amount of points
 	// Distance to the closest neighbor
 	double mindist=10000;
-	for (int j=0;j<n;j++){
+	for (size_t j=0;j<n;j++){
 		if(j==i)
 			continue;
 		int ja=4*j;
@@ -1209,7 +1209,7 @@ double PointArray::sim_potentialdxyz(int i, double dx, double dy, double dz) {
 
 double PointArray::calc_total_length(){
 	double dist=0;
-	for(int i=0; i<n; i++){
+	for(uint i=0; i<n; i++){
 		int k=(i+1)%n;
 		double d=(points[i*4]-points[k*4])*(points[i*4]-points[k*4])+(points[i*4+1]-points[k*4+1])*(points[i*4+1]-points[k*4+1])+(points[i*4+2]-points[k*4+2])*(points[i*4+2]-points[k*4+2]);
 		d=sqrt(d);
@@ -1350,7 +1350,8 @@ void PointArray::sim_minstep_seq(double meanshift) {
 //		if (pots<pot) {
 			points[i*4]+=shift[0]*stepadj;
 			points[i*4+1]+=shift[1]*stepadj;
-			points[i*4+2]+=shift[2]*stepadj;
+			if (!map2d)
+				points[i*4+2]+=shift[2]*stepadj;
 //			printf("%d. %1.4g -> %1.4g  %1.3g %1.3g %1.3g %1.3g\n",i,pot,pots,shift[0],shift[1],shift[2],stepadj);
 //			if (potential()>p2) printf("%d. %1.4g %1.4g\t%1.4g %1.4g\n",i,pot,pots,p2,potential());
 //		}
@@ -1391,11 +1392,21 @@ void PointArray::sim_printstat() {
 	double mdist=0.0,mang=0.0,mdihed=0.0;
 	double midist=1000.0,miang=M_PI*2,midihed=M_PI*2;
 	double madist=0.0,maang=0.0,madihed=0.0;
-	
-	for (int i=0; i<n; i++) {
+	double mmap=0.0;
+	if (map &&mapc) {
+		for (uint i=0; i<n; i++) {
+			double m=map->sget_value_at_interp(points[i*4]/apix+centx,points[i*4+1]/apix+centy,points[i*4+2]/apix+centz);
+			mmap+=m;
+// 			printf("%f,%f,%f\t %f\n",points[i*4]/apix+centx,points[i*4+1]/apix+centy,points[i*4+2]/apix+centz,m);
+		}
+		mmap/=n;
+	}
+	for (size_t i=0; i<n; i++) {
 		mdist+=adist[i];
 		mang+=aang[i];
 		mdihed+=adihed[i];
+		
+		
 
 		midist=adist[i]<midist?adist[i]:midist;
 		madist=adist[i]>madist?adist[i]:madist;
@@ -1408,7 +1419,7 @@ void PointArray::sim_printstat() {
 	}
 	double p=sim_potential();
 	double anorm = 180.0/M_PI;
-	printf(" potential: %1.1f\t dist: %1.2f / %1.2f / %1.2f\tang: %1.2f / %1.2f / %1.2f\tdihed: %1.2f / %1.2f / %1.2f  ln=%1.1f\n",p,midist,mdist/n,madist,miang*anorm,mang/n*anorm,maang*anorm,midihed*anorm,mdihed/n*anorm,madihed*anorm,mdihed/(M_PI*2.0)-n/10.0);
+	printf(" potential: %1.1f\t map: %1.2f\tdist: %1.2f || %1.2f / %1.2f / %1.2f\tang: %1.2f / %1.2f / %1.2f\tdihed: %1.2f / %1.2f / %1.2f  ln=%1.1f\n",p,mmap,dist0,midist,mdist/n,madist,miang*anorm,mang/n*anorm,maang*anorm,midihed*anorm,mdihed/n*anorm,madihed*anorm,mdihed/(M_PI*2.0)-n/10.0);
 		
 }
 
@@ -1429,6 +1440,10 @@ void PointArray::sim_set_pot_parms(double pdist0,double pdistc,double pangc, dou
 		
 		map=pmap;
 		apix=map->get_attr("apix_x");
+		if (map->get_zsize()==1)
+			map2d=true;
+		else
+			map2d=false;
 // 		centx=map->get_xsize()/2;
 // 		centy=map->get_ysize()/2;
 // 		centz=map->get_zsize()/2;
@@ -1497,10 +1512,10 @@ void PointArray::sim_add_point_one() {
 
 	
 	double maxpot=-1000000,pot,meanpot=0;
-	int ipt=-1;
+	uint ipt=0;
 	bool onedge=0;
 	// Find the highest potential point
-	for (int i=0; i<n; i++) {
+	for (uint i=0; i<n; i++) {
 		meanpot+=sim_pointpotential(adist[i],aang[i],adihed[i]);
 		pot=/*sim_pointpotential(adist[i],aang[i],adihed[i])*/-mapc*map->sget_value_at_interp(points[i*4]/apix+centx,points[i*4+1]/apix+centy,points[i*4+2]/apix+centz);
 		if (pot>maxpot){
@@ -1510,7 +1525,7 @@ void PointArray::sim_add_point_one() {
 	}
 	meanpot/=n;
 	
-	for (int i=0; i<n; i++) {
+	for (uint i=0; i<n; i++) {
 		int k=(i+1)%n;
 		double pt0,pt1,pt2;
 		pt0=(points[k*4]+points[i*4])/2;
@@ -1526,9 +1541,9 @@ void PointArray::sim_add_point_one() {
 	}
 	
 	// The rest points remain the same
-	int i;
+	uint i;
 	double* pa2data=(double *) calloc(4 * (n+1), sizeof(double));
-	for (int ii=0; ii<n+1; ii++) {
+	for (uint ii=0; ii<n+1; ii++) {
 		if(ii!=ipt && ii!=ipt+1){
 			if(ii<ipt)
 				i=ii;
@@ -1543,8 +1558,8 @@ void PointArray::sim_add_point_one() {
 	}
 	// Adding points
 	if( onedge ) {
-		int k0,k1;
-		k0=((ipt+n-1)%n);
+		uint k1;
+// 		k0=((ipt+n-1)%n);
 		k1=((ipt+1)%n);
 		pa2data[ipt*4]=points[ipt*4];
 		pa2data[ipt*4+1]=points[ipt*4+1];
@@ -1558,7 +1573,7 @@ void PointArray::sim_add_point_one() {
 		
 	}
 	else {
-		int k0,k1;
+		uint k0,k1;
 		k0=((ipt+n-1)%n);
 		k1=((ipt+1)%n);
 		pa2data[ipt*4]=(points[ipt*4]+points[k0*4])/2;
@@ -1654,7 +1669,7 @@ vector<float> PointArray::do_filter(vector<float> pts, float *ft, int num){
 	vector<float> result(pts);
 	for (uint i=0; i<pts.size(); i++)
 		result[i]=0;
-	for (int i=(num-1)/2; i<pts.size()-(num-1)/2; i++){
+	for (uint i=(num-1)/2; i<pts.size()-(num-1)/2; i++){
 		for (int j=0; j<num; j++){
 			int k=i+j-(num-1)/2;
 			result[i]+=pts[k]*ft[j];
@@ -1664,7 +1679,7 @@ vector<float> PointArray::do_filter(vector<float> pts, float *ft, int num){
 	
 }
 
-vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindensity=4, vector<int> edge=vector<int>(),int twodir=0,int minl=9)
+vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindensity=4, vector<int> edge=vector<int>(),int twodir=0,uint minl=9)
 {
 	vector<float> hlxlen(n);
 	vector<int> helix;
@@ -1682,13 +1697,13 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 			vector<float> dist(50);
 			// for each point, search the following 50 points, find the longest rod
 			for (int len=5; len<50; len++){
-				int pos=i+len;
+				uint pos=i+len;
 				if (pos>=n || pos<0)	break;
 				vector<float> eigvec=do_pca(i,pos); // align the points 
 				vector<float> pts((len+1)*3);
 				float mean[3];
 				for (int k=0; k<3; k++) mean[k]=0;
-				for (int k=i; k<pos; k++){
+				for (uint k=i; k<pos; k++){
 					for (int l=0; l<3; l++){
 						pts[(k-i)*3+l]=points[k*4+0]*eigvec[l*3+0]+points[k*4+1]*eigvec[l*3+1]+points[k*4+2]*eigvec[l*3+2];
 						mean[l]+=pts[(k-i)*3+l];
@@ -1808,28 +1823,28 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 // 	vector<float> allscore(allhlx.size()/2);
 	for (uint i=0; i<allhlx.size()/2; i++){
 		int sz=5;
-		int start=allhlx[i*2]-sz,end=allhlx[i*2+1]+sz;
+		uint start=allhlx[i*2]-sz,end=allhlx[i*2+1]+sz;
 		start=start>0?start:0;
 		end=end<n?end:n;
 		float minscr=100000;
 		int mj=0,mk=0;
 		
-		for (int j=start; j<end; j++){
-			for (int k=j+6; k<end; k++){
+		for (uint j=start; j<end; j++){
+			for (uint k=j+6; k<end; k++){
 				vector<float> eigvec=do_pca(j,k);
 				vector<float> pts((k-j)*3);
 				float mean[3];
 				for (int u=0; u<3; u++) mean[u]=0;
-				for (int u=j; u<k; u++){
+				for (uint u=j; u<k; u++){
 					for (int v=0; v<3; v++){
 						pts[(u-j)*3+v]=points[u*4+0]*eigvec[v*3+0]+points[u*4+1]*eigvec[v*3+1]+points[u*4+2]*eigvec[v*3+2];
 						mean[v]+=pts[(u-j)*3+v];
 					}
 				}
-				for (int u=0; u<3; u++) mean[u]/=(k-j);
+				for (uint u=0; u<3; u++) mean[u]/=(k-j);
 				float dst=0;
 				// distance to the center axis
-				for (int u=0; u<k-j; u++){
+				for (uint u=0; u<k-j; u++){
 					dst+=sqrt((pts[u*3]-mean[0])*(pts[u*3]-mean[0])+(pts[u*3+1]-mean[1])*(pts[u*3+1]-mean[1]));
 				}
 				float len=k-j;
@@ -1892,12 +1907,12 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 	vector<double> hlxid;
 	printf("Confirming helix... \n");
 	while(ia<n){
-		if (ia==allhlx[ka*2]){
+		if (int(ia)==allhlx[ka*2]){
 // 			int sz=(allhlx[ka*2+1]-allhlx[ka*2])>10?5:(allhlx[ka*2+1]-allhlx[ka*2])/2;
 			int sz=3;
 			float score=0,maxscr=0;
 			float bestphs=0,phsscore=0,pscore=0;
-			int mi,mj;
+			int mi=0,mj=0;
 			for (int i=0; i<sz; i++){
 				for (int j=0; j<sz; j++){
 					int start=allhlx[ka*2]+i,end=allhlx[ka*2+1]-j;
@@ -1932,7 +1947,7 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 				vector<double> pts=construct_helix(start,end,bestphs,score,dir);
 				int lendiff=end-start-pts.size()/3-2;
 				printf("dir %d\t",dir);
-				printf("len %d\t diff %d\t",pts.size()/3-2,lendiff);
+				printf("len %lu\t diff %d\t",pts.size()/3-2,lendiff);
 				if (pts.size()/3-2>minl && abs(lendiff)<15){
 					
 					for (int i=0; i<mi; i++){			
@@ -1941,11 +1956,11 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 						finalhlx.push_back(points[(i+ia)*4+2]);
 					}
 					hlxid.push_back(finalhlx.size()/3+1);
-					printf("%d\t",finalhlx.size()/3+1);
+					printf("%lu\t",finalhlx.size()/3+1);
 					for (uint j=3; j<pts.size()-3; j++)
 						finalhlx.push_back(pts[j]);
 					hlxid.push_back(finalhlx.size()/3-2);
-					printf("%d\t",finalhlx.size()/3-2);
+					printf("%lu\t",finalhlx.size()/3-2);
 					for (uint j=0; j<3; j++)
 						hlxid.push_back(pts[j]);
 					for (uint j=pts.size()-3; j<pts.size(); j++)
@@ -1960,7 +1975,7 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 			}
 			printf("\n\n");
 			ka++;
-			while(allhlx[ka*2]<ia)
+			while(allhlx[ka*2]<int(ia))
 				ka++;
 		}
 		else{
@@ -1999,11 +2014,11 @@ vector<double> PointArray::construct_helix(int start,int end, float phs, float &
 
 	Util::coveig(3,&eigvec[0],eigval,vec);
 	float maxeigv=0;
-	int maxvi=-1;
+// 	int maxvi=-1;
 	for(int i=0; i<3; i++){
 		if(abs(eigval[i])>maxeigv){
 			maxeigv=abs(eigval[i]);
-			maxvi=i;
+// 			maxvi=i;
 		}
 	}
 // 	dir=eigval[maxvi]>0;
@@ -2118,14 +2133,14 @@ void PointArray::merge_to(PointArray &pa,float thr=3.5)
 {
 	printf("merging\n");
 	vector<double> result;
-	for (int i=0; i<pa.n; i++){
+	for (uint i=0; i<pa.n; i++){
 		result.push_back(pa.points[i*4]);
 		result.push_back(pa.points[i*4+1]);
 		result.push_back(pa.points[i*4+2]);
 	}
-	for (int i=0; i<n; i++){
+	for (uint i=0; i<n; i++){
 		float dist=100;
-		for (int j=0; j<pa.n; j++){
+		for (uint j=0; j<pa.n; j++){
 			Vec3f d(points[i*4]-pa.points[j*4],points[i*4+1]-pa.points[j*4+1],points[i*4+2]-pa.points[j*4+2]);
 			dist=d.length();
 			if (dist<thr)
@@ -2139,7 +2154,7 @@ void PointArray::merge_to(PointArray &pa,float thr=3.5)
 		}
 	}
 	set_number_points(result.size()/3);
-	for (int i=0; i<n; i++){
+	for (uint i=0; i<n; i++){
 		for (uint j=0; j<3; j++)
 			points[i*4+j]=result[i*3+j];
 		points[i*4+3]=0;
@@ -2172,11 +2187,11 @@ void PointArray::save_pdb_with_helix(const char *file, vector<float> hlxid)
 	FILE *fp = fopen(file, "w");
 	
 	for (uint i=0; i<hlxid.size()/8; i++){
-		fprintf(fp, "HELIX%5lu   A ALA A%5lu  ALA A%5lu  1                        %5lu\n", 
+		fprintf(fp, "HELIX%5u   A ALA A%5d  ALA A%5d  1                        %5d\n", 
 				i, (int)hlxid[i*8], (int)hlxid[i*8+1], int(hlxid[i*8+1]-hlxid[i*8]+4));
 	}
-	for ( size_t i = 0; i < get_number_points(); i++) {
-		fprintf(fp, "ATOM  %5lu  CA  ALA A%4lu    %8.3f%8.3f%8.3f%6.2f%6.2f%8s\n", i, i,
+	for ( uint i = 0; i < get_number_points(); i++) {
+		fprintf(fp, "ATOM  %5u  CA  ALA A%4u    %8.3f%8.3f%8.3f%6.2f%6.2f%8s\n", i, i,
 				points[4 * i], points[4 * i + 1], points[4 * i + 2], points[4 * i + 3], 0.0, " ");
 	}
 	fclose(fp);
@@ -2211,14 +2226,90 @@ void PointArray::remove_helix_from_map(EMData *m, vector<float> hlxid){
 	}
 }
 
+
+Transform PointArray::calc_transform(PointArray *p)
+{
+	
+	Transform t;
+	
+	// calculate translation
+	FloatPoint c1=p->get_center(),c2=get_center();
+	t.set_trans(c1[0]-c2[0],c1[1]-c2[1],c1[2]-c2[2]);
+	
+	// calculate rotation
+	// this rotation rotates unit vectors a,b into A,B;
+	//    The program assumes a dot b must equal A dot B
+	
+	//pick two bonds randomly
+	int i1=Util::get_irand(0,n-2);
+	int i2=Util::get_irand(0,n-2);
+	while(i1==i2)
+		i2=Util::get_irand(0,n-2);
+	
+	const Vec3f eahat=get_vector_at(i1+1)-get_vector_at(i1);
+	const Vec3f ebhat=get_vector_at(i2+1)-get_vector_at(i2);
+        const Vec3f eAhat=p->get_vector_at(i1+1)-p->get_vector_at(i1);
+        const Vec3f eBhat=p->get_vector_at(i2+1)-p->get_vector_at(i2);
+	Vec3f eahatcp(eahat);
+	Vec3f ebhatcp(ebhat);
+	Vec3f eAhatcp(eAhat);
+	Vec3f eBhatcp(eBhat);
+
+	eahatcp.normalize();
+	ebhatcp.normalize();
+	eAhatcp.normalize();
+	eBhatcp.normalize();
+
+	Vec3f aMinusA(eahatcp);
+	aMinusA  -= eAhatcp;
+	Vec3f bMinusB(ebhatcp);
+	bMinusB  -= eBhatcp;
+
+
+	Vec3f  nhat;
+	float aAlength = aMinusA.length();
+	float bBlength = bMinusB.length();
+	if (aAlength==0){
+		nhat=eahatcp;
+	}else if (bBlength==0){
+		nhat=ebhatcp;
+	}else{
+		nhat= aMinusA.cross(bMinusB);
+		nhat.normalize();
+	}
+
+//		printf("nhat=%f,%f,%f \n",nhat[0],nhat[1],nhat[2]);
+
+	Vec3f neahat  = eahatcp.cross(nhat);
+	Vec3f nebhat  = ebhatcp.cross(nhat);
+	Vec3f neAhat  = eAhatcp.cross(nhat);
+	Vec3f neBhat  = eBhatcp.cross(nhat);
+
+	double cosomegaA = (neahat.dot(neAhat))  / (neahat.dot(neahat));
+//	float cosomegaB = (nebhat.dot(neBhat))  / (nebhat.dot(nebhat));
+	double sinomegaA = (neahat.dot(eAhatcp)) / (neahat.dot(neahat));
+//	printf("cosomegaA=%f \n",cosomegaA); 	printf("sinomegaA=%f \n",sinomegaA);
+
+	double omegaA = atan2(sinomegaA,cosomegaA);
+//	printf("omegaA=%f \n",omegaA*180/M_PI);
+	Dict rotation;
+	rotation["type"]="spin";
+	rotation["n1"]= nhat[0];
+	rotation["n2"]= nhat[1];
+	rotation["n3"]= nhat[2];
+	rotation["omega"] = (float)(omegaA*180.0/M_PI);
+	t.set_rotation(rotation);
+	return t;
+}
+
 void PointArray::reverse_chain(){
 	// reverse the point array chain, from the last to the first point
 	double tmp;
 // 	for(int i=0; i<n/2; i++){
 // 		for (int j=0; j<4; j++){
 // 			printf("%f\t",
-	for(int i=0; i<n/2; i++){
-		for (int j=0; j<4; j++){
+	for(uint i=0; i<n/2; i++){
+		for (uint j=0; j<4; j++){
 			tmp=points[(n-1-i)*4+j];
 			points[(n-1-i)*4+j]=points[i*4+j];
 			points[i*4+j]=tmp;
@@ -2227,7 +2318,7 @@ void PointArray::reverse_chain(){
 }
 
 void PointArray::delete_point(int id){
-	for (int i=id*4; i<n*4; i++){
+	for (uint i=id*4; i<n*4; i++){
 		points[i]=points[i+4];
 	}
 	set_number_points(n-1);
@@ -2264,7 +2355,7 @@ bool PointArray::read_ca_from_pdb(const char *file)
 		if (s[13] == ' ')
 			s[13] = s[15];
 
-		float e = 0;
+		float e = 6;
 		char ctt, ctt2 = ' ';
 		if (s[13] == ' ')
 			ctt = s[14];
