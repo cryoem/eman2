@@ -312,6 +312,9 @@ def pdb_2_mrc(file_name,apix=1.0,res=2.8,het=False,box=None,chains=None,quiet=Fa
 	outmap.set_attr("apix_x",apix)
 	outmap.set_attr("apix_y",apix)
 	outmap.set_attr("apix_z",apix)	
+	outmap.set_attr("origin_x",-xt*apix+amin[0])	
+	outmap.set_attr("origin_y",-yt*apix+amin[1])	
+	outmap.set_attr("origin_z",-zt*apix+amin[2])
 	return outmap
 	
 if __name__ == "__main__":

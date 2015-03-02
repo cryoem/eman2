@@ -92,6 +92,25 @@ def compares(vec,empty):
 	return 100*cmp_probe.cmp("dot",a,{})
 	#return -a["mean"]
 
+def pdb_transform(infile,outfile,trans,center):
+	pdb=open(infile,"r")
+	out=open(outfile,"w")
+	for line in pdb:
+		if (line[:4]=='ATOM' or line[:6]=='HETATM') :
+			x=float(line[30:38])-center[0]
+			y=float(line[38:46])-center[1]
+			z=float(line[46:54])-center[2]
+			v2=trans.transform(x,y,z)+center
+			line=list(line)
+			line[30:38]= '{:>8}'.format('{:.3f}'.format(v2[0]))
+			line[38:46]= '{:>8}'.format('{:.3f}'.format(v2[1]))
+			line[46:54]= '{:>8}'.format('{:.3f}'.format(v2[2]))
+			line=''.join(line)
+		out.write(line)
+	pdb.close()
+	out.close()
+			
+
 def main():
 	global tdim,pdim,tdim2,pdim2,sfac
 	global cmp_probe,cmp_target
@@ -121,17 +140,43 @@ both box sizes should be multiples of 8."""
 	try : infile=open(args[0],"r")
 	except : parser.error("Cannot open input file")
 	
+
+	
 	# read the target and probe
 	target=EMData()
 	target.read_image(args[0])
 	
-	probe=EMData()
-	probe.read_image(args[1])
 	
+	apix=target["apix_x"]
+	probe=EMData()
+	probefilename=args[1]
+	# support pdb format
+	if args[1].endswith(".pdb"):
+		print "e2pdb2mrc.py {s} probe.mrc -R 10 --het --apix={a}>tmp.txt".format(s=args[1],a=apix)
+		os.system("e2pdb2mrc.py {s} probe.mrc -R 10 --het --apix={a}>tmp.txt".format(s=args[1],a=apix))
+		tmp=open('tmp.txt')
+		lines=tmp.readlines()
+		tmp.close()
+		cent=[]
+		for l in range(len(lines)):
+			if lines[l].startswith("Bounding box"):
+				break
+		for q in range(3):
+			#print lines[q+l][17:-1].split('-')
+			t=[float(i) for i in (lines[q+l][17:-1].split(' - '))]
+			#print t
+			cent.append((t[0]+t[1])/2)
+		
+		probefilename="probe.mrc"
+	else:
+		probefilename=args[1]
+	probe.read_image(probefilename)
+	
+		
 	tdim=(target.get_xsize(),target.get_ysize(),target.get_zsize())
 	pdim=(probe.get_xsize(),probe.get_ysize(),probe.get_zsize())
 	
-	if (pdim[0]>tdim[0] or pdim[1]>tdim[1] or pdim[2]>tdim[2]) :
+	if (pdim[0]>tdim[0] or pdim[1]>tdim[1] or pdim[2]>tdim[2]):
 		print "Probe must fit within target"
 		exit(1)
 	target.process_inplace("normalize.unitsum")
@@ -189,12 +234,16 @@ both box sizes should be multiples of 8."""
 
 	best.reverse()
 	
+	if len(best)<1:
+		cm=target.calc_center_of_mass(0)
+		best.append([0,0,0,0,cm[0]-tdim2[0]/2,cm[1]-tdim2[1]/2,cm[2]-tdim2[2]/2,0])
 	print len(best)," possible candidates"
 
 	# this is designed to eliminate angular redundancies in peak location
 	print best[0]
 	print best[-1]
-	#best=best[1:4]
+	if len(best)>10000:
+		best=best[0:10000]
 	#print best
 	for ii in range(len(best)):
 		for jj in range(ii+1,len(best)):
@@ -255,7 +304,7 @@ both box sizes should be multiples of 8."""
 	
 	# reread the original images
 	target.read_image(args[0])
-	probe.read_image(args[1])
+	probe.read_image(probefilename)
 	probe.process_inplace("normalize.unitsum")
 	probe.mult(10000)
 	
@@ -292,20 +341,32 @@ both box sizes should be multiples of 8."""
 		#t.set_trans((0,0,0))
 		#t.set_trans((b[3]+tdim[0]/2,b[4]+tdim[1]/2,b[5]+tdim[2]/2))
 		
-		a=cmp_target.get_rotated_clip(t,pdim,1.0)
-#		a=cmp_target.get_rotated_clip(Transform3D((b[3]+tdim[0]/2,b[4]+tdim[1]/2,b[5]+tdim[2]/2),b[0],b[1],b[2],(0,0,0)),pdim,1.0)
-		a.write_image("clip.%02d.mrc"%i)
-		pc=probe.get_clip(Region((pdim[0]-tdim[0])/2,(pdim[1]-tdim[1])/2,(pdim[2]-tdim[2])/2,tdim[0],tdim[1],tdim[2]))
-		#print pc
 		s=Transform()
+		t=Transform()
 		s.set_rotation({'type':'eman', 'az':b[0], 'alt':b[1], 'phi':b[2]})
 		s.set_trans((b[3],b[4],b[5]))
+		print (pdim[0]-tdim[0])/2,(pdim[1]-tdim[1])/2,(pdim[2]-tdim[2])/2
+		pc=probe.get_clip(Region((pdim[0]-tdim[0])/2,(pdim[1]-tdim[1])/2,(pdim[2]-tdim[2])/2,tdim[0],tdim[1],tdim[2]))
 		pc.transform(s)
-		pc.write_image("final.%02d.mrc"%i)
-		#pc.rotate(-b[0],-b[2],-b[1])
-		#pc.rotate_translate(0,0,0,b[3],b[4],b[5])		# FIXME, when rotate_translate with post-translate works
-##		pc.rotate_translate(-b[0],-b[2],-b[1],0,0,0,b[3],b[4],b[5])
-		#pc.write_image("final.%02d.mrc"%i)
+		if target["MRC.nxstart"]==0 and target["MRC.nystart"]==0:
+			shx=target['origin_x']
+			shy=target['origin_y']
+			shz=target['origin_z']
+		else:
+			shx=target["MRC.nxstart"]*target["apix_x"]
+			shy=target["MRC.nystart"]*target["apix_x"]
+			shz=target["MRC.nzstart"]*target["apix_x"]
+		b[3]=b[3]*apix-pc['origin_x']+shx
+		b[4]=b[4]*apix-pc['origin_y']+shy
+		b[5]=b[5]*apix-pc["origin_z"]+shz
+		#pc['origin_x']=target["MRC.nxstart"]*target["apix_x"]
+		#pc['origin_y']=target["MRC.nystart"]*target["apix_x"]
+		#pc["origin_z"]=target["MRC.nzstart"]*target["apix_x"]
+		#pc.write_image("tst.mrc")
+		t.set_rotation({'type':'eman', 'az':b[0], 'alt':b[1], 'phi':b[2]})
+		t.set_trans((b[3],b[4],b[5]))
+		pdb_transform(args[1],'final.%02d.pdb'%i,t,cent)
+
 
 	print ncmp," total comparisons"
 	out.close()
