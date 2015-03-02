@@ -3842,52 +3842,52 @@ c       automatic arrays
 #endif	//_WIN32
 
 	q = (double*)calloc(maxrin, sizeof(double));
-	t = (float*)calloc(maxrin, sizeof(float));
+//	t = (float*)calloc(maxrin, sizeof(float));
 
 //   cout << *qn <<"  " <<*tot<<"  "<<ip<<endl;
 	for (i=1; i<=nring; i++) {
 		numr3i = numr(3,i);
 		numr2i = numr(2,i);
 
-		t(1) = (circ1(numr2i)) * circ2(numr2i);
+		q(1) += (circ1(numr2i)) * circ2(numr2i);
 
 		if (numr3i != maxrin) {
 			 // test .ne. first for speed on some compilers
-			t(numr3i+1) = circ1(numr2i+1) * circ2(numr2i+1);
-			t(2)		= 0.0;
+			q(numr3i+1) += circ1(numr2i+1) * circ2(numr2i+1);
+			//q(2)		+= 0.0;
 
 			if (neg) {
 				// first set is conjugated (mirrored)
 				for (j=3;j<=numr3i;j=j+2) {
 					jc = j+numr2i-1;
-					t(j)   =  (circ1(jc))*circ2(jc)   - (circ1(jc+1))*circ2(jc+1);
-					t(j+1) = -(circ1(jc))*circ2(jc+1) - (circ1(jc+1))*circ2(jc);
+					q(j)   +=  (circ1(jc))*circ2(jc)   - (circ1(jc+1))*circ2(jc+1);
+					q(j+1) += -(circ1(jc))*circ2(jc+1) - (circ1(jc+1))*circ2(jc);
 				}
 			} else {
 				for (j=3;j<=numr3i;j=j+2) {
 					jc = j+numr2i-1;
-					t(j)   =  (circ1(jc))*circ2(jc)   + (circ1(jc+1))*circ2(jc+1);
-					t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
+					q(j)   +=  (circ1(jc))*circ2(jc)   + (circ1(jc+1))*circ2(jc+1);
+					q(j+1) += -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
 				}
 			}
-			for (j=1;j<=numr3i+1;j++) q(j) = q(j) + t(j);
+			//for (j=1;j<=numr3i+1;j++) q(j) = q(j) + t(j);
 		} else {
-			t(2) = circ1(numr2i+1) * circ2(numr2i+1);
+			q(2) += circ1(numr2i+1) * circ2(numr2i+1);
 			if (neg) {
 				// first set is conjugated (mirrored)
 				for (j=3;j<=maxrin;j=j+2) {
 					jc = j+numr2i-1;
-					t(j)   =  (circ1(jc))*circ2(jc)   - (circ1(jc+1))*circ2(jc+1);
-					t(j+1) = -(circ1(jc))*circ2(jc+1) - (circ1(jc+1))*circ2(jc);
+					q(j)   +=  (circ1(jc))*circ2(jc)   - (circ1(jc+1))*circ2(jc+1);
+					q(j+1) += -(circ1(jc))*circ2(jc+1) - (circ1(jc+1))*circ2(jc);
 				}
 			} else {
 				for (j=3;j<=maxrin;j=j+2) {
 					jc = j+numr2i-1;
-					t(j)   =  (circ1(jc))*circ2(jc)   + (circ1(jc+1))*circ2(jc+1);
-					t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
+					q(j)   +=  (circ1(jc))*circ2(jc)   + (circ1(jc+1))*circ2(jc+1);
+					q(j+1) += -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
 				}
 			}
-			for (j = 1; j <= maxrin; j++) q(j) += t(j);
+			//for (j = 1; j <= maxrin; j++) q(j) += t(j);
 		}
 	}
 
@@ -3917,7 +3917,6 @@ c       automatic arrays
 	tot = (float)jtot + pos;
 
 	if (q) free(q);
-	if (t) free(t);
 
 	Dict retvals;
 	retvals["qn"]  = qn;
@@ -19410,6 +19409,8 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 	float theta1 = d["theta"];
 	mirror = (int)(theta1 > 90.0f);
 
+    // sym is a symmetry string, t is the projection transform of the input image, tsym is a vector of transforms that are input transofrmation multiplied by all symmetries.
+    // its length is number of symmetries.
     vector<Transform> tsym = t->get_sym_proj(sym);
 
     int isym = 0;
@@ -19654,14 +19655,21 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
                 vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
                 vector<int>numr, float cnx, float cny, string sym) {
 
-	const size_t crefim_len = crefim.size();
+	//const size_t crefim_len = crefim.size();
+	size_t crefim_len = crefim.size();
 	const float qv = static_cast<float>( pi/180.0 );
     Transform * t = 0;
 
-    vector<float> n1;
-    vector<float> n2;
-    vector<float> n3;
- //cout << ant <<endl;
+    float ang = 0.0f;
+    float sxs=0.0f, sys=0.0f;
+    float sx=0.0f, sy=0.0f;
+    float peak = -1.0e23f;
+    int nref = -1, mirror = 0;
+    bool found_better = false;
+    size_t tiref = 0;
+
+
+// cout << ant <<endl;
     if( ant > 0.0f) {
         /***********************************************************/
         /***********************************************************/
@@ -19679,14 +19687,54 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
     shc with previousmax=-1.0e23 and reference projection direction set to the current angle.
     */
         t = image->get_attr("xform.anchor");
-        n1.resize((int)crefim_len);
-        n2.resize((int)crefim_len);
-        n3.resize((int)crefim_len);
-        for ( int iref = 0; iref < (int)crefim_len; iref++) {
-            n1[iref] = crefim[iref]->get_attr("n1");
-            n2[iref] = crefim[iref]->get_attr("n2");
-            n3[iref] = crefim[iref]->get_attr("n3");
-        }
+        Dict d = t->get_params("spider");
+        float phi   = d["phi"];
+        float theta   = d["theta"];
+
+//        cout << "AA01  " << phi << "  " << theta << endl;
+
+	mirror = (int)(theta > 90.0f);
+
+    vector<Transform> tsym = t->get_sym_proj(sym);
+
+    int isym = 0;
+    int nsym = tsym.size();
+
+
+    // Ims structure of 3 floats defined here  NXCt3rIDWnWrG2bj
+    vector<Ims> vIms(nsym);
+
+    for (isym = 0; isym < nsym; ++isym) {
+        Dict u = tsym[isym].get_params("spider");
+        float phi   = u["phi"];
+        float theta = u["theta"];
+        vIms[isym].ims1 = sin(theta*qv)*cos(phi*qv);
+        vIms[isym].ims2 = sin(theta*qv)*sin(phi*qv);
+        vIms[isym].ims3 = cos(theta*qv);
+    }
+
+
+    vector<int> index_crefim;
+
+	for (unsigned i = 0; i < crefim_len; i++) {
+		float n1 = crefim[i]->get_attr("n1");
+		float n2 = crefim[i]->get_attr("n2");
+		float n3 = crefim[i]->get_attr("n3");
+
+        for (isym = 0; isym < nsym; ++isym) {
+
+            if(abs(n1*vIms[isym].ims1 + n2*vIms[isym].ims2 + n3*vIms[isym].ims3)>=ant) {
+                index_crefim.push_back(i);
+                break;
+            }
+
+         }
+	}
+
+
+//        float theta = d["theta"];
+//        int mirror = (int)(theta > 90.0f);
+//        cout << "AA02  " << phi << "  " << theta << endl;
 
         //Transform * t = image->get_attr("xform.projection");
         const float previousmax = image->get_attr("previousmax");
@@ -19695,20 +19743,16 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
         //float phi   = d["phi"];
         //float theta = d["theta"];
 
-        vector<unsigned> listr(crefim_len);
-        for (unsigned i = 0; i < crefim_len; ++i) listr[i] = i;
-        for (unsigned i = 0; i < crefim_len; ++i) {
-            unsigned r = Util::get_irand(0,crefim_len-1);
-            swap( listr[r], listr[i] );
-        }
+        crefim_len = index_crefim.size();
 
-  
+        if (crefim_len > 0)
+        {
+
 // 	const int ky = int(2*yrng/step+0.5)/2;
 // 	const int kx = int(2*xrng/step+0.5)/2;
 	
 	const int lkx = int(xrng[0]/step);
 	const int rkx = int(xrng[1]/step);
-	
 	const int lky = int(yrng[0]/step);
 	const int rky = int(yrng[1]/step);
 
@@ -19725,76 +19769,77 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 		}		
 	}
 
-
-        float sx=0.0f, sy=0.0f;
-        float peak = -1.0e23f;
-        float ang = 0.0f;
-        int nref = 0, mirror = 0;
-        bool found_better = false;
-        size_t tiref = 0;
+            for (unsigned i = 0; i < crefim_len; ++i) {
+                unsigned r = Util::get_irand(0,crefim_len-1);
+                swap( index_crefim[r], index_crefim[i] );
+            }
 
 
-        for ( ;  (tiref < crefim_len) && (! found_better); tiref++) {
-            const int iref = listr[tiref];
-            //  Here check for neighbors
-            vector<Transform> tsym = t->get_sym_proj(sym);
+            bool found_better = false;
 
-            int nsym = tsym.size();
-            int isym;
-            for (isym = 0; isym < nsym; ++isym) {
-                Dict d = tsym[isym].get_params("spider");
-                float phi   = d["phi"];
-                float theta = d["theta"];
-                float imn1 = sin(theta*qv)*cos(phi*qv);
-                float imn2 = sin(theta*qv)*sin(phi*qv);
-                float imn3 = cos(theta*qv);
-                if(abs(n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3)>=ant)
-                {
-                    break;
-                }
-             }
 
-            if (isym == nsym) continue;
+//            cout << "AA05  " << endl;
 
-            std::vector<int> shifts = shuffled_range( 0, (lkx+rkx+1) * (lky+rky+1) - 1 );
-            for ( unsigned nodeId = 0;  nodeId < shifts.size();  ++nodeId ) {
-                const int i = ( shifts[nodeId] % (lky+rky+1) ) - lky;
-                const int j = ( shifts[nodeId] / (lky+rky+1) ) - lkx;
-                const float iy = i * step;
-                const float ix = j * step;
-                EMData* cimage = cimages[i+lky][j+lkx];
-                Dict retvals = Crosrng_rand_e(crefim[iref], cimage, numr, 0, previousmax);
-                const float new_peak = static_cast<float>( retvals["qn"] );
 
-                //cout << new_peak <<endl;
+            for ( ;  (tiref < crefim_len) && (! found_better); tiref++) {
+                const int iref = index_crefim[tiref];
 
-                if (new_peak > peak) {
-                    sx = -ix;
-                    sy = -iy;
-                    nref = iref;
-                    ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-                    peak = new_peak;
-                    mirror = static_cast<int>( retvals["mirror"] );
-                    found_better = (peak > previousmax);
-                    //cout << found_better <<endl;
-                    // jump out from search in while
-                    if (found_better) break;
+//                    float phi2   = crefim[iref]->get_attr("phi");
+//                    float theta2   = crefim[iref]->get_attr("theta");
+//                    cout << "iref:" << iref <<  " isym: " << isym << "  " << phi2 << "  " << theta2 << endl;
+
+
+                std::vector<int> shifts = shuffled_range( 0, (lkx+rkx+1) * (lky+rky+1) - 1 );
+                for ( unsigned nodeId = 0;  nodeId < shifts.size();  ++nodeId ) {
+
+                    const int i = ( shifts[nodeId] % (lky+rky+1) ) - lky;
+                    const int j = ( shifts[nodeId] / (lky+rky+1) ) - lkx;
+                    const float iy = i * step;
+                    const float ix = j * step;
+                    EMData* cimage = cimages[i+lky][j+lkx];
+
+                    Dict retvals = Crosrng_rand_e(crefim[iref], cimage, numr, mirror, previousmax);
+                    const float new_peak = static_cast<float>( retvals["qn"] );
+
+                    //cout << new_peak <<endl;
+
+                    if (new_peak > peak) {
+//                    if (new_peak > previousmax) {
+                        sx = -ix;
+                        sy = -iy;
+                        nref = iref;
+                        ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+                        peak = new_peak;
+                        mirror = static_cast<int>( retvals["mirror"] );
+                        found_better = (peak > previousmax);
+                        //cout << found_better <<endl;
+                        // jump out from search in while
+                        if (found_better) break;
+
+
+//                         cout << "ix:" << ix << " iy: " << iy <<  " newpeak: " << new_peak << endl;
+                    }
                 }
             }
+
+
+            for (unsigned i = 0; i < cimages.size(); ++i) {
+                for (unsigned j = 0; j < cimages[i].size(); ++j) {
+                    delete cimages[i][j];
+                    cimages[i][j] = NULL;
+                }
+            }
+
         }
+        // ZZXX}
         //cout << "  JUMPED OUT " <<endl;
 
-        for (unsigned i = 0; i < cimages.size(); ++i) {
-            for (unsigned j = 0; j < cimages[i].size(); ++j) {
-                delete cimages[i][j];
-                cimages[i][j] = NULL;
-            }
-        }
 
         const float co =  cos(ang*qv);
         const float so = -sin(ang*qv);
         const float sxs = sx*co - sy*so;
         const float sys = sx*so + sy*co;
+        // ZZXX}
 
         vector<float> res;
         res.push_back(ang);
@@ -19845,13 +19890,6 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
                 cimages[i+lky][j+rkx] = cimage;
             }
         }
-
-        float sx=0.0f, sy=0.0f;
-        float peak = -1.0e23f;
-        float ang = 0.0f;
-        int nref = 0, mirror = 0;
-        bool found_better = false;
-        size_t tiref = 0;
 
         for ( ;  (tiref < crefim_len) && (! found_better); tiref++) {
             const int iref = listr[tiref];
