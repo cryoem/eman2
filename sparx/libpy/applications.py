@@ -14559,8 +14559,10 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 															xrng[N_step], yrng[N_step], step[N_step], \
 															mode=mode, CTF=False, delta=delta)
 
+'''
+#  commented out to prevent problems 03/02/2015
 def within_group_refinement_fast(data, dimage, maskfile, randomize, ir, ou, rs, xrng, yrng, step, maxrange, dst, maxit, FH, FF):
-
+	#  It is not used anywhere, however, the check of boundaries has to be added or the code removed
 	# Comment by Zhengfan Yang 03/11/11
 	# This is a simple version of ali2d_data (down to the bone), no output dir, no logfile, no CTF, no MPI or CUDA, no Fourvar, no auto stop, no user function
 	
@@ -14665,7 +14667,7 @@ def within_group_refinement_fast(data, dimage, maskfile, randomize, ir, ou, rs, 
 		params[im][2] = sys
 
 	return tavg, params
-
+'''
 def volalixshift_MPI(stack, ref_vol, outdir, search_rng, pixel_size, dp, dphi, fract, rmax, rmin, maskfile = None, \
 	    maxit = 1, CTF = False, snr = 1.0, sym = "c1",  user_func_name = "helical", \
 	    npad = 2, debug = False, nearby=3):

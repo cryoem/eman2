@@ -1142,17 +1142,17 @@ def main():
 				tracker["extension"] -= 1
 
 				tracker["movedup"] = False
-			
-				shrink = min(2*newres + paramsdict["aa"], 1.0)
-				nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
 
 				shrink = min(2*currentres + paramsdict["aa"], 1.0)
 				nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
-				tracker["previous-resolution"] = newres
-				currentres = newres
-				tracker["eliminated-outliers"] = eliminated_outliers
-				tracker["movedup"] = False
-				keepgoing = 1
+				if( tracker["previous-nx"] == nnxo ):
+					keepgoing = 0
+				else:
+					tracker["previous-resolution"] = newres
+					currentres = newres
+					tracker["eliminated-outliers"] = eliminated_outliers
+					tracker["movedup"] = False
+					keepgoing = 1
 			else:
 				if(myid == main_node):  print("The resolution did not improve.")
 
