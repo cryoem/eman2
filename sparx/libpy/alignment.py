@@ -519,10 +519,10 @@ def ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0):
 
 
 	lkx = int(xrng[0]/step)
-	rkx = int(xrng[1]/step)
-	
+	rkx = int(xrng[-1]/step)
+
 	lky = int(yrng[0]/step)
-	rky = int(yrng[1]/step)
+	rky = int(yrng[-1]/step)
 	
 	for i in xrange(-lky, rky+1):
 		iy = i*step
@@ -2415,7 +2415,7 @@ def fine_2D_refinement(data, br, mask, tavg, group = -1):
 		#print  " Criterium on the fly ", tave.cmp("dot", tave, {"negative":0,"mask":mask})
 
 
-def align2d(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rstep=1, mode = "F"):
+def align2d(image, refim, xrng=[0, 0], yrng=[0, 0], step=1, first_ring=1, last_ring=0, rstep=1, mode = "F"):
 	"""  Determine shift and rotation between image and reference image
 	     quadratic interpolation
 	     Output: ang, sxs, sys, mirror, peak
@@ -2425,13 +2425,7 @@ def align2d(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rst
 	step = float(step)
 	nx = refim.get_xsize()
 	ny = refim.get_ysize()
-	MAX_XRNG = nx/2
-	MAX_YRNG=ny/2
-	if xrng >= MAX_XRNG:
-		ERROR('Translation search range in x is at most %d'%MAX_XRNG, "align2d ", 1)
-	if yrng >= MAX_YRNG:
-		ERROR('Translation search range in y is at most %d'%MAX_YRNG, "align2d ", 1)
-	if(last_ring == 0):  last_ring = nx/2-2-int(max(xrng,yrng))
+	if(last_ring == 0):  last_ring = nx/2-2-int(max(max(xrng),max(yrng)))
 	# center in SPIDER convention
 	cnx = nx//2+1
 	cny = ny//2+1

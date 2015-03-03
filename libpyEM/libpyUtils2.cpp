@@ -455,6 +455,7 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.def("Frngs_inv", &EMAN::Util::Frngs_inv, args("circ", "numr"), "This function conducts the Single Precision Inverse Fourier Transform for a set of rings")
 		.def("Applyws", &EMAN::Util::Applyws, args("circ", "numr", "wr"), "This is a copy of Applyws routine from alignment.py")
 		.def("Crosrng_e", &EMAN::Util::Crosrng_e, args("circ1", "cir2", "numr", "mirrored"), "A little notes about different Crosrng:\n \nBasically, they all do cross-correlation function to two images in polar coordinates\nCrosrng_e is the original one")
+		.def("Crosrng_rand_e", &EMAN::Util::Crosrng_rand_e, args("circ1", "cir2", "numr", "mirrored", "previous_max"), "A little notes about different Crosrng:\n \nBasically, they all do cross-correlation function to two images in polar coordinates\nCrosrng_e is the original one")
 		.def("Crosrng_ew", &EMAN::Util::Crosrng_ew, args("circ1", "cir2", "numr", "w", "mirrored"), "A little notes about different Crosrng:\n \nBasically, they all do cross-correlation function to two images in polar coordinates\nCrosrng_ew is the one that you could apply weights to different rings")
 		.def("Crosrng_ms", &EMAN::Util::Crosrng_ms, args("circ1", "circ2", "numr"), "A little notes about different Crosrng:\n \nBasically, they all do cross-correlation function to two images in polar coordinates\nCrosrng_ms assumes the user already applied weights to circ1, it also returns both\nstraight and mirrored positions simultaneously.")
 		.def("Crosrng_ms_delta", &EMAN::Util::Crosrng_ms_delta, args("circ1", "circ2", "numr", "delta_start", "delta"), "A little notes about different Crosrng:\n \nBasically, they all do cross-correlation function to two images in polar coordinates\nCrosrng_ms assumes the user already applied weights to circ1, it also returns both\nstraight and mirrored positions simultaneously.")
@@ -716,6 +717,9 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 #ifndef _WIN32
 		.staticmethod("recv_broadcast")
 #endif	//_WIN32
+        .staticmethod("Crosrng_e")
+        .staticmethod("Crosrng_rand_e")
+		.staticmethod("Crosrng_ew")
 		.staticmethod("Crosrng_ms")
 		.staticmethod("Crosrng_ms_delta")
 		.staticmethod("Crosrng_sm_psi")
@@ -788,7 +792,6 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.staticmethod("change_filename_ext")
 		.staticmethod("cyclicshift")
 		.staticmethod("sub_fav")
-		.staticmethod("Crosrng_ew")
 		.staticmethod("get_gauss_rand")
 		.staticmethod("mult_scalar")
 		.staticmethod("svdcmp")
@@ -834,7 +837,6 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.staticmethod("add_img_abs")
 		.staticmethod("im_diff")
 		.staticmethod("Polar2Dmi")
-		.staticmethod("Crosrng_e")
 		.staticmethod("fast_floor")
 		.staticmethod("Frngs")
 		.staticmethod("Frngs_inv")
