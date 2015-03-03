@@ -19650,7 +19650,6 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
     Transform * t = 0;
 
     float ang = 0.0f;
-    float sxs=0.0f, sys=0.0f;
     float sx=0.0f, sy=0.0f;
     float peak = -1.0e23f;
     int nref = -1, mirror = 0;
@@ -19674,11 +19673,6 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 		Dict d = t->get_params("spider");
 		float theta   = d["theta"];
 		mirror = (int)(theta > 90.0f);
-
-
-//        float phi   = d["phi"];
-//        cout << "AA01  " << phi << "  " << theta << endl;
-
 
 		//  Multiply anchor direction object t by all symmetry group rotations.
 		vector<Transform> tsym = t->get_sym_proj(sym);
@@ -19711,26 +19705,10 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 			}
 		}
 
-
-//        float theta = d["theta"];
-//        int mirror = (int)(theta > 90.0f);
-//        cout << "AA02  " << phi << "  " << theta << endl;
-
-        //Transform * t = image->get_attr("xform.projection");
 		const float previousmax = image->get_attr("previousmax");
-        //Dict d = t->get_params("spider");
-        //if(t) {delete t; t=0;}
-        //float phi   = d["phi"];
-        //float theta = d["theta"];
-
         crefim_len = index_crefim.size();
 
-        if (crefim_len > 0)
-        {
-
-	// 	const int ky = int(2*yrng/step+0.5)/2;
-	// 	const int kx = int(2*xrng/step+0.5)/2;
-	
+        if (crefim_len > 0) {
 			const int lkx = int(xrng[0]/step);
 			const int rkx = int(xrng[1]/step);
 			const int lky = int(yrng[0]/step);
@@ -19758,9 +19736,6 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 
 			for ( ;  (tiref < crefim_len) && (! found_better); tiref++) {
 				const int iref = index_crefim[tiref];
-			//                    float phi2   = crefim[iref]->get_attr("phi");
-			//                    float theta2   = crefim[iref]->get_attr("theta");
-			//                    cout << "iref:" << iref <<  " isym: " << isym << "  " << phi2 << "  " << theta2 << endl;
 				std::vector<int> shifts = shuffled_range( 0, (lkx+rkx+1) * (lky+rky+1) - 1 );
 				for ( unsigned nodeId = 0;  nodeId < shifts.size();  ++nodeId ) {
 
@@ -19774,18 +19749,15 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 					const float new_peak = static_cast<float>( retvals["qn"] );
 					//cout << new_peak <<endl;
 					if (new_peak > peak) {
-			//                    if (new_peak > previousmax) {
 						sx = -ix;
 						sy = -iy;
 						nref = iref;
 						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
 						peak = new_peak;
-						mirror = static_cast<int>( retvals["mirror"] );
 						found_better = (peak > previousmax);
 						//cout << found_better <<endl;
 						// jump out from search in while
 						if (found_better) break;
-			//                         cout << "ix:" << ix << " iy: " << iy <<  " newpeak: " << new_peak << endl;
 					}
 				}
 			}
@@ -19797,22 +19769,22 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 				}
 			}
 
-			}
-			//cout << "  JUMPED OUT " <<endl;
-			const float co =  cos(ang*qv);
-			const float so = -sin(ang*qv);
-			const float sxs = sx*co - sy*so;
-			const float sys = sx*so + sy*co;
+		}
+		//cout << "  JUMPED OUT " <<endl;
+		const float co =  cos(ang*qv);
+		const float so = -sin(ang*qv);
+		const float sxs = sx*co - sy*so;
+		const float sys = sx*so + sy*co;
 
-			vector<float> res;
-			res.push_back(ang);
-			res.push_back(sxs);
-			res.push_back(sys);
-			res.push_back(static_cast<float>(mirror));
-			res.push_back(static_cast<float>(nref));
-			res.push_back(peak);
-			res.push_back(static_cast<float>(tiref));
-			return res;
+		vector<float> res;
+		res.push_back(ang);
+		res.push_back(sxs);
+		res.push_back(sys);
+		res.push_back(static_cast<float>(mirror));
+		res.push_back(static_cast<float>(nref));
+		res.push_back(peak);
+		res.push_back(static_cast<float>(tiref));
+		return res;
 
     } else {  // GLOBAL SEARCHES
 		const float previousmax = image->get_attr("previousmax");
