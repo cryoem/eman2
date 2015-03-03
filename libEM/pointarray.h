@@ -161,7 +161,7 @@ namespace EMAN
 		double sim_potential();
 		
 		/** Compute a single point potential value **/
-		double sim_potentiald(uint i);
+		double sim_potentiald(int i);
 
 		/** Compute a potential value for a perturbed point, including +-2 nearest neighbors which will also be impacted **/
 		double sim_potentialdxyz(int i,double dx, double dy, double dz);
@@ -195,7 +195,7 @@ namespace EMAN
 		double calc_total_length();
 		
 		/** Fit helix from peptide chains**/
-		vector<double> fit_helix(EMData *pmap,int minlength,float mindensity,vector<int> edge,int twodir,uint minl);
+		vector<double> fit_helix(EMData *pmap,int minlength,float mindensity,vector<int> edge,int twodir,size_t minl);
 		
 		/** Do principal component analysis to (a subset of) the point array, used in helix fitting in pathwalker **/
 		vector<float> do_pca(int start, int end);

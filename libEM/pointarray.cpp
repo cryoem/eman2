@@ -1058,7 +1058,7 @@ void PointArray::sim_updategeom() {
 	if (!aang) aang=(double *)malloc(sizeof(double)*n);
 	if (!adihed) adihed=(double *)malloc(sizeof(double)*n);
 	
-	for (uint ii=0; ii<n; ii++) {
+	for (size_t ii=0; ii<n; ii++) {
 		// how expensive is % ?  Worth replacing ?
 		int ib=4*((ii+n-1)%n);		// point before i with wraparound
 		int ibb=4*((ii+n-2)%n);	// 2 points before i with wraparound
@@ -1101,10 +1101,10 @@ double PointArray::sim_potential() {
 	sim_updategeom();
 	
 	if (map &&mapc) {
-		for (uint i=0; i<n; i++) ret+=sim_pointpotential(adist[i],aang[i],adihed[i])-mapc*map->sget_value_at_interp(points[i*4]/apix+centx,points[i*4+1]/apix+centy,points[i*4+2]/apix+centz);
+		for (size_t i=0; i<n; i++) ret+=sim_pointpotential(adist[i],aang[i],adihed[i])-mapc*map->sget_value_at_interp(points[i*4]/apix+centx,points[i*4+1]/apix+centy,points[i*4+2]/apix+centz);
 	}
 	else {
-		for (uint i=0; i<n; i++) ret+=sim_pointpotential(adist[i],aang[i],adihed[i]);
+		for (size_t i=0; i<n; i++) ret+=sim_pointpotential(adist[i],aang[i],adihed[i]);
 	}
 
 #ifdef _WIN32
@@ -1118,11 +1118,15 @@ double PointArray::sim_potential() {
 }
 
 // potential for a single point. Note that if a point moves, it will impact energies +-2 from its position. This function computes only for the point i
-double PointArray::sim_potentiald(uint i) {
+double PointArray::sim_potentiald(int ind) {
 	if (!adist) sim_updategeom();		// wasteful, but only once
 	
 //	if (i<0 || i>=n) throw InvalidParameterException("Point number out of range");
-	if (i<0) i-=n*(i/n-1);
+	size_t i;
+	if (ind<0)
+		i=ind-n*(ind/n-1);
+	else
+		i=ind;
 	if (i>=n) i=i%n;
 	
 	// how expensive is % ?  Worth replacing ?
@@ -1209,7 +1213,7 @@ double PointArray::sim_potentialdxyz(int i, double dx, double dy, double dz) {
 
 double PointArray::calc_total_length(){
 	double dist=0;
-	for(uint i=0; i<n; i++){
+	for(size_t i=0; i<n; i++){
 		int k=(i+1)%n;
 		double d=(points[i*4]-points[k*4])*(points[i*4]-points[k*4])+(points[i*4+1]-points[k*4+1])*(points[i*4+1]-points[k*4+1])+(points[i*4+2]-points[k*4+2])*(points[i*4+2]-points[k*4+2]);
 		d=sqrt(d);
@@ -1256,7 +1260,7 @@ void PointArray::sim_minstep(double maxshift) {
 	
 	double max=0.0;
 	double mean=0.0;
-	for (uint i=0; i<n; i++) {
+	for (size_t i=0; i<n; i++) {
 		if (oldshifts.size()==n) shifts.push_back((sim_descent(i)+oldshifts[i])/2.0);
 		else shifts.push_back(sim_descent(i));
 		float len=shifts[i].length();
@@ -1267,7 +1271,7 @@ void PointArray::sim_minstep(double maxshift) {
 	
 //	printf("max vec %1.2f\tmean %1.3f\n",max,mean/n);
 	
-	for (uint i=0; i<n; i++) {
+	for (size_t i=0; i<n; i++) {
 //		if (std::isnan(shifts[i][0]) ||std::isnan(shifts[i][1]) ||std::isnan(shifts[i][2])) { printf("Nan: %d\n",i); shifts[i]=Vec3f(max,max,max); }
 		points[i*4]+=shifts[i][0]*maxshift/max;
 		points[i*4+1]+=shifts[i][1]*maxshift/max;
@@ -1329,8 +1333,8 @@ void PointArray::sim_minstep_seq(double meanshift) {
 	// This may create a "seam" at the first point which won't be adjusted to compensate for the last point (wraparound)
 	// until the next cycle
 	Vec3f oshifts;
-	for (uint ii=0; ii<n; ii++) {
-		uint i=2*(ii%(n/2))+2*ii/n;	// this maps a linear sequence to an all-even -> all odd sequence
+	for (size_t ii=0; ii<n; ii++) {
+		size_t i=2*(ii%(n/2))+2*ii/n;	// this maps a linear sequence to an all-even -> all odd sequence
 		Vec3f shift,d;
 		if (ii==n) {
 			d=sim_descent(i);
@@ -1364,7 +1368,7 @@ void PointArray::sim_rescale() {
 	double meandist=0.0;
 	double max=0.0,min=dist0*1000.0;
 	
-	for (uint ii=0; ii<n; ii++) {
+	for (size_t ii=0; ii<n; ii++) {
 		int ib=4*((ii+n-1)%n);		// point before i with wraparound
 		int i=4*ii;
 
@@ -1379,7 +1383,7 @@ void PointArray::sim_rescale() {
 	
 	printf("mean = %1.3f rescaled: %1.3f - %1.3f\n",meandist,min*scale,max*scale);
 	
-	for (uint i=0; i<n; i++) {
+	for (size_t i=0; i<n; i++) {
 		points[i*4]*=scale;
 		points[i*4+1]*=scale;
 		points[i*4+2]*=scale;
@@ -1394,7 +1398,7 @@ void PointArray::sim_printstat() {
 	double madist=0.0,maang=0.0,madihed=0.0;
 	double mmap=0.0;
 	if (map &&mapc) {
-		for (uint i=0; i<n; i++) {
+		for (size_t i=0; i<n; i++) {
 			double m=map->sget_value_at_interp(points[i*4]/apix+centx,points[i*4+1]/apix+centy,points[i*4+2]/apix+centz);
 			mmap+=m;
 // 			printf("%f,%f,%f\t %f\n",points[i*4]/apix+centx,points[i*4+1]/apix+centy,points[i*4+2]/apix+centz,m);
@@ -1512,10 +1516,10 @@ void PointArray::sim_add_point_one() {
 
 	
 	double maxpot=-1000000,pot,meanpot=0;
-	uint ipt=0;
+	size_t ipt=0;
 	bool onedge=0;
 	// Find the highest potential point
-	for (uint i=0; i<n; i++) {
+	for (size_t i=0; i<n; i++) {
 		meanpot+=sim_pointpotential(adist[i],aang[i],adihed[i]);
 		pot=/*sim_pointpotential(adist[i],aang[i],adihed[i])*/-mapc*map->sget_value_at_interp(points[i*4]/apix+centx,points[i*4+1]/apix+centy,points[i*4+2]/apix+centz);
 		if (pot>maxpot){
@@ -1525,7 +1529,7 @@ void PointArray::sim_add_point_one() {
 	}
 	meanpot/=n;
 	
-	for (uint i=0; i<n; i++) {
+	for (size_t i=0; i<n; i++) {
 		int k=(i+1)%n;
 		double pt0,pt1,pt2;
 		pt0=(points[k*4]+points[i*4])/2;
@@ -1541,9 +1545,9 @@ void PointArray::sim_add_point_one() {
 	}
 	
 	// The rest points remain the same
-	uint i;
+	size_t i;
 	double* pa2data=(double *) calloc(4 * (n+1), sizeof(double));
-	for (uint ii=0; ii<n+1; ii++) {
+	for (size_t ii=0; ii<n+1; ii++) {
 		if(ii!=ipt && ii!=ipt+1){
 			if(ii<ipt)
 				i=ii;
@@ -1558,7 +1562,7 @@ void PointArray::sim_add_point_one() {
 	}
 	// Adding points
 	if( onedge ) {
-		uint k1;
+		size_t k1;
 // 		k0=((ipt+n-1)%n);
 		k1=((ipt+1)%n);
 		pa2data[ipt*4]=points[ipt*4];
@@ -1573,7 +1577,7 @@ void PointArray::sim_add_point_one() {
 		
 	}
 	else {
-		uint k0,k1;
+		size_t k0,k1;
 		k0=((ipt+n-1)%n);
 		k1=((ipt+1)%n);
 		pa2data[ipt*4]=(points[ipt*4]+points[k0*4])/2;
@@ -1667,9 +1671,9 @@ vector<float> PointArray::do_pca(int start=0, int end=-1){
 vector<float> PointArray::do_filter(vector<float> pts, float *ft, int num){
 	// filter a 1D array
 	vector<float> result(pts);
-	for (uint i=0; i<pts.size(); i++)
+	for (size_t i=0; i<pts.size(); i++)
 		result[i]=0;
-	for (uint i=(num-1)/2; i<pts.size()-(num-1)/2; i++){
+	for (size_t i=(num-1)/2; i<pts.size()-(num-1)/2; i++){
 		for (int j=0; j<num; j++){
 			int k=i+j-(num-1)/2;
 			result[i]+=pts[k]*ft[j];
@@ -1679,7 +1683,7 @@ vector<float> PointArray::do_filter(vector<float> pts, float *ft, int num){
 	
 }
 
-vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindensity=4, vector<int> edge=vector<int>(),int twodir=0,uint minl=9)
+vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindensity=4, vector<int> edge=vector<int>(),int twodir=0,size_t minl=9)
 {
 	vector<float> hlxlen(n);
 	vector<int> helix;
@@ -1693,17 +1697,17 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 		// search in both directions and combine the result
 		if( twodir==0)
 		  reverse_chain();
-		for (uint i=0; i<n; i++){
+		for (size_t i=0; i<n; i++){
 			vector<float> dist(50);
 			// for each point, search the following 50 points, find the longest rod
 			for (int len=5; len<50; len++){
-				uint pos=i+len;
-				if (pos>=n || pos<0)	break;
+				size_t pos=i+len;
+				if (pos>=n)	break;
 				vector<float> eigvec=do_pca(i,pos); // align the points 
 				vector<float> pts((len+1)*3);
 				float mean[3];
 				for (int k=0; k<3; k++) mean[k]=0;
-				for (uint k=i; k<pos; k++){
+				for (size_t k=i; k<pos; k++){
 					for (int l=0; l<3; l++){
 						pts[(k-i)*3+l]=points[k*4+0]*eigvec[l*3+0]+points[k*4+1]*eigvec[l*3+1]+points[k*4+2]*eigvec[l*3+2];
 						mean[l]+=pts[(k-i)*3+l];
@@ -1739,7 +1743,7 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 		int hlx=0;
 		float up=minlength; // rod length threshold
 		// record position of possible helixes
-		for (uint i=0; i<n; i++){
+		for (size_t i=0; i<n; i++){
 			if(hlx<=0){
 				if(hlxlen[i]>up){
 					hlx=hlxlen[i];
@@ -1754,8 +1758,8 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 		}
 		// while counting reversely
 		if(dir==0){
-			for (uint i=0; i<helix.size(); i++) helix[i]=n-1-helix[i];
-			for (uint i=0; i<helix.size()/2; i++){
+			for (size_t i=0; i<helix.size(); i++) helix[i]=n-1-helix[i];
+			for (size_t i=0; i<helix.size()/2; i++){
 				int tmp=helix[i*2+1];
 				helix[i*2+1]=helix[i*2];
 				helix[i*2]=tmp;
@@ -1767,7 +1771,7 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 
 #ifdef DEBUG
 	printf("potential helix counting from both sides: \n");
-	for (uint i=0; i<helix.size()/2; i++){
+	for (size_t i=0; i<helix.size()/2; i++){
 		printf("%d\t%d\n",helix[i*2],helix[i*2+1]);
 	}	
 	printf("\n\n");
@@ -1775,11 +1779,11 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 /*
 
 	// Combine the result from both side
-	for (uint i=0; i<helix.size()/2; i++){
+	for (size_t i=0; i<helix.size()/2; i++){
 		int change=1;
 		while(change==1){
 			change=0;
-			for (uint j=i+1; j<helix.size()/2; j++){
+			for (size_t j=i+1; j<helix.size()/2; j++){
 				if(helix[j*2]==0) continue;
 				if(helix[j*2]-2<helix[i*2+1] && helix[j*2+1]+2>helix[i*2]){
 					helix[i*2]=(helix[i*2]<helix[j*2])?helix[i*2]:helix[j*2];
@@ -1797,7 +1801,7 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 	while (minid>=0){
 		int mins=10000;
 		minid=-1;
-		for (uint i=0;i<helix.size()/2; i++){
+		for (size_t i=0;i<helix.size()/2; i++){
 			if(helix[i*2]<.1) continue;
 			if(helix[i*2]<mins){
 				mins=helix[i*2];
@@ -1813,7 +1817,7 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 	
 #ifdef DEBUG
 	printf("combined result: \n");	
-	for (uint i=0; i<allhlx.size()/2; i++){
+	for (size_t i=0; i<allhlx.size()/2; i++){
 		printf("%d\t%d\n",allhlx[i*2],allhlx[i*2+1]);
 	}	
 	printf("\n\n");
@@ -1821,30 +1825,30 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 	
 	// local search to decide the start and end point of each helix
 // 	vector<float> allscore(allhlx.size()/2);
-	for (uint i=0; i<allhlx.size()/2; i++){
+	for (size_t i=0; i<allhlx.size()/2; i++){
 		int sz=5;
-		uint start=allhlx[i*2]-sz,end=allhlx[i*2+1]+sz;
+		size_t start=allhlx[i*2]-sz,end=allhlx[i*2+1]+sz;
 		start=start>0?start:0;
 		end=end<n?end:n;
 		float minscr=100000;
 		int mj=0,mk=0;
 		
-		for (uint j=start; j<end; j++){
-			for (uint k=j+6; k<end; k++){
+		for (size_t j=start; j<end; j++){
+			for (size_t k=j+6; k<end; k++){
 				vector<float> eigvec=do_pca(j,k);
 				vector<float> pts((k-j)*3);
 				float mean[3];
 				for (int u=0; u<3; u++) mean[u]=0;
-				for (uint u=j; u<k; u++){
+				for (size_t u=j; u<k; u++){
 					for (int v=0; v<3; v++){
 						pts[(u-j)*3+v]=points[u*4+0]*eigvec[v*3+0]+points[u*4+1]*eigvec[v*3+1]+points[u*4+2]*eigvec[v*3+2];
 						mean[v]+=pts[(u-j)*3+v];
 					}
 				}
-				for (uint u=0; u<3; u++) mean[u]/=(k-j);
+				for (size_t u=0; u<3; u++) mean[u]/=(k-j);
 				float dst=0;
 				// distance to the center axis
-				for (uint u=0; u<k-j; u++){
+				for (size_t u=0; u<k-j; u++){
 					dst+=sqrt((pts[u*3]-mean[0])*(pts[u*3]-mean[0])+(pts[u*3+1]-mean[1])*(pts[u*3+1]-mean[1]));
 				}
 				float len=k-j;
@@ -1867,7 +1871,7 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 // 			allscore[i]=100;
 	}
 	
-	for (uint i=0; i<edge.size()/2; i++){
+	for (size_t i=0; i<edge.size()/2; i++){
 		allhlx.push_back(edge[i*2]);
 		allhlx.push_back(edge[i*2+1]);
 	}
@@ -1878,7 +1882,7 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 	while (minid>=0){
 		int mins=10000;
 		minid=-1;
-		for (uint i=0;i<allhlx.size()/2; i++){
+		for (size_t i=0;i<allhlx.size()/2; i++){
 			if(allhlx[i*2]<.1) continue;
 			if(allhlx[i*2]<mins){
 				mins=allhlx[i*2];
@@ -1895,13 +1899,13 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 	
 #ifdef DEBUG
 	printf("Fitted helixes: \n");
-	for (uint i=0; i<allhlx.size()/2; i++){
+	for (size_t i=0; i<allhlx.size()/2; i++){
 		printf("%d\t%d\n",allhlx[i*2],allhlx[i*2+1]);
 	}	
 	printf("\n\n");
 #endif
 	// create ideal helix
-	uint ia=0,ka=0;
+	size_t ia=0,ka=0;
 	int dir;
 	vector<double> finalhlx;
 	vector<double> hlxid;
@@ -1957,13 +1961,13 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 					}
 					hlxid.push_back(finalhlx.size()/3+1);
 					printf("%lu\t",finalhlx.size()/3+1);
-					for (uint j=3; j<pts.size()-3; j++)
+					for (size_t j=3; j<pts.size()-3; j++)
 						finalhlx.push_back(pts[j]);
 					hlxid.push_back(finalhlx.size()/3-2);
 					printf("%lu\t",finalhlx.size()/3-2);
-					for (uint j=0; j<3; j++)
+					for (size_t j=0; j<3; j++)
 						hlxid.push_back(pts[j]);
-					for (uint j=pts.size()-3; j<pts.size(); j++)
+					for (size_t j=pts.size()-3; j<pts.size(); j++)
 						hlxid.push_back(pts[j]);
 					ia=end;
 				}
@@ -1989,8 +1993,8 @@ vector<double> PointArray::fit_helix(EMData* pmap,int minlength=13,float mindens
 	
 	set_number_points(finalhlx.size()/3);
 	
-	for (uint i=0; i<n; i++){
-		for (uint j=0; j<3; j++)
+	for (size_t i=0; i<n; i++){
+		for (size_t j=0; j<3; j++)
 			points[i*4+j]=finalhlx[i*3+j];
 		points[i*4+3]=0;
 	}
@@ -2133,14 +2137,14 @@ void PointArray::merge_to(PointArray &pa,float thr=3.5)
 {
 	printf("merging\n");
 	vector<double> result;
-	for (uint i=0; i<pa.n; i++){
+	for (size_t i=0; i<pa.n; i++){
 		result.push_back(pa.points[i*4]);
 		result.push_back(pa.points[i*4+1]);
 		result.push_back(pa.points[i*4+2]);
 	}
-	for (uint i=0; i<n; i++){
+	for (size_t i=0; i<n; i++){
 		float dist=100;
-		for (uint j=0; j<pa.n; j++){
+		for (size_t j=0; j<pa.n; j++){
 			Vec3f d(points[i*4]-pa.points[j*4],points[i*4+1]-pa.points[j*4+1],points[i*4+2]-pa.points[j*4+2]);
 			dist=d.length();
 			if (dist<thr)
@@ -2154,8 +2158,8 @@ void PointArray::merge_to(PointArray &pa,float thr=3.5)
 		}
 	}
 	set_number_points(result.size()/3);
-	for (uint i=0; i<n; i++){
-		for (uint j=0; j<3; j++)
+	for (size_t i=0; i<n; i++){
+		for (size_t j=0; j<3; j++)
 			points[i*4+j]=result[i*3+j];
 		points[i*4+3]=0;
 	}
@@ -2186,12 +2190,12 @@ void PointArray::save_pdb_with_helix(const char *file, vector<float> hlxid)
 
 	FILE *fp = fopen(file, "w");
 	
-	for (uint i=0; i<hlxid.size()/8; i++){
-		fprintf(fp, "HELIX%5u   A ALA A%5d  ALA A%5d  1                        %5d\n", 
+	for (size_t i=0; i<hlxid.size()/8; i++){
+		fprintf(fp, "HELIX%5lu   A ALA A%5d  ALA A%5d  1                        %5d\n", 
 				i, (int)hlxid[i*8], (int)hlxid[i*8+1], int(hlxid[i*8+1]-hlxid[i*8]+4));
 	}
-	for ( uint i = 0; i < get_number_points(); i++) {
-		fprintf(fp, "ATOM  %5u  CA  ALA A%4u    %8.3f%8.3f%8.3f%6.2f%6.2f%8s\n", i, i,
+	for ( size_t i = 0; i < get_number_points(); i++) {
+		fprintf(fp, "ATOM  %5lu  CA  ALA A%4lu    %8.3f%8.3f%8.3f%6.2f%6.2f%8s\n", i, i,
 				points[4 * i], points[4 * i + 1], points[4 * i + 2], points[4 * i + 3], 0.0, " ");
 	}
 	fclose(fp);
@@ -2206,7 +2210,7 @@ void PointArray::remove_helix_from_map(EMData *m, vector<float> hlxid){
 			for (int z=0; z<sz; z++){
 				Vec3f p0((x)*ax,(y)*ay,(z)*az);
 				bool inhlx=false;
-				for (uint i=0; i<hlxid.size()/8; i++){
+				for (size_t i=0; i<hlxid.size()/8; i++){
 					Vec3f p1(hlxid[i*8+2],hlxid[i*8+3],hlxid[i*8+4]),p2(hlxid[i*8+5],hlxid[i*8+6],hlxid[i*8+7]);
 					Vec3f dp=p2-p1;
 					float l=dp.length();
@@ -2308,8 +2312,8 @@ void PointArray::reverse_chain(){
 // 	for(int i=0; i<n/2; i++){
 // 		for (int j=0; j<4; j++){
 // 			printf("%f\t",
-	for(uint i=0; i<n/2; i++){
-		for (uint j=0; j<4; j++){
+	for(size_t i=0; i<n/2; i++){
+		for (size_t j=0; j<4; j++){
 			tmp=points[(n-1-i)*4+j];
 			points[(n-1-i)*4+j]=points[i*4+j];
 			points[i*4+j]=tmp;
@@ -2318,7 +2322,7 @@ void PointArray::reverse_chain(){
 }
 
 void PointArray::delete_point(int id){
-	for (uint i=id*4; i<n*4; i++){
+	for (size_t i=id*4; i<n*4; i++){
 		points[i]=points[i+4];
 	}
 	set_number_points(n-1);
