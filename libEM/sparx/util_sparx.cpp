@@ -19645,9 +19645,9 @@ vector<float> Util::shc0(const vector< EMData* >& cimages, const vector< EMData*
 	return res;
 }
 
-﻿vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
+vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
                 vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
-                vector<int>numr, float cnx, float cny, string sym) {
+                  vector<int>numr, float cnx, float cny, string sym) {
 
 	//const size_t crefim_len = crefim.size();
 	size_t crefim_len = crefim.size();
