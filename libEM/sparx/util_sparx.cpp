@@ -19847,7 +19847,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 				EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 				Normalize_ring( cimage, numr );
 				Frngs(cimage, numr);
-				cimages[i+lky][j+rkx] = cimage;
+				cimages[i+lky][j+lkx] = cimage;
 			}
 		}
 
