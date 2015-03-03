@@ -2959,9 +2959,13 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 				print "\nThe particle's COARSE size is", simage['nx'],simage['ny'],simage['nz']
 				print "\nThe reference's COARSE size is", sfixedimage['nx'],sfixedimage['ny'],sfixedimage['nz']
 				sys.exit()	
-			
-		bestcoarse = simage.xform_align_nbest(options.align[0],sfixedimage,options.align[1],options.npeakstorefine,options.aligncmp[0],options.aligncmp[1])
 		
+		#some aligners don't have the ability to return 'nbest' answers
+	#	try:
+		bestcoarse = simage.xform_align_nbest(options.align[0],sfixedimage,options.align[1],options.npeakstorefine,options.aligncmp[0],options.aligncmp[1])
+		#except:
+		#	bestcoarse = simage.align(options.align[0],sfixedimage,options.align[1],options.npeakstorefine,options.aligncmp[0],options.aligncmp[1])
+			
 		# Scale translation
 		scaletrans=1.0
 		if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none' and options.shrinkfine:
