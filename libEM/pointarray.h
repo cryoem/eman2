@@ -161,7 +161,7 @@ namespace EMAN
 		double sim_potential();
 		
 		/** Compute a single point potential value **/
-		double sim_potentiald(int i);
+		double sim_potentiald(int);
 
 		/** Compute a potential value for a perturbed point, including +-2 nearest neighbors which will also be impacted **/
 		double sim_potentialdxyz(int i,double dx, double dy, double dz);
