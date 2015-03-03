@@ -2318,8 +2318,12 @@ def makeAverage(options,ic,align_parms,it=1):
 			score = ptcl_parms[0]["score"]
 			
 			if score <= thresh:
-				print "Particle kept because its score %f is LOWER than the threshold %f, when the best score was %f" %( score, thresh, maxscore )
-				
+				if thres != 1.0:
+					print "Particle kept because its score %f is LOWER than the threshold %f, when the best score was %f" %( score, thresh, maxscore )
+				else:
+					print "Particle kept because its score %f is LOWER than the DEFAULT threshold %f, when the best score was %f" %( score, thresh, maxscore )
+
+								
 				#print "preavgproc1 and len and type are", options.preavgproc1, len(options.preavgproc1), type(options.preavgproc1)
 				#print "preavgproc2 and len are", options.preavgproc2, len(options.preavgproc2),  type(options.preavgproc2)
 				
