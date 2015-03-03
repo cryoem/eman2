@@ -3731,52 +3731,48 @@ c       automatic arrays
 #endif	//_WIN32
 
 	q = (double*)calloc(maxrin, sizeof(double));
-	t = (float*)calloc(maxrin, sizeof(float));
 
 //   cout << *qn <<"  " <<*tot<<"  "<<ip<<endl;
 	for (i=1; i<=nring; i++) {
 		numr3i = numr(3,i);
 		numr2i = numr(2,i);
 
-		t(1) = (circ1(numr2i)) * circ2(numr2i);
+		q(1) += (circ1(numr2i)) * circ2(numr2i);
 
 		if (numr3i != maxrin) {
 			 // test .ne. first for speed on some compilers
-			t(numr3i+1) = circ1(numr2i+1) * circ2(numr2i+1);
-			t(2)		= 0.0;
+			q(numr3i+1) += circ1(numr2i+1) * circ2(numr2i+1);
 
 			if (neg) {
 				// first set is conjugated (mirrored)
 				for (j=3;j<=numr3i;j=j+2) {
 					jc = j+numr2i-1;
-					t(j)   =  (circ1(jc))*circ2(jc)   - (circ1(jc+1))*circ2(jc+1);
-					t(j+1) = -(circ1(jc))*circ2(jc+1) - (circ1(jc+1))*circ2(jc);
+					q(j)   +=  (circ1(jc))*circ2(jc)   - (circ1(jc+1))*circ2(jc+1);
+					q(j+1) += -(circ1(jc))*circ2(jc+1) - (circ1(jc+1))*circ2(jc);
 				}
 			} else {
 				for (j=3;j<=numr3i;j=j+2) {
 					jc = j+numr2i-1;
-					t(j)   =  (circ1(jc))*circ2(jc)   + (circ1(jc+1))*circ2(jc+1);
-					t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
+					q(j)   +=  (circ1(jc))*circ2(jc)   + (circ1(jc+1))*circ2(jc+1);
+					q(j+1) += -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
 				}
 			}
-			for (j=1;j<=numr3i+1;j++) q(j) = q(j) + t(j);
 		} else {
-			t(2) = circ1(numr2i+1) * circ2(numr2i+1);
+			q(2) += circ1(numr2i+1) * circ2(numr2i+1);
 			if (neg) {
 				// first set is conjugated (mirrored)
 				for (j=3;j<=maxrin;j=j+2) {
 					jc = j+numr2i-1;
-					t(j)   =  (circ1(jc))*circ2(jc)   - (circ1(jc+1))*circ2(jc+1);
-					t(j+1) = -(circ1(jc))*circ2(jc+1) - (circ1(jc+1))*circ2(jc);
+					q(j)   +=  (circ1(jc))*circ2(jc)   - (circ1(jc+1))*circ2(jc+1);
+					q(j+1) += -(circ1(jc))*circ2(jc+1) - (circ1(jc+1))*circ2(jc);
 				}
 			} else {
 				for (j=3;j<=maxrin;j=j+2) {
 					jc = j+numr2i-1;
-					t(j)   =  (circ1(jc))*circ2(jc)   + (circ1(jc+1))*circ2(jc+1);
-					t(j+1) = -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
+					q(j)   +=  (circ1(jc))*circ2(jc)   + (circ1(jc+1))*circ2(jc+1);
+					q(j+1) += -(circ1(jc))*circ2(jc+1) + (circ1(jc+1))*circ2(jc);
 				}
 			}
-			for (j = 1; j <= maxrin; j++) q(j) += t(j);
 		}
 	}
 
@@ -3798,7 +3794,6 @@ c       automatic arrays
 	tot = (float)jtot + pos;
 
 	if (q) free(q);
-	if (t) free(t);
 
 	Dict retvals;
 	retvals["qn"]  = qn;
