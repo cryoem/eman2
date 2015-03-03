@@ -1115,11 +1115,9 @@ def prep_vol_kb(vol, kb, npad=2):
 
 def prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", numr = None, MPI=False, \
 						phiEqpsi = "Minus", kbx = None, kby = None, initial_theta = None, \
-						delta_theta = None, ant = -1.0):
+						delta_theta = None):
 	"""
 		Generate quasi-evenly distributed reference projections converted to rings
-		ant - neighborhood for local searches.  I believe the fastest way to deal with it in case of point-group symmetry
-		        it to generate cushion projections within an/2 of the border of unique zone
 	"""
 	from projection   import prep_vol, prgs
 	from applications import MPI_start_end
@@ -1197,6 +1195,94 @@ def prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", 
 	for i in xrange(len(ref_angles)):
 		n1,n2,n3 = getfvec(ref_angles[i][0], ref_angles[i][1])
 		refrings[i].set_attr_dict( {"phi":ref_angles[i][0], "theta":ref_angles[i][1], "psi":ref_angles[i][2], "n1":n1, "n2":n2, "n3":n3} )
+
+	return refrings
+
+
+def prepare_refrings2( volft, kb, nz, segmask, delta, ref_a, sym, numr, MPI=False, phiEqpsi = "Minus", kbx = None, kby = None, initial_theta = None, delta_theta = None):
+
+	from projection   import prep_vol, prgs
+	from math         import sin, cos, radians
+	from applications import MPI_start_end
+	from utilities    import even_angles
+	from alignment	  import ringwe
+
+	# generate list of Eulerian angles for reference projections
+	#  phi, theta, psi
+	mode = "F"
+	ref_angles = []
+	if initial_theta is None:
+		#ref_angles = even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
+		phiphi = 0.0
+		while( phiphi < 360.0 ):
+			ref_angles.append([phiphi, 90.0, 90.0])
+			phiphi += delta
+	else:
+		if delta_theta is None: delta_theta = 1.0
+		#ref_angles = even_angles(delta, theta1 = initial_theta, theta2 = delta_theta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
+		ththt = 90.0
+		while(ththt >= initial_theta ):
+			phiphi = 0.0
+			while( phiphi < 360.0 ):
+				ref_angles.append([phiphi, ththt, 90.0])
+				if(ththt != 90.0): ref_angles.append([phiphi, 180.0 - ththt, 90.0])
+				phiphi += delta
+			ththt -= delta_theta
+	wr_four  = ringwe(numr, mode)
+	cnx = nz//2 + 1
+	cny = nz//2 + 1
+	num_ref = len(ref_angles)
+
+	if MPI:
+		from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
+		myid = mpi_comm_rank( MPI_COMM_WORLD )
+		ncpu = mpi_comm_size( MPI_COMM_WORLD )
+	else:
+		ncpu = 1
+		myid = 0
+	from applications import MPI_start_end
+	ref_start, ref_end = MPI_start_end(num_ref, ncpu, myid)
+
+	refrings = []     # list of (image objects) reference projections in Fourier representation
+
+	sizex = numr[len(numr)-2] + numr[len(numr)-1]-1
+
+	for i in xrange(num_ref):
+		prjref = EMData()
+		prjref.set_size(sizex, 1, 1)
+		refrings.append(prjref)
+
+	if kbx is None:
+		for i in xrange(ref_start, ref_end):
+			prjref = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
+			Util.mul_img(prjref, segmask )
+			cimage = Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
+			Util.Normalize_ring(cimage, numr)
+			Util.Frngs(cimage, numr)
+			Util.Applyws(cimage, numr, wr_four)
+			refrings[i] = cimage
+	else:
+		print "do not handle this case"
+		sys.exit()
+	if MPI:
+		from utilities import bcast_EMData_to_all
+		for i in xrange(num_ref):
+			for j in xrange(ncpu):
+				ref_start, ref_end = MPI_start_end(num_ref, ncpu, j)
+				if i >= ref_start and i < ref_end: rootid = j
+			bcast_EMData_to_all(refrings[i], myid, rootid)
+
+	for i in xrange(num_ref):
+		q0 = radians(ref_angles[i][0])
+		q1 = radians(ref_angles[i][1])
+		sq1 = sin(q1)
+		n1 = sq1*cos(q0)
+		n2 = sq1*sin(q0)
+		n3 = cos(q1)
+		refrings[i].set_attr_dict( {"n1":n1, "n2":n2, "n3":n3} )
+		refrings[i].set_attr("phi",   ref_angles[i][0])
+		refrings[i].set_attr("theta", ref_angles[i][1])
+		refrings[i].set_attr("psi",   ref_angles[i][2])
 
 	return refrings
 

@@ -3831,7 +3831,7 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 			print_msg("\nITERATION #%3d\n"%(N_step*max_iter+Iter+1))
 
 			volft, kb = prep_vol(vol)
-			refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, sym, numr, MPI=False, ant = max(an[N_step],0.0)*1.1)  # 1.1 is to have extra safety
+			refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, sym, numr, MPI=False)
 			del volft, kb
 
 			for im in xrange(nima):
@@ -4080,7 +4080,7 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f, delta psi = %5.2f, start psi = %5.2f\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],yrng[N_step],step[N_step],deltapsi[N_step],startpsi[N_step]))
 
 			volft, kb = prep_vol(vol)
-			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, True, ant = max(an[N_step],0.0)*1.1)  # 1.1 is to have extra safety
+			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, True)
 			del volft, kb
 			if myid == main_node:
 				print_msg("Time to prepare rings: %d\n" % (time()-start_time))
@@ -4407,7 +4407,7 @@ def ali3dlocal_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs 
 			volft, kb = prep_vol(vol)
 			if( numberofcones == 1):
 				# One cone good enough, use the original code
-				refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, True, ant = max(an[N_step],0.0)*1.1)  # 1.1 is to have extra safety
+				refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, True)
 
 				if myid == main_node:
 					print_msg("Time to prepare rings: %d\n" % (time()-start_time))
@@ -5033,7 +5033,7 @@ def Xali3d_shc0MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs 
 			#=========================================================================
 			# build references
 			volft, kb = prep_vol(vol)
-			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, True, ant = max(an[N_step],0.0)*1.1)
+			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, True)
 			lastdelta = delta[N_step]
 			del volft, kb
 			#=========================================================================
@@ -5376,7 +5376,7 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 		data[im].set_attr('ID', list_of_particles[im])
 		if( an[0] > -1 ):
 			#  These are local searches, set xform.anchor to the current projection direction
-			data[im].set_attr(data[im].get_attr("xform.projection"),"xform.anchor")
+			data[im].set_attr("xform.anchor", data[im].get_attr("xform.projection"))
 		if fourvar: original_data.append(data[im].copy())
 		if CTF:
 			ctf_params = data[im].get_attr("ctf")
@@ -5427,9 +5427,9 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 			#=========================================================================
 			# build references
 			volft, kb = prep_vol(vol)
-			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, True, ant = max(an[N_step],0.0)*1.1)
+			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, True)
 			lastdelta = delta[N_step]
-			del volft, kb
+			del vol, volft, kb
 			#=========================================================================
 
 			if myid == main_node:
@@ -5552,7 +5552,8 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 					else:
 						from utilities import recv_attr_dict
 						recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-					"""
+
+					'''
 					# save parameters to file
 					paro = [None]*total_nima
 					projs_headers = EMData.read_images(stack, range(total_nima), True)
@@ -5568,7 +5569,9 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 					# ------- end of saving parameters to file
 					print_msg("Time to write header information= %d\n"%(time()-start_time))
 					start_time = time()
-					"""
+					'''
+
+
 				else:
 					send_attr_dict(main_node, data, par_str, image_start, image_end)
 			#=========================================================================
@@ -5608,7 +5611,6 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 			# broadcast volume
 			bcast_EMData_to_all(vol, myid, main_node)
 			#=========================================================================
-
 
 	if myid == main_node: 
 		print_end_msg("ali3d_shcMPI")
@@ -5755,7 +5757,7 @@ def mref_ali3d(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1, ir=
 			else:
 				volft, kb = prep_vol(vol)
 				if runtype=="REFINEMENT":
-					refrings = prepare_refrings(volft,kb,nx,delta[N_step],ref_a,sym,numr, ant = max(an[N_step],0.0)*1.1)
+					refrings = prepare_refrings(volft,kb,nx,delta[N_step],ref_a,sym,numr)
 			for im in xrange(nima):
 				if(CTF):
 					ctf_params = data[im].get_attr("ctf")
@@ -5763,7 +5765,7 @@ def mref_ali3d(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1, ir=
 						previous_defocus = ctf_params.defocus
 						volft,kb = prep_vol(filt_ctf(vol, ctf_params))
 					if runtype=="REFINEMENT":
-						refrings = prepare_refrings(volft,kb,nx,delta[N_step],ref_a,sym,numr, ant = max(an[N_step],0.0)*1.1)
+						refrings = prepare_refrings(volft,kb,nx,delta[N_step],ref_a,sym,numr)
 
 				if runtype=="ASSIGNMENT":
 					phi,tht,psi,s2x,s2y = get_params_proj(data[im])
@@ -9209,11 +9211,11 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 					print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %5.2f, an = %5.4f, xrange (Pixels) = %5.4f,stepx (Pixels) = %5.4f, yrng (Pixels) = %5.4f,  stepy (Pixels) = %5.4f, y_restrict (Pixels)=%5.4f, ynumber = %3d\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],stepx[N_step],yrng[N_step],stepy,y_restrict[N_step], ynumber[N_step]))
 			if( xysize == -1 and zsize==-1 ):
 				volft,kb = prep_vol( vol )
-				refrings = prepare_refrings( volft, kb, nmax, delta[N_step], ref_a, symref, numr, MPI = True, phiEqpsi = "Zero", initial_theta =initial_theta, delta_theta = delta_theta, ant = max(an[N_step],0.0)*1.1)
+				refrings = prepare_refrings( volft, kb, nmax, delta[N_step], ref_a, symref, numr, MPI = True, phiEqpsi = "Zero", initial_theta =initial_theta, delta_theta = delta_theta)
 				del volft,kb
 			else:
 				volft, kbx, kby, kbz = prep_vol( vol )
-				refrings = prepare_refrings( volft, kbz, nmax, delta[N_step], ref_a, symref, numr, MPI = True, phiEqpsi = "Zero", kbx = kbx, kby = kby, initial_theta =initial_theta, delta_theta = delta_theta, ant = max(an[N_step],0.0)*1.1)
+				refrings = prepare_refrings( volft, kbz, nmax, delta[N_step], ref_a, symref, numr, MPI = True, phiEqpsi = "Zero", kbx = kbx, kby = kby, initial_theta =initial_theta, delta_theta = delta_theta)
 				del volft, kbx, kby, kbz
 
 			if myid== main_node:
@@ -17394,14 +17396,14 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 						rmin, rmax, fract,  npad, sym, user_func_name, \
 						pixel_size, debug, y_restrict, search_iter):
 
-	from alignment      import Numrinit, prepare_refrings
+	from alignment      import Numrinit, prepare_refrings2, prepare_refrings
 	from alignment      import proj_ali_helicon_local, proj_ali_helicon_90_local
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string, pad, model_blank
 	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all
 	from utilities      import send_attr_dict, read_text_row, sym_vol
 	from utilities      import get_params_proj, set_params_proj, file_type, chunks_distribution
 	from fundamentals   import rot_avg_image
-	from applications 	import setfilori_SP, prepare_refrings2, filamentupdown
+	from applications 	import setfilori_SP, filamentupdown
 	from pixel_error    import max_3D_pixel_error, ordersegments
 	from utilities      import print_begin_msg, print_end_msg, print_msg
 	from mpi            import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier
@@ -18031,94 +18033,6 @@ def setfilori_SP(fildata, pixel_size, dp, dphi):
 	#print yer, per
 	
 	return
-
-def prepare_refrings2( volft, kb, nz, segmask, delta, ref_a, sym, numr, MPI=False, phiEqpsi = "Minus", kbx = None, kby = None, initial_theta = None, delta_theta = None):
-
-	from projection   import prep_vol, prgs
-	from math         import sin, cos, radians
-	from applications import MPI_start_end
-	from utilities    import even_angles
-	from alignment	  import ringwe
-
-	# generate list of Eulerian angles for reference projections
-	#  phi, theta, psi
-	mode = "F"
-	ref_angles = []
-	if initial_theta is None:
-		#ref_angles = even_angles(delta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
-		phiphi = 0.0
-		while( phiphi < 360.0 ):
-			ref_angles.append([phiphi, 90.0, 90.0])
-			phiphi += delta
-	else:
-		if delta_theta is None: delta_theta = 1.0
-		#ref_angles = even_angles(delta, theta1 = initial_theta, theta2 = delta_theta, symmetry=sym, method = ref_a, phiEqpsi = phiEqpsi)
-		ththt = 90.0
-		while(ththt >= initial_theta ):
-			phiphi = 0.0
-			while( phiphi < 360.0 ):
-				ref_angles.append([phiphi, ththt, 90.0])
-				if(ththt != 90.0): ref_angles.append([phiphi, 180.0 - ththt, 90.0])
-				phiphi += delta
-			ththt -= delta_theta
-	wr_four  = ringwe(numr, mode)
-	cnx = nz//2 + 1
-	cny = nz//2 + 1
-	num_ref = len(ref_angles)
-
-	if MPI:
-		from mpi import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
-		myid = mpi_comm_rank( MPI_COMM_WORLD )
-		ncpu = mpi_comm_size( MPI_COMM_WORLD )
-	else:
-		ncpu = 1
-		myid = 0
-	from applications import MPI_start_end
-	ref_start, ref_end = MPI_start_end(num_ref, ncpu, myid)
-
-	refrings = []     # list of (image objects) reference projections in Fourier representation
-
-	sizex = numr[len(numr)-2] + numr[len(numr)-1]-1
-
-	for i in xrange(num_ref):
-		prjref = EMData()
-		prjref.set_size(sizex, 1, 1)
-		refrings.append(prjref)
-
-	if kbx is None:
-		for i in xrange(ref_start, ref_end):
-			prjref = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
-			Util.mul_img(prjref, segmask )
-			cimage = Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
-			Util.Normalize_ring(cimage, numr)
-			Util.Frngs(cimage, numr)
-			Util.Applyws(cimage, numr, wr_four)
-			refrings[i] = cimage
-	else:
-		print "do not handle this case"
-		sys.exit()
-	if MPI:
-		from utilities import bcast_EMData_to_all
-		for i in xrange(num_ref):
-			for j in xrange(ncpu):
-				ref_start, ref_end = MPI_start_end(num_ref, ncpu, j)
-				if i >= ref_start and i < ref_end: rootid = j
-			bcast_EMData_to_all(refrings[i], myid, rootid)
-
-	for i in xrange(num_ref):
-		q0 = radians(ref_angles[i][0])
-		q1 = radians(ref_angles[i][1])
-		sq1 = sin(q1)
-		n1 = sq1*cos(q0)
-		n2 = sq1*sin(q0)
-		n3 = cos(q1)
-		refrings[i].set_attr_dict( {"n1":n1, "n2":n2, "n3":n3} )
-		refrings[i].set_attr("phi",   ref_angles[i][0])
-		refrings[i].set_attr("theta", ref_angles[i][1])
-		refrings[i].set_attr("psi",   ref_angles[i][2])
-
-	return refrings
-
 
 def prepare_refffts( volft, kb, nx,ny,nz, segmask, delta,  \
 		MPI=False, psimax=1.0, psistep=1.0, kbx = None, kby = None, initial_theta = None, delta_theta = None):
