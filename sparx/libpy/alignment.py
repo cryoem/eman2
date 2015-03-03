@@ -4081,7 +4081,7 @@ def alivol_m( v, vref, mask ):
 
 # =================== SHC
 '''
-def shc0(data, cimages, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=None):
+def Xshc0(data, cimages, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=None):
 	from utilities    import compose_transform2
 	from math         import cos, sin, degrees, radians
 	from EMAN2 import Vec2f
@@ -4216,7 +4216,7 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 		finfo.flush()
 
 	previousmax = data.get_attr("previousmax")
-	[ang, sxs, sys, mirror, iref, peak, checked_refs] = Util.shc(data, refrings, xrng, yrng, step, ant, mode, numr, cnx+sxi, cny+syi, sym)
+	[ang, sxs, sys, mirror, iref, peak, checked_refs] = Util.shc(data, refrings, txrng, tyrng, step, ant, mode, numr, cnx+sxi, cny+syi, sym)
 	iref=int(iref)
 	number_of_checked_refs += int(checked_refs)
 
