@@ -397,7 +397,7 @@ def Numrinit(first_ring, last_ring, skip=1, mode="F"):
 	   "F" means a full circle interpolation
 	   "H" means a half circle interpolation
 	"""
-	MAXFFT=32768
+	MAXFFT = 32768
 	from math import pi
 
 	if (mode == 'f' or mode == 'F'): dpi = 2*pi
@@ -430,7 +430,7 @@ def Numrinit(first_ring, last_ring, skip=1, mode="F"):
 	   "F" means a full circle interpolation
 	   "H" means a half circle interpolation
 	"""
-	MAXFFT=32768
+	MAXFFT = 32768
 	from math import pi
 
 	if (mode == 'f' or mode == 'F'): dpi = 2*pi
@@ -445,7 +445,8 @@ def Numrinit(first_ring, last_ring, skip=1, mode="F"):
 		numr.append(ip)
 		lcirc += ip		
 	return  numr
-'''	
+'''
+
 def ringwe(numr, mode="F"):
 	"""
 	   Calculate ring weights for rotational alignment
@@ -473,8 +474,6 @@ def ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	#from utilities import info
 	#print "ORNQ"
 	peak = -1.0E23
-# 	ky = int(2*yrng/step+0.5)/2
-# 	kx = int(2*xrng/step+0.5)/2
 
 	lkx = int(xrng[0]/step)
 	rkx = int(xrng[1]/step)
@@ -514,9 +513,6 @@ def ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0):
 	from math import pi, cos, sin, radians
 	#print "ORMQ"
 	peak = -1.0E23
-# 	ky = int(2*yrng/step+0.5)//2
-# 	kx = int(2*xrng/step+0.5)//2
-
 
 	lkx = int(xrng[0]/step)
 	rkx = int(xrng[-1]/step)
@@ -1431,8 +1427,6 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 			psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
 			s2x   = sxb - sxi
 			s2y   = syb - syi
-			
-			
 
 		#set_params_proj(data, [phi, theta, psi, s2x, s2y])
 		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
@@ -4086,7 +4080,7 @@ def alivol_m( v, vref, mask ):
 
 
 # =================== SHC
-
+'''
 def shc0(data, cimages, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=None):
 	from utilities    import compose_transform2
 	from math         import cos, sin, degrees, radians
@@ -4179,7 +4173,7 @@ def shc0(data, cimages, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1",
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 			finfo.flush()
 		return peak, pixel_error, number_of_checked_refs, iref
-
+'''
 
 def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=None):
 	from utilities    import compose_transform2
@@ -4203,6 +4197,18 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 	#phi, theta, psi, sxo, syo = get_params_proj(data)
 	t1 = data.get_attr("xform.projection")
 	dp = t1.get_params("spider")
+	t1 = data.get_attr("xform.projection")
+	dp = t1.get_params("spider")
+	ou = numr[-3]
+	sxi = dp["tx"]
+	syi = dp["ty"]
+	txrng = [0.0]*2 
+	tyrng = [0.0]*2
+	txrng[0] = max(0,min(cnx+sxi-ou, xrng+sxi))
+	txrng[1] = max(0, min(nx-cnx-sxi-ou, xrng-sxi))
+	tyrng[0] = max(0,min(cny+syi-ou, yrng+syi))
+	tyrng[1] = max(0, min(ny-cny-syi-ou, yrng-syi))
+
 	if finfo:
 		finfo.write("Image id: %6d\n"%(ID))
 		#finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, sxo, syo))
@@ -4210,13 +4216,9 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 		finfo.flush()
 
 	previousmax = data.get_attr("previousmax")
-	#  The code for shc does not work for local searches!  PAP 01/27/2015
-	#  Do not use previous shifts so the image does not slide away
-	[ang, sxs, sys, mirror, iref, peak, checked_refs] = Util.shc(data, refrings, xrng, yrng, step, ant, mode, numr, cnx, cny, sym)  #+dp["tx"], cny+dp["ty"])
+	[ang, sxs, sys, mirror, iref, peak, checked_refs] = Util.shc(data, refrings, xrng, yrng, step, ant, mode, numr, cnx+sxi, cny+syi, sym)
 	iref=int(iref)
 	number_of_checked_refs += int(checked_refs)
-	#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
-	#ang = (ang+360.0)%360.0
 
 	if peak <= previousmax:
 		return -1.0e23, 0.0, number_of_checked_refs, -1
@@ -4241,14 +4243,14 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 			theta = 180.0-refrings[iref].get_attr("theta")
 			psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
-			s2x   = sxb #- dp["tx"]
-			s2y   = syb #- dp["ty"]
+			s2x   = sxb - sxi
+			s2y   = syb - syi
 		else:
 			phi   = refrings[iref].get_attr("phi")
 			theta = refrings[iref].get_attr("theta")
 			psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-			s2x   = sxb #- dp["tx"]
-			s2y   = syb #- dp["ty"]
+			s2x   = sxb - sxi
+			s2y   = syb - syi
 
 		#set_params_proj(data, [phi, theta, psi, s2x, s2y])
 		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})

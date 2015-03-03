@@ -447,7 +447,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 					# -------- alignment
 					im = proj_ids[mpi_subrank]
 					#  For symmetries pixel error is no doubt calculated incorrectly, as it has to be given as a minimum over symmetry transformations
-					peak, pixel_error, checked_refs, iref = shc(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], sym = sym) # this option should not be used here PAP, an[N_step])
+					peak, pixel_error, checked_refs, iref = shc(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], sym = sym) # an should not be used here PAP
 					# -------- gather results to root
 					vector_assigned_refs = wrap_mpi_gatherv([iref], 0, mpi_subcomm)
 					vector_previousmax   = wrap_mpi_gatherv([data[im].get_attr("previousmax")], 0, mpi_subcomm)
@@ -2112,7 +2112,7 @@ def proj_ali_incore_multi(data, refrings, numr, xrng = 0.0, yrng = 0.0, step=1.0
 		
 	#print "Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"])
 	#[ang, sxs, sys, mirror, iref, peak, checked_refs] = Util.shc(data, refrings, xrng, yrng, step, ant, mode, numr, cnx+dp["tx"], cny+dp["ty"])
-	peaks = Util.multiref_polar_ali_2d_peaklist_local(data, refrings, txrng, tyrng, step, ant, mode, numr, cnx+dp["tx"], cny+dp["ty"])
+	peaks = Util.multiref_polar_ali_2d_peaklist_local(data, refrings, txrng, tyrng, step, ant, mode, numr, cnx+sxi, cny+syi)
 	peaks_count = len(peaks) / 5
 	#pixel_error = 0.0
 	peak = 0.0
@@ -2149,8 +2149,8 @@ def proj_ali_incore_multi(data, refrings, numr, xrng = 0.0, yrng = 0.0, step=1.0
 			phi   = refrings[iref].get_attr("phi")
 			theta = refrings[iref].get_attr("theta")
 			psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-			s2x   = sxb - dp["tx"]
-			s2y   = syb - dp["ty"]
+			s2x   = sxb - sxi
+			s2y   = syb - syi
 
 			t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 			t2.set_trans(Vec2f(-s2x, -s2y))
@@ -3003,6 +3003,9 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 		phi,tetha,psi,sx,sy = get_params_proj(data[im])
 		data[im] = fshift(data[im], sx, sy)
 		set_params_proj(data[im],[phi,tetha,psi,0.0,0.0])
+		#  For local SHC set anchor
+		if(nsoft == 1 and an[0] > -1):
+			set_params_proj(data[im],[phi,tetha,psi,0.0,0.0], "xform.anchor")
 		oldshifts[im] = [sx,sy]
 		if CTF :
 			ctf_params = data[im].get_attr("ctf")

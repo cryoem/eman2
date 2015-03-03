@@ -3885,7 +3885,7 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
             xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an = "-1", apsi = "-1", deltapsi = "-1", startpsi = "-1",
 	    center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym = "c1",  user_func_name = "ref_ali3d",
-	    fourvar = True, npad = 4, debug = False, termprec = 0.0):
+	    fourvar = True, npad = 2, debug = False, termprec = 0.0):
 
 	from alignment       import Numrinit, prepare_refrings, proj_ali_incore, proj_ali_incore_local, proj_ali_incore_local_psi
 	from utilities       import model_circle, get_image, drop_image, get_input_from_string
@@ -4797,8 +4797,8 @@ def ali3dpsi_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 	if myid == main_node: print_end_msg("ali3dpsi_MPI")
 
 # =================== SHC
-
-def ali3d_shc0MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
+'''
+def Xali3d_shc0MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
             xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an = "-1", apsi = "-1", deltapsi = "-1", startpsi = "-1",
 	    center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym = "c1",  user_func_name = "ref_ali3d",
 	    fourvar = True, npad = 4, debug = False, termprec = 0.0, gamma=-1):
@@ -5218,7 +5218,7 @@ def ali3d_shc0MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs =
 
 	if myid == main_node: 
 		print_end_msg("ali3d_shcMPI")
-
+'''
 def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1, 
             xr = "4 2 2 1", yr = "-1", ts = "1 1 0.5 0.25", delta = "10 6 4 4", an = "-1", apsi = "-1", deltapsi = "-1", startpsi = "-1",
 	    center = -1, maxit = 5, CTF = False, snr = 1.0,  ref_a = "S", sym = "c1",  user_func_name = "ref_ali3d",
@@ -5374,6 +5374,9 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 	if fourvar:  original_data = []
 	for im in xrange(nima):
 		data[im].set_attr('ID', list_of_particles[im])
+		if( an[0] > -1 ):
+			#  These are local searches, set xform.anchor to the current projection direction
+			data[im].set_attr(data[im].get_attr("xform.projection"),"xform.anchor")
 		if fourvar: original_data.append(data[im].copy())
 		if CTF:
 			ctf_params = data[im].get_attr("ctf")
@@ -5420,7 +5423,6 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 			if myid == main_node:
 				start_time = time()
 				print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %5.2f, an = %5.2f, xrange = %5.2f, yrange = %5.2f,translational step = %5.2f\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step], yrng[N_step], step[N_step]))
-				#print_msg("\nITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f, delta psi = %5.2f, start psi = %5.2f\n"%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],yrng[N_step],step[N_step],deltapsi[N_step],startpsi[N_step]))
 
 			#=========================================================================
 			# build references
