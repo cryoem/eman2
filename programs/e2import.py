@@ -35,24 +35,45 @@ from EMAN2 import *
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """prog [options] <micrgrpah1, microgaph2....
-	Import particles coordinates from box files. To work the box file name must be the same as the microgrpah name save the extension.
-	>"""
+	usage = """prog [options] files
+	This program performs a variety of tasks for getting data or metadata from other programs into an EMAN2 project. 
+	
+	import_particles - will simply copy a set of per-micrograph particle files into EMAN2.1's preferred HDF format in particles/
+	import_boxes - will read EMAN1 '.box' files (text files containing coordinates) into appropriate info/*json files (see --box_type)
+	import_tomos - imports subtomogams for a SPT project (see also --importation)
+	import_eman1 - will convert a typical EMAN1 phase-flipped start.hed/img file into an EMAN2 project (converting files, fixing CTF, splitting, ...)
+"""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_pos_argument(name="import_files",help="List the files to import here.", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=True)",  row=0, col=0, rowspan=1, colspan=2, nosharedb=True, mode='coords,parts,tomos')
 	parser.add_header(name="filterheader", help='Options below this label are specific to e2import', title="### e2import options ###", row=1, col=0, rowspan=1, colspan=2, mode='coords,parts,tomos')
 	parser.add_argument("--import_particles",action="store_true",help="Import particles",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='parts[True]')
+	parser.add_argument("--import_eman1",action="store_true",help="This will import a phase-flipped particle stack from EMAN1",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='eman1[True]')
 	parser.add_argument("--import_tomos",action="store_true",help="Import tomograms",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='tomos[True]')
-	parser.add_argument("--importation",help="import particles",default='copy',guitype='combobox',choicelist='["move","copy","link"]',row=2,col=1,rowspan=1,colspan=1, mode='tomos')
+	parser.add_argument("--importation",help="Specify mode move, copy or link, for importing tomograms only",default='copy',guitype='combobox',choicelist='["move","copy","link"]',row=2,col=1,rowspan=1,colspan=1, mode='tomos')
 	parser.add_argument("--import_boxes",action="store_true",help="Import boxes",default=False, guitype='boolbox', row=2, col=0, rowspan=1, colspan=1, mode='coords[True]')
 	parser.add_argument("--extension",type=str,help="Extension of the micrographs that the boxes match", default='dm3')
 	parser.add_argument("--box_type",help="Type of boxes to import, normally boxes, but for tilted data use tiltedboxes, and untiltedboxes for the tilted  particle partner",default="boxes",guitype='combobox',choicelist='["boxes","coords","tiltedboxes","untiltedboxes"]',row=2,col=1,rowspan=1,colspan=1, mode="coords['boxes']")
+	parser.add_argument("--curdefocushint",action="store_true",help="Used with import_eman1, will use EMAN1 defocus as starting point",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='eman1[True]')
+	parser.add_argument("--curdefocusfix",action="store_true",help="Used with import_eman1, will use EMAN1 defocus unchanged (+-.001 um)",default=False, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode='eman1[False]')
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv,options.ppid)
+
+	# Import EMAN1
+	# will read start.hed/img, split by micrograph (based on defocus), and reprocess CTF in EMAN2 style
+	if options.import_eman1 :
+		try:
+			n=EMUtil.get_image_count(args[0])
+		except:
+			print "Error, couldn't read images from: ",args[0]
+			sys.exit(1)
+		
+		try:
+			img=EMData(args[0],0)
+			ctf=img["ctf"]
 
 	# Import boxes
 	if options.import_boxes:
