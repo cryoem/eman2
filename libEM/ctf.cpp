@@ -69,6 +69,9 @@ int EMAN1Ctf::from_string(const string & ctf)
 	int i = sscanf(ctf.c_str(), "%c%f %f %f %f %f %f %f %f %f %f %f%n",
 				   &type,&defocus, &bfactor, &amplitude, &ampcont, &noise1,
 				   &noise2, &noise3, &noise4, &voltage, &cs, &apix, &pos);
+	defocus*=-1.0;		// different convention in EMAN2
+	ampcont*=100.0;		// different convention in EMAN2
+	bfactor*=4.0;		// again
 	if (pos==-1) {
 		const char *s=ctf.c_str();
 		throw InvalidValueException(s," Invalid CTF string");
@@ -149,7 +152,7 @@ string EMAN1Ctf::to_string() const
 {
 	char ctf[1024];
 	sprintf(ctf, "O%1.3g %1.3g %1.3g %1.3g %1.3g %1.3g %1.3g %1.3g %1.3g %1.3g %1.3g",
-			defocus, bfactor, amplitude, ampcont, noise1, noise2, noise3, noise4, voltage, cs,
+			-defocus, bfactor/4.0, amplitude, ampcont/100.0, noise1, noise2, noise3, noise4, voltage, cs,
 			apix);
 
 	return string(ctf);

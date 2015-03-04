@@ -113,15 +113,15 @@ models are not completely compatible."""
 		if options.debug :
 			print "  Creating EMAN1 CTF object..."
 		e1ctf = EMAN1Ctf( )
-		e1ctf.defocus = e2ctf.defocus * -1.
+#		e1ctf.defocus = e2ctf.defocus * -1.		# no longer necessary
 		e1ctf.voltage = e2ctf.voltage
 		e1ctf.cs = e2ctf.cs
 		e1ctf.apix = e2ctf.apix
-		e1ctf.ampcont = options.ac / 100.
+#		e1ctf.ampcont = options.ac / 100.		# no longer necessary
 		if options.bf > 0. :
 			e1ctf.bfactor = options.bf
-		else :
-			e1ctf.bfactor = e2ctf.bfactor / 4.
+#		else :						# no longer necessary
+#			e1ctf.bfactor = e2ctf.bfactor / 4.
 		
 		# Convert noise model
 		if options.debug :
