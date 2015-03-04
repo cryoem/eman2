@@ -35,7 +35,7 @@ from sys import argv
 from optparse import OptionParser
 import sys
 import numpy as np
-from scipy.stats import norm
+#from scipy.stats import norm
 
 def main():
 	#import pylab
