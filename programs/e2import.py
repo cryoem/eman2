@@ -120,15 +120,22 @@ def main():
 			img=fft1.do_ift()
 			img.write_image("particles/particles{:03d}.hdf".format(imgnum),-1)		# append particle to stack
 			
-		if options.curdefocusfix: flag="--curdefocusfix"
-		elif options.curdefocushint: flag="--curdefocushint"
-		else: flag=""
+		if options.curdefocusfix: 
+			flag="--curdefocusfix"
+			rbysnr=" "
+		elif options.curdefocushint: 
+			flag="--curdefocushint"
+			rbysnr="--refinebysnr"
+		else: 
+			flag=""
+			rbysnr="--refinebysnr"
 
 		# fill in the needed CTF info
-		launch_childprocess("e2ctf.py --autofit {} --allparticles --threads {} --voltage {} --cs {} --ac {} --apix {}".format(flag,options.threads,ctf.defocus,ctf.cs,ctf.ampcont,ctf.apix))
+		launch_childprocess("e2ctf.py --autofit {} --allparticles --threads {} --voltage {} --cs {} --ac {} --apix {} --computesf".format(flag,options.threads,ctf.voltage,ctf.cs,ctf.ampcont,ctf.apix))
+		launch_childprocess("e2ctf.py --autofit {} --allparticles --threads {} --voltage {} --cs {} --ac {} --apix {}".format(flag,options.threads,ctf.voltage,ctf.cs,ctf.ampcont,ctf.apix))
 
 		# reflip flip the phases, and make "proc" images
-		launch_childprocess("e2ctf.py --phaseflip --allparticles --phaseflipproc filter.highpass.gauss:cutoff_freq=0.005 --phaseflipproc2 filter.lowpass.gauss:cutoff_freq=0.08 --phaseflipproc3 math.meanshrink:n=2")
+		launch_childprocess("e2ctf.py {} --phaseflip --allparticles --phaseflipproc filter.highpass.gauss:cutoff_freq=0.005 --phaseflipproc2 filter.lowpass.gauss:cutoff_freq=0.08 --phaseflipproc3 math.meanshrink:n=2".format(rbysnr))
 
 		# build sets
 		launch_childprocess("e2buildsets.py --allparticles --setname all")
