@@ -181,7 +181,7 @@ vector < float >EMAN1Ctf::compute_1d(int size, float ds, CtfType type, XYData * 
 {
 	Assert(size > 0);
 
-	float tmp_f1 = CTFOS * sqrt((float) 2) * size / 2;
+	float tmp_f1 =  sqrt((float) 2) * size / 2;
 	int np = (int) ceil(tmp_f1) + 2;
 	vector < float >r;
 
@@ -301,6 +301,10 @@ vector <float> EMAN1Ctf::compute_1d_fromimage(int size, float ds, EMData *image)
 
 void EMAN1Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 {
+	// Discovered that whomever wrote these apparently never tested them. They do not follow the correct
+	// conventions, and the results are rubbish!
+	throw InvalidParameterException("EMAN1Ctf compute_2d_complex is broken, please use EMAN2Ctf instead");
+	
 	if (!image) {
 		LOGERR("image is null. cannot computer 2D complex CTF");
 		return;

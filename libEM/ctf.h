@@ -112,10 +112,6 @@ namespace EMAN
 		virtual void copy_from(const Ctf * new_ctf) = 0;
 		virtual bool equal(const Ctf * ctf1) const = 0;
 
-	  public:
-		enum
-		{ CTFOS = 5 };
-
 	};
 
 	/** EMAN1Ctf is the CTF model used in EMAN1.

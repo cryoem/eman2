@@ -506,7 +506,7 @@ BOOST_PYTHON_MODULE(libpyAligner2)
     ;
 
 
-    scope().attr("CTFOS") = (int)EMAN::Ctf::CTFOS;
+//    scope().attr("CTFOS") = (int)EMAN::Ctf::CTFOS;
 
     delete EMAN_Ctf_scope;
 

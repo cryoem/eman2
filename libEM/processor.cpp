@@ -6473,7 +6473,8 @@ void SNRProcessor::process_inplace(EMData * image)
 	EMData *d3 = image->get_clip(clip_r);
 	EMData *d2 = d3->do_fft();
 
-	d2->apply_radial_func(0, 2.0f / Ctf::CTFOS, ctf, 0);
+//	d2->apply_radial_func(0, 2.0f / Ctf::CTFOS, ctf, 0);	// this is troubling! only EMAN1 CTF used CTFOS, and then, not correctly...
+	d2->apply_radial_func(0, 2.0f, ctf, 0);
 
 	if( d3 )
 	{
