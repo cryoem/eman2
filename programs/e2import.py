@@ -111,14 +111,14 @@ def main():
 				db.close()
 
 				flipim=fft1.copy()
-				ctf.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
+				ctf2.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
 
 			lastdf=ctf.defocus
 			
 			# unflip the EMAN1 phases (hopefully accurate enough)
 			fft1.mult(flipim)
 			img=fft1.do_ift()
-			img.write_image("particles/particles{}.hdf".format(imgnum),-1)		# append particle to stack
+			img.write_image("particles/particles{:03d}.hdf".format(imgnum),-1)		# append particle to stack
 			
 		if options.curdefocusfix: flag="--curdefocusfix"
 		elif options.curdefocushint: flag="--curdefocushint"
