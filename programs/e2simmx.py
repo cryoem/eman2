@@ -438,7 +438,7 @@ class EMSimTaskDC(JSTask):
 				else:
 					ref[0]=ref[0].process("filter.matchto",{"to":ptcl})	# matched filter
 					ref[0].mult(ref[1])											# remask after setsf
-			if options.has_key("align") and options["align"] != None:
+			if options.has_key("align") and options["align"][0] != None:
 				aligned=ref[0].align(options["align"][0],ptcl,options["align"][1],options["aligncmp"][0],options["aligncmp"][1])
 
 				if options.has_key("ralign") and options["ralign"] != None: # potentially employ refine alignment
@@ -472,7 +472,7 @@ class EMSimTaskDC(JSTask):
 					data[ref_idx] = (ptcl.cmp(options["cmp"][0],aligned,options["cmp"][1]),t)
 					
 			else:
-				data[ref_idx] = (ptcl.cmp(options["cmp"][0],ref,options["cmp"][1]),None)
+				data[ref_idx] = (ptcl.cmp(options["cmp"][0],ref[0],options["cmp"][1]),None)
 
 		return data
 

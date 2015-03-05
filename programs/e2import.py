@@ -57,6 +57,8 @@ def main():
 	parser.add_argument("--box_type",help="Type of boxes to import, normally boxes, but for tilted data use tiltedboxes, and untiltedboxes for the tilted  particle partner",default="boxes",guitype='combobox',choicelist='["boxes","coords","tiltedboxes","untiltedboxes"]',row=2,col=1,rowspan=1,colspan=1, mode="coords['boxes']")
 	parser.add_argument("--curdefocushint",action="store_true",help="Used with import_eman1, will use EMAN1 defocus as starting point",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='eman1[True]')
 	parser.add_argument("--curdefocusfix",action="store_true",help="Used with import_eman1, will use EMAN1 defocus unchanged (+-.001 um)",default=False, guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode='eman1[False]')
+	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful",guitype='intbox', row=6, col=1, rowspan=1, colspan=1, mode='eman1[1]')
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -74,6 +76,62 @@ def main():
 		try:
 			img=EMData(args[0],0)
 			ctf=img["ctf"]
+		except:
+			print "Error, start.hed/img must be phase-flipped to import"
+			sys.exit(1)
+		
+		db=js_open_dict("info/project.json")
+		db["global.apix"]=ctf.apix
+		db["global.cs"]=ctf.cs
+		db["global.voltage"]=ctf.voltage
+		
+		try: os.mkdir("particles")
+		except: pass
+		
+		imgnum=0
+		lastdf=-1.0
+		for i in xrange(n):
+			img=EMData(args[0],i)
+			ctf=img["ctf"]
+			img.del_attr("ctf")
+			fft1=img.do_fft()
+			if ctf.defocus!=lastdf :
+				imgnum+=1
+				if options.verbose>0: print "Defocus {:4.2f} particles{:03d}".format(ctf.defocus,imgnum)
+				db=js_open_dict("info/particles{:03d}_info.json".format(imgnum))
+				ctf2=EMAN2Ctf()
+				ctf2.defocus=ctf.defocus
+				ctf2.cs=ctf.cs
+				ctf2.apix=ctf.apix
+				ctf2.voltage=ctf.voltage
+				ctf2.ampcont=ctf.ampcont
+				ctf2.dfdiff=0
+				ctf2.dfang=0
+				db["ctf"]=[ctf2]
+				db.close()
+
+				flipim=fft1.copy()
+				ctf.compute_2d_complex(flipim,Ctf.CtfType.CTF_SIGN)
+
+			lastdf=ctf.defocus
+			
+			# unflip the EMAN1 phases (hopefully accurate enough)
+			fft1.mult(flipim)
+			img=fft1.do_ift()
+			img.write_image("particles/particles{}.hdf".format(imgnum),-1)		# append particle to stack
+			
+		if options.curdefocusfix: flag="--curdefocusfix"
+		elif options.curdefocushint: flag="--curdefocushint"
+		else: flag=""
+
+		# fill in the needed CTF info
+		launch_childprocess("e2ctf.py --autofit {} --allparticles --threads {} --voltage {} --cs {} --ac {} --apix {}".format(flag,options.threads,ctf.defocus,ctf.cs,ctf.ampcont,ctf.apix))
+
+		# reflip flip the phases, and make "proc" images
+		launch_childprocess("e2ctf.py --phaseflip --allparticles --phaseflipproc filter.highpass.gauss:cutoff_freq=0.005 --phaseflipproc2 filter.lowpass.gauss:cutoff_freq=0.08 --phaseflipproc3 math.meanshrink:n=2")
+
+		# build sets
+		launch_childprocess("e2buildsets.py --allparticles --setname all")
 
 	# Import boxes
 	if options.import_boxes:
