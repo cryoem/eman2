@@ -539,7 +539,7 @@ def main():
 	parser.add_option("--maxit",    type="int",  default= 400,                  help="maximum number of iterations performed for the GA part (set to 400) ")
 	parser.add_option("--outlier_percentile",     type="float",    default= 95, help="percentile above which outliers are removed every iteration")
 	parser.add_option("--iteration_start",     type="int",    default= 0,       help="starting iteration for rviper, 0 means go to the most recent one (default).")
-	parser.add_option("--CTF",      action="store_true", default=False,         help="NOT IMPLEMENTED Consider CTF correction during the alignment ")
+	parser.add_option("--CTF",      action="store_true", default=False,         help="Use CTF")
 	parser.add_option("--snr",      type="float",  default= 1.0,                help="Signal-to-Noise Ratio of the data (default 1.0)")
 	parser.add_option("--ref_a",    type="string", default= "S",                help="method for generating the quasi-uniformly distributed projection directions (default S)")
 	parser.add_option("--sym",      type="string", default= "c1",               help="symmetry of the refined structure")
