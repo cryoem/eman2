@@ -53,14 +53,14 @@
         "ICON": "green_boxes",
         "MODE": "boxing",
         "PROGRAM": "e2RCTboxer.py",
-        "NAME": "Box Particles -e2RCTboxer",
+        "NAME": "Box Tilt Pairs -e2RCTboxer",
         "CHILDREN": []
       },
       {
         "ICON": "green_boxes",
         "MODE": "extraction",
         "PROGRAM": "e2RCTboxer.py",
-        "NAME": "Extract Particles -e2RCTboxer",
+        "NAME": "Extract Tilt Pairs -e2RCTboxer",
         "CHILDREN": []
       },
       {
@@ -78,7 +78,15 @@
         "WIZARD":"/lib/pmconfig/particleimport.json",
         "NAME": "Box Coordinate Import -e2import.py",
         "CHILDREN": []
+      },
+      {
+        "ICON": "green_boxes",
+	"MODE": "eman1",
+        "PROGRAM": "e2import.py",
+        "NAME": "Import start.hed/img from EMAN1",
+        "CHILDREN": []
       }
+
     ]
   },
   {
