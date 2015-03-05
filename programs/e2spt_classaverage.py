@@ -2392,14 +2392,14 @@ def makeAverage(options,ic,align_parms,it=1):
 				ptcl['xform.align3d'] = Transform()
 				#ptcl['spt_ali_param'] = ptcl_parms[0]['xform.align3d']
 				ptcl['xform.align3d'] = ptcl_parms[0]['xform.align3d']
-			
+				ptcl['spt_indx_original']=i
 				#classname = path + "/class_" +  str(ic).zfill( len( str(ic) )) + "_ptcl.hdf"
 				#print "The class name is", classname
 				#sys.exit()
 				
 				aliptcls = path + '/aliptcls' + klassid + '.hdf'
 					
-				ptcl.write_image(aliptcls,i)
+				ptcl.write_image(aliptcls,-1)
 			
 			
 					
