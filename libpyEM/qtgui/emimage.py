@@ -206,7 +206,7 @@ class EMWidgetFromFile(object):
 				data = [EMData(filename,0)]
 			else:
 				data = EMData()
-				data.read_image(filename,0,True)		# This should be 3-D. We read the header-only here
+				data.read_image(filename,0,not force_2d)		# This should be 3-D. We read the header-only here
 				data = [data]
 				
 			if data != None and len(data) == 1: data = data[0]
