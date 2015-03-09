@@ -3117,21 +3117,26 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 				start_time = time()
 			
 			#=========================================================================
-			if total_iter == 1:
-				# adjust params to references, calculate psi+shifts, calculate previousmax
-				for im in xrange(nima):
-					previousmax = data[im].get_attr_default("previousmax", -1.0e23)
-					if(previousmax == -1.0e23):
-						peak, pixer[im] = proj_ali_incore_local(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], 10.0, sym = sym)
-						data[im].set_attr("previousmax", peak)#*0.9)
+			#  there is no need for previosumax for deterministic searches
+			if total_iter == 1 and nsoft > 0:
+				if(an[N_step] < 0.0):
+					# adjust params to references, calculate psi+shifts, calculate previousmax
+					for im in xrange(nima):
+						previousmax = data[im].get_attr_default("previousmax", -1.0e23)
+						if(previousmax == -1.0e23):
+							peak, pixer[im] = proj_ali_incore_local(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], delta[N_step]*2.5, sym = sym)
+							data[im].set_attr("previousmax", peak)
+				else:
+					#  Here it is supposed to be shake and bake for local SHC, but it would have to be signaled somehow
+					for im in xrange(nima):
+						data[im].set_attr("previousmax", -1.0e23)
 				if myid == main_node:
 					log.add("Time to calculate first psi+shifts+previousmax: %f\n" % (time()-start_time))
 					start_time = time()
 			#=========================================================================
 
 			mpi_barrier(mpi_comm)
-			if myid == main_node:
-				start_time = time()
+			if myid == main_node:  start_time = time()
 			#=========================================================================
 			# alignment
 			#number_of_checked_refs = 0
