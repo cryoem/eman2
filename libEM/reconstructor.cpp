@@ -2591,8 +2591,8 @@ int nn4_rectReconstructor::insert_slice(const EMData* const slice, const Transfo
 
 		if( padffted != 0 ) padfft = new EMData(*slice);
 		else                padfft = padfft_slice( slice, t,  m_npad );
-
-		Assert( mult > 0 );
+		
+		//Assert( mult > 0 );
 
 			if( m_ndim==3 ) {
 			insert_padfft_slice( padfft, t, weight );		
