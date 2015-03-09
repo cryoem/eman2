@@ -466,6 +466,7 @@ class ali3d_options:
 
 def metamove(paramsdict, partids, partstack, outputdir, procid, myid, main_node, nproc):
 	if(myid == main_node):
+		#  Create output directory
 		log = Logger(BaseLogger_Files())
 		log.prefix = os.path.join(outputdir)
 		cmd = "mkdir "+log.prefix
@@ -474,13 +475,13 @@ def metamove(paramsdict, partids, partstack, outputdir, procid, myid, main_node,
 	else:  log = None
 	mpi_barrier(MPI_COMM_WORLD)
 
-	ali3d_options.delta = paramsdict["delta"]
+	ali3d_options.delta  = paramsdict["delta"]
 	ali3d_options.center = paramsdict["center"]
-	ali3d_options.ts = paramsdict["ts"]
-	ali3d_options.xr = paramsdict["xr"]
-	ali3d_options.fl = paramsdict["currentres"]
-	ali3d_options.aa = paramsdict["aa"]
-	ali3d_options.maxit = paramsdict["maxit"]
+	ali3d_options.ts     = paramsdict["ts"]
+	ali3d_options.xr     = paramsdict["xr"]
+	ali3d_options.fl     = paramsdict["currentres"]
+	ali3d_options.aa     = paramsdict["aa"]
+	ali3d_options.maxit  = paramsdict["maxit"]
 	ali3d_options.mask3D = paramsdict["mask3D"]
 	projdata = getindexdata(paramsdict["stack"], partids, partstack, myid, nproc)
 	if(paramsdict["delpreviousmax"]):
@@ -493,8 +494,8 @@ def metamove(paramsdict, partids, partstack, outputdir, procid, myid, main_node,
 		print(line,"METAMOVE parameters")
 		spaces = "                 "
 		for q in paramsdict:  print("                    => ",q+spaces[len(q):],":  ",paramsdict[q])
-		print("                    =>    partids:              ",partids)
-		print("                    =>    partstack:            ",partstack)
+		print("                    =>  partids      :       ",partids)
+		print("                    =>  partstack    :       ",partstack)
 
 	#  Run alignment command
 	params = ali3d_base(projdata, get_im(paramsdict["refvol"]), \
@@ -504,7 +505,7 @@ def metamove(paramsdict, partids, partstack, outputdir, procid, myid, main_node,
 	#  store params
 	if(myid == main_node):
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line,"Executed successfully: ","ali3d_base_MPI %d"%paramsdict["nsoft"])
+		print(line,"Executed successfully: ","ali3d_base_MPI %d"%paramsdict["nsoft"],"  number of images:%7d"%len(params))
 		write_text_row(params, os.path.join(outputdir,"params-chunk%01d.txt"%procid) )
 
 
@@ -525,31 +526,32 @@ def main():
 	import socket
 
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack  [output_directory]  initial_volume  --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood  --center=center_type --maxit1=max_iter1 --maxit2=max_iter2 --L2threshold=0.1  --fl --aa --ref_a=S --sym=c1"
+	usage = progname + " stack  [output_directory]  initial_volume  --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood  --center=center_type --fl --aa --ref_a=S --sym=c1"
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--ir",       type= "int",   default= 1,                  help="inner radius for rotational correlation > 0 (set to 1)")
-	parser.add_option("--ou",       type= "int",   default= -1,                 help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
-	parser.add_option("--rs",       type= "int",   default= 1,                  help="step between rings in rotational correlation >0  (set to 1)" ) 
-	parser.add_option("--xr",       type="string", default= "-1",               help="range for translation search in x direction, search is +/xr (default 0)")
-	parser.add_option("--yr",       type="string", default= "-1",               help="range for translation search in y direction, search is +/yr (default = same as xr)")
-	parser.add_option("--ts",       type="string", default= "1",                help="step size of the translation search in both directions, search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional")
-	parser.add_option("--delta",    type="string", default= "-1",                help="angular step of reference projections during initialization step (default automatically selected based on radius of the structure.)")
-	#parser.add_option("--an",       type="string", default= "-1",              help="angular neighborhood for local searches (phi and theta)")
-	parser.add_option("--center",   type="float",  default= -1,                 help="-1: average shift method; 0: no centering; 1: center of gravity (default=-1)")
-	parser.add_option("--maxit",    type="int",  default= 400,                  help="maximum number of iterations performed for the GA part (set to 400) ")
-	parser.add_option("--outlier_percentile",     type="float",    default= 95, help="percentile above which outliers are removed every iteration")
-	parser.add_option("--iteration_start",     type="int",    default= 0,       help="starting iteration for rviper, 0 means go to the most recent one (default).")
-	parser.add_option("--CTF",      action="store_true", default=False,         help="Use CTF")
-	parser.add_option("--snr",      type="float",  default= 1.0,                help="Signal-to-Noise Ratio of the data (default 1.0)")
-	parser.add_option("--ref_a",    type="string", default= "S",                help="method for generating the quasi-uniformly distributed projection directions (default S)")
-	parser.add_option("--sym",      type="string", default= "c1",               help="symmetry of the refined structure")
-	parser.add_option("--npad",     type="int",    default= 2,                  help="padding size for 3D reconstruction (default=2)")
+	parser.add_option("--ir",      		type= "int",   default= 1,			help="inner radius for rotational correlation > 0 (set to 1)")
+	parser.add_option("--ou",      		type= "int",   default= -1,			help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
+	parser.add_option("--rs",      		type= "int",   default= 1,			help="step between rings in rotational correlation >0  (set to 1)" ) 
+	parser.add_option("--xr",      		type="string", default= "-1",		help="range for translation search in x direction, search is +/xr (default 0)")
+	parser.add_option("--yr",      		type="string", default= "-1",		help="range for translation search in y direction, search is +/yr (default = same as xr)")
+	parser.add_option("--ts",      		type="string", default= "1",		help="step size of the translation search in both directions, search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional")
+	parser.add_option("--delta",   		type="string", default= "-1",		help="angular step of reference projections during initialization step (default automatically selected based on radius of the structure.)")
+	#parser.add_option("--an",      	type="string", default= "-1",		help="angular neighborhood for local searches (phi and theta)")
+	parser.add_option("--center",  		type="float",  default= -1,			help="-1: average shift method; 0: no centering; 1: center of gravity (default=-1)")
+	parser.add_option("--maxit",   		type="int",  	default= 400,		help="maximum number of iterations performed for the GA part (set to 400) ")
+	parser.add_option("--outlier_percentile",type="float",    default= 95,	help="percentile above which outliers are removed every iteration")
+	parser.add_option("--iteration_start",type="int",    default= 0,		help="starting iteration for rviper, 0 means go to the most recent one (default).")
+	parser.add_option("--CTF",     		action="store_true", default=False,	help="Use CTF (Default no CTF correction)")
+	parser.add_option("--snr",     		type="float",  default= 1.0,		help="Signal-to-Noise Ratio of the data (default 1.0)")
+	parser.add_option("--ref_a",   		type="string", default= "S",		help="method for generating the quasi-uniformly distributed projection directions (default S)")
+	parser.add_option("--sym",     		type="string", default= "c1",		help="symmetry of the refined structure")
+	parser.add_option("--npad",    		type="int",    default= 2,			help="padding size for 3D reconstruction (default=2)")
+	parser.add_option("--startangles",  action="store_true", default=False,	help="Use orientation parameters in the input file header to jumpstart the procedure")
 
 	#options introduced for the do_volume function
-	parser.add_option("--fl",      type="float",  default=0.12,    help="cut-off frequency of hyperbolic tangent low-pass Fourier filte (default 0.12)")
-	parser.add_option("--aa",      type="float",  default=0.1,    help="fall-off of hyperbolic tangent low-pass Fourier filter (default 0.1)")
-	parser.add_option("--pwreference",      type="string",  default="",    help="text file with a reference power spectrum (default no power spectrum adjustment)")
-	parser.add_option("--mask3D",      type="string",  default=None,    help="3D mask file (default a sphere  WHAT RADIUS??)")
+	parser.add_option("--fl",			type="float",	default=0.12,		help="cut-off frequency of hyperbolic tangent low-pass Fourier filte (default 0.12)")
+	parser.add_option("--aa",			type="float",	default=0.1,		help="fall-off of hyperbolic tangent low-pass Fourier filter (default 0.1)")
+	parser.add_option("--pwreference",	type="string",	default="",			help="text file with a reference power spectrum (default no power spectrum adjustment)")
+	parser.add_option("--mask3D",		type="string",	default=None,		help="3D mask file (default a sphere  WHAT RADIUS??)")
 			
 
 
@@ -664,7 +666,8 @@ def main():
 	if(nxinit < 0):  nxinit = min(32, nnxo)
 
 	nxshrink = nxinit
-	shrink = float(nxshrink)/float(nnxo)
+	minshrink = 32.0/float(nnxo)
+	shrink = max(float(nxshrink)/float(nnxo),minshrink)
 
 	#  MASTER DIRECTORY
 	if(myid == main_node):
@@ -722,7 +725,7 @@ def main():
 	#  Estimate initial resolution
 	initdir = os.path.join(masterdir,"main000")
 	#  make sure the initial volume is not set to zero outside of a mask, as if it is it will crach the program
-	if( myid == main_node ):
+	if( myid == main_node and (not options.startangles)):
 		viv = get_im(volinit)
 		if(options.mask3D == None):  mask33d = model_circle(radi,nnxo,nnxo,nnxo)
 		else:  mask33d = (options.mask3D).copy()
@@ -732,30 +735,46 @@ def main():
 			viv.write_image(volinit)
 		del mask33d, viv
 
-	xr = min(8,(nnxo - (2*radi+1))//2)
-	if(xr > 3):  ts = "2"
-	else:  ts = "1"
-
-	delta = int(options.delta)
-	if(delta <= 0.0):
-		delta = "%f"%round(degrees(atan(1.0/float(radi))), 2)
-
-	paramsdict = {	"stack":stack,"delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":"-1", "center":options.center, "maxit":1, \
-					"currentres":0.4, "aa":0.1, "radius":radi, "nsoft":0, "delpreviousmax":True, "shrink":1.0, "saturatecrit":1.0, \
-					"refvol":volinit, "mask3D":options.mask3D}
 	doit, keepchecking = checkstep(initdir, keepchecking, myid, main_node)
 	if  doit:
-
 		partids = os.path.join(masterdir, "ids.txt")
 		partstack = os.path.join(masterdir, "paramszero.txt")
-		
-		if( myid == main_node ):
-			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(line,"INITIALIZATION")
-			write_text_file(range(total_stack), partids)
-			write_text_row([[0.0,0.0,0.0,0.0,0.0] for i in xrange(total_stack) ], partstack)
+		xr = min(8,(nnxo - (2*radi+1))//2)
+		if(xr > 3):  ts = "2"
+		else:  ts = "1"
 
-		metamove(paramsdict, partids, partstack, initdir, 0, myid, main_node, nproc)
+		delta = int(options.delta)
+		if(delta <= 0.0):
+			delta = "%f"%round(degrees(atan(1.0/float(radi))), 2)
+
+		paramsdict = {	"stack":stack,"delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":"-1", "center":options.center, "maxit":1, \
+						"currentres":0.4, "aa":0.1, "radius":radi, "nsoft":0, "delpreviousmax":True, "shrink":1.0, "saturatecrit":1.0, \
+						"refvol":volinit, "mask3D":options.mask3D}
+
+		if(options.startangles):
+
+			if( myid == main_node ):
+				cmd = "mkdir "+initdir
+				cmdexecute(cmd)
+				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+				print(line,"INITIALIZATION")
+				cmd = "{} {}".format("sxheader.py --params=xform.projection  --export="+os.path.join(initdir,"params-chunk0.txt"), stack)
+				cmdexecute(cmd)
+				print(line,"Executed successfully: ","Imported initial parameters from the input stack")
+
+		else:
+	
+			if( myid == main_node ):
+				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+				print(line,"INITIALIZATION")
+				write_text_file(range(total_stack), partids)
+				write_text_row([[0.0,0.0,0.0,0.0,0.0] for i in xrange(total_stack) ], partstack)
+
+			metamove(paramsdict, partids, partstack, initdir, 0, myid, main_node, nproc)
+			if(myid == main_node):
+				print(line,"Executed successfully: ","initialization ali3d_base_MPI  %d"%nsoft)
+
+			
 
 		#  store params
 		partids = [None]*2
@@ -764,9 +783,9 @@ def main():
 		for procid in xrange(2):  partstack[procid] = os.path.join(initdir,"params-chunk%01d.txt"%procid)
 		from random import shuffle
 		if(myid == main_node):
-			print(line,"Executed successfully: ","initialization ali3d_base_MPI  %d"%nsoft)
 			#  split randomly
 			params = read_text_row(os.path.join(initdir,"params-chunk0.txt"))
+			assert(len(params) == total_stack)
 			ll = range(total_stack)
 			shuffle(ll)
 			l1 = ll[:total_stack//2]
@@ -776,10 +795,11 @@ def main():
 			l2.sort()
 			write_text_file(l1,partids[0])
 			write_text_file(l2,partids[1])
-			write_text_row([params[i] for i in l1], partstack[0]) 
+			write_text_row([params[i] for i in l1], partstack[0])
 			write_text_row([params[i] for i in l2], partstack[1])
 			del params, l1, l2
 		mpi_barrier(MPI_COMM_WORLD)
+
 		#  Now parallel
 		vol = [None]*2
 		for procid in xrange(2):
@@ -1038,9 +1058,11 @@ def main():
 					ts = get_symt(ali3d_options.sym)
 					badapples = []
 					deltaerror = 2.0
+					total_images_now = 0
 					for procid in xrange(2):
 						bad = []
 						ids  = map(int,read_text_file( partids[procid] ))
+						total_images_now += len(ids)
 						oldp = read_text_row(partstack[procid])
 						newp = read_text_row(os.path.join(mainoutputdir,"logc%01d"%procid,"params-chunk%01d.txt"%procid))
 						for i in xrange(len(ids)):
@@ -1065,12 +1087,15 @@ def main():
 							badapples += [ids[bad[i]] for i in xrange(len(bad))]
 							for i in xrange(len(bad)-1,-1,-1):
 								del oldp[bad[i]],ids[bad[i]]
-						write_text_file(ids,os.path.join(mainoutputdir,"chunk%01d.txt"%procid))
-						write_text_row(oldp,os.path.join(mainoutputdir,"params-chunk%01d.txt"%procid))
+						if(len(ids) == 0):
+							ERROR("sxpetite","program divegred, all images have large angular errors, most likely the initial model is badly off",1)
+						else:
+							write_text_file(ids,os.path.join(mainoutputdir,"chunk%01d.txt"%procid))
+							write_text_row(oldp,os.path.join(mainoutputdir,"params-chunk%01d.txt"%procid))
 					if(len(badapples)>0):
 						badapples.sort()
 						write_text_file(badapples,os.path.join(mainoutputdir,"badapples.txt"))
-						eli = 100*float(len(badapples))/float(len(ids))
+						eli = 100*float(len(badapples))/float(total_images_now)
 						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 						print(line,"Elimination of outliers: %5.1f percent"%eli )
 					else:  eli = 0.0
@@ -1088,7 +1113,7 @@ def main():
 
 			if( newres > currentres ):  tracker["movedup"] = True
 			else:   tracker["movedup"] = False
-			shrink = min(2*newres + paramsdict["aa"], 1.0)
+			shrink = max(min(2*newres + paramsdict["aa"], 1.0),minshrink)
 			tracker["extension"] = 4
 			nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
 			tracker["previous-resolution"] = newres
@@ -1118,19 +1143,19 @@ def main():
 					mpi_finale()
 					exit()
 					
-				if( bestoutputdir != mainoutputdir):
+				if( bestoutputdir != mainoutputdir and myid == main_node):
 					cmd = "{} {} {}".format("cp -p ",os.path.join(bestoutputdir,"chunk%01d.txt"%procid) , os.path.join(mainoutputdir,"chunk%01d.txt"%procid))
 					cmdexecute(cmd)
 					cmd = "{} {} {}".format("cp -p ",os.path.join(bestoutputdir,"params-chunk%01d.txt"%procid), os.path.join(mainoutputdir,"params-chunk%01d.txt"%procid))
 					cmdexecute(cmd)
-				if(myid == main_node):  currentres = read_text_file( os.path.join(bestoutputdir,"current_resolution.txt") )[0]	
-				currentres = bcast_number_to_all(currentres, source_node = main_node)	
+				if(myid == main_node):
+					currentres = read_text_file( os.path.join(bestoutputdir,"current_resolution.txt") )[0]
+				currentres = bcast_number_to_all(currentres, source_node = main_node)
 
-				shrink = min(2*currentres + paramsdict["aa"], 1.0)
+				shrink = max(min(2*currentres + paramsdict["aa"], 1.0), minshrink)
 				tracker["extension"] -= 1
 				nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
 				tracker["previous-resolution"] = newres
-				currentres = newres
 				tracker["eliminated-outliers"] = eliminated_outliers
 				tracker["movedup"] = False
 				keepgoing = 1
@@ -1143,7 +1168,7 @@ def main():
 
 				tracker["movedup"] = False
 
-				shrink = min(2*currentres + paramsdict["aa"], 1.0)
+				shrink = max(min(2*currentres + paramsdict["aa"], 1.0), minshrink)
 				nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
 				if( tracker["previous-nx"] == nnxo ):
 					keepgoing = 0

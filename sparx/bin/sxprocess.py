@@ -40,6 +40,24 @@ from	utilities 	import *
 from    statistics import mono
 import  os
 
+
+
+
+def rotate_shift_params(paramsin, transf):
+	from EMAN2 import Vec2f
+	t = Transform({"type":"spider","phi":transf[0],"theta":transf[1],"psi":transf[2],"tx":transf[3],"ty":transf[4],"tz":transf[5],"mirror":0,"scale":1.0})
+	t = t.inverse()
+	cpar = []
+	for params in paramsin:
+		d = Transform({"type":"spider","phi":params[0],"theta":params[1],"psi":params[2]})
+		d.set_trans(Vec2f(-params[3], -params[4]))
+		c = d*t
+		u = c.get_params("spider")
+		cpar.append([u["phi"],u["theta"],u["psi"],-u["tx"],-u["ty"]])
+	return cpar
+
+
+
 """
 	Traveling salesman problem solved using Simulated Annealing.
 """
@@ -212,75 +230,84 @@ def main():
 	Functionality:
 
 	1.  Phase flip a stack of images and write output to new file:
-	sxprocess.py input_stack.hdf output_stack.hdf --phase_flip
+		sxprocess.py input_stack.hdf output_stack.hdf --phase_flip
 	
 	2.  Resample (decimate or interpolate up) images (2D or 3D) in a stack to change the pixel size.
 	    The window size will change accordingly.
-	sxprocess input.hdf output.hdf  --changesize --ratio=0.5
+		sxprocess input.hdf output.hdf  --changesize --ratio=0.5
 
 	3.  Compute average power spectrum of a stack of 2D images with optional padding (option wn) with zeroes.
-	sxprocess.py input_stack.hdf powerspectrum.hdf --pw [--wn=1024]
+		sxprocess.py input_stack.hdf powerspectrum.hdf --pw [--wn=1024]
 
 	4.  Generate a stack of projections bdb:data and micrographs with prefix mic (i.e., mic0.hdf, mic1.hdf etc) from structure input_structure.hdf, with CTF applied to both projections and micrographs:
-	sxprocess.py input_structure.hdf data mic --generate_projections format="bdb":apix=5.2:CTF=True:boxsize=64
+		sxprocess.py input_structure.hdf data mic --generate_projections format="bdb":apix=5.2:CTF=True:boxsize=64
 
     5.  Retrieve original image numbers in the selected ISAC group (here group 12 from generation 3):
-    sxprocess.py  bdb:test3 class_averages_generation_3.hdf  list3_12.txt --isacgroup=12 --params=myid
+    	sxprocess.py  bdb:test3 class_averages_generation_3.hdf  list3_12.txt --isacgroup=12 --params=myid
 
     6.  Adjust rotationally averaged power spectrum of an image to that of a reference image or a reference 1D power spectrum stored in an ASCII file.
     	Optionally use a tangent low-pass filter.  Also works for a stack of images, in which case the output is also a stack.
-    sxprocess.py  vol.hdf ref.hdf  avol.hdf < 0.25 0.2> --adjpw
-    sxprocess.py  vol.hdf pw.txt   avol.hdf < 0.25 0.2> --adjpw
+    	sxprocess.py  vol.hdf ref.hdf  avol.hdf < 0.25 0.2> --adjpw
+   	 	sxprocess.py  vol.hdf pw.txt   avol.hdf < 0.25 0.2> --adjpw
 
 	7.  Generate a 1D rotationally averaged power spectrum of an image.
-    sxprocess.py  vol.hdf --rotwp=rotpw.txt
-    # Output will contain three columns:
+		sxprocess.py  vol.hdf --rotwp=rotpw.txt
+    	# Output will contain three columns:
        (1) integer line number (from zero to approximately to half the image size)
        (2) rotationally averaged power spectrum
        (3) logarithm of the rotationally averaged power spectrum
+       
+    8.  Apply 3D transformation (rotation and/or shift) to a set of orientation parameters associated with projection data.
+    	sxprocess.py  --transfromparams=phi,theta,psi,tx,ty,tz      input.txt  output.txt
+    	The output file is then imported and 3D transformed volume computed:
+    	sxheader.py  bdb:p  --params=xform.projection  --import=output.txt
+    	mpirun -np 2 sxrecons3d_n.py  bdb:p tvol.hdf --MPI
+    	The reconstructed volume is in the position of the volume computed using the input.txt parameters and then
+    	transformed with rot_shift3D(vol, phi,theta,psi,tx,ty,tz)
 
-	8.  Import ctf parameters from the output of sxcter into windowed particle headers.
+	9.  Import ctf parameters from the output of sxcter into windowed particle headers.
 	    There are three possible input files formats:  (1) all particles are in one stack, (2 aor 3) particles are in stacks, each stack corresponds to a single micrograph.
 	    In each case the particles should contain a name of the micrograph of origin stores using attribute name 'ptcl_source_image'.  Normally this is done by e2boxer.py during windowing.
 	    Particles whose defocus or astigmatism error exceed set thresholds will be skipped, otherwise, virtual stacks with the original way preceded by G will be created.
-	sxprocess.py  --input=bdb:data  --importctf=outdir/partres  --defocuserror=10.0  --astigmatismerror=5.0
-	#  Output will be a vritual stack bdb:Gdata
-	sxprocess.py  --input="bdb:directory/stacks*"  --importctf=outdir/partres  --defocuserror=10.0  --astigmatismerror=5.0
-	To concatenate output files:
-	cd directory
-	e2bdb.py . --makevstack=bdb:allparticles  --filt=G
-	IMPORTANT:  Please do not move (or remove!) any input/intermediate EMAN2DB files as the information is linked between them.
+		sxprocess.py  --input=bdb:data  --importctf=outdir/partres  --defocuserror=10.0  --astigmatismerror=5.0
+		#  Output will be a vritual stack bdb:Gdata
+		sxprocess.py  --input="bdb:directory/stacks*"  --importctf=outdir/partres  --defocuserror=10.0  --astigmatismerror=5.0
+		To concatenate output files:
+		cd directory
+		e2bdb.py . --makevstack=bdb:allparticles  --filt=G
+		IMPORTANT:  Please do not move (or remove!) any input/intermediate EMAN2DB files as the information is linked between them.
 
 """
 
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--order", action="store_true", help="Two arguments are required: name of input stack and desired name of output stack. The output stack is the input stack sorted by similarity in terms of cross-correlation coefficent.", default=False)
-	parser.add_option("--order_lookup", action="store_true", help="Test/Debug.", default=False)
-	parser.add_option("--order_metropolis", action="store_true", help="Test/Debug.", default=False)
-	parser.add_option("--order_pca", action="store_true", help="Test/Debug.", default=False)
-	parser.add_option("--initial", type="int", default=-1, help="Specifies which image will be used as an initial seed to form the chain. (default = 0, means the first image)")
-	parser.add_option("--circular", action="store_true", help="Select circular ordering (fisr image has to be similar to the last", default=False)
-	parser.add_option("--radius", type="int", default=-1, help="Radius of a circular mask for similarity based ordering")
-	parser.add_option("--changesize", action="store_true", help="resample (decimate or interpolate up) images (2D or 3D) in a stack to change the pixel size.", default=False)
-	parser.add_option("--ratio", type="float", default=1.0, help="The ratio of new to old image size (if <1 the pixel size will increase and image size decrease, if>1, the other way round")
-	parser.add_option("--pw", action="store_true", help="compute average power spectrum of a stack of 2-D images with optional padding (option wn) with zeroes", default=False)
-	parser.add_option("--wn", type="int", default=-1, help="Size of window to use (should be larger/equal than particle box size, default padding to max(nx,ny))")
-	parser.add_option("--phase_flip", action="store_true", help="Phase flip the input stack", default=False)
-	parser.add_option("--makedb", metavar="param1=value1:param2=value2", type="string",
+	parser.add_option("--order", 				action="store_true", help="Two arguments are required: name of input stack and desired name of output stack. The output stack is the input stack sorted by similarity in terms of cross-correlation coefficent.", default=False)
+	parser.add_option("--order_lookup", 		action="store_true", help="Test/Debug.", default=False)
+	parser.add_option("--order_metropolis", 	action="store_true", help="Test/Debug.", default=False)
+	parser.add_option("--order_pca", 			action="store_true", help="Test/Debug.", default=False)
+	parser.add_option("--initial",				type="int", 		default=-1, help="Specifies which image will be used as an initial seed to form the chain. (default = 0, means the first image)")
+	parser.add_option("--circular", 			action="store_true", help="Select circular ordering (fisr image has to be similar to the last", default=False)
+	parser.add_option("--radius", 				type="int", 		default=-1, help="Radius of a circular mask for similarity based ordering")
+	parser.add_option("--changesize", 			action="store_true", help="resample (decimate or interpolate up) images (2D or 3D) in a stack to change the pixel size.", default=False)
+	parser.add_option("--ratio", 				type="float", 		default=1.0, help="The ratio of new to old image size (if <1 the pixel size will increase and image size decrease, if>1, the other way round")
+	parser.add_option("--pw", 					action="store_true", help="compute average power spectrum of a stack of 2-D images with optional padding (option wn) with zeroes", default=False)
+	parser.add_option("--wn", 					type="int", 		default=-1, help="Size of window to use (should be larger/equal than particle box size, default padding to max(nx,ny))")
+	parser.add_option("--phase_flip", 			action="store_true", help="Phase flip the input stack", default=False)
+	parser.add_option("--makedb", 				metavar="param1=value1:param2=value2", type="string",
 					action="append",  help="One argument is required: name of key with which the database will be created. Fill in database with parameters specified as follows: --makedb param1=value1:param2=value2, e.g. 'gauss_width'=1.0:'pixel_input'=5.2:'pixel_output'=5.2:'thr_low'=1.0")
 	parser.add_option("--generate_projections", metavar="param1=value1:param2=value2", type="string",
 					action="append", help="Three arguments are required: name of input structure from which to generate projections, desired name of output projection stack, and desired prefix for micrographs (e.g. if prefix is 'mic', then micrographs mic0.hdf, mic1.hdf etc will be generated). Optional arguments specifying format, apix, box size and whether to add CTF effects can be entered as follows after --generate_projections: format='bdb':apix=5.2:CTF=True:boxsize=100, or format='hdf', etc., where format is bdb or hdf, apix (pixel size) is a float, CTF is True or False, and boxsize denotes the dimension of the box (assumed to be a square). If an optional parameter is not specified, it will default as follows: format='bdb', apix=2.5, CTF=False, boxsize=64.")
-	parser.add_option("--isacgroup", type="int", help="Retrieve original image numbers in the selected ISAC group   See ISAC documentaion for details.", default=-1)
-	parser.add_option("--params",	   type="string",       default=None,    help="Name of header of parameter, which one depends on specific option")
-	parser.add_option("--adjpw", action="store_true", help="Adjust rotationally averaged power spectrum of an image", default=False)
-	parser.add_option("--rotpw", type="string",   default=None,    help="Name of the text file to contain rotationally averaged power spectrum of the input image.")
+	parser.add_option("--isacgroup", 			type="int", 		help="Retrieve original image numbers in the selected ISAC group   See ISAC documentaion for details.", default=-1)
+	parser.add_option("--params",	   			type="string",      default=None,    help="Name of header of parameter, which one depends on specific option")
+	parser.add_option("--adjpw", 				action="store_true",	help="Adjust rotationally averaged power spectrum of an image", default=False)
+	parser.add_option("--rotpw", 				type="string",   	default=None,    help="Name of the text file to contain rotationally averaged power spectrum of the input image.")
+	parser.add_option("--transformparams",		type="string",   	default=None,    help="Name of the text file to contain rotationally averaged power spectrum of the input image.")
 
 	
 	# import ctf estimates done using cter
-	parser.add_option("--input",              type="string",	default= None,     		  help="Input particles.")
-	parser.add_option("--importctf",          type="string",	default= None,     		  help="Name of the file containing CTF parameters produced by sxcter.")
-	parser.add_option("--defocuserror",       type="float",  	default=1000000.0,        help="Exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent.  The error is computed as (std dev defocus)/defocus*100%")
-	parser.add_option("--astigmatismerror",   type="float",  	default=360.0,            help="Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees.")
+	parser.add_option("--input",              	type="string",		default= None,     		  help="Input particles.")
+	parser.add_option("--importctf",          	type="string",		default= None,     		  help="Name of the file containing CTF parameters produced by sxcter.")
+	parser.add_option("--defocuserror",       	type="float",  		default=1000000.0,        help="Exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent.  The error is computed as (std dev defocus)/defocus*100%")
+	parser.add_option("--astigmatismerror",   	type="float",  		default=360.0,            help="Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees.")
 
 
  	(options, args) = parser.parse_args()
@@ -343,7 +370,7 @@ def main():
 			
 			tmp.write_image(outstack, i)
 
-	if options.changesize:
+	elif options.changesize:
 		nargs = len(args)
 		if nargs != 2:
 			ERROR("must provide name of input and output file!", "change size", 1)
@@ -358,7 +385,7 @@ def main():
 		for i in xrange(nima):
 			resample(get_im(instack, i), sub_rate).write_image(outstack, i)
 
-	if options.isacgroup>-1:
+	elif options.isacgroup>-1:
 		nargs = len(args)
 		if nargs != 3:
 			ERROR("Three files needed on input!", "isacgroup", 1)
@@ -372,7 +399,7 @@ def main():
 		from utilities import write_text_file
 		write_text_file(l, args[2])
 
-	if options.pw:
+	elif options.pw:
 		nargs = len(args)
 		if nargs != 2:
 			ERROR("must provide name of input and output file!", "pw", 1)
@@ -399,7 +426,7 @@ def main():
 		p /= n
 		p.write_image(args[1])
 
-	if options.adjpw:
+	elif options.adjpw:
 
 		if len(args) < 3:
 			ERROR("filt_by_rops input target output fl aa (the last two are optional parameters of a low-pass filter)","adjpw",1)
@@ -439,7 +466,7 @@ def main():
 			img = fft(filt_table(img, table))
 			img.write_image(out_stack, i)
 
-	if options.rotpw != None:
+	elif options.rotpw != None:
 
 		if len(args) != 1:
 			ERROR("Only one input permitted","rotpw",1)
@@ -453,8 +480,18 @@ def main():
 		for i in x:  r[i] = log10(t[i])
 		write_text_file([x,t,r],options.rotpw)
 
+	elif options.transformparams != None:
+		if len(args) != 2:
+			ERROR("Please provide names of input and output files with orientation parameters","transformparams",1)
+			return
+		from utilities import read_text_row, write_text_row
+		transf = [0.0]*6
+		spl=options.transformparams.split(',')
+		for i in xrange(len(spl)):  transf[i] = float(spl[i])
 
-	if options.makedb != None:
+		write_text_row( rotate_shift_params(read_text_row(args[0]), transf)	, args[1])
+
+	elif options.makedb != None:
 		nargs = len(args)
 		if nargs != 1:
 			print "must provide exactly one argument denoting database key under which the input params will be stored"
@@ -476,21 +513,21 @@ def main():
 				dbdict[pkey] = param_dict[pkey]
 		gbdb[dbkey] = dbdict
 
-	if options.generate_projections:
+	elif options.generate_projections:
 		nargs = len(args)
 		if nargs != 3:
 			print "Must provide name of input structure from which to generate projections, desired name of output projection stack, and desired prefix for output micrographs. Exiting..."
 			return
-		inpstr = args[0]
-		outstk = args[1]
+		inpstr  = args[0]
+		outstk  = args[1]
 		micpref = args[2]
 
 		parmstr = 'dummy:'+options.generate_projections[0]
 		(processorname, param_dict) = parsemodopt(parmstr)
 
-		parm_CTF = False
+		parm_CTF    = False
 		parm_format = 'bdb'
-		parm_apix = 2.5
+		parm_apix   = 2.5
 
 		if 'CTF' in param_dict:
 			if param_dict['CTF'] == 'True':
@@ -508,13 +545,13 @@ def main():
 
 		print "pixel size: ", parm_apix, " format: ", parm_format, " add CTF: ", parm_CTF, " box size: ", boxsize
 
-		scale_mult = 2500
-		sigma_add = 1.5
-		sigma_proj = 30.0
-		sigma2_proj = 17.5
-		sigma_gauss = 0.3
-		sigma_mic = 30.0
-		sigma2_mic = 17.5
+		scale_mult      = 2500
+		sigma_add       = 1.5
+		sigma_proj      = 30.0
+		sigma2_proj     = 17.5
+		sigma_gauss     = 0.3
+		sigma_mic       = 30.0
+		sigma2_mic      = 17.5
 		sigma_gauss_mic = 0.3
 		
 		if 'scale_mult' in param_dict:
@@ -646,7 +683,7 @@ def main():
 		
 		drop_spider_doc("params.txt", params)
 
-	if options.importctf != None:
+	elif options.importctf != None:
 		print ' IMPORTCTF  '
 		from utilities import read_text_row,write_text_row
 		from random import randint
@@ -708,7 +745,8 @@ def main():
 				
 		cmd = "{} {} {}".format("rm -f",grpfile,ctfpfile)
 		subprocess.call(cmd, shell=True)
-		
+	
+	else:  ERROR("Please provide option name","sxprocess.py",1)	
 
 if __name__ == "__main__":
 	main()
