@@ -204,6 +204,10 @@ def	mergeparfiles(i1,i2,io,p1,p2,po):
 
 
 def getindexdata(stack, partids, partstack, myid, nproc):
+	# The function will read from stack a subset of images specified in partids
+	#   and assign to them parameters from partstack
+	# So, the lengths of partids and partstack are the same.
+	#  The read data is properly distributed among MPI threads.
 	lpartids  = map(int, read_text_file(partids) )
 	ndata = len(lpartids)
 	partstack = read_text_row(partstack)
@@ -238,7 +242,28 @@ def getalldata(stack, myid, nproc):
 		image_start, image_end = MPI_start_end(ndata, nproc, myid)
 	data = EMData.read_images(stack, range(image_start, image_end))
 	return data
-	
+
+def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, myid, main_node, nproc):
+	vol = [None]*2
+
+	for procid in xrange(2):
+		#  sxrecons3d.py  (full size)
+		projdata = getindexdata(stack, partids[procid], partstack[procid], myid, nproc)
+		if CTF:  vol[procid] = recons3d_4nn_ctf_MPI(myid, projdata, symmetry=ali3d_options.sym, npad = 2)
+		else:    vol[procid] = recons3d_4nn_MPI(myid, projdata, symmetry=ali3d_options.sym, npad = 2)
+		del projdata
+		if( myid == main_node):
+			vol[procid].write_image(os.path.join(outputdir,"vol%01d.hdf"%procid))
+			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			print(  line,"Generated vol #%01d "%procid)
+
+	newres = 0.0
+	if(myid == main_node):
+		newres = get_resolution(vol, radi, nnxo, outputdir)
+		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		print(  line,"Current resolution %6.4f"%newres)
+		write_text_file([newres],os.path.join(outputdir,"current_resolution.txt"))
+	return newres
 
 def compute_fscs(stack, outputdir, chunkname, newgoodname, fscoutputdir, doit, keepchecking, nproc, myid, main_node):
 	#  Compute reconstructions per group from good particles only to get FSC curves
@@ -419,7 +444,7 @@ def compute_fscs(stack, outputdir, chunkname, newgoodname, fscoutputdir, doit, k
 
 
 
-def compute_resolution(vol, radi, nnxo, fscoutputdir):
+def get_resolution(vol, radi, nnxo, fscoutputdir):
 	# this function is single processor
 	#  Get updated FSC curves
 	if(ali3d_options.mask3D is None):  mask = model_circle(radi,nnxo,nnxo,nnxo)
@@ -465,6 +490,11 @@ class ali3d_options:
 
 
 def metamove(paramsdict, partids, partstack, outputdir, procid, myid, main_node, nproc):
+	#  Reads from paramsdict["stack"] particles partids set parameters in partstack
+	#    and do refinement as specified in paramsdict
+	#
+	#  Will create outputdir
+	#  Will write to outputdir output parameters: params-chunk0.txt and params-chunk1.txt
 	if(myid == main_node):
 		#  Create output directory
 		log = Logger(BaseLogger_Files())
@@ -494,8 +524,8 @@ def metamove(paramsdict, partids, partstack, outputdir, procid, myid, main_node,
 		print(line,"METAMOVE parameters")
 		spaces = "                 "
 		for q in paramsdict:  print("                    => ",q+spaces[len(q):],":  ",paramsdict[q])
-		print("                    =>  partids      :       ",partids)
-		print("                    =>  partstack    :       ",partstack)
+		print("                    =>  partids          :    ",partids)
+		print("                    =>  partstack        :    ",partstack)
 
 	#  Run alignment command
 	params = ali3d_base(projdata, get_im(paramsdict["refvol"]), \
@@ -814,7 +844,7 @@ def main():
 
 
 		if(myid == main_node):
-			currentres = compute_resolution(vol, radi, nnxo, initdir)		
+			currentres = get_resolution(vol, radi, nnxo, initdir)		
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			print(  line,"Initial resolution %6.4f"%currentres)
 			write_text_file([currentres],os.path.join(initdir,"current_resolution.txt"))
@@ -859,7 +889,8 @@ def main():
 				cmd = "{} {}".format("mkdir", mainoutputdir)
 				cmdexecute(cmd)
 
-		# prepare names of input file names
+		# prepare names of input file names, they are in main directory, 
+		#   log subdirectories contain outputs from specific refinements
 		partids = [None]*2
 		for procid in xrange(2):  partids[procid] = os.path.join(previousoutputdir,"chunk%01d.txt"%procid)
 		partstack = [None]*2
@@ -915,6 +946,7 @@ def main():
 			break
 
 		#  REFINEMENT
+		#  Part "a"  SHC
 		for procid in xrange(2):
 			coutdir = os.path.join(mainoutputdir,"loga%01d"%procid)
 			doit, keepchecking = checkstep(coutdir  , keepchecking, myid, main_node)
@@ -967,7 +999,8 @@ def main():
 		mpi_barrier(MPI_COMM_WORLD)
 		doit = bcast_number_to_all(doit, source_node = main_node)
 
-			
+
+		#  Part "b"  deterministic			
 		partstack = [None]*2
 		for procid in xrange(2):  partstack[procid] = os.path.join(mainoutputdir,"loga%01d"%procid,"params-chunk%01d.txt"%procid)
 
@@ -981,56 +1014,42 @@ def main():
 							"refvol":os.path.join(mainoutputdir,"loga%01d"%procid,"fusevol%01d.hdf"%procid), "mask3D":options.mask3D }
 
 			if  doit:
-
 				metamove(paramsdict, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
 
 		partstack = [None]*2
 		for procid in xrange(2):  partstack[procid] = os.path.join(mainoutputdir,"logb%01d"%procid,"params-chunk%01d.txt"%procid)
-		vol = [None]*2
 
-		for procid in xrange(2):
-			doit, keepchecking = checkstep(os.path.join(mainoutputdir,"vol%01d.hdf"%procid), keepchecking, myid, main_node)
-
-			#  sxrecons3d.py  (full size)
-			if  doit:
-				projdata = getindexdata(stack, partids[procid], partstack[procid], myid, nproc)
-				if ali3d_options.CTF:  vol[procid] = recons3d_4nn_ctf_MPI(myid, projdata, symmetry=ali3d_options.sym, npad = 2)
-				else:                  vol[procid] = recons3d_4nn_MPI(myid, projdata, symmetry=ali3d_options.sym, npad = 2)
-				del projdata
-				if( myid == main_node):
-					vol[procid].write_image(os.path.join(mainoutputdir,"vol%01d.hdf"%procid))
-					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-					print(  line,"Generated vol #%01d "%procid)
-			else:
-				if(myid == main_node):
-					vol[procid] = get_im(os.path.join(mainoutputdir,"vol%01d.hdf"%procid))
-				else:
-					#  The other nodes do not need volumes
-					vol[procid] = model_blank(nnxo,nnxo,nnxo)
-
-
+		#  Compute current resolution, store result in main directory
 		doit, keepchecking = checkstep(os.path.join(mainoutputdir,"current_resolution.txt"), keepchecking, myid, main_node)
 		newres = 0.0
-		if  doit:
-			if(myid == main_node):
-				newres = compute_resolution(vol, radi, nnxo, mainoutputdir)
-				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-				print(  line,"Current resolution %6.4f"%newres)
-				write_text_file([newres],os.path.join(mainoutputdir,"current_resolution.txt"))
+		if doit:
+			newres = compute_resolution(stack, mainoutputdir, partids, partstack, radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
 		else:
 			if(myid == main_node): newres = read_text_file( os.path.join(mainoutputdir,"current_resolution.txt") )[0]		
 		newres = bcast_number_to_all(newres, source_node = main_node)
 
+		#  Here I have code to generate presentable results.  IDs and params have to be merged and stored and an overall volume computed.
 		doit, keepchecking = checkstep(os.path.join(mainoutputdir,"volf.hdf"), keepchecking, myid, main_node)
 		if  doit:
-			#  Here I should have code to generate presentable results.  IDs and params have to be merged and stored and an overall volume computed.
-			volf = (vol[0]+vol[1])*0.5
+			if( myid == main_node ):
+				pinids = map(int, read_text_file(partids[0]) ) + map(int, read_text_file(partids[1]) )
+				params = read_text_row(partstack[0]) + read_text_row(partstack[1])
+
+				assert(len(pinids) == len(params))
+
+				for i in xrange(len(pinids)):
+					pinids[i] = [ pinids[i], params[i] ]
+				del params
+				pinids.sort()
+
+				write_text_file([pinids[i][0] for i in xrange(len(pinids))], os.path.join(mainoutputdir,"indexes.txt"))
+				write_text_row( [pinids[i][1] for i in xrange(len(pinids))], os.path.join(mainoutputdir,"params.txt"))
+			mpi_barrier(MPI_COMM_WORLD)
 			ali3d_options.fl = newres
 			ali3d_options.ou = radi
-			volf = do_volume(volf,ali3d_options, mainiteration, mpi_comm = MPI_COMM_WORLD)
+			projdata = getindexdata(stack, os.path.join(mainoutputdir,"indexes.txt"), os.path.join(mainoutputdir,"params.txt"), myid, nproc)
+			volf = do_volume(projdata, ali3d_options, mainiteration, mpi_comm = MPI_COMM_WORLD)
 			if(myid == main_node): volf.write_image(os.path.join(mainoutputdir,"volf.hdf"))
-			del volf, vol
-		
 
 		mpi_barrier(MPI_COMM_WORLD)
 
@@ -1042,11 +1061,12 @@ def main():
 				doit, keepchecking = checkstep(coutdir, keepchecking, myid, main_node)
 
 				if  doit:
-					#
+					#  Do cross-check of the results
 					paramsdict = {	"stack":stack,"delta":"%f"%round(degrees(atan(1.0/lastring)), 2) , "ts":"1", "xr":"2", "an":"-1", "center":options.center, "maxit":1,  \
 									"currentres":newres, "aa":0.1, "radius":radi, "nsoft":0, "saturatecrit":0.95, "delpreviousmax":True, "shrink":shrink, \
 									"refvol":os.path.join(mainoutputdir,"vol%01d.hdf"%(1-procid)), "mask3D":options.mask3D }
-
+					#  The cross-check uses parameters from step "b" to make sure shifts are correct.  
+					#  As the check is exhaustive, angles are ignored
 					metamove(paramsdict, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
 
 			# identify bad apples
@@ -1065,8 +1085,8 @@ def main():
 						total_images_now += len(ids)
 						oldp = read_text_row(partstack[procid])
 						newp = read_text_row(os.path.join(mainoutputdir,"logc%01d"%procid,"params-chunk%01d.txt"%procid))
-						for i in xrange(len(ids)):
 
+						for i in xrange(len(ids)):
 							t1 = Transform({"type":"spider","phi":oldp[i][0],"theta":oldp[i][1],"psi":oldp[i][2]})
 							t1.set_trans(Vec2f(-oldp[i][3]*shrink, -oldp[i][4]*shrink))
 							t2 = Transform({"type":"spider","phi":newp[i][0],"theta":newp[i][1],"psi":newp[i][2]})
@@ -1088,8 +1108,9 @@ def main():
 							for i in xrange(len(bad)-1,-1,-1):
 								del oldp[bad[i]],ids[bad[i]]
 						if(len(ids) == 0):
-							ERROR("sxpetite","program divegred, all images have large angular errors, most likely the initial model is badly off",1)
+							ERROR("sxpetite","program diverged, all images have large angular errors, most likely the initial model is badly off",1)
 						else:
+							#  This generate new parameters, hopefully to be used as starting ones in the new iteration
 							write_text_file(ids,os.path.join(mainoutputdir,"chunk%01d.txt"%procid))
 							write_text_row(oldp,os.path.join(mainoutputdir,"params-chunk%01d.txt"%procid))
 					if(len(badapples)>0):
@@ -1101,11 +1122,41 @@ def main():
 					else:  eli = 0.0
 					del badapples, oldp,ids,bad,newp,ts
 				else:  eli =0.0
-				eli = bcast_number_to_all(eli, source_node = main_node)	
-				if(eli > 0.0):  eliminated_outliers = True
-				else:  eliminated_outliers = False
+				eli = bcast_number_to_all(eli, source_node = main_node)
+				
+				#  This part under MPI
+				if(eli > 0.0):
+					#  Compute current resolution
+					depres = compute_resolution(stack, mainoutputdir, \
+							[os.path.join(mainoutputdir,"chunk%01d.txt"%procid) for procid in xrange(2)], \
+							[os.path.join(mainoutputdir,"params-chunk%01d.txt"%procid) for procid in xrange(2)], \
+							radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
+					depres = bcast_number_to_all(depres, source_node = main_node)
+					if(depres < newres):
+						#  elimination of outliers decreased resolution, ignore the effort
+						eliminated_outliers = False
+					else:
+						eliminated_outliers = True
+						newres = depres
+						"""
+						#  It does not seem to be needed, as data is there, we just point to the directory
+						for procid in xrange(2):
+							#  set pointers to current parameters in main, which are for the reduced set stored above
+							partids[procid]   = os.path.join(mainoutputdir,"chunk%01d.txt"%procid
+							partstack[procid] = os.path.join(mainoutputdir,"params-chunk%01d.txt"%procid)
+						"""
+				else:
+					eliminated_outliers = False
 		else:
 			eliminated_outliers = False
+
+		if(myid == main_node and not eliminated_outliers):
+			for procid in xrange(2):
+				#  This is standard path, copy parameters to be used to the main
+				cmd = "{} {} {}".format("cp -p ", partids[procid] , os.path.join(mainoutputdir,"chunk%01d.txt"%procid))
+				cmdexecute(cmd)
+				cmd = "{} {} {}".format("cp -p ", partstack[procid], os.path.join(mainoutputdir,"params-chunk%01d.txt"%procid))
+				cmdexecute(cmd)
 
 		keepgoing = 0
 		if( newres > currentres or (eliminated_outliers and not tracker["eliminated-outliers"])):
@@ -1119,6 +1170,7 @@ def main():
 			tracker["previous-resolution"] = newres
 			currentres = newres
 			tracker["bestsolution"] = mainiteration
+			bestoutputdir = mainoutputdir
 			tracker["eliminated-outliers"] = eliminated_outliers
 			keepgoing = 1
 		
@@ -1140,14 +1192,17 @@ def main():
 				else:  # missing something here?
 					if(myid == main_node):  print(" Should not be here, ERROR 175!")
 					break
-					mpi_finale()
+					mpi_finalize()
 					exit()
-					
-				if( bestoutputdir != mainoutputdir and myid == main_node):
-					cmd = "{} {} {}".format("cp -p ",os.path.join(bestoutputdir,"chunk%01d.txt"%procid) , os.path.join(mainoutputdir,"chunk%01d.txt"%procid))
-					cmdexecute(cmd)
-					cmd = "{} {} {}".format("cp -p ",os.path.join(bestoutputdir,"params-chunk%01d.txt"%procid), os.path.join(mainoutputdir,"params-chunk%01d.txt"%procid))
-					cmdexecute(cmd)
+				if( bestoutputdir != mainoutputdir ):
+					#  This is the key, we just reset the main to previous, so it will be eventually used as a starting in the next iteration
+					mainoutputdir = bestoutputdir
+					"""
+					#  Set data from the main previous best to the current.
+					for procid in xrange(2):
+						partids[procid]   = os.path.join(bestoutputdir,"chunk%01d.txt"%procid)
+						partstack[procid] = os.path.join(bestoutputdir,"params-chunk%01d.txt"%procid)
+				"""
 				if(myid == main_node):
 					currentres = read_text_file( os.path.join(bestoutputdir,"current_resolution.txt") )[0]
 				currentres = bcast_number_to_all(currentres, source_node = main_node)
@@ -1180,21 +1235,25 @@ def main():
 					keepgoing = 1
 			else:
 				if(myid == main_node):  print("The resolution did not improve.")
+				keepgoing = 0
 
 			
 
 		if( keepgoing == 1 ):
 			if(myid == main_node):
 				print("  New shrink and image dimension :",shrink,nxshrink)
+				"""
+				#  It does not look like it is necessary, we just have to point to the directory as the files should be there.
 				#  Will continue, so update the params files
 				for procid in xrange(2):
-					if(not os.path.exists(os.path.join(mainoutputdir,"chunk%01d.txt"%procid))): 
+					#  partids ads partstack contain parameters to be used as starting in the next iteration
+					if(not os.path.exists(os.path.join(mainoutputdir,"chunk%01d.txt"%procid))):
 						cmd = "{} {} {}".format("cp -p ", partids[procid] , os.path.join(mainoutputdir,"chunk%01d.txt"%procid))
 						cmdexecute(cmd)
 					if(not os.path.exists(os.path.join(mainoutputdir,"params-chunk%01d.txt"%procid))):
 						cmd = "{} {} {}".format("cp -p ", partstack[procid], os.path.join(mainoutputdir,"params-chunk%01d.txt"%procid))
 						cmdexecute(cmd)
-			
+				"""
 			previousoutputdir = mainoutputdir
 			tracker["previous-shrink"]     = shrink
 			tracker["previous-nx"]         = nxshrink
@@ -1205,35 +1264,6 @@ def main():
 		mpi_barrier(MPI_COMM_WORLD)
 
 	mpi_finalize()
-
-
-
-"""
-We need some mechanism to have presentable results
-a = map(int, read_text_file("main001/chunk0.txt") )
-p = read_text_row("main001/params-chunk0.txt")
-
-a += map(int, read_text_file("main001/chunk1.txt") ) 
-p += read_text_row("main001/params-chunk1.txt") 
-
-assert(len(a) == len(p))
-
-for i in xrange(len(a)):
-	a[i] = [ a[i], p[i] ]
-
-a.sort()
-
-write_text_file([a[i][0] for i in xrange(len(a))],"main001/indexes.txt")
-write_text_row([a[i][1] for i in xrange(len(a))],"main001/params.txt")
-
-del a,p
-
-#  In masterdir
-e2bdb.py  bdb:rdata  --makevstack=bdb:set01 --list=main001/indexes.txt
-sxheader.py  bdb:set01  --params=xform.projection --import=main001/params.txt
-
-"""
-
 
 
 if __name__=="__main__":
