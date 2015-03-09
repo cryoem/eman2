@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Jesus Galaz, 04/28/2012; last update 31/May/2013
+# Author: Jesus Galaz, 04/28/2012; last update 9/Mar/2015
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -637,11 +637,24 @@ def fscplotter(fscs,options,apix=0.0):
 		print "factorOfTicksIs", factorOfTicks
 		print "And the final number of values is", len(values)
 		for i in range(len(values)):
-			if not kk % factorOfTicks:
-				print "I have appended this tick!", inversefreqslabels[i]
-				print "Because k is", kk
-				print "And k mod factorOfTicks is", kk % factorOfTicks
+			if i == 0:	
+				print "I always append the zero tick", inversefreqslabels[i]
 				xticks.append(inversefreqslabels[i])
+			
+			if not (kk+1) % factorOfTicks:
+				print "I have appended this tick!", inversefreqslabels[i]
+				print "Because k+1 is", kk+1
+				print "And k mod factorOfTicks is", (kk+1) % factorOfTicks
+				xticks.append(inversefreqslabels[i])
+			else:
+				print "skipped this thick", inversefreqslabels[i]
+				if i != len(values)-1 and i != 0:
+					xticks.append('')
+			
+			#if i == len(values) -1:
+			#	print "I always append the last tick", inversefreqslabels[i]
+			#	xticks.append(inversefreqslabels[i])
+				
 			kk += 1
 	
 		#xticks[0]='0'
@@ -804,7 +817,7 @@ def fscplotter(fscs,options,apix=0.0):
 			print "x len is", len(x)
 			print "yfit len is", len(yfit)
 			
-			print "x is", x
+			print "x axis is", x
 			print "yfit is", yfit
 			
 			
