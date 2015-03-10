@@ -1084,7 +1084,8 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None 
 			#=========================================================================
 			# build references
 			volft, kb = prep_vol(vol)
-			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, MPI=mpi_comm)
+			#  For the local SHC it is essential reference projections have psi zero, as otherwise it will get messed up.
+			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, MPI=mpi_comm, phiEqpsi = "Zero")
 			del volft, kb
 			#=========================================================================
 

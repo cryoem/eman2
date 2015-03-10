@@ -4265,7 +4265,8 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 	from utilities    import compose_transform2
 	from math         import cos, sin, degrees, radians
 	from EMAN2 import Vec2f
-
+	#  Templates have to have psi zero, remove once tested.
+	assert(refrings[iref].get_attr("psi") == 0.0)
 
 	ID = data.get_attr("ID")
 
