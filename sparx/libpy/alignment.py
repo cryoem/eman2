@@ -4266,7 +4266,7 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 	from math         import cos, sin, degrees, radians
 	from EMAN2 import Vec2f
 	#  Templates have to have psi zero, remove once tested.
-	assert(refrings[iref].get_attr("psi") == 0.0)
+	assert(refrings[0].get_attr("psi") == 0.0)
 
 	ID = data.get_attr("ID")
 
@@ -4361,3 +4361,8 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 			finfo.flush()
 		return peak, pixel_error, number_of_checked_refs, iref
+
+
+
+
+
