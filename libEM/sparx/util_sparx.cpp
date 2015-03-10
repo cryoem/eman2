@@ -3803,7 +3803,7 @@ c       automatic arrays
 
 static std::vector<int> shuffled_range(int first, int last);
 
-Dict Util::Crosrng_rand_e(EMData*  circ1p, EMData* circ2p, vector<int> numr, int neg, float previous_max) {
+Dict Util::Crosrng_rand_e(EMData*  circ1p, EMData* circ2p, vector<int> numr, int neg, float previous_max, float an, int psi_pos) {
 /*
 c checks single position, neg is flag for checking mirrored position
 c
@@ -3815,6 +3815,8 @@ c   neg = 0 straight,  neg = 1 mirrored
 	double precision  q(maxrin)
 	double precision  t7(-3:3)
 */
+
+
 	int nring = numr.size()/3;
 	//int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
 	int maxrin = numr[numr.size()-1];
@@ -3831,6 +3833,7 @@ c   neg = 0 straight,  neg = 1 mirrored
 #endif	//_WIN32
 
 	q = (double*)calloc(maxrin, sizeof(double));
+
 	for (i=1; i<=nring; i++) {
 		numr3i = numr(3,i);
 		numr2i = numr(2,i);
@@ -3874,22 +3877,60 @@ c   neg = 0 straight,  neg = 1 mirrored
 		}
 	}
 
+
 	fftr_d(q,ip);
 
-	double qn = -1.0e20;
-	int jtot = -1;
-    std::vector<int> rperm = shuffled_range(0, maxrin-1);
-	for (int j_j=1;j_j<=maxrin;j_j++) {
-		j = rperm[j_j - 1] + 1;
+// 12345 to go
+    int jtot = -1;
+	float qn = -1.0e20;
+	for (j=1;j<=maxrin;j++) {
+	   if (q(j) >= qn) {
+		  qn = q(j); jtot = j;
+	   }
+	}
+
+	printf("\njtot=%d psi_pos=%d  maxrin=%d\n", jtot, psi_pos, maxrin);
+
+//	exit(0);
+
+	// psi is randomized within +- 2 * an of the anchor position
+	const int psi_range = int(2*an/360.0*maxrin + 0.5);
+
+//    std::vector<int> rperm = shuffled_range(0, maxrin-1);
+    std::vector<int> rperm(2*psi_range+1);
+	for (k=-psi_range; k<=psi_range; k++) {
+		j = ( k + psi_pos + maxrin - 1)%maxrin+1;
+		rperm[k + psi_range] = j;
+	}
+
+	for (unsigned i = 0; i < rperm.size(); ++i) {
+		unsigned r = Util::get_irand(0,rperm.size()-1);
+		std::swap( rperm[r], rperm[i] );
+	}
+
+//	double qn = -1.0e20;
+//	int jtot = -1;
+	qn = -1.0e20;
+	jtot = -1;
+	for (int j_j=0;j_j<rperm.size();j_j++) {
+		j = rperm[j_j] + 1;
 
 		if (q(j) >= qn) {
 			qn = q(j);
 			if (qn > previous_max) {
 				jtot = j;
+// used to break for testing gloabal
 				break;
 			}
 		}
 	}
+
+//	printf("\njtot=%d psi_pos=%d  maxrin=%d\n", jtot, psi_pos, maxrin);
+//
+//	exit(0);
+
+
+
 
 	float  tot = 0.0;
 	if( jtot > -1 ) {
@@ -4546,7 +4587,9 @@ Dict Util::Crosrng_sm_psi(EMData* circ1p, EMData* circ2p, vector<int> numr, floa
 
 	qn  = -1.0e20;
 	// psi = 0 should correspond to psi_pos = 1 (meaning no change in in-plane rotation)
-	int psi_pos = int(psi/360.0*maxrin+0.5) + 1;
+	// this has to be verified for mirror
+    int psi_pos = (int)fmod(roundf(-psi/360.0*maxrin+10*maxrin),(float)maxrin) + 1;
+
 	const int psi_range = int(psi_max/360.0*maxrin + 0.5);
 
 	for (k=-psi_range; k<=psi_range; k++) {
@@ -4647,11 +4690,12 @@ Dict Util::Crosrng_psi(EMData* circ1p, EMData* circ2p, vector<int> numr, float p
 
 	qn  = -1.0e20;
 	// psi = 0 should correspond to psi_pos = 1
-	int psi_pos = int(psi/360.0*maxrin+0.5) + 1;
+	// this has to be verified for mirror
+    int psi_pos = (int)fmod(roundf(-psi/360.0*maxrin+10*maxrin),(float)maxrin) + 1;
 	const int psi_range = int(psi_max/360.0*maxrin + 0.5);
 
 	for (k=-psi_range; k<=psi_range; k++) {
-		j = (k+psi_pos+maxrin-1)%maxrin+1;
+    j = (k+psi_pos+maxrin-1)%maxrin+1;
 		if (q(j) >= qn) {
 			qn  = q(j);
 			jtot = j;
@@ -19645,6 +19689,18 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 				vector<int>numr, float cnx, float cny, string sym) {
 
 	//const size_t crefim_len = crefim.size();
+
+
+
+//                    float *circ1 = image->get_data();
+//                    printf("\n\n");
+//                    for (int j=0;j<=100;j++) printf("%f  ",circ1[j]);
+//                    printf("\n\n");
+//                    exit(0);
+
+
+
+
 	size_t crefim_len = crefim.size();
 	const float qv = static_cast<float>( pi/180.0 );
     Transform * t = 0;
@@ -19655,6 +19711,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
     int nref = -1, mirror = 0;
     bool found_better = false;
     size_t tiref = 0;
+    float an;
 
 
 // cout << ant <<endl;
@@ -19669,13 +19726,22 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
     With the above, local searches could be also used for randomization tests as it would be enough to call
     shc with previousmax=-1.0e23 and reference projection direction set to the current angle.
     */
+
+
+
 		t = image->get_attr("xform.anchor");
 		Dict d = t->get_params("spider");
 		float theta   = d["theta"];
+		float psi   = d["psi"];
+        int maxrin = numr[numr.size()-1];
+
 		mirror = (int)(theta > 90.0f);
+        // mirror = 0 then use -psi;
+        int psi_pos = (int)fmod(roundf((-psi - mirror*180)/360.0*maxrin+10*maxrin),(float)maxrin) + 1;
 
 		//  Multiply anchor direction object t by all symmetry group rotations.
 		vector<Transform> tsym = t->get_sym_proj(sym);
+
 
 		int isym = 0;
 		int nsym = tsym.size();
@@ -19685,10 +19751,14 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 			Dict u = tsym[isym].get_params("spider");
 			float phi   = u["phi"];
 			float theta = u["theta"];
+//			float psi = u["psi"];
+//			printf("\n%f %f %f\n",phi, theta, psi);
 			vIms[isym].ims1 = sin(theta*qv)*cos(phi*qv);
 			vIms[isym].ims2 = sin(theta*qv)*sin(phi*qv);
 			vIms[isym].ims3 = cos(theta*qv);
 		}
+
+
 
 		//  extract indexes of reference images that are within predefined angular distance from the anchor direction.
 		vector<int> index_crefim;
@@ -19705,8 +19775,28 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 			}
 		}
 
+
+        an = (float)acos(ant) / qv;
+
+
+//        const char * myfilename01 = "/users/hvoicu/EMAN2/src/test_scripts/ref_angles02.txt";
+//        FILE *fp = fopen(myfilename01, "w");
+//
+//		for(int i = 0; i < index_crefim.size(); ++i) {
+//            float phi = crefim[index_crefim[i]]->get_attr("phi");
+//            float theta = crefim[index_crefim[i]]->get_attr("theta");
+//            float psi = crefim[index_crefim[i]]->get_attr("psi");
+//            cout << phi << " "  << theta << " " << psi << " 0 0"   << endl;
+//            fprintf(fp, "%f %f %f 0 0\n", phi, theta, psi);
+//		}
+//
+//        fflush(fp);
+//        fclose(fp);
+//		exit(0);
+
 		const float previousmax = image->get_attr("previousmax");
         crefim_len = index_crefim.size();
+
 
         if (crefim_len > 0) {
 			const int lkx = int(xrng[0]/step);
@@ -19721,10 +19811,20 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 					const int ix = j*step ;
 					EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 					Normalize_ring( cimage, numr );
+//                    printf("\n\n AAA4");
+//                    float *circ1 = cimage->get_data();
+//                    printf("\n\n");
+//                    for (int j=0;j<=100;j++) printf("%f  ",circ1[j]);
+//                    printf("\n\n");
+//                    exit(0);
+
 					Frngs(cimage, numr);
 					cimages[i+lky][j+lkx] = cimage;
 				}
 			}
+
+
+
 
 			for (unsigned i = 0; i < crefim_len; ++i) {
 				unsigned r = Util::get_irand(0,crefim_len-1);
@@ -19745,7 +19845,17 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 					const float ix = j * step;
 					EMData* cimage = cimages[i+lky][j+lkx];
 
-					Dict retvals = Crosrng_rand_e(crefim[iref], cimage, numr, mirror, previousmax);
+
+//                    printf("\nlky=%d, lkx=%d\n", lky, lkx);
+
+//                    float *circ1 = cimage->get_data();
+//                    printf("\n\n");
+//                    for (int j=0;j<=100;j++) printf("%f  ",circ1[j]);
+//                    printf("\n\n");
+//                    exit(0);
+
+
+					Dict retvals = Crosrng_rand_e(crefim[iref], cimage, numr, mirror, previousmax, an, psi_pos);
 					const float new_peak = static_cast<float>( retvals["qn"] );
 					//cout << new_peak <<endl;
 					if (new_peak > peak) {
@@ -21834,7 +21944,9 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 		throw NullPointerException("NULL input image");
 	}
 
-	cout <<"  VERSION  02/26/2015  10:00 AM"<<endl;
+	cout <<"  VERSION  03/11/2015  10:00 AM"<<endl;
+
+	exit(0);
 
 	float dummy;
 	dummy = ri;

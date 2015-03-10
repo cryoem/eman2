@@ -558,7 +558,7 @@ class FakeKaiserBessel : public KaiserBessel {
 	        Crosrng_msg_m is same as Crosrng_msg except that it only checks mirrored position
 	  */
 	static Dict Crosrng_e(EMData* circ1, EMData* circ2, vector<int> numr, int neg);
-	static Dict Crosrng_rand_e(EMData* circ1, EMData* circ2, vector<int> numr, int neg, float previous_max);
+	static Dict Crosrng_rand_e(EMData* circ1, EMData* circ2, vector<int> numr, int neg, float previous_max, float an, int psi_pos);
 	static Dict Crosrng_ew(EMData* circ1, EMData* circ2, vector<int> numr, vector<float> w, int neg);
 
 	static Dict Crosrng_ms(EMData* circ1, EMData* circ2, vector<int> numr);
