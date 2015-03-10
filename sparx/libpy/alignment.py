@@ -3487,6 +3487,10 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 	#  It makes no sense, as it still searches within the entire range of psi_max
 	bnr = max( int(round(reduced_psiref/psistep))+ nc-nr,  nc-nr)
 	enr = min( int(round(reduced_psiref/psistep))+ nc+1+nr, nc+nr+1)
+	##new@ming
+	bnr = max(int(round(reduced_psiref/psistep)),0)
+	enr = min(int(round(reduced_psiref/psistep))+nr,nr)
+ 
 	
 
 	N = inima.get_ysize()  # assumed image is square, but because it is FT take y.
@@ -3497,6 +3501,7 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 	rny   = int(round(yrng/stepy))
 	wnx = 2*rnx + 1
 	wny = 2*rny + 1
+
 	w = model_blank( wnx, wny)
 	stepxx = 2*stepx
 	stepyy = 2*stepy
@@ -3531,6 +3536,7 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 	from sys import exit
 	exit()
 	"""
+	if ( rny == 0 ) : return  0.0, 0.0, 0.0, -1.e23     ## do nothing for rny=0 @ming
 	for i in xrange(bnr, enr, 1):
 		if updown == "up" :
 			c = ccf(ima,ref[i])
@@ -3552,15 +3558,15 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 			#  did not find a peak, find a maximum location instead
 			if( pp[0] == 1.0 and px == 0 and py == 0):
 				#  No peak!
-				#pass
-				
+				pass
+				"""
 				loc = w.calc_max_location()
 				PEAKV = w.get_value_at(loc[0],loc[1])
 				#print "  Did not find a peak  :",i,loc[0]-wxc, loc[1]-wyc, PEAKV
 				if(PEAKV>ma2):
 						ma2  = PEAKV
 						oma2 = pp+[loc[0]-wxc, loc[1]-wyc, loc[0]-wxc, loc[1]-wyc, PEAKV,(i-nc)*psistep]
-				
+				"""
 			else:
 				ww = model_blank(3,3)
 				px = int(pp[1])
@@ -4038,6 +4044,9 @@ def flexhelicalali(params,data):
 		if ixl > nx-1:
 			ixl = nx-2
 			dxl = 0
+		if iyl < 0:
+			iyl = 0
+			dyl = 0	
 		if iyl > ny-1:
 			iyl = ny-2
 			dyl = 0		

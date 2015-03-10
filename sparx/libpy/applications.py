@@ -16306,10 +16306,13 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
  		while(Iter < totmax_iter and terminate == 0):
 			yrng[N_step]=float(dp)/(2*pixel_size) #will change it later according to dp
 			#yrng[N_step]=max(int(yrng[N_step]+0.5),1)
-			if(ynumber[N_step]==0): stepy = 0.0
+			if(ynumber[N_step]==0): 
+				yrng[N_step]= 0
+				stepy = 1.0
 			else:                   stepy = (2*yrng[N_step]/ynumber[N_step])
-			stepx = stepy
-
+			#stepx = stepy
+			if stepy < 0.1:
+				ERROR('yrange step size cannot be lower than 0.1', "localhelicon_MPInew", 1,myid)
 			pixer  = [0.0]*nima
 
 			neworient = [[0.0, 0.0, 0.0, 0.0, 0.0, -2.0e23] for i in xrange(nima)]
@@ -16320,7 +16323,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 			if myid == main_node:
 				start_time = time()
 				print_msg("\n (localhelicon_MPI) ITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.4f, xrange (Pixels) = %5.4f,stepx (Pixels) = %5.4f, yrng (Pixels) = %5.4f,  stepy (Pixels) = %5.4f, y_restrict (Pixels)=%5.4f, ynumber = %3d\n"\
-				%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step], stepx, yrng[N_step], stepy, y_restrict[N_step], ynumber[N_step]))
+				%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step], stepx[N_step], yrng[N_step], stepy, y_restrict[N_step], ynumber[N_step]))
 				print  "ITERATION   ",total_iter
 
 			volft,kbv = prep_vol( vol )
@@ -16359,7 +16362,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 				#  Fit predicted locations as new starting points
 				if (seg_end - seg_start) > 1:
 					setfilori_SP(data[seg_start: seg_end], pixel_size, dp, dphi)
-
+				
 			#  Generate list of reference angles, all nodes have the entire list
 			ref_angles = prepare_helical_refangles(delta[N_step], initial_theta =initial_theta, delta_theta = delta_theta)
 			#  count how many projections did not have a peak.  If too many, something is wrong
@@ -16411,10 +16414,14 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 							#		phi and theta are restricted by parameter an above.
 							#
 							#
+							
+							
+							tyrng = max(stepy,min(yrng[N_step],abs(y_restrict[N_step]-ty),abs(-y_restrict[N_step]-ty)))
+							
 							#print  "IMAGE  ",im
 							angb, tx, ty, pik = directaligriddingconstrained(dataft[im], kb, refrings, \
-								psi_max, psistep, xrng[N_step], yrng[N_step], stepx, stepy, psi, tx, ty, direction)
-
+								psi_max, psistep, xrng[N_step], tyrng, stepx[N_step], stepy, psi, tx, ty, direction)
+							
 							if(pik > -1.0e23):
 								if(pik > neworient[im][-1]):
 									neworient[im][-1] = pik
@@ -18012,7 +18019,7 @@ def setfilori_SP(fildata, pixel_size, dp, dphi):
 
 		qdst = 0.0
 		for i in xrange(ns):
-			for k in xrange(2):
+			for k in xrange(3):
 				qdst += (gxyz[i][k]-cxyz[i][k])**2
 		#print qdst,toto
 		if(qdst<toto):
