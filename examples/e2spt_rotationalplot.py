@@ -57,7 +57,7 @@ def main():
 	parser.add_argument("--vols1", type=str, help="Comma-separated filenames of the .hdf volumes whose self-rotational correlation plot you want to compute.", default=None)
 	parser.add_argument("--vols2", type=str, help="Comma-separated filenames of the .hdf volumes whose rotational correlation plot you want to compute against the volumes provided through --vols1.", default=None)
 
-	#parser.add_argument("--output", type=str, help="Name for the .txt file with the results and the corresponding .png plot")
+	parser.add_argument("--output", type=str, help="Name for the .txt file with the results and the corresponding .png plot")
 	parser.add_argument("--sym", type=str, help="Symmetry to apply after all preprocessing.",default='c1')
 
 	
@@ -102,10 +102,7 @@ def main():
 	parser.add_argument("--offset",type=float,default=0.0, help="""Default=0. Rotation in azimuth
 		to apply to one of the models before computing the entire rotational correlation plot.""")
 		
-	parser.add_argument("--histogram",type=int, default=0, help="""Default=0 (won't save
-		histogram). Number of bins to use to save plot as a histogram
-		in addition to the normal, continuous curve.""")
-
+	parser.add_argument("--ownvalues",action='store_true',default=False,help="""Default=False. If provided and --normalizeplot is also provided, this parameter will cause all curves to go from 0 to 1 when ploted on the same plot by specifying --singleplot. Otherwise, the maximum value will drawn from the highest value amongst all the curves and the minimum value from the lowest value amongst all the curves being plotted simultaneously, preserving the relative intensity between different curves, but still effectively making the range 0 to 1.""")
 
 	
 	(options, args) = parser.parse_args()
@@ -211,6 +208,19 @@ def main():
 		
 		values={}
 		
+		
+		#absMIN=1000000
+		#absMAX=-1
+		absMIN = 0.0
+		absMAX = 0.0
+		ownvalues = 1
+		try:
+			if options.ownvalues:
+				ownvalues = options.ownvalues
+		except:
+			pass
+		
+		
 		k=0
 		for F in files:
 			print "Working with this file now", F
@@ -230,19 +240,37 @@ def main():
 				print "Thus az, value are", az, value
 	
 			#title=F.replace('.txt','')
+			
+			if not ownvalues:
+			
+				minv = float(min(valuesforthisfile))
+				if float(minv) < float(absMIN):
+					absMIN = float(minv)
+
+				maxv = float(max(valuesforthisfile))
+				if float(maxv) > float(absMAX):
+					absMAX = float(maxv)
+				print "Min and max to send are", absMIN, absMAX
 		
+			
 			values.update({k:valuesforthisfile})
 			k+=1
-		absMIN=1000000
-		absMAX=-1
 		
-		plotter(options,azs,values,options.output.replace('.txt',''),None,k,absMIN,absMAX)
+		title = 'plot'
+		if options.output:
+			tilte = options.output.replace('.txt','')
+		
+		
+		plotter(options,azs,values,title,None,k,absMIN,absMAX)
 		print "I have returned from the plotter"
 			
 		if options.singleplot:	
 			print "And single plot is on"
 			
-			plotname = options.output.replace('.txt','')
+			plotname = 'plot'
+			if options.output:
+				plotname = options.output.replace('.txt','')
+			
 			if not options.only2dplot:
 				print "While only 2D plot is off"
 				#pylab.savefig(plotname)	
@@ -281,8 +309,10 @@ def rotcccplot(v1,v2,options):
 				 and the single volume through --vol2."""
 			sys.exit()
 
-	absMAX=-1.0
-	absMIN=1000000.0
+	#absMAX=-1.0
+	#absMIN=1000000.0
+	absMAX=0.0
+	absMIN=0.0
 	#mastervalues=[]
 	
 	for ni in range(nimg1):
@@ -329,22 +359,20 @@ def rotcccplot(v1,v2,options):
 		
 			if not options.normalizeplot or not options.singleplot:
 				plotter(options,azs,values,title,ts,loop,0,0)
-				if options.histogram:
-					histogramBins = options.histogram
-					histogramPlot( title, options, values, histogramBins )
+				
 				
 				print "I have returned from the plotter"
 			else:
 				#mastervalues.append(values)
 				for ele in values:
 					minv = float(min(values[ele]))
-					if minv < absMIN:
-						absMIN = minv
+					if float(minv) < float(absMIN):
+						absMIN = float(minv)
 
 					maxv = float(max(values[ele]))
-					if maxv > absMAX:
-						absMAX = maxv
-
+					if float(maxv) > float(absMAX):
+						absMAX = float(maxv)
+				print "Min and max to send are", absMIN, absMAX
 				plotter(options,azs,values,title,ts,loop,absMIN,absMAX)
 		
 		if options.singleplot:	
@@ -388,16 +416,24 @@ def symmetrize(vol,options):
 	
 	
 def plotter(options,azs,values,title,ts,loop,absMIN,absMAX):
-
+	
+	import colorsys
+	N = len(values)
+	HSV_tuples = [(x*1.0/N, 0.5, 0.5) for x in range(N)]
+	RGB_tuples = map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples)
+	
 	print "I have acquired azs and values and will proceed to plot."
 	
 	if options.normalizeplot:
 		for ele in values:
 			#val = values[ele]
-		
+			print "values are", values
 			minv1 = min(values[ele])
-			if absMIN:
+			print "minval BEFORE is", minv1
+			if absMIN and options.singleplot and len(values) > 1:
 				minv1 = absMIN
+			
+				print "There was absmin and singleplot therefore minval is", minv1
 			#maxv1 = max(values[ele])
 			#print "Min max before normalization was", minv,maxv1
 			for k in range(len(values[ele])):
@@ -405,10 +441,15 @@ def plotter(options,azs,values,title,ts,loop,absMIN,absMAX):
 		
 			#minv2 = min(values[ele])
 			maxv2 = max(values[ele])
-			if absMAX:
-				maxv2 = absMAX -absMIN
+			print "maxval BEFORE is", maxv2
+			if absMAX and options.singleplot and len(values) > 1:
+				maxv2 = absMAX - minv1
+				print "There was absmax and single plot therefore maxval is", maxv2
 			#print "After subtracting min, the are", minv2,maxv
 			#print "Max before normalization was", maxv
+	
+			
+			
 			for k in range(len(values[ele])):
 				values[ele][k] = values[ele][k] / maxv2
 				
@@ -420,6 +461,7 @@ def plotter(options,azs,values,title,ts,loop,absMIN,absMAX):
 	
 	mins = []
 	maxs = []
+	kont=0
 	for ele in values:
 		plotname = title.replace('.hdf','').replace('.mrc','') + '.png'
 		#alt = ele
@@ -475,7 +517,7 @@ def plotter(options,azs,values,title,ts,loop,absMIN,absMAX):
 			matplotlib.rc('font', **font)
   		 	
 			
-			pylab.plot(azs, values[ele], linewidth=2)
+			pylab.plot(azs, values[ele], color=RGB_tuples[kont], linewidth=2)
 			pylab.rc("axes", linewidth=2.0)
 		
 			pylab.xlabel('X Axis', fontsize=16, fontweight='bold')
@@ -501,7 +543,8 @@ def plotter(options,azs,values,title,ts,loop,absMIN,absMAX):
 		#else:
 		#	ylim([min(values[ele]),max(values[ele])])
 		
-		ylim([ min(mins),max(maxs) ])
+		if options.singleplot:
+			ylim([ min(mins),max(maxs) ])
 			
 		if not options.singleplot:
 			plotname = txtname.replace('.txt','.png')
@@ -511,7 +554,8 @@ def plotter(options,azs,values,title,ts,loop,absMIN,absMAX):
 			pylab.savefig( options.path + '/' + plotname)
 			print "I have saved the figure"
 			clf()	
-	
+		kont+=1
+		
 	print "I am exiting the plotter"
 	return()
 	
@@ -746,23 +790,6 @@ def genicosvertices():
 	return(ts)
 
 
-def histogramPlot( name, options, intensities, bins ):
-
-	plt.hist(intensities, bins, label=name)	
-	#mean = numpy.mean( intensities )
-	#std = numpy.std( intensities )
-	
-	#pdf = norm.pdf(intensities, mean, std)
-	#plt.plot(intensities, pdf)
-
-	plt.title("Rotational correlation histogram")
-	plt.ylabel("Azimuth")
-	plt.xlabel("Correlation")
-	
-	plt.savefig(options.path + '/' + name + '.png')
-	plt.clf()
-
-	return
 	
 if __name__ == "__main__":
 	main()
