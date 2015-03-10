@@ -192,19 +192,19 @@ def main():
 			rmidy = Region(0, ny/2, 0, nx, 1, nz)
 			#tz = Transform({'type':'eman','az':0,'alt':0,'phi':0})
 
-			regions={'SLICEmidz':rmidz,'SLICEmidx':rmidx,'SLICEmidy':rmidy}
-			k=0
-			for tag in regions:
+			regions={0:rmidz,1:rmidx,2:rmidy}
+			#k=0
+			for kk in regions:
 				z=1
-				if 'midz' in tag:
+				if kk == 0:
 					x=nx
 					y=ny
 				
-				elif 'midx' in tag:
+				elif kk == 1:
 					x=nz
 					y=ny
 					
-				elif 'midy' in tag:
+				elif kk == 2:
 					x=nx
 					y=nz
 				
@@ -212,12 +212,12 @@ def main():
 				#d = EMData()
 				#d.read_image(options.input, 0, False, regions[tag])
 				
-				print "I have extracted this orthogonal region", regions[tag]
-				slice = a.get_clip(regions[tag])
+				print "I have extracted this orthogonal region", regions[kk]
+				slice = a.get_clip(regions[kk])
 				slice.set_size(x,y,1)
-				slice.write_image(options.path + '/' + options.input.replace('.','_SLICESortho.'),k)
-				print "The mean and index are", slice['mean'],k
-				k+=1
+				slice.write_image(options.path + '/' + options.input.replace('.','_SLICESortho.'),kk)
+				print "The mean and index are", slice['mean'],kk
+				#k+=1
 				
 		if options.allz:
 			print "Generating all z slices"
