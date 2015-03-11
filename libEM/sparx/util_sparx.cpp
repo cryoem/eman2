@@ -3790,7 +3790,16 @@ c       automatic arrays
 	return  retvals;
 }
 
-static std::vector<int> shuffled_range(int first, int last);
+static std::vector<int> shuffled_range(int first, int last)
+{
+	std::vector<int> v(last - first + 1);
+	for (unsigned i = 0; i < v.size(); ++i) v[i] = first + i;
+	for (unsigned i = 0; i < v.size(); ++i) {
+		unsigned r = Util::get_irand(0,v.size()-1);
+		std::swap( v[r], v[i] );
+	}
+	return v;
+}
 
 Dict Util::Crosrng_rand_e(EMData*  circ1p, EMData* circ2p, vector<int> numr, int neg, float previous_max, float an, int psi_pos) {
 /*
@@ -3880,15 +3889,13 @@ c   neg = 0 straight,  neg = 1 mirrored
 	}
 
 	double qn = -1.0e20;
-	int jtot = -1;
+	int jtot  = -1;
 	for (int j_j=0;j_j<rperm.size();j_j++) {
 		j = rperm[j_j] + 1;
-		if (q(j) >= qn) {
-			if (qn > previous_max) {
-				qn = q(j);
-				jtot = j;
-				break;
-			}
+		if (q(j) > previous_max) {
+			qn = q(j);
+			jtot = j;
+			break;
 		}
 	}
 
@@ -3898,11 +3905,10 @@ c   neg = 0 straight,  neg = 1 mirrored
 			j = (jtot+k+maxrin-1)%maxrin + 1;
 			t7(k+4) = q(j);
 		}
-
 		prb1d(t7,7,&pos);
-
 		tot = (float)jtot + pos;
 	}
+
 	if (q) free(q);
 
 	Dict retvals;
@@ -4171,17 +4177,6 @@ c
 	return retvals;
 }
 
-static std::vector<int> shuffled_range(int first, int last)
-{
-	std::vector<int> v(last - first + 1);
-	for (unsigned i = 0; i < v.size(); ++i) v[i] = first + i;
-	for (unsigned i = 0; i < v.size(); ++i) {
-		unsigned r = Util::get_irand(0,v.size()-1);
-		std::swap( v[r], v[i] );
-	}
-	return v;
-}
-
 static Dict Crosrng_rand_ms(EMData* circ1p, EMData* circ2p, vector<int> numr, float previous_max)
 {
 	int nring = numr.size()/3;
@@ -4275,29 +4270,25 @@ c
 	std::vector<int> angles = shuffled_range(0, 2*maxrin-1);  // [0..maxrin) - not-mirrored, [maxrin..2*maxrin) - mirrored
 	bool mirrored = false;
 	double qn = -1.0e20;
-	int jtot = -1;
+	int    jtot = -1;
 	for (int pos_j=0; pos_j < 2*maxrin; pos_j++) {   //cout <<"  "<<j<<"   "<<q(j-1) <<endl;
 		j = angles[pos_j] + 1;
 		if (j <= maxrin) {
 			// not mirrored
-			if (q(j) > qn) {
+			if (q(j) > previous_max) {
 				mirrored = false;
 				qn  = q(j);
-				if (qn > previous_max)  {
-					jtot = j;
-					break;
-				}
+				jtot = j;
+				break;
 			}
 		} else {
 			// mirrored
 			j -= maxrin;
-			if ( t(j) > qn ) {
+			if ( t(j) > previous_max ) {
 				mirrored = true;
 				qn   = t(j);
-				if (qn > previous_max)  {
-					jtot = j;
-					break;
-				}
+				jtot = j;
+				break;
 			}
 		}
 	}
@@ -19655,13 +19646,12 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
     float ang = 0.0f;
     float sx=0.0f, sy=0.0f;
     float peak = -1.0e23f;
-    int nref = -1, mirror = 0;
-    bool found_better = false;
+    int   nref = -1, mirror = 0;
+    bool  found_better = false;
     size_t tiref = 0;
     float an;
 
-
-// cout << ant <<endl;
+	// cout << ant <<endl;
     if( ant > 0.0f) {  //LOCAL SEARCHES
     /*
     Sequence of operations:
@@ -19762,7 +19752,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 						peak = new_peak;
 						found_better = (peak > previousmax);
 						//cout << found_better <<endl;
-						// jump out from search in while
+						// jump out from search
 						if (found_better) break;
 					}
 				}
@@ -19843,7 +19833,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 					mirror = static_cast<int>( retvals["mirror"] );
 					found_better = (peak > previousmax);
 					//cout << found_better <<endl;
-					// jump out from search in while
+					// jump out from search
 					if (found_better) break;
 				}
 			}
