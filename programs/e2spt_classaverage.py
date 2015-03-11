@@ -1225,13 +1225,16 @@ def clip3D( vol, sizex, sizey=0, sizez=0 ):
 '''
 Function to generate the reference either by reading from disk or bootstrapping
 '''
-def sptRefGen( options, ptclnumsdict, cmdwp ):
+def sptRefGen( options, ptclnumsdict, cmdwp, wildcard=0, method='',subset4ref=0):
 	
 	refsdict = {}
 	elements = cmdwp.split(' ')
 	print "elements are", elements
 	
 	print "ptclnumsdict received in sptRefGen is", ptclnumsdict
+	
+	print "RECEIVED CMDWP", cmdwp
+	print 'Therefore elemnts are', elements
 	
 	for klassnum in ptclnumsdict:
 		
@@ -1240,8 +1243,16 @@ def sptRefGen( options, ptclnumsdict, cmdwp ):
 		if klassnum == 1:
 			klassidref = '_odd'
 		
-		if options.goldstandardoff:
-			klassidref = ''
+		try:
+			if options.goldstandardoff:
+				klassidref = ''
+		except:
+			if wildcard:
+				klassidref = ''
+				
+		
+		if len(ptclnumsdict) > 2:
+			klassidref = '_' + str( klassnum ).zfill( len( str( len(ptclnumsdict))))
 		
 		ptclnums = ptclnumsdict[ klassnum ]
 		print "Therefore for class", klassnum
@@ -1284,41 +1295,77 @@ def sptRefGen( options, ptclnumsdict, cmdwp ):
 			
 			refsdict.update({ klassnum : ref })
 			
+		
+		else:
+			try:
+				if options.hacref:
+					method = 'hac'
+			except:
+				pass
 			
-		elif options.hacref:
+			try:
+				if options.btref:
+					method = 'bt'
+			except:
+				pass
+			
+			try:
+				if options.ssaref:
+					method = 'ssa'
+			except:
+				pass
+				
+			if not method and not options.ref:
+				method = 'bt'
+				
+		#elif options.hacref:
+		if method == 'hac':
+		
 			if options.verbose:
 				print "\n(e2spt_classaverage)(sptRefGen) - Generating initial reference using hierarchical ascendant classification through e2spt_hac.py"
 			
 			subsetForHacRef = 'spthac_refsubset'+ klassidref + '.hdf'
 			
 			i = 0
+			nptclsforref = 10
+			try:
+				if options.hacref:
+					nptclsforref = options.hacref								
+			except:
+				if subset4ref:
+					nptclsforref=subset4ref
 			
-			hacreflimit = options.hacref
-			if hacreflimit >= len(ptclnums):
-				hacreflimit =  len(ptclnums)
+			if nptclsforref >= len(ptclnums):
+				nptclsforref =  len(ptclnums)
 			
-			print "Hacreflimit is", hacreflimit
-			if hacreflimit < 3:
+			print "Hacreflimit is", nptclsforref
+			if nptclsforref < 3:
 				print """ERROR: You cannot build a HAC reference with less than 3 particles.
 				Either provide a larger --hacref number, a larger --subset number, or provide
 				--goldstandardoff"""
 				
 				sys.exit()
 			
-			while i < hacreflimit :
+			
+			i = 0
+			while i < nptclsforref :
 				a = EMData( options.input, ptclnums[i] )
 				a.write_image( subsetForHacRef, i )
 				i+=1
 			
-			niterhac = options.hacref - 1
+			niterhac = nptclsforref - 1
 
 			hacelements = []
 			for ele in elements:
-				if 'output' not in ele and 'fsc' not in ele and 'subset' not in ele and 'input' not in ele and 'ref' not in ele and 'path' not in ele and 'keep' not in ele and 'iter' not in ele and 'subset' not in ele and 'goldstandardoff' not in ele and 'savepreprocessed' not in ele:
+				if 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'output' not in ele and 'fsc' not in ele and 'subset' not in ele and 'input' not in ele and '--ref' not in ele and 'path' not in ele and 'keep' not in ele and 'iter' not in ele and 'subset' not in ele and 'goldstandardoff' not in ele and 'savepreprocessed' not in ele:
 					hacelements.append(ele)
 			
 			cmdhac = ' '.join(hacelements)
 			cmdhac = cmdhac.replace('e2spt_classaverage','e2spt_hac')
+			
+			if wildcard:
+				cmdhac = cmdhac.replace('e2spt_refinemulti','e2spt_hac')
+				
 			
 			hacrefsubdir = 'spthac_ref' + klassidref
 			
@@ -1338,9 +1385,9 @@ def sptRefGen( options, ptclnumsdict, cmdwp ):
 			ref = EMData( options.path +'/'+ hacrefsubdir +'/finalAvg.hdf', 0 )
 
 			refsdict.update({ klassnum : ref })
-
-
-		elif options.ssaref:
+		
+		#elif options.ssaref:
+		if method == 'ssa':
 			if options.verbose:
 				print "\n(e2spt_classaverage)(sptRefGen) - Generating initial reference using self symmetry alignment through e2symsearch3d.py"
 			
@@ -1351,8 +1398,19 @@ def sptRefGen( options, ptclnumsdict, cmdwp ):
 			
 			subsetForSsaRef = 'sptssa_refsubset'+ klassidref + '.hdf'
 			
+			nptclsforref = 10
+			try:
+				if options.ssaref:
+					nptclsforref=options.ssaref		
+			except:
+				if subset4ref:
+					nptclsforref=subset4ref
+			
+			if nptclsforref >= len(ptclnums):
+				nptclsforref =  len(ptclnums)
+			
 			i = 0
-			while i < options.ssaref :
+			while i < nptclsforref :
 				a = EMData( options.input, ptclnums[i] )
 				a.write_image( subsetForSsaRef, i )
 				i+=1
@@ -1361,7 +1419,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp ):
 			
 			ssaelements = []
 			for ele in elements:
-				if 'fine' not in ele and 'fsc' not in ele and 'output' not in ele and 'path' not in ele and 'goldstandardoff' not in ele and 'savepreprocessed' not in ele and 'align' not in ele and 'iter' not in ele and 'npeakstorefine' not in ele and 'precision'not in ele and '--radius' not in ele and 'randphase' not in ele and 'search' not in ele and '--save' not in ele and 'ref' not in ele and 'input' not in ele and 'output' not in ele and 'subset' not in ele:
+				if 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'fine' not in ele and 'fsc' not in ele and 'output' not in ele and 'path' not in ele and 'goldstandardoff' not in ele and 'savepreprocessed' not in ele and 'align' not in ele and 'iter' not in ele and 'npeakstorefine' not in ele and 'precision'not in ele and '--radius' not in ele and 'randphase' not in ele and 'search' not in ele and '--save' not in ele and '--ref' not in ele and 'input' not in ele and 'output' not in ele and 'subset' not in ele:
 				#	print "Appended element", ele
 					ssaelements.append(ele)
 				#else:
@@ -1376,6 +1434,9 @@ def sptRefGen( options, ptclnumsdict, cmdwp ):
 				
 			cmdssa = ' '.join(ssaelements)
 			cmdssa = cmdssa.replace('e2spt_classaverage','e2symsearch3d')
+			
+			if wildcard:
+				cmdssa = cmdssa.replace('e2spt_refinemulti','e2symsearch3d')
 			
 			cmdssa += ' --input=' + subsetForSsaRef 
 			cmdssa += ' --path=' + ssarefsubdir
@@ -1398,9 +1459,10 @@ def sptRefGen( options, ptclnumsdict, cmdwp ):
 			ref = EMData( options.path +'/'+ ssarefsubdir +'/' + ssarefname, 0 )
 
 			refsdict.update({ klassnum : ref })
-						
 
-		elif not options.hacref and not options.ssaref:
+		#elif not options.hacref and not options.ssaref:				
+		if method == 'bt':
+		
 			nptclForRef = len(ptclnums)
 
 			#from e2spt_binarytree import binaryTreeRef
@@ -1412,10 +1474,15 @@ def sptRefGen( options, ptclnumsdict, cmdwp ):
 			niter = int(floor(log( len(ptclnums) ,2 )))
 			nseed=2**niter
 			
-			if options.btref:
-				niter = int(floor(log( options.btref, 2 )))
-				nseed=2**niter			
-			
+			try:
+				if options.btref:
+					niter = int(floor(log( options.btref, 2 )))
+					nseed=2**niter			
+			except:
+				if subset4ref:
+					niter = int(floor(log( subset4ref, 2 )))
+					nseed=2**niter	
+					
 			
 			
 			#ref = binaryTreeRef( options, nptclForRef, nseed, ic, etc )
@@ -1431,11 +1498,18 @@ def sptRefGen( options, ptclnumsdict, cmdwp ):
 
 			btelements = []
 			for ele in elements:
-				if 'output' not in ele and 'fsc' not in ele and 'subset' not in ele and 'input' not in ele and 'ref' not in ele and 'path' not in ele and 'keep' not in ele and 'iter' not in ele and 'goldstandardoff' not in ele and 'savepreprocessed' not in ele:
+				if 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'output' not in ele and 'fsc' not in ele and 'subset' not in ele and 'input' not in ele and '--ref' not in ele and 'path' not in ele and 'keep' not in ele and 'iter' not in ele and 'goldstandardoff' not in ele and 'savepreprocessed' not in ele:
 					btelements.append(ele)
 			
 			cmdbt = ' '.join(btelements)
 			cmdbt = cmdbt.replace('e2spt_classaverage','e2spt_binarytree')
+			
+			print "wildcard is!", wildcard
+			print "BEFORE replacement", cmdbt
+			
+			if wildcard:
+				cmdbt = cmdbt.replace('e2spt_refinemulti','e2spt_binarytree')
+			
 			
 			btrefsubdir = 'sptbt_ref' + klassidref		
 			
