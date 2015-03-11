@@ -3689,10 +3689,11 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 	if updown == "up" :  reduced_psiref = psiref -  90.0
 	else:                reduced_psiref = psiref - 180.0
 	#  Limit psi search to within psimax range
+	#bnr = max(int(round(reduced_psiref/psistep)),0)
+	#enr = min(int(round(reduced_psiref/psistep))+nr,nr)
 	bnr = max(int(round(reduced_psiref/psistep)),0)
 	enr = min(int(round(reduced_psiref/psistep))+nr,nr)
-	bnr = 0
-	enr = nr
+	
 	N = inima.get_ysize()  # assumed image is square, but because it is FT take y.
 	#  Window for ccf sampled by gridding
 	#   We quietly assume the search range for translations is always much less than the ccf size,
@@ -3736,6 +3737,7 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 	exit()
 	"""
 	ccf3dimg = model_blank(wnx, wny, enr-bnr)
+	if ( rny == 0 ) : return  0.0, 0.0, 0.0, -1.e23, ccf3dimg     ## do nothing for rny=0 @ming
 	for i in xrange(bnr, enr, 1):
 		if updown == "up" :
 			c = ccf(ima,ref[i])
@@ -3761,8 +3763,8 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 			#  did not find a peak, find a maximum location instead
 			if( pp[0] == 1.0 and px == 0 and py == 0):
 				#  No peak!
-				#pass
-				
+				pass
+				"""
 				loc = w.calc_max_location()
 				PEAKV = w.get_value_at(loc[0],loc[1])
 				#print "  Did not find a peak  :",i,wxc, wyc, loc[0]-wxc, loc[1]-wyc, PEAKV
@@ -3770,7 +3772,7 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 					ma2  = PEAKV
 					#oma2 = pp+[loc[0]-wxc, loc[1]-wyc, loc[0]-wxc, loc[1]-wyc, PEAKV,(i-nc)*psistep]
 					oma2 = pp+[loc[0]-wxc, loc[1]-wyc, loc[0]-wxc, loc[1]-wyc, PEAKV,(i-nc)]
-				
+				"""
 			else:
 				ww = model_blank(3,3)
 				px = int(pp[1])
@@ -3806,15 +3808,15 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 			py = int(pp[5])
 			if( pp[0] == 1.0 and px == 0 and py == 0):
 				#  No peak!
-				#pass
-				
+				pass
+				"""
 				loc = w.calc_max_location()
 				PEAKV = w.get_value_at(loc[0],loc[1])
 				if(PEAKV>ma4):
 					ma4  = PEAKV
 					#oma4 = pp+[loc[0], loc[1], loc[0], loc[1], PEAKV,(i-nc)*psistep]
 					oma4 = pp+[loc[0]-wxc, loc[1]-wyc, loc[0]-wxc, loc[1]-wyc, PEAKV,(i-nc)]
-				
+				"""
 			else:
 				ww = model_blank(3,3)
 				px = int(pp[1])
@@ -3941,9 +3943,9 @@ def alignment3Dsnake(partition, nsegs, initialori, ctx, psistep, stepx, stepy, t
 	xtol = 1.e-8
 	maxi = 1000
 	scale = [nc*1.0]*len(TCK[0][1])+[rnx*1.0]*len(TCK[1][1])+[rny*1.0]*len(TCK[2][1])
-	print "begin amoeba refine..."
+	print "begin amoeba refine... "#, params0
 	params,fval, numit=amoeba(params, scale, flexhelicalali, ftol, xtol, maxi, [ctx,params0, 0.0, TCK, nsegs])
-	print "amoeba iter_num=%d"%numit
+	print "after amoeba refine, iter_num=%d"%numit#, params
 	##4. get alignment parameters from refined b-spline coefficients.
 	import numpy as np        
 	pang = np.array(params[0:len(TCK[0][1])])

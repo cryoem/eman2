@@ -16310,6 +16310,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 				yrng[N_step]= 0
 				stepy = 1.0
 			else:                   stepy = (2*yrng[N_step]/ynumber[N_step])
+			
 			#stepx = stepy
 			if stepy < 0.1:
 				ERROR('yrange step size cannot be lower than 0.1', "localhelicon_MPInew", 1,myid)
@@ -16397,7 +16398,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 
 							if(refrings[0] == None):
 								#print  "  reffft1  ",im,refang
-								refrings = prepare_reffft1( volft, kbv, refang, segmask, psi_max, psistep)
+								refrings = prepare_reffft1(volft, kbv, refang, segmask, psi_max, psistep)
 
 							if psi < 180.0 :  direction = "up"
 							else:             direction = "down"
@@ -16433,7 +16434,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 					#print " neworient  ",im,neworient[im]
 					#from utilities import inverse_transform2
 					#t1, t2, t3, tp = inverse_transform2(neworient[im][3][1]+neworient[im][0])
-					tp = Transform({"type":"spider","phi":neworient[im][3][0],"theta":neworient[im][3][1],"psi":neworient[im][3][1]+neworient[im][0]})
+					tp = Transform({"type":"spider","phi":neworient[im][3][0],"theta":neworient[im][3][1],"psi":neworient[im][3][2]+neworient[im][0]})
 					tp.set_trans( Vec2f( neworient[im][1], neworient[im][2] ) )
 					data[im].set_attr("xform.projection", tp)
 					from utilities import get_params_proj
@@ -16795,11 +16796,18 @@ def localhelicon_MPIming(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, x
 		Iter = 0
 		ant = cos(radians(an[N_step]))
  		while(Iter < totmax_iter and terminate == 0):
-			yrng[N_step]=float(dp)/(2*pixel_size) #will change it later according to dp
-			#yrng[N_step]=max(int(yrng[N_step]+0.5),1)
-			if(ynumber[N_step]==0): stepy = 0.0
+ 			yrng[N_step]=float(dp)/(2*pixel_size) #will change it later according to dp
+			if(ynumber[N_step]==0): 
+				yrng[N_step]= 0
+				stepy = 1.0
 			else:                   stepy = (2*yrng[N_step]/ynumber[N_step])
-			stepx = stepy
+					
+			if stepy < 0.1:
+				ERROR('yrange step size cannot be lower than 0.1', "localhelicon_MPInew", 1,myid)
+ 		
+ 		
+			
+			
 
 			pixer  = [0.0]*nima
 
@@ -16811,7 +16819,7 @@ def localhelicon_MPIming(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, x
 			if myid == main_node:
 				start_time = time()
 				print_msg("\n (localhelicon_MPI) ITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.4f, xrange (Pixels) = %5.4f,stepx (Pixels) = %5.4f, yrng (Pixels) = %5.4f,  stepy (Pixels) = %5.4f, y_restrict (Pixels)=%5.4f, ynumber = %3d\n"\
-				%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step], stepx, yrng[N_step], stepy, y_restrict[N_step], ynumber[N_step]))
+				%(total_iter, Iter, delta[N_step], an[N_step], xrng[N_step], stepx[N_step], yrng[N_step], stepy, y_restrict[N_step], ynumber[N_step]))
 				print  "ITERATION   ",total_iter
 
 			volft,kbv = prep_vol( vol )
@@ -16876,46 +16884,54 @@ def localhelicon_MPIming(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, x
 						finfo.flush()
 					#  Determine whether segment is up and down and search for psi in one orientation only.
 					
-						
+					imn1 = sin(radians(theta))*cos(radians(phi))
+					imn2 = sin(radians(theta))*sin(radians(phi))
+					imn3 = cos(radians(theta))	
 					for refang in ref_angles:
+						n1 = sin(radians(refang[1]))*cos(radians(refang[0]))
+						n2 = sin(radians(refang[1]))*sin(radians(refang[0]))
+						n3 = cos(radians(refang[1]))
 						refrings = [None]
-						if(refrings[0] == None):
-							#print  "  reffft1  ",im,refang
-							refrings = prepare_reffft1( volft, kbv, refang, segmask, psi_max, psistep)
-
-						if psi < 180.0 :  direction = "up"
-						else:             direction = "down"
-
+												
+						if( (n1*imn1 + n2*imn2 + n3*imn3)>=ant ):
+							if(refrings[0] == None):
+								#print  "  reffft1  ",im,refang
+								refrings = prepare_reffft1(volft, kbv, refang, segmask, psi_max, psistep)
+								
+							if psi < 180.0 :  direction = "up"
+							else:             direction = "down"
 				
-						#  Constrained snake search methodology
-						#		x - around previously found location tx +/- xrng[N_step] in stepx
-						#		y - around previously found location ty +/- yrng[N_step] in stepy
-						#		psi - around previously found position psi +/- psi_max in steps psistep
-						#		phi and theta are restricted by parameter an above.
-						#
-						#
-						#print  "IMAGE  ",im
-						#print "AAAAAAAAAAA, refang=", refang
-						angb, newtx, newty, pik, ccf3dimg = directaligriddingconstrained3dccf(dataft[im], kb, refrings, \
-							psi_max, psistep, xrng[N_step], yrng[N_step], stepx, stepy, psi, tx, ty, direction)
-						
-						if(pik > -1.0e23):
-							if(pik > neworient[im][-1]):
-								neworient[im][-1] = pik
-								neworient[im][:4] = [angb, newtx, newty, refang]
-								#print "im", im-seg_start
-								ctx[im-seg_start]=ccf3dimg
+							#  Constrained snake search methodology
+							#		x - around previously found location tx +/- xrng[N_step] in stepx
+							#		y - around previously found location ty +/- yrng[N_step] in stepy
+							#		psi - around previously found position psi +/- psi_max in steps psistep
+							#		phi and theta are restricted by parameter an above.
+							#
+							#
+							#print  "IMAGE  ",im
+							#print "AAAAAAAAAAA, refang=", refang
+							tyrng = max(stepy,min(yrng[N_step],abs(y_restrict[N_step]-ty),abs(-y_restrict[N_step]-ty)))
+							
+							angb, newtx, newty, pik, ccf3dimg = directaligriddingconstrained3dccf(dataft[im], kb, refrings, \
+								psi_max, psistep, xrng[N_step], tyrng, stepx[N_step], stepy, psi, tx, ty, direction)
+					
+							if(pik > -1.0e23):
+								if(pik > neworient[im][-1]):
+									neworient[im][-1] = pik
+									neworient[im][:4] = [angb, newtx, newty, refang]
+									#print "im", im-seg_start
+									ctx[im-seg_start]=ccf3dimg
 					#print "im peak", im, pik			
 				
 				##3D snake search.
-				print neworient[seg_start:seg_end]
+				print "before refine: neworient", neworient[seg_start:seg_end]
 				nc = (int(2*psi_max/psistep)+1)//2
-				rnx   = int(round(xrng[N_step]/stepx))
+				rnx   = int(round(xrng[N_step]/stepx[N_step]))
 				rny   = int(round(yrng[N_step]/stepy))
-				neworientsnake=alignment3Dsnake(1, seg_end-seg_start, neworient[seg_start:seg_end], ctx, psistep, stepx, stepy, txtol, tytol, nc, rnx, rny, direction)
+				neworientsnake=alignment3Dsnake(1, seg_end-seg_start, neworient[seg_start:seg_end], ctx, psistep, stepx[N_step], stepy, txtol, tytol, nc, rnx, rny, direction)
 				for im in xrange( seg_start, seg_end ):
 					neworient[im] = neworientsnake[im- seg_start]
-					
+				print "after refine: neworient", neworient[seg_start:seg_end]	
 			for im in xrange(nima):
 				if(neworient[im][-1] > -1.0e23):
 					#print " neworient  ",im,neworient[im]
