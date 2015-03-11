@@ -2843,11 +2843,6 @@ c  purpose: linear interpolation
 	iyold   = (int) floor(yold);
 	ydif = yold - iyold;
 	yrem = 1.0f - ydif;
-
-	//  May want to insert if?
-//              IF ((IYOLD .GE. 1 .AND. IYOLD .LE. NROW-1) .AND.
-//     &            (IXOLD .GE. 1 .AND. IXOLD .LE. NSAM-1)) THEN
-//c                INSIDE BOUNDARIES OF OUTPUT IMAGE
 	xdif = xold - ixold;
 	xrem = 1.0f- xdif;
 //                 RBUF(K) = YDIF*(BUF(NADDR+NSAM)*XREM
@@ -2860,15 +2855,9 @@ c  purpose: linear interpolation
 }
 */
 	float xdif, ydif;
-
 	ixold   = (int) xold;
 	iyold   = (int) yold;
 	ydif = yold - iyold;
-	
-	//  May want to insert it?
-//              IF ((IYOLD .GE. 1 .AND. IYOLD .LE. NROW-1) .AND.
-//     &            (IXOLD .GE. 1 .AND. IXOLD .LE. NSAM-1)) THEN
-//c                INSIDE BOUNDARIES OF OUTPUT IMAGE
 	xdif = xold - ixold;
 	bilinear = xim(ixold, iyold) + ydif* (xim(ixold, iyold+1) - xim(ixold, iyold)) +
 	           xdif* (xim(ixold+1, iyold) - xim(ixold, iyold) +
@@ -3815,8 +3804,6 @@ c   neg = 0 straight,  neg = 1 mirrored
 	double precision  q(maxrin)
 	double precision  t7(-3:3)
 */
-
-
 	int nring = numr.size()/3;
 	//int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
 	int maxrin = numr[numr.size()-1];
@@ -3877,26 +3864,10 @@ c   neg = 0 straight,  neg = 1 mirrored
 		}
 	}
 
-
 	fftr_d(q,ip);
-
-// 12345 to go
-    int jtot = -1;
-	float qn = -1.0e20;
-	for (j=1;j<=maxrin;j++) {
-	   if (q(j) >= qn) {
-		  qn = q(j); jtot = j;
-	   }
-	}
-
-	printf("\njtot=%d psi_pos=%d  maxrin=%d\n", jtot, psi_pos, maxrin);
-
-//	exit(0);
 
 	// psi is randomized within +- 2 * an of the anchor position
 	const int psi_range = int(2*an/360.0*maxrin + 0.5);
-
-//    std::vector<int> rperm = shuffled_range(0, maxrin-1);
     std::vector<int> rperm(2*psi_range+1);
 	for (k=-psi_range; k<=psi_range; k++) {
 		j = ( k + psi_pos + maxrin - 1)%maxrin+1;
@@ -3908,29 +3879,18 @@ c   neg = 0 straight,  neg = 1 mirrored
 		std::swap( rperm[r], rperm[i] );
 	}
 
-//	double qn = -1.0e20;
-//	int jtot = -1;
-	qn = -1.0e20;
-	jtot = -1;
+	double qn = -1.0e20;
+	int jtot = -1;
 	for (int j_j=0;j_j<rperm.size();j_j++) {
 		j = rperm[j_j] + 1;
-
 		if (q(j) >= qn) {
-			qn = q(j);
 			if (qn > previous_max) {
+				qn = q(j);
 				jtot = j;
-// used to break for testing gloabal
 				break;
 			}
 		}
 	}
-
-//	printf("\njtot=%d psi_pos=%d  maxrin=%d\n", jtot, psi_pos, maxrin);
-//
-//	exit(0);
-
-
-
 
 	float  tot = 0.0;
 	if( jtot > -1 ) {
@@ -19688,19 +19648,6 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 				vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
 				vector<int>numr, float cnx, float cny, string sym) {
 
-	//const size_t crefim_len = crefim.size();
-
-
-
-//                    float *circ1 = image->get_data();
-//                    printf("\n\n");
-//                    for (int j=0;j<=100;j++) printf("%f  ",circ1[j]);
-//                    printf("\n\n");
-//                    exit(0);
-
-
-
-
 	size_t crefim_len = crefim.size();
 	const float qv = static_cast<float>( pi/180.0 );
     Transform * t = 0;
@@ -19726,9 +19673,6 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
     With the above, local searches could be also used for randomization tests as it would be enough to call
     shc with previousmax=-1.0e23 and reference projection direction set to the current angle.
     */
-
-
-
 		t = image->get_attr("xform.anchor");
 		Dict d = t->get_params("spider");
 		float theta   = d["theta"];
@@ -19741,8 +19685,6 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 
 		//  Multiply anchor direction object t by all symmetry group rotations.
 		vector<Transform> tsym = t->get_sym_proj(sym);
-
-
 		int isym = 0;
 		int nsym = tsym.size();
 		vector<Ims> vIms(nsym);
@@ -19757,8 +19699,6 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 			vIms[isym].ims2 = sin(theta*qv)*sin(phi*qv);
 			vIms[isym].ims3 = cos(theta*qv);
 		}
-
-
 
 		//  extract indexes of reference images that are within predefined angular distance from the anchor direction.
 		vector<int> index_crefim;
@@ -19775,28 +19715,9 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 			}
 		}
 
-
         an = (float)acos(ant) / qv;
-
-
-//        const char * myfilename01 = "/users/hvoicu/EMAN2/src/test_scripts/ref_angles02.txt";
-//        FILE *fp = fopen(myfilename01, "w");
-//
-//		for(int i = 0; i < index_crefim.size(); ++i) {
-//            float phi = crefim[index_crefim[i]]->get_attr("phi");
-//            float theta = crefim[index_crefim[i]]->get_attr("theta");
-//            float psi = crefim[index_crefim[i]]->get_attr("psi");
-//            cout << phi << " "  << theta << " " << psi << " 0 0"   << endl;
-//            fprintf(fp, "%f %f %f 0 0\n", phi, theta, psi);
-//		}
-//
-//        fflush(fp);
-//        fclose(fp);
-//		exit(0);
-
 		const float previousmax = image->get_attr("previousmax");
         crefim_len = index_crefim.size();
-
 
         if (crefim_len > 0) {
 			const int lkx = int(xrng[0]/step);
@@ -19811,50 +19732,25 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 					const int ix = j*step ;
 					EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 					Normalize_ring( cimage, numr );
-//                    printf("\n\n AAA4");
-//                    float *circ1 = cimage->get_data();
-//                    printf("\n\n");
-//                    for (int j=0;j<=100;j++) printf("%f  ",circ1[j]);
-//                    printf("\n\n");
-//                    exit(0);
-
 					Frngs(cimage, numr);
 					cimages[i+lky][j+lkx] = cimage;
 				}
 			}
 
-
-
-
 			for (unsigned i = 0; i < crefim_len; ++i) {
 				unsigned r = Util::get_irand(0,crefim_len-1);
 				swap( index_crefim[r], index_crefim[i] );
 			}
-
-
 			bool found_better = false;
-
 			for ( ;  (tiref < crefim_len) && (! found_better); tiref++) {
 				const int iref = index_crefim[tiref];
 				std::vector<int> shifts = shuffled_range( 0, (lkx+rkx+1) * (lky+rky+1) - 1 );
 				for ( unsigned nodeId = 0;  nodeId < shifts.size();  ++nodeId ) {
-
 					const int i = ( shifts[nodeId] % (lky+rky+1) ) - lky;
 					const int j = ( shifts[nodeId] / (lky+rky+1) ) - lkx;
 					const float iy = i * step;
 					const float ix = j * step;
 					EMData* cimage = cimages[i+lky][j+lkx];
-
-
-//                    printf("\nlky=%d, lkx=%d\n", lky, lkx);
-
-//                    float *circ1 = cimage->get_data();
-//                    printf("\n\n");
-//                    for (int j=0;j<=100;j++) printf("%f  ",circ1[j]);
-//                    printf("\n\n");
-//                    exit(0);
-
-
 					Dict retvals = Crosrng_rand_e(crefim[iref], cimage, numr, mirror, previousmax, an, psi_pos);
 					const float new_peak = static_cast<float>( retvals["qn"] );
 					//cout << new_peak <<endl;
@@ -19898,10 +19794,6 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 
     } else {  // GLOBAL SEARCHES
 		const float previousmax = image->get_attr("previousmax");
-		//Dict d = t->get_params("spider");
-		//if(t) {delete t; t=0;}
-		//float phi   = d["phi"];
-		//float theta = d["theta"];
 
 		vector<unsigned> listr(crefim_len);
 		for (unsigned i = 0; i < crefim_len; ++i) listr[i] = i;
@@ -19940,11 +19832,8 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 				EMData* cimage = cimages[i+lky][j+lkx];
 
 				Dict retvals = Crosrng_rand_ms(crefim[iref], cimage, numr, previousmax);
-
 				const float new_peak = static_cast<float>( retvals["qn"] );
-
 				//cout << new_peak <<endl;
-
 				if (new_peak > peak) {
 					sx = -ix;
 					sy = -iy;
