@@ -4309,15 +4309,17 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 
 	if finfo:
 		finfo.write("Image id: %6d\n"%(ID))
-		#finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, sxo, syo))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
+		finfo.flush()
+		from utilities import get_params_proj
+		z1,z2,z3,z4,z5 = get_params_proj(data, "xform.anchor")
+		finfo.write("Anc parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(z1,z2,z3,-z4,-z5))
 		finfo.flush()
 
 	previousmax = data.get_attr("previousmax")
 	[ang, sxs, sys, mirror, iref, peak, checked_refs] = Util.shc(data, refrings, txrng, tyrng, step, ant, mode, numr, cnx+sxi, cny+syi, sym)
 	iref=int(iref)
 	number_of_checked_refs += int(checked_refs)
-
 	if peak <= previousmax:
 		return -1.0e23, 0.0, number_of_checked_refs, -1
 		"""

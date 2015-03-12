@@ -2961,7 +2961,7 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 		total_nima = int(total_nima[0])
 
 
-	if myid == 7:
+	if myid == 0:
 		finfo = None
 		"""
 		import os
@@ -3109,7 +3109,7 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 			#=========================================================================
 			# build references
 			volft, kb = prep_vol(vol)
-			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, MPI=mpi_comm)
+			refrings = prepare_refrings(volft, kb, nx, delta[N_step], ref_a, sym, numr, MPI=mpi_comm, phiEqpsi = "Zero")
 			del volft, kb
 			#=========================================================================
 
@@ -3118,7 +3118,7 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 				start_time = time()
 			
 			#=========================================================================
-			#  there is no need for previosumax for deterministic searches
+			#  there is no need for previousmax for deterministic searches
 			if total_iter == 1 and nsoft > 0:
 				if(an[N_step] < 0.0):
 					# adjust params to references, calculate psi+shifts, calculate previousmax
@@ -3151,11 +3151,11 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 					if(pixer[im] == 0.0):  par_r[0] += 1
 				elif(nsoft == 1):
 					peak, pixer[im], number_of_checked_refs, iref = \
-						shc(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], an[N_step], sym)
+						shc(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], an[N_step], sym, finfo = finfo)
 					if(pixer[im] == 0.0):  par_r[0] += 1
 				elif(nsoft > 1):
 					peak, pixer[im], checked_refs, number_of_peaks = shc_multi(data[im], refrings, numr, \
-												xrng[N_step], yrng[N_step], step[N_step], an[N_step], nsoft, sym, finfo)
+												xrng[N_step], yrng[N_step], step[N_step], an[N_step], nsoft, sym, finfo = finfo)
 					par_r[number_of_peaks] += 1
 					#number_of_checked_refs += checked_refs
 

@@ -3649,39 +3649,14 @@ void Util::Applyws(EMData* circp, vector<int> numr, vector<float> wr)
 	}
 }
 
-#define  b(i)            b[i-1]
-void Util::prb1d(double *b, int npoint, float *pos) {
+void Util::prb1d(double *b, float *pos) {
+	//  three points 1D parabola fit
 	double  c2,c3;
-	int 	nhalf;
-
-	nhalf = npoint/2 + 1;
-	*pos  = 0.0;
-
-	if (npoint == 7) {
-		c2 = 49.*b(1) + 6.*b(2) - 21.*b(3) - 32.*b(4) - 27.*b(5)
-		     - 6.*b(6) + 31.*b(7);
-		c3 = 5.*b(1) - 3.*b(3) - 4.*b(4) - 3.*b(5) + 5.*b(7);
-	}
-	else if (npoint == 5) {
-		c2 = (74.*b(1) - 23.*b(2) - 60.*b(3) - 37.*b(4)
-		   + 46.*b(5) ) / (-70.);
-		c3 = (2.*b(1) - b(2) - 2.*b(3) - b(4) + 2.*b(5) ) / 14.0;
-	}
-	else if (npoint == 3) {
-		c2 = (5.*b(1) - 8.*b(2) + 3.*b(3) ) / (-2.0);
-		c3 = (b(1) - 2.*b(2) + b(3) ) / 2.0;
-	}
-	//else if (npoint == 9) {
-	else  { // at least one has to be true!!
-		c2 = (1708.*b(1) + 581.*b(2) - 246.*b(3) - 773.*b(4)
-		     - 1000.*b(5) - 927.*b(6) - 554.*b(7) + 119.*b(8)
-		     + 1092.*b(9) ) / (-4620.);
-		c3 = (28.*b(1) + 7.*b(2) - 8.*b(3) - 17.*b(4) - 20.*b(5)
-		     - 17.*b(6) - 8.*b(7) + 7.*b(8) + 28.*b(9) ) / 924.0;
-	}
-	if (c3 != 0.0)  *pos = static_cast<float>(c2/(2.0*c3) - nhalf);
+	c3 = b[0] - 2.0f*b[1] +b[1];
+	if( fabs(c3) > 1.0e-6 ) *pos =  max( min ( static_cast<float>(2*(b[0]-b[2])/c3), 1.0f), -1.0f);
+	else  *pos = 0.0f;
+	//printf("\n  prb1d    %f    %f    %f    %f\n",b[0] ,b[1] ,b[2], *pos);
 }
-#undef  b
 
 #define  circ1(i)        circ1[i-1]
 #define  circ2(i)        circ2[i-1]
@@ -3778,7 +3753,7 @@ c       automatic arrays
 		t7(k+4) = q(j);
 	}
 
-	prb1d(t7,7,&pos);
+	prb1d(t7,&pos);
 
 	tot = (float)jtot + pos;
 
@@ -3881,6 +3856,7 @@ c   neg = 0 straight,  neg = 1 mirrored
 	for (k=-psi_range; k<=psi_range; k++) {
 		j = ( k + psi_pos + maxrin - 1)%maxrin+1;
 		rperm[k + psi_range] = j;
+		//printf(" JJJ  %d      %d      %d      %d \n",k,rperm[k + psi_range],psi_pos,psi_range);
 	}
 
 	for (unsigned i = 0; i < rperm.size(); ++i) {
@@ -3898,18 +3874,19 @@ c   neg = 0 straight,  neg = 1 mirrored
 			break;
 		}
 	}
-
+			//printf(" jtot qn  %d      %f \n",jtot, qn);
 	float  tot = 0.0;
 	if( jtot > -1 ) {
 		for (k=-3; k<=3; k++) {
 			j = (jtot+k+maxrin-1)%maxrin + 1;
 			t7(k+4) = q(j);
 		}
-		prb1d(t7,7,&pos);
+		prb1d(t7,&pos);
 		tot = (float)jtot + pos;
 	}
 
 	if (q) free(q);
+			//printf(" tot pos  %f      %f \n",tot, pos);
 
 	Dict retvals;
 	retvals["qn"]  = qn;
@@ -4013,7 +3990,7 @@ c       automatic arrays
 		t7(k+4) = q(j);
 	}
 
-	prb1d(t7,7,&pos);
+	prb1d(t7,&pos);
 
 	tot = (float)jtot + pos;
 
@@ -4137,10 +4114,8 @@ c
 	}
 
 	// interpolate
-	prb1d(t7,7,&pos);
+	prb1d(t7,&pos);
 	tot = (float)(jtot)+pos;
-	// Do not interpolate
-	//tot = (float)(jtot);
 
 	// mirrored
 	fftr_d(t,ip);
@@ -4161,10 +4136,8 @@ c
 
 	// interpolate
 
-	prb1d(t7,7,&pos);
+	prb1d(t7,&pos);
 	tmt = float(jtot) + pos;
-	// Do not interpolate
-	//tmt = float(jtot);
 
 	free(t);
 	free(q);
@@ -4309,10 +4282,8 @@ c
 		}
 
 		// interpolate
-		Util::prb1d(t7,7,&pos);
+		Util::prb1d(t7,&pos);
 		tot = (float)(jtot)+pos;
-		// Do not interpolate
-		//	const float tot = (float)(jtot);
 	}
 
 	free(t);
@@ -4436,7 +4407,7 @@ c
 	//}
 
 	// interpolate
-	//prb1d(t7,7,&pos);
+	//prb1d(t7,&pos);
 	//tot = (float)(jtot)+pos;
 	// Do not interpolate
 	tot = (float)(jtot);
@@ -4460,7 +4431,7 @@ c
 
 	// interpolate
 
-	//prb1d(t7,7,&pos);
+	//prb1d(t7,&pos);
 	//tmt = float(jtot) + pos;
 	// Do not interpolate
 	tmt = float(jtot);
@@ -4762,10 +4733,8 @@ c
 	}
 
 	// interpolate
-	prb1d(t7,7,&pos);
+	prb1d(t7,&pos);
 	tot = (float)(jtot)+pos;
-	// Do not interpolate
-	//*tot = (float)(jtot);
 
 	free(q);
 
@@ -19475,166 +19444,6 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 	return res;
 }
 
-vector<float> Util::shc0(const vector< EMData* >& cimages, const vector< EMData* >& crefim,
-                float xrng, float yrng, float step, float ant, string mode,
-                vector<int>numr, float cnx, float cny,  string sym ) {
-//  This code supposedly has option ant for local shc searches, but it was not tested
-//   When I tried it it gave strange results.  PAP 01/27/2015
-//   Worse yet, it has a conceptual problem.  Since the search is local but random,
-//   after repeated searches a projection projection may drift away due to random walk effect.
-//   Most likely the code would have to be modified so the random search is done not around
-//   the current orientation, but around the original, the one the projection had when local searches
-//    started.  This could however be handled on a higher level by changing the current direction
-//    assigned to projection.
-//
-//    Method:
-//      1. resample input image into polar with respect to all shifts.
-//      2.  shuffle order of refrings so they are processed in random order
-//      3.     shuffle shifts, process them in random order
-//      4.        get random angle/mirror for a postion with value>previousmax
-//                   Crosrng_rand_ms: it computes both 1D ccfs and then scans both in random order,
-//                    stops when ccf value > previousmax
-//
-//      In effect, the randomness is hierarchical: 
-//            the top level, projdirs, is fully random
-//             but for each projdir, all shifts are scanned
-//             and for each shift all angles and mirrors are scanned.
-//
-//        For SCF one would have to proceed as follows:
-//         1.  Pick up random projection direction
-//         2.  compute 1D half-ccfs for both straight and mirror
-//         3.    scan both curves in a random order, just as above, 
-//                  so one would pick up random angle and mirror, which would have to be larger than previousmax_scf
-//         4.      rotate image, compute ccf, scan shifts in a random order, pick up one better than previousmax_shift
-//        Conclusion: clearly, this is not very attractive and is certain to be slower than polar due to the need
-//                    to compute multiple rotations and 2D CCFs.  Abandon the plan.  PAP 02/08/2015
-//
-// Manually extract.
-/*    vector< EMAN::EMData* > crefim;
-    std::size_t crefim_len = PyObject_Length(crefim_list.ptr());
-    crefim.reserve(crefim_len);
-
-    for(std::size_t i=0;i<crefim_len;i++) {
-        boost::python::extract<EMAN::EMData*> proxy(crefim_list[i]);
-        crefim.push_back(proxy());
-    }
-*/
-	const size_t crefim_len = crefim.size();
-	const float qv = static_cast<float>( pi/180.0 );
-    Transform * t = 0;
-    vector<float> n1;
-    vector<float> n2;
-    vector<float> n3;
- //cout << ant <<endl;
-    if( ant >= 0.0) {
-        t = cimages[0]->get_attr("xform.projection");
-        n1.resize((int)crefim_len);
-        n2.resize((int)crefim_len);
-        n3.resize((int)crefim_len);
-        for ( int iref = 0; iref < (int)crefim_len; iref++) {
-            n1[iref] = crefim[iref]->get_attr("n1");
-            n2[iref] = crefim[iref]->get_attr("n2");
-            n3[iref] = crefim[iref]->get_attr("n3");
-        }
-    }
-
-
-	//Transform * t = image->get_attr("xform.projection");
-	const float previousmax = cimages[0]->get_attr("previousmax");
-	//Dict d = t->get_params("spider");
-	//if(t) {delete t; t=0;}
-	//float phi   = d["phi"];
-	//float theta = d["theta"];
-	const int ky = int(2*yrng/step+0.5)/2;
-	const int kx = int(2*xrng/step+0.5)/2;
-
-	vector<unsigned> listr(crefim_len);
-	for (unsigned i = 0; i < crefim_len; ++i) listr[i] = i;
-	for (unsigned i = 0; i < crefim_len; ++i) {
-		unsigned r = Util::get_irand(0,crefim_len-1);
-		swap( listr[r], listr[i] );
-	}
-
-	float sx=0.0f, sy=0.0f;
-	float peak = -1.0e23f;
-	float ang = 0.0f;
-	int nref = 0, mirror = 0;
-	bool found_better = false;
-	size_t tiref = 0;
-	for ( ;  (tiref < crefim_len) && (! found_better); tiref++) {
-		const int iref = listr[tiref];
-		//  Here check for neighbors
-		bool gogo;
-		if( ant >= 0.0 )  {
-		    bool gogo = false;
-		    vector<Transform> tsym = t->get_sym_proj(sym);
-		    int isym = 0;
-		    int nsym = tsym.size();
-		    while ( isym < nsym && ! gogo ) {
-                Dict d = tsym[isym].get_params("spider");
-                float phi   = d["phi"];
-                float theta = d["theta"];
-                float imn1 = sin(theta*qv)*cos(phi*qv);
-                float imn2 = sin(theta*qv)*sin(phi*qv);
-                float imn3 = cos(theta*qv);
-		        if(abs(n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3)>=ant)  gogo = true;
-		        isym ++;
-		     }
-		}
-        else    gogo = true;
-
-        if( gogo ) {
-	    	std::vector<int> shifts = shuffled_range( 0, (2*kx+1) * (2*ky+1) - 1 );
-		    for ( unsigned nodeId = 0;  nodeId < shifts.size();  ++nodeId ) {
-			    const int i = ( shifts[nodeId] % (2*ky+1) ) - ky;
-    			const int j = ( shifts[nodeId] / (2*ky+1) ) - kx;
-	    		const float iy = i * step;
-		    	const float ix = j * step;
-			    EMData* cimage = cimages[(i+ky)*(2*kx+1)+j+kx];
-    			Dict retvals = Crosrng_rand_ms(crefim[iref], cimage, numr, previousmax);
-	    		const float new_peak = static_cast<float>( retvals["qn"] );
-
-	    		//cout << new_peak <<endl;
-
-		    	if (new_peak > peak) {
-			    	sx = -ix;
-				    sy = -iy;
-    				nref = iref;
-	    			ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-		    		peak = new_peak;
-			    	mirror = static_cast<int>( retvals["mirror"] );
-				    found_better = (peak > previousmax);
-				    //cout << found_better <<endl;
-					if (found_better) break;
-				}
-			}
-		}
-	}
-	//cout << "  JUMPED OUT " <<endl;
-
-	// for (unsigned i = 0; i < cimages.size(); ++i) {
-// 		for (unsigned j = 0; j < cimages[i].size(); ++j) {
-// 			delete cimages[i][j];
-// 			cimages[i][j] = NULL;
-// 		}
-// 	}
-
-	const float co =  cos(ang*qv);
-	const float so = -sin(ang*qv);
-	const float sxs = sx*co - sy*so;
-	const float sys = sx*so + sy*co;
-
-	vector<float> res;
-	res.push_back(ang);
-	res.push_back(sxs);
-	res.push_back(sys);
-	res.push_back(static_cast<float>(mirror));
-	res.push_back(static_cast<float>(nref));
-	res.push_back(peak);
-	res.push_back(static_cast<float>(tiref));
-	return res;
-}
-
 vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 				vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
 				vector<int>numr, float cnx, float cny, string sym) {
@@ -19665,10 +19474,12 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
     */
 		t = image->get_attr("xform.anchor");
 		Dict d = t->get_params("spider");
+		//float phi   = d["phi"];
 		float theta   = d["theta"];
 		float psi   = d["psi"];
         int maxrin = numr[numr.size()-1];
 
+		//printf("\nINPUT   %f   %f   %f   %f   %d \n",phi, theta, psi, 360.0f-psi,mirror);
 		mirror = (int)(theta > 90.0f);
         // mirror = 0 then use -psi;
         int psi_pos = (int)fmod(roundf((-psi - mirror*180)/360.0*maxrin+10*maxrin),(float)maxrin) + 1;
@@ -19707,6 +19518,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 
         an = (float)acos(ant) / qv;
 		const float previousmax = image->get_attr("previousmax");
+		//printf("\n  previousmax   %f  \n",previousmax);
         crefim_len = index_crefim.size();
 
         if (crefim_len > 0) {
@@ -19748,7 +19560,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 						sx = -ix;
 						sy = -iy;
 						nref = iref;
-						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+						ang = ang_n(retvals["tot"], mode, maxrin);
 						peak = new_peak;
 						found_better = (peak > previousmax);
 						//cout << found_better <<endl;
@@ -19764,14 +19576,13 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 					cimages[i][j] = NULL;
 				}
 			}
-
 		}
 		//cout << "  JUMPED OUT " <<endl;
 		const float co =  cos(ang*qv);
 		const float so = -sin(ang*qv);
 		const float sxs = sx*co - sy*so;
 		const float sys = sx*so + sy*co;
-
+		//printf("\n OUTPUT   %f    %d    %f   %f   %d   %d   %f\n",360.0f - psi, psi_pos, ang, peak, mirror, maxrin,an);
 		vector<float> res;
 		res.push_back(ang);
 		res.push_back(sxs);
