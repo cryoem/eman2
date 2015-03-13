@@ -76,6 +76,8 @@ def main():
 		
 	parser.add_argument("--translation",type=str,default='',help="""Three comma separated coordinates
 		x,y,z, to translate the masks by before writing them out.""")
+		
+	parser.add_argument("--rotavg",action='store_true',default=False,help="""This will compute the rotational average of the mask(s) in addition to writing the cylindrical mask itself out.""")
 	
 	(options, args) = parser.parse_args()	
 	
@@ -138,6 +140,7 @@ def main():
 			tx = Transform({'type':'eman','az':0,'alt':90,'phi':90})
 			ts.update({'x':tx})
 			print "added x transform"
+		
 		if 'y' in axis or 'Y' in axis:
 			ty = Transform({'type':'eman','az':0,'alt':90,'phi':0})
 			ts.update({'y':ty})
@@ -158,16 +161,34 @@ def main():
 			maskname=masknamebase.replace('.hdf','_Z_') + tag + '.hdf'
 			maskz.transform( ts[a] )
 			maskz.write_image( maskname, 0 )
+			
+			if options.rotavg:
+				rotavgname = maskname.replace('.','_ROTAVG.')
+				maskzrotavg = maskz.rotavg_i()
+				maskzrotavg.write_image( rotavgname , 0 )
+				
 		if a == 'x':
 			maskx=mask.copy()
 			maskx.transform( ts[a] )
 			maskname=masknamebase.replace('.hdf','_X_') + tag + '.hdf'
 			maskx.write_image( maskname, 0 )
+			
+			if options.rotavg:
+				rotavgname = maskname.replace('.','_ROTAVG.')
+				maskxrotavg = maskx.rotavg_i()
+				maskxrotavg.write_image( rotavgname , 0 )
+		
 		if a == 'y':
 			masky=mask.copy()
 			masky.transform( ts[a] )
 			maskname=masknamebase.replace('.hdf','_Y_') + tag + '.hdf'	
 			masky.write_image( maskname, 0 )
+
+			if options.rotavg:
+				rotavgname = maskname.replace('.','_ROTAVG.')
+				maskyrotavg = masky.rotavg_i()
+		
+				maskyrotavg.write_image( rotavgname , 0 )
 	
 	E2end(logger)
 	return
