@@ -101,6 +101,11 @@ def main():
 	
 	axes = options.axes.split(',')
 	
+	print "After splitting, axes=", axes
+	
+	#axisdict ={}
+	#for axis in axes:
+	#	axisdict.update( { 'z } )
 	ts = {}
 	
 	mask = cylinder(options)
@@ -121,17 +126,22 @@ def main():
 		rt=Transform({'type':'eman','az':az,'alt':alt,'phi':phi,'tx':xc,'ty':yc,'tz':zc})
 		mask.transform( rt )
 		
-		
+	
 	for axis in axes:
-		if 'z' or 'Z' in axis:
+		print "axis is", axis
+		if 'z' in axis or 'Z' in axis:
 			tz = Transform({'type':'eman','az':0,'alt':0,'phi':0})
+			print "added z transform"
 			ts.update({'z':tz})
-		if 'x' or 'X' in axis:
+		if 'x' in axis or 'X' in axis:
+			
 			tx = Transform({'type':'eman','az':0,'alt':90,'phi':90})
 			ts.update({'x':tx})
-		if 'y' or 'Y' in axis:
+			print "added x transform"
+		if 'y' in axis or 'Y' in axis:
 			ty = Transform({'type':'eman','az':0,'alt':90,'phi':0})
 			ts.update({'y':ty})
+			print "added y transform"
 	
 	masknamebase = options.path + '/cylmask.hdf'
 	
