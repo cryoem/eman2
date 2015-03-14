@@ -3649,14 +3649,51 @@ void Util::Applyws(EMData* circp, vector<int> numr, vector<float> wr)
 	}
 }
 
-void Util::prb1d(double *b, float *pos) {
-	//  three points 1D parabola fit
+void Util::prb3p(double *b, float *pos) {
+	//  three points 1D parabola fit,  call this function for random searchea
 	double  c2,c3;
 	c3 = b[0] - 2.0f*b[1] +b[1];
 	if( fabs(c3) > 1.0e-6 ) *pos =  max( min ( static_cast<float>(2*(b[0]-b[2])/c3), 1.0f), -1.0f);
 	else  *pos = 0.0f;
 	//printf("\n  prb1d    %f    %f    %f    %f\n",b[0] ,b[1] ,b[2], *pos);
 }
+
+
+
+#define  b(i)            b[i-1]
+void Util::prb1d(double *b, int npoint, float *pos) {
+	double  c2,c3;
+	int 	nhalf;
+
+	nhalf = npoint/2 + 1;
+	*pos  = 0.0;
+
+	if (npoint == 7) {
+		c2 = 49.*b(1) + 6.*b(2) - 21.*b(3) - 32.*b(4) - 27.*b(5)
+		     - 6.*b(6) + 31.*b(7);
+		c3 = 5.*b(1) - 3.*b(3) - 4.*b(4) - 3.*b(5) + 5.*b(7);
+	}
+	else if (npoint == 5) {
+		c2 = (74.*b(1) - 23.*b(2) - 60.*b(3) - 37.*b(4)
+		   + 46.*b(5) ) / (-70.);
+		c3 = (2.*b(1) - b(2) - 2.*b(3) - b(4) + 2.*b(5) ) / 14.0;
+	}
+	else if (npoint == 3) {
+		c2 = (5.*b(1) - 8.*b(2) + 3.*b(3) ) / (-2.0);
+		c3 = (b(1) - 2.*b(2) + b(3) ) / 2.0;
+	}
+	//else if (npoint == 9) {
+	else  { // at least one has to be true!!
+		c2 = (1708.*b(1) + 581.*b(2) - 246.*b(3) - 773.*b(4)
+		     - 1000.*b(5) - 927.*b(6) - 554.*b(7) + 119.*b(8)
+		     + 1092.*b(9) ) / (-4620.);
+		c3 = (28.*b(1) + 7.*b(2) - 8.*b(3) - 17.*b(4) - 20.*b(5)
+		     - 17.*b(6) - 8.*b(7) + 7.*b(8) + 28.*b(9) ) / 924.0;
+	}
+	if (c3 != 0.0)  *pos = static_cast<float>(c2/(2.0*c3) - nhalf);
+}
+#undef  b
+
 
 #define  circ1(i)        circ1[i-1]
 #define  circ2(i)        circ2[i-1]
@@ -3753,7 +3790,7 @@ c       automatic arrays
 		t7(k+4) = q(j);
 	}
 
-	prb1d(t7,&pos);
+	prb1d(t7,7,&pos);
 
 	tot = (float)jtot + pos;
 
@@ -3793,7 +3830,7 @@ c   neg = 0 straight,  neg = 1 mirrored
 	int maxrin = numr[numr.size()-1];
 	float *circ1 = circ1p->get_data();
 	float *circ2 = circ2p->get_data();
-	double t7[7], *q;
+	double p3[3], *q;
 	int    i, j, k, ip, jc, numr3i, numr2i;
 	float  pos;
 
@@ -3877,11 +3914,11 @@ c   neg = 0 straight,  neg = 1 mirrored
 			//printf(" jtot qn  %d      %f \n",jtot, qn);
 	float  tot = 0.0;
 	if( jtot > -1 ) {
-		for (k=-3; k<=3; k++) {
+		for (k=-1; k<=1; k++) {
 			j = (jtot+k+maxrin-1)%maxrin + 1;
-			t7(k+4) = q(j);
+			p3[k+1] = q(j);
 		}
-		prb1d(t7,&pos);
+		prb3p(p3,&pos);
 		tot = (float)jtot + pos;
 	}
 
@@ -3990,7 +4027,7 @@ c       automatic arrays
 		t7(k+4) = q(j);
 	}
 
-	prb1d(t7,&pos);
+	prb1d(t7,7,&pos);
 
 	tot = (float)jtot + pos;
 
@@ -4114,7 +4151,7 @@ c
 	}
 
 	// interpolate
-	prb1d(t7,&pos);
+	prb1d(t7,7,&pos);
 	tot = (float)(jtot)+pos;
 
 	// mirrored
@@ -4136,7 +4173,7 @@ c
 
 	// interpolate
 
-	prb1d(t7,&pos);
+	prb1d(t7,7,&pos);
 	tmt = float(jtot) + pos;
 
 	free(t);
@@ -4167,9 +4204,7 @@ c
 */
 
 	// dimension		 circ1(lcirc),circ2(lcirc)
-
-	// t(maxrin), q(maxrin), t7(-3:3)  //maxrin+2 removed
-	double *t, *q, t7[7];
+	double *t, *q, p3[3];
 
 	int   jc, numr3i, numr2i, i, j, k;
 	float t1, t2, t3, t4, c1, c2, d1, d2, pos;
@@ -4213,11 +4248,11 @@ c
 			jc     = j+numr2i-1;
 
 // Here, (c1+c2i)*conj(d1+d2i) = (c1*d1+c2*d2)+(-c1*d2+c2*d1)i
-//   			          ----- -----    ----- -----
-//      			   t1     t2      t3    t4
+//   			                  ----- -----    ----- -----
+//      			               t1     t2      t3    t4
 // Here, conj(c1+c2i)*conj(d1+d2i) = (c1*d1-c2*d2)+(-c1*d2-c2*d1)i
-//     		                      ----- -----    ----- -----
-//     			               t1    t2       t3    t4
+//     		                          ----- -----    ----- -----
+//     			                       t1    t2       t3    t4
 
 			c1     = circ1(jc);
 			c2     = circ1(jc+1);
@@ -4270,19 +4305,19 @@ c
 	if( jtot > -1) {
 		// interpolation
 		if (! mirrored) {
-			for (k=-3; k<=3; k++) {
+			for (k=-1; k<=1; k++) {
 				j = ((jtot+k+maxrin-1)%maxrin)+1;
-				t7(k+4) = q(j);
+				p3[k+1] = q(j);
 			}
 		} else {
-			for (k=-3; k<=3; k++)  {
+			for (k=-1; k<=1; k++)  {
 				j = ((jtot+k+maxrin-1)%maxrin) + 1;
-				t7(k+4) = t(j);
+				p3[k+1] = t(j);
 			}
 		}
 
 		// interpolate
-		Util::prb1d(t7,&pos);
+		Util::prb3p(p3,&pos);
 		tot = (float)(jtot)+pos;
 	}
 
@@ -4407,7 +4442,7 @@ c
 	//}
 
 	// interpolate
-	//prb1d(t7,&pos);
+	//prb1d(t7,7,&pos);
 	//tot = (float)(jtot)+pos;
 	// Do not interpolate
 	tot = (float)(jtot);
@@ -4431,7 +4466,7 @@ c
 
 	// interpolate
 
-	//prb1d(t7,&pos);
+	//prb1d(t7,7,&pos);
 	//tmt = float(jtot) + pos;
 	// Do not interpolate
 	tmt = float(jtot);
@@ -4733,7 +4768,7 @@ c
 	}
 
 	// interpolate
-	prb1d(t7,&pos);
+	prb1d(t7,7,&pos);
 	tot = (float)(jtot)+pos;
 
 	free(q);
