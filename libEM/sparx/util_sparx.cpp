@@ -19365,16 +19365,6 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
                 vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
                 vector<int>numr, float cnx, float cny, string sym) {
 
-    // Manually extract.
-/*    vector< EMAN::EMData* > crefim;
-    std::size_t crefim_len = PyObject_Length(crefim_list.ptr());
-    crefim.reserve(crefim_len);
-
-    for(std::size_t i=0;i<crefim_len;i++) {
-        boost::python::extract<EMAN::EMData*> proxy(crefim_list[i]);
-        crefim.push_back(proxy());
-    }
-*/
 
 // 	int   ky    = int(2*yrng/step+0.5)/2;
 // 	int   kx    = int(2*xrng/step+0.5)/2;
@@ -19382,7 +19372,7 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 	int rkx = int(xrng[1]/step);
 	int lky = int(yrng[0]/step);
 	int rky = int(yrng[1]/step);
-	int   iref, nref=0, mirror=0;
+	int   iref, nref=0, mirror=0, report_mirror=0;
 	float iy, ix, sx=0, sy=0;
 	float peak = -1.0E23f;
 	float ang  = 0.0f;
@@ -19393,9 +19383,9 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 	const float qv = static_cast<float>( pi/180.0 );
 
 	Transform * t = image->get_attr("xform.projection");
-	Dict d = t->get_params("spider");
-	float theta1 = d["theta"];
-	mirror = (int)(theta1 > 90.0f);
+//	Dict d = t->get_params("spider");
+//	float theta1 = d["theta"];
+//	mirror = (int)(theta1 > 90.0f);
 
     // sym is a symmetry string, t is the projection transform of the input image, tsym is a vector of transforms that are input transofrmation multiplied by all symmetries.
     // its length is number of symmetries.
@@ -19417,47 +19407,51 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
         vIms[isym].ims3 = cos(theta*qv);
     }
 
-
-    vector<int> index_crefim;
-
 	for (iref = 0; iref < crefim_len; iref++) {
+
+	    float ref_theta = crefim[iref]->get_attr("theta");
+	    float ref_phi = crefim[iref]->get_attr("phi");
+	    float ref_psi = crefim[iref]->get_attr("psi");
+
 		float n1 = crefim[iref]->get_attr("n1");
 		float n2 = crefim[iref]->get_attr("n2");
 		float n3 = crefim[iref]->get_attr("n3");
 
-        for (isym = 0; isym < nsym; ++isym) {
 
-            if(abs(n1*vIms[isym].ims1 + n2*vIms[isym].ims2 + n3*vIms[isym].ims3)>=ant) {
-                index_crefim.push_back(iref);
-                break;
+
+        for (isym = 0; isym < nsym; ++isym) {
+            float dot_product = n1*vIms[isym].ims1 + n2*vIms[isym].ims2 + n3*vIms[isym].ims3;
+            if(abs(dot_product)>=ant) {
+                mirror = dot_product < 0;
+
+                //02162015PAP
+                for (int i = -lky; i <= rky; i++) {
+                    iy = i * step ;
+                    for (int j = -lkx; j <= rkx; j++) {
+                        ix = j*step;
+                        EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+                        Normalize_ring( cimage, numr );
+                        Frngs(cimage, numr);
+                        //  compare with all reference images that are on a new list
+                            Dict retvals = Crosrng_e(crefim[iref], cimage, numr, mirror);
+                            double qn = retvals["qn"];
+
+                            if(qn >= peak) {
+                                report_mirror = mirror;
+                                sx = -ix;
+                                sy = -iy;
+                                nref = iref;
+                                ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+                                peak = static_cast<float>( qn );
+                            }
+                          delete cimage; cimage = 0;
+                    }
+                }
             }
 
-         }
+        }
 	}
-	//02162015PAP
-	for (int i = -lky; i <= rky; i++) {
-	    iy = i * step ;
-	    for (int j = -lkx; j <= rkx; j++) {
-            ix = j*step;
-            EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
-            Normalize_ring( cimage, numr );
-            Frngs(cimage, numr);
-            //  compare with all reference images that are on a new list
-            for ( int i_iref = 0; i_iref < index_crefim.size() ; i_iref++) {
-                iref = index_crefim[i_iref];
-                Dict retvals = Crosrng_e(crefim[iref], cimage, numr, mirror);
-                double qn = retvals["qn"];
 
-                if(qn >= peak) {
-                    sx = -ix;
-                    sy = -iy;
-                    nref = iref;
-                    ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-                    peak = static_cast<float>( qn );
-                }
-            }  delete cimage; cimage = 0;
-	    }
-	}
 	float co, so, sxs, sys;
 	if(peak == -1.0E23) {
 		ang=0.0; sxs=0.0; sys=0.0; mirror=0;
@@ -19467,8 +19461,9 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 		so  = -sin(ang*qv);
 		sxs = sx*co - sy*so;
 		sys = sx*so + sy*co;
-
+		mirror = report_mirror;
 	}
+
 	vector<float> res;
 	res.push_back(ang);
 	res.push_back(sxs);
@@ -19478,6 +19473,24 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 	res.push_back(peak);
 	return res;
 }
+
+
+// Needed for debugging
+//      printf("\n HHHHHHHHHHHHHHHH \n");
+//      const char * myfilename01 = "/users/hvoicu/EMAN2/src/test_scripts/ref_angles02.txt";
+//      FILE *fp = fopen(myfilename01, "w");
+//
+//        for(int i = 0; i < index_crefim.size(); ++i) {
+//          float phi = crefim[index_crefim[i]]->get_attr("phi");
+//          float theta = crefim[index_crefim[i]]->get_attr("theta");
+//          float psi = crefim[index_crefim[i]]->get_attr("psi");
+//          cout << phi << " "  << theta << " " << psi << " 0 0"   << endl;
+//          fprintf(fp, "%f %f %f 0 0\n", phi, theta, psi);
+//        }
+//
+//      fflush(fp);
+//      fclose(fp);
+//      exit(0);
 
 vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 				vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
@@ -19538,20 +19551,26 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 
 		//  extract indexes of reference images that are within predefined angular distance from the anchor direction.
 		vector<int> index_crefim;
+		vector<int> mirror_crefim;
+
 		for (unsigned i = 0; i < crefim_len; i++) {
 			float n1 = crefim[i]->get_attr("n1");
 			float n2 = crefim[i]->get_attr("n2");
 			float n3 = crefim[i]->get_attr("n3");
 			//  for point-group symmetry get any close symmetry-related reference image
 			for (isym = 0; isym < nsym; ++isym) {
-				if(abs(n1*vIms[isym].ims1 + n2*vIms[isym].ims2 + n3*vIms[isym].ims3)>=ant) {
+
+                float dot_product = n1*vIms[isym].ims1 + n2*vIms[isym].ims2 + n3*vIms[isym].ims3;
+                if(abs(dot_product)>=ant) {
+                    mirror_crefim.push_back(int(dot_product < 0));
 					index_crefim.push_back(i);
 					break;
 				}
 			}
 		}
 
-        an = (float)acos(ant) / qv;
+      an = (float)acos(ant) / qv;
+
 		const float previousmax = image->get_attr("previousmax");
 		//printf("\n  previousmax   %f  \n",previousmax);
         crefim_len = index_crefim.size();
@@ -19588,7 +19607,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 					const float iy = i * step;
 					const float ix = j * step;
 					EMData* cimage = cimages[i+lky][j+lkx];
-					Dict retvals = Crosrng_rand_e(crefim[iref], cimage, numr, mirror, previousmax, an, psi_pos);
+					Dict retvals = Crosrng_rand_e(crefim[iref], cimage, numr, mirror_crefim[iref], previousmax, an, psi_pos);
 					const float new_peak = static_cast<float>( retvals["qn"] );
 					//cout << new_peak <<endl;
 					if (new_peak > peak) {
@@ -19597,6 +19616,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 						nref = iref;
 						ang = ang_n(retvals["tot"], mode, maxrin);
 						peak = new_peak;
+						mirror = mirror_crefim[iref];
 						found_better = (peak > previousmax);
 						//cout << found_better <<endl;
 						// jump out from search

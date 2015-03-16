@@ -38,6 +38,7 @@ from optparse import OptionParser
 import sys
 
 def main():
+
         arglist = []
         for arg in sys.argv:
         	arglist.append( arg )
