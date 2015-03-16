@@ -19365,9 +19365,6 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
                 vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
                 vector<int>numr, float cnx, float cny, string sym) {
 
-
-// 	int   ky    = int(2*yrng/step+0.5)/2;
-// 	int   kx    = int(2*xrng/step+0.5)/2;
 	int lkx = int(xrng[0]/step);
 	int rkx = int(xrng[1]/step);
 	int lky = int(yrng[0]/step);
@@ -19376,8 +19373,6 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 	float iy, ix, sx=0, sy=0;
 	float peak = -1.0E23f;
 	float ang  = 0.0f;
-
-
 
 	size_t crefim_len = crefim.size();
 	const float qv = static_cast<float>( pi/180.0 );
@@ -19424,8 +19419,7 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
             if(abs(dot_product)>=ant) {
                 mirror = dot_product < 0;
 
-                //02162015PAP
-                for (int i = -lky; i <= rky; i++) {
+                 for (int i = -lky; i <= rky; i++) {
                     iy = i * step ;
                     for (int j = -lkx; j <= rkx; j++) {
                         ix = j*step;
