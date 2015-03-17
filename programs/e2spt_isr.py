@@ -686,17 +686,20 @@ def recentertilts( options, reprojections, originalseries, angles, it ):
 		tys.append(ty)
 		drs.append(dr)
 		
-		print "\nfor image %d x,y translations are x=%f, y=%f" % ( kkk, tx, ty )
+		print "\nIn iteration %d, for image %d, x,y translations are x=%f, y=%f" % ( it, kkk, tx, ty )
 
 		try:
 			print "whereas original images were off by tx", oimg['spt_txerror'], oimg['spt_tyerror']
-		
+			
+			print "\nThe header is", oimg.get_attr_dict()
+			
 			xerror = float(tx) + float(oimg['spt_txerror'])
 			yerror = float(ty) + float(oimg['spt_tyerror'])
 			#error =  math.sqrt( xerror*xerror + yerror*yerror )/2.0
 			error = ( math.fabs(xerror) + math.fabs(yerror) )/2.0
 			
-			errors.append(error)
+			if error:
+				errors.append(error)
 			
 			print "therfore the error is", error
 			
