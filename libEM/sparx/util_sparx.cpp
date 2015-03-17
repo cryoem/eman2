@@ -19419,7 +19419,7 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
             if(abs(dot_product)>=ant) {
                 mirror = dot_product < 0;
 
-                 for (int i = -lky; i <= rky; i++) {
+                for (int i = -lky; i <= rky; i++) {
                     iy = i * step ;
                     for (int j = -lkx; j <= rkx; j++) {
                         ix = j*step;
@@ -19441,8 +19441,8 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
                           delete cimage; cimage = 0;
                     }
                 }
+                break;
             }
-
         }
 	}
 
