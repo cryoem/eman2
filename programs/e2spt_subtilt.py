@@ -534,6 +534,9 @@ def main():
 			middleslice = retm2[0]
 			'''
 			
+			midscoordx = xc
+			midscoordy = yc
+			
 			if options.centerzerotilt:					
 				box = middleslice['nx']
 				radius = box / 4.0
@@ -564,9 +567,24 @@ def main():
 				retm2 = extract2D( options, zerotiltangle, icethickness, tomox, xc, yc, zc, midsxt, midsyt, zerotiltindx )
 			
 				middleslice = retm2[0]
+				midscoordx = retm2[1]
+				midscoordy = retm2[2]
 			
 			
-			#middleslice.process_inplace('normalize')	
+			#middleslice.process_inplace('normalize')
+			
+			middleslice['spt_tiltangle'] = zerotiltangle
+			middleslice['spt_tiltaxis'] = 'y'
+			middleslice['spt_subtilt_x'] = midscoordx
+			middleslice['spt_subtilt_y'] = midscoordy
+			middleslice['origin_x'] = middleslice['nx']/2.0
+			middleslice['origin_y'] = middleslice['ny']/2.0
+			middleslice['origin_z'] = 0
+
+			middleslice['apix_x'] = apix
+			middleslice['apix_y'] = apix
+			middleslice['apix_z'] = apix
+				
 			middleslice.write_image( ptclfile, 0 )
 			
 			if str(zerotiltindx) in anglestackslist and options.saveanglestacks:	
@@ -593,7 +611,6 @@ def main():
 					if k == options.ntiltslowpos:
 						break
 				
-				
 				if k < nLangles and not options.ntiltslowpos:
 					#print "\n k and nLangles are", k, nLangles
 					lowerindx = zerotiltindx - (k+1)
@@ -614,6 +631,24 @@ def main():
 				
 						if str(lowerindx) in anglestackslist and options.saveanglestacks:	
 							anglestackname = options.path + '/anglestack_' + str(lowerindx) + '_angle' + str(int(lowerangle)) + '.hdf' 
+							
+							
+							
+							
+							#middleslice['spt_tiltangle'] = zerotiltangle
+							#middleslice['spt_tiltaxis'] = 'y'
+							#middleslice['spt_subtilt_x'] = midscoordx
+							#middleslice['spt_subtilt_y'] = midscoordy
+							#middleslice['origin_x'] = middleslice['nx']/2.0
+							#middleslice['origin_y'] = middleslice['ny']/2.0
+							#middleslice['origin_z'] = 0
+
+							#middleslice['apix_x'] = apix
+							#middleslice['apix_y'] = apix
+							#middleslice['apix_z'] = apix
+							
+							
+							
 							refL.write_image( anglestackname, -1 )
 				
 				if k < nUangles and not options.ntiltslowneg:
@@ -740,7 +775,7 @@ def write2D( options, angle, icethickness, tomox, tomoy, xc, yc, zc, cumulatived
 	
 		return [e, cumulativedx, cumulativedy]
 	else:
-		print "\nParticle excluded from angle view %.2f since its center %.2f, %.2f is outside the --excludeedge limits x=[%.2f,%.2f] and y[%.2f,%.2f]" %(angle,fx,fy,threshx1,threshx2,threshy1,threshy2) 
+		print "\nWARNING! Particle excluded from angle view %.2f since its center %.2f, %.2f is outside the --excludeedge limits x=[%.2f,%.2f] and y[%.2f,%.2f]" %(angle,fx,fy,threshx1,threshx2,threshy1,threshy2) 
 		return None
 
 def extract2D( options, angle, icethickness, tomox, xc, yc, zc, cumulativedx, cumulativedy, sliceindx ):
