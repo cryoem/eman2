@@ -285,9 +285,14 @@ def main():
 						nimgs=EMUtil.get_image_count(f)
 						for ii in range(nimgs):
 							img=EMData(f,ii)
-							print "Header is", img.get_attr_dict()
-							angle=img['spt_tiltangle']
-							series.update({ angle:img })
+							try:
+								angle=img['spt_tiltangle']
+								series.update({ angle:img })
+							except:
+								print "ERROR: spt_tiltangle not found in image", ii
+								print "\nHeader is", img.get_attr_dict()
+								sys.exit()
+
 						
 						retm = makevol( options, f, series, i, originalangles, size, writevols = 1, initialfsc = 1  )	#C:In the first iteration, first reconstruct the tilt series into a 3D volume
 					
