@@ -349,8 +349,9 @@ def main():
 				fmeanscore2d = sum(fscores2d)/len(fscores2d)
 				fmeanscores2d[ i ][f].append( fmeanscore2d )
 				
-				fmeanerror =  sum(ferrors)/len(ferrors)
-				fmeanerrors[ i ][f].append( fmeanerror )
+				if ferrors and errorswitch:
+					fmeanerror =  sum(ferrors)/len(ferrors)
+					fmeanerrors[ i ][f].append( fmeanerror )
 				
 				#fmeanscores2d.update( i:{ f:fmeanscore2d } )
 			
