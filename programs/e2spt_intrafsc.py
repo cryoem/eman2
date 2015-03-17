@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 #
-# Author: Jesus Galaz, 29/Sep/2014; last update 14/oct/2014
+# Author: Jesus Galaz-Montoya
+# Last update 25/Feb/2015
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -51,6 +52,7 @@ def main():
 		e2spt_subtilt.py, and computes the resolution of two volumes reconstructed with
 		the even and the odd images in the tilt series. Must be in HDF format.
 		Note that the apix in the header must be accurate to get sensible results.
+		(You can fix the header of an image with e2fixheaderparam.py).
 		"""
 			
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
@@ -59,19 +61,19 @@ def main():
 	
 	parser.add_argument('--path',type=str,default='sptintrafsc',help="""Default=sptintrafsc. Directory to save the results.""")
 		
-	parser.add_argument('--nonewpath',action='store_true',default=False,help="""Default=False. If True, a new --path directory will not be made. Therefore, whatever is sepcified in --path will be used as the output directory. Note that this poses the risk of overwritting data.""")
+	parser.add_argument('--nonewpath',action='store_true',default=False,help="""Default=False. If True, a new --path directory will not be made. Therefore, whatever is sepcified in --path will be used as the output directory. Note that this poses the risk of overwriting data.""")
 		
-	parser.add_argument('--input',type=str,default='',help="""Default=None. Subtiltseries file file to process. If processing a single file, --inputstem will work too, but you can also just provide the entire filename here --input=subt00.hdf""")
+	parser.add_argument('--input',type=str,default='',help="""Default=None. Subtiltseries file to process. If processing a single file, --inputstem will work too, but you can also just provide the entire filename here --input=subt00.hdf""")
 		
 	parser.add_argument('--savehalftiltseries',action='store_true',default=False,help="""Default=False. If this parameter is on, the odd and even subtiltseries will be saved.""")
 		
 	parser.add_argument('--savehalfvolumes',action='store_true',default=False,help="""Default=False. If this parameter is on, the odd and even volumes will be saved.""")
 	
-	parser.add_argument("--reconstructor", type=str,default="fourier",help="""Default=fourier. The reconstructor to use to reconstruct the tilt series into a tomogram. Type 'e2help.py reconstructors' at the command line to see all options and parameters available. To specify the interpolation scheme for the fourier reconstruction, specify 'mode'. Options are 'nearest_neighbor', 'gauss_2', 'gauss_3', 'gauss_5', 'gauss_5_slow', 'gypergeom_5', 'experimental'. For example --reconstructor=fourier:mode=gauss_5 """)
+	parser.add_argument("--reconstructor", type=str,default="fourier:mode=gauss_2",help="""Default=fourier:mode=gauss_2. The reconstructor to use to reconstruct the tilt series into a tomogram. Type 'e2help.py reconstructors' at the command line to see all options and parameters available. To specify the interpolation scheme for the fourier reconstructor, specify 'mode'. Options are 'nearest_neighbor', 'gauss_2', 'gauss_3', 'gauss_5'. For example --reconstructor=fourier:mode=gauss_5 """)
 	
-	parser.add_argument("--pad2d", type=float,default=0.0,help="""Padding factor to zero-pad the 2d images in the tilt series prior to reconstruction. (The final reconstructed subvolumes will be cropped to the original size).""")
+	parser.add_argument("--pad2d", type=float,default=0.0,help="""Default=0.0. Padding factor (e.g., 2.0, to make the box twice as big) to zero-pad the 2d images in the tilt series for reconstruction purposes (the final reconstructed subvolumes will be cropped back to the original size though).""")
 
-	parser.add_argument("--pad3d", type=float,default=0.0,help="""Default=0.0. Padding factor to zero-pad the reconstruction volume. (The final reconstructed subvolumes will be cropped to the original size).""")
+	parser.add_argument("--pad3d", type=float,default=0.0,help="""Default=0.0. Padding factor (e.g., 2.0, to make the box twice as big) to zero-pad the volumes for reconstruction purposes (the final reconstructed subvolumes will be cropped back to the original size though).""")
 	
 	parser.add_argument("--averager",type=str,default="mean.tomo",help="""Default=mean.tomo. The type of averager used to produce the class average.""")
 	
@@ -130,12 +132,37 @@ def main():
 	
 	for fi in inputfiles:
 		
-		genOddAndEvenVols( options, fi )
+		#genOddAndEvenVols( options, fi )
 		
-		#ret = genOddAndEvenVols( options, fi )
-		#volOdd = ret[0]
-		#volEven = ret[-1]
+		ret = genOddAndEvenVols( options, fi,[] )
+		volOdd = ret[1]
+		volEven = ret[0]
 			
+		if options.savehalfvolumes and volOdd and volEven:
+			volOdd.write_image( options.path + '/' + fi.replace('.hdf','_ODDVOL.hdf'), 0 )
+			volEven.write_image( options.path + '/' + fi.replace('.hdf','_EVENVOL.hdf'), 0 )
+		
+		retfsc = fscOddVsEven( options, fi, volOdd, volEven )
+		
+		fscfilename = retfsc[0]
+		fscarea = retfsc[1]
+		
+		if options.averagehalves:
+			avgr = Averagers.get( options.averager[0], options.averager[1] )
+			avgr.add_image( recOdd )
+			avgr.add_image( recEven )
+			
+			avg = avgr.finish()
+			avg['origin_x'] = 0
+			avg['origin_y'] = 0
+			avg['origin_z'] = 0
+			avg['apix_x'] = apix
+			avg['apix_y'] = apix
+			avg['apix_z'] = apix
+			
+			avgfile = options.path + '/AVG.hdf'
+			avg.write_image( avgfile, 0 )
+		
 	E2end(logger)
 	
 	return
@@ -151,17 +178,22 @@ def fscOddVsEven( options, filename, odd, even ):
 	fsc = fsc[ third:2*third ]
 	saxis = [ x/apix for x in xaxis ]
 	
-	fscfilename = options.path +'/' + filename.replace('.hdf','_evenOddFSC.txt')
-	Util.save_data( saxis[1],saxis[1]-saxis[0],fsc[1:-1], fscfilename )
+	if filename:
+		fscfilename = options.path +'/' + os.path.basename(filename).replace('.hdf','_evenOddFSC.txt')
+		Util.save_data( saxis[1],saxis[1]-saxis[0],fsc[0:-1], fscfilename )
 	
-	return fscfilename
+	fscarea = sum(fsc)
+	
+	return [fscfilename,fscarea]
 	
 	
-def genOddAndEvenVols( options, fi ):
+def genOddAndEvenVols( options, fi, imgs ):
 	
-	imgs = []
+	#print "size of imageslist images received is", imgs[0]['nx'], imgs[-1]['ny']
 	
-	if isinstance( fi, str ):	
+	
+	#if isinstance( fi, str ):	
+	if not imgs:
 		#hdr = EMData( fi, 0, True)
 		nimgs = EMUtil.get_image_count( fi )
 		
@@ -169,8 +201,10 @@ def genOddAndEvenVols( options, fi ):
 			img = EMData( fi, i )
 			imgs.append( img )
 
-	elif isinstance( fi, list ):
-		imgs = fi
+	#elif isinstance( fi, list ):
+	#	imgs = fi
+	
+	#print "therefore converted images list is type", type(imgs),imgs
 	
 	apix = imgs[0]['apix_x']
 	nx = imgs[0]['nx']
@@ -182,32 +216,42 @@ def genOddAndEvenVols( options, fi ):
 	if options.reconstructor:
 		if len(options.reconstructor) > 1:
 			if 'mode' in options.reconstructor[-1]:
-				mode = options.reconstructor[-1]['mode']
-				
-				print "\nThe reconstructor mode has been changed from default to", mode
+				try:
+					if options.reconstructor[-1]['mode'] != 'gauss_2':
+						mode = options.reconstructor[-1]['mode']
+						print "\nThe reconstructor mode has been changed from default to", mode
+					else:
+						pass
+				except:
+					pass
 		
 	originalboxsize = box
 	
 	if options.pad3d:
 		if options.pad2d:
 			if options.pad3d > options.pad2d:
-				box = box*options.pad3d
+				box = int(box*options.pad3d)
 			else:
-				box = box*options.pad2d
+				box = int(box*options.pad2d)
 		else:
-			box = box*options.pad3d			
+			box = int(box*options.pad3d)		
 	elif options.pad2d:
-		box = box*options.pad2d
-			
-	rOdd = Reconstructors.get(options.reconstructor[0],{'size':(box,box,box),'sym':'c1','verbose':True,'mode':mode})
-	rEven = Reconstructors.get(options.reconstructor[0],{'size':(box,box,box),'sym':'c1','verbose':True,'mode':mode})
-
+		box = int(box*options.pad2d)
+		
+	rOdd = Reconstructors.get(options.reconstructor[0],{'size':(box,box,box),'sym':'c1','verbose':False,'mode':mode})
+	rEven = Reconstructors.get(options.reconstructor[0],{'size':(box,box,box),'sym':'c1','verbose':False,'mode':mode})
+	
+	#print "in intrafsc reconstructor is", options.reconstructor
+	#print "rOdd is", rOdd
+	#print "and box was", box
+	
 	rOdd.setup()
 	rEven.setup()
 	
 	ko = 0
-	oddtilts = options.path + '/' + fi.replace('.hdf', '_ODDTILTS.hdf')
 	ke = 0
+	
+	oddtilts = options.path + '/' + fi.replace('.hdf', '_ODDTILTS.hdf')
 	eventilts = options.path + '/' + fi.replace('.hdf', '_EVENTILTS.hdf')
 	
 	iii = 0
@@ -222,10 +266,13 @@ def genOddAndEvenVols( options, fi ):
 		t = Transform( {'type':'eman', 'az':90, 'alt':img['spt_tiltangle'], 'phi':-90 } )
 		img.set_attr('xform.projection',t)
 		
+		#print "Using this transform for even odd", img['xform.projection']
+		
 		if iii%2:
-			print "Print slice inserted into odd", iii
+			#print "Print slice inserted into odd", iii
 			pmOdd = rOdd.preprocess_slice( img, img['xform.projection'] )
-			rOdd.insert_slice( pmOdd,pmOdd['xform.projection'],1.0 )
+			weight = 1.0
+			rOdd.insert_slice( pmOdd,pmOdd['xform.projection'],weight)
 			
 			try:
 				if options.savehalftiltseries:
@@ -238,9 +285,10 @@ def genOddAndEvenVols( options, fi ):
 			
 			
 		else:
-			print "Print slice inserted into even", iii
+			#print "Print slice inserted into even", iii
 			pmEven = rEven.preprocess_slice( img,img['xform.projection'] )
-			rEven.insert_slice( pmEven,pmEven['xform.projection'],1.0 )
+			weight=1.0
+			rEven.insert_slice( pmEven,pmEven['xform.projection'],weight )
 			
 			try:
 				if options.savehalftiltseries:
@@ -259,6 +307,7 @@ def genOddAndEvenVols( options, fi ):
 	recOdd['apix_x'] = apix
 	recOdd['apix_y'] = apix
 	recOdd['apix_z'] = apix
+	recOdd.process_inplace('normalize')
 	
 	recEven = rEven.finish(True)
 	recEven['origin_x'] = 0
@@ -267,6 +316,7 @@ def genOddAndEvenVols( options, fi ):
 	recEven['apix_x'] = apix
 	recEven['apix_y'] = apix
 	recEven['apix_z'] = apix
+	recEven.process_inplace('normalize')
 	
 	#t90 = Transform({ 'type':'eman','alt':180,'az':0,'phi':0 })
 	#recOdd.transform( t90 )
@@ -278,36 +328,17 @@ def genOddAndEvenVols( options, fi ):
 		recOdd = clip3D( recOdd, originalboxsize )
 		recEven = clip3D( recEven, originalboxsize )
 	
-	try:	
-		if options.savehalfvolumes:
-			recOdd.write_image( options.path + '/' + fi.replace('.hdf','_ODDVOL.hdf'), 0 )
-			recEven.write_image( options.path + '/' + fi.replace('.hdf','_EVENVOL.hdf'), 0 )
-	except:
-		pass
+		
+	ccm = recEven.calc_ccf( recOdd )
+	ccm.process_inplace('normalize')
+	maxloc = ccm.calc_max_location()
+	maxx = maxloc[0]
+	maxy = maxloc[1]
+	maxz = maxloc[2]
+	score3d = ccm.get_value_at( maxx, maxy, maxz )
 	
-	fscfilename = fscOddVsEven( options, fi, recOdd, recEven )
-		
-	try:
-		if options.averagehalves:
-			avgr = Averagers.get( options.averager[0], options.averager[1] )
-			avgr.add_image( recOdd )
-			avgr.add_image( recEven )
-			
-			avg = avgr.finish()
-			avg['origin_x'] = 0
-			avg['origin_y'] = 0
-			avg['origin_z'] = 0
-			avg['apix_x'] = apix
-			avg['apix_y'] = apix
-			avg['apix_z'] = apix
-			
-			avgfile = options.path + '/AVG.hdf'
-			avg.write_image( avgfile, 0 )
-	except:
-		pass	
-		
-	return fscfilename
-	#return [ recOdd, recEven ]
+	#return fscfilename
+	return [ recEven, recOdd, score3d ]
 
 
 def clip3D( vol, size ):
