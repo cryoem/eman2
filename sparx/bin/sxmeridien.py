@@ -764,21 +764,23 @@ def main():
 			viv.write_image(volinit)
 		del mask33d, viv
 
+	xr = min(8,(nnxo - (2*radi+1))//2)
+	if(xr > 3):  ts = "2"
+	else:  ts = "1"
+
+	delta = int(options.delta)
+	if(delta <= 0.0):
+		delta = "%f"%round(degrees(atan(1.0/float(radi))), 2)
+
+	paramsdict = {	"stack":stack,"delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":options.an, "center":options.center, "maxit":1, \
+					"currentres":0.4, "aa":0.1, "radius":radi, "nsoft":0, "delpreviousmax":True, "shrink":1.0, "saturatecrit":1.0, \
+					"refvol":volinit, "mask3D":options.mask3D}
+
+
 	doit, keepchecking = checkstep(initdir, keepchecking, myid, main_node)
 	if  doit:
 		partids = os.path.join(masterdir, "ids.txt")
 		partstack = os.path.join(masterdir, "paramszero.txt")
-		xr = min(8,(nnxo - (2*radi+1))//2)
-		if(xr > 3):  ts = "2"
-		else:  ts = "1"
-
-		delta = int(options.delta)
-		if(delta <= 0.0):
-			delta = "%f"%round(degrees(atan(1.0/float(radi))), 2)
-
-		paramsdict = {	"stack":stack,"delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":options.an, "center":options.center, "maxit":1, \
-						"currentres":0.4, "aa":0.1, "radius":radi, "nsoft":0, "delpreviousmax":True, "shrink":1.0, "saturatecrit":1.0, \
-						"refvol":volinit, "mask3D":options.mask3D}
 
 		if(options.startangles):
 
