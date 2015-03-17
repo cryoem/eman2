@@ -285,6 +285,7 @@ def main():
 						nimgs=EMUtil.get_image_count(f)
 						for ii in range(nimgs):
 							img=EMData(f,ii)
+							print "Header is", img.get_attr_dict()
 							angle=img['spt_tiltangle']
 							series.update({ angle:img })
 						
