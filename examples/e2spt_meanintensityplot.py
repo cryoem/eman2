@@ -482,7 +482,7 @@ def plotintensities( intensities, options, datafile, onefile='yes' ):
 	plotname = datafile.replace('.hdf', '_MIplotMSK.png')
 
 	print "The total number of particles is", len(intensities)
-	print "because intensities are", intensities
+	#print "because intensities are", intensities
 
 	#plt.hist(y, bins=5)
 	
