@@ -125,6 +125,9 @@ def main():
 	means = []
 	stds = []
 	
+	from e2spt_classaverage import writeParameters
+	cmdwp = writeParameters(options,'e2spt_meanintensityplot.py', 'sptmeanintensity')
+	
 	for datafile in datafiles:
 		n = EMUtil.get_image_count(datafile)
 		
@@ -512,6 +515,8 @@ def plotintensities( intensities, options, datafile, onefile='yes' ):
 		calcbins = options.bins
 	
 	print "\nAnd the number of bins n = ( max(intensities) - min(intensities) ) / width will thus be", calcbins
+	calcbins = round(calcbins)
+	print "rounding to", calcbins
 	
 	statistics.append( 'bins=' + str( calcbins ) + ' , binwidth=' + str( width ) + '\n')
 	
