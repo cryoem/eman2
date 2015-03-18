@@ -222,6 +222,21 @@ def main():
 	
 	
 	'''
+	Parse aligner parameters such that redundant and conflicting parameters are resolved, for example,
+	providing --sym and --search, but also providing these at the aligner level, 
+	--align=whatever_aligner:sym=xxx:search=xxx'''
+	from e2spt_classaverage import sptParseAligner
+	options = sptParseAligner( options )
+	
+	
+	'''
+	Parse parameters such that "None" or "none" are adequately interpreted to turn of an option
+	'''
+	from e2spt_classaverage import sptOptionsParser
+	options = sptOptionsParser( options )
+	
+	
+	'''
 	If --radius of the particle is provided, we calculate the optimal alignment steps for 
 	coarse and fine alignment rounds using --shrink and --shrinkfine options and apix info
 	'''
@@ -230,116 +245,6 @@ def main():
 		options = calcAliStep(options)
 		
 	
-	if options.align:
-		if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align and 'grid' not in options.align:
-			if 'rotate_translate_3d' in options.align or 'rotate_symmetry_3d' in options.align: 
-				options.align += ':sym=' + str( options.sym )
-						
-		if 'search' not in options.align:
-			if 'rotate_translate_3d' in options.align:		
-				options.align += ':search=' + str( options.search )
-			
-			#sys.exit()
-			
-		elif 'rotate_translate_3d' in options.align:
-			searchA = options.align.split('search=')[-1].split(':')[0]
-			searchdefault = 8
-			
-			#print "There was search in --align", searchA
-			#sys.exit()
-			if options.search != searchdefault:
-						
-				prefix = options.align.split('search=')[0]
-				trail = options.align.split('search=')[-1].split(':')[-1]
-			
-				options.align =  prefix + 'search=' + str(options.search)
-				if len(trail) > 2 and '=' in trail:
-					options.align += ':' + trail 
-			
-				print """\nWARNING: --search is different from search= provided through
-				--align or its default value of 8. There's no need to specify both, 
-				but if you did, --search takes precedence :-) ."""
-				#sys.exit()
-			elif options.search == searchdefault:
-				options.search = searchA
-				
-
-	
-		
-		if "rotate_translate_3d_grid" in options.align:
-			if "alt0" and "alt1" in options.align:
-				alt0 = int(options.align.split('alt0')[-1].split(':')[0].replace('=',''))	
-				alt1 = int(options.align.split('alt1')[-1].split(':')[0].replace('=',''))
-				
-				print "alt0 and alt1 are", alt0,alt1, type(alt0), type(alt1)
-				print alt1-alt0 == 0
-				#sys.exit()
-				
-				if alt1-alt0 == 0:
-					print """\nERROR: alt0 and alt1 cannot be equal for rotate_translate_3d_grid.
-					If you want to inactivate searches in this angle, provide a alt0 and alt1
-					such that alt1-alt0 is NOT ZERO, and provide a step size for dalt that is larger
-					than this difference. For example: 
-					alt0=0:alt1=1:dalt=2."""
-					sys.exit()
-					
-			if "phi0" and "phi1" in options.align:
-				phi0 = int(options.align.split('phi0')[-1].split(':')[0].replace('=',''))	
-				phi1 = int(options.align.split('phi1')[-1].split(':')[0].replace('=',''))
-				
-				print "phi0 and phi1 are", phi0,phi1, type(phi0), type(phi1)
-				print phi1-phi0 == 0
-				#sys.exit()
-				
-				if phi1-phi0 == 0:
-					print """\nERROR: phi0 and phi1 cannot be equal for rotate_translate_3d_grid.
-					If you want to inactivate searches in this angle, provide a phi0 and phi1
-					such that phi1-phi0 is NOT ZERO, and provide a step size for dphi that is larger
-					than this difference. For example: 
-					phi0=0:phi1=1:dphi=2."""
-					sys.exit()
-					
-			if "az0" and "az1" in options.align:
-				az0 = int(options.align.split('az0')[-1].split(':')[0].replace('=',''))	
-				az1 = int(options.align.split('az1')[-1].split(':')[0].replace('=',''))
-				
-				print "az0 and az1 are", az0,az1, type(az0), type(az1)
-				print az1-az0 == 0
-				#sys.exit()
-				
-				if az1-az0 == 0:
-					print """\nERROR: az0 and az1 cannot be equal for rotate_translate_3d_grid.
-					If you want to inactivate searches in this angle, provide a az0 and az1
-					such that az1-az0 is NOT ZERO, and provide a step size for daz that is larger
-					than this difference. For example: 
-					az0=0:az1=1:daz=2."""
-					sys.exit()
-	
-	
-	if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
-		if 'search' not in options.falign and 'refine_3d_grid' in options.falign:	
-			options.falign += ':search=' + str( options.searchfine )
-			
-		else:
-			searchF = options.falign.split('search=')[-1].split(':')[0]
-			searchfinedefault = 2
-			
-			if options.searchfine != searchfinedefault:
-						
-				prefix = options.falign.split('search=')[0]
-				trail = options.falign.split('search=')[-1].split(':')[-1]
-			
-				options.falign =  prefix + 'search=' + str(options.searchfine)
-				if len(trail) > 2 and '=' in trail:
-					options.falign += ':' + trail 
-			
-				print """\nWARNING: --searchfine is different from search= provided through
-				--falign or its default value of 2. There's no need to specify both, but 
-				if you did, --searchfine takes precedence :-) ."""
-				#sys.exit()
-				
-			elif options.searchfine == searchfinedefault:
-				options.searchfine = searchF
 	
 	'''
 	Store parameters in parameters.txt file inside --path
@@ -348,73 +253,11 @@ def main():
 	writeParameters(options,'e2spt_hac.py', 'hac')
 	
 	print "e2spt_hac.py (main) - spthac_parameters.txt written."
-	'''
-	Parse parameters
-	'''
-	
-	from e2spt_classaverage import sptOptionsParser
-	options = sptOptionsParser( options )
+
 	
 	print "e2spt_hac.py (main) - options parsed."
 	
-	"""
-	if options.autocenter:
-		options.autocenter=parsemodopt(options.autocenter)
-		
-	if options.autocentermask:
-		options.autocentermask=parsemodopt(options.autocentermask)
-	
-	#if options.autocenterpreprocess:
-	#	options.autocenterpreprocess=parsemodopt(options.autocenterpreprocess)
-	
-	if options.align:
-		options.align=parsemodopt(options.align)
-	
-	if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none': 
-		options.falign=parsemodopt(options.falign)
-	
-	if options.aligncmp: 
-		options.aligncmp=parsemodopt(options.aligncmp)
-	
-	if options.faligncmp: 
-		options.faligncmp=parsemodopt(options.faligncmp)
-	
-	if options.averager: 
-		options.averager=parsemodopt(options.averager)		
-		
-		
-	if options.normproc and options.normproc != 'None' and options.normproc != 'none':
-		options.normproc=parsemodopt(options.normproc)	
-		
-	if options.mask and options.mask != 'None' and options.mask != 'none':
-		#print "parsing mask", sys.exit()
-		options.mask=parsemodopt(options.mask)
-	
-	if options.preprocess and options.preprocess != 'None' and options.preprocess != 'none': 
-		options.preprocess=parsemodopt(options.preprocess)
-		
-	if options.threshold and options.threshold != 'None' and options.threshold != 'none': 
-		options.threshold=parsemodopt(options.threshold)
-		
-	if options.preprocessfine and options.preprocessfine != 'None' and options.preprocessfine != 'none': 
-		options.preprocessfine=parsemodopt(options.preprocessfine)
-		
-	if options.lowpass and options.lowpass != 'None' and options.lowpass != 'none': 
-		options.lowpass=parsemodopt(options.lowpass)
-		
-	if options.lowpassfine and options.lowpassfine != 'None' and options.lowpassfine != 'none': 
-		options.lowpassfine=parsemodopt(options.lowpassfine)
-	
-	if options.highpass and options.highpass != 'None' and options.highpass != 'none': 
-		options.highpass=parsemodopt(options.highpass)
-		
-	if options.highpassfine and options.highpassfine != 'None' and options.highpassfine != 'none': 
-		options.highpassfine=parsemodopt(options.highpassfine)
-		
-	if options.postprocess and options.postprocess != 'None' and options.postprocess != 'none': 
-		options.postprocess=parsemodopt(options.postprocess)
-		
-	"""	
+
 
 	group_ranges=[]
 	data_files = []
@@ -1319,7 +1162,7 @@ def allvsall(options):
 				
 				
 				if len(results) == 1:
-					avg.write_image(options.path + '/finalAvg.hdf',0)
+					avg.write_image(options.path + '/final_avg.hdf',0)
 
 				if options.saveali:
 					for oo in range(len(avg_ptcls)):
