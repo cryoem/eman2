@@ -92,7 +92,13 @@ def main():
 	
 	parser.add_argument("--precision",type=float,default=1.0,help="""Default=1.0. Precision in pixels to use when figuring out alignment parameters automatically using --radius. Precision would be the number of pixels that the the edge of the specimen is moved (rotationally) during the finest sampling, --falign. If precision is 1, then the precision of alignment will be that of the sampling (apix of your images) times the --shrinkfine factor specified.""")
 	
-	parser.add_argument("--search", type=int,default=8,help=""""Default=8. During COARSE alignment translational search in X, Y and Z, in pixels. Default=8. This WILL overwrite any search: provided through --align, EXCEPT if you provide --search=8, which is the default. In general, just avoid providing search twice (through here and through the aligner, --align). If you do, just be careful to make them consistent to minimize misinterpretation and error.""")
+	parser.add_argument("--search", type=int,default=8,help=""""Default=8. During COARSE alignment, translational search in X, Y and Z, in pixels. This WILL overwrite any search: provided through --align, EXCEPT if you provide --search=8, which is the default. In general, just avoid providing search twice (through here and through the aligner, --align). If you do, just be careful to make them consistent to minimize misinterpretation and error.""")
+	
+	#parser.add_argument("--searchx", type=int,default=8,help=""""Default=0. Not used. During COARSE alignment translational search in X, Y and Z, in pixels. Default=8. This WILL overwrite any search: provided through --align, EXCEPT if you provide --search=8, which is the default. In general, just avoid providing search twice (through here and through the aligner, --align). If you do, just be careful to make them consistent to minimize misinterpretation and error.""")
+
+	#parser.add_argument("--searchy", type=int,default=8,help=""""Default=8. During COARSE alignment translational search in X, Y and Z, in pixels. Default=8. This WILL overwrite any search: provided through --align, EXCEPT if you provide --search=8, which is the default. In general, just avoid providing search twice (through here and through the aligner, --align). If you do, just be careful to make them consistent to minimize misinterpretation and error.""")
+
+	#parser.add_argument("--searchz", type=int,default=8,help=""""Default=8. During COARSE alignment translational search in X, Y and Z, in pixels. Default=8. This WILL overwrite any search: provided through --align, EXCEPT if you provide --search=8, which is the default. In general, just avoid providing search twice (through here and through the aligner, --align). If you do, just be careful to make them consistent to minimize misinterpretation and error.""")
 	
 	parser.add_argument("--searchfine", type=int,default=2,help=""""Default=2. During FINE alignment translational search in X, Y and Z, in pixels. Default=2. This WILL overwrite any search: provided through --falign, EXCEPT if you provide --searchfine=2, which is the default. In general, just avoid providing search twice (through here and through the fine aligner --falign). If you do, just be careful to make them consistent to minimize misinterpretation and error.""")
 		
@@ -143,6 +149,8 @@ def main():
 	parser.add_argument("--aligncmp",type=str,default="ccc.tomo",help="""Default=ccc.tomo. The comparator used for the --align aligner. Do not specify unless you need to use anotherspecific aligner.""",guitype='comboparambox',choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=13, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
 	
 	parser.add_argument("--falign",type=str,default="refine_3d_grid:delta=3:range=15:search=2",help="""Default="refine_3d_grid:delta=3:range=15:search=2". This is the second stage aligner used to fine-tune the first alignment. Specify 'None' to disable.""", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine.*3d\')', row=14, col=0, rowspan=1, colspan=3, nosharedb=True, mode='alignment,breaksym[None]')
+		
+	parser.add_argument("--translateonly",action='store_true',default=False,help="""Default=False. This will force the aligner to not do any rotations and thus serves for translational centering. Specify search values through --search, otherwise its default value will be used.""")	
 		
 	parser.add_argument("--faligncmp",type=str,default="ccc.tomo",help="""Default=ccc.tomo. The comparator used by the second stage aligner.""", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=15, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")		
 	
@@ -329,117 +337,30 @@ def main():
 					print "ERROR: You need at least 2 particles in --input to buidl a refernece if --ref is not provided."""
 					sys.exit()
 					
+	if not options.translateonly:
+		options = sptParseAligner( options )
+	else:
+		options.align = 'rotate_translate_3d_grid:phi0=0:phi1=1:alt0=0:alt1=1:az0=0:az1=1:dphi=2:daz=2:dalt=2'
 		
+		if options.search:
+			options.align += ':search=' + str(options.search)
+			
+		#if options.searchx:
+		#	options.align += ':searchx=' + str(options.searchx)
 		
-			
-	if options.align:
-		#print "There's options.align", options.align
-		if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align and 'grid' not in options.align:
-			if 'rotate_translate_3d' in options.align or 'rotate_symmetry_3d' in options.align:
-				options.align += ':sym=' + str( options.sym )
-			#print "And there's sym", options.sym
-			
-		if 'search' not in options.align:
-			if 'rotate_translate_3d' in options.align:	
-				options.align += ':search=' + str( options.search )
-			
-		elif 'rotate_translate_3d' in options.align:
-			searchA = options.align.split('search=')[-1].split(':')[0]
-			searchdefault = 8
-			
-			if options.search != searchdefault:
-						
-				prefix = options.align.split('search=')[0]
-				trail = options.align.split('search=')[-1].split(':')[-1]
-			
-				options.align =  prefix + 'search=' + str(options.search)
-				if len(trail) > 2 and '=' in trail:
-					options.align += ':' + trail 
-			
-				print """\nWARNING: --search is different from search= provided through
-				--align or its default value of 8. There's no need to specify both, but 
-				if you did, --search takes precedence :-) ."""
-				#sys.exit()
-			elif options.search == searchdefault:
-				options.search = searchA
-			
-
-		if "rotate_translate_3d_grid" in options.align:
-			if "alt0" and "alt1" in options.align:
-				alt0 = int(options.align.split('alt0')[-1].split(':')[0].replace('=',''))	
-				alt1 = int(options.align.split('alt1')[-1].split(':')[0].replace('=',''))
-				
-				print "alt0 and alt1 are", alt0,alt1, type(alt0), type(alt1)
-				print alt1-alt0 == 0
-				#sys.exit()
-				
-				if alt1-alt0 == 0:
-					print """\nERROR: alt0 and alt1 cannot be equal for rotate_translate_3d_grid.
-					If you want to inactivate searches in this angle, provide a alt0 and alt1
-					such that alt1-alt0 is NOT ZERO, and provide a step size for dalt that is larger
-					than this difference. For example: 
-					alt0=0:alt1=1:dalt=2."""
-					sys.exit()
-					
-			if "phi0" and "phi1" in options.align:
-				phi0 = int(options.align.split('phi0')[-1].split(':')[0].replace('=',''))	
-				phi1 = int(options.align.split('phi1')[-1].split(':')[0].replace('=',''))
-				
-				print "phi0 and phi1 are", phi0,phi1, type(phi0), type(phi1)
-				print phi1-phi0 == 0
-				#sys.exit()
-				
-				if phi1-phi0 == 0:
-					print """\nERROR: phi0 and phi1 cannot be equal for rotate_translate_3d_grid.
-					If you want to inactivate searches in this angle, provide a phi0 and phi1
-					such that phi1-phi0 is NOT ZERO, and provide a step size for dphi that is larger
-					than this difference. For example: 
-					phi0=0:phi1=1:dphi=2."""
-					sys.exit()
-					
-			if "az0" and "az1" in options.align:
-				az0 = int(options.align.split('az0')[-1].split(':')[0].replace('=',''))	
-				az1 = int(options.align.split('az1')[-1].split(':')[0].replace('=',''))
-				
-				print "az0 and az1 are", az0,az1, type(az0), type(az1)
-				print az1-az0 == 0
-				#sys.exit()
-				
-				if az1-az0 == 0:
-					print """\nERROR: az0 and az1 cannot be equal for rotate_translate_3d_grid.
-					If you want to inactivate searches in this angle, provide a az0 and az1
-					such that az1-az0 is NOT ZERO, and provide a step size for daz that is larger
-					than this difference. For example: 
-					az0=0:az1=1:daz=2."""
-					sys.exit()
-			
-	print "\n\nBefore adding and fixing searches, options.falign is", options.falign, type(options.falign)	
-	if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
-		if 'search' not in options.falign and 'refine_3d_grid' in options.falign:		
-			options.falign += ':search=' + str( options.searchfine )
-			
-		else:
-			searchF = options.falign.split('search=')[-1].split(':')[0]
-			searchfinedefault = 2
-			
-			if options.searchfine != searchfinedefault:
-						
-				prefix = options.falign.split('search=')[0]
-				trail = options.falign.split('search=')[-1].split(':')[-1]
-				
-				options.falign =  prefix + 'search=' + str(options.searchfine)
-				
-				if len(trail) > 2 and '=' in trail:
-				
-					options.falign += ':' + trail 
-			
-				print """\nWARNING: --searchfine is different from search= provided through
-				--falign or its default value of 2. There's no need to specify both, but 
-				if you did, --searchfine takes precedence :-) ."""
-				#sys.exit()
-			
-			elif options.searchfine == searchfinedefault:
-				options.searchfine = searchF	
+		#if options.searchy:
+		#	options.align += ':searchy=' + str(options.searchy)
+		
+		#if options.searchz:
+		#	options.align += ':searchz=' + str(options.searchz)
+	
+		
+	'''
+	Parse parameters such that "None" or "none" are adequately interpreted to turn of an option
+	'''
+	options = sptOptionsParser( options )
+	
+	print "After parsing options, options.goldstandardoff is", options.goldstandardoff, type(options.goldstandardoff)
 	
 	
 	print "after fixing searches but before calcali options.falign is", options.falign
@@ -447,15 +368,7 @@ def main():
 		#print "(e2spt_classaverage)(main) before calling calcAliStep, options.input is", options.input
 		options = calcAliStep(options)
 	
-	'''
-	Parse parameters
-	'''
-	
-	options = sptOptionsParser( options )
-	
-	print "After parsing options, options.goldstandardoff is", options.goldstandardoff, type(options.goldstandardoff)
-
-
+		
 	if options.resultmx: 
 		print "\nSorry, resultmx not implemented yet"
 	
@@ -908,7 +821,11 @@ def main():
 						#ppref.write_image("%s/class_%02d.hdf"%(options.path,ic),it)
 						ppref.write_image(refnamePP,it)
 					
-					ref.write_image( options.path + '/finalAvg.hdf', 0)
+					outname = options.path + '/final_avg.hdf'
+					if options.output:
+						outname = options.path + '/' + options.output
+					
+					ref.write_image( outname , 0)
 					print "Done alignig the only particle in --input to --ref"
 					sys.exit()
 			
@@ -942,7 +859,12 @@ def main():
 						ppref.write_image(refnamePP,it)
 				
 				if it == options.iter -1:
-					ref.write_image( options.path + '/finalAvg.hdf', 0)
+				
+					outname = options.path + '/final_avg.hdf'
+					if options.output:
+						outname = options.path + '/' + options.output
+				
+					ref.write_image( outname , 0)
 
 
 			jsA.close()
@@ -1058,13 +980,19 @@ def main():
 			fscfile = options.path + '/fsc_' + str(it).zfill( len( str(options.iter))) + '.txt'
 
 			jsAvgs = js_open_dict( avgsDict )
-			finalAvg = compareEvenOdd(options, avgeven, avgodd, it, etc, jsAvgs, fscfile  )
+			final_avg = compareEvenOdd(options, avgeven, avgodd, it, etc, jsAvgs, fscfile  )
 			jsAvgs.close()
 			
-			finalAvg.write_image( options.path + '/avgs.hdf' , it)
+			if options.savesteps:
+				final_avg.write_image( options.path + '/avgs.hdf' , it)
 	
 			if it == options.iter -1 :
-				finalAvg.write_image( options.path + '/finalAvg.hdf', 0)
+			
+				outname = options.path + '/final_avg.hdf'
+				if options.output:
+					outname = options.path + '/' + options.output
+					
+				final_avg.write_image( outname , 0)
 			
 			
 			
@@ -1144,6 +1072,123 @@ def main():
 	return
 
 
+'''
+This function tries to alleviate the issue of providing parameters both through the aligner,
+and outside of it. For example, --sym and --search, vs --align:whatever_alinger:sym=xxx:search=xxx.
+Command line options should take precedence.
+'''
+def sptParseAligner( options ):
+	if options.align and 'rotate' in options.align:
+		#print "There's options.align", options.align
+		if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align and 'grid' not in options.align:
+			if 'rotate_translate_3d' in options.align or 'rotate_symmetry_3d' in options.align:
+				options.align += ':sym=' + str( options.sym )
+			#print "And there's sym", options.sym
+			
+		if 'search' not in options.align:
+			if 'rotate_translate_3d' in options.align:	
+				options.align += ':search=' + str( options.search )
+			
+		elif 'rotate_translate_3d' in options.align:
+			searchA = options.align.split('search=')[-1].split(':')[0]
+			searchdefault = 8
+			
+			if options.search != searchdefault:
+						
+				prefix = options.align.split('search=')[0]
+				trail = options.align.split('search=')[-1].split(':')[-1]
+			
+				options.align =  prefix + 'search=' + str(options.search)
+				if len(trail) > 2 and '=' in trail:
+					options.align += ':' + trail 
+			
+				print """\nWARNING: --search is different from search= provided through
+				--align or its default value of 8. There's no need to specify both, but 
+				if you did, --search takes precedence :-) ."""
+				#sys.exit()
+			elif options.search == searchdefault:
+				options.search = searchA
+			
+
+		if "rotate_translate_3d_grid" in options.align:
+			if "alt0" and "alt1" in options.align:
+				alt0 = int(options.align.split('alt0')[-1].split(':')[0].replace('=',''))	
+				alt1 = int(options.align.split('alt1')[-1].split(':')[0].replace('=',''))
+				
+				print "alt0 and alt1 are", alt0,alt1, type(alt0), type(alt1)
+				print alt1-alt0 == 0
+				#sys.exit()
+				
+				if alt1-alt0 == 0:
+					print """\nERROR: alt0 and alt1 cannot be equal for rotate_translate_3d_grid.
+					If you want to inactivate searches in this angle, provide a alt0 and alt1
+					such that alt1-alt0 is NOT ZERO, and provide a step size for dalt that is larger
+					than this difference. For example: 
+					alt0=0:alt1=1:dalt=2."""
+					sys.exit()
+					
+			if "phi0" and "phi1" in options.align:
+				phi0 = int(options.align.split('phi0')[-1].split(':')[0].replace('=',''))	
+				phi1 = int(options.align.split('phi1')[-1].split(':')[0].replace('=',''))
+				
+				print "phi0 and phi1 are", phi0,phi1, type(phi0), type(phi1)
+				print phi1-phi0 == 0
+				#sys.exit()
+				
+				if phi1-phi0 == 0:
+					print """\nERROR: phi0 and phi1 cannot be equal for rotate_translate_3d_grid.
+					If you want to inactivate searches in this angle, provide a phi0 and phi1
+					such that phi1-phi0 is NOT ZERO, and provide a step size for dphi that is larger
+					than this difference. For example: 
+					phi0=0:phi1=1:dphi=2."""
+					sys.exit()
+					
+			if "az0" and "az1" in options.align:
+				az0 = int(options.align.split('az0')[-1].split(':')[0].replace('=',''))	
+				az1 = int(options.align.split('az1')[-1].split(':')[0].replace('=',''))
+				
+				print "az0 and az1 are", az0,az1, type(az0), type(az1)
+				print az1-az0 == 0
+				#sys.exit()
+				
+				if az1-az0 == 0:
+					print """\nERROR: az0 and az1 cannot be equal for rotate_translate_3d_grid.
+					If you want to inactivate searches in this angle, provide a az0 and az1
+					such that az1-az0 is NOT ZERO, and provide a step size for daz that is larger
+					than this difference. For example: 
+					az0=0:az1=1:daz=2."""
+					sys.exit()
+			
+	print "\n\nBefore adding and fixing searches, options.falign is", options.falign, type(options.falign)	
+	if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
+		if 'search' not in options.falign and 'refine_3d_grid' in options.falign:		
+			options.falign += ':search=' + str( options.searchfine )
+			
+		else:
+			searchF = options.falign.split('search=')[-1].split(':')[0]
+			searchfinedefault = 2
+			
+			if options.searchfine != searchfinedefault:
+						
+				prefix = options.falign.split('search=')[0]
+				trail = options.falign.split('search=')[-1].split(':')[-1]
+				
+				options.falign =  prefix + 'search=' + str(options.searchfine)
+				
+				if len(trail) > 2 and '=' in trail:
+				
+					options.falign += ':' + trail 
+			
+				print """\nWARNING: --searchfine is different from search= provided through
+				--falign or its default value of 2. There's no need to specify both, but 
+				if you did, --searchfine takes precedence :-) ."""
+				#sys.exit()
+			
+			elif options.searchfine == searchfinedefault:
+				options.searchfine = searchF	
+	return options
+
+
 def compareEvenOdd( options, avgeven, avgodd, it, etc, jsAvgs, fscfile, average=True ):
 	tasks = []
 	
@@ -1175,7 +1220,7 @@ def compareEvenOdd( options, avgeven, avgodd, it, etc, jsAvgs, fscfile, average=
 		finalA['origin_z']=0
 		finalA['xform.align3d'] = Transform()
 
-		#apix = finalAvg['apix_x']
+		#apix = final_avg['apix_x']
 	
 	calcFsc( options, avgeven, avgodd, fscfile )
 	
@@ -1229,12 +1274,11 @@ def sptRefGen( options, ptclnumsdict, cmdwp, wildcard=0, method='',subset4ref=0)
 	
 	refsdict = {}
 	elements = cmdwp.split(' ')
-	print "elements are", elements
 	
-	print "ptclnumsdict received in sptRefGen is", ptclnumsdict
-	
-	print "RECEIVED CMDWP", cmdwp
-	print 'Therefore elemnts are', elements
+	#print "elements are", elements
+	#print "ptclnumsdict received in sptRefGen is", ptclnumsdict
+	#print "RECEIVED CMDWP", cmdwp
+	#print 'Therefore elemnts are', elements
 	
 	for klassnum in ptclnumsdict:
 		
@@ -1255,8 +1299,8 @@ def sptRefGen( options, ptclnumsdict, cmdwp, wildcard=0, method='',subset4ref=0)
 			klassidref = '_' + str( klassnum ).zfill( len( str( len(ptclnumsdict))))
 		
 		ptclnums = ptclnumsdict[ klassnum ]
-		print "Therefore for class", klassnum
-		print "ptclnums len and themsvels are", len(ptclnums), ptclnums
+		#print "Therefore for class", klassnum
+		#print "ptclnums len and themsvels are", len(ptclnums), ptclnums
 		
 		ptclnums.sort()
 		
@@ -1283,7 +1327,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, wildcard=0, method='',subset4ref=0)
 					
 				ref.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":filterfreq,"apix":ref['apix_x']})
 				
-				refrandphfile = options.path + '/' + os.path.basename( options.ref ).replace('.hdf','_randPH' + klassidref +'.hdf').replace('finalAvg','ref')
+				refrandphfile = options.path + '/' + os.path.basename( options.ref ).replace('.hdf','_randPH' + klassidref +'.hdf').replace('final_avg','ref')
 
 				ref['origin_x'] = 0
 				ref['origin_y'] = 0
@@ -1357,7 +1401,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, wildcard=0, method='',subset4ref=0)
 
 			hacelements = []
 			for ele in elements:
-				if 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'output' not in ele and 'fsc' not in ele and 'subset' not in ele and 'input' not in ele and '--ref' not in ele and 'path' not in ele and 'keep' not in ele and 'iter' not in ele and 'subset' not in ele and 'goldstandardoff' not in ele and 'savepreprocessed' not in ele:
+				if 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'output' not in ele and 'fsc' not in ele and 'subset' not in ele and 'input' not in ele and '--ref' not in ele and 'path' not in ele and 'keep' not in ele and 'iter' not in ele and 'subset' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreprocessed' not in ele:
 					hacelements.append(ele)
 			
 			cmdhac = ' '.join(hacelements)
@@ -1382,7 +1426,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, wildcard=0, method='',subset4ref=0)
 			text=p.communicate()	
 			p.stdout.close()
 			
-			ref = EMData( options.path +'/'+ hacrefsubdir +'/finalAvg.hdf', 0 )
+			ref = EMData( options.path +'/'+ hacrefsubdir +'/final_avg.hdf', 0 )
 
 			refsdict.update({ klassnum : ref })
 		
@@ -1419,7 +1463,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, wildcard=0, method='',subset4ref=0)
 			
 			ssaelements = []
 			for ele in elements:
-				if 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'fine' not in ele and 'fsc' not in ele and 'output' not in ele and 'path' not in ele and 'goldstandardoff' not in ele and 'savepreprocessed' not in ele and 'align' not in ele and 'iter' not in ele and 'npeakstorefine' not in ele and 'precision'not in ele and '--radius' not in ele and 'randphase' not in ele and 'search' not in ele and '--save' not in ele and '--ref' not in ele and 'input' not in ele and 'output' not in ele and 'subset' not in ele:
+				if 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'fine' not in ele and 'fsc' not in ele and 'output' not in ele and 'path' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreprocessed' not in ele and 'align' not in ele and 'iter' not in ele and 'npeakstorefine' not in ele and 'precision'not in ele and '--radius' not in ele and 'randphase' not in ele and 'search' not in ele and '--save' not in ele and '--ref' not in ele and 'input' not in ele and 'output' not in ele and 'subset' not in ele:
 				#	print "Appended element", ele
 					ssaelements.append(ele)
 				#else:
@@ -1444,7 +1488,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, wildcard=0, method='',subset4ref=0)
 			cmdssa += ' --average'
 			
 			#ssarefname = 'ssaref_' + klassidref + '.hdf'
-			ssarefname = 'finalAvg.hdf'
+			ssarefname = 'final_avg.hdf'
 			#cmdssa += ' --output=' + ssarefname
 			
 			cmdssa += ' && mv ' + ssarefsubdir + ' ' + options.path + '/' + ' && mv ' + subsetForSsaRef + ' ' + options.path
@@ -1467,8 +1511,8 @@ def sptRefGen( options, ptclnumsdict, cmdwp, wildcard=0, method='',subset4ref=0)
 
 			#from e2spt_binarytree import binaryTreeRef
 			
-			print "len ptclnums is", len(ptclnums)
-			print "log 2 of that is" 
+			#print "len ptclnums is", len(ptclnums)
+			#print "log 2 of that is" 
 			print log( len(ptclnums), 2 )
 			
 			niter = int(floor(log( len(ptclnums) ,2 )))
@@ -1497,15 +1541,20 @@ def sptRefGen( options, ptclnumsdict, cmdwp, wildcard=0, method='',subset4ref=0)
 				i+=1
 
 			btelements = []
+			#print "elements are", elements
 			for ele in elements:
-				if 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'output' not in ele and 'fsc' not in ele and 'subset' not in ele and 'input' not in ele and '--ref' not in ele and 'path' not in ele and 'keep' not in ele and 'iter' not in ele and 'goldstandardoff' not in ele and 'savepreprocessed' not in ele:
+				if 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'output' not in ele and 'fsc' not in ele and 'subset' not in ele and 'input' not in ele and '--ref' not in ele and 'path' not in ele and 'keep' not in ele and 'iter' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreprocessed' not in ele:
+					#print "added ele", ele
 					btelements.append(ele)
+				else:
+					pass
+					#print "skipped ele", ele
 			
 			cmdbt = ' '.join(btelements)
 			cmdbt = cmdbt.replace('e2spt_classaverage','e2spt_binarytree')
 			
-			print "wildcard is!", wildcard
-			print "BEFORE replacement", cmdbt
+			#print "wildcard is!", wildcard
+			#print "BEFORE replacement", cmdbt
 			
 			if wildcard:
 				cmdbt = cmdbt.replace('e2spt_refinemulti','e2spt_binarytree')
@@ -1526,7 +1575,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, wildcard=0, method='',subset4ref=0)
 			text=p.communicate()	
 			p.stdout.close()
 			
-			ref = EMData( options.path +'/'+ btrefsubdir +'/finalAvg.hdf', 0 )
+			ref = EMData( options.path +'/'+ btrefsubdir +'/final_avg.hdf', 0 )
 
 			refsdict.update({ klassnum : ref })
 	
@@ -2278,7 +2327,7 @@ def preprocessing(image,options,mask,clipali,normproc,shrink,lowpass,highpass,pr
 	return simage
 	
 
-def makeAverage(options,ic,align_parms,it=1):
+def makeAverage(options,ic,align_parms,it=0):
 	
 	klassid = '_even'
 	if ic == 1:
@@ -2379,6 +2428,16 @@ def makeAverage(options,ic,align_parms,it=1):
 	#except:
 	#	print "There are no scores!", scores
 		
+	writeali = 0
+	aliptcls = path + '/aliptcls' + klassid + '.hdf'
+	
+	if options.saveallalign:
+		writeali = 1
+		aliptcls = path + '/aliptcls' + klassid + '_' + str(it).zfill( len(str(options.iter)) ) + '.hdf'
+
+	elif saveali and it == options.iter - 1:
+		writeali = 1
+		
 	for i,ptcl_parms in enumerate(align_parms):
 		
 		ptcl = EMData(ptcl_file,i)
@@ -2454,26 +2513,25 @@ def makeAverage(options,ic,align_parms,it=1):
 				included.append(i)
 
 			#js["tomo_%04d"%i] = ptcl_parms[0]['xform.align3d']
-			if saveali:
+		
+			if writeali:
 				ptcl['origin_x'] = 0
-				ptcl['origin_y'] = 0		# jesus - the origin needs to be reset to ZERO to avoid display issues in Chimera
+				ptcl['origin_y'] = 0		
 				ptcl['origin_z'] = 0
 				ptcl['spt_score'] = score
 			
-				#print "\nThe score is", ptcl_parms[0]['score']
-				#print "Because the zero element is", ptcl_parms[0]
-			
 				ptcl['xform.align3d'] = Transform()
-				#ptcl['spt_ali_param'] = ptcl_parms[0]['xform.align3d']
 				ptcl['xform.align3d'] = ptcl_parms[0]['xform.align3d']
-				ptcl['spt_indx_original']=i
-				#classname = path + "/class_" +  str(ic).zfill( len( str(ic) )) + "_ptcl.hdf"
-				#print "The class name is", classname
-				#sys.exit()
 				
-				aliptcls = path + '/aliptcls' + klassid + '.hdf'
+				originalindex = i*2
+				if ic == 1:
+					originalindex = i*2 + 1 
+				if options.goldstandardoff:
+					originalindex = i
 					
-				ptcl.write_image(aliptcls,-1)
+				ptcl['spt_indx_original']=originalindex
+			
+				ptcl.write_image(aliptcls,i)
 			
 			
 					
