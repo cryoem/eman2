@@ -125,6 +125,8 @@ def main():
 	parser.add_argument("--preavgproc2",type=str,default='',help="""Default=None. A processor (see 'e2help.py processors -v 10' at the command line) to be applied to the raw particle after alignment but before averaging (for example, a threshold to exclude extreme values, or a highphass filter if you have phaseplate data.)""")
 
 	parser.add_argument("--weighbytiltaxis",type=str,default='',help="""Default=None. A,B, where A is an integer number and B a decimal. A represents the location of the tilt axis in the tomogram in pixels (eg.g, for a 4096x4096xZ tomogram, this value should be 2048), and B is the weight of the particles furthest from the tomogram. For example, --weighbytiltaxis=2048,0.5 means that praticles at the tilt axis (with an x coordinate of 2048) will have a weight of 1.0 during averaging, while the distance in the x coordinates of particles not-on the tilt axis will be used to weigh their contribution to the average, with particles at the edge(0+radius or 4096-radius) weighing 0.5, as specified by the value provided for B.""")
+	
+	parser.add_argument("--weighbyscore",action='store_true',default=False,help="""Default=False. This option will weigh the contribution of each subtomogram to the average by score/bestscore.""")
 
 	
 	(options, args) = parser.parse_args()
@@ -219,15 +221,15 @@ def main():
 	#Finalize average of all particles if non were set to be excluded. Otherwise, determine the discrimination threshold and then average the particles that pass it.
 	if options.average: 
 			
-		finalAvg = avgr.finish()
+		final_avg = avgr.finish()
 
-		finalAvg['origin_x']=0
-		finalAvg['origin_y']=0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
-		finalAvg['origin_z']=0
-		finalAvg['xform.align3d'] = Transform()
+		final_avg['origin_x']=0
+		final_avg['origin_y']=0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
+		final_avg['origin_z']=0
+		final_avg['xform.align3d'] = Transform()
 	
 		if options.keep == 1.0 and not options.keepsig:	
-			finalAvg.write_image( options.path + '/finalAvg.hdf' , 0)
+			final_avg.write_image( options.path + '/final_avg.hdf' , 0)
 			
 			if options.avgiter > 1:
 				print """WARNING: --avgiter > 1 must be accompanied by --keepsing, or by --keep < 1.0"""
@@ -242,8 +244,8 @@ def main():
 					ref.process_inplace('xform.mirror',{'axis': options.mirror })
 					refComp( options, outputstack, ref, results, '_vsMirror')
 			else:
-				ref2compare =  finalAvg
-				refComp( options, outputstack, finalAvg, results, '')	
+				ref2compare =  final_avg
+				refComp( options, outputstack, final_avg, results, '')	
 			
 
 	if log:
@@ -267,7 +269,7 @@ def refComp( options, outputstack, ref2compare, results, mirrortag ):
 						
 		if it == options.avgiter -1:
 			print "Final mean score is", meanscore
-			ref2compare.write_image( options.path + '/finalAvg' + mirrotag + '.hdf', 0)
+			ref2compare.write_image( options.path + '/final_avg' + mirrotag + '.hdf', 0)
 	
 	return
 

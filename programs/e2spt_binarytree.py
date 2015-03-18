@@ -547,7 +547,7 @@ def binaryTreeRef(options,nptclForRef,nseed,ic,etc):
 			outfile="%s/seedtree_%d.hdf"%(options.path,i+1)
 	
 		if i == nseediter-1:
-			outfile = options.path + '/finalAvg.hdf'
+			outfile = options.path + '/final_avg.hdf'
 		
 		print "Outfile will be", outfile
 	

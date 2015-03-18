@@ -71,32 +71,23 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_header(name="sptrefinemultiheader", help="""Options below this label are 
-		specific to sptrefinemulti.""", title="### sptrefinemulti options ###", 
-		row=5, col=0, rowspan=1, colspan=3,mode="align")
+	parser.add_header(name="sptrefinemultiheader", help="""Options below this label are specific to sptrefinemulti.""", title="### sptrefinemulti options ###", row=5, col=0, rowspan=1, colspan=3,mode="align")
 	
 	#parser.add_argument("--ncls", type=int, help="...", default=2)
 	#parser.add_argument("--nbasis", type=int, help="Basis vectors to use", default=3)
 
-	parser.add_argument("--input", type=str, help="""The name of the input volume stack. 
-		MUST be HDF since volume stack support is required.""", 
-		default=None, guitype='filebox', browser='EMSubTomosTable(withmodal=True,multiselect=False)', 
-		row=0, col=0, rowspan=1, colspan=3, mode="align")
+	parser.add_argument("--input", type=str, help="""The name of the input volume stack. MUST be HDF since volume stack support is required.""", default=None, guitype='filebox', browser='EMSubTomosTable(withmodal=True,multiselect=False)', row=0, col=0, rowspan=1, colspan=3, mode="align")
 	
-	parser.add_argument("--refs", type=str, help="""This can either be an HDF stack, 
-		where each image will be treated as a separate model/reference, or a comma separatted 
-		list of individual images; e.g. --refs=ref1.hdf,ref2.hdf,ref3.hdf.""", default='')
+	parser.add_argument("--ref", type=str, help="""This can either be an HDF stack, where each image will be treated as a separate model/reference, or a comma separated list of individual images; e.g. --refs=ref1.hdf,ref2.hdf,ref3.hdf. If a single image is provided, several copies will be made based on the number of references specified through --nref.""", default='')
 	
-	parser.add_argument("--nrefs", type=int, help="""Number of references to generate from 
-		the data for reference-free alignment. Default=1""", default=1)
+	parser.add_argument("--nref", type=int, help="""Number of references to generate from a single image provided through --ref (random-phase filtered differently), or number of different initial references to generate from scratch from the data set (--input). Default=2""", default=2)
 	
-	parser.add_argument("--refsgenmethod", type=str, help="""Method for generating the 
-		initial reference(s). Options are 'binarytree' and 'hac'. Default=binarytree""", 
-		default='binarytree') 
+	parser.add_argument("--refgenmethod", type=str, help="""Method for generating the initial reference(s). Options are 'bt', for binary tree (see e2spt_binarytree.py), 'hac', for hierarchical ascendant classification (see e2spt_hac.py), or 'ssa' for self-symmetry alignment (see e2symsearch3d.py). Default=bt""", default='bt') 
+	
+	parser.add_argument("--subset4ref",type=int, help=""" Size of the subset of particles to use for generating each reference. Default=0, which means all particles in each subgroup will be used (for example, if --input has 100 particles and --nref is 10, 10 references will be generated using 10 particles for each). If --ref not provided, the program generates an --nref number of references from --input.""")
 	
 	#parser.add_argument("--refpreprocess",action="store_true",default=False,help="""This 
 	#	will preprocess the reference identically to the particles. It is off by default, but it is internally turned on when no reference is supplied.""")
-	
 	
 	'''
 	PARAMETERS TO BE PASSED ON TO e2spt_classaverage.py
@@ -212,8 +203,14 @@ def main():
 	parser.add_argument("--preavgproc2",type=str,default='',help="""Default=None. A processor (see 'e2help.py processors -v 10' at the command line) to be applied to the raw particle after alignment but before averaging (for example, a threshold to exclude extreme values, or a highphass filter if you have phaseplate data.)""")
 	
 	parser.add_argument("--weighbytiltaxis",type=str,default='',help="""Default=None. A,B, where A is an integer number and B a decimal. A represents the location of the tilt axis in the tomogram in pixels (eg.g, for a 4096x4096xZ tomogram, this value should be 2048), and B is the weight of the particles furthest from the tomogram. For example, --weighbytiltaxis=2048,0.5 means that praticles at the tilt axis (with an x coordinate of 2048) will have a weight of 1.0 during averaging, while the distance in the x coordinates of particles not-on the tilt axis will be used to weigh their contribution to the average, with particles at the edge(0+radius or 4096-radius) weighing 0.5, as specified by the value provided for B.""")
-
 	
+	parser.add_argument("--weighbyscore",action='store_true',default=False,help="""Default=False. This option will weigh the contribution of each subtomogram to the average by score/bestscore.""")
+	
+	parser.add_argument("--clipali",type=int,default=0,help="""Default=0 (which means it's not used). Boxsize to clip particles as part of preprocessing to speed up alignment. For example, the boxsize of the particles might be 100 pixels, but the particles are only 50 pixels in diameter. Aliasing effects are not always as deleterious for all specimens, and sometimes 2x padding isn't necessary; still, there are some benefits from 'oversampling' the data during averaging; so you might still want an average of size 2x, but perhaps particles in a box of 1.5x are sufficiently good for alignment. In this case, you would supply --clipali=75""")
+
+	parser.add_argument("--precision",type=float,default=1.0,help="""Default=1.0. Precision in pixels to use when figuring out alignment parameters automatically using --radius. Precision would be the number of pixels that the the edge of the specimen is moved (rotationally) during the finest sampling, --falign. If precision is 1, then the precision of alignment will be that of the sampling (apix of your images) times the --shrinkfine factor specified.""")
+
+
 	
 	(options, args) = parser.parse_args()
 
@@ -255,12 +252,11 @@ def main():
 	finalize=0
 
 	
-	
 	'''
 	Store parameters in parameters.txt file inside --path
 	'''
 	from e2spt_classaverage import writeParameters
-	writeParameters(options,'e2spt_refinemulti.py', 'refinemulti')
+	cmdwp = writeParameters(options,'e2spt_refinemulti.py', 'refinemulti')
 	
 	'''
 	Determine how many references there are and put them into one file classAvg.hdf, or 
@@ -268,16 +264,21 @@ def main():
 	'''
 	nrefs=0
 	
-	refsfiles = set([])
-	
-	if not options.refs:
+	#refsfiles = set([])
+	"""
+	if not options.ref:
 		'''
 		If no references are provided, the program has to generate them, using the method
 		specified through --refsgenmethod
 		'''
 		
 		print "(e2spt_refinemulti.py) No references provided; therefore, genrefs function will be called"
-		ret = genrefs( options, originalCompletePath)
+		
+		from e2spt_classaverage import sptRefGen 
+		
+		refs = sptRefGen( options, ptclnumsdict, cmdwp, wildcard=1 ):
+		
+		#ret = genrefs( options, originalCompletePath)
 		
 		print "\n(e2spt_refinemulti.py) Back to main, genrefs has returned", ret
 		
@@ -318,7 +319,62 @@ def main():
 
 
 	#print "ERROR: You must provide at least one reference through --ref, or specify the number of references to generate from the data through --nrefs."
+	"""	
+	
+	
+	nptcls = EMUtil.get_image_count( options.input )
+	
+	refimgs = {}
+	
+	if options.ref:
 		
+		reffiles = options.ref.split(',')
+		nrefsfiles = len(reffiles)
+		
+		if nrefsfiles > 1:
+			ptclnumsdummy = {}
+		
+			for i in range(nrefsfiles):
+				ptclnumsdummy.update( {i:''} )
+			
+			from e2spt_classaverage import sptRefGen 
+	
+			for rf in reffiles:
+				options.ref = rf
+				refimgs = sptRefGen( options, ptclnumsdummy, cmdwp, wildcard=1, method=options.refgenmethod )
+		
+		else:
+			nrefs = EMUtil.get_image_count( options.ref )
+			
+			for i in range(nrefs):
+				a = EMData( options.ref, i )
+				refimgs.update({ i:a })
+	else:
+		from e2spt_classaverage import sptRefGen 
+
+		ptclnumsdict = {}
+		
+		groupsize = nptcls / options.nref
+		
+		for i in range( options.nref ):
+
+			ptclist = [j for j in xrange(groupsize*i, groupsize*(i+1))]	
+			if i == options.nref - 1:
+				ptclist = [j for j in xrange(groupsize*i, nptcls) ]
+				#ptclnumsdict.update( { i: ptclist } )
+			
+			ptclnumsdict.update( { i: ptclist  } )
+		
+		print "ptclnumsdict to send is", ptclnumsdict
+				
+		refimgs = sptRefGen( options, ptclnumsdict, cmdwp, wildcard=1, method=options.refgenmethod, subset4ref=options.subset4ref )
+				
+	
+	print "There are these many references", len(refimgs)	
+	sys.exit()
+	
+	
+	
 		
 	'''
 	Generate the commands to refine the data against each reference
@@ -601,6 +657,14 @@ def main():
 	return()
 
 
+
+
+
+
+
+
+
+"""
 def genrefs( options, originalCompletePath ):
 	
 	nptcls = EMUtil.get_image_count( options.input )
@@ -690,7 +754,7 @@ def genrefs( options, originalCompletePath ):
 		
 		for i in range(options.nrefs):
 			groupID = 'group' + str(i+1).zfill(len(str(options.nrefs)))
-			os.system('mv ' + originalCompletePath + '/' + groupID + '/finalAvg.hdf ' +  originalCompletePath + '/' + groupID +  '/' + groupID + 'avg.hdf')
+			os.system('mv ' + originalCompletePath + '/' + groupID + '/final_avg.hdf ' +  originalCompletePath + '/' + groupID +  '/' + groupID + 'avg.hdf')
 		
 				
 			refFyle = originalCompletePath + '/' + groupID + '/' + groupID + 'avg.hdf'
@@ -700,7 +764,7 @@ def genrefs( options, originalCompletePath ):
 	print "\nDone building references. The returned references are", refsFyles
 
 	return refsFyles
-	
+"""	
 	
 def makeAverage(options, klass, klassIndx, klassesLen, iterNum, finalize, originalCompletePath):
 	"""Will take a set of alignments and an input particle stack filename and produce a new class-average.
