@@ -66,32 +66,40 @@ def main():
 	parser.add_argument("--profile", action='store_true', help="Will profile the internal call to e2spt_classaverage.py to see what processes are consuming the most time.",default=False)
 	parser.add_argument("--eman2dir", type=str, help="If profiling is on, you must provide the full path to your EMAN2 directory WITHOUT. For example, /Users/jgalaz/EMAN2",default='')
 
-	parser.add_argument("--test", action='store_true', help="Will run a quick tests using a few box sizes.",default=False)
+	parser.add_argument("--test", action='store_true', help="Will run a quick test using a few box sizes.",default=False)
 	parser.add_argument("--medium", action='store_true', help="Will test boxsizes in multiples of 10 between 10 and 240.",default=False)
-	parser.add_argument("--extensive", action='store_true', help="Will test EVERY box size between 12 and 256.",default=False)
+	parser.add_argument("--evenonly", action='store_true', help="Will test boxsizes in multiples of 2 between --lowerlimit and --upperlimit.",default=False)
+
+	parser.add_argument("--extensive", action='store_true', help="Will test EVERY box size between --lowerlimit and --upperlimit",default=False)
 	parser.add_argument("--boxsizes", type=str, help="""For a SINGLE AND CONTINUOUS range, separate the first and the last boxsizes to sample with a hyphen; for example, 16-48. 
 														Following python's conventions, the first index is 0, and the upper end of any range is not included.
 														For specific boxes, separate the values with a comma, or provide a .txt file with a list of box sizes.""",default='')
 	#parser.add_argument("--boxsizelist", type=str, help="Will test SPT alignment for a comma separated list of boxsizes.",default='')
-
-	parser.add_argument("--onefulloff", action='store_true', help="""Will test time for one CCF (between two boxes with noise) with all
-									 processing overhead for EVERY box size between 12 and 256.""",default=False)
-	parser.add_argument("--oneccfoff", action='store_true', help="Will test time for one CCF (between two boxes with noise)  without overhead (e2spt_classaverage.py isn't called), for EVERY box size between 12 and 256.",default=False)
-	parser.add_argument("--rotonlyoff", action='store_true', help="""Will test time for CCFs (between two boxes with noise) for as many orientations fit in an icosahedral unit 
-																	as determined by --coarsestep and --finestep, without any overhead (e2spt_classaverage.py isn't called), for EVERY box size between 12 and 256.""",default=False)
 	
-	parser.add_argument("--oneicosoff", action='store_true', help="""Will test alignment time for however many orientations fit in one icosahedral unit, 
-																	depending on --coarsestep and --finestep, for EVERY box size between 12 and 256.""",default=False)
+	parser.add_argument("--lowerlimit",type=int,default=12,help="""Default=12. Lower limit to START testing box sizes.""")
+	parser.add_argument("--upperlimit",type=int,default=257,help="""Default=257. Upper limit to STOP testing box sizes. Recall that the upper limit is not included. If --upperlimit=257, the last box tested will be 256.""")
+
+	parser.add_argument("--oneccfoff", action='store_true', help="Turn off the following: time tests for a single CCF (between two boxes of noise) without overhead (e2spt_classaverage.py isn't called), for EVERY box size between 12 and 256, without doing any rotations.",default=False)
+	
+	parser.add_argument("--onefulloff", action='store_true', help="""Turn off the following: time tests for a single CCF (between two boxes of noise), including preprocessing overhead in e2spt_classaverage.py, but no rotations.""",default=False)
+
+	parser.add_argument("--rotonlyoff", action='store_true', help="""Turn off the following: testing alignment time for multiple CCFs (between two boxes with noise), corresponding to as many orientations fit in an icosahedral asymmetric unit, depending on --coarsestep and --finestep, WITHOUT any overhead (e2spt_classaverage.py is NOT called).""",default=False)	
+	
+	parser.add_argument("--oneicosoff", action='store_true', help="""Turn off the following: testing alignment time for multiple CCFs (between two boxes with noise), corresponding to as many orientations fit in an icosahedral asymmetric unit, depending on --coarsestep and --finestep, WITH overhead (e2spt_classaverage.py IS called).""",default=False)
 	
 	parser.add_argument("--ID", type=str, help="Tag files generated on a particular computer.",default='')
 	parser.add_argument("--sym", type=str, help="Confine alignment time test(s) to scanning an asymmetric unit with --coarsestep and --finestep sampling.",default='c1')
 
-	parser.add_argument("--coarsestep", type=int, help="Step size for coarse alignment.",default=30)
-	parser.add_argument("--finestep", type=int, help="Step size for fine alignment.",default=15)
+	parser.add_argument("--coarsestep", type=int, help="Overwrites radius and precision. Step size for coarse alignment.",default=0)
+	parser.add_argument("--finestep", type=int, help="Overwrites radius and precision. Step size for fine alignment.",default=0)
+	
+	#parser.add_argument("--radius", type=float, default=0, help="""Default=0 (which means it's not used by default). Hydrodynamic radius of the particle in Angstroms. This will be used to automatically calculate the angular steps to use in search of the best alignment. Make sure the apix is correct on the particles' headers, sine the radius will be converted from Angstroms to pixels. Then, the fine angular step is equal to 360/(2*pi*radius), and the coarse angular step 4 times that.""")
+	#parser.add_argument("--precision",type=float,default=1.0,help="""Default=1.0. Precision in pixels to use when figuring out alignment parameters automatically using --radius. Precision would be the number of pixels that the the edge of the specimen is moved (rotationally) during the finest sampling, --falign. If precision is 1, then the precision of alignment will be that of the sampling (apix of your images).""")
+	
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-	parser.add_argument("--path",type=str,default='sptCudaTest',help="Directory to store results in. The default is a numbered series of directories containing the prefix 'sptCudaTest'; for example, sptCudaTest_01 will be the directory by default if 'sptCudaTest_00' already exists.")
+	parser.add_argument("--path",type=str,default='spt_time_test',help="Directory to store results in. The default is a numbered series of directories containing the prefix 'spt_time_test'; for example, spt_time_test_01 will be the directory by default if 'spt_time_test_00' already exists.")
 	parser.add_argument("--noplot", action='store_true', help="To run jobs on a cluster or other interfaces that don't support plotting, turn this option on.",default=False)
 	
 	parser.add_argument("--plotonly",type=str, help="""If you already have the time variation with boxsize (for a particular cpu or gpu) in a text file in rows of 'boxsize,time', 
@@ -455,7 +463,7 @@ def makepath(options,rootpath):
 	return options
 
 
-def preplot(options,tipo,data,key):
+def preplot( options, tipo, data, key ):
 	print "I am in PREPLOT"
 	name = options.path + "/" + options.ID + key + "_CS"+ str(options.coarsestep).zfill(2)  + "_FS" + str( options.finestep ).zfill(2) + '_' + tipo + '.png'
 	xdata = data[0]				
@@ -608,11 +616,20 @@ def doit(corg,options,originaldir):
 		mults = [16,32,64,96,97,98,128,129,130,180,181,182]
 		#steps = [30]
 
-	elif options.extensive:
+	elif options.extensive: 
 		mults = []
-		for i in xrange(12,257):
+		for i in xrange( options.lowerlimit, options.upperlimit ):
 			mults.append(i)
-		#steps=[10]
+	
+	elif options.evenonly: 
+		mults = []
+		for i in xrange( options.lowerlimit, options.upperlimit ):
+			if not i % 2:
+				print "appended even box", i
+				mults.append(i)
+		
+		
+		
 	
 	computer = options.ID
 	if computer:
@@ -662,7 +679,7 @@ def doit(corg,options,originaldir):
 		if aidee == 'rotonly':
 			name = options.path + '/' + computer + 'rotonly_CS' + str(coarsestep).zfill(len(str(coarsestep))) + '_FS' + str(finestep).zfill(len(str(finestep))) + '_'+ corg + '.txt'
 		
-		mastername = name.replace('.txt','_master.txt')
+		mastername = name.replace('.txt','_final.txt')
 		
 		times=[]
 		cmd=''
@@ -679,6 +696,10 @@ def doit(corg,options,originaldir):
 				#print "\n\n\n !!!! I Have turned cuda ON!!!\n\n\n"
 				if options.setcudadevice is not None:
 					setcuda += '&& export SETCUDADEVICE=' + options.setcudadevice
+					
+				print "SETCUDA IS", setcuda	
+					
+				
 			elif corg=='cpu' or corg=='CPU':
 				setcuda = 'export NOCUDAINIT=1'
 				#print "\n\n\n !!!! I Have turned cuda OFF!!!\n\n\n"
@@ -686,7 +707,7 @@ def doit(corg,options,originaldir):
 				print "Something is wrong; you're supposed to select GPU or CPU. TERMINATING!"
 				sys.exit()
 			
-			print "SETCUDA IS", setcuda
+		
 			cmd=''
 			abspath = originaldir + '/' + options.path
 			#print "\n\n\n@@@@@@@@@@@@@@@@@@@@@@@@@Abs path is", abspath
@@ -711,15 +732,13 @@ def doit(corg,options,originaldir):
 
 			#paf = abspath + '/' + aidee
 			
-				#cmd = setcuda + ''' && e2spt_classaverage.py --input=''' + aname + ''' --output=''' + out + ''' --ref=''' + bname + ''' --iter=1 --npeakstorefine=1 -v 0 --mask=mask.sharp:outer_radius=-2 --preprocess=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --align=rotate_translate_3d:search=6:delta=''' + str(coarsestep) + ''':dphi=''' + str(coarsestep) + ''':verbose=0:sym=icos --parallel=thread:1 --ralign=refine_3d_grid:delta=''' + str(finestep) + ''':range=''' + str( int(math.ceil(coarsestep/2.0)) ) + ''' --averager=mean.tomo --aligncmp=ccc.tomo --raligncmp=ccc.tomo --normproc=normalize.mask --path=''' + paf
+				#cmd = setcuda + ''' && e2spt_classaverage.py --input=''' + aname + ''' --output=''' + out + ''' --ref=''' + bname + ''' --iter=1 --npeakstorefine=1 -v 0 --mask=mask.sharp:outer_radius=-2 --preprocess=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --align=rotate_translate_3d:search=6:delta=''' + str(coarsestep) + ''':dphi=''' + str(coarsestep) + ''':verbose=0:sym=icos --parallel=thread:1 --falign=refine_3d_grid:delta=''' + str(finestep) + ''':range=''' + str( int(math.ceil(coarsestep/2.0)) ) + ''' --averager=mean.tomo --aligncmp=ccc.tomo --faligncmp=ccc.tomo --normproc=normalize.mask --path=''' + paf
 				#cmds.update('icosali':cmd1)
 		
 			ta=0
 			tb=0
 			sym='c1'
 			if aidee == 'onefull' or aidee == 'oneicos':	
-				if aidee == 'oneicos':
-					sym='icos'
 				
 				parallel=options.parallel
 				profilecmd1='e2spt_classaverage.py'
@@ -731,7 +750,10 @@ def doit(corg,options,originaldir):
 					print "profilecmd1 is", profilecmd1
 					print "profilecmd2 is", profilecmd2
 									
-				cmd = setcuda + ''' && cd ''' + abspath + ''' && ''' + profilecmd1 + ''' --input=''' + aname + ''' --output=''' + out + ''' --ref=''' + bname + ''' --iter=1 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --highpass=filter.highpass.gauss:cutoff_freq=0.01:apix=1.0 --preprocess=filter.lowpass.gauss:cutoff_freq=0.2:apix=1.0 --align=rotate_symmetry_3d:sym=''' + sym + ''' --parallel=''' + parallel + ''' --ralign=None --averager=mean.tomo --aligncmp=ccc.tomo --normproc=normalize.mask --path=''' + aidee + ''' --verbose=''' + str(options.verbose) + ' ' + profilecmd2
+				cmd = setcuda + ''' && cd ''' + abspath + ''' && ''' + profilecmd1 + ''' --input=''' + aname + ''' --output=''' + out + ''' --ref=''' + bname + ''' --iter=1 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --highpass=filter.highpass.gauss:cutoff_freq=0.01:apix=1.0 --preprocess=filter.lowpass.gauss:cutoff_freq=0.2:apix=1.0 --align=rotate_symmetry_3d:sym=''' + sym + ''' --parallel=''' + parallel + ''' --falign=None --averager=mean.tomo --aligncmp=ccc.tomo --normproc=normalize.mask --path=''' + aidee + ''' --verbose=''' + str(options.verbose) + ' ' + profilecmd2 + ' && rm -r ' + aidee
+			
+				if aidee == 'oneicos':
+					cmd = setcuda + ''' && cd ''' + abspath + ''' && ''' + profilecmd1 + ''' --input=''' + aname + ''' --output=''' + out + ''' --ref=''' + bname + ''' --iter=1 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --highpass=filter.highpass.gauss:cutoff_freq=0.01:apix=1.0 --preprocess=filter.lowpass.gauss:cutoff_freq=0.2:apix=1.0 --align=rotate_translate_3d:sym=icos:delta=''' + str(coarestep) + ''' --parallel=''' + parallel + ''' --falign=refine_3d_grid:delta=''' + str( finestep ) + '''range=''' + str( coarsestep ) + ''' --averager=mean.tomo --aligncmp=ccc.tomo --normproc=normalize.mask --path=''' + aidee + ''' --verbose=''' + str(options.verbose) + ' ' + profilecmd2  + ' && rm -r ' + aidee
 			
 				print "Therefore the instruction is", cmd
 				ta = time()
@@ -758,11 +780,11 @@ def doit(corg,options,originaldir):
 				a=EMData(aname,0)
 				b=EMData(bname,0)
 				
-				#--align=rotate_translate_3d:search=12:delta=12:dphi=12:verbose=1 --parallel=thread:8 --ralign=refine_3d_grid:delta=3:range=12:search=2
+				#--align=rotate_translate_3d:search=12:delta=12:dphi=12:verbose=1 --parallel=thread:8 --falign=refine_3d_grid:delta=3:range=12:search=2
 				ta = time()
 				bestcoarse = a.xform_align_nbest('rotate_translate_3d',b,{'delta':int(options.coarsestep),'dphi':int(options.coarsestep),'search':10,'sym':options.sym},1,'ccc.tomo')
 				for bc in bestcoarse:
-					#classoptions["ralign"][1]["xform.align3d"] = bc["xform.align3d"]
+					#classoptions["falign"][1]["xform.align3d"] = bc["xform.align3d"]
 					ran=int(round(float(options.coarsestep)/2.0))
 					a.align('refine_3d_grid',b,{'delta':int(options.finestep),'range':ran,'search':3,'xform.align3d':bc['xform.align3d']},'ccc.tomo')
 				tb = time()
@@ -830,13 +852,6 @@ def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0,ide
 	
 	linestyles=['-','--','**']
 	linest=linestyles[linenum]
-	
-	
-	
-	
-	
-	
-
 
 	'''
 	FORMAT AXES
