@@ -341,6 +341,10 @@ def main():
 
 	if options.verbose>0:
 		print "%d images, processing %d-%d (step %d)......"%(nimg, n0, n1,n2)
+		
+	# processors that only work out of place
+	oopprocs={"misc.directional_sum"}
+	
 	#print 'start.....'
 	img_index = 0
 	for data in datlst:
@@ -415,7 +419,8 @@ def main():
 						except:
 							pass
 
-				data.process_inplace(filtername, param_dict)
+				if filtername in oopprocs : data=data.process(filtername,param_dict)
+				else : data.process_inplace(filtername, param_dict)
 				index_d[option1] += 1
 
 			elif option1 == "ralignzphi":
