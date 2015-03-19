@@ -313,6 +313,7 @@ def main():
 		n1 = nimg-1
 
 	# Steve:  why are all of the images being read at once !?!?. This is nuts
+	# modified so for multiple volumes, returns header-only
 	datlst = parse_infile(infile, n0, n1,n2)
 
 	logid=E2init(sys.argv,options.ppid)
@@ -334,10 +335,6 @@ def main():
 	apix = datlst[0]["apix_x"]	# default to apix_x from file
 	if options.apix:
 		apix = options.apix
-		for data in datlst:
-			data.set_attr('apix_x', apix)
-			data.set_attr('apix_y', apix)
-			data.set_attr('apix_z', apix)
 
 	if not "outtype" in optionlist:
 		optionlist.append("outtype")
@@ -347,6 +344,14 @@ def main():
 	#print 'start.....'
 	img_index = 0
 	for data in datlst:
+		# if this is a list of images, we have header-only, and need to read the actual volume
+		if len(datlst)>0 : data=EMData(data["source_path"],data["source_n"])
+		if options.apix:
+			data.set_attr('apix_x', apix)
+			data.set_attr('apix_y', apix)
+			data.set_attr('apix_z', apix)
+			
+		
 		if options.inputto1 : data.to_one()			# replace all voxel values with 1.0
 		if options.resetxf : data["xform.align3d"]=Transform()
 
@@ -669,16 +674,10 @@ def parse_infile(infile, first, last, step):
 			print "the image is a 3D stack - I will process images from %d to %d" % (first, last)
 			data = []
 			for i in xrange(first, last+1, step):
-				d = EMData()
-				d.read_image(infile, i)
+				d = EMData(infile,i,True)	# header only
 				data.append(d)
 			return data
-	else:
-		data = []
-		d = EMData()
-		d.read_image(infile,0)
-		data.append(d)
-		return data
+	else: return [EMData(infile,0)]
 
 
 if __name__ == "__main__":
