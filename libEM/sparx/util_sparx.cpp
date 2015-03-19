@@ -19414,36 +19414,36 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 
 
 
-        for (isym = 0; isym < nsym; ++isym) {
-            float dot_product = n1*vIms[isym].ims1 + n2*vIms[isym].ims2 + n3*vIms[isym].ims3;
-            if(abs(dot_product)>=ant) {
-                mirror = dot_product < 0;
+		for (isym = 0; isym < nsym; ++isym) {
+			float dot_product = n1*vIms[isym].ims1 + n2*vIms[isym].ims2 + n3*vIms[isym].ims3;
+			if(abs(dot_product)>=ant) {
+				mirror = dot_product < 0;
 
-                for (int i = -lky; i <= rky; i++) {
-                    iy = i * step ;
-                    for (int j = -lkx; j <= rkx; j++) {
-                        ix = j*step;
-                        EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
-                        Normalize_ring( cimage, numr );
-                        Frngs(cimage, numr);
-                        //  compare with all reference images that are on a new list
-                            Dict retvals = Crosrng_e(crefim[iref], cimage, numr, mirror);
-                            double qn = retvals["qn"];
+				for (int i = -lky; i <= rky; i++) {
+					iy = i * step ;
+					for (int j = -lkx; j <= rkx; j++) {
+						ix = j*step;
+						EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+						Normalize_ring( cimage, numr );
+						Frngs(cimage, numr);
+						//  compare with all reference images that are on a new list
+							Dict retvals = Crosrng_e(crefim[iref], cimage, numr, mirror);
+							double qn = retvals["qn"];
 
-                            if(qn >= peak) {
-                                report_mirror = mirror;
-                                sx = -ix;
-                                sy = -iy;
-                                nref = iref;
-                                ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-                                peak = static_cast<float>( qn );
-                            }
-                          delete cimage; cimage = 0;
-                    }
-                }
-                break;
-            }
-        }
+							if(qn >= peak) {
+								report_mirror = mirror;
+								sx = -ix;
+								sy = -iy;
+								nref = iref;
+								ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+								peak = static_cast<float>( qn );
+							}
+						  delete cimage; cimage = 0;
+					}
+				}
+				break;
+			}
+		}
 	}
 
 	float co, so, sxs, sys;
@@ -19563,7 +19563,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 			}
 		}
 
-      an = (float)acos(ant) / qv;
+		 an = (float)acos(ant) / qv;
 
 		const float previousmax = image->get_attr("previousmax");
 		//printf("\n  previousmax   %f  \n",previousmax);
