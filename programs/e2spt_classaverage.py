@@ -86,7 +86,7 @@ def main():
 	
 	parser.add_argument("--input", type=str, default='',help="""Default=None. The name of the input volume stack. MUST be HDF since volume stack support is required.""", guitype='filebox', browser='EMSubTomosTable(withmodal=True,multiselect=False)', row=0, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
-	parser.add_argument("--output", type=str, default='avg.hdf', help="""Default=avg.hdf. The name of the output class-average stack. MUST be HDF since volume stack support is required.""", guitype='strbox', row=2, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	#parser.add_argument("--output", type=str, default='avg.hdf', help="""Default=avg.hdf. The name of the output class-average stack. MUST be HDF since volume stack support is required.""", guitype='strbox', row=2, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
 	parser.add_argument("--radius", type=float, default=0, help="""Default=0 (which means it's not used by default). Hydrodynamic radius of the particle in Angstroms. This will be used to automatically calculate the angular steps to use in search of the best alignment. Make sure the apix is correct on the particles' headers, sine the radius will be converted from Angstroms to pixels. Then, the fine angular step is equal to 360/(2*pi*radius), and the coarse angular step 4 times that.""")
 	
@@ -394,10 +394,11 @@ def main():
 			print "(e2spt_classaverage)(main) - Error, ref volume not same size as input volume(s)"
 			sys.exit(1)
 	
-	if not options.donotaverage:		
-		if '.hdf' not in options.output:					
-			print "(e2spt_classaverage)(main) - Error in output name. Format must be '.hdf'; make sure you didn't mistake a comma for a dot"
-			sys.exit(1)
+	#if not options.donotaverage:		
+		#if '.hdf' not in options.output:					
+		#	print "(e2spt_classaverage)(main) - Error in output name. Format must be '.hdf'; make sure you didn't mistake a comma for a dot"
+		#	sys.exit(1)
+	#	pass
 		
 	logger = E2init(sys.argv, options.ppid)
 	
@@ -600,7 +601,7 @@ def main():
 		print "Klass is", klass
 		print "Indexes are", ptclnumsdict[ klass ]
 	
-	originalOutput = options.output
+	#originalOutput = options.output
 	
 	refsdict = sptRefGen( options, ptclnumsdict,cmdwp )
 	
@@ -675,12 +676,12 @@ def main():
 			print "\n"
 			
 			#options.output = originalOutput.replace('.hdf', '_' + str(ic).zfill( len (str (ncls))) + '.hdf')
-			options.output = originalOutput
+			#options.output = originalOutput
 			
-			if ncls > 1:
+			#if ncls > 1:
 				
 			
-				options.output = originalOutput.replace('.hdf', klassid + '.hdf')	
+				#options.output = originalOutput.replace('.hdf', klassid + '.hdf')	
 		
 			#resNum = 0
 			resumeDict = {}
@@ -822,8 +823,8 @@ def main():
 						ppref.write_image(refnamePP,it)
 					
 					outname = options.path + '/final_avg.hdf'
-					if options.output:
-						outname = options.path + '/' + options.output
+					#if options.output:
+					#	outname = options.path + '/' + options.output
 					
 					ref.write_image( outname , 0)
 					print "Done alignig the only particle in --input to --ref"
@@ -861,8 +862,8 @@ def main():
 				if it == options.iter -1:
 				
 					outname = options.path + '/final_avg.hdf'
-					if options.output:
-						outname = options.path + '/' + options.output
+					#if options.output:
+					#	outname = options.path + '/' + options.output
 				
 					ref.write_image( outname , 0)
 
@@ -989,8 +990,8 @@ def main():
 			if it == options.iter -1 :
 			
 				outname = options.path + '/final_avg.hdf'
-				if options.output:
-					outname = options.path + '/' + options.output
+				#if options.output:
+				#	outname = options.path + '/' + options.output
 					
 				final_avg.write_image( outname , 0)
 			
