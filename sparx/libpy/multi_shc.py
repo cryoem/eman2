@@ -1694,7 +1694,7 @@ def get_dsym_angles(p1, sym):
 
 
 # parameters: list of (all) projections | reference volume | ...
-def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, number_of_runs=2 ):
+def Xali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, number_of_runs=2 ):
 
 	from alignment    import Numrinit, prepare_refrings, proj_ali_incore_local, shc
 	from utilities    import model_circle, get_input_from_string, get_params_proj, set_params_proj, wrap_mpi_gatherv, wrap_mpi_bcast, wrap_mpi_send, wrap_mpi_recv

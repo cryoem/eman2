@@ -6185,6 +6185,32 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 		del recvbuf
 
 
+
+		if myid == main_node:
+			d = empty( (numref, total_nima), dtype = float32)
+			for ima in xrange(total_nima):
+				for iref in xrange(numref):  d[iref][ima] = dtot[iref][N[ima]]
+			id_list_long = Util.assign_groups(str(d.__array_interface__['data'][0]), numref, nima) # string with memory address is passed as parameters
+			del d
+			id_list = [[] for i in xrange(numref)]
+			maxasi = total_nima/numref
+			for i in xrange(maxasi*numref):
+				id_list[i/maxasi].append(id_list_long[i])
+			for i in xrange(total_nima%maxasi):
+				id_list[id_list_long[-1]].append(id_list_long[maxasi*numref+i])
+			for iref in xrange(numref):
+				id_list[iref].sort()
+
+			assignment = [0]*total_nima
+			for iref in xrange(numref):
+				for im in id_list[iref]: assignment[im] = iref
+		else:
+			assignment = [0]*total_nima
+		mpi_barrier(comm)
+		#belongsto = mpi_bcast(belongsto, nima, MPI_INT, main_node, comm)
+		#belongsto = map(int, belongsto)
+		"""
+
 		if myid == main_node:
 			SA = False
 			asi = [[] for iref in xrange(numref)]
@@ -6250,19 +6276,22 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 				else:
 					report_error = 1
 			del dtot
-
 		else:
 			assignment = []
 			report_error = 0
 
 		report_error = bcast_number_to_all(report_error, source_node = main_node)
 		if report_error == 1:  ERROR('Number of images within a group too small', "mref_ali3d_MPI", 1, myid)
+		"""
+		
+		"""
 		if myid == main_node:
 			assignment = [0]*total_nima
 			for iref in xrange(numref):
 				for im in xrange(len(asi[iref])):
 					assignment[asi[iref][im]] = iref
 			del asi
+		"""
 
 		'''
 		if myid == main_node:
