@@ -67,7 +67,7 @@ def main():
 	
 	parser.add_argument("--input", type=str, default='',help="""Default=None. The name of the input volume stack. MUST be HDF since volume stack support is required.""", guitype='filebox', browser='EMSubTomosTable(withmodal=True,multiselect=False)', row=0, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
-	parser.add_argument("--output", type=str, default='avg.hdf', help="""Default=avg.hdf. The name of the output class-average stack. MUST be HDF since volume stack support is required.""", guitype='strbox', row=2, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	#parser.add_argument("--output", type=str, default='avg.hdf', help="""Default=avg.hdf. The name of the output class-average stack. MUST be HDF since volume stack support is required.""", guitype='strbox', row=2, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
 	#parser.add_argument("--classmx", type=str, default='', help="""Default=None. The name of the classification matrix specifying how particles in 'input' should be grouped. If omitted, all particles will be averaged.""")
 	
