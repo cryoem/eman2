@@ -149,7 +149,6 @@ def main():
 		for i in xrange(len(ctfs0)):
 			ctf=ctfs0[i]
 			basemic = baseroot(ctf[-1])
-
 			if(ctf[8]/ctf[0] > cterr[0]):
 				print_msg('Defocus error %f exceeds the threshold. Micrograph %s rejected.\n' % (ctf[8]/ctf[0], basemic))
 				n_reject_defocus_error += 1
@@ -171,7 +170,7 @@ def main():
 	n_total_coordinates_detect = 0
 	n_total_coordinates_process = 0
 	n_total_coordinates_reject_out_of_boundary = 0
-	
+	cutoffhistogram = []		#@ming compute the histogram for micrographs cut of by ctf limit.
 # 	Loop over micrographs
 	for k in range(len(micnames)):
 		# basename is name of micrograph minus the path and extension
@@ -238,7 +237,9 @@ def main():
 			q1, q2 = ctflimit(box_size,ctf[0],ctf[1],ctf[2],new_pixel_size)
 			# This is absolute frequency of the CTF limit in the scale of original micrograph
 			q1 = (ctf[3] / new_pixel_size) * q1/float(box_size)
-			immic = filt_tanl(immic, q1, 0.01)
+			if q1 < 0.5:          #@ming
+				immic = filt_tanl(immic, q1, 0.01)
+				cutoffhistogram.append(q1)
 # 		Cut off frequency components lower than the box size can express 
 		immic = fft(filt_gaussh( immic, resample_ratio/box_size ))
 		
@@ -323,7 +324,19 @@ def main():
 		print_msg('Detected                        : %4d\n' % (len(coords)))
 		print_msg('Processed                       : %4d\n' % (ind))
 		print_msg('Rejected by out of boundary     : %4d\n' % (n_coordinates_reject_out_of_boundary))
-		
+
+	if len(cutoffhistogram) > 0:
+		lhist = 10
+		print_msg("The number of micrographs filtered by cutoff frequencies %d is less than the number of bins %d. No histogram is produced.\n"%(len(cutoffhistogram), lhist))
+		if len(cutoffhistogram) >= lhist:
+			from statistics import hist_list
+			region,hist = hist_list(cutoffhistogram, lhist)	
+			msg = "      Histogram of cut off frequency\n      ERROR       number of frequencies\n"
+			print_msg(msg)
+			for lhx in xrange(lhist):
+				msg = " %10.3f     %7d\n"%(region[lhx], hist[lhx])
+				print_msg(msg)
+						
 #	Print out the summary of all micrographs
 	print_msg('\n')
 	print_msg('Global Summary of micrographs ...\n')
@@ -337,6 +350,7 @@ def main():
 	print_msg('Detected                        : %6d\n' % (n_total_coordinates_detect))
 	print_msg('Processed                       : %6d\n' % (n_total_coordinates_process))
 	print_msg('Rejected by out of boundary     : %6d\n' % (n_total_coordinates_reject_out_of_boundary))
+	print_msg('The percentage of micrographs filtered by the cutoff frequency: %6f\n' % (len(cutoffhistogram)*1.0/len(micnames)))
 
 if __name__=='__main__':
 	main()
