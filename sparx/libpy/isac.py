@@ -914,6 +914,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		mpi_barrier(comm) # to make sure that slaves freed the matrix d
 		
 		if myid == main_node:
+			#  PAP 03/20/2015  added cleaning of long lists...
 			id_list_long = Util.assign_groups(str(d.__array_interface__['data'][0]), numref, nima) # string with memory address is passed as parameters
 			del d
 			id_list = [[] for i in xrange(numref)]
@@ -924,10 +925,12 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 				id_list[id_list_long[-1]].append(id_list_long[maxasi*numref+i])
 			for iref in xrange(numref):
 				id_list[iref].sort()
+			del id_list_long
 
 			belongsto = [0]*nima
 			for iref in xrange(numref):
 				for im in id_list[iref]: belongsto[im] = iref
+			del id_list_long
 		else:
 			belongsto = [0]*nima
 		mpi_barrier(comm)
