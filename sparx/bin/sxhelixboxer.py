@@ -114,7 +114,8 @@ def main():
 	parser.add_argument("--importctf",          type=str,				 default= None,     		  help="File name with CTF parameters produced by sxcter.")
 	parser.add_argument("--defocuserror",       type=float,  			 default=1000000.0,           help="Exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent.  The error is computed as (std dev defocus)/defocus")
 	parser.add_argument("--astigmatismerror",   type=float,  			 default=360.0,               help="Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees.")
-	
+	parser.add_argument("--limitctf",             action="store_true",     default=False,               help="Filter micrographs based on the CTF limit. (Default: no filter)")
+
 	(options, args) = parser.parse_args()
 	
 	# invert meaning of gridding
@@ -133,7 +134,7 @@ def main():
  		windowallmic(options.dirid, options.micid, options.micsuffix, outdir, pixel_size=options.apix, boxsize=options.boxsize, minseg=options.minseg,\
 				outstacknameall=options.outstacknameall, hcoords_dir = options.hcoords_dir, hcoords_suffix = options.hcoords_suffix, ptcl_dst=options.ptcl_dst, \
 				inv_contrast=options.invert_contrast, new_pixel_size=options.new_apix, rmax = options.rmax, freq=options.freq, \
-				debug = options.dbg, do_rotation = True, do_gridding=options.gridding, topdir=tdir, importctf=options.importctf, cterr = cterr)
+				debug = options.dbg, do_rotation = True, do_gridding=options.gridding, topdir=tdir, importctf=options.importctf, limitctf=options.limitctf, cterr = cterr)
 		return
 
 	if options.helix_width < 1:
@@ -1851,7 +1852,7 @@ if ENABLE_GUI:
 
 def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, boxsize=256, minseg = 6, outstacknameall='bdb:data', \
 				hcoords_dir = "", hcoords_suffix = "_boxes.txt", ptcl_dst=-1, inv_contrast=False, new_pixel_size=-1, rmax = -1.0, freq = -1, debug = 1, \
-				do_rotation = True, do_gridding=True, topdir = None, importctf=None, cterr = None):
+				do_rotation = True, do_gridding=True, topdir = None, importctf=None, limitctf=None, cterr = None):
 	'''
 	
 	Windows segments from helices boxed from micrographs. 
@@ -2014,6 +2015,8 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, boxsize=256, minse
 	for coutdir in outdirlist:
 		print_msg("Creating output directory %s\n"%coutdir)
 		os.mkdir(coutdir)
+	cutoffhistogram = []       #@ming
+	lenmicnames = 0	
 	for v1 in micdirlist:
 		# window all micrographs in directory v1 with micid
 		flist2 = os.listdir(v1)
@@ -2038,10 +2041,23 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, boxsize=256, minse
 				# For example, if using default sxhelixboxer naming convention, then coordinates of all helices boxed in mic0 would be in mic0_boxes.txt
 				if( os.path.exists(hcoordsname) ):
 					micname = os.path.join(v1, v2)
+					lenmicnames += 1
 					print_msg("\n\nPreparing to window helices from micrograph %s with box coordinate file %s\n\n"%(micname, hcoordsname))
 					#windowmic(outstacknameall, coutdir, micname, hcoordsname, pixel_size, boxsize, ptcl_dst, minseg, inv_contrast, new_pixel_size, rmaxp, freq, do_rotation, do_gridding, importctf, cterr)
-					windowmic(outstacknameall, v1, coutdir, micname, hcoordsname, pixel_size, boxsize, ptcl_dst, minseg, inv_contrast, new_pixel_size, rmaxp, freq, do_rotation, do_gridding, importctf, cterr)  ##changed by @ming 
-	# If not debug mode, then remove all output directories 
+					windowmic(outstacknameall, v1, coutdir, micname, hcoordsname, pixel_size, boxsize, ptcl_dst, minseg, inv_contrast, new_pixel_size, rmaxp, freq, do_rotation, do_gridding, importctf, limitctf, cterr, cutoffhistogram)  ##changed by @ming 
+	
+	if len(cutoffhistogram) > 0:		#@ming
+		lhist = 3
+		if len(cutoffhistogram) >= lhist:
+			from statistics import hist_list
+			region,hist = hist_list(cutoffhistogram,lhist)	
+			msg = "      Histogram of cut off frequencies\n      ERROR       number of frequencies\n"
+			print_msg(msg)
+			for lhx in xrange(len(lhist)):
+				msg = " %10.3f     %7d\n"%(region[lhx], hist[lhx])
+				print_msg(msg)
+		print_msg('The percentage of micrographs filtered by the cutoff frequency: %6f\n' % (len(cutoffhistogram)*1.0/lenmicnames))		
+	# If not debug mode, then remove all output directories 				
 	if debug == 0:
 		from subprocess import call
 		for coutdir in outdirlist:
@@ -2049,7 +2065,7 @@ def windowallmic(dirid, micid, micsuffix, outdir, pixel_size, boxsize=256, minse
 			print_msg("cmd: %s"%cmd)
 			call(cmd, shell=True)
 
-def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size, boxsize, ptcl_dst, minseg, inv_contrast, new_pixel_size, rmaxp, freq, do_rotation, do_gridding, importctf, cterr):
+def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size, boxsize, ptcl_dst, minseg, inv_contrast, new_pixel_size, rmaxp, freq, do_rotation, do_gridding, importctf, limitctf, cterr, cutoffhistogram):
 	'''
 	
 	INPUT
@@ -2087,7 +2103,7 @@ def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size
 	'''
 	from utilities    import pad, model_blank, read_text_row, get_im, print_msg
 	from fundamentals import ramp, resample
-	from filter	  	  import filt_gaussh
+	from filter	  	  import filt_gaussh,filt_tanl 
 	from pixel_error  import getnewhelixcoords
 	from EMAN2 	      import EMUtil, Util
 	from subprocess   import call
@@ -2122,7 +2138,18 @@ def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size
 	dummy.read_image(micname, 0, True)
 	l = dummy.get_attr_dict()
 
-
+	## Cut off frequency components higher than CTF limit   @ming
+	img = get_im(micname)
+	from morphology import ctflimit
+	if limitctf:
+# 			Cut off frequency components higher than CTF limit 
+		q1, q2 = ctflimit(boxsize,ctfs[0],ctfs[1],ctfs[2],new_pixel_size)
+		# This is absolute frequency of the CTF limit in the scale of original micrograph
+		q1 = (ctfs[3] / new_pixel_size) * q1/float(boxsize)
+		if q1 < 0.5:          #@ming
+			img = filt_tanl(img, q1, 0.01)
+			cutoffhistogram.append(q1)
+	
 	if new_pixel_size != pixel_size:
 		# Resample micrograph, map coordinates, and window segments from resampled micrograph using new coordinates
 		# Set ctf along with new pixel size in resampled micrograph
@@ -2130,7 +2157,6 @@ def windowmic(outstacknameall, micpath, outdir, micname, hcoordsname, pixel_size
 		print_msg('Resample micrograph to pixel size %f and window segments from resampled micrograph\n'%new_pixel_size)
 		resample_ratio = pixel_size/new_pixel_size
 		# after resampling by resample_ratio, new pixel size will be pixel_size/resample_ratio = new_pixel_size
-		img = get_im(micname)
 		nx = img.get_xsize()
 		ny = img.get_ysize()
 		img = resample(img, resample_ratio)
