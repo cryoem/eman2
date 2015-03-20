@@ -516,7 +516,8 @@ def main():
 	elif options.generate_projections:
 		nargs = len(args)
 		if nargs != 3:
-			print "Must provide name of input structure from which to generate projections, desired name of output projection stack, and desired prefix for output micrographs. Exiting..."
+			ERROR("Must provide name of input structure(s) from which to generate projections, name of output projection stack, and prefix for output micrographs."\
+			"sxprocess - generate projections",1)
 			return
 		inpstr  = args[0]
 		outstk  = args[1]
@@ -579,25 +580,27 @@ def main():
 		angles = even_angles(delta, 0.0, 89.9, 0.0, 359.9, "S")
 		nangle = len(angles)
 		
-		modelvol = EMData()
-		#modelvol.read_image("../model_structure.hdf")
-		modelvol.read_image(inpstr)
+		modelvol = []
+		nvlms = EMUtil.get_image_count(inpstr)
+		from utilities import get_im
+		for k in xrange(nvlms):  modelvol.append(get_im(inpstr,k))
 		
-		nx = modelvol.get_xsize()
+		nx = modelvol[0].get_xsize()
 		
 		if nx != boxsize:
-			print "requested box dimension does not match dimension of the input model....Exiting"
-			sys.exit()
-
+			ERROR("Requested box dimension does not match dimension of the input model.", \
+			"sxprocess - generate projections",1)
 		nvol = 10
-		volfts = [None]*nvol
-		for i in xrange(nvol):
-			sigma = sigma_add + random()  # 1.5-2.5
-			addon = model_gauss(sigma, boxsize, boxsize, boxsize, sigma, sigma, 38, 38, 40 )
-			scale = scale_mult * (0.5+random())
-			model = modelvol + scale*addon
-			volfts[i], kb = prep_vol(modelvol + scale*addon)
-			
+		volfts = [[] for k in xrange(nvlms)]
+		for k in xrange(nvlms):
+			for i in xrange(nvol):
+				sigma = sigma_add + random()  # 1.5-2.5
+				addon = model_gauss(sigma, boxsize, boxsize, boxsize, sigma, sigma, 38, 38, 40 )
+				scale = scale_mult * (0.5+random())
+				vf, kb = prep_vol(modelvol[k] + scale*addon)
+				volfts[k].append(vf)
+		del vf, modelvol
+
 		if parm_format == "bdb":
 			stack_data = "bdb:"+outstk
 			delete_bdb(stack_data)
@@ -614,7 +617,7 @@ def main():
 		xstart = 8 + boxsize/2
 		ystart = 8 + boxsize/2
 		rowlen = 17
-
+		from random import randint
 		params = []
 		for idef in xrange(3, 8):
 
@@ -624,12 +627,9 @@ def main():
 			mic = model_blank(4096, 4096)
 			defocus = idef * 0.5#0.2
 			if parm_CTF:
-# 				ctf = EMAN2Ctf()
-# 				ctf.from_dict({"defocus": defocus, "cs": Cs, "voltage": voltage, "apix": pixel, "ampcont": ampcont, "bfactor": 0.0})
 				astampl=defocus*0.15
 				astangl=50.0
 				ctf = generate_ctf([defocus, Cs, voltage,  pixel, ampcont, 0.0, astampl, astangl])
-# 				print {"defocus":defocus, "astampl":astampl, "astangl":astangl}
 
 			for i in xrange(nangle):
 				for k in xrange(12):
@@ -646,18 +646,18 @@ def main():
 					params.append([phi, tht, psi, s2x, s2y])
 
 					ivol = iprj % nvol
-					proj = prgs(volfts[ivol], kb, [phi, tht, psi, -s2x, -s2y])
-		
+					proj = prgs(volfts[randint(0,nvlms-1)][ivol], kb, [phi, tht, psi, -s2x, -s2y])
+
 					x = xstart + irow * width
 					y = ystart + icol * width
 
 					mic += pad(proj, 4096, 4096, 1, 0.0, x-2048, y-2048, 0)
-			
+
 					proj = proj + model_gauss_noise( sigma_proj, nx, nx )
 					if parm_CTF:
 						proj = filt_ctf(proj, ctf)
 						proj.set_attr_dict({"ctf":ctf, "ctf_applied":0})
-			
+
 					proj = proj + filt_gaussl(model_gauss_noise(sigma2_proj, nx, nx), sigma_gauss)
 					proj.set_attr("active", 1)
 					# flags describing the status of the image (1 = true, 0 = false)

@@ -6187,6 +6187,22 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 
 
 		if myid == main_node:
+
+			for imrefa in xrange(numrefang):
+				from utilities import findall
+				N = findall(imrefa, assigntorefa)
+				current_nima = len(N)
+				if( current_nima >= numref and report_error == 0):
+					tasi = [[] for iref in xrange(numref)]
+					maxasi = current_nima//numref
+					nt = current_nima
+					kt = numref
+					K = range(numref)
+
+					d = empty( (numref, current_nima), dtype = float32)
+					for ima in xrange(current_nima):
+						for iref in xrange(numref):  d[iref][ima] = dtot[iref][N[ima]]
+
 			d = empty( (numref, total_nima), dtype = float32)
 			for ima in xrange(total_nima):
 				for iref in xrange(numref):  d[iref][ima] = dtot[iref][N[ima]]
@@ -6206,8 +6222,8 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 				for im in id_list[iref]: assignment[im] = iref
 		else:
 			assignment = [0]*total_nima
-		mpi_barrier(comm)
-		#belongsto = mpi_bcast(belongsto, nima, MPI_INT, main_node, comm)
+		mpi_barrier(MPI_COMM_WORLD)
+		#belongsto = mpi_bcast(belongsto, nima, MPI_INT, main_node, MPI_COMM_WORLD)
 		#belongsto = map(int, belongsto)
 		"""
 
