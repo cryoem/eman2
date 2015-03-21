@@ -2,9 +2,18 @@
 
 set echo on
 
-gunzip ../tteftu_with_tRNA.pdb.gz
+#gunzip ../tteftu_with_tRNA.pdb.gz
 
-sxpdb2em.py ../tteftu_with_tRNA.pdb tmp.hdf --apix=5.2 --box=64
+gunzip ../grp*.pdb.gz
+
+sxpdb2em.py ../grp0.pdb tmp0.hdf --apix=5.2 --box=64
+sxpdb2em.py ../grp1.pdb tmp1.hdf --apix=5.2 --box=64
+sxpdb2em.py ../grp2.pdb tmp2.hdf --apix=5.2 --box=64
+sxpdb2em.py ../grp3.pdb tmp3.hdf --apix=5.2 --box=64
+sxpdb2em.py ../grp4.pdb tmp4.hdf --apix=5.2 --box=64
+
+sxcpy.py tmp*.hdf  ttt.hdf
+rm tmp*
 ###################################################################
 # To run gui version, enter the following in the command line:
 #        sxgui.py --demo=mpibdbctf &
@@ -14,11 +23,10 @@ sxpdb2em.py ../tteftu_with_tRNA.pdb tmp.hdf --apix=5.2 --box=64
 # which case the proper values must be entered manually.
 ###################################################################
 
-e2proc3d.py tmp.hdf ../fmodel_structure.hdf --process=filter.lowpass.tanh:cutoff_abs=0.15:fall_off=0.2
+e2proc3d.py ttt.hdf ../fmodel_structure.hdf --process=filter.lowpass.tanh:cutoff_abs=0.15:fall_off=0.2
+e2proc3d.py ttt.hdf ../model_structure.hdf --process=filter.lowpass.tanh:cutoff_abs=0.45:fall_off=0.1
 
-e2proc3d.py tmp.hdf ../model_structure.hdf --process=filter.lowpass.tanh:cutoff_abs=0.45:fall_off=0.1
-
-rm tmp.hdf
+rm ttt.hdf
 
 # Generating 2D projections of a 3D model from an input hdf file.
 # It simulates the procedure of EM image acquisition process.
@@ -141,6 +149,11 @@ mpirun -np 12 sxviper.py bdb:class_averages outdirshc --ou=28 --xr=3.0 --delta=2
 # 3D projection alignment - refinement of the initial structure
 mpirun -np 16 sxpetite.py bdb:data refinementdir outdirshc/volf.hdf --CTF --ou=28 > cou &
 
+
+sxheader.py bdb:data --params=xform.projection --import=refinementdir/main002/params.txt
+sxheader.py bdb:data --params=active --one
+
+
 mpirun -np 12 sx3dvariability.py bdb:master_25_Feb_2015_18_52_08/set01  --fl=0.3 --aa=0.1 --ave2D=groupdata.hdf  --ave3D=volg.hdf --var3D=farg.hdf  --CTF --img_per_grp=5
 
 mpirun -np 12  sxlocres.py master_25_Feb_2015_18_52_08/main001/vol0.hdf  master_25_Feb_2015_18_52_08/main001/vol1.hdf    locres.hdf --cutoff=0.5  --radius=28  --fsc=fscvol.txt --MPI
@@ -148,6 +161,16 @@ mpirun -np 12  sxlocres.py master_25_Feb_2015_18_52_08/main001/vol0.hdf  master_
 mpirun -np 12  sxfilterlocal.py master_25_Feb_2015_18_52_08/main001/vol0.hdf  locres.hdf  locfilt.hdf --radius=28  --MPI
 
 
+mpirun -np 4 sxrecons3d_n.py bdb:data  tmp0.hdf  0 1429 5  --CTF --MPI
+mpirun -np 4 sxrecons3d_n.py bdb:data  tmp1.hdf  1 1429 5  --CTF --MPI
+mpirun -np 4 sxrecons3d_n.py bdb:data  tmp2.hdf  2 1429 5  --CTF --MPI
+mpirun -np 4 sxrecons3d_n.py bdb:data  tmp3.hdf  3 1429 5  --CTF --MPI
+mpirun -np 4 sxrecons3d_n.py bdb:data  tmp4.hdf  4 1429 5  --CTF --MPI
+sxcpy.py tmp*.hdf ttt.hdf
+e2proc3d.py ttt.hdf ref_vols.hdf --process=filter.lowpass.tanh:cutoff_abs=0.35:fall_off=0.1
+rm  tmp*hdf ttt.hdf
+
+mpirun -np 12 sxmref_ali3d.py bdb:data ref_vols.hdf mref  --ou=28 --nassign=10 --nrefine=0 --maxit=10 --stoprnct=1  --CTF  --MPI
 
 
 # Refinement of the 3D structure using high accuracy alignment
