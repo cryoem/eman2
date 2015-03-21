@@ -129,10 +129,10 @@ EMData *EMData::copy_head() const
 
 std::complex<float> EMData::get_complex_at(const int &x,const int &y) const{
 	if (abs(x)>=nx/2 || abs(y)>ny/2) return std::complex<float>(0,0);
-	if (x>=0 && y>=0) return std::complex<float>(rdata[ x*2+y*nx],      rdata[x*2+y*nx+1]);
-	if (x>0 && y<0) return std::complex<float>(  rdata[ x*2+(ny+y)*nx], rdata[x*2+(ny+y)*nx+1]);
+	if (x>=0 && y>=0) return std::complex<float>(rdata[ x*2+y*nx],rdata[x*2+y*nx+1]);
+	if (x>0 && y<0) return std::complex<float>(rdata[ x*2+(ny+y)*nx],rdata[x*2+(ny+y)*nx+1]);
 	if (x<0 && y>0) return std::complex<float>(  rdata[-x*2+(ny-y)*nx],-rdata[-x*2+(ny-y)*nx+1]);
-	return std::complex<float>(rdata[-x*2-y*nx],-rdata[-x*2+-y*nx+1]);
+	return std::complex<float>(rdata[-x*2-y*nx],-rdata[-x*2-y*nx+1]);
 }
 
 std::complex<float> EMData::get_complex_at(const int &x,const int &y,const int &z) const{
@@ -174,8 +174,36 @@ return (x-subx0)*2+(y-suby0)*(size_t)nx+(z-subz0)*(size_t)nx*(size_t)ny;
 
 void EMData::set_complex_at(const int &x,const int &y,const std::complex<float> &val) {
 	if (abs(x)>=nx/2 || abs(y)>ny/2) return;
-	if (x>=0 && y>=0) { rdata[ x*2+y*nx]=val.real(); rdata[x*2+y*nx+1]=val.imag(); }
-	else if (x>0 && y<0) { rdata[ x*2+(ny+y)*nx]=val.real(); rdata[x*2+(ny+y)*nx+1]=val.imag(); }
+	if (x==0) {
+		if (y==0) { rdata[0]=val.real(); rdata[1]=0; }
+		else if (y==ny/2 || y==-ny/2) { rdata[ny/2*nx]=val.real(); rdata[ny/2*nx+1]=0; }
+		else if (y>0) {
+			rdata[y*nx]=rdata[(ny-y)*nx]=val.real();
+			rdata[y*nx+1]=val.imag();
+			rdata[(ny-y)*nx+1]=-val.imag();
+		}
+		else {
+			rdata[(ny+y)*nx]=rdata[-y*nx]=val.real();
+			rdata[(ny+y)*nx+1]=val.imag();
+			rdata[-y*nx+1]=-val.imag();
+		}
+	}
+	else if (x==nx/2-1) {
+		if (y==0) { rdata[nx-2]=val.real(); rdata[nx-1]=0; }
+		else if (y==ny/2 || y==-ny/2) { rdata[ny/2*nx+nx-2]=val.real(); rdata[ny/2*nx+nx-1]=0; }
+		else if (y>0) {
+			rdata[y*nx+nx-2]=rdata[(ny-y)*nx+nx-2]=val.real();
+			rdata[y*nx+nx-1]=val.imag();
+			rdata[(ny-y)*nx+nx-1]=-val.imag();
+		}
+		else {
+			rdata[(ny+y)*nx+nx-2]=rdata[-y*nx+nx-2]=val.real();
+			rdata[(ny+y)*nx+nx-1]=val.imag();
+			rdata[-y*nx+nx-1]=-val.imag();
+		}
+	}
+	else if (x>0 && y>=0) { rdata[ x*2+y*nx]=val.real(); rdata[x*2+y*nx+1]=val.imag(); }
+	else if (x>0 && y<0) { rdata[ x*2+(ny+y)*nx]=val.real(); rdata[x*2+(ny+y)*nx+1]=val.imag(); printf("%d %d %d %f\n",x,y,x*2+(ny+y)*nx,val.real()); }
 	else if (x<0 && y>0) { rdata[-x*2+(ny-y)*nx]=val.real(); rdata[-x*2+(ny-y)*nx+1]=-val.imag(); }
 	else { rdata[-x*2-y*nx]=val.real(); rdata[-x*2+-y*nx+1]=-val.imag(); }
 	return;
