@@ -6185,7 +6185,8 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 		del recvbuf
 
 
-
+		"""
+		#  Trying to use ISAC code for EQ-Kmeans  PAP 03/21/2015
 		if myid == main_node:
 
 			for imrefa in xrange(numrefang):
@@ -6226,6 +6227,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 		#belongsto = mpi_bcast(belongsto, nima, MPI_INT, main_node, MPI_COMM_WORLD)
 		#belongsto = map(int, belongsto)
 		"""
+
 
 		if myid == main_node:
 			SA = False
@@ -6292,13 +6294,19 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 				else:
 					report_error = 1
 			del dtot
+
 		else:
 			assignment = []
 			report_error = 0
 
 		report_error = bcast_number_to_all(report_error, source_node = main_node)
 		if report_error == 1:  ERROR('Number of images within a group too small', "mref_ali3d_MPI", 1, myid)
-		"""
+		if myid == main_node:
+			assignment = [0]*total_nima
+			for iref in xrange(numref):
+				for im in xrange(len(asi[iref])):
+					assignment[asi[iref][im]] = iref
+			del asi
 		
 		"""
 		if myid == main_node:
