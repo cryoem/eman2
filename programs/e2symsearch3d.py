@@ -152,6 +152,12 @@ def main():
 	if options.nopath:
 		options.path = '.'
 	
+	
+	rootpath =os.getcwd()
+	
+	if rootpath not in options.path:
+		options.path = rootpath + '/' + options.path
+	
 	from e2spt_classaverage import preprocessing		
 	from EMAN2PAR import EMTaskCustomer
 	from e2spt_classaverage import sptOptionsParser
@@ -181,7 +187,7 @@ def main():
 			print "\nHowever, I will first preprocess particle number",i
 			
 			print "\nWill call preprocessing on ptcl",i
-			preprocvol = preprocessing(preprocvol,options,options.mask,options.clipali,options.normproc,options.shrink,options.lowpass,options.highpass,options.preprocess,options.threshold,i)
+			preprocvol = preprocessing(preprocvol,options,options.mask,options.normproc,options.shrink,options.lowpass,options.highpass,options.preprocess,options.threshold,i)
 			
 			print "\nDone preprocessing on ptcl",i
 		
