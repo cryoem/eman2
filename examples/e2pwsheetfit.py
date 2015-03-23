@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# Muyuan Chen 12/2014
+# Fit beta sheets using pathwalker results
+
 import EMAN2
 from EMAN2 import *
 import random

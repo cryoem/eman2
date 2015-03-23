@@ -1,5 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
+# Muyuan Chen 12/2014
+# Minor Modification to the pathwalking structure
+
 
 import EMAN2
 from EMAN2 import *
@@ -260,10 +262,10 @@ def main():
 				print options.thr
 			if (atomcolor[i]<options.thr):
 				print i, csbd[i], atomcolor[i]
-				atomcolor[i]=1000
-				atomcolor[i+1]=1000
-				atomcolor[csbd[i]]=1000
-				atomcolor[csbd[i]+1]=1000
+				atomcolor[i]=options.thr
+				atomcolor[i+1]=options.thr
+				atomcolor[csbd[i]]=options.thr
+				atomcolor[csbd[i]+1]=options.thr
 				for j in range(i+1,(1+csbd[i]+i+1)/2):
 					k=csbd[i]+i+1-j
 					

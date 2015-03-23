@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
+# Muyuan Chen 12/2014
 # Fit helixes using pathwalker results
 
 import EMAN2
