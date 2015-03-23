@@ -337,9 +337,12 @@ def main():
 				#for particles to be the adequate size, given that clip here is the FINAL box size
 				if options.preprocess or int(options.shrink) > 1 or options.lowpass or options.highpass or options.clip or options.normproc or options.threshold:
 					from e2spt_classaverage import preprocessing
-					model = preprocessing( model, options, options.mask, options.clip*options.shrink, options.normproc, options.shrink, options.lowpass, options.highpass, options.preprocess, options.threshold)
+					model = preprocessing( model, options, options.mask, options.normproc, options.shrink, options.lowpass, options.highpass, options.preprocess, options.threshold)
 					#options = ret[0]
-					print "\n\n\n\n\n\nBox of model AFTER preprocessing is", model['nx']
+					if options.clip:
+						
+						model = clip3D( model, options.clip * options.shrink )
+						print "\n\n\n\n\n\nBox of model AFTER preprocessing is", model['nx']
 				
 				if options.savepreprocessed:
 					outpreprocmodel = options.input.replace( '.hdf', '_PREPROC.hdf' )
