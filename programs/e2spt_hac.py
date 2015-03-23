@@ -145,7 +145,7 @@ def main():
 	
 	#parser.add_argument("--keepsig", action="store_true", default=False,help="""Default=False. Causes the keep argument to be interpreted in standard deviations.""", guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
 
-	parser.add_argument("--inixforms",type=str,default="",help="""Default=None. .json file containing a dict of transforms to apply to 'pre-align' the particles.""", guitype='dirbox', dirbasename='spt_|sptsym_', row=7, col=0,rowspan=1, colspan=2, nosharedb=True, mode='breaksym')
+	#parser.add_argument("--inixforms",type=str,default="",help="""Default=None. .json file containing a dict of transforms to apply to 'pre-align' the particles.""", guitype='dirbox', dirbasename='spt_|sptsym_', row=7, col=0,rowspan=1, colspan=2, nosharedb=True, mode='breaksym')
 	
 	parser.add_argument("--breaksym",action="store_true", default=False,help="""Default=False. Break symmetry. Do not apply symmetrization after averaging, even if searching the asymmetric unit provided through --sym only for alignment. Default=False""", guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, nosharedb=True, mode=',breaksym[True]')
 	
@@ -167,7 +167,7 @@ def main():
 	
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="""Default=0. Verbose level [0-9], higner number means higher level of verboseness""")
 		
-	parser.add_argument("--resume",type=str,default='',help="""(Not working currently). tomo_fxorms.json file that contains alignment information for the particles in the set. If the information is incomplete (i.e., there are less elements in the file than particles in the stack), on the first iteration the program will complete the file by working ONLY on particle indexes that are missing. For subsequent iterations, all the particles will be used.""")
+	#parser.add_argument("--resume",type=str,default='',help="""(Not working currently). tomo_fxorms.json file that contains alignment information for the particles in the set. If the information is incomplete (i.e., there are less elements in the file than particles in the stack), on the first iteration the program will complete the file by working ONLY on particle indexes that are missing. For subsequent iterations, all the particles will be used.""")
 																				
 	parser.add_argument("--plots", action='store_true', default=False,help="""Default=False. Turn this option on to generate a plot of the ccc scores during each iteration in.png format (otherwise only .txt files will be saved). This option will also produce a plot of mean ccc score across iterations. Running on a cluster or via ssh remotely might not support plotting.""")
 
@@ -229,11 +229,9 @@ def main():
 	options = sptParseAligner( options )
 	
 	
-	'''
-	Parse parameters such that "None" or "none" are adequately interpreted to turn of an option
-	'''
-	from e2spt_classaverage import sptOptionsParser
-	options = sptOptionsParser( options )
+	if options.shrink < options.shrinkfine:
+		options.shrink = options.shrinkfine
+		print "WARNING: It makes no sense for shrinkfine to be larger than shrink; therefore, shrink will be made to match shrinkfine"
 	
 	
 	'''
@@ -243,8 +241,13 @@ def main():
 	if options.radius:
 		from e2spt_classaverage import calcAliStep
 		options = calcAliStep(options)
-		
 	
+	'''
+	Parse parameters such that "None" or "none" are adequately interpreted to turn of an option
+	'''
+	from e2spt_classaverage import sptOptionsParser
+	options = sptOptionsParser( options )
+
 	
 	'''
 	Store parameters in parameters.txt file inside --path
