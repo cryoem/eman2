@@ -44,12 +44,6 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + """ Input Output [options]
 	
-	Helicise the atom coordinates of input pdb file according to input helical symmetry parameters.
-	Input: pdb file containing atom coordinates to be helicised and helical symmetry parameters dp and dphi. 
-	Output: pdb file containing helicised atom coordinates
-	
-		sxhelical_demo.py 3MFP_1SU.pdb rnew.pdb --heli --dp=27.6 --dphi=166.5
-	
 	Generate three micrographs, each micrograph contains one projection of a long filament.
 	Input: Reference Volume, output directory 
 	Output: Three micrographs stored in output directory		
@@ -75,9 +69,6 @@ def main():
 	parser = OptionParser(usage,version=SPARXVERSION)
 	
 	# helicise the Atom coordinates
-	parser.add_option("--heli",                   action="store_true",      default=False,      		  	 help="Helicise the atom coordinates of input pdb file according to input helical symmetry parameters. \n Input: pdb file containing atom coordinates to be helicised and helical symmetry parameters dp and dphi. \n Output: pdb file containing helicised atom coordinates")
-	parser.add_option("--dp",                     type="float",			    default= -1.0,              	 help="delta z - translation in Angstroms")   
-	parser.add_option("--dphi",                   type="float",			    default=  0.0,              	 help="delta phi - rotation in degrees")  
 	
 	# generate micrographs of helical filament
 	parser.add_option("--generate_micrograph",    action="store_true",      default=False,      		  	 help="Generate three micrographs where each micrograph contains one projection of a long filament. \n Input: Reference Volume, output directory \n Output: Three micrographs containing helical filament projections stored in output directory")
@@ -116,12 +107,6 @@ def main():
 	else:
 		if options.generate_script:
 			generate_runscript(options.filename, options.seg_ny, options.ptcl_dist, options.fract)
-			
-		if options.heli:
-			if options.dp < 0 or options.dphi == 0.:
-				print "Please enter helical symmetry parameters dp and dphi."
-				sys.exit()
-			helicise_pdb(args[0], args[1], options.dp, options.dphi)
 
 		if options.generate_micrograph:
 			if options.apix <= 0:
@@ -181,94 +166,6 @@ def main():
 				prj.set_attr('active', 1)
 				prj.set_attr('ctf_applied', 0)
 				prj.write_image(newstack, im)
-
-def helicise_pdb(inpdb, outpdb, dp, dphi):
-	from math import cos, sin, pi
-	from copy import deepcopy
-	from numpy import zeros, float32, dot
-
-	dp = dp*-1.0
-	infile =open(inpdb,"r")
-	pall = infile.readlines()
-	infile.close()
-
-	p = []
-
-	pos = []
-	for i in xrange( len(pall) ):
-		
-		if( (pall[i])[:4] == 'ATOM'):
-			p.append( pall[i] )
-			pos.append(i)
-	n = len(p)
-	nperiod = 50
-	X = zeros( (3,len(p) ), dtype=float32 )
-	X_new = zeros( (3,len(p) ), dtype=float32 )
-	for i in xrange( len(p) ):
-	
-		element = deepcopy( p[i] )
-		X[0,i]=float(element[30:38])
-		X[1,i]=float(element[38:46])	
-		X[2,i]=float(element[46:54])
-	
-	pnew = []
-	
-	for j in xrange(-nperiod, nperiod+1):
-		for i in xrange( n ):
-			pnew.append( deepcopy(p[i]) )
-	
-	for j in xrange(-nperiod, nperiod+1):
-		if j != 0:
-			rd = pi*j*dphi/180
-			m = zeros( (3,3 ), dtype=float32 )
-			t = zeros( (3,1 ), dtype=float32 )
-			m[0][0] = cos(rd)
-			m[0][1] = -sin(rd)
-			m[1][0] = sin(rd)
-			m[1][1] = cos(rd)
-			m[2][2] = 1.0
-			t[0,0]=0.0
-			t[1,0]=0.0
-			t[2,0]=j*dp
-			##for curve filaments
-			# RR = 50
-# 			distheta = j*1.0/RR
-# 			t[0,0]=0.0     
-# 			t[1,0]=RR*sin(j*1.0/nperiod*6.28)   
-# 			t[2,0]=j*dp
-			##end for curve filament.
-			
-			## for parabola filament.
-			# t[0,0]=0.0
-# 			a = 100.0/(nperiod*nperiod)     
-#  			t[1,0]= a * j*j  
-# 			t[2,0]=j*dp
-
-# 			## for cubic filament
-# 			t[0,0]=0.0
-#  			a = 300.0/(nperiod*nperiod*nperiod) 
-#  			t[1,0]= a * j*j*j  
-# 			t[2,0]=j*dp
-
-# 			if  j>= -nperiod and j < 0:
-# 				a = 100.0/(nperiod*nperiod*nperiod) 
-# 				t[1,0]= a * j*j*j
-# 			else:
-# 				t[1,0] = 3.0/nperiod*j
-
-
-			
-			X_new = dot(m, X) + t 
-			for i in xrange( n ):
-				pnew[j*n+i] = pnew[j*n+i].replace( p[i][30:38], "%8.3f"%( float(X_new[0,i]) ) )
-				pnew[j*n+i] = pnew[j*n+i].replace( p[i][38:46], "%8.3f"%( float(X_new[1,i]) ) )
-				pnew[j*n+i] = pnew[j*n+i].replace( p[i][46:54], "%8.3f"%( float(X_new[2,i]) ) )
-	
-	outfile=open(outpdb,"w")
-	outfile.writelines(pall[0:pos[0]-1])
-	outfile.writelines(pnew)
-	outfile.writelines(pall[n-1:len(pall)])
-	outfile.close()
 
 def generate_helimic(refvol, outdir, pixel, CTF=False, Cs=2.0,voltage = 200.0, ampcont = 10.0, nonoise = False, rand_seed=14567):
 	

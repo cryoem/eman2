@@ -292,9 +292,10 @@ def main():
 			p = []
 
 			pos = []
+			lkl = -1
 			for i in xrange( len(pall) ):
-	
 				if( (pall[i])[:4] == 'ATOM'):
+					if( lkl == -1 ):  lkl = i
 					p.append( pall[i] )
 					pos.append(i)
 			n = len(p)
@@ -303,7 +304,6 @@ def main():
 			X_new = zeros( (3,len(p) ), dtype=float32 )
 
 			for i in xrange( len(p) ):
-
 				element = deepcopy( p[i] )
 				X[0,i]=float(element[30:38])
 				X[1,i]=float(element[38:46])	
@@ -335,9 +335,9 @@ def main():
 
 
 			outfile=open(args[1],"w")
-			outfile.writelines(pall[0:pos[0]-1])
+			outfile.writelines(pall[0:lkl])
 			outfile.writelines(pnew)
-			outfile.writelines(pall[n-1:len(pall)])
+			outfile.writelines("END\n")
 			outfile.close()
 			sys.exit()
 
