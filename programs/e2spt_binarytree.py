@@ -144,7 +144,7 @@ def main():
 	
 	#parser.add_argument("--keepsig", action="store_true", default=False,help="""Default=False. Causes the keep argument to be interpreted in standard deviations.""", guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
 
-	parser.add_argument("--inixforms",type=str,default="",help="""Default=None. .json file containing a dict of transforms to apply to 'pre-align' the particles.""", guitype='dirbox', dirbasename='spt_|sptsym_', row=7, col=0,rowspan=1, colspan=2, nosharedb=True, mode='breaksym')
+	#parser.add_argument("--inixforms",type=str,default="",help="""Default=None. .json file containing a dict of transforms to apply to 'pre-align' the particles.""", guitype='dirbox', dirbasename='spt_|sptsym_', row=7, col=0,rowspan=1, colspan=2, nosharedb=True, mode='breaksym')
 	
 	parser.add_argument("--breaksym",action="store_true", default=False,help="""Default=False. Break symmetry. Do not apply symmetrization after averaging, even if searching the asymmetric unit provided through --sym only for alignment. Default=False""", guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, nosharedb=True, mode=',breaksym[True]')
 	
@@ -166,7 +166,7 @@ def main():
 	
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="""Default=0. Verbose level [0-9], higner number means higher level of verboseness""")
 		
-	parser.add_argument("--resume",type=str,default='',help="""(Not working currently). tomo_fxorms.json file that contains alignment information for the particles in the set. If the information is incomplete (i.e., there are less elements in the file than particles in the stack), on the first iteration the program will complete the file by working ONLY on particle indexes that are missing. For subsequent iterations, all the particles will be used.""")
+	#parser.add_argument("--resume",type=str,default='',help="""(Not working currently). tomo_fxorms.json file that contains alignment information for the particles in the set. If the information is incomplete (i.e., there are less elements in the file than particles in the stack), on the first iteration the program will complete the file by working ONLY on particle indexes that are missing. For subsequent iterations, all the particles will be used.""")
 															
 	parser.add_argument("--plots", action='store_true', default=False,help="""Default=False. Turn this option on to generatea plot of the ccc scores during each iteration. Running on a cluster or via ssh remotely might not support plotting.""")
 
@@ -221,196 +221,33 @@ def main():
 		p.stdout.close()
 		
 		options.input = subsetStack
-	
-	
+		
+	from e2spt_classaverage import sptParseAligner
+	options = sptParseAligner( options )
+
 	'''
 	If --radius of the particle is provided, we calculate the optimal alignment steps for 
 	coarse and fine alignment rounds using --shrink and --shrinkfine options and apix info
 	'''
-	if options.radius:
-		from e2spt_classaverage import calcAliStep
-		options = calcAliStep(options)
-		
-	
-	if options.align:
-		if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align and 'grid' not in options.align:
-			if 'rotate_translate_3d' in options.align or 'rotate_symmetry_3d' in options.align: 
-				options.align += ':sym=' + str( options.sym )
-						
-		if 'search' not in options.align:
-			if 'rotate_translate_3d' in options.align:		
-				options.align += ':search=' + str( options.search )
-			
-			#sys.exit()
-			
-		elif 'rotate_translate_3d' in options.align:
-			searchA = options.align.split('search=')[-1].split(':')[0]
-			searchdefault = 8
-			
-			#print "There was search in --align", searchA
-			#sys.exit()
-			if options.search != searchdefault:
-						
-				prefix = options.align.split('search=')[0]
-				trail = options.align.split('search=')[-1].split(':')[-1]
-			
-				options.align =  prefix + 'search=' + str(options.search)
-				if len(trail) > 2 and '=' in trail:
-					options.align += ':' + trail 
-			
-				print """\nWARNING: --search is different from search= provided through
-				--align or its default value of 8. There's no need to specify both, 
-				but if you did, --search takes precedence :-) ."""
-				#sys.exit()
-			elif options.search == searchdefault:
-				options.search = searchA
-				
-
-	
-		
-		if "rotate_translate_3d_grid" in options.align:
-			if "alt0" and "alt1" in options.align:
-				alt0 = int(options.align.split('alt0')[-1].split(':')[0].replace('=',''))	
-				alt1 = int(options.align.split('alt1')[-1].split(':')[0].replace('=',''))
-				
-				print "alt0 and alt1 are", alt0,alt1, type(alt0), type(alt1)
-				print alt1-alt0 == 0
-				#sys.exit()
-				
-				if alt1-alt0 == 0:
-					print """\nERROR: alt0 and alt1 cannot be equal for rotate_translate_3d_grid.
-					If you want to inactivate searches in this angle, provide a alt0 and alt1
-					such that alt1-alt0 is NOT ZERO, and provide a step size for dalt that is larger
-					than this difference. For example: 
-					alt0=0:alt1=1:dalt=2."""
-					sys.exit()
-					
-			if "phi0" and "phi1" in options.align:
-				phi0 = int(options.align.split('phi0')[-1].split(':')[0].replace('=',''))	
-				phi1 = int(options.align.split('phi1')[-1].split(':')[0].replace('=',''))
-				
-				print "phi0 and phi1 are", phi0,phi1, type(phi0), type(phi1)
-				print phi1-phi0 == 0
-				#sys.exit()
-				
-				if phi1-phi0 == 0:
-					print """\nERROR: phi0 and phi1 cannot be equal for rotate_translate_3d_grid.
-					If you want to inactivate searches in this angle, provide a phi0 and phi1
-					such that phi1-phi0 is NOT ZERO, and provide a step size for dphi that is larger
-					than this difference. For example: 
-					phi0=0:phi1=1:dphi=2."""
-					sys.exit()
-					
-			if "az0" and "az1" in options.align:
-				az0 = int(options.align.split('az0')[-1].split(':')[0].replace('=',''))	
-				az1 = int(options.align.split('az1')[-1].split(':')[0].replace('=',''))
-				
-				print "az0 and az1 are", az0,az1, type(az0), type(az1)
-				print az1-az0 == 0
-				#sys.exit()
-				
-				if az1-az0 == 0:
-					print """\nERROR: az0 and az1 cannot be equal for rotate_translate_3d_grid.
-					If you want to inactivate searches in this angle, provide a az0 and az1
-					such that az1-az0 is NOT ZERO, and provide a step size for daz that is larger
-					than this difference. For example: 
-					az0=0:az1=1:daz=2."""
-					sys.exit()
-	
-	
-	if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
-		if 'search' not in options.falign and 'refine_3d_grid' in options.falign:	
-			options.falign += ':search=' + str( options.searchfine )
-			
-		else:
-			searchF = options.falign.split('search=')[-1].split(':')[0]
-			searchfinedefault = 2
-			
-			if options.searchfine != searchfinedefault:
-						
-				prefix = options.falign.split('search=')[0]
-				trail = options.falign.split('search=')[-1].split(':')[-1]
-			
-				options.falign =  prefix + 'search=' + str(options.searchfine)
-				if len(trail) > 2 and '=' in trail:
-					options.falign += ':' + trail 
-			
-				print """\nWARNING: --searchfine is different from search= provided through
-				--falign or its default value of 2. There's no need to specify both, but 
-				if you did, --searchfine takes precedence :-) ."""
-				#sys.exit()
-				
-			elif options.searchfine == searchfinedefault:
-				options.searchfine = searchF
-
-	
-	'''
-	Store parameters in parameters.txt file inside --path
-	'''
-	from e2spt_classaverage import writeParameters
-	writeParameters(options,'e2spt_binarytree.py', 'bt')
-	
-	'''
-	Parse parameters
-	'''
-	
-	if options.autocenter:
-		options.autocenter=parsemodopt(options.autocenter)
-		
-	if options.autocentermask:
-		options.autocentermask=parsemodopt(options.autocentermask)
-
-	if options.align:
-		options.align=parsemodopt(options.align)
-	
-	if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none': 
-		options.falign=parsemodopt(options.falign)
-	
-	if options.aligncmp: 
-		options.aligncmp=parsemodopt(options.aligncmp)
-	
-	if options.faligncmp: 
-		options.faligncmp=parsemodopt(options.faligncmp)
-	
-	if options.averager: 
-		options.averager=parsemodopt(options.averager)		
-		
-	if options.normproc and options.normproc != 'None' and options.normproc != 'none':
-		options.normproc=parsemodopt(options.normproc)	
-		
-	if options.mask and options.mask != 'None' and options.mask != 'none':
-		#print "parsing mask", sys.exit()
-		options.mask=parsemodopt(options.mask)
-	
-	if options.preprocess and options.preprocess != 'None' and options.preprocess != 'none': 
-		options.preprocess=parsemodopt(options.preprocess)
-		
-	if options.threshold and options.threshold != 'None' and options.threshold != 'none': 
-		options.threshold=parsemodopt(options.threshold)
-		
-	if options.preprocessfine and options.preprocessfine != 'None' and options.preprocessfine != 'none': 
-		options.preprocessfine=parsemodopt(options.preprocessfine)
-		
-	if options.lowpass and options.lowpass != 'None' and options.lowpass != 'none': 
-		options.lowpass=parsemodopt(options.lowpass)
-		
-	if options.lowpassfine and options.lowpassfine != 'None' and options.lowpassfine != 'none': 
-		options.lowpassfine=parsemodopt(options.lowpassfine)
-	
-	if options.highpass and options.highpass != 'None' and options.highpass != 'none': 
-		options.highpass=parsemodopt(options.highpass)
-		
-	if options.highpassfine and options.highpassfine != 'None' and options.highpassfine != 'none': 
-		options.highpassfine=parsemodopt(options.highpassfine)
-		
-	if options.postprocess and options.postprocess != 'None' and options.postprocess != 'none': 
-		options.postprocess=parsemodopt(options.postprocess)
-		
-	
 	
 	if options.shrink < options.shrinkfine:
 		options.shrink = options.shrinkfine
 		print "It makes no sense for shrinkfine to be larger than shrink; therefore, shrink will be made to match shrinkfine"
+	
+	if options.radius:
+		from e2spt_classaverage import calcAliStep
+		options = calcAliStep(options)
+	
+	'''
+	Parse parameters such that "None" or "none" are adequately interpreted to turn of an option
+	'''
+	
+	from e2spt_classaverage import sptOptionsParser
+	options = sptOptionsParser( options )
+	
+	from e2spt_classaverage import writeParameters
+	writeParameters(options,'e2spt_binarytree.py', 'bt')
+	
 					
 	hdr = EMData(options.input,0,True)
 	nx = hdr["nx"]
@@ -578,11 +415,11 @@ def binaryTreeRef(options,nptclForRef,nseed,ic,etc):
 				print "%d tasks queued in seedtree level %d"%(len(tids),i) 
 
 			"""Wait for alignments to finish and get results"""
-			results=get_results(etc,tids,options.verbose,{},nseed,0,'binarytree')
+			results=get_results(etc,tids,options.verbose,nseed,'binarytree')
 
 			#results=get_results(etc,tids,options.verbose,{},len(ptclnums),0,'binarytree')
-
 			#results=get_results(etc,tids,options.verbose,{},nptclForRef,0)
+			#def get_results(etc,tids,verbose,nptcls,refmethod=''):
 
 
 
@@ -604,7 +441,7 @@ def binaryTreeRef(options,nptclForRef,nseed,ic,etc):
 	return
 	
 
-def makeAveragePairs(options,ptcl_file,outfile,align_parms):
+def makeAveragePairs(options,ptcl_file,outfile, results):
 	"""Will take a set of alignments and an input particle stack filename and produce a new set of class-averages over pairs"""
 	
 	current = os.getcwd()
@@ -615,18 +452,24 @@ def makeAveragePairs(options,ptcl_file,outfile,align_parms):
 	print "\nThe particle file where the particles ought to be read from is", ptcl_file
 	print "\nLets see if ptcl_file is in path. Files in path are", findirpath
 	
-	print "\nalign_parms are", align_parms
-	print "\nTheir len", len(align_parms)
+	print "\nresults are", results
+	print "\nTheir len", len(results)
 	
-	for i,ptcl_parms in enumerate(align_parms):
+	#for i,ptcl_parms in enumerate(align_parms):
+	ii=0
+	for r in results:
+		print "r is", r
+		print "\nr[0] is", r[0]
+		print "\nr[0][0] is", r[0][0]
+		print "\nr[0][0]['xform.align3d'] is", r[0][0]["xform.align3d"]
+		print "\nr[0][-1]", r[0][-1]
 		
-		print "\ni, ptcl_parms are", i, ptcl_parms
-		
+				
 		#if ptcl_parms:
-		ptcl0=EMData(ptcl_file,i*2)
+		ptcl0=EMData(ptcl_file,ii*2)
 		
-		ptcl1=EMData(ptcl_file,i*2+1)
-		ptcl1.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
+		ptcl1=EMData(ptcl_file,ii*2+1)
+		ptcl1.process_inplace("xform",{"transform":r[0][0]["xform.align3d"]})
 	
 		#ptcl1.process_inplace("xform",{"transform":align_parms[0]["xform.align3d"]})
 	
@@ -664,7 +507,10 @@ def makeAveragePairs(options,ptcl_file,outfile,align_parms):
 		avg['origin_y']=0
 		avg['origin_z']=0
 	
-		avg.write_image(outfile,i)
+		avg.write_image(outfile,ii)
+		
+		ii+=1
+		
 	return
 
 
