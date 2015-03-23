@@ -241,7 +241,7 @@ def main():
 	print "Initially, options.goldstandardoff is", options.goldstandardoff, type(options.goldstandardoff)
 	
 	'''
-	Get rootpath to provide absoulute paths to files.
+	Get rootpath to provide absoulute paths to files. 
 	Make the directory where to create the database where the results will be stored, 
 	if --resume is not provided.
 	'''
@@ -338,7 +338,10 @@ def main():
 					sys.exit()
 					
 	if not options.translateonly:
-		options = sptParseAligner( options )
+		if options.search or options.searchfine:
+			options = sptParseAligner( options )
+		
+			print "aligner parsed", sptParseAligner
 	else:
 		options.align = 'rotate_translate_3d_grid:phi0=0:phi1=1:alt0=0:alt1=1:az0=0:az1=1:dphi=2:daz=2:dalt=2'
 		
@@ -354,19 +357,24 @@ def main():
 		#if options.searchz:
 		#	options.align += ':searchz=' + str(options.searchz)
 	
-		
-	'''
-	Parse parameters such that "None" or "none" are adequately interpreted to turn of an option
-	'''
-	options = sptOptionsParser( options )
-	
-	print "After parsing options, options.goldstandardoff is", options.goldstandardoff, type(options.goldstandardoff)
-	
+	if options.shrink < options.shrinkfine:
+		options.shrink = options.shrinkfine
+		print "WARNING: It makes no sense for shrinkfine to be larger than shrink; therefore, shrink will be made to match shrinkfine"
 	
 	print "after fixing searches but before calcali options.falign is", options.falign
 	if options.radius and float(options.radius) > 0.0:
 		#print "(e2spt_classaverage)(main) before calling calcAliStep, options.input is", options.input
 		options = calcAliStep(options)
+	
+	'''
+	Parse parameters such that "None" or "none" are adequately interpreted to turn of an option
+	'''
+	options = sptOptionsParser( options )
+	
+	print "after parsing options, options.goldstandardoff is", options.goldstandardoff, type(options.goldstandardoff)
+	print options.align, type(options.align)
+	
+	
 	
 		
 	if options.resultmx: 
@@ -375,10 +383,6 @@ def main():
 	#????
 	if options.resultmx != None: 
 		options.storebad = True
-			
-	if options.shrink < options.shrinkfine:
-		options.shrink = options.shrinkfine
-		print "WARNING: It makes no sense for shrinkfine to be larger than shrink; therefore, shrink will be made to match shrinkfine"
 					
 	ptclshdr = EMData(options.input,0,True)
 	nx = ptclshdr["nx"]
@@ -452,8 +456,8 @@ def main():
 	if options.parallel :
 	
 		if options.parallel == 'none' or options.parallel == 'None' or options.parallel == 'NONE':
-			options.parallel = ''
-			etc = ''
+			options.parallel = None
+			etc = None
 		
 		else:
 			print "\n\n(e2spt_classaverage)(main) - INITIALIZING PARALLELISM!"
@@ -610,13 +614,9 @@ def main():
 		refeven = refsdict[0]
 		refodd = refsdict[1] 
 		
-		avgsDict = options.path + '/initialrefs_tomo_xforms_oddAli2even.json'
-		
 		fscfile = options.path + '/initialrefs_fsc.txt'
 				
-		jsAvgs = js_open_dict( avgsDict )
-		refsavg = compareEvenOdd( options, refeven, refodd, 2, etc, jsAvgs, fscfile ) #We pass on an "iteration number" > 1, that is 2 here, just so that both initial references are preprocessed and treated equally (this is required since --refpreprocessing is off when --ref is supplied 
-		jsAvgs.close()
+		refsavg = compareEvenOdd( options, refeven, refodd, 2, etc, fscfile, 'initial' ) #We pass on an "iteration number" > 1, that is 2 here, just so that both initial references are preprocessed and treated equally (this is required since --refpreprocessing is off when --ref is supplied 
 		
 		if options.filterbyfsc:
 			print "Options.lowpass was and of type", options.lowpass, type( options.lowpass )
@@ -656,24 +656,35 @@ def main():
 	
 		classmxFile = options.path + '/classmx_' + str( it ).zfill( len (str (options.iter))) + '.hdf'
 		
+		#weightsMasterDict = {}
+		
 		for ic in range( ncls ):
+			weights = {}
 			if options.verbose:
 				print "Processing class %d/%d"%(ic+1,ncls)
 
 			ptclnums = ptclnumsdict[ ic ]
+			
+			
+			
 			klassid = '_even'
 			if ic == 1:
 				klassid = '_odd'
 			if options.goldstandardoff:
 				klassid = ''
+			
+			
+			print "for klassid", klassid
+			print "ptclnums are", ptclnums
+			print "\n"
 				
 			#if options.savesteps:
 			#	refname = options.path + '/class_' + str(ic).zfill( len( str(ic) )) + '.hdf'
 			#	ref.write_image(refname,-1)
 
-			print "\nFor class", ic
-			print "Particle numbers are", ptclnums		
-			print "\n"
+			#print "\nFor class", ic
+			#print "Particle numbers are", ptclnums		
+			#print "\n"
 			
 			#options.output = originalOutput.replace('.hdf', '_' + str(ic).zfill( len (str (ncls))) + '.hdf')
 			#options.output = originalOutput
@@ -694,34 +705,8 @@ def main():
 			tasks=[]
 			results=[]
 				
-			'''
-			Define and open the .json dictionaries where alignment and score values will be stored, for each iteration,
-			and for each reference if using multiple model refinement
-			'''
-			jsAliParamsPath = abspath + '/tomo_xforms.json'
-			
-			#if options.refinemultireftag:
-			#	jsAliParamsPath = jsAliParamsPath.replace('.json','_ref' + str(options.refinemultireftag) + '.json')
-			
-			if not options.refinemultireftag:
-				jsAliParamsPath = jsAliParamsPath.replace('.json', '_' + str(it).zfill( len(str(options.iter))) + '.json')
-			
-			print "(e2spt_classaverage) This is the .json file to write", jsAliParamsPath
-
-			jsA = js_open_dict(jsAliParamsPath) #Write particle orientations to json database.
-			
 			ref = refsdict[ ic ]
 			# ALL CLIPPING and preprocessing should happen inside the preprocessing function
-			#if options.clipali and ref['nx'] != options.clipali:
-			#	
-			#	ref = clip3D( ref, options.clipali )
-			#	
-			#	print "\n\n\nRef AFTER clip ali is", ref, ref['nx'], ref['minimum'],ref['maximum'], ref['sigma'],ref['mean']
-			#	
-			#	if not ref['minimum'] and not ref['maximum']:
-			#		print "ERROR: emtpy ref after clip ali, region", r
-			#		print "sizes", ref['nx']
-			#		sys.exit()
 			
 			'''
 			Code to 'resume' crashed jobs
@@ -734,6 +719,7 @@ def main():
 				pass
 					
 			for ptclnum in ptclnums:
+				nptclsinklass =len( ptclnums )
 				
 				try:
 					if actualNums and ptclnum in actualNums:
@@ -791,8 +777,15 @@ def main():
 
 				"""Wait for alignments to finish and get results"""
 				#results=get_results(etc,tids,options.verbose,jsA,len(ptclnums),1)
-				results=get_results(etc,tids,options.verbose,jsA, nptcl ,1)
-			
+				#results=get_results(etc,tids,options.verbose,jsA, nptcl ,1)
+				#def get_results(etc,tids,verbose,nptcls,ref=''):
+				
+				results=filter( None, get_results(etc,tids,options.verbose, nptcl ) )
+				
+				#results = get_results(etc,tids,options.verbose, nptcl )
+				
+				
+				
 			if options.verbose > 2: 
 				print "Results:" 
 				pprint(results)
@@ -801,7 +794,18 @@ def main():
 				#ref = make_average(options,ic,options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.sym,options.groups,options.breaksym,options.nocenterofmass,options.verbose,it)
 				ref=''
 				if nptcl > 1:
-					ref = makeAverage(options,ic,results,it)
+					ret = makeAverage(options,ic,results,it)
+					ref = ret[0]
+					weights = ret[1]
+					
+					#weightsid = 'even'
+					#if ic == 1:
+					#	weightsid = 'odd'
+					#if options.goldstandardoff:
+					#	klassid = 'all'
+					
+					#weightsMasterDict.update({ weightsid: weights })
+					
 				else:
 					ref = EMData( options.input, 0 )
 					ref.process_inplace("xform",{"transform":results[0][0]["xform.align3d"]})
@@ -865,58 +869,89 @@ def main():
 					#if options.output:
 					#	outname = options.path + '/' + options.output
 				
-					ref.write_image( outname , 0)
-
-
-			jsA.close()
-		
+					ref.write_image( outname , 0 )			
+			
+			'''
+			Define and open the .json dictionaries where alignment and score values will be stored, for each iteration,
+			and for each reference if using multiple model refinement
+			'''
+			jsAliParamsPath = abspath + '/tomo_xforms.json'
+			
+			if not options.refinemultireftag:
+				jsAliParamsPath = jsAliParamsPath.replace('.json', '_' + str(it).zfill( len(str(options.iter))) + '.json')
+			
+			print "(e2spt_classaverage) This is the .json file to write", jsAliParamsPath
+			jsA = js_open_dict(jsAliParamsPath) #Write particle orientations to json database.
+			
+			iii=0
 			
 			classScoresList = [] 
 			
-			iii=0
+			'''
+			Iterate over alignment results to write them to classmx.hdf and .json files
+			'''
+			print "len results is", len(results)
+			print "should match nptcl", nptcl
 			for r in results:
-				if r and r[0]:	
-					score = r[0]['score']
-					#classmxScores.set_value_at(ic,iii,score)
+				#if r and r[0]:	
+				
+				ptclindx = r[-1]
 					
-					#posscore = math.fabs(score)
-					classScoresList.append(score)
-					#print "\n\n\n\n\n\n\n\nThe appended positive score is", posscore
-					
-					weight=1.0
-					classmxWeights.set_value_at(ic,iii,weight)
-					
-					t = r[0]['xform.align3d']
-					trans=t.get_trans()
-					print "\n\n\nTranslations were", trans
-					print "Therefre the transform was", t
-					rots=t.get_rotation()
-					
-					tx=trans[0]
-					print "Translation in x was", tx
-					classmxXs.set_value_at(ic,iii,tx)
-					
-					ty=trans[1]
-					print "Translation in y was", ty
-					classmxYs.set_value_at(ic,iii,ty)
-					
-					tz=trans[2]
-					print "Translation in z was", tz
-					classmxZs.set_value_at(ic,iii,tz)
-					
-					az=rots['az']
-					classmxAzs.set_value_at(ic,iii,az)
-					
-					alt=rots['alt']
-					classmxAlts.set_value_at(ic,iii,alt)
-					
-					phi=rots['phi']
-					classmxPhis.set_value_at(ic,iii,phi)
-					
-					scale=1.0
-					classmxScales.set_value_at(ic,iii,scale)
-				iii+=1
+				score = r[0][0]['score']
+				
+				#classmxScores.set_value_at(ic,iii,score)
+			
+				#posscore = math.fabs(score)
+				classScoresList.append(score)
+				#print "\n\n\n\n\n\n\n\nThe appended positive score is", posscore
+			
+				#weight=1.0
+				classmxWeights.set_value_at(ic,ptclindx,weights[ptclindx])
+			
+				t = r[0][0]['xform.align3d']
+			
+			
+				xformslabel = 'tomo_' + str( ptclindx ).zfill( len( str( nptcl ) ) )			
+				jsA.setval( xformslabel, [ t , score ] )
+			
+				trans=t.get_trans()
+				print "\n\n\nTranslations were", trans
+				print "Therefre the transform was", t
+				rots=t.get_rotation()
+			
+				tx=trans[0]
+				print "Translation in x was", tx
+				classmxXs.set_value_at(ic,ptclindx,tx)
+			
+				ty=trans[1]
+				print "Translation in y was", ty
+				classmxYs.set_value_at(ic,ptclindx,ty)
+			
+				tz=trans[2]
+				print "Translation in z was", tz
+				classmxZs.set_value_at(ic,ptclindx,tz)
+			
+				az=rots['az']
+				classmxAzs.set_value_at(ic,ptclindx,az)
+			
+				alt=rots['alt']
+				classmxAlts.set_value_at(ic,ptclindx,alt)
+			
+				phi=rots['phi']
+				classmxPhis.set_value_at(ic,ptclindx,phi)
+			
+				scale=1.0
+				classmxScales.set_value_at(ic,ptclindx,scale)
+			#else:
+			#	print "Warning!! Aberrant results r[0]", r[0]
+			#	print "and r", r
+			#	sys.exit()
+			
+			iii+=1
+				
 										
+			jsA.close()
+			
 			classmxScores.write_image(classmxFile,0)
 			classmxWeights.write_image(classmxFile,1)
 			classmxXs.write_image(classmxFile,2)
@@ -975,14 +1010,10 @@ def main():
 					print "Both independent averages have converged!"
 					sys.exit()
 				
-			
-			avgsDict = options.path + '/tomo_xforms_' + str(it).zfill( len( str(options.iter))) + '_oddAli2even.json'
-			
 			fscfile = options.path + '/fsc_' + str(it).zfill( len( str(options.iter))) + '.txt'
-
-			jsAvgs = js_open_dict( avgsDict )
-			final_avg = compareEvenOdd(options, avgeven, avgodd, it, etc, jsAvgs, fscfile  )
-			jsAvgs.close()
+			
+			final_avg = compareEvenOdd(options, avgeven, avgodd, it, etc, fscfile, 'goldstandard'  )
+			
 			
 			if options.savesteps:
 				final_avg.write_image( options.path + '/avgs.hdf' , it)
@@ -1017,6 +1048,9 @@ def main():
 			if it > 0 and len(avgshdrs[0]) > 1 :
 				if avgshdrs[0][-1]['mean'] == avgshdrs[0][-2]['mean']:
 					print "The average has converged!"
+					outname = options.path + '/final_avg.hdf'
+					avg.write_image( outname , 0)
+					
 					sys.exit()
 
 			originalref = EMData( options.ref, 0 )
@@ -1025,11 +1059,16 @@ def main():
 
 			#calcFsc( originalref, avg, fscfile )
 			
-			avgsDict = options.path + '/tomo_xforms_' + str(it).zfill( len( str(options.iter))) + '_avgAli2ref.json'
+			final_avg = compareEvenOdd( options, originalref, avg, 2, etc, fscfile, 'refbased', average=False ) #We pass on an "iteration number" > 1, that is 2 here, just so that both initial references are preprocessed and treated equally (this is required since --refpreprocessing is off when --ref is supplied 
 			
-			jsAvgs = js_open_dict( avgsDict )
-			compareEvenOdd( options, originalref, avg, 2, etc, jsAvgs, fscfile, average=False ) #We pass on an "iteration number" > 1, that is 2 here, just so that both initial references are preprocessed and treated equally (this is required since --refpreprocessing is off when --ref is supplied 
-			jsAvgs.close()	
+			if options.savesteps:
+				final_avg.write_image( options.path + '/avgs.hdf' , it)
+	
+			if it == options.iter -1 :
+			
+				outname = options.path + '/final_avg.hdf'
+				final_avg.write_image( outname , 0)
+			
 			
 			if options.filterbyfsc:
 				print "Options.lowpass was and of type", options.lowpass, type( options.lowpass )
@@ -1190,24 +1229,57 @@ def sptParseAligner( options ):
 	return options
 
 
-def compareEvenOdd( options, avgeven, avgodd, it, etc, jsAvgs, fscfile, average=True ):
-	tasks = []
+def compareEvenOdd( options, avgeven, avgodd, it, etc, fscfile, tag, average=True ):
+	
+	#from EMAN2PAR import EMTaskCustomer
+	#etc=EMTaskCustomer(options.parallel)
+	
+	#tasks = []
 	
 	if not options.parallel:
 		print "ERROR: Parallelization cannot be turned off unless you supply --goldstandardoff as well"
 		sys.exit()
 	
-	task = Align3DTask( avgeven, avgodd, 0, "avgeven(ref) vs avgodd", options, None, it, nptclsexception=1)
-	tasks.append( task )
+	#task = Align3DTask( avgeven, avgodd, 0, "avgeven(ref) vs avgodd", options, None, it, nptclsexception=1)
+	#tasks.append( task )
 
-	tids = etc.send_tasks(tasks)
+	#tids = etc.send_tasks(tasks)
 	
-	resultsAvgs = get_results( etc, tids, options.verbose, jsAvgs, 1 , 1 )
+	#resultsAvgs = get_results( etc, tids, options.verbose, 1 )
 								#etc,tids,verbose,jsA,nptcls,savealiparams=0,ref=''
+								#def get_results(etc,tids,verbose,nptcls,ref=''):
 	
-	transformAliOdd2even = resultsAvgs[0][0]['xform.align3d']
 	
-	avgodd.transform( transformAliOdd2even )
+	resultsAvgs = align3Dfunc( avgeven, avgodd, 0, "avgeven(ref) vs avgodd", options, None, it )
+								
+	
+	
+	print "r['final'] is", resultsAvgs['final']
+	print "\nr['final'][0] is", resultsAvgs['final'][0]
+	#print "\nr[0][0] is", resultsAvgs[0][0]
+	#print "\nr[0][0[0] is", resultsAvgs[0][0][0]
+	print "\nr['final'][0]['xform.align3d'] is", resultsAvgs['final'][0]["xform.align3d"]
+	#print "\nr[0][-1]", resultsAvgs[0][-1]
+	
+	transformAliOdd2even = resultsAvgs['final'][0]['xform.align3d']
+	scoreAliOdd2even = resultsAvgs['final'][0]['score']
+	
+	avgsDict = options.path + '/tomo_xforms_' + str(it).zfill( len( str(options.iter))) + '_oddAli2even.json'
+	
+	if not average and tag == 'refbased':
+		avgsDict = options.path + '/tomo_xforms_' + str(it).zfill( len( str( it ))) + '_avgAli2ref.json'
+	
+	elif tag == 'initial':
+		avgsDict = options.path + '/initialrefs_tomo_xforms_oddAli2even.json'
+	
+	jsAvgs = js_open_dict( avgsDict )
+
+	xformslabel = 'tomo_0'		
+	
+	jsAvgs.setval( xformslabel, [ transformAliOdd2even , scoreAliOdd2even ] )
+
+	jsAvgs.close()	
+	
 	finalA = None
 	
 	if average:
@@ -1223,6 +1295,11 @@ def compareEvenOdd( options, avgeven, avgodd, it, etc, jsAvgs, fscfile, average=
 
 		#apix = final_avg['apix_x']
 	
+	avgodd.transform( transformAliOdd2even )
+	
+	if not average:
+		finalA = avgodd.copy()
+		
 	calcFsc( options, avgeven, avgodd, fscfile )
 	
 	return finalA
@@ -2048,7 +2125,7 @@ def sptmakepath(options, stem='spt'):
 
 
 
-def preprocessing(image,options,mask,clipali,normproc,shrink,lowpass,highpass,preprocess,threshold,ptclindx=0,tag='ptcls',coarse='yes',round=-1):
+def preprocessing(image,options,mask,normproc,shrink,lowpass,highpass,preprocess,threshold,ptclindx=0,tag='ptcls',coarse='yes',round=-1):
 
 	print "\n(e2spt_classaverage) preprocessing"
 	print "Mask and its type are", mask, type(mask)
@@ -2076,51 +2153,10 @@ def preprocessing(image,options,mask,clipali,normproc,shrink,lowpass,highpass,pr
 	maskimg.to_one()
 	print "Donde creating mask"
 	
-	#mask['origin_x']=0
-	#mask['origin_y']=0
-	#mask['origin_z']=0
-	
-	#mask['apix_x']=apix
-	#mask['apix_y']=apix
-	#mask['apix_z']=apix
 	
 	simage = image.copy()
 
-	
-	'''
-	Clip the box size smaller if instructed to
-	'''
-	if clipali:
-		print "(e2spt_classaverage)(preprocessing) --cliapli provided:", clipali
-		
-		sx = simage['nx']
-		sy = simage['ny']
-		sz = simage['nz']
-		
-		xc = sx/2
-		yc = sy/2
-		zc = sz/2
-		
-		#print "Box center is", xc,yc,sz
-		newsize = int(clipali)
-		
-		#print "new size is", newsize
-		
-		#print "original size was", sx,sy,sz
-		
-		r=Region( (2*xc - newsize)/2, (2*yc - newsize)/2, (2*zc - newsize)/2, newsize , newsize , newsize)
-		simage.clip_inplace( r )
-		
-		#print "Clip ali region is", r
-		#sys.exit()
-		
-		#print "\n\nMask size before clipping is", mask['nx'],mask['ny'],mask['nz']
-		#if mask and mask != 'None' and mask != 'none':
-		
-		if mask:
-			maskimg.clip_inplace( r )
-			#print "\n\nMask size AFTER clipping is", mask['nx'],mask['ny'],mask['nz']
-	
+
 	
 	if mask and mask != 'None' and mask != 'none':
 		#if options.verbose:
@@ -2164,6 +2200,7 @@ def preprocessing(image,options,mask,clipali,normproc,shrink,lowpass,highpass,pr
 	Set the 'mask' parameter for --normproc if normalize.mask is being used
 	'''
 	if normproc and normproc != 'None' and normproc != 'none':
+		print "normproc is", normproc, type(normproc)
 		if normproc[0]=="normalize.mask": 
 			normproc[1]["mask"]=maskimg
 	
@@ -2328,7 +2365,7 @@ def preprocessing(image,options,mask,clipali,normproc,shrink,lowpass,highpass,pr
 	return simage
 	
 
-def makeAverage(options,ic,align_parms,it=0):
+def makeAverage(options,ic,results,it=0):
 	
 	klassid = '_even'
 	if ic == 1:
@@ -2355,31 +2392,49 @@ def makeAverage(options,ic,align_parms,it=0):
 	If keepsig is not set, then keep represents an absolute fraction of particles to keep (0-1). 
 	Otherwise it represents a sigma multiplier akin to e2classaverage.py.'''
 	
-	print "(e2pt_classaverage.py)(makeAverage) The results to parse are", align_parms
+	
+	print "len of results inside makeAverage is", len(results)
+	
+	print "(e2pt_classaverage.py)(makeAverage) The results to parse are", 
+	
+	for r in results:
+		print r
 	
 	#else:
 	
 	thresh=1.0
 	scores = []
 	
-	for p in align_parms:
-		if 'score' in p[0]:
-			pass
-			#print "\nscore!"
-		else:
-			if p and p[0]:
-				print "\nIn e2spt_classaverage.py, score not in a non-empty element of p, p[0]", p, p[0]
-				#print "see, p[0] is", p[0]
-				sys.exit()
+	#print "results are", results
+	#print "\nresults[0] is", results[0]
+	#print "\nresults[0][0] is", results[0][0]
+	##print "\nresults[0][0[0] is", results[0][0][0]
+	#print "\nresults[0][0][0]['xform.align3d'] is", results[0][0][0]["xform.align3d"]
+	#print "\nresults[0][-1]", results[0][-1]
 	
-		if p and p[0]:
-			score = p[0]['score']
-			scores.append( score )
+	
+	for r in results:
+		#if 'score' in r[0]:
+		#	pass
+		#	#print "\nscore!"
+		#else:
+		#	if r and r[0]:
+		#		print "\nIn e2spt_classaverage.py, score not in a non-empty element of p, p[0]", r, r[0]
+		#		#print "see, p[0] is", p[0]
+		#		sys.exit()
+	
+		#if r and r[0]:
+		#print "\nr is", r
+		#print "\nr[0]", r[0]
+		#print "\nr[0][0]",r[0][0]
+		#print "score in r[0][0]", 'score' in r[0][0]
+		score = r[0][0]['score']
+		scores.append( score )
 			#vals.append( score )
 				
 	if keep < 1.0:
 		#print "p[0]['score'] is", align_parms[0]['score']
-		print "Len of align_parms is", len(align_parms)
+		print "Len of align_parms is", len(results)
 			
 			#val=[p[0]["score"] for p in align_parms]
 		scores.sort()
@@ -2390,18 +2445,13 @@ def makeAverage(options,ic,align_parms,it=0):
 	if keepsig:
 		# inefficient memory-wise
 		
-		#vals=[]
 		scores2=[]
 		for score in scores:
-		#for p in align_params:
-			#if p and p[0]:
-				#vals.append(p[0]['score'])
+
 			scores2.append(score**2)
 			
 		val=sum(scores)
 		val2=sum(scores2)
-		#val=sum([p[0]["score"] for p in align_parms])
-		#val2=sum([p[0]["score"]**2 for p in align_parms])
 
 		mean=val/len(scores)
 		sig=sqrt(val2/len(scores)-mean*mean)
@@ -2432,6 +2482,8 @@ def makeAverage(options,ic,align_parms,it=0):
 	writeali = 0
 	aliptcls = path + '/aliptcls' + klassid + '.hdf'
 	
+	weights={}
+	
 	if options.saveallalign:
 		writeali = 1
 		aliptcls = path + '/aliptcls' + klassid + '_' + str(it).zfill( len(str(options.iter)) ) + '.hdf'
@@ -2439,107 +2491,116 @@ def makeAverage(options,ic,align_parms,it=0):
 	elif saveali and it == options.iter - 1:
 		writeali = 1
 		
-	for i,ptcl_parms in enumerate(align_parms):
-		
-		ptcl = EMData(ptcl_file,i)
+	#for i,ptcl_parms in enumerate(align_parms):
+	
+	ii=0
+	for r in results:
+		ptclindx = r[-1]
+		ptcl = EMData(ptcl_file,ptclindx)
 		weight = 1.0
 		
-		if ptcl_parms and ptcl_parms[0]:
+		#if r and r[0]:
 		
-			ptcl.process_inplace("xform",{"transform":ptcl_parms[0]["xform.align3d"]})
-			#print "I have applied this transform before averaging", ptcl_parms[0]["xform.align3d"]			
-			
-			score = ptcl_parms[0]["score"]
-			
-			if score <= thresh:
-				if thresh != 1.0:
-					print "Particle kept because its score %f is LOWER than the threshold %f, when the best score was %f" %( score, thresh, maxscore )
-				else:
-					print "Particle kept because its score %f is LOWER than the DEFAULT threshold %f, when the best score was %f" %( score, thresh, maxscore )
-
-								
-				#print "preavgproc1 and len and type are", options.preavgproc1, len(options.preavgproc1), type(options.preavgproc1)
-				#print "preavgproc2 and len are", options.preavgproc2, len(options.preavgproc2),  type(options.preavgproc2)
-				
-				try:
-					if options.preavgproc1:
-						ptcl.process_inplace( options.preavgproc1[0], options.preavgproc1[1] )
-				except:
-					print """ERROR: Preavgproc1 probably requires parameters you did not specify.
-						For example, --preavgproc1=threshold.clampminmax.nsigma would fail.
-						You need to specify an integer for nsgima, e.g.:
-						--preavgproc1=threshold.clampminmax.nsigma:nsimga=2."""	
-					sys.exit()		 
-				try:
-					if options.preavgproc2:
-						ptcl.process_inplace( options.preavgproc2[0], options.preavgproc2[1] )
-				except:
-					print """ERROR: Preavgproc2 probably requires parameters you did not specify.
-						For example, --preavgproc2=threshold.clampminmax.nsigma would fail.
-						You need to specify an integer for nsgima, e.g.:
-						--preavgproc1=threshold.clampminmax.nsigma:nsimga=2."""
-					sys.exit()	
-						
-				if options.weighbytiltaxis:
-					px = x = int(ptcl['ptcl_source_coord'][0])
-					
-					tiltaxis = int( options.weighbytiltaxis.split(',')[0] )
-					minweight = float( options.weighbytiltaxis.split(',')[1] )
-					
-					if px > tiltaxis:
-						px = -1 *( px - 2*tiltaxis )
-					
-					X = tiltaxis				#This models a line in 'weight space' (x, w), that passes through (0, minweight) and ( tiltaxis, maxweight ) 
-					W = 1.0 - minweight
-					slope = W/X
-											#Having the slope of the line and its y-axis (or w-axis in this case) crossing we predict the weight of any particle depending on its dx distance to the tiltaxis
-					print "Tiltaxis is", X
-					print "W is", W
-					print "Therefore slope is", slope
-					
-					dx = tiltaxis - px 
-					taweight = slope * px + minweight 
-					weight = weight * ( taweight )
-					print "tiltaxis weight was %f because it's distance from the tilt axis is %d, because it's x coordinate was %d" % (taweight, dx, x)
-
-				if options.weighbyscore:
-					scoreweight = score / maxscore
-					print "the score weight is %f because score was %f and the best score was %f" % (scoreweight, score, maxscore )
-					weight = weight * scoreweight
-					
-				print "therefore the final weight for particle %d is %f" %( i, weight )
-					
-				ptcl.mult( weight )
-				avgr.add_image( ptcl )
-				included.append(i)
-
-			#js["tomo_%04d"%i] = ptcl_parms[0]['xform.align3d']
+		ptcl.process_inplace("xform",{"transform":r[0][0]["xform.align3d"]})
+		#print "I have applied this transform before averaging", ptcl_parms[0]["xform.align3d"]			
 		
-			if writeali:
-				ptcl['origin_x'] = 0
-				ptcl['origin_y'] = 0		
-				ptcl['origin_z'] = 0
-				ptcl['spt_score'] = score
+		score = r[0][0]["score"]
+		
+		if score <= thresh:
+			if thresh != 1.0:
+				print "Particle kept because its score %f is LOWER than the threshold %f, when the best score was %f" %( score, thresh, maxscore )
+			else:
+				print "Particle kept because its score %f is LOWER than the DEFAULT threshold %f, when the best score was %f" %( score, thresh, maxscore )
+
+							
+			#print "preavgproc1 and len and type are", options.preavgproc1, len(options.preavgproc1), type(options.preavgproc1)
+			#print "preavgproc2 and len are", options.preavgproc2, len(options.preavgproc2),  type(options.preavgproc2)
 			
-				ptcl['xform.align3d'] = Transform()
-				ptcl['xform.align3d'] = ptcl_parms[0]['xform.align3d']
-				
-				originalindex = i*2
-				if ic == 1:
-					originalindex = i*2 + 1 
-				if options.goldstandardoff:
-					originalindex = i
+			try:
+				if options.preavgproc1:
+					ptcl.process_inplace( options.preavgproc1[0], options.preavgproc1[1] )
+			except:
+				print """ERROR: Preavgproc1 probably requires parameters you did not specify.
+					For example, --preavgproc1=threshold.clampminmax.nsigma would fail.
+					You need to specify an integer for nsgima, e.g.:
+					--preavgproc1=threshold.clampminmax.nsigma:nsimga=2."""	
+				sys.exit()		 
+			try:
+				if options.preavgproc2:
+					ptcl.process_inplace( options.preavgproc2[0], options.preavgproc2[1] )
+			except:
+				print """ERROR: Preavgproc2 probably requires parameters you did not specify.
+					For example, --preavgproc2=threshold.clampminmax.nsigma would fail.
+					You need to specify an integer for nsgima, e.g.:
+					--preavgproc1=threshold.clampminmax.nsigma:nsimga=2."""
+				sys.exit()	
 					
-				ptcl['spt_indx_original']=originalindex
+			if options.weighbytiltaxis:
+				px = x = int(ptcl['ptcl_source_coord'][0])
+				
+				tiltaxis = int( options.weighbytiltaxis.split(',')[0] )
+				minweight = float( options.weighbytiltaxis.split(',')[1] )
+				
+				if px > tiltaxis:
+					px = -1 *( px - 2*tiltaxis )
+				
+				X = tiltaxis				#This models a line in 'weight space' (x, w), that passes through (0, minweight) and ( tiltaxis, maxweight ) 
+				W = 1.0 - minweight
+				slope = W/X
+										#Having the slope of the line and its y-axis (or w-axis in this case) crossing we predict the weight of any particle depending on its dx distance to the tiltaxis
+				print "Tiltaxis is", X
+				print "W is", W
+				print "Therefore slope is", slope
+				
+				dx = tiltaxis - px 
+				taweight = slope * px + minweight 
+				weight = weight * ( taweight )
+				print "tiltaxis weight was %f because it's distance from the tilt axis is %d, because it's x coordinate was %d" % (taweight, dx, x)
+
+			if options.weighbyscore:
+				scoreweight = score / maxscore
+				print "the score weight is %f because score was %f and the best score was %f" % (scoreweight, score, maxscore )
+				weight = weight * scoreweight
 			
-				ptcl.write_image(aliptcls,i)
+			weights.update( {ptclindx:weight} )
+				
+			print "therefore the final weight for particle %d is %f" %(ptclindx, weight )
+				
+			ptcl.mult( weight )
+			avgr.add_image( ptcl )
+			included.append( ptclindx )
+		
+		else:
+			weights.update( {ptclindx:0.0} )
+		
+		#js["tomo_%04d"%i] = ptcl_parms[0]['xform.align3d']
+	
+		if writeali:
+			ptcl['origin_x'] = 0
+			ptcl['origin_y'] = 0		
+			ptcl['origin_z'] = 0
+			ptcl['spt_score'] = score
+		
+			ptcl['xform.align3d'] = Transform()
+			ptcl['xform.align3d'] = r[0][0]["xform.align3d"]
 			
+			#originalindex = i*2
+			#if ic == 1:
+			#	originalindex = i*2 + 1 
+			#if options.goldstandardoff:
+			#	originalindex = i
+				
+			ptcl['spt_indx_original']=ptclindx
+		
+			ptcl.write_image(aliptcls,ii)
+		
+		ii+=1
 			
 					
 	#js.close()
 	
 	if verbose: 
-		print "Kept %d / %d particles in average"%(len(included),len(align_parms))
+		print "Kept %d / %d particles in average"%(len(included),len(results))
 
 	print "Will finalize average"
 
@@ -2588,21 +2649,22 @@ def makeAverage(options,ic,align_parms,it=0):
 	avg['origin_y']=0
 	avg['origin_z']=0
 	
-	return avg
+	return [avg,weights]
 		
 
-def get_results(etc,tids,verbose,jsA,nptcls,savealiparams=0,ref=''):
+def get_results(etc,tids,verbose,nptcls,refmethod=''):
 	'''This will get results for a list of submitted tasks. Won't return until it has all requested results.
 	aside from the use of options["ptcl"] this is fairly generalizable code.'''
 	
 	# wait for them to finish and get the results
 	# results for each will just be a list of (qual,Transform) pairs
 	
-	results=[ [ '' ] ]*nptcls
+	#results=[ [ '' ] ]*nptcls
+	results=[ 0 ]*nptcls
 	
 	#print "tids inside get_results are", tids
 	
-	if ref == 'binarytree':
+	if refmethod == 'binarytree':
 		results=[0]*len(tids)		# storage for results
 	
 	ncomplete=0
@@ -2626,18 +2688,21 @@ def get_results(etc,tids,verbose,jsA,nptcls,savealiparams=0,ref=''):
 				#print "results inside get_results are", results
 				
 				
-				results[ptcl] = r[1]["final"]					# this will be a list of (qual,Transform)
+				if r[1]["final"]:
+					results[ptcl] = [ filter(None,r[1]["final"]) ,ptcl]					# this will be a list of (qual,Transform)
 				
 				#print "ptcl and type are", ptcl, type(ptcl)
 				#print "results[ptcl] are", results[ptcl]
 				#print "because results are", results
 				
+				'''
 				if savealiparams and results and results[ptcl]:
 					xformslabel = 'tomo_' + str( ptcl ).zfill( len( str(nptcls) ) )
 			
 					AliParams=results[ptcl][0]['xform.align3d']
 					score = float(results[ptcl][0]['score'])
 					jsA.setval( xformslabel, [ AliParams , score ] )
+				'''
 				
 				ncomplete+=1
 		
@@ -2648,7 +2713,7 @@ def get_results(etc,tids,verbose,jsA,nptcls,savealiparams=0,ref=''):
 	
 		if len(tidsleft)==0: break
 		
-	return results
+	return filter(None,results)
 
 
 def wedgestats(volume,angle, wedgei, wedgef, options):
@@ -2894,6 +2959,8 @@ def align3Dfunc(fixedimage,image,ptclnum,label,options,transform,currentIter):
 	bestfinal=ret[0]
 	bestcoarse=ret[1]
 	
+	#print "\n\n\nReceived from alignment in 3dfunc, bestfinal", bestfinal
+	
 	if not fixedimage['maximum'] and not fixedimage['minimum']:
 		print "Error. Empty reference."
 		sys.exit()
@@ -2958,27 +3025,44 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	sfixedimage = fixedimage.copy()
 	s2fixedimage = fixedimage.copy()
 	
+	if options.clipali:
+		if sfixedimage['nx'] != options.clipali or sfixedimage['ny'] != options.clipali or sfixedimage['nz'] != options.clipali:
+			sfixedimage = clip3D( sfixedimage, options.clipali )
+			
+			print "\nclipped sfixedimage to", options.clipali, sfixedimage['nx']
+		
+		if s2fixedimage['nx'] != options.clipali or s2fixedimage['ny'] != options.clipali or s2fixedimage['nz'] != options.clipali:
+			s2fixedimage = clip3D( s2fixedimage, options.clipali )
+			
+			print "\nclipped s2fixedimage to", options.clipali, s2fixedimage['nx']
+
+	
 	if not refpreprocess:
 		print "\nThere is NO refpreprocess! But an external reference WAS provided, type, len", options.ref, type( options.ref ), len( str( options.ref ))
 	
-		if options.clipali:
-			if sfixedimage['nx'] != options.clipali or sfixedimage['ny'] != options.clipali or sfixedimage['nz'] != options.clipali:
-				sfixedimage = clip3D( sfixedimage, options.clipali )
-			
-			if s2fixedimage['nx'] != options.clipali or s2fixedimage['ny'] != options.clipali or s2fixedimage['nz'] != options.clipali:
-				s2fixedimage = clip3D( s2fixedimage, options.clipali )
+		#if options.clipali:
+		#	if sfixedimage['nx'] != options.clipali or sfixedimage['ny'] != options.clipali or sfixedimage['nz'] != options.clipali:
+		#		sfixedimage = clip3D( sfixedimage, options.clipali )
+		#	
+		#	if s2fixedimage['nx'] != options.clipali or s2fixedimage['ny'] != options.clipali or s2fixedimage['nz'] != options.clipali:
+		#		s2fixedimage = clip3D( s2fixedimage, options.clipali )
 		
 		if options.shrink and int(options.shrink) > 1:
 			sfixedimage = sfixedimage.process('math.meanshrink',{'n':options.shrink})
+			
 		
-		if options.procfinelikecoarse:
-			s2fixedimage = sfixedimage.copy()	
-		
-		elif options.falign:
-			if options.shrinkfine and int(options.shrinkfine) > 1:
+		if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
+			
+			if options.procfinelikecoarse:
+				s2fixedimage = sfixedimage.copy()
+			
+			elif options.shrinkfine and int(options.shrinkfine) > 1:
 				s2fixedimage = s2fixedimage.process('math.meanshrink',{'n':options.shrinkfine})
 		else:
-			s2fixedimage = sfixedimage.copy()
+			#s2fixedimage = sfixedimage.copy()
+			#s2fixedimage = fixedimage.copy()
+			s2fixedimage = None
+
 	
 	elif refpreprocess:
 		
@@ -2986,20 +3070,27 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		if 'odd' in label or 'even' in label:
 			savetag = ''
 			
-		if options.clipali or options.threshold or options.normproc or options.mask or options.preprocess or options.lowpass or options.highpass or int(options.shrink) > 1:
+		if options.threshold or options.normproc or options.mask or options.preprocess or options.lowpass or options.highpass or int(options.shrink) > 1:
 			print "\nThere IS refpreprocess!"	
-			sfixedimage = preprocessing(fixedimage,options,options.mask,options.clipali,options.normproc,options.shrink,options.lowpass,options.highpass,options.preprocess,options.threshold,refindx, savetag ,'yes',round)
+			sfixedimage = preprocessing(sfixedimage,options,options.mask,options.normproc,options.shrink,options.lowpass,options.highpass,options.preprocess,options.threshold,refindx, savetag ,'yes',round)
 		
 		#Only preprocess again if there's fine alignment, AND IF the parameters for fine alignment are different
+			
 		if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
+			#if options.procfinelikecoarse:
+			#	s2fixedimage = sfixedimage.copy()
+			#	print "REFERENCE fine preprocessing is equal to coarse"
+			
 			if options.procfinelikecoarse:
 				s2fixedimage = sfixedimage.copy()
-				print "REFERENCE fine preprocessing is equal to coarse"
-	
+			
 			elif options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1:
-				s2fixedimage = preprocessing(fixedimage,options,options.mask,options.clipali,options.normproc,options.shrinkfine,options.lowpassfine,options.highpassfine,options.preprocessfine,options.threshold,refindx, savetag ,'no',round)
+				s2fixedimage = preprocessing(s2fixedimage,options,options.mask,options.normproc,options.shrinkfine,options.lowpassfine,options.highpassfine,options.preprocessfine,options.threshold,refindx, savetag ,'no',round)
 		else:
-			s2fixedimage = sfixedimage.copy()	
+			#s2fixedimage = sfixedimage.copy()
+			#s2fixedimage = fixedimage.copy()	
+			s2fixedimage = None
+	
 	
 	#########################################
 	#Preprocess the particle or "moving image"
@@ -3007,15 +3098,30 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	simage = image.copy()
 	s2image = image.copy()
 	
+	if options.clipali:
+		if simage['nx'] != options.clipali or simage['ny'] != options.clipali or simage['nz'] != options.clipali:
+			simage = clip3D( simage, options.clipali )
+			
+			print "\nclipped simage to", options.clipali, simage['nx']
+
+		
+		if s2image['nx'] != options.clipali or s2image['ny'] != options.clipali or s2image['nz'] != options.clipali:
+			s2image = clip3D( s2image, options.clipali )
+			
+			print "\nclipped s2image to", options.clipali, s2image['nx']
+
+	
+	
 	savetagp = 'ptcls'
 	if 'odd' in label or 'even' in label:
 		savetag = ''
 	
-	if options.clipali or options.threshold or options.normproc or options.mask or options.preprocess or options.lowpass or options.highpass or int(options.shrink) > 1:
+	
+	if options.threshold or options.normproc or options.mask or options.preprocess or options.lowpass or options.highpass or int(options.shrink) > 1:
 	
 		print "\n\n\n\n\n\n\n\n\n\n\nSending moving particle to preprocessing. It's size is", simage['nx'],simage['ny'],simage['nz']
 	
-		simage = preprocessing(image,options,options.mask,options.clipali,options.normproc,options.shrink,options.lowpass,options.highpass,options.preprocess,options.threshold,ptclindx, savetagp ,'yes',round)
+		simage = preprocessing(simage,options,options.mask,options.normproc,options.shrink,options.lowpass,options.highpass,options.preprocess,options.threshold,ptclindx, savetagp ,'yes',round)
 	
 	print "preprocessed moving particle has size", simage['nx']
 	
@@ -3028,17 +3134,21 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			s2image = simage.copy()
 			print "PARTICLE fine preprocessing is equal to coarse"
 		elif options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1:
-			s2image = preprocessing(image,options,options.mask,options.clipali,options.normproc,options.shrinkfine,options.lowpassfine,options.highpassfine,options.preprocessfine,options.threshold,ptclindx, savetagp ,'no',round)
+			s2image = preprocessing(s2image,options,options.mask,options.normproc,options.shrinkfine,options.lowpassfine,options.highpassfine,options.preprocessfine,options.threshold,ptclindx, savetagp ,'no',round)
 			print "There was fine preprocessing"
 		#sys.exit()
 	else:
-		s2image = simage.copy()
+		#s2image = simage.copy()
+		#s2image = image.copy()
+		s2image = None
+	
+	
 	
 	if sfixedimage['nx'] != simage['nx']:
 		print "ERROR: preprocessed images for coarse alignment not the same size", sfixedimage['nx'], simage['nx']
 		sys.exit()
 		
-	elif options.falign:
+	if options.falign:
 		if s2fixedimage['nx'] != s2image['nx']:
 			print "ERROR: preprocessed images for fine alignment not the same size", s2fixedimage['nx'], s2image['nx']
 			sys.exit()
@@ -3099,6 +3209,12 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		
 		#some aligners don't have the ability to return 'nbest' answers
 	#	try:
+	
+		print "\n\noptions.align is", options.align, type(options.align)
+		print "\noptions.align[0]", options.align[0]
+		print "\nsimage and type", simage, type(simage)
+		print "\nsfixedimage and type", sfixedimage, type(sfixedimage)
+		
 		bestcoarse = simage.xform_align_nbest(options.align[0],sfixedimage,options.align[1],options.npeakstorefine,options.aligncmp[0],options.aligncmp[1])
 		#except:
 		#	bestcoarse = simage.align(options.align[0],sfixedimage,options.align[1],options.npeakstorefine,options.aligncmp[0],options.aligncmp[1])
@@ -3135,12 +3251,8 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		peaknum=0
 		print "\n(e2spt_classaverage)(alignment) options.falign is", options.falign, type(options.falign)
 		for bc in bestcoarse:
+			
 			options.falign[1]["xform.align3d"] = bc["xform.align3d"]
-			
-			#print "\n\n\nRight BEFORE FINE alignment, the boxsize of the REFINE image is", s2image['nx'],s2image['ny'],s2image['nz']
-			#print "And the transform passed in is", bc["xform.align3d"]
-			#ali = s2image.align(options.falign[0],s2fixedimage,options.falign[1],options.faligncmp[0],options.faligncmp[1])
-			
 			
 			print "\n(e2spt_classaverage)(alignment) s2image['nx'] == s2fixedimage['nx']", s2image['nx'] == s2fixedimage['nx'],  s2image['nx'], type(s2image['nx']), s2fixedimage['nx'], type(s2fixedimage['nx'])
 			print "\n(e2spt_classaverage)(alignment) s2image['ny'] == s2fixedimage['ny']", s2image['ny'] == s2fixedimage['ny'],  s2image['ny'], type(s2image['ny']), s2fixedimage['ny'], type(s2fixedimage['ny'])
@@ -3208,9 +3320,9 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	
 	print "\n(e2spt_classaverage)(alignment)Rreturning from alignment."	
 	
-	print "\n\n\nRRRRRRRRR\n Returning from alignment", 
-	print "bestfinal",bestfinal
-	print "and bestcorase", bestcoarse
+	#print "\n\n\nRRRRRRRRR\n Returning from alignment", 
+	#print "bestfinal",bestfinal
+	#print "and bestcorase", bestcoarse
 	
 	return [bestfinal, bestcoarse]
 	
