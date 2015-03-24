@@ -119,7 +119,7 @@ def main():
 
 	# helicise pdb
 	parser.add_option("--helicisepdb",        action="store_true",	 default=False,               help="Helicise pdb file and save the result to a new pdb file")
-	parser.add_option("--nrepeats",           type="int",   		 default= 3,                  help="Number of time the helical symmetry will be applied to the input file")
+	parser.add_option("--nrepeats",           type="int",   		 default= 50,                  help="Number of time the helical symmetry will be applied to the input file")
 
 
 	# input options for generating disks
