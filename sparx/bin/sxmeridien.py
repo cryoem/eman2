@@ -259,10 +259,10 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 
 	newres = 0.0
 	if(myid == main_node):
-		newres = get_resolution(vol, radi, nnxo, outputdir)
+		newres, currentres = get_resolution(vol, radi, nnxo, outputdir)
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(  line,"Current resolution %6.4f"%newres)
-		write_text_file([newres],os.path.join(outputdir,"current_resolution.txt"))
+		print(  line,"Current resolution %6.4f"%currentres)
+		write_text_row([newres, currentres],os.path.join(outputdir,"current_resolution.txt"))
 	return newres
 
 def compute_fscs(stack, outputdir, chunkname, newgoodname, fscoutputdir, doit, keepchecking, nproc, myid, main_node):
@@ -450,10 +450,11 @@ def get_resolution(vol, radi, nnxo, fscoutputdir):
 	if(ali3d_options.mask3D is None):  mask = model_circle(radi,nnxo,nnxo,nnxo)
 	else:                              mask = get_im(ali3d_options.mask3D)
 	nfsc = fsc(vol[0]*mask,vol[1]*mask, 1.0,os.path.join(fscoutputdir,"fsc.txt") )
-	currentres = 0.5
+	currentres = 1.0/3.0
 	ns = len(nfsc[1])
+	#  This is actual resolution, as computed by 2*f/(1+f)
 	for i in xrange(1,ns-1):
-		if ( (2*nfsc[1][i]/(1.0+nfsc[1][i]) ) < 0.5):
+		if ( nfsc[1][i] < 0.333333333333333333333333):
 			currentres = nfsc[0][i-1]
 			break
 	#print("  Current resolution ",i,currentres)
@@ -461,8 +462,15 @@ def get_resolution(vol, radi, nnxo, fscoutputdir):
 		print("  Something wrong with the resolution, cannot continue")
 		mpi_finalize()
 		exit()
+	filtres = 0.5
+	ns = len(nfsc[1])
+	#  This is resolution used to filter half-volumes
+	for i in xrange(1,ns-1):
+		if ( nfsc[1][i] < 0.5 ):
+			filtres = nfsc[0][i-1]
+			break
 
-	return  currentres
+	return  filtres, currentres
 
 
 
@@ -509,7 +517,7 @@ def metamove(paramsdict, partids, partstack, outputdir, procid, myid, main_node,
 	ali3d_options.center = paramsdict["center"]
 	ali3d_options.ts     = paramsdict["ts"]
 	ali3d_options.xr     = paramsdict["xr"]
-	ali3d_options.fl     = paramsdict["currentres"]
+	ali3d_options.fl     = paramsdict["filtres"]
 	ali3d_options.aa     = paramsdict["aa"]
 	ali3d_options.maxit  = paramsdict["maxit"]
 	ali3d_options.mask3D = paramsdict["mask3D"]
@@ -773,7 +781,7 @@ def main():
 		delta = "%f"%round(degrees(atan(1.0/float(radi))), 2)
 
 	paramsdict = {	"stack":stack,"delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":options.an, "center":options.center, "maxit":1, \
-					"currentres":0.4, "aa":0.1, "radius":radi, "nsoft":0, "delpreviousmax":True, "shrink":1.0, "saturatecrit":1.0, \
+					"filtres":0.4, "aa":0.1, "radius":radi, "nsoft":0, "delpreviousmax":True, "shrink":1.0, "saturatecrit":1.0, \
 					"refvol":volinit, "mask3D":options.mask3D}
 
 
@@ -845,21 +853,22 @@ def main():
 
 
 		if(myid == main_node):
-			currentres = get_resolution(vol, radi, nnxo, initdir)		
+			filtres, currentres = get_resolution(vol, radi, nnxo, initdir)		
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			print(  line,"Initial resolution %6.4f"%currentres)
-			write_text_file([currentres],os.path.join(initdir,"current_resolution.txt"))
-		else:  currentres = 0.0
-		currentres = bcast_number_to_all(currentres, source_node = main_node)
+			write_text_row([filtres, currentres],os.path.join(initdir,"current_resolution.txt"))
+		else:
+			filtres = 0.0
+		filtres = bcast_number_to_all(filtres, source_node = main_node)
 	else:
-		if(myid == main_node): currentres = read_text_file(os.path.join(initdir,"current_resolution.txt"))[0]		
-		else:  currentres = 0.0
-		currentres = bcast_number_to_all(currentres, source_node = main_node)
+		if(myid == main_node): filtres = read_text_file(os.path.join(initdir,"current_resolution.txt"))[0]		
+		else:  filtres = 0.0
+		filtres = bcast_number_to_all(filtres, source_node = main_node)
 
 	# set for the first iteration
-	nxshrink = min(max(32, int((currentres+paramsdict["aa"]/2.)*2*nnxo + 0.5)), nnxo)
+	nxshrink = min(max(32, int((filtres+paramsdict["aa"]/2.)*2*nnxo + 0.5)), nnxo)
 	shrink = float(nxshrink)/nnxo
-	tracker = {"previous-resolution":currentres, "movedup":False,"eliminated-outliers":False,\
+	tracker = {"previous-resolution":filtres, "movedup":False,"eliminated-outliers":False,\
 				"previous-nx":nxshrink, "previous-shrink":shrink, "extension":0, "bestsolution":0}
 	
 	previousoutputdir = initdir
@@ -954,7 +963,7 @@ def main():
 
 			paramsdict = {	"stack":stack,"delta":"%f"%round(degrees(atan(1.0/lastring)), 2) , "ts":"1", "xr":"2", "an":options.an, \
 							"center":options.center, "maxit":1500,  \
-							"currentres":currentres, "aa":0.1, "radius":radi, "nsoft":1, "saturatecrit":0.75, "delpreviousmax":True, "shrink":shrink, \
+							"filtres":filtres, "aa":0.1, "radius":radi, "nsoft":1, "saturatecrit":0.75, "delpreviousmax":True, "shrink":shrink, \
 							"refvol":os.path.join(mainoutputdir,"fusevol%01d.hdf"%procid),"mask3D":options.mask3D }
 			if( paramsdict["nsoft"] > 0 ):
 				if( float(paramsdict["an"]) == -1.0 ): paramsdict["saturatecrit"] = 0.75
@@ -1015,7 +1024,7 @@ def main():
 				#  Run exhaustive to finish up matching
 				paramsdict = {	"stack":stack,"delta":"%f"%round(degrees(atan(1.0/lastring)), 2) , "ts":"1", "xr":"2", "an":options.an, \
 								"center":options.center, "maxit":10, \
-								"currentres":currentres, "aa":0.1, "radius":radi, "nsoft":0, "saturatecrit":0.95, "delpreviousmax":True, "shrink":shrink, \
+								"filtres":filtres, "aa":0.1, "radius":radi, "nsoft":0, "saturatecrit":0.95, "delpreviousmax":True, "shrink":shrink, \
 								"refvol":os.path.join(mainoutputdir,"loga%01d"%procid,"fusevol%01d.hdf"%procid), "mask3D":options.mask3D }
 
 				if  doit:
@@ -1036,7 +1045,7 @@ def main():
 		doit, keepchecking = checkstep(os.path.join(mainoutputdir,"current_resolution.txt"), keepchecking, myid, main_node)
 		newres = 0.0
 		if doit:
-			newres = compute_resolution(stack, mainoutputdir, partids, partstack, radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
+			newres, currentres = compute_resolution(stack, mainoutputdir, partids, partstack, radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
 		else:
 			if(myid == main_node): newres = read_text_file( os.path.join(mainoutputdir,"current_resolution.txt") )[0]
 		newres = bcast_number_to_all(newres, source_node = main_node)
@@ -1067,7 +1076,7 @@ def main():
 		mpi_barrier(MPI_COMM_WORLD)
 
 		#print("RACING  X ",myid)
-		if(newres == currentres):
+		if(newres == filtres):
 
 			for procid in xrange(2):
 				coutdir = os.path.join(mainoutputdir,"logc%01d"%procid)
@@ -1077,7 +1086,7 @@ def main():
 					#  Do cross-check of the results
 					paramsdict = {	"stack":stack,"delta":"%f"%round(degrees(atan(1.0/lastring)), 2) , "ts":"1", "xr":"2", "an":options.an, \
 									"center":options.center, "maxit":1,  \
-									"currentres":newres, "aa":0.1, "radius":radi, "nsoft":0, "saturatecrit":0.95, "delpreviousmax":True, "shrink":shrink, \
+									"filtres":newres, "aa":0.1, "radius":radi, "nsoft":0, "saturatecrit":0.95, "delpreviousmax":True, "shrink":shrink, \
 									"refvol":os.path.join(mainoutputdir,"vol%01d.hdf"%(1-procid)), "mask3D":options.mask3D }
 					#  The cross-check uses parameters from step "b" to make sure shifts are correct.  
 					#  As the check is exhaustive, angles are ignored
@@ -1141,7 +1150,7 @@ def main():
 				#  This part under MPI
 				if(eli > 0.0):
 					#  Compute current resolution
-					depres = compute_resolution(stack, mainoutputdir, \
+					depres, currentres = compute_resolution(stack, mainoutputdir, \
 							[os.path.join(mainoutputdir,"chunk%01d.txt"%procid) for procid in xrange(2)], \
 							[os.path.join(mainoutputdir,"params-chunk%01d.txt"%procid) for procid in xrange(2)], \
 							radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
@@ -1173,22 +1182,22 @@ def main():
 				cmdexecute(cmd)
 
 		keepgoing = 0
-		if( newres > currentres or (eliminated_outliers and not tracker["eliminated-outliers"])):
+		if( newres > filtres or (eliminated_outliers and not tracker["eliminated-outliers"])):
 			if(myid == main_node):  print("  Resolution improved, full steam ahead!")
 
-			if( newres > currentres ):  tracker["movedup"] = True
+			if( newres > filtres ):  tracker["movedup"] = True
 			else:   tracker["movedup"] = False
 			shrink = max(min(2*newres + paramsdict["aa"], 1.0),minshrink)
 			tracker["extension"] = 4
 			nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
 			tracker["previous-resolution"] = newres
-			currentres = newres
+			filtres = newres
 			tracker["bestsolution"] = mainiteration
 			bestoutputdir = mainoutputdir
 			tracker["eliminated-outliers"] = eliminated_outliers
 			keepgoing = 1
 		
-		elif(newres < currentres):
+		elif(newres < filtres):
 			if(not tracker["movedup"] and tracker["extension"] < 2 and mainiteration > 1):
 				keepgoing = 0
 				if(myid == main_node):  print("  Cannot improve resolution, the best result is in the directory main%03d"%tracker["bestsolution"])
@@ -1218,10 +1227,10 @@ def main():
 						partstack[procid] = os.path.join(bestoutputdir,"params-chunk%01d.txt"%procid)
 				"""
 				if(myid == main_node):
-					currentres = read_text_file( os.path.join(bestoutputdir,"current_resolution.txt") )[0]
-				currentres = bcast_number_to_all(currentres, source_node = main_node)
+					filtres = read_text_file( os.path.join(bestoutputdir,"current_resolution.txt") )[0]
+				filtres = bcast_number_to_all(filtres, source_node = main_node)
 
-				shrink = max(min(2*currentres + paramsdict["aa"], 1.0), minshrink)
+				shrink = max(min(2*filtres + paramsdict["aa"], 1.0), minshrink)
 				tracker["extension"] -= 1
 				nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
 				tracker["previous-resolution"] = newres
@@ -1230,20 +1239,20 @@ def main():
 				keepgoing = 1
 			
 
-		elif(newres == currentres):
+		elif(newres == filtres):
 			if( tracker["extension"] > 0 ):
 				if(myid == main_node):  print("The resolution did not improve. This is look ahead move.  Let's try to relax slightly and hope for the best")
 				tracker["extension"] -= 1
 
 				tracker["movedup"] = False
 
-				shrink = max(min(2*currentres + paramsdict["aa"], 1.0), minshrink)
+				shrink = max(min(2*filtres + paramsdict["aa"], 1.0), minshrink)
 				nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
 				if( tracker["previous-nx"] == nnxo ):
 					keepgoing = 0
 				else:
 					tracker["previous-resolution"] = newres
-					currentres = newres
+					filtres = newres
 					tracker["eliminated-outliers"] = eliminated_outliers
 					tracker["movedup"] = False
 					keepgoing = 1
