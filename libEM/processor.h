@@ -7609,6 +7609,92 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 			}
 			static const string NAME;
 		};
+		
+	/**  
+	 * Muyuan Chen
+	 */
+	class CircularAverageBinarizeProcessor:public Processor
+	{
+	public:
+		virtual void process_inplace(EMData * image);
+		virtual EMData* process(const EMData* const image);
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new CircularAverageBinarizeProcessor( );
+		}
+		string get_desc() const
+		{
+			return "Binarize an image based on the circular average around each pixel in real space.";
+		}
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("thresh", EMObject::INT, "The radius threshold that the circulsr average of density keep dropping.");
+			return d;
+		}
+		static const string NAME;
+	};
+	
+	
+	class ObjDensityProcessor:public Processor
+	{
+	public:
+		virtual void process_inplace(EMData * image);
+		virtual EMData* process(const EMData* const image);
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new ObjDensityProcessor();
+		}
+		string get_desc() const
+		{
+			return "Sum of density of each object above threshold";
+		}
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("thresh", EMObject::FLOAT, "The threshold to seperate objects.");
+			return d;
+		}
+		static const string NAME;
+	};
+	
+	class ObjLabelProcessor:public Processor
+	{
+	public:
+		virtual void process_inplace(EMData * image);
+		virtual EMData* process(const EMData* const image);
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new ObjLabelProcessor();
+		}
+		string get_desc() const
+		{
+			return "Label each object above threshold. Also return the center of each object.";
+		}
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("thresh", EMObject::FLOAT, "The threshold to seperate objects.");
+			return d;
+		}
+		static const string NAME;
+	};
+
 
 #ifdef SPARX_USING_CUDA
 	/* class MPI CUDA kmeans processor

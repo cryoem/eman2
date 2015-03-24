@@ -263,6 +263,9 @@ const string NewBandpassTanhProcessor::NAME = "filter.bandpass.tanh";
 const string CTF_Processor::NAME = "filter.CTF_";
 const string ConvolutionKernelProcessor::NAME = "filter.convolution.kernel";
 const string RotateInFSProcessor::NAME = "rotateinfs";
+const string CircularAverageBinarizeProcessor::NAME = "threshold.binary.circularmean";
+const string ObjDensityProcessor::NAME = "morph.object.density";
+const string ObjLabelProcessor::NAME = "morph.object.label";
 
 //#ifdef EMAN2_USING_CUDA
 //const string CudaMultProcessor::NAME = "cuda.math.mult";
@@ -505,6 +508,9 @@ template <> Factory < Processor >::Factory()
 	force_add<ApplyPolynomialProfileToHelix>();
 	force_add<BinarySkeletonizerProcessor>();
 	force_add<RotateInFSProcessor>();
+	force_add<CircularAverageBinarizeProcessor>();
+	force_add<ObjDensityProcessor>();
+	force_add<ObjLabelProcessor>();
 
 //#ifdef EMAN2_USING_CUDA
 //	force_add<CudaMultProcessor>();
@@ -11195,6 +11201,249 @@ void RotateInFSProcessor::process_inplace(EMData * image) // right now for 2d im
 
 }
 
+EMData* CircularAverageBinarizeProcessor::process(const EMData* const image)  // now do it layer by layer in 3d
+{
+	int thr=params["thresh"];
+	EMData* bwmap= image -> copy(); 
+	int x_size = image->get_xsize(); 
+	int y_size = image->get_ysize();
+	int z_size = image->get_zsize();
+
+	int ix,iy,iz,it,count,ic;
+	int *dx=new int[thr*8],*dy=new int[thr*8];
+	for (it=1; it<=thr; it++){
+		// calculate the indexes
+		count=0;
+		for (ix=-thr-1; ix<=thr+1; ix++){
+			for (iy=-thr-1; iy<=thr+1; iy++){
+				int d2=ix*ix+iy*iy;
+				if (d2>=it*it && d2<(it+1)*(it+1)){
+					dx[count]=ix;
+					dy[count]=iy;
+					count++;
+				}
+			}
+		}
+		printf("count=%d\n",count);
+		// for each pixel
+		for (iz=0; iz<z_size; iz++){
+			for (ix=0; ix<x_size; ix++){
+				for (iy=0; iy<y_size; iy++){
+					// circular average on each ring
+					float mn=0;
+					if (bwmap->get_value_at(ix,iy,iz)==0)
+						continue;
+					for (ic=0; ic<count; ic++){
+						mn+=image->sget_value_at(ix+dx[ic],iy+dy[ic],iz);
+					}
+					mn/=count;
+					if (mn>bwmap->get_value_at(ix,iy,iz))
+						mn=0;
+					bwmap->set_value_at(ix,iy,iz,mn);
+				}
+			}
+		}
+	}
+	// binarize image
+	for (iz=0; iz<z_size; iz++){
+		for (ix=0; ix<x_size; ix++){
+			for (iy=0; iy<y_size; iy++){
+				if (bwmap->get_value_at(ix,iy,iz)>0)
+					bwmap->set_value_at(ix,iy,iz,1);
+				else
+					bwmap->set_value_at(ix,iy,iz,0);
+			}
+		}
+	}
+	delete 
+	dx;
+	delete dy;
+	return bwmap;
+	
+	
+}
+void CircularAverageBinarizeProcessor::process_inplace(EMData * image)
+{
+	EMData *tmp=process(image);
+	memcpy(image->get_data(),tmp->get_data(),(size_t)image->get_xsize()*image->get_ysize()*image->get_zsize()*sizeof(float));
+	delete tmp;
+	image->update();
+	return;
+	
+}
+
+EMData* ObjDensityProcessor::process(const EMData* const image) //
+{
+
+    EMData* imageCp= image -> copy(); 
+    process_inplace(imageCp);
+
+    return imageCp;
+}
+
+void ObjDensityProcessor::process_inplace(EMData * image)
+{
+
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+
+	float threshold=params.set_default("thresh",1.5);
+
+	EMData *mask = new EMData();
+	mask->set_size(nx, ny, nz);
+	mask->to_one();
+
+	for (int zz = 0; zz < nz; zz++) {
+		for (int yy = 0; yy < ny; yy++) {
+			for (int xx = 0; xx < nx; xx++) {
+				if (image->get_value_at(xx,yy,zz)>threshold && mask->get_value_at(xx,yy,zz)==1.0) {
+					float sumden=0;
+					vector<Vec3i> pvec;
+					pvec.push_back(Vec3i(xx,yy,zz));
+					for (uint i=0; i<pvec.size(); i++) {
+						// Duplicates will occur the way the algorithm is constructed, so we eliminate them as we encounter them
+						if (mask->sget_value_at(pvec[i])==0.0f) {
+							pvec.erase(pvec.begin()+i);
+							i--;
+							continue;
+						}
+
+						// mask out the points in the volume
+						mask->set_value_at(pvec[i],0.0f);
+
+						int x=pvec[i][0];
+						int y=pvec[i][1];
+						int z=pvec[i][2];
+						// Any neighboring values above threshold we haven't already set get added to the list
+						if (image->sget_value_at(x-1,y,z)>threshold && mask->get_value_at(x-1,y,z)==1.0){
+							pvec.push_back(Vec3i(x-1,y,z));
+							sumden+=image->sget_value_at(x-1,y,z);
+						}
+						if (image->sget_value_at(x+1,y,z)>threshold && mask->get_value_at(x+1,y,z)==1.0){
+							pvec.push_back(Vec3i(x+1,y,z));
+							sumden+=image->sget_value_at(x+1,y,z);
+						}							
+						if (image->sget_value_at(x,y-1,z)>threshold && mask->get_value_at(x,y-1,z)==1.0){
+							pvec.push_back(Vec3i(x,y-1,z));
+							sumden+=image->sget_value_at(x,y-1,z);
+						}
+						if (image->sget_value_at(x,y+1,z)>threshold && mask->get_value_at(x,y+1,z)==1.0){
+							pvec.push_back(Vec3i(x,y+1,z));
+							sumden+=image->sget_value_at(x,y+1,z);
+						}
+						if (image->sget_value_at(x,y,z-1)>threshold && mask->get_value_at(x,y,z-1)==1.0){
+							pvec.push_back(Vec3i(x,y,z-1));
+							sumden+=image->sget_value_at(x,y,z-1);
+						}
+						if (image->sget_value_at(x,y,z+1)>threshold && mask->get_value_at(x,y,z+1)==1.0){ 
+							pvec.push_back(Vec3i(x,y,z+1));
+							sumden+=image->sget_value_at(x,y,z+1);
+						}
+					}
+
+					// If the blob is too big, then we don't mask it out after all, but we set the value
+					// to 2.0 so we know the voxels have already been examined, and don't check them again
+					for (uint i=0; i<pvec.size(); i++) mask->set_value_at(pvec[i],2.0);
+					for (uint i=0; i<pvec.size(); i++) image->set_value_at(pvec[i],sumden);
+				}
+			}
+		}
+	}
+
+	delete mask;
+}
+EMData* ObjLabelProcessor::process(const EMData* const image) //
+{
+
+    EMData* imageCp= image -> copy(); 
+    process_inplace(imageCp);
+
+    return imageCp;
+}
+
+void ObjLabelProcessor::process_inplace(EMData * image)
+{
+
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+
+	float threshold=params.set_default("thresh",1.5);
+
+	vector<float> centers;
+	EMData *mask = new EMData();
+	mask->set_size(nx, ny, nz);
+	mask->to_one();
+	int count=0;
+	for (int zz = 0; zz < nz; zz++) {
+		for (int yy = 0; yy < ny; yy++) {
+			for (int xx = 0; xx < nx; xx++) {
+				if (image->get_value_at(xx,yy,zz)>threshold && mask->get_value_at(xx,yy,zz)==1.0) {
+					count++;
+					vector<Vec3i> pvec;
+					pvec.push_back(Vec3i(xx,yy,zz));
+					for (uint i=0; i<pvec.size(); i++) {
+						// Duplicates will occur the way the algorithm is constructed, so we eliminate them as we encounter them
+						if (mask->sget_value_at(pvec[i])==0.0f) {
+							pvec.erase(pvec.begin()+i);
+							i--;
+							continue;
+						}
+
+						// mask out the points in the volume
+						mask->set_value_at(pvec[i],0.0f);
+
+						int x=pvec[i][0];
+						int y=pvec[i][1];
+						int z=pvec[i][2];
+						// Any neighboring values above threshold we haven't already set get added to the list
+						if (image->sget_value_at(x-1,y,z)>threshold && mask->get_value_at(x-1,y,z)==1.0){
+							pvec.push_back(Vec3i(x-1,y,z));
+						}
+						if (image->sget_value_at(x+1,y,z)>threshold && mask->get_value_at(x+1,y,z)==1.0){
+							pvec.push_back(Vec3i(x+1,y,z));
+						}							
+						if (image->sget_value_at(x,y-1,z)>threshold && mask->get_value_at(x,y-1,z)==1.0){
+							pvec.push_back(Vec3i(x,y-1,z));
+						}
+						if (image->sget_value_at(x,y+1,z)>threshold && mask->get_value_at(x,y+1,z)==1.0){
+							pvec.push_back(Vec3i(x,y+1,z));
+						}
+						if (image->sget_value_at(x,y,z-1)>threshold && mask->get_value_at(x,y,z-1)==1.0){
+							pvec.push_back(Vec3i(x,y,z-1));
+						}
+						if (image->sget_value_at(x,y,z+1)>threshold && mask->get_value_at(x,y,z+1)==1.0){ 
+							pvec.push_back(Vec3i(x,y,z+1));
+						}
+					}
+
+					// If the blob is too big, then we don't mask it out after all, but we set the value
+					// to 2.0 so we know the voxels have already been examined, and don't check them again
+					for (uint i=0; i<pvec.size(); i++) mask->set_value_at(pvec[i],2.0);
+					for (uint i=0; i<pvec.size(); i++) image->set_value_at(pvec[i],count);
+					float cnt[3]={0,0,0};
+					for (uint i=0; i<pvec.size(); i++){
+// 						printf("%d,%d,%d\n",pvec[i][0],pvec[i][1],pvec[i][2]);
+						cnt[0]+=pvec[i][0];
+						cnt[1]+=pvec[i][1];
+						cnt[2]+=pvec[i][2];
+					}
+					cnt[0]/=pvec.size();
+					cnt[1]/=pvec.size();
+					cnt[2]/=pvec.size();
+// 					printf("%f,%f,%f\n",cnt[0],cnt[1],cnt[2]);
+					centers.push_back(cnt[0]);
+					centers.push_back(cnt[1]);
+					centers.push_back(cnt[2]);
+				}
+			}
+		}
+	}
+	image->set_attr("obj_centers",centers);
+
+	delete mask;
+}
 
 #ifdef SPARX_USING_CUDA
 
