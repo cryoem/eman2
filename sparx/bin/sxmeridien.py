@@ -263,7 +263,7 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print(  line,"Current resolution %6.4f"%currentres)
 		write_text_row([newres, currentres],os.path.join(outputdir,"current_resolution.txt"))
-	return newres
+	return newres, currentres
 
 def compute_fscs(stack, outputdir, chunkname, newgoodname, fscoutputdir, doit, keepchecking, nproc, myid, main_node):
 	#  Compute reconstructions per group from good particles only to get FSC curves

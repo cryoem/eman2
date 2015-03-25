@@ -3298,7 +3298,7 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 					if myid == 0:
 						assert(total_nima == len(params))
 					if myid == main_node:
-						write_text_row(params, "soft/p arams-%04d-%04d.txt"%(i,total_iter))
+						write_text_row(params, "soft/params-%04d-%04d.txt"%(i,total_iter))
 					del previousmax, params
 					i+=1
 
