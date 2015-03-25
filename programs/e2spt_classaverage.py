@@ -259,7 +259,10 @@ def main():
 			directory needs to be resumed. Provide it through --path"""			
 			sys.exit()
 
-	abspath= rootpath + '/' + options.path
+	if rootpath not in options.path:
+		options.path = rootpath + '/' + options.path
+		
+	#abspath= rootpath + '/' + options.path
 	#print "\nThus the abs path could be", abspath
 	
 	nptcl = EMUtil.get_image_count(options.input)
@@ -875,7 +878,7 @@ def main():
 			Define and open the .json dictionaries where alignment and score values will be stored, for each iteration,
 			and for each reference if using multiple model refinement
 			'''
-			jsAliParamsPath = abspath + '/tomo_xforms.json'
+			jsAliParamsPath = options.path + '/tomo_xforms.json'
 			
 			if not options.refinemultireftag:
 				jsAliParamsPath = jsAliParamsPath.replace('.json', '_' + str(it).zfill( len(str(options.iter))) + '.json')
@@ -1254,11 +1257,11 @@ def compareEvenOdd( options, avgeven, avgodd, it, etc, fscfile, tag, average=Tru
 								
 	
 	
-	print "r['final'] is", resultsAvgs['final']
-	print "\nr['final'][0] is", resultsAvgs['final'][0]
+	##print "r['final'] is", resultsAvgs['final']
+	##print "\nr['final'][0] is", resultsAvgs['final'][0]
 	#print "\nr[0][0] is", resultsAvgs[0][0]
 	#print "\nr[0][0[0] is", resultsAvgs[0][0][0]
-	print "\nr['final'][0]['xform.align3d'] is", resultsAvgs['final'][0]["xform.align3d"]
+	##print "\nr['final'][0]['xform.align3d'] is", resultsAvgs['final'][0]["xform.align3d"]
 	#print "\nr[0][-1]", resultsAvgs[0][-1]
 	
 	transformAliOdd2even = resultsAvgs['final'][0]['xform.align3d']
@@ -1312,9 +1315,14 @@ def calcFsc( options, img1, img2, fscfile ):
 	
 	apix = img1['apix_x']
 	
-	if options.clipali:
-		img1fsc = clip3D( img1fsc, options.clipali )
-		img2fsc = clip3D( img2fsc, options.clipali )
+	#if options.clipali:
+		#img1fsc = clip3D( img1fsc, options.clipali )
+		#img1fsc.process_inpl
+		
+	#	img1fsc.write_image(options.path +'/vol4fsc1.hdf',0)
+		
+	#	img2fsc = clip3D( img2fsc, options.clipali )
+	#	img2fsc.write_image(options.path +'/vol4fsc2.hdf',0)
 		
 	fsc = img1fsc.calc_fourier_shell_correlation( img2fsc )
 	third = len( fsc )/3
@@ -1357,6 +1365,8 @@ def sptRefGen( options, ptclnumsdict, cmdwp, wildcard=0, method='',subset4ref=0)
 	#print "ptclnumsdict received in sptRefGen is", ptclnumsdict
 	#print "RECEIVED CMDWP", cmdwp
 	#print 'Therefore elemnts are', elements
+	
+	#current = os.getcwd()
 	
 	for klassnum in ptclnumsdict:
 		
@@ -1504,7 +1514,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, wildcard=0, method='',subset4ref=0)
 			text=p.communicate()	
 			p.stdout.close()
 			
-			ref = EMData( options.path +'/'+ hacrefsubdir +'/final_avg.hdf', 0 )
+			ref = EMData( options.path + '/' + hacrefsubdir +'/final_avg.hdf', 0 )
 
 			refsdict.update({ klassnum : ref })
 		
@@ -1578,7 +1588,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, wildcard=0, method='',subset4ref=0)
 			text=p.communicate()	
 			p.stdout.close()
 			
-			ref = EMData( options.path +'/'+ ssarefsubdir +'/' + ssarefname, 0 )
+			ref = EMData( options.path + '/' + ssarefsubdir +'/' + ssarefname, 0 )
 
 			refsdict.update({ klassnum : ref })
 
@@ -1606,8 +1616,6 @@ def sptRefGen( options, ptclnumsdict, cmdwp, wildcard=0, method='',subset4ref=0)
 					nseed=2**niter	
 					
 			
-			
-			#ref = binaryTreeRef( options, nptclForRef, nseed, ic, etc )
 
 
 			subsetForBTRef = 'sptbt_refsubset'+ klassidref + '.hdf'
@@ -1616,6 +1624,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, wildcard=0, method='',subset4ref=0)
 			while i < nseed :
 				a = EMData( options.input, ptclnums[i] )
 				a.write_image( subsetForBTRef, i )
+				print "writing image %d to subset %s" %(i,subsetForBTRef)
 				i+=1
 
 			btelements = []
@@ -1653,7 +1662,18 @@ def sptRefGen( options, ptclnumsdict, cmdwp, wildcard=0, method='',subset4ref=0)
 			text=p.communicate()	
 			p.stdout.close()
 			
-			ref = EMData( options.path +'/'+ btrefsubdir +'/final_avg.hdf', 0 )
+			#if os.getcwd() not in options.path:
+			#	options.path = os.getcwd() + '/' + ptions.path
+			
+			print "\ncmdbt is", cmdbt
+			
+			#print "\nfindir are"
+			#findir=os.listdir(current)
+			#for f in findir:
+			#	print f
+			
+			print "The BT reference to load is",  options.path+ '/' +btrefsubdir +'/final_avg.hdf'
+			ref = EMData( options.path + '/' + btrefsubdir +'/final_avg.hdf', 0 )
 
 			refsdict.update({ klassnum : ref })
 	
