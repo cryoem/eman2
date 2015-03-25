@@ -261,7 +261,7 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 	if(myid == main_node):
 		newres, currentres = get_resolution(vol, radi, nnxo, outputdir)
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(  line,"Current resolution %6.4f"%currentres)
+		print(  line,"Current resolution %6.2f"%currentres)
 		write_text_row([newres, currentres],os.path.join(outputdir,"current_resolution.txt"))
 	return newres, currentres
 
@@ -470,7 +470,7 @@ def get_resolution(vol, radi, nnxo, fscoutputdir):
 			filtres = nfsc[0][i-1]
 			break
 
-	return  filtres, currentres
+	return  round(filtres,2), round(currentres,2)
 
 
 
@@ -855,7 +855,7 @@ def main():
 		if(myid == main_node):
 			filtres, currentres = get_resolution(vol, radi, nnxo, initdir)		
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(  line,"Initial resolution %6.4f"%currentres)
+			print(  line,"Initial resolution %6.2f"%currentres)
 			write_text_row([filtres, currentres],os.path.join(initdir,"current_resolution.txt"))
 		else:
 			filtres = 0.0
@@ -864,6 +864,7 @@ def main():
 		if(myid == main_node): filtres = read_text_file(os.path.join(initdir,"current_resolution.txt"))[0]		
 		else:  filtres = 0.0
 		filtres = bcast_number_to_all(filtres, source_node = main_node)
+		filtres = round(filtres,2)
 
 	# set for the first iteration
 	nxshrink = min(max(32, int((filtres+paramsdict["aa"]/2.)*2*nnxo + 0.5)), nnxo)
@@ -1049,6 +1050,7 @@ def main():
 		else:
 			if(myid == main_node): newres = read_text_file( os.path.join(mainoutputdir,"current_resolution.txt") )[0]
 		newres = bcast_number_to_all(newres, source_node = main_node)
+		newres = round(newres,2)
 
 		#  Here I have code to generate presentable results.  IDs and params have to be merged and stored and an overall volume computed.
 		doit, keepchecking = checkstep(os.path.join(mainoutputdir,"volf.hdf"), keepchecking, myid, main_node)
@@ -1229,6 +1231,7 @@ def main():
 				if(myid == main_node):
 					filtres = read_text_file( os.path.join(bestoutputdir,"current_resolution.txt") )[0]
 				filtres = bcast_number_to_all(filtres, source_node = main_node)
+				filtres = round(filtres,2)
 
 				shrink = max(min(2*filtres + paramsdict["aa"], 1.0), minshrink)
 				tracker["extension"] -= 1
