@@ -9220,11 +9220,12 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 	int nxy = nx*ny;
+	int N   = ny;
 
 	const float * const src_data = image->get_const_data();
 	float *des_data = (float *) EMUtil::em_malloc(nx*ny*nz* sizeof(float));
 
-	if (nz == 1) {
+	if ((nz == 1)&&(image -> is_real()))  {
 		Vec2f offset(nx/2,ny/2);
 		for (int j = 0; j < ny; j++) {
 			for (int i = 0; i < nx; i++) {
@@ -9264,7 +9265,89 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			}
 		}
 	}
-	else {
+	if ((nz == 1)&&(image -> is_complex())&&(nx%2==0)&&((2*(nx-ny)-3)*(2*(nx-ny)-3)==1))  { 
+	  printf("Hello 2-d complex  TransformProcessor \n");
+	  // make sure there was a realImage.process('xform.phaseorigin.tocorner')
+	 //           to create the current image
+// 		First make sure that image has proper size; 
+//         if 2N is size of image, then sizes of FFT are (2N+2,2N)
+//         if 2N+1 is size of image, then sizes of FFT are (2N+2,2N+1)
+//         so we need nx =ny+2, and ny  even  
+//	          or  nx = ny+1  and ny odd
+//         so nx even, and ny=nx-3/2  +- 1/2; So  abs(2*(nx-ny)-3) == 1
+		float theta =  t.get_rotation("eman").get("phi");
+		float tempR; float tempI;
+		printf("angle is %f \n", theta); theta=theta*pi/180;
+//		int kNy= ny; //size of the real space image
+//		int kNx= nx/2; //
+		Vec2f offset(nx/2,ny/2); 
+		for (int kyN = 0; kyN < ny; kyN++) {
+			int kyNew = kyN;
+			if (kyN>=nx) kyNew=kyN-ny;  //      Unalias
+			for (int kxN = 0; kxN < (nx/2); kxN++) {
+				int kxNew=kxN; 
+				if (kxN >= nx/2) kxNew=kxN-ny;//      Unalias
+				//  Step 1, Do rotation and find 4 nn
+				float kxOld=  cos(theta)* kxNew - sin(theta)* kyNew;
+				float kyOld=  sin(theta)* kxNew + cos(theta)* kyNew;
+				//
+				int kxLower= floor(kxOld); int kxUpper= kxLower+1;
+				int kyLower= floor(kyOld); int kyUpper= kyLower+1;
+				float dkxLower= (kxUpper-kxOld);    float dkxUpper= (kxOld-kxLower);
+				float dkyLower= (kyUpper-kyOld);    float dkyUpper= (kyOld-kyLower);
+			        //printf(" kxOld = %f, kyOld = %d, xl = %d, xu = %d, yl = %d, yu = %d  \n",kxOld, kyOld, kxLower,kxUpper,kyLower,kyUpper);
+//
+				int kxL= kxLower; int kyL=kyLower; 
+				float dataLL_R= 0; float dataLL_I=0; int flag=1;
+				if ((abs(kxL)<N) && (abs(kyL)<N)) { //   Step 2 Make sure to be in First BZ
+				    kxL = (N+kxL)%N;  kyL = (N+kyL)%N;
+				    if (kxL> floor(N/2)){ kxL=(N-kxL)%N; kyL=(N-kyL)%N ;flag=-1;} // Step 3: if nec, use Friedel paired
+				    dataLL_R=     image -> get_value_at(2*kxL,kyL);
+				    dataLL_I=flag*image -> get_value_at(2*kxL+1,kyL);
+				} 
+
+			        kxL=kxLower; int kyU=kyUpper; 
+			        float dataLU_R= 0; float dataLU_I=0; flag=1;
+				if ((abs(kxL)<N) && (abs(kyU)<N)){ //       Step 2 Make sure to be in First BZ
+				    kxL = (N+kxL)%N;  kyU = (N+kyU)%N;
+				    if (kxL> floor(N/2)){ kxL=(N-kxL)%N; kyU=(N-kyU)%N;flag=-1;} // Step 3
+				    dataLU_R=	  image -> get_value_at(2*kxL,kyU);
+				    dataLU_I=flag*image -> get_value_at(2*kxL+1,kyU);
+			        }
+
+				int kxU= kxUpper; kyL=kyLower; 
+				float dataUL_R= 0; float dataUL_I=0; flag=1;
+				if ((abs(kxU)<N) && (abs(kyL)<N)) {   //       Step 2
+				    kxU = (N+kxU)%N; kyL = (N+kyL)%N;
+				    if (kxU> floor(N/2)) { kxU=(N-kxU)%N; kyL=(N-kyL)%N;flag=-1;} // Step 3
+				    dataUL_R=	  image -> get_value_at(2*kxU,kyL);
+				    dataUL_I=flag*image -> get_value_at(2*kxU+1,kyL);
+				}
+
+			      kxU= kxUpper; kyU=kyUpper; 
+			      float dataUU_R= 0; float dataUU_I=0; flag=1;
+			      if ((abs(kxU)<N) & (abs(kyU)<N)){  //       Step 2
+				    kxU = (N+kxU)%N; kyU = (N+kyU)%N;
+				    if (kxU> floor(N/2)) { kxU=(N-kxU)%N; kyU=(N-kyU)%N;flag=-1;} // Step 3
+				    dataUU_R=	  image -> get_value_at(2*kxU,kyU);
+				    dataUU_I=flag*image -> get_value_at(2*kxU+1,kyU);
+			      }
+			      //            Step 4    Assign Real, then Imaginar Values
+			      tempR = dkxLower*dkyLower* dataLL_R   +   dkxLower*dkyUpper* dataLU_R 
+				    + dkxUpper*dkyLower* dataUL_R +   dkxUpper*dkyUpper* dataUU_R ;
+			      des_data[2*kxN   + nx* kyN] = tempR;
+				    
+			      //
+			      tempI = dkxLower*dkyLower* dataLL_I +   dkxLower*dkyUpper* dataLU_I
+				    + dkxUpper*dkyLower* dataUL_I +   dkxUpper*dkyUpper* dataUU_I ;
+			      des_data[2*kxN+1 + nx* kyN] = tempI;
+			      //printf("real  is %f complex is %f \n", tempR, tempI);
+			      // printf(" xl = %d, xu = %d, yl = %d, yu = %d  \n", kxLower,kxUpper,kyLower,kyUpper);
+				     
+			}
+		}
+	}
+	if ((nz > 1)&&(image -> is_real())) {
 		size_t l=0, ii, k0, k1, k2, k3, k4, k5, k6, k7;
 		Vec3f offset(nx/2,ny/2,nz/2);
 		float x2, y2, z2, tuvx, tuvy, tuvz;
