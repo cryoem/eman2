@@ -258,6 +258,7 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 			print(  line,"Generated vol #%01d "%procid)
 
 	newres = 0.0
+	currentres = 0.0
 	if(myid == main_node):
 		newres, currentres = get_resolution(vol, radi, nnxo, outputdir)
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
@@ -1163,6 +1164,7 @@ def main():
 							[os.path.join(mainoutputdir,"params-chunk%01d.txt"%procid) for procid in xrange(2)], \
 							radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
 					depres = bcast_number_to_all(depres, source_node = main_node)
+					depres = round(depres, 2)
 					if(depres < newres):
 						#  elimination of outliers decreased resolution, ignore the effort
 						eliminated_outliers = False
