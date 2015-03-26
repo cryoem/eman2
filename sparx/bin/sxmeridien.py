@@ -261,7 +261,7 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 	if(myid == main_node):
 		newres, currentres = get_resolution(vol, radi, nnxo, outputdir)
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(  line,"Current resolution %6.2f"%currentres)
+		print(  line,"Current resolution %6.2f, low-pass filter cut-off %6.2f"%(currentres,newres))
 		write_text_row([newres, currentres],os.path.join(outputdir,"current_resolution.txt"))
 	return newres, currentres
 
@@ -685,6 +685,8 @@ def main():
 	if(myid == main_node):
 		a = get_im(orgstack)
 		nnxo = a.get_xsize()
+		if( nnxo%2 == 1 ):
+			ERROR("Only even-dimensioned data allowed","sxmeridien",1)
 		if ali3d_options.CTF:
 			i = a.get_attr('ctf')
 			pixel_size = i.apix
@@ -701,6 +703,8 @@ def main():
 	elif((2*radi+2)>nnxo):  ERROR("HERE","particle radius set too large!",1)
 	ali3d_options.ou = radi
 	if(nxinit < 0):  nxinit = min(32, nnxo)
+	else:
+		if(nxinit%2 == 1): ERROR("Only even dimensions allowed","sxmeridien",1)
 
 	nxshrink = nxinit
 	minshrink = 32.0/float(nnxo)
@@ -772,6 +776,7 @@ def main():
 			viv.write_image(volinit)
 		del mask33d, viv
 
+	#  This is initial setting, has to be initialized here
 	xr = min(8,(nnxo - (2*radi+1))//2)
 	if(xr > 3):  ts = "2"
 	else:  ts = "1"
@@ -853,25 +858,26 @@ def main():
 
 
 		if(myid == main_node):
-			filtres, currentres = get_resolution(vol, radi, nnxo, initdir)		
+			filtres, currentres = get_resolution(vol, radi, nnxo, initdir)
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(  line,"Initial resolution %6.2f"%currentres)
+			print(  line,"Initial resolution %6.2f, filter cut-off %6.2f"%(currentres,filtres))
 			write_text_row([filtres, currentres],os.path.join(initdir,"current_resolution.txt"))
 		else:
 			filtres = 0.0
 		filtres = bcast_number_to_all(filtres, source_node = main_node)
 	else:
-		if(myid == main_node): filtres = read_text_file(os.path.join(initdir,"current_resolution.txt"))[0]		
+		if(myid == main_node): filtres = read_text_file(os.path.join(initdir,"current_resolution.txt"))[0]
 		else:  filtres = 0.0
 		filtres = bcast_number_to_all(filtres, source_node = main_node)
 		filtres = round(filtres,2)
 
 	# set for the first iteration
 	nxshrink = min(max(32, int((filtres+paramsdict["aa"]/2.)*2*nnxo + 0.5)), nnxo)
+	nxshrink += nxshrink%2
 	shrink = float(nxshrink)/nnxo
 	tracker = {"previous-resolution":filtres, "movedup":False,"eliminated-outliers":False,\
 				"previous-nx":nxshrink, "previous-shrink":shrink, "extension":0, "bestsolution":0}
-	
+
 	previousoutputdir = initdir
 	#  MAIN ITERATION
 	mainiteration = 0
@@ -1022,7 +1028,7 @@ def main():
 			doit, keepchecking = checkstep(coutdir, keepchecking, myid, main_node)
 			#if(paramsdict["nsoft"] > 0 and float(paramsdict["an"]) == -1.0):  #  Only do finishing up when the previous step was HSC and exhausting
 			if(True):
-				#  Run exhaustive to finish up matching
+				#  Run hard to finish up matching
 				paramsdict = {	"stack":stack,"delta":"%f"%round(degrees(atan(1.0/lastring)), 2) , "ts":"1", "xr":"2", "an":options.an, \
 								"center":options.center, "maxit":10, \
 								"filtres":filtres, "aa":0.1, "radius":radi, "nsoft":0, "saturatecrit":0.95, "delpreviousmax":True, "shrink":shrink, \
@@ -1192,6 +1198,8 @@ def main():
 			shrink = max(min(2*newres + paramsdict["aa"], 1.0),minshrink)
 			tracker["extension"] = 4
 			nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
+			nxshrink += nxshrink%2
+			shrink = float(nxshrink)/nnxo
 			tracker["previous-resolution"] = newres
 			filtres = newres
 			tracker["bestsolution"] = mainiteration
@@ -1234,8 +1242,10 @@ def main():
 				filtres = round(filtres,2)
 
 				shrink = max(min(2*filtres + paramsdict["aa"], 1.0), minshrink)
-				tracker["extension"] -= 1
+				tracker["extension"] -= 2
 				nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
+				nxshrink += nxshrink%2
+				shrink = float(nxshrink)/nnxo
 				tracker["previous-resolution"] = newres
 				tracker["eliminated-outliers"] = eliminated_outliers
 				tracker["movedup"] = False
@@ -1245,12 +1255,13 @@ def main():
 		elif(newres == filtres):
 			if( tracker["extension"] > 0 ):
 				if(myid == main_node):  print("The resolution did not improve. This is look ahead move.  Let's try to relax slightly and hope for the best")
-				tracker["extension"] -= 1
-
+				tracker["extension"] -= 2
 				tracker["movedup"] = False
 
 				shrink = max(min(2*filtres + paramsdict["aa"], 1.0), minshrink)
 				nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
+				nxshrink += nxshrink%2
+				shrink = float(nxshrink)/nnxo
 				if( tracker["previous-nx"] == nnxo ):
 					keepgoing = 0
 				else:
