@@ -485,15 +485,15 @@ def main():
 	
 	try:
 		if options.resume: 
-			print "The resume dict to open is", options.resume
+			#print "The resume dict to open is", options.resume
 			resumeDict = js_open_dict( options.resume )
 		
-			print "Resume dict is", resumeDict
+			#print "Resume dict is", resumeDict
 			for key in resumeDict.keys():
-				print "\n\nKKKKKKey is", key
+				#print "\n\nKKKKKKey is", key
 			
 				keyint = int ( key.split('_')[-1] )
-				print "\n\nkeyint is", keyint
+				#print "\n\nkeyint is", keyint
 			
 				if keyint % 2:
 					actualNumsOdd.append( keyint )
@@ -502,7 +502,7 @@ def main():
 		
 			actualNumsDict.update({ 0:actualNumsEven, 1:actualNumsOdd })
 				
-			print "\nActualNumsDict is", actualNumsDict	
+			#print "\nActualNumsDict is", actualNumsDict	
 
 			resumeDict.close()
 	except:
@@ -1000,8 +1000,8 @@ def main():
 			print "avgshdrs[0] is and type", avgshdrs[0], type(avgshdrs[0])
 			print "avgshdrs[1] is and type", avgshdrs[1], type(avgshdrs[1])
 			
-			print "avgeven is", avgeven
-			print "avgodd is", avgodd
+			#print "avgeven is", avgeven
+			#print "avgodd is", avgodd
 			
 			avgshdrs[0].append( avgeven.get_attr_dict() )
 			avgshdrs[1].append( avgodd.get_attr_dict() )
@@ -1624,7 +1624,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, wildcard=0, method='',subset4ref=0)
 			while i < nseed :
 				a = EMData( options.input, ptclnums[i] )
 				a.write_image( subsetForBTRef, i )
-				print "writing image %d to subset %s" %(i,subsetForBTRef)
+				print "writing image %d to subset in file %s" %(i,subsetForBTRef)
 				i+=1
 
 			btelements = []
@@ -1672,7 +1672,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, wildcard=0, method='',subset4ref=0)
 			#for f in findir:
 			#	print f
 			
-			print "The BT reference to load is",  options.path+ '/' +btrefsubdir +'/final_avg.hdf'
+			print "The BT reference to load is in file",  options.path+ '/' +btrefsubdir +'/final_avg.hdf'
 			ref = EMData( options.path + '/' + btrefsubdir +'/final_avg.hdf', 0 )
 
 			refsdict.update({ klassnum : ref })
@@ -2711,7 +2711,7 @@ def get_results(etc,tids,verbose,nptcls,refmethod=''):
 				
 				if r[1]["final"]:
 					results[ptcl] = [ filter(None,r[1]["final"]) ,ptcl]					# this will be a list of (qual,Transform)
-				
+					
 				#print "ptcl and type are", ptcl, type(ptcl)
 				#print "results[ptcl] are", results[ptcl]
 				#print "because results are", results
@@ -2851,12 +2851,6 @@ class Align3DTask(JSTask):
 		
 		
 		#print "With image sizes img and fixedimg", image['nx'],fixedimage['nx']
-		
-		if not classoptions['options'].notmatchimgs:
-			#print "Matching images!"
-			#print "Thhere is matchto because notmatch is False, see", classoptions['options'].notmatchimgs 
-			
-			fixedimage.process_inplace( 'filter.matchto',{'to':image})
 		
 		"""
 		CALL the alignment function
@@ -2999,6 +2993,14 @@ def align3Dfunc(fixedimage,image,ptclnum,label,options,transform,currentIter):
 FUNCTION THAT DOES THE ACTUAL ALIGNMENT OF TWO GIVEN SUBVOLUMES -This is also used by e2spt_hac.py, any modification to it or its used parameters should be made with caution
 '''
 def alignment( fixedimage, image, label, options, xformslabel, iter, transform, prog='e2spt_classaverage', refpreprocess=0 ):
+	
+	
+	if not options.notmatchimgs:
+		#print "Matching images!"
+		#print "Thhere is matchto because notmatch is False, see", classoptions['options'].notmatchimgs 
+			
+		fixedimage.process_inplace( 'filter.matchto',{'to':image})
+	
 	
 	if options.verbose: 
 		print "\n\n!!!!\n(e2spt_classaverage)(alignment)Aligning ",label
@@ -3199,7 +3201,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		
 	elif options.randomizewedge:
 		rand_orient = OrientGens.get("rand",{"n":1,"phitoo":1})		#Fetches the orientation generator
-		c1_sym = Symmetries.get("c1")					#Generates the asymmetric unit from which you wish to generate a random orientation
+		c1_sym = Symmetries.get("c1")								#Generates the asymmetric unit from which you wish to generate a random orientation
 		random_transform = rand_orient.gen_orientations(c1_sym)[0]	#Generates a random orientation (in a Transform object) using the generator and asymmetric unit specified 
 		if options.align:
 			options.align[1].update({'transform' : random_transform})
@@ -3255,22 +3257,25 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			scaletrans=float(options.shrink)
 			
 		if scaletrans>1.0:
-			print "\n\n\nShrink or shrinkfine are greater than 1 and not equal, and therefore translations need to be scaled!"
-			print "Before, translations are", bestcoarse[0]['xform.align3d'].get_trans()
-			print "Transform is", bestcoarse[0]['xform.align3d']
+			#print "\n\n\nShrink or shrinkfine are greater than 1 and not equal, and therefore translations need to be scaled!"
+			#print "Before, translations are", bestcoarse[0]['xform.align3d'].get_trans()
+			#print "Transform is", bestcoarse[0]['xform.align3d']
 			
 			for c in bestcoarse:
 				c["xform.align3d"].set_trans(c["xform.align3d"].get_trans()*scaletrans)
-			print "After scaling, translations are", c['xform.align3d'].get_trans()
-			print "Transform is", c['xform.align3d']
+			
+			#print "After scaling, translations are", c['xform.align3d'].get_trans()
+			#print "Transform is", c['xform.align3d']
 
 		elif options.shrink > 1.0 and options.shrinkfine > 1.0 and options.shrink == options.shrinkfine:
-			print "\n\nshrink and shrink refine were equal!\n\n"
+			pass
+			#print "\n\nshrink and shrink refine were equal!\n\n"
 			
 	# verbose printout
 	if options.verbose > 1 :
 		for i,j in enumerate(bestcoarse): 
-			print "coarse %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
+			pass
+			#print "coarse %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
 
 	if options.falign and options.falign[0] and options.falign != 'None' and options.falign != 'none' and options.falign[0] != "None" and options.falign[0] != 'none':
 		#print "\n(e2spt_classaverage)(alignment) Will do fine alignment, over these many peaks", len(bestcoarse)
@@ -3315,23 +3320,25 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 				#print "New trans and type are", newtrans, type(newtrans)
 				c["xform.align3d"].set_trans(newtrans)
 		
-		print "AFTER fine alignment, after SHRINK compensation, the transform is", bestfinal[0]['xform.align3d']		
-		print "\n\n\n"
+		#print "AFTER fine alignment, after SHRINK compensation, the transform is", bestfinal[0]['xform.align3d']		
+		#print "\n\n\n"
 		
 		#verbose printout of fine refinement
 		if options.verbose>1 :
 			for i,j in enumerate(bestfinal): 
-				print "fine %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
+				pass
+				#print "fine %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
 	else: 
 		bestfinal = bestcoarse
 		if options.verbose:
-			print "\nThere was no fine alignment; therefore, score is", bestfinal[0]['score']
+			pass
+			#print "\nThere was no fine alignment; therefore, score is", bestfinal[0]['score']
 	
 	from operator import itemgetter							#If you just sort 'bestfinal' it will be sorted based on the 'coarse' key in the dictionaries of the list
 															#because they come before the 'score' key of the dictionary (alphabetically)
 	bestfinal = sorted(bestfinal, key=itemgetter('score'))
 	
-	print "Best final answer determined"
+	#print "Best final answer determined"
 	if options.verbose:
 		#print "\nThe best peaks sorted are"	#confirm the peaks are adequately sorted
 		#for i in bestfinal:
