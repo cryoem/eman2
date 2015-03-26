@@ -187,7 +187,8 @@ def main():
 			print "\nHowever, I will first preprocess particle number",i
 			
 			print "\nWill call preprocessing on ptcl",i
-			preprocvol = preprocessing(preprocvol,options,options.mask,options.normproc,options.shrink,options.lowpass,options.highpass,options.preprocess,options.threshold,i)
+			preprocvol = preprocessing(preprocvol,options,i)
+			#preprocessing(s2image,options, ptclindx, savetagp ,'no',round)
 			
 			print "\nDone preprocessing on ptcl",i
 		

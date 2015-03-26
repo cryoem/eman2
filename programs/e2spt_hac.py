@@ -204,6 +204,10 @@ def main():
 	from e2spt_classaverage import sptmakepath
 	options = sptmakepath(options,'spt_hac')
 	
+	rootpath = os.getcwd()
+	if rootpath not in options.path:
+		options.path = rootpath + '/' + options.path
+	
 	if not options.input:
 		parser.print_help()
 		exit(0)
