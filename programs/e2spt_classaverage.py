@@ -2145,24 +2145,25 @@ def sptmakepath(options, stem='spt'):
 
 
 
-def preprocessing(image,options,mask,normproc,shrink,lowpass,highpass,preprocess,threshold,ptclindx=0,tag='ptcls',coarse='yes',round=-1):
+def preprocessing(image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1):
 
 	print "\n(e2spt_classaverage) preprocessing"
-	print "Mask and its type are", mask, type(mask)
-	if mask == 'None' or mask == 'none':
-		mask = None
-	if lowpass == 'None' or lowpass == 'none':
-		lowpass = None
-	if highpass == 'None' or highpass == 'none':
-		highpass = None
-	if preprocess == 'None' or preprocess == 'none':
-		preprocess = None
-	if threshold == 'None' or threshold == 'none':
-		threshold = None
+	#print "Mask and its type are", mask, type(mask)
+	if options.mask == 'None' or options.mask  == 'none':
+		options.mask  = None
+	if options.lowpass  == 'None' or options.lowpass == 'none':
+		options.lowpass = None
+	if options.highpass == 'None' or options.highpass == 'none':
+		options.highpass = None
+	if options.preprocess == 'None' or options.preprocess == 'none':
+		options.preprocess = None
+	if options.threshold == 'None' or options.threshold == 'none':
+		options.threshold = None
 	
 	if coarse != 'yes':
-		print "lowpassfine received is", lowpass	
-	
+		#print "lowpassfine received is", options.lowpass	
+		pass
+		
 	apix = image['apix_x']
 	
 	'''
@@ -2178,12 +2179,12 @@ def preprocessing(image,options,mask,normproc,shrink,lowpass,highpass,preprocess
 
 
 	
-	if mask and mask != 'None' and mask != 'none':
+	if options.mask and options.mask != 'None' and options.mask != 'none':
 		#if options.verbose:
 		print "This is the mask I will apply: mask.process_inplace(%s,%s)" %(options.mask[0],options.mask[1]) 
-		maskimg.process_inplace(mask[0],mask[1])
+		maskimg.process_inplace(options.mask[0],options.mask[1])
 		
-		print "(e2spt_classaverage)(preprocessing) --mask provided:", mask
+		print "(e2spt_classaverage)(preprocessing) --mask provided:", options.mask
 		#mask.write_image(options.path + '/mask.hdf',-1)
 	
 	try:
@@ -2219,37 +2220,37 @@ def preprocessing(image,options,mask,normproc,shrink,lowpass,highpass,preprocess
 	'''
 	Set the 'mask' parameter for --normproc if normalize.mask is being used
 	'''
-	if normproc and normproc != 'None' and normproc != 'none':
-		print "normproc is", normproc, type(normproc)
-		if normproc[0]=="normalize.mask": 
-			normproc[1]["mask"]=maskimg
+	if options.normproc and options.normproc != 'None' and options.normproc != 'none':
+		print "normproc is", options.normproc, type(options.normproc)
+		if options.normproc[0]=="normalize.mask": 
+			options.normproc[1]["mask"]=maskimg
 	
 	'''
-	Mask-Normalize-Mask
+	Normalize-Mask
 	'''	
 	#if mask and mask != 'None' and mask != 'none' or options.maskfile:
 	
-	try:
-		if mask or options.maskfile:
+	#try:
+	#	if options.mask or options.maskfile:
 			#if options.shrink:
 			#	maskCoarse = mask.copy()
 			#	maskCoarse.process_inplace('math.meanshrink',{'n':options.shrink})
-			print "Masking once"
+	#		print "Masking once"
 			#simage.write_image(options.path + '/imgRawClip.hdf',-1)
-			simage.mult(maskimg)
+	#		simage.mult(maskimg)
 			#simage.write_image(options.path + '/imgMsk1.hdf',-1)
-	except:
-		pass
+	#except:
+	#	pass
 			
-	if normproc and normproc != 'None' and normproc != 'none':
-		simage.process_inplace(normproc[0],normproc[1])
+	if options.normproc and options.normproc != 'None' and options.normproc != 'none':
+		simage.process_inplace(options.normproc[0],options.normproc[1])
 		#simage.write_image(options.path + '/imgMsk1norm.hdf',-1)
 
-		print "(e2spt_classaverage)(preprocessing) --normproc provided:", normproc
+		print "(e2spt_classaverage)(preprocessing) --normproc provided:", options.normproc
 	
 	try:
 		#if mask and mask != 'None' and mask != 'none' or options.maskfile:
-		if mask or options.maskfile:
+		if options.mask or options.maskfile:
 			print "Masking again after normalizing"
 			simage.mult(maskimg)
 			#simage.write_image(options.path + '/imgMsk1normMsk2.hdf',-1)
@@ -2261,34 +2262,34 @@ def preprocessing(image,options,mask,normproc,shrink,lowpass,highpass,preprocess
 	#	#simage.write_image(options.path + '/imgMsk1normMsk2Filts.hdf',-1)
 
 
-	if threshold and threshold != 'None' and threshold != 'none':
+	if options.threshold and options.threshold != 'None' and options.threshold != 'none':
 		simage.process_inplace(threshold[0],threshold[1])
 		#simage.write_image(options.path + '/imgMsk1normMsk2LpFiltsThr.hdf',-1)
 
 	'''
 	#Preprocess, lowpass and/or highpass
 	'''
-	if preprocess:
+	if options.preprocess:
 		print "(e2spt_classaverage)(preprocessing) --preprocess provided:", options.preprocess
-		simage.process_inplace(preprocess[0],preprocess[1])
+		simage.process_inplace(options.preprocess[0],options.preprocess[1])
 		#fimage.write_image(options.path + '/imgPrep.hdf',-1)
 		
-	if lowpass:
+	if options.lowpass:
 		print "(e2spt_classaverage)(preprocessing) --lowpass provided:", options.lowpass
-		simage.process_inplace(lowpass[0],lowpass[1])
+		simage.process_inplace(options.lowpass[0],options.lowpass[1])
 		#fimage.write_image(options.path + '/imgPrepLp.hdf',-1)
 	
-	if highpass:
+	if options.highpass:
 		print "(e2spt_classaverage)(preprocessing) --highpass provided:", options.highpass
-		simage.process_inplace(highpass[0],highpass[1])
+		simage.process_inplace(options.highpass[0],options.highpass[1])
 		#fimage.write_image(options.path + '/imgPrepLpHp.hdf',-1)
 	
 	'''
 	#Shrinking
 	'''
-	if shrink and int( shrink ) > 1 :
+	if options.shrink and int( options.shrink  ) > 1 :
 		print "(e2spt_classaverage)(preprocessing) --shrink provided:", options.shrink
-		simage.process_inplace("math.meanshrink",{"n":shrink})
+		simage.process_inplace("math.meanshrink",{"n":options.shrink })
 		#fimage.write_image(options.path + '/imgPrepLpHpSh.hdf',-1)
 	
 	preproclst = ''		
@@ -2834,7 +2835,7 @@ class Align3DTask(JSTask):
 		"""This aligns one volume to a reference and returns the alignment parameters"""
 		classoptions=self.classoptions
 
-		print "classptclnum received", classoptions['ptclnum']
+		#print "classptclnum received", classoptions['ptclnum']
 		
 		if isinstance(self.data["fixedimage"],EMData):
 			fixedimage=self.data["fixedimage"]
@@ -2844,16 +2845,17 @@ class Align3DTask(JSTask):
 		if isinstance(self.data["image"],EMData) :
 			image=self.data["image"]
 		else: 
-			print "\nImage to align is", self.data["image"][1], self.data["image"][2]
-			print "Inside path", classoptions['options'].path
+			#print "\nImage to align is", self.data["image"][1], self.data["image"][2]
+			#print "Inside path", classoptions['options'].path
 			image=EMData(self.data["image"][1],self.data["image"][2])
 		
 		
-		print "With image sizes img and fixedimg", image['nx'],fixedimage['nx']
+		#print "With image sizes img and fixedimg", image['nx'],fixedimage['nx']
 		
 		if not classoptions['options'].notmatchimgs:
-			print "Matching images!"
-			print "Thhere is matchto because notmatch is False, see", classoptions['options'].notmatchimgs 
+			#print "Matching images!"
+			#print "Thhere is matchto because notmatch is False, see", classoptions['options'].notmatchimgs 
+			
 			fixedimage.process_inplace( 'filter.matchto',{'to':image})
 		
 		"""
@@ -2865,9 +2867,10 @@ class Align3DTask(JSTask):
 			nptcls = classoptions['nptclsexception']
 			nptcls = 1
 			classoptions['ptclnum'] = 0
-			print "classptclnum CHANGED TO", classoptions['ptclnum']
 			
-		print "\n(e2spt_classaverage)(Align3DTaks)(execute) nptcls is", nptcls
+			#print "classptclnum CHANGED TO", classoptions['ptclnum']
+			
+		#print "\n(e2spt_classaverage)(Align3DTaks)(execute) nptcls is", nptcls
 		#print "classoptions are", classoptions
 		
 		xformslabel = 'tomo_' + str(classoptions['ptclnum']).zfill( len( str(nptcls) ) )
@@ -2886,14 +2889,14 @@ class Align3DTask(JSTask):
 			refpreprocess=1
 		
 		try:
-			print "inside class, options.ref and type and len are", options.ref, type(options.ref), len(str(options.ref))
+			#print "inside class, options.ref and type and len are", options.ref, type(options.ref), len(str(options.ref))
 	
 			if not options.ref or options.ref == '':
 				refpreprocess=1
-				print "\n\n\n\n(e2spt_classaverage)(Align3DTask) There is no reference; therfore, refpreprocess should be turned on", refpreprocess
+				#print "\n\n\n\n(e2spt_classaverage)(Align3DTask) There is no reference; therfore, refpreprocess should be turned on", refpreprocess
 				
 		except:
-			print "inside class options.ref doesnt exist therefore refpreprocess is 1"
+			#print "inside class options.ref doesnt exist therefore refpreprocess is 1"
 			refpreprocess=1
 		
 		#After the first iteration, refpreprocess is always on. It should be turned on manually by the user if a non-crystal structure reference is provided.
@@ -2903,12 +2906,13 @@ class Align3DTask(JSTask):
 		
 		if options.verbose:
 			print "\n\n!!!!!!!!!!!!!!!!!!!!!!!!\n(e2spt_classaverage)(Align3DTask) Aligning ",classoptions['label']
-			print "\n\!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!n\n\n\n\n\n\n"
+			#print "\n\!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!n\n\n\n\n\n\n"
 		
 		
-		print "SENDING reference image in alignment and values are", fixedimage, fixedimage['minimum'],fixedimage['maximum'],fixedimage['sigma'],fixedimage['mean']
+		#print "SENDING reference image in alignment and values are", fixedimage, fixedimage['minimum'],fixedimage['maximum'],fixedimage['sigma'],fixedimage['mean']
+		
 		if not fixedimage['maximum'] and not fixedimage['minimum']:
-			print "Error. Empty reference."
+			#print "Error. Empty reference."
 			sys.exit()
 		
 		if nptcls == 1:
@@ -2921,11 +2925,12 @@ class Align3DTask(JSTask):
 		bestcoarse=ret[1]
 
 		if nptcls == 1:
-			print "\n\n\nCCCCCCCCCCCCCCC\nRet from alignment is", ret
-		
-			print "therefore received from alignment in class"
-			print "best final", bestfinal
-			print "and best coarse", bestcoarse
+			#print "\n\n\nCCCCCCCCCCCCCCC\nRet from alignment is", ret
+			#print "therefore received from alignment in class"
+			#print "best final", bestfinal
+			#print "and best coarse", bestcoarse
+			
+			pass
 			
 			#sys.exit()
 		
@@ -2938,9 +2943,10 @@ def align3Dfunc(fixedimage,image,ptclnum,label,options,transform,currentIter):
 	"""This aligns one volume to a reference and returns the alignment parameters"""
 
 	if options.verbose: 
-		print "(e2spt_classaverage)(align3Dfunc) Aligning ",label
-	
-	print "In align3Dfunc fixed image and its type are" , fixedimage, type(fixedimage)
+		#print "(e2spt_classaverage)(align3Dfunc) Aligning ",label
+		pass
+		
+	#print "In align3Dfunc fixed image and its type are" , fixedimage, type(fixedimage)
 	if type(fixedimage) is list:
 		fixedimage=EMData(fixedimage[1],fixedimage[2])
 	
@@ -2960,10 +2966,10 @@ def align3Dfunc(fixedimage,image,ptclnum,label,options,transform,currentIter):
 	refpreprocess=0
 	
 	
-	print "Inside func, options.ref and type and len are", options.ref, type(options.ref), len(str(options.ref))
+	#print "Inside func, options.ref and type and len are", options.ref, type(options.ref), len(str(options.ref))
 	if not options.ref or options.ref == '':
 		refpreprocess=1
-		print "\n(e2spt_classaverage)(align3Dfunc) There is no reference; therfore, refpreprocess should be turned on", refpreprocess
+		#print "\n(e2spt_classaverage)(align3Dfunc) There is no reference; therfore, refpreprocess should be turned on", refpreprocess
 
 	if options.refpreprocess:
 		refpreprocess=1
@@ -2972,7 +2978,7 @@ def align3Dfunc(fixedimage,image,ptclnum,label,options,transform,currentIter):
 		refpreprocess=1
 	
 	
-	print "SENDING reference image in alignment and values are", fixedimage, fixedimage['minimum'],fixedimage['maximum'],fixedimage['sigma'],fixedimage['mean']
+	#print "SENDING reference image in alignment and values are", fixedimage, fixedimage['minimum'],fixedimage['maximum'],fixedimage['sigma'],fixedimage['mean']
 	
 	ret=alignment(fixedimage,image,label,options,xformslabel,currentIter,transform,'e2spt_classaverage',refpreprocess)
 
@@ -2996,7 +3002,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	
 	if options.verbose: 
 		print "\n\n!!!!\n(e2spt_classaverage)(alignment)Aligning ",label
-		print "\n\!!!!!n\n\n\n\n\n\n"
+		#print "\n\!!!!!n\n\n\n\n\n\n"
 	
 	
 	#refindx = -1
@@ -3010,7 +3016,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	#
 	
 	round=iter
-	print "label is", label
+	#print "label is", label
 	try:
 		ptclindx = int(label.split(' ')[1])
 		refindx = -1
@@ -3049,16 +3055,16 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		if sfixedimage['nx'] != options.clipali or sfixedimage['ny'] != options.clipali or sfixedimage['nz'] != options.clipali:
 			sfixedimage = clip3D( sfixedimage, options.clipali )
 			
-			print "\nclipped sfixedimage to", options.clipali, sfixedimage['nx']
+			#print "\nclipped sfixedimage to", options.clipali, sfixedimage['nx']
 		
 		if s2fixedimage['nx'] != options.clipali or s2fixedimage['ny'] != options.clipali or s2fixedimage['nz'] != options.clipali:
 			s2fixedimage = clip3D( s2fixedimage, options.clipali )
 			
-			print "\nclipped s2fixedimage to", options.clipali, s2fixedimage['nx']
+			#print "\nclipped s2fixedimage to", options.clipali, s2fixedimage['nx']
 
 	
 	if not refpreprocess:
-		print "\nThere is NO refpreprocess! But an external reference WAS provided, type, len", options.ref, type( options.ref ), len( str( options.ref ))
+		#print "\nThere is NO refpreprocess! But an external reference WAS provided, type, len", options.ref, type( options.ref ), len( str( options.ref ))
 	
 		#if options.clipali:
 		#	if sfixedimage['nx'] != options.clipali or sfixedimage['ny'] != options.clipali or sfixedimage['nz'] != options.clipali:
@@ -3091,8 +3097,8 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			savetag = ''
 			
 		if options.threshold or options.normproc or options.mask or options.preprocess or options.lowpass or options.highpass or int(options.shrink) > 1:
-			print "\nThere IS refpreprocess!"	
-			sfixedimage = preprocessing(sfixedimage,options,options.mask,options.normproc,options.shrink,options.lowpass,options.highpass,options.preprocess,options.threshold,refindx, savetag ,'yes',round)
+			#print "\nThere IS refpreprocess!"	
+			sfixedimage = preprocessing(sfixedimage,options, refindx, savetag ,'yes',round)
 		
 		#Only preprocess again if there's fine alignment, AND IF the parameters for fine alignment are different
 			
@@ -3105,7 +3111,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 				s2fixedimage = sfixedimage.copy()
 			
 			elif options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1:
-				s2fixedimage = preprocessing(s2fixedimage,options,options.mask,options.normproc,options.shrinkfine,options.lowpassfine,options.highpassfine,options.preprocessfine,options.threshold,refindx, savetag ,'no',round)
+				s2fixedimage = preprocessing(s2fixedimage,options,refindx, savetag ,'no',round)
 		else:
 			#s2fixedimage = sfixedimage.copy()
 			#s2fixedimage = fixedimage.copy()	
@@ -3122,13 +3128,13 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		if simage['nx'] != options.clipali or simage['ny'] != options.clipali or simage['nz'] != options.clipali:
 			simage = clip3D( simage, options.clipali )
 			
-			print "\nclipped simage to", options.clipali, simage['nx']
+			#print "\nclipped simage to", options.clipali, simage['nx']
 
 		
 		if s2image['nx'] != options.clipali or s2image['ny'] != options.clipali or s2image['nz'] != options.clipali:
 			s2image = clip3D( s2image, options.clipali )
 			
-			print "\nclipped s2image to", options.clipali, s2image['nx']
+			#print "\nclipped s2image to", options.clipali, s2image['nx']
 
 	
 	
@@ -3139,23 +3145,23 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	
 	if options.threshold or options.normproc or options.mask or options.preprocess or options.lowpass or options.highpass or int(options.shrink) > 1:
 	
-		print "\n\n\n\n\n\n\n\n\n\n\nSending moving particle to preprocessing. It's size is", simage['nx'],simage['ny'],simage['nz']
+		#print "\n\n\n\n\n\n\n\n\n\n\nSending moving particle to preprocessing. It's size is", simage['nx'],simage['ny'],simage['nz']
 	
-		simage = preprocessing(simage,options,options.mask,options.normproc,options.shrink,options.lowpass,options.highpass,options.preprocess,options.threshold,ptclindx, savetagp ,'yes',round)
+		simage = preprocessing(simage,options,ptclindx, savetagp ,'yes',round)
 	
-	print "preprocessed moving particle has size", simage['nx']
+	#print "preprocessed moving particle has size", simage['nx']
 	
 	#Only preprocess again if there's fine alignment, AND IF the parameters for fine alignment are different
 	
-	print "options.falign is", options.falign
+	#print "options.falign is", options.falign
 	
 	if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none': 
 		if options.procfinelikecoarse:
 			s2image = simage.copy()
-			print "PARTICLE fine preprocessing is equal to coarse"
+			#print "PARTICLE fine preprocessing is equal to coarse"
 		elif options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1:
-			s2image = preprocessing(s2image,options,options.mask,options.normproc,options.shrinkfine,options.lowpassfine,options.highpassfine,options.preprocessfine,options.threshold,ptclindx, savetagp ,'no',round)
-			print "There was fine preprocessing"
+			s2image = preprocessing(s2image,options,ptclindx, savetagp ,'no',round)
+			#print "There was fine preprocessing"
 		#sys.exit()
 	else:
 		#s2image = simage.copy()
@@ -3165,12 +3171,14 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	
 	
 	if sfixedimage['nx'] != simage['nx']:
-		print "ERROR: preprocessed images for coarse alignment not the same size", sfixedimage['nx'], simage['nx']
+		#print "ERROR: preprocessed images for coarse alignment not the same size", sfixedimage['nx'], simage['nx']
+		print "ERROR: preprocessed images for coarse alignment not the same size"
 		sys.exit()
 		
 	if options.falign:
 		if s2fixedimage['nx'] != s2image['nx']:
-			print "ERROR: preprocessed images for fine alignment not the same size", s2fixedimage['nx'], s2image['nx']
+			#print "ERROR: preprocessed images for fine alignment not the same size", s2fixedimage['nx'], s2image['nx']
+			print "ERROR: preprocessed images for fine alignment not the same size"
 			sys.exit()
 	
 	if transform:
@@ -3223,17 +3231,17 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		if options.align:
 			if simage['nx'] != sfixedimage['nx'] or simage['ny'] != sfixedimage['ny'] or simage['nz'] != sfixedimage['nz']:
 				print "\n\nERROR: COARSE alignment images not the same size"
-				print "\nThe particle's COARSE size is", simage['nx'],simage['ny'],simage['nz']
-				print "\nThe reference's COARSE size is", sfixedimage['nx'],sfixedimage['ny'],sfixedimage['nz']
+				#print "\nThe particle's COARSE size is", simage['nx'],simage['ny'],simage['nz']
+				#print "\nThe reference's COARSE size is", sfixedimage['nx'],sfixedimage['ny'],sfixedimage['nz']
 				sys.exit()	
 		
 		#some aligners don't have the ability to return 'nbest' answers
 	#	try:
 	
-		print "\n\noptions.align is", options.align, type(options.align)
-		print "\noptions.align[0]", options.align[0]
-		print "\nsimage and type", simage, type(simage)
-		print "\nsfixedimage and type", sfixedimage, type(sfixedimage)
+		#print "\n\noptions.align is", options.align, type(options.align)
+		#print "\noptions.align[0]", options.align[0]
+		#print "\nsimage and type", simage, type(simage)
+		#print "\nsfixedimage and type", sfixedimage, type(sfixedimage)
 		
 		bestcoarse = simage.xform_align_nbest(options.align[0],sfixedimage,options.align[1],options.npeakstorefine,options.aligncmp[0],options.aligncmp[1])
 		#except:
@@ -3253,7 +3261,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			
 			for c in bestcoarse:
 				c["xform.align3d"].set_trans(c["xform.align3d"].get_trans()*scaletrans)
-			print "After, translations are", c['xform.align3d'].get_trans()
+			print "After scaling, translations are", c['xform.align3d'].get_trans()
 			print "Transform is", c['xform.align3d']
 
 		elif options.shrink > 1.0 and options.shrinkfine > 1.0 and options.shrink == options.shrinkfine:
@@ -3265,23 +3273,23 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			print "coarse %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
 
 	if options.falign and options.falign[0] and options.falign != 'None' and options.falign != 'none' and options.falign[0] != "None" and options.falign[0] != 'none':
-		print "\n(e2spt_classaverage)(alignment) Will do fine alignment, over these many peaks", len(bestcoarse)
+		#print "\n(e2spt_classaverage)(alignment) Will do fine alignment, over these many peaks", len(bestcoarse)
 		# Now loop over the individual peaks and refine each
 		bestfinal=[]
 		peaknum=0
-		print "\n(e2spt_classaverage)(alignment) options.falign is", options.falign, type(options.falign)
+		#print "\n(e2spt_classaverage)(alignment) options.falign is", options.falign, type(options.falign)
 		for bc in bestcoarse:
 			
 			options.falign[1]["xform.align3d"] = bc["xform.align3d"]
 			
-			print "\n(e2spt_classaverage)(alignment) s2image['nx'] == s2fixedimage['nx']", s2image['nx'] == s2fixedimage['nx'],  s2image['nx'], type(s2image['nx']), s2fixedimage['nx'], type(s2fixedimage['nx'])
-			print "\n(e2spt_classaverage)(alignment) s2image['ny'] == s2fixedimage['ny']", s2image['ny'] == s2fixedimage['ny'],  s2image['ny'], type(s2image['ny']), s2fixedimage['ny'], type(s2fixedimage['ny'])
-			print "\n(e2spt_classaverage)(alignment) s2image['nz'] == s2fixedimage['nz']", s2image['nz'] == s2fixedimage['nz'],  s2image['nz'], type(s2image['nz']), s2fixedimage['nz'], type(s2fixedimage['nz'])
+			#print "\n(e2spt_classaverage)(alignment) s2image['nx'] == s2fixedimage['nx']", s2image['nx'] == s2fixedimage['nx'],  s2image['nx'], type(s2image['nx']), s2fixedimage['nx'], type(s2fixedimage['nx'])
+			#print "\n(e2spt_classaverage)(alignment) s2image['ny'] == s2fixedimage['ny']", s2image['ny'] == s2fixedimage['ny'],  s2image['ny'], type(s2image['ny']), s2fixedimage['ny'], type(s2fixedimage['ny'])
+			#print "\n(e2spt_classaverage)(alignment) s2image['nz'] == s2fixedimage['nz']", s2image['nz'] == s2fixedimage['nz'],  s2image['nz'], type(s2image['nz']), s2fixedimage['nz'], type(s2fixedimage['nz'])
 			
 			if int(s2image['nx']) != int(s2fixedimage['nx']) or int(s2image['ny']) != int(s2fixedimage['ny']) or int(s2image['nz']) != int(s2fixedimage['nz']):
 				print "\n(e2spt_classaverage)(alignment) ERROR: FINE alignment images not the same size"
-				print "\nThe particle's FINE size is", s2image['nx'],s2image['ny'],s2image['nz']
-				print "\nThe reference's FINE size is", s2fixedimage['nx'],s2fixedimage['ny'],s2fixedimage['nz']
+				#print "\nThe particle's FINE size is", s2image['nx'],s2image['ny'],s2image['nz']
+				#print "\nThe reference's FINE size is", s2fixedimage['nx'],s2fixedimage['ny'],s2fixedimage['nz']
 				sys.exit('MIE')
 			
 			ali = s2image.align(options.falign[0],s2fixedimage,options.falign[1],options.faligncmp[0],options.faligncmp[1])
@@ -3338,7 +3346,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		#print "Inside ALIGNMENT function in e2spt_classaverage, done aligning ",label
 		pass	
 	
-	print "\n(e2spt_classaverage)(alignment)Rreturning from alignment."	
+	print "\n(e2spt_classaverage)(alignment)Rreturning from alignment from aligning", label	
 	
 	#print "\n\n\nRRRRRRRRR\n Returning from alignment", 
 	#print "bestfinal",bestfinal
