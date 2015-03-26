@@ -140,7 +140,7 @@ std::complex<float> EMData::get_complex_at(const int &x,const int &y,const int &
 
 	if (x<0) {
 		int idx=-x*2+(y<=0?-y:ny-y)*nx+(z<=0?-z:nz-z)*nxy;
-		return std::complex<float>(rdata[idx],rdata[idx+1]);
+		return std::complex<float>(rdata[idx],-rdata[idx+1]);
 	}
 
 	int idx=x*2+(y<0?ny+y:y)*nx+(z<0?nz+z:z)*nxy;
@@ -211,17 +211,33 @@ void EMData::set_complex_at(const int &x,const int &y,const std::complex<float> 
 
 void EMData::set_complex_at(const int &x,const int &y,const int &z,const std::complex<float> &val) {
 if (abs(x)>=nx/2 || abs(y)>ny/2 || abs(z)>nz/2) return;
-//if (x==0 && (y!=0 || z!=0)) set_complex_at(0,-y,-z,conj(val));
+
+size_t idx;
 
 // for x=0, we need to insert the value in 2 places
 // complex conjugate insertion. Removed due to ambiguity with returned index
-/*if (x==0 && (y!=0 || z!=0)) {
-	size_t idx=(y<=0?-y:ny-y)*nx+(z<=0?-z:nz-z)*nx*ny;
+if (x==0) {
+	if (y==0 && z==0) {
+		rdata[0]=(float)val.real();
+		rdata[1]=0;
+		return;
+	}
+	// complex conjugate in x=0 plane
+	size_t idx=(y<=0?-y:ny-y)*(size_t)nx+(z<=0?-z:nz-z)*(size_t)nxy;
 	rdata[idx]=(float)val.real();
 	rdata[idx+1]=(float)-val.imag();
-}*/
-
-size_t idx;
+}
+if (abs(x)==nx/2-1) {
+	if (y==0 && z==0) {
+		rdata[nx-2]=(float)val.real();
+		rdata[nx-1]=0;
+		return;
+	}
+	// complex conjugate in x=0 plane
+	size_t idx=nx-2+(y<=0?-y:ny-y)*(size_t)nx+(z<=0?-z:nz-z)*(size_t)nxy;
+	rdata[idx]=(float)val.real();
+	rdata[idx+1]=(float)-val.imag();
+}
 if (x<0) {
 	idx=-x*2+(y<=0?-y:ny-y)*(size_t)nx+(z<=0?-z:nz-z)*(size_t)nxy;
 	rdata[idx]=(float)val.real();
