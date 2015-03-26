@@ -930,7 +930,6 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			belongsto = [0]*nima
 			for iref in xrange(numref):
 				for im in id_list[iref]: belongsto[im] = iref
-			del id_list_long
 		else:
 			belongsto = [0]*nima
 		mpi_barrier(comm)
@@ -1181,6 +1180,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 					refi[j].set_attr_dict({'members': id_list[j], 'n_objects': len(id_list[j])})
 					if outname != None:
 						refi[j].write_image(final_outname, j)
+			del id_list
 		mpi_barrier(comm)
 
 	return refi
