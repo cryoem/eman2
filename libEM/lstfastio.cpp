@@ -203,7 +203,7 @@ int LstFastIO::read_header(Dict & dict, int image_index, const Region * area, bo
 	int ref_image_index = calc_ref_image_index(image_index);
 	int err = imageio->read_header(dict, ref_image_index, area, is_3d);
 	dict.put("data_source",ref_filename);
-	dict.put("data_n",image_index);
+	dict.put("data_n",ref_image_index);
 	EXITFUNC;
 	return err;
 }
