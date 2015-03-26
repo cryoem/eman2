@@ -709,6 +709,8 @@ def main():
 			results=[]
 				
 			ref = refsdict[ ic ]
+			if options.parallel: ref.write_image(os.path.join(options.path,"tmpref.hdf"),0)
+
 			# ALL CLIPPING and preprocessing should happen inside the preprocessing function
 			
 			'''
@@ -765,7 +767,7 @@ def main():
 					transform = None
 				
 				if options.parallel:
-					task=Align3DTask(ref,["cache",options.input,ptclnum],ptclnum,"Ptcl %d in iter %d"%(ptclnum,it),options,transform,it)
+					task=Align3DTask(["cache",os.path.join(options.path,"tmpref.hdf"),0],["cache",options.input,ptclnum],ptclnum,"Ptcl %d in iter %d"%(ptclnum,it),options,transform,it)
 					tasks.append(task)
 				else:
 					#print "No parallelism specified"

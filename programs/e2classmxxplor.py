@@ -478,7 +478,7 @@ def classmx_xplore_dir_data():
 			if len(prjs_even)==len(classmx_even):
 				ret.append([dir,str(ptcl[0]),prjs_even,classmx_even])
 			else:
-				print "Mismatch in :",zip(prjs,classmx)
+				print "Mismatch in :",zip(prjs_even,classmx_even)
 
 			prjs_odd=[pfx+i for i in dl if "projections_" in i and i[-4:]==".hdf" and "_odd" in i]
 			classmx_odd=[pfx+i for i in dl if "classmx_" in i and "_odd" in i]
