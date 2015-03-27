@@ -1712,9 +1712,18 @@ def mref_ali2d(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, y
 			alphai, sxi, syi, scalei = inverse_transform2(alpha, sx, sy)
 			# normalize
 			data[im].process_inplace("normalize.mask", {"mask":mask, "no_sigma":0})
+			#restrict the range @ming
+			ny = nx
+			ou1 = numr[-3]
+			txrng = [0.0]*2 
+			tyrng = [0.0]*2
+			txrng[0] = max(0,min(cnx+sxi-ou1, xrng+sxi))
+			txrng[1] = max(0, min(nx-cnx-sxi-ou1, xrng-sxi))
+			tyrng[0] = max(0,min(cny+syi-ou1, yrng+syi))
+			tyrng[1] = max(0, min(ny-cny-syi-ou1, yrng-syi))
 			# align current image to the reference
 			[angt, sxst, syst, mirrort, xiref, peakt] = Util.multiref_polar_ali_2d(data[im], 
-				ringref, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
+				ringref, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi)
 			iref = int(xiref)
 			# combine parameters and set them to the header, ignore previous angle and mirror
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, int(mirrort))
@@ -1968,9 +1977,18 @@ def mref_ali2d_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrn
 			alphai, sxi, syi, scalei = inverse_transform2(alpha, sx, sy)
 			# normalize
 			data[im-image_start].process_inplace("normalize.mask", {"mask":mask, "no_sigma":0}) # subtract average under the mask
+			#restrict the range @ming
+			ny = nx
+			ou1 = numr[-3]
+			txrng = [0.0]*2 
+			tyrng = [0.0]*2
+			txrng[0] = max(0,min(cnx+sxi-ou1, xrng+sxi))
+			txrng[1] = max(0, min(nx-cnx-sxi-ou1, xrng-sxi))
+			tyrng[0] = max(0,min(cny+syi-ou1, yrng+syi))
+			tyrng[1] = max(0, min(ny-cny-syi-ou1, yrng-syi))
 			# align current image to the reference
 			[angt, sxst, syst, mirrort, xiref, peakt] = Util.multiref_polar_ali_2d(data[im-image_start], 
-				ringref, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
+				ringref, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi)
 			iref = int(xiref)
 			# combine parameters and set them to the header, ignore previous angle and mirror
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, (int)(mirrort))
@@ -16836,7 +16854,7 @@ def localhelicon_MPIming(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, x
 	for ii in xrange(lstp):
 		if stepx[ii] == 0.0:
 			if xrng[ii] != 0.0:
-				ERROR('xrange step size cannot be zero', "localhelicon_MPI", 1,myid)
+				ERROR('xrange step size cannot be zero', "localhelicon_MPIming", 1,myid)
 			else:
 				stepx[ii] = 1.0 # this is to prevent division by zero in c++ code
 
@@ -16856,7 +16874,7 @@ def localhelicon_MPIming(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, x
 			else:                   stepy = (2*yrng[N_step]/ynumber[N_step])
 					
 			if stepy < 0.1:
-				ERROR('yrange step size cannot be lower than 0.1', "localhelicon_MPInew", 1,myid)
+				ERROR('yrange step size cannot be lower than 0.1', "localhelicon_MPIming", 1,myid)
  		
  		
 			
@@ -16925,7 +16943,7 @@ def localhelicon_MPIming(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, x
 				txtol = [0.0]*(seg_end-seg_start)
 				tytol = [0.0]*(seg_end-seg_start)	
 				for im in xrange( seg_start, seg_end ):
-					print "for %dth segment"%im 
+					#print "for %dth segment"%im 
 					#  Here I have to figure for local search whether given image has to be matched with this refproj dir
 					ID = data[im].get_attr("ID")
 					phi, theta, psi, tx, ty = get_params_proj(data[im])
@@ -16963,7 +16981,7 @@ def localhelicon_MPIming(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, x
 							#
 							#print  "IMAGE  ",im
 							#print "AAAAAAAAAAA, refang=", refang
-							tyrng = max(stepy,min(yrng[N_step],abs(y_restrict[N_step]-ty),abs(-y_restrict[N_step]-ty)))
+							tyrng = max(1,min(yrng[N_step],abs(y_restrict[N_step]-ty),abs(-y_restrict[N_step]-ty)))
 							
 							angb, newtx, newty, pik, ccf3dimg = directaligriddingconstrained3dccf(dataft[im], kb, refrings, \
 								psi_max, psistep, xrng[N_step], tyrng, stepx[N_step], stepy, psi, tx, ty, direction)
@@ -16971,7 +16989,7 @@ def localhelicon_MPIming(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, x
 							if(pik > -1.0e23):
 								if(pik > neworient[im][-1]):
 									neworient[im][-1] = pik
-									neworient[im][:4] = [angb, newtx, newty, refang]
+									neworient[im][:4] = [0, 0, 0, refang] #[angb, newtx, newty, refang]
 									#print "im", im-seg_start
 									ctx[im-seg_start]=ccf3dimg
 					#print "im peak", im, pik			
@@ -16983,7 +17001,7 @@ def localhelicon_MPIming(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, x
 				rny   = int(round(yrng[N_step]/stepy))
 				neworientsnake=alignment3Dsnake(1, seg_end-seg_start, neworient[seg_start:seg_end], ctx, psistep, stepx[N_step], stepy, txtol, tytol, nc, rnx, rny, direction)
 				for im in xrange( seg_start, seg_end ):
-					neworient[im] = neworientsnake[im- seg_start]
+					neworient[im][:3] = neworientsnake[im- seg_start]
 				print "after refine: neworient", neworient[seg_start:seg_end]	
 			for im in xrange(nima):
 				if(neworient[im][-1] > -1.0e23):
@@ -17893,7 +17911,7 @@ def filamentupdown(fildata, pixel_size, dp, dphi):
 	#print " ERRORS :",terr," \n        ",serr
 	if(terr[0] > terr[1]):  updown = 0
 	else:                   updown = 1
-	print "updown=%d"%updown	
+	#print "updown=%d"%updown	
 	for i in xrange(ns):  fildata[i].set_attr("updown",updown)
 	return
 """
