@@ -9351,8 +9351,8 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			      tempI = WLL*dataLL_I  +   WLU*dataLU_I + WUL* dataUL_I +   WUU * dataUU_I ;
 			      des_data[2*kxN+1 + nx* kyN] = tempI/tempW;
 			      //printf("real  is %f complex is %f \n", tempR, tempI);
-			      printf(" kxNew = %d, kyNew = %d,kxOld = %f, kyOld = %f,  xl = %d,xU = %d,yl = %d,yu = %d, tempR = %f, tempI=%f,  \n", 
-				      kxNew,kyNew, kxOld, kyOld, kxLower,kxUpper,kyLower,kyUpper, tempR, tempI);
+/*			      printf(" kxNew = %d, kyNew = %d,kxOld = %f, kyOld = %f,  xl = %d,xU = %d,yl = %d,yu = %d, tempR = %f, tempI=%f,  \n", 
+				      kxNew,kyNew, kxOld, kyOld, kxLower,kxUpper,kyLower,kyUpper, tempR, tempI);*/
 			}
 		}
 	}
