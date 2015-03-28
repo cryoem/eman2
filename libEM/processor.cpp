@@ -9268,7 +9268,12 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 	if ((nz == 1)&&(image -> is_complex())&&(nx%2==0)&&((2*(nx-ny)-3)*(2*(nx-ny)-3)==1))  { 
 	  printf("Hello 2-d complex  TransformProcessor \n");
 	  // make sure there was a realImage.process('xform.phaseorigin.tocorner')
-	 //           to create the current image
+	 //           before transformation to Fourier Space
+// This rotates a complex image that is a FT of a real space image: it has Friedel symmetries
+// An arbitrary complex image, F, can be decomposed into two Friedel images 
+//         G(k) = (F(k) + F*(-k))/2 ,  H(k) = (-i(F(k) - F*(k)))/2;
+//          via   F(k) = G(k) + i H(k); notice G and H are Friedel symmetric (not necessarily real)
+//	           But g,h are real, using f=g+ih.
 // 		First make sure that image has proper size; 
 //         if 2N is size of image, then sizes of FFT are (2N+2,2N)
 //         if 2N+1 is size of image, then sizes of FFT are (2N+2,2N+1)
@@ -9276,14 +9281,14 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 //	          or  nx = ny+1  and ny odd
 //         so nx even, and ny=nx-3/2  +- 1/2; So  abs(2*(nx-ny)-3) == 1
 		float theta =  t.get_rotation("eman").get("phi");
-		float tempR; float tempI;
+		float tempR; float tempI;float tempW;
 		printf("angle is %f \n", theta); theta=theta*pi/180;
 //		int kNy= ny; //size of the real space image
 //		int kNx= nx/2; //
 		Vec2f offset(nx/2,ny/2); 
 		for (int kyN = 0; kyN < ny; kyN++) {
 			int kyNew = kyN;
-			if (kyN>=nx) kyNew=kyN-ny;  //      Unalias
+			if (kyN>=nx/2) kyNew=kyN-ny;  //      Unalias
 			for (int kxN = 0; kxN < (nx/2); kxN++) {
 				int kxNew=kxN; 
 				if (kxN >= nx/2) kxNew=kxN-ny;//      Unalias
@@ -9333,17 +9338,21 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 				    dataUU_I=flag*image -> get_value_at(2*kxU+1,kyU);
 			      }
 			      //            Step 4    Assign Real, then Imaginar Values
-			      tempR = dkxLower*dkyLower* dataLL_R   +   dkxLower*dkyUpper* dataLU_R 
-				    + dkxUpper*dkyLower* dataUL_R +   dkxUpper*dkyUpper* dataUU_R ;
-			      des_data[2*kxN   + nx* kyN] = tempR;
-				    
+			      float WLL = dkxLower*dkyLower  ; 
+			      float WLU = dkxLower*dkyUpper  ;
+			      float WUL = dkxUpper*dkyLower  ;
+			      float WUU = dkxUpper*dkyUpper  ;
+			      
+			      tempW = WLL  +  WLU + WUL +  WUU ;
+			      tempR = WLL*dataLL_R  +   WLU*dataLU_R + WUL* dataUL_R +   WUU * dataUU_R ;
+			      des_data[2*kxN   + nx* kyN] = tempR/tempW;
+			    
 			      //
-			      tempI = dkxLower*dkyLower* dataLL_I +   dkxLower*dkyUpper* dataLU_I
-				    + dkxUpper*dkyLower* dataUL_I +   dkxUpper*dkyUpper* dataUU_I ;
-			      des_data[2*kxN+1 + nx* kyN] = tempI;
+			      tempI = WLL*dataLL_I  +   WLU*dataLU_I + WUL* dataUL_I +   WUU * dataUU_I ;
+			      des_data[2*kxN+1 + nx* kyN] = tempI/tempW;
 			      //printf("real  is %f complex is %f \n", tempR, tempI);
-			      // printf(" xl = %d, xu = %d, yl = %d, yu = %d  \n", kxLower,kxUpper,kyLower,kyUpper);
-				     
+			      printf(" kxNew = %d, kyNew = %d,kxOld = %f, kyOld = %f,  xl = %d,xU = %d,yl = %d,yu = %d, tempR = %f, tempI=%f,  \n", 
+				      kxNew,kyNew, kxOld, kyOld, kxLower,kxUpper,kyLower,kyUpper, tempR, tempI);
 			}
 		}
 	}
