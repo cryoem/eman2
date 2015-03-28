@@ -2147,7 +2147,7 @@ def sptmakepath(options, stem='spt'):
 
 
 
-def preprocessing(image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1):
+def preprocessing(image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1,finetag=''):
 
 	print "\n(e2spt_classaverage) preprocessing"
 	#print "Mask and its type are", mask, type(mask)
@@ -2161,6 +2161,18 @@ def preprocessing(image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1):
 		options.preprocess = None
 	if options.threshold == 'None' or options.threshold == 'none':
 		options.threshold = None
+	
+	
+	if finetag:
+		if options.lowpassfine  == 'None' or options.lowpassfine == 'none':
+			options.lowpassfine = None
+		if options.highpassfine == 'None' or options.highpassfine == 'none':
+			options.highpassfine = None
+		if options.preprocessfine == 'None' or options.preprocessfine == 'none':
+			options.preprocessfine = None
+		
+	
+		options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine)
 	
 	if coarse != 'yes':
 		#print "lowpassfine received is", options.lowpass	
@@ -2271,28 +2283,48 @@ def preprocessing(image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1):
 	'''
 	#Preprocess, lowpass and/or highpass
 	'''
-	if options.preprocess:
-		print "(e2spt_classaverage)(preprocessing) --preprocess provided:", options.preprocess
-		simage.process_inplace(options.preprocess[0],options.preprocess[1])
-		#fimage.write_image(options.path + '/imgPrep.hdf',-1)
+	
+	if not finetag:
+		if options.preprocess:
+			print "(e2spt_classaverage)(preprocessing) --preprocess provided:", options.preprocess
+			simage.process_inplace(options.preprocess[0],options.preprocess[1])
+			#fimage.write_image(options.path + '/imgPrep.hdf',-1)
 		
-	if options.lowpass:
-		print "(e2spt_classaverage)(preprocessing) --lowpass provided:", options.lowpass
-		simage.process_inplace(options.lowpass[0],options.lowpass[1])
-		#fimage.write_image(options.path + '/imgPrepLp.hdf',-1)
+		if options.lowpass:
+			print "(e2spt_classaverage)(preprocessing) --lowpass provided:", options.lowpass
+			simage.process_inplace(options.lowpass[0],options.lowpass[1])
+			#fimage.write_image(options.path + '/imgPrepLp.hdf',-1)
 	
-	if options.highpass:
-		print "(e2spt_classaverage)(preprocessing) --highpass provided:", options.highpass
-		simage.process_inplace(options.highpass[0],options.highpass[1])
-		#fimage.write_image(options.path + '/imgPrepLpHp.hdf',-1)
+		if options.highpass:
+			print "(e2spt_classaverage)(preprocessing) --highpass provided:", options.highpass
+			simage.process_inplace(options.highpass[0],options.highpass[1])
+			#fimage.write_image(options.path + '/imgPrepLpHp.hdf',-1)
+		
+		if options.shrink and int( options.shrink  ) > 1 :
+			print "(e2spt_classaverage)(preprocessing) --shrink provided:", options.shrink
+			simage.process_inplace("math.meanshrink",{"n":options.shrink })
 	
-	'''
-	#Shrinking
-	'''
-	if options.shrink and int( options.shrink  ) > 1 :
-		print "(e2spt_classaverage)(preprocessing) --shrink provided:", options.shrink
-		simage.process_inplace("math.meanshrink",{"n":options.shrink })
-		#fimage.write_image(options.path + '/imgPrepLpHpSh.hdf',-1)
+	else:
+		if options.preprocessfine:
+			print "(e2spt_classaverage)(preprocessing) --preprocess provided:", options.preprocessfine
+			simage.process_inplace(options.preprocessfine[0],options.preprocessfine[1])
+			#fimage.write_image(options.path + '/imgPrep.hdf',-1)
+		
+		if options.lowpassfine:
+			print "(e2spt_classaverage)(preprocessing) --lowpass provided:", options.lowpassfine
+			simage.process_inplace(options.lowpassfine[0],options.lowpassfine[1])
+			#fimage.write_image(options.path + '/imgPrepLp.hdf',-1)
+	
+		if options.highpassfine:
+			print "(e2spt_classaverage)(preprocessing) --highpass provided:", options.highpassfine
+			simage.process_inplace(options.highpassfine[0],options.highpassfine[1])
+			#fimage.write_image(options.path + '/imgPrepLpHp.hdf',-1)
+		
+
+		if options.shrinkfine and int( options.shrinkfine  ) > 1 :
+			print "(e2spt_classaverage)(preprocessing) --shrink provided:", options.shrinkfine
+			simage.process_inplace("math.meanshrink",{"n":options.shrinkfine })
+			#fimage.write_image(options.path + '/imgPrepLpHpSh.hdf',-1)
 	
 	preproclst = ''		
 		
@@ -3068,7 +3100,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 
 	
 	if not refpreprocess:
-		#print "\nThere is NO refpreprocess! But an external reference WAS provided, type, len", options.ref, type( options.ref ), len( str( options.ref ))
+		print "\nthere is NO refpreprocess! But an external reference WAS provided, type, len", options.ref
 	
 		#if options.clipali:
 		#	if sfixedimage['nx'] != options.clipali or sfixedimage['ny'] != options.clipali or sfixedimage['nz'] != options.clipali:
@@ -3078,7 +3110,9 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		#		s2fixedimage = clip3D( s2fixedimage, options.clipali )
 		
 		if options.shrink and int(options.shrink) > 1:
+			print "shrinking sfixedimage BEFORE", sfixedimage['nx']
 			sfixedimage = sfixedimage.process('math.meanshrink',{'n':options.shrink})
+			print "shrinking sfixedimage AFTER", sfixedimage['nx']
 			
 		
 		if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
@@ -3164,7 +3198,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			s2image = simage.copy()
 			#print "PARTICLE fine preprocessing is equal to coarse"
 		elif options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1:
-			s2image = preprocessing(s2image,options,ptclindx, savetagp ,'no',round)
+			s2image = preprocessing(s2image,options,ptclindx, savetagp ,'no',round,'fine')
 			#print "There was fine preprocessing"
 		#sys.exit()
 	else:
@@ -3175,14 +3209,14 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	
 	
 	if sfixedimage['nx'] != simage['nx']:
-		#print "ERROR: preprocessed images for coarse alignment not the same size", sfixedimage['nx'], simage['nx']
-		print "ERROR: preprocessed images for coarse alignment not the same size"
+		print "ERROR: preprocessed images for coarse alignment not the same size, sfixedimage, simage", sfixedimage['nx'], simage['nx']
+		#print "ERROR: preprocessed images for coarse alignment not the same size"
 		sys.exit()
 		
 	if options.falign:
 		if s2fixedimage['nx'] != s2image['nx']:
-			#print "ERROR: preprocessed images for fine alignment not the same size", s2fixedimage['nx'], s2image['nx']
-			print "ERROR: preprocessed images for fine alignment not the same size"
+			print "ERROR: preprocessed images for fine alignment not the same size, s2fixedimage, s2image", s2fixedimage['nx'], s2image['nx']
+			#print "ERROR: preprocessed images for fine alignment not the same size"
 			sys.exit()
 	
 	if transform:
