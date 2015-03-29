@@ -7610,8 +7610,12 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 			static const string NAME;
 		};
 		
-	/**  
-	 * Muyuan Chen
+	/**  Binarize an image based on the circular average around each pixel in real space.
+	 *   The pixel is set to 1 when the ring average around the pixel keeps decreasing for n 
+	 *   pixels as the radius of the ring increases. Here n is the threshold. This essentially 
+	 *   picks out the local maximum pixels with some noise tolerance.
+	 *   @author: Muyuan Chen
+	 *   @date: 03/2015
 	 */
 	class CircularAverageBinarizeProcessor:public Processor
 	{
@@ -7634,13 +7638,18 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("thresh", EMObject::INT, "The radius threshold that the circulsr average of density keep dropping.");
+			d.put("thresh", EMObject::INT, "The radius threshold that the circular average of density keep dropping.");
 			return d;
 		}
 		static const string NAME;
 	};
 	
-	
+	/**  Replace the value of each pixel with the sum of density of the object it belongs to. 
+	 *   Objects are defined by continius density above the given threshold.
+	 *   Currently only works in 2D images.
+	 *   @author: Muyuan Chen
+	 *   @date: 03/2015
+	 */	
 	class ObjDensityProcessor:public Processor
 	{
 	public:
@@ -7668,6 +7677,10 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 		static const string NAME;
 	};
 	
+	/**  Label each object above threshold. Also return the center of each object.
+	 *   @author: Muyuan Chen
+	 *   @date: 03/2015
+	 */	
 	class ObjLabelProcessor:public Processor
 	{
 	public:
@@ -7694,8 +7707,44 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 		}
 		static const string NAME;
 	};
+	
+	/**  Thinning a binary map to skelton using the Zhang-Suen thinning algorithm.
+	 *   @author: Muyuan Chen
+	 *   @date: 03/2015
+	 */	
+	class BwThinningProcessor:public Processor
+	{
+	public:
+		virtual void process_inplace(EMData * image);
+		virtual EMData* process(const EMData* const image);
 
-
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new BwThinningProcessor();
+		}
+		string get_desc() const
+		{
+			return "Thinning a binary map to skelton using the Zhang-Suen thinning algorithm.";
+		}
+		int process_pixel(float* data, float* array, int step);
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("thresh", EMObject::FLOAT, "The threshold to seperate objects.");
+			d.put("verbose", EMObject::INT, "Verbose");
+			d.put("ntimes", EMObject::INT, "Number of iterations in the thinning process. Default: -1 (perform thinning until the image is skeltonized");
+			return d;
+		}
+		static const string NAME;
+	};
+	
+	
+	
+	
 #ifdef SPARX_USING_CUDA
 	/* class MPI CUDA kmeans processor
 	 * 2009-02-13 17:34:45 JB first version

@@ -266,6 +266,7 @@ const string RotateInFSProcessor::NAME = "rotateinfs";
 const string CircularAverageBinarizeProcessor::NAME = "threshold.binary.circularmean";
 const string ObjDensityProcessor::NAME = "morph.object.density";
 const string ObjLabelProcessor::NAME = "morph.object.label";
+const string BwThinningProcessor::NAME = "morph.thin";
 
 //#ifdef EMAN2_USING_CUDA
 //const string CudaMultProcessor::NAME = "cuda.math.mult";
@@ -511,6 +512,7 @@ template <> Factory < Processor >::Factory()
 	force_add<CircularAverageBinarizeProcessor>();
 	force_add<ObjDensityProcessor>();
 	force_add<ObjLabelProcessor>();
+	force_add<BwThinningProcessor>();
 
 //#ifdef EMAN2_USING_CUDA
 //	force_add<CudaMultProcessor>();
@@ -11535,6 +11537,128 @@ void ObjLabelProcessor::process_inplace(EMData * image)
 	image->set_attr("obj_centers",centers);
 
 	delete mask;
+}
+
+EMData* BwThinningProcessor::process(const EMData* const image) //
+{
+
+    EMData* imageCp= image -> copy(); 
+    process_inplace(imageCp);
+
+    return imageCp;
+}
+
+void BwThinningProcessor::process_inplace(EMData * image){
+
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+	
+	float threshold=params.set_default("thresh",0);
+	int ntimes=params.set_default("ntimes",-1);
+	int verbose=params.set_default("verbose",0);
+	if (nz > 1) {
+		ImageDimensionException("Only 2-D images supported");
+	}
+	float array[9];
+	int n=1;
+	float *data = image->get_data();
+	size_t total_size = (size_t)nx * (size_t)ny * (size_t)nz;
+	// binarize image and deal with boundary points first
+	for (int j=0; j<ny; j++){
+		int jnx = j * nx;
+		for (int i=0; i<nx; i++){
+			if(i==0 || i==nx-1 || j==0 || j==ny-1)
+				data[i+jnx]=0;
+			else{
+				if (data[i+jnx]>threshold)
+					data[i+jnx]=1;
+				else
+					data[i+jnx]=0;
+			}
+		}
+	}
+	
+	float *data2 = new float[total_size];
+	int ntstep=1;
+	if (ntimes<0){
+		ntimes=1;
+		ntstep=0;
+	}
+	for (int nt=0; nt<ntimes; nt+=ntstep){
+		int cg=0;
+		for (int st = 0; st<2; st++){
+			memcpy(data2, data, total_size * sizeof(float));
+			for (int j = n; j < ny - n; j++) {
+				int jnx = j * nx;
+				for (int i = n; i < nx - n; i++) {
+					size_t s = 0;
+					for (int i2 = i - n; i2 <= i + n; i2++) {
+						for (int j2 = j - n; j2 <= j + n; j2++) {
+							array[s] = data2[i2 + j2 * nx];
+							++s;
+						}
+					}
+
+					cg+=process_pixel(&data[i + jnx ], array, st);
+				}
+			}
+		}
+		if (verbose>0)
+			printf("%d pixels changed\n",cg);
+		if(cg==0)
+			break;
+	}
+
+	image->update();
+
+	if( data2 )
+	{
+		delete[]data2;
+		data2 = 0;
+	}
+}
+
+
+int BwThinningProcessor::process_pixel(float* data, float* array, int step){
+	if (*data==0){
+		return 0;
+	}
+	int bp=-1; // number of black neighbors, not counting itself 
+	for (int i=0; i<9; i++){
+		if (array[i]>0)
+			bp++;
+	}
+	if (bp<2 || bp>6){
+		return 0;
+	}
+	int ap=0; // number of transitions from 0 to 1
+	int order[9]={0,1,2,5,8,7,6,3,0};
+	for (int i=0; i<8; i++){
+		if (array[order[i]]==0 && array[order[i+1]]>0){
+			ap++;
+		}
+	}
+	if (ap!=1)
+		return 0;
+	
+	if (step==0){
+		if(array[order[1]]*array[order[3]]*array[order[5]]>0)
+			return 0;
+		if(array[order[3]]*array[order[5]]*array[order[7]]>0)
+			return 0;		
+	}
+	
+	if (step==1){
+		if(array[order[1]]*array[order[3]]*array[order[7]]>0)
+			return 0;
+		if(array[order[1]]*array[order[5]]*array[order[7]]>0)
+			return 0;		
+	}
+	
+	*data=0;
+	return 1;
+	
 }
 
 #ifdef SPARX_USING_CUDA
