@@ -4545,7 +4545,7 @@ Dict Util::Crosrng_sm_psi(EMData* circ1p, EMData* circ2p, vector<int> numr, floa
 	qn  = -1.0e20;
 	// psi = 0 should correspond to psi_pos = 1 (meaning no change in in-plane rotation)
 	// this has to be verified for mirror
-    int psi_pos = (int)fmod(roundf(-psi/360.0*maxrin+10*maxrin),(float)maxrin) + 1;
+	int psi_pos = (int)fmod((float)Util::round(-psi/360.0*maxrin+10*maxrin),(float)maxrin) + 1;
 
 	const int psi_range = int(psi_max/360.0*maxrin + 0.5);
 
@@ -4648,7 +4648,7 @@ Dict Util::Crosrng_psi(EMData* circ1p, EMData* circ2p, vector<int> numr, float p
 	qn  = -1.0e20;
 	// psi = 0 should correspond to psi_pos = 1
 	// this has to be verified for mirror
-    int psi_pos = (int)fmod(roundf(-psi/360.0*maxrin+10*maxrin),(float)maxrin) + 1;
+	int psi_pos = (int)fmod((float)Util::round(-psi/360.0*maxrin+10*maxrin),(float)maxrin) + 1;
 	const int psi_range = int(psi_max/360.0*maxrin + 0.5);
 
 	for (k=-psi_range; k<=psi_range; k++) {
@@ -19524,7 +19524,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 		//printf("\nINPUT   %f   %f   %f   %f   %d \n",phi, theta, psi, 360.0f-psi,mirror);
 		mirror = (int)(theta > 90.0f);
         // mirror = 0 then use -psi;
-        int psi_pos = (int)fmod(roundf((-psi - mirror*180)/360.0*maxrin+10*maxrin),(float)maxrin) + 1;
+		int psi_pos = (int)fmod((float)Util::round((-psi - mirror*180)/360.0*maxrin+10*maxrin),(float)maxrin) + 1;
 
 		//  Multiply anchor direction object t by all symmetry group rotations.
 		vector<Transform> tsym = t->get_sym_proj(sym);
