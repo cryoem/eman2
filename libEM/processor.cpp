@@ -9306,7 +9306,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 				float dataLL_R= 0; float dataLL_I=0; int flag=1;
 				if ((abs(kxL)<N) && (abs(kyL)<N)) { //   Step 2 Make sure to be in First BZ
 				    kxL = (N+kxL)%N;  kyL = (N+kyL)%N;
-				    if (kxL> floor(N/2)){ kxL=(N-kxL)%N; kyL=(N-kyL)%N ;flag=-1;} // Step 3: if nec, use Friedel paired
+				    if (kxL> (int)floor((double)(N/2))){ kxL=(N-kxL)%N; kyL=(N-kyL)%N ;flag=-1;} // Step 3: if nec, use Friedel paired
 				    dataLL_R=     image -> get_value_at(2*kxL,kyL);
 				    dataLL_I=flag*image -> get_value_at(2*kxL+1,kyL);
 				} 
@@ -9315,7 +9315,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			        float dataLU_R= 0; float dataLU_I=0; flag=1;
 				if ((abs(kxL)<N) && (abs(kyU)<N)){ //       Step 2 Make sure to be in First BZ
 				    kxL = (N+kxL)%N;  kyU = (N+kyU)%N;
-				    if (kxL> floor(N/2)){ kxL=(N-kxL)%N; kyU=(N-kyU)%N;flag=-1;} // Step 3
+				    if (kxL> (int)floor((double)(N/2))){ kxL=(N-kxL)%N; kyU=(N-kyU)%N;flag=-1;} // Step 3
 				    dataLU_R=	  image -> get_value_at(2*kxL,kyU);
 				    dataLU_I=flag*image -> get_value_at(2*kxL+1,kyU);
 			        }
@@ -9324,7 +9324,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 				float dataUL_R= 0; float dataUL_I=0; flag=1;
 				if ((abs(kxU)<N) && (abs(kyL)<N)) {   //       Step 2
 				    kxU = (N+kxU)%N; kyL = (N+kyL)%N;
-				    if (kxU> floor(N/2)) { kxU=(N-kxU)%N; kyL=(N-kyL)%N;flag=-1;} // Step 3
+				    if (kxU> (int)floor((double)(N/2))) { kxU=(N-kxU)%N; kyL=(N-kyL)%N;flag=-1;} // Step 3
 				    dataUL_R=	  image -> get_value_at(2*kxU,kyL);
 				    dataUL_I=flag*image -> get_value_at(2*kxU+1,kyL);
 				}
@@ -9333,7 +9333,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			      float dataUU_R= 0; float dataUU_I=0; flag=1;
 			      if ((abs(kxU)<N) & (abs(kyU)<N)){  //       Step 2
 				    kxU = (N+kxU)%N; kyU = (N+kyU)%N;
-				    if (kxU> floor(N/2)) { kxU=(N-kxU)%N; kyU=(N-kyU)%N;flag=-1;} // Step 3
+				    if (kxU> (int)floor((double)(N/2))) { kxU=(N-kxU)%N; kyU=(N-kyU)%N;flag=-1;} // Step 3
 				    dataUU_R=	  image -> get_value_at(2*kxU,kyU);
 				    dataUU_I=flag*image -> get_value_at(2*kxU+1,kyU);
 			      }
@@ -9400,7 +9400,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			    float dataLLL_R= 0; float dataLLL_I=0; int flag=1;
 			    if ( (abs(kxL)<N) && (abs(kyL)<N) && (abs(kzL)<N) ) { //   Step 2 Make sure to be in First BZ
 				kxL = (N+kxL)%N;  kyL = (N+kyL)%N; kzL = (N+kzL)%N;
-				if (kxL> floor(N/2)){kxL=(N-kxL)%N; kyL=(N-kyL)%N ; kzL=(N-kzL)%N ;flag=-1;} // Step 3: use Friedel paired
+				if (kxL> (int)floor((double)(N/2))){kxL=(N-kxL)%N; kyL=(N-kyL)%N ; kzL=(N-kzL)%N ;flag=-1;} // Step 3: use Friedel paired
 				dataLLL_R=     image -> get_value_at(2*kxL,kyL,kzL);
 				dataLLL_I=flag*image -> get_value_at(2*kxL+1,kyL,kzL);
 			    }
@@ -9409,7 +9409,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			    float dataLLU_R= 0; float dataLLU_I=0; flag=1;
 			    if ( (abs(kxL)<N) && (abs(kyL)<N) && (abs(kzU)<N) ) {//   Step 2 Make sure to be in First BZ
 				kxL = (N+kxL)%N;  kyL = (N+kyL)%N; kzU = (N+kzU)%N;
-				if (kxL> floor(N/2)){kxL=(N-kxL)%N; kyL=(N-kyL)%N ; kzU=(N-kzU)%N ;flag=-1;} // Step 3: use Friedel paired
+				if (kxL> (int)floor((double)(N/2))){kxL=(N-kxL)%N; kyL=(N-kyL)%N ; kzU=(N-kzU)%N ;flag=-1;} // Step 3: use Friedel paired
 				dataLLU_R=     image -> get_value_at(2*kxL  ,kyL,kzU);
 				dataLLU_I=flag*image -> get_value_at(2*kxL+1,kyL,kzU);
 			    }
@@ -9418,7 +9418,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			    float dataLUL_R= 0; float dataLUL_I=0; flag=1;
 			    if ( (abs(kxL)<N) && (abs(kyU)<N)&& (abs(kzL)<N) ) {//  Step 2 Make sure to be in First BZ
 				kxL = (N+kxL)%N;  kyU = (N+kyU)%N; kzL = (N+kzL)%N;
-				if (kxL> floor(N/2)){ kxL=(N-kxL)%N; kyU=(N-kyU)%N; kzL=(N-kzL)%N ;flag=-1;}// Step 3
+				if (kxL> (int)floor((double)(N/2))){ kxL=(N-kxL)%N; kyU=(N-kyU)%N; kzL=(N-kzL)%N ;flag=-1;}// Step 3
 				dataLUL_R=     image -> get_value_at(2*kxL  ,kyU,kzL);
 				dataLUL_I=flag*image -> get_value_at(2*kxL+1,kyU,kzL);
 			    }
@@ -9427,7 +9427,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			    float dataLUU_R= 0; float dataLUU_I=0; flag=1;
 			    if ( (abs(kxL)<N) && (abs(kyU)<N)&& (abs(kzU)<N)) {//   Step 2 Make sure to be in First BZ
 				kxL = (N+kxL)%N;  kyU = (N+kyU)%N; kzU = (N+kzU)%N;
-				if (kxL> floor(N/2)){kxL=(N-kxL)%N; kyU=(N-kyU)%N; kzL=(N-kzL)%N ;flag=-1;} // Step 3
+				if (kxL> (int)floor((double)(N/2))){kxL=(N-kxL)%N; kyU=(N-kyU)%N; kzL=(N-kzL)%N ;flag=-1;} // Step 3
 				dataLUU_R=     image -> get_value_at(2*kxL  ,kyU,kzU);
 				dataLUU_I=flag*image -> get_value_at(2*kxL+1,kyU,kzU);
 			    }
@@ -9436,7 +9436,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			    float dataULL_R= 0; float dataULL_I=0; flag=1;
 			    if ( (abs(kxU)<N) && (abs(kyL)<N) && (abs(kzL)<N) ) {//    Step 2
 				kxU = (N+kxU)%N; kyL = (N+kyL)%N; kzL = (N+kzL)%N;
-				if (kxU> floor(N/2)){kxU=(N-kxU)%N; kyL=(N-kyL)%N; kzL=(N-kzL)%N ;flag=-1;} // Step 3
+				if (kxU> (int)floor((double)(N/2))){kxU=(N-kxU)%N; kyL=(N-kyL)%N; kzL=(N-kzL)%N ;flag=-1;} // Step 3
 				dataULL_R=     image -> get_value_at(2*kxU  ,kyL,kzL);
 				dataULL_I=flag*image -> get_value_at(2*kxU+1,kyL,kzL);
 			    }
@@ -9445,7 +9445,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			    float dataULU_R= 0; float dataULU_I=0; flag=1;
 			    if ( (abs(kxU)<N) && (abs(kyL)<N)&& (abs(kzU)<N) ) {//      Step 2
 				kxU = (N+kxU)%N; kyL = (N+kyL)%N; kzU = (N+kzU)%N;
-				if (kxU> floor(N/2)){kxU=(N-kxU)%N; kyL=(N-kyL)%N; kzU=(N-kzU)%N ;flag=-1;} // Step 3
+				if (kxU> (int)floor((double)(N/2))){kxU=(N-kxU)%N; kyL=(N-kyL)%N; kzU=(N-kzU)%N ;flag=-1;} // Step 3
 				dataULU_R=     image -> get_value_at(2*kxU  ,kyL,kzU);
 				dataULU_I=flag*image -> get_value_at(2*kxU+1,kyL,kzU);
 			    }
@@ -9454,7 +9454,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			    float dataUUL_R= 0; float dataUUL_I=0; flag=1;
 			    if ( (abs(kxU)<N) && (abs(kyU)<N) && (abs(kzL)<N) ) {//      Step 2
 				kxU = (N+kxU)%N; kyU = (N+kyU)%N; kzL = (N+kzL)%N;
-				if (kxU> floor(N/2)){kxU=(N-kxU)%N; kyU=(N-kyU)%N; kzL=(N-kzL)%N ;flag=-1;} // Step 3
+				if (kxU> (int)floor((double)(N/2))){kxU=(N-kxU)%N; kyU=(N-kyU)%N; kzL=(N-kzL)%N ;flag=-1;} // Step 3
 				dataUUL_R=     image -> get_value_at(2*kxU  ,kyU,kzL);
 				dataUUL_I=flag*image -> get_value_at(2*kxU+1,kyU,kzL);
 			    }
@@ -9463,7 +9463,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			    float dataUUU_R= 0; float dataUUU_I=0; flag=1;
 			    if ( (abs(kxU)<N) && (abs(kyU)<N) && (abs(kzU)<N) ) { //       Step 2
 				kxU = (N+kxU)%N; kyU = (N+kyU)%N; kzU = (N+kzU)%N;
-				if (kxU> floor(N/2)) {kxU=(N-kxU)%N; kyU=(N-kyU)%N; kzU=(N-kzU)%N ;flag=-1;} // Step 3
+				if (kxU> (int)floor((double)(N/2))) {kxU=(N-kxU)%N; kyU=(N-kyU)%N; kzU=(N-kzU)%N ;flag=-1;} // Step 3
 				dataUUU_R=     image -> get_value_at(2*kxU  ,kyU,kzU);
 				dataUUU_I=flag*image -> get_value_at(2*kxU+1,kyU,kzU);
 			    }
@@ -11205,7 +11205,7 @@ void RotateInFSProcessor::process_inplace(EMData * image) // right now for 2d im
 
 	int debug=0;
 
-//	error: conversion from ‘EMAN::EMObject’ to non-scalar type ‘EMAN::Transform’ requested
+//	error: conversion from 'EMAN::EMObject' to non-scalar type 'EMAN::Transform' requested
 
 
 	// if 2N is size of image, then sizes of FFT are (2N+2,2N,2N) or  (2N+2,2N,1)
@@ -11281,7 +11281,7 @@ void RotateInFSProcessor::process_inplace(EMData * image) // right now for 2d im
         if (debug) printf("  Just about to start second loop  \n");
 
 	image ->to_zero();
-        invRotNow = rotNow ->inverse(); //  no match for ‘operator=’ in ‘PosBefore = EMAN::operator*(const EMAN::Transform&, const EMAN::Transform&)((
+        invRotNow = rotNow ->inverse(); //  no match for 'operator=' in 'PosBefore = EMAN::operator*(const EMAN::Transform&, const EMAN::Transform&)((
 
 
 	for (int kxAfter = 0; kxAfter <= N  ; ++kxAfter) {  // These are the  kx, ky, kz coordinates of the rotated image
