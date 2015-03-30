@@ -79,8 +79,9 @@ def main():
 	#parser.add_option("--MA_WRAP",            type="int",            default= 0,                  help="do wrapping in MA if MA_WRAP=1, else no wrapping in MA. Default is 0.")
 	parser.add_option("--seg_ny",             type="int",            default= 256,                help="y dimension of desired segment size, should be related to fract in that fract ~ seg_ny/ny, where ny is dimension of input projections. (pixels)")
 	parser.add_option("--new",                action="store_true",   default=False,               help="use new version")
-	parser.add_option("--snake",                action="store_true",   default=False,               help="use snake method")
-
+	parser.add_option("--snake",              action="store_true",   default=False,               help="use snake method")	
+	parser.add_option("--snakeknots",         type="int",            default= -1,                 help="maximal number of knots for each filament snake. If take default value -1, it will take nseg//2+1, where nseg is the number of segments in the filament")
+	
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 3 or len(args) > 4:
 		print "usage: " + usage + "\n"
@@ -140,7 +141,7 @@ def main():
 			txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, \
 				options.dp, options.dphi, options.psi_max, \
 			rminp, rmaxp, options.fract, options.npad,options.sym, options.function,\
-			options.apix, options.debug, y_restrict2, options.searchit)	
+			options.apix, options.debug, y_restrict2, options.searchit, options.snakeknots)	
 		else:  localhelicon_MPI(args[0], args[1], args[2], options.seg_ny, mask, irp, oup, options.rs, xrp, options.ynumber, \
 			txsp, options.delta, options.initial_theta, options.delta_theta, options.an, options.maxit, options.CTF, options.snr, \
 				options.dp, options.dphi, options.psi_max, \

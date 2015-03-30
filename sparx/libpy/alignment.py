@@ -3487,10 +3487,7 @@ def directaligriddingconstrained(inima, kb, ref, psimax=1.0, psistep=1.0, xrng=1
 	#  It makes no sense, as it still searches within the entire range of psi_max
 	bnr = max( int(round(reduced_psiref/psistep))+ nc-nr,  nc-nr)
 	enr = min( int(round(reduced_psiref/psistep))+ nc+1+nr, nc+nr+1)
-	##new@ming
-	bnr = max(int(round(reduced_psiref/psistep)),0)
-	enr = min(int(round(reduced_psiref/psistep))+nr,nr)
- 
+	
 	
 
 	N = inima.get_ysize()  # assumed image is square, but because it is FT take y.
@@ -3693,6 +3690,8 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 	#enr = min(int(round(reduced_psiref/psistep))+nr,nr)
 	bnr = max(int(round(reduced_psiref/psistep)),0)
 	enr = min(int(round(reduced_psiref/psistep))+nr,nr)
+	bnr = 0
+	enr = nr
 	
 	N = inima.get_ysize()  # assumed image is square, but because it is FT take y.
 	#  Window for ccf sampled by gridding
@@ -3736,8 +3735,11 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 	from sys import exit
 	exit()
 	"""
+	#print "wnx wny enr-bnr", wnx,wny,enr-bnr
 	ccf3dimg = model_blank(wnx, wny, enr-bnr)
-	if ( rny == 0 ) : return  0.0, 0.0, 0.0, -1.e23, ccf3dimg     ## do nothing for rny=0 @ming
+	if ( rny == 0 ) : 
+		print "rny = 0 return---------------"
+		return  0.0, 0.0, 0.0, -1.e23, ccf3dimg     ## do nothing for rny=0 @ming
 	for i in xrange(bnr, enr, 1):
 		if updown == "up" :
 			c = ccf(ima,ref[i])
@@ -3763,8 +3765,8 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 			#  did not find a peak, find a maximum location instead
 			if( pp[0] == 1.0 and px == 0 and py == 0):
 				#  No peak!
-				pass
-				"""
+				#pass
+				
 				loc = w.calc_max_location()
 				PEAKV = w.get_value_at(loc[0],loc[1])
 				#print "  Did not find a peak  :",i,wxc, wyc, loc[0]-wxc, loc[1]-wyc, PEAKV
@@ -3772,7 +3774,7 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 					ma2  = PEAKV
 					#oma2 = pp+[loc[0]-wxc, loc[1]-wyc, loc[0]-wxc, loc[1]-wyc, PEAKV,(i-nc)*psistep]
 					oma2 = pp+[loc[0]-wxc, loc[1]-wyc, loc[0]-wxc, loc[1]-wyc, PEAKV,(i-nc)]
-				"""
+				
 			else:
 				ww = model_blank(3,3)
 				px = int(pp[1])
@@ -3808,15 +3810,15 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 			py = int(pp[5])
 			if( pp[0] == 1.0 and px == 0 and py == 0):
 				#  No peak!
-				pass
-				"""
+				#pass
+				
 				loc = w.calc_max_location()
 				PEAKV = w.get_value_at(loc[0],loc[1])
 				if(PEAKV>ma4):
 					ma4  = PEAKV
 					#oma4 = pp+[loc[0], loc[1], loc[0], loc[1], PEAKV,(i-nc)*psistep]
 					oma4 = pp+[loc[0]-wxc, loc[1]-wyc, loc[0]-wxc, loc[1]-wyc, PEAKV,(i-nc)]
-				"""
+				
 			else:
 				ww = model_blank(3,3)
 				px = int(pp[1])
@@ -3875,7 +3877,7 @@ def directaligriddingconstrained3dccf(inima, kb, ref, psimax=1.0, psistep=1.0, x
 	
 	return  nalpha, ntx, nty, peak, ccf3dimg
 
-def alignment3Dsnake(partition, nsegs, initialori, ctx, psistep, stepx, stepy, txref, tyref, nc, rnx, rny, updown = "up"):
+def alignment3Dsnake(partition, snakeknots, nsegs, initialori, ctx, psistep, stepx, stepy, txref, tyref, nc, rnx, rny, updown = "up"):
 	from scipy import interpolate
 	from utilities    import inverse_transform2, compose_transform2
 	#1. setting basis parameters for b-spline
@@ -3883,7 +3885,8 @@ def alignment3Dsnake(partition, nsegs, initialori, ctx, psistep, stepx, stepy, t
 	pt = partition
 	nknots=[0]*pt
 	for ipt in xrange(pt):
-		nknots[ipt]  =  9   ##does not include the right end knots.
+		if snakeknots>1: nknots[ipt]  =  min(snakeknots-1,nsegs//2+1)   ##does not include the right end knots.
+		else: nknots[ipt]  = nsegs//2+1
 		#nknots1 = 4
 	#mknots = 1	
 	print "begin snake refine...."
@@ -3925,7 +3928,7 @@ def alignment3Dsnake(partition, nsegs, initialori, ctx, psistep, stepx, stepy, t
 
 		tck=interpolate.splrep(U,AT,W, t=T[1:len(T)-1], k=3,s=0)
 		TCK.append(tck)
-		print tck	
+		#print tck	
 
 	angrot0=list(TCK[0][1]) 	
 	sx0    =list(TCK[1][1])
@@ -3941,9 +3944,9 @@ def alignment3Dsnake(partition, nsegs, initialori, ctx, psistep, stepx, stepy, t
 	params  = angrot+sx+sy
 	ftol = 1.e-8
 	xtol = 1.e-8
-	maxi = 1000
+	maxi = 5000
 	scale = [nc*1.0]*len(TCK[0][1])+[rnx*1.0]*len(TCK[1][1])+[rny*1.0]*len(TCK[2][1])
-	print "begin amoeba refine... "#, params0
+	print "begin amoeba refine... number of segments=%d, number of amoeba parameters for x-shift =%d"%(nsegs, len(sx)) #, params0
 	params,fval, numit=amoeba(params, scale, flexhelicalali, ftol, xtol, maxi, [ctx,params0, 0.0, TCK, nsegs])
 	print "after amoeba refine, iter_num=%d"%numit#, params
 	##4. get alignment parameters from refined b-spline coefficients.
@@ -3964,19 +3967,19 @@ def alignment3Dsnake(partition, nsegs, initialori, ctx, psistep, stepx, stepy, t
 	valang = interpolate.splev(u, tckang, der=0, ext=0)
 	valx = interpolate.splev(u, tckx, der=0, ext=0)
 	valy = interpolate.splev(u, tcky, der=0, ext=0)	
-
+	neworient = [[0.0, 0.0, 0.0] for i in xrange(nsegs)]
 	for im in xrange(nsegs):	
 		if updown == "up" :				
-			initialori[im][0] = initialori[im][0]*psistep
-			initialori[im][1] =  initialori[im][1]*stepx - txref[im]
-			initialori[im][2] =  initialori[im][2]*stepy - tyref[im]	
+			neworient[im][0] = valang[im]*psistep
+			neworient[im][1] =  valx[im]*stepx - txref[im]
+			neworient[im][2] =  valy[im]*stepy - tyref[im]	
 		if updown == "down" :
-			nalpha, ntx, nty, junk = compose_transform2(-initialori[im][0]*psistep, initialori[im][1]*stepx - txref[im],initialori[im][2]*stepy - tyref[im],1.0,180.,0,0,1)
+			nalpha, ntx, nty, junk = compose_transform2(-valang[im]*psistep, valx[im]*stepx - txref[im],valy[im]*stepy - tyref[im],1.0,180.,0,0,1)
 			nalpha, ntx, nty, mirror = inverse_transform2(nalpha, ntx, nty, 0)
-			initialori[im][0] = nalpha
-			initialori[im][1] = ntx
-			initialori[im][2] = nty			
-	return initialori
+			neworient[im][0] = nalpha
+			neworient[im][1] = ntx
+			neworient[im][2] = nty			
+	return neworient
 
 def flexhelicalali(params,data):
 	sccf    = data[0]
@@ -3995,14 +3998,7 @@ def flexhelicalali(params,data):
 	tckx   = (TCK[1][0], px,TCK[1][2]) 
 	tcky   = (TCK[2][0], py,TCK[2][2])
 	
-	nx = sccf[0].get_xsize()
-	ny = sccf[0].get_ysize()
-	na = sccf[0].get_zsize()
-	
-	#print "nx ny nz, size(sccf), type(sccf[0]) get_value_at", nx, ny,na, len(sccf), type(sccf[1]), sccf[1].get_value_at(0,0,0)
-	nxc=nx//2
-	nyc=ny//2
-	nac=na//2
+
 	
 	from scipy import interpolate
 	#print "lambw", lambw
@@ -4013,6 +4009,15 @@ def flexhelicalali(params,data):
 	valx = interpolate.splev(u, tckx, der=0, ext=0)
 	valy = interpolate.splev(u, tcky, der=0, ext=0)
 	for id in xrange(nsegs):
+		nx = sccf[id].get_xsize()
+		ny = sccf[id].get_ysize()
+		na = sccf[id].get_zsize()
+	
+		#print "nx ny nz, size(sccf), type(sccf[0]) get_value_at", nx, ny,na, len(sccf), type(sccf[1]), sccf[1].get_value_at(0,0,0)
+		nxc=nx//2
+		nyc=ny//2
+		nac=na//2
+	
 		al = valang[id]  #interpolate.splev([id-nperiod], tck, der=0, ext=0)
 		xl = valx[id]
 		yl = valy[id]
@@ -4034,24 +4039,27 @@ def flexhelicalali(params,data):
 		# if ixl < 0:
 # 			print "ixl=%d xl=%f params[id]=%f"%(ixl,xl,params[id])
 		#print "ix iy ia", ixl, iyl, ial
-		if ial < 0:
-			ial = 0
-			dal = 0
-		if ial > na-1:
-			ial = na-2
-			dal = 0
-		if ixl < 0:
-			ixl = 0
-			dxl = 0
-		if ixl > nx-1:
-			ixl = nx-2
-			dxl = 0
-		if iyl < 0:
-			iyl = 0
-			dyl = 0	
-		if iyl > ny-1:
-			iyl = ny-2
-			dyl = 0		
+		if ial < 0 or ial >= na-1 or ixl < 0 or ixl >= nx-1 or iyl < 0 or iyl >= ny-1:
+			return -1.0e23
+			
+		# if ial < 0:
+# 			ial = 0
+# 			dal = 0
+# 		if ial >= na-1:
+# 			ial = na-2
+# 			dal = 0
+# 		if ixl < 0:
+# 			ixl = 0
+# 			dxl = 0
+# 		if ixl >= nx-1:
+# 			ixl = nx-2
+# 			dxl = 0
+# 		if iyl < 0:
+# 			iyl = 0
+# 			dyl = 0	
+# 		if iyl >= ny-1:
+# 			iyl = ny-2
+# 			dyl = 0		
 		c00 = (1.0-dxl)*sccf[id].get_value_at(ixl,iyl,ial)+dxl*sccf[id].get_value_at(ixl+1,iyl,ial)
 		c10 = (1.0-dxl)*sccf[id].get_value_at(ixl,iyl+1,ial)+dxl*sccf[id].get_value_at(ixl+1,iyl+1,ial)
 		c01 = (1.0-dxl)*sccf[id].get_value_at(ixl,iyl,ial+1)+dxl*sccf[id].get_value_at(ixl+1,iyl,ial+1)

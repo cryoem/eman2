@@ -1712,18 +1712,9 @@ def mref_ali2d(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, y
 			alphai, sxi, syi, scalei = inverse_transform2(alpha, sx, sy)
 			# normalize
 			data[im].process_inplace("normalize.mask", {"mask":mask, "no_sigma":0})
-			#restrict the range @ming
-			ny = nx
-			ou1 = numr[-3]
-			txrng = [0.0]*2 
-			tyrng = [0.0]*2
-			txrng[0] = max(0,min(cnx+sxi-ou1, xrng+sxi))
-			txrng[1] = max(0, min(nx-cnx-sxi-ou1, xrng-sxi))
-			tyrng[0] = max(0,min(cny+syi-ou1, yrng+syi))
-			tyrng[1] = max(0, min(ny-cny-syi-ou1, yrng-syi))
 			# align current image to the reference
 			[angt, sxst, syst, mirrort, xiref, peakt] = Util.multiref_polar_ali_2d(data[im], 
-				ringref, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi)
+				ringref, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
 			iref = int(xiref)
 			# combine parameters and set them to the header, ignore previous angle and mirror
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, int(mirrort))
@@ -1977,18 +1968,9 @@ def mref_ali2d_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrn
 			alphai, sxi, syi, scalei = inverse_transform2(alpha, sx, sy)
 			# normalize
 			data[im-image_start].process_inplace("normalize.mask", {"mask":mask, "no_sigma":0}) # subtract average under the mask
-			#restrict the range @ming
-			ny = nx
-			ou1 = numr[-3]
-			txrng = [0.0]*2 
-			tyrng = [0.0]*2
-			txrng[0] = max(0,min(cnx+sxi-ou1, xrng+sxi))
-			txrng[1] = max(0, min(nx-cnx-sxi-ou1, xrng-sxi))
-			tyrng[0] = max(0,min(cny+syi-ou1, yrng+syi))
-			tyrng[1] = max(0, min(ny-cny-syi-ou1, yrng-syi))
 			# align current image to the reference
 			[angt, sxst, syst, mirrort, xiref, peakt] = Util.multiref_polar_ali_2d(data[im-image_start], 
-				ringref, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi)
+				ringref, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
 			iref = int(xiref)
 			# combine parameters and set them to the header, ignore previous angle and mirror
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, (int)(mirrort))
@@ -16584,7 +16566,7 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 def localhelicon_MPIming(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, ynumber,\
 						txs, delta, initial_theta, delta_theta, an, maxit, CTF, snr, dp, dphi, psi_max,\
 						rmin, rmax, fract,  npad, sym, user_func_name, \
-						pixel_size, debug, y_restrict, search_iter):
+						pixel_size, debug, y_restrict, search_iter, snakeknots):
 	from alignment      import proj_ali_helicon_local, proj_ali_helicon_90_local_direct, directaligridding1, directaligriddingconstrained, directaligriddingconstrained3dccf, alignment3Dsnake
 	from utilities      import model_circle, get_image, drop_image, get_input_from_string, pad, model_blank
 	from utilities      import bcast_list_to_all, bcast_number_to_all, reduce_EMData_to_root, bcast_EMData_to_all
@@ -16963,14 +16945,14 @@ def localhelicon_MPIming(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, x
 						n2 = sin(radians(refang[1]))*sin(radians(refang[0]))
 						n3 = cos(radians(refang[1]))
 						refrings = [None]
-												
+						if psi < 180.0 :  direction = "up"
+						else:             direction = "down"
+										
 						if( (n1*imn1 + n2*imn2 + n3*imn3)>=ant ):
 							if(refrings[0] == None):
 								#print  "  reffft1  ",im,refang
 								refrings = prepare_reffft1(volft, kbv, refang, segmask, psi_max, psistep)
 								
-							if psi < 180.0 :  direction = "up"
-							else:             direction = "down"
 				
 							#  Constrained snake search methodology
 							#		x - around previously found location tx +/- xrng[N_step] in stepx
@@ -16995,14 +16977,14 @@ def localhelicon_MPIming(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, x
 					#print "im peak", im, pik			
 				
 				##3D snake search.
-				print "before refine: neworient", neworient[seg_start:seg_end]
+				#print "before refine: neworient", neworient[seg_start:seg_end]
 				nc = (int(2*psi_max/psistep)+1)//2
 				rnx   = int(round(xrng[N_step]/stepx[N_step]))
 				rny   = int(round(yrng[N_step]/stepy))
-				neworientsnake=alignment3Dsnake(1, seg_end-seg_start, neworient[seg_start:seg_end], ctx, psistep, stepx[N_step], stepy, txtol, tytol, nc, rnx, rny, direction)
+				neworientsnake=alignment3Dsnake(1, snakeknots, seg_end-seg_start, neworient[seg_start:seg_end], ctx, psistep, stepx[N_step], stepy, txtol, tytol, nc, rnx, rny, direction)
 				for im in xrange( seg_start, seg_end ):
 					neworient[im][:3] = neworientsnake[im- seg_start]
-				print "after refine: neworient", neworient[seg_start:seg_end]	
+				#print "after refine: neworient", neworient[seg_start:seg_end]	
 			for im in xrange(nima):
 				if(neworient[im][-1] > -1.0e23):
 					#print " neworient  ",im,neworient[im]
