@@ -260,7 +260,7 @@ int PCA::dopca_ooc(const string &filename_in, const string &filename_out,
    for (int j=0; j<nvec; j++) {
       for (int i = 0; i<nx; i++) ritzvec[i]=0.0;
       for (int jlan = 1; jlan <= kstep; jlan++) {
-           fread(vlan, sizeof(float), nx, fp);
+           size_t nr = fread(vlan, sizeof(float), nx, fp); nr++;
            saxpy_(&nx, &qmat(jlan,kstep-j), vlan, &ione, ritzvec, &ione);
       }
       rewind(fp);
@@ -365,25 +365,25 @@ int PCA::Lanczos(vector <EMData*> imgstack, int *kstep,
     for ( i = 1; i <= imgsize; i++) v0(i) = 1.0;
 
     // normalize the starting vector
-    *beta  = snrm2_(&imgsize, v0, &ione);
+    *beta  = (float) snrm2_(&imgsize, v0, &ione);
     for (i = 1; i<=imgsize; i++)
 	V(i,1) = v0(i) / (*beta);
 
     // do Av <-- A*v0, where A is a cov matrix
     for (i = 0; i < nimgs; i++) {
        imgdata = imgstack[i]->get_data();
-       alpha = sdot_(&imgsize, imgdata, &ione, V, &ione); 
+       alpha = (float) sdot_(&imgsize, imgdata, &ione, V, &ione); 
        saxpy_(&imgsize, &alpha, imgdata, &ione, Av, &ione);
     }
 
     // Av <--- Av - V(:,1)*V(:,1)'*Av 
-    diag(1) = sdot_(&imgsize, V, &ione, Av, &ione); 
+    diag(1) = (float) sdot_(&imgsize, V, &ione, Av, &ione); 
     alpha   = -diag(1);
     saxpy_(&imgsize, &alpha, V, &ione, Av, &ione);
 
     // main loop 
     for ( iter = 2 ; iter <= *kstep ; iter++ ) {
-        *beta = snrm2_(&imgsize, Av, &ione);
+        *beta = (float) snrm2_(&imgsize, Av, &ione);
 
         if (*beta < TOL) {
 	    // found an invariant subspace, exit
@@ -400,7 +400,7 @@ int PCA::Lanczos(vector <EMData*> imgstack, int *kstep,
         for (i = 0; i < imgsize; i++) Av[i] = 0;
         for (i = 0; i < nimgs; i++) {
            imgdata = imgstack[i]->get_data();
-           alpha = sdot_(&imgsize, imgdata, &ione, &V(1,iter), &ione); 
+           alpha = (float) sdot_(&imgsize, imgdata, &ione, &V(1,iter), &ione); 
            saxpy_(&imgsize, &alpha, imgdata, &ione, Av, &ione);
         }
 	
@@ -528,7 +528,7 @@ int PCA::Lanczos_ooc(string const& filename_in, int *kstep,
     for ( i = 1; i <= imgsize; i++) v(i) = 1.0;
 
     // normalize the starting vector
-    *beta  = snrm2_(&imgsize, v, &ione);
+    *beta  = (float) snrm2_(&imgsize, v, &ione);
     alpha = 1/(*beta);    
     sscal_(&imgsize, &alpha, v, &ione);
     // write v out to a scratch file
@@ -541,19 +541,19 @@ int PCA::Lanczos_ooc(string const& filename_in, int *kstep,
     for (i = 0; i < nimgs; i++) {
        maskedimage->read_image(filename_in,i);
        imgdata = maskedimage->get_data();
-       alpha = sdot_(&imgsize, imgdata, &ione, v, &ione); 
+       alpha = (float) sdot_(&imgsize, imgdata, &ione, v, &ione); 
        saxpy_(&imgsize, &alpha, imgdata, &ione, Av, &ione);
     }
 
     // Av <--- Av - V(:,1)*V(:,1)'*Av 
-    diag(1) = sdot_(&imgsize, v, &ione, Av, &ione); 
+    diag(1) = (float) sdot_(&imgsize, v, &ione, Av, &ione); 
     alpha   = -diag(1);
     scopy_(&imgsize, Av, &ione, resid, &ione);
     saxpy_(&imgsize, &alpha, v, &ione, resid, &ione);
 
     // main loop 
     for ( iter = 2 ; iter <= *kstep ; iter++ ) {
-        *beta = snrm2_(&imgsize, resid, &ione);
+        *beta = (float) snrm2_(&imgsize, resid, &ione);
 
         if (*beta < TOL) {
 	    // found an invariant subspace, exit
@@ -576,7 +576,7 @@ int PCA::Lanczos_ooc(string const& filename_in, int *kstep,
         for (i = 0; i < nimgs; i++) {
            maskedimage->read_image(filename_in,i);
            imgdata = maskedimage->get_data();
-           alpha = sdot_(&imgsize, imgdata, &ione, v, &ione); 
+           alpha = (float) sdot_(&imgsize, imgdata, &ione, v, &ione); 
            saxpy_(&imgsize, &alpha, imgdata, &ione, Av, &ione);
         }
 
@@ -585,8 +585,8 @@ int PCA::Lanczos_ooc(string const& filename_in, int *kstep,
         scopy_(&imgsize, Av, &ione, resid, &ione);
         fp = fopen(lanscratch.c_str(),"rb");
         for (int jlan = 1; jlan <= iter; jlan++) {
-           fread(v, sizeof(float), imgsize, fp);
-           h     = sdot_(&imgsize, v, &ione, Av, &ione);
+           size_t nr = fread(v, sizeof(float), imgsize, fp); nr++;
+           h     = (float) sdot_(&imgsize, v, &ione, Av, &ione);
            alpha = -h;
            saxpy_(&imgsize, &alpha, v, &ione, resid, &ione);
         }
@@ -596,8 +596,8 @@ int PCA::Lanczos_ooc(string const& filename_in, int *kstep,
         scopy_(&imgsize, resid, &ione, Av, &ione);
         fp = fopen(lanscratch.c_str(),"rb");
         for (int jlan = 1; jlan <= iter; jlan++) {
-           fread(v, sizeof(float), imgsize, fp);
-           htmp  = sdot_(&imgsize, v, &ione, Av, &ione);
+           size_t nr = fread(v, sizeof(float), imgsize, fp); nr++;
+           htmp  = (float) sdot_(&imgsize, v, &ione, Av, &ione);
            alpha = -htmp;
            saxpy_(&imgsize, &alpha, v, &ione, resid, &ione);
            h += htmp;
