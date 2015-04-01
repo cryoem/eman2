@@ -267,6 +267,8 @@ const string CircularAverageBinarizeProcessor::NAME = "threshold.binary.circular
 const string ObjDensityProcessor::NAME = "morph.object.density";
 const string ObjLabelProcessor::NAME = "morph.object.label";
 const string BwThinningProcessor::NAME = "morph.thin";
+const string BwMajorityProcessor::NAME = "morph.majority";
+// const string PruneSkeletonProcessor::NAME = "morph.prune"; #TODO Muyuan
 
 //#ifdef EMAN2_USING_CUDA
 //const string CudaMultProcessor::NAME = "cuda.math.mult";
@@ -513,6 +515,7 @@ template <> Factory < Processor >::Factory()
 	force_add<ObjDensityProcessor>();
 	force_add<ObjLabelProcessor>();
 	force_add<BwThinningProcessor>();
+	force_add<BwMajorityProcessor>();
 
 //#ifdef EMAN2_USING_CUDA
 //	force_add<CudaMultProcessor>();
@@ -11709,13 +11712,15 @@ void BwThinningProcessor::process_inplace(EMData * image){
 	}
 	
 	float *data2 = new float[total_size];
-	int ntstep=1;
-	if (ntimes<0){
-		ntimes=1;
+	int ntstep=1,allt=ntimes;
+	if (ntimes<0){	// thin to skeleton
+		allt=1;
 		ntstep=0;
 	}
-	for (int nt=0; nt<ntimes; nt+=ntstep){
-		int cg=0;
+	// thinning
+	int cg;
+	for (int nt=0; nt<allt; nt+=ntstep){
+		cg=0;
 		for (int st = 0; st<2; st++){
 			memcpy(data2, data, total_size * sizeof(float));
 			for (int j = n; j < ny - n; j++) {
@@ -11738,6 +11743,28 @@ void BwThinningProcessor::process_inplace(EMData * image){
 		if(cg==0)
 			break;
 	}
+	
+	// remove corner pixels when doing skeletonization
+	if (ntimes<0){
+		cg=0;
+		memcpy(data2, data, total_size * sizeof(float));
+		for (int j = n; j < ny - n; j++) {
+			int jnx = j * nx;
+			for (int i = n; i < nx - n; i++) {
+				size_t s = 0;
+				for (int i2 = i - n; i2 <= i + n; i2++) {
+					for (int j2 = j - n; j2 <= j + n; j2++) {
+						array[s] = data2[i2 + j2 * nx];
+						++s;
+					}
+				}
+
+				cg+=process_pixel(&data[i + jnx ], array, 2);
+			}
+		}
+	}
+	if (verbose>0)
+		printf("%d corner pixels\n",cg);
 
 	image->update();
 
@@ -11753,7 +11780,7 @@ int BwThinningProcessor::process_pixel(float* data, float* array, int step){
 	if (*data==0){
 		return 0;
 	}
-	int bp=-1; // number of black neighbors, not counting itself 
+	int bp=-1; // number of 1 neighbors, not counting itself 
 	for (int i=0; i<9; i++){
 		if (array[i]>0)
 			bp++;
@@ -11768,7 +11795,7 @@ int BwThinningProcessor::process_pixel(float* data, float* array, int step){
 			ap++;
 		}
 	}
-	if (ap!=1)
+	if (ap!=1 && step<2)
 		return 0;
 	
 	if (step==0){
@@ -11783,6 +11810,34 @@ int BwThinningProcessor::process_pixel(float* data, float* array, int step){
 			return 0;
 		if(array[order[1]]*array[order[5]]*array[order[7]]>0)
 			return 0;		
+	}
+	
+	if (step==2){
+		if (bp==2){
+			if(array[order[1]]*array[order[3]]>0 
+			|| array[order[3]]*array[order[5]]>0
+			|| array[order[5]]*array[order[7]]>0
+			|| array[order[7]]*array[order[1]]>0
+			){
+				*data=0;
+				return 1;
+			}
+			else{
+				return 0;
+			}
+		}
+		if (ap==2 ){
+			if(array[order[1]]*array[order[3]]>0 
+			|| array[order[3]]*array[order[5]]>0
+			){
+				*data=0;
+				return 1;
+			}
+			else{
+				return 0;
+			}
+		}
+		return 0;
 	}
 	
 	*data=0;

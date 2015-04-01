@@ -7734,12 +7734,53 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("thresh", EMObject::FLOAT, "The threshold to seperate objects.");
+			d.put("thresh", EMObject::FLOAT, "The threshold to binarize the map.");
 			d.put("verbose", EMObject::INT, "Verbose");
 			d.put("ntimes", EMObject::INT, "Number of iterations in the thinning process. Default: -1 (perform thinning until the image is skeltonized");
 			return d;
 		}
 		static const string NAME;
+	};
+
+	/**  Set a pixel to white when >= N neighbors are white.
+	 *   @author: Muyuan Chen
+	 *   @date: 04/2015
+	 */	
+	class BwMajorityProcessor:public BoxStatProcessor
+	{
+	public:
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new BwMajorityProcessor();
+		}
+		string get_desc() const
+		{
+			return "Set a pixel to white when >= N neighbors are white.";
+		}
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("thresh", EMObject::FLOAT, "The threshold to binarize the map.");
+			d.put("nmaj", EMObject::INT, "Number of neighbors needed to set to white.");
+			return d;
+		}
+		static const string NAME;
+		
+	protected:
+		void process_pixel(float *pixel, const float *array, int n) const
+		{
+			float thresh=params.set_default("thresh",0);
+			int nmaj=params.set_default("nmaj",n/2+1);
+			for (int i=0; i<n; i++){
+				if (array[i]>thresh)
+					nmaj--;
+			}
+			*pixel=nmaj<=0?1:0;			
+		}
 	};
 	
 	
