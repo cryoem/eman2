@@ -49,7 +49,6 @@ from emshape import EMShape
 from valslider import *
 from sys import argv
 
-
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] <Volume file>
@@ -121,7 +120,7 @@ def main():
 	#parser.add_argument('--normalize', action="store_true", default=False, help='Will normalize each subvolume so that the mean is zero and standard deviation one').
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
-	global options
+	global options,args
 	(options, args) = parser.parse_args()
 
 
@@ -288,7 +287,7 @@ shrunk and/or lowpass filtered).
 It is also called when boxing from the commandline, without GUI usage, as when you already have
 a coordinates file
 """
-def unbinned_extractor(options,boxsize,x,y,z,cshrink,invert,center,tomogram=argv[1]):
+def unbinned_extractor(options,boxsize,x,y,z,cshrink,invert,center,tomogram):
 
 	if options.verbose:
 		print "\n\nUnbinned extractor received this center", center
@@ -499,7 +498,7 @@ def commandline_tomoboxer(tomogram,options):
 			print "Therefore, the swapped coordinates are", x, y, z
 
 		print "\n\nBefore calling unbinned extractor, options.centerbox is", options.centerbox
-		ret = unbinned_extractor(options,options.boxsize,x,y,z,options.cshrink,options.invert,options.centerbox)
+		ret = unbinned_extractor(options,options.boxsize,x,y,z,options.cshrink,options.invert,options.centerbox,args[0])
 
 		if ret:
 			e=ret[0]
@@ -553,9 +552,9 @@ def commandline_tomoboxer(tomogram,options):
 					nameprjs = nameprjs.replace('.mrc','.hdf')
 
 				if not options.yshort:
-					nameprjs = nameprjs.replace('.hdf','_prjsZ.hdf')
+					nameprjs = nameprjs.replace('.hdf','__prjsz.hdf')
 				elif options.yshort:
-					nameprjs = nameprjs.replace('.hdf','_prjsY.hdf')
+					nameprjs = nameprjs.replace('.hdf','__prjsy.hdf')
 
 				if options.path not in nameprjs:
 					nameprjs = options.path + '/' + nameprjs
@@ -568,7 +567,7 @@ def commandline_tomoboxer(tomogram,options):
 		avg = avgr.finish()
 		if avg:
 			avg['spt_originalstack'] = os.path.basename( name )
-			avgout = options.output.replace( '.hdf', '_AVG.hdf' )
+			avgout = options.output.replace( '.hdf', '__avg.hdf' )
 			if options.path:
 				avgout = options.path + '/' + avgout
 			avg.process_inplace('normalize')
@@ -1261,11 +1260,11 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				center=self.center
 
 				if self.yshort:
-					ret = unbinned_extractor(options,bs,b[0],b[2],b[1],shrinkf,contrast,center)
+					ret = unbinned_extractor(options,bs,b[0],b[2],b[1],shrinkf,contrast,center,args[0])
 					img = ret[0]
 					prj = ret[1]
 				else:
-					ret = unbinned_extractor(options,bs,b[0],b[1],b[2],shrinkf,contrast,center)
+					ret = unbinned_extractor(options,bs,b[0],b[1],b[2],shrinkf,contrast,center,args[0])
 					img = ret[0]
 					prj = ret[1]
 
@@ -1322,11 +1321,11 @@ class EMTomoBoxer(QtGui.QMainWindow):
 				center=self.center
 
 				if self.yshort:
-					ret = unbinned_extractor(options,bs,b[0],b[2],b[1],shrinkf,contrast,center)
+					ret = unbinned_extractor(options,bs,b[0],b[2],b[1],shrinkf,contrast,center,args[0])
 					img = ret[0]
 					prj = ret[1]
 				else:
-					ret = unbinned_extractor(options,bs,b[0],b[1],b[2],shrinkf,contrast,center)
+					ret = unbinned_extractor(options,bs,b[0],b[1],b[2],shrinkf,contrast,center,args[0])
 					img = ret[0]
 					prj = ret[1]
 

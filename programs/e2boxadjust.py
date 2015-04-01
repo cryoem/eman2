@@ -38,7 +38,7 @@ import sys
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """prog [options] <sets/file.lst> <clsxxx.hdf> <box3d 1> <box3d 2> ...
+	usage = """prog [options] <sets/file.lst> <classmx_xx.hdf> <box3d 1> <box3d 2> ...
 	
 Uses the results of 2-D classification to better center particles for re-boxing.
 	
@@ -57,16 +57,18 @@ Uses the results of 2-D classification to better center particles for re-boxing.
 
 	logid=E2init(sys.argv,options.ppid)
 	
-	# The cls file contains particle alignment information
+	# The classmx file contains particle alignment information
 	classmx=EMData(args[1],0)
-	nptcl=classmx[1]["ny"]
+	nptcl=classmx["ny"]
 	cmxtx=EMData(args[1],2)
 	cmxty=EMData(args[1],3)
 	cmxalpha=EMData(args[1],4)
 	cmxmirror=EMData(args[1],5)
 	
+	print "Classmx has info on ",nptcl," particles"
+	
 	# The files containing the particle locations
-	boxfiles=[base_name(args[i],nodir=True) for i in xrange(2,len(args)]
+	boxfiles=[base_name(args[i],nodir=True) for i in xrange(2,len(args))]
 	
 	# The .lst file allowing us to reference original files from the information in cls files 
 	lsx=LSXFile(args[0])
@@ -74,7 +76,7 @@ Uses the results of 2-D classification to better center particles for re-boxing.
 	lpfile=None
 	for p in xrange(nptcl):
 		# The number and file of particle N
-		pn,pfile,com = lsx[i]
+		pn,pfile,com = lsx[p]
 		
 		if pfile!=lpfile:
 			skipfile=False
