@@ -61,7 +61,7 @@ def main():
 	
 	
 	print "Find centers.."
-	imlabel=img.process("morph.object.label",{"thresh":img["mean"]})
+	imlabel=img.process("morph.object.label",{"thresh":img["mean"],"write_centers":True})
 	cnts=imlabel["obj_centers"]
 	ct=[]
 	for c in cnts:

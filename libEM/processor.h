@@ -7672,6 +7672,7 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 		{
 			TypeDict d;
 			d.put("thresh", EMObject::FLOAT, "The threshold to seperate objects.");
+			d.put("more_neighbor", EMObject::BOOL, "Using 8 neighbors(2D) or 26 neighbors(3D). (default is 4/8 neighbors(2D/3D)).");
 			return d;
 		}
 		static const string NAME;
@@ -7703,12 +7704,14 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 		{
 			TypeDict d;
 			d.put("thresh", EMObject::FLOAT, "The threshold to seperate objects.");
+			d.put("more_neighbor", EMObject::BOOL, "Using 8 neighbors(2D) or 26 neighbors(3D). (default is 4/8 neighbors(2D/3D)).");
+			d.put("write_centers", EMObject::BOOL, "Write the center of each object into the attribute of image.(May cause error when there are too many objects)");
 			return d;
 		}
 		static const string NAME;
 	};
 	
-	/**  Thinning a binary map to skelton using the Zhang-Suen thinning algorithm.
+	/**  Thinning a binary map to skelton using the Zhang-Suen thinning algorithm. (1984, ACM)
 	 *   @author: Muyuan Chen
 	 *   @date: 03/2015
 	 */	
@@ -7784,6 +7787,39 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 	};
 	
 	
+	/**  Prune branches from the skeleton. Remove a piece when the minimum distance through density 
+	 *   from an endpoint to the nearest branch point is shorter than a given value.
+	 *   @author: Muyuan Chen
+	 *   @date: 04/2015
+	 */	
+	class PruneSkeletonProcessor:public Processor
+	{
+	public:
+		virtual void process_inplace(EMData * image);
+		virtual EMData* process(const EMData* const image);
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new PruneSkeletonProcessor();
+		}
+		string get_desc() const
+		{
+			return "Prune branches from the skeleton. Remove a piece when the minimum distance through density from an endpoint to the nearest branch point is shorter than a given value.";
+		}
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("thresh", EMObject::FLOAT, "The threshold to binarize the map.");
+			d.put("verbose", EMObject::INT, "Verbose");
+			d.put("maxdist", EMObject::INT, "Maximum distance from the endpoint to branchpoint");
+			return d;
+		}
+		static const string NAME;
+	};
 	
 	
 #ifdef SPARX_USING_CUDA
