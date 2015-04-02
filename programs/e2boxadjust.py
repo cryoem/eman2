@@ -39,9 +39,28 @@ import sys
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] <sets/file.lst> <classmx_xx.hdf> <box3d 1> <box3d 2> ...
-	
-Uses the results of 2-D classification to better center particles for re-boxing.
-	
+
+This program is part of a pipeline to improve centering of subtomograms prior to alignment and averaging.
+This is a typical workflow:
+
+1) select 3-D particles and store locations in .box3d files with names agreeing with the name of the tomogram, eg
+  rawtomograms/file0001.hdf -> rawtomograms/file0001.box3d
+
+2) extract the 3-D particles from the tomograms, and generate Z-projections corresponding to each particle (this may be done automatically by e2spt_boxer)
+
+3) insure that the Z-projections are normalized, filtered and have postive (white) contrast against the background, eg:
+  e2proc2d.py spt_particles/file0001_prjsz.hdf spt_particles/file0001_prjsz.hdf --inplace --process filter.lowpass.gauss:cutoff_abs=0.1 --process filter.highpass.gauss:cutoff_abs=0.02 --mult -1 --process normalize.edgemean
+
+4) build a set containing all of the z projection stacks, eg
+  e2proclst.py spt_particles/file0001_prjsz.hdf spt_particles/file0002_prjsz.hdf --create sets/all_prjsz.lst
+
+5) run e2refine2d.py
+
+6) run this program, eg
+  e2boxadjust.py sets/all_prjsz.lst r2d_01/classmx_08.hdf rawtomograms/*box3d -v 2
+
+7) re-extract the particles using the new _cen.box3d files
+
 """
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
