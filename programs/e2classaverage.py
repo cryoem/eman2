@@ -79,6 +79,7 @@ def main():
 	parser.add_argument("--keep",type=float,help="The fraction of particles to keep in each class.",default=1.0)
 	parser.add_argument("--keepsig", action="store_true", help="Causes the keep argument to be interpreted in standard deviations.",default=False)
 	parser.add_argument("--automask",action="store_true",help="Applies a 2-D automask before centering. Can help with negative stain data, and other cases where centering is poor.")
+	parser.add_argument("--center",type=str,default="xform.center",help="If the default centering algorithm (xform.center) doesn't work well, you can specify one of the others here (e2help.py processor center)")
 	parser.add_argument("--bootstrap",action="store_true",help="Ignored. Present for historical reasons only.")
 	parser.add_argument("--normproc",type=str,help="Normalization processor applied to particles before alignment. Default is normalize.edgemean. If you want to turn this option off specify \'None\'", default="normalize.edgemean")
 	parser.add_argument("--usefilt", dest="usefilt", default=None, help="Specify a particle data file that has been low pass or Wiener filtered. Has a one to one correspondence with your particle data. If specified will be used to align particles to the running class average, however the original particle will be used to generate the actual final class average")
@@ -164,7 +165,7 @@ def main():
 			if options.even: ptcls=[i for i in ptcls if i%2==0]
 			tasks.append(ClassAvTask(options.input,ptcls,options.usefilt,options.ref,options.iter,options.normproc,options.prefilt,
 			  options.align,options.aligncmp,options.ralign,options.raligncmp,options.averager,options.cmp,options.keep,options.keepsig,
-			  options.automask,options.saveali,options.setsfref,options.verbose,cl))
+			  options.automask,options.saveali,options.setsfref,options.verbose,cl,options.center))
 
 	else:
 		ptcls=range(nptcl)
@@ -173,7 +174,7 @@ def main():
 		if options.even: ptcls=[i for i in ptcls if i%2==0]
 		tasks.append(ClassAvTask(options.input,range(nptcl),options.usefilt,options.ref,options.iter,options.normproc,options.prefilt,
 			  options.align,options.aligncmp,options.ralign,options.raligncmp,options.averager,options.cmp,options.keep,options.keepsig,
-			  options.automask,options.saveali,options.setsfref,options.verbose,0))
+			  options.automask,options.saveali,options.setsfref,options.verbose,0,options.center))
 
 	# execute task list
 	if options.parallel:				# run in parallel
@@ -304,8 +305,9 @@ class ClassAvTask(JSTask):
 	"""This task will create a single task-average"""
 
 	def __init__(self,imagefile,imagenums,usefilt=None,ref=None,niter=1,normproc=("normalize.edgemean",{}),prefilt=0,align=("rotate_translate_flip",{}),
-		  aligncmp=("ccc",{}),ralign=None,raligncmp=None,averager=("mean",{}),scmp=("ccc",{}),keep=1.5,keepsig=1,automask=0,saveali=0,setsfref=0,verbose=0,n=0):
+		  aligncmp=("ccc",{}),ralign=None,raligncmp=None,averager=("mean",{}),scmp=("ccc",{}),keep=1.5,keepsig=1,automask=0,saveali=0,setsfref=0,verbose=0,n=0,center="xform.center"):
 		if usefilt==None : usefilt=imagefile
+		self.center=center
 		data={"images":["cache",imagefile,imagenums],"usefilt":["cache",usefilt,imagenums]}
 		if ref!=None : data["ref"]=["cache",ref,n]
 		JSTask.__init__(self,"ClassAv",data,{},"")
@@ -371,7 +373,7 @@ class ClassAvTask(JSTask):
 			#avg.process_inplace("normalize.circlemean")
 			#ali=avg.process("threshold.binary",{"value":avg["mean"]+avg["sigma"]*1.5})
 			#ali.process_inplace("xform.centerofmass",{"threshold":0.5})
-			ali=avg.process("xform.center")
+			ali=avg.process(self.center)
 			fxf=ali["xform.align2d"]
 			if options["verbose"]>0 : print "Final center:",fxf.get_trans_2d()
 			avg1=avg
@@ -464,7 +466,7 @@ def class_average_withali(images,ptcl_info,xform,ref,averager=("mean",{}),normpr
 	return avg
 
 def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),prefilt=0,align=("rotate_translate_flip",{}),
-		aligncmp=("ccc",{}),ralign=None,raligncmp=None,averager=("mean",{}),scmp=("ccc",{}),keep=1.5,keepsig=1,automask=0,saveali=0,verbose=0,callback=None):
+		aligncmp=("ccc",{}),ralign=None,raligncmp=None,averager=("mean",{}),scmp=("ccc",{}),keep=1.5,keepsig=1,automask=0,saveali=0,verbose=0,callback=None,center="xform.center"):
 	"""Create a single class-average by iterative alignment and averaging.
 	images - may either be a list/tuple of images OR a tuple containing a filename followed by integer image numbers
 	ref - optional reference image (EMData).
@@ -531,7 +533,7 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 			#ref2.process_inplace("xform.centerofmass",{"threshold":0.5})						# TODO: should probably check how well this works
 			#fxf=ref2["xform.align2d"]
 			#ref.translate(fxf.get_trans())
-			ref.process_inplace("xform.center")
+			ref.process_inplace(center)
 			ref.process_inplace("mask.gaussian",{"inner_radius":ref["nx"]/2-gmw,"outer_radius":gmw/1.3})
 			ref.process_inplace("normalize.circlemean")
 			ref_orient=None

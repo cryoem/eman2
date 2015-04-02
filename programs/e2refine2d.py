@@ -74,6 +74,7 @@ def main():
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None, guitype='strbox', row=4, col=0, rowspan=1, colspan=3, mode="spr")
 	parser.add_argument("--automask", default=False, action="store_true",help="This will perform a 2-D automask on class-averages to help with centering. May be useful for negative stain data particularly.")
 	parser.add_argument("--centeracf", default=False, action="store_true",help="This option has been removed in favor of a new centering algorithm")
+	parser.add_argument("--center",type=str,default="xform.center",help="If the default centering algorithm (xform.center) doesn't work well, you can specify one of the others here (e2help.py processor center)")
 	parser.add_argument("--check", "-c",default=False, action="store_true",help="Checks the contents of the current directory to verify that e2refine2d.py command will work - checks for the existence of the necessary starting files and checks their dimensions. Performs no work ")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--maxshift", default=-1, type=int, help="Maximum particle translation in x and y")
@@ -280,7 +281,7 @@ def main():
 		if logid : E2progress(logid,proc_tally/total_procs)
 
 		# make class-averages
-		cls_cmd = "e2classaverage.py --input=%s --classmx=%s/classmx_%02d.hdf --output=%s/classes_%02d.hdf --force --iter=%d " %(options.input,options.path,it,options.path,it,options.classiter)
+		cls_cmd = "e2classaverage.py --input=%s --classmx=%s/classmx_%02d.hdf --output=%s/classes_%02d.hdf --force --center %s --iter=%d " %(options.input,options.path,it,options.path,it,options.center,options.classiter)
 		cls_cmd += get_classaverage_extras(options)
 		#run("e2classaverage.py %s %s#classmx_%02d %s#classes_%02d --iter=%d --align=%s:maxshift=%d --averager=%s -vf  --keep=%f --cmp=%s --aligncmp=%s"%(options.input,options.path,it,options.path,it,options.classiter,options.classalign,options.maxshift,options.classaverager,options.classkeep,options.classcmp,options.classaligncmp))
 		run(cls_cmd)
@@ -328,7 +329,7 @@ def get_simmx_cmd(options,refs,simmx,check=False,nofilecheck=False):
 
 def get_classaverage_cmd(options,check=False,nofilecheck=False):
 
-	e2cacmd = "e2classaverage.py --input=%s --classmx=%s --force --output=%s --keep=.75" %(options.startimg,options.classifyfile,options.cafile)
+	e2cacmd = "e2classaverage.py --input=%s --classmx=%s --force --output=%s --keep=.75 --center %s" %(options.startimg,options.classifyfile,options.cafile,options.center)
 
 	e2cacmd += " --ref=%s --iter=%d -f" %(options.projfile,options.classiter)
 

@@ -50,12 +50,17 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	parser.add_argument("--minlosnr",type=float,help="Integrated SNR from 1/200-1/20 1/A must be larger than this",default=0,guitype='floatbox', row=8, col=0)
 	parser.add_argument("--minhisnr",type=float,help="Integrated SNR from 1/10-1/4 1/A must be larger than this",default=0,guitype='floatbox', row=8, col=1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higner number means higher level of verboseness",default=1)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+
 
 	(options, args) = parser.parse_args()
 	
 	if len(args)<1 : 
 		parser.error("At least one lst file required")
 		sys.exit(1)
+
+	logid=E2init(sys.argv,options.ppid)
+
 
 	if options.create != None:
 		lst=LSXFile(options.create,False)
@@ -167,6 +172,8 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 		if options.verbose : 
 			if nwrt==ntot : print "{} particles in {}".format(ntot,options.mergesort)
 			else : print "{} of {} particles written to {}".format(nwrt,ntot,options.mergesort)
+
+	E2end(logid)
 
 if __name__ == "__main__":
 	main()

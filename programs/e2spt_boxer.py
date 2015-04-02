@@ -165,10 +165,7 @@ def main():
 
 		E2end(logger)
 
-
-
 	else:
-
 
 		if options.path and options.verbose:
 			print "OPTIONS.PATH IS!!!!\n\n\n", options.path
@@ -224,7 +221,7 @@ def main():
 			if options.shrink > 1:
 
 				imgnew = img
-				if '_edtedtemp.' not in img:
+				if '_editedtemp.' not in img:
 					imgnew = img.replace('.','_editedtemp.')
 				print "Shrinking, please wait :)"
 				imgfile = EMData()

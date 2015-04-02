@@ -74,32 +74,53 @@ Uses the results of 2-D classification to better center particles for re-boxing.
 	lsx=LSXFile(args[0])
 	
 	lpfile=None
+	skipfile=True
 	for p in xrange(nptcl):
 		# The number and file of particle N
 		pn,pfile,com = lsx[p]
 		
 		if pfile!=lpfile:
+			# write the boxes from the last file
+			if not skipfile: write_boxes(curboxfile,curboxes)
+
 			skipfile=False
 			pfileb=base_name(pfile,nodir=True)
 			if not pfileb in boxfiles :
 				print "No box file found for: ",pfileb
 				lpfile=pfile
 				skipfile=True
-				
+				continue
+			
+			
 			# This is the file containing the box locations for this range of particles
 			curboxfile=args[boxfiles.index(pfileb)+2]
-			print pfileb,"->",curboxfile
+			p0=p
+			if options.verbose: print pfileb,"->",curboxfile
 			
 			# These are the box locations within that file
 			curboxes=[[int(j) for j in i.split()] for i in file(curboxfile,"r") if i[0]!="#"]
+			lpfile=pfile
 		else:
 			if skipfile : continue		# we've already identified this as a file we don't have box locations for
 		
 		ptclxf=Transform({"type":"2d","alpha":cmxalpha[0,p],"mirror":int(cmxmirror[0,p]),"tx":cmxtx[0,p],"ty":cmxty[0,p]})
+		pt2d=ptclxf.get_pre_trans_2d()
+		curboxes[p-p0][0]-=pt2d[0]
+		curboxes[p-p0][1]-=pt2d[1]
 		
-		print ptclxf.get_pre_trans_2d(),ptclxf.get_trans_2d()
 		
+		if options.verbose>1: 
+			try: print "{}) {}: {}\t {:d},{:d}".format(p,p-p0,pfileb,int(pt2d[0]),int(pt2d[1]))
+			except: pass
+	
+	if not skipfile: write_boxes(curboxfile,curboxes)
+	
 	E2end(logid)
+
+def write_boxes(curboxfile,curboxes):
+	print "Writing updated boxes for: ",curboxfile
+	out=file(curboxfile.split(".")[0]+"_cen.box3d","w")
+	for b in curboxes: out.write("{:d}\t{:d}\t{:d}\n".format(int(b[0]),int(b[1]),int(b[2])))
 
 if __name__== "__main__":
 	main()
