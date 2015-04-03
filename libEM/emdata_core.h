@@ -336,6 +336,7 @@ size_t add_complex_at(const int &x,const int &y,const int &z,const std::complex<
 
 inline size_t add_complex_at_fast(const int &x,const int &y,const int &z,const std::complex<float> &val) {
 //if (x>=nx/2 || y>ny/2 || z>nz/2 || x<=-nx/2 || y<-ny/2 || z<-nz/2) return nxyz;
+if (abs(x)>=nx/2 || abs(y)>ny/2 || abs(z)>nz/2) return nxyz;
 
 size_t idx;
 

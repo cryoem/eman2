@@ -253,12 +253,11 @@ return;
 }
 
 size_t EMData::add_complex_at(const int &x,const int &y,const int &z,const std::complex<float> &val) {
-if (abs(x)>=nx/2 || abs(y)>ny/2 || abs(z)>nz/2) return -1;
+if (abs(x)>=nx/2 || abs(y)>ny/2 || abs(z)>nz/2) return nxyz;
 
 size_t idx;
 
 // for x=0, we need to insert the value in 2 places
-// complex conjugate insertion. Removed due to ambiguity with returned index
 if (x==0) {
 	if (y==0 && z==0) {
 		rdata[0]+=(float)val.real();

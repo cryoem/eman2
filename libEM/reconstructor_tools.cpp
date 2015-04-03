@@ -121,19 +121,19 @@ bool FourierInserter3DMode2::insert_pixel(const float& xx, const float& yy, cons
 	int y0 = (int) floor(yy);
 	int z0 = (int) floor(zz);
 	
+	// note that subnx differs in the inserters. In the reconstructors it subx0 is 0 for the full volume. Here it is -1
 	if (subx0<0) {			// normal full reconstruction
 		if (x0<-nx2-1 || y0<-ny2-1 || z0<-nz2-1 || x0>nx2 || y0>ny2 || z0>nz2 ) return false;
 
-		// no error checking on add_complex_fast, so we need to be careful here
 		int x1=x0+1;
 		int y1=y0+1;
 		int z1=z0+1;
-		if (x0<-nx2) x0=-nx2;
-		if (x1>nx2) x1=nx2;
-		if (y0<-ny2) y0=-ny2;
-		if (y1>ny2) y1=ny2;
-		if (z0<-nz2) z0=-nz2;
-		if (z1>nz2) z1=nz2;
+// 		if (x0<-nx2) x0=-nx2;
+// 		if (x1>nx2) x1=nx2;
+// 		if (y0<-ny2) y0=-ny2;
+// 		if (y1>ny2) y1=ny2;
+// 		if (z0<-nz2) z0=-nz2;
+// 		if (z1>nz2) z1=nz2;
 		
 //		float h=2.0/((1.0+pow(Util::hypot3sq(xx,yy,zz),.5))*EMConsts::I2G);
 		float h=1.0f/EMConsts::I2G;
@@ -152,7 +152,7 @@ bool FourierInserter3DMode2::insert_pixel(const float& xx, const float& yy, cons
 					size_t off;
 					off=data->add_complex_at_fast(i,j,k,dt*gg);
 //					off=data->add_complex_at(i,j,k,dt*gg);
-					norm[off/2]+=gg;
+					if (off!=nxyz) norm[off/2]+=gg;
 				}
 			}
 		}

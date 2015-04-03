@@ -262,20 +262,48 @@ void ReconstructorVolumeData::normalize_threed(const bool sqrt_damp,const bool w
 {
 	float* norm = tmp_data->get_data();
 	float* rdata = image->get_data();
-
+	
+	size_t nnx=tmp_data->get_xsize();
+	size_t nnxy=tmp_data->get_ysize()*nnx;
+	
 //	printf("%d %d %d %d %d %d\n",subnx,subny,subnz,image->get_xsize(),image->get_ysize(),image->get_zsize());
 
 	// FIXME should throw a sensible error
 	if ( 0 == norm ) throw NullPointerException("The normalization volume was null!");
 	if ( 0 == rdata ) throw NullPointerException("The complex reconstruction volume was null!");
 
+	// add_complex_at handles complex conjugate addition, but the normalization image doesn't
+	// take this into account, so we need to sum the appropriate values
+	// only works for whole volumes!
+	if (subx0==0 && subnx==nx && suby0==0 && subny==ny && subz0==0 && subnz==nz) {
+		printf("cc gain correction\n");
+		for (int z=-nz/2; z<nz/2; z++) {
+			for (int y=0; y<=ny/2; y++) {
+				if (z==0 && y==0) continue;
+				// x=0 plane
+				size_t idx1=(y==0?0:ny-y)*nnx+(z<=0?-z:nz-z)*nnxy;
+				size_t idx2=y*nnx+(z<0?nz+z:z)*nnxy;
+				if (idx1==idx2) continue;
+				float snorm=norm[idx1]+norm[idx2];
+				norm[idx1]=norm[idx2]=snorm;
+				
+				// This is the x=nx-1 plane
+				idx1+=nnx-1;
+				idx2+=nnx-1;
+				snorm=norm[idx1]+norm[idx2];
+				norm[idx1]=norm[idx2]=snorm;
+			}
+		}
+	}
+	
 	// The math is a bit tricky to explain. Wiener filter is basically SNR/(1+SNR)
 	// In this case, data have already been effectively multiplied by SNR (one image at a time),
 	// so without Wiener filter, we just divide by total SNR. With Wiener filter, we just add
 	// 1.0 to total SNR, and we're done		--steve
 	float wfilt=0.0;
 	if (wiener) wfilt=1.0;		
-	
+		
+	// actual normalization
 	for (size_t i = 0; i < (size_t)subnx * subny * subnz; i += 2) {
 		float d = norm[i/2];
 		if (sqrt_damp) d*=sqrt(d);
@@ -291,40 +319,43 @@ void ReconstructorVolumeData::normalize_threed(const bool sqrt_damp,const bool w
 		}
 	}
 
+	
+	// This task should now be handled by use of add_complex_at, which adds both values when appropriate
+	
 	// enforce complex conj, only works on subvolumes if the complete conjugate plane is in the volume
-	if (subx0==0 && subnx>1 && subny==ny && subnz==nz) {
-		for (int z=0; z<=nz/2; z++) {
-			for (int y=1; y<=ny; y++) {
-				if (y==0 && z==0) continue;
-				// x=0
-				size_t i=(size_t)(y%ny)*subnx+(size_t)(z%nz)*subnx*subny;
-				size_t i2=(size_t)(ny-y)*subnx+(size_t)((nz-z)%nz)*subnx*subny;
-				float ar=(rdata[i]+rdata[i2])/2.0f;
-				float ai=(rdata[i+1]-rdata[i2+1])/2.0f;
-				rdata[i]=ar;
-				rdata[i2]=ar;
-				rdata[i+1]=ai;
-				rdata[i2+1]=-ai;
-			}
-		}
-	}
+// 	if (subx0==0 && subnx>1 && subny==ny && subnz==nz) {
+// 		for (int z=0; z<=nz/2; z++) {
+// 			for (int y=1; y<=ny; y++) {
+// 				if (y==0 && z==0) continue;
+// 				// x=0
+// 				size_t i=(size_t)(y%ny)*subnx+(size_t)(z%nz)*subnx*subny;
+// 				size_t i2=(size_t)(ny-y)*subnx+(size_t)((nz-z)%nz)*subnx*subny;
+// 				float ar=(rdata[i]+rdata[i2])/2.0f;
+// 				float ai=(rdata[i+1]-rdata[i2+1])/2.0f;
+// 				rdata[i]=ar;
+// 				rdata[i2]=ar;
+// 				rdata[i+1]=ai;
+// 				rdata[i2+1]=-ai;
+// 			}
+// 		}
+// 	}
 
-	if (subx0+subnx==nx && subnx>1 && subny==ny && subnz==nz) {
-		for (int z=0; z<=nz/2; z++) {
-			for (int y=1; y<=ny; y++) {
-				if (y==0 && z==0) continue;
-				// x=0
-				size_t i=(size_t)(y%ny)*subnx+(size_t)(z%nz)*subnx*subny+subnx-2;
-				size_t i2=(size_t)(ny-y)*subnx+(size_t)((nz-z)%nz)*subnx*subny+subnx-2;
-				float ar=(rdata[i]+rdata[i2])/2.0f;
-				float ai=(rdata[i+1]-rdata[i2+1])/2.0f;
-				rdata[i]=ar;
-				rdata[i2]=ar;
-				rdata[i+1]=ai;
-				rdata[i2+1]=-ai;
-			}
-		}
-	}
+// 	if (subx0+subnx==nx && subnx>1 && subny==ny && subnz==nz) {
+// 		for (int z=0; z<=nz/2; z++) {
+// 			for (int y=1; y<=ny; y++) {
+// 				if (y==0 && z==0) continue;
+// 				// x=0
+// 				size_t i=(size_t)(y%ny)*subnx+(size_t)(z%nz)*subnx*subny+subnx-2;
+// 				size_t i2=(size_t)(ny-y)*subnx+(size_t)((nz-z)%nz)*subnx*subny+subnx-2;
+// 				float ar=(rdata[i]+rdata[i2])/2.0f;
+// 				float ai=(rdata[i+1]-rdata[i2+1])/2.0f;
+// 				rdata[i]=ar;
+// 				rdata[i2]=ar;
+// 				rdata[i+1]=ai;
+// 				rdata[i2+1]=-ai;
+// 			}
+// 		}
+// 	}
 }
 
 void FourierPlaneReconstructor::load_default_settings() {}
@@ -677,7 +708,7 @@ void FourierReconstructor::do_insert_slice_work(const EMData* const input_slice,
 	for ( vector<Transform>::const_iterator it = syms.begin(); it != syms.end(); ++it ) {
 		Transform t3d = arg*(*it);
 		for (int y = -iny/2; y < iny/2; y++) {
-			for (int x = 0; x <=  inx/2; x++) {
+			for (int x = 0; x < inx/2; x++) {
 
 				float rx = (float) x/(inx-2.0f);	// coords relative to Nyquist=.5
 				float ry = (float) y/iny;

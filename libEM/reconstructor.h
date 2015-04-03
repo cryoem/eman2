@@ -195,7 +195,7 @@ namespace EMAN
 
 	/** This is a Mixin class 
 	 *  A class object encapsulating the volume data required by Reconstructors
-	 *  It basically stores two (pointers) to EMData objectsd stores the dimensions of the image volume.
+	 *  It basically stores two (pointers) to EMData objects and stores the dimensions of the image volume.
 	 *  One EMData object basically stores the real pixel data, the other is used for storing normalization values.
 	 *  This class was originally added simply to encapsulate the
 	 *  the things common to FourierReconstructor, WienerFourierReconstructor
@@ -231,10 +231,13 @@ namespace EMAN
 			int ny,ny2;
 			int nz,nz2;
 			
+			// Note that subvolume capabilities may not be 100% functional
+			// subvolume size
 			int subnx;
 			int subny;
 			int subnz;
 			
+			// subvolume origin
 			int subx0;
 			int suby0;
 			int subz0;
