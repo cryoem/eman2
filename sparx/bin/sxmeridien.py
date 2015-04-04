@@ -1027,7 +1027,7 @@ def main():
 		for procid in xrange(2):
 			coutdir = os.path.join(mainoutputdir,"logb%01d"%procid)
 			doit, keepchecking = checkstep(coutdir, keepchecking, myid, main_node)
-			#if(paramsdict["nsoft"] > 0 and float(paramsdict["an"]) == -1.0):  #  Only do finishing up when the previous step was HSC and exhausting
+			#if(paramsdict["nsoft"] > 0 and float(paramsdict["an"]) == -1.0):  #  Only do finishing up when the previous step was SHC and exhausting
 			if(True):
 				#  Run hard to finish up matching
 				paramsdict = {	"stack":stack,"delta":"%f"%round(degrees(atan(1.0/lastring)), 2) , "ts":"1", "xr":"2", "an":options.an, \

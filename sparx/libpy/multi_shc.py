@@ -1303,7 +1303,7 @@ def multi_shc(all_projs, subset, runs_count, ali3d_options, mpi_comm, log=None, 
 			del all_projs_params
 		else:
 			from utilities import even_angles
-			prms = even_angles(ali3d_options.delta, theta2 = 180.0, symmetry = sym)
+			prms = even_angles(float(ali3d_options.delta[0]), theta2 = 180.0, symmetry = sym)
 			from random import shuffle
 			shuffle(prms)
 			assert(len(prms) > len(all_projs))
