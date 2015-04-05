@@ -6144,6 +6144,10 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 		for  iref in xrange(numref):
 			recvbuf = mpi_gatherv(peaks[iref], nima, MPI_FLOAT, recvcount, disps, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 			if( myid == 0 ): dtot[iref] = recvbuf
+		del recvbuf
+
+
+		#  The while loop over even angles delta should start here.
 		#  prepare reference directions
 		from utilities import even_angles, getvec
 		refa = even_angles(15.0)
@@ -6182,7 +6186,6 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 		assigntorefa = map(int, assigntorefa)
 
 		del refassign, refanorm, transv
-		del recvbuf
 
 
 		"""
@@ -6293,6 +6296,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 					del tasi
 				else:
 					report_error = 1
+			#  This should be deleted only once we know that the number of images is sufficiently large, see below.
 			del dtot
 
 		else:
