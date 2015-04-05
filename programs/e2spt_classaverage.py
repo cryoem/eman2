@@ -104,11 +104,13 @@ def main():
 		
 	parser.add_argument("--iter", type=int, default=1, help="""Default=1. The number of iterations to perform.""", guitype='intbox', row=5, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym')
 	
-	parser.add_argument("--savesteps",action="store_true", default=False, help="""Default=False. If set, will save the average after each iteration to class_#.hdf. Each class in a separate file. Appends to existing files.""", guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='alignment,breaksym')
+	parser.add_argument("--savesteps",action="store_true", default=False, help="""Default=False. If set, this will save the average after each iteration to class_#.hdf. Each class in a separate file. Appends to existing files.""", guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='alignment,breaksym')
 	
-	parser.add_argument("--saveali",action="store_true", default=False, help="""Default=False. If set, will save the aligned particle volumes in class_ptcl.hdf. Overwrites existing file.""", guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
+	parser.add_argument("--saveali",action="store_true", default=False, help="""Default=False. If set, this will save the aligned particle volumes in class_ptcl.hdf. Overwrites existing file.""", guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
 	
-	parser.add_argument("--saveallalign",action="store_true", default=False, help="""Default=False. If set, will save the alignment parameters after each iteration""", guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode='alignment,breaksym')
+	parser.add_argument("--saveallalign",action="store_true", default=False, help="""Default=False. If set, this will save the alignment parameters after each iteration""", guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode='alignment,breaksym')
+	
+	parser.add_argument("--saveallpeaks",action="store_true", default=False, help="""Default=False. If set, this will save the alignment information and score for all examined peaks --npeakstorefine during coarse alignment.""")
 	
 	parser.add_argument("--sym", dest = "sym", default='', help = """Default=None (equivalent to c1). Symmetry to impose -choices are: c<n>, d<n>, h<n>, tet, oct, icos""", guitype='symbox', row=9, col=1, rowspan=1, colspan=2, mode='alignment,breaksym')
 	
@@ -641,9 +643,15 @@ def main():
 	
 	#ptclshdr = EMData( options.input, 0, True )
 	
+	'''
+	This dictionary is used as one measure of convergence. If two consecutive averages have the same values on the header, they are equivalent and the algorithm has converged
+	'''
 	avgshdrs = { 0:[''] }
 	print "Upon initial setup, avgshdrs[0] is",  avgshdrs[0], type( avgshdrs[0] )
 	
+	'''
+	This dictionary will store the mean score per class across alignment iterations
+	'''
 	meanScores = { 0:[0] }
 	
 	if not options.goldstandardoff and ncls > 1 and nptcl > 1:
@@ -785,7 +793,7 @@ def main():
 				#results=get_results(etc,tids,options.verbose,jsA, nptcl ,1)
 				#def get_results(etc,tids,verbose,nptcls,ref=''):
 				
-				results=filter( None, get_results(etc,tids,options.verbose, nptcl ) )
+				results = filter( None, get_results(etc,tids,options.verbose, nptcl ) )
 				
 				#results = get_results(etc,tids,options.verbose, nptcl )
 				
@@ -799,7 +807,7 @@ def main():
 				#ref = make_average(options,ic,options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.sym,options.groups,options.breaksym,options.nocenterofmass,options.verbose,it)
 				ref=''
 				if nptcl > 1:
-					ret = makeAverage(options,ic,results,it)
+					ret = makeAverage(options, ic,results,it)
 					ref = ret[0]
 					weights = ret[1]
 					
@@ -880,15 +888,19 @@ def main():
 			Define and open the .json dictionaries where alignment and score values will be stored, for each iteration,
 			and for each reference if using multiple model refinement
 			'''
+			
 			jsAliParamsPath = options.path + '/tomo_xforms.json'
+			
 			
 			if not options.refinemultireftag:
 				jsAliParamsPath = jsAliParamsPath.replace('.json', '_' + str(it).zfill( len(str(options.iter))) + '.json')
-			
+				
+				
+
 			print "(e2spt_classaverage) This is the .json file to write", jsAliParamsPath
-			jsA = js_open_dict(jsAliParamsPath) #Write particle orientations to json database.
+			jsA = js_open_dict( jsAliParamsPath ) #Write particle orientations to json database.
 			
-			iii=0
+			iii = 0
 			
 			classScoresList = [] 
 			
@@ -897,12 +909,15 @@ def main():
 			'''
 			print "len results is", len(results)
 			print "should match nptcl", nptcl
+			
+			
 			for r in results:
 				#if r and r[0]:	
 				
-				ptclindx = r[-1]
+				ptclindx = r[1]
 					
 				score = r[0][0]['score']
+				
 				
 				#classmxScores.set_value_at(ic,iii,score)
 			
@@ -919,6 +934,58 @@ def main():
 				xformslabel = 'tomo_' + str( ptclindx ).zfill( len( str( nptcl ) ) )			
 				jsA.setval( xformslabel, [ t , score ] )
 			
+			
+				if options.saveallpeaks and options.npeakstorefine > 1:
+					scoresCoarse = []
+					
+					rCoarse = r[2]
+					
+					for peak in rCoarse:
+						sc = peak['score']
+						
+						if float( sc ) < 0.0:
+							scoresCoarse.append( sc )
+						
+					meanPeaksScoresCoarse = numpy.mean( scoresCoarse )
+					
+					#sigmaPeaksScoresCoarse = 0.0
+					#if len( scoresCoarse ) > 1:
+					
+					sigmaPeaksScoresCoarse = numpy.std( scoresCoarse )
+					
+					
+					if len(scoresCoarse) > 1:
+					
+					
+						jsAliParamsPathCoarseAll = options.path + '/tomo_xforms_coarse_allpeaks.json'
+	
+						if not options.refinemultireftag:
+							jsAliParamsPathCoarseAll = jsAliParamsPathCoarseAll.replace('.json', '_' + str(it).zfill( len(str(options.iter))) + '.json')
+	
+						jsAcoarseAll = js_open_dict( jsAliParamsPathCoarseAll )
+						
+						pi = 0
+						
+						for peak in rCoarse:
+							tc = peak['xform.align3d']
+							sc = peak['score']
+						
+							if float( sc ) < 0.0:
+								z = ( sc - meanPeaksScoresCoarse ) / sigmaPeaksScoresCoarse
+						
+								print "pi, sc, meanPeaksScoresCoarse, sigmaPeaksScoresCoarse, z", pi, sc, meanPeaksScoresCoarse, sigmaPeaksScoresCoarse, z
+						
+								peaklabel = str( pi ).zfill( len( str(options.npeakstorefine) ) )
+						
+								jsAcoarseAll.setval( xformslabel + '_peak_' + peaklabel , [ tc , 'ccc='+str(sc), 'zscore='+str(z) ] )
+							else:
+								print "Empty score for peak", pi
+						
+							pi += 1	
+					else:
+						print "WARNING: Not enough successful alignments to compute a z-score"
+						
+						
 				trans=t.get_trans()
 				print "\n\n\nTranslations were", trans
 				print "Therefre the transform was", t
@@ -2550,7 +2617,7 @@ def makeAverage(options,ic,results,it=0):
 	
 	ii=0
 	for r in results:
-		ptclindx = r[-1]
+		ptclindx = r[1]
 		ptcl = EMData(ptcl_file,ptclindx)
 		weight = 1.0
 		
@@ -2738,13 +2805,13 @@ def get_results(etc,tids,verbose,nptcls,refmethod=''):
 				r = etc.get_results( tidsleft[i] ) 			# results for a completed task
 				
 				#print "r is", r
-				ptcl = r[0].classoptions["ptclnum"]			# get the particle number from the task rather than trying to work back to it
+				ptcl = r[0].classoptions['ptclnum']			# get the particle number from the task rather than trying to work back to it
 				#print "ptcl is", ptcl
 				#print "results inside get_results are", results
 				
 				
-				if r[1]["final"]:
-					results[ptcl] = [ filter(None,r[1]["final"]) ,ptcl]					# this will be a list of (qual,Transform)
+				if r[1]['final']:
+					results[ptcl] = [ filter(None,r[1]['final']) , ptcl, filter(None,r[1]['coarse']) ]					# this will be a list of (qual,Transform)
 					
 				#print "ptcl and type are", ptcl, type(ptcl)
 				#print "results[ptcl] are", results[ptcl]
@@ -3024,7 +3091,9 @@ def align3Dfunc(fixedimage,image,ptclnum,label,options,transform,currentIter):
 
 
 '''
-FUNCTION THAT DOES THE ACTUAL ALIGNMENT OF TWO GIVEN SUBVOLUMES -This is also used by e2spt_hac.py, any modification to it or its used parameters should be made with caution
+FUNCTION THAT DOES THE ACTUAL ALIGNMENT OF TWO GIVEN SUBVOLUMES -This is also used by e2spt_hac.py, 
+e2spt_binarytree.py and e2spt_refinemulti.py, any modification to it or its used parameters 
+should be made with caution
 '''
 def alignment( fixedimage, image, label, options, xformslabel, iter, transform, prog='e2spt_classaverage', refpreprocess=0 ):
 	
@@ -3087,18 +3156,25 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	sfixedimage = fixedimage.copy()
 	s2fixedimage = fixedimage.copy()
 	
+	print "s2fixedimage starts with size", s2fixedimage['nx']
+	#sys.exit()
+	
 	if options.clipali:
 		if sfixedimage['nx'] != options.clipali or sfixedimage['ny'] != options.clipali or sfixedimage['nz'] != options.clipali:
-			sfixedimage = clip3D( sfixedimage, options.clipali )
 			
+			sfixedimage = clip3D( sfixedimage, options.clipali )
+			print "clipping reference for coarse alignment", options.clipali, sfixedimage['nx']
 			#print "\nclipped sfixedimage to", options.clipali, sfixedimage['nx']
 		
 		if s2fixedimage['nx'] != options.clipali or s2fixedimage['ny'] != options.clipali or s2fixedimage['nz'] != options.clipali:
 			s2fixedimage = clip3D( s2fixedimage, options.clipali )
+			print "clipping reference for fine alignment", options.clipali, s2fixedimage['nx']
 			
 			#print "\nclipped s2fixedimage to", options.clipali, s2fixedimage['nx']
-
 	
+	print "before refpreprocess, refpreprocess and iter", refpreprocess, iter
+	
+		
 	if not refpreprocess:
 		print "\nthere is NO refpreprocess! But an external reference WAS provided, type, len", options.ref
 	
@@ -3110,18 +3186,21 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		#		s2fixedimage = clip3D( s2fixedimage, options.clipali )
 		
 		if options.shrink and int(options.shrink) > 1:
-			print "shrinking sfixedimage BEFORE", sfixedimage['nx']
+			print "shrinking sfixedimage BEFORE, iter", sfixedimage['nx'], iter
 			sfixedimage = sfixedimage.process('math.meanshrink',{'n':options.shrink})
-			print "shrinking sfixedimage AFTER", sfixedimage['nx']
+			print "shrinking sfixedimage AFTER, iter", sfixedimage['nx'], iter
 			
 		
 		if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
-			
+			print "there's fine alignment"
 			if options.procfinelikecoarse:
+				print "there's procfinelikecoarse"
 				s2fixedimage = sfixedimage.copy()
 			
 			elif options.shrinkfine and int(options.shrinkfine) > 1:
 				s2fixedimage = s2fixedimage.process('math.meanshrink',{'n':options.shrinkfine})
+				print "shrinking reference for fine alignment!!!!, iter", options.shrinkfine, s2fixedimage['nx'], iter
+
 		else:
 			#s2fixedimage = sfixedimage.copy()
 			#s2fixedimage = fixedimage.copy()
@@ -3129,15 +3208,18 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 
 	
 	elif refpreprocess:
-		
+		print "there is refpreprocess, iter", iter
 		savetag = 'ref'
 		if 'odd' in label or 'even' in label:
 			savetag = ''
 			
 		if options.threshold or options.normproc or options.mask or options.preprocess or options.lowpass or options.highpass or int(options.shrink) > 1:
 			#print "\nThere IS refpreprocess!"	
+			
+			print "BEFORE preprocessing coarse ref, because there is refpreprocess, size is, iter", sfixedimage['nx'],iter
 			sfixedimage = preprocessing(sfixedimage,options, refindx, savetag ,'yes',round)
-		
+			print "AFTER preprocessing coarse ref, because there is refpreprocess, size is, iter", sfixedimage['nx'],iter
+
 		#Only preprocess again if there's fine alignment, AND IF the parameters for fine alignment are different
 			
 		if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
@@ -3145,17 +3227,26 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			#	s2fixedimage = sfixedimage.copy()
 			#	print "REFERENCE fine preprocessing is equal to coarse"
 			
+			print "procfinelikecoarse is", options.procfinelikecoarse
+			
 			if options.procfinelikecoarse:
 				s2fixedimage = sfixedimage.copy()
 			
 			elif options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1:
-				s2fixedimage = preprocessing(s2fixedimage,options,refindx, savetag ,'no',round)
+				print "BEFORE preprocessing fine ref, because there is refpreprocess, size is, iter", s2fixedimage['nx'],iter
+
+				s2fixedimage = preprocessing(s2fixedimage,options,refindx, savetag ,'no',round,'fine')
+		
+				print "AFTER preprocessing fine ref, because there is refpreprocess, size is, iter", s2fixedimage['nx'],iter
+
 		else:
 			#s2fixedimage = sfixedimage.copy()
 			#s2fixedimage = fixedimage.copy()	
 			s2fixedimage = None
 	
+	print "after all preproc, coarse and fine refs are of size in iter", sfixedimage['nx'], s2fixedimage['nx'], iter
 	
+
 	#########################################
 	#Preprocess the particle or "moving image"
 	#########################################
@@ -3206,6 +3297,9 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		#s2image = image.copy()
 		s2image = None
 	
+	print "after all preproc, coarse and fine PTCLS are of size in iter", sfixedimage['nx'], s2fixedimage['nx'], iter
+	
+	#sys.exit()
 	
 	
 	if sfixedimage['nx'] != simage['nx']:
@@ -3394,6 +3488,12 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	#print "\n\n\nRRRRRRRRR\n Returning from alignment", 
 	#print "bestfinal",bestfinal
 	#print "and bestcorase", bestcoarse
+	
+	'''
+	bestfinal was sorted, but should also sort bestcoarse in case it's used independently later
+	'''
+	
+	bestcoarse = sorted(bestcoarse, key=itemgetter('score'))
 	
 	return [bestfinal, bestcoarse]
 	
