@@ -818,7 +818,7 @@ class EMBdbFileType(EMFileType) :
 			return [("Show 3D", "Add to 3D window", self.show3dApp), ("Show 3D+", "New 3D Window", self.show3DNew), ("Show Stack", "Show as set of 2-D Z slices", self.show2dStack), 
 				("Show Stack+", "Show all images together in a new window", self.show2dStackNew), ("Show 2D", "Show in a scrollable 2D image window", self.show2dSingle), 
 				("Show 2D+", "Show all images, one at a time in a new window", self.show2dSingleNew), ("Chimera", "Open in chimera (if installed)", self.showChimera), 
-				("FilterTool", "Open in e2filtertool.py", self.showFilterTool), ("Save As", "Saves images in new file format", self.saveAs)]
+				("FilterTool", "Open in e2filtertool.py", self.showFilterTool), ("ProjXYZ", "Make projections along X,Y,Z", self.showProjXYZ ),("Save As", "Saves images in new file format", self.saveAs)]
 		# single 2-D
 		elif self.nimg == 1 and self.dim[1] > 1 :
 			return [("Show 2D", "Show in a 2D single image display", self.show2dSingle), ("Show 2D+", "Show in new 2D single image display", self.show2dSingleNew), ("FilterTool", "Open in e2filtertool.py", self.showFilterTool), ("Save As", "Saves images in new file format", self.saveAs)]
@@ -838,6 +838,23 @@ class EMBdbFileType(EMFileType) :
 			return [("Plot 2D", "Plot all on a single 2-D plot", self.plot2dNew), ("Save As", "Saves images in new file format", self.saveAs)]
 
 		return []
+
+	def showProjXYZ(self,brws) :
+		"""Show XYZ projections of 3-D volume"""
+
+		brws.busy()
+
+		tmp=EMData(self.path, 0)
+		data=[tmp.process("misc.directional_sum",{"axis":axis}) for axis in "xyz"]
+	
+		target = EMImage2DWidget(data)
+		brws.view2d.append(target)
+
+		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
+
+		brws.notbusy()
+		target.show()
+		target.raise_()
 
 	def showChimera(self, brws) :
 		"""Open in Chimera"""
@@ -904,7 +921,7 @@ class EMImageFileType(EMFileType) :
 			return [("Show 3D", "Add to 3D window", self.show3dApp), ("Show 3D+", "New 3D Window", self.show3DNew), ("Show Stack", "Show as set of 2-D Z slices", self.show2dStack), 
 				("Show Stack+", "Show all images together in a new window", self.show2dStackNew), ("Show 2D", "Show in a scrollable 2D image window", self.show2dSingle), 
 				("Show 2D+", "Show all images, one at a time in a new window", self.show2dSingleNew), ("Chimera", "Open in chimera (if installed)", self.showChimera), 
-				("FilterTool", "Open in e2filtertool.py", self.showFilterTool), ("Save As", "Saves images in new file format", self.saveAs)]
+				("FilterTool", "Open in e2filtertool.py", self.showFilterTool), ("ProjXYZ", "Make projections along X,Y,Z", self.showProjXYZ ), ("Save As", "Saves images in new file format", self.saveAs)]
 		## 2-D stack, STEVE: THIS SHOULD NOT BE HERE
 		# elif self.nimg > 1 :
 			# return [("Show Stack", "Show as set of 2-D Z slices", self.show2dStack), ("Show Stack+", "Show all images together in a new window", self.show2dStackNew), ("Show 2D", "Show in a scrollable 2D image window", self.show2dSingle), 
@@ -915,6 +932,23 @@ class EMImageFileType(EMFileType) :
 		else :
 			return [("Plot 2D", "Add to current plot", self.plot2dApp), ("Plot 2D+", "Make new plot", self.plot2dNew), 
 				("Show 2D", "Replace in 2D single image display", self.show2dSingle), ("Show 2D+", "New 2D single image display", self.show2dSingleNew), ("Save As", "Saves images in new file format", self.saveAs)]
+
+	def showProjXYZ(self,brws) :
+		"""Show XYZ projections of 3-D volume"""
+
+		brws.busy()
+
+		tmp=EMData(self.path, 0)
+		data=[tmp.process("misc.directional_sum",{"axis":axis}) for axis in "xyz"]
+	
+		target = EMImage2DWidget(data)
+		brws.view2d.append(target)
+
+		target.qt_parent.setWindowTitle(self.path.split('/')[-1])
+
+		brws.notbusy()
+		target.show()
+		target.raise_()
 
 	def showChimera(self, brws) :
 		"""Open in Chimera"""
@@ -1351,7 +1385,7 @@ class EMDirEntry(object) :
 					except : continue
 					break
 				if i == 9 :
-					print "Error: all of the first 10 images are missing !"
+					print "Error: all of the first 10 images are missing ! : ",self.path()
 					return
 
 			if tmp["ny"] == 1 : self.dim = str(tmp["nx"])

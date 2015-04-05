@@ -662,6 +662,8 @@ int FourierReconstructor::insert_slice(const EMData* const input_slice, const Tr
 
 	// Finally to the pixel wise slice insertion
 	//slice->copy_to_cuda();
+//	EMData *s2=slice->do_ift();
+//	s2->write_image("is.hdf",-1);
 	do_insert_slice_work(slice, *rotation, weight);
 	
 	delete rotation; rotation=0;
