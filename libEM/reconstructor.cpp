@@ -276,10 +276,10 @@ void ReconstructorVolumeData::normalize_threed(const bool sqrt_damp,const bool w
 	// take this into account, so we need to sum the appropriate values
 	// only works for whole volumes!
 	if (subx0==0 && subnx==nx && suby0==0 && subny==ny && subz0==0 && subnz==nz) {
-		printf("cc gain correction\n");
+//		printf("cc gain correction\n");
 		for (int z=-nz/2; z<nz/2; z++) {
-			for (int y=0; y<=ny/2; y++) {
-				if (z==0 && y==0) continue;
+			for (int y=0; y<ny/2; y++) {
+				if (z<=0 && y==0) continue;
 				// x=0 plane
 				size_t idx1=(y==0?0:ny-y)*nnx+(z<=0?-z:nz-z)*nnxy;
 				size_t idx2=y*nnx+(z<0?nz+z:z)*nnxy;
@@ -295,6 +295,7 @@ void ReconstructorVolumeData::normalize_threed(const bool sqrt_damp,const bool w
 			}
 		}
 	}
+//	else printf("Subregion, no CC plane correction\n");
 	
 	// The math is a bit tricky to explain. Wiener filter is basically SNR/(1+SNR)
 	// In this case, data have already been effectively multiplied by SNR (one image at a time),
