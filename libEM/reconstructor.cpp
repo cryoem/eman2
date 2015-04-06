@@ -278,8 +278,8 @@ void ReconstructorVolumeData::normalize_threed(const bool sqrt_damp,const bool w
 	if (subx0==0 && subnx==nx && suby0==0 && subny==ny && subz0==0 && subnz==nz) {
 //		printf("cc gain correction\n");
 		for (int z=-nz/2; z<nz/2; z++) {
-			for (int y=0; y<ny/2; y++) {
-				if (z<=0 && y==0) continue;
+			for (int y=0; y<=ny/2; y++) {
+				if (z<=0 && (y==0||y==ny/2)) continue;
 				// x=0 plane
 				size_t idx1=(y==0?0:ny-y)*nnx+(z<=0?-z:nz-z)*nnxy;
 				size_t idx2=y*nnx+(z<0?nz+z:z)*nnxy;
@@ -294,6 +294,12 @@ void ReconstructorVolumeData::normalize_threed(const bool sqrt_damp,const bool w
 				norm[idx1]=norm[idx2]=snorm;
 			}
 		}
+		// special cases not handled elsewhere
+		norm[0     +   0*nnx+nz/2*nnxy]*=2;
+		norm[0     +ny/2*nnx+   0*nnxy]*=2;
+		norm[0     +ny/2*nnx+nz/2*nnxy]*=2;
+		norm[nx/2-1+   0*nnx+nz/2*nnxy]*=2;
+		norm[nx/2-1+ny/2*nnx+   0*nnxy]*=2;
 	}
 //	else printf("Subregion, no CC plane correction\n");
 	

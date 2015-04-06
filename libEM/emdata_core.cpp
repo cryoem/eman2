@@ -255,8 +255,8 @@ return;
 size_t EMData::add_complex_at(const int &x,const int &y,const int &z,const std::complex<float> &val) {
 if (abs(x)>=nx/2 || abs(y)>ny/2 || abs(z)>nz/2) return nxyz;
 
+//if (x==0 && abs(y)==16 && abs(z)==1) printf("## %d %d %d\n",x,y,z);
 size_t idx;
-
 // for x=0, we need to insert the value in 2 places
 if (x==0) {
 	if (y==0 && z==0) {
@@ -266,6 +266,7 @@ if (x==0) {
 	}
 	// complex conjugate in x=0 plane
 	size_t idx=(y<=0?-y:ny-y)*(size_t)nx+(z<=0?-z:nz-z)*(size_t)nxy;
+//	if (idx==16*34+1*34*32) printf("a %d %d %d\t%1.5f+%1.5fi\t%1.5f+%1.5fi\n",x,y,z,val.real(),val.imag(),rdata[idx],rdata[idx+1]);
 	rdata[idx]+=(float)val.real();
 	rdata[idx+1]+=(float)-val.imag();
 }
@@ -277,17 +278,20 @@ if (abs(x)==nx/2-1) {
 	}
 	// complex conjugate in x=0 plane
 	size_t idx=nx-2+(y<=0?-y:ny-y)*(size_t)nx+(z<=0?-z:nz-z)*(size_t)nxy;
+//	if (idx==16*34+1*34*32) printf("b %d %d %d\t%1.5f+%1.5fi\t%1.5f+%1.5fi\n",x,y,z,val.real(),val.imag(),rdata[idx],rdata[idx+1]);
 	rdata[idx]+=(float)val.real();
 	rdata[idx+1]+=(float)-val.imag();
 }
 if (x<0) {
 	idx=-x*2+(y<=0?-y:ny-y)*(size_t)nx+(z<=0?-z:nz-z)*(size_t)nxy;
+//	if (idx==16*34+1*34*32) printf("c %d %d %d\t%1.5f+%1.5fi\t%1.5f+%1.5fi\n",x,y,z,val.real(),val.imag(),rdata[idx],rdata[idx+1]);
 	rdata[idx]+=(float)val.real();
 	rdata[idx+1]+=-(float)val.imag();
 	return idx;
 }
 
 idx=x*2+(y<0?ny+y:y)*(size_t)nx+(z<0?nz+z:z)*(size_t)nxy;
+//if (idx==16*34+1*34*32) printf("d %d %d %d\t%1.5f+%1.5fi\t%1.5f+%1.5fi\n",x,y,z,val.real(),val.imag(),rdata[idx],rdata[idx+1]);
 rdata[idx]+=(float)val.real();
 rdata[idx+1]+=(float)val.imag();
 
