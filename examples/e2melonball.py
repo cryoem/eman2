@@ -46,47 +46,33 @@ def main():
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_argument("--input", default='',type=str, help="""3D map or stack of maps to 
-		extract smaller regions from.""")
+	parser.add_argument("--input", default='',type=str, help="""3D map or stack of maps to extract smaller regions from.""")
 	
-	parser.add_argument("--output", default='extracts',type=str, help="""String to use as
-		the 'stem' for naming output volumes. Note that for each input volume, you'll get
-		a stack of subvolumes. For example, if you provide a stack with 3 volumes, and
-		you extract 12 subvolumes from each of these, you'll have 3 stacks of extracted
-		subvolumes.""")
+	parser.add_argument("--output", default='extracts',type=str, help="""String to use as the 'stem' for naming output volumes. Note that for each input volume, you'll get a stack of subvolumes. For example, if you provide a stack with 3 volumes, and you extract 12 subvolumes from each of these, you'll have 3 stacks of extracted subvolumes.""")
 		
-	parser.add_argument("--path",type=str,help=""""Name of directory where to store the 
-		output file(s)""",default="melonscoops")
+	parser.add_argument("--path",type=str,help=""""Name of directory where to store the output file(s)""",default="melonscoops")
 	
-	parser.add_argument("--sym", dest = "sym", default="c1", help = """Specify symmetry. 
-		Choices are: c<n>, d<n>, h<n>, tet, oct, icos. For asymmetric reconstruction ommit 
-		this option or specify c1.""")
+	parser.add_argument("--sym", dest = "sym", default="c1", help = """Specify symmetry. Choices are: c<n>, d<n>, h<n>, tet, oct, icos. For asymmetric reconstruction ommit this option or specify c1.""")
 	
-	parser.add_argument("--vertices", action='store_true', default=False,help="""Only works
-		if --sym=icos. This flag will make the program extract only the 12 vertices from
-		among all 60 symmetry related units.""") 
+	parser.add_argument("--vertices", action='store_true', default=False,help="""Only works if --sym=icos. This flag will make the program extract only the 12 vertices from among all 60 symmetry related units.""") 
 	
-	parser.add_argument("--mask",type=str,help="""Mask processor to define the shape of
-		regions to extract. Default is None.""", default="")
+	parser.add_argument("--mask",type=str,help="""Mask processor to define the shape of regions to extract. Default is None.""", default="")
 		
-	parser.add_argument("--maskfile",type=str,help="""Precomputed mask to use to extract
-		subvolumes from the locations specified through --coords or through --radius and 
-		--sym""", default="")
+	parser.add_argument("--maskfile",type=str,help="""Precomputed mask to use to extract subvolumes from the locations specified through --coords or through --radius and --sym""", default="")
 		
-	parser.add_argument("--savescoops",action='store_true',default='',help="""Save extracted
-		parts from each particle into a per-particle stack, with extracted subvolumes centered
-		in a box of the size specified by --boxsize, and rotated so that each subvolume is pointing along Z.""")
+	parser.add_argument("--savescoops",action='store_true',default='',help="""Save extracted parts from each particle into a per-particle stack, with extracted subvolumes centered in a box of the size specified by --boxsize, and rotated so that each subvolume is pointing along Z.""")
 	
-	parser.add_argument("--savescoopsinplace",action='store_true',default='',help="""Save 
-		extracted parts from each particle into a per-particle stack, with extracted 
-		subvolumes 'in-situ'; that is, with the same size and orientation as in the original
-		volume.""")		
+	parser.add_argument("--savescoopsinplace",action='store_true',default='',help="""Save extracted parts from each particle into a per-particle stack, with extracted subvolumes 'in-situ'; that is, with the same size and orientation as in the original volume.""")		
 		
-	parser.add_argument("--coords",type=str,help="""File with coordinates from where to 
-		extract subvolumes.""", default="")
+	parser.add_argument("--coords",type=str,help="""File with coordinates from where to extract subvolumes.""", default="")
 		
-	parser.add_argument("--radius",type=str,help="""Radius (in pixels) where to center the
-		mask for subvolume extraction.""", default="")
+	parser.add_argument("--radius",type=int,help="""Radius (in pixels) where to center the mask for subvolume extraction. Works only for cases in which the asymmetric unit of interest lies along z (for example, vertexes of an icosahedral virus aligned to the symmetry axes such that a vertex lies along z). Supplying --tz should achieve the same results.""", default=0)
+	
+	parser.add_argument("--tx",type=int,help="""Translation (in pixels) along x to define the mask's center. If supplied with --radius, the latter will be ignored.""", default=0)
+
+	parser.add_argument("--ty",type=int,help="""Translation (in pixels) along y to define the masks's center. If supplied with --radius, the latter will be ignored.""", default=0)
+
+	parser.add_argument("--tz",type=int,help="""Translation (in pixels) along z to define the masks's center. If supplied with --radius, the latter will be ignored.""", default=0)
 	
 	#parser.add_argument("--normproc",type=str,default='',help="Normalization processor applied to particles before alignment. Default is to use normalize. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'")
 	#
@@ -99,9 +85,7 @@ def main():
 
 	#parser.add_argument("--highpass",type=str,default='',help="A highpass filtering processor (as in e2proc3d.py) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=18, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 
-	parser.add_argument("--boxsize",type=int,default=0,help="""If specified, the output
-		subvolumes will be clipped to this size and centered in the box; otherwise, they 
-		will be saved in a boxsize equal to the volume they came from.""")
+	parser.add_argument("--boxsize",type=int,default=0,help="""If specified, the output subvolumes will be clipped to this size and centered in the box; otherwise, they will be saved in a boxsize equal to the volume they came from.""")
 	
 	#parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:<option>=<value>:<option>:<value>",default=None, guitype='strbox', row=8, col=0, rowspan=1, colspan=2, mode="align")
 	
@@ -160,11 +144,15 @@ def main():
 		r=Region( (2*maskcx - inputhdr['nx'])/2, (2*maskcx - inputhdr['ny'])/2, (2*maskcx - inputhdr['nz'])/2, inputhdr['nx'],inputhdr['ny'],inputhdr['nz'])
 		mask.clip_inplace( r )
 	
-	print "\nMask is done"
+	print "\nMask done"
 	
-	mask.translate(0,0, float(options.radius) )
-	
-	print "\nMask translated by radius", options.radius
+	if options.radius:
+		mask.translate(0,0, float(options.radius) )
+		print "\nMask translated by radius %d along z" %( options.radius )
+
+	else:
+		mask.translate( options.tx, options.ty, options.tz )
+		print "\nMask translated by tx=%d, ty=%d, tz=%d,", options.tx, options.ty, options.tz
 	
 	symnames = ['oct','OCT','icos','ICOS','tet','TET']
 	
@@ -173,7 +161,7 @@ def main():
 	anglelines = []
 	
 	if options.sym:
-		print "\nSym found", options.sym
+		print "\nsym found", options.sym
 	
 		symnum = 0
 		
@@ -208,8 +196,13 @@ def main():
 		t = Transform()
 		
 		if symnum:
-			print "\nSymnum determined",symnum
+			print "\nsymnum determined",symnum
+			print "while symletter is", symletter
 			
+			if symletter == 'd' or symletter == 'D':
+				symnum *= 2
+				print "\nsymnum corrected, because symmetry is d",symnum
+				
 			#if options.save
 			
 			for i in range(symnum):
@@ -232,21 +225,25 @@ def main():
 	masks = {}
 	
 	if orientations:
-		print "\nGenerated these many orientations", len (orientations)
-		if options.sym == 'icos' or options.sym == 'ICOS' and options.vertices:
+		print "\ngenerated these many orientations", len (orientations)
+		if options.sym == 'icos' or options.sym == 'ICOS':
+			if options.vertices:
 
-			print "\nBut fetching vertices only"
+				print "\nbut fetching vertices only"
 			
-			#orientations = genicosvertices ( orientations )
+				#orientations = genicosvertices ( orientations )
 
-
-
-			orientations = genicosverticesnew ( orientations )
+				orientations = genicosverticesnew ( orientations )
 			
 			
 		centerx = 0.0
 		centery = 0.0
 		centerz = float( options.radius )
+		
+		if not options.radius:
+			centerx = options.tx 
+			centery = options.ty 
+			centerz = options.tz
 		
 		groundv = Vec3f(centerx,centery,centerz)
 		
@@ -266,7 +263,9 @@ def main():
 			tmpmask = mask.copy()
 			tmpmask.transform( t )
 			
-			tmpmask.write_image(options.path + '/masks.hdf',k)
+			tmpmask['origin_x'] = 0
+			tmpmask['origin_y'] = 0
+			tmpmask['origin_z'] = 0
 			
 			finalmask = finalmask + tmpmask
 			
@@ -277,13 +276,30 @@ def main():
 			newcentery = int( round(center[1] + mask['ny']/2.0 ))
 			newcenterz = int( round(center[2] + mask['nz']/2.0 ))
 			
+			tout = Transform()
+			rot = t.get_rotation()
+			
+			tout.set_rotation( rot )
+			tout.set_trans( newcenterx, newcentery, newcenterz )
+			
+			tmpmask['spt_scoop_center'] = [ newcenterx, newcentery, newcenterz ]
+			tmpmask['xform.align3d'] = tout
+			
+			tmpmask.write_image(options.path + '/masks.hdf',k)
+			
+			masks.update( {k:[tmpmask,tout,[newcenterx,newcentery,newcenterz]]} )
+			
+			
 			centerline = str(newcenterx) + ' ' + str(newcentery) + ' ' + str(newcenterz) + '\n'
 			
 			f.write(centerline)
 			
 			centersmap.set_value_at( int( round(center[0] + mask['nx']/2.0 )) , int( round(center[1] + mask['ny']/2.0 )), int( round(center[2] + mask['nz']/2.0 )), 1.0 )
 		
-			masks.update( {k:[tmpmask,t,[newcenterx,newcentery,newcenterz]]} )
+			
+			
+			#print "setting indx and t are", k, t
+			#print "whereas mask t is", tout
 		
 		f.close()
 			
@@ -307,37 +323,58 @@ def main():
 			for key in masks.keys():
 			
 				scoopinplace = ptcl.copy()
+				scoop = ptcl.copy()
+				
 				thismask = masks[key][0]
+				
+				t = masks[key][1]
+				
+				#tapp = Transform()
+				#rot = t.get_rotation()
+				#tapp.set_rotation( rot )
+				
+				#print "key and t are", key, tapp
+				sx = masks[key][-1][0]
+				sy = masks[key][-1][1]
+				sz = masks[key][-1][2]
 				
 				if options.savescoopsinplace:
 					
+					#scoopinplace.mult( thismask )
+					scoopinplace.process_inplace('normalize.edgemean')
 					scoopinplace.mult( thismask )
-					scoopinplace.process_inplace('normalize')
-					scoopinplace.mult( thismask )
+					
+					
+					scoopinplace['origin_x'] = 0
+					scoopinplace['origin_y'] = 0
+					scoopinplace['origin_z'] = 0
+					
+					scoopinplace['spt_scoop_x'] = sx
+					scoopinplace['spt_scoop_y'] = sy
+					scoopinplace['spt_scoop_z'] = sz
+					
+					scoopinplace['spt_score'] = 0
+					
+					scoopinplace['xform.align3d'] = t
 					
 					scoopinplace.write_image( options.path + '/' + scoopsinplacestack, key )
 					print "\nWrote this scoop 'in place' ", key
 					
 				if options.savescoops:
+					
+					scoop.mult( thismask )
+					
 					box = options.boxsize
 		
-					#bigbox = mask['nx']
-					#if options.boxsize:
-										
 					extra = math.fabs( math.sqrt(2.0) * ( box/2.0 - 1.0 ) - ( box/2.0 - 1 ) )	
 					paddedbox = int( math.ceil( float(box) + extra ) )
-					
-					t = masks[key][1]
-					sx = masks[key][-1][0]
-					sy = masks[key][-1][1]
-					sz = masks[key][-1][2]
 					
 					#print "Center for region is", sx,sy,sz
 						
 					print "\nExtracting this scoop", key
 					print "With a padded box of this size", paddedbox
 					bigr = Region( (sx*2 - paddedbox)/2 ,  (sy*2 - paddedbox)/2 ,  (sz*2 - paddedbox)/2, paddedbox,paddedbox,paddedbox)
-					bigscoop = ptcl.get_clip(bigr)
+					bigscoop = scoop.get_clip(bigr)
 					
 					#bigscoop.write_image( options.path + '/bigscoops.hdf', key)
 					
@@ -346,8 +383,14 @@ def main():
 					bigscoop['origin_z'] = 0
 					
 					print "\nOrienting the subscoop with this transform", t
-					ti = t.inverse()
-					bigscoop.transform(ti)
+					
+					t2use = Transform()
+					rot = t.get_rotation()
+					
+					t2use.set_rotation( rot )
+					
+					ti = t2use.inverse()
+					bigscoop.transform( ti )
 					
 					#bigscoop.write_image( options.path + '/bigscoopsOriented.hdf', key)
 					
@@ -357,10 +400,12 @@ def main():
 					
 					print "\nCenter of bigs scoops is", sxB,syB,szB
 					
-					r = Region( (sxB*2 - box)/2 ,  (syB*2 - box)/2 ,  (szB*2 - box)/2, box,box,box)
-					scoop = bigscoop.get_clip(r)
+					scoop = clip3D( bigscoop, box )
 					
-					print "\nTherefore region for small scopp is", r
+					#r = Region( (sxB*2 - box)/2 ,  (syB*2 - box)/2 ,  (szB*2 - box)/2, box,box,box)
+					#scoop = bigscoop.get_clip(r)
+					
+					#print "\nTherefore region for small scoop is", r
 					
 					print "\nClipping the extracted and oriented scoop back to the desired boxsize", box
 					
@@ -368,8 +413,8 @@ def main():
 					defaultmask.to_one()
 					defaultmask.process_inplace('mask.sharp',{'outer_radius':-1})
 					
-					scoop.mult(defaultmask)
-					scoop.process_inplace('normalize')
+					#scoop.mult(defaultmask)
+					#scoop.process_inplace('normalize.edgemean')
 					scoop.mult(defaultmask)
 					
 					scoop['origin_x'] = 0
@@ -378,12 +423,39 @@ def main():
 					
 					scoop['spt_score'] = 0
 					
-					scoop['xform.align3d'] = ti
+					trans = t.get_trans()
+					transi = -1 * trans
+					
+					ti2write = Transform()
+					ti2write.set_rotation( ti.get_rotation() )
+	 
+					ti2write.set_trans( transi )
+					
+					scoop['xform.align3d'] = ti2write
+					
+					
+					
+					scoop['spt_scoop_center'] = [sx, sy, sz]
+					
 					scoop.write_image( options.path + '/' + scoopsstack, key)	
 		
 	E2end(logid)
 	
 	return
+
+
+
+def clip3D( vol, size ):
+	
+	volxc = vol['nx']/2
+	volyc = vol['ny']/2
+	volzc = vol['nz']/2
+	
+	Rvol =  Region( (2*volxc - size)/2, (2*volyc - size)/2, (2*volzc - size)/2, size , size , size)
+	vol.clip_inplace( Rvol )
+	#vol.process_inplace('mask.sharp',{'outer_radius':-1})
+	
+	return vol
 
 
 def genicosverticesnew( syms ):
