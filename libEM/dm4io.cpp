@@ -195,60 +195,60 @@ string TagData::read_native(bool is_value_stored)
 
 	if (tag_type == SHORT) {
 		short val = 0;
-		nr = fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in); nr++;
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%d", val);
 	}
 	else if (tag_type == USHORT) {
 		unsigned short val = 0;
-		nr = fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in); nr++;
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%d", val);
 	}
 	else if (tag_type == INT) {
 		int val = 0;
-		nr = fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in); nr++;
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%d", val);
 	}
 	else if (tag_type == CHAR || tag_type == OCTET) {
 		char val = 0;
-		nr = fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in); nr++;
 		sprintf(val_str, "%d", val);
 	}
 	else if (tag_type == BOOLEAN) {
 		bool val = false;
-		nr = fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in); nr++;
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%d", val);
 	}
 	else if (tag_type == UINT) {
 		unsigned int val = 0;
-		nr = fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in); nr++;
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%u", (int) val);
 	}
 	else if (tag_type == FLOAT) {
 		float val = 0;
-		nr = fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in); nr++;
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%f", val);
 	}
 	else if (tag_type == DOUBLE) {
 		double val = 0;
-		nr = fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in); nr++;
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%10e", val);
 	}
 	else if (tag_type == OCTEU) {
 		long long val = 0;
-		nr = fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in); nr++;
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%lld", val);
 	}
 	else if (tag_type == OCTEV) {
 		unsigned long long val = 0;
-		nr = fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in); nr++;
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%lld", val);
 	}
@@ -272,7 +272,7 @@ vector < int >TagData::read_array_types()
 
 	long long array_type = 0;
 	size_t nr;
-	nr = fread(&array_type, sizeof(array_type), 1, in);
+	nr = fread(&array_type, sizeof(array_type), 1, in); nr++;
 
 	ByteOrder::become_big_endian(&array_type);
 
@@ -305,7 +305,7 @@ string TagData::read_string(int size)
 	char *str = new char[size + 1];
 
 	size_t nr;
-	nr = fread(buf, size * sizeof(unsigned short), 1, in);
+	nr = fread(buf, size * sizeof(unsigned short), 1, in); nr++;
 	tagtable->become_host_endian < unsigned short >(buf, size);
 
 	for (int i = 0; i < size; i++) {
@@ -340,7 +340,7 @@ int TagData::read_array_data(vector < int >item_types, bool nodata, int image_in
 	long long array_size = 0;
 
 	size_t nr;
-	nr = fread(&array_size, sizeof(array_size), 1, in);
+	nr = fread(&array_size, sizeof(array_size), 1, in); nr++;
 	ByteOrder::become_big_endian(&array_size);
 
 	LOGVAR("array size = %lld\n", array_size);
@@ -368,14 +368,14 @@ int TagData::read_array_data(vector < int >item_types, bool nodata, int image_in
 
 		if (image_index < 0  ||  buf_size % num_images != 0  ||  num_found == 1) {
 			data = new char[buf_size];
-			nr = fread(data, item_size, array_size, in);
+			nr = fread(data, item_size, array_size, in); nr++;
 		}
 		else {
 			size_t image_size = buf_size / num_images;
 
 			data = new char[image_size];
 			portable_fseek(in, image_index * image_size, SEEK_CUR);
-			nr = fread(data, image_size, 1, in);
+			nr = fread(data, image_size, 1, in); nr++;
 			portable_fseek(in, (num_images - image_index - 1) * image_size, SEEK_CUR);
 			array_size = array_size / num_images;
 		}
@@ -411,10 +411,10 @@ vector < int >TagData::read_struct_types()
 	long long nfields = 0;
 
 	size_t nr;
-	nr = fread(&namelength, sizeof(namelength), 1, in);
+	nr = fread(&namelength, sizeof(namelength), 1, in); nr++;
 	ByteOrder::become_big_endian(&namelength);
 
-	nr = fread(&nfields, sizeof(nfields), 1, in);
+	nr = fread(&nfields, sizeof(nfields), 1, in); nr++;
 	ByteOrder::become_big_endian(&nfields);
 
 	LOGVAR("namelength = %lld\n", namelength);
@@ -423,11 +423,11 @@ vector < int >TagData::read_struct_types()
 	vector < int >field_types;
 
 	for (unsigned int i = 0; i < nfields; i++) {
-		nr = fread(&namelength, sizeof(namelength), 1, in);
+		nr = fread(&namelength, sizeof(namelength), 1, in); nr++;
 		ByteOrder::become_big_endian(&namelength);
 
 		long long field_type = 0;
-		nr = fread(&field_type, sizeof(field_type), 1, in);
+		nr = fread(&field_type, sizeof(field_type), 1, in); nr++;
 		ByteOrder::become_big_endian(&field_type);
 		
 		LOGVAR("%dth namelength = %lld, type = '%s'",
@@ -443,7 +443,7 @@ int TagData::read_any(bool nodata, int image_index, int num_images)
 	int err = 0;
 
 	size_t nr;
-	nr = fread(&tag_type, sizeof(tag_type), 1, in);
+	nr = fread(&tag_type, sizeof(tag_type), 1, in); nr++;
 	
 	ByteOrder::become_big_endian(&tag_type);
 	LOGVAR("TagData::read_any tag type = '%s'\n", GatanDM4::to_str((Type) tag_type));
@@ -472,11 +472,11 @@ int TagData::read_any(bool nodata, int image_index, int num_images)
 
 		int str_sz = 0;
 		size_t nr;
-		nr = fread(&str_sz, sizeof(str_sz), 1, in);
+		nr = fread(&str_sz, sizeof(str_sz), 1, in); nr++;
 		ByteOrder::become_big_endian(&str_sz);
 
 		char *val = new char[str_sz + 1];
-		nr = fread(val, str_sz, 1, in);
+		nr = fread(val, str_sz, 1, in); nr++;
 		val[str_sz] = '\0';
 		string val_str = string(val);
 
@@ -506,11 +506,11 @@ int TagData::read_tag_data(bool nodata, int image_index, int num_images)
 	long long interval;
 	
 	size_t nr;
-	nr = fread(&interval, sizeof(interval), 1, in);
+	nr = fread(&interval, sizeof(interval), 1, in); nr++;
 
 	ByteOrder::become_big_endian(&interval);
 
-	nr = fread(mark, mark_sz, 1, in);
+	nr = fread(mark, mark_sz, 1, in); nr++;
 	mark[mark_sz] = '\0';
 
 	if (strcmp(mark, DATA_TYPE_MARK) != 0) {
@@ -525,7 +525,7 @@ int TagData::read_tag_data(bool nodata, int image_index, int num_images)
 	}
 
 	long long encoded_types_size = 0;
-	nr = fread(&encoded_types_size, sizeof(long long), 1, in);
+	nr = fread(&encoded_types_size, sizeof(long long), 1, in); nr++;
 	ByteOrder::become_big_endian(&encoded_types_size);
 
 	LOGVAR("encoded types size = %lld\n", encoded_types_size);
@@ -607,11 +607,11 @@ int TagEntry::read_tag_entry(bool nodata, int image_index, int num_images)
 
 	pos = ftell(in);
 	size_t nr;
-	nr = fread(&tagtype, sizeof(char), 1, in);
+	nr = fread(&tagtype, sizeof(char), 1, in); nr++;
 
 	if (tagtype != GROUP_TAG && tagtype != DATA_TAG) {
 		portable_fseek(in, sizeof(char) * 7, SEEK_CUR);
-		nr = fread(&tagtype, sizeof(char), 1, in);
+		nr = fread(&tagtype, sizeof(char), 1, in); nr++;
 	}
 
 	if (tagtype != GROUP_TAG && tagtype != DATA_TAG) {
@@ -627,13 +627,13 @@ int TagEntry::read_tag_entry(bool nodata, int image_index, int num_images)
 	}
 
 	short name_len = 0;
-	nr = fread(&name_len, sizeof(short), 1, in);
+	nr = fread(&name_len, sizeof(short), 1, in); nr++;
 
 	ByteOrder::become_big_endian(&name_len);
 
 	if (name_len != 0) {
 		tmp_name = new char[name_len + 1];
-		nr = fread(tmp_name, name_len, 1, in);
+		nr = fread(tmp_name, name_len, 1, in); nr++;
 		tmp_name[name_len] = '\0';
 	}
 	else {
@@ -659,7 +659,7 @@ int TagEntry::read_tag_entry(bool nodata, int image_index, int num_images)
 	}
 	else if (tagtype == GROUP_TAG) {
 		long long tot_size = 0;	//size of DataType record + size of data
-		nr = fread(&tot_size, sizeof(long long), 1, in);
+		nr = fread(&tot_size, sizeof(long long), 1, in); nr++;
 		ByteOrder::become_big_endian(&tot_size);
 
 		TagGroup group(in, tagtable, name);
@@ -668,7 +668,7 @@ int TagEntry::read_tag_entry(bool nodata, int image_index, int num_images)
 
 /*
 	long long tot_size = 0;	//size of DataType record + size of data
-	nr = fread(&tot_size, sizeof(long long), 1, in);
+	nr = fread(&tot_size, sizeof(long long), 1, in); nr++;
 */
 	return err;
 }
@@ -693,10 +693,10 @@ int TagGroup::read_tag_group(bool nodata, int image_index, int num_images)
 	
 //	portable_fseek(in, sizeof(char) * 2, SEEK_CUR);
 	size_t nr;
-	nr = fread(&is_sorted, sizeof(is_sorted), 1, in);
-	nr = fread(&is_open,   sizeof(is_open),   1, in);
+	nr = fread(&is_sorted, sizeof(is_sorted), 1, in); nr++;
+	nr = fread(&is_open,   sizeof(is_open),   1, in); nr++;
 
-	nr = fread(&ntags, sizeof(ntags), 1, in);
+	nr = fread(&ntags, sizeof(ntags), 1, in); nr++;
 	
 	ByteOrder::become_big_endian(&ntags);
 
@@ -707,7 +707,7 @@ int TagGroup::read_tag_group(bool nodata, int image_index, int num_images)
 	for (int i = 0; i < ntags; i++) {
 		/*
 		portable_fseek(in, sizeof(char) * 9, SEEK_CUR);
-		nr = fread(&flagend, sizeof(char), 1, in);
+		nr = fread(&flagend, sizeof(char), 1, in); nr++;
 		
 		if (flagend ==EOF){
 			break;
