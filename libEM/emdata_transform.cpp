@@ -1086,16 +1086,16 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 	for (int kEx= 0; kEx<2*Mid; kEx=kEx+2) { // kEx twice the value of the Fourier
 						// x variable: EMAN index for real, imag
 		int kx    = kEx/2;		// kx  is  the value of the Fourier variable
-	        int kIx   = kx+Mid-1; // This is the value of the index for a matlab image (-1)
+		int kIx   = kx+Mid-1; // This is the value of the index for a matlab image (-1)
 		int kCx   =  -kx ;
 		int kCIx  = kCx+ Mid-1 ;
 		for (int kEy= 0 ; kEy<End; kEy++) { // This is the value of the EMAN index
-    		 	int kIy              =  kEy       ; //  This is the value of the index for a matlab image (-1)
+    		int kIy              =  kEy       ; //  This is the value of the index for a matlab image (-1)
 			int ky               =  kEy+1-Mid; // (kEy+ Mid-1)%End - Mid+1 ;  // This is the actual value of the Fourier variable
 			float realVal        =  fk -> get_value_at(kEx  ,kEy) ;
 			float imagVal        =  fk -> get_value_at(kEx+1,kEy) ;
 			float absVal         =  ::sqrt(realVal*realVal+imagVal*imagVal);
-			float fkAng 	     =  atan2(imagVal,realVal);
+			float fkAng 	      =  atan2(imagVal,realVal);
 
 			float NewRealVal   ;
 			float NewImagVal   ;
@@ -1119,10 +1119,10 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 			fkVecR[kIy+kCIx*End] =  NewRealVal ;
 			fkVecI[kIy+kIx *End] =  NewImagVal ;
 			fkVecI[kIy+kCIx*End] = -NewImagVal ;
-        		absD1fkVec[kIy + kIx  *End] = absVal;
-        		absD1fkVec[kIy + kCIx *End] = absVal;
+        	absD1fkVec[kIy + kIx  *End] = absVal;
+        	absD1fkVec[kIy + kCIx *End] = absVal;
 			kVecX[kIy+kIx  *End] =  kx      ;
-        		kVecX[kIy+kCIx *End] =  kCx    ;
+        	kVecX[kIy+kCIx *End] =  kCx    ;
 			kVecY[kIy+kIx  *End] =  ky     ;
 			kVecY[kIy+kCIx *End] =  ky     ;
 //			printf("kx=%d,ky=%d,tempVal =%f+ i %4.2f \n",kx,ky,realVal,imagVal );
@@ -1143,8 +1143,9 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 	_unlink("fkCopy.???");
 	_unlink("fk?Copy.???");
 #else
-	system("rm -f fkCopy.???");
-	system("rm -f fk?Copy.???");
+	int rslt;
+	rslt = system("rm -f fkCopy.???");  rslt++;
+	rslt = system("rm -f fk?Copy.???"); rslt++;
 #endif	//_WIN32
 	fkCopy  -> write_image("fkCopy.img");
 	fkRCopy -> write_image("fkRCopy.img");
@@ -1174,8 +1175,8 @@ EMData*   EMData::bispecRotTransInvN(int N, int NK)
 
 
  	for(int i  = 0; i < CountxyMax; ++i ) {  // creates a new fkVec
-		int Si  = SortfkInds[i];
-		int kIx = (int)  Si/End;  kIx = (int)  i/End; // i = kIx*End+kIy
+//		int Si  = SortfkInds[i];
+//		int kIx = (int)  Si/End;  kIx = (int)  i/End; // i = kIx*End+kIy
 //		int kIy = Si  - kIx*End;  kIy = i  - kIx*End;
 //		int iC = (End-1-kIx)*End + (End-1-kIy);
 //		if (i<30) { cout<< "i= " << i << " kIx= " << kIx << " kIy=" << kIy << " valAft=" << absD1fkVecSorted[i]<< " valBef="  <<     absD1fkVec[Si] << "  SortfkInds = " << Si <<endl; }// This worked
@@ -1635,7 +1636,8 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 #ifdef	_WIN32
 		_unlink("WeightImage.???");
 #else
-		system("rm -f WeightImage.???");
+		int rslt;
+		rslt = system("rm -f WeightImage.???"); rslt++;
 #endif	//_WIN32
 		WeightImage  -> write_image("WeightImage.img");
 
@@ -1753,7 +1755,8 @@ EMData*   EMData::bispecRotTransInvDirect(int type)
 #ifdef	_WIN32
 		_unlink("WeightImage.???");
 #else
-		system("rm -f WeightImage.???");
+		int rslt;
+		rslt = system("rm -f WeightImage.???"); rslt++;
 #endif	//_WIN32
 		WeightImage  -> write_image("WeightImage.img");
 
