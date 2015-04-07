@@ -280,7 +280,7 @@ def main():
 #			for i in range(sfcurve.get_size()):
 #				if sfcurve.get_x(i)>1.0/(2.0*apix) : sfcurve.set_y(i,0.0)
 			output.process_inplace("filter.setstrucfac",{"apix":apix,"strucfac":sfcurve})
-			output.process_inplace("filter.lowpass.tophat",{"apix":apix,"cutoff_abs":0.49})
+#			output.process_inplace("filter.lowpass.tophat",{"apix":apix,"cutoff_abs":0.49})
 
 
 	if options.postprocess != None:

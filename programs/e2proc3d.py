@@ -387,6 +387,7 @@ def main():
 				Util.save_data(0, 1.0/(apix*ny), curve, options.calcsf);
 
 			elif option1 == "setsf":
+				if options.verbose>1 : print "setsf -> ",options.setsf
 				sf=XYData()
 				sf.read_file(options.setsf)
 				data.process_inplace("filter.setstrucfac",{"apix":apix,"strucfac":sf})
@@ -407,7 +408,7 @@ def main():
 
 			elif option1 == "process":
 				fi = index_d[option1]
-				#print 'process option = ', options.process
+				if options.verbose>1 : print "process -> ",options.process[fi]
 				(filtername, param_dict) = parsemodopt(options.process[fi])
 				if not param_dict : param_dict={}
 
@@ -469,7 +470,7 @@ def main():
 					sys.exit(1)
 
 				fi = index_d[option1]
-				#print 'process option = ', options.process
+				if options.verbose>1 : print "align -> ",options.align[fi]
 				(alignername, param_dict) = parsemodopt(options.align[fi])
 				if not param_dict : param_dict={}
 

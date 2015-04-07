@@ -209,7 +209,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--pad", type=int, dest="pad", default=0, help="Default=auto. To reduce Fourier artifacts, the model is typically padded by ~25 percent - only applies to Fourier reconstruction")
 	parser.add_argument("--recon", dest="recon", default="fourier", help="Default=auto. Reconstructor to use see e2help.py reconstructors -v",)
 	parser.add_argument("--m3dkeepsig", default=False, action="store_true", help="Default=auto. The standard deviation alternative to the --m3dkeep argument")
-	parser.add_argument("--m3dsetsf", type=str,dest="m3dsetsf", default=None, help="Default=auto. Name of a file containing a structure factor to apply after refinement")
+#	parser.add_argument("--m3dsetsf", type=str,dest="m3dsetsf", default=None, help="Default=auto. Name of a file containing a structure factor to apply after refinement")
 	parser.add_argument("--m3dpreprocess", type=str, default=None, help="Default=auto. Normalization processor applied before 3D reconstruction")
 
 	#lowmem!
@@ -714,26 +714,26 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 		append_html("<p>* Using the known orientations, reconstruct the even/odd 3-D maps from the even/odd 2-D class-averages.</p>",True)
 		if not options.m3dold :
 			cmd="e2make3dpar.py --input {path}/classes_{itr:02d}_even.hdf --sym {sym} --output {path}/threed_{itr:02d}_even.hdf {preprocess} \
- --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --fillangle {fillangle} --threads {threads} {setsf} {verbose}".format(
+ --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --fillangle {fillangle} --threads {threads} {verbose}".format(
 			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=m3dpreprocess,  m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
-			m3dpad=options.pad, setsf=m3dsetsf, fillangle=astep ,threads=options.threads, apix=apix, verbose=verbose)
+			m3dpad=options.pad,fillangle=astep ,threads=options.threads, apix=apix, verbose=verbose)
 		else:
 			cmd="e2make3d.py --input {path}/classes_{itr:02d}_even.hdf --iter 2 -f --sym {sym} --output {path}/threed_{itr:02d}_even.hdf --recon {recon} {preprocess} \
- --keep={m3dkeep} {keepsig} --apix={apix} --pad={m3dpad} {setsf} {verbose}".format(
+ --keep={m3dkeep} {keepsig} --apix={apix} --pad={m3dpad} {verbose}".format(
 			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=m3dpreprocess,  m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
-			m3dpad=options.pad, setsf=m3dsetsf, apix=apix, verbose=verbose)
+			m3dpad=options.pad, apix=apix, verbose=verbose)
 		run(cmd)
 
 		if not options.m3dold :
 			cmd="e2make3dpar.py --input {path}/classes_{itr:02d}_odd.hdf --sym {sym} --output {path}/threed_{itr:02d}_odd.hdf {preprocess} \
- --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --fillangle {fillangle} --threads {threads} {setsf} {verbose}".format(
+ --keep {m3dkeep} {keepsig} --apix {apix} --pad {m3dpad} --fillangle {fillangle} --threads {threads} {verbose}".format(
 			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=m3dpreprocess, m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
-			m3dpad=options.pad, apix=apix, setsf=m3dsetsf, fillangle=astep ,threads=options.threads, verbose=verbose)
+			m3dpad=options.pad, apix=apix, fillangle=astep ,threads=options.threads, verbose=verbose)
 		else:
 			cmd="e2make3d.py --input {path}/classes_{itr:02d}_odd.hdf --iter 2 -f --sym {sym} --output {path}/threed_{itr:02d}_odd.hdf --recon {recon} {preprocess} \
- --keep={m3dkeep} {keepsig} --apix={apix} --pad={m3dpad} {setsf} {verbose}".format(
+ --keep={m3dkeep} {keepsig} --apix={apix} --pad={m3dpad} {verbose}".format(
 			path=options.path, itr=it, sym=m3dsym, recon=options.recon, preprocess=m3dpreprocess, m3dkeep=options.m3dkeep, keepsig=m3dkeepsig,
-			m3dpad=options.pad, apix=apix, setsf=m3dsetsf, verbose=verbose)
+			m3dpad=options.pad, apix=apix, verbose=verbose)
 		run(cmd)
 		progress += 1.0
 
@@ -743,8 +743,8 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
  		evenfile="{path}/threed_{itr:02d}_even.hdf".format(path=options.path,itr=it)
  		oddfile="{path}/threed_{itr:02d}_odd.hdf".format(path=options.path,itr=it)
  		combfile="{path}/threed_{itr:02d}.hdf".format(path=options.path,itr=it)
-		run("e2refine_postprocess.py --even {path}/threed_{it:02d}_even.hdf --odd {path}/threed_{it:02d}_odd.hdf --output {path}/threed_{it:02d}.hdf --align --mass {mass} --iter {it} {amask3d} {amask3d2} {m3dpostproc} --sym={sym} --restarget={restarget} --underfilter".format(
-			path=options.path,it=it,mass=options.mass,amask3d=amask3d,sym=m3dsym,amask3d2=amask3d2,m3dpostproc=m3dpostproc,restarget=options.targetres))
+		run("e2refine_postprocess.py --even {path}/threed_{it:02d}_even.hdf --odd {path}/threed_{it:02d}_odd.hdf --output {path}/threed_{it:02d}.hdf --align --mass {mass} --iter {it} {amask3d} {amask3d2} {m3dpostproc} {setsf} --sym={sym} --restarget={restarget} --underfilter".format(
+			path=options.path,it=it,mass=options.mass,amask3d=amask3d,sym=m3dsym,amask3d2=amask3d2,m3dpostproc=m3dpostproc,setsf=m3dsetsf,restarget=options.targetres))
 
 
 		db.update({"last_map":combfile,"last_even":evenfile,"last_odd":oddfile})
