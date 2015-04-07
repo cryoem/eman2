@@ -175,48 +175,48 @@ string TagData::read_native(bool is_value_stored)
 
 	if (tag_type == SHORT) {
 		short val = 0;
-		nr = fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in); nr++;
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%d", val);
 	}
 	else if (tag_type == USHORT) {
 		unsigned short val = 0;
-		nr = fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in); nr++;
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%d", val);
 	}
 	else if (tag_type == INT) {
 		int val = 0;
-		nr = fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in); nr++;
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%d", val);
 	}
 	else if (tag_type == CHAR || tag_type == OCTET) {
 		char val = 0;
-		nr = fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in); nr++;
 		sprintf(val_str, "%d", val);
 	}
 	else if (tag_type == BOOLEAN) {
 		bool val = false;
-		nr = fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in); nr++;
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%d", val);
 	}
 	else if (tag_type == UINT) {
 		unsigned int val = 0;
-		nr = fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in); nr++;
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%d", (int) val);
 	}
 	else if (tag_type == FLOAT) {
 		float val = 0;
-		nr = fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in); nr++;
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%f", val);
 	}
 	else if (tag_type == DOUBLE) {
 		double val = 0;
-		nr = fread(&val, sz, 1, in);
+		nr = fread(&val, sz, 1, in); nr++;
 		tagtable->become_host_endian(&val);
 		sprintf(val_str, "%10e", val);
 	}
@@ -240,7 +240,7 @@ vector < int >TagData::read_array_types()
 
 	int array_type = 0;
 	size_t nr;
-	nr = fread(&array_type, sizeof(array_type), 1, in);
+	nr = fread(&array_type, sizeof(array_type), 1, in); nr++;
 
 	ByteOrder::become_big_endian(&array_type);
 
@@ -274,7 +274,7 @@ string TagData::read_string(int size)
 	char *str = new char[size + 1];
 
 	size_t nr;
-	nr = fread(buf, size * sizeof(unsigned short), 1, in);
+	nr = fread(buf, size * sizeof(unsigned short), 1, in); nr++;
 	tagtable->become_host_endian < unsigned short >(buf, size);
 
 	for (int i = 0; i < size; i++) {
@@ -309,7 +309,7 @@ int TagData::read_array_data(vector < int >item_types, bool nodata)
 	int array_size = 0;
 
 	size_t nr;
-	nr = fread(&array_size, sizeof(array_size), 1, in);
+	nr = fread(&array_size, sizeof(array_size), 1, in); nr++;
 	ByteOrder::become_big_endian(&array_size);
 
 	LOGVAR("array size = %d\n", array_size);
@@ -330,7 +330,7 @@ int TagData::read_array_data(vector < int >item_types, bool nodata)
 	}
 	else if (!nodata && name == "Data") {
 		char *data = new char[buf_size];
-		nr = fread(data, buf_size, 1, in);
+		nr = fread(data, buf_size, 1, in); nr++;
 
 		if (item_size == sizeof(short)) {
 			tagtable->become_host_endian((short *) data, array_size);
@@ -363,10 +363,10 @@ vector < int >TagData::read_struct_types()
 	unsigned int nfields = 0;
 
 	size_t nr;
-	nr = fread(&namelength, sizeof(namelength), 1, in);
+	nr = fread(&namelength, sizeof(namelength), 1, in); nr++;
 	ByteOrder::become_big_endian(&namelength);
 
-	nr = fread(&nfields, sizeof(nfields), 1, in);
+	nr = fread(&nfields, sizeof(nfields), 1, in); nr++;
 	ByteOrder::become_big_endian(&nfields);
 
 	LOGVAR("namelength = %d\n", namelength);
@@ -375,11 +375,11 @@ vector < int >TagData::read_struct_types()
 	vector < int >field_types;
 
 	for (unsigned int i = 0; i < nfields; i++) {
-		nr = fread(&namelength, sizeof(namelength), 1, in);
+		nr = fread(&namelength, sizeof(namelength), 1, in); nr++;
 		ByteOrder::become_big_endian(&namelength);
 
 		int field_type = 0;
-		nr = fread(&field_type, sizeof(field_type), 1, in);
+		nr = fread(&field_type, sizeof(field_type), 1, in); nr++;
 		ByteOrder::become_big_endian(&field_type);
 
 		LOGVAR("%dth namelength = %d, type = '%s'",
@@ -395,7 +395,7 @@ int TagData::read_any(bool nodata)
 	int err = 0;
 
 	size_t nr;
-	nr = fread(&tag_type, sizeof(tag_type), 1, in);
+	nr = fread(&tag_type, sizeof(tag_type), 1, in); nr++;
 	ByteOrder::become_big_endian(&tag_type);
 	LOGVAR("tag type = '%s'\n", Gatan::to_str((Type) tag_type));
 
@@ -417,11 +417,11 @@ int TagData::read_any(bool nodata)
 	}
 	else if (tag_type == STRING) {
 		int str_sz = 0;
-		nr = fread(&str_sz, sizeof(str_sz), 1, in);
+		nr = fread(&str_sz, sizeof(str_sz), 1, in); nr++;
 		ByteOrder::become_big_endian(&str_sz);
 
 		char *val = new char[str_sz + 1];
-		nr = fread(val, str_sz, 1, in);
+		nr = fread(val, str_sz, 1, in); nr++;
 		val[str_sz] = '\0';
 		string val_str = string(val);
 		if( val )
@@ -449,7 +449,7 @@ int TagData::read(bool nodata)
 	char *mark = new char[mark_sz + 1];
 
 	size_t nr;
-	nr = fread(mark, mark_sz, 1, in);
+	nr = fread(mark, mark_sz, 1, in); nr++;
 	mark[mark_sz] = '\0';
 
 	if (strcmp(mark, DATA_TYPE_MARK) != 0) {
@@ -464,7 +464,7 @@ int TagData::read(bool nodata)
 	}
 
 	int encoded_types_size = 0;
-	nr = fread(&encoded_types_size, sizeof(int), 1, in);
+	nr = fread(&encoded_types_size, sizeof(int), 1, in); nr++;
 	ByteOrder::become_big_endian(&encoded_types_size);
 
 	LOGVAR("encoded types size = %d\n", encoded_types_size);
@@ -537,7 +537,7 @@ int TagGroup::read(bool nodata)
 	portable_fseek(in, sizeof(char) * 2, SEEK_CUR);
 	
 	size_t nr;
-	nr = fread(&ntags, sizeof(ntags), 1, in);
+	nr = fread(&ntags, sizeof(ntags), 1, in); nr++;
 	
 	ByteOrder::become_big_endian(&ntags);
 	
@@ -588,7 +588,7 @@ int TagEntry::read(bool nodata)
 	char *tmp_name = 0;
 
 	size_t nr;
-	nr = fread(&tag_type, sizeof(char), 1, in);
+	nr = fread(&tag_type, sizeof(char), 1, in); nr++;
 
 	if (tag_type != GROUP_TAG && tag_type != DATA_TAG) {
 		LOGERR("TagEntry::read() invalid tag type: %d", tag_type);
@@ -596,12 +596,12 @@ int TagEntry::read(bool nodata)
 	}
 
 	short name_len = 0;
-	nr = fread(&name_len, sizeof(short), 1, in);
+	nr = fread(&name_len, sizeof(short), 1, in); nr++;
 	ByteOrder::become_big_endian(&name_len);
 
 	if (name_len != 0) {
 		tmp_name = new char[name_len + 1];
-		nr = fread(tmp_name, name_len, 1, in);
+		nr = fread(tmp_name, name_len, 1, in); nr++;
 		tmp_name[name_len] = '\0';
 	}
 	else {
