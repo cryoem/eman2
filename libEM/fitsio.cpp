@@ -117,16 +117,18 @@ int FitsIO::read_header(Dict & dict, int image_index, const Region * area, bool 
 	dict["nz"]=1;
 
 	char s[81],lbl[9],val[80];
-	int dim=0;
+//	int dim=0;
 	s[80]=0;
 	rewind(fitsfile);
-	for (fread(s,80,1,fitsfile); strncmp("END",s,3); fread(s,80,1,fitsfile)) {
+	size_t nr;
+	for (nr = fread(s,80,1,fitsfile); strncmp("END",s,3); nr = fread(s,80,1,fitsfile)) {
+		nr = nr;
 		sscanf(s,"%8s = %[^/]",lbl,val);
 //		printf("%s,%s\n",lbl,val);
 		if (strncmp("SIMPLE  ",s,8)==0) continue;
 		else if (strncmp("END     ",s,8)==0) break;
 //		else if (strncmp("BITPIX  ",s,8)==0)
-		else if (strncmp("NAXIS   ",s,8)==0) dim=atoi(val);
+//		else if (strncmp("NAXIS   ",s,8)==0) dim=atoi(val);
 		else if (strncmp("NAXIS",s,5)==0) {
 			if (s[5]=='1') dict["nx"]=atoi(val);
 			if (s[5]=='2') dict["ny"]=atoi(val);
@@ -164,6 +166,7 @@ int FitsIO::read_data(float *rdata, int image_index, const Region *, bool )
 {
 	ENTERFUNC;
 	size_t i;
+	size_t nr;
 	size_t size = (size_t)nx*ny*nz;
 
 	//single image format, index can only be zero
@@ -178,26 +181,26 @@ int FitsIO::read_data(float *rdata, int image_index, const Region *, bool )
 
 	switch (dtype) {
 	case 8:
-		fread(cdata,nx,ny*nz,fitsfile);
+		nr = fread(cdata,nx,ny*nz,fitsfile); nr++;
 		for (i=size-1; i<size; i--) rdata[i]=cdata[i];
 		break;
 	case 16:
-		fread(cdata,nx,ny*nz*2,fitsfile);
+		nr = fread(cdata,nx,ny*nz*2,fitsfile); nr++;
 		if (!ByteOrder::is_host_big_endian()) ByteOrder::swap_bytes((short*) sdata, size);
 		for (i=size-1; i<size; i--) rdata[i]=sdata[i];
 		break;
 	case 32:
-		fread(cdata,nx,ny*nz*4,fitsfile);
+		nr = fread(cdata,nx,ny*nz*4,fitsfile); nr++;
 		if (!ByteOrder::is_host_big_endian()) ByteOrder::swap_bytes((int*) rdata, size);
 		for (i=0; i<size; i++) rdata[i]=static_cast<float>(idata[i]);
 		break;
 	case -32:
-		fread(cdata,nx*4,ny*nz,fitsfile);
+		nr = fread(cdata,nx*4,ny*nz,fitsfile); nr++;
 		if (!ByteOrder::is_host_big_endian()) ByteOrder::swap_bytes((float*) rdata, size);
 		break;
 	case -64:
 		ddata=(double *)malloc(size*8);
-		fread(ddata,nx,ny*nz*8,fitsfile);
+		nr = fread(ddata,nx,ny*nz*8,fitsfile); nr++;
 		if (!ByteOrder::is_host_big_endian()) ByteOrder::swap_bytes((double*) ddata, size);
 		for (i=0; i<size; i++) rdata[i]=static_cast<float>(ddata[i]);
 		free(ddata);
