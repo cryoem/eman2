@@ -378,9 +378,6 @@ def main():
 	
 	print "after parsing options, options.goldstandardoff is", options.goldstandardoff, type(options.goldstandardoff)
 	print options.align, type(options.align)
-	
-	
-	
 		
 	if options.resultmx: 
 		print "\nSorry, resultmx not implemented yet"
@@ -553,7 +550,6 @@ def main():
 				print "\n(e2spt_classaverage)(main) - Particle %d will belong to classid %d" %( i, klassid )
 				classmxScores.set_value_at( klassid, i, 1.0 )
 					
-		
 		else:
 			classmxScores.to_one() 		#If there's only one class, all particles are in it
 		
@@ -591,7 +587,7 @@ def main():
 		if options.verbose:
 			print "\n(e2spt_classaverage)(main) - Read classmx file and its type are", options.classmx, type(classmx)
 
-		#ptclnums=classmx_ptcls(classmx,ic)			# This gets the list from the classmx
+		#ptclnums=classmx_ptcls(classmx,ic)				# This gets the list from the classmx
 
 		scoresImg = classmx[0]
 		print "x dimension of classmx file is",  scoresImg['nx']
@@ -618,19 +614,24 @@ def main():
 		
 		refeven = refsdict[0]
 		refodd = refsdict[1] 
-		
-		fscfile = options.path + '/initialrefs_fsc.txt'
-				
-		refsavg = compareEvenOdd( options, refeven, refodd, 2, etc, fscfile, 'initial' ) #We pass on an "iteration number" > 1, that is 2 here, just so that both initial references are preprocessed and treated equally (this is required since --refpreprocessing is off when --ref is supplied 
-		
+			
 		if options.filterbyfsc:
-			print "Options.lowpass was and of type", options.lowpass, type( options.lowpass )
+			fscfile = options.path + '/initialrefs_fsc.txt'
+			
+			if not options.ref:	
+				refsavg = compareEvenOdd( options, refeven, refodd, 2, etc, fscfile, 'initial' ) #We pass on an "iteration number" > 1, that is 2 here, just so that both initial references are preprocessed and treated equally (this is required since --refpreprocessing is off when --ref is supplied 
+				
+				if options.savesteps:
+					refname = options.path + '/initialrefs_avg.hdf'
+					refsavg.write_image(refname, 0)
+				
+			else:
+				calcFsc( options, refeven, refodd, fscfile )
+			
+			print "options.lowpass and type were", options.lowpass, type( options.lowpass )
 			options.lowpass = ('filter.wiener.byfsc',{ 'fscfile':fscfile })
 			print "Now it is", options.lowpass, type(options.lowpass)
 
-		if options.savesteps:
-			refname = options.path + '/initialrefs_avg.hdf'
-			refsavg.write_image(refname, 0)
 	
 	'''
 	We loop over the number of iterations first (opposed to older versions where you refined
@@ -1131,7 +1132,7 @@ def main():
 
 			#calcFsc( originalref, avg, fscfile )
 			
-			final_avg = compareEvenOdd( options, originalref, avg, 2, etc, fscfile, 'refbased', average=False ) #We pass on an "iteration number" > 1, that is 2 here, just so that both initial references are preprocessed and treated equally (this is required since --refpreprocessing is off when --ref is supplied 
+			final_avg = compareEvenOdd( options, originalref, avg, it, etc, fscfile, 'refbased', average=False ) #We pass on an "iteration number" > 1, that is 2 here, just so that both initial references are preprocessed and treated equally (this is required since --refpreprocessing is off when --ref is supplied 
 			
 			if options.savesteps:
 				final_avg.write_image( options.path + '/avgs.hdf' , it)
@@ -1322,7 +1323,7 @@ def compareEvenOdd( options, avgeven, avgodd, it, etc, fscfile, tag, average=Tru
 								#def get_results(etc,tids,verbose,nptcls,ref=''):
 	
 	
-	resultsAvgs = align3Dfunc( avgeven, avgodd, 0, "avgeven(ref) vs avgodd", options, None, it )
+	resultsAvgs = align3Dfunc( avgeven, avgodd, 0, "avgeven(ref) vs avgodd", options, None, 2 )
 								
 	
 	
@@ -3216,9 +3217,9 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		if options.threshold or options.normproc or options.mask or options.preprocess or options.lowpass or options.highpass or int(options.shrink) > 1:
 			#print "\nThere IS refpreprocess!"	
 			
-			print "BEFORE preprocessing coarse ref, because there is refpreprocess, size is, iter", sfixedimage['nx'],iter
+			print "BEFORE preprocessing coarse ref, because there is refpreprocess, size is %d, iter %d" %( sfixedimage['nx'],iter )
 			sfixedimage = preprocessing(sfixedimage,options, refindx, savetag ,'yes',round)
-			print "AFTER preprocessing coarse ref, because there is refpreprocess, size is, iter", sfixedimage['nx'],iter
+			print "AFTER preprocessing coarse ref, because there is refpreprocess, size is %d, iter %d" %( sfixedimage['nx'],iter )
 
 		#Only preprocess again if there's fine alignment, AND IF the parameters for fine alignment are different
 			
@@ -3233,18 +3234,22 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 				s2fixedimage = sfixedimage.copy()
 			
 			elif options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1:
-				print "BEFORE preprocessing fine ref, because there is refpreprocess, size is, iter", s2fixedimage['nx'],iter
+				print "BEFORE preprocessing fine ref, because there is refpreprocess, size is %d, iter %d" %( s2fixedimage['nx'],iter)
 
 				s2fixedimage = preprocessing(s2fixedimage,options,refindx, savetag ,'no',round,'fine')
 		
-				print "AFTER preprocessing fine ref, because there is refpreprocess, size is, iter", s2fixedimage['nx'],iter
+				print "AFTER preprocessing fine ref, because there is refpreprocess, size is %d, iter %d" %( s2fixedimage['nx'],iter)
 
 		else:
 			#s2fixedimage = sfixedimage.copy()
 			#s2fixedimage = fixedimage.copy()	
 			s2fixedimage = None
 	
-	print "after all preproc, coarse and fine refs are of size in iter", sfixedimage['nx'], s2fixedimage['nx'], iter
+	if sfixedimage:
+		print "after all preproc, COARSE ref is of size %d, in iter %d" %( sfixedimage['nx'], iter)
+	
+	if s2fixedimage:
+		print "after all preproc, FINE ref is of size %d, in iter %d" %( s2fixedimage['nx'], iter)
 	
 
 	#########################################
@@ -3297,8 +3302,11 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		#s2image = image.copy()
 		s2image = None
 	
-	print "after all preproc, coarse and fine PTCLS are of size in iter", sfixedimage['nx'], s2fixedimage['nx'], iter
+	if simage:
+		print "after all preproc, COARSE ref is of size %d, in iter %d" %( simage['nx'], iter)
 	
+	if s2image:
+		print "after all preproc, FINE ref is of size %d, in iter %d" %( s2image['nx'], iter)
 	#sys.exit()
 	
 	
@@ -3307,7 +3315,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		#print "ERROR: preprocessed images for coarse alignment not the same size"
 		sys.exit()
 		
-	if options.falign:
+	if options.falign and s2fixedimage and s2image:
 		if s2fixedimage['nx'] != s2image['nx']:
 			print "ERROR: preprocessed images for fine alignment not the same size, s2fixedimage, s2image", s2fixedimage['nx'], s2image['nx']
 			#print "ERROR: preprocessed images for fine alignment not the same size"
