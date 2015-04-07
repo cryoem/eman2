@@ -232,12 +232,13 @@ class EMPlot2DWidget(EMGLWidget):
 			if len(data)>1 :
 				if len(data)>2:
 					if data[0][2]-data[0][1]==1 : self.axes[key]=(1,2,-2,-2)	# if it looks like the first axis is a boring count
+					else : self.axes[key]=(0,1,-2,-2)
 				else : self.axes[key]=(0,1,-2,-2)
 			else : self.axes[key]=(-1,0,-2,-2)
 		except: return
 
 		if symtype==-2 and linetype==-2:
-			if len(data)<3 and (diff(self.data[key][0])>=0).all() : doline,linetype=1,0
+			if len(data)<4 and (diff(self.data[key][0])>=0).all() : doline,linetype=1,0
 			else : dosym,symtype=1,0
 		if color<0 : color=len(self.data)%len(colortypes)			# Automatic color setting
 		if color >len(colortypes): color = 0 # there are only a certain number of colors
