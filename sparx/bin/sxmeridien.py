@@ -934,7 +934,7 @@ def main():
 				if( myid == main_node):
 					vol.write_image(outvol[procid])
 					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-					print(  line,"Generated inivol #%01d "%procid)
+					print(  line,"Generated inivol %s"%outvol[procid])
 				del vol
 
 		if(myid == main_node):
@@ -1140,7 +1140,7 @@ def main():
 							for i in xrange(len(bad)-1,-1,-1):
 								del oldp[bad[i]],ids[bad[i]]
 						if(len(ids) == 0):
-							ERROR("sxpetite","program diverged, all images have large angular errors, most likely the initial model is badly off",1)
+							ERROR("sxmeridien","program diverged, all images have large angular errors, most likely the initial model is badly off",1)
 						else:
 							#  This generate new parameters, hopefully to be used as starting ones in the new iteration
 							write_text_file(ids,os.path.join(mainoutputdir,"chunk%01d.txt"%procid))
@@ -1183,7 +1183,7 @@ def main():
 		else:
 			eliminated_outliers = False
 
-		if(myid == main_node and not eliminated_outliers):
+		if(myid == main_node and not eliminated_outliers and doit):  # I had to add here doit, otherwise during the restart it incorrectly copies the files.
 			for procid in xrange(2):
 				#  This is standard path, copy parameters to be used to the main
 				cmd = "{} {} {}".format("cp -p", partids[procid] , os.path.join(mainoutputdir,"chunk%01d.txt"%procid))
