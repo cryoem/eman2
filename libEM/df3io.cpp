@@ -73,14 +73,15 @@ int Df3IO::read_header(Dict & dict, int, const Region *, bool )
 {
 	ENTERFUNC;
 	init();
+	size_t nr;
 
 	if (!is_new_file) {
 		if (fread(&nx, sizeof(unsigned short), 1, df3file) != 1) {
 			throw ImageReadException(filename, "DF3 header");
 		}
 
-		fread(&ny, sizeof(unsigned short), 1, df3file);
-		fread(&nz, sizeof(unsigned short), 1, df3file);
+		nr = fread(&ny, sizeof(unsigned short), 1, df3file); nr++;
+		nr = fread(&nz, sizeof(unsigned short), 1, df3file); nr++;
 
 		if(!ByteOrder::is_host_big_endian()) {
 			ByteOrder::swap_bytes(&nx);
@@ -129,6 +130,7 @@ int Df3IO::read_data(float *rdata, int, const Region *, bool)
 	ENTERFUNC;
 
 	size_t image_size = (size_t)nx*ny*nz;
+	size_t nr;
 
 	// obtain file size:
 	portable_fseek (df3file , 0 , SEEK_END);
@@ -143,21 +145,21 @@ int Df3IO::read_data(float *rdata, int, const Region *, bool)
 	switch(fsize/image_size) {
 	case sizeof(unsigned int):
 		uidata = new unsigned int[image_size];
-		fread(uidata, sizeof(unsigned int), image_size, df3file);
+		nr = fread(uidata, sizeof(unsigned int), image_size, df3file); nr++;
 		become_host_endian < unsigned int >(uidata, image_size);
 		std::copy(uidata, uidata+image_size, rdata);
 		if(uidata) {delete [] uidata; uidata=0;}
 		break;
 	case sizeof(unsigned short):
 		usdata = new unsigned short[image_size];
-		fread(usdata, sizeof(unsigned short), image_size, df3file);
+		nr = fread(usdata, sizeof(unsigned short), image_size, df3file); nr++;
 		become_host_endian < unsigned short >(usdata, image_size);
 		std::copy(usdata, usdata+image_size, rdata);
 		if(usdata) {delete [] usdata; usdata=0;}
 		break;
 	case sizeof(unsigned char):
 		ucdata = new unsigned char[image_size];
-		fread(ucdata, sizeof(unsigned char), image_size, df3file);
+		nr = fread(ucdata, sizeof(unsigned char), image_size, df3file); nr++;
 		std::copy(ucdata, ucdata+image_size, rdata);
 		if(ucdata) {delete [] ucdata; ucdata=0;}
 		break;
