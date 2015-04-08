@@ -134,7 +134,7 @@ int AmiraIO::read_header(Dict & dict, int image_index, const Region *, bool)
 	char datatype[16] = "";
 
 	do {
-		fgets(ll,MAXPATHLEN,amira_file);
+		char * str = fgets(ll,MAXPATHLEN,amira_file); str = str;
 //		printf("%s", ll);
 		if(char* s=strstr(ll,"define Lattice ")) {
 			if(sscanf(s+15,"%d %d %d",&nx, &ny, &nz) == 3) {
@@ -250,7 +250,6 @@ int AmiraIO::write_header(const Dict & dict, int image_index, const Region*, EMU
 		fprintf(amira_file, "\tContent \"%dx%dx%d %s, uniform coordinates\",\n", nx,ny,nz,type.c_str());
 		fprintf(amira_file, "\tCoordType \"uniform\",\n");
 		fprintf(amira_file,"\tBoundingBox %.2f %.2f %.2f %.2f %.2f %.2f\n}\n\n",xorigin,xorigin+pixel*(nx-1),yorigin,yorigin+pixel*(ny-1),zorigin,zorigin+pixel*(nz-1));
-
 		fprintf(amira_file, "Lattice { float ScalarField } @1\n\n# Data section follows\n@1\n");
 	}
 
@@ -262,15 +261,18 @@ int AmiraIO::read_data(float * rdata, int, const Region *, bool)
 {
 	ENTERFUNC;
 
+	size_t nr;
 	size_t size = (size_t)nx*ny*nz;
+
 	switch(dt) {
 	case EMUtil::EM_FLOAT:
 		
-		fread(rdata,nx*nz,ny*sizeof(float),amira_file);
+		nr = fread(rdata,nx*nz,ny*sizeof(float),amira_file); nr++;
 		
-		if( (is_big_endian && ByteOrder::is_host_big_endian()) && !(is_big_endian || ByteOrder::is_host_big_endian()) ) {
+		if ( (is_big_endian && ByteOrder::is_host_big_endian()) && !(is_big_endian || ByteOrder::is_host_big_endian()) ) {
 			char tmpdata;
 			char *cdata=(char*)rdata;
+
 			for(size_t i=0;i<size;++i){
 				//swap 0-3
 				tmpdata=cdata[4*i+3];
@@ -280,8 +282,6 @@ int AmiraIO::read_data(float * rdata, int, const Region *, bool)
 				tmpdata=cdata[4*i+2];
 				cdata[4*i+2]=cdata[4*i+1];
 				cdata[4*i+1] = tmpdata;
-				
-				
 			}
 		}
 		
@@ -295,7 +295,7 @@ int AmiraIO::read_data(float * rdata, int, const Region *, bool)
 		for (int i=0;i<ny;i++){
 			for (int j=0;j<nx;j++){
 				rdata[i*nx+j]=copydata[(ny-1-i)*nx+j];
-				}
+			}
 		}
 		delete[] copydata;
 		
@@ -303,8 +303,9 @@ int AmiraIO::read_data(float * rdata, int, const Region *, bool)
 	case EMUtil::EM_SHORT:
 	{
 		short *datashort = (short*)malloc(sizeof(short)*nx*ny*nz);
-		fread(datashort,nx*nz,ny*sizeof(short),amira_file);
-		if( (is_big_endian && ByteOrder::is_host_big_endian()) && !(is_big_endian || ByteOrder::is_host_big_endian()) ) {
+		nr = fread(datashort,nx*nz,ny*sizeof(short),amira_file); nr++;
+
+		if ( (is_big_endian && ByteOrder::is_host_big_endian()) && !(is_big_endian || ByteOrder::is_host_big_endian()) ) {
 			char tmpdata;
 			char *cdata=(char*)datashort;
 			for(size_t i=0;i<size;++i){
@@ -316,8 +317,7 @@ int AmiraIO::read_data(float * rdata, int, const Region *, bool)
 			for(size_t i=0; i<size; ++i) rdata[i] = float(datashort[i]);
 			free(datashort);
 		}
-		
-		
+
 		float* copydata;
 		copydata=new float[size];
 		
@@ -328,7 +328,7 @@ int AmiraIO::read_data(float * rdata, int, const Region *, bool)
 		for (int i=0;i<ny;i++){
 			for (int j=0;j<nx;j++){
 				rdata[i*nx+j]=copydata[(ny-1-i)*nx+j];
-				}
+			}
 		}
 		delete[] copydata;
 		
@@ -337,7 +337,8 @@ int AmiraIO::read_data(float * rdata, int, const Region *, bool)
 	case EMUtil::EM_CHAR:
 	{
 		char *databyte = (char*)malloc(sizeof(char)*nx*ny*nz);
-		fread(databyte,nx*nz,ny*sizeof(char),amira_file);
+		nr = fread(databyte,nx*nz,ny*sizeof(char),amira_file); nr++;
+
 		for(size_t i=0; i<size; ++i) rdata[i] = float(databyte[i]);
 		free(databyte);
 		
@@ -351,7 +352,7 @@ int AmiraIO::read_data(float * rdata, int, const Region *, bool)
 		for (int i=0;i<ny;i++){
 			for (int j=0;j<nx;j++){
 				rdata[i*nx+j]=copydata[(ny-1-i)*nx+j];
-				}
+			}
 		}
 		delete[] copydata;
 		
@@ -384,7 +385,7 @@ int AmiraIO::write_data(float *data, int image_index, const Region*, EMUtil::EMD
 	for (int i=0;i<ny;i++){
 		for (int j=0;j<nx;j++){
 			data[i*nx+j]=copydata[(ny-1-i)*nx+j];
-			}
+		}
 	}
 	delete[] copydata;	
 	
