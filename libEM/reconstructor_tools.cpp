@@ -234,17 +234,17 @@ bool FourierInserter3DMode3::insert_pixel(const float& xx, const float& yy, cons
 
 bool FourierInserter3DMode5::insert_pixel(const float& xx, const float& yy, const float& zz, const std::complex<float> dt,const float& weight)
 {
-	int x0 = (int) floor(xx-1.5);
-	int y0 = (int) floor(yy-1.5);
-	int z0 = (int) floor(zz-1.5);
+	int x0 = (int) floor(xx-2.5);
+	int y0 = (int) floor(yy-2.5);
+	int z0 = (int) floor(zz-2.5);
 	
 	if (subx0<0) {			// normal full reconstruction
 		if (x0<-nx2-4 || y0<-ny2-4 || z0<-nz2-4 || x0>nx2+3 || y0>ny2+3 || z0>nz2+3 ) return false;
 
 		// no error checking on add_complex_fast, so we need to be careful here
-		int x1=x0+4;
-		int y1=y0+4;
-		int z1=z0+4;
+		int x1=x0+5;
+		int y1=y0+5;
+		int z1=z0+5;
 		if (x0<-nx2) x0=-nx2;
 		if (x1>nx2) x1=nx2;
 		if (y0<-ny2) y0=-ny2;
@@ -253,11 +253,14 @@ bool FourierInserter3DMode5::insert_pixel(const float& xx, const float& yy, cons
 		if (z1>nz2) z1=nz2;
 		
 //		float h=2.0/((1.0+pow(Util::hypot3sq(xx,yy,zz),.5))*EMConsts::I2G);
-//		float h=2.0/EMConsts::I3G;
-		float h=32.0f/((8.0f+Util::hypot3(xx,yy,zz))*EMConsts::I3G); 
-		float w=weight/(1.0f+6.0f*Util::fast_exp(-h)+12*Util::fast_exp(-h*2.0f)+8*Util::fast_exp(-h*3.0f)+
-			6.0f*Util::fast_exp(-h*4.0f)+24.0f*Util::fast_exp(-h*5.0f)+24.0f*Util::fast_exp(-h*6.0f)+12.0f*Util::fast_exp(-h*8.0f)+
-			24.0f*Util::fast_exp(-h*9.0f)+8.0f*Util::fast_exp(-h*12.0f));	// approx normalization so higer radii aren't upweighted relative to lower due to wider Gaussian
+		float h=1.0f/EMConsts::I5G;
+		float w=weight;
+		
+		// Not sure exactly what this was doing? Using wider Gaussian at high radius?
+// 		float h=32.0f/((8.0f+Util::hypot3(xx,yy,zz))*EMConsts::I3G); 
+// 		float w=weight/(1.0f+6.0f*Util::fast_exp(-h)+12*Util::fast_exp(-h*2.0f)+8*Util::fast_exp(-h*3.0f)+
+// 			6.0f*Util::fast_exp(-h*4.0f)+24.0f*Util::fast_exp(-h*5.0f)+24.0f*Util::fast_exp(-h*6.0f)+12.0f*Util::fast_exp(-h*8.0f)+
+// 			24.0f*Util::fast_exp(-h*9.0f)+8.0f*Util::fast_exp(-h*12.0f));	// approx normalization so higer radii aren't upweighted relative to lower due to wider Gaussian
 		//size_t idx;
 		float r, gg;
 //		int pc=0;
@@ -266,19 +269,20 @@ bool FourierInserter3DMode5::insert_pixel(const float& xx, const float& yy, cons
 				for (int i = x0; i <= x1; i ++) {
 					r = Util::hypot3sq((float) i - xx, j - yy, k - zz);
 //					gg=weight;
-					gg = Util::fast_exp(-r *h)*w;
+					gg = Util::fast_exp(-r *h);
 //					gg = Util::fast_exp(-r / EMConsts::I2G)*weight;
 //					gg = sqrt(Util::fast_exp(-r / EMConsts::I2G))*weight;
 					
 					size_t off;
-					off=data->add_complex_at_fast(i,j,k,dt*gg);
-					norm[off/2]+=gg;
+					off=data->add_complex_at_fast(i,j,k,dt*gg*w);
+					norm[off/2]+=gg*w;
+//					norm[off/2]+=w;			// This would use a Gaussian kernel rather than just Gaussian weight with square kernel, can't seem to get it to work better tho
 				}
 			}
 		}
 		return true;
 	}
-	printf("region writing not supported in mode 3\n");
+	printf("region writing not supported in mode 5\n");
 	return false;
 }
 

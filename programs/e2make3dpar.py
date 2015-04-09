@@ -96,6 +96,7 @@ def main():
 	parser.add_argument("--keepsig",action="store_true",default=False, dest="keepsig", help="If set, keep will be interpreted as a standard deviation coefficient instead of as a percentage.")
 	parser.add_argument("--keepabs",action="store_true",default=False, dest="keepabs", help="If set, keep will refer to the absolute quality of the class-average, not a local quality relative to other similar sized classes.")
 	parser.add_argument("--no_wt", action="store_true", dest="no_wt", default=False, help="This argument turns automatic weighting off causing all images to be weighted by 1. If this argument is not specified images inserted into the reconstructed volume are weighted by the number of particles that contributed to them (i.e. as in class averages), which is extracted from the image header (as the ptcl_repr attribute).")
+	parser.add_argument("--mode", type=str, default="gauss_2", help="Fourier reconstruction 'mode' to use. The default should not normally be changed. default='gauss_2'")
 
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
@@ -205,7 +206,7 @@ def main():
 	if options.verbose: print "After filter, %d images"%len(data)
 
 	# Get the reconstructor and initialize it correctly
-	a = {"size":padvol,"sym":options.sym,"mode":"gauss_2","verbose":options.verbose-1}
+	a = {"size":padvol,"sym":options.sym,"mode":options.mode,"verbose":options.verbose-1}
 	if options.savenorm!=None : a["savenorm"]=options.savenorm
 	recon=Reconstructors.get("fourier", a)
 
