@@ -150,8 +150,8 @@ bool FourierInserter3DMode2::insert_pixel(const float& xx, const float& yy, cons
 //					gg = sqrt(Util::fast_exp(-r / EMConsts::I2G))*weight;
 					
 					size_t off;
-//					off=data->add_complex_at_fast(i,j,k,dt*gg);
-					off=data->add_complex_at(i,j,k,dt*gg);
+					off=data->add_complex_at_fast(i,j,k,dt*gg);
+//					off=data->add_complex_at(i,j,k,dt*gg);
 					if (off!=nxyz) norm[off/2]+=gg;
 				}
 			}

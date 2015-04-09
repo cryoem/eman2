@@ -661,7 +661,7 @@ vector<Pixel> EMData::calc_n_highest_locations(int n)
 
 	// initialize with n elements
 	float * data = get_data();
-	for ( int i=0; i<n; i++) result.push_back(Pixel(0,0,0,data[0]));
+	for ( int i=0; i<n; i++) result.push_back(Pixel(0,0,0,-data[0]));
 
 	int nxy = nx * ny;
 
