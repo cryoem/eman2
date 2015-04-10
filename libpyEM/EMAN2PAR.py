@@ -783,9 +783,9 @@ class EMMpiClient():
 					
 					if com=="EXEC":
 						if self.logfile!=None : self.logfile.write( "EXEC\n")
-						if verbose>1 : print "rank %d: I just got a task to execute (%s):"%(self.rank,socket.gethostname()),data
 						task=loads(data)		# just for clarity
 						if not isinstance(task,JSTask) : raise Exception,"Non-task object passed to MPI for execution ! (%s)"%str(type(task))
+						if verbose>1 : print "rank %d: I just got a task to execute (%s: %s):"%(self.rank,socket.gethostname(),task.command,str(task.options))
 
 						self.taskfile="%s/taskexe.%d"%(self.queuedir,os.getpid())
 						self.taskout="%s/taskout.%d"%(self.queuedir,os.getpid())
