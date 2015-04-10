@@ -701,7 +701,7 @@ def main():
 	nnxo = bcast_number_to_all(nnxo, source_node = main_node)
 
 	if(radi < 1):  radi = nnxo//2-2
-	elif((2*radi+2)>nnxo):  ERROR("HERE","particle radius set too large!",1)
+	elif((2*radi+2)>nnxo):  ERROR("Particle radius set too large!","sxmeridien",1)
 	ali3d_options.ou = radi
 	if(nxinit < 0):  nxinit = min(32, nnxo)
 	else:
@@ -766,21 +766,21 @@ def main():
 	#  Run exhaustive projection matching to get initial orientation parameters
 	#  Estimate initial resolution
 	initdir = os.path.join(masterdir,"main000")
-	#  make sure the initial volume is not set to zero outside of a mask, as if it is it will crach the program
+	#  make sure the initial volume is not set to zero outside of a mask, as if it is it will crash the program
 	if( myid == main_node and (not options.startangles)):
 		viv = get_im(volinit)
 		if(options.mask3D == None):  mask33d = model_circle(radi,nnxo,nnxo,nnxo)
-		else:  mask33d = (options.mask3D).copy()
+		else:  mask33d = get_im(options.mask3D)
 		st = Util.infomask(viv, mask33d, False)
 		if( st[0] == 0.0 ):
 			viv += (model_blank(nnxo,nnxo,nnxo,1.0) - mask33d)*model_gauss_noise(st[1]/1000.0,nnxo,nnxo,nnxo)
 			viv.write_image(volinit)
 		del mask33d, viv
 
-	#  This is initial setting, has to be initialized here
+	#  This is initial setting, has to be initialized here, we do not want it to run too long.
+	#  If we new the initial resolution, it could be done more densly
 	xr = min(8,(nnxo - (2*radi+1))//2)
-	if(xr > 3):  ts = "2"
-	else:  ts = "1"
+	ts = "%f"%max((xr-1)/6.0,1.0)
 
 	delta = int(options.delta)
 	if(delta <= 0.0):
@@ -817,7 +817,7 @@ def main():
 
 			metamove(paramsdict, partids, partstack, initdir, 0, myid, main_node, nproc)
 			if(myid == main_node):
-				print(line,"Executed successfully: ","initialization ali3d_base_MPI  %d"%nsoft)
+				print(line,"Executed successfully: ","initialization ali3d_base_MPI")
 
 			
 
