@@ -778,8 +778,8 @@ def main():
 		del mask33d, viv
 
 	#  This is initial setting, has to be initialized here, we do not want it to run too long.
-	#  If we new the initial resolution, it could be done more densly
-	xr = min(8,(nnxo - (2*radi+1))//2)
+	#  If we new the initial resolution, it could be done more densely
+	xr = (nnxo - 2*radi)//2
 	ts = "%f"%max((xr-1)/6.0,1.0)
 
 	delta = int(options.delta)
