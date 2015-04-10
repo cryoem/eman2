@@ -779,7 +779,7 @@ def main():
 
 	#  This is initial setting, has to be initialized here, we do not want it to run too long.
 	#  If we new the initial resolution, it could be done more densely
-	xr = (nnxo - 2*radi)//2
+	xr = (nnxo - (2*radi-1))//2
 	ts = "%f"%max((xr-1)/6.0,1.0)
 
 	delta = int(options.delta)
@@ -885,7 +885,6 @@ def main():
 	keepgoing = 1
 	while(keepgoing):
 		mainiteration += 1
-
 
 		#  prepare output directory
 		mainoutputdir = os.path.join(masterdir,"main%03d"%mainiteration)
@@ -1045,7 +1044,6 @@ def main():
 					cmd = "{} {} {}".format("cp -p", os.path.join(mainoutputdir,"loga%01d"%procid,"params-chunk%01d.txt"%procid) , os.path.join(coutdir,"params-chunk%01d.txt"%procid))
 					cmdexecute(cmd)
 					
-					
 		partstack = [None]*2
 		for procid in xrange(2):  partstack[procid] = os.path.join(mainoutputdir,"logb%01d"%procid,"params-chunk%01d.txt"%procid)
 
@@ -1193,7 +1191,9 @@ def main():
 
 		keepgoing = 0
 		if( newres > filtres or (eliminated_outliers and not tracker["eliminated-outliers"])):
-			if(myid == main_node):  print("  Resolution improved, full steam ahead!")
+			if(myid == main_node):
+				if( newres > filtres):  print("  Resolution improved, full steam ahead!   New resolution %6.2f   Previous resolution %6.2f"%(newres , filtres))
+				else:  print("  New resolution %6.2f   Previous resolution %6.2f . However, we eliminated outliers so we follow the resolution improved path."%(newres , filtres))
 
 			if( newres > filtres ):  tracker["movedup"] = True
 			else:   tracker["movedup"] = False
@@ -1203,7 +1203,7 @@ def main():
 			nxshrink += nxshrink%2
 			shrink = float(nxshrink)/nnxo
 			tracker["previous-resolution"] = newres
-			filtres = newres
+			filtres = newres   #  HERE the filter is adjusted!!!
 			tracker["bestsolution"] = mainiteration
 			bestoutputdir = mainoutputdir
 			tracker["eliminated-outliers"] = eliminated_outliers
@@ -1242,6 +1242,7 @@ def main():
 					filtres = read_text_file( os.path.join(bestoutputdir,"current_resolution.txt") )[0]
 				filtres = bcast_number_to_all(filtres, source_node = main_node)
 				filtres = round(filtres,2)
+				filtres += 0.05  #  what about that ??
 
 				shrink = max(min(2*filtres + paramsdict["aa"], 1.0), minshrink)
 				tracker["extension"] -= 2
@@ -1259,12 +1260,12 @@ def main():
 				if(myid == main_node):  print("The resolution did not improve. This is look ahead move.  Let's try to relax slightly and hope for the best")
 				tracker["extension"] -= 2
 				tracker["movedup"] = False
-
+				filtres += 0.1
 				shrink = max(min(2*filtres + paramsdict["aa"], 1.0), minshrink)
 				nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
 				nxshrink += nxshrink%2
 				shrink = float(nxshrink)/nnxo
-				if( tracker["previous-nx"] == nnxo ):
+				if( tracker["previous-nx"] == nnxo or filtres > 0.5):
 					keepgoing = 0
 				else:
 					tracker["previous-resolution"] = newres
