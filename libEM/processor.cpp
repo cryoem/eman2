@@ -266,9 +266,6 @@ const string RotateInFSProcessor::NAME = "rotateinfs";
 const string CircularAverageBinarizeProcessor::NAME = "threshold.binary.circularmean";
 const string ObjDensityProcessor::NAME = "morph.object.density";
 const string ObjLabelProcessor::NAME = "morph.object.label";
-const string BwThinningProcessor::NAME = "morph.thin";
-const string BwMajorityProcessor::NAME = "morph.majority";
-const string PruneSkeletonProcessor::NAME = "morph.prune"; 
 
 //#ifdef EMAN2_USING_CUDA
 //const string CudaMultProcessor::NAME = "cuda.math.mult";
@@ -514,9 +511,6 @@ template <> Factory < Processor >::Factory()
 	force_add<CircularAverageBinarizeProcessor>();
 	force_add<ObjDensityProcessor>();
 	force_add<ObjLabelProcessor>();
-	force_add<BwThinningProcessor>();
-	force_add<BwMajorityProcessor>();
-	force_add<PruneSkeletonProcessor>();
 
 //#ifdef EMAN2_USING_CUDA
 //	force_add<CudaMultProcessor>();
@@ -6399,21 +6393,22 @@ EMData *FSCFourierProcessor::process(EMData const *image)
 	int localav=0;				// once triggered, this uses a local average of 5 points instead of the point itself
 	// While this could all be in one equation, the compiler will optimize it, and this is much more transparent
 	for (int i=0; i<N; i++) {
+		if (localav==2) {
+			fsc.set_y(i,0.00001);
+			continue;
+		}
+
 		float s=i*nyquist/N;
 		float f=fsc.get_y(i);
 		float snr;
 		if (s>=maxfreq && lf<f) f=lf;
 		if (f<0 && i>2) localav=1;
-		if (localav==1) f=(fsc.get_y(i-2)+fsc.get_y(i-1)+fsc.get_y(i)+fsc.get_y(i+1)+fsc.get_y(i+2))/5.0f;
-		else if (localav==2) f=.00001;
-
-		if (f>=1.0) f=.9999;
-		if (f<0) { localav=2; f=.00001; }
-
-		snr=snrmult*f/(1.0-f);		// if FSC==1, we just set it to 1000, which is large enough to make the Wiener filter effectively 1
+		if (localav) f=(fsc.get_y(i-2)+fsc.get_y(i-1)+fsc.get_y(i)+fsc.get_y(i+1)+fsc.get_y(i+2))/5.0f;
+		if (f>=1.0) snr=1000.0;
+		else if (f<0) localav=2;
+		else snr=snrmult*f/(1.0-f);	// if FSC==1, we just set it to 1000, which is large enough to make the Wiener filter effectively 1
 		float wiener=snr*snr/(snr*snr+1);
-		if (wiener<.0001) wiener=.0001;	// we don't want to go all the way to zero. We leave behind just just a touch to preserve potential phase info
-
+		if (wiener<.00001) wiener=.00001;	// we don't want to go all the way to zero. We leave behind just just a touch to preserve potential phase info
 		fsc.set_y(i,wiener);
 		lf=f;
 	}
@@ -9279,23 +9274,24 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 //          via   F(k) = G(k) + i H(k); notice G and H are Friedel symmetric (not necessarily real)
 //	           But g,h are real, using f=g+ih.
 // 		First make sure that image has proper size; 
-//         if 2N is size of image, then sizes of FFT are (2N+2,2N)
-//         if 2N+1 is size of image, then sizes of FFT are (2N+2,2N+1)
+//         if 2N is side of real image, then sizes of FFT are (2N+2,2N)
+//         if 2N+1 is side of real image, then sizes of FFT are (2N+2,2N+1)
 //         so we need nx =ny+2, and ny  even  
 //	          or  nx = ny+1  and ny odd
 //         so nx even, and 2 *(nx -ny) -3=  +- 1; So  abs(2*(nx-ny)-3) == 1
 		float theta =  t.get_rotation("eman").get("phi"); theta=theta*pi/180;
+		Vec3f transNow= t.get_trans();
+		float xshift= transNow[0]; float yshift= transNow[1];
 		float tempR; float tempI;float tempW;
-		//printf("angle is %f \n", theta); 
 //		int kNy= ny; //size of the real space image
 //		int kNx= nx/2; //
 		Vec2f offset(nx/2,ny/2); 
 		for (int kyN = 0; kyN < ny; kyN++) {
 			int kyNew = kyN;
-			if (kyN>=nx/2) kyNew=kyN-ny;  //      Unalias
+			if (kyN>=nx/2) kyNew=kyN-ny;  // Step 0     Unalias
 			for (int kxN = 0; kxN < (nx/2); kxN++) {
 				int kxNew=kxN; 
-				if (kxN >= nx/2) kxNew=kxN-ny;//      Unalias
+				if (kxN >= nx/2) kxNew=kxN-ny;//  Step 0   Unalias
 				//  Step 1, Do rotation and find 4 nn
 				float kxOld=  cos(theta)* kxNew - sin(theta)* kyNew;
 				float kyOld=  sin(theta)* kxNew + cos(theta)* kyNew;
@@ -9309,7 +9305,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 				float dataLL_R= 0; float dataLL_I=0; int flag=1;
 				if ((abs(kxL)<N) && (abs(kyL)<N)) { //   Step 2 Make sure to be in First BZ
 				    kxL = (N+kxL)%N;  kyL = (N+kyL)%N;
-				    if (kxL> (int)floor((double)(N/2))){ kxL=(N-kxL)%N; kyL=(N-kyL)%N ;flag=-1;} // Step 3: if nec, use Friedel paired
+				    if (kxL> floor(N/2)){ kxL=(N-kxL)%N; kyL=(N-kyL)%N ;flag=-1;} // Step 3: if nec, use Friedel paired
 				    dataLL_R=     image -> get_value_at(2*kxL,kyL);
 				    dataLL_I=flag*image -> get_value_at(2*kxL+1,kyL);
 				} 
@@ -9318,7 +9314,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			        float dataLU_R= 0; float dataLU_I=0; flag=1;
 				if ((abs(kxL)<N) && (abs(kyU)<N)){ //       Step 2 Make sure to be in First BZ
 				    kxL = (N+kxL)%N;  kyU = (N+kyU)%N;
-				    if (kxL> (int)floor((double)(N/2))){ kxL=(N-kxL)%N; kyU=(N-kyU)%N;flag=-1;} // Step 3
+				    if (kxL> floor(N/2)){ kxL=(N-kxL)%N; kyU=(N-kyU)%N;flag=-1;} // Step 3
 				    dataLU_R=	  image -> get_value_at(2*kxL,kyU);
 				    dataLU_I=flag*image -> get_value_at(2*kxL+1,kyU);
 			        }
@@ -9327,7 +9323,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 				float dataUL_R= 0; float dataUL_I=0; flag=1;
 				if ((abs(kxU)<N) && (abs(kyL)<N)) {   //       Step 2
 				    kxU = (N+kxU)%N; kyL = (N+kyL)%N;
-				    if (kxU> (int)floor((double)(N/2))) { kxU=(N-kxU)%N; kyL=(N-kyL)%N;flag=-1;} // Step 3
+				    if (kxU> floor(N/2)) { kxU=(N-kxU)%N; kyL=(N-kyL)%N;flag=-1;} // Step 3
 				    dataUL_R=	  image -> get_value_at(2*kxU,kyL);
 				    dataUL_I=flag*image -> get_value_at(2*kxU+1,kyL);
 				}
@@ -9336,7 +9332,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			      float dataUU_R= 0; float dataUU_I=0; flag=1;
 			      if ((abs(kxU)<N) & (abs(kyU)<N)){  //       Step 2
 				    kxU = (N+kxU)%N; kyU = (N+kyU)%N;
-				    if (kxU> (int)floor((double)(N/2))) { kxU=(N-kxU)%N; kyU=(N-kyU)%N;flag=-1;} // Step 3
+				    if (kxU> floor(N/2)) { kxU=(N-kxU)%N; kyU=(N-kyU)%N;flag=-1;} // Step 3
 				    dataUU_R=	  image -> get_value_at(2*kxU,kyU);
 				    dataUU_I=flag*image -> get_value_at(2*kxU+1,kyU);
 			      }
@@ -9349,11 +9345,14 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 
 			      //            Step 5    Assign Real, then Imaginar Values
 			      tempR = WLL*dataLL_R  +   WLU*dataLU_R + WUL* dataUL_R +   WUU * dataUU_R ;
-			      des_data[2*kxN   + nx* kyN] = tempR/tempW;
-			    
-			      //
 			      tempI = WLL*dataLL_I  +   WLU*dataLU_I + WUL* dataUL_I +   WUU * dataUU_I ;
-			      des_data[2*kxN+1 + nx* kyN] = tempI/tempW;
+			      //
+			      float phase = -2*pi*(kxNew*xshift+kyNew*yshift)/ny;
+			      float tempRb=tempR*cos(phase) - tempI*sin(phase);
+			      float tempIb=tempR*sin(phase) + tempI*cos(phase);
+			      //
+			      des_data[2*kxN   + nx* kyN] = tempRb/tempW;
+			      des_data[2*kxN+1 + nx* kyN] = tempIb/tempW;
 			      //printf(" kxNew = %d, kyNew = %d,kxOld = %3.2f, kyOld = %3.2f,  xl = %d,xU = %d,yl = %d,yu = %d, tempR = %3.2f, tempI=%3.2f,  \n", 
 				//      kxNew,kyNew, kxOld, kyOld, kxLower,kxUpper,kyLower,kyUpper, tempR, tempI);
 			}
@@ -9365,6 +9364,8 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 		float phi =  t.get_rotation("eman").get("phi"); phi=pi*phi/180;
 		float alt =  t.get_rotation("eman").get("alt"); alt=pi*alt/180;
 		float az  =  t.get_rotation("eman").get("az");   az=pi*az /180;
+		Vec3f transNow= t.get_trans();
+		float xshift= transNow[0]; float yshift= transNow[1];float zshift= transNow[2];
 		
 		float MatXX = (cos(az)*cos(phi) - sin(az)*cos(alt)*sin(phi) );
 		float MatXY = (- cos(az)*sin(phi) - sin(az)*cos(alt)*cos(phi) ) ;
@@ -9403,7 +9404,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			    float dataLLL_R= 0; float dataLLL_I=0; int flag=1;
 			    if ( (abs(kxL)<N) && (abs(kyL)<N) && (abs(kzL)<N) ) { //   Step 2 Make sure to be in First BZ
 				kxL = (N+kxL)%N;  kyL = (N+kyL)%N; kzL = (N+kzL)%N;
-				if (kxL> (int)floor((double)(N/2))){kxL=(N-kxL)%N; kyL=(N-kyL)%N ; kzL=(N-kzL)%N ;flag=-1;} // Step 3: use Friedel paired
+				if (kxL> floor(N/2)){kxL=(N-kxL)%N; kyL=(N-kyL)%N ; kzL=(N-kzL)%N ;flag=-1;} // Step 3: use Friedel paired
 				dataLLL_R=     image -> get_value_at(2*kxL,kyL,kzL);
 				dataLLL_I=flag*image -> get_value_at(2*kxL+1,kyL,kzL);
 			    }
@@ -9412,7 +9413,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			    float dataLLU_R= 0; float dataLLU_I=0; flag=1;
 			    if ( (abs(kxL)<N) && (abs(kyL)<N) && (abs(kzU)<N) ) {//   Step 2 Make sure to be in First BZ
 				kxL = (N+kxL)%N;  kyL = (N+kyL)%N; kzU = (N+kzU)%N;
-				if (kxL> (int)floor((double)(N/2))){kxL=(N-kxL)%N; kyL=(N-kyL)%N ; kzU=(N-kzU)%N ;flag=-1;} // Step 3: use Friedel paired
+				if (kxL> floor(N/2)){kxL=(N-kxL)%N; kyL=(N-kyL)%N ; kzU=(N-kzU)%N ;flag=-1;} // Step 3: use Friedel paired
 				dataLLU_R=     image -> get_value_at(2*kxL  ,kyL,kzU);
 				dataLLU_I=flag*image -> get_value_at(2*kxL+1,kyL,kzU);
 			    }
@@ -9421,7 +9422,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			    float dataLUL_R= 0; float dataLUL_I=0; flag=1;
 			    if ( (abs(kxL)<N) && (abs(kyU)<N)&& (abs(kzL)<N) ) {//  Step 2 Make sure to be in First BZ
 				kxL = (N+kxL)%N;  kyU = (N+kyU)%N; kzL = (N+kzL)%N;
-				if (kxL> (int)floor((double)(N/2))){ kxL=(N-kxL)%N; kyU=(N-kyU)%N; kzL=(N-kzL)%N ;flag=-1;}// Step 3
+				if (kxL> floor(N/2)){ kxL=(N-kxL)%N; kyU=(N-kyU)%N; kzL=(N-kzL)%N ;flag=-1;}// Step 3
 				dataLUL_R=     image -> get_value_at(2*kxL  ,kyU,kzL);
 				dataLUL_I=flag*image -> get_value_at(2*kxL+1,kyU,kzL);
 			    }
@@ -9430,7 +9431,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			    float dataLUU_R= 0; float dataLUU_I=0; flag=1;
 			    if ( (abs(kxL)<N) && (abs(kyU)<N)&& (abs(kzU)<N)) {//   Step 2 Make sure to be in First BZ
 				kxL = (N+kxL)%N;  kyU = (N+kyU)%N; kzU = (N+kzU)%N;
-				if (kxL> (int)floor((double)(N/2))){kxL=(N-kxL)%N; kyU=(N-kyU)%N; kzL=(N-kzL)%N ;flag=-1;} // Step 3
+				if (kxL> floor(N/2)){kxL=(N-kxL)%N; kyU=(N-kyU)%N; kzL=(N-kzL)%N ;flag=-1;} // Step 3
 				dataLUU_R=     image -> get_value_at(2*kxL  ,kyU,kzU);
 				dataLUU_I=flag*image -> get_value_at(2*kxL+1,kyU,kzU);
 			    }
@@ -9439,7 +9440,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			    float dataULL_R= 0; float dataULL_I=0; flag=1;
 			    if ( (abs(kxU)<N) && (abs(kyL)<N) && (abs(kzL)<N) ) {//    Step 2
 				kxU = (N+kxU)%N; kyL = (N+kyL)%N; kzL = (N+kzL)%N;
-				if (kxU> (int)floor((double)(N/2))){kxU=(N-kxU)%N; kyL=(N-kyL)%N; kzL=(N-kzL)%N ;flag=-1;} // Step 3
+				if (kxU> floor(N/2)){kxU=(N-kxU)%N; kyL=(N-kyL)%N; kzL=(N-kzL)%N ;flag=-1;} // Step 3
 				dataULL_R=     image -> get_value_at(2*kxU  ,kyL,kzL);
 				dataULL_I=flag*image -> get_value_at(2*kxU+1,kyL,kzL);
 			    }
@@ -9448,7 +9449,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			    float dataULU_R= 0; float dataULU_I=0; flag=1;
 			    if ( (abs(kxU)<N) && (abs(kyL)<N)&& (abs(kzU)<N) ) {//      Step 2
 				kxU = (N+kxU)%N; kyL = (N+kyL)%N; kzU = (N+kzU)%N;
-				if (kxU> (int)floor((double)(N/2))){kxU=(N-kxU)%N; kyL=(N-kyL)%N; kzU=(N-kzU)%N ;flag=-1;} // Step 3
+				if (kxU> floor(N/2)){kxU=(N-kxU)%N; kyL=(N-kyL)%N; kzU=(N-kzU)%N ;flag=-1;} // Step 3
 				dataULU_R=     image -> get_value_at(2*kxU  ,kyL,kzU);
 				dataULU_I=flag*image -> get_value_at(2*kxU+1,kyL,kzU);
 			    }
@@ -9457,7 +9458,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			    float dataUUL_R= 0; float dataUUL_I=0; flag=1;
 			    if ( (abs(kxU)<N) && (abs(kyU)<N) && (abs(kzL)<N) ) {//      Step 2
 				kxU = (N+kxU)%N; kyU = (N+kyU)%N; kzL = (N+kzL)%N;
-				if (kxU> (int)floor((double)(N/2))){kxU=(N-kxU)%N; kyU=(N-kyU)%N; kzL=(N-kzL)%N ;flag=-1;} // Step 3
+				if (kxU> floor(N/2)){kxU=(N-kxU)%N; kyU=(N-kyU)%N; kzL=(N-kzL)%N ;flag=-1;} // Step 3
 				dataUUL_R=     image -> get_value_at(2*kxU  ,kyU,kzL);
 				dataUUL_I=flag*image -> get_value_at(2*kxU+1,kyU,kzL);
 			    }
@@ -9466,12 +9467,14 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			    float dataUUU_R= 0; float dataUUU_I=0; flag=1;
 			    if ( (abs(kxU)<N) && (abs(kyU)<N) && (abs(kzU)<N) ) { //       Step 2
 				kxU = (N+kxU)%N; kyU = (N+kyU)%N; kzU = (N+kzU)%N;
-				if (kxU> (int)floor((double)(N/2))) {kxU=(N-kxU)%N; kyU=(N-kyU)%N; kzU=(N-kzU)%N ;flag=-1;} // Step 3
+				if (kxU> floor(N/2)) {kxU=(N-kxU)%N; kyU=(N-kyU)%N; kzU=(N-kzU)%N ;flag=-1;} // Step 3
 				dataUUU_R=     image -> get_value_at(2*kxU  ,kyU,kzU);
 				dataUUU_I=flag*image -> get_value_at(2*kxU+1,kyU,kzU);
 			    }
 			    //          Step 4    Assign Weights
 			    float WLLL = dkxLower*dkyLower*dkzLower ;
+			    // WLLL = sqrt(pow(dkxUpper,2)+ pow(dkyUpper,2) + pow(dkzUpper,2)) ;
+			    // WLLL = sin(pi* WLLL+.00000001)/(pi* WLLL+.00000001);
 			    float WLLU = dkxLower*dkyLower*dkzUpper ;
 			    float WLUL = dkxLower*dkyUpper*dkzLower ;
 			    float WLUU = dkxLower*dkyUpper*dkzUpper ;
@@ -9483,11 +9486,16 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			    //           Step 5    Assign Real, then Imaginary Values
 			    tempR =  WLLL*dataLLL_R + WLLU*dataLLU_R + WLUL*dataLUL_R + WLUU*dataLUU_R ;
 			    tempR += WULL*dataULL_R + WULU*dataULU_R + WUUL*dataUUL_R + WUUU*dataUUU_R ;
-			    des_data[2*kxN    + nx* kyN +nx*ny*kzN] = tempR/tempW;
 			    //
 			    tempI  = WLLL*dataLLL_I + WLLU*dataLLU_I + WLUL*dataLUL_I + WLUU*dataLUU_I ;
 			    tempI += WULL*dataULL_I + WULU*dataULU_I + WUUL*dataUUL_I + WUUU*dataUUU_I ;
-			    des_data[2*kxN+1  + nx* kyN +nx*ny*kzN] = tempI/tempW;
+			    //
+			    float phase = -2*pi*(kxNew*xshift+kyNew*yshift+kzNew*zshift)/ny;
+			    float tempRb=tempR*cos(phase) - tempI*sin(phase);
+			    float tempIb=tempR*sin(phase) + tempI*cos(phase);
+			    //
+			    des_data[2*kxN    + nx* kyN +nx*ny*kzN] = tempRb/tempW;
+			    des_data[2*kxN+1  + nx* kyN +nx*ny*kzN] = tempIb/tempW;
 		}}}  // end z, y, x loops through new coordinates
 	}   //  end  rotations in Fourier Space  3D
 	if ((nz > 1)&&(image -> is_real())) {
@@ -11208,7 +11216,7 @@ void RotateInFSProcessor::process_inplace(EMData * image) // right now for 2d im
 
 	int debug=0;
 
-//	error: conversion from 'EMAN::EMObject' to non-scalar type 'EMAN::Transform' requested
+//	error: conversion from ‘EMAN::EMObject’ to non-scalar type ‘EMAN::Transform’ requested
 
 
 	// if 2N is size of image, then sizes of FFT are (2N+2,2N,2N) or  (2N+2,2N,1)
@@ -11284,7 +11292,7 @@ void RotateInFSProcessor::process_inplace(EMData * image) // right now for 2d im
         if (debug) printf("  Just about to start second loop  \n");
 
 	image ->to_zero();
-        invRotNow = rotNow ->inverse(); //  no match for 'operator=' in 'PosBefore = EMAN::operator*(const EMAN::Transform&, const EMAN::Transform&)((
+        invRotNow = rotNow ->inverse(); //  no match for ‘operator=’ in ‘PosBefore = EMAN::operator*(const EMAN::Transform&, const EMAN::Transform&)((
 
 
 	for (int kxAfter = 0; kxAfter <= N  ; ++kxAfter) {  // These are the  kx, ky, kz coordinates of the rotated image
@@ -11429,8 +11437,7 @@ void RotateInFSProcessor::process_inplace(EMData * image) // right now for 2d im
 
 EMData* CircularAverageBinarizeProcessor::process(const EMData* const image)  // now do it layer by layer in 3d
 {
-	int thr=params.set_default("thresh",5);
-	
+	int thr=params["thresh"];
 	EMData* bwmap= image -> copy(); 
 	int x_size = image->get_xsize(); 
 	int y_size = image->get_ysize();
@@ -11451,6 +11458,7 @@ EMData* CircularAverageBinarizeProcessor::process(const EMData* const image)  //
 				}
 			}
 		}
+		printf("count=%d\n",count);
 		// for each pixel
 		for (iz=0; iz<z_size; iz++){
 			for (ix=0; ix<x_size; ix++){
@@ -11509,44 +11517,75 @@ EMData* ObjDensityProcessor::process(const EMData* const image) //
 
 void ObjDensityProcessor::process_inplace(EMData * image)
 {
+
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 
 	float threshold=params.set_default("thresh",1.5);
-	bool nb8=params.set_default("more_neighbor",false);
-	
-	// label each object first
-	EMData *label=image->process("morph.object.label",Dict("thresh",threshold,"more_neighbor",nb8));
-	int nobj=int(label->get_attr("maximum"))+1;
-	float *sden=new float[nobj];	// sum density of each object
-	for (int i=0; i<nobj; i++) sden[i]=0;
-	
-	for (int x=0; x<nx; x++){
-		for (int y=0; y<ny; y++){
-			for (int z=0; z<nz; z++){
-				float v=image->get_value_at(x,y,z);
-				if (v<threshold)
-					continue;
-				
-				int li=label->get_value_at(x,y,z);
-				sden[li]+=v;
+
+	EMData *mask = new EMData();
+	mask->set_size(nx, ny, nz);
+	mask->to_one();
+
+	for (int zz = 0; zz < nz; zz++) {
+		for (int yy = 0; yy < ny; yy++) {
+			for (int xx = 0; xx < nx; xx++) {
+				if (image->get_value_at(xx,yy,zz)>threshold && mask->get_value_at(xx,yy,zz)==1.0) {
+					float sumden=0;
+					vector<Vec3i> pvec;
+					pvec.push_back(Vec3i(xx,yy,zz));
+					for (uint i=0; i<pvec.size(); i++) {
+						// Duplicates will occur the way the algorithm is constructed, so we eliminate them as we encounter them
+						if (mask->sget_value_at(pvec[i])==0.0f) {
+							pvec.erase(pvec.begin()+i);
+							i--;
+							continue;
+						}
+
+						// mask out the points in the volume
+						mask->set_value_at(pvec[i],0.0f);
+
+						int x=pvec[i][0];
+						int y=pvec[i][1];
+						int z=pvec[i][2];
+						// Any neighboring values above threshold we haven't already set get added to the list
+						if (image->sget_value_at(x-1,y,z)>threshold && mask->get_value_at(x-1,y,z)==1.0){
+							pvec.push_back(Vec3i(x-1,y,z));
+							sumden+=image->sget_value_at(x-1,y,z);
+						}
+						if (image->sget_value_at(x+1,y,z)>threshold && mask->get_value_at(x+1,y,z)==1.0){
+							pvec.push_back(Vec3i(x+1,y,z));
+							sumden+=image->sget_value_at(x+1,y,z);
+						}							
+						if (image->sget_value_at(x,y-1,z)>threshold && mask->get_value_at(x,y-1,z)==1.0){
+							pvec.push_back(Vec3i(x,y-1,z));
+							sumden+=image->sget_value_at(x,y-1,z);
+						}
+						if (image->sget_value_at(x,y+1,z)>threshold && mask->get_value_at(x,y+1,z)==1.0){
+							pvec.push_back(Vec3i(x,y+1,z));
+							sumden+=image->sget_value_at(x,y+1,z);
+						}
+						if (image->sget_value_at(x,y,z-1)>threshold && mask->get_value_at(x,y,z-1)==1.0){
+							pvec.push_back(Vec3i(x,y,z-1));
+							sumden+=image->sget_value_at(x,y,z-1);
+						}
+						if (image->sget_value_at(x,y,z+1)>threshold && mask->get_value_at(x,y,z+1)==1.0){ 
+							pvec.push_back(Vec3i(x,y,z+1));
+							sumden+=image->sget_value_at(x,y,z+1);
+						}
+					}
+
+					// If the blob is too big, then we don't mask it out after all, but we set the value
+					// to 2.0 so we know the voxels have already been examined, and don't check them again
+					for (uint i=0; i<pvec.size(); i++) mask->set_value_at(pvec[i],2.0);
+					for (uint i=0; i<pvec.size(); i++) image->set_value_at(pvec[i],sumden);
+				}
 			}
 		}
 	}
-	
-	for (int x=0; x<nx; x++){
-		for (int y=0; y<ny; y++){
-			for (int z=0; z<nz; z++){
-				int li=label->get_value_at(x,y,z);
-				if (li==0)
-					continue;
-				image->set_value_at_fast(x,y,z,sden[li]);
-			}
-		}
-	}
-	delete label;
-	delete []sden;
+
+	delete mask;
 }
 EMData* ObjLabelProcessor::process(const EMData* const image) //
 {
@@ -11559,22 +11598,18 @@ EMData* ObjLabelProcessor::process(const EMData* const image) //
 
 void ObjLabelProcessor::process_inplace(EMData * image)
 {
-	// This structure is copied from AutoMaskDustProcessor
-	
+
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 
 	float threshold=params.set_default("thresh",1.5);
-	bool nb8=params.set_default("more_neighbor",false);
-	bool writecenter=params.set_default("write_centers",false);
 
 	vector<float> centers;
 	EMData *mask = new EMData();
 	mask->set_size(nx, ny, nz);
 	mask->to_one();
 	int count=0;
-	int zs=(nz>1)? 1 : 0;
 	for (int zz = 0; zz < nz; zz++) {
 		for (int yy = 0; yy < ny; yy++) {
 			for (int xx = 0; xx < nx; xx++) {
@@ -11597,407 +11632,52 @@ void ObjLabelProcessor::process_inplace(EMData * image)
 						int y=pvec[i][1];
 						int z=pvec[i][2];
 						// Any neighboring values above threshold we haven't already set get added to the list
-						if (nb8){
-							for (int ix=x-1; ix<=x+1; ix++){
-								for (int iy=y-1; iy<=y+1; iy++){
-									for (int iz=z-zs; iz<=z+zs; iz++){
-										if (image->sget_value_at(ix,iy,iz)>threshold && mask->sget_value_at(ix,iy,iz)==1.0){
-											pvec.push_back(Vec3i(ix,iy,iz));
-										}
-									}
-									
-								}
-							}
+						if (image->sget_value_at(x-1,y,z)>threshold && mask->get_value_at(x-1,y,z)==1.0){
+							pvec.push_back(Vec3i(x-1,y,z));
 						}
-						else{
-							if (image->sget_value_at(x-1,y,z)>threshold && mask->sget_value_at(x-1,y,z)==1.0){
-								pvec.push_back(Vec3i(x-1,y,z));
-							}
-							if (image->sget_value_at(x+1,y,z)>threshold && mask->sget_value_at(x+1,y,z)==1.0){
-								pvec.push_back(Vec3i(x+1,y,z));
-							}							
-							if (image->sget_value_at(x,y-1,z)>threshold && mask->sget_value_at(x,y-1,z)==1.0){
-								pvec.push_back(Vec3i(x,y-1,z));
-							}
-							if (image->sget_value_at(x,y+1,z)>threshold && mask->sget_value_at(x,y+1,z)==1.0){
-								pvec.push_back(Vec3i(x,y+1,z));
-							}
-							if (image->sget_value_at(x,y,z-1)>threshold && mask->sget_value_at(x,y,z-1)==1.0){
-								pvec.push_back(Vec3i(x,y,z-1));
-							}
-							if (image->sget_value_at(x,y,z+1)>threshold && mask->sget_value_at(x,y,z+1)==1.0){ 
-								pvec.push_back(Vec3i(x,y,z+1));
-							}
+						if (image->sget_value_at(x+1,y,z)>threshold && mask->get_value_at(x+1,y,z)==1.0){
+							pvec.push_back(Vec3i(x+1,y,z));
+						}							
+						if (image->sget_value_at(x,y-1,z)>threshold && mask->get_value_at(x,y-1,z)==1.0){
+							pvec.push_back(Vec3i(x,y-1,z));
+						}
+						if (image->sget_value_at(x,y+1,z)>threshold && mask->get_value_at(x,y+1,z)==1.0){
+							pvec.push_back(Vec3i(x,y+1,z));
+						}
+						if (image->sget_value_at(x,y,z-1)>threshold && mask->get_value_at(x,y,z-1)==1.0){
+							pvec.push_back(Vec3i(x,y,z-1));
+						}
+						if (image->sget_value_at(x,y,z+1)>threshold && mask->get_value_at(x,y,z+1)==1.0){ 
+							pvec.push_back(Vec3i(x,y,z+1));
 						}
 					}
 
+					// If the blob is too big, then we don't mask it out after all, but we set the value
+					// to 2.0 so we know the voxels have already been examined, and don't check them again
 					for (uint i=0; i<pvec.size(); i++) mask->set_value_at(pvec[i],2.0);
 					for (uint i=0; i<pvec.size(); i++) image->set_value_at(pvec[i],count);
-					if (writecenter){
-						float cnt[3]={0,0,0};
-						for (uint i=0; i<pvec.size(); i++){
-	// 						printf("%d,%d,%d\n",pvec[i][0],pvec[i][1],pvec[i][2]);
-							cnt[0]+=pvec[i][0];
-							cnt[1]+=pvec[i][1];
-							cnt[2]+=pvec[i][2];
-						}
-						cnt[0]/=pvec.size();
-						cnt[1]/=pvec.size();
-						cnt[2]/=pvec.size();
-	// 					printf("%f,%f,%f\n",cnt[0],cnt[1],cnt[2]);
-						centers.push_back(cnt[0]);
-						centers.push_back(cnt[1]);
-						centers.push_back(cnt[2]);
+					float cnt[3]={0,0,0};
+					for (uint i=0; i<pvec.size(); i++){
+// 						printf("%d,%d,%d\n",pvec[i][0],pvec[i][1],pvec[i][2]);
+						cnt[0]+=pvec[i][0];
+						cnt[1]+=pvec[i][1];
+						cnt[2]+=pvec[i][2];
 					}
+					cnt[0]/=pvec.size();
+					cnt[1]/=pvec.size();
+					cnt[2]/=pvec.size();
+// 					printf("%f,%f,%f\n",cnt[0],cnt[1],cnt[2]);
+					centers.push_back(cnt[0]);
+					centers.push_back(cnt[1]);
+					centers.push_back(cnt[2]);
 				}
 			}
 		}
 	}
-	if (writecenter)
-		image->set_attr("obj_centers",centers);
+	image->set_attr("obj_centers",centers);
 
 	delete mask;
 }
-
-EMData* BwThinningProcessor::process(const EMData* const image) //
-{
-
-    EMData* imageCp= image -> copy(); 
-    process_inplace(imageCp);
-
-    return imageCp;
-}
-
-void BwThinningProcessor::process_inplace(EMData * image){
-
-	int nx = image->get_xsize();
-	int ny = image->get_ysize();
-	int nz = image->get_zsize();
-	
-	float threshold=params.set_default("thresh",0);
-	int ntimes=params.set_default("ntimes",-1);
-	int verbose=params.set_default("verbose",0);
-	if (nz > 1) {
-		ImageDimensionException("Only 2-D images supported");
-	}
-	float array[9];
-	int n=1;
-	float *data = image->get_data();
-	size_t total_size = (size_t)nx * (size_t)ny * (size_t)nz;
-	// binarize image and deal with boundary points first
-	for (int j=0; j<ny; j++){
-		int jnx = j * nx;
-		for (int i=0; i<nx; i++){
-			if(i==0 || i==nx-1 || j==0 || j==ny-1)
-				data[i+jnx]=0;
-			else{
-				if (data[i+jnx]>threshold)
-					data[i+jnx]=1;
-				else
-					data[i+jnx]=0;
-			}
-		}
-	}
-	
-	float *data2 = new float[total_size];
-	int ntstep=1,allt=ntimes;
-	if (ntimes<0){	// thin to skeleton
-		allt=1;
-		ntstep=0;
-	}
-	// thinning
-	int cg;
-	for (int nt=0; nt<allt; nt+=ntstep){
-		cg=0;
-		for (int st = 0; st<2; st++){
-			memcpy(data2, data, total_size * sizeof(float));
-			for (int j = n; j < ny - n; j++) {
-				int jnx = j * nx;
-				for (int i = n; i < nx - n; i++) {
-					size_t s = 0;
-					for (int i2 = i - n; i2 <= i + n; i2++) {
-						for (int j2 = j - n; j2 <= j + n; j2++) {
-							array[s] = data2[i2 + j2 * nx];
-							++s;
-						}
-					}
-
-					cg+=process_pixel(&data[i + jnx ], array, st);
-				}
-			}
-		}
-		if (verbose>0)
-			printf("%d pixels changed\n",cg);
-		if(cg==0)
-			break;
-	}
-	
-	// remove corner pixels when doing skeletonization
-	if (ntimes<0){
-		cg=0;
-		memcpy(data2, data, total_size * sizeof(float));
-		for (int j = n; j < ny - n; j++) {
-			int jnx = j * nx;
-			for (int i = n; i < nx - n; i++) {
-				size_t s = 0;
-				for (int i2 = i - n; i2 <= i + n; i2++) {
-					for (int j2 = j - n; j2 <= j + n; j2++) {
-						array[s] = data2[i2 + j2 * nx];
-						++s;
-					}
-				}
-
-				cg+=process_pixel(&data[i + jnx ], array, 2);
-			}
-		}
-	}
-	if (verbose>0)
-		printf("%d corner pixels\n",cg);
-
-	image->update();
-
-	if( data2 )
-	{
-		delete[]data2;
-		data2 = 0;
-	}
-}
-
-
-int BwThinningProcessor::process_pixel(float* data, float* array, int step){
-	
-	if (*data==0){
-		return 0;
-	}
-	int bp=-1; // number of 1 neighbors, not counting itself 
-	for (int i=0; i<9; i++){
-		if (array[i]>0)
-			bp++;
-	}
-	if (bp<2 || bp>6){
-		return 0;
-	}
-	int ap=0; // number of transitions from 0 to 1
-	int order[9]={0,1,2,5,8,7,6,3,0};
-	for (int i=0; i<8; i++){
-		if (array[order[i]]==0 && array[order[i+1]]>0){
-			ap++;
-		}
-	}
-	if (ap!=1 && step<2)
-		return 0;
-	
-	if (step==0){
-		if(array[order[1]]*array[order[3]]*array[order[5]]>0)
-			return 0;
-		if(array[order[3]]*array[order[5]]*array[order[7]]>0)
-			return 0;		
-	}
-	
-	if (step==1){
-		if(array[order[1]]*array[order[3]]*array[order[7]]>0)
-			return 0;
-		if(array[order[1]]*array[order[5]]*array[order[7]]>0)
-			return 0;		
-	}
-	
-	if (step==2){
-		if (bp==2){
-			if(array[order[1]]*array[order[3]]>0 
-			|| array[order[3]]*array[order[5]]>0
-			|| array[order[5]]*array[order[7]]>0
-			|| array[order[7]]*array[order[1]]>0
-			){
-				*data=0;
-				return 1;
-			}
-			else{
-				return 0;
-			}
-		}
-		if (ap==2 ){
-			if(array[order[1]]*array[order[3]]>0 
-			|| array[order[3]]*array[order[5]]>0
-			){
-				*data=0;
-				return 1;
-			}
-			else{
-				return 0;
-			}
-		}
-		return 0;
-	}
-	
-	*data=0;
-	return 1;
-	
-}
-
-EMData* PruneSkeletonProcessor::process(const EMData* const image) //
-{
-	EMData* imageCp= image -> copy(); 
-	process_inplace(imageCp);
-	return imageCp;
-}
-
-void PruneSkeletonProcessor::process_inplace(EMData * image){
-	// This function is far from optimized, but it works...
-	
-	int nx = image->get_xsize();
-	int ny = image->get_ysize();
-	int nz = image->get_zsize();
-	
-	float threshold=params.set_default("thresh",0);
-	int verbose=params.set_default("verbose",0);
-	int maxdist=params.set_default("maxdist",3);
-	
-	if (nz > 1) {
-		ImageDimensionException("Only 2-D images supported");
-	}
-	
-	float *data = image->get_data();
-	size_t total_size = (size_t)nx * (size_t)ny * (size_t)nz;
-	
-	// binarize image first
-	for (int j=0; j<ny; j++){
-		int jnx = j * nx;
-		for (int i=0; i<nx; i++){
-		
-			if (data[i+jnx]>threshold)
-				data[i+jnx]=1;
-			else
-				data[i+jnx]=0;
-		}
-	}
-	
-	float array[9];
-	float *data2 = new float[total_size];
-	memcpy(data2, data, total_size * sizeof(float));
-	image->to_zero();
-	
-	// find branch points
-	int nbranch=0;
-	for (int j=1; j < ny-1; j++) {
-		int jnx = j * nx;
-		for (int i=1; i<nx-1; i++) {
-			
-			if (data2[i+jnx]==0)
-				continue;
-			int s=0;
-			for (int i2 = i-1; i2 <= i + 1; i2++) {
-				for (int j2 = j - 1; j2 <= j + 1; j2++) {
-					array[s++] = data2[i2 + j2 * nx];
-				}
-			}
-			int ap=0; // number of transitions from 0 to 1
-			int order[9]={0,1,2,5,8,7,6,3,0};
-			for (int oi=0; oi<8; oi++){
-				if (array[order[oi]]==0 && array[order[oi+1]]>0){
-					ap++;
-				}
-			}
-			if (ap>2){
-				data[i+jnx]=1;
-				nbranch++;
-			}
-		}
-	}
-	if (verbose>0)
-		printf("%d branch pixels\n",nbranch);
-	
-	// now, data->branch points, data2->binarized image
-	
-	// distance to branch point
-	for (int j=1; j<ny; j++){
-		int jnx=j*nx;
-		for (int i=0; i<nx; i++){
-			data[i+jnx]=(1-data[i+jnx])*(maxdist+1);
-		}
-		
-	}
-	for (int dt=0; dt<maxdist; dt++){
-		for (int j=1; j < ny-1; j++) {
-			int jnx=j*nx;
-			for (int i=1; i<nx-1; i++) {
-				
-				if (data2[i+jnx]==0)
-					continue;
-				if (data[i+jnx]<=maxdist)
-					continue;
-				int db=maxdist;	// distance from nearest branch point. 
-				for (int i2=i-1; i2<=i+1; i2++) {
-					for (int j2=j-1; j2<=j+1; j2++) {
-						db=(data[i2+j2*nx]==dt ? dt : db);
-					}
-				}
-				data[i+jnx]=db+1;
-			}
-		}
-	}
-	// now, data->distance to the nearest branch point
-	
-	// mark endpoints for deletion
-	int nend=0;
-	for (int j=1; j < ny-1; j++) {
-		int jnx=j*nx;
-		for (int i=1; i<nx-1; i++) {
-			
-			if (data2[i+jnx]==0)
-				continue;
-			if (data[i+jnx]>maxdist)
-				continue;
-			int nb=-1;	// number of neighbors
-			for (int i2=i-1; i2<=i+1; i2++) {
-				for (int j2=j-1; j2<=j+1; j2++) {
-					nb+=data2[i2+j2*nx];
-				}
-			}
-			if (nb==1){	// endpoint found
-				data[i+jnx]=-data[i+jnx];	//mark for deletion
-				data2[i+jnx]=0;
-				nend++;
-			}
-		}
-	}
-	
-	// remove marked branches
-	for (int dt=-maxdist; dt<-1; dt++){
-		for (int j=1; j < ny-1; j++) {
-			int jnx=j*nx;
-			for (int i=1; i<nx-1; i++) {
-				
-				if (data2[i+jnx]==0)
-					continue;
-				if (data[i+jnx]<=0)
-					continue;
-				int rm=0; // delete this pixel
-				for (int i2=i-1; i2<=i+1; i2++) {
-					for (int j2=j-1; j2<=j+1; j2++) {
-						rm=( data[i2+j2*nx]==dt ? 1 : rm );
-					}
-				}
-				if (rm>0){
-					data2[i+jnx]=0;
-					data[i+jnx]=dt+1;
-				}
-			}
-		}
-	}
-	memcpy(data, data2, total_size * sizeof(float));
-	if (verbose>0)
-		printf("%d branches removed\n",nend);
-	
-	
-	image->update();	
-	if( data2 )
-	{
-		delete[]data2;
-		data2 = 0;
-	}
-	
-}
-
 
 #ifdef SPARX_USING_CUDA
 
