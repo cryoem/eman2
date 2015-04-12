@@ -190,6 +190,7 @@ def main():
 						rslt[1]["average"]["class_ptcl_src"]=options.input
 						if options.decayedge:
 							nx=rslt[1]["average"]["nx"]
+							rslt[1]["average"].process_inplace("normalize.circlemean",{"radius":nx/2-nx/15})
 							rslt[1]["average"].process_inplace("mask.gaussian",{"inner_radius":nx/2-nx/15,"outer_radius":nx/20})
 							#rslt[1]["average"].process_inplace("mask.decayedge2d",{"width":nx/15})
 
@@ -254,6 +255,7 @@ def main():
 				rslt["average"]["class_ptcl_src"]=options.input
 				if options.decayedge:
 					nx=rslt["average"]["nx"]
+					rslt["average"].process_inplace("normalize.circlemean",{"radius":nx/2-nx/15})
 					rslt["average"].process_inplace("mask.gaussian",{"inner_radius":nx/2-nx/15,"outer_radius":nx/20})
 					#rslt["average"].process_inplace("mask.decayedge2d",{"width":nx/15})
 				if options.ref!=None : rslt["average"]["projection_image"]=options.ref
