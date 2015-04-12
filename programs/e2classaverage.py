@@ -534,8 +534,8 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 			#fxf=ref2["xform.align2d"]
 			#ref.translate(fxf.get_trans())
 			ref.process_inplace(center)
+			ref.process_inplace("normalize.circlemean",{"radius":ref["nx"]/2-gmw})
 			ref.process_inplace("mask.gaussian",{"inner_radius":ref["nx"]/2-gmw,"outer_radius":gmw/1.3})
-			ref.process_inplace("normalize.circlemean")
 			ref_orient=None
 		except:
 			traceback.print_exc()
@@ -632,8 +632,8 @@ def class_average(images,ref=None,niter=1,normproc=("normalize.edgemean",{}),pre
 		ref["class_ptcl_qual_sigma"]=sigma
 
 		# A little masking before the next iteration
-		ref.process_inplace("normalize.circlemean")
 		gmw=max(5,ref["nx"]/12)		# gaussian mask width
+		ref.process_inplace("normalize.circlemean",{"radius":ref["nx"]/2-gmw})
 		if automask :
 			ref.process_inplace("mask.auto2d",{"nmaxseed":10,"nshells":gmw-2,"nshellsgauss":gmw,"sigma":0.2})
 		else :
