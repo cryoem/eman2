@@ -7739,6 +7739,7 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 			TypeDict d;
 			d.put("thresh", EMObject::FLOAT, "The threshold to binarize the map.");
 			d.put("verbose", EMObject::INT, "Verbose");
+			d.put("preserve_value", EMObject::BOOL, "The value on the skeleton is the same as the original map.");
 			d.put("ntimes", EMObject::INT, "Number of iterations in the thinning process. Default: -1 (perform thinning until the image is skeltonized");
 			return d;
 		}
