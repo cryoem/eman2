@@ -6393,22 +6393,21 @@ EMData *FSCFourierProcessor::process(EMData const *image)
 	int localav=0;				// once triggered, this uses a local average of 5 points instead of the point itself
 	// While this could all be in one equation, the compiler will optimize it, and this is much more transparent
 	for (int i=0; i<N; i++) {
-		if (localav==2) {
-			fsc.set_y(i,0.00001);
-			continue;
-		}
-
 		float s=i*nyquist/N;
 		float f=fsc.get_y(i);
 		float snr;
 		if (s>=maxfreq && lf<f) f=lf;
 		if (f<0 && i>2) localav=1;
-		if (localav) f=(fsc.get_y(i-2)+fsc.get_y(i-1)+fsc.get_y(i)+fsc.get_y(i+1)+fsc.get_y(i+2))/5.0f;
-		if (f>=1.0) snr=1000.0;
-		else if (f<0) localav=2;
-		else snr=snrmult*f/(1.0-f);	// if FSC==1, we just set it to 1000, which is large enough to make the Wiener filter effectively 1
+		if (localav==1) f=(fsc.get_y(i-2)+fsc.get_y(i-1)+fsc.get_y(i)+fsc.get_y(i+1)+fsc.get_y(i+2))/5.0f;
+		else if (localav==2) f=.00001;
+
+		if (f>=1.0) f=.9999;
+		if (f<0) { localav=2; f=.00001; }
+
+		snr=snrmult*f/(1.0-f);		// if FSC==1, we just set it to 1000, which is large enough to make the Wiener filter effectively 1
 		float wiener=snr*snr/(snr*snr+1);
-		if (wiener<.00001) wiener=.00001;	// we don't want to go all the way to zero. We leave behind just just a touch to preserve potential phase info
+		if (wiener<.001) wiener=.001;	// we don't want to go all the way to zero. We leave behind just just a touch to preserve potential phase info
+
 		fsc.set_y(i,wiener);
 		lf=f;
 	}
