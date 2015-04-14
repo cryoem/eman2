@@ -50,7 +50,9 @@ import string
 from   sys import exit
 from   time import localtime, strftime
 
-
+def subdict(d,u):
+	# substitute values in dictionary d by those given by dictionary u
+	for q in u:  d[q] = u[q]
 
 def cmdexecute(cmd):
 	from   time import localtime, strftime
@@ -257,14 +259,19 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			print(  line,"Generated vol #%01d "%procid)
 
-	newres = 0.0
+	lowpass = 0.0
 	currentres = 0.0
 	if(myid == main_node):
-		newres, currentres = get_resolution(vol, radi, nnxo, outputdir)
+		lowpass, currentres = get_resolution(vol, radi, nnxo, outputdir)
+		lowpass = round(lowpass, 2)
+		currentres = round(currentres, 2)
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print(  line,"Current resolution %6.2f, low-pass filter cut-off %6.2f"%(currentres,newres))
-		write_text_row([newres, currentres],os.path.join(outputdir,"current_resolution.txt"))
-	return newres, currentres
+		write_text_row([lowpass, currentres],os.path.join(outputdir,"current_resolution.txt"))
+	#  Returns: low-pass filter cutoff;  current resolution
+	currentres = bcast_number_to_all(currentres, source_node = main_node)
+	lowpass    = bcast_number_to_all(lowpass, source_node = main_node)
+	return lowpass, currentres
 
 def compute_fscs(stack, outputdir, chunkname, newgoodname, fscoutputdir, doit, keepchecking, nproc, myid, main_node):
 	#  Compute reconstructions per group from good particles only to get FSC curves
@@ -463,15 +470,15 @@ def get_resolution(vol, radi, nnxo, fscoutputdir):
 		print("  Something wrong with the resolution, cannot continue")
 		mpi_finalize()
 		exit()
-	filtres = 0.5
+	lowpass = 0.5
 	ns = len(nfsc[1])
 	#  This is resolution used to filter half-volumes
 	for i in xrange(1,ns-1):
 		if ( nfsc[1][i] < 0.5 ):
-			filtres = nfsc[0][i-1]
+			lowpass = nfsc[0][i-1]
 			break
 
-	return  round(filtres,2), round(currentres,2)
+	return  round(lowpass,2), round(currentres,2)
 
 
 
@@ -518,7 +525,7 @@ def metamove(paramsdict, partids, partstack, outputdir, procid, myid, main_node,
 	ali3d_options.center = paramsdict["center"]
 	ali3d_options.ts     = paramsdict["ts"]
 	ali3d_options.xr     = paramsdict["xr"]
-	ali3d_options.fl     = paramsdict["filtres"]
+	ali3d_options.fl     = paramsdict["lowpass"]
 	ali3d_options.aa     = paramsdict["aa"]
 	ali3d_options.maxit  = paramsdict["maxit"]
 	ali3d_options.mask3D = paramsdict["mask3D"]
@@ -585,6 +592,7 @@ def main():
 	parser.add_option("--ref_a",   		type="string", default= "S",		help="method for generating the quasi-uniformly distributed projection directions (default S)")
 	parser.add_option("--sym",     		type="string", default= "c1",		help="symmetry of the refined structure")
 	parser.add_option("--npad",    		type="int",    default= 2,			help="padding size for 3D reconstruction (default=2)")
+	parser.add_option("--nsoft",    	type="int",    default= 1,			help="Use SHC in first phase of refinement iteration (default=1, to turn it off set to 0)")
 	parser.add_option("--startangles",  action="store_true", default=False,	help="Use orientation parameters in the input file header to jumpstart the procedure")
 
 	#options introduced for the do_volume function
@@ -680,7 +688,7 @@ def main():
 	#  PARAMETERS OF THE PROCEDURE 
 	#  threshold error
 	thresherr = 0
-	fq = 0.11 # low-freq limit to which fuse ref volumes.  Should it be estimated somehow?
+	fq = 50 # low-freq resolution to which fuse ref volumes. [A] 
 
 	# Get the pixel size, if none set to 1.0, and the original image size
 	if(myid == main_node):
@@ -691,21 +699,26 @@ def main():
 		if ali3d_options.CTF:
 			i = a.get_attr('ctf')
 			pixel_size = i.apix
+			fq = pixel_size/fq
 		else:
 			pixel_size = 1.0
+			#  No pixel size, fusing computed as 5 Fourier pixels
+			fq = 5.0/nnxo
 		del a
 	else:
 		nnxo = 0
 		pixel_size = 1.0
 	pixel_size = bcast_number_to_all(pixel_size, source_node = main_node)
 	nnxo = bcast_number_to_all(nnxo, source_node = main_node)
+	fq   = bcast_number_to_all(fq, source_node = main_node)
+
 
 	if(radi < 1):  radi = nnxo//2-2
-	elif((2*radi+2)>nnxo):  ERROR("Particle radius set too large!","sxmeridien",1)
+	elif((2*radi+2)>nnxo):  ERROR("Particle radius set too large!","sxmeridien",1,myid)
 	ali3d_options.ou = radi
 	if(nxinit < 0):  nxinit = min(32, nnxo)
 	else:
-		if(nxinit%2 == 1): ERROR("Only even dimensions allowed","sxmeridien",1)
+		if(nxinit%2 == 1): ERROR("Only even dimensions allowed","sxmeridien",1,myid)
 
 	nxshrink = nxinit
 	minshrink = 32.0/float(nnxo)
@@ -778,6 +791,7 @@ def main():
 		del mask33d, viv
 
 	#  This is initial setting, has to be initialized here, we do not want it to run too long.
+	#    INITIALIZATION THAT FOLLOWS WILL HAVE TO BE CHANGED SO THE USER CAN PROVIDE INITIAL GUESS OF RESOLUTION
 	#  If we new the initial resolution, it could be done more densely
 	xr = (nnxo - (2*radi-1))//2
 	ts = "%f"%max((xr-1)/6.0,1.0)
@@ -787,7 +801,7 @@ def main():
 		delta = "%f"%round(degrees(atan(1.0/float(radi))), 2)
 
 	paramsdict = {	"stack":stack,"delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":options.an, "center":options.center, "maxit":1, \
-					"filtres":0.4, "aa":0.1, "radius":radi, "nsoft":0, "delpreviousmax":True, "shrink":1.0, "saturatecrit":1.0, \
+					"lowpass":0.4, "aa":0.1, "radius":radi, "nsoft":0, "delpreviousmax":True, "shrink":1.0, "saturatecrit":1.0, \
 					"refvol":volinit, "mask3D":options.mask3D}
 
 
@@ -859,24 +873,30 @@ def main():
 
 
 		if(myid == main_node):
-			filtres, currentres = get_resolution(vol, radi, nnxo, initdir)
+			lowpass, currentres = get_resolution(vol, radi, nnxo, initdir)
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(  line,"Initial resolution %6.2f, filter cut-off %6.2f"%(currentres,filtres))
-			write_text_row([filtres, currentres],os.path.join(initdir,"current_resolution.txt"))
+			print(  line,"Initial resolution %6.2f, filter cut-off %6.2f"%(currentres,lowpass))
+			write_text_row([lowpass, currentres],os.path.join(initdir,"current_resolution.txt"))
 		else:
-			filtres = 0.0
-		filtres = bcast_number_to_all(filtres, source_node = main_node)
+			lowpass    = 0.0
+			currentres = 0.0
+		lowpass    = bcast_number_to_all(lowpass, source_node = main_node)
+		currentres = bcast_number_to_all(currentres, source_node = main_node)
 	else:
-		if(myid == main_node): filtres = read_text_file(os.path.join(initdir,"current_resolution.txt"))[0]
-		else:  filtres = 0.0
-		filtres = bcast_number_to_all(filtres, source_node = main_node)
-		filtres = round(filtres,2)
+		if(myid == main_node): [lowpass, currentres] = read_text_row(os.path.join(initdir,"current_resolution.txt"))[0]
+		else:
+			lowpass    = 0.0
+			currentres = 0.0
+		lowpass    = bcast_number_to_all(lowpass, source_node = main_node)
+		lowpass    = round(lowpass,2)
+		currentres = bcast_number_to_all(currentres, source_node = main_node)
+		currentres = round(currentres,2)
 
 	# set for the first iteration
-	nxshrink = min(max(32, int((filtres+paramsdict["aa"]/2.)*2*nnxo + 0.5)), nnxo)
+	nxshrink = min(max(32, int((lowpass+paramsdict["aa"]/2.)*2*nnxo + 0.5)), nnxo)
 	nxshrink += nxshrink%2
 	shrink = float(nxshrink)/nnxo
-	tracker = {"previous-resolution":filtres, "movedup":False,"eliminated-outliers":False,\
+	tracker = {"previous-resolution":currentres,"previous-lowpass":lowpass, "movedup":False,"eliminated-outliers":False,\
 				"previous-nx":nxshrink, "previous-shrink":shrink, "extension":0, "bestsolution":0}
 
 	previousoutputdir = initdir
@@ -891,7 +911,7 @@ def main():
 
 		if(myid == main_node):
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(line,"MAIN ITERATION #",mainiteration, shrink, nxshrink)
+			print(line,"MAIN ITERATION #",mainiteration, shrink, nxshrink, currentres, lowpass)
 			if keepchecking:
 				if(os.path.exists(mainoutputdir)):
 					doit = 0
@@ -948,7 +968,7 @@ def main():
 				doit = 1
 			if doit:
 				vol = [ get_im(outvol[procid]) for procid in xrange(2) ]
-				fq = 0.11 # which part to fuse
+
 				fuselowf(vol, fq)
 				for procid in xrange(2):  vol[procid].write_image(os.path.join(mainoutputdir,"fusevol%01d.hdf"%procid) )
 				del vol
@@ -959,8 +979,7 @@ def main():
 		#  Refine two groups at a current resolution
 		lastring = int(shrink*radi + 0.5)
 		if(lastring < 2):
-			print(  line,"ERROR!!   lastring too small  ", radi, shrink, lastring)
-			break
+			ERROR( "ERROR!!   lastring too small  %f    %f   %d"%(radi, shrink, lastring), "sxmeridien",1, myid)
 
 		#  REFINEMENT
 		#  Part "a"  SHC         <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -968,13 +987,16 @@ def main():
 			coutdir = os.path.join(mainoutputdir,"loga%01d"%procid)
 			doit, keepchecking = checkstep(coutdir  , keepchecking, myid, main_node)
 
-			paramsdict = {	"stack":stack,"delta":"%f"%round(degrees(atan(1.0/lastring)), 2) , "ts":"1", "xr":"2", "an":options.an, \
-							"center":options.center, "maxit":1500,  \
-							"filtres":filtres, "aa":0.1, "radius":radi, "nsoft":1, "saturatecrit":0.75, "delpreviousmax":True, "shrink":shrink, \
-							"refvol":os.path.join(mainoutputdir,"fusevol%01d.hdf"%procid),"mask3D":options.mask3D }
+			subdict( paramsdict, {	"delta":"%f"%round(degrees(atan(1.0/lastring)), 2) , "ts":"1", "xr":"2", "an":options.an, \
+							"filtres":lowpass, "nsoft":options.nsoft, "saturatecrit":0.75, "delpreviousmax":True, "shrink":shrink, \
+							"refvol":os.path.join(mainoutputdir,"fusevol%01d.hdf"%procid) } )
 			if( paramsdict["nsoft"] > 0 ):
 				if( float(paramsdict["an"]) == -1.0 ): paramsdict["saturatecrit"] = 0.75
 				else:                                  paramsdict["saturatecrit"] = 0.90  # Shake and bake for local
+				paramsdict["saturatecrit"] = 1500
+			else:
+				paramsdict["saturatecrit"] = 50 #  ?? Lucky guess
+				paramsdict["saturatecrit"] = 0.95
 
 			if  doit:
 				metamove(paramsdict, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
@@ -1011,7 +1033,6 @@ def main():
 			if doit:
 				vol = []
 				for procid in xrange(2):  vol.append(get_im(os.path.join(mainoutputdir,"loga%01d"%procid,"shcvol%01d.hdf"%procid) ))
-				fq = 0.11 # which part to fuse
 				fuselowf(vol, fq)
 				for procid in xrange(2):  vol[procid].write_image( os.path.join(mainoutputdir,"loga%01d"%procid,"fusevol%01d.hdf"%procid) )
 				del vol
@@ -1026,13 +1047,10 @@ def main():
 		for procid in xrange(2):
 			coutdir = os.path.join(mainoutputdir,"logb%01d"%procid)
 			doit, keepchecking = checkstep(coutdir, keepchecking, myid, main_node)
-			#if(paramsdict["nsoft"] > 0 and float(paramsdict["an"]) == -1.0):  #  Only do finishing up when the previous step was SHC and exhausting
-			if(True):
+			if(paramsdict["nsoft"] > 0 ):  #  Only do finishing up when the previous step was SHC and exhausting
 				#  Run hard to finish up matching
-				paramsdict = {	"stack":stack,"delta":"%f"%round(degrees(atan(1.0/lastring)), 2) , "ts":"1", "xr":"2", "an":options.an, \
-								"center":options.center, "maxit":10, \
-								"filtres":filtres, "aa":0.1, "radius":radi, "nsoft":0, "saturatecrit":0.95, "delpreviousmax":True, "shrink":shrink, \
-								"refvol":os.path.join(mainoutputdir,"loga%01d"%procid,"fusevol%01d.hdf"%procid), "mask3D":options.mask3D }
+				subdict(paramsdict, \
+				{ "maxit":10, "nsoft":0, "saturatecrit":0.95, "delpreviousmax":True, "refvol":os.path.join(mainoutputdir,"loga%01d"%procid,"fusevol%01d.hdf"%procid)} )
 
 				if  doit:
 					metamove(paramsdict, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
@@ -1049,13 +1067,19 @@ def main():
 
 		#  Compute current resolution, store result in the main directory
 		doit, keepchecking = checkstep(os.path.join(mainoutputdir,"current_resolution.txt"), keepchecking, myid, main_node)
-		newres = 0.0
 		if doit:
-			newres, currentres = compute_resolution(stack, mainoutputdir, partids, partstack, radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
+			#  low-pass filter, current resolution
+			currentlowpass, currentres = compute_resolution(stack, mainoutputdir, partids, partstack, radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
 		else:
-			if(myid == main_node): newres = read_text_file( os.path.join(mainoutputdir,"current_resolution.txt") )[0]
-		newres = bcast_number_to_all(newres, source_node = main_node)
-		newres = round(newres,2)
+			if(myid == main_node):
+				[currentlowpass, currentres] = read_text_row( os.path.join(mainoutputdir,"current_resolution.txt") )[0]
+			else:
+				currentlowpass = 0.0
+				currentres    = 0.0
+			currentlowpass = bcast_number_to_all(currentlowpass, source_node = main_node)
+			currentlowpass = round(currentlowpass,2)
+			currentres = bcast_number_to_all(currentres, source_node = main_node)
+			currentres = round(currentres,2)
 
 		#  Here I have code to generate presentable results.  IDs and params have to be merged and stored and an overall volume computed.
 		doit, keepchecking = checkstep(os.path.join(mainoutputdir,"volf.hdf"), keepchecking, myid, main_node)
@@ -1074,7 +1098,7 @@ def main():
 				write_text_file([pinids[i][0] for i in xrange(len(pinids))], os.path.join(mainoutputdir,"indexes.txt"))
 				write_text_row( [pinids[i][1] for i in xrange(len(pinids))], os.path.join(mainoutputdir,"params.txt"))
 			mpi_barrier(MPI_COMM_WORLD)
-			ali3d_options.fl = newres
+			ali3d_options.fl = currentres
 			ali3d_options.ou = radi
 			projdata = getindexdata(stack, os.path.join(mainoutputdir,"indexes.txt"), os.path.join(mainoutputdir,"params.txt"), myid, nproc)
 			volf = do_volume(projdata, ali3d_options, mainiteration, mpi_comm = MPI_COMM_WORLD)
@@ -1083,7 +1107,8 @@ def main():
 		mpi_barrier(MPI_COMM_WORLD)
 
 		#print("RACING  X ",myid)
-		if(newres == filtres):
+		#  If the resolution stalled, try to eliminate outliers
+		if(currentres == tracker["previous-resolution"]):
 
 			for procid in xrange(2):
 				coutdir = os.path.join(mainoutputdir,"logc%01d"%procid)
@@ -1091,10 +1116,9 @@ def main():
 
 				if  doit:
 					#  Do cross-check of the results
-					paramsdict = {	"stack":stack,"delta":"%f"%round(degrees(atan(1.0/lastring)), 2) , "ts":"1", "xr":"2", "an":options.an, \
-									"center":options.center, "maxit":1,  \
-									"filtres":newres, "aa":0.1, "radius":radi, "nsoft":0, "saturatecrit":0.95, "delpreviousmax":True, "shrink":shrink, \
-									"refvol":os.path.join(mainoutputdir,"vol%01d.hdf"%(1-procid)), "mask3D":options.mask3D }
+					subdict(paramsdict, \
+						{ "maxit":1, "filtres":currentlowpass, "nsoft":0, "saturatecrit":0.95, "delpreviousmax":True, "shrink":shrink, \
+									"refvol":os.path.join(mainoutputdir,"vol%01d.hdf"%(1-procid)) }
 					#  The cross-check uses parameters from step "b" to make sure shifts are correct.  
 					#  As the check is exhaustive, angles are ignored
 					metamove(paramsdict, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
@@ -1107,7 +1131,12 @@ def main():
 					from pixel_error import max_3D_pixel_error
 					ts = get_symt(ali3d_options.sym)
 					badapples = []
-					deltaerror = 2.0
+					#  Estimate tolerable error based on current delta and shrink.
+					t1 = Transform({"type":"spider","phi":0.0,"theta":0.0,"psi":0.0})
+					t1.set_trans(Vec2f(0.0, 0.0))
+					t2 = Transform({"type":"spider","phi":0.0,"theta":float(paramsdict["delta"]),"psi":float(paramsdict["delta"])})
+					t2.set_trans(Vec2f(0.5, 0.5))
+					deltaerror = max_3D_pixel_error(t1, t2, radi*shrink)
 					total_images_now = 0
 					for procid in xrange(2):
 						bad = []
@@ -1138,7 +1167,7 @@ def main():
 							for i in xrange(len(bad)-1,-1,-1):
 								del oldp[bad[i]],ids[bad[i]]
 						if(len(ids) == 0):
-							ERROR("sxmeridien","program diverged, all images have large angular errors, most likely the initial model is badly off",1)
+							ERROR("program diverged, all images have large angular errors, most likely the initial model is badly off","sxmeridien",1,myid)
 						else:
 							#  This generate new parameters, hopefully to be used as starting ones in the new iteration
 							write_text_file(ids,os.path.join(mainoutputdir,"chunk%01d.txt"%procid))
@@ -1157,18 +1186,18 @@ def main():
 				#  This part under MPI
 				if(eli > 0.0):
 					#  Compute current resolution
-					depres, currentres = compute_resolution(stack, mainoutputdir, \
+					depfilter, depres = compute_resolution(stack, mainoutputdir, \
 							[os.path.join(mainoutputdir,"chunk%01d.txt"%procid) for procid in xrange(2)], \
 							[os.path.join(mainoutputdir,"params-chunk%01d.txt"%procid) for procid in xrange(2)], \
 							radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
-					depres = bcast_number_to_all(depres, source_node = main_node)
-					depres = round(depres, 2)
-					if(depres < newres):
+					#  AGAIN, BASED ON RESOLUTION!!
+					if(depres < currentres):
 						#  elimination of outliers decreased resolution, ignore the effort
 						eliminated_outliers = False
 					else:
 						eliminated_outliers = True
-						newres = depres
+						currentres = depres
+						currentlowpass = depfilter
 						"""
 						#  It does not seem to be needed, as data is there, we just point to the directory
 						for procid in xrange(2):
@@ -1190,26 +1219,28 @@ def main():
 				cmdexecute(cmd)
 
 		keepgoing = 0
-		if( newres > filtres or (eliminated_outliers and not tracker["eliminated-outliers"])):
+		if( ( currentres > tracker["previous-resolution"] ) or (eliminated_outliers and not tracker["eliminated-outliers"])):
 			if(myid == main_node):
-				if( newres > filtres):  print("  Resolution improved, full steam ahead!   New resolution %6.2f   Previous resolution %6.2f"%(newres , filtres))
-				else:  print("  New resolution %6.2f   Previous resolution %6.2f . However, we eliminated outliers so we follow the resolution improved path."%(newres , filtres))
+				print(" New resolution %6.2f   Previous resolution %6.2f"%(currentres , tracker["previous-resolution"]))
+				if( currentres > tracker["previous-resolution"]):  print("  Resolution improved, full steam ahead!")
+				else:  print("  While the resolution did not improve, we eliminated outliers so we follow the _resolution_improved_ path.")
 
-			if( newres > filtres ):  tracker["movedup"] = True
+			if( currentres > tracker["previous-resolution"] ):  tracker["movedup"] = True
 			else:   tracker["movedup"] = False
-			shrink = max(min(2*newres + paramsdict["aa"], 1.0),minshrink)
+			shrink = max(min(2*currentlowpass + paramsdict["aa"], 1.0), minshrink)
 			tracker["extension"] = 4
 			nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
 			nxshrink += nxshrink%2
 			shrink = float(nxshrink)/nnxo
-			tracker["previous-resolution"] = newres
-			filtres = newres   #  HERE the filter is adjusted!!!
+			tracker["previous-resolution"] = currentres
+			tracker["previous-lowpass"] = currentlowpass
+			lowpass = currentlowpass   #  HERE the filter is adjusted!!!
 			tracker["bestsolution"] = mainiteration
 			bestoutputdir = mainoutputdir
 			tracker["eliminated-outliers"] = eliminated_outliers
 			keepgoing = 1
 		
-		elif(newres < filtres):
+		elif( currentres < tracker["previous-resolution"] ):
 			if(not tracker["movedup"] and tracker["extension"] < 2 and mainiteration > 1):
 				keepgoing = 0
 				if(myid == main_node):  print("  Cannot improve resolution, the best result is in the directory main%03d"%tracker["bestsolution"])
@@ -1225,10 +1256,7 @@ def main():
 					bestoutputdir = mainoutputdir
 					tracker["extension"] += 1
 				else:  # missing something here?
-					if(myid == main_node):  print(" Should not be here, ERROR 175!")
-					break
-					mpi_finalize()
-					exit()
+					ERROR(" Should not be here, ERROR 175!", "sxmeridien", 1, myid)
 				if( bestoutputdir != mainoutputdir ):
 					#  This is the key, we just reset the main to previous, so it will be eventually used as a starting in the next iteration
 					mainoutputdir = bestoutputdir

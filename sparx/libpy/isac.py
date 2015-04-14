@@ -1316,11 +1316,11 @@ def match_independent_runs(data, refi, n_group, T):
 	K = len(refi)/n_group
 	Parts = []
 	for i in xrange(n_group):
-		part = [] 
-		for k in xrange(K): 
-			lid = refi[i*K+k].get_attr('members') 
-			lid = array(lid, 'int32') 
-			lid.sort() 
+		part = []
+		for k in xrange(K):
+			lid = refi[i*K+k].get_attr('members')
+			lid = array(lid, 'int32')
+			lid.sort()
 			part.append(lid)
 		Parts.append(part)
 
