@@ -146,16 +146,22 @@ def main():
 	
 	parser.add_argument("--npeakstorefine", type=int, help="""Default=1. The number of best coarse alignments to refine in search of the best final alignment. Default=1.""", default=4, guitype='intbox', row=9, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym[1]')
 	
-	parser.add_argument("--align",type=str,default="rotate_translate_3d:search=8:delta=12:dphi=12",help="""This is the aligner used to align particles to the previous class average. Default is rotate_translate_3d:search=8:delta=12:dphi=12, specify 'None' (with capital N) to disable.""", returnNone=True,guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'3d\')', row=12, col=0, rowspan=1, colspan=3, nosharedb=True, mode="alignment,breaksym['rotate_symmetry_3d']")
+	parser.add_argument("--align",type=str,default="rotate_translate_3d:search=8:delta=16:dphi=16",help="""This is the aligner used to align particles to the previous class average. Default is rotate_translate_3d:search=8:delta=12:dphi=12, specify 'None' (with capital N) to disable.""", returnNone=True,guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'3d\')', row=12, col=0, rowspan=1, colspan=3, nosharedb=True, mode="alignment,breaksym['rotate_symmetry_3d']")
 	
 	parser.add_argument("--aligncmp",type=str,default="ccc.tomo",help="""Default=ccc.tomo. The comparator used for the --align aligner. Do not specify unless you need to use anotherspecific aligner.""",guitype='comboparambox',choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=13, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
+
+
+	#parser.add_argument("--ialign",type=str,default="refine_3d_grid:delta=4:range=8:search=4",help="""Default="refine_3d_grid:delta=3:range=8:search=4". This is the second stage aligner used for intermediate alignment. Specify 'None' to disable.""", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine.*3d\')', row=14, col=0, rowspan=1, colspan=3, nosharedb=True, mode='alignment,breaksym[None]')
+			
+	#parser.add_argument("--ialigncmp",type=str,default="ccc.tomo",help="""Default=ccc.tomo. The comparator used by the second stage aligner.""", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=15, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")
+
 	
-	parser.add_argument("--falign",type=str,default="refine_3d_grid:delta=3:range=15:search=2",help="""Default="refine_3d_grid:delta=3:range=15:search=2". This is the second stage aligner used to fine-tune the first alignment. Specify 'None' to disable.""", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine.*3d\')', row=14, col=0, rowspan=1, colspan=3, nosharedb=True, mode='alignment,breaksym[None]')
-		
+	parser.add_argument("--falign",type=str,default="refine_3d_grid:delta=2:range=4:search=2",help="""Default="refine_3d_grid:delta=2:range=4:search=2". This is the second stage aligner used to fine-tune the first alignment. Specify 'None' to disable.""", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'refine.*3d\')', row=14, col=0, rowspan=1, colspan=3, nosharedb=True, mode='alignment,breaksym[None]')
+			
+	parser.add_argument("--faligncmp",type=str,default="ccc.tomo",help="""Default=ccc.tomo. The comparator used by the second stage aligner.""", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=15, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")		
+
 	parser.add_argument("--translateonly",action='store_true',default=False,help="""Default=False. This will force the aligner to not do any rotations and thus serves for translational centering. Specify search values through --search, otherwise its default value will be used.""")	
 		
-	parser.add_argument("--faligncmp",type=str,default="ccc.tomo",help="""Default=ccc.tomo. The comparator used by the second stage aligner.""", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\')', row=15, col=0, rowspan=1, colspan=3,mode="alignment,breaksym")		
-	
 	parser.add_argument("--filterbyfsc",action='store_true',default=False,help="""If on, this parameter will use dynamic FSC filtering. --lowpass will be used to build initial references if no --ref supplied, then, the FSC between the even and odd initial references will be used to filter the data during preprocessing. If --ref is supplied, --lowpass will be used during the first iteration to align the particles against the reference. Thereafter, the FSC between the most current particle average and the original reference (--ref) will be used in the next iteration.""")
 	
 	parser.add_argument("--averager",type=str,default="mean.tomo",help="""Default=mean.tomo. The type of averager used to produce the class average. Default=mean.tomo.""")
@@ -200,12 +206,9 @@ def main():
 
 	parser.add_argument("--weighbyscore",action='store_true',default=False,help="""Default=False. This option will weigh the contribution of each subtomogram to the average by score/bestscore.""")
 
+	#parser.add_argument("--automask",action="store_true",help="""Applies a 3-D automask before centering. Can help with negative stain data, and other cases where centering is poor.""")
 	
-	#parser.add_argument("--automask",action="store_true",help="""Applies a 3-D automask before 
-	#	centering. Can help with negative stain data, and other cases where centering is poor.""")
-	
-	#parser.add_argument("--resample",action="store_true",help="""If set, will perform bootstrap 
-	#	resampling on the particle data for use in making variance maps.""",default=False)
+	#parser.add_argument("--resample",action="store_true",help="""If set, will perform bootstrap resampling on the particle data for use in making variance maps.""",default=False)
 
 	'''
 	CLASSAVERAGE SPECIFIC PARAMETERS
@@ -822,7 +825,11 @@ def main():
 					
 				else:
 					ref = EMData( options.input, 0 )
-					ref.process_inplace("xform",{"transform":results[0][0]["xform.align3d"]})
+					
+					print "results len", len(results)
+					print "results[0]", results[0]
+					print "results", results
+					ref.process_inplace("xform",{"transform":results[0][0][0]["xform.align3d"]})
 					
 					ref['origin_x'] = 0
 					ref['origin_y'] = 0
@@ -1191,6 +1198,7 @@ and outside of it. For example, --sym and --search, vs --align:whatever_alinger:
 Command line options should take precedence.
 '''
 def sptParseAligner( options ):
+	
 	if options.align and 'rotate' in options.align:
 		#print "There's options.align", options.align
 		if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align and 'grid' not in options.align:
@@ -1273,6 +1281,42 @@ def sptParseAligner( options ):
 					sys.exit()
 			
 	print "\n\nBefore adding and fixing searches, options.falign is", options.falign, type(options.falign)	
+	
+	
+	
+	
+	
+	#if options.ialign and options.ialign != None and options.ialign != 'None' and options.ialign != 'none':
+	#	if 'search' not in options.ialign and 'refine_3d_grid' in options.ialign:		
+	#		options.ialign += ':search=' + str( options.search )
+	#		
+	#	else:
+	#		searchI = options.ialign.split('search=')[-1].split(':')[0]
+	#		searchinterdefault = 4
+	#		
+	#		if options.search/2 != searchinterdefault:
+	#					
+	#			prefix = options.ialign.split('search=')[0]
+	#			trail = options.ialign.split('search=')[-1].split(':')[-1]
+	#			
+	#			options.ialign =  prefix + 'search=' + str(options.search)
+	#			
+	#			if len(trail) > 2 and '=' in trail:
+	#			
+	#				options.ialign += ':' + trail 
+	#		
+	#			print """\nWARNING: --search is different from search= provided through
+	#			--ialign or its default value of 4. There's no need to specify both, but 
+	#			if you did, --search takes precedence, and will be divided in half for intermediate alignment."""
+	#			#sys.exit()
+	#		
+	#		#elif options.search/2 == searchfinedefault:
+	#		#	options.search = searchF
+	
+	
+	
+	
+	
 	if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
 		if 'search' not in options.falign and 'refine_3d_grid' in options.falign:		
 			options.falign += ':search=' + str( options.searchfine )
@@ -1299,6 +1343,8 @@ def sptParseAligner( options ):
 			
 			elif options.searchfine == searchfinedefault:
 				options.searchfine = searchF	
+	
+	
 	return options
 
 
@@ -1775,6 +1821,19 @@ def sptOptionsParser( options ):
 	except:
 		if options.verbose > 9:
 			print "\nWARNING (might not be relevant): --align not provided"
+	
+	
+	#try:
+	#	if options.ialign:
+	#		#print "(e2spt_classaverage) --align to parse is", options.align
+	#		options.ialign=parsemodopt(options.ialign)
+	#	elif options.ialign == 'None' or  options.ialign == 'none':
+	#		options.ialign=None
+	#except:
+	#	if options.verbose > 9:
+	#		print "\nWARNING (might not be relevant): --ialign not provided"
+	
+	
 		
 	try:
 		if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none': 
@@ -2147,6 +2206,7 @@ def calcAliStep(options):
 			options.falign += ':verbose=1'
 	
 	return options
+	
 	
 
 def postprocess(img,mask,normproc,postprocess):
