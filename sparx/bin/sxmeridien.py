@@ -1118,7 +1118,7 @@ def main():
 					#  Do cross-check of the results
 					subdict(paramsdict, \
 						{ "maxit":1, "filtres":currentlowpass, "nsoft":0, "saturatecrit":0.95, "delpreviousmax":True, "shrink":shrink, \
-									"refvol":os.path.join(mainoutputdir,"vol%01d.hdf"%(1-procid)) }
+									"refvol":os.path.join(mainoutputdir,"vol%01d.hdf"%(1-procid)) } )
 					#  The cross-check uses parameters from step "b" to make sure shifts are correct.  
 					#  As the check is exhaustive, angles are ignored
 					metamove(paramsdict, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
@@ -1267,36 +1267,40 @@ def main():
 						partstack[procid] = os.path.join(bestoutputdir,"params-chunk%01d.txt"%procid)
 				"""
 				if(myid == main_node):
-					filtres = read_text_file( os.path.join(bestoutputdir,"current_resolution.txt") )[0]
-				filtres = bcast_number_to_all(filtres, source_node = main_node)
-				filtres = round(filtres,2)
-				filtres += 0.05  #  what about that ??
+					currentlowpass, currentres = read_text_row( os.path.join(bestoutputdir,"current_resolution.txt") )[0]
+				currentres = bcast_number_to_all(currentres, source_node = main_node)
+				currentres = round(currentres,2)
+				currentlowpass = bcast_number_to_all(currentlowpass, source_node = main_node)
+				currentlowpass = round(currentlowpass,2)
+				currentlowpass += 0.05  #  what about that ??
 
-				shrink = max(min(2*filtres + paramsdict["aa"], 1.0), minshrink)
+				shrink = max(min(2*currentlowpass + paramsdict["aa"], 1.0), minshrink)
 				tracker["extension"] -= 2
 				nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
 				nxshrink += nxshrink%2
 				shrink = float(nxshrink)/nnxo
-				tracker["previous-resolution"] = newres
+				tracker["previous-resolution"] = currentres
+				tracker["previous-lowpass"] = currentlowpass
 				tracker["eliminated-outliers"] = eliminated_outliers
 				tracker["movedup"] = False
 				keepgoing = 1
 			
 
-		elif(newres == filtres):
+		elif( currentres == tracker["previous-resolution"] ):
 			if( tracker["extension"] > 0 ):
 				if(myid == main_node):  print("The resolution did not improve. This is look ahead move.  Let's try to relax slightly and hope for the best")
 				tracker["extension"] -= 2
 				tracker["movedup"] = False
-				filtres += 0.1
-				shrink = max(min(2*filtres + paramsdict["aa"], 1.0), minshrink)
+				currentlowpass += 0.1 #  what about that ??
+				shrink = max(min(2*currentlowpass + paramsdict["aa"], 1.0), minshrink)
 				nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
 				nxshrink += nxshrink%2
 				shrink = float(nxshrink)/nnxo
-				if( tracker["previous-nx"] == nnxo or filtres > 0.5):
+				if( tracker["previous-nx"] == nnxo or currentlowpass > 0.5):
 					keepgoing = 0
 				else:
-					tracker["previous-resolution"] = newres
+					tracker["previous-resolution"] = currentres
+					tracker["previous-lowpass"] = currentlowpass
 					filtres = newres
 					tracker["eliminated-outliers"] = eliminated_outliers
 					tracker["movedup"] = False
