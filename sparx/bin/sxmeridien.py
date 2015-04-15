@@ -1047,7 +1047,7 @@ def main():
 		for procid in xrange(2):
 			coutdir = os.path.join(mainoutputdir,"logb%01d"%procid)
 			doit, keepchecking = checkstep(coutdir, keepchecking, myid, main_node)
-			if(paramsdict["nsoft"] > 0 ):  #  Only do finishing up when the previous step was SHC and exhausting
+			if( options.nsoft > 0 and doit):  #  Only do finishing up when the previous step was SHC and exhausting
 				#  Run hard to finish up matching
 				subdict(paramsdict, \
 				{ "maxit":10, "nsoft":0, "saturatecrit":0.95, "delpreviousmax":True, "refvol":os.path.join(mainoutputdir,"loga%01d"%procid,"fusevol%01d.hdf"%procid)} )
