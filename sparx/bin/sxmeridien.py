@@ -266,7 +266,7 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 		lowpass = round(lowpass, 2)
 		currentres = round(currentres, 2)
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(  line,"Current resolution %6.2f, low-pass filter cut-off %6.2f"%(currentres,newres))
+		print(  line,"Current resolution %6.2f, low-pass filter cut-off %6.2f"%(currentres,lowpass))
 		write_text_row([lowpass, currentres],os.path.join(outputdir,"current_resolution.txt"))
 	#  Returns: low-pass filter cutoff;  current resolution
 	currentres = bcast_number_to_all(currentres, source_node = main_node)
@@ -1301,7 +1301,6 @@ def main():
 				else:
 					tracker["previous-resolution"] = currentres
 					tracker["previous-lowpass"] = currentlowpass
-					filtres = newres
 					tracker["eliminated-outliers"] = eliminated_outliers
 					tracker["movedup"] = False
 					keepgoing = 1
