@@ -525,7 +525,8 @@ def metamove(paramsdict, partids, partstack, outputdir, procid, myid, main_node,
 	ali3d_options.center = paramsdict["center"]
 	ali3d_options.ts     = paramsdict["ts"]
 	ali3d_options.xr     = paramsdict["xr"]
-	ali3d_options.fl     = paramsdict["lowpass"]
+	#  low pass filter is applied to shrank data, so it has to be adjusted
+	ali3d_options.fl     = paramsdict["lowpass"]/paramsdict["shrink"]
 	ali3d_options.aa     = paramsdict["aa"]
 	ali3d_options.maxit  = paramsdict["maxit"]
 	ali3d_options.mask3D = paramsdict["mask3D"]
@@ -543,6 +544,7 @@ def metamove(paramsdict, partids, partstack, outputdir, procid, myid, main_node,
 		for q in paramsdict:  print("                    => ",q+spaces[len(q):],":  ",paramsdict[q])
 		print("                    =>  partids           :  ",partids)
 		print("                    =>  partstack         :  ",partstack)
+	if(ali3d_options.fl > 0.46):  ERROR("Low pass filter in metamove > 0.46 on the scale of shrank data","sxmeridien",1,myid) 
 
 	#  Run alignment command
 	params = ali3d_base(projdata, get_im(paramsdict["refvol"]), \
@@ -885,8 +887,8 @@ def main():
 	else:
 		if(myid == main_node): [lowpass, currentres] = read_text_row(os.path.join(initdir,"current_resolution.txt"))[0]
 		else:
-			lowpass    = 0.0
-			currentres = 0.0
+			lowpass = 0.0
+			currentres     = 0.0
 		lowpass    = bcast_number_to_all(lowpass, source_node = main_node)
 		lowpass    = round(lowpass,2)
 		currentres = bcast_number_to_all(currentres, source_node = main_node)
@@ -988,15 +990,15 @@ def main():
 			doit, keepchecking = checkstep(coutdir  , keepchecking, myid, main_node)
 
 			subdict( paramsdict, {	"delta":"%f"%round(degrees(atan(1.0/lastring)), 2) , "ts":"1", "xr":"2", "an":options.an, \
-							"filtres":lowpass, "nsoft":options.nsoft, "saturatecrit":0.75, "delpreviousmax":True, "shrink":shrink, \
+							"lowpass":lowpass, "nsoft":options.nsoft, "saturatecrit":0.75, "delpreviousmax":True, "shrink":shrink, \
 							"refvol":os.path.join(mainoutputdir,"fusevol%01d.hdf"%procid) } )
 			if( paramsdict["nsoft"] > 0 ):
 				if( float(paramsdict["an"]) == -1.0 ): paramsdict["saturatecrit"] = 0.75
 				else:                                  paramsdict["saturatecrit"] = 0.90  # Shake and bake for local
-				paramsdict["saturatecrit"] = 1500
+				paramsdict["maxit"] = 1500
 			else:
-				paramsdict["saturatecrit"] = 50 #  ?? Lucky guess
 				paramsdict["saturatecrit"] = 0.95
+				paramsdict["maxit"] = 50 #  ?? Lucky guess
 
 			if  doit:
 				metamove(paramsdict, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
@@ -1069,15 +1071,15 @@ def main():
 		doit, keepchecking = checkstep(os.path.join(mainoutputdir,"current_resolution.txt"), keepchecking, myid, main_node)
 		if doit:
 			#  low-pass filter, current resolution
-			currentlowpass, currentres = compute_resolution(stack, mainoutputdir, partids, partstack, radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
+			lowpass, currentres = compute_resolution(stack, mainoutputdir, partids, partstack, radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
 		else:
 			if(myid == main_node):
-				[currentlowpass, currentres] = read_text_row( os.path.join(mainoutputdir,"current_resolution.txt") )[0]
+				[lowpass, currentres] = read_text_row( os.path.join(mainoutputdir,"current_resolution.txt") )[0]
 			else:
-				currentlowpass = 0.0
-				currentres    = 0.0
-			currentlowpass = bcast_number_to_all(currentlowpass, source_node = main_node)
-			currentlowpass = round(currentlowpass,2)
+				lowpass    = 0.0
+				currentres = 0.0
+			lowpass = bcast_number_to_all(lowpass, source_node = main_node)
+			lowpass = round(lowpass,2)
 			currentres = bcast_number_to_all(currentres, source_node = main_node)
 			currentres = round(currentres,2)
 
@@ -1117,7 +1119,7 @@ def main():
 				if  doit:
 					#  Do cross-check of the results
 					subdict(paramsdict, \
-						{ "maxit":1, "filtres":currentlowpass, "nsoft":0, "saturatecrit":0.95, "delpreviousmax":True, "shrink":shrink, \
+						{ "maxit":1, "lowpass":lowpass, "nsoft":0, "saturatecrit":0.95, "delpreviousmax":True, "shrink":shrink, \
 									"refvol":os.path.join(mainoutputdir,"vol%01d.hdf"%(1-procid)) } )
 					#  The cross-check uses parameters from step "b" to make sure shifts are correct.  
 					#  As the check is exhaustive, angles are ignored
@@ -1197,7 +1199,7 @@ def main():
 					else:
 						eliminated_outliers = True
 						currentres = depres
-						currentlowpass = depfilter
+						lowpass = depfilter
 						"""
 						#  It does not seem to be needed, as data is there, we just point to the directory
 						for procid in xrange(2):
@@ -1227,15 +1229,14 @@ def main():
 
 			if( currentres > tracker["previous-resolution"] ):  tracker["movedup"] = True
 			else:   tracker["movedup"] = False
-			shrink = max(min(2*currentlowpass + paramsdict["aa"], 1.0), minshrink)
+			shrink = max(min(2*lowpass + paramsdict["aa"], 1.0), minshrink)
 			tracker["extension"] = 4
 			nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
 			nxshrink += nxshrink%2
 			shrink = float(nxshrink)/nnxo
 			tracker["previous-resolution"] = currentres
-			tracker["previous-lowpass"] = currentlowpass
-			lowpass = currentlowpass   #  HERE the filter is adjusted!!!
-			tracker["bestsolution"] = mainiteration
+			tracker["previous-lowpass"]    = lowpass
+			tracker["bestsolution"]        = mainiteration
 			bestoutputdir = mainoutputdir
 			tracker["eliminated-outliers"] = eliminated_outliers
 			keepgoing = 1
@@ -1267,20 +1268,20 @@ def main():
 						partstack[procid] = os.path.join(bestoutputdir,"params-chunk%01d.txt"%procid)
 				"""
 				if(myid == main_node):
-					currentlowpass, currentres = read_text_row( os.path.join(bestoutputdir,"current_resolution.txt") )[0]
+					lowpass, currentres = read_text_row( os.path.join(bestoutputdir,"current_resolution.txt") )[0]
 				currentres = bcast_number_to_all(currentres, source_node = main_node)
 				currentres = round(currentres,2)
-				currentlowpass = bcast_number_to_all(currentlowpass, source_node = main_node)
-				currentlowpass = round(currentlowpass,2)
-				currentlowpass += 0.05  #  what about that ??
+				lowpass = bcast_number_to_all(lowpass, source_node = main_node)
+				lowpass = round(lowpass,2)
+				lowpass += 0.05  #  what about that ??
 
-				shrink = max(min(2*currentlowpass + paramsdict["aa"], 1.0), minshrink)
+				shrink = max(min(2*lowpass + paramsdict["aa"], 1.0), minshrink)
 				tracker["extension"] -= 2
 				nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
 				nxshrink += nxshrink%2
 				shrink = float(nxshrink)/nnxo
 				tracker["previous-resolution"] = currentres
-				tracker["previous-lowpass"] = currentlowpass
+				tracker["previous-lowpass"] = lowpass
 				tracker["eliminated-outliers"] = eliminated_outliers
 				tracker["movedup"] = False
 				keepgoing = 1
@@ -1291,16 +1292,16 @@ def main():
 				if(myid == main_node):  print("The resolution did not improve. This is look ahead move.  Let's try to relax slightly and hope for the best")
 				tracker["extension"] -= 2
 				tracker["movedup"] = False
-				currentlowpass += 0.1 #  what about that ??
-				shrink = max(min(2*currentlowpass + paramsdict["aa"], 1.0), minshrink)
+				lowpass = min(lowpass + 0.1, 0.45) #  what about that ??
+				shrink = max(min(2*lowpass + paramsdict["aa"], 1.0), minshrink)
 				nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
 				nxshrink += nxshrink%2
 				shrink = float(nxshrink)/nnxo
-				if( tracker["previous-nx"] == nnxo or currentlowpass > 0.5):
+				if( tracker["previous-nx"] == nnxo):
 					keepgoing = 0
 				else:
 					tracker["previous-resolution"] = currentres
-					tracker["previous-lowpass"] = currentlowpass
+					tracker["previous-lowpass"] = lowpass
 					tracker["eliminated-outliers"] = eliminated_outliers
 					tracker["movedup"] = False
 					keepgoing = 1
