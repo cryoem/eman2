@@ -542,8 +542,10 @@ def metamove(paramsdict, partids, partstack, outputdir, procid, myid, main_node,
 		print(line,"METAMOVE parameters")
 		spaces = "                 "
 		for q in paramsdict:  print("                    => ",q+spaces[len(q):],":  ",paramsdict[q])
+		print("                    =>  actual lowpass    :  ",ali3d_options.fl)
 		print("                    =>  partids           :  ",partids)
 		print("                    =>  partstack         :  ",partstack)
+		
 	if(ali3d_options.fl > 0.46):  ERROR("Low pass filter in metamove > 0.46 on the scale of shrank data","sxmeridien",1,myid) 
 
 	#  Run alignment command
