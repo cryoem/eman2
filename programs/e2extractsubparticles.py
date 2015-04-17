@@ -172,8 +172,10 @@ will be examined automatically to extract the corresponding particles and projec
 				# we got from the whole/unmasked particle
 				for pr in projc[1:]:
 					ptcl3=ptcl.process("math.sub.optimal",{"ref":projc[0],"actual":pr})
-					if options.masked : ptcl3.mult(projmaskc)
-					if options.debug: display((ptcl,ptcl3,pr,projc[0]))
+					if options.masked : 
+						ptcl3.mult(projmaskc)
+						if options.debug : display((ptcl,ptcl3,pr,projc[0],projmaskc))
+					elif options.debug: display((ptcl,ptcl3,pr,projc[0]))
 					ptcl3.write_image(options.output,-1)
 #					print ptcl.cmp("optsub",projc[0])
 

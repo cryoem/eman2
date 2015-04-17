@@ -71,7 +71,7 @@ def main():
 
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--process", metavar="processor_name:param1=value1:param2=value2", type=str,default="segment.kmeans:ampweight=1:nseg=50:thr=0.8",
-						help="The name and parameters of a processor to perform the segmentation. 'e2help.py processors segment -v 1' for a full list. Default=segment.kmeans:ampweight=1:nseg=50:thr=0.8 ")
+						help="The name and parameters of a processor to perform the segmentation. 'e2help.py processor segment -v 1' for a full list. Default=segment.kmeans:ampweight=1:nseg=50:thr=0.8 ")
 	parser.add_argument("--output", default=None, type=str,help="Name of output file for segmented volume")
 	parser.add_argument("--chimeraout", default=None, type=str,help="Name of file to write center of segments in UCSF Chimera marker format.")
 	parser.add_argument("--pdbout", default=None, type=str,help="Name of file to write center of segments in PDB format.")

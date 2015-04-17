@@ -2642,19 +2642,36 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	float apix=(float)this_img->get_attr("apix_x");
 	int ny=this_img->get_ysize();
 	
-	int downsample=ny/20;		// Minimum shrunken box size is 20^3
+//	int downsample=floor(ny/20);		// Minimum shrunken box size is 20^3
 	
 	// initialize results
 	vector<Dict> solns;
 	for (unsigned int i = 0; i < nsoln; ++i ) {
 		Dict d;
 		d["score"] = 1.e24;
+		d["coverage"] = 0.0;
 		d["xform.align3d"] = new Transform();
 		solns.push_back(d);
 	}
 
-	for (int n=downsample; n>=1; n--) {
+	// We start with 32^3, 64^3 ...
+	for (int sexp=5; sexp<10; sexp++) {
+		int ss=pow(2.0,sexp);
+		if (ss>ny) ss=ny;
 		
+		//ss=good_size(ny/ds);
+		EMData *small_this=base_this->get_clip(Region(0,(ny-ss)/2,(ny-ss)/2,ss+2,ss,ss));
+		EMData *small_to=  base_to->  get_clip(Region(0,(ny-ss)/2,(ny-ss)/2,ss+2,ss,ss));
+		
+		//Genrate points on a sphere in an asymmetric unit
+		Dict d;
+		d["inc_mirror"] = true;
+		d["delta"] = params.set_default("delta",10.f);
+		Symmetry3D* sym = Factory<Symmetry3D>::get((string)params.set_default("sym","c1"));
+		vector<Transform> transforms = sym->gen_orientations((string)params.set_default("orientgen","eman"),d);
+	
+		//Genrate symmetry related orritenations
+		//vector<Transform> syms = Symmetry3D::get_symmetries((string)params["sym"]);
 		
 	}
 	
