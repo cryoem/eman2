@@ -88,7 +88,7 @@ def main():
 						ui.set_value_at_fast( x,y,z, round(ui.get_value_at(x,y,z), 2) )
 			falloff = options.falloff
 			radius  = options.radius
-			if(radius == -1):  radius = nx//2-1
+			if(radius == -1):  radius = min(nx,ny,nz)//2-1
 			dis = [nx,ny,nz]
 		else:
 			falloff = 0.0
@@ -109,7 +109,7 @@ def main():
 
 		if len(args) == 3:
 			radius = options.radius
-			if( radius == -1 ):  radius = nn//2 -1
+			if( radius == -1 ):  radius = min(nx,ny,nz)//2 -1
 			m = model_circle( radius ,nx,ny,nz)
 			outvol = args[2]
 		
@@ -128,12 +128,13 @@ def main():
 		
 
 		filteredvol = model_blank(nx,ny,nz)
-		cutoff = st[2] - 0.01
+		cutoff = max(st[2] - 0.01,0.0)
 		while(cutoff < st[3] ):
 			cutoff = round(cutoff + 0.01, 2)
-			pt = Util.infomask( threshold_outside(ui, cutoff - 0.05, cutoff + 0.05), m, True)  # Ideally, one would want to check only slides in question...
+			pt = Util.infomask( threshold_outside(ui, cutoff - 0.05, cutoff + 0.05), m, True)  # Ideally, one would want to check only slices in question...
 			if(pt[0] != 0.0):
-				vovo = fft(filt_tanl(vi, cutoff, falloff) )
+				#print cutoff,pt[0]
+				vovo = fft( filt_tanl(vi, cutoff, falloff) )
 				for z in xrange(myid, nz, number_of_proc):
 					for x in xrange(nx):
 						for y in xrange(ny):
