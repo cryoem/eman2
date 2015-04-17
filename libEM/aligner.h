@@ -1662,6 +1662,59 @@ namespace EMAN
 			static const string NAME;
 	};
 	
+	/** 3D rotational and translational alignment using a hierarchical method with gradually decreasing downsampling in Fourier space.
+	 * In theory, very fast, and without need for a "refine" aligner. Comparator is ignored. Uses an inbuilt comparison.
+	 * @param sym The symmtery to use as the basis of the spherical sampling
+	 * @param verbose Turn this on to have useful information printed to standard out
+	 * @author Steve Ludtke
+	 * @date April 2015
+	 */
+	class RT3DTreeAligner:public Aligner
+	{
+		public:
+			/** See Aligner comments for more details
+			 */
+			virtual EMData * align(EMData * this_img, EMData * to_img,
+								   const string & cmp_name= "sqeuclidean", const Dict& cmp_params = Dict()) const;
+			/** See Aligner comments for more details
+			 */
+			virtual EMData * align(EMData * this_img, EMData * to_img) const
+			{
+				return align(this_img, to_img, "sqeuclidean", Dict());
+			}
+
+
+			/** See Aligner comments for more details
+			 */
+			virtual vector<Dict> xform_align_nbest(EMData * this_img, EMData * to_img, const unsigned int nsoln, const string & cmp_name, const Dict& cmp_params) const;
+
+			virtual string get_name() const
+			{
+				return NAME;
+			}
+
+			virtual string get_desc() const
+			{
+				return "3D rotational and translational alignment using a hierarchical approach in Fourier space. Should be very fast and not require 'refine' alignment.";
+			}
+
+			static Aligner *NEW()
+			{
+				return new RT3DTreeAligner();
+			}
+
+			virtual TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("sym", EMObject::STRING,"The symmtery to use as the basis of the spherical sampling. Default is c1 (asymmetry).");
+// 				d.put("initxform", EMObject::TRANSFORM,"The Transform storing the starting position. If unspecified the identity matrix is used");
+				d.put("verbose", EMObject::BOOL,"Turn this on to have useful information printed to standard out.");
+				return d;
+			}
+			
+			static const string NAME;
+	};
+	
 	/** 3D rotational symmetry aligner. This aligner takes a map, which must be first aligned to the symmetry axis,
 	 * and rotates it to it symmetric positions. This is used to check for pseudo symmetry (such as finding the tail
 	 * of an icosahedral virus). A list of best matches (moving to a reference is produced. Alternativly, a rotated 

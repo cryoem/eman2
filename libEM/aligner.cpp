@@ -83,6 +83,7 @@ const string Refine3DAlignerGrid::NAME = "refine_3d_grid";
 const string Refine3DAlignerQuaternion::NAME = "refine_3d";
 const string RT3DGridAligner::NAME = "rotate_translate_3d_grid";
 const string RT3DSphereAligner::NAME = "rotate_translate_3d";
+const string RT3DTreeAligner::NAME = "rotate_translate_3d_tree";
 const string RT3DSymmetryAligner::NAME = "rotate_symmetry_3d";
 const string FRM2DAligner::NAME = "frm2d";
 const string ScaleAligner::NAME = "scale";
@@ -116,6 +117,7 @@ template <> Factory < Aligner >::Factory()
 	force_add<Refine3DAlignerQuaternion>();
 	force_add<RT3DGridAligner>();
 	force_add<RT3DSphereAligner>();
+	force_add<RT3DTreeAligner>();
 	force_add<RT3DSymmetryAligner>();
 	force_add<FRM2DAligner>();
 	force_add<ScaleAligner>();
@@ -2608,7 +2610,56 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	return solns;
 
 }
+EMData* RT3DTreeAligner::align(EMData * this_img, EMData *to, const string & cmp_name, const Dict& cmp_params) const
+{
 
+ 	vector<Dict> alis = xform_align_nbest(this_img,to,1,cmp_name,cmp_params);
+ 
+ 	Dict t;
+ 	Transform* tr = (Transform*) alis[0]["xform.align3d"];
+ 	t["transform"] = tr;
+ 	EMData* soln = this_img->process("xform",t);
+ 	soln->set_attr("xform.align3d",tr);
+ 	delete tr; tr = 0;
+
+	
+	
+	return soln;
+
+}
+
+vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, const unsigned int nsoln, const string & cmp_name, const Dict& cmp_params) const {
+	if (nsoln == 0) throw InvalidParameterException("ERROR (RT3DTreeAligner): nsoln must be >0"); // What was the user thinking?
+
+	EMData *base_this = this_img->do_fft();
+	EMData *base_to = to->do_fft();
+	
+	base_this->process_inplace("xform.phaseorigin.tocorner");
+	base_this->process_inplace("xform.fourierorigin.tocenter");
+	base_to->process_inplace("xform.phaseorigin.tocorner");
+	base_to->process_inplace("xform.fourierorigin.tocenter");
+
+	float apix=(float)this_img->get_attr("apix_x");
+	int ny=this_img->get_ysize();
+	
+	int downsample=floor(ny/20);		// Minimum shrunken box size is 20^3
+	
+	// initialize results
+	vector<Dict> solns;
+	for (unsigned int i = 0; i < nsoln; ++i ) {
+		Dict d;
+		d["score"] = 1.e24;
+		d["xform.align3d"] = new Transform();
+		solns.push_back(d);
+	}
+
+	for (int n=downsample; n>=1; n--) {
+		
+		
+	}
+	
+}
+	
 EMData* RT3DSphereAligner::align(EMData * this_img, EMData *to, const string & cmp_name, const Dict& cmp_params) const
 {
 
@@ -2672,7 +2723,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 	if (threshold < 0.0f) throw InvalidParameterException("The threshold parameter must be greater than or equal to zero");
 	bool verbose = params.set_default("verbose",false);
 	
-	//in case we arre aligning tomos
+	//in case we are aligning tomos
 	Dict altered_cmp_params(cmp_params);
 	if (cmp_name == "ccc.tomo") {
 		altered_cmp_params.set_default("searchx", searchx);
