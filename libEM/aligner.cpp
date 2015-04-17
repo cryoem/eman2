@@ -2642,7 +2642,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	float apix=(float)this_img->get_attr("apix_x");
 	int ny=this_img->get_ysize();
 	
-	int downsample=floor(ny/20);		// Minimum shrunken box size is 20^3
+	int downsample=ny/20;		// Minimum shrunken box size is 20^3
 	
 	// initialize results
 	vector<Dict> solns;
