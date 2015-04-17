@@ -897,7 +897,7 @@ def main():
 		currentres = round(currentres,2)
 
 	# set for the first iteration
-	nxshrink = min(max(32, int((lowpass+paramsdict["aa"]/2.)*2*nnxo + 0.5)), nnxo)
+	nxshrink = min(max(32, int( (lowpass+paramsdict["aa"]/2.)*2*nnxo + 0.5)), nnxo)
 	nxshrink += nxshrink%2
 	shrink = float(nxshrink)/nnxo
 	tracker = {"previous-resolution":currentres,"previous-lowpass":lowpass, "movedup":False,"eliminated-outliers":False,\
@@ -1073,15 +1073,15 @@ def main():
 		doit, keepchecking = checkstep(os.path.join(mainoutputdir,"current_resolution.txt"), keepchecking, myid, main_node)
 		if doit:
 			#  low-pass filter, current resolution
-			lowpass, currentres = compute_resolution(stack, mainoutputdir, partids, partstack, radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
+			newlowpass, currentres = compute_resolution(stack, mainoutputdir, partids, partstack, radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
 		else:
 			if(myid == main_node):
-				[lowpass, currentres] = read_text_row( os.path.join(mainoutputdir,"current_resolution.txt") )[0]
+				[newlowpass, currentres] = read_text_row( os.path.join(mainoutputdir,"current_resolution.txt") )[0]
 			else:
-				lowpass    = 0.0
+				newlowpass    = 0.0
 				currentres = 0.0
-			lowpass = bcast_number_to_all(lowpass, source_node = main_node)
-			lowpass = round(lowpass,2)
+			newlowpass = bcast_number_to_all(newlowpass, source_node = main_node)
+			newlowpass = round(newlowpass,2)
 			currentres = bcast_number_to_all(currentres, source_node = main_node)
 			currentres = round(currentres,2)
 
@@ -1201,7 +1201,7 @@ def main():
 					else:
 						eliminated_outliers = True
 						currentres = depres
-						lowpass = depfilter
+						newlowpass = depfilter
 						"""
 						#  It does not seem to be needed, as data is there, we just point to the directory
 						for procid in xrange(2):
@@ -1213,6 +1213,8 @@ def main():
 					eliminated_outliers = False
 		else:
 			eliminated_outliers = False
+		#  HERE the lowpass has the true meaning
+		lowpass = newlowpass
 
 		if(myid == main_node and not eliminated_outliers and doit):  # I had to add here doit, otherwise during the restart it incorrectly copies the files.
 			for procid in xrange(2):
@@ -1231,11 +1233,12 @@ def main():
 
 			if( currentres > tracker["previous-resolution"] ):  tracker["movedup"] = True
 			else:   tracker["movedup"] = False
-			shrink = max(min(2*lowpass + paramsdict["aa"], 1.0), minshrink)
-			tracker["extension"] = 4
+			tracker["extension"] = currentres - lowpass
+			shrink = max(min(2*currentres + paramsdict["aa"], 1.0), minshrink)
 			nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
 			nxshrink += nxshrink%2
 			shrink = float(nxshrink)/nnxo
+			lowpass = currentres
 			tracker["previous-resolution"] = currentres
 			tracker["previous-lowpass"]    = lowpass
 			tracker["bestsolution"]        = mainiteration
@@ -1244,14 +1247,14 @@ def main():
 			keepgoing = 1
 		
 		elif( currentres < tracker["previous-resolution"] ):
-			if(not tracker["movedup"] and tracker["extension"] < 2 and mainiteration > 1):
+			if(not tracker["movedup"] and tracker["extension"] > 0.05 and mainiteration > 1):
 				keepgoing = 0
 				if(myid == main_node):  print("  Cannot improve resolution, the best result is in the directory main%03d"%tracker["bestsolution"])
 			else:
-				if(not tracker["movedup"] and tracker["extension"] > 1 and mainiteration > 1):
+				if(not tracker["movedup"] and tracker["extension"] > 0.0 and mainiteration > 1):
 					if(myid == main_node):  print("  Resolution decreased.  Will decrease target resolution and will fall back on the best so far:  main%03d"%tracker["bestsolution"])
 					bestoutputdir = os.path.join(masterdir,"main%03d"%tracker["bestsolution"])
-				elif( tracker["movedup"] and tracker["extension"] > 1 and mainiteration > 1):
+				elif( tracker["movedup"] and tracker["extension"] > 0.0 and mainiteration > 1):
 					if(myid == main_node):  print("  Resolution decreased.  Will decrease target resolution and will try starting from previous stage:  main%03d"%(mainiteration - 1))
 					bestoutputdir = os.path.join(masterdir,"main%03d"%(mainiteration-1))
 				elif( mainiteration == 1):
@@ -1273,17 +1276,16 @@ def main():
 					lowpass, currentres = read_text_row( os.path.join(bestoutputdir,"current_resolution.txt") )[0]
 				currentres = bcast_number_to_all(currentres, source_node = main_node)
 				currentres = round(currentres,2)
-				lowpass = bcast_number_to_all(lowpass, source_node = main_node)
-				lowpass = round(lowpass,2)
-				lowpass += 0.05  #  what about that ??
-
+				#lowpass = bcast_number_to_all(lowpass, source_node = main_node)
+				#lowpass = round(lowpass,2)
+				tracker["extension"] -= 0.05
+				lowpass = currentres + tracker["extension"] 
 				shrink = max(min(2*lowpass + paramsdict["aa"], 1.0), minshrink)
-				tracker["extension"] -= 2
 				nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
 				nxshrink += nxshrink%2
 				shrink = float(nxshrink)/nnxo
 				tracker["previous-resolution"] = currentres
-				tracker["previous-lowpass"] = lowpass
+				tracker["previous-lowpass"]    = lowpass
 				tracker["eliminated-outliers"] = eliminated_outliers
 				tracker["movedup"] = False
 				keepgoing = 1
@@ -1292,9 +1294,9 @@ def main():
 		elif( currentres == tracker["previous-resolution"] ):
 			if( tracker["extension"] > 0 ):
 				if(myid == main_node):  print("The resolution did not improve. This is look ahead move.  Let's try to relax slightly and hope for the best")
-				tracker["extension"] -= 2
-				tracker["movedup"] = False
-				lowpass = min(lowpass + 0.1, 0.45) #  what about that ??
+				tracker["extension"] += 0.05
+				tracker["movedup"]    = False
+				lowpass = min(currentres + tracker["extension"], 0.45) #  what about that ??
 				shrink = max(min(2*lowpass + paramsdict["aa"], 1.0), minshrink)
 				nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
 				nxshrink += nxshrink%2
@@ -1303,7 +1305,7 @@ def main():
 					keepgoing = 0
 				else:
 					tracker["previous-resolution"] = currentres
-					tracker["previous-lowpass"] = lowpass
+					tracker["previous-lowpass"]    = lowpass
 					tracker["eliminated-outliers"] = eliminated_outliers
 					tracker["movedup"] = False
 					keepgoing = 1
