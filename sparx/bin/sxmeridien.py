@@ -632,7 +632,7 @@ def main():
 	ali3d_options.xr     = options.xr
 	ali3d_options.yr     = options.yr
 	ali3d_options.ts     = options.ts
-	ali3d_options.an     = options.an
+	ali3d_options.an     = "-1"
 	ali3d_options.sym    = options.sym
 	ali3d_options.delta  = options.delta
 	ali3d_options.npad   = options.npad
@@ -641,7 +641,7 @@ def main():
 	ali3d_options.ref_a  = options.ref_a
 	ali3d_options.snr    = options.snr
 	ali3d_options.mask3D = options.mask3D
-	ali3d_options.pwreference = options.pwreference
+	ali3d_options.pwreference = ""  #   It will have to be turned on after exhaustive done by setting to options.pwreference
 	ali3d_options.fl     = 0.4
 	ali3d_options.aa     = 0.1
 
@@ -727,6 +727,7 @@ def main():
 	nxshrink = nxinit
 	minshrink = 32.0/float(nnxo)
 	shrink = max(float(nxshrink)/float(nnxo),minshrink)
+	angular_neighborhood = "-1"
 
 	#  MASTER DIRECTORY
 	if(myid == main_node):
@@ -804,10 +805,9 @@ def main():
 	if(delta <= 0.0):
 		delta = "%f"%round(degrees(atan(1.0/float(radi))), 2)
 
-	paramsdict = {	"stack":stack,"delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":options.an, "center":options.center, "maxit":1, \
+	paramsdict = {	"stack":stack,"delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":angular_neighborhood, "center":options.center, "maxit":1, \
 					"lowpass":0.4, "aa":0.1, "radius":radi, "nsoft":0, "delpreviousmax":True, "shrink":1.0, "saturatecrit":1.0, \
 					"refvol":volinit, "mask3D":options.mask3D}
-
 
 	doit, keepchecking = checkstep(initdir, keepchecking, myid, main_node)
 	if  doit:
@@ -889,8 +889,8 @@ def main():
 	else:
 		if(myid == main_node): [lowpass, currentres] = read_text_row(os.path.join(initdir,"current_resolution.txt"))[0]
 		else:
-			lowpass = 0.0
-			currentres     = 0.0
+			lowpass    = 0.0
+			currentres = 0.0
 		lowpass    = bcast_number_to_all(lowpass, source_node = main_node)
 		lowpass    = round(lowpass,2)
 		currentres = bcast_number_to_all(currentres, source_node = main_node)
@@ -901,8 +901,8 @@ def main():
 	nxshrink += nxshrink%2
 	shrink = float(nxshrink)/nnxo
 	tracker = {"previous-resolution":currentres,"previous-lowpass":lowpass, "movedup":False,"eliminated-outliers":False,\
-				"previous-nx":nxshrink, "previous-shrink":shrink, "extension":0, "bestsolution":0}
-
+				"previous-nx":nxshrink, "previous-shrink":shrink, "extension":0.0,"directory":"none"}
+	history = [tracker.copy()]
 	previousoutputdir = initdir
 	#  MAIN ITERATION
 	mainiteration = 0
@@ -911,7 +911,8 @@ def main():
 		mainiteration += 1
 
 		#  prepare output directory
-		mainoutputdir = os.path.join(masterdir,"main%03d"%mainiteration)
+		history[-1]["directory"] = "main%03d"%mainiteration
+		mainoutputdir = os.path.join(masterdir,history[-1]["directory"])
 
 		if(myid == main_node):
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
@@ -991,7 +992,7 @@ def main():
 			coutdir = os.path.join(mainoutputdir,"loga%01d"%procid)
 			doit, keepchecking = checkstep(coutdir  , keepchecking, myid, main_node)
 
-			subdict( paramsdict, {	"delta":"%f"%round(degrees(atan(1.0/lastring)), 2) , "ts":"1", "xr":"2", "an":options.an, \
+			subdict( paramsdict, { "delta":"%f"%round(degrees(atan(1.0/lastring)), 2) , "ts":"1", "xr":"2", "an":angular_neighborhood, \
 							"lowpass":lowpass, "nsoft":options.nsoft, "saturatecrit":0.75, "delpreviousmax":True, "shrink":shrink, \
 							"refvol":os.path.join(mainoutputdir,"fusevol%01d.hdf"%procid) } )
 			if( paramsdict["nsoft"] > 0 ):
@@ -1078,7 +1079,7 @@ def main():
 			if(myid == main_node):
 				[newlowpass, currentres] = read_text_row( os.path.join(mainoutputdir,"current_resolution.txt") )[0]
 			else:
-				newlowpass    = 0.0
+				newlowpass = 0.0
 				currentres = 0.0
 			newlowpass = bcast_number_to_all(newlowpass, source_node = main_node)
 			newlowpass = round(newlowpass,2)
@@ -1230,37 +1231,46 @@ def main():
 				print(" New resolution %6.2f   Previous resolution %6.2f"%(currentres , tracker["previous-resolution"]))
 				if( currentres > tracker["previous-resolution"]):  print("  Resolution improved, full steam ahead!")
 				else:  print("  While the resolution did not improve, we eliminated outliers so we follow the _resolution_improved_ path.")
-
-			if( currentres > tracker["previous-resolution"] ):  tracker["movedup"] = True
-			else:   tracker["movedup"] = False
-			tracker["extension"] = currentres - lowpass
-			shrink = max(min(2*currentres + paramsdict["aa"], 1.0), minshrink)
-			nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
-			nxshrink += nxshrink%2
-			shrink = float(nxshrink)/nnxo
-			lowpass = currentres
-			tracker["previous-resolution"] = currentres
-			tracker["previous-lowpass"]    = lowpass
-			tracker["bestsolution"]        = mainiteration
-			bestoutputdir = mainoutputdir
-			tracker["eliminated-outliers"] = eliminated_outliers
-			keepgoing = 1
+			if(currentres >= 0.45 ):
+				print(" Resolution exceeded 0.45, i.e., approached Nyquist limit, program will terminate")
+			else:
+				if( currentres > tracker["previous-resolution"] ):  tracker["movedup"] = True
+				else:   tracker["movedup"] = False
+				tracker["extension"] = min(0.05, 0.45 - currentres)  # lowpass cannot exceed 0.45
+				shrink = max(min(2*currentres + paramsdict["aa"], 1.0), minshrink)
+				nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
+				nxshrink += nxshrink%2
+				shrink = float(nxshrink)/nnxo
+				lowpass = currentres
+				tracker["previous-nx"]         = nxshrink
+				tracker["previous-resolution"] = currentres
+				tracker["previous-lowpass"]    = lowpass
+				tracker["eliminated-outliers"] = eliminated_outliers
+				bestoutputdir = mainoutputdir
+				keepgoing = 1
 		
 		elif( currentres < tracker["previous-resolution"] ):
-			if(not tracker["movedup"] and tracker["extension"] > 0.05 and mainiteration > 1):
-				keepgoing = 0
-				if(myid == main_node):  print("  Cannot improve resolution, the best result is in the directory main%03d"%tracker["bestsolution"])
+			if(not tracker["movedup"] and tracker["extension"] == 0.0 and mainiteration > 1):
+				if( angular_neighborhood == "-1" ):
+					angular_neighborhood == options.an
+					ali3d_options.pwreference = options.pwreference
+					tracker["extension"] = 0.07 # so below it will be set to 0.05
+					keepgoing = 1
+					if(myid == main_node):  print("  Switching to local searches with an %s"%angular_neighborhood)
+				else:
+					keepgoing = 0
+					if(myid == main_node):  print("  Cannot improve resolution, the best result is in the directory %s"%bestoutputdir)
 			else:
-				if(not tracker["movedup"] and tracker["extension"] > 0.0 and mainiteration > 1):
+				if(not tracker["movedup"] and tracker["extension"] > 0.01 and mainiteration > 1):
 					if(myid == main_node):  print("  Resolution decreased.  Will decrease target resolution and will fall back on the best so far:  main%03d"%tracker["bestsolution"])
 					bestoutputdir = os.path.join(masterdir,"main%03d"%tracker["bestsolution"])
-				elif( tracker["movedup"] and tracker["extension"] > 0.0 and mainiteration > 1):
+				elif( tracker["movedup"] and tracker["extension"] > 0.01 and mainiteration > 1):
 					if(myid == main_node):  print("  Resolution decreased.  Will decrease target resolution and will try starting from previous stage:  main%03d"%(mainiteration - 1))
 					bestoutputdir = os.path.join(masterdir,"main%03d"%(mainiteration-1))
 				elif( mainiteration == 1):
 					if(myid == main_node):  print("  Resolution decreased in the first iteration.  It is expected, not to worry")
 					bestoutputdir = mainoutputdir
-					tracker["extension"] += 1
+					tracker["extension"] = 0.02  # so it will become zero
 				else:  # missing something here?
 					ERROR(" Should not be here, ERROR 175!", "sxmeridien", 1, myid)
 				if( bestoutputdir != mainoutputdir ):
@@ -1278,26 +1288,32 @@ def main():
 				currentres = round(currentres,2)
 				#lowpass = bcast_number_to_all(lowpass, source_node = main_node)
 				#lowpass = round(lowpass,2)
-				tracker["extension"] -= 0.05
-				lowpass = currentres + tracker["extension"] 
-				shrink = max(min(2*lowpass + paramsdict["aa"], 1.0), minshrink)
-				nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
-				nxshrink += nxshrink%2
-				shrink = float(nxshrink)/nnxo
+				tracker["extension"] -= 0.02
+				lowpass = currentres + tracker["extension"]
+				#  Here to be consistent I would have to know what was shrink for this run
+				k = -1
+				for i in xrange(len(history)):
+					if(history[i]["directory"] == bestoutputdir[-6:]):
+						k = i
+						break
+				if(k == -1):
+					print("  something wrong with bestoutputdir")
+					exit()
+				shrink   = history[i]["previous-shrink"]
+				nxshrink = history[i]["previous-nxshrink"]
 				tracker["previous-resolution"] = currentres
 				tracker["previous-lowpass"]    = lowpass
 				tracker["eliminated-outliers"] = eliminated_outliers
 				tracker["movedup"] = False
 				keepgoing = 1
-			
 
 		elif( currentres == tracker["previous-resolution"] ):
-			if( tracker["extension"] > 0 ):
+			if( tracker["movedup"] ):
 				if(myid == main_node):  print("The resolution did not improve. This is look ahead move.  Let's try to relax slightly and hope for the best")
-				tracker["extension"] += 0.05
+				tracker["extension"]  = min(0.05,0.45-currentres)
 				tracker["movedup"]    = False
-				lowpass = min(currentres + tracker["extension"], 0.45) #  what about that ??
-				shrink = max(min(2*lowpass + paramsdict["aa"], 1.0), minshrink)
+				lowpass = currentres + tracker["extension"]
+				shrink  = max(min(2*lowpass + paramsdict["aa"], 1.0), minshrink)
 				nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
 				nxshrink += nxshrink%2
 				shrink = float(nxshrink)/nnxo
@@ -1310,10 +1326,19 @@ def main():
 					tracker["movedup"] = False
 					keepgoing = 1
 			else:
-				if(myid == main_node):  print("The resolution did not improve.")
-				keepgoing = 0
-
-			
+				#  The resolution is not moving up.  Check whether this is exhaustive search, 
+				#    if yes switch to local searches by activating an, tun on PW adjustment, if given.
+				#  
+				if( angular_neighborhood == "-1" ):
+					angular_neighborhood == options.an
+					ali3d_options.pwreference = options.pwreference
+					tracker["movedup"] = True
+					if(myid == main_node):  print("  Switching to local searches with an %s"%angular_neighborhood)
+					keepgoing = 1
+				else:	
+					if(myid == main_node):  print("The resolution did not improve.")
+					keepgoing = 0
+		
 
 		if( keepgoing == 1 ):
 			if(myid == main_node):
@@ -1333,6 +1358,7 @@ def main():
 			previousoutputdir = mainoutputdir
 			tracker["previous-shrink"]     = shrink
 			tracker["previous-nx"]         = nxshrink
+			history.append(tracker.copy())
 
 		else:
 			if(myid == main_node):
