@@ -538,10 +538,7 @@ def metamove(paramsdict, partids, partstack, outputdir, procid, myid, main_node,
 			except:  pass
 	ali3d_options.ou = paramsdict["radius"]  #  This is changed in ali3d_base, but the shrank value is needed in vol recons, fixt it!
 	if(myid == main_node):
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line,"METAMOVE parameters")
-		spaces = "                 "
-		for q in paramsdict:  print("                    => ",q+spaces[len(q):],":  ",paramsdict[q])
+		print_dict(paramsdict,"METAMOVE parameters")
 		print("                    =>  actual lowpass    :  ",ali3d_options.fl)
 		print("                    =>  partids           :  ",partids)
 		print("                    =>  partstack         :  ",partstack)
@@ -559,6 +556,11 @@ def metamove(paramsdict, partids, partstack, outputdir, procid, myid, main_node,
 		print(line,"Executed successfully: ","ali3d_base_MPI %d"%paramsdict["nsoft"],"  number of images:%7d"%len(params))
 		write_text_row(params, os.path.join(outputdir,"params-chunk%01d.txt"%procid) )
 
+def print_dict(dict,theme):
+	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	print(line,theme)
+	spaces = "                 "
+	for q in dict:  print("                    => ",q+spaces[len(q):],":  ",dict[q])
 
 
 def main():
@@ -917,6 +919,8 @@ def main():
 		if(myid == main_node):
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			print(line,"MAIN ITERATION #",mainiteration, shrink, nxshrink, currentres, lowpass)
+			print_dict(history[-1],"TRACKER")
+
 			if keepchecking:
 				if(os.path.exists(mainoutputdir)):
 					doit = 0
