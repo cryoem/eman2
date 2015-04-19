@@ -1240,12 +1240,12 @@ def main():
 			else:
 				if( currentres > tracker["previous-resolution"] ):  tracker["movedup"] = True
 				else:   tracker["movedup"] = False
-				tracker["extension"] = min(0.05, 0.45 - currentres)  # lowpass cannot exceed 0.45
-				shrink = max(min(2*currentres + paramsdict["aa"], 1.0), minshrink)
-				nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
+				tracker["extension"] = min(0.1, 0.45 - currentres)  # lowpass cannot exceed 0.45
+				lowpass = currentres + tracker["extension"]
+				shrink = max(min(2*lowpass + paramsdict["aa"], 1.0), minshrink)
+				nxshrink = min(int(nnxo*shrink + 0.5),nnxo)
 				nxshrink += nxshrink%2
 				shrink = float(nxshrink)/nnxo
-				lowpass = currentres
 				tracker["previous-nx"]         = nxshrink
 				tracker["previous-resolution"] = currentres
 				tracker["previous-lowpass"]    = lowpass
@@ -1258,7 +1258,7 @@ def main():
 				if( angular_neighborhood == "-1" ):
 					angular_neighborhood == options.an
 					ali3d_options.pwreference = options.pwreference
-					tracker["extension"] = 0.07 # so below it will be set to 0.05
+					tracker["extension"] = 0.12 # so below it will be set to 0.1
 					keepgoing = 1
 					if(myid == main_node):  print("  Switching to local searches with an %s"%angular_neighborhood)
 				else:
@@ -1314,7 +1314,7 @@ def main():
 		elif( currentres == tracker["previous-resolution"] ):
 			if( tracker["movedup"] ):
 				if(myid == main_node):  print("The resolution did not improve. This is look ahead move.  Let's try to relax slightly and hope for the best")
-				tracker["extension"]  = min(0.05,0.45-currentres)
+				tracker["extension"]  = min(0.1,0.45-currentres)
 				tracker["movedup"]    = False
 				lowpass = currentres + tracker["extension"]
 				shrink  = max(min(2*lowpass + paramsdict["aa"], 1.0), minshrink)
