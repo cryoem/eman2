@@ -500,6 +500,7 @@ class ali3d_options:
 	mask3D = "startm.hdf"
 	fl     = 0.4
 	aa     = 0.1
+	initfl = 0.4
 	pwreference = "rotpw3i3.txt"
 #################################
 
@@ -527,6 +528,7 @@ def metamove(paramsdict, partids, partstack, outputdir, procid, myid, main_node,
 	ali3d_options.xr     = paramsdict["xr"]
 	#  low pass filter is applied to shrank data, so it has to be adjusted
 	ali3d_options.fl     = paramsdict["lowpass"]/paramsdict["shrink"]
+	ali3d_options.initfl = paramsdict["initialfl"]/paramsdict["shrink"]
 	ali3d_options.aa     = paramsdict["aa"]
 	ali3d_options.maxit  = paramsdict["maxit"]
 	ali3d_options.mask3D = paramsdict["mask3D"]
@@ -539,9 +541,10 @@ def metamove(paramsdict, partids, partstack, outputdir, procid, myid, main_node,
 	ali3d_options.ou = paramsdict["radius"]  #  This is changed in ali3d_base, but the shrank value is needed in vol recons, fixt it!
 	if(myid == main_node):
 		print_dict(paramsdict,"METAMOVE parameters")
-		print("                    =>  actual lowpass    :  ",ali3d_options.fl)
-		print("                    =>  partids           :  ",partids)
-		print("                    =>  partstack         :  ",partstack)
+		print("                    =>  actual lowpass      :  ",ali3d_options.fl)
+		print("                    =>  actual init lowpass :  ",ali3d_options.initfl)
+		print("                    =>  partids             :  ",partids)
+		print("                    =>  partstack           :  ",partstack)
 		
 	if(ali3d_options.fl > 0.46):  ERROR("Low pass filter in metamove > 0.46 on the scale of shrank data","sxmeridien",1,myid) 
 
@@ -645,34 +648,10 @@ def main():
 	ali3d_options.mask3D = options.mask3D
 	ali3d_options.pwreference = ""  #   It will have to be turned on after exhaustive done by setting to options.pwreference
 	ali3d_options.fl     = 0.4
+	ali3d_options.initfl = 0.4
 	ali3d_options.aa     = 0.1
 
 	if( ali3d_options.xr == "-1" ):  ali3d_options.xr = "2"
-	"""
-	print( options)
-
-	print( 'ali3d_options',  ali3d_options.ir    ,\
-	ali3d_options.rs        ,\
-	ali3d_options.ou        ,\
-	ali3d_options.xr        ,\
-	ali3d_options.yr        ,\
-	ali3d_options.ts        ,\
-	ali3d_options.an        ,\
-	ali3d_options.sym       ,\
-	ali3d_options.delta     ,\
-	ali3d_options.npad      ,\
-	ali3d_options.center    ,\
-	ali3d_options.CTF       ,\
-	ali3d_options.ref_a     ,\
-	ali3d_options.snr       ,\
-	ali3d_options.mask3D    ,\
-	ali3d_options.fl        ,\
-	ali3d_options.aa    \
-	)
-
-		#exit()
-"""
-
 
 
 	mpi_init(0, [])
@@ -807,8 +786,10 @@ def main():
 	if(delta <= 0.0):
 		delta = "%f"%round(degrees(atan(1.0/float(radi))), 2)
 
-	paramsdict = {	"stack":stack,"delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":angular_neighborhood, "center":options.center, "maxit":1, \
-					"lowpass":0.4, "aa":0.1, "radius":radi, "nsoft":0, "delpreviousmax":True, "shrink":1.0, "saturatecrit":1.0, \
+	paramsdict = {	"stack":stack,"delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":angular_neighborhood, \
+					"center":options.center, "maxit":1, \
+					"lowpass":0.4, "initialfl":0.4, "aa":0.1, "radius":radi, \
+					"nsoft":0, "delpreviousmax":True, "shrink":1.0, "saturatecrit":1.0, \
 					"refvol":volinit, "mask3D":options.mask3D}
 
 	doit, keepchecking = checkstep(initdir, keepchecking, myid, main_node)
@@ -902,7 +883,8 @@ def main():
 	nxshrink = min(max(32, int( (lowpass+paramsdict["aa"]/2.)*2*nnxo + 0.5)), nnxo)
 	nxshrink += nxshrink%2
 	shrink = float(nxshrink)/nnxo
-	tracker = {"previous-resolution":currentres,"previous-lowpass":lowpass, "movedup":False,"eliminated-outliers":False,\
+	tracker = {"previous-resolution":currentres,"previous-lowpass":lowpass, "initialfl":lowpass,  \
+				"movedup":False,"eliminated-outliers":False,\
 				"previous-nx":nxshrink, "previous-shrink":shrink, "extension":0.0,"directory":"none"}
 	history = [tracker.copy()]
 	previousoutputdir = initdir
@@ -1241,6 +1223,7 @@ def main():
 				if( currentres > tracker["previous-resolution"] ):  tracker["movedup"] = True
 				else:   tracker["movedup"] = False
 				tracker["extension"] = min(0.1, 0.45 - currentres)  # lowpass cannot exceed 0.45
+				paramsdict["initialfl"] = lowpass
 				lowpass = currentres + tracker["extension"]
 				shrink = max(min(2*lowpass + paramsdict["aa"], 1.0), minshrink)
 				nxshrink = min(int(nnxo*shrink + 0.5),nnxo)
@@ -1249,6 +1232,7 @@ def main():
 				tracker["previous-nx"]         = nxshrink
 				tracker["previous-resolution"] = currentres
 				tracker["previous-lowpass"]    = lowpass
+				tracker["initialfl"]           = paramsdict["initialfl"]
 				tracker["eliminated-outliers"] = eliminated_outliers
 				bestoutputdir = mainoutputdir
 				keepgoing = 1
@@ -1305,6 +1289,8 @@ def main():
 					exit()
 				shrink   = history[i]["previous-shrink"]
 				nxshrink = history[i]["previous-nxshrink"]
+				paramsdict["initialfl"]        = history[i]["initialfl"]
+				tracker["initialfl"]           = history[i]["initialfl"]
 				tracker["previous-resolution"] = currentres
 				tracker["previous-lowpass"]    = lowpass
 				tracker["eliminated-outliers"] = eliminated_outliers
@@ -1316,6 +1302,8 @@ def main():
 				if(myid == main_node):  print("The resolution did not improve. This is look ahead move.  Let's try to relax slightly and hope for the best")
 				tracker["extension"]  = min(0.1,0.45-currentres)
 				tracker["movedup"]    = False
+				tracker["initialfl"]  = lowpass
+				paramsdict["initialfl"] = lowpass
 				lowpass = currentres + tracker["extension"]
 				shrink  = max(min(2*lowpass + paramsdict["aa"], 1.0), minshrink)
 				nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)

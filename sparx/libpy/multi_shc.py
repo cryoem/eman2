@@ -3051,6 +3051,9 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 		start_time = time()
 
 	#  Read	template volume if provided or reconstruct it
+	#  Apply initfl first, meaning true fl has to be preserved
+	fl = ali3d_options.fl
+	ali3d_options.fl = ali3d_options.initfl
 	if ref_vol:
 		if type(ref_vol) is types.StringType:
 			if myid == main_node:
@@ -3076,7 +3079,8 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 		vol = do_volume(vol, ali3d_options, 0, mpi_comm)
 	else:
 		vol = do_volume(data, ali3d_options, 0, mpi_comm)
-
+	#  Restore desired fl
+	ali3d_options.fl = fl
 
 	# log
 	if myid == main_node:
