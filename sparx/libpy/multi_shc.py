@@ -3214,7 +3214,9 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 					lhx = 0
 					for msg in all_pixer:
 						if(msg < 2.0): lhx += 1
-					if(float(lhx)/float(total_nima) > saturatecrit):
+					lhx = float(lhx)/float(total_nima)
+					log.add(">>> %4.2f images had pixel error <2.0"%lhx)
+					if( lhx > saturatecrit):
 						if(nsoft == 1 and Iter == 1):
 							log.add("Will continue even though %4.2f images had pixel error <2.0"%saturatecrit)
 						else:
