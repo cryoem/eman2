@@ -559,7 +559,7 @@ def metamove(paramsdict, partids, partstack, outputdir, procid, myid, main_node,
 def print_dict(dict,theme):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	print(line,theme)
-	spaces = "                 "
+	spaces = "                         "
 	for q in dict:  print("                    => ",q+spaces[len(q):],":  ",dict[q])
 
 
