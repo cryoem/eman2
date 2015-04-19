@@ -3185,7 +3185,7 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 					log.add(msg)
 				log.add("_______________________________________________________")
 				changes = par_r[0]/float(total_nima)
-				if(  changes > saturatecrit ):
+				if(  changes > saturatecrit and (nsoft == 1 and Iter >1) ):
 					terminate = 1
 					log.add("...............")
 					log.add(">>>>>>>>>>>>>>>   Will terminate as %4.2f images did not find better orientations"%saturatecrit)
@@ -3207,7 +3207,7 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 					msg = "          %10.3f     %7d"%(region[lhx], histo[lhx])
 					log.add(msg)
 				log.add("____________________________________________________")
-				if(nsoft<2 and terminate == 0):
+				if(nsoft<2 and terminate == 0 and (nsoft == 1 and Iter >1) ):
 					lhx = 0
 					for msg in all_pixer:
 						if(msg < 2.0): lhx += 1
