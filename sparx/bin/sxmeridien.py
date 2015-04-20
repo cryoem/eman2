@@ -1074,7 +1074,7 @@ def main():
 				#  Previous phase was hard, so the volumes exist
 				vol = []
 				for procid in xrange(2):  vol.append(get_im(os.path.join(mainoutputdir,"loga%01d"%procid,"shcvol%01d.hdf"%procid) ))
-				lowpass, currentres = compute_resolution(vol, mainoutputdir, partids, partstack, radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
+				newlowpass, currentres = compute_resolution(vol, mainoutputdir, partids, partstack, radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
 				del vol
 		else:
 			if(myid == main_node):
