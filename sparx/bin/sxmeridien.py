@@ -245,15 +245,47 @@ def getalldata(stack, myid, nproc):
 	data = EMData.read_images(stack, range(image_start, image_end))
 	return data
 
+
+def get_resolution(vol, radi, nnxo, fscoutputdir):
+	# this function is single processor
+	#  Get updated FSC curves
+	if(ali3d_options.mask3D is None):  mask = model_circle(radi,nnxo,nnxo,nnxo)
+	else:                              mask = get_im(ali3d_options.mask3D)
+	nfsc = fsc(vol[0]*mask,vol[1]*mask, 1.0,os.path.join(fscoutputdir,"fsc.txt") )
+	currentres = -1.0
+	ns = len(nfsc[1])
+	#  This is actual resolution, as computed by 2*f/(1+f)
+	for i in xrange(1,ns-1):
+		if ( nfsc[1][i] < 0.333333333333333333333333):
+			currentres = nfsc[0][i-1]
+			break
+	if(currentres < 0.0):
+		print("  Something wrong with the resolution, cannot continue")
+		mpi_finalize()
+		exit()
+	lowpass = 0.5
+	ns = len(nfsc[1])
+	#  This is resolution used to filter half-volumes
+	for i in xrange(1,ns-1):
+		if ( nfsc[1][i] < 0.5 ):
+			lowpass = nfsc[0][i-1]
+			break
+
+	return  round(lowpass,2), round(currentres,2)
+
 def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, myid, main_node, nproc):
 	vol = [None]*2
 
 	for procid in xrange(2):
 		#  sxrecons3d.py  (full size)
-		projdata = getindexdata(stack, partids[procid], partstack[procid], myid, nproc)
-		if CTF:  vol[procid] = recons3d_4nn_ctf_MPI(myid, projdata, symmetry=ali3d_options.sym, npad = 2)
-		else:    vol[procid] = recons3d_4nn_MPI(myid, projdata, symmetry=ali3d_options.sym, npad = 2)
-		del projdata
+		if(len(stack) > 2):
+			projdata = getindexdata(stack, partids[procid], partstack[procid], myid, nproc)
+			if CTF:  vol[procid] = recons3d_4nn_ctf_MPI(myid, projdata, symmetry=ali3d_options.sym, npad = 2)
+			else:    vol[procid] = recons3d_4nn_MPI(myid, projdata, symmetry=ali3d_options.sym, npad = 2)
+			del projdata
+		else:
+			#  There are only two entries, these have to be volumes
+			vol = stack
 		if( myid == main_node):
 			vol[procid].write_image(os.path.join(outputdir,"vol%01d.hdf"%procid))
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
@@ -263,15 +295,13 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 	currentres = 0.0
 	if(myid == main_node):
 		lowpass, currentres = get_resolution(vol, radi, nnxo, outputdir)
-		lowpass = round(lowpass, 2)
-		currentres = round(currentres, 2)
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print(  line,"Current resolution %6.2f, low-pass filter cut-off %6.2f"%(currentres,lowpass))
 		write_text_row([lowpass, currentres],os.path.join(outputdir,"current_resolution.txt"))
 	#  Returns: low-pass filter cutoff;  current resolution
 	currentres = bcast_number_to_all(currentres, source_node = main_node)
 	lowpass    = bcast_number_to_all(lowpass, source_node = main_node)
-	return lowpass, currentres
+	return round(lowpass,2), round(currentres,2)
 
 def compute_fscs(stack, outputdir, chunkname, newgoodname, fscoutputdir, doit, keepchecking, nproc, myid, main_node):
 	#  Compute reconstructions per group from good particles only to get FSC curves
@@ -449,36 +479,6 @@ def compute_fscs(stack, outputdir, chunkname, newgoodname, fscoutputdir, doit, k
 
 	mpi_barrier(MPI_COMM_WORLD)
 	return  currentres, doit, keepchecking
-
-
-
-def get_resolution(vol, radi, nnxo, fscoutputdir):
-	# this function is single processor
-	#  Get updated FSC curves
-	if(ali3d_options.mask3D is None):  mask = model_circle(radi,nnxo,nnxo,nnxo)
-	else:                              mask = get_im(ali3d_options.mask3D)
-	nfsc = fsc(vol[0]*mask,vol[1]*mask, 1.0,os.path.join(fscoutputdir,"fsc.txt") )
-	currentres = 1.0/3.0
-	ns = len(nfsc[1])
-	#  This is actual resolution, as computed by 2*f/(1+f)
-	for i in xrange(1,ns-1):
-		if ( nfsc[1][i] < 0.333333333333333333333333):
-			currentres = nfsc[0][i-1]
-			break
-	#print("  Current resolution ",i,currentres)
-	if(currentres < 0.0):
-		print("  Something wrong with the resolution, cannot continue")
-		mpi_finalize()
-		exit()
-	lowpass = 0.5
-	ns = len(nfsc[1])
-	#  This is resolution used to filter half-volumes
-	for i in xrange(1,ns-1):
-		if ( nfsc[1][i] < 0.5 ):
-			lowpass = nfsc[0][i-1]
-			break
-
-	return  round(lowpass,2), round(currentres,2)
 
 
 
@@ -1011,6 +1011,7 @@ def main():
 					print(  line,"Generated shcvol #%01d "%procid)
 				del vol
 
+		#  fuse shc volumes to serve as starting point for the next, deterministic part.
 		if(myid == main_node):
 			if keepchecking:
 				procid = 1
@@ -1038,7 +1039,7 @@ def main():
 		for procid in xrange(2):
 			coutdir = os.path.join(mainoutputdir,"logb%01d"%procid)
 			doit, keepchecking = checkstep(coutdir, keepchecking, myid, main_node)
-			if( options.nsoft > 0 and doit):  #  Only do finishing up when the previous step was SHC and exhausting
+			if( options.nsoft > 0 and doit):  #  Only do finishing up when the previous step was SHC
 				#  Run hard to finish up matching
 				subdict(paramsdict, \
 				{ "maxit":10, "nsoft":0, "saturatecrit":0.95, "delpreviousmax":True, "refvol":os.path.join(mainoutputdir,"loga%01d"%procid,"fusevol%01d.hdf"%procid)} )
@@ -1059,8 +1060,21 @@ def main():
 		#  Compute current resolution, store result in the main directory
 		doit, keepchecking = checkstep(os.path.join(mainoutputdir,"current_resolution.txt"), keepchecking, myid, main_node)
 		if doit:
+<<<<<<< sxmeridien.py
+			if( options.nsoft > 0 ):
+				#  There was first soft phase, so the volumes have to be computed
+				#  low-pass filter, current resolution
+				lowpass, currentres = compute_resolution(stack, mainoutputdir, partids, partstack, radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
+			else:
+				#  Previous phase was hard, so the volumes exist
+				vol = []
+				for procid in xrange(2):  vol.append(get_im(os.path.join(mainoutputdir,"loga%01d"%procid,"shcvol%01d.hdf"%procid) ))
+				lowpass, currentres = compute_resolution(vol, mainoutputdir, partids, partstack, radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
+				del vol
+=======
 			#  low-pass filter, current resolution
 			newlowpass, currentres = compute_resolution(stack, mainoutputdir, partids, partstack, radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
+>>>>>>> 1.25
 		else:
 			if(myid == main_node):
 				[newlowpass, currentres] = read_text_row( os.path.join(mainoutputdir,"current_resolution.txt") )[0]
@@ -1240,7 +1254,7 @@ def main():
 		elif( currentres < tracker["previous-resolution"] ):
 			if(not tracker["movedup"] and tracker["extension"] == 0.0 and mainiteration > 1):
 				if( angular_neighborhood == "-1" ):
-					angular_neighborhood == options.an
+					angular_neighborhood = options.an
 					ali3d_options.pwreference = options.pwreference
 					tracker["extension"] = 0.12 # so below it will be set to 0.1
 					keepgoing = 1
