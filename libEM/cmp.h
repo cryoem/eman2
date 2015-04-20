@@ -349,6 +349,41 @@ namespace EMAN
 		static const string NAME;
 	};
 
+	/** Both images should be FFTs. Computes a CCC excluding pixels with very small value (assumes they are missing wedge)
+    * Returns overlap amount as "fft_overlap" in "image"
+	* @date 2010-10-18
+	*/
+	class TomoWedgeCccCmp:public Cmp
+	{
+	  public:
+		virtual float cmp(EMData * image, EMData * with) const;
+
+		virtual string get_name() const 
+		{
+			return NAME;
+		}
+
+		virtual string get_desc() const
+		{
+			return "Ccc of two FFTs with missing wedge taken into account explicitly. Also stores overlap as 'fft_overlap' in first input image.";
+		}
+
+		static Cmp *NEW()
+		{
+			return new TomoWedgeCccCmp();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+// 			d.put("norm", EMObject::BOOL,"Whether the cross correlation image should be normalized (should be for normalized images). Default is true.");
+// 			d.put("ccf", EMObject::EMDATA,"The ccf image, can be provided if it already exists to avoid recalculating it");
+// 			d.put("searchz", EMObject::INT, "The maximum range of the peak location in the z direction. Default is sizez/4");
+			return d;
+		}
+		
+		static const string NAME;
+	};
 	
 	/** This is a FSC comparitor for tomography. I only counts voxels above a threshold, which is obtained from subtomogram metadata
 	* @ingroup CUDA_ENABLED

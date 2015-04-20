@@ -2663,13 +2663,55 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		EMData *small_this=base_this->get_clip(Region(0,(ny-ss)/2,(ny-ss)/2,ss+2,ss,ss));
 		EMData *small_to=  base_to->  get_clip(Region(0,(ny-ss)/2,(ny-ss)/2,ss+2,ss,ss));
 		
-		//Genrate points on a sphere in an asymmetric unit
-		Dict d;
-		d["inc_mirror"] = true;
-		d["delta"] = params.set_default("delta",10.f);
-		Symmetry3D* sym = Factory<Symmetry3D>::get((string)params.set_default("sym","c1"));
-		vector<Transform> transforms = sym->gen_orientations((string)params.set_default("orientgen","eman"),d);
-	
+		float astep = 89.999/floor(180.0/atan(2.0/ss));
+		vector<Transform> transforms;
+		
+		// This is for the first loop, we do a full search in a heavily downsampled space
+		if ((int)solns[0]["coverage"]==0) {
+			//Genrate points on a sphere in an asymmetric unit
+			Dict d;
+			d["inc_mirror"] = true;
+			d["delta"] = astep;		// make sure the altitude step hits 90 degrees, not absolutely necessary for this, but can't hurt
+			Symmetry3D* sym = Factory<Symmetry3D>::get((string)params.set_default("sym","c1"));
+			//We don't generate for phi, since this can produce a very large number of orientations
+			transforms = sym->gen_orientations((string)params.set_default("orientgen","eman"),d);
+		}
+		// Once we have our initial list of best locations, we just refine them
+		else {
+			// We generate a search pattern around each existing solution
+			for (std::vector<Dict>::iterator s = solns.begin(); s != solns.end(); ++s) {
+				
+				// Ouch, exhaustive (local) search in all 6 axes!
+				for (int daz=-2; daz<=2; daz++) {
+					for (int dalt=-2; dalt<=2; dalt++) {
+						for (int dphi=-2; dphi<=2; dphi++) {
+							for (int dx=-2; dx<=2; dx++) {
+								for (int dy=-2; dy<=2; dy++) {
+									for (int dz=-2; dz<=2; dz++) {
+										Transform t=Transform((Transform&)((*s)["xform.align3d"]));
+										Dict aap=t.get_params("eman");
+										aap["az"]=(float)aap["az"]+daz;
+										aap["alt"]=(float)aap["alt"]+dalt;
+										aap["phi"]=(float)aap["phi"]+dphi;
+										aap["tx"]=(float)aap["tx"]+dx;
+										aap["ty"]=(float)aap["ty"]+dy;
+										aap["tz"]=(float)aap["tz"]+dz;
+										t.set_params(aap);
+										
+										EMData *stt=small_this->process("xform",Dict("Transform",EMObject(&t)));
+										
+									}
+								}
+							}
+						}
+					}
+				}
+							
+				//transforms=
+			}
+		}
+		
+		
 		//Genrate symmetry related orritenations
 		//vector<Transform> syms = Symmetry3D::get_symmetries((string)params["sym"]);
 		

@@ -49,6 +49,7 @@ const string LodCmp::NAME = "lod";
 const string SqEuclideanCmp::NAME = "sqeuclidean";
 const string DotCmp::NAME = "dot";
 const string TomoCccCmp::NAME = "ccc.tomo";
+const string TomoWedgeCccCmp::NAME = "ccc.tomo";
 const string TomoFscCmp::NAME = "fsc.tomo";
 const string QuadMinDotCmp::NAME = "quadmindot";
 const string OptVarianceCmp::NAME = "optvariance";
@@ -63,6 +64,7 @@ template <> Factory < Cmp >::Factory()
 	force_add<SqEuclideanCmp>();
 	force_add<DotCmp>();
 	force_add<TomoCccCmp>();
+	force_add<TomoWedgeCccCmp>();
 	force_add<TomoFscCmp>();
 	force_add<QuadMinDotCmp>();
 	force_add<OptVarianceCmp>();
@@ -667,6 +669,31 @@ float TomoCccCmp::cmp(EMData * image, EMData *with) const
 	}
 #endif
 
+	if (!ccf) {
+		ccf = image->calc_ccf(with);
+		ccf_ownership = true;
+	}
+	if (norm) ccf->process_inplace("normalize");
+	
+	float best_score = ccf->get_value_at_wrap(0,0,0);
+        if (ccf_ownership) delete ccf; ccf = 0;
+        
+	return negative*best_score;
+
+}
+
+// CCC in Fourier space with small valued pixels presumed to be in missing wedge, and excluded from similarity
+// Fractional overlap returned in "image"
+
+float TomoWedgeCccCmp::cmp(EMData * image, EMData *with) const
+{
+	ENTERFUNC;
+	EMData* ccf = params.set_default("ccf",(EMData*) NULL);
+	bool ccf_ownership = false;
+	bool norm = params.set_default("norm",true);
+	float negative = (float)params.set_default("negative", 1);
+	if (negative) negative=-1.0; else negative=1.0;
+	
 	if (!ccf) {
 		ccf = image->calc_ccf(with);
 		ccf_ownership = true;

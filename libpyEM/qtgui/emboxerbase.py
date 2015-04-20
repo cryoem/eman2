@@ -2184,7 +2184,7 @@ class EMBoxerWriteOutputTask(WorkFlowTask):
 		psuffix = ParamDef(name="suffix",vartype="string",desc_short="Output Suffix", desc_long="This text will be appended to the names of the output files",property=None,defaultunits=db.setdefault("suffix","_ptcls"),choices=None )
 		pinv = ParamDef(name="invert",vartype="boolean",desc_short="Invert Pixels",desc_long="Do you want the pixel intensities in the output inverted?",property=None,defaultunits=db.setdefault("invert",False),choices=None)
 		pn =  ParamDef(name="normproc",vartype="string",desc_short="Normalize Images",desc_long="How the output box images should be normalized",property=None,defaultunits=db.setdefault("normproc","normalize.edgemean"),choices=["normalize","normalize.edgemean","normalize.ramp.normvar","None"])
-		pop = ParamDef(name="format",vartype="string",desc_short="Output Image Format",desc_long="The format of the output box images",property=None,defaultunits=db.setdefault("format","bdb"),choices=self.output_formats)
+		pop = ParamDef(name="format",vartype="string",desc_short="Output Image Format",desc_long="The format of the output box images",property=None,defaultunits=db.setdefault("format","hdf"),choices=self.output_formats)
 		params.append([psuffix,pinv])
 		params.append(pn)
 		params.append(pop)
