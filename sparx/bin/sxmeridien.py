@@ -1331,7 +1331,7 @@ def main():
 				#    if yes switch to local searches by activating an, tun on PW adjustment, if given.
 				#  
 				if( angular_neighborhood == "-1" ):
-					angular_neighborhood == options.an
+					angular_neighborhood = options.an
 					ali3d_options.pwreference = options.pwreference
 					tracker["movedup"] = True
 					if(myid == main_node):  print("  Switching to local searches with an %s"%angular_neighborhood)
