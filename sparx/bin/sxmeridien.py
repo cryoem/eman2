@@ -894,6 +894,7 @@ def main():
 	history = [tracker.copy()]
 	previousoutputdir = initdir
 	#  MAIN ITERATION
+	test_outliers = True
 	mainiteration = 0
 	keepgoing = 1
 	while(keepgoing):
@@ -1113,7 +1114,8 @@ def main():
 
 		#print("RACING  X ",myid)
 		#  If the resolution stalled, try to eliminate outliers
-		if(currentres == tracker["previous-resolution"]):
+		if(currentres == tracker["previous-resolution"]  and test_outliers):
+			test_outliers = False
 
 			for procid in xrange(2):
 				coutdir = os.path.join(mainoutputdir,"logc%01d"%procid)
@@ -1213,6 +1215,7 @@ def main():
 				else:
 					eliminated_outliers = False
 		else:
+			test_outliers = True
 			eliminated_outliers = False
 		#  HERE the lowpass has the true meaning
 		lowpass = newlowpass
@@ -1226,6 +1229,8 @@ def main():
 				cmdexecute(cmd)
 
 		keepgoing = 0
+		stepforward = 0.05
+		increment   = 0.02
 		if( ( currentres > tracker["previous-resolution"] ) or (eliminated_outliers and not tracker["eliminated-outliers"])):
 			if(myid == main_node):
 				print(" New resolution %6.2f   Previous resolution %6.2f"%(currentres , tracker["previous-resolution"]))
@@ -1236,7 +1241,7 @@ def main():
 			else:
 				if( currentres > tracker["previous-resolution"] ):  tracker["movedup"] = True
 				else:   tracker["movedup"] = False
-				tracker["extension"] = min(0.1, 0.45 - currentres)  # lowpass cannot exceed 0.45
+				tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
 				paramsdict["initialfl"] = lowpass
 				lowpass = currentres + tracker["extension"]
 				shrink = max(min(2*lowpass + paramsdict["aa"], 1.0), minshrink)
@@ -1252,12 +1257,12 @@ def main():
 				keepgoing = 1
 
 		elif( currentres < tracker["previous-resolution"] ):
-			if(not tracker["movedup"] and tracker["extension"] == 0.0 and mainiteration > 1):
+			if(not tracker["movedup"] and tracker["extension"] < increment and mainiteration > 1):
 				if( angular_neighborhood == "-1" ):
 					angular_neighborhood = options.an
 					ali3d_options.pwreference = options.pwreference
 					tracker["PWadjustment"] = ali3d_options.pwreference
-					tracker["extension"] = 0.12 # so below it will be set to 0.1
+					tracker["extension"] = stepforward + increment # so below it will be set to stepforward
 					keepgoing = 1
 					if(myid == main_node):  print("  Switching to local searches with an %s"%angular_neighborhood)
 				else:
@@ -1273,7 +1278,7 @@ def main():
 				elif( mainiteration == 1):
 					if(myid == main_node):  print("  Resolution decreased in the first iteration.  It is expected, not to worry")
 					bestoutputdir = mainoutputdir
-					tracker["extension"] = 0.02  # so it will become zero
+					tracker["extension"] = increment  # so it will become zero
 				else:  # missing something here?
 					ERROR(" Should not be here, ERROR 175!", "sxmeridien", 1, myid)
 				if( bestoutputdir != mainoutputdir ):
@@ -1291,7 +1296,7 @@ def main():
 				currentres = round(currentres,2)
 				#lowpass = bcast_number_to_all(lowpass, source_node = main_node)
 				#lowpass = round(lowpass,2)
-				tracker["extension"] -= 0.02
+				tracker["extension"] -= increment
 				lowpass = currentres + tracker["extension"]
 				#  Here to be consistent I would have to know what was shrink for this run
 				k = -1
@@ -1315,7 +1320,7 @@ def main():
 		elif( currentres == tracker["previous-resolution"] ):
 			if( tracker["movedup"] ):
 				if(myid == main_node):  print("The resolution did not improve. This is look ahead move.  Let's try to relax slightly and hope for the best")
-				tracker["extension"]  = min(0.1,0.45-currentres)
+				tracker["extension"]  = min(stepforward,0.45-currentres)
 				tracker["movedup"]    = False
 				tracker["initialfl"]  = lowpass
 				paramsdict["initialfl"] = lowpass
