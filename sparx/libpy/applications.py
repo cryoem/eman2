@@ -8284,8 +8284,8 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 		terminate = int(terminate[0])
 
 
-def local_ali3d_base_MPI(stack, ali3d_options, templatevol = None, chunk = -1.0, shrinkage = 1.0,
-		    	log= None, debug = False, mpi_comm = None):
+def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
+		    	mpi_comm = None, log= None, chunk = -1.0, saturatecrit = 0.95, debug = False ):
 	"""
 		
 	"""

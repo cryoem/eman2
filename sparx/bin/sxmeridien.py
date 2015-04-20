@@ -551,7 +551,10 @@ def metamove(paramsdict, partids, partstack, outputdir, procid, myid, main_node,
 	if(ali3d_options.fl > 0.46):  ERROR("Low pass filter in metamove > 0.46 on the scale of shrank data","sxmeridien",1,myid) 
 
 	#  Run alignment command
-	params = ali3d_base(projdata, get_im(paramsdict["refvol"]), \
+	if(paramsdict["local"]): params = local_ali3d_base_MPI(projdata, get_im(paramsdict["refvol"]), \
+				ali3d_options, paramsdict["shrink"], mpi_comm = MPI_COMM_WORLD, log = log, \
+		    	chunk = 0.25, saturatecrit = paramsdict["saturatecrit"] )
+	else: params = ali3d_base(projdata, get_im(paramsdict["refvol"]), \
 				ali3d_options, paramsdict["shrink"], mpi_comm = MPI_COMM_WORLD, log = log, \
 				nsoft = paramsdict["nsoft"], saturatecrit = paramsdict["saturatecrit"] )
 	del log, projdata
@@ -789,7 +792,7 @@ def main():
 		delta = "%f"%round(degrees(atan(1.0/float(radi))), 2)
 
 	paramsdict = {	"stack":stack,"delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":angular_neighborhood, \
-					"center":options.center, "maxit":1, \
+					"center":options.center, "maxit":1, "local":False,\
 					"lowpass":0.4, "initialfl":0.4, "aa":0.1, "radius":radi, \
 					"nsoft":0, "delpreviousmax":True, "shrink":1.0, "saturatecrit":1.0, \
 					"refvol":volinit, "mask3D":options.mask3D}
@@ -886,7 +889,7 @@ def main():
 	nxshrink += nxshrink%2
 	shrink = float(nxshrink)/nnxo
 	tracker = {"previous-resolution":currentres,"previous-lowpass":lowpass, "initialfl":lowpass,  \
-				"movedup":False,"eliminated-outliers":False,"PWadjustment":"",\
+				"movedup":False,"eliminated-outliers":False,"PWadjustment":"","local":False,\
 				"previous-nx":nxshrink, "previous-shrink":shrink, "extension":0.0,"directory":"none"}
 	history = [tracker.copy()]
 	previousoutputdir = initdir
