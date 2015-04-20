@@ -543,6 +543,8 @@ def metamove(paramsdict, partids, partstack, outputdir, procid, myid, main_node,
 		print_dict(paramsdict,"METAMOVE parameters")
 		print("                    =>  actual lowpass      :  ",ali3d_options.fl)
 		print("                    =>  actual init lowpass :  ",ali3d_options.initfl)
+		if(len(ali3d_options.pwreference)>0): \
+		print("                    =>  PW adjustment       :  ",ali3d_options.pwreference)
 		print("                    =>  partids             :  ",partids)
 		print("                    =>  partstack           :  ",partstack)
 		
@@ -884,7 +886,7 @@ def main():
 	nxshrink += nxshrink%2
 	shrink = float(nxshrink)/nnxo
 	tracker = {"previous-resolution":currentres,"previous-lowpass":lowpass, "initialfl":lowpass,  \
-				"movedup":False,"eliminated-outliers":False,\
+				"movedup":False,"eliminated-outliers":False,"PWadjustment":"",\
 				"previous-nx":nxshrink, "previous-shrink":shrink, "extension":0.0,"directory":"none"}
 	history = [tracker.copy()]
 	previousoutputdir = initdir
@@ -1245,12 +1247,13 @@ def main():
 				tracker["eliminated-outliers"] = eliminated_outliers
 				bestoutputdir = mainoutputdir
 				keepgoing = 1
-		
+
 		elif( currentres < tracker["previous-resolution"] ):
 			if(not tracker["movedup"] and tracker["extension"] == 0.0 and mainiteration > 1):
 				if( angular_neighborhood == "-1" ):
 					angular_neighborhood = options.an
 					ali3d_options.pwreference = options.pwreference
+					tracker["PWadjustment"] = ali3d_options.pwreference
 					tracker["extension"] = 0.12 # so below it will be set to 0.1
 					keepgoing = 1
 					if(myid == main_node):  print("  Switching to local searches with an %s"%angular_neighborhood)
@@ -1333,6 +1336,7 @@ def main():
 				if( angular_neighborhood == "-1" ):
 					angular_neighborhood = options.an
 					ali3d_options.pwreference = options.pwreference
+					tracker["PWadjustment"] = ali3d_options.pwreference
 					tracker["movedup"] = True
 					if(myid == main_node):  print("  Switching to local searches with an %s"%angular_neighborhood)
 					keepgoing = 1
