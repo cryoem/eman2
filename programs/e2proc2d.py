@@ -226,7 +226,8 @@ def main():
 		is_inp_bdb = (len (infile)  >= 4 and infile.lower() [0:4] == "bdb:")
 		is_out_bdb = (len (outfile) >= 4 and outfile.lower()[0:4] == "bdb:")
 
-		inp_ext = os.path.splitext(infile)[1]
+		if (infile[0]==":") : inp_ext=".hdf"
+		else : inp_ext = os.path.splitext(infile)[1]
 		out_ext = os.path.splitext(outfile)[1]
 
 		if out_ext == "" and multiple_files and not is_out_bdb :
@@ -242,6 +243,8 @@ def main():
 #				print "BDB directory EMAN2DB does not exist."
 #				continue
 			num_inp_images = -1
+		elif infile[0]==":" :				# special flag to create a new image
+			num_inp_images=2
 		elif os.path.isfile(infile) :
 			num_inp_images = EMUtil.get_image_count(infile)
 
@@ -342,6 +345,9 @@ def main():
 				threed_xsize = d.get_xsize()
 				threed_ysize = d.get_ysize()
 				isthreed = False
+		elif infile[0]==":" : 
+			nimg=1
+			isthreed=False
 		else:
 			nimg = EMUtil.get_image_count(infile)
 
@@ -432,6 +438,14 @@ def main():
 				if options.threed2threed or options.threed2twod:
 					d = EMData()
 					d.read_image(infile, 0, False, Region(0,0,i,threed_xsize,threed_ysize,1))
+				elif infile[0]==":":
+					vals=infile.split(":")
+					if len(vals) not in (3,4) : 
+						print "Error: Specify new images as ':X:Y:fillvalue'"
+						sys.exit(1)
+					d=EMData(int(vals[1]),int(vals[2]),1)
+					if len(vals)==3: vals.append(0)
+					d.to_value(float(vals[-1]))
 				else:
 					d = EMData()
 					d.read_image(infile, i)
@@ -451,21 +465,6 @@ def main():
 					d = threed.get_clip(roi)
 					#d.read_image(infile,0, HEADER_AND_DATA, roi)
 					d.set_size(tomo_ny,tomo_nz,1)
-
-			sigma = d.get_attr("sigma").__float__()
-
-			if sigma == 0:
-				if options.threed2threed or options.threed2twod:
-					pass
-				else:
-					if options.verbose > 0:
-						print "Warning: sigma = 0 for image ",i
-
-					if options.writejunk == False:
-						if options.verbose > 0:
-							print "Use the writejunk option to force writing this image to disk"
-
-						continue
 
 			if not "outtype" in optionlist:
 				optionlist.append("outtype")
@@ -861,6 +860,14 @@ def main():
 
 						elif options.unstacking:	# output a series numbered single image files
 							out_name = outfile.split('.')[0]+'-'+str(i+1).zfill(len(str(nimg)))+'.'+outfile.split('.')[-1]
+							if d["sigma"]==0:
+								if options.verbose > 0:
+									print "Warning: sigma = 0 for image ",i
+
+								if options.writejunk == False:
+									if options.verbose > 0:
+										print "Use the writejunk option to force writing this image to disk"
+									continue
 
 							d.write_image(out_name, 0, out_type, False, None, out_mode, not_swap)
 
@@ -874,6 +881,15 @@ def main():
 								d = EMData(len(rd),1,1)
 
 								for x in xrange(len(rd)): d[x] = rd[x]
+
+							if d["sigma"]==0:
+								if options.verbose > 0:
+									print "Warning: sigma = 0 for image ",i
+
+								if options.writejunk == False:
+									if options.verbose > 0:
+										print "Use the writejunk option to force writing this image to disk"
+									continue
 
 							if options.inplace:
 								d.write_image(outfile, i, out_type, False, None, out_mode, not_swap)
