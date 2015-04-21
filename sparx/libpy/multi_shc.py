@@ -298,8 +298,6 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 
 	# if an != "-1":
 	# 	ERROR("Option an not used","VIPER1",1,myid)
-	if sym[0] == "d" and int(sym[1:])%2 == 0:
-		ERROR("Symmetry d-even not implemented yet, please contact the developer","VIPER1",1,myid)
 	if sym[0] == "d" and int(sym[1:]) !=3 :
 		log.add("WARNING:  d-odd symmetries other than 3 were not tested!")
 
@@ -788,8 +786,6 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				mpi_barrier(mpi_comm)
 				if myid == main_node:
 					start_time = time()
-				# vol = volume_reconstruction(data[image_start:image_end], ali3d_options, mpi_subcomm)
-				# 9here
 				vol = do_volume(data[image_start:image_end], ali3d_options, 0, mpi_subcomm)
 
 				if mpi_subrank == 0:

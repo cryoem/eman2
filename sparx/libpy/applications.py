@@ -8398,6 +8398,7 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 		nima = len(list_of_particles)
 		total_nima = len(list_of_particles)
 		total_nima = mpi_reduce(total_nima, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
+		total_nima = mpi_bcast(total_nima, 1, MPI_INT, 0, MPI_COMM_WORLD)
 		total_nima = int(total_nima[0])
 
 	if(myid == main_node):
