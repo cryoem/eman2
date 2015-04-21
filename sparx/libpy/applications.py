@@ -8383,6 +8383,7 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 			list_of_particles = None
 			total_nima = 0
 		total_nima = wrap_mpi_bcast(total_nima, main_node, mpi_comm)
+		total_nima = int(total_nima[0])
 		list_of_particles = wrap_mpi_bcast(list_of_particles, main_node, mpi_comm)
 		if myid == main_node:
 			particle_ids = [0]*total_nima
@@ -8397,7 +8398,7 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 		nima = len(list_of_particles)
 		total_nima = len(list_of_particles)
 		total_nima = mpi_reduce(total_nima, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
-	total_nima = int(total_nima)
+		total_nima = int(total_nima[0])
 
 	if(myid == main_node):
 		if( type(stack) is types.StringType ):  dataim = get_im(stack, list_of_particles[0])

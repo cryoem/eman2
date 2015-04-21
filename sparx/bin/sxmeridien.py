@@ -1352,6 +1352,7 @@ def main():
 				elif(angular_neighborhood > 0.0 and not paramsdict["local"] ):
 					paramsdict["local"] = True
 					paramsdict["ts"]    = "2.0"
+					tracker["local"]  = True
 					tracker["movedup"]  = True
 					if(myid == main_node):  print("  Switching to local searches")
 					keepgoing = 1					
