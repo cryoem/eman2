@@ -897,6 +897,7 @@ def main():
 	test_outliers = True
 	mainiteration = 0
 	keepgoing = 1
+	paramsdict["ts"] = "1.0"
 	while(keepgoing):
 		mainiteration += 1
 
@@ -983,8 +984,8 @@ def main():
 		for procid in xrange(2):
 			coutdir = os.path.join(mainoutputdir,"loga%01d"%procid)
 			doit, keepchecking = checkstep(coutdir  , keepchecking, myid, main_node)
-
-			subdict( paramsdict, { "delta":"%f"%round(degrees(atan(1.0/lastring)), 2) , "ts":"1", "xr":"2", "an":angular_neighborhood, \
+			#  here ts has different meaning for standard and continuous
+			subdict( paramsdict, { "delta":"%f"%round(degrees(atan(1.0/lastring)), 2) , "xr":"2", "an":angular_neighborhood, \
 							"lowpass":lowpass, "nsoft":options.nsoft, "saturatecrit":0.75, "delpreviousmax":True, "shrink":shrink, \
 							"refvol":os.path.join(mainoutputdir,"fusevol%01d.hdf"%procid) } )
 			if( paramsdict["nsoft"] > 0 ):
@@ -1320,9 +1321,9 @@ def main():
 		elif( currentres == tracker["previous-resolution"] ):
 			if( tracker["movedup"] ):
 				if(myid == main_node):  print("The resolution did not improve. This is look ahead move.  Let's try to relax slightly and hope for the best")
-				tracker["extension"]  = min(stepforward,0.45-currentres)
-				tracker["movedup"]    = False
-				tracker["initialfl"]  = lowpass
+				tracker["extension"]    = min(stepforward,0.45-currentres)
+				tracker["movedup"]      = False
+				tracker["initialfl"]    = lowpass
 				paramsdict["initialfl"] = lowpass
 				lowpass = currentres + tracker["extension"]
 				shrink  = max(min(2*lowpass + paramsdict["aa"], 1.0), minshrink)
@@ -1348,6 +1349,12 @@ def main():
 					tracker["movedup"] = True
 					if(myid == main_node):  print("  Switching to local searches with an %s"%angular_neighborhood)
 					keepgoing = 1
+				elif(angular_neighborhood > 0.0 and not paramsdict["local"] ):
+					paramsdict["local"] = True
+					paramsdict["ts"]    = "2.0"
+					tracker["movedup"]  = True
+					if(myid == main_node):  print("  Switching to local searches")
+					keepgoing = 1					
 				else:	
 					if(myid == main_node):  print("The resolution did not improve.")
 					keepgoing = 0
