@@ -95,11 +95,17 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + """ [options] <inputfile> ... <inputfile> <outputfile>
 
+	MRC stack files MUST use the .mrcs extension to be treated as a set of 2-D images (or you must 
+	use one of the --threed* options)
+
 	If there is more than one input file, then outputfile is a pattern, where @
 	in the pattern is replaced by the input file base name (minus any extension).
 
 	Generic 2-D image processing and file format conversion program. Acts on stacks of 2-D images
 	(multiple images in one file). All EMAN2 recognized file formats accepted (see Wiki for list).
+
+	You can create a new 2-D image from scratch instead of reading from a file by specifing 
+	':<nx>:<ny>:<fillvalue>' as an input filename.
 
 	Examples:
 
@@ -108,6 +114,12 @@ def main():
 
 	convert all MRC format files in current directory to HDF format:
 	e2proc2d.py *.mrc @.hdf
+
+	convert a 'set' (.lst file) to an MRC stack file:
+	e2proc2d.py sets/myset.lst myset.mrcs
+	
+	create a new image, initialized with 1.0, then mask it:
+	e2proc2d.py :128:128:1 mymask.hdf --process mask.soft:outer_radius=50
 
 	apply a 10 A low-pass filter to a stack of particles downsample the particles by a factor of 2
 	and write output to a new file.

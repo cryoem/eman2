@@ -66,20 +66,26 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + """ [options] <inputfile> <outputfile>
 	Generic 3-D image processing and file format conversion program.
-        All EMAN2 recognized file formats accepted (see Wiki for list).
+	All EMAN2 recognized file formats accepted (see Wiki for list).
 
-        Examples:
+	To create a new image, rather than reading from a file, specify ':<nx>:<ny>:<nz>:<value>' 
+	as an input filename. 
 
-        convert MRC format to HDF format:
-        e2proc3d.py test.mrc test.hdf
+	Examples:
 
-        apply a 10 A low-pass filter to a volume and write output to a new file.
-        e2proc3d.py threed.hdf threed.filt.hdf --process=filter.lowpass.gauss:cutoff_freq=0.1
+	Convert MRC format to HDF format:
+	e2proc3d.py test.mrc test.hdf
 
-	extract a reconstruction from a refinement directory as an HDF file usable with Chimera
+	Apply a 10 A low-pass filter to a volume and write output to a new file:
+	e2proc3d.py threed.hdf threed.filt.hdf --process=filter.lowpass.gauss:cutoff_freq=0.1
+
+	Extract a reconstruction from a refinement directory as an HDF file usable with Chimera:
 	e2proc3d.py bdb:refine_02#threed_filt_04 map_02_04.hdf
 
-        'e2help.py processors -v 2' for a detailed list of available procesors
+	Create a new 64x64x64 volume, initialize it as 1, then apply a hard spherical mask to 0:
+	e2proc3d.py :64:64:64:1 myvol.hdf --process mask.sharp:outer_radius=25
+
+	'e2help.py processors -v 2' for a detailed list of available procesors
 
 """
 	parser = OptionParser(usage)
@@ -272,7 +278,8 @@ def main():
 
 	n0 = options.first
 	n1 = options.last
-	nimg = EMUtil.get_image_count(infile)
+	if infile[0]==":" : nimg=1
+	else : nimg = EMUtil.get_image_count(infile)
 	if n1 > nimg or n1<0: n1=nimg-1
 
 	if options.step != None:
@@ -349,7 +356,7 @@ def main():
 	img_index = 0
 	for data in datlst:
 		# if this is a list of images, we have header-only, and need to read the actual volume
-		if len(datlst)>0 : data=EMData(data["source_path"],data["source_n"])
+		if len(datlst)>1 : data=EMData(data["source_path"],data["source_n"])
 		if options.apix:
 			data.set_attr('apix_x', apix)
 			data.set_attr('apix_y', apix)
@@ -656,6 +663,17 @@ def main():
 
 #parse_file() wil read the input image file and return a list of EMData() object
 def parse_infile(infile, first, last, step):
+	if infile[0]==":" :
+		parm=infile.split(":")
+		if len(parm)==4 : parm.append(0)
+		if len(parm)!=5 :
+			print "Error: please specify ':X:Y:Z:fillval' to create a new volume"
+			sys.exit(1)
+		
+		ret=EMData(int(parm[1]),int(parm[2]),int(parm[3]))
+		ret.to_value(float(parm[4]))
+		return [ret]
+		
 	nimg = EMUtil.get_image_count(infile)
 
 	if (nimg > 1):
