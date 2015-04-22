@@ -8676,9 +8676,9 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 				from pixel_error import max_3D_pixel_error
 				pixer[imn] = max_3D_pixel_error(t1, t2, last_ring)
 				#set_params_proj(dataim[imn], optm_params[0])
-				if( myid == main_node and imn%4 == 0):
-					log.add( "Time to process %6d particles : %d\n" % (imn, time()-start_time) )
-					start_time = time()
+				#if( myid == main_node and imn%4 == 0):
+				#	log.add( "Time to process %6d particles : %d\n" % (imn, time()-start_time) )
+				#	start_time = time()
 			if( myid == main_node ):
 				log.add( "Time to process %6d particles : %d\n" % (image_end_in_chunk, time()-start_time) )
 				start_time = time()
