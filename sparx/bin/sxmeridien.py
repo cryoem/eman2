@@ -993,8 +993,12 @@ def main():
 				else:                                  paramsdict["saturatecrit"] = 0.90  # Shake and bake for local
 				paramsdict["maxit"] = 1500
 			else:
-				paramsdict["saturatecrit"] = 0.95
-				paramsdict["maxit"] = 50 #  ?? Lucky guess
+				if(paramsdict["local"]):
+					paramsdict["saturatecrit"] = 0.95
+					paramsdict["maxit"] = 5 #  ?? Lucky guess
+				else:
+					paramsdict["saturatecrit"] = 0.95
+					paramsdict["maxit"] = 50 #  ?? Lucky guess
 
 			if  doit:
 				metamove(paramsdict, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
