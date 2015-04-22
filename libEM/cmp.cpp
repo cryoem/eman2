@@ -677,7 +677,7 @@ float TomoCccCmp::cmp(EMData * image, EMData *with) const
 	
 	float best_score = ccf->get_value_at_wrap(0,0,0);
         if (ccf_ownership) delete ccf; ccf = 0;
-        
+
 	return negative*best_score;
 
 }
@@ -688,23 +688,19 @@ float TomoCccCmp::cmp(EMData * image, EMData *with) const
 float TomoWedgeCccCmp::cmp(EMData * image, EMData *with) const
 {
 	ENTERFUNC;
-	EMData* ccf = params.set_default("ccf",(EMData*) NULL);
-	bool ccf_ownership = false;
-	bool norm = params.set_default("norm",true);
-	float negative = (float)params.set_default("negative", 1);
-	if (negative) negative=-1.0; else negative=1.0;
-	
-	if (!ccf) {
-		ccf = image->calc_ccf(with);
-		ccf_ownership = true;
-	}
-	if (norm) ccf->process_inplace("normalize");
-	
-	float best_score = ccf->get_value_at_wrap(0,0,0);
-        if (ccf_ownership) delete ccf; ccf = 0;
-        
-	return negative*best_score;
+	if (!image->is_complex() || !with->is_complex())  throw InvalidCallException("Error: TomoWedgeCccCmp requires complex images");
+	if (image->get_xsize()!=with->get_xsize() || image->get_ysize()!=with->get_ysize() || image->get_zsize()!=with->get_zsize())  throw InvalidCallException("Error: TomoWedgeCccCmp requires complex images");
 
+	float s1=image->get_attr("sigma");		// Note this is the STD of real and imag values treated independently
+	float s2=with->get_attr("sigma");
+	
+	for (int z=0; z<image->get_zsize(); z++) {
+		for (int y=0; y<image->get_ysize(); y++) {
+			for (int x=0; x<image->get_zsize(); x+=2) {
+			}
+		}
+	}
+	
 }
 
 float TomoFscCmp::cmp(EMData * image, EMData *with) const
