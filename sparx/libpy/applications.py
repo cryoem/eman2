@@ -8696,19 +8696,27 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 			pixer = map(float, pixer)
 			from statistics import hist_list
 			lhist = 20
-			region, histo = hist_list(pixer, lhist)
-			if(region[0] < 0.0):  region[0] = 0.0
-			msg = "      Histogram of pixel errors\n      ERROR       number of particles\n"
-			log.add(msg)
+			region, histo = hist_list(all_pixer, lhist)
+			log.add("=========== Histogram of pixel errors ==============")
 			for lhx in xrange(lhist):
-				msg = " %10.3f     %7d\n"%(region[lhx], histo[lhx])
+				msg = "          %10.3f     %7d"%(region[lhx], histo[lhx])
 				log.add(msg)
+			log.add("____________________________________________________")
+
+
 			# Terminate if saturatecrit% within 1 pixel error  WHY ONE??
 			im = 0
 			for lhx in xrange(lhist):
 				if(region[lhx] > 1.0): break
 				im += histo[lhx]
-			if(im/float(total_nima) > saturatecrit):  terminate = 1
+			lhx = im/float(total_nima)
+			if( lhc > saturatecrit):
+				if( iteration == 1 ):
+					log.add("First iteration, will continue even though %4.2f images did not find better orientations"%saturatecrit)
+				else:
+					terminate = 1
+					log.add("...............")
+					log.add(">>>>>>>>>>>>>>>   Will terminate as %4.2f images did not find better orientations"%saturatecrit)
 			del region, histo
 		del pixer
 		terminate = mpi_bcast(terminate, 1, MPI_INT, 0, mpi_comm)
