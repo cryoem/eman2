@@ -133,7 +133,9 @@ not need to specify any of the following other than the ones already listed abov
 	#parser.add_header(name="multimodelheader", help='Options below this label are specific to e2refinemulti Model', title="### e2refinemulti model options ###", row=4, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--model", dest="model", type=str,default=None, help="The map to use as a starting point for refinement", guitype='filebox', browser='EMModelsTable(withmodal=True,multiselect=False)', filecheck=False, row=1, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--nmodels", dest = "nmodels", type = int, default=2, help = "The total number of different maps to generate. Specify with --model, but not with --models", guitype='intbox', row=3, col=0, rowspan=1, colspan=1, mode="refinement")
-	parser.add_argument("--mapfragment",default=False, action="store_true", help="Generate initial maps by randomly removing portions of the input map rather than by phase randomizing.",guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--mapfragment",default=False, action="store_true", help="Generate initial maps by randomly removing portions of the input map rather than by phase randomizing.",guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--randclassify",default=False, action="store_true", help="Generate initial maps by randomly assigning the particles in each class to each model after the first iteration.",guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode="refinement[True]")
+	parser.add_argument("--randphase",default=False, action="store_true", help="Generate initial maps by randomizing the phase of the given model.",guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_header(name="orblock", help='Just a visual separation', title="- OR -", row=5, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--models", dest="models", type=str,default=None, help="The map to use as a starting point for refinement", guitype='filebox', browser='EMModelsTable(withmodal=True,multiselect=True)', filecheck=False, row=7, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--input", dest="input", default=None,type=str, help="The name of the image file containing the particle data", guitype='filebox', browser='EMSetsTable(withmodal=True,multiselect=False)', filecheck=False, row=8, col=0, rowspan=1, colspan=3, mode="refinement")
@@ -219,6 +221,7 @@ not need to specify any of the following other than the ones already listed abov
 		print "ERROR: --speed must be between 1 and 7. Lower numbers will make refinements take longer, but produce slightly better measured resolutions. The default value of 5 is a good balance for typical refinements. When\
 satisfied with the results with speed=5 you may consider reducing this number, though pushing for higher resolution would normally be done in the subsequent single-model refinements."
 
+	
 	if options.path == None:
 		fls=[int(i[-2:]) for i in os.listdir(".") if i[:6]=="multi_" and len(i)==8]
 		if len(fls)==0 : fls=[0]
@@ -228,6 +231,10 @@ satisfied with the results with speed=5 you may consider reducing this number, t
 		print "WARNING: threads set to an invalid value. Changing to 1, but you should really provide a reasonable number."
 		options.threads=1
 
+	if options.randclassify+options.randphase+options.mapfragment>1:
+		print "ERROR: Must select only one initial model generation method."
+		sys.exit(1)
+	
 	global output_path
 	output_path="{}/report".format(options.path)
 	try: os.makedirs(output_path)
@@ -252,10 +259,18 @@ satisfied with the results with speed=5 you may consider reducing this number, t
 			seg=None		# free up memory
 			seg2=None
 			model2=None
-		else:
+			
+		elif options.randphase:
 			for i in range(options.nmodels):
 				model.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":.02})
 				model.write_image("{}/threed_00_{:02d}.hdf".format(options.path,i+1),0)
+			
+		elif options.randclassify:
+			model.write_image("{}/threed_00_01.hdf".format(options.path),0)
+		
+		else:
+			print "ERROR: Must specify a initial model genenration method."
+			sys.exit(1)
 	else:
 		# or copy the specified starting models
 		options.models=options.models.split(",")
@@ -312,6 +327,8 @@ in the refinement directory. You can use Info with the browser or just read the 
 			if scale>1 : cmd="e2proc3d.py {path}/threed_00_{i:02d}.hdf {path}/threed_00_{i:02d}.hdf --clip={cl},{cl},{cl} --scale={sca:1.4f}".format(path=options.path,i=i+1,cl=xsize,sca=scale)
 			else :       cmd="e2proc3d.py {path}/threed_00_{i:02d}.hdf {path}/threed_00_{i:02d}.hdf --scale={sca:1.4f} --clip={cl},{cl},{cl}".format(path=options.path,i=i+1,cl=xsize,sca=scale)
 			run(cmd)
+		if ( options.randclassify ):
+			break
 
 	repim=EMData(options.input,0)		# read a representative image to get some basic info
 	if repim.has_attr("ctf") : hasctf=True
@@ -515,14 +532,20 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 	db.update(vars(options))
 
 	print "NOTE: you can check the progress of the refinement at any time by opening this URL in your web-browser:  file://{}/index.html".format(os.path.abspath(output_path))
-
+	
+	
 	### Actual refinement loop ###
 	for it in range(1,options.iter+1) :
 		append_html("<h4>Beginning iteration {} at {}</h4>".format(it,time.ctime(time.time())),True)
 
 		### 3-D Projections
 		models=["{path}/threed_{itrm1:02d}_{mdl:02d}.hdf".format(path=options.path,itrm1=it-1,mdl=mdl+1) for mdl in xrange(options.nmodels)]
-		run("e2project3d.py {mdls} --outfile {path}/projections_{itr:02d}.hdf -f --projector {projector} --orientgen {orient} --sym {sym} --postprocess normalize.circlemean {prethr} --parallel thread:{threads} {verbose}".format(
+		
+		if (options.randclassify and it==1):
+			run("e2project3d.py {mdls} --outfile {path}/projections_{itr:02d}.hdf -f --projector {projector} --orientgen {orient} --sym {sym} --postprocess normalize.circlemean {prethr} --parallel thread:{threads} {verbose}".format(
+			path=options.path,mdls=models[0],itrm1=it-1,mdl=i,itr=it,projector=options.projector,orient=options.orientgen,sym=sym[0],prethr=prethreshold,threads=options.threads,verbose=verbose))
+		else:	
+			run("e2project3d.py {mdls} --outfile {path}/projections_{itr:02d}.hdf -f --projector {projector} --orientgen {orient} --sym {sym} --postprocess normalize.circlemean {prethr} --parallel thread:{threads} {verbose}".format(
 			path=options.path,mdls=" ".join(models),itrm1=it-1,mdl=i,itr=it,projector=options.projector,orient=options.orientgen,sym=",".join(sym),prethr=prethreshold,threads=options.threads,verbose=verbose))
 
 		progress += 1.0
@@ -559,6 +582,25 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 		progress += 1.0
 		E2progress(logid,progress/total_procs)
 
+		#random assignment
+		if (options.randclassify and it==1):
+			clsmx=EMData("{path}/classmx_{itr:02d}.hdf".format(
+				path=options.path,itr=it),0)
+			nproj=EMUtil.get_image_count("{}/projections_{:02d}.hdf".format(options.path,it))
+			nptl=clsmx["ny"]
+			for iu in range(nptl):
+				if Util.get_frand(0,1)>.5:
+					nowcls=clsmx.get_value_at(iu)
+					#print iu,nowcls+nproj
+					clsmx.set_value_at(0,iu,nowcls+nproj)
+			clsmx.write_image("{path}/classmx_{itr:02d}.hdf".format(
+				path=options.path,itr=it),0)
+			for iu in range(nproj):
+				pj=EMData("{}/projections_{:02d}.hdf".format(options.path,it),iu)
+				pj["model_id"]=2
+				pj.write_image("{}/projections_{:02d}.hdf".format(options.path,it),iu+nproj)
+
+
 		### Class-averaging
 		cmd="e2classaverage.py --input {inputfile} --classmx {path}/classmx_{itr:02d}.hdf --decayedge --storebad --output {path}/classes_{itr:02d}.hdf --ref {path}/projections_{itr:02d}.hdf --iter {classiter} \
 -f --resultmx {path}/cls_result_{itr:02d}.hdf --normproc {normproc} --averager {averager} {classrefsf} {classautomask} --keep {classkeep} {classkeepsig} --cmp {classcmp} \
@@ -569,9 +611,10 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 		run(cmd)
 		progress += 1.0
 		E2progress(logid,progress/total_procs)
-
-		### 3-D Reconstruction
-		# FIXME - --lowmem removed due to some tricky bug in e2make3d
+		
+		
+		## 3-D Reconstruction
+		#FIXME - --lowmem removed due to some tricky bug in e2make3d
 
 		for mdl in xrange(options.nmodels):
 			if options.breaksym : m3dsym="c1"
@@ -585,8 +628,8 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 
 		progress += 1.0
 
-		#######################
-		### postprocessing, a bit different than e2refine_postprocess, and we need a lot of info, so we do it in-place
+		######################
+		## postprocessing, a bit different than e2refine_postprocess, and we need a lot of info, so we do it in-place
 
 		# alignment
 
