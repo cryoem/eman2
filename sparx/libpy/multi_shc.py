@@ -126,8 +126,6 @@ def find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, sym =
 	while(True):
 		#  extract images in common subset
 		if( sym[0] == "d"):
-			#  This code was only tested for D-3 symmetry.  I would have to check D-even
-			# have to figure whether anything has to be mirrored and then reduce the angles.
 			projs2 = [0.0]*sc
 			for iConf in xrange(sc):
 				projs2[iConf] = []
@@ -574,7 +572,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 					#  oarams gets overwritten by rotated parameters,  subset is a list of indexes common
 					subset, avg_diff_per_image, params = find_common_subset([params_0, params], delta[N_step]*1.5, len(params)/3, sym)
 					params = params[1]
-					#   neither is needed, I hope this is correct
+					#   neither is needed
 					del subset, avg_diff_per_image
 					# if myid == 2:  print  " params before orient  ",myid,params[:4],params[-4:]
 					from utilities import write_text_row
@@ -594,8 +592,6 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				#temp = [None]*nima
 				#for i in xrange(nima): temp[i] = data[i].get_attr("xform.projection")
 				for i in xrange(nima):  set_params_proj(data[i], params[i])
-				# vol = volume_reconstruction(data[image_start:image_end], ali3d_options, mpi_subcomm)
-				# 9here
 				vol = do_volume(data[image_start:image_end], ali3d_options, 0, mpi_subcomm)
 				#for i in xrange(nima): data[i].set_attr("xform.projection",temp[i])
 				#del temp
@@ -1482,8 +1478,8 @@ def reduce_dsym_angles(p1, sym):
 
 
 def mirror_and_reduce_dsym(params, sym):
-	# for the time being do it in a silly way, i.e., select first as a reference and run with it.
-	#  It seems to be mostly written for d3
+	# For D symmetry there are two equivalen positions that agree with given Dn symmetry
+	#  The second is rotated by 360/(2n) degrees.
 	
 	from utilities import get_symt, get_sym, getfvec
 	from EMAN2 import Vec2f, Transform, EMData
@@ -1531,14 +1527,14 @@ def mirror_and_reduce_dsym(params, sym):
 	bbdb = 360.0/int(sym[1:])/2
 	bbde = bbdb + 360.0/int(sym[1:])/4
 
-	
+	#  bbdb is 360.0/(2n) and indicates position of the second symmetry
 	for i in xrange(1,sc):
 		solvs = []
-		for rphi in xrange(0,61,60):
+		for rphi in [0.0, bbdb]:
 			tpari = [None]*ns
 			for j in xrange(ns):  tpari[j] = params[i][j][:]
-			if(rphi == 60):
-				for j in xrange(ns):  tpari[j][0] = (tpari[j][0]+60)%symphi
+			if(rphi == bbdb):
+				for j in xrange(ns):  tpari[j][0] = (tpari[j][0]+bbdb)%symphi
 
 			# mirror checking
 			psi_diff = angle_diff( [tpari[j][2] for j in xrange(ns)], [params[0][j][2] for j in xrange(ns)] )
