@@ -1358,8 +1358,22 @@ def main():
 					paramsdict["ts"]    = "2.0"
 					tracker["local"]  = True
 					tracker["movedup"]  = True
-					if(myid == main_node):  print("  Switching to local searches")
-					keepgoing = 1					
+					tracker["initialfl"]    = lowpass
+					paramsdict["initialfl"] = lowpass
+					lowpass = currentres + tracker["extension"]
+					shrink  = max(min(2*lowpass + paramsdict["aa"], 1.0), minshrink)
+					nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
+					nxshrink += nxshrink%2
+					shrink = float(nxshrink)/nnxo
+					if( tracker["previous-nx"] == nnxo):
+						keepgoing = 0
+					else:
+						tracker["previous-resolution"] = currentres
+						tracker["previous-lowpass"]    = lowpass
+						tracker["eliminated-outliers"] = eliminated_outliers
+						tracker["movedup"] = False
+						if(myid == main_node):  print("  Switching to local searches")
+						keepgoing = 1
 				else:	
 					if(myid == main_node):  print("The resolution did not improve.")
 					keepgoing = 0

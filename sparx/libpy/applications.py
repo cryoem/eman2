@@ -8696,7 +8696,7 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 			pixer = map(float, pixer)
 			from statistics import hist_list
 			lhist = 20
-			region, histo = hist_list(all_pixer, lhist)
+			region, histo = hist_list(pixer, lhist)
 			log.add("=========== Histogram of pixel errors ==============")
 			for lhx in xrange(lhist):
 				msg = "          %10.3f     %7d"%(region[lhx], histo[lhx])
@@ -8710,7 +8710,7 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 				if(region[lhx] > 1.0): break
 				im += histo[lhx]
 			lhx = im/float(total_nima)
-			if( lhc > saturatecrit):
+			if( lhx > saturatecrit):
 				if( iteration == 1 ):
 					log.add("First iteration, will continue even though %4.2f images did not find better orientations"%saturatecrit)
 				else:
