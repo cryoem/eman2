@@ -268,7 +268,10 @@ def main():
 
 					if out_ext == ".mrc" :
 						if os.path.isfile(outfile) :
-							os.remove(outfile)
+							if infile == outfile :
+								options.inplace = True
+							else :
+								os.remove(outfile)
 		else :
 			num_inp_images = -1
 			print "Input file '" + infile + "' does not exist."
