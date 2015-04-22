@@ -558,6 +558,7 @@ void PointArray::save_to_pdb(const char *file)
 		fprintf(fp, "ATOM  %5lu  CA  ALA A%4lu    %8.3f%8.3f%8.3f%6.2f%6.2f%8s\n", i, i,
 				points[4 * i], points[4 * i + 1], points[4 * i + 2], points[4 * i + 3], 0.0, " ");
 	}
+	fprintf(fp, "TER   %5lu      ALA A%4lu\nEND", get_number_points(),get_number_points()-1);
 	fclose(fp);
 }
 
@@ -2198,6 +2199,8 @@ void PointArray::save_pdb_with_helix(const char *file, vector<float> hlxid)
 		fprintf(fp, "ATOM  %5lu  CA  ALA A%4lu    %8.3f%8.3f%8.3f%6.2f%6.2f%8s\n", i, i,
 				points[4 * i], points[4 * i + 1], points[4 * i + 2], points[4 * i + 3], 0.0, " ");
 	}
+	fprintf(fp, "TER   %5lu      ALA A%4lu\nEND", get_number_points(),get_number_points()-1);
+
 	fclose(fp);
 }
 
