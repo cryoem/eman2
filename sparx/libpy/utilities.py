@@ -3112,8 +3112,42 @@ def nearestk_projangles(projangles, whichone = 0, howmany = 1, sym="c1"):
 			assignments[i] = lookup[best_j]
 			del tempan[best_j], lookup[best_j]
 
+	elif( sym[:1] == "c" ):
+		from utilities import get_symt, getvec
+		from EMAN2 import Vec2f, Transform
+		t = get_symt(sym)
+		phir = 360.0/int(sym[1:])
+		for i in xrange(len(t)):  t[i] = t[i].inverse()
+		refvec = getfvec(projangles[whichone][0], projangles[whichone][1])
+		#print  "refvec   ",q["phi"], q["theta"]
+
+		tempan =  [None]*len(projangles)
+		for i in xrange(len(projangles)): tempan[i] = projangles[i]
+		del tempan[whichone], lookup[whichone]
+		assignments = [-1]*howmany
+
+		for i in xrange(howmany):
+			best = -1
+			for j in xrange(len(tempan)):
+				nearest = -1.
+				a = Transform({"type":"spider","phi":tempan[j][0], "theta":tempan[j][1]})
+				for l in xrange(len(t)):
+					q = a*t[l]
+					q = q.get_params("spider")
+					vecs = getfvec(q["phi"], q["theta"])
+					s = abs(vecs[0]*refvec[0] + vecs[1]*refvec[1] + vecs[2]*refvec[2])
+					if( s > nearest ):
+						nearest = s
+						#ttt = (q["phi"], q["theta"])
+				if( nearest > best ):
+					best = nearest
+					best_j = j
+					#print  j,tempan[j][0], tempan[j][1],best,lookup[j],ttt
+			assignments[i] = lookup[best_j]
+			del tempan[best_j], lookup[best_j]
+
 	else:
-		print  "  ERROR: this symmetry is not supported  ",sym
+		print  "  ERROR:  symmetry not supported  ",sym
 		assignments = []
 
 
