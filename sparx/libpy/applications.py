@@ -8703,12 +8703,12 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 			for lhx in xrange(lhist):
 				msg = " %10.3f     %7d\n"%(region[lhx], histo[lhx])
 				log.add(msg)
-			# Terminate if 95% within 1 pixel error
+			# Terminate if saturatecrit% within 1 pixel error  WHY ONE??
 			im = 0
 			for lhx in xrange(lhist):
 				if(region[lhx] > 1.0): break
 				im += histo[lhx]
-			if(im/float(total_nima) > 0.95):  terminate = 1
+			if(im/float(total_nima) > saturatecrit):  terminate = 1
 			del region, histo
 		del pixer
 		terminate = mpi_bcast(terminate, 1, MPI_INT, 0, mpi_comm)
