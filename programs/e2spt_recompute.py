@@ -44,7 +44,10 @@ def main():
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	#parser.add_argument("--input", default='',type=str, help="The name of the hdf stack of volumes to process.")
+	parser.add_argument("--stacks", default='',type=str, help="""Comma separated list of HDF image stacks to process.""")
+	
+	parser.add_argument("--tomograms", default='',type=str, help="""Comma separated list of tomograms with REC extension from which all particles in --stacks came from.""")
+	
 	#parser.add_argument("--output", default="avg.hdf",type=str, help="The name of the output average volume.")
 	#parser.add_argument("--rotationtype", default="eman",type=str, help="Valid options are: eman,imagic,mrc,spider,quaternion,sgirot,spi,xyz")
 	
@@ -55,11 +58,15 @@ def main():
 	parser.add_argument("--path",default='',type=str,help="Name of directory where to save the output file.")
 	#parser.add_argument("--alifile",default='',type=str,help=".json file with alingment parameters, if raw stack supplied via --input.")
 	
-	parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=0)
+	parser.add_argument("--boxsize","-B",type=int,default=0,help="""Default=0 (option not used). Provide a value for the boxsize of the output average in pixels. If not provided, the boxsize of --stacks will be used.""")
 	
 	parser.add_argument("--normproc",type=str,default='normalize.edgemean',help="""Normalization processor applied to particles before extraction. Default=normalize.edgemean. If using the latter, you must provide --masknorm, otherwise, a default --masknorm=mask.sharp:outer_radius=-2 will be used.""")
 	
 	parser.add_argument("--threshold",type=str,help="""Threshold processor to apply to particles before writing them out to get rid of too high and/or too low pixel values.""", default='')
+	
+	parser.add_argument("--usetomograms",action='store_true',default=False,help=""""Re-extract particles from the original tomogram.""")
+	
+	parser.add_argument("--useinverseali",action='store_true',default=False,help=""""Use the inverse of the value stored in xform.align3d in the header of each particle.""")
 	
 	parser.add_argument('--shrink', type=int, default=1, help="""Shrink factor to shrink particles before averaging. Default=1, which means no shrinking.""")
 	
@@ -103,9 +110,9 @@ def main():
 		options.averager=parsemodopt(options.averager)
 	'''
 	
-	if not options.boxsize:
-		print "\n(e2spt_recompute.py) (main) ERROR: Boxsize must be greater than zero. It is:", options.boxsize
-		sys.exit()
+	#if not options.boxsize:
+	#	print "\n(e2spt_recompute.py) (main) ERROR: Boxsize must be greater than zero. It is:", options.boxsize
+	#	sys.exit()
 	
 	logid=E2init(sys.argv,options.ppid)
 	
@@ -117,13 +124,40 @@ def main():
 	findir = os.listdir( c ) 		#Get list of files in current directory
 	
 	stacks = set([]) 				#Make list set to store particle stacks
-	tomograms = set([])				#Make list set to store tomograms
-	for f in findir:
-		if '.hdf' in f:
-			stacks.add(f)
-		elif '.rec' in f:
-			tomograms.add(f)
-	
+	if options.stacks:
+		stacks = set( options.stacks.split(',') )
+		
+		if not options.boxsize:
+			boxesdict = {}
+			boxes = []
+			for sta in stacks:
+				box = EMData( sta, 0 )['nx']
+				boxesdict.update({sta:box})
+				boxes.append( box )
+			boxes = set(boxes)
+			if len(boxes) >1:
+				print "ERROR: Your stacks are not all the same boxsize. There are %d many different boxsizes" %(len(boxes))
+				print "which are", boxes
+				print "all input stacks in --stacks must have the same boxsize; otherwise, specify a unique boxsize through --boxsize."
+				sys.exit()		
+	else:	
+		for f in findir:
+			if '.hdf' in f:
+				stacks.add(f)
+
+	tomograms = set([])
+	tomogramsbases = set([])
+	if options.usetomograms:		#Make list set to store tomograms
+		if options.tomograms:
+			tomograms = set( options.tomograms.split(',') )
+			for tom in tomograms:
+				tombase = os.path.basename(tom)
+				tomogramsbases.append(tombase)	
+		
+		else:
+			for f in findir:
+				if '.rec' in f:
+					tomograms.add(f)
 	
 	for stack in stacks:								#Loop over stacks
 		n = EMUtil.get_image_count( stack )				#Determine number of particles in stack
@@ -134,56 +168,85 @@ def main():
 		for i in range(n):								#Loop over particles in stack
 			hdr = EMData( stack, i, True)				#Load particle header by providing 'True' flag
 			
-			tomogram = hdr['ptcl_source_image']			#Determine what tomogram a particle comes from
-			if tomogram not in tomograms:
-				print "\n(e2spt_recompute.py) (main) ERROR: Tomogram %s not found in current directory" %( tomogram )
-				sys.exit()
+			a = None
 			
-			print "\n(e2spt_recompute.py) (main) Processing particle %d in stack %s which should come from tomogram %s" %(i, stack, tomogram )
+			box = hdr['nx']
+			if options.boxsize:
+				box = options.boxsize
 			
-			coords = hdr['ptcl_source_coord']			#And from what location exactly
-			x = coords[0]								#Parse coordinates
-			y = coords[1]
-			z = coords[2]
-			box = options.boxsize						
+			if options.usetomograms and tomograms:
+				tomogram = hdr['ptcl_source_image']			#Determine what tomogram a particle comes from
+				if tomogram not in tomogramsbases and tomogram not in tomograms:
+					print "\n(e2spt_recompute.py) (main) ERROR: Tomogram %s not found" %( tomogram )
+					sys.exit()
 			
-			r = Region((2*x-box)/2,(2*y-box)/2, (2*z-box)/2, box, box, box)		#Define extraction region based on boxsize
+				print "\n(e2spt_recompute.py) (main) Processing particle %d in stack %s which should come from tomogram %s" %(i, stack, tomogram )
 			
-			a = EMData()
-			a.read_image(tomogram,0,False,r)									#Actually 'read'/extract particle data
-																				#Preprocess as needed
-			if options.normproc:
-				a.process_inplace(options.normproc[0],options.normproc[1])
+				coords = hdr['ptcl_source_coord']			#And from what location exactly
+				x = coords[0]								#Parse coordinates
+				y = coords[1]
+				z = coords[2]					
 			
-			if options.invert:
-				a.mult(-1)
+				r = Region((2*x-box)/2,(2*y-box)/2, (2*z-box)/2, box, box, box)		#Define extraction region based on boxsize
 			
-			t = hdr['xform.align3d']												#Rotate particle into aligned orientation
-			print "Applied this transform",t
-			a.transform(t)
+				a = EMData()
+				a.read_image(tomogram,0,False,r)									#Actually 'read'/extract particle data
+																					#Preprocess as needed
+			else:
+				a = EMData( stack, i )
 			
-			if options.threshold:
-				a.process_inplace(options.threshold[0],options.threshold[1])
-
-			if options.lowpass:
-				a.process_inplace(options.lowpass[0],options.lowpass[1])
-
-			if options.preprocess:
-				a.process_inplace(options.preprocess[0],options.preprocess[1])
-
-			if options.shrink and int(options.shrink) > 1:
-				shrinkfactor = options.shrink 
-				a.process_inplace('math.meanshrink',{'n':shrinkfactor})
-				
-			#a['origin_x'] = 0
-			#a['origin_y'] = 0
-			#a['origin_z'] = 0
+			if a:
+				if options.normproc:
+					a.process_inplace(options.normproc[0],options.normproc[1])
 			
-			#a['ptcl_source_image'] = hdr['ptcl_source_image']	
-			#a['ptcl_source_coord'] = hdr['ptcl_source_coord']
-			
-			avgr.add_image(a)
+				if options.invert:
+					a.mult(-1)
 		
+				t = None
+				try:
+					t = hdr['xform.align3d']												#Rotate particle into aligned orientation
+				except:
+					print "WARNING: 'xform.align3d' not found in header of particle %d" % (i)
+				
+				try:
+					t = hdr['sptsim_randT']
+				except:
+					print "ERROR: 'sptsim_randT also not found in header or particle %d" %(i)
+				
+				if t:
+					tf = t
+					if options.useinverseali:
+						tf = t.inverse()
+						print "t is", t
+						print "and its inverse is", tf
+		
+					#print "Applied this transform",tf
+					a.transform(tf)
+			
+					if options.threshold:
+						a.process_inplace(options.threshold[0],options.threshold[1])
+
+					if options.lowpass:
+						a.process_inplace(options.lowpass[0],options.lowpass[1])
+
+					if options.preprocess:
+						a.process_inplace(options.preprocess[0],options.preprocess[1])
+
+					if options.shrink and int(options.shrink) > 1:
+						shrinkfactor = options.shrink 
+						a.process_inplace('math.meanshrink',{'n':shrinkfactor})
+				
+					#a['origin_x'] = 0
+					#a['origin_y'] = 0
+					#a['origin_z'] = 0
+			
+					#a['ptcl_source_image'] = hdr['ptcl_source_image']	
+					#a['ptcl_source_coord'] = hdr['ptcl_source_coord']
+			
+					avgr.add_image(a)
+				else:
+					print "skipping particle", i
+					
 		avg = avgr.finish()
 		
 		avg.process_inplace('normalize')

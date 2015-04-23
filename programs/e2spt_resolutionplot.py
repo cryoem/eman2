@@ -63,6 +63,8 @@ def main():
 
 	parser.add_argument("--symali", type=str, default='c1', help = """Will pass the value to --sym for alignment with e2spt_classaverage.py""")
 
+	parser.add_argument("--nocolor",action='store_true',default=False,help="""Turns the ouput png(s) into grey scale figures. Instead of using different colors to distinguish between various curves on the same plot, this option will have the program automatically use different markers in black and white for each curve.""")
+	
 	parser.add_argument("--symmap", type=str, default='c1', help = """Will symmetrize --ref AND pass --sym to e2spt_classaverage.py""")
 	
 	parser.add_argument("--maskali",type=str,help="""Mask processor applied to particles 
@@ -162,9 +164,11 @@ def main():
 	if options.maskfsc: 
 		options.maskfsc=parsemodopt(options.maskfsc)
 
-	if options.cutoff:
+	if options.cutoff and options.cutoff != 'None' and options.cutoff != 'none':
 		options.cutoff = options.cutoff.split(',')
 		print "Options.cutoff is", options.cutoff
+	else:
+		options.cutoff = None
 
 	if not options.output and not options.plotonly:
 		print "ERROR: Unless you provide .txt files through --plotonly, you must specify an --output in .txt format."
@@ -555,11 +559,14 @@ def fscplotter(fscs,options,apix=0.0):
 	fig = figure()
 
 	#from itertools import product
-	#markers=["-","--","x"]
+	markers=["*","o","x","z","M"]
 	#colors=["k","r","b","g","m","y","c"]
 	#colorsANDmarkers = [a+b for a,b in product(colors,markers)]
 	
 	import colorsys
+	import itertools
+
+	
 	N = len(fscs)
 	HSV_tuples = [(x*1.0/N, 0.5, 0.5) for x in range(N)]
 	RGB_tuples = map(lambda x: colorsys.hsv_to_rgb(*x), HSV_tuples)
@@ -786,8 +793,7 @@ def fscplotter(fscs,options,apix=0.0):
 				print "FSC0.5 resolution calculations 1 and 2 are", fsc0p5resolution1, fsc0p5resolution2
 				print "FSC0.143 resolution calculations 1 and 2 are", fsc0p143resolution1, fsc0p143resolution2
 		
-		
-		
+
 			final0p5='NA'
 			if fsc0p5resolution2label:
 				final0p5 = fsc0p5resolution2label
@@ -819,13 +825,27 @@ def fscplotter(fscs,options,apix=0.0):
 			
 			print "x axis is", x
 			print "yfit is", yfit
-			
-			
+				
 		'''
 		Actual PLOT
 		'''
 		pylab.rc("axes", linewidth=2.0)
-		pylab.plot(x, values, color=RGB_tuples[kont], linewidth=2,alpha=1.0)
+		
+		colortouse = RGB_tuples[kont]
+		mark = ''
+		if options.nocolor:
+			colortouse = 'k'
+			try:
+				mark = markers[kont]
+			except:
+				mark = markers[-1]
+			
+			#mark = itertools.cycle((',', '+', '.', 'o', '*')) 
+    
+    	#plt.plot(x,n, marker = marker.next(), linestyle='')
+			
+		
+		pylab.plot(x, values, color=colortouse, linewidth=2, alpha=1.0, marker = mark, markersize = 10 )
 	
 		ax = fig.add_subplot(111)
 		
@@ -851,7 +871,9 @@ def fscplotter(fscs,options,apix=0.0):
 		'''
 		PLOT Threshold criteria as horizontal lines
 		'''
-		if options.cutoff:
+		
+		#print "cutoff is", type(options.cutoff), options.cutoff
+		if options.cutoff and options.cutoff != 'None' and options.cutoff != 'none':
 			print "\n\n\n\nTTTTTTTTTTTTTTTTT\nPlotting cutoff threshold"
 			for thresh in options.cutoff:
 				print "\nCurrent cutoff thresh is", thresh
@@ -887,7 +909,7 @@ def fscplotter(fscs,options,apix=0.0):
 	pylab.ylabel('FSC')
 	pylab.xlabel('Frequency 1/Angstroms')
 	#pylab.grid(True)
-	pylab.ylim([0,1.2])
+	pylab.ylim([-0.1,1.2])
 	plt.savefig(plot_name)
 	
 
