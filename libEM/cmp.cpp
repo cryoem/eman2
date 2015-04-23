@@ -691,16 +691,38 @@ float TomoWedgeCccCmp::cmp(EMData * image, EMData *with) const
 	if (!image->is_complex() || !with->is_complex())  throw InvalidCallException("Error: TomoWedgeCccCmp requires complex images");
 	if (image->get_xsize()!=with->get_xsize() || image->get_ysize()!=with->get_ysize() || image->get_zsize()!=with->get_zsize())  throw InvalidCallException("Error: TomoWedgeCccCmp requires complex images");
 
-	float s1=image->get_attr("sigma");		// Note this is the STD of real and imag values treated independently
-	float s2=with->get_attr("sigma");
+	float sigmaimg = params.set_default("sigmaimg",0.5f);
+	float sigmawith = params.set_default("sigmawith",0.5f);
+
+	// Note 'sigma' is the STD of real and imag values treated independently
+	// s1 and s2 are threshold values squared (for speed)
+	float s1=pow((float)image->get_attr("sigma")*sigmaimg,2.0);		
+	float s2=pow((float)with->get_attr("sigma")*sigmawith,2.0);
 	
+	double sum=0;
+	double sumsq1=0;
+	double sumsq2=0;
+	double norm=0;
 	for (int z=0; z<image->get_zsize(); z++) {
 		for (int y=0; y<image->get_ysize(); y++) {
-			for (int x=0; x<image->get_zsize(); x+=2) {
+			for (int x=0; x<image->get_xsize(); x+=2) {
+				float v1r=image->get_value_at(x,y,z);
+				float v1i=image->get_value_at(x+1,y,z);
+				float v1=Util::square_sum(v1r,v1i);
+				if (v1<s1) continue;
+				
+				float v2r=with->get_value_at(x,y,z);
+				float v2i=with->get_value_at(x+1,y,z);
+				float v2=Util::square_sum(v2r,v2i);
+				if (v2<s2) continue;
+				
+				sum+=v1r*v2r+v1i*v2i;
+				sumsq1+=v1;
+				sumsq2+=v2;
+				norm+=1.0;
 			}
 		}
 	}
-	
 }
 
 float TomoFscCmp::cmp(EMData * image, EMData *with) const

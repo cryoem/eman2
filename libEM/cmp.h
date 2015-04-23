@@ -365,7 +365,10 @@ namespace EMAN
 
 		virtual string get_desc() const
 		{
-			return "Ccc of two FFTs with missing wedge taken into account explicitly. Also stores overlap as 'fft_overlap' in first input image.";
+			return "Ccc of two FFTs with missing wedge taken into account explicitly. Also stores overlap as 'fft_overlap' in \
+first input image. Individual voxels are include only if they exceed the threshold value in both images. fft_overlap expresses \
+the fractional number of voxels included in the comparison. Actual returned correlations already account for this effect, but \
+the overlap can be used to estimate the relative uncertainty in the resulting correlation coefficient.";
 		}
 
 		static Cmp *NEW()
@@ -378,7 +381,8 @@ namespace EMAN
 			TypeDict d;
 // 			d.put("norm", EMObject::BOOL,"Whether the cross correlation image should be normalized (should be for normalized images). Default is true.");
 // 			d.put("ccf", EMObject::EMDATA,"The ccf image, can be provided if it already exists to avoid recalculating it");
-// 			d.put("searchz", EMObject::INT, "The maximum range of the peak location in the z direction. Default is sizez/4");
+ 			d.put("sigmaimg", EMObject::FLOAT, "Sigma coefficient for thresholding values included in the dot product. default = 0.5");
+ 			d.put("sigmawith", EMObject::FLOAT, "Sigma coefficient for thresholding values included in the dot product in the 'with' image. Default = 0.5");
 			return d;
 		}
 		
