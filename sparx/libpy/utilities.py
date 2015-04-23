@@ -3244,7 +3244,7 @@ def cone_ang( projangles, phi, tht, ant ):
 		vecs = getvec( projangles[i][0], projangles[i][1] )
 		s = abs(vecs[0]*vec[0] + vecs[1]*vec[1] + vecs[2]*vec[2])
 		if s >= cone:
-			la.append(i)
+			la.append(projangles[i])
 
 	return la
 
@@ -3258,7 +3258,7 @@ def cone_vectors( normvectors, phi, tht, ant ):
 	for i in xrange( len(normvectors) ):
 		s = abs(normvectors[i][0]*vec[0] + normvectors[i][1]*vec[1] + normvectors[i][2]*vec[2])
 		if s >= cone:
-			la.append(i)
+			la.append(normvectors[i])
 
 	return la
 
@@ -4268,7 +4268,7 @@ def wrap_mpi_split(comm, no_of_groups):
 	"""
 
 	Takes the processes of a communicator (comm) and splits them in groups (no_of_groups).
-	Each subgroup of processes have ids generated from 0 to number of processes per group - 1.
+	Each subgroup of processes has ids generated from 0 to number of processes per group - 1.
 	Consecutive global process ids have consecutive subgroup process ids.
 
 	"""
@@ -4287,3 +4287,26 @@ def get_dist(c1, c2):
 	d = sqrt((c1[0] - c2[0])**2 + (c1[1] - c2[1])**2)
 	return d
 
+
+def eliminate_moons(my_volume):
+	from morphology import binarize
+	histogram_threshold  =  my_volume.find_3d_threshold(750, 4.84)*1.1
+	# clean11 88x88,  4.84 px/A 750 kDa
+
+	my_volume_binarized = binarize(my_volume, histogram_threshold)
+	# my_volume_binarized.write_image ("my_volume_binarized.hdf")
+	my_volume_binarized_with_no_moons = Util.get_biggest_cluster(my_volume_binarized)
+	# my_volume_binarized_with_no_moons.write_image("my_volume_binarized_with_no_moons.hdf")
+	volume_difference = my_volume_binarized - my_volume_binarized_with_no_moons
+	# volume_difference.write_image("volume_difference.hdf")
+
+	if volume_difference.get_value_at(volume_difference.calc_max_index()) == 0 and \
+		volume_difference.get_value_at(volume_difference.calc_min_index()) == 0:
+		return my_volume
+	else:
+		from utilities import gauss_edge
+		return gauss_edge(my_volume_binarized_with_no_moons) * my_volume
+
+		# from utilities   import model_blank
+		# # mask = model_blank(my_volume_binarized_with_no_moons.get_xsize(), my_volume_binarized_with_no_moons.get_ysize(), my_volume_binarized_with_no_moons.get_zsize())
+		# # mask.to_one()
