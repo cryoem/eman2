@@ -589,16 +589,18 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 			nproj=EMUtil.get_image_count("{}/projections_{:02d}.hdf".format(options.path,it))
 			nptl=clsmx["ny"]
 			for iu in range(nptl):
-				if Util.get_frand(0,1)>.5:
-					nowcls=clsmx.get_value_at(iu)
-					#print iu,nowcls+nproj
-					clsmx.set_value_at(0,iu,nowcls+nproj)
+				## randomly assign the particles in classes
+				rndtmp=Util.get_irand(0,options.nmodels-1)
+				nowcls=clsmx.get_value_at(iu)
+				#print iu,nowcls+nproj
+				clsmx.set_value_at(0,iu,nowcls+nproj*rndtmp)
 			clsmx.write_image("{path}/classmx_{itr:02d}.hdf".format(
 				path=options.path,itr=it),0)
-			for iu in range(nproj):
-				pj=EMData("{}/projections_{:02d}.hdf".format(options.path,it),iu)
-				pj["model_id"]=2
-				pj.write_image("{}/projections_{:02d}.hdf".format(options.path,it),iu+nproj)
+			for im in range(1,options.nmodels):
+				for iu in range(nproj):
+					pj=EMData("{}/projections_{:02d}.hdf".format(options.path,it),iu)
+					pj["model_id"]=im+1
+					pj.write_image("{}/projections_{:02d}.hdf".format(options.path,it),iu+nproj*im)
 
 
 		### Class-averaging
