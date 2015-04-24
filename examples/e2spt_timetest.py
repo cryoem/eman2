@@ -754,7 +754,7 @@ def doit(corg,options,originaldir):
 				cmd = setcuda + ''' && cd ''' + abspath + ''' && ''' + profilecmd1 + ''' --input=''' + aname + ''' --ref=''' + bname + ''' --iter=1 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --highpass=filter.highpass.gauss:cutoff_freq=0.01:apix=1.0 --preprocess=filter.lowpass.gauss:cutoff_freq=0.2:apix=1.0 --align=rotate_symmetry_3d:sym=''' + sym + ''' --parallel=''' + parallel + ''' --falign=None --averager=mean.tomo --aligncmp=ccc.tomo --normproc=normalize.mask --path=''' + aidee + ''' --verbose=''' + str(options.verbose) + ' ' + profilecmd2 + ' && rm -r ' + aidee
 			
 				if aidee == 'oneicos':
-					cmd = setcuda + ''' && cd ''' + abspath + ''' && ''' + profilecmd1 + ''' --input=''' + aname +  ''' --ref=''' + bname + ''' --iter=1 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --highpass=filter.highpass.gauss:cutoff_freq=0.01:apix=1.0 --preprocess=filter.lowpass.gauss:cutoff_freq=0.2:apix=1.0 --align=rotate_translate_3d:sym=icos:delta=''' + str(coarsestep) + ''' --parallel=''' + parallel + ''' --falign=refine_3d_grid:delta=''' + str( finestep ) + '''range=''' + str( coarsestep ) + ''' --averager=mean.tomo --aligncmp=ccc.tomo --normproc=normalize.mask --path=''' + aidee + ''' --verbose=''' + str(options.verbose) + ' ' + profilecmd2  + ' && rm -r ' + aidee
+					cmd = setcuda + ''' && cd ''' + abspath + ''' && ''' + profilecmd1 + ''' --input=''' + aname +  ''' --ref=''' + bname + ''' --iter=1 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --highpass=filter.highpass.gauss:cutoff_freq=0.01:apix=1.0 --preprocess=filter.lowpass.gauss:cutoff_freq=0.2:apix=1.0 --align=rotate_translate_3d:sym=icos:delta=''' + str(coarsestep) + ''' --parallel=''' + parallel + ''' --falign=refine_3d_grid:delta=''' + str( finestep ) + ''':range=''' + str( coarsestep ) + ''' --averager=mean.tomo --aligncmp=ccc.tomo --normproc=normalize.mask --path=''' + aidee + ''' --verbose=''' + str(options.verbose) + ' ' + profilecmd2  + ' && rm -r ' + aidee
 			
 				print "Therefore the instruction is", cmd
 				ta = time()
@@ -783,11 +783,11 @@ def doit(corg,options,originaldir):
 				
 				#--align=rotate_translate_3d:search=12:delta=12:dphi=12:verbose=1 --parallel=thread:8 --falign=refine_3d_grid:delta=3:range=12:search=2
 				ta = time()
-				bestcoarse = a.xform_align_nbest('rotate_translate_3d',b,{'delta':int(options.coarsestep),'dphi':int(options.coarsestep),'search':10,'sym':options.sym},1,'ccc.tomo')
+				bestcoarse = a.xform_align_nbest('rotate_translate_3d',b,{'delta':int(options.coarsestep),'dphi':int(options.coarsestep),'search':10,'sym':options.sym,'verbose':options.verbose},1,'ccc.tomo')
 				for bc in bestcoarse:
 					#classoptions["falign"][1]["xform.align3d"] = bc["xform.align3d"]
 					ran=int(round(float(options.coarsestep)/2.0))
-					a.align('refine_3d_grid',b,{'delta':int(options.finestep),'range':ran,'search':3,'xform.align3d':bc['xform.align3d']},'ccc.tomo')
+					a.align('refine_3d_grid',b,{'delta':int(options.finestep),'range':ran,'search':3,'xform.align3d':bc['xform.align3d'],'verbose':options.verbose},'ccc.tomo')
 				tb = time()
 
 				if corg=='gpu' or corg=='GPU':
