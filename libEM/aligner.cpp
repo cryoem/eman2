@@ -2630,7 +2630,9 @@ EMData* RT3DTreeAligner::align(EMData * this_img, EMData *to, const string & cmp
 
 vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, const unsigned int nsoln, const string & cmp_name, const Dict& cmp_params) const {
 	if (nsoln == 0) throw InvalidParameterException("ERROR (RT3DTreeAligner): nsoln must be >0"); // What was the user thinking?
-
+	if (this_img->get_xsize()!=this_img->get_ysize()+2 || this_img->get_ysize()!=this_img->get_zsize()
+		|| to->get_xsize()!=to->get_ysize()+2 || to->get_ysize()!=to->get_zsize()) throw InvalidCallException("ERROR (RT3DTreeAligner): requires cubic images");
+	
 	EMData *base_this = this_img->do_fft();
 	EMData *base_to = to->do_fft();
 	
@@ -2685,23 +2687,34 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				for (int daz=-2; daz<=2; daz++) {
 					for (int dalt=-2; dalt<=2; dalt++) {
 						for (int dphi=-2; dphi<=2; dphi++) {
-							for (int dx=-2; dx<=2; dx++) {
-								for (int dy=-2; dy<=2; dy++) {
-									for (int dz=-2; dz<=2; dz++) {
-										Transform t=Transform((Transform&)((*s)["xform.align3d"]));
-										Dict aap=t.get_params("eman");
-										aap["az"]=(float)aap["az"]+daz;
-										aap["alt"]=(float)aap["alt"]+dalt;
-										aap["phi"]=(float)aap["phi"]+dphi;
-										aap["tx"]=(float)aap["tx"]+dx;
-										aap["ty"]=(float)aap["ty"]+dy;
-										aap["tz"]=(float)aap["tz"]+dz;
-										t.set_params(aap);
+							Transform t=Transform((Transform&)((*s)["xform.align3d"]));
+							Dict aap=t.get_params("eman");
+							aap["az"]=(float)aap["az"]+daz;
+							aap["alt"]=(float)aap["alt"]+dalt;
+							aap["phi"]=(float)aap["phi"]+dphi;
+							aap["tx"]=0;
+							aap["ty"]=0;
+							aap["tz"]=0;
+							t.set_params(aap);
 										
-										EMData *stt=small_this->process("xform",Dict("Transform",EMObject(&t)));
-										
-									}
-								}
+							EMData *stt=small_this->process("xform",Dict("Transform",EMObject(&t)));
+							EMData *ccf=small_to->calc_ccf(stt,CIRCULANT,true);
+							IntPoint ml=ccf->calc_max_location();
+							
+							aap["tx"]=(int)ml[0]-ny/2;
+							aap["ty"]=(int)ml[1]-ny/2;
+							aap["tz"]=(int)ml[2]-ny/2;
+							t.set_params(aap);
+							delete stt;
+							stt=small_this->process("xform",Dict("Transform",EMObject(&t)));	// we have to do 1 slow transform here now that we have the translation
+							
+							float sim=stt->cmp("ccc.tomo.thresh",small_to);
+							
+							// If the score is better than before, we update this particular best value
+							if (sim<(float)((*s)["score"])) {
+								(*s)["score"]=sim;
+								(*s)["coverage"]=stt->get_attr("coverage");
+								((Transform *)((*s)["xform.align3d"]))->set_params(aap);
 							}
 						}
 					}
