@@ -637,8 +637,8 @@ def doit(corg,options,originaldir):
 	
 	data = {}
 	
-	coarsestep=options.coarsestep
-	finestep=options.finestep
+	coarsestep = options.coarsestep
+	finestep = options.finestep
 		
 	#name = options.path + '/CS' + str(coarsestep).zfill(len(str(max(steps)))) + '_FS' + str(finestep) + '.txt'
 	#if computer:
@@ -750,10 +750,10 @@ def doit(corg,options,originaldir):
 					print "profilecmd1 is", profilecmd1
 					print "profilecmd2 is", profilecmd2
 									
-				cmd = setcuda + ''' && cd ''' + abspath + ''' && ''' + profilecmd1 + ''' --input=''' + aname + ''' --output=''' + out + ''' --ref=''' + bname + ''' --iter=1 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --highpass=filter.highpass.gauss:cutoff_freq=0.01:apix=1.0 --preprocess=filter.lowpass.gauss:cutoff_freq=0.2:apix=1.0 --align=rotate_symmetry_3d:sym=''' + sym + ''' --parallel=''' + parallel + ''' --falign=None --averager=mean.tomo --aligncmp=ccc.tomo --normproc=normalize.mask --path=''' + aidee + ''' --verbose=''' + str(options.verbose) + ' ' + profilecmd2 + ' && rm -r ' + aidee
+				cmd = setcuda + ''' && cd ''' + abspath + ''' && ''' + profilecmd1 + ''' --input=''' + aname + ''' --ref=''' + bname + ''' --iter=1 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --highpass=filter.highpass.gauss:cutoff_freq=0.01:apix=1.0 --preprocess=filter.lowpass.gauss:cutoff_freq=0.2:apix=1.0 --align=rotate_symmetry_3d:sym=''' + sym + ''' --parallel=''' + parallel + ''' --falign=None --averager=mean.tomo --aligncmp=ccc.tomo --normproc=normalize.mask --path=''' + aidee + ''' --verbose=''' + str(options.verbose) + ' ' + profilecmd2 + ' && rm -r ' + aidee
 			
 				if aidee == 'oneicos':
-					cmd = setcuda + ''' && cd ''' + abspath + ''' && ''' + profilecmd1 + ''' --input=''' + aname + ''' --output=''' + out + ''' --ref=''' + bname + ''' --iter=1 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --highpass=filter.highpass.gauss:cutoff_freq=0.01:apix=1.0 --preprocess=filter.lowpass.gauss:cutoff_freq=0.2:apix=1.0 --align=rotate_translate_3d:sym=icos:delta=''' + str(coarestep) + ''' --parallel=''' + parallel + ''' --falign=refine_3d_grid:delta=''' + str( finestep ) + '''range=''' + str( coarsestep ) + ''' --averager=mean.tomo --aligncmp=ccc.tomo --normproc=normalize.mask --path=''' + aidee + ''' --verbose=''' + str(options.verbose) + ' ' + profilecmd2  + ' && rm -r ' + aidee
+					cmd = setcuda + ''' && cd ''' + abspath + ''' && ''' + profilecmd1 + ''' --input=''' + aname +  ''' --ref=''' + bname + ''' --iter=1 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --highpass=filter.highpass.gauss:cutoff_freq=0.01:apix=1.0 --preprocess=filter.lowpass.gauss:cutoff_freq=0.2:apix=1.0 --align=rotate_translate_3d:sym=icos:delta=''' + str(coarsestep) + ''' --parallel=''' + parallel + ''' --falign=refine_3d_grid:delta=''' + str( finestep ) + '''range=''' + str( coarsestep ) + ''' --averager=mean.tomo --aligncmp=ccc.tomo --normproc=normalize.mask --path=''' + aidee + ''' --verbose=''' + str(options.verbose) + ' ' + profilecmd2  + ' && rm -r ' + aidee
 			
 				print "Therefore the instruction is", cmd
 				ta = time()

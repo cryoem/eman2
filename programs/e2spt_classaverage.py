@@ -829,8 +829,9 @@ def main():
 					print "results len", len(results)
 					print "results[0]", results[0]
 					print "results", results
-					ref.process_inplace("xform",{"transform":results[0][0][0]["xform.align3d"]})
-					
+					#ref.process_inplace("xform",{"transform":results[0][0][0]["xform.align3d"]})
+					ref.process_inplace("xform",{"transform":results[0][0]["xform.align3d"]})
+
 					ref['origin_x'] = 0
 					ref['origin_y'] = 0
 					ref['origin_z'] = 0
