@@ -318,6 +318,61 @@ def ref_ali3d( ref_data ):
 		volf  = fshift(volf, -cs[0], -cs[1], -cs[2])
 	return  volf, cs
 
+def do_volume( ref_data ):
+	from utilities      import print_msg
+	from filter         import fit_tanh, filt_tanl
+	from fundamentals   import fshift
+	from morphology     import threshold
+	#  Prepare the reference in 3D alignment, this function corresponds to what do_volume does.
+	#  Input: list ref_data
+	#   0 - mask
+	#   1 - center flag
+	#   2 - raw average
+	#   3 - fsc result
+	#  Output: filtered, centered, and masked reference image
+	#  apply filtration (FSC) to reference image:
+
+	global  ref_ali2d_counter
+	ref_ali2d_counter += 1
+
+	fl = ref_data[2].cmp("dot",ref_data[2], {"negative":0, "mask":ref_data[0]} )
+	print_msg("do_volume user function    Step = %5d        GOAL = %10.3e\n"%(ref_ali2d_counter,fl))
+
+	stat = Util.infomask(ref_data[2], ref_data[0], False)
+	vol = ref_data[2] - stat[0]
+	Util.mul_scalar(vol, 1.0/stat[1])
+	vol = threshold(vol)
+	#Util.mul_img(vol, ref_data[0])
+	fl = 0.3
+	aa = 0.1
+	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
+	print_msg(msg)
+
+	from utilities    import read_text_file
+	from fundamentals import rops_table, fftip, fft
+	from filter       import filt_table
+	rt = read_text_file( "pwreference.txt" )
+	fftip(vol)
+	ro = rops_table(vol)
+	#  Here unless I am mistaken it is enough to take the beginning of the reference pw.
+	for i in xrange(1,len(ro)):  ro[i] = (rt[i]/ro[i])**0.5
+	vol = fft( filt_table( filt_tanl(vol, fl, aa), ro) )
+	stat = Util.infomask(vol, ref_data[0], False)
+	vol -= stat[0]
+	Util.mul_scalar(vol, 1.0/stat[1])
+	vol = threshold(vol)
+	vol = filt_btwl(vol, 0.38, 0.5)
+	Util.mul_img(vol, ref_data[0])
+
+	if ref_data[1] == 1:
+		cs = volf.phase_cog()
+		msg = "Center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
+		print_msg(msg)
+		volf  = fshift(volf, -cs[0], -cs[1], -cs[2])
+	else:  	cs = [0.0]*3
+
+	return  vol, cs
+
 def helical( ref_data ):
 	from utilities      import print_msg
 	from filter         import fit_tanh, filt_tanl
