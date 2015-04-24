@@ -287,8 +287,9 @@ def main():
 			if options.goldstandardoff:
 				print "goldstandard is off"
 				if options.subset < 2:
-					print "ERROR: You need at least 2 particles in --input to buidl a refernece if --ref is not provided."""
-					sys.exit()	
+					if not options.ref:
+						print "ERROR: You need at least 2 particles in --input to buidl a refernece if --ref is not provided."""
+						sys.exit()	
 			else:
 				print "goldstandard is on"
 				if options.subset < 4:
@@ -342,8 +343,10 @@ def main():
 					pass
 			else:
 				if nptcl < 2:
-					print "ERROR: You need at least 2 particles in --input to buidl a refernece if --ref is not provided."""
+					print "ERROR: You need at least 2 particles in --input to build a refernece if --ref is not provided."""
 					sys.exit()
+		#else:
+		#	print "ref is", options.ref
 					
 	if not options.translateonly:
 		if options.search or options.searchfine:
@@ -810,6 +813,11 @@ def main():
 			if not options.donotaverage:					
 				#ref = make_average(options,ic,options.input,options.path,results,options.averager,options.saveali,options.saveallalign,options.keep,options.keepsig,options.sym,options.groups,options.breaksym,options.nocenterofmass,options.verbose,it)
 				ref=''
+				
+				'''
+				If there's more than one particle, the reference for the next round will
+				be the average of the aligned particles
+				'''
 				if nptcl > 1:
 					ret = makeAverage(options, ic,results,it)
 					ref = ret[0]
@@ -824,13 +832,22 @@ def main():
 					#weightsMasterDict.update({ weightsid: weights })
 					
 				else:
+					'''
+					If there's only one particle, the "reference" for the next round will
+					be the one aligned particle. However, since it makes no sense to have
+					more iterations, the program will be stopped shortly, after the
+					aligned particle is written out
+					'''
 					ref = EMData( options.input, 0 )
 					
 					print "results len", len(results)
 					print "results[0]", results[0]
 					print "results", results
-					#ref.process_inplace("xform",{"transform":results[0][0][0]["xform.align3d"]})
-					ref.process_inplace("xform",{"transform":results[0][0]["xform.align3d"]})
+					try:
+						ref.process_inplace("xform",{"transform":results[0][0][0]["xform.align3d"]})
+					
+					except:
+						ref.process_inplace("xform",{"transform":results[0][0]["xform.align3d"]})
 
 					ref['origin_x'] = 0
 					ref['origin_y'] = 0

@@ -437,7 +437,8 @@ def main():
 	
 				if not options.singleplot:
 					plt.clf()
-		
+	E2end(logger)
+
 	return()
 
 
