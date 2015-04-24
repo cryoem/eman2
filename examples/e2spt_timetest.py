@@ -97,6 +97,9 @@ def main():
 	#parser.add_argument("--precision",type=float,default=1.0,help="""Default=1.0. Precision in pixels to use when figuring out alignment parameters automatically using --radius. Precision would be the number of pixels that the the edge of the specimen is moved (rotationally) during the finest sampling, --falign. If precision is 1, then the precision of alignment will be that of the sampling (apix of your images).""")
 	
 	
+	parser.add_argument("--npeakstorefine", type=int, default=1,help="""Default=1. The number of best coarse alignments to refine in search of the best final alignment.""")
+
+	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--path",type=str,default='spt_time_test',help="Directory to store results in. The default is a numbered series of directories containing the prefix 'spt_time_test'; for example, spt_time_test_01 will be the directory by default if 'spt_time_test_00' already exists.")
@@ -751,10 +754,10 @@ def doit(corg,options,originaldir):
 					print "profilecmd1 is", profilecmd1
 					print "profilecmd2 is", profilecmd2
 									
-				cmd = setcuda + ''' && cd ''' + abspath + ''' && ''' + profilecmd1 + ''' --input=''' + aname + ''' --ref=''' + bname + ''' --iter=1 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --highpass=filter.highpass.gauss:cutoff_freq=0.01:apix=1.0 --preprocess=filter.lowpass.gauss:cutoff_freq=0.2:apix=1.0 --align=rotate_symmetry_3d:sym=''' + sym + ''' --parallel=''' + parallel + ''' --falign=None --averager=mean.tomo --aligncmp=ccc.tomo --normproc=normalize.mask --path=''' + aidee + ''' --verbose=''' + str(options.verbose) + ' ' + profilecmd2 + ' && rm -r ' + aidee
+				cmd = setcuda + ''' && cd ''' + abspath + ''' && ''' + profilecmd1 + ''' --input=''' + aname + ''' --ref=''' + bname + ''' --iter=1 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --highpass=filter.highpass.gauss:cutoff_freq=0.01:apix=1.0 --preprocess=filter.lowpass.gauss:cutoff_freq=0.2:apix=1.0 --align=rotate_symmetry_3d:sym=c1 --parallel=''' + parallel + ''' --falign=None --averager=mean.tomo --aligncmp=ccc.tomo --normproc=normalize.mask --path=''' + aidee + ''' --verbose=''' + str(options.verbose) + ' ' + profilecmd2 + ' && rm -r ' + aidee
 			
 				if aidee == 'oneicos':
-					cmd = setcuda + ''' && cd ''' + abspath + ''' && ''' + profilecmd1 + ''' --input=''' + aname +  ''' --ref=''' + bname + ''' --iter=1 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --highpass=filter.highpass.gauss:cutoff_freq=0.01:apix=1.0 --preprocess=filter.lowpass.gauss:cutoff_freq=0.2:apix=1.0 --align=rotate_translate_3d:sym=icos:delta=''' + str(coarsestep) + ''' --parallel=''' + parallel + ''' --falign=refine_3d_grid:delta=''' + str( finestep ) + ''':range=''' + str( coarsestep ) + ''' --averager=mean.tomo --aligncmp=ccc.tomo --normproc=normalize.mask --path=''' + aidee + ''' --verbose=''' + str(options.verbose) + ' ' + profilecmd2  + ' && rm -r ' + aidee
+					cmd = setcuda + ''' && cd ''' + abspath + ''' && ''' + profilecmd1 + ''' --input=''' + aname +  ''' --ref=''' + bname + ''' --npeakstorefine=''' + str(options.npeakstorefine) + ''' --iter=1 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --highpass=filter.highpass.gauss:cutoff_freq=0.01:apix=1.0 --preprocess=filter.lowpass.gauss:cutoff_freq=0.2:apix=1.0 --align=rotate_translate_3d:sym=icos:delta=''' + str(coarsestep) + ''' --parallel=''' + parallel + ''' --falign=refine_3d_grid:delta=''' + str( finestep ) + ''':range=''' + str( coarsestep ) + ''' --averager=mean.tomo --aligncmp=ccc.tomo --normproc=normalize.mask --path=''' + aidee + ''' --verbose=''' + str(options.verbose) + ' ' + profilecmd2  + ' && rm -r ' + aidee
 			
 				print "Therefore the instruction is", cmd
 				ta = time()
