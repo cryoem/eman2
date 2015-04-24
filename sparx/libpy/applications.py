@@ -8212,7 +8212,8 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 				#data[5] = [(random()-0.5)*2,(random()-0.5)*2]  #  HERE !!!!!!!!!!!
 
 				weight_phi = max(delta, delta*abs((atparams[1]-90.0)/180.0*pi))
-
+				if( myid == main_node ):
+					print  "  moeba params  ",weight_phi, delta, weight_phi
 				optm_params = amoeba_multi_level(atparams, [weight_phi, delta, weight_phi], eqproj_cascaded_ccc, 1.0, 1.e-2, 500, data)
 				optm_params[0].append(optm_params[3][0])
 				optm_params[0].append(optm_params[3][1])
@@ -8234,7 +8235,6 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 				if( myid == main_node ):
 					print_msg( "Time to process %6d particles : %d\n" % (image_end_in_chunk-image_start_in_chunk, time()-start_time) )
 					start_time = time()
-
 			# release memory of volft
 			data[0] = None
 
@@ -8655,7 +8655,8 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 				#data[5] = [(random()-0.5)*2,(random()-0.5)*2]  #  HERE !!!!!!!!!!!
 
 				weight_phi = max(delta, delta*abs((atparams[1]-90.0)/180.0*pi))
-
+				if( myid == main_node ):
+					print  "  moeba params  ",weight_phi, delta, weight_phi
 				optm_params = amoeba_multi_level(atparams, [weight_phi, delta, weight_phi], eqproj_cascaded_ccc, 1.0, 1.e-2, 500, data)
 				optm_params[0].append(optm_params[3][0])
 				optm_params[0].append(optm_params[3][1])
@@ -8678,7 +8679,7 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 				#	log.add( "Time to process %6d particles : %d\n" % (imn, time()-start_time) )
 				#	start_time = time()
 			if( myid == main_node ):
-				log.add( "Time to process %6d particles : %d\n" % (image_end_in_chunk, time()-start_time) )
+				log.add( "Time to process %6d particles : %d\n" % (image_end_in_chunk-image_start_in_chunk, time()-start_time) )
 				start_time = time()
 
 			# release memory

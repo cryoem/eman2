@@ -318,7 +318,7 @@ def ref_ali3d( ref_data ):
 		volf  = fshift(volf, -cs[0], -cs[1], -cs[2])
 	return  volf, cs
 
-def do_volume( ref_data ):
+def dovolume( ref_data ):
 	from utilities      import print_msg
 	from filter         import fit_tanh, filt_tanl
 	from fundamentals   import fshift
