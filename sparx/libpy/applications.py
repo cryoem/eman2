@@ -7968,8 +7968,6 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 		import global_def
 		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
 		print_begin_msg("local_ali3d_MPI")
-		import user_functions
-		user_func = user_functions.factory[user_func_name]
 		if CTF:
 			ima = EMData()
 			ima.read_image(stack, 0)
@@ -8041,8 +8039,8 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 		print_msg("CTF correction              : %s\n"%(CTF))
 		print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
 		print_msg("Symmetry group              : %s\n"%(sym))
-		print_msg("Chunk size                  : %f\n\n"%(chunk))
-		print_msg("User function               : %s\n"%(user_func_name))
+		print_msg("Chunk size                  : %f\n"%(chunk))
+		print_msg("User function               : %s\n\n"%(user_func_name))
 
 	if maskfile:
 		import  types

@@ -350,7 +350,7 @@ def do_volume( ref_data ):
 
 	from utilities    import read_text_file
 	from fundamentals import rops_table, fftip, fft
-	from filter       import filt_table
+	from filter       import filt_table, filt_btwl
 	rt = read_text_file( "pwreference.txt" )
 	fftip(vol)
 	ro = rops_table(vol)
@@ -880,6 +880,7 @@ class factory_class:
 		self.contents["ref_aliB_cone"]      = ref_aliB_cone
 		self.contents["ref_7grp"]           = ref_7grp
 		self.contents["steady"]             = steady
+		self.contents["dovolume"]           = dovolume	 
 		self.contents["constant"]           = constant	 
 
 	def __getitem__(self,index):
