@@ -9458,7 +9458,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 				dataULU_R=     image -> get_value_at(2*kxU  ,kyL,kzU);
 				dataULU_I=flag*image -> get_value_at(2*kxU+1,kyL,kzU);
 			    }
-			    //     UUL 7 
+			    //     UUL 7
 			    kxU= kxUpper; kyU=kyUpper; kzL=kzLower;
 			    float dataUUL_R= 0; float dataUUL_I=0; flag=1;
 			    if ( (abs(kxU)<N) && (abs(kyU)<N) && (abs(kzL)<N) ) {//      Step 2

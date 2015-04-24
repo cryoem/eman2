@@ -383,6 +383,7 @@ the overlap can be used to estimate the relative uncertainty in the resulting co
 // 			d.put("ccf", EMObject::EMDATA,"The ccf image, can be provided if it already exists to avoid recalculating it");
  			d.put("sigmaimg", EMObject::FLOAT, "Sigma coefficient for thresholding values included in the dot product. default = 0.5");
  			d.put("sigmawith", EMObject::FLOAT, "Sigma coefficient for thresholding values included in the dot product in the 'with' image. Default = 0.5");
+			d.put("negative", EMObject::INT, "If set, returns -1 * ccc product. Set by default so smaller is better");
 			return d;
 		}
 		

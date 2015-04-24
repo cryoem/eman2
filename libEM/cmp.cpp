@@ -49,7 +49,7 @@ const string LodCmp::NAME = "lod";
 const string SqEuclideanCmp::NAME = "sqeuclidean";
 const string DotCmp::NAME = "dot";
 const string TomoCccCmp::NAME = "ccc.tomo";
-const string TomoWedgeCccCmp::NAME = "ccc.tomo";
+const string TomoWedgeCccCmp::NAME = "ccc.tomo.thresh";
 const string TomoFscCmp::NAME = "fsc.tomo";
 const string QuadMinDotCmp::NAME = "quadmindot";
 const string OptVarianceCmp::NAME = "optvariance";
@@ -693,6 +693,7 @@ float TomoWedgeCccCmp::cmp(EMData * image, EMData *with) const
 
 	float sigmaimg = params.set_default("sigmaimg",0.5f);
 	float sigmawith = params.set_default("sigmawith",0.5f);
+	int negative = params.set_default("negative",1);
 
 	// Note 'sigma' is the STD of real and imag values treated independently
 	// s1 and s2 are threshold values squared (for speed)
@@ -723,6 +724,9 @@ float TomoWedgeCccCmp::cmp(EMData * image, EMData *with) const
 			}
 		}
 	}
+	image->set_attr("fft_overlap",(float)(2.0*norm/(image->get_xsize()*image->get_ysize()*image->get_zsize())));
+	
+	return sum/(sqrt(sumsq1)*sqrt(sumsq2));
 }
 
 float TomoFscCmp::cmp(EMData * image, EMData *with) const
