@@ -68,6 +68,8 @@ def main():
 
 	logid=E2init(sys.argv,options.ppid)
 
+	if options.setsf.lower()=="none" : options.setsf=None
+
 	if options.underfilter: underfilter=":sscale=1.1"
 	else: underfilter=""
 

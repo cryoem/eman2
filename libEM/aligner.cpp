@@ -2665,8 +2665,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		EMData *small_this=base_this->get_clip(Region(0,(ny-ss)/2,(ny-ss)/2,ss+2,ss,ss));
 		EMData *small_to=  base_to->  get_clip(Region(0,(ny-ss)/2,(ny-ss)/2,ss+2,ss,ss));
 		
-		float astep = 89.999/floor(180.0/atan(2.0/ss));
-		vector<Transform> transforms;
+		float astep = 89.999/floor(90.0/atan(2.0/ss));
 		
 		// This is for the first loop, we do a full search in a heavily downsampled space
 		if ((int)solns[0]["coverage"]==0) {
@@ -2675,8 +2674,48 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 			d["inc_mirror"] = true;
 			d["delta"] = astep;		// make sure the altitude step hits 90 degrees, not absolutely necessary for this, but can't hurt
 			Symmetry3D* sym = Factory<Symmetry3D>::get((string)params.set_default("sym","c1"));
-			//We don't generate for phi, since this can produce a very large number of orientations
-			transforms = sym->gen_orientations((string)params.set_default("orientgen","eman"),d);
+			// We don't generate for phi, since this can produce a very large number of orientations
+			vector<Transform> transforms = sym->gen_orientations((string)params.set_default("orientgen","eman"),d);
+			
+			for (std::vector<Transform>::iterator t = transforms.begin(); t!=transforms.end(); ++t) {
+				for (float phi=0; phi<360.0; phi+=astep) {
+					Dict aap=(*t).get_params("eman");
+					aap["phi"]=phi;
+					aap["tx"]=0;
+					aap["ty"]=0;
+					aap["tz"]=0;
+					t->set_params(aap);
+					
+					EMData *stt=small_this->process("xform",Dict("Transform",EMObject(&t)));
+					EMData *ccf=small_to->calc_ccf(stt,CIRCULANT,true);
+					IntPoint ml=ccf->calc_max_location();
+					
+					aap["tx"]=(int)ml[0]-ny/2;
+					aap["ty"]=(int)ml[1]-ny/2;
+					aap["tz"]=(int)ml[2]-ny/2;
+					t->set_params(aap);
+					delete stt;
+					stt=small_this->process("xform",Dict("Transform",EMObject(&t)));	// we have to do 1 slow transform here now that we have the translation
+					
+					float sim=stt->cmp("ccc.tomo.thresh",small_to);
+					
+					// We need to insert this in our list of best orientations if it's better than an existing one
+					
+//					Dict *worst=solns[0];
+//					for (std::vector<Dict>::iterator s = solns.begin(); s != solns.end(); ++s) if (*s["coverage"]==0 || sim<*s["score"]) break;
+					
+					// If the score is better than before, we update this particular best value
+// 					if (sim<(float)((*s)["score"])) {
+// 						(*s)["score"]=sim;
+// 						(*s)["coverage"]=stt->get_attr("coverage");
+// 						((Transform *)((*s)["xform.align3d"]))->set_params(aap);
+// 					}
+					
+					
+				}
+			}
+				
+			
 		}
 		// Once we have our initial list of best locations, we just refine them
 		else {
@@ -2689,9 +2728,9 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 						for (int dphi=-2; dphi<=2; dphi++) {
 							Transform t=Transform((Transform&)((*s)["xform.align3d"]));
 							Dict aap=t.get_params("eman");
-							aap["az"]=(float)aap["az"]+daz;
-							aap["alt"]=(float)aap["alt"]+dalt;
-							aap["phi"]=(float)aap["phi"]+dphi;
+							aap["az"]=(float)aap["az"]+daz*astep;
+							aap["alt"]=(float)aap["alt"]+dalt*astep;
+							aap["phi"]=(float)aap["phi"]+dphi*astep;
 							aap["tx"]=0;
 							aap["ty"]=0;
 							aap["tz"]=0;
@@ -2719,8 +2758,6 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 						}
 					}
 				}
-							
-				//transforms=
 			}
 		}
 		
