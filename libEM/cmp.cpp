@@ -697,8 +697,8 @@ float TomoWedgeCccCmp::cmp(EMData * image, EMData *with) const
 
 	// Note 'sigma' is the STD of real and imag values treated independently
 	// s1 and s2 are threshold values squared (for speed)
-	float s1=pow((float)image->get_attr("sigma")*sigmaimg,2.0);		
-	float s2=pow((float)with->get_attr("sigma")*sigmawith,2.0);
+	float s1=pow((float)image->get_attr("sigma")*sigmaimg,(float)2.0);		
+	float s2=pow((float)with->get_attr("sigma")*sigmawith,(float)2.0);
 	
 	double sum=0;
 	double sumsq1=0;
