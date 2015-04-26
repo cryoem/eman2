@@ -33,6 +33,7 @@ parser = EMArgumentParser(usage, version=EMANVERSION)
 parser.add_argument("--export_whole_project", action="store_true", help="This option will create an emx directory, where it will export the eman2 project into EMX format", default=False)
 parser.add_argument("--import_box_coordinates", type=str, help="Import box coordinates and corresponding micrographs")
 parser.add_argument("--import_ctf", type=str, help="Import ctf information and corresponding micrographs")
+parser.add_argument("--import_2d_alignment", type=str, help="Import particles and corresponding transformation information")
 parser.add_argument("--refinedefocus",  action="store_true", help="Will use EMAN2 CTF fitting to refine the defocus by SNR optimization (+-0.1 micron from the current values, no astigmatism adjustment)")
 parser.add_argument("--refitdefocus",  action="store_true", help="Will use EMAN2 CTF fitting to refit the defocus values (+-0.1 micron, astigmatism unchanged)")
 parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
@@ -382,20 +383,37 @@ for option1 in optionList:
 					db.setval("boxes",db['boxes'],deferupdate=True)
 
 
+	elif option1 == "import_2d_alignment":
+		et = xml.etree.ElementTree.parse(options.import_2d_alignment)
+		emx = et.getroot()
+		for item in emx:
+			if item.tag == "particle":
+				for particle_attrib in item.attrib:
+					if particle_attrib == "fileName":
+						particle_filename = item.attrib['fileName']
+					elif particle_attrib == "index":
+						particle_index = item.attrib['index']
+					else:
+						print "Unknown tag: " + particle_attrib
+			for item2 in item:
+				if item2.tag == "transformationMatrix":
+					t = Transform([float(item2.find('t11').text),float(item2.find('t12').text),float(item2.find('t13').text),float(item2.find('t14').text),float(item2.find('t21').text),float(item2.find('t22').text),float(item2.find('t23').text),float(item2.find('t24').text),float(item2.find('t31').text),float(item2.find('t32').text),float(item2.find('t33').text),float(item2.find('t34').text)])
+					print t
 
 
-	#elif option1 == "import_2d_alignment":
-		#et = xml.etree.ElementTree.parse(options.import_box_coordinates)
-		#emx = et.getroot()
-		#if item.tag == "particle":
-			#for particle_attrib in item.attrib:
-				#if particle_attrib == "fileName":
-					#particle_filename = item.attrib['fileName']
-				#elif particle_attrib == "index":
-					#particle_index = item.attrib['index']
-				#else:
-					#print "Unknown tag: " + particle_attrib
-			#for item2 in item:
+
+
+
+
+
+
+
+
+
+
+
+
+
 				##if item2.tag == "boxSize":
 					##for item3 in item2:
 						##if item3.tag == "X":
