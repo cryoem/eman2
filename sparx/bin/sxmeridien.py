@@ -888,9 +888,9 @@ def main():
 	nxshrink = min(max(32, int( (lowpass+paramsdict["aa"]/2.)*2*nnxo + 0.5)), nnxo)
 	nxshrink += nxshrink%2
 	shrink = float(nxshrink)/nnxo
-	tracker = {"previous-resolution":currentres,"previous-lowpass":lowpass, "initialfl":lowpass,  \
+	tracker = {"resolution":currentres,"lowpass":lowpass, "initialfl":lowpass,  \
 				"movedup":False,"eliminated-outliers":False,"PWadjustment":"","local":False,\
-				"previous-nx":nxshrink, "previous-shrink":shrink, "extension":0.0,"directory":"none"}
+				"nx":nxshrink, "shrink":shrink, "extension":0.0,"directory":"none"}
 	history = [tracker.copy()]
 	previousoutputdir = initdir
 	#  MAIN ITERATION
@@ -1119,7 +1119,8 @@ def main():
 
 		#print("RACING  X ",myid)
 		#  If the resolution stalled, try to eliminate outliers
-		if(currentres == tracker["previous-resolution"]  and test_outliers):
+		if(False):
+		#if(currentres == tracker["resolution"]  and test_outliers):
 			test_outliers = False
 
 			for procid in xrange(2):
@@ -1234,34 +1235,51 @@ def main():
 				cmdexecute(cmd)
 
 		keepgoing = 0
-		stepforward = 0.05
-		increment   = 0.02
-		if( ( currentres > tracker["previous-resolution"] ) or (eliminated_outliers and not tracker["eliminated-outliers"])):
+		if(angular_neighborhood == "-1" ):
+			stepforward = 0.05
+			increment   = 0.02
+		else:
+			stepforward = 0.02
+			increment   = 0.01
+
+		if( ( currentres > tracker["resolution"] ) or (eliminated_outliers and not tracker["eliminated-outliers"])):
 			if(myid == main_node):
-				print(" New resolution %6.2f   Previous resolution %6.2f"%(currentres , tracker["previous-resolution"]))
-				if( currentres > tracker["previous-resolution"]):  print("  Resolution improved, full steam ahead!")
+				print(" New resolution %6.2f   Previous resolution %6.2f"%(currentres , tracker["resolution"]))
+				if( currentres > tracker["resolution"]):  print("  Resolution improved, full steam ahead!")
 				else:  print("  While the resolution did not improve, we eliminated outliers so we follow the _resolution_improved_ path.")
 			if(currentres >= 0.45 ):
 				print(" Resolution exceeded 0.45, i.e., approached Nyquist limit, program will terminate")
 			else:
-				if( currentres > tracker["previous-resolution"] ):  tracker["movedup"] = True
-				else:   tracker["movedup"] = False
-				tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
-				paramsdict["initialfl"] = lowpass
-				lowpass = currentres + tracker["extension"]
-				shrink = max(min(2*lowpass + paramsdict["aa"], 1.0), minshrink)
-				nxshrink = min(int(nnxo*shrink + 0.5),nnxo)
-				nxshrink += nxshrink%2
-				shrink = float(nxshrink)/nnxo
-				tracker["previous-nx"]         = nxshrink
-				tracker["previous-resolution"] = currentres
-				tracker["previous-lowpass"]    = lowpass
+				if(angular_neighborhood == "-1" ):
+					if( currentres > tracker["resolution"] ):  tracker["movedup"] = True
+					else:   tracker["movedup"] = False
+					tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
+					paramsdict["initialfl"] = lowpass
+					lowpass = currentres + tracker["extension"]
+					shrink = max(min(2*lowpass + paramsdict["aa"], 1.0), minshrink)
+					nxshrink = min(int(nnxo*shrink + 0.5),nnxo)
+					nxshrink += nxshrink%2
+					shrink = float(nxshrink)/nnxo
+				else:
+					#  this is for local searches, move only as much as the resolution increase allows
+					if( currentres > tracker["resolution"] ):  tracker["movedup"] = True
+					else:   tracker["movedup"] = False
+					tracker["extension"] =    0.0  # lowpass cannot exceed 0.45
+					paramsdict["initialfl"] = lowpass
+					lowpass = currentres + tracker["extension"]
+					shrink = max(min(2*lowpass + paramsdict["aa"], 1.0), minshrink)
+					nxshrink = min(int(nnxo*shrink + 0.5),nnxo)
+					nxshrink += nxshrink%2
+					shrink = float(nxshrink)/nnxo
+				tracker["nx"]                  = nxshrink
+				tracker["resolution"]          = currentres
+				tracker["lowpass"]             = lowpass
 				tracker["initialfl"]           = paramsdict["initialfl"]
 				tracker["eliminated-outliers"] = eliminated_outliers
 				bestoutputdir = mainoutputdir
 				keepgoing = 1
 
-		elif( currentres < tracker["previous-resolution"] ):
+		elif( currentres < tracker["resolution"] ):
 			if(not tracker["movedup"] and tracker["extension"] < increment and mainiteration > 1):
 				if( angular_neighborhood == "-1" ):
 					angular_neighborhood = options.an
@@ -1312,17 +1330,17 @@ def main():
 				if(k == -1):
 					print("  something wrong with bestoutputdir")
 					exit()
-				shrink   = history[i]["previous-shrink"]
-				nxshrink = history[i]["previous-nxshrink"]
+				shrink   = history[i]["shrink"]
+				nxshrink = history[i]["nxshrink"]
 				paramsdict["initialfl"]        = history[i]["initialfl"]
 				tracker["initialfl"]           = history[i]["initialfl"]
-				tracker["previous-resolution"] = currentres
-				tracker["previous-lowpass"]    = lowpass
+				tracker["resolution"] = currentres
+				tracker["lowpass"]    = lowpass
 				tracker["eliminated-outliers"] = eliminated_outliers
 				tracker["movedup"] = False
 				keepgoing = 1
 
-		elif( currentres == tracker["previous-resolution"] ):
+		elif( currentres == tracker["resolution"] ):
 			if( tracker["movedup"] ):
 				if(myid == main_node):  print("The resolution did not improve. This is look ahead move.  Let's try to relax slightly and hope for the best")
 				tracker["extension"]    = min(stepforward,0.45-currentres)
@@ -1334,11 +1352,11 @@ def main():
 				nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
 				nxshrink += nxshrink%2
 				shrink = float(nxshrink)/nnxo
-				if( tracker["previous-nx"] == nnxo):
+				if( tracker["nx"] == nnxo):
 					keepgoing = 0
 				else:
-					tracker["previous-resolution"] = currentres
-					tracker["previous-lowpass"]    = lowpass
+					tracker["resolution"] = currentres
+					tracker["lowpass"]    = lowpass
 					tracker["eliminated-outliers"] = eliminated_outliers
 					tracker["movedup"] = False
 					keepgoing = 1
@@ -1365,11 +1383,11 @@ def main():
 					nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
 					nxshrink += nxshrink%2
 					shrink = float(nxshrink)/nnxo
-					if( tracker["previous-nx"] == nnxo):
+					if( tracker["nx"] == nnxo):
 						keepgoing = 0
 					else:
-						tracker["previous-resolution"] = currentres
-						tracker["previous-lowpass"]    = lowpass
+						tracker["resolution"] = currentres
+						tracker["lowpass"]    = lowpass
 						tracker["eliminated-outliers"] = eliminated_outliers
 						tracker["movedup"] = False
 						if(myid == main_node):  print("  Switching to local searches")
@@ -1395,8 +1413,8 @@ def main():
 						cmdexecute(cmd)
 				"""
 			previousoutputdir = mainoutputdir
-			tracker["previous-shrink"]     = shrink
-			tracker["previous-nx"]         = nxshrink
+			tracker["shrink"]     = shrink
+			tracker["nx"]         = nxshrink
 			history.append(tracker.copy())
 
 		else:
