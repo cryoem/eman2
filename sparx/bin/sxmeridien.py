@@ -292,12 +292,12 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 			if CTF:
 				from reconstruction import rec3D_MPI
 				vol[procid],fsc[procid] = rec3D_MPI(projdata, snr = 1.0, sym = ali3d_options.sym, \
-					mask = mask, fsc_file = os.path.join(fscoutputdir,"within-fsc%01d.txt"%procid), \
+					mask = mask, fsc_file = os.path.join(outputdir,"within-fsc%01d.txt"%procid), \
 					myid = myid, main_node = main_node, rstep = 1.0, odd_start = 1, eve_start = 0, finfo = None, npad = 2)
 			else :
 				from reconstruction import rec3D_MPI_noCTF
 				vol[procid],fsc[procid] = rec3D_MPI_noCTF(projdata, sym = ali3d_options.sym, \
-					mask = mask, fsc_file = os.path.join(fscoutputdir,"within-fsc%01d.txt"%procid), \
+					mask = mask, fsc_file = os.path.join(outputdir,"within-fsc%01d.txt"%procid), \
 					myid = myid, main_node = main_node, rstep = 1.0, odd_start = 1, eve_start = 0, finfo = None, npad = 2)
 
 
@@ -1001,21 +1001,24 @@ def main():
 		partstack = [None]*2
 		for procid in xrange(2):  partstack[procid] = os.path.join(mainoutputdir, "loga%01d"%procid, "params-chunk%01d.txt"%procid)
 
-		for procid in xrange(2):
-			outvol = os.path.join(mainoutputdir,"loga%01d"%procid,"shcvol%01d.hdf"%procid)
-			doit, keepchecking = checkstep(outvol, keepchecking, myid, main_node)
+		#  check it for the first, if it does not exist, run the program
+		outvol = os.path.join(mainoutputdir,"loga0","vol0.hdf")
+		doit, keepchecking = checkstep(outvol, keepchecking, myid, main_node)
 
-			if  doit:
-				from multi_shc import do_volume
-				projdata = getindexdata(stack, partids[procid], partstack[procid], myid, nproc)
-				if ali3d_options.CTF:  vol = recons3d_4nn_ctf_MPI(myid, projdata, symmetry=ali3d_options.sym, npad = 2)
-				else:                  vol = recons3d_4nn_MPI(myid, projdata, symmetry=ali3d_options.sym, npad = 2)
-				del projdata
-				if( myid == main_node):
-					vol.write_image(outvol)
-					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-					print(  line,"Generated shcvol #%01d "%procid)
-				del vol
+		if  doit:
+			xlowpass, xcurrentres = compute_resolution(stack, mainoutputdir, partids, partstack, radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
+			del xlowpass, xcurrentres
+			if( myid == main_node):
+				# Move output to proper directories
+				for procid in xrange(2):
+					cmd = "{} {} {}".format("mv", os.path.join(mainoutputdir,"vol%01d.hdf"%procid), os.path.join(mainoutputdir,"loga%01d"%procid) )
+					cmdexecute(cmd)
+					cmd = "{} {} {}".format("mv", os.path.join(mainoutputdir,"within-fsc%01d.txt"%procid), os.path.join(mainoutputdir,"loga%01d"%procid) )
+					cmdexecute(cmd)
+				cmd = "{} {} {}".format("mv", os.path.join(mainoutputdir,"fsc.txt") , os.path.join(mainoutputdir,"afsc.txt"))
+				cmdexecute(cmd)
+				cmd = "{} {} {}".format("mv", os.path.join(mainoutputdir,"current-resolution.txt") , os.path.join(mainoutputdir,"current-resolution.txt"))
+				cmdexecute(cmd)
 
 		#  fuse shc volumes to serve as starting point for the next, deterministic part.
 		if(myid == main_node):
@@ -1030,7 +1033,7 @@ def main():
 				doit = 1
 			if doit:
 				vol = []
-				for procid in xrange(2):  vol.append(get_im(os.path.join(mainoutputdir,"loga%01d"%procid,"shcvol%01d.hdf"%procid) ))
+				for procid in xrange(2):  vol.append(get_im(os.path.join(mainoutputdir,"loga%01d"%procid,"vol%01d.hdf"%procid) ))
 				fuselowf(vol, fq)
 				for procid in xrange(2):  vol[procid].write_image( os.path.join(mainoutputdir,"loga%01d"%procid,"fusevol%01d.hdf"%procid) )
 				del vol
