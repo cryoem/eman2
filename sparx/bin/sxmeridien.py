@@ -952,6 +952,7 @@ def main():
 		for procid in xrange(2):  partstack[procid] = os.path.join(previousoutputdir,"params-chunk%01d.txt"%procid)
 
 		mpi_barrier(MPI_COMM_WORLD)
+		doit = bcast_number_to_all(doit, source_node = main_node)
 
 
 		#mpi_finalize()
@@ -959,40 +960,15 @@ def main():
 
 		#print("RACING  A ",myid)
 		outvol = [os.path.join(previousoutputdir,"vol%01d.hdf"%procid) for procid in xrange(2)]
-		for procid in xrange(2):
-			doit, keepchecking = checkstep(outvol[procid], keepchecking, myid, main_node)
-
-			if  doit:
-				from multi_shc import do_volume
-				projdata = getindexdata(stack, partids[procid], partstack[procid], myid, nproc)
-				if ali3d_options.CTF:  vol = recons3d_4nn_ctf_MPI(myid, projdata, symmetry=ali3d_options.sym, npad = 2)
-				else:                  vol = recons3d_4nn_MPI(myid, projdata, symmetry=ali3d_options.sym, npad = 2)
-				del projdata
-				if( myid == main_node):
-					vol.write_image(outvol[procid])
-					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-					print(  line,"Generated inivol %s"%outvol[procid])
-				del vol
 
 		if(myid == main_node):
-			if keepchecking:
-				procid = 1
-				if(os.path.join(mainoutputdir,"fusevol%01d.hdf"%procid)):
-					doit = 0
-				else:
-					doit = 1
-					keepchecking = False
-			else:
-				doit = 1
-			if doit:
+			if  doit:
 				vol = [ get_im(outvol[procid]) for procid in xrange(2) ]
-
 				fuselowf(vol, fq)
 				for procid in xrange(2):  vol[procid].write_image(os.path.join(mainoutputdir,"fusevol%01d.hdf"%procid) )
 				del vol
-		else:  doit = 0
+
 		mpi_barrier(MPI_COMM_WORLD)
-		doit = bcast_number_to_all(doit, source_node = main_node)
 
 		#  Refine two groups at a current resolution
 		lastring = int(shrink*radi + 0.5)
