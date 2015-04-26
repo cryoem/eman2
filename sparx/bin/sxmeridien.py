@@ -281,7 +281,6 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 	fsc = [None]*2
 	if(ali3d_options.mask3D is None):  mask = model_circle(radi,nnxo,nnxo,nnxo)
 	else:                              mask = get_im(ali3d_options.mask3D)
-	nfsc = fsc(vol[0]*mask,vol[1]*mask, 1.0,os.path.join(fscoutputdir,"fsc.txt") )
 
 	for procid in xrange(2):
 		#  sxrecons3d.py  (full size)
