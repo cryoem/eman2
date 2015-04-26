@@ -188,7 +188,9 @@ for option1 in optionList:
 				jdb = js_open_dict(info_name(micrograph_filename))
 				jdb['ctf_frame']=[512,ctf,(256,256),tuple(),5,1]
 				jdb.setval("ctf_frame",jdb['ctf_frame'],deferupdate=True)
+				micro_dict[micrograph_filename]['stack']=micrograph_filename
 			elif item.tag == "particle":
+				print "particle"
 				temp_dict={}
 				foundU=foundV=foundAng=foundapix = False
 				for particle_attrib in item.attrib:
@@ -201,18 +203,16 @@ for option1 in optionList:
 					else:
 						print "Unknown tag: " + particle_attrib
 				for item2 in item:
+					#temp_dict={}
 					if item2.tag == "defocusU":
-						defocus_particle_1 = float(item2.text) / 1000 # in nm
+						temp_dict['defocusU'] = float(item2.text) / 1000 # in nm
 						foundU = True
 					elif item2.tag == "defocusV":
-						defocus_particle_2 = float(item2.text) /1000 # in nm
+						temp_dict['defocusV'] = float(item2.text) /1000 # in nm
 						foundV = True
 					elif item2.tag == "defocusUAngle":
-						defocus_particle_angle = item2.text # in degrees (0->180)
+						temp_dict['defocusUAngle'] = item2.text # in degrees (0->180)
 						foundAng = True
-					#elif item2.tag == "fom":
-						#particle_fom = item2.text # figure-of-merit (0->1)
-						#foundfom=True
 					elif item2.tag == "micrograph":
 						for micrograph_attrib in item2.attrib:
 							if micrograph_attrib == "fileName":
@@ -236,6 +236,7 @@ for option1 in optionList:
 								apix_z = float(item3.text)
 							else:
 								print "Unknown Tag: " + item3.tag
+				part_list.append(temp_dict)
 				if particle_micrograph_filename != last_part_filename:
 					micro_dict[particle_micrograph_filename]['first_index'] = int(particle) - 1
 					last_part_filename = particle_micrograph_filename
@@ -243,18 +244,16 @@ for option1 in optionList:
 						micro_dict[particle_micrograph_filename]['last_index'] = int(particle)-1
 				else:
 					micro_dict[particle_micrograph_filename]['last_index'] = int(particle)-1
-				if foundU or foundV or foundAng:
 					found_per_particle=True
 				if foundapix:
 					micro_dict[particle_micrograph_filename]["apix_x"]=apix_x
 				else:
 					apix_x=micro_dict[particle_micrograph_filename]['apix_x']
-					
 				ctf=EMAN2Ctf()
 				ctf.from_dict({"defocus":(float(defocus1)+float(defocus2))/2000,"dfang":float(defocus_angle),"dfdiff":abs(float(defocus1)-float(defocus2))/1000,"voltage":float(voltage),"cs":float(cs),"ampcont":float(ampcont),"apix":float(apix_x)})
 				jdb = js_open_dict(info_name(particle_micrograph_filename))
-				jdb['ctf_frame']=[512,ctf,(256,256),tuple(),5,1]
-				jdb.setval("ctf_frame",jdb['ctf_frame'],deferupdate=True)
+				jdb['ctf']=[512,ctf,(256,256),tuple(),5,1]
+				jdb.setval("ctf",jdb['ctf'],deferupdate=True)
 				micro_dict[particle_micrograph_filename]['stack']=particle_filename
 		if options.refinedefocus : 
 			dfopt="--curdefocushint --refinebysnr"
@@ -267,16 +266,22 @@ for option1 in optionList:
 			if options.verbose>0 : print "Computing particle SNRs"
 		if not os.path.exists("particles"):
 			os.mkdir("particles")
-		#for part_file in part_list:
-			#print "e2proc2d.py {} particles/{}_ptcls.hdf --threed2twod".format(part_file,base_name(part_file))
-			#launch_childprocess("e2proc2d.py {} particles/{}_ptcls.hdf --threed2twod".format(part_file,base_name(part_file)))
 		for item in micro_dict.keys():
-			#print "e2proc2d.py {} particles/{}_ptcls.hdf --threed2twod --first {} --last {}".format(micro_dict[item]['stack'],base_name(item),micro_dict[item]['first_index'],micro_dict[item]['last_index'])
+			print "e2proc2d.py {} particles/{}_ptcls.hdf --threed2twod --first {} --last {}".format(micro_dict[item]['stack'],base_name(item),micro_dict[item]['first_index'],micro_dict[item]['last_index']) 
 			launch_childprocess("e2proc2d.py {} particles/{}_ptcls.hdf --threed2twod --first {} --last {}".format(micro_dict[item]['stack'],base_name(item),micro_dict[item]['first_index'],micro_dict[item]['last_index']))
-			#print "e2ctf.py particles/{}_ptcls.hdf --voltage {} --cs {} --ac {} --apix {} --autofit {} -v {}".format(base_name(item),micro_dict[item]['voltage'],micro_dict[item]['cs'],micro_dict[item]['ampcont'],micro_dict[item]['apix_x'],dfopt,options.verbose-1)
-			launch_childprocess("e2ctf.py particles/{}_ptcls.hdf --voltage {} --cs {} --ac {} --apix {} --autofit {} -v {}".format(base_name(item),micro_dict[item]['voltage'],micro_dict[item]['cs'],micro_dict[item]['ampcont'],micro_dict[item]['apix_x'],dfopt,options.verbose-1))
+			launch_childprocess("e2ctf.py particles/{}_ptcls.hdf --voltage {} --cs {} --ac {} --apix {} --autofit --zerook --storeparm --astigmatism {} -v {}".format(base_name(item),micro_dict[item]['voltage'],micro_dict[item]['cs'],micro_dict[item]['ampcont'],micro_dict[item]['apix_x'],dfopt,options.verbose-1))
 		if found_per_particle:
 			print "Per-particle defocus values or angles found. Please note that we do not support import of this information at the moment. Using the per-micrograph information provided"
+			for part in part_list:
+				pdb = EMData("particles/"+base_name(part['particle_micrograph_filename'])+"_ptcls.hdf",int(part['index'])-1,True)
+				pdbctf = pdb['ctf'].to_dict()
+				pdbctf['dfang'] = part['defocusUAngle']
+				pdbctf['defocus'] = (float(part['defocusU'])+float(part['defocusV']))/2
+				pdbctf['dfdiff'] = abs(float(part['defocusU'])-float(part['defocusV']))
+				ctf = EMAN2Ctf()
+				ctf.from_dict(pdbctf)
+				pdb['ctf'] = ctf
+				pdb.write_image("particles/"+base_name(part['particle_micrograph_filename'])+"_ptcls.hdf",int(part['index'])-1)
 	elif option1 == "import_box_coordinates":
 		current_micrograph = ""
 		et = xml.etree.ElementTree.parse(options.import_box_coordinates)
@@ -375,6 +380,10 @@ for option1 in optionList:
 				else:
 					db['boxes'].append(tup)
 					db.setval("boxes",db['boxes'],deferupdate=True)
+
+
+
+
 	#elif option1 == "import_2d_alignment":
 		#et = xml.etree.ElementTree.parse(options.import_box_coordinates)
 		#emx = et.getroot()
