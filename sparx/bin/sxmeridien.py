@@ -292,13 +292,13 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 			if CTF:
 				from reconstruction import rec3D_MPI
 				vol[procid],fsc[procid] = rec3D_MPI(projdata, snr = 1.0, symmetry = ali3d_options.sym, \
-					mask = mask, fsc_file = os.path.join(outputdir,"within-fsc%01d.txt"%procid), \
-					myid = myid, main_node = main_node, rstep = 1.0, odd_start = 1, eve_start = 0, finfo = None, npad = 2)
+					mask3D = mask, fsc_curve = os.path.join(outputdir,"within-fsc%01d.txt"%procid), \
+					myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2)
 			else :
 				from reconstruction import rec3D_MPI_noCTF
 				vol[procid],fsc[procid] = rec3D_MPI_noCTF(projdata, symmetry = ali3d_options.sym, \
-					mask = mask, fsc_file = os.path.join(outputdir,"within-fsc%01d.txt"%procid), \
-					myid = myid, main_node = main_node, rstep = 1.0, odd_start = 1, eve_start = 0, finfo = None, npad = 2)
+					mask3D = mask, fsc_curve = os.path.join(outputdir,"within-fsc%01d.txt"%procid), \
+					myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2)
 
 
 			del projdata
