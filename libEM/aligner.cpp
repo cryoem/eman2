@@ -2625,8 +2625,11 @@ EMData* RT3DTreeAligner::align(EMData * this_img, EMData *to, const string & cmp
 
 }
 
-vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, const unsigned int nsoln, const string & cmp_name, const Dict& cmp_params) const {
-	if (nsoln == 0) throw InvalidParameterException("ERROR (RT3DTreeAligner): nsoln must be >0"); // What was the user thinking?
+vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, const unsigned int nrsoln, const string & cmp_name, const Dict& cmp_params) const {
+	if (nrsoln == 0) throw InvalidParameterException("ERROR (RT3DTreeAligner): nsoln must be >0"); // What was the user thinking?
+	
+	int nsoln = nrsoln;
+	if (nrsoln<10) nsoln=10;		// we need at least 10 solutions for the hierarchical approach
 	
 	int cleanup=0;
 	EMData *base_this;
@@ -2639,12 +2642,16 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		base_to = to->do_fft();
 		cleanup=1;
 	}
+
+	float sigmathis = params.set_default("sigmathis",0.5f);
+	float sigmato = params.set_default("sigmato",0.5f);
+
 	
 	if (base_this->get_xsize()!=base_this->get_ysize()+2 || base_this->get_ysize()!=base_this->get_zsize()
 		|| base_to->get_xsize()!=base_to->get_ysize()+2 || base_to->get_ysize()!=base_to->get_zsize()) throw InvalidCallException("ERROR (RT3DTreeAligner): requires cubic images");
 
 	base_this->process_inplace("xform.phaseorigin.tocorner");
-	base_this->process_inplace("xform.fourierorigin.tocenter");
+	base_this->process_inplace("xform.fourierorigin.tocenter");		// easier to chop out Fourier subvolumes
 	base_to->process_inplace("xform.phaseorigin.tocorner");
 	base_to->process_inplace("xform.fourierorigin.tocenter");
 
@@ -2667,25 +2674,29 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		//ss=good_size(ny/ds);
 		EMData *small_this=base_this->get_clip(Region(0,(ny-ss)/2,(ny-ss)/2,ss+2,ss,ss));
 		EMData *small_to=  base_to->  get_clip(Region(0,(ny-ss)/2,(ny-ss)/2,ss+2,ss,ss));
-		small_this->process_inplace("xform.fourierorigin.tocorner");
+		small_this->process_inplace("xform.fourierorigin.tocorner");					// after clipping back to canonical form
+		small_this->process_inplace("filter.highpass.gauss",Dict("cutoff_freq",0.005f));
+		small_this->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.33f));
 		small_to->process_inplace("xform.fourierorigin.tocorner");
+		small_to->process_inplace("filter.highpass.gauss",Dict("cutoff_freq",0.005f));
+		small_to->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.33f));
 		
 		for (int i=0; i<nsoln; i++) s_score[i]=1.0e24;	// reset the scores since the different scales will not match
 		
 		// debug out
-// 		EMData *x=small_this->do_ift();
-// 		x->process_inplace("xform.phaseorigin.tocenter");
-// 		x->write_image("dbg.hdf",(sexp-5)*2);
-// 		delete x;
-// 		x=small_to->do_ift();
-// 		x->process_inplace("xform.phaseorigin.tocenter");
-// 		x->write_image("dbg.hdf",(sexp-5)*2+1);
-// 		delete x;
+		EMData *x=small_this->do_ift();
+		x->process_inplace("xform.phaseorigin.tocenter");
+		x->write_image("dbg.hdf",(sexp-5)*2);
+		delete x;
+		x=small_to->do_ift();
+		x->process_inplace("xform.phaseorigin.tocenter");
+		x->write_image("dbg.hdf",(sexp-5)*2+1);
+		delete x;
 		
 		// This is a solid estimate for very complete searching
 // 		float astep = 89.999/floor(pi/(2.0*atan(2.0/ss)));
 		
-		// This is drawn from single particle analysis testing, which insures that enough sampling to
+		// This is drawn from single particle analysis testing, which in that case insures that enough sampling to
 		// reasonably fill Fourier space is achieved
 		float astep=89.99/ceil(90.0*9.0/(8*sqrt(4300/ss)));	// 8 is (3+speed) from SPA with speed=5
 		
@@ -2728,7 +2739,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 					delete ccf;
 					stt=small_this->process("xform",Dict("transform",EMObject(&t)));	// we have to do 1 slow transform here now that we have the translation
 					
-					float sim=stt->cmp("ccc.tomo.thresh",small_to);
+					float sim=stt->cmp("ccc.tomo.thresh",small_to,Dict("sigmaimg",sigmathis,"sigmawith",sigmato));
 
 					// First we find the worst solution in the list of possible best solutions, or the first
 					// solution which is currently "empty"
@@ -2787,7 +2798,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 							delete ccf;
 							stt=small_this->process("xform",Dict("transform",EMObject(&t)));	// we have to do 1 slow transform here now that we have the translation
 							
-							float sim=stt->cmp("ccc.tomo.thresh",small_to);
+							float sim=stt->cmp("ccc.tomo.thresh",small_to,Dict("sigmaimg",sigmathis,"sigmawith",sigmato));
 							
 							// If the score is better than before, we update this particular best value
 							if (sim<s_score[i]) {
@@ -2809,10 +2820,27 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		delete base_this;
 		delete base_to;
 	}
+	else {
+		base_this->process_inplace("xform.fourierorigin.tocorner");		// easier to chop out Fourier subvolumes
+		base_this->process_inplace("xform.phaseorigin.tocenter");
+		base_to->process_inplace("xform.fourierorigin.tocorner");
+		base_to->process_inplace("xform.phaseorigin.tocenter");
+	}
 
+	// lazy earlier in defining s_ vectors, so lazy here too and inefficiently sorting
+	for (unsigned int i=0; i<nsoln-1; i++) {
+		for (unsigned int j=i+1; j<nsoln; j++) {
+			if (s_score[i]>s_score[j]) {
+				float t=s_score[i]; s_score[i]=s_score[j]; s_score[j]=t;
+				t=s_coverage[i]; s_coverage[i]=s_coverage[j]; s_coverage[j]=t;
+				Transform tt=s_xform[i]; s_xform[i]=s_xform[j]; s_xform[j]=tt;
+			}
+		}
+	}
+		
 	// initialize results
 	vector<Dict> solns;
-	for (unsigned int i = 0; i < nsoln; ++i ) {
+	for (unsigned int i = 0; i < nrsoln; ++i ) {
 		Dict d;
 		d["score"] = s_score[i];
 		d["coverage"] = s_coverage[i];

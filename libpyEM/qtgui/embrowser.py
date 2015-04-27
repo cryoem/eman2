@@ -818,7 +818,7 @@ class EMBdbFileType(EMFileType) :
 			return [("Show 3D", "Add to 3D window", self.show3dApp), ("Show 3D+", "New 3D Window", self.show3DNew), ("Show Stack", "Show as set of 2-D Z slices", self.show2dStack), 
 				("Show Stack+", "Show all images together in a new window", self.show2dStackNew), ("Show 2D", "Show in a scrollable 2D image window", self.show2dSingle), 
 				("Show 2D+", "Show all images, one at a time in a new window", self.show2dSingleNew), ("Chimera", "Open in chimera (if installed)", self.showChimera), 
-				("FilterTool", "Open in e2filtertool.py", self.showFilterTool), ("ProjXYZ", "Make projections along X,Y,Z", self.showProjXYZ ),("Save As", "Saves images in new file format", self.saveAs)]
+				("FilterTool", "Open in e2filtertool.py", self.showFilterTool), ("ProjXYZ", "Make projections along Z,Y,X", self.showProjXYZ ),("Save As", "Saves images in new file format", self.saveAs)]
 		# single 2-D
 		elif self.nimg == 1 and self.dim[1] > 1 :
 			return [("Show 2D", "Show in a 2D single image display", self.show2dSingle), ("Show 2D+", "Show in new 2D single image display", self.show2dSingleNew), ("FilterTool", "Open in e2filtertool.py", self.showFilterTool), ("Save As", "Saves images in new file format", self.saveAs)]
@@ -845,7 +845,7 @@ class EMBdbFileType(EMFileType) :
 		brws.busy()
 
 		tmp=EMData(self.path, self.n)
-		data=[tmp.process("misc.directional_sum",{"axis":axis}) for axis in "xyz"]
+		data=[tmp.process("misc.directional_sum",{"axis":axis}) for axis in "zyx"]
 	
 		target = EMImage2DWidget(data)
 		brws.view2d.append(target)
@@ -921,7 +921,7 @@ class EMImageFileType(EMFileType) :
 			return [("Show 3D", "Add to 3D window", self.show3dApp), ("Show 3D+", "New 3D Window", self.show3DNew), ("Show Stack", "Show as set of 2-D Z slices", self.show2dStack), 
 				("Show Stack+", "Show all images together in a new window", self.show2dStackNew), ("Show 2D", "Show in a scrollable 2D image window", self.show2dSingle), 
 				("Show 2D+", "Show all images, one at a time in a new window", self.show2dSingleNew), ("Chimera", "Open in chimera (if installed)", self.showChimera), 
-				("FilterTool", "Open in e2filtertool.py", self.showFilterTool), ("ProjXYZ", "Make projections along X,Y,Z", self.showProjXYZ ), ("Save As", "Saves images in new file format", self.saveAs)]
+				("FilterTool", "Open in e2filtertool.py", self.showFilterTool), ("ProjXYZ", "Make projections along Z,Y,X", self.showProjXYZ ), ("Save As", "Saves images in new file format", self.saveAs)]
 		## 2-D stack, STEVE: THIS SHOULD NOT BE HERE
 		# elif self.nimg > 1 :
 			# return [("Show Stack", "Show as set of 2-D Z slices", self.show2dStack), ("Show Stack+", "Show all images together in a new window", self.show2dStackNew), ("Show 2D", "Show in a scrollable 2D image window", self.show2dSingle), 
@@ -939,7 +939,7 @@ class EMImageFileType(EMFileType) :
 		brws.busy()
 
 		tmp=EMData(self.path, self.n)
-		data=[tmp.process("misc.directional_sum",{"axis":axis}) for axis in "xyz"]
+		data=[tmp.process("misc.directional_sum",{"axis":axis}) for axis in "zyx"]
 	
 		target = EMImage2DWidget(data)
 		brws.view2d.append(target)

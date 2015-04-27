@@ -1707,6 +1707,8 @@ namespace EMAN
 			{
 				TypeDict d;
 				d.put("sym", EMObject::STRING,"The symmtery to use as the basis of the spherical sampling. Default is c1 (asymmetry).");
+				d.put("sigmathis", EMObject::FLOAT,"Only Fourier voxels larger than sigma times this value will be considered");
+				d.put("sigmato", EMObject::FLOAT,"The angle increment in the phi direction. Default is 10");
 // 				d.put("initxform", EMObject::TRANSFORM,"The Transform storing the starting position. If unspecified the identity matrix is used");
 				d.put("verbose", EMObject::BOOL,"Turn this on to have useful information printed to standard out.");
 				return d;
