@@ -8601,7 +8601,7 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 
 				if myid == main_node:
 					#drop_image(vol, os.path.join(outdir, "vol%03d_%03d.hdf"%(iteration, ic) ))
-					log.add("3D reconstruction time = %d\n"%(time()-start_time))
+					log.add("3D reconstruction time = %d"%(time()-start_time))
 					start_time = time()
 				if debug:
 					finfo.write("  done reconstruction = "+str(image_start))
@@ -8698,7 +8698,8 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 			from statistics import hist_list
 			lhist = 20
 			region, histo = hist_list(pixer, lhist)
-			log.add("\n=========== Histogram of pixel errors ==============")
+			log.add(" ")
+			log.add("=========== Histogram of pixel errors ==============")
 			for lhx in xrange(lhist):
 				msg = "          %10.3f     %7d"%(region[lhx], histo[lhx])
 				log.add(msg)
