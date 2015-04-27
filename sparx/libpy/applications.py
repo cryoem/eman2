@@ -8570,13 +8570,15 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 		for ic in xrange(n_of_chunks):
 			# In the very first step the volume has to be computed if it was not provided by the user
 			if( ((iteration > 0) and (ic > 0)) or vol == None):
-				if(center == -1):
+				if(center == -1 and sym[0] == 'c'):
 					if debug:
 						finfo.write("  begin centering \n")
 						finfo.flush()
 					cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(dataim, total_nima, myid, number_of_proc, main_node)
 					cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, mpi_comm)
 					cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
+					if int(sym[1]) > 1:
+						cs[0] = cs[1] = 0.0
 					rotate_3D_shift(dataim, cs)
 					if myid == main_node:
 						msg = "Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
