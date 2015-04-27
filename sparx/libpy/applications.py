@@ -8283,7 +8283,7 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 
 
 def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
-		    	mpi_comm = None, log= None, chunk = -1.0, saturatecrit = 0.95, debug = False ):
+		    	mpi_comm = None, log= None, chunk = -1.0, saturatecrit = 0.95, pixercutoff = 1.0, debug = False ):
 	"""
 		
 	"""
@@ -8681,7 +8681,7 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 				#	log.add( "Time to process %6d particles : %d\n" % (imn, time()-start_time) )
 				#	start_time = time()
 			if( myid == main_node ):
-				log.add( "Time to process %6d particles : %d\n" % (image_end_in_chunk-image_start_in_chunk, time()-start_time) )
+				log.add( "Time to process %6d particles : %d" % (image_end_in_chunk-image_start_in_chunk, time()-start_time) )
 				start_time = time()
 
 			# release memory
@@ -8698,17 +8698,17 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 			from statistics import hist_list
 			lhist = 20
 			region, histo = hist_list(pixer, lhist)
-			log.add("=========== Histogram of pixel errors ==============")
+			log.add("\n=========== Histogram of pixel errors ==============")
 			for lhx in xrange(lhist):
 				msg = "          %10.3f     %7d"%(region[lhx], histo[lhx])
 				log.add(msg)
 			log.add("____________________________________________________")
 
 
-			# Terminate if saturatecrit% within 1 pixel error  WHY ONE??
+			# Terminate if saturatecrit% within pixercutoff pixel error  WHY ONE??
 			im = 0
 			for lhx in xrange(lhist):
-				if(region[lhx] > 1.0): break
+				if(region[lhx] > pixercutoff): break
 				im += histo[lhx]
 			lhx = im/float(total_nima)
 			if( lhx > saturatecrit):
