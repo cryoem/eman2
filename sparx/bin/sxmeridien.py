@@ -1240,7 +1240,7 @@ def main():
 			stepforward = 0.02
 			increment   = 0.01
 
-		if( ( currentres > tracker["resolution"] ) or (eliminated_outliers and not tracker["eliminated-outliers"])):
+		if( mainiteration != 7 and ( currentres > tracker["resolution"] ) or (eliminated_outliers and not tracker["eliminated-outliers"])):
 			if(myid == main_node):
 				print(" New resolution %6.2f   Previous resolution %6.2f"%(currentres , tracker["resolution"]))
 				if( currentres > tracker["resolution"]):  print("  Resolution improved, full steam ahead!")
@@ -1338,8 +1338,8 @@ def main():
 				tracker["movedup"] = False
 				keepgoing = 1
 
-		elif( currentres == tracker["resolution"] ):
-			if( tracker["movedup"] ):
+		elif( mainiteration == 7 or currentres == tracker["resolution"] ):
+			if( mainiteration != 7 and tracker["movedup"] ):
 				if(myid == main_node):  print("The resolution did not improve. This is look ahead move.  Let's try to relax slightly and hope for the best")
 				tracker["extension"]    = min(stepforward,0.45-currentres)
 				tracker["movedup"]      = False
