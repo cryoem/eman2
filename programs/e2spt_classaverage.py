@@ -2423,7 +2423,7 @@ def preprocessing(image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1,fin
 
 
 	if options.threshold and options.threshold != 'None' and options.threshold != 'none':
-		simage.process_inplace(threshold[0],threshold[1])
+		simage.process_inplace(options.threshold[0],options.threshold[1])
 		#simage.write_image(options.path + '/imgMsk1normMsk2LpFiltsThr.hdf',-1)
 
 	'''
