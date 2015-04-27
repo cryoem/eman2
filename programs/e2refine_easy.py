@@ -661,15 +661,16 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 			msk.process_inplace("threshold.notzero")
 			msk.write_image("{path}/simmask.hdf".format(path=options.path),0)
 		
-		### Classify using a binary tree
 		if options.treeclassify:
+			### Classify using a binary tree
 			append_html("<p>* Classify each particle using a binary tree generated from the projections</p>",True)
-			cmd = "e2classifytree.py {path}/projections_{itr:02d}_even.hdf {inputfile} --output={path}/classmx_{itr:02d}_even.hdf  --nodes {path}/nodes_{itr:02d}_even.hdf --threads {threads}".format(path=options.path,itr=it,inputfile=options.input[0],threads=options.threads)
+			cmd = "e2classifytree.py {path}/projections_{itr:02d}_even.hdf {inputfile} --output={path}/classmx_{itr:02d}_even.hdf  --nodes {path}/nodes_{itr:02d}_even.hdf --cmp {simcmp} --align {simalign} --aligncmp {simaligncmp} {simralign} --threads {threads}".format(path=options.path,itr=it,inputfile=options.input[0],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,threads=options.threads)
 			run(cmd)
+			progress += 1.0
 			
-			cmd = "e2classifytree.py {path}/projections_{itr:02d}_odd.hdf {inputfile} --output={path}/classmx_{itr:02d}_odd.hdf  --nodes {path}/nodes_{itr:02d}_odd.hdf --threads {threads}".format(path=options.path,itr=it,inputfile=options.input[1],threads=options.threads)
+			cmd = "e2classifytree.py {path}/projections_{itr:02d}_odd.hdf {inputfile} --output={path}/classmx_{itr:02d}_odd.hdf  --nodes {path}/nodes_{itr:02d}_odd.hdf --cmp {simcmp} --align {simalign} --aligncmp {simaligncmp} {simralign} --threads {threads}".format(path=options.path,itr=it,inputfile=options.input[1],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,threads=options.threads)
 			run(cmd)
-			progress += 2.0
+			progress += 1.0
 			E2progress(logid,progress/total_procs)
 		else:
 		
