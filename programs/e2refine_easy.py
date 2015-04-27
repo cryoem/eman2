@@ -152,6 +152,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_header(name="required", help='Just a visual separation', title="Required:", row=9, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--sym", dest = "sym", default="c1",help = "Specify symmetry - choices are: c<n>, d<n>, tet, oct, icos.", guitype='strbox', row=10, col=1, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--breaksym", action="store_true", default=False,help = "If selected, reconstruction will be asymmetric with sym= specifying a known pseudosymmetry, not an imposed symmetry.", guitype='boolbox', row=11, col=1, rowspan=1, colspan=1, mode="refinement[False]")
+	parser.add_argument("--treeclassify",default=False, action="store_true", help="Classify using a binary tree.",guitype='boolbox', row=11, col=0, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--m3dold", action="store_true", default=False,help = "Use the traditional e2make3d program instead of the new e2make3dpar program",guitype='boolbox', row=11, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--iter", dest = "iter", type = int, default=6, help = "The total number of refinement iterations to perform. Default=auto", guitype='intbox', row=10, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--mass", default=0, type=float,help="The ~mass of the particle in kilodaltons, used to run normalize.bymass. Due to resolution effects, not always the true mass.", guitype='floatbox', row=12, col=0, rowspan=1, colspan=1, mode="refinement['self.pm().getMass()']")
@@ -659,34 +660,46 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 #			msk.process_inplace("threshold.binary",{"value":msk["sigma"]/50.0})
 			msk.process_inplace("threshold.notzero")
 			msk.write_image("{path}/simmask.hdf".format(path=options.path),0)
+		
+		### Classify using a binary tree
+		if options.treeclassify:
+			append_html("<p>* Classify each particle using a binary tree generated from the projections</p>",True)
+			cmd = "e2classifytree.py {path}/projections_{itr:02d}_even.hdf {inputfile} --output={path}/classmx_{itr:02d}_even.hdf  --nodes {path}/nodes_{itr:02d}_even.hdf --threads {threads}".format(path=options.path,itr=it,inputfile=options.input[0],threads=options.threads)
+			run(cmd)
+			
+			cmd = "e2classifytree.py {path}/projections_{itr:02d}_odd.hdf {inputfile} --output={path}/classmx_{itr:02d}_odd.hdf  --nodes {path}/nodes_{itr:02d}_odd.hdf --threads {threads}".format(path=options.path,itr=it,inputfile=options.input[1],threads=options.threads)
+			run(cmd)
+			progress += 2.0
+			E2progress(logid,progress/total_procs)
+		else:
+		
+			### Simmx
+			#FIXME - Need to combine simmx with classification !!!
 
-		### Simmx
-		#FIXME - Need to combine simmx with classification !!!
+			append_html("<p>* Computing similarity of each particle to the set of projections using a hierarchical scheme. This will be the basis for classification.</p>",True)
+			cmd = "e2simmx2stage.py {path}/projections_{itr:02d}_even.hdf {inputfile} {path}/simmx_{itr:02d}_even.hdf {path}/proj_simmx_{itr:02d}_even.hdf {path}/proj_stg1_{itr:02d}_even.hdf {path}/simmx_stg1_{itr:02d}_even.hdf --saveali --cmp {simcmp} \
+	--align {simalign} --aligncmp {simaligncmp} {simralign} {shrinks1} {shrink} {prefilt} {simmask} {verbose} {parallel}".format(
+				path=options.path,itr=it,inputfile=options.input[0],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,
+				shrinks1=shrinks1,shrink=shrink,prefilt=prefilt,simmask=simmask,verbose=verbose,parallel=parallel)
+			run(cmd)
+			cmd = "e2simmx2stage.py {path}/projections_{itr:02d}_odd.hdf {inputfile} {path}/simmx_{itr:02d}_odd.hdf {path}/proj_simmx_{itr:02d}_odd.hdf {path}/proj_stg1_{itr:02d}_odd.hdf {path}/simmx_stg1_{itr:02d}_odd.hdf --saveali --cmp {simcmp} \
+	--align {simalign} --aligncmp {simaligncmp} {simralign} {shrinks1} {shrink} {prefilt} {simmask} {verbose} {parallel}".format(
+				path=options.path,itr=it,inputfile=options.input[1],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,
+				shrinks1=shrinks1,shrink=shrink,prefilt=prefilt,simmask=simmask,verbose=verbose,parallel=parallel)
+			run(cmd)
+			progress += 1.0
+			E2progress(logid,progress/total_procs)
 
-		append_html("<p>* Computing similarity of each particle to the set of projections using a hierarchical scheme. This will be the basis for classification.</p>",True)
-		cmd = "e2simmx2stage.py {path}/projections_{itr:02d}_even.hdf {inputfile} {path}/simmx_{itr:02d}_even.hdf {path}/proj_simmx_{itr:02d}_even.hdf {path}/proj_stg1_{itr:02d}_even.hdf {path}/simmx_stg1_{itr:02d}_even.hdf --saveali --cmp {simcmp} \
---align {simalign} --aligncmp {simaligncmp} {simralign} {shrinks1} {shrink} {prefilt} {simmask} {verbose} {parallel}".format(
-			path=options.path,itr=it,inputfile=options.input[0],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,
-			shrinks1=shrinks1,shrink=shrink,prefilt=prefilt,simmask=simmask,verbose=verbose,parallel=parallel)
-		run(cmd)
-		cmd = "e2simmx2stage.py {path}/projections_{itr:02d}_odd.hdf {inputfile} {path}/simmx_{itr:02d}_odd.hdf {path}/proj_simmx_{itr:02d}_odd.hdf {path}/proj_stg1_{itr:02d}_odd.hdf {path}/simmx_stg1_{itr:02d}_odd.hdf --saveali --cmp {simcmp} \
---align {simalign} --aligncmp {simaligncmp} {simralign} {shrinks1} {shrink} {prefilt} {simmask} {verbose} {parallel}".format(
-			path=options.path,itr=it,inputfile=options.input[1],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,
-			shrinks1=shrinks1,shrink=shrink,prefilt=prefilt,simmask=simmask,verbose=verbose,parallel=parallel)
-		run(cmd)
-		progress += 1.0
-		E2progress(logid,progress/total_procs)
-
-		### Classify
-		append_html("<p>* Based on the similarity values, put each particle in to 1 or more classes (depending on --sep)</p>",True)
-		cmd = "e2classify.py {path}/simmx_{itr:02d}_even.hdf {path}/classmx_{itr:02d}_even.hdf -f --sep {sep} {verbose}".format(
-			path=options.path,itr=it,sep=options.sep,verbose=verbose)
-		run(cmd)
-		cmd = "e2classify.py {path}/simmx_{itr:02d}_odd.hdf {path}/classmx_{itr:02d}_odd.hdf -f --sep {sep} {verbose}".format(
-			path=options.path,itr=it,sep=options.sep,verbose=verbose)
-		run(cmd)
-		progress += 1.0
-		E2progress(logid,progress/total_procs)
+			### Classify
+			append_html("<p>* Based on the similarity values, put each particle in to 1 or more classes (depending on --sep)</p>",True)
+			cmd = "e2classify.py {path}/simmx_{itr:02d}_even.hdf {path}/classmx_{itr:02d}_even.hdf -f --sep {sep} {verbose}".format(
+				path=options.path,itr=it,sep=options.sep,verbose=verbose)
+			run(cmd)
+			cmd = "e2classify.py {path}/simmx_{itr:02d}_odd.hdf {path}/classmx_{itr:02d}_odd.hdf -f --sep {sep} {verbose}".format(
+				path=options.path,itr=it,sep=options.sep,verbose=verbose)
+			run(cmd)
+			progress += 1.0
+			E2progress(logid,progress/total_procs)
 
 		### Class-averaging
 		append_html("<p>* Iteratively align and average all of the particles within each class, discarding the worst fraction</p>",True)
