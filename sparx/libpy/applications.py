@@ -8114,13 +8114,15 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 			finfo.write("\n")
 			finfo.flush()
 		for ic in xrange(n_of_chunks):
-			if(center == -1):
+			if(center == -1 and sym[0] == 'c'):
 				if debug:
 					finfo.write("  begin centering \n")
 					finfo.flush()
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(dataim, total_nima, myid, number_of_proc, main_node)
-				cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+				cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, mpi_comm)
 				cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
+				if int(sym[1]) > 1:
+					cs[0] = cs[1] = 0.0
 				rotate_3D_shift(dataim, cs)
 				if myid == main_node:
 					msg = "Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
