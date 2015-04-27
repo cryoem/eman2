@@ -2613,16 +2613,13 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 EMData* RT3DTreeAligner::align(EMData * this_img, EMData *to, const string & cmp_name, const Dict& cmp_params) const
 {
 
- 	vector<Dict> alis = xform_align_nbest(this_img,to,1,cmp_name,cmp_params);
+ 	vector<Dict> alis = xform_align_nbest(this_img,to,10,cmp_name,cmp_params);
  
  	Dict t;
  	Transform* tr = (Transform*) alis[0]["xform.align3d"];
  	t["transform"] = tr;
  	EMData* soln = this_img->process("xform",t);
  	soln->set_attr("xform.align3d",tr);
- 	delete tr; tr = 0;
-
-	
 	
 	return soln;
 
@@ -2630,12 +2627,22 @@ EMData* RT3DTreeAligner::align(EMData * this_img, EMData *to, const string & cmp
 
 vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, const unsigned int nsoln, const string & cmp_name, const Dict& cmp_params) const {
 	if (nsoln == 0) throw InvalidParameterException("ERROR (RT3DTreeAligner): nsoln must be >0"); // What was the user thinking?
-	if (this_img->get_xsize()!=this_img->get_ysize()+2 || this_img->get_ysize()!=this_img->get_zsize()
-		|| to->get_xsize()!=to->get_ysize()+2 || to->get_ysize()!=to->get_zsize()) throw InvalidCallException("ERROR (RT3DTreeAligner): requires cubic images");
 	
-	EMData *base_this = this_img->do_fft();
-	EMData *base_to = to->do_fft();
+	int cleanup=0;
+	EMData *base_this;
+	EMData *base_to;
+	if (this_img->is_complex() && to->is_complex()) {
+		base_this=this_img;
+		base_to=to;
+	} else {
+		base_this = this_img->do_fft();
+		base_to = to->do_fft();
+		cleanup=1;
+	}
 	
+	if (base_this->get_xsize()!=base_this->get_ysize()+2 || base_this->get_ysize()!=base_this->get_zsize()
+		|| base_to->get_xsize()!=base_to->get_ysize()+2 || base_to->get_ysize()!=base_to->get_zsize()) throw InvalidCallException("ERROR (RT3DTreeAligner): requires cubic images");
+
 	base_this->process_inplace("xform.phaseorigin.tocorner");
 	base_this->process_inplace("xform.fourierorigin.tocenter");
 	base_to->process_inplace("xform.phaseorigin.tocorner");
@@ -2646,87 +2653,118 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	
 //	int downsample=floor(ny/20);		// Minimum shrunken box size is 20^3
 	
-	// initialize results
-	vector<Dict> solns;
-	for (unsigned int i = 0; i < nsoln; ++i ) {
-		Dict d;
-		d["score"] = 1.e24;
-		d["coverage"] = 0.0;
-		d["xform.align3d"] = new Transform();
-		solns.push_back(d);
-	}
-
+	vector<float> s_score(nsoln,0.0f);
+	vector<float> s_coverage(nsoln,0.0f);
+	vector<Transform> s_xform(nsoln);
+	printf("%d solutions\n",nsoln);
+	
 	// We start with 32^3, 64^3 ...
 	for (int sexp=5; sexp<10; sexp++) {
 		int ss=pow(2.0,sexp);
 		if (ss>ny) ss=ny;
+		printf("Size %d\n",ss);
 		
 		//ss=good_size(ny/ds);
 		EMData *small_this=base_this->get_clip(Region(0,(ny-ss)/2,(ny-ss)/2,ss+2,ss,ss));
 		EMData *small_to=  base_to->  get_clip(Region(0,(ny-ss)/2,(ny-ss)/2,ss+2,ss,ss));
+		small_this->process_inplace("xform.fourierorigin.tocorner");
+		small_to->process_inplace("xform.fourierorigin.tocorner");
 		
-		float astep = 89.999/floor(90.0/atan(2.0/ss));
+		for (int i=0; i<nsoln; i++) s_score[i]=1.0e24;	// reset the scores since the different scales will not match
+		
+		// debug out
+// 		EMData *x=small_this->do_ift();
+// 		x->process_inplace("xform.phaseorigin.tocenter");
+// 		x->write_image("dbg.hdf",(sexp-5)*2);
+// 		delete x;
+// 		x=small_to->do_ift();
+// 		x->process_inplace("xform.phaseorigin.tocenter");
+// 		x->write_image("dbg.hdf",(sexp-5)*2+1);
+// 		delete x;
+		
+		// This is a solid estimate for very complete searching
+// 		float astep = 89.999/floor(pi/(2.0*atan(2.0/ss)));
+		
+		// This is drawn from single particle analysis testing, which insures that enough sampling to
+		// reasonably fill Fourier space is achieved
+		float astep=89.99/ceil(90.0*9.0/(8*sqrt(4300/ss)));	// 8 is (3+speed) from SPA with speed=5
 		
 		// This is for the first loop, we do a full search in a heavily downsampled space
-		if ((int)solns[0]["coverage"]==0) {
-			//Genrate points on a sphere in an asymmetric unit
+		if (s_coverage[0]==0.0f) {
+			// Genrate points on a sphere in an asymmetric unit
+			printf("stage 1 - ang step %1.2f\n",astep);
 			Dict d;
 			d["inc_mirror"] = true;
 			d["delta"] = astep;		// make sure the altitude step hits 90 degrees, not absolutely necessary for this, but can't hurt
 			Symmetry3D* sym = Factory<Symmetry3D>::get((string)params.set_default("sym","c1"));
 			// We don't generate for phi, since this can produce a very large number of orientations
 			vector<Transform> transforms = sym->gen_orientations((string)params.set_default("orientgen","eman"),d);
+			printf("%d orientations to test\n",(int)(transforms.size()*(360.0/astep)));
 			
-			for (std::vector<Transform>::iterator t = transforms.begin(); t!=transforms.end(); ++t) {
+			// We iterate over all orientations in an asym triangle (alt & az) then deal with phi ourselves
+//			for (std::vector<Transform>::iterator t = transforms.begin(); t!=transforms.end(); ++t) {    // iterator form was causing all sorts of problems
+			for (unsigned int it=0; it<transforms.size(); it++) {
+				Transform t = transforms[it];
+				printf("  %d/%d\r",it,transforms.size());
+				fflush(stdout);
 				for (float phi=0; phi<360.0; phi+=astep) {
-					Dict aap=(*t).get_params("eman");
+					Dict aap=t.get_params("eman");
 					aap["phi"]=phi;
 					aap["tx"]=0;
 					aap["ty"]=0;
 					aap["tz"]=0;
-					t->set_params(aap);
+					t.set_params(aap);
 					
-					EMData *stt=small_this->process("xform",Dict("Transform",EMObject(&t)));
-					EMData *ccf=small_to->calc_ccf(stt,CIRCULANT,true);
-					IntPoint ml=ccf->calc_max_location();
+					// somewhat strangely, rotations are actually much more expensive than FFTs, so we use a CCF for translation
+					EMData *stt=small_this->process("xform",Dict("transform",EMObject(&t)));
+					EMData *ccf=small_to->calc_ccf(stt);
+					IntPoint ml=ccf->calc_max_location_wrap();
 					
-					aap["tx"]=(int)ml[0]-ny/2;
-					aap["ty"]=(int)ml[1]-ny/2;
-					aap["tz"]=(int)ml[2]-ny/2;
-					t->set_params(aap);
+					aap["tx"]=(int)ml[0];
+					aap["ty"]=(int)ml[1];
+					aap["tz"]=(int)ml[2];
+					t.set_params(aap);
 					delete stt;
-					stt=small_this->process("xform",Dict("Transform",EMObject(&t)));	// we have to do 1 slow transform here now that we have the translation
+					delete ccf;
+					stt=small_this->process("xform",Dict("transform",EMObject(&t)));	// we have to do 1 slow transform here now that we have the translation
 					
 					float sim=stt->cmp("ccc.tomo.thresh",small_to);
+
+					// First we find the worst solution in the list of possible best solutions, or the first
+					// solution which is currently "empty"
+					int worst=-1;
+					for (int i=0; i<nsoln; i++) {
+						if (s_coverage[i]==0.0) { worst=i; break; }
+						if (s_score[i]<s_score[worst]) worst=i;
+					}
 					
-					// We need to insert this in our list of best orientations if it's better than an existing one
-					
-//					Dict *worst=solns[0];
-//					for (std::vector<Dict>::iterator s = solns.begin(); s != solns.end(); ++s) if (*s["coverage"]==0 || sim<*s["score"]) break;
-					
-					// If the score is better than before, we update this particular best value
-// 					if (sim<(float)((*s)["score"])) {
-// 						(*s)["score"]=sim;
-// 						(*s)["coverage"]=stt->get_attr("coverage");
-// 						((Transform *)((*s)["xform.align3d"]))->set_params(aap);
-// 					}
-					
-					
+					// If the current solution is better than the worst of the previous solutions, then we
+					// displace it. Note that there is no sorting performed here
+					if (sim<s_score[worst]) {
+						s_score[worst]=sim;
+						s_coverage[worst]=stt->get_attr("fft_overlap");
+						s_xform[worst]=t;
+					}
+					delete stt;
 				}
 			}
+			printf("\n");
 				
 			
 		}
-		// Once we have our initial list of best locations, we just refine them
+		// Once we have our initial list of best locations, we just refine each possibility individually
 		else {
 			// We generate a search pattern around each existing solution
-			for (std::vector<Dict>::iterator s = solns.begin(); s != solns.end(); ++s) {
+			printf("stage 2 (%1.2f)\n",astep);
+			for (int i=0; i<nsoln; i++) {
 				
-				// Ouch, exhaustive (local) search in all 6 axes!
-				for (int daz=-2; daz<=2; daz++) {
-					for (int dalt=-2; dalt<=2; dalt++) {
-						for (int dphi=-2; dphi<=2; dphi++) {
-							Transform t=Transform((Transform&)((*s)["xform.align3d"]));
+				printf("  %d/%d\r",i,nsoln);
+				fflush(stdout);
+				// Ouch, exhaustive (local) search
+				for (int daz=-1; daz<=1; daz++) {
+					for (int dalt=-1; dalt<=1; dalt++) {
+						for (int dphi=-1; dphi<=1; dphi++) {
+							Transform t=s_xform[i];			// copy
 							Dict aap=t.get_params("eman");
 							aap["az"]=(float)aap["az"]+daz*astep;
 							aap["alt"]=(float)aap["alt"]+dalt*astep;
@@ -2735,38 +2773,54 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 							aap["ty"]=0;
 							aap["tz"]=0;
 							t.set_params(aap);
-										
-							EMData *stt=small_this->process("xform",Dict("Transform",EMObject(&t)));
-							EMData *ccf=small_to->calc_ccf(stt,CIRCULANT,true);
-							IntPoint ml=ccf->calc_max_location();
 							
-							aap["tx"]=(int)ml[0]-ny/2;
-							aap["ty"]=(int)ml[1]-ny/2;
-							aap["tz"]=(int)ml[2]-ny/2;
+							// rotate in Fourier space then use a CCF to find translation
+							EMData *stt=small_this->process("xform",Dict("transform",EMObject(&t)));
+							EMData *ccf=small_to->calc_ccf(stt);
+							IntPoint ml=ccf->calc_max_location_wrap();
+							
+							aap["tx"]=(int)ml[0];
+							aap["ty"]=(int)ml[1];
+							aap["tz"]=(int)ml[2];
 							t.set_params(aap);
 							delete stt;
-							stt=small_this->process("xform",Dict("Transform",EMObject(&t)));	// we have to do 1 slow transform here now that we have the translation
+							delete ccf;
+							stt=small_this->process("xform",Dict("transform",EMObject(&t)));	// we have to do 1 slow transform here now that we have the translation
 							
 							float sim=stt->cmp("ccc.tomo.thresh",small_to);
 							
 							// If the score is better than before, we update this particular best value
-							if (sim<(float)((*s)["score"])) {
-								(*s)["score"]=sim;
-								(*s)["coverage"]=stt->get_attr("coverage");
-								((Transform *)((*s)["xform.align3d"]))->set_params(aap);
+							if (sim<s_score[i]) {
+								s_score[i]=sim;
+								s_coverage[i]=stt->get_attr("fft_overlap");
+								s_xform[i]=t;
 							}
+							delete stt;
 						}
 					}
 				}
 			}
 		}
-		
-		
-		//Genrate symmetry related orritenations
-		//vector<Transform> syms = Symmetry3D::get_symmetries((string)params["sym"]);
-		
+		delete small_this;
+		delete small_to;
+		if (ss==ny) break;
 	}
-	
+	if (cleanup) {
+		delete base_this;
+		delete base_to;
+	}
+
+	// initialize results
+	vector<Dict> solns;
+	for (unsigned int i = 0; i < nsoln; ++i ) {
+		Dict d;
+		d["score"] = s_score[i];
+		d["coverage"] = s_coverage[i];
+		d["xform.align3d"] = &s_xform[i];
+		solns.push_back(d);
+	}
+
+	return solns;
 }
 	
 EMData* RT3DSphereAligner::align(EMData * this_img, EMData *to, const string & cmp_name, const Dict& cmp_params) const
