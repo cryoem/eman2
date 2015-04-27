@@ -1356,7 +1356,6 @@ def main():
 					tracker["resolution"] = currentres
 					tracker["lowpass"]    = lowpass
 					tracker["eliminated-outliers"] = eliminated_outliers
-					tracker["movedup"] = False
 					keepgoing = 1
 			else:
 				#  The resolution is not moving up.  Check whether this is exhaustive search, 
@@ -1369,27 +1368,49 @@ def main():
 					tracker["movedup"] = True
 					if(myid == main_node):  print("  Switching to local searches with an %s"%angular_neighborhood)
 					keepgoing = 1
-				elif(angular_neighborhood > 0.0 and not paramsdict["local"] ):
-					paramsdict["local"] = True
-					paramsdict["ts"]    = "2.0"
-					tracker["local"]  = True
-					tracker["movedup"]  = True
-					tracker["initialfl"]    = lowpass
-					paramsdict["initialfl"] = lowpass
-					lowpass = currentres + tracker["extension"]
-					shrink  = max(min(2*lowpass + paramsdict["aa"], 1.0), minshrink)
-					nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
-					nxshrink += nxshrink%2
-					shrink = float(nxshrink)/nnxo
-					if( tracker["nx"] == nnxo):
-						keepgoing = 0
+				elif(angular_neighborhood > 0.0 ):
+					if( not paramsdict["local"] ):
+						paramsdict["local"] = True
+						paramsdict["ts"]    = "2.0"
+						tracker["local"]  = True
+						tracker["movedup"]  = False
+						tracker["initialfl"]    = lowpass
+						paramsdict["initialfl"] = lowpass
+						lowpass = currentres + tracker["extension"]
+						shrink  = max(min(2*lowpass + paramsdict["aa"], 1.0), minshrink)
+						nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
+						nxshrink += nxshrink%2
+						shrink = float(nxshrink)/nnxo
+						if( tracker["nx"] == nnxo):
+							if(myid == main_node):  print("The resolution did not improve and image we reached the full image size.")
+							keepgoing = 0
+						else:
+							tracker["resolution"] = currentres
+							tracker["lowpass"]    = lowpass
+							tracker["eliminated-outliers"] = eliminated_outliers
+							tracker["movedup"] = False
+							if(myid == main_node):  print("  Switching to local searches")
+							keepgoing = 1
 					else:
-						tracker["resolution"] = currentres
-						tracker["lowpass"]    = lowpass
-						tracker["eliminated-outliers"] = eliminated_outliers
-						tracker["movedup"] = False
-						if(myid == main_node):  print("  Switching to local searches")
-						keepgoing = 1
+						#  If the resolution did not improve for local, keep current parameters, but increase the image size to full.
+						paramsdict["ts"]    = "2.0"
+						tracker["local"]  = True
+						tracker["movedup"]  = False
+						tracker["initialfl"]    = lowpass
+						paramsdict["initialfl"] = lowpass
+						nxshrink = nnxo
+						shrink = float(nxshrink)/nnxo
+						if( tracker["nx"] == nnxo):
+							if(myid == main_node):  print("The resolution did not improve and image we reached the full image size.")
+							keepgoing = 0
+						else:
+							tracker["resolution"] = currentres
+							tracker["lowpass"]    = lowpass
+							tracker["eliminated-outliers"] = eliminated_outliers
+							tracker["movedup"] = False
+							if(myid == main_node):  print("  Resolution id not imrove, do local searches at full size")
+							keepgoing = 1
+						
 				else:	
 					if(myid == main_node):  print("The resolution did not improve.")
 					keepgoing = 0
