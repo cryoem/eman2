@@ -8702,7 +8702,7 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 			for lhx in xrange(lhist):
 				msg = "          %10.3f     %7d"%(region[lhx], histo[lhx])
 				log.add(msg)
-			log.add("____________________________________________________")
+			log.add("____________________________________________________\n")
 
 
 			# Terminate if saturatecrit% within pixercutoff pixel error  WHY ONE??
@@ -8716,7 +8716,7 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 					log.add("First iteration, will continue even though %4.2f images did not find better orientations"%saturatecrit)
 				else:
 					terminate = 1
-					log.add("...............")
+					log.add("..............................................................")
 					log.add(">>>>>>>>>>>>>>>   Will terminate as %4.2f images did not find better orientations"%saturatecrit)
 			del region, histo
 		del pixer

@@ -108,6 +108,17 @@ global passlastring, mempernode
 def hlfmem(x):
 	return (len(even_angles(x))*4.*passlastring**2*4./ mempernode - 0.5)**2
 
+def get_pixercutoff(radius, delta = 2.0, dsx = 0.5):
+	#  Estimate tolerable error based on current delta and shrink.
+	#  Current radius (radi*shrink)
+	#  delta - current angular step
+	#  dsx   - expected pixel error (generally, for polar searches it is 0.5, for gridding 0.1.
+	t1 = Transform({"type":"spider","phi":0.0,"theta":0.0,"psi":0.0})
+	t1.set_trans(Vec2f(0.0, 0.0))
+	t2 = Transform({"type":"spider","phi":0.0,"theta":delta,"psi":delta})
+	t2.set_trans(Vec2f(dsx, dsx))
+	return max_3D_pixel_error(t1, t2, radius)
+
 
 def comparetwoalis(params1, params2, thresherr=1.0, radius = 1.0):
 	#  Find errors per image
@@ -572,7 +583,7 @@ def metamove(paramsdict, partids, partstack, outputdir, procid, myid, main_node,
 	#  Run alignment command
 	if(paramsdict["local"]): params = local_ali3d_base_MPI(projdata, get_im(paramsdict["refvol"]), \
 				ali3d_options, paramsdict["shrink"], mpi_comm = MPI_COMM_WORLD, log = log, \
-		    	chunk = 0.25, saturatecrit = paramsdict["saturatecrit"] )
+		    	chunk = 0.25, saturatecrit = paramsdict["saturatecrit"], pixercutoff =  paramsdict["pixercutoff"])
 	else: params = ali3d_base(projdata, get_im(paramsdict["refvol"]), \
 				ali3d_options, paramsdict["shrink"], mpi_comm = MPI_COMM_WORLD, log = log, \
 				nsoft = paramsdict["nsoft"], saturatecrit = paramsdict["saturatecrit"] )
@@ -813,7 +824,7 @@ def main():
 	paramsdict = {	"stack":stack,"delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":angular_neighborhood, \
 					"center":options.center, "maxit":1, "local":False,\
 					"lowpass":0.4, "initialfl":0.4, "aa":0.1, "radius":radi, \
-					"nsoft":0, "delpreviousmax":True, "shrink":1.0, "saturatecrit":1.0, \
+					"nsoft":0, "delpreviousmax":True, "shrink":1.0, "saturatecrit":1.0, "pixercutoff":2.0,\
 					"refvol":volinit, "mask3D":options.mask3D}
 
 	doit, keepchecking = checkstep(initdir, keepchecking, myid, main_node)
@@ -978,7 +989,7 @@ def main():
 		#  Part "a"  SHC         <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 		for procid in xrange(2):
 			coutdir = os.path.join(mainoutputdir,"loga%01d"%procid)
-			doit, keepchecking = checkstep(coutdir  , keepchecking, myid, main_node)
+			doit, keepchecking = checkstep(coutdir, keepchecking, myid, main_node)
 			#  here ts has different meaning for standard and continuous
 			subdict( paramsdict, { "delta":"%f"%round(degrees(atan(1.0/lastring)), 2) , "xr":"2", "an":angular_neighborhood, \
 							"lowpass":lowpass, "nsoft":options.nsoft, "saturatecrit":0.75, "delpreviousmax":True, "shrink":shrink, \
@@ -1142,12 +1153,7 @@ def main():
 					from pixel_error import max_3D_pixel_error
 					ts = get_symt(ali3d_options.sym)
 					badapples = []
-					#  Estimate tolerable error based on current delta and shrink.
-					t1 = Transform({"type":"spider","phi":0.0,"theta":0.0,"psi":0.0})
-					t1.set_trans(Vec2f(0.0, 0.0))
-					t2 = Transform({"type":"spider","phi":0.0,"theta":float(paramsdict["delta"]),"psi":float(paramsdict["delta"])})
-					t2.set_trans(Vec2f(0.5, 0.5))
-					deltaerror = max_3D_pixel_error(t1, t2, radi*shrink)
+					pixercutoff = get_pixercutoff(radi*shrink, float(paramsdict["delta"]), 0.5)
 					total_images_now = 0
 					for procid in xrange(2):
 						bad = []
@@ -1171,7 +1177,7 @@ def main():
 							else:
 								pixel_error = max_3D_pixel_error(t1, t2, lastring)
 
-							if(pixel_error > deltaerror):
+							if(pixel_error > pixercutoff):
 								bad.append(i)
 						if(len(bad)>0):
 							badapples += [ids[bad[i]] for i in xrange(len(bad))]
@@ -1390,6 +1396,8 @@ def main():
 							tracker["eliminated-outliers"] = eliminated_outliers
 							tracker["movedup"] = False
 							if(myid == main_node):  print("  Switching to local searches")
+							#  We have to decrease angular error as these are "continuous" searches
+							paramsdict["pixercutoff"] = get_pixercutoff(radi*shrink, degrees(atan(1.0/float(radi*shrink)))/4.0, 0.1)
 							keepgoing = 1
 					else:
 						#  If the resolution did not improve for local, keep current parameters, but increase the image size to full.
@@ -1408,13 +1416,15 @@ def main():
 							tracker["lowpass"]    = lowpass
 							tracker["eliminated-outliers"] = eliminated_outliers
 							tracker["movedup"] = False
-							if(myid == main_node):  print("  Resolution id not imrove, do local searches at full size")
+							if(myid == main_node):  print("  Resolution id not improve, do local searches at full size")
+							#  We have to decrease angular error as these are "continuous" searches
+							paramsdict["pixercutoff"] = get_pixercutoff(radi*shrink, degrees(atan(1.0/float(radi*shrink)))/4.0, 0.1)
 							keepgoing = 1
 						
 				else:	
 					if(myid == main_node):  print("The resolution did not improve.")
 					keepgoing = 0
-		
+
 
 		if( keepgoing == 1 ):
 			if(myid == main_node):
