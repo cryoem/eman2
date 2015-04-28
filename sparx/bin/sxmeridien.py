@@ -1245,6 +1245,8 @@ def main():
 		else:
 			test_outliers = True
 			eliminated_outliers = False
+			newlowpass = lowpass
+			newfalloff = falloff
 		#  HERE the lowpass has the true meaning
 		lowpass = newlowpass
 		falloff = newfalloff
