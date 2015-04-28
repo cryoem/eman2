@@ -277,6 +277,7 @@ def get_resolution(vol, radi, nnxo, fscoutputdir):
 		print("  Something wrong with the resolution, cannot continue")
 		mpi_finalize()
 		exit()
+	"""
 	lowpass = 0.5
 	ns = len(nfsc[1])
 	#  This is resolution used to filter half-volumes
@@ -284,8 +285,10 @@ def get_resolution(vol, radi, nnxo, fscoutputdir):
 		if ( nfsc[1][i] < 0.5 ):
 			lowpass = nfsc[0][i-1]
 			break
+	"""
+	lowpass, falloff = fit_tanh1(nfsc, 0.01)
 
-	return  round(lowpass,2), round(currentres,2)
+	return  round(lowpass,4), round(falloff,4), round(currentres,2)
 
 def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, myid, main_node, nproc):
 	vol = [None]*2
@@ -321,17 +324,20 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			print(  line,"Generated vol #%01d "%procid)
 	del fsc
-	lowpass = 0.0
+	lowpass    = 0.0
+	falloff    = 0.0
 	currentres = 0.0
+
 	if(myid == main_node):
-		lowpass, currentres = get_resolution(vol, mask, nnxo, outputdir)
+		lowpass, falloff, currentres = get_resolution(vol, mask, nnxo, outputdir)
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(  line,"Current resolution %6.2f, low-pass filter cut-off %6.2f"%(currentres,lowpass))
-		write_text_row([lowpass, currentres],os.path.join(outputdir,"current_resolution.txt"))
-	#  Returns: low-pass filter cutoff;  current resolution
+		print(  line,"Current resolution %6.2f, low-pass filter cut-off %6.4f and fall-off %6.4f"%(currentres,lowpass,falloff))
+		write_text_row([lowpass, falloff, currentres],os.path.join(outputdir,"current_resolution.txt"))
+	#  Returns: low-pass filter cutoff;  low-pass filter falloff;  current resolution
 	currentres = bcast_number_to_all(currentres, source_node = main_node)
 	lowpass    = bcast_number_to_all(lowpass, source_node = main_node)
-	return round(lowpass,2), round(currentres,2)
+	falloff    = bcast_number_to_all(falloff, source_node = main_node)
+	return round(lowpass,4), round(falloff,4), round(currentres,2)
 
 def compute_fscs(stack, outputdir, chunkname, newgoodname, fscoutputdir, doit, keepchecking, nproc, myid, main_node):
 	#  Compute reconstructions per group from good particles only to get FSC curves
@@ -559,7 +565,7 @@ def metamove(paramsdict, partids, partstack, outputdir, procid, myid, main_node,
 	#  low pass filter is applied to shrank data, so it has to be adjusted
 	ali3d_options.fl     = paramsdict["lowpass"]/paramsdict["shrink"]
 	ali3d_options.initfl = paramsdict["initialfl"]/paramsdict["shrink"]
-	ali3d_options.aa     = paramsdict["aa"]
+	ali3d_options.aa     = paramsdict["falloff"]
 	ali3d_options.maxit  = paramsdict["maxit"]
 	ali3d_options.mask3D = paramsdict["mask3D"]
 	ali3d_options.an	 = paramsdict["an"]
@@ -823,7 +829,7 @@ def main():
 
 	paramsdict = {	"stack":stack,"delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":angular_neighborhood, \
 					"center":options.center, "maxit":1, "local":False,\
-					"lowpass":0.4, "initialfl":0.4, "aa":0.1, "radius":radi, \
+					"lowpass":0.4, "initialfl":0.4, "falloff":0.1, "radius":radi, \
 					"nsoft":0, "delpreviousmax":True, "shrink":1.0, "saturatecrit":1.0, "pixercutoff":2.0,\
 					"refvol":volinit, "mask3D":options.mask3D}
 
@@ -895,30 +901,35 @@ def main():
 
 
 		if(myid == main_node):
-			lowpass, currentres = get_resolution(vol, radi, nnxo, initdir)
+			lowpass, falloff, currentres = get_resolution(vol, radi, nnxo, initdir)
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(  line,"Initial resolution %6.2f, filter cut-off %6.2f"%(currentres,lowpass))
-			write_text_row([lowpass, currentres],os.path.join(initdir,"current_resolution.txt"))
+			print(  line,"Initial resolution %6.2f, filter cut-off %6.4f and fall-off %6.4f"%(currentres,lowpass,falloff))
+			write_text_row([lowpass, falloff, currentres],os.path.join(initdir,"current_resolution.txt"))
 		else:
 			lowpass    = 0.0
+			falloff    = 0.0
 			currentres = 0.0
 		lowpass    = bcast_number_to_all(lowpass, source_node = main_node)
+		falloff    = bcast_number_to_all(falloff, source_node = main_node)
 		currentres = bcast_number_to_all(currentres, source_node = main_node)
 	else:
-		if(myid == main_node): [lowpass, currentres] = read_text_row(os.path.join(initdir,"current_resolution.txt"))[0]
+		if(myid == main_node): [lowpass, falloff, currentres] = read_text_row(os.path.join(initdir,"current_resolution.txt"))[0]
 		else:
 			lowpass    = 0.0
+			falloff    = 0.0
 			currentres = 0.0
 		lowpass    = bcast_number_to_all(lowpass, source_node = main_node)
-		lowpass    = round(lowpass,2)
+		lowpass    = round(lowpass,4)
+		falloff    = bcast_number_to_all(falloff, source_node = main_node)
+		falloff    = round(falloff,4)
 		currentres = bcast_number_to_all(currentres, source_node = main_node)
 		currentres = round(currentres,2)
 
 	# set for the first iteration
-	nxshrink = min(max(32, int( (lowpass+paramsdict["aa"]/2.)*2*nnxo + 0.5)), nnxo)
+	nxshrink = min(max(32, int( (lowpass+paramsdict["falloff"]/2.)*2*nnxo + 0.5)), nnxo)
 	nxshrink += nxshrink%2
 	shrink = float(nxshrink)/nnxo
-	tracker = {"resolution":currentres,"lowpass":lowpass, "initialfl":lowpass,  \
+	tracker = {"resolution":currentres,"lowpass":lowpass, "falloff":falloff, "initialfl":lowpass,  \
 				"movedup":False,"eliminated-outliers":False,"PWadjustment":"","local":False,\
 				"nx":nxshrink, "shrink":shrink, "extension":0.0,"directory":"none"}
 	history = [tracker.copy()]
@@ -937,7 +948,7 @@ def main():
 
 		if(myid == main_node):
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(line,"MAIN ITERATION #",mainiteration, shrink, nxshrink, currentres, lowpass)
+			print(line,"MAIN ITERATION   shrink, nxshrink, currentres, lowpass, falloff#",mainiteration, shrink, nxshrink, currentres, lowpass, falloff)
 			print_dict(history[-1],"TRACKER")
 
 			if keepchecking:
@@ -992,7 +1003,7 @@ def main():
 			doit, keepchecking = checkstep(coutdir, keepchecking, myid, main_node)
 			#  here ts has different meaning for standard and continuous
 			subdict( paramsdict, { "delta":"%f"%round(degrees(atan(1.0/lastring)), 2) , "xr":"2", "an":angular_neighborhood, \
-							"lowpass":lowpass, "nsoft":options.nsoft, "saturatecrit":0.75, "delpreviousmax":True, "shrink":shrink, \
+							"lowpass":lowpass, "falloff":falloff, "nsoft":options.nsoft, "saturatecrit":0.75, "delpreviousmax":True, "shrink":shrink, \
 							"refvol":os.path.join(mainoutputdir,"fusevol%01d.hdf"%procid) } )
 			if( paramsdict["nsoft"] > 0 ):
 				if( float(paramsdict["an"]) == -1.0 ): paramsdict["saturatecrit"] = 0.75
@@ -1017,8 +1028,8 @@ def main():
 		doit, keepchecking = checkstep(outvol, keepchecking, myid, main_node)
 
 		if  doit:
-			xlowpass, xcurrentres = compute_resolution(stack, mainoutputdir, partids, partstack, radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
-			del xlowpass, xcurrentres
+			xlowpass, xfalloff, xcurrentres = compute_resolution(stack, mainoutputdir, partids, partstack, radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
+			del xlowpass, xfalloff, xcurrentres
 			if( myid == main_node):
 				# Move output to proper directories
 				for procid in xrange(2):
@@ -1083,21 +1094,24 @@ def main():
 			if( options.nsoft > 0 ):
 				#  There was first soft phase, so the volumes have to be computed
 				#  low-pass filter, current resolution
-				lowpass, currentres = compute_resolution(stack, mainoutputdir, partids, partstack, radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
+				lowpass, falloff, currentres = compute_resolution(stack, mainoutputdir, partids, partstack, radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
 			else:
 				#  Previous phase was hard, so the volumes exist
 				vol = []
 				for procid in xrange(2):  vol.append(get_im(os.path.join(mainoutputdir,"loga%01d"%procid,"vol%01d.hdf"%procid) ))
-				newlowpass, currentres = compute_resolution(vol, mainoutputdir, partids, partstack, radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
+				newlowpass, newfalloff, currentres = compute_resolution(vol, mainoutputdir, partids, partstack, radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
 				del vol
 		else:
 			if(myid == main_node):
-				[newlowpass, currentres] = read_text_row( os.path.join(mainoutputdir,"current_resolution.txt") )[0]
+				[newlowpass, newfalloff, currentres] = read_text_row( os.path.join(mainoutputdir,"current_resolution.txt") )[0]
 			else:
 				newlowpass = 0.0
+				newfalloff = 0.0
 				currentres = 0.0
 			newlowpass = bcast_number_to_all(newlowpass, source_node = main_node)
-			newlowpass = round(newlowpass,2)
+			newlowpass = round(newlowpass,4)
+			newfalloff = bcast_number_to_all(newfalloff, source_node = main_node)
+			newfalloff = round(newfalloff,4)
 			currentres = bcast_number_to_all(currentres, source_node = main_node)
 			currentres = round(currentres,2)
 
@@ -1139,7 +1153,8 @@ def main():
 				if  doit:
 					#  Do cross-check of the results
 					subdict(paramsdict, \
-						{ "maxit":1, "lowpass":lowpass, "nsoft":0, "saturatecrit":0.95, "delpreviousmax":True, "shrink":shrink, \
+						{ "maxit":1, "lowpass":lowpass, "xfalloff":falloff, "nsoft":0, "saturatecrit":0.95, \
+									"delpreviousmax":True, "shrink":shrink, \
 									"refvol":os.path.join(mainoutputdir,"vol%01d.hdf"%(1-procid)) } )
 					#  The cross-check uses parameters from step "b" to make sure shifts are correct.  
 					#  As the check is exhaustive, angles are ignored
@@ -1203,7 +1218,7 @@ def main():
 				#  This part under MPI
 				if(eli > 0.0):
 					#  Compute current resolution
-					depfilter, depres = compute_resolution(stack, mainoutputdir, \
+					depfilter, depfalloff, depres = compute_resolution(stack, mainoutputdir, \
 							[os.path.join(mainoutputdir,"chunk%01d.txt"%procid) for procid in xrange(2)], \
 							[os.path.join(mainoutputdir,"params-chunk%01d.txt"%procid) for procid in xrange(2)], \
 							radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
@@ -1215,6 +1230,7 @@ def main():
 						eliminated_outliers = True
 						currentres = depres
 						newlowpass = depfilter
+						newfalloff = depfalloff
 						"""
 						#  It does not seem to be needed, as data is there, we just point to the directory
 						for procid in xrange(2):
@@ -1229,6 +1245,7 @@ def main():
 			eliminated_outliers = False
 		#  HERE the lowpass has the true meaning
 		lowpass = newlowpass
+		falloff = newfalloff
 
 		if(myid == main_node and not eliminated_outliers and doit):  # I had to add here doit, otherwise during the restart it incorrectly copies the files.
 			for procid in xrange(2):
@@ -1246,7 +1263,7 @@ def main():
 			stepforward = 0.02
 			increment   = 0.01
 
-		if( mainiteration != 7 and ( currentres > tracker["resolution"] ) or (eliminated_outliers and not tracker["eliminated-outliers"])):
+		if( ( currentres > tracker["resolution"] ) or (eliminated_outliers and not tracker["eliminated-outliers"]) ):
 			if(myid == main_node):
 				print(" New resolution %6.2f   Previous resolution %6.2f"%(currentres , tracker["resolution"]))
 				if( currentres > tracker["resolution"]):  print("  Resolution improved, full steam ahead!")
@@ -1259,8 +1276,9 @@ def main():
 					else:   tracker["movedup"] = False
 					tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
 					paramsdict["initialfl"] = lowpass
+					paramsdict["falloff"]   = falloff
 					lowpass = currentres + tracker["extension"]
-					shrink = max(min(2*lowpass + paramsdict["aa"], 1.0), minshrink)
+					shrink = max(min(2*lowpass + paramsdict["falloff"], 1.0), minshrink)
 					nxshrink = min(int(nnxo*shrink + 0.5),nnxo)
 					nxshrink += nxshrink%2
 					shrink = float(nxshrink)/nnxo
@@ -1270,14 +1288,16 @@ def main():
 					else:   tracker["movedup"] = False
 					tracker["extension"] =    0.0  # lowpass cannot exceed 0.45
 					paramsdict["initialfl"] = lowpass
+					paramsdict["falloff"]   = falloff
 					lowpass = currentres + tracker["extension"]
-					shrink = max(min(2*lowpass + paramsdict["aa"], 1.0), minshrink)
+					shrink = max(min(2*lowpass + paramsdict["falloff"], 1.0), minshrink)
 					nxshrink = min(int(nnxo*shrink + 0.5),nnxo)
 					nxshrink += nxshrink%2
 					shrink = float(nxshrink)/nnxo
 				tracker["nx"]                  = nxshrink
 				tracker["resolution"]          = currentres
 				tracker["lowpass"]             = lowpass
+				tracker["falloff"]             = falloff
 				tracker["initialfl"]           = paramsdict["initialfl"]
 				tracker["eliminated-outliers"] = eliminated_outliers
 				bestoutputdir = mainoutputdir
@@ -1318,11 +1338,13 @@ def main():
 						partstack[procid] = os.path.join(bestoutputdir,"params-chunk%01d.txt"%procid)
 				"""
 				if(myid == main_node):
-					lowpass, currentres = read_text_row( os.path.join(bestoutputdir,"current_resolution.txt") )[0]
+					lowpass, falloff, currentres = read_text_row( os.path.join(bestoutputdir,"current_resolution.txt") )[0]
 				currentres = bcast_number_to_all(currentres, source_node = main_node)
 				currentres = round(currentres,2)
 				#lowpass = bcast_number_to_all(lowpass, source_node = main_node)
-				#lowpass = round(lowpass,2)
+				#lowpass = round(lowpass,4)
+				#falloff = bcast_number_to_all(falloff, source_node = main_node)
+				#falloff = round(falloff,4)
 				tracker["extension"] -= increment
 				lowpass = currentres + tracker["extension"]
 				#  Here to be consistent I would have to know what was shrink for this run
@@ -1334,25 +1356,28 @@ def main():
 				if(k == -1):
 					print("  something wrong with bestoutputdir")
 					exit()
-				shrink   = history[i]["shrink"]
-				nxshrink = history[i]["nxshrink"]
-				paramsdict["initialfl"]        = history[i]["initialfl"]
-				tracker["initialfl"]           = history[i]["initialfl"]
-				tracker["resolution"] = currentres
-				tracker["lowpass"]    = lowpass
+				shrink                   = history[i]["shrink"]
+				nxshrink                 = history[i]["nxshrink"]
+				paramsdict["initialfl"]  = history[i]["initialfl"]
+				paramsdict["falloff"]    = history[i]["falloff"]
+				tracker["initialfl"]     = history[i]["initialfl"]
+				tracker["resolution"]    = currentres
+				tracker["lowpass"]       = lowpass
+				tracker["falloff"]       = paramsdict["falloff"]
 				tracker["eliminated-outliers"] = eliminated_outliers
 				tracker["movedup"] = False
 				keepgoing = 1
 
-		elif( mainiteration == 7 or currentres == tracker["resolution"] ):
-			if( mainiteration != 7 and tracker["movedup"] ):
+		elif( currentres == tracker["resolution"] ):
+			if( tracker["movedup"] ):
 				if(myid == main_node):  print("The resolution did not improve. This is look ahead move.  Let's try to relax slightly and hope for the best")
 				tracker["extension"]    = min(stepforward,0.45-currentres)
 				tracker["movedup"]      = False
 				tracker["initialfl"]    = lowpass
 				paramsdict["initialfl"] = lowpass
+				paramsdict["falloff"]   = falloff
 				lowpass = currentres + tracker["extension"]
-				shrink  = max(min(2*lowpass + paramsdict["aa"], 1.0), minshrink)
+				shrink  = max(min(2*lowpass + paramsdict["falloff"], 1.0), minshrink)
 				nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
 				nxshrink += nxshrink%2
 				shrink = float(nxshrink)/nnxo
@@ -1361,6 +1386,7 @@ def main():
 				else:
 					tracker["resolution"] = currentres
 					tracker["lowpass"]    = lowpass
+					tracker["falloff"]    = falloff
 					tracker["eliminated-outliers"] = eliminated_outliers
 					keepgoing = 1
 			else:
@@ -1376,14 +1402,15 @@ def main():
 					keepgoing = 1
 				elif(angular_neighborhood > 0.0 ):
 					if( not paramsdict["local"] ):
-						paramsdict["local"] = True
-						paramsdict["ts"]    = "2.0"
-						tracker["local"]  = True
-						tracker["movedup"]  = False
+						paramsdict["local"]     = True
+						paramsdict["ts"]        = "2.0"
+						paramsdict["falloff"]   = falloff
+						tracker["local"]        = True
+						tracker["movedup"]      = False
 						tracker["initialfl"]    = lowpass
 						paramsdict["initialfl"] = lowpass
 						lowpass = currentres + tracker["extension"]
-						shrink  = max(min(2*lowpass + paramsdict["aa"], 1.0), minshrink)
+						shrink  = max(min(2*lowpass + paramsdict["falloff"], 1.0), minshrink)
 						nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
 						nxshrink += nxshrink%2
 						shrink = float(nxshrink)/nnxo
@@ -1393,6 +1420,7 @@ def main():
 						else:
 							tracker["resolution"] = currentres
 							tracker["lowpass"]    = lowpass
+							tracker["falloff"]    = falloff
 							tracker["eliminated-outliers"] = eliminated_outliers
 							tracker["movedup"] = False
 							if(myid == main_node):  print("  Switching to local searches")
@@ -1402,6 +1430,7 @@ def main():
 					else:
 						#  If the resolution did not improve for local, keep current parameters, but increase the image size to full.
 						paramsdict["ts"]    = "2.0"
+						paramsdict["falloff"]   = falloff
 						tracker["local"]  = True
 						tracker["movedup"]  = False
 						tracker["initialfl"]    = lowpass
@@ -1414,6 +1443,7 @@ def main():
 						else:
 							tracker["resolution"] = currentres
 							tracker["lowpass"]    = lowpass
+							tracker["falloff"]    = falloff
 							tracker["eliminated-outliers"] = eliminated_outliers
 							tracker["movedup"] = False
 							if(myid == main_node):  print("  Resolution id not improve, do local searches at full size")
