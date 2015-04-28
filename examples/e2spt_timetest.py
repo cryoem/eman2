@@ -87,6 +87,9 @@ def main():
 	
 	parser.add_argument("--oneicosoff", action='store_true', help="""Turn off the following: testing alignment time for multiple CCFs (between two boxes with noise), corresponding to as many orientations fit in an icosahedral asymmetric unit, depending on --coarsestep and --finestep, WITH overhead (e2spt_classaverage.py IS called).""",default=False)
 	
+	parser.add_argument("--onerotationoff", action='store_true', help="""Turn off the following: alignment time for a single rotation (no ccf, and no overhead anywhere).""",default=False)
+
+	
 	parser.add_argument("--ID", type=str, help="Tag files generated on a particular computer.",default='')
 	parser.add_argument("--sym", type=str, help="Confine alignment time test(s) to scanning an asymmetric unit with --coarsestep and --finestep sampling.",default='c1')
 
@@ -661,6 +664,9 @@ def doit(corg,options,originaldir):
 		
 	if not options.rotonlyoff:
 		IDS.append('rotonly')
+		
+	if not options.onerotationoff:
+		IDS.append('onerotation')
 	
 	
 	#print "\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\nThe IDS and corg are", IDS, corg
@@ -675,13 +681,18 @@ def doit(corg,options,originaldir):
 		#print "\n&&&&&&&&&&&&&&&&&&&&&&&&\n\n\n\n\n"
 		name=options.path + '/' + computer + corg + '.txt'
 		if aidee == 'oneicos':	
-			name = options.path + '/' + computer + 'oneicos_CS' + str(coarsestep).zfill(len(str(coarsestep))) + '_FS' + str(finestep).zfill(len(str(finestep))) + '_' + corg + '.txt'
+			name = options.path + '/' + computer + 'oneicosali_CS' + str(coarsestep).zfill(len(str(coarsestep))) + '_FS' + str(finestep).zfill(len(str(finestep))) + '_' + corg + '.txt'
 		if aidee == 'onefull':
-			name = options.path + '/' + computer + 'onefull_' + corg + '.txt'
+			name = options.path + '/' + computer + 'oneccfwithoverhead_' + corg + '.txt'
 		if aidee == 'oneccf':
 			name = options.path + '/' + computer + 'oneccf_' + corg + '.txt'
 		if aidee == 'rotonly':
-			name = options.path + '/' + computer + 'rotonly_CS' + str(coarsestep).zfill(len(str(coarsestep))) + '_FS' + str(finestep).zfill(len(str(finestep))) + '_'+ corg + '.txt'
+			name = options.path + '/' + computer + 'overheadoff_CS' + str(coarsestep).zfill(len(str(coarsestep))) + '_FS' + str(finestep).zfill(len(str(finestep))) + '_'+ corg + '.txt'
+		if aidee == "onerotation":
+			name = options.path + '/' + computer + 'onerotation_CS' + str(coarsestep).zfill(len(str(coarsestep))) + '_FS' + str(finestep).zfill(len(str(finestep))) + '_'+ corg + '.txt'
+
+		
+		
 		
 		mastername = name.replace('.txt','_final.txt')
 		
@@ -776,6 +787,17 @@ def doit(corg,options,originaldir):
 				
 				if corg=='gpu' or corg=='GPU':
 					EMData.switchoffcuda()
+			
+			elif aidee == 'onerotation':
+				if corg=='gpu' or corg=='GPU':
+					EMData.switchoncuda()
+				
+				a=EMData(aname,0)
+				#b=EMData(bname,0)
+				ta = time()
+				a.rotate(45,45,45)
+				tb = time()
+				
 				
 			elif aidee == 'rotonly':
 				if corg=='gpu' or corg=='GPU':
@@ -787,6 +809,7 @@ def doit(corg,options,originaldir):
 				#--align=rotate_translate_3d:search=12:delta=12:dphi=12:verbose=1 --parallel=thread:8 --falign=refine_3d_grid:delta=3:range=12:search=2
 				ta = time()
 				bestcoarse = a.xform_align_nbest('rotate_translate_3d',b,{'delta':int(options.coarsestep),'dphi':int(options.coarsestep),'search':10,'sym':options.sym,'verbose':options.verbose},1,'ccc.tomo')
+				
 				for bc in bestcoarse:
 					#classoptions["falign"][1]["xform.align3d"] = bc["xform.align3d"]
 					ran=int(round(float(options.coarsestep)/2.0))
