@@ -1252,6 +1252,7 @@ def main():
 		falloff = newfalloff
 
 		if(myid == main_node and not eliminated_outliers and doit):  # I had to add here doit, otherwise during the restart it incorrectly copies the files.
+			#  It still has a problem with the restart, has to be corrected.
 			for procid in xrange(2):
 				#  This is standard path, copy parameters to be used to the main
 				cmd = "{} {} {}".format("cp -p", partids[procid] , os.path.join(mainoutputdir,"chunk%01d.txt"%procid))
