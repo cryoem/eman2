@@ -1041,7 +1041,7 @@ def main():
 					cmdexecute(cmd)
 				cmd = "{} {} {}".format("mv", os.path.join(mainoutputdir,"fsc.txt") , os.path.join(mainoutputdir,"afsc.txt"))
 				cmdexecute(cmd)
-				cmd = "{} {} {}".format("mv", os.path.join(mainoutputdir,"current-resolution.txt") , os.path.join(mainoutputdir,"acurrent-resolution.txt"))
+				cmd = "{} {} {}".format("mv", os.path.join(mainoutputdir,"current_resolution.txt") , os.path.join(mainoutputdir,"acurrent_resolution.txt"))
 				cmdexecute(cmd)
 
 		#  fuse shc volumes to serve as starting point for the next, deterministic part.
