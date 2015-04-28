@@ -929,8 +929,9 @@ def main():
 	nxshrink = min(max(32, int( (lowpass+paramsdict["falloff"]/2.)*2*nnxo + 0.5)), nnxo)
 	nxshrink += nxshrink%2
 	shrink = float(nxshrink)/nnxo
+	nsoft = options.nsoft
 	tracker = {"resolution":currentres,"lowpass":lowpass, "falloff":falloff, "initialfl":lowpass,  \
-				"movedup":False,"eliminated-outliers":False,"PWadjustment":"","local":False,\
+				"movedup":False,"eliminated-outliers":False,"PWadjustment":"","local":False,"nsoft":nsoft, \
 				"nx":nxshrink, "shrink":shrink, "extension":0.0,"directory":"none"}
 	history = [tracker.copy()]
 	previousoutputdir = initdir
@@ -1003,7 +1004,7 @@ def main():
 			doit, keepchecking = checkstep(coutdir, keepchecking, myid, main_node)
 			#  here ts has different meaning for standard and continuous
 			subdict( paramsdict, { "delta":"%f"%round(degrees(atan(1.0/lastring)), 2) , "xr":"2", "an":angular_neighborhood, \
-							"lowpass":lowpass, "falloff":falloff, "nsoft":options.nsoft, "saturatecrit":0.75, "delpreviousmax":True, "shrink":shrink, \
+							"lowpass":lowpass, "falloff":falloff, "nsoft":nsoft, "saturatecrit":0.75, "delpreviousmax":True, "shrink":shrink, \
 							"refvol":os.path.join(mainoutputdir,"fusevol%01d.hdf"%procid) } )
 			if( paramsdict["nsoft"] > 0 ):
 				if( float(paramsdict["an"]) == -1.0 ): paramsdict["saturatecrit"] = 0.75
@@ -1070,7 +1071,7 @@ def main():
 		for procid in xrange(2):
 			coutdir = os.path.join(mainoutputdir,"logb%01d"%procid)
 			doit, keepchecking = checkstep(coutdir, keepchecking, myid, main_node)
-			if( options.nsoft > 0 and doit):  #  Only do finishing up when the previous step was SHC
+			if( nsoft > 0 and doit):  #  Only do finishing up when the previous step was SHC
 				#  Run hard to finish up matching
 				subdict(paramsdict, \
 				{ "maxit":10, "nsoft":0, "saturatecrit":0.95, "delpreviousmax":True, "refvol":os.path.join(mainoutputdir,"loga%01d"%procid,"fusevol%01d.hdf"%procid)} )
@@ -1091,7 +1092,7 @@ def main():
 		#  Compute current resolution, store result in the main directory
 		doit, keepchecking = checkstep(os.path.join(mainoutputdir,"current_resolution.txt"), keepchecking, myid, main_node)
 		if doit:
-			if( options.nsoft > 0 ):
+			if( nsoft > 0 ):
 				#  There was first soft phase, so the volumes have to be computed
 				#  low-pass filter, current resolution
 				lowpass, falloff, currentres = compute_resolution(stack, mainoutputdir, partids, partstack, radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
@@ -1398,7 +1399,10 @@ def main():
 					ali3d_options.pwreference = options.pwreference
 					tracker["PWadjustment"] = ali3d_options.pwreference
 					tracker["movedup"] = True
-					if(myid == main_node):  print("  Switching to local searches with an %s"%angular_neighborhood)
+					nsoft = 0
+					tracker["nsoft"] = 0
+					paramsdoct["nsoft"] = 0
+					if(myid == main_node):  print("  Switching to local searches with an %s and turning off SHC"%angular_neighborhood)
 					keepgoing = 1
 				elif(angular_neighborhood > 0.0 ):
 					if( not paramsdict["local"] ):
