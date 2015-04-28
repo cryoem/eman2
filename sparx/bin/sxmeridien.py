@@ -950,7 +950,7 @@ def main():
 
 		if(myid == main_node):
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(line,"MAIN ITERATION   shrink, nxshrink, currentres, lowpass, falloff#",mainiteration, shrink, nxshrink, currentres, lowpass, falloff)
+			print(line,"MAIN ITERATION  #%2d     shrink, nxshrink, currentres, lowpass, falloff "%mainiteration, shrink, nxshrink, currentres, lowpass, falloff)
 			print_dict(history[-1],"TRACKER")
 
 			if keepchecking:
