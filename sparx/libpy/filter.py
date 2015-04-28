@@ -664,6 +664,12 @@ def fit_tanh(dres, low = 0.1):
 		#print args,v
 		return v
 
+	setzero = False
+	for i in xrange(1,len(dres[0])):
+		if not setzero:
+			if(2*dres[1][i]/(1.0+dres[1][i]) <low):  setzero = True
+		if setzero:  dres[1][i] = 0.0
+
 	freq = -1.0
 	for i in xrange(1,len(dres[0])-1):
 		if ( (2*dres[1][i]/(1.0+dres[1][i]) ) < 0.5):
@@ -713,16 +719,21 @@ def fit_tanh1(dres, low = 0.1):
 		#print args,v
 		return v
 
+	setzero = False
+	for i in xrange(1,len(dres[0])):
+		if not setzero:
+			if(2*dres[1][i]/(1.0+dres[1][i]) <low):  setzero = True
+		if setzero:  dres[1][i] = 0.0
+
 	freq = -1.0
 	for i in xrange(1,len(dres[0])-1):
-		#if ( dres[1][i]/(1.0+dres[1][i]) < 0.5):
 		if ( dres[1][i] < 0.5):
 			freq = dres[0][i-1]
 			break
 	if(freq < 0.0):
 		# the curve never falls below 0.5, most likely something's wrong; however, return reasonable values
 		freq = 0.2
-		fall_off = 0.1
+		fall_off = 0.2
 		return freq, fall_off
 	from utilities import amoeba
 	args   = [freq, 0.1]
@@ -740,6 +751,16 @@ def fit_tanh1(dres, low = 0.1):
 		#qt  = fsc - 0.5*( tanh(pi*(dres[0][i]+args[0])/2.0/args[1]/args[0]) - tanh(pi*(dres[0][i]-args[0])/2.0/args[1]/args[0]) )
 	'''
 	return result[0][0], result[0][1]
+
+def tanhfilter(nx, fl, aa):
+	#  generate discretized tanh filter
+	from math import pi, tanh
+	n = nx//2 + nx%2
+	f = [0.0]*n
+	for i in xrange(n):
+		x = float(i)/nx
+		f[i] = 0.5*( tanh(pi*(x+fl)/2.0/aa/fl) - tanh(pi*(x-fl)/2.0/aa/fl) )
+	return  [[float(i)/nx for i in xrange(n)],f]
 
 def filt_matched(ima, SNR, Pref):
 	""" 
