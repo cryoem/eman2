@@ -1537,12 +1537,16 @@ def cter(stack, outpwrot, outpartres, indir, nameroot, micsuffix, wn,  f_start= 
 	for ifi in xrange(set_start,set_end):
 		
 		
-		numFM = EMUtil.get_image_count(namics[ifi])
 		pw2 = []
-		print  " ifi, tilemic numFM", ifi,namics[ifi],numFM
-		for nf in xrange(numFM):
-			if stack == None:
-				pw2 += tilemic(get_im(namics[ifi]), win_size=wn, overlp_x=overlap_x, overlp_y=overlap_y, edge_x=edge_x, edge_y=edge_y)
+		if stack == None:
+			numFM = EMUtil.get_image_count(namics[ifi])
+			print  " ifi, tilemic numFM", ifi,namics[ifi],numFM
+			for nf in xrange(numFM):
+					pw2 += tilemic(get_im(namics[ifi]), win_size=wn, overlp_x=overlap_x, overlp_y=overlap_y, edge_x=edge_x, edge_y=edge_y)
+		else:
+			numFM = EMUtil.get_image_count(stack)
+			for i in xrange(numFM):
+				pw2.append(periodogram(get_im(stack,i)))
 	
 		nimi = len(pw2)
 		adefocus = [0.0]*kboot
