@@ -930,6 +930,7 @@ def main():
 	nxshrink += nxshrink%2
 	shrink = float(nxshrink)/nnxo
 	nsoft = options.nsoft
+	paramsdict["initialfl"] = lowpass
 	tracker = {"resolution":currentres,"lowpass":lowpass, "falloff":falloff, "initialfl":lowpass,  \
 				"movedup":False,"eliminated-outliers":False,"PWadjustment":"","local":False,"nsoft":nsoft, \
 				"nx":nxshrink, "shrink":shrink, "extension":0.0,"directory":"none"}
