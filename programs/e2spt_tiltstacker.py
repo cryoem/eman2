@@ -106,7 +106,8 @@ def main():
 	
 	parser.add_argument("--clip",type=str,default='',help="""Resize the 2-D images in the
 		tilt series. If one number is provided, then x and y dimensions will be made the same.
-		To specify both dimensions, supply two numbers, --clip=x,y.""")
+		To specify both dimensions, supply two numbers, --clip=x,y. Clipping will be about
+		the center of the image.""")
 			
 	parser.add_argument("--apix",type=float,default=0.0,help="""True apix of images to be 
 		written on final stack.""")
@@ -152,10 +153,6 @@ def main():
 	print "\nLogging"
 	logger = E2init(sys.argv, options.ppid)
 	
-	mrcs=[]
-	mrcsmirror=[]
-	hdfs=[]
-	hdfsmirror=[]
 	
 	from e2spt_classaverage import sptmakepath
 	options = sptmakepath( options, 'sptstacker')
@@ -191,35 +188,79 @@ def main():
 		intilts = findtiltimgfiles( options )
 		
 		print "\nWill organize tilt imgs found"
-		intiltsdict = organizetilts( intilts, options )		#Get a dictionary in the form { indexintiltseries:[ tilfile,tiltangle,damageRank ]},
-		print "\nDone organizing tilt imgs"					#where tiltimagenumbers tell you the order in which the images where acquired
+		intiltsdict = organizetilts( intilts, options )		#Get a dictionary in the form { indexintiltseries:[ tiltfile, tiltangle, damageRank ]},
+		print "\nDone organizing tilt imgs"					#where damageRank tells you the order in which the images where acquired
 															#regardless of wether the tilt series goes from -tiltrange to +tiltrange, 
 															#or 0 to -tiltrange then +tiltstep to +tiltrange, or the opposite of these 
 		outstackhdf = options.path + '/stack.hdf' 
+		
+		minindx = min(intiltsdict)
+		print "minindx is", minindx
+		print "getting size from any first image, intiltsdict[ minindx ][0]", intiltsdict[ minindx ][0]
+		
+		hdr = EMData( intiltsdict[minindx][0], 0, True )
+		nx = hdr['nx']
+		ny = hdr['ny']
+		print nx,ny
+		
+		
 		print "\nOutstack is", outstackhdf
+		
+		tiltstoexclude = options.exclude.split(',')				
+		
+		#orderedindexes = []
+		#for index in intiltsdict:
+		#	orderedindexes.append( index )
+		
+		#orderedindexes.sort()
+		
 		for index in intiltsdict:
-			intiltimgfile =	intiltsdict[index][0]
-			intiltimg = EMData( intiltimgfile, 0 )
 			
-			tiltangle = intiltsdict[index][1]
-			intiltimg['spt_tiltangle'] = tiltangle
+			if str(index) not in tiltstoexclude:
+				intiltimgfile =	intiltsdict[index][0]
+				
+				print "\nat index %d we have image %s, collected in this turn %d" %( index, intiltsdict[index][0], intiltsdict[index][-1] )
+				intiltimg = EMData( intiltimgfile, 0 )
 			
-			damageRank = intiltsdict[index][2]
-			intiltimg['damageRank'] = damageRank
+				tiltangle = intiltsdict[index][1]
+				intiltimg['spt_tiltangle'] = tiltangle
 			
-			if options.invert:
-				intiltimg.mult(-1)
-			intiltimg.write_image( outstackhdf, index )
-			print "\nWrote image index", index
+				damageRank = intiltsdict[index][2]
+				intiltimg['damageRank'] = damageRank
+			
+				if options.invert:
+					intiltimg.mult(-1)
+				intiltimg.write_image( outstackhdf, -1 )
+				print "\nWrote image index", index
 		
 		if options.clip:
 			clip = options.clip.split(',')
-			clipx = clipy = clip[0]
-			if len(clip) > 1:
-				clipy = clip[-1]
+			
+			shiftx = 0
+			shifty = 0
+			if len( clip ) == 1:
+				clipx = clipy = clip[0]
+			
+			if len( clip ) == 2:
+				clipx = clip[0]
+				clipy = clip[1]
+			
+			if len( clip ) == 4:
+				clipx = clip[0]
+				clipy = clip[1]
+				shiftx = clip[2]
+				shifty = clip[3]
 			
 			tmp = options.path + '/tmp.hdf'
 			cmdClip = 'e2proc2d.py ' + outstackhdf + ' ' + tmp + ' --clip=' + clipx + ',' + clipy
+			
+			if shiftx:
+				xcenter = int( round( nx/2.0 + float(shiftx)))
+				cmdClip += ',' + str(xcenter)
+			if shifty:
+				ycenter = int( round( ny/2.0 + float(shifty)))
+				cmdClip += ',' + str(ycenter)
+			
 			cmdClip += ' && rm ' + outstackhdf + ' && mv ' + tmp + ' ' + outstackhdf
 
 			print "\n(e2spt_tiltstacker.py)(main) cmdClip is", cmdClip
@@ -248,26 +289,31 @@ def main():
 				print text
 			
 			
-		outstackmrcs = outstackhdf.replace('.hdf','.mrcs')
-		mrcscmd = 'e2proc2d.py	' + outstackhdf + ' ' + outstackmrcs
+		outstackst = outstackhdf.replace('.hdf','.st')
+		stcmd = 'e2proc2d.py	' + outstackhdf + ' ' + outstackst + ' --twod2threed'
 		if options.outmode != 'float':
-			mrcscmd += ' --outmode=' + options.outmode
+			stcmd += ' --outmode=' + options.outmode + ' --fixintscaling=sane'
 		
-		print "\n(e2spt_tiltstacker.py)(main) mrcscmd is", mrcscmd	
-		p = subprocess.Popen( mrcscmd , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		print "\n(e2spt_tiltstacker.py)(main) stcmd is", stcmd	
+		p = subprocess.Popen( stcmd , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 		text = p.communicate()	
 		p.stdout.close()
 		
 		if options.verbose > 9:
-			print "\nFeedback from mrcscmd:"
+			print "\nFeedback from stcmd:"
 			print text
 		
 		if options.mirroraxis:
 			print "\nMirroring across axis", options.mirroraxis
 			mirrorlabel = options.mirroraxis.upper()
-			outstackmrcsmirror = outstackmrcs.replace('.mrcs','_mirror'+ mirrorlabel+ '.mrcs')
+			outstackstmirror = outstackst.replace('.st','_mirror'+ mirrorlabel+ '.st')
 
-			cmdMirror = 'e2proc2d.py ' + outstackmrcs + ' ' + outstackmrcsmirror + ' --process=xform.mirror:axis=' + options.mirroraxis
+			cmdMirror = 'e2proc2d.py ' + outstackst + ' ' + outstackstmirror + ' --process=xform.mirror:axis=' + options.mirroraxis
+			
+			if options.outmode != 'float':
+				cmdMirror += ' --outmode=' + options.outmode + ' --fixintscaling=sane'
+			
+			
 			p = subprocess.Popen( cmdMirror , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 			text = p.communicate()	
 			
@@ -331,8 +377,11 @@ def getangles( options ):
 		print "There was no .tlt file so I'll generate the angles using lowesttilt=%f, highesttilt=%f, tiltstep=%f" % (options.lowesttilt, options.highesttilt, options.tiltstep)
 		generate = floatrange( options.lowesttilt, options.highesttilt, options.tiltstep )
 		angles=[ x for x in generate ]
-		
+	
 	angles.sort()
+	if not options.negativetiltseries:
+		angles.reverse()
+	
 	print "\n(e2spt_tiltstacker.py)(getangles) angles are", angles
 
 	return angles
@@ -341,16 +390,22 @@ def getangles( options ):
 def writetlt( angles, options ):
 	
 	angless = list( angles )
-	if options.negativetiltseries:
-		angless.sort()
+	angless.sort()
+	if not options.negativetiltseries:
 		angless.reverse()
 		
 	f = open( options.path + '/stack.rawtlt','w')
 	lines = []
-	for a in angless:
-		line = str(a) + '\n'
-		lines.append( line )
 	
+	k=0
+	tiltstoexclude = options.exclude.split(',')				
+	for a in angless:
+		if str(k) not in tiltstoexclude:
+			line = str(a) + '\n'
+			lines.append( line )
+		
+		k+=1
+		
 	f.writelines( lines )
 	f.close()
 		
@@ -360,38 +415,42 @@ def writetlt( angles, options ):
 def organizetilts( intilts, options ):
 	
 	intiltsdict = {}
-	angles = getangles( options )
+	angles = getangles( options )			#This returns angles from -tiltrange to +tiltrange if --negativetiltseries is supplied; from +tiltrange to -tiltrange otherwise
 	orderedangles = list( angles )
 	
 	#print "\n(organizetilts) angles are", angles
+	
+	zeroangle = min( [ math.fabs(a) for a in angles] )		#Find the angle closest to 0 tilt, in the middle of the tiltseries
+	indexminangle = None
+	try:
+		indexminangle = angles.index( zeroangle )			#The middle angle (0 tilt) could have been positive
+		zeroangle = angles[ indexminangle ]
+	except:
+		indexminangle = angles.index( -1*zeroangle )		#Or negative. Either way, we find its index in the list of angles
+		zeroangle = angles[ indexminangle ]
+
+	
 	if not options.tltfile:
 		
 		writetlt( angles, options )
 		if options.bidirectional:
-			zeroangle = min( [ math.fabs(a) for a in angles] )		#Find the angle closest to 0 tilt, in the middle of the tiltseries
-			indexminangle = None
-			try:
-				indexminangle = angles.index( zeroangle )			#The middle angle (0 tilt) could have been positive
-				zeroangle = angles[ indexminangle ]
-			except:
-				indexminangle = angles.index( -1*zeroangle )		#Or negative. Either way, we find its index in the list of angles
-				zeroangle = angles[ indexminangle ]
+			
 			
 			print "\nzeroangle=%f, indexminangle=%d" %( zeroangle, indexminangle )
 			if not options.negativetiltseries:
 				print "\nNegative tilt series is OFF. This is a POSITIVE tilt series"
-				firsthalf = angles[ indexminangle: len(angles) ]	#This goes from zero to highest tilt angle, that is, +tiltrange
+				secondhalf = angles[ indexminangle: len(angles) ]	#This goes from zero to lowest tilta angles, i.e., -tiltrange
 				#print "Firsthalf is", firsthalf
 				#print "because angles are", angles
-				secondhalf =  angles[ 0:indexminangle ]				#This should go from most negative angle to zero (without including it)
-				secondhalf.sort()									#We order this list to go from 0-tiltstep to the most negative angle, -tiltrange
-				secondhalf.reverse()
+				firsthalf =  angles[ 0:indexminangle ]				#This should go from most positive angle or +tiltrange to zero (without including it)
+				#secondhalf.sort()									#We order this list to go from 0-tiltstep to the most negative angle, -tiltrange
+				#secondhalf.reverse()
 			
 			elif options.negativetiltseries:
 				print "T\nhis is a NEGATIVE tiltseries"
 				firsthalf = angles[ 0:indexminangle+1 ]				#This goes from the most negative angle to zero (INCLUDING it)
-				firsthalf.sort()									#We order this list to go from 0 to -tiltrange
-				firsthalf.reverse()
+				#firsthalf.sort()									#We order this list to go from 0 to -tiltrange
+				#firsthalf.reverse()
 				
 				secondhalf = angles[ indexminangle+1: len(angles) ]	#This goes from 0+tiltstep to the most positive angle, that is, +tiltrange
 			
@@ -402,11 +461,12 @@ def organizetilts( intilts, options ):
 	
 	#else:
 	
-	if options.negativetiltseries:			#Change angles to go from +tiltrange to -tiltrange if that's the order of the images
+	angles.sort()
+	if not options.negativetiltseries:			#Change angles to go from +tiltrange to -tiltrange if that's the order of the images
 		#orderedangles.sort()
 		#orderedangles.reverse()
 		
-		angles.sort()
+		#angles.sort()
 		angles.reverse()
 		
 		#print "However, after reversal, they are", orderedangles
@@ -418,12 +478,47 @@ def organizetilts( intilts, options ):
 		and tilt images is not equal."""
 		print """Number of tilt angles = %d ; number of tilt images = %d """ % ( len( orderedangles ), len( intilts ) )
 		sys.exit()
-					
+	
+	tiltstoexclude = options.exclude.split(',')
+	
+	indexesintiltseries = range(len(angles))
+	collectionindexes = range(len(angles))
+	
+	print "options.bidirectional is", options.bidirectional
+	print "indexminangle is", indexminangle
+
+	if options.bidirectional and indexminangle != None:
+		firstrange = range(0,indexminangle+1)
+		secondrange = range(indexminangle+1,len(angles))			
+		
+		collectionindexes = []
+		collectionindexes = list(firstrange) + list(secondrange)
+		
+		
+		firstrange.sort()
+		firstrange.reverse()
+		
+		indexesintiltseries = []
+		indexesintiltseries = list(firstrange) + list(secondrange)
+		
+		
+		
+		
+	print "collection indexes are", collectionindexes
+	print "indexes in tiltseries are", indexesintiltseries
+		
+		
 	for k in range(len(intilts)):
 		tiltangle = orderedangles[k]
-		indexintiltseries = angles.index( orderedangles[k] )
-		intiltsdict.update( { indexintiltseries:[ intilts[k],tiltangle,k ]} )
-		print "\ncollectionIndex=%d, tiltangle=%f, indexintiltseries=%d" % ( k, tiltangle, indexintiltseries )
+		#indexintiltseries = angles.index( orderedangles[k] )
+		
+		indexintiltseries = indexesintiltseries[k]
+		collectionindex = collectionindexes[k]
+		
+		if indexintiltseries not in tiltstoexclude and str(indexintiltseries) not in tiltstoexclude:
+		
+			intiltsdict.update( { indexintiltseries:[ intilts[k],tiltangle,collectionindex ]} )
+			print "\nadded collectionIndex=%d, tiltangle=%f, indexintiltseries=%d" % ( collectionindex, tiltangle, indexintiltseries )
  				
 	return intiltsdict
 
@@ -456,15 +551,26 @@ def usntacker( options ):
 		
 
 def restacker( options ):
-
-	outname = options.path + '/' + options.restack.replace('.mrc','.hdf')
-	outname = options.path + '/' + options.restack.replace('.mrcs','.hdf')
-	outname = options.path + '/' + options.restack.replace('.st','.hdf')	
-	outname = options.path + '/' + options.restack.replace('.ali','.hdf')
+	inputf = options.restack
 	
 	outname = options.path + '/' + options.restack.replace('.hdf','_RESTACKED.hdf')
 	
-	tmp = options.path + '/tmp.hdf'
+	if '.ali' in inputf[-4:]: 
+		outname = options.path + '/' + options.restack.replace('.ali','_RESTACKED.ali')
+	if '.mrc' in inputf[-4:]: 
+		outname = options.path + '/' + options.restack.replace('.mrc','_RESTACKED.mrc')
+	if '.mrcs' in inputf[-5:]: 
+		outname = options.path + '/' + options.restack.replace('.mrcs','_RESTACKED.mrcs')
+	if '.st' in inputf[-3:]:
+		outname = options.path + '/' + options.restack.replace('.st','_RESTACKED.st')
+	
+	print "\n!!!!!!!!!!!!!!!!\n\nOutname is", outname
+	
+	tmp = options.path + '/' + 'tmp.hdf'
+	
+	if '.ali' in inputf[-4:] or '.mrc' in inputf[-4:] or '.mrcs' in inputf[-5:] or '.st' in inputf[-3:]:
+		tmp = options.path + '/' + 'tmp.mrcs'
+	
 	cmdre = 'e2proc2d.py ' + options.restack + ' ' + tmp
 	
 	if options.outmode:
@@ -490,31 +596,47 @@ def getindxs( string ):
 	stringList = list( string.split(',') )
 	#print "\nstringList is", stringList
 	
+	intList=set([])
 	for i in range( len(stringList) ):
 		print "\n\nstringList[i] is", stringList[i]
+		
 		if '-' in stringList[i]:
 			stringList[i] = stringList[i].split('-')
 			
 			x1 = int( stringList[i][0] )
 			x2 = int( stringList[i][-1] ) + 1
 			
-			stringList[i] = [ str( ele ) for ele in xrange( x1, x2 ) ]
+			#stringList[i] = [ str( ele ) for ele in xrange( x1, x2 ) ]
+			intList.union([ ele for ele in xrange( x1, x2 ) ])
+			
+		#parsedindxs = parsedindxs.union( set( list( List[i] ) ) )
 		
-		parsedindxs = parsedindxs.union( set( list( stringList[i] ) ) )
-	
-	parsedindxs = list( parsedindxs )
+		#intList = set( list(intList) )
+	if intList:
+		parsedindxs = [ str(ele) for ele in intList ]
+	else:
+		parsedindxs = stringList
+		
+	#parsedindxs = list( parsedindxs )
 	parsedindxs.sort()
 	
 	print "\nParsed indexes are", parsedindxs
 	return parsedindxs
 	
 
-def makeimglist( input, options ):
+def makeimglist( inputf, options ):
 	
-	n = EMUtil.get_image_count( input )
+	n = EMUtil.get_image_count( inputf )
+	if '.ali' in inputf[-4:] or '.mrc' in inputf[-4:] or '.mrcs' in inputf[-5:] or '.st' in inputf[-3:]:
+		n = EMData( inputf,0,True )['nz']
+
+	print "input n is", n
+	print "input is",input
 	
 	allindxs = set( [ str(i) for i in range(n) ] )
 	finalindxs = set( list( allindxs ) )
+	
+	print "\nallindxs are", allindxs
 	
 	if options.exclude:
 		print "\nPrint there's EXCLUDE!!"
@@ -526,18 +648,18 @@ def makeimglist( input, options ):
 		iindxs = getindxs( options.include )
 		finalindxs = list( iindxs )
 	
+	print "\nFinalindxs are", finalindxs
+	
 	ints = []
 	for id in finalindxs:
 		ints.append( int( id ) )
 	
 	ints.sort()
 	
+	print "\nfinalindx sorted are", ints
 	#final = []
 	#for fi in ints:
 	#	final.append( str( fi ) )
-	
-	
-	print "\nFinalindxs are", finalindxs
 	
 	lines = []
 	for indx in ints:
