@@ -293,6 +293,11 @@ def main():
 		stcmd = 'e2proc2d.py	' + outstackhdf + ' ' + outstackst + ' --twod2threed'
 		if options.outmode != 'float':
 			stcmd += ' --outmode=' + options.outmode + ' --fixintscaling=sane'
+			
+		if options.apix:
+			stcmd += ' --apix=' + str(options.apix)
+			stcmd += ' && e2fixheaderparam.py --input=' + outstackst + ' --stem=apix --valtype=float --stemval=' + str( options.apix ) + ' --output=' + outstackst.replace('.st','.mrc') + " && mv " +  outstackst.replace('.st','.mrc') + ' ' + outstackst
+			
 		
 		print "\n(e2spt_tiltstacker.py)(main) stcmd is", stcmd	
 		p = subprocess.Popen( stcmd , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -313,7 +318,14 @@ def main():
 			if options.outmode != 'float':
 				cmdMirror += ' --outmode=' + options.outmode + ' --fixintscaling=sane'
 			
+			print "options.apix is", options.apix
+			if options.apix:
+				cmdMirror += ' --apix=' + str(options.apix)
+				cmdMirror += ' && e2fixheaderparam.py --input=' + outstackstmirror + ' --stem=apix --valtype=float --stemval=' + str( options.apix ) + ' --output=' + outstackstmirror.replace('.st','.mrc') + " && mv " +  outstackstmirror.replace('.st','.mrc') + ' ' + outstackstmirror
+				
+				print "added fixheaderparam to cmdMirror!"
 			
+			print "cmdMirror is", cmdMirror
 			p = subprocess.Popen( cmdMirror , shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 			text = p.communicate()	
 			
