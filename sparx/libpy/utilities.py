@@ -4288,9 +4288,14 @@ def get_dist(c1, c2):
 	return d
 
 
-def eliminate_moons(my_volume):
+def eliminate_moons(my_volume, moon_elimination_params):
+	"""
+	moon_elimination_params[0] - mass in KDa
+	moon_elimination_params[1] - resolution in px/A
+	"""
+
 	from morphology import binarize
-	histogram_threshold  =  my_volume.find_3d_threshold(750, 4.84)*1.1
+	histogram_threshold  =  my_volume.find_3d_threshold(moon_elimination_params[0], moon_elimination_params[1])*1.1
 	# clean11 88x88,  4.84 px/A 750 kDa
 
 	my_volume_binarized = binarize(my_volume, histogram_threshold)
@@ -4310,3 +4315,4 @@ def eliminate_moons(my_volume):
 		# from utilities   import model_blank
 		# # mask = model_blank(my_volume_binarized_with_no_moons.get_xsize(), my_volume_binarized_with_no_moons.get_ysize(), my_volume_binarized_with_no_moons.get_zsize())
 		# # mask.to_one()
+	# this is only in master

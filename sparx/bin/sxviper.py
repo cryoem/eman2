@@ -40,11 +40,20 @@ def main():
 	parser.add_option("--aa",      type="float",  default=0.1,    help="fall-off of hyperbolic tangent low-pass Fourier filter (default 0.1)")
 	parser.add_option("--pwreference",      type="string",  default="",    help="text file with a reference power spectrum (default no power spectrum adjustment)")
 	parser.add_option("--mask3D",      type="string",  default=None,    help="3D mask file (default a sphere)")
-	# 
+	parser.add_option("--moon_elimination",      type="string",  default=None,    help="mass in KDa and resolution in px/A separated by comma, no space")
+
+	#
 	#parser.add_option("--an",       type="string", default= "-1",               help="NOT USED angular neighborhood for local searches (phi and theta)")
 	#parser.add_option("--CTF",      action="store_true", default=False,         help="NOT USED Consider CTF correction during the alignment ")
 	#parser.add_option("--snr",      type="float",  default= 1.0,                help="NOT USED Signal-to-Noise Ratio of the data (default 1.0)")
 	(options, args) = parser.parse_args(sys.argv[1:])
+
+	if options.moon_elimination==None:
+		options.moon_elimination = []
+	else:
+		options.moon_elimination = map(float, options.moon_elimination.split(","))
+
+
 	if len(args) < 2 or len(args) > 3:
 		print "usage: " + usage
 		print "Please run '" + progname + " -h' for detailed options"

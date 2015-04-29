@@ -124,6 +124,8 @@ def find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, sym =
 	#   or if there are no more angles with errors above target threshold
 	#
 	while(True):
+		for i in subset:
+			avg_diff_per_image[i] = -1.0
 		#  extract images in common subset
 		if( sym[0] == "d"):
 			projs2 = [0.0]*sc
@@ -168,7 +170,8 @@ def find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, sym =
 				for j in xrange(i+1,sc):
 					matrix_rot[i][j], out = orient_params(projs[j], projs[i], subset, sym = sym)
 					if(nsymc > 1):
-						for k in xrange(n):
+						# for k in xrange(n):
+						for k in subset:
 							mind = 1.0e23
 							for l in xrange(nsymc):
 								u1,u2,u3 = getfvec(out[k][0] + l*divic, out[k][1])
@@ -178,20 +181,23 @@ def find_common_subset(projs, target_threshold=2.0, minimal_subset_size=3, sym =
 							#print  "avg_diff_per_image  %3d  %8.2f="%(k,avg_diff_per_image[k]),\
 							#"  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f"%( projs[i][k][0],projs[i][k][1],projs[i][k][2],out[k][0],out[k][1],out[k][2])
 					else:
-						for k in xrange(n):
+						# for k in xrange(n):
+						for k in subset:
 							u1,u2,u3 = getfvec(out[k][0], out[k][1])
 							avg_diff_per_image[k] += degrees(acos(min(1.0,max(-1.0,(tv[k][0]*u1+tv[k][1]*u2+tv[k][2]*u3)))))
-							#print  "avg_diff_per_image  %3d  %8.2f="%(k,avg_diff_per_image[k]),\
-							#"  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f"%( projs[i][k][0],projs[i][k][1],projs[i][k][2],out[k][0],out[k][1],out[k][2])
+							# print  "avg_diff_per_image  %3d  %8.2f %8.6f="%(k,avg_diff_per_image[k], tv[k][0]*u1+tv[k][1]*u2+tv[k][2]*u3),\
+							# "  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f  %6.2f"%( projs[i][k][0],projs[i][k][1],projs[i][k][2],out[k][0],out[k][1],out[k][2])
 					if(i == 0):
 						outp.append(deepcopy(out))
 
-			for k in xrange(n):
+			# for k in range(n):
+			for k in subset:
 				avg_diff_per_image[k] /= (sc*(sc-1)/2.0)
 		else:
 			ERROR("Unsupported symmetry","find_common_subset",1)
 
-		if(len(subset) == minimal_subset_size):  break
+		if(len(subset) == minimal_subset_size):
+			break
 		
 		#  Remove element whose avg_diff_per_image is larger than max_error, if none, break
 		max_error = -1.0
@@ -783,6 +789,10 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				if myid == main_node:
 					start_time = time()
 				vol = do_volume(data[image_start:image_end], ali3d_options, 0, mpi_subcomm)
+
+				if len(ali3d_options.moon_elimination) > 0:
+					from utilities import eliminate_moons
+					vol = eliminate_moons(vol, ali3d_options.moon_elimination)
 
 				if mpi_subrank == 0:
 					L2 = vol.cmp("dot", vol, dict(negative = 0, mask = model_circle(last_ring, nx, nx, nx)))
