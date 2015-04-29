@@ -485,6 +485,7 @@ class ali3d_options:
 	fl     = 0.4
 	aa     = 0.1
 	pwreference = "rotpw3i3.txt"
+	initfl = fl
 #################################
 
 
