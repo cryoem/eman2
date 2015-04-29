@@ -56,6 +56,8 @@ def main():
 	parser.add_argument("--ralign",type=str,help="The name and parameters of the second stage aligner which refines the results of the first alignment", default=None)
 	parser.add_argument("--raligncmp",type=str,help="The name and parameters of the comparitor used by the second stage aligner. Default is dot.",default="dot")
 	parser.add_argument("--cmp",type=str,help="The name of a 'cmp' to be used in comparing the aligned images", default="dot:normalize=1")
+	parser.add_argument("--cmpdiff", action="store_true", default=False ,help="Compare using the difference of the two children")
+	parser.add_argument("--incomplete", type=int,help="The degree of incomplete allowed in the tree on each level", default=0)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	(options, args) = parser.parse_args()
 	E2n=E2init(sys.argv,options.ppid)
@@ -73,49 +75,74 @@ def main():
 	npt=EMUtil.get_image_count(ptcl)
 	
 	### Build tree
+	print "Building binary tree..."
 	if not os.path.isfile(options.nodes):
-		buildtree(projs,options.threads,options.nodes)
-		
+		buildtree(projs,options.threads,options.nodes,options.incomplete)
+	
+	## Generate children pairs for comparison
+	print "Generating children pairs for comparison..."
+	if options.cmpdiff:
+		masktmp="msk.hdf"
+		if os.path.isfile(masktmp): os.remove(masktmp)
+		cmptmp="cmptmp.hdf"
+		if os.path.isfile(cmptmp):
+			os.remove(cmptmp)
+		makechildpair(options.nodes, cmptmp, masktmp)
+	else:
+		masktmp=None
+		cmptmp=None
+	
 	E2progress(E2n,0.6)
-	print "Start classification..."
+	print "Starting classification..."
+	
 	## Classify particles
+	nnod=EMUtil.get_image_count(options.nodes)
+	for i in range(nnod):
+		ndtmp=EMData(options.nodes,i,True)
+		ndtmp["tree_nptls"]=0
+		ndtmp.write_image(options.nodes,i)
 	t={}
 	clsmx=[EMData(1,npt) for i in range(7)]
 	for i in range(options.threads):
 		ai=[x for x in range(npt) if x%options.threads==i]
-		t[i]=threading.Thread(target=classify,args=(ptcl,ai,options.nodes,clsmx,options.align,options.aligncmp,options.cmp,options.ralign,options.raligncmp))
+		t[i]=threading.Thread(target=classify,args=(ptcl,ai,options.nodes,clsmx,options.align,options.aligncmp,options.cmp,options.ralign,options.raligncmp,cmptmp,masktmp))
 		t[i].start()
 	for i in range(options.threads):
 		t[i].join()
 		
 	if os.path.isfile(options.output):
-		os.system('rm '+options.output)
+		os.remove(options.output)
 	for  i in clsmx:
 		i.write_image(options.output,-1)
-		
+	
+	if options.cmpdiff:	
+		os.remove(cmptmp)
+		os.remove(masktmp)
 	print "Finished~"
 	E2progress(E2n,1.0)
 	E2end(E2n)
 	
 
 	
-def buildtree(projs,thread,nodes):
+def buildtree(projs,thread,nodes,incomplete):
 	simxorder={0:"tx",1:"ty",2:"alpha",3:"mirror",4:"scale"}
 	tmpsim="tmp_simmix.hdf"
 	
 	### Building the similarity matrix for all projections
 	cmd="e2simmx.py {pj} {pj} {smx} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali --force --parallel=thread:{thr:d}".format(pj=projs,smx=tmpsim,thr=thread)
-	os.system(cmd)
+	launch_childprocess(cmd)
 	
 	### Initialize buttom level nodes
 	if (os.path.isfile(nodes)):
-		os.system("rm {}".format(nodes))
-		
+		os.remove(nodes)
+	
+	tr=Transform()
 	npj=EMUtil.get_image_count(projs)
 	for i in range(npj):
 		pj=EMData(projs,i)
 		pj.process_inplace("normalize.edgemean")
-		pj["tree"]=[-1,-1]
+		pj["tree_children"]=[-1,-1]
+		pj["tree_transform"]=tr
 		pj.write_image(nodes,i)
 		
 	simmx=EMData(tmpsim,0)
@@ -124,24 +151,28 @@ def buildtree(projs,thread,nodes):
 	pms=[EMNumPy.em2numpy(i) for i in epms]
 	ai =range(dst[0].size)		# index of each node in "nodes.hdf"
 	big=(dst.max()+1)
-
+	tmplist="tmplist.lst"
 
 	dst+=np.identity(dst[0].size)*big
 	om=0
 	
 	for k in range(dst[0].size-1):
+		#print len(ai),dst[0].size-om 
 
 		### Finish one level, move to next
-		if (dst[0].size-om < 2):
+		if (dst[0].size-om < 2+incomplete):
 			#omat.fill(0)
 			#print ar
 			om=0
-			if os.path.isfile("rr.lst"): os.system("rm rr.lst")
-			rr=LSXFile("rr.lst")
-			for r in range(len(ai)):
-				for t in range(2): rr.write(r,ai[r],nodes)
+			if os.path.isfile(tmplist): os.remove(tmplist)
+			rr=LSXFile(tmplist)
+			
+			## FIXME I do not know why I need to write twice here, but e2simmx reads one less line if I don't
+			for r,a in enumerate(ai):
+				rr.write(r,a,nodes)
+				rr.write(r,a,nodes)
 				
-			os.system("e2simmx.py rr.lst rr.lst {} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali --force --parallel=thread:{:d}".format(tmpsim,thread))
+			launch_childprocess("e2simmx.py {lst} {lst} {sim} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali --force --parallel=thread:{trd:d}".format(lst=tmplist, sim=tmpsim, trd=thread))
 			simmx=EMData(tmpsim,0)
 			dst=EMNumPy.em2numpy(simmx)
 			dst+=np.identity(dst[0].size)*big
@@ -166,11 +197,13 @@ def buildtree(projs,thread,nodes):
 		tr=Transform(alidict)
 		img1=EMData(nodes,ai[x])
 		img2=EMData(nodes,ai[y])
+		img1["tree_transform"]=tr
+		img1.write_image(nodes,ai[x])
 		img1.process_inplace("xform",{"transform":tr})
 		img1.add(img2)
 		img1.div(2)
-		img1.process_inplace("normalize.edgemean")
-		img1["tree"]=[ai[x],ai[y]]
+		#img1.process_inplace("normalize.edgemean")
+		img1["tree_children"]=[ai[x],ai[y]]
 		img1.write_image(nodes,-1)
 		om+=1
 		
@@ -190,11 +223,12 @@ def buildtree(projs,thread,nodes):
 		ai[x]=npj+k
 		del ai[y]
 	
-	os.system("rm {}".format(tmpsim))
+	os.remove(tmpsim)
+	os.remove(tmplist)
 	
 	return 	
 
-
+### Do ref-target comparison
 def compare(ref,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ralign=None, alircmp=("dot",{})):
 	
 	if align[0] :
@@ -213,83 +247,128 @@ def compare(ref,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ralign=None,
 		t.invert()
 		p = t.get_params("2d")
 
-		scr=(target.cmp(cmp[0],ta,cmp[1]),p["tx"],p["ty"],p["alpha"],p["mirror"],p["scale"])
-#			ta.write_image("dbug.hdf",-1)
-
-#				print ta["source_n"],target["source_n"]
-			#psub=target.process("math.sub.optimal",{"ref":ta})
-			#nout=ta["source_n"]*3
-			#ta.write_image("dbug_%d.hdf"%target["source_n"],nout)
-			#target.write_image("dbug_%d.hdf"%target["source_n"],nout+1)
-			#psub.write_image("dbug_%d.hdf"%target["source_n"],nout+2)
-
+		scr=(target.cmp(cmp[0],ta,cmp[1]),1,p["tx"],p["ty"],p["alpha"],p["mirror"],p["scale"])
+#			
 
 	else :
-		scr=(target.cmp(cmp[0],ref,cmp[1]),0,0,0,1.0,False)
+		scr=(target.cmp(cmp[0],ref,cmp[1]),1,0,0,0,1,1)
 
-	return scr, p
+	return scr
+	
+### Compare the two children of current node
+def cmpchild(ref,nimg,cmptmp,mask,align,alicmp,ralign,alircmp):
+	### Align to current node first
+	if align[0] :
+		ref.del_attr("xform.align2d")
+		ta=ref.align(align[0],nimg,align[1],alicmp[0],alicmp[1])
+		#if verbose>3: print ta.get_attr("xform.align2d")
+		#ta.debug_print_params()
+
+		if ralign and ralign[0]:
+		
+			ralign[1]["xform.align2d"] = ta.get_attr("xform.align2d")
+			ref.del_attr("xform.align2d")
+			ta = ref.align(ralign[0],nimg,ralign[1],alircmp[0],alircmp[1])
+	
+	### Compare the aligned particle with the two children 
+	
+
+	limg=EMData(cmptmp,nimg["tree_children"][0])
+	rimg=EMData(cmptmp,nimg["tree_children"][1])
+	#tmp="tmp.hdf"
+	#ta.write_image(tmp,-1)
+	ta.mult(mask)
+	#ta.write_image(tmp,-1)
+	#limg.write_image(tmp,-1)
+	#rimg.write_image(tmp,-1)
+	
+	cmp=parsemodopt("dot:normalize=1")
+	dl=ta.cmp(cmp[0],limg,cmp[1])
+	dr=ta.cmp(cmp[0],rimg,cmp[1])
+	#print dl,dr
+	#exit()
+	return dl,dr
 	
 	
-	##print pj,n
-	#align=parsemodopt("rotate_translate_flip")
-	#alicmp=parsemodopt(acmp)
-	#ccmp=parsemodopt(acmp)
-	#ref.del_attr("xform.align2d")
-	#ta=ref.align(align[0],target,align[1],alicmp[0],alicmp[1])
-	#ralign["xform.align2d"] = ta.get_attr("xform.align2d")
-	#ref.del_attr("xform.align2d")
-	#ta = ref.align(ralign,target,ralign[1],alircmp[0],alircmp[1])
-	
-	
-	#t=apt.get_attr("xform.align2d")
-	#pm=t.get_params('2d')
-	##apt=apt.align("refinecg",b,{},alncmp[0],alncmp[1])
-	##apt.process_inplace("normalize.edgemean")
-	#scr=b.cmp(ccmp[0],apt,ccmp[1])
-	#return scr,pm
 	
 	
 ### Classify each particle using the tree
-def classify(ptcl,ai,nodes,clsmx,align,alicmp,cmp,ralign,alircmp):
-	
+def classify(ptcl,ai,nodes,clsmx,align,alicmp,cmp,ralign,alircmp,cmptmp,masktmp):
+	#tmp="tmp.hdf"
+	#if os.path.isfile(tmp): os.remove(tmp)
+	#ai=[1]
 	rt=EMUtil.get_image_count(nodes)-1
 	rimg=EMData()
 	rimg.read_image(nodes,rt,True)
 	nimg=EMData()
-	rl=rimg["tree"][0]
-	rr=rimg["tree"][1]
+	rl=rimg["tree_children"][0]
+	rr=rimg["tree_children"][1]
 	for pp in ai:
 		ni=rt
 		nl=rl
 		nr=rr
 		prob=EMData(ptcl,pp)
+		#prob.process_inplace("normalize")
+		choice=[]
 		while(1):
+			choice.append(ni)
 			nimg.read_image(nodes,ni,True)
-			if (nimg["tree"][0]<0):
+			nimg["tree_nptls"]+=1
+			nimg.write_image(nodes,ni)
+			if (nimg["tree_children"][0]<0):
 				break
-			limg=EMData(nodes,nimg["tree"][0])
-			rimg=EMData(nodes,nimg["tree"][1])
-			dl=compare(prob,limg,align,alicmp,cmp,ralign,alircmp)
-			dr=compare(prob,rimg,align,alicmp,cmp,ralign,alircmp)
-			if dl<dr:
-				ni=nimg["tree"][0]
+			if cmptmp==None:
+				limg=EMData(nodes,nimg["tree_children"][0])
+				rimg=EMData(nodes,nimg["tree_children"][1])
+				dl=compare(prob,limg,align,alicmp,cmp,ralign,alircmp)
+				dr=compare(prob,rimg,align,alicmp,cmp,ralign,alircmp)
+				dl=dl[0]
+				dr=dr[0]
 			else:
-				ni=nimg["tree"][1]
-		#print 
-		#print pp,ni
+				nimg.read_image(nodes,ni)
+				mask=EMData(masktmp,ni)
+				dl,dr=cmpchild(prob,nimg,cmptmp,mask,align,alicmp,ralign,alircmp)
+				
+			if dl<dr:
+				ni=nimg["tree_children"][0]
+			else:
+				ni=nimg["tree_children"][1]
+		#print pp,choice
 		nimg=EMData(nodes,ni)
-		d,pm=compare(prob,nimg,align,alicmp,cmp,ralign,alircmp)
-		#print pm
+		pm=compare(prob,nimg,align,alicmp,cmp,ralign,alircmp)
 		clsmx[0].set_value_at(0,pp,ni)
-		clsmx[1].set_value_at(0,pp,1)
-		clsmx[2].set_value_at(0,pp,pm['tx'])
-		clsmx[3].set_value_at(0,pp,pm['ty'])
-		clsmx[4].set_value_at(0,pp,pm['alpha'])
-		clsmx[5].set_value_at(0,pp,pm['mirror'])
-		clsmx[6].set_value_at(0,pp,pm['scale'])
+		for nt in range(1,7):
+			clsmx[nt].set_value_at(0,pp,pm[nt])
 	
 	
-	
+def makechildpair(nodes, cmptmp, masktmp):
+	for ni in range(EMUtil.get_image_count(nodes)):
+		nimg=EMData(nodes,ni)
+		if (nimg["tree_children"][0]<0):
+			nimg.to_zero()
+			nimg.write_image(masktmp,ni)
+			continue
+		limg=EMData(nodes,nimg["tree_children"][0])
+		rimg=EMData(nodes,nimg["tree_children"][1])
+		#print ni,nimg["tree_children"][0],nimg["tree_children"][1]
+		tr=limg["tree_transform"]
+		limg.process_inplace("xform",{"transform":tr})
+		msk=nimg.copy()
+		msk.process_inplace("threshold.belowtominval",{"minval":msk["sigma"],"newval":-1})
+		msk.process_inplace("threshold.binary")
+		nimg.sub(limg)
+		nimg.process_inplace("math.absvalue")
+		nimg.process_inplace("threshold.belowtozero",{"minval":nimg["sigma"]})
+		nimg.mult(msk)
+		nimg.write_image(masktmp,ni)
+		 
+		limg.mult(nimg)
+		rimg.mult(nimg)
+		limg.write_image(cmptmp,nimg["tree_children"][0])
+		rimg.write_image(cmptmp,nimg["tree_children"][1])
+		
+		
+
 	
 if __name__ == '__main__':
 	main()

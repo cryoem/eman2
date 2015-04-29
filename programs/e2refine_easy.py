@@ -188,6 +188,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="Default=auto. Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes. 0 -> no shrinking", )
 	parser.add_argument("--shrinks1", dest="shrinks1", type = int, help="The level of shrinking to apply in the first stage of the two-stage classification process. Default=0 (autoselect)",default=0)
 	parser.add_argument("--prefilt",action="store_true",help="Default=auto. Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison. Applies both to classification and class-averaging.",default=False)
+	parser.add_argument("--cmpdiff",action="store_true",help="Used only in binary tree classification. Use a mask that focus on the difference of two children.",default=False)
 
 	# options associated with e2classify.py
 
@@ -520,6 +521,9 @@ important to use an angular step which is 90/integer.</p>")
 
 	if options.prefilt : prefilt="--prefilt"
 	else: prefilt=""
+	
+	if options.cmpdiff : cmpdiff="--cmpdiff"
+	else: cmpdiff=""
 
 	if options.simmask!=None :
 		makesimmask=False
@@ -664,11 +668,11 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 		if options.treeclassify:
 			### Classify using a binary tree
 			append_html("<p>* Classify each particle using a binary tree generated from the projections</p>",True)
-			cmd = "e2classifytree.py {path}/projections_{itr:02d}_even.hdf {inputfile} --output={path}/classmx_{itr:02d}_even.hdf  --nodes {path}/nodes_{itr:02d}_even.hdf --cmp {simcmp} --align {simalign} --aligncmp {simaligncmp} {simralign} --threads {threads}".format(path=options.path,itr=it,inputfile=options.input[0],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,threads=options.threads)
+			cmd = "e2classifytree.py {path}/projections_{itr:02d}_even.hdf {inputfile} --output={path}/classmx_{itr:02d}_even.hdf  --nodes {path}/nodes_{itr:02d}_even.hdf --cmp {simcmp} --align {simalign} --aligncmp {simaligncmp} {simralign} {cmpdiff} --threads {threads}".format(path=options.path,itr=it,inputfile=options.input[0],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,threads=options.threads,cmpdiff=cmpdiff)
 			run(cmd)
 			progress += 1.0
 			
-			cmd = "e2classifytree.py {path}/projections_{itr:02d}_odd.hdf {inputfile} --output={path}/classmx_{itr:02d}_odd.hdf  --nodes {path}/nodes_{itr:02d}_odd.hdf --cmp {simcmp} --align {simalign} --aligncmp {simaligncmp} {simralign} --threads {threads}".format(path=options.path,itr=it,inputfile=options.input[1],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,threads=options.threads)
+			cmd = "e2classifytree.py {path}/projections_{itr:02d}_odd.hdf {inputfile} --output={path}/classmx_{itr:02d}_odd.hdf  --nodes {path}/nodes_{itr:02d}_odd.hdf --cmp {simcmp} --align {simalign} --aligncmp {simaligncmp} {simralign} {cmpdiff} --threads {threads}".format(path=options.path,itr=it,inputfile=options.input[1],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,threads=options.threads,cmpdiff=cmpdiff)
 			run(cmd)
 			progress += 1.0
 			E2progress(logid,progress/total_procs)
