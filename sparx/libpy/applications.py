@@ -8706,7 +8706,7 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 			log.add("____________________________________________________\n")
 
 
-			# Terminate if saturatecrit% within pixercutoff pixel error  WHY ONE??
+			# Terminate if saturatecrit% within pixercutoff pixel error
 			im = 0
 			for lhx in xrange(lhist):
 				if(region[lhx] > pixercutoff): break

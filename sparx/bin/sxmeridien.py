@@ -592,7 +592,7 @@ def metamove(paramsdict, partids, partstack, outputdir, procid, myid, main_node,
 		    	chunk = 0.25, saturatecrit = paramsdict["saturatecrit"], pixercutoff =  paramsdict["pixercutoff"])
 	else: params = ali3d_base(projdata, get_im(paramsdict["refvol"]), \
 				ali3d_options, paramsdict["shrink"], mpi_comm = MPI_COMM_WORLD, log = log, \
-				nsoft = paramsdict["nsoft"], saturatecrit = paramsdict["saturatecrit"] )
+				nsoft = paramsdict["nsoft"], saturatecrit = paramsdict["saturatecrit"],  pixercutoff =  paramsdict["pixercutoff"] )
 	del log, projdata
 	#  store params
 	if(myid == main_node):
@@ -1004,8 +1004,11 @@ def main():
 			coutdir = os.path.join(mainoutputdir,"loga%01d"%procid)
 			doit, keepchecking = checkstep(coutdir, keepchecking, myid, main_node)
 			#  here ts has different meaning for standard and continuous
-			subdict( paramsdict, { "delta":"%f"%round(degrees(atan(1.0/lastring)), 2) , "xr":"2", "an":angular_neighborhood, \
-							"lowpass":lowpass, "falloff":falloff, "nsoft":nsoft, "saturatecrit":0.75, "delpreviousmax":True, "shrink":shrink, \
+			delta = round(degrees(atan(1.0/lastring)), 2)
+			subdict( paramsdict, { "delta":"%f"%delta , "xr":"2", "an":angular_neighborhood, \
+							"lowpass":lowpass, "falloff":falloff, "nsoft":nsoft, \
+							"saturatecrit":0.75, "pixercutoff":get_pixercutoff(radi*shrink, delta, 0.5), \
+							"delpreviousmax":True, "shrink":shrink, \
 							"refvol":os.path.join(mainoutputdir,"fusevol%01d.hdf"%procid) } )
 			if( paramsdict["nsoft"] > 0 ):
 				if( float(paramsdict["an"]) == -1.0 ): paramsdict["saturatecrit"] = 0.75
@@ -1075,7 +1078,8 @@ def main():
 			if( nsoft > 0 and doit):  #  Only do finishing up when the previous step was SHC
 				#  Run hard to finish up matching
 				subdict(paramsdict, \
-				{ "maxit":10, "nsoft":0, "saturatecrit":0.95, "delpreviousmax":True, "refvol":os.path.join(mainoutputdir,"loga%01d"%procid,"fusevol%01d.hdf"%procid)} )
+				{ "maxit":10, "nsoft":0, "saturatecrit":0.95, "delpreviousmax":True, \
+				"refvol":os.path.join(mainoutputdir,"loga%01d"%procid,"fusevol%01d.hdf"%procid)} )
 
 				if  doit:
 					metamove(paramsdict, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
@@ -1276,9 +1280,22 @@ def main():
 			if(currentres >= 0.45 ):
 				print(" Resolution exceeded 0.45, i.e., approached Nyquist limit, program will terminate")
 			else:
-				if(angular_neighborhood == "-1" ):
-					if( currentres > tracker["resolution"] ):  tracker["movedup"] = True
-					else:   tracker["movedup"] = False
+				# We need separate rules for each case
+				if( currentres > tracker["resolution"] ):  tracker["movedup"] = True
+				else:   tracker["movedup"] = False
+				#  Exhaustive searches
+				if(angular_neighborhood == "-1" and not tracker["local"]):
+					tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
+					paramsdict["initialfl"] = lowpass
+					#  For exhaustive searches do sharp cut-off to prevent volumes size to grow too large
+					paramsdict["falloff"]   = 0.2
+					lowpass = currentres + tracker["extension"]
+					shrink = max(min(2*lowpass + paramsdict["falloff"], 1.0), minshrink)
+					nxshrink = min(int(nnxo*shrink + 0.5),nnxo)
+					nxshrink += nxshrink%2
+					shrink = float(nxshrink)/nnxo
+				#  Local discrete/gridding searches
+				if(angular_neighborhood != "-1" and not tracker["local"]):
 					tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
 					paramsdict["initialfl"] = lowpass
 					paramsdict["falloff"]   = falloff
@@ -1287,10 +1304,8 @@ def main():
 					nxshrink = min(int(nnxo*shrink + 0.5),nnxo)
 					nxshrink += nxshrink%2
 					shrink = float(nxshrink)/nnxo
-				else:
-					#  this is for local searches, move only as much as the resolution increase allows
-					if( currentres > tracker["resolution"] ):  tracker["movedup"] = True
-					else:   tracker["movedup"] = False
+				#  Local/gridding  searches, move only as much as the resolution increase allows
+				elif(tracker["local"]):
 					tracker["extension"] =    0.0  # lowpass cannot exceed 0.45
 					paramsdict["initialfl"] = lowpass
 					paramsdict["falloff"]   = falloff
@@ -1299,6 +1314,9 @@ def main():
 					nxshrink = min(int(nnxo*shrink + 0.5),nnxo)
 					nxshrink += nxshrink%2
 					shrink = float(nxshrink)/nnxo
+				else:
+					print(" Unknown combination of settings in improved resolution path",angular_neighborhood,tracker["local"])
+					exit()  #  This will crash the program, but the situation is unlikely to occure
 				tracker["nx"]                  = nxshrink
 				tracker["resolution"]          = currentres
 				tracker["lowpass"]             = lowpass
@@ -1309,14 +1327,21 @@ def main():
 				keepgoing = 1
 
 		elif( currentres < tracker["resolution"] ):
+			#  The resolution decreased.  For exhaustive or local, backoff and switch to the next refinement.  For gridding, terminate
 			if(not tracker["movedup"] and tracker["extension"] < increment and mainiteration > 1):
-				if( angular_neighborhood == "-1" ):
+				if( angular_neighborhood == "-1" and not tracker["local"]):
 					angular_neighborhood = options.an
 					ali3d_options.pwreference = options.pwreference
 					tracker["PWadjustment"] = ali3d_options.pwreference
 					tracker["extension"] = stepforward + increment # so below it will be set to stepforward
+					mainoutputdir = bestoutputdir
 					keepgoing = 1
 					if(myid == main_node):  print("  Switching to local searches with an %s"%angular_neighborhood)
+				elif(angular_neighborhood != "-1" and not tracker["local"]):
+					tracker["extension"] = stepforward + increment # so below it will be set to stepforward
+					mainoutputdir = bestoutputdir
+					keepgoing = 1
+					if(myid == main_node):  print("  Switching to local/gridding searches")
 				else:
 					keepgoing = 0
 					if(myid == main_node):  print("  Cannot improve resolution, the best result is in the directory %s"%bestoutputdir)
@@ -1374,6 +1399,50 @@ def main():
 				keepgoing = 1
 
 		elif( currentres == tracker["resolution"] ):
+			# We need separate rules for each case
+			#  Exhaustive searches
+			if(angular_neighborhood == "-1" and not tracker["local"]):
+				tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
+				paramsdict["initialfl"] = lowpass
+				#  For exhaustive searches do sharp cut-off to prevent volumes size to grow too large
+				paramsdict["falloff"]   = 0.2
+				lowpass = currentres + tracker["extension"]
+				shrink = max(min(2*lowpass + paramsdict["falloff"], 1.0), minshrink)
+				nxshrink = min(int(nnxo*shrink + 0.5),nnxo)
+				nxshrink += nxshrink%2
+				shrink = float(nxshrink)/nnxo
+			#  Local discrete/gridding searches
+			if(angular_neighborhood != "-1" and not tracker["local"]):
+				tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
+				paramsdict["initialfl"] = lowpass
+				paramsdict["falloff"]   = falloff
+				lowpass = currentres + tracker["extension"]
+				shrink = max(min(2*lowpass + paramsdict["falloff"], 1.0), minshrink)
+				nxshrink = min(int(nnxo*shrink + 0.5),nnxo)
+				nxshrink += nxshrink%2
+				shrink = float(nxshrink)/nnxo
+			#  Local/gridding  searches, move only as much as the resolution increase allows
+			elif(tracker["local"]):
+				tracker["extension"] =    0.0  # lowpass cannot exceed 0.45
+				paramsdict["initialfl"] = lowpass
+				paramsdict["falloff"]   = falloff
+				lowpass = currentres + tracker["extension"]
+				shrink = max(min(2*lowpass + paramsdict["falloff"], 1.0), minshrink)
+				nxshrink = min(int(nnxo*shrink + 0.5),nnxo)
+				nxshrink += nxshrink%2
+				shrink = float(nxshrink)/nnxo
+			else:
+				print(" Unknown combination of settings in improved resolution path",angular_neighborhood,tracker["local"])
+				exit()  #  This will crash the program, but the situation is unlikely to occure
+			tracker["nx"]                  = nxshrink
+			tracker["resolution"]          = currentres
+			tracker["lowpass"]             = lowpass
+			tracker["falloff"]             = falloff
+			tracker["initialfl"]           = paramsdict["initialfl"]
+			tracker["eliminated-outliers"] = eliminated_outliers
+			bestoutputdir = mainoutputdir
+			keepgoing = 1
+			"""
 			if( tracker["movedup"] ):
 				if(myid == main_node):  print("The resolution did not improve. This is look ahead move.  Let's try to relax slightly and hope for the best")
 				tracker["extension"]    = min(stepforward,0.45-currentres)
@@ -1458,10 +1527,10 @@ def main():
 							#  We have to decrease angular error as these are "continuous" searches
 							paramsdict["pixercutoff"] = get_pixercutoff(radi*shrink, degrees(atan(1.0/float(radi*shrink)))/4.0, 0.1)
 							keepgoing = 1
-						
-				else:	
-					if(myid == main_node):  print("The resolution did not improve.")
-					keepgoing = 0
+				"""						
+#			else:
+#				if(myid == main_node):  print("The resolution did not improve.")
+#				keepgoing = 0
 
 
 		if( keepgoing == 1 ):

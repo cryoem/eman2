@@ -294,6 +294,12 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 	if number_of_proc < number_of_runs:
 		ERROR("number_of_proc < number_of_runs","VIPER1",1,myid)
 
+	# if an != "-1":
+	# 	ERROR("Option an not used","VIPER1",1,myid)
+	if sym[0] == "d" and int(sym[1:]) !=3 :
+		log.add("WARNING:  d-odd symmetries other than 3 were not tested!")
+
+
 	# mpi_subcomm = mpi_comm_split(mpi_comm, myid % number_of_runs, myid / number_of_runs)
 	# mpi_subrank = mpi_comm_rank(mpi_subcomm)
 	# mpi_subsize = mpi_comm_size(mpi_subcomm)
@@ -2863,7 +2869,8 @@ def no_of_processors_restricted_by_data__do_volume(projections, ali3d_options, i
 # 			 nsoft = 0 & an > 0 : local deterministic
 # 			 nsoft = 1 shc
 # 			 nsoft >1  shc_multi
-def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi_comm = None, log = None, nsoft = 3, saturatecrit = 0.95 ):
+def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi_comm = None, log = None, nsoft = 3, \
+		saturatecrit = 0.95, pixercutoff = 1.0 ):
 
 	from alignment       import Numrinit, prepare_refrings, proj_ali_incore,  proj_ali_incore_local, shc
 	from utilities       import bcast_number_to_all, bcast_EMData_to_all, 	wrap_mpi_gatherv, wrap_mpi_bcast, model_blank
@@ -3199,16 +3206,16 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 				if(nsoft<2 and terminate == 0):
 					lhx = 0
 					for msg in all_pixer:
-						if(msg < 2.0): lhx += 1
+						if(msg < pixercutoff): lhx += 1
 					lhx = float(lhx)/float(total_nima)
 					log.add(">>> %4.2f images had pixel error <2.0"%lhx)
 					if( lhx > saturatecrit):
 						if( Iter == 1 ):
-							log.add("Will continue even though %4.2f images had pixel error <2.0"%saturatecrit)
+							log.add("Will continue even though %4.2f images had pixel error < %5.2f"%(saturatecrit,pixercutoff))
 						else:
 							terminate = 1
 							log.add("...............")
-							log.add(">>>>>>>>>>>>>>>   Will terminate as %4.2f images had pixel error <2.0"%saturatecrit)
+							log.add(">>>>>>>>>>>>>>>   Will terminate as %4.2f images had pixel error < %5.2"%(saturatecrit,pixercutoff))
 					
 				"""
 				if (max(all_pixer) < 0.5) and (sum(all_pixer)/total_nima < 0.05):
