@@ -1026,7 +1026,7 @@ def main():
 					paramsdict["maxit"] = 5 #  ?? Lucky guess
 				else:
 					paramsdict["saturatecrit"] = 0.95
-					paramsdict["xr"] = 
+					paramsdict["xr"] = 2.0
 					paramsdict["xr"] = 2.0
 					paramsdict["maxit"] = 50 #  ?? Lucky guess
 
