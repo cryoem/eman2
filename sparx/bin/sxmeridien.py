@@ -1014,7 +1014,7 @@ def main():
 			if( paramsdict["nsoft"] > 0 ):
 				if( float(paramsdict["an"]) == -1.0 ):
 					paramsdict["saturatecrit"] = 0.75
-					paramsdict["xr"] = "%s"%float(max(int((nnxo - radi -1)/2.0*shrink),1))
+					paramsdict["xr"] = "%s"%float(max(int((nnxo - 2*radi -1)/2.0*shrink),1))
 				else:
 					paramsdict["saturatecrit"] = 0.90  # Shake and bake for local
 					paramsdict["xr"] = "2.0"
