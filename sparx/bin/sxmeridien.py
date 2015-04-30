@@ -931,6 +931,7 @@ def main():
 	shrink = float(nxshrink)/nnxo
 	nsoft = options.nsoft
 	paramsdict["initialfl"] = lowpass
+	falloff = 0.2
 	tracker = {"resolution":currentres,"lowpass":lowpass, "falloff":falloff, "initialfl":lowpass,  \
 				"movedup":False,"eliminated-outliers":False,"PWadjustment":"","local":False,"nsoft":nsoft, \
 				"nx":nxshrink, "shrink":shrink, "extension":0.0,"directory":"none"}
@@ -1005,21 +1006,28 @@ def main():
 			doit, keepchecking = checkstep(coutdir, keepchecking, myid, main_node)
 			#  here ts has different meaning for standard and continuous
 			delta = round(degrees(atan(1.0/lastring)), 2)
-			subdict( paramsdict, { "delta":"%f"%delta , "xr":"2", "an":angular_neighborhood, \
+			subdict( paramsdict, { "delta":"%f"%delta , "an":angular_neighborhood, \
 							"lowpass":lowpass, "falloff":falloff, "nsoft":nsoft, \
-							"saturatecrit":0.75, "pixercutoff":get_pixercutoff(radi*shrink, delta, 0.5), \
+							"pixercutoff":get_pixercutoff(radi*shrink, delta, 0.5), \
 							"delpreviousmax":True, "shrink":shrink, \
 							"refvol":os.path.join(mainoutputdir,"fusevol%01d.hdf"%procid) } )
 			if( paramsdict["nsoft"] > 0 ):
-				if( float(paramsdict["an"]) == -1.0 ): paramsdict["saturatecrit"] = 0.75
-				else:                                  paramsdict["saturatecrit"] = 0.90  # Shake and bake for local
+				if( float(paramsdict["an"]) == -1.0 ):
+					paramsdict["saturatecrit"] = 0.75
+					paramsdict["xr"] = max(int((nnxo - radi -1)/2.0*shrink),1)
+				else:
+					paramsdict["saturatecrit"] = 0.90  # Shake and bake for local
+					paramsdict["xr"] = 2.0
 				paramsdict["maxit"] = 1500
 			else:
 				if(paramsdict["local"]):
 					paramsdict["saturatecrit"] = 0.95
+					paramsdict["xr"] = 2.0
 					paramsdict["maxit"] = 5 #  ?? Lucky guess
 				else:
 					paramsdict["saturatecrit"] = 0.95
+					paramsdict["xr"] = 
+					paramsdict["xr"] = 2.0
 					paramsdict["maxit"] = 50 #  ?? Lucky guess
 
 			if  doit:
