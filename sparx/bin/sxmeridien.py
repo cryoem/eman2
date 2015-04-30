@@ -1014,20 +1014,19 @@ def main():
 			if( paramsdict["nsoft"] > 0 ):
 				if( float(paramsdict["an"]) == -1.0 ):
 					paramsdict["saturatecrit"] = 0.75
-					paramsdict["xr"] = max(int((nnxo - radi -1)/2.0*shrink),1)
+					paramsdict["xr"] = "%s"%float(max(int((nnxo - radi -1)/2.0*shrink),1))
 				else:
 					paramsdict["saturatecrit"] = 0.90  # Shake and bake for local
-					paramsdict["xr"] = 2.0
+					paramsdict["xr"] = "2.0"
 				paramsdict["maxit"] = 1500
 			else:
 				if(paramsdict["local"]):
 					paramsdict["saturatecrit"] = 0.95
-					paramsdict["xr"] = 2.0
+					paramsdict["xr"] = "2.0"
 					paramsdict["maxit"] = 5 #  ?? Lucky guess
 				else:
 					paramsdict["saturatecrit"] = 0.95
-					paramsdict["xr"] = 2.0
-					paramsdict["xr"] = 2.0
+					paramsdict["xr"] = "2.0"
 					paramsdict["maxit"] = 50 #  ?? Lucky guess
 
 			if  doit:
