@@ -938,6 +938,8 @@ def main():
 	history = [tracker.copy()]
 	previousoutputdir = initdir
 	#  MAIN ITERATION
+	xrrr = float(max(int((nnxo - 2*radi -1)/2.0*shrink),1))
+	tsss = xrrr/3.0
 	test_outliers = True
 	mainiteration = 0
 	keepgoing = 1
@@ -1011,13 +1013,13 @@ def main():
 							"pixercutoff":get_pixercutoff(radi*shrink, delta, 0.5), \
 							"delpreviousmax":True, "shrink":shrink, \
 							"refvol":os.path.join(mainoutputdir,"fusevol%01d.hdf"%procid) } )
+			paramsdict["xr"] = "%s"%xrrr
+			paramsdict["ts"] = "%s"%tsss
 			if( paramsdict["nsoft"] > 0 ):
 				if( float(paramsdict["an"]) == -1.0 ):
-					paramsdict["saturatecrit"] = 0.75
-					paramsdict["xr"] = "%s"%float(max(int((nnxo - 2*radi -1)/2.0*shrink),1))
+					paramsdict["saturatecrit"] = 0.75					
 				else:
 					paramsdict["saturatecrit"] = 0.90  # Shake and bake for local
-					paramsdict["xr"] = "2.0"
 				paramsdict["maxit"] = 1500
 			else:
 				if(paramsdict["local"]):
@@ -1026,7 +1028,6 @@ def main():
 					paramsdict["maxit"] = 5 #  ?? Lucky guess
 				else:
 					paramsdict["saturatecrit"] = 0.95
-					paramsdict["xr"] = "2.0"
 					paramsdict["maxit"] = 50 #  ?? Lucky guess
 
 			if  doit:
@@ -1541,6 +1542,8 @@ def main():
 
 
 		if( keepgoing == 1 ):
+			xrrr = max(tsss,3.0)
+			tsss = xrrr/3.0
 			if(myid == main_node):
 				print("  New shrink and image dimension :",shrink,nxshrink)
 				"""
