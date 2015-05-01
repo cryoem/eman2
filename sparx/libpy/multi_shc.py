@@ -3225,7 +3225,7 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 						else:
 							terminate = 1
 							log.add("...............")
-							log.add(">>>>>>>>>>>>>>>   Will terminate as %4.2f images had pixel error < %5.2"%(saturatecrit,pixercutoff))
+							log.add(">>>>>>>>>>>>>>>   Will terminate as %4.2f images had pixel error < %5.2f"%(saturatecrit,pixercutoff))
 					
 				"""
 				if (max(all_pixer) < 0.5) and (sum(all_pixer)/total_nima < 0.05):
