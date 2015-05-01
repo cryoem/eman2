@@ -1303,7 +1303,7 @@ def main():
 					nxshrink += nxshrink%2
 					shrink = float(nxshrink)/nnxo
 				#  Local discrete/gridding searches
-				if(angular_neighborhood != "-1" and not tracker["local"]):
+				elif(angular_neighborhood != "-1" and not tracker["local"]):
 					tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
 					paramsdict["initialfl"] = lowpass
 					paramsdict["falloff"]   = falloff
@@ -1535,7 +1535,7 @@ def main():
 							#  We have to decrease angular error as these are "continuous" searches
 							paramsdict["pixercutoff"] = get_pixercutoff(radi*shrink, degrees(atan(1.0/float(radi*shrink)))/4.0, 0.1)
 							keepgoing = 1
-				"""						
+				"""	
 #			else:
 #				if(myid == main_node):  print("The resolution did not improve.")
 #				keepgoing = 0
