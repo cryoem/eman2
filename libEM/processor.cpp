@@ -9229,16 +9229,18 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 	const float * const src_data = image->get_const_data();
 	float *des_data = (float *) EMUtil::em_malloc(nx*ny*nz* sizeof(float));
 
-	if ((nz == 1)&&(image -> is_real()))  {
-		Vec2f offset(nx/2,ny/2);
+	if ((nz == 1)&&(image -> is_real()))  { //This is the new loop
+		vector <float> mat4inv  = inv.get_matrix();
+		printf(" %3.3f \t  %3.3f \t %3.3f \t  %3.3f \t %3.3f\t  %3.3f\t %3.3f\t %3.3f\t   \n", 
+		         mat4inv[0],mat4inv[1],mat4inv[2],mat4inv[3],mat4inv[4],mat4inv[5],mat4inv[6],mat4inv[7]);
 		for (int j = 0; j < ny; j++) {
+		       float x2 = mat4inv[1]*j+nx*(1-mat4inv[0])/2  -ny*(mat4inv[1])/2   +mat4inv[3] ;// 
+		       float y2 = mat4inv[5]*j-nx*(mat4inv[4])/2    +ny*(1-mat4inv[5])/2 +mat4inv[7] ;
 			for (int i = 0; i < nx; i++) {
-				Vec2f coord(i-nx/2,j-ny/2);
-				Vec2f soln = inv*coord;
-				soln += offset;
-
-				float x2 = soln[0];
-				float y2 = soln[1];
+				if (i>0) {
+				  x2 +=  mat4inv[0];
+				  y2 +=  mat4inv[4];}
+				printf(" %3.3f \t  %3.3f   \n", x2,y2);
 
 				if (x2 < 0 || x2 >= nx || y2 < 0 || y2 >= ny ) {
 					des_data[i + j * nx] = 0; // It may be tempting to set this value to the
@@ -9294,12 +9296,14 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 		for (int kyN = 0; kyN < ny; kyN++) {
 			int kyNew = kyN;
 			if (kyN>=nx/2) kyNew=kyN-ny;  // Step 0     Unalias
+			float kxOldPre=  - sin(theta)* kyNew;
+			float kyOldPre=    cos(theta)* kyNew;
 			for (int kxN = 0; kxN < (nx/2); kxN++) {
 				int kxNew=kxN; 
 				if (kxN >= nx/2) kxNew=kxN-ny;//  Step 0   Unalias
 				//  Step 1, Do rotation and find 4 nn
-				float kxOld=  cos(theta)* kxNew - sin(theta)* kyNew;
-				float kyOld=  sin(theta)* kxNew + cos(theta)* kyNew;
+				float kxOld=  kxOldPre + cos(theta)* kxNew ;
+				float kyOld=  kyOldPre + sin(theta)* kxNew ;
 				//
 				int kxLower= floor(kxOld); int kxUpper= kxLower+1;
 				int kyLower= floor(kyOld); int kyUpper= kyLower+1;
@@ -9311,8 +9315,8 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 				if ((abs(kxL)<N) && (abs(kyL)<N)) { //   Step 2 Make sure to be in First BZ
 				    kxL = (N+kxL)%N;  kyL = (N+kyL)%N;
 				    if (kxL> N/2){ kxL=(N-kxL)%N; kyL=(N-kyL)%N ;flag=-1;} // Step 3: if nec, use Friedel paired
-				    dataLL_R=     image -> get_value_at(2*kxL,kyL);
-				    dataLL_I=flag*image -> get_value_at(2*kxL+1,kyL);
+				    dataLL_R=      src_data[2*kxL+   kyL*nx]; //  image -> get_value_at(2*kxL,kyL);
+				    dataLL_I= flag*src_data[2*kxL+1+ kyL*nx]; //  image -> get_value_at(2*kxL+1,kyL);
 				} 
 
 			        kxL=kxLower; int kyU=kyUpper; 
@@ -9320,8 +9324,8 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 				if ((abs(kxL)<N) && (abs(kyU)<N)){ //       Step 2 Make sure to be in First BZ
 				    kxL = (N+kxL)%N;  kyU = (N+kyU)%N;
 				    if (kxL> N/2){ kxL=(N-kxL)%N; kyU=(N-kyU)%N;flag=-1;} // Step 3
-				    dataLU_R=	  image -> get_value_at(2*kxL,kyU);
-				    dataLU_I=flag*image -> get_value_at(2*kxL+1,kyU);
+				    dataLU_R=	    src_data[2*kxL+   kyU*nx];//  image -> get_value_at(2*kxL,kyU);
+				    dataLU_I=  flag*src_data[2*kxL+1+ kyU*nx];// flag*image -> get_value_at(2*kxL+1,kyU);
 			        }
 
 				int kxU= kxUpper; kyL=kyLower; 
@@ -9329,8 +9333,8 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 				if ((abs(kxU)<N) && (abs(kyL)<N)) {   //       Step 2
 				    kxU = (N+kxU)%N; kyL = (N+kyL)%N;
 				    if (kxU> N/2) { kxU=(N-kxU)%N; kyL=(N-kyL)%N;flag=-1;} // Step 3
-				    dataUL_R=	  image -> get_value_at(2*kxU,kyL);
-				    dataUL_I=flag*image -> get_value_at(2*kxU+1,kyL);
+				    dataUL_R=	    src_data[2*kxU   +   kyL*nx]; //  image -> get_value_at(2*kxU,kyL);
+				    dataUL_I=  flag*src_data[2*kxU+1 +   kyL*nx]; // flag*image -> get_value_at(2*kxU+1,kyL);
 				}
 
 			      kxU= kxUpper; kyU=kyUpper; 
@@ -9338,8 +9342,8 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			      if ((abs(kxU)<N) & (abs(kyU)<N)){  //       Step 2
 				    kxU = (N+kxU)%N; kyU = (N+kyU)%N;
 				    if (kxU> N/2) { kxU=(N-kxU)%N; kyU=(N-kyU)%N;flag=-1;} // Step 3
-				    dataUU_R=	  image -> get_value_at(2*kxU,kyU);
-				    dataUU_I=flag*image -> get_value_at(2*kxU+1,kyU);
+				    dataUU_R=	    src_data[2*kxU   +   kyU*nx]; //   image -> get_value_at(2*kxU,kyU);
+				    dataUU_I=  flag*src_data[2*kxU+1 +   kyU*nx]; //flag*image -> get_value_at(2*kxU+1,kyU);
 			      }
 			      //            Step 4    Assign Weights
 			      float WLL = dkxLower*dkyLower  ;
@@ -9389,13 +9393,16 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 		    for (int kyN = 0; kyN < ny; kyN++) {//       moves them to lesser mag   
 			int kyNew=kyN; 
 			if (kyN>=nx/2) kyNew=kyN-ny;  //        Step 0   Unalias
+		        float kxPre =  MatXY * kyNew +  MatXZ *kzNew;
+	                float kyPre =  MatYY * kyNew +  MatYZ*kzNew;
+			float kzPre =  MatZY * kyNew +  MatZZ*kzNew;
 			for (int kxN = 0; kxN < (nx/2); kxN++ ) {
 			    int kxNew=kxN; 
 			    if (kxN >= nx/2) kxNew=kxN-N; //    Step 0   Unalias
 			    //  Step 1: Do inverse Rotation to get former values, and alias   Step1
-			    float kxOld=  MatXX * kxNew + MatXY * kyNew +  MatXZ *kzNew;
-			    float kyOld=  MatYX * kxNew + MatYY * kyNew +  MatYZ*kzNew;
-			    float kzOld=  MatZX * kxNew + MatZY * kyNew +  MatZZ*kzNew;
+			    float kxOld=  MatXX * kxNew + kxPre;
+			    float kyOld=  MatYX * kxNew + kyPre;
+			    float kzOld=  MatZX * kxNew + kzPre;
 			    //
 			    int kxLower= floor(kxOld); int kxUpper= kxLower+1;
 			    int kyLower= floor(kyOld); int kyUpper= kyLower+1;
@@ -9410,8 +9417,8 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			    if ( (abs(kxL)<N) && (abs(kyL)<N) && (abs(kzL)<N) ) { //   Step 2 Make sure to be in First BZ
 				kxL = (N+kxL)%N;  kyL = (N+kyL)%N; kzL = (N+kzL)%N;
 				if (kxL> N/2){kxL=(N-kxL)%N; kyL=(N-kyL)%N ; kzL=(N-kzL)%N ;flag=-1;} // Step 3: use Friedel paired
-				dataLLL_R=     image -> get_value_at(2*kxL,kyL,kzL);
-				dataLLL_I=flag*image -> get_value_at(2*kxL+1,kyL,kzL);
+				dataLLL_R=     src_data[ 2*kxL   + nx*kyL+ nx*ny*kzL ]; //get_value_at(2*kxL,kyL,kzL);
+				dataLLL_I=flag*src_data[ 2*kxL+1 + nx*kyL+ nx*ny*kzL ];//get_value_at(2*kxL+1,kyL,kzL);
 			    }
 			    //      LLU 2
 			    kxL= kxLower; kyL=kyLower; int kzU=kzUpper; 
@@ -9419,8 +9426,8 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			    if ( (abs(kxL)<N) && (abs(kyL)<N) && (abs(kzU)<N) ) {//   Step 2 Make sure to be in First BZ
 				kxL = (N+kxL)%N;  kyL = (N+kyL)%N; kzU = (N+kzU)%N;
 				if (kxL> N/2){kxL=(N-kxL)%N; kyL=(N-kyL)%N ; kzU=(N-kzU)%N ;flag=-1;} // Step 3: use Friedel paired
-				dataLLU_R=     image -> get_value_at(2*kxL  ,kyL,kzU);
-				dataLLU_I=flag*image -> get_value_at(2*kxL+1,kyL,kzU);
+				dataLLU_R=      src_data[ 2*kxL   + nx*kyL+ nx*ny*kzU ]; //   image -> get_value_at(2*kxL  ,kyL,kzU);
+				dataLLU_I= flag*src_data[ 2*kxL+1 + nx*kyL+ nx*ny*kzU ]; //   image -> get_value_at(2*kxL+1,kyL,kzU);
 			    }
 			    //      LUL 3
 			    kxL= kxLower; int kyU=kyUpper; kzL=kzLower;  
@@ -9428,8 +9435,8 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			    if ( (abs(kxL)<N) && (abs(kyU)<N)&& (abs(kzL)<N) ) {//  Step 2 Make sure to be in First BZ
 				kxL = (N+kxL)%N;  kyU = (N+kyU)%N; kzL = (N+kzL)%N;
 				if (kxL> N/2){ kxL=(N-kxL)%N; kyU=(N-kyU)%N; kzL=(N-kzL)%N ;flag=-1;}// Step 3
-				dataLUL_R=     image -> get_value_at(2*kxL  ,kyU,kzL);
-				dataLUL_I=flag*image -> get_value_at(2*kxL+1,kyU,kzL);
+				dataLUL_R=     src_data[ 2*kxL   + nx*kyU+ nx*ny*kzL ]; // image -> get_value_at(2*kxL  ,kyU,kzL);
+				dataLUL_I=flag*src_data[ 2*kxL+1 + nx*kyU+ nx*ny*kzL ]; // image -> get_value_at(2*kxL+1,kyU,kzL);
 			    }
 			    //      LUU 4
 			    kxL= kxLower; kyU=kyUpper; kzL=kzUpper;  
@@ -9437,8 +9444,8 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			    if ( (abs(kxL)<N) && (abs(kyU)<N)&& (abs(kzU)<N)) {//   Step 2 Make sure to be in First BZ
 				kxL = (N+kxL)%N;  kyU = (N+kyU)%N; kzU = (N+kzU)%N;
 				if (kxL> N/2){kxL=(N-kxL)%N; kyU=(N-kyU)%N; kzL=(N-kzL)%N ;flag=-1;} // Step 3
-				dataLUU_R=     image -> get_value_at(2*kxL  ,kyU,kzU);
-				dataLUU_I=flag*image -> get_value_at(2*kxL+1,kyU,kzU);
+				dataLUU_R=     src_data[ 2*kxL   + nx*kyU+ nx*ny*kzU ]; // image -> get_value_at(2*kxL  ,kyU,kzU);
+				dataLUU_I=flag*src_data[ 2*kxL+1 + nx*kyU+ nx*ny*kzU ]; // image -> get_value_at(2*kxL+1,kyU,kzU);
 			    }
 			     //     ULL  5
 			    int kxU= kxUpper; kyL=kyLower; kzL=kzLower; 
@@ -9446,8 +9453,8 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			    if ( (abs(kxU)<N) && (abs(kyL)<N) && (abs(kzL)<N) ) {//    Step 2
 				kxU = (N+kxU)%N; kyL = (N+kyL)%N; kzL = (N+kzL)%N;
 				if (kxU> N/2){kxU=(N-kxU)%N; kyL=(N-kyL)%N; kzL=(N-kzL)%N ;flag=-1;} // Step 3
-				dataULL_R=     image -> get_value_at(2*kxU  ,kyL,kzL);
-				dataULL_I=flag*image -> get_value_at(2*kxU+1,kyL,kzL);
+				dataULL_R=     src_data[ 2*kxU   + nx*kyL+ nx*ny*kzL ]; // image -> get_value_at(2*kxU  ,kyL,kzL);
+				dataULL_I=flag*src_data[ 2*kxU+1 + nx*kyL+ nx*ny*kzL ]; // image -> get_value_at(2*kxU+1,kyL,kzL);
 			    }
 			    //   ULU 6
 			    kxU= kxUpper; kyL=kyLower; kzU=kzUpper; 
@@ -9455,8 +9462,8 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			    if ( (abs(kxU)<N) && (abs(kyL)<N)&& (abs(kzU)<N) ) {//      Step 2
 				kxU = (N+kxU)%N; kyL = (N+kyL)%N; kzU = (N+kzU)%N;
 				if (kxU> N/2){kxU=(N-kxU)%N; kyL=(N-kyL)%N; kzU=(N-kzU)%N ;flag=-1;} // Step 3
-				dataULU_R=     image -> get_value_at(2*kxU  ,kyL,kzU);
-				dataULU_I=flag*image -> get_value_at(2*kxU+1,kyL,kzU);
+				dataULU_R=     src_data[ 2*kxU   + nx*kyL+ nx*ny*kzU ]; // image -> get_value_at(2*kxU  ,kyL,kzU);
+				dataULU_I=flag*src_data[ 2*kxU+1 + nx*kyL+ nx*ny*kzU ]; // image -> get_value_at(2*kxU+1,kyL,kzU);
 			    }
 			    //     UUL 7
 			    kxU= kxUpper; kyU=kyUpper; kzL=kzLower;
@@ -9464,8 +9471,8 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			    if ( (abs(kxU)<N) && (abs(kyU)<N) && (abs(kzL)<N) ) {//      Step 2
 				kxU = (N+kxU)%N; kyU = (N+kyU)%N; kzL = (N+kzL)%N;
 				if (kxU> N/2){kxU=(N-kxU)%N; kyU=(N-kyU)%N; kzL=(N-kzL)%N ;flag=-1;} // Step 3
-				dataUUL_R=     image -> get_value_at(2*kxU  ,kyU,kzL);
-				dataUUL_I=flag*image -> get_value_at(2*kxU+1,kyU,kzL);
+				dataUUL_R=     src_data[ 2*kxU   + nx*kyU+ nx*ny*kzL ]; // image -> get_value_at(2*kxU  ,kyU,kzL);
+				dataUUL_I=flag*src_data[ 2*kxU+1 + nx*kyU+ nx*ny*kzL ]; // image -> get_value_at(2*kxU+1,kyU,kzL);
 			    }
 			    //    UUU 8
 			    kxU= kxUpper; kyU=kyUpper; kzU=kzUpper;
@@ -9473,8 +9480,8 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			    if ( (abs(kxU)<N) && (abs(kyU)<N) && (abs(kzU)<N) ) { //       Step 2
 				kxU = (N+kxU)%N; kyU = (N+kyU)%N; kzU = (N+kzU)%N;
 				if (kxU> N/2) {kxU=(N-kxU)%N; kyU=(N-kyU)%N; kzU=(N-kzU)%N ;flag=-1;} // Step 3
-				dataUUU_R=     image -> get_value_at(2*kxU  ,kyU,kzU);
-				dataUUU_I=flag*image -> get_value_at(2*kxU+1,kyU,kzU);
+				dataUUU_R=     src_data[ 2*kxU   + nx*kyU+ nx*ny*kzU ]; // image -> get_value_at(2*kxU  ,kyU,kzU);
+				dataUUU_I=flag*src_data[ 2*kxU+1 + nx*kyU+ nx*ny*kzU ]; // image -> get_value_at(2*kxU+1,kyU,kzU);
 			    }
 			    //          Step 4    Assign Weights
 			    float WLLL = dkxLower*dkyLower*dkzLower ;
@@ -9973,7 +9980,7 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 //					v/=(pow(mxd[s1+s1*nsegstart],0.6667f)+pow(mxd[s2+s2*nsegstart],0.6667f));	// normalize by the sum of the estimated surface areas (no shape effects)
 					v/=max(mxd[s1+s1*nsegstart],mxd[s2+s2*nsegstart]);	// normalize by the sum of the estimated surface areas (no shape effects)
 					if (v>bestv) { bestv=v; sub1=s1; sub2=s2; }
-				}
+			 	}
 			}
 			float mv=0;
 			int mvl=0;
