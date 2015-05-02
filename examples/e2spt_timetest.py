@@ -66,7 +66,7 @@ def main():
 	parser.add_argument("--profile", action='store_true', help="Will profile the internal call to e2spt_classaverage.py to see what processes are consuming the most time.",default=False)
 	parser.add_argument("--eman2dir", type=str, help="If profiling is on, you must provide the full path to your EMAN2 directory WITHOUT. For example, /Users/jgalaz/EMAN2",default='')
 
-	parser.add_argument("--test", action='store_true', help="Will run a quick test using a few box sizes.",default=False)
+	parser.add_argument("--quicktest", action='store_true', help="Will run a quick test using a few box sizes.",default=False)
 	parser.add_argument("--medium", action='store_true', help="Will test boxsizes in multiples of 10 between 10 and 240.",default=False)
 	parser.add_argument("--evenonly", action='store_true', help="Will test boxsizes in multiples of 2 between --lowerlimit and --upperlimit.",default=False)
 
@@ -79,15 +79,29 @@ def main():
 	parser.add_argument("--lowerlimit",type=int,default=12,help="""Default=12. Lower limit to START testing box sizes.""")
 	parser.add_argument("--upperlimit",type=int,default=257,help="""Default=257. Upper limit to STOP testing box sizes. Recall that the upper limit is not included. If --upperlimit=257, the last box tested will be 256.""")
 
-	parser.add_argument("--oneccfoff", action='store_true', help="Turn off the following: time tests for a single CCF (between two boxes of noise) without overhead (e2spt_classaverage.py isn't called), for EVERY box size between 12 and 256, without doing any rotations.",default=False)
+	parser.add_argument("--oneccfreal", action='store_true', help="Turn on the following: time tests for a single CCF (between two real space boxes of noise) WITHOUT OVERHEAD (e2spt_classaverage.py isn't called), for EVERY box size between 12 and 256, without doing any rotations.",default=False)
 	
-	parser.add_argument("--onefulloff", action='store_true', help="""Turn off the following: time tests for a single CCF (between two boxes of noise), including preprocessing overhead in e2spt_classaverage.py, but no rotations.""",default=False)
+	parser.add_argument("--oneccffourier", action='store_true', help="Turn on the following: time tests for a single CCF (between two Fourier space boxes of noise) WITHOUT OVERHEAD (e2spt_classaverage.py isn't called), for EVERY box size between 12 and 256, without doing any rotations.",default=False)
+	
+	parser.add_argument("--oneccfrealwithoverhead", action='store_true', help="""Turn on the following: time tests for a single CCF (between two real space boxes of noise), WITH OVERHEAD from preprocessing in e2spt_classaverage.py, but no rotations.""",default=False)
 
-	parser.add_argument("--rotonlyoff", action='store_true', help="""Turn off the following: testing alignment time for multiple CCFs (between two boxes with noise), corresponding to as many orientations fit in an icosahedral asymmetric unit, depending on --coarsestep and --finestep, WITHOUT any overhead (e2spt_classaverage.py is NOT called).""",default=False)	
+	parser.add_argument("--oneccffourierwithoverhead", action='store_true', help="""Turn on the following: time tests for a single CCF (between two Fourier space boxes of noise), WITH OVERHEAD from preprocessing in e2spt_classaverage.py, but no rotations.""",default=False)
+
+	parser.add_argument("--fullali", action='store_true', help="""Turn on the following: testing alignment time for multiple CCFs (between two boxes with noise), corresponding to as many orientations fit in an asymmetric unit (depending on --sym), depending on --coarsestep and --finestep, WITHOUT any overhead (e2spt_classaverage.py is NOT called).""",default=False)	
 	
-	parser.add_argument("--oneicosoff", action='store_true', help="""Turn off the following: testing alignment time for multiple CCFs (between two boxes with noise), corresponding to as many orientations fit in an icosahedral asymmetric unit, depending on --coarsestep and --finestep, WITH overhead (e2spt_classaverage.py IS called).""",default=False)
-	
-	parser.add_argument("--onerotationoff", action='store_true', help="""Turn off the following: alignment time for a single rotation (no ccf, and no overhead anywhere).""",default=False)
+	parser.add_argument("--fullaliwithoverhead", action='store_true', help="""Turn on the following: testing alignment time for multiple CCFs (between two boxes with noise), corresponding to as many orientations fit in an asymmetric unit (depending on --sym), depending on --coarsestep and --finestep, WITH overhead (e2spt_classaverage.py IS called).""",default=False)
+
+	parser.add_argument("--onerotreal", action='store_true', help="""Turn on the following: time for a single rotation in real space (no ccf, and no overhead anywhere).""",default=False)
+
+	parser.add_argument("--onerotfourier", action='store_true', help="""Turn on the following: time for a single rotation in Fourier space (no ccf, and no overhead anywhere).""",default=False)
+
+	parser.add_argument("--onetransformreal", action='store_true', help="""Turn on the following: time for a single transformation in real space (no ccf, and no overhead anywhere).""",default=False)
+
+	parser.add_argument("--onetransformfourier", action='store_true', help="""Turn on the following: time for a single transformation in Fourier space (no ccf, and no overhead anywhere).""",default=False)
+
+	parser.add_argument("--test2d", action='store_true', help="""Turn on all tests for 2D data.""",default=False)
+
+	parser.add_argument("--test3d", action='store_true', help="""Turn on all tests for 3D data.""",default=False)
 
 	
 	parser.add_argument("--ID", type=str, help="Tag files generated on a particular computer.",default='')
@@ -123,26 +137,29 @@ def main():
 	parser.add_argument("--parallel",  help="Parallelism. See http://blake.bcm.edu/emanwiki/EMAN2/Parallel", default='')
 
 	global options
-
+	
 	(options, args) = parser.parse_args()
 	
-	if options.test and options.extensive:
+
+	if not options.test2d and not options.test3d:
+		print "ERROR: provide at least one of --test2d and/or --test3d."
+		sys.exit(1)
+		
+	if options.quicktest and options.extensive:
 		print "ERROR: You cannot specify --test and --extensive simultaneously"
-		sys.exit()
+		sys.exit(1)
 	
-	if options.test and options.medium:
+	if options.quicktest and options.medium:
 		print "ERROR: You cannot specify --test and --medium simultaneously"
-		sys.exit()
+		sys.exit(1)
 
 	if options.extensive and options.medium:
 		print "ERROR: You cannot specify --extensive and --medium simultaneously"
-		sys.exit()
-
-
+		sys.exit(1)
 	
 	if options.profile and not options.eman2dir:
 		print "ERROR: --profile is on, yet you haven't provided the path to your EMAN2 directory."
-		sys.exit()
+		sys.exit(1)
 	#print "options are", options
 	
 	logger = E2init(sys.argv, options.ppid)
@@ -222,7 +239,7 @@ def main():
 						print "This gpu set does not have the same number of elements as the corresponding cpu set"
 			else:
 				print "For some sick reason, you don't have the same number of data points for gpu and cpu, therefore, you cannot compare them, see", len(retgpu), len(retcpu)
-				sys.exit()
+				sys.exit(1)
 		else:
 			return()
 
@@ -236,7 +253,7 @@ def main():
 		print "$$$$$$$$$$$$$$\n\n\n"
 		if options.noplot:
 			print "ERROR: You cannot speficy 'plotonly' and 'noplot' at the same time."
-			sys.exit()
+			sys.exit(1)
 		
 		mastervalues={}
 		
@@ -472,7 +489,26 @@ def makepath(options,rootpath):
 
 def preplot( options, tipo, data, key ):
 	print "I am in PREPLOT"
-	name = options.path + "/" + options.ID + key + "_CS"+ str(options.coarsestep).zfill(2)  + "_FS" + str( options.finestep ).zfill(2) + '_' + tipo + '.png'
+	
+	name = options.path + "/" + options.ID 
+	if options.ID and key:
+		print "adding _ from options.ID or key", options.ID, key
+		name += '_'
+	
+	if key:	
+		name += key  
+	
+	if key and tipo:
+		print "adding _ from key or tipo", key, tipo
+		name += '_'
+	
+	if tipo:
+		name += tipo
+	name += '.png'
+
+	if 'one' not in key and options.coarsestep and options.finestep:
+		name = options.path + "/" + options.ID + key + "_CS"+ str(options.coarsestep).zfill(2)  + "_FS" + str( options.finestep ).zfill(2) + '_' + tipo + '.png'
+	
 	xdata = data[0]				
 	ydata = data[1]				
 	
@@ -558,7 +594,9 @@ def preplot( options, tipo, data, key ):
 def textwriter(name,xdata,ydata):
 	if not xdata or not ydata:
 		print "ERROR: Attempting to write an empty text file!"
-		sys.exit()
+		sys.exit(1)
+	
+	print "name received in textwriter", name, type(name)
 	
 	filename=name.replace('.png','.txt')
 	
@@ -576,6 +614,25 @@ def textwriter(name,xdata,ydata):
 
 	return()
 
+
+def createfilename( ID, computer, coarsestep, finestep, corg ):
+	
+	name = options.path + '/' 
+	
+	if computer:
+		name+= computer + '_' + ID + '_' + corg + '.txt'
+
+	else:
+		name+= ID + '_' + corg + '.txt'
+
+	if 'one' not in ID:
+		name = options.path + '/' 
+		if computer:
+			name += computer + '_' + ID + '_CS' + str(coarsestep).zfill(len(str(coarsestep))) + '_FS' + str(finestep).zfill(len(str(finestep))) + '_' + corg + '.txt'
+		else:
+			name += ID + '_CS' + str(coarsestep).zfill(len(str(coarsestep))) + '_FS' + str(finestep).zfill(len(str(finestep))) + '_' + corg + '.txt'
+
+	return name
 
 
 '''
@@ -616,7 +673,7 @@ def doit(corg,options,originaldir):
 			for box in boxes:
 				mults.append( int(box) )
 			
-	elif options.test:
+	elif options.quicktest:
 		mults=[100,101,120,121,140,141]
 	
 	elif options.medium:
@@ -628,12 +685,17 @@ def doit(corg,options,originaldir):
 		for i in xrange( options.lowerlimit, options.upperlimit ):
 			mults.append(i)
 	
-	elif options.evenonly: 
-		mults = []
-		for i in xrange( options.lowerlimit, options.upperlimit ):
-			if not i % 2:
-				print "appended even box", i
-				mults.append(i)
+	elif options.lowerlimit and options.upperlimit:
+		mults = [i for i in range(options.lowerlimit,options.upperlimit+1)]
+	
+	
+	if options.evenonly: 
+		finalmults = []
+		for m in mults:
+			if not m % 2:
+				print "appended even box", m
+				finalmults.append(m)
+		mults=finalmults
 		
 		
 		
@@ -650,24 +712,37 @@ def doit(corg,options,originaldir):
 	#name = options.path + '/CS' + str(coarsestep).zfill(len(str(max(steps)))) + '_FS' + str(finestep) + '.txt'
 	#if computer:
 	
-	
 	IDS = []
+		 
+	if options.oneccfrealwithoverhead:
+		IDS.append('oneccfrealwithoverhead')
 	
-	if not options.oneicosoff:		
-		IDS.append('oneicos')
-
-	if not options.onefulloff:
-		IDS.append('onefull')
+	if options.oneccffourierwithoverhead:
+		IDS.append('oneccffourierwithoverhead')
 	
-	if not options.oneccfoff:
-		IDS.append('oneccf')
+	if options.fullaliwithoverhead:
+		IDS.append('fullaliwithoverhead')
 		
-	if not options.rotonlyoff:
-		IDS.append('rotonly')
-		
-	if not options.onerotationoff:
-		IDS.append('onerotation')
+	if options.fullali:
+		IDS.append('fullali')	
 	
+	if options.oneccfreal:
+		IDS.append('oneccfreal')
+	
+	if options.oneccffourier:
+		IDS.append('oneccffourier')
+		
+	if options.onerotreal:
+		IDS.append('onerotreal')
+		
+	if options.onerotfourier:
+		IDS.append('onerotfourier')
+	
+	if options.onetransformreal:
+		IDS.append('onetransformreal')
+	
+	if options.onetransformfourier:
+		IDS.append('onetransformfourier')
 	
 	#print "\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\nThe IDS and corg are", IDS, corg
 	#print "The len of IDs is", len(IDS)
@@ -676,170 +751,285 @@ def doit(corg,options,originaldir):
 	#	print "aide, corg are", aide,corg	
 	#print "\n&&&&&&&&&&&&&&&&&&&&&&&&\n"
 
-	for aidee in IDS:
-		#print "\n\n\n\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&\nWorking with THIS id and corg", aidee,corg
-		#print "\n&&&&&&&&&&&&&&&&&&&&&&&&\n\n\n\n\n"
-		name=options.path + '/' + computer + corg + '.txt'
-		if aidee == 'oneicos':	
-			name = options.path + '/' + computer + 'oneicosali_CS' + str(coarsestep).zfill(len(str(coarsestep))) + '_FS' + str(finestep).zfill(len(str(finestep))) + '_' + corg + '.txt'
-		if aidee == 'onefull':
-			name = options.path + '/' + computer + 'oneccfwithoverhead_' + corg + '.txt'
-		if aidee == 'oneccf':
-			name = options.path + '/' + computer + 'oneccf_' + corg + '.txt'
-		if aidee == 'rotonly':
-			name = options.path + '/' + computer + 'overheadoff_CS' + str(coarsestep).zfill(len(str(coarsestep))) + '_FS' + str(finestep).zfill(len(str(finestep))) + '_'+ corg + '.txt'
-		if aidee == "onerotation":
-			name = options.path + '/' + computer + 'onerotation_CS' + str(coarsestep).zfill(len(str(coarsestep))) + '_FS' + str(finestep).zfill(len(str(finestep))) + '_'+ corg + '.txt'
-
 		
+	dimensions = []
+	if options.test2d:
+		dimensions.append( 2 )
+	if options.test3d:
+		dimensions.append( 3 )
+	
+	print "dimensions are", dimensions
+	
+	for dimension in dimensions:
 		
+		print "processing dimension", dimension	
 		
-		mastername = name.replace('.txt','_final.txt')
+		dimensiontag = str( dimension ) + 'D'
 		
-		times=[]
-		cmd=''
-		for size in mults:
-			print "\naligning size", size
-			print "for ID", aidee
-			print "alignment type", corg
-			print "\n"			
-			#t=t1=t2=t1h=t2h=t1m=t2m=t1s=t2s=t1tot=t2tot=0
+		for aidee in IDS:
 			
-			setcuda=''
-			if corg=='gpu' or corg=='GPU':
-				setcuda= 'export NOCUDAINIT=0'
-				#print "\n\n\n !!!! I Have turned cuda ON!!!\n\n\n"
-				if options.setcudadevice is not None:
-					setcuda += '&& export SETCUDADEVICE=' + options.setcudadevice
-					
-				print "SETCUDA IS", setcuda	
-					
+			finalaidee = aidee+dimensiontag
+			
+			name = createfilename( aidee, computer, coarsestep, finestep, corg )		
 				
-			elif corg=='cpu' or corg=='CPU':
-				setcuda = 'export NOCUDAINIT=1'
-				#print "\n\n\n !!!! I Have turned cuda OFF!!!\n\n\n"
-			else:
-				print "Something is wrong; you're supposed to select GPU or CPU. TERMINATING!"
-				sys.exit()
-			
-		
+			times=[]
 			cmd=''
-			abspath = originaldir + '/' + options.path
-			#print "\n\n\n@@@@@@@@@@@@@@@@@@@@@@@@@Abs path is", abspath
-			os.system('cd ' + abspath)
-			#print "But the dir I'm in is" + os.getcwd() + "@@@@@@@@@@@@@@@@@@@@@@@@@\n\n\n"
+			for size in mults:
+				print "\naligning size", size
+				print "for ID", finalaidee
+				print "alignment type", corg
+				print "\n"			
+				#t=t1=t2=t1h=t2h=t1m=t2m=t1s=t2s=t1tot=t2tot=0
 			
-			a=EMData(size,size,size)
-			a=a.process('testimage.noise.gauss')
+				setcuda=''
+				if corg=='gpu' or corg=='GPU':
+					setcuda= 'export NOCUDAINIT=0'
+					#print "\n\n\n !!!! I Have turned cuda ON!!!\n\n\n"
+					if options.setcudadevice is not None:
+						setcuda += '&& export SETCUDADEVICE=' + options.setcudadevice
+					
+					print "SETCUDA IS", setcuda	
+					
+				
+				elif corg=='cpu' or corg=='CPU':
+					setcuda = 'export NOCUDAINIT=1'
+					#print "\n\n\n !!!! I Have turned cuda OFF!!!\n\n\n"
+				else:
+					print "Something is wrong; you're supposed to select GPU or CPU. TERMINATING!"
+					sys.exit(1)
 			
-			aname = abspath+ '/' + 'a_stack.hdf'
-			a.write_image(aname)
-
-			b=EMData(size,size,size)
-			b=b.process('testimage.noise.gauss')
-			bname = abspath + '/' +'b_stack.hdf'
-			b.write_image(bname)
-
-			out = 'garbage.hdf'
-			
-			#print "aname is", aname
-			#print "bname is", bname
-
-			#paf = abspath + '/' + aidee
-			
-				#cmd = setcuda + ''' && e2spt_classaverage.py --input=''' + aname + ''' --output=''' + out + ''' --ref=''' + bname + ''' --iter=1 --npeakstorefine=1 -v 0 --mask=mask.sharp:outer_radius=-2 --preprocess=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --align=rotate_translate_3d:search=6:delta=''' + str(coarsestep) + ''':dphi=''' + str(coarsestep) + ''':verbose=0:sym=icos --parallel=thread:1 --falign=refine_3d_grid:delta=''' + str(finestep) + ''':range=''' + str( int(math.ceil(coarsestep/2.0)) ) + ''' --averager=mean.tomo --aligncmp=ccc.tomo --faligncmp=ccc.tomo --normproc=normalize.mask --path=''' + paf
-				#cmds.update('icosali':cmd1)
 		
-			ta=0
-			tb=0
-			sym='c1'
-			if aidee == 'onefull' or aidee == 'oneicos':	
+				cmd=''
+				abspath = originaldir + '/' + options.path
+				#print "\n\n\n@@@@@@@@@@@@@@@@@@@@@@@@@Abs path is", abspath
+				os.system('cd ' + abspath)
+				#print "But the dir I'm in is" + os.getcwd() + "@@@@@@@@@@@@@@@@@@@@@@@@@\n\n\n"
+			
+				retimgs = makeimgs( options, dimension, size, abspath )
+				a = retimgs[0]
+				b = retimgs[1]
+
+				out = 'garbage.hdf'
+			
+				ta=0
+				tb=0
+				sym='c1'
+			
+				afft = a.do_fft()
+				bfft = b.do_fft()
+			
+				t=Transform({'type':'eman','az':45,'alt':45,'phi':45})
+			
+				if corg=='gpu' or corg=='GPU':
+					EMData.switchoncuda()
+			
+				if 'overhead' in aidee:	
 				
-				parallel=options.parallel
-				profilecmd1='e2spt_classaverage.py'
-				profilecmd2=''
-				if options.profile:
-					profilecmd1 = "python -m cProfile -s time " + options.eman2dir + "/bin/e2spt_classaverage.py"
-					profilecmd2 = "> profiled_" + corg + '_box' + str(size).zfill(3) + '.txt' 
-					parallel=''
-					print "profilecmd1 is", profilecmd1
-					print "profilecmd2 is", profilecmd2
+					parallel=options.parallel
+					profilecmd1='e2spt_classaverage.py'
+					profilecmd2=''
+				
+					if options.profile:
+						profilecmd1 = "python -m cProfile -s time " + options.eman2dir + "/bin/e2spt_classaverage.py"
+						profilecmd2 = "> profiled_" + corg + '_box' + str(size).zfill(3) + '.txt' 
+						parallel=''
+						print "profilecmd1 is", profilecmd1
+						print "profilecmd2 is", profilecmd2
 									
-				cmd = setcuda + ''' && cd ''' + abspath + ''' && ''' + profilecmd1 + ''' --input=''' + aname + ''' --ref=''' + bname + ''' --iter=1 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --highpass=filter.highpass.gauss:cutoff_freq=0.01:apix=1.0 --preprocess=filter.lowpass.gauss:cutoff_freq=0.2:apix=1.0 --align=rotate_symmetry_3d:sym=c1 --parallel=''' + parallel + ''' --falign=None --averager=mean.tomo --aligncmp=ccc.tomo --normproc=normalize.mask --path=''' + aidee + ''' --verbose=''' + str(options.verbose) + ' ' + profilecmd2 + ' && rm -r ' + aidee
+					cmd = setcuda + ''' && cd ''' + abspath + ''' && ''' + profilecmd1 + ''' --input=''' + aname + ''' --ref=''' + bname + ''' --iter=1 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --highpass=filter.highpass.gauss:cutoff_freq=0.01:apix=1.0 --preprocess=filter.lowpass.gauss:cutoff_freq=0.2:apix=1.0 --align=rotate_symmetry_3d:sym=c1 --parallel=''' + parallel + ''' --falign=None --averager=mean.tomo --aligncmp=ccc.tomo --normproc=normalize.mask --path=''' + aidee + ''' --verbose=''' + str(options.verbose) + ' ' + profilecmd2 + ' && rm -r ' + aidee
 			
-				if aidee == 'oneicos':
-					cmd = setcuda + ''' && cd ''' + abspath + ''' && ''' + profilecmd1 + ''' --input=''' + aname +  ''' --ref=''' + bname + ''' --npeakstorefine=''' + str(options.npeakstorefine) + ''' --iter=1 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --highpass=filter.highpass.gauss:cutoff_freq=0.01:apix=1.0 --preprocess=filter.lowpass.gauss:cutoff_freq=0.2:apix=1.0 --align=rotate_translate_3d:sym=icos:delta=''' + str(coarsestep) + ''' --parallel=''' + parallel + ''' --falign=refine_3d_grid:delta=''' + str( finestep ) + ''':range=''' + str(int(round(float(options.coarsestep)/2.0))) + ''' --averager=mean.tomo --aligncmp=ccc.tomo --normproc=normalize.mask --path=''' + aidee + ''' --verbose=''' + str(options.verbose) + ' ' + profilecmd2  + ' && rm -r ' + aidee
-			
-				print "Therefore the instruction is", cmd
-				ta = time()
-				os.system(cmd)
-				tb = time()
+					if 'full' in aidee:
+					
+						if coarsestep:
+							cmd = setcuda + ''' && cd ''' + abspath + ''' && ''' + profilecmd1 + ''' --input=''' + aname +  ''' --ref=''' + bname + ''' --npeakstorefine=''' + str(options.npeakstorefine) + ''' --iter=1 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --highpass=filter.highpass.gauss:cutoff_freq=0.01:apix=1.0 --preprocess=filter.lowpass.gauss:cutoff_freq=0.2:apix=1.0 --align=rotate_translate_3d:sym=''' + options.sym +''':delta=''' + str(coarsestep) + ''' --parallel=''' + parallel  + ''' --averager=mean.tomo --aligncmp=ccc.tomo --normproc=normalize.mask --path=''' + aidee + ''' --verbose=''' + str(options.verbose)
+						
+							if 'fourier' in aidee:
+								cmd = setcuda + ''' && cd ''' + abspath + ''' && ''' + profilecmd1 + ''' --input=''' + aname +  ''' --ref=''' + bname + ''' --npeakstorefine=''' + str(options.npeakstorefine) + ''' --iter=1 -v 0 --mask=mask.sharp:outer_radius=-2 --lowpass=filter.lowpass.gauss:cutoff_freq=0.1:apix=1.0 --highpass=filter.highpass.gauss:cutoff_freq=0.01:apix=1.0 --preprocess=filter.lowpass.gauss:cutoff_freq=0.2:apix=1.0 --align=rotate_translate_3d:fft_tag=yes:sym=''' + options.sym + ''':delta''' + str(coarsestep) + ''' --parallel=''' + parallel + ''' --averager=mean.tomo --aligncmp=ccc.tomo --normproc=normalize.mask --path=''' + aidee + ''' --verbose=''' + str(options.verbose)
+						
+							if finestep:
+							
+								if 'fourier' not in aidee:
+									cmd += ''' --falign=refine_3d_grid:delta=''' + str( finestep ) + ''':range=''' + str(int(round(float(options.coarsestep)/2.0)))
+								elif 'fourier' in aidee:
+									cmd += ''' --falign=fft_tag=yes:refine_3d_grid:delta=''' + str( finestep ) + ''':range=''' + str(int(round(float(options.coarsestep)/2.0)))
+										
+							cmd += ' ' + profilecmd2  + ' && rm -r ' + aidee
+							
+						else:
+							"ERROR/WARNING: Non-zero --coarsestep needs to be provided with --fullaliwithoverhead."
+											
+					print "cmd for ID %s is %s" %( finalaidee, cmd )
+					ta = time()
+					os.system(cmd)
+					tb = time()
 	
-			elif aidee == 'oneccf':
-				if corg=='gpu' or corg=='GPU':
-					EMData.switchoncuda()
-					
-				a=EMData(aname,0)
-				b=EMData(bname,0)
-				ta = time()
-				ccfab=a.calc_ccf(b)
-				tb = time()
+				elif 'oneccfreal' in finalaidee:					
+					ta = time()
+					ccfab=a.calc_ccf(b)
+					tb = time()
 				
-				if corg=='gpu' or corg=='GPU':
-					EMData.switchoffcuda()
+				elif 'oneccffourier' in finalaidee:				
+					ta = time()
+					ccfabfft=afft.calc_ccf(bfft)
+					tb = time()
 			
-			elif aidee == 'onerotation':
-				if corg=='gpu' or corg=='GPU':
-					EMData.switchoncuda()
+				elif 'fullali' in finalaidee:				
+					#--align=rotate_translate_3d:search=12:delta=12:dphi=12:verbose=1 --parallel=thread:8 --falign=refine_3d_grid:delta=3:range=12:search=2
+					if options.coarsestep:
 				
-				a=EMData(aname,0)
-				#b=EMData(bname,0)
-				ta = time()
-				a.rotate(45,45,45)
-				tb = time()
-				
-				
-			elif aidee == 'rotonly':
-				if corg=='gpu' or corg=='GPU':
-					EMData.switchoncuda()
+						ta = time()
+						bestcoarse = a.xform_align_nbest('rotate_translate_3d',b,{'delta':int(options.coarsestep),'dphi':int(options.coarsestep),'search':10,'sym':options.sym,'verbose':options.verbose},1,'ccc.tomo')
 					
-				a=EMData(aname,0)
-				b=EMData(bname,0)
+						if options.finestep:
+							for bc in bestcoarse:
+								#classoptions["falign"][1]["xform.align3d"] = bc["xform.align3d"]
+								ran=int(round(float(options.coarsestep)/2.0))
+								a.align('refine_3d_grid',b,{'delta':int(options.finestep),'range':ran,'search':3,'xform.align3d':bc['xform.align3d'],'verbose':options.verbose},'ccc.tomo')
+						tb = time()
+					else:
+						"ERROR/WARNING: Non-zero --coarsestep needs to be specified with --fullali."
 				
-				#--align=rotate_translate_3d:search=12:delta=12:dphi=12:verbose=1 --parallel=thread:8 --falign=refine_3d_grid:delta=3:range=12:search=2
-				ta = time()
-				bestcoarse = a.xform_align_nbest('rotate_translate_3d',b,{'delta':int(options.coarsestep),'dphi':int(options.coarsestep),'search':10,'sym':options.sym,'verbose':options.verbose},1,'ccc.tomo')
+				elif 'onerotreal' in finalaidee:				
+					ar = a.copy()
 				
-				for bc in bestcoarse:
-					#classoptions["falign"][1]["xform.align3d"] = bc["xform.align3d"]
-					ran=int(round(float(options.coarsestep)/2.0))
-					a.align('refine_3d_grid',b,{'delta':int(options.finestep),'range':ran,'search':3,'xform.align3d':bc['xform.align3d'],'verbose':options.verbose},'ccc.tomo')
-				tb = time()
+					ta = time()
+					ar.rotate(45,45,45)
+					tb = time()
+			
+				elif 'onerotfourier' in finalaidee:				
+					afftr = afft.copy()
+				
+					ta = time()
+					afftr.rotate(45,45,45)
+					tb = time()
+			
+				elif 'onetransformreal' in finalaidee:		
+					at = a.copy()
+				
+					ta = time()
+					at.transform(t)
+					tb = time()
+			
+				elif 'onetransformfourier' in finalaidee:				
+					afftt = afft.copy()
+				
+					ta = time()
+					afftt.transform(t)
+					tb = time()
 
 				if corg=='gpu' or corg=='GPU':
 					EMData.switchoffcuda()
-			td = tb - ta
-			if td:
-				#print "Excution time was", td
-				times.append(float(td))
-				line2write= str(size) + ' ' + str( float(td) )+'\n'
-				#txt.write(line2write)
-				txt = open(mastername,'a')
-				txt.write( line2write )
-				txt.close()
+			
+				td = tb - ta
+			
+				if td:
+					#print "Excution time was", td
+					times.append(float(td))
+					line2write= str(size) + ' ' + str( float(td) )+'\n'
+					#txt.write(line2write)
+					txt = open(name,'a')
+					txt.write( line2write )
+					txt.close()
 					
-		#txt.close()
+			#txt.close()
+			
+			
+			data.update({finalaidee:[mults,times]})
+		
+		print "data len is", len(data)
+		print "data is", data
+		if 'onerotreal'+dimensiontag in data and 'onerotfourier'+dimensiontag in data:
+			ratiodata = calcratio( options, data['onerotreal'+dimensiontag][-1], data['onerotfourier'+dimensiontag][-1], mults, corg, 'onerotreal'+dimensiontag, 'onerotfourier'+dimensiontag )
+			ratiox = ratiodata[0]
+			ratioy = ratiodata[1]
+			ratiofilename = ratiodata[2]
+			print "for rot ratiofilename", ratiofilename
+			textfilename = ratiofilename.replace('.png','.txt')
+			textwriter( textfilename, ratiox, ratioy )
+		
+		if 'oneccfreal'+dimensiontag  in data and 'oneccffourier'+dimensiontag in data:
+			ratiodata = calcratio( options, data['oneccfreal'+dimensiontag][-1], data['oneccffourier'+dimensiontag][-1], mults, corg, 'oneccfreal'+dimensiontag, 'oneccffourier'+dimensiontag ) 
+			ratiox = ratiodata[0]
+			ratioy = ratiodata[1]
+			ratiofilename = ratiodata[2]
+			print "for ccf ratiofilename", ratiofilename
+		
+			textfilename = ratiofilename.replace('.png','.txt')
+			textwriter( textfilename, ratiox, ratioy )
 	
-		data.update({aidee:[mults,times]})
+		if 'onetransformreal'+dimensiontag in data and 'onetransformfourier'+dimensiontag in data:
+			ratiodata = calcratio( options, data['onetransformreal'+dimensiontag][-1], data['onetransformfourier'+dimensiontag][-1], mults, corg, 'onetransformreal'+dimensiontag, 'onetransformfourier'+dimensiontag ) 
+			ratiox = ratiodata[0]
+			ratioy = ratiodata[1]
+			ratiofilename = ratiodata[2]
+			print "for transform ratiofilename", ratiofilename
+		
+			textfilename = ratiofilename.replace('.png','.txt')
+			textwriter( textfilename, ratiox, ratioy )
+	
 		#print "\n\nThe data to return is\n", data
 		#print "\n"
 	return(data)
 
 
+def makeimgs( options, dimension, size, abspath ):
+	
+	a = None
+	b = None
+	
+	if dimension:
+		a=EMData(size,size)
+		b=a.copy()
+	
+	if dimension:	
+		a=EMData(size,size,size)
+		b=a.copy()
+	
+	a.process_inplace('testimage.noise.gauss')
+	aname = abspath+ '/' + 'a_stack.hdf'
+	a.write_image(aname)
+
+	b.process_inplace('testimage.noise.gauss')
+	bname = abspath + '/' +'b_stack.hdf'
+	b.write_image(bname)
+
+	return a,b
+
+def calcratio( options, x1, x2, sizes, corg, ID1, ID2 ):
+	x1 = numpy.array( x1 )
+	x2 = numpy.array( x2 )
+	
+	sumx1 = sum(x1)
+	sumx2 = sum(x2)
+	
+	difs = x1/x2
+	difs = list(difs)
+	title= ID1 + '/' + ID2
+	
+	if sumx2 > sumx1:
+		difs = x2/x1
+		difs = list(difs)
+		title= ID2 + '/' + ID1
+	
+	labelY = 'Ratio ' + title
+	
+	plotter(sizes,difs,title.replace('/','_over'),title,labelY)
+	
+	filename = options.path + '/' + title.replace('/','_over_') + '.png'
+
+	plt.savefig( filename )
+	plt.clf()
+	
+	print "calcratio, filename to return", filename
+	print "type", type(filename)
+	
+	return sizes, difs, filename
+	
+
 '''
 FUNCTION TO PLOT RESULTS
 '''
-def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0,idee='',yminnonconvex=[]):
+def plotter(xaxis,yaxis,name='',title='',labelY='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0,idee='',yminnonconvex=[]):
 
 	#yaxislog=[]
 	if options.logplot:
@@ -854,13 +1044,13 @@ def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0,ide
 		#print "ERROR! xaxis and yminnonconvex are not equal in length, see"
 		#print "xaxis is", xaxis
 		#print "yminnonconvex is", yminnonconvex
-		#sys.exit()
+		#sys.exit(1)
 		pass
 	#print "in plotter, linen received is", linenum
 	
 	if not xaxis or not yaxis:
 		#print "The plotter has received empty xaxis or yaxis arrays, see", 
-		sys.exit()
+		sys.exit(1)
 
 	#print "IN PLOTTER X", xaxis
 	#print "IN PLOTTER Y", yaxis
@@ -894,6 +1084,9 @@ def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0,ide
 	pylab.rc("axes", linewidth=2.0)
 	pylab.xlabel('X Axis', fontsize=14, fontweight='bold')
 	pylab.ylabel('Y Axis', fontsize=14, fontweight='bold')
+
+	if title:
+		pylab.title(title)
 
 	#pylab.ylim([-1,ylimvalmax+10])
 	pylab.xlim([-1,max(xaxis)+10])
@@ -966,13 +1159,16 @@ def plotter(xaxis,yaxis,name='',CS=0,FS=0,markernum=0,linenum=0,ylimvalmax=0,ide
 		if 'gpu' in name or 'GPU' in name and 'cpu' not in name and 'CPU' not in name:
 			tag='gpu 3D alignment Time'
 			labelfory='Time (s)'
-		if 'cpu' in name or 'CPU' in name and 'gpu' not in name and 'GPU' not in name:
+		elif 'cpu' in name or 'CPU' in name and 'gpu' not in name and 'GPU' not in name:
 			tag='cpu 3D alignment Time'
 			labelfory='Time (s)'
-		if options.logplot:
+		elif options.logplot:
 			labelfory = "LOG( " + labelfory + " )"
 		stepslabel='\ncoarse step=' + str(CS) + ' : fine step=' + str(FS)
 		plt.title(tag + ' VS box-size' + stepslabel)
+	elif name and not CS and not FS:
+		plt.title( title )
+		labelfory = labelY
 	
 	plt.ylabel(labelfory)
 	plt.xlabel("Box side-length (pixels)")
