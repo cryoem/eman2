@@ -169,22 +169,22 @@ namespace EMAN
 	 */
 	class ScaleAlignerABS:public Aligner
 	{
-	  public: 
+	  public:
 		 /** Constructor to initialize the basealigner string */
 		 ScaleAlignerABS(const string& ba) : basealigner(ba)
 		 {
 		 }
-		 
+
 		 /**implmentation of the scale alignment using the base aligner set in set_base_aligner */
 		 EMData* align_using_base(EMData * this_img, EMData * to_img,
 						const string & cmp_name = "dot", const Dict& cmp_params = Dict()) const;
-	
+
 	  protected:
 		const string basealigner;
 		Dict basealigner_params;
-		
+
 	};
-	
+
 	/** Scale aligner. To scale one image to another in real space
 	 * @param min Minimum scaling (default: 0.95)
 	 * @param max aximum scaling (default: 1.05)
@@ -226,10 +226,10 @@ namespace EMAN
 			d.put("step", EMObject::FLOAT, "Scaling step (default: 0.01)");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
-	
+
 	/** Translational 2D Alignment using cross correlation.
      * It calculates the shift for a translational alignment, then
      * do the translation.
@@ -274,7 +274,7 @@ namespace EMAN
 			d.put("nozero", EMObject::INT,"Zero translation not permitted (useful for CCD images)");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -318,7 +318,7 @@ namespace EMAN
 			d.put("ambig180", EMObject::INT,"Either 0 or 1. If set, will not try and resolve the 180 degree ambiguity. If not set, it will assume the particle is well centered and resolve the ambiguity that way. default=false");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -362,7 +362,7 @@ namespace EMAN
 			d.put("r2", EMObject::INT, "Outer ring, pixels");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -399,7 +399,7 @@ namespace EMAN
 			TypeDict d;
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -446,7 +446,7 @@ namespace EMAN
 			d.put("zscore", EMObject::INT,"Either 0 or 1. This option is passed directly to the rotational aligner (default=false)");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -463,7 +463,7 @@ namespace EMAN
 	class RotateTranslateScaleAligner:public ScaleAlignerABS
 	{
 	  public:
-		
+
 		//Set the type of base aligner
 		RotateTranslateScaleAligner() : ScaleAlignerABS("rotate_translate")
 		{
@@ -505,10 +505,10 @@ namespace EMAN
 			d.put("zscore", EMObject::INT,"Either 0 or 1. This option is passed directly to the rotational aligner (default=false)");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
-	
+
 	/** Iterative rotational, translational alignment.  Basically, we find the best translation, and move to that pointer
 	* then we find the best rotation and rotate to that point. Next we iterate X times.
 	 * @param maxshift Maximum translation in pixels
@@ -556,7 +556,7 @@ namespace EMAN
 			d.put("useflcf", EMObject::INT,"Use Fast Local Correlation Function rather than CCF for translational alignment");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -580,7 +580,7 @@ namespace EMAN
 		RotateTranslateScaleAlignerIterative() : ScaleAlignerABS("rotate_translate_iterative")
 		{
 		}
-		
+
 		virtual EMData * align(EMData * this_img, EMData * to_img,
 					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
 
@@ -618,11 +618,11 @@ namespace EMAN
 			d.put("useflcf", EMObject::INT,"Use Fast Local Correlation Function rather than CCF for translational alignment");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
-	/** Rotational, translational alignment by resampling to polar coordinates.  
+	/** Rotational, translational alignment by resampling to polar coordinates.
 	* translation if found by varing to origin using for polar coordinate resampling in real space
 	 * @param tx maximum transltion in x direction, must by less than (n/2 - 1 - r2)
 	 * @param tu maximum transltion in y direction, must by less than (n/2 - 1 - r2)
@@ -667,10 +667,10 @@ namespace EMAN
 			d.put("r2", EMObject::INT, "Outer ring, pixels");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
-	
+
 	/** rotational, translational alignment
 	 * @param maxshift Maximum translation in pixels
 	 * @param snr signal to noise ratio array
@@ -801,7 +801,7 @@ namespace EMAN
 
 		static const string NAME;
 	};
-	
+
 	/** rotational, translational and flip alignment
 	 * @param flip
 	 * @param usedot
@@ -849,7 +849,7 @@ namespace EMAN
 			d.put("zscore", EMObject::INT,"Either 0 or 1. This option is passed directly to the rotational aligner (default=false)");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -866,7 +866,7 @@ namespace EMAN
         */
 	class RotateTranslateFlipScaleAligner:public ScaleAlignerABS
 	{
-	  public:	
+	  public:
 		//Set the type of base aligner
 		RotateTranslateFlipScaleAligner() : ScaleAlignerABS("rotate_translate_flip")
 		{
@@ -909,10 +909,10 @@ namespace EMAN
 			d.put("zscore", EMObject::INT,"Either 0 or 1. This option is passed directly to the rotational aligner (default=false)");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
-	
+
 	/** rotational, translational and flip alignment, iterative style
 	 * @param flip
 	 * @param r1 inner ring
@@ -961,10 +961,10 @@ namespace EMAN
 			d.put("maxshift", EMObject::INT, "Maximum translation in pixels");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
-	
+
 	/** Iterative rotational, translational alignment with flipping and scaling.  Basically, we find the best translation, and move to that pointer
 	* then we find the best rotation and rotate to that point. Next we iterate X times. We do this for each scale and flip of the image and return the optimal solution
 	 * @param min Minimum scaling (default: 0.95)
@@ -985,7 +985,7 @@ namespace EMAN
 		RotateTranslateFlipScaleAlignerIterative() : ScaleAlignerABS("rotate_translate_flip_iterative")
 		{
 		}
-		
+
 		virtual EMData * align(EMData * this_img, EMData * to_img,
 					   const string & cmp_name="dot", const Dict& cmp_params = Dict()) const;
 
@@ -1022,11 +1022,11 @@ namespace EMAN
 			d.put("maxiter", EMObject::INT, "Maximum number of iterations");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
-	
-	/** Rotational, translational alignment by resampling to polar coordinates.  
+
+	/** Rotational, translational alignment by resampling to polar coordinates.
 	* translation if found by varing to origin using for polar coordinate resampling in real space
 	 * @param tx maximum transltion in x direction, must by less than (n/2 - 1 - r2)
 	 * @param tu maximum transltion in y direction, must by less than (n/2 - 1 - r2)
@@ -1071,10 +1071,10 @@ namespace EMAN
 			d.put("r2", EMObject::INT, "Outer ring, pixels");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
-	
+
 	/** rotational, translational and flip alignment using real-space methods. slow
 	 * @param flip
 	 * @param maxshift Maximum translation in pixels
@@ -1112,7 +1112,7 @@ namespace EMAN
 			d.put("maxshift", EMObject::INT, "Maximum translation in pixels");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -1156,10 +1156,10 @@ namespace EMAN
 			d.put("angstep", EMObject::FLOAT,"The angular step (in degrees) to take in the exhaustive search for the solution angle. Typically very small i.e. 3 or smaller.");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
-	
+
 	/** Aligns a particle with the specified symmetry into the standard orientation for that
 	 * symmetry. Works by searching over a Grid and maximizing the recon variance after symmetrization.
 	 * NOTE: This function is depricated. Use the SymAlignProcessorQuat procssor instead.
@@ -1261,11 +1261,11 @@ namespace EMAN
 			d.put("verbose", EMObject::INT, "This will cause debugging information to be printed on the screen for the iterative refinement. Larger numbers -> more info. default=0");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
-	
+
 	/** Conjugate gradient refine alignment. Refines a preliminary 2D alignment to subpixel precision. Faster than 'refine', but requires better local minimum
 	* @param xform.align2d The Transform storing the starting guess. If unspecified the identity matrix is used
 	* @param step The initial increment used for stepping on the gradient. default=0.1
@@ -1316,7 +1316,7 @@ namespace EMAN
 			d.put("verbose", EMObject::INT, "This will cause debugging information to be printed on the screen for the iterative refinement. Larger numbers -> more info. default=0");
 			return d;
 		}
-		
+
 		static const string NAME;
 	};
 
@@ -1336,7 +1336,7 @@ namespace EMAN
 			{
 				return align(this_img, to_img, "ccc", Dict());
 			}
-		
+
 		virtual string get_name() const
 		{
 			return NAME;
@@ -1366,9 +1366,9 @@ namespace EMAN
 			d.put("maxshift", EMObject::INT,"Maximum translation in pixels in any direction. If the solution yields a shift beyond this value in any direction, then the refinement is judged a failure and the original alignment is used as the solution.");
 			return d;
 		}
-		static const string NAME;	
+		static const string NAME;
 	};
-	
+
 	/** Refine alignment. Refines a preliminary 3D alignment using a sampling grid. This is a port from tomohunter, but the az
 	 * sampling scheme is altered cuch that the points on the sphere are equidistant (Improves speed several hundered times).
 	 * The distance between the points on the sphere is 'delta' and the range(distance from the pole, 0,0,0 position) is
@@ -1384,7 +1384,7 @@ namespace EMAN
 	 * @param searchy The maximum length of the detectable translational shift in the y direction- if you supply this parameter you can not supply the maxshift parameters
 	 * @param searchz The maximum length of the detectable translational shift in the z direction- if you supply this parameter you can not supply the maxshift parameters
 	 * @param verbose Turn this on to have useful information printed to standard out
-	 * @author John Flanagan 
+	 * @author John Flanagan
 	 * @date Mar 2011
 	*/
 	class Refine3DAlignerGrid:public Aligner
@@ -1427,15 +1427,15 @@ namespace EMAN
 				d.put("verbose", EMObject::BOOL,"Turn this on to have useful information printed to standard out.");
 				return d;
 			}
-			
+
 			static const string NAME;
 	};
-	
+
 	/** Refine alignment. Refines a preliminary 3D alignment using a simplex algorithm. Subpixel precision.
 	 * Target function for the simplex algorithm is a rotation along an arbitrary axis defined by a quaternion, whose
-	 * rotation magnitude is defined by the vector length (hence the simplex varies the vecotr component of the quaternion). 
-	 * In addition the simplex varies translation. Using quaternions avoids gimbal lock. 
-	 * The simplex algorithm moves the function downhill in a ameboa like fasion, hence it may get stuck in a local 
+	 * rotation magnitude is defined by the vector length (hence the simplex varies the vecotr component of the quaternion).
+	 * In addition the simplex varies translation. Using quaternions avoids gimbal lock.
+	 * The simplex algorithm moves the function downhill in a ameboa like fasion, hence it may get stuck in a local
 	 * minima if the two 3D models are already roughly aligned.
 	 * @ingroup CUDA_ENABLED
 	 * @param xform.align3d The Transform storing the starting guess. If unspecified the identity matrix is used
@@ -1445,7 +1445,7 @@ namespace EMAN
 	 * @param stepn0 The initial simplex step size in the first quaternion vecotr component
 	 * @param stepn1 The initial simplex step size in the second quaternion vecotr component
 	 * @param stepn2 The initial simplex step size in the third quaternion vecotr component
-	 * @param spin_coeff The multiplier appied to the spin (if it is too small or too large the simplex will not converge) 
+	 * @param spin_coeff The multiplier appied to the spin (if it is too small or too large the simplex will not converge)
 	 * @param precision The precision which, if achieved, can stop the iterative refinement before reaching the maximum iterations
 	 * @param maxiter The maximum number of iterations that can be performed by the Simplex minimizer
 	 * @param maxshift Maximum translation in pixels in any direction.
@@ -1494,10 +1494,10 @@ namespace EMAN
 				d.put("maxshift", EMObject::INT,"Maximum translation in pixels in any direction. If the solution yields a shift beyond this value in any direction, then the refinement is judged a failure and the original alignment is used as the solution.");
 				return d;
 			}
-			
+
 			static const string NAME;
 	};
-	
+
 	/** rotational and translational alignment using a square qrid of Altitude and Azimuth values (the phi range is specifiable)
 	 * This aligner is ported from the original tomohunter.py - it is less efficient than searching on the sphere (RT3DSphereAligner).
 	 * This is for use as a course aligner. For refineing alignments, use the refine_3d_grid aligner. In general this aligner is not
@@ -1576,16 +1576,16 @@ namespace EMAN
 				d.put("verbose", EMObject::BOOL,"Turn this on to have useful information printed to standard out.");
 				return d;
 			}
-			
+
 			static const string NAME;
 	};
 
 	/** 3D rotational and translational alignment using spherical sampling, can reduce the search space based on symmetry.
 	 * can also make use of different OrientationGenerators (random, for example)
 	 * 2X more efficient than the RT3DGridAligner
-	 * The aligner actually aligns the reference to the 'moving' and then takes the inverse of the resulting transform. This 
-	 * is necessary because, in the case of symmetry (i.e. not c1), the reference symmetry axis must be aligned to the EMAN2 
-	 * symmetry axis, restricting the search space to the asymmetrical points on a sphere. We note that if the reference 
+	 * The aligner actually aligns the reference to the 'moving' and then takes the inverse of the resulting transform. This
+	 * is necessary because, in the case of symmetry (i.e. not c1), the reference symmetry axis must be aligned to the EMAN2
+	 * symmetry axis, restricting the search space to the asymmetrical points on a sphere. We note that if the reference
 	 * symmetry axis is not aligned to the EMAN2 symmetry axis, the best thing is to do a full search (i.e. specify sym='c1')
 	 * unless you really know what you are doing!
 	 * @ingroup CUDA_ENABLED
@@ -1658,10 +1658,10 @@ namespace EMAN
 				d.put("verbose", EMObject::BOOL,"Turn this on to have useful information printed to standard out.");
 				return d;
 			}
-			
+
 			static const string NAME;
 	};
-	
+
 	/** 3D rotational and translational alignment using a hierarchical method with gradually decreasing downsampling in Fourier space.
 	 * In theory, very fast, and without need for a "refine" aligner. Comparator is ignored. Uses an inbuilt comparison.
 	 * @param sym The symmtery to use as the basis of the spherical sampling
@@ -1713,21 +1713,25 @@ namespace EMAN
 				d.put("verbose", EMObject::BOOL,"Turn this on to have useful information printed to standard out.");
 				return d;
 			}
-			
+
 			static const string NAME;
+
+		private:
+			bool testort(EMData *small_this, EMData *small_to, vector<float> &s_score, vector<float> &s_coverage,vector<Transform> &s_xform,int i,Dict &upd) const;
+
 	};
-	
+
 	/** 3D rotational symmetry aligner. This aligner takes a map, which must be first aligned to the symmetry axis,
 	 * and rotates it to it symmetric positions. This is used to check for pseudo symmetry (such as finding the tail
-	 * of an icosahedral virus). A list of best matches (moving to a reference is produced. Alternativly, a rotated 
+	 * of an icosahedral virus). A list of best matches (moving to a reference is produced. Alternativly, a rotated
 	 * verison of the moving map is returned.
 	 * @ingroup CUDA_ENABLED
-	 * @param sym The symmtery to use 
+	 * @param sym The symmtery to use
 	 * @param verbose Turn this on to have useful information printed to standard out
 	 * @author John Flanagan
 	 * @date Mar 2011
 	 */
-	
+
 	class RT3DSymmetryAligner:public Aligner
 	{
 		public:
@@ -1770,7 +1774,7 @@ namespace EMAN
 				d.put("verbose", EMObject::BOOL,"Turn this on to have useful information printed to standard out.");
 				return d;
 			}
-			
+
 			static const string NAME;
 	};
 
@@ -1811,7 +1815,7 @@ namespace EMAN
 					static const string NAME;
 		};
 
-	
+
 	class CUDA_Aligner
 	{
 	  public:
@@ -1824,7 +1828,7 @@ namespace EMAN
 		void insert_image(EMData *image, int num);
 
 		void filter_stack(vector<float> ctf_params);
-		
+
 		void sum_oe(vector<float> ctf_params, vector<float> ali_params, EMData* ave1, EMData *ave2);
 
 		vector<float> alignment_2d(EMData *ref_image, vector<float> sx, vector<float> sy, int silent);
@@ -1847,11 +1851,11 @@ namespace EMAN
 		void finish();
 
 		void setup(int nima, int nref, int nx, int ny, int ring_length, int nring, int ou, float step, int kx, int ky, bool ctf);
-		
+
 		void setup_params(vector<float> all_ali_params, vector<float> all_ctf_params);
 
 		void insert_image(EMData *image, int num);
-		
+
 		void insert_ref_image(EMData *image, int num);
 
 		vector<float> multiref_ali2d(int silent);

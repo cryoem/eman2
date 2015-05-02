@@ -137,30 +137,30 @@ EMData* ScaleAlignerABS::align_using_base(EMData * this_img, EMData * to,
 	float min =  params.set_default("min",0.95f);
 	float max = params.set_default("max",1.05f);
 	float step = params.set_default("step",0.01f);
-	
+
 	// crate the starting transform
 	Transform t = Transform();
 	t.set_scale(max);
-	
+
 	//save orignal data
 	float* oridata = this_img->get_data();
-	
+
 	//get the transform processor and cast to correct factory product
 	Processor* proc = Factory <Processor>::get("xform", Dict());
 	TransformProcessor* xform = dynamic_cast<TransformProcessor*>(proc);
-	
+
 	// Using the following method we only create one EMdata object. If I just used the processor, then I would create many EMdata objects
 	EMData* result = 0;
 //	float bestscore = numeric_limits<float>::infinity();
 	float bestscore = 1.0e37;
-	
+
 	for(float i = max; i > min; i-=step){
-		
+
 		//scale the image
 		float* des_data = xform->transform(this_img,t);
 		this_img->set_data(des_data);
 		this_img->update();
-		
+
 		//check compairsion
 		EMData* aligned = this_img->align(basealigner, to, basealigner_params, cmp_name, cmp_params);
 		float score = aligned->cmp(cmp_name, to, cmp_params);
@@ -177,45 +177,45 @@ EMData* ScaleAlignerABS::align_using_base(EMData * this_img, EMData * to,
 		delete des_data;
 
 		t.set_scale(i);
-		
+
 		//reset original data
 		this_img->set_data(oridata);
-	}	
-	
+	}
+
 	if (!result) throw UnexpectedBehaviorException("Alignment score is infinity! Something is seriously wrong with the data!");
 	if (proc != 0) delete proc;
-	
-	return result;	
-	
+
+	return result;
+
 };
 
 EMData* ScaleAligner::align(EMData * this_img, EMData *to,
 			const string& cmp_name, const Dict& cmp_params) const
 {
-	
+
 	//get the scale range
 	float min =  params.set_default("min",0.95f);
 	float max = params.set_default("max",1.05f);
 	float step = params.set_default("step",0.01f);
-	
+
 	Transform t = Transform();
 	t.set_scale(max);
 	float* oridata = this_img->get_data();
-	
+
 	//get the transform processor and cast to correct factory product
 	Processor* proc = Factory <Processor>::get("xform", Dict());
 	TransformProcessor* xform = dynamic_cast<TransformProcessor*>(proc);
-	
+
 	// Using the following method we only create one EMdata object. If I just used the processor, then I would create many EMdata objects
 	float bestscale = 1.0;
 	float bestscore = 1.0e37;
 
 	for(float i = max; i > min; i-=step){
-			
+
 		float* des_data = xform->transform(this_img,t);
 		this_img->set_data(des_data);
 		this_img->update();
-		
+
 		//check compairsion
 		float score = this_img->cmp(cmp_name, to, cmp_params);
 		if(score < bestscore){
@@ -224,23 +224,23 @@ EMData* ScaleAligner::align(EMData * this_img, EMData *to,
 		}
 		//clean up scaled image data
 		delete des_data;
-		
+
 		t.set_scale(i);
-		
+
 		//reset original data
 		this_img->set_data(oridata);
 	}
 
 
-	
+
 	//Return scaled image
 	t.set_scale(bestscale);
 	EMData* result = this_img->process("xform",Dict("transform",&t));
 	result->set_attr("scalefactor",bestscale);
 	if (proc != 0) delete proc;
-	
+
 	return result;
-	
+
 }
 
 // Note, the translational aligner assumes that the correlation image
@@ -277,7 +277,7 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 		//cf = this_img->calc_ccf(to);
 	}
 #endif // EMAN2_USING_CUDA
-	
+
 	if (use_cpu) {
 		if (useflcf) cf = this_img->calc_flcf(to);
 		else cf = this_img->calc_ccf(to);
@@ -323,7 +323,7 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 	if (nozero) {
 		cf->zero_corner_circulant(1);
 	}
-	
+
 	IntPoint peak;
 #ifdef EMAN2_USING_CUDA
 	if (!use_cpu) {
@@ -334,7 +334,7 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 		free(data);
 	}
 #endif // EMAN2_USING_CUDA
-	
+
 	if (use_cpu) {
 		peak = cf->calc_max_location_wrap(maxshiftx, maxshifty, maxshiftz);
 	}
@@ -356,14 +356,14 @@ EMData *TranslationalAligner::align(EMData * this_img, EMData *to,
 		delete cf;
 		cf = 0;
 	}
-	
+
 	Dict params("trans",static_cast< vector<int> >(cur_trans));
 	if (use_cpu){
 		cf=this_img->process("xform.translate.int",params);
 	}
 	Transform t;
 	t.set_trans(cur_trans);
-	
+
 #ifdef EMAN2_USING_CUDA
 	if (!use_cpu) {
 		cout << "USe CUDA TA 3" << endl;
@@ -407,7 +407,7 @@ EMData * RotationalAligner::align_180_ambiguous(EMData * this_img, EMData * to, 
 	EMData *cf = this_img_rfp->calc_ccfx(to_rfp, 0, this_img->get_ysize(),false,false,zscore);
 // cf->process_inplace("normalize");
 // cf->write_image("ralisum.hdf",-1);
-// 	
+//
 // EMData *cf2 = this_img_rfp->calc_ccfx(to_rfp, 0, this_img->get_ysize(),true);
 // cf2->write_image("ralistack.hdf",-1);
 // delete cf2;
@@ -418,7 +418,7 @@ EMData * RotationalAligner::align_180_ambiguous(EMData * this_img, EMData * to, 
 
 	// Now solve the rotational alignment by finding the max in the column sum
 	float *data = cf->get_data();
-	
+
 	float peak = 0;
 	int peak_index = 0;
 	Util::find_max(data, this_img_rfp_nx, &peak, &peak_index);
@@ -443,7 +443,7 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 			const string& cmp_name, const Dict& cmp_params) const
 {
 	if (!to) throw InvalidParameterException("Can not rotational align - the image to align to is NULL");
-	
+
 #ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1) {
 		//if(!this_img->getcudarwdata()) this_img->copy_to_cuda();
@@ -455,7 +455,7 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 	int rfp_mode = params.set_default("rfp_mode",2);
 	int zscore = params.set_default("zscore",0);
 	int ambig180 = params.set_default("ambig180",0);
-	
+
 	EMData* rot_aligned = RotationalAligner::align_180_ambiguous(this_img,to,rfp_mode,zscore);
 	Transform * tmp = rot_aligned->get_attr("xform.align2d");
 	Dict rot = tmp->get_rotation("2d");
@@ -466,7 +466,7 @@ EMData *RotationalAligner::align(EMData * this_img, EMData *to,
 	if (ambig180) {
 		return rot_aligned;
 	}
-	
+
 	EMData *rot_align_180 = rot_aligned->process("math.rotate.180");
 
 	// Generate the comparison metrics for both rotational candidates
@@ -557,13 +557,13 @@ EMData *RotationalAlignerIterative::align(EMData * this_img, EMData *to,
 	EMData * to_polar = to->unwrap(r1,r2,-1,0,0,true);
 	EMData * this_img_polar = this_img->unwrap(r1,r2,-1,0,0,true);
 	int this_img_polar_nx = this_img_polar->get_xsize();
-	
+
 	EMData * cf = this_img_polar->calc_ccfx(to_polar, 0, this_img->get_ysize());
-	
+
 	//take out the garbage
 	delete to_polar; to_polar = 0;
 	delete this_img_polar; this_img_polar = 0;
-	
+
 	float * data = cf->get_data();
 	float peak = 0;
 	int peak_index = 0;
@@ -571,36 +571,36 @@ EMData *RotationalAlignerIterative::align(EMData * this_img, EMData *to,
 
 	delete cf; cf = 0;
 	float rot_angle = (float) (peak_index * 360.0f / this_img_polar_nx);
-	
+
 	//return the result
 	//cout << rot_angle << endl;
 	Transform tmp(Dict("type","2d","alpha",rot_angle));
 	EMData * rotimg=this_img->process("xform",Dict("transform",(Transform*)&tmp));
 	rotimg->set_attr("xform.align2d",&tmp);
-	
+
 	return rotimg;
-	
+
 }
 
 EMData *RotateTranslateAlignerIterative::align(EMData * this_img, EMData *to,
 			const string & cmp_name, const Dict& cmp_params) const
 {
 	int maxiter = params.set_default("maxiter", 3);
-	
+
 	Dict trans_params;
 	trans_params["intonly"] = 0;
 	trans_params["maxshift"] = params.set_default("maxshift", -1);
 	trans_params["useflcf"] = params.set_default("useflcf",0);
 	trans_params["nozero"] = params.set_default("nozero",false);
-	
+
 	Dict rot_params;
 	rot_params["r1"] = params.set_default("r1", -1);
 	rot_params["r2"] = params.set_default("r2", -1);
-	
+
 	Transform t;
 	EMData * moving_img = this_img;
 	for(int it = 0; it < maxiter; it++){
-		
+
 		// First do a translational alignment
 		EMData * trans_align = moving_img->align("translational", to, trans_params, cmp_name, cmp_params);
 		Transform * tt = trans_align->get_attr("xform.align2d");
@@ -614,23 +614,23 @@ EMData *RotateTranslateAlignerIterative::align(EMData * this_img, EMData *to,
 		delete trans_align; trans_align = 0;
 		delete rottrans_align; rottrans_align = 0;
 		delete rt;
-		
+
 		//this minimizes interpolation errors (all images that are futher processed will be interpolated at most twice)
 		if(it > 0){delete moving_img;}
-		
+
 		moving_img = this_img->process("xform",Dict("transform",&t));  //iterate
 	}
-	
-	//write the total transformation; Avoids interpolation erros 	
+
+	//write the total transformation; Avoids interpolation erros
 	moving_img->set_attr("xform.align2d", &t);
-	
+
 	return moving_img;
 }
 
 EMData *RotateTranslateScaleAlignerIterative::align(EMData * this_img, EMData *to,
 			const string & cmp_name, const Dict& cmp_params) const
 {
-	
+
 	//Basically copy params into rotate_translate
 	basealigner_params["maxshift"] = params.set_default("maxshift", -1);
 	basealigner_params["r1"] = params.set_default("r1",-1);
@@ -638,45 +638,45 @@ EMData *RotateTranslateScaleAlignerIterative::align(EMData * this_img, EMData *t
 	basealigner_params["maxiter"] = params.set_default("maxiter",3);
 	basealigner_params["nozero"] = params.set_default("nozero",false);
 	basealigner_params["useflcf"] = params.set_default("useflcf",0);
-	
+
 	//return the correct results
 	return align_using_base(this_img, to, cmp_name, cmp_params);
-	
+
 }
 
 EMData *RotateTranslateAlignerPawel::align(EMData * this_img, EMData *to,
 			const string & cmp_name, const Dict& cmp_params) const
 {
 	if (cmp_name != "dot" && cmp_name != "ccc") throw InvalidParameterException("Resample aligner only works for dot and ccc");
-	
+
 	int maxtx = params.set_default("tx", 0);
 	int maxty = params.set_default("ty", 0);
 	int r1 = params.set_default("r1",-1);
 	int r2 = params.set_default("r2",-1);
-	
+
 	if(this_img->get_xsize()/2 - 1 - r2 - maxtx <= 0 || (r2 == -1 && maxtx > 0)) throw InvalidParameterException("nx/2 - 1 - r2 - tx must be greater than or = 0");
 	if(this_img->get_ysize()/2 - 1 - r2 - maxty <= 0 || (r2 == -1 && maxty > 0)) throw InvalidParameterException("ny/2 - 1 - r2 - ty must be greater than or = 0");
-	
+
 //	float best_peak = -numeric_limits<float>::infinity();
 	float best_peak = -1.0e37;
 	int best_peak_index = 0;
 	int best_tx = 0;
 	int best_ty = 0;
 	int polarxsize = 0;
-		
+
 	for(int x = -maxtx; x <= maxtx; x++){
 		for(int y = -maxty; y <= maxty; y++){
 
 			EMData * to_polar = to->unwrap(r1,r2,-1,0,0,true);
 			EMData * this_img_polar = this_img->unwrap(r1,r2,-1,x,y,true);
 			EMData * cf = this_img_polar->calc_ccfx(to_polar, 0, this_img_polar->get_ysize());
-			
+
 			polarxsize = this_img_polar->get_xsize();
-			
+
 			//take out the garbage
 			delete to_polar; to_polar = 0;
 			delete this_img_polar; this_img_polar = 0;
-	
+
 			float *data = cf->get_data();
 			float peak = 0;
 			int peak_index = 0;
@@ -691,18 +691,18 @@ EMData *RotateTranslateAlignerPawel::align(EMData * this_img, EMData *to,
 			}
 		}
 	}
-	
+
 	float rot_angle = (float) (best_peak_index * 360.0f / polarxsize);
-				
+
 	//return the result
 	Transform tmptt(Dict("type","2d","alpha",0,"tx",-best_tx,"ty",-best_ty));
 	Transform tmprot(Dict("type","2d","alpha",rot_angle,"tx",0,"ty",0));
 	Transform total = tmprot*tmptt;
 	EMData* rotimg=this_img->process("xform",Dict("transform",(Transform*)&total));
 	rotimg->set_attr("xform.align2d",&total);
-	
+
 	return rotimg;
-	
+
 }
 
 EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
@@ -780,16 +780,16 @@ EMData *RotateTranslateAligner::align(EMData * this_img, EMData *to,
 EMData *RotateTranslateScaleAligner::align(EMData * this_img, EMData *to,
 			const string & cmp_name, const Dict& cmp_params) const
 {
-	
+
 	//Basically copy params into rotate_translate
 	basealigner_params["maxshift"] = params.set_default("maxshift", -1);
 	basealigner_params["rfp_mode"] = params.set_default("rfp_mode",2);
 	basealigner_params["useflcf"] = params.set_default("useflcf",0);
 	basealigner_params["zscore"] = params.set_default("zscore",0);
-	
+
 	//return the correct results
 	return align_using_base(this_img, to, cmp_name, cmp_params);
-	
+
 }
 
 EMData* RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
@@ -798,7 +798,7 @@ EMData* RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 	// Get the non flipped rotational, tranlsationally aligned image
 	Dict rt_params("maxshift", params["maxshift"], "rfp_mode", params.set_default("rfp_mode",2),"useflcf",params.set_default("useflcf",0),"zscore",params.set_default("zscore",0));
 	EMData *rot_trans_align = this_img->align("rotate_translate",to,rt_params,cmp_name, cmp_params);
-	
+
 	// Do the same alignment, but using the flipped version of the image
 	EMData *flipped = params.set_default("flip", (EMData *) 0);
 	bool delete_flag = false;
@@ -848,17 +848,17 @@ EMData* RotateTranslateFlipAligner::align(EMData * this_img, EMData *to,
 EMData *RotateTranslateFlipScaleAligner::align(EMData * this_img, EMData *to,
 			const string & cmp_name, const Dict& cmp_params) const
 {
-	
+
 	//Basically copy params into rotate_translate
 	basealigner_params["flip"] = params.set_default("flip", (EMData *) 0);
 	basealigner_params["maxshift"] = params.set_default("maxshift", -1);
 	basealigner_params["rfp_mode"] = params.set_default("rfp_mode",2);
 	basealigner_params["useflcf"] = params.set_default("useflcf",0);
 	basealigner_params["zscore"] = params.set_default("zscore",0);
-	
+
 	//return the correct results
 	return align_using_base(this_img, to, cmp_name, cmp_params);
-	
+
 }
 
 EMData* RotateTranslateFlipAlignerIterative::align(EMData * this_img, EMData *to,
@@ -917,29 +917,29 @@ EMData* RotateTranslateFlipAlignerIterative::align(EMData * this_img, EMData *to
 EMData *RotateTranslateFlipScaleAlignerIterative::align(EMData * this_img, EMData *to,
 			const string & cmp_name, const Dict& cmp_params) const
 {
-	
+
 	//Basically copy params into rotate_translate
 	basealigner_params["flip"] = params.set_default("flip", (EMData *) 0);
 	basealigner_params["maxshift"] = params.set_default("maxshift", -1);
 	basealigner_params["r1"] = params.set_default("r1",-1);
 	basealigner_params["r2"] = params.set_default("r2",-1);
 	basealigner_params["maxiter"] = params.set_default("maxiter",3);
-	
+
 	//return the correct results
 	return align_using_base(this_img, to, cmp_name, cmp_params);
-	
+
 }
 
 EMData *RotateTranslateFlipAlignerPawel::align(EMData * this_img, EMData *to,
 			const string & cmp_name, const Dict& cmp_params) const
 {
 	if (cmp_name != "dot" && cmp_name != "ccc") throw InvalidParameterException("Resample aligner only works for dot and ccc");
-	
+
 	int maxtx = params.set_default("tx", 0);
 	int maxty = params.set_default("ty", 0);
 	int r1 = params.set_default("r1",-1);
 	int r2 = params.set_default("r2",-1);
-	
+
 	if(this_img->get_xsize()/2 - 1 - r2 - maxtx <= 0 || (r2 == -1 && maxtx > 0)){
 		cout << "\nRunTimeError: nx/2 - 1 - r2 - tx must be greater than or = 0\n" << endl; // For some reason the expection message is not being print, stupid C++
 		throw InvalidParameterException("nx/2 - 1 - r2 - tx must be greater than or = 0");
@@ -948,7 +948,7 @@ EMData *RotateTranslateFlipAlignerPawel::align(EMData * this_img, EMData *to,
 		cout << "\nRunTimeError:ny/2 - 1 - r2 - ty must be greater than or = 0\n" << endl; // For some reason the expection message is not being print, stupid C++
 		throw InvalidParameterException("ny/2 - 1 - r2 - ty must be greater than or = 0");
 	}
-	
+
 //	float best_peak = -numeric_limits<float>::infinity();
 	float best_peak = -1.0e37;
 	int best_peak_index = 0;
@@ -956,7 +956,7 @@ EMData *RotateTranslateFlipAlignerPawel::align(EMData * this_img, EMData *to,
 	int best_ty = 0;
 	int polarxsize = 0;
 	bool flip = false;
-	
+
 	for(int x = -maxtx; x <= maxtx; x++){
 		for(int y = -maxty; y <= maxty; y++){
 
@@ -964,13 +964,13 @@ EMData *RotateTranslateFlipAlignerPawel::align(EMData * this_img, EMData *to,
 			EMData * this_img_polar = this_img->unwrap(r1,r2,-1,x,y,true);
 			EMData * cfflip = this_img_polar->calc_ccfx(to_polar, 0, this_img_polar->get_ysize(), false, true);
 			EMData * cf = this_img_polar->calc_ccfx(to_polar, 0, this_img_polar->get_ysize());
-			
+
 			polarxsize = this_img_polar->get_xsize();
-			
+
 			//take out the garbage
 			delete to_polar; to_polar = 0;
 			delete this_img_polar; this_img_polar = 0;
-	
+
 			float *data = cf->get_data();
 			float peak = 0;
 			int peak_index = 0;
@@ -984,7 +984,7 @@ EMData *RotateTranslateFlipAlignerPawel::align(EMData * this_img, EMData *to,
 				best_ty = y;
 				flip = false;
 			}
-			
+
 			data = cfflip->get_data();
 			Util::find_max(data, polarxsize, &peak, &peak_index);
 			delete cfflip; cfflip = 0;
@@ -998,9 +998,9 @@ EMData *RotateTranslateFlipAlignerPawel::align(EMData * this_img, EMData *to,
 			}
 		}
 	}
-	
+
 	float rot_angle = (float) (best_peak_index * 360.0f / polarxsize);
-				
+
 	//return the result
 	Transform tmptt(Dict("type","2d","alpha",0,"tx",-best_tx,"ty",-best_ty));
 	Transform tmprot(Dict("type","2d","alpha",rot_angle,"tx",0,"ty",0));
@@ -1010,9 +1010,9 @@ EMData *RotateTranslateFlipAlignerPawel::align(EMData * this_img, EMData *to,
 	if(flip == true) {
 		rotimg->process_inplace("xform.flip",Dict("axis", "x"));
 	}
-	
+
 	return rotimg;
-	
+
 }
 
 EMData *RotateFlipAligner::align(EMData * this_img, EMData *to,
@@ -1530,23 +1530,23 @@ EMData *RTFSlowExhaustiveAligner::align(EMData * this_img, EMData *to,
 
 EMData* SymAlignProcessor::align(EMData * this_img, EMData *to, const string & cmp_name, const Dict& cmp_params) const
 {
-	
+
 	// Set parms
 	float dphi = params.set_default("dphi",10.f);
 	float lphi = params.set_default("lphi",0.0f);
 	float uphi = params.set_default("uphi",359.9f);
-	
+
 	Dict d;
 	d["inc_mirror"] = true;
 	d["delta"] = params.set_default("delta",10.f);
-	
+
 	//Genrate points on a sphere in an asymmetric unit
 	Symmetry3D* sym = Factory<Symmetry3D>::get((string)params.set_default("sym","c1"));
 	vector<Transform> transforms = sym->gen_orientations((string)params.set_default("orientgen","eman"),d);
-	
+
 	//Genrate symmetry related orritenations
 	vector<Transform> syms = Symmetry3D::get_symmetries((string)params["sym"]);
-	
+
 	float bestquality = 0.0f;
 	EMData* bestimage = 0;
 	for(vector<Transform>::const_iterator trans_it = transforms.begin(); trans_it != transforms.end(); trans_it++) {
@@ -1555,9 +1555,9 @@ EMData* SymAlignProcessor::align(EMData * this_img, EMData *to, const string & c
 		for( float phi = lphi; phi < uphi; phi += dphi ) {
 			tparams["phi"] = phi;
 			t.set_rotation(tparams);
-			
+
 			//Get the averagaer
-			Averager* imgavg = Factory<Averager>::get((string)params.set_default("avger","mean")); 
+			Averager* imgavg = Factory<Averager>::get((string)params.set_default("avger","mean"));
 			//Now make the averages
 			for ( vector<Transform>::const_iterator it = syms.begin(); it != syms.end(); ++it ) {
 				Transform sympos = (*it)*t;
@@ -1565,7 +1565,7 @@ EMData* SymAlignProcessor::align(EMData * this_img, EMData *to, const string & c
 				imgavg->add_image(transformed);
 				delete transformed;
 			}
-			
+
 			EMData* symptcl=imgavg->finish();
 			delete imgavg;
 			//See which average is the best
@@ -1580,7 +1580,7 @@ EMData* SymAlignProcessor::align(EMData * this_img, EMData *to, const string & c
 		}
 	}
 	if(sym != 0) delete sym;
-	
+
 	return bestimage;
 }
 
@@ -1612,19 +1612,19 @@ static double refalifn(const gsl_vector * v, void *params)
 	double result = c->cmp(tmp,with);
 
 	if (tmp != 0) delete tmp;
-	
+
 	return result;
 }
 
 static void refalidf(const gsl_vector * v, void *params,gsl_vector * df) {
-	// we do this using a simple local difference estimate due to the expense of the calculation. 
+	// we do this using a simple local difference estimate due to the expense of the calculation.
 	// The step has to be large enough for the similarity metric
-	// To provide an accurate change in value. 
-	static double lstep[4] = { 0.05, 0.05, 0.1, 0.01 }; 
-	
+	// To provide an accurate change in value.
+	static double lstep[4] = { 0.05, 0.05, 0.1, 0.01 };
+
 	gsl_vector *vc = gsl_vector_alloc(v->size);
 	gsl_vector_memcpy(vc,v);
-	
+
 	double f = refalifn(v,params);
 	for (unsigned int i=0; i<v->size; i++) {
 		// double *vp = gsl_vector_ptr(vc,i);
@@ -1634,23 +1634,23 @@ static void refalidf(const gsl_vector * v, void *params,gsl_vector * df) {
 		double f2 = refalifn(vc,params);
 		// *vp-=lstep[i];
 		gsl_vector_set(vc,i,vp);
-		
+
 		gsl_vector_set(df,i,(f2-f)/lstep[i]);
 	}
-	
+
 	gsl_vector_free(vc);
 	return;
 }
 
 static void refalifdf(const gsl_vector * v, void *params, double * f, gsl_vector * df) {
-	// we do this using a simple local difference estimate due to the expense of the calculation. 
+	// we do this using a simple local difference estimate due to the expense of the calculation.
 	// The step has to be large enough for the similarity metric
-	// To provide an accurate change in value. 
-	static double lstep[4] = { 0.05, 0.05, 0.1, 0.01 }; 
-	
+	// To provide an accurate change in value.
+	static double lstep[4] = { 0.05, 0.05, 0.1, 0.01 };
+
 	gsl_vector *vc = gsl_vector_alloc(v->size);
 	gsl_vector_memcpy(vc,v);
-	
+
 	*f = refalifn(v,params);
 	for (unsigned int i=0; i<v->size; i++) {
 		// double *vp = gsl_vector_ptr(vc,i);
@@ -1660,10 +1660,10 @@ static void refalifdf(const gsl_vector * v, void *params, double * f, gsl_vector
 		double f2 = refalifn(vc,params);
 		// *vp-=lstep[i];
 		gsl_vector_set(vc,i,vp);
-		
+
 		gsl_vector_set(df,i,(f2-*f)/lstep[i]);
 	}
-	
+
 	gsl_vector_free(vc);
 	return;
 }
@@ -1722,7 +1722,7 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 		delete t;
 		return result;
 	}
-	
+
 	float stepx = params.set_default("stepx",1.0f);
 	float stepy = params.set_default("stepy",1.0f);
 	// Default step is 5 degree - note in EMAN1 it was 0.1 radians
@@ -1737,7 +1737,7 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 	gsl_params["snr"]  = params["snr"];
 	gsl_params["mirror"] = mirror;
 	if (params.has_key("mask")) gsl_params["mask"]=params["mask"];
-	
+
 	const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
 	gsl_vector *ss = gsl_vector_alloc(np);
 
@@ -1746,13 +1746,13 @@ EMData *RefineAligner::align(EMData * this_img, EMData *to,
 	gsl_vector_set(ss, 1, stepy);
 	gsl_vector_set(ss, 2, stepaz);
 	if (stepscale!=0.0) gsl_vector_set(ss,3,stepscale);
-	
+
 	gsl_vector *x = gsl_vector_alloc(np);
 	gsl_vector_set(x, 0, sdx);
 	gsl_vector_set(x, 1, sdy);
 	gsl_vector_set(x, 2, saz);
 	if (stepscale!=0.0) gsl_vector_set(x,3,1.0);
-	
+
 	Cmp *c = 0;
 
 	gsl_multimin_function minex_func;
@@ -1857,7 +1857,7 @@ EMData *RefineAlignerCG::align(EMData * this_img, EMData *to,
 		delete t;
 		return result;
 	}
-	
+
 	float step = params.set_default("step",0.1f);
 	float stepscale = params.set_default("stepscale",0.0f);
 
@@ -1871,13 +1871,13 @@ EMData *RefineAlignerCG::align(EMData * this_img, EMData *to,
 	if (params.has_key("mask")) gsl_params["mask"]=params["mask"];
 
 	const gsl_multimin_fdfminimizer_type *T = gsl_multimin_fdfminimizer_vector_bfgs;
-	
+
 	gsl_vector *x = gsl_vector_alloc(np);
 	gsl_vector_set(x, 0, sdx);
 	gsl_vector_set(x, 1, sdy);
 	gsl_vector_set(x, 2, saz);
 	if (stepscale!=0.0) gsl_vector_set(x,3,1.0);
-	
+
 	Cmp *c = 0;
 
 	gsl_multimin_function_fdf minex_func;
@@ -1954,7 +1954,7 @@ static Transform refalin3d_perturbquat(const Transform*const t, const float& spi
 {
 	Vec3f normal(n0,n1,n2);
 	normal.normalize();
-	
+
 	float omega = spincoeff*sqrt(n0*n0 + n1*n1 + n2*n2); // Here we compute the spin by the rotation axis vector length
 	Dict d;
 	d["type"] = "spin";
@@ -1963,12 +1963,12 @@ static Transform refalin3d_perturbquat(const Transform*const t, const float& spi
 	d["n2"] = normal[1];
 	d["n3"] = normal[2];
 	//cout << omega << " " << normal[0] << " " << normal[1] << " " << normal[2] << " " << n0 << " " << n1 << " " << n2 << endl;
-	
+
 	Transform q(d);
 	q.set_trans((float)x,(float)y,(float)z);
-	
-	q = q*(*t); //compose transforms	
-	
+
+	q = q*(*t); //compose transforms
+
 	return q;
 }
 
@@ -2037,7 +2037,7 @@ EMData* SymAlignProcessorQuat::align(EMData * volume, EMData *to, const string &
 	}else {
 		t = new Transform(); // is the identity
 	}
-	
+
 	float sdi = 0.0;
 	float sdj = 0.0;
 	float sdk = 0.0;
@@ -2046,14 +2046,14 @@ EMData* SymAlignProcessorQuat::align(EMData * volume, EMData *to, const string &
 	float sdz = 0.0;
 
 	float spincoeff =  params.set_default("spin_coeff",10.0f); // spin coefficient, controls speed of convergence (sort of)
-	
+
 	int np = 6; // the number of dimensions
 	Dict gsl_params;
 	gsl_params["volume"] = volume;
 	gsl_params["transform"] = t;
 	gsl_params["sym"] = params.set_default("sym","c1");
 	gsl_params["spincoeff"] = spincoeff;
-	
+
 	const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
 	gsl_vector *ss = gsl_vector_alloc(np);
 
@@ -2078,7 +2078,7 @@ EMData* SymAlignProcessorQuat::align(EMData * volume, EMData *to, const string &
 	gsl_vector_set(x, 3, sdx);
 	gsl_vector_set(x, 4, sdy);
 	gsl_vector_set(x, 5, sdz);
-	
+
 	gsl_multimin_function minex_func;
 	Cmp *c = Factory < Cmp >::get(cmp_name, cmp_params);
 	gsl_params["cmp"] = (void *) c;
@@ -2087,11 +2087,11 @@ EMData* SymAlignProcessorQuat::align(EMData * volume, EMData *to, const string &
 	minex_func.params = (void *) &gsl_params;
 	gsl_multimin_fminimizer *s = gsl_multimin_fminimizer_alloc(T, np);
 	gsl_multimin_fminimizer_set(s, &minex_func, x, ss);
-	
+
 	int rval = GSL_CONTINUE;
 	int status = GSL_SUCCESS;
 	int iter = 1;
-	
+
 	float precision = params.set_default("precision",0.01f);
 	int maxiter = params.set_default("maxiter",100);
 	while (rval == GSL_CONTINUE && iter < maxiter) {
@@ -2109,7 +2109,7 @@ EMData* SymAlignProcessorQuat::align(EMData * volume, EMData *to, const string &
 		maxshift = volume->get_xsize() / 4;
 	}
 	float fmaxshift = static_cast<float>(maxshift);
-	
+
 	EMData *result;
 	if ( fmaxshift >= (float)gsl_vector_get(s->x, 0) && fmaxshift >= (float)gsl_vector_get(s->x, 1)  && fmaxshift >= (float)gsl_vector_get(s->x, 2))
 	{
@@ -2119,9 +2119,9 @@ EMData* SymAlignProcessorQuat::align(EMData * volume, EMData *to, const string &
 		float x = (float)gsl_vector_get(s->x, 3);
 		float y = (float)gsl_vector_get(s->x, 4);
 		float z = (float)gsl_vector_get(s->x, 5);
-		
+
 		Transform tsoln = refalin3d_perturbquat(t,spincoeff,n0,n1,n2,x,y,z);
-			
+
 		result = volume->process("xform",Dict("transform",&tsoln));
 		result->set_attr("xform.align3d",&tsoln);
 		EMData *tmpsym = result->process("xform.applysym",Dict("sym",gsl_params["sym"]));
@@ -2132,26 +2132,26 @@ EMData* SymAlignProcessorQuat::align(EMData * volume, EMData *to, const string &
 		result->set_attr("xform.align3d",t);
 		result->set_attr("score",0.0);
 	}
-	
+
 	gsl_vector_free(x);
 	gsl_vector_free(ss);
 	gsl_multimin_fminimizer_free(s);
 
 	if (c != 0) delete c;
 	delete t;
-				      
+
 	return result;
 }
 
 EMData* Refine3DAlignerQuaternion::align(EMData * this_img, EMData *to,
 	const string & cmp_name, const Dict& cmp_params) const
 {
-	
+
 	if (!to || !this_img) throw NullPointerException("Input image is null"); // not sure if this is necessary, it was there before I started
 
 	if (to->get_ndim() != 3 || this_img->get_ndim() != 3) throw ImageDimensionException("The Refine3D aligner only works for 3D images");
 
-#ifdef EMAN2_USING_CUDA 
+#ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1) {
 		if(!this_img->getcudarwdata()) this_img->copy_to_cuda();
 		if(!to->getcudarwdata()) to->copy_to_cuda();
@@ -2165,7 +2165,7 @@ EMData* Refine3DAlignerQuaternion::align(EMData * this_img, EMData *to,
 	float sdy = 0.0;
 	float sdz = 0.0;
 	bool mirror = false;
-	
+
 	Transform* t;
 	if (params.has_key("xform.align3d") ) {
 		// Unlike the 2d refine aligner, this class doesn't require the starting transform's
@@ -2176,29 +2176,29 @@ EMData* Refine3DAlignerQuaternion::align(EMData * this_img, EMData *to,
 	}else {
 		t = new Transform(); // is the identity
 	}
-	
+
 	float spincoeff =  params.set_default("spin_coeff",10.0f); // spin coefficient, controls speed of convergence (sort of)
-	
+
 	int np = 6; // the number of dimensions
 	Dict gsl_params;
 	gsl_params["this"] = this_img;
 	gsl_params["with"] = to;
 	gsl_params["snr"]  = params["snr"];
 	gsl_params["mirror"] = mirror;
-	gsl_params["transform"] = t;	
+	gsl_params["transform"] = t;
 	gsl_params["spincoeff"] = spincoeff;
 	Dict altered_cmp_params(cmp_params);
-	
+
 	const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex;
 	gsl_vector *ss = gsl_vector_alloc(np);
-	
+
 	float stepi = params.set_default("stepn0",1.0f); // doesn't really matter b/c the vecor part will be normalized anyway
 	float stepj = params.set_default("stepn1",1.0f); // doesn't really matter b/c the vecor part will be normalized anyway
 	float stepk = params.set_default("stepn2",1.0f); // doesn't really matter b/c the vecor part will be normalized anyway
 	float stepx = params.set_default("stepx",1.0f);
 	float stepy = params.set_default("stepy",1.0f);
 	float stepz = params.set_default("stepz",1.0f);
-	
+
 	//gsl_vector_set(ss, 0, stepw);
 	gsl_vector_set(ss, 0, stepi);
 	gsl_vector_set(ss, 1, stepj);
@@ -2206,7 +2206,7 @@ EMData* Refine3DAlignerQuaternion::align(EMData * this_img, EMData *to,
 	gsl_vector_set(ss, 3, stepx);
 	gsl_vector_set(ss, 4, stepy);
 	gsl_vector_set(ss, 5, stepz);
-	
+
 	gsl_vector *x = gsl_vector_alloc(np);
 	gsl_vector_set(x, 0, sdi);
 	gsl_vector_set(x, 1, sdj);
@@ -2214,23 +2214,23 @@ EMData* Refine3DAlignerQuaternion::align(EMData * this_img, EMData *to,
 	gsl_vector_set(x, 3, sdx);
 	gsl_vector_set(x, 4, sdy);
 	gsl_vector_set(x, 5, sdz);
-	
+
 	gsl_multimin_function minex_func;
 	Cmp *c = Factory < Cmp >::get(cmp_name, altered_cmp_params);
-		
+
 	gsl_params["cmp"] = (void *) c;
 	minex_func.f = &refalifn3dquat;
 
 	minex_func.n = np;
 	minex_func.params = (void *) &gsl_params;
-	
+
 	gsl_multimin_fminimizer *s = gsl_multimin_fminimizer_alloc(T, np);
 	gsl_multimin_fminimizer_set(s, &minex_func, x, ss);
-	
+
 	int rval = GSL_CONTINUE;
 	int status = GSL_SUCCESS;
 	int iter = 1;
-	
+
 	float precision = params.set_default("precision",0.01f);
 	int maxiter = params.set_default("maxiter",100);
 	while (rval == GSL_CONTINUE && iter < maxiter) {
@@ -2248,7 +2248,7 @@ EMData* Refine3DAlignerQuaternion::align(EMData * this_img, EMData *to,
 		maxshift = this_img->get_xsize() / 4;
 	}
 	float fmaxshift = static_cast<float>(maxshift);
-	
+
 	EMData *result;
 	if ( fmaxshift >= (float)gsl_vector_get(s->x, 0) && fmaxshift >= (float)gsl_vector_get(s->x, 1)  && fmaxshift >= (float)gsl_vector_get(s->x, 2))
 	{
@@ -2258,20 +2258,20 @@ EMData* Refine3DAlignerQuaternion::align(EMData * this_img, EMData *to,
 		float x = (float)gsl_vector_get(s->x, 3);
 		float y = (float)gsl_vector_get(s->x, 4);
 		float z = (float)gsl_vector_get(s->x, 5);
-		
+
 		Transform tsoln = refalin3d_perturbquat(t,spincoeff,n0,n1,n2,x,y,z);
-			
+
 		result = this_img->process("xform",Dict("transform",&tsoln));
 		result->set_attr("xform.align3d",&tsoln);
 		result->set_attr("score", result->cmp(cmp_name,to,cmp_params));
-		
+
 	 //coda goes here
 	} else { // The refine aligner failed - this shift went beyond the max shift
 		result = this_img->process("xform",Dict("transform",t));
 		result->set_attr("xform.align3d",t);
 		result->set_attr("score",0.0);
 	}
-	
+
 	//EMData *result = this_img->process("xform",Dict("transform",t));
 	delete t;
 	gsl_vector_free(x);
@@ -2279,7 +2279,7 @@ EMData* Refine3DAlignerQuaternion::align(EMData * this_img, EMData *to,
 	gsl_multimin_fminimizer_free(s);
 
 	if (c != 0) delete c;
-	
+
 	return result;
 }
 
@@ -2321,19 +2321,19 @@ EMData* Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 		searchx = params.set_default("searchx",3);
 		searchy = params.set_default("searchy",3);
 		searchz = params.set_default("searchz",3);
-	}	
+	}
 
 	float delta = params.set_default("delta",1.0f);
 	float range = params.set_default("range",10.0f);
 	bool verbose = params.set_default("verbose",false);
-	
+
 	bool tomography = (cmp_name == "ccc.tomo") ? 1 : 0;
 	EMData * tofft = 0;
 	if(dotrans || tomography){
 		tofft = to->do_fft();
 	}
 
-#ifdef EMAN2_USING_CUDA 
+#ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1) {
 		if(!this_img->getcudarodata()) this_img->copy_to_cudaro(); // This is safer
 		if(!to->getcudarwdata()) to->copy_to_cuda();
@@ -2349,9 +2349,9 @@ EMData* Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 	bool use_cpu = true;
 	Transform tran = Transform();
 	Cmp* c = Factory <Cmp>::get(cmp_name, cmp_params);
-	
+
 	for ( float alt = 0; alt < range; alt += delta) {
-		// now compute a sane az step size 
+		// now compute a sane az step size
 		float saz = 360;
 		if(alt != 0) saz = delta/sin(alt*M_PI/180.0f); // This gives consistent az step sizes(arc lengths)
 		for ( float az = 0; az < 360; az += saz ){
@@ -2361,20 +2361,20 @@ EMData* Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 			// account for any changes in az
 			for( float phi = -range-az; phi < range-az; phi += delta ) {
 				d["alt"] = alt;
-				d["phi"] = phi; 
+				d["phi"] = phi;
 				d["az"] = az;
 				Transform tr(d);
 				tr = tr*(*t);	// compose transforms, this moves to the pole (aprox)
-				
+
 				//EMData* transformed = this_img->process("xform",Dict("transform",&tr));
 				EMData* transformed;
 				transformed = this_img->process("xform",Dict("transform",&tr));
-				
+
 				//need to do things a bit diffrent if we want to compare two tomos
 				float score = 0.0f;
 				if(dotrans || tomography){
 					EMData* ccf = transformed->calc_ccf(tofft);
-#ifdef EMAN2_USING_CUDA	
+#ifdef EMAN2_USING_CUDA
 					if(EMData::usecuda == 1){
 						use_cpu = false;
 						CudaPeakInfo* data = calc_max_location_wrap_cuda(ccf->getcudarwdata(), ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
@@ -2400,7 +2400,7 @@ EMData* Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 						tran.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
 						score = -ccf->get_value_at_wrap(point[0], point[1], point[2]);
 						tr = tran*tr;// to reflect the fact that we have done a rotation first and THEN a transformation
-						
+
 					}
 					delete ccf; ccf =0;
 					delete transformed; transformed = 0;// this is to stop a mem leak
@@ -2411,26 +2411,26 @@ EMData* Refine3DAlignerGrid::align(EMData * this_img, EMData *to,
 					score = c->cmp(to,transformed);
 					delete transformed; transformed = 0;// this is to stop a mem leak
 				}
-				
+
 				if(score < float(best["score"])) {
 //					printf("%f\n",score);
 					best["score"] = score;
 					best["xform.align3d"] = &tr; // I wonder if this will cause a mem leak?
-				} 	
+				}
 			}
 		}
 	}
 
 	if(tofft) {delete tofft; tofft = 0;}
 	if (c != 0) delete c;
-	
+
 	//make aligned map;
 	EMData* best_match = this_img->process("xform",Dict("transform", best["xform.align3d"])); // we are returning a map
 	best_match->set_attr("xform.align3d", best["xform.align3d"]);
 	best_match->set_attr("score", float(best["score"]));
-	
+
 	return best_match;
-	
+
 }
 
 EMData* RT3DGridAligner::align(EMData * this_img, EMData *to, const string & cmp_name, const Dict& cmp_params) const
@@ -2458,7 +2458,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	int searchx = 0;
 	int searchy = 0;
 	int searchz = 0;
-	
+
 	bool dotrans = params.set_default("dotrans",1);
 	if (params.has_key("search")) {
 		vector<string> check;
@@ -2477,7 +2477,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		searchy = params.set_default("searchy",3);
 		searchz = params.set_default("searchz",3);
 	}
-        
+
 	Transform* initxform;
 	if (params.has_key("initxform") ) {
 		// Unlike the 2d refine aligner, this class doesn't require the starting transform's
@@ -2488,7 +2488,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	}else {
 		initxform = new Transform(); // is the identity
 	}
-	
+
 	float lalt = params.set_default("alt0",0.0f);
 	float laz = params.set_default("az0",0.0f);
 	float lphi = params.set_default("phi0",0.0f);
@@ -2499,7 +2499,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	float daz = params.set_default("daz",10.f);
 	float dphi = params.set_default("dphi",10.f);
 	bool verbose = params.set_default("verbose",false);
-	
+
 	//in case we arre aligning tomos
 	Dict altered_cmp_params(cmp_params);
 	if (cmp_name == "ccc.tomo") {
@@ -2518,14 +2518,14 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		d["xform.align3d"] = &t; // deep copy is going on here
 		solns.push_back(d);
 	}
-	
+
 	bool tomography = (cmp_name == "ccc.tomo") ? 1 : 0;
 	EMData * tofft = 0;
 	if(dotrans || tomography){
 		tofft = to->do_fft();
 	}
-	
-#ifdef EMAN2_USING_CUDA 
+
+#ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1) {
 		if(!this_img->getcudarodata()) this_img->copy_to_cudaro();  // safer call
 		if(!to->getcudarwdata()) to->copy_to_cuda();
@@ -2547,17 +2547,17 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 			}
 			for( float phi = lphi; phi < uphi; phi += dphi ) {
 				d["alt"] = alt;
-				d["phi"] = phi; 
+				d["phi"] = phi;
 				d["az"] = az;
 				Transform t(d);
 				t = t*(*initxform);
 				EMData* transformed = this_img->process("xform",Dict("transform",&t));
-			
+
 				//need to do things a bit diffrent if we want to compare two tomos
 				float best_score = 0.0f;
 				if(dotrans || tomography){
 					EMData* ccf = transformed->calc_ccf(tofft);
-#ifdef EMAN2_USING_CUDA	
+#ifdef EMAN2_USING_CUDA
 					if(EMData::usecuda == 1){
 						use_cpu = false;;
 						CudaPeakInfo* data = calc_max_location_wrap_cuda(ccf->getcudarwdata(), ccf->get_xsize(), ccf->get_ysize(), ccf->get_zsize(), searchx, searchy, searchz);
@@ -2573,7 +2573,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 					}
 #endif
 					if(use_cpu){
-						if(tomography) ccf->process_inplace("normalize");	
+						if(tomography) ccf->process_inplace("normalize");
 						IntPoint point = ccf->calc_max_location_wrap(searchx,searchy,searchz);
 						trans.set_trans((float)-point[0], (float)-point[1], (float)-point[2]);
 						t = trans*t;	//composite transfrom to reflect the fact that we have done a rotation first and THEN a transformation
@@ -2588,7 +2588,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 					best_score = c->cmp(to,transformed);
 					delete transformed; transformed = 0;
 				}
-				
+
 				unsigned int j = 0;
 				for ( vector<Dict>::iterator it = solns.begin(); it != solns.end(); ++it, ++j ) {
 					if ( (float)(*it)["score"] > best_score ) {  // Note greater than - EMAN2 preferes minimums as a matter of policy
@@ -2603,10 +2603,10 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 			}
 		}
 	}
-	
+
 	if(tofft) {delete tofft; tofft = 0;}
 	if (c != 0) delete c;
-	
+
 	return solns;
 
 }
@@ -2614,23 +2614,23 @@ EMData* RT3DTreeAligner::align(EMData * this_img, EMData *to, const string & cmp
 {
 
  	vector<Dict> alis = xform_align_nbest(this_img,to,10,cmp_name,cmp_params);
- 
+
  	Dict t;
  	Transform* tr = (Transform*) alis[0]["xform.align3d"];
  	t["transform"] = tr;
  	EMData* soln = this_img->process("xform",t);
  	soln->set_attr("xform.align3d",tr);
-	
+
 	return soln;
 
 }
 
 vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, const unsigned int nrsoln, const string & cmp_name, const Dict& cmp_params) const {
 	if (nrsoln == 0) throw InvalidParameterException("ERROR (RT3DTreeAligner): nsoln must be >0"); // What was the user thinking?
-	
+
 	int nsoln = nrsoln;
 	if (nrsoln<10) nsoln=10;		// we need at least 10 solutions for the hierarchical approach
-	
+
 	int cleanup=0;
 	EMData *base_this;
 	EMData *base_to;
@@ -2646,7 +2646,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	float sigmathis = params.set_default("sigmathis",0.5f);
 	float sigmato = params.set_default("sigmato",0.5f);
 
-	
+
 	if (base_this->get_xsize()!=base_this->get_ysize()+2 || base_this->get_ysize()!=base_this->get_zsize()
 		|| base_to->get_xsize()!=base_to->get_ysize()+2 || base_to->get_ysize()!=base_to->get_zsize()) throw InvalidCallException("ERROR (RT3DTreeAligner): requires cubic images");
 
@@ -2657,20 +2657,20 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 
 	float apix=(float)this_img->get_attr("apix_x");
 	int ny=this_img->get_ysize();
-	
+
 //	int downsample=floor(ny/20);		// Minimum shrunken box size is 20^3
-	
+
 	vector<float> s_score(nsoln,0.0f);
 	vector<float> s_coverage(nsoln,0.0f);
 	vector<Transform> s_xform(nsoln);
 	printf("%d solutions\n",nsoln);
-	
+
 	// We start with 32^3, 64^3 ...
 	for (int sexp=5; sexp<10; sexp++) {
 		int ss=pow(2.0,sexp);
 		if (ss>ny) ss=ny;
 		printf("Size %d\n",ss);
-		
+
 		//ss=good_size(ny/ds);
 		EMData *small_this=base_this->get_clip(Region(0,(ny-ss)/2,(ny-ss)/2,ss+2,ss,ss));
 		EMData *small_to=  base_to->  get_clip(Region(0,(ny-ss)/2,(ny-ss)/2,ss+2,ss,ss));
@@ -2680,9 +2680,9 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		small_to->process_inplace("xform.fourierorigin.tocorner");
 		small_to->process_inplace("filter.highpass.gauss",Dict("cutoff_freq",0.005f));
 		small_to->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.33f));
-		
+
 		for (int i=0; i<nsoln; i++) s_score[i]=1.0e24;	// reset the scores since the different scales will not match
-		
+
 		// debug out
 		EMData *x=small_this->do_ift();
 		x->process_inplace("xform.phaseorigin.tocenter");
@@ -2692,14 +2692,14 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		x->process_inplace("xform.phaseorigin.tocenter");
 		x->write_image("dbg.hdf",(sexp-5)*2+1);
 		delete x;
-		
+
 		// This is a solid estimate for very complete searching
 // 		float astep = 89.999/floor(pi/(2.0*atan(2.0/ss)));
-		
+
 		// This is drawn from single particle analysis testing, which in that case insures that enough sampling to
 		// reasonably fill Fourier space is achieved
 		float astep = (float)(89.99/ceil(90.0*9.0/(8.0*sqrt((float)(4300.0/ss)))));	// 8 is (3+speed) from SPA with speed=5
-		
+
 		// This is for the first loop, we do a full search in a heavily downsampled space
 		if (s_coverage[0]==0.0f) {
 			// Genrate points on a sphere in an asymmetric unit
@@ -2711,7 +2711,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 			// We don't generate for phi, since this can produce a very large number of orientations
 			vector<Transform> transforms = sym->gen_orientations((string)params.set_default("orientgen","eman"),d);
 			printf("%d orientations to test\n",(int)(transforms.size()*(360.0/astep)));
-			
+
 			// We iterate over all orientations in an asym triangle (alt & az) then deal with phi ourselves
 //			for (std::vector<Transform>::iterator t = transforms.begin(); t!=transforms.end(); ++t) {    // iterator form was causing all sorts of problems
 			for (unsigned int it=0; it<transforms.size(); it++) {
@@ -2725,12 +2725,12 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 					aap["ty"]=0;
 					aap["tz"]=0;
 					t.set_params(aap);
-					
+
 					// somewhat strangely, rotations are actually much more expensive than FFTs, so we use a CCF for translation
 					EMData *stt=small_this->process("xform",Dict("transform",EMObject(&t)));
 					EMData *ccf=small_to->calc_ccf(stt);
 					IntPoint ml=ccf->calc_max_location_wrap();
-					
+
 					aap["tx"]=(int)ml[0];
 					aap["ty"]=(int)ml[1];
 					aap["tz"]=(int)ml[2];
@@ -2738,7 +2738,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 					delete stt;
 					delete ccf;
 					stt=small_this->process("xform",Dict("transform",EMObject(&t)));	// we have to do 1 slow transform here now that we have the translation
-					
+
 					float sim=stt->cmp("ccc.tomo.thresh",small_to,Dict("sigmaimg",sigmathis,"sigmawith",sigmato));
 
 					// First we find the worst solution in the list of possible best solutions, or the first
@@ -2748,7 +2748,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 						if (s_coverage[i]==0.0) { worst=i; break; }
 						if (s_score[i]<s_score[worst]) worst=i;
 					}
-					
+
 					// If the current solution is better than the worst of the previous solutions, then we
 					// displace it. Note that there is no sorting performed here
 					if (sim<s_score[worst]) {
@@ -2760,53 +2760,26 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				}
 			}
 			printf("\n");
-				
-			
+
+
 		}
 		// Once we have our initial list of best locations, we just refine each possibility individually
 		else {
 			// We generate a search pattern around each existing solution
 			printf("stage 2 (%1.2f)\n",astep);
 			for (int i=0; i<nsoln; i++) {
-				
+
 				printf("  %d/%d\r",i,nsoln);
 				fflush(stdout);
 				// Ouch, exhaustive (local) search
 				for (int daz=-1; daz<=1; daz++) {
 					for (int dalt=-1; dalt<=1; dalt++) {
 						for (int dphi=-1; dphi<=1; dphi++) {
-							Transform t=s_xform[i];			// copy
-							Dict aap=t.get_params("eman");
-							aap["az"]=(float)aap["az"]+daz*astep;
-							aap["alt"]=(float)aap["alt"]+dalt*astep;
-							aap["phi"]=(float)aap["phi"]+dphi*astep;
-							aap["tx"]=0;
-							aap["ty"]=0;
-							aap["tz"]=0;
-							t.set_params(aap);
-							
-							// rotate in Fourier space then use a CCF to find translation
-							EMData *stt=small_this->process("xform",Dict("transform",EMObject(&t)));
-							EMData *ccf=small_to->calc_ccf(stt);
-							IntPoint ml=ccf->calc_max_location_wrap();
-							
-							aap["tx"]=(int)ml[0];
-							aap["ty"]=(int)ml[1];
-							aap["tz"]=(int)ml[2];
-							t.set_params(aap);
-							delete stt;
-							delete ccf;
-							stt=small_this->process("xform",Dict("transform",EMObject(&t)));	// we have to do 1 slow transform here now that we have the translation
-							
-							float sim=stt->cmp("ccc.tomo.thresh",small_to,Dict("sigmaimg",sigmathis,"sigmawith",sigmato));
-							
-							// If the score is better than before, we update this particular best value
-							if (sim<s_score[i]) {
-								s_score[i]=sim;
-								s_coverage[i]=stt->get_attr("fft_overlap");
-								s_xform[i]=t;
-							}
-							delete stt;
+							Dict upd;
+							upd["az"]=daz*astep;
+							upd["alt"]=dalt*astep;
+							upd["phi"]=dphi*astep;
+							testort(small_this,small_to,s_score,s_coverage,s_xform,i,upd);
 						}
 					}
 				}
@@ -2837,7 +2810,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 			}
 		}
 	}
-		
+
 	// initialize results
 	vector<Dict> solns;
 	for (unsigned int i = 0; i < nrsoln; ++i ) {
@@ -2850,7 +2823,47 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 
 	return solns;
 }
-	
+
+// This is just to prevent redundancy. It takes the existing solution vectors as arguments, an a proposed update for
+// vector i. It updates the vectors if the proposal makes an improvement, in which case it returns true
+bool RT3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<float> &s_score, vector<float> &s_coverage,vector<Transform> &s_xform,int i,Dict &upd) const {
+	float sigmathis = params["sigmathis"];
+	float sigmato = params["sigmato"];
+	Transform t=s_xform[i];			// copy
+	Dict aap=t.get_params("eman");
+	aap["tx"]=0;
+	aap["ty"]=0;
+	aap["tz"]=0;
+	t.set_params(aap);
+
+	// rotate in Fourier space then use a CCF to find translation
+	EMData *stt=small_this->process("xform",Dict("transform",EMObject(&t)));
+	EMData *ccf=small_to->calc_ccf(stt);
+	IntPoint ml=ccf->calc_max_location_wrap();
+
+	aap["tx"]=(int)ml[0];
+	aap["ty"]=(int)ml[1];
+	aap["tz"]=(int)ml[2];
+	t.set_params(aap);
+	delete stt;
+	delete ccf;
+	stt=small_this->process("xform",Dict("transform",EMObject(&t)));	// we have to do 1 slow transform here now that we have the translation
+
+	float sim=stt->cmp("ccc.tomo.thresh",small_to,Dict("sigmaimg",sigmathis,"sigmawith",sigmato));
+
+	// If the score is better than before, we update this particular best value
+	if (sim<s_score[i]) {
+		s_score[i]=sim;
+		s_coverage[i]=stt->get_attr("fft_overlap");
+		s_xform[i]=t;
+		delete stt;
+		return true;
+	}
+	delete stt;
+	return false;
+}
+
+
 EMData* RT3DSphereAligner::align(EMData * this_img, EMData *to, const string & cmp_name, const Dict& cmp_params) const
 {
 
@@ -2876,7 +2889,7 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 	int searchx = 0;
 	int searchy = 0;
 	int searchz = 0;
-         
+
 	bool dotrans = params.set_default("dotrans",1);
 	if (params.has_key("search")) {
 		vector<string> check;
@@ -2906,14 +2919,14 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 	}else {
 		initxform = new Transform(); // is the identity
 	}
-	
+
 	float lphi = params.set_default("phi0",0.0f);
 	float uphi = params.set_default("phi1",360.0f);
 	float dphi = params.set_default("dphi",10.f);
 	float threshold = params.set_default("threshold",0.f);
 	if (threshold < 0.0f) throw InvalidParameterException("The threshold parameter must be greater than or equal to zero");
 	bool verbose = params.set_default("verbose",false);
-	
+
 	//in case we are aligning tomos
 	Dict altered_cmp_params(cmp_params);
 	if (cmp_name == "ccc.tomo") {
@@ -2949,14 +2962,14 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 	vector<Transform> transforms = sym->gen_orientations((string)params.set_default("orientgen","eman"),d);
 
 	bool tomography = (cmp_name == "ccc.tomo") ? 1 : 0;
-	
+
 	//precompute fixed FT, saves a LOT of time!!!
 	EMData * this_imgfft = 0;
 	if(dotrans || tomography){
 		this_imgfft = this_img->do_fft();
 	}
-	
-#ifdef EMAN2_USING_CUDA 
+
+#ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1) {
 		cout << "Using CUDA for 3D alignment" << endl;
 		if(!to->getcudarodata()) to->copy_to_cudaro(); // Safer call
@@ -2967,31 +2980,31 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 
 	Transform trans = Transform();
 	Cmp* c = Factory <Cmp>::get(cmp_name, cmp_params);
-	
+
 	bool use_cpu = true;
 	for(vector<Transform>::const_iterator trans_it = transforms.begin(); trans_it != transforms.end(); trans_it++) {
 		Dict params = trans_it->get_params("eman");
-		
+
 		if (verbose) {
 			float alt = params["alt"];
 			float az = params["az"];
 			cout << "Trying angle alt: " << alt << " az: " << az << endl;
 		}
 
-		for( float phi = lphi; phi < uphi; phi += dphi ) { 
+		for( float phi = lphi; phi < uphi; phi += dphi ) {
 			params["phi"] = phi;
 			Transform t(params);
 			t = t*(*initxform);
-			
+
 			EMData* transformed;
 			transformed = to->process("xform",Dict("transform",&t));
-				
+
 			//need to do things a bit diffrent if we want to compare two tomos
 			float best_score = 0.0f;
 			// Dotrans is effectievly ignored for tomography
 			if(dotrans || tomography){
 				EMData* ccf = transformed->calc_ccf(this_imgfft);
-#ifdef EMAN2_USING_CUDA	
+#ifdef EMAN2_USING_CUDA
 				if(EMData::usecuda == 1){
 					// I use the following code rather than ccc.tomo to avoid doing two CCCs
 					use_cpu = false;
@@ -3041,11 +3054,11 @@ vector<Dict> RT3DSphereAligner::xform_align_nbest(EMData * this_img, EMData * to
 
 		}
 	}
-	
+
 	if(this_imgfft) {delete this_imgfft; this_imgfft = 0;}
 	if(sym!=0) delete sym;
 	if (c != 0) delete c;
-	
+
 	return solns;
 
 }
@@ -3065,9 +3078,9 @@ EMData* RT3DSymmetryAligner::align(EMData * this_img, EMData *to, const string &
 
 }
 
-vector<Dict> RT3DSymmetryAligner::xform_align_nbest(EMData * this_img, EMData * to, const unsigned int nsoln, const string & cmp_name, const Dict& cmp_params) const 
+vector<Dict> RT3DSymmetryAligner::xform_align_nbest(EMData * this_img, EMData * to, const unsigned int nsoln, const string & cmp_name, const Dict& cmp_params) const
 {
-	
+
 	bool verbose = params.set_default("verbose",false);
 	Transform* ixform;
 	if (params.has_key("transform") ) {
@@ -3075,7 +3088,7 @@ vector<Dict> RT3DSymmetryAligner::xform_align_nbest(EMData * this_img, EMData * 
 	}else{
 		ixform = new Transform(); // is the identity
 	}
-	
+
 	//Initialize a soln dict
 	vector<Dict> solns;
 	if (nsoln == 0) return solns; // What was the user thinking?
@@ -3086,8 +3099,8 @@ vector<Dict> RT3DSymmetryAligner::xform_align_nbest(EMData * this_img, EMData * 
 		d["xform.align3d"] = &t; // deep copy is going on here
 		solns.push_back(d);
 	}
-	
-	#ifdef EMAN2_USING_CUDA 
+
+	#ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1) {
 		cout << "Using CUDA for 3D sym alignment" << endl;
 		if(!this_img->getcudarwdata()) this_img->copy_to_cudaro();
@@ -3098,7 +3111,7 @@ vector<Dict> RT3DSymmetryAligner::xform_align_nbest(EMData * this_img, EMData * 
 	//Generate symmetry related orientations
 	vector<Transform> syms = Symmetry3D::get_symmetries((string)params.set_default("sym","icos"));
 	Cmp* c = Factory <Cmp>::get(cmp_name, cmp_params);
-	
+
 	float score = 0.0f;
 	for ( vector<Transform>::const_iterator symit = syms.begin(); symit != syms.end(); ++symit ) {
 		//Here move to sym position and compute the score
@@ -3106,12 +3119,12 @@ vector<Dict> RT3DSymmetryAligner::xform_align_nbest(EMData * this_img, EMData * 
 		EMData* transformed = this_img->process("xform",Dict("transform", &sympos));
 		score = c->cmp(transformed,to);
 		delete transformed; transformed = 0;
-		
+
 		if (verbose) {
 			Dict rots = sympos.get_rotation("eman");
 			cout <<"Score is: " << score << " az " << float(rots["az"]) << " alt " << float(rots["alt"]) << " phi " << float(rots["phi"]) << endl;
 		}
-		
+
 		unsigned int j = 0;
 		for ( vector<Dict>::iterator it = solns.begin(); it != solns.end(); ++it, ++j ) {
 			if ( (float)(*it)["score"] > score ) { // Note greater than - EMAN2 preferes minimums as a matter of policy
@@ -3124,9 +3137,9 @@ vector<Dict> RT3DSymmetryAligner::xform_align_nbest(EMData * this_img, EMData * 
 			}
 		}
 	}
-	
+
 	if (c != 0) delete c;
-	
+
 	return solns;
 }
 
@@ -3513,7 +3526,7 @@ void CUDA_Aligner::setup(int nima, int nx, int ny, int ring_length, int nring, i
 	KY = ky;
 	OU = ou;
 	CTF = ctf;
-	
+
 	image_stack = (float *)malloc(NIMA*NX*NY*sizeof(float));
 	if (CTF == 1) image_stack_filtered = (float *)malloc(NIMA*NX*NY*sizeof(float));
 	ccf = (float *)malloc(2*(2*KX+1)*(2*KY+1)*NIMA*(RING_LENGTH+2)*sizeof(float));
@@ -3529,11 +3542,11 @@ void CUDA_Aligner::insert_image(EMData *image, int num) {
 }
 
 void CUDA_Aligner::filter_stack(vector<float> ctf_params) {
-	
+
 	float *params;
-	
-	params = (float *)malloc(NIMA*6*sizeof(float));	
-	
+
+	params = (float *)malloc(NIMA*6*sizeof(float));
+
 	for (int i=0; i<NIMA*6; i++) params[i] = ctf_params[i];
 
 	filter_image(image_stack, image_stack_filtered, NIMA, NX, NY, params);
@@ -3542,22 +3555,22 @@ void CUDA_Aligner::filter_stack(vector<float> ctf_params) {
 }
 
 void CUDA_Aligner::sum_oe(vector<float> ctf_params, vector<float> ali_params, EMData *ave1, EMData *ave2) {
-	
+
 	float *ctf_p, *ali_p, *av1, *av2;
-	
+
 	ctf_p = (float *)malloc(NIMA*6*sizeof(float));
 	ali_p = (float *)malloc(NIMA*4*sizeof(float));
-	
+
 	if (CTF == 1) {
 		for (int i=0; i<NIMA*6; i++)  ctf_p[i] = ctf_params[i];
 	}
 	for (int i=0; i<NIMA*4; i++)   ali_p[i] = ali_params[i];
-	
+
 	av1 = ave1->get_data();
 	av2 = ave2->get_data();
-	
+
 	rot_filt_sum(image_stack, NIMA, NX, NY, CTF, ctf_p, ali_p, av1, av2);
-	
+
 	free(ctf_p);
 	free(ali_p);
 }
@@ -3575,12 +3588,12 @@ vector<float> CUDA_Aligner::alignment_2d(EMData *ref_image_em, vector<float> sx_
 	sy2 = (float *)malloc(NIMA*sizeof(float));
 
 	ref_image = ref_image_em->get_data();
-	
+
 	for (int i=0; i<NIMA; i++) {
 		sx2[i] = sx_list[i];
 		sy2[i] = sy_list[i];
 	}
-	
+
 	if (CTF == 1) {
 		calculate_ccf(image_stack_filtered, ref_image, ccf, NIMA, NX, NY, RING_LENGTH, NRING, OU, STEP, KX, KY, sx2, sy2, silent);
 	} else {
@@ -3605,7 +3618,7 @@ vector<float> CUDA_Aligner::alignment_2d(EMData *ref_image_em, vector<float> sx_
 						max_ccf = ts;
 					}
 					if (tm > max_ccf) {
-						ang = float(l)/RING_LENGTH*360.0; 
+						ang = float(l)/RING_LENGTH*360.0;
 						sx = -kx*STEP;
 						sy = -ky*STEP;
 						mirror = 1;
@@ -3624,10 +3637,10 @@ vector<float> CUDA_Aligner::alignment_2d(EMData *ref_image_em, vector<float> sx_
 		align_result.push_back(sys);
 		align_result.push_back(mirror);
 	}
-	
+
 	free(sx2);
 	free(sy2);
-	
+
 	return align_result;
 }
 
@@ -3646,7 +3659,7 @@ vector<float> CUDA_Aligner::ali2d_single_iter(EMData *ref_image_em, vector<float
 	sy2 = (float *)malloc(NIMA*sizeof(float));
 
 	ref_image = ref_image_em->get_data();
-	
+
 	for (int i=0; i<NIMA; i++) {
 		ang = ali_params[i*4]/180.0*M_PI;
 		sx = (ali_params[i*4+3] < 0.5)?(ali_params[i*4+1]-csx):(ali_params[i*4+1]+csx);
@@ -3656,7 +3669,7 @@ vector<float> CUDA_Aligner::ali2d_single_iter(EMData *ref_image_em, vector<float
 		sx2[i] = -(sx*co-sy*so);
 		sy2[i] = -(sx*so+sy*co);
 	}
-	
+
 	if (CTF == 1) {
 		calculate_ccf(image_stack_filtered, ref_image, ccf, NIMA, NX, NY, RING_LENGTH, NRING, OU, STEP, KX, KY, sx2, sy2, silent);
 	} else {
@@ -3670,8 +3683,8 @@ vector<float> CUDA_Aligner::ali2d_single_iter(EMData *ref_image_em, vector<float
 
 	int dl;
 	dl = static_cast<int>(delta/360.0*RING_LENGTH);
-	if (dl<1) { dl = 1; }	
-	
+	if (dl<1) { dl = 1; }
+
 	for (int im=0; im<NIMA; im++) {
 		max_ccf = -1.0e22;
 		for (int kx=-KX; kx<=KX; kx++) {
@@ -3688,7 +3701,7 @@ vector<float> CUDA_Aligner::ali2d_single_iter(EMData *ref_image_em, vector<float
 						max_ccf = ts;
 					}
 					if (tm > max_ccf) {
-						ang = float(l)/RING_LENGTH*360.0; 
+						ang = float(l)/RING_LENGTH*360.0;
 						sx = -kx*STEP;
 						sy = -ky*STEP;
 						mirror = 1;
@@ -3699,7 +3712,7 @@ vector<float> CUDA_Aligner::ali2d_single_iter(EMData *ref_image_em, vector<float
 		}
 		co =  cos(ang*M_PI/180.0);
 		so = -sin(ang*M_PI/180.0);
-		
+
 		sxs = (sx-sx2[im])*co-(sy-sy2[im])*so;
 		sys = (sx-sx2[im])*so+(sy-sy2[im])*co;
 
@@ -3709,17 +3722,17 @@ vector<float> CUDA_Aligner::ali2d_single_iter(EMData *ref_image_em, vector<float
 		align_result.push_back(sxs);
 		align_result.push_back(sys);
 		align_result.push_back(mirror);
-		
+
 		if (mirror == 0)  { sx_sum += sxs; }  else { sx_sum -= sxs; }
 		sy_sum += sys;
 	}
-	
+
 	align_result.push_back(sx_sum);
 	align_result.push_back(sy_sum);
-	
+
 	free(sx2);
 	free(sy2);
-	
+
 	return align_result;
 }
 
@@ -3748,7 +3761,7 @@ void CUDA_multiref_aligner::finish() {
 	ccf = NULL;
 	ctf_params = NULL;
 	ali_params = NULL;
-}	
+}
 
 void CUDA_multiref_aligner::setup(int nima, int nref, int nx, int ny, int ring_length, int nring, int ou, float step, int kx, int ky, bool ctf) {
 
@@ -3763,10 +3776,10 @@ void CUDA_multiref_aligner::setup(int nima, int nref, int nx, int ny, int ring_l
 	KY = ky;
 	OU = ou;
 	CTF = ctf;
-	// This number can be increased according to the GPU memory. But my tests has shown the speedup 
+	// This number can be increased according to the GPU memory. But my tests has shown the speedup
 	// is limited (~5%) even if I increased the size 10 times, so it's better to be on the safe side.
 	MAX_IMAGE_BATCH = 10;
-	
+
 	image_stack = (float *)malloc(NIMA*NX*NY*sizeof(float));
 	ref_image_stack = (float *)malloc(NREF*NX*NY*sizeof(float));
 	if (CTF == 1) ref_image_stack_filtered = (float *)malloc(NREF*NX*NY*sizeof(float));
@@ -3774,7 +3787,7 @@ void CUDA_multiref_aligner::setup(int nima, int nref, int nx, int ny, int ring_l
 }
 
 void CUDA_multiref_aligner::setup_params(vector<float> all_ali_params, vector<float> all_ctf_params) {
-	
+
 	ali_params = (float *)malloc(NIMA*4*sizeof(float));
 	for (int i=0; i<NIMA*4; i++)   ali_params[i] = all_ali_params[i];
 	if (CTF == 1) {
@@ -3803,7 +3816,7 @@ void CUDA_multiref_aligner::insert_ref_image(EMData *image, int num) {
 
 vector<float> CUDA_multiref_aligner::multiref_ali2d(int silent) {
 
-	float *ctf_params_ref = (float *)malloc(NREF*6*sizeof(float));	
+	float *ctf_params_ref = (float *)malloc(NREF*6*sizeof(float));
 	float *sx2 = (float *)malloc(NIMA*sizeof(float));
 	float *sy2 = (float *)malloc(NIMA*sizeof(float));
 	vector<float> align_results;
@@ -3811,7 +3824,7 @@ vector<float> CUDA_multiref_aligner::multiref_ali2d(int silent) {
 
 	vector<int> batch_size;
 	vector<int> batch_begin;
-	
+
 	if (CTF == 1) {
 		float previous_defocus = ctf_params[0];
 		int current_size = 1;
@@ -3820,7 +3833,7 @@ vector<float> CUDA_multiref_aligner::multiref_ali2d(int silent) {
 				batch_size.push_back(current_size);
 				current_size = 1;
 				previous_defocus = ctf_params[i*6];
-			} else current_size++;			
+			} else current_size++;
 		}
 		batch_size.push_back(current_size);
 	} else {
@@ -3862,7 +3875,7 @@ vector<float> CUDA_multiref_aligner::multiref_ali2d(int silent) {
 				int mirror = 0;
 				for (int kx=-KX; kx<=KX; kx++) {
 					for (int ky=-KY; ky<=KY; ky++) {
-						int base_address = (((ky+KY)*(2*KX+1)+(kx+KX))*NREF+im)*(RING_LENGTH+2)+ccf_offset*2*j;			
+						int base_address = (((ky+KY)*(2*KX+1)+(kx+KX))*NREF+im)*(RING_LENGTH+2)+ccf_offset*2*j;
 						for (int l=0; l<RING_LENGTH; l++) {
 							float ts = ccf[base_address+l];
 							float tm = ccf[base_address+l+ccf_offset];
@@ -3874,7 +3887,7 @@ vector<float> CUDA_multiref_aligner::multiref_ali2d(int silent) {
 								max_ccf = ts;
 							}
 							if (tm > max_ccf) {
-								ang = float(l)/RING_LENGTH*360.0; 
+								ang = float(l)/RING_LENGTH*360.0;
 								sx = -kx*STEP;
 								sy = -ky*STEP;
 								mirror = 1;
@@ -3885,7 +3898,7 @@ vector<float> CUDA_multiref_aligner::multiref_ali2d(int silent) {
 				}
 				float co =  cos(ang*M_PI/180.0);
 				float so = -sin(ang*M_PI/180.0);
-		
+
 				int img_num = batch_begin[i]+j;
 				float sxs = (sx-sx2[img_num])*co-(sy-sy2[img_num])*so;
 				float sys = (sx-sx2[img_num])*so+(sy-sy2[img_num])*co;
@@ -3898,11 +3911,11 @@ vector<float> CUDA_multiref_aligner::multiref_ali2d(int silent) {
 			}
 		}
 	}
-	
+
 	free(ctf_params_ref);
 	free(sx2);
 	free(sy2);
-	
+
 	return align_results;
 }
 
