@@ -1307,7 +1307,7 @@ def main():
 					tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
 					paramsdict["initialfl"] = lowpass
 					paramsdict["falloff"]   = falloff
-					lowpass = currentres + tracker["extension"]
+					lowpass = currentres# + tracker["extension"]
 					shrink = max(min(2*lowpass + paramsdict["falloff"], 1.0), minshrink)
 					nxshrink = min(int(nnxo*shrink + 0.5),nnxo)
 					nxshrink += nxshrink%2

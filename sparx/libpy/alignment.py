@@ -1207,6 +1207,7 @@ def prepare_refrings_projections( volft, kb, nz = -1, delta = 2.0, ref_a = "P", 
 	from projection   import prep_vol, prgs
 	from applications import MPI_start_end
 	from utilities    import even_angles, getfvec
+	from fundamentals import scf
 	from types        import BooleanType
 
 	# mpi communicator can be sent by the MPI parameter
@@ -1259,7 +1260,7 @@ def prepare_refrings_projections( volft, kb, nz = -1, delta = 2.0, ref_a = "P", 
 
 	for i in xrange(ref_start, ref_end):
 		prjref = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
-		cimage = Util.Polar2Dm(prjref, cnx, cny, numr, mode)  # currently set to quadratic....
+		cimage = Util.Polar2Dm(scf(prjref), cnx, cny, numr, mode)  # currently set to quadratic....
 		Util.Normalize_ring(cimage, numr)
 		Util.Frngs(cimage, numr)
 		Util.Applyws(cimage, numr, wr_four)
@@ -2636,6 +2637,75 @@ def align2dshc(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, 
 
 
 
+def align2d_scf(image, refrings, projections, xrng=-1, yrng=-1, ou = -1):
+	from fundamentals import scf, rot_shift2D, ccf, mirror
+	from utilities import peak_search
+	from math import radians, sin, cos
+	nx = image.get_xsize()
+	ny = image.get_xsize()
+	if(ou<0):  ou = min(nx//2-1,ny//2-1)
+	if(yrng < 0):  yrng = xrng
+	if(ou<2):
+		ERROR('Radius of the object (ou) has to be given','align2d_scf',1)
+	nrx = min( 2*(xrng+1)+1, (((nx-2)//2)*2+1) )
+	nry = min( 2*(yrng+1)+1, (((ny-2)//2)*2+1) )
+	sci = scf(image)
+	scm = mirror(sci)
+	
+	peak = -1.0e23
+	for iref in xrange(len(refrings)):
+		#  This is strange
+		alpha1, sxs, sys, mirr, peak1 = align2d_no_mirror(sci, refrings[iref], last_ring=ou, mode="H")
+		alpha2, sxs, sys, mirr, peak2 = align2d_no_mirror(scm, refrings[iref], last_ring=ou, mode="H")
+	
+		if(peak1>peak2):
+			mirr = 0
+			alpha = alpha1
+		else:
+			mirr = 1
+			alpha = -alpha2
+
+		ccf1 = Util.window(ccf(rot_shift2D(image, alpha, 0.0, 0.0, mirr),projections[iref]),nrx,nry)
+		p1 = peak_search(ccf1)
+	
+		ccf2 = Util.window(ccf(rot_shift2D(image, alpha+180.0, 0.0, 0.0, mirr),projections[iref]),nrx,nry)
+		p2 = peak_search(ccf2)
+		#print p1
+		#print p2
+
+	
+		peak_val1 = p1[0][0]
+		peak_val2 = p2[0][0]
+	
+		if peak_val1 > peak_val2:
+			sxs = -p1[0][4]
+			sys = -p1[0][5]
+			cx = int(p1[0][1])
+			cy = int(p1[0][2])
+			peak = peak_val1
+		else:
+			alpha += 180.0
+			sxs = -p2[0][4]
+			sys = -p2[0][5]
+			peak = peak_val2
+			cx = int(p2[0][1])
+			cy = int(p2[0][2])
+			ccf1 = ccf2
+		from utilities import model_blank
+		#print cx,cy
+		z = model_blank(3,3)
+		for i in xrange(3):
+			for j in xrange(3):
+				z[i,j] = ccf1[i+cx-1,j+cy-1]
+		#print  ccf1[cx,cy],z[1,1]
+		XSH, YSH, PEAKV = parabl(z)
+		#print sxs, sys, XSH, YSH, PEAKV, peak
+		if(mirr == 1):  	sx = -sxs+XSH
+		else:               sx =  sxs-XSH
+		if(PEAKV>peak):
+			return alpha, sx, sys-YSH, mirr, PEAKV
+	return talpha, tsxs, tsys, tmirror, tpeak
+"""
 def align2d_scf(image, refim, xrng=-1, yrng=-1, ou = -1):
 	from fundamentals import scf, rot_shift2D, ccf, mirror
 	from utilities import peak_search
@@ -2700,7 +2770,7 @@ def align2d_scf(image, refim, xrng=-1, yrng=-1, ou = -1):
 	else:               sx =  sxs-XSH
 	return alpha, sx, sys-YSH, mirr, PEAKV
 	#return alpha, sxs, sys, mirror, peak
-
+"""
 def parabl(Z):
 	#  parabolic fit to a peak, C indexing
 	C1 = (26.*Z[0,0] - Z[0,1] + 2*Z[0,2] - Z[1,0] - 19.*Z[1,1] - 7.*Z[1,2] + 2.*Z[2,0] - 7.*Z[2,1] + 14.*Z[2,2])/9.
