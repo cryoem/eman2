@@ -186,7 +186,7 @@ def buildtree(projs,thread,nodes,incomplete):
 		y=y[0]
 		
 		### Do averaging
-		print "Averaging ",ai[x],ai[y]," to ",npj+k
+		#print "Averaging ",ai[x],ai[y]," to ",npj+k
 		
 		alipm=[a[x,y] for a in pms]
 		alidict={"type":"2d"}
