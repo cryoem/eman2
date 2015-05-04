@@ -2769,7 +2769,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 			printf("stage 2 (%1.2f)\n",astep);
 			for (int i=0; i<nsoln; i++) {
 
-				printf("  %d/%d\r",i,nsoln);
+				printf("  %d/t%d\r",i,nsoln);
 				fflush(stdout);
 				// Ouch, exhaustive (local) search
 				for (int daz=-1; daz<=1; daz++) {

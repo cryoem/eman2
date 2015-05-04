@@ -9229,18 +9229,16 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 	const float * const src_data = image->get_const_data();
 	float *des_data = (float *) EMUtil::em_malloc(nx*ny*nz* sizeof(float));
 
-	if ((nz == 1)&&(image -> is_real()))  { //This is the new loop
-		vector <float> mat4inv  = inv.get_matrix();
-		printf(" %3.3f \t  %3.3f \t %3.3f \t  %3.3f \t %3.3f\t  %3.3f\t %3.3f\t %3.3f\t   \n", 
-		         mat4inv[0],mat4inv[1],mat4inv[2],mat4inv[3],mat4inv[4],mat4inv[5],mat4inv[6],mat4inv[7]);
+	if ((nz == 1)&&(image -> is_real()))  {
+		Vec2f offset(nx/2,ny/2);
 		for (int j = 0; j < ny; j++) {
-		       float x2 = mat4inv[1]*j+nx*(1-mat4inv[0])/2  -ny*(mat4inv[1])/2   +mat4inv[3] ;// 
-		       float y2 = mat4inv[5]*j-nx*(mat4inv[4])/2    +ny*(1-mat4inv[5])/2 +mat4inv[7] ;
 			for (int i = 0; i < nx; i++) {
-				if (i>0) {
-				  x2 +=  mat4inv[0];
-				  y2 +=  mat4inv[4];}
-				printf(" %3.3f \t  %3.3f   \n", x2,y2);
+				Vec2f coord(i-nx/2,j-ny/2);
+				Vec2f soln = inv*coord;
+				soln += offset;
+
+				float x2 = soln[0];
+				float y2 = soln[1];
 
 				if (x2 < 0 || x2 >= nx || y2 < 0 || y2 >= ny ) {
 					des_data[i + j * nx] = 0; // It may be tempting to set this value to the
