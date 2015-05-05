@@ -57,12 +57,25 @@ too look for issues with preferred orientation, etc.
 
 	out=file(options.output,"w")
 
+	alts=[0]*9
 	for k in db.keys():
 		xf=db[k][0]
 		xfd=xf.get_params("eman")
 		out.write("%1.3f,\t%1.3f,\t%1.3f\n"%(xfd["az"],xfd["alt"],xfd["phi"]))
+		
+		try:
+			an=int(floor(xfd["alt"]/20.0001))
+			alts[an]+=1
+		except: pass
 	
 
+	print "Altitude distribution:"
+
+	for i in xrange(9) :
+		print "%d - %d: %d"%(i*20.0,(i+1)*20.0,alts[i])
+
+
+	print "See also: ",options.output
 	E2end(logid)
 	
 
