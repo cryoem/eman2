@@ -1705,6 +1705,7 @@ The basic design of EMAN Processors: <br>\
 			{
 				TypeDict d;
 				d.put("transform", EMObject::TRANSFORM, "The Transform object that will be applied to the image" );
+				d.put("zerocorners",EMObject::INT,"If set, corners (anything beyond radius/2-1) may be zeroed out in real or Fourier space. This will produce a considerable speedup in Fourier rotations. ");
 				return d;
 			}
 

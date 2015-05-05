@@ -9226,6 +9226,9 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 	int nxy = nx*ny;
 	int N   = ny;
 
+	int zerocorners = params.set_default("zerocorners",0);
+
+	
 	const float * const src_data = image->get_const_data();
 	float *des_data = (float *) EMUtil::em_malloc(nx*ny*nz* sizeof(float));
 
