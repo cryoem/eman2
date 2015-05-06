@@ -61,7 +61,7 @@ too look for issues with preferred orientation, etc.
 	for k in db.keys():
 		xf=db[k][0]
 		xfd=xf.get_params("eman")
-		out.write("%1.3f,\t%1.3f,\t%1.3f\n"%(xfd["az"],xfd["alt"],xfd["phi"]))
+		out.write("%1.3f,\t%1.3f,\t%1.3f,\t%1.3g\n"%(xfd["az"],xfd["alt"],xfd["phi"],float(db[k][1])))
 		
 		try:
 			an=int(floor(xfd["alt"]/20.0001))
