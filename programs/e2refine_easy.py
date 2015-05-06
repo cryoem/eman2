@@ -669,11 +669,11 @@ power spectrum of one of the maps to the other. For example <i>e2proc3d.py map_e
 		if options.treeclassify:
 			### Classify using a binary tree
 			append_html("<p>* Classify each particle using a binary tree generated from the projections</p>",True)
-			cmd = "e2classifytree.py {path}/projections_{itr:02d}_even.hdf {inputfile} --output={path}/classmx_{itr:02d}_even.hdf  --nodes {path}/nodes_{itr:02d}_even.hdf --cmp {simcmp} --align {simalign} --aligncmp {simaligncmp} {simralign} {cmpdiff} --incomplete {incomplete} --threads {threads}".format(path=options.path,itr=it,inputfile=options.input[0],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,threads=options.threads,cmpdiff=cmpdiff,incomplete=options.treeincomplete)
+			cmd = "e2classifytree.py {path}/projections_{itr:02d}_even.hdf {inputfile} --output={path}/classmx_{itr:02d}_even.hdf  --nodes {path}/nodes_{itr:02d}_even.hdf --cmp {simcmp} --align {simalign} --aligncmp {simaligncmp} {simralign} {cmpdiff} --incomplete {incomplete} {parallel}".format(path=options.path,itr=it,inputfile=options.input[0],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,cmpdiff=cmpdiff,incomplete=options.treeincomplete, parallel=parallel)
 			run(cmd)
 			progress += 1.0
 			
-			cmd = "e2classifytree.py {path}/projections_{itr:02d}_odd.hdf {inputfile} --output={path}/classmx_{itr:02d}_odd.hdf  --nodes {path}/nodes_{itr:02d}_odd.hdf --cmp {simcmp} --align {simalign} --aligncmp {simaligncmp} {simralign} {cmpdiff} --incomplete {incomplete} --threads {threads}".format(path=options.path,itr=it,inputfile=options.input[1],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,threads=options.threads,cmpdiff=cmpdiff,incomplete=options.treeincomplete)
+			cmd = "e2classifytree.py {path}/projections_{itr:02d}_odd.hdf {inputfile} --output={path}/classmx_{itr:02d}_odd.hdf  --nodes {path}/nodes_{itr:02d}_odd.hdf --cmp {simcmp} --align {simalign} --aligncmp {simaligncmp} {simralign} {cmpdiff} --incomplete {incomplete} {parallel}".format(path=options.path,itr=it,inputfile=options.input[1],simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,cmpdiff=cmpdiff,incomplete=options.treeincomplete,parallel=parallel)
 			run(cmd)
 			progress += 1.0
 			E2progress(logid,progress/total_procs)

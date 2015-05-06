@@ -137,6 +137,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--randclassify",default=False, action="store_true", help="Generate initial maps by randomly assigning the particles in each class to each model after the first iteration.",guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode="refinement[True]")
 	parser.add_argument("--randphase",default=False, action="store_true", help="Generate initial maps by randomizing the phase of the given model.",guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_header(name="orblock", help='Just a visual separation', title="- OR -", row=5, col=0, rowspan=1, colspan=3, mode="refinement")
+	parser.add_argument("--treeclassify",default=False, action="store_true", help="Classify using a binary tree.",guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--models", dest="models", type=str,default=None, help="The map to use as a starting point for refinement", guitype='filebox', browser='EMModelsTable(withmodal=True,multiselect=True)', filecheck=False, row=7, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--input", dest="input", default=None,type=str, help="The name of the image file containing the particle data", guitype='filebox', browser='EMSetsTable(withmodal=True,multiselect=False)', filecheck=False, row=8, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_header(name="required", help='Just a visual separation', title="Required:", row=9, col=0, rowspan=1, colspan=3, mode="refinement")
@@ -178,6 +179,9 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--shrink", dest="shrink", type = int, default=0, help="Default=auto. Optionally shrink the input particles by an integer amount prior to computing similarity scores. For speed purposes. 0 -> no shrinking", )
 	parser.add_argument("--shrinks1", dest="shrinks1", type = int, help="The level of shrinking to apply in the first stage of the two-stage classification process. Default=0 (autoselect)",default=0)
 	parser.add_argument("--prefilt",action="store_true",help="Default=auto. Filter each reference (c) to match the power spectrum of each particle (r) before alignment and comparison. Applies both to classification and class-averaging.",default=False)
+	parser.add_argument("--cmpdiff",action="store_true",help="Used only in binary tree classification. Use a mask that focus on the difference of two children.",default=False)
+	parser.add_argument("--treeincomplete",type=int, help="Used only in binary tree classification. Incompleteness of the tree on each level.Default=0",default=0)
+
 
 	# options associated with e2classify.py
 
@@ -527,6 +531,8 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 	if options.prethreshold : prethreshold="--prethreshold"
 	else : prethreshold=""
 
+	if options.cmpdiff : cmpdiff="--cmpdiff"
+	else: cmpdiff=""
 	# store the input arguments forever in the refinement directory
 	db = js_open_dict(options.path+"/0_refine_parms.json")
 	db.update(vars(options))
@@ -563,24 +569,33 @@ Based on your requested resolution and box-size, modified by --speed, I will use
 #			msk.process_inplace("threshold.binary",{"value":msk["sigma"]/50.0})
 			msk.process_inplace("threshold.notzero")
 			msk.write_image("{path}/simmask.hdf".format(path=options.path),0)
+		
+		if options.treeclassify:
+			### Classify using a binary tree
+			append_html("<p>* Classify each particle using a binary tree generated from the projections</p>",True)
+			cmd = "e2classifytree.py {path}/projections_{itr:02d}.hdf {inputfile} --output={path}/classmx_{itr:02d}.hdf  --nodes {path}/nodes_{itr:02d}.hdf --cmp {simcmp} --align {simalign} --aligncmp {simaligncmp} {simralign} {cmpdiff} --incomplete {incomplete} {parallel}".format(path=options.path,itr=it,inputfile=options.input,simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,threads=options.threads,cmpdiff=cmpdiff,incomplete=options.treeincomplete,parallel=parallel)
+			run(cmd)
+			progress += 2.0
+			
+		else:
+			### Simmx
+			#FIXME - Need to combine simmx with classification !!!
 
-		### Simmx
-		#FIXME - Need to combine simmx with classification !!!
+			cmd = "e2simmx2stage.py {path}/projections_{itr:02d}.hdf {inputfile} {path}/simmx_{itr:02d}.hdf {path}/proj_simmx_{itr:02d}.hdf {path}/proj_stg1_{itr:02d}.hdf {path}/simmx_stg1_{itr:02d}.hdf --saveali --cmp {simcmp} \
+	--align {simalign} --aligncmp {simaligncmp} {simralign} {shrinks1} {shrink} {prefilt} {simmask} {verbose} {parallel}".format(
+				path=options.path,itr=it,inputfile=options.input,simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,
+				shrinks1=shrinks1,shrink=shrink,prefilt=prefilt,simmask=simmask,verbose=verbose,parallel=parallel)
+			run(cmd)
+			progress += 1.0
+			E2progress(logid,progress/total_procs)
 
-		cmd = "e2simmx2stage.py {path}/projections_{itr:02d}.hdf {inputfile} {path}/simmx_{itr:02d}.hdf {path}/proj_simmx_{itr:02d}.hdf {path}/proj_stg1_{itr:02d}.hdf {path}/simmx_stg1_{itr:02d}.hdf --saveali --cmp {simcmp} \
---align {simalign} --aligncmp {simaligncmp} {simralign} {shrinks1} {shrink} {prefilt} {simmask} {verbose} {parallel}".format(
-			path=options.path,itr=it,inputfile=options.input,simcmp=options.simcmp,simalign=options.simalign,simaligncmp=options.simaligncmp,simralign=simralign,
-			shrinks1=shrinks1,shrink=shrink,prefilt=prefilt,simmask=simmask,verbose=verbose,parallel=parallel)
-		run(cmd)
-		progress += 1.0
-		E2progress(logid,progress/total_procs)
-
-		### Classify
-		cmd = "e2classify.py {path}/simmx_{itr:02d}.hdf {path}/classmx_{itr:02d}.hdf -f --sep {sep} {verbose}".format(
-			path=options.path,itr=it,sep=options.sep,verbose=verbose)
-		run(cmd)
-		progress += 1.0
-		E2progress(logid,progress/total_procs)
+			### Classify
+			cmd = "e2classify.py {path}/simmx_{itr:02d}.hdf {path}/classmx_{itr:02d}.hdf -f --sep {sep} {verbose}".format(
+				path=options.path,itr=it,sep=options.sep,verbose=verbose)
+			run(cmd)
+			progress += 1.0
+			E2progress(logid,progress/total_procs)
+			
 
 		#random assignment
 		if (options.randclassify and it==1):

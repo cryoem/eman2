@@ -38,14 +38,17 @@
 from EMAN2 import *
 import os
 import numpy as np
-
+from EMAN2jsondb import JSTask
 	
 def main():
 	
 	########################
 	### Classify by averaging
 	
-	usage="e2classifytree.py <projection> <particle> [options]"
+	usage="""e2classifytree.py <projection> <particle> [options]
+	
+	Classify particles using a binary tree. Can be used as an alternative for e2simmx2stage.py + e2classify.py.
+	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--threads", type=int,help="", default=12)
 	parser.add_argument("--nodes", type=str,help="", default="nodes.hdf")
@@ -59,6 +62,9 @@ def main():
 	parser.add_argument("--cmpdiff", action="store_true", default=False ,help="Compare using the difference of the two children")
 	parser.add_argument("--incomplete", type=int,help="The degree of incomplete allowed in the tree on each level", default=0)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--parallel", default=None, help="parallelism argument")
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+
 	(options, args) = parser.parse_args()
 	E2n=E2init(sys.argv,options.ppid)
 	
@@ -73,18 +79,25 @@ def main():
 	ptcl=args[1]
 	npj=EMUtil.get_image_count(projs)
 	npt=EMUtil.get_image_count(ptcl)
-	
+	if options.parallel==None:
+		par="thread:{:d}".format(options.threads)
+	else:
+		par=options.parallel
+		
 	### Build tree
-	print "Building binary tree..."
 	if not os.path.isfile(options.nodes):
-		buildtree(projs,options.threads,options.nodes,options.incomplete)
+		print "Building binary tree..."
+		buildtree(projs,par,options.nodes,options.incomplete,options.verbose)
+	else:
+		print "Using existing tree..."
 	
 	## Generate children pairs for comparison
 	print "Generating children pairs for comparison..."
 	if options.cmpdiff:
-		masktmp="msk.hdf"
+		nodepath= os.path.dirname(options.nodes)
+		masktmp='/'.join([nodepath,"tmp_msk.hdf"])
 		if os.path.isfile(masktmp): os.remove(masktmp)
-		cmptmp="cmptmp.hdf"
+		cmptmp='/'.join([nodepath,"tmp_cmp.hdf"])
 		if os.path.isfile(cmptmp):
 			os.remove(cmptmp)
 		makechildpair(options.nodes, cmptmp, masktmp)
@@ -92,23 +105,70 @@ def main():
 		masktmp=None
 		cmptmp=None
 	
-	E2progress(E2n,0.6)
+	E2progress(E2n,0.5)
+	#exit()
 	print "Starting classification..."
+	### Classify particles
 	
-	## Classify particles
-	nnod=EMUtil.get_image_count(options.nodes)
-	for i in range(nnod):
-		ndtmp=EMData(options.nodes,i,True)
-		ndtmp["tree_nptls"]=0
-		ndtmp.write_image(options.nodes,i)
-	t={}
+		
 	clsmx=[EMData(1,npt) for i in range(7)]
-	for i in range(options.threads):
-		ai=[x for x in range(npt) if x%options.threads==i]
-		t[i]=threading.Thread(target=classify,args=(ptcl,ai,options.nodes,clsmx,options.align,options.aligncmp,options.cmp,options.ralign,options.raligncmp,cmptmp,masktmp))
-		t[i].start()
-	for i in range(options.threads):
-		t[i].join()
+	nnod=EMUtil.get_image_count(options.nodes)
+	if options.parallel :
+		from EMAN2PAR import EMTaskCustomer
+		etc=EMTaskCustomer(options.parallel)
+		tasks=[]
+		step=50
+		tt=[range(i,i+step) for i in range(0,npt-step,step)]
+		tt.append(range(tt[-1][-1]+1,npt))
+		
+		for it in tt:
+			tasks.append(TreeClassifyTask(ptcl, it, options.nodes, options.align, options.aligncmp, options.cmp, options.ralign, options.raligncmp, cmptmp, masktmp))
+		
+		taskids=etc.send_tasks(tasks)
+		ptclpernode=[0 for i in range(nnod)]
+		nfinished=0
+		while len(taskids)>0 :
+			haveprogress=False
+			time.sleep(3)
+			curstat=etc.check_task(taskids)
+			for i,j in enumerate(curstat):
+				if j==100 :
+					haveprogress=True
+					rslt=etc.get_results(taskids[i])
+					rslt= rslt[1]
+					for r in rslt:
+						nfinished+=1
+						if options.verbose>0: print "Particle:",r["id"],"\tnodes:",r["choice"]
+						for c in r["choice"]:
+							ptclpernode[c]+=1
+						clsmx[0].set_value_at(0,r["id"],r["cls"])
+						for nt in range(1,7):
+							clsmx[nt].set_value_at(0,r["id"],r["simmx"][nt])
+			
+			taskids=[j for i,j in enumerate(taskids) if curstat[i]!=100]
+			if haveprogress: print "{:d}/{:d} finished".format(nfinished,npt)
+			E2progress(E2n, 0.5 + float(nfinished)/npt)
+			
+		for i in range(nnod):
+			ndtmp=EMData(options.nodes,i,True)
+			ndtmp["tree_nptls"]=ptclpernode[i]
+			ndtmp.write_image(options.nodes,i)
+	
+	else:
+		
+		### To record the number of particles in each branch of the tree
+		for i in range(nnod):
+			ndtmp=EMData(options.nodes,i,True)
+			ndtmp["tree_nptls"]=0
+			ndtmp.write_image(options.nodes,i)
+		t={}
+		clsmx=[EMData(1,npt) for i in range(7)]
+		for i in range(options.threads):
+			ai=[x for x in range(npt) if x%options.threads==i]
+			t[i]=threading.Thread(target=classify,args=(ptcl,ai,options.nodes,clsmx,options.align,options.aligncmp,options.cmp,options.ralign,options.raligncmp,cmptmp,masktmp))
+			t[i].start()
+		for i in range(options.threads):
+			t[i].join()
 		
 	if os.path.isfile(options.output):
 		os.remove(options.output)
@@ -124,12 +184,13 @@ def main():
 	
 
 	
-def buildtree(projs,thread,nodes,incomplete):
+def buildtree(projs,par,nodes,incomplete,verbose):
 	simxorder={0:"tx",1:"ty",2:"alpha",3:"mirror",4:"scale"}
 	tmpsim="tmp_simmix.hdf"
-	
+	par="--parallel "+par
 	### Building the similarity matrix for all projections
-	cmd="e2simmx.py {pj} {pj} {smx} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali --force --parallel=thread:{thr:d}".format(pj=projs,smx=tmpsim,thr=thread)
+	cmd="e2simmx.py {pj} {pj} {smx} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali -v {vb:d} --force {parallel}".format(pj=projs,smx=tmpsim, parallel=par, vb=verbose-1)
+	print cmd
 	launch_childprocess(cmd)
 	
 	### Initialize buttom level nodes
@@ -171,8 +232,10 @@ def buildtree(projs,thread,nodes,incomplete):
 			for r,a in enumerate(ai):
 				rr.write(r,a,nodes)
 				rr.write(r,a,nodes)
-				
-			launch_childprocess("e2simmx.py {lst} {lst} {sim} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali --force --parallel=thread:{trd:d}".format(lst=tmplist, sim=tmpsim, trd=thread))
+			
+			if len(ai)<10:
+				par=""
+			launch_childprocess("e2simmx.py {lst} {lst} {sim} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali -v {vb:d} --force {parallel}".format(lst=tmplist, sim=tmpsim, parallel=par, vb=verbose-1))
 			simmx=EMData(tmpsim,0)
 			dst=EMNumPy.em2numpy(simmx)
 			dst+=np.identity(dst[0].size)*big
@@ -186,7 +249,7 @@ def buildtree(projs,thread,nodes,incomplete):
 		y=y[0]
 		
 		### Do averaging
-		#print "Averaging ",ai[x],ai[y]," to ",npj+k
+		if verbose>0: print "Averaging ",ai[x],ai[y]," to ",npj+k
 		
 		alipm=[a[x,y] for a in pms]
 		alidict={"type":"2d"}
@@ -229,7 +292,13 @@ def buildtree(projs,thread,nodes,incomplete):
 	return 	
 
 ### Do ref-target comparison
-def compare(ref,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ralign=None, alircmp=("dot",{})):
+def compare(ref,target,options):
+	
+	align=options["align"]
+	alicmp=options["alicmp"]
+	cmp=options["cmp"]
+	ralign=options["ralign"]
+	alircmp=options["alircmp"]
 	
 	if align[0] :
 		ref.del_attr("xform.align2d")
@@ -256,7 +325,13 @@ def compare(ref,target,align=None,alicmp=("dot",{}),cmp=("dot",{}), ralign=None,
 	return scr
 	
 ### Compare the two children of current node
-def cmpchild(ref,nimg,cmptmp,mask,align,alicmp,ralign,alircmp):
+def cmpchild(ref,nimg,limg,rimg,mask,options):
+	
+	align=options["align"]
+	alicmp=options["alicmp"]
+	ralign=options["ralign"]
+	alircmp=options["alircmp"]
+	
 	### Align to current node first
 	if align[0] :
 		ref.del_attr("xform.align2d")
@@ -273,8 +348,6 @@ def cmpchild(ref,nimg,cmptmp,mask,align,alicmp,ralign,alircmp):
 	### Compare the aligned particle with the two children 
 	
 
-	limg=EMData(cmptmp,nimg["tree_children"][0])
-	rimg=EMData(cmptmp,nimg["tree_children"][1])
 	#tmp="tmp.hdf"
 	#ta.write_image(tmp,-1)
 	ta.mult(mask)
@@ -285,11 +358,8 @@ def cmpchild(ref,nimg,cmptmp,mask,align,alicmp,ralign,alircmp):
 	cmp=parsemodopt("dot:normalize=1")
 	dl=ta.cmp(cmp[0],limg,cmp[1])
 	dr=ta.cmp(cmp[0],rimg,cmp[1])
-	#print dl,dr
-	#exit()
+	
 	return dl,dr
-	
-	
 	
 	
 ### Classify each particle using the tree
@@ -297,6 +367,7 @@ def classify(ptcl,ai,nodes,clsmx,align,alicmp,cmp,ralign,alircmp,cmptmp,masktmp)
 	#tmp="tmp.hdf"
 	#if os.path.isfile(tmp): os.remove(tmp)
 	#ai=[1]
+	options={"align":align, "alicmp":alicmp, "cmp":cmp, "ralign":ralign, "alircmp":alircmp}
 	rt=EMUtil.get_image_count(nodes)-1
 	rimg=EMData()
 	rimg.read_image(nodes,rt,True)
@@ -320,22 +391,24 @@ def classify(ptcl,ai,nodes,clsmx,align,alicmp,cmp,ralign,alircmp,cmptmp,masktmp)
 			if cmptmp==None:
 				limg=EMData(nodes,nimg["tree_children"][0])
 				rimg=EMData(nodes,nimg["tree_children"][1])
-				dl=compare(prob,limg,align,alicmp,cmp,ralign,alircmp)
-				dr=compare(prob,rimg,align,alicmp,cmp,ralign,alircmp)
+				dl=compare(prob,limg,options)
+				dr=compare(prob,rimg,options)
 				dl=dl[0]
 				dr=dr[0]
 			else:
 				nimg.read_image(nodes,ni)
+				limg=EMData(cmptmp,nimg["tree_children"][0])
+				rimg=EMData(cmptmp,nimg["tree_children"][1])
 				mask=EMData(masktmp,ni)
-				dl,dr=cmpchild(prob,nimg,cmptmp,mask,align,alicmp,ralign,alircmp)
+				dl,dr=cmpchild(prob,nimg,limg,rimg,mask,options)
 				
 			if dl<dr:
 				ni=nimg["tree_children"][0]
 			else:
 				ni=nimg["tree_children"][1]
-		#print pp,choice
+		print "Particle",pp,"nodes",choice
 		nimg=EMData(nodes,ni)
-		pm=compare(prob,nimg,align,alicmp,cmp,ralign,alircmp)
+		pm=compare(prob,nimg,options)
 		clsmx[0].set_value_at(0,pp,ni)
 		for nt in range(1,7):
 			clsmx[nt].set_value_at(0,pp,pm[nt])
@@ -368,8 +441,80 @@ def makechildpair(nodes, cmptmp, masktmp):
 		rimg.write_image(cmptmp,nimg["tree_children"][1])
 		
 		
-
+class TreeClassifyTask(JSTask):
 	
+	def __init__(self,ptcl,ptid,nodes,align=None,alicmp=("dot",{}),cmp=("dot",{}), ralign=None, alircmp=("dot",{}),cmptmp=None,masktmp=None):
+		rt=EMUtil.get_image_count(nodes)
+		if cmptmp==None or masktmp==None:
+			### Compare to the two children seperately 
+			data={"images":["cache",ptcl,ptid], "nodes":["cache",nodes,0,rt]}
+			cmpdiff=False
+		else:
+			### Mask out the difference between the two children
+			cn=EMUtil.get_image_count(cmptmp)
+			mn=EMUtil.get_image_count(masktmp)
+			data={"images":["cache",ptcl,ptid], "nodes":["cache",nodes,0,rt], "cmptmp":["cache",cmptmp,0,cn], "masktmp":["cache",masktmp,0,mn] }
+			cmpdiff=True
+			
+		JSTask.__init__(self,"TreeClassify",data,{},"")
+		self.options={"align":align, "alicmp":alicmp, "cmp":cmp, "ralign":ralign, "alircmp":alircmp,"cmpdiff":cmpdiff, "id":ptid}
+	
+	
+	def execute(self,callback=None):
+		options=self.options
+		rst=[]
+		for tt in self.data["images"][2]:
+			
+			ni=self.data["nodes"][3]-1
+			nimg=EMData()
+			prob=EMData(self.data["images"][1],tt)
+			
+			choice=[]
+			while(1):
+				### Compare through the tree
+				choice.append(ni)
+				nimg.read_image(self.data["nodes"][1],ni,True)
+				#nimg["tree_nptls"]+=1
+				#nimg.write_image(self.data["nodes"][1],ni)
+				
+				if (nimg["tree_children"][0]<0):
+					### At the leaf of the tree, stop.
+					break
+				
+				if options["cmpdiff"]:
+					nimg.read_image(self.data["nodes"][1],ni)
+					mask=EMData(self.data["masktmp"][1],ni)
+					limg=EMData(self.data["cmptmp"][1],nimg["tree_children"][0])
+					rimg=EMData(self.data["cmptmp"][1],nimg["tree_children"][1])
+					dl,dr=cmpchild(prob,nimg,limg,rimg,mask,options)
+				else:
+					limg=EMData(self.data["nodes"][1],nimg["tree_children"][0])
+					rimg=EMData(self.data["nodes"][1],nimg["tree_children"][1])
+					dl=compare(prob,limg,options)
+					dr=compare(prob,rimg,options)
+					dl=dl[0]
+					dr=dr[0]
+					
+				if dl<dr:
+					ni=nimg["tree_children"][0]
+				else:
+					ni=nimg["tree_children"][1]
+			
+			#print pp,choice
+			nimg=EMData(self.data["nodes"][1],ni)
+			pm=compare(prob,nimg,options)
+		
+			rst.append({"cls":ni,"simmx":pm, "id":tt,"choice":choice})
+		return rst
+		#clsmx[0].set_value_at(0,pp,ni)
+		#for nt in range(1,7):
+			#clsmx[nt].set_value_at(0,pp,pm[nt])
+		
+		
+		
+		
+		
+
 if __name__ == '__main__':
 	main()
 	 
