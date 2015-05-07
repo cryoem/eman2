@@ -76,6 +76,10 @@ def main():
 	parser.add_argument("--invert",action="store_true",default=False,help=""""This 
 		will multiply the pixel values by -1.""")
 	
+	parser.add_argument("--stackregardless",action="store_true",default=False,help=""""Stack
+		images found with the common string provided through --stem2stack, even if the
+		number of images does not match the predicted number of tilt angles.""")
+	
 	parser.add_argument("--outmode", type=str, default="float", help="""All EMAN2 programs 
 		write images with 4-byte floating point values when possible by default. This allows 
 		specifying an alternate format when supported: float, int8, int16, int32, uint8, 
@@ -350,8 +354,8 @@ def findtiltimgfiles( options ):
 	#k=0
 	for f in filesindir:
 		intilt = ''	
-		if '.dm3' in f or '.DM3' in f or '.tif' in f or '.TIF' in f or '.MRC' in f: 
-			if '.txt' not in f and '.db' not in f and 'mirror' not in f:
+		if '.dm3' in f or '.DM3' in f or '.tif' in f or '.TIF' in f or '.MRC' in f or '.hdf' in f: 
+			if '.txt' not in f and '.db' not in f:
 				if options.stem2stack:
 					if options.stem2stack in f:
 						print "\nFound file", f
@@ -484,12 +488,20 @@ def organizetilts( intilts, options ):
 		#print "However, after reversal, they are", orderedangles
 		#print "and angles are", angles
 			
-			
+	
+		
 	if len( intilts ) != len( orderedangles ):
-		print """\n(e2spt_tiltstacker.py)(organizetilts) ERROR: Number of tilt angles 
-		and tilt images is not equal."""
-		print """Number of tilt angles = %d ; number of tilt images = %d """ % ( len( orderedangles ), len( intilts ) )
-		sys.exit()
+		
+		if not options.stackregardless:	
+			print """\n(e2spt_tiltstacker.py)(organizetilts) ERROR: Number of tilt angles 
+			and tilt images is not equal."""
+			print """Number of tilt angles = %d ; number of tilt images = %d """ % ( len( orderedangles ), len( intilts ) )
+			sys.exit()
+		else:
+			print """\n(e2spt_tiltstacker.py)(organizetilts) WARNING: Number of tilt angles 
+			and tilt images is not equal. Stacking nevertheless since you provided --stackregardless""", options.stackregardless
+			print """Number of tilt angles = %d ; number of tilt images = %d """ % ( len( orderedangles ), len( intilts ) )
+			
 	
 	tiltstoexclude = options.exclude.split(',')
 	
@@ -521,12 +533,20 @@ def organizetilts( intilts, options ):
 		
 		
 	for k in range(len(intilts)):
-		tiltangle = orderedangles[k]
-		#indexintiltseries = angles.index( orderedangles[k] )
 		
-		indexintiltseries = indexesintiltseries[k]
-		collectionindex = collectionindexes[k]
+		try:
+			tiltangle = orderedangles[k]
+			#indexintiltseries = angles.index( orderedangles[k] )
 		
+			indexintiltseries = indexesintiltseries[k]
+			collectionindex = collectionindexes[k]
+		except:
+			if options.stackregardless:
+				tiltangle = orderedangles[k-1] + orderedangles[k-1] - orderedangles[k-2]
+				indexintiltseries = indexesintiltseries[k-1] + indexesintiltseries[k-1] - indexesintiltseries[k-2]
+				collectionindex = collectionindexes[k-1] + collectionindexes[k-1] - collectionindexes[k-2]
+			
+				
 		if indexintiltseries not in tiltstoexclude and str(indexintiltseries) not in tiltstoexclude:
 		
 			intiltsdict.update( { indexintiltseries:[ intilts[k],tiltangle,collectionindex ]} )
@@ -579,12 +599,15 @@ def restacker( options ):
 		outname = options.path + '/' + options.restack.replace('.mrcs','_RESTACKED.mrcs')
 	if '.st' in inputf[-3:]:
 		outname = options.path + '/' + options.restack.replace('.st','_RESTACKED.st')
+		
+	if '.hdf' in inputf[-3:]:
+		outname = options.path + '/' + options.restack.replace('.st','_RESTACKED.hdf')
 	
 	print "\n!!!!!!!!!!!!!!!!\n\nOutname is", outname
 	
 	tmp = options.path + '/' + 'tmp.hdf'
 	
-	if '.ali' in inputf[-4:] or '.mrc' in inputf[-4:] or '.mrcs' in inputf[-5:] or '.st' in inputf[-3:]:
+	if '.ali' in inputf[-4:] or '.mrc' in inputf[-4:] or '.mrcs' in inputf[-5:] or '.st' in inputf[-3:] or '.hdf' in inputf[-4:]  :
 		tmp = options.path + '/' + 'tmp.mrcs'
 	
 	cmdre = 'e2proc2d.py ' + options.restack + ' ' + tmp
