@@ -90,7 +90,7 @@ handled this way."""
 	#else : mode="pca"
 
 	if options.mask>-2 :
-		mask=EMData(sys.argv[1],0)
+		mask=EMData(args[0],0)
 		ny=mask.get_ysize()
 		mask.to_one()
 		if options.mask<=1 : mask.process_inplace("mask.sharp",{"outer_radius":ny/2-1})
