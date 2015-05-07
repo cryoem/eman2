@@ -537,14 +537,18 @@ def organizetilts( intilts, options ):
 
 def usntacker( options ):
 	
+	print "e2spt_tiltstacker (unstacker). options.unstack is", options.unstack
+	
 	outname = options.path + '/' + options.unstack.replace('.mrc','.hdf')
 	outname = options.path + '/' + options.unstack.replace('.mrcs','.hdf')
 	outname = options.path + '/' + options.unstack.replace('.st','.hdf')	
 	outname = options.path + '/' + options.unstack.replace('.ali','.hdf')
 	
-	outname = options.path + '/' + options.unstack.replace('.hdf','_UNSTACKED.hdf')
+	outname = outname.replace('.hdf','_UNSTACKED.hdf')
 	
-	print "\nOutname of unstacked tilt will be", outname
+	print "unstack outname is", outname
+	
+	#print "\noutname of unstacked tilt will be", outname
 	
 	cmdun = 'e2proc2d.py ' + options.unstack + ' ' + outname + ' --unstacking '
 	if options.outmode:
