@@ -61,6 +61,7 @@ from e2spt_hac import Align3DTaskAVSA
 from e2spt_simulation import SubtomoSimTask
 from e2symsearch3d import SymAlignTask
 from e2tvrecon import TVReconTask
+from e2classifytree import TreeClassifyTask
 
 from e2initialmodel import InitMdlTask
 import SocketServer
