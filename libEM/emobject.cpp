@@ -1100,6 +1100,13 @@ bool EMAN::operator!=(const Dict& d1, const Dict& d2)
 	return !(d1 == d2);
 }
 
+void Dict::update(const Dict& that)
+{
+	for (Dict::const_iterator p=that.begin(); p!=that.end(); p++) {
+		dict[p->first]=p->second;
+	}
+}
+
 
 // Iterator support
 // This is just a wrapper, everything is inherited from the map<string,EMObject>::iterator

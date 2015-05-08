@@ -2643,8 +2643,9 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		cleanup=1;
 	}
 
-	float sigmathis = params.set_default("sigmathis",0.5f);
-	float sigmato = params.set_default("sigmato",0.5f);
+	float sigmathis = params.set_default("sigmathis",0.05f);
+	float sigmato = params.set_default("sigmato",0.05f);
+	int verbose = params.set_default("verbose",0);
 
 
 	if (base_this->get_xsize()!=base_this->get_ysize()+2 || base_this->get_ysize()!=base_this->get_zsize()
@@ -2663,13 +2664,13 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	vector<float> s_score(nsoln,0.0f);
 	vector<float> s_coverage(nsoln,0.0f);
 	vector<Transform> s_xform(nsoln);
-	printf("%d solutions\n",nsoln);
+	if (verbose>0) printf("%d solutions\n",nsoln);
 
 	// We start with 32^3, 64^3 ...
 	for (int sexp=5; sexp<10; sexp++) {
 		int ss=pow(2.0,sexp);
 		if (ss>ny) ss=ny;
-		printf("Size %d\n",ss);
+		if (verbose>0) printf("Size %d\n",ss);
 
 		//ss=good_size(ny/ds);
 		EMData *small_this=base_this->get_clip(Region(0,(ny-ss)/2,(ny-ss)/2,ss+2,ss,ss));
@@ -2703,7 +2704,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		// This is for the first loop, we do a full search in a heavily downsampled space
 		if (s_coverage[0]==0.0f) {
 			// Genrate points on a sphere in an asymmetric unit
-			printf("stage 1 - ang step %1.2f\n",astep);
+			if (verbose>1) printf("stage 1 - ang step %1.2f\n",astep);
 			Dict d;
 			d["inc_mirror"] = true;
 			d["delta"] = astep;		// make sure the altitude step hits 90 degrees, not absolutely necessary for this, but can't hurt
@@ -2716,8 +2717,10 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 //			for (std::vector<Transform>::iterator t = transforms.begin(); t!=transforms.end(); ++t) {    // iterator form was causing all sorts of problems
 			for (unsigned int it=0; it<transforms.size(); it++) {
 				Transform t = transforms[it];
-				printf("  %d/%d\r",it,transforms.size());
-				fflush(stdout);
+				if (verbose>2) {
+					printf("  %d/%d\r",it,transforms.size());
+					fflush(stdout);
+				}
 				for (float phi=0; phi<360.0; phi+=astep) {
 					Dict aap=t.get_params("eman");
 					aap["phi"]=phi;
@@ -2766,23 +2769,55 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		// Once we have our initial list of best locations, we just refine each possibility individually
 		else {
 			// We generate a search pattern around each existing solution
-			printf("stage 2 (%1.2f)\n",astep);
+			if (verbose>1) printf("stage 2 (%1.2f)\n",astep);
 			for (int i=0; i<nsoln; i++) {
 
-				printf("  %d/t%d\r",i,nsoln);
-				fflush(stdout);
-				// Ouch, exhaustive (local) search
-				for (int daz=-1; daz<=1; daz++) {
-					for (int dalt=-1; dalt<=1; dalt++) {
-						for (int dphi=-1; dphi<=1; dphi++) {
-							Dict upd;
-							upd["az"]=daz*astep;
-							upd["alt"]=dalt*astep;
-							upd["phi"]=dphi*astep;
-							testort(small_this,small_to,s_score,s_coverage,s_xform,i,upd);
-						}
-					}
+				if (verbose>2) {
+					printf("  %d\t%d\r",i,nsoln);
+					fflush(stdout);
 				}
+				// We work an axis at a time until we get where we want to be. Somewhat like a simplex
+				int changed=1;
+				float dstep[3] = {1,1,1};		// we take  steps for each of the 3 angles, may be positive or negative
+				char *axname[] = {"az","alt","phi"};
+				while (changed) {
+					if (verbose>3) printf("\n%1.3f\t%1.3f\t%1.3f\t",dstep[0],dstep[1],dstep[2]);
+					changed=0;
+					for (int axis=0; axis<3; axis++) {
+						Dict upd;
+						upd[axname[axis]]=dstep[axis]*astep;
+						int r=testort(small_this,small_to,s_score,s_coverage,s_xform,i,upd);
+						
+						// If we fail, we reverse direction with a slightly smaller step and try that
+						// Whether this fails or not, we move on to the next axis
+						if (r) changed=1; 
+						else {
+							dstep[axis]*=-0.75;
+							upd[axname[axis]]=dstep[axis]*astep;
+							r=testort(small_this,small_to,s_score,s_coverage,s_xform,i,upd);
+							if (r) changed=1;
+						}
+						printf("\nX %1.3f\t%1.3f\t%1.3f\t%d\t",dstep[0],dstep[1],dstep[2],changed);
+					}
+					if (!changed) {
+						for (int j=0; j<3; j++) dstep[j]*-0.75;
+						changed=1;
+					}
+					if (fabs(dstep[0])+fabs(dstep[1])+fabs(dstep[2])<0.25) changed=0;		// We must still be making significant improvements
+				}
+				
+				// Ouch, exhaustive (local) search
+// 				for (int daz=-1; daz<=1; daz++) {
+// 					for (int dalt=-1; dalt<=1; dalt++) {
+// 						for (int dphi=-1; dphi<=1; dphi++) {
+// 							Dict upd;
+// 							upd["az"]=daz*astep;
+// 							upd["alt"]=dalt*astep;
+// 							upd["phi"]=dphi*astep;
+// 							int r=testort(small_this,small_to,s_score,s_coverage,s_xform,i,upd);
+// 						}
+// 					}
+// 				}
 			}
 		}
 		delete small_this;
@@ -2834,6 +2869,10 @@ bool RT3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<float> 
 	aap["tx"]=0;
 	aap["ty"]=0;
 	aap["tz"]=0;
+	for (Dict::const_iterator p=upd.begin(); p!=upd.end(); p++) {
+		aap[p->first]=(float)aap[p->first]+(float)p->second;
+	}
+
 	t.set_params(aap);
 
 	// rotate in Fourier space then use a CCF to find translation

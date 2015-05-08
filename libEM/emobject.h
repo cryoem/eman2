@@ -503,6 +503,12 @@ namespace EMAN
 			return result;
 		}
 
+		/** Update replaces values from that into this without
+		 * otherwise altering this
+		 */
+		void update(const Dict& that);
+
+		
 		/** Ask the Dictionary if it as a particular key in a case insensitive way
 		 * @param key the (string) key to find
 		 */
