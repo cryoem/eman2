@@ -5819,6 +5819,43 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 		static const string NAME;
 	};
 
+	/** This processor will remove specific bad lines from CCD images, generally due to faulty lines/rows in the detector.
+	 * Specify only one of xloc or yloc
+	 *@param xloc x location of a bad vertical line
+	 *@param yloc y location of a bad horizontal line
+	 */
+	class BadLineXYProcessor:public Processor
+	{
+	  public:
+		void process_inplace(EMData * image);
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		static Processor *NEW()
+		{
+			return new BadLineXYProcessor();
+		}
+
+		virtual string get_desc() const
+		{
+			return "This processor will remove localized 'striping' along the x/y axes, caused by issues with CCD/CMOS readout. In theory this should be done by dark/gain correction, but in many cases, there are residual effects that this will help eliminate. This can produce high-pass filter-like effects, so generally large length values are suggested. Integration covers +-xlen/ylen. Y and X axes are corrected sequentially, not simultaneously, Y first";
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("xloc", EMObject::INT, "X coordinate of a bad vertical line");
+			d.put("yloc", EMObject::INT, "Y coordinate of a bad vertical line. Specify only one of xloc or yloc");
+			return d;
+		}
+
+		static const string NAME;
+	};
+
+	
 	/** This processor will remove localized 'striping' along the x/y axes, caused by issues with CCD/CMOS readout. In theory this should be done by dark/gain correction, but in many cases, there are residual effects that this will help eliminate.
 	 *@param threshold an isosurface threshold at which all desired features are visible
 	 *@param radius a normalization size similar to an lp= value

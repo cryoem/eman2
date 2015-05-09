@@ -196,6 +196,7 @@ const string FSCFourierProcessor::NAME = "filter.wiener.byfsc";
 const string SymSearchProcessor::NAME = "misc.symsearch";
 const string LocalNormProcessor::NAME = "normalize.local";
 const string StripeXYProcessor::NAME = "math.xystripefix";
+const string BadLineXYProcessor::NAME = "math.xybadline";
 const string IndexMaskFileProcessor::NAME = "mask.fromfile";
 const string CoordinateMaskFileProcessor::NAME = "mask.fromfile.sizediff";
 const string PaintProcessor::NAME = "mask.paint";
@@ -442,6 +443,7 @@ template <> Factory < Processor >::Factory()
 
 	force_add<SymSearchProcessor>();
 	force_add<StripeXYProcessor>();
+	force_add<BadLineXYProcessor>();
 	force_add<LocalNormProcessor>();
 
 	force_add<IndexMaskFileProcessor>();
@@ -6564,6 +6566,30 @@ void FileFourierProcessor::process_inplace(EMData * image)
 
 	d2->apply_radial_func(xd[0], xd[1] - xd[0], yd, 1);
 	image = d2->do_ift();
+}
+
+void BadLineXYProcessor::process_inplace(EMData * image)
+{
+	if (!image) {
+		LOGWARN("NULL Image");
+		return;
+	}
+	if (image->get_zsize()>1) throw ImageDimensionException("Error: math.xybadline works only on 2D images");
+	
+	int xloc = params.set_default("xloc",-1);
+	int yloc = params.set_default("yloc",-1);
+
+	int nx=image->get_xsize();
+	int ny=image->get_ysize();
+	
+	// each pixel is the average of its adjacent neighbors
+	if (xloc>0 && xloc<nx-1) {
+		for (int y=0; y<ny; y++) image->set_value_at(xloc,y,(image->get_value_at(xloc-1,y)+image->get_value_at(xloc+1,y))/2.0);
+	}
+	
+	if (yloc>0 && yloc<ny-1) {
+		for (int x=0; x<nx; x++) image->set_value_at(x,yloc,(image->get_value_at(x,yloc-1)+image->get_value_at(x,yloc+1))/2.0);
+	}
 }
 
 void StripeXYProcessor::process_inplace(EMData * image)
