@@ -290,21 +290,40 @@ def main():
 	if options.alignref : alignref=EMData(options.alignref,0)
 	else : alignref=None
 
+
 	if options.average:
 		print "Averaging particles from %d to %d stepping by %d. All other options ignored !"%(n0,n1,n2)
-		ptcls = []
+
+		avgr = Averagers.get("mean")
 		for i in range(n0,n1+1,n2):
-			ptcls.append(EMData(infile,i))
-		avg = sum(ptcls)/len(ptcls)
+			avgr.add_image( EMData(infile,i) )
+			if options.verbose:
+				print "Added ptcl %d / %d" %( i+1, (n1-n0)/n2 + 1)
+		avg=avgr.finish()
+		
 		try :
 			avg["ptcl_repr"]=sum([i["ptcl_repr"] for i in ptcls])
 		except:
 			pass
 
-#		avg.process_inplace('normalize.edgemean')
 		avg.write_image(outfile,0)
 		sys.exit()
+			
+		
+		#ptcls = []
+		#for i in range(n0,n1+1,n2):
+		#	ptcls.append(EMData(infile,i))
+		#avg = sum(ptcls)/len(ptcls)
+		#try :
+		#	avg["ptcl_repr"]=sum([i["ptcl_repr"] for i in ptcls])
+		#except:
+		#	pass
 
+#		avg.process_inplace('normalize.edgemean')
+		#avg.write_image(outfile,0)
+		#sys.exit()
+	
+	
 	index_d = {}
 	for append_option in append_options:
 		index_d[append_option] = 0
