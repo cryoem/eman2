@@ -354,9 +354,13 @@ def main():
 	
 	#print 'start.....'
 	img_index = 0
+	#print "datalst is", datlst
 	for data in datlst:
 		# if this is a list of images, we have header-only, and need to read the actual volume
-		if len(datlst)>1 : data=EMData(data["source_path"],data["source_n"])
+		if len(datlst)>1 : 
+			data=EMData(data["source_path"],data["source_n"])
+			#print "Read image data from file %s for index %d" %(data["source_path"],data["source_n"])
+			
 		if options.apix:
 			data.set_attr('apix_x', apix)
 			data.set_attr('apix_y', apix)
@@ -699,6 +703,10 @@ def parse_infile(infile, first, last, step):
 			data = []
 			for i in xrange(first, last+1, step):
 				d = EMData(infile,i,True)	# header only
+				
+				if not first - last:
+					d = EMData(infile,i)	# header only
+				
 				data.append(d)
 			return data
 	else: return [EMData(infile,0)]
