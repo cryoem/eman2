@@ -2794,7 +2794,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 					if (verbose>3) printf("\n%1.3f\t%1.3f\t%1.3f\t",s_step[i*3],s_step[i*3+1],s_step[i*3+2]);
 					changed=0;
 					for (int axis=0; axis<3; axis++) {
-						if (fabs(s_step[i*3+axis])<astep/4.0) continue;		// skip axes where we already have enough precision
+						if (fabs(s_step[i*3+axis])<astep/4.0) continue;		// skip axes where we already have enough precision on this axis
 						Dict upd;
 						upd[axname[axis]]=s_step[i*3+axis];
 						int r=testort(small_this,small_to,s_score,s_coverage,s_xform,i,upd);
@@ -2899,8 +2899,8 @@ bool RT3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<float> 
 	EMData *st2=small_this->process("xform",Dict("transform",EMObject(&t)));	// we have to do 1 slow transform here now that we have the translation
 	
 	float sim=st2->cmp("ccc.tomo.thresh",small_to,Dict("sigmaimg",sigmathis,"sigmawith",sigmato));
-	printf("\nTESTORT %6.1f  %6.1f  %6.1f\t%4d %4d %4d\t%1.5g\t%1.5g %d (%d)",
-		float(aap["az"]),float(aap["alt"]),float(aap["phi"]),int(aap["tx"]),int(aap["ty"]),int(aap["tz"]),sim,s_score[i],int(sim<s_score[i]),ccf->get_ysize());
+// 	printf("\nTESTORT %6.1f  %6.1f  %6.1f\t%4d %4d %4d\t%1.5g\t%1.5g %d (%d)",
+// 		float(aap["az"]),float(aap["alt"]),float(aap["phi"]),int(aap["tx"]),int(aap["ty"]),int(aap["tz"]),sim,s_score[i],int(sim<s_score[i]),ccf->get_ysize());
 
 	delete ccf;
 	// If the score is better than before, we update this particular best value
