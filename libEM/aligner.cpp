@@ -2643,8 +2643,8 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		cleanup=1;
 	}
 
-	float sigmathis = params.set_default("sigmathis",0.05f);
-	float sigmato = params.set_default("sigmato",0.05f);
+	float sigmathis = params.set_default("sigmathis",0.01f);
+	float sigmato = params.set_default("sigmato",0.01f);
 	int verbose = params.set_default("verbose",0);
 
 
@@ -2663,8 +2663,13 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 
 	vector<float> s_score(nsoln,0.0f);
 	vector<float> s_coverage(nsoln,0.0f);
+	vector<float> s_step(nsoln*3,7.5f);
 	vector<Transform> s_xform(nsoln);
 	if (verbose>0) printf("%d solutions\n",nsoln);
+
+	
+//	float dstep[3] = {7.5,7.5,7.5};		// we take  steps for each of the 3 angles, may be positive or negative
+	char *axname[] = {"az","alt","phi"};
 
 	// We start with 32^3, 64^3 ...
 	for (int sexp=5; sexp<10; sexp++) {
@@ -2682,17 +2687,16 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		small_to->process_inplace("filter.highpass.gauss",Dict("cutoff_freq",0.005f));
 		small_to->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.33f));
 
-		for (int i=0; i<nsoln; i++) s_score[i]=1.0e24;	// reset the scores since the different scales will not match
-
+		
 		// debug out
-		EMData *x=small_this->do_ift();
-		x->process_inplace("xform.phaseorigin.tocenter");
-		x->write_image("dbg.hdf",(sexp-5)*2);
-		delete x;
-		x=small_to->do_ift();
-		x->process_inplace("xform.phaseorigin.tocenter");
-		x->write_image("dbg.hdf",(sexp-5)*2+1);
-		delete x;
+// 		EMData *x=small_this->do_ift();
+// 		x->process_inplace("xform.phaseorigin.tocenter");
+// 		x->write_image("dbg.hdf",(sexp-5)*2);
+// 		delete x;
+// 		x=small_to->do_ift();
+// 		x->process_inplace("xform.phaseorigin.tocenter");
+// 		x->write_image("dbg.hdf",(sexp-5)*2+1);
+// 		delete x;
 
 		// This is a solid estimate for very complete searching
 // 		float astep = 89.999/floor(pi/(2.0*atan(2.0/ss)));
@@ -2701,6 +2705,14 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		// reasonably fill Fourier space is achieved
 		float astep = (float)(89.99/ceil(90.0*9.0/(8.0*sqrt((float)(4300.0/ss)))));	// 8 is (3+speed) from SPA with speed=5
 
+		// This insures we make at least one real effort at each level
+		for (int i=0; i<nsoln; i++) {
+			s_score[i]=1.0e24;	// reset the scores since the different scales will not match
+			if (fabs(s_step[i*3+0])<astep/4.0) s_step[i*3+0]=astep/2.0;
+			if (fabs(s_step[i*3+1])<astep/4.0) s_step[i*3+1]=astep/2.0;
+			if (fabs(s_step[i*3+2])<astep/4.0) s_step[i*3+2]=astep/2.0;
+		}
+		
 		// This is for the first loop, we do a full search in a heavily downsampled space
 		if (s_coverage[0]==0.0f) {
 			// Genrate points on a sphere in an asymmetric unit
@@ -2778,32 +2790,30 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				}
 				// We work an axis at a time until we get where we want to be. Somewhat like a simplex
 				int changed=1;
-				float dstep[3] = {1,1,1};		// we take  steps for each of the 3 angles, may be positive or negative
-				char *axname[] = {"az","alt","phi"};
 				while (changed) {
-					if (verbose>3) printf("\n%1.3f\t%1.3f\t%1.3f\t",dstep[0],dstep[1],dstep[2]);
+					if (verbose>3) printf("\n%1.3f\t%1.3f\t%1.3f\t",s_step[i*3],s_step[i*3+1],s_step[i*3+2]);
 					changed=0;
 					for (int axis=0; axis<3; axis++) {
 						Dict upd;
-						upd[axname[axis]]=dstep[axis]*astep;
+						upd[axname[axis]]=s_step[i*3+axis];
 						int r=testort(small_this,small_to,s_score,s_coverage,s_xform,i,upd);
 						
 						// If we fail, we reverse direction with a slightly smaller step and try that
 						// Whether this fails or not, we move on to the next axis
 						if (r) changed=1; 
 						else {
-							dstep[axis]*=-0.75;
-							upd[axname[axis]]=dstep[axis]*astep;
+							s_step[i*3+axis]*=-0.75;
+							upd[axname[axis]]=s_step[i*3+axis];
 							r=testort(small_this,small_to,s_score,s_coverage,s_xform,i,upd);
 							if (r) changed=1;
 						}
-						printf("\nX %1.3f\t%1.3f\t%1.3f\t%d\t",dstep[0],dstep[1],dstep[2],changed);
+						printf("\nX %1.3f\t%1.3f\t%1.3f\t%d\t",s_step[i*3],s_step[i*3+1],s_step[i*3+2],changed);
 					}
 					if (!changed) {
-						for (int j=0; j<3; j++) dstep[j]*-0.75;
+						for (int j=0; j<3; j++) s_step[i*3+j]*-0.75;
 						changed=1;
 					}
-					if (fabs(dstep[0])+fabs(dstep[1])+fabs(dstep[2])<0.25) changed=0;		// We must still be making significant improvements
+					if (fabs(s_step[i*3])<astep/4 and fabs(s_step[i*3+1])<astep/4 and fabs(s_step[i*3+2])<astep/4) changed=0;
 				}
 				
 				// Ouch, exhaustive (local) search
@@ -2864,8 +2874,8 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 bool RT3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<float> &s_score, vector<float> &s_coverage,vector<Transform> &s_xform,int i,Dict &upd) const {
 	float sigmathis = params["sigmathis"];
 	float sigmato = params["sigmato"];
-	Transform t=s_xform[i];			// copy
-	Dict aap=t.get_params("eman");
+	Transform t;
+	Dict aap=s_xform[i].get_params("eman");
 	aap["tx"]=0;
 	aap["ty"]=0;
 	aap["tz"]=0;
@@ -2880,25 +2890,36 @@ bool RT3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<float> 
 	EMData *ccf=small_to->calc_ccf(stt);
 	IntPoint ml=ccf->calc_max_location_wrap();
 
+	
 	aap["tx"]=(int)ml[0];
 	aap["ty"]=(int)ml[1];
 	aap["tz"]=(int)ml[2];
 	t.set_params(aap);
-	delete stt;
+	EMData *st2=small_this->process("xform",Dict("transform",EMObject(&t)));	// we have to do 1 slow transform here now that we have the translation
+	
+	float sim=st2->cmp("ccc.tomo.thresh",small_to,Dict("sigmaimg",sigmathis,"sigmawith",sigmato));
+	printf("\nTESTORT %6.1f  %6.1f  %6.1f\t%4d %4d %4d\t%1.5g\t%1.5g %d (%d)",
+		float(aap["az"]),float(aap["alt"]),float(aap["phi"]),int(aap["tx"]),int(aap["ty"]),int(aap["tz"]),sim,s_score[i],int(sim<s_score[i]),ccf->get_ysize());
+
 	delete ccf;
-	stt=small_this->process("xform",Dict("transform",EMObject(&t)));	// we have to do 1 slow transform here now that we have the translation
-
-	float sim=stt->cmp("ccc.tomo.thresh",small_to,Dict("sigmaimg",sigmathis,"sigmawith",sigmato));
-
 	// If the score is better than before, we update this particular best value
 	if (sim<s_score[i]) {
 		s_score[i]=sim;
-		s_coverage[i]=stt->get_attr("fft_overlap");
+		s_coverage[i]=st2->get_attr("fft_overlap");
 		s_xform[i]=t;
+//  		if (sim<-.67 && stt->get_ysize()==160) {
+//  			stt->write_image("dbug2.hdf",0);
+//  			st2->write_image("dbug2.hdf",1);
+//  			small_to->write_image("dbug2.hdf",2);
+//  			printf("$$$$\n");
+// 			t.printme();
+//  		}
 		delete stt;
+		delete st2;
 		return true;
 	}
 	delete stt;
+	delete st2;
 	return false;
 }
 

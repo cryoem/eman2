@@ -727,7 +727,7 @@ float TomoWedgeCccCmp::cmp(EMData * image, EMData *with) const
 	image->set_attr("fft_overlap",(float)(2.0*norm/(image->get_xsize()*image->get_ysize()*image->get_zsize())));
 	
 	if (negative) sum*=-1.0;
-	return sum/(sqrt(sumsq1)*sqrt(sumsq2));
+	return float(sum/(sqrt(sumsq1)*sqrt(sumsq2)));
 }
 
 float TomoFscCmp::cmp(EMData * image, EMData *with) const
