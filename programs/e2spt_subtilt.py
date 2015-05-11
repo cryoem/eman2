@@ -109,22 +109,23 @@ def main():
 
 	parser.add_argument("--subtractbackground",action='store_true',default=False,help="""(Experimental. Not working yet). This will extract a box from the tomogram much larger than the subtomogram. Projections will be generated. You MUST provide --tomogram for this.""")
 
-	parser.add_argument("--normproc",type=str,default='',help="""Not used anywhere yet. Default=None""")
+	parser.add_argument("--normproc",type=str,default='',help="""WARNING: Not used anywhere yet. Default=None""")
 	
 	#parser.add_argument("--yshort",action='store_true',help="""Not used anywhere yet. Default=False""", default=False)
 	
 	parser.add_argument("--shrink", type=int,default=1,help="""Default=1 (no shrinking). Integer shrinking factor, part of preprocessing to facilitate particle tracking.""")
 	
-	parser.add_argument("--lowpass", type=str,default='filter.lowpass.gauss:cutoff_freq=0.02',help="""Default=filter.lowpass.gauss:cutoff_freq=0.02, which applies a 50 angstroms low pass gaussian filter. Type 'None' to turn off. Low pass filtering processor (see e2help.py processors at the command line), part of preprocessing to facilitate particle tracking.""")
+	parser.add_argument("--lowpass", type=str,default='',help="""Default=None. Requires --track. Low pass filtering processor (see e2help.py processors at the command line), part of preprocessing to facilitate particle tracking.""")
 
 	parser.add_argument("--highpass", type=str,default='',help="""Default=None (no highpass). High pass filtering processor (see e2help.py processors at the command line), part of preprocessing to facilitate particle tracking.""")
 	
-	parser.add_argument("--mask", type=str,default='mask.sharp:outer_radius=-2',help="""Default='mask.sharp:outer_radius=-2'. Type 'None' to turn off. Masking processor (see e2help.py processors at the command line), part of preprocessing to facilitate particle tracking.""")
+	parser.add_argument("--mask", type=str,default='',help="""Default=None. Requires --track. Masking processor (see e2help.py processors at the command line), part of preprocessing to facilitate particle tracking.""")
 
-	parser.add_argument("--threshold", type=str,default='',help="""Default=None (no threshold). Thresholding processor (see e2help.py processors at the command line), part of preprocessing to facilitate particle tracking.""")
+	parser.add_argument("--threshold", type=str,default='',help="""Default=None (no threshold). Requires --track. Thresholding processor (see e2help.py processors at the command line), part of preprocessing to facilitate particle tracking.""")
 
-	parser.add_argument("--preprocess", type=str,default='',help="""Default=None (no additional preprocessing). Any additional preprocessing processor (see e2help.py processors at the command line), part of preprocessing to facilitate particle tracking.""")
-
+	parser.add_argument("--preprocess", type=str,default='',help="""Default=None (no additional preprocessing). Requires --track. Any additional preprocessing processor (see e2help.py processors at the command line), part of preprocessing to facilitate particle tracking.""")
+	
+	parser.add_argument("--track",action='store_true',default=False,help="""Default=False (not used). If supplied, this option will track particles from one tilt image to another.""")
 	
 	(options, args) = parser.parse_args()
 	
@@ -623,7 +624,9 @@ def main():
 						lowerangle *= -1
 					
 					print "Lower slice index to send is", lowerindx
+					
 					retL = write2D( options, lowerangle, icethickness, tomox, tomoy, xc, yc, zc, cumulativeLdx, cumulativeLdy, refL, apix, 'lower', ptclfile, maxtilt, lowerindx )
+					
 					if retL:
 						refL = retL[0]
 						cumulativeLdx = retL[1]
@@ -698,38 +701,40 @@ def write2D( options, angle, icethickness, tomox, tomoy, xc, yc, zc, cumulatived
 
 	ret1 = extract2D( options, angle, icethickness, tomox, xc, yc, zc, cumulativedx, cumulativedy, sliceindx )
 	img = ret1[0]
+	fx = ret1[1]
+	fy = ret1[2]
+	finalimg = img.copy()
 
-	'''
-	Preprocess the extracted images (for k) if necessary, then align them to the immediate previous image (from k-1); for k=0, the k-1 image is the zero tilt image
-	'''
-	#try:
-	#	if options.preproc2d:
-	#		img = preprocImg( img, options, False )
-	#except:
-	#	pass
-	#	#print "Preprocessing not implemented yet"
+	if options.track:
+		'''
+		Preprocess the extracted images inside align2D, since preprocessing is needed only if alignment is performed.
+		Start from k=0, then align them to the immediate previous image (k-1); for k=0, the k-1 image is the zero tilt image.
+		(The zero tilt image is probably handled independently before calling this function, write2D).
+		'''
+		ret2 = align2D( options, ref, img )
+		rdx = ret2[0]
+		rdy = ret2[1]
+
+		'''
+		Reextract better centered images taking into account accumulated x and y shifts
+		'''
+
+		cumulativedx += rdx
+		cumulativedy += rdy
+	
+		print "Cumulativedx", cumulativedx
+		print "Cumulativedy", cumulativedy
+
+		retf = extract2D( options, angle, icethickness, tomox, xc, yc, zc, cumulativedx, cumulativedy, sliceindx )
 		
-	ret2 = align2D( options, ref, img )
-	rdx = ret2[0]
-	rdy = ret2[1]
-
-	'''
-	Reextract better centered images taking into account accumulated x and y shifts
-	'''
-
-	cumulativedx += rdx
-	cumulativedy += rdy
+		
+		#print "Slice index used for extraction was", sliceindx
 	
-	print "Cumulativedx", cumulativedx
-	print "Cumulativedy", cumulativedy
-
-	retf = extract2D( options, angle, icethickness, tomox, xc, yc, zc, cumulativedx, cumulativedy, sliceindx )
-	
-	#print "Slice index used for extraction was", sliceindx
-	
-	e = retf[0]
-	fx = retf[1]
-	fy = retf[2]
+		e = retf[0]
+		finalimg = e.copy()
+		
+		fx = retf[1]
+		fy = retf[2]
 	
 	threshy1 = float( options.excludeedge )
 	threshx1 = float( options.excludeedge )
@@ -739,23 +744,23 @@ def write2D( options, angle, icethickness, tomox, tomoy, xc, yc, zc, cumulatived
 	
 	if float( fx ) > threshx1 and float(xc) > threshx1 and float( fx ) < threshx2 and float (xc) < threshx2 and float( fy ) > threshy1 and float(yc) > threshy1 and float( fy ) < threshy2 and float(yc) < threshy2:
 			
-		e['spt_tiltangle'] = angle
-		e['spt_tiltaxis'] = 'y'
-		e['spt_subtilt_x'] = fx
-		e['spt_subtilt_y'] = fy
-		e['origin_x'] = e['nx']/2.0
-		e['origin_y'] = e['ny']/2.0
-		e['origin_z'] = 0
+		finalimg['spt_tiltangle'] = angle
+		finalimg['spt_tiltaxis'] = 'y'
+		finalimg['spt_subtilt_x'] = fx
+		finalimg['spt_subtilt_y'] = fy
+		finalimg['origin_x'] = finalimg['nx']/2.0
+		finalimg['origin_y'] = finalimg['ny']/2.0
+		finalimg['origin_z'] = 0
 
-		e['apix_x'] = apix
-		e['apix_y'] = apix
-		e['apix_z'] = apix
+		finalimg['apix_x'] = apix
+		finalimg['apix_y'] = apix
+		finalimg['apix_z'] = apix
 
 		if options.coords3d:
 			sptcoords = ( fx, fy, zc )
-			e['ptcl_source_coord']=sptcoords
+			finalimg['ptcl_source_coord']=sptcoords
 
-		e.process_inplace('normalize')
+		finalimg.process_inplace('normalize')
 	
 	
 		if options.subtractbackground and maxtilt:
@@ -764,7 +769,7 @@ def write2D( options, angle, icethickness, tomox, tomoy, xc, yc, zc, cumulatived
 	
 		tmpimgfile = options.path + '/tmp.hdf'
 	 
-		e.write_image( tmpimgfile, 0 )
+		finalimg.write_image( tmpimgfile, 0 )
 	
 		cmd = 'e2proc2d.py ' + tmpimgfile + ' ' + ptclfile + ' && rm ' + tmpimgfile
 	
@@ -773,10 +778,11 @@ def write2D( options, angle, icethickness, tomox, tomoy, xc, yc, zc, cumulatived
 	
 		os.popen(cmd)
 	
-		return [e, cumulativedx, cumulativedy]
+		return [finalimg, cumulativedx, cumulativedy]
 	else:
 		print "\nWARNING! Particle excluded from angle view %.2f since its center %.2f, %.2f is outside the --excludeedge limits x=[%.2f,%.2f] and y[%.2f,%.2f]" %(angle,fx,fy,threshx1,threshx2,threshy1,threshy2) 
 		return None
+		
 
 def extract2D( options, angle, icethickness, tomox, xc, yc, zc, cumulativedx, cumulativedy, sliceindx ):
 
