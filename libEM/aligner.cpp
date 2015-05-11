@@ -2794,6 +2794,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 					if (verbose>3) printf("\n%1.3f\t%1.3f\t%1.3f\t",s_step[i*3],s_step[i*3+1],s_step[i*3+2]);
 					changed=0;
 					for (int axis=0; axis<3; axis++) {
+						if (fabs(s_step[i*3+axis])<astep/4.0) continue;		// skip axes where we already have enough precision
 						Dict upd;
 						upd[axname[axis]]=s_step[i*3+axis];
 						int r=testort(small_this,small_to,s_score,s_coverage,s_xform,i,upd);
@@ -2807,7 +2808,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 							r=testort(small_this,small_to,s_score,s_coverage,s_xform,i,upd);
 							if (r) changed=1;
 						}
-						printf("\nX %1.3f\t%1.3f\t%1.3f\t%d\t",s_step[i*3],s_step[i*3+1],s_step[i*3+2],changed);
+						if (verbose>4) printf("\nX %1.3f\t%1.3f\t%1.3f\t%d\t",s_step[i*3],s_step[i*3+1],s_step[i*3+2],changed);
 					}
 					if (!changed) {
 						for (int j=0; j<3; j++) s_step[i*3+j]*-0.75;
