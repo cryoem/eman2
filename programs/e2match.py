@@ -388,14 +388,32 @@ def preciseShrink( options, stack2processSample, stack2processEd, targetApix, ta
 			print "(e2spt_refprep.py) The stack2process was shrunk, to a first approximation, see", EMData(options.stack2process,0,True)['nx']
 	
 		stack2processApix = EMData( stack2processEd, 0 , True)['apix_x']
+	
+	else:
+		#targetbox = EMData( options.stack2match,0,True )['nx']
+		
+		cmd = 'e2proc3d.py ' + str(stack2processEd) + ' ' + str(stack2processEd) + ' --clip=' + str(targetBox)
 
+		#cmd += ' && e2proc3d.py ' + str(stack2processEd) + ' ' + str(stack2processEd) + ' --process=math.meanshrink:n=' + str(meanshrinkfactor_int)
+		p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		text=p.communicate()	
+		p.stdout.close()
+		
+	
 	scalefactor = float( stack2processApix )/float( targetApix)
 
 	print "\n\n\n\n(e2spt_refprep.py) The finer scale factor to apply is", scalefactor
 	
 	print "Right before, apix is", EMData(stack2processEd,0,True)['apix_x']
 	print "(e2spt_refprep.py) The final clip box is", targetBox
-	cmd = 'e2proc3d.py ' + str(stack2processEd) + ' ' + str(stack2processEd) + ' --process=xform.scale:scale=' + str(scalefactor) + ':clip=' + str(targetBox)
+	cmd = 'e2proc3d.py ' + str(stack2processEd) + ' ' + str(stack2processEd) + ' --process=xform.scale:scale=' + str(scalefactor) 
+	
+	'''
+	Only need to add clipping to scaling if the box wasn't clipped before. Boxes need to be clipped first when you're "scaling up the data" (making it bigger) rather than shrinking it
+	'''
+	if meanshrinkfactor_int > 1:
+		cmd+=+ ':clip=' + str(targetBox)
+	
 	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	text=p.communicate()	
 	p.stdout.close()
