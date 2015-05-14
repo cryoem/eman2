@@ -34,7 +34,8 @@
 from EMAN2 import *
 import copy
 from emapplication import EMGLWidget
-from emdataitem3d import EMDataItem3D, EMIsosurface, EMSliceItem3D, EMVolumeItem3D
+from emdataitem3d import *
+#from emdataitem3d import EMDataItem3D, EMIsosurface, EMSliceItem3D, EMVolumeItem3D
 from emglobjects import get_default_gl_colors
 from emitem3d import EMItem3D, EMItem3DInspector
 from emshapeitem3d import *
@@ -49,6 +50,7 @@ from OpenGL import GLU
 from OpenGL.GL import *
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
+
 
 # XPM format Cursors
 visibleicon = [
@@ -2984,9 +2986,9 @@ class NodeDialog(QtGui.QDialog):
 		self.node_type_combo.addItem("Text")
 		self.textwidgetdict = {}
 		self.node_stacked_widget.addWidget(EM3DText.getNodeDialogWidget(self.textwidgetdict))
-		self.node_type_combo.addItem("PDB Structure")
+		self.node_type_combo.addItem("Structure")
 		self.structurewidgetdict = {}
-		self.node_stacked_widget.addWidget(EMStructure.getNodeDialogWidget(self.structurewidgetdict))
+		self.node_stacked_widget.addWidget(EMStructureItem3D.getNodeDialogWidget(self.structurewidgetdict))
 		self.node_type_combo.addItem("Data")
 		self.datawidgetdict = {}
 		self.node_stacked_widget.addWidget(EMDataItem3D.getNodeDialogWidget(self.datawidgetdict))
@@ -3036,8 +3038,8 @@ class NodeDialog(QtGui.QDialog):
 			insertion_node = EM3DText.getNodeForDialog(self.textwidgetdict)
 			node_name = str(self.textwidgetdict["node_name"].text())
 		# Structure
-		if self.node_type_combo.currentText() == "PDB Structure":
-			insertion_node = EMStructure.getNodeForDialog(self.structurewidgetdict)
+		if self.node_type_combo.currentText() == "Structure":
+			insertion_node = EMStructureItem3D.getNodeForDialog(self.structurewidgetdict)
 			node_name = str(self.structurewidgetdict["node_name"].text())
 		# Data
 		if self.node_type_combo.currentText() == "Data": 

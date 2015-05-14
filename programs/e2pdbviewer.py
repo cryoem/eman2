@@ -31,27 +31,27 @@
 
 from EMAN2 import *
 from emapplication import EMApp
+from emdataitem3d import EMStructureItem3D
 from emscene3d import EMScene3D, EMInspector3D
-from emshapeitem3d import *
 import os
 import sys
 
 from PyQt4 import QtCore
 from PyQt4 import QtGui
 
-
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
 	usage = """e2pdbviewer.py <project directory>
 	
-	A simple program to view a .pdb file on your computer. This is simply an PDB
-	specific interface to the more general EMScene3D viewer. All functionalities
-	are accessible from here.
+	A wrapper program to view a .pdb file on your computer. This is simply an PDB
+	specific interface to the more general EMScene3D viewer called by e2display.py. 
+	Though all of its functionalities are accessible from here, it is recommended to
+	utilize this program only for viewing individual structures.
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--file",type=str,help="Specify the pdb file you wish to \
-		view", required=False, default=None)
+	parser.add_argument("--files",type=str,help="Specify one or mode pdb files you \
+		wish to view",nargs='*',required=False, default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent \
 		process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", \
@@ -63,9 +63,11 @@ def main():
 	
 	app = EMApp()
 	viewer = EMScene3D()
-	if options.file:
-		structure = EMStructure(options.file)
-		viewer.addChild(structure)
+	
+	if options.files:
+		models = [EMStructureItem3D(pdbf) for pdbf in options.files]
+		viewer.addChildren(models)
+	
 	viewer.show()
 	app.execute()
 	
