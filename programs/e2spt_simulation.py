@@ -67,7 +67,7 @@ def main():
 	
 	parser.add_argument("--threshold",type=str, default='', help="""A filter (as in a processor from e2proc3d.py) to apply to the model before generating simulated particles from it. Type 'e2help.py processors' at the command line and find the options availbale from the processors list)""")
 	
-	parser.add_argument("--normproc",type=str,help="""Normalization processor applied to particles before alignment. Default is 'normalize.edgemean'. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'""", default='normalize.edgemean')
+	parser.add_argument("--normproc",type=str, default='',help="""Default=None. Normalization processor applied to particles before alignment. If normalize.mask is used, results of the mask option will be passed in automatically. If you want to turn this option off specify \'None\'""")
 	
 	parser.add_argument("--mask",type=str, default='', help="""A filter (as in a processor from e2proc3d.py) to apply to the model before generating simulated particles from it. Type 'e2help.py processors' at the command line and find the options availbale from the processors list)""")
 	
@@ -92,6 +92,8 @@ def main():
 	parser.add_argument("--trange", type=int,default=0,help="""Maximum number of pixels to randomly translate each subtomogram in all X, Y and Z. The random translation will be picked between -transrage and +trange; --txrange, --tyrange and --tzrange overwrite --trange for each specified direction.""")
 	
 	parser.add_argument("--terror", type=int,default=0,help="""Range of random translation error in pixels to perturb individual 2-D images in each subtiltseries by along x, y and z. The random translation perturbation will be picked between -terror and +terror. If set, this will overwrite --txerror, --tyerror and --tzerror.""")
+	
+	parser.add_argument("--set2tiltaxis",action='store_true',default=False,help="""Default=False. Simulate particles along the tilt axis only.""")
 	
 	parser.add_argument("--tiltrange", type=float,default=60,help="""Maximum angular value at which the highest tilt picture will be simulated. Projections will be simulated from -tiltrange to +titlrange. For example, if simulating a tilt series collected from -60 to 60 degrees, enter a --tiltrange value of 60. Note that this parameter will determine the size of the missing wedge.""")
 
@@ -133,7 +135,7 @@ def main():
 
 	#parser.add_argument("--preclip", type=str,default='',help="""Factor to clip the model to before simulating subtomograms. You might want to supply this if the model is in a tight box where it fits exactly.""")								
 
-	parser.add_argument("--clip", type=int,default='',help="""The final box size to clip the output subtomograms to.""")								
+	parser.add_argument("--clip", type=int,default=0,help="""The final box size to clip the output subtomograms to.""")								
 
 	parser.add_argument("--snr",type=float,default=0,help="Weighing noise factor for noise added to the image.")
 	
@@ -336,8 +338,13 @@ def main():
 				#The preprocessing function clips then shrinks. Therefore, you need to pass on clip*shrink
 				#for particles to be the adequate size, given that clip here is the FINAL box size
 				if options.preprocess or int(options.shrink) > 1 or options.lowpass or options.highpass or options.clip or options.normproc or options.threshold:
-					from e2spt_classaverage import preprocessing
-					model = preprocessing( model, options, options.mask, options.normproc, options.shrink, options.lowpass, options.highpass, options.preprocess, options.threshold)
+					
+					from e2spt_classaverage import preprocessingallocator
+					#preprocessingallocator( options, image, fftstackC='', fftstackF='', imageindex=0, postfft = 0 )
+
+					model = preprocessingallocator( options, model, '','', 0, postfft=1)
+					
+					
 					#options = ret[0]
 					if options.clip:
 						
@@ -607,7 +614,7 @@ def randomizer(options, model, tag):
 			
 			if i > 0:
 				print "\nGenerating random orientation"
-				rand_orient = OrientGens.get("rand",{"n":1, "phitoo":1})						#Generate a random orientation (randomizes all 3 euler angles)
+				rand_orient = OrientGens.get("rand",{"n":1, "phitoo":1,"inc_mirror":1})						#Generate a random orientation (randomizes all 3 euler angles)
 				c1_sym = Symmetries.get("c1")
 				random_transform = rand_orient.gen_orientations(c1_sym)[0]
 			
@@ -902,16 +909,32 @@ class SubtomoSimTask(JSTask):
 		#print "\n\nBBBBBBBBBB\n\nThe apix of the simulated ptcl is", apix
 		#print "\n\nBBBBBBBBBB\n\n"
 	
+		px = 0
+		if options.applyctf and not options.set2tiltaxis:
+			'''
+			Random distance 'px' of the particle to the tilt axis at tilt=0, used for CTF simulation.
+			Units in microns since it will be used to simulate the effects of having a "defocus gradient"
+			with tilt angle, in microns.
+			The center of a particle cannot be right at the edge of the tomogram; it has to be
+			at least ptcl_size/2 away from it.
+			'''
+			px = random.uniform(-1* options.gridholesize/2.0 + (apix*image['nx']/2.0)/10000, options.gridholesize/2.0 - (apix*image['nx']/2.0)/10000)			
+			
+		pz=0
+		if options.icethickness > image['nx']/2.0:
+			'''
+			Beware, --icethickness supplied in microns
+			'''
+			coordz = random.randint(0 + image['nx']/2, int(round(options.icethickness*10000/apix - image['nx']/2 )) )
 		
-		'''
-		Random distance 'px' of the particle to the tilt axis at tilt=0, used for CTF simulation.
-		Units in microns since it will be used to simulate the effects of having a "defocus gradient"
-		with tilt angle, in microns.
-		The center of a particle cannot be right at the edge of the tomogram; it has to be
-		at least ptcl_size/2 away from it.
-		'''
-		px = random.uniform(-1* options.gridholesize/2.0 + (apix*image['nx']/2.0)/10000, options.gridholesize/2.0 - (apix*image['nx']/2.0)/10000)			
-	
+			'''
+			Calculate the particle's distance 'pz' in microns to the mid section of the tomogram in Z 
+			(1/2 of 'nz' or --icethickness). If in-focus occurs at nz/2, then the relative position of 
+			a particle to this plane (above or below in the ice) will affect its defocus.
+			'''
+		
+			pz = coordz*apix/10000 - options.icethickness/2	
+		
 		'''
 		Calculate coordx from px since it's shifted by half the gridholesize (the position of the tilt axis)
 		and convert to pixels.
@@ -920,24 +943,15 @@ class SubtomoSimTask(JSTask):
 		'''
 		coordx = int( round( 10000*(px + options.gridholesize/2)/apix ))
 		coordy = random.randint(0 + image['nx']/2, int(round(options.gridholesize*10000/apix - image['nx']/2 )) )									#random distance in Y of the particle's center from the bottom edge in the XY plane, at tilt=0
+		coordz = int( round( image['nx']/2.0 ) )
 		
-		'''
-		Beware, --icethickness supplied in microns
-		'''
-		coordz = random.randint(0 + image['nx']/2, int(round(options.icethickness*10000/apix - image['nx']/2 )) )
-		
+		if options.set2tiltaxis:
+			coordx = 0
+			
 		sptcoords = tuple([coordx, coordy, coordz])
 		
 		print "Spt coords are", sptcoords	
 
-		'''
-		Calculate the particle's distance 'pz' in microns to the mid section of the tomogram in Z 
-		(1/2 of 'nz' or --icethickness). If in-focus occurs at nz/2, then the relative position of 
-		a particle to this plane (above or below in the ice) will affect its defocus.
-		'''
-		
-		pz = coordz*apix/10000 - options.icethickness/2
-																
 		alt = lower_bound
 		raw_projections = []
 		ctfed_projections = []
@@ -1011,9 +1025,11 @@ class SubtomoSimTask(JSTask):
 			
 			
 			#prj = image.process("misc.directional_sum",{"axis":"z"})
-			print "\nProjecting from",t,realalt
+			print "\nprojecting from",t,realalt
 	
 			prj = image.project("standard",t)
+			
+			print "projection done"
 			
 			'''
 			if options.fillwedge and j > nslices:
@@ -1104,6 +1120,8 @@ class SubtomoSimTask(JSTask):
 			ctfed_projections.append(prj_r)
 			#print "Appended ctfed prj in slice j", j
 		
+			print "options.applyctf", options.applyctf
+			print "should save edited prjs..."
 			if options.saveprjs and (options.applyctf or options.snr):
 				finalprjsED = outname.replace('.hdf', '_ptcl' + str(i).zfill(len(str(nslices))) + '_prjsEDITED.hdf')
 				#if options.path + '/' in outname:
@@ -1111,7 +1129,7 @@ class SubtomoSimTask(JSTask):
 				
 				finalprjsED = finalprjsED.replace('_preproc','')
 				prj_r.write_image( finalprjsED , -1)	
-	
+				print "wrote edited prj to", finalprjsED
 	
 	
 	
