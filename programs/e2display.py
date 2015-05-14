@@ -78,7 +78,7 @@ def main():
 	if options.fullrange:
 		fullrangeparms = set_full_range()
 
-	if len(args) < 1 and not options.pdbfile:
+	if len(args) < 1 and not options.pdb:
 		dialog = embrowser.EMBrowserWidget(withmodal=False,multiselect=False)
 		dialog.show()
 		try: dialog.raise_()
