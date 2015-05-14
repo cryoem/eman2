@@ -9298,7 +9298,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			}
 		}
 	}
-	if ((nz == 1)&&(image -> is_complex())&&(nx%2==0)&&((2*(nx-ny)-3)*(2*(nx-ny)-3)==1))  { 
+	if ((nz == 1)&&(image -> is_complex())&&(nx%2==0)&&((2*(nx-ny)-3)*(2*(nx-ny)-3)==1)&&(zerocorners==0) )  { 
  	  //printf("Hello 2-d complex  TransformProcessor \n");
 	  // make sure there was a realImage.process('xform.phaseorigin.tocorner')
 	 //           before transformation to Fourier Space
@@ -9320,11 +9320,14 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 //		int kNy= ny; //size of the real space image
 //		int kNx= nx/2; //
 		Vec2f offset(nx/2,ny/2); 
+		float Mid =(N+1.0)/2.0;  // Check this
 		for (int kyN = 0; kyN < ny; kyN++) {
 			int kyNew = kyN;
 			if (kyN>=nx/2) kyNew=kyN-ny;  // Step 0     Unalias
 			float kxOldPre=  - sin(theta)* kyNew;
 			float kyOldPre=    cos(theta)* kyNew;
+    		        float phaseY = -2*pi*kyNew*yshift/ny;
+
 			for (int kxN = 0; kxN < (nx/2); kxN++) {
 				int kxNew=kxN; 
 				if (kxN >= nx/2) kxNew=kxN-ny;//  Step 0   Unalias
@@ -9332,14 +9335,14 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 				float kxOld=  kxOldPre + cos(theta)* kxNew ;
 				float kyOld=  kyOldPre + sin(theta)* kxNew ;
 				//
-				int kxLower= floor(kxOld); int kxUpper= kxLower+1;
-				int kyLower= floor(kyOld); int kyUpper= kyLower+1;
+				int kxLower= floor(kxOld); int kxUpper= kxLower+1;    // All these values
+				int kyLower= floor(kyOld); int kyUpper= kyLower+1;    // may be neg
 				float dkxLower= (kxUpper-kxOld);    float dkxUpper= (kxOld-kxLower);
 				float dkyLower= (kyUpper-kyOld);    float dkyUpper= (kyOld-kyLower);
 //
 				int kxL= kxLower; int kyL=kyLower; 
 				float dataLL_R= 0; float dataLL_I=0; int flag=1;
-				if ((abs(kxL)<N) && (abs(kyL)<N)) { //   Step 2 Make sure to be in First BZ
+				if ((abs(kxL)<Mid) && (abs(kyL)<Mid)) { //   Step 2 Make sure to be in First BZ
 				    kxL = (N+kxL)%N;  kyL = (N+kyL)%N;
 				    if (kxL> N/2){ kxL=(N-kxL)%N; kyL=(N-kyL)%N ;flag=-1;} // Step 3: if nec, use Friedel paired
 				    dataLL_R=      src_data[2*kxL+   kyL*nx]; //  image -> get_value_at(2*kxL,kyL);
@@ -9348,7 +9351,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 
 			        kxL=kxLower; int kyU=kyUpper; 
 			        float dataLU_R= 0; float dataLU_I=0; flag=1;
-				if ((abs(kxL)<N) && (abs(kyU)<N)){ //       Step 2 Make sure to be in First BZ
+				if ((abs(kxL)<Mid) && (abs(kyU)<Mid)){ //       Step 2 Make sure to be in First BZ
 				    kxL = (N+kxL)%N;  kyU = (N+kyU)%N;
 				    if (kxL> N/2){ kxL=(N-kxL)%N; kyU=(N-kyU)%N;flag=-1;} // Step 3
 				    dataLU_R=	    src_data[2*kxL+   kyU*nx];//  image -> get_value_at(2*kxL,kyU);
@@ -9357,7 +9360,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 
 				int kxU= kxUpper; kyL=kyLower; 
 				float dataUL_R= 0; float dataUL_I=0; flag=1;
-				if ((abs(kxU)<N) && (abs(kyL)<N)) {   //       Step 2
+				if ((abs(kxU)<Mid) && (abs(kyL)<Mid)) {   //       Step 2
 				    kxU = (N+kxU)%N; kyL = (N+kyL)%N;
 				    if (kxU> N/2) { kxU=(N-kxU)%N; kyL=(N-kyL)%N;flag=-1;} // Step 3
 				    dataUL_R=	    src_data[2*kxU   +   kyL*nx]; //  image -> get_value_at(2*kxU,kyL);
@@ -9366,7 +9369,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 
 			      kxU= kxUpper; kyU=kyUpper; 
 			      float dataUU_R= 0; float dataUU_I=0; flag=1;
-			      if ((abs(kxU)<N) & (abs(kyU)<N)){  //       Step 2
+			      if ((abs(kxU)<Mid) & (abs(kyU)<Mid)){  //       Step 2
 				    kxU = (N+kxU)%N; kyU = (N+kyU)%N;
 				    if (kxU> N/2) { kxU=(N-kxU)%N; kyU=(N-kyU)%N;flag=-1;} // Step 3
 				    dataUU_R=	    src_data[2*kxU   +   kyU*nx]; //   image -> get_value_at(2*kxU,kyU);
@@ -9383,7 +9386,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			      tempR = WLL*dataLL_R  +   WLU*dataLU_R + WUL* dataUL_R +   WUU * dataUU_R ;
 			      tempI = WLL*dataLL_I  +   WLU*dataLU_I + WUL* dataUL_I +   WUU * dataUU_I ;
 			      //
-			      float phase = -2*pi*(kxNew*xshift+kyNew*yshift)/ny;
+			      float phase = phaseY -2*pi*kxNew*xshift/ny;
 			      float tempRb=tempR*cos(phase) - tempI*sin(phase);
 			      float tempIb=tempR*sin(phase) + tempI*cos(phase);
 			      //
@@ -9395,13 +9398,134 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 		}
 	}
 
-	if ((nz > 1)&&(image -> is_complex())) {
+	if ((nz == 1)&&(image -> is_complex())&&(nx%2==0)&&((2*(nx-ny)-3)*(2*(nx-ny)-3)==1)&&(zerocorners==1) )  { 
+ 	  //printf("Hello 2-d complex  TransformProcessor \n");
+	  // make sure there was a realImage.process('xform.phaseorigin.tocorner')
+	 //           before transformation to Fourier Space
+// This rotates a complex image that is a FT of a real space image: it has Friedel symmetries
+// An arbitrary complex image, F, can be decomposed into two Friedel images 
+//         G(k) = (F(k) + F*(-k))/2 ,  H(k) = (-i(F(k) - F*(k)))/2;
+//          via   F(k) = G(k) + i H(k); notice G and H are Friedel symmetric (not necessarily real)
+//	           But g,h are real, using f=g+ih.
+// 		First make sure that image has proper size; 
+//         if 2N is side of real image, then sizes of FFT are (2N+2,2N)
+//         if 2N+1 is side of real image, then sizes of FFT are (2N+2,2N+1)
+//         so we need nx =ny+2, and ny  even  
+//	          or  nx = ny+1  and ny odd
+//         so nx even, and 2 *(nx -ny) -3=  +- 1; So  abs(2*(nx-ny)-3) == 1
+		float theta =  t.get_rotation("eman").get("phi"); theta=theta*pi/180;
+		float Ctheta= cos(theta);
+		float Stheta= sin(theta);
+		Vec3f transNow= t.get_trans();
+		float xshift= transNow[0]; float yshift= transNow[1];
+		float tempR; float tempI; // float tempW;
+		float Mid =(N+1.0)/2.0;  // Check this
+//		int kNy= ny; //size of the real space image
+//		int kNx= nx/2; //
+		Vec2f offset(nx/2,ny/2); 
+		float phaseConstx  = -2*pi*xshift/ny ;
+		float k1= cos(phaseConstx); float k2= sin(phaseConstx);
+		float k3= 1.0/k1; float k4= k2/k1; // that is 1/cos and tan()
+		
+		for (int kyN = 0; kyN < ny; kyN++) {
+			int kyNew = kyN;
+			if (kyN>=nx/2) kyNew=kyN-ny;  // Step 0     Unalias
+			float kxOld=  - Stheta* kyNew - Ctheta;
+			float kyOld=    Ctheta* kyNew - Stheta;
+    		        float phase = -2*pi*kyNew*yshift/ny - phaseConstx ;
+			float Cphase = cos(phase);
+			float Sphase = sin(phase);
+			int kx,ky;
+			int IndexOut=  -2+ nx* kyN;
+			for (int kxN = 0; kxN < (nx/2); kxN++) {
+				IndexOut += 2;  
+				// int kxNew=kxN; 
+				// if (kxN >= nx/2) kxNew=kxN-ny;//  Step 0   Unalias, but this won't happen
+				//  Step 1, Do rotation and find 4 nn
+				kxOld +=  Ctheta ;// was using kxNew instead of kxN
+				kyOld +=  Stheta ;
+				phase += phaseConstx;
+			        Cphase = Cphase*k1 -Sphase*k2; //update using trig addition; this is   cos = cos cos  -sin sin
+			        Sphase = Sphase*k3+ Cphase*k4;  //   and   sin = sin  (1/ cos) + cos * tan;
+
+				if ((abs(kxOld)>=Mid) || (abs(kyOld)>=Mid)) { // out of bounds
+         			      des_data[IndexOut] = 0;
+	        		      des_data[IndexOut+1] = 0;
+				   continue;}
+				   
+				//
+				int kxLower= floor(kxOld);     // All these values
+				int kyLower= floor(kyOld);    // may be neg
+				//float dkxLower= (kxLower+1-kxOld);    
+				float dkxUpper= (kxOld-kxLower);
+				//float dkyLower= (kyLower+1-kyOld);    
+				float dkyUpper= (kyOld-kyLower);
+//
+				kx= kxLower; ky =kyLower; 
+				int flagLL=1;
+				    if (kx<0) kx += N;  
+				    if (ky<0) ky += N;
+				    if (kx> N/2){ kx=(N-kx) ; ky=(N-ky)%N  ;flagLL=-1;} // Step 3: if nec, use Friedel paired
+				    int kLL =2*kx+ky*nx; 
+
+			        kx = kxLower; ky = kyLower+1; 
+				int flagLU =1;
+				    if (kx<0) kx += N;  
+				    if (ky<0) ky += N;
+				    if (kx> N/2){ kx=(N-kx) ; ky=(N-ky)%N  ;flagLU=-1;} // Step 3: if nec, use Friedel paired
+				    int kLU =2*kx+ky*nx; 
+
+				kx = kxLower+1; ky=kyLower; 
+				int flagUL=1;
+				    if (kx<0) kx += N;  
+				    if (ky<0) ky += N;
+				    if (kx> N/2){ kx=(N-kx) ; ky=(N-ky)%N  ;flagUL=-1;} // Step 3: if nec, use Friedel paired
+				    int kUL =2*kx+ky*nx; 
+
+			        kx = kxLower+1; ky = kyLower+1; 
+			        int flagUU =1;
+				    if (kx<0) kx += N;  
+				    if (ky<0) ky += N;
+				    if (kx> N/2){ kx=(N-kx) ; ky=(N-ky)%N  ;flagUU=-1;} // Step 3: if nec, use Friedel paired
+				    int kUU =2*kx+ky*nx; 
+				    
+			      //            Step 4    Assign Weights
+// 			      float WLL = dkxLower*dkyLower  ;
+// 			      float WLU = dkxLower*dkyUpper  ;// make more intricated weightings here 
+// 			      float WUL = dkxUpper*dkyLower  ;// WLL(dkxLower,dkyLower)
+// 			      float WUU = dkxUpper*dkyUpper  ;//  etc
+// 			      tempW = WLL  +  WLU + WUL +  WUU ;
+
+			      //            Step 5    Assign Real, then Imaginary Values
+			      tempR = Util::bilinear_interpolate(src_data[kLL],src_data[kUL], src_data[kLU], src_data[kUU],dkxUpper,dkyUpper);//
+			               //WLL*dataLL_R  +   WLU*dataLU_R + WUL* dataUL_R +   WUU * dataUU_R ;
+			      tempI = Util::bilinear_interpolate(flagLL* src_data[kLL+1],flagUL*src_data[kUL+1], 
+					                   flagLU*src_data[kLU+1], flagUU*src_data[kUU+1],dkxUpper,dkyUpper);
+			               //WLL*dataLL_I  +   WLU*dataLU_I + WUL* dataUL_I +   WUU * dataUU_I ;
+			      //
+			      
+			      float tempRb=tempR*Cphase - tempI*Sphase;
+			      float tempIb=tempR*Sphase + tempI*Cphase;
+			      //
+			      des_data[IndexOut]   = tempRb;
+			      des_data[IndexOut+1] = tempIb;
+			      //printf(" kxNew = %d, kyNew = %d,kxOld = %3.2f, kyOld = %3.2f,  xl = %d,xU = %d,yl = %d,yu = %d, tempR = %3.2f, tempI=%3.2f,  \n", 
+				//      kxNew,kyNew, kxOld, kyOld, kxLower,kxUpper,kyLower,kyUpper, tempR, tempI);
+			}
+		}
+	}
+
+	if ((nz > 1)&&(image -> is_complex())&&(zerocorners<2)) {
 		//printf("Hello 3-d complex  TransformProcessor \n");
 		float phi =  t.get_rotation("eman").get("phi"); phi=pi*phi/180;
 		float alt =  t.get_rotation("eman").get("alt"); alt=pi*alt/180;
 		float az  =  t.get_rotation("eman").get("az");   az=pi*az /180;
 		Vec3f transNow= t.get_trans();
 		float xshift= transNow[0]; float yshift= transNow[1];float zshift= transNow[2];
+
+		float phaseConstx  = -2*pi*xshift/ny ;
+		float k1= cos(phaseConstx); float k2= sin(phaseConstx);
+		float k3= 1.0/k1; float k4= k2/k1; // that is 1/cos and tan()
 		
 		float MatXX = (cos(az)*cos(phi) - sin(az)*cos(alt)*sin(phi) );
 		float MatXY = (- cos(az)*sin(phi) - sin(az)*cos(alt)*cos(phi) ) ;
@@ -9413,6 +9537,8 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 		float MatZY = sin(alt)*cos(phi);
 		float MatZZ = cos(alt)  ;
 		float tempR; float tempI; float tempW;
+		float Mid =(N+1.0)/2.0;  // Check this
+		int nxny = nx*ny;
 		
 		for (int kzN = 0; kzN < ny; kzN++) { 
 		    int kzNew=kzN; 
@@ -9423,14 +9549,30 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 		        float kxPre =  MatXY * kyNew +  MatXZ *kzNew;
 	                float kyPre =  MatYY * kyNew +  MatYZ*kzNew;
 			float kzPre =  MatZY * kyNew +  MatZZ*kzNew;
-			for (int kxN = 0; kxN < (nx/2); kxN++ ) {
-			    int kxNew=kxN; 
-			    if (kxN >= nx/2) kxNew=kxN-N; //    Step 0   Unalias
+    		        float phase = -2*pi*kzNew*zshift/ny-2*pi*kyNew*yshift/ny - phaseConstx ;
+			float Cphase = cos(phase);
+			float Sphase = sin(phase);
+			
+			float OutBounds2= (2*Mid*Mid- (kyNew*kyNew+kzNew*kzNew)) ;
+			int kxNewMax= nx/2;
+			if (OutBounds2< 0) kxNewMax=0;
+			else if (OutBounds2<(nx*nx/4)) kxNewMax=sqrt(OutBounds2);
+			int tempint;
+			
+			
+			for (int kxN = 0; kxN < kxNewMax; kxN++ ) {
+			     Cphase = Cphase*k1 -Sphase*k2; //update using trig addition; this is   cos = cos cos  -sin sin
+			     Sphase = Sphase*k3+ Cphase*k4;  //   and   sin = sin  (1/ cos) + cos * tan;
 			    //  Step 1: Do inverse Rotation to get former values, and alias   Step1
-			    float kxOld=  MatXX * kxNew + kxPre;
-			    float kyOld=  MatYX * kxNew + kyPre;
-			    float kzOld=  MatZX * kxNew + kzPre;
+			    float kxOld=  MatXX * kxN + kxPre;
+			    float kyOld=  MatYX * kxN + kyPre;
+			    float kzOld=  MatZX * kxN + kzPre;
 			    //
+				if ((abs(kxOld)>=Mid) || (abs(kyOld)>=Mid) || (abs(kzOld)>=Mid) ) { // out of bounds
+         			      des_data[2*kxN    + nx* kyN +nxny*kzN] = 0;
+	        		      des_data[2*kxN    + nx* kyN +nxny*kzN+1] = 0;
+				   continue;}
+				//
 			    int kxLower= floor(kxOld); int kxUpper= kxLower+1;
 			    int kyLower= floor(kyOld); int kyUpper= kyLower+1;
 			    int kzLower= floor(kzOld); int kzUpper= kzLower+1;
@@ -9441,74 +9583,74 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			    //      LLL  1
 			    int kxL= kxLower; int kyL=kyLower; int kzL=kzLower; 
 			    float dataLLL_R= 0; float dataLLL_I=0; int flag=1;
-			    if ( (abs(kxL)<N) && (abs(kyL)<N) && (abs(kzL)<N) ) { //   Step 2 Make sure to be in First BZ
+			    if ( (abs(kxL)<Mid) && (abs(kyL)<Mid) && (abs(kzL)<Mid) ) { //   Step 2 Make sure to be in First BZ
 				kxL = (N+kxL)%N;  kyL = (N+kyL)%N; kzL = (N+kzL)%N;
 				if (kxL> N/2){kxL=(N-kxL)%N; kyL=(N-kyL)%N ; kzL=(N-kzL)%N ;flag=-1;} // Step 3: use Friedel paired
-				dataLLL_R=     src_data[ 2*kxL   + nx*kyL+ nx*ny*kzL ]; //get_value_at(2*kxL,kyL,kzL);
-				dataLLL_I=flag*src_data[ 2*kxL+1 + nx*kyL+ nx*ny*kzL ];//get_value_at(2*kxL+1,kyL,kzL);
+				dataLLL_R=     src_data[ 2*kxL   + nx*kyL+ nxny*kzL ]; //get_value_at(2*kxL,kyL,kzL);
+				dataLLL_I=flag*src_data[ 2*kxL+1 + nx*kyL+ nxny*kzL ];//get_value_at(2*kxL+1,kyL,kzL);
 			    }
 			    //      LLU 2
 			    kxL= kxLower; kyL=kyLower; int kzU=kzUpper; 
 			    float dataLLU_R= 0; float dataLLU_I=0; flag=1;
-			    if ( (abs(kxL)<N) && (abs(kyL)<N) && (abs(kzU)<N) ) {//   Step 2 Make sure to be in First BZ
+			    if ( (abs(kxL)<Mid) && (abs(kyL)<Mid) && (abs(kzU)<Mid) ) {//   Step 2 Make sure to be in First BZ
 				kxL = (N+kxL)%N;  kyL = (N+kyL)%N; kzU = (N+kzU)%N;
 				if (kxL> N/2){kxL=(N-kxL)%N; kyL=(N-kyL)%N ; kzU=(N-kzU)%N ;flag=-1;} // Step 3: use Friedel paired
-				dataLLU_R=      src_data[ 2*kxL   + nx*kyL+ nx*ny*kzU ]; //   image -> get_value_at(2*kxL  ,kyL,kzU);
-				dataLLU_I= flag*src_data[ 2*kxL+1 + nx*kyL+ nx*ny*kzU ]; //   image -> get_value_at(2*kxL+1,kyL,kzU);
+				dataLLU_R=      src_data[ 2*kxL   + nx*kyL+ nxny*kzU ]; //   image -> get_value_at(2*kxL  ,kyL,kzU);
+				dataLLU_I= flag*src_data[ 2*kxL+1 + nx*kyL+ nxny*kzU ]; //   image -> get_value_at(2*kxL+1,kyL,kzU);
 			    }
 			    //      LUL 3
 			    kxL= kxLower; int kyU=kyUpper; kzL=kzLower;  
 			    float dataLUL_R= 0; float dataLUL_I=0; flag=1;
-			    if ( (abs(kxL)<N) && (abs(kyU)<N)&& (abs(kzL)<N) ) {//  Step 2 Make sure to be in First BZ
+			    if ( (abs(kxL)<Mid) && (abs(kyU)<Mid)&& (abs(kzL)<Mid) ) {//  Step 2 Make sure to be in First BZ
 				kxL = (N+kxL)%N;  kyU = (N+kyU)%N; kzL = (N+kzL)%N;
 				if (kxL> N/2){ kxL=(N-kxL)%N; kyU=(N-kyU)%N; kzL=(N-kzL)%N ;flag=-1;}// Step 3
-				dataLUL_R=     src_data[ 2*kxL   + nx*kyU+ nx*ny*kzL ]; // image -> get_value_at(2*kxL  ,kyU,kzL);
-				dataLUL_I=flag*src_data[ 2*kxL+1 + nx*kyU+ nx*ny*kzL ]; // image -> get_value_at(2*kxL+1,kyU,kzL);
+				dataLUL_R=     src_data[ 2*kxL   + nx*kyU+ nxny*kzL ]; // image -> get_value_at(2*kxL  ,kyU,kzL);
+				dataLUL_I=flag*src_data[ 2*kxL+1 + nx*kyU+ nxny*kzL ]; // image -> get_value_at(2*kxL+1,kyU,kzL);
 			    }
 			    //      LUU 4
 			    kxL= kxLower; kyU=kyUpper; kzL=kzUpper;  
 			    float dataLUU_R= 0; float dataLUU_I=0; flag=1;
-			    if ( (abs(kxL)<N) && (abs(kyU)<N)&& (abs(kzU)<N)) {//   Step 2 Make sure to be in First BZ
+			    if ( (abs(kxL)<Mid) && (abs(kyU)<Mid)&& (abs(kzU)<Mid)) {//   Step 2 Make sure to be in First BZ
 				kxL = (N+kxL)%N;  kyU = (N+kyU)%N; kzU = (N+kzU)%N;
 				if (kxL> N/2){kxL=(N-kxL)%N; kyU=(N-kyU)%N; kzL=(N-kzL)%N ;flag=-1;} // Step 3
-				dataLUU_R=     src_data[ 2*kxL   + nx*kyU+ nx*ny*kzU ]; // image -> get_value_at(2*kxL  ,kyU,kzU);
-				dataLUU_I=flag*src_data[ 2*kxL+1 + nx*kyU+ nx*ny*kzU ]; // image -> get_value_at(2*kxL+1,kyU,kzU);
+				dataLUU_R=     src_data[ 2*kxL   + nx*kyU+ nxny*kzU ]; // image -> get_value_at(2*kxL  ,kyU,kzU);
+				dataLUU_I=flag*src_data[ 2*kxL+1 + nx*kyU+ nxny*kzU ]; // image -> get_value_at(2*kxL+1,kyU,kzU);
 			    }
 			     //     ULL  5
 			    int kxU= kxUpper; kyL=kyLower; kzL=kzLower; 
 			    float dataULL_R= 0; float dataULL_I=0; flag=1;
-			    if ( (abs(kxU)<N) && (abs(kyL)<N) && (abs(kzL)<N) ) {//    Step 2
+			    if ( (abs(kxU)<Mid) && (abs(kyL)<Mid) && (abs(kzL)<Mid) ) {//    Step 2
 				kxU = (N+kxU)%N; kyL = (N+kyL)%N; kzL = (N+kzL)%N;
 				if (kxU> N/2){kxU=(N-kxU)%N; kyL=(N-kyL)%N; kzL=(N-kzL)%N ;flag=-1;} // Step 3
-				dataULL_R=     src_data[ 2*kxU   + nx*kyL+ nx*ny*kzL ]; // image -> get_value_at(2*kxU  ,kyL,kzL);
-				dataULL_I=flag*src_data[ 2*kxU+1 + nx*kyL+ nx*ny*kzL ]; // image -> get_value_at(2*kxU+1,kyL,kzL);
+				dataULL_R=     src_data[ 2*kxU   + nx*kyL+ nxny*kzL ]; // image -> get_value_at(2*kxU  ,kyL,kzL);
+				dataULL_I=flag*src_data[ 2*kxU+1 + nx*kyL+ nxny*kzL ]; // image -> get_value_at(2*kxU+1,kyL,kzL);
 			    }
 			    //   ULU 6
 			    kxU= kxUpper; kyL=kyLower; kzU=kzUpper; 
 			    float dataULU_R= 0; float dataULU_I=0; flag=1;
-			    if ( (abs(kxU)<N) && (abs(kyL)<N)&& (abs(kzU)<N) ) {//      Step 2
+			    if ( (abs(kxU)<Mid) && (abs(kyL)<Mid)&& (abs(kzU)<Mid) ) {//      Step 2
 				kxU = (N+kxU)%N; kyL = (N+kyL)%N; kzU = (N+kzU)%N;
 				if (kxU> N/2){kxU=(N-kxU)%N; kyL=(N-kyL)%N; kzU=(N-kzU)%N ;flag=-1;} // Step 3
-				dataULU_R=     src_data[ 2*kxU   + nx*kyL+ nx*ny*kzU ]; // image -> get_value_at(2*kxU  ,kyL,kzU);
-				dataULU_I=flag*src_data[ 2*kxU+1 + nx*kyL+ nx*ny*kzU ]; // image -> get_value_at(2*kxU+1,kyL,kzU);
+				dataULU_R=     src_data[ 2*kxU   + nx*kyL+ nxny*kzU ]; // image -> get_value_at(2*kxU  ,kyL,kzU);
+				dataULU_I=flag*src_data[ 2*kxU+1 + nx*kyL+ nxny*kzU ]; // image -> get_value_at(2*kxU+1,kyL,kzU);
 			    }
 			    //     UUL 7
 			    kxU= kxUpper; kyU=kyUpper; kzL=kzLower;
 			    float dataUUL_R= 0; float dataUUL_I=0; flag=1;
-			    if ( (abs(kxU)<N) && (abs(kyU)<N) && (abs(kzL)<N) ) {//      Step 2
+			    if ( (abs(kxU)<Mid) && (abs(kyU)<Mid) && (abs(kzL)<Mid) ) {//      Step 2
 				kxU = (N+kxU)%N; kyU = (N+kyU)%N; kzL = (N+kzL)%N;
 				if (kxU> N/2){kxU=(N-kxU)%N; kyU=(N-kyU)%N; kzL=(N-kzL)%N ;flag=-1;} // Step 3
-				dataUUL_R=     src_data[ 2*kxU   + nx*kyU+ nx*ny*kzL ]; // image -> get_value_at(2*kxU  ,kyU,kzL);
-				dataUUL_I=flag*src_data[ 2*kxU+1 + nx*kyU+ nx*ny*kzL ]; // image -> get_value_at(2*kxU+1,kyU,kzL);
+				dataUUL_R=     src_data[ 2*kxU   + nx*kyU+ nxny*kzL ]; // image -> get_value_at(2*kxU  ,kyU,kzL);
+				dataUUL_I=flag*src_data[ 2*kxU+1 + nx*kyU+ nxny*kzL ]; // image -> get_value_at(2*kxU+1,kyU,kzL);
 			    }
 			    //    UUU 8
 			    kxU= kxUpper; kyU=kyUpper; kzU=kzUpper;
 			    float dataUUU_R= 0; float dataUUU_I=0; flag=1;
-			    if ( (abs(kxU)<N) && (abs(kyU)<N) && (abs(kzU)<N) ) { //       Step 2
+			    if ( (abs(kxU)<Mid) && (abs(kyU)<Mid) && (abs(kzU)<Mid) ) { //       Step 2
 				kxU = (N+kxU)%N; kyU = (N+kyU)%N; kzU = (N+kzU)%N;
 				if (kxU> N/2) {kxU=(N-kxU)%N; kyU=(N-kyU)%N; kzU=(N-kzU)%N ;flag=-1;} // Step 3
-				dataUUU_R=     src_data[ 2*kxU   + nx*kyU+ nx*ny*kzU ]; // image -> get_value_at(2*kxU  ,kyU,kzU);
-				dataUUU_I=flag*src_data[ 2*kxU+1 + nx*kyU+ nx*ny*kzU ]; // image -> get_value_at(2*kxU+1,kyU,kzU);
+				dataUUU_R=     src_data[ 2*kxU   + nx*kyU+ nxny*kzU ]; // image -> get_value_at(2*kxU  ,kyU,kzU);
+				dataUUU_I=flag*src_data[ 2*kxU+1 + nx*kyU+ nxny*kzU ]; // image -> get_value_at(2*kxU+1,kyU,kzU);
 			    }
 			    //          Step 4    Assign Weights
 			    float WLLL = dkxLower*dkyLower*dkzLower ;
@@ -9529,12 +9671,212 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			    tempI  = WLLL*dataLLL_I + WLLU*dataLLU_I + WLUL*dataLUL_I + WLUU*dataLUU_I ;
 			    tempI += WULL*dataULL_I + WULU*dataULU_I + WUUL*dataUUL_I + WUUU*dataUUU_I ;
 			    //
-			    float phase = -2*pi*(kxNew*xshift+kyNew*yshift+kzNew*zshift)/ny;
-			    float tempRb=tempR*cos(phase) - tempI*sin(phase);
-			    float tempIb=tempR*sin(phase) + tempI*cos(phase);
+//			    float phase = -2*pi*(kxNew*xshift+kyNew*yshift+kzNew*zshift)/ny;
+			    float tempRb=tempR*Cphase - tempI*Sphase;
+			    float tempIb=tempR*Sphase + tempI*Cphase;
 			    //
-			    des_data[2*kxN    + nx* kyN +nx*ny*kzN] = tempRb/tempW;
-			    des_data[2*kxN+1  + nx* kyN +nx*ny*kzN] = tempIb/tempW;
+			    des_data[2*kxN    + nx* kyN +nxny*kzN] = tempRb/tempW;
+			    des_data[2*kxN+1  + nx* kyN +nxny*kzN] = tempIb/tempW;
+		}}}  // end z, y, x loops through new coordinates
+	}   //  end  rotations in Fourier Space  3D
+	if ((nz > 1)&&(image -> is_complex())&&(zerocorners==5)) {
+		//printf("Hello 3-d complex  TransformProcessor \n");
+		float phi =  t.get_rotation("eman").get("phi"); phi=pi*phi/180;
+		float alt =  t.get_rotation("eman").get("alt"); alt=pi*alt/180;
+		float az  =  t.get_rotation("eman").get("az");   az=pi*az /180;
+		Vec3f transNow= t.get_trans();
+		float xshift= transNow[0]; float yshift= transNow[1];float zshift= transNow[2];
+		
+		float MatXX = (cos(az)*cos(phi) - sin(az)*cos(alt)*sin(phi) );
+		float MatXY = (- cos(az)*sin(phi) - sin(az)*cos(alt)*cos(phi) ) ;
+		float MatXZ = sin(az)*sin(alt) ;
+		float MatYX = (sin(az)*cos(phi) + cos(az)*cos(alt)*sin(phi) );
+		float MatYY = (- sin(az)*sin(phi) + cos(az)*cos(alt)*cos(phi) )  ;
+		float MatYZ = - cos(az)*sin(alt) ;
+		float MatZX = sin(alt)*sin(phi);
+		float MatZY = sin(alt)*cos(phi);
+		float MatZZ = cos(alt)  ;
+		float tempR=0; float tempI=0; 
+		float Mid =(N+1.0)/2.0;  // Check this
+		float phaseConstx  = -2*pi*xshift/ny ;
+		float k1= cos(phaseConstx); float k2= sin(phaseConstx);
+		float k3= 1.0/k1; float k4= k2/k1; // that is 1/cos and tan()
+		float dataRLLL, dataRLLU, dataRLUL, dataRLUU;
+		float dataRULL, dataRULU, dataRUUL, dataRUUU;
+		float dataILLL, dataILLU, dataILUL, dataILUU;
+		float dataIULL, dataIULU, dataIUUL, dataIUUU;
+		
+		for (int kzN = 0; kzN < ny; kzN++) { 
+		    int kzNew=kzN; 
+		    if (kzN >= nx/2) kzNew=kzN-N; //            Step 0 Unalias new coords; 
+		    for (int kyN = 0; kyN < ny; kyN++) {//       moves them to lesser mag   
+			int kyNew=kyN; 
+			if (kyN>=nx/2) kyNew=kyN-ny;  //        Step 0   Unalias
+			  //  Step 1: Do inverse Rotation to get former values, and alias   Step1
+		        float kxOld =  MatXY * kyNew +  MatXZ *kzNew - MatXX;
+	                float kyOld =  MatYY * kyNew +  MatYZ*kzNew  - MatYX;
+			float kzOld =  MatZY * kyNew +  MatZZ*kzNew  - MatZX;
+    		        float phase = -2*pi*kzNew*zshift/ny-2*pi*kyNew*yshift/ny - phaseConstx ;
+			float Cphase = cos(phase);
+			float Sphase = sin(phase);
+			int kx, ky,kz;
+			
+			int IndexOut= -2+ nx* kyN +nx*ny*kzN;
+			float OutBounds= sqrt(2*Mid*Mid- (kyOld*kyOld+kzOld*kzOld)) ;
+			int kxNewMax= !(OutBounds<(nx/2))?(nx/2):OutBounds;
+			
+			for (int kxNew = 0; kxNew < kxNewMax; kxNew++ ) {
+/*			      printf(" kxNew = %d, kyNew = %d, kzNew = %d,kxOld = %3.2f, kyOld = %3.2f, kzOld = %3.2f \n", 
+				      kxNew,kyNew,kzNew, kxOld, kyOld, kzOld);*/
+			  
+			     IndexOut +=2;
+
+			     kxOld +=  MatXX ;
+			     kyOld +=  MatYX ;
+			     kzOld +=  MatZX ;
+                             phase += phaseConstx;
+			     Cphase = Cphase*k1 -Sphase*k2; //update using trig addition; this is   cos = cos cos  -sin sin
+			     Sphase = Sphase*k3+ Cphase*k4;  //   and   sin = sin  (1/ cos) + cos * tan;
+			      
+			    //
+				if ((abs(kxOld)>=Mid) || (abs(kyOld)>=Mid) || (abs(kzOld)>=Mid) ) { // out of bounds
+          			      des_data[IndexOut] = 0;
+	        		      des_data[IndexOut+1] = 0;
+				   continue;}
+/*				if (kxOld*kxOld+OutBounds> 2*Mid*Mid){ // out of bounds
+          			      des_data[IndexOut] = 0;
+	        		      des_data[IndexOut+1] = 0;
+				   continue;}  */
+				//
+			    int kxLower= floor(kxOld);
+			    int kyLower= floor(kyOld);
+			    int kzLower= floor(kzOld);
+			    //
+			    float dkxUpper= (kxOld-kxLower);
+			    float dkyUpper= (kyOld-kyLower);
+			    float dkzUpper= (kzOld-kzLower);
+			    
+			    //      LLL  1
+			    kx= kxLower; ky =kyLower; kz=kzLower;
+			    dataRLLL=0;
+			    dataILLL=0;
+			    if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //   Step 2 Make sure to be in First BZ
+			      int flagLLL=1;
+			      if (kx<0) kx += N; if (ky<0) ky += N; if (kz<0) kz += N;
+			      if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagLLL=-1;} // Step 3: if nec, use Friedel paired
+			      dataRLLL =         src_data[  2*kx   + nx*kyN+ nx*ny*kz]; 
+			      dataILLL = flagLLL*src_data[1+2*kx   + nx*ky+ nx*ny*kz];} 
+
+			    //      LLU  2
+			    kx= kxLower; ky =kyLower; kz=kzLower+1;
+			    dataRLLU=0;
+			    dataILLU=0;
+			    if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //   Step 2 Make sure to be in First BZ
+			      int flagLLU=1;
+			      if (kx<0) kx += N; if (ky<0) ky += N; if (kz<0) kz += N;
+			      if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagLLU=-1;} // Step 3: if nec, use Friedel paired
+			      int kLLU =2*kx   + nx*ky+ nx*ny*kz ; 
+			      dataRLLU =         src_data[  2*kx   + nx*ky+ nx*ny*kz]; 
+			      dataILLU = flagLLU*src_data[1+2*kx   + nx*ky+ nx*ny*kz];} 
+
+			    //      LUL  3
+			    kx= kxLower; ky =kyLower+1; kz=kzLower;
+			    dataRLUL=0;
+			    dataILUL=0;
+			    if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //   Step 2 Make sure to be in First BZ
+			      int flagLUL=1;
+			      if (kx<0) kx += N; if (ky<0) ky += N; if (kz<0) kz += N;
+			      if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagLUL=-1;} // Step 3: if nec, use Friedel paired
+			      int kLUL =2*kx   + nx*ky+ nx*ny*kz ; 
+			      dataRLUL =         src_data[  2*kx   + nx*ky+ nx*ny*kz]; 
+			      dataILUL = flagLUL*src_data[1+2*kx   + nx*ky+ nx*ny*kz];} 
+
+			    //      LUU  4
+			    kx= kxLower; ky =kyLower+1; kz=kzLower+1;
+			    dataRLUU=0;
+			    dataILUU=0;
+			    if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //   Step 2 Make sure to be in First BZ
+			      int flagLUU=1;
+			      if (kx<0) kx += N; if (ky<0) ky += N; if (kz<0) kz += N;
+			      if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagLUU=-1;} // Step 3: if nec, use Friedel paired
+			      int kLUU =2*kx   + nx*ky+ nx*ny*kz ; 
+			      dataRLUU =         src_data[  2*kx   + nx*ky+ nx*ny*kz]; 
+			      dataILUU = flagLUU*src_data[1+2*kx   + nx*ky+ nx*ny*kz];} 
+
+			    //      ULL  5
+			    kx= kxLower+1; ky =kyLower; kz=kzLower;
+			    dataRULL=0;
+			    dataIULL=0;
+			    if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //   Step 2 Make sure to be in First BZ
+			      int flagULL=1;
+			      if (kx<0) kx += N; if (ky<0) ky += N; if (kz<0) kz += N;
+			      if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagULL=-1;} // Step 3: if nec, use Friedel paired
+			      int kULL =2*kx   + nx*ky+ nx*ny*kz ; 
+			      dataRULL =         src_data[  2*kx   + nx*ky+ nx*ny*kz]; 
+			      dataIULL = flagULL*src_data[1+2*kx   + nx*ky+ nx*ny*kz];} 
+
+			    //      ULU  6
+			    kx= kxLower+1; ky =kyLower; kz=kzLower+1;
+			    dataRULU=0;
+			    dataIULU=0;
+			    if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //   Step 2 Make sure to be in First BZ
+			      int flagULU=1;
+			      if (kx<0) kx += N; if (ky<0) ky += N;if (kz<0) kz += N;
+			      if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagULU=-1;} // Step 3: if nec, use Friedel paired
+			      int kULU =2*kx   + nx*ky+ nx*ny*kz ; 
+			      dataRULU =         src_data[  2*kx   + nx*ky+ nx*ny*kz]; 
+			      dataIULU = flagULU*src_data[1+2*kx   + nx*ky+ nx*ny*kz];} 
+		      
+			    //      UUL  7
+			    kx= kxLower+1; ky =kyLower+1; kz=kzLower;
+			    dataRUUL=0;
+			    dataIUUL=0;
+			    if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //   Step 2 Make sure to be in First BZ
+			      int flagUUL=1;
+			      if (kx<0) kx += N; if (ky<0) ky += N;if (kz<0) kz += N;
+			      if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagUUL=-1;} // Step 3: if nec, use Friedel paired
+			      int kUUL =2*kx   + nx*ky+ nx*ny*kz ; 
+			      dataRUUL =         src_data[  2*kx   + nx*ky+ nx*ny*kz]; 
+			      dataIUUL = flagUUL*src_data[1+2*kx   + nx*ky+ nx*ny*kz];} 
+
+			    //      UUU  8
+			    kx= kxLower+1; ky =kyLower+1; kz=kzLower+1;
+			    dataRUUU=0;
+			    dataIUUU=0;
+			    if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //   Step 2 Make sure to be in First BZ
+			      int flagUUU=1;
+			      if (kx<0) kx += N; if (ky<0) ky += N;if (kz<0) kz += N;
+			      if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagUUU=-1;} // Step 3: if nec, use Friedel paired
+			      int kUUU =2*kx   + nx*ky+ nx*ny*kz ; 
+			      dataRUUU =         src_data[  2*kx   + nx*ky+ nx*ny*kz]; 
+			      dataIUUU = flagUUU*src_data[1+2*kx   + nx*ky+ nx*ny*kz];} 
+
+			    //           Step 4    Assign Real, then Imaginary Values
+/*			      printf(" kxNew = %d, kyNew = %d, kzNew = %d,kxOld = %3.2f, kyOld = %3.2f, kzOld = %3.2f \n", 
+				      kxNew,kyNew,kzNew, kxOld, kyOld, kzOld);
+			      printf("  dataRLLL= %f, dataRULL = %f, dataRLUL = %f,dataRUUL = %f, dataRLLU = %f, dataRULU = %f, dataRLUU = %f, dataRUUU = %f \n", 
+				      dataRLLL,dataRULL,dataRLUL, dataRUUL,dataRLLU, dataRULU,dataRLUU, dataRUUU);
+			      printf("  dataILLL= %f, dataIULL = %f, dataILUL = %f,dataIUUL = %f, dataILLU = %f, dataIULU = %f, dataILUU = %f, dataIUUU = %f \n", 
+				      dataILLL,dataIULL,dataILUL, dataIUUL,dataILLU, dataIULU,dataILUU, dataIUUU);*/
+/*			      printf("  kLLL= %f, kULL = %d, kLUL = %d,kUUL = %d, kLLU = %d, kULU = %d, kLUU = %d, kUUU = %d \n", 
+				      kLLL,kULL,kLUL, kUUL,kLLU, kULU,kLUU, kUUU);*/
+			      
+			      tempR = Util::trilinear_interpolate(
+				 dataRLLL,dataRULL, dataRLUL, dataRUUL,
+				 dataRLLU,dataRULU, dataRLUU, dataRUUU, 
+				 dkxUpper,dkyUpper,dkzUpper);
+			               
+			      tempI = Util::trilinear_interpolate(
+				 dataILLL, dataIULL, dataILUL, dataIUUL,
+				 dataILLU, dataIULU, dataILUU, dataIUUU, 
+				 dkxUpper,dkyUpper,dkzUpper);
+
+			      //           Step 5    Apply translation
+			      float tempRb=tempR*Cphase - tempI*Sphase;
+			      float tempIb=tempR*Sphase + tempI*Cphase;
+			      //
+			      des_data[IndexOut]   = tempRb;
+			      des_data[IndexOut+1] = tempIb;
 		}}}  // end z, y, x loops through new coordinates
 	}   //  end  rotations in Fourier Space  3D
 	if ((nz > 1)&&(image -> is_real())) {
