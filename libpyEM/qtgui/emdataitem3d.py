@@ -1876,7 +1876,7 @@ class EMStructureItem3D(EMItem3D):
 				res = self.allResidues[k]
 				key =  res[4][0]
 				if self.side_chains.has_key(key):
-					self.drawBonds(res,self)
+					self.renderResidues(res,self)
 					continue
 				if k !=0: #connects residues together from the nitrogen of one residue to the O of the next residue
 					nt = [0,0,0]
@@ -1981,7 +1981,7 @@ class EMStructureItem3D(EMItem3D):
 		glPopMatrix()
 	
 	@staticmethod
-	def drawBonds(res,target):
+	def renderResidues(res,target):
 		aa = res[4][0]
 		if aa == "ALA":
 			try: t1 = res[3].index('CB')
