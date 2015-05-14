@@ -32,20 +32,25 @@
 #
 
 from EMAN2 import *
-from OpenGL.GL import *
-from OpenGL import GLU
-from PyQt4 import QtCore, QtGui, QtOpenGL 
-from PyQt4.QtCore import Qt
+import copy
 from emapplication import EMGLWidget
-from emitem3d import EMItem3D, EMItem3DInspector
-from libpyGLUtils2 import GLUtil
-from valslider import ValSlider, EMLightControls, CameraControls, EMSpinWidget, EMQTColorWidget, EMANToolButton
-import math, weakref, os, pickle, copy
-from emshapeitem3d import *
 from emdataitem3d import EMDataItem3D, EMIsosurface, EMSliceItem3D, EMVolumeItem3D
 from emglobjects import get_default_gl_colors
-# XPM format Cursors
+from emitem3d import EMItem3D, EMItem3DInspector
+from emshapeitem3d import *
+from libpyGLUtils2 import GLUtil
+import math
+import os
+import pickle
+from valslider import ValSlider, EMLightControls, CameraControls, EMSpinWidget, EMQTColorWidget, EMANToolButton
+import weakref
 
+from OpenGL import GLU
+from OpenGL.GL import *
+from PyQt4 import QtCore, QtGui, QtOpenGL
+from PyQt4.QtCore import Qt
+
+# XPM format Cursors
 visibleicon = [
     '16 12 3 1',
     'a c #0000ff',
@@ -2979,6 +2984,9 @@ class NodeDialog(QtGui.QDialog):
 		self.node_type_combo.addItem("Text")
 		self.textwidgetdict = {}
 		self.node_stacked_widget.addWidget(EM3DText.getNodeDialogWidget(self.textwidgetdict))
+		self.node_type_combo.addItem("PDB Structure")
+		self.structurewidgetdict = {}
+		self.node_stacked_widget.addWidget(EMStructure.getNodeDialogWidget(self.structurewidgetdict))
 		self.node_type_combo.addItem("Data")
 		self.datawidgetdict = {}
 		self.node_stacked_widget.addWidget(EMDataItem3D.getNodeDialogWidget(self.datawidgetdict))
@@ -3027,6 +3035,10 @@ class NodeDialog(QtGui.QDialog):
 		if self.node_type_combo.currentText() == "Text":
 			insertion_node = EM3DText.getNodeForDialog(self.textwidgetdict)
 			node_name = str(self.textwidgetdict["node_name"].text())
+		# Structure
+		if self.node_type_combo.currentText() == "PDB Structure":
+			insertion_node = EMStructure.getNodeForDialog(self.structurewidgetdict)
+			node_name = str(self.structurewidgetdict["node_name"].text())
 		# Data
 		if self.node_type_combo.currentText() == "Data": 
 			insertion_node = EMDataItem3D.getNodeForDialog(self.datawidgetdict)

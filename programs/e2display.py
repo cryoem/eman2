@@ -31,17 +31,17 @@
 #
 #
 
-from EMAN2 import EMANVERSION,E2init,E2end,EMData,base_name,file_exists,EMArgumentParser
-from emimage import EMImageWidget,EMWidgetFromFile
-
-import sys
-from PyQt4 import QtCore, QtGui, QtOpenGL
-from PyQt4.QtCore import Qt
-from OpenGL import GL,GLU,GLUT
+from EMAN2 import EMANVERSION, E2init, E2end, EMData, base_name, file_exists, EMArgumentParser
+import EMAN2db
 from emapplication import EMApp
 import embrowser
+from emimage import EMImageWidget, EMWidgetFromFile
 import os
-import EMAN2db
+import sys
+from OpenGL import GL, GLU, GLUT
+from PyQt4 import QtCore, QtGui, QtOpenGL
+from PyQt4.QtCore import Qt
+
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -58,6 +58,7 @@ def main():
 	parser.add_argument("--classmx",type=str,help="<classmx>,<#> Show particles in one class from a classification matrix. Pass raw particle file as first argument to command.")
 	parser.add_argument("--classes",type=str,help="<rawptcl>,<classmx> Show particles associated class-averages")
 	parser.add_argument("--singleimage",action="store_true",default=False,help="Display a stack in a single image view")
+	parser.add_argument("-p","--pdbfile",type=str,help="Specify the location of a PDB file for viewing.")
 	parser.add_argument("--plot",action="store_true",default=False,help="Data file(s) should be plotted rather than displayed in 2-D")
 	parser.add_argument("--plot3",action="store_true",default=False,help="Data file(s) should be plotted rather than displayed in 3-D")
 	parser.add_argument("--fullrange",action="store_true",default=False,help="A specialized flag that disables auto contrast for the display of particles stacks and 2D images only.")
@@ -66,7 +67,6 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
-
 
 #	logid=E2init(sys.argv)
 
@@ -77,9 +77,7 @@ def main():
 	if options.fullrange:
 		fullrangeparms = set_full_range()
 
-
-
-	if len(args)<1 :
+	if len(args) < 1 and not options.pdbfile:
 		dialog = embrowser.EMBrowserWidget(withmodal=False,multiselect=False)
 		dialog.show()
 		try: dialog.raise_()
@@ -87,10 +85,13 @@ def main():
 		#QtCore.QObject.connect(dialog,QtCore.SIGNAL("ok"),on_browser_done)
 		#QtCore.QObject.connect(dialog,QtCore.SIGNAL("cancel"),on_browser_cancel)
 		dialog.show()
+	
 	elif options.plot:
 		plot(args,app)
+		
 	elif options.plot3:
 		plot_3d(args,app)
+		
 	elif options.classes:
 		options.classes=options.classes.split(",")
 		imgs=EMData.read_images(args[0])
@@ -102,11 +103,16 @@ def main():
 			out.write("#LST\n")
 			out.close()
 		except: pass
+		
 	elif options.classmx:
 		options.classmx=options.classmx.split(",")
 		clsnum=int(options.classmx[1])
 		imgs=getmxim(args[0],options.classmx[0],clsnum)
 		display(imgs,app,args[0])
+		
+	elif options.pdbfile:
+		load_pdb(options.pdbfile)
+		
 	else:
 		for i in args:
 			if not file_exists(i):
@@ -259,6 +265,14 @@ def plot_3d(files,app):
 	app.show_specific(plotw)
 	return plotw
 
+def load_pdb(pdbfile):
+		from emscene3d import EMScene3D
+		from emshapeitem3d import *
+		v = EMScene3D()
+		if pdbfile:
+			s = EMStructure(pdb_file=pdbfile)
+			v.addChild(s)
+		v.show()
 
 # If executed as a program
 if __name__ == '__main__':
