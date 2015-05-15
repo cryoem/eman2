@@ -144,9 +144,9 @@ def main():
 		clsmx[i].set_size(1,ysize)
 		for j in range(clsmx[i].get_ysize()):
 			if(j%2==0): #even
-				clsmx[i].set_value_at(0,j,clsmx_even[i].get_value_at(1,j/2))
+				clsmx[i].set_value_at(0,j,clsmx_even[i].get_value_at(0,j/2))
 			else: #odd
-				clsmx[i].set_value_at(0,j,clsmx_odd[i].get_value_at(1,(j+1)/2))
+				clsmx[i].set_value_at(0,j,clsmx_odd[i].get_value_at(0,(j-1)/2))
 			
 		
 		clsmx[i].write_image("%s/classify.hdf"%(options.output),i)
