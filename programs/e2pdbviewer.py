@@ -59,8 +59,6 @@ def main():
 	
 	logid=E2init(sys.argv,options.ppid)
 	
-	
-	
 	app = EMApp()
 	viewer = EMScene3D()
 	
