@@ -90,10 +90,6 @@ def main():
 		and then will stack the rest from 0+tiltstep throgh --upperend. 
 		If --negativetiltseries is supplied, images will be stacked from --upperend through 0, then 
 		from 0-tiltstep through --lowerend.""")
-		 	
-	parser.add_argument("--negativetiltseries",action='store_true',default=False,help=""" 
-		This indicates that the tilt series goes from -tiltrange to +tiltrange, or
-		0 to -tiltrange, then +tiltstep to +tiltrange if --bidirectional is specified.""")
 	
 	parser.add_argument("--lowesttilt",type=float,default=0.0,help="""Lowest tilt angle.
 		If not supplied, it will be assumed to be -1* --tiltrange.""")
@@ -144,11 +140,20 @@ def main():
 		--include=1,5-7,10,12,15-19 will include images 1,5,6,7,10,12,15,16,17,18,19""")
 
 
+	#parser.add_argument("--negativetiltseries",action='store_true',default=False,help="""This indicates that the tilt series goes from -tiltrange to +tiltrange, or 0 to -tiltrange, then +tiltstep to +tiltrange if --bidirectional is specified.""")
+	
+	#parser.add_argument("--negative",action='store_true',default=False,help="""This indicates that the tilt series goes from -tiltrange to +tiltrange, or 0 to -tiltrange, then +tiltstep to +tiltrange if --bidirectional is specified.""")
+	
+	parser.add_argument("--negativetiltseries",action='store_true',default=False,help="""This indicates that the tilt series goes from -tiltrange to +tiltrange, or 0 to -tiltrange, then +tiltstep to +tiltrange if --bidirectional is specified.""")
+
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()	
+	
+	
+	print "--negativetiltseries", options.negativetiltseries
 	
 	if options.exclude and options.include:
 		print "\nERROR: Supplied either exclude or include. Cannot supply both at the same time."
@@ -352,21 +357,23 @@ def findtiltimgfiles( options ):
 	
 	intilts = []
 	#k=0
-	for f in filesindir:
+	
+	if options.stem2stack:
 		intilt = ''	
-		if '.dm3' in f or '.DM3' in f or '.tif' in f or '.TIF' in f or '.MRC' in f or '.hdf' in f: 
-			if '.txt' not in f and '.db' not in f:
-				if options.stem2stack:
-					if options.stem2stack in f:
-						print "\nFound file", f
+		for f in filesindir:
+			if options.stem2stack in f:
+				if '.txt' not in f and '.db' not in f:
+					print "potential tilt image", f
+					if '.dm3' in f[-4:] or '.DM3' in f[-4:] or '.tif' in f[-4:] or '.TIF' in f[-4:] or '.MRC' in f[-4:] or '.mrc' in f[-4:] or '.hdf' in f[-4:]: 
+						print "\nvalid file", f
 						intilt = f
-				else:
-					print "\nFound file", f
-					intilt = f
+						if intilt:
+							intilts.append( intilt )
+					else:
+						print "format not valid. Needs to be .mrc, .hdf, .dm3, or .tif"
 					
-		if intilt:
-			intilts.append( intilt )			#k will serve to compensate for damage.
-												#It indicates the order in which data collection occured
+					#k will serve to compensate for damage.
+					#It indicates the order in which data collection occured
 	print "\n(e2spt_tiltstacker.py)(findtiltimgfiles) These many img files were found", len( intilts )		
 	intilts.sort()
 	print "\nand they've been sorted"
@@ -392,13 +399,17 @@ def getangles( options ):
 		
 		print "There was no .tlt file so I'll generate the angles using lowesttilt=%f, highesttilt=%f, tiltstep=%f" % (options.lowesttilt, options.highesttilt, options.tiltstep)
 		generate = floatrange( options.lowesttilt, options.highesttilt, options.tiltstep )
-		angles=[ x for x in generate ]
+		angles=[ float(x) for x in generate ]
 	
+	print "BEFORE sorting, angles are", angles
 	angles.sort()
+	print "\n(e2spt_tiltstacker.py)(getangles) AFTER sorting, angles are", angles
+	
 	if not options.negativetiltseries:
 		angles.reverse()
+		print "\n(e2spt_tiltstacker.py)(getangles) AFTER REVERSING, angles are", angles
 	
-	print "\n(e2spt_tiltstacker.py)(getangles) angles are", angles
+	
 
 	return angles
 
