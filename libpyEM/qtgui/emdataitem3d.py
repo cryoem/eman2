@@ -1686,8 +1686,8 @@ class EMStructureItem3D(EMItem3D):
 		"""Create a new node using a attribdict"""
 		return EMStructureItem3D(str(attribdict["data_path"].text()), transform=EMItem3D.getTransformFromDict(attribdict))
 	
-	def __init__(self, parent=None,transform=None):
-		EMItem3D.__init__(self, pdb_file=None, parent=parent, children=set(), transform=transform)
+	def __init__(self, parent=None,transform=None,pdb_file=None):
+		EMItem3D.__init__(self, parent=parent, children=set(), transform=transform)
 		if pdb_file == None:
 			self.fName = str(self.attribdict['data_path'].text())
 			self.name = str(self.attribdict['node_name'].text())

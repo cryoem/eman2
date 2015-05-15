@@ -50,7 +50,7 @@ def main():
 
 	This program can be used to visualize most files used in EMAN2. Running it without arguments
 	will open a browser window with more flexible functionality than the command-line.
-	
+
 	"""
 	global app,win,options
 
@@ -78,7 +78,7 @@ def main():
 	if options.fullrange:
 		fullrangeparms = set_full_range()
 
-	if len(args) < 1:
+	if len(args) < 1 and not options.pdb:
 		dialog = embrowser.EMBrowserWidget(withmodal=False,multiselect=False)
 		dialog.show()
 		try: dialog.raise_()
@@ -86,13 +86,13 @@ def main():
 		#QtCore.QObject.connect(dialog,QtCore.SIGNAL("ok"),on_browser_done)
 		#QtCore.QObject.connect(dialog,QtCore.SIGNAL("cancel"),on_browser_cancel)
 		dialog.show()
-	
+
 	elif options.plot:
 		plot(args,app)
-		
+
 	elif options.plot3:
 		plot_3d(args,app)
-		
+
 	elif options.classes:
 		options.classes=options.classes.split(",")
 		imgs=EMData.read_images(args[0])
@@ -104,16 +104,16 @@ def main():
 			out.write("#LST\n")
 			out.close()
 		except: pass
-		
+
 	elif options.classmx:
 		options.classmx=options.classmx.split(",")
 		clsnum=int(options.classmx[1])
 		imgs=getmxim(args[0],options.classmx[0],clsnum)
 		display(imgs,app,args[0])
-		
+
 	elif options.pdb:
 		load_pdb(options.pdb)
-	
+
 	else:
 		for i in args:
 			if not file_exists(i):
