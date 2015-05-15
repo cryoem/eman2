@@ -2702,12 +2702,17 @@ def makeAverage(options,ic,results,it=0):
 	
 	weights={}
 	
-	if options.saveallalign:
-		writeali = 1
-		aliptcls = path + '/aliptcls' + klassid + '_' + str(it).zfill( len(str(options.iter)) ) + '.hdf'
+	try:
+		if options.saveallalign:
+			writeali = 1
+			aliptcls = path + '/aliptcls' + klassid + '_' + str(it).zfill( len(str(options.iter)) ) + '.hdf'
 
-	elif saveali and it == options.iter - 1:
-		writeali = 1
+		elif saveali and it == options.iter - 1:
+			writeali = 1
+	except: #The exception should be triggered when e2spt_hac.py is called since it doesn't have the --iter parameter.
+		if options.saveali:
+			writeali = 1		#This saves the aligned particles across ALL iterations for HAC -probably shouldn't be done.
+		
 		
 	#for i,ptcl_parms in enumerate(align_parms):
 	
@@ -3092,9 +3097,13 @@ class Align3DTask(JSTask):
 		
 		#After the first iteration, refpreprocess is always on. It should be turned on manually by the user if a non-crystal structure reference is provided.
 		currentIter=self.classoptions['currentIter']
-		if int(options.iter) > 1 and currentIter > 0:
-			refpreprocess=1
 		
+		try:
+			if int(options.iter) > 1 and currentIter > 0:
+				refpreprocess=1
+		except:
+			refpreprocess=1
+			
 		if options.verbose:
 			print "\n\n!!!!!!!!!!!!!!!!!!!!!!!!\n(e2spt_classaverage)(Align3DTask) Aligning ",classoptions['label']
 			#print "\n\!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!n\n\n\n\n\n\n"
@@ -3165,9 +3174,11 @@ def align3Dfunc(fixedimage,image,ptclnum,label,options,transform,currentIter):
 	if options.refpreprocess:
 		refpreprocess=1
 	
-	if int(options.iter) > 1 and currentIter > 0:
+	try:
+		if int(options.iter) > 1 and currentIter > 0:
+			refpreprocess=1
+	except:
 		refpreprocess=1
-	
 	
 	#print "SENDING reference image in alignment and values are", fixedimage, fixedimage['minimum'],fixedimage['maximum'],fixedimage['sigma'],fixedimage['mean']
 	
