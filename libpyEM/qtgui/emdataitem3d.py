@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #
 # Author: Ross Coleman (racolema@bcm.edu)
+# Author: James Michael Bell, 2016 (jmbell@bcm.edu)
 # Copyright (c) 2011- Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -30,19 +31,18 @@
 #
 #
 
-from EMAN2 import * #EMData, MarchingCubes, Transform, PDBReader
+from EMAN2 import *
 from embrowser import EMBrowserWidget
 from emglobjects import EMViewportDepthTools, Camera2, get_default_gl_colors, get_RGB_tab, EM3DModel
 from emglobjects import get_default_gl_colors
 from emimageutil import ImgHistogram
 from emitem3d import EMItem3D, EMItem3DInspector, drawBoundingBox
-from emshapeitem3d import EMInspectorControlShape, EMShapeBase
+from emshapeitem3d import EMInspectorControlShape
 from libpyGLUtils2 import GLUtil
 import math
 import os.path
 import sys
 from valslider import ValSlider, EMLightControls, CameraControls, EMSpinWidget, EMQTColorWidget, EMANToolButton
-from valslider import ValSlider, EMSpinWidget
 
 from OpenGL import GL
 from OpenGL.GL import *
@@ -1651,6 +1651,9 @@ class EMIsosurface(EMItem3D,EM3DModel):
 
 class EMStructureItem3D(EMItem3D):
 	
+	name = "Structure"
+	nodetype = "ItemChild"
+	
 	@staticmethod
 	def getNodeDialogWidget(attribdict):
 		"""Get Data Widget"""
@@ -1677,7 +1680,6 @@ class EMStructureItem3D(EMItem3D):
 		filename = QtGui.QFileDialog.getOpenFileName(None, 'Get file', os.getcwd())
 		if filename:
 			EMStructureItem3D.attribdict["data_path"].setText(str(filename))
-			#EMStructureItem3D.fName = str(filename)
 			name = os.path.basename(str(filename)).split('/')[-1].split('.')[0]
 			EMStructureItem3D.attribdict["node_name"].setText(str(name))
 	
@@ -1731,19 +1733,18 @@ class EMStructureItem3D(EMItem3D):
 		"""
 		Return a dictionary of item parameters (used for restoring sessions
 		"""
-		dictionary = super(EMShapeBase, self).getItemDictionary()
+		dictionary = super(EMStructureItem3D, self).getItemDictionary()
 		dictionary.update({"COLOR":[self.ambient, self.diffuse, self.specular, self.shininess]})
 		return dictionary
-	
+
 	def setUsingDictionary(self, dictionary):
 		"""
 		Set item attributes using a dictionary, used in session restoration
 		"""
-		super(EMShapeBase, self).setUsingDictionary(dictionary)
-		self.setAmbientColor(*dictionary["COLOR"][0])
-		self.setDiffuseColor(*dictionary["COLOR"][1])
-		self.setSpecularColor(*dictionary["COLOR"][2])
-		self.setShininess(dictionary["COLOR"][3])
+		super(EMStructureItem3D, self).setUsingDictionary(dictionary)
+		self.setAmbientColor(dictionary["COLOR"][0][0], dictionary["COLOR"][0][1], dictionary["COLOR"][0][2], dictionary["COLOR"][0][3])
+		self.setDiffuseColor(dictionary["COLOR"][1][0], dictionary["COLOR"][1][1], dictionary["COLOR"][1][2], dictionary["COLOR"][1][3])
+		self.setSpecularColor(dictionary["COLOR"][2][0], dictionary["COLOR"][2][1], dictionary["COLOR"][2][2], dictionary["COLOR"][2][3])
 		
 	def renderNode(self):
 		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded(): # No need to draw outline in selection mode
@@ -1771,14 +1772,14 @@ class EMStructureItem3D(EMItem3D):
 			glPopAttrib()
 	
 	def getEvalString(self):
-		return "EMStructure(%s)"%self.pdb_id
+		return "EMStructureItem3D(%s)"%self.name
 	
 	def getItemInspector(self):
 		"""Return a Qt widget that controls the scene item"""
-		if not self.item_inspector: self.item_inspector = EMInspectorControlShape("EMStructure", self)
+		if not self.item_inspector: self.item_inspector = EMStructureInspector("EMStructureItem3D", self)
 		return self.item_inspector
 	
-	def buildResList (self): # calls PDBReader to read the given pdb file and create a list (self.allResidues) of lists (x,y,z,atom name, residue name) of lists (all the values for that residue)
+	def buildResList(self): # calls PDBReader to read the given pdb file and create a list (self.allResidues) of lists (x,y,z,atom name, residue name) of lists (all the values for that residue)
 		self.allResidues = []
 		try:
 			f = open(self.fName)
@@ -1857,6 +1858,12 @@ class EMStructureItem3D(EMItem3D):
 	
 	def current_text(self): 
 		return self.text
+	
+	def getRenderBoundingBox(self):
+		return self.renderBoundingBox
+
+	def setRenderBoundingBox(self, state):
+		self.renderBoundingBox = state
 	
 	def draw_objects(self):
 		self.init_basic_shapes() # only does something the first time you call it
@@ -2487,3 +2494,7 @@ class EMStructureItem3D(EMItem3D):
 			except: pass
 			try: target.makeStick(res, t7, t8)
 			except: pass
+
+class EMStructureInspector(EMItem3DInspector):
+	def __init__(self, name, item3d):
+		EMItem3DInspector.__init__(self, name, item3d)
