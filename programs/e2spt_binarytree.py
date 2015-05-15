@@ -88,7 +88,7 @@ def main():
 	
 	#parser.add_argument("--donotaverage",action="store_true", help="""If e2spt_refinemulti.py is calling e2spt_classaverage.py, the latter need not average any particles, but rather only yield the alignment results.""", default=False)
 	
-	parser.add_argument("--iter", type=int, default=1, help="""Default=1. The number of iterations to perform.""", guitype='intbox', row=5, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym')
+	parser.add_argument("--iterstop", type=int, default=0, help="""Default=0. (Not used). The program is called to convergence by default (all particles merge into one final average). To stop at an intermediate iteration, provide this parameter. For example, --iterstop=1, will only allow the algorithm to complete 1 iteration; --iterstop=2 will allow it to go through 2, etc.""")
 	
 	parser.add_argument("--savesteps",action="store_true", default=False, help="""Default=False. If set, will save the average after each iteration to class_#.hdf. Each class in a separate file. Appends to existing files.""", guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='alignment,breaksym')
 	
@@ -333,8 +333,8 @@ def binaryTreeRef(options,nptclForRef,nseed,ic,etc):
 
 	nseediter=int(log(nseed,2))			# number of iterations we'll need
 	
-	if options.iter:
-		nseediter=options.iter
+	if options.iterstop:
+		nseediter=options.iterstop
 	
 	if options.verbose: 
 		print "Seedtree to produce initial reference. Using %d particles in a %d level tree"%(nseed,nseediter)
