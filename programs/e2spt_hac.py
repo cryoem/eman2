@@ -89,7 +89,7 @@ def main():
 	
 	#parser.add_argument("--donotaverage",action="store_true", help="""If e2spt_refinemulti.py is calling e2spt_classaverage.py, the latter need not average any particles, but rather only yield the alignment results.""", default=False)
 	
-	parser.add_argument("--iter", type=int, default=1, help="""Default=1. The number of iterations to perform.""", guitype='intbox', row=5, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym')
+	parser.add_argument("--iterstop", type=int, default=0, help="""Default=0. (Not used). The program is called to convergence by default (all particles merge into one final average). To stop at an intermediate iteration, provide this parameter. For example, --iterstop=1, will only allow the algorithm to complete 1 iteration; --iterstop=2 will allow it to go through 2, etc.""")
 	
 	parser.add_argument("--savesteps",action="store_true", default=False, help="""Default=False. If set, will save the average after each iteration to class_#.hdf. Each class in a separate file. Appends to existing files.""", guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='alignment,breaksym')
 	
@@ -528,14 +528,19 @@ def allvsall(options):
 	
 	maxX=0
 	maxY=0
-	for k in range(options.iter):							#Start the loop over the user-defined number of iterations
+	
+	iters = nptcls-1 					#This is the maximum possible number of iterations
+	if options.iterstop:
+		iters = options.iterstop
+	
+	for k in range( iters ):							#Start the loop over the user-defined number of iterations
 		
 		#avgname = options.path + '/round' + str(k).zfill(fillfactor) + '_averages.hdf'
 		newstack = options.path + '/round' + str(k-1).zfill(fillfactor) + '_averages.hdf'
 		if k== 0:
 			newstack =options.input
 		
-		print "\n\n==================================\n(e2spt_hca.py) Starting iteration %d / %d " % ( k, options.iter )
+		print "\n\n==================================\n(e2spt_hca.py) Starting iteration %d / %d (worst-case scenario)" % ( k, nptcls-1)
 		print "==================================\n\n"
 		
 		nnew = len(newptcls)
@@ -545,7 +550,7 @@ def allvsall(options):
 		#	print "TERMINATING: There's only one particle left; the algorithm has converged; TERMINATING"
 		#	#sys.exit()
 			
-		if k == (int(options.iter) - 1) or (nnew + len(oldptcls) ) < 3 :
+		if k == (int( iters ) - 1) or (nnew + len(oldptcls) ) < 3 :
 			print "\n(e2spt_hac.py) (allvsall) This will be the final round", k
 			if options.saveali:
 				if options.verbose:
@@ -560,7 +565,7 @@ def allvsall(options):
 			print "\n(e2spt_hac.py) (allvsall) TERMINATING: There's only one particle left; the algorithm has converged; TERMINATING"
 			break
 		
-		elif k < int(options.iter):
+		elif k < int( iters ):
 			f=open(dendofile,'a')
 			f.write('ITERATION ' + str(k) + '\n')
 			f.close()
@@ -598,7 +603,7 @@ def allvsall(options):
 				
 				#def __init__(self,fixedimagestack,imagestack,comparison, ptcl1, ptcl2, p1n, p2n,label,options,transform):
 				
-				task = Align3DTaskAVSA(newstack,newstack, jj, reftag, particletag, ptcl1, ptcl2,"Aligning particle#%s VS particle#%s in iteration %d" % (reftag,particletag,k),options,k)
+				task = Align3DTaskAVSA(newstack,newstack, jj, reftag, particletag, ptcl1, ptcl2,"Aligning particle#%s VS particle#%s in iteration %d" % (reftag,particletag,k),options,k,iters)
 
 				#task = Align3DTaskAVSA(newstack,newstack, jj, reftag, particletag, ptcl1, ptcl2,"Aligning particle#%s VS particle#%s in iteration %d" % (reftag,particletag,k),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
 				#options.npeakstorefine,options.align,options.aligncmp,options.falign,options.faligncmp,options.shrink,options.shrinkfine,options.verbose-1)
@@ -635,7 +640,7 @@ def allvsall(options):
 					#task = Align3DTaskAVSA( newstack, options.path + '/oldptclstack.hdf', jj , refkey, particlekey, ptcl1, ptcl2,"Aligning particle round#%d_%d VS particle#%s, in iteration %d" % (k,ptcl1,particlekey.split('_')[0] + str(ptcl2),k),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
 					#options.npeakstorefine,options.align,options.aligncmp,options.falign,options.faligncmp,options.shrink,options.shrinkfine,options.verbose-1)
 					
-					task = Align3DTaskAVSA( newstack, options.path + '/oldptclstack.hdf', jj , refkey, particlekey, ptcl1, ptcl2,"Aligning particle round#%d_%d VS particle#%s, in iteration %d" % (k,ptcl1,particlekey.split('_')[0] + '_' + str(ptcl2),k),options,k)
+					task = Align3DTaskAVSA( newstack, options.path + '/oldptclstack.hdf', jj , refkey, particlekey, ptcl1, ptcl2,"Aligning particle round#%d_%d VS particle#%s, in iteration %d" % (k,ptcl1,particlekey.split('_')[0] + '_' + str(ptcl2),k),options,k,iters)
 					
 					
 					tasks.append(task)
@@ -772,7 +777,7 @@ def allvsall(options):
 		
 	
 		#if k == 0:
-		simmxFile = options.path + '/simmx_' + str( k ).zfill( len (str (options.iter))) + '.hdf'
+		simmxFile = options.path + '/simmx_' + str( k ).zfill( len (str ( iters ))) + '.hdf'
 		simmxScores.write_image(simmxFile,0)
 		simmxXs.write_image(simmxFile,1)
 		simmxYs.write_image(simmxFile,2)
@@ -814,8 +819,7 @@ def allvsall(options):
 		mm=0												#Counter to track new particles/averages produced and write them to output
 		
 		
-		
-		roundRawInfoFile = options.path + '/aliInfo_'+ str( k ).zfill( len(str(options.iter)) ) + '.json'
+		roundRawInfoFile = options.path + '/aliInfo_'+ str( k ).zfill( len(str( iters )) ) + '.json'
 		
 		roundInfoDict = js_open_dict(roundRawInfoFile) #Write particle orientations to json database.
 		
@@ -839,7 +843,7 @@ def allvsall(options):
 		
 		
 		
-		frank = open(options.path + '/ranking' + str(k).zfill( len(str(options.iter)) ) + '.txt','a')
+		frank = open(options.path + '/ranking' + str(k).zfill( len(str( iters )) ) + '.txt','a')
 		
 		
 		for z in range(len(results)):
@@ -1370,20 +1374,21 @@ class Align3DTaskAVSA(JSTask):
 	
 	#def __init__(self,fixedimagestack,imagestack,comparison,ptcl1,ptcl2,p1n,p2n,label,mask,normproc,preprocess,lowpass,highpass,npeakstorefine,align,aligncmp,falign,faligncmp,shrink,shrinkfine,verbose):
 
-	def __init__(self,fixedimagestack,imagestack,comparison, ptclA, ptclB, pAn, pBn,label,classoptions, round):
+	def __init__(self,fixedimagestack,imagestack,comparison, ptclA, ptclB, pAn, pBn,label,options,round,iters):
 		
 		data={}
 		data={"fixedimage":fixedimagestack,"image":imagestack}
 		JSTask.__init__(self,"SptHac",data,{},"")
 
 		#self.options={"comparison":comparison,"ptcl1":ptcl1,"ptcl2":ptcl2,"p1number":p1n,"p2number":p2n,"label":label,"mask":mask,"normproc":normproc,"preprocess":preprocess,"lowpass":lowpass,"highpass":highpass,"npeakstorefine":npeakstorefine,"align":align,"aligncmp":aligncmp,"falign":falign,"faligncmp":faligncmp,"shrink":shrink,"shrinkfine":shrinkfine,"verbose":verbose}
-		self.classoptions={"comparison":comparison,"ptclA":ptclA,"ptclB":ptclB,"pAn":pAn,"pBn":pBn,"label":label,"classoptions":classoptions, 'round':round}
+		self.classoptions={"comparison":comparison,"ptclA":ptclA,"ptclB":ptclB,"pAn":pAn,"pBn":pBn,"label":label,"options":options, 'round':round,'iters':iters}
 	
 	def execute(self,callback=None):
 		
 		"""This aligns one volume to a reference and returns the alignment parameters"""
-		#classoptions=self.classoptions
-		options=self.classoptions
+		classoptions=self.classoptions
+		
+		#options=self.classoptions
 		
 		"""
 		CALL the alignment function, which is imported from e2spt_classaverage
@@ -1396,22 +1401,22 @@ class Align3DTaskAVSA(JSTask):
 		
 		#def alignment(fixedimage,image,ptcl,label,classoptions,transform):
 		
-		fixedimage = EMData( self.data["fixedimage"], options['pAn'] )
-		image = EMData( self.data["image"], options['pBn'] )
+		fixedimage = EMData( self.data["fixedimage"], classoptions['pAn'] )
+		image = EMData( self.data["image"], classoptions['pBn'] )
 		
-		nptcls = EMUtil.get_image_count( options['classoptions'].input )
+		nptcls = EMUtil.get_image_count( classoptions['options'].input )
 		
-		if options['classoptions'].groups:
-			nptcls = ( nptcls / int(options['classoptions'].groups) ) + nptcls % int(options['classoptions'].groups)
+		if classoptions['options'].groups:
+			nptcls = ( nptcls / int(classoptions['options'].groups) ) + nptcls % int(classoptions['options'].groups)
 		
 		potentialcomps = ( nptcls * (nptcls - 1) )/ 2
 		
-		xformslabel = 'round' + str(options['round']).zfill( len( str(options['classoptions'].iter))) + '_comparison' + str(options['comparison']).zfill( len( str(potentialcomps) ) ) + '_ptclA' + str(options['pAn']).zfill( len(str(nptcls))) + '_ptclB' + str(options['pBn']).zfill( len(str(nptcls)))
+		xformslabel = 'round' + str(classoptions['round']).zfill( len( str( classoptions['iters']))) + '_comparison' + str(classoptions['comparison']).zfill( len( str(potentialcomps) ) ) + '_ptclA' + str(classoptions['pAn']).zfill( len(str(nptcls))) + '_ptclB' + str(classoptions['pBn']).zfill( len(str(nptcls)))
 		
 		refpreprocess=1
 		
 		print "\n(e2spt_hac.py)(Align3DTaskAVSA) Will call alignment function"
-		ret=alignment( fixedimage, image, options['label'], options['classoptions'],xformslabel,options['round'],None,'e2spt_hac',refpreprocess)
+		ret=alignment( fixedimage, image, classoptions['label'], classoptions['options'],xformslabel,classoptions['round'],None,'e2spt_hac',refpreprocess)
 				
 		#ret=alignment(fixedimage,image,classoptions['label'],classoptions['options'],xformslabel,classoptions['currentIter'],classoptions['transform'],'e2spt_classaverage',refpreprocess)
 
