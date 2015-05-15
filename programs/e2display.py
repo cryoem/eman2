@@ -36,6 +36,7 @@ import EMAN2db
 from emapplication import EMApp
 import embrowser
 from emdataitem3d import EMStructureItem3D
+from emscene3d import EMScene3D
 from emimage import EMImageWidget, EMWidgetFromFile
 import os
 import sys
@@ -43,14 +44,13 @@ from OpenGL import GL, GLU, GLUT
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 
-
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] <image file> ...
 
 	This program can be used to visualize most files used in EMAN2. Running it without arguments
 	will open a browser window with more flexible functionality than the command-line.
-
+	
 	"""
 	global app,win,options
 
@@ -78,21 +78,24 @@ def main():
 	if options.fullrange:
 		fullrangeparms = set_full_range()
 
-	if len(args) < 1 and not options.pdb:
-		dialog = embrowser.EMBrowserWidget(withmodal=False,multiselect=False)
+	if len(args) < 1:
+		global dialog, file_list
+		file_list = []
+		dialog = embrowser.EMBrowserWidget(withmodal=True,multiselect=False)
 		dialog.show()
-		try: dialog.raise_()
-		except: pass
-		#QtCore.QObject.connect(dialog,QtCore.SIGNAL("ok"),on_browser_done)
-		#QtCore.QObject.connect(dialog,QtCore.SIGNAL("cancel"),on_browser_cancel)
-		dialog.show()
-
+		try:
+			dialog.raise_()
+			QtCore.QObject.connect(dialog,QtCore.SIGNAL("ok"),on_browser_done)
+			QtCore.QObject.connect(dialog,QtCore.SIGNAL("cancel"),on_browser_cancel)
+		except: 
+			pass
+	
 	elif options.plot:
 		plot(args,app)
-
+		
 	elif options.plot3:
 		plot_3d(args,app)
-
+		
 	elif options.classes:
 		options.classes=options.classes.split(",")
 		imgs=EMData.read_images(args[0])
@@ -104,23 +107,23 @@ def main():
 			out.write("#LST\n")
 			out.close()
 		except: pass
-
+		
 	elif options.classmx:
 		options.classmx=options.classmx.split(",")
 		clsnum=int(options.classmx[1])
 		imgs=getmxim(args[0],options.classmx[0],clsnum)
 		display(imgs,app,args[0])
-
+		
 	elif options.pdb:
 		load_pdb(options.pdb)
-
+	
 	else:
 		for i in args:
 			if not file_exists(i):
 				print "%s doesn't exist" %i
 				sys.exit(1)
 			display_file(i,app,options.singleimage,usescenegraph=options.newwidget)
-
+	
 	if options.fullrange:
 		revert_full_range(fullrangeparms)
 
@@ -173,14 +176,13 @@ def revert_full_range(d):
 
 	#for key,value in d.items():
 		#db[key] = d[key]
-
 	pass
 
-def on_browser_done(string_list):
-	if len(string_list) != 0:
-		for s in string_list:
-			print s,
-		print
+def on_browser_done():
+	file_list = dialog.getResult()
+	if file_list[0].split('/')[-1].split('.')[-1]:
+		load_pdb(file_list)
+
 def on_browser_cancel():
 	pass
 
@@ -267,7 +269,6 @@ def plot_3d(files,app):
 	return plotw
 
 def load_pdb(pdbfiles):
-		from emscene3d import EMScene3D
 		viewer = EMScene3D()
 		models = [EMStructureItem3D(pdb_file=pdbf) for pdbf in pdbfiles]
 		viewer.addChildren(models)

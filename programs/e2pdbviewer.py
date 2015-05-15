@@ -45,9 +45,7 @@ def main():
 	usage = """e2pdbviewer.py <project directory>
 	
 	A wrapper program to view a .pdb file on your computer. This is simply an PDB
-	specific interface to the more general EMScene3D viewer called by e2display.py. 
-	Though all of its functionalities are accessible from here, it is recommended to
-	utilize this program only for viewing individual structures.
+	specific interface to the more general EMScene3D viewer.
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--pdbfiles",type=str,help="Specify one or mode pdb files you \
@@ -60,6 +58,8 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	logid=E2init(sys.argv,options.ppid)
+	
+	
 	
 	app = EMApp()
 	viewer = EMScene3D()
