@@ -79,7 +79,7 @@ def main():
 		fullrangeparms = set_full_range()
 
 	if len(args) < 1:
-		global dialog, file_list
+		global dialog
 		file_list = []
 		dialog = embrowser.EMBrowserWidget(withmodal=True,multiselect=False)
 		dialog.show()
@@ -180,7 +180,7 @@ def revert_full_range(d):
 
 def on_browser_done():
 	file_list = dialog.getResult()
-	if file_list[0].split('/')[-1].split('.')[-1]:
+	if file_list[0].split('/')[-1].split('.')[-1] == "pdb":
 		load_pdb(file_list)
 
 def on_browser_cancel():
