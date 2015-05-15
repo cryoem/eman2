@@ -114,7 +114,7 @@ def main():
 	
 	parser.add_argument("--sym", dest = "sym", default='', help = """Default=None (equivalent to c1). Symmetry to impose -choices are: c<n>, d<n>, h<n>, tet, oct, icos""", guitype='symbox', row=9, col=1, rowspan=1, colspan=2, mode='alignment,breaksym')
 	
-	parser.add_argument("--mask",type=str,default="mask.sharp:outer_radius=-2", help="""Default is mask.sharp:outer_radius=-2. Masking processor applied to particles before alignment. IF using --clipali, make sure to express outer mask radii as negative pixels from the edge.""", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=11, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--mask",type=str,default="mask.soft:outer_radius=-4", help="""Default is mask.soft:outer_radius=-4. Masking processor applied to particles before alignment. IF using --clipali, make sure to express outer mask radii as negative pixels from the edge.""", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=11, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
 	parser.add_argument("--maskfile",type=str,default='',help="""Default=None. Mask file (3D IMAGE) applied to particles before alignment. Must be in HDF format. Default is None.""")
 	
@@ -126,9 +126,9 @@ def main():
 	
 	parser.add_argument("--preprocessfine",type=str,default='',help="""Any processor (see 'e2help.py processors -v 10' at the command line) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.""")
 	
-	parser.add_argument("--lowpass",type=str,default='filter.lowpass.gauss:cutoff_freq=0.2',help="""Default=filter.lowpass.gauss:cutoff_freq=0.2. A lowpass filtering processor (see 'e2help.py processors -v 10' at the command line) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.""", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=17, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--lowpass",type=str,default='filter.lowpass.gauss:cutoff_freq=0.05',help="""Default=filter.lowpass.gauss:cutoff_freq=0.05. A lowpass filtering processor (see 'e2help.py processors -v 10' at the command line) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.""", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=17, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
-	parser.add_argument("--lowpassfine",type=str,default='',help="""Default=None. A lowpass filtering processor (see 'e2help.py processors -v 10' at the command line) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.""")
+	parser.add_argument("--lowpassfine",type=str,default='filter.lowpass.gauss:cutoff_freq=0.1',help="""Default=filter.lowpass.gauss:cutoff_freq=0.1. A lowpass filtering processor (see 'e2help.py processors -v 10' at the command line) to be applied to each volume prior to FINE alignment. Not applied to aligned particles before averaging.""")
 
 	parser.add_argument("--highpass",type=str,default='',help="""Default=None. A highpass filtering processor (see 'e2help.py processors -v 10' at the command line) to be applied to each volume prior to COARSE alignment. Not applied to aligned particles before averaging.""", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=18, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
@@ -140,11 +140,11 @@ def main():
 	
 	parser.add_argument("--clipali",type=int,default=0,help="""Default=0 (which means it's not used). Boxsize to clip particles as part of preprocessing to speed up alignment. For example, the boxsize of the particles might be 100 pixels, but the particles are only 50 pixels in diameter. Aliasing effects are not always as deleterious for all specimens, and sometimes 2x padding isn't necessary; still, there are some benefits from 'oversampling' the data during averaging; so you might still want an average of size 2x, but perhaps particles in a box of 1.5x are sufficiently good for alignment. In this case, you would supply --clipali=75""")
 	
-	parser.add_argument("--postprocess",type=str,default='',help="""A processor to be applied to the FINAL volume after averaging the raw volumes in their FINAL orientations, after all iterations are done.""",guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=16, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
+	parser.add_argument("--postprocess",type=str,default='',help="""Default=None. A processor to be applied to the FINAL volume after averaging the raw volumes in their FINAL orientations, after all iterations are done.""",guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'filter\')', row=16, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
 	parser.add_argument("--procfinelikecoarse",action='store_true',default=False,help="""If you supply this parameters, particles for fine alignment will be preprocessed identically to particles for coarse alignment by default. If you supply this, but want specific parameters for preprocessing particles for also supply: fine alignment, nd supply fine alignment parameters, such as --lowpassfine, --highpassfine, etc; to preprocess the particles for FINE alignment differently than for COARSE alignment.""")
 	
-	parser.add_argument("--npeakstorefine", type=int, help="""Default=1. The number of best coarse alignments to refine in search of the best final alignment. Default=1.""", default=4, guitype='intbox', row=9, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym[1]')
+	parser.add_argument("--npeakstorefine", type=int, help="""Default=1. The number of best coarse alignments to refine in search of the best final alignment.""", default=1, guitype='intbox', row=9, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym[1]')
 	
 	parser.add_argument("--align",type=str,default="rotate_translate_3d:search=8:delta=16:dphi=16",help="""This is the aligner used to align particles to the previous class average. Default is rotate_translate_3d:search=8:delta=12:dphi=12, specify 'None' (with capital N) to disable.""", returnNone=True,guitype='comboparambox', choicelist='re_filter_list(dump_aligners_list(),\'3d\')', row=12, col=0, rowspan=1, colspan=3, nosharedb=True, mode="alignment,breaksym['rotate_symmetry_3d']")
 	
@@ -251,6 +251,10 @@ def main():
 	if --resume is not provided.
 	'''
 	
+	
+	if 'tree' in options.align:
+		options.falign = None
+	
 	rootpath = os.getcwd()
 
 	if not options.resume:
@@ -279,10 +283,10 @@ def main():
 		parser.print_help()
 		exit(0)
 	elif options.subset:
-		print "there is subset!", options.subset
+		#print "there is subset!", options.subset
 		
 		if options.subset < nptcl:
-			print "smaller than the number of particles", nptcl
+			#print "smaller than the number of particles", nptcl
 			
 			if options.goldstandardoff:
 				print "goldstandard is off"
@@ -591,12 +595,13 @@ def main():
 	elif ncls > 1:
 		classmx = EMData.read_images( options.classmx )
 		if options.verbose:
-			print "\n(e2spt_classaverage)(main) - Read classmx file and its type are", options.classmx, type(classmx)
-
+			#print "\n(e2spt_classaverage)(main) - Read classmx file and its type are", options.classmx, type(classmx)
+			pass
+			
 		#ptclnums=classmx_ptcls(classmx,ic)				# This gets the list from the classmx
 
 		scoresImg = classmx[0]
-		print "x dimension of classmx file is",  scoresImg['nx']
+		#print "x dimension of classmx file is",  scoresImg['nx']
 		for j in range( scoresImg['nx'] ):				#Loop over the number of classes
 			ptclnums=[]									#each of which starts with no particles in it
 			for i in range( scoresImg['ny'] ):			#Loop over the number of particles
@@ -607,10 +612,11 @@ def main():
 			ptclnumsdict.update({ j : ptclnums })
 
 	
-	print "\nThe number of classes and their indexes are"
-	for klass in ptclnumsdict:
-		print "Klass is", klass
-		print "Indexes are", ptclnumsdict[ klass ]
+	if not options.goldstandardoff:
+		print "\nThe number of classes and their indexes are"
+		for klass in ptclnumsdict:
+			print "Klass is", klass
+			print "Indexes are", ptclnumsdict[ klass ]
 	
 	#originalOutput = options.output
 	
@@ -1075,13 +1081,18 @@ def main():
 			maxX = max(plotX) + 1
 		
 			plotName = 'spt_cccs_' + str( it ).zfill( len( str( options.iter ) )) + klassid + '.png'
-					
+			
+			classScoresList2plot = list(classScoresList)
+			classScoresList2plot.sort()
+			classScoresList2plot.reverse()
+			
 			txtname = plotName.replace('.png','.txt')
-			textwriter(classScoresList,options,txtname, invert=1)
+			textwriter(classScoresList2plot,options,txtname, invert=1)
 				
 			if options.plots:
 				from e2spt_hac import plotter
-				plotter(plotX, classScoresList, options, plotName, maxX, maxY, 1, sort=1)
+			
+				plotter(plotX, classScoresList2plot, options, plotName, maxX, maxY, 1, sort=1)
 			
 		
 		'''
@@ -1190,13 +1201,18 @@ def main():
 		maxX = max(plotX) + 1
 	
 		plotName = 'spt_meanccc' + klassid + '.png'
-	
+		
+		scores2plot = list(scores)
+		scores2plot.sort()
+		scores2plot.reverse()
+		
 		txtname = plotName.replace('.png','.txt')
-		textwriter( scores ,options, txtname, invert=1 )
+		textwriter( scores2plot ,options, txtname, invert=1 )
 	
 	if options.plots:
 		from e2spt_hac import plotter
-		plotter(plotX, scores, options, plotName, maxX, maxY, 1, sort=0)
+	
+		plotter(plotX, scores2plot, options, plotName, maxX, maxY, 1, sort=0)
 		
 		
 	if options.inixforms: 
@@ -1225,10 +1241,10 @@ def sptParseAligner( options ):
 			#print "And there's sym", options.sym
 			
 		if 'search' not in options.align:
-			if 'rotate_translate_3d' in options.align:	
+			if 'rotate_translate_3d' in options.align and options.search and 'tree' not in options.align:	
 				options.align += ':search=' + str( options.search )
 			
-		elif 'rotate_translate_3d' in options.align:
+		elif 'rotate_translate_3d' in options.align and 'tree' not in options.align:
 			searchA = options.align.split('search=')[-1].split(':')[0]
 			searchdefault = 8
 			
@@ -1537,17 +1553,18 @@ def sptRefGen( options, ptclnumsdict, cmdwp, wildcard=0, method='',subset4ref=0)
 				sys.exit()
 
 			if not options.goldstandardoff:
-				filterfreq = 1.0/60.0
+				#filterfreq = 1.0/60.0
 
 				if options.refrandphase:
 					filterfreq =  1.0/float( options.refrandphase )
+					ref.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":filterfreq,"apix":ref['apix_x']})
 				
 				if options.apix:
 					ref['apix_x'] = options.apix
 					ref['apix_y'] = options.apix
 					ref['apix_z'] = options.apix
 					
-				ref.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":filterfreq,"apix":ref['apix_x']})
+				
 				
 				refrandphfile = options.path + '/' + os.path.basename( options.ref ).replace('.hdf','_randPH' + klassidref +'.hdf').replace('final_avg','ref')
 
@@ -1758,7 +1775,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, wildcard=0, method='',subset4ref=0)
 			while i < nseed :
 				a = EMData( options.input, ptclnums[i] )
 				a.write_image( subsetForBTRef, i )
-				print "writing image %d to subset in file %s" %(i,subsetForBTRef)
+				print "writing image %d to file %s, which will contain the subset of particles used for BTA refernece building" %(i,subsetForBTRef)
 				i+=1
 
 			btelements = []
@@ -3189,16 +3206,6 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		#print "\n\!!!!!n\n\n\n\n\n\n"
 	
 	
-	#refindx = -1
-	#try:
-	#	ptclindx = int(label.split(' ')[1])
-	#
-	#except:
-		#
-	#	refindx = int(xformslabel.split('_ptclA')[-1].split('_')[0])
-	#	ptclindx = int(xformslabel.split('_ptclB')[-1].split('_')[0])
-	#
-	
 	round=iter
 	#print "label is", label
 	try:
@@ -3253,81 +3260,76 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	
 	print "before refpreprocess, refpreprocess and iter", refpreprocess, iter
 	
-		
-	if not refpreprocess:
-		print "\nthere is NO refpreprocess! But an external reference WAS provided, type, len", options.ref
 	
-		#if options.clipali:
-		#	if sfixedimage['nx'] != options.clipali or sfixedimage['ny'] != options.clipali or sfixedimage['nz'] != options.clipali:
-		#		sfixedimage = clip3D( sfixedimage, options.clipali )
-		#	
-		#	if s2fixedimage['nx'] != options.clipali or s2fixedimage['ny'] != options.clipali or s2fixedimage['nz'] != options.clipali:
-		#		s2fixedimage = clip3D( s2fixedimage, options.clipali )
+	
+	if 'rotate_translate_3d_tree' not in options.align[0]:	
+		if not refpreprocess:
+			print "\nthere is NO refpreprocess! But an external reference WAS provided, type, len", options.ref
 		
-		if options.shrink and int(options.shrink) > 1:
-			print "shrinking sfixedimage BEFORE, iter", sfixedimage['nx'], iter
-			sfixedimage = sfixedimage.process('math.meanshrink',{'n':options.shrink})
-			print "shrinking sfixedimage AFTER, iter", sfixedimage['nx'], iter
+			if options.shrink and int(options.shrink) > 1:
+				print "shrinking sfixedimage BEFORE, iter", sfixedimage['nx'], iter
+				sfixedimage = sfixedimage.process('math.meanshrink',{'n':options.shrink})
+				print "shrinking sfixedimage AFTER, iter", sfixedimage['nx'], iter
 			
 		
-		if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
-			print "there's fine alignment"
-			if options.procfinelikecoarse:
-				print "there's procfinelikecoarse"
-				s2fixedimage = sfixedimage.copy()
+			if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
+				print "there's fine alignment"
+				if options.procfinelikecoarse:
+					print "there's procfinelikecoarse"
+					s2fixedimage = sfixedimage.copy()
 			
-			elif options.shrinkfine and int(options.shrinkfine) > 1:
-				s2fixedimage = s2fixedimage.process('math.meanshrink',{'n':options.shrinkfine})
-				print "shrinking reference for fine alignment!!!!, iter", options.shrinkfine, s2fixedimage['nx'], iter
+				elif options.shrinkfine and int(options.shrinkfine) > 1:
+					s2fixedimage = s2fixedimage.process('math.meanshrink',{'n':options.shrinkfine})
+					print "shrinking reference for fine alignment!!!!, iter", options.shrinkfine, s2fixedimage['nx'], iter
 
-		else:
-			#s2fixedimage = sfixedimage.copy()
-			#s2fixedimage = fixedimage.copy()
-			s2fixedimage = None
+			else:
+				#s2fixedimage = sfixedimage.copy()
+				#s2fixedimage = fixedimage.copy()
+				s2fixedimage = None
 
 	
-	elif refpreprocess:
-		print "there is refpreprocess, iter", iter
-		savetag = 'ref'
-		if 'odd' in label or 'even' in label:
-			savetag = ''
+		elif refpreprocess:
+			print "there is refpreprocess, iter", iter
+			savetag = 'ref'
+			if 'odd' in label or 'even' in label:
+				savetag = ''
 			
-		if options.threshold or options.normproc or options.mask or options.preprocess or options.lowpass or options.highpass or int(options.shrink) > 1:
-			#print "\nThere IS refpreprocess!"	
+			if options.threshold or options.normproc or options.mask or options.preprocess or options.lowpass or options.highpass or int(options.shrink) > 1:
+				#print "\nThere IS refpreprocess!"	
 			
-			print "BEFORE preprocessing coarse ref, because there is refpreprocess, size is %d, iter %d" %( sfixedimage['nx'],iter )
-			sfixedimage = preprocessing(sfixedimage,options, refindx, savetag ,'yes',round)
-			print "AFTER preprocessing coarse ref, because there is refpreprocess, size is %d, iter %d" %( sfixedimage['nx'],iter )
+				print "BEFORE preprocessing coarse ref, because there is refpreprocess, size is %d, iter %d" %( sfixedimage['nx'],iter )
+				sfixedimage = preprocessing(sfixedimage,options, refindx, savetag ,'yes',round)
+				print "AFTER preprocessing coarse ref, because there is refpreprocess, size is %d, iter %d" %( sfixedimage['nx'],iter )
 
-		#Only preprocess again if there's fine alignment, AND IF the parameters for fine alignment are different
+			#Only preprocess again if there's fine alignment, AND IF the parameters for fine alignment are different
 			
-		if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
-			#if options.procfinelikecoarse:
-			#	s2fixedimage = sfixedimage.copy()
-			#	print "REFERENCE fine preprocessing is equal to coarse"
+			if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
+				#if options.procfinelikecoarse:
+				#	s2fixedimage = sfixedimage.copy()
+				#	print "REFERENCE fine preprocessing is equal to coarse"
 			
-			print "procfinelikecoarse is", options.procfinelikecoarse
+				print "procfinelikecoarse is", options.procfinelikecoarse
 			
-			if options.procfinelikecoarse:
-				s2fixedimage = sfixedimage.copy()
+				if options.procfinelikecoarse:
+					s2fixedimage = sfixedimage.copy()
 			
-			elif options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1:
-				print "BEFORE preprocessing fine ref, because there is refpreprocess, size is %d, iter %d" %( s2fixedimage['nx'],iter)
+				elif options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1:
+					print "BEFORE preprocessing fine ref, because there is refpreprocess, size is %d, iter %d" %( s2fixedimage['nx'],iter)
 
-				s2fixedimage = preprocessing(s2fixedimage,options,refindx, savetag ,'no',round,'fine')
+					s2fixedimage = preprocessing(s2fixedimage,options,refindx, savetag ,'no',round,'fine')
 		
-				print "AFTER preprocessing fine ref, because there is refpreprocess, size is %d, iter %d" %( s2fixedimage['nx'],iter)
+					print "AFTER preprocessing fine ref, because there is refpreprocess, size is %d, iter %d" %( s2fixedimage['nx'],iter)
 
-		else:
-			#s2fixedimage = sfixedimage.copy()
-			#s2fixedimage = fixedimage.copy()	
-			s2fixedimage = None
+			else:
+				#s2fixedimage = sfixedimage.copy()
+				#s2fixedimage = fixedimage.copy()	
+				s2fixedimage = None
 	
-	if sfixedimage:
-		print "after all preproc, COARSE ref is of size %d, in iter %d" %( sfixedimage['nx'], iter)
+		if sfixedimage:
+			print "after all preproc, COARSE ref is of size %d, in iter %d" %( sfixedimage['nx'], iter)
 	
-	if s2fixedimage:
-		print "after all preproc, FINE ref is of size %d, in iter %d" %( s2fixedimage['nx'], iter)
+		if s2fixedimage:
+			print "after all preproc, FINE ref is of size %d, in iter %d" %( s2fixedimage['nx'], iter)
 	
 
 	#########################################
@@ -3355,74 +3357,76 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		savetag = ''
 	
 	
-	if options.threshold or options.normproc or options.mask or options.preprocess or options.lowpass or options.highpass or int(options.shrink) > 1:
 	
-		#print "\n\n\n\n\n\n\n\n\n\n\nSending moving particle to preprocessing. It's size is", simage['nx'],simage['ny'],simage['nz']
+	if 'rotate_translate_3d_tree' not in options.align[0]:
 	
-		simage = preprocessing(simage,options,ptclindx, savetagp ,'yes',round)
+		if options.threshold or options.normproc or options.mask or options.preprocess or options.lowpass or options.highpass or int(options.shrink) > 1:
 	
-	#print "preprocessed moving particle has size", simage['nx']
+			#print "\n\n\n\n\n\n\n\n\n\n\nSending moving particle to preprocessing. It's size is", simage['nx'],simage['ny'],simage['nz']
 	
-	#Only preprocess again if there's fine alignment, AND IF the parameters for fine alignment are different
+			simage = preprocessing(simage,options,ptclindx, savetagp ,'yes',round)
 	
-	#print "options.falign is", options.falign
+		#print "preprocessed moving particle has size", simage['nx']
 	
-	if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none': 
-		if options.procfinelikecoarse:
-			s2image = simage.copy()
-			#print "PARTICLE fine preprocessing is equal to coarse"
-		elif options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1:
-			s2image = preprocessing(s2image,options,ptclindx, savetagp ,'no',round,'fine')
-			#print "There was fine preprocessing"
-		#sys.exit()
-	else:
-		#s2image = simage.copy()
-		#s2image = image.copy()
-		s2image = None
+		#Only preprocess again if there's fine alignment, AND IF the parameters for fine alignment are different
 	
-	if simage:
-		print "after all preproc, COARSE ref is of size %d, in iter %d" %( simage['nx'], iter)
+		#print "options.falign is", options.falign
 	
-	if s2image:
-		print "after all preproc, FINE ref is of size %d, in iter %d" %( s2image['nx'], iter)
-	#sys.exit()
+		if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none': 
+			if options.procfinelikecoarse:
+				s2image = simage.copy()
+				#print "PARTICLE fine preprocessing is equal to coarse"
+			elif options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1:
+				s2image = preprocessing(s2image,options,ptclindx, savetagp ,'no',round,'fine')
+				#print "There was fine preprocessing"
+			#sys.exit()
+		else:
+			#s2image = simage.copy()
+			#s2image = image.copy()
+			s2image = None
 	
+		if simage:
+			print "after all preproc, COARSE ref is of size %d, in iter %d" %( simage['nx'], iter)
+	
+		if s2image:
+			print "after all preproc, FINE ref is of size %d, in iter %d" %( s2image['nx'], iter)	
 	
 	if sfixedimage['nx'] != simage['nx']:
 		print "ERROR: preprocessed images for coarse alignment not the same size, sfixedimage, simage", sfixedimage['nx'], simage['nx']
 		#print "ERROR: preprocessed images for coarse alignment not the same size"
 		sys.exit()
-		
-	if options.falign and s2fixedimage and s2image:
-		if s2fixedimage['nx'] != s2image['nx']:
-			print "ERROR: preprocessed images for fine alignment not the same size, s2fixedimage, s2image", s2fixedimage['nx'], s2image['nx']
-			#print "ERROR: preprocessed images for fine alignment not the same size"
-			sys.exit()
 	
-	if transform:
-		#print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nThere WAS a transform, see", transform
-		#print "And its type is", type(transform)
-		#if classoptions.verbose:
-		#	print "Moving Xfrom", transform
-		#options["align"][1]["inixform"] = options["transform"]
-		if options.align:
-			#print "There was classoptions.align"
-			#print "and classoptions.align[1] is", classoptions.align[1]
-			if options.align[1]:
-				options.align[1]["transform"] = transform
+	if 'rotate_translate_3d_tree' not in options.align[0]:
+		if options.falign and s2fixedimage and s2image:
+			if s2fixedimage['nx'] != s2image['nx']:
+				print "ERROR: preprocessed images for fine alignment not the same size, s2fixedimage, s2image", s2fixedimage['nx'], s2image['nx']
+				#print "ERROR: preprocessed images for fine alignment not the same size"
+				sys.exit()
+	
+		if transform:
+			#print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nThere WAS a transform, see", transform
+			#print "And its type is", type(transform)
+			#if classoptions.verbose:
+			#	print "Moving Xfrom", transform
+			#options["align"][1]["inixform"] = options["transform"]
+			if options.align:
+				#print "There was classoptions.align"
+				#print "and classoptions.align[1] is", classoptions.align[1]
+				if options.align[1]:
+					options.align[1]["transform"] = transform
 		
-		if int(options.shrink) > 1:
-			#options["align"][1]["inixform"].set_trans( options["align"][1]["inixform"].get_trans()/float(options["shrinkfine"]) )
-			options.align[1]["transform"].set_trans( options.align[1]["transform"].get_trans()/float(options.shrinkfine) )
+			if int(options.shrink) > 1:
+				#options["align"][1]["inixform"].set_trans( options["align"][1]["inixform"].get_trans()/float(options["shrinkfine"]) )
+				options.align[1]["transform"].set_trans( options.align[1]["transform"].get_trans()/float(options.shrinkfine) )
 		
-	elif options.randomizewedge:
-		rand_orient = OrientGens.get("rand",{"n":1,"phitoo":1})		#Fetches the orientation generator
-		c1_sym = Symmetries.get("c1")								#Generates the asymmetric unit from which you wish to generate a random orientation
-		random_transform = rand_orient.gen_orientations(c1_sym)[0]	#Generates a random orientation (in a Transform object) using the generator and asymmetric unit specified 
-		if options.align:
-			options.align[1].update({'transform' : random_transform})
-		else:
-			transform = random_transform
+		elif options.randomizewedge:
+			rand_orient = OrientGens.get("rand",{"n":1,"phitoo":1})		#Fetches the orientation generator
+			c1_sym = Symmetries.get("c1")								#Generates the asymmetric unit from which you wish to generate a random orientation
+			random_transform = rand_orient.gen_orientations(c1_sym)[0]	#Generates a random orientation (in a Transform object) using the generator and asymmetric unit specified 
+			if options.align:
+				options.align[1].update({'transform' : random_transform})
+			else:
+				transform = random_transform
 	
 	if not options.align:
 		if not transform:
@@ -3464,28 +3468,30 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		bestcoarse = simage.xform_align_nbest(options.align[0],sfixedimage,options.align[1],options.npeakstorefine,options.aligncmp[0],options.aligncmp[1])
 		#except:
 		#	bestcoarse = simage.align(options.align[0],sfixedimage,options.align[1],options.npeakstorefine,options.aligncmp[0],options.aligncmp[1])
+		
+		
+		if 'rotate_translate_3d_tree' not in options.align[0]:	
+			# Scale translation
+			scaletrans=1.0
+			if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none' and options.shrinkfine:
+				scaletrans = options.shrink/float(options.shrinkfine)
+			elif options.shrink and not options.falign:
+				scaletrans=float(options.shrink)
 			
-		# Scale translation
-		scaletrans=1.0
-		if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none' and options.shrinkfine:
-			scaletrans = options.shrink/float(options.shrinkfine)
-		elif options.shrink and not options.falign:
-			scaletrans=float(options.shrink)
+			if scaletrans>1.0:
+				#print "\n\n\nShrink or shrinkfine are greater than 1 and not equal, and therefore translations need to be scaled!"
+				#print "Before, translations are", bestcoarse[0]['xform.align3d'].get_trans()
+				#print "Transform is", bestcoarse[0]['xform.align3d']
 			
-		if scaletrans>1.0:
-			#print "\n\n\nShrink or shrinkfine are greater than 1 and not equal, and therefore translations need to be scaled!"
-			#print "Before, translations are", bestcoarse[0]['xform.align3d'].get_trans()
-			#print "Transform is", bestcoarse[0]['xform.align3d']
+				for c in bestcoarse:
+					c["xform.align3d"].set_trans(c["xform.align3d"].get_trans()*scaletrans)
 			
-			for c in bestcoarse:
-				c["xform.align3d"].set_trans(c["xform.align3d"].get_trans()*scaletrans)
-			
-			#print "After scaling, translations are", c['xform.align3d'].get_trans()
-			#print "Transform is", c['xform.align3d']
+				#print "After scaling, translations are", c['xform.align3d'].get_trans()
+				#print "Transform is", c['xform.align3d']
 
-		elif options.shrink > 1.0 and options.shrinkfine > 1.0 and options.shrink == options.shrinkfine:
-			pass
-			#print "\n\nshrink and shrink refine were equal!\n\n"
+			elif options.shrink > 1.0 and options.shrinkfine > 1.0 and options.shrink == options.shrinkfine:
+				pass
+				#print "\n\nshrink and shrink refine were equal!\n\n"
 			
 	# verbose printout
 	if options.verbose > 1 :
@@ -3493,63 +3499,68 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			pass
 			#print "coarse %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
 
-	if options.falign and options.falign[0] and options.falign != 'None' and options.falign != 'none' and options.falign[0] != "None" and options.falign[0] != 'none':
-		#print "\n(e2spt_classaverage)(alignment) Will do fine alignment, over these many peaks", len(bestcoarse)
-		# Now loop over the individual peaks and refine each
-		bestfinal=[]
-		peaknum=0
-		#print "\n(e2spt_classaverage)(alignment) options.falign is", options.falign, type(options.falign)
-		for bc in bestcoarse:
+	if 'rotate_translate_3d_tree' not in options.align[0]:	
+		if options.falign and options.falign[0] and options.falign != 'None' and options.falign != 'none' and options.falign[0] != "None" and options.falign[0] != 'none':
+			#print "\n(e2spt_classaverage)(alignment) Will do fine alignment, over these many peaks", len(bestcoarse)
+			# Now loop over the individual peaks and refine each
+			bestfinal=[]
+			peaknum=0
+			#print "\n(e2spt_classaverage)(alignment) options.falign is", options.falign, type(options.falign)
+			for bc in bestcoarse:
 			
-			options.falign[1]["xform.align3d"] = bc["xform.align3d"]
+				options.falign[1]["xform.align3d"] = bc["xform.align3d"]
 			
-			#print "\n(e2spt_classaverage)(alignment) s2image['nx'] == s2fixedimage['nx']", s2image['nx'] == s2fixedimage['nx'],  s2image['nx'], type(s2image['nx']), s2fixedimage['nx'], type(s2fixedimage['nx'])
-			#print "\n(e2spt_classaverage)(alignment) s2image['ny'] == s2fixedimage['ny']", s2image['ny'] == s2fixedimage['ny'],  s2image['ny'], type(s2image['ny']), s2fixedimage['ny'], type(s2fixedimage['ny'])
-			#print "\n(e2spt_classaverage)(alignment) s2image['nz'] == s2fixedimage['nz']", s2image['nz'] == s2fixedimage['nz'],  s2image['nz'], type(s2image['nz']), s2fixedimage['nz'], type(s2fixedimage['nz'])
+				#print "\n(e2spt_classaverage)(alignment) s2image['nx'] == s2fixedimage['nx']", s2image['nx'] == s2fixedimage['nx'],  s2image['nx'], type(s2image['nx']), s2fixedimage['nx'], type(s2fixedimage['nx'])
+				#print "\n(e2spt_classaverage)(alignment) s2image['ny'] == s2fixedimage['ny']", s2image['ny'] == s2fixedimage['ny'],  s2image['ny'], type(s2image['ny']), s2fixedimage['ny'], type(s2fixedimage['ny'])
+				#print "\n(e2spt_classaverage)(alignment) s2image['nz'] == s2fixedimage['nz']", s2image['nz'] == s2fixedimage['nz'],  s2image['nz'], type(s2image['nz']), s2fixedimage['nz'], type(s2fixedimage['nz'])
 			
-			if int(s2image['nx']) != int(s2fixedimage['nx']) or int(s2image['ny']) != int(s2fixedimage['ny']) or int(s2image['nz']) != int(s2fixedimage['nz']):
-				print "\n(e2spt_classaverage)(alignment) ERROR: FINE alignment images not the same size"
-				#print "\nThe particle's FINE size is", s2image['nx'],s2image['ny'],s2image['nz']
-				#print "\nThe reference's FINE size is", s2fixedimage['nx'],s2fixedimage['ny'],s2fixedimage['nz']
-				sys.exit('MIE')
+				if int(s2image['nx']) != int(s2fixedimage['nx']) or int(s2image['ny']) != int(s2fixedimage['ny']) or int(s2image['nz']) != int(s2fixedimage['nz']):
+					print "\n(e2spt_classaverage)(alignment) ERROR: FINE alignment images not the same size"
+					#print "\nThe particle's FINE size is", s2image['nx'],s2image['ny'],s2image['nz']
+					#print "\nThe reference's FINE size is", s2fixedimage['nx'],s2fixedimage['ny'],s2fixedimage['nz']
+					sys.exit('MIE')
 			
-			ali = s2image.align(options.falign[0],s2fixedimage,options.falign[1],options.faligncmp[0],options.faligncmp[1])
+				ali = s2image.align(options.falign[0],s2fixedimage,options.falign[1],options.faligncmp[0],options.faligncmp[1])
 
-			try: 					
-				bestfinal.append({"score":ali["score"],"xform.align3d":ali["xform.align3d"],"coarse":bc})
-				#print "\nThe appended score in TRY is", bestfinal[0]['score']					
-			except:
-				bestfinal.append({"score":1.0e10,"xform.align3d":bc["xform.align3d"],"coarse":bc})
-				#print "\nThe appended score in EXCEPT is", bestfinal[0]['score']
-			peaknum+=1
+				try: 					
+					bestfinal.append({"score":ali["score"],"xform.align3d":ali["xform.align3d"],"coarse":bc})
+					#print "\nThe appended score in TRY is", bestfinal[0]['score']					
+				except:
+					bestfinal.append({"score":1.0e10,"xform.align3d":bc["xform.align3d"],"coarse":bc})
+					#print "\nThe appended score in EXCEPT is", bestfinal[0]['score']
+				peaknum+=1
 			
-		if options.verbose:
-			pass
-			#print "Best final is", bestfinal
-		
-		
-		#print "\n\n\nAfter fine alignment, before SHRINK compensation, the transform is", bestfinal[0]['xform.align3d']		
-		if options.shrinkfine>1 :
-			for c in bestfinal:
-			
-				newtrans = c["xform.align3d"].get_trans() * float(options.shrinkfine)
-				#print "New trans and type are", newtrans, type(newtrans)
-				c["xform.align3d"].set_trans(newtrans)
-		
-		#print "AFTER fine alignment, after SHRINK compensation, the transform is", bestfinal[0]['xform.align3d']		
-		#print "\n\n\n"
-		
-		#verbose printout of fine refinement
-		if options.verbose>1 :
-			for i,j in enumerate(bestfinal): 
+			if options.verbose:
 				pass
-				#print "fine %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
+				#print "Best final is", bestfinal
+		
+		
+			#print "\n\n\nAfter fine alignment, before SHRINK compensation, the transform is", bestfinal[0]['xform.align3d']		
+			if options.shrinkfine>1 :
+				for c in bestfinal:
+			
+					newtrans = c["xform.align3d"].get_trans() * float(options.shrinkfine)
+					#print "New trans and type are", newtrans, type(newtrans)
+					c["xform.align3d"].set_trans(newtrans)
+		
+			#print "AFTER fine alignment, after SHRINK compensation, the transform is", bestfinal[0]['xform.align3d']		
+			#print "\n\n\n"
+		
+			#verbose printout of fine refinement
+			if options.verbose>1 :
+				for i,j in enumerate(bestfinal): 
+					pass
+					#print "fine %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
+		else: 
+			bestfinal = bestcoarse
+			if options.verbose:
+				pass
+				#print "\nThere was no fine alignment; therefore, score is", bestfinal[0]['score']
 	else: 
 		bestfinal = bestcoarse
 		if options.verbose:
 			pass
-			#print "\nThere was no fine alignment; therefore, score is", bestfinal[0]['score']
-	
+
 	from operator import itemgetter							#If you just sort 'bestfinal' it will be sorted based on the 'coarse' key in the dictionaries of the list
 															#because they come before the 'score' key of the dictionary (alphabetically)
 	bestfinal = sorted(bestfinal, key=itemgetter('score'))
