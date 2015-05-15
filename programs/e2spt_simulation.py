@@ -324,12 +324,13 @@ def main():
 				model = EMData( options.input, 0 )
 				if dimension == 3:					
 					if model['nx'] != model['ny'] or model['nx'] != model['nz'] or model['ny'] != model['nz']:	
-						model = clip3D( model )
+						#if options.clip:
+						model = clip3D( model, max( model['nx'], model['ny'], model['nz'] ) )
 						#modelhdr = EMData(options.input,0,True)
 						
 				elif model['nx'] != model['ny'] or model['nx'] != model['nz'] or model['ny'] != model['nz']:
 					print "\nThe image is 2D"
-					model = clip2D( model )	
+					model = clip2D( model, max( model['nx'], model['ny'] ) )	
 			
 				'''
 				Preprocess model if necessary
@@ -339,16 +340,19 @@ def main():
 				#for particles to be the adequate size, given that clip here is the FINAL box size
 				if options.preprocess or int(options.shrink) > 1 or options.lowpass or options.highpass or options.clip or options.normproc or options.threshold:
 					
-					from e2spt_classaverage import preprocessingallocator
+					#from e2spt_classaverage import preprocessingallocator
 					#preprocessingallocator( options, image, fftstackC='', fftstackF='', imageindex=0, postfft = 0 )
-
-					model = preprocessingallocator( options, model, '','', 0, postfft=1)
+					#model = preprocessingallocator( options, model, '','', 0, postfft=1)
+					
+					from e2spt_classaverage import preprocessing 
+					model = preprocessing( model, options, 'ptcls','yes',-1,'yes')
+					#image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1,finetag=''
 					
 					
 					#options = ret[0]
 					if options.clip:
 						
-						model = clip3D( model, options.clip * options.shrink )
+						model = clip3D( model, options.clip )
 						print "\n\n\n\n\n\nBox of model AFTER preprocessing is", model['nx']
 				
 				if options.savepreprocessed:
@@ -476,7 +480,10 @@ def clip3D( vol, size ):
 	volzc = vol['nz']/2
 	
 	Rvol =  Region( (2*volxc - size)/2, (2*volyc - size)/2, (2*volzc - size)/2, size , size , size)
-	vol.clip_inplace( Rvol )
+	if Rvol:
+		vol.clip_inplace( Rvol )
+	else:
+		print "ERROR!: Empty Region to clip", Rvol
 	#vol.process_inplace('mask.sharp',{'outer_radius':-1})
 	
 	return vol
@@ -489,7 +496,11 @@ def clip2D( img, size ):
 	#imgzc = img['nz']/2
 	
 	Rimg =  Region( (2*imgxc - size)/2, (2*imgyc - size)/2, 0, size , size , 1)
-	img.clip_inplace( Rimg )
+	if Rimg:
+		img.clip_inplace( Rimg )
+	else:
+		print "ERROR!: Empty Region to clip", Rimg
+		
 	#img.process_inplace('mask.sharp',{'outer_radius':-1})
 	
 	return img
@@ -1251,7 +1262,8 @@ class SubtomoSimTask(JSTask):
 		
 		#box = image.get_xsize()
 		
-		print "\n\n\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\nThe final boxsize of rec is", rec['nx'], box
+		print "\n\n\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\nThe final boxsize of rec is", rec['nx'], rec['ny'], rec['nz'] 
+		print "and box is", box
 		return { classoptions['ptclnum']:rec }
 
 
