@@ -50,7 +50,7 @@ def main():
 	utilize this program only for viewing individual structures.
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--files",type=str,help="Specify one or mode pdb files you \
+	parser.add_argument("--pdbfiles",type=str,help="Specify one or mode pdb files you \
 		wish to view",nargs='*',required=False, default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent \
 		process, used for cross platform PPID",default=-1)
@@ -64,8 +64,8 @@ def main():
 	app = EMApp()
 	viewer = EMScene3D()
 	
-	if options.files:
-		models = [EMStructureItem3D(pdbf) for pdbf in options.files]
+	if options.pdbfiles:
+		models = [EMStructureItem3D(pdb_file=pdbf) for pdbf in options.pdbfiles]
 		viewer.addChildren(models)
 	
 	viewer.show()

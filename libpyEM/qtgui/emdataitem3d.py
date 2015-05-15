@@ -1687,18 +1687,22 @@ class EMStructureItem3D(EMItem3D):
 		return EMStructureItem3D(str(attribdict["data_path"].text()), transform=EMItem3D.getTransformFromDict(attribdict))
 	
 	def __init__(self, parent=None,transform=None):
-		EMItem3D.__init__(self, parent=parent, children=set(), transform=transform)
-		self.fName = str(self.attribdict['data_path'].text())
-		self.name = str(self.attribdict['node_name'].text())
-		
+		EMItem3D.__init__(self, pdb_file=None, parent=parent, children=set(), transform=transform)
+		if pdb_file == None:
+			self.fName = str(self.attribdict['data_path'].text())
+			self.name = str(self.attribdict['node_name'].text())
+		else:
+			self.fName = pdb_file
+			self.name = pdb_file.split('/')[-1].split('.')[0]
+			self.attribdict = {}
+			self.attribdict['data_path'] = self.fName
+			self.attribdict['node_name'] = self.name
 		self.diffuse = [0.5,0.5,0.5,1.0]
 		self.specular = [1.0,1.0,1.0,1.0]
 		self.ambient = [1.0, 1.0, 1.0, 1.0]
 		self.shininess = 25.0
-		
 		self.renderBoundingBox = False
 		self.first_render_flag = True # this is used to catch the first call to the render function - so you can do an GL context sensitive initialization when you know there is a valid context
-
 		self.gq = None # will be a glu quadric
 		self.dl = None
 		self.cylinderdl = 0 # will be a cylinder with no caps

@@ -59,7 +59,7 @@ def main():
 	parser.add_argument("--classmx",type=str,help="<classmx>,<#> Show particles in one class from a classification matrix. Pass raw particle file as first argument to command.")
 	parser.add_argument("--classes",type=str,help="<rawptcl>,<classmx> Show particles associated class-averages")
 	parser.add_argument("--singleimage",action="store_true",default=False,help="Display a stack in a single image view")
-	parser.add_argument("--pdb",type=str,nargs='*',help="Specify the location of one or more PDB files you wish to inspect.")
+	parser.add_argument("--pdb",type=str,nargs='*',help="Specify the location of one or more PDB files for viewing.")
 	parser.add_argument("--plot",action="store_true",default=False,help="Data file(s) should be plotted rather than displayed in 2-D")
 	parser.add_argument("--plot3",action="store_true",default=False,help="Data file(s) should be plotted rather than displayed in 3-D")
 	parser.add_argument("--fullrange",action="store_true",default=False,help="A specialized flag that disables auto contrast for the display of particles stacks and 2D images only.")
@@ -78,7 +78,7 @@ def main():
 	if options.fullrange:
 		fullrangeparms = set_full_range()
 
-	if len(args) < 1 and not options.pdb:
+	if len(args) < 1:
 		dialog = embrowser.EMBrowserWidget(withmodal=False,multiselect=False)
 		dialog.show()
 		try: dialog.raise_()
@@ -113,7 +113,7 @@ def main():
 		
 	elif options.pdb:
 		load_pdb(options.pdb)
-		
+	
 	else:
 		for i in args:
 			if not file_exists(i):
@@ -234,6 +234,7 @@ def display_file(filename,app,force_2d=False,usescenegraph=False):
 	except: pass
 	return w
 
+
 def display(img,app,title="EMAN2 image"):
 	if len(img)==1 : img=img[0]
 	w=EMImageWidget(data=img,old=None,app=app)
@@ -265,10 +266,10 @@ def plot_3d(files,app):
 	app.show_specific(plotw)
 	return plotw
 
-def load_pdb(pdbfs):
+def load_pdb(pdbfiles):
 		from emscene3d import EMScene3D
 		viewer = EMScene3D()
-		models = [EMStructureItem3D(pdbf) for pdbf in pdbfs]
+		models = [EMStructureItem3D(pdb_file=pdbf) for pdbf in pdbfiles]
 		viewer.addChildren(models)
 		viewer.show()
 
