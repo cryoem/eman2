@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.7
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -646,7 +646,8 @@ def main():
 					params.append([phi, tht, psi, s2x, s2y])
 
 					ivol = iprj % nvol
-					proj = prgs(volfts[randint(0,nvlms-1)][ivol], kb, [phi, tht, psi, -s2x, -s2y])
+					imgsrc = randint(0,nvlms-1)
+					proj = prgs(volfts[imgsrc][ivol], kb, [phi, tht, psi, -s2x, -s2y])
 
 					x = xstart + irow * width
 					y = ystart + icol * width
@@ -660,6 +661,7 @@ def main():
 
 					proj = proj + filt_gaussl(model_gauss_noise(sigma2_proj, nx, nx), sigma_gauss)
 					proj.set_attr("active", 1)
+					proj.set_attr("origimgsrc",imgsrc)
 					# flags describing the status of the image (1 = true, 0 = false)
 					set_params2D(proj, [0.0, 0.0, 0.0, 0, 1.0])
 					set_params_proj(proj, [phi, tht, psi, s2x, s2y])
