@@ -36,6 +36,7 @@ import EMAN2db
 from emapplication import EMApp
 import embrowser
 from emdataitem3d import EMStructureItem3D
+from empdbitem3d import EMPDBItem3D
 from emscene3d import EMScene3D
 from emimage import EMImageWidget, EMWidgetFromFile
 import os
@@ -81,14 +82,12 @@ def main():
 	if len(args) < 1:
 		global dialog
 		file_list = []
-		dialog = embrowser.EMBrowserWidget(withmodal=True,multiselect=False)
+		dialog = embrowser.EMBrowserWidget(withmodal=False,multiselect=False)
 		dialog.show()
-		try:
-			dialog.raise_()
-			QtCore.QObject.connect(dialog,QtCore.SIGNAL("ok"),on_browser_done)
-			QtCore.QObject.connect(dialog,QtCore.SIGNAL("cancel"),on_browser_cancel)
-		except: 
-			pass
+		try: dialog.raise_()
+# 			QtCore.QObject.connect(dialog,QtCore.SIGNAL("ok"),on_browser_done)
+# 			QtCore.QObject.connect(dialog,QtCore.SIGNAL("cancel"),on_browser_cancel)
+		except: pass
 	
 	elif options.plot:
 		plot(args,app)
@@ -113,9 +112,6 @@ def main():
 		clsnum=int(options.classmx[1])
 		imgs=getmxim(args[0],options.classmx[0],clsnum)
 		display(imgs,app,args[0])
-		
-	elif options.pdb:
-		load_pdb(options.pdb)
 	
 	else:
 		for i in args:
@@ -179,9 +175,7 @@ def revert_full_range(d):
 	pass
 
 def on_browser_done():
-	file_list = dialog.getResult()
-	if file_list[0].split('/')[-1].split('.')[-1] == "pdb":
-		load_pdb(file_list)
+	pass
 
 def on_browser_cancel():
 	pass
@@ -267,12 +261,6 @@ def plot_3d(files,app):
 	plotw.setWindowTitle("3D Plot")
 	app.show_specific(plotw)
 	return plotw
-
-def load_pdb(pdbfiles):
-		viewer = EMScene3D()
-		models = [EMStructureItem3D(pdb_file=pdbf) for pdbf in pdbfiles]
-		viewer.addChildren(models)
-		viewer.show()
 
 # If executed as a program
 if __name__ == '__main__':
