@@ -720,15 +720,14 @@ float TomoWedgeCccCmp::cmp(EMData * image, EMData *with) const
 				
 				sum+=v1r*v2r+v1i*v2i;
 				sumsq1+=v1;
-				if (isnan(sumsq1)) { printf("%d %d %d %f %f %f\n",x,y,z,v1r,v1i,v1);
-					exit(1);}
+				if (isnan(sumsq1)) { printf("TomoWedgeCccCmp: NaN encountered: %d %d %d %f %f %f\n",x,y,z,v1r,v1i,v1); }
 				sumsq2+=v2;
 				norm+=1.0;
 			}
 		}
 	}
 	image->set_attr("fft_overlap",(float)(2.0*norm/(image->get_xsize()*image->get_ysize()*image->get_zsize())));
-	printf("%f\t%f\t%f\t%f\t%f\n",s1,s2,sumsq1,sumsq2,norm);
+//	printf("%f\t%f\t%f\t%f\t%f\n",s1,s2,sumsq1,sumsq2,norm);
 	
 	if (negative) sum*=-1.0;
 	return float(sum/(sqrt(sumsq1)*sqrt(sumsq2)));

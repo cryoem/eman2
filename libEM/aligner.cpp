@@ -2771,6 +2771,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 						s_score[worst]=sim;
 						s_coverage[worst]=stt->get_attr("fft_overlap");
 						s_xform[worst]=t;
+						//printf("%f\t%f\t%d\n",s_score[worst],s_coverage[worst],worst);
 					}
 					delete stt;
 				}
