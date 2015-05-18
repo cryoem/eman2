@@ -720,7 +720,7 @@ float TomoWedgeCccCmp::cmp(EMData * image, EMData *with) const
 				
 				sum+=v1r*v2r+v1i*v2i;
 				sumsq1+=v1;
-				if (isnan(sumsq1)) { printf("TomoWedgeCccCmp: NaN encountered: %d %d %d %f %f %f\n",x,y,z,v1r,v1i,v1); }
+				if (Util::is_nan(sumsq1)) { printf("TomoWedgeCccCmp: NaN encountered: %d %d %d %f %f %f\n",x,y,z,v1r,v1i,v1); }
 				sumsq2+=v2;
 				norm+=1.0;
 			}
