@@ -1,4 +1,4 @@
-#!/usr/bin/python2.7
+#!/usr/bin/env python
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
@@ -31,186 +31,13 @@
 #
 #
 
+# $Id$
 import	global_def
 from	global_def 	import *
 from	EMAN2 		import EMUtil, parsemodopt, EMAN2Ctf
 from    EMAN2jsondb import js_open_dict
 
 from	utilities 	import *
-from    statistics import mono
-import  os
-
-
-
-
-def rotate_shift_params(paramsin, transf):
-	from EMAN2 import Vec2f
-	t = Transform({"type":"spider","phi":transf[0],"theta":transf[1],"psi":transf[2],"tx":transf[3],"ty":transf[4],"tz":transf[5],"mirror":0,"scale":1.0})
-	t = t.inverse()
-	cpar = []
-	for params in paramsin:
-		d = Transform({"type":"spider","phi":params[0],"theta":params[1],"psi":params[2]})
-		d.set_trans(Vec2f(-params[3], -params[4]))
-		c = d*t
-		u = c.get_params("spider")
-		cpar.append([u["phi"],u["theta"],u["psi"],-u["tx"],-u["ty"]])
-	return cpar
-
-
-
-"""
-	Traveling salesman problem solved using Simulated Annealing.
-"""
-#from scipy import *
-#from pylab import *
-
-def Distance(i1, i2, lccc):
-	return max(1.0 - lccc[mono(i1,i2)][0], 0.0)
-# 	return sqrt((R1[0]-R2[0])**2+(R1[1]-R2[1])**2)
-
-def TotalDistance(city, lccc):
-	dist = 0.0
-	for i in range(len(city)-1):
-		dist += Distance(city[i], city[i+1], lccc)
-	dist += Distance(city[-1], city[0], lccc)
-	return dist
-    
-def reverse(city, n):
-    nct = len(city)
-    nn = (1+ ((n[1]-n[0]) % nct))/2 # half the lenght of the segment to be reversed
-    # the segment is reversed in the following way n[0]<->n[1], n[0]+1<->n[1]-1, n[0]+2<->n[1]-2,...
-    # Start at the ends of the segment and swap pairs of cities, moving towards the center.
-    for j in range(nn):
-        k = (n[0]+j) % nct
-        l = (n[1]-j) % nct
-        (city[k],city[l]) = (city[l],city[k])  # swap
-
-def transpt(city, n):
-    nct = len(city)
-    
-    newcity=[]
-    # Segment in the range n[0]...n[1]
-    for j in range( (n[1]-n[0])%nct + 1):
-        newcity.append(city[ (j+n[0])%nct ])
-    # is followed by segment n[5]...n[2]
-    for j in range( (n[2]-n[5])%nct + 1):
-        newcity.append(city[ (j+n[5])%nct ])
-    # is followed by segment n[3]...n[4]
-    for j in range( (n[4]-n[3])%nct + 1):
-        newcity.append(city[ (j+n[3])%nct ])
-    return newcity
-
-"""
-def Plot(city, R, dist):
-    # Plot
-    Pt = [R[city[i]] for i in range(len(city))]
-    Pt += [R[city[0]]]
-    Pt = array(Pt)
-    title('Total distance='+str(dist))
-    plot(Pt[:,0], Pt[:,1], '-o')
-    show()
-"""
-
-def tsp(lccc):
-
-	#     ncity = 100        # Number of cities to visit
-	from math import sqrt
-	ncity = int( (1+sqrt(1+8*len(lccc)))/2 )        # Number of cities to visit
-    #  sanity check
-	if( ncity*(ncity-1)/2 != len(lccc) ): return [-1]
-
-	maxTsteps = 100    # Temperature is lowered not more than maxTsteps
-	Tstart = 0.2       # Starting temperature - has to be high enough
-	fCool = 0.9        # Factor to multiply temperature at each cooling step
-	maxSteps = 100*ncity     # Number of steps at constant temperature
-	maxAccepted = 10*ncity   # Number of accepted steps at constant temperature
-
-	Preverse = 0.5      # How often to choose reverse/transpose trial move
-
-
-	# The index table -- the order the cities are visited.
-	city = range(ncity)
-	# Distance of the travel at the beginning
-	dist = TotalDistance(city, lccc)
-
-	#  Not clear what is nct
-	nct = ncity
-	# Stores points of a move
-	n = zeros(6, dtype=int)
-
-	T = Tstart # temperature
-
-	#     Plot(city, R, dist)
-
-	for t in range(maxTsteps):  # Over temperature
-
-		accepted = 0
-		for i in range(maxSteps): # At each temperature, many Monte Carlo steps
-            
-			while True: # Will find two random cities sufficiently close by
-				# Two cities n[0] and n[1] are choosen at random
-				n[0] = int((nct)*rand())     # select one city
-				n[1] = int((nct-1)*rand())   # select another city, but not the same
-				if (n[1] >= n[0]): n[1] += 1   #
-				if (n[1] < n[0]): (n[0],n[1]) = (n[1],n[0]) # swap, because it must be: n[0]<n[1]
-				nn = (n[0]+nct -n[1]-1) % nct  # number of cities not on the segment n[0]..n[1]
-				if nn>=3: break
-        
-			# We want to have one index before and one after the two cities
-			# The order hence is [n2,n0,n1,n3]
-			n[2] = (n[0]-1) % nct  # index before n0  -- see figure in the lecture notes
-			n[3] = (n[1]+1) % nct  # index after n2   -- see figure in the lecture notes
-            
-			if Preverse > rand(): 
-				# Here we reverse a segment
-				# What would be the cost to reverse the path between city[n[0]]-city[n[1]]?
-				de = Distance(city[n[2]], city[n[1]], lccc) + Distance(city[n[3]], city[n[0]], lccc)\
-					 - Distance(city[n[2]], city[n[0]], lccc) - Distance(city[n[3]] ,city[n[1]], lccc)
-                
-				if de<0 or exp(-de/T)>rand(): # Metropolis
-					accepted += 1
-					dist += de
-					reverse(city, n)
-			else:
-				# Here we transpose a segment
-				nc = (n[1]+1+ int(rand()*(nn-1)))%nct  # Another point outside n[0],n[1] segment. See picture in lecture nodes!
-				n[4] = nc
-				n[5] = (nc+1) % nct
-
-				# Cost to transpose a segment
-				de = -Distance( city[n[1]], city[n[3]], lccc) - Distance( city[n[0]], city[n[2]], lccc) \
-						- Distance( city[n[4]], city[n[5]], lccc)
-				de += Distance( city[n[0]], city[n[4]], lccc) + Distance( city[n[1]], city[n[5]], lccc) \
-						+ Distance( city[n[2]], city[n[3]], lccc)
-
-				if de<0 or exp(-de/T)>rand(): # Metropolis
-					accepted += 1
-					dist += de
-					city = transpt(city, n)
-                    
-			if accepted > maxAccepted: break
-
-		# Plot
-		#         Plot(city, R, dist)
-            
-		print "T=%10.5f , distance= %10.5f , accepted steps= %d" %(T, dist, accepted)
-		T *= fCool             # The system is cooled down
-		if accepted == 0: break  # If the path does not want to change any more, we can stop
-
-        
-#     Plot(city, R, dist)
-	return city
-
-
-
-
-def pca(cov):
-	from numpy import  linalg, argsort
-	""" assume one sample per column """
-	values, vecs = linalg.eigh(cov)
-	perm = argsort(-values)  # sort in descending order
-	return values[perm], vecs[:, perm]
-
 
 def main():
 	import sys
@@ -230,90 +57,118 @@ def main():
 	Functionality:
 
 	1.  Phase flip a stack of images and write output to new file:
-		sxprocess.py input_stack.hdf output_stack.hdf --phase_flip
+	sxprocess.py input_stack.hdf output_stack.hdf --phase_flip
 	
 	2.  Resample (decimate or interpolate up) images (2D or 3D) in a stack to change the pixel size.
 	    The window size will change accordingly.
-		sxprocess input.hdf output.hdf  --changesize --ratio=0.5
+	sxprocess input.hdf output.hdf  --changesize --ratio=0.5
 
 	3.  Compute average power spectrum of a stack of 2D images with optional padding (option wn) with zeroes.
-		sxprocess.py input_stack.hdf powerspectrum.hdf --pw [--wn=1024]
+	sxprocess.py input_stack.hdf powerspectrum.hdf --pw [--wn=1024]
 
-	4.  Generate a stack of projections bdb:data and micrographs with prefix mic (i.e., mic0.hdf, mic1.hdf etc) from structure input_structure.hdf, with CTF applied to both projections and micrographs:
-		sxprocess.py input_structure.hdf data mic --generate_projections format="bdb":apix=5.2:CTF=True:boxsize=64
+	4.  Order a 2-D stack of image based on pair-wise similarity (computed as a cross-correlation coefficent).
+	    Option initial specifies which image will be used as an initial seed to form the chain.
+	sxprocess.py input_stack.hdf output_stack.hdf --order  --initial=23
 
-    5.  Retrieve original image numbers in the selected ISAC group (here group 12 from generation 3):
-    	sxprocess.py  bdb:test3 class_averages_generation_3.hdf  list3_12.txt --isacgroup=12 --params=myid
+	5.  Generate a stack of projections bdb:data and micrographs with prefix mic (i.e., mic0.hdf, mic1.hdf etc) from structure input_structure.hdf, with CTF applied to both projections and micrographs:
+	sxprocess.py input_structure.hdf data mic --generate_projections format="bdb":apix=5.2:CTF=True:boxsize=64
 
-    6.  Adjust rotationally averaged power spectrum of an image to that of a reference image or a reference 1D power spectrum stored in an ASCII file.
+    6.  Retrieve original image numbers in the selected ISAC group (here group 12 from generation 3):
+    sxprocess.py  bdb:test3 class_averages_generation_3.hdf  list3_12.txt --isacgroup=12 --params=myid
+
+    7.  Adjust rotationally averaged power spectrum of an image to that of a reference image or a reference 1D power spectrum stored in an ASCII file.
     	Optionally use a tangent low-pass filter.  Also works for a stack of images, in which case the output is also a stack.
-    	sxprocess.py  vol.hdf ref.hdf  avol.hdf < 0.25 0.2> --adjpw
-   	 	sxprocess.py  vol.hdf pw.txt   avol.hdf < 0.25 0.2> --adjpw
+    sxprocess.py  vol.hdf ref.hdf  avol.hdf < 0.25 0.2> --adjpw
+    sxprocess.py  vol.hdf pw.txt   avol.hdf < 0.25 0.2> --adjpw
 
-	7.  Generate a 1D rotationally averaged power spectrum of an image.
-		sxprocess.py  vol.hdf --rotwp=rotpw.txt
-    	# Output will contain three columns:
+	8.  Generate a 1D rotationally averaged power spectrum of an image.
+    sxprocess.py  vol.hdf --rotwp=rotpw.txt
+    # Output will contain three columns:
        (1) integer line number (from zero to approximately to half the image size)
        (2) rotationally averaged power spectrum
        (3) logarithm of the rotationally averaged power spectrum
-       
-    8.  Apply 3D transformation (rotation and/or shift) to a set of orientation parameters associated with projection data.
-    	sxprocess.py  --transfromparams=phi,theta,psi,tx,ty,tz      input.txt  output.txt
-    	The output file is then imported and 3D transformed volume computed:
-    	sxheader.py  bdb:p  --params=xform.projection  --import=output.txt
-    	mpirun -np 2 sxrecons3d_n.py  bdb:p tvol.hdf --MPI
-    	The reconstructed volume is in the position of the volume computed using the input.txt parameters and then
-    	transformed with rot_shift3D(vol, phi,theta,psi,tx,ty,tz)
 
 	9.  Import ctf parameters from the output of sxcter into windowed particle headers.
 	    There are three possible input files formats:  (1) all particles are in one stack, (2 aor 3) particles are in stacks, each stack corresponds to a single micrograph.
 	    In each case the particles should contain a name of the micrograph of origin stores using attribute name 'ptcl_source_image'.  Normally this is done by e2boxer.py during windowing.
 	    Particles whose defocus or astigmatism error exceed set thresholds will be skipped, otherwise, virtual stacks with the original way preceded by G will be created.
-		sxprocess.py  --input=bdb:data  --importctf=outdir/partres  --defocuserror=10.0  --astigmatismerror=5.0
-		#  Output will be a vritual stack bdb:Gdata
-		sxprocess.py  --input="bdb:directory/stacks*"  --importctf=outdir/partres  --defocuserror=10.0  --astigmatismerror=5.0
-		To concatenate output files:
-		cd directory
-		e2bdb.py . --makevstack=bdb:allparticles  --filt=G
-		IMPORTANT:  Please do not move (or remove!) any input/intermediate EMAN2DB files as the information is linked between them.
+	sxprocess.py  --input=bdb:data  --importctf=outdir/partres  --defocuserror=10.0  --astigmatismerror=5.0
+	#  Output will be a vritual stack bdb:Gdata
+	sxprocess.py  --input="bdb:directory/stacks*"  --importctf=outdir/partres  --defocuserror=10.0  --astigmatismerror=5.0
+	To concatenate output files:
+	cd directory
+	e2bdb.py . --makevstack=bdb:allparticles  --filt=G
+	IMPORTANT:  Please do not move (or remove!) any input/intermediate EMAN2DB files as the information is linked between them.
 
 """
 
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--order", 				action="store_true", help="Two arguments are required: name of input stack and desired name of output stack. The output stack is the input stack sorted by similarity in terms of cross-correlation coefficent.", default=False)
-	parser.add_option("--order_lookup", 		action="store_true", help="Test/Debug.", default=False)
-	parser.add_option("--order_metropolis", 	action="store_true", help="Test/Debug.", default=False)
-	parser.add_option("--order_pca", 			action="store_true", help="Test/Debug.", default=False)
-	parser.add_option("--initial",				type="int", 		default=-1, help="Specifies which image will be used as an initial seed to form the chain. (default = 0, means the first image)")
-	parser.add_option("--circular", 			action="store_true", help="Select circular ordering (fisr image has to be similar to the last", default=False)
-	parser.add_option("--radius", 				type="int", 		default=-1, help="Radius of a circular mask for similarity based ordering")
-	parser.add_option("--changesize", 			action="store_true", help="resample (decimate or interpolate up) images (2D or 3D) in a stack to change the pixel size.", default=False)
-	parser.add_option("--ratio", 				type="float", 		default=1.0, help="The ratio of new to old image size (if <1 the pixel size will increase and image size decrease, if>1, the other way round")
-	parser.add_option("--pw", 					action="store_true", help="compute average power spectrum of a stack of 2-D images with optional padding (option wn) with zeroes", default=False)
-	parser.add_option("--wn", 					type="int", 		default=-1, help="Size of window to use (should be larger/equal than particle box size, default padding to max(nx,ny))")
-	parser.add_option("--phase_flip", 			action="store_true", help="Phase flip the input stack", default=False)
-	parser.add_option("--makedb", 				metavar="param1=value1:param2=value2", type="string",
+	parser.add_option("--order", action="store_true", help="Two arguments are required: name of input stack and desired name of output stack. The output stack is the input stack sorted by similarity in terms of cross-correlation coefficent.", default=False)
+	parser.add_option("--initial", type="int", default=0, help="Specifies which image will be used as an initial seed to form the chain. (default = 0, means the first image)")
+	parser.add_option("--changesize", action="store_true", help="resample (decimate or interpolate up) images (2D or 3D) in a stack to change the pixel size.", default=False)
+	parser.add_option("--ratio", type="float", default=1.0, help="The ratio of new to old image size (if <1 the pixel size will increase and image size decrease, if>1, the other way round")
+	parser.add_option("--pw", action="store_true", help="compute average power spectrum of a stack of 2-D images with optional padding (option wn) with zeroes", default=False)
+	parser.add_option("--wn", type="int", default=-1, help="Size of window to use (should be larger/equal than particle box size, default padding to max(nx,ny))")
+	parser.add_option("--phase_flip", action="store_true", help="Phase flip the input stack", default=False)
+	parser.add_option("--makedb", metavar="param1=value1:param2=value2", type="string",
 					action="append",  help="One argument is required: name of key with which the database will be created. Fill in database with parameters specified as follows: --makedb param1=value1:param2=value2, e.g. 'gauss_width'=1.0:'pixel_input'=5.2:'pixel_output'=5.2:'thr_low'=1.0")
 	parser.add_option("--generate_projections", metavar="param1=value1:param2=value2", type="string",
 					action="append", help="Three arguments are required: name of input structure from which to generate projections, desired name of output projection stack, and desired prefix for micrographs (e.g. if prefix is 'mic', then micrographs mic0.hdf, mic1.hdf etc will be generated). Optional arguments specifying format, apix, box size and whether to add CTF effects can be entered as follows after --generate_projections: format='bdb':apix=5.2:CTF=True:boxsize=100, or format='hdf', etc., where format is bdb or hdf, apix (pixel size) is a float, CTF is True or False, and boxsize denotes the dimension of the box (assumed to be a square). If an optional parameter is not specified, it will default as follows: format='bdb', apix=2.5, CTF=False, boxsize=64.")
-	parser.add_option("--isacgroup", 			type="int", 		help="Retrieve original image numbers in the selected ISAC group   See ISAC documentaion for details.", default=-1)
-	parser.add_option("--params",	   			type="string",      default=None,    help="Name of header of parameter, which one depends on specific option")
-	parser.add_option("--adjpw", 				action="store_true",	help="Adjust rotationally averaged power spectrum of an image", default=False)
-	parser.add_option("--rotpw", 				type="string",   	default=None,    help="Name of the text file to contain rotationally averaged power spectrum of the input image.")
-	parser.add_option("--transformparams",		type="string",   	default=None,    help="Name of the text file to contain rotationally averaged power spectrum of the input image.")
+	parser.add_option("--isacgroup", type="int", help="Retrieve original image numbers in the selected ISAC group   See ISAC documentaion for details.", default=-1)
+	parser.add_option("--params",	   type="string",       default=None,    help="Name of header of parameter, which one depends on specific option")
+	parser.add_option("--adjpw", action="store_true", help="Adjust rotationally averaged power spectrum of an image", default=False)
+	parser.add_option("--rotpw", type="string",   default=None,    help="Name of the text file to contain rotationally averaged power spectrum of the input image.")
 
 	
 	# import ctf estimates done using cter
-	parser.add_option("--input",              	type="string",		default= None,     		  help="Input particles.")
-	parser.add_option("--importctf",          	type="string",		default= None,     		  help="Name of the file containing CTF parameters produced by sxcter.")
-	parser.add_option("--defocuserror",       	type="float",  		default=1000000.0,        help="Exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent.  The error is computed as (std dev defocus)/defocus*100%")
-	parser.add_option("--astigmatismerror",   	type="float",  		default=360.0,            help="Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees.")
+	parser.add_option("--input",              type="string",	default= None,     		  help="Input particles.")
+	parser.add_option("--importctf",          type="string",	default= None,     		  help="Name of the file containing CTF parameters produced by sxcter.")
+	parser.add_option("--defocuserror",       type="float",  	default=1000000.0,        help="Exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent.  The error is computed as (std dev defocus)/defocus*100%")
+	parser.add_option("--astigmatismerror",   type="float",  	default=360.0,            help="Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees.")
 
 
  	(options, args) = parser.parse_args()
 
 	global_def.BATCH = True
+
+	if options.order:
+		nargs = len(args)
+		if nargs != 2:
+			print "must provide name of input and output file!"
+			return
 		
+		from utilities import get_params2D, model_circle
+		from fundamentals import rot_shift2D
+		from statistics import ccc
+		stack = args[0]
+		new_stack = args[1]
+		
+		d = EMData.read_images(stack)
+		for i in xrange(len(d)):
+			alpha, sx, sy, mirror, scale = get_params2D(d[i])
+			d[i] = rot_shift2D(d[i], alpha, sx, sy, mirror)
+		m = model_circle(30, 64, 64)
+
+		init = options.initial
+		temp = d[init].copy()
+		temp.write_image(new_stack, 0)
+		del d[init]
+		k = 1
+		while len(d) > 1:
+			maxcit = -111.
+			for i in xrange(len(d)):
+					cuc = ccc(d[i], temp, m)
+					if cuc > maxcit:
+							maxcit = cuc
+							qi = i
+			#print k, maxcit
+			temp = d[qi].copy()
+			del d[qi]
+			temp.write_image(new_stack, k)
+			k += 1
+
+		d[0].write_image(new_stack, k)
+			
 	if options.phase_flip:
 		nargs = len(args)
 		if nargs != 2:
@@ -370,7 +225,7 @@ def main():
 			
 			tmp.write_image(outstack, i)
 
-	elif options.changesize:
+	if options.changesize:
 		nargs = len(args)
 		if nargs != 2:
 			ERROR("must provide name of input and output file!", "change size", 1)
@@ -385,7 +240,7 @@ def main():
 		for i in xrange(nima):
 			resample(get_im(instack, i), sub_rate).write_image(outstack, i)
 
-	elif options.isacgroup>-1:
+	if options.isacgroup>-1:
 		nargs = len(args)
 		if nargs != 3:
 			ERROR("Three files needed on input!", "isacgroup", 1)
@@ -399,7 +254,7 @@ def main():
 		from utilities import write_text_file
 		write_text_file(l, args[2])
 
-	elif options.pw:
+	if options.pw:
 		nargs = len(args)
 		if nargs != 2:
 			ERROR("must provide name of input and output file!", "pw", 1)
@@ -414,10 +269,9 @@ def main():
 		else:
 			if( (wn<nx) or (wn<ny) ):  ERROR("window size cannot be smaller than the image size","pw",1)
 		n = EMUtil.get_image_count(args[0])
-		from utilities import model_blank, model_circle, pad
+		from utilities import model_blank, pad
 		from EMAN2 import periodogram
 		p = model_blank(wn,wn)
-		
 		for i in xrange(n):
 			d = get_im(args[0], i)
 			st = Util.infomask(d, None, True)
@@ -425,8 +279,9 @@ def main():
 			p += periodogram(pad(d, wn, wn, 1, 0.))
 		p /= n
 		p.write_image(args[1])
+		sys.exit()
 
-	elif options.adjpw:
+	if options.adjpw:
 
 		if len(args) < 3:
 			ERROR("filt_by_rops input target output fl aa (the last two are optional parameters of a low-pass filter)","adjpw",1)
@@ -466,7 +321,7 @@ def main():
 			img = fft(filt_table(img, table))
 			img.write_image(out_stack, i)
 
-	elif options.rotpw != None:
+	if options.rotpw != None:
 
 		if len(args) != 1:
 			ERROR("Only one input permitted","rotpw",1)
@@ -480,18 +335,8 @@ def main():
 		for i in x:  r[i] = log10(t[i])
 		write_text_file([x,t,r],options.rotpw)
 
-	elif options.transformparams != None:
-		if len(args) != 2:
-			ERROR("Please provide names of input and output files with orientation parameters","transformparams",1)
-			return
-		from utilities import read_text_row, write_text_row
-		transf = [0.0]*6
-		spl=options.transformparams.split(',')
-		for i in xrange(len(spl)):  transf[i] = float(spl[i])
 
-		write_text_row( rotate_shift_params(read_text_row(args[0]), transf)	, args[1])
-
-	elif options.makedb != None:
+	if options.makedb != None:
 		nargs = len(args)
 		if nargs != 1:
 			print "must provide exactly one argument denoting database key under which the input params will be stored"
@@ -513,22 +358,21 @@ def main():
 				dbdict[pkey] = param_dict[pkey]
 		gbdb[dbkey] = dbdict
 
-	elif options.generate_projections:
+	if options.generate_projections:
 		nargs = len(args)
 		if nargs != 3:
-			ERROR("Must provide name of input structure(s) from which to generate projections, name of output projection stack, and prefix for output micrographs."\
-			"sxprocess - generate projections",1)
+			print "Must provide name of input structure from which to generate projections, desired name of output projection stack, and desired prefix for output micrographs. Exiting..."
 			return
-		inpstr  = args[0]
-		outstk  = args[1]
+		inpstr = args[0]
+		outstk = args[1]
 		micpref = args[2]
 
 		parmstr = 'dummy:'+options.generate_projections[0]
 		(processorname, param_dict) = parsemodopt(parmstr)
 
-		parm_CTF    = False
+		parm_CTF = False
 		parm_format = 'bdb'
-		parm_apix   = 2.5
+		parm_apix = 2.5
 
 		if 'CTF' in param_dict:
 			if param_dict['CTF'] == 'True':
@@ -546,13 +390,13 @@ def main():
 
 		print "pixel size: ", parm_apix, " format: ", parm_format, " add CTF: ", parm_CTF, " box size: ", boxsize
 
-		scale_mult      = 2500
-		sigma_add       = 1.5
-		sigma_proj      = 30.0
-		sigma2_proj     = 17.5
-		sigma_gauss     = 0.3
-		sigma_mic       = 30.0
-		sigma2_mic      = 17.5
+		scale_mult = 2500
+		sigma_add = 1.5
+		sigma_proj = 30.0
+		sigma2_proj = 17.5
+		sigma_gauss = 0.3
+		sigma_mic = 30.0
+		sigma2_mic = 17.5
 		sigma_gauss_mic = 0.3
 		
 		if 'scale_mult' in param_dict:
@@ -580,27 +424,25 @@ def main():
 		angles = even_angles(delta, 0.0, 89.9, 0.0, 359.9, "S")
 		nangle = len(angles)
 		
-		modelvol = []
-		nvlms = EMUtil.get_image_count(inpstr)
-		from utilities import get_im
-		for k in xrange(nvlms):  modelvol.append(get_im(inpstr,k))
+		modelvol = EMData()
+		#modelvol.read_image("../model_structure.hdf")
+		modelvol.read_image(inpstr)
 		
-		nx = modelvol[0].get_xsize()
+		nx = modelvol.get_xsize()
 		
 		if nx != boxsize:
-			ERROR("Requested box dimension does not match dimension of the input model.", \
-			"sxprocess - generate projections",1)
-		nvol = 10
-		volfts = [[] for k in xrange(nvlms)]
-		for k in xrange(nvlms):
-			for i in xrange(nvol):
-				sigma = sigma_add + random()  # 1.5-2.5
-				addon = model_gauss(sigma, boxsize, boxsize, boxsize, sigma, sigma, 38, 38, 40 )
-				scale = scale_mult * (0.5+random())
-				vf, kb = prep_vol(modelvol[k] + scale*addon)
-				volfts[k].append(vf)
-		del vf, modelvol
+			print "requested box dimension does not match dimension of the input model....Exiting"
+			sys.exit()
 
+		nvol = 5
+		volfts = [None]*nvol
+		for i in xrange(nvol):
+			sigma = sigma_add + random()  # 1.5-2.5
+			addon = model_gauss(sigma, boxsize, boxsize, boxsize, sigma, sigma, 38, 38, 40 )
+			scale = scale_mult * (0.5+random())
+			model = modelvol + scale*addon
+			volfts[i], kb = prep_vol(modelvol + scale*addon)
+			
 		if parm_format == "bdb":
 			stack_data = "bdb:"+outstk
 			delete_bdb(stack_data)
@@ -617,7 +459,7 @@ def main():
 		xstart = 8 + boxsize/2
 		ystart = 8 + boxsize/2
 		rowlen = 17
-		from random import randint
+
 		params = []
 		for idef in xrange(3, 8):
 
@@ -625,11 +467,14 @@ def main():
 			icol = 0
 
 			mic = model_blank(4096, 4096)
-			defocus = idef * 0.5#0.2
+			defocus = idef * 0.2
 			if parm_CTF:
+# 				ctf = EMAN2Ctf()
+# 				ctf.from_dict({"defocus": defocus, "cs": Cs, "voltage": voltage, "apix": pixel, "ampcont": ampcont, "bfactor": 0.0})
 				astampl=defocus*0.15
 				astangl=50.0
 				ctf = generate_ctf([defocus, Cs, voltage,  pixel, ampcont, 0.0, astampl, astangl])
+# 				print {"defocus":defocus, "astampl":astampl, "astangl":astangl}
 
 			for i in xrange(nangle):
 				for k in xrange(12):
@@ -646,22 +491,21 @@ def main():
 					params.append([phi, tht, psi, s2x, s2y])
 
 					ivol = iprj % nvol
-					imgsrc = randint(0,nvlms-1)
-					proj = prgs(volfts[imgsrc][ivol], kb, [phi, tht, psi, -s2x, -s2y])
-
+					proj = prgs(volfts[ivol], kb, [phi, tht, psi, -s2x, -s2y])
+		
 					x = xstart + irow * width
 					y = ystart + icol * width
 
 					mic += pad(proj, 4096, 4096, 1, 0.0, x-2048, y-2048, 0)
-
+			
 					proj = proj + model_gauss_noise( sigma_proj, nx, nx )
 					if parm_CTF:
 						proj = filt_ctf(proj, ctf)
 						proj.set_attr_dict({"ctf":ctf, "ctf_applied":0})
-
+			
 					proj = proj + filt_gaussl(model_gauss_noise(sigma2_proj, nx, nx), sigma_gauss)
-					proj.set_attr("active", 1)
-					proj.set_attr("origimgsrc",imgsrc)
+#					proj.set_attr("active", 1)
+					proj.set_attr("origimgsrc",ivol)
 					# flags describing the status of the image (1 = true, 0 = false)
 					set_params2D(proj, [0.0, 0.0, 0.0, 0, 1.0])
 					set_params_proj(proj, [phi, tht, psi, s2x, s2y])
@@ -685,7 +529,7 @@ def main():
 		
 		drop_spider_doc("params.txt", params)
 
-	elif options.importctf != None:
+	if options.importctf != None:
 		print ' IMPORTCTF  '
 		from utilities import read_text_row,write_text_row
 		from random import randint
@@ -747,8 +591,7 @@ def main():
 				
 		cmd = "{} {} {}".format("rm -f",grpfile,ctfpfile)
 		subprocess.call(cmd, shell=True)
-	
-	else:  ERROR("Please provide option name","sxprocess.py",1)	
+		
 
 if __name__ == "__main__":
 	main()
