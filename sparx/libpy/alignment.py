@@ -476,11 +476,11 @@ def ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	peak = -1.0E23
 
 	lkx = int(xrng[0]/step)
-	rkx = int(xrng[1]/step)
-	
+	rkx = int(xrng[-1]/step)
+
 	lky = int(yrng[0]/step)
-	rky = int(yrng[1]/step)
-	
+	rky = int(yrng[-1]/step)
+
 	for i in xrange(-lky, rky+1):
 		iy = i*step
 		for j in xrange(-lkx, rkx+1):
@@ -1201,13 +1201,13 @@ def prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", 
 def prepare_refrings_projections( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", mode = "H", numr = None, MPI=False, \
 						phiEqpsi = "Zero", initial_theta = None, delta_theta = None):
 	"""
-		Generate quasi-evenly distributed reference projections and their rings
+		Generate quasi-evenly distributed reference FTs projections and the halfrings of their scf's
 		nz has to be provided
 	"""
 	from projection   import prep_vol, prgs
 	from applications import MPI_start_end
 	from utilities    import even_angles, getfvec
-	from fundamentals import scf
+	from fundamentals import scf, fft
 	from types        import BooleanType
 
 	# mpi communicator can be sent by the MPI parameter
@@ -1250,7 +1250,7 @@ def prepare_refrings_projections( volft, kb, nz = -1, delta = 2.0, ref_a = "P", 
 	refrings    = [None]*num_ref     # list of (image objects) reference projections in Fourier/polar representation
 
 	sizex = numr[len(numr)-2] + numr[len(numr)-1]-1
-	cimage = model_blank(nz,nz)
+	cimage = EMData(nz,nz,1,False)  #  FT blank
 
 	for i in xrange(num_ref):
 		prjref = EMData()
@@ -1259,7 +1259,7 @@ def prepare_refrings_projections( volft, kb, nz = -1, delta = 2.0, ref_a = "P", 
 		projections[i] = cimage.copy()
 
 	for i in xrange(ref_start, ref_end):
-		prjref = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
+		prjref = fft( prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0]) )
 		cimage = Util.Polar2Dm(scf(prjref), cnx, cny, numr, mode)  # currently set to quadratic....
 		Util.Normalize_ring(cimage, numr)
 		Util.Frngs(cimage, numr)
@@ -1272,10 +1272,12 @@ def prepare_refrings_projections( volft, kb, nz = -1, delta = 2.0, ref_a = "P", 
 		bcast_compacted_EMData_to_all(projections, myid, comm=mpi_comm)
 		bcast_compacted_EMData_to_all(refrings, myid, comm=mpi_comm)
 
+	dd = {'is_complex':1, 'is_fftodd':nz%2, 'is_fftpad':1}
 	for i in xrange(len(ref_angles)):
 		n1,n2,n3 = getfvec(ref_angles[i][0], ref_angles[i][1])
 		refrings[i].set_attr_dict( {"phi":ref_angles[i][0], "theta":ref_angles[i][1], "psi":ref_angles[i][2], "n1":n1, "n2":n2, "n3":n3} )
 		projections[i].set_attr_dict( {"phi":ref_angles[i][0], "theta":ref_angles[i][1], "psi":ref_angles[i][2], "n1":n1, "n2":n2, "n3":n3} )
+		projections[i].set_attr_dict( dd )
 
 	return refrings
 
@@ -2635,79 +2637,9 @@ def align2dshc(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, 
 	return   Util.shc(image, [crefim], xrng, yrng, step, -1.0, mode, numr, cnx, cny, "c1")
 '''
 
-
-
-def align2d_scf(image, refrings, projections, xrng=-1, yrng=-1, ou = -1):
-	from fundamentals import scf, rot_shift2D, ccf, mirror
-	from utilities import peak_search
-	from math import radians, sin, cos
-	nx = image.get_xsize()
-	ny = image.get_xsize()
-	if(ou<0):  ou = min(nx//2-1,ny//2-1)
-	if(yrng < 0):  yrng = xrng
-	if(ou<2):
-		ERROR('Radius of the object (ou) has to be given','align2d_scf',1)
-	nrx = min( 2*(xrng+1)+1, (((nx-2)//2)*2+1) )
-	nry = min( 2*(yrng+1)+1, (((ny-2)//2)*2+1) )
-	sci = scf(image)
-	scm = mirror(sci)
-	
-	peak = -1.0e23
-	for iref in xrange(len(refrings)):
-		#  This is strange
-		alpha1, sxs, sys, mirr, peak1 = align2d_no_mirror(sci, refrings[iref], last_ring=ou, mode="H")
-		alpha2, sxs, sys, mirr, peak2 = align2d_no_mirror(scm, refrings[iref], last_ring=ou, mode="H")
-	
-		if(peak1>peak2):
-			mirr = 0
-			alpha = alpha1
-		else:
-			mirr = 1
-			alpha = -alpha2
-
-		ccf1 = Util.window(ccf(rot_shift2D(image, alpha, 0.0, 0.0, mirr),projections[iref]),nrx,nry)
-		p1 = peak_search(ccf1)
-	
-		ccf2 = Util.window(ccf(rot_shift2D(image, alpha+180.0, 0.0, 0.0, mirr),projections[iref]),nrx,nry)
-		p2 = peak_search(ccf2)
-		#print p1
-		#print p2
-
-	
-		peak_val1 = p1[0][0]
-		peak_val2 = p2[0][0]
-	
-		if peak_val1 > peak_val2:
-			sxs = -p1[0][4]
-			sys = -p1[0][5]
-			cx = int(p1[0][1])
-			cy = int(p1[0][2])
-			peak = peak_val1
-		else:
-			alpha += 180.0
-			sxs = -p2[0][4]
-			sys = -p2[0][5]
-			peak = peak_val2
-			cx = int(p2[0][1])
-			cy = int(p2[0][2])
-			ccf1 = ccf2
-		from utilities import model_blank
-		#print cx,cy
-		z = model_blank(3,3)
-		for i in xrange(3):
-			for j in xrange(3):
-				z[i,j] = ccf1[i+cx-1,j+cy-1]
-		#print  ccf1[cx,cy],z[1,1]
-		XSH, YSH, PEAKV = parabl(z)
-		#print sxs, sys, XSH, YSH, PEAKV, peak
-		if(mirr == 1):  	sx = -sxs+XSH
-		else:               sx =  sxs-XSH
-		if(PEAKV>peak):
-			return alpha, sx, sys-YSH, mirr, PEAKV
-	return talpha, tsxs, tsys, tmirror, tpeak
-"""
 def align2d_scf(image, refim, xrng=-1, yrng=-1, ou = -1):
 	from fundamentals import scf, rot_shift2D, ccf, mirror
+	from fundamentals import fft
 	from utilities import peak_search
 	from math import radians, sin, cos
 	nx = image.get_xsize()
@@ -2716,12 +2648,30 @@ def align2d_scf(image, refim, xrng=-1, yrng=-1, ou = -1):
 	if(yrng < 0):  yrng = xrng
 	if(ou<2):
 		ERROR('Radius of the object (ou) has to be given','align2d_scf',1)
-	#sci = scf(image)
+	sci = scf(image)
 	scr = scf(refim)
+	first_ring = 1
 
-	alpha1, sxs, sys, mirr, peak1 = align2d_no_mirror(scf(image), scr, last_ring=ou, mode="H")
-	alpha2, sxs, sys, mirr, peak2 = align2d_no_mirror(scf(mirror(image)), scr, last_ring=ou, mode="H")
-	
+	#alpha1, sxs, sys, mirr, peak1 = align2d_no_mirror(scf(image), scr, last_ring=ou, mode="H")
+	#alpha2, sxs, sys, mirr, peak2 = align2d_no_mirror(scf(mirror(image)), scr, last_ring=ou, mode="H")
+	#alpha1, sxs, sys, mirr, peak1 = align2d_no_mirror(sci, scr, first_ring = 1, last_ring=ou, mode="H")
+	#alpha2, sxs, sys, mirr, peak2 = align2d_no_mirror(mirror(sci), scr,  first_ring = 1, last_ring=ou, mode="H")
+
+
+	from alignment import Numrinit, ringwe, ornq
+	# center in SPIDER convention
+	cnx = nx//2+1
+	cny = ny//2+1
+	#precalculate rings
+	numr = Numrinit(first_ring, ou, 1, "H")
+	wr   = ringwe(numr, "H")
+	crefim = Util.Polar2Dm(scr, cnx, cny, numr, "H")
+	Util.Frngs(crefim, numr)
+	Util.Applyws(crefim, numr, wr)
+	alpha1, sxs, sys, mirr, peak1 = ornq(sci, crefim, [0.0], [0.0], 1.0, "H", numr, cnx, cny)
+	alpha2, sxs, sys, mirr, peak2 = ornq(mirror(sci), crefim, [0.0], [0.0], 1.0, "H", numr, cnx, cny)
+
+
 	if(peak1>peak2):
 		mirr = 0
 		alpha = alpha1
@@ -2730,16 +2680,15 @@ def align2d_scf(image, refim, xrng=-1, yrng=-1, ou = -1):
 		alpha = -alpha2
 	nrx = min( 2*(xrng+1)+1, (((nx-2)//2)*2+1) )
 	nry = min( 2*(yrng+1)+1, (((ny-2)//2)*2+1) )
-
-	ccf1 = Util.window(ccf(rot_shift2D(image, alpha, 0.0, 0.0, mirr),refim),nrx,nry)
+	frotim = fft( refim )
+	ccf1 = Util.window(ccf(rot_shift2D(image, alpha, 0.0, 0.0, mirr), frotim),nrx,nry)
 	p1 = peak_search(ccf1)
 	
-	ccf2 = Util.window(ccf(rot_shift2D(image, alpha+180.0, 0.0, 0.0, mirr),refim),nrx,nry)
+	ccf2 = Util.window(ccf(rot_shift2D(image, alpha+180.0, 0.0, 0.0, mirr), frotim),nrx,nry)
 	p2 = peak_search(ccf2)
 	#print p1
 	#print p2
 
-	
 	peak_val1 = p1[0][0]
 	peak_val2 = p2[0][0]
 	
@@ -2769,8 +2718,88 @@ def align2d_scf(image, refim, xrng=-1, yrng=-1, ou = -1):
 	if(mirr == 1):  	sx = -sxs+XSH
 	else:               sx =  sxs-XSH
 	return alpha, sx, sys-YSH, mirr, PEAKV
-	#return alpha, sxs, sys, mirror, peak
-"""
+
+
+
+def multalign2d_scf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1):
+	from fundamentals import scf, rot_shift2D, ccf, mirror
+	from utilities import peak_search
+	from alignment import ornq
+	from math import radians, sin, cos
+	nx = image.get_xsize()
+	ny = image.get_xsize()
+	if(ou<0):  ou = min(nx//2-1,ny//2-1)
+	if(yrng < 0):  yrng = xrng
+	if(ou<2):
+		ERROR('Radius of the object (ou) has to be given','align2d_scf',1)
+	sci = scf(image)
+	first_ring = 1
+	# center in SPIDER convention
+	cnx = nx//2+1
+	cny = ny//2+1
+
+	nrx = min( 2*(xrng+1)+1, (((nx-2)//2)*2+1) )
+	nry = min( 2*(yrng+1)+1, (((ny-2)//2)*2+1) )
+
+	totpeak = -1.0e23
+
+	for iki in xrange(len(refrings)):
+		alpha1, sxs, sys, mirr, peak1 = ornq(sci, refrings[iki], [0.0], [0.0], 1.0, "H", numr, cnx, cny)
+		alpha2, sxs, sys, mirr, peak2 = ornq(mirror(sci), refrings[iki], [0.0], [0.0], 1.0, "H", numr, cnx, cny)
+
+
+		if(peak1>peak2):
+			mirr = 0
+			alpha = alpha1
+		else:
+			mirr = 1
+			alpha = -alpha2
+
+		ccf1 = Util.window(ccf(rot_shift2D(image, alpha, 0.0, 0.0, mirr), frotim[iki]), nrx, nry)
+		p1 = peak_search(ccf1)
+	
+		ccf2 = Util.window(ccf(rot_shift2D(image, alpha+180.0, 0.0, 0.0, mirr), frotim[iki]), nrx, nry)
+		p2 = peak_search(ccf2)
+		#print p1
+		#print p2
+
+		peak_val1 = p1[0][0]
+		peak_val2 = p2[0][0]
+	
+		if peak_val1 > peak_val2:
+			sxs = -p1[0][4]
+			sys = -p1[0][5]
+			cx = int(p1[0][1])
+			cy = int(p1[0][2])
+			peak = peak_val1
+		else:
+			alpha += 180.0
+			sxs = -p2[0][4]
+			sys = -p2[0][5]
+			peak = peak_val2
+			cx = int(p2[0][1])
+			cy = int(p2[0][2])
+			ccf1 = ccf2
+		from utilities import model_blank
+		#print cx,cy
+		z = model_blank(3,3)
+		for i in xrange(3):
+			for j in xrange(3):
+				z[i,j] = ccf1[i+cx-1,j+cy-1]
+		#print  ccf1[cx,cy],z[1,1]
+		XSH, YSH, PEAKV = parabl(z)
+		if(PEAKV > totpeak):
+			totpeak = PEAKV
+			iref = iki
+			#print sxs, sys, XSH, YSH, PEAKV, peak
+			if(mirr == 1):  	sx = -sxs+XSH
+			else:               sx =  sxs-XSH
+			sy = sys-YSH
+			talpha = alpha
+			tmirr = mirr
+			#return alpha, sx, sys-YSH, mirr, PEAKV
+	return sx,sy,iref,talpha,tmirr,totpeak
+
 def parabl(Z):
 	#  parabolic fit to a peak, C indexing
 	C1 = (26.*Z[0,0] - Z[0,1] + 2*Z[0,2] - Z[1,0] - 19.*Z[1,1] - 7.*Z[1,2] + 2.*Z[2,0] - 7.*Z[2,1] + 14.*Z[2,2])/9.
@@ -2985,7 +3014,7 @@ def align2d_no_mirror(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_r
 	crefim = Util.Polar2Dm(refim, cnx, cny, numr, mode)
 	Util.Frngs(crefim, numr)
 	Util.Applyws(crefim, numr, wr)
-	return ornq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny)
+	return ornq(image, crefim, [xrng], [yrng], step, mode, numr, cnx, cny)
 
 
 def align2d_peaks(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rstep=1, mode = "F"):
@@ -3010,7 +3039,7 @@ def align2d_peaks(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=
 	#print_col(crefim)
 	Util.Frngs(crefim, numr)
 	Util.Applyws(crefim, numr, wr)
-	return ormq_peaks(image, crefim, xrng, yrng, step, mode, numr, cnx, cny)
+	return ormq_peaks(image, crefim, [xrng], [yrng], step, mode, numr, cnx, cny)
 
 def align2d_g(image, refim, xrng=0, yrng=0, step=1, first_ring=1, last_ring=0, rstep=1, mode = "F"):
 	"""  Determine shift and rotation between image and reference image
@@ -4553,6 +4582,7 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, shrinkage 
 	from mpi             import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier, mpi_reduce, MPI_INT, MPI_SUM
 	from projection      import prep_vol
 	from statistics      import hist_list
+	from utilities		 import params_2D_3D
 	from applications    import MPI_start_end
 	from filter          import filt_ctf
 	from global_def      import Util
@@ -4626,8 +4656,11 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, shrinkage 
 		ali3d_options.ou = last_ring
 		ali3d_options.ir = first_ring
 	numr	= Numrinit(first_ring, last_ring, rstep, "H")
+	if(xr == -1.0): xrng = (nx - last_ring - 1)//2
+	else: 			xrng = xr
+	yrng = xrng
 
-	oldshifts = [None]*nima
+	#oldshifts = [None]*nima
 
 	if myid == main_node:
 		start_time = time()
@@ -4665,151 +4698,40 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, shrinkage 
 		log.add("Reference 3D reconstruction time = %f\n"%(time()-start_time))
 		start_time = time()
 
-	pixer = [0.0]*nima
-	total_iter = 0
-	# do the projection matching
-	Iter = 0
-	# There are no iterations here, just one match
-	while Iter < 1:
+	mpi_barrier(mpi_comm)
+	if myid == main_node:
+		log.add("Delta = %5.2f, an = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f\n"%(delta[N_step], an[N_step], xrng[N_step], yrng[N_step], step[N_step]))
+		start_time = time()
 
-		Iter += 1
-		total_iter += 1
+	#=========================================================================
+	# build references
+	volft, kb = prep_vol(vol)
+	refrings, ftprojections = prepare_refrings_projections(volft, kb, nx, delta[N_step], ref_a, sym, numr, MPI=mpi_comm, phiEqpsi = "Zero")
+	del volft, kb
+	#=========================================================================
 
-		mpi_barrier(mpi_comm)
-		if myid == main_node:
-			log.add("ITERATION #%3d,  inner iteration #%3d"%(total_iter, Iter))
-			log.add("Delta = %5.2f, an = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f\n"%(delta[N_step], an[N_step], xrng[N_step], yrng[N_step], step[N_step]))
-			start_time = time()
+	if myid == main_node:
+		log.add("Time to prepare rings: %f\n" % (time()-start_time))
+		start_time = time()
+	# alignment
+	params = [None]*nima
+	for im in xrange(nima):
+		newsx,newsy,iref,talpha,tmirr,totpeak = multalign2d_scf(data[im], refrings, ftprojections, numr, xrng, yrng, last_ring)
+		talpha, newsx, newsy = params_2D_3D(talpha, newsx, newsy, tmirr)
+		params[im] = [talpha, newsx/shrinkage, newsx/shrinkage, iref]
 
-		#=========================================================================
-		# build references
-		volft, kb = prep_vol(vol)
-		refrings, projections = prepare_refrings_projections(volft, kb, nx, delta[N_step], ref_a, sym, numr, MPI=mpi_comm, phiEqpsi = "Zero")
-		del volft, kb
-		#=========================================================================
+	#=========================================================================
+	mpi_barrier(mpi_comm)
+	if myid == main_node:
+		#print  data[0].get_attr_dict()
+		log.add("Time of alignment = %f\n"%(time()-start_time))
+		start_time = time()
 
-		if myid == main_node:
-			log.add("Time to prepare rings: %f\n" % (time()-start_time))
-			start_time = time()
-		# alignment
-
-		for im in xrange(nima):
-			newsx,newsy = align2d_scf(data[im], refrings, projections, xrng=-1, yrng=-1, ou = -1)
-
-		#=========================================================================
-		mpi_barrier(mpi_comm)
-		if myid == main_node:
-			#print  data[0].get_attr_dict()
-			log.add("Time of alignment = %f\n"%(time()-start_time))
-			start_time = time()
-
-		#=========================================================================
-		#output pixel errors, check stop criterion
-		all_pixer = wrap_mpi_gatherv(pixer, 0, mpi_comm)
-		par_r = mpi_reduce(par_r, len(par_r), MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD)
-		#total_checked_refs = wrap_mpi_gatherv([number_of_checked_refs], main_node, mpi_comm)
-		if myid == main_node:
-			#total_checked_refs = sum(total_checked_refs)
-			if(nsoft < 2):  par_r[1] = total_nima - par_r[0]
-			log.add("=========== Number of better peaks found ==============")
-			for lhx in xrange(len(par_r)):
-				msg = "            %5d     %7d"%(lhx, par_r[lhx])
-				log.add(msg)
-			log.add("_______________________________________________________")
-			changes = par_r[0]/float(total_nima)
-			if(  changes > saturatecrit ):
-				if( Iter == 1 ):
-					log.add("Will continue even though %4.2f images did not find better orientations"%saturatecrit)
-				else:
-					log.add("...............")
-					log.add(">>>>>>>>>>>>>>>   Will terminate as %4.2f images did not find better orientations"%saturatecrit)
-
-			lhist = 20
-			region, histo = hist_list(all_pixer, lhist)
-			log.add("=========== Histogram of pixel errors ==============")
-			for lhx in xrange(lhist):
-				msg = "          %10.3f     %7d"%(region[lhx], histo[lhx])
-				log.add(msg)
-			log.add("____________________________________________________")
-		#=========================================================================
-		mpi_barrier(mpi_comm)
-		if myid == main_node:
-			#print  data[0].get_attr_dict()
-			log.add("Time to compute histograms = %f\n"%(time()-start_time))
-			start_time = time()
-
-		#=========================================================================
-		if(False):  #total_iter%1 == 5 or terminate):
-			# gather parameters
-			params = []
-			previousmax = []
-			for im in data:
-				t = get_params_proj(im)
-				params.append( [t[0], t[1], t[2], t[3]/shrinkage, t[4]/shrinkage] )
-				#if(t[3] >0.0 or t[4]>0.0):  print  "  ERRROR  ",t
-				previousmax.append(im.get_attr("previousmax"))
-			assert(nima == len(params))
-			params = wrap_mpi_gatherv(params, 0, mpi_comm)
-			if myid == 0:
-				assert(total_nima == len(params))
-			previousmax = wrap_mpi_gatherv(previousmax, 0, mpi_comm)
-			if myid == main_node:
-				from utilities import write_text_row, write_text_file
-				write_text_row(params, "soft/params%04d.txt"%total_iter)
-				write_text_file(previousmax, "soft/previousmax%04d.txt"%total_iter)
-
-
-			del previousmax, params
-			i = 1
-			while data[0].has_attr("xform.projection" + str(i)):
-				params = []
-				previousmax = []
-				for im in data:
-
-					try:
-						#print  im.get_attr("xform.projection" + str(i))
-						t = get_params_proj(im,"xform.projection" + str(i))
-					except:
-						print " NO XFORM  ",myid, i,im.get_attr('ID')
-						from sys import exit
-						exit()
-
-					params.append( [t[0], t[1], t[2], t[3]/shrinkage, t[4]/shrinkage] )
-				assert(nima == len(params))
-				params = wrap_mpi_gatherv(params, 0, mpi_comm)
-				if myid == 0:
-					assert(total_nima == len(params))
-				if myid == main_node:
-					write_text_row(params, "soft/params-%04d-%04d.txt"%(i,total_iter))
-				del previousmax, params
-				i+=1
-
-		
-		if( Iter == max_iter):
-			# gather parameters
-			params = []
-			for im in xrange(nima):
-				t = get_params_proj(data[im])
-				params.append( [t[0], t[1], t[2], t[3]/shrinkage + oldshifts[im][0], t[4]/shrinkage+ oldshifts[im][1]] )
-			params = wrap_mpi_gatherv(params, main_node, mpi_comm)
-		"""
-		if( ( terminate or (Iter == max_iter) ) and (myid == main_node) ):
-			if( type(stack) is types.StringType ):
-				from EMAN2 import Vec2f, Transform
-				from EMAN2db import db_open_dict
-				DB = db_open_dict(stack)
-				for im in xrange(len(params)):
-					t = Transform({"type":"spider","phi":params[im][0],"theta":params[im][1],"psi":params[im][2]})
-					t.set_trans(Vec2f(-params[im][3], -params[im][4]))
-					DB.set_attr(particle_ids[im], "xform.projection", t)
-				DB.close()
-			else:
-				for im in xrange(len(params)): set_params_proj(stack[particle_ids[im]], params[im])
-		"""
+	params = wrap_mpi_gatherv(params, main_node, mpi_comm)
 
 
 	if myid == main_node:
-		log.add("Finish ali3d_base, nsoft = %1d"%nsoft)
+		log.add("End 3D centering")
 	return params  #, vol, previousmax, par_r
 	#else:
 	#	return #None, None, None, None  # results for the other processes
