@@ -113,8 +113,9 @@ Transform::Transform( const Transform& that )
 
 Transform& Transform::operator=(const Transform& that ) {
 	if (this != &that ) {
+//		for (int i=0; i<3; i++) 
+//			for (int j=0; j<4; j++) matrix[i][j]=that.matrix[i][j];
 		memcpy(matrix,that.matrix,12*sizeof(float));
-// 		transform_type = that.transform_type;
 	}
 	return *this;
 }

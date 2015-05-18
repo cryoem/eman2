@@ -2672,8 +2672,9 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	char *axname[] = {"az","alt","phi"};
 
 	// We start with 32^3, 64^3 ...
-	for (int sexp=5; sexp<10; sexp++) {
+	for (int sexp=4; sexp<10; sexp++) {
 		int ss=pow(2.0,sexp);
+//		if (ss==16) ss=24;		// 16 may be too small, but 32 takes too long...
 		if (ss>ny) ss=ny;
 		if (verbose>0) printf("Size %d\n",ss);
 
@@ -2899,8 +2900,8 @@ bool RT3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<float> 
 	EMData *st2=small_this->process("xform",Dict("transform",EMObject(&t)));	// we have to do 1 slow transform here now that we have the translation
 	
 	float sim=st2->cmp("ccc.tomo.thresh",small_to,Dict("sigmaimg",sigmathis,"sigmawith",sigmato));
-// 	printf("\nTESTORT %6.1f  %6.1f  %6.1f\t%4d %4d %4d\t%1.5g\t%1.5g %d (%d)",
-// 		float(aap["az"]),float(aap["alt"]),float(aap["phi"]),int(aap["tx"]),int(aap["ty"]),int(aap["tz"]),sim,s_score[i],int(sim<s_score[i]),ccf->get_ysize());
+//	printf("\nTESTORT %6.1f  %6.1f  %6.1f\t%4d %4d %4d\t%1.5g\t%1.5g %d (%d)",
+//		float(aap["az"]),float(aap["alt"]),float(aap["phi"]),int(aap["tx"]),int(aap["ty"]),int(aap["tz"]),sim,s_score[i],int(sim<s_score[i]),ccf->get_ysize());
 
 	delete ccf;
 	// If the score is better than before, we update this particular best value
