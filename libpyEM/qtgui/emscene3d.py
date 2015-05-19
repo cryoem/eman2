@@ -2988,16 +2988,18 @@ class NodeDialog(QtGui.QDialog):
 		self.node_type_combo.addItem("Text")
 		self.textwidgetdict = {}
 		self.node_stacked_widget.addWidget(EM3DText.getNodeDialogWidget(self.textwidgetdict))
+		
 		self.node_type_combo.addItem("PDB")
 		self.pdbwidgetdict = {}
 		self.node_stacked_widget.addWidget(EMPDBItem3D.getNodeDialogWidget(self.pdbwidgetdict))
 		if self.item and self.item.item3d().name == "PDB":
-			self.node_type_combo.addItem("Ball/Stick")
+			self.node_type_combo.addItem("Ball and Stick")
 			self.ballstickwidgetdict = {}
 			self.node_stacked_widget.addWidget(EMBallStickModel.getNodeDialogWidget(self.ballstickwidgetdict))
 			self.node_type_combo.addItem("Spheres")
 			self.sphereswidgetdict = {}
-			self.node_stacked_widget.addWidget(EMSpheresModel.getNodeDialogWidget(self.sphereswidgetdict))
+			self.node_stacked_widget.addWidget(EMSphereModel.getNodeDialogWidget(self.sphereswidgetdict))
+		
 		self.node_type_combo.addItem("Data")
 		self.datawidgetdict = {}
 		self.node_stacked_widget.addWidget(EMDataItem3D.getNodeDialogWidget(self.datawidgetdict))
@@ -3011,6 +3013,7 @@ class NodeDialog(QtGui.QDialog):
 			self.node_type_combo.addItem("Volume")
 			self.volumewidgetdict = {}
 			self.node_stacked_widget.addWidget(EMVolumeItem3D.getNodeDialogWidget(self.volumewidgetdict))
+		
 		self.connect(self.addnode_button, QtCore.SIGNAL('clicked()'), self._on_add_node)
 		self.connect(self.cancel_button, QtCore.SIGNAL('clicked()'), self._on_cancel)
 		self.connect(self.node_type_combo, QtCore.SIGNAL("activated(int)"), self._node_combobox_changed)
@@ -3057,7 +3060,7 @@ class NodeDialog(QtGui.QDialog):
 		# Spheres
 		if self.node_type_combo.currentText() == "Spheres": 
 			self.sphereswidgetdict["parent"] = parentnode = self.item.item3d()
-			insertion_node = EMSpheresModel.getNodeForDialog(self.sphereswidgetdict)
+			insertion_node = EMSphereModel.getNodeForDialog(self.sphereswidgetdict)
 			node_name = str(self.sphereswidgetdict["node_name"].text())
 		# Data
 		if self.node_type_combo.currentText() == "Data": 

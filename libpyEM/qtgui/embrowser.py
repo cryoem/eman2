@@ -37,6 +37,7 @@ from emimage2d import *
 from emimagemx import *
 from emplot2d import *
 from emplot3d import *
+from empdbitem3d import *
 from expand_string import expand_string
 from libpyUtils2 import EMUtil
 from matching import matches_pats
@@ -278,7 +279,7 @@ class EMFileType(object) :
 		"""Add to current 3-D window"""
 
 		brws.busy()
-
+		
 		if self.n >= 0 : data = emdataitem3d.EMDataItem3D(self.path, n = self.n)
 		else : data = emdataitem3d.EMDataItem3D(self.path)
 
@@ -1007,29 +1008,27 @@ class EMStackFileType(EMFileType) :
 
 	def actions(self) :
 		"""Returns a list of (name, callback) tuples detailing the operations the user can call on the current file"""
-
 		# 3-D stack
-		if self.nimg > 1 and self.dim[2] > 1 :
+		if self.nimg > 1 and self.dim[2] > 1:
 			return [("Show all 3D", "Show all in a single 3D window", self.show3DAll), ("Show 1st 3D", "Show only the first volume", self.show3DNew), ("Chimera", "Open in chimera (if installed)", self.showChimera), ("Save As", "Saves images in new file format", self.saveAs)]
 		# 2-D stack
-		elif self.nimg > 1 and self.dim[1] > 1 :
+		elif self.nimg > 1 and self.dim[1] > 1:
 			return [("Show Stack", "Show all images together in one window", self.show2dStack), ("Show Stack+", "Show all images together in a new window", self.show2dStackNew), 
 				("Show 2D", "Show all images, one at a time in current window", self.show2dSingle), ("Show 2D+", "Show all images, one at a time in a new window", self.show2dSingleNew), ("FilterTool", "Open in e2filtertool.py", self.showFilterTool), ("Save As", "Saves images in new file format", self.saveAs)]
 		# 1-D stack
-		elif self.nimg > 1 :
+		elif self.nimg > 1:
 			return [("Plot 2D", "Plot all on a single 2-D plot", self.plot2dNew), ("Save As", "Saves images in new file format", self.saveAs)]
 		else : print "Error: stackfile with < 2 images ? (%s)"%self.path
 
 		return []
 
-	def showChimera(self, brws) :
+	def showChimera(self, brws):
 		"""Open in Chimera"""
-
-		if get_platform() == "Linux" :
+		if get_platform() == "Linux":
 			# these types are supported natively in Chimera
 			if EMUtil.get_image_type("tst.hdf") in (IMAGE_HDF, IMAGE_MRC, IMAGE_SPIDER, IMAGE_SINGLE_SPIDER) :
 				os.system("chimera %s &"%self.path)
-			else :
+			else:
 				os.system("e2proc3d.py %s /tmp/vol.hdf"%self.path)		# Probably not a good hack to use, but it will do for now...
 				os.system("chimera /tmp/vol.hdf&")
 		elif get_platform() == "Darwin" :
@@ -1049,64 +1048,75 @@ class EMPDBFileType(EMFileType):
 	
 	@staticmethod
 	def name():
-		"""The unique name of this FileType. Stored in EMDirEntry.filetype for each file."""
+		"""
+		The unique name of this FileType. Stored in EMDirEntry.filetype for each file.
+		"""
 		return "PDB"
 
 	@staticmethod
 	def infoClass():
-		"""Returns a reference to the QWidget subclass for displaying information about this file"""
+		"""
+		Returns a reference to the QWidget subclass for displaying information about this file
+		"""
 		return EMPDBInfoPane
 
 	@staticmethod
-	def isValid(path, header):
-		"""Returns (size, n-atoms, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."""
-		parser = PDBReader()
-		valid = parser.read_from_pdb(path)
-		if valid:
-			size = os.stat(path)[6]
+	def isValid(path, header) :
+		"""
+		Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. 
+		The first 4k block of data from the file is provided as well to avoid unnecesary file access.
+		"""
+		if not isprint(header) : return False			# demand printable Ascii. FIXME: what about unicode ?
+		
+		try : size = os.stat(path)[6]
+		except : return False
+		
+		if size > 5000000: dim = "big"
+		else :
 			f = file(path, "r").read()
 			lns = max(f.count("\n"), f.count("\r"))
 			dim = "%d ln"%lns
-			natoms = "%d atoms"%parser.get_number_points()
-			return (size, natoms, dim)
-		else: return False
-	
+		
+		return (size, "-", dim)
+
 	def actions(self):
-		"""Returns a list of (name, callback) tuples detailing the operations the user can call on the current file"""
-		return [("Show 3D +", "Show in the current 3D window", self.show3dApp), ("Show 3D", "Show in a new 3D window", self.show3DNew), ("Chimera", "Open in chimera (if installed)", self.showChimera)]
-	
+		"""
+		Returns a list of (name, callback) tuples detailing the operations the user can call on the current file
+		"""
+		return [("Show 3D", "Show in a new 3D window", self.show3DNew), ("Show 3D +", "Show in the current 3D window", self.show3dApp), ("Chimera", "Open in chimera (if installed)", self.showChimera),("Save As", "Saves a copy of the selected PDB file", self.saveAs)]
+
+	def show3DNew(self, brws):
+		"""New 3-D window"""
+		brws.busy()
+		pdb_model = EMPDBItem3D(self.path)
+		target = emscene3d.EMScene3D()
+		brws.view3d.append(target)
+		target.insertNewNode(self.path.split("/")[-1].split("#")[-1],pdb_model)
+		modeltype = EMBallStickModel(self.path) #parent=pdb_model)
+		target.insertNewNode(modeltype.representation, modeltype, parentnode = pdb_model)
+		target.initialViewportDims(pdb_model.getBoundingBoxDimensions()[0])	# Scale viewport to object size
+		target.setCurrentSelection(modeltype)	# Set style to display upon inspector loading
+		brws.notbusy()
+		target.setWindowTitle(pdb_model.getName())
+		target.show()
+		target.raise_()
+
 	def show3dApp(self, brws):
 		"""Add to current 3-D window"""
 		brws.busy()
-		pdb_model = emdataitem3d.EMPDBItem3D(self.path)
+		pdb_model = EMPDBItem3D(self.path)
 		try: target = brws.view3d[-1]
 		except:
 			target = emscene3d.EMScene3D()
 			brws.view3d.append(target)
 		target.insertNewNode(self.path.split("/")[-1].split("#")[-1],pdb_model, parentnode = target)
-		style = empdbitem3d.EMBallStickItem3D()
-		target.insertNewNode(style.representation, style, parentnode = pdb_model)
-		target.initialViewportDims(data.getData().get_xsize())	# Scale viewport to object size
-		target.setCurrentSelection(style)				# Set style to display upon inspector loading
-		target.updateSG()	# this is needed because this might just be an addition to the SG rather than initialization
+		modeltype = EMBallStickModel(self.path)#parent=pdb_model)
+		target.insertNewNode(modeltype.representation, modeltype, parentnode = pdb_model)
+		target.initialViewportDims(pdb_model.getBoundingBoxDimensions()[0])	# Scale viewport to object size
+		target.setCurrentSelection(modeltype)	# Set style to display upon inspector loading
+		#target.updateSG()	# this is needed because this might just be an addition to the SG rather than initialization
 		target.setWindowTitle(pdb_model.getName())
 		brws.notbusy()
-		target.show()
-		target.raise_()
-
-	def show3DNew(self, brws):
-		"""New 3-D window"""
-		brws.busy()
-		pdb_model = empdbitem3d.EMPDBItem3D(self.path)
-		target = emscene3d.EMScene3D()
-		brws.view3d.append(target)
-		target.insertNewNode(self.path.split("/")[-1].split("#")[-1],pdb_model)
-		representation = empdbitem3d.EMBallStickItem3D()
-		target.insertNewNode(representation.representation, style, parentnode = pdb_model)
-		target.initialViewportDims(pdb_model.getBoundingBoxDimensions()[0],pdb_model.getBoundingBoxDimensions()[1])	# Scale viewport to object size
-		target.setCurrentSelection(representation)		# Set style to display upon inspector loading
-		brws.notbusy()
-		target.setWindowTitle(pdb_model.getName())
 		target.show()
 		target.raise_()
 
@@ -1489,6 +1499,8 @@ class EMDirEntry(object) :
 
 				try : guesses = EMFileType.extbyft[os.path.splitext(self.path())[1]]		# This will get us a list of possible FileTypes for this extension
 				except : guesses = EMFileType.alltocheck
+
+	#			print "-------\n", guesses
 
 				for guess in guesses :
 					try : size, n, dim = guess.isValid(self.path(), head)		# This will raise an exception if isValid returns False
@@ -1915,13 +1927,12 @@ class EMHTMLInfoPane(EMInfoPane) :
 #---------------------------------------------------------------------------
 
 class EMPDBInfoPane(EMInfoPane) :
-	
 	def __init__(self, parent = None) :
 		QtGui.QWidget.__init__(self, parent)
 		self.vbl = QtGui.QVBoxLayout(self)
 		# text editing widget
 		self.text = QtGui.QTextEdit()
-		self.text.setAcceptRichText(True)
+		self.text.setAcceptRichText(False)
 		self.text.setReadOnly(True)
 		self.vbl.addWidget(self.text)
 		# Find box
@@ -1943,10 +1954,10 @@ class EMPDBInfoPane(EMInfoPane) :
 		QtCore.QObject.connect(self.wbutcancel, QtCore.SIGNAL('clicked(bool)'), self.buttonCancel)
 		QtCore.QObject.connect(self.wbutok, QtCore.SIGNAL('clicked(bool)'), self.buttonOk)
 
-	def display(self, data):
+	def display(self, data) :
 		"""display information for the target EMDirEntry"""
 		self.target = data
-		self.text.setHtml(file(self.target.path(),"r").read())
+		self.text.setPlainText(file(self.target.path(), "r").read())
 		self.text.setReadOnly(True)
 		self.wbutedit.setEnabled(True)
 		self.wbutcancel.setEnabled(False)
@@ -1969,7 +1980,7 @@ class EMPDBInfoPane(EMInfoPane) :
 		self.display(self.target)
 
 	def buttonOk(self, tog) :
-		try : file(self.target.path(), "w").write(str(self.text.toHtml()))
+		try : file(self.target.path(), "w").write(str(self.text.toPlainText()))
 		except : QtGui.QMessageBox.warning(self, "Error !", "File write failed")
 
 #---------------------------------------------------------------------------

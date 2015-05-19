@@ -1,6 +1,8 @@
 #!/usr/bin/env python
+
 #
 # Author: James Michael Bell, 2016 (jmbell@bcm.edu)
+# Bond Drawing Code By: Muthu Alagappan, m.alagappan901@gmail.com, 07/22/09
 # Copyright (c) 2011- Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -31,7 +33,7 @@
 
 from EMAN2 import *
 from emglobjects import get_default_gl_colors
-from emitem3d import EMItem3D, EMItem3DInspector
+from emitem3d import EMItem3D, EMItem3DInspector, drawBoundingBox
 from libpyGLUtils2 import GLUtil
 import os
 import sys
@@ -48,8 +50,9 @@ class EMPDBItem3D(EMItem3D):
 	Though it has an orientation, it can not be displayed directly. Instead, its children are 
 	displayable, and are sized, postioned, and oriented relative to this node.
 	"""
+	
 	name = "PDB Model"
-
+	
 	@staticmethod
 	def getNodeDialogWidget(attribdict):
 		"""Get PDB Widget"""
@@ -68,10 +71,10 @@ class EMPDBItem3D(EMItem3D):
 		EMItem3D.get_transformlayout(grid, 4, attribdict)
 		datawidget.setLayout(grid)
 		EMPDBItem3D.attribdict = attribdict
-		QtCore.QObject.connect(browse_button, QtCore.SIGNAL('clicked()'), EMDataItem3D._on_browse)
+		QtCore.QObject.connect(browse_button, QtCore.SIGNAL('clicked()'), EMPDBItem3D._on_browse)
 
 		return datawidget
-
+	
 	@staticmethod
 	def _on_browse():
 		filename = QtGui.QFileDialog.getOpenFileName(None, 'Get file', os.getcwd())
@@ -90,7 +93,6 @@ class EMPDBItem3D(EMItem3D):
 		if not transform: transform = Transform()	# Object initialization should not be put in the constructor. Causes issues
 		EMItem3D.__init__(self, parent, children, transform=transform)
 		self.setData(pdb_file)
-		
 		self.diffuse = [0.5,0.5,0.5,1.0]
 		self.specular = [1.0,1.0,1.0,1.0]
 		self.ambient = [1.0, 1.0, 1.0, 1.0]
@@ -106,7 +108,7 @@ class EMPDBItem3D(EMItem3D):
 	def getRenderBoundingBox(self):
 		return self.renderBoundingBox
 
-	def setRenderBoundingBox(self, state):
+	def setRenderBoundingBox(self,state):
 		self.renderBoundingBox = state
 
 	def getEvalString(self):
@@ -124,26 +126,34 @@ class EMPDBItem3D(EMItem3D):
 
 	def setData(self, path):
 		if path == None:
-			self.fName = str(self.attribdict['data_path'].text())
+			self.path = str(self.attribdict['data_path'].text())
 			self.name = str(self.attribdict['node_name'].text())
 		else:
-			self.fName = path
-			self.name = path.split('/')[-1].split('.')[0]
+			try:
+				self.path = str(path.text())
+			except:
+				self.path = str(path)
+			self.name = self.path.split('/')[-1].split('.')[0]
 			self.attribdict = {}
-			self.attribdict['data_path'] = self.fName
+			self.attribdict['data_path'] = self.path
 			self.attribdict['node_name'] = self.name
+		
 		self.parser = PDBReader()
-		try: valid_pdb_file = self.parser.read_from_pdb(self.fName)
-		except: valid_pdb_file = False
-		if valid_pdb_file:
-			self.natoms = p.get_number_points()
-			self.data = np.array(p.get_points()).reshape(self.natoms,3)
-		else:
+		try:
+			self.parser.read_from_pdb(self.path)
+			self.natoms = self.parser.get_number_points()
+			points = self.parser.get_points()
+			self.data = np.array(points).reshape(self.natoms,3)
+		except:
 			print('Could not validate this PDB file. Try another or redownload, as your copy may be corrupt.')
+		
 		for child in self.getChildren():
 			try: child.dataChanged()
 			except: pass
-		self.boundingboxsize = "%dx%dx%d"%(self.getBoundingBoxDimensions())
+		
+		bbsize = self.getBoundingBoxDimensions()
+		self.boundingboxsize = "%dx%dx%d"%(bbsize[0],bbsize[1],bbsize[2])
+		
 		if self.item_inspector: self.item_inspector.updateMetaData()
 
 	def getItemDictionary(self):
@@ -151,41 +161,14 @@ class EMPDBItem3D(EMItem3D):
 		return super(EMPDBItem3D, self).getItemDictionary()
 	
 	def renderNode(self):
-		if self.renderBoundingBox:
-			drawBoundingBox(*self.getBoundingBoxDimensions())
-		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded(): # No need to draw outline in selection mode
-			#if glGetIntegerv(GL_RENDER_MODE) == GL_RENDER: print "X"
-			glPushAttrib( GL_ALL_ATTRIB_BITS )
-			# First render the cylinder, writing the outline to the stencil buffer
-			glClearStencil(0)
-			glClear( GL_STENCIL_BUFFER_BIT )
-			glEnable( GL_STENCIL_TEST )
-			# Write to stencil buffer
-			glStencilFunc( GL_ALWAYS, 1, 0xFFFF )
-			# Only pixels that pass the depth test are written to the stencil buffer
-			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )
-			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL )
-			self.renderShape()
-			# Then render the outline
-			glStencilFunc( GL_NOTEQUAL, 1, 0xFFFF )
-			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )
-			# By increasing the line width only the outline is drawn
-			glLineWidth( 4.0 )
-			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE )
-			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0, 1.0, 0.0, 1.0])
-			self.renderShape()
-			glPopAttrib()	
-		else:
-			glPushAttrib( GL_ALL_ATTRIB_BITS )
-			self.renderShape()
-			glPopAttrib()
+		if self.renderBoundingBox: drawBoundingBox(*self.getBoundingBoxDimensions())
 	
 	def getItemInspector(self):
 		"""Return a Qt widget that controls the scene item"""
-		if not self.item_inspector: self.item_inspector = EMPDBItemInspector(self.name, self)
+		if not self.item_inspector: self.item_inspector = EMPDBItem3DInspector(self.name, self)
 		return self.item_inspector
 
-class EMPDBItemInspector(EMItem3DInspector):
+class EMPDBItem3DInspector(EMItem3DInspector):
 	
 	def __init__(self, name, item3d):
 		EMItem3DInspector.__init__(self, name, item3d)
@@ -194,7 +177,8 @@ class EMPDBItemInspector(EMItem3DInspector):
 		""" Updates this item inspector. Function is called by the item it observes"""
 		super(EMPDBItem3DInspector, self).updateItemControls()
 		# Anything that needs to be updated when the scene is rendered goes here.....
-		if self.item3d().path: self.file_path_label.setText(self.item3d().path)
+		if self.item3d().path:
+			self.file_path_label.setText(self.item3d().path)
 		self.data_checkbox.setChecked(self.item3d().getRenderBoundingBox())
 
 	def addTabs(self):
@@ -227,7 +211,7 @@ class EMPDBItemInspector(EMItem3DInspector):
 		self.file_browse_button.clicked.connect(self.onFileBrowse)
 		QtCore.QObject.connect(self.data_checkbox, QtCore.SIGNAL("stateChanged(int)"), self.onBBoxChange)
 		# Set to default, but run only once and not in each base class
-		if type(self) == EMPDBItemInspector: self.updateItemControls()
+		if type(self) == EMPDBItem3DInspector: self.updateItemControls()
 
 	def onFileBrowse(self):
 		#TODO: replace this with an EMAN2 browser window once we re-write it
@@ -267,14 +251,13 @@ class EMBallStickModel(EMPDBItem3D):
 		"""Create a new node using a attribdict"""
 		return EMBallStickModel(attribdict["parent"], transform=EMItem3D.getTransformFromDict(attribdict))
 
-	def __init__(self, parent=None, children = set(), transform=None, pdb_file=None):
+	def __init__(self, pdb_file, parent=None, children = set(), transform=None):
 		"""
 		@param parent: should be an EMPDBItem3D instance for proper functionality.
 		"""
+		#self.renderBoundingBox = False
 		if not transform: transform = Transform()	# Object initialization should not be put in the constructor. Causes issues
-		EMItem3D.__init__(self, parent, children, transform=transform)
-		#if parent == None and pdb_file != None:
-		#	self.setData(pdb_file)
+		EMPDBItem3D.__init__(self, pdb_file=pdb_file, parent=parent, children=children, transform=transform)
 		self.first_render_flag = True # this is used to catch the first call to the render function - so you can do an GL context sensitive initialization when you know there is a valid context
 		self.gq = None # will be a glu quadric
 		self.dl = None
@@ -287,8 +270,6 @@ class EMBallStickModel(EMPDBItem3D):
 		self.colors = get_default_gl_colors()
 		amino_acids_list = ["ALA","ARG","ASN","ASP","CYS","GLU","GLN","GLY","HIS","ILE","LEU","LYS","MET","PHE","PRO","SER","THR","TYR","TRP","VAL"]
 		self.side_chains = {aa:[] for aa in amino_acids_list}
-		with open(pdb_file) as infile:
-			self.text = infile.readlines()
 	
 	def current_text(self): 
 		return self.text
@@ -337,6 +318,8 @@ class EMBallStickModel(EMPDBItem3D):
 
 	def buildResList(self): # calls PDBReader to read the given pdb file and create a list (self.allResidues) of lists (x,y,z,atom name, residue name) of lists (all the values for that residue)
 		self.allResidues = []
+# 		data = self.getData()
+# 		data = data - np.mean(data,axis=0)
 		point_x = self.parser.get_x()
 		point_y = self.parser.get_y()
 		point_z = self.parser.get_z()
@@ -353,7 +336,7 @@ class EMBallStickModel(EMPDBItem3D):
 		resName = []
 		amino = []
 		currentRes = point_resNum[0]
-		for i in range(len(point_x)):
+		for i in range(len(self.data)):
 			if (point_resNum[i]==currentRes):
 				x.append(point_x[i])
 				y.append(point_y[i])
@@ -391,7 +374,7 @@ class EMBallStickModel(EMPDBItem3D):
 					amino.append(resName[:])
 					self.allResidues.append(amino[:])
 					break
-
+	
 	def draw_objects(self):
 		self.init_basic_shapes() # only does something the first time you call it
 		if self.dl == None: #self.dl is the display list, every time a new file is added, this is changed back to None
@@ -505,6 +488,34 @@ class EMBallStickModel(EMPDBItem3D):
 		self.load_gl_color("silver")
 		glCallList(self.cylinderdl)
 		glPopMatrix()
+	
+	def renderNode(self):
+		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded(): # No need to draw outline in selection mode
+			#if glGetIntegerv(GL_RENDER_MODE) == GL_RENDER: print "X"
+			glPushAttrib( GL_ALL_ATTRIB_BITS )
+			# First render the cylinder, writing the outline to the stencil buffer
+			glClearStencil(0)
+			glClear( GL_STENCIL_BUFFER_BIT )
+			glEnable( GL_STENCIL_TEST )
+			# Write to stencil buffer
+			glStencilFunc( GL_ALWAYS, 1, 0xFFFF )
+			# Only pixels that pass the depth test are written to the stencil buffer
+			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )
+			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL )
+			self.renderShape()
+			# Then render the outline
+			glStencilFunc( GL_NOTEQUAL, 1, 0xFFFF )
+			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )
+			# By increasing the line width only the outline is drawn
+			glLineWidth( 4.0 )
+			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE )
+			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0, 1.0, 0.0, 1.0])
+			self.renderShape()
+			glPopAttrib()	
+		else:
+			glPushAttrib( GL_ALL_ATTRIB_BITS )
+			self.renderShape()
+			glPopAttrib()
 	
 	def renderShape(self):
 		glDisable(GL_COLOR_MATERIAL)
@@ -1022,27 +1033,26 @@ class EMBallStickModel(EMPDBItem3D):
 			try: target.makeStick(res, t7, t8)
 			except: pass
 
-class EMBallStickModelInspector(EMPDBItemInspector):
+class EMBallStickModelInspector(EMPDBItem3DInspector):
 	
 	def __init__(self, name, item3d):
-		EMInspectorControlShape.__init__(self, name, item3d)
-		self.updateItemControls()
+		EMPDBItem3DInspector.__init__(self, name, item3d)
 
-class EMSpheresModel(EMPDBItem3D):
+class EMSphereModel(EMPDBItem3D):
 	
 	"""Spheres representation of a PDB model."""
 	
 	name = "Spheres Model"
 	nodetype = "PDBChild"
 	representation = "Spheres"
-	
+		
 	@staticmethod
 	def getNodeDialogWidget(attribdict):
 		"""Get Spheres Model Widget"""
 		sphereswidget = QtGui.QWidget()
 		grid = QtGui.QGridLayout()
 		node_name_model_label = QtGui.QLabel("PDB Structure Name")
-		attribdict["node_name"] = QtGui.QLineEdit(str(EMSpheresModel.name))
+		attribdict["node_name"] = QtGui.QLineEdit(str(EMSphereModel.name))
 		grid.addWidget(node_name_model_label, 0, 0, 1, 2)
 		grid.addWidget(attribdict["node_name"], 0, 2, 1, 2)
 		EMItem3D.get_transformlayout(grid, 2, attribdict)
@@ -1052,15 +1062,14 @@ class EMSpheresModel(EMPDBItem3D):
 	@staticmethod
 	def getNodeForDialog(attribdict):
 		"""Create a new node using a attribdict"""
-		return EMSpheresModel(attribdict["parent"], transform=EMItem3D.getTransformFromDict(attribdict))
-
-	def __init__(self, pdb_file, parent=None, children = set(), transform=None):
+		return EMSphereModel(attribdict["parent"], transform=EMItem3D.getTransformFromDict(attribdict))
+	
+	def __init__(self, parent=None, children = set(), transform=None):
 		"""
 		@param parent: should be an EMPDBItem3D instance for proper functionality.
 		"""
 		if not transform: transform = Transform()	# Object initialization should not be put in the constructor. Causes issues
-		EMItem3D.__init__(self, parent, children, transform=transform)
-		self.setData(pdb_file)
+		EMPDBItem3D.__init__(self, pdb_file=pdb_file, parent=parent, children=children, transform=transform)
 		self.first_render_flag = True # this is used to catch the first call to the render function - so you can do an GL context sensitive initialization when you know there is a valid context
 		self.spheredl = 0 # this will be a low resolution sphere
 		self.highresspheredl = 0 # high resolution sphere
@@ -1068,10 +1077,13 @@ class EMSpheresModel(EMPDBItem3D):
 		self.colors = get_default_gl_colors()
 		amino_acids = ["ALA","ARG","ASN","ASP","CYS","GLU","GLN","GLY","HIS","ILE","LEU","LYS","MET","PHE","PRO","SER","THR","TYR","TRP","VAL"]
 		self.side_chains = {aa:[] for aa in amino_acids}
-		with open(pdb_file) as infile:
-			self.text = infile.readlines()
-
-	def current_text(self): 
+# 		try:
+# 			with open(self.path) as pdbfile:
+# 				self.text = infile.readlines()
+# 		except:
+# 			print("You must provide a parent node for this representation.")
+	
+	def current_text(self):
 		return self.text
 
 	# I have added these methods so the inspector can set the color John Flanagan
@@ -1097,24 +1109,52 @@ class EMSpheresModel(EMPDBItem3D):
 		glMaterial(GL_FRONT,GL_SHININESS,color["shininess"])
 
 	def getEvalString(self):
-		return "EMSpheresModel()"
+		return "EMSphereModel()"
 
 	def getItemInspector(self):
-		if not self.item_inspector: self.item_inspector = EMSpheresModelInspector("BALL/STICK", self)
+		if not self.item_inspector: self.item_inspector = EMSphereModelInspector("BALL/STICK", self)
 		return self.item_inspector
 
 	def getItemDictionary(self):
 		"""Return a dictionary of item parameters (used for restoring sessions"""
-		dictionary = super(EMSpheresModel, self).getItemDictionary()
+		dictionary = super(EMSphereModel, self).getItemDictionary()
 		dictionary.update({"COLOR":[self.ambient, self.diffuse, self.specular, self.shininess]})
 		return dictionary
 
 	def setUsingDictionary(self, dictionary):
 		"""Set item attributes using a dictionary, used in session restoration"""
-		super(EMSpheresModel, self).setUsingDictionary(dictionary)
+		super(EMSphereModel, self).setUsingDictionary(dictionary)
 		self.setAmbientColor(dictionary["COLOR"][0][0], dictionary["COLOR"][0][1], dictionary["COLOR"][0][2], dictionary["COLOR"][0][3])
 		self.setDiffuseColor(dictionary["COLOR"][1][0], dictionary["COLOR"][1][1], dictionary["COLOR"][1][2], dictionary["COLOR"][1][3])
 		self.setSpecularColor(dictionary["COLOR"][2][0], dictionary["COLOR"][2][1], dictionary["COLOR"][2][2], dictionary["COLOR"][2][3])
+	
+	def renderNode(self):
+		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded(): # No need to draw outline in selection mode
+			#if glGetIntegerv(GL_RENDER_MODE) == GL_RENDER: print "X"
+			glPushAttrib( GL_ALL_ATTRIB_BITS )
+			# First render the cylinder, writing the outline to the stencil buffer
+			glClearStencil(0)
+			glClear( GL_STENCIL_BUFFER_BIT )
+			glEnable( GL_STENCIL_TEST )
+			# Write to stencil buffer
+			glStencilFunc( GL_ALWAYS, 1, 0xFFFF )
+			# Only pixels that pass the depth test are written to the stencil buffer
+			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )
+			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL )
+			self.renderShape()
+			# Then render the outline
+			glStencilFunc( GL_NOTEQUAL, 1, 0xFFFF )
+			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )
+			# By increasing the line width only the outline is drawn
+			glLineWidth( 4.0 )
+			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE )
+			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0, 1.0, 0.0, 1.0])
+			self.renderShape()
+			glPopAttrib()	
+		else:
+			glPushAttrib( GL_ALL_ATTRIB_BITS )
+			self.renderShape()
+			glPopAttrib()
 	
 	def renderShape(self):
 		glDisable(GL_COLOR_MATERIAL)
@@ -1133,8 +1173,8 @@ class EMSpheresModel(EMPDBItem3D):
 			gluSphere(qd,self.radius,8,8)
 			glPopMatrix()
 
-class EMSpheresModelInspector(EMPDBItemInspector):
+
+class EMSphereModelInspector(EMPDBItem3DInspector):
 	
 	def __init__(self, name, item3d):
-		EMPDBItemInspector.__init__(self, name, item3d)
-		self.updateItemControls()
+		EMPDBItem3DInspector.__init__(self, name, item3d)
