@@ -4574,7 +4574,7 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 #  The input volume is assumed to be shrunk but not filtered, if not provided, it will be reconstructed and shrunk
 #  We apply ali3d_options.fl
 def center_projections_3D(data, ref_vol = None, ali3d_options = None, shrinkage = 1.0, \
-	mpi_comm = None, number_of_proc = 1, myid = 0, main_node = 0, log = None ):
+	mpi_comm = None, myid = 0, main_node = 0, log = None ):
 
 	from alignment       import Numrinit, prepare_refrings, proj_ali_incore,  proj_ali_incore_local, shc
 	from utilities       import bcast_number_to_all, bcast_EMData_to_all, 	wrap_mpi_gatherv, wrap_mpi_bcast, model_blank
@@ -4647,7 +4647,14 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, shrinkage 
 	else:
 		finfo = None
 
-	nx = data[0].get_xsize()
+	onx = data[0].get_xsize()
+	if(shrinkage == 1.0):  nx = onx
+	else:		
+		st = resample(data[0], shrinkage)
+		nx = st.get_xsize()
+
+
+
 	if last_ring < 0:	last_ring = int(nx/2/shrinkage) - 2
 	mask2D  = model_circle(last_ring,onx,onx) - model_circle(first_ring,onx,onx)
 	if(shrinkage < 1.0):
@@ -4699,8 +4706,10 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, shrinkage 
 		start_time = time()
 
 	mpi_barrier(mpi_comm)
+	N_step = 0
 	if myid == main_node:
-		log.add("Delta = %5.2f, an = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f\n"%(delta[N_step], an[N_step], xrng[N_step], yrng[N_step], step[N_step]))
+		print " fififi   ",delta[N_step], an[N_step], xrng[N_step], yrng[N_step], step[N_step]
+		log.add("Delta = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f\n"%(delta[N_step], xrng[N_step], yrng[N_step], step[N_step]))
 		start_time = time()
 
 	#=========================================================================

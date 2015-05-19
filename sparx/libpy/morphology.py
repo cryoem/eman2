@@ -2107,7 +2107,7 @@ def defocusgett(roo, nx, voltage=300.0, Pixel_size=1.0, Cs=2.0, ampcont=0.1, f_s
 	for i in xrange(len(subpw)):  subpw[i] = max(subpw[i],0.0)
 	#print "IN defocusgett  ",np.min(subpw),np.max(subpw)
 	#envelope = movingaverage(  subpw   , nroo//4, 3)
-	envelope = np.array([1.0]*500, np.float32)
+	envelope = np.array([1.0]*len(subpw), np.float32)
 	#write_text_file([roo,baseline,subpw],"dbgt.txt")
 
 	#print "IN defocusgett  ",np.min(subpw),np.max(subpw),np.min(envelope)
