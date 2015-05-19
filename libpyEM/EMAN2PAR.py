@@ -51,6 +51,7 @@ from EMAN2 import test_image,EMData,abs_path,local_datetime,EMUtil,Util,get_plat
 from EMAN2db import e2filemodtime
 from EMAN2jsondb import JSTask,JSTaskQueue,js_open_dict
 from e2classaverage import ClassAvTask
+from e2classifytree import TreeClassifyTask
 
 from e2tiltvalidate import CompareToTiltTask
 from e2simmx import EMSimTaskDC
