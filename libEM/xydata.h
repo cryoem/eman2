@@ -38,6 +38,7 @@
 
 #include <string>
 #include <vector>
+#include "exception.h"
 
 using std::string;
 using std::vector;
@@ -98,6 +99,7 @@ namespace EMAN
 
 		float get_y(size_t i) const
 		{
+			if (i>data.size()) throw InvalidValueException(i, "Attempt to access XYData out of range");
 			return data[i].y;
 		}
 

@@ -1142,6 +1142,7 @@ EMFileType.typesbyft = {
 EMFileType.extbyft = {
 	".json" : (EMJSONFileType, EMTextFileType),
 	".pdb"  : (EMPDBFileType,  EMTextFileType),
+	".ent"  : (EMPDBFileType,  EMTextFileType),
 	".txt"  : (EMPlotFileType, EMTextFileType),
 	".htm"  : (EMHTMLFileType, EMTextFileType),
 	".html" : (EMHTMLFileType, EMTextFileType)
@@ -1150,7 +1151,7 @@ EMFileType.extbyft = {
 # Default Choices when extension doesn't work
 # We don't need to test for things like Images because they are fully tested outside this mechanism
 
-EMFileType.alltocheck = (EMPlotFileType, EMTextFileType)
+EMFileType.alltocheck = (EMPlotFileType, EMPDBFileType, EMTextFileType)
 
 #---------------------------------------------------------------------------
 
@@ -1488,8 +1489,6 @@ class EMDirEntry(object) :
 
 				try : guesses = EMFileType.extbyft[os.path.splitext(self.path())[1]]		# This will get us a list of possible FileTypes for this extension
 				except : guesses = EMFileType.alltocheck
-
-	#			print "-------\n", guesses
 
 				for guess in guesses :
 					try : size, n, dim = guess.isValid(self.path(), head)		# This will raise an exception if isValid returns False

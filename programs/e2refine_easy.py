@@ -172,6 +172,7 @@ not need to specify any of the following other than the ones already listed abov
 
 	# options associated with e2project3d.py
 #	parser.add_header(name="projectheader", help='Options below this label are specific to e2project', title="### e2project options ###", row=12, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--automaskexpand", default=-1, type=int,help="Default=boxsize/20. Specify number of voxels to expand mask before soft edge. Use this if low density peripheral features are cut off by the mask.",guitype='intbox', row=12, col=1, rowspan=1, colspan=1, mode="refinement[-1]" )
 	parser.add_argument("--automask3d", default=None, type=str,help="Default=auto. Specify as a processor, eg - mask.auto3d:threshold=1.1:radius=30:nshells=5:nshellsgauss=5.", )
 	parser.add_argument("--automask3d2", default=None, type=str,help="Default=none. If specified, this mask will be multiplied by the result of the first mask, eg - using mask.soft to mask out the center of a virus.", )
 	parser.add_argument("--projector", dest = "projector", default = "standard",help = "Default=standard. Projector to use with parameters.")
@@ -762,8 +763,8 @@ Note that the next iteration is seeded with the individual even/odd maps, not th
  		evenfile="{path}/threed_{itr:02d}_even.hdf".format(path=options.path,itr=it)
  		oddfile="{path}/threed_{itr:02d}_odd.hdf".format(path=options.path,itr=it)
  		combfile="{path}/threed_{itr:02d}.hdf".format(path=options.path,itr=it)
-		run("e2refine_postprocess.py --even {path}/threed_{it:02d}_even.hdf --odd {path}/threed_{it:02d}_odd.hdf --output {path}/threed_{it:02d}.hdf --align --mass {mass} --iter {it} {amask3d} {amask3d2} {m3dpostproc} {setsf} --sym={sym} --restarget={restarget} --underfilter".format(
-			path=options.path,it=it,mass=options.mass,amask3d=amask3d,sym=m3dsym,amask3d2=amask3d2,m3dpostproc=m3dpostproc,setsf=m3dsetsf,restarget=options.targetres))
+		run("e2refine_postprocess.py --even {path}/threed_{it:02d}_even.hdf --odd {path}/threed_{it:02d}_odd.hdf --output {path}/threed_{it:02d}.hdf --automaskexpand {amaskxp} --align --mass {mass} --iter {it} {amask3d} {amask3d2} {m3dpostproc} {setsf} --sym={sym} --restarget={restarget} --underfilter".format(
+			path=options.path,it=it,mass=options.mass,amask3d=amask3d,sym=m3dsym,amask3d2=amask3d2,m3dpostproc=m3dpostproc,setsf=m3dsetsf,restarget=options.targetres,amaskxp=options.automaskexpand))
 
 
 		db.update({"last_map":combfile,"last_even":evenfile,"last_odd":oddfile})
