@@ -43,18 +43,21 @@ from PyQt4 import QtCore, QtGui
 import numpy as np
 
 class EMPDBItem3D(EMItem3D):
-	
+	"""
+	This class is the scene graph node that has a reference to a Protein Data Bank (PDB) structure. 
+	Though it has an orientation, it can not be displayed directly. Instead, its children are 
+	displayable, and are sized, postioned, and oriented relative to this node.
+	"""
 	name = "PDB Model"
-	nodetype = "ItemChild"
-	
+
 	@staticmethod
 	def getNodeDialogWidget(attribdict):
-		"""Get PDB Model Widget"""
-		structurewidget = QtGui.QWidget()
+		"""Get PDB Widget"""
+		datawidget = QtGui.QWidget()
 		grid = QtGui.QGridLayout()
-		node_name_data_label = QtGui.QLabel("Model Label")
+		node_name_data_label = QtGui.QLabel("PDB Model Label")
 		attribdict["node_name"] = QtGui.QLineEdit()
-		data_path_label = QtGui.QLabel("Model Path")
+		data_path_label = QtGui.QLabel("PDB Model Path")
 		attribdict["data_path"] = QtGui.QLineEdit()
 		browse_button = QtGui.QPushButton("Browse")
 		grid.addWidget(node_name_data_label, 0, 0, 1, 2)
@@ -63,40 +66,215 @@ class EMPDBItem3D(EMItem3D):
 		grid.addWidget(attribdict["data_path"], 1, 2, 1, 2)
 		grid.addWidget(browse_button, 2, 0, 1, 4)
 		EMItem3D.get_transformlayout(grid, 4, attribdict)
-		structurewidget.setLayout(grid)
-		EMStructureItem3D.attribdict = attribdict
-		QtCore.QObject.connect(browse_button, QtCore.SIGNAL('clicked()'), EMPDBItem3D._on_browse)
-		return structurewidget
-	
+		datawidget.setLayout(grid)
+		EMPDBItem3D.attribdict = attribdict
+		QtCore.QObject.connect(browse_button, QtCore.SIGNAL('clicked()'), EMDataItem3D._on_browse)
+
+		return datawidget
+
 	@staticmethod
 	def _on_browse():
 		filename = QtGui.QFileDialog.getOpenFileName(None, 'Get file', os.getcwd())
 		if filename:
-			EMStructureItem3D.attribdict["data_path"].setText(str(filename))
-			name = os.path.basename(str(filename)).split('/')[-1].split('.')[0]
-			EMStructureItem3D.attribdict["node_name"].setText(str(name))
-	
+			EMPDBItem3D.attribdict["data_path"].setText(filename)
+			#name = os.path.basename(str(filename))
+			name = str(filename).split('/')[-1].split('.')[0]
+			EMPDBItem3D.attribdict["node_name"].setText(str(name))
+
 	@staticmethod
 	def getNodeForDialog(attribdict):
 		"""Create a new node using a attribdict"""
-		return EMStructureItem3D(str(attribdict["data_path"].text()), transform=EMItem3D.getTransformFromDict(attribdict))
-	
-	def __init__(self, parent=None,transform=None,pdb_file=None):
-		EMItem3D.__init__(self, parent=parent, children=set(), transform=transform)
-		if pdb_file == None:
-			self.fName = str(self.attribdict['data_path'].text())
-			self.name = str(self.attribdict['node_name'].text())
-		else:
-			self.fName = pdb_file
-			self.name = pdb_file.split('/')[-1].split('.')[0]
-			self.attribdict = {}
-			self.attribdict['data_path'] = self.fName
-			self.attribdict['node_name'] = self.name
+		return EMPDBItem3D(str(attribdict["data_path"].text()), transform=EMItem3D.getTransformFromDict(attribdict))
+
+	def __init__(self, pdb_file, parent=None, children = set(), transform=None, style='bs'):
+		if not transform: transform = Transform()	# Object initialization should not be put in the constructor. Causes issues
+		EMItem3D.__init__(self, parent, children, transform=transform)
+		self.setData(pdb_file)
+		
 		self.diffuse = [0.5,0.5,0.5,1.0]
 		self.specular = [1.0,1.0,1.0,1.0]
 		self.ambient = [1.0, 1.0, 1.0, 1.0]
 		self.shininess = 25.0
+		
 		self.renderBoundingBox = False
+
+	def setSelectedItem(self, is_selected):
+		""" Set SG apix to curent selection"""
+		EMItem3D.setSelectedItem(self, is_selected)
+		sg = self.getRootNode()
+
+	def getRenderBoundingBox(self):
+		return self.renderBoundingBox
+
+	def setRenderBoundingBox(self, state):
+		self.renderBoundingBox = state
+
+	def getEvalString(self):
+		return "EMPDBItem3D(\"%s\")"%os.path.abspath(self.path)
+
+	def getBoundingBoxDimensions(self):
+		data = self.getData()
+		return np.max(data,axis=0)
+
+	def getName(self):
+		return self.name
+
+	def getData(self):
+		return self.data
+
+	def setData(self, path):
+		if path == None:
+			self.fName = str(self.attribdict['data_path'].text())
+			self.name = str(self.attribdict['node_name'].text())
+		else:
+			self.fName = path
+			self.name = path.split('/')[-1].split('.')[0]
+			self.attribdict = {}
+			self.attribdict['data_path'] = self.fName
+			self.attribdict['node_name'] = self.name
+		self.parser = PDBReader()
+		try: valid_pdb_file = self.parser.read_from_pdb(self.fName)
+		except: valid_pdb_file = False
+		if valid_pdb_file:
+			self.natoms = p.get_number_points()
+			self.data = np.array(p.get_points()).reshape(self.natoms,3)
+		else:
+			print('Could not validate this PDB file. Try another or redownload, as your copy may be corrupt.')
+		for child in self.getChildren():
+			try: child.dataChanged()
+			except: pass
+		self.boundingboxsize = "%dx%dx%d"%(self.getBoundingBoxDimensions())
+		if self.item_inspector: self.item_inspector.updateMetaData()
+
+	def getItemDictionary(self):
+		"""Return a dictionary of item parameters (used for restoring sessions"""
+		return super(EMPDBItem3D, self).getItemDictionary()
+	
+	def renderNode(self):
+		if self.renderBoundingBox:
+			drawBoundingBox(*self.getBoundingBoxDimensions())
+		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded(): # No need to draw outline in selection mode
+			#if glGetIntegerv(GL_RENDER_MODE) == GL_RENDER: print "X"
+			glPushAttrib( GL_ALL_ATTRIB_BITS )
+			# First render the cylinder, writing the outline to the stencil buffer
+			glClearStencil(0)
+			glClear( GL_STENCIL_BUFFER_BIT )
+			glEnable( GL_STENCIL_TEST )
+			# Write to stencil buffer
+			glStencilFunc( GL_ALWAYS, 1, 0xFFFF )
+			# Only pixels that pass the depth test are written to the stencil buffer
+			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )
+			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL )
+			self.renderShape()
+			# Then render the outline
+			glStencilFunc( GL_NOTEQUAL, 1, 0xFFFF )
+			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )
+			# By increasing the line width only the outline is drawn
+			glLineWidth( 4.0 )
+			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE )
+			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0, 1.0, 0.0, 1.0])
+			self.renderShape()
+			glPopAttrib()	
+		else:
+			glPushAttrib( GL_ALL_ATTRIB_BITS )
+			self.renderShape()
+			glPopAttrib()
+	
+	def getItemInspector(self):
+		"""Return a Qt widget that controls the scene item"""
+		if not self.item_inspector: self.item_inspector = EMPDBItemInspector(self.name, self)
+		return self.item_inspector
+
+class EMPDBItemInspector(EMItem3DInspector):
+	
+	def __init__(self, name, item3d):
+		EMItem3DInspector.__init__(self, name, item3d)
+	
+	def updateItemControls(self):
+		""" Updates this item inspector. Function is called by the item it observes"""
+		super(EMDataItem3DInspector, self).updateItemControls()
+		# Anything that needs to be updated when the scene is rendered goes here.....
+		if self.item3d().path: self.file_path_label.setText(self.item3d().path)
+		self.data_checkbox.setChecked(self.item3d().getRenderBoundingBox())
+
+	def addTabs(self):
+		""" Add a tab for each 'column' """
+		tabwidget = QtGui.QWidget()
+		gridbox = QtGui.QGridLayout()
+		tabwidget.setLayout(gridbox)
+		self.addTab(tabwidget, "data")
+		# add data tab first, then basic
+		super(EMDataItem3DInspector, self).addTabs()
+		EMDataItem3DInspector.addControls(self, gridbox)
+
+	def addControls(self, gridbox):
+		""" Construct all the widgets in this Item Inspector """
+		dataframe = QtGui.QFrame()
+		dataframe.setFrameShape(QtGui.QFrame.StyledPanel)
+		lfont = QtGui.QFont()
+		lfont.setBold(True)
+		datagridbox = QtGui.QGridLayout()
+		self.data_checkbox= QtGui.QCheckBox("Display Bounding Box")
+		datagridbox.addWidget(self.data_checkbox, 0, 0)
+		self.file_browse_button = QtGui.QPushButton("Set Data Source")
+		datagridbox.addWidget(self.file_browse_button, 1, 0)
+		dataframe.setLayout(datagridbox)
+		gridbox.addWidget(dataframe, 2, 0)
+		self.file_path_label = QtGui.QLabel()
+		self.file_path_label.setAlignment(QtCore.Qt.AlignCenter)
+		self.file_path_label.setFont(lfont)
+		gridbox.addWidget(self.file_path_label, 3, 0)
+		self.file_browse_button.clicked.connect(self.onFileBrowse)
+		QtCore.QObject.connect(self.data_checkbox, QtCore.SIGNAL("stateChanged(int)"), self.onBBoxChange)
+		# Set to default, but run only once and not in each base class
+		if type(self) == EMPDBItemInspector: self.updateItemControls()
+
+	def onFileBrowse(self):
+		#TODO: replace this with an EMAN2 browser window once we re-write it
+		file_path = QtGui.QFileDialog.getOpenFileName(self, "Open 3D Volume Map")
+		if file_path:
+			self.file_path_label.setText(file_path)
+			self.item3d().setData(file_path)
+			self.inspector().updateSceneGraph()
+	
+	def onBBoxChange(self, state):
+		self.item3d().setRenderBoundingBox(not self.item3d().getRenderBoundingBox())
+		self.inspector().updateSceneGraph()
+
+class EMBallStickItem3D(EMPDBItem3D):
+	
+	"""Ball and stick representation of a PDB model."""
+	
+	name = "Ball and Stick Model"
+	nodetype = "PDBChild"
+	representation = "Spheres"
+
+	@staticmethod
+	def getNodeDialogWidget(attribdict):
+		"""Get Ball and Stick Model Widget"""
+		ballstickwidget = QtGui.QWidget()
+		grid = QtGui.QGridLayout()
+		node_name_model_label = QtGui.QLabel("PDB Structure Name")
+		attribdict["node_name"] = QtGui.QLineEdit(str(EMBallStickItem3D.name))
+		grid.addWidget(node_name_model_label, 0, 0, 1, 2)
+		grid.addWidget(attribdict["node_name"], 0, 2, 1, 2)
+		EMItem3D.get_transformlayout(grid, 2, attribdict)
+		ballstickwidget.setLayout(grid)
+		return ballstickwidget
+
+	@staticmethod
+	def getNodeForDialog(attribdict):
+		"""Create a new node using a attribdict"""
+		return EMBallStickItem3D(attribdict["parent"], transform=EMItem3D.getTransformFromDict(attribdict))
+
+	def __init__(self, parent=None, children = set(), transform=None, pdb_file=None):
+		"""
+		@param parent: should be an EMPDBItem3D instance for proper functionality.
+		"""
+		if not transform: transform = Transform()	# Object initialization should not be put in the constructor. Causes issues
+		EMItem3D.__init__(self, parent, children, transform=transform)
+		#if parent == None and pdb_file != None:
+		#	self.setData(pdb_file)
 		self.first_render_flag = True # this is used to catch the first call to the render function - so you can do an GL context sensitive initialization when you know there is a valid context
 		self.gq = None # will be a glu quadric
 		self.dl = None
@@ -109,86 +287,65 @@ class EMPDBItem3D(EMItem3D):
 		self.colors = get_default_gl_colors()
 		amino_acids_list = ["ALA","ARG","ASN","ASP","CYS","GLU","GLN","GLY","HIS","ILE","LEU","LYS","MET","PHE","PRO","SER","THR","TYR","TRP","VAL"]
 		self.side_chains = {aa:[] for aa in amino_acids_list}
+		with open(pdb_file) as infile:
+			self.text = infile.readlines()
 	
+	def current_text(self): 
+		return self.text
+
+	# I have added these methods so the inspector can set the color John Flanagan
 	def setAmbientColor(self, red, green, blue, alpha=1.0):
 		self.ambient = [red, green, blue, alpha]
 
 	def setDiffuseColor(self, red, green, blue, alpha=1.0):
 		self.diffuse = [red, green, blue, alpha]
-		
+
 	def setSpecularColor(self, red, green, blue, alpha=1.0):
 		self.specular = [red, green, blue, alpha]
-	
+
 	def setShininess(self, shininess):
 		self.shininess = shininess
-	
+		
+	def load_gl_color(self,name):
+		color = self.colors[name]
+		glColor(color["ambient"])
+		glMaterial(GL_FRONT,GL_AMBIENT,color["ambient"])
+		glMaterial(GL_FRONT,GL_DIFFUSE,color["diffuse"])
+		glMaterial(GL_FRONT,GL_SPECULAR,color["specular"])
+		glMaterial(GL_FRONT,GL_EMISSION,color["emission"])
+		glMaterial(GL_FRONT,GL_SHININESS,color["shininess"])
+
+	def getEvalString(self):
+		return "EMBallStickItem3D()"
+
+	def getItemInspector(self):
+		if not self.item_inspector: self.item_inspector = EMBallStickInspector("BALL/STICK", self)
+		return self.item_inspector
+
 	def getItemDictionary(self):
-		"""
-		Return a dictionary of item parameters (used for restoring sessions
-		"""
-		dictionary = super(EMStructureItem3D, self).getItemDictionary()
+		"""Return a dictionary of item parameters (used for restoring sessions"""
+		dictionary = super(EMBallStickItem3D, self).getItemDictionary()
 		dictionary.update({"COLOR":[self.ambient, self.diffuse, self.specular, self.shininess]})
 		return dictionary
 
 	def setUsingDictionary(self, dictionary):
 		"""Set item attributes using a dictionary, used in session restoration"""
-		super(EMStructureItem3D, self).setUsingDictionary(dictionary)
+		super(EMBallStickItem3D, self).setUsingDictionary(dictionary)
 		self.setAmbientColor(dictionary["COLOR"][0][0], dictionary["COLOR"][0][1], dictionary["COLOR"][0][2], dictionary["COLOR"][0][3])
 		self.setDiffuseColor(dictionary["COLOR"][1][0], dictionary["COLOR"][1][1], dictionary["COLOR"][1][2], dictionary["COLOR"][1][3])
 		self.setSpecularColor(dictionary["COLOR"][2][0], dictionary["COLOR"][2][1], dictionary["COLOR"][2][2], dictionary["COLOR"][2][3])
-	
-	def renderNode(self):
-		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded(): # No need to draw outline in selection mode
-			#if glGetIntegerv(GL_RENDER_MODE) == GL_RENDER: print "X"
-			glPushAttrib( GL_ALL_ATTRIB_BITS )
-			# First render the cylinder, writing the outline to the stencil buffer
-			glClearStencil(0)
-			glClear( GL_STENCIL_BUFFER_BIT )
-			glEnable( GL_STENCIL_TEST )
-			glStencilFunc( GL_ALWAYS, 1, 0xFFFF )		# Write to stencil buffer
-			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )	# Only pixels that pass the depth test are written to the stencil buffer
-			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL )	
-			self.renderShape()
-			# Then render the outline
-			glStencilFunc( GL_NOTEQUAL, 1, 0xFFFF )		# The object itself is stenciled out
-			glStencilOp( GL_KEEP, GL_KEEP, GL_REPLACE )
-			glLineWidth( 4.0 )				# By increasing the line width only the outline is drawn
-			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE )
-			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0, 1.0, 0.0, 1.0])
-			self.renderShape()
-			glPopAttrib()	
-		else:
-			glPushAttrib( GL_ALL_ATTRIB_BITS )
-			self.renderShape()
-			glPopAttrib()
-	
-	def getEvalString(self):
-		return "EMStructureItem3D(%s)"%self.name
-	
-	def getItemInspector(self):
-		"""Return a Qt widget that controls the scene item"""
-		if not self.item_inspector: self.item_inspector = EMStructureInspector("EMStructureItem3D", self)
-		return self.item_inspector
-	
+
 	def buildResList(self): # calls PDBReader to read the given pdb file and create a list (self.allResidues) of lists (x,y,z,atom name, residue name) of lists (all the values for that residue)
 		self.allResidues = []
-		try:
-			f = open(self.fName)
-			f.close()
-		except IOError:
-			print "Sorry, the file name \"" + str(self.fName) + "\" does not exist"
-			sys.exit()
-		self.a = PDBReader()
-		self.a.read_from_pdb(self.fName)
-		point_x = self.a.get_x()
-		point_y = self.a.get_y()
-		point_z = self.a.get_z()
+		point_x = self.parser.get_x()
+		point_y = self.parser.get_y()
+		point_z = self.parser.get_z()
 		point_x = point_x - np.mean(point_x)
 		point_y = point_y - np.mean(point_y)
 		point_z = point_z - np.mean(point_z)
-		point_atomName = self.a.get_atomName()
-		point_resName = self.a.get_resName()
-		point_resNum = self.a.get_resNum()
+		point_atomName = self.parser.get_atomName()
+		point_resName = self.parser.get_resName()
+		point_resNum = self.parser.get_resNum()
 		x =[]
 		y =[]
 		z =[]
@@ -234,28 +391,7 @@ class EMPDBItem3D(EMItem3D):
 					amino.append(resName[:])
 					self.allResidues.append(amino[:])
 					break
-	
-	def load_gl_color(self,name):
-		color = self.colors[name]
-		glColor(color["ambient"])
-		glMaterial(GL_FRONT,GL_AMBIENT,color["ambient"])
-		glMaterial(GL_FRONT,GL_DIFFUSE,color["diffuse"])
-		glMaterial(GL_FRONT,GL_SPECULAR,color["specular"])
-		glMaterial(GL_FRONT,GL_EMISSION,color["emission"])
-		glMaterial(GL_FRONT,GL_SHININESS,color["shininess"])
-	
-	def createDefault(self):
-		return	#display a default pdb here, currently not done
-	
-	def current_text(self): 
-		return self.text
-	
-	def getRenderBoundingBox(self):
-		return self.renderBoundingBox
 
-	def setRenderBoundingBox(self, state):
-		self.renderBoundingBox = state
-	
 	def draw_objects(self):
 		self.init_basic_shapes() # only does something the first time you call it
 		if self.dl == None: #self.dl is the display list, every time a new file is added, this is changed back to None
@@ -886,65 +1022,57 @@ class EMPDBItem3D(EMItem3D):
 			try: target.makeStick(res, t7, t8)
 			except: pass
 
-class EMPDBInspector(EMItem3DInspector):
+class EMBallStickInspector(EMPDBItemInspector):
 	
 	def __init__(self, name, item3d):
-		EMItem3DInspector.__init__(self, name, item3d)
+		EMInspectorControlShape.__init__(self, name, item3d)
+		self.updateItemControls()
 
-
-class EMSliceItem3D(EMItem3D):
+class EMSpheresItem3D(EMPDBItem3D):
 	
-	"""
-	This displays a slice of the volume that can be oriented any direction.
-	Its parent in the tree data structure that forms the scene graph must be an EMDataItem3D instance.
-	"""
-	name = "Slice"
-	nodetype = "DataChild"
-
+	"""Ball and stick representation of a PDB model."""
+	
+	name = "Spheres Model"
+	nodetype = "PDBChild"
+	representation = "Spheres"
+	
 	@staticmethod
 	def getNodeDialogWidget(attribdict):
-		"""
-		Get Slice Widget
-		"""
-		slicewidget = QtGui.QWidget()
+		"""Get Spheres Model Widget"""
+		ballstickwidget = QtGui.QWidget()
 		grid = QtGui.QGridLayout()
-		node_name_slice_label = QtGui.QLabel("Slice Name")
-		attribdict["node_name"] = QtGui.QLineEdit(str(EMSliceItem3D.name))
-		grid.addWidget(node_name_slice_label, 0, 0, 1, 2)
+		node_name_model_label = QtGui.QLabel("PDB Structure Name")
+		attribdict["node_name"] = QtGui.QLineEdit(str(EMBallStickItem3D.name))
+		grid.addWidget(node_name_model_label, 0, 0, 1, 2)
 		grid.addWidget(attribdict["node_name"], 0, 2, 1, 2)
 		EMItem3D.get_transformlayout(grid, 2, attribdict)
-		slicewidget.setLayout(grid)
-
-		return slicewidget
+		ballstickwidget.setLayout(grid)
+		return ballstickwidget
 
 	@staticmethod
 	def getNodeForDialog(attribdict):
-		"""
-		Create a new node using a attribdict
-		"""
-		return EMSliceItem3D(attribdict["parent"], transform=EMItem3D.getTransformFromDict(attribdict))
+		"""Create a new node using a attribdict"""
+		return EMBallStickItem3D(attribdict["parent"], transform=EMItem3D.getTransformFromDict(attribdict))
 
-	def __init__(self, parent=None, children = set(), transform=None):
+	def __init__(self, pdb_file, parent=None, children = set(), transform=None):
 		"""
-		@param parent: should be an EMDataItem3D instance for proper functionality.
+		@param parent: should be an EMPDBItem3D instance for proper functionality.
 		"""
 		if not transform: transform = Transform()	# Object initialization should not be put in the constructor. Causes issues
 		EMItem3D.__init__(self, parent, children, transform=transform)
-		self.texture2d_name = 0
-		self.texture3d_name = 0
-		self.use_3d_texture = False
-		self.force_texture_update = True
-
+		self.setData(pdb_file)
+		self.first_render_flag = True # this is used to catch the first call to the render function - so you can do an GL context sensitive initialization when you know there is a valid context
+		self.spheredl = 0 # this will be a low resolution sphere
+		self.highresspheredl = 0 # high resolution sphere
+		self.radius = 100
 		self.colors = get_default_gl_colors()
-		self.isocolor = "bluewhite"
+		amino_acids = ["ALA","ARG","ASN","ASP","CYS","GLU","GLN","GLY","HIS","ILE","LEU","LYS","MET","PHE","PRO","SER","THR","TYR","TRP","VAL"]
+		self.side_chains = {aa:[] for aa in amino_acids}
+		with open(pdb_file) as infile:
+			self.text = infile.readlines()
 
-		# color Needed for inspector to work John Flanagan
-		self.diffuse = self.colors[self.isocolor]["diffuse"]
-		self.specular = self.colors[self.isocolor]["specular"]
-		self.ambient = self.colors[self.isocolor]["ambient"]
-		self.shininess = self.colors[self.isocolor]["shininess"]
-
-		if parent: self.dataChanged()
+	def current_text(self): 
+		return self.text
 
 	# I have added these methods so the inspector can set the color John Flanagan
 	def setAmbientColor(self, red, green, blue, alpha=1.0):
@@ -958,310 +1086,55 @@ class EMSliceItem3D(EMItem3D):
 
 	def setShininess(self, shininess):
 		self.shininess = shininess
-
-	def useDefaultBrightnessContrast(self):
-		"""
-		This applies default settings for brightness and contrast.
-		"""
-
-		data = self.getParent().getData()
-		min = data.get_attr("minimum")
-		max = data.get_attr("maximum")
-		self.brightness = -min
-		if max != min:
-			self.contrast = 1.0/(max-min)
-		else:
-			self.contrast = 1
-
-	def gen3DTexture(self):
-		"""
-		If no 3D texture exists, this creates one. It always returns the number that identifies the current 3D texture.
-		"""
-		if self.texture3d_name == 0:
-			data_copy = self.getParent().getData().copy()
-			data_copy.add(self.brightness)
-			data_copy.mult(self.contrast)
-
-			if True: #MUCH faster than generating texture in Python
-				self.texture3d_name = GLUtil.gen_gl_texture(data_copy, GL.GL_LUMINANCE)
-			else:
-				self.texture3d_name = GL.glGenTextures(1)
-				GL.glBindTexture(GL.GL_TEXTURE_3D, self.texture3d_name)
-				GL.glTexImage3D(GL.GL_TEXTURE_3D,0,GL.GL_LUMINANCE, data_copy["nx"], data_copy["ny"], data_copy["nz"],0, GL.GL_ALPHA, GL.GL_FLOAT, data_copy.get_data_as_vector())
-
-			#print "Slice Node's 3D texture == ", self.texture3d_name
-		return self.texture3d_name
-
-	def dataChanged(self):
-		"""
-		When the EMData changes for EMDataItem3D parent node, this method is called. It is responsible for updating the state of the slice node.
-		"""
-		if self.texture2d_name != 0:
-			GL.glDeleteTextures(self.texture2d_name)
-			self.texture2d_name = 0
-		if self.texture3d_name != 0:
-			GL.glDeleteTextures(self.texture3d_name)
-			self.texture3d_name = 0
-
-		self.useDefaultBrightnessContrast()
+		
+	def load_gl_color(self,name):
+		color = self.colors[name]
+		glColor(color["ambient"])
+		glMaterial(GL_FRONT,GL_AMBIENT,color["ambient"])
+		glMaterial(GL_FRONT,GL_DIFFUSE,color["diffuse"])
+		glMaterial(GL_FRONT,GL_SPECULAR,color["specular"])
+		glMaterial(GL_FRONT,GL_EMISSION,color["emission"])
+		glMaterial(GL_FRONT,GL_SHININESS,color["shininess"])
 
 	def getEvalString(self):
-		return "EMSliceItem3D()"
+		return "EMBallStickItem3D()"
 
 	def getItemInspector(self):
-		if not self.item_inspector:
-			self.item_inspector = EMSliceInspector("SLICE", self)
+		if not self.item_inspector: self.item_inspector = EMBallStickInspector("BALL/STICK", self)
 		return self.item_inspector
 
 	def getItemDictionary(self):
-		"""
-		Return a dictionary of item parameters (used for restoring sessions
-		"""
-		dictionary = super(EMSliceItem3D, self).getItemDictionary()
+		"""Return a dictionary of item parameters (used for restoring sessions"""
+		dictionary = super(EMBallStickItem3D, self).getItemDictionary()
 		dictionary.update({"COLOR":[self.ambient, self.diffuse, self.specular, self.shininess]})
 		return dictionary
 
 	def setUsingDictionary(self, dictionary):
-		"""
-		Set item attributes using a dictionary, used in session restoration
-		"""
-		super(EMSliceItem3D, self).setUsingDictionary(dictionary)
+		"""Set item attributes using a dictionary, used in session restoration"""
+		super(EMBallStickItem3D, self).setUsingDictionary(dictionary)
 		self.setAmbientColor(dictionary["COLOR"][0][0], dictionary["COLOR"][0][1], dictionary["COLOR"][0][2], dictionary["COLOR"][0][3])
 		self.setDiffuseColor(dictionary["COLOR"][1][0], dictionary["COLOR"][1][1], dictionary["COLOR"][1][2], dictionary["COLOR"][1][3])
 		self.setSpecularColor(dictionary["COLOR"][2][0], dictionary["COLOR"][2][1], dictionary["COLOR"][2][2], dictionary["COLOR"][2][3])
+	
+	def renderShape(self):
+		glDisable(GL_COLOR_MATERIAL)
+		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
+		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
+		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
+		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
+		qd = gluNewQuadric() # a quadric for general use
+		gluQuadricDrawStyle(qd,GLU_FILL)
+		gluQuadricNormals(qd,GLU_SMOOTH)
+		gluQuadricOrientation(qd,GLU_OUTSIDE)
+		gluQuadricTexture(qd,GL_FALSE)
+		for coord in self.data:
+			glPushMatrix()
+			glTranslate(coord[0],coord[1],coord[2])
+			gluSphere(qd,self.radius,8,8)
+			glPopMatrix()
 
-	def renderNode(self):
-		data = self.getParent().getData()
-
-		nx = data["nx"]
-		ny = data["ny"]
-		nz = data["nz"]
-		interior_diagonal = math.sqrt(nx**2+ny**2+nz**2) #A square with sides this big could hold any slice from the volume
-		#The interior diagonal is usually too big, and OpenGL textures work best with powers of 2 so let's get the next smaller power of 2
-		diag = 2**(int(math.floor( math.log(interior_diagonal)/math.log(2) ))) #next smaller power of 2
-		diag2 = diag/2
-
-		glPushAttrib( GL_ALL_ATTRIB_BITS )
-		GL.glDisable(GL.GL_LIGHTING)
-		GL.glColor3f(1.0,1.0,1.0)
-
-		if not self.use_3d_texture: #Use 2D texture
-
-			# Any time self.transform changes, a new 2D texture is REQUIRED.
-			# It is easiest to create a new 2D texture every time this is called, and seems fast enough.
-			# Thus, a new 2D texture is created whether it is needed or not.
-
-			temp_data = EMData(diag, diag)
-			temp_data.cut_slice(data, self.transform)
-			temp_data.add(self.brightness)
-			temp_data.mult(self.contrast)
-
-			if self.texture2d_name != 0:
-				GL.glDeleteTextures(self.texture2d_name)
-
-			self.texture2d_name = GLUtil.gen_gl_texture(temp_data, GL.GL_LUMINANCE)
-
-
-			#For debugging purposes, draw an outline
-			GL.glBegin(GL.GL_LINE_LOOP)
-			GL.glVertex3f(-diag2, -diag2, 0)
-			GL.glVertex3f(-diag2, diag2, 0)
-			GL.glVertex3f(diag2, diag2, 0)
-			GL.glVertex3f(diag2, -diag2, 0)
-			GL.glEnd()
-
-
-			#Now draw the texture on another quad
-
-			GL.glEnable(GL.GL_TEXTURE_2D)
-			GL.glBindTexture(GL.GL_TEXTURE_2D, self.texture2d_name)
-			GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP)
-			GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP)
-			GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR)#GL.GL_NEAREST)
-			GL.glTexParameterf(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR)#GL.GL_NEAREST)
-
-			GL.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_REPLACE)
-
-			GL.glBegin(GL.GL_QUADS)
-			GL.glTexCoord2f(0, 0)
-			GL.glVertex3f(-diag2, -diag2, 0)
-			GL.glTexCoord2f(0, 1)
-			GL.glVertex3f(-diag2, diag2, 0)
-			GL.glTexCoord2f(1, 1)
-			GL.glVertex3f(diag2, diag2, 0)
-			GL.glTexCoord2f(1, 0)
-			GL.glVertex3f(diag2, -diag2, 0)
-			glEnd()
-
-			GL.glDisable(GL.GL_TEXTURE_2D)
-
-		else: #Using a 3D texture
-
-			# Generating a new 3D texture is slower than a new 2D texture.
-			# Creating a new texture is needed if brightness or contrast change or if the EMData in self.getParent().getData() has changed.
-
-			if self.force_texture_update:
-				GL.glDeleteTextures(self.texture3d_name)
-				self.texture3d_name = 0
-			self.gen3DTexture()
-
-			quad_points = [(-diag2, -diag2, 0), (-diag2, diag2, 0), (diag2, diag2, 0), (diag2, -diag2, 0)]
-
-			#For debugging purposes, draw an outline
-			GL.glMatrixMode(GL.GL_MODELVIEW)
-			GL.glBegin(GL.GL_LINE_LOOP)
-			for i in range(4):
-				GL.glVertex3f(*quad_points[i])
-			GL.glEnd()
-
-			#Now draw the texture on another quad
-
-			GL.glEnable(GL.GL_TEXTURE_3D)
-			GL.glBindTexture(GL.GL_TEXTURE_3D, self.texture3d_name)
-			GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP_TO_BORDER)
-			GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP_TO_BORDER)
-			GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_WRAP_R, GL.GL_CLAMP_TO_BORDER)
-			GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR)#GL.GL_NEAREST)
-			GL.glTexParameterf(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR)#GL.GL_NEAREST)
-	#		GL.glTexParameterfv(GL.GL_TEXTURE_3D, GL.GL_TEXTURE_BORDER_COLOR, (0.0, 0.0,1.0,1.0,1.0))
-
-			GL.glTexEnvf(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_REPLACE)
-			GL.glMatrixMode(GL.GL_TEXTURE)
-			GL.glLoadIdentity()
-			GL.glTranslatef(0.5, 0.5, 0.5) #Put the origin at the center of the 3D texture
-			GL.glScalef(1.0/nx, 1.0/ny, 1.0/nz) #Scale to make the texture coords the same as data coords
-			GLUtil.glMultMatrix(self.transform) #Make texture coords the same as EMSliceItem3D coords
-			GL.glMatrixMode(GL.GL_MODELVIEW)
-
-			GL.glBegin(GL.GL_QUADS)
-			for i in range(4):
-				GL.glTexCoord3f(*quad_points[i])
-				GL.glVertex3f(*quad_points[i])
-			glEnd()
-
-			GL.glMatrixMode(GL.GL_TEXTURE)
-			GL.glLoadIdentity()
-			GL.glMatrixMode(GL.GL_MODELVIEW)
-
-			GL.glDisable(GL.GL_TEXTURE_3D)
-
-		GL.glEnable(GL.GL_LIGHTING)
-		glPopAttrib()
-
-class EMSliceInspector(EMInspectorControlShape):
+class EMASpheresInspector(EMPDBItemInspector):
+	
 	def __init__(self, name, item3d):
-		EMInspectorControlShape.__init__(self, name, item3d)
-
-		self.constrained_plane_combobox.currentIndexChanged.connect(self.onConstrainedOrientationChanged)
-		self.use_3d_texture_checkbox.clicked.connect(self.on3DTextureCheckbox)
-		QtCore.QObject.connect(self.constrained_slider, QtCore.SIGNAL("valueChanged"), self.onConstraintSlider)
-		QtCore.QObject.connect(self.brightness_slider, QtCore.SIGNAL("valueChanged"), self.onBrightnessSlider)
-		QtCore.QObject.connect(self.contrast_slider, QtCore.SIGNAL("valueChanged"), self.onContrastSlider)
-
+		EMPDBItemInspector.__init__(self, name, item3d)
 		self.updateItemControls()
-
-	def updateItemControls(self):
-		""" Updates this item inspector. Function is called by the item it observes"""
-		super(EMSliceInspector, self).updateItemControls()
-		# Anything that needs to be updated when the scene is rendered goes here.....
-		self.use_3d_texture_checkbox.setChecked(self.item3d().use_3d_texture)
-		data = self.item3d().getParent().getData()
-		min = data["minimum"]
-		max = data["maximum"]
-		mean = data["mean"]
-		std_dev = data["sigma"]
-
-		self.brightness_slider.setValue(self.item3d().brightness)
-		self.brightness_slider.setRange(-max, -min)
-
-		self.contrast_slider.setValue(self.item3d().contrast)
-		self.contrast_slider.setRange(0.001, 1.0)
-
-	def addTabs(self):
-		""" Add a tab for each 'column' """
-		tabwidget = QtGui.QWidget()
-		gridbox = QtGui.QGridLayout()
-		tabwidget.setLayout(gridbox)
-		self.addTab(tabwidget, "slices")
-		# add slices tab first then basic tab
-		super(EMSliceInspector, self).addTabs()
-		EMSliceInspector.addControls(self, gridbox)
-
-	def addControls(self, gridbox):
-		""" Construct all the widgets in this Item Inspector """
-		sliceframe = QtGui.QFrame()
-		sliceframe.setFrameShape(QtGui.QFrame.StyledPanel)
-		slice_grid_layout = QtGui.QGridLayout()
-
-		self.constrained_group_box = QtGui.QGroupBox("Constrained Slices")
-		self.constrained_group_box.setCheckable(True)
-		self.constrained_group_box.setChecked(False)
-
-		self.constrained_plane_combobox = QtGui.QComboBox()
-		self.constrained_plane_combobox.addItems(["XY", "YZ", "ZX"])
-		self.constrained_slider = ValSlider(label="Trans:")
-
-		constrained_layout = QtGui.QVBoxLayout()
-		constrained_layout.addWidget(self.constrained_plane_combobox)
-		constrained_layout.addWidget(self.constrained_slider)
-		constrained_layout.addStretch()
-		self.constrained_group_box.setLayout(constrained_layout)
-
-		self.use_3d_texture_checkbox = QtGui.QCheckBox("Use 3D Texture")
-		self.use_3d_texture_checkbox.setChecked(self.item3d().use_3d_texture)
-
-		self.brightness_slider = ValSlider(label="Bright:")
-		self.contrast_slider = ValSlider(label="Contr:")
-
-		slice_grid_layout.addWidget(self.constrained_group_box, 0, 1, 2, 1)
-		slice_grid_layout.addWidget(self.use_3d_texture_checkbox, 2, 1, 1, 1)
-		slice_grid_layout.addWidget(self.brightness_slider, 3, 1, 1, 1)
-		slice_grid_layout.addWidget(self.contrast_slider, 4, 1, 1, 1)
-		slice_grid_layout.setRowStretch(5,1)
-		sliceframe.setLayout(slice_grid_layout)
-		gridbox.addWidget(sliceframe, 2, 0, 2, 1)
-
-	def on3DTextureCheckbox(self):
-		self.item3d().use_3d_texture = self.use_3d_texture_checkbox.isChecked()
-		if self.inspector:
-			self.inspector().updateSceneGraph()
-
-	def onConstrainedOrientationChanged(self):
-		self.constrained_slider.setValue(0)
-		(nx, ny, nz) = self.item3d().getParent().getBoundingBoxDimensions()
-		range = (0, nx)
-		plane = str(self.constrained_plane_combobox.currentText())
-		if plane == "XY": range = (-nz/2.0, nz/2.0)
-		elif plane == "YZ": range = (-nx/2.0, nx/2.0)
-		elif plane == "ZX": range = (-ny/2.0, ny/2.0)
-		self.constrained_slider.setRange(*range)
-		self.onConstraintSlider()
-
-	def onConstraintSlider(self):
-		value = self.constrained_slider.getValue()
-		transform = self.item3d().getTransform()
-		plane = str(self.constrained_plane_combobox.currentText())
-		if plane == "XY":
-			transform.set_rotation((0,0,1))
-			transform.set_trans(0,0,value)
-		elif plane == "YZ":
-			transform.set_rotation((1,0,0))
-			transform.set_trans(value, 0, 0)
-		elif plane == "ZX":
-			transform.set_rotation((0,1,0))
-			transform.set_trans(0,value,0)
-
-		if self.inspector:
-			self.inspector().updateSceneGraph()
-
-	def onBrightnessSlider(self):
-		self.item3d().brightness = self.brightness_slider.getValue()
-		self.item3d().force_texture_update = True
-		if self.inspector:
-			self.inspector().updateSceneGraph()
-
-	def onContrastSlider(self):
-		self.item3d().contrast = self.contrast_slider.getValue()
-		self.item3d().force_texture_update = True
-		if self.inspector:
-			self.inspector().updateSceneGraph()

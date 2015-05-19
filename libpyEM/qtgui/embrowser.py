@@ -30,32 +30,33 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 
-import PyQt4
-from PyQt4 import QtCore, QtGui
-from PyQt4.QtCore import Qt, QString, QChar
-from emapplication import EMApp
 from EMAN2 import *
 from EMAN2jsondb import js_open_dict
-from libpyUtils2 import EMUtil
-import os.path
-import os
-import re
-import traceback
+from emapplication import EMApp
 from emimage2d import *
 from emimagemx import *
 from emplot2d import *
 from emplot3d import *
-from valslider import StringBox
+from expand_string import expand_string
+from libpyUtils2 import EMUtil
+from matching import matches_pats
+import os
+import os.path
 import re
+import re
+from string import lower
 import threading
 import time
+import traceback
+from valslider import StringBox
 import weakref
-from matching import matches_pats
-from expand_string import expand_string
-from string import lower
+
+from PyQt4 import QtCore, QtGui
+import PyQt4
+from PyQt4.QtCore import Qt, QString, QChar
+
 
 #---------------------------------------------------------------------------
-
 def display_error(msg) :
 	"""Displays an error message, in gui and on terminal."""
 
@@ -480,8 +481,6 @@ class EMTextFileType(EMFileType) :
 		"""No actions other than the inspector for text files"""
 
 		return []
-
-#---------------------------------------------------------------------------
 
 class EMHTMLFileType(EMFileType) :
 	"""FileType for files containing HTML text"""
@@ -1040,12 +1039,95 @@ class EMStackFileType(EMFileType) :
 
 #---------------------------------------------------------------------------
 
+class EMPDBFileType(EMFileType):
+	
+	"""FileType for files with original pdb format"""
+	
+	def __init__(self, path) :
+		if path[:2] == "./" : path = path[2:]
+		EMFileType.__init__(self, path)	# the current path this FileType is representing
+	
+	@staticmethod
+	def name():
+		"""The unique name of this FileType. Stored in EMDirEntry.filetype for each file."""
+		return "PDB"
+
+	@staticmethod
+	def infoClass():
+		"""Returns a reference to the QWidget subclass for displaying information about this file"""
+		return EMPDBInfoPane
+
+	@staticmethod
+	def isValid(path, header):
+		"""Returns (size, n-atoms, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecesary file access."""
+		parser = PDBReader()
+		valid = parser.read_from_pdb(path)
+		if valid:
+			size = os.stat(path)[6]
+			f = file(path, "r").read()
+			lns = max(f.count("\n"), f.count("\r"))
+			dim = "%d ln"%lns
+			natoms = "%d atoms"%parser.get_number_points()
+			return (size, natoms, dim)
+		else: return False
+	
+	def actions(self):
+		"""Returns a list of (name, callback) tuples detailing the operations the user can call on the current file"""
+		return [("Show 3D +", "Show in the current 3D window", self.show3dApp), ("Show 3D", "Show in a new 3D window", self.show3DNew), ("Chimera", "Open in chimera (if installed)", self.showChimera)]
+	
+	def show3dApp(self, brws):
+		"""Add to current 3-D window"""
+		brws.busy()
+		pdb_model = emdataitem3d.EMPDBItem3D(self.path)
+		try: target = brws.view3d[-1]
+		except:
+			target = emscene3d.EMScene3D()
+			brws.view3d.append(target)
+		target.insertNewNode(self.path.split("/")[-1].split("#")[-1],pdb_model, parentnode = target)
+		style = empdbitem3d.EMBallStickItem3D()
+		target.insertNewNode(style.representation, style, parentnode = pdb_model)
+		target.initialViewportDims(data.getData().get_xsize())	# Scale viewport to object size
+		target.setCurrentSelection(style)				# Set style to display upon inspector loading
+		target.updateSG()	# this is needed because this might just be an addition to the SG rather than initialization
+		target.setWindowTitle(pdb_model.getName())
+		brws.notbusy()
+		target.show()
+		target.raise_()
+
+	def show3DNew(self, brws):
+		"""New 3-D window"""
+		brws.busy()
+		pdb_model = empdbitem3d.EMPDBItem3D(self.path)
+		target = emscene3d.EMScene3D()
+		brws.view3d.append(target)
+		target.insertNewNode(self.path.split("/")[-1].split("#")[-1],pdb_model)
+		representation = empdbitem3d.EMBallStickItem3D()
+		target.insertNewNode(representation.representation, style, parentnode = pdb_model)
+		target.initialViewportDims(pdb_model.getBoundingBoxDimensions()[0],pdb_model.getBoundingBoxDimensions()[1])	# Scale viewport to object size
+		target.setCurrentSelection(representation)		# Set style to display upon inspector loading
+		brws.notbusy()
+		target.setWindowTitle(pdb_model.getName())
+		target.show()
+		target.raise_()
+
+	def showChimera(self):
+		"""Open in Chimera"""
+		if get_platform() == "Linux":
+			os.system("chimera %s &" % self.path)
+		elif get_platform() == "Darwin":
+			os.system("/Applications/Chimera.app/Contents/MacOS/chimera %s &" % self.path)
+		else:
+			print "Sorry, I don't know how to run Chimera on this platform"
+
+#---------------------------------------------------------------------------
+
 # These are set all together at the end rather than after each class for efficiency
 
 EMFileType.typesbyft = {
 	"Folder"      : EMFolderFileType,
 	"JSON"        : EMJSONFileType,
 	"BDB"         : EMBdbFileType,
+	"PDB"         : EMPDBFileType,
 	"Text"        : EMTextFileType,
 	"Plot"        : EMPlotFileType,
 	"Image"       : EMImageFileType,
@@ -1059,9 +1141,10 @@ EMFileType.typesbyft = {
 
 EMFileType.extbyft = {
 	".json" : (EMJSONFileType, EMTextFileType),
+	".pdb"  : (EMPDBFileType,  EMTextFileType),
 	".txt"  : (EMPlotFileType, EMTextFileType),
 	".htm"  : (EMHTMLFileType, EMTextFileType),
-	".html" : (EMHTMLFileType, EMTextFileType),
+	".html" : (EMHTMLFileType, EMTextFileType)
 }
 
 # Default Choices when extension doesn't work
@@ -1090,7 +1173,7 @@ class EMDirEntry(object) :
 		self.name = str(name)	# name of this path element (string)
 		self.index = str(index)
 		self.hidedot = hidedot	# If set children beginning with . will be hidden
-
+		
 		if self.root[-1] == "/" or self.root[-1] == "\\" : self.root = self.root[:-1]
 
 		# self.seq = EMDirEntry.classcount
@@ -1126,7 +1209,7 @@ class EMDirEntry(object) :
 			self.dim = ""
 			self.nimg = ""
 			self.size = ""
-
+		
 #		print "Init DirEntry ", self, self.__dict__
 
 	def __repr__(self) :
@@ -1148,9 +1231,11 @@ class EMDirEntry(object) :
 
 	def fileTypeClass(self) :
 		"""Returns the FileType class corresponding to the named filetype if it exists. None otherwise"""
-
-		try : return EMFileType.typesbyft[self.filetype]
-		except : return None
+		try:
+			filetype = EMFileType.typesbyft[self.filetype]
+			return filetype
+		except:
+			return None
 
 	def sort(self, column, order) :
 		"""Recursive sorting"""
@@ -1810,6 +1895,66 @@ class EMHTMLInfoPane(EMInfoPane) :
 	def find(self, value) :
 		"""Find a string"""
 
+		if not self.text.find(value) :
+			# this implements wrapping
+			self.text.moveCursor(1, 0)
+			self.text.find(value)
+
+	def buttonEdit(self, tog) :
+		self.text.setReadOnly(False)
+		self.wbutedit.setEnabled(False)
+		self.wbutcancel.setEnabled(True)
+		self.wbutok.setEnabled(True)
+
+	def buttonCancel(self, tog) :
+		self.display(self.target)
+
+	def buttonOk(self, tog) :
+		try : file(self.target.path(), "w").write(str(self.text.toHtml()))
+		except : QtGui.QMessageBox.warning(self, "Error !", "File write failed")
+
+#---------------------------------------------------------------------------
+
+class EMPDBInfoPane(EMInfoPane) :
+	
+	def __init__(self, parent = None) :
+		QtGui.QWidget.__init__(self, parent)
+		self.vbl = QtGui.QVBoxLayout(self)
+		# text editing widget
+		self.text = QtGui.QTextEdit()
+		self.text.setAcceptRichText(True)
+		self.text.setReadOnly(True)
+		self.vbl.addWidget(self.text)
+		# Find box
+		self.wfind = StringBox(label = "Find:")
+		self.vbl.addWidget(self.wfind)
+		# Buttons
+		self.hbl = QtGui.QHBoxLayout()
+		self.wbutedit = QtGui.QPushButton("Edit")
+		self.hbl.addWidget(self.wbutedit)
+		self.wbutcancel = QtGui.QPushButton("Revert")
+		self.wbutcancel.setEnabled(False)
+		self.hbl.addWidget(self.wbutcancel)
+		self.wbutok = QtGui.QPushButton("Save")
+		self.wbutok.setEnabled(False)
+		self.hbl.addWidget(self.wbutok)
+		self.vbl.addLayout(self.hbl)
+		QtCore.QObject.connect(self.wfind, QtCore.SIGNAL("valueChanged"), self.find)
+		QtCore.QObject.connect(self.wbutedit, QtCore.SIGNAL('clicked(bool)'), self.buttonEdit)
+		QtCore.QObject.connect(self.wbutcancel, QtCore.SIGNAL('clicked(bool)'), self.buttonCancel)
+		QtCore.QObject.connect(self.wbutok, QtCore.SIGNAL('clicked(bool)'), self.buttonOk)
+
+	def display(self, data):
+		"""display information for the target EMDirEntry"""
+		self.target = data
+		self.text.setHtml(file(self.target.path(),"r").read())
+		self.text.setReadOnly(True)
+		self.wbutedit.setEnabled(True)
+		self.wbutcancel.setEnabled(False)
+		self.wbutok.setEnabled(False)
+
+	def find(self, value) :
+		"""Find a string"""
 		if not self.text.find(value) :
 			# this implements wrapping
 			self.text.moveCursor(1, 0)
@@ -2763,6 +2908,7 @@ class EMBrowserWidget(QtGui.QWidget) :
 		self.wfilter.addItem(".*_ptcls$")
 		self.wfilter.addItem(".*\.mrc")
 		self.wfilter.addItem(".*\.tif")
+		self.wfilter.addItem(".*\.pdb")
 		self.wfilter.addItem("help")
 		self.wtoolhbl2.addWidget(self.wfilter, 5)
 

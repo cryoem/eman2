@@ -35,12 +35,11 @@ from EMAN2 import EMANVERSION, E2init, E2end, EMData, base_name, file_exists, EM
 import EMAN2db
 from emapplication import EMApp
 import embrowser
-from emdataitem3d import EMStructureItem3D
-from empdbitem3d import EMPDBItem3D
-from emscene3d import EMScene3D
 from emimage import EMImageWidget, EMWidgetFromFile
+from emscene3d import EMScene3D
 import os
 import sys
+
 from OpenGL import GL, GLU, GLUT
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
@@ -60,7 +59,7 @@ def main():
 	parser.add_argument("--classmx",type=str,help="<classmx>,<#> Show particles in one class from a classification matrix. Pass raw particle file as first argument to command.")
 	parser.add_argument("--classes",type=str,help="<rawptcl>,<classmx> Show particles associated class-averages")
 	parser.add_argument("--singleimage",action="store_true",default=False,help="Display a stack in a single image view")
-	parser.add_argument("--pdb",type=str,nargs='*',help="Specify the location of one or more PDB files for viewing.")
+	#parser.add_argument("--pdb",type=str,nargs='*',help="Specify the location of one or more PDB files for viewing.")
 	parser.add_argument("--plot",action="store_true",default=False,help="Data file(s) should be plotted rather than displayed in 2-D")
 	parser.add_argument("--plot3",action="store_true",default=False,help="Data file(s) should be plotted rather than displayed in 3-D")
 	parser.add_argument("--fullrange",action="store_true",default=False,help="A specialized flag that disables auto contrast for the display of particles stacks and 2D images only.")
