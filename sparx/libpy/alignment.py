@@ -1248,7 +1248,6 @@ def prepare_refrings_projections( volft, kb, nz = -1, delta = 2.0, ref_a = "P", 
 
 	projections = [None]*num_ref     # list of (image objects) reference projections
 	refrings    = [None]*num_ref     # list of (image objects) reference projections in Fourier/polar representation
-
 	sizex = numr[len(numr)-2] + numr[len(numr)-1]-1
 	cimage = EMData(nz,nz,1,False)  #  FT blank
 
@@ -1269,17 +1268,18 @@ def prepare_refrings_projections( volft, kb, nz = -1, delta = 2.0, ref_a = "P", 
 
 	if MPI:
 		from utilities import bcast_compacted_EMData_to_all
+		from utilities import info
 		bcast_compacted_EMData_to_all(projections, myid, comm=mpi_comm)
 		bcast_compacted_EMData_to_all(refrings, myid, comm=mpi_comm)
 
 	dd = {'is_complex':1, 'is_fftodd':nz%2, 'is_fftpad':1}
-	for i in xrange(len(ref_angles)):
+	for i in xrange(num_ref):
 		n1,n2,n3 = getfvec(ref_angles[i][0], ref_angles[i][1])
 		refrings[i].set_attr_dict( {"phi":ref_angles[i][0], "theta":ref_angles[i][1], "psi":ref_angles[i][2], "n1":n1, "n2":n2, "n3":n3} )
 		projections[i].set_attr_dict( {"phi":ref_angles[i][0], "theta":ref_angles[i][1], "psi":ref_angles[i][2], "n1":n1, "n2":n2, "n3":n3} )
 		projections[i].set_attr_dict( dd )
 
-	return refrings
+	return refrings, projections
 
 
 def prepare_refrings2( volft, kb, nz, segmask, delta, ref_a, sym, numr, MPI=False, phiEqpsi = "Minus", kbx = None, kby = None, initial_theta = None, delta_theta = None):
@@ -4574,7 +4574,7 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 #  The input volume is assumed to be shrunk but not filtered, if not provided, it will be reconstructed and shrunk
 #  We apply ali3d_options.fl
 def center_projections_3D(data, ref_vol = None, ali3d_options = None, shrinkage = 1.0, \
-	mpi_comm = None, myid = 0, main_node = 0, log = None ):
+							mpi_comm = None, myid = 0, main_node = 0, log = None ):
 
 	from alignment       import Numrinit, prepare_refrings, proj_ali_incore,  proj_ali_incore_local, shc
 	from utilities       import bcast_number_to_all, bcast_EMData_to_all, 	wrap_mpi_gatherv, wrap_mpi_bcast, model_blank
@@ -4617,12 +4617,12 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, shrinkage 
 	if myid == main_node:
 		log.add("Start 3D centering")
 
-	xrng        = get_input_from_string(xr)
+	xrng        = int(get_input_from_string(xr)[0])
 	if  yr == "-1":  yrng = xrng
-	else          :  yrng = get_input_from_string(yr)
+	else          :  yrng = int(get_input_from_string(yr)[0])
 	step        = get_input_from_string(ts)
 	delta       = get_input_from_string(delta)
-	lstp = min(len(xrng), len(yrng), len(step), len(delta))
+	lstp = 1 #min(len(xrng), len(yrng), len(step), len(delta))
 	if an == "-1":
 		an = [-1] * lstp
 	else:
@@ -4633,8 +4633,6 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, shrinkage 
 	last_ring   = int(ou)
 	max_iter    = int(ali3d_options.maxit)
 	center      = int(center)
-
-
 
 	if myid == 0:
 		finfo = None
@@ -4663,8 +4661,7 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, shrinkage 
 		ali3d_options.ou = last_ring
 		ali3d_options.ir = first_ring
 	numr	= Numrinit(first_ring, last_ring, rstep, "H")
-	if(xr == -1.0): xrng = (nx - last_ring - 1)//2
-	else: 			xrng = xr
+	if(xrng == -1): xrng = (nx - last_ring - 1)//2
 	yrng = xrng
 
 	#oldshifts = [None]*nima
@@ -4708,14 +4705,17 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, shrinkage 
 	mpi_barrier(mpi_comm)
 	N_step = 0
 	if myid == main_node:
-		print " fififi   ",delta[N_step], an[N_step], xrng[N_step], yrng[N_step], step[N_step]
-		log.add("Delta = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f\n"%(delta[N_step], xrng[N_step], yrng[N_step], step[N_step]))
+		log.add("Delta = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f\n"%(delta[N_step], xrng, yrng, step[N_step]))
 		start_time = time()
 
 	#=========================================================================
 	# build references
 	volft, kb = prep_vol(vol)
-	refrings, ftprojections = prepare_refrings_projections(volft, kb, nx, delta[N_step], ref_a, sym, numr, MPI=mpi_comm, phiEqpsi = "Zero")
+	refrings, ftprojections = prepare_refrings_projections(volft, kb, nx, delta[N_step], ref_a, sym, "H", numr, MPI=False, phiEqpsi = "Zero")
+	from fundamentals import fft
+	for i in xrange(len(ftprojections)):  fft(ftprojections[i]).write_image("template%03d.hdf"%myid, i)
+	#MPI=mpi_comm, phiEqpsi = "Zero")
+	#MPI=False, phiEqpsi = "Zero")
 	del volft, kb
 	#=========================================================================
 
@@ -4723,10 +4723,11 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, shrinkage 
 		log.add("Time to prepare rings: %f\n" % (time()-start_time))
 		start_time = time()
 	# alignment
+	nima = len(data)
 	params = [None]*nima
 	for im in xrange(nima):
 		newsx,newsy,iref,talpha,tmirr,totpeak = multalign2d_scf(data[im], refrings, ftprojections, numr, xrng, yrng, last_ring)
-		talpha, newsx, newsy = params_2D_3D(talpha, newsx, newsy, tmirr)
+		dummy, dummy, talpha, newsx, newsy = params_2D_3D(talpha, newsx, newsy, tmirr)
 		params[im] = [talpha, newsx/shrinkage, newsx/shrinkage, iref]
 
 	#=========================================================================
