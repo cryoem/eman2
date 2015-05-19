@@ -35,7 +35,6 @@ from EMAN2 import *
 import copy
 from emapplication import EMGLWidget
 from emdataitem3d import *
-#from emdataitem3d import EMDataItem3D, EMIsosurface, EMSliceItem3D, EMVolumeItem3D
 from emglobjects import get_default_gl_colors
 from emitem3d import EMItem3D, EMItem3DInspector
 from emshapeitem3d import *
@@ -51,7 +50,10 @@ from OpenGL.GL import *
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
 
+from empdbitem3d import *
 
+
+#from emdataitem3d import EMDataItem3D, EMIsosurface, EMSliceItem3D, EMVolumeItem3D
 # XPM format Cursors
 visibleicon = [
     '16 12 3 1',
@@ -2986,9 +2988,16 @@ class NodeDialog(QtGui.QDialog):
 		self.node_type_combo.addItem("Text")
 		self.textwidgetdict = {}
 		self.node_stacked_widget.addWidget(EM3DText.getNodeDialogWidget(self.textwidgetdict))
-		self.node_type_combo.addItem("Structure")
-		self.structurewidgetdict = {}
-		self.node_stacked_widget.addWidget(EMStructureItem3D.getNodeDialogWidget(self.structurewidgetdict))
+		self.node_type_combo.addItem("PDB")
+		self.pdbwidgetdict = {}
+		self.node_stacked_widget.addWidget(EMPDBItem3D.getNodeDialogWidget(self.pdbwidgetdict))
+		if self.item and self.item.item3d().name == "PDB":
+			self.node_type_combo.addItem("Ball/Stick")
+			self.ballstickwidgetdict = {}
+			self.node_stacked_widget.addWidget(EMBallStickModel.getNodeDialogWidget(self.ballstickwidgetdict))
+			self.node_type_combo.addItem("Spheres")
+			self.sphereswidgetdict = {}
+			self.node_stacked_widget.addWidget(EMSpheresModel.getNodeDialogWidget(self.sphereswidgetdict))
 		self.node_type_combo.addItem("Data")
 		self.datawidgetdict = {}
 		self.node_stacked_widget.addWidget(EMDataItem3D.getNodeDialogWidget(self.datawidgetdict))
@@ -3002,7 +3011,6 @@ class NodeDialog(QtGui.QDialog):
 			self.node_type_combo.addItem("Volume")
 			self.volumewidgetdict = {}
 			self.node_stacked_widget.addWidget(EMVolumeItem3D.getNodeDialogWidget(self.volumewidgetdict))
-		
 		self.connect(self.addnode_button, QtCore.SIGNAL('clicked()'), self._on_add_node)
 		self.connect(self.cancel_button, QtCore.SIGNAL('clicked()'), self._on_cancel)
 		self.connect(self.node_type_combo, QtCore.SIGNAL("activated(int)"), self._node_combobox_changed)
@@ -3037,10 +3045,20 @@ class NodeDialog(QtGui.QDialog):
 		if self.node_type_combo.currentText() == "Text":
 			insertion_node = EM3DText.getNodeForDialog(self.textwidgetdict)
 			node_name = str(self.textwidgetdict["node_name"].text())
-		# Structure
-		if self.node_type_combo.currentText() == "Structure":
-			insertion_node = EMStructureItem3D.getNodeForDialog(self.structurewidgetdict)
-			node_name = str(self.structurewidgetdict["node_name"].text())
+		# PDB
+		if self.node_type_combo.currentText() == "PDB":
+			insertion_node = EMPDBItem3D.getNodeForDialog(self.pdbwidgetdict)
+			node_name = str(self.pdbwidgetdict["node_name"].text())
+		# Ball/Stick
+		if self.node_type_combo.currentText() == "Ball/Stick": 
+			self.ballstickwidgetdict["parent"] = parentnode = self.item.item3d()
+			insertion_node = EMBallStickModel.getNodeForDialog(self.ballstickwidgetdict)
+			node_name = str(self.ballstickwidgetdict["node_name"].text())
+		# Spheres
+		if self.node_type_combo.currentText() == "Spheres": 
+			self.sphereswidgetdict["parent"] = parentnode = self.item.item3d()
+			insertion_node = EMSpheresModel.getNodeForDialog(self.sphereswidgetdict)
+			node_name = str(self.sphereswidgetdict["node_name"].text())
 		# Data
 		if self.node_type_combo.currentText() == "Data": 
 			insertion_node = EMDataItem3D.getNodeForDialog(self.datawidgetdict)
@@ -3104,8 +3122,8 @@ class GLdemo(QtGui.QWidget):
 		
 	def closeEvent(self, event): 
 		self.widget.close()
-		
-		
+
+
 if __name__ == "__main__":
 	import sys
 	from pmwidgets import PMIntEntryWidget, PMStringEntryWidget, PMBoolWidget, PMFileNameWidget, PMComboWidget

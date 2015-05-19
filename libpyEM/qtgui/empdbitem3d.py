@@ -192,7 +192,7 @@ class EMPDBItemInspector(EMItem3DInspector):
 	
 	def updateItemControls(self):
 		""" Updates this item inspector. Function is called by the item it observes"""
-		super(EMDataItem3DInspector, self).updateItemControls()
+		super(EMPDBItem3DInspector, self).updateItemControls()
 		# Anything that needs to be updated when the scene is rendered goes here.....
 		if self.item3d().path: self.file_path_label.setText(self.item3d().path)
 		self.data_checkbox.setChecked(self.item3d().getRenderBoundingBox())
@@ -204,8 +204,8 @@ class EMPDBItemInspector(EMItem3DInspector):
 		tabwidget.setLayout(gridbox)
 		self.addTab(tabwidget, "data")
 		# add data tab first, then basic
-		super(EMDataItem3DInspector, self).addTabs()
-		EMDataItem3DInspector.addControls(self, gridbox)
+		super(EMPDBItem3DInspector, self).addTabs()
+		EMPDBItem3DInspector.addControls(self, gridbox)
 
 	def addControls(self, gridbox):
 		""" Construct all the widgets in this Item Inspector """
@@ -241,13 +241,13 @@ class EMPDBItemInspector(EMItem3DInspector):
 		self.item3d().setRenderBoundingBox(not self.item3d().getRenderBoundingBox())
 		self.inspector().updateSceneGraph()
 
-class EMBallStickItem3D(EMPDBItem3D):
+class EMBallStickModel(EMPDBItem3D):
 	
 	"""Ball and stick representation of a PDB model."""
 	
 	name = "Ball and Stick Model"
 	nodetype = "PDBChild"
-	representation = "Spheres"
+	representation = "Ball and Stick"
 
 	@staticmethod
 	def getNodeDialogWidget(attribdict):
@@ -255,7 +255,7 @@ class EMBallStickItem3D(EMPDBItem3D):
 		ballstickwidget = QtGui.QWidget()
 		grid = QtGui.QGridLayout()
 		node_name_model_label = QtGui.QLabel("PDB Structure Name")
-		attribdict["node_name"] = QtGui.QLineEdit(str(EMBallStickItem3D.name))
+		attribdict["node_name"] = QtGui.QLineEdit(str(EMBallStickModel.name))
 		grid.addWidget(node_name_model_label, 0, 0, 1, 2)
 		grid.addWidget(attribdict["node_name"], 0, 2, 1, 2)
 		EMItem3D.get_transformlayout(grid, 2, attribdict)
@@ -265,7 +265,7 @@ class EMBallStickItem3D(EMPDBItem3D):
 	@staticmethod
 	def getNodeForDialog(attribdict):
 		"""Create a new node using a attribdict"""
-		return EMBallStickItem3D(attribdict["parent"], transform=EMItem3D.getTransformFromDict(attribdict))
+		return EMBallStickModel(attribdict["parent"], transform=EMItem3D.getTransformFromDict(attribdict))
 
 	def __init__(self, parent=None, children = set(), transform=None, pdb_file=None):
 		"""
@@ -319,12 +319,12 @@ class EMBallStickItem3D(EMPDBItem3D):
 		return "EMBallStickItem3D()"
 
 	def getItemInspector(self):
-		if not self.item_inspector: self.item_inspector = EMBallStickInspector("BALL/STICK", self)
+		if not self.item_inspector: self.item_inspector = EMBallStickModelInspector("BALL/STICK", self)
 		return self.item_inspector
 
 	def getItemDictionary(self):
 		"""Return a dictionary of item parameters (used for restoring sessions"""
-		dictionary = super(EMBallStickItem3D, self).getItemDictionary()
+		dictionary = super(EMBallStickModel, self).getItemDictionary()
 		dictionary.update({"COLOR":[self.ambient, self.diffuse, self.specular, self.shininess]})
 		return dictionary
 
@@ -1022,15 +1022,15 @@ class EMBallStickItem3D(EMPDBItem3D):
 			try: target.makeStick(res, t7, t8)
 			except: pass
 
-class EMBallStickInspector(EMPDBItemInspector):
+class EMBallStickModelInspector(EMPDBItemInspector):
 	
 	def __init__(self, name, item3d):
 		EMInspectorControlShape.__init__(self, name, item3d)
 		self.updateItemControls()
 
-class EMSpheresItem3D(EMPDBItem3D):
+class EMSpheresModel(EMPDBItem3D):
 	
-	"""Ball and stick representation of a PDB model."""
+	"""Spheres representation of a PDB model."""
 	
 	name = "Spheres Model"
 	nodetype = "PDBChild"
@@ -1039,20 +1039,20 @@ class EMSpheresItem3D(EMPDBItem3D):
 	@staticmethod
 	def getNodeDialogWidget(attribdict):
 		"""Get Spheres Model Widget"""
-		ballstickwidget = QtGui.QWidget()
+		sphereswidget = QtGui.QWidget()
 		grid = QtGui.QGridLayout()
 		node_name_model_label = QtGui.QLabel("PDB Structure Name")
-		attribdict["node_name"] = QtGui.QLineEdit(str(EMBallStickItem3D.name))
+		attribdict["node_name"] = QtGui.QLineEdit(str(EMSpheresModel.name))
 		grid.addWidget(node_name_model_label, 0, 0, 1, 2)
 		grid.addWidget(attribdict["node_name"], 0, 2, 1, 2)
 		EMItem3D.get_transformlayout(grid, 2, attribdict)
-		ballstickwidget.setLayout(grid)
-		return ballstickwidget
+		sphereswidget.setLayout(grid)
+		return sphereswidget
 
 	@staticmethod
 	def getNodeForDialog(attribdict):
 		"""Create a new node using a attribdict"""
-		return EMBallStickItem3D(attribdict["parent"], transform=EMItem3D.getTransformFromDict(attribdict))
+		return EMSpheresModel(attribdict["parent"], transform=EMItem3D.getTransformFromDict(attribdict))
 
 	def __init__(self, pdb_file, parent=None, children = set(), transform=None):
 		"""
@@ -1097,21 +1097,21 @@ class EMSpheresItem3D(EMPDBItem3D):
 		glMaterial(GL_FRONT,GL_SHININESS,color["shininess"])
 
 	def getEvalString(self):
-		return "EMBallStickItem3D()"
+		return "EMSpheresModel()"
 
 	def getItemInspector(self):
-		if not self.item_inspector: self.item_inspector = EMBallStickInspector("BALL/STICK", self)
+		if not self.item_inspector: self.item_inspector = EMSpheresModelInspector("BALL/STICK", self)
 		return self.item_inspector
 
 	def getItemDictionary(self):
 		"""Return a dictionary of item parameters (used for restoring sessions"""
-		dictionary = super(EMBallStickItem3D, self).getItemDictionary()
+		dictionary = super(EMSpheresModel, self).getItemDictionary()
 		dictionary.update({"COLOR":[self.ambient, self.diffuse, self.specular, self.shininess]})
 		return dictionary
 
 	def setUsingDictionary(self, dictionary):
 		"""Set item attributes using a dictionary, used in session restoration"""
-		super(EMBallStickItem3D, self).setUsingDictionary(dictionary)
+		super(EMSpheresModel, self).setUsingDictionary(dictionary)
 		self.setAmbientColor(dictionary["COLOR"][0][0], dictionary["COLOR"][0][1], dictionary["COLOR"][0][2], dictionary["COLOR"][0][3])
 		self.setDiffuseColor(dictionary["COLOR"][1][0], dictionary["COLOR"][1][1], dictionary["COLOR"][1][2], dictionary["COLOR"][1][3])
 		self.setSpecularColor(dictionary["COLOR"][2][0], dictionary["COLOR"][2][1], dictionary["COLOR"][2][2], dictionary["COLOR"][2][3])
@@ -1133,7 +1133,7 @@ class EMSpheresItem3D(EMPDBItem3D):
 			gluSphere(qd,self.radius,8,8)
 			glPopMatrix()
 
-class EMASpheresInspector(EMPDBItemInspector):
+class EMSpheresModelInspector(EMPDBItemInspector):
 	
 	def __init__(self, name, item3d):
 		EMPDBItemInspector.__init__(self, name, item3d)
