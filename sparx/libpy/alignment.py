@@ -2744,9 +2744,11 @@ def multalign2d_scf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1):
 	totpeak = -1.0e23
 
 	for iki in xrange(len(refrings)):
+		print  "TEMPLATE  ",iki
 		alpha1, sxs, sys, mirr, peak1 = ornq(sci, refrings[iki], [0.0], [0.0], 1.0, "H", numr, cnx, cny)
 		alpha2, sxs, sys, mirr, peak2 = ornq(mirror(sci), refrings[iki], [0.0], [0.0], 1.0, "H", numr, cnx, cny)
-
+		print  alpha1, sxs, sys, mirr, peak1
+		print  alpha2, sxs, sys, mirr, peak2
 
 		if(peak1>peak2):
 			mirr = 0
@@ -2760,8 +2762,8 @@ def multalign2d_scf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1):
 	
 		ccf2 = Util.window(ccf(rot_shift2D(image, alpha+180.0, 0.0, 0.0, mirr), frotim[iki]), nrx, nry)
 		p2 = peak_search(ccf2)
-		#print p1
-		#print p2
+		print p1
+		print p2
 
 		peak_val1 = p1[0][0]
 		peak_val2 = p2[0][0]
@@ -2788,15 +2790,16 @@ def multalign2d_scf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1):
 				z[i,j] = ccf1[i+cx-1,j+cy-1]
 		#print  ccf1[cx,cy],z[1,1]
 		XSH, YSH, PEAKV = parabl(z)
+		print  PEAKV
 		if(PEAKV > totpeak):
 			totpeak = PEAKV
 			iref = iki
-			#print sxs, sys, XSH, YSH, PEAKV, peak
 			if(mirr == 1):  	sx = -sxs+XSH
 			else:               sx =  sxs-XSH
 			sy = sys-YSH
 			talpha = alpha
 			tmirr = mirr
+			print "BETTER",sx,sy,iref,talpha,tmirr,totpeak
 			#return alpha, sx, sys-YSH, mirr, PEAKV
 	return sx,sy,iref,talpha,tmirr,totpeak
 

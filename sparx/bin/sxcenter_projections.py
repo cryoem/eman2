@@ -199,14 +199,51 @@ def run3Dalignment(paramsdict, partids, partstack, outputdir, procid, myid, main
 	ali3d_options.maxit  = paramsdict["maxit"]
 	ali3d_options.mask3D = paramsdict["mask3D"]
 	ali3d_options.an	 = paramsdict["an"]
+	ali3d_options.ou     = paramsdict["radius"]  #  This is changed in ali3d_base, but the shrank value is needed in vol recons, fixt it!
+	shrinkage            = paramsdict["shrink"]
+
 	projdata = getindexdata(paramsdict["stack"], partids, partstack, myid, nproc)
+	onx = projdata[0].get_xsize()
+	last_ring = ali3d_options.ou
+	if last_ring < 0:	last_ring = int(onx/2) - 2
+	mask2D  = model_circle(last_ring,onx,onx) - model_circle(ali3d_options.ir,onx,onx)
+	nima = len(projdata)
+	for im in xrange(nima):
+		#data[im].set_attr('ID', list_of_particles[im])
+		ctf_applied = projdata[im].get_attr_default('ctf_applied', 0)
+		#phi,tetha,psi,sx,sy = get_params_proj(data[im])
+		#data[im] = fshift(data[im], sx, sy)
+		#set_params_proj(data[im],[phi,tetha,psi,0.0,0.0])
+		#  For local SHC set anchor
+		#if(nsoft == 1 and an[0] > -1):
+		#	set_params_proj(data[im],[phi,tetha,psi,0.0,0.0], "xform.anchor")
+		#oldshifts[im] = [sx,sy]
+		if ali3d_options.CTF :
+			ctf_params = projdata[im].get_attr("ctf")
+			if ctf_applied == 0:
+				st = Util.infomask(projdata[im], mask2D, False)
+				projdata[im] -= st[0]
+				projdata[im] = filt_ctf(projdata[im], ctf_params)
+				projdata[im].set_attr('ctf_applied', 1)
+		if(shrinkage != 1.0):
+			phi,theta,psi,sx,sy = get_params_proj(projdata[im])
+			projdata[im] = resample(data[im], shrinkage)
+			sx *= shrinkage
+			sy *= shrinkage
+			set_params_proj(projdata[im], [phi,theta,psi,sx,sy])
+			if CTF :
+				ctf_params.apix /= shrinkage
+				projdata[im].set_attr('ctf', ctf_params)
+	del mask2D
+
+
+
 	"""
 	if(paramsdict["delpreviousmax"]):
 		for i in xrange(len(projdata)):
 			try:  projdata[i].del_attr("previousmax")
 			except:  pass
 	"""
-	ali3d_options.ou = paramsdict["radius"]  #  This is changed in ali3d_base, but the shrank value is needed in vol recons, fixt it!
 	if(myid == main_node):
 		print_dict(paramsdict,"3D alignment parameters")
 		print("                    =>  actual lowpass      :  ",ali3d_options.fl)
@@ -220,14 +257,14 @@ def run3Dalignment(paramsdict, partids, partstack, outputdir, procid, myid, main
 
 	#  Run alignment command
 	params = center_projections_3D(projdata, get_im(paramsdict["refvol"]), \
-		ali3d_options, paramsdict["shrink"], \
+		ali3d_options, shrinkage, \
 		mpi_comm = MPI_COMM_WORLD,  myid = myid, main_node = main_node, log = log )
 	del log, projdata
 	#  store params
 	if(myid == main_node):
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print(line,"Executed successfully: ","3D alignment","  number of images:%7d"%len(params))
-		write_text_row(params, os.path.join(outputdir,"params.txt"%procid) )
+		write_text_row(params, os.path.join(outputdir,"params.txt") )
 
 def print_dict(dict,theme):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
@@ -343,8 +380,6 @@ def main():
 	total_stack = bcast_number_to_all(total_stack, source_node = main_node)
 	pixel_size  = bcast_number_to_all(pixel_size, source_node = main_node)
 	nxinit      = bcast_number_to_all(nxinit, source_node = main_node)
-	fq   = bcast_number_to_all(fq, source_node = main_node)
-
 
 	if(radi < 1):  radi = nxinit//2-2
 	elif((2*radi+2)>nxinit):  ERROR("Particle radius set too large!","sxcenter_projections",1,myid)
@@ -377,8 +412,6 @@ def main():
 
 	#  INITIALIZATION
 
-	#  Run exhaustive projection matching to get initial orientation parameters
-	#  Estimate initial resolution
 	initdir = masterdir
 	#  make sure the initial volume is not set to zero outside of a mask, as if it is it will crash the program
 	if( myid == main_node ):
@@ -416,22 +449,11 @@ def main():
 
 
 	if( myid == main_node ):
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line,"INITIALIZATION")
 		write_text_file(range(total_stack), partids)
 		write_text_row([[0.0,0.0,0.0,0.0,0.0] for i in xrange(total_stack) ], partstack)
 
 	run3Dalignment(paramsdict, partids, partstack, initdir, 0, myid, main_node, nproc)
-	if(myid == main_node):
-		print(line,"Executed successfully: ","3D alignment")
 
-	#  store params
-	partids = [None]*2
-	for procid in xrange(2):  partids[procid] = os.path.join(initdir,"chunk%01d.txt"%procid)
-	partstack = [None]*2
-	for procid in xrange(2):  partstack[procid] = os.path.join(initdir,"params-chunk%01d.txt"%procid)
-	if(myid == main_node):
-			print("  Terminating, the best solution is in the directory main%03d"%tracker["bestsolution"])
 	mpi_barrier(MPI_COMM_WORLD)
 
 	mpi_finalize()
