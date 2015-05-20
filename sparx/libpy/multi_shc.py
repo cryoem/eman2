@@ -2882,7 +2882,7 @@ def no_of_processors_restricted_by_data__do_volume(projections, ali3d_options, i
 def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi_comm = None, log = None, nsoft = 3, \
 		saturatecrit = 0.95, pixercutoff = 1.0 ):
 
-	from alignment       import Numrinit, prepare_refrings, proj_ali_incore,  proj_ali_incore_local, shc
+	from alignment       import Numrinit, prepare_refrings, proj_ali_incore,  proj_ali_incore_local, shc, center_projections_3D
 	from utilities       import bcast_number_to_all, bcast_EMData_to_all, 	wrap_mpi_gatherv, wrap_mpi_bcast, model_blank
 	from utilities       import get_im, file_type, model_circle, get_input_from_string, get_params_proj, set_params_proj
 	from mpi             import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier, mpi_reduce, MPI_INT, MPI_SUM

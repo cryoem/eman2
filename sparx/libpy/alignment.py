@@ -4620,11 +4620,11 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, onx = -1, 
 	xr     = ali3d_options.xr
 	yr     = ali3d_options.yr
 	ts     = ali3d_options.ts
-	an     = ali3d_options.an
+	#an     = ali3d_options.an
 	sym    = ali3d_options.sym
 	sym    = sym[0].lower() + sym[1:]
 	delta  = ali3d_options.delta
-	center = ali3d_options.center
+	#center = ali3d_options.center
 	CTF    = ali3d_options.CTF
 	ref_a  = ali3d_options.ref_a
 	#maskfile = ali3d_options.mask3D
