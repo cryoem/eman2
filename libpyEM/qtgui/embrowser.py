@@ -938,7 +938,8 @@ class EMImageFileType(EMFileType) :
 
 		brws.busy()
 
-		tmp=EMData(self.path, self.n)
+		if self.n>=0 : tmp=EMData(self.path, self.n)
+		else: tmp=EMData(self.path, 0)
 		data=[tmp.process("misc.directional_sum",{"axis":axis}) for axis in "zyx"]
 	
 		target = EMImage2DWidget(data)
