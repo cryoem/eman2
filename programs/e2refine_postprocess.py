@@ -136,8 +136,10 @@ def main():
 	except: pass
 	combined.write_image(combfile,0)
 
-	if options.setsf!="none" : setsf="--setsf "+options.setsf
-	else : setsf=""
+	if options.setsf and options.setsf!="none" : 
+		setsf="--setsf "+options.setsf
+	else: 
+		setsf=""
 
 	nx,ny,nz=combined["nx"],combined["ny"],combined["nz"]
 	run("e2proc3d.py {combfile} {combfile} {setsf} --process=filter.wiener.byfsc:fscfile={path}fsc_unmasked_{itr:02d}.txt:snrmult=2:maxfreq={maxfreq} --process=normalize.bymass:thr=1:mass={mass}".format(
