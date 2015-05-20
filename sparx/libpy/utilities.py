@@ -2169,7 +2169,7 @@ def bcast_compacted_EMData_to_all(list_of_em_objects, myid, comm=-1):
 	"""
 	The assumption in <<bcast_compacted_EMData_to_all>> is that each processor
 	calculates part of the list of elements and then each processor sends
-	its results to the other ones.
+	its results to the other ones. I
 
 	Therefore, each processor has access to the header. If we assume that the
 	attributes of interest from the header are the same for all elements then
@@ -2192,6 +2192,20 @@ def bcast_compacted_EMData_to_all(list_of_em_objects, myid, comm=-1):
 	
 	# used for copying the header
 	reference_em_object = list_of_em_objects[ref_start]
+	nx = reference_em_object.get_xsize()
+	ny = reference_em_object.get_ysize()
+	nz = reference_em_object.get_zsize()
+	# is_complex = reference_em_object.is_complex()
+	is_ri = reference_em_object.is_ri()
+	changecount = reference_em_object.get_attr("changecount")
+	is_complex_x = reference_em_object.is_complex_x()
+	is_complex_ri = reference_em_object.get_attr("is_complex_ri")
+	apix_x = reference_em_object.get_attr("apix_x")
+	apix_y = reference_em_object.get_attr("apix_y")
+	apix_z = reference_em_object.get_attr("apix_z")
+	is_complex = reference_em_object.get_attr_default("is_complex",1)
+	is_fftpad = reference_em_object.get_attr_default("is_fftpad",1)
+	is_fftodd = reference_em_object.get_attr_default("is_fftodd", nz%2)
 	
 	data = EMNumPy.em2numpy(list_of_em_objects[ref_start])
 	size_of_one_refring_assumed_common_to_all = data.size
@@ -2225,26 +2239,27 @@ def bcast_compacted_EMData_to_all(list_of_em_objects, myid, comm=-1):
 				end_p   = (i+1-offset_ring)*size_of_one_refring_assumed_common_to_all
 				image_data = data[start_p:end_p]
 
-				if int(reference_em_object.get_zsize()) != 1:
-					image_data = reshape(image_data, (int(reference_em_object.get_zsize()), int(reference_em_object.get_ysize()), int(reference_em_object.get_xsize())))
-				elif reference_em_object.get_ysize() != 1:
-					image_data = reshape(image_data, (int(reference_em_object.get_ysize()), int(reference_em_object.get_xsize())))
+				if int(nz) != 1:
+					image_data = reshape(image_data, (nz, ny, nx))
+				elif ny != 1:
+					image_data = reshape(image_data, (ny, nx))
 					
 				em_object = EMNumPy.numpy2em(image_data)
 
-				em_object.set_complex(reference_em_object.is_complex())
-				em_object.set_ri(reference_em_object.is_ri())
+				# em_object.set_complex(is_complex)
+				em_object.set_ri(is_ri)
 				em_object.set_attr_dict({
-				"changecount":reference_em_object.get_attr("changecount"),
-				"is_complex_x":reference_em_object.is_complex_x(),
-				"is_complex_ri":reference_em_object.get_attr("is_complex_ri"),
-				"apix_x":reference_em_object.get_attr("apix_x"),
-				"apix_y":reference_em_object.get_attr("apix_y"),
-				"apix_z":reference_em_object.get_attr("apix_z")})
+				"changecount":changecount,
+				"is_complex_x":is_complex_x,
+				"is_complex_ri":is_complex_ri,
+				"apix_x":apix_x,
+				"apix_y":apix_y,
+				"apix_z":apix_z,
+				'is_complex':is_complex,
+				'is_fftodd':is_fftodd,
+				'is_fftpad':is_fftpad})
 
 				list_of_em_objects[i] = em_object
-				
-
 
 
 
