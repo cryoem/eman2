@@ -105,7 +105,7 @@ def main():
 
 	parser.add_argument('--coords', type=str, default='', help='Provide a coordinates file that contains the center coordinates of the sub-volumes you want to extract, to box from the command line.')
 
-	parser.add_argument('--cshrink', type=float, default=1.0, help='''Specifies the factor by which to multiply the coordinates in the coordinates file, so that they can be at the same scale as the tomogram.\nFor example, provide 2 if the coordinates are on a 2K x 2K scale,\nbut you want to extract the sub-volumes from the UN-shrunk 4K x 4K tomogram.''')
+	parser.add_argument('--cshrink', type=float, default=1.0, help='''WARNING: The coordinates file gets written on the scale of the input tomogram. This means that if you supply the raw, unbinned tomogram to e2pt_boxer but also say --shrink at the command line, a temporary tomogram will be created for particle localization, but the coordinates file will contain the full-size coordinates. If, on the other hand, you pre-shrink the tomogram with another tool (e2proc3d.py or binvol in IMOD), the coordinates in the coordinates file will be shrunk. It is in such case that you would use --cshrink to specifies the factor by which to multiply the coordinates in the coordinates file, so that they can be at the same scale as the RAW tomogram (or whatever tomogram you intend for the particles to be extracted from).\nFor example, provide --cshrink=2 if the coordinates are on a 2K x 2K scale because you used a 2K x 2K tomogram to find the particles,\nbut you want to extract the subvolumes from a UN-shrunk 4K x 4K tomogram.''')
 
 	parser.add_argument('--subset', type=int, default=0, help='''Specify how many sub-volumes 
 		from the coordinates file you want to extract; e.g, if you specify 10, the first 10 
