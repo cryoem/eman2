@@ -3044,7 +3044,7 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 			data[im] = resample(data[im], shrinkage)
 			st = Util.infomask(data[im], None, True)
 			data[im] -= st[0]
-			st = data.infomask(data[im], masks2D, True)
+			st = Util.infomask(data[im], masks2D, True)
 			data[im] /= st[1]
 			#sx *= shrinkage
 			#sy *= shrinkage
