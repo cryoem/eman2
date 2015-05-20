@@ -2366,6 +2366,7 @@ def recv_EMData(src, tag, comm=-1):
 	from mpi import mpi_recv, MPI_INT, MPI_FLOAT, MPI_COMM_WORLD
 	from numpy import reshape
 	from EMAN2 import EMNumPy
+
 	
 	if comm==-1: comm = MPI_COMM_WORLD
 	head_tag = 2*tag
