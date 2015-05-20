@@ -42,9 +42,6 @@ from EMAN2jsondb import JSTask
 	
 def main():
 	
-	########################
-	### Classify by averaging
-	
 	usage="""e2classifytree.py <projection> <particle> [options]
 	
 	Classify particles using a binary tree. Can be used as an alternative for e2simmx2stage.py + e2classify.py.
@@ -186,10 +183,12 @@ def main():
 	
 def buildtree(projs,par,nodes,incomplete,verbose):
 	simxorder={0:"tx",1:"ty",2:"alpha",3:"mirror",4:"scale"}
-	tmpsim="tmp_simmix.hdf"
+	nodepath= os.path.dirname(nodes)
+	tmpsim='/'.join([nodepath,"tmp_simmix.hdf"])
 	par="--parallel "+par
 	### Building the similarity matrix for all projections
-	cmd="e2simmx.py {pj} {pj} {smx} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali -v {vb:d} --force {parallel}".format(pj=projs,smx=tmpsim, parallel=par, vb=verbose-1)
+	#cmd="e2simmx.py {pj} {pj} {smx} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali -v {vb:d} --force {parallel}".format(pj=projs,smx=tmpsim, parallel=par, vb=verbose-1)
+	cmd="e2simmx.py {pj} {pj} {smx} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=frc:maxres=10.0 --ralign=refine --raligncmp=frc:maxres=10.0 --saveali -v {vb:d} --force {parallel}".format(pj=projs,smx=tmpsim, parallel=par, vb=verbose-1)
 	print cmd
 	launch_childprocess(cmd)
 	
@@ -235,7 +234,9 @@ def buildtree(projs,par,nodes,incomplete,verbose):
 			
 			if len(ai)<10:
 				par=""
-			launch_childprocess("e2simmx.py {lst} {lst} {sim} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali -v {vb:d} --force {parallel}".format(lst=tmplist, sim=tmpsim, parallel=par, vb=verbose-1))
+			cmd="e2simmx.py {lst} {lst} {sim} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1  --ralign=refine --raligncmp=frc:maxres=10.0 --cmp=frc:maxres=10.0 --saveali -v {vb:d} --force {parallel}".format(lst=tmplist, sim=tmpsim, parallel=par, vb=verbose-1)
+			launch_childprocess(cmd)
+			#launch_childprocess("e2simmx.py {lst} {lst} {sim} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali -v {vb:d} --force {parallel}".format(lst=tmplist, sim=tmpsim, parallel=par, vb=verbose-1))
 			simmx=EMData(tmpsim,0)
 			dst=EMNumPy.em2numpy(simmx)
 			dst+=np.identity(dst[0].size)*big
