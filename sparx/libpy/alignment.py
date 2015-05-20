@@ -4645,11 +4645,12 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, onx = -1, 
 	step        = get_input_from_string(ts)
 	delta       = get_input_from_string(delta)
 	lstp = 1 #min(len(xrng), len(yrng), len(step), len(delta))
+	"""
 	if an == "-1":
 		an = [-1] * lstp
 	else:
 		an = get_input_from_string(an)
-
+	"""
 	first_ring  = int(ir)
 	rstep       = int(rs)
 	last_ring   = int(ou)

@@ -3068,7 +3068,7 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 	center3d_options.rs     = ali3d_options.rs
 	center3d_options.ts     = ali3d_options.ts
 	center3d_options.ou     = ali3d_options.ou
-	center3d_options.delta  = delta
+	center3d_options.delta  = ali3d_options.delta
 	center3d_options.fl     = ali3d_options.fl
 	center3d_options.sym    = ali3d_options.sym
 	center3d_options.ref_a  = ali3d_options.ref_a
