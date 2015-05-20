@@ -251,9 +251,6 @@ def run3Dalignment(paramsdict, partids, partstack, outputdir, procid, myid, main
 			projdata[im] /= st[1]
 	del mask2D
 	if(shrinkage < 1.0): del masks2D
-	
-
-
 
 	"""
 	if(paramsdict["delpreviousmax"]):
@@ -278,7 +275,7 @@ def run3Dalignment(paramsdict, partids, partstack, outputdir, procid, myid, main
 									mpi_comm = MPI_COMM_WORLD,  myid = myid, main_node = main_node, log = log )
 	del log, projdata
 
-	params = wrap_mpi_gatherv(params, main_node, mpi_comm)
+	params = wrap_mpi_gatherv(params, main_node, MPI_COMM_WORLD)
 
 	#  store params
 	if(myid == main_node):
@@ -436,23 +433,11 @@ def main():
 	#  INITIALIZATION
 
 	initdir = masterdir
-	#  make sure the initial volume is not set to zero outside of a mask, as if it is it will crash the program
-	if( myid == main_node ):
-		#viv = get_im(volinit)
-		if(options.mask3D == None):  mask33d = model_circle(radi,nnxo,nnxo,nnxo)
-		else:  mask33d = get_im(options.mask3D)
-		"""
-		st = Util.infomask(viv, mask33d, False)
-		if( st[0] == 0.0 ):
-			viv += (model_blank(nnxo,nnxo,nnxo,1.0) - mask33d)*model_gauss_noise(st[1]/1000.0,nnxo,nnxo,nnxo)
-			viv.write_image(volinit)
-		"""
-		del mask33d#, viv
 
 	#  This is initial setting, has to be initialized here, we do not want it to run too long.
 	#    INITIALIZATION THAT FOLLOWS WILL HAVE TO BE CHANGED SO THE USER CAN PROVIDE INITIAL GUESS OF RESOLUTION
 	#  If we new the initial resolution, it could be done more densely
-	if(options.xr == "-1"):  xr = "%d"%(nnxo - (2*radi-1))//2
+	if(options.xr == "-1"):  xr = "%d"%((nnxo - (2*radi-1))//2)
 	else:  xr = options.xr
 	if(options.yr == "-1"):  yr = xr
 	else:  yr = options.yr

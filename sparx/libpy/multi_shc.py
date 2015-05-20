@@ -2897,6 +2897,28 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 	import types
 	from time            import time
 
+
+	class center3d_options:
+		ir     = 1
+		rs     = 1
+		ou     = -1
+		xr     = "-1"
+		yr     = "-1"
+		ts     = "1"
+		an     = "-1"
+		sym    = "d2"
+		delta  = "2"
+		npad   = 2
+		center = 0
+		CTF    = True
+		ref_a  = "S"
+		snr    = 1.0
+		mask3D = "startm.hdf"
+		fl     = 0.4
+		aa     = 0.1
+		initfl = 0.4
+		pwreference = "rotpw3i3.txt"
+
 	ir     = ali3d_options.ir
 	rs     = ali3d_options.rs
 	ou     = ali3d_options.ou
@@ -3044,6 +3066,35 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 
 
 	#  Set parameters
+
+	ir     = ali3d_options.ir
+	rs     = ali3d_options.rs
+	ou     = ali3d_options.ou
+	xr     = ali3d_options.xr
+	yr     = ali3d_options.yr
+	ts     = ali3d_options.ts
+	an     = ali3d_options.an
+	sym    = ali3d_options.sym
+	sym    = sym[0].lower() + sym[1:]
+	delta  = ali3d_options.delta
+	center = ali3d_options.center
+	CTF    = ali3d_options.CTF
+	ref_a  = ali3d_options.ref_a
+	maskfile = ali3d_options.mask3D
+
+
+	ali3d_options.delta  = paramsdict["delta"]
+	ali3d_options.center = paramsdict["center"]
+	ali3d_options.ts     = paramsdict["ts"]
+	ali3d_options.xr     = paramsdict["xr"]
+	#  low pass filter is applied to shrank data, so it has to be adjusted
+	ali3d_options.fl     = paramsdict["lowpass"]/paramsdict["shrink"]
+	ali3d_options.initfl = paramsdict["initialfl"]/paramsdict["shrink"]
+	ali3d_options.aa     = paramsdict["falloff"]
+	ali3d_options.maxit  = paramsdict["maxit"]
+	ali3d_options.mask3D = paramsdict["mask3D"]
+	ali3d_options.an	 = paramsdict["an"]
+
 	#  Run alignment command, it returns shifts per CPU
 	shifts = center_projections_3D(data, None, ali3d_options, onx, shrinkage, \
 							MPI_COMM_WORLD, myid, main_node, log)

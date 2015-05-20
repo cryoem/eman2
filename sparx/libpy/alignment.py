@@ -4675,10 +4675,12 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, onx = -1, 
 	if(shrinkage < 1.0):
 		first_ring = max(1, int(first_ring*shrinkage))
 		last_ring  = int(last_ring*shrinkage)
+		#  redefines parameters
 		ali3d_options.ou = last_ring
 		ali3d_options.ir = first_ring
 	numr	= Numrinit(first_ring, last_ring, rstep, "H")
 	if(xrng == -1): xrng = (nx - last_ring - 1)//2
+	#else:  xrng = int(xrng*shrinkage + 0.5)  #  XRNG HAS TO REFER TO SHRANK DATA
 	yrng = xrng
 
 	if myid == main_node:
@@ -4690,7 +4692,7 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, onx = -1, 
 			if myid == main_node:
 				vol = get_im(ref_vol)
 				i = vol.get_xsize()
-				if( shrinkage != 1.0 ):
+				if( shrinkage < 1.0 ):
 					if( i != nx ):
 						vol = resample(vol, shrinkage)
 			else:
@@ -4698,7 +4700,7 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, onx = -1, 
 		else:
 			if myid == main_node:
 				i = ref_vol.get_xsize()
-				if( shrinkage != 1.0 ):
+				if( shrinkage < 1.0 ):
 					if( i != nx ):
 						vol = resample(ref_vol, shrinkage)
 				else:
@@ -4752,9 +4754,6 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, onx = -1, 
 		log.add("Time of alignment = %f\n"%(time()-start_time))
 		start_time = time()
 		log.add("End 3D centering")
-	return params  #, vol, previousmax, par_r
-	#else:
-	#	return #None, None, None, None  # results for the other processes
-
+	return params
 
 
