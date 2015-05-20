@@ -2164,24 +2164,38 @@ def reduce_EMData_to_root(data, myid, main_node = 0, comm = -1):
 
 
 
-def bcast_compacted_EMData_to_all(refrings, myid, comm=-1):
+def bcast_compacted_EMData_to_all(list_of_em_objects, myid, comm=-1):
 
+	"""
+	The assumption in <<bcast_compacted_EMData_to_all>> is that each processor
+	calculates part of the list of elements and then each processor sends
+	its results to the other ones.
+
+	Therefore, each processor has access to the header. If we assume that the
+	attributes of interest from the header are the same for all elements then
+	we can copy the header and no mpi message is necessary for the
+	header.
+
+	"""
 	from applications import MPI_start_end
 	from EMAN2 import EMNumPy
 	from numpy import concatenate, shape, array, split
 	from mpi import mpi_comm_size, mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
+	from numpy import reshape
 
 	if comm == -1 or comm == None: comm = MPI_COMM_WORLD
 
-
-	num_ref = len(refrings)
+	num_ref = len(list_of_em_objects)
 	ncpu = mpi_comm_size(comm)	# Total number of processes, passed by --np option.
 
 	ref_start, ref_end = MPI_start_end(num_ref, ncpu, myid)
-
-	data = EMNumPy.em2numpy(refrings[ref_start])
+	
+	# used for copying the header
+	reference_em_object = list_of_em_objects[ref_start]
+	
+	data = EMNumPy.em2numpy(list_of_em_objects[ref_start])
 	size_of_one_refring_assumed_common_to_all = data.size
-
+	
 	# n = shape(data)
 	# size_of_one_refring_assumed_common_to_all = 1
 	# for i in n: size_of_one_refring_assumed_common_to_all *= i
@@ -2191,9 +2205,9 @@ def bcast_compacted_EMData_to_all(refrings, myid, comm=-1):
 
 	for sender_id in range(ncpu):
 		if sender_id == myid:
-			data = EMNumPy.em2numpy(refrings[ref_start])  #array([], dtype = 'float32')
+			data = EMNumPy.em2numpy(list_of_em_objects[ref_start])  #array([], dtype = 'float32')
 			for i in xrange(ref_start+1,ref_end):
-				data = concatenate([data, EMNumPy.em2numpy(refrings[i])])
+				data = concatenate([data, EMNumPy.em2numpy(list_of_em_objects[i])])
 		else:
 			data = array([], dtype = 'float32')
 
@@ -2209,7 +2223,27 @@ def bcast_compacted_EMData_to_all(refrings, myid, comm=-1):
 				offset_ring = sender_ref_start
 				start_p = (i-offset_ring)*size_of_one_refring_assumed_common_to_all
 				end_p   = (i+1-offset_ring)*size_of_one_refring_assumed_common_to_all
-				refrings[i] = EMNumPy.numpy2em(data[start_p:end_p])
+				image_data = data[start_p:end_p]
+
+				if int(reference_em_object.get_zsize()) != 1:
+					image_data = reshape(image_data, (int(reference_em_object.get_zsize()), int(reference_em_object.get_ysize()), int(reference_em_object.get_xsize())))
+				elif reference_em_object.get_ysize() != 1:
+					image_data = reshape(image_data, (int(reference_em_object.get_ysize()), int(reference_em_object.get_xsize())))
+					
+				em_object = EMNumPy.numpy2em(image_data)
+
+				em_object.set_complex(reference_em_object.is_complex())
+				em_object.set_ri(reference_em_object.is_ri())
+				em_object.set_attr_dict({
+				"changecount":reference_em_object.get_attr("changecount"),
+				"is_complex_x":reference_em_object.is_complex_x(),
+				"is_complex_ri":reference_em_object.get_attr("is_complex_ri"),
+				"apix_x":reference_em_object.get_attr("apix_x"),
+				"apix_y":reference_em_object.get_attr("apix_y"),
+				"apix_z":reference_em_object.get_attr("apix_z")})
+
+				list_of_em_objects[i] = em_object
+				
 
 
 
