@@ -131,7 +131,7 @@ def main():
 		cutoff = max(st[2] - 0.01,0.0)
 		while(cutoff < st[3] ):
 			cutoff = round(cutoff + 0.01, 2)
-			pt = Util.infomask( threshold_outside(ui, cutoff - 0.05, cutoff + 0.05), m, True)  # Ideally, one would want to check only slices in question...
+			pt = Util.infomask( threshold_outside(ui, cutoff - 0.00501, cutoff + 0.005), m, True)  # Ideally, one would want to check only slices in question...
 			if(pt[0] != 0.0):
 				#print cutoff,pt[0]
 				vovo = fft( filt_tanl(vi, cutoff, falloff) )

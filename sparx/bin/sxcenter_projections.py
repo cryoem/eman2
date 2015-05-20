@@ -207,17 +207,19 @@ def run3Dalignment(paramsdict, partids, partstack, outputdir, procid, myid, main
 	last_ring = ali3d_options.ou
 	if last_ring < 0:	last_ring = int(onx/2) - 2
 	mask2D  = model_circle(last_ring,onx,onx) - model_circle(ali3d_options.ir,onx,onx)
+	if(shrinkage != 1.0):  masks2D  = model_circle(int(last_ring*shrinkage+0.5),onx,onx) - model_circle(max(int(ali3d_options.ir*shrinkage+0.5),1),onx,onx)
 	nima = len(projdata)
+	oldshifts = [0.0,0.0]*nima
 	for im in xrange(nima):
 		#data[im].set_attr('ID', list_of_particles[im])
 		ctf_applied = projdata[im].get_attr_default('ctf_applied', 0)
-		#phi,tetha,psi,sx,sy = get_params_proj(data[im])
-		#data[im] = fshift(data[im], sx, sy)
-		#set_params_proj(data[im],[phi,tetha,psi,0.0,0.0])
+		phi,theta,psi,sx,sy = get_params_proj(projdata[im])
+		projdata[im] = fshift(projdata[im], sx, sy)
+		set_params_proj(projdata[im],[phi,theta,psi,0.0,0.0])
 		#  For local SHC set anchor
 		#if(nsoft == 1 and an[0] > -1):
 		#	set_params_proj(data[im],[phi,tetha,psi,0.0,0.0], "xform.anchor")
-		#oldshifts[im] = [sx,sy]
+		oldshifts[im] = [sx,sy]
 		if ali3d_options.CTF :
 			ctf_params = projdata[im].get_attr("ctf")
 			if ctf_applied == 0:
@@ -226,14 +228,23 @@ def run3Dalignment(paramsdict, partids, partstack, outputdir, procid, myid, main
 				projdata[im] = filt_ctf(projdata[im], ctf_params)
 				projdata[im].set_attr('ctf_applied', 1)
 		if(shrinkage != 1.0):
-			phi,theta,psi,sx,sy = get_params_proj(projdata[im])
-			projdata[im] = resample(data[im], shrinkage)
-			sx *= shrinkage
-			sy *= shrinkage
-			set_params_proj(projdata[im], [phi,theta,psi,sx,sy])
+			#phi,theta,psi,sx,sy = get_params_proj(projdata[im])
+			projdata[im] = resample(projdata[im], shrinkage)
+			st = Util.infomask(projdata[im], None, True)
+			projdata[im] -= st[0]
+			st = Util.infomask(projdata[im], masks2D, True)
+			projdata[im] /= st[1]
+			#sx *= shrinkage
+			#sy *= shrinkage
+			#set_params_proj(projdata[im], [phi,theta,psi,sx,sy])
 			if CTF :
 				ctf_params.apix /= shrinkage
 				projdata[im].set_attr('ctf', ctf_params)
+		else:
+			st = Util.infomask(projdata[im], None, True)
+			projdata[im] -= st[0]
+			st = Util.infomask(projdata[im], mask2D, True)
+			projdata[im] /= st[1]
 	del mask2D
 
 

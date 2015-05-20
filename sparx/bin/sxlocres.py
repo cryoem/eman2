@@ -143,7 +143,7 @@ def main():
 			fl = step*i
 			fh = fl+step
 			freq=(fl+fh)/2.0
-			print number_of_proc,myid,lp,i,step,fl,fh
+			print number_of_proc,myid,lp,i,step,fl,fh,freq
 
 			if i>0 :
 				v = fft(filt_tophatb( vf, fl, fh))
@@ -153,7 +153,9 @@ def main():
 				tmp3 = Util.muln_img(u,v)
 				do = Util.infomask(square_root(Util.muln_img(tmp1,tmp2)),m,True)[0]
 				dp = Util.infomask(tmp3,m,True)[0]
-				dis = [freq, dp/do]
+				#print "dpdo   ",myid,dp,do
+				if do == 0.0: dis = [freq, 0.0]
+				else:  dis = [freq, dp/do]
 			else:
 				tmp1 = model_blank(nx,ny,nz,1.0)
 				tmp2 = model_blank(nx,ny,nz,1.0)
