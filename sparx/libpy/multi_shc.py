@@ -3067,36 +3067,24 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 
 	#  Set parameters
 
-	ir     = ali3d_options.ir
-	rs     = ali3d_options.rs
-	ou     = ali3d_options.ou
-	xr     = ali3d_options.xr
-	yr     = ali3d_options.yr
-	ts     = ali3d_options.ts
-	an     = ali3d_options.an
-	sym    = ali3d_options.sym
-	sym    = sym[0].lower() + sym[1:]
-	delta  = ali3d_options.delta
-	center = ali3d_options.center
-	CTF    = ali3d_options.CTF
-	ref_a  = ali3d_options.ref_a
-	maskfile = ali3d_options.mask3D
-
-
-	ali3d_options.delta  = paramsdict["delta"]
-	ali3d_options.center = paramsdict["center"]
-	ali3d_options.ts     = paramsdict["ts"]
-	ali3d_options.xr     = paramsdict["xr"]
-	#  low pass filter is applied to shrank data, so it has to be adjusted
-	ali3d_options.fl     = paramsdict["lowpass"]/paramsdict["shrink"]
-	ali3d_options.initfl = paramsdict["initialfl"]/paramsdict["shrink"]
-	ali3d_options.aa     = paramsdict["falloff"]
-	ali3d_options.maxit  = paramsdict["maxit"]
-	ali3d_options.mask3D = paramsdict["mask3D"]
-	ali3d_options.an	 = paramsdict["an"]
+	center3d_options.ir     = ali3d_options.ir
+	center3d_options.rs     = ali3d_options.rs
+	center3d_options.ts     = ali3d_options.ts
+	center3d_options.ou     = ali3d_options.ou
+	center3d_options.delta  = delta
+	center3d_options.center = center
+	center3d_options.ts     = ts
+	center3d_options.xr     = xr
+	center3d_options.yr     = yr
+	center3d_options.fl     = ali3d_options.fl
+	center3d_options.sym    = ali3d_options.sym
+	center3d_options.initfl = -1
+	center3d_options.ref_a  = ali3d_options.ref_a
+	center3d_options.mask3D = ali3d_options.mask3D
+	center3d_options.pwreference = ali3d_options.pwreference
 
 	#  Run alignment command, it returns shifts per CPU
-	shifts = center_projections_3D(data, None, ali3d_options, onx, shrinkage, \
+	shifts = center_projections_3D(data, None, center3d_options, onx, shrinkage, \
 							MPI_COMM_WORLD, myid, main_node, log)
 	for im in xrange(nima):
 		oldshifts[im][0] += shifts[im][0]

@@ -1280,12 +1280,12 @@ def prepare_refrings_projections( volft, kb, nz = -1, delta = 2.0, ref_a = "P", 
 		bcast_compacted_EMData_to_all(projections, myid, comm=mpi_comm)
 		bcast_compacted_EMData_to_all(refrings, myid, comm=mpi_comm)
 
-	dd = {'is_complex':1, 'is_fftodd':nz%2, 'is_fftpad':1}
+	#dd = {'is_complex':1, 'is_fftodd':nz%2, 'is_fftpad':1}
 	for i in xrange(num_ref):
 		n1,n2,n3 = getfvec(ref_angles[i][0], ref_angles[i][1])
 		refrings[i].set_attr_dict( {"phi":ref_angles[i][0], "theta":ref_angles[i][1], "psi":ref_angles[i][2], "n1":n1, "n2":n2, "n3":n3} )
 		projections[i].set_attr_dict( {"phi":ref_angles[i][0], "theta":ref_angles[i][1], "psi":ref_angles[i][2], "n1":n1, "n2":n2, "n3":n3} )
-		projections[i].set_attr_dict( dd )
+		#projections[i].set_attr_dict( dd )
 
 	return refrings, projections
 
@@ -4653,8 +4653,6 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, onx = -1, 
 	first_ring  = int(ir)
 	rstep       = int(rs)
 	last_ring   = int(ou)
-	max_iter    = int(ali3d_options.maxit)
-	center      = int(center)
 
 	if myid == 0:
 		finfo = None
@@ -4674,7 +4672,7 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, onx = -1, 
 	mask2D  = model_circle(last_ring,onx,onx) - model_circle(first_ring,onx,onx)
 	if(shrinkage < 1.0):
 		first_ring = max(1, int(first_ring*shrinkage))
-		last_ring  = int(last_ring*shrinkage)
+		last_ring  = int((last_ring+2)*shrinkage - 2)
 		#  redefines parameters
 		ali3d_options.ou = last_ring
 		ali3d_options.ir = first_ring
@@ -4728,7 +4726,7 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, onx = -1, 
 	#=========================================================================
 	# build references
 	volft, kb = prep_vol(vol)
-	refrings, ftprojections = prepare_refrings_projections(volft, kb, nx, delta[N_step], ref_a, sym, "H", numr, MPI=False, phiEqpsi = "Zero")
+	refrings, ftprojections = prepare_refrings_projections(volft, kb, nx, delta[N_step], ref_a, sym, "H", numr, MPI=mpi_comm, phiEqpsi = "Zero")
 	#from fundamentals import fft
 	#for i in xrange(len(ftprojections)):  fft(ftprojections[i]).write_image("template%03d.hdf"%myid, i)
 	#MPI=mpi_comm, phiEqpsi = "Zero")
