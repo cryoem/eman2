@@ -358,6 +358,54 @@ namespace EMAN
 		gsl_matrix *A;
 	};
 
+		
+	/**  Calculate the circular average around the center in real space.
+	 *   @author: Muyuan Chen
+	 *   @date: 04/2015
+	 */
+	class CircularAverageAnalyzer:public Analyzer
+	{
+	  public:
+		CircularAverageAnalyzer() : verbose(0) {}
+
+		virtual int insert_image(EMData *image) {
+			images.push_back(image);
+			return 0;
+		}
+
+		virtual vector<EMData*> analyze();
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		string get_desc() const
+		{
+			return "Calculate the circular average around the center in real space";
+		}
+
+		static Analyzer * NEW()
+		{
+			return new CircularAverageAnalyzer();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("verbose", EMObject::INT, "Display progress if set, more detail with larger numbers");
+			d.put("maxr", EMObject::INT, "Maximum radius.");
+			d.put("step", EMObject::INT, "Thickness of the ring.");
+			return d;
+		}
+
+		static const string NAME;
+
+	  protected:
+		int verbose;
+		vector<EMData *> ret;		// This will contain only a single image
+	};
+	
 	template <> Factory < Analyzer >::Factory();
 
 	void dump_analyzers();

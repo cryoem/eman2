@@ -55,6 +55,7 @@ namespace EMAN {
 	const string ShapeAnalyzer::NAME = "shape";
 	const string KMeansAnalyzer::NAME = "kmeans";
 	const string SVDAnalyzer::NAME = "svd_gsl";
+	const string CircularAverageAnalyzer::NAME = "cir_avg";
 
 	template <> Factory < Analyzer >::Factory()
 	{
@@ -65,6 +66,7 @@ namespace EMAN {
 		force_add<ShapeAnalyzer>();
  		force_add<KMeansAnalyzer>();
  		force_add<SVDAnalyzer>();
+ 		force_add<CircularAverageAnalyzer>();
 	}
 
 }
@@ -912,7 +914,45 @@ map<string, vector<string> > EMAN::dump_analyzers_list()
 
 
 
+vector<EMData *> CircularAverageAnalyzer::analyze() {
+// 	for (int i=0; i<10; i++)
+// 		avg->set_value_at(i,0,i);
+	
+	if (images.size()!=1) throw ImageDimensionException("Only takes a single image as input");
+	int nx=images[0]->get_xsize();
+	int ny=images[0]->get_ysize();
+	int nz=images[0]->get_zsize();
+	if (nz>1)	
+		throw ImageDimensionException("Only takes 2D images.");
+	int maxr=params.set_default("maxr",nx/2-1);
+	int step=params.set_default("step",2);
+	
+	EMData *avg = new EMData(maxr/step+1,1);
 
+	int ix,iy,it,count;
+	for (it=0; it<maxr; it+=step){
+		float mn=0;
+		count=0;
+		for (ix=-maxr-1; ix<=maxr+1; ix++){
+			for (iy=-maxr-1; iy<=maxr+1; iy++){
+				int d2=ix*ix+iy*iy;
+				if (d2>=it*it && d2<(it+step)*(it+step)){
+					count++;
+					mn+=images[0]->sget_value_at(ix+nx/2,iy+ny/2);
+					
+				}
+			}
+		}
+		
+		mn/=count;
+		if(verbose>0) printf("%d,%d,%f\n",it,count,mn);
+		avg->set_value_at(it/step,0,mn);
+	}
+	
+	
+	ret.push_back(avg);
+	return ret;
+}
 
 
 
