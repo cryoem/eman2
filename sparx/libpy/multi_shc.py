@@ -2900,23 +2900,20 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 
 	class center3d_options:
 		ir     = 1
-		rs     = 1
 		ou     = -1
+		#  Will always do maximum trans searches.
 		xr     = "-1"
 		yr     = "-1"
 		ts     = "1"
-		an     = "-1"
 		sym    = "d2"
 		delta  = "2"
 		npad   = 2
-		center = 0
 		CTF    = True
 		ref_a  = "S"
 		snr    = 1.0
 		mask3D = "startm.hdf"
 		fl     = 0.4
 		aa     = 0.1
-		initfl = 0.4
 		pwreference = "rotpw3i3.txt"
 
 	ir     = ali3d_options.ir
@@ -3072,13 +3069,8 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 	center3d_options.ts     = ali3d_options.ts
 	center3d_options.ou     = ali3d_options.ou
 	center3d_options.delta  = delta
-	center3d_options.center = center
-	center3d_options.ts     = ts
-	center3d_options.xr     = xr
-	center3d_options.yr     = yr
 	center3d_options.fl     = ali3d_options.fl
 	center3d_options.sym    = ali3d_options.sym
-	center3d_options.initfl = -1
 	center3d_options.ref_a  = ali3d_options.ref_a
 	center3d_options.mask3D = ali3d_options.mask3D
 	center3d_options.pwreference = ali3d_options.pwreference

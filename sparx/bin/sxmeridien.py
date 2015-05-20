@@ -939,11 +939,10 @@ def main():
 	history = [tracker.copy()]
 	previousoutputdir = initdir
 	#  MAIN ITERATION
-	xrrr = float(max(int((nnxo - 2*radi -1)/2.0*shrink),1))
-	tsss = xrrr/3.0
 	test_outliers = True
 	mainiteration = 0
 	keepgoing = 1
+	paramsdict["xr"] = "3"
 	paramsdict["ts"] = "1.0"
 	while(keepgoing):
 		mainiteration += 1
@@ -1014,8 +1013,9 @@ def main():
 							"pixercutoff":get_pixercutoff(radi*shrink, delta, 0.5), \
 							"delpreviousmax":True, "shrink":shrink, \
 							"refvol":os.path.join(mainoutputdir,"fusevol%01d.hdf"%procid) } )
-			paramsdict["xr"] = "%s"%xrrr
-			paramsdict["ts"] = "%s"%tsss
+			if(len(history)>1):  old_nx = history[-2]["nx"]
+			else:    old_nx = tracker["nx"]
+			paramsdict["xr"] = "%s"%max(3,int(1.5*tracker["nx"]/float(old_nx) +0.5))
 			if( paramsdict["nsoft"] > 0 ):
 				if( float(paramsdict["an"]) == -1.0 ):
 					paramsdict["saturatecrit"] = 0.75					
@@ -1543,8 +1543,6 @@ def main():
 
 
 		if( keepgoing == 1 ):
-			xrrr = max(tsss,3.0)
-			tsss = xrrr/3.0
 			if(myid == main_node):
 				print("  New shrink and image dimension :",shrink,nxshrink)
 				"""
