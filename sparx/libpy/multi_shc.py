@@ -2995,6 +2995,8 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 		last_ring  = int(last_ring*shrinkage)
 		ali3d_options.ou = last_ring
 		ali3d_options.ir = first_ring
+		masks2D  = model_circle(int(last_ring*shrinkage+0.5),nx,nx) - model_circle(max(int(ali3d_options.ir*shrinkage+0.5),1),nx,nx)
+
 	numr	= Numrinit(first_ring, last_ring, rstep, "F")
 
 	oldshifts = [None]*nima
@@ -3004,12 +3006,12 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 		else:                                   data[im] = stack[list_of_particles[im]]
 		data[im].set_attr('ID', list_of_particles[im])
 		ctf_applied = data[im].get_attr_default('ctf_applied', 0)
-		phi,tetha,psi,sx,sy = get_params_proj(data[im])
+		phi,theta,psi,sx,sy = get_params_proj(data[im])
 		data[im] = fshift(data[im], sx, sy)
-		set_params_proj(data[im],[phi,tetha,psi,0.0,0.0])
+		set_params_proj(data[im],[phi,theta,psi,0.0,0.0])
 		#  For local SHC set anchor
 		if(nsoft == 1 and an[0] > -1):
-			set_params_proj(data[im],[phi,tetha,psi,0.0,0.0], "xform.anchor")
+			set_params_proj(data[im],[phi,theta,psi,0.0,0.0], "xform.anchor")
 		oldshifts[im] = [sx,sy]
 		if CTF :
 			ctf_params = data[im].get_attr("ctf")
@@ -3018,19 +3020,38 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 				data[im] -= st[0]
 				data[im] = filt_ctf(data[im], ctf_params)
 				data[im].set_attr('ctf_applied', 1)
-		if(shrinkage != 1.0):
+		if(shrinkage < 1.0):
 			phi,theta,psi,sx,sy = get_params_proj(data[im])
 			data[im] = resample(data[im], shrinkage)
-			sx *= shrinkage
-			sy *= shrinkage
-			set_params_proj(data[im], [phi,theta,psi,sx,sy])
+			st = Util.infomask(data[im], None, True)
+			projdata[im] -= st[0]
+			st = data.infomask(data[im], masks2D, True)
+			data[im] /= st[1]
+			#sx *= shrinkage
+			#sy *= shrinkage
+			#set_params_proj(data[im], [phi,theta,psi,sx,sy])
 			if CTF :
 				ctf_params.apix /= shrinkage
 				data[im].set_attr('ctf', ctf_params)
+		else:
+			st = Util.infomask(data[im], None, True)
+			data[im] -= st[0]
+			st = Util.infomask(data[im], mask2D, True)
+			data[im] /= st[1]
 	del mask2D
-
-
+	if(shrinkage < 1.0): del masks2D
 	mpi_barrier(mpi_comm)
+
+
+	#  Set parameters
+	#  Run alignment command, it returns shifts per CPU
+	shifts = center_projections_3D(data, None, ali3d_options, onx, shrinkage, \
+							MPI_COMM_WORLD, myid, main_node, log)
+	for im in xrange(nima):
+		oldshifts[im][0] += shifts[im][0]
+		oldshifts[im][1] += shifts[im][1]
+		data[im] = fshift(data[im], shifts[im][0], shifts[im][1])
+	del  shifts
 	"""
 	if maskfile:
 		if type(maskfile) is types.StringType:

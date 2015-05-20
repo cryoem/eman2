@@ -207,7 +207,11 @@ def run3Dalignment(paramsdict, partids, partstack, outputdir, procid, myid, main
 	last_ring = ali3d_options.ou
 	if last_ring < 0:	last_ring = int(onx/2) - 2
 	mask2D  = model_circle(last_ring,onx,onx) - model_circle(ali3d_options.ir,onx,onx)
-	if(shrinkage != 1.0):  masks2D  = model_circle(int(last_ring*shrinkage+0.5),onx,onx) - model_circle(max(int(ali3d_options.ir*shrinkage+0.5),1),onx,onx)
+	if(shrinkage < 1.0):
+		# get the new size
+		masks2D = resample(mask2D, shrinkage)
+		nx = masks2D.get_xsize()
+		masks2D  = model_circle(int(last_ring*shrinkage+0.5),nx,nx) - model_circle(max(int(ali3d_options.ir*shrinkage+0.5),1),nx,nx)
 	nima = len(projdata)
 	oldshifts = [0.0,0.0]*nima
 	for im in xrange(nima):
@@ -227,7 +231,7 @@ def run3Dalignment(paramsdict, partids, partstack, outputdir, procid, myid, main
 				projdata[im] -= st[0]
 				projdata[im] = filt_ctf(projdata[im], ctf_params)
 				projdata[im].set_attr('ctf_applied', 1)
-		if(shrinkage != 1.0):
+		if(shrinkage < 1.0):
 			#phi,theta,psi,sx,sy = get_params_proj(projdata[im])
 			projdata[im] = resample(projdata[im], shrinkage)
 			st = Util.infomask(projdata[im], None, True)
@@ -237,7 +241,7 @@ def run3Dalignment(paramsdict, partids, partstack, outputdir, procid, myid, main
 			#sx *= shrinkage
 			#sy *= shrinkage
 			#set_params_proj(projdata[im], [phi,theta,psi,sx,sy])
-			if CTF :
+			if ali3d_options.CTF :
 				ctf_params.apix /= shrinkage
 				projdata[im].set_attr('ctf', ctf_params)
 		else:
@@ -246,6 +250,8 @@ def run3Dalignment(paramsdict, partids, partstack, outputdir, procid, myid, main
 			st = Util.infomask(projdata[im], mask2D, True)
 			projdata[im] /= st[1]
 	del mask2D
+	if(shrinkage < 1.0): del masks2D
+	
 
 
 
@@ -266,13 +272,19 @@ def run3Dalignment(paramsdict, partids, partstack, outputdir, procid, myid, main
 		
 	if(ali3d_options.fl > 0.46):  ERROR("Low pass filter in 3D alignment > 0.46 on the scale of shrank data","sxcenter_projections",1,myid) 
 
-	#  Run alignment command
-	params = center_projections_3D(projdata, get_im(paramsdict["refvol"]), \
-		ali3d_options, shrinkage, \
-		mpi_comm = MPI_COMM_WORLD,  myid = myid, main_node = main_node, log = log )
+	#  Run alignment command, it returns params per CPU
+	params = center_projections_3D(projdata, paramsdict["refvol"], \
+									ali3d_options, onx, shrinkage, \
+									mpi_comm = MPI_COMM_WORLD,  myid = myid, main_node = main_node, log = log )
 	del log, projdata
+
+	params = wrap_mpi_gatherv(params, main_node, mpi_comm)
+
 	#  store params
 	if(myid == main_node):
+		for im in xrange(nima):
+			params[im][0] = params[im][0]/shrinkage +oldshifts[im][0]
+			params[im][1] = params[im][1]/shrinkage +oldshifts[im][1]
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print(line,"Executed successfully: ","3D alignment","  number of images:%7d"%len(params))
 		write_text_row(params, os.path.join(outputdir,"params.txt") )

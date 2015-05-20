@@ -1206,8 +1206,8 @@ def prepare_refrings_projections( volft, kb, nz = -1, delta = 2.0, ref_a = "P", 
 	"""
 	from projection   import prep_vol, prgs
 	from applications import MPI_start_end
-	from utilities    import even_angles, getfvec
-	from fundamentals import scf, fft
+	from utilities    import even_angles, getfvec, model_circle
+	from fundamentals import scf, fft, fftip
 	from types        import BooleanType
 
 	# mpi communicator can be sent by the MPI parameter
@@ -1251,6 +1251,8 @@ def prepare_refrings_projections( volft, kb, nz = -1, delta = 2.0, ref_a = "P", 
 	sizex = numr[len(numr)-2] + numr[len(numr)-1]-1
 	cimage = EMData(nz,nz,1,False)  #  FT blank
 
+	mask2D = model_circle(numr[-3], nz,nz)
+
 	for i in xrange(num_ref):
 		prjref = EMData()
 		prjref.set_size(sizex, 1, 1)
@@ -1258,7 +1260,13 @@ def prepare_refrings_projections( volft, kb, nz = -1, delta = 2.0, ref_a = "P", 
 		projections[i] = cimage.copy()
 
 	for i in xrange(ref_start, ref_end):
-		prjref = fft( prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0]) )
+		prjref = prgs(volft, kb, [ref_angles[i][0], ref_angles[i][1], ref_angles[i][2], 0.0, 0.0])
+		
+		st = Util.infomask(prjref, None, True)
+		prjref -= st[0]
+		st = Util.infomask(prjref, mask2D, True)
+		prjref /= st[1]
+		fftip( prjref )
 		cimage = Util.Polar2Dm(scf(prjref), cnx, cny, numr, mode)  # currently set to quadratic....
 		Util.Normalize_ring(cimage, numr)
 		Util.Frngs(cimage, numr)
@@ -2723,9 +2731,10 @@ def align2d_scf(image, refim, xrng=-1, yrng=-1, ou = -1):
 
 def multalign2d_scf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1):
 	from fundamentals import scf, rot_shift2D, ccf, mirror
-	from utilities import peak_search
-	from alignment import ornq
+	from utilities import peak_search, model_blank
 	from math import radians, sin, cos
+	from alignment import ang_n
+
 	nx = image.get_xsize()
 	ny = image.get_xsize()
 	if(ou<0):  ou = min(nx//2-1,ny//2-1)
@@ -2738,17 +2747,28 @@ def multalign2d_scf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1):
 	cnx = nx//2+1
 	cny = ny//2+1
 
+	cimage = Util.Polar2Dm(sci, cnx, cny, numr, "H")
+	Util.Frngs(cimage, numr)
+	mimage = Util.Polar2Dm(mirror(sci), cnx, cny, numr, "H")
+	Util.Frngs(mimage, numr)
+
+
 	nrx = min( 2*(xrng+1)+1, (((nx-2)//2)*2+1) )
 	nry = min( 2*(yrng+1)+1, (((ny-2)//2)*2+1) )
 
 	totpeak = -1.0e23
 
 	for iki in xrange(len(refrings)):
-		print  "TEMPLATE  ",iki
-		alpha1, sxs, sys, mirr, peak1 = ornq(sci, refrings[iki], [0.0], [0.0], 1.0, "H", numr, cnx, cny)
-		alpha2, sxs, sys, mirr, peak2 = ornq(mirror(sci), refrings[iki], [0.0], [0.0], 1.0, "H", numr, cnx, cny)
-		print  alpha1, sxs, sys, mirr, peak1
-		print  alpha2, sxs, sys, mirr, peak2
+		#print  "TEMPLATE  ",iki
+		#  Find angle
+		retvals = Util.Crosrng_e(refrings[iki], cimage, numr, 0)
+		alpha1  = ang_n(retvals["tot"], "H", numr[-1])
+		peak1 	= retvals["qn"]
+		retvals = Util.Crosrng_e(refrings[iki], mimage, numr, 0)
+		alpha2  = ang_n(retvals["tot"], "H", numr[-1])
+		peak2 	= retvals["qn"]
+		#print  alpha1, peak1
+		#print  alpha2, peak2
 
 		if(peak1>peak2):
 			mirr = 0
@@ -2762,8 +2782,8 @@ def multalign2d_scf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1):
 	
 		ccf2 = Util.window(ccf(rot_shift2D(image, alpha+180.0, 0.0, 0.0, mirr), frotim[iki]), nrx, nry)
 		p2 = peak_search(ccf2)
-		print p1
-		print p2
+		#print p1
+		#print p2
 
 		peak_val1 = p1[0][0]
 		peak_val2 = p2[0][0]
@@ -2782,7 +2802,6 @@ def multalign2d_scf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1):
 			cx = int(p2[0][1])
 			cy = int(p2[0][2])
 			ccf1 = ccf2
-		from utilities import model_blank
 		#print cx,cy
 		z = model_blank(3,3)
 		for i in xrange(3):
@@ -2790,7 +2809,7 @@ def multalign2d_scf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1):
 				z[i,j] = ccf1[i+cx-1,j+cy-1]
 		#print  ccf1[cx,cy],z[1,1]
 		XSH, YSH, PEAKV = parabl(z)
-		print  PEAKV
+		#print  PEAKV
 		if(PEAKV > totpeak):
 			totpeak = PEAKV
 			iref = iki
@@ -2799,7 +2818,7 @@ def multalign2d_scf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1):
 			sy = sys-YSH
 			talpha = alpha
 			tmirr = mirr
-			print "BETTER",sx,sy,iref,talpha,tmirr,totpeak
+			#print "BETTER",sx,sy,iref,talpha,tmirr,totpeak
 			#return alpha, sx, sys-YSH, mirr, PEAKV
 	return sx,sy,iref,talpha,tmirr,totpeak
 
@@ -4576,7 +4595,7 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 #  Data is assumed to be shrunk and CTF-applied
 #  The input volume is assumed to be shrunk but not filtered, if not provided, it will be reconstructed and shrunk
 #  We apply ali3d_options.fl
-def center_projections_3D(data, ref_vol = None, ali3d_options = None, shrinkage = 1.0, \
+def center_projections_3D(data, ref_vol = None, ali3d_options = None, onx = -1, shrinkage = 1.0, \
 							mpi_comm = None, myid = 0, main_node = 0, log = None ):
 
 	from alignment       import Numrinit, prepare_refrings, proj_ali_incore,  proj_ali_incore_local, shc
@@ -4648,13 +4667,8 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, shrinkage 
 	else:
 		finfo = None
 
-	onx = data[0].get_xsize()
-	if(shrinkage == 1.0):  nx = onx
-	else:		
-		st = resample(data[0], shrinkage)
-		nx = st.get_xsize()
-
-
+	#  Data is already shrank
+	nx = data[0].get_xsize()
 
 	if last_ring < 0:	last_ring = int(nx/2/shrinkage) - 2
 	mask2D  = model_circle(last_ring,onx,onx) - model_circle(first_ring,onx,onx)
@@ -4666,8 +4680,6 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, shrinkage 
 	numr	= Numrinit(first_ring, last_ring, rstep, "H")
 	if(xrng == -1): xrng = (nx - last_ring - 1)//2
 	yrng = xrng
-
-	#oldshifts = [None]*nima
 
 	if myid == main_node:
 		start_time = time()
@@ -4715,8 +4727,8 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, shrinkage 
 	# build references
 	volft, kb = prep_vol(vol)
 	refrings, ftprojections = prepare_refrings_projections(volft, kb, nx, delta[N_step], ref_a, sym, "H", numr, MPI=False, phiEqpsi = "Zero")
-	from fundamentals import fft
-	for i in xrange(len(ftprojections)):  fft(ftprojections[i]).write_image("template%03d.hdf"%myid, i)
+	#from fundamentals import fft
+	#for i in xrange(len(ftprojections)):  fft(ftprojections[i]).write_image("template%03d.hdf"%myid, i)
 	#MPI=mpi_comm, phiEqpsi = "Zero")
 	#MPI=False, phiEqpsi = "Zero")
 	del volft, kb
@@ -4731,7 +4743,7 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, shrinkage 
 	for im in xrange(nima):
 		newsx,newsy,iref,talpha,tmirr,totpeak = multalign2d_scf(data[im], refrings, ftprojections, numr, xrng, yrng, last_ring)
 		dummy, dummy, talpha, newsx, newsy = params_2D_3D(talpha, newsx, newsy, tmirr)
-		params[im] = [talpha, newsx/shrinkage, newsx/shrinkage, iref]
+		params[im] = [talpha, newsx/shrinkage, newsy/shrinkage, iref]
 
 	#=========================================================================
 	mpi_barrier(mpi_comm)
@@ -4739,11 +4751,6 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, shrinkage 
 		#print  data[0].get_attr_dict()
 		log.add("Time of alignment = %f\n"%(time()-start_time))
 		start_time = time()
-
-	params = wrap_mpi_gatherv(params, main_node, mpi_comm)
-
-
-	if myid == main_node:
 		log.add("End 3D centering")
 	return params  #, vol, previousmax, par_r
 	#else:
