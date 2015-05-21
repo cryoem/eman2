@@ -3074,7 +3074,7 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 	center3d_options.ref_a  = ali3d_options.ref_a
 	center3d_options.mask3D = ali3d_options.mask3D
 	center3d_options.pwreference = ali3d_options.pwreference
-	print  "  center3d_options ",\
+	if myid == main_node: print  "  center3d_options ",\
 	center3d_options.ir    ,\
 	center3d_options.rs     ,\
 	center3d_options.ts    ,\

@@ -4712,17 +4712,22 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, onx = -1, 
 	else:
 		vol = do_volume(data, ali3d_options, 0, mpi_comm)
 
+	N_step = 0
 	# log
 	if myid == main_node:
 		log.add("Dimensions used (nx, onx, first_ring, last_ring, shrinkage)  %5d     %5d     %5d     %5d     %6.3f\n"%(nx, onx, first_ring, last_ring, shrinkage))
 		log.add("Reference 3D reconstruction time = %f\n"%(time()-start_time))
-		start_time = time()
-
-	mpi_barrier(mpi_comm)
-	N_step = 0
-	if myid == main_node:
 		log.add("Delta = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f\n"%(delta[N_step], xrng, yrng, step[N_step]))
 		start_time = time()
+
+
+		log.add("Inner radius                : %i\n"%(first_ring))
+		log.add("Outer radius                : %i\n"%(last_ring))
+		log.add("Ring step                   : %i\n"%(rstep))
+		log.add("X search range              : %s\n"%(xrng))
+		log.add("Y search range              : %s\n"%(yrng))
+		log.add("Translational step          : %s\n"%(step))
+		log.add("Angular step                : %s\n"%(delta))
 
 	#=========================================================================
 	# build references
