@@ -3074,14 +3074,29 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 	center3d_options.ref_a  = ali3d_options.ref_a
 	center3d_options.mask3D = ali3d_options.mask3D
 	center3d_options.pwreference = ali3d_options.pwreference
-
+	print  "  center3d_options ",\
+	center3d_options.ir    ,\
+	center3d_options.rs     ,\
+	center3d_options.ts    ,\
+	center3d_options.ou     ,\
+	center3d_options.delta   ,\
+	center3d_options.fl     ,\
+	center3d_options.sym     ,\
+	center3d_options.ref_a   ,\
+	center3d_options.mask3D  ,\
+	center3d_options.pwreference 
+	
 	#  Run alignment command, it returns shifts per CPU
 	shifts = center_projections_3D(data, None, center3d_options, onx, shrinkage, \
 							MPI_COMM_WORLD, myid, main_node, log)
 	for im in xrange(nima):
 		oldshifts[im][0] += shifts[im][1]
 		oldshifts[im][1] += shifts[im][2]
-		data[im] = fshift(data[im], shifts[im][0]*shrinkage, shifts[im][1]*shrinkage)
+		data[im] = fshift(data[im], shifts[im][1]*shrinkage, shifts[im][2]*shrinkage)
+	shifts = wrap_mpi_gatherv(shifts, main_node, mpi_comm)
+	if myid == main_node:
+		from utilities import write_text_row
+		write_text_row(shifts,"shifts.txt")
 	del  shifts
 	"""
 	if maskfile:
