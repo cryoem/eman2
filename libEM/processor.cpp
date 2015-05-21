@@ -9558,7 +9558,10 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			int kxNewMax= nx/2;
 			if (OutBounds2< 0) kxNewMax=0;
 			else if (OutBounds2<(nx*nx/4)) kxNewMax=sqrt(OutBounds2);
-			int tempint;
+			for (int kxN = kxNewMax; kxN < nx/2 ; kxN++ ) {
+       			      des_data[2*kxN    + nx* kyN +nxny*kzN] = 0;
+        		      des_data[2*kxN    + nx* kyN +nxny*kzN+1] = 0;
+			}
 			
 			
 			for (int kxN = 0; kxN < kxNewMax; kxN++ ) {
