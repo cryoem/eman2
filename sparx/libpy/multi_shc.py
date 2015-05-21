@@ -3375,7 +3375,7 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 				params = []
 				for im in xrange(nima):
 					t = get_params_proj(data[im])
-					params.append( [t[0], t[1], t[2], t[3]/shrinkage + oldshifts[im][0], t[4]/shrinkage+ oldshifts[im][1]] )
+					params.append( [t[0], t[1], t[2], t[3]/shrinkage + oldshifts[im][1], t[4]/shrinkage+ oldshifts[im][1]] )
 				params = wrap_mpi_gatherv(params, main_node, mpi_comm)
 			"""
 			if( ( terminate or (Iter == max_iter) ) and (myid == main_node) ):
