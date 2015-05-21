@@ -3079,9 +3079,9 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 	shifts = center_projections_3D(data, None, center3d_options, onx, shrinkage, \
 							MPI_COMM_WORLD, myid, main_node, log)
 	for im in xrange(nima):
-		oldshifts[im][0] += shifts[im][1]/shrinkage
-		oldshifts[im][1] += shifts[im][2]/shrinkage
-		data[im] = fshift(data[im], shifts[im][0], shifts[im][1])
+		oldshifts[im][0] += shifts[im][1]
+		oldshifts[im][1] += shifts[im][2]
+		data[im] = fshift(data[im], shifts[im][0]*shrinkage, shifts[im][1]*shrinkage)
 	del  shifts
 	"""
 	if maskfile:
