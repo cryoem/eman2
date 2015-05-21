@@ -93,7 +93,6 @@ class TomoSegInspector(QtGui.QWidget):
 		self.inspectortab.addTab(self.getToolsWidget(), "Tools")
 		self.inspectortab.addTab(self.getTreeWidget(), "Labels")
 		self.inspectortab.addTab(self.getUtilsWidget(), "Utils")
-		#self.inspectortab.addTab(self.getFileWidget(), "File")
 		vbox.addWidget(self.inspectortab)
 			
 		self.setLayout(vbox)
@@ -421,78 +420,93 @@ class TomoSegInspector(QtGui.QWidget):
 		font = QtGui.QFont()
 		font.setBold(True)
 		# Controls frame
-		frame = QtGui.QFrame()
-		frame.setFrameShape(QtGui.QFrame.StyledPanel)
-		gridbox = QtGui.QGridLayout()
-		backgroundcolor_label = QtGui.QLabel("Background Color", frame)
-		backgroundcolor_label.setFont(font)
-		self.backgroundcolor = EMQTColorWidget(parent=frame)
-		self.hideselectionbutton = QtGui.QCheckBox("Hide Display Selections")
-		self.hideselectionbutton.setMinimumHeight(100)
-		self.hideselectionbutton.setFont(font)
-		gridbox.addWidget(backgroundcolor_label, 0, 0)
-		gridbox.addWidget(self.backgroundcolor, 0, 1)
-		gridbox.addWidget(self.hideselectionbutton, 1, 0, 1, 2)
-		gridbox.setAlignment(QtCore.Qt.AlignCenter)
-		gridbox.setSpacing(10)
-		frame.setLayout(gridbox)
+		#frame = QtGui.QFrame()
+		#frame.setFrameShape(QtGui.QFrame.StyledPanel)
+		#gridbox = QtGui.QGridLayout()
+		#backgroundcolor_label = QtGui.QLabel("Background Color", frame)
+		#backgroundcolor_label.setFont(font)
+		#self.backgroundcolor = EMQTColorWidget(parent=frame)
+		#self.hideselectionbutton = QtGui.QCheckBox("Hide Display Selections")
+		#self.hideselectionbutton.setMinimumHeight(100)
+		#self.hideselectionbutton.setFont(font)
+		#gridbox.addWidget(backgroundcolor_label, 0, 0)
+		#gridbox.addWidget(self.backgroundcolor, 0, 1)
+		#gridbox.addWidget(self.hideselectionbutton, 1, 0, 1, 2)
+		#gridbox.setAlignment(QtCore.Qt.AlignCenter)
+		#gridbox.setSpacing(10)
+		#frame.setLayout(gridbox)
 		# Buttons frame
-		uvbox.addWidget(frame)
+		#uvbox.addWidget(frame)
+		
 		self.opensession_button = QtGui.QPushButton("Open Session")
 		self.savesession_button = QtGui.QPushButton("Save Session")
 		self.savebutton = QtGui.QPushButton("Save Image Snapshot")
+		
+		self.open_tomogram_button = QtGui.QPushButton("Open Tomogram")
+		self.open_segmentation_button = QtGui.QPushButton("Open Segmentation")
+		self.save_segmentation_button = QtGui.QPushButton("Save Segmentation")
+		
 		uvbox.addWidget(self.opensession_button)
 		uvbox.addWidget(self.savesession_button)
 		uvbox.addWidget(self.savebutton)
+		
+		uvbox.addWidget(self.open_tomogram_button)
+		uvbox.addWidget(self.open_segmentation_button)
+		uvbox.addWidget(self.save_segmentation_button)
 		uwidget.setLayout(uvbox)
 		
-		QtCore.QObject.connect(self.backgroundcolor,QtCore.SIGNAL("newcolor(QColor)"),self._on_bg_color)
-		QtCore.QObject.connect(self.hideselectionbutton, QtCore.SIGNAL("clicked()"),self._on_hide)
 		QtCore.QObject.connect(self.savebutton, QtCore.SIGNAL("clicked()"),self._on_save)
 		QtCore.QObject.connect(self.savesession_button, QtCore.SIGNAL("clicked()"),self._on_save_session)
 		QtCore.QObject.connect(self.opensession_button, QtCore.SIGNAL("clicked()"),self._on_open_session)
 		
-		return uwidget
-	
-	def _on_hide(self):
-		"""
-		Hide display selections
-		"""
-		for node in self.scenegraph().getAllNodes():
-				node.setHiddenSelected(self.hideselectionbutton.isChecked())
-		self.updateSceneGraph()
+		QtCore.QObject.connect(self.open_tomogram_button, QtCore.SIGNAL("clicked()"),self._on_open_tomogram)
+		QtCore.QObject.connect(self.open_segmentation_button, QtCore.SIGNAL("clicked()"),self._on_open_segmentation)
+		QtCore.QObject.connect(self.save_segmentation_button, QtCore.SIGNAL("clicked()"),self._on_save_segmentation)
 		
+		return uwidget
+
 	def _on_open_session(self):
 		"""
 		Open a session
 		"""
-		# Open the file
 		filename = QtGui.QFileDialog.getOpenFileName(self, 'Open Session', os.getcwd(), "*.eman")
-		if filename:
-			self.scenegraph().loadSession(filename)
 		
 	def _on_save_session(self):
 		"""
 		Return a list of all the child items (actually a tree of sorts)
 		"""
 		filename = QtGui.QFileDialog.getSaveFileName(self, 'Save Session', os.getcwd(), "*.eman")
-		if filename: # if we cancel
-			self.scenegraph().saveSession(filename)
 
 	def _on_save(self):
 		"""
 		Save a snapshot of the scene
 		"""
 		filename = QtGui.QFileDialog.getSaveFileName(self, 'Save Image', os.getcwd(), "(*.tiff *.jpeg *.png)")
-		if filename: # if we cancel
-			self.scenegraph().saveSnapShot(filename)
-	
-	def _on_bg_color(self, color):
-		rgb = color.getRgb()
-		self.scenegraph().makeCurrent()
-		self.scenegraph().setClearColor(float(rgb[0])/255.0, float(rgb[1])/255.0, float(rgb[2])/255.0)
-		self.updateSceneGraph()
 
+	def _on_open_tomogram(self):
+		"""
+		Open a session
+		"""
+		filename = QtGui.QFileDialog.getOpenFileName(self, 'Open Tomogram', os.getcwd(), "*.hdf,*.mrc")
+		#if filename:
+		#	self.scenegraph().loadSession(filename)
+		
+	def _on_open_segmentation(self):
+		"""
+		Open a session
+		"""
+		# Open the file
+		filename = QtGui.QFileDialog.getOpenFileName(self, 'Open Segmentation', os.getcwd(), "*.hdf,*.xml")
+		#if filename:
+		#	self.scenegraph().loadSession(filename)
+		
+	def _on_save_segmentation(self):
+		"""
+		Save a snapshot of the scene
+		"""
+		filename = QtGui.QFileDialog.getSaveFileName(self, 'Save Segmentation', os.getcwd(), "(*.hdf,*.xml)")
+		#if filename: # if we cancel
+		#	self.scenegraph().saveSnapShot(filename)
 		
 	def updateInspector(self):
 		"""
