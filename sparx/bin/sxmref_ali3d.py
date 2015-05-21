@@ -60,7 +60,7 @@ def main():
 	parser.add_option("--rs",       type= "int",         default="1",	           help="step between rings in rotational correlation >0 (set to 1)" ) 
 	parser.add_option("--xr",       type="string",       default="4 2 1 1 1",      help="range for translation search in x direction, search is +/-xr ")
 	parser.add_option("--yr",       type="string",       default="-1",	           help="range for translation search in y direction, search is +/-yr (default = same as xr)")
-	parser.add_option("--ts",       type="string",       default="1 1 1 0.5 0.25", help="step size of the translation search in both directions direction, search is -xr, -xr+ts, 0, xr-ts, xr ")
+	parser.add_option("--ts",       type="string",       default="0.25",           help="step size of the translation search in both directions direction, search is -xr, -xr+ts, 0, xr-ts, xr ")
 	parser.add_option("--delta",    type="string",       default="10 6 4  3   2",  help="angular step of reference projections")
 	parser.add_option("--an",       type="string",       default="-1",	           help="angular neighborhood for local searches")
 	parser.add_option("--center",   type="float",        default=-1,	           help="0 - if you do not want the volume to be centered, 1 - center the volume using cog (default=-1)")
