@@ -2793,7 +2793,10 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				// We work an axis at a time until we get where we want to be. Somewhat like a simplex
 				int changed=1;
 				while (changed) {
-					if (verbose>3) printf("\n%1.3f\t%1.3f\t%1.3f\t",s_step[i*3],s_step[i*3+1],s_step[i*3+2]);
+					if (verbose>3) {
+							Dict aap=s_xform[i].get_params("eman");
+							printf("\n%1.3f\t%1.3f\t%1.3f\t%1.3f\t%1.3f\t%1.3f",s_step[i*3],s_step[i*3+1],s_step[i*3+2],float(aap["az"]),float(aap["alt"]),float(aap["phi"]));
+					}
 					changed=0;
 					for (int axis=0; axis<3; axis++) {
 						if (fabs(s_step[i*3+axis])<astep/4.0) continue;		// skip axes where we already have enough precision on this axis
