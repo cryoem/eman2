@@ -205,7 +205,7 @@ def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
  	cny = cnx
  	mode = "F"
 	if CTF:
-		if data[0].get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "ali2d", 1)
+		if data[0].get_attr_default('ctf_applied', 0) > 0:	ERROR("data cannot be ctf-applied", "ali2d", 1)
 		from filter import filt_ctf
 		from morphology import ctf_img
 		ctf_abs_sum = EMData(nx, nx, 1, False)
@@ -477,7 +477,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 		ima = EMData()
 		ima.read_image(stack, list_of_particles[0], True)
 		nx = ima.get_xsize()
-		if CTF:	ctf_app = ima.get_attr_default('ctf_applied', 2)
+		if CTF:	ctf_app = ima.get_attr_default('ctf_applied', 0)
 		del ima
 	else:
 		nx = 0
@@ -893,7 +893,7 @@ def ORGali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 	data = []
 	if CTF:
 		ctf_params = ima.get_attr("ctf")
-		if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "ORGali2d_c", 1)
+		if ima.get_attr_default('ctf_applied', 0) > 0:	ERROR("data cannot be ctf-applied", "ORGali2d_c", 1)
 		from morphology   import ctf_img
 		ctf_2_sum = EMData(nx, nx, 1, False)
 	else:
@@ -1145,7 +1145,7 @@ def ORGali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1"
 	data = []
 	if CTF:
 		ctf_params = ima.get_attr("ctf")
-		if ima.get_attr_default('ctf_applied', 2) > 0:	ERROR("data cannot be ctf-applied", "ORGali2d_c_MPI", 1,myid)
+		if ima.get_attr_default('ctf_applied', 0) > 0:	ERROR("data cannot be ctf-applied", "ORGali2d_c_MPI", 1,myid)
 		from filter import filt_ctf
 		from morphology   import ctf_img
 		ctf_2_sum = EMData(nx, nx, 1, False)
@@ -12266,7 +12266,7 @@ def prepare_2d_forPCA(data, mode = "a", output_stack = None, CTF = False):
 
 	mask = model_circle( nx//2-2, nx, ny)
 	if  CTF:
-		if(img.get_attr_default('ctf_applied', 2) > 0):
+		if(img.get_attr_default('ctf_applied', 0) > 0):
 			ERROR("data cannot be ctf-applied","prepare_2d_forPCA",1)
 		from fundamentals import fft, fftip, window2d
 		from morphology   import ctf_img
