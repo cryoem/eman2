@@ -99,7 +99,7 @@ def main():
 			options.ts, options.nomirror, options.dst, \
 			options.center, options.maxit, options.CTF, options.snr, options.Fourvar, \
 			options.Ng, options.function, options.CUDA, options.GPUID, options.MPI, \
-			options.template, random_method = random_method)
+			options.template, random_method = options.random_method)
 		global_def.BATCH = False
 
 		if options.MPI:
