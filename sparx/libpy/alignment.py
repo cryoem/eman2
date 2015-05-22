@@ -50,6 +50,10 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 
 	maxrin = numr[-1]  #  length
 	ou = numr[-3]  #  maximum radius
+	if random_method == "SCF":
+		from fundamentals import fft
+		from alignment import multalign2d_scf
+		frotim = [fft(tavg)]
 	#  commented out, not used anywhere PAP 03/02/2015
 	#sxilimt = cnx - ou - 2*xrng
 	#syilimt = cny - ou - 2*yrng
@@ -103,15 +107,16 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 				set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
 				##set_params2D(data[im], [angt, sxst, syst, mirrort, 1.0], ali_params)
 				data[im].set_attr("previousmax",olo[5])
-				##mn = sxn = syn = 0
-				if mn == 0: sx_sum += sxn
-				##if mirrort == 0: sx_sum += sxn
-				else:       sx_sum -= sxn
-				sy_sum += syn
 			else:
 				# Did not find a better peak, but we have to set shifted parameters, as the average shifted
 				set_params2D(data[im], [alpha, sx, sy, mirror, 1.0], ali_params)
 				nope += 1
+				mn = 0
+				sxn = 0.0
+				syn = 0.0
+		elif random_method == "SCF":
+			sxn,syn,iref,alphan,mn,totpeak = multalign2d_scf(image, [cimage], frotim, numr, xrng, yrng, ou = ou)
+			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
 		else:
 			if nomirror:  [angt, sxst, syst, mirrort, peakt] = ornq(ima, cimage, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi)
 			else:	      [angt, sxst, syst, mirrort, peakt] = ormq(ima, cimage, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi, delta)
@@ -119,9 +124,9 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
 			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
 
-			if mn == 0: sx_sum += sxn
-			else:       sx_sum -= sxn
-			sy_sum += syn
+		if mn == 0: sx_sum += sxn
+		else:       sx_sum -= sxn
+		sy_sum += syn
 
 	return sx_sum, sy_sum, nope
 '''
