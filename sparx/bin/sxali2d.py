@@ -66,7 +66,7 @@ def main():
 	parser.add_option("--randomize",action="store_true", default=False,   help="randomize initial rotations (suboption of friedel, default False)")
 	parser.add_option("--orient",   action="store_true", default=False,   help="orient images such that the average is symmetric about x-axis, for layer lines (suboption of friedel, default False)")
 	parser.add_option("--template", type="string",       default=None,    help="2D alignment will be initialized using the template provided (only non-MPI version, default None)")
-	parser.add_option("--new",      action="store_true", default=False,   help="use new method ")
+	parser.add_option("--random_method",   type="string", default="",   help="use SHC or SCF (default standard method)")
 
 	(options, args) = parser.parse_args()
 
@@ -95,8 +95,6 @@ def main():
 			sys.argv = mpi_init(len(sys.argv),sys.argv)
 
 		global_def.BATCH = True
-		if options.new: random_method = "SHC"
-		else:			random_method = ""
 		ali2d(args[0], outdir, mask, options.ir, options.ou, options.rs, options.xr, options.yr, \
 			options.ts, options.nomirror, options.dst, \
 			options.center, options.maxit, options.CTF, options.snr, options.Fourvar, \
