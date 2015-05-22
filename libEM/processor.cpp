@@ -6406,8 +6406,7 @@ EMData *FSCFourierProcessor::process(EMData const *image)
 		float snr;
 		if (s>=maxfreq && lf<f) f=lf;
 		if (f<0 && i>2) localav=1;
-		if (localav==1 && i>N-3) f=lf;
-		else if (localav==1) f=(fsc.get_y(i-2)+fsc.get_y(i-1)+fsc.get_y(i)+fsc.get_y(i+1)+fsc.get_y(i+2))/5.0f;
+		if (localav==1) f=(fsc.get_y(i-2)+fsc.get_y(i-1)+fsc.get_y(i)+fsc.get_y(i+1)+fsc.get_y(i+2))/5.0f;
 		else if (localav==2) f=.00001;
 
 		if (f>=1.0) f=.9999;
@@ -9709,6 +9708,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 		float dataRULL, dataRULU, dataRUUL, dataRUUU;
 		float dataILLL, dataILLU, dataILUL, dataILUU;
 		float dataIULL, dataIULU, dataIUUL, dataIUUU;
+		int nxny = nx*ny;
 		
 		for (int kzN = 0; kzN < ny; kzN++) { 
 		    int kzNew=kzN; 
@@ -9725,9 +9725,17 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			float Sphase = sin(phase);
 			int kx, ky,kz;
 			
-			int IndexOut= -2+ nx* kyN +nx*ny*kzN;
-			float OutBounds= sqrt(2*Mid*Mid- (kyOld*kyOld+kzOld*kzOld)) ;
-			int kxNewMax= !(OutBounds<(nx/2))?(nx/2):OutBounds;
+			int IndexOut= -2+ nx* kyN +nxny*kzN;
+			float OutBounds2 = (2*Mid*Mid- (kyOld*kyOld+kzOld*kzOld)) ;
+			
+			int kxNewMax= nx/2;
+			if (OutBounds2< 0) kxNewMax=0;
+			else if (OutBounds2<(nx*nx/4)) kxNewMax=sqrt(OutBounds2);
+			for (int kxN = kxNewMax; kxN < nx/2 ; kxN++ ) {
+       			      des_data[2*kxN    + nx* kyN +nxny*kzN] = 0;
+        		      des_data[2*kxN    + nx* kyN +nxny*kzN+1] = 0;
+			}
+			
 			
 			for (int kxNew = 0; kxNew < kxNewMax; kxNew++ ) {
 /*			      printf(" kxNew = %d, kyNew = %d, kzNew = %d,kxOld = %3.2f, kyOld = %3.2f, kzOld = %3.2f \n", 
@@ -9768,8 +9776,8 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			      int flagLLL=1;
 			      if (kx<0) kx += N; if (ky<0) ky += N; if (kz<0) kz += N;
 			      if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagLLL=-1;} // Step 3: if nec, use Friedel paired
-			      dataRLLL =         src_data[  2*kx   + nx*kyN+ nx*ny*kz]; 
-			      dataILLL = flagLLL*src_data[1+2*kx   + nx*ky+ nx*ny*kz];} 
+			      dataRLLL =         src_data[  2*kx   + nx*ky+ nxny*kz]; 
+			      dataILLL = flagLLL*src_data[1+2*kx   + nx*ky+ nxny*kz];} 
 
 			    //      LLU  2
 			    kx= kxLower; ky =kyLower; kz=kzLower+1;
@@ -9779,9 +9787,9 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			      int flagLLU=1;
 			      if (kx<0) kx += N; if (ky<0) ky += N; if (kz<0) kz += N;
 			      if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagLLU=-1;} // Step 3: if nec, use Friedel paired
-			      int kLLU =2*kx   + nx*ky+ nx*ny*kz ; 
-			      dataRLLU =         src_data[  2*kx   + nx*ky+ nx*ny*kz]; 
-			      dataILLU = flagLLU*src_data[1+2*kx   + nx*ky+ nx*ny*kz];} 
+			      int kLLU =2*kx   + nx*ky+ nxny*kz ; 
+			      dataRLLU =         src_data[  2*kx   + nx*ky+ nxny*kz]; 
+			      dataILLU = flagLLU*src_data[1+2*kx   + nx*ky+ nxny*kz];} 
 
 			    //      LUL  3
 			    kx= kxLower; ky =kyLower+1; kz=kzLower;
@@ -9791,9 +9799,9 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			      int flagLUL=1;
 			      if (kx<0) kx += N; if (ky<0) ky += N; if (kz<0) kz += N;
 			      if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagLUL=-1;} // Step 3: if nec, use Friedel paired
-			      int kLUL =2*kx   + nx*ky+ nx*ny*kz ; 
-			      dataRLUL =         src_data[  2*kx   + nx*ky+ nx*ny*kz]; 
-			      dataILUL = flagLUL*src_data[1+2*kx   + nx*ky+ nx*ny*kz];} 
+			      int kLUL =2*kx   + nx*ky+ nxny*kz ; 
+			      dataRLUL =         src_data[  2*kx   + nx*ky+ nxny*kz]; 
+			      dataILUL = flagLUL*src_data[1+2*kx   + nx*ky+ nxny*kz];} 
 
 			    //      LUU  4
 			    kx= kxLower; ky =kyLower+1; kz=kzLower+1;
@@ -9803,9 +9811,9 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			      int flagLUU=1;
 			      if (kx<0) kx += N; if (ky<0) ky += N; if (kz<0) kz += N;
 			      if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagLUU=-1;} // Step 3: if nec, use Friedel paired
-			      int kLUU =2*kx   + nx*ky+ nx*ny*kz ; 
-			      dataRLUU =         src_data[  2*kx   + nx*ky+ nx*ny*kz]; 
-			      dataILUU = flagLUU*src_data[1+2*kx   + nx*ky+ nx*ny*kz];} 
+			      int kLUU =2*kx   + nx*ky+ nxny*kz ; 
+			      dataRLUU =         src_data[  2*kx   + nx*ky+ nxny*kz]; 
+			      dataILUU = flagLUU*src_data[1+2*kx   + nx*ky+ nxny*kz];} 
 
 			    //      ULL  5
 			    kx= kxLower+1; ky =kyLower; kz=kzLower;
@@ -9815,9 +9823,9 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			      int flagULL=1;
 			      if (kx<0) kx += N; if (ky<0) ky += N; if (kz<0) kz += N;
 			      if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagULL=-1;} // Step 3: if nec, use Friedel paired
-			      int kULL =2*kx   + nx*ky+ nx*ny*kz ; 
-			      dataRULL =         src_data[  2*kx   + nx*ky+ nx*ny*kz]; 
-			      dataIULL = flagULL*src_data[1+2*kx   + nx*ky+ nx*ny*kz];} 
+			      int kULL =2*kx   + nx*ky+ nxny*kz ; 
+			      dataRULL =         src_data[  2*kx   + nx*ky+ nxny*kz]; 
+			      dataIULL = flagULL*src_data[1+2*kx   + nx*ky+ nxny*kz];} 
 
 			    //      ULU  6
 			    kx= kxLower+1; ky =kyLower; kz=kzLower+1;
@@ -9827,9 +9835,9 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			      int flagULU=1;
 			      if (kx<0) kx += N; if (ky<0) ky += N;if (kz<0) kz += N;
 			      if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagULU=-1;} // Step 3: if nec, use Friedel paired
-			      int kULU =2*kx   + nx*ky+ nx*ny*kz ; 
-			      dataRULU =         src_data[  2*kx   + nx*ky+ nx*ny*kz]; 
-			      dataIULU = flagULU*src_data[1+2*kx   + nx*ky+ nx*ny*kz];} 
+			      int kULU =2*kx   + nx*ky+ nxny*kz ; 
+			      dataRULU =         src_data[  2*kx   + nx*ky+ nxny*kz]; 
+			      dataIULU = flagULU*src_data[1+2*kx   + nx*ky+ nxny*kz];} 
 		      
 			    //      UUL  7
 			    kx= kxLower+1; ky =kyLower+1; kz=kzLower;
@@ -9839,9 +9847,9 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			      int flagUUL=1;
 			      if (kx<0) kx += N; if (ky<0) ky += N;if (kz<0) kz += N;
 			      if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagUUL=-1;} // Step 3: if nec, use Friedel paired
-			      int kUUL =2*kx   + nx*ky+ nx*ny*kz ; 
-			      dataRUUL =         src_data[  2*kx   + nx*ky+ nx*ny*kz]; 
-			      dataIUUL = flagUUL*src_data[1+2*kx   + nx*ky+ nx*ny*kz];} 
+			      int kUUL =2*kx   + nx*ky+ nxny*kz ; 
+			      dataRUUL =         src_data[  2*kx   + nx*ky+ nxny*kz]; 
+			      dataIUUL = flagUUL*src_data[1+2*kx   + nx*ky+ nxny*kz];} 
 
 			    //      UUU  8
 			    kx= kxLower+1; ky =kyLower+1; kz=kzLower+1;
@@ -9851,9 +9859,9 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			      int flagUUU=1;
 			      if (kx<0) kx += N; if (ky<0) ky += N;if (kz<0) kz += N;
 			      if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagUUU=-1;} // Step 3: if nec, use Friedel paired
-			      int kUUU =2*kx   + nx*ky+ nx*ny*kz ; 
-			      dataRUUU =         src_data[  2*kx   + nx*ky+ nx*ny*kz]; 
-			      dataIUUU = flagUUU*src_data[1+2*kx   + nx*ky+ nx*ny*kz];} 
+			      int kUUU =2*kx   + nx*ky+ nxny*kz ; 
+			      dataRUUU =         src_data[  2*kx   + nx*ky+ nxny*kz]; 
+			      dataIUUU = flagUUU*src_data[1+2*kx   + nx*ky+ nxny*kz];} 
 
 			    //           Step 4    Assign Real, then Imaginary Values
 /*			      printf(" kxNew = %d, kyNew = %d, kzNew = %d,kxOld = %3.2f, kyOld = %3.2f, kzOld = %3.2f \n", 
