@@ -2629,7 +2629,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	if (nrsoln == 0) throw InvalidParameterException("ERROR (RT3DTreeAligner): nsoln must be >0"); // What was the user thinking?
 
 	int nsoln = nrsoln;
-	if (nrsoln<10) nsoln=10;		// we need at least 10 solutions for the hierarchical approach
+	if (nrsoln<3) nsoln=3;		// we need at least 3 solutions for the hierarchical approach
 
 	int cleanup=0;
 	EMData *base_this;
