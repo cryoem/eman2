@@ -54,6 +54,8 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 		from fundamentals import fft
 		from alignment import multalign2d_scf
 		frotim = [fft(tavg)]
+		xrng = int(xrng+0.5)
+		yrng = int(yrng+0.5)
 	#  commented out, not used anywhere PAP 03/02/2015
 	#sxilimt = cnx - ou - 2*xrng
 	#syilimt = cny - ou - 2*yrng
@@ -115,7 +117,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 				sxn = 0.0
 				syn = 0.0
 		elif random_method == "SCF":
-			sxn,syn,iref,alphan,mn,totpeak = multalign2d_scf(image, [cimage], frotim, numr, xrng, yrng, ou = ou)
+			sxn,syn,iref,alphan,mn,totpeak = multalign2d_scf(data[im], [cimage], frotim, numr, xrng, yrng, ou = ou)
 			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
 		else:
 			if nomirror:  [angt, sxst, syst, mirrort, peakt] = ornq(ima, cimage, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi)
