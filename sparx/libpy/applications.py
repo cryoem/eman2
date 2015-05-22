@@ -492,6 +492,10 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 	if CTF:
 		ctf_app = bcast_number_to_all(ctf_app, source_node = main_node)
 		if ctf_app > 0:	ERROR("data cannot be ctf-applied", "ali2d_MPI", 1, myid)
+		phase_flip = True
+	else:
+		phase_flip = False
+	CTF = False
 
 	# default value for the last ring
 	if last_ring == -1: last_ring = nx/2-2
