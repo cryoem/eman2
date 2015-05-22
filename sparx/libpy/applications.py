@@ -207,10 +207,13 @@ def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 	if CTF:
 		if data[0].get_attr_default('ctf_applied', 0) > 0:	ERROR("data cannot be ctf-applied", "ali2d", 1)
 		from filter import filt_ctf
-		from morphology import ctf_img
-		ctf_abs_sum = EMData(nx, nx, 1, False)
+		flip_phases = True
+		CTF = False
+		#from morphology import ctf_img
+		#ctf_abs_sum = EMData(nx, nx, 1, False)
 		ctf_2_sum = EMData(nx, nx, 1, False)
 	else:
+		flip_phases = False
 		ctf_2_sum = None
 
 	if Fourvar:
@@ -227,6 +230,8 @@ def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 		#  Subtract averages outside of mask from all input data
 		st = Util.infomask(data[im], mask, False)
 		data[im] -= st[0]
+		if flip_phases: data[im] = filt_ctf(data[im], data[im].get_attr("ctf"), binary = 1)
+		"""
 		if CTF:
 			ctf_params = data[im].get_attr("ctf")
 			ctfimg = ctf_img(nx, ctf_params)
@@ -237,6 +242,7 @@ def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 		if CUDA:
 			alpha, sx, sy, mirror, scale = get_params2D(data[im])
 			all_ali_params.extend([alpha, sx, sy, mirror])
+		"""
 		if( random_method == "SHC" ):  data[im].set_attr('previousmax',1.0e-23)
 	if CTF: 
 		adw_img = Util.mult_scalar(ctf_2_sum, snr)
