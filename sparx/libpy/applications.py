@@ -553,7 +553,8 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 
 	cnx  = nx/2+1
  	cny  = cnx
- 	mode = "F"
+ 	if  random_method == "SCF":		mode = "H"
+ 	else: 							mode = "F"
 	data = []
 	if CTF:
 		from filter import filt_ctf

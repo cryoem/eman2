@@ -43,19 +43,24 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 	if CTF:
 		from filter  import filt_ctf
 
-	# 2D alignment using rotational ccf in polar coords and quadratic interpolation
-	cimage = Util.Polar2Dm(tavg, cnx, cny, numr, mode)
-	Util.Frngs(cimage, numr)
-	Util.Applyws(cimage, numr, wr)
 
 	maxrin = numr[-1]  #  length
 	ou = numr[-3]  #  maximum radius
 	if random_method == "SCF":
-		from fundamentals import fft
+		from fundamentals import fft, scf
 		from alignment import multalign2d_scf
 		frotim = [fft(tavg)]
 		xrng = int(xrng+0.5)
 		yrng = int(yrng+0.5)
+		cimage = Util.Polar2Dm(scf(tavg), cnx, cny, numr, mode)
+		Util.Frngs(cimage, numr)
+		Util.Applyws(cimage, numr, wr)
+	else:
+		# 2D alignment using rotational ccf in polar coords and quadratic interpolation
+		cimage = Util.Polar2Dm(tavg, cnx, cny, numr, mode)
+		Util.Frngs(cimage, numr)
+		Util.Applyws(cimage, numr, wr)
+
 	#  commented out, not used anywhere PAP 03/02/2015
 	#sxilimt = cnx - ou - 2*xrng
 	#syilimt = cny - ou - 2*yrng
@@ -117,7 +122,8 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 				sxn = 0.0
 				syn = 0.0
 		elif random_method == "SCF":
-			sxn,syn,iref,alphan,mn,totpeak = multalign2d_scf(data[im], [cimage], frotim, numr, xrng, yrng, ou = ou)
+			sxst,syst,iref,angt,mirrort,totpeak = multalign2d_scf(data[im], [cimage], frotim, numr, xrng, yrng, ou = ou)
+			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
 			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
 		else:
 			if nomirror:  [angt, sxst, syst, mirrort, peakt] = ornq(ima, cimage, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi)
@@ -2758,7 +2764,6 @@ def multalign2d_scf(image, refrings, frotim, numr, xrng=-1, yrng=-1, ou = -1):
 	Util.Frngs(cimage, numr)
 	mimage = Util.Polar2Dm(mirror(sci), cnx, cny, numr, "H")
 	Util.Frngs(mimage, numr)
-
 
 	nrx = min( 2*(xrng+1)+1, (((nx-2)//2)*2+1) )
 	nry = min( 2*(yrng+1)+1, (((ny-2)//2)*2+1) )
