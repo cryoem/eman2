@@ -2635,8 +2635,9 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	EMData *base_this;
 	EMData *base_to;
 	if (this_img->is_complex() && to->is_complex()) {
-		base_this=this_img;
-		base_to=to;
+		base_this=this_img->copy();
+		base_to=to->copy();
+		cleanup=1;
 	} else {
 		base_this = this_img->do_fft();
 		base_to = to->do_fft();
@@ -2753,7 +2754,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 					t.set_params(aap);
 					delete stt;
 					delete ccf;
-					stt=small_this->process("xform",Dict("transform",EMObject(&t)));	// we have to do 1 slow transform here now that we have the translation
+					stt=small_this->process("xform",Dict("transform",EMObject(&t),"zerocorners",5));	// we have to do 1 slow transform here now that we have the translation
 
 					float sim=stt->cmp("ccc.tomo.thresh",small_to,Dict("sigmaimg",sigmathis,"sigmawith",sigmato));
 
@@ -2901,7 +2902,7 @@ bool RT3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<float> 
 	aap["ty"]=(int)ml[1];
 	aap["tz"]=(int)ml[2];
 	t.set_params(aap);
-	EMData *st2=small_this->process("xform",Dict("transform",EMObject(&t)));	// we have to do 1 slow transform here now that we have the translation
+	EMData *st2=small_this->process("xform",Dict("transform",EMObject(&t),"zerocorners",5));	// we have to do 1 slow transform here now that we have the translation
 	
 	float sim=st2->cmp("ccc.tomo.thresh",small_to,Dict("sigmaimg",sigmathis,"sigmawith",sigmato));
 //	printf("\nTESTORT %6.1f  %6.1f  %6.1f\t%4d %4d %4d\t%1.5g\t%1.5g %d (%d)",
