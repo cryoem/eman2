@@ -240,6 +240,7 @@ def main():
 	
 	parser.add_argument("--keepsig", action="store_true", default=False,help="""Default=False. Causes the keep argument to be interpreted in standard deviations.""", guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
 
+	parser.add_argument("--tweak",action='store_true',default=False,help="""This will perform a final alignment with no downsampling [without using --shrink or --shrinkfine] if --shrinkfine > 1.""")
 	
 	(options, args) = parser.parse_args()
 	
@@ -2341,10 +2342,7 @@ def preprocessing(image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1,fin
 			options.highpassfine = None
 		if options.preprocessfine == 'None' or options.preprocessfine == 'none':
 			options.preprocessfine = None
-		
-	
-		options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine)
-	
+			
 	if coarse != 'yes':
 		#print "lowpassfine received is", options.lowpass	
 		pass
@@ -2491,10 +2489,11 @@ def preprocessing(image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1,fin
 			simage.process_inplace(options.highpassfine[0],options.highpassfine[1])
 			#fimage.write_image(options.path + '/imgPrepLpHp.hdf',-1)
 		
-
-		if options.shrinkfine and int( options.shrinkfine  ) > 1 :
-			print "(e2spt_classaverage)(preprocessing) --shrink provided:", options.shrinkfine
-			simage.process_inplace("math.meanshrink",{"n":options.shrinkfine })
+		
+		if finetag != 'noshrink':
+			if options.shrinkfine and int( options.shrinkfine  ) > 1 :
+				print "(e2spt_classaverage)(preprocessing) --shrink provided:", options.shrinkfine
+				simage.process_inplace("math.meanshrink",{"n":options.shrinkfine })
 			#fimage.write_image(options.path + '/imgPrepLpHpSh.hdf',-1)
 	
 	preproclst = ''		
@@ -3212,6 +3211,8 @@ should be made with caution
 '''
 def alignment( fixedimage, image, label, options, xformslabel, iter, transform, prog='e2spt_classaverage', refpreprocess=0 ):
 	
+	from operator import itemgetter	
+	
 	
 	if not options.notmatchimgs:
 		#print "Matching images!"
@@ -3538,7 +3539,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			#print "\n(e2spt_classaverage)(alignment) Will do fine alignment, over these many peaks", len(bestcoarse)
 			# Now loop over the individual peaks and refine each
 			bestfinal=[]
-			besttweak = []
+			#besttweak = []
 			peaknum=0
 			#print "\n(e2spt_classaverage)(alignment) options.falign is", options.falign, type(options.falign)
 			for bc in bestcoarse:
@@ -3568,37 +3569,90 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			if options.verbose:
 				pass
 				#print "Best final is", bestfinal
-		
-		
+															
+			
 			#print "\n\n\nAfter fine alignment, before SHRINK compensation, the transform is", bestfinal[0]['xform.align3d']		
 			if options.shrinkfine>1 :
+				
+					#C: you need to sort here to be able to tweak productively
+					#C: If you just sort 'bestfinal' it will be sorted based on the 'coarse' key in the dictionaries of the list
+					#C: because they come before the 'score' key of the dictionary (alphabetically)
+				
+				
 				for c in bestfinal:
 					
+					#print "fixing these translations", c
 					newtrans = c["xform.align3d"].get_trans() * float(options.shrinkfine)
 					#print "New trans and type are", newtrans, type(newtrans)
 					c["xform.align3d"].set_trans(newtrans)
 					
+				if options.tweak:
+					bestfinal = sorted(bestfinal, key=itemgetter('score'))
+				
+					originalLpFine = options.lowpassfine
+					if options.lowpassfine:
+						originalLpRes = options.lowpassfine[1]['cutoff_freq']
+						newres = originalLpRes*2
+						options.lowpassfine[1]['cutoff_freq'] = newres
+					
+					
+					
 					if reffullsize['nx'] != imgfullsize['nx'] or  reffullsize['ny'] != imgfullsize['ny'] or  reffullsize['nz'] != imgfullsize['nz']:
-						print "ERROR: reffulsize and imgfullsize are not the same size" 
+						print "ERROR: reffullsize and imgfullsize are not the same size" 
 						print "reffullsize", reffullsize['nx'], reffullsize['ny'], reffullsize['nz']
 						print "imgfullsize", imgfullsize['nx'], imgfullsize['ny'], imgfullsize['nz']
 						sys.exit()
-					
-					print "tweaking alignment!"	
-					bestT = c["xform.align3d"]
-					tweakrange = options.falign[1]['delta']+ 0.5
-					tweakdelta = options.falign[1]['delta']/2.0 -0.1
+			
+					print "\ntweaking alignment!"	
+					bestT = bestfinal[0]["xform.align3d"]
+					bestScore = bestfinal[0]['score']
+				
+					print "best alignment was", bestT
+					tweakrange = options.falign[1]['delta']
+					print "tweaking range is", tweakrange
+					tweakdelta = options.falign[1]['delta']/2.0
+					print "tweaking step is", tweakdelta
+
 					tweaksearch = options.shrinkfine
-					alitweak =imgfullsize.align('refine_3d_grid',reffullsize,{'xform.align3d':bestT,'range':tweakrange,'delta':tweakdelta,'search':tweaksearch},options.faligncmp[0],options.faligncmp[1])
+			
+					if options.lowpassfine:
+						print "new options.lowpassfine is", options.lowpassfine
+			
+					reffullsizeali = reffullsize.copy()
+					imgfullsizeali = imgfullsize.copy()
+			
+					reffullsizeali = preprocessing(reffullsizeali,options,ptclindx, 'ref' ,'no',round,'noshrink')
+					imgfullsizeali = preprocessing(imgfullsizeali,options,ptclindx, savetagp ,'no',round,'noshrink')
+						
+						
+					print "before alitweak, sizes of img are and apix", imgfullsizeali['nx'], imgfullsizeali, imgfullsizeali['ny'], imgfullsizeali['nz'],imgfullsizeali['apix_x']
+					print "before alitweak, sizes of ref are and apix", reffullsizeali['nx'], reffullsizeali, reffullsizeali['ny'], reffullsizeali['nz'],reffullsizeali['apix_x']
 					
-					try: 					
-						besttweak.append({"score":alitweak["score"],"xform.align3d":alitweak["xform.align3d"],"coarse":c})
-						#print "\nThe appended score in TRY is", bestfinal[0]['score']					
+					alitweak =imgfullsizeali.align('refine_3d_grid',reffullsizeali,{'xform.align3d':bestT,'range':tweakrange,'delta':tweakdelta,'search':tweaksearch},options.faligncmp[0],options.faligncmp[1])
+				
+					besttweakT = bestT
+					besttweakScore = 1.0e10
+					try: 
+						besttweakScore = alitweak["score"]
+						besttweakT = alitweak["xform.align3d"]					
+					
+						if float( besttweakScore ) < float( bestScore ) and besttweakT != bestT:
+					
+							print "tweaking improved score from %.6f to %.6f" %( float( bestScore ), float( besttweakScore ) )
+							bestfinal[0]['score'] = besttweakScore
+							bestfinal[0]["xform.align3d"] = besttweakT
+							print "and changed the transform from, to", bestT, besttweakT
+						else:
+							print "tweaking did not improve score; therefore, it will be ignored."			
+
 					except:
-						besttweak.append({"score":1.0e10,"xform.align3d":c["xform.align3d"],"coarse":c})
-						#print "\nThe appended score in EXCEPT is", bestfinal[0]['score']
-					
-					
+						print "WARNING: tweaking failed!"
+
+					options.lowpassfine = originalLpFine
+				
+				else:
+					print "NOT tweaking!"								
+						
 					
 				
 			#print "AFTER fine alignment, after SHRINK compensation, the transform is", bestfinal[0]['xform.align3d']		
@@ -3606,15 +3660,11 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		
 			#verbose printout of fine refinement
 			if options.verbose>1 :
-				if not besttweak:
-					for i,j in enumerate(bestfinal): 
-						pass
-						#print "fine %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
-				elif besttweak:
-					for i,j in enumerate(besttweak): 
-						pass
-						#print "fine %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
-		else: 
+				
+				for i,j in enumerate(bestfinal): 
+					pass
+					#print "fine %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
+		
 			bestfinal = bestcoarse
 			if options.verbose:
 				pass
@@ -3625,12 +3675,9 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			pass
 
 	from operator import itemgetter							#If you just sort 'bestfinal' it will be sorted based on the 'coarse' key in the dictionaries of the list
-															#because they come before the 'score' key of the dictionary (alphabetically)
+															#because they come before the 'score' key of the dictionary (alphabetically). Should be sorted already, except if there was no --falign
 	bestfinal = sorted(bestfinal, key=itemgetter('score'))
-	
-	if besttweak:
-		bestfinal = sorted(besttweak, key=itemgetter('score'))
-	
+
 	
 	#print "Best final answer determined"
 	if options.verbose:
