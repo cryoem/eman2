@@ -3608,9 +3608,9 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 					bestScore = bestfinal[0]['score']
 				
 					print "best alignment was", bestT
-					tweakrange = options.falign[1]['delta']
+					tweakrange = options.falign[1]['delta']+0.5
 					print "tweaking range is", tweakrange
-					tweakdelta = options.falign[1]['delta']/2.0
+					tweakdelta = options.falign[1]['delta']/2.0 - 0.1
 					print "tweaking step is", tweakdelta
 
 					tweaksearch = options.shrinkfine
@@ -3627,6 +3627,8 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 						
 					print "before alitweak, sizes of img are and apix", imgfullsizeali['nx'], imgfullsizeali, imgfullsizeali['ny'], imgfullsizeali['nz'],imgfullsizeali['apix_x']
 					print "before alitweak, sizes of ref are and apix", reffullsizeali['nx'], reffullsizeali, reffullsizeali['ny'], reffullsizeali['nz'],reffullsizeali['apix_x']
+					
+					print "aligner to tweak is", ['refine_3d_grid',{'xform.align3d':bestT,'range':tweakrange,'delta':tweakdelta,'search':tweaksearch}]
 					
 					alitweak =imgfullsizeali.align('refine_3d_grid',reffullsizeali,{'xform.align3d':bestT,'range':tweakrange,'delta':tweakdelta,'search':tweaksearch},options.faligncmp[0],options.faligncmp[1])
 				
