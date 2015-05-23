@@ -222,7 +222,7 @@ def main():
 	
 	parser.add_argument("--ref", type=str, default='', help="""Default=None. Reference image. Used as an initial alignment reference. The refinements are 'gold standard' by default, and therefore two independent copies of the reference will be generated and randomphase-lowpass filtered to the resolution specified through --refrandphase. To turn dataset splitting and gold standard refinement off, supply --goldstandardoff.""", guitype='filebox', browser='EMBrowserWidget(withmodal=True,multiselect=True)', filecheck=False, row=1, col=0, rowspan=1, colspan=3, mode='alignment')
 	
-	parser.add_argument("--refpreprocess",action="store_true",default=False,help="""Default=False. This will preprocess the reference identically to the particles. It is off by default, but it is internally turned on when no reference is supplied.""")
+	parser.add_argument("--refpreprocess",action="store_true",default=False,help="""Default=False. This will preprocess the reference identically to the particles. It is off by default, but it is internally turned on when no reference is supplied. It should probably be off when using a crystal structure (with all positive densities) turned to EM density as an initial model, but it should be on when using an EM map.""")
 	
 	parser.add_argument("--refrandphase", type=float, default=60.0, help="""Default=60.0. Resolution to phase randomize the reference to (or the two copies of the reference if --goldstandardoff is NOT supplied [gold standard refinement is on by default].""")
 	
@@ -230,7 +230,7 @@ def main():
 		
 	parser.add_argument("--ssaref",type=int,default=0,help="""Default=0 (not used by default). Size of the SUBSET of particles to use to build an initial reference by calling e2symsearch3d.py, which does self-symmetry alignments. You must provide --sym different than c1 for this to make any sense.""")
 		
-	parser.add_argument("--btref",type=int,default=0,help="""Default=64 (internally turned on). Size of the SUBSET of particles to use to build an initial reference by calling e2spt_binarytree.py. By default, the largest power of two smaller than the number of particles in --input will be used. For example, if you supply a stack with 150 subtomograms, the program will automatically select 128 as the limit to use because it's the largest power of 2 that is smaller than 150. But if you provide, say --btref=100, then the number of particles used will be 64, because it's the largest power of 2 that is still smaller than 100.""")
+	parser.add_argument("--btref",type=int,default=0,help="""Default=0 (internally turned on and set to 64). Size of the SUBSET of particles to use to build an initial reference by calling e2spt_binarytree.py. By default, the largest power of two smaller than the number of particles in --input will be used. For example, if you supply a stack with 150 subtomograms, the program will automatically select 128 as the limit to use because it's the largest power of 2 that is smaller than 150. But if you provide, say --btref=100, then the number of particles used will be 64, because it's the largest power of 2 that is still smaller than 100.""")
 	
 	parser.add_argument("--resultmx",type=str,default=None,help="""Default=None. Specify an output image to store the result matrix. This is in the same format as the classification matrix. http://blake.bcm.edu/emanwiki/EMAN2/ClassmxFiles""")
 	
@@ -730,7 +730,8 @@ def main():
 			results=[]
 				
 			ref = refsdict[ ic ]
-			if options.parallel: ref.write_image(os.path.join(options.path,"tmpref.hdf"),0)
+			#if options.parallel: 
+			ref.write_image(os.path.join(options.path,"tmpref.hdf"),0)
 
 			# ALL CLIPPING and preprocessing should happen inside the preprocessing function
 			
@@ -792,7 +793,7 @@ def main():
 					tasks.append(task)
 				else:
 					#print "No parallelism specified"
-					result=align3Dfunc(ref,["cache",options.input,ptclnum],ptclnum,"Ptcl %d in iter %d"%(ptclnum,it),options,transform,it)
+					result=align3Dfunc(["cache",os.path.join(options.path,"tmpref.hdf"),0],["cache",options.input,ptclnum],ptclnum,"Ptcl %d in iter %d"%(ptclnum,it),options,transform,it)
 					results.append(result['final'])
 			
 			# start the alignments running
@@ -915,7 +916,12 @@ def main():
 					#	outname = options.path + '/' + options.output
 				
 					ref.write_image( outname , 0 )			
-			
+			elif options.donotaverage: 				#This is used with e2spt_multirefine, where all you need is the alignment info, but not the averages
+				for p in range( nptcl ):
+					weights.update( {p:1.0} )
+				
+				
+				
 			'''
 			Define and open the .json dictionaries where alignment and score values will be stored, for each iteration,
 			and for each reference if using multiple model refinement
@@ -923,6 +929,8 @@ def main():
 			
 			jsAliParamsPath = options.path + '/tomo_xforms.json'
 			
+			
+			print "options.refinemultireftag and type are", options.refinemultireftag, type(options.refinemultireftag)
 			
 			if not options.refinemultireftag:
 				jsAliParamsPath = jsAliParamsPath.replace('.json', '_' + str(it).zfill( len(str(options.iter))) + '.json')
@@ -942,32 +950,47 @@ def main():
 			print "len results is", len(results)
 			print "should match nptcl", nptcl
 			
+			print "results are", results
 			
 			for r in results:
 				#if r and r[0]:	
 				
+				
 				ptclindx = r[1]
 					
 				score = r[0][0]['score']
-				
+				if options.verbose > 3:
+					print "for particle %d score is %.4f" %(ptclindx,score)
 				
 				#classmxScores.set_value_at(ic,iii,score)
-			
 				#posscore = math.fabs(score)
+				
 				classScoresList.append(score)
+				
 				#print "\n\n\n\n\n\n\n\nThe appended positive score is", posscore
-			
 				#weight=1.0
+				
+				if options.verbose > 3:
+					print "classmxWeights img is", classmxWeights['nx'], classmxWeights['ny'], classmxWeights['nz']
+					
+				print "weights is", weights
+				print "gout to set value for classmxweights at", ic, ptclindx, weights[ptclindx]
 				classmxWeights.set_value_at(ic,ptclindx,weights[ptclindx])
-			
+				
+				print "set value for classmxweights at", ic, ptclindx, weights[ptclindx]
+				
 				t = r[0][0]['xform.align3d']
-			
+				
+				if options.verbose > 3:
+					print "and transform is",t
 			
 				xformslabel = 'tomo_' + str( ptclindx ).zfill( len( str( nptcl ) ) )			
 				jsA.setval( xformslabel, [ t , score ] )
 			
-			
-				if options.saveallpeaks and options.npeakstorefine > 1:
+				if options.verbose > 3:
+					print "wrote info to .json file"
+				
+				if options.saveallpeaks and options.npeakstorefine > 1 and options.falign:
 					scoresCoarse = []
 					
 					rCoarse = r[2]
@@ -1016,7 +1039,12 @@ def main():
 							pi += 1	
 					else:
 						print "WARNING: Not enough successful alignments to compute a z-score"
+				else:
+					pass #Only one peak from --npeakstorefine was refined
 						
+				
+				if options.verbose > 3:
+					print "setting classmx"
 						
 				trans=t.get_trans()
 				print "\n\n\nTranslations were", trans
@@ -1055,6 +1083,9 @@ def main():
 				
 										
 			jsA.close()
+			print "closed .json file"
+			
+			
 			
 			classmxScores.write_image(classmxFile,0)
 			classmxWeights.write_image(classmxFile,1)
@@ -1117,6 +1148,7 @@ def main():
 			if it > 0 and len(avgshdrs[0]) > 1 and len(avgshdrs[1]) > 1:
 				if avgshdrs[0][-1]['mean'] == avgshdrs[0][-2]['mean'] and avgshdrs[1][-1]['mean'] == avgshdrs[0][-2]['mean']:
 					print "Both independent averages have converged!"
+					os.system('rm ' + options.path + '/tmpref.hdf')
 					sys.exit()
 				
 			fscfile = options.path + '/fsc_' + str(it).zfill( len( str(options.iter))) + '.txt'
@@ -1159,7 +1191,7 @@ def main():
 					print "The average has converged!"
 					outname = options.path + '/final_avg.hdf'
 					avg.write_image( outname , 0)
-					
+					os.system('rm ' + options.path + '/tmpref.hdf')
 					sys.exit()
 
 			originalref = EMData( options.ref, 0 )
@@ -1217,11 +1249,16 @@ def main():
 		
 	if options.inixforms: 
 		preOrientationsDict.close()
-	print "Will end logger"	
+	
+	os.system('rm ' + options.path + '/tmpref.hdf')
+	
+	print "Logger ending"	
 	E2end(logger)
 	
 	print "logger ended"
 	sys.stdout.flush()
+	
+	
 	
 	return
 
@@ -1315,41 +1352,6 @@ def sptParseAligner( options ):
 					sys.exit()
 			
 	print "\n\nBefore adding and fixing searches, options.falign is", options.falign, type(options.falign)	
-	
-	
-	
-	
-	
-	#if options.ialign and options.ialign != None and options.ialign != 'None' and options.ialign != 'none':
-	#	if 'search' not in options.ialign and 'refine_3d_grid' in options.ialign:		
-	#		options.ialign += ':search=' + str( options.search )
-	#		
-	#	else:
-	#		searchI = options.ialign.split('search=')[-1].split(':')[0]
-	#		searchinterdefault = 4
-	#		
-	#		if options.search/2 != searchinterdefault:
-	#					
-	#			prefix = options.ialign.split('search=')[0]
-	#			trail = options.ialign.split('search=')[-1].split(':')[-1]
-	#			
-	#			options.ialign =  prefix + 'search=' + str(options.search)
-	#			
-	#			if len(trail) > 2 and '=' in trail:
-	#			
-	#				options.ialign += ':' + trail 
-	#		
-	#			print """\nWARNING: --search is different from search= provided through
-	#			--ialign or its default value of 4. There's no need to specify both, but 
-	#			if you did, --search takes precedence, and will be divided in half for intermediate alignment."""
-	#			#sys.exit()
-	#		
-	#		#elif options.search/2 == searchfinedefault:
-	#		#	options.search = searchF
-	
-	
-	
-	
 	
 	if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
 		if 'search' not in options.falign and 'refine_3d_grid' in options.falign:		
@@ -1506,7 +1508,7 @@ def clip3D( vol, sizex, sizey=0, sizez=0 ):
 '''
 Function to generate the reference either by reading from disk or bootstrapping
 '''
-def sptRefGen( options, ptclnumsdict, cmdwp, wildcard=0, method='',subset4ref=0):
+def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref=0):
 	
 	refsdict = {}
 	elements = cmdwp.split(' ')
@@ -1529,18 +1531,19 @@ def sptRefGen( options, ptclnumsdict, cmdwp, wildcard=0, method='',subset4ref=0)
 			if options.goldstandardoff:
 				klassidref = ''
 		except:
-			if wildcard:
+			if refinemulti:
 				klassidref = ''
 				
 		
-		if len(ptclnumsdict) > 2:
-			klassidref = '_' + str( klassnum ).zfill( len( str( len(ptclnumsdict))))
-		
-		ptclnums = ptclnumsdict[ klassnum ]
-		#print "Therefore for class", klassnum
-		#print "ptclnums len and themsvels are", len(ptclnums), ptclnums
-		
-		ptclnums.sort()
+		if refinemulti:
+			zfillfactor = len(str( len( ptclnumsdict )))
+			
+			#if ptclnumsdict[klassnum]:
+			#else:
+			
+			klassidref = '_' + str( klassnum ).zfill( zfillfactor )
+			if len( ptclnumsdict ) < 2:
+				klassidref = '_' + str( refinemulti ).zfill( zfillfactor )	
 		
 		if options.ref: 
 			ref = EMData(options.ref,0)
@@ -1551,22 +1554,20 @@ def sptRefGen( options, ptclnumsdict, cmdwp, wildcard=0, method='',subset4ref=0)
 			if not ref['maximum'] and not ref['minimum']:
 				print "(e2spt_classaverage)(sptRefGen) - ERROR: Empty/blank reference file. Exiting."
 				sys.exit()
-
-			if not options.goldstandardoff:
-				#filterfreq = 1.0/60.0
-
-				if options.refrandphase:
-					filterfreq =  1.0/float( options.refrandphase )
-					ref.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":filterfreq,"apix":ref['apix_x']})
+			
+			if options.apix:
+				ref['apix_x'] = options.apix
+				ref['apix_y'] = options.apix
+				ref['apix_z'] = options.apix
+			
+			if options.refrandphase:
+				filterfreq =  1.0/float( options.refrandphase )
+				ref.process_inplace("filter.lowpass.randomphase",{"cutoff_freq":filterfreq,"apix":ref['apix_x']})
+						
+				refrandphfile = options.path + '/' + os.path.basename( options.ref ).replace('.hdf','_randPH' + klassidref +'.hdf')
 				
-				if options.apix:
-					ref['apix_x'] = options.apix
-					ref['apix_y'] = options.apix
-					ref['apix_z'] = options.apix
-					
-				
-				
-				refrandphfile = options.path + '/' + os.path.basename( options.ref ).replace('.hdf','_randPH' + klassidref +'.hdf').replace('final_avg','ref')
+				if 'final_avg' in refrandphfile:								#you don't want any confusion between final averages produces in other runs of the program and references
+					refrandphfile = refrandphfile.replace('final_avg','ref')
 
 				ref['origin_x'] = 0
 				ref['origin_y'] = 0
@@ -1580,6 +1581,13 @@ def sptRefGen( options, ptclnumsdict, cmdwp, wildcard=0, method='',subset4ref=0)
 			
 		
 		else:
+			ptclnums = ptclnumsdict[ klassnum ]
+			#print "Therefore for class", klassnum
+			#print "ptclnums len and themsvels are", len(ptclnums), ptclnums
+		
+			if ptclnums:
+				ptclnums.sort()		
+			
 			try:
 				if options.hacref:
 					method = 'hac'
@@ -1601,232 +1609,232 @@ def sptRefGen( options, ptclnumsdict, cmdwp, wildcard=0, method='',subset4ref=0)
 			if not method and not options.ref:
 				method = 'bt'
 				
-		#elif options.hacref:
-		if method == 'hac':
+			#elif options.hacref:
+			if method == 'hac':
 		
-			if options.verbose:
-				print "\n(e2spt_classaverage)(sptRefGen) - Generating initial reference using hierarchical ascendant classification through e2spt_hac.py"
+				if options.verbose:
+					print "\n(e2spt_classaverage)(sptRefGen) - Generating initial reference using hierarchical ascendant classification through e2spt_hac.py"
 			
-			subsetForHacRef = 'spthac_refsubset'+ klassidref + '.hdf'
+				subsetForHacRef = 'spthac_refsubset'+ klassidref + '.hdf'
 			
-			i = 0
-			nptclsforref = 10
-			try:
-				if options.hacref:
-					nptclsforref = options.hacref								
-			except:
-				if subset4ref:
-					nptclsforref=subset4ref
+				i = 0
+				nptclsforref = 10
+				try:
+					if options.hacref:
+						nptclsforref = options.hacref								
+				except:
+					if subset4ref:
+						nptclsforref=subset4ref
 			
-			if nptclsforref >= len(ptclnums):
-				nptclsforref =  len(ptclnums)
+				if nptclsforref >= len(ptclnums):
+					nptclsforref =  len(ptclnums)
 			
-			print "Hacreflimit is", nptclsforref
-			if nptclsforref < 3:
-				print """ERROR: You cannot build a HAC reference with less than 3 particles.
-				Either provide a larger --hacref number, a larger --subset number, or provide
-				--goldstandardoff"""
+				print "Hacreflimit is", nptclsforref
+				if nptclsforref < 3:
+					print """ERROR: You cannot build a HAC reference with less than 3 particles.
+					Either provide a larger --hacref number, a larger --subset number, or provide
+					--goldstandardoff"""
 				
-				sys.exit()
+					sys.exit()
 			
 			
-			i = 0
-			while i < nptclsforref :
-				a = EMData( options.input, ptclnums[i] )
-				a.write_image( subsetForHacRef, i )
-				i+=1
+				i = 0
+				while i < nptclsforref :
+					a = EMData( options.input, ptclnums[i] )
+					a.write_image( subsetForHacRef, i )
+					i+=1
 			
-			niterhac = nptclsforref - 1
+				niterhac = nptclsforref - 1
 
-			hacelements = []
-			for ele in elements:
-				if 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'output' not in ele and 'fsc' not in ele and 'subset' not in ele and 'input' not in ele and '--ref' not in ele and 'path' not in ele and 'keep' not in ele and 'iter' not in ele and 'subset' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreprocessed' not in ele:
-					hacelements.append(ele)
+				hacelements = []
+				for ele in elements:
+					if 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'output' not in ele and 'fsc' not in ele and 'subset' not in ele and 'input' not in ele and '--ref' not in ele and 'path' not in ele and 'keep' not in ele and 'iter' not in ele and 'subset' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreprocessed' not in ele:
+						hacelements.append(ele)
 			
-			cmdhac = ' '.join(hacelements)
-			cmdhac = cmdhac.replace('e2spt_classaverage','e2spt_hac')
+				cmdhac = ' '.join(hacelements)
+				cmdhac = cmdhac.replace('e2spt_classaverage','e2spt_hac')
 			
-			if wildcard:
-				cmdhac = cmdhac.replace('e2spt_refinemulti','e2spt_hac')
+				if refinemulti:
+					cmdhac = cmdhac.replace('e2spt_refinemulti','e2spt_hac')
 				
 			
-			hacrefsubdir = 'spthac_ref' + klassidref
+				hacrefsubdir = 'spthac_ref' + klassidref
 			
-			cmdhac+=' --path=' + hacrefsubdir
-			cmdhac+=' --iter='+str(niterhac)
-			cmdhac+=' --input='+subsetForHacRef
+				cmdhac+=' --path=' + hacrefsubdir
+				cmdhac+=' --iter='+str(niterhac)
+				cmdhac+=' --input='+subsetForHacRef
 
-			cmdhac+= ' && mv ' + hacrefsubdir + ' ' + options.path + '/' + ' && mv ' + subsetForHacRef + ' ' + options.path
+				cmdhac+= ' && mv ' + hacrefsubdir + ' ' + options.path + '/' + ' && mv ' + subsetForHacRef + ' ' + options.path
 
-			if options.verbose:
-				print "\n(e2spt_classaverage)(sptRefGen) - Command to generate hacref is", cmdhac
+				if options.verbose:
+					print "\n(e2spt_classaverage)(sptRefGen) - Command to generate hacref is", cmdhac
 
-			p=subprocess.Popen( cmdhac, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-			text=p.communicate()	
-			p.stdout.close()
-			
-			ref = EMData( options.path + '/' + hacrefsubdir +'/final_avg.hdf', 0 )
+				p=subprocess.Popen( cmdhac, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+				text=p.communicate()	
+				p.stdout.close()
+				
+				ref = EMData( options.path + '/' + hacrefsubdir +'/final_avg.hdf', 0 )
 
-			refsdict.update({ klassnum : ref })
+				refsdict.update({ klassnum : ref })
 		
-		#elif options.ssaref:
-		if method == 'ssa':
-			if options.verbose:
-				print "\n(e2spt_classaverage)(sptRefGen) - Generating initial reference using self symmetry alignment through e2symsearch3d.py"
+			#elif options.ssaref:
+			if method == 'ssa':
+				if options.verbose:
+					print "\n(e2spt_classaverage)(sptRefGen) - Generating initial reference using self symmetry alignment through e2symsearch3d.py"
 			
-			if options.sym == 'c1' or options.sym == 'C1':
-				print """\n(e2spt_classaverage)(sptRefGen) - ERROR: You must provide at least c2 or higher symmetry to use
-				--ssaref"""
-			#sys.exit(1)
+				if options.sym == 'c1' or options.sym == 'C1':
+					print """\n(e2spt_classaverage)(sptRefGen) - ERROR: You must provide at least c2 or higher symmetry to use
+					--ssaref"""
+				#sys.exit(1)
 			
-			subsetForSsaRef = 'sptssa_refsubset'+ klassidref + '.hdf'
+				subsetForSsaRef = 'sptssa_refsubset'+ klassidref + '.hdf'
 			
-			nptclsforref = 10
-			try:
-				if options.ssaref:
-					nptclsforref=options.ssaref		
-			except:
-				if subset4ref:
-					nptclsforref=subset4ref
+				nptclsforref = 10
+				try:
+					if options.ssaref:
+						nptclsforref=options.ssaref		
+				except:
+					if subset4ref:
+						nptclsforref=subset4ref
 			
-			if nptclsforref >= len(ptclnums):
-				nptclsforref =  len(ptclnums)
+				if nptclsforref >= len(ptclnums):
+					nptclsforref =  len(ptclnums)
 			
-			i = 0
-			while i < nptclsforref :
-				a = EMData( options.input, ptclnums[i] )
-				a.write_image( subsetForSsaRef, i )
-				i+=1
+				i = 0
+				while i < nptclsforref :
+					a = EMData( options.input, ptclnums[i] )
+					a.write_image( subsetForSsaRef, i )
+					i+=1
 			
-			ssarefsubdir = 'sptssa_ref' + klassidref
+				ssarefsubdir = 'sptssa_ref' + klassidref
 			
-			ssaelements = []
-			for ele in elements:
-				if 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'fine' not in ele and 'fsc' not in ele and 'output' not in ele and 'path' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreprocessed' not in ele and 'align' not in ele and 'iter' not in ele and 'npeakstorefine' not in ele and 'precision'not in ele and '--radius' not in ele and 'randphase' not in ele and 'search' not in ele and '--save' not in ele and '--ref' not in ele and 'input' not in ele and 'output' not in ele and 'subset' not in ele:
-				#	print "Appended element", ele
-					ssaelements.append(ele)
+				ssaelements = []
+				for ele in elements:
+					if 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'fine' not in ele and 'fsc' not in ele and 'output' not in ele and 'path' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreprocessed' not in ele and 'align' not in ele and 'iter' not in ele and 'npeakstorefine' not in ele and 'precision'not in ele and '--radius' not in ele and 'randphase' not in ele and 'search' not in ele and '--save' not in ele and '--ref' not in ele and 'input' not in ele and 'output' not in ele and 'subset' not in ele:
+					#	print "Appended element", ele
+						ssaelements.append(ele)
+					#else:
+					#	print "SKIPPED element", ele
+					
+				#if 'e2spt_classaverage' in ssaelements:
+				#	print "HERE!"
+				#	sys.exit()
 				#else:
-				#	print "SKIPPED element", ele
-					
-			#if 'e2spt_classaverage' in ssaelements:
-			#	print "HERE!"
-			#	sys.exit()
-			#else:
-			#	print "Not here, see", ssaelements
-			#	sys.exit()
+				#	print "Not here, see", ssaelements
+				#	sys.exit()
 				
-			cmdssa = ' '.join(ssaelements)
-			cmdssa = cmdssa.replace('e2spt_classaverage','e2symsearch3d')
+				cmdssa = ' '.join(ssaelements)
+				cmdssa = cmdssa.replace('e2spt_classaverage','e2symsearch3d')
 			
-			if wildcard:
-				cmdssa = cmdssa.replace('e2spt_refinemulti','e2symsearch3d')
+				if refinemulti:
+					cmdssa = cmdssa.replace('e2spt_refinemulti','e2symsearch3d')
 			
-			cmdssa += ' --input=' + subsetForSsaRef 
-			cmdssa += ' --path=' + ssarefsubdir
-			cmdssa += ' --symmetrize'
-			cmdssa += ' --average'
+				cmdssa += ' --input=' + subsetForSsaRef 
+				cmdssa += ' --path=' + ssarefsubdir
+				cmdssa += ' --symmetrize'
+				cmdssa += ' --average'
 			
-			#ssarefname = 'ssaref_' + klassidref + '.hdf'
-			ssarefname = 'final_avg.hdf'
-			#cmdssa += ' --output=' + ssarefname
+				#ssarefname = 'ssaref_' + klassidref + '.hdf'
+				ssarefname = 'final_avg.hdf'
+				#cmdssa += ' --output=' + ssarefname
 			
-			cmdssa += ' && mv ' + ssarefsubdir + ' ' + options.path + '/' + ' && mv ' + subsetForSsaRef + ' ' + options.path
+				cmdssa += ' && mv ' + ssarefsubdir + ' ' + options.path + '/' + ' && mv ' + subsetForSsaRef + ' ' + options.path
 
-			if options.verbose:
-				print "\n(e2spt_classaverage)(sptRefGen) - Command to generate ssaref is", cmdssa
+				if options.verbose:
+					print "\n(e2spt_classaverage)(sptRefGen) - Command to generate ssaref is", cmdssa
 
-			p=subprocess.Popen( cmdssa, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-			text=p.communicate()	
-			p.stdout.close()
+				p=subprocess.Popen( cmdssa, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+				text=p.communicate()	
+				p.stdout.close()
 			
-			ref = EMData( options.path + '/' + ssarefsubdir +'/' + ssarefname, 0 )
+				ref = EMData( options.path + '/' + ssarefsubdir +'/' + ssarefname, 0 )
 
-			refsdict.update({ klassnum : ref })
+				refsdict.update({ klassnum : ref })
 
-		#elif not options.hacref and not options.ssaref:				
-		if method == 'bt':
+			#elif not options.hacref and not options.ssaref:				
+			if method == 'bt':
 		
-			nptclForRef = len(ptclnums)
+				nptclForRef = len(ptclnums)
 
-			#from e2spt_binarytree import binaryTreeRef
+				#from e2spt_binarytree import binaryTreeRef
 			
-			#print "len ptclnums is", len(ptclnums)
-			#print "log 2 of that is" 
-			print log( len(ptclnums), 2 )
+				#print "len ptclnums is", len(ptclnums)
+				#print "log 2 of that is" 
+				print log( len(ptclnums), 2 )
 			
-			niter = int(floor(log( len(ptclnums) ,2 )))
-			nseed=2**niter
+				niter = int(floor(log( len(ptclnums) ,2 )))
+				nseed=2**niter
 			
-			try:
-				if options.btref:
-					niter = int(floor(log( options.btref, 2 )))
-					nseed=2**niter			
-			except:
-				if subset4ref:
-					niter = int(floor(log( subset4ref, 2 )))
-					nseed=2**niter	
+				try:
+					if options.btref:
+						niter = int(floor(log( options.btref, 2 )))
+						nseed=2**niter			
+				except:
+					if subset4ref:
+						niter = int(floor(log( subset4ref, 2 )))
+						nseed=2**niter	
 					
 			
 
 
-			subsetForBTRef = 'sptbt_refsubset'+ klassidref + '.hdf'
+				subsetForBTRef = 'sptbt_refsubset'+ klassidref + '.hdf'
 			
-			i = 0
-			while i < nseed :
-				a = EMData( options.input, ptclnums[i] )
-				a.write_image( subsetForBTRef, i )
-				print "writing image %d to file %s, which will contain the subset of particles used for BTA refernece building" %(i,subsetForBTRef)
-				i+=1
+				i = 0
+				while i < nseed :
+					a = EMData( options.input, ptclnums[i] )
+					a.write_image( subsetForBTRef, i )
+					print "writing image %d to file %s, which will contain the subset of particles used for BTA refernece building" %(i,subsetForBTRef)
+					i+=1
 
-			btelements = []
-			#print "elements are", elements
-			for ele in elements:
-				if 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'output' not in ele and 'fsc' not in ele and 'subset' not in ele and 'input' not in ele and '--ref' not in ele and 'path' not in ele and 'keep' not in ele and 'iter' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreprocessed' not in ele:
-					#print "added ele", ele
-					btelements.append(ele)
-				else:
-					pass
-					#print "skipped ele", ele
+				btelements = []
+				#print "elements are", elements
+				for ele in elements:
+					if 'btref' not in ele and 'hacref' not in ele and 'ssaref' not in ele and 'subset4ref' not in ele and 'refgenmethod' not in ele and 'nref' not in ele and 'output' not in ele and 'fsc' not in ele and 'subset' not in ele and 'input' not in ele and '--ref' not in ele and 'path' not in ele and 'keep' not in ele and 'iter' not in ele and 'goldstandardoff' not in ele and 'saveallalign' not in ele and 'savepreprocessed' not in ele:
+						#print "added ele", ele
+						btelements.append(ele)
+					else:
+						pass
+						#print "skipped ele", ele
 			
-			cmdbt = ' '.join(btelements)
-			cmdbt = cmdbt.replace('e2spt_classaverage','e2spt_binarytree')
+				cmdbt = ' '.join(btelements)
+				cmdbt = cmdbt.replace('e2spt_classaverage','e2spt_binarytree')
 			
-			#print "wildcard is!", wildcard
-			#print "BEFORE replacement", cmdbt
+				#print "wildcard is!", wildcard
+				#print "BEFORE replacement", cmdbt
 			
-			if wildcard:
-				cmdbt = cmdbt.replace('e2spt_refinemulti','e2spt_binarytree')
+				if refinemulti:
+					cmdbt = cmdbt.replace('e2spt_refinemulti','e2spt_binarytree')
 			
 			
-			btrefsubdir = 'sptbt_ref' + klassidref		
+				btrefsubdir = 'sptbt_ref' + klassidref		
 			
-			cmdbt+=' --path=' + btrefsubdir
-			cmdbt+=' --iter=' + str( niter )
-			cmdbt+=' --input=' + subsetForBTRef
+				cmdbt+=' --path=' + btrefsubdir
+				cmdbt+=' --iter=' + str( niter )
+				cmdbt+=' --input=' + subsetForBTRef
 
-			cmdbt+= ' && mv ' + btrefsubdir + ' ' + options.path + '/' + ' && mv ' + subsetForBTRef + ' ' + options.path
+				cmdbt+= ' && mv ' + btrefsubdir + ' ' + options.path + '/' + ' && mv ' + subsetForBTRef + ' ' + options.path
 
-			if options.verbose:
-				print "\n(e2spt_classaverage)(sptRefGen) - Command to generate btref is", cmdbt
+				if options.verbose:
+					print "\n(e2spt_classaverage)(sptRefGen) - Command to generate btref is", cmdbt
 
-			p=subprocess.Popen( cmdbt, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-			text=p.communicate()	
-			p.stdout.close()
+				p=subprocess.Popen( cmdbt, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+				text=p.communicate()	
+				p.stdout.close()
 			
-			#if os.getcwd() not in options.path:
-			#	options.path = os.getcwd() + '/' + ptions.path
+				#if os.getcwd() not in options.path:
+				#	options.path = os.getcwd() + '/' + ptions.path
 			
-			print "\ncmdbt is", cmdbt
+				print "\ncmdbt is", cmdbt
 			
-			#print "\nfindir are"
-			#findir=os.listdir(current)
-			#for f in findir:
-			#	print f
+				#print "\nfindir are"
+				#findir=os.listdir(current)
+				#for f in findir:
+				#	print f
 			
-			print "The BT reference to load is in file",  options.path+ '/' +btrefsubdir +'/final_avg.hdf'
-			ref = EMData( options.path + '/' + btrefsubdir +'/final_avg.hdf', 0 )
+				print "The BT reference to load is in file",  options.path+ '/' +btrefsubdir +'/final_avg.hdf'
+				ref = EMData( options.path + '/' + btrefsubdir +'/final_avg.hdf', 0 )
 
-			refsdict.update({ klassnum : ref })
+				refsdict.update({ klassnum : ref })
 	
 	refnames={}
 	#if options.savesteps:
@@ -3250,6 +3258,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	#########################################
 	#Preprocess the reference or "fixed image"
 	#########################################
+	reffullsize = fixedimage.copy()
 	sfixedimage = fixedimage.copy()
 	s2fixedimage = fixedimage.copy()
 	
@@ -3268,7 +3277,12 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			print "clipping reference for fine alignment", options.clipali, s2fixedimage['nx']
 			
 			#print "\nclipped s2fixedimage to", options.clipali, s2fixedimage['nx']
-	
+		
+		if reffullsize['nx'] != options.clipali or reffullsize['ny'] != options.clipali or reffullsize['nz'] != options.clipali:
+			reffullsize = clip3D( reffullsize, options.clipali )
+			print "clipping full-sized reference for final tweaking alignment", options.clipali, reffullsize['nx']
+		
+		
 	print "before refpreprocess, refpreprocess and iter", refpreprocess, iter
 	
 	
@@ -3341,11 +3355,14 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	
 		if s2fixedimage:
 			print "after all preproc, FINE ref is of size %d, in iter %d" %( s2fixedimage['nx'], iter)
-	
+		
+		if reffullsize:
+			print "after all preproc, REFFULLSIZE is of size %d, in iter %d" %( reffullsize['nx'], iter)
 
 	#########################################
 	#Preprocess the particle or "moving image"
 	#########################################
+	imgfullsize = image.copy()
 	simage = image.copy()
 	s2image = image.copy()
 	
@@ -3358,6 +3375,9 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		
 		if s2image['nx'] != options.clipali or s2image['ny'] != options.clipali or s2image['nz'] != options.clipali:
 			s2image = clip3D( s2image, options.clipali )
+		
+		if imgfullsize['nx'] != options.clipali or imgfullsize['ny'] != options.clipali or imgfullsize['nz'] != options.clipali:
+			imgfullsize = clip3D( imgfullsize, options.clipali )
 			
 			#print "\nclipped s2image to", options.clipali, s2image['nx']
 
@@ -3397,10 +3417,13 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			s2image = None
 	
 		if simage:
-			print "after all preproc, COARSE ref is of size %d, in iter %d" %( simage['nx'], iter)
+			print "after all preproc, COARSE ptcl is of size %d, in iter %d" %( simage['nx'], iter)
 	
 		if s2image:
-			print "after all preproc, FINE ref is of size %d, in iter %d" %( s2image['nx'], iter)	
+			print "after all preproc, FINE ptcl is of size %d, in iter %d" %( s2image['nx'], iter)	
+		
+		if imgfullsize:
+			print "after all preproc, IMGFULLSIZE is of size %d, in iter %d" %( imgfullsize['nx'], iter)
 	
 	if sfixedimage['nx'] != simage['nx']:
 		print "ERROR: preprocessed images for coarse alignment not the same size, sfixedimage, simage", sfixedimage['nx'], simage['nx']
@@ -3515,6 +3538,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			#print "\n(e2spt_classaverage)(alignment) Will do fine alignment, over these many peaks", len(bestcoarse)
 			# Now loop over the individual peaks and refine each
 			bestfinal=[]
+			besttweak = []
 			peaknum=0
 			#print "\n(e2spt_classaverage)(alignment) options.falign is", options.falign, type(options.falign)
 			for bc in bestcoarse:
@@ -3549,19 +3573,47 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			#print "\n\n\nAfter fine alignment, before SHRINK compensation, the transform is", bestfinal[0]['xform.align3d']		
 			if options.shrinkfine>1 :
 				for c in bestfinal:
-			
+					
 					newtrans = c["xform.align3d"].get_trans() * float(options.shrinkfine)
 					#print "New trans and type are", newtrans, type(newtrans)
 					c["xform.align3d"].set_trans(newtrans)
-		
+					
+					if reffullsize['nx'] != imgfullsize['nx'] or  reffullsize['ny'] != imgfullsize['ny'] or  reffullsize['nz'] != imgfullsize['nz']:
+						print "ERROR: reffulsize and imgfullsize are not the same size" 
+						print "reffullsize", reffullsize['nx'], reffullsize['ny'], reffullsize['nz']
+						print "imgfullsize", imgfullsize['nx'], imgfullsize['ny'], imgfullsize['nz']
+						sys.exit()
+					
+					print "tweaking alignment!"	
+					bestT = c["xform.align3d"]
+					tweakrange = options.falign[1]['delta']+ 0.5
+					tweakdelta = options.falign[1]['delta']/2.0 -0.1
+					tweaksearch = options.shrinkfine
+					alitweak =imgfullsize.align('refine_3d_grid',reffullsize,{'xform.align3d':bestT,'range':tweakrange,'delta':tweakdelta,'search':tweaksearch},options.faligncmp[0],options.faligncmp[1])
+					
+					try: 					
+						besttweak.append({"score":alitweak["score"],"xform.align3d":alitweak["xform.align3d"],"coarse":c})
+						#print "\nThe appended score in TRY is", bestfinal[0]['score']					
+					except:
+						besttweak.append({"score":1.0e10,"xform.align3d":c["xform.align3d"],"coarse":c})
+						#print "\nThe appended score in EXCEPT is", bestfinal[0]['score']
+					
+					
+					
+				
 			#print "AFTER fine alignment, after SHRINK compensation, the transform is", bestfinal[0]['xform.align3d']		
 			#print "\n\n\n"
 		
 			#verbose printout of fine refinement
 			if options.verbose>1 :
-				for i,j in enumerate(bestfinal): 
-					pass
-					#print "fine %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
+				if not besttweak:
+					for i,j in enumerate(bestfinal): 
+						pass
+						#print "fine %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
+				elif besttweak:
+					for i,j in enumerate(besttweak): 
+						pass
+						#print "fine %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
 		else: 
 			bestfinal = bestcoarse
 			if options.verbose:
@@ -3575,6 +3627,10 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	from operator import itemgetter							#If you just sort 'bestfinal' it will be sorted based on the 'coarse' key in the dictionaries of the list
 															#because they come before the 'score' key of the dictionary (alphabetically)
 	bestfinal = sorted(bestfinal, key=itemgetter('score'))
+	
+	if besttweak:
+		bestfinal = sorted(besttweak, key=itemgetter('score'))
+	
 	
 	#print "Best final answer determined"
 	if options.verbose:
