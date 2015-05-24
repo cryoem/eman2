@@ -524,6 +524,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 		print_msg("Use Fourier variance        : %s\n"%(Fourvar))
 		#print_msg("Number of groups            : %d\n"%(Ng))
 		print_msg("CTF correction              : %s\n"%(CTF))
+		print_msg("Phase flip                  : %s\n"%(phase_flip))
 		print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
 		if auto_stop:
 			print_msg("Stop iteration with         : criterion\n")
@@ -595,6 +596,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 			alpha, sx, sy, mirror, scale = get_params2D(data[im])
 			all_ali_params.extend([alpha, sx, sy, mirror])
 		if( random_method == "SHC" ):  data[im].set_attr('previousmax',1.0e-23)
+		if phase_flip:  data[im] = filt_ctf(data[im], data[im].get_attr("ctf"), binary = True)
 
 	if CTF:
 		reduce_EMData_to_root(ctf_2_sum, myid, main_node)
