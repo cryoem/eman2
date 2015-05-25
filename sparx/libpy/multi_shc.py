@@ -3062,6 +3062,7 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 	mpi_barrier(mpi_comm)
 
 
+	"""
 	#  Set parameters
 
 	center3d_options.ir     = ali3d_options.ir
@@ -3087,7 +3088,6 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 	center3d_options.pwreference 
 	
 	#  Run alignment command, it returns shifts per CPU
-	"""
 	shifts = center_projections_3D(data, None, center3d_options, onx, shrinkage, \
 							MPI_COMM_WORLD, myid, main_node, log)
 	for im in xrange(nima):
