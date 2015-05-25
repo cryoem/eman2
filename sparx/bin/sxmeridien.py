@@ -1422,7 +1422,7 @@ def main():
 				nxshrink += nxshrink%2
 				shrink = float(nxshrink)/nnxo
 			#  Local discrete/gridding searches
-			if(angular_neighborhood != "-1" and not tracker["local"]):
+			elif(angular_neighborhood != "-1" and not tracker["local"]):
 				tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
 				paramsdict["initialfl"] = lowpass
 				paramsdict["falloff"]   = falloff
