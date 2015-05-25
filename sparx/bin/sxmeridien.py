@@ -1443,7 +1443,7 @@ def main():
 				shrink = float(nxshrink)/nnxo
 			else:
 				print(" Unknown combination of settings in improved resolution path",angular_neighborhood,tracker["local"])
-				exit()  #  This will crash the program, but the situation is unlikely to occure
+				exit()  #  This will crash the program, but the situation is unlikely to occur
 			tracker["nx"]                  = nxshrink
 			tracker["resolution"]          = currentres
 			tracker["lowpass"]             = lowpass
