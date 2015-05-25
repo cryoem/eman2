@@ -1386,20 +1386,21 @@ def main():
 				#falloff = round(falloff,4)
 				tracker["extension"] -= increment
 				lowpass = currentres + tracker["extension"]
-				#  Here to be consistent I would have to know what was shrink for this run
-				k = -1
-				for i in xrange(len(history)):
-					if(history[i]["directory"] == bestoutputdir[-6:]):
-						k = i
-						break
-				if(k == -1):
-					print("  something wrong with bestoutputdir")
-					exit()
-				shrink                   = history[i]["shrink"]
-				nxshrink                 = history[i]["nxshrink"]
-				paramsdict["initialfl"]  = history[i]["initialfl"]
-				paramsdict["falloff"]    = history[i]["falloff"]
-				tracker["initialfl"]     = history[i]["initialfl"]
+				if(mainiteration > 1):
+					#  Here to be consistent I would have to know what was shrink for this run
+					k = -1
+					for i in xrange(len(history)):
+						if(history[i]["directory"] == bestoutputdir[-6:]):
+							k = i
+							break
+					if(k == -1):
+						print("  something wrong with bestoutputdir")
+						exit()
+					shrink                   = history[i]["shrink"]
+					nxshrink                 = history[i]["nxshrink"]
+					paramsdict["initialfl"]  = history[i]["initialfl"]
+					paramsdict["falloff"]    = history[i]["falloff"]
+					tracker["initialfl"]     = history[i]["initialfl"]
 				tracker["resolution"]    = currentres
 				tracker["lowpass"]       = lowpass
 				tracker["falloff"]       = paramsdict["falloff"]
