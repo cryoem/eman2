@@ -1416,20 +1416,33 @@ def main():
 				print("  Resolution did not improve, swith to the next move", angular_neighborhood, tracker["local"],currentres,lowpass)
 			#  Exhaustive searches
 			if(angular_neighborhood == "-1" and not tracker["local"]):
+				if(myid == main_node):
+					print("  Switching to local searches with an  %s"options.an)
+				falloff = 0.2
+				lowpass = currentres
 				tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
 				paramsdict["initialfl"] = lowpass
 				#  For exhaustive searches do sharp cut-off to prevent volumes size to grow too large
-				falloff = 0.2
 				paramsdict["falloff"]   = falloff
-				lowpass = currentres + tracker["extension"]
+				#lowpass = currentres + tracker["extension"]
 				shrink = max(min(2*lowpass + paramsdict["falloff"], 1.0), minshrink)
 				nxshrink = min(int(nnxo*shrink + 0.5),nnxo)
 				nxshrink += nxshrink%2
 				shrink = float(nxshrink)/nnxo
+				tracker["local"] = True
+
+				angular_neighborhood = options.an
+				ali3d_options.pwreference = options.pwreference
+				tracker["PWadjustment"] = ali3d_options.pwreference
+				keepgoing = 1
+				if(myid == main_node):
+					print("  Switching to local searches with an %s"%angular_neighborhood)
+					if(tracker["PWadjustment"] != ""):
+						print("  Turning on power spectrum adjustment %s"%tracker["PWadjustment"])
 			#  Local discrete/gridding searches
 			elif(angular_neighborhood != "-1" and not tracker["local"]):
 				if(myid == main_node):
-					print("  Switching to local searches with an")
+					print("  Switching to local searches without an")
 				falloff = 0.2
 				tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
 				paramsdict["initialfl"] = lowpass
