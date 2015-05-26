@@ -1281,9 +1281,11 @@ def main():
 			stepforward = 0.02
 			increment   = 0.01
 
+		if(myid == main_node):
+			print(" New resolution %6.3f   Previous resolution %6.3f"%(currentres , tracker["resolution"]))
+
 		if( ( currentres > tracker["resolution"] ) or (eliminated_outliers and not tracker["eliminated-outliers"]) ):
 			if(myid == main_node):
-				print(" New resolution %6.2f   Previous resolution %6.2f"%(currentres , tracker["resolution"]))
 				if( currentres > tracker["resolution"]):  print("  Resolution improved, full steam ahead!")
 				else:  print("  While the resolution did not improve, we eliminated outliers so we follow the _resolution_improved_ path.")
 			if(currentres >= 0.45 ):
@@ -1410,6 +1412,8 @@ def main():
 
 		elif( currentres == tracker["resolution"] ):
 			# We need separate rules for each case
+			if(myid == main_node):
+				print("  Resolution did not improve, swith to next move")
 			#  Exhaustive searches
 			if(angular_neighborhood == "-1" and not tracker["local"]):
 				tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
@@ -1421,6 +1425,15 @@ def main():
 				nxshrink = min(int(nnxo*shrink + 0.5),nnxo)
 				nxshrink += nxshrink%2
 				shrink = float(nxshrink)/nnxo
+
+				angular_neighborhood = options.an
+				ali3d_options.pwreference = options.pwreference
+				tracker["PWadjustment"] = ali3d_options.pwreference
+				keepgoing = 1
+				if(myid == main_node):
+					print("  Switching to local searches with an %s"%angular_neighborhood)
+					if(tracker["PWadjustment"] != ""):
+						print("  Turning on power spectrum adjustment %s"%tracker["PWadjustment"])
 			#  Local discrete/gridding searches
 			elif(angular_neighborhood != "-1" and not tracker["local"]):
 				tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
