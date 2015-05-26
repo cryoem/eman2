@@ -1428,6 +1428,8 @@ def main():
 				shrink = float(nxshrink)/nnxo
 			#  Local discrete/gridding searches
 			elif(angular_neighborhood != "-1" and not tracker["local"]):
+				if(myid == main_node):
+					print("  Switching to local searches with an")
 				falloff = 0.2
 				tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
 				paramsdict["initialfl"] = lowpass
