@@ -1435,7 +1435,7 @@ def main():
 				nxshrink = min(int(nnxo*shrink + 0.5),nnxo)
 				nxshrink += nxshrink%2
 				shrink = float(nxshrink)/nnxo
-				tracker["local"]) = True
+				tracker["local"] = True
 
 				angular_neighborhood = options.an
 				ali3d_options.pwreference = options.pwreference
