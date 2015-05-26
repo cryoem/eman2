@@ -1413,7 +1413,7 @@ def main():
 		elif( currentres == tracker["resolution"] ):
 			# We need separate rules for each case
 			if(myid == main_node):
-				print("  Resolution did not improve, swith to next move")
+				print("  Resolution did not improve, swith to the next move", angular_neighborhood, )
 			#  Exhaustive searches
 			if(angular_neighborhood == "-1" and not tracker["local"]):
 				tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
@@ -1425,6 +1425,17 @@ def main():
 				nxshrink = min(int(nnxo*shrink + 0.5),nnxo)
 				nxshrink += nxshrink%2
 				shrink = float(nxshrink)/nnxo
+			#  Local discrete/gridding searches
+			elif(angular_neighborhood != "-1" and not tracker["local"]):
+				tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
+				paramsdict["initialfl"] = lowpass
+				paramsdict["falloff"]   = 0.2#falloff
+				lowpass = currentres# + tracker["extension"]
+				shrink = max(min(2*lowpass + paramsdict["falloff"], 1.0), minshrink)
+				nxshrink = min(int(nnxo*shrink + 0.5),nnxo)
+				nxshrink += nxshrink%2
+				shrink = float(nxshrink)/nnxo
+				tracker["local"]) = True
 
 				angular_neighborhood = options.an
 				ali3d_options.pwreference = options.pwreference
@@ -1434,16 +1445,6 @@ def main():
 					print("  Switching to local searches with an %s"%angular_neighborhood)
 					if(tracker["PWadjustment"] != ""):
 						print("  Turning on power spectrum adjustment %s"%tracker["PWadjustment"])
-			#  Local discrete/gridding searches
-			elif(angular_neighborhood != "-1" and not tracker["local"]):
-				tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
-				paramsdict["initialfl"] = lowpass
-				paramsdict["falloff"]   = falloff
-				lowpass = currentres + tracker["extension"]
-				shrink = max(min(2*lowpass + paramsdict["falloff"], 1.0), minshrink)
-				nxshrink = min(int(nnxo*shrink + 0.5),nnxo)
-				nxshrink += nxshrink%2
-				shrink = float(nxshrink)/nnxo
 			#  Local/gridding  searches, move only as much as the resolution increase allows
 			elif(tracker["local"]):
 				tracker["extension"] =    0.0  # lowpass cannot exceed 0.45
