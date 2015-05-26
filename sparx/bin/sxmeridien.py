@@ -1284,7 +1284,7 @@ def main():
 		if(myid == main_node):
 			print(" New resolution %6.3f   Previous resolution %6.3f"%(currentres , tracker["resolution"]))
 
-		if( ( currentres > tracker["resolution"] ) or (eliminated_outliers and not tracker["eliminated-outliers"]) ):
+		if( ( currentres > tracker["resolution"] ) or (eliminated_outliers and not tracker["eliminated-outliers"]) or mainiteration == 1):
 			if(myid == main_node):
 				if( currentres > tracker["resolution"]):  print("  Resolution improved, full steam ahead!")
 				else:  print("  While the resolution did not improve, we eliminated outliers so we follow the _resolution_improved_ path.")
