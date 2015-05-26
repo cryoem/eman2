@@ -55,10 +55,10 @@ def main():
 	parser.add_option("--CTF",      action="store_true", default=False,   help="use CTF correction during alignment")
 	parser.add_option("--snr",      type="float",  default=1.0,           help="signal-to-noise ratio of the data (set to 1.0)")
 	parser.add_option("--Fourvar",  action="store_true", default=False,   help="compute Fourier variance")
-	parser.add_option("--Ng",       type="int",          default=-1,      help="number of groups in the new CTF filteration")
+	#parser.add_option("--Ng",       type="int",          default=-1,      help="number of groups in the new CTF filteration")
 	parser.add_option("--function", type="string",       default="ref_ali2d",  help="name of the reference preparation function (default ref_ali2d)")
-	parser.add_option("--CUDA",     action="store_true", default=False,   help="use CUDA program")
-	parser.add_option("--GPUID",    type="string",    default="",         help="ID of GPUs available")
+	#parser.add_option("--CUDA",     action="store_true", default=False,   help="use CUDA program")
+	#parser.add_option("--GPUID",    type="string",    default="",         help="ID of GPUs available")
 	parser.add_option("--MPI",      action="store_true", default=False,   help="use MPI version ")
 	parser.add_option("--rotational", action="store_true", default=False, help="rotational alignment with optional limited in-plane angle, the parameters are: ir, ou, rs, psi_max, mode(F or H), maxit, orient, randomize")
 	parser.add_option("--psi_max",  type="float",        default=180.0,   help="psi_max")
@@ -84,22 +84,52 @@ def main():
 		if len(args) == 2: mask = None
 		else:              mask = args[2]
 		
-		from applications import ali2d
 
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
 		
-		if options.MPI:
-			from mpi import mpi_init
+		global_def.BATCH = True
+		if  options.MPI:
+			from applications import ali2d_base
+			from mpi import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 			sys.argv = mpi_init(len(sys.argv),sys.argv)
 
-		global_def.BATCH = True
-		ali2d(args[0], outdir, mask, options.ir, options.ou, options.rs, options.xr, options.yr, \
-			options.ts, options.nomirror, options.dst, \
-			options.center, options.maxit, options.CTF, options.snr, options.Fourvar, \
-			options.Ng, options.function, options.CUDA, options.GPUID, options.MPI, \
-			options.template, random_method = options.random_method)
+			number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
+			myid = mpi_comm_rank(MPI_COMM_WORLD)
+			main_node = 0
+
+			if(myid == main_node):
+				import subprocess
+				from logger import Logger, BaseLogger_Files
+				#  Create output directory
+				log = Logger(BaseLogger_Files())
+				log.prefix = os.path.join(outdir)
+				cmd = "mkdir "+log.prefix
+				outcome = subprocess.call(cmd, shell=True)
+				log.prefix += "/"
+			else:
+				outcome = 0
+				log = None
+			from utilities       import bcast_number_to_all
+			outcome  = bcast_number_to_all(outcome, source_node = main_node)
+			if(outcome == 1):
+				 ERROR('Output directory exists, please change the name and restart the program', "ali2d_MPI", 1, myid)
+
+			ali2d_base(args[0], outdir, mask, options.ir, options.ou, options.rs, options.xr, options.yr, \
+				options.ts, options.nomirror, options.dst, \
+				options.center, options.maxit, options.CTF, options.snr, options.Fourvar, \
+				options.function, random_method = options.random_method, log = log, \
+				number_of_proc = number_of_proc, myid = myid, main_node = main_node, mpi_comm = MPI_COMM_WORLD,\
+				write_headers = True)
+		else:
+			from applications import ali2d
+			ali2d(args[0], outdir, mask, options.ir, options.ou, options.rs, options.xr, options.yr, \
+				options.ts, options.nomirror, options.dst, \
+				options.center, options.maxit, options.CTF, options.snr, options.Fourvar, \
+				options.Ng, options.function, options.CUDA, options.GPUID, options.MPI, \
+				options.template, random_method = options.random_method)
+
 		global_def.BATCH = False
 
 		if options.MPI:

@@ -1426,7 +1426,7 @@ def main():
 				paramsdict["falloff"]   = falloff
 				#lowpass = currentres + tracker["extension"]
 				shrink = max(min(2*lowpass + paramsdict["falloff"], 1.0), minshrink)
-				nxshrink = mas( min(int(nnxo*shrink + 0.5),nnxo), nxshrink )  # shrink cannot decrease
+				nxshrink = max( min(int(nnxo*shrink + 0.5),nnxo), nxshrink )  # shrink cannot decrease
 				nxshrink += nxshrink%2
 				shrink = float(nxshrink)/nnxo
 				tracker["local"] = True

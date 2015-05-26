@@ -137,6 +137,8 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 		sy_sum += syn
 
 	return sx_sum, sy_sum, nope
+
+
 '''
 #  commented out as it does not seem to be used anywhere PAP 03/02/2015
 def ali2d_single_iter_fast(data, dimage, params, numr, wr, cs, tavg, cnx, cny, \
