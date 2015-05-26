@@ -1413,13 +1413,14 @@ def main():
 		elif( currentres == tracker["resolution"] ):
 			# We need separate rules for each case
 			if(myid == main_node):
-				print("  Resolution did not improve, swith to the next move", angular_neighborhood, )
+				print("  Resolution did not improve, swith to the next move", angular_neighborhood, tracker["local"],currentres,lowpass)
 			#  Exhaustive searches
 			if(angular_neighborhood == "-1" and not tracker["local"]):
 				tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
 				paramsdict["initialfl"] = lowpass
 				#  For exhaustive searches do sharp cut-off to prevent volumes size to grow too large
-				paramsdict["falloff"]   = 0.2
+				falloff = 0.2
+				paramsdict["falloff"]   = falloff
 				lowpass = currentres + tracker["extension"]
 				shrink = max(min(2*lowpass + paramsdict["falloff"], 1.0), minshrink)
 				nxshrink = min(int(nnxo*shrink + 0.5),nnxo)
@@ -1427,9 +1428,10 @@ def main():
 				shrink = float(nxshrink)/nnxo
 			#  Local discrete/gridding searches
 			elif(angular_neighborhood != "-1" and not tracker["local"]):
+				falloff = 0.2
 				tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
 				paramsdict["initialfl"] = lowpass
-				paramsdict["falloff"]   = 0.2#falloff
+				paramsdict["falloff"]   = falloff
 				lowpass = currentres# + tracker["extension"]
 				shrink = max(min(2*lowpass + paramsdict["falloff"], 1.0), minshrink)
 				nxshrink = min(int(nnxo*shrink + 0.5),nnxo)
