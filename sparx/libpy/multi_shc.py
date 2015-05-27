@@ -2533,11 +2533,15 @@ def ali3d_multishc_soft(stack, ref_vol, ali3d_options, mpi_comm = None, log = No
 			if file_type(stack) == "bdb":
 				from EMAN2db import db_open_dict
 				dummy = db_open_dict(stack, True)
-			active = EMUtil.get_all_attributes(stack, 'active')
-			list_of_particles = []
-			for im in xrange(len(active)):
-				if active[im]:  list_of_particles.append(im)
-			del active
+			# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+			# active = EMUtil.get_all_attributes(stack, 'active')
+			# list_of_particles = []
+			# for im in xrange(len(active)):
+			# 	if active[im]:  list_of_particles.append(im)
+			# del active
+			nima = EMUtil.get_image_count(stack)
+			list_of_particles = range(nima)
+			
 			total_nima = len(list_of_particles)
 		else:
 			list_of_particles = None

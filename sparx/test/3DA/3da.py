@@ -114,7 +114,9 @@ for i in xrange(nangles):
 	#ps.set_attr_dict({'phi':angles[i][0], 'theta':angles[i][1], 'psi':angles[i][2], 'sx':0., 'sy':0., 'mirror':0.})
 	ps.set_attr_dict({'phi':angles[i][0], 'theta':angles[i][1], 'psi':angles[i][2]+ast, 'alpha':0, 'sx':sxt, 'sy':syt, 'mirror':0.})
 	ps.set_attr_dict({'defocus':0.0, 'amp_contrast':0.1, 'voltage':200, 'Cs':2.0, 'pixel':2.2})
-	ps.set_attr_dict({'active':1, 'ctf_applied':0})
+	# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+	# ps.set_attr_dict({'active':1, 'ctf_applied':0})
+	ps.set_attr_dict({'ctf_applied':0})
 	ps.write_image(stack2, i)
 
 from sys import exit

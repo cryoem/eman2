@@ -1060,36 +1060,37 @@ def aves_w(stack, mode="a"):
 	ctf_2_sum = [0]*len(ctf_1)
 	for i in xrange(nima):
 		e.read_image(stack,i)
-		active = e.get_attr('active')
-		if(active):
-			if(mode == "a"): # for alignment 
-				alpha, sx, sy, mirror, scale = get_params2D(e)
-	 			out = rot_shift2D(e, alpha, sx, sy, mirror)
-			else:
-				out=e.copy()
-			ctf_mul = e.get_attr('ctf_applied')
-			ctf_1   = e.get_attr('ctf_1')
-			ctf_2   = e.get_attr('ctf_2')
-			TE      = e.get_attr('TE')
-			snr = e.get_attr('SNR') # SNR can be either float or list
-			import types
-			if(type(snr) is types.ListType):
-				for k in xrange(len(snr)):
-					if(ctf_mul): ctf_1[k]  =snr[k]*ctf_2[k]*TE[k]*TE[k]*TE[k]
-					else:        ctf_1[k] *= snr[k]*TE[k]
-				Util.add_img(twie, filt_table(out, ctf_1))
-				for j in xrange(len(snr)):
-					if(ctf_mul==1): ctf_2_sum[j]+=ctf_2[j]*snr[j]*ctf_2[j]*TE[j]**4
-					else:	       	ctf_2_sum[j]+=ctf_2[j]*snr[j]*TE[j]**2
-			else:
-				for k in xrange(len(TE)):
-					if(ctf_mul==1): ctf_1[k]=snr*ctf_2[k]*TE[k]*TE[k]*TE[k]
-					else: ctf_1[k]*=snr*TE[k]
-				wie = filt_table(out, ctf_1)*snr
-				Util.add_img(twie, wie)
-				for j in xrange(len(TE)):
-					if(ctf_mul==1): ctf_2_sum[j]+=ctf_2[j]*snr*ctf_2[j]*TE[j]**4
-					else: ctf_2_sum[j]+=ctf_2[j]*snr*TE[j]**2
+		# # horatio active_refactoring ﻿Jy51i1EwmLD4tWZ9_00000_1
+		# active = e.get_attr('active')
+		# if(active):
+		if(mode == "a"): # for alignment 
+			alpha, sx, sy, mirror, scale = get_params2D(e)
+			out = rot_shift2D(e, alpha, sx, sy, mirror)
+		else:
+			out=e.copy()
+		ctf_mul = e.get_attr('ctf_applied')
+		ctf_1   = e.get_attr('ctf_1')
+		ctf_2   = e.get_attr('ctf_2')
+		TE      = e.get_attr('TE')
+		snr = e.get_attr('SNR') # SNR can be either float or list
+		import types
+		if(type(snr) is types.ListType):
+			for k in xrange(len(snr)):
+				if(ctf_mul): ctf_1[k]  =snr[k]*ctf_2[k]*TE[k]*TE[k]*TE[k]
+				else:        ctf_1[k] *= snr[k]*TE[k]
+			Util.add_img(twie, filt_table(out, ctf_1))
+			for j in xrange(len(snr)):
+				if(ctf_mul==1): ctf_2_sum[j]+=ctf_2[j]*snr[j]*ctf_2[j]*TE[j]**4
+				else:	       	ctf_2_sum[j]+=ctf_2[j]*snr[j]*TE[j]**2
+		else:
+			for k in xrange(len(TE)):
+				if(ctf_mul==1): ctf_1[k]=snr*ctf_2[k]*TE[k]*TE[k]*TE[k]
+				else: ctf_1[k]*=snr*TE[k]
+			wie = filt_table(out, ctf_1)*snr
+			Util.add_img(twie, wie)
+			for j in xrange(len(TE)):
+				if(ctf_mul==1): ctf_2_sum[j]+=ctf_2[j]*snr*ctf_2[j]*TE[j]**4
+				else: ctf_2_sum[j]+=ctf_2[j]*snr*TE[j]**2
 
 	for i in xrange(len(TE)):  ctf_2_sum[i] = 1./(ctf_2_sum[i]+1.)
 	return filt_table(twie, ctf_2_sum)
@@ -2121,39 +2122,40 @@ def k_means_locasg2glbasg(ASG, LUT, N):
 
 	return GASG
 
-# k-means open and prepare images, only unstable objects (active = 1)
-def k_means_list_active(stack):
-	from utilities     import file_type
-	from EMAN2db import db_open_dict
-	
-	N    = EMUtil.get_image_count(stack)
-
-	image = EMData()
-	image.read_image(stack, 0, True)
-	flagactive = True
-	try:	active = image.get_attr('active')
-	except: flagactive = False
-	del image
-
-	if flagactive:
-		LUT  = []
-		ext  = file_type(stack)
-		if ext == 'bdb':
-			DB = db_open_dict(stack)
-			for n in xrange(N):
-				if DB.get_attr(n, 'active'): LUT.append(n)
-			DB.close()
-		else:
-			im = EMData()
-			for n in xrange(N):
-				im.read_image(stack, n, True)
-				if im.get_attr('active'): LUT.append(n)
-
-		N = len(LUT)
-	else:
-		LUT = range(N)
-
-	return LUT, N
+# # # horatio active_refactoring ﻿Jy51i1EwmLD4tWZ9_00000_1
+# # k-means open and prepare images, only unstable objects (active = 1)
+# def k_means_list_active(stack):
+# 	from utilities     import file_type
+# 	from EMAN2db import db_open_dict
+# 	
+# 	N    = EMUtil.get_image_count(stack)
+# 
+# 	image = EMData()
+# 	image.read_image(stack, 0, True)
+# 	flagactive = True
+# 	try:	active = image.get_attr('active')
+# 	except: flagactive = False
+# 	del image
+# 
+# 	if flagactive:
+# 		LUT  = []
+# 		ext  = file_type(stack)
+# 		if ext == 'bdb':
+# 			DB = db_open_dict(stack)
+# 			for n in xrange(N):
+# 				if DB.get_attr(n, 'active'): LUT.append(n)
+# 			DB.close()
+# 		else:
+# 			im = EMData()
+# 			for n in xrange(N):
+# 				im.read_image(stack, n, True)
+# 				if im.get_attr('active'): LUT.append(n)
+# 
+# 		N = len(LUT)
+# 	else:
+# 		LUT = range(N)
+# 
+# 	return LUT, N
 
 # k-means, prepare to open images later
 def k_means_init_open_im(stack, maskname):
@@ -2183,36 +2185,40 @@ def k_means_init_open_im(stack, maskname):
 	if TXT:
 		Ntot = len(open(stack, 'r').readlines())
 	else:   Ntot = EMUtil.get_image_count(stack)
-	
-	# check if the flag active is used, in the case where k-means will run for the stability
-	if TXT:
-		flagactive = False
-	else:
-		image = EMData()
-		image.read_image(stack, 0, True)
-		flagactive = True
-		try:	active = image.get_attr('active')
-		except: flagactive = False
-		del image
-	
-	# if flag active used, prepare the list of images
-	if flagactive:
-		active = EMUtil.get_all_attributes(stack, "active")
-		lim  = []
-		for n in xrange(len(active)):
-			if active[n]: lim.append(n)
-		"""
-		from utilities import write_text_file
-		from sys import exit
-		write_text_file(active,'active')
-		write_text_file(lim,'lim')
-		exit()
-		"""
-		del active
-		N = len(lim)
-	else:
-		lim = range(Ntot)
-		N = Ntot
+
+	# horatio active_refactoring ﻿Jy51i1EwmLD4tWZ9_00000_1	
+	# # check if the flag active is used, in the case where k-means will run for the stability
+	# if TXT:
+	# 	flagactive = False
+	# else:
+	# 	image = EMData()
+	# 	image.read_image(stack, 0, True)
+	# 	flagactive = True
+	# 	try:	active = image.get_attr('active')
+	# 	except: flagactive = False
+	# 	del image
+	# 
+	# # if flag active used, prepare the list of images
+	# if flagactive:
+	# 	active = EMUtil.get_all_attributes(stack, "active")
+	# 	lim  = []
+	# 	for n in xrange(len(active)):
+	# 		if active[n]: lim.append(n)
+	# 	"""
+	# 	from utilities import write_text_file
+	# 	from sys import exit
+	# 	write_text_file(active,'active')
+	# 	write_text_file(lim,'lim')
+	# 	exit()
+	# 	"""
+	# 	del active
+	# 	N = len(lim)
+	# else:
+	# 	lim = range(Ntot)
+	# 	N = Ntot
+
+	lim = range(Ntot)
+	N = Ntot
 
 	return lim, mask, N, m, Ntot
 
@@ -5370,35 +5376,40 @@ def k_means_cuda_init_open_im(stack, maskname):
 	m  = im.get_xsize()
 	del im
 
-	# check if the flag active is used, in the case where k-means will run for the stability
-	if TXT:
-		flagactive = False
-	else:
-		image = EMData()
-		image.read_image(stack, 0, True)
-		flagactive = True
-		try:	active = image.get_attr('active')
-		except: flagactive = False
-		del image
-	
-	# if flag active used, prepare the list of images
-	if flagactive:
-		lim  = []
-		ext  = file_type(stack)
-		if ext == 'bdb':
-			DB = db_open_dict(stack)
-			for n in xrange(Ntot):
-				if DB.get_attr(n, 'active'): lim.append(n)
-			DB.close()
-		else:
-			im = EMData.read_images(stack, range(Ntot), True)
-			for n in xrange(Ntot):
-				if im[n].get_attr('active'): lim.append(n)
-			del im
-		N = len(lim)
-	else:
-		lim = range(Ntot)
-		N = Ntot
+	# horatio active_refactoring ﻿Jy51i1EwmLD4tWZ9_00000_1
+	# # check if the flag active is used, in the case where k-means will run for the stability
+	# if TXT:
+	# 	flagactive = False
+	# else:
+	# 	image = EMData()
+	# 	image.read_image(stack, 0, True)
+	# 	flagactive = True
+	# 	try:	active = image.get_attr('active')
+	# 	except: flagactive = False
+	# 	del image
+	# 
+	# 
+	# # if flag active used, prepare the list of images
+	# if flagactive:
+	# 	lim  = []
+	# 	ext  = file_type(stack)
+	# 	if ext == 'bdb':
+	# 		DB = db_open_dict(stack)
+	# 		for n in xrange(Ntot):
+	# 			if DB.get_attr(n, 'active'): lim.append(n)
+	# 		DB.close()
+	# 	else:
+	# 		im = EMData.read_images(stack, range(Ntot), True)
+	# 		for n in xrange(Ntot):
+	# 			if im[n].get_attr('active'): lim.append(n)
+	# 		del im
+	# 	N = len(lim)
+	# else:
+	# 	lim = range(Ntot)
+	# 	N = Ntot
+
+	lim = range(Ntot)
+	N = Ntot
 
 	return lim, mask, N, m, Ntot
 
@@ -6443,7 +6454,8 @@ def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th
 
 		# tag informations to the header
 		logging.info('... Update info to the header')
-		k_means_stab_update_tag(stack, STB_PART, id_rejected)
+		# horatio active_refactoring ﻿Jy51i1EwmLD4tWZ9_00000_1
+		# k_means_stab_update_tag(stack, STB_PART, id_rejected)
 	
 	logging.info('... Done')
 
@@ -6597,7 +6609,8 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 		if not TXT:
 		        # tag informations to the header
 			logging.info('... Update info to the header')
-			k_means_stab_update_tag(stack, STB_PART, id_rejected)
+			# horatio active_refactoring ﻿Jy51i1EwmLD4tWZ9_00000_1				
+			# k_means_stab_update_tag(stack, STB_PART, id_rejected)
 
 		logging.info('... Done')
 
@@ -7012,36 +7025,37 @@ def k_means_asg_locasg2glbpart(ASG, LUT):
 
 	return PART
 
-# Update information to the header of the stack file
-def k_means_stab_update_tag(stack, STB_PART, lrej):
-	from utilities import file_type, write_header
-	from EMAN2db import db_open_dict
-
-	N  = EMUtil.get_image_count(stack)
-	# prepare for active images
-	list_stb = []
-	for part in STB_PART: list_stb.extend(part)
-
-	ext = file_type(stack)
-	if ext == 'bdb':
-		DB = db_open_dict(stack)
-		# these are stable
-		for ID in list_stb: DB.set_attr(ID, 'active', 0)
-		# these are still unstable
-		for ID in lrej: DB.set_attr(ID, 'active', 1)
-		DB.close()
-	else:
-		im = EMData()
-		# these are stable
-		for ID in list_stb:
-			im.read_image(stack, ID, True)
-			im.set_attr('active', 0)
-			write_header(stack, im, ID)
-		# these are still unstable
-		for ID in lrej:
-			im.read_image(stack, ID, True)
-			im.set_attr('active', 1)
-			write_header(stack, im, ID)
+# horatio active_refactoring ﻿Jy51i1EwmLD4tWZ9_00000_1
+# # Update information to the header of the stack file
+# def k_means_stab_update_tag(stack, STB_PART, lrej):
+# 	from utilities import file_type, write_header
+# 	from EMAN2db import db_open_dict
+# 
+# 	N  = EMUtil.get_image_count(stack)
+# 	# prepare for active images
+# 	list_stb = []
+# 	for part in STB_PART: list_stb.extend(part)
+# 
+# 	ext = file_type(stack)
+# 	if ext == 'bdb':
+# 		DB = db_open_dict(stack)
+# 		# these are stable
+# 		for ID in list_stb: DB.set_attr(ID, 'active', 0)
+# 		# these are still unstable
+# 		for ID in lrej: DB.set_attr(ID, 'active', 1)
+# 		DB.close()
+# 	else:
+# 		im = EMData()
+# 		# these are stable
+# 		for ID in list_stb:
+# 			im.read_image(stack, ID, True)
+# 			im.set_attr('active', 0)
+# 			write_header(stack, im, ID)
+# 		# these are still unstable
+# 		for ID in lrej:
+# 			im.read_image(stack, ID, True)
+# 			im.set_attr('active', 1)
+# 			write_header(stack, im, ID)
 
 # Gather all stable class averages in the same stack
 def k_means_stab_gather(nb_run, maskname, outdir):
@@ -7088,7 +7102,8 @@ def k_means_extract_class_ali(stack_name, ave_name, dir):
 			alpha, sx, sy, mir, scale = get_params2D(im, 'xform.align2d')
 			im = rot_shift2D(im, alpha, sx, sy, mir, scale)
 			set_params2D(im, [0.0, 0.0, 0.0, 0, 1.0], 'xform.align2d')
-			im.set_attr('active', 1)
+			# horatio active_refactoring ﻿Jy51i1EwmLD4tWZ9_00000_1
+			# im.set_attr('active', 1)
 			im.write_image(trg, i)
 	
 # compute pixel error for a class given	

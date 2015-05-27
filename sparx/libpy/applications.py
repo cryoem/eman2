@@ -84,13 +84,17 @@ def ali2d(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1"
 	if file_type(stack) == "bdb":
 		from EMAN2db import db_open_dict
 		dummy = db_open_dict(stack, True)
-	active = EMUtil.get_all_attributes(stack, 'active')
-	list_of_particles = []
-	for im in xrange(len(active)):
-		if active[im]:  list_of_particles.append(im)
-	del active
-	nima = len(list_of_particles)
-	
+	# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+	# active = EMUtil.get_all_attributes(stack, 'active')
+	# list_of_particles = []
+	# for im in xrange(len(active)):
+	# 	if active[im]:  list_of_particles.append(im)
+	# del active
+	# nima = len(list_of_particles)
+
+	nima = EMUtil.get_image_count(stack)
+	list_of_particles = range(nima)
+		
 	data = EMData.read_images(stack, list_of_particles)
 	for im in xrange(nima):
 		data[im].set_attr('ID', list_of_particles[im])
@@ -161,7 +165,9 @@ def ali2d_data(data, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 
 	import user_functions
 	user_func = user_functions.factory[user_func_name]
-	print_msg("Number of active images     : %s\n"%(nima))
+	# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+	# print_msg("Number of active images     : %s\n"%(nima))
+	print_msg("Number of images            : %s\n"%(nima))
 	print_msg("Output directory            : %s\n"%(outdir))
 	print_msg("Inner radius                : %i\n"%(first_ring))
 	print_msg("Outer radius                : %i\n"%(last_ring))
@@ -453,15 +459,20 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 		auto_stop = False
 
 	if myid == main_node:
-       		if ftp == "bdb":
+		if ftp == "bdb":
 			from EMAN2db import db_open_dict
 			dummy = db_open_dict(stack, True)
-		active = EMUtil.get_all_attributes(stack, 'active')
-		list_of_particles = []
-		for im in xrange(len(active)):
-			if active[im]:  list_of_particles.append(im)
-		del active
-		nima = len(list_of_particles)
+		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+		# active = EMUtil.get_all_attributes(stack, 'active')
+		# list_of_particles = []
+		# for im in xrange(len(active)):
+		# 	if active[im]:  list_of_particles.append(im)
+		# del active
+		# nima = len(list_of_particles)
+		
+		nima = EMUtil.get_image_count(stack)
+		list_of_particles = range(nima)
+	
 	else:
 		nima = 0
 	nima = bcast_number_to_all(nima, source_node = main_node)
@@ -510,7 +521,9 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 	
 	if myid == main_node:
 		print_msg("Input stack                 : %s\n"%(stack))
-		print_msg("Number of active images     : %d\n"%(nima))
+		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+		# print_msg("Number of active images     : %d\n"%(nima))
+		print_msg("Number of images            : %d\n"%(nima))
 		print_msg("Output directory            : %s\n"%(outdir))
 		print_msg("Inner radius                : %i\n"%(first_ring))
 		print_msg("Outer radius                : %i\n"%(last_ring))
@@ -4157,14 +4170,18 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	if debug:  outf = file(os.path.join(outdir, "progress"), "w")
 	else:      outf = None
 
-	active = EMUtil.get_all_attributes(stack, 'active')
-	list_of_particles = []
-	for im in xrange(len(active)):
-		if(active[im]):  list_of_particles.append(im)
-	del active
+	# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+	# active = EMUtil.get_all_attributes(stack, 'active')
+	# list_of_particles = []
+	# for im in xrange(len(active)):
+	# 	if(active[im]):  list_of_particles.append(im)
+	# del active
+	nima = EMUtil.get_image_count(stack)
+	list_of_particles = range(nima)
+		
 	data = EMData.read_images(stack, list_of_particles)
-        for im in xrange(len(data)):
-                data[im].set_attr('ID', list_of_particles[im])
+	for im in xrange(len(data)):
+		data[im].set_attr('ID', list_of_particles[im])
 		if CTF:
 			ctf_params = data[im].get_attr("ctf")
 			st = Util.infomask(data[im], mask2D, False)
@@ -4361,15 +4378,20 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	else:	 from reconstruction import rec3D_MPI_noCTF
 
 	if myid == main_node:
-       		if file_type(stack) == "bdb":
+		if file_type(stack) == "bdb":
 			from EMAN2db import db_open_dict
 			dummy = db_open_dict(stack, True)
-		active = EMUtil.get_all_attributes(stack, 'active')
-		list_of_particles = []
-		for im in xrange(len(active)):
-			if active[im]:  list_of_particles.append(im)
-		del active
-		nima = len(list_of_particles)
+		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+		# active = EMUtil.get_all_attributes(stack, 'active')
+		# list_of_particles = []
+		# for im in xrange(len(active)):
+		# 	if active[im]:  list_of_particles.append(im)
+		# del active
+		# nima = len(list_of_particles)
+			
+		nima = EMUtil.get_image_count(stack)
+		list_of_particles = range(nima)
+		
 	else:
 		nima = 0
 	total_nima = bcast_number_to_all(nima, source_node = main_node)
@@ -4675,15 +4697,20 @@ def ali3dlocal_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs 
 	else:	 from reconstruction import rec3D_MPI_noCTF
 
 	if myid == main_node:
-       		if file_type(stack) == "bdb":
+		if file_type(stack) == "bdb":
 			from EMAN2db import db_open_dict
 			dummy = db_open_dict(stack, True)
-		active = EMUtil.get_all_attributes(stack, 'active')
-		list_of_particles = []
-		for im in xrange(len(active)):
-			if active[im]:  list_of_particles.append(im)
-		del active
-		nima = len(list_of_particles)
+		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+		# active = EMUtil.get_all_attributes(stack, 'active')
+		# list_of_particles = []
+		# for im in xrange(len(active)):
+		# 	if active[im]:  list_of_particles.append(im)
+		# del active
+		# nima = len(list_of_particles)
+
+		nima = EMUtil.get_image_count(stack)
+		list_of_particles = range(nima)
+		
 	else:
 		nima = 0
 	total_nima = bcast_number_to_all(nima, source_node = main_node)
@@ -5026,12 +5053,17 @@ def ali3dpsi_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 		if file_type(stack) == "bdb":
 			from EMAN2db import db_open_dict
 			dummy = db_open_dict(stack, True)
-		active = EMUtil.get_all_attributes(stack, 'active')
-		list_of_particles = []
-		for im in xrange(len(active)):
-			if active[im]:  list_of_particles.append(im)
-		del active
-		nima = len(list_of_particles)
+		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+		# active = EMUtil.get_all_attributes(stack, 'active')
+		# list_of_particles = []
+		# for im in xrange(len(active)):
+		# 	if active[im]:  list_of_particles.append(im)
+		# del active
+		# nima = len(list_of_particles)
+		
+		nima = EMUtil.get_image_count(stack)
+		list_of_particles = range(nima)
+	
 	else:
 		nima = 0
 	total_nima = bcast_number_to_all(nima, source_node = main_node)
@@ -5700,12 +5732,17 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 		if file_type(stack) == "bdb":
 			from EMAN2db import db_open_dict
 			dummy = db_open_dict(stack, True)
-		active = EMUtil.get_all_attributes(stack, 'active')
-		list_of_particles = []
-		for im in xrange(len(active)):
-			if active[im]:  list_of_particles.append(im)
-		del active
-		nima = len(list_of_particles)
+		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+		# active = EMUtil.get_all_attributes(stack, 'active')
+		# list_of_particles = []
+		# for im in xrange(len(active)):
+		# 	if active[im]:  list_of_particles.append(im)
+		# del active
+		# nima = len(list_of_particles)
+		
+		nima = EMUtil.get_image_count(stack)
+		list_of_particles = range(nima)
+	
 	else:
 		nima = 0
 	total_nima = bcast_number_to_all(nima, source_node = main_node)
@@ -6065,11 +6102,16 @@ def mref_ali3d(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1, ir=
 	if debug:  finfo = file(os.path.join(outdir, "progress"), "w")
 	else:      finfo = None
 
-	active = EMUtil.get_all_attributes(stack, 'active')
-	list_of_particles = []
-	for im in xrange(len(active)):
-		if(active[im]):  list_of_particles.append(im)
-	del active
+	# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+	# active = EMUtil.get_all_attributes(stack, 'active')
+	# list_of_particles = []
+	# for im in xrange(len(active)):
+	# 	if(active[im]):  list_of_particles.append(im)
+	# del active
+	
+	nima = EMUtil.get_image_count(stack)
+	list_of_particles = range(nima)
+	
 	data = EMData.read_images(stack, list_of_particles)
 	nima = len(data)
 
@@ -6320,12 +6362,17 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 	if(first_ring > 1):  mask2D -= model_circle(first_ring, nx, nx)
 
 	if(myid == main_node):
-		active = EMUtil.get_all_attributes(stack, 'active')
-		list_of_particles = []
-		for im in xrange(len(active)):
-			if(active[im]):  list_of_particles.append(im)
-		del active
-		total_nima = len(list_of_particles)
+		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+		# active = EMUtil.get_all_attributes(stack, 'active')
+		# list_of_particles = []
+		# for im in xrange(len(active)):
+		# 	if(active[im]):  list_of_particles.append(im)
+		# del active
+		# total_nima = len(list_of_particles)
+	
+		nima = EMUtil.get_image_count(stack)
+		list_of_particles = range(nima)
+	
 	else:
 		total_nima =0
 
@@ -7360,15 +7407,20 @@ def local_ali3dm_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25,
 		print_msg("Shift search range          : %f\n"%(ts))
 
 	if(myid == main_node):
-       		if(file_type(stack) == "bdb"):
+		if(file_type(stack) == "bdb"):
 			from EMAN2db import db_open_dict
 			dummy = db_open_dict(stack, True)
-		active = EMUtil.get_all_attributes(stack, "active")
-		list_of_particles = []
-		for im in xrange( len(active) ):
-			if( active[im] ) : list_of_particles.append(im)
-		del active
-		nima = len( list_of_particles )
+		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+		# active = EMUtil.get_all_attributes(stack, "active")
+		# list_of_particles = []
+		# for im in xrange( len(active) ):
+		# 	if( active[im] ) : list_of_particles.append(im)
+		# del active
+		# nima = len( list_of_particles )
+		
+		nima = EMUtil.get_image_count(stack)
+		list_of_particles = range(nima)
+	
 		start_time = time()
 	else:
 		nima = 0
@@ -7762,15 +7814,20 @@ def local_ali3dm_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, 
 		print_msg("User function               : %s\n"%(user_func_name))
 
 	if(myid == main_node):
-       		if(file_type(stack) == "bdb"):
+		if(file_type(stack) == "bdb"):
 			from EMAN2db import db_open_dict
 			dummy = db_open_dict(stack, True)
-		active = EMUtil.get_all_attributes(stack, "active")
-		list_of_particles = []
-		for im in xrange( len(active) ):
-			if( active[im] ) : list_of_particles.append(im)
-		del active
-		nima = len( list_of_particles )
+		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+		# active = EMUtil.get_all_attributes(stack, "active")
+		# list_of_particles = []
+		# for im in xrange( len(active) ):
+		# 	if( active[im] ) : list_of_particles.append(im)
+		# del active
+		# nima = len( list_of_particles )
+		
+		nima = EMUtil.get_image_count(stack)
+		list_of_particles = range(nima)
+	
 		start_time = time()
 	else:
 		nima = 0
@@ -8140,11 +8197,16 @@ def local_ali3d(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, ce
 	if debug:  outf = file(os.path.join(outdir, "progress"), "w")
 	else:      outf = None
 
-	active = EMUtil.get_all_attributes(stack, 'active')
-	list_of_particles = []
-	for im in xrange(len(active)):
-		if(active[im]):  list_of_particles.append(im)
-	del active
+	# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+	# active = EMUtil.get_all_attributes(stack, 'active')
+	# list_of_particles = []
+	# for im in xrange(len(active)):
+	# 	if(active[im]):  list_of_particles.append(im)
+	# del active
+	
+	nima = EMUtil.get_image_count(stack)
+	list_of_particles = range(nima)
+	
 	dataim = EMData.read_images(stack, list_of_particles)
 	nima = len(dataim)
 
@@ -8346,12 +8408,17 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 		if(file_type(stack) == "bdb"):
 			from EMAN2db import db_open_dict
 			dummy = db_open_dict(stack, True)
-		active = EMUtil.get_all_attributes(stack, 'active')
-		list_of_particles = []
-		for im in xrange(len(active)):
-			if(active[im]):  list_of_particles.append(im)
-		del active
-		nima = len(list_of_particles)
+		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+		# active = EMUtil.get_all_attributes(stack, 'active')
+		# list_of_particles = []
+		# for im in xrange(len(active)):
+		# 	if(active[im]):  list_of_particles.append(im)
+		# del active
+		# nima = len(list_of_particles)
+			
+		nima = EMUtil.get_image_count(stack)
+		list_of_particles = range(nima)
+			
 		ima     = EMData()
 		ima.read_image(stack, 0)
 		nx      = ima.get_xsize()
@@ -8723,11 +8790,16 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 			if(file_type(stack) == "bdb"):
 				from EMAN2db import db_open_dict
 				dummy = db_open_dict(stack, True)
-			active = EMUtil.get_all_attributes(stack, 'active')
-			list_of_particles = []
-			for im in xrange(len(active)):
-				if(active[im]):  list_of_particles.append(im)
-			del active
+			# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+			# active = EMUtil.get_all_attributes(stack, 'active')
+			# list_of_particles = []
+			# for im in xrange(len(active)):
+			# 	if(active[im]):  list_of_particles.append(im)
+			# del active
+		
+			nima = EMUtil.get_image_count(stack)
+			list_of_particles = range(nima)
+	
 			total_nima = len(list_of_particles)
 		else:
 			list_of_particles = None
@@ -9537,12 +9609,17 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 		if(file_type(stack) == "bdb"):
 			from EMAN2db import db_open_dict
 			dummy = db_open_dict(stack, True)
-		active = EMUtil.get_all_attributes(stack, 'active')
-		list_of_particles = []
-		for im in xrange(len(active)):
-			if active[im]:  list_of_particles.append(im)
-		del active
-		nima = len(list_of_particles)
+		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+		# active = EMUtil.get_all_attributes(stack, 'active')
+		# list_of_particles = []
+		# for im in xrange(len(active)):
+		# 	if active[im]:  list_of_particles.append(im)
+		# del active
+		# nima = len(list_of_particles)
+		
+		nima = EMUtil.get_image_count(stack)
+		list_of_particles = range(nima)
+		
 	else:
 		nima = 0
 	total_nima = bcast_number_to_all(nima, source_node = main_node)
@@ -11350,7 +11427,9 @@ def project3d(volume, stack = None, mask = None, delta = 5, method = "S", phiEqp
 				else:
 					proj = prgs(volft, kbz, [angles[i][0], angles[i][1], angles[i][2], -angles[i][3], -angles[i][4]],kbx,kby)
 			set_params_proj(proj, angles[i])
-		proj.set_attr_dict({'active':1})
+		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+		# proj.set_attr_dict({'active':1})
+		
 
 		# add noise, if noise is set. this is two-fold: application of noise before
 		#    ctf filtering and after it.
@@ -12398,31 +12477,32 @@ def ssnr3d_MPI(stack, output_volume = None, ssnr_text_file = None, mask = None, 
 	prjlist = EMData.read_images(stack, range(image_start, image_end))
 	if random_angles > 0:
 		for prj in prjlist:
-			active = prj.get_attr_default('active', 1)
-			if active == 1:
-				if random_angles == 2:
-					from  random import  random
-					phi	 = 360.0*random()
-					theta	 = 180.0*random()
-					psi	 = 360.0*random()
-					xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi} )
-					prj.set_attr("xform.projection", xform_proj)
-				elif random_angles == 3:
-					from  random import  random
-					phi    = 360.0*random()
-					theta  = 180.0*random()
-					psi    = 360.0*random()
-					tx     = 6.0*(random() - 0.5)
-					ty     = 6.0*(random() - 0.5)
-					xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi, "tx":tx, "ty":ty} )
-					prj.set_attr("xform.projection", xform_proj)
-				elif random_angles  == 1:
-					from  random import  random
-					old_xform_proj = prj.get_attr( "xform.projection" )
-					dict = old_xform_proj.get_rotation( "spider" )
-					dict["psi"] = 360.0*random()
-					xform_proj = Transform( dict )
-					prj.set_attr("xform.projection", xform_proj)
+			# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+			# active = prj.get_attr_default('active', 1)
+			# if active == 1:
+			if random_angles == 2:
+				from  random import  random
+				phi	 = 360.0*random()
+				theta	 = 180.0*random()
+				psi	 = 360.0*random()
+				xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi} )
+				prj.set_attr("xform.projection", xform_proj)
+			elif random_angles == 3:
+				from  random import  random
+				phi    = 360.0*random()
+				theta  = 180.0*random()
+				psi    = 360.0*random()
+				tx     = 6.0*(random() - 0.5)
+				ty     = 6.0*(random() - 0.5)
+				xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi, "tx":tx, "ty":ty} )
+				prj.set_attr("xform.projection", xform_proj)
+			elif random_angles  == 1:
+				from  random import  random
+				old_xform_proj = prj.get_attr( "xform.projection" )
+				dict = old_xform_proj.get_rotation( "spider" )
+				dict["psi"] = 360.0*random()
+				xform_proj = Transform( dict )
+				prj.set_attr("xform.projection", xform_proj)
 		random_angles = 0
 	if myid == 0: [ssnr1, vol_ssnr1] = recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)  
 	else:	                           recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, rw, npad, sign, sym, CTF, random_angles)
@@ -14837,10 +14917,16 @@ def ave_ali(name_stack, name_out = None, ali = False, active = False, param_to_s
 		mode = 'a'
 	else:
 		mode = ''
-	if active: 
-		listID, N = k_means_list_active(name_stack)
-	else:
-		listID    = range(N)
+
+	# # horatio active_refactoring ﻿Jy51i1EwmLD4tWZ9_00002_1	
+	# if active: 
+	# 	listID, N = k_means_list_active(name_stack)
+	# else:
+	# 	listID    = range(N)
+
+	# # horatio active_refactoring ﻿Jy51i1EwmLD4tWZ9_00002_2	
+	listID    = range(N)
+
 	
 	ave, var = ave_var(name_stack, mode, listID)
 	nlistID = len(listID)

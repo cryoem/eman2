@@ -67,7 +67,9 @@ for i in xrange(nangles):
 	# CTF parameters, if defocus zero, they are undetermined
 	proj.set_attr_dict({'defocus':0.0, 'amp_contrast':0.1, 'voltage':200, 'Cs':2.0, 'pixel':2.2})
 	# flags describing the status of the image (1 = true, 0 = false)
-	proj.set_attr_dict({'active':1, 'ctf_applied':0})
+	# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+	# proj.set_attr_dict({'active':1, 'ctf_applied':0})
+	proj.set_attr_dict({'ctf_applied':0})
 	proj.write_image(stack_data, i)
 #dropSpiderDoc("params",ppp)
 #del ppp

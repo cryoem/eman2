@@ -40,10 +40,16 @@ import sys
 def main():
 	
 	progname = os.path.basename(sys.argv[0])
+	# # horatio active_refactoring ﻿Jy51i1EwmLD4tWZ9_00003_1
 	usage = progname + " stack <name_output> --ali --active --set_size=param_name_with_size --set_members=param_name_with_id"
+	# # horatio active_refactoring ﻿Jy51i1EwmLD4tWZ9_00003_2	
+	usage = progname + " stack <name_output> --ali --set_size=param_name_with_size --set_members=param_name_with_id"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ali"        , action = "store_true", default=False, help="Perform average using alignment parameters")
-	parser.add_option("--active"     , action = "store_true", default=False, help="Perform average only for active images")
+
+	# # horatio active_refactoring ﻿Jy51i1EwmLD4tWZ9_00004_1	
+	# parser.add_option("--active"     , action = "store_true", default=False, help="Perform average only for active images")
+	
 	parser.add_option("--set_size"   , type   = "string"    , default=None , help="Save number of input images to parameter with given name")
 	parser.add_option("--set_members", type   = "string"    , default=None , help="Save list of id of input images to parameter named \"members\", id of input images are taken from parameter with given name")
 	parser.add_option("--filament"        , action = "store_true", default=False, help="Calculate stack of averages according to filament membership")

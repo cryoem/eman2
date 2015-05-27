@@ -159,14 +159,18 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weig
 	if type(stack_name) == types.StringType:
 		for i in xrange(len(list_proj)):
 			proj.read_image(stack_name, list_proj[i])
-			active = proj.get_attr_default('active', 1)
-			if active == 1:
-				insert_slices(r, proj)
+			# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+			# active = proj.get_attr_default('active', 1)
+			# if active == 1:
+			# 	insert_slices(r, proj)
+			insert_slices(r, proj)
 	else:
 		for i in list_proj:
-			active = stack_name[i].get_attr_default('active', 1)
-			if active == 1:
-				insert_slices(r, stack_name[i])
+			# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+			# active = stack_name[i].get_attr_default('active', 1)
+			# if active == 1:
+			# 	insert_slices(r, stack_name[i])
+			insert_slices(r, stack_name[i])
 
 	dummy = r.finish(True)
 	return fftvol
@@ -221,15 +225,24 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad=4, xysize=-1,
 	if not (info is None): nimg = 0
 	while prjlist.goToNext():
 		prj = prjlist.image()
-		active = prj.get_attr_default('active', 1)
-		if(active == 1):
-			if dopad:
-				prj = pad(prj, imgsize,imgsize, 1, "circumference")
-			insert_slices(r, prj)
-			if( not (info is None) ):
-				nimg += 1
-				info.write("Image %4d inserted.\n" %(nimg) )
-				info.flush()
+		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+		# active = prj.get_attr_default('active', 1)
+		# if(active == 1):
+		# 	if dopad:
+		# 		prj = pad(prj, imgsize,imgsize, 1, "circumference")
+		# 	insert_slices(r, prj)
+		# 	if( not (info is None) ):
+		# 		nimg += 1
+		# 		info.write("Image %4d inserted.\n" %(nimg) )
+		# 		info.flush()
+
+		if dopad:
+			prj = pad(prj, imgsize,imgsize, 1, "circumference")
+		insert_slices(r, prj)
+		if( not (info is None) ):
+			nimg += 1
+			info.write("Image %4d inserted.\n" %(nimg) )
+			info.flush()
 
 	if not (info is None): 
 		info.write( "Begin reducing ...\n" )
@@ -328,19 +341,32 @@ def secondrunrecons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None,
 	while prjlist.goToNext():
 		prj = prjlist.image()
 
-		active = prj.get_attr_default('active', 1)
-		if(active == 1):
-			if ll%100 == 0:  print "  moved  ",ll
-			ll +=1
-			prj.set_attr("sigmasq2", models[0])
-			#if ll == 0:
-			#	write_text_file([range(bigsize),[pqdif[i] for i in xrange(bigsize)] ],"pqdif.txt")
-			#	ll+=1
-			insert_slices(r, prj)
-			if( not (finfo is None) ):
-				nimg += 1
-				info.write("Image %4d inserted.\n" %(nimg) )
-				info.flush()
+		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+		# active = prj.get_attr_default('active', 1)
+		# if(active == 1):
+		if ll%100 == 0:  print "  moved  ",ll
+		ll +=1
+		prj.set_attr("sigmasq2", models[0])
+		#if ll == 0:
+		#	write_text_file([range(bigsize),[pqdif[i] for i in xrange(bigsize)] ],"pqdif.txt")
+		#	ll+=1
+		insert_slices(r, prj)
+		if( not (finfo is None) ):
+			nimg += 1
+			info.write("Image %4d inserted.\n" %(nimg) )
+			info.flush()
+
+		if ll%100 == 0:  print "  moved  ",ll
+		ll +=1
+		prj.set_attr("sigmasq2", models[0])
+		#if ll == 0:
+		#	write_text_file([range(bigsize),[pqdif[i] for i in xrange(bigsize)] ],"pqdif.txt")
+		#	ll+=1
+		insert_slices(r, prj)
+		if( not (finfo is None) ):
+			nimg += 1
+			info.write("Image %4d inserted.\n" %(nimg) )
+			info.flush()
 
 	if not (finfo is None):
 		info.write( "Begin reducing ...\n" )
@@ -459,86 +485,28 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, 
 	ll = 0
 	while prjlist.goToNext():
 		prj = prjlist.image()
+		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+		# active = prj.get_attr_default('active', 1)
+		# if(active == 1):
+		if ll%100 == 0:  print "  moved  ",ll
+		ll +=1
+		ml = prj.get_attr('groupindex')#int(prj.get_attr('data_path')[4:8])
+		prj.set_attr("sigmasq2", models[groupkeys[1].index(ml)])
+		insert_slices(r, prj)
+		if( not (finfo is None) ):
+			nimg += 1
+			info.write("Image %4d inserted.\n" %(nimg) )
+			info.flush()
 
-		active = prj.get_attr_default('active', 1)
-		if(active == 1):
-			if ll%100 == 0:  print "  moved  ",ll
-			ll +=1
-			"""
-			phi, theta, psi, sx, sy = get_params_proj(prj)
-			#  Make sure image is normalized properly
-			st = Util.infomask(prj, mask2d, False)
-			assert st[0] != 0.0
-			prj = (prj - st[0])/st[1]
-			st = Util.infomask(prj, mask2d, True)
-			tpj = prgs(volft, kb, [phi, theta, psi, -sx, -sy])
-			#  Make sure template is normalized properly
-			ct = prj.get_attr("ctf")
-			qt = Util.infomask(tpj, mask2d, False)
-			#print  "  reproj :",ll,qt
-			tpj -= qt[0]
-			tpj = filt_ctf(pad(tpj, bigsize, bigsize, 1, 0.0), ct, False)
-			qt = Util.infomask(tpj, maskbi, True)
-			tpj *= st[1]/qt[1]
-			#print  " data :",Util.infomask(prj, mask2d, True),Util.infomask(tpj, maskbi, True)
-			#info(pad(prj,bigsize,bigsize,1,0.0), None, "pad(prj,bigsize,bigsize,1,0.0)")
-			#info(tpj, None, "   tpj")
-			#tpj.write_image("tpj.hdf")
-			#pad(prj,bigsize,bigsize,1,0.0).write_image("prj.hdf")
-			qdif = fft(pad(prj,bigsize,bigsize,1,0.0) - tpj)
-			st = rops(qdif)*(bigsize**4)/4.
-			st[0] = st[1]
-			#for i in xrange(st.get_xsize()):  st.set_value_at(i,i)#1.0)#/(st.get_value_at(i)))
-			#for i in xrange(st.get_xsize()):  print i,st.get_value_at(i)
-			pqdif = model_blank(bigsize,1,1,0.0)
-			for i in xrange(st.get_xsize()):  pqdif.set_value_at(i,1.0/(st.get_value_at(i)))
-			"""
-			"""
-			from fundamentals import rops_table
-			sso = rops_table(qdif)
-			for i in xrange(len(sso)):  sso[i] *= (bigsize**4)/4.
-			from morphology import ctf_2
-			ct2 = ctf_2(bigsize, ct)
-			from utilities import write_text_file
-			#write_text_file([range(len(sso)),sso,ct2[:len(sso)], zizi[:len(sso)]],"soso.txt")
-			#fft(qdif).write_image("wdif.hdf", ll); ll +=1
-			# pack qdif by x and invert it
-			pqdif = model_blank((bigsize+2)//2, bigsize)
-			qdif.set_attr("is_complex", 0)
-			from math import sqrt
-			for jj in xrange(bigsize):
-				#if( jj > bigsize/2):  fdsfds = (jj-bigsize)**2
-				#else:  fdsfds= jj**2
-				for ii in xrange(0,bigsize+2,2):
-					#st = sqrt((ii//2)**2+fdsfds)
-					#st = ((ii//2)**2+fdsfds)
-					#if st == 0.0:  st=1.0
-					pqdif.set_value_at_fast(ii//2,jj,1.0/((qdif.get_value_at(ii,jj))**2+(qdif.get_value_at(ii+1,jj))**2) )
-			pqdif.set_value_at_fast(0,0,1.0)
-			"""
-			"""
-			pqdif.write_image("pqdif.hdf")
-			from sys import exit
-			exit()
-			"""
-			#pqdif = model_blank((bigsize+2)//2, bigsize,1,1.0)
-			#info(pqdif,None,"pqdif")
-			ml = prj.get_attr('groupindex')#int(prj.get_attr('data_path')[4:8])
-			"""
-			from utilities import info
-			print "models"
-			info(models[groupkeys[1].index(ml)])
-			for lm in xrange(len(temp[0])):  print models[groupkeys[1].index(ml)].get_value_at(lm)
-			"""
-			prj.set_attr("sigmasq2", models[groupkeys[1].index(ml)])
-			#if ll == 0:
-			#	write_text_file([range(bigsize),[pqdif[i] for i in xrange(bigsize)] ],"pqdif.txt")
-			#	ll+=1
-			insert_slices(r, prj)
-			if( not (finfo is None) ):
-				nimg += 1
-				info.write("Image %4d inserted.\n" %(nimg) )
-				info.flush()
+		if ll%100 == 0:  print "  moved  ",ll
+		ll +=1
+		ml = prj.get_attr('groupindex')#int(prj.get_attr('data_path')[4:8])
+		prj.set_attr("sigmasq2", models[groupkeys[1].index(ml)])
+		insert_slices(r, prj)
+		if( not (finfo is None) ):
+			nimg += 1
+			info.write("Image %4d inserted.\n" %(nimg) )
+			info.flush()
 
 	if not (finfo is None):
 		info.write( "Begin reducing ...\n" )
@@ -591,7 +559,8 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 1.0, sign=1, symmetry="c1
 	else:    proj = stack_name[list_proj[0]].copy()
 
 	# convert angles to transform (rotation) objects
-	active = proj.get_attr_default('active', 1)
+	# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+	# active = proj.get_attr_default('active', 1)
 	size   = proj.get_xsize()
 	if proj.get_ysize() != size:
 		size = max(size, proj.get_ysize())
@@ -630,16 +599,22 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 1.0, sign=1, symmetry="c1
 	if type(stack_name) == types.StringType:
 		for i in xrange(len(list_proj)):
 			proj.read_image(stack_name, list_proj[i])
-			active = proj.get_attr_default('active', 1)
-			if(active == 1):
-				if dopad: 
-					proj = pad(proj, size, size, 1, "circumference")
-				insert_slices(r, proj)
+			# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+			# active = proj.get_attr_default('active', 1)
+			# if(active == 1):
+			# 	if dopad: 
+			# 		proj = pad(proj, size, size, 1, "circumference")
+			# 	insert_slices(r, proj)
+			if dopad: 
+				proj = pad(proj, size, size, 1, "circumference")
+			insert_slices(r, proj)
 	else:
 		for i in xrange(len(list_proj)):
-			active = stack_name[list_proj[i]].get_attr_default('active', 1)
-			if active == 1:
-				insert_slices(r, stack_name[list_proj[i]])
+			# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+			# active = stack_name[list_proj[i]].get_attr_default('active', 1)
+			# if active == 1:
+			# 	insert_slices(r, stack_name[list_proj[i]])
+			insert_slices(r, stack_name[list_proj[i]])
 	dummy = r.finish(True)
 	return fftvol
 
@@ -702,13 +677,15 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", info=N
 	nimg = 0
 	while prjlist.goToNext():
 		prj = prjlist.image()
-		active = prj.get_attr_default('active', 1)
-		#if nimg%10 == 0:  print "III  ",nimg
-		#nimg +=1
-		if active == 1:
-			if dopad:
-				prj = pad(prj, imgsize,imgsize, 1, "circumference")
-			insert_slices(r, prj)
+		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+		# active = prj.get_attr_default('active', 1)
+		# if active == 1:
+		# 	if dopad:
+		# 		prj = pad(prj, imgsize,imgsize, 1, "circumference")
+		# 	insert_slices(r, prj)
+		if dopad:
+			prj = pad(prj, imgsize,imgsize, 1, "circumference")
+		insert_slices(r, prj)
 		if not (info is None):
 			nimg += 1
 			info.write(" %4d inserted\n" %(nimg) )
@@ -799,36 +776,39 @@ def recons3d_nn_SSNR(stack_name,  mask2D = None, ring_width=1, npad =1, sign=1, 
 			proj.read_image(stack_name, i)
 		else:
 			proj = stack_name[i]
-		active = proj.get_attr_default('active', 1)
-		if(active == 1):
-			if(random_angles  == 2):
-				from  random import  random
-				phi    = 360.0*random()
-				theta  = 180.0*random()
-				psi    = 360.0*random()
-				xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi} )
-			elif(random_angles  == 3):
-				from  random import  random
-				phi    = 360.0*random()
-				theta  = 180.0*random()
-				psi    = 360.0*random()
-				tx     = 6.0*(random() - 0.5)
-				ty     = 6.0*(random() - 0.5)
-				xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi, "tx":tx, "ty":ty} )
-			elif(random_angles  == 1):
-				from  random import  random
-				old_xform_proj = proj.get_attr( "xform.projection" )
-				dict = old_xform_proj.get_rotation( "spider" )
-				dict["psi"] = 360.0*random()
-				xform_proj = Transform( dict )
-			else:
-				xform_proj = proj.get_attr( "xform.projection" )
+		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+		# active = proj.get_attr_default('active', 1)
+		# if(active == 1):
+		if(random_angles  == 2):
+			from  random import  random
+			phi    = 360.0*random()
+			theta  = 180.0*random()
+			psi    = 360.0*random()
+			xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi} )
+		elif(random_angles  == 3):
+			from  random import  random
+			phi    = 360.0*random()
+			theta  = 180.0*random()
+			psi    = 360.0*random()
+			tx     = 6.0*(random() - 0.5)
+			ty     = 6.0*(random() - 0.5)
+			xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi, "tx":tx, "ty":ty} )
+		elif(random_angles  == 1):
+			from  random import  random
+			old_xform_proj = proj.get_attr( "xform.projection" )
+			dict = old_xform_proj.get_rotation( "spider" )
+			dict["psi"] = 360.0*random()
+			xform_proj = Transform( dict )
+		else:
+			xform_proj = proj.get_attr( "xform.projection" )
+	
+		if mask2D:
+			stats = Util.infomask(proj, mask2D, True)
+			proj -= stats[0]
+			proj *= mask2D
+		r.insert_slice(proj, xform_proj)
+		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1  END
 
-		 	if mask2D:
-				stats = Util.infomask(proj, mask2D, True)
-				proj -= stats[0]
-				proj *= mask2D
-			r.insert_slice(proj, xform_proj)
 	dummy = r.finish(True)
 	outlist = [[] for i in xrange(6)]
 	nn = SSNR.get_xsize()
@@ -872,35 +852,38 @@ def recons3d_nn_SSNR_MPI(myid, prjlist, mask2D, ring_width=1, npad =1, sign=1, s
 
 	if prjlist[0].get_xsize() != imgsize or prjlist[0].get_ysize() != imgsize: ERROR("inconsistent image size","recons3d_nn_SSNR_MPI",1)
 	for prj in prjlist:
-		active = prj.get_attr_default('active', 1)
-		if active == 1:
-			if random_angles  == 2:
-				from  random import  random
-				phi	 = 360.0*random()
-				theta    = 180.0*random()
-				psi	 = 360.0*random()
-				xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi} )
-			elif random_angles  == 3:
-				from  random import  random
-				phi    = 360.0*random()
-				theta  = 180.0*random()
-				psi    = 360.0*random()
-				tx     = 6.0*(random() - 0.5)
-				ty     = 6.0*(random() - 0.5)
-				xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi, "tx":tx, "ty":ty} )
-			elif random_angles  == 1:
-				from  random import  random
-				old_xform_proj = prj.get_attr( "xform.projection" )
-				dict = old_xform_proj.get_rotation( "spider" )
-				dict["psi"] = 360.0*random()
-				xform_proj = Transform( dict )
-			else:
-				xform_proj = prj.get_attr( "xform.projection" )
-			if mask2D:
-				stats = Util.infomask(prj, mask2D, True)
-				prj -= stats[0]
-				prj *= mask2D
-			r.insert_slice(prj, xform_proj )
+		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+		# active = prj.get_attr_default('active', 1)
+		# if active == 1:
+		if random_angles  == 2:
+			from  random import  random
+			phi	 = 360.0*random()
+			theta    = 180.0*random()
+			psi	 = 360.0*random()
+			xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi} )
+		elif random_angles  == 3:
+			from  random import  random
+			phi    = 360.0*random()
+			theta  = 180.0*random()
+			psi    = 360.0*random()
+			tx     = 6.0*(random() - 0.5)
+			ty     = 6.0*(random() - 0.5)
+			xform_proj = Transform( {"type":"spider", "phi":phi, "theta":theta, "psi":psi, "tx":tx, "ty":ty} )
+		elif random_angles  == 1:
+			from  random import  random
+			old_xform_proj = prj.get_attr( "xform.projection" )
+			dict = old_xform_proj.get_rotation( "spider" )
+			dict["psi"] = 360.0*random()
+			xform_proj = Transform( dict )
+		else:
+			xform_proj = prj.get_attr( "xform.projection" )
+		if mask2D:
+			stats = Util.infomask(prj, mask2D, True)
+			prj -= stats[0]
+			prj *= mask2D
+		r.insert_slice(prj, xform_proj )
+		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1 END
+		
 	#from utilities import info
 	reduce_EMData_to_root(weight,  myid, 0, comm=mpi_comm)
 	reduce_EMData_to_root(fftvol,  myid, 0, comm=mpi_comm)
@@ -1658,9 +1641,12 @@ def prepare_recons(data, symmetry, myid, main_node_half, half_start, step, index
 	for i in xrange(half_start, len(data), step):
 		if(index >-1 ):  group = data[i].get_attr('group')
 		if(group == index):
-			if( data[i].get_attr_default('active',1) == 1):
-				xform_proj = data[i].get_attr( "xform.projection" )
-				half.insert_slice(data[i], xform_proj )
+			# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+			# if( data[i].get_attr_default('active',1) == 1):
+			# 	xform_proj = data[i].get_attr( "xform.projection" )
+			# 	half.insert_slice(data[i], xform_proj )
+			xform_proj = data[i].get_attr( "xform.projection" )
+			half.insert_slice(data[i], xform_proj )
 
 	if not(finfo is None):
 		finfo.write( "begin reduce half\n" )
@@ -1706,9 +1692,12 @@ def prepare_recons_ctf_fftvol(data, snr, symmetry, myid, main_node_half, pidlist
 	half.setup()
 
 	for i in pidlist:
-		if( data[i].get_attr_default('active', 1) == 1):
-			xform_proj = data[i].get_attr( "xform.projection" )
-			half.insert_slice(data[i], xform_proj )
+		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+		# if( data[i].get_attr_default('active', 1) == 1):
+		# 	xform_proj = data[i].get_attr( "xform.projection" )
+		# 	half.insert_slice(data[i], xform_proj )
+		xform_proj = data[i].get_attr( "xform.projection" )
+		half.insert_slice(data[i], xform_proj )
 
 	if not(finfo is None):
 		finfo.write( "begin reduce half\n" )
@@ -1735,9 +1724,12 @@ def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start
 	half.setup()
 
 	for i in xrange(half_start, len(data), step):
-		if( data[i].get_attr_default('active',1) == 1):
-			xform_proj = data[i].get_attr( "xform.projection" )
-			half.insert_slice(data[i], xform_proj )
+		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+		# if( data[i].get_attr_default('active',1) == 1):
+		# 	xform_proj = data[i].get_attr( "xform.projection" )
+		# 	half.insert_slice(data[i], xform_proj )
+		xform_proj = data[i].get_attr( "xform.projection" )
+		half.insert_slice(data[i], xform_proj )
 
 	if not(finfo is None):
 		finfo.write( "begin reduce half\n" )

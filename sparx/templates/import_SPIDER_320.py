@@ -74,7 +74,9 @@ for ii in xrange(1) :
 		deci = data
 		#set_params_proj(deci, [phi, theta, psi, sxnb, synb])
 		set_params_proj(deci, [0.,0.,0.,0.,0.])
-		deci.set_attr_dict({'active':1, 'ctf_applied':0})
+		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+		# deci.set_attr_dict({'active':1, 'ctf_applied':0})
+		deci.set_attr_dict({'ctf_applied':0})
 
 		# Here, we convert the amp_contrast into the new convention
 		set_ctf(deci, [defocus, Cs, voltage, pixel, bfactor, amp_contrast])
