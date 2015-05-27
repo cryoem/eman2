@@ -1145,7 +1145,7 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 							if pixel_error_list[i] < 0:  del pixel_error_list[i]
 						region, hist = hist_list(pixel_error_list, 20)	
 						for p in xrange(20):
-							log.add("      %14.6f: %6d"%(region[p], hist[p]))
+							log.add("      %14.2f: %6d"%(region[p], hist[p]))
 					log.add("\n\n")
 
 	if myid == main_node and outdir:  drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
