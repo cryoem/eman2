@@ -48,9 +48,9 @@ def main():
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
-		from applications import params_2D_to_3D
+		from applications import wrapper_params_2D_to_3D
 		global_def.BATCH = True
-		params_2D_to_3D(args[0])
+		wrapper_params_2D_to_3D(args[0])
 		global_def.BATCH = False     
 			
 

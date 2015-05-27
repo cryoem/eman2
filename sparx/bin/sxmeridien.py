@@ -803,6 +803,55 @@ def main():
 	nnxo        = bcast_number_to_all(nnxo, source_node = main_node)
 
 	#  INITIALIZATION
+	#  Do prealignment of 2D data using reference-free alignment
+	if(not options.startangles):
+		#  The maximum step size for 2D alignment
+		nxrsteps = 4
+		init2dir = os.path.join(masterdir,"2dalignment")
+		doit, keepchecking = checkstep(init2dir, keepchecking, myid, main_node)
+		if  doit:
+			if( myid == main_node ):
+				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+				print(line,"INITIALIZATION 2D")
+
+			from applications import ali2d_base
+
+			if(myid == main_node):
+				import subprocess
+				from logger import Logger, BaseLogger_Files
+				#  Create output directory
+				log2d = Logger(BaseLogger_Files())
+				log2d.prefix = os.path.join(init2dir)
+				cmd = "mkdir "+log2d.prefix
+				outcome = subprocess.call(cmd, shell=True)
+				log2d.prefix += "/"
+			else:
+				outcome = 0
+				log2d = None
+			txrm = (nnxo - (2*radi-1))//2
+			if(txrm < 0):  			ERROR( "ERROR!!   Radius of the structure larger than the window data size permits   %d"%(radi), "sxmeridien",1, myid)
+			if(txrm/nxrsteps>0):
+				tss = ""
+				txr = ""
+				while(txrm/nxrsteps>0):
+					tts=txrm/nxrsteps
+					tss += "  %d"%tts
+					txr += "  %d"%(tts*nxrsteps)
+					txrm =txrm//2
+			else:
+				tss = "1"
+				txr = "%d"%txrm
+
+			params2d = ali2d_base(stack, init2dir, None, 1, radi, 1, txr, txr, tss, \
+				False, 90.0, -1, 20, options.CTF, 1.0, False, \
+				"ref_ali2d", "", log2d, \
+				number_of_proc, myid, main_node, MPI_COMM_WORLD,\
+				write_headers = False)
+			#  Convert 2d to 3D parameters
+			if( myid == main_node ):
+				for i in xrange(len(params2d)):
+					params2d = params_2D_3D(params2d[0], params2d[1], params2d[2], int(params2d[3]))
+				write_text_row(params2d,os.path.join(init2dir, "initial3Dshifts.txt"))
 
 	#  Run exhaustive projection matching to get initial orientation parameters
 	#  Estimate initial resolution
@@ -821,8 +870,8 @@ def main():
 	#  This is initial setting, has to be initialized here, we do not want it to run too long.
 	#    INITIALIZATION THAT FOLLOWS WILL HAVE TO BE CHANGED SO THE USER CAN PROVIDE INITIAL GUESS OF RESOLUTION
 	#  If we new the initial resolution, it could be done more densely
-	xr = (nnxo - (2*radi-1))//2
-	ts = "%f"%max((xr-1)/6.0,1.0)
+	xr = min(txrm,(nnxo - (2*radi-1))//2)
+	ts = "1.0"
 
 	delta = int(options.delta)
 	if(delta <= 0.0):
@@ -837,7 +886,7 @@ def main():
 	doit, keepchecking = checkstep(initdir, keepchecking, myid, main_node)
 	if  doit:
 		partids = os.path.join(masterdir, "ids.txt")
-		partstack = os.path.join(masterdir, "paramszero.txt")
+		partstack = os.path.join(init2dir, "initial3Dshifts.txt")
 
 		if(options.startangles):
 
@@ -851,12 +900,10 @@ def main():
 				print(line,"Executed successfully: ","Imported initial parameters from the input stack")
 
 		else:
-	
 			if( myid == main_node ):
 				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-				print(line,"INITIALIZATION")
+				print(line,"INITIALIZATION 3D")
 				write_text_file(range(total_stack), partids)
-				write_text_row([[0.0,0.0,0.0,0.0,0.0] for i in xrange(total_stack) ], partstack)
 
 			metamove(paramsdict, partids, partstack, initdir, 0, myid, main_node, nproc)
 			if(myid == main_node):

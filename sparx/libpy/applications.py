@@ -705,6 +705,15 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 					if outdir:
 						vav_r.write_image(os.path.join(outdir, "varf.hdf"), total_iter-1)
 
+
+				# a0 should increase; stop algorithm when it decreases.    
+				#     However, the result will depend on filtration, so it is not quite right.
+				#  moved it here, so it is for unfiltered average and thus hopefully makes more sense
+				a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
+				msg = "Criterion %d = %15.8e"%(total_iter, a1)
+				log.add(msg)
+
+
 				ref_data[2] = tavg
 				ref_data[3] = frsc
 
@@ -725,12 +734,6 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 				if outdir:
 					tavg.write_image(os.path.join(outdir, "aqf.hdf"), total_iter-1)
 
-				# a0 should increase; stop algorithm when it decreases.    
-				#     However, the result will depend on filtration, so it is not quite right.
-				a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
-				msg = "Criterion %d = %15.8e\n"%(total_iter, a1)
-				print_msg(msg)
-				
 				if a1 < a0:
 					if auto_stop: 	again = 0
 				else:	a0 = a1
@@ -879,8 +882,8 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 
 	import types
 	if( type(stack) is types.StringType ):
-		if myid == main_node: total_nima = EMUtil.get_image_count(stack)
-		else:                total_nima = 0
+		if myid == main_node:	total_nima = EMUtil.get_image_count(stack)
+		else:					total_nima = 0
 	total_nima = bcast_number_to_all(total_nima, source_node = main_node)
 	list_of_particles = range(total_nima)
 
@@ -1054,6 +1057,15 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 					if outdir:
 						vav_r.write_image(os.path.join(outdir, "varf.hdf"), total_iter-1)
 
+
+				# a0 should increase; stop algorithm when it decreases.    
+				#     However, the result will depend on filtration, so it is not quite right.
+				#  moved it here, so it is for unfiltered average and thus hopefully makes more sense
+				a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
+				msg = "Criterion %d = %15.8e"%(total_iter, a1)
+				log.add(msg)
+
+
 				ref_data[2] = tavg
 				ref_data[3] = frsc
 
@@ -1073,12 +1085,6 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 				# write the current filtered average
 				if outdir:
 					tavg.write_image(os.path.join(outdir, "aqf.hdf"), total_iter-1)
-
-				# a0 should increase; stop algorithm when it decreases.    
-				#     However, the result will depend on filtration, so it is not quite right.
-				a1 = tavg.cmp("dot", tavg, dict(negative = 0, mask = ref_data[0]))
-				msg = "Criterion %d = %15.8e"%(total_iter, a1)
-				log.add(msg)
 				
 				if a1 < a0:
 					if auto_stop: 	again = 0
@@ -12875,7 +12881,7 @@ def bootstrap_run(prj_stack, media, outdir, nvol, CTF, snr, sym, verbose, MPI=Fa
 	from reconstruction import bootstrap_nn
 	bootstrap_nn( prj_stack, myvolume_file, list_proj, mynvol, media, npad, sym, mystatus, CTF, snr, sign)
 	
-def params_2D_to_3D(stack):
+def wrapper_params_2D_to_3D(stack):
 	from utilities import params_2D_3D, print_begin_msg, print_end_msg, print_msg, get_params2D, set_params_proj, write_header
 	
 	#print_begin_msg("params_2D_to_3D")
@@ -12891,7 +12897,7 @@ def params_2D_to_3D(stack):
 		write_header(stack, ima, im)
 	#print_end_msg("params_2D_to_3D")
 
-def params_3D_to_2D(stack):
+def wrapper_params_3D_to_2D(stack):
 	from utilities import params_3D_2D, print_begin_msg, print_end_msg, print_msg, set_params2D, write_header
 	
 	#print_begin_msg("params_3D_to_2D")
