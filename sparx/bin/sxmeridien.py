@@ -851,8 +851,16 @@ def main():
 				outcome = subprocess.call("sxheader.py  "+stack+"   --params=xform.align2d  --import="+os.path.join(init2dir, "initial2Dparams.txt"), shell=True)
 			mpi_barrier(MPI_COMM_WORLD)
 			txr = "%d"%((nnxo - 2*(radi+1))//2)
+			init2dir = os.path.join(masterdir,"2dpostalignment")
+			if(myid == main_node):
+				#  Create output directory
+				log2d = Logger(BaseLogger_Files())
+				log2d.prefix = os.path.join(init2dir)
+				cmd = "mkdir "+log2d.prefix
+				outcome = subprocess.call(cmd, shell=True)
+				log2d.prefix += "/"
 			params2d = ali2d_base(stack, init2dir, None, 1, radi, 1, txr, txr, "1", \
-						False, 0.0, -1, 1, options.CTF, 1.0, False, \
+						False, 0.0, -1, 2, options.CTF, 1.0, False, \
 						"ref_ali2d", "", log2d, nproc, myid, main_node, MPI_COMM_WORLD, write_headers = False)
 			#  Convert 2d to 3D parameters
 			if( myid == main_node ):
