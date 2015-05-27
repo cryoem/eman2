@@ -825,6 +825,7 @@ def main():
 				cmd = "mkdir "+log2d.prefix
 				outcome = subprocess.call(cmd, shell=True)
 				log2d.prefix += "/"
+				outcome = subprocess.call("sxheader.py  "+stack+"   --params=xform.align2d  --zero", shell=True)
 			else:
 				outcome = 0
 				log2d = None
