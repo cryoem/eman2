@@ -1067,6 +1067,11 @@ class EMPDBFileType(EMFileType):
 		Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. 
 		The first 4k block of data from the file is provided as well to avoid unnecesary file access.
 		"""
+		
+		proper_extensions = ['pdb','ent']
+		if os.path.basename(a).split('.')[-1] not in proper_extensions: 
+			return False
+		
 		if not isprint(header) : return False			# demand printable Ascii. FIXME: what about unicode ?
 		
 		try : size = os.stat(path)[6]
@@ -1084,7 +1089,7 @@ class EMPDBFileType(EMFileType):
 		"""
 		Returns a list of (name, callback) tuples detailing the operations the user can call on the current file
 		"""
-		return [("Show 3D", "Show in a new 3D window", self.show3DNew), ("Show 3D +", "Show in the current 3D window", self.show3dApp), ("Chimera", "Open in chimera (if installed)", self.showChimera),("Save As", "Saves a copy of the selected PDB file", self.saveAs)]
+		return [("Show PDB", "Show in a new 3D window", self.show3DNew), ("Show PDB +", "Show in the current 3D window", self.show3dApp), ("Chimera", "Open in chimera (if installed)", self.showChimera),("Save As", "Saves a copy of the selected PDB file", self.saveAs)]
 
 	def show3DNew(self, brws):
 		"""New 3-D window"""
