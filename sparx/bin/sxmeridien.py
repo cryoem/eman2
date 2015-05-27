@@ -844,14 +844,20 @@ def main():
 				txr = "%d"%txrm
 
 			params2d = ali2d_base(stack, init2dir, None, 1, radi, 1, txr, txr, tss, \
-				False, 90.0, -1, 20, options.CTF, 1.0, False, \
-				"ref_ali2d", "", log2d, \
-				nproc, myid, main_node, MPI_COMM_WORLD,\
-				write_headers = False)
+						False, 90.0, -1, 14, options.CTF, 1.0, False, \
+						"ref_ali2d", "", log2d, nproc, myid, main_node, MPI_COMM_WORLD, write_headers = False)
+			if( myid == main_node ):
+				write_text_row(params2d,os.path.join(init2dir, "initial2Dparams.txt"))		
+				outcome = subprocess.call("sxheader.py  "+stack+"   --params=xform.align2d  --import="+os.path.join(init2dir, "initial2Dparams.txt"), shell=True)
+			mpi_barrier(MPI_COMM_WORLD)
+			txr = "%d"%((nnxo - 2*(radi+1))//2)
+			params2d = ali2d_base(stack, init2dir, None, 1, radi, 1, txr, txr, "1", \
+						False, 0.0, -1, 1, options.CTF, 1.0, False, \
+						"ref_ali2d", "", log2d, nproc, myid, main_node, MPI_COMM_WORLD, write_headers = False)
 			#  Convert 2d to 3D parameters
 			if( myid == main_node ):
 				for i in xrange(len(params2d)):
-					params2d = params_2D_3D(params2d[0], params2d[1], params2d[2], int(params2d[3]))
+					params2d = params_2D_3D(params2d[i][0], params2d[i][1], params2d[i][2], int(params2d[i][3]))
 				write_text_row(params2d,os.path.join(init2dir, "initial3Dshifts.txt"))
 
 	#  Run exhaustive projection matching to get initial orientation parameters
