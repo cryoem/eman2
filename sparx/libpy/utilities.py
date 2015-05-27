@@ -33,7 +33,7 @@ from global_def import *
 def params_2D_3D(alpha, sx, sy, mirror):
 	"""
 		Convert 2D alignment parameters (alpha, sx, sy, mirror) into
-		3D alignment parameters (phi, theta, psi, s2x, s2y, mirror)
+		3D alignment parameters (phi, theta, psi, s2x, s2y)
 	"""
 	phi = 0
 	psi = 0
