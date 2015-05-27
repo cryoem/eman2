@@ -2414,6 +2414,8 @@ vector<float> EMData::calc_az_dist(int n, float a0, float da, float rmin, float 
 		yc[i] = 0.00001f;
 	}
 
+	int isri=is_ri();
+	
 	float * data = get_data();
 	if (is_complex()) {
 		int c = 0;
@@ -2443,7 +2445,7 @@ vector<float> EMData::calc_az_dist(int n, float a0, float da, float rmin, float 
 					}
 					else if (i > 0 && i < (n - 1)) {
 						float h = 0;
-						if (is_ri()) {
+						if (isri) {
 #ifdef	_WIN32
 							h = (float)_hypot(data[c], data[c + 1]);
 #else
@@ -2731,6 +2733,7 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 	int x,y,z,i;
 	int step=is_complex()?2:1;
 	int isinten=get_attr_default("is_intensity",0);
+	int isri=is_ri();
 
 	if (isinten&&!inten) { throw InvalidParameterException("Must set inten for calc_radial_dist with intensity image"); }
 
@@ -2747,14 +2750,14 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 					r=(float)(Util::hypot_fast(x/2,y<ny/2?y:ny-y));		// origin at 0,0; periodic
 					if (!inten) {
 #ifdef	_WIN32
-						if (is_ri()) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+						if (isri) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #else
-						if (is_ri()) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+						if (isri) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #endif
 						else v=data[i];							// amp/phase, just get amp
 					} else {
 						if (isinten) v=data[i];
-						else if (is_ri()) v=data[i]*data[i]+data[i+1]*data[i+1];
+						else if (isri) v=data[i]*data[i]+data[i+1]*data[i+1];
 						else v=data[i]*data[i];
 					}
 				}
@@ -2790,14 +2793,14 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 						r=Util::hypot3(x/2,y<ny/2?y:ny-y,z<nz/2?z:nz-z);	// origin at 0,0; periodic
 						if (!inten) {
 #ifdef	_WIN32
-							if (is_ri()) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+							if (isri) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #else
-							if (is_ri()) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+							if (isri) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #endif	//_WIN32
 							else v=data[i];							// amp/phase, just get amp
 						} else {
 							if (isinten) v=data[i];
-							else if (is_ri()) v=data[i]*data[i]+data[i+1]*data[i+1];
+							else if (isri) v=data[i]*data[i]+data[i+1]*data[i+1];
 							else v=data[i]*data[i];
 						}
 					}
@@ -2846,6 +2849,7 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, fl
 	vector<double>norm(n*nwedge);
 
 	int x,y,i;
+	int isri = is_ri();	// this has become expensive!
 	int step=is_complex()?2:1;
 	float astep=static_cast<float>(M_PI*2.0/nwedge);
 	if (is_complex()) astep/=2;							// Since we only have the right 1/2 of Fourier space
@@ -2866,14 +2870,14 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int nwedge, fl
 				a=atan2(float(y<ny/2?y:y-ny),x/2.0f);
 				if (!inten) {
 #ifdef	_WIN32
-					if (is_ri()) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+					if (isri) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #else
-					if (is_ri()) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+					if (isri) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #endif	//_WIN32
 					else v=data[i];							// amp/phase, just get amp
 				} else {
 					if (isinten) v=data[i];
-					else if (is_ri()) v=data[i]*data[i]+data[i+1]*data[i+1];
+					else if (isri) v=data[i]*data[i]+data[i+1]*data[i+1];
 					else v=data[i]*data[i];
 				}
 				bin=n*int(floor((a+M_PI/2.0f+offset)/astep));

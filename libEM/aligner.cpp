@@ -2641,6 +2641,8 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	} else {
 		base_this = this_img->do_fft();
 		base_to = to->do_fft();
+		base_this->process_inplace("xform.phaseorigin.tocorner");
+		base_to->process_inplace("xform.phaseorigin.tocorner");
 		cleanup=1;
 	}
 
@@ -2652,9 +2654,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	if (base_this->get_xsize()!=base_this->get_ysize()+2 || base_this->get_ysize()!=base_this->get_zsize()
 		|| base_to->get_xsize()!=base_to->get_ysize()+2 || base_to->get_ysize()!=base_to->get_zsize()) throw InvalidCallException("ERROR (RT3DTreeAligner): requires cubic images");
 
-	base_this->process_inplace("xform.phaseorigin.tocorner");
 	base_this->process_inplace("xform.fourierorigin.tocenter");		// easier to chop out Fourier subvolumes
-	base_to->process_inplace("xform.phaseorigin.tocorner");
 	base_to->process_inplace("xform.fourierorigin.tocenter");
 
 	float apix=(float)this_img->get_attr("apix_x");
@@ -2675,7 +2675,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	// We start with 32^3, 64^3 ...
 	for (int sexp=4; sexp<10; sexp++) {
 		int ss=pow(2.0,sexp);
-//		if (ss==16) ss=24;		// 16 may be too small, but 32 takes too long...
+		if (ss==16) ss=24;		// 16 may be too small, but 32 takes too long...
 		if (ss>ny) ss=ny;
 		if (verbose>0) printf("Size %d\n",ss);
 
@@ -2683,10 +2683,10 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		EMData *small_this=base_this->get_clip(Region(0,(ny-ss)/2,(ny-ss)/2,ss+2,ss,ss));
 		EMData *small_to=  base_to->  get_clip(Region(0,(ny-ss)/2,(ny-ss)/2,ss+2,ss,ss));
 		small_this->process_inplace("xform.fourierorigin.tocorner");					// after clipping back to canonical form
-		small_this->process_inplace("filter.highpass.gauss",Dict("cutoff_freq",0.005f));
+		small_this->process_inplace("filter.highpass.gauss",Dict("cutoff_pixels",1));
 		small_this->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.33f));
 		small_to->process_inplace("xform.fourierorigin.tocorner");
-		small_to->process_inplace("filter.highpass.gauss",Dict("cutoff_freq",0.005f));
+		small_to->process_inplace("filter.highpass.gauss",Dict("cutoff_pixels",1));
 		small_to->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.33f));
 
 		
@@ -2725,7 +2725,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 			Symmetry3D* sym = Factory<Symmetry3D>::get((string)params.set_default("sym","c1"));
 			// We don't generate for phi, since this can produce a very large number of orientations
 			vector<Transform> transforms = sym->gen_orientations((string)params.set_default("orientgen","eman"),d);
-			printf("%d orientations to test\n",(int)(transforms.size()*(360.0/astep)));
+			if (verbose>0) printf("%d orientations to test\n",(int)(transforms.size()*(360.0/astep)));
 
 			// We iterate over all orientations in an asym triangle (alt & az) then deal with phi ourselves
 //			for (std::vector<Transform>::iterator t = transforms.begin(); t!=transforms.end(); ++t) {    // iterator form was causing all sorts of problems
@@ -2744,7 +2744,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 					t.set_params(aap);
 
 					// somewhat strangely, rotations are actually much more expensive than FFTs, so we use a CCF for translation
-					EMData *stt=small_this->process("xform",Dict("transform",EMObject(&t)));
+					EMData *stt=small_this->process("xform",Dict("transform",EMObject(&t),"zerocorners",5));
 					EMData *ccf=small_to->calc_ccf(stt);
 					IntPoint ml=ccf->calc_max_location_wrap();
 
@@ -2777,7 +2777,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 					delete stt;
 				}
 			}
-			printf("\n");
+			if (verbose>2) printf("\n");
 
 
 		}
@@ -2893,7 +2893,7 @@ bool RT3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<float> 
 	t.set_params(aap);
 
 	// rotate in Fourier space then use a CCF to find translation
-	EMData *stt=small_this->process("xform",Dict("transform",EMObject(&t)));
+	EMData *stt=small_this->process("xform",Dict("transform",EMObject(&t),"zerocorners",5));
 	EMData *ccf=small_to->calc_ccf(stt);
 	IntPoint ml=ccf->calc_max_location_wrap();
 
