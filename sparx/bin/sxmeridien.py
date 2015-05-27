@@ -828,7 +828,7 @@ def main():
 			else:
 				outcome = 0
 				log2d = None
-			txrm = (nnxo - (2*radi-1))//2
+			txrm = (nnxo - 2*(radi+1))//2
 			if(txrm < 0):  			ERROR( "ERROR!!   Radius of the structure larger than the window data size permits   %d"%(radi), "sxmeridien",1, myid)
 			if(txrm/nxrsteps>0):
 				tss = ""
@@ -870,7 +870,7 @@ def main():
 	#  This is initial setting, has to be initialized here, we do not want it to run too long.
 	#    INITIALIZATION THAT FOLLOWS WILL HAVE TO BE CHANGED SO THE USER CAN PROVIDE INITIAL GUESS OF RESOLUTION
 	#  If we new the initial resolution, it could be done more densely
-	xr = min(txrm,(nnxo - (2*radi-1))//2)
+	xr = min(txrm,(nnxo - 2*(radi+1))//2)
 	ts = "1.0"
 
 	delta = int(options.delta)
