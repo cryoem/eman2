@@ -856,6 +856,8 @@ def main():
 				#  Create output directory
 				log2d = Logger(BaseLogger_Files())
 				log2d.prefix = os.path.join(init2dir)
+				cmd = "rm -rf "+log2d.prefix
+				outcome = subprocess.call(cmd, shell=True)
 				cmd = "mkdir "+log2d.prefix
 				outcome = subprocess.call(cmd, shell=True)
 				log2d.prefix += "/"
@@ -886,7 +888,7 @@ def main():
 	#  This is initial setting, has to be initialized here, we do not want it to run too long.
 	#    INITIALIZATION THAT FOLLOWS WILL HAVE TO BE CHANGED SO THE USER CAN PROVIDE INITIAL GUESS OF RESOLUTION
 	#  If we new the initial resolution, it could be done more densely
-	xr = min(txrm,(nnxo - 2*(radi+1))//2)
+	xr = min(nxrsteps,(nnxo - 2*(radi+1))//2)
 	ts = "1.0"
 
 	delta = int(options.delta)
