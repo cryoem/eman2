@@ -2723,7 +2723,7 @@ void EMData::apply_radial_func(float x0, float step, vector < float >array, bool
 	EXITFUNC;
 }
 
-vector<float> EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
+vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 {
 	ENTERFUNC;
 
@@ -2737,7 +2737,19 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 
 	if (isinten&&!inten) { throw InvalidParameterException("Must set inten for calc_radial_dist with intensity image"); }
 
-	for (i=0; i<n; i++) ret[i]=norm[i]=0.0;
+	switch (inten){
+		case 0:
+		case 1:
+			for (i=0; i<n; i++) ret[i]=norm[i]=0.0;
+			break;
+		case 2:
+			for (i=0; i<n; i++) ret[i]=norm[i]=1.0e27;
+			break;
+		case 3:
+			for (i=0; i<n; i++) ret[i]=norm[i]=-1.0e27;
+			break;
+	}
+			
 	float * data = get_data();
 
 	// We do 2D separately to avoid the hypot3 call
@@ -2745,73 +2757,65 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 		for (y=i=0; y<ny; y++) {
 			for (x=0; x<nx; x+=step,i+=step) {
 				float r,v;
+				int f;
 				if (step==2) {		//complex
 					if (x==0 && y>ny/2) continue;
 					r=(float)(Util::hypot_fast(x/2,y<ny/2?y:ny-y));		// origin at 0,0; periodic
-					if (!inten) {
-#ifdef	_WIN32
-						if (isri) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
-#else
-						if (isri) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
-#endif
-						else v=data[i];							// amp/phase, just get amp
-					} else {
-						if (isinten) v=data[i];
-						else if (isri) v=data[i]*data[i]+data[i+1]*data[i+1];
-						else v=data[i]*data[i];
-					}
-				}
-				else {
-					r=(float)(Util::hypot_fast(x-nx/2,y-ny/2));
-					if (inten) v=data[i]*data[i];
-					else v=data[i];
-				}
-				r=(r-x0)/dx;
-				int f=int(r);	// safe truncation, so floor isn't needed
-				r-=float(f);	// r is now the fractional spacing between bins
-//				printf("%d\t%d\t%d\t%1.3f\t%d\t%1.3f\t%1.4g\n",x,y,f,r,step,Util::hypot_fast(x/2,y<ny/2?y:ny-y),v);
-				if (f>=0 && f<n) {
-					ret[f]+=v*(1.0f-r);
-					norm[f]+=(1.0f-r);
-					if (f<n-1) {
-						ret[f+1]+=v*r;
-						norm[f+1]+=r;
-					}
-				}
-			}
-		}
-	}
-	else {
-		size_t i;	//3D file may have >2G size
-		for (z=i=0; z<nz; ++z) {
-			for (y=0; y<ny; ++y) {
-				for (x=0; x<nx; x+=step,i+=step) {
-					float r,v;
-					if (step==2) {	//complex
-						if (x==0 && z<nz/2) continue;
-						if (x==0 && z==nz/2 && y<ny/2) continue;
-						r=Util::hypot3(x/2,y<ny/2?y:ny-y,z<nz/2?z:nz-z);	// origin at 0,0; periodic
-						if (!inten) {
+					r=(r-x0)/dx;
+					f=int(r);	// safe truncation, so floor isn't needed
+					switch (inten) {
+						case 0:
 #ifdef	_WIN32
 							if (isri) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #else
 							if (isri) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
-#endif	//_WIN32
+#endif
 							else v=data[i];							// amp/phase, just get amp
-						} else {
+							break;
+						case 1:
 							if (isinten) v=data[i];
 							else if (isri) v=data[i]*data[i]+data[i+1]*data[i+1];
 							else v=data[i]*data[i];
-						}
+							break;
+						case 2:
+#ifdef	_WIN32
+							if (isri) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+#else
+							if (isri) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+#endif
+							if (v<ret[f]) ret[f]=v;
+						case 3:
+#ifdef	_WIN32
+							if (isri) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+#else
+							if (isri) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+#endif
+							if (v>ret[f]) ret[f]=v;
 					}
-					else {
-						r=Util::hypot3(x-nx/2,y-ny/2,z-nz/2);
-						if (inten) v=data[i]*data[i];
-						else v=data[i];
-					}
+				}
+				else {
+					r=(float)(Util::hypot_fast(x-nx/2,y-ny/2));
 					r=(r-x0)/dx;
-					int f=int(r);	// safe truncation, so floor isn't needed
+					f=int(r);	// safe truncation, so floor isn't needed
+					switch (inten) {
+						case 0:
+							v=data[i];
+							break;
+						case 1:
+							v=data[i]*data[i];
+							break;
+						case 2:
+							if (data[i]<ret[f]) ret[f]=data[i];
+							break;
+						case 3:
+							if (data[i]>ret[f]) ret[f]=data[i];
+							break;
+					}
+				}
+				
+				if (inten<2) {
 					r-=float(f);	// r is now the fractional spacing between bins
+	//				printf("%d\t%d\t%d\t%1.3f\t%d\t%1.3f\t%1.4g\n",x,y,f,r,step,Util::hypot_fast(x/2,y<ny/2?y:ny-y),v);
 					if (f>=0 && f<n) {
 						ret[f]+=v*(1.0f-r);
 						norm[f]+=(1.0f-r);
@@ -2824,9 +2828,89 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, bool inten)
 			}
 		}
 	}
+	else {
+		size_t i;	//3D file may have >2G size
+		for (z=i=0; z<nz; ++z) {
+			for (y=0; y<ny; ++y) {
+				for (x=0; x<nx; x+=step,i+=step) {
+					float r,v;
+					int f;
+					if (step==2) {	//complex
+						if (x==0 && z<nz/2) continue;
+						if (x==0 && z==nz/2 && y<ny/2) continue;
+						r=Util::hypot3(x/2,y<ny/2?y:ny-y,z<nz/2?z:nz-z);	// origin at 0,0; periodic
+						r=(r-x0)/dx;
+						f=int(r);	// safe truncation, so floor isn't needed
+						switch(inten) {
+							case 0:
+#ifdef	_WIN32
+								if (isri) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+#else
+								if (isri) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+#endif	//_WIN32
+								else v=data[i];							// amp/phase, just get amp
+								break;
+							case 1:
+								if (isinten) v=data[i];
+								else if (isri) v=data[i]*data[i]+data[i+1]*data[i+1];
+								else v=data[i]*data[i];
+								break;
+							case 2:
+#ifdef	_WIN32
+								if (isri) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+#else
+								if (isri) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+#endif
+								if (v<ret[f]) ret[f]=v;
+							case 3:
+#ifdef	_WIN32
+								if (isri) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+#else
+								if (isri) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+#endif
+								if (v>ret[f]) ret[f]=v;
+						}						
+					}
+					else {
+						r=Util::hypot3(x-nx/2,y-ny/2,z-nz/2);
+						r=(r-x0)/dx;
+						f=int(r);	// safe truncation, so floor isn't needed
+						switch(inten) {
+							case 0:
+								v=data[i];
+								break;
+							case 1:
+								v=data[i]*data[i];
+								break;
+							case 2:
+								if (data[i]<ret[f]) ret[f]=data[i];
+								break;
+							case 3:
+								if (data[i]>ret[f]) ret[f]=data[i];
+								break;
+						}
+					}
 
-	for (i=0; i<n; i++) ret[i]/=norm[i]?norm[i]:1.0f;	// Normalize
-
+					if (inten<2) {
+						r-=float(f);	// r is now the fractional spacing between bins
+						if (f>=0 && f<n) {
+							ret[f]+=v*(1.0f-r);
+							norm[f]+=(1.0f-r);
+							if (f<n-1) {
+								ret[f+1]+=v*r;
+								norm[f+1]+=r;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	if (inten<2) {
+		for (i=0; i<n; i++) ret[i]/=norm[i]?norm[i]:1.0f;	// Normalize
+	}
+		
 	EXITFUNC;
 
 	return vector<float>(ret.begin(),ret.end());

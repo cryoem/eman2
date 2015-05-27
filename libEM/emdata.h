@@ -544,10 +544,10 @@ namespace EMAN
 		 * @param n number of points.
 		 * @param x0 starting point x coordinate.
 		 * @param dx step of x.
-		 * @param inten returns intensity (amp^2) rather than amplitude if set
+		 * @param inten 0 -> amp, 1-> inten (amp^2), 2->min, 3-> max
 		 * @return The radial distribution in an array.
 		 */
-		vector < float >calc_radial_dist(int n, float x0, float dx,bool inten);
+		vector < float >calc_radial_dist(int n, float x0, float dx,int inten);
 
 
 		/** calculates radial distribution subdivided by angle. works for real and imaginary images.

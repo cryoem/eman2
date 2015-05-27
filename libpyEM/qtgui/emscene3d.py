@@ -2992,6 +2992,7 @@ class NodeDialog(QtGui.QDialog):
 		self.node_type_combo.addItem("PDB")
 		self.pdbwidgetdict = {}
 		self.node_stacked_widget.addWidget(EMPDBItem3D.getNodeDialogWidget(self.pdbwidgetdict))
+#		print self.item.item3d().name
 		if self.item and self.item.item3d().name == "PDB":
 			self.node_type_combo.addItem("Ball and Stick")
 			self.ballstickwidgetdict = {}
