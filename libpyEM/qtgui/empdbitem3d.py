@@ -57,7 +57,7 @@ class EMPDBItem3D(EMItem3D):
 	@staticmethod
 	def getNodeDialogWidget(attribdict):
 		"""Get PDB Widget"""
-		datawidget = QtGui.QWidget()
+		pdbwidget = QtGui.QWidget()
 		grid = QtGui.QGridLayout()
 		node_name_data_label = QtGui.QLabel("PDB Model Label")
 		attribdict["node_name"] = QtGui.QLineEdit()
@@ -70,11 +70,10 @@ class EMPDBItem3D(EMItem3D):
 		grid.addWidget(attribdict["data_path"], 1, 2, 1, 2)
 		grid.addWidget(browse_button, 2, 0, 1, 4)
 		EMItem3D.get_transformlayout(grid, 4, attribdict)
-		datawidget.setLayout(grid)
+		pdbwidget.setLayout(grid)
 		EMPDBItem3D.attribdict = attribdict
 		QtCore.QObject.connect(browse_button, QtCore.SIGNAL('clicked()'), EMPDBItem3D._on_browse)
-
-		return datawidget
+		return pdbwidget
 	
 	@staticmethod
 	def _on_browse():
@@ -89,18 +88,21 @@ class EMPDBItem3D(EMItem3D):
 	def getNodeForDialog(attribdict):
 		"""Create a new node using a attribdict"""
 		return EMPDBItem3D(str(attribdict["data_path"].text()), transform=EMItem3D.getTransformFromDict(attribdict))
-
+	
 	def __init__(self, pdb_file, parent=None, children = set(), transform=None, style='bs'):
-		if not transform: transform = Transform()	# Object initialization should not be put in the constructor. Causes issues
+		#if not transform: transform = Transform()	# Object initialization should not be put in the constructor. Causes issues
 		EMItem3D.__init__(self, parent, children, transform=transform)
 		self.setData(pdb_file)
 		self.diffuse = [0.5,0.5,0.5,1.0]
 		self.specular = [1.0,1.0,1.0,1.0]
 		self.ambient = [1.0, 1.0, 1.0, 1.0]
 		self.shininess = 25.0
-		
+		self.pdb_file = pdb_file
 		self.renderBoundingBox = False
-
+	
+	def setLabel(self, label): 
+		self.label = label
+	
 	def setSelectedItem(self, is_selected):
 		""" Set SG apix to curent selection"""
 		EMItem3D.setSelectedItem(self, is_selected)
@@ -120,7 +122,7 @@ class EMPDBItem3D(EMItem3D):
 		return np.max(data,axis=0)
 
 	def getName(self):
-		return self.name
+		return self.model_name
 
 	def getData(self):
 		return self.data
@@ -128,16 +130,16 @@ class EMPDBItem3D(EMItem3D):
 	def setData(self, path):
 		if path == None:
 			self.path = str(self.attribdict['data_path'].text())
-			self.name = str(self.attribdict['node_name'].text())
+			self.model_name = str(self.attribdict['node_name'].text())
 		else:
 			try:
 				self.path = str(path.text())
 			except:
 				self.path = str(path)
-			self.name = self.path.split('/')[-1].split('.')[0]
+			self.model_name = self.path.split('/')[-1].split('.')[0]
 			self.attribdict = {}
 			self.attribdict['data_path'] = self.path
-			self.attribdict['node_name'] = self.name
+			self.attribdict['node_name'] = self.model_name
 		
 		self.parser = PDBReader()
 		try:
@@ -166,7 +168,7 @@ class EMPDBItem3D(EMItem3D):
 	
 	def getItemInspector(self):
 		"""Return a Qt widget that controls the scene item"""
-		if not self.item_inspector: self.item_inspector = EMPDBItem3DInspector(self.name, self)
+		if not self.item_inspector: self.item_inspector = EMPDBItem3DInspector(self.model_name, self)
 		return self.item_inspector
 
 class EMPDBItem3DInspector(EMItem3DInspector):
@@ -230,7 +232,7 @@ class EMBallStickModel(EMPDBItem3D):
 	
 	"""Ball and stick representation of a PDB model."""
 	
-	name = "Ball and Stick Model"
+	#name = "Ball and Stick Model"
 	nodetype = "PDBChild"
 	representation = "Ball and Stick"
 
@@ -240,7 +242,7 @@ class EMBallStickModel(EMPDBItem3D):
 		ballstickwidget = QtGui.QWidget()
 		grid = QtGui.QGridLayout()
 		node_name_model_label = QtGui.QLabel("PDB Structure Name")
-		attribdict["node_name"] = QtGui.QLineEdit(str(EMBallStickModel.name))
+		attribdict["node_name"] = QtGui.QLineEdit(str(EMBallStickModel.representation))
 		grid.addWidget(node_name_model_label, 0, 0, 1, 2)
 		grid.addWidget(attribdict["node_name"], 0, 2, 1, 2)
 		EMItem3D.get_transformlayout(grid, 2, attribdict)
@@ -256,7 +258,6 @@ class EMBallStickModel(EMPDBItem3D):
 		"""
 		@param parent: should be an EMPDBItem3D instance for proper functionality.
 		"""
-		#self.renderBoundingBox = False
 		if not transform: transform = Transform()	# Object initialization should not be put in the constructor. Causes issues
 		EMPDBItem3D.__init__(self, pdb_file=pdb_file, parent=parent, children=children, transform=transform)
 		self.first_render_flag = True # this is used to catch the first call to the render function - so you can do an GL context sensitive initialization when you know there is a valid context
@@ -298,10 +299,10 @@ class EMBallStickModel(EMPDBItem3D):
 		glMaterial(GL_FRONT,GL_SHININESS,color["shininess"])
 
 	def getEvalString(self):
-		return "EMBallStickItem3D()"
+		return "EMBallStickModel()"
 
 	def getItemInspector(self):
-		if not self.item_inspector: self.item_inspector = EMBallStickModelInspector("BALL/STICK", self)
+		if not self.item_inspector: self.item_inspector = EMBallStickModelInspector("BALL AND STICK", self)
 		return self.item_inspector
 
 	def getItemDictionary(self):
@@ -1042,8 +1043,7 @@ class EMBallStickModelInspector(EMPDBItem3DInspector):
 class EMSphereModel(EMPDBItem3D):
 	
 	"""Spheres representation of a PDB model."""
-	
-	name = "Spheres Model"
+
 	nodetype = "PDBChild"
 	representation = "Spheres"
 		
@@ -1053,7 +1053,7 @@ class EMSphereModel(EMPDBItem3D):
 		sphereswidget = QtGui.QWidget()
 		grid = QtGui.QGridLayout()
 		node_name_model_label = QtGui.QLabel("PDB Structure Name")
-		attribdict["node_name"] = QtGui.QLineEdit(str(EMSphereModel.name))
+		attribdict["node_name"] = QtGui.QLineEdit(str(EMSphereModel.representation))
 		grid.addWidget(node_name_model_label, 0, 0, 1, 2)
 		grid.addWidget(attribdict["node_name"], 0, 2, 1, 2)
 		EMItem3D.get_transformlayout(grid, 2, attribdict)
@@ -1065,7 +1065,7 @@ class EMSphereModel(EMPDBItem3D):
 		"""Create a new node using a attribdict"""
 		return EMSphereModel(attribdict["parent"], transform=EMItem3D.getTransformFromDict(attribdict))
 	
-	def __init__(self, parent=None, children = set(), transform=None):
+	def __init__(self, pdb_file, parent=None, children = set(), transform=None):
 		"""
 		@param parent: should be an EMPDBItem3D instance for proper functionality.
 		"""
@@ -1078,15 +1078,10 @@ class EMSphereModel(EMPDBItem3D):
 		self.colors = get_default_gl_colors()
 		amino_acids = ["ALA","ARG","ASN","ASP","CYS","GLU","GLN","GLY","HIS","ILE","LEU","LYS","MET","PHE","PRO","SER","THR","TYR","TRP","VAL"]
 		self.side_chains = {aa:[] for aa in amino_acids}
-# 		try:
-# 			with open(self.path) as pdbfile:
-# 				self.text = infile.readlines()
-# 		except:
-# 			print("You must provide a parent node for this representation.")
 	
 	def current_text(self):
 		return self.text
-
+	
 	# I have added these methods so the inspector can set the color John Flanagan
 	def setAmbientColor(self, red, green, blue, alpha=1.0):
 		self.ambient = [red, green, blue, alpha]
@@ -1113,7 +1108,7 @@ class EMSphereModel(EMPDBItem3D):
 		return "EMSphereModel()"
 
 	def getItemInspector(self):
-		if not self.item_inspector: self.item_inspector = EMSphereModelInspector("BALL/STICK", self)
+		if not self.item_inspector: self.item_inspector = EMSphereModelInspector("SPHERES", self)
 		return self.item_inspector
 
 	def getItemDictionary(self):

@@ -58,8 +58,8 @@ def main():
 
 	parser.add_argument("--classmx",type=str,help="<classmx>,<#> Show particles in one class from a classification matrix. Pass raw particle file as first argument to command.")
 	parser.add_argument("--classes",type=str,help="<rawptcl>,<classmx> Show particles associated class-averages")
+	parser.add_argument("--pdb",type=str,help="<pdb file> Show PDB structure.")
 	parser.add_argument("--singleimage",action="store_true",default=False,help="Display a stack in a single image view")
-	#parser.add_argument("--pdb",type=str,nargs='*',help="Specify the location of one or more PDB files for viewing.")
 	parser.add_argument("--plot",action="store_true",default=False,help="Data file(s) should be plotted rather than displayed in 2-D")
 	parser.add_argument("--plot3",action="store_true",default=False,help="Data file(s) should be plotted rather than displayed in 3-D")
 	parser.add_argument("--fullrange",action="store_true",default=False,help="A specialized flag that disables auto contrast for the display of particles stacks and 2D images only.")
@@ -72,12 +72,12 @@ def main():
 #	logid=E2init(sys.argv)
 
 	app = EMApp()
-	gapp = app
+	#gapp = app
 	#QtGui.QApplication(sys.argv)
 	win=[]
 	if options.fullrange:
 		fullrangeparms = set_full_range()
-
+	
 	if len(args) < 1:
 		global dialog
 		file_list = []
@@ -87,6 +87,9 @@ def main():
 # 			QtCore.QObject.connect(dialog,QtCore.SIGNAL("ok"),on_browser_done)
 # 			QtCore.QObject.connect(dialog,QtCore.SIGNAL("cancel"),on_browser_cancel)
 		except: pass
+	
+	elif options.pdb:
+		load_pdb(args,app)
 	
 	elif options.plot:
 		plot(args,app)
@@ -260,6 +263,21 @@ def plot_3d(files,app):
 	plotw.setWindowTitle("3D Plot")
 	app.show_specific(plotw)
 	return plotw
+
+def load_pdb(files,app):
+	from empdbitem3D import EMPDBItem3D, EMBallStickModel
+	scene=EMScene3D()
+	title = []
+	for f in files:
+		pdb_model = EMPDBItem3D(f)
+		scene.insertNewNode(f.split("/")[-1],pdb_model)
+		modeltype = EMBallStickModel(f) 
+		scene.insertNewNode(modeltype.representation, modeltype, parentnode = pdb_model)
+		scene.addChild(EMPDBItem3D(f))
+		title.append(pdb_model.getName())
+	scene.setWindowTitle(" ".join(title))
+	scene.show()
+	return scene
 
 # If executed as a program
 if __name__ == '__main__':

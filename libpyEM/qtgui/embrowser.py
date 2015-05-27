@@ -1067,10 +1067,9 @@ class EMPDBFileType(EMFileType):
 		Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. 
 		The first 4k block of data from the file is provided as well to avoid unnecesary file access.
 		"""
-		
-		proper_extensions = ['pdb','ent']
-		if os.path.basename(a).split('.')[-1] not in proper_extensions: 
-			return False
+		proper_exts = ['pdb','ent']
+		ext = os.path.basename(path).split('.')[-1]
+		if ext not in proper_exts: return False
 		
 		if not isprint(header) : return False			# demand printable Ascii. FIXME: what about unicode ?
 		
