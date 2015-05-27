@@ -14918,13 +14918,13 @@ def ave_ali(name_stack, name_out = None, ali = False, active = False, param_to_s
 	else:
 		mode = ''
 
-	# # horatio active_refactoring ﻿Jy51i1EwmLD4tWZ9_00002_1	
+	# # horatio active_refactoring Jy51i1EwmLD4tWZ9_00002_1	
 	# if active: 
 	# 	listID, N = k_means_list_active(name_stack)
 	# else:
 	# 	listID    = range(N)
 
-	# # horatio active_refactoring ﻿Jy51i1EwmLD4tWZ9_00002_2	
+	# # horatio active_refactoring Jy51i1EwmLD4tWZ9_00002_2	
 	listID    = range(N)
 
 	

@@ -2122,7 +2122,7 @@ def k_means_locasg2glbasg(ASG, LUT, N):
 
 	return GASG
 
-# # # horatio active_refactoring ﻿Jy51i1EwmLD4tWZ9_00000_1
+# # # horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
 # # k-means open and prepare images, only unstable objects (active = 1)
 # def k_means_list_active(stack):
 # 	from utilities     import file_type
@@ -2186,7 +2186,7 @@ def k_means_init_open_im(stack, maskname):
 		Ntot = len(open(stack, 'r').readlines())
 	else:   Ntot = EMUtil.get_image_count(stack)
 
-	# horatio active_refactoring ﻿Jy51i1EwmLD4tWZ9_00000_1	
+	# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1	
 	# # check if the flag active is used, in the case where k-means will run for the stability
 	# if TXT:
 	# 	flagactive = False
@@ -5376,7 +5376,7 @@ def k_means_cuda_init_open_im(stack, maskname):
 	m  = im.get_xsize()
 	del im
 
-	# horatio active_refactoring ﻿Jy51i1EwmLD4tWZ9_00000_1
+	# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
 	# # check if the flag active is used, in the case where k-means will run for the stability
 	# if TXT:
 	# 	flagactive = False
@@ -6454,7 +6454,7 @@ def k_means_stab_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0, th
 
 		# tag informations to the header
 		logging.info('... Update info to the header')
-		# horatio active_refactoring ﻿Jy51i1EwmLD4tWZ9_00000_1
+		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
 		# k_means_stab_update_tag(stack, STB_PART, id_rejected)
 	
 	logging.info('... Done')
@@ -6609,7 +6609,7 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 		if not TXT:
 		        # tag informations to the header
 			logging.info('... Update info to the header')
-			# horatio active_refactoring ﻿Jy51i1EwmLD4tWZ9_00000_1				
+			# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1				
 			# k_means_stab_update_tag(stack, STB_PART, id_rejected)
 
 		logging.info('... Done')
@@ -7025,7 +7025,7 @@ def k_means_asg_locasg2glbpart(ASG, LUT):
 
 	return PART
 
-# horatio active_refactoring ﻿Jy51i1EwmLD4tWZ9_00000_1
+# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
 # # Update information to the header of the stack file
 # def k_means_stab_update_tag(stack, STB_PART, lrej):
 # 	from utilities import file_type, write_header
@@ -7102,7 +7102,7 @@ def k_means_extract_class_ali(stack_name, ave_name, dir):
 			alpha, sx, sy, mir, scale = get_params2D(im, 'xform.align2d')
 			im = rot_shift2D(im, alpha, sx, sy, mir, scale)
 			set_params2D(im, [0.0, 0.0, 0.0, 0, 1.0], 'xform.align2d')
-			# horatio active_refactoring ﻿Jy51i1EwmLD4tWZ9_00000_1
+			# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
 			# im.set_attr('active', 1)
 			im.write_image(trg, i)
 	
