@@ -1060,7 +1060,7 @@ def aves_w(stack, mode="a"):
 	ctf_2_sum = [0]*len(ctf_1)
 	for i in xrange(nima):
 		e.read_image(stack,i)
-		# # horatio active_refactoring ﻿Jy51i1EwmLD4tWZ9_00000_1
+		# # horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
 		# active = e.get_attr('active')
 		# if(active):
 		if(mode == "a"): # for alignment 
