@@ -845,7 +845,7 @@ def main():
 			params2d = ali2d_base(stack, init2dir, None, 1, radi, 1, txr, txr, tss, \
 				False, 90.0, -1, 20, options.CTF, 1.0, False, \
 				"ref_ali2d", "", log2d, \
-				number_of_proc, myid, main_node, MPI_COMM_WORLD,\
+				nproc, myid, main_node, MPI_COMM_WORLD,\
 				write_headers = False)
 			#  Convert 2d to 3D parameters
 			if( myid == main_node ):
