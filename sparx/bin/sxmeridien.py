@@ -857,7 +857,7 @@ def main():
 			#  Convert 2d to 3D parameters
 			if( myid == main_node ):
 				for i in xrange(len(params2d)):
-					params2d = params_2D_3D(params2d[i][0], params2d[i][1], params2d[i][2], int(params2d[i][3]))
+					params2d[i] = params_2D_3D(params2d[i][0], params2d[i][1], params2d[i][2], int(params2d[i][3]))
 				write_text_row(params2d,os.path.join(init2dir, "initial3Dshifts.txt"))
 
 	#  Run exhaustive projection matching to get initial orientation parameters
