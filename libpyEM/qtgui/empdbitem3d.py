@@ -51,7 +51,8 @@ class EMPDBItem3D(EMItem3D):
 	displayable, and are sized, postioned, and oriented relative to this node.
 	"""
 	
-	name = "PDB Model"
+	name = "PDB"
+	nodetype = "SceneChild"
 	
 	@staticmethod
 	def getNodeDialogWidget(attribdict):
@@ -337,7 +338,7 @@ class EMBallStickModel(EMPDBItem3D):
 		amino = []
 		currentRes = point_resNum[0]
 		for i in range(len(self.data)):
-			if (point_resNum[i]==currentRes):
+			if point_resNum[i]==currentRes:
 				x.append(point_x[i])
 				y.append(point_y[i])
 				z.append(point_z[i])
