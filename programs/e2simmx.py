@@ -385,7 +385,19 @@ class EMSimTaskDC(JSTask):
 #		print self.data["references"][2:]
 		refs = {}
 		for idx in ref_indices:
-			image = EMData(ref_data_name,idx)
+			datareaderror=True
+			for datareadid in range(20):
+				try: image = EMData(ref_data_name,idx)
+				except:
+					print "Failed to read %s from range %s. Wait for 5s and try again."%(str(idx),str(ptcl_indices))
+					time.sleep(5)
+				else:
+					datareaderror=False
+					break
+			if datareaderror:
+				print "Cannot read image. Give up."
+				raise Exception,"Couldn't read data in init_memory"
+				
 			if shrink != None:
 				image.process_inplace("math.meanshrink",{"n":options["shrink"]})
 
@@ -402,10 +414,20 @@ class EMSimTaskDC(JSTask):
 
 		ptcls = {}
 		for idx in ptcl_indices:
-			try: image = EMData(ptcl_data_name,idx)
-			except:
-				print "Failed to read %s in %s from range %s"%(str(idx),ptcl_data_name,str(ptcl_indices))
+			datareaderror=True
+			for datareadid in range(20):
+				try: image = EMData(ptcl_data_name,idx)
+				except:
+					print "Failed to read %s in %s from range %s. Wait for 5s and try again."%(str(idx),ptcl_data_name,str(ptcl_indices))
+					time.sleep(5)
+				else:
+					datareaderror=False
+					break
+			if datareaderror:
+				print "Cannot read image. Give up."
 				raise Exception,"Couldn't read data in init_memory"
+			
+			
 			if shrink != None:
 				image.process_inplace("math.meanshrink",{"n":options["shrink"]})
 # removed 8/2/12 stevel. Don't want to apply mask before alignment
