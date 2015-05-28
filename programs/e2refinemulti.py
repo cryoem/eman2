@@ -331,7 +331,7 @@ in the refinement directory. You can use Info with the browser or just read the 
 			if scale>1 : cmd="e2proc3d.py {path}/threed_00_{i:02d}.hdf {path}/threed_00_{i:02d}.hdf --clip={cl},{cl},{cl} --scale={sca:1.4f}".format(path=options.path,i=i+1,cl=xsize,sca=scale)
 			else :       cmd="e2proc3d.py {path}/threed_00_{i:02d}.hdf {path}/threed_00_{i:02d}.hdf --scale={sca:1.4f} --clip={cl},{cl},{cl}".format(path=options.path,i=i+1,cl=xsize,sca=scale)
 			run(cmd)
-		if ( options.randclassify ):
+		if ( options.randclassify and options.model!=None ):
 			break
 
 	repim=EMData(options.input,0)		# read a representative image to get some basic info
