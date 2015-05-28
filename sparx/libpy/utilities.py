@@ -1785,7 +1785,7 @@ def write_text_row(data, file_name):
 					# we manually mimic the spec.  
 					# %12.5g results in int when a float value has only one non-zero digit after decimal point 
 					a = data[i][j]
-					z = (float("  %12.5f"%a) == a)
+					z = (a>0.00001 and a<1.e6) or (a<-0.00001 and a>-1.e4)
 					if z: outf.write("  %12.5f"%a)
 					else: outf.write("  %12.5e"%a)
 				else:
@@ -1803,7 +1803,7 @@ def write_text_row(data, file_name):
 				# we manually mimic the spec.  
 				# %12.5g results in int when a float value has only one non-zero digit after decimal point 
 				a = data[j]
-				z = (float("  %12.5f\n"%a) == a)
+				z = (a>0.00001 and a<1.e6) or (a<-0.00001 and a>-1.e4)
 				if z: outf.write("  %12.5f\n"%a)
 				else: outf.write("  %12.5e\n"%a)
 			else:
@@ -1864,7 +1864,7 @@ def write_text_file(data, file_name):
 					# we manually mimic the spec.  
 					# %12.5g results in int when a float value has only one non-zero digit after decimal point 
 					a = data[j][i]
-					z = (float("  %12.5f"%a) == a)
+					z = (a>0.00001 and a<1.e6) or (a<-0.00001 and a>-1.e4)
 					if z: outf.write("  %12.5f"%a)
 					else: outf.write("  %12.5e"%a)
 				else:
@@ -1882,7 +1882,7 @@ def write_text_file(data, file_name):
 				# we manually mimic the spec.  
 				# %12.5g results in int when a float value has only one non-zero digit after decimal point 
 				a = data[j]
-				z = (float("  %12.5f\n"%a) == a)
+				z = (a>0.00001 and a<1.e6) or (a<-0.00001 and a>-1.e4)
 				if z: outf.write("  %12.5f\n"%a)
 				else: outf.write("  %12.5e\n"%a)
 			else:

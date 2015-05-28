@@ -332,7 +332,7 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 		lowpass, falloff, currentres = get_resolution(vol, mask, nnxo, outputdir)
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print(  line,"Current resolution %6.2f, low-pass filter cut-off %6.4f and fall-off %6.4f"%(currentres,lowpass,falloff))
-		write_text_row([lowpass, falloff, currentres],os.path.join(outputdir,"current_resolution.txt"))
+		write_text_row([[lowpass, falloff, currentres]],os.path.join(outputdir,"current_resolution.txt"))
 	#  Returns: low-pass filter cutoff;  low-pass filter falloff;  current resolution
 	currentres = bcast_number_to_all(currentres, source_node = main_node)
 	lowpass    = bcast_number_to_all(lowpass, source_node = main_node)
@@ -970,7 +970,7 @@ def main():
 			lowpass, falloff, currentres = get_resolution(vol, radi, nnxo, initdir)
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			print(  line,"Initial resolution %6.2f, filter cut-off %6.4f and fall-off %6.4f"%(currentres,lowpass,falloff))
-			write_text_row([lowpass, falloff, currentres],os.path.join(initdir,"current_resolution.txt"))
+			write_text_row([[lowpass, falloff, currentres]],os.path.join(initdir,"current_resolution.txt"))
 		else:
 			lowpass    = 0.0
 			falloff    = 0.0
@@ -996,8 +996,8 @@ def main():
 	nxshrink += nxshrink%2
 	shrink = float(nxshrink)/nnxo
 	nsoft = options.nsoft
+	falloff = paramsdict["falloff"]
 	paramsdict["initialfl"] = lowpass
-	falloff = 0.2
 	tracker = {"resolution":currentres,"lowpass":lowpass, "falloff":falloff, "initialfl":lowpass,  \
 				"movedup":False,"eliminated-outliers":False,"PWadjustment":"","local":False,"nsoft":nsoft, \
 				"nx":nxshrink, "shrink":shrink, "extension":0.0,"directory":"none"}
