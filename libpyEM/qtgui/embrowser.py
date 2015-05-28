@@ -31,15 +31,17 @@
 #
 
 from EMAN2 import *
+from EMAN2jsondb import js_open_dict
 from emapplication import EMApp
 from emimage2d import *
 from emimagemx import *
 from empdbitem3d import *
 from emplot2d import *
 from emplot3d import *
+from expand_string import expand_string
 from libpyUtils2 import EMUtil
+from matching import matches_pats
 import os
-import os.path
 import re
 from string import lower
 import threading
@@ -49,12 +51,7 @@ from valslider import StringBox
 import weakref
 
 from PyQt4 import QtCore, QtGui
-import PyQt4
 from PyQt4.QtCore import Qt, QString, QChar
-
-from EMAN2jsondb import js_open_dict
-from expand_string import expand_string
-from matching import matches_pats
 
 
 #---------------------------------------------------------------------------
@@ -1090,7 +1087,7 @@ class EMPDBFileType(EMFileType):
 		"""
 		return [("Show Ball and Stick", "Show ball and stick representation of this PDB model in a new 3D window", self.showBallStick3DNew), ("Show Ball and Stick +", "Show ball and stick representation of this PDB model in the current 3D window", self.showBallStick3dApp), ("Show Spheres", "Show spheres representation of this PDB model in a new 3D window", self.showSpheres3DNew), ("Show Spheres +", "Show spheres representation of this PDB model in the current 3D window", self.showSpheres3dApp), ("Chimera", "Open this PDB file in chimera (if installed)", self.showChimera), ("Save As", "Saves a copy of the selected PDB file", self.saveAs)]
 
-	def showSpheres3DNew(self, brws):
+	def showSpheres3DApp(self, brws):
 		"""New 3-D window"""
 		brws.busy()
 		pdb_model = EMPDBItem3D(self.path)
@@ -1106,7 +1103,7 @@ class EMPDBFileType(EMFileType):
 		target.show()
 		target.raise_()
 
-	def showSpheres3dApp(self, brws):
+	def showSpheres3dNew(self, brws):
 		"""Add to current 3-D window"""
 		brws.busy()
 		pdb_model = EMPDBItem3D(self.path)
@@ -1125,7 +1122,7 @@ class EMPDBFileType(EMFileType):
 		target.show()
 		target.raise_()
 
-	def showBallStick3DNew(self, brws):
+	def showBallStick3DApp(self, brws):
 		"""New 3-D window"""
 		brws.busy()
 		pdb_model = EMPDBItem3D(self.path)
@@ -1141,7 +1138,7 @@ class EMPDBFileType(EMFileType):
 		target.show()
 		target.raise_()
 
-	def showBallStick3dApp(self, brws):
+	def showBallStick3dNew(self, brws):
 		"""Add to current 3-D window"""
 		brws.busy()
 		pdb_model = EMPDBItem3D(self.path)
