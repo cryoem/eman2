@@ -1080,7 +1080,7 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 	int maxiter = params.set_default("maxiter",100);
 	int maxvoxmove = params.set_default("maxvoxmove",25);
 	int verbose = params.set_default("verbose",0);
-	bool psudoatom = params.set_default("psudoatom",0);
+	bool pseudoatom = params.set_default("pseudoatom",0);
 	float sep = params.set_default("sep",3.78f);
 
 	int nx=image->get_xsize();
@@ -1092,7 +1092,7 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 	vector<float> centers(nseg*3);
 	vector<float> count(nseg);
 	// Alternative seeding method for paudoatom generation. Seed on the gird.
-	if (psudoatom){
+	if (pseudoatom){
 		float ax=image->get_attr("apix_x");
 		sep/=ax;
 		if (verbose) printf("Seeding .....\n");

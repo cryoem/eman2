@@ -844,12 +844,12 @@ The basic design of EMAN Processors: <br>\
 			d.put("maxvoxmove",EMObject::FLOAT,"Maximum number of voxels that can move before quitting. Default=25");
 			d.put("verbose",EMObject::INT,"Be verbose while running");
 			/**
-			 *An option for psudoatom generation in pathwalker. Instead of random seeding, seed on the gird initially.
+			 *An option for pseudoatom generation in pathwalker. Instead of random seeding, seed on the gird initially.
 			 *@author Muyuan Chen
 			 *@date 2014/06/05
 	         */
-			d.put("psudoatom",EMObject::BOOL,"Doing psudoatom generation");
-			d.put("sep",EMObject::FLOAT,"Separation distance, used only in psudoatom generation. Default=3.78");
+			d.put("pseudoatom",EMObject::BOOL,"Doing pseudoatom generation");
+			d.put("sep",EMObject::FLOAT,"Separation distance, used only in pseudoatom generation. Default=3.78");
 			return d;
 		}
 
