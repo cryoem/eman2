@@ -82,11 +82,12 @@ def main():
 		par=options.parallel
 		
 	### Build tree
-	if not os.path.isfile(options.nodes):
-		print "Building binary tree..."
-		buildtree(projs,par,options.nodes,options.incomplete,options.verbose)
-	else:
-		print "Using existing tree..."
+	### always overwrite the tree here now
+	#if not os.path.isfile(options.nodes):
+	print "Building binary tree..."
+	buildtree(projs,par,options.nodes,options.incomplete,options.verbose)
+	#else:
+		#print "Using existing tree..."
 	
 	## Generate children pairs for comparison
 	print "Generating children pairs for comparison..."
