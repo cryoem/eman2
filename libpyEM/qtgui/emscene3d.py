@@ -37,6 +37,7 @@ from emapplication import EMGLWidget
 from emdataitem3d import *
 from emglobjects import get_default_gl_colors
 from emitem3d import EMItem3D, EMItem3DInspector
+from empdbitem3d import *
 from emshapeitem3d import *
 from libpyGLUtils2 import GLUtil
 import math
@@ -49,8 +50,6 @@ from OpenGL import GLU
 from OpenGL.GL import *
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from PyQt4.QtCore import Qt
-
-from empdbitem3d import *
 
 
 #from emdataitem3d import EMDataItem3D, EMIsosurface, EMSliceItem3D, EMVolumeItem3D
@@ -2992,7 +2991,6 @@ class NodeDialog(QtGui.QDialog):
 		self.node_type_combo.addItem("PDB")
 		self.pdbwidgetdict = {}
 		self.node_stacked_widget.addWidget(EMPDBItem3D.getNodeDialogWidget(self.pdbwidgetdict))
-#		print self.item.item3d().name
 		if self.item and self.item.item3d().name == "PDB":
 			self.node_type_combo.addItem("Ball and Stick")
 			self.ballstickwidgetdict = {}
@@ -3054,7 +3052,7 @@ class NodeDialog(QtGui.QDialog):
 			insertion_node = EMPDBItem3D.getNodeForDialog(self.pdbwidgetdict)
 			node_name = str(self.pdbwidgetdict["node_name"].text())
 		# Ball/Stick
-		if self.node_type_combo.currentText() == "Ball/Stick": 
+		if self.node_type_combo.currentText() == "Ball and Stick": 
 			self.ballstickwidgetdict["parent"] = parentnode = self.item.item3d()
 			insertion_node = EMBallStickModel.getNodeForDialog(self.ballstickwidgetdict)
 			node_name = str(self.ballstickwidgetdict["node_name"].text())
@@ -3130,7 +3128,7 @@ class GLdemo(QtGui.QWidget):
 
 if __name__ == "__main__":
 	import sys
-	from pmwidgets import PMIntEntryWidget, PMStringEntryWidget, PMBoolWidget, PMFileNameWidget, PMComboWidget
+	#from pmwidgets import PMIntEntryWidget, PMStringEntryWidget, PMBoolWidget, PMFileNameWidget, PMComboWidget
 	app = QtGui.QApplication(sys.argv)
 	window = GLdemo()
 	window.show()

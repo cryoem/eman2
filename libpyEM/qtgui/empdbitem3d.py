@@ -100,32 +100,20 @@ class EMPDBItem3D(EMItem3D):
 		self.pdb_file = pdb_file
 		self.renderBoundingBox = False
 	
-	def setLabel(self, label): 
-		self.label = label
-	
 	def setSelectedItem(self, is_selected):
 		""" Set SG apix to curent selection"""
 		EMItem3D.setSelectedItem(self, is_selected)
 		sg = self.getRootNode()
 
-	def getRenderBoundingBox(self):
-		return self.renderBoundingBox
-
-	def setRenderBoundingBox(self,state):
-		self.renderBoundingBox = state
-
-	def getEvalString(self):
-		return "EMPDBItem3D(\"%s\")"%os.path.abspath(self.path)
-
 	def getBoundingBoxDimensions(self):
 		data = self.getData()
-		return np.max(data,axis=0)
+		return np.abs(np.max(data,axis=0).astype(np.int)) + np.std(data,axis=0).astype(np.int)
 
-	def getName(self):
-		return self.model_name
-
-	def getData(self):
-		return self.data
+	def getRenderBoundingBox(self): return self.renderBoundingBox
+	def setRenderBoundingBox(self,state): self.renderBoundingBox = state
+	def getEvalString(self): return "EMPDBItem3D(\"%s\")"%os.path.abspath(self.path)
+	def getName(self): return self.model_name
+	def getData(self): return self.data
 
 	def setData(self, path):
 		if path == None:
@@ -145,8 +133,8 @@ class EMPDBItem3D(EMItem3D):
 		try:
 			self.parser.read_from_pdb(self.path)
 			self.natoms = self.parser.get_number_points()
-			points = self.parser.get_points()
-			self.data = np.array(points).reshape(self.natoms,3)
+			self.data = np.array(self.parser.get_points()).reshape(self.natoms,3)
+			self.atom_names = self.parser.get_atomName()
 		except:
 			print('Could not validate this PDB file. Try another or redownload, as your copy may be corrupt.')
 		
@@ -218,7 +206,7 @@ class EMPDBItem3DInspector(EMItem3DInspector):
 
 	def onFileBrowse(self):
 		#TODO: replace this with an EMAN2 browser window once we re-write it
-		file_path = QtGui.QFileDialog.getOpenFileName(self, "Open 3D Volume Map")
+		file_path = QtGui.QFileDialog.getOpenFileName(self, "Open PDB Model")
 		if file_path:
 			self.file_path_label.setText(file_path)
 			self.item3d().setData(file_path)
@@ -227,12 +215,29 @@ class EMPDBItem3DInspector(EMItem3DInspector):
 	def onBBoxChange(self, state):
 		self.item3d().setRenderBoundingBox(not self.item3d().getRenderBoundingBox())
 		self.inspector().updateSceneGraph()
+	
+	###########
+	# John Flanagan added these methods so the inspector can set the color
+	###########
+	
+	def setAmbientColor(self, red, green, blue, alpha=1.0):
+		self.ambient = [red, green, blue, alpha]
+	
+	def setDiffuseColor(self, red, green, blue, alpha=1.0):
+		self.diffuse = [red, green, blue, alpha]
+
+	def setSpecularColor(self, red, green, blue, alpha=1.0):
+		self.specular = [red, green, blue, alpha]
+
+	def setShininess(self, shininess):
+		self.shininess = shininess
+	
+	############
 
 class EMBallStickModel(EMPDBItem3D):
 	
 	"""Ball and stick representation of a PDB model."""
 	
-	#name = "Ball and Stick Model"
 	nodetype = "PDBChild"
 	representation = "Ball and Stick"
 
@@ -252,8 +257,11 @@ class EMBallStickModel(EMPDBItem3D):
 	@staticmethod
 	def getNodeForDialog(attribdict):
 		"""Create a new node using a attribdict"""
-		return EMBallStickModel(attribdict["parent"], transform=EMItem3D.getTransformFromDict(attribdict))
-
+		parent = attribdict["parent"]
+		pdb_file = parent.attribdict['data_path']
+		transform = EMItem3D.getTransformFromDict(attribdict)
+		return EMBallStickModel(pdb_file=pdb_file, parent=parent, transform=transform)
+	
 	def __init__(self, pdb_file, parent=None, children = set(), transform=None):
 		"""
 		@param parent: should be an EMPDBItem3D instance for proper functionality.
@@ -273,22 +281,6 @@ class EMBallStickModel(EMPDBItem3D):
 		amino_acids_list = ["ALA","ARG","ASN","ASP","CYS","GLU","GLN","GLY","HIS","ILE","LEU","LYS","MET","PHE","PRO","SER","THR","TYR","TRP","VAL"]
 		self.side_chains = {aa:[] for aa in amino_acids_list}
 	
-	def current_text(self): 
-		return self.text
-
-	# I have added these methods so the inspector can set the color John Flanagan
-	def setAmbientColor(self, red, green, blue, alpha=1.0):
-		self.ambient = [red, green, blue, alpha]
-
-	def setDiffuseColor(self, red, green, blue, alpha=1.0):
-		self.diffuse = [red, green, blue, alpha]
-
-	def setSpecularColor(self, red, green, blue, alpha=1.0):
-		self.specular = [red, green, blue, alpha]
-
-	def setShininess(self, shininess):
-		self.shininess = shininess
-		
 	def load_gl_color(self,name):
 		color = self.colors[name]
 		glColor(color["ambient"])
@@ -297,9 +289,10 @@ class EMBallStickModel(EMPDBItem3D):
 		glMaterial(GL_FRONT,GL_SPECULAR,color["specular"])
 		glMaterial(GL_FRONT,GL_EMISSION,color["emission"])
 		glMaterial(GL_FRONT,GL_SHININESS,color["shininess"])
-
-	def getEvalString(self):
-		return "EMBallStickModel()"
+	
+	def setLabel(self, label): self.label = label
+	def current_text(self):  return self.text
+	def getEvalString(self): return "EMBallStickModel()"
 
 	def getItemInspector(self):
 		if not self.item_inspector: self.item_inspector = EMBallStickModelInspector("BALL AND STICK", self)
@@ -525,8 +518,7 @@ class EMBallStickModel(EMPDBItem3D):
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
 		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
-		if self.first_render_flag: 
-			self.first_render_flag = False
+		if self.first_render_flag: self.first_render_flag = False
 		glPushMatrix()
 		self.draw_objects()
 		glPopMatrix()
@@ -1063,38 +1055,43 @@ class EMSphereModel(EMPDBItem3D):
 	@staticmethod
 	def getNodeForDialog(attribdict):
 		"""Create a new node using a attribdict"""
-		return EMSphereModel(attribdict["parent"], transform=EMItem3D.getTransformFromDict(attribdict))
+		parent = attribdict["parent"]
+		pdb_file = parent.attribdict["data_path"]
+		transform=EMItem3D.getTransformFromDict(attribdict)
+		return EMSphereModel(pdb_file=pdb_file, parent=parent, transform=transform)
 	
-	def __init__(self, pdb_file, parent=None, children = set(), transform=None):
+	@staticmethod
+	def get_vanderwaals_radius(name):
+		# returns van der waals radius in angstroms
+		if 'H' in name: return 1.2
+		elif 'C' in name: return 1.7
+		elif 'N' in name: return 1.5
+		elif 'O' in name: return 1.4
+		elif 'F' in name: return 1.35
+		elif 'P' in name: return 1.9
+		elif 'S' in name: return 1.85
+		elif 'CL' in name: return 1.8
+		else: return 1.5
+	
+	def __init__(self, pdb_file, parent=None, children = set(), transform=None, radius=1.75):
 		"""
 		@param parent: should be an EMPDBItem3D instance for proper functionality.
 		"""
 		if not transform: transform = Transform()	# Object initialization should not be put in the constructor. Causes issues
 		EMPDBItem3D.__init__(self, pdb_file=pdb_file, parent=parent, children=children, transform=transform)
 		self.first_render_flag = True # this is used to catch the first call to the render function - so you can do an GL context sensitive initialization when you know there is a valid context
-		self.spheredl = 0 # this will be a low resolution sphere
+		self.gq = None # will be a glu quadric
+		self.dl = None
+# 		self.spheredl = 0 # this will be a low resolution sphere
 		self.highresspheredl = 0 # high resolution sphere
-		self.radius = 100
+		self.radius = radius
 		self.colors = get_default_gl_colors()
-		amino_acids = ["ALA","ARG","ASN","ASP","CYS","GLU","GLN","GLY","HIS","ILE","LEU","LYS","MET","PHE","PRO","SER","THR","TYR","TRP","VAL"]
-		self.side_chains = {aa:[] for aa in amino_acids}
+		self.vwr = [self.get_vanderwaals_radius(an) for an in self.atom_names]
+		self.coords = self.data - np.mean(self.data,axis=0)
 	
 	def current_text(self):
 		return self.text
 	
-	# I have added these methods so the inspector can set the color John Flanagan
-	def setAmbientColor(self, red, green, blue, alpha=1.0):
-		self.ambient = [red, green, blue, alpha]
-
-	def setDiffuseColor(self, red, green, blue, alpha=1.0):
-		self.diffuse = [red, green, blue, alpha]
-
-	def setSpecularColor(self, red, green, blue, alpha=1.0):
-		self.specular = [red, green, blue, alpha]
-
-	def setShininess(self, shininess):
-		self.shininess = shininess
-		
 	def load_gl_color(self,name):
 		color = self.colors[name]
 		glColor(color["ambient"])
@@ -1124,6 +1121,19 @@ class EMSphereModel(EMPDBItem3D):
 		self.setDiffuseColor(dictionary["COLOR"][1][0], dictionary["COLOR"][1][1], dictionary["COLOR"][1][2], dictionary["COLOR"][1][3])
 		self.setSpecularColor(dictionary["COLOR"][2][0], dictionary["COLOR"][2][1], dictionary["COLOR"][2][2], dictionary["COLOR"][2][3])
 	
+	def init_basic_shapes(self):
+		if self.gq == None:
+			self.gq=gluNewQuadric() # a quadric for general use
+			gluQuadricDrawStyle(self.gq,GLU_FILL)
+			gluQuadricNormals(self.gq,GLU_SMOOTH)
+			gluQuadricOrientation(self.gq,GLU_OUTSIDE)
+			gluQuadricTexture(self.gq,GL_FALSE)
+		if self.highresspheredl == 0:
+			self.highresspheredl=glGenLists(1)
+			glNewList(self.highresspheredl,GL_COMPILE)
+			gluSphere(self.gq,self.radius,20,20)
+			glEndList()
+	
 	def renderNode(self):
 		if self.is_selected and glGetIntegerv(GL_RENDER_MODE) == GL_RENDER and not self.isSelectionHidded(): # No need to draw outline in selection mode
 			#if glGetIntegerv(GL_RENDER_MODE) == GL_RENDER: print "X"
@@ -1146,7 +1156,7 @@ class EMSphereModel(EMPDBItem3D):
 			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE )
 			glMaterialfv(GL_FRONT, GL_EMISSION, [0.0, 1.0, 0.0, 1.0])
 			self.renderShape()
-			glPopAttrib()	
+			glPopAttrib()
 		else:
 			glPushAttrib( GL_ALL_ATTRIB_BITS )
 			self.renderShape()
@@ -1158,19 +1168,48 @@ class EMSphereModel(EMPDBItem3D):
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
 		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
-		qd = gluNewQuadric() # a quadric for general use
-		gluQuadricDrawStyle(qd,GLU_FILL)
-		gluQuadricNormals(qd,GLU_SMOOTH)
-		gluQuadricOrientation(qd,GLU_OUTSIDE)
-		gluQuadricTexture(qd,GL_FALSE)
-		for coord in self.data:
-			glPushMatrix()
-			glTranslate(coord[0],coord[1],coord[2])
-			gluSphere(qd,self.radius,8,8)
-			glPopMatrix()
-
+		if self.first_render_flag: self.first_render_flag = False
+		glPushMatrix()
+		self.draw_objects()
+		glPopMatrix()
+	
+	def draw_objects(self):
+		self.init_basic_shapes() # only does something the first time you call it
+		if self.dl == None: #self.dl is the display list, every time a new file is added, this is changed back to None
+			self.dl=glGenLists(1)
+			glNewList(self.dl,GL_COMPILE)
+			for i in xrange(self.natoms):
+				glPushMatrix()
+				glTranslate(self.coords[i][0],self.coords[i][1],self.coords[i][2])
+				glScale(self.vwr[i],self.vwr[i],self.vwr[i])
+				if 'C' in self.atom_names[i]: self.load_gl_color("white")
+				elif 'N' in self.atom_names[i]: self.load_gl_color("green")
+				elif 'O' in self.atom_names[i]: self.load_gl_color("blue")
+				elif 'S' in self.atom_names[i]: self.load_gl_color("red")
+				elif 'H' in self.atom_names[i]: self.load_gl_color("yellow")
+				else: self.load_gl_color("dark_grey")
+				
+				glCallList(self.highresspheredl)
+				glPopMatrix()
+			glEndList()
+		try:
+			glCallList(self.dl)
+		except:
+			print "call list failed",self.dl
+			glDeleteLists(self.dl,1)
+			self.dl = None
 
 class EMSphereModelInspector(EMPDBItem3DInspector):
 	
 	def __init__(self, name, item3d):
 		EMPDBItem3DInspector.__init__(self, name, item3d)
+
+if __name__ == '__main__' :
+	print("WARNING: This module is not designed to be run as a program. The browser you see is for testing purposes.")
+	from emapplication import EMApp
+	from embrowser import EMBrowserWidget
+	app = EMApp()
+	browser = EMBrowserWidget(withmodal = False, multiselect = False)
+	browser.show()
+	app.execute()
+	

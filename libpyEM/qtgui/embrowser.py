@@ -31,19 +31,15 @@
 #
 
 from EMAN2 import *
-from EMAN2jsondb import js_open_dict
 from emapplication import EMApp
 from emimage2d import *
 from emimagemx import *
+from empdbitem3d import *
 from emplot2d import *
 from emplot3d import *
-from empdbitem3d import *
-from expand_string import expand_string
 from libpyUtils2 import EMUtil
-from matching import matches_pats
 import os
 import os.path
-import re
 import re
 from string import lower
 import threading
@@ -55,6 +51,10 @@ import weakref
 from PyQt4 import QtCore, QtGui
 import PyQt4
 from PyQt4.QtCore import Qt, QString, QChar
+
+from EMAN2jsondb import js_open_dict
+from expand_string import expand_string
+from matching import matches_pats
 
 
 #---------------------------------------------------------------------------
@@ -1088,9 +1088,44 @@ class EMPDBFileType(EMFileType):
 		"""
 		Returns a list of (name, callback) tuples detailing the operations the user can call on the current file
 		"""
-		return [("Show PDB", "Show in a new 3D window", self.show3DNew), ("Show PDB +", "Show in the current 3D window", self.show3dApp), ("Chimera", "Open in chimera (if installed)", self.showChimera),("Save As", "Saves a copy of the selected PDB file", self.saveAs)]
+		return [("Show Ball and Stick", "Show ball and stick representation of this PDB model in a new 3D window", self.showBallStick3DNew), ("Show Ball and Stick +", "Show ball and stick representation of this PDB model in the current 3D window", self.showBallStick3dApp), ("Show Spheres", "Show spheres representation of this PDB model in a new 3D window", self.showSpheres3DNew), ("Show Spheres +", "Show spheres representation of this PDB model in the current 3D window", self.showSpheres3dApp), ("Chimera", "Open this PDB file in chimera (if installed)", self.showChimera), ("Save As", "Saves a copy of the selected PDB file", self.saveAs)]
 
-	def show3DNew(self, brws):
+	def showSpheres3DNew(self, brws):
+		"""New 3-D window"""
+		brws.busy()
+		pdb_model = EMPDBItem3D(self.path)
+		target = emscene3d.EMScene3D()
+		brws.view3d.append(target)
+		target.insertNewNode(self.path.split("/")[-1].split("#")[-1],pdb_model)
+		modeltype = EMSphereModel(self.path)
+		target.insertNewNode(modeltype.representation, modeltype, parentnode = pdb_model)
+		target.initialViewportDims(pdb_model.getBoundingBoxDimensions()[0])	# Scale viewport to object size
+		target.setCurrentSelection(modeltype)	# Set style to display upon inspector loading
+		brws.notbusy()
+		target.setWindowTitle(pdb_model.getName())
+		target.show()
+		target.raise_()
+
+	def showSpheres3dApp(self, brws):
+		"""Add to current 3-D window"""
+		brws.busy()
+		pdb_model = EMPDBItem3D(self.path)
+		try: target = brws.view3d[-1]
+		except:
+			target = emscene3d.EMScene3D()
+			brws.view3d.append(target)
+		target.insertNewNode(self.path.split("/")[-1].split("#")[-1],pdb_model, parentnode = target)
+		modeltype = EMSphereModel(self.path)
+		target.insertNewNode(modeltype.representation, modeltype, parentnode = pdb_model)
+		target.initialViewportDims(pdb_model.getBoundingBoxDimensions()[0])	# Scale viewport to object size
+		target.setCurrentSelection(modeltype)	# Set style to display upon inspector loading
+		#target.updateSG()	# this is needed because this might just be an addition to the SG rather than initialization
+		target.setWindowTitle(pdb_model.getName())
+		brws.notbusy()
+		target.show()
+		target.raise_()
+
+	def showBallStick3DNew(self, brws):
 		"""New 3-D window"""
 		brws.busy()
 		pdb_model = EMPDBItem3D(self.path)
@@ -1106,7 +1141,7 @@ class EMPDBFileType(EMFileType):
 		target.show()
 		target.raise_()
 
-	def show3dApp(self, brws):
+	def showBallStick3dApp(self, brws):
 		"""Add to current 3-D window"""
 		brws.busy()
 		pdb_model = EMPDBItem3D(self.path)
