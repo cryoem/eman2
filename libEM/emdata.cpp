@@ -2763,6 +2763,7 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 					r=(float)(Util::hypot_fast(x/2,y<ny/2?y:ny-y));		// origin at 0,0; periodic
 					r=(r-x0)/dx;
 					f=int(r);	// safe truncation, so floor isn't needed
+					if (f<0 || f>=n) continue;
 					switch (inten) {
 						case 0:
 #ifdef	_WIN32
@@ -2783,20 +2784,25 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 #else
 							if (isri) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #endif
+							else v=data[i];
 							if (v<ret[f]) ret[f]=v;
+							break;
 						case 3:
 #ifdef	_WIN32
 							if (isri) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #else
 							if (isri) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #endif
+							else v=data[i];
 							if (v>ret[f]) ret[f]=v;
+							break;
 					}
 				}
 				else {
 					r=(float)(Util::hypot_fast(x-nx/2,y-ny/2));
 					r=(r-x0)/dx;
 					f=int(r);	// safe truncation, so floor isn't needed
+					if (f<0 || f>=n) continue;
 					switch (inten) {
 						case 0:
 							v=data[i];
@@ -2816,13 +2822,11 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 				if (inten<2) {
 					r-=float(f);	// r is now the fractional spacing between bins
 	//				printf("%d\t%d\t%d\t%1.3f\t%d\t%1.3f\t%1.4g\n",x,y,f,r,step,Util::hypot_fast(x/2,y<ny/2?y:ny-y),v);
-					if (f>=0 && f<n) {
-						ret[f]+=v*(1.0f-r);
-						norm[f]+=(1.0f-r);
-						if (f<n-1) {
-							ret[f+1]+=v*r;
-							norm[f+1]+=r;
-						}
+					ret[f]+=v*(1.0f-r);
+					norm[f]+=(1.0f-r);
+					if (f<n-1) {
+						ret[f+1]+=v*r;
+						norm[f+1]+=r;
 					}
 				}
 			}
@@ -2836,11 +2840,12 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 					float r,v;
 					int f;
 					if (step==2) {	//complex
-						if (x==0 && z<nz/2) continue;
-						if (x==0 && z==nz/2 && y<ny/2) continue;
+						if (x==0 && z>nz/2) continue;
+						if (x==0 && z==nz/2 && y>ny/2) continue;
 						r=Util::hypot3(x/2,y<ny/2?y:ny-y,z<nz/2?z:nz-z);	// origin at 0,0; periodic
 						r=(r-x0)/dx;
 						f=int(r);	// safe truncation, so floor isn't needed
+						if (f<0 || f>=n) continue;
 						switch(inten) {
 							case 0:
 #ifdef	_WIN32
@@ -2861,14 +2866,27 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 #else
 								if (isri) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #endif
+								else v=data[i];							// amp/phase, just get amp
 								if (v<ret[f]) ret[f]=v;
+								break;
 							case 3:
 #ifdef	_WIN32
 								if (isri) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #else
 								if (isri) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
 #endif
+								else v=data[i];							// amp/phase, just get amp
 								if (v>ret[f]) ret[f]=v;
+								break;
+							case 4:
+#ifdef	_WIN32
+								if (isri) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+#else
+								if (isri) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
+#endif
+								else v=data[i];							// amp/phase, just get amp
+								if (v>ret[f]) ret[f]=v;
+								break;
 						}						
 					}
 					else {
@@ -2892,14 +2910,15 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 					}
 
 					if (inten<2) {
+// 						ret[f]+=v;
+// 						norm[f]+=1.0;
+						
 						r-=float(f);	// r is now the fractional spacing between bins
-						if (f>=0 && f<n) {
-							ret[f]+=v*(1.0f-r);
-							norm[f]+=(1.0f-r);
-							if (f<n-1) {
-								ret[f+1]+=v*r;
-								norm[f+1]+=r;
-							}
+						ret[f]+=v*(1.0f-r);
+						norm[f]+=(1.0f-r);
+						if (f<n-1) {
+							ret[f+1]+=v*r;
+							norm[f+1]+=r;
 						}
 					}
 				}
@@ -2908,7 +2927,7 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 	}
 	
 	if (inten<2) {
-		for (i=0; i<n; i++) ret[i]/=norm[i]?norm[i]:1.0f;	// Normalize
+		for (i=0; i<n; i++) ret[i]/=(norm[i]==0?1.0f:norm[i]);	// Normalize
 	}
 		
 	EXITFUNC;
