@@ -919,7 +919,9 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 	
 	if myid == main_node:
 		log.add("Input stack                 : %s"%(stack))
-		log.add("Number of active images     : %d"%(nima))
+		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+		# log.add("Number of active images     : %d"%(nima))
+		log.add("Number of images              : %d"%(nima))
 		log.add("Output directory            : %s"%(outdir))
 		log.add("Inner radius                : %i"%(first_ring))
 		log.add("Outer radius                : %i"%(last_ring))
@@ -14912,7 +14914,7 @@ def tomo(box):
 	print 'status: ', status
 
 # Calculate averages of a given stack (wrap for ave_var in statistics)
-def ave_ali(name_stack, name_out = None, ali = False, active = False, param_to_save_size = None, set_as_member_id = None):
+def ave_ali(name_stack, name_out = None, ali = False, param_to_save_size = None, set_as_member_id = None):
 	from statistics import ave_var, add_ave_varf, k_means_list_active
 	from utilities  import file_type
 	"""

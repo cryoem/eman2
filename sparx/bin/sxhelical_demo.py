@@ -319,7 +319,8 @@ def generate_runscript(filename, seg_ny, ptcl_dst, fract):
 	f.write('\n')
 	f.write('# center all the EM images\n')
 	f.write('# centering parameters will be saved in header, the input images will not be changed.\n')
-	f.write('sxheader.py bdb:hadata --params=active --one\n')
+	# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+	# f.write('sxheader.py bdb:hadata --params=active --one\n')
 	f.write('sxheader.py bdb:hadata --params=xform.align2d --zero\n')
 	f.write('mpirun -np 2 sxshiftali.py bdb:hadata mask2d.hdf --oneDx --search_rng=10 --maxit=20 --CTF --MPI\n')
 	f.write('\n')
@@ -332,7 +333,8 @@ def generate_runscript(filename, seg_ny, ptcl_dst, fract):
 	f.write('\n')
 	f.write('#Exhaustive search \n')
 	f.write('sxheader.py bdb:hdata --params=xform.projection --zero\n')
-	f.write('sxheader.py bdb:hdata --params=active --one\n')
+	# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+	# f.write('sxheader.py bdb:hdata --params=active --one\n')
 	f.write('mpirun -np 3 sxhelicon.py bdb:hdata ini.hdf result_helicon --CTF --seg_ny=%d --fract=%.2f --psi_max=2.0 --delta=1.0 --maxit=7 --function=[.,nofunc,helical3c] --searchxshift=3.68 --xwobble=1.84 --ywobble=0 --dp=27.6 --dphi=166.715 --apix=1.84 --rmin=0.0 --rmax=64 --MPI\n'%(seg_ny,fract))
 	f.write('\n')
 	f.write('#Local search \n')

@@ -554,7 +554,8 @@ class PopupHelicalRefinement(QWidget):
     def setactiveheader(self):
 	stack = self.stacknameedit.text()
 	print "stack defined="+ stack
-	header(str(stack), "active", one=True)
+	# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+	# header(str(stack), "active", one=True)
 	
     def setprojectionheader(self):
 	#Here we just read in all user inputs in the line edits of the Poptwodali window
@@ -1161,7 +1162,9 @@ class Popuptwodali(QWidget):
     def setactiveheader(self):
 	stack = self.stacknameedit.text()
 	print "stack defined="+ stack
-	header(str(stack), "active", one=True)
+	# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+	# header(str(stack), "active", one=True)
+
 
     def seta2dheader(self):
 	#opens a file browser, showing files only in .hdf format
@@ -1753,7 +1756,9 @@ class Popupthreedali(QWidget):
     def setactiveheader(self):
 	stack = self.stacknameedit.text()
 	print "stack defined="+ stack
-	header(str(stack), "active", one=True)
+	# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+	# header(str(stack), "active", one=True)
+
 
     def setprojheader(self):
 	#opens a file browser, showing files only in .hdf format
@@ -2331,7 +2336,9 @@ class Popupkmeans(QWidget):
     def setactiveheader(self):
 	stack = self.stacknameedit.text()
 	print "stack defined="+ stack
-	header(str(stack), "active", one=True)
+	# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+	# header(str(stack), "active", one=True)
+
 
    
     def choose_file(self):
@@ -2697,7 +2704,9 @@ class Popupkmeansgroups(QWidget):
     def setactiveheader(self):
 	stack = self.stacknameedit.text()
 	print "stack defined="+ stack
-	header(str(stack), "active", one=True)
+	# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+	# header(str(stack), "active", one=True)
+
 
    
     def choose_file(self):
@@ -3759,7 +3768,9 @@ class Popupmrefthreedali(QWidget):
     def setactiveheader(self):
 	stack = self.stacknameedit.text()
 	print "stack defined="+ stack
-	header(str(stack), "active", one=True)
+	# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+	# header(str(stack), "active", one=True)
+
 
     def setprojheader(self):
 	#opens a file browser, showing files only in .hdf format
@@ -5190,7 +5201,9 @@ class Popuplocalthreedali(QWidget):
     def setactiveheader(self):
 	stack = self.stacknameedit.text()
 	print "stack defined="+ stack
-	header(str(stack), "active", one=True)
+	# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+	# header(str(stack), "active", one=True)
+
 
     def setprojheader(self):
 	#opens a file browser, showing files only in .hdf format

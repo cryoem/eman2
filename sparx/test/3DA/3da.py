@@ -89,7 +89,7 @@ for i in xrange(nangles):
 	# CTF parameters, if defocus zero, they are undetermined
 	ps.set_attr_dict({'defocus':0.0, 'amp_contrast':0.1, 'voltage':200, 'Cs':2.0, 'pixel':2.2})
 	# flags describing the status of the image (1 = true, 0 = false)
-	ps.set_attr_dict({'active':1, 'ctf_applied':0})
+	ps.set_attr_dict({'ctf_applied':0})
 	ps.write_image(stack, i)
 	#  without mirror ends here
 	'''

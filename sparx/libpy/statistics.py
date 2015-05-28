@@ -6524,7 +6524,7 @@ def k_means_stab_MPI_stream(stack, outdir, maskname, K, npart = 5, F = 0, T0 = 0
 	IM, ctf, ctf2         = k_means_open_im(stack, mask, CTF, LUT, flagnorm)
 
 	if myid == main_node:
-		logging.info('... %d active images found' % N)
+		logging.info('... %d images found' % N)
 	if N < K:
 		logging.info('[STOP] Not enough images')
 		sys.exit()

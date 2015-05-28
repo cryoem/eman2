@@ -65,7 +65,10 @@ def main():
             
         6. Generate disks from filament based reconstructions:		
             sxheader.py stk.hdf --params=xform.projection --import=params.txt
-            sxheader.py stk.hdf --params=active --one
+
+			# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
+            # sxheader.py stk.hdf --params=active --one
+
             mpirun -np 2 sxhelicon_utils.py stk.hdf --gendisk='bdb:disk' --ref_nx=100 --ref_ny=100 --ref_nz=200 --apix=1.84 --dp=27.6 --dphi=166.715 --fract=0.67 --rmin=0 --rmax=64 --function="[.,nofunc,helical3c]" --sym="c1" --MPI
 
         7. Stack disks based on helical symmetry parameters

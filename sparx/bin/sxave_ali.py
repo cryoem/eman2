@@ -41,7 +41,7 @@ def main():
 	
 	progname = os.path.basename(sys.argv[0])
 	# # horatio active_refactoring ﻿Jy51i1EwmLD4tWZ9_00003_1
-	usage = progname + " stack <name_output> --ali --active --set_size=param_name_with_size --set_members=param_name_with_id"
+	# usage = progname + " stack <name_output> --ali --active --set_size=param_name_with_size --set_members=param_name_with_id"
 	# # horatio active_refactoring ﻿Jy51i1EwmLD4tWZ9_00003_2	
 	usage = progname + " stack <name_output> --ali --set_size=param_name_with_size --set_members=param_name_with_id"
 	parser = OptionParser(usage,version=SPARXVERSION)
@@ -82,7 +82,7 @@ def main():
 				disable_bdb_cache()
 	
 			global_def.BATCH = True
-			ave_ali(args[0], name_output, options.ali, options.active, options.set_size, options.set_members)
+			ave_ali(args[0], name_output, options.ali, options.set_size, options.set_members)
 			global_def.BATCH = False
 
 if __name__ == "__main__":
