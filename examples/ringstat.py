@@ -14,13 +14,18 @@ from os import listdir
 from os.path import isfile, join
 
 def main():
-	#process_image(sys.argv[1])
-
-	mypath=sys.argv[1]
+	
+	
+	usage=""
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+	parser.add_argument("--output", type=str,help="output file name", default="circlestat")
+	(options, args) = parser.parse_args()
+	
+	mypath=args[0]
 	if mypath.endswith(".pdb") or mypath.endswith(".mrc"):
 		process_image(mypath,"")
 	else:
-		filetype=sys.argv[2]
+		filetype=args[1]
 		
 		if filetype=="all":
 			mrcf = sorted([ f for f in listdir(mypath) if f.endswith("finalimg.mrc")])
@@ -31,7 +36,7 @@ def main():
 				print mrcf[i],pdbf[i]
 				pdbshp=process_image(join(mypath,pdbf[i]),pdbf[i])
 				mrcshp=process_image(join(mypath,mrcf[i]),mrcf[i])
-				outfile=open("circlestat_all","a")
+				outfile=open(options.output,"a")
 				outfile.write("%s\t%1.3g\t%1.3g\t%1.3g\t%1.5g\t"%(pdbf[i],pdbshp[0],pdbshp[1],pdbshp[2],pdbshp[3]))
 				outfile.write("||\t%1.3g\t%1.3g\t%1.3g\t%1.5g\n"%(mrcshp[0],mrcshp[1],mrcshp[2],mrcshp[3]))
 				#outfile.write("%s\t%1.5g\n"%(fname,totalen))
@@ -55,8 +60,11 @@ def main():
 				#totalen=process_image(join(mypath,fname),fname)
 				
 				#outfile=open("circlestat_m","a")
-				outfile=open("circlestat_gr_all","a")
-				outfile.write("%s\t%1.3g\t%1.3g\t%1.3g\t%1.5g\n"%(fname,shape[0],shape[1],shape[2],shape[3]))
+				outfile=open(options.output,"a")
+				outfile.write("%s"%(fname))
+				for s in shape:
+					outfile.write("\t%f"%(s))
+				outfile.write("\n")
 				#outfile.write("%s\t%1.5g\n"%(fname,totalen))
 				outfile.close()
 
@@ -84,6 +92,7 @@ def process_image(imgname,imgprefix):
 		p=delete(p,0,axis=0)
 		tp=transpose(p)
 		mx=dot(tp,p)
+		### align the polygon 
 		eigvv=LA.eig(mx)		# a 3-vector with eigenvalues and a 3x3 with the vectors
 		eig=[(1.0/eigvv[0][i],eigvv[1][:,i]) for i in xrange(3)]  # extract for sorting
 		eig=sorted(eig)		# now eig is sorted in order from major to minor axes
@@ -91,9 +100,24 @@ def process_image(imgname,imgprefix):
 		
 		pl=dot(p,et.T)
 		shp=(pl.max(0)-pl.min(0))
+		
+		
+		
 		mn=mean(pl,axis=0)
 		for j in range(20):
 			pl[j]-=mn
+		
+		#print pl
+		area=0
+		for ip in range(len(pl)):
+			### x1*y2-x2*y1
+			p1= pl[ip].A1
+			p2=pl[(ip+1)%20].A1
+			area+=(p1[1]*p2[2]-p2[1]*p1[2])
+			#print area
+
+		area=abs(area/2)
+		#print area
 		
 		pmax=argmax(abs(pl),axis=0)
 		pm=pmax.A1[0]
@@ -109,6 +133,7 @@ def process_image(imgname,imgprefix):
 		d=d/10
 		#shp=append(shp.A1,d)
 		shp=append(shp.A1,totalen)
+		shp=append(shp,area)
 		print shp
 		#for i in range(nn):
 			#pa.set_vector_at(i,Vec3f(pl[i,0],pl[i,1],pl[i,2]),1.0)
