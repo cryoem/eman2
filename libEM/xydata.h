@@ -99,7 +99,7 @@ namespace EMAN
 
 		float get_y(size_t i) const
 		{
-			if (i>data.size()) throw InvalidValueException(i, "Attempt to access XYData out of range");
+			if (i>=data.size()) throw InvalidValueException(i, "Attempt to access XYData out of range");
 			return data[i].y;
 		}
 

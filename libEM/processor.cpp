@@ -6406,7 +6406,8 @@ EMData *FSCFourierProcessor::process(EMData const *image)
 		float snr;
 		if (s>=maxfreq && lf<f) f=lf;
 		if (f<0 && i>2) localav=1;
-		if (localav==1) f=(fsc.get_y(i-2)+fsc.get_y(i-1)+fsc.get_y(i)+fsc.get_y(i+1)+fsc.get_y(i+2))/5.0f;
+		if (localav==1 && i>N-3) f=lf;
+		else if (localav==1) f=(fsc.get_y(i-2)+fsc.get_y(i-1)+fsc.get_y(i)+fsc.get_y(i+1)+fsc.get_y(i+2))/5.0f;
 		else if (localav==2) f=.00001;
 
 		if (f>=1.0) f=.9999;
