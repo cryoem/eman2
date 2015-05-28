@@ -57,11 +57,12 @@ import subprocess
 helpstring+="\n\nYou are currently running %s (%s)"%(EMANVERSION,CVSDATESTAMP[6:-2])
 
 try:
+	if os.getenv("DISPLAY")==None : raise Exception
 	from PyQt4 import QtCore, QtGui
 	from PyQt4.QtCore import Qt
 except:
 	print helpstring
-	raw_input()
+	raw_input("Please press <enter> to exit")
 	exit()	
 
 app = EMApp()
