@@ -904,7 +904,6 @@ def main():
 	doit, keepchecking = checkstep(initdir, keepchecking, myid, main_node)
 	if  doit:
 		partids = os.path.join(masterdir, "ids.txt")
-		partstack = os.path.join(init2dir, "initial3Dshifts.txt")
 
 		if(options.startangles):
 
@@ -922,6 +921,8 @@ def main():
 				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 				print(line,"INITIALIZATION 3D")
 				write_text_file(range(total_stack), partids)
+			partstack = os.path.join(masterdir, "2dpostalignment", "initial3Dshifts.txt")
+
 
 			metamove(paramsdict, partids, partstack, initdir, 0, myid, main_node, nproc)
 			if(myid == main_node):
