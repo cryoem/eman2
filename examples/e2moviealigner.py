@@ -34,6 +34,7 @@ from EMAN2 import *
 import os
 import sys
 import numpy as np
+from e2boxinfo_rescale import boxes
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -130,85 +131,129 @@ def main():
 	
 	for movie in args:
 		if options.verbose : print "Processing", movie	
-		orig_file = movie.get_attr('source_path')
-		outfile = name.rsplit(".",1)[0]+"_proc.hdf"
-		
 		##################################
-		aligner = MovieModeAligner(movie)
+		aligner = MovieModeAligner(movie,dark,gain)
 		aligner.optimize()
-		aligner.write(outfile)
+		aligner.write()
 		##################################
 		
 	E2end(pid)
 
 class MovieModeAligner:
 	
-	"""
-	Class to hold information for optimized alignment of DDD cameras.
-	"""
+	"""Class to hold information for optimized alignment of DDD cameras."""
 	
-	def __init__(frames, dark=None,):
-		self.data = frames
-		self.nimgs = frames.get_zsize()
-		self.shape = [frames.get_xsize(),frames.get_ysize()]
- 
- 		t = Transform({"type":"eman","tx":0.0,"ty":0.0})
-		self.transforms = [t for i in self.nimgs]
-		self.opt_trans = self.transforms
-		
-		self.optim = np.inf
-		self.cost = self.compute_cost()
+	def __init__(movie, dark, gain, boxsize=512, transform=None):
+		# set path and metadata parameters
+		self.path = movie
+		self.hdr = EMData(movie,0,True).get_attr_dict()
+		self.hdr['nimg'] = EMUtil.get_image_count(movie)
+		# set references
+		self.dark = dark
+		self.gain = gain
+		# perform background subtraction
+		self._remove_background()
+		# calculate regions to be averaged based on size of data
+		self._initialize_regions(boxsize)
+		# set initial transformations
+		self._initialize_transforms(transform)
+		# set incoherent and initial coherent power spectra
+		self._set_ips()
+		self._set_cps()
+		# set initial cost to be minimized via optimization
+		self._cost = np.inf
+		self._optimized = False
 	
-	def compute_cost(self):
-		
+	def _initialize_regions(self,boxsize):
+		self.boxsize = boxsize
+		self.regions = {}
+		for i in xrange(self.hdr['nimg']):
+			self.regions[i] = []
+			for x in xrange(self.hdr['nx'] / boxsize - 1):
+				for y in xrange(self.hdr['ny'] / boxsize - 1):
+					r = Region(x*self.boxsize+self.boxsize/2,y*self.boxsize+self.boxsize/2,self.boxsize,self.boxsize)
+					self.regions[i].append(r)
+		self.nregions = len(self.regions)
+	
+	def _initialize_transforms(self,initial):
+		if initial == None:
+			initial = Transform({"type":"eman","tx":0.0,"ty":0.0})
+		self._transforms = [initial for i in self.hdr['nimg']]
+		self.optimal_transforms = self._transforms
+	
+	def _set_ips(self): # FUNCTION WITH PARAMETER TO BE OPTIMIZED 
+		"""function to compute the 2D incoherent power spectrum"""
+		self.ips = boxes = box = EMData(self.boxsize,self.boxsize)
+		for i in xrange(self.hdr['nimg']):
+			for r in self.regions:
+				box.read_image_c(self.path,i,False,r)
+				boxes += box
+			boxes /= self.nregions
+			boxes.process_inplace("normalize.edgemean")
+			boxes.do_fft_inplace()
+			self.ips.ri2inten()
+			self.ips += boxes
+		self.ips /= self.hdr['nimg']
+		self.ips.process_inplace('math.rotationalaverage')
+	
+	def _set_cps(self): # TARGET FUNCTION FOR OPTIMIZATION
+		"""function to compute the 2D coherent power spectrum"""
+		self.cps = boxes = box = EMData(self.boxsize,self.boxsize)
+		for i in xrange(self.hdr['nimg']):
+			for r in self.regions:
+				box.read_image_c(self.path,i,False,r)
+				box.process_inplace("normalize.edgemean")
+				box.do_fft_inplace()
+				box.ri2inten()
+				boxes += box
+			boxes /= self.nregions
+			self.cps += boxes
+		self.cps /= self.hdr['nimg']
+		self.cps.process_inplace('math.rotationalaverage')
+	
+	def _remove_background(self):
+		"""function to subtract background noise from power spectra"""
+		print('Background subtraction not implemented')
+	
+	def _update_frame_params(self,imgnum,transform):
+		self._transforms[imgnum] = transform
+		for region in self.regions:
+			origin = region.get_origin()
+			region.set_origin(origin + [transform['tx'],transform['ty']])
+	
+	def _update_cost(self, transforms):
 		"""
-		Our cost function is the dot product of the 
-		incoherent and coherent power spectra
+		Our cost function is the dot product of the incoherent and coherent 2D power spectra
+		@param transforms: list of transform objects, one for each frame in the movie
 		"""
-		
-		# incoherent power spectrum
-		frames = EMData(self.shape[0],self.shape[1])
-		for i in self.nimgs:
-			r = Region(0,0,i,self.shape[0],self.shape[1],1)
-			frame = self.data.get_clip(r)
-			frames += frame.do_fft() # FFT each frame
-		frames /= self.nimgs # take average of FFTs
-		ips = frames.rotavg()
-		
-		# coherent power spectrum
-		frames = EMData(self.shape[0],self.shape[1])
-		for i in self.nimgs:
-			r = Region(0,0,i,self.shape[0],self.shape[1],1)
-			frame = self.data.get_clip(r)
-			frame.transform(self.transforms[i])
-			frames += frame
-		frames /= self.nimgs # average frames
-		fft_frames = frames.do_fft() # compute FFT of average
-		cps = fft_frames.rotavg()
-		
-		return -np.dot(ips,cps) # I prefer to minimize 'cost'
+		for i,transform in enumerate(proposed_transforms):
+			if self.transforms[i] != transform:
+				self._update_frame_params(i,transform)
+		self._set_ips()
+		new_cost = -1*self.ips.dot(self.cps)
+		if new_cost < self.cost:
+			self._cost = -1*self.ips.dot(self.cps)
+			self.optimal_transforms = self.transforms
 	
 	def optimize(self):
 		"""Optimization of objective function"""
-		
+		if self._optimized: return
+		else: self._optimized = True
 		print('Not implemented yet.')
-
-		# Muyuan, you'll need to update the transforms attribute
-		
-		self.cost = self.compute_cost()
-		
-		if self.cost < self.optim:
-			self.optim = self.cost
-			self.opt_trans = self.tansforms
+		return
 	
-	def write(self,fname):
+	def write(self,name=None):
 		"""Writes aligned results to disk"""
-		
-		for i in self.nimgs:
-			r = Region(0,0,i,self.shape[0],self.shape[1],1)
-			frame = frames.get_clip(r)
-			frame.transform(self.transforms[i])
-			frame.write_image(fname,i)
+		print("Writing not yet implemented")
 	
+	def get_transforms(self):
+		return self.transforms
+	
+	def get_data(self):
+		return EMData(self.path)
+	
+	def get_header(self):
+		return self.hdr
+
 if __name__ == "__main__":
 	main()
