@@ -3216,7 +3216,7 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 					for msg in all_pixer:
 						if(msg < pixercutoff): lhx += 1
 					lhx = float(lhx)/float(total_nima)
-					log.add(">>> %4.2f images had pixel error <2.0"%lhx)
+					log.add(">>> %4.2f images had pixel error <%5.2f"%(lhx,pixercutoff))
 					if( lhx > saturatecrit):
 						if( Iter == 1 ):
 							log.add("Will continue even though %4.2f images had pixel error < %5.2f"%(saturatecrit,pixercutoff))
@@ -3224,13 +3224,6 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 							terminate = 1
 							log.add("...............")
 							log.add(">>>>>>>>>>>>>>>   Will terminate as %4.2f images had pixel error < %5.2f"%(saturatecrit,pixercutoff))
-					
-				"""
-				if (max(all_pixer) < 0.5) and (sum(all_pixer)/total_nima < 0.05):
-					terminate = 1
-					log.add("...............")
-					log.add(">>>>>>>>>>>>>>>   Will terminate due to small pixel errors")
-				"""
 			terminate = wrap_mpi_bcast(terminate, main_node, mpi_comm)
 			#=========================================================================
 			mpi_barrier(mpi_comm)
