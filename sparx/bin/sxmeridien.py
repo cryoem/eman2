@@ -570,6 +570,7 @@ def metamove(paramsdict, partids, partstack, outputdir, procid, myid, main_node,
 	ali3d_options.maxit  = paramsdict["maxit"]
 	ali3d_options.mask3D = paramsdict["mask3D"]
 	ali3d_options.an	 = paramsdict["an"]
+	ali3d_options.shrink = paramsdict["shrink"]
 	projdata = getindexdata(paramsdict["stack"], partids, partstack, myid, nproc)
 	if(paramsdict["delpreviousmax"]):
 		for i in xrange(len(projdata)):
@@ -692,6 +693,7 @@ def main():
 	ali3d_options.fl     = 0.4
 	ali3d_options.initfl = 0.4
 	ali3d_options.aa     = 0.1
+	ali3d_options.shrink = 1.0
 
 	if( ali3d_options.xr == "-1" ):  ali3d_options.xr = "2"
 
@@ -1213,8 +1215,9 @@ def main():
 				write_text_file([pinids[i][0] for i in xrange(len(pinids))], os.path.join(mainoutputdir,"indexes.txt"))
 				write_text_row( [pinids[i][1] for i in xrange(len(pinids))], os.path.join(mainoutputdir,"params.txt"))
 			mpi_barrier(MPI_COMM_WORLD)
-			ali3d_options.fl = currentres
-			ali3d_options.ou = radi
+			ali3d_options.fl     = currentres
+			ali3d_options.ou     = radi
+			ali3d_options.shrink = 1.0
 			projdata = getindexdata(stack, os.path.join(mainoutputdir,"indexes.txt"), os.path.join(mainoutputdir,"params.txt"), myid, nproc)
 			volf = do_volume(projdata, ali3d_options, mainiteration, mpi_comm = MPI_COMM_WORLD)
 			if(myid == main_node): volf.write_image(os.path.join(mainoutputdir,"volf.hdf"))

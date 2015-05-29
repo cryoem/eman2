@@ -2807,12 +2807,14 @@ def do_volume(data, options, iter, mpi_comm):
 		else:
 			if( type(options.mask3D) == types.StringType ):  mask3D = get_im(options.mask3D)
 			else:  mask3D = (options.mask3D).copy()
-			nxm = mask3D.get_xsize()
-			if( nxm != nx ):
-				from fundamentals import resample
-				mask3D = resample(mask3D, float(nx)/float(nxm))
-				nxm = mask3D.get_xsize()
-				assert(nx == nxm)
+			try:
+				shrink = options.shrink
+				if( shrink < 1.0 ):
+					from fundamentals import resample
+					mask3D = resample(mask3D, shrink)
+					nxm = mask3D.get_xsize()
+					assert(nx == nxm)
+			except:  pass
 
 		stat = Util.infomask(vol, mask3D, False)
 		vol -= stat[0]
