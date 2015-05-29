@@ -2729,6 +2729,7 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 
 	vector<double>ret(n);
 	vector<double>norm(n);
+	vector<double>count(n);
 
 	int x,y,z,i;
 	int step=is_complex()?2:1;
@@ -2740,13 +2741,14 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 	switch (inten){
 		case 0:
 		case 1:
-			for (i=0; i<n; i++) ret[i]=norm[i]=0.0;
+		case 4:
+			for (i=0; i<n; i++) ret[i]=norm[i]=count[i]=0.0;
 			break;
 		case 2:
-			for (i=0; i<n; i++) ret[i]=norm[i]=1.0e27;
+			for (i=0; i<n; i++) ret[i]=1.0e27;
 			break;
 		case 3:
-			for (i=0; i<n; i++) ret[i]=norm[i]=-1.0e27;
+			for (i=0; i<n; i++) ret[i]=-1.0e27;
 			break;
 	}
 			
@@ -2796,6 +2798,14 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 							else v=data[i];
 							if (v>ret[f]) ret[f]=v;
 							break;
+						case 4:
+							if (isinten) v=data[i];
+							else if (isri) v=data[i]*data[i]+data[i+1]*data[i+1];
+							else v=data[i]*data[i];
+							ret[f]+=std::sqrt(v);
+							norm[f]+=v;
+							count[f]+=1.0;
+							break;
 					}
 				}
 				else {
@@ -2815,6 +2825,11 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 							break;
 						case 3:
 							if (data[i]>ret[f]) ret[f]=data[i];
+							break;
+						case 4:
+							ret[f]+=data[i];
+							norm[f]+=data[i]*data[i];
+							count[f]+=1.0;
 							break;
 					}
 				}
@@ -2879,13 +2894,12 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 								if (v>ret[f]) ret[f]=v;
 								break;
 							case 4:
-#ifdef	_WIN32
-								if (isri) v=static_cast<float>(_hypot(data[i],data[i+1]));	// real/imag, compute amplitude
-#else
-								if (isri) v=static_cast<float>(hypot(data[i],data[i+1]));	// real/imag, compute amplitude
-#endif
-								else v=data[i];							// amp/phase, just get amp
-								if (v>ret[f]) ret[f]=v;
+								if (isinten) v=data[i];
+								else if (isri) v=data[i]*data[i]+data[i+1]*data[i+1];
+								else v=data[i]*data[i];
+								ret[f]+=std::sqrt(v);
+								norm[f]+=v;
+								count[f]+=1.0;
 								break;
 						}						
 					}
@@ -2905,6 +2919,11 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 								break;
 							case 3:
 								if (data[i]>ret[f]) ret[f]=data[i];
+								break;
+							case 4:
+								ret[f]+=data[i];
+								norm[f]+=data[i]*data[i];
+								count[f]+=1.0;
 								break;
 						}
 					}
@@ -2928,6 +2947,13 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 	
 	if (inten<2) {
 		for (i=0; i<n; i++) ret[i]/=(norm[i]==0?1.0f:norm[i]);	// Normalize
+	}
+	else if (inten==4) {
+		for (i=0; i<n; i++) {
+			ret[i]/=count[i];	// becomes mean
+			norm[i]/=count[i];	// avg amp^2
+			ret[i]=std::sqrt(norm[i]-ret[i]*ret[i]);	// sigma
+		}
 	}
 		
 	EXITFUNC;
