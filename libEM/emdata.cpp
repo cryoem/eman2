@@ -2907,6 +2907,7 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 						r=Util::hypot3(x-nx/2,y-ny/2,z-nz/2);
 						r=(r-x0)/dx;
 						f=int(r);	// safe truncation, so floor isn't needed
+						if (f<0 || f>=n) continue;
 						switch(inten) {
 							case 0:
 								v=data[i];
