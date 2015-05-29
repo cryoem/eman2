@@ -34,7 +34,6 @@ from EMAN2 import *
 import os
 import sys
 import numpy as np
-from IPython import embed
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -76,7 +75,6 @@ def main():
 	
 	for fname in args:
 		if options.verbose: print "Processing", fname
-		embed()
 		aligner = MovieModeAligner(fname)
 		aligner.optimize()
 		aligner.get_transforms()
@@ -88,15 +86,15 @@ class MovieModeAligner:
 	
 	"""Class to hold information for optimized alignment of DDD cameras."""
 	
-	def __init__(file_name, boxsize=512, transform=None):
+	def __init__(self, fname, boxsize=512, transform=None):
 		# set path and metadata parameters
-		self.path = file_name
-		self.hdr = EMData(file_name,0,True).get_attr_dict()
-		self.hdr['nimg'] = EMUtil.get_image_count(file_name)
+		self.path = fname
+		self.hdr = EMData(fname,0,True).get_attr_dict()
+		self.hdr['nimg'] = EMUtil.get_image_count(fname)
 		# perform background subtraction
 		self._remove_background()
 		# calculate regions and initialize transforms
-		self._initialize_params(boxsize)
+		self._initialize_params(boxsize,transform)
 		# set incoherent and initial coherent power spectra
 		self._set_ips()
 		self._set_cps()
@@ -105,21 +103,17 @@ class MovieModeAligner:
 		self._optimized = False
 	
 	def _initialize_params(self,boxsize,transforms):
-		if type(boxsize) != int:
-			print("Must use integer box size.")
-		else:
-			self._boxsize = boxsize
+		self._boxsize = boxsize
 		self._regions = {}
 		for i in xrange(self.hdr['nimg']):
 			self._regions[i] = []
 			for x in xrange(self.hdr['nx'] / boxsize - 1):
 				for y in xrange(self.hdr['ny'] / boxsize - 1):
-					r.set_origin(x*self._boxsize+self._boxsize/2,y*self._boxsize+self._boxsize/2)
-					r.set_width(self._boxsize,self._boxsize)
+					r = Region(x*self._boxsize+self._boxsize/2,y*self._boxsize+self._boxsize/2,self._boxsize,self._boxsize)
 					self._regions[i].append(r)
 		self.nregions = len(self._regions)
 		if transforms == None: transforms = Transform({"type":"eman","tx":0.0,"ty":0.0})
-		self._transforms = [transforms for i in self.hdr['nimg']]
+		self._transforms = [transforms for i in xrange(self.hdr['nimg'])]
 		self.optimal_transforms = self._transforms
 		self._ips = EMData(self._boxsize,self._boxsize)
 		self._cps = EMData(self._boxsize,self._boxsize)
@@ -129,14 +123,14 @@ class MovieModeAligner:
 	def _set_ips(self):
 		"""function to compute the 2D incoherent power spectrum"""
 		for i in xrange(self.hdr['nimg']):
-			for r in self._regions:
+			for r in self._regions[i]:
 				self._box.read_image_c(self.path,i,False,r)
-				self._boxes += box
+				self._boxes += self._box
 			self._boxes /= self.nregions
 			self._boxes.process_inplace("normalize.edgemean")
 			self._boxes.do_fft_inplace()
 			self._ips.ri2inten()
-			self._ips += boxes
+			self._ips += self._boxes
 			self._boxes.to_zero()
 		self._ips /= self.hdr['nimg']
 		self._ips.process_inplace('math.rotationalaverage')
@@ -144,14 +138,14 @@ class MovieModeAligner:
 	def _set_cps(self):
 		"""function to compute the 2D coherent power spectrum"""
 		for i in xrange(self.hdr['nimg']):
-			for r in self._regions:
+			for r in self._regions[i]:
 				self._box.read_image_c(self.path,i,False,r)
 				self._box.process_inplace("normalize.edgemean")
 				self._box.do_fft_inplace()
 				self._box.ri2inten()
-				self._boxes += box
+				self._boxes += self._box
 			self._boxes /= self.nregions
-			self._cps += boxes
+			self._cps += self._boxes
 			self._boxes.to_zero()
 		self._cps /= self.hdr['nimg']
 		self._cps.process_inplace('math.rotationalaverage')
