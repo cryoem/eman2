@@ -804,9 +804,9 @@ def main():
 
 	#  INITIALIZATION
 	#  Do prealignment of 2D data using reference-free alignment
+	nxrsteps = 4
 	if(not options.startangles):
 		#  The maximum step size for 2D alignment
-		nxrsteps = 4
 		init2dir = os.path.join(masterdir,"2dalignment")
 		doit, keepchecking = checkstep(init2dir, keepchecking, myid, main_node)
 		if  doit:
