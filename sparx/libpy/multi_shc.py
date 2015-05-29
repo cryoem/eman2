@@ -2901,25 +2901,6 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 	import types
 	from time            import time
 
-
-	class center3d_options:
-		ir     = 1
-		ou     = -1
-		#  Will always do maximum trans searches.
-		xr     = "-1"
-		yr     = "-1"
-		ts     = "1"
-		sym    = "d2"
-		delta  = "2"
-		npad   = 2
-		CTF    = True
-		ref_a  = "S"
-		snr    = 1.0
-		mask3D = "startm.hdf"
-		fl     = 0.4
-		aa     = 0.1
-		pwreference = "rotpw3i3.txt"
-
 	ir     = ali3d_options.ir
 	rs     = ali3d_options.rs
 	ou     = ali3d_options.ou
@@ -3018,8 +2999,6 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 		last_ring  = int(last_ring*shrinkage)
 		ali3d_options.ou = last_ring
 		ali3d_options.ir = first_ring
-		masks2D  = model_circle(int(last_ring*shrinkage+0.5),nx,nx) - model_circle(max(int(ali3d_options.ir*shrinkage+0.5),1),nx,nx)
-
 	numr	= Numrinit(first_ring, last_ring, rstep, "F")
 
 	oldshifts = [None]*nima
@@ -3044,67 +3023,10 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 				data[im] = filt_ctf(data[im], ctf_params)
 				data[im].set_attr('ctf_applied', 1)
 		if(shrinkage < 1.0):
-			phi,theta,psi,sx,sy = get_params_proj(data[im])
+			#  resample will properly adjusts shifts and pixel size in ctf
 			data[im] = resample(data[im], shrinkage)
-			st = Util.infomask(data[im], None, True)
-			data[im] -= st[0]
-			st = Util.infomask(data[im], masks2D, True)
-			data[im] /= st[1]
-			#sx *= shrinkage
-			#sy *= shrinkage
-			#set_params_proj(data[im], [phi,theta,psi,sx,sy])
-			if CTF :
-				ctf_params.apix /= shrinkage
-				data[im].set_attr('ctf', ctf_params)
-		else:
-			st = Util.infomask(data[im], None, True)
-			data[im] -= st[0]
-			st = Util.infomask(data[im], mask2D, True)
-			data[im] /= st[1]
 	del mask2D
-	if(shrinkage < 1.0): del masks2D
 	mpi_barrier(mpi_comm)
-
-
-	"""
-	#  Set parameters
-
-	center3d_options.ir     = ali3d_options.ir
-	center3d_options.rs     = ali3d_options.rs
-	center3d_options.ts     = ali3d_options.ts
-	center3d_options.ou     = ali3d_options.ou
-	center3d_options.delta  = ali3d_options.delta
-	center3d_options.fl     = ali3d_options.fl
-	center3d_options.sym    = ali3d_options.sym
-	center3d_options.ref_a  = ali3d_options.ref_a
-	center3d_options.mask3D = ali3d_options.mask3D
-	center3d_options.pwreference = ali3d_options.pwreference
-	if myid == main_node: print  "  center3d_options ",\
-	center3d_options.ir    ,\
-	center3d_options.rs     ,\
-	center3d_options.ts    ,\
-	center3d_options.ou     ,\
-	center3d_options.delta   ,\
-	center3d_options.fl     ,\
-	center3d_options.sym     ,\
-	center3d_options.ref_a   ,\
-	center3d_options.mask3D  ,\
-	center3d_options.pwreference 
-	
-	#  Run alignment command, it returns shifts per CPU
-	shifts = center_projections_3D(data, None, center3d_options, onx, shrinkage, \
-							MPI_COMM_WORLD, myid, main_node, log)
-	for im in xrange(nima):
-		oldshifts[im][0] += shifts[im][1]
-		oldshifts[im][1] += shifts[im][2]
-		data[im] = fshift(data[im], shifts[im][1]*shrinkage, shifts[im][2]*shrinkage)
-	shifts = wrap_mpi_gatherv(shifts, main_node, mpi_comm)
-	if myid == main_node:
-		from utilities import write_text_row
-		write_text_row(shifts,"shifts.txt")
-	del  shifts
-	"""
-
 	"""
 	if maskfile:
 		if type(maskfile) is types.StringType:
@@ -3397,7 +3319,7 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 				params = []
 				for im in xrange(nima):
 					t = get_params_proj(data[im])
-					params.append( [t[0], t[1], t[2], t[3]/shrinkage + oldshifts[im][1], t[4]/shrinkage+ oldshifts[im][1]] )
+					params.append( [t[0], t[1], t[2], t[3]/shrinkage + oldshifts[im][0], t[4]/shrinkage+ oldshifts[im][1]] )
 				params = wrap_mpi_gatherv(params, main_node, mpi_comm)
 			"""
 			if( ( terminate or (Iter == max_iter) ) and (myid == main_node) ):
