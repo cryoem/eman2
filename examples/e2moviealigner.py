@@ -88,12 +88,14 @@ def main():
 		if options.verbose: print "Processing", fname
 		# perform background subtraction
 		bgsub = MovieModeAlignment.background_subtract(options,fname,dark,gain)
+		# simply average frames before alignment
 		if options.simpleavg: MovieModeAlignment.simple_average(bgsub)
-		# align frames
+		# actual alignment of movie frames
 		alignment = MovieModeAlignment(bgsub)
 		alignment.optimize()
-		if options.movie: alignment.show_movie(options.movie)
 		alignment.write()
+		# movie mode viewing
+		if options.movie: alignment.show_movie(options.movie)
 	
 	E2end(pid)
 
@@ -130,7 +132,7 @@ class MovieModeAlignment:
 	
 	def _initialize_params(self,boxsize,transforms):
 		"""
-		A purely organizational method to keep the initialization code clean and readable.
+		A purely organizational private method to keep the initialization code clean and readable.
 		This function takes care of initializing the variables (and allocating the 
 		subsequent memory) that will be used through the lifetime of the MovieModeAligner.
 		
@@ -160,7 +162,7 @@ class MovieModeAlignment:
 
 	def _set_ips(self):
 		"""
-		Method to compute and store the 2D incoherent power spectrum.
+		Private method to compute and store the 2D incoherent power spectrum.
 		Regions are updated by the _update_frame_params method, which
 		is called by the _update_cost method. 
 		"""
@@ -178,7 +180,7 @@ class MovieModeAlignment:
 	
 	def _set_cps(self):
 		"""
-		Method to compute and store the 2D coherent power spectrum. 
+		Private method to compute and store the 2D coherent power spectrum. 
 		Regions are updated by the _update_frame_params method, which
 		is called by the _update_cost method. Since this function
 		represents our target, it is inadvisable to run this method
@@ -199,7 +201,7 @@ class MovieModeAlignment:
 	
 	def _update_frame_params(self,imgnum,transform):
 		"""
-		Method to update a single image according to an affine transformation. 
+		Private method to update a single image according to an affine transformation. 
 		Note that transformations should by be in 2D.
 		
 		@param transform:	An EMAN Transform object
@@ -211,7 +213,7 @@ class MovieModeAlignment:
 	
 	def _update_cost(self, transforms):
 		"""
-		Method to update the cost associated with a particular set of frame alignments.
+		Private method to update the cost associated with a particular set of frame alignments.
 		Our cost function is the dot product of the incoherent and coherent 2D power spectra.
 		The optimizer needs to pass a list of transformations which will then be applied. If
 		the alignment is improved, the transforms supplied will be stored in the 
@@ -274,6 +276,7 @@ class MovieModeAlignment:
 	def dark_correct(cls,options):
 		"""
 		Class method to dark correct a DDD movie stack according to a dark reference.
+		
 		@param options:	"argparse" options from e2ddd_movie.py
 		"""
 		if path[-4:].lower() in (".mrc"): nd = self.hdr['nz']
@@ -305,6 +308,7 @@ class MovieModeAlignment:
 	def gain_correct(cls,options):
 		"""
 		Class method to gain correct a DDD movie stack.
+		
 		@param options:	"argparse" options from e2ddd_movie.py
 		"""
 		if path[-4:].lower() in (".mrc"): nd = self.hdr['nz']
@@ -338,6 +342,7 @@ class MovieModeAlignment:
 	def background_subtract(cls,options,path,dark,gain,outfile=None):
 		"""
 		Class method to background subtract and gain correct a DDD movie
+		
 		@param options	:	"argparse" options from e2ddd_movie.py
 		@param path		:	path of movie to be background subtracted
 		@param dark		:	dark reference image
@@ -370,6 +375,7 @@ class MovieModeAlignment:
 	def simple_average(cls, path):
 		"""
 		Class method to compute a simple averge of all frames in a DDD movie stack.
+		
 		@param path	:	file location DDD movie stack
 		"""
 		hdr = EMData(path,0,True).get_attr_dict()
