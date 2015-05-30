@@ -85,7 +85,7 @@ class MovieModeAligner:
 	
 	"""Class to hold information for optimized alignment of DDD cameras."""
 	
-	def __init__(self, fname, boxsize=512, transform=None):
+	def __init__(self, fname, boxsize=512, transforms=None):
 		# set path and metadata parameters
 		self.path = fname
 		self.hdr = EMData(fname,0,True).get_attr_dict()
@@ -93,15 +93,6 @@ class MovieModeAligner:
 		# perform background subtraction
 		self._remove_background()
 		# calculate regions and initialize transforms
-		self._initialize_params(boxsize,transform)
-		# set incoherent and initial coherent power spectra
-		self._set_ips()
-		self._set_cps()
-		# set initial cost to be minimized via optimization
-		self._cost = np.inf
-		self._optimized = False
-	
-	def _initialize_params(self,boxsize,transforms):
 		self._boxsize = boxsize
 		self._regions = {}
 		for i in xrange(self.hdr['nimg']):
@@ -114,7 +105,7 @@ class MovieModeAligner:
 		if not transforms:
 			t = Transform({"type":"eman","tx":0.0,"ty":0.0})
 			self._transforms = [t for i in xrange(self.hdr['nimg'])]
-		else: self._transforms = transforms 
+		else: self._transforms = transforms
 		self.optimal_transforms = self._transforms
 		self._rbox = EMData(self._boxsize,self._boxsize)
 		self._cbox = EMData(self._boxsize,self._boxsize).do_fft()
@@ -122,7 +113,13 @@ class MovieModeAligner:
 		self._cboxes = EMData(self._boxsize,self._boxsize).do_fft()
 		self._ips = EMData(self._boxsize,self._boxsize).do_fft()
 		self._cps = EMData(self._boxsize,self._boxsize).do_fft()
-	
+		# set incoherent and initial coherent power spectra
+		self._set_ips()
+		self._set_cps()
+		# set initial cost to be minimized via optimization
+		self._cost = np.inf
+		self._optimized = False
+
 	def _set_ips(self):
 		"""Function to compute and store the 2D incoherent power spectrum"""
 		for i in xrange(self.hdr['nimg']):
@@ -136,6 +133,7 @@ class MovieModeAligner:
 			self._ips += self._cboxes
 		self._ips /= self.hdr['nimg']
 		self._ips.process_inplace('math.rotationalaverage')
+		display(self._ips)
 	
 	def _set_cps(self):
 		"""Function to compute and store the 2D coherent power spectrum"""
@@ -151,14 +149,15 @@ class MovieModeAligner:
 			self._cboxes.to_zero()
 		self._cps /= self.hdr['nimg']
 		self._cps.process_inplace('math.rotationalaverage')
+		display(self._cps)
 	
 	def _remove_background(self):
-		"""function to subtract background noise from power spectra"""
+		"""Function to subtract background noise from power spectra"""
 		print('Background subtraction not implemented')
 	
 	def _update_frame_params(self,imgnum,transform):
 		self._transforms[imgnum] = transform
-		for region in self._regions:
+		for region in self._regions[imgnum]:
 			origin = region.get_origin()
 			region.set_origin(origin + [transform['tx'],transform['ty']])
 	
@@ -191,9 +190,14 @@ class MovieModeAligner:
 		"""Writes aligned results to disk"""
 		print("Writing not yet implemented")
 	
-	def get_transforms(self): return self.optimal_transforms
-	def get_data(self): return EMData(self.path)
-	def get_header(self): return self.hdr
+	def get_transforms(self): 
+		return self.optimal_transforms
+	
+	def get_data(self): 
+		return EMData(self.path)
+	
+	def get_header(self): 
+		return self.hdr
 	
 	@staticmethod
 	def dark_correct(options):
