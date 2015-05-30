@@ -2848,6 +2848,7 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 		}
 	}
 	else {
+//		FILE *out = fopen("x.txt","w");
 		size_t i;	//3D file may have >2G size
 		for (z=i=0; z<nz; ++z) {
 			for (y=0; y<ny; ++y) {
@@ -2900,6 +2901,7 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 								ret[f]+=std::sqrt(v);
 								norm[f]+=v;
 								count[f]+=1.0;
+//								if (f==100) fprintf(out,"%1.4g\n",std::sqrt(v));
 								break;
 						}						
 					}
@@ -2944,6 +2946,7 @@ vector<float> EMData::calc_radial_dist(int n, float x0, float dx, int inten)
 				}
 			}
 		}
+//		fclose(out);
 	}
 	
 	if (inten<2) {
