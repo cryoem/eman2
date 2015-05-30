@@ -39,8 +39,8 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """e2moviealigner.py [options] <ddd_movie_stack>
 	
-	Determines the optimal alignment of frames in a DDD movie. It can be used to 
-	generate the affine transforms for each image and can perform the actual 
+	Determines the optimal whole-frame alignment of a DDD movie. It can be used 
+	to generate the affine transforms for each image and can perform the actual 
 	alignment of the movie frames according to the transformations.
 	"""
 	
@@ -48,7 +48,13 @@ def main():
 
 	parser.add_argument("--dark",type=str,default=None,help="Perform dark image correction using the specified image file")
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
-	parser.add_argument("--fixbadpixels",action="store_true",default=False,help="Tries to identify bad pixels in the dark/gain reference, and fills images in with sane values instead")
+	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.")
+	parser.add_argument("--step",type=str,default="1,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 1,1 (first image skipped)")
+	parser.add_argument("--fixbadpixels",action="store_true",dest="fbp",default=False,help="Tries to identify bad pixels in the dark/gain reference, and fills images in with sane values instead")
+	parser.add_argument("--frames",action="store_true",default=False,help="Save the dark/gain corrected frames")
+	parser.add_argument("--normalize",action="store_true",default=False,help="Apply edgenormalization to input images after dark/gain")
+	parser.add_argument("--simpleavg", action="store_true",help="Will save a simple average of the dark/gain corrected frames (no alignment or weighting)",default=False)
+	parser.add_argument("--movie", type=int,help="Display an n-frame averaged 'movie' of the stack, specify number of frames to average",default=0)	
 	parser.add_argument("--parallel", default=None, help="parallelism argument. This program supports only thread:<n>")
 	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement[4]")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
@@ -69,39 +75,47 @@ def main():
 	
 	if options.threads>1: threads=max(threads,options.threads)
 	if threads>1: print "Sorry, limited to one thread at the moment."
-
-	pid=E2init(sys.argv)
 	
-	if options.dark: MovieModeAligner.dark_correct(options)
-	if options.gain: MovieModeAligner.gain_correct(options)
+	if options.dark: dark = MovieModeAlignment.dark_correct(options)
+	else: dark=None
+	
+	if options.gain: gain = MovieModeAlignment.gain_correct(options)
+	elif options.gaink2: gain = EMData(options.gaink2)
+	else: gain = None
+	
+	pid=E2init(sys.argv)
 	
 	for fname in args:
 		if options.verbose: print "Processing", fname
-		aligner = MovieModeAligner(fname)
-		aligner.optimize()
-		aligner.get_transforms()
-		aligner.write()
+		# perform background subtraction
+		bgsub = MovieModeAlignment.background_subtract(options,fname,dark,gain)
+		if options.simpleavg: MovieModeAlignment.simple_average(bgsub)
+		# align frames
+		alignment = MovieModeAlignment(bgsub)
+		alignment.optimize()
+		if options.movie: alignment.show_movie(options.movie)
+		alignment.write()
 	
 	E2end(pid)
 
-class MovieModeAligner:
+class MovieModeAlignment:
 	
-	"""
-	Class to hold information for optimized alignment of DDD cameras.
-	"""
+	"""Class to hold information for optimized alignment of DDD cameras."""
 	
 	def __init__(self, path, boxsize=512, transforms=None):
 		"""
 		@param path 		:	File location and name.
+		@param dark 		:	Dark reference movie.
+		@param gain 		:	Gain reference movie.
 		@param boxsize  	:	(optional) Size of boxes used to compute average power spectra.
 		@param transforms	: 	(optional) A list of Transform objects.
 		""" 
 		# set path and metadata parameters
 		self.path = path
 		self.hdr = EMData(path,0,True).get_attr_dict()
-		self.hdr['nimg'] = EMUtil.get_image_count(path)
-		# perform background subtraction
-		self._remove_background()
+		if path[-4:].lower() in (".mrc"): self.hdr['nimg'] = self.hdr['nz']
+		else: self.hdr['nimg'] = EMUtil.get_image_count(path)
+		self.outfile = path.rsplit(".",1)[0]+"_proc.hdf"		
 		# calculate regions and initialize transforms
 		self._initialize_params(boxsize,transforms)
 		# set incoherent and initial coherent power spectra
@@ -111,11 +125,14 @@ class MovieModeAligner:
 		self._cost = np.inf
 		self._optimized = False
 	
-	def _initialize_params(self):
+	def _initialize_params(self,boxsize,transforms):
 		"""
 		An organizational function to keep the initialization code clean and readable.
 		This function takes care of initializing the variables (and allocating the 
 		subsequent memory) that will be used through the lifetime of the MovieModeAligner.
+		
+		@param boxsize		:	Size of boxes used to compute average power spectra.
+		@param transforms	:	A list of Transform objects.
 		"""
 		self._boxsize = boxsize
 		self._regions = {}
@@ -139,7 +156,11 @@ class MovieModeAligner:
 		self._cps = EMData(self._boxsize,self._boxsize).do_fft()
 
 	def _set_ips(self):
-		"""Function to compute and store the 2D incoherent power spectrum"""
+		"""
+		Function to compute and store the 2D incoherent power spectrum.
+		Regions are updated by the _update_frame_params method, which
+		is called by the _update_cost method. 
+		"""
 		for i in xrange(self.hdr['nimg']):
 			for r in self._regions[i]:
 				self._rbox.read_image_c(self.path,i,False,r)
@@ -151,10 +172,15 @@ class MovieModeAligner:
 			self._ips += self._cboxes
 		self._ips /= self.hdr['nimg']
 		self._ips.process_inplace('math.rotationalaverage')
-		#display(self._ips)
 	
 	def _set_cps(self):
-		"""Function to compute and store the 2D coherent power spectrum"""
+		"""
+		Function to compute and store the 2D coherent power spectrum. 
+		Regions are updated by the _update_frame_params method, which
+		is called by the _update_cost method. Since this function
+		represents our target, it is inadvisable to run this method
+		more than once in a single instance.
+		"""
 		for i in xrange(self.hdr['nimg']):
 			for r in self._regions[i]:
 				self._rbox.read_image_c(self.path,i,False,r)
@@ -167,33 +193,30 @@ class MovieModeAligner:
 			self._cboxes.to_zero()
 		self._cps /= self.hdr['nimg']
 		self._cps.process_inplace('math.rotationalaverage')
-		#display(self._cps)
-	
-	def _remove_background(self):
-		"""Function to subtract background noise from power spectra"""
-		print('Background subtraction not implemented')
 	
 	def _update_frame_params(self,imgnum,transform):
 		"""
 		Updates a single image according to an affine transformation. 
 		Note that transformations should by be in 2D.
-		@param transform	:	An EMAN Transform object
+		
+		@param transform:	An EMAN Transform object
 		"""
 		self._transforms[imgnum] = transform
 		for region in self._regions[imgnum]:
 			origin = region.get_origin()
 			region.set_origin(origin + [transform['tx'],transform['ty']])
 	
-	def _update_cost(self, proposed_transforms):
+	def _update_cost(self, transforms):
 		"""
 		Function to update the cost associated with a particular set of frame alignments.
 		Our cost function is the dot product of the incoherent and coherent 2D power spectra.
 		The optimizer needs to pass a list of transformations which will then be applied. If
-		the alignment is improved, the transforms supplied will be stored in the optimal_transforms
-		variable for later access.
-		@param proposed_transforms	: List of EMAN Transform objects, one for each image.
+		the alignment is improved, the transforms supplied will be stored in the 
+		optimal_transforms variable for later access.
+		
+		@param transforms: 	List of proposed EMAN Transform objects, one for each frame in movie.
 		"""
-		for i,t in enumerate(proposed_transforms):
+		for i,t in enumerate(transforms):
 			if self._transforms[i] != t:
 				self._update_frame_params(i,t)
 		self._set_ips()
@@ -204,88 +227,155 @@ class MovieModeAligner:
 	
 	def optimize(self):
 		"""Optimization routine for objective function"""
-		if self._optimized: print("Optimal alignment already determined")
+		if self._optimized: print("Optimal alignment already determined.")
 		else:
 			self._optimized = True
-			self._update_cost(self._transforms)
-			print('Optimizer not yet implemented.')
+			test = self._transforms
+			self._update_cost(test)
+			print('Optimizer not yet implemented. Running test with initial transforms.')
 		return
 	
 	def write(self,name=None):
 		"""Writes aligned results to disk"""
-		if not name:
-			name=self.hdr['source_path'].rsplit(".",1)[0]+"_proc.hdf"
-		print("Writing not yet implemented")
+		if not name: name=self.outfile
+		print("Writing not yet implemented.")
 	
 	def get_transforms(self): return self.optimal_transforms
 	def get_data(self): return EMData(self.path)
 	def get_header(self): return self.hdr
 	
-	@staticmethod
-	def dark_correct(options):
+	def show_movie(self,f2avg=5):
 		"""
-		Static function to dark correct a DDD movie stack.
-		@param options: "Argparse" options from e2ddd_movie.py.
+		Function to display 'movie' of averaged frames
+		
+		@param f2avg: number of frames to average. Default is 5.
 		"""
-		if options.dark : 
-			nd=EMUtil.get_image_count(options.dark)
-			dark=EMData(options.dark,0)
-			if nd>1:
-				sigd=dark.copy()
-				sigd.to_zero()
-				a=Averagers.get("mean",{"sigma":sigd,"ignore0":1})
-				print "Summing dark"
-				for i in xrange(0,nd):
-					if options.verbose:
-						print " {}/{}   \r".format(i+1,nd),
-						sys.stdout.flush()
-					t=EMData(options.dark,i)
-					t.process_inplace("threshold.clampminmax",{"minval":0,"maxval":t["mean"]+t["sigma"]*3.5,"tozero":1})
-					a.add_image(t)
-				dark=a.finish()
-				sigd.write_image(options.dark.rsplit(".",1)[0]+"_sig.hdf")
-				if options.fixbadpixels:
-					sigd.process_inplace("threshold.binary",{"value":sigd["sigma"]/10.0})		# Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
-					dark.mult(sigd)
-				dark.write_image(options.dark.rsplit(".",1)[0]+"_sum.hdf")
-			dark.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
-			dark2=dark.process("normalize.unitlen")
-		else: dark=None
+		mov=[]
+		for i in xrange(f2avg+1,self.hdr['nimg']):
+			im=sum(outim[i-f2avg-1:i])
+			mov.append(im)
+		display(mov)
 	
-	@staticmethod
-	def gain_correct(options):
+	@classmethod
+	def dark_correct(cls,options):
+		"""
+		Function to dark correct a DDD movie stack according to a dark reference.
+		@param options:	"argparse" options from e2ddd_movie.py
+		"""
+		if path[-4:].lower() in (".mrc"): nd = self.hdr['nz']
+		else: nd = EMUtil.get_image_count(options.dark)
+		dark=EMData(options.dark,0)
+		if nd>1:
+			sigd=dark.copy()
+			sigd.to_zero()
+			a=Averagers.get("mean",{"sigma":sigd,"ignore0":1})
+			print "Summing dark"
+			for i in xrange(0,nd):
+				if options.verbose:
+					print " {}/{}   \r".format(i+1,nd),
+					sys.stdout.flush()
+				t=EMData(options.dark,i)
+				t.process_inplace("threshold.clampminmax",{"minval":0,"maxval":t["mean"]+t["sigma"]*3.5,"tozero":1})
+				a.add_image(t)
+			dark=a.finish()
+			sigd.write_image(options.dark.rsplit(".",1)[0]+"_sig.hdf")
+			if options.fixbadpixels:
+				sigd.process_inplace("threshold.binary",{"value":sigd["sigma"]/10.0})		# Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
+				dark.mult(sigd)
+			dark.write_image(options.dark.rsplit(".",1)[0]+"_sum.hdf")
+		dark.process_inplace("threshold.clampminmax.nsigma",{"nsigma":3.0})
+		dark2=dark.process("normalize.unitlen")
+		return dark
+	
+	@classmethod
+	def gain_correct(cls,options):
 		"""
 		Static function to gain correct a DDD movie stack.
-		@param options: "Argparse" options from e2ddd_movie.py.
+		@param options:	"argparse" options from e2ddd_movie.py
 		"""
-		if options.gain: 
-			nd=EMUtil.get_image_count(options.gain)
-			gain=EMData(options.gain,0)
-			if nd>1:
-				sigg=gain.copy()
-				sigg.to_zero()
-				a=Averagers.get("mean",{"sigma":sigg,"ignore0":1})
-				print "Summing gain"
-				for i in xrange(0,nd):
-					if options.verbose:
-						print " {}/{}   \r".format(i+1,nd),
-						sys.stdout.flush()
-					t=EMData(options.gain,i)
-					t.process_inplace("threshold.clampminmax",{"minval":0,"maxval":t["mean"]+t["sigma"]*3.5,"tozero":1})
-					a.add_image(t)
-				gain=a.finish()
-				sigg.write_image(options.gain.rsplit(".",1)[0]+"_sig.hdf")
-				if options.fixbadpixels:
-					sigg.process_inplace("threshold.binary",{"value":sigg["sigma"]/10.0})		# Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
-					if dark!=None: 
-						sigg.mult(sigd)
-					gain.mult(sigg)
-				gain.write_image(options.gain.rsplit(".",1)[0]+"_sum.hdf")
-			if dark!=None: 
-				gain.sub(dark)												# dark correct the gain-reference
-			gain.mult(1.0/gain["mean"])									# normalize so gain reference on average multiplies by 1.0
-			gain.process_inplace("math.reciprocal",{"zero_to":0.0})		# setting zero values to zero helps identify bad pixels
-		else: gain=None	
+		if path[-4:].lower() in (".mrc"): nd = self.hdr['nz']
+		else: nd = EMUtil.get_image_count(options.gain)
+		gain=EMData(options.gain,0)
+		if nd>1:
+			sigg=gain.copy()
+			sigg.to_zero()
+			a=Averagers.get("mean",{"sigma":sigg,"ignore0":1})
+			print "Summing gain"
+			for i in xrange(0,nd):
+				if options.verbose:
+					print " {}/{}   \r".format(i+1,nd),
+					sys.stdout.flush()
+				t=EMData(options.gain,i)
+				t.process_inplace("threshold.clampminmax",{"minval":0,"maxval":t["mean"]+t["sigma"]*3.5,"tozero":1})
+				a.add_image(t)
+			gain=a.finish()
+			sigg.write_image(options.gain.rsplit(".",1)[0]+"_sig.hdf")
+			if options.fixbadpixels:
+				sigg.process_inplace("threshold.binary",{"value":sigg["sigma"]/10.0})		# Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
+				if dark!=None : sigg.mult(sigd)
+				gain.mult(sigg)
+			gain.write_image(options.gain.rsplit(".",1)[0]+"_sum.hdf")
+		if dark!=None : gain.sub(dark)								# dark correct the gain-reference
+		gain.mult(1.0/gain["mean"])									# normalize so gain reference on average multiplies by 1.0
+		gain.process_inplace("math.reciprocal",{"zero_to":0.0})		# setting zero values to zero helps identify bad pixels
+		return gain
+	
+	@classmethod
+	def background_subtract(cls,options,path,dark,gain,outfile=None):
+		"""
+		Class method to background subtract and gain correct a DDD movie
+		@param options	:	"argparse" options from e2ddd_movie.py
+		@param path		:	path of movie to be background subtracted
+		@param dark		:	dark reference image
+		@param gain		:	gain reference image
+		@param outfile	:	(optional) name of the file to be written with background subtracted movie
+		"""
+		if not outfile: outfile = path.rsplit(".",1)[0]+"_bgsub.hdf"
+		step = options.step.split(",")
+		if len(step) == 3: last = int(step[2])
+		else: last = -1
+		first = int(step[0])
+		step  = int(step[1])
+		if options.verbose : print "Range = {} - {}, Step = {}".format(first, last, step)
+		for i in xrange(first,flast,step):
+			if path[-4:].lower() in (".mrc"):
+				r = Region(0,0,i,nx,ny,1)
+				im=EMData(path,0,False,r)
+			else:
+				im=EMData(path,i)
+			if dark: im.sub(dark)
+			if gain: im.mult(gain)
+			im.process_inplace("threshold.clampminmax",{"minval":0,"maxval":im["mean"]+im["sigma"]*3.5,"tozero":1})
+			if options.fixbadpixels: im.process_inplace("threshold.outlier.localmean",{"sigma":3.5,"fix_zero":1})		# fixes clear outliers as well as values which were exactly zero
+			if options.normalize: im.process_inplace("normalize.edgemean")
+			if options.frames: im.write_image(outname[:-4]+"_corr.hdf",i-first)
+			im.write_image(outfile,i)
+		return outfile
+	
+	@classmethod
+	def simple_average(cls, path):
+		"""
+		Class method to compute a simple averge of all frames in a DDD movie stack.
+		@param path	:	file location DDD movie stack
+		"""
+		hdr = EMData(path,0,True).get_attr_dict()
+		nx = hdr['nx']
+		ny = hdr['ny']
+		if path[-4:].lower() in (".mrc"):
+			mrc = True
+			nimg = self.hdr['nz']
+			r = Region(0,0,i,nx,ny,1)
+		else:
+			nimg = EMUtil.get_image_count(path)
+		avgr=Averagers.get("mean")
+		for i in xrange(nimg):
+			if mrc:
+				r.set_origin(0,0,i)
+				avgr.add_image(EMData(path,i,False,r))
+			else:
+				avgr.add_image(EMData(path,i))
+		av=avgr.finish()
+		av.write_image(outname[:-4]+"_mean.hdf",0)
 
 if __name__ == "__main__":
 	main()
