@@ -39,7 +39,6 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] <ddd_movie_stack>
 	
-	Align the frames of a DDD movie stack.
 	"""
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
@@ -112,41 +111,44 @@ class MovieModeAligner:
 					r = Region(x*self._boxsize+self._boxsize/2,y*self._boxsize+self._boxsize/2,self._boxsize,self._boxsize)
 					self._regions[i].append(r)
 		self.nregions = len(self._regions)
-		if transforms == None: transforms = Transform({"type":"eman","tx":0.0,"ty":0.0})
-		self._transforms = [transforms for i in xrange(self.hdr['nimg'])]
+		if not transforms:
+			t = Transform({"type":"eman","tx":0.0,"ty":0.0})
+			self._transforms = [t for i in xrange(self.hdr['nimg'])]
+		else: self._transforms = transforms 
 		self.optimal_transforms = self._transforms
-		self._ips = EMData(self._boxsize,self._boxsize)
-		self._cps = EMData(self._boxsize,self._boxsize)
-		self._boxes = EMData(self._boxsize,self._boxsize)
-		self._box = EMData(self._boxsize,self._boxsize)
+		self._rbox = EMData(self._boxsize,self._boxsize)
+		self._cbox = EMData(self._boxsize,self._boxsize).do_fft()
+		self._rboxes = EMData(self._boxsize,self._boxsize)
+		self._cboxes = EMData(self._boxsize,self._boxsize).do_fft()
+		self._ips = EMData(self._boxsize,self._boxsize).do_fft()
+		self._cps = EMData(self._boxsize,self._boxsize).do_fft()
 	
 	def _set_ips(self):
-		"""function to compute the 2D incoherent power spectrum"""
+		"""Function to compute and store the 2D incoherent power spectrum"""
 		for i in xrange(self.hdr['nimg']):
 			for r in self._regions[i]:
-				self._box.read_image_c(self.path,i,False,r)
-				self._boxes += self._box
-			self._boxes /= self.nregions
-			self._boxes.process_inplace("normalize.edgemean")
-			self._boxes.do_fft_inplace()
-			self._ips.ri2inten()
-			self._ips += self._boxes
-			self._boxes.to_zero()
+				self._rbox.read_image_c(self.path,i,False,r)
+				self._rboxes += self._rbox
+			self._rboxes /= self.nregions
+			self._rboxes.process_inplace("normalize.edgemean")
+			self._cboxes = self._rboxes.do_fft()
+			self._rboxes.to_zero()
+			self._ips += self._cboxes
 		self._ips /= self.hdr['nimg']
 		self._ips.process_inplace('math.rotationalaverage')
 	
 	def _set_cps(self):
-		"""function to compute the 2D coherent power spectrum"""
+		"""Function to compute and store the 2D coherent power spectrum"""
 		for i in xrange(self.hdr['nimg']):
 			for r in self._regions[i]:
-				self._box.read_image_c(self.path,i,False,r)
-				self._box.process_inplace("normalize.edgemean")
-				self._box.do_fft_inplace()
-				self._box.ri2inten()
-				self._boxes += self._box
-			self._boxes /= self.nregions
-			self._cps += self._boxes
-			self._boxes.to_zero()
+				self._rbox.read_image_c(self.path,i,False,r)
+				self._rbox.process_inplace("normalize.edgemean")
+				self._cbox = self._rbox.do_fft()
+				self._cbox.ri2inten()
+				self._cboxes += self._cbox
+			self._cboxes /= self.nregions
+			self._cps += self._cboxes
+			self._cboxes.to_zero()
 		self._cps /= self.hdr['nimg']
 		self._cps.process_inplace('math.rotationalaverage')
 	
@@ -160,27 +162,29 @@ class MovieModeAligner:
 			origin = region.get_origin()
 			region.set_origin(origin + [transform['tx'],transform['ty']])
 	
-	def _update_cost_func(self, transforms):
+	def _update_cost_func(self, proposed_transforms):
 		"""
 		Our cost function is the dot product of the incoherent and coherent 2D power spectra
 		@param transforms: list of transform objects, one for each frame in the movie
 		"""
 		for i,t in enumerate(proposed_transforms):
-			if self.transforms[i] != t:
+			if self._transforms[i] != t:
 				self._update_frame_params(i,t)
 		self._set_ips()
 		cost = -1*self._ips.dot(self._cps)
 		if cost < self._cost:
 			self._cost = cost
-			self.optimal_transforms = self.transforms
+			self.optimal_transforms = self._transforms
 	
 	def optimize(self):
 		"""Optimization of objective function"""
-		if self._optimized: return
+		if self._optimized:
+			print("Optimal alignment already determined")
+			return
 		else:
 			self._optimized = True
-			self._update_cost_func(self.transforms)
-		print('Optimizer not yet implemented.')
+			self._update_cost_func(self._transforms)
+			print('Optimizer not yet implemented.')
 		return
 	
 	def write(self,name=None):
