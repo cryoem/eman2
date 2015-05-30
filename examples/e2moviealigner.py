@@ -37,8 +37,11 @@ import numpy as np
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """prog [options] <ddd_movie_stack>
+	usage = """e2moviealigner.py [options] <ddd_movie_stack>
 	
+	Determines the optimal alignment of frames in a DDD movie. It can be used to 
+	generate the affine transforms for each image and can perform the actual 
+	alignment of the movie frames according to the transformations.
 	"""
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
@@ -83,16 +86,37 @@ def main():
 
 class MovieModeAligner:
 	
-	"""Class to hold information for optimized alignment of DDD cameras."""
+	"""
+	Class to hold information for optimized alignment of DDD cameras.
+	"""
 	
-	def __init__(self, fname, boxsize=512, transforms=None):
+	def __init__(self, path, boxsize=512, transforms=None):
+		"""
+		@param path 		:	File location and name.
+		@param boxsize  	:	(optional) Size of boxes used to compute average power spectra.
+		@param transforms	: 	(optional) A list of Transform objects.
+		""" 
 		# set path and metadata parameters
-		self.path = fname
-		self.hdr = EMData(fname,0,True).get_attr_dict()
-		self.hdr['nimg'] = EMUtil.get_image_count(fname)
+		self.path = path
+		self.hdr = EMData(path,0,True).get_attr_dict()
+		self.hdr['nimg'] = EMUtil.get_image_count(path)
 		# perform background subtraction
 		self._remove_background()
 		# calculate regions and initialize transforms
+		self._initialize_params(boxsize,transforms)
+		# set incoherent and initial coherent power spectra
+		self._set_ips()
+		self._set_cps()
+		# set initial cost to be minimized via optimization
+		self._cost = np.inf
+		self._optimized = False
+	
+	def _initialize_params(self):
+		"""
+		An organizational function to keep the initialization code clean and readable.
+		This function takes care of initializing the variables (and allocating the 
+		subsequent memory) that will be used through the lifetime of the MovieModeAligner.
+		"""
 		self._boxsize = boxsize
 		self._regions = {}
 		for i in xrange(self.hdr['nimg']):
@@ -113,12 +137,6 @@ class MovieModeAligner:
 		self._cboxes = EMData(self._boxsize,self._boxsize).do_fft()
 		self._ips = EMData(self._boxsize,self._boxsize).do_fft()
 		self._cps = EMData(self._boxsize,self._boxsize).do_fft()
-		# set incoherent and initial coherent power spectra
-		self._set_ips()
-		self._set_cps()
-		# set initial cost to be minimized via optimization
-		self._cost = np.inf
-		self._optimized = False
 
 	def _set_ips(self):
 		"""Function to compute and store the 2D incoherent power spectrum"""
@@ -133,7 +151,7 @@ class MovieModeAligner:
 			self._ips += self._cboxes
 		self._ips /= self.hdr['nimg']
 		self._ips.process_inplace('math.rotationalaverage')
-		display(self._ips)
+		#display(self._ips)
 	
 	def _set_cps(self):
 		"""Function to compute and store the 2D coherent power spectrum"""
@@ -149,22 +167,31 @@ class MovieModeAligner:
 			self._cboxes.to_zero()
 		self._cps /= self.hdr['nimg']
 		self._cps.process_inplace('math.rotationalaverage')
-		display(self._cps)
+		#display(self._cps)
 	
 	def _remove_background(self):
 		"""Function to subtract background noise from power spectra"""
 		print('Background subtraction not implemented')
 	
 	def _update_frame_params(self,imgnum,transform):
+		"""
+		Updates a single image according to an affine transformation. 
+		Note that transformations should by be in 2D.
+		@param transform	:	An EMAN Transform object
+		"""
 		self._transforms[imgnum] = transform
 		for region in self._regions[imgnum]:
 			origin = region.get_origin()
 			region.set_origin(origin + [transform['tx'],transform['ty']])
 	
-	def _update_cost_func(self, proposed_transforms):
+	def _update_cost(self, proposed_transforms):
 		"""
-		Our cost function is the dot product of the incoherent and coherent 2D power spectra
-		@param transforms: list of transform objects, one for each frame in the movie
+		Function to update the cost associated with a particular set of frame alignments.
+		Our cost function is the dot product of the incoherent and coherent 2D power spectra.
+		The optimizer needs to pass a list of transformations which will then be applied. If
+		the alignment is improved, the transforms supplied will be stored in the optimal_transforms
+		variable for later access.
+		@param proposed_transforms	: List of EMAN Transform objects, one for each image.
 		"""
 		for i,t in enumerate(proposed_transforms):
 			if self._transforms[i] != t:
@@ -176,31 +203,30 @@ class MovieModeAligner:
 			self.optimal_transforms = self._transforms
 	
 	def optimize(self):
-		"""Optimization of objective function"""
-		if self._optimized:
-			print("Optimal alignment already determined")
-			return
+		"""Optimization routine for objective function"""
+		if self._optimized: print("Optimal alignment already determined")
 		else:
 			self._optimized = True
-			self._update_cost_func(self._transforms)
+			self._update_cost(self._transforms)
 			print('Optimizer not yet implemented.')
 		return
 	
 	def write(self,name=None):
 		"""Writes aligned results to disk"""
+		if not name:
+			name=self.hdr['source_path'].rsplit(".",1)[0]+"_proc.hdf"
 		print("Writing not yet implemented")
 	
-	def get_transforms(self): 
-		return self.optimal_transforms
-	
-	def get_data(self): 
-		return EMData(self.path)
-	
-	def get_header(self): 
-		return self.hdr
+	def get_transforms(self): return self.optimal_transforms
+	def get_data(self): return EMData(self.path)
+	def get_header(self): return self.hdr
 	
 	@staticmethod
 	def dark_correct(options):
+		"""
+		Static function to dark correct a DDD movie stack.
+		@param options: "Argparse" options from e2ddd_movie.py.
+		"""
 		if options.dark : 
 			nd=EMUtil.get_image_count(options.dark)
 			dark=EMData(options.dark,0)
@@ -228,6 +254,10 @@ class MovieModeAligner:
 	
 	@staticmethod
 	def gain_correct(options):
+		"""
+		Static function to gain correct a DDD movie stack.
+		@param options: "Argparse" options from e2ddd_movie.py.
+		"""
 		if options.gain: 
 			nd=EMUtil.get_image_count(options.gain)
 			gain=EMData(options.gain,0)
@@ -258,5 +288,4 @@ class MovieModeAligner:
 		else: gain=None	
 
 if __name__ == "__main__":
-	
 	main()
