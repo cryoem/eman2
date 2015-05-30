@@ -108,6 +108,7 @@ class MovieModeAlignment:
 	def __init__(self, path, boxsize=512, transforms=None):
 		"""
 		Initialization method for MovieModeAlignment objects.
+		
 		@param path 		:	File location and name.
 		@param dark 		:	Dark reference movie.
 		@param gain 		:	Gain reference movie.
@@ -237,16 +238,16 @@ class MovieModeAlignment:
 		if self._optimized: print("Optimal alignment already determined.")
 		else:
 			self._optimized = True
+			print('Optimizer not yet implemented. Running test with initial transforms.')
 			test = self._transforms
 			self._update_cost(test)
-			print('Optimizer not yet implemented. Running test with initial transforms.')
 		return
 	
 	def write(self,name=None):
 		"""
 		Method to write aligned results to disk
 		
-		@param name:	file name to write aligned movie stack
+		@param name: file name to write aligned movie stack
 		"""
 		if not name: name=self.outfile
 		if not self._optimized:
@@ -256,9 +257,14 @@ class MovieModeAlignment:
 			im.transform(self.transforms[i])
 			im.write_image_c(name,i)
 	
-	def get_transforms(self): return self.optimal_transforms
-	def get_data(self): return EMData(self.path)
-	def get_header(self): return self.hdr
+	def get_transforms(self): 
+		return self.optimal_transforms
+	
+	def get_data(self): 
+		return EMData(self.path)
+	
+	def get_header(self): 
+		return self.hdr
 	
 	def show_movie(self,f2avg=5):
 		"""
@@ -268,6 +274,7 @@ class MovieModeAlignment:
 		"""
 		mov=[]
 		for i in xrange(f2avg+1,self.hdr['nimg']):
+			outim = EMData(self.path,i)
 			im=sum(outim[i-f2avg-1:i])
 			mov.append(im)
 		display(mov)
