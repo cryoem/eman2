@@ -33,7 +33,6 @@
 from EMAN2 import *
 import os
 import sys
-import numpy as np
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -100,10 +99,13 @@ def main():
 
 class MovieModeAlignment:
 	
-	"""Class to hold information for optimized alignment of DDD cameras."""
+	"""
+	Class to hold information for optimized alignment of DDD cameras.
+	"""
 	
 	def __init__(self, path, boxsize=512, transforms=None):
 		"""
+		Initialization method for MovieModeAlignment objects.
 		@param path 		:	File location and name.
 		@param dark 		:	Dark reference movie.
 		@param gain 		:	Gain reference movie.
@@ -123,12 +125,12 @@ class MovieModeAlignment:
 		self._set_ips()
 		self._set_cps()
 		# set initial cost to be minimized via optimization
-		self._cost = np.inf
+		self._cost = sys.float_info.max
 		self._optimized = False
 	
 	def _initialize_params(self,boxsize,transforms):
 		"""
-		An organizational function to keep the initialization code clean and readable.
+		A purely organizational method to keep the initialization code clean and readable.
 		This function takes care of initializing the variables (and allocating the 
 		subsequent memory) that will be used through the lifetime of the MovieModeAligner.
 		
@@ -158,7 +160,7 @@ class MovieModeAlignment:
 
 	def _set_ips(self):
 		"""
-		Function to compute and store the 2D incoherent power spectrum.
+		Method to compute and store the 2D incoherent power spectrum.
 		Regions are updated by the _update_frame_params method, which
 		is called by the _update_cost method. 
 		"""
@@ -176,7 +178,7 @@ class MovieModeAlignment:
 	
 	def _set_cps(self):
 		"""
-		Function to compute and store the 2D coherent power spectrum. 
+		Method to compute and store the 2D coherent power spectrum. 
 		Regions are updated by the _update_frame_params method, which
 		is called by the _update_cost method. Since this function
 		represents our target, it is inadvisable to run this method
@@ -197,7 +199,7 @@ class MovieModeAlignment:
 	
 	def _update_frame_params(self,imgnum,transform):
 		"""
-		Updates a single image according to an affine transformation. 
+		Method to update a single image according to an affine transformation. 
 		Note that transformations should by be in 2D.
 		
 		@param transform:	An EMAN Transform object
@@ -209,7 +211,7 @@ class MovieModeAlignment:
 	
 	def _update_cost(self, transforms):
 		"""
-		Function to update the cost associated with a particular set of frame alignments.
+		Method to update the cost associated with a particular set of frame alignments.
 		Our cost function is the dot product of the incoherent and coherent 2D power spectra.
 		The optimizer needs to pass a list of transformations which will then be applied. If
 		the alignment is improved, the transforms supplied will be stored in the 
@@ -227,7 +229,9 @@ class MovieModeAlignment:
 			self.optimal_transforms = self._transforms
 	
 	def optimize(self):
-		"""Optimization routine for objective function"""
+		"""
+		Method to perform optimization
+		"""
 		if self._optimized: print("Optimal alignment already determined.")
 		else:
 			self._optimized = True
@@ -238,13 +242,13 @@ class MovieModeAlignment:
 	
 	def write(self,name=None):
 		"""
-		Writes aligned results to disk
+		Method to write aligned results to disk
+		
 		@param name:	file name to write aligned movie stack
 		"""
 		if not name: name=self.outfile
 		if not self._optimized:
 			print("Warning: Saving non-optimal alignment.\nRun the optimize method to determine best frame translations.")
-		#aligned = EMData(self.hdr['nx'],self.hdr['ny'])
 		for i in xrange(self.hdr['nimg']):
 			im = EMData(self.path,i)
 			im.transform(self.transforms[i])
@@ -256,7 +260,7 @@ class MovieModeAlignment:
 	
 	def show_movie(self,f2avg=5):
 		"""
-		Function to display 'movie' of averaged frames
+		Method to display 'movie' of averaged frames
 		
 		@param f2avg: number of frames to average. Default is 5.
 		"""
@@ -269,7 +273,7 @@ class MovieModeAlignment:
 	@classmethod
 	def dark_correct(cls,options):
 		"""
-		Function to dark correct a DDD movie stack according to a dark reference.
+		Class method to dark correct a DDD movie stack according to a dark reference.
 		@param options:	"argparse" options from e2ddd_movie.py
 		"""
 		if path[-4:].lower() in (".mrc"): nd = self.hdr['nz']
@@ -300,7 +304,7 @@ class MovieModeAlignment:
 	@classmethod
 	def gain_correct(cls,options):
 		"""
-		Static function to gain correct a DDD movie stack.
+		Class method to gain correct a DDD movie stack.
 		@param options:	"argparse" options from e2ddd_movie.py
 		"""
 		if path[-4:].lower() in (".mrc"): nd = self.hdr['nz']
