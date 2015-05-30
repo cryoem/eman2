@@ -112,7 +112,8 @@ class MovieModeAlignment:
 		""" 
 		# set path and metadata parameters
 		self.path = path
-		self.hdr = EMData(path,0,True).get_attr_dict()
+		self.hdr = EMData(path,0).get_attr_dict()
+		#self.hdr = hdr
 		if path[-4:].lower() in (".mrc"): self.hdr['nimg'] = self.hdr['nz']
 		else: self.hdr['nimg'] = EMUtil.get_image_count(path)
 		self.outfile = path.rsplit(".",1)[0]+"_proc.hdf"		
@@ -236,9 +237,18 @@ class MovieModeAlignment:
 		return
 	
 	def write(self,name=None):
-		"""Writes aligned results to disk"""
+		"""
+		Writes aligned results to disk
+		@param name:	file name to write aligned movie stack
+		"""
 		if not name: name=self.outfile
-		print("Writing not yet implemented.")
+		if not self._optimized:
+			print("Warning: Saving non-optimal alignment.\nRun the optimize method to determine best frame translations.")
+		#aligned = EMData(self.hdr['nx'],self.hdr['ny'])
+		for i in xrange(self.hdr['nimg']):
+			im = EMData(self.path,i)
+			im.transform(self.transforms[i])
+			im.write_image_c(name,i)
 	
 	def get_transforms(self): return self.optimal_transforms
 	def get_data(self): return EMData(self.path)
@@ -337,7 +347,7 @@ class MovieModeAlignment:
 		first = int(step[0])
 		step  = int(step[1])
 		if options.verbose : print "Range = {} - {}, Step = {}".format(first, last, step)
-		for i in xrange(first,flast,step):
+		for i in xrange(first,last,step):
 			if path[-4:].lower() in (".mrc"):
 				r = Region(0,0,i,nx,ny,1)
 				im=EMData(path,0,False,r)
@@ -349,7 +359,7 @@ class MovieModeAlignment:
 			if options.fixbadpixels: im.process_inplace("threshold.outlier.localmean",{"sigma":3.5,"fix_zero":1})		# fixes clear outliers as well as values which were exactly zero
 			if options.normalize: im.process_inplace("normalize.edgemean")
 			if options.frames: im.write_image(outname[:-4]+"_corr.hdf",i-first)
-			im.write_image(outfile,i)
+			im.write_image_c(outfile,i)
 		return outfile
 	
 	@classmethod
