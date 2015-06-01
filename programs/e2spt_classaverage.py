@@ -3288,77 +3288,78 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	
 	
 	
-	if 'rotate_translate_3d_tree' not in options.align[0]:	
-		if not refpreprocess:
-			print "\nthere is NO refpreprocess! But an external reference WAS provided, type, len", options.ref
-		
-			if options.shrink and int(options.shrink) > 1:
-				print "shrinking sfixedimage BEFORE, iter", sfixedimage['nx'], iter
-				sfixedimage = sfixedimage.process('math.meanshrink',{'n':options.shrink})
-				print "shrinking sfixedimage AFTER, iter", sfixedimage['nx'], iter
-			
-		
-			if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
-				print "there's fine alignment"
-				if options.procfinelikecoarse:
-					print "there's procfinelikecoarse"
-					s2fixedimage = sfixedimage.copy()
-			
-				elif options.shrinkfine and int(options.shrinkfine) > 1:
-					s2fixedimage = s2fixedimage.process('math.meanshrink',{'n':options.shrinkfine})
-					print "shrinking reference for fine alignment!!!!, iter", options.shrinkfine, s2fixedimage['nx'], iter
-
-			else:
-				#s2fixedimage = sfixedimage.copy()
-				#s2fixedimage = fixedimage.copy()
-				s2fixedimage = None
-
+	#if 'rotate_translate_3d_tree' not in options.align[0]:	
 	
-		elif refpreprocess:
-			print "there is refpreprocess, iter", iter
-			savetag = 'ref'
-			if 'odd' in label or 'even' in label:
-				savetag = ''
-			
-			if options.threshold or options.normproc or options.mask or options.preprocess or options.lowpass or options.highpass or int(options.shrink) > 1:
-				#print "\nThere IS refpreprocess!"	
-			
-				print "BEFORE preprocessing coarse ref, because there is refpreprocess, size is %d, iter %d" %( sfixedimage['nx'],iter )
-				sfixedimage = preprocessing(sfixedimage,options, refindx, savetag ,'yes',round)
-				print "AFTER preprocessing coarse ref, because there is refpreprocess, size is %d, iter %d" %( sfixedimage['nx'],iter )
-
-			#Only preprocess again if there's fine alignment, AND IF the parameters for fine alignment are different
-			
-			if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
-				#if options.procfinelikecoarse:
-				#	s2fixedimage = sfixedimage.copy()
-				#	print "REFERENCE fine preprocessing is equal to coarse"
-			
-				print "procfinelikecoarse is", options.procfinelikecoarse
-			
-				if options.procfinelikecoarse:
-					s2fixedimage = sfixedimage.copy()
-			
-				elif options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1:
-					print "BEFORE preprocessing fine ref, because there is refpreprocess, size is %d, iter %d" %( s2fixedimage['nx'],iter)
-
-					s2fixedimage = preprocessing(s2fixedimage,options,refindx, savetag ,'no',round,'fine')
-		
-					print "AFTER preprocessing fine ref, because there is refpreprocess, size is %d, iter %d" %( s2fixedimage['nx'],iter)
-
-			else:
-				#s2fixedimage = sfixedimage.copy()
-				#s2fixedimage = fixedimage.copy()	
-				s2fixedimage = None
+	if not refpreprocess:
+		print "\nthere is NO refpreprocess! But an external reference WAS provided, type, len", options.ref
 	
-		if sfixedimage:
-			print "after all preproc, COARSE ref is of size %d, in iter %d" %( sfixedimage['nx'], iter)
-	
-		if s2fixedimage:
-			print "after all preproc, FINE ref is of size %d, in iter %d" %( s2fixedimage['nx'], iter)
+		if options.shrink and int(options.shrink) > 1:
+			print "shrinking sfixedimage BEFORE, iter", sfixedimage['nx'], iter
+			sfixedimage = sfixedimage.process('math.meanshrink',{'n':options.shrink})
+			print "shrinking sfixedimage AFTER, iter", sfixedimage['nx'], iter
 		
-		if reffullsize:
-			print "after all preproc, REFFULLSIZE is of size %d, in iter %d" %( reffullsize['nx'], iter)
+	
+		if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
+			print "there's fine alignment"
+			if options.procfinelikecoarse:
+				print "there's procfinelikecoarse"
+				s2fixedimage = sfixedimage.copy()
+		
+			elif options.shrinkfine and int(options.shrinkfine) > 1:
+				s2fixedimage = s2fixedimage.process('math.meanshrink',{'n':options.shrinkfine})
+				print "shrinking reference for fine alignment!!!!, iter", options.shrinkfine, s2fixedimage['nx'], iter
+
+		else:
+			#s2fixedimage = sfixedimage.copy()
+			#s2fixedimage = fixedimage.copy()
+			s2fixedimage = None
+
+
+	elif refpreprocess:
+		print "there is refpreprocess, iter", iter
+		savetag = 'ref'
+		if 'odd' in label or 'even' in label:
+			savetag = ''
+		
+		if options.threshold or options.normproc or options.mask or options.preprocess or options.lowpass or options.highpass or int(options.shrink) > 1:
+			#print "\nThere IS refpreprocess!"	
+		
+			print "BEFORE preprocessing coarse ref, because there is refpreprocess, size is %d, iter %d" %( sfixedimage['nx'],iter )
+			sfixedimage = preprocessing(sfixedimage,options, refindx, savetag ,'yes',round)
+			print "AFTER preprocessing coarse ref, because there is refpreprocess, size is %d, iter %d" %( sfixedimage['nx'],iter )
+
+		#Only preprocess again if there's fine alignment, AND IF the parameters for fine alignment are different
+		
+		if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
+			#if options.procfinelikecoarse:
+			#	s2fixedimage = sfixedimage.copy()
+			#	print "REFERENCE fine preprocessing is equal to coarse"
+		
+			print "procfinelikecoarse is", options.procfinelikecoarse
+		
+			if options.procfinelikecoarse:
+				s2fixedimage = sfixedimage.copy()
+		
+			elif options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1:
+				print "BEFORE preprocessing fine ref, because there is refpreprocess, size is %d, iter %d" %( s2fixedimage['nx'],iter)
+
+				s2fixedimage = preprocessing(s2fixedimage,options,refindx, savetag ,'no',round,'fine')
+	
+				print "AFTER preprocessing fine ref, because there is refpreprocess, size is %d, iter %d" %( s2fixedimage['nx'],iter)
+
+		else:
+			#s2fixedimage = sfixedimage.copy()
+			#s2fixedimage = fixedimage.copy()	
+			s2fixedimage = None
+
+	if sfixedimage:
+		print "after all preproc, COARSE ref is of size %d, in iter %d" %( sfixedimage['nx'], iter)
+
+	if s2fixedimage:
+		print "after all preproc, FINE ref is of size %d, in iter %d" %( s2fixedimage['nx'], iter)
+	
+	if reffullsize:
+		print "after all preproc, REFFULLSIZE is of size %d, in iter %d" %( reffullsize['nx'], iter)
 
 	#########################################
 	#Preprocess the particle or "moving image"
@@ -3390,41 +3391,43 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	
 	
 	
-	if 'rotate_translate_3d_tree' not in options.align[0]:
+	#if 'rotate_translate_3d_tree' not in options.align[0]:
 	
-		if options.threshold or options.normproc or options.mask or options.preprocess or options.lowpass or options.highpass or int(options.shrink) > 1:
+	if options.threshold or options.normproc or options.mask or options.preprocess or options.lowpass or options.highpass or int(options.shrink) > 1:
+
+		#print "\n\n\n\n\n\n\n\n\n\n\nSending moving particle to preprocessing. It's size is", simage['nx'],simage['ny'],simage['nz']
+
+		simage = preprocessing(simage,options,ptclindx, savetagp ,'yes',round)
+
+	#print "preprocessed moving particle has size", simage['nx']
+
+	#Only preprocess again if there's fine alignment, AND IF the parameters for fine alignment are different
+
+	#print "options.falign is", options.falign
+
+	if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none': 
+		if options.procfinelikecoarse:
+			s2image = simage.copy()
+			#print "PARTICLE fine preprocessing is equal to coarse"
+		elif options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1:
+			s2image = preprocessing(s2image,options,ptclindx, savetagp ,'no',round,'fine')
+			#print "There was fine preprocessing"
+		#sys.exit()
+	else:
+		#s2image = simage.copy()
+		#s2image = image.copy()
+		s2image = None
+
+	if simage:
+		print "after all preproc, COARSE ptcl is of size %d, in iter %d" %( simage['nx'], iter)
+
+	if s2image:
+		print "after all preproc, FINE ptcl is of size %d, in iter %d" %( s2image['nx'], iter)	
 	
-			#print "\n\n\n\n\n\n\n\n\n\n\nSending moving particle to preprocessing. It's size is", simage['nx'],simage['ny'],simage['nz']
+	if imgfullsize:
+		print "after all preproc, IMGFULLSIZE is of size %d, in iter %d" %( imgfullsize['nx'], iter)
+
 	
-			simage = preprocessing(simage,options,ptclindx, savetagp ,'yes',round)
-	
-		#print "preprocessed moving particle has size", simage['nx']
-	
-		#Only preprocess again if there's fine alignment, AND IF the parameters for fine alignment are different
-	
-		#print "options.falign is", options.falign
-	
-		if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none': 
-			if options.procfinelikecoarse:
-				s2image = simage.copy()
-				#print "PARTICLE fine preprocessing is equal to coarse"
-			elif options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1:
-				s2image = preprocessing(s2image,options,ptclindx, savetagp ,'no',round,'fine')
-				#print "There was fine preprocessing"
-			#sys.exit()
-		else:
-			#s2image = simage.copy()
-			#s2image = image.copy()
-			s2image = None
-	
-		if simage:
-			print "after all preproc, COARSE ptcl is of size %d, in iter %d" %( simage['nx'], iter)
-	
-		if s2image:
-			print "after all preproc, FINE ptcl is of size %d, in iter %d" %( s2image['nx'], iter)	
-		
-		if imgfullsize:
-			print "after all preproc, IMGFULLSIZE is of size %d, in iter %d" %( imgfullsize['nx'], iter)
 	
 	if sfixedimage['nx'] != simage['nx']:
 		print "ERROR: preprocessed images for coarse alignment not the same size, sfixedimage, simage", sfixedimage['nx'], simage['nx']
