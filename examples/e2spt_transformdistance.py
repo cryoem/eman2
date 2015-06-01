@@ -243,10 +243,11 @@ def accountForSym( options, solutionT, simT ):
 	
 	orientations = []
 	
-	if options.sym:
-		print "\nSym found", options.sym
+	symletter = 'c'
+	symnum = 1
 	
-		symnum = 0
+	if options.sym:
+		print "\nsym found", options.sym
 		
 		if options.sym not in symnames:
 			
