@@ -2465,7 +2465,7 @@ def preprocessing(image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1,fin
 			simage.process_inplace(options.highpass[0],options.highpass[1])
 			#fimage.write_image(options.path + '/imgPrepLpHp.hdf',-1)
 		
-		if options.shrink and int( options.shrink  ) > 1 :
+		if options.shrink and int( options.shrink  ) > 1 and 'rotate_translate_3d_tree' not in options.align[0]:
 			print "(e2spt_classaverage)(preprocessing) --shrink provided:", options.shrink
 			simage.process_inplace("math.meanshrink",{"n":options.shrink })
 		
@@ -3441,30 +3441,31 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 				#print "ERROR: preprocessed images for fine alignment not the same size"
 				sys.exit()
 	
-		if transform:
-			#print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nThere WAS a transform, see", transform
-			#print "And its type is", type(transform)
-			#if classoptions.verbose:
-			#	print "Moving Xfrom", transform
-			#options["align"][1]["inixform"] = options["transform"]
-			if options.align:
-				#print "There was classoptions.align"
-				#print "and classoptions.align[1] is", classoptions.align[1]
-				if options.align[1]:
-					options.align[1]["transform"] = transform
-		
-			if int(options.shrink) > 1:
-				#options["align"][1]["inixform"].set_trans( options["align"][1]["inixform"].get_trans()/float(options["shrinkfine"]) )
-				options.align[1]["transform"].set_trans( options.align[1]["transform"].get_trans()/float(options.shrinkfine) )
-		
-		elif options.randomizewedge:
-			rand_orient = OrientGens.get("rand",{"n":1,"phitoo":1})		#Fetches the orientation generator
-			c1_sym = Symmetries.get("c1")								#Generates the asymmetric unit from which you wish to generate a random orientation
-			random_transform = rand_orient.gen_orientations(c1_sym)[0]	#Generates a random orientation (in a Transform object) using the generator and asymmetric unit specified 
-			if options.align:
-				options.align[1].update({'transform' : random_transform})
-			else:
-				transform = random_transform
+	if transform:
+		#print "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nThere WAS a transform, see", transform
+		#print "And its type is", type(transform)
+		#if classoptions.verbose:
+		#	print "Moving Xfrom", transform
+		#options["align"][1]["inixform"] = options["transform"]
+		if options.align:
+			#print "There was classoptions.align"
+			#print "and classoptions.align[1] is", classoptions.align[1]
+			if options.align[1]:
+				options.align[1]["transform"] = transform
+	
+		if int(options.shrink) > 1:
+			#options["align"][1]["inixform"].set_trans( options["align"][1]["inixform"].get_trans()/float(options["shrinkfine"]) )
+			options.align[1]["transform"].set_trans( options.align[1]["transform"].get_trans()/float(options.shrinkfine) )
+	
+	elif options.randomizewedge:
+		rand_orient = OrientGens.get("rand",{"n":1,"phitoo":1})		#Fetches the orientation generator
+		c1_sym = Symmetries.get("c1")								#Generates the asymmetric unit from which you wish to generate a random orientation
+		random_transform = rand_orient.gen_orientations(c1_sym)[0]	#Generates a random orientation (in a Transform object) using the generator and asymmetric unit specified 
+		if options.align:
+			options.align[1].update({'transform' : random_transform})
+		else:
+			transform = random_transform
+	
 	
 	if not options.align:
 		if not transform:
@@ -3537,6 +3538,8 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			pass
 			#print "coarse %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
 
+	bestfinal = bestcoarse
+	
 	if 'rotate_translate_3d_tree' not in options.align[0]:	
 		if options.falign and options.falign[0] and options.falign != 'None' and options.falign != 'none' and options.falign[0] != "None" and options.falign[0] != 'none':
 			#print "\n(e2spt_classaverage)(alignment) Will do fine alignment, over these many peaks", len(bestcoarse)
@@ -3679,10 +3682,10 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			if options.verbose:
 				pass
 				#print "\nThere was no fine alignment; therefore, score is", bestfinal[0]['score']
-	else: 
-		bestfinal = bestcoarse
-		if options.verbose:
-			pass
+	#else: 
+	#	bestfinal = bestcoarse
+	#	if options.verbose:
+	#		pass
 
 	from operator import itemgetter							#If you just sort 'bestfinal' it will be sorted based on the 'coarse' key in the dictionaries of the list
 															#because they come before the 'score' key of the dictionary (alphabetically). Should be sorted already, except if there was no --falign
