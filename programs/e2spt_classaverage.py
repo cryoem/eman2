@@ -2454,10 +2454,6 @@ def preprocessing(image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1,fin
 	'''
 	
 	if not finetag:
-		if options.preprocess:
-			print "(e2spt_classaverage)(preprocessing) --preprocess provided:", options.preprocess
-			simage.process_inplace(options.preprocess[0],options.preprocess[1])
-			#fimage.write_image(options.path + '/imgPrep.hdf',-1)
 		
 		if options.lowpass:
 			print "(e2spt_classaverage)(preprocessing) --lowpass provided:", options.lowpass
@@ -2472,13 +2468,13 @@ def preprocessing(image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1,fin
 		if options.shrink and int( options.shrink  ) > 1 :
 			print "(e2spt_classaverage)(preprocessing) --shrink provided:", options.shrink
 			simage.process_inplace("math.meanshrink",{"n":options.shrink })
-	
-	else:
-		if options.preprocessfine:
-			print "(e2spt_classaverage)(preprocessing) --preprocess provided:", options.preprocessfine
-			simage.process_inplace(options.preprocessfine[0],options.preprocessfine[1])
+		
+		if options.preprocess:
+			print "(e2spt_classaverage)(preprocessing) --preprocess provided:", options.preprocess
+			simage.process_inplace(options.preprocess[0],options.preprocess[1])
 			#fimage.write_image(options.path + '/imgPrep.hdf',-1)
 		
+	else:
 		if options.lowpassfine:
 			print "(e2spt_classaverage)(preprocessing) --lowpass provided:", options.lowpassfine
 			simage.process_inplace(options.lowpassfine[0],options.lowpassfine[1])
@@ -2495,7 +2491,11 @@ def preprocessing(image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1,fin
 				print "(e2spt_classaverage)(preprocessing) --shrink provided:", options.shrinkfine
 				simage.process_inplace("math.meanshrink",{"n":options.shrinkfine })
 			#fimage.write_image(options.path + '/imgPrepLpHpSh.hdf',-1)
-	
+			
+		if options.preprocessfine:
+			print "(e2spt_classaverage)(preprocessing) --preprocess provided:", options.preprocessfine
+			simage.process_inplace(options.preprocessfine[0],options.preprocessfine[1])
+			#fimage.write_image(options.path + '/imgPrep.hdf',-1)
 	preproclst = ''		
 		
 	lines=[]
