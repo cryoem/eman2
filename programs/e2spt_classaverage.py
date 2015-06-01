@@ -3628,9 +3628,14 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 					print "before alitweak, sizes of img are and apix", imgfullsizeali['nx'], imgfullsizeali, imgfullsizeali['ny'], imgfullsizeali['nz'],imgfullsizeali['apix_x']
 					print "before alitweak, sizes of ref are and apix", reffullsizeali['nx'], reffullsizeali, reffullsizeali['ny'], reffullsizeali['nz'],reffullsizeali['apix_x']
 					
-					print "aligner to tweak is", ['refine_3d_grid',{'xform.align3d':bestT,'range':tweakrange,'delta':tweakdelta,'search':tweaksearch}]
+					#print "aligner to tweak is", ['refine_3d_grid',{'xform.align3d':bestT,'range':tweakrange,'delta':tweakdelta,'search':tweaksearch}]
 					
-					alitweak =imgfullsizeali.align('refine_3d_grid',reffullsizeali,{'xform.align3d':bestT,'range':tweakrange,'delta':tweakdelta,'search':tweaksearch},options.faligncmp[0],options.faligncmp[1])
+					#alitweak =imgfullsizeali.align('refine_3d_grid',reffullsizeali,{'xform.align3d':bestT,'range':tweakrange,'delta':tweakdelta,'search':tweaksearch},options.faligncmp[0],options.faligncmp[1])
+					
+					reffullsizeali.transform( bestT )
+					
+					alitweak =imgfullsizeali.align('rotate_translate_3d_grid',reffullsizeali,{'phi0':0, 'phi1':1,'dphi':2,'az0':0,'az1':1,'daz':2,'alt0':0,'alt1':1,'dalt':2,'search':tweaksearch},options.faligncmp[0],options.faligncmp[1])
+
 				
 					besttweakT = bestT
 					besttweakScore = 1.0e10
