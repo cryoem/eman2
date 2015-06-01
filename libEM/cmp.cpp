@@ -771,29 +771,31 @@ float TomoWedgeFscCmp::cmp(EMData * image, EMData *with) const
 	double sumsq1=0;
 	double sumsq2=0;
 	double norm=0;
-// 	for (int z=0; z<nz; z++) {
-// 		for (int y=0; y<ny; y++) {
-// 			for (int x=0; x<nx; x+=2) {
-// 				float v1r=image->get_value_at(x,y,z);
-// 				float v1i=image->get_value_at(x+1,y,z);
-// 				float v1=Util::square_sum(v1r,v1i);
-// //				if (v1<s1) continue;
-// 				
-// 				float v2r=with->get_value_at(x,y,z);
-// 				float v2i=with->get_value_at(x+1,y,z);
-// 				float v2=Util::square_sum(v2r,v2i);
-// //				if (v2<s2) continue;
-// 				
-// 				sum+=v1r*v2r+v1i*v2i;
-// 				sumsq1+=v1;
-// 				if (Util::is_nan(sumsq1)) { printf("TomoWedgeCccCmp: NaN encountered: %d %d %d %f %f %f\n",x,y,z,v1r,v1i,v1); }
-// 				sumsq2+=v2;
-// 				norm+=1.0;
-// 			}
-// 		}
-// 	}
-// 	image->set_attr("fft_overlap",(float)(2.0*norm/(image->get_xsize()*image->get_ysize()*image->get_zsize())));
-// //	printf("%f\t%f\t%f\t%f\t%f\n",s1,s2,sumsq1,sumsq2,norm);
+	for (int z=0; z<nz; z++) {
+		for (int y=0; y<ny; y++) {
+			for (int x=0; x<nx; x+=2) {
+				int r=int(Util::hypot3(x/2,y<ny/2?y:ny-y,z<nz/2?z:nz-z));	// origin at 0,0; periodic
+				
+				float v1r=image->get_value_at(x,y,z);
+				float v1i=image->get_value_at(x+1,y,z);
+				float v1=Util::square_sum(v1r,v1i);
+				if (v1<sigmaimg[r]) continue;
+				
+				float v2r=with->get_value_at(x,y,z);
+				float v2i=with->get_value_at(x+1,y,z);
+				float v2=Util::square_sum(v2r,v2i);
+				if (v2<sigmawith[r]) continue;
+				
+				sum+=v1r*v2r+v1i*v2i;
+				sumsq1+=v1;
+				if (Util::is_nan(sumsq1)) { printf("TomoWedgeCccCmp: NaN encountered: %d %d %d %f %f %f\n",x,y,z,v1r,v1i,v1); }
+				sumsq2+=v2;
+				norm+=1.0;
+			}
+		}
+	}
+	image->set_attr("fft_overlap",(float)(2.0*norm/(image->get_xsize()*image->get_ysize()*image->get_zsize())));
+//	printf("%f\t%f\t%f\t%f\t%f\n",s1,s2,sumsq1,sumsq2,norm);
 	
 	if (negative) sum*=-1.0;
 	return float(sum/(sqrt(sumsq1)*sqrt(sumsq2)));
