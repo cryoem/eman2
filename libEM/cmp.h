@@ -389,6 +389,49 @@ the overlap can be used to estimate the relative uncertainty in the resulting co
 		
 		static const string NAME;
 	};
+
+	/** Both images should be FFTs. Computes a CCC excluding pixels with very small value (assumes they are missing wedge)
+    * Returns overlap amount as "fft_overlap" in "image"
+	* @date 2010-10-18
+	*/
+	class TomoWedgeFscCmp:public Cmp
+	{
+	  public:
+		virtual float cmp(EMData * image, EMData * with) const;
+
+		virtual string get_name() const 
+		{
+			return NAME;
+		}
+
+		virtual string get_desc() const
+		{
+			return "FSC of two FFTs with missing wedge taken into account via a dynamic threshold. Also stores overlap as 'fft_overlap' in \
+first input image on return. This comparator can take the missing wedge into account automatically without any precomputation of wedge \
+orientation. If sigmaimg and/or sigmawith are provided, they must contain floating point arrays with at least as many elements as the \
+Fourier radius in pixels, and these curves represent the thresholds for each image for including the values in the FSC, or considering them \
+to be missing values. If not provided, these values will be computed automatically. These options are primarily provided for speed.";
+		}
+
+		static Cmp *NEW()
+		{
+			return new TomoWedgeFscCmp();
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+// 			d.put("norm", EMObject::BOOL,"Whether the cross correlation image should be normalized (should be for normalized images). Default is true.");
+// 			d.put("ccf", EMObject::EMDATA,"The ccf image, can be provided if it already exists to avoid recalculating it");
+ 			d.put("sigmaimg", EMObject::FLOATARRAY, "Res dependent amplitude threshold. If provided this must contain a floating point array with as many elements as the Fourier radius of the image. ");
+ 			d.put("sigmawith", EMObject::FLOATARRAY, "Resolution dependent coefficient for thresholding values included in the dot product in the 'with' image. Default = 0.1 and is normally fine");
+			d.put("negative", EMObject::INT, "If set, returns -1 * ccc product. Set by default so smaller is better");
+			return d;
+		}
+		
+		static const string NAME;
+	};
+
 	
 	/** This is a FSC comparitor for tomography. I only counts voxels above a threshold, which is obtained from subtomogram metadata
 	* @ingroup CUDA_ENABLED

@@ -50,6 +50,7 @@ const string SqEuclideanCmp::NAME = "sqeuclidean";
 const string DotCmp::NAME = "dot";
 const string TomoCccCmp::NAME = "ccc.tomo";
 const string TomoWedgeCccCmp::NAME = "ccc.tomo.thresh";
+const string TomoWedgeFscCmp::NAME = "fsc.tomo.auto";
 const string TomoFscCmp::NAME = "fsc.tomo";
 const string QuadMinDotCmp::NAME = "quadmindot";
 const string OptVarianceCmp::NAME = "optvariance";
@@ -65,6 +66,7 @@ template <> Factory < Cmp >::Factory()
 	force_add<DotCmp>();
 	force_add<TomoCccCmp>();
 	force_add<TomoWedgeCccCmp>();
+	force_add<TomoWedgeFscCmp>();
 	force_add<TomoFscCmp>();
 	force_add<QuadMinDotCmp>();
 	force_add<OptVarianceCmp>();
@@ -728,6 +730,70 @@ float TomoWedgeCccCmp::cmp(EMData * image, EMData *with) const
 	}
 	image->set_attr("fft_overlap",(float)(2.0*norm/(image->get_xsize()*image->get_ysize()*image->get_zsize())));
 //	printf("%f\t%f\t%f\t%f\t%f\n",s1,s2,sumsq1,sumsq2,norm);
+	
+	if (negative) sum*=-1.0;
+	return float(sum/(sqrt(sumsq1)*sqrt(sumsq2)));
+}
+
+// CCC in Fourier space with small valued pixels presumed to be in missing wedge, and excluded from similarity
+// Fractional overlap returned in "image"
+
+float TomoWedgeFscCmp::cmp(EMData * image, EMData *with) const
+{
+	ENTERFUNC;
+	if (!image->is_complex() || !with->is_complex())  throw InvalidCallException("Error: TomoWedgeFscCmp requires complex images");
+	if (image->get_xsize()!=with->get_xsize() || image->get_ysize()!=with->get_ysize() || image->get_zsize()!=with->get_zsize())  throw InvalidCallException("Error: TomoWedgeFscCmp requires 2 images the same size");
+
+	int nx=image->get_xsize();
+	int ny=image->get_ysize();
+	int nz=image->get_zsize();
+	
+	// User can pass in a sigma vector if they like, otherwise we call it 1/10 of the standard deviation in each shell
+	// This has proven to be a good cutoff for identifying the missing wedge voxels, without throwing away too many
+	// voxels if the image is complete in Fourier space (no wedge)
+	vector<float> sigmaimg; 
+	if (params.has_key("sigmaimg")) sigmaimg=params["sigmaimg"];
+	else {
+		sigmaimg=image->calc_radial_dist(nx/2,0,1,4);
+		for (int i=0; i<nx/2; i++) sigmaimg[i]*=.1;
+	}
+	
+	vector<float> sigmawith;
+	if (params.has_key("sigmawith")) sigmawith = params["sigmawith"];
+	else {
+		sigmawith=image->calc_radial_dist(nx/2,0,1,4);
+		for (int i=0; i<nx/2; i++) sigmawith[i]*=.1;
+	}
+
+	int negative = params.set_default("negative",1);
+	
+	double sum=0;
+	double sumsq1=0;
+	double sumsq2=0;
+	double norm=0;
+// 	for (int z=0; z<nz; z++) {
+// 		for (int y=0; y<ny; y++) {
+// 			for (int x=0; x<nx; x+=2) {
+// 				float v1r=image->get_value_at(x,y,z);
+// 				float v1i=image->get_value_at(x+1,y,z);
+// 				float v1=Util::square_sum(v1r,v1i);
+// //				if (v1<s1) continue;
+// 				
+// 				float v2r=with->get_value_at(x,y,z);
+// 				float v2i=with->get_value_at(x+1,y,z);
+// 				float v2=Util::square_sum(v2r,v2i);
+// //				if (v2<s2) continue;
+// 				
+// 				sum+=v1r*v2r+v1i*v2i;
+// 				sumsq1+=v1;
+// 				if (Util::is_nan(sumsq1)) { printf("TomoWedgeCccCmp: NaN encountered: %d %d %d %f %f %f\n",x,y,z,v1r,v1i,v1); }
+// 				sumsq2+=v2;
+// 				norm+=1.0;
+// 			}
+// 		}
+// 	}
+// 	image->set_attr("fft_overlap",(float)(2.0*norm/(image->get_xsize()*image->get_ysize()*image->get_zsize())));
+// //	printf("%f\t%f\t%f\t%f\t%f\n",s1,s2,sumsq1,sumsq2,norm);
 	
 	if (negative) sum*=-1.0;
 	return float(sum/(sqrt(sumsq1)*sqrt(sumsq2)));
