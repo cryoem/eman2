@@ -100,8 +100,11 @@ def main():
 		if options.simpleavg: MovieModeAlignment.simple_average(bgsub)
 		# actual alignment of movie frames
 		alignment = MovieModeAlignment(bgsub)
+		
 		# optimize alignment
-		alignment.optimize()
+		
+		#alignment.optimize()
+		
 		# write to disk
 		alignment.write()
 		# movie mode viewing
@@ -130,7 +133,8 @@ class MovieModeAlignment:
 		self.hdr = EMData(path,0).get_attr_dict()
 		if path[-4:].lower() in (".mrc"): self.hdr['nimg'] = self.hdr['nz']
 		else: self.hdr['nimg'] = EMUtil.get_image_count(path)
-		self.outfile = path.rsplit(".",1)[0]+"_proc.hdf"		
+		self.outfile = path.rsplit(".",1)[0]+"_proc.hdf"
+		self.dir = os.path.dirname(self.path)
 		print("Initializing parameters")
 		self._initialize_params(boxsize,transforms,min,max,n)
 		print("Compuiting incoherent and coherent power spectra")
@@ -154,8 +158,8 @@ class MovieModeAlignment:
 		self._regions = {}
 		for i in xrange(self.hdr['nimg']):
 			self._regions[i] = []
-			for x in xrange(self.hdr['nx'] / boxsize - 1):
-				for y in xrange(self.hdr['ny'] / boxsize - 1):
+			for x in xrange(1, self.hdr['nx'] / boxsize - 1):
+				for y in xrange(1, self.hdr['ny'] / boxsize - 1):
 					r = Region(x*self._boxsize+self._boxsize/2,y*self._boxsize+self._boxsize/2,self._boxsize,self._boxsize)
 					self._regions[i].append(r)
 		self.nregions = len(self._regions)
@@ -210,11 +214,7 @@ class MovieModeAlignment:
 					img = EMData(self.path,inum,False,reg)
 					img.process_inplace("normalize.edgemean")
 					img.do_fft_inplace()
-					try:
-						self._cboxes += img
-					except:
-						print(img.get_xsize(),img.get_ysize(),self._cboxes.get_xsize(),self._cboxes.get_ysize())
-						sys.exit()
+					self._cboxes += img
 				self._cboxes /= self.hdr['nimg'] # average each region across all movie frames
 				self._cboxes.ri2inten()
 				self._cps += self._cboxes
@@ -275,12 +275,15 @@ class MovieModeAlignment:
 		@param name: file name to write aligned movie stack
 		"""
 		if not name: name=self.outfile
+		print(name)
 		if not self._optimized:
 			print("Warning: Saving non-optimal alignment.\nRun the optimize method to determine best frame translations.")
 		for i in xrange(self.hdr['nimg']):
 			im = EMData(self.path,i)
 			im.transform(self._transforms[i])
 			im.write_image_c(name,i)
+		self._cps.write_image(self.dir+'/cps.hdf')
+		self._ips.write_image(self.dir+'/ips.hdf')
 	
 	# get function(s)
 	def get_transforms(self): return self.optimal_transforms
