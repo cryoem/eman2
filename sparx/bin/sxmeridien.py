@@ -587,7 +587,7 @@ def get_shrink_data(onx, nx, stack, partids, partstack, myid, nproc, CTF = False
 	if radi < 0:	radi = onx//2 - 2
 	mask2D  = model_circle(radi,onx,onx)
 	nima = image_end - image_start
-	oldshifts = [[0.0,0.0]*nima]
+	oldshifts = [[0.0,0.0]]*nima
 	data = [None]*nima
 	shrinkage = float(nx)/float(onx)
 	for im in xrange(nima):
@@ -603,11 +603,10 @@ def get_shrink_data(onx, nx, stack, partids, partstack, myid, nproc, CTF = False
 		set_params_proj(data[im],[phi,theta,psi,0.0,0.0], "xform.anchor")
 		if CTF :
 			ctf_params = data[im].get_attr("ctf")
-			if ctf_applied == 0:
-				st = Util.infomask(data[im], mask2D, False)
-				data[im] -= st[0]
-				data[im] = filt_ctf(data[im], ctf_params)
-				data[im].set_attr('ctf_applied', 1)
+			st = Util.infomask(data[im], mask2D, False)
+			data[im] -= st[0]
+			data[im] = filt_ctf(data[im], ctf_params)
+			data[im].set_attr('ctf_applied', 1)
 		if(shrinkage < 1.0):
 			#  resample will properly adjusts shifts and pixel size in ctf
 			data[im] = resample(data[im], shrinkage)
