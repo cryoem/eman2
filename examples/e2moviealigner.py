@@ -31,22 +31,13 @@
 #
 
 from EMAN2 import *
-from datetime import MINYEAR
 import os
 import sys
-import random
-
-import itertools as it
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import itertools as it
 import numpy as np
-from Simplex import Simplex
-
-def compares(vec,data):
-	for vi in range(0,len(vec),2):
-		t = Transform({'type':'eman','tx':vec[vi],'ty':vec[vi+1]})
-		data._update_frame_params(vi/2,t)
-	data._update_energy()
-	return data.get_energy()
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -64,9 +55,6 @@ def main():
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
 	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.")
 	parser.add_argument("--boxsize", type=int, help="Set the boxsize used to compute power spectra across movie frames",default=256)
-	parser.add_argument("--minsearch", type=str, help="Specify the minimum x,y parameter search in the following string format: 'xmin,ymin'. The larger the minimum, the more negative it will be. Default is '4,4', corresponding to (-4,-4).",default="4,4")
-	parser.add_argument("--maxsearch", type=str, help="Specify the maximum x,y parameter search in the following string format: 'xmax,ymax'. The default is '4,4'.",default="4,4")
-	parser.add_argument("--nxysearch", type=str, help="Specify the number of grid points to test between the min and max along each coordinate direction in the follwing format: 'nx,ny'. These must be positive. The default is 5,5.",default="5,5")
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 0,1 (first image skipped)")
 	parser.add_argument("--fixbadpixels",action="store_true",default=False,help="Tries to identify bad pixels in the dark/gain reference, and fills images in with sane values instead")
 	parser.add_argument("--frames",action="store_true",default=False,help="Save the dark/gain corrected frames")
@@ -96,10 +84,6 @@ def main():
 	if options.threads>1: threads=max(threads,options.threads)
 	if threads>1: print "Sorry, limited to one thread at the moment."
 	
-	if options.minsearch: mins = [-1.0*float(m) for m in options.minsearch.split(',')]
-	if options.maxsearch: maxs = [float(m) for m in options.maxsearch.split(',')]
-	if options.nxysearch: nxys = [int(n) for n in options.nxysearch.split(',')]
-	
 	if options.boxsize: bs = options.boxsize
 	hdr = EMData(args[0],0,True).get_attr_dict()
 	if (hdr['nx'] / bs - 1) < 3 or (hdr['ny'] / bs - 1) < 3:
@@ -111,32 +95,22 @@ def main():
 	for fname in args:
 		if options.verbose: print "Processing", fname
 		options.path = fname
-		# dark correct
 		if options.dark: dark = MovieModeAlignment.dark_correct(options)
 		else: dark=None
-		# gain correct
 		if options.gain: gain = MovieModeAlignment.gain_correct(options,dark)
 		elif options.gaink2: gain = EMData(options.gaink2)
 		else: gain = None
-		# perform background subtraction
 		bgsub = MovieModeAlignment.background_subtract(options,dark,gain)
-		# simply average frames before alignment
 		if options.simpleavg: savg = MovieModeAlignment.simple_average(bgsub)
-		# create movie aligner
 		if options.verbose: print("Creating movie aligner object")
-		alignment = MovieModeAlignment(bgsub,bs,mins[0],mins[1],maxs[0],maxs[1],nxys[0],nxys[1])
-		# optimize alignment
+		alignment = MovieModeAlignment(bgsub,bs)
 		if options.verbose: print("Optimizing movie frame alignment")
 		alignment.optimize()
-		
+		if options.verbose: print("Plotting derived alignment data")
 		alignment.plot_energies()
 		alignment.plot_translations()
-		# write aligned movie to disk
 		if options.verbose: print("Writing aligned frames to disk")
 		alignment.write()
-		if options.verbose: print("Writing final coherent and incoherent power spectra to disk")
-		alignment.write_spectra()
-		# movie mode viewing
 		if options.movie: alignment.show_movie(options.movie)
 	
 	E2end(pid)
@@ -147,7 +121,7 @@ class MovieModeAlignment:
 	MovieModeAlignment: Class to hold information for optimized alignment of DDD cameras.
 	"""
 	
-	def __init__(self, path, boxsize=256, xmin=-50.0, ymin=-50.0, xmax=50.0, ymax=50.0, xn=100, yn=100, transforms=None):
+	def __init__(self, path, boxsize=256, transforms=None):
 		"""
 		Initialization method for MovieModeAlignment objects.
 		
@@ -164,14 +138,16 @@ class MovieModeAlignment:
 		else: self.hdr['nimg'] = EMUtil.get_image_count(path)
 		self.outfile = path.rsplit(".",1)[0]+"_proc.hdf"
 		self.dir = os.path.dirname(os.path.abspath(self.path))
-		self._initialize_params(boxsize,transforms,xmin,xmax,ymin,ymax,xn,yn)
+		self._initialize_params(boxsize,transforms)
 		self._computed_objective = False
 		self._calc_incoherent_power_spectrum()
+		self.write_incoherent_power_spectrum()
 		self._calc_coherent_power_spectrum()
 		self._energies = [sys.float_info.max]
+		self._all_energies = []
 		self._optimized = False
 	
-	def _initialize_params(self,boxsize,transforms,xmin,xmax,ymin,ymax,nx,ny):
+	def _initialize_params(self,boxsize,transforms):
 		"""
 		A purely organizational private method to keep the initialization code clean and readable.
 		This function takes care of initializing the variables (and allocating the 
@@ -186,10 +162,6 @@ class MovieModeAlignment:
 		@param int nx			:	Number of proposed translations in x (between minx and maxx)
 		@param int ny			:	Number of proposed translations in y (between miny and maxy)
 		"""
-		self._xmin = xmin
-		self._ymin = ymin
-		self._xmax = xmax
-		self._ymax = ymax
 		self._boxsize = boxsize
 		self._regions = {}
 		mx = xrange(1,self.hdr['nx'] / boxsize - 1,1)
@@ -207,11 +179,8 @@ class MovieModeAlignment:
 		self._cboxes = EMData(self._boxsize,self._boxsize).do_fft()
 		self._ips = EMData(self._boxsize,self._boxsize).do_fft()
 		self._cps = EMData(self._boxsize,self._boxsize).do_fft()
-		xp = np.linspace(xmin,xmax,nx).tolist()
-		yp = np.linspace(xmin,xmax,ny).tolist()
-		ip = np.linspace(0,self.hdr['nimg']-1,self.hdr['nimg']).astype(int).tolist()
-		self._param_grid_size = len(xp) * len(yp) * len(ip)
-		self._param_grid = it.product(ip,xp,yp)
+		self._cpsflag = False
+		self._ipsflag = False
 	
 	def _calc_incoherent_power_spectrum(self):
 		"""
@@ -269,18 +238,15 @@ class MovieModeAlignment:
 		@param int i		: 	An integer specifying which transformation to update
 		@param Transform t	:	An EMAN Transform object
 		"""
-		# update transform
-		self._transforms[i] = t
-		# update regions
-		newregions = []
+		self._transforms[i] = t  # update transform
+		newregions = [] # update regions
 		for r in self._regions[i]:
 			x =  [a+b for a,b in zip(r.get_origin()[:2],t.get_trans_2d())]
 			newregions.append(Region(x[0],x[1],self._boxsize,self._boxsize))
 		self._regions[i] = newregions
-		# update stacks
-		for ir in xrange(self._nregions):
+		for ir in xrange(self._nregions): # update stacks
 			self._stacks[ir][i] = self._regions[i][ir]
-			
+	
 	def _update_energy(self):
 		"""
 		Private method to update the energy associated with a particular set of frame alignments.
@@ -292,6 +258,7 @@ class MovieModeAlignment:
 		@param list transforms	: 	List of proposed EMAN Transform objects, one for each frame in movie.
 		"""
 		self._calc_coherent_power_spectrum()
+		self.write_coherent_power_spectrum(imnum=-1)
 		energy = EMData.cmp(self._ips,'dot',self._cps,{'normalize':1}) #-1*self._ips.dot(self._cps)
 		if energy < self._energies[-1]:
 			self._energies.append(energy)
@@ -301,31 +268,27 @@ class MovieModeAlignment:
 		"""
 		Method to perform optimization of movie alignment.
 		"""
-		
-		
-		if self._optimized: print("Optimal alignment already determined.")
+		if self._optimized: 
+			print("Optimal alignment already determined.")
+			return
 		else:
-			nm=self.hdr['nimg']*2
-			guess=[random.randint(-5,5)  for i in range(nm)]
-
-			
-			sm=Simplex(compares,guess,[5]*nm, data=self)
-			mn=sm.minimize(monitor=1,epsilon=.01)
-			print mn
-			################
-			#print("Progress\tImage\ttx\t\tty\t\tEnergy")
-			#denom = self._param_grid_size
-			#numer = 0.0
-			#for i,x,y in self._param_grid:
-				#numer += 1.0
-				#t = Transform({'type':'eman','tx':x,'ty':y})
-				#self._update_frame_params(i,t)
-				#eold = self.get_energy()
-				#self._update_energy()
-				#enew = self.get_energy()
-				#print("%f\t%i\t%f\t%f\t%f"%(numer/denom*100,i,x,y,enew))
-			#self._optimized = True
+			from Simplex import Simplex
+			nm=2*self.hdr['nimg']
+			guess=[np.random.randint(self._xmin,self._xmax) for i in range(nm)]
+			sm=Simplex(self._compares,guess,[5]*nm,data=self)
+			mn=sm.minimize(monitor=1,epsilon=.001)
+			print("\n\n{}\n".format(mn))
+		self._optimized = True
+		return
 	
+	@staticmethod
+	def _compares(vec,data):
+		for vi in range(0,len(vec),2):
+			t = Transform({'type':'eman','tx':vec[vi],'ty':vec[vi+1]})
+			data._update_frame_params(vi/2,t)
+		data._update_energy()
+		return np.log(1+data.get_energy())
+		
 	def write(self,name=None):
 		"""
 		Method to write aligned results to disk
@@ -339,18 +302,30 @@ class MovieModeAlignment:
 			im = EMData(self.path,i)
 			im.transform(self._transforms[i])
 			im.write_image_c(name,i)
-	
-	def write_spectra(self,cpsname='cps.hdf',ipsname='ips.hdf'):
+
+	def write_coherent_power_spectrum(self,cpsname='cps.hdf',imnum=None):
 		"""
-		Method to write power spectra to current directory.
+		Method to write coherent power spectrum to current directory.
 		
-		@param string cpsname	: name of coherent power spectrum to be written to disk
-		@param string ipsname	: name of incoherent power spectrum to be written to disk
+		@param str cpsname	: name of coherent power spectrum to be written to disk
+		@param int imnum	: slice to save image to
 		"""
 		if cpsname[:-4] != '.hdf': cpsname = cpsname[:-4] + '.hdf'  # force HDF
-		self._cps.write_image(self.dir+'/'+cpsname)
+		if imnum and self._cpsflag: self._cps.write_image(self.dir+'/'+cpsname,imnum)
+		else: self._cps.write_image(self.dir+'/'+cpsname)
+		self._cpsflag = True
+	
+	def write_incoherent_power_spectrum(self,ipsname='ips.hdf',imnum=None):
+		"""
+		Method to write incoherent power spectrum to current directory.
+		
+		@param str ipsname	: name of incoherent power spectrum to be written to disk
+		@param int imnum	: slice to save image to
+		"""
 		if ipsname[:-4] != '.hdf': ipsname = ipsname[:-4] + '.hdf'  # force HDF
-		self._ips.write_image(self.dir+'/'+ipsname)
+		if imnum and self._ipsflag: self._ips.write_image(self.dir+'/'+ipsname,imnum)
+		else: self._ips.write_image(self.dir+'/'+ipsname)
+		self._ipsflag = True
 	
 	def get_transforms(self): 
 		return self.optimal_transforms
@@ -361,12 +336,11 @@ class MovieModeAlignment:
 	def get_header(self): 
 		return self.hdr
 	
-	def get_energies(self): 
+	def get_energies(self):
 		return self._energies[1:]
 
 	def get_energy(self): 
 		return self._energies[-1]
-	
 	
 	def get_incoherent_power_spectrum(self): 
 		return self._ips
@@ -393,15 +367,8 @@ class MovieModeAlignment:
 			im=sum(outim[i-f2avg-1:i])
 			mov.append(im)
 		display(mov)
-
-	def plot_energy_landscape(self,frame=0):
-		"""
-		Method to plot energy landscape for single frame in 2D.
-		"""
-		#might need to rethink energy representation for this one (store in 2D instead?)
-		raise(NotImplementedError)
 	
-	def plot_energies(self,fname=None,savefig=True,showfig=True):
+	def plot_energies(self,fname=None,savefig=True,showfig=False):
 		"""
 		Method to plot the energies from the optimization in 1D.
 		"""
@@ -415,25 +382,25 @@ class MovieModeAlignment:
 		ax.set_title('DDD Movie Alignment: Energy')
 		if savefig: plt.savefig(fname)
 		if showfig: plt.show()
-		return fig	
+		return fig
 	
-	def plot_translations(self,fname=None,savefig=True,showfig=True):
+	def plot_translations(self,fname=None,savefig=True,showfig=False):
 		"""
 		Method to display optimized, labeled whole-frame translation vectors in 2D.
 		"""
 		if not fname: fname = self.dir + '/' + 'trans.png'
 		trans2d = []
-		for i in xrange(len(self._transforms)-1):
+		for i in xrange(self.hdr['nimg']-1):
 			ti = self._transforms[i].get_trans_2d()
 			tf = self._transforms[i+1].get_trans_2d()
-			trans2d.append([ti[0],ti[1],tf[0],tf[1]])
+			trans2d.append([ti[0],ti[1],tf[0]-ti[0],tf[1]-ti[1]])
 		trans2d = np.array(trans2d)
 		X,Y,U,V = zip(*trans2d)
 		plt.figure()
 		ax = plt.gca()
 		ax.quiver(X,Y,U,V,angles='xy',scale_units='xy',scale=1)
-		ax.set_xlim([self._xmin,self._xmax])
-		ax.set_ylim([self._ymin,self._ymax])
+		ax.set_xlim([np.min(X),np.max(U)])
+		ax.set_ylim([np.min(Y),np.max(V)])
 		ax.set_title('DDD Movie Alignment: Frame Motion')
 		if savefig: plt.savefig(fname)
 		plt.draw()
