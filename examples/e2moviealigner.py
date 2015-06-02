@@ -34,11 +34,19 @@ from EMAN2 import *
 from datetime import MINYEAR
 import os
 import sys
+import random
 
 import itertools as it
 import matplotlib.pyplot as plt
 import numpy as np
+from Simplex import Simplex
 
+def compares(vec,data):
+	for vi in range(0,len(vec),2):
+		t = Transform({'type':'eman','tx':vec[vi],'ty':vec[vi+1]})
+		data._update_frame_params(vi/2,t)
+	data._update_energy()
+	return data.get_energy()
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -59,7 +67,7 @@ def main():
 	parser.add_argument("--minsearch", type=str, help="Specify the minimum x,y parameter search in the following string format: 'xmin,ymin'. The larger the minimum, the more negative it will be. Default is '4,4', corresponding to (-4,-4).",default="4,4")
 	parser.add_argument("--maxsearch", type=str, help="Specify the maximum x,y parameter search in the following string format: 'xmax,ymax'. The default is '4,4'.",default="4,4")
 	parser.add_argument("--nxysearch", type=str, help="Specify the number of grid points to test between the min and max along each coordinate direction in the follwing format: 'nx,ny'. These must be positive. The default is 5,5.",default="5,5")
-	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 1,1 (first image skipped)")
+	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 0,1 (first image skipped)")
 	parser.add_argument("--fixbadpixels",action="store_true",default=False,help="Tries to identify bad pixels in the dark/gain reference, and fills images in with sane values instead")
 	parser.add_argument("--frames",action="store_true",default=False,help="Save the dark/gain corrected frames")
 	parser.add_argument("--normalize",action="store_true",default=False,help="Apply edgenormalization to input images after dark/gain")
@@ -293,20 +301,30 @@ class MovieModeAlignment:
 		"""
 		Method to perform optimization of movie alignment.
 		"""
+		
+		
 		if self._optimized: print("Optimal alignment already determined.")
 		else:
-			print("Progress\tImage\ttx\t\tty\t\tEnergy")
-			denom = self._param_grid_size
-			numer = 0.0
-			for i,x,y in self._param_grid:
-				numer += 1.0
-				t = Transform({'type':'eman','tx':x,'ty':y})
-				self._update_frame_params(i,t)
-				eold = self.get_energy()
-				self._update_energy()
-				enew = self.get_energy()
-				print("%f\t%i\t%f\t%f\t%f"%(numer/denom*100,i,x,y,enew))
-			self._optimized = True
+			nm=self.hdr['nimg']*2
+			guess=[random.randint(-5,5)  for i in range(nm)]
+
+			
+			sm=Simplex(compares,guess,[5]*nm, data=self)
+			mn=sm.minimize(monitor=1,epsilon=.01)
+			print mn
+			################
+			#print("Progress\tImage\ttx\t\tty\t\tEnergy")
+			#denom = self._param_grid_size
+			#numer = 0.0
+			#for i,x,y in self._param_grid:
+				#numer += 1.0
+				#t = Transform({'type':'eman','tx':x,'ty':y})
+				#self._update_frame_params(i,t)
+				#eold = self.get_energy()
+				#self._update_energy()
+				#enew = self.get_energy()
+				#print("%f\t%i\t%f\t%f\t%f"%(numer/denom*100,i,x,y,enew))
+			#self._optimized = True
 	
 	def write(self,name=None):
 		"""
