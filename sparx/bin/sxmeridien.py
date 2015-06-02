@@ -579,17 +579,16 @@ def get_shrink_data(onx, nx, stack, partids, partstack, myid, nproc, CTF = False
 		image_start, image_end = MPI_start_end(ndata, nproc, myid)
 	lpartids  = lpartids[image_start:image_end]
 	partstack = partstack[image_start:image_end]
-	#data = EMData.read_images(stack, lpartids)
 	#  Preprocess the data
 	if radi < 0:	radi = onx//2 - 2
-	mask2D  = model_circle(radi,onx,onx) - model_circle(radi,onx,onx)
+	mask2D  = model_circle(radi,onx,onx)
 	nima = image_end - image_start
 	oldshifts = [[0.0,0.0]*nima]
 	data = [None]*nima
 	shrinkage = float(nx)/float(onx)
 	for im in xrange(nima):
 		data[im] = get_im(stack, lpartids[im])
-		phi,theta,psi,sx,sy = partstack[i][0], partstack[i][1], partstack[i][2], partstack[i][3], partstack[i][4]
+		phi,theta,psi,sx,sy = partstack[im][0], partstack[im][1], partstack[im][2], partstack[im][3], partstack[im][4]
 		if preshift:
 			data[im] = fshift(data[im], sx, sy)
 			set_params_proj(data[im],[phi,theta,psi,0.0,0.0])
@@ -674,8 +673,8 @@ def metamove(projdata, oldshifts, paramsdict, partids, partstack, outputdir, pro
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print(line,"Executed successfully: ","sali3d_base_MPI, nsoft = %d"%paramsdict["nsoft"],"  number of images:%7d"%len(params))
 		for i in xrange(len(params)):
-			params[i][[3] = params[i][[3]/ali3d_options.shrink + oldshifts[i][0]
-			params[i][[4] = params[i][[4]/ali3d_options.shrink + oldshifts[i][1]
+			params[i][3] = params[i][3]/ali3d_options.shrink + oldshifts[i][0]
+			params[i][4] = params[i][4]/ali3d_options.shrink + oldshifts[i][1]
 		write_text_row(params, os.path.join(outputdir,"params-chunk%01d.txt"%procid) )
 
 def print_dict(dict,theme):
