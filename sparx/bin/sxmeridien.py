@@ -1054,7 +1054,7 @@ def main():
 
 
 		if(myid == main_node):
-			lowpass, falloff, icurrentres = get_resolution(vol, radi, nnxo, initdir)
+			lowpass, falloff, icurrentres = get_pixel_resolution(vol, radi, nnxo, initdir)
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			print(  line,"Initial resolution %6.2f  (%d), filter cut-off %6.4f and fall-off %6.4f"%(float(icurrentres)/nnxo,icurrentres,lowpass,falloff))
 			write_text_row([[lowpass, falloff, icurrentres]],os.path.join(initdir,"current_resolution.txt"))
