@@ -564,7 +564,7 @@ def getalldata(stack, myid, nproc):
 
 
 
-def get_shrink_data(onx, nx, stack, partids, partstack, myid, nproc, CTF = False, preshift = False, radi = -1):
+def get_shrink_data(onx, nx, stack, partids, partstack, myid, main_node, nproc, CTF = False, preshift = False, radi = -1):
 	# The function will read from stack a subset of images specified in partids
 	#   and assign to them parameters from partstack with optional CTF application and shifting of the data.
 	# So, the lengths of partids and partstack are the same.
@@ -1010,7 +1010,7 @@ def main():
 				write_text_file(range(total_stack), partids)
 			partstack = os.path.join(masterdir, "2dpostalignment", "initial3Dshifts.txt")
 
-			projdata, oldshifts = get_shrink_data(nnxo, nnxo, stack, partids, partstack, myid, nproc, ali3d_options.CTF, preshift = True, radi = radi)
+			projdata, oldshifts = get_shrink_data(nnxo, nnxo, stack, partids, partstack, myid, main_node, nproc, ali3d_options.CTF, preshift = True, radi = radi)
 			metamove(projdata, oldshifts, paramsdict, partids, partstack, initdir, 0, myid, main_node, nproc)
 			if(myid == main_node):
 				print(line,"Executed successfully: ","initialization ali3d_base_MPI")
@@ -1193,7 +1193,7 @@ def main():
 			if  doit:
 				if( tracker["nxinit"] != projdata[procid][0].get_xsize() ):
 					projdata[procid], oldshifts[procid] = get_shrink_data(nnxo, tracker["nxinit"], \
-										stack, partids, partstack, myid, nproc, ali3d_options.CTF, preshift = True, radi = radi)
+										stack, partids, partstack, myid, main_node, nproc, ali3d_options.CTF, preshift = True, radi = radi)
 				metamove(projdata, oldshifts, paramsdict, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
 
 		partstack = [None]*2
@@ -1255,7 +1255,7 @@ def main():
 				if  doit:
 					if( tracker["nxinit"] != projdata[procid][0].get_xsize() ):
 						projdata[procid], oldshifts[procid] = get_shrink_data(nnxo, tracker["nxinit"], \
-											stack, partids, partstack, myid, nproc, ali3d_options.CTF, preshift = True, radi = radi)
+											stack, partids, partstack, myid, main_node, nproc, ali3d_options.CTF, preshift = True, radi = radi)
 					metamove(paramsdict, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
 			else:
 				if( myid == main_node and doit):
