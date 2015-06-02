@@ -225,12 +225,13 @@ def main():
 ANGDIST - Calculates the distance between two transforms. Used to verify the answers provided by the aligner for simmulated data,
 and to determine the proximity of the 10 best peaks proposed, for experimental and simmulated data.
 '''
-def angdist(t1,t2):
+def angdist(t1,t2, num=0):
 	t2inv = t2.inverse()
 	product = t2inv * t1
 	product_SPIN = product.get_rotation('spin')
 	angular_distance = round(float(product_SPIN["omega"]),2)
-	print "The angular distance is", angular_distance
+	
+	print "For orientation %d the angular distance %f" %(num, angular_distance)
 	
 	return(angular_distance)
 
@@ -293,6 +294,7 @@ def accountForSym( options, solutionT, simT ):
 	
 	
 	groundT = Transform()
+	kk=0
 	for o in orientations:
 		
 		oi = o.inverse()
@@ -301,7 +303,7 @@ def accountForSym( options, solutionT, simT ):
 											#will give you a large "difference" if the solution found
 											#is far from the symmetry axis. Otherwise, they'll cancel each other out 
 		
-		distance = angdist( o,  diff )	 	#Find the distance between this difference and all symmetry-related positions
+		distance = angdist( o,  diff,kk+1 )	 	#Find the distance between this difference and all symmetry-related positions
 		
 		solutionTsym = oi * solutionT		#For each possible symmetry related position, you calculate a
 											#symmetry-related "variant" of the solution by multiplying the 
@@ -309,6 +311,8 @@ def accountForSym( options, solutionT, simT ):
 											#(in an ideal case, the solution by itself would be the inverse of random transform "simT")
 		
 		symDistances.update( {distance: solutionTsym } )	#Keep track of all symmetry-related solutions and their transforms
+		
+		kk+=1
 		
 	mindist = min( symDistances.keys() )	#Find the symmetry-related solution that yields the minimum distance to a symmetry-related axis
 	
