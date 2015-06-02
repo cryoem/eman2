@@ -4396,3 +4396,30 @@ def Combinations_of_n_taken_by_k(n,k):
 	from fractions import Fraction
 	return int(reduce(lambda x, y: x * y, (Fraction(n-i, i+1) for i in range(k)), 1))
 	
+def cmdexecute(cmd):
+	from   time import localtime, strftime
+	import subprocess
+	outcome = subprocess.call(cmd, shell=True)
+	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+	if(outcome == 1):
+		print(  line,"ERROR!!   Command failed:  ", cmd)
+		from sys import exit
+		exit()
+	else:  print(line,"Executed successfully: ",cmd)
+
+def string_found_in_file(myregex, filename):
+	import re
+	pattern = re.compile(myregex)
+	for line in open(filename):
+		if re.findall(pattern, line) <> []:
+			return True
+	return False
+
+def get_latest_directory_increment_value(directory_location, directory_name, start_value=1):
+	import os
+	dir_count = start_value
+	while os.path.isdir(directory_location + directory_name + "%03d"%(dir_count)):
+		dir_count += 1
+	if dir_count == start_value:
+		return start_value
+	return dir_count - 1
