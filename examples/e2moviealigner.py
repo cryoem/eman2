@@ -116,6 +116,7 @@ def main():
 		# optimize alignment
 		if options.verbose: print("Optimizing movie frame alignment")
 		alignment.optimize()
+		alignment.plot_energies()
 		# write aligned movie to disk
 		if options.verbose: print("Writing aligned frames to disk")
 		alignment.write()
@@ -153,7 +154,7 @@ class MovieModeAlignment:
 		self._computed_objective = False
 		self._calc_incoherent_power_spectrum()
 		self._calc_coherent_power_spectrum()
-		self._energies = [sys.float_info.max]
+		self._energies = [sys.float_info.max,50.0,12.0,10.0]
 		self._optimized = False
 	
 	def _initialize_params(self,boxsize,transforms,xmin,xmax,ymin,ymax,nx,ny):
@@ -351,7 +352,32 @@ class MovieModeAlignment:
 			im=sum(outim[i-f2avg-1:i])
 			mov.append(im)
 		display(mov)
+
+	def plot_energy_landscape(self,frame=0):
+		"""
+		Method to plot energy landscape for single frame in 2D.
+		"""
+		import matplotlib.pyplot as plt
+		raise(NotImplementedError)
+	
+	def plot_energies(self,frame=None):
+		"""
+		Method to plot the energies from the optimization in 1D.
+		"""
+		import matplotlib.pyplot as plt
+		fig = plt.figure()
+		ax = fig.add_subplot(1,1,1)
+		ax.plot(self._energies[1:])
+		ax.set_title('Energy')
+		plt.show()
+	
+	def plot_vector_alignment_diagram(self):
+		"""
+		Method to display optimized, labeled whole-frame translation vectors in 2D.
+		"""
 		
+		raise(NotImplementedError)
+	
 	@classmethod
 	def dark_correct(cls,options):
 		"""
