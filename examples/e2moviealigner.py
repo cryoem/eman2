@@ -102,7 +102,7 @@ def main():
 		alignment = MovieModeAlignment(bgsub)
 		# optimize alignment
 		if options.verbose: print("Optimizing movie frame alignment")
-		#alignment.optimize()
+		alignment.optimize()
 		# write aligned movie to disk
 		if options.verbose: print("Writing aligned frames to disk")
 		alignment.write()
@@ -202,7 +202,7 @@ class MovieModeAlignment:
 				self._cboxes /= self._nregions
 				self._ips += self._cboxes
 				self._cboxes.to_zero()
-			self._ips /= self.hdr['nimg']
+			#self._ips /= self.hdr['nimg']
 			self._ips.process_inplace('math.rotationalaverage')
 			self._computed_objective = True
 		else: print("Incoherent power spectrum has been computed. It is attainable via the get_incoherent_power_spectrum method.")
@@ -215,17 +215,16 @@ class MovieModeAlignment:
 		"""
 		# average each region across all frames -> ri2inten -> average -> sum
 		self._cboxes.to_zero()
-		images = []
 		for s in xrange(self._nstacks):
 			for i,r in enumerate(self._stacks[s]):
 				img = EMData(self.path,i,False,r)
 				img.process_inplace("normalize.edgemean")
 				self._cboxes += img.do_fft()
-				images.append(img)
-			display(images)
+				#if s < 1: self._cboxes.write_image(self.dir+'/x%i.hdf'%s)
+				if s < 1: img.write_image(self.dir+'/x%i.hdf'%i)
 			self._cboxes /= self.hdr['nimg'] # average each region across all movie frames
 			self._cboxes.ri2inten()
-			if s < 1: self._cboxes.write_image(self.dir+'/x.hdf')
+			#
 			self._cps += self._cboxes
 			self._cboxes.to_zero()
 		self._cps /= self._nregions
@@ -271,12 +270,12 @@ class MovieModeAlignment:
 		"""
 		if self._optimized: print("Optimal alignment already determined.")
 		else:
-			for i,x,y in self._param_grid:
-				print(i,x,y)
-				t = Transform({'type':'eman','tx':x,'ty':y})
-				self._update_frame_params(i,t)
-				self._update_energy()
-			self._optimized = True
+			#for i,x,y in self._param_grid:
+				#t = Transform({'type':'eman','tx':x,'ty':y})
+				#self._update_frame_params(i,t)
+				#self._update_energy()
+			#self._optimized = True
+			self._optimized = False #TEMPORARY
 	
 	def write(self,name=None):
 		"""
@@ -286,7 +285,7 @@ class MovieModeAlignment:
 		"""
 		if not name: name=self.outfile
 		elif name[:-4] != '.hdf': name = name[:-4] + '.hdf'  # force HDF
-		if not self._optimized: print("Warning: Saving non-optimal alignment.\nRun the optimize method to determine best frame translations.")
+		if not self._optimized: print("Warning: Saving non-optimal alignment. Run the optimize method to determine best frame translations.")
 		for i in xrange(self.hdr['nimg']):
 			im = EMData(self.path,i)
 			im.transform(self._transforms[i])
