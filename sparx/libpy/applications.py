@@ -6378,8 +6378,8 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 		# del active
 		# total_nima = len(list_of_particles)
 	
-		nima = EMUtil.get_image_count(stack)
-		list_of_particles = range(nima)
+		total_nima = EMUtil.get_image_count(stack)
+		list_of_particles = range(total_nima)
 	
 	else:
 		total_nima =0
