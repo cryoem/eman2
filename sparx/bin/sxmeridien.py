@@ -1008,6 +1008,7 @@ def main():
 				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 				print(line,"INITIALIZATION 3D")
 				write_text_file(range(total_stack), partids)
+			mpi_barrier(MPI_COMM_WORLD)
 			partstack = os.path.join(masterdir, "2dpostalignment", "initial3Dshifts.txt")
 			projdata = getindexdata(stack, partids, partstack, myid, nproc)
 			mpi_barrier(MPI_COMM_WORLD)
