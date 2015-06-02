@@ -66,7 +66,7 @@ def main():
 	
 	if len(args)<1 and not options.path:
 		print usage
-		parser.error("Specify input DDD stack")
+		parser.error("You must specify an input DDD stack.")
 	
 	if options.path:
 		args.append(options.path)
@@ -86,27 +86,27 @@ def main():
 	for fname in args:
 		if options.verbose: print "Processing", fname
 		options.path = fname
-		
+		# dark correct
 		if options.dark: dark = MovieModeAlignment.dark_correct(options)
 		else: dark=None
-		
+		# gain correct
 		if options.gain: gain = MovieModeAlignment.gain_correct(options,dark)
 		elif options.gaink2: gain = EMData(options.gaink2)
 		else: gain = None
-		
 		# perform background subtraction
 		bgsub = MovieModeAlignment.background_subtract(options,dark,gain)
 		# simply average frames before alignment
-		if options.simpleavg: MovieModeAlignment.simple_average(bgsub)
-		# actual alignment of movie frames
+		if options.simpleavg: savg = MovieModeAlignment.simple_average(bgsub)
+		# create movie aligner
+		if options.verbose: print("Creating movie aligner object")
 		alignment = MovieModeAlignment(bgsub)
-		
 		# optimize alignment
-		
+		if options.verbose: print("Optimizing movie frame alignment")
 		#alignment.optimize()
-		
-		# write to disk
+		# write aligned movie to disk
+		if options.verbose: print("Writing aligned frames to disk")
 		alignment.write()
+		alignment.write_spectra()
 		# movie mode viewing
 		if options.movie: alignment.show_movie(options.movie)
 	
@@ -115,66 +115,73 @@ def main():
 class MovieModeAlignment:
 	
 	"""
-	Class to hold information for optimized alignment of DDD cameras.
+	MovieModeAlignment: Class to hold information for optimized alignment of DDD cameras.
 	"""
 	
-	def __init__(self, path, boxsize=512, transforms=None, min=-50.0, max=50.0, n=100):
+	def __init__(self, path, boxsize=256, transforms=None, min=-50.0, max=50.0, n=100):
 		"""
 		Initialization method for MovieModeAlignment objects.
 		
 		@param path 		:	File location and name.
-		@param dark 		:	Dark reference movie.
-		@param gain 		:	Gain reference movie.
-		@param boxsize  	:	(optional) Size of boxes used to compute average power spectra.
+		@param boxsize  	:	(optional) Size of boxes used to compute average power spectra. Default is 512.
 		@param transforms	: 	(optional) A list of Transform objects.
+		@param float min	:	(optional) The minimum alignment translation. Default is -50.0
+		@param float max	:	(optional) The maximum alignment translation. Default is 50.0
+		@param int n		:	(optional) The number of alignment translations to test (between min and max). Default is 100.
 		"""
-		print("Loading movie data")
 		self.path = path
 		self.hdr = EMData(path,0).get_attr_dict()
 		if path[-4:].lower() in (".mrc"): self.hdr['nimg'] = self.hdr['nz']
 		else: self.hdr['nimg'] = EMUtil.get_image_count(path)
 		self.outfile = path.rsplit(".",1)[0]+"_proc.hdf"
 		self.dir = os.path.dirname(self.path)
-		print("Initializing parameters")
-		self._initialize_params(boxsize,transforms,min,max,n)
-		print("Compuiting incoherent and coherent power spectra")
+		self._initialize_params(boxsize,transforms,min,max,min,max,n,n)
 		self._computed_objective = False
 		self._calc_incoherent_power_spectrum()
 		self._calc_coherent_power_spectrum()
-		print("Initializing energy function")
 		self._energies = [sys.float_info.max]
 		self._optimized = False
 	
-	def _initialize_params(self,boxsize,transforms,min,max,n):
+	def _initialize_params(self,boxsize,transforms,xmin,xmax,ymin,ymax,nx,ny):
 		"""
 		A purely organizational private method to keep the initialization code clean and readable.
 		This function takes care of initializing the variables (and allocating the 
 		subsequent memory) that will be used through the lifetime of the MovieModeAligner.
 		
-		@param boxsize		:	Size of boxes used to compute average power spectra.
-		@param transforms	:	A list of Transform objects.
+		@param int boxsize		:	Size of boxes used to compute average power spectra.
+		@param list transforms	:	A list of Transform objects.
+		@param float xmin		:	Minimum translation in X to search
+		@param float xmax		:	Maximum translation in X to search
+		@param float ymin		:	Minimum translation in Y to search
+		@param float ymax		:	Maximum translation in X to search
+		@param int nx			:	Number of proposed translations in x (between minx and maxx)
+		@param int ny			:	Number of proposed translations in y (between miny and maxy)
 		"""
 		self._boxsize = boxsize
 		self._regions = {}
 		for i in xrange(self.hdr['nimg']):
 			self._regions[i] = []
-			for x in xrange(1, self.hdr['nx'] / boxsize - 1):
-				for y in xrange(1, self.hdr['ny'] / boxsize - 1):
-					r = Region(x*self._boxsize+self._boxsize/2,y*self._boxsize+self._boxsize/2,self._boxsize,self._boxsize)
+			for x in xrange(1, self.hdr['nx'] / boxsize - 1, 1):
+				for y in xrange(1, self.hdr['ny'] / boxsize - 1, 1):
+					r = Region(x*boxsize+boxsize/2,y*boxsize+boxsize/2,boxsize,boxsize)
 					self._regions[i].append(r)
-		self.nregions = len(self._regions)
-		if not transforms:
-			t = Transform({"type":"eman","tx":0.0,"ty":0.0})
-			self._transforms = [t for i in xrange(self.hdr['nimg'])]
-		else: self._transforms = transforms
+		self._nregions = len(self._regions)
+		self._stacks = {}
+		for ir in xrange(self._nregions):
+			self._stacks[ir] = []
+			for i in xrange(self.hdr['nimg']):
+				self._stacks[ir].append(self._regions[i][ir])
+		self._nstacks = len(self._stacks)
+		if transforms: self._transforms = transforms
+		else: self._transforms = [Transform({"type":"eman","tx":0.0,"ty":0.0}) for i in xrange(self.hdr['nimg'])]
 		self.optimal_transforms = self._transforms
 		self._cboxes = EMData(self._boxsize,self._boxsize).do_fft()
 		self._ips = EMData(self._boxsize,self._boxsize).do_fft()
 		self._cps = EMData(self._boxsize,self._boxsize).do_fft()
-		self._param_grid = {}
-		for i in xrange(self.hdr['nimg']):
-			params = np.linspace(min,max,n)
-			self._param_grid[i] = it.combinations_with_replacement(params,2)
+		xp = np.linspace(xmin,xmax,nx).tolist()
+		yp = np.linspace(xmin,xmax,ny).tolist()
+		ip = np.linspace(0,self.hdr['nimg']-1,self.hdr['nimg']).astype(int).tolist()
+		self._param_grid = it.product(ip,xp,yp)
 	
 	def _calc_incoherent_power_spectrum(self):
 		"""
@@ -192,7 +199,7 @@ class MovieModeAlignment:
 					box.do_fft_inplace()
 					box.ri2inten()
 					self._cboxes += box
-				self._cboxes /= self.nregions
+				self._cboxes /= self._nregions
 				self._ips += self._cboxes
 				self._cboxes.to_zero()
 			self._ips /= self.hdr['nimg']
@@ -206,20 +213,22 @@ class MovieModeAlignment:
 		Regions are updated by the _update_frame_params method, which
 		is called by the _update_energy method.
 		"""
-		# average region across frames -> ri2inten -> average -> sum
-		for rnum in xrange(self.nregions):
-			regs = self._regions[rnum]
-			for reg in regs:
-				for inum in xrange(self.hdr['nimg']):
-					img = EMData(self.path,inum,False,reg)
-					img.process_inplace("normalize.edgemean")
-					img.do_fft_inplace()
-					self._cboxes += img
-				self._cboxes /= self.hdr['nimg'] # average each region across all movie frames
-				self._cboxes.ri2inten()
-				self._cps += self._cboxes
-				self._cboxes.to_zero()
-		self._cps /= self.nregions
+		# average each region across all frames -> ri2inten -> average -> sum
+		self._cboxes.to_zero()
+		images = []
+		for s in xrange(self._nstacks):
+			for i,r in enumerate(self._stacks[s]):
+				img = EMData(self.path,i,False,r)
+				img.process_inplace("normalize.edgemean")
+				self._cboxes += img.do_fft()
+				images.append(img)
+			display(images)
+			self._cboxes /= self.hdr['nimg'] # average each region across all movie frames
+			self._cboxes.ri2inten()
+			if s < 1: self._cboxes.write_image(self.dir+'/x.hdf')
+			self._cps += self._cboxes
+			self._cboxes.to_zero()
+		self._cps /= self._nregions
 		self._cps.process_inplace('math.rotationalaverage')
 	
 	def _update_frame_params(self,i,t):
@@ -227,13 +236,18 @@ class MovieModeAlignment:
 		Private method to update a single image according to an affine transformation. 
 		Note that transformations should by be in 2D.
 		
-		@param transform:	An EMAN Transform object
+		@param int i		: 	An integer specifying which transformation to update
+		@param Transform t	:	An EMAN Transform object
 		"""
+		# update transform
 		self._transforms[i] = t
+		# update regions
 		for r in self._regions[i]:
-			x0 = r.get_origin()
-			x1 = [x for x in t.get_trans_2d()]
-			r.set_origin(x0 + x1)
+			x = r.get_origin() + [x for x in t.get_trans_2d()]
+			self._regions[i] = Region(x[0],x[1],self._boxsize,self._boxsize)
+		# update stacks
+		for ir in xrange(self._nregions):
+			self._stacks[ir][i] = self._regions[i]
 	
 	def _update_energy(self):
 		"""
@@ -243,7 +257,7 @@ class MovieModeAlignment:
 		the alignment is improved, the transforms supplied will be stored in the 
 		optimal_transforms variable for later access.
 		
-		@param transforms: 	List of proposed EMAN Transform objects, one for each frame in movie.
+		@param list transforms	: 	List of proposed EMAN Transform objects, one for each frame in movie.
 		"""
 		self._calc_coherent_power_spectrum()
 		energy = -1*self._ips.dot(self._cps)
@@ -255,45 +269,61 @@ class MovieModeAlignment:
 		"""
 		Method to perform optimization of movie alignment
 		"""
-		if self._optimized:
-			print("Optimal alignment already determined.")
-			return
-		for i in xrange(self.hdr['nimg']):
-			print('Optimizing image %i'%(i))
-			for x,y in self._param_grid[i]:
-				self._update_frame_params(i,Transform({'type':'eman','tx':x,'ty':y}))
+		if self._optimized: print("Optimal alignment already determined.")
+		else:
+			for i,x,y in self._param_grid:
+				print(i,x,y)
+				t = Transform({'type':'eman','tx':x,'ty':y})
+				self._update_frame_params(i,t)
 				self._update_energy()
-# 				try: self._update_energy()
-# 				except: print("Cannot perform Transform({'type':'eman','tx':%f,'ty':%f}) on image %i."%(x,y,i))
-		self._optimized = True
-		return
+			self._optimized = True
 	
 	def write(self,name=None):
 		"""
 		Method to write aligned results to disk
 		
-		@param name: file name to write aligned movie stack
+		@param string name: (optional) file name to write aligned movie stack
 		"""
 		if not name: name=self.outfile
-		print(name)
-		if not self._optimized:
-			print("Warning: Saving non-optimal alignment.\nRun the optimize method to determine best frame translations.")
+		elif name[:-4] != '.hdf': name = name[:-4] + '.hdf'  # force HDF
+		if not self._optimized: print("Warning: Saving non-optimal alignment.\nRun the optimize method to determine best frame translations.")
 		for i in xrange(self.hdr['nimg']):
 			im = EMData(self.path,i)
 			im.transform(self._transforms[i])
 			im.write_image_c(name,i)
-		self._cps.write_image(self.dir+'/cps.hdf')
-		self._ips.write_image(self.dir+'/ips.hdf')
 	
-	# get function(s)
-	def get_transforms(self): return self.optimal_transforms
-	def get_data(self): return EMData(self.path)
-	def get_header(self): return self.hdr
-	def get_energies(self): return self._energies
-	def get_incoherent_power_spectrum(self): return self._ips
-	def get_coherent_power_spectrum(self): return self._cps
+	def write_spectra(self,cpsname='cps.hdf',ipsname='ips.hdf'):
+		"""
+		Method to write power spectra to current directory.
+		
+		@param string cpsname	: name of coherent power spectrum to be written to disk
+		@param string ipsname	: name of incoherent power spectrum to be written to disk
+		"""
+		if cpsname[:-4] != '.hdf':
+			cpsname = cpsname[:-4] + '.hdf'  # force HDF
+		self._cps.write_image(self.dir+'/'+cpsname)
+		if ipsname[:-4] != '.hdf':
+			ipsname = ipsname[:-4] + '.hdf'  # force HDF
+		self._ips.write_image(self.dir+'/'+ipsname)
 	
-	# display data
+	def get_transforms(self): 
+		return self.optimal_transforms
+	
+	def get_data(self): 
+		return EMData(self.path)
+	
+	def get_header(self): 
+		return self.hdr
+	
+	def get_energies(self): 
+		return self._energies
+	
+	def get_incoherent_power_spectrum(self): 
+		return self._ips
+	
+	def get_coherent_power_spectrum(self): 
+		return self._cps
+	
 	def show_power_spectra(self):
 		print("Displaying incoherent (1) and coherent (2) power spectra.")
 		display([self._ips,self._cps])
@@ -304,7 +334,7 @@ class MovieModeAlignment:
 		"""
 		Method to display 'movie' of averaged frames
 		
-		@param f2avg: number of frames to average. Default is 5.
+		@param int f2avg : 	number of frames to average. Default is 5.
 		"""
 		mov=[]
 		for i in xrange(f2avg+1,self.hdr['nimg']):
@@ -312,15 +342,13 @@ class MovieModeAlignment:
 			im=sum(outim[i-f2avg-1:i])
 			mov.append(im)
 		display(mov)
-	
-	# class methods for pre/post-processing
-	
+		
 	@classmethod
 	def dark_correct(cls,options):
 		"""
 		Class method to dark correct a DDD movie stack according to a dark reference.
 		
-		@param options:	"argparse" options from e2ddd_movie.py
+		@param options	:	"argparse" options from e2ddd_movie.py
 		"""
 		hdr = EMData(options.dark,0,True).get_attr_dict()
 		if options.path[-4:].lower() in (".mrc"): nd = hdr['nz']
@@ -353,7 +381,7 @@ class MovieModeAlignment:
 		"""
 		Class method to gain correct a DDD movie stack.
 		
-		@param options:	"argparse" options from e2ddd_movie.py
+		@param options	:	"argparse" options from e2ddd_movie.py
 		"""
 		hdr = EMData(options.gain,0,True).get_attr_dict()
 		if options.path[-4:].lower() in (".mrc"): nd = hdr['nz']
@@ -388,11 +416,11 @@ class MovieModeAlignment:
 		"""
 		Class method to background subtract and gain correct a DDD movie
 		
-		@param options	:	"argparse" options from e2ddd_movie.py
-		@param path		:	path of movie to be background subtracted
-		@param dark		:	dark reference image
-		@param gain		:	gain reference image
-		@param outfile	:	(optional) name of the file to be written with background subtracted movie
+		@param namespace options	:	"argparse" options from e2ddd_movie.py
+		@param string path			:	path of movie to be background subtracted
+		@param string dark			:	dark reference image
+		@param string gain			: 	gain reference image
+		@param string outfile		:	(optional) name of the file to be written with background subtracted movie
 		"""
 		hdr = EMData(options.path,0,True).get_attr_dict()
 		if options.path[-4:].lower() in (".mrc"): nd = hdr['nz']
@@ -423,7 +451,7 @@ class MovieModeAlignment:
 		"""
 		Class method to compute a simple averge of all frames in a DDD movie stack.
 		
-		@param path	:	file location DDD movie stack
+		@param string path:	file location DDD movie stack
 		"""
 		hdr = EMData(path,0,True).get_attr_dict()
 		nx = hdr['nx']
@@ -443,6 +471,7 @@ class MovieModeAlignment:
 				avgr.add_image(EMData(path,i))
 		av=avgr.finish()
 		av.write_image(outname[:-4]+"_mean.hdf",0)
+		return av
 
 if __name__ == "__main__":
 	main()
