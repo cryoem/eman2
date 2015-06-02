@@ -106,6 +106,7 @@ def main():
 		# write aligned movie to disk
 		if options.verbose: print("Writing aligned frames to disk")
 		alignment.write()
+		if options.verbose: print("Writing final coherent and incoherent power spectra to disk")
 		alignment.write_spectra()
 		# movie mode viewing
 		if options.movie: alignment.show_movie(options.movie)
@@ -192,17 +193,17 @@ class MovieModeAlignment:
 			self._ips.to_zero()
 			for i in xrange(self.hdr['nimg']):
 				img = EMData(self.path,i)
-				for r in self._regions[i]:
+				for r in self._regions[i]: # get region
 					box = img.get_clip(r)
 					box.process_inplace("normalize.edgemean")
-					box.do_fft_inplace()
-					box.ri2inten()
-					self._cboxes += box
+					box.do_fft_inplace() # fft region
+					box.ri2inten() # convert to intensities
+					self._cboxes += box # sum across regions
 				self._cboxes /= self._nregions
-				self._ips += self._cboxes
+				self._ips += self._cboxes # sum across frames
 				self._cboxes.to_zero()
 			self._ips /= self.hdr['nimg']
-			self._ips.process_inplace('math.rotationalaverage')
+			self._ips.process_inplace('math.rotationalaverage') # smooth
 			self._computed_objective = True
 	
 	def _calc_coherent_power_spectrum(self):
@@ -211,20 +212,22 @@ class MovieModeAlignment:
 		Regions are updated by the _update_frame_params method, which
 		is called by the _update_energy method.
 		"""
-		# average each region across all frames -> ri2inten -> average -> sum
 		self._cps.to_zero()
 		self._cboxes.to_zero()
+		b = self._cboxes.do_ift()
 		for s in xrange(self._nstacks):
 			for i,r in enumerate(self._stacks[s]):
 				img = EMData(self.path,i,False,r)
-				img.process_inplace("normalize.edgemean")
-				self._cboxes += img.do_fft()
-			self._cboxes /= self.hdr['nimg'] # average each region across all movie frames
-			self._cboxes.ri2inten()
+				b += img
+			b /= self.hdr['nimg'] # average each region across all movie frames
+			b.process_inplace("normalize.edgemean")
+			self._cboxes = b.do_fft() # fft
+			b.to_zero()
+			self._cboxes.ri2inten() # ri2inten
 			self._cps += self._cboxes
 			self._cboxes.to_zero()
-		self._cps /= self._nregions
-		self._cps.process_inplace('math.rotationalaverage')
+		self._cps /= self._nregions # average
+		self._cps.process_inplace('math.rotationalaverage') # smooth
 	
 	def _update_frame_params(self,i,t):
 		"""
