@@ -122,6 +122,11 @@ def main():
 	
 	
 	intensitiesSeveral = []
+	iwzSeveral = []
+	iminsSeveral = []
+	imaxsSeveral = []
+	istdsSeveral = []
+	
 	means = []
 	stds = []
 	
@@ -143,9 +148,21 @@ def main():
 			sys.exit(1)
 	
 	for datafile in datafiles:
-		intensitiesSingle = calcintensities( options, datafile )
-	
-		intensitiesSeveral.append( [ datafile, list(intensitiesSingle) ] )
+		ret = calcintensities( options, datafile )
+		
+		intensitiesSingle = ret[0]
+		iwz = ret[1]
+		imins = ret[2]
+		imaxs = ret[3]
+		istds = ret[4]
+		
+		intensitiesSeveral.append( [ datafile, list( intensitiesSingle ) ] )
+		
+		iwzSeveral.append( [ datafile, list( iwz ) ] )
+		iminsSeveral.append( [ datafile, list( imins ) ] ) 
+		imaxsSeveral.append( [ datafile, list( imaxs ) ] ) 
+		istdsSeveral.append( [ datafile, list( istds ) ] ) 
+				
 		
 		intensitiesSingleNorm = intensitiesSingle
 		
@@ -160,6 +177,12 @@ def main():
 		std = ret[1]
 		means.append(mean)
 		stds.append(std)
+		
+		
+		ret = plotintensities( iwz, options, datafile,'wz' )
+		ret = plotintensities( imins, options, datafile,'mins' )
+		ret = plotintensities( imaxs, options, datafile,'maxs' )
+		ret = plotintensities( istds, options, datafile,'stds' )
 		
 	#print "\nIntensities several len is", len( intensitiesSeveral )
 	if len( intensitiesSeveral ) > 1:
@@ -285,6 +308,10 @@ def calcintensities( options, datafile ):
 
 	print "\n(e2spt_meanintensityplot) (calcintensities)"
 	intensities = []
+	intensitiesWzeros = []
+	intensitiesMins = []
+	intensitiesMaxs = []
+	intensitiesStds = []
 	
 	n = EMUtil.get_image_count( datafile )
 	
@@ -412,7 +439,14 @@ def calcintensities( options, datafile ):
 		
 		#print "Value added to 1!!!!!",finalval
 			
-		intensities.append(a['mean_nonzero'])		
+		intensities.append(a['mean_nonzero'])
+		
+		intensitiesWzeros.append(a['mean'])
+		intensitiesMins.append(a['minimum'])
+		intensitiesMaxs.append(a['maximum'])
+		intensitiesStds.append(a['sigma'])
+	
+			
 		if not a['mean_nonzero']:
 			print "WARNING: mean intensity appended is zero"
 		else:
@@ -421,11 +455,72 @@ def calcintensities( options, datafile ):
 		if options.savepreprocessed:
 			a.write_image(options.path + '/' + datafile.replace('.','_EDITED.'),i)
 
-	stddin = np.std( intensities )
-	meanin = np.mean( intensities )
-
-	finalvalues = []
 	
+
+	
+	
+	
+	finalvalues = []
+	stdin = np.std( intensities )
+	meanin = np.mean( intensities )
+	finalvalues = prunevals( options, intensities, meanin, stdin )	
+	
+	intensitiestxt = options.path + '/' + datafile.replace('.hdf','_INTENSITIES.txt')		
+	
+	
+	finalvaluesWz = []
+	stdinWz = np.std( intensitiesWzeros )
+	meaninWz = np.mean( intensitiesWzeros )
+	finalvaluesWz = prunevals( options, intensitiesWzeros, meaninWz, stdinWz )
+	
+	intensitiestxtWz = options.path + '/' + datafile.replace('.hdf','_INTENSITIESwZeros.txt')	
+	
+	finalvaluesMins = []
+	stdinMins = np.std( intensitiesMins  )
+	meaninMins  = np.mean( intensitiesMins  )
+	finalvaluesMins  = prunevals( options, intensitiesMins , meaninMins , stdinMins  )
+	intensitiestxtMin = options.path + '/' + datafile.replace('.hdf','_MIN.txt')
+	
+	finalvaluesMaxs = []
+	stdinMaxs = np.std( intensitiesMaxs )
+	meaninMaxs = np.mean( intensitiesMaxs )
+	finalvaluesMaxs = prunevals( options, intensitiesMaxs, meaninMaxs, stdinMaxs )
+	intensitiestxtMax = options.path + '/' + datafile.replace('.hdf','_MAX.txt')
+	
+	finalvaluesStds = []
+	stdinStds = np.std( intensitiesStds )
+	meaninStds = np.mean( intensitiesStds )
+	finalvaluesStds = prunevals( options, intensitiesStds, meaninStds, stdinStds )
+	intensitiestxtStd = options.path + '/' + datafile.replace('.hdf','_STD.txt')
+	
+	
+	#print "Type of intensities is", type(finalvalues)
+	#stddinpruned = np.std( finalvalues )
+	#meaninpruned = np.mean( finalvalues )
+	
+	#plotintensities( finalvalues, options, datafile, 'yes' )
+	
+	return [finalvalues, finalvaluesWz, finalvaluesMins, finalvaluesMaxs, finalvaluesStds]
+
+
+def writetxt():
+
+	f=open( intensitiestxt, 'w')
+	lines = []
+	k=0
+	for inten in finalvalues:
+		lines.append( str(k) + ' ' + str(inten) + '\n')
+		k+=1
+		
+	f.writelines(lines)
+	f.close()
+
+	return
+
+
+def prunevals( options, intensities, mean, std ):
+	
+	finalvalues = []
 	for val in intensities:
 		if not options.removesigma:
 			finalvalues.append( val )
@@ -442,30 +537,11 @@ def calcintensities( options, datafile ):
 				
 			else:
 				print """Value %f EXCLUDED""" %( float(val) )
-				
-	#print "Type of intensities is", type(finalvalues)
-	
-	#stddinpruned = np.std( finalvalues )
-	#meaninpruned = np.mean( finalvalues )
-	
-	intensitiestxt = options.path + '/' + datafile.replace('.hdf','_INTENSITIES.txt')
-	
-	f=open( intensitiestxt, 'w')
-	lines = []
-	k=0
-	for inten in finalvalues:
-		lines.append( str(k) + ' ' + str(inten) + '\n')
-		k+=1
-		
-	f.writelines(lines)
-	f.close()
-	
-	#plotintensities( finalvalues, options, datafile, 'yes' )
 	
 	return finalvalues
 	
 	
-def plotintensities( intensities, options, datafile, onefile='yes' ):	
+def plotintensities( intensities, options, datafile, tag='', onefile='yes' ):	
 	import matplotlib.pyplot as plt
 	
 	#msktag=''
@@ -479,7 +555,10 @@ def plotintensities( intensities, options, datafile, onefile='yes' ):
 	#msktag=msktag.split('.')[0]
 
 	#print "\n\n\n\n\n\n\nMSK TAG is\n", msktag
-	plotname = datafile.replace('.hdf', '_MIplotMSK.png')
+	
+	if tag:
+		tag ='_' + tag
+	plotname = datafile.replace('.hdf', '_MIplotMSK' + tag + '.png')
 
 	print "The total number of particles is", len(intensities)
 	#print "because intensities are", intensities
