@@ -1010,9 +1010,6 @@ def main():
 				write_text_file(range(total_stack), partids)
 			mpi_barrier(MPI_COMM_WORLD)
 			partstack = os.path.join(masterdir, "2dpostalignment", "initial3Dshifts.txt")
-			projdata = getindexdata(stack, partids, partstack, myid, nproc)
-			mpi_barrier(MPI_COMM_WORLD)
-			print("  READ  ",myid)
 			projdata, oldshifts = get_shrink_data(nnxo, nnxo, stack, partids, partstack, myid, main_node, nproc, ali3d_options.CTF, preshift = True, radi = radi)
 			metamove(projdata, oldshifts, paramsdict, partids, partstack, initdir, 0, myid, main_node, nproc)
 			if(myid == main_node):
