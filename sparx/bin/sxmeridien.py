@@ -611,7 +611,7 @@ def get_shrink_data(onx, nx, stack, partids, partstack, myid, main_node, nproc, 
 			#  resample will properly adjusts shifts and pixel size in ctf
 			data[im] = resample(data[im], shrinkage)
 	assert( nx == data[0].get_xsize() )  #  Just to make sure.
-	oldshifts = wrap_mpi_gatherv(oldshifts, main_node, mpi_comm)
+	oldshifts = wrap_mpi_gatherv(oldshifts, main_node, MPI_COMM_WORLD)
 	return data, oldshifts
 
 
@@ -1009,7 +1009,9 @@ def main():
 				print(line,"INITIALIZATION 3D")
 				write_text_file(range(total_stack), partids)
 			partstack = os.path.join(masterdir, "2dpostalignment", "initial3Dshifts.txt")
-
+			projdata = getindexdata(stack, partids, partstack, myid, nproc)
+			mpi_barrier(MPI_COMM_WORLD)
+			print("  READ  ",myid)
 			projdata, oldshifts = get_shrink_data(nnxo, nnxo, stack, partids, partstack, myid, main_node, nproc, ali3d_options.CTF, preshift = True, radi = radi)
 			metamove(projdata, oldshifts, paramsdict, partids, partstack, initdir, 0, myid, main_node, nproc)
 			if(myid == main_node):
