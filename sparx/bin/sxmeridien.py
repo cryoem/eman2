@@ -26,6 +26,32 @@ import string
 from   sys import exit
 from   time import localtime, strftime
 
+
+
+class ali3d_options:
+	ir     = 1
+	rs     = 1
+	ou     = -1
+	xr     = "-1"
+	yr     = "-1"
+	ts     = "1"
+	an     = "-1"
+	sym    = "d2"
+	delta  = "2"
+	npad   = 2
+	center = 0
+	CTF    = True
+	ref_a  = "S"
+	snr    = 1.0
+	mask3D = "startm.hdf"
+	fl     = 0.4
+	aa     = 0.1
+	initfl = 0.4
+	pwreference = "rotpw3i3.txt"
+
+#################################
+
+
 def subdict(d,u):
 	# substitute values in dictionary d by those given by dictionary u
 	for q in u:  d[q] = u[q]
@@ -190,47 +216,6 @@ def	mergeparfiles(i1,i2,io,p1,p2,po):
 			p = read_text_row(p1+"%01d.txt"%ll) + read_text_row(p2+"%01d.txt"%ll)
 			write_text_row([p[t[i][1]] for i in xrange(len(t))], po+"%01d.txt"%ll)
 	return
-
-
-def getindexdata(stack, partids, partstack, myid, nproc):
-	# The function will read from stack a subset of images specified in partids
-	#   and assign to them parameters from partstack
-	# So, the lengths of partids and partstack are the same.
-	#  The read data is properly distributed among MPI threads.
-	lpartids  = map(int, read_text_file(partids) )
-	ndata = len(lpartids)
-	partstack = read_text_row(partstack)
-	if( ndata < nproc):
-		if(myid<ndata):
-			image_start = myid
-			image_end   = myid+1
-		else:
-			image_start = 0
-			image_end   = 1			
-	else:
-		image_start, image_end = MPI_start_end(ndata, nproc, myid)
-	lpartids  = lpartids[image_start:image_end]
-	partstack = partstack[image_start:image_end]
-	data = EMData.read_images(stack, lpartids)
-	for i in xrange(len(partstack)):  set_params_proj(data[i], partstack[i])
-	return data
-
-
-def getalldata(stack, myid, nproc):
-	if(myid == 0):  ndata = EMUtil.get_image_count(stack)
-	else:           ndata = 0
-	ndata = bcast_number_to_all(ndata)	
-	if( ndata < nproc):
-		if(myid<ndata):
-			image_start = myid
-			image_end   = myid+1
-		else:
-			image_start = 0
-			image_end   = 1			
-	else:
-		image_start, image_end = MPI_start_end(ndata, nproc, myid)
-	data = EMData.read_images(stack, range(image_start, image_end))
-	return data
 
 
 def get_resolution(vol, radi, nnxo, fscoutputdir):
@@ -537,28 +522,47 @@ def compute_fscs(stack, outputdir, chunkname, newgoodname, fscoutputdir, doit, k
 
 
 
-class ali3d_options:
-	ir     = 1
-	rs     = 1
-	ou     = -1
-	xr     = "-1"
-	yr     = "-1"
-	ts     = "1"
-	an     = "-1"
-	sym    = "d2"
-	delta  = "2"
-	npad   = 2
-	center = 0
-	CTF    = True
-	ref_a  = "S"
-	snr    = 1.0
-	mask3D = "startm.hdf"
-	fl     = 0.4
-	aa     = 0.1
-	initfl = 0.4
-	pwreference = "rotpw3i3.txt"
+def getindexdata(stack, partids, partstack, myid, nproc):
+	# The function will read from stack a subset of images specified in partids
+	#   and assign to them parameters from partstack
+	# So, the lengths of partids and partstack are the same.
+	#  The read data is properly distributed among MPI threads.
+	lpartids  = map(int, read_text_file(partids) )
+	ndata = len(lpartids)
+	partstack = read_text_row(partstack)
+	if( ndata < nproc):
+		if(myid<ndata):
+			image_start = myid
+			image_end   = myid+1
+		else:
+			image_start = 0
+			image_end   = 1			
+	else:
+		image_start, image_end = MPI_start_end(ndata, nproc, myid)
+	lpartids  = lpartids[image_start:image_end]
+	partstack = partstack[image_start:image_end]
+	data = EMData.read_images(stack, lpartids)
+	for i in xrange(len(partstack)):  set_params_proj(data[i], partstack[i])
+	return data
 
-#################################
+
+def getalldata(stack, myid, nproc):
+	if(myid == 0):  ndata = EMUtil.get_image_count(stack)
+	else:           ndata = 0
+	ndata = bcast_number_to_all(ndata)	
+	if( ndata < nproc):
+		if(myid<ndata):
+			image_start = myid
+			image_end   = myid+1
+		else:
+			image_start = 0
+			image_end   = 1			
+	else:
+		image_start, image_end = MPI_start_end(ndata, nproc, myid)
+	data = EMData.read_images(stack, range(image_start, image_end))
+	return data
+
+
 
 def get_shrink_data(onx, nx, stack, partids, partstack, myid, nproc, CTF = False, preshift = False, radi = -1):
 	# The function will read from stack a subset of images specified in partids
