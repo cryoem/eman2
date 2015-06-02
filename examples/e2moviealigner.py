@@ -56,9 +56,9 @@ def main():
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
 	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.")
 	parser.add_argument("--boxsize", type=int, help="Set the boxsize used to compute power spectra across movie frames",default=256)
-	parser.add_argument("--minsearch", type=str, help="Specify the minimum x,y parameter search in the following string format: 'xmin,ymin'. The larger the minimum, the more negative it will be. Default is '50,50', corresponding to (-50,-50).",default="50,50")
-	parser.add_argument("--maxsearch", type=str, help="Specify the maximum x,y parameter search in the following string format: 'xmax,ymax'. The default is '50,50'.",default="50,50")
-	parser.add_argument("--nxysearch", type=str, help="Specify the number of grid points to test between the min and max along each coordinate direction in the follwing format: 'nx,ny'. These must be positive. The default is 100,100.",default="100,100")
+	parser.add_argument("--minsearch", type=str, help="Specify the minimum x,y parameter search in the following string format: 'xmin,ymin'. The larger the minimum, the more negative it will be. Default is '4,4', corresponding to (-4,-4).",default="4,4")
+	parser.add_argument("--maxsearch", type=str, help="Specify the maximum x,y parameter search in the following string format: 'xmax,ymax'. The default is '4,4'.",default="4,4")
+	parser.add_argument("--nxysearch", type=str, help="Specify the number of grid points to test between the min and max along each coordinate direction in the follwing format: 'nx,ny'. These must be positive. The default is 5,5.",default="5,5")
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 1,1 (first image skipped)")
 	parser.add_argument("--fixbadpixels",action="store_true",default=False,help="Tries to identify bad pixels in the dark/gain reference, and fills images in with sane values instead")
 	parser.add_argument("--frames",action="store_true",default=False,help="Save the dark/gain corrected frames")
@@ -120,6 +120,7 @@ def main():
 		# optimize alignment
 		if options.verbose: print("Optimizing movie frame alignment")
 		alignment.optimize()
+		
 		alignment.plot_energies()
 		alignment.plot_translations()
 		# write aligned movie to disk
@@ -201,6 +202,7 @@ class MovieModeAlignment:
 		xp = np.linspace(xmin,xmax,nx).tolist()
 		yp = np.linspace(xmin,xmax,ny).tolist()
 		ip = np.linspace(0,self.hdr['nimg']-1,self.hdr['nimg']).astype(int).tolist()
+		self._param_grid_size = len(xp) * len(yp) * len(ip)
 		self._param_grid = it.product(ip,xp,yp)
 	
 	def _calc_incoherent_power_spectrum(self):
@@ -262,14 +264,15 @@ class MovieModeAlignment:
 		# update transform
 		self._transforms[i] = t
 		# update regions
+		newregions = []
 		for r in self._regions[i]:
-			x = r.get_origin() + [x for x in t.get_trans_2d()]
-			self._regions[i] = Region(x[0],x[1],self._boxsize,self._boxsize)
+			x =  [a+b for a,b in zip(r.get_origin()[:2],t.get_trans_2d())]
+			newregions.append(Region(x[0],x[1],self._boxsize,self._boxsize))
+		self._regions[i] = newregions
 		# update stacks
 		for ir in xrange(self._nregions):
-			try: self._stacks[ir][i] = self._regions[i][ir]
-			except: self._stacks[ir][i] = self._regions[i] # only one region ...not sure why this would happen. bug?
-	
+			self._stacks[ir][i] = self._regions[i][ir]
+			
 	def _update_energy(self):
 		"""
 		Private method to update the energy associated with a particular set of frame alignments.
@@ -281,23 +284,29 @@ class MovieModeAlignment:
 		@param list transforms	: 	List of proposed EMAN Transform objects, one for each frame in movie.
 		"""
 		self._calc_coherent_power_spectrum()
-		energy = -1*self._ips.dot(self._cps)
+		energy = EMData.cmp(self._ips,'dot',self._cps,{'normalize':1}) #-1*self._ips.dot(self._cps)
 		if energy < self._energies[-1]:
 			self._energies.append(energy)
 			self.optimal_transforms = self._transforms
-		
+	
 	def optimize(self):
 		"""
-		Method to perform optimization of movie alignment
+		Method to perform optimization of movie alignment.
 		"""
 		if self._optimized: print("Optimal alignment already determined.")
 		else:
-			#for i,x,y in self._param_grid:
-				#t = Transform({'type':'eman','tx':x,'ty':y})
-				#self._update_frame_params(i,t)
-				#self._update_energy()
-			#self._optimized = True
-			self._optimized = False #TEMPORARY
+			print("Progress\tImage\ttx\t\tty\t\tEnergy")
+			denom = self._param_grid_size
+			numer = 0.0
+			for i,x,y in self._param_grid:
+				numer += 1.0
+				t = Transform({'type':'eman','tx':x,'ty':y})
+				self._update_frame_params(i,t)
+				eold = self.get_energy()
+				self._update_energy()
+				enew = self.get_energy()
+				print("%f\t%i\t%f\t%f\t%f"%(numer/denom*100,i,x,y,enew))
+			self._optimized = True
 	
 	def write(self,name=None):
 		"""
@@ -336,6 +345,10 @@ class MovieModeAlignment:
 	
 	def get_energies(self): 
 		return self._energies[1:]
+
+	def get_energy(self): 
+		return self._energies[-1]
+	
 	
 	def get_incoherent_power_spectrum(self): 
 		return self._ips
@@ -347,7 +360,8 @@ class MovieModeAlignment:
 		print("Displaying incoherent (1) and coherent (2) power spectra.")
 		display([self._ips,self._cps])
 
-	def show_data(self): display([EMData(self.path,i) for i in xrange(self.hdr['nimg'])])
+	def show_data(self): 
+		display([EMData(self.path,i) for i in xrange(self.hdr['nimg'])])
 	
 	def show_movie(self,f2avg=5):
 		"""
@@ -495,7 +509,7 @@ class MovieModeAlignment:
 		else: last = nd
 		first = int(step[0])
 		step  = int(step[1])
-		if options.verbose : print("Range = {} - {}, Step = {}".format(first, last, step))
+		if options.verbose > 5: print("Range = {} - {}, Step = {}".format(first, last, step))
 		for i in xrange(first,last,step):
 			if options.path[-4:].lower() in (".mrc"):
 				r = Region(0,0,i,nx,ny,1)
