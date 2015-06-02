@@ -1193,7 +1193,7 @@ def main():
 			if  doit:
 				if( tracker["nxinit"] != projdata[procid][0].get_xsize() ):
 					projdata[procid], oldshifts[procid] = get_shrink_data(nnxo, tracker["nxinit"], \
-										stack, partids, partstack, myid, main_node, nproc, ali3d_options.CTF, preshift = True, radi = radi)
+						stack, partids[procid], partstack[procid], myid, main_node, nproc, ali3d_options.CTF, preshift = True, radi = radi)
 				metamove(projdata, oldshifts, paramsdict, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
 
 		partstack = [None]*2
@@ -1255,7 +1255,7 @@ def main():
 				if  doit:
 					if( tracker["nxinit"] != projdata[procid][0].get_xsize() ):
 						projdata[procid], oldshifts[procid] = get_shrink_data(nnxo, tracker["nxinit"], \
-											stack, partids, partstack, myid, main_node, nproc, ali3d_options.CTF, preshift = True, radi = radi)
+											stack, partids[procid], partstack[procid], myid, main_node, nproc, ali3d_options.CTF, preshift = True, radi = radi)
 					metamove(paramsdict, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
 			else:
 				if( myid == main_node and doit):
