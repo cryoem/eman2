@@ -1080,8 +1080,7 @@ def main():
 		icurrentres = bcast_number_to_all(icurrentres, source_node = main_node)
 
 	# set for the first iteration
-	nxshrink = icurrentres
-	nxshrink += nxshrink%2
+	nxshrink = icurrentres*2 +8
 	assert( nxshrink <= nnxo )
 	while( nxshrink > nxinit ): nxinit += 32
 	nxinit = min(nxinit,nnxo)
