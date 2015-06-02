@@ -51,6 +51,10 @@ def main():
 	parser.add_argument("--dark",type=str,default=None,help="Perform dark image correction using the specified image file")
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
 	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.")
+	parser.add_argument("--boxsize", type=int, help="Set the boxsize used to compute power spectra across movie frames",default=256)
+	parser.add_argument("--minsearch", type=str, help="Specify the minimum x,y parameter search in the following string format: 'xmin,ymin'. The larger the minimum, the more negative it will be. Default is '50,50', corresponding to (-50,-50).",default="50,50")
+	parser.add_argument("--maxsearch", type=str, help="Specify the maximum x,y parameter search in the following string format: 'xmax,ymax'. The default is '50,50'.",default="50,50")
+	parser.add_argument("--nxysearch", type=str, help="Specify the number of grid points to test between the min and max along each coordinate direction in the follwing format: 'nx,ny'. These must be positive. The default is 100,100.",default="100,100")
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 1,1 (first image skipped)")
 	parser.add_argument("--fixbadpixels",action="store_true",default=False,help="Tries to identify bad pixels in the dark/gain reference, and fills images in with sane values instead")
 	parser.add_argument("--frames",action="store_true",default=False,help="Save the dark/gain corrected frames")
@@ -68,8 +72,7 @@ def main():
 		print usage
 		parser.error("You must specify an input DDD stack.")
 	
-	if options.path:
-		args.append(options.path)
+	if options.path: args.append(options.path) # will eventually convert to nargs=+ or nargs=*
 	
 	if options.parallel!=None :
 		if options.parallel[:7]!="thread:":
@@ -81,6 +84,16 @@ def main():
 	if options.threads>1: threads=max(threads,options.threads)
 	if threads>1: print "Sorry, limited to one thread at the moment."
 	
+	if options.minsearch: mins = [-1.0*float(m) for m in options.minsearch.split(',')]
+	if options.maxsearch: maxs = [float(m) for m in options.maxsearch.split(',')]
+	if options.nxysearch: nxys = [int(n) for n in options.nxysearch.split(',')]
+	
+	if options.boxsize: bs = options.boxsize
+	hdr = EMData(args[0],0,True).get_attr_dict()
+	if (hdr['nx'] / bs - 1) < 3 or (hdr['ny'] / bs - 1) < 3:
+		print("You will need to use a smaller box size with your data.")
+		sys.exit(1)
+		
 	pid=E2init(sys.argv)
 	
 	for fname in args:
@@ -99,7 +112,7 @@ def main():
 		if options.simpleavg: savg = MovieModeAlignment.simple_average(bgsub)
 		# create movie aligner
 		if options.verbose: print("Creating movie aligner object")
-		alignment = MovieModeAlignment(bgsub)
+		alignment = MovieModeAlignment(bgsub,bs,mins[0],mins[1],maxs[0],maxs[1],nxys[0],nxys[1])
 		# optimize alignment
 		if options.verbose: print("Optimizing movie frame alignment")
 		alignment.optimize()
@@ -119,7 +132,7 @@ class MovieModeAlignment:
 	MovieModeAlignment: Class to hold information for optimized alignment of DDD cameras.
 	"""
 	
-	def __init__(self, path, boxsize=256, transforms=None, min=-50.0, max=50.0, n=100):
+	def __init__(self, path, boxsize=256, xmin=-50.0, ymin=-50.0, xmax=50.0, ymax=50.0, xn=100, yn=100, transforms=None):
 		"""
 		Initialization method for MovieModeAlignment objects.
 		
@@ -136,7 +149,7 @@ class MovieModeAlignment:
 		else: self.hdr['nimg'] = EMUtil.get_image_count(path)
 		self.outfile = path.rsplit(".",1)[0]+"_proc.hdf"
 		self.dir = os.path.dirname(os.path.abspath(self.path))
-		self._initialize_params(boxsize,transforms,min,max,min,max,n,n)
+		self._initialize_params(boxsize,transforms,xmin,xmax,ymin,ymax,xn,yn)
 		self._computed_objective = False
 		self._calc_incoherent_power_spectrum()
 		self._calc_coherent_power_spectrum()
@@ -160,10 +173,10 @@ class MovieModeAlignment:
 		"""
 		self._boxsize = boxsize
 		self._regions = {}
-		mx = self.hdr['nx'] / boxsize - 1
-		my = self.hdr['ny'] / boxsize - 1
+		mx = xrange(1,self.hdr['nx'] / boxsize - 1,1)
+		my = xrange(1,self.hdr['ny'] / boxsize - 1,1)
 		for i in xrange(self.hdr['nimg']):
-			self._regions[i] = [Region(x*boxsize+boxsize/2,y*boxsize+boxsize/2,boxsize,boxsize) for y in xrange(1,my,1) for x in xrange(1,mx,1)]
+			self._regions[i] = [Region(x*boxsize+boxsize/2,y*boxsize+boxsize/2,boxsize,boxsize) for y in my for x in mx]
 		self._nregions = len(self._regions)
 		self._stacks = {}
 		for ir in xrange(self._nregions):
@@ -186,7 +199,6 @@ class MovieModeAlignment:
 		This 2D function represents our objective and is only computed once
 		during object initialiation.
 		"""
-		# region -> fft -> ri2inten -> sum across regions and frames
 		if self._computed_objective:
 			print("Incoherent power spectrum has been computed. It is attainable via the get_incoherent_power_spectrum method.")
 		else:
