@@ -3443,7 +3443,7 @@ def sali3d_base(stack, ref_vol = None, ali3d_options = None, mpi_comm = None, lo
 	else:
 		finfo = None
 
-	if( myid = main_node):
+	if( myid == main_node):
 		if( type(stack) is types.StringType ):  mask2D = get_im(stack, list_of_particles[0])
 		else:                                   mask2D = stack[list_of_particles[0]]
 		nx = mask2D.get_xsize()
