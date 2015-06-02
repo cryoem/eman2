@@ -259,7 +259,7 @@ def get_pixel_resolution(vol, radi, nnxo, fscoutputdir):
 		if(ali3d_options.mask3D is None):  mask = model_circle(radi,nnxo,nnxo,nnxo)
 		else:                              mask = get_im(ali3d_options.mask3D)
 	else:  mask = radi
-	nx = vol.get_xsize()
+	nx = vol[0].get_xsize()
 	if( nx != nnxo ):
 		mask = Util.window(rot_shift3D(mask,scale=float(n)/float(nnxo)),nx,nx,nx)
 	nfsc = fsc(vol[0]*mask,vol[1]*mask, 1.0,os.path.join(fscoutputdir,"fsc.txt") )
@@ -1155,9 +1155,9 @@ def main():
 		mpi_barrier(MPI_COMM_WORLD)
 
 		#  Refine two groups at a current resolution
-		lastring = int(shrink*radi + 0.5)
+		lastring = int(radi*float(tracker["nxinit"])/float(onx)+0.5)
 		if(lastring < 2):
-			ERROR( "ERROR!!   lastring too small  %f    %f   %d"%(radi, shrink, lastring), "sxmeridien",1, myid)
+			ERROR( "ERROR!!   lastring too small  %f    %f   %d"%(radi, lastring), "sxmeridien",1, myid)
 
 		#  REFINEMENT
 		#  Part "a"  SHC         <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -1170,7 +1170,7 @@ def main():
 							"lowpass":lowpass, "falloff":falloff, "nsoft":nsoft, \
 							"nnxo":tracker["nnxo"], "icurrentres":tracker["icurrentres"],"nxinit":tracker["nxinit"], "nxshrink":tracker["nxshrink"],
 							"pixercutoff":get_pixercutoff(radi*float(tracker["nxinit"])/float(onx), delta, 0.5), \
-							"radius":int(radi*float(tracker["nxinit"])/float(onx)+0.5),"delpreviousmax":True, \
+							"radius":lastring,"delpreviousmax":True, \
 							"refvol":os.path.join(mainoutputdir,"fusevol%01d.hdf"%procid) } )
 			#if(len(history)>1):  old_nx = history[-2]["nx"]
 			#else:    old_nx = tracker["nx"]
