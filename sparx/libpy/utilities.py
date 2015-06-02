@@ -4391,3 +4391,8 @@ def eliminate_moons(my_volume, moon_elimination_params):
 		# # mask = model_blank(my_volume_binarized_with_no_moons.get_xsize(), my_volume_binarized_with_no_moons.get_ysize(), my_volume_binarized_with_no_moons.get_zsize())
 		# # mask.to_one()
 	# this is only in master
+	
+def Combinations_of_n_taken_by_k(n,k):
+	from fractions import Fraction
+	return int(reduce(lambda x, y: x * y, (Fraction(n-i, i+1) for i in range(k)), 1))
+	
