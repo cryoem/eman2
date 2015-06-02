@@ -408,7 +408,9 @@ def main():
 	if options.ref:
 		refhdr = EMData( options.ref, 0, True )
 		if refhdr["nx"]!=nx or refhdr["ny"]!=ny or refhdr["nz"]!=nz : 
-			print "(e2spt_classaverage)(main) - Error, ref volume not same size as input volume(s)"
+			print """(e2spt_classaverage)(main). 
+			ERROR: ref volume size %d, %d, %d, not the same as input volume(s)' size, 
+			%d, %d, %d""" %(refhdr["nx"], refhdr["ny"], refhdr["nz"],nx, ny, nz)
 			sys.exit(1)
 	
 	#if not options.donotaverage:		
