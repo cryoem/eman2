@@ -31,10 +31,14 @@
 #
 
 from EMAN2 import *
+from datetime import MINYEAR
 import os
 import sys
+
 import itertools as it
+import matplotlib.pyplot as plt
 import numpy as np
+
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -117,6 +121,7 @@ def main():
 		if options.verbose: print("Optimizing movie frame alignment")
 		alignment.optimize()
 		alignment.plot_energies()
+		alignment.plot_translations()
 		# write aligned movie to disk
 		if options.verbose: print("Writing aligned frames to disk")
 		alignment.write()
@@ -154,7 +159,7 @@ class MovieModeAlignment:
 		self._computed_objective = False
 		self._calc_incoherent_power_spectrum()
 		self._calc_coherent_power_spectrum()
-		self._energies = [sys.float_info.max,50.0,12.0,10.0]
+		self._energies = [sys.float_info.max]
 		self._optimized = False
 	
 	def _initialize_params(self,boxsize,transforms,xmin,xmax,ymin,ymax,nx,ny):
@@ -172,6 +177,10 @@ class MovieModeAlignment:
 		@param int nx			:	Number of proposed translations in x (between minx and maxx)
 		@param int ny			:	Number of proposed translations in y (between miny and maxy)
 		"""
+		self._xmin = xmin
+		self._ymin = ymin
+		self._xmax = xmax
+		self._ymax = ymax
 		self._boxsize = boxsize
 		self._regions = {}
 		mx = xrange(1,self.hdr['nx'] / boxsize - 1,1)
@@ -326,7 +335,7 @@ class MovieModeAlignment:
 		return self.hdr
 	
 	def get_energies(self): 
-		return self._energies
+		return self._energies[1:]
 	
 	def get_incoherent_power_spectrum(self): 
 		return self._ips
@@ -357,26 +366,46 @@ class MovieModeAlignment:
 		"""
 		Method to plot energy landscape for single frame in 2D.
 		"""
-		import matplotlib.pyplot as plt
+		#might need to rethink energy representation for this one (store in 2D instead?)
 		raise(NotImplementedError)
 	
-	def plot_energies(self,frame=None):
+	def plot_energies(self,fname=None,savefig=True,showfig=True):
 		"""
 		Method to plot the energies from the optimization in 1D.
 		"""
-		import matplotlib.pyplot as plt
+		if len(self._energies) <= 1: 
+			print("You must first optimize the movie alignment before running this plotting routine.")
+			return
+		if not fname: fname = self.dir + '/' + 'energy.png'
 		fig = plt.figure()
 		ax = fig.add_subplot(1,1,1)
 		ax.plot(self._energies[1:])
-		ax.set_title('Energy')
-		plt.show()
+		ax.set_title('DDD Movie Alignment: Energy')
+		if savefig: plt.savefig(fname)
+		if showfig: plt.show()
+		return fig	
 	
-	def plot_vector_alignment_diagram(self):
+	def plot_translations(self,fname=None,savefig=True,showfig=True):
 		"""
 		Method to display optimized, labeled whole-frame translation vectors in 2D.
 		"""
-		
-		raise(NotImplementedError)
+		if not fname: fname = self.dir + '/' + 'trans.png'
+		trans2d = []
+		for i in xrange(len(self._transforms)-1):
+			ti = self._transforms[i].get_trans_2d()
+			tf = self._transforms[i+1].get_trans_2d()
+			trans2d.append([ti[0],ti[1],tf[0],tf[1]])
+		trans2d = np.array(trans2d)
+		X,Y,U,V = zip(*trans2d)
+		plt.figure()
+		ax = plt.gca()
+		ax.quiver(X,Y,U,V,angles='xy',scale_units='xy',scale=1)
+		ax.set_xlim([self._xmin,self._xmax])
+		ax.set_ylim([self._ymin,self._ymax])
+		ax.set_title('DDD Movie Alignment: Frame Motion')
+		if savefig: plt.savefig(fname)
+		plt.draw()
+		if showfig: plt.show()
 	
 	@classmethod
 	def dark_correct(cls,options):
