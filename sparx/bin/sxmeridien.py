@@ -1155,7 +1155,7 @@ def main():
 		mpi_barrier(MPI_COMM_WORLD)
 
 		#  Refine two groups at a current resolution
-		lastring = int(radi*float(tracker["nxinit"])/float(onx)+0.5)
+		lastring = int(radi*float(tracker["nxinit"])/float(nnxo)+0.5)
 		if(lastring < 2):
 			ERROR( "ERROR!!   lastring too small  %f    %f   %d"%(radi, lastring), "sxmeridien",1, myid)
 
@@ -1169,7 +1169,7 @@ def main():
 			subdict( paramsdict, { "delta":"%f"%delta , "an":angular_neighborhood, \
 							"lowpass":lowpass, "falloff":falloff, "nsoft":nsoft, \
 							"nnxo":tracker["nnxo"], "icurrentres":tracker["icurrentres"],"nxinit":tracker["nxinit"], "nxshrink":tracker["nxshrink"],
-							"pixercutoff":get_pixercutoff(radi*float(tracker["nxinit"])/float(onx), delta, 0.5), \
+							"pixercutoff":get_pixercutoff(radi*float(tracker["nxinit"])/float(nnxo), delta, 0.5), \
 							"radius":lastring,"delpreviousmax":True, \
 							"refvol":os.path.join(mainoutputdir,"fusevol%01d.hdf"%procid) } )
 			#if(len(history)>1):  old_nx = history[-2]["nx"]
