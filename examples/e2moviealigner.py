@@ -134,7 +134,7 @@ class MovieModeAlignment:
 		if path[-4:].lower() in (".mrc"): self.hdr['nimg'] = self.hdr['nz']
 		else: self.hdr['nimg'] = EMUtil.get_image_count(path)
 		self.outfile = path.rsplit(".",1)[0]+"_proc.hdf"
-		self.dir = os.path.dirname(self.path)
+		self.dir = os.path.dirname(os.path.abspath(self.path))
 		self._initialize_params(boxsize,transforms,min,max,min,max,n,n)
 		self._computed_objective = False
 		self._calc_incoherent_power_spectrum()
@@ -159,21 +159,17 @@ class MovieModeAlignment:
 		"""
 		self._boxsize = boxsize
 		self._regions = {}
+		mx = self.hdr['nx'] / boxsize - 1
+		my = self.hdr['ny'] / boxsize - 1
 		for i in xrange(self.hdr['nimg']):
-			self._regions[i] = []
-			for x in xrange(1, self.hdr['nx'] / boxsize - 1, 1):
-				for y in xrange(1, self.hdr['ny'] / boxsize - 1, 1):
-					r = Region(x*boxsize+boxsize/2,y*boxsize+boxsize/2,boxsize,boxsize)
-					self._regions[i].append(r)
+			self._regions[i] = [Region(x*boxsize+boxsize/2,y*boxsize+boxsize/2,boxsize,boxsize) for y in xrange(1,my,1) for x in xrange(1,mx,1)]
 		self._nregions = len(self._regions)
 		self._stacks = {}
 		for ir in xrange(self._nregions):
-			self._stacks[ir] = []
-			for i in xrange(self.hdr['nimg']):
-				self._stacks[ir].append(self._regions[i][ir])
+			self._stacks[ir] = [self._regions[i][ir] for i in xrange(self.hdr['nimg'])]
 		self._nstacks = len(self._stacks)
 		if transforms: self._transforms = transforms
-		else: self._transforms = [Transform({"type":"eman","tx":0.0,"ty":0.0}) for i in xrange(self.hdr['nimg'])]
+		else: self._transforms = np.repeat(Transform({"type":"eman","tx":0.0,"ty":0.0}),self.hdr['nimg']).tolist()
 		self.optimal_transforms = self._transforms
 		self._cboxes = EMData(self._boxsize,self._boxsize).do_fft()
 		self._ips = EMData(self._boxsize,self._boxsize).do_fft()
@@ -190,7 +186,10 @@ class MovieModeAlignment:
 		during object initialiation.
 		"""
 		# region -> fft -> ri2inten -> sum across regions and frames
-		if not self._computed_objective:
+		if self._computed_objective:
+			print("Incoherent power spectrum has been computed. It is attainable via the get_incoherent_power_spectrum method.")
+		else:
+			self._ips.to_zero()
 			for i in xrange(self.hdr['nimg']):
 				img = EMData(self.path,i)
 				for r in self._regions[i]:
@@ -202,10 +201,9 @@ class MovieModeAlignment:
 				self._cboxes /= self._nregions
 				self._ips += self._cboxes
 				self._cboxes.to_zero()
-			#self._ips /= self.hdr['nimg']
+			self._ips /= self.hdr['nimg']
 			self._ips.process_inplace('math.rotationalaverage')
 			self._computed_objective = True
-		else: print("Incoherent power spectrum has been computed. It is attainable via the get_incoherent_power_spectrum method.")
 	
 	def _calc_coherent_power_spectrum(self):
 		"""
@@ -214,17 +212,15 @@ class MovieModeAlignment:
 		is called by the _update_energy method.
 		"""
 		# average each region across all frames -> ri2inten -> average -> sum
+		self._cps.to_zero()
 		self._cboxes.to_zero()
 		for s in xrange(self._nstacks):
 			for i,r in enumerate(self._stacks[s]):
 				img = EMData(self.path,i,False,r)
 				img.process_inplace("normalize.edgemean")
 				self._cboxes += img.do_fft()
-				#if s < 1: self._cboxes.write_image(self.dir+'/x%i.hdf'%s)
-				if s < 1: img.write_image(self.dir+'/x%i.hdf'%i)
 			self._cboxes /= self.hdr['nimg'] # average each region across all movie frames
 			self._cboxes.ri2inten()
-			#
 			self._cps += self._cboxes
 			self._cboxes.to_zero()
 		self._cps /= self._nregions
@@ -246,7 +242,8 @@ class MovieModeAlignment:
 			self._regions[i] = Region(x[0],x[1],self._boxsize,self._boxsize)
 		# update stacks
 		for ir in xrange(self._nregions):
-			self._stacks[ir][i] = self._regions[i]
+			try: self._stacks[ir][i] = self._regions[i][ir]
+			except: self._stacks[ir][i] = self._regions[i] # only one region ...not sure why this would happen. bug?
 	
 	def _update_energy(self):
 		"""
@@ -298,11 +295,9 @@ class MovieModeAlignment:
 		@param string cpsname	: name of coherent power spectrum to be written to disk
 		@param string ipsname	: name of incoherent power spectrum to be written to disk
 		"""
-		if cpsname[:-4] != '.hdf':
-			cpsname = cpsname[:-4] + '.hdf'  # force HDF
+		if cpsname[:-4] != '.hdf': cpsname = cpsname[:-4] + '.hdf'  # force HDF
 		self._cps.write_image(self.dir+'/'+cpsname)
-		if ipsname[:-4] != '.hdf':
-			ipsname = ipsname[:-4] + '.hdf'  # force HDF
+		if ipsname[:-4] != '.hdf': ipsname = ipsname[:-4] + '.hdf'  # force HDF
 		self._ips.write_image(self.dir+'/'+ipsname)
 	
 	def get_transforms(self): 
