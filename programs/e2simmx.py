@@ -389,7 +389,7 @@ class EMSimTaskDC(JSTask):
 			for datareadid in range(20):
 				try: image = EMData(ref_data_name,idx)
 				except:
-					print "Failed to read %s from range %s. Wait for 5s and try again."%(str(idx),str(ptcl_indices))
+					print "Failed to read %s. Wait for 5s and try again."%(str(idx))
 					time.sleep(5)
 				else:
 					datareaderror=False
