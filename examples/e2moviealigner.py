@@ -36,12 +36,14 @@ import itertools as it
 import numpy as np
 import os
 import sys
-if 'DISPLAY' in os.environ:
-	import matplotlib.pyplot as plt
-else:
-	import matplotlib
-	matplotlib.use('Agg')
-	import matplotlib.pyplot as plt
+import matplotlib
+import matplotlib.pyplot as plt
+
+# if 'DISPLAY' in os.environ: # user has a display server running
+# 	import matplotlib.pyplot as plt
+# else: # user is logged in via SSH without X-Forwarding
+# 	matplotlib.use('Agg')
+# 	import matplotlib.pyplot as plt
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -161,7 +163,7 @@ class MovieModeAlignment:
 		self._calc_incoherent_power_spectrum()
 		self.write_incoherent_power_spectrum()
 		self._calc_coherent_power_spectrum()
-		os.remove(self.dir+'/coherent.hdf') # a hack to be dealt with later
+		if os.path.isfile(self.dir+'/coherent.hdf'): os.remove(self.dir+'/coherent.hdf')
 		self.write_coherent_power_spectrum()
 		self._energies = [sys.float_info.max]
 		self._all_energies = []
@@ -274,7 +276,7 @@ class MovieModeAlignment:
 		@param list transforms	: 	List of proposed EMAN Transform objects, one for each frame in movie.
 		"""
 		self._calc_coherent_power_spectrum()
-		self.write_coherent_power_spectrum(imnum=-1)
+		self.write_coherent_power_spectrum(num=-1)
 		energy = EMData.cmp(self._ips,'dot',self._cps,{'normalize':1})
 		if energy < self._energies[-1]:
 			self._energies.append(energy)
@@ -321,7 +323,7 @@ class MovieModeAlignment:
 			im.transform(self._transforms[i])
 			im.write_image_c(name,i)
 
-	def write_coherent_power_spectrum(self,name='coherent.hdf',imnum=None):
+	def write_coherent_power_spectrum(self,name='coherent.hdf',num=None):
 		"""
 		Method to write coherent power spectrum to current directory.
 		
