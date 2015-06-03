@@ -663,14 +663,14 @@ def metamove(projdata, oldshifts, paramsdict, partids, partstack, outputdir, pro
 	ali3d_options.ou = paramsdict["radius"]
 	if(myid == main_node):
 		print_dict(paramsdict,"METAMOVE parameters")
-		print("                    =>  actual lowpass      :  ",ali3d_options.fl)
-		print("                    =>  actual init lowpass :  ",ali3d_options.initfl)
+		#print("                    =>  actual lowpass      :  ",ali3d_options.fl)
+		#print("                    =>  actual init lowpass :  ",ali3d_options.initfl)
 		if(len(ali3d_options.pwreference)>0): \
 		print("                    =>  PW adjustment       :  ",ali3d_options.pwreference)
 		print("                    =>  partids             :  ",partids)
 		print("                    =>  partstack           :  ",partstack)
 
-	if(ali3d_options.fl > 0.48):  ERROR("Low pass filter in metamove > 0.48 on the scale of shrank data","sxmeridien",1,myid)
+	#if(ali3d_options.fl > 0.48):  ERROR("Low pass filter in metamove > 0.48 on the scale of shrank data","sxmeridien",1,myid)
 
 	#  Run alignment command
 	if(paramsdict["local"]):
