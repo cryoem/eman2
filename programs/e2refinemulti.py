@@ -137,7 +137,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--randclassify",default=False, action="store_true", help="Generate initial maps by randomly assigning the particles in each class to each model after the first iteration.",guitype='boolbox', row=4, col=1, rowspan=1, colspan=1, mode="refinement[True]")
 	parser.add_argument("--randphase",default=False, action="store_true", help="Generate initial maps by randomizing the phase of the given model.",guitype='boolbox', row=4, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_header(name="orblock", help='Just a visual separation', title="- OR -", row=5, col=0, rowspan=1, colspan=3, mode="refinement")
-	parser.add_argument("--treeclassify",default=False, action="store_true", help="Classify using a binary tree.",guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--treeclassify",default=False, action="store_true", help="Classify using a binary tree. This will call e2classifytree.py for particle classification, replacing e2simmx2stage.py and e2classify.py. This function is still experimental.",guitype='boolbox', row=3, col=1, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--models", dest="models", type=str,default=None, help="The map to use as a starting point for refinement", guitype='filebox', browser='EMModelsTable(withmodal=True,multiselect=True)', filecheck=False, row=7, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--input", dest="input", default=None,type=str, help="The name of the image file containing the particle data", guitype='filebox', browser='EMSetsTable(withmodal=True,multiselect=False)', filecheck=False, row=8, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_header(name="required", help='Just a visual separation', title="Required:", row=9, col=0, rowspan=1, colspan=3, mode="refinement")
@@ -236,7 +236,7 @@ satisfied with the results with speed=5 you may consider reducing this number, t
 		options.threads=1
 
 	if options.randclassify+options.randphase+options.mapfragment>1:
-		print "ERROR: Must select only one initial model generation method."
+		print "ERROR: Must select only one initial model generation method. Either --mapfragment, --randclassify or --randphase."
 		sys.exit(1)
 	
 	global output_path
