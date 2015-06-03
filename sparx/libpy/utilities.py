@@ -4413,7 +4413,7 @@ def eliminate_moons(my_volume, moon_elimination_params):
 		# # mask.to_one()
 	# this is only in master
 	
-def Combinations_of_n_taken_by_k(n,k):
+def Combinations_of_n_taken_by_k(n, k):
 	from fractions import Fraction
 	return int(reduce(lambda x, y: x * y, (Fraction(n-i, i+1) for i in range(k)), 1))
 	
@@ -4436,7 +4436,7 @@ def string_found_in_file(myregex, filename):
 			return True
 	return False
 
-def get_latest_directory_increment_value(directory_location, directory_name, start_value=1):
+def get_latest_directory_increment_value(directory_location, directory_name, start_value = 1):
 	import os
 	dir_count = start_value
 	while os.path.isdir(directory_location + directory_name + "%03d"%(dir_count)):
@@ -4444,3 +4444,8 @@ def get_latest_directory_increment_value(directory_location, directory_name, sta
 	if dir_count == start_value:
 		return start_value
 	return dir_count - 1
+
+def print_with_time_info(msg):
+	from time import localtime, strftime
+	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>" + msg
+	print line
