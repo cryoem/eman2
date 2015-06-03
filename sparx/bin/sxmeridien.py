@@ -584,9 +584,13 @@ def get_shrink_data(onx, nx, stack, partids, partstack, myid, main_node, nproc, 
 	#   and assign to them parameters from partstack with optional CTF application and shifting of the data.
 	# So, the lengths of partids and partstack are the same.
 	#  The read data is properly distributed among MPI threads.
-	lpartids  = map(int, read_text_file(partids) )
+	if( myid == main_node ): lpartids = read_text_file(partids)
+	else:  lpartids = 0
+	lpartids = wrap_mpi_bcast(lpartids, main_node)
 	ndata = len(lpartids)
-	partstack = read_text_row(partstack)
+	if( myid == main_node ):  partstack = read_text_row(partstack)
+	else:  partstack = 0
+	partstack = wrap_mpi_bcast(partstack, main_node)
 	if( ndata < nproc):
 		if(myid<ndata):
 			image_start = myid
@@ -1207,6 +1211,7 @@ def main():
 					paramsdict["maxit"] = 50 #  ?? Lucky guess
 
 			if  doit:
+				mpi_barrier(MPI_COMM_WORLD)
 				if( tracker["nxinit"] != projdata[procid][0].get_xsize() ):  projdata[procid], oldshifts[procid] = get_shrink_data(nnxo, tracker["nxinit"], \
 						stack, partids[procid], partstack[procid], myid, main_node, nproc, ali3d_options.CTF, preshift = True, radi = radi)
 				metamove(projdata[procid], oldshifts[procid], paramsdict, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)

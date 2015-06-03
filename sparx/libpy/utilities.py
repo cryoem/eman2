@@ -2589,7 +2589,7 @@ def bcast_list_to_all(list_to_send, myid, source_node = 0):
 	if( tp == 0 ):	list_to_send = mpi_bcast(list_to_send, n, MPI_INT, source_node, MPI_COMM_WORLD)
 	else:			list_to_send = mpi_bcast(list_to_send, n, MPI_FLOAT, source_node, MPI_COMM_WORLD)
 
-	return [list_to_send[i] for i in xrange(n)]
+	return [n for n in list_to_send]
 
 def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, number_of_proc, comm = -1):
 	import types
@@ -4316,16 +4316,16 @@ def wrap_mpi_bcast(data, root, communicator = None):
 	
 	if communicator == None:
 		communicator = MPI_COMM_WORLD
-	
+
 	rank = mpi_comm_rank(communicator)
-	
+
 	if rank == root:
 		msg = pack_message(data)
 		n = pack("I",len(msg))
 	else:
 		msg = None
 		n = None
-		
+
 	n = mpi_bcast(n, 4, MPI_CHAR, root, communicator)  # int MPI_Bcast ( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm ) 
 	n=unpack("I",n)[0]
 	msg = mpi_bcast(msg, n, MPI_CHAR, root, communicator)  # int MPI_Bcast ( void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm ) 
