@@ -31,13 +31,11 @@
 #
 
 from EMAN2 import *
-import os
-import sys
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
+from Simplex import Simplex
 import itertools as it
 import numpy as np
+import os
+import sys
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -55,6 +53,8 @@ def main():
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
 	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.")
 	parser.add_argument("--boxsize", type=int, help="Set the boxsize used to compute power spectra across movie frames",default=256)
+	parser.add_argument("--min", type=int, help="Set the minimum translation in pixels",default=-4)
+	parser.add_argument("--max", type=int, help="Set the maximum translation in pixels",default=4)
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 0,1 (first image skipped)")
 	parser.add_argument("--fixbadpixels",action="store_true",default=False,help="Tries to identify bad pixels in the dark/gain reference, and fills images in with sane values instead")
 	parser.add_argument("--frames",action="store_true",default=False,help="Save the dark/gain corrected frames")
@@ -89,7 +89,18 @@ def main():
 	if (hdr['nx'] / bs - 1) < 3 or (hdr['ny'] / bs - 1) < 3:
 		print("You will need to use a smaller box size with your data.")
 		sys.exit(1)
-		
+	
+	if options.min: 
+		if options.min > 0: min = -options.min
+		else: min = options.min
+	
+	if options.max:
+		if options.max < 0: max = -options.max
+		elif options.max < min:
+			print("The parameter '--max' must be greater than --min")
+			sys.exit(1)
+		else: max = options.max
+	
 	pid=E2init(sys.argv)
 	
 	for fname in args:
@@ -101,9 +112,9 @@ def main():
 		elif options.gaink2: gain = EMData(options.gaink2)
 		else: gain = None
 		bgsub = MovieModeAlignment.background_subtract(options,dark,gain)
-		if options.simpleavg: savg = MovieModeAlignment.simple_average(bgsub)
+		if options.simpleavg: savg = MovieModeAlignment.simple_average(bgsub,min=min,max=max)
 		if options.verbose: print("Creating movie aligner object")
-		alignment = MovieModeAlignment(bgsub,bs)
+		alignment = MovieModeAlignment(fname,bgsub,bs)
 		if options.verbose: print("Optimizing movie frame alignment")
 		alignment.optimize()
 		if options.verbose: print("Plotting derived alignment data")
@@ -121,24 +132,25 @@ class MovieModeAlignment:
 	MovieModeAlignment: Class to hold information for optimized alignment of DDD cameras.
 	"""
 	
-	def __init__(self, path, boxsize=256, transforms=None):
+	def __init__(self, fname, bgsub, boxsize=256, transforms=None, min=-4, max=4):
 		"""
 		Initialization method for MovieModeAlignment objects.
 		
-		@param path 		:	File location and name.
+		@param fname 		:	File location original data
+		@param bgsub		:	File location of background subtracted data
 		@param boxsize  	:	(optional) Size of boxes used to compute average power spectra. Default is 512.
 		@param transforms	: 	(optional) A list of Transform objects.
-		@param float min	:	(optional) The minimum alignment translation. Default is -50.0
-		@param float max	:	(optional) The maximum alignment translation. Default is 50.0
-		@param int n		:	(optional) The number of alignment translations to test (between min and max). Default is 100.
+		@param float min	:	(optional) The minimum alignment translation in pixels. Default is -4
+		@param float max	:	(optional) The maximum alignment translation in pixels. Default is 4
 		"""
-		self.path = path
-		self.hdr = EMData(path,0).get_attr_dict()
-		if path[-4:].lower() in (".mrc"): self.hdr['nimg'] = self.hdr['nz']
-		else: self.hdr['nimg'] = EMUtil.get_image_count(path)
-		self.outfile = path.rsplit(".",1)[0]+"_proc.hdf"
-		self.dir = os.path.dirname(os.path.abspath(self.path))
-		self._initialize_params(boxsize,transforms)
+		self.orig = fname
+		self.hdr = EMData(fname,0).get_attr_dict()
+		self.path = bgsub
+		if fname[-4:].lower() in (".mrc"): self.hdr['nimg'] = self.hdr['nz']
+		else: self.hdr['nimg'] = EMUtil.get_image_count(fname)
+		self.outfile = fname.rsplit(".",1)[0]+"_align.hdf"
+		self.dir = os.path.dirname(os.path.abspath(fname))
+		self._initialize_params(boxsize,transforms,min,max)
 		self._computed_objective = False
 		self._calc_incoherent_power_spectrum()
 		self.write_incoherent_power_spectrum()
@@ -146,8 +158,9 @@ class MovieModeAlignment:
 		self._energies = [sys.float_info.max]
 		self._all_energies = []
 		self._optimized = False
+		self._load_mpl()
 	
-	def _initialize_params(self,boxsize,transforms):
+	def _initialize_params(self,boxsize,transforms,min,max):
 		"""
 		A purely organizational private method to keep the initialization code clean and readable.
 		This function takes care of initializing the variables (and allocating the 
@@ -155,14 +168,10 @@ class MovieModeAlignment:
 		
 		@param int boxsize		:	Size of boxes used to compute average power spectra.
 		@param list transforms	:	A list of Transform objects.
-		@param float xmin		:	Minimum translation in X to search
-		@param float xmax		:	Maximum translation in X to search
-		@param float ymin		:	Minimum translation in Y to search
-		@param float ymax		:	Maximum translation in X to search
-		@param int nx			:	Number of proposed translations in x (between minx and maxx)
-		@param int ny			:	Number of proposed translations in y (between miny and maxy)
 		"""
 		self._boxsize = boxsize
+		self._min = min
+		self._max = max
 		self._regions = {}
 		mx = xrange(1,self.hdr['nx'] / boxsize - 1,1)
 		my = xrange(1,self.hdr['ny'] / boxsize - 1,1)
@@ -218,7 +227,7 @@ class MovieModeAlignment:
 		b = self._cboxes.do_ift()
 		for s in xrange(self._nstacks):
 			for i,r in enumerate(self._stacks[s]):
-				img = EMData(self.path,i,False,r)
+				img = EMData(self.orig,i,False,r)
 				b += img
 			b /= self.hdr['nimg'] # average each region across all movie frames
 			b.process_inplace("normalize.edgemean")
@@ -272,12 +281,11 @@ class MovieModeAlignment:
 			print("Optimal alignment already determined.")
 			return
 		else:
-			from Simplex import Simplex
 			nm=2*self.hdr['nimg']
-			guess=[np.random.randint(self._xmin,self._xmax) for i in range(nm)]
+			guess=[np.random.randint(self._min,self._max) for i in range(nm)]
 			sm=Simplex(self._compares,guess,[5]*nm,data=self)
-			mn=sm.minimize(monitor=1,epsilon=.001)
-			print("\n\n{}\n".format(mn))
+			mn=sm.minimize(epsilon = 0.01, maxiters = 250, monitor = 1) # segfaults when epsilon = 0.0001 (33iters), 0.001 (32iters), 
+			print("\n\nBest Parameters: {}\nError: {}\nIterations: {}\n".format(mn[0],mn[1],mn[2]))
 		self._optimized = True
 		return
 	
@@ -535,6 +543,12 @@ class MovieModeAlignment:
 		av=avgr.finish()
 		av.write_image(outname[:-4]+"_mean.hdf",0)
 		return av
+
+	@staticmethod
+	def _load_mpl():
+		import matplotlib
+		if 'DISPLAY' not in os.environ: matplotlib.use('Agg')
+		import matplotlib.pyplot as plt
 
 if __name__ == "__main__":
 	main()
