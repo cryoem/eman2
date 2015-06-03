@@ -55,7 +55,6 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_argument("--path",type=str,default=None,help="Specify the path to the DDD movie you wish to align")
-	#parser.add_argument("--procpath",type=str,default=None,help="Specify the path to the background subtracted movie you wish to align")
 	parser.add_argument("--dark",type=str,default=None,help="Perform dark image correction using the specified image file")
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
 	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.")
@@ -162,6 +161,7 @@ class MovieModeAlignment:
 		self._calc_incoherent_power_spectrum()
 		self.write_incoherent_power_spectrum()
 		self._calc_coherent_power_spectrum()
+		os.remove(self.dir+'/coherent.hdf') # a hack to be dealt with later
 		self.write_coherent_power_spectrum()
 		self._energies = [sys.float_info.max]
 		self._all_energies = []
@@ -275,22 +275,27 @@ class MovieModeAlignment:
 		"""
 		self._calc_coherent_power_spectrum()
 		self.write_coherent_power_spectrum(imnum=-1)
-		energy = EMData.cmp(self._ips,'dot',self._cps,{'normalize':1}) #-1*self._ips.dot(self._cps)
+		energy = EMData.cmp(self._ips,'dot',self._cps,{'normalize':1})
 		if energy < self._energies[-1]:
 			self._energies.append(energy)
 			self.optimal_transforms = self._transforms
 	
-	def optimize(self):
+	def optimize(self, epsilon = 0.001, maxiters = 250, verbose = 1):
 		"""
 		Method to perform optimization of movie alignment.
+		
+		@param float epsilon	: the learning rate for the simplex optimizer
+		@param int maxiters		: the maximum number of iterations to be computed by the simplex optimizer
+		@param int verbose		: 1 or 0 specifying whether (or not) simplex optimization steps will be printed
 		"""
+		if verbose != 0: verbose = 1
 		if self._optimized: 
 			print("Optimal alignment already determined.")
 			return
 		nm=2*self.hdr['nimg']
 		guess=[np.random.randint(self._min,self._max) for i in range(nm)]
 		sm=Simplex(self._compares,guess,[5]*nm,data=self)
-		mn=sm.minimize(epsilon = 0.01, maxiters = 250, monitor = 1) # segfaults when epsilon = 0.0001 (33iters), 0.001 (32iters), 
+		mn=sm.minimize(epsilon = epsilon, maxiters = maxiters, monitor = verbose) 
 		print("\n\nBest Parameters: {}\nError: {}\nIterations: {}\n".format(mn[0],mn[1],mn[2]))
 		self._optimized = True
 	
@@ -316,33 +321,33 @@ class MovieModeAlignment:
 			im.transform(self._transforms[i])
 			im.write_image_c(name,i)
 
-	def write_coherent_power_spectrum(self,cpsname='coherent.hdf',imnum=None):
+	def write_coherent_power_spectrum(self,name='coherent.hdf',imnum=None):
 		"""
 		Method to write coherent power spectrum to current directory.
 		
 		@param str cpsname	: name of coherent power spectrum to be written to disk
 		@param int imnum	: slice to save image to
 		"""
-		if cpsname[:-4] != '.hdf': cpsname = cpsname[:-4] + '.hdf'  # force HDF
+		if name[:-4] != '.hdf': name = name[:-4] + '.hdf'  # force HDF
 		rcps = self._cps.do_ift()
-		if imnum and self._cpsflag: rcps.write_image(self.dir+'/'+cpsname,imnum)
-		else: rcps.write_image(self.dir+'/'+cpsname)
+		if imnum and self._cpsflag: rcps.write_image(self.dir+'/'+name,imnum)
+		else: rcps.write_image(self.dir+'/'+name)
 		self._cpsflag = True
 	
-	def write_incoherent_power_spectrum(self,ipsname='incoherent.hdf',imnum=None):
+	def write_incoherent_power_spectrum(self,name='incoherent.hdf',imnum=None):
 		"""
 		Method to write incoherent power spectrum to current directory.
 		
 		@param str ipsname	: name of incoherent power spectrum to be written to disk
 		@param int imnum	: slice to save image to
 		"""
-		if ipsname[:-4] != '.hdf': ipsname = ipsname[:-4] + '.hdf'  # force HDF
+		if name[:-4] != '.hdf': name = name[:-4] + '.hdf'  # force HDF
 		rips = self._ips.do_ift()
-		if imnum and self._ipsflag: rips.write_image(self.dir+'/'+ipsname,imnum)
-		else: rips.write_image(self.dir+'/'+ipsname)
+		if imnum and self._ipsflag: rips.write_image(self.dir+'/'+name,imnum)
+		else: rips.write_image(self.dir+'/'+name)
 		self._ipsflag = True
 	
-	def get_transforms(self): 
+	def get_transforms(self):
 		return self.optimal_transforms
 	
 	def get_data(self):
