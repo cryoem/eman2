@@ -143,10 +143,10 @@ class MovieModeAlignment:
 		"""
 		Initialization method for MovieModeAlignment objects.
 		
-		@param fname 		:	File location original data
-		@param bgsub		:	File location of background subtracted data
-		@param boxsize  	:	(optional) Size of boxes used to compute average power spectra. Default is 512.
-		@param transforms	: 	(optional) A list of Transform objects.
+		@param str fname 		:	File location original data
+		@param str bgsub		:	File location of background subtracted data
+		@param int boxsize  	:	(optional) Size of boxes used to compute average power spectra. Default is 512.
+		@param list transforms	: 	(optional) A list of Transform objects.
 		@param float min	:	(optional) The minimum alignment translation in pixels. Default is -4
 		@param float max	:	(optional) The maximum alignment translation in pixels. Default is 4
 		"""
@@ -162,6 +162,7 @@ class MovieModeAlignment:
 		self._calc_incoherent_power_spectrum()
 		self.write_incoherent_power_spectrum()
 		self._calc_coherent_power_spectrum()
+		self.write_coherent_power_spectrum()
 		self._energies = [sys.float_info.max]
 		self._all_energies = []
 		self._optimized = False
@@ -286,14 +287,12 @@ class MovieModeAlignment:
 		if self._optimized: 
 			print("Optimal alignment already determined.")
 			return
-		else:
-			nm=2*self.hdr['nimg']
-			guess=[np.random.randint(self._min,self._max) for i in range(nm)]
-			sm=Simplex(self._compares,guess,[5]*nm,data=self)
-			mn=sm.minimize(epsilon = 0.01, maxiters = 250, monitor = 1) # segfaults when epsilon = 0.0001 (33iters), 0.001 (32iters), 
-			print("\n\nBest Parameters: {}\nError: {}\nIterations: {}\n".format(mn[0],mn[1],mn[2]))
+		nm=2*self.hdr['nimg']
+		guess=[np.random.randint(self._min,self._max) for i in range(nm)]
+		sm=Simplex(self._compares,guess,[5]*nm,data=self)
+		mn=sm.minimize(epsilon = 0.01, maxiters = 250, monitor = 1) # segfaults when epsilon = 0.0001 (33iters), 0.001 (32iters), 
+		print("\n\nBest Parameters: {}\nError: {}\nIterations: {}\n".format(mn[0],mn[1],mn[2]))
 		self._optimized = True
-		return
 	
 	@staticmethod
 	def _compares(vec,data):
@@ -313,11 +312,12 @@ class MovieModeAlignment:
 		elif name[:-4] != '.hdf': name = name[:-4] + '.hdf'  # force HDF
 		if not self._optimized: print("Warning: Saving non-optimal alignment. Run the optimize method to determine best frame translations.")
 		for i in xrange(self.hdr['nimg']):
-			im = EMData(self.path,i)
+			im = EMData(self.orig,i)
 			im.transform(self._transforms[i])
-			im.write_image_c(name,i)
+			rim = im.do_ift() # we do not store complex images
+			rim.write_image_c(name,i)
 
-	def write_coherent_power_spectrum(self,cpsname='cps.hdf',imnum=None):
+	def write_coherent_power_spectrum(self,cpsname='coherent.hdf',imnum=None):
 		"""
 		Method to write coherent power spectrum to current directory.
 		
@@ -325,11 +325,12 @@ class MovieModeAlignment:
 		@param int imnum	: slice to save image to
 		"""
 		if cpsname[:-4] != '.hdf': cpsname = cpsname[:-4] + '.hdf'  # force HDF
-		if imnum and self._cpsflag: self._cps.write_image(self.dir+'/'+cpsname,imnum)
-		else: self._cps.write_image(self.dir+'/'+cpsname)
+		rcps = self._cps.do_ift()
+		if imnum and self._cpsflag: rcps.write_image(self.dir+'/'+cpsname,imnum)
+		else: rcps.write_image(self.dir+'/'+cpsname)
 		self._cpsflag = True
 	
-	def write_incoherent_power_spectrum(self,ipsname='ips.hdf',imnum=None):
+	def write_incoherent_power_spectrum(self,ipsname='incoherent.hdf',imnum=None):
 		"""
 		Method to write incoherent power spectrum to current directory.
 		
@@ -337,14 +338,15 @@ class MovieModeAlignment:
 		@param int imnum	: slice to save image to
 		"""
 		if ipsname[:-4] != '.hdf': ipsname = ipsname[:-4] + '.hdf'  # force HDF
-		if imnum and self._ipsflag: self._ips.write_image(self.dir+'/'+ipsname,imnum)
-		else: self._ips.write_image(self.dir+'/'+ipsname)
+		rips = self._ips.do_ift()
+		if imnum and self._ipsflag: rips.write_image(self.dir+'/'+ipsname,imnum)
+		else: rips.write_image(self.dir+'/'+ipsname)
 		self._ipsflag = True
 	
 	def get_transforms(self): 
 		return self.optimal_transforms
 	
-	def get_data(self): 
+	def get_data(self):
 		return EMData(self.path)
 	
 	def get_header(self): 
@@ -366,8 +368,11 @@ class MovieModeAlignment:
 		print("Displaying incoherent (1) and coherent (2) power spectra.")
 		display([self._ips,self._cps])
 
-	def show_data(self): 
-		display([EMData(self.path,i) for i in xrange(self.hdr['nimg'])])
+	def show_bgsub(self): 
+		display([EMData(self.bgsub,i) for i in xrange(self.hdr['nimg'])])
+	
+	def show_orig(self): 
+		display([EMData(self.orig,i) for i in xrange(self.hdr['nimg'])])
 	
 	def show_movie(self,f2avg=5):
 		"""
