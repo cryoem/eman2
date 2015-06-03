@@ -222,6 +222,7 @@ def	mergeparfiles(i1,i2,io,p1,p2,po):
 
 def read_fsc(fsclocation, lc, myid, main_node, comm = -1):
 	# read fsc and fill it with zeroes pass lc location
+	from utilities import bcast_list_to_all, read_text_file
 	if comm == -1 or comm == None: comm = MPI_COMM_WORLD
 	if(myid == main_node):
 		f = read_text_file(fsclocation,1)
@@ -229,7 +230,7 @@ def read_fsc(fsclocation, lc, myid, main_node, comm = -1):
 		f = f[:lc+1] +[0.0 for i in xrange(lc+1,n)]
 	else: f = 0.0
 	mpi_barrier(comm)
-	f = bcast_list_to_all(fmyid, main_node)
+	f = bcast_list_to_all(f, myid, main_node)
 	return f
 	
 def get_resolution(vol, radi, nnxo, fscoutputdir):
@@ -1182,7 +1183,7 @@ def main():
 			#  here ts has different meaning for standard and continuous
 			delta = round(degrees(atan(1.0/lastring)), 2)
 			subdict( paramsdict, { "delta":"%f"%delta , "an":angular_neighborhood, \
-							"lowpass":lowpass, "falloff":tracker["lowpass"], "nsoft":nsoft, \
+							"lowpass":tracker["lowpass"], "nsoft":nsoft, \
 							"nnxo":tracker["nnxo"], "icurrentres":tracker["icurrentres"],"nxinit":tracker["nxinit"], "nxshrink":tracker["nxshrink"],
 							"pixercutoff":get_pixercutoff(radi*float(tracker["nxinit"])/float(nnxo), delta, 0.5), \
 							"radius":lastring,"delpreviousmax":True, \
@@ -1206,8 +1207,7 @@ def main():
 					paramsdict["maxit"] = 50 #  ?? Lucky guess
 
 			if  doit:
-				if( tracker["nxinit"] != projdata[procid][0].get_xsize() ):
-					projdata[procid], oldshifts[procid] = get_shrink_data(nnxo, tracker["nxinit"], \
+				if( tracker["nxinit"] != projdata[procid][0].get_xsize() ):  projdata[procid], oldshifts[procid] = get_shrink_data(nnxo, tracker["nxinit"], \
 						stack, partids[procid], partstack[procid], myid, main_node, nproc, ali3d_options.CTF, preshift = True, radi = radi)
 				metamove(projdata[procid], oldshifts[procid], paramsdict, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
 
