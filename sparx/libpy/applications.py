@@ -6557,7 +6557,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 		#  The while loop over even angles delta should start here.
 		#  prepare reference directions
 		from utilities import even_angles, getvec
-		refa = even_angles(15.0)
+		refa = even_angles(90.0)
 		numrefang = len(refa)
 		refanorm = empty( (numrefang, 3), dtype = float32)
 		for i in xrange(numrefang):
@@ -6906,6 +6906,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 	        		from utilities import recv_attr_dict
 	        		recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	        else:		send_attr_dict(main_node, data, par_str, image_start, image_end)
+		mpi_barrier(MPI_COMM_WORLD)
 		if(terminate == 1):
 			if myid==main_node:
 				print_end_msg("mref_ali3d_MPI terminated due to small number of objects changing assignments")
