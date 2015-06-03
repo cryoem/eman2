@@ -1173,7 +1173,7 @@ def main():
 							"refvol":os.path.join(mainoutputdir,"fusevol%01d.hdf"%procid) } )
 			#if(len(history)>1):  old_nx = history[-2]["nx"]
 			#else:    old_nx = tracker["nx"]
-			paramsdict["xr"] = 3.0#"%s"%max(3,int(1.5*tracker["nx"]/float(old_nx) +0.5))
+			paramsdict["xr"] = "3.0"#"%s"%max(3,int(1.5*tracker["nx"]/float(old_nx) +0.5))
 			if( paramsdict["nsoft"] > 0 ):
 				if( float(paramsdict["an"]) == -1.0 ):
 					paramsdict["saturatecrit"] = 0.75					
@@ -1193,7 +1193,7 @@ def main():
 				if( tracker["nxinit"] != projdata[procid][0].get_xsize() ):
 					projdata[procid], oldshifts[procid] = get_shrink_data(nnxo, tracker["nxinit"], \
 						stack, partids[procid], partstack[procid], myid, main_node, nproc, ali3d_options.CTF, preshift = True, radi = radi)
-				metamove(projdata, oldshifts, paramsdict, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
+				metamove(projdata[procid], oldshifts[procid], paramsdict, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
 
 		partstack = [None]*2
 		for procid in xrange(2):  partstack[procid] = os.path.join(mainoutputdir, "loga%01d"%procid, "params-chunk%01d.txt"%procid)
@@ -1255,7 +1255,7 @@ def main():
 					if( tracker["nxinit"] != projdata[procid][0].get_xsize() ):
 						projdata[procid], oldshifts[procid] = get_shrink_data(nnxo, tracker["nxinit"], \
 											stack, partids[procid], partstack[procid], myid, main_node, nproc, ali3d_options.CTF, preshift = True, radi = radi)
-					metamove(paramsdict, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
+					metamove(projdata[procid], oldshifts[procid], paramsdict, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
 			else:
 				if( myid == main_node and doit):
 					#  Simply copy from loga to logb the necessary stuff
