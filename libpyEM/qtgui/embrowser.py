@@ -1365,7 +1365,9 @@ class EMDirEntry(object) :
 				for child in filelist :
 #					print child, self.dirregex.search (child)
 
-					have_dir = os.path.isdir(self.filepath + "/" + child)
+					ctt=self.filepath + "/" + child
+					have_dir = os.path.isdir(ctt)
+					if not (have_dir or os.path.isfile(ctt) or os.path.islink(ctt)) : continue
 
 					if isinstance(self.dirregex, str) :
 						if have_dir :
@@ -1458,7 +1460,7 @@ class EMDirEntry(object) :
 
 		if self.filetype != None : return 0		# must all ready be filled in
 
-#		print "%s\t%s\t%s"%(self.root, self.name, self.path())
+#		print "X %s\t%s\t%s"%(self.root, self.name, self.path())
 
 		cache = None
 		cachename = self.name+"!main"
@@ -1472,6 +1474,10 @@ class EMDirEntry(object) :
 			pass
 
 		# Check the cache for metadata
+
+		if not (os.path.isfile(self.path()) or os.path.islink(self.path())) : 
+			self.filetype="SPECIAL"
+			return 0
 
 		name = 'browser'
 
