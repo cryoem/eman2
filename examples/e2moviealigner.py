@@ -314,8 +314,7 @@ class MovieModeAlignment:
 		for i in xrange(self.hdr['nimg']):
 			im = EMData(self.orig,i)
 			im.transform(self._transforms[i])
-			rim = im.do_ift() # we do not store complex images
-			rim.write_image_c(name,i)
+			im.write_image_c(name,i)
 
 	def write_coherent_power_spectrum(self,cpsname='coherent.hdf',imnum=None):
 		"""
