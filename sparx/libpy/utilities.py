@@ -2569,15 +2569,28 @@ def bcast_number_to_all(number_to_send, source_node = 0):
 	else:
 		print  " ERROR in bcast_number_to_all"
 	
-def bcast_list_to_all(list_to_send, source_node = 0):
-	from mpi import mpi_bcast, MPI_COMM_WORLD, MPI_FLOAT
+def bcast_list_to_all(list_to_send, myid, source_node = 0):
+	from mpi import mpi_bcast, MPI_COMM_WORLD, MPI_FLOAT, MPI_INT
 	import   types
-	list_tmp = mpi_bcast(list_to_send, len(list_to_send), MPI_FLOAT, source_node, MPI_COMM_WORLD)
-	list_to_bcast = []
-	for i in xrange(len(list_to_send)):
-		if (type(list_to_send[i]) == types.IntType ): list_to_bcast.append( int(  list_tmp[i] ) )
-		else:                                        list_to_bcast.append( float( list_tmp[i] ) )
-	return list_to_bcast
+	if(myid == source_node):
+		n = len(list_to_send)
+		# we will also assume all elements on the list are of the same type
+		if( type(list_to_send[0]) == types.IntType ): tp = 0
+		elif( type(list_to_send[0]) == types.FloatType ): tp = 1
+		else: tp = 2
+	else:
+		n = 0
+		tp = 0
+	n = bcast_number_to_all(n, source_node = source_node)
+	tp = bcast_number_to_all(tp, source_node = source_node)
+	if( tp == 2 ): 	ERROR("Only list of the same type numbers can be brodcasted","bcast_list_to_all",1, myid)
+	if(myid != source_node): list_to_send = [0]*n
+
+
+	if( tp == 0 ):	list_to_send = mpi_bcast(list_to_send, n, MPI_INT, source_node, MPI_COMM_WORLD)
+	else:			list_to_send = mpi_bcast(list_to_send, n, MPI_FLOAT, source_node, MPI_COMM_WORLD)
+
+	return list_to_send
 
 def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, number_of_proc, comm = -1):
 	import types

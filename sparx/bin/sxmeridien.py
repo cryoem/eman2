@@ -220,11 +220,11 @@ def	mergeparfiles(i1,i2,io,p1,p2,po):
 
 
 
-def read_fsc(fsclocaltion, lc, myid, main_node, comm = -1):
+def read_fsc(fsclocation, lc, myid, main_node, comm = -1):
 	# read fsc and fill it with zeroes pass lc location
 	if comm == -1 or comm == None: comm = MPI_COMM_WORLD
 	if(myid == main_node):
-		f = read_text_file(fsclocation)[1]
+		f = read_text_file(fsclocation,1)
 		n = len(f)
 		f = f[:lc+1] +[0.0 for i in xrange(lc+1,n)]
 	mpi_barrier(comm)

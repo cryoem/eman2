@@ -479,7 +479,7 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 	
 	if myid != main_node:
 		list_of_particles = [-1]*nima
-	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
+	list_of_particles = bcast_list_to_all(list_of_particles, myid,  source_node = main_node)
 
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
 	list_of_particles = list_of_particles[image_start: image_end]
@@ -1465,7 +1465,7 @@ def ORGali2d_c_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1"
 	
 	if myid != main_node:
 		list_of_particles = [-1]*nima
-	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
+	list_of_particles = bcast_list_to_all(list_of_particles, myid,  source_node = main_node)
 	
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
 	list_of_particles = list_of_particles[image_start: image_end]
@@ -3890,7 +3890,7 @@ def ali3d_MPI_chunks(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, r
 
 	if myid != main_node:
 		list_of_particles = [-1]*total_nima
-	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
+	list_of_particles = bcast_list_to_all(list_of_particles, myid,  source_node = main_node)
 
 	image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
 	# create a list of images for each node
@@ -4406,7 +4406,7 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 
 	if myid != main_node:
 		list_of_particles = [-1]*total_nima
-	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
+	list_of_particles = bcast_list_to_all(list_of_particles, myid,  source_node = main_node)
 
 	image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
 	# create a list of images for each node
@@ -4725,7 +4725,7 @@ def ali3dlocal_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs 
 
 	if myid != main_node:
 		list_of_particles = [-1]*total_nima
-	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
+	list_of_particles = bcast_list_to_all(list_of_particles, myid,  source_node = main_node)
 
 	image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
 	# create a list of images for each node
@@ -5078,7 +5078,7 @@ def ali3dpsi_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 
 	if myid != main_node:
 		list_of_particles = [-1]*total_nima
-	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
+	list_of_particles = bcast_list_to_all(list_of_particles, myid,  source_node = main_node)
 
 	image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
 	# create a list of images for each node
@@ -5331,7 +5331,7 @@ def Xali3d_shc0MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs 
 
 	if myid != main_node:
 		list_of_particles = [-1]*total_nima
-	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
+	list_of_particles = bcast_list_to_all(list_of_particles, myid,  source_node = main_node)
 
 	image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
 	# create a list of images for each node
@@ -5757,7 +5757,7 @@ def ali3d_shcMPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 
 
 	if myid != main_node:
 		list_of_particles = [-1]*total_nima
-	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
+	list_of_particles = bcast_list_to_all(list_of_particles, myid,  source_node = main_node)
 
 	image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
 	# create a list of images for each node
@@ -6389,7 +6389,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 	if(myid != main_node):
 		list_of_particles = [-1]*total_nima
 
-	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
+	list_of_particles = bcast_list_to_all(list_of_particles, myid,  source_node = main_node)
 
 	image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
 	# create a list of images for each node
@@ -7043,7 +7043,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 	if myid != main_node:
 		list_of_particles = [-1]*nima
 
-	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
+	list_of_particles = bcast_list_to_all(list_of_particles, myid,  source_node = main_node)
 
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
 	# create a list of images for each node
@@ -7439,7 +7439,7 @@ def local_ali3dm_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25,
 	if(myid != main_node):
 		list_of_particles = [-1]*nima
 
-	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
+	list_of_particles = bcast_list_to_all(list_of_particles, myid,  source_node = main_node)
 
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
 	# create a list of images for each node
@@ -7846,7 +7846,7 @@ def local_ali3dm_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, 
 	if(myid != main_node):
 		list_of_particles = [-1]*nima
 
-	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
+	list_of_particles = bcast_list_to_all(list_of_particles, myid,  source_node = main_node)
 
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
 	# create a list of images for each node
@@ -8440,7 +8440,7 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 
 	if myid != main_node:
 		list_of_particles = [-1]*total_nima
-	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
+	list_of_particles = bcast_list_to_all(list_of_particles, myid,  source_node = main_node)
 
 	image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
 	# create a list of images for each node
@@ -9635,7 +9635,7 @@ def ihrsr_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 
 	if myid != main_node:
 		list_of_particles = [-1]*total_nima
-	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
+	list_of_particles = bcast_list_to_all(list_of_particles, myid,  source_node = main_node)
 
 	image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
 	# create a list of images for each node
@@ -10393,7 +10393,7 @@ def gchelix_MPI(stack, ref_vol, outdir, maskfile, ir, ou, rs, xr, ynumber,\
 
 	if myid != main_node:
 		list_of_particles = [-1]*total_nima
-	list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
+	list_of_particles = bcast_list_to_all(list_of_particles, myid,  source_node = main_node)
 
 	image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
 	# create a list of images for each node
@@ -16014,11 +16014,11 @@ def gendisks_MPI(stack, mask3d, ref_nx, pixel_size, dp, dphi, fract=0.67, rmax=7
 	total_nfils = bcast_number_to_all(total_nfils, source_node = main_node)
 	if myid != main_node:
 		inidl = [-1]*total_nfils
-	inidl = bcast_list_to_all(inidl, source_node = main_node)
+	inidl = bcast_list_to_all(inidl, myid, source_node = main_node)
 	linidl = bcast_number_to_all(linidl, source_node = main_node)
 	if myid != main_node:
 		tfilaments = [-1]*linidl
-	tfilaments = bcast_list_to_all(tfilaments, source_node = main_node)
+	tfilaments = bcast_list_to_all(tfilaments, myid, source_node = main_node)
 	filaments = []
 	iendi = 0
 	for i in xrange(total_nfils):
@@ -16286,10 +16286,10 @@ def ehelix_MPI(stack, ref_vol, outdir, seg_ny, delta, phiwobble, psi_max, search
 	total_nfils = bcast_number_to_all(total_nfils, source_node = main_node)
 	if myid != main_node:
 		inidl = [-1]*total_nfils
-	inidl = bcast_list_to_all(inidl, source_node = main_node)
+	inidl = bcast_list_to_all(inidl, myid, source_node = main_node)
 	linidl = bcast_number_to_all(linidl, source_node = main_node)
 	if myid != main_node: tfilaments = [-1]*linidl
-	tfilaments = bcast_list_to_all(tfilaments, source_node = main_node)
+	tfilaments = bcast_list_to_all(tfilaments, myid, source_node = main_node)
 	filaments = []
 	iendi = 0
 	for i in xrange(total_nfils):
@@ -16707,11 +16707,11 @@ def localhelicon_MPInew(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr
 	total_nfils = bcast_number_to_all(total_nfils, source_node = main_node)
 	if myid != main_node:
 		inidl = [-1]*total_nfils
-	inidl = bcast_list_to_all(inidl, source_node = main_node)
+	inidl = bcast_list_to_all(inidl, myid, source_node = main_node)
 	linidl = bcast_number_to_all(linidl, source_node = main_node)
 	if myid != main_node:
 		tfilaments = [-1]*linidl
-	tfilaments = bcast_list_to_all(tfilaments, source_node = main_node)
+	tfilaments = bcast_list_to_all(tfilaments, myid, source_node = main_node)
 	filaments = []
 	iendi = 0
 	for i in xrange(total_nfils):
@@ -17199,11 +17199,11 @@ def localhelicon_MPIming(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, x
 	total_nfils = bcast_number_to_all(total_nfils, source_node = main_node)
 	if myid != main_node:
 		inidl = [-1]*total_nfils
-	inidl = bcast_list_to_all(inidl, source_node = main_node)
+	inidl = bcast_list_to_all(inidl, myid, source_node = main_node)
 	linidl = bcast_number_to_all(linidl, source_node = main_node)
 	if myid != main_node:
 		tfilaments = [-1]*linidl
-	tfilaments = bcast_list_to_all(tfilaments, source_node = main_node)
+	tfilaments = bcast_list_to_all(tfilaments, myid, source_node = main_node)
 	filaments = []
 	iendi = 0
 	for i in xrange(total_nfils):
@@ -17704,11 +17704,11 @@ def localhelicon_MPInew_fullrefproj(stack, ref_vol, outdir, seg_ny, maskfile, ir
 	total_nfils = bcast_number_to_all(total_nfils, source_node = main_node)
 	if myid != main_node:
 		inidl = [-1]*total_nfils
-	inidl = bcast_list_to_all(inidl, source_node = main_node)
+	inidl = bcast_list_to_all(inidl, myid, source_node = main_node)
 	linidl = bcast_number_to_all(linidl, source_node = main_node)
 	if myid != main_node:
 		tfilaments = [-1]*linidl
-	tfilaments = bcast_list_to_all(tfilaments, source_node = main_node)
+	tfilaments = bcast_list_to_all(tfilaments, myid, source_node = main_node)
 	filaments = []
 	iendi = 0
 	for i in xrange(total_nfils):
@@ -18105,11 +18105,11 @@ def localhelicon_MPI(stack, ref_vol, outdir, seg_ny, maskfile, ir, ou, rs, xr, y
 	total_nfils = bcast_number_to_all(total_nfils, source_node = main_node)
 	if myid != main_node:
 		inidl = [-1]*total_nfils
-	inidl = bcast_list_to_all(inidl, source_node = main_node)
+	inidl = bcast_list_to_all(inidl, myid, source_node = main_node)
 	linidl = bcast_number_to_all(linidl, source_node = main_node)
 	if myid != main_node:
 		tfilaments = [-1]*linidl
-	tfilaments = bcast_list_to_all(tfilaments, source_node = main_node)
+	tfilaments = bcast_list_to_all(tfilaments, myid, source_node = main_node)
 	filaments = []
 	iendi = 0
 	for i in xrange(total_nfils):
