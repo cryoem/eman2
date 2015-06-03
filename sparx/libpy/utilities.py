@@ -2586,11 +2586,10 @@ def bcast_list_to_all(list_to_send, myid, source_node = 0):
 	if( tp == 2 ): 	ERROR("Only list of the same type numbers can be brodcasted","bcast_list_to_all",1, myid)
 	if(myid != source_node): list_to_send = [0]*n
 
-
 	if( tp == 0 ):	list_to_send = mpi_bcast(list_to_send, n, MPI_INT, source_node, MPI_COMM_WORLD)
 	else:			list_to_send = mpi_bcast(list_to_send, n, MPI_FLOAT, source_node, MPI_COMM_WORLD)
 
-	return list_to_send
+	return [list_to_send[i] for i in xrange(n)]
 
 def recv_attr_dict(main_node, stack, data, list_params, image_start, image_end, number_of_proc, comm = -1):
 	import types

@@ -3470,14 +3470,14 @@ def sali3d_base(stack, ref_vol = None, ali3d_options = None, mpi_comm = None, lo
 
 	#  Read	template volume if provided or reconstruct it
 	#  Apply initfl first, meaning true fl has to be preserved
-	fl = ali3d_options.fl
-	ali3d_options.fl = ali3d_options.initfl
+	#fl = ali3d_options.fl
+	#ali3d_options.fl = ali3d_options.initfl
 	if ref_vol:
 		vol = do_volume(ref_vol, ali3d_options, 0, mpi_comm)
 	else:
 		vol = do_volume(data, ali3d_options, 0, mpi_comm)
 	#  Restore desired fl
-	ali3d_options.fl = fl
+	#ali3d_options.fl = fl
 
 	# log
 	if myid == main_node:
