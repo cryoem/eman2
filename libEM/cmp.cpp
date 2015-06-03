@@ -774,7 +774,10 @@ float TomoWedgeFscCmp::cmp(EMData * image, EMData *with) const
 	for (int z=0; z<nz; z++) {
 		for (int y=0; y<ny; y++) {
 			for (int x=0; x<nx; x+=2) {
-				int r=int(Util::hypot3(x/2,y<ny/2?y:ny-y,z<nz/2?z:nz-z));	// origin at 0,0; periodic
+//				float r2=Util::hypot3sq(x/2,y<ny/2?y:ny-y,z<nz/2?z:nz-z);	// origin at 0,0; periodic
+// 				int r=int(sqrtf(r2));
+				float rf=Util::hypot3(x/2,y<ny/2?y:ny-y,z<nz/2?z:nz-z);	// origin at 0,0; periodic
+				int r=int(rf);
 				
 				float v1r=image->get_value_at(x,y,z);
 				float v1i=image->get_value_at(x+1,y,z);
@@ -786,10 +789,10 @@ float TomoWedgeFscCmp::cmp(EMData * image, EMData *with) const
 				float v2=Util::square_sum(v2r,v2i);
 				if (v2<sigmawith[r]) continue;
 				
-				sum+=v1r*v2r+v1i*v2i;
-				sumsq1+=v1;
-				if (Util::is_nan(sumsq1)) { printf("TomoWedgeCccCmp: NaN encountered: %d %d %d %f %f %f\n",x,y,z,v1r,v1i,v1); }
-				sumsq2+=v2;
+				sum+=(v1r*v2r+v1i*v2i)/rf;	// The r downweighting of points allows us to integrate over the entire image rather than computing a FSC and integrating that
+				sumsq1+=v1/rf;
+//				if (Util::is_nan(sumsq1)) { printf("TomoWedgeCccCmp: NaN encountered: %d %d %d %f %f %f\n",x,y,z,v1r,v1i,v1); }
+				sumsq2+=v2/rf;
 				norm+=1.0;
 			}
 		}
