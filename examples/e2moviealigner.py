@@ -36,6 +36,12 @@ import itertools as it
 import numpy as np
 import os
 import sys
+if 'DISPLAY' in os.environ:
+	import matplotlib.pyplot as plt
+else:
+	import matplotlib
+	matplotlib.use('Agg')
+	import matplotlib.pyplot as plt
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -49,6 +55,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_argument("--path",type=str,default=None,help="Specify the path to the DDD movie you wish to align")
+	#parser.add_argument("--procpath",type=str,default=None,help="Specify the path to the background subtracted movie you wish to align")
 	parser.add_argument("--dark",type=str,default=None,help="Perform dark image correction using the specified image file")
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
 	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.")
@@ -158,7 +165,6 @@ class MovieModeAlignment:
 		self._energies = [sys.float_info.max]
 		self._all_energies = []
 		self._optimized = False
-		self._load_mpl()
 	
 	def _initialize_params(self,boxsize,transforms,min,max):
 		"""
@@ -301,7 +307,7 @@ class MovieModeAlignment:
 		"""
 		Method to write aligned results to disk
 		
-		@param string name: (optional) file name to write aligned movie stack
+		@param str name: (optional) file name to write aligned movie stack
 		"""
 		if not name: name=self.outfile
 		elif name[:-4] != '.hdf': name = name[:-4] + '.hdf'  # force HDF
@@ -419,7 +425,7 @@ class MovieModeAlignment:
 		"""
 		Class method to dark correct a DDD movie stack according to a dark reference.
 		
-		@param options	:	"argparse" options from e2ddd_movie.py
+		@param namespace options	:	"argparse" options from e2ddd_movie.py
 		"""
 		hdr = EMData(options.dark,0,True).get_attr_dict()
 		if options.path[-4:].lower() in (".mrc"): nd = hdr['nz']
@@ -452,7 +458,7 @@ class MovieModeAlignment:
 		"""
 		Class method to gain correct a DDD movie stack.
 		
-		@param options	:	"argparse" options from e2ddd_movie.py
+		@param namespace options	:	"argparse" options from e2ddd_movie.py
 		"""
 		hdr = EMData(options.gain,0,True).get_attr_dict()
 		if options.path[-4:].lower() in (".mrc"): nd = hdr['nz']
@@ -488,10 +494,10 @@ class MovieModeAlignment:
 		Class method to background subtract and gain correct a DDD movie
 		
 		@param namespace options	:	"argparse" options from e2ddd_movie.py
-		@param string path			:	path of movie to be background subtracted
-		@param string dark			:	dark reference image
-		@param string gain			: 	gain reference image
-		@param string outfile		:	(optional) name of the file to be written with background subtracted movie
+		@param str path			:	path of movie to be background subtracted
+		@param str dark			:	dark reference image
+		@param str gain			: 	gain reference image
+		@param str outfile		:	(optional) name of the file to be written with background subtracted movie
 		"""
 		hdr = EMData(options.path,0,True).get_attr_dict()
 		if options.path[-4:].lower() in (".mrc"): nd = hdr['nz']
@@ -522,7 +528,7 @@ class MovieModeAlignment:
 		"""
 		Class method to compute a simple averge of all frames in a DDD movie stack.
 		
-		@param string path:	file location DDD movie stack
+		@param str path:	file location DDD movie stack
 		"""
 		hdr = EMData(path,0,True).get_attr_dict()
 		nx = hdr['nx']
@@ -543,12 +549,6 @@ class MovieModeAlignment:
 		av=avgr.finish()
 		av.write_image(outname[:-4]+"_mean.hdf",0)
 		return av
-
-	@staticmethod
-	def _load_mpl():
-		import matplotlib
-		if 'DISPLAY' not in os.environ: matplotlib.use('Agg')
-		import matplotlib.pyplot as plt
 
 if __name__ == "__main__":
 	main()
