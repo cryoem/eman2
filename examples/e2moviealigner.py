@@ -325,25 +325,25 @@ class MovieModeAlignment:
 		"""
 		Method to write coherent power spectrum to current directory.
 		
-		@param str cpsname	: name of coherent power spectrum to be written to disk
-		@param int imnum	: slice to save image to
+		@param str name	: name of coherent power spectrum to be written to disk
+		@param int num	: image slice into which the coherent power spectrum will be saved
 		"""
 		if name[:-4] != '.hdf': name = name[:-4] + '.hdf'  # force HDF
 		rcps = self._cps.do_ift()
-		if imnum and self._cpsflag: rcps.write_image(self.dir+'/'+name,imnum)
+		if num and self._cpsflag: rcps.write_image(self.dir+'/'+name,num)
 		else: rcps.write_image(self.dir+'/'+name)
 		self._cpsflag = True
 	
-	def write_incoherent_power_spectrum(self,name='incoherent.hdf',imnum=None):
+	def write_incoherent_power_spectrum(self,name='incoherent.hdf',num=None):
 		"""
 		Method to write incoherent power spectrum to current directory.
 		
-		@param str ipsname	: name of incoherent power spectrum to be written to disk
-		@param int imnum	: slice to save image to
+		@param str name	: name of incoherent power spectrum to be written to disk
+		@param int num	: image slice into which the incoherent power spectrum will be saved
 		"""
 		if name[:-4] != '.hdf': name = name[:-4] + '.hdf'  # force HDF
 		rips = self._ips.do_ift()
-		if imnum and self._ipsflag: rips.write_image(self.dir+'/'+name,imnum)
+		if num and self._ipsflag: rips.write_image(self.dir+'/'+name,num)
 		else: rips.write_image(self.dir+'/'+name)
 		self._ipsflag = True
 	
