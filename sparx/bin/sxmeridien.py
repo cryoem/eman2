@@ -218,6 +218,18 @@ def	mergeparfiles(i1,i2,io,p1,p2,po):
 	return
 
 
+
+def read_fsc(fsclocaltion, lc, myid, main_node, comm = -1):
+	# read fsc and fill it with zeroes pass lc location
+	if comm == -1 or comm == None: comm = MPI_COMM_WORLD
+	if(myid == main_node):
+		f = read_text_file(fsclocation)[1]
+		n = len(f)
+		f = f[:lc+1] +[0.0 for i in xrange(lc+1,n)]
+	mpi_barrier(comm)
+	f = bcast_list_to_all(f)
+	return f
+	
 def get_resolution(vol, radi, nnxo, fscoutputdir):
 	# this function is single processor
 	#  Get updated FSC curves, user can also provide a mask using radi variable
@@ -263,8 +275,8 @@ def get_pixel_resolution(vol, radi, nnxo, fscoutputdir):
 	if( nx != nnxo ):
 		mask = Util.window(rot_shift3D(mask,scale=float(n)/float(nnxo)),nx,nx,nx)
 	nfsc = fsc(vol[0]*mask,vol[1]*mask, 1.0,os.path.join(fscoutputdir,"fsc.txt") )
-	currentres = -1.0
 	ns = len(nfsc[1])
+	currentres = ns
 	'''
 	#  This is actual resolution, as computed by 2*f/(1+f)
 	for i in xrange(1,ns-1):
@@ -274,7 +286,7 @@ def get_pixel_resolution(vol, radi, nnxo, fscoutputdir):
 	'''
 	#  0.5 cut-off
 	for i in xrange(1,ns-1):
-		if ( nfsc[1][i] < 0.333333333333333333333333):
+		if ( nfsc[1][i] < 0.5):
 			currentres = i
 			break
 	if(currentres < 0.0):
@@ -292,7 +304,7 @@ def get_pixel_resolution(vol, radi, nnxo, fscoutputdir):
 	"""
 	lowpass, falloff = fit_tanh1(nfsc, 0.01)
 
-	return  round(lowpass,4), round(falloff,4), i
+	return  round(lowpass,4), round(falloff,4), currentres
 
 def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, myid, main_node, nproc):
 	vol = [None]*2
@@ -654,7 +666,7 @@ def metamove(projdata, oldshifts, paramsdict, partids, partstack, outputdir, pro
 		print("                    =>  PW adjustment       :  ",ali3d_options.pwreference)
 		print("                    =>  partids             :  ",partids)
 		print("                    =>  partstack           :  ",partstack)
-		
+
 	if(ali3d_options.fl > 0.48):  ERROR("Low pass filter in metamove > 0.48 on the scale of shrank data","sxmeridien",1,myid)
 
 	#  Run alignment command
@@ -798,6 +810,7 @@ def main():
 	#
 
 	nxinit = 64  #int(280*0.3*2)
+	cushion = 8  #  the window size has to be at lest 8 pixels larger than what would follow from resolutiol
 
 	mempernode = 4.0e9
 
@@ -1080,9 +1093,9 @@ def main():
 		icurrentres = bcast_number_to_all(icurrentres, source_node = main_node)
 
 	# set for the first iteration
-	nxshrink = icurrentres*2 +8
-	assert( nxshrink <= nnxo )
-	while( nxshrink > nxinit ): nxinit += 32
+	nxshrink = icurrentres*2 +2
+	assert( nxshrink +cushion <= nnxo )
+	while( nxshrink + cushion > nxinit ): nxinit += 32
 	nxinit = min(nxinit,nnxo)
 	nsoft = options.nsoft
 	falloff = paramsdict["falloff"]
@@ -1090,6 +1103,7 @@ def main():
 	tracker = {"resolution":icurrentres,"lowpass":lowpass, "falloff":falloff, "initialfl":lowpass,  \
 				"movedup":False,"eliminated-outliers":False,"PWadjustment":"","local":False,"nsoft":nsoft, \
 				"nnxo":nnxo, "icurrentres":icurrentres,"nxinit":nxinit, "nxshrink":nxshrink, "extension":0.0, "directory":"none"}
+	tracker["lowpass"] = read_fsc(os.path.join(initdir,"fsc.txt"),icurrentres, myid, main_node)
 	history = [tracker.copy()]
 	previousoutputdir = initdir
 	#  remove projdata, if it existed, initialize to nonsense
@@ -1166,7 +1180,7 @@ def main():
 			#  here ts has different meaning for standard and continuous
 			delta = round(degrees(atan(1.0/lastring)), 2)
 			subdict( paramsdict, { "delta":"%f"%delta , "an":angular_neighborhood, \
-							"lowpass":lowpass, "falloff":falloff, "nsoft":nsoft, \
+							"lowpass":lowpass, "falloff":tracker["lowpass"], "nsoft":nsoft, \
 							"nnxo":tracker["nnxo"], "icurrentres":tracker["icurrentres"],"nxinit":tracker["nxinit"], "nxshrink":tracker["nxshrink"],
 							"pixercutoff":get_pixercutoff(radi*float(tracker["nxinit"])/float(nnxo), delta, 0.5), \
 							"radius":lastring,"delpreviousmax":True, \

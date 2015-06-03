@@ -4407,6 +4407,7 @@ def Combinations_of_n_taken_by_k(n,k):
 def cmdexecute(cmd):
 	from   time import localtime, strftime
 	import subprocess
+	from __future__ import print_function
 	outcome = subprocess.call(cmd, shell=True)
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if(outcome == 1):
