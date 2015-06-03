@@ -179,10 +179,10 @@ def resample( prjfile, outdir, bufprefix, nbufvol, nvol, seedbase,\
 	#print "  READ ",myid
 	if  MPI:
 		#print " will bcast",myid
-	        from mpi import mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
-	        vct = mpi_bcast(vct,len(vct),MPI_FLOAT,0,MPI_COMM_WORLD)
+		from mpi import mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
+		vct = mpi_bcast(vct,len(vct),MPI_FLOAT,0,MPI_COMM_WORLD)
 		from utilities import  bcast_list_to_all
-		tetprj = bcast_list_to_all(tetprj)
+		tetprj = bcast_list_to_all(tetprj, myid, 0)
 	#print  "  reshape  ",myid
 	vct = reshape(vct,(nprj,3))
 	assignments = [[] for i in xrange(nrefa)]

@@ -250,7 +250,7 @@ def main():
 				proj_angles_list[i*4+1] = proj_angles[i][2]
 				proj_angles_list[i*4+2] = proj_angles[i][3]
 				proj_angles_list[i*4+3] = proj_angles[i][4]
-		proj_angles_list = bcast_list_to_all(proj_angles_list)
+		proj_angles_list = bcast_list_to_all(proj_angles_list, myid, main_node)
 		proj_angles = []
 		for i in xrange(nima):
 			proj_angles.append([proj_angles_list[i*4], proj_angles_list[i*4+1], proj_angles_list[i*4+2], int(proj_angles_list[i*4+3])])

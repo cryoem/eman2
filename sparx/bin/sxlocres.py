@@ -95,7 +95,7 @@ def main():
 		else:
 			dis = [0,0,0,0]
 
-		dis = bcast_list_to_all(dis, source_node = main_node)
+		dis = bcast_list_to_all(dis, myid, source_node = main_node)
 
 		if(myid != main_node):
 			nx = int(dis[0])

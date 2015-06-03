@@ -227,8 +227,9 @@ def read_fsc(fsclocation, lc, myid, main_node, comm = -1):
 		f = read_text_file(fsclocation,1)
 		n = len(f)
 		f = f[:lc+1] +[0.0 for i in xrange(lc+1,n)]
+	else: f = 0.0
 	mpi_barrier(comm)
-	f = bcast_list_to_all(f)
+	f = bcast_list_to_all(fmyid, main_node)
 	return f
 	
 def get_resolution(vol, radi, nnxo, fscoutputdir):

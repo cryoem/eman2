@@ -97,7 +97,7 @@ def main():
 		falloff = bcast_number_to_all(falloff, main_node)
 		radius  = bcast_number_to_all(radius, main_node)
 
-		dis = bcast_list_to_all(dis, source_node = main_node)
+		dis = bcast_list_to_all(dis, myid, source_node = main_node)
 
 		if(myid != main_node):
 			nx = int(dis[0])

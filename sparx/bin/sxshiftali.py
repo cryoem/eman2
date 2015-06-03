@@ -113,25 +113,6 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 
 	max_iter=int(maxit)
 
-	# # horatio active_refactoring ﻿Jy51i1EwmLD4tWZ9_00000_1
-	# if myid == main_node:
-	# 	if ftp == "bdb":
-	# 		from EMAN2db import db_open_dict
-	# 		dummy = db_open_dict(stack, True)
-	# 	active = EMUtil.get_all_attributes(stack, 'active')
-	# 	list_of_particles = []
-	# 	for im in xrange(len(active)):
-	# 		if active[im]:  list_of_particles.append(im)
-	# 	del active
-	# 	nima = len(list_of_particles)
-	# else:
-	# 	nima = 0
-	# nima = bcast_number_to_all(nima, source_node = main_node)
-	# 
-	# if myid != main_node:
-	# 	list_of_particles = [-1]*nima
-	# list_of_particles = bcast_list_to_all(list_of_particles, source_node = main_node)
-
 	# horatio active_refactoring ﻿Jy51i1EwmLD4tWZ9_00000_2
 	if myid == main_node:
 		if ftp == "bdb":
@@ -145,9 +126,6 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 	
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
 	list_of_particles = list_of_particles[image_start: image_end]
-	
-	
-	
 
 	# read nx and ctf_app (if CTF) and broadcast to all nodes
 	if myid == main_node:
@@ -424,11 +402,11 @@ def helicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fou
 	total_nfils = bcast_number_to_all(total_nfils, source_node = main_node)
 	if myid != main_node:
 		inidl = [-1]*total_nfils
-	inidl = bcast_list_to_all(inidl, source_node = main_node)
+	inidl = bcast_list_to_all(inidl, myid, source_node = main_node)
 	linidl = bcast_number_to_all(linidl, source_node = main_node)
 	if myid != main_node:
 		tfilaments = [-1]*linidl
-	tfilaments = bcast_list_to_all(tfilaments, source_node = main_node)
+	tfilaments = bcast_list_to_all(tfilaments, myid, source_node = main_node)
 	filaments = []
 	iendi = 0
 	for i in xrange(total_nfils):
