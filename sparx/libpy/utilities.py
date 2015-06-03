@@ -1753,8 +1753,10 @@ def read_text_row(fnam, format="", skip=";"):
 						word.append(strg[k_start : k_stop])				
 			line=[]
 			for i in xrange(len(word)):
-				try:  line.append(float(word[i]))
-				except:  line.append(word[i])
+				try:  line.append(int(word[i]))
+				except:
+					try:  	line.append(float(word[i]))
+					except:	line.append(word[i])
 			data.append(line)
 		strg=inf.readline()
 	inf.close
@@ -1815,7 +1817,7 @@ def write_text_row(data, file_name):
 def read_text_file(file_name, ncol = 0):
 	"""
 		Read data from text file, if ncol = -1, read all columns
-		if ncol >= 0, just read the (ncol+1)-th column.
+		if ncol >= 0, just read the (ncol)-th column.
 	"""
 	
 	from string import split
@@ -1827,16 +1829,22 @@ def read_text_file(file_name, ncol = 0):
 			vdata = split(line)
 			if data == []:
 				for i in xrange(len(vdata)):
-					try:     data.append([float(vdata[i])])
-					except:  data.append([vdata[i]])
+					try:     data.append([int(vdata[i])])
+					except:
+						try:  	 data.append([float(vdata[i])])
+						except:  data.append([vdata[i]])
 			else:
 				for i in xrange(len(vdata)):
-					try:  data[i].append(float(vdata[i]))
-					except:  data[i].append(vdata[i])
+					try:  data[i].append(int(vdata[i]))
+					except:
+						try:  data[i].append(float(vdata[i]))
+						except:  data[i].append(vdata[i])
 		else:
 			vdata = split(line)[ncol]
-			try:     data.append(float(vdata))
-			except:  data.append(vdata)
+			try:     data.append(int(vdata))
+			except:
+				try:  	data.append(float(vdata))
+				except:  data.append(vdata)
 		line = inf.readline()
 	return data
 
