@@ -56,6 +56,7 @@ def subdict(d,u):
 	# substitute values in dictionary d by those given by dictionary u
 	for q in u:  d[q] = u[q]
 
+"""
 def cmdexecute(cmd):
 	from   time import localtime, strftime
 	import subprocess
@@ -65,7 +66,7 @@ def cmdexecute(cmd):
 		print(  line,"ERROR!!   Command failed:  ", cmd)
 		exit()
 	else:  print(line,"Executed successfully: ",cmd)
-
+"""
 def volshiftali(vv, mask3d=None):
 	nv = len(vv)
 	ni = vv[0].get_xsize()

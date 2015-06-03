@@ -4407,14 +4407,13 @@ def Combinations_of_n_taken_by_k(n,k):
 def cmdexecute(cmd):
 	from   time import localtime, strftime
 	import subprocess
-	from __future__ import print_function
 	outcome = subprocess.call(cmd, shell=True)
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	if(outcome == 1):
-		print(  line,"ERROR!!   Command failed:  ", cmd)
+		print  line,"ERROR!!   Command failed:  ", cmd
 		from sys import exit
 		exit()
-	else:  print(line,"Executed successfully: ",cmd)
+	else:  print line,"Executed successfully: ",cmd
 
 def string_found_in_file(myregex, filename):
 	import re

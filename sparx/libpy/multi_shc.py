@@ -2807,14 +2807,12 @@ def do_volume(data, options, iter, mpi_comm):
 		else:
 			if( type(options.mask3D) == types.StringType ):  mask3D = get_im(options.mask3D)
 			else:  mask3D = (options.mask3D).copy()
-			try:
-				shrink = options.shrink
-				if( shrink < 1.0 ):
-					from fundamentals import resample
-					mask3D = resample(mask3D, shrink)
-					nxm = mask3D.get_xsize()
-					assert(nx == nxm)
-			except:  pass
+			nxm = mask3D.get_xsize()
+			if( nx != nxm):
+				from fundamentals import resample
+				mask3D = resample(mask3D, float(nx)/float(nxm))
+				nxm = mask3D.get_xsize()
+				assert(nx == nxm)
 
 		stat = Util.infomask(vol, mask3D, False)
 		vol -= stat[0]
@@ -2830,8 +2828,15 @@ def do_volume(data, options, iter, mpi_comm):
 			ro = rops_table(vol)
 			#  Here unless I am mistaken it is enough to take the beginning of the reference pw.
 			for i in xrange(1,len(ro)):  ro[i] = (rt[i]/ro[i])**0.5
-			vol = fft( filt_table( filt_tanl(vol, options.fl, options.aa), ro) )
-		else:  vol = filt_tanl(vol, options.fl, options.aa)
+			if( type(options.fl) == types.ListType ):
+				vol = fft( filt_table( filt_table(vol, options.fl), ro) )
+			else:
+				vol = fft( filt_table( filt_tanl(vol, options.fl, options.aa), ro) )
+		else:
+			if( type(options.fl) == types.ListType ):
+				vol = filt_table(vol, options.fl)
+			else:
+				vol = filt_tanl(vol, options.fl, options.aa)
 		stat = Util.infomask(vol, mask3D, False)
 		vol -= stat[0]
 		Util.mul_scalar(vol, 1.0/stat[1])
