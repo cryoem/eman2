@@ -1717,7 +1717,7 @@ namespace EMAN
 			static const string NAME;
 
 		private:
-			bool testort(EMData *small_this, EMData *small_to, vector<float> &s_score, vector<float> &s_coverage,vector<Transform> &s_xform,int i,Dict &upd) const;
+			bool testort(EMData *small_this, EMData *small_to,vector<float> &sigmathisv,vector<float> &sigmatov, vector<float> &s_score, vector<float> &s_coverage,vector<Transform> &s_xform,int i,Dict &upd) const;
 
 	};
 

@@ -2689,6 +2689,13 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		small_to->process_inplace("filter.highpass.gauss",Dict("cutoff_pixels",1));
 		small_to->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.33f));
 
+		// these are cached for speed in the comparator
+		vector<float>sigmathisv=small_this->calc_radial_dist(ss/2,0,1,4);
+		vector<float>sigmatov=small_to->calc_radial_dist(ss/2,0,1,4);
+		for (int i=0; i<ss/2; i++) {
+			sigmathisv[i]*=sigmathis;
+			sigmatov[i]*=sigmato;
+		}
 		
 		// debug out
 // 		EMData *x=small_this->do_ift();
@@ -2701,7 +2708,8 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 // 		delete x;
 
 		// This is a solid estimate for very complete searching, 2.5 is a bit arbitrary
- 		float astep = 2.5*89.999/floor(pi/(2.0*atan(2.0/ss)));
+		// make sure the altitude step hits 90 degrees, not absolutely necessary for this, but can't hurt
+ 		float astep = 89.999/floor(pi/(2.5*2.0*atan(2.0/ss)));
 
 		// This is drawn from single particle analysis testing, which in that case insures that enough sampling to
 		// reasonably fill Fourier space is achieved, but doesn't perfectly apply to SPT
@@ -2721,7 +2729,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 			if (verbose>1) printf("stage 1 - ang step %1.2f\n",astep);
 			Dict d;
 			d["inc_mirror"] = true;
-			d["delta"] = astep;		// make sure the altitude step hits 90 degrees, not absolutely necessary for this, but can't hurt
+			d["delta"] = astep;		
 			Symmetry3D* sym = Factory<Symmetry3D>::get((string)params.set_default("sym","c1"));
 			// We don't generate for phi, since this can produce a very large number of orientations
 			vector<Transform> transforms = sym->gen_orientations((string)params.set_default("orientgen","eman"),d);
@@ -2756,7 +2764,10 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 					delete ccf;
 					stt=small_this->process("xform",Dict("transform",EMObject(&t),"zerocorners",5));	// we have to do 1 slow transform here now that we have the translation
 
-					float sim=stt->cmp("ccc.tomo.thresh",small_to,Dict("sigmaimg",sigmathis,"sigmawith",sigmato));
+//					float sim=stt->cmp("ccc.tomo.thresh",small_to,Dict("sigmaimg",sigmathis,"sigmawith",sigmato));
+					float sim=stt->cmp("ccc.tomo.thresh",small_to);
+//					float sim=stt->cmp("fsc.tomo.auto",small_to,Dict("sigmaimg",sigmathisv,"sigmawith",sigmatov));
+//					float sim=stt->cmp("fsc.tomo.auto",small_to);
 
 					// First we find the worst solution in the list of possible best solutions, or the first
 					// solution which is currently "empty"
@@ -2807,7 +2818,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 						// phi continues to move independently. I believe this should produce a more monotonic energy surface
 						if (axis==0) upd[axname[2]]=-s_step[i*3+axis];		
 
-						int r=testort(small_this,small_to,s_score,s_coverage,s_xform,i,upd);
+						int r=testort(small_this,small_to,sigmathisv,sigmatov,s_score,s_coverage,s_xform,i,upd);
 						
 						// If we fail, we reverse direction with a slightly smaller step and try that
 						// Whether this fails or not, we move on to the next axis
@@ -2815,7 +2826,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 						else {
 							s_step[i*3+axis]*=-0.75;
 							upd[axname[axis]]=s_step[i*3+axis];
-							r=testort(small_this,small_to,s_score,s_coverage,s_xform,i,upd);
+							r=testort(small_this,small_to,sigmathisv,sigmatov,s_score,s_coverage,s_xform,i,upd);
 							if (r) changed=1;
 						}
 						if (verbose>4) printf("\nX %1.3f\t%1.3f\t%1.3f\t%d\t",s_step[i*3],s_step[i*3+1],s_step[i*3+2],changed);
@@ -2850,10 +2861,10 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		delete base_to;
 	}
 	else {
-		base_this->process_inplace("xform.fourierorigin.tocorner");		// easier to chop out Fourier subvolumes
-		base_this->process_inplace("xform.phaseorigin.tocenter");
-		base_to->process_inplace("xform.fourierorigin.tocorner");
-		base_to->process_inplace("xform.phaseorigin.tocenter");
+// 		base_this->process_inplace("xform.fourierorigin.tocorner");		// easier to chop out Fourier subvolumes
+// 		base_this->process_inplace("xform.phaseorigin.tocenter");
+// 		base_to->process_inplace("xform.fourierorigin.tocorner");
+// 		base_to->process_inplace("xform.phaseorigin.tocenter");
 	}
 
 	// lazy earlier in defining s_ vectors, so lazy here too and inefficiently sorting
@@ -2882,9 +2893,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 
 // This is just to prevent redundancy. It takes the existing solution vectors as arguments, an a proposed update for
 // vector i. It updates the vectors if the proposal makes an improvement, in which case it returns true
-bool RT3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<float> &s_score, vector<float> &s_coverage,vector<Transform> &s_xform,int i,Dict &upd) const {
-	float sigmathis = params["sigmathis"];
-	float sigmato = params["sigmato"];
+bool RT3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<float> &sigmathisv,vector<float> &sigmatov,vector<float> &s_score, vector<float> &s_coverage,vector<Transform> &s_xform,int i,Dict &upd) const {
 	Transform t;
 	Dict aap=s_xform[i].get_params("eman");
 	aap["tx"]=0;
@@ -2908,7 +2917,7 @@ bool RT3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<float> 
 	t.set_params(aap);
 	EMData *st2=small_this->process("xform",Dict("transform",EMObject(&t),"zerocorners",5));	// we have to do 1 slow transform here now that we have the translation
 	
-	float sim=st2->cmp("fsc.tomo.auto",small_to);
+	float sim=st2->cmp("fsc.tomo.auto",small_to,Dict("sigmaimg",sigmathisv,"sigmawith",sigmatov));
 //	float sim=st2->cmp("ccc.tomo.thresh",small_to,Dict("sigmaimg",sigmathis,"sigmawith",sigmato));
 // 	printf("\nTESTORT %6.1f  %6.1f  %6.1f\t%4d %4d %4d\t%1.5g\t%1.5g %d (%d)",
 // 		float(aap["az"]),float(aap["alt"]),float(aap["phi"]),int(aap["tx"]),int(aap["ty"]),int(aap["tz"]),sim,s_score[i],int(sim<s_score[i]),ccf->get_ysize());
