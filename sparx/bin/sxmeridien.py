@@ -1524,6 +1524,7 @@ def main():
 					exit()  #  This will crash the program, but the situation is unlikely to occure
 				tracker["nxshrink"]            = nxshrink
 				tracker["nxinit"]              = nxinit
+				tracker["icurrentres"]         = icurrentres
 				tracker["eliminated-outliers"] = eliminated_outliers
 				bestoutputdir = mainoutputdir
 				keepgoing = 1
