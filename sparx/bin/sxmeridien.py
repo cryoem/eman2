@@ -1342,7 +1342,7 @@ def main():
 				write_text_row( [pinids[i][1] for i in xrange(len(pinids))], os.path.join(mainoutputdir,"params.txt"))
 			mpi_barrier(MPI_COMM_WORLD)
 			nfsc = read_fsc(os.path.join(mainoutputdir,"fsc.txt"),nnxo, myid, main_node)
-			ali3d_options.fl, ali3d_options.aa = fit_tanh1([float(i)/nnxo for i in xrange(len(nfsc)),nfsc], 0.01)
+			ali3d_options.fl, ali3d_options.aa = fit_tanh1([[float(i)/nnxo for i in xrange(len(nfsc))],nfsc], 0.01)
 			del nfsc
 			ali3d_options.ou     = radi
 			ali3d_options.shrink = 1.0
