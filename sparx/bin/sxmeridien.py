@@ -1486,14 +1486,14 @@ def main():
 			if(myid == main_node):
 				if( currentres > tracker["resolution"]):  print("  Resolution improved, full steam ahead!")
 				else:  print("  While the resolution did not improve, we eliminated outliers so we follow the _resolution_improved_ path.")
-			if(tracker["icurrentres"] + nsxtep//2 >= nnxo ):
+			if(tracker["icurrentres"] + nxstep//2 >= nnxo ):
 				if(myid == main_node): print(" Resolution approached Nyquist limit, program will terminate")
 			else:
 				# We need separate rules for each case
 				if( icurrentres > tracker["resolution"] ):  tracker["movedup"] = True
 				else:   tracker["movedup"] = False
 				#  increase resolution
-				icurrentres = tracker["icurrentres"] + nsxtep//2
+				icurrentres = tracker["icurrentres"] + nxstep//2
 				nxshrink = tracker["nxshrink"]
 				nxshrink += nxstep
 				nxinit = tracker["nxinit"]
