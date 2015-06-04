@@ -2774,6 +2774,7 @@ def get_softy(im):
 def do_volume(data, options, iter, mpi_comm):
 	from EMAN2          import Util
 	from mpi            import mpi_comm_rank
+	from filter       import filt_table
 	from reconstruction import recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
 	from utilities      import bcast_EMData_to_all
 	import types
@@ -2822,7 +2823,6 @@ def do_volume(data, options, iter, mpi_comm):
 		if( options.pwreference ):
 			from utilities    import read_text_file
 			from fundamentals import rops_table, fftip, fft
-			from filter       import filt_table
 			rt = read_text_file( options.pwreference )
 			fftip(vol)
 			ro = rops_table(vol)
