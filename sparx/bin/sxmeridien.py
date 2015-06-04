@@ -1484,7 +1484,7 @@ def main():
 
 		if( ( icurrentres > tracker["icurrentres"] ) or (eliminated_outliers and not tracker["eliminated-outliers"]) or mainiteration == 1):
 			if(myid == main_node):
-				if( currentres > tracker["resolution"]):  print("  Resolution improved, full steam ahead!")
+				if( icurrentres > tracker["resolution"]):  print("  Resolution improved, full steam ahead!")
 				else:  print("  While the resolution did not improve, we eliminated outliers so we follow the _resolution_improved_ path.")
 			if(tracker["icurrentres"] + nxstep//2 >= nnxo ):
 				if(myid == main_node): print(" Resolution approached Nyquist limit, program will terminate")
