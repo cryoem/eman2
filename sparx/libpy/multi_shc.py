@@ -2810,8 +2810,8 @@ def do_volume(data, options, iter, mpi_comm):
 			else:  mask3D = (options.mask3D).copy()
 			nxm = mask3D.get_xsize()
 			if( nx != nxm):
-				from fundamentals import resample
-				mask3D = resample(mask3D, float(nx)/float(nxm))
+				from fundamentals import rot_shift3D
+				mask3D = Util.window(rot_shift3D(mask3D,scale=float(nx)/float(nxm)),nx,nx,nx)
 				nxm = mask3D.get_xsize()
 				assert(nx == nxm)
 
