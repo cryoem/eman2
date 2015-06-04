@@ -661,7 +661,6 @@ def main():
 						proj.set_attr_dict({"ctf":ctf, "ctf_applied":0})
 
 					proj = proj + filt_gaussl(model_gauss_noise(sigma2_proj, nx, nx), sigma_gauss)
-#					proj.set_attr("active", 1)
 					proj.set_attr("origimgsrc",imgsrc)
 					proj.set_attr("test_id", iprj)
 					# flags describing the status of the image (1 = true, 0 = false)
