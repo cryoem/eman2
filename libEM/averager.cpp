@@ -109,38 +109,47 @@ void TomoAverager::add_image(EMData * image)
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
-	size_t image_size = (size_t)nx * ny * nz;
+//	size_t image_size = (size_t)nx * ny * nz;
 
 	if (norm_image == 0) {
-		printf("init average %d %d %d",nx,ny,nz);
+//		printf("init average %d %d %d",nx,ny,nz);
 		result = image->copy_head();
 		result->to_zero();
 		
 		norm_image = image->copy_head();
 		norm_image->to_zero();
 		
-		thresh_sigma = (float)params.set_default("thresh_sigma", 0.01);
+		thresh_sigma = (float)params.set_default("thresh_sigma", 0.1);
 	}
 
 	float *result_data = result->get_data();
 	float *norm_data = norm_image->get_data();
 	float *data = image->get_data();
-	float thresh=image->get_attr("sigma");
-	thresh=2.0f*thresh*thresh*thresh_sigma;
 	
+	vector<float> threshv;
+	threshv=image->calc_radial_dist(nx/2,0,1,4);
+	for (int i=0; i<nx/2; i++) threshv[i]*=thresh_sigma;
+	
+	size_t j=0;
 	// Add any values above threshold to the result image, and add 1 to the corresponding pixels in the norm image
-	for (size_t j = 0; j < image_size; j+=2) {
-		float f=data[j];	// real
-		float g=data[j+1];	// imag
-		float inten=f*f+g*g;
-		
-		if (inten<thresh) continue;
-		
-		result_data[j]  +=f;
-		result_data[j+1]+=g;
-		
-		norm_data[j]  +=1.0;
-		norm_data[j+1]+=1.0;
+	for (int z=0; z<nz; z++) {
+		for (int y=0; y<ny; y++) {
+			for (int x=0; x<nx; x+=2, j+=2) {
+				float rf=Util::hypot3(x/2,y<ny/2?y:ny-y,z<nz/2?z:nz-z);	// origin at 0,0; periodic
+				int r=int(rf);
+				float f=data[j];	// real
+				float g=data[j+1];	// imag
+				float inten=f*f+g*g;
+				
+				if (inten<threshv[r]) continue;
+				
+				result_data[j]  +=f;
+				result_data[j+1]+=g;
+				
+				norm_data[j]  +=1.0;
+				norm_data[j+1]+=1.0;
+			}
+		}
 	}
 	
 	if (image->has_attr("free_me")) delete image;
@@ -158,7 +167,7 @@ EMData * TomoAverager::finish()
 	float *result_data = result->get_data();
 	float *norm_data = norm_image->get_data();
 	
-	printf("finish average %d %d %d",nx,ny,nz);
+//	printf("finish average %d %d %d",nx,ny,nz);
 	// normalize the average
 	for (size_t j = 0; j < image_size; j++) {
 		if (norm_data[j]==0.0) result_data[j]=0.0;

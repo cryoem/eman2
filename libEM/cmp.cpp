@@ -777,6 +777,7 @@ float TomoWedgeFscCmp::cmp(EMData * image, EMData *with) const
 //				float r2=Util::hypot3sq(x/2,y<ny/2?y:ny-y,z<nz/2?z:nz-z);	// origin at 0,0; periodic
 // 				int r=int(sqrtf(r2));
 				float rf=Util::hypot3(x/2,y<ny/2?y:ny-y,z<nz/2?z:nz-z);	// origin at 0,0; periodic
+				if (rf<3.0) continue;
 				int r=int(rf);
 				
 				float v1r=image->get_value_at(x,y,z);
