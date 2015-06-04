@@ -4415,7 +4415,7 @@ def eliminate_moons(my_volume, moon_elimination_params):
 		# # mask.to_one()
 	# this is only in master
 	
-def Combinations_of_n_taken_by_k(n, k):
+def combinations_of_n_taken_by_k(n, k):
 	from fractions import Fraction
 	return int(reduce(lambda x, y: x * y, (Fraction(n-i, i+1) for i in range(k)), 1))
 	
@@ -4451,3 +4451,55 @@ def print_with_time_info(msg):
 	from time import localtime, strftime
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>" + msg
 	print line
+
+def if_error_all_processes_quit_program(error_status):
+	from traceback import extract_stack
+	import sys, copy
+	from mpi import mpi_bcast, mpi_finalize, MPI_INT, MPI_COMM_WORLD
+
+	# print "error_status1:", error_status
+	error_status = mpi_bcast(error_status, 1, MPI_INT, 0, MPI_COMM_WORLD)
+	error_status = int(error_status[0])
+
+	if error_status > 0:
+		# if mpi_comm_rank(MPI_COMM_WORLD) == 0:
+		# 	print "Stack INFO -0-:", extract_stack()[-3:]
+		# if mpi_comm_rank(MPI_COMM_WORLD) == 1:
+		# 	print "Stack INFO -1-:", extract_stack()[-3:]
+		#
+		# print "qqqqqqq:", error_status
+		mpi_finalize()
+		sys.exit()
+
+def store_value_of_simple_vars_in_json_file(local_vars, exclude_list_of_vars = [], write_or_append = "w", 
+	vars_that_will_show_only_size = []):
+	
+	import json, types, collections
+	 
+	allowed_types = [types.NoneType, types.BooleanType, types.IntType, types.LongType, types.FloatType, types.ComplexType,
+					 types.UnicodeType, types.StringType]
+	
+	local_vars_keys = local_vars.keys()
+
+	my_vars = dict()
+	for key in set(local_vars_keys) - set(exclude_list_of_vars):
+		if type(local_vars[key]) in allowed_types:
+			my_vars[key] = local_vars[key]
+		elif type(local_vars[key]) in [types.ListType, types.TupleType, type(set())]:
+			if len({type(i) for i in local_vars[key]} - set(allowed_types)) == 0:
+				if key in vars_that_will_show_only_size:
+					my_vars[key] = "%s with length: %d"%(str(type(local_vars[key])),len(local_vars[key]))
+				else:
+					if	type(local_vars[key]) == type(set()):
+						my_vars[key] = list(local_vars[key])
+					else:
+						my_vars[key] = local_vars[key]
+		elif type(local_vars[key]) == types.DictType:
+			if len({type(local_vars[key][i]) for i in local_vars[key]} - set(allowed_types)) == 0:	
+					my_vars[key] = local_vars[key]
+
+	ordered_my_vars = collections.OrderedDict(sorted(my_vars.items()))
+	
+	with open('program_state.json', write_or_append) as fp:
+		json.dump(ordered_my_vars, fp, indent = 2)
+	fp.close()
