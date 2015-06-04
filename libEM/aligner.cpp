@@ -2718,9 +2718,9 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		// This insures we make at least one real effort at each level
 		for (int i=0; i<nsoln; i++) {
 			s_score[i]=1.0e24;	// reset the scores since the different scales will not match
-			if (fabs(s_step[i*3+0])<astep/8.0) s_step[i*3+0]*=2.0;
-			if (fabs(s_step[i*3+1])<astep/8.0) s_step[i*3+1]*=2.0;
-			if (fabs(s_step[i*3+2])<astep/8.0) s_step[i*3+2]*=2.0;
+			if (fabs(s_step[i*3+0])<astep/4.0) s_step[i*3+0]*=2.0;
+			if (fabs(s_step[i*3+1])<astep/4.0) s_step[i*3+1]*=2.0;
+			if (fabs(s_step[i*3+2])<astep/4.0) s_step[i*3+2]*=2.0;
 		}
 		
 		// This is for the first loop, we do a full search in a heavily downsampled space
@@ -2811,7 +2811,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 					}
 					changed=0;
 					for (int axis=0; axis<3; axis++) {
-						if (fabs(s_step[i*3+axis])<astep/8.0) continue;		// skip axes where we already have enough precision on this axis
+						if (fabs(s_step[i*3+axis])<astep/4.0) continue;		// skip axes where we already have enough precision on this axis
 						Dict upd;
 						upd[axname[axis]]=s_step[i*3+axis];
 						// when moving az, we move phi in the opposite direction by the same amount since the two are singular at alt=0
@@ -2835,7 +2835,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 						for (int j=0; j<3; j++) s_step[i*3+j]*-0.75;
 						changed=1;
 					}
-					if (fabs(s_step[i*3])<astep/8 && fabs(s_step[i*3+1])<astep/8 && fabs(s_step[i*3+2])<astep/8) changed=0;
+					if (fabs(s_step[i*3])<astep/4 && fabs(s_step[i*3+1])<astep/4 && fabs(s_step[i*3+2])<astep/4) changed=0;
 				}
 				
 				// Ouch, exhaustive (local) search
