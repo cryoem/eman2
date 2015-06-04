@@ -825,7 +825,8 @@ def main():
 	#
 
 	nxinit = 64  #int(280*0.3*2)
-	cushion = 8  #  the window size has to be at lest 8 pixels larger than what would follow from resolutiol
+	cushion = 8  #  the window size has to be at least 8 pixels larger than what would follow from resolution
+	nxstep = 4
 
 	mempernode = 4.0e9
 
@@ -1481,60 +1482,55 @@ def main():
 		if(myid == main_node):
 			print(" New resolution %6d   Previous resolution %d"%(icurrentres , tracker["resolution"]))
 
-		if( ( currentres > tracker["resolution"] ) or (eliminated_outliers and not tracker["eliminated-outliers"]) or mainiteration == 1):
+		if( ( icurrentres > tracker["icurrentres"] ) or (eliminated_outliers and not tracker["eliminated-outliers"]) or mainiteration == 1):
 			if(myid == main_node):
 				if( currentres > tracker["resolution"]):  print("  Resolution improved, full steam ahead!")
 				else:  print("  While the resolution did not improve, we eliminated outliers so we follow the _resolution_improved_ path.")
-			if(currentres >= 0.45 ):
-				print(" Resolution exceeded 0.45, i.e., approached Nyquist limit, program will terminate")
+			if(tracker["icurrentres"] + nsxtep//2 >= nnxo ):
+				if(myid == main_node): print(" Resolution approached Nyquist limit, program will terminate")
 			else:
 				# We need separate rules for each case
-				if( currentres > tracker["resolution"] ):  tracker["movedup"] = True
+				if( icurrentres > tracker["resolution"] ):  tracker["movedup"] = True
 				else:   tracker["movedup"] = False
+				#  increase resolution
+				icurrentres = tracker["icurrentres"] + nsxtep//2
+				nxshrink = tracker["nxshrink"]
+				nxshrink += nsxtep
+				nxinit = tracker["nxinit"]
+				while( nxshrink + cushion > nxinit ): nxinit += 32
+				nxinit = min(nxinit,nnxo)
 				#  Exhaustive searches
 				if(angular_neighborhood == "-1" and not tracker["local"]):
-					tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
-					paramsdict["initialfl"] = lowpass
-					#  For exhaustive searches do sharp cut-off to prevent volumes size to grow too large
-					paramsdict["falloff"]   = 0.2
-					lowpass = currentres + tracker["extension"]
-					shrink = max(min(2*lowpass + paramsdict["falloff"], 1.0), minshrink)
-					nxshrink = min(int(nnxo*shrink + 0.5),nnxo)
-					nxshrink += nxshrink%2
-					shrink = float(nxshrink)/nnxo
+					paramsdict["initialfl"] = read_fsc(os.path.join(initdir,"fsc.txt"),icurrentres, myid, main_node)
+					tracker["initialfl"] = paramsdict["initialfl"]
+					tracker["lowpass"] = paramsdict["initialfl"]
+					paramsdict["lowpass"] = paramsdict["initialfl"]
 				#  Local discrete/gridding searches
 				elif(angular_neighborhood != "-1" and not tracker["local"]):
-					tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
-					paramsdict["initialfl"] = lowpass
-					paramsdict["falloff"]   = falloff
-					lowpass = currentres# + tracker["extension"]
-					shrink = max(min(2*lowpass + paramsdict["falloff"], 1.0), minshrink)
-					nxshrink = min(int(nnxo*shrink + 0.5),nnxo)
-					nxshrink += nxshrink%2
-					shrink = float(nxshrink)/nnxo
+					#tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
+					paramsdict["initialfl"] = read_fsc(os.path.join(initdir,"fsc.txt"),icurrentres, myid, main_node)
+					tracker["initialfl"] = paramsdict["initialfl"]
+					tracker["lowpass"] = paramsdict["initialfl"]
+					paramsdict["lowpass"] = paramsdict["initialfl"]
 				#  Local/gridding  searches, move only as much as the resolution increase allows
 				elif(tracker["local"]):
-					tracker["extension"] =    0.0  # lowpass cannot exceed 0.45
-					paramsdict["initialfl"] = lowpass
-					paramsdict["falloff"]   = falloff
-					lowpass = currentres + tracker["extension"]
-					shrink = max(min(2*lowpass + paramsdict["falloff"], 1.0), minshrink)
-					nxshrink = min(int(nnxo*shrink + 0.5),nnxo)
-					nxshrink += nxshrink%2
-					shrink = float(nxshrink)/nnxo
+					#tracker["extension"] =    0.0  # lowpass cannot exceed 0.45
+					paramsdict["initialfl"] = read_fsc(os.path.join(initdir,"fsc.txt"),icurrentres, myid, main_node)
+					tracker["initialfl"] = paramsdict["initialfl"]
+					tracker["lowpass"] = paramsdict["initialfl"]
+					paramsdict["lowpass"] = paramsdict["initialfl"]
 				else:
 					print(" Unknown combination of settings in improved resolution path",angular_neighborhood,tracker["local"])
 					exit()  #  This will crash the program, but the situation is unlikely to occure
-				tracker["nx"]                  = nxshrink
-				tracker["resolution"]          = currentres
-				tracker["lowpass"]             = lowpass
-				tracker["falloff"]             = falloff
-				tracker["initialfl"]           = paramsdict["initialfl"]
+				tracker["nxshrink"]            = nxshrink
+				tracker["nxinit"]              = nxinit
 				tracker["eliminated-outliers"] = eliminated_outliers
 				bestoutputdir = mainoutputdir
 				keepgoing = 1
 
 		elif( currentres < tracker["resolution"] ):
+			if(myid == main_node):  print("  Cannot improve resolution, the best result is in the directory %s"%bestoutputdir)
+			exit()
 			#  The resolution decreased.  For exhaustive or local, backoff and switch to the next refinement.  For gridding, terminate
 			if(not tracker["movedup"] and tracker["extension"] < increment and mainiteration > 1):
 				if( angular_neighborhood == "-1" and not tracker["local"]):
@@ -1616,18 +1612,9 @@ def main():
 				if(myid == main_node):
 					print("  Switching to local searches with an  %s"%options.an)
 				falloff = 0.2
-				lowpass = currentres
-				tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
-				paramsdict["initialfl"] = lowpass
-				#  For exhaustive searches do sharp cut-off to prevent volumes size to grow too large
-				paramsdict["falloff"]   = falloff
-				#lowpass = currentres + tracker["extension"]
-				shrink = max(min(2*lowpass + paramsdict["falloff"], 1.0), minshrink)
-				nxshrink = max( min(int(nnxo*shrink + 0.5),nnxo), nxshrink )  # shrink cannot decrease
-				nxshrink += nxshrink%2
-				shrink = float(nxshrink)/nnxo
 				tracker["local"] = True
-
+				#  keep the same resolution
+				icurrentres = tracker["icurrentres"]
 				angular_neighborhood = options.an
 				ali3d_options.pwreference = options.pwreference
 				tracker["PWadjustment"] = ali3d_options.pwreference
@@ -1640,20 +1627,11 @@ def main():
 			elif(angular_neighborhood != "-1" and not tracker["local"]):
 				if(myid == main_node):
 					print("  Switching to local searches without an")
-				falloff = 0.2
-				tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
-				paramsdict["initialfl"] = lowpass
-				paramsdict["falloff"]   = falloff
-				lowpass = currentres# + tracker["extension"]
-				shrink = max(min(2*lowpass + paramsdict["falloff"], 1.0), minshrink)
-				nxshrink = min(int(nnxo*shrink + 0.5),nnxo)
-				nxshrink += nxshrink%2
-				shrink = float(nxshrink)/nnxo
 				tracker["local"] = True
-
-				angular_neighborhood = options.an
+				#  Finish up
+				#angular_neighborhood = options.an
 				ali3d_options.pwreference = options.pwreference
-				tracker["PWadjustment"] = ali3d_options.pwreference
+				#tracker["PWadjustment"] = ali3d_options.pwreference
 				keepgoing = 1
 				if(myid == main_node):
 					print("  Switching to local searches with an %s"%angular_neighborhood)
@@ -1661,9 +1639,6 @@ def main():
 						print("  Turning on power spectrum adjustment %s"%tracker["PWadjustment"])
 			#  Local/gridding  searches, move only as much as the resolution increase allows
 			elif(tracker["local"]):
-				tracker["extension"] =    0.0  # lowpass cannot exceed 0.45
-				paramsdict["initialfl"] = lowpass
-				paramsdict["falloff"]   = falloff
 				lowpass = currentres + tracker["extension"]
 				shrink = max(min(2*lowpass + paramsdict["falloff"], 1.0), minshrink)
 				nxshrink = min(int(nnxo*shrink + 0.5),nnxo)
@@ -1672,11 +1647,6 @@ def main():
 			else:
 				print(" Unknown combination of settings in improved resolution path",angular_neighborhood,tracker["local"])
 				exit()  #  This will crash the program, but the situation is unlikely to occur
-			tracker["nx"]                  = nxshrink
-			tracker["resolution"]          = currentres
-			tracker["lowpass"]             = lowpass
-			tracker["falloff"]             = falloff
-			tracker["initialfl"]           = paramsdict["initialfl"]
 			tracker["eliminated-outliers"] = eliminated_outliers
 			bestoutputdir = mainoutputdir
 			keepgoing = 1
@@ -1772,6 +1742,7 @@ def main():
 
 
 		if( keepgoing == 1 ):
+			nsoft = 0
 			if(myid == main_node):
 				print("  New shrink and image dimension :",shrink,nxshrink)
 				"""
@@ -1787,8 +1758,8 @@ def main():
 						cmdexecute(cmd)
 				"""
 			previousoutputdir = mainoutputdir
-			tracker["shrink"]     = shrink
-			tracker["nx"]         = nxshrink
+			#  maybe resolution should be kept in abs freq units?
+			tracker["resolution"]         = tracker["icurrentres"]
 			history.append(tracker.copy())
 
 		else:
