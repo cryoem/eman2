@@ -227,7 +227,7 @@ def read_fsc(fsclocation, lc, myid, main_node, comm = -1):
 	if(myid == main_node):
 		f = read_text_file(fsclocation,1)
 		n = len(f)
-		f = f[:lc+1] +[0.0 for i in xrange(lc+1,n)]
+		if(n > lc+1 ):  f = f[:lc+1] +[0.0 for i in xrange(lc+1,n)]
 	else: f = 0.0
 	mpi_barrier(comm)
 	f = bcast_list_to_all(f, myid, main_node)
@@ -348,15 +348,15 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 	currentres = 0.0
 
 	if(myid == main_node):
-		lowpass, falloff, currentres = get_resolution(vol, mask, nnxo, outputdir)
+		lowpass, falloff, currentres = get_pixel_resolution(vol, mask, nnxo, outputdir)
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(  line,"Current resolution %6.2f, low-pass filter cut-off %6.4f and fall-off %6.4f"%(currentres,lowpass,falloff))
+		print(  line,"Current resolution %6d, low-pass filter cut-off %6.4f and fall-off %6.4f"%(currentres,lowpass,falloff))
 		write_text_row([[lowpass, falloff, currentres]],os.path.join(outputdir,"current_resolution.txt"))
 	#  Returns: low-pass filter cutoff;  low-pass filter falloff;  current resolution
 	currentres = bcast_number_to_all(currentres, source_node = main_node)
 	lowpass    = bcast_number_to_all(lowpass, source_node = main_node)
 	falloff    = bcast_number_to_all(falloff, source_node = main_node)
-	return round(lowpass,4), round(falloff,4), round(currentres,2)
+	return round(lowpass,4), round(falloff,4), currentres
 
 def compute_fscs(stack, outputdir, chunkname, newgoodname, fscoutputdir, doit, keepchecking, nproc, myid, main_node):
 	#  Compute reconstructions per group from good particles only to get FSC curves
@@ -1015,7 +1015,7 @@ def main():
 					"lowpass":inifil, "initialfl":inifil, "falloff":0.2, "radius":radi, \
 					"icurrentres": nxinit//2, "nxinit":nxinit,"nxshrink":nnxo,\
 					"nsoft":0, "delpreviousmax":True, "saturatecrit":1.0, "pixercutoff":2.0,\
-					"refvol":volinit, "mask3D":options.mask3D}
+					"refvol":volinit, "mask3D":options.mask3D  }
 
 	doit, keepchecking = checkstep(initdir, keepchecking, myid, main_node)
 	if  doit:
@@ -1212,10 +1212,12 @@ def main():
 			else:
 				if(paramsdict["local"]):
 					paramsdict["saturatecrit"] = 0.95
+					#paramsdict["pixercutoff"]  = 0.5
 					paramsdict["xr"] = "2.0"
 					paramsdict["maxit"] = 5 #  ?? Lucky guess
 				else:
 					paramsdict["saturatecrit"] = 0.95
+					paramsdict["pixercutoff"]  = 0.5
 					paramsdict["maxit"] = 50 #  ?? Lucky guess
 
 			if  doit:
@@ -1277,7 +1279,7 @@ def main():
 			if( nsoft > 0 and doit):  #  Only do finishing up when the previous step was SHC
 				#  Run hard to finish up matching
 				subdict(paramsdict, \
-				{ "maxit":10, "nsoft":0, "saturatecrit":0.95, "delpreviousmax":True, \
+				{ "maxit":10, "nsoft":0, "saturatecrit":0.95, "pixercutoff":0.5,"delpreviousmax":True, \
 				"refvol":os.path.join(mainoutputdir,"loga%01d"%procid,"fusevol%01d.hdf"%procid)} )
 
 				if  doit:
@@ -1302,26 +1304,25 @@ def main():
 			if( nsoft > 0 ):
 				#  There was first soft phase, so the volumes have to be computed
 				#  low-pass filter, current resolution
-				lowpass, falloff, currentres = compute_resolution(stack, mainoutputdir, partids, partstack, radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
+				lowpass, falloff, icurrentres = compute_resolution(stack, mainoutputdir, partids, partstack, radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
 			else:
 				#  Previous phase was hard, so the volumes exist
 				vol = []
 				for procid in xrange(2):  vol.append(get_im(os.path.join(mainoutputdir,"loga%01d"%procid,"vol%01d.hdf"%procid) ))
-				newlowpass, newfalloff, currentres = compute_resolution(vol, mainoutputdir, partids, partstack, radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
+				newlowpass, newfalloff, icurrentres = compute_resolution(vol, mainoutputdir, partids, partstack, radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
 				del vol
 		else:
 			if(myid == main_node):
-				[newlowpass, newfalloff, currentres] = read_text_row( os.path.join(mainoutputdir,"current_resolution.txt") )[0]
+				[newlowpass, newfalloff, icurrentres] = read_text_row( os.path.join(mainoutputdir,"current_resolution.txt") )[0]
 			else:
 				newlowpass = 0.0
 				newfalloff = 0.0
-				currentres = 0.0
+				icurrentres = 0
 			newlowpass = bcast_number_to_all(newlowpass, source_node = main_node)
 			newlowpass = round(newlowpass,4)
 			newfalloff = bcast_number_to_all(newfalloff, source_node = main_node)
 			newfalloff = round(newfalloff,4)
-			currentres = bcast_number_to_all(currentres, source_node = main_node)
-			currentres = round(currentres,2)
+			icurrentres = bcast_number_to_all(icurrentres, source_node = main_node)
 
 		#  Here I have code to generate presentable results.  IDs and params have to be merged and stored and an overall volume computed.
 		doit, keepchecking = checkstep(os.path.join(mainoutputdir,"volf.hdf"), keepchecking, myid, main_node)
@@ -1340,7 +1341,9 @@ def main():
 				write_text_file([pinids[i][0] for i in xrange(len(pinids))], os.path.join(mainoutputdir,"indexes.txt"))
 				write_text_row( [pinids[i][1] for i in xrange(len(pinids))], os.path.join(mainoutputdir,"params.txt"))
 			mpi_barrier(MPI_COMM_WORLD)
-			ali3d_options.fl     = currentres
+			nfsc = read_fsc(os.path.join(mainoutputdir,"fsc.txt"),nnxo, myid, main_node)
+			ali3d_options.fl, ali3d_options.aa = fit_tanh1([float(i)/nnxo for i in xrange(len(nfsc)),nfsc], 0.01)
+			del nfsc
 			ali3d_options.ou     = radi
 			ali3d_options.shrink = 1.0
 			projdata = getindexdata(stack, os.path.join(mainoutputdir,"indexes.txt"), os.path.join(mainoutputdir,"params.txt"), myid, nproc)
@@ -1476,7 +1479,7 @@ def main():
 			increment   = 0.01
 
 		if(myid == main_node):
-			print(" New resolution %6.3f   Previous resolution %6.3f"%(icurrentres , tracker["resolution"]))
+			print(" New resolution %6d   Previous resolution %d"%(icurrentres , tracker["resolution"]))
 
 		if( ( currentres > tracker["resolution"] ) or (eliminated_outliers and not tracker["eliminated-outliers"]) or mainiteration == 1):
 			if(myid == main_node):
