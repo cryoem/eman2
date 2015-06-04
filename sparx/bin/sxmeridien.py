@@ -1188,19 +1188,19 @@ def main():
 		if(lastring < 2):
 			ERROR( "ERROR!!   lastring too small  %f    %f   %d"%(radi, lastring), "sxmeridien",1, myid)
 
+		delta = round(degrees(atan(1.0/lastring)), 2)
+		subdict( paramsdict, { "delta":"%f"%delta , "an":angular_neighborhood, \
+						"lowpass":tracker["lowpass"],
+						"nnxo":tracker["nnxo"], "icurrentres":tracker["icurrentres"],"nxinit":tracker["nxinit"], "nxshrink":tracker["nxshrink"],
+						"pixercutoff":get_pixercutoff(radi*float(tracker["nxinit"])/float(nnxo), delta, 0.5), \
+						"radius":lastring,"delpreviousmax":True } )
 		#  REFINEMENT
 		#  Part "a"  SHC         <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 		for procid in xrange(2):
 			coutdir = os.path.join(mainoutputdir,"loga%01d"%procid)
 			doit, keepchecking = checkstep(coutdir, keepchecking, myid, main_node)
 			#  here ts has different meaning for standard and continuous
-			delta = round(degrees(atan(1.0/lastring)), 2)
-			subdict( paramsdict, { "delta":"%f"%delta , "an":angular_neighborhood, \
-							"lowpass":tracker["lowpass"], "nsoft":nsoft, \
-							"nnxo":tracker["nnxo"], "icurrentres":tracker["icurrentres"],"nxinit":tracker["nxinit"], "nxshrink":tracker["nxshrink"],
-							"pixercutoff":get_pixercutoff(radi*float(tracker["nxinit"])/float(nnxo), delta, 0.5), \
-							"radius":lastring,"delpreviousmax":True, \
-							"refvol":os.path.join(mainoutputdir,"fusevol%01d.hdf"%procid) } )
+			subdict( paramsdict, { "nsoft":nsoft, "refvol":os.path.join(mainoutputdir,"fusevol%01d.hdf"%procid) } )
 			#if(len(history)>1):  old_nx = history[-2]["nx"]
 			#else:    old_nx = tracker["nx"]
 			paramsdict["xr"] = "3.0"#"%s"%max(3,int(1.5*tracker["nx"]/float(old_nx) +0.5))
@@ -1744,7 +1744,7 @@ def main():
 		if( keepgoing == 1 ):
 			nsoft = 0
 			if(myid == main_node):
-				print("  New shrink and image dimension :",shrink,nxshrink)
+				print("  New shrink and image dimension :",nxshrink, nxinit)
 				"""
 				#  It does not look like it is necessary, we just have to point to the directory as the files should be there.
 				#  Will continue, so update the params files
