@@ -2700,19 +2700,19 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 // 		x->write_image("dbg.hdf",(sexp-5)*2+1);
 // 		delete x;
 
-		// This is a solid estimate for very complete searching
-// 		float astep = 89.999/floor(pi/(2.0*atan(2.0/ss)));
+		// This is a solid estimate for very complete searching, 2.5 is a bit arbitrary
+ 		float astep = 2.5*89.999/floor(pi/(2.0*atan(2.0/ss)));
 
 		// This is drawn from single particle analysis testing, which in that case insures that enough sampling to
-		// reasonably fill Fourier space is achieved
-		float astep = (float)(89.99/ceil(90.0*9.0/(8.0*sqrt((float)(4300.0/ss)))));	// 8 is (3+speed) from SPA with speed=5
+		// reasonably fill Fourier space is achieved, but doesn't perfectly apply to SPT
+//		float astep = (float)(89.99/ceil(90.0*9.0/(8.0*sqrt((float)(4300.0/ss)))));	// 8 is (3+speed) from SPA with speed=5
 
 		// This insures we make at least one real effort at each level
 		for (int i=0; i<nsoln; i++) {
 			s_score[i]=1.0e24;	// reset the scores since the different scales will not match
-			if (fabs(s_step[i*3+0])<astep/4.0) s_step[i*3+0]=astep/2.0;
-			if (fabs(s_step[i*3+1])<astep/4.0) s_step[i*3+1]=astep/2.0;
-			if (fabs(s_step[i*3+2])<astep/4.0) s_step[i*3+2]=astep/2.0;
+			if (fabs(s_step[i*3+0])<astep/8.0) s_step[i*3+0]*=2.0;
+			if (fabs(s_step[i*3+1])<astep/8.0) s_step[i*3+1]*=2.0;
+			if (fabs(s_step[i*3+2])<astep/8.0) s_step[i*3+2]*=2.0;
 		}
 		
 		// This is for the first loop, we do a full search in a heavily downsampled space
@@ -2800,9 +2800,13 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 					}
 					changed=0;
 					for (int axis=0; axis<3; axis++) {
-						if (fabs(s_step[i*3+axis])<astep/4.0) continue;		// skip axes where we already have enough precision on this axis
+						if (fabs(s_step[i*3+axis])<astep/8.0) continue;		// skip axes where we already have enough precision on this axis
 						Dict upd;
 						upd[axname[axis]]=s_step[i*3+axis];
+						// when moving az, we move phi in the opposite direction by the same amount since the two are singular at alt=0
+						// phi continues to move independently. I believe this should produce a more monotonic energy surface
+						if (axis==0) upd[axname[2]]=-s_step[i*3+axis];		
+
 						int r=testort(small_this,small_to,s_score,s_coverage,s_xform,i,upd);
 						
 						// If we fail, we reverse direction with a slightly smaller step and try that
@@ -2820,7 +2824,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 						for (int j=0; j<3; j++) s_step[i*3+j]*-0.75;
 						changed=1;
 					}
-					if (fabs(s_step[i*3])<astep/4 && fabs(s_step[i*3+1])<astep/4 && fabs(s_step[i*3+2])<astep/4) changed=0;
+					if (fabs(s_step[i*3])<astep/8 && fabs(s_step[i*3+1])<astep/8 && fabs(s_step[i*3+2])<astep/8) changed=0;
 				}
 				
 				// Ouch, exhaustive (local) search

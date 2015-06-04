@@ -1937,6 +1937,10 @@ if the lst file does not exist."""
 		if len(tupl)==3 : self.write(n,tupl[0],tupl[1],tupl[2])
 		else : self.write(n,tupl[0],tupl[1])
 
+	def close(self):
+		"""Once you call this, you should not try to access this object any more"""
+		self.ptr=None
+
 	def write(self,n,nextfile,extfile,comment=None):
 		"""Writes a record to any location in a valid #LSX file.
 n : image number in #LSX file, -1 appends, as does n>= current file len
