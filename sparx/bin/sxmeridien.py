@@ -646,8 +646,16 @@ def metamove(projdata, oldshifts, paramsdict, partids, partstack, outputdir, pro
 		cmd = "mkdir "+log.prefix
 		cmdexecute(cmd)
 		log.prefix += "/"
-	else:  log = None
+		ref_vol = get_im(paramsdict["refvol"])
+		nnn = ref_vol.get_xsize()
+		if(paramsdict["nxinit"] != nnn ):
+			from fundamentals import resample
+			ref_vol = resample(ref_vol, float(paramsdict["nxinit"])/float(nnn))
+	else:
+		log = None
+		ref_vol = model_blank(paramsdict["nxinit"], paramsdict["nxinit"], paramsdict["nxinit"])
 	mpi_barrier(MPI_COMM_WORLD)
+	bcast_EMData_to_all(ref_vol, myid, main_node)
 
 	ali3d_options.delta  = paramsdict["delta"]
 	ali3d_options.center = paramsdict["center"]
@@ -683,7 +691,7 @@ def metamove(projdata, oldshifts, paramsdict, partids, partstack, outputdir, pro
 						ali3d_options, paramsdict["shrink"], mpi_comm = MPI_COMM_WORLD, log = log, \
 		    			chunk = 0.25, \
 		    			saturatecrit = paramsdict["saturatecrit"], pixercutoff =  paramsdict["pixercutoff"])
-	else: params = sali3d_base(projdata, get_im(paramsdict["refvol"]), \
+	else: params = sali3d_base(projdata, ref_vol, \
 						ali3d_options, mpi_comm = MPI_COMM_WORLD, log = log, \
 						nsoft = paramsdict["nsoft"], \
 						saturatecrit = paramsdict["saturatecrit"],  pixercutoff =  paramsdict["pixercutoff"] )
