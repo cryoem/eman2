@@ -1495,7 +1495,7 @@ def main():
 				#  increase resolution
 				icurrentres = tracker["icurrentres"] + nsxtep//2
 				nxshrink = tracker["nxshrink"]
-				nxshrink += nsxtep
+				nxshrink += nxstep
 				nxinit = tracker["nxinit"]
 				while( nxshrink + cushion > nxinit ): nxinit += 32
 				nxinit = min(nxinit,nnxo)
