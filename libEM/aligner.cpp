@@ -2733,6 +2733,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 			Symmetry3D* sym = Factory<Symmetry3D>::get((string)params.set_default("sym","c1"));
 			// We don't generate for phi, since this can produce a very large number of orientations
 			vector<Transform> transforms = sym->gen_orientations((string)params.set_default("orientgen","eman"),d);
+			if (transforms.size()<28) continue; // for very high symmetries we will go up to 32 instead of 24
 			if (verbose>0) printf("%d orientations to test\n",(int)(transforms.size()*(360.0/astep)));
 
 			// We iterate over all orientations in an asym triangle (alt & az) then deal with phi ourselves
@@ -2750,7 +2751,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 					aap["ty"]=0;
 					aap["tz"]=0;
 					t.set_params(aap);
-
+					
 					// somewhat strangely, rotations are actually much more expensive than FFTs, so we use a CCF for translation
 					EMData *stt=small_this->process("xform",Dict("transform",EMObject(&t),"zerocorners",5));
 					EMData *ccf=small_to->calc_ccf(stt);
@@ -2769,15 +2770,31 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 //					float sim=stt->cmp("fsc.tomo.auto",small_to,Dict("sigmaimg",sigmathisv,"sigmawith",sigmatov));
 //					float sim=stt->cmp("fsc.tomo.auto",small_to);
 
-					// First we find the worst solution in the list of possible best solutions, or the first
-					// solution which is currently "empty"
+					// We want to make sure our starting points are somewhat separated from each other, so we replace any angles too close to an existing angle
+					// If we find an existing 'best' angle within range, then we either replace it or skip
 					int worst=-1;
 					for (int i=0; i<nsoln; i++) {
-						if (s_coverage[i]==0.0) { worst=i; break; }
-						if (s_score[i]<s_score[worst]) worst=i;
+						if (s_coverage[i]==0.0) continue;	// hasn't been set yet
+						Transform tdif=s_xform[i].inverse();
+						tdif=tdif*t;
+						float adif=tdif.get_rotation("spin")["omega"];
+						if (adif<astep*2.5) {
+							worst=i;
+//							printf("= %1.3f\n",adif);
+						}
+					}
+					
+					// if we weren't close to an existing angle, then we find the lowest current score and use that
+					if (worst==-1) {
+						// First we find the worst solution in the list of possible best solutions, or the first
+						// solution which is currently "empty"
+						for (int i=0; i<nsoln; i++) {
+							if (s_coverage[i]==0.0) { worst=i; break; }
+							if (s_score[i]<s_score[worst]) worst=i;
+						}
 					}
 
-					// If the current solution is better than the worst of the previous solutions, then we
+					// If the current solution is better than the 'worst' of the previous solutions, then we
 					// displace it. Note that there is no sorting performed here
 					if (sim<s_score[worst]) {
 						s_score[worst]=sim;
