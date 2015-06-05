@@ -232,7 +232,8 @@ def main():
 
 	parser.add_argument("--precision",type=float,default=1.0,help="""Default=1.0. Precision in pixels to use when figuring out alignment parameters automatically using --radius. Precision would be the number of pixels that the the edge of the specimen is moved (rotationally) during the finest sampling, --falign. If precision is 1, then the precision of alignment will be that of the sampling (apix of your images) times the --shrinkfine factor specified.""")
 
-	
+	parser.add_argument("--tweak",action='store_true',default=False,help="""WARNING: BUGGY. [NOT IMPLMEMENTED HERE YET]. This will perform a final alignment with no downsampling [without using --shrink or --shrinkfine] if --shrinkfine > 1.""")
+
 	(options, args) = parser.parse_args()
 
 	try:
