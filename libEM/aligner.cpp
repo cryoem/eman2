@@ -2677,7 +2677,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		int ss=pow(2.0,sexp);
 		if (ss==16) ss=24;		// 16 may be too small, but 32 takes too long...
 		if (ss>ny) ss=ny;
-		if (verbose>0) printf("Size %d\n",ss);
+		if (verbose>0) printf("\nSize %d\n",ss);
 
 		//ss=good_size(ny/ds);
 		EMData *small_this=base_this->get_clip(Region(0,(ny-ss)/2,(ny-ss)/2,ss+2,ss,ss));
@@ -2741,7 +2741,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 			for (unsigned int it=0; it<transforms.size(); it++) {
 				Transform t = transforms[it];
 				if (verbose>2) {
-					printf("  %d/%d\r",it,transforms.size());
+					printf("  %d/%d \r",it,transforms.size());
 					fflush(stdout);
 				}
 				for (float phi=0; phi<360.0; phi+=astep) {
@@ -2822,10 +2822,6 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 				// We work an axis at a time until we get where we want to be. Somewhat like a simplex
 				int changed=1;
 				while (changed) {
-					if (verbose>3) {
-							Dict aap=s_xform[i].get_params("eman");
-							printf("\n%1.3f\t%1.3f\t%1.3f\t%1.3f\t%1.3f\t%1.3f",s_step[i*3],s_step[i*3+1],s_step[i*3+2],float(aap["az"]),float(aap["alt"]),float(aap["phi"]));
-					}
 					changed=0;
 					for (int axis=0; axis<3; axis++) {
 						if (fabs(s_step[i*3+axis])<astep/4.0) continue;		// skip axes where we already have enough precision on this axis
@@ -2848,6 +2844,11 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 						}
 						if (verbose>4) printf("\nX %1.3f\t%1.3f\t%1.3f\t%d\t",s_step[i*3],s_step[i*3+1],s_step[i*3+2],changed);
 					}
+					if (verbose>3) {
+							Dict aap=s_xform[i].get_params("eman");
+							printf("\n%1.3f\t%1.3f\t%1.3f\t%1.3f\t%1.3f\t%1.3f\t(%1.3f)",s_step[i*3],s_step[i*3+1],s_step[i*3+2],float(aap["az"]),float(aap["alt"]),float(aap["phi"]),s_score[i]);
+					}
+					
 					if (!changed) {
 						for (int j=0; j<3; j++) s_step[i*3+j]*-0.75;
 						changed=1;
