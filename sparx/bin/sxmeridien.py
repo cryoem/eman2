@@ -1025,10 +1025,11 @@ def main():
 	if(delta <= 0.0):
 		delta = "%f"%round(degrees(atan(1.0/float(radi))), 2)
 	inifil = float(nxinit)/2.0/nnxo
+	inifil = 0.4
 	paramsdict = {	"stack":stack,"delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":angular_neighborhood, \
 					"center":options.center, "maxit":1, "local":False,\
-					"lowpass":inifil, "initialfl":inifil, "falloff":0.2, "radius":radi, \
-					"icurrentres": nxinit//2, "nxinit":nxinit,"nxresolution":nnxo,\
+					"lowpass":inifil, "initialfl":inifil, "falloff":0.1, "radius":radi, \
+					"icurrentres": nxinit//2, "nxinit":nnxo,"nxresolution":nnxo,\
 					"nsoft":0, "delpreviousmax":True, "saturatecrit":1.0, "pixercutoff":2.0,\
 					"refvol":volinit, "mask3D":options.mask3D  }
 
