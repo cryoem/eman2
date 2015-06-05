@@ -4503,3 +4503,47 @@ def store_value_of_simple_vars_in_json_file(local_vars, exclude_list_of_vars = [
 	with open('program_state.json', write_or_append) as fp:
 		json.dump(ordered_my_vars, fp, indent = 2)
 	fp.close()
+
+
+def getindexdata(stack, partids, partstack, myid, nproc):
+	# The function will read from stack a subset of images specified in partids
+	#   and assign to them parameters from partstack
+	# So, the lengths of partids and partstack are the same.
+	#  The read data is properly distributed among MPI threads.
+	
+	from applications import MPI_start_end
+
+	lpartids = map(int, read_text_file(partids) )
+	ndata = len(lpartids)
+	partstack = read_text_row(partstack)
+
+	if( ndata < nproc):
+		if(myid<ndata):
+			image_start = myid
+			image_end   = myid+1
+		else:
+			image_start = 0
+			image_end   = 1
+	else:
+		image_start, image_end = MPI_start_end(ndata, nproc, myid)
+	lpartids  = lpartids[image_start:image_end]
+	partstack = partstack[image_start:image_end]
+	data = EMData.read_images(stack, lpartids)
+
+	for i in xrange(len(partstack)):
+		set_params_proj(data[i], partstack[i])
+	return data
+
+def print_program_start_information():
+	
+	from mpi import MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size, mpi_barrier
+	import os
+	from socket import gethostname
+
+	myid = mpi_comm_rank(MPI_COMM_WORLD)
+	mpi_size = mpi_comm_size(MPI_COMM_WORLD)	# Total number of processes, passed by --np option.
+
+	if(myid == 0):
+		print "Location: " + os.getcwd()
+		
+	print "MPI Rank: %03d/%03d "%(myid, mpi_size) + "Hostname: " + gethostname() +  " proc_id: " + str(os.getpid())

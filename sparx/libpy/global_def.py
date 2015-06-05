@@ -67,13 +67,15 @@ CACHE_DISABLE = False
 global LOGFILE 
 LOGFILE = "logfile"
 from time import localtime, strftime
-timestring = strftime("_%d_%b_%Y_%H_%M_%S", localtime())
+# timestring = strftime("_%d_%b_%Y_%H_%M_%S", localtime())
+timestring = strftime("_%Y_%m_%d_%H_%M_%S", localtime())
 LOGFILE = LOGFILE+timestring
 LOGFILE_HANDLE = 0
 IS_LOGFILE_OPEN = False
 '''   SYSTEM FUNCTIONS - please do not change the text below '''
 global SPARXVERSION
 SPARXVERSION = "SPARX v3.0" + ' (CVS' + CVSDATESTAMP[6:-2] +')'
+
 
 def ERROR(message, where, action = 1, myid = 0):
 	"""
@@ -90,4 +92,5 @@ def ERROR(message, where, action = 1, myid = 0):
 	if action and BATCH:
 		from sys import exit		
 		exit()
+
 

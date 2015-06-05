@@ -1,208 +1,348 @@
 #!/usr/bin/env python
 
-
-# Making sure the correct version of the project is executed
-# Needs to be removed in production
-
-# import sys, os
-# sys.path.insert(0,os.path.dirname(os.path.realpath(__file__)) )
-# if(not os.path.exists(os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/libpy")):
-# 	sys.path.insert(1,os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/libpy")
-# if(not os.path.exists(os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/lib")):
-# 	sys.path.insert(1,os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/lib")
-
-
-# print sys.path
-# print len(sys.path)
-# sys.exit()
-# /home/hvoicu/Analysis/test_rviper/eman2/sparx/bin/sxrviper.py
-"""
-
-start.sh mpirun --npernode 16 --host n2,n3 -tag-output -np 32 \
-/home/hvoicu/EMAN2/bin/sxrviper.py \
-bdb:aclf --n_shc_runs=4 --outlier_percentile=95 --fl=0.1 --aa=0.15 \
---doga=0.1 --L2threshold=0.05 --maxit2=50 --ou=30 --xr=1 --center=0
-
-start.sh mpirun --npernode 16 --host n6,n7 -tag-output -np 32 \
-/home/hvoicu/EMAN2/bin/sxrviper.py \
-bdb:g20 --n_shc_runs=4 --outlier_percentile=95 --fl=0.1 --aa=0.15 \
---doga=0.1 --L2threshold=0.05 --maxit2=50 --ou=30 --xr=1 --center=0 --n_rv_runs=3
-
-start.sh mpirun --npernode 16 --host n6  -tag-output -np 8 \
-/home/hvoicu/EMAN2/bin/sxrviper.py \
-bdb:keep --n_shc_runs=2 --outlier_percentile=95 --fl=0.1 --aa=0.1 \
---doga=0.3   --L2threshold=0.05 --maxit2=50 --ou=25  --xr=2  --center=0
-
-start.sh mpirun --npernode 16 --host bmbpccl1,n0,n1,n6,n7,n8,n9,n10  -tag-output -np 128 \
-/home/hvoicu/Analysis/test_rviper/eman2/sparx/bin/sxrviper.py \
-bdb:g20 --n_shc_runs=8 --outlier_percentile=98 --fl=0.3 --aa=0.15 \
---doga=0.3   --L2threshold=0.05 --maxit2=50 --ou=30  --xr=0  --center=0
-
-
-start.sh mpirun --npernode 16 --host n0,n1  -tag-output -np 32 \
-/home/hvoicu/EMAN2/bin/sxrviper.py \
-"'aclf.hdf'" nrun21  --fl=0.1 --aa=0.15   --doga=0.1   \
---L2threshold=0.05 --maxit2=50   --nruns=4  --ou=30  --xr=1 --center=0
-
-
-"""
-
-
-
-from mpi import MPI_SUM, mpi_reduce, mpi_init, mpi_finalize, MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size, mpi_barrier, mpi_bcast, MPI_INT, MPI_CHAR, MPI_FLOAT
-
-# from debug_mpi import mpi_bcast
-
-
-from utilities import bcast_number_to_all
 import global_def
 from global_def import *
-from socket import gethostname
+from mpi import MPI_SUM, mpi_reduce, mpi_init, mpi_finalize, MPI_COMM_WORLD, mpi_comm_rank, mpi_comm_size, mpi_barrier, \
+	mpi_comm_split, mpi_bcast, MPI_INT, MPI_CHAR, MPI_FLOAT
+
+from utilities import get_im, string_found_in_file, get_latest_directory_increment_value, store_value_of_simple_vars_in_json_file
+from utilities import cmdexecute, if_error_all_processes_quit_program
+from utilities import read_text_row, read_text_file, write_text_file, write_text_row, getindexdata, print_program_start_information
+from multi_shc import find_common_subset, do_volume, multi_shc
+
 import string
-import numpy as np
-import os
-#from multi_shc import *
-
-#from debug_mpi import mpi_barrier 
-
-global f_counter
+import os, sys
+#from debug_mpi import mpi_barrier, mpi_bcast 
 
 
-def print_with_time_info(msg):
-	from   time import localtime, strftime
-	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>" + msg
-	print line
-
-def cmdexecute(cmd):
-	from   time import localtime, strftime
-	import subprocess
-	outcome = subprocess.call(cmd, shell=True)
-	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-	if(outcome == 1):
-		print(  line,"ERROR!!   Command failed:  ", cmd)
-		from sys import exit
-		exit()
-	else:  print(line,"Executed successfully: ",cmd)
-
-def string_found_in_file(myregex, filename):
-	import re
-	pattern = re.compile(myregex)
-	for line in open(filename):
-		if re.findall(pattern, line) <> []:
-			return True
-	return False
+MAXIMUM_NO_OF_VIPER_RUNS_ANALYZED_TOGETHER = 10
+# NORMALIZED_AREA_THRESHOLD_FOR_OUTLIER_DETECTION = 0.2
+PERCENT_THRESHOLD_X = .8
+PERCENT_THRESHOLD_Y = .2
 
 
+def calculate_list_of_independent_viper_run_indices_used_for_outlier_elimination(no_of_viper_runs_analyzed_together, 
+	no_of_viper_runs_analyzed_together_from_user_options, masterdir, rviper_iter, criterion_name):
 
-def get_latest_directory_increment_value(directory_location, directory_name):
-	import os
-	dir_count = 1
-	while os.path.isdir(directory_location + directory_name + "%03d"%(dir_count)):
-		dir_count += 1
-	if dir_count == 1:
-		return 1
-	return dir_count - 1
+	from utilities import combinations_of_n_taken_by_k
+
+	# generate all possible combinations of (no_of_viper_runs_analyzed_together - 1) taken (3 - 1) at a time
+	import itertools
+
+	number_of_additional_combinations_for_this_viper_iteration = combinations_of_n_taken_by_k(no_of_viper_runs_analyzed_together - 1,
+																		  no_of_viper_runs_analyzed_together_from_user_options - 1)
+
+	criterion_measure = [0.0] * number_of_additional_combinations_for_this_viper_iteration
+	all_n_minus_1_combinations_taken_k_minus_1_at_a_time = list(itertools.combinations(range(no_of_viper_runs_analyzed_together - 1),
+																  no_of_viper_runs_analyzed_together_from_user_options - 1))
+
+	no_of_processors = mpi_comm_size(MPI_COMM_WORLD)
+	my_rank = mpi_comm_rank(MPI_COMM_WORLD)
+
+	for idx, tuple_of_projection_indices in enumerate(all_n_minus_1_combinations_taken_k_minus_1_at_a_time):
+		if (my_rank == idx % no_of_processors):
+			list_of_viper_run_indices = list(tuple_of_projection_indices) + [no_of_viper_runs_analyzed_together - 1]
+			criterion_measure[idx] = measure_for_outlier_criterion(criterion_name, masterdir, rviper_iter, list_of_viper_run_indices)
+			plot_errors_between_any_number_of_projections(masterdir, rviper_iter, list_of_viper_run_indices, criterion_measure[idx])
+
+	criterion_measure = mpi_reduce(criterion_measure, number_of_additional_combinations_for_this_viper_iteration, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD)
+
+	if (my_rank == 0):
+		index_of_sorted_criterion_measure_list = [i[0] for i in sorted(enumerate(criterion_measure), reverse=False, key=lambda x: x[1])]
+
+		list_of_viper_run_indices_for_the_current_rrr_viper_iteration = list(all_n_minus_1_combinations_taken_k_minus_1_at_a_time[index_of_sorted_criterion_measure_list[0]]) + \
+																		[no_of_viper_runs_analyzed_together - 1]
+
+		mainoutputdir = masterdir + "/main%03d/" % (rviper_iter)
+
+		if criterion_name == "80th percentile":
+			pass_criterion = criterion_measure[index_of_sorted_criterion_measure_list[0]] < PERCENT_THRESHOLD_Y
+		elif criterion_name == "fastest increase in the last quartile":
+			pass_criterion = criterion_measure[index_of_sorted_criterion_measure_list[-1]] > PERCENT_THRESHOLD_Y
+		else:
+			pass_criterion = False
+
+		if not pass_criterion:
+			list_of_viper_run_indices_for_the_current_rrr_viper_iteration = []
+
+		import json; f = open(mainoutputdir + "list_of_viper_runs_included_in_outlier_elimination.json", 'w')
+		json.dump(list_of_viper_run_indices_for_the_current_rrr_viper_iteration,f); f.close()
+
+		mpi_barrier(MPI_COMM_WORLD)
+		return list_of_viper_run_indices_for_the_current_rrr_viper_iteration
+
+	mpi_barrier(MPI_COMM_WORLD)
+
+	return []
 
 
+def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_together, 
+	no_of_viper_runs_analyzed_together_from_user_options, masterdir, bdb_stack_location, outlier_percentile, 
+	criterion_name, outlier_index_threshold_method):
+	
+	no_of_viper_runs_analyzed_together_must_be_incremented = 0
+	do_calculation = 1
 
-def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_together, masterdir, bdb_stack_location, outlier_percentile):
-	from utilities import wrap_mpi_bcast
+	if (myid == main_node):
+		mainoutputdir = masterdir + "/main%03d/" % (rviper_iter)
+		if(os.path.exists(mainoutputdir + "/list_of_viper_runs_included_in_outlier_elimination.json")):
+			# list_of_independent_viper_run_indices_used_for_outlier_elimination = map(int, read_text_file(mainoutputdir + "/list_of_viper_runs_included_in_outlier_elimination.txt"))
+			import json; f = open(mainoutputdir + "list_of_viper_runs_included_in_outlier_elimination.json", 'r')
+			list_of_independent_viper_run_indices_used_for_outlier_elimination  = json.load(f); f.close()
+			do_calculation = 0
+		do_calculation = mpi_bcast(do_calculation, 1, MPI_INT, 0, MPI_COMM_WORLD)[0]
+	else:
+		do_calculation = mpi_bcast(do_calculation, 1, MPI_INT, 0, MPI_COMM_WORLD)[0]
+
+	if do_calculation:
+		list_of_independent_viper_run_indices_used_for_outlier_elimination = calculate_list_of_independent_viper_run_indices_used_for_outlier_elimination(no_of_viper_runs_analyzed_together,
+			no_of_viper_runs_analyzed_together_from_user_options, masterdir, rviper_iter, criterion_name)
+
+	# only master has the actual list: list_of_independent_viper_run_indices_used_for_outlier_elimination
+	# only master has the actual list: list_of_independent_viper_run_indices_used_for_outlier_elimination
+	# only master has the actual list: list_of_independent_viper_run_indices_used_for_outlier_elimination
+
 	error_status = 0
 	if (myid == main_node):
-		if not found_outliers(outlier_percentile, rviper_iter, no_of_viper_runs_analyzed_together, masterdir, bdb_stack_location):
-		#if not found_outliers(95, rviper_iter, no_of_viper_runs_analyzed_together, masterdir, bdb_stack_location):
-			error_status = 1
-			cmd = "{} {} {}".format("mkdir ", masterdir, "Converged")
-			cmdexecute(cmd)
-			# update database files
+		if len(list_of_independent_viper_run_indices_used_for_outlier_elimination) == 0:
+			if no_of_viper_runs_analyzed_together > MAXIMUM_NO_OF_VIPER_RUNS_ANALYZED_TOGETHER:
+				error_status = 1
+				cmd = "{} {}".format("mkdir ", masterdir + "MAXIMUM_NO_OF_VIPER_RUNS_ANALYZED_TOGETHER__Reached"); cmdexecute(cmd)
+			else:
+				# No set of solutions has been found to make a selection for outlier elimination.
+				# A new independent viper run will be performed
+				no_of_viper_runs_analyzed_together_must_be_incremented = 1
+				cmd = "{} {}".format("rm ", mainoutputdir + "list_of_viper_runs_included_in_outlier_elimination.json"); cmdexecute(cmd)
+
+		else:
+			# Outliers are eliminated based on the viper runs contained in "list_of_independent_viper_run_indices_used_for_outlier_elimination"
+			found_outliers(list_of_independent_viper_run_indices_used_for_outlier_elimination, outlier_percentile, 
+				rviper_iter, masterdir, bdb_stack_location, outlier_index_threshold_method)
+
+		no_of_viper_runs_analyzed_together_must_be_incremented = mpi_bcast(no_of_viper_runs_analyzed_together_must_be_incremented, 1, MPI_INT, 0, MPI_COMM_WORLD)[0]
+	else:
+		no_of_viper_runs_analyzed_together_must_be_incremented = mpi_bcast(no_of_viper_runs_analyzed_together_must_be_incremented, 1, MPI_INT, 0, MPI_COMM_WORLD)[0]
 
 	if_error_all_processes_quit_program(error_status)
 
-def plot_errors_between_projections(projs, masterdir, rviper_iter, no_of_viper_runs_analyzed_together):
+	return no_of_viper_runs_analyzed_together_must_be_incremented
+
+
+def plot_errors_between_any_number_of_projections(masterdir, rviper_iter, list_of_projection_indices, error_value):
 	import matplotlib.pyplot as plt
-	from multi_shc import find_common_subset
-	from utilities import read_text_row
 
-	main_iterations = ["main" + "%03d"%i for i in range(1,rviper_iter+1)]
+	# # for debugging purposes
+	# if "counter" not in plot_errors_between_any_number_of_projections.__dict__:
+	# 	plot_errors_between_any_number_of_projections.counter = 0
+	# plot_errors_between_any_number_of_projections.counter += 1
 
-	for main_i in main_iterations:
-		mainoutputdir = masterdir + "/" + main_i + "/"
-		p=[]
-		for i1 in range(0,no_of_viper_runs_analyzed_together):
-			p.append(read_text_row(mainoutputdir + "run%03d"%(i1) + "/params.txt"))
-		ti1, ti3, out = find_common_subset(p,1.0)
-		u = []
-		for i in xrange(len(ti3)):
-			u.append([ti3[i],i])
-		u.sort()
-		# EMAN2.display([range(len(u)),[u[i][0] for i in xrange(len(u))]])
-		plt.plot(range(len(u)),[u[i][0] for i in xrange(len(u))])
+	# main_iterations = ["main" + "%03d" % i for i in range(1, rviper_iter + 1)]
+	main_iterations = ["main" + "%03d" % i for i in range(rviper_iter, rviper_iter + 1)]
+
+	mainoutputdir = masterdir + "/" + main_iterations[0] + "/"
+	p=[]
+	for i1 in list_of_projection_indices:
+		p.append(read_text_row(mainoutputdir + "run%03d"%(i1) + "/params.txt"))
+
+	ti1, ti3, out = find_common_subset(p,0)
+	u = []
+	for i in xrange(len(ti3)):
+		u.append([ti3[i],i])
+	u.sort()
+	# EMAN2.display([range(len(u)),[u[i][0] for i in xrange(len(u))]])
+	plt.plot(range(len(u)),[u[i][0] for i in xrange(len(u))])
+
+	# import json; f = open("error_curve%03d.json"%plot_errors_between_any_number_of_projections.counter, 'w')
+	# json.dump([u[i][0] for i in xrange(len(u))],f); f.close()
+
 	plt.ylabel('Error')
 	plt.xlabel('Image index')
-	plt.legend(main_iterations, loc = 'upper left')
 	plt.title("Sorted errors between projections")
-	plt.savefig(mainoutputdir + '/sorted_errors_between_projections.png')
+	import StringIO
+	which_projections = StringIO.StringIO()
+	which_projections.write("_" + "%.6f"%error_value)
+	for p_i in list_of_projection_indices: which_projections.write("_" + "%03d"%p_i)
+	for p_i in list_of_projection_indices: which_projections.write("___" + "%03d"%get_already_processed_viper_runs.r_permutation[p_i])
+
+	plt.savefig(mainoutputdir + '/sorted_errors_between_projections' + which_projections.getvalue() + '.png')
+	which_projections.close()
 	plt.close()
 
-def found_outliers(outlier_percentile, rviper_iter, no_of_viper_runs_analyzed_together, masterdir,  bdb_stack_location):
+
+def find_index_of_discontinuity_in_derivative(error_curve_func, list_of_projection_indices, mainoutputdir,
+	outlier_percentile):
+
+	import numpy as np
+
+	resolution = 100
+	split_point_resolution = 29
+	degree_of_the_fitting_polynomial = 1
+
+	data_set_length = len(error_curve_func)
+
+	# split_point_set = np.linspace(0.71,.99,split_point_resolution)
+	# split_point_set = np.linspace(0.71,outlier_percentile/100.0,split_point_resolution)
+	split_point_set = np.linspace(0.9,outlier_percentile/100.0,split_point_resolution)
+
+	minimum_goodness_of_fit_for_both_lines = 1e20
+	optimized_split_point = -1
+	for split_point in split_point_set:
+		first_line_x = map(int, np.linspace(0,split_point,resolution)*data_set_length)
+		first_line_y = np.array([error_curve_func[x] for x in first_line_x])
+		first_line_z = np.poly1d( np.polyfit(first_line_x, first_line_y, degree_of_the_fitting_polynomial) )
+
+		second_line_x = map(int, np.linspace(split_point,1, resolution)*data_set_length)
+		second_line_y = np.array([error_curve_func[x-1] for x in second_line_x])
+		second_line_z = np.poly1d( np.polyfit(second_line_x, second_line_y, degree_of_the_fitting_polynomial) )
+
+		goodness_of_fit_for_both_lines = sum((first_line_z(first_line_x) - first_line_y)**2)
+		goodness_of_fit_for_both_lines += sum((second_line_z(second_line_x) - second_line_y)**2)
+		# goodness_of_fit_for_both_lines = angle((1,first_line_z[1]), (1,second_line_z[1]))
+		if goodness_of_fit_for_both_lines < minimum_goodness_of_fit_for_both_lines:
+			minimum_goodness_of_fit_for_both_lines = goodness_of_fit_for_both_lines
+			optimized_split_point = split_point
+
+		import matplotlib.pyplot as plt
+		# split_point = optimized_split_point
+		plt.plot(range(len(error_curve_func)),error_curve_func)
+
+		first_line_x = map(int, np.linspace(0,split_point,resolution)*data_set_length)
+		first_line_y = np.array([error_curve_func[x] for x in first_line_x])
+		first_line_z = np.poly1d( np.polyfit(first_line_x, first_line_y, degree_of_the_fitting_polynomial) )
+
+		plt.plot(first_line_x,first_line_z(first_line_x))
+
+		second_line_x = map(int, np.linspace(split_point,1, resolution)*data_set_length)
+		second_line_y = np.array([error_curve_func[x-1] for x in second_line_x])
+		second_line_z = np.poly1d( np.polyfit(second_line_x, second_line_y, degree_of_the_fitting_polynomial) )
+		plt.plot(second_line_x,second_line_z(second_line_x))
+
+		import StringIO
+		which_projections = StringIO.StringIO()
+		which_projections.write("_" + "%.03f__%.6f"%(split_point, goodness_of_fit_for_both_lines))
+		for p_i in list_of_projection_indices: which_projections.write("_" + "%03d"%p_i)
+		for p_i in list_of_projection_indices: which_projections.write("___" + "%03d"%get_already_processed_viper_runs.r_permutation[p_i])
+
+		plt.title(mainoutputdir + '/sorted_errors' + which_projections.getvalue() + '.png')
+		plt.savefig(mainoutputdir + '/sorted_errors' + which_projections.getvalue() + '.png')
+		plt.close()
+
+	import matplotlib.pyplot as plt
+	split_point = optimized_split_point
+	plt.plot(range(len(error_curve_func)),error_curve_func)
+
+	first_line_x = map(int, np.linspace(0,split_point,resolution)*data_set_length)
+	first_line_y = np.array([error_curve_func[x] for x in first_line_x])
+	first_line_z = np.poly1d( np.polyfit(first_line_x, first_line_y, degree_of_the_fitting_polynomial) )
+
+	plt.plot(first_line_x,first_line_z(first_line_x))
+
+	second_line_x = map(int, np.linspace(split_point,1, resolution)*data_set_length)
+	second_line_y = np.array([error_curve_func[x-1] for x in second_line_x])
+	second_line_z = np.poly1d( np.polyfit(second_line_x, second_line_y, degree_of_the_fitting_polynomial) )
+	plt.plot(second_line_x,second_line_z(second_line_x))
+
+	import StringIO
+	which_projections = StringIO.StringIO()
+	which_projections.write("_" + "%.03f"%split_point)
+	for p_i in list_of_projection_indices: which_projections.write("_" + "%03d"%p_i)
+	for p_i in list_of_projection_indices: which_projections.write("___" + "%03d"%get_already_processed_viper_runs.r_permutation[p_i])
+
+	plt.title(mainoutputdir + '/optimized_errors' + which_projections.getvalue() + '.png')
+	plt.savefig(mainoutputdir + '/optimized_errors' + which_projections.getvalue() + '.png')
+	plt.close()
+
+	if optimized_split_point < 0:
+		return -1
+
+	return int(optimized_split_point*data_set_length)
+
+
+def measure_for_outlier_criterion(criterion_name, masterdir, rviper_iter, list_of_viper_run_indices):
+
+	# main_iterations = ["main" + "%03d" % i for i in range(1, rviper_iter + 1)]
+	main_iterations = ["main" + "%03d" % i for i in range(rviper_iter, rviper_iter + 1)]
+	mainoutputdir = masterdir + "/" + main_iterations[0] + "/"
+
+	p = []
+	for i1 in list_of_viper_run_indices:
+		p.append(read_text_row(mainoutputdir + "run%03d" % (i1) + "/params.txt"))
+	subset, avg_diff_per_image, outp = find_common_subset(p, 0)
+
+	avg_diff_per_image.sort()
+	x1 = len(avg_diff_per_image)
+	y1 = avg_diff_per_image[-1]
+
+	if criterion_name == "80th percentile":
+		return avg_diff_per_image[int(x1*PERCENT_THRESHOLD_X)]/y1
+	elif criterion_name == "fastest increase in the last quartile":
+		for k in range(5,6):
+			avg_diff_per_image_diff = [x - avg_diff_per_image[i - k] for i, x in enumerate(avg_diff_per_image)][k:]
+			
+			avg_diff_per_image_diff_max = max(avg_diff_per_image_diff)
+			avg_diff_per_image_diff_max_normalized = max(avg_diff_per_image_diff)/y1
+			
+			if avg_diff_per_image_diff.index(avg_diff_per_image_diff_max) >= int(x1*0.75):
+				return avg_diff_per_image_diff_max_normalized
+			return 0.0
+	else:
+		print "Error, no criterion name is specified!"
+		mpi_finalize()
+		sys.exit()
+
+
+
+def found_outliers(list_of_projection_indices, outlier_percentile, rviper_iter, masterdir,  bdb_stack_location,
+	outlier_index_threshold_method):
+	
 	# sxheader.py bdb:nj  --consecutive  --params=OID
 	import numpy as np
-	from utilities import read_text_row, write_text_file, write_text_row
-	from multi_shc import find_common_subset
-	from pixel_error import rotate_angleset_to_match
-
-	# masterdir = "/Users/hvoicu/tmp/test078/master2015_01_20__18_15_07/"
-	# no_of_viper_runs_analyzed_together = 3
-	# rviper_iter = 15
-
 
 	mainoutputdir = masterdir + "/main%03d/"%(rviper_iter)
 
 	# if this data analysis step was already performed in the past then return
-	# for future changes make sure that the file checked is the last one to be processed !!!
-	if(os.path.exists(mainoutputdir + "run%03d"%(no_of_viper_runs_analyzed_together - 1) + "/rotated_reduced_params.txt")):
-		return True
-
+	for check_run in list_of_projection_indices:
+		if not (os.path.exists(mainoutputdir + "/run%03d"%(check_run) + "/rotated_reduced_params.txt")):
+			break
+	else:
+		return
 
 	print "identify_outliers"
 	projs = []
-	for i1 in range(0,no_of_viper_runs_analyzed_together):
+	for i1 in list_of_projection_indices:
 		projs.append(read_text_row(mainoutputdir + "run%03d"%(i1) + "/params.txt"))
 
-	plot_errors_between_projections(projs, masterdir, rviper_iter, no_of_viper_runs_analyzed_together)
-
-
-##########  just for testing
-	#if (rviper_iter == 1):
-		#dat = EMData.read_images(bdb_stack_location)
-	#else:
-		#dat = EMData.read_images(bdb_stack_location + "_%03d"%(rviper_iter))
-
-	#if (rviper_iter > 1):
-		#for i1 in range(0,no_of_viper_runs_analyzed_together):
-			#projs[i1] = projs[i1][:len(dat)]
-##########  just for testing
-
-
-	#  This is my new code, I might be wrong, though, PAP 01/28/2015
-	percentile_index = int(np.percentile(range(len(projs[0])), outlier_percentile))
-	th = 1.0e23
-
-	index_outliers = []
-	index_keep_images = range(len(projs[0]))
-
-	while( len(projs[0]) > percentile_index):
-		subset, avg_diff_per_image, outp = find_common_subset(projs, th)
-		m = max([avg_diff_per_image[klt] for klt in subset])
-		l = avg_diff_per_image.index(m)
-		index_outliers.append(index_keep_images[l])
-		del index_keep_images[l]
-		for k in xrange(len(projs)):
-			del projs[k][l]
-			del outp[k][l]
-
-
+	# ti1, ti3, out = find_common_subset(projs, 1.0)
+	subset, avg_diff_per_image, rotated_params = find_common_subset(projs, target_threshold = 0)
+	# subset, avg_diff_per_image, rotated_params = find_common_subset(projs, target_threshold = 1.0)
+	error_values_and_indices = []
+	for i in xrange(len(avg_diff_per_image)):
+		error_values_and_indices.append([avg_diff_per_image[i], i])
 	del subset, avg_diff_per_image
+
+	error_values_and_indices.sort()
+
+	if outlier_index_threshold_method == "discontinuity_in_derivative":
+		outlier_index_threshold = find_index_of_discontinuity_in_derivative([i[0] for i in error_values_and_indices],
+		list_of_projection_indices, mainoutputdir, outlier_percentile)
+	elif outlier_index_threshold_method == "percentile":
+		outlier_index_threshold = outlier_percentile * (len(error_values_and_indices) - 1)/ 100.0
+	elif outlier_index_threshold_method == "angle_measure":
+		error_values = [i[0] for i in error_values_and_indices]
+		outlier_index_threshold = min(range(len(error_values)), key=lambda i: abs(error_values[i]-outlier_percentile))
+	
+	index_keep_images = [i[1] for i in error_values_and_indices[:(outlier_index_threshold-1)]]
+	index_outliers = [i[1] for i in error_values_and_indices[outlier_index_threshold:]]
+
+	print "error_values_and_indices: %f"%error_values_and_indices
+
+	import copy
+	reversed_sorted_index_outliers = copy.deepcopy(index_outliers)
+	reversed_sorted_index_outliers.sort(reverse=True)
+
+	for k in xrange(len(projs)):
+		for l in reversed_sorted_index_outliers:
+			del rotated_params[k][l]
 
 	index_outliers.sort()
 	index_keep_images.sort()
@@ -210,27 +350,8 @@ def found_outliers(outlier_percentile, rviper_iter, no_of_viper_runs_analyzed_to
 	write_text_file(index_outliers, mainoutputdir + "this_iteration_index_outliers.txt")
 	write_text_file(index_keep_images, mainoutputdir + "this_iteration_index_keep_images.txt")
 
-
-
 	#if len(index_outliers) < 3:
 		#return False
-
-
-
-
-	# if (rviper_iter == 1):
-	# 	cmd = "{} {} {} {}".format("e2bdb.py ", bdb_stack_location, "--makevstack=" + bdb_stack_location + "_outliers_%03d"%(rviper_iter + 1), "--list=" + mainoutputdir +  "this_iteration_index_outliers.txt")
-	# 	cmdexecute(cmd)
-	# 	cmd = "{} {} {} {}".format("e2bdb.py ", bdb_stack_location, "--makevstack=" + bdb_stack_location + "_%03d"%(rviper_iter + 1), "--list=" + mainoutputdir +  "this_iteration_index_keep_images.txt")
-	# 	cmdexecute(cmd)
-	# 	dat = EMData.read_images(bdb_stack_location)
-	# else:
-	# 	cmd = "{} {} {} {}".format("e2bdb.py ", bdb_stack_location + "_%03d"%(rviper_iter), "--makevstack=" + bdb_stack_location + "_outliers_%03d"%(rviper_iter + 1), "--list=" + mainoutputdir  +  "this_iteration_index_outliers.txt")
-	# 	cmdexecute(cmd)
-	# 	cmd = "{} {} {} {}".format("e2bdb.py ", bdb_stack_location + "_%03d"%(rviper_iter), "--makevstack=" + bdb_stack_location + "_%03d"%(rviper_iter + 1), "--list=" + mainoutputdir +  "this_iteration_index_keep_images.txt")
-	# 	cmdexecute(cmd)
-	# 	dat = EMData.read_images(bdb_stack_location + "_%03d"%(rviper_iter))
-
 
 	cmd = "{} {} {} {}".format("e2bdb.py ", bdb_stack_location + "_%03d"%(rviper_iter - 1), "--makevstack=" + bdb_stack_location + "_outliers_%03d"%(rviper_iter), "--list=" + mainoutputdir  +  "this_iteration_index_outliers.txt")
 	cmdexecute(cmd)
@@ -238,79 +359,56 @@ def found_outliers(outlier_percentile, rviper_iter, no_of_viper_runs_analyzed_to
 	cmdexecute(cmd)
 	dat = EMData.read_images(bdb_stack_location + "_%03d"%(rviper_iter - 1))
 
-
-
-
 	write_text_file([dat[i].get_attr("original_image_index")  for i in index_outliers],mainoutputdir + "index_outliers.txt")
 	write_text_file([dat[i].get_attr("original_image_index")  for i in index_keep_images],mainoutputdir + "index_keep_images.txt")
 
+	print "index_outliers:: " + str(index_outliers)
 
-		#cmd = "{} {} {} {}".format("e2bdb.py ", bdb_stack_location , "--makevstack=" + bdb_stack_location + "_%03d"%(rviper_iter + 1), "--list=" + mainoutputdir  +  "index_outliers.txt")
-		#cmdexecute(cmd)
-		#cmd = "{} {} {} {}".format("e2bdb.py ", bdb_stack_location , "--makevstack=" + bdb_stack_location + "_%03d"%(rviper_iter + 1), "--list=" + mainoutputdir +  "index_keep_images.txt")
-		#cmdexecute(cmd)
-	#print "e2bdb.py ", bdb_stack_location, "--makevstack=" + bdb_stack_location + "_%03d"%(rviper_iter + 1), "--list=" + mainoutputdir,  index_outliers
-	#print "e2bdb.py ", bdb_stack_location, "--makevstack=" + bdb_stack_location + "_%03d"%(rviper_iter + 1), "--list=" + mainoutputdir, index_keep_images
-	#print "e2bdb.py ", bdb_stack_location, "--makevstack=" + bdb_stack_location + "_%03d"%(rviper_iter), "--list=" + mainoutputdir, index_outliers
-	#print "e2bdb.py ", bdb_stack_location, "--makevstack=" + bdb_stack_location + "_%03d"%(rviper_iter), "--list=" + mainoutputdir, index_keep_images
-
-	print "index_outliers::", index_outliers
-	print "index_keep_images::", index_keep_images
-	#print "Length of dat (outliers):", len(dat)
-	#print "Type of dat[0] (outliers):", type(dat[0]), type(dat[len(dat)-1]),
-	#print "Length of gdat (keep_images):", len(gdat)
-	#print "Type of gdat[0] (keep_images):", type(gdat[0]), type(gdat[len(gdat)-1]),
-
-	#return True
-
-	#write_text_file([dat[i].get_attr("OID")  for i in range(len(dat))],mainoutputdir + "rejects.txt")
-
-
-	#for i in xrange(len(gdat)):  gdat[i].write_image(bdb_stack_location + "_%03d"%(rviper_iter + 1),i)
-	#for i in xrange(len(gdat)):  gdat[i].write_image(masterdir + "centered_%03d.hdf"%(rviper_iter + 1),i)
-
-
-
-	# reduce the set of parameters to kept images
-	#for i1 in range(0,no_of_viper_runs_analyzed_together):
-	#	projs[i1] = [projs[i1][i2] for i2 in index_keep_images]
-
-	# apply rotation to params (reduced set) using volume#1 as a reference
-
-
-	# write param files
-	for i1 in range(0,no_of_viper_runs_analyzed_together):
-		write_text_row(outp[i1], mainoutputdir + "run%03d"%(i1) + "/rotated_reduced_params.txt")
-
-
-
+	# write rotated param files
+	for i1 in range(len(list_of_projection_indices)):
+		write_text_row(rotated_params[i1], mainoutputdir + "run%03d"%(list_of_projection_indices[i1]) + "/rotated_reduced_params.txt")
 
 	return True
 
 
-def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, masterdir, bdb_stack_location, mpi_rank, mpi_size, no_of_viper_runs_analyzed_together, mpi_comm = -1):
+def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, masterdir, bdb_stack_location, mpi_rank, mpi_size,
+												   no_of_viper_runs_analyzed_together, no_of_viper_runs_analyzed_together_from_user_options, mpi_comm = -1):
+	
 	# This function takes into account the case in which there are more processors than images
-
-	from mpi import mpi_comm_rank, mpi_comm_size, mpi_finalize, mpi_comm_split, mpi_barrier, MPI_COMM_WORLD
-	from utilities import read_text_file
 
 	if mpi_comm == -1:
 		mpi_comm = MPI_COMM_WORLD
 
-	# third argument is for debugging purposes
-
-	from multi_shc import no_of_processors_restricted_by_data__do_volume, do_volume
+	# some arguments are for debugging purposes
 
 	mainoutputdir = masterdir + "/main%03d/"%(rviper_iter)
 
+	# list_of_projection_indices_used_for_outlier_elimination = map(int, read_text_file(mainoutputdir + "/list_of_viper_runs_included_in_outlier_elimination.txt"))
+	import json; f = open(mainoutputdir + "list_of_viper_runs_included_in_outlier_elimination.json", 'r')
+	list_of_independent_viper_run_indices_used_for_outlier_elimination  = json.load(f); f.close()
+
+	if len(list_of_independent_viper_run_indices_used_for_outlier_elimination)==0:
+		print "Error: len(list_of_independent_viper_run_indices_used_for_outlier_elimination)==0"
+		mpi_finalize()
+		sys.exit()
+
 	# if this data analysis step was already performed in the past then return
 	# for future changes make sure that the file checked is the last one to be processed !!!
-	if(os.path.exists(mainoutputdir + "/run%03d"%(no_of_viper_runs_analyzed_together - 1) + "/rotated_volume.hdf")):
+	# if(os.path.exists(mainoutputdir + "/run%03d"%(no_of_viper_runs_analyzed_together - 1) + "/rotated_volume.hdf")):
+	# check_last_run = max(get_latest_directory_increment_value(mainoutputdir, "run", start_value=0), no_of_viper_runs_analyzed_together_from_user_options)
+	# if(os.path.exists(mainoutputdir + "/run%03d"%(check_last_run) + "/rotated_volume.hdf")):
+	# 	return
+
+	# if this data analysis step was already performed in the past then return
+	for check_run in list_of_independent_viper_run_indices_used_for_outlier_elimination:
+		if not (os.path.exists(mainoutputdir + "/run%03d"%(check_run) + "/rotated_volume.hdf")):
+			break
+	else:
 		return
 
-
 	partstack = []
-	for i1 in range(0,no_of_viper_runs_analyzed_together):
+	# for i1 in range(0,no_of_viper_runs_analyzed_together):
+	for i1 in list_of_independent_viper_run_indices_used_for_outlier_elimination:
 		partstack.append(mainoutputdir + "run%03d"%(i1) + "/rotated_reduced_params.txt")
 	partids_file_name = mainoutputdir + "this_iteration_index_keep_images.txt"
 
@@ -326,41 +424,40 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 		mpi_subrank = mpi_comm_rank(mpi_subcomm)
 		if (mpi_rank < n_projs):
 
-			for i in xrange(no_of_viper_runs_analyzed_together):
-				projdata = getindexdata(bdb_stack_location + "_%03d"%(rviper_iter - 1), partids_file_name, partstack[i], mpi_rank, mpi_subsize)
+			# for i in xrange(no_of_viper_runs_analyzed_together):
+			for idx, i in enumerate(list_of_independent_viper_run_indices_used_for_outlier_elimination):
+				projdata = getindexdata(bdb_stack_location + "_%03d"%(rviper_iter - 1), partids_file_name, partstack[idx], mpi_rank, mpi_subsize)
 				vol = do_volume(projdata, ali3d_options, 0, mpi_comm = mpi_subcomm)
 				del projdata
 				if( mpi_rank == 0):
 					vol.write_image(mainoutputdir + "/run%03d"%(i) + "/rotated_volume.hdf")
-					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-					print(line,"Generated rec_ref_volume_run #%01d "%i)
+					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " => "
+					print line  + "Generated rec_ref_volume_run #%01d \n"%i
 				del vol
 
 		mpi_barrier(mpi_comm)
 	else:
-
-		# <<<<<<< sxrviper.py
-		for i in xrange(no_of_viper_runs_analyzed_together):
-			projdata = getindexdata(bdb_stack_location + "_%03d"%(rviper_iter - 1), partids_file_name, partstack[i], mpi_rank, mpi_size)
+		for idx, i in enumerate(list_of_independent_viper_run_indices_used_for_outlier_elimination):
+			projdata = getindexdata(bdb_stack_location + "_%03d"%(rviper_iter - 1), partids_file_name, partstack[idx], mpi_rank, mpi_size)
 			vol = do_volume(projdata, ali3d_options, 0, mpi_comm = mpi_comm)
 			del projdata
 			if( mpi_rank == 0):
 				vol.write_image(mainoutputdir + "/run%03d"%(i) + "/rotated_volume.hdf")
-				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-				print(line,"Generated rec_ref_volume_run #%01d "%i)
+				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " => "
+				print line + "Generated rec_ref_volume_run #%01d"%i
 			del vol
 
-	# =======
-	# 	"""  Added 02/12/2015 PAP
 	if( mpi_rank == 0):
 		# Align all rotated volumes, calculate their average and save as an overall result
 		from utilities import get_params3D, set_params3D, get_im, model_circle
 		from statistics import ave_var
 		from applications import ali_vol
-		vls = [None]*no_of_viper_runs_analyzed_together
-		for i in xrange(no_of_viper_runs_analyzed_together):
-			vls[i] = get_im(mainoutputdir + "/run%03d"%(i) + "/rotated_volume.hdf")
-			set_params3D(vls[i],[0.,0.,0.,0.,0.,0.,0,1.0])
+		# vls = [None]*no_of_viper_runs_analyzed_together
+		vls = [None]*len(list_of_independent_viper_run_indices_used_for_outlier_elimination)
+		# for i in xrange(no_of_viper_runs_analyzed_together):
+		for idx, i in enumerate(list_of_independent_viper_run_indices_used_for_outlier_elimination):
+			vls[idx] = get_im(mainoutputdir + "/run%03d"%(i) + "/rotated_volume.hdf")
+			set_params3D(vls[idx],[0.,0.,0.,0.,0.,0.,0,1.0])
 		asa,sas = ave_var(vls)
 		# do the alignment
 		nx = asa.get_xsize()
@@ -370,11 +467,12 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 		going = True
 		while(going):
 			set_params3D(asa,[0.,0.,0.,0.,0.,0.,0,1.0])
-			for i in xrange(no_of_viper_runs_analyzed_together):
-				o = ali_vol(vls[i],asa,7.0,5.,radius)  # range of angles and shifts, maybe should be adjusted
+			# for i in xrange(no_of_viper_runs_analyzed_together):
+			for idx, i in enumerate(list_of_independent_viper_run_indices_used_for_outlier_elimination):
+				o = ali_vol(vls[idx],asa,7.0,5.,radius)  # range of angles and shifts, maybe should be adjusted
 				p = get_params3D(o)
 				del o
-				set_params3D(vls[i],p)
+				set_params3D(vls[idx],p)
 			asa,sas = ave_var(vls)
 			st = Util.infomask(asa*asa, model_circle(radius,nx,nx,nx), True)
 			if(st[0] > goal):  goal = st[0]
@@ -382,120 +480,89 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 		# over and out
 		asa.write_image(mainoutputdir + "/average_volume.hdf")
 		sas.write_image(mainoutputdir + "/variance_volume.hdf")
-		# """
-	# >>>>>>> 1.23
 	return
 
 
 
-def getindexdata(stack, partids, partstack, myid, nproc):
-	from utilities import read_text_file
-	from utilities import read_text_row
-	from applications import MPI_start_end
-	from utilities import set_params_proj
+def get_already_processed_viper_runs(run_get_already_processed_viper_runs):
 
-	lpartids = map(int, read_text_file(partids) )
-	ndata = len(lpartids)
-	partstack = read_text_row(partstack)
+	import random
 
-	if( ndata < nproc):
-		if(myid<ndata):
-			image_start = myid
-			image_end   = myid+1
-		else:
-			image_start = 0
-			image_end   = 1
+	if run_get_already_processed_viper_runs:
+		location_location = "/Users/hvoicu/Analysis/rrviper/particle__PIC_ISAC_g1_clean/0001__sim_r_viper_pool_001/"
+		location_location = "/Users/hvoicu/Analysis/rrviper/particle__sp_MED_isac_clean_v1/0001__sim_r_viper_pool_001/"
+		
+		if "counter" not in get_already_processed_viper_runs.__dict__:
+			# function needs to be called once before being used !
+			get_already_processed_viper_runs.counter = -2
+	
+			import os
+			path, dirs, files = os.walk(location_location).next()
+			# dirs = filter(lambda x:'run' in x, dirs)
+			import re
+			dirs = filter(lambda x:re.search('run\d\d\d$', x), dirs)
+			get_already_processed_viper_runs.r_permutation = range(len(dirs))
+			random.shuffle(get_already_processed_viper_runs.r_permutation)
+			print str(get_already_processed_viper_runs.r_permutation)
+		get_already_processed_viper_runs.counter += 1
+		print "get_already_processed_viper_runs.counter: " + str(get_already_processed_viper_runs.counter)
+		# if get_already_processed_viper_runs.counter > 9:
+		if get_already_processed_viper_runs.counter > (MAXIMUM_NO_OF_VIPER_RUNS_ANALYZED_TOGETHER - 1):
+			print "get_already_processed_viper_runs.counter > 9"
+			mpi_finalize()
+			sys.exit()
+	
+		return location_location + "run%03d"%get_already_processed_viper_runs.r_permutation[get_already_processed_viper_runs.counter]
 	else:
-		image_start, image_end = MPI_start_end(ndata, nproc, myid)
-	lpartids  = lpartids[image_start:image_end]
-	partstack = partstack[image_start:image_end]
-	data = EMData.read_images(stack, lpartids)
-
-	for i in xrange(len(partstack)):
-		set_params_proj(data[i], partstack[i])
-	return data
-
-
-
-def checkstep(item, keepchecking, myid, main_node):
-	if(myid == main_node):
-		if keepchecking:
-			if(os.path.exists(item)):
-				doit = 0
-			else:
-				doit = 1
-				keepchecking = False
-		else:
-			doit = 1
-	else:
-		doit = 1
-	doit = bcast_number_to_all(doit, source_node = main_node)
-	return doit, keepchecking
-
-
-
-def if_error_all_processes_quit_program(error_status):
-	from traceback import extract_stack
-	import sys, copy
-
-	# print "error_status1:", error_status
-	error_status = mpi_bcast(error_status, 1, MPI_INT, 0, MPI_COMM_WORLD)
-	error_status = int(error_status[0])
-
-	if error_status > 0:
-		# if mpi_comm_rank(MPI_COMM_WORLD) == 0:
-		# 	print "Stack INFO -0-:", extract_stack()[-3:]
-		# if mpi_comm_rank(MPI_COMM_WORLD) == 1:
-		# 	print "Stack INFO -1-:", extract_stack()[-3:]
-		#
-		# print "qqqqqqq:", error_status
-		mpi_finalize()
-		sys.exit()
+		get_already_processed_viper_runs.r_permutation = [0]*20
 
 
 def main():
 
-	from utilities import write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle
 	from logger import Logger, BaseLogger_Files
-	import sys
-	import os
-	import time
-	import socket
 	import user_functions
-	from applications import MPI_start_end
 	from optparse import OptionParser
 	from global_def import SPARXVERSION
 	from EMAN2 import EMData
-	from multi_shc import multi_shc, do_volume
 
 
 
-	global f_counter
-	f_counter = 1
+	main_node = 0
+	mpi_init(0, [])
+	mpi_comm = MPI_COMM_WORLD
+	myid = mpi_comm_rank(MPI_COMM_WORLD)
+	mpi_size = mpi_comm_size(MPI_COMM_WORLD)	# Total number of processes, passed by --np option.
+
+	# mpi_barrier(mpi_comm)
+	# from mpi import mpi_finalize
+	# mpi_finalize()
+	# print "mpi finalize"
+	# from sys import exit
+	# exit()
 
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack  [output_directory]  [initial_volume]  --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood  --center=center_type --maxit1=max_iter1 --maxit2=max_iter2 --L2threshold=0.1  --fl --aa --ref_a=S --sym=c1"
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--ir",       type= "int",   default= 1,                  help="inner radius for rotational correlation > 0 (set to 1)")
+	parser.add_option("--ir",		type= "int",   default= 1,                  help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--ou",       type= "int",   default= -1,                 help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
 	parser.add_option("--rs",       type= "int",   default= 1,                  help="step between rings in rotational correlation >0  (set to 1)" ) 
 	parser.add_option("--xr",       type="string", default= "0",                help="range for translation search in x direction, search is +/xr (default 0)")
 	parser.add_option("--yr",       type="string", default= "-1",               help="range for translation search in y direction, search is +/yr (default = same as xr)")
 	parser.add_option("--ts",       type="string", default= "1",                help="step size of the translation search in both directions, search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional")
 	parser.add_option("--delta",    type="string", default= "2",                help="angular step of reference projections (default 2)")
-	#parser.add_option("--an",       type="string", default= "-1",               help="angular neighborhood for local searches (phi and theta)")
+	#parser.add_option("--an",       type="string", default= "-1",              help="angular neighborhood for local searches (phi and theta)")
 	parser.add_option("--center",   type="float",  default= -1,                 help="-1: average shift method; 0: no centering; 1: center of gravity (default=-1)")
 	parser.add_option("--maxit1",    type="float",  default= 400,               help="maximum number of iterations performed for the GA part (set to 400) ")
 	parser.add_option("--maxit2",    type="float",  default= 50,                help="maximum number of iterations performed for the finishing up part (set to 50) ")
 	parser.add_option("--L2threshold", type="float",  default= 0.03,            help="Stopping criterion of GA given as a maximum relative dispersion of L2 norms (set to 0.03) ")
 	parser.add_option("--doga",     type="float",  default= 0.1,                help="do GA when fraction of orientation changes less than 1.0 degrees is at least doga (default=0.1)")
-	parser.add_option("--n_shc_runs",    type="int",    default= 24,                  help="number of quasi-independent runs (shc) (default=3)")
-	parser.add_option("--n_rv_runs",       type= "int",   default= 30,                  help="number of r_viper runs")
-	parser.add_option("--n_v_runs",       type= "int",   default= 3,                  help="number of viper runs for each r_viper cycle")
-	parser.add_option("--outlier_percentile",     type="float",    default= 95,                  help="percentile above which outliers are removed every iteration")
-	parser.add_option("--iteration_start",     type="int",    default= 0,                  help="starting iteration for rviper, 0 means go to the most recent one (default).")
-	#parser.add_option("--CTF",      action="store_true", default=False,         help="NOT IMPLEMENTED Consider CTF correction during the alignment ")
-	#parser.add_option("--snr",      type="float",  default= 1.0,                help="Signal-to-Noise Ratio of the data (default 1.0)")
+	parser.add_option("--n_shc_runs",    type="int",    default= 24,            help="number of quasi-independent runs (shc) (default=3)")
+	parser.add_option("--n_rv_runs",       type= "int",   default= 30,          help="number of r_viper runs")
+	parser.add_option("--n_v_runs",       type= "int",   default= 3,            help="number of viper runs for each r_viper cycle")
+	parser.add_option("--outlier_percentile",     type="float",    default= 95, help="percentile above which outliers are removed every iteration")
+	parser.add_option("--iteration_start",     type="int",    default= 0,       help="starting iteration for rviper, 0 means go to the most recent one (default).")
+	#parser.add_option("--CTF",      action="store_true", default=False,        help="NOT IMPLEMENTED Consider CTF correction during the alignment ")
+	#parser.add_option("--snr",      type="float",  default= 1.0,               help="Signal-to-Noise Ratio of the data (default 1.0)")
 	parser.add_option("--ref_a",    type="string", default= "S",                help="method for generating the quasi-uniformly distributed projection directions (default S)")
 	parser.add_option("--sym",      type="string", default= "c1",               help="symmetry of the refined structure")
 	parser.add_option("--function", type="string", default="ref_ali3d",         help="name of the reference preparation function (ref_ali3d by default)")
@@ -506,17 +573,43 @@ def main():
 	parser.add_option("--aa",      type="float",  default=0.1,    help="fall-off of hyperbolic tangent low-pass Fourier filter (default 0.1)")
 	parser.add_option("--pwreference",      type="string",  default="",    help="text file with a reference power spectrum (default no power spectrum adjustment)")
 	parser.add_option("--mask3D",      type="string",  default=None,    help="3D mask file (default a sphere  WHAT RADIUS??)")
-			
+	parser.add_option("--moon_elimination",      type="string",  default=None,    help="mass in KDa and resolution in px/A separated by comma, no space")
 
 
+	parser.add_option("--my_random_seed",      type="int",  default=123,    help="random seed, default value: 123")
+	parser.add_option("--criterion_name",      type="string",  default="80th percentile",    help="default: 80th percentile, other options:/fastest increase in the last quartile/")
+	parser.add_option("--outlier_index_threshold_method",      type="string",  default="discontinuity_in_derivative",    help="default: discontinuity_in_derivative, other options:/percentile/angle_measure")
+	
+	parser.add_option("--run_get_already_processed_viper_runs", action="store_true", dest="run_get_already_processed_viper_runs", default=False)
+	
+	parser.add_option("--use_latest_master_directory", action="store_true", dest="use_latest_master_directory", default=False)
+	
 	(options, args) = parser.parse_args(sys.argv[1:])
 
 	options.CTF = False
 	options.snr = 1.0
 	options.an = -1
 
+	if options.moon_elimination==None:
+		options.moon_elimination = []
+	else:
+		options.moon_elimination = map(float, options.moon_elimination.split(","))
 
+	my_random_seed = options.my_random_seed
+	criterion_name = options.criterion_name
+	outlier_index_threshold_method = options.outlier_index_threshold_method
+	use_latest_master_directory = options.use_latest_master_directory
+	iteration_start_default = options.iteration_start
+	number_of_rrr_viper_runs = options.n_rv_runs
+	no_of_viper_runs_analyzed_together_from_user_options = options.n_v_runs
+	no_of_shc_runs_analyzed_together = options.n_shc_runs 
+	outlier_percentile = options.outlier_percentile 
+	
+	run_get_already_processed_viper_runs = options.run_get_already_processed_viper_runs
+	get_already_processed_viper_runs(run_get_already_processed_viper_runs)
 
+	import random
+	random.seed(my_random_seed)
 
 	if len(args) < 1 or len(args) > 3:
 		print "usage: " + usage
@@ -528,46 +621,25 @@ def main():
 	else:
 		ref_vol = None
 
-
-
 	masterdir = ""
 	bdb_stack_location = ""
 	if len(args) == 2:
 		masterdir = args[1]
 		if masterdir[-1] != "/":
 			masterdir += "/"
-
-
-	iteration_start_default = options.iteration_start
-	number_of_rrr_viper_runs = options.n_rv_runs
-	no_of_viper_runs_analyzed_together = options.n_v_runs 
-	no_of_shc_runs_analyzed_together = options.n_shc_runs 
-	outlier_percentile = options.outlier_percentile 
-	
-	main_node = 0
-	mpi_init(0, [])
-
-
-	print "Hostname:", socket.gethostname(), "proc_id:", os.getpid()
-
-	mpi_comm = MPI_COMM_WORLD
-
-	#mpi_barrier(mpi_comm)
-	#from mpi import mpi_finalize
-	#mpi_finalize()
-	#print "mpi finalize"
-	#from sys import exit
-	#exit()
-
-
-	#print "Hostname2:", socket.gethostname()
-	error_status = 0
+	elif len(args) == 1:
+		if use_latest_master_directory:
+			all_dirs = [d for d in os.listdir(".") if os.path.isdir(d)]
+			import re; r = re.compile("^master.*$")
+			all_dirs = filter(r.match, all_dirs)
+			if len(all_dirs)>0:
+				# all_dirs = max(all_dirs, key=os.path.getctime)
+				masterdir = max(all_dirs, key=os.path.getmtime)
+				masterdir += "/"
 
 	log = Logger(BaseLogger_Files())
 
-	myid = mpi_comm_rank(MPI_COMM_WORLD)
-	mpi_size = mpi_comm_size(MPI_COMM_WORLD)	# Total number of processes, passed by --np option.
-
+	error_status = 0	
 	if mpi_size % no_of_shc_runs_analyzed_together != 0:
 		ERROR('Number of processes needs to be a multiple of total number of runs. '
 		'Total quasi-independent runs by default are 3, you can change it by specifying '
@@ -575,11 +647,7 @@ def main():
 		'the number of processes divided by the number of quasi-independent runs is a power '
 		'of 2 (e.g. 2, 4, 8 or 16 depending on how many physical cores each node has).', 'sxviper', 1)
 		error_status = 1
-
 	if_error_all_processes_quit_program(error_status)
-
-	if(myid == main_node):
-		print "Location:",  os.getcwd()
 
 	#Create folder for all results or check if there is one created already
 	if(myid == main_node):
@@ -587,7 +655,6 @@ def main():
 		#cmdexecute(cmd)
 
 		if( masterdir == ""):
-			#timestring = strftime("_%d_%b_%Y_%H_%M_%S", localtime())
 			timestring = strftime("%Y_%m_%d__%H_%M_%S/", localtime())
 			masterdir = "master"+timestring
 
@@ -598,65 +665,37 @@ def main():
 				bdb_stack_location = args[0].split(":")[0] + ":" + masterdir + args[0].split(":")[1]
 				org_stack_location = args[0]
 
-				# AAAAAAAAA
-				# cmd = "{} {} {}".format("sxheader.py  ", org_stack_location, " --consecutive  --params=original_image_index")
-				# cmdexecute(cmd)
-
 				if(not os.path.exists(os.path.join(masterdir,"EMAN2DB/"))):
 					# cmd = "{} {}".format("cp -rp EMAN2DB", masterdir, "EMAN2DB/")
 					# cmdexecute(cmd)
 					cmd = "{} {} {}".format("e2bdb.py", org_stack_location,"--makevstack=" + bdb_stack_location + "_000")
 					cmdexecute(cmd)
 
-					cmd = "{} {}".format("sxheader.py  ", bdb_stack_location + "_000 --consecutive  --params=original_image_index")
-					cmdexecute(cmd)
-
+					os_return_value = os.system("sxheader.py  " + bdb_stack_location + "_000 --print  --params=original_image_index")
+					if os_return_value != 0:
+						cmd = "{} {}".format("sxheader.py  ", bdb_stack_location + "_000 --consecutive  --params=original_image_index")
+						cmdexecute(cmd)
 			else:
 				filename = os.path.basename(args[0])
 				bdb_stack_location = "bdb:" + masterdir + os.path.splitext(filename)[0]
 				if(not os.path.exists(os.path.join(masterdir,"EMAN2DB/"))):
 					cmd = "{} {} {}".format("sxcpy.py  ", args[0], bdb_stack_location + "_000")
 					cmdexecute(cmd)
-					cmd = "{} {}".format("sxheader.py  ", bdb_stack_location + "_000 --consecutive  --params=original_image_index")
-					cmdexecute(cmd)
-				# else:
-				# 	ERROR('Conflicting information: EMAN2DB exists, but provided *.hdf file', "sxrviper", 1)
-				# 	error_status = 1
 
-			# all_projs = EMData.read_images(bdb_stack_location)
-			# print "bdb_stack_location:",  bdb_stack_location
-			# #mpi_finalize()
-			# #sys.exit()
-			#
-			# print "XXXXXXXXXXXXXXXXX"
-			# print "Number of projections:", len(all_projs)
-			# print "XXXXXXXXXXXXXXXXX"
-			# subset = range(len(all_projs))
-			# # if mpi_size > len(all_projs):
-			# # 	ERROR('Number of processes supplied by --np needs to be less than or equal to %d (total number of images) ' % len(all_projs), 'sxviper', 1)
-			# # 	error_status = 1
-
-			# error_status = 1
+					os_return_value = os.system("sxheader.py  " + bdb_stack_location + "_000 --print  --params=original_image_index")
+					if os_return_value != 0:
+						cmd = "{} {}".format("sxheader.py  ", bdb_stack_location + "_000 --consecutive  --params=original_image_index")
+						cmdexecute(cmd)
+				else:
+					ERROR('Conflicting information: EMAN2DB exists, but provided *.hdf file', "sxrviper", 1)
+					error_status = 1
 
 		else:
 			# os.path.exists(masterdir) does not exist
 			ERROR('Output directory does not exist, please change the name and restart the program', "sxrviper", 1)
 			error_status = 1
-	# else:
-	# 	all_projs = None
-	# 	subset = None
-	# 	#mpi_finalize()
-	# 	#sys.exit()
 
 	if_error_all_processes_quit_program(error_status)
-
-
-	#mpi_barrier(MPI_COMM_WORLD)
-	#mpi_subcomm = wrap_mpi_split(mpi_comm, number_of_independent_runs)
-
-	#mpi_finalize()
-	#sys.exit()
-	#Iteration over the independent runs of viper function
 
 	# send masterdir to all processes
 	dir_len  = len(masterdir)*int(myid == main_node)
@@ -665,6 +704,18 @@ def main():
 	masterdir = string.join(masterdir,"")
 	if masterdir[-1] != "/":
 		masterdir += "/"
+		
+	global_def.LOGFILE =  os.path.join(masterdir, global_def.LOGFILE)
+	print_program_start_information()
+	
+
+	# mpi_barrier(mpi_comm)
+	# from mpi import mpi_finalize
+	# mpi_finalize()
+	# print "mpi finalize"
+	# from sys import exit
+	# exit()
+		
 	
 	# send bdb_stack_location to all processes
 	dir_len  = len(bdb_stack_location)*int(myid == main_node)
@@ -672,11 +723,6 @@ def main():
 	bdb_stack_location = mpi_bcast(bdb_stack_location,dir_len,MPI_CHAR,main_node,MPI_COMM_WORLD)
 	bdb_stack_location = string.join(bdb_stack_location,"")
 
-
-	#print "masterdir:", masterdir
-	#mpi_finalize()
-	#import sys
-	#sys.exit()
 	iteration_start = get_latest_directory_increment_value(masterdir, "main")
 
 	if (myid == main_node):
@@ -686,146 +732,118 @@ def main():
 	if iteration_start_default!=0:
 		iteration_start = iteration_start_default
 	if (myid == main_node):
-		if (number_of_rrr_viper_runs <= iteration_start):
+		if (number_of_rrr_viper_runs < iteration_start):
 			ERROR('Please provide number of rviper runs (--n_rv_runs) greater than number of iterations already performed.', 'sxviper', 1)
 			error_status = 1
 
 	if_error_all_processes_quit_program(error_status)
 
-
-	count_already_finished_runs = 0
 	for rviper_iter in range(iteration_start, number_of_rrr_viper_runs + 1):
 		if(myid == main_node):
 			all_projs = EMData.read_images(bdb_stack_location + "_%03d"%(rviper_iter - 1))
 			print "XXXXXXXXXXXXXXXXX"
-			print "Number of projections (in loop):", len(all_projs)
+			print "Number of projections (in loop): " + str(len(all_projs))
 			print "XXXXXXXXXXXXXXXXX"
 			subset = range(len(all_projs))
 		else:
 			all_projs = None
 			subset = None
 
-		error_status = 0
-		for runs_iter in range(0, no_of_viper_runs_analyzed_together):
-			#print runs_iter
-			#Generate/check directories for processing data
-			#print "quit2:", rviper_iter, error_status
-			if (myid == main_node):
-				independent_run_dir = masterdir + '/main%03d/run%03d/'%(rviper_iter, runs_iter) 	
-				if os.path.exists(independent_run_dir):
-					if os.path.exists(independent_run_dir + "log.txt"):
-						#Check to see if this run has finished
-						if string_found_in_file("Finish VIPER2", independent_run_dir + "log.txt"):
-							count_already_finished_runs += 1
-							we_are_not_inbetween_completed_rrr_viper_runs = not ((count_already_finished_runs %  no_of_viper_runs_analyzed_together) == 0)
-							dir_len = mpi_bcast((-1)*(we_are_not_inbetween_completed_rrr_viper_runs),1,MPI_INT,main_node,MPI_COMM_WORLD)[0]
+		runs_iter = get_latest_directory_increment_value(masterdir + "main%03d"%rviper_iter, "/run", start_value=0) - 1
+		no_of_viper_runs_analyzed_together = max(runs_iter + 2, no_of_viper_runs_analyzed_together_from_user_options)
 
-							if (dir_len == 0):
-								# if inbetween completed rrrviper runs jump to call outliers
-								break
-							continue
-					#Need to restart this independent run by doing rm -rf in run%02d directory 
-					cmd = "{} {}".format("rm -rf", independent_run_dir)
-					cmdexecute(cmd)
-				cmd = "{} {}".format("mkdir -p", independent_run_dir)
-				cmdexecute(cmd)
+		first_time_entering_the_loop_need_to_do_full_check_up = True
+		while True:
+			runs_iter += 1
+
+			if not first_time_entering_the_loop_need_to_do_full_check_up:
+				if runs_iter >= no_of_viper_runs_analyzed_together:
+					break
+			first_time_entering_the_loop_need_to_do_full_check_up = False
+
+			this_run_is_NOT_complete = 0
+			if (myid == main_node):
+				independent_run_dir = masterdir + '/main%03d/run%03d/'%(rviper_iter, runs_iter)
+				if run_get_already_processed_viper_runs:
+					cmd = "{} {}".format("mkdir -p", masterdir + '/main%03d/'%(rviper_iter)); cmdexecute(cmd)
+					cmd = "{} {}".format("rm -rf", independent_run_dir); cmdexecute(cmd)
+					cmd = "{} {}".format("cp -r", get_already_processed_viper_runs() + " " +  independent_run_dir); cmdexecute(cmd)
+				
+				if os.path.exists(independent_run_dir + "log.txt") and (string_found_in_file("Finish VIPER2", independent_run_dir + "log.txt")):
+					this_run_is_NOT_complete = 0
+				else:
+					this_run_is_NOT_complete = 1
+					cmd = "{} {}".format("rm -rf", independent_run_dir); cmdexecute(cmd)
+					cmd = "{} {}".format("mkdir -p", independent_run_dir); cmdexecute(cmd)
+
+				this_run_is_NOT_complete = mpi_bcast(this_run_is_NOT_complete,1,MPI_INT,main_node,MPI_COMM_WORLD)[0]
 				dir_len = len(independent_run_dir)
-				# print "dir_len=", dir_len
+				dir_len = mpi_bcast(dir_len,1,MPI_INT,main_node,MPI_COMM_WORLD)[0]
+				independent_run_dir = mpi_bcast(independent_run_dir,dir_len,MPI_CHAR,main_node,MPI_COMM_WORLD)
+				independent_run_dir = string.join(independent_run_dir,"")
 			else:
+				this_run_is_NOT_complete = mpi_bcast(this_run_is_NOT_complete,1,MPI_INT,main_node,MPI_COMM_WORLD)[0]
 				dir_len = 0
 				independent_run_dir = ""
+				dir_len = mpi_bcast(dir_len,1,MPI_INT,main_node,MPI_COMM_WORLD)[0]
+				independent_run_dir = mpi_bcast(independent_run_dir,dir_len,MPI_CHAR,main_node,MPI_COMM_WORLD)
+				independent_run_dir = string.join(independent_run_dir,"")
+
 			
-			dir_len = mpi_bcast(dir_len,1,MPI_INT,main_node,MPI_COMM_WORLD)[0]
-			# dir_len = bcast_number_to_all(dir_len)
-			# in case all viper runs are done already for the current iteration, need to run identify_outliers program
-			if (dir_len <= 0):
-				# if ostring_found_in_file("Finish VIPER2", independent_run_dir + "log.txt") is true
-				# do what the master does
-				if (dir_len == 0):
-					# if inbetween completed rrrviper runs jump to call outliers
-					break
-				continue
+			if this_run_is_NOT_complete:
+				mpi_barrier(MPI_COMM_WORLD)
 
-			independent_run_dir = mpi_bcast(independent_run_dir,dir_len,MPI_CHAR,main_node,MPI_COMM_WORLD)
-			independent_run_dir = string.join(independent_run_dir,"")
+				if independent_run_dir[-1] != "/":
+					independent_run_dir += "/"
 
-			import global_def
-			global_def.LOGFILE =  os.path.join(independent_run_dir, global_def.LOGFILE)
-			#if(myid == main_node):
-				#print independent_run_dir, "ZZZZ", global_def.LOGFILE
-			mpi_barrier(MPI_COMM_WORLD)
+				log.prefix = independent_run_dir
 
-			#mpi_finalize()
-			#sys.exit()
+				options.user_func = user_functions.factory[options.function]
 
-			if independent_run_dir[-1] != "/":
-				independent_run_dir += "/"
+				# for debugging purposes
+				#if (myid == main_node):
+					#cmd = "{} {}".format("cp ~/log.txt ", independent_run_dir)
+					#cmdexecute(cmd)
+					#cmd = "{} {}{}".format("cp ~/paramdir/params$(mycounter ccc).txt ", independent_run_dir, "param%03d.txt"%runs_iter)
+					#cmd = "{} {}{}".format("cp ~/paramdir/params$(mycounter ccc).txt ", independent_run_dir, "params.txt")
+					#cmdexecute(cmd)
 
-			#if(myid == main_node):
-				#print independent_run_dir, "XXXXX", global_def.LOGFILE
-			log.prefix = independent_run_dir
+				if (myid == main_node):
+					store_value_of_simple_vars_in_json_file(locals(), exclude_list_of_vars=["usage"], 
+						vars_that_will_show_only_size = ["subset"])
+					store_value_of_simple_vars_in_json_file(options.__dict__, write_or_append='a')
+				
+				# mpi_barrier(mpi_comm)
+				# from mpi import mpi_finalize
+				# mpi_finalize()
+				# print "mpi finalize"
+				# from sys import exit
+				# exit()
+				
+				out_params, out_vol, out_peaks = multi_shc(all_projs, subset, no_of_shc_runs_analyzed_together, options,
+				mpi_comm=mpi_comm, log=log, ref_vol=ref_vol)
 
+				# end of: if this_run_is_NOT_complete:
 
-			options.user_func = user_functions.factory[options.function]
-			# options.user_func = do_volume
+			if runs_iter >= (no_of_viper_runs_analyzed_together_from_user_options - 1):
+				no_of_viper_runs_analyzed_together += identify_outliers(myid, main_node, rviper_iter,
+				no_of_viper_runs_analyzed_together, no_of_viper_runs_analyzed_together_from_user_options, masterdir,
+				bdb_stack_location, outlier_percentile, criterion_name, outlier_index_threshold_method)
 
-			#################print_with_time_info("Starting independent iteration %02d, by myid = %02d" % (runs_iter, myid))
-			#time.sleep(10)
+		# end of independent viper loop
 
-			#if (myid == main_node):
-				#cmd = "{} {}".format("cp ~/log.txt ", independent_run_dir)
-				#cmdexecute(cmd)
-				#cmd = "{} {}{}".format("cp ~/paramdir/params$(mycounter ccc).txt ", independent_run_dir, "param%03d.txt"%runs_iter)
-				#cmd = "{} {}{}".format("cp ~/paramdir/params$(mycounter ccc).txt ", independent_run_dir, "params.txt")
-				#cmdexecute(cmd)
+		calculate_volumes_after_rotation_and_save_them(options, rviper_iter, masterdir, bdb_stack_location, myid,
+		mpi_size, no_of_viper_runs_analyzed_together, no_of_viper_runs_analyzed_together_from_user_options)
 
+	# end of R viper loop
 
+	#mpi_finalize()
+	#sys.exit()
 
-			####out_params, out_vol, out_peaks = multi_shc(all_projs, subset, no_of_viper_runs_analyzed_together, options, mpi_comm=mpi_comm, log=log, ref_vol=ref_vol)
-
-
-			# 1here
-			# print gethostname(), "Finish before multi_shc"
-			# print gethostname(), "mpi_finalize"
-			# mpi_finalize()
-			# import sys
-			# sys.exit()
-
-
-			out_params, out_vol, out_peaks = multi_shc(all_projs, subset, no_of_shc_runs_analyzed_together, options, mpi_comm=mpi_comm, log=log, ref_vol=ref_vol)
-
-			#print gethostname(), "mpi_finalize"
-			#mpi_finalize()
-			#import sys
-			#sys.exit()
-
-		
-		# 1here
-		identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_together, masterdir, bdb_stack_location, outlier_percentile)
-
-		# save current volumes, skip them if they are already there
-
-		# calculate_volumes_after_rotation_and_save_them(mainoutputdir, bdb_stack_location, myid, mpi_size):
-
-		#print "masterdirA:", masterdir
-		#print "bdb_stack_locationA:", bdb_stack_location
-
-		# 1here
-
-		calculate_volumes_after_rotation_and_save_them(options, rviper_iter, masterdir, bdb_stack_location, myid, mpi_size, no_of_viper_runs_analyzed_together)
-
-		## 1here
-		#mpi_finalize()
-		#import sys
-		#sys.exit()
-
-	print gethostname(), "mpi_finalize"
+	
 	mpi_finalize()
-
-
 
 
 if __name__=="__main__":
 	main()
-
 
