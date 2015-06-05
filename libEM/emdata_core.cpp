@@ -203,7 +203,7 @@ void EMData::set_complex_at(const int &x,const int &y,const std::complex<float> 
 		}
 	}
 	else if (x>0 && y>=0) { rdata[ x*2+y*nx]=val.real(); rdata[x*2+y*nx+1]=val.imag(); }
-	else if (x>0 && y<0) { rdata[ x*2+(ny+y)*nx]=val.real(); rdata[x*2+(ny+y)*nx+1]=val.imag(); printf("%d %d %d %f\n",x,y,x*2+(ny+y)*nx,val.real()); }
+	else if (x>0 && y<0) { rdata[ x*2+(ny+y)*nx]=val.real(); rdata[x*2+(ny+y)*nx+1]=val.imag(); /*printf("%d %d %d %f\n",x,y,x*2+(ny+y)*nx,val.real());*/ }
 	else if (x<0 && y>0) { rdata[-x*2+(ny-y)*nx]=val.real(); rdata[-x*2+(ny-y)*nx+1]=-val.imag(); }
 	else { rdata[-x*2-y*nx]=val.real(); rdata[-x*2+-y*nx+1]=-val.imag(); }
 	return;
