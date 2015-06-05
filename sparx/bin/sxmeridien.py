@@ -627,6 +627,8 @@ def get_shrink_data(onx, nx, stack, partids, partstack, myid, main_node, nproc, 
 			data[im] = fshift(data[im], sx, sy)
 			set_params_proj(data[im],[phi,theta,psi,0.0,0.0])
 			oldshifts[im] = [sx,sy]
+		else:
+			set_params_proj(data[im],[phi,theta,psi,sx,sy])
 		#  For local SHC set anchor
 		#if(nsoft == 1 and an[0] > -1):
 		#  We will always set it to simplify the code
@@ -1052,7 +1054,7 @@ def main():
 			mpi_barrier(MPI_COMM_WORLD)
 			partstack = os.path.join(masterdir, "2dpostalignment", "initial3Dshifts.txt")
 			projdata, oldshifts = get_shrink_data(nnxo, nnxo, stack, partids, partstack, myid, main_node, nproc,\
-					ali3d_options.CTF, applyctf = Tracker["applyctf"], preshift = False, radi = radi)
+					ali3d_options.CTF, applyctf = True, preshift = False, radi = radi)
 			metamove(projdata, oldshifts, paramsdict, partids, partstack, initdir, 0, myid, main_node, nproc)
 			projdata = [[model_blank(1,1)],[model_blank(1,1)]]
 			if(myid == main_node):
