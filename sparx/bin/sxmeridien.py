@@ -310,15 +310,24 @@ def get_pixel_resolution(vol, radi, nnxo, fscoutputdir):
 	return  round(lowpass,4), round(falloff,4), currentres
 
 def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, myid, main_node, nproc):
+	import types
 	vol = [None]*2
 	fsc = [None]*2
-	if(ali3d_options.mask3D is None):  mask = model_circle(radi,nnxo,nnxo,nnxo)
-	else:                              mask = get_im(ali3d_options.mask3D)
+	if( type(stack) == list ):
+		nx = stack[0].get_xsize()
+		nz = stack[0].get_zsize()
+	else:
+		nz = 1
 
 	for procid in xrange(2):
 		#  sxrecons3d.py  (full size)
-		if(len(stack) > 2):
-			projdata = getindexdata(stack, partids[procid], partstack[procid], myid, nproc)
+		if(type(stack) == str or ( nz == 1 )):
+			if(type(stack) == str):
+				projdata = getindexdata(stack, partids[procid], partstack[procid], myid, nproc)
+				nx = projdata[0].get_xsize()
+			else:
+				projdata = stack
+				
 			#if CTF:  vol[procid] = recons3d_4nn_ctf_MPI(myid, projdata, symmetry=ali3d_options.sym, npad = 2)
 			#else:    vol[procid] = recons3d_4nn_MPI(myid, projdata, symmetry=ali3d_options.sym, npad = 2)
 
@@ -327,33 +336,35 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 				vol[procid],fsc[procid] = rec3D_MPI(projdata, snr = 1.0, symmetry = ali3d_options.sym, \
 					mask3D = mask, fsc_curve = os.path.join(outputdir,"within-fsc%01d.txt"%procid), \
 					myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2)
-			else :
+			else:
 				from reconstruction import rec3D_MPI_noCTF
 				vol[procid],fsc[procid] = rec3D_MPI_noCTF(projdata, symmetry = ali3d_options.sym, \
 					mask3D = mask, fsc_curve = os.path.join(outputdir,"within-fsc%01d.txt"%procid), \
 					myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2)
 
+			if(type(stack) == str):  del projdata
 
-			del projdata
 		else:
-			#  There are only two entries, these have to be volumes
+			#  Volumes
 			vol = stack
 		if( myid == main_node):
 			vol[procid].write_image(os.path.join(outputdir,"vol%01d.hdf"%procid))
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			print(  line,"Generated vol #%01d "%procid)
+	if(ali3d_options.mask3D is None):  mask = model_circle(radi,nnxo,nnxo,nnxo)
+	else:                              mask = get_im(ali3d_options.mask3D)
 	del fsc
 	lowpass    = 0.0
 	falloff    = 0.0
 	currentres = 0.0
 
 	if(myid == main_node):
-		lowpass, falloff, currentres = get_pixel_resolution(vol, mask, nnxo, outputdir)
+		lowpass, falloff, icurrentres = get_pixel_resolution(vol, mask, nnxo, outputdir)
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(  line,"Current resolution %6d, low-pass filter cut-off %6.4f and fall-off %6.4f"%(currentres,lowpass,falloff))
-		write_text_row([[lowpass, falloff, currentres]],os.path.join(outputdir,"current_resolution.txt"))
+		print(  line,"Current resolution  %6.2 (%6d), low-pass filter cut-off %6.2f and fall-off %6.2f"%(icurrentres/float(nnxo),icurrentres,lowpass,falloff))
+		write_text_row([[lowpass, falloff, icurrentres]],os.path.join(outputdir,"current_resolution.txt"))
 	#  Returns: low-pass filter cutoff;  low-pass filter falloff;  current resolution
-	currentres = bcast_number_to_all(currentres, source_node = main_node)
+	icurrentres = bcast_number_to_all(icurrentres, source_node = main_node)
 	lowpass    = bcast_number_to_all(lowpass, source_node = main_node)
 	falloff    = bcast_number_to_all(falloff, source_node = main_node)
 	return round(lowpass,4), round(falloff,4), currentres
@@ -579,7 +590,7 @@ def getalldata(stack, myid, nproc):
 
 
 
-def get_shrink_data(onx, nx, stack, partids, partstack, myid, main_node, nproc, CTF = False, preshift = False, radi = -1):
+def get_shrink_data(onx, nx, stack, partids, partstack, myid, main_node, nproc, CTF = False, applyctf = True, preshift = False, radi = -1):
 	# The function will read from stack a subset of images specified in partids
 	#   and assign to them parameters from partstack with optional CTF application and shifting of the data.
 	# So, the lengths of partids and partstack are the same.
@@ -620,7 +631,7 @@ def get_shrink_data(onx, nx, stack, partids, partstack, myid, main_node, nproc, 
 		#if(nsoft == 1 and an[0] > -1):
 		#  We will always set it to simplify the code
 		set_params_proj(data[im],[phi,theta,psi,0.0,0.0], "xform.anchor")
-		if CTF :
+		if CTF and applyctf:
 			ctf_params = data[im].get_attr("ctf")
 			st = Util.infomask(data[im], mask2D, False)
 			data[im] -= st[0]
@@ -648,9 +659,10 @@ def metamove(projdata, oldshifts, paramsdict, partids, partstack, outputdir, pro
 		log.prefix += "/"
 		ref_vol = get_im(paramsdict["refvol"])
 		nnn = ref_vol.get_xsize()
+		shrinkage = float(paramsdict["nxinit"])/float(nnn)
 		if(paramsdict["nxinit"] != nnn ):
 			from fundamentals import resample
-			ref_vol = resample(ref_vol, float(paramsdict["nxinit"])/float(nnn))
+			ref_vol = resample(ref_vol, shrinkage)
 	else:
 		log = None
 		ref_vol = model_blank(paramsdict["nxinit"], paramsdict["nxinit"], paramsdict["nxinit"])
@@ -697,14 +709,14 @@ def metamove(projdata, oldshifts, paramsdict, partids, partstack, outputdir, pro
 						saturatecrit = paramsdict["saturatecrit"],  pixercutoff =  paramsdict["pixercutoff"] )
 
 	#  We could calculate here a 3D to get the within group resolution and return it as a result to eventually get crossresolution
-	del log, projdata
+	del log
 	#  store params
 	if(myid == main_node):
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print(line,"Executed successfully: ","sali3d_base_MPI, nsoft = %d"%paramsdict["nsoft"],"  number of images:%7d"%len(params))
 		for i in xrange(len(params)):
-			params[i][3] = params[i][3]/ali3d_options.shrink + oldshifts[i][0]
-			params[i][4] = params[i][4]/ali3d_options.shrink + oldshifts[i][1]
+			params[i][3] = params[i][3]/shrinkage + oldshifts[i][0]
+			params[i][4] = params[i][4]/shrinkage + oldshifts[i][1]
 		write_text_row(params, os.path.join(outputdir,"params-chunk%01d.txt"%procid) )
 
 def print_dict(dict,theme):
@@ -798,7 +810,6 @@ def main():
 	ali3d_options.fl     = 0.4
 	ali3d_options.initfl = 0.4
 	ali3d_options.aa     = 0.1
-	ali3d_options.shrink = 1.0
 
 	if( ali3d_options.xr == "-1" ):  ali3d_options.xr = "2"
 
@@ -819,14 +830,15 @@ def main():
 	#  nnxo - original nx of the data, will not be changed
 	#  nxinit - window size used by the program during given iteration [64 + iter*32], 
 	#           will be increased in steps of 32 with the resolution
-	#  nxshrink - resolution window size in Fourier pixels within nxinit.
-	#             The fl within the reduced data is nxshrink/nxinit/2.0
-	#             The absolute fl is nxshrink/nnxo/2.0
+	#  nxresolution - resolution window size in Fourier pixels within nxinit.
+	#             The fl within the reduced data is nxresolution/nxinit/2.0
+	#             The absolute fl is nxresolution/nnxo/2.0
 	#
 
 	nxinit = 64  #int(280*0.3*2)
 	cushion = 8  #  the window size has to be at least 8 pixels larger than what would follow from resolution
 	nxstep = 4
+	projdata = [[model_blank(1,1)],[model_blank(1,1)]]
 
 	mempernode = 4.0e9
 
@@ -843,7 +855,7 @@ def main():
 		if( nnxo%2 == 1 ):
 			ERROR("Only even-dimensioned data allowed","sxmeridien",1)
 			nnxo = -1
-		elif( nnxo < nxinit ):
+		elif( nxinit > nnxo ):
 			ERROR("Image size less than minimum permitted $d"%nxinit,"sxmeridien",1)
 			nnxo = -1
 		else:
@@ -1014,7 +1026,7 @@ def main():
 	paramsdict = {	"stack":stack,"delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":angular_neighborhood, \
 					"center":options.center, "maxit":1, "local":False,\
 					"lowpass":inifil, "initialfl":inifil, "falloff":0.2, "radius":radi, \
-					"icurrentres": nxinit//2, "nxinit":nxinit,"nxshrink":nnxo,\
+					"icurrentres": nxinit//2, "nxinit":nxinit,"nxresolution":nnxo,\
 					"nsoft":0, "delpreviousmax":True, "saturatecrit":1.0, "pixercutoff":2.0,\
 					"refvol":volinit, "mask3D":options.mask3D  }
 
@@ -1039,8 +1051,10 @@ def main():
 				write_text_file(range(total_stack), partids)
 			mpi_barrier(MPI_COMM_WORLD)
 			partstack = os.path.join(masterdir, "2dpostalignment", "initial3Dshifts.txt")
-			projdata, oldshifts = get_shrink_data(nnxo, nnxo, stack, partids, partstack, myid, main_node, nproc, ali3d_options.CTF, preshift = True, radi = radi)
+			projdata, oldshifts = get_shrink_data(nnxo, nnxo, stack, partids, partstack, myid, main_node, nproc,\
+					ali3d_options.CTF, applyctf = Tracker["applyctf"], preshift = False, radi = radi)
 			metamove(projdata, oldshifts, paramsdict, partids, partstack, initdir, 0, myid, main_node, nproc)
+			projdata = [[model_blank(1,1)],[model_blank(1,1)]]
 			if(myid == main_node):
 				print(line,"Executed successfully: ","initialization ali3d_base_MPI")
 
@@ -1085,7 +1099,7 @@ def main():
 		if(myid == main_node):
 			lowpass, falloff, icurrentres = get_pixel_resolution(vol, radi, nnxo, initdir)
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(  line,"Initial resolution %6.2f  (%d), filter cut-off %6.4f and fall-off %6.4f"%(float(icurrentres)/nnxo,icurrentres,lowpass,falloff))
+			print( line,"Initial resolution %6.2f  (%d), filter cut-off %6.4f and fall-off %6.4f"%(float(icurrentres)/nnxo,icurrentres,lowpass,falloff))
 			write_text_row([[lowpass, falloff, icurrentres]],os.path.join(initdir,"current_resolution.txt"))
 		else:
 			lowpass    = 0.0
@@ -1097,7 +1111,6 @@ def main():
 	else:
 		if(myid == main_node):
 			[lowpass, falloff, icurrentres] = read_text_row(os.path.join(initdir,"current_resolution.txt"))[0]
-			icurrentres = int(icurrentres)
 		else:
 			lowpass    = 0.0
 			falloff    = 0.0
@@ -1109,16 +1122,17 @@ def main():
 		icurrentres = bcast_number_to_all(icurrentres, source_node = main_node)
 
 	# set for the first iteration
-	nxshrink = icurrentres*2 +2
-	assert( nxshrink +cushion <= nnxo )
-	while( nxshrink + cushion > nxinit ): nxinit += 32
+	nxresolution = icurrentres*2 +2
+	assert( nxresolution +cushion <= nnxo )
+	while( nxresolution + cushion > nxinit ): nxinit += 32
 	nxinit = min(nxinit,nnxo)
 	nsoft = options.nsoft
 	falloff = paramsdict["falloff"]
 	paramsdict["initialfl"] = lowpass
-	tracker = {"resolution":icurrentres,"lowpass":lowpass, "falloff":falloff, "initialfl":lowpass,  \
-				"movedup":False,"eliminated-outliers":False,"PWadjustment":"","local":False,"nsoft":nsoft, \
-				"nnxo":nnxo, "icurrentres":icurrentres,"nxinit":nxinit, "nxshrink":nxshrink, "extension":0.0, "directory":"none"}
+	tracker = {"resolution":icurrentres/float(nnxo),"lowpass":lowpass, "falloff":falloff, "initialfl":lowpass,  \
+				"movedup":False,"eliminated-outliers":False,"applyctf":True,"PWadjustment":"","local":False,"nsoft":nsoft, \
+				"nnxo":nnxo, "icurrentres":icurrentres,"nxinit":nxinit, "nxresolution":nxresolution, "extension":0.0, \
+				"directory":"none"}
 	tracker["lowpass"] = read_fsc(os.path.join(initdir,"fsc.txt"),icurrentres, myid, main_node)
 	history = [tracker.copy()]
 	previousoutputdir = initdir
@@ -1140,7 +1154,8 @@ def main():
 
 		if(myid == main_node):
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(line,"MAIN ITERATION  #%2d     nxinit, nxshrink, icurrentres, lowpass, falloff "%mainiteration, nxinit, nxshrink, nxshrink, icurrentres, lowpass, falloff)
+			print(line,"MAIN ITERATION  #%2d     nxinit, nxresolution, icurrentres, resolution, lowpass, falloff "%\
+				mainiteration, nxinit,  nxresolution, icurrentres, icurrentres/float(nnxo), lowpass, falloff)
 			print_dict(history[-1],"TRACKER")
 
 			if keepchecking:
@@ -1190,8 +1205,8 @@ def main():
 
 		delta = round(degrees(atan(1.0/lastring)), 2)
 		subdict( paramsdict, { "delta":"%f"%delta , "an":angular_neighborhood, \
-						"lowpass":tracker["lowpass"],
-						"nnxo":tracker["nnxo"], "icurrentres":tracker["icurrentres"],"nxinit":tracker["nxinit"], "nxshrink":tracker["nxshrink"],
+						"lowpass":tracker["lowpass"],"resolution":tracker["resolution"],"icurrentres":tracker["icurrentres"],
+						"nnxo":tracker["nnxo"], "nxinit":tracker["nxinit"], "nxresolution":tracker["nxresolution"],
 						"pixercutoff":get_pixercutoff(radi*float(tracker["nxinit"])/float(nnxo), delta, 0.5), \
 						"radius":lastring,"delpreviousmax":True } )
 		#  REFINEMENT
@@ -1223,8 +1238,10 @@ def main():
 
 			if  doit:
 				mpi_barrier(MPI_COMM_WORLD)
-				if( tracker["nxinit"] != projdata[procid][0].get_xsize() ):  projdata[procid], oldshifts[procid] = get_shrink_data(nnxo, tracker["nxinit"], \
-						stack, partids[procid], partstack[procid], myid, main_node, nproc, ali3d_options.CTF, preshift = True, radi = radi)
+				if( tracker["nxinit"] != projdata[procid][0].get_xsize() ):  \
+					projdata[procid], oldshifts[procid] = get_shrink_data(nnxo, tracker["nxinit"], \
+						stack, partids[procid], partstack[procid], myid, main_node, nproc, \
+						ali3d_options.CTF, Tracker["applyctf"], preshift = False, radi = radi)
 				metamove(projdata[procid], oldshifts[procid], paramsdict, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
 
 		partstack = [None]*2
@@ -1235,7 +1252,8 @@ def main():
 		doit, keepchecking = checkstep(outvol, keepchecking, myid, main_node)
 
 		if  doit:
-			xlowpass, xfalloff, xcurrentres = compute_resolution(stack, mainoutputdir, partids, partstack, radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
+			xlowpass, xfalloff, xcurrentres = compute_resolution(stack, mainoutputdir, partids, partstack, \
+													radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
 			del xlowpass, xfalloff, xcurrentres
 			if( myid == main_node):
 				# Move output to proper directories
@@ -1286,8 +1304,10 @@ def main():
 				if  doit:
 					if( tracker["nxinit"] != projdata[procid][0].get_xsize() ):
 						projdata[procid], oldshifts[procid] = get_shrink_data(nnxo, tracker["nxinit"], \
-											stack, partids[procid], partstack[procid], myid, main_node, nproc, ali3d_options.CTF, preshift = True, radi = radi)
-					metamove(projdata[procid], oldshifts[procid], paramsdict, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
+											stack, partids[procid], partstack[procid], myid, main_node, nproc, \
+											ali3d_options.CTF, Tracker["applyctf"], preshift = False, radi = radi)
+					metamove(projdata[procid], oldshifts[procid], paramsdict, partids[procid], partstack[procid], \
+									coutdir, procid, myid, main_node, nproc)
 			else:
 				if( myid == main_node and doit):
 					#  Simply copy from loga to logb the necessary stuff
@@ -1305,12 +1325,14 @@ def main():
 			if( nsoft > 0 ):
 				#  There was first soft phase, so the volumes have to be computed
 				#  low-pass filter, current resolution
-				lowpass, falloff, icurrentres = compute_resolution(stack, mainoutputdir, partids, partstack, radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
+				lowpass, falloff, icurrentres = compute_resolution(stack, mainoutputdir, partids, partstack, \
+														radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
 			else:
 				#  Previous phase was hard, so the volumes exist
 				vol = []
 				for procid in xrange(2):  vol.append(get_im(os.path.join(mainoutputdir,"loga%01d"%procid,"vol%01d.hdf"%procid) ))
-				newlowpass, newfalloff, icurrentres = compute_resolution(vol, mainoutputdir, partids, partstack, radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
+				newlowpass, newfalloff, icurrentres = compute_resolution(vol, mainoutputdir, partids, partstack, radi, \
+											nnxo, ali3d_options.CTF, myid, main_node, nproc)
 				del vol
 		else:
 			if(myid == main_node):
@@ -1325,7 +1347,7 @@ def main():
 			newfalloff = round(newfalloff,4)
 			icurrentres = bcast_number_to_all(icurrentres, source_node = main_node)
 
-		#  Here I have code to generate presentable results.  IDs and params have to be merged and stored and an overall volume computed.
+		#  Here I have code to generate presentable results.  IDs and params have to be merged and stored and the overall volume computed.
 		doit, keepchecking = checkstep(os.path.join(mainoutputdir,"volf.hdf"), keepchecking, myid, main_node)
 		if  doit:
 			if( myid == main_node ):
@@ -1346,7 +1368,6 @@ def main():
 			ali3d_options.fl, ali3d_options.aa = fit_tanh1([[float(i)/nnxo for i in xrange(len(nfsc))],nfsc], 0.01)
 			del nfsc
 			ali3d_options.ou     = radi
-			ali3d_options.shrink = 1.0
 			projdata = getindexdata(stack, os.path.join(mainoutputdir,"indexes.txt"), os.path.join(mainoutputdir,"params.txt"), myid, nproc)
 			volf = do_volume(projdata, ali3d_options, mainiteration, mpi_comm = MPI_COMM_WORLD)
 			if(myid == main_node): volf.write_image(os.path.join(mainoutputdir,"volf.hdf"))
@@ -1494,10 +1515,12 @@ def main():
 				else:   tracker["movedup"] = False
 				#  increase resolution
 				icurrentres = tracker["icurrentres"] + nxstep//2
-				nxshrink = tracker["nxshrink"]
-				nxshrink += nxstep
+				nxresolution = tracker["nxresolution"]
+				nxresolution += nxstep
 				nxinit = tracker["nxinit"]
-				while( nxshrink + cushion > nxinit ): nxinit += 32
+				while( nxresolution + cushion > nxinit ): nxinit += 32
+				#  Window size changed, reset projdata
+				if(nxinit> trackeer["nxinit"]):  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
 				nxinit = min(nxinit,nnxo)
 				#  Exhaustive searches
 				if(angular_neighborhood == "-1" and not tracker["local"]):
@@ -1505,13 +1528,15 @@ def main():
 					tracker["initialfl"] = paramsdict["initialfl"]
 					tracker["lowpass"] = paramsdict["initialfl"]
 					paramsdict["lowpass"] = paramsdict["initialfl"]
-				#  Local discrete/gridding searches
+					tracker["applyctf"] = True
+				#  Local searches
 				elif(angular_neighborhood != "-1" and not tracker["local"]):
 					#tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
 					paramsdict["initialfl"] = read_fsc(os.path.join(initdir,"fsc.txt"),icurrentres, myid, main_node)
 					tracker["initialfl"] = paramsdict["initialfl"]
 					tracker["lowpass"] = paramsdict["initialfl"]
 					paramsdict["lowpass"] = paramsdict["initialfl"]
+					tracker["applyctf"] = True
 				#  Local/gridding  searches, move only as much as the resolution increase allows
 				elif(tracker["local"]):
 					#tracker["extension"] =    0.0  # lowpass cannot exceed 0.45
@@ -1519,10 +1544,11 @@ def main():
 					tracker["initialfl"] = paramsdict["initialfl"]
 					tracker["lowpass"] = paramsdict["initialfl"]
 					paramsdict["lowpass"] = paramsdict["initialfl"]
+					tracker["applyctf"] = False
 				else:
 					print(" Unknown combination of settings in improved resolution path",angular_neighborhood,tracker["local"])
 					exit()  #  This will crash the program, but the situation is unlikely to occure
-				tracker["nxshrink"]            = nxshrink
+				tracker["nxresolution"]            = nxresolution
 				tracker["nxinit"]              = nxinit
 				tracker["icurrentres"]         = icurrentres
 				tracker["eliminated-outliers"] = eliminated_outliers
@@ -1593,7 +1619,7 @@ def main():
 						print("  something wrong with bestoutputdir")
 						exit()
 					shrink                   = history[i]["shrink"]
-					nxshrink                 = history[i]["nxshrink"]
+					nxresolution                 = history[i]["nxresolution"]
 					paramsdict["initialfl"]  = history[i]["initialfl"]
 					paramsdict["falloff"]    = history[i]["falloff"]
 					tracker["initialfl"]     = history[i]["initialfl"]
@@ -1612,6 +1638,7 @@ def main():
 			if(angular_neighborhood == "-1" and not tracker["local"]):
 				if(myid == main_node):
 					print("  Switching to local searches with an  %s"%options.an)
+				tracker["applyctf"] = True
 				falloff = 0.2
 				tracker["local"] = True
 				#  keep the same resolution
@@ -1624,27 +1651,34 @@ def main():
 					print("  Switching to local searches with an %s"%angular_neighborhood)
 					if(tracker["PWadjustment"] != ""):
 						print("  Turning on power spectrum adjustment %s"%tracker["PWadjustment"])
-			#  Local discrete/gridding searches
+			#  Local continuous searches
 			elif(angular_neighborhood != "-1" and not tracker["local"]):
 				if(myid == main_node):
-					print("  Switching to local searches without an")
+					print("  Switching to local continuous")
+				projdata = [[model_blank(1,1)],[model_blank(1,1)]]
+				tracker["applyctf"] = False
+				#  keep the same resolution
+				icurrentres = tracker["icurrentres"]
 				tracker["local"] = True
-				#  Finish up
 				#angular_neighborhood = options.an
 				ali3d_options.pwreference = options.pwreference
-				#tracker["PWadjustment"] = ali3d_options.pwreference
+				tracker["PWadjustment"] = ali3d_options.pwreference
 				keepgoing = 1
 				if(myid == main_node):
 					print("  Switching to local searches with an %s"%angular_neighborhood)
 					if(tracker["PWadjustment"] != ""):
 						print("  Turning on power spectrum adjustment %s"%tracker["PWadjustment"])
-			#  Local/gridding  searches, move only as much as the resolution increase allows
+			#  Local/continuous  searches, finishing up
 			elif(tracker["local"]):
+				#  Finish up by running continuous at full size
+				#  for continuous data cannot be ctf applied.
+				projdata = [[model_blank(1,1)],[model_blank(1,1)]]
+				tracker["applyctf"] = False
 				lowpass = currentres + tracker["extension"]
 				shrink = max(min(2*lowpass + paramsdict["falloff"], 1.0), minshrink)
-				nxshrink = min(int(nnxo*shrink + 0.5),nnxo)
-				nxshrink += nxshrink%2
-				shrink = float(nxshrink)/nnxo
+				nxresolution = min(int(nnxo*shrink + 0.5),nnxo)
+				nxresolution += nxresolution%2
+				shrink = float(nxresolution)/nnxo
 			else:
 				print(" Unknown combination of settings in improved resolution path",angular_neighborhood,tracker["local"])
 				exit()  #  This will crash the program, but the situation is unlikely to occur
@@ -1661,9 +1695,9 @@ def main():
 				paramsdict["falloff"]   = falloff
 				lowpass = currentres + tracker["extension"]
 				shrink  = max(min(2*lowpass + paramsdict["falloff"], 1.0), minshrink)
-				nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
-				nxshrink += nxshrink%2
-				shrink = float(nxshrink)/nnxo
+				nxresolution = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
+				nxresolution += nxresolution%2
+				shrink = float(nxresolution)/nnxo
 				if( tracker["nx"] == nnxo):
 					keepgoing = 0
 				else:
@@ -1697,9 +1731,9 @@ def main():
 						paramsdict["initialfl"] = lowpass
 						lowpass = currentres + tracker["extension"]
 						shrink  = max(min(2*lowpass + paramsdict["falloff"], 1.0), minshrink)
-						nxshrink = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
-						nxshrink += nxshrink%2
-						shrink = float(nxshrink)/nnxo
+						nxresolution = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
+						nxresolution += nxresolution%2
+						shrink = float(nxresolution)/nnxo
 						if( tracker["nx"] == nnxo):
 							if(myid == main_node):  print("The resolution did not improve and image we reached the full image size.")
 							keepgoing = 0
@@ -1721,8 +1755,8 @@ def main():
 						tracker["movedup"]  = False
 						tracker["initialfl"]    = lowpass
 						paramsdict["initialfl"] = lowpass
-						nxshrink = nnxo
-						shrink = float(nxshrink)/nnxo
+						nxresolution = nnxo
+						shrink = float(nxresolution)/nnxo
 						if( tracker["nx"] == nnxo):
 							if(myid == main_node):  print("The resolution did not improve and image we reached the full image size.")
 							keepgoing = 0
@@ -1745,7 +1779,7 @@ def main():
 		if( keepgoing == 1 ):
 			nsoft = 0
 			if(myid == main_node):
-				print("  New shrink and image dimension :",nxshrink, nxinit)
+				print("  New shrink and image dimension :",nxresolution, nxinit)
 				"""
 				#  It does not look like it is necessary, we just have to point to the directory as the files should be there.
 				#  Will continue, so update the params files
