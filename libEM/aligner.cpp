@@ -2613,7 +2613,7 @@ vector<Dict> RT3DGridAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 EMData* RT3DTreeAligner::align(EMData * this_img, EMData *to, const string & cmp_name, const Dict& cmp_params) const
 {
 
- 	vector<Dict> alis = xform_align_nbest(this_img,to,10,cmp_name,cmp_params);
+ 	vector<Dict> alis = xform_align_nbest(this_img,to,8,cmp_name,cmp_params);
 
  	Dict t;
  	Transform* tr = (Transform*) alis[0]["xform.align3d"];
@@ -2625,27 +2625,29 @@ EMData* RT3DTreeAligner::align(EMData * this_img, EMData *to, const string & cmp
 
 }
 
+// NOTE - if symmetry is applied, it is critical that "to" be the volume which is already aligned to the symmetry axes (ie - the reference)
 vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, const unsigned int nrsoln, const string & cmp_name, const Dict& cmp_params) const {
 	if (nrsoln == 0) throw InvalidParameterException("ERROR (RT3DTreeAligner): nsoln must be >0"); // What was the user thinking?
 
 	int nsoln = nrsoln;
 	if (nrsoln<3) nsoln=3;		// we need at least 3 solutions for the hierarchical approach
 
-	int cleanup=0;
+	// !!!!!! IMPORTANT NOTE - we are inverting the order of this and to here to match convention in other aligners, to compensate
+	// the Transform is inverted before being returned
 	EMData *base_this;
 	EMData *base_to;
-	if (this_img->is_complex() && to->is_complex()) {
-		base_this=this_img->copy();
-		base_to=to->copy();
-		cleanup=1;
-	} else {
-		base_this = this_img->do_fft();
-		base_to = to->do_fft();
-		base_this->process_inplace("xform.phaseorigin.tocorner");
+	if (this_img->is_complex()) base_to=this_img->copy();
+	else {
+		base_to=this_img->do_fft();
 		base_to->process_inplace("xform.phaseorigin.tocorner");
-		cleanup=1;
 	}
-
+	
+	if (to->is_complex()) base_this=to->copy();
+	else {
+		base_this=to->do_fft();
+		base_this->process_inplace("xform.phaseorigin.tocorner");
+	}
+	
 	float sigmathis = params.set_default("sigmathis",0.01f);
 	float sigmato = params.set_default("sigmato",0.01f);
 	int verbose = params.set_default("verbose",0);
@@ -2874,16 +2876,9 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		delete small_to;
 		if (ss==ny) break;
 	}
-	if (cleanup) {
-		delete base_this;
-		delete base_to;
-	}
-	else {
-// 		base_this->process_inplace("xform.fourierorigin.tocorner");		// easier to chop out Fourier subvolumes
-// 		base_this->process_inplace("xform.phaseorigin.tocenter");
-// 		base_to->process_inplace("xform.fourierorigin.tocorner");
-// 		base_to->process_inplace("xform.phaseorigin.tocenter");
-	}
+	
+	delete base_this;
+	delete base_to;
 
 	// lazy earlier in defining s_ vectors, so lazy here too and inefficiently sorting
 	for (unsigned int i=0; i<nsoln-1; i++) {
@@ -2902,6 +2897,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		Dict d;
 		d["score"] = s_score[i];
 		d["coverage"] = s_coverage[i];
+		s_xform[i].invert();	// this is because we inverted the order of the input images above to match convention
 		d["xform.align3d"] = &s_xform[i];
 		solns.push_back(d);
 	}
