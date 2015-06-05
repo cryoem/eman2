@@ -388,7 +388,7 @@ for option1 in optionList:
 	elif option1 == "threads":
 		s = s + " --j " + str(options.threads)
 	elif option1 == "maxmemory":
-		s = s + " --max_memory " + str(options.maxmemory)
+		s = s + " --memory_per_thread " + str(options.maxmemory)
 	elif option1 == "greyscale":
 		grey = 1
 	elif option1 == "randomizemodel":

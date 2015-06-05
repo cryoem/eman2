@@ -398,6 +398,11 @@ for option1 in optionList:
 			for item2 in item:
 				if item2.tag == "transformationMatrix":
 					t = Transform([float(item2.find('t11').text),float(item2.find('t12').text),float(item2.find('t13').text),float(item2.find('t14').text),float(item2.find('t21').text),float(item2.find('t22').text),float(item2.find('t23').text),float(item2.find('t24').text),float(item2.find('t31').text),float(item2.find('t32').text),float(item2.find('t33').text),float(item2.find('t34').text)])
+					alpha = t.get_params('2d')['alpha']
+					tx = t.get_params('2d')['tx']
+					ty = t.get_params('2d')['ty']
+					mirror = t.get_params('2d')['mirror']
+					scale = t.get_params('2d')['scale']
 					print t
 
 
@@ -412,8 +417,7 @@ for option1 in optionList:
 
 
 
-
-
+#------------------ Legacy Code here in case I want a reference to it -----------------------------#
 				##if item2.tag == "boxSize":
 					##for item3 in item2:
 						##if item3.tag == "X":

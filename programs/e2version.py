@@ -36,6 +36,7 @@ import sys
 import platform
 from subprocess import *
 
+
 EMANVERSION="EMAN 2.1"
 CVSDATESTAMP="$Date$"
 
