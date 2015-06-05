@@ -188,7 +188,7 @@ def main():
 	
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="""Default=0. Verbose level [0-9], higner number means higher level of verboseness""")
 		
-	parser.add_argument("--resume",type=str,default='',help="""(Not working currently). tomo_fxorms.json file that contains alignment information for the particles in the set. If the information is incomplete (i.e., there are less elements in the file than particles in the stack), on the first iteration the program will complete the file by working ONLY on particle indexes that are missing. For subsequent iterations, all the particles will be used.""")
+	parser.add_argument("--resume",type=str,default='',help="""(Not working currently). sptali_ir.json file that contains alignment information for the particles in the set. If the information is incomplete (i.e., there are less elements in the file than particles in the stack), on the first iteration the program will complete the file by working ONLY on particle indexes that are missing. For subsequent iterations, all the particles will be used.""")
 															
 	parser.add_argument("--plots", action='store_true', default=False,help="""Default=False. Turn this option on to generate a plot of the ccc scores during each iteration in.png format (otherwise only .txt files will be saved). This option will also produce a plot of mean ccc score across iterations. Running on a cluster or via ssh remotely might not support plotting.""")
 
@@ -756,7 +756,7 @@ def main():
 						print """Skipping this particle because you provided --resume and the alignment info for this particle is aready present.
 						Info for particle loaded into results""", ptclnum
 					
-						tomoID = "tomo_" + str(ptclnum).zfill( len(str( len(ptclnums) )) )
+						tomoID = "subtomo_" + str(ptclnum).zfill( len(str( len(ptclnums) )) )
 					
 						if tomoID not in resumeDict.keys():
 							print "ERROR: This key is not in the file provided for --resume", tomoID
@@ -768,11 +768,11 @@ def main():
 						
 							for key in keys:
 								if type(resumeDict[key]) is not list:					 
-									print """ERROR: Your tomo_xforms.json file seems to be incomplete. The value for the particle key is a Transform(), but should be a list.
-									The file should contain a dictionary where there's a 'key' for each particle, containing the word 'tomo_' followed by the particle's index 
+									print """ERROR: Your sptali_ir.json file seems to be incomplete. The value for the particle key is a Transform(), but should be a list.
+									The file should contain a dictionary where there's a 'key' for each particle, containing the word 'subtomo_' followed by the particle's index 
 									(with as many digits as there are orders of magnitude in the set; for example
-									the first particle in a set of 10 would be 'tomo_0', but in a set of 10 to 100 it would be 'tomo_00', and in a set of 101 to 1000
-									it would be 'tomo_000'), and the 'value' of each key would be a list with two elements, [ Transform(), score ], where Transform
+									the first particle in a set of 10 would be 'subtomo_0', but in a set of 10 to 100 it would be 'subtomo_00', and in a set of 101 to 1000
+									it would be 'subtomo_000'), and the 'value' of each key would be a list with two elements, [ Transform(), score ], where Transform
 									contains the alignment parameters between a particle and the reference, and score the cross correlation score for that alignment.""" 
 									sys.exit()
 							
@@ -782,7 +782,7 @@ def main():
 					
 									
 				if options.inixforms:
-					tomoID = "tomo_" + str(ptclnum).zfill( len(str( len(ptclnums) )) )
+					tomoID = "subtomo_" + str(ptclnum).zfill( len(str( len(ptclnums) )) )
 					transform = preOrientationsDict[tomoID][0]
 					
 					print transform
@@ -930,7 +930,7 @@ def main():
 			and for each reference if using multiple model refinement
 			'''
 			
-			jsAliParamsPath = options.path + '/tomo_xforms.json'
+			jsAliParamsPath = options.path + '/sptali_ir.json'
 			
 			
 			print "options.refinemultireftag and type are", options.refinemultireftag, type(options.refinemultireftag)
@@ -987,7 +987,7 @@ def main():
 				if options.verbose > 3:
 					print "and transform is",t
 			
-				xformslabel = 'tomo_' + str( ptclindx ).zfill( len( str( nptcl ) ) )			
+				xformslabel = 'subtomo_' + str( ptclindx ).zfill( len( str( nptcl ) ) )			
 				jsA.setval( xformslabel, [ t , score ] )
 			
 				if options.verbose > 3:
@@ -1015,7 +1015,7 @@ def main():
 					if len(scoresCoarse) > 1:
 					
 					
-						jsAliParamsPathCoarseAll = options.path + '/tomo_xforms_coarse_allpeaks.json'
+						jsAliParamsPathCoarseAll = options.path + '/sptali_ir_coarse_allpeaks.json'
 	
 						if not options.refinemultireftag:
 							jsAliParamsPathCoarseAll = jsAliParamsPathCoarseAll.replace('.json', '_' + str(it).zfill( len(str(options.iter))) + '.json')
@@ -1422,17 +1422,17 @@ def compareEvenOdd( options, avgeven, avgodd, it, etc, fscfile, tag, average=Tru
 	transformAliOdd2even = resultsAvgs['final'][0]['xform.align3d']
 	scoreAliOdd2even = resultsAvgs['final'][0]['score']
 	
-	avgsDict = options.path + '/tomo_xforms_' + str(it).zfill( len( str(options.iter))) + '_oddAli2even.json'
+	avgsDict = options.path + '/sptali_ir_' + str(it).zfill( len( str(options.iter))) + '_oddAli2even.json'
 	
 	if not average and tag == 'refbased':
-		avgsDict = options.path + '/tomo_xforms_' + str(it).zfill( len( str( it ))) + '_avgAli2ref.json'
+		avgsDict = options.path + '/sptali_ir_' + str(it).zfill( len( str( it ))) + '_avgAli2ref.json'
 	
 	elif tag == 'initial':
-		avgsDict = options.path + '/initialrefs_tomo_xforms_oddAli2even.json'
+		avgsDict = options.path + '/initialrefs_sptali_ir_oddAli2even.json'
 	
 	jsAvgs = js_open_dict( avgsDict )
 
-	xformslabel = 'tomo_0'		
+	xformslabel = 'subtomo_0'		
 	
 	jsAvgs.setval( xformslabel, [ transformAliOdd2even , scoreAliOdd2even ] )
 
@@ -2697,7 +2697,7 @@ def makeAverage(options,ic,results,it=0):
 	included=[]
 	
 	#print "The path to save the alignments is", path
-	#jsdict = path + '/tomo_xforms.json'
+	#jsdict = path + '/sptali_ir.json'
 	#js = js_open_dict(jsdict)
 	
 	#maxscore = None
@@ -2774,7 +2774,7 @@ def makeAverage(options,ic,results,it=0):
 				minweight = float( options.weighbytiltaxis.split(',')[1] )
 				
 				if px > tiltaxis:
-					px = -1 *( px - 2*tiltaxis )
+					px = -1 *( px - 2*tiltaxis )	#This puts te particle at the same distance from te tilt axis, but to the left of it.
 				
 				X = tiltaxis				#This models a line in 'weight space' (x, w), that passes through (0, minweight) and ( tiltaxis, maxweight ) 
 				W = 1.0 - minweight
@@ -2805,7 +2805,7 @@ def makeAverage(options,ic,results,it=0):
 		else:
 			weights.update( {ptclindx:0.0} )
 		
-		#js["tomo_%04d"%i] = ptcl_parms[0]['xform.align3d']
+		#js["subtomo_%04d"%i] = ptcl_parms[0]['xform.align3d']
 	
 		if writeali:
 			ptcl['origin_x'] = 0
@@ -2929,7 +2929,7 @@ def get_results(etc,tids,verbose,nptcls,refmethod=''):
 				
 				'''
 				if savealiparams and results and results[ptcl]:
-					xformslabel = 'tomo_' + str( ptcl ).zfill( len( str(nptcls) ) )
+					xformslabel = 'subtomo_' + str( ptcl ).zfill( len( str(nptcls) ) )
 			
 					AliParams=results[ptcl][0]['xform.align3d']
 					score = float(results[ptcl][0]['score'])
@@ -3078,7 +3078,7 @@ class Align3DTask(JSTask):
 		#print "\n(e2spt_classaverage)(Align3DTaks)(execute) nptcls is", nptcls
 		#print "classoptions are", classoptions
 		
-		xformslabel = 'tomo_' + str(classoptions['ptclnum']).zfill( len( str(nptcls) ) )
+		xformslabel = 'subtomo_' + str(classoptions['ptclnum']).zfill( len( str(nptcls) ) )
 		
 		refpreprocess=0
 		options=classoptions['options']
@@ -3170,7 +3170,7 @@ def align3Dfunc(fixedimage,image,ptclnum,label,options,transform,currentIter):
 	"""
 	
 	nptcls = EMUtil.get_image_count(options.input)
-	xformslabel = 'tomo_' + str(ptclnum).zfill( len( str(nptcls) ) )
+	xformslabel = 'subtomo_' + str(ptclnum).zfill( len( str(nptcls) ) )
 	
 	refpreprocess=0
 	
