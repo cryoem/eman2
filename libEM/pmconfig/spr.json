@@ -41,6 +41,14 @@
       },
       {
         "ICON": "green_boxes",
+	"MODE": "coords",
+        "PROGRAM": "e2import.py",
+        "WIZARD":"/lib/pmconfig/particleimport.json",
+        "NAME": "Import Box Coord (.box files) -e2import.py",
+        "CHILDREN": []
+      },
+      {
+        "ICON": "green_boxes",
         "MODE": "extraction",
         "EXPERT": 1,
         "WIKIPAGE": "http://blake.bcm.tmc.edu/emanwiki/EMAN2/Programs/e2boxer",
@@ -69,14 +77,6 @@
         "PROGRAM": "e2import.py",
         "WIZARD":"/lib/pmconfig/particleimport.json",
         "NAME": "Particle Import -e2import.py",
-        "CHILDREN": []
-      },
-      {
-        "ICON": "green_boxes",
-	"MODE": "coords",
-        "PROGRAM": "e2import.py",
-        "WIZARD":"/lib/pmconfig/particleimport.json",
-        "NAME": "Box Coordinate Import -e2import.py",
         "CHILDREN": []
       },
       {
