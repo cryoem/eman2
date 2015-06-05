@@ -100,7 +100,7 @@ def main():
 	(options, args) = parser.parse_args()
 		
 	# Run the GUI if in GUI mode
-	print options
+	#print options
 	if options.gui:
 		display_validation_plots(options.path, options.radcut, options.planethres, plotdatalabels=options.datalabels, color=options.datalabelscolor, plotzaxiscolor=options.colorzaxis)
 		exit(0)

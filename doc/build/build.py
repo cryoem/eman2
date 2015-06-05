@@ -220,9 +220,6 @@ class MacTarget(Target):
 
     Installing EMAN2 is simple. 
 
-    If clarification of any step is needed, we have created a visual guide with screenshots in the EMAN2 wiki:
-        http://blake.grid.bcm.edu/emanwiki/EMAN2/Install/BinaryInstall_OSXVisualGuide
-
     1. Copy the "EMAN2" folder to /Applications.
 
     2. If you use the bash shell, add the following line to your ".profile" file:
