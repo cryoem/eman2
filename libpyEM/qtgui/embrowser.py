@@ -32,6 +32,8 @@
 
 from EMAN2 import *
 from EMAN2jsondb import js_open_dict
+from PyQt4 import QtCore, QtGui
+from PyQt4.QtCore import QChar, QString, Qt
 from emapplication import EMApp
 from emimage2d import *
 from emimagemx import *
@@ -41,17 +43,15 @@ from emplot3d import *
 from expand_string import expand_string
 from libpyUtils2 import EMUtil
 from matching import matches_pats
+from string import lower
+from valslider import StringBox
 import os
 import re
-from string import lower
 import threading
 import time
 import traceback
-from valslider import StringBox
 import weakref
 
-from PyQt4 import QtCore, QtGui
-from PyQt4.QtCore import Qt, QString, QChar
 
 
 #---------------------------------------------------------------------------
@@ -1085,9 +1085,9 @@ class EMPDBFileType(EMFileType):
 		"""
 		Returns a list of (name, callback) tuples detailing the operations the user can call on the current file
 		"""
-		return [("Show Ball and Stick", "Show ball and stick representation of this PDB model in a new 3D window", self.showBallStick3DNew), ("Show Ball and Stick +", "Show ball and stick representation of this PDB model in the current 3D window", self.showBallStick3dApp), ("Show Spheres", "Show spheres representation of this PDB model in a new 3D window", self.showSpheres3DNew), ("Show Spheres +", "Show spheres representation of this PDB model in the current 3D window", self.showSpheres3dApp), ("Chimera", "Open this PDB file in chimera (if installed)", self.showChimera), ("Save As", "Saves a copy of the selected PDB file", self.saveAs)]
+		return [("Show Ball and Stick", "Show ball and stick representation of this PDB model in a new 3D window", self.showBallStick3dNew), ("Show Ball and Stick +", "Show ball and stick representation of this PDB model in the current 3D window", self.showBallStick3dApp), ("Show Spheres", "Show spheres representation of this PDB model in a new 3D window", self.showSpheres3dNew), ("Show Spheres +", "Show spheres representation of this PDB model in the current 3D window", self.showSpheres3dApp), ("Chimera", "Open this PDB file in chimera (if installed)", self.showChimera), ("Save As", "Saves a copy of the selected PDB file", self.saveAs)]
 
-	def showSpheres3DApp(self, brws):
+	def showSpheres3dApp(self, brws):
 		"""New 3-D window"""
 		brws.busy()
 		pdb_model = EMPDBItem3D(self.path)
@@ -1122,7 +1122,7 @@ class EMPDBFileType(EMFileType):
 		target.show()
 		target.raise_()
 
-	def showBallStick3DApp(self, brws):
+	def showBallStick3dApp(self, brws):
 		"""New 3-D window"""
 		brws.busy()
 		pdb_model = EMPDBItem3D(self.path)
