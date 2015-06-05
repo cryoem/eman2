@@ -1129,12 +1129,12 @@ def main():
 	nsoft = options.nsoft
 	falloff = paramsdict["falloff"]
 	paramsdict["initialfl"] = lowpass
-	tracker = {"resolution":icurrentres/float(nnxo),"lowpass":lowpass, "falloff":falloff, "initialfl":lowpass,  \
+	Tracker = {"resolution":icurrentres/float(nnxo),"lowpass":lowpass, "falloff":falloff, "initialfl":lowpass,  \
 				"movedup":False,"eliminated-outliers":False,"applyctf":True,"PWadjustment":"","local":False,"nsoft":nsoft, \
 				"nnxo":nnxo, "icurrentres":icurrentres,"nxinit":nxinit, "nxresolution":nxresolution, "extension":0.0, \
 				"directory":"none"}
-	tracker["lowpass"] = read_fsc(os.path.join(initdir,"fsc.txt"),icurrentres, myid, main_node)
-	history = [tracker.copy()]
+	Tracker["lowpass"] = read_fsc(os.path.join(initdir,"fsc.txt"),icurrentres, myid, main_node)
+	history = [Tracker.copy()]
 	previousoutputdir = initdir
 	#  remove projdata, if it existed, initialize to nonsense
 	projdata = [[model_blank(1,1)], [model_blank(1,1)]]
@@ -1199,15 +1199,15 @@ def main():
 		mpi_barrier(MPI_COMM_WORLD)
 
 		#  Refine two groups at a current resolution
-		lastring = int(radi*float(tracker["nxinit"])/float(nnxo)+0.5)
+		lastring = int(radi*float(Tracker["nxinit"])/float(nnxo)+0.5)
 		if(lastring < 2):
 			ERROR( "ERROR!!   lastring too small  %f    %f   %d"%(radi, lastring), "sxmeridien",1, myid)
 
 		delta = round(degrees(atan(1.0/lastring)), 2)
 		subdict( paramsdict, { "delta":"%f"%delta , "an":angular_neighborhood, \
-						"lowpass":tracker["lowpass"],"resolution":tracker["resolution"],"icurrentres":tracker["icurrentres"],
-						"nnxo":tracker["nnxo"], "nxinit":tracker["nxinit"], "nxresolution":tracker["nxresolution"],
-						"pixercutoff":get_pixercutoff(radi*float(tracker["nxinit"])/float(nnxo), delta, 0.5), \
+						"lowpass":Tracker["lowpass"],"resolution":Tracker["resolution"],"icurrentres":Tracker["icurrentres"],
+						"nnxo":Tracker["nnxo"], "nxinit":Tracker["nxinit"], "nxresolution":Tracker["nxresolution"],
+						"pixercutoff":get_pixercutoff(radi*float(Tracker["nxinit"])/float(nnxo), delta, 0.5), \
 						"radius":lastring,"delpreviousmax":True } )
 		#  REFINEMENT
 		#  Part "a"  SHC         <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -1217,8 +1217,8 @@ def main():
 			#  here ts has different meaning for standard and continuous
 			subdict( paramsdict, { "nsoft":nsoft, "refvol":os.path.join(mainoutputdir,"fusevol%01d.hdf"%procid) } )
 			#if(len(history)>1):  old_nx = history[-2]["nx"]
-			#else:    old_nx = tracker["nx"]
-			paramsdict["xr"] = "3.0"#"%s"%max(3,int(1.5*tracker["nx"]/float(old_nx) +0.5))
+			#else:    old_nx = Tracker["nx"]
+			paramsdict["xr"] = "3.0"#"%s"%max(3,int(1.5*Tracker["nx"]/float(old_nx) +0.5))
 			if( paramsdict["nsoft"] > 0 ):
 				if( float(paramsdict["an"]) == -1.0 ):
 					paramsdict["saturatecrit"] = 0.75					
@@ -1238,8 +1238,8 @@ def main():
 
 			if  doit:
 				mpi_barrier(MPI_COMM_WORLD)
-				if( tracker["nxinit"] != projdata[procid][0].get_xsize() ):  \
-					projdata[procid], oldshifts[procid] = get_shrink_data(nnxo, tracker["nxinit"], \
+				if( Tracker["nxinit"] != projdata[procid][0].get_xsize() ):  \
+					projdata[procid], oldshifts[procid] = get_shrink_data(nnxo, Tracker["nxinit"], \
 						stack, partids[procid], partstack[procid], myid, main_node, nproc, \
 						ali3d_options.CTF, Tracker["applyctf"], preshift = False, radi = radi)
 				metamove(projdata[procid], oldshifts[procid], paramsdict, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
@@ -1302,8 +1302,8 @@ def main():
 				"refvol":os.path.join(mainoutputdir,"loga%01d"%procid,"fusevol%01d.hdf"%procid)} )
 
 				if  doit:
-					if( tracker["nxinit"] != projdata[procid][0].get_xsize() ):
-						projdata[procid], oldshifts[procid] = get_shrink_data(nnxo, tracker["nxinit"], \
+					if( Tracker["nxinit"] != projdata[procid][0].get_xsize() ):
+						projdata[procid], oldshifts[procid] = get_shrink_data(nnxo, Tracker["nxinit"], \
 											stack, partids[procid], partstack[procid], myid, main_node, nproc, \
 											ali3d_options.CTF, Tracker["applyctf"], preshift = False, radi = radi)
 					metamove(projdata[procid], oldshifts[procid], paramsdict, partids[procid], partstack[procid], \
@@ -1377,7 +1377,7 @@ def main():
 		#print("RACING  X ",myid)
 		#  If the resolution stalled, try to eliminate outliers
 		if(False):
-		#if(currentres == tracker["resolution"]  and test_outliers):
+		#if(currentres == Tracker["resolution"]  and test_outliers):
 			test_outliers = False
 
 			for procid in xrange(2):
@@ -1501,75 +1501,75 @@ def main():
 			increment   = 0.01
 
 		if(myid == main_node):
-			print(" New resolution %6d   Previous resolution %d"%(icurrentres , tracker["resolution"]))
+			print(" New resolution %6d   Previous resolution %d"%(icurrentres , Tracker["resolution"]))
 
-		if( ( icurrentres > tracker["icurrentres"] ) or (eliminated_outliers and not tracker["eliminated-outliers"]) or mainiteration == 1):
+		if( ( icurrentres > Tracker["icurrentres"] ) or (eliminated_outliers and not Tracker["eliminated-outliers"]) or mainiteration == 1):
 			if(myid == main_node):
-				if( icurrentres > tracker["resolution"]):  print("  Resolution improved, full steam ahead!")
+				if( icurrentres > Tracker["resolution"]):  print("  Resolution improved, full steam ahead!")
 				else:  print("  While the resolution did not improve, we eliminated outliers so we follow the _resolution_improved_ path.")
-			if(tracker["icurrentres"] + nxstep//2 >= nnxo ):
+			if(Tracker["icurrentres"] + nxstep//2 >= nnxo ):
 				if(myid == main_node): print(" Resolution approached Nyquist limit, program will terminate")
 			else:
 				# We need separate rules for each case
-				if( icurrentres > tracker["resolution"] ):  tracker["movedup"] = True
-				else:   tracker["movedup"] = False
+				if( icurrentres > Tracker["resolution"] ):  Tracker["movedup"] = True
+				else:   Tracker["movedup"] = False
 				#  increase resolution
-				icurrentres = tracker["icurrentres"] + nxstep//2
-				nxresolution = tracker["nxresolution"]
+				icurrentres = Tracker["icurrentres"] + nxstep//2
+				nxresolution = Tracker["nxresolution"]
 				nxresolution += nxstep
-				nxinit = tracker["nxinit"]
+				nxinit = Tracker["nxinit"]
 				while( nxresolution + cushion > nxinit ): nxinit += 32
 				#  Window size changed, reset projdata
 				if(nxinit> trackeer["nxinit"]):  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
 				nxinit = min(nxinit,nnxo)
 				#  Exhaustive searches
-				if(angular_neighborhood == "-1" and not tracker["local"]):
+				if(angular_neighborhood == "-1" and not Tracker["local"]):
 					paramsdict["initialfl"] = read_fsc(os.path.join(initdir,"fsc.txt"),icurrentres, myid, main_node)
-					tracker["initialfl"] = paramsdict["initialfl"]
-					tracker["lowpass"] = paramsdict["initialfl"]
+					Tracker["initialfl"] = paramsdict["initialfl"]
+					Tracker["lowpass"] = paramsdict["initialfl"]
 					paramsdict["lowpass"] = paramsdict["initialfl"]
-					tracker["applyctf"] = True
+					Tracker["applyctf"] = True
 				#  Local searches
-				elif(angular_neighborhood != "-1" and not tracker["local"]):
-					#tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
+				elif(angular_neighborhood != "-1" and not Tracker["local"]):
+					#Tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
 					paramsdict["initialfl"] = read_fsc(os.path.join(initdir,"fsc.txt"),icurrentres, myid, main_node)
-					tracker["initialfl"] = paramsdict["initialfl"]
-					tracker["lowpass"] = paramsdict["initialfl"]
+					Tracker["initialfl"] = paramsdict["initialfl"]
+					Tracker["lowpass"] = paramsdict["initialfl"]
 					paramsdict["lowpass"] = paramsdict["initialfl"]
-					tracker["applyctf"] = True
+					Tracker["applyctf"] = True
 				#  Local/gridding  searches, move only as much as the resolution increase allows
-				elif(tracker["local"]):
-					#tracker["extension"] =    0.0  # lowpass cannot exceed 0.45
+				elif(Tracker["local"]):
+					#Tracker["extension"] =    0.0  # lowpass cannot exceed 0.45
 					paramsdict["initialfl"] = read_fsc(os.path.join(initdir,"fsc.txt"),icurrentres, myid, main_node)
-					tracker["initialfl"] = paramsdict["initialfl"]
-					tracker["lowpass"] = paramsdict["initialfl"]
+					Tracker["initialfl"] = paramsdict["initialfl"]
+					Tracker["lowpass"] = paramsdict["initialfl"]
 					paramsdict["lowpass"] = paramsdict["initialfl"]
-					tracker["applyctf"] = False
+					Tracker["applyctf"] = False
 				else:
-					print(" Unknown combination of settings in improved resolution path",angular_neighborhood,tracker["local"])
+					print(" Unknown combination of settings in improved resolution path",angular_neighborhood,Tracker["local"])
 					exit()  #  This will crash the program, but the situation is unlikely to occure
-				tracker["nxresolution"]            = nxresolution
-				tracker["nxinit"]              = nxinit
-				tracker["icurrentres"]         = icurrentres
-				tracker["eliminated-outliers"] = eliminated_outliers
+				Tracker["nxresolution"]            = nxresolution
+				Tracker["nxinit"]              = nxinit
+				Tracker["icurrentres"]         = icurrentres
+				Tracker["eliminated-outliers"] = eliminated_outliers
 				bestoutputdir = mainoutputdir
 				keepgoing = 1
 
-		elif( currentres < tracker["resolution"] ):
+		elif( currentres < Tracker["resolution"] ):
 			if(myid == main_node):  print("  Cannot improve resolution, the best result is in the directory %s"%bestoutputdir)
 			exit()
 			#  The resolution decreased.  For exhaustive or local, backoff and switch to the next refinement.  For gridding, terminate
-			if(not tracker["movedup"] and tracker["extension"] < increment and mainiteration > 1):
-				if( angular_neighborhood == "-1" and not tracker["local"]):
+			if(not Tracker["movedup"] and Tracker["extension"] < increment and mainiteration > 1):
+				if( angular_neighborhood == "-1" and not Tracker["local"]):
 					angular_neighborhood = options.an
 					ali3d_options.pwreference = options.pwreference
-					tracker["PWadjustment"] = ali3d_options.pwreference
-					tracker["extension"] = stepforward + increment # so below it will be set to stepforward
+					Tracker["PWadjustment"] = ali3d_options.pwreference
+					Tracker["extension"] = stepforward + increment # so below it will be set to stepforward
 					mainoutputdir = bestoutputdir
 					keepgoing = 1
 					if(myid == main_node):  print("  Switching to local searches with an %s"%angular_neighborhood)
-				elif(angular_neighborhood != "-1" and not tracker["local"]):
-					tracker["extension"] = stepforward + increment # so below it will be set to stepforward
+				elif(angular_neighborhood != "-1" and not Tracker["local"]):
+					Tracker["extension"] = stepforward + increment # so below it will be set to stepforward
 					mainoutputdir = bestoutputdir
 					keepgoing = 1
 					if(myid == main_node):  print("  Switching to local/gridding searches")
@@ -1577,16 +1577,16 @@ def main():
 					keepgoing = 0
 					if(myid == main_node):  print("  Cannot improve resolution, the best result is in the directory %s"%bestoutputdir)
 			else:
-				if(not tracker["movedup"] and tracker["extension"] > 0.01 and mainiteration > 1):
-					if(myid == main_node):  print("  Resolution decreased.  Will decrease target resolution and will fall back on the best so far:  main%03d"%tracker["bestsolution"])
-					bestoutputdir = os.path.join(masterdir,"main%03d"%tracker["bestsolution"])
-				elif( tracker["movedup"] and tracker["extension"] > 0.01 and mainiteration > 1):
+				if(not Tracker["movedup"] and Tracker["extension"] > 0.01 and mainiteration > 1):
+					if(myid == main_node):  print("  Resolution decreased.  Will decrease target resolution and will fall back on the best so far:  main%03d"%Tracker["bestsolution"])
+					bestoutputdir = os.path.join(masterdir,"main%03d"%Tracker["bestsolution"])
+				elif( Tracker["movedup"] and Tracker["extension"] > 0.01 and mainiteration > 1):
 					if(myid == main_node):  print("  Resolution decreased.  Will decrease target resolution and will try starting from previous stage:  main%03d"%(mainiteration - 1))
 					bestoutputdir = os.path.join(masterdir,"main%03d"%(mainiteration-1))
 				elif( mainiteration == 1):
 					if(myid == main_node):  print("  Resolution decreased in the first iteration.  It is expected, not to worry")
 					bestoutputdir = mainoutputdir
-					tracker["extension"] = increment  # so it will become zero
+					Tracker["extension"] = increment  # so it will become zero
 				else:  # missing something here?
 					ERROR(" Should not be here, ERROR 175!", "sxmeridien", 1, myid)
 				if( bestoutputdir != mainoutputdir ):
@@ -1606,8 +1606,8 @@ def main():
 				#lowpass = round(lowpass,4)
 				#falloff = bcast_number_to_all(falloff, source_node = main_node)
 				#falloff = round(falloff,4)
-				tracker["extension"] -= increment
-				lowpass = currentres + tracker["extension"]
+				Tracker["extension"] -= increment
+				lowpass = currentres + Tracker["extension"]
 				if(mainiteration > 1):
 					#  Here to be consistent I would have to know what was shrink for this run
 					k = -1
@@ -1622,89 +1622,89 @@ def main():
 					nxresolution                 = history[i]["nxresolution"]
 					paramsdict["initialfl"]  = history[i]["initialfl"]
 					paramsdict["falloff"]    = history[i]["falloff"]
-					tracker["initialfl"]     = history[i]["initialfl"]
-				tracker["resolution"]    = currentres
-				tracker["lowpass"]       = lowpass
-				tracker["falloff"]       = paramsdict["falloff"]
-				tracker["eliminated-outliers"] = eliminated_outliers
-				tracker["movedup"] = False
+					Tracker["initialfl"]     = history[i]["initialfl"]
+				Tracker["resolution"]    = currentres
+				Tracker["lowpass"]       = lowpass
+				Tracker["falloff"]       = paramsdict["falloff"]
+				Tracker["eliminated-outliers"] = eliminated_outliers
+				Tracker["movedup"] = False
 				keepgoing = 1
 
-		elif( currentres == tracker["resolution"] ):
+		elif( currentres == Tracker["resolution"] ):
 			# We need separate rules for each case
 			if(myid == main_node):
-				print("  Resolution did not improve, swith to the next move", angular_neighborhood, tracker["local"],currentres,lowpass)
+				print("  Resolution did not improve, swith to the next move", angular_neighborhood, Tracker["local"],currentres,lowpass)
 			#  Exhaustive searches
-			if(angular_neighborhood == "-1" and not tracker["local"]):
+			if(angular_neighborhood == "-1" and not Tracker["local"]):
 				if(myid == main_node):
 					print("  Switching to local searches with an  %s"%options.an)
-				tracker["applyctf"] = True
+				Tracker["applyctf"] = True
 				falloff = 0.2
-				tracker["local"] = True
+				Tracker["local"] = True
 				#  keep the same resolution
-				icurrentres = tracker["icurrentres"]
+				icurrentres = Tracker["icurrentres"]
 				angular_neighborhood = options.an
 				ali3d_options.pwreference = options.pwreference
-				tracker["PWadjustment"] = ali3d_options.pwreference
+				Tracker["PWadjustment"] = ali3d_options.pwreference
 				keepgoing = 1
 				if(myid == main_node):
 					print("  Switching to local searches with an %s"%angular_neighborhood)
-					if(tracker["PWadjustment"] != ""):
-						print("  Turning on power spectrum adjustment %s"%tracker["PWadjustment"])
+					if(Tracker["PWadjustment"] != ""):
+						print("  Turning on power spectrum adjustment %s"%Tracker["PWadjustment"])
 			#  Local continuous searches
-			elif(angular_neighborhood != "-1" and not tracker["local"]):
+			elif(angular_neighborhood != "-1" and not Tracker["local"]):
 				if(myid == main_node):
 					print("  Switching to local continuous")
 				projdata = [[model_blank(1,1)],[model_blank(1,1)]]
-				tracker["applyctf"] = False
+				Tracker["applyctf"] = False
 				#  keep the same resolution
-				icurrentres = tracker["icurrentres"]
-				tracker["local"] = True
+				icurrentres = Tracker["icurrentres"]
+				Tracker["local"] = True
 				#angular_neighborhood = options.an
 				ali3d_options.pwreference = options.pwreference
-				tracker["PWadjustment"] = ali3d_options.pwreference
+				Tracker["PWadjustment"] = ali3d_options.pwreference
 				keepgoing = 1
 				if(myid == main_node):
 					print("  Switching to local searches with an %s"%angular_neighborhood)
-					if(tracker["PWadjustment"] != ""):
-						print("  Turning on power spectrum adjustment %s"%tracker["PWadjustment"])
+					if(Tracker["PWadjustment"] != ""):
+						print("  Turning on power spectrum adjustment %s"%Tracker["PWadjustment"])
 			#  Local/continuous  searches, finishing up
-			elif(tracker["local"]):
+			elif(Tracker["local"]):
 				#  Finish up by running continuous at full size
 				#  for continuous data cannot be ctf applied.
 				projdata = [[model_blank(1,1)],[model_blank(1,1)]]
-				tracker["applyctf"] = False
-				lowpass = currentres + tracker["extension"]
+				Tracker["applyctf"] = False
+				lowpass = currentres + Tracker["extension"]
 				shrink = max(min(2*lowpass + paramsdict["falloff"], 1.0), minshrink)
 				nxresolution = min(int(nnxo*shrink + 0.5),nnxo)
 				nxresolution += nxresolution%2
 				shrink = float(nxresolution)/nnxo
 			else:
-				print(" Unknown combination of settings in improved resolution path",angular_neighborhood,tracker["local"])
+				print(" Unknown combination of settings in improved resolution path",angular_neighborhood,Tracker["local"])
 				exit()  #  This will crash the program, but the situation is unlikely to occur
-			tracker["eliminated-outliers"] = eliminated_outliers
+			Tracker["eliminated-outliers"] = eliminated_outliers
 			bestoutputdir = mainoutputdir
 			keepgoing = 1
 			"""
-			if( tracker["movedup"] ):
+			if( Tracker["movedup"] ):
 				if(myid == main_node):  print("The resolution did not improve. This is look ahead move.  Let's try to relax slightly and hope for the best")
-				tracker["extension"]    = min(stepforward,0.45-currentres)
-				tracker["movedup"]      = False
-				tracker["initialfl"]    = lowpass
+				Tracker["extension"]    = min(stepforward,0.45-currentres)
+				Tracker["movedup"]      = False
+				Tracker["initialfl"]    = lowpass
 				paramsdict["initialfl"] = lowpass
 				paramsdict["falloff"]   = falloff
-				lowpass = currentres + tracker["extension"]
+				lowpass = currentres + Tracker["extension"]
 				shrink  = max(min(2*lowpass + paramsdict["falloff"], 1.0), minshrink)
-				nxresolution = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
+				nxresolution = min(int(nnxo*shrink + 0.5) + Tracker["extension"],nnxo)
 				nxresolution += nxresolution%2
 				shrink = float(nxresolution)/nnxo
-				if( tracker["nx"] == nnxo):
+				if( Tracker["nx"] == nnxo):
 					keepgoing = 0
 				else:
-					tracker["resolution"] = currentres
-					tracker["lowpass"]    = lowpass
-					tracker["falloff"]    = falloff
-					tracker["eliminated-outliers"] = eliminated_outliers
+					Tracker["resolution"] = currentres
+					Tracker["lowpass"]    = lowpass
+					Tracker["falloff"]    = falloff
+					Tracker["eliminated-outliers"] = eliminated_outliers
 					keepgoing = 1
 			else:
 				#  The resolution is not moving up.  Check whether this is exhaustive search, 
@@ -1713,10 +1713,10 @@ def main():
 				if( angular_neighborhood == "-1" ):
 					angular_neighborhood = options.an
 					ali3d_options.pwreference = options.pwreference
-					tracker["PWadjustment"] = ali3d_options.pwreference
-					tracker["movedup"] = True
+					Tracker["PWadjustment"] = ali3d_options.pwreference
+					Tracker["movedup"] = True
 					nsoft = 0
-					tracker["nsoft"] = 0
+					Tracker["nsoft"] = 0
 					paramsdoct["nsoft"] = 0
 					if(myid == main_node):  print("  Switching to local searches with an %s and turning off SHC"%angular_neighborhood)
 					keepgoing = 1
@@ -1725,24 +1725,24 @@ def main():
 						paramsdict["local"]     = True
 						paramsdict["ts"]        = "2.0"
 						paramsdict["falloff"]   = falloff
-						tracker["local"]        = True
-						tracker["movedup"]      = False
-						tracker["initialfl"]    = lowpass
+						Tracker["local"]        = True
+						Tracker["movedup"]      = False
+						Tracker["initialfl"]    = lowpass
 						paramsdict["initialfl"] = lowpass
-						lowpass = currentres + tracker["extension"]
+						lowpass = currentres + Tracker["extension"]
 						shrink  = max(min(2*lowpass + paramsdict["falloff"], 1.0), minshrink)
-						nxresolution = min(int(nnxo*shrink + 0.5) + tracker["extension"],nnxo)
+						nxresolution = min(int(nnxo*shrink + 0.5) + Tracker["extension"],nnxo)
 						nxresolution += nxresolution%2
 						shrink = float(nxresolution)/nnxo
-						if( tracker["nx"] == nnxo):
+						if( Tracker["nx"] == nnxo):
 							if(myid == main_node):  print("The resolution did not improve and image we reached the full image size.")
 							keepgoing = 0
 						else:
-							tracker["resolution"] = currentres
-							tracker["lowpass"]    = lowpass
-							tracker["falloff"]    = falloff
-							tracker["eliminated-outliers"] = eliminated_outliers
-							tracker["movedup"] = False
+							Tracker["resolution"] = currentres
+							Tracker["lowpass"]    = lowpass
+							Tracker["falloff"]    = falloff
+							Tracker["eliminated-outliers"] = eliminated_outliers
+							Tracker["movedup"] = False
 							if(myid == main_node):  print("  Switching to local searches")
 							#  We have to decrease angular error as these are "continuous" searches
 							paramsdict["pixercutoff"] = get_pixercutoff(radi*shrink, degrees(atan(1.0/float(radi*shrink)))/4.0, 0.1)
@@ -1751,21 +1751,21 @@ def main():
 						#  If the resolution did not improve for local, keep current parameters, but increase the image size to full.
 						paramsdict["ts"]    = "2.0"
 						paramsdict["falloff"]   = falloff
-						tracker["local"]  = True
-						tracker["movedup"]  = False
-						tracker["initialfl"]    = lowpass
+						Tracker["local"]  = True
+						Tracker["movedup"]  = False
+						Tracker["initialfl"]    = lowpass
 						paramsdict["initialfl"] = lowpass
 						nxresolution = nnxo
 						shrink = float(nxresolution)/nnxo
-						if( tracker["nx"] == nnxo):
+						if( Tracker["nx"] == nnxo):
 							if(myid == main_node):  print("The resolution did not improve and image we reached the full image size.")
 							keepgoing = 0
 						else:
-							tracker["resolution"] = currentres
-							tracker["lowpass"]    = lowpass
-							tracker["falloff"]    = falloff
-							tracker["eliminated-outliers"] = eliminated_outliers
-							tracker["movedup"] = False
+							Tracker["resolution"] = currentres
+							Tracker["lowpass"]    = lowpass
+							Tracker["falloff"]    = falloff
+							Tracker["eliminated-outliers"] = eliminated_outliers
+							Tracker["movedup"] = False
 							if(myid == main_node):  print("  Resolution id not improve, do local searches at full size")
 							#  We have to decrease angular error as these are "continuous" searches
 							paramsdict["pixercutoff"] = get_pixercutoff(radi*shrink, degrees(atan(1.0/float(radi*shrink)))/4.0, 0.1)
@@ -1794,12 +1794,12 @@ def main():
 				"""
 			previousoutputdir = mainoutputdir
 			#  maybe resolution should be kept in abs freq units?
-			tracker["resolution"]         = tracker["icurrentres"]
-			history.append(tracker.copy())
+			Tracker["resolution"]         = Tracker["icurrentres"]
+			history.append(Tracker.copy())
 
 		else:
 			if(myid == main_node):
-				print("  Terminating, the best solution is in the directory main%03d"%tracker["bestsolution"])
+				print("  Terminating, the best solution is in the directory main%03d"%Tracker["bestsolution"])
 		mpi_barrier(MPI_COMM_WORLD)
 
 	mpi_finalize()

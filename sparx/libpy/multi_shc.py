@@ -3525,7 +3525,8 @@ def sali3d_base(stack, ref_vol = None, ali3d_options = None, mpi_comm = None, lo
 					for im in xrange(nima):
 						previousmax = data[im].get_attr_default("previousmax", -1.0e23)
 						if(previousmax == -1.0e23):
-							peak, pixer[im] = proj_ali_incore_local(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], delta[N_step]*2.5, sym = sym)
+							peak, pixer[im] = proj_ali_incore_local(data[im], refrings, numr, \
+									xrng[N_step], yrng[N_step], step[N_step], delta[N_step]*2.5, sym = sym)
 							data[im].set_attr("previousmax", peak)
 				else:
 					#  Here it is supposed to be shake and bake for local SHC, but it would have to be signaled somehow
