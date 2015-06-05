@@ -719,7 +719,7 @@ def display(img,force_2d=False,force_plot=False):
 		else:
 			img.write_image(fsp,0)
 
-		os.system("e2display.py --singleimage "+fsp)
+		os.system("e2display.py "+fsp)
 
 def euler_display(emdata_list):
 	if len(emdata_list) == 0: return

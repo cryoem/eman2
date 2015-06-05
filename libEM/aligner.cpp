@@ -2733,8 +2733,8 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 			Symmetry3D* sym = Factory<Symmetry3D>::get((string)params.set_default("sym","c1"));
 			// We don't generate for phi, since this can produce a very large number of orientations
 			vector<Transform> transforms = sym->gen_orientations((string)params.set_default("orientgen","eman"),d);
-			if (transforms.size()<28) continue; // for very high symmetries we will go up to 32 instead of 24
-			if (verbose>0) printf("%d orientations to test\n",(int)(transforms.size()*(360.0/astep)));
+			if (verbose>0) printf("%d orientations to test (%d)\n",(int)(transforms.size()*(360.0/astep)),transforms.size());
+			if (transforms.size()<25) continue; // for very high symmetries we will go up to 32 instead of 24
 
 			// We iterate over all orientations in an asym triangle (alt & az) then deal with phi ourselves
 //			for (std::vector<Transform>::iterator t = transforms.begin(); t!=transforms.end(); ++t) {    // iterator form was causing all sorts of problems
