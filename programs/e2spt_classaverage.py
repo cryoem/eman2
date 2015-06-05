@@ -1578,7 +1578,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				ref.write_image( refrandphfile, 0 )
 
 			if float(ref['apix_x']) <= 1.0:
-				print "\n(e2spt_classaverage)(sptRefGen) - WARNING: apix < 1.0. This is most likely wrong. You might want to fix the reference's apix value by providing --apix or by running it through e2fixheaderparam.py"
+				print "\n(e2spt_classaverage)(sptRefGen) - WARNING: apix <= 1.0. This is most likely wrong. You might want to fix the reference's apix value by providing --apix or by running it through e2fixheaderparam.py"
 			
 			refsdict.update({ klassnum : ref })
 			
