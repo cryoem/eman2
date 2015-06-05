@@ -86,7 +86,7 @@ def main():
 	
 	parser.add_argument("--subset4ref",type=int, help=""" Size of the subset of particles to use for generating each reference. Default=0, which means all particles in each subgroup will be used (for example, if --input has 100 particles and --nref is 10, 10 references will be generated using 10 particles for each). If --ref not provided, the program generates an --nref number of references from --input.""")
 	
-	parser.add_argument("--subset",type=int,default=0,help="""Default=0 (not used). Refine only this substet of particles from the stack provided through --input""")
+	parser.add_argument("--subset",type=int,default=0,help=""" WARNING: NOT IMPLEMENTED HERE YET. Default=0 (not used). Refine only this substet of particles from the stack provided through --input""")
 
 	
 	#parser.add_argument("--refpreprocess",action="store_true",default=False,help="""This 
@@ -161,7 +161,7 @@ def main():
 	
 	parser.add_argument("--procfinelikecoarse",type=bool,default=True,help="Turn on with --procfinelikecoarse=False, and supply fine alignment parameters, such as --lowpassfine, --highpassfine, etc; to preprocess the particles for FINE alignment differently than for COARSE alignment.")
 	
-	parser.add_argument("--ncoarse", type=int, help="Deprecated. Use --npeakstorefine instead.", default=None)
+#	parser.add_argument("--ncoarse", type=int, help="Deprecated. Use --npeakstorefine instead.", default=None)
 
 	parser.add_argument("--npeakstorefine", type=int, default=1, help="Default=1. The number of best coarse alignments to refine in search of the best final alignment.",guitype='intbox', row=9, col=0, rowspan=1, colspan=1, nosharedb=True, mode='alignment,breaksym[1]')
 
