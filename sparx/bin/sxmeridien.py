@@ -277,7 +277,13 @@ def get_pixel_resolution(vol, radi, nnxo, fscoutputdir):
 	nx = vol[0].get_xsize()
 	if( nx != nnxo ):
 		mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(nnxo)),nx,nx,nx)
-	nfsc = fsc(vol[0]*mask,vol[1]*mask, 1.0,os.path.join(fscoutputdir,"fsc.txt") )
+	nfsc = fsc(vol[0]*mask,vol[1]*mask, 1.0 )
+	if(nx<nnxo):
+		for i in xrange(3):
+			nfsc[i] += [0.0]*(nnxo/2+1)
+		for i in xrange(nnxo/2+1):
+			nfsc[0][i] = float(i)/nnxo
+	write_text_file( nfsc, os.path.join(fscoutputdir,"fsc.txt") )
 	ns = len(nfsc[1])
 	currentres = ns
 	'''
@@ -320,30 +326,26 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 		nz = 1
 	if(ali3d_options.mask3D is None):  mask = model_circle(radi,nnxo,nnxo,nnxo)
 	else:                              mask = get_im(ali3d_options.mask3D)
-	if( nx != nnxo ):
-		mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(nnxo)),nx,nx,nx)
 
 	for procid in xrange(2):
 		#  sxrecons3d.py  (full size)
 		if(type(stack) == str or ( nz == 1 )):
 			if(type(stack) == str):
 				projdata = getindexdata(stack, partids[procid], partstack[procid], myid, nproc)
-				nx = projdata[0].get_xsize()
 			else:
 				projdata = stack
-				
-			#if CTF:  vol[procid] = recons3d_4nn_ctf_MPI(myid, projdata, symmetry=ali3d_options.sym, npad = 2)
-			#else:    vol[procid] = recons3d_4nn_MPI(myid, projdata, symmetry=ali3d_options.sym, npad = 2)
+			if( nx != nnxo and procid == 0 ):
+				mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(nnxo)),nx,nx,nx)
 
 			if CTF:
 				from reconstruction import rec3D_MPI
-				vol[procid],fsc[procid] = rec3D_MPI(projdata, snr = 1.0, symmetry = ali3d_options.sym, \
-					mask3D = mask, fsc_curve = os.path.join(outputdir,"within-fsc%01d.txt"%procid), \
+				vol[procid],fsc[procid] = rec3D_MPI(projdata, symmetry = ali3d_options.sym, \
+					mask3D = mask, None, \
 					myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2)
 			else:
 				from reconstruction import rec3D_MPI_noCTF
 				vol[procid],fsc[procid] = rec3D_MPI_noCTF(projdata, symmetry = ali3d_options.sym, \
-					mask3D = mask, fsc_curve = os.path.join(outputdir,"within-fsc%01d.txt"%procid), \
+					mask3D = mask, None, \
 					myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2)
 
 			if(type(stack) == str):  del projdata
@@ -351,6 +353,10 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 		else:
 			#  Volumes
 			vol = stack
+			nx = vol.get_xsize()
+			if( nx != nnxo ):
+				mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(nnxo)),nx,nx,nx)
+
 		if( myid == main_node):
 			vol[procid].write_image(os.path.join(outputdir,"vol%01d.hdf"%procid))
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
@@ -361,6 +367,14 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 	currentres = 0.0
 
 	if(myid == main_node):
+		if(nx<nnxo):
+			for j in xrange(2):
+				for i in xrange(3):
+					fsc[j][i] += [0.0]*(nnxo/2+1)
+				for i in xrange(nnxo/2+1):
+					fsc[j][0][i] = float(i)/nnxo
+		for procid in xrange(2):
+			write_text_file( fsc[procifd], os.path.join(outputdir,"within-fsc%01d.txt"%procid) )
 		lowpass, falloff, icurrentres = get_pixel_resolution(vol, mask, nnxo, outputdir)
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print(  line,"Current resolution  %6.2 (%6d), low-pass filter cut-off %6.2f and fall-off %6.2f"%(icurrentres/float(nnxo),icurrentres,lowpass,falloff))
