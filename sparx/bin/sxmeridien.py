@@ -280,7 +280,8 @@ def get_pixel_resolution(vol, radi, nnxo, fscoutputdir):
 	nfsc = fsc(vol[0]*mask,vol[1]*mask, 1.0 )
 	if(nx<nnxo):
 		for i in xrange(3):
-			nfsc[i] += [0.0]*(nnxo/2+1)
+			for k in xrange(nx,nnxo/2+1):
+				nfsc[i][k].append(0.0)
 		for i in xrange(nnxo/2+1):
 			nfsc[0][i] = float(i)/nnxo
 	write_text_file( nfsc, os.path.join(fscoutputdir,"fsc.txt") )
