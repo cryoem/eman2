@@ -37,8 +37,6 @@ import math
 import os
 from EMAN2jsondb import JSTask,jsonclasses
 import sys
-from e2spt_classaverage import preprocessing
-
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -96,7 +94,7 @@ def main():
 	
 	parser.add_argument("--keepsig", action="store_true", default=False,help="""Default=False. Causes theoptions.keep argument to be interpreted in standard deviations.""", guitype='boolbox', row=6, col=1, rowspan=1, colspan=1, mode='alignment,breaksym')
 	
-	parser.add_argument("--iter",type=int,default=1,help="""Default=1. If --keep is different from 1.0 and --average is on, an  average will be computed with all the particles, but then the percent specified by --keep (or determined from --keepsigma) will be kept (the rest thrown away) and a new average will be computed. If --iter > 1, this new average will be compared again against all the particles. The procedure will be repeated for however many iterations --iter is given, or the process will stop automatically if in two consecutive iterations exactly the same particles are kept""") 
+	parser.add_argument("--avgiter",type=int,default=1,help="""Default=1. If --keep is different from 1.0 and --average is on, the initial average will include all the particles, but then the percent specified byoptions.keep will be kept (the rest thrown away) and a new average will be computed. If --avgiter > 1, this new average will be compared again against all the particles. The procedure will be repeated for however many iterations --avgiter is given, or the process will stop automatically if in two consecutive rounds exactly the same particles are kept""") 
 	
 	parser.add_argument('--subset',type=int,default=0,help="""Number of particles in a subset of particles from the --input stack of particles to run the alignments on.""")
 	
@@ -118,9 +116,9 @@ def main():
 	
 	parser.add_argument("--saveali",action='store_true',default=False,help="""Save the stack of aligned/symmetrized particles.""")
 	
-	parser.add_argument("--savesteps",action='store_true',default=False,help="""If --iter > 1, save all intermediate averages and intermediate aligned kept stacks.""")
+	parser.add_argument("--savesteps",action='store_true',default=False,help="""If --avgiter > 1, save all intermediate averages and intermediate aligned kept stacks.""")
 	
-	#parser.add_argument("--notmatchimgs",action='store_true',default=False,help="""Default=True. This option prevents applying filter.match.to to one image so that it matches the other's spectral profile during preprocessing for alignment purposes.""")
+	parser.add_argument("--notmatchimgs",action='store_true',default=False,help="""Default=True. This option prevents applying filter.match.to to one image so that it matches the other's spectral profile during preprocessing for alignment purposes.""")
 	
 	parser.add_argument("--preavgproc1",type=str,default='',help="""Default=None. A processor (see 'e2help.py processors -v 10' at the command line) to be applied to the raw particle after alignment but before averaging (for example, a threshold to exclude extreme values, or a highphass filter if you have phaseplate data.)""")
 	
@@ -130,8 +128,10 @@ def main():
 	
 	parser.add_argument("--weighbyscore",action='store_true',default=False,help="""Default=False. This option will weigh the contribution of each subtomogram to the average by score/bestscore.""")
 	
-	parser.add_argument("--reconsiderbad",action='store_true',default=False,help="""This option will trigger the re-alignment of particles excluded from the average if --iter > 1 AND ( --keep < 1.0 OR if --keepsig is provided).""")
+	parser.add_argument("--align",type=str,default='symalignquat',help="""Default=symalignquat. WARNING: The aligner cannot be changed for this program currently. Option ignored.""")
 	
+	parser.add_argument("--tweak",action='store_true',default=False,help="""WARNING: Not used for anything yet. This will perform a final alignment with no downsampling [without using --shrink or --shrinkfine] if --shrinkfine > 1.""")
+
 	
 	(options, args) = parser.parse_args()
 	
@@ -162,59 +162,23 @@ def main():
 	if rootpath not in options.path:
 		options.path = rootpath + '/' + options.path
 	
+	from e2spt_classaverage import preprocessing		
+	from EMAN2PAR import EMTaskCustomer
 	from e2spt_classaverage import sptOptionsParser
 
 	options = sptOptionsParser( options )
 	
-	outputstack = options.path + '/aliptcls.hdf'
-	
-	rets = symsearcher( options, options.input, options.average )
-	final_avg = rets[0]
-	results = rets[1]
-	
-	if options.keep == 1.0 and not options.keepsig and options.iter < 2:	
-			final_avg.write_image( options.path + '/final_avg.hdf' , 0)
-			if options.iter > 1:
-				print """ERROR: --iter > 1 must be accompanied by --keepsing, or by --keep < 1.0"""
-				sys.exit(1)
-	
-	elif options.keep < 1.0 or options.keepsig:
-		if options.savesteps:
-			final_avg.write_image( options.path + '/final_avg_all.hdf' , 0)
-		
-		if options.ref:
-			ref = EMData( options.ref, 0 )
-			refComp( options, outputstack, ref, results, '' )
-			
-			if options.mirror:
-				ref.process_inplace('xform.mirror',{'axis': options.mirror })
-				refComp( options, outputstack, ref, results, '_vsMirror')
-		else:
-			ref2compare =  final_avg
-			refComp( options, outputstack, final_avg, results, '')	
-		
-
-	if log:
-		E2end(logid)
-	
-	return
-
-
-def symsearcher( options, infile, averageflag=False, results={} ):
-	from EMAN2PAR import EMTaskCustomer	
-
 	avgr = Averagers.get( options.averager[0], options.averager[1 ])
-	#results = {}
+	results = {}
 	scores=[]
 	
-	outputstack = options.path + '/aliptcls.hdf'
+	outputstack = options.path + '/allPtclsAli.hdf'
 	
 	#Determine number of particles in the stack
 	n = EMUtil.get_image_count( options.input )
 	if options.subset and options.subset < n:
 		n = options.subset
 	
-	sptmultinit=0
 	for i in range(n):
 	
 		print "\nI'll look for symmetry in particle number",i
@@ -241,18 +205,10 @@ def symsearcher( options, infile, averageflag=False, results={} ):
 		ret = symalgorithm.execute()
 		symxform = ret[0]
 		score = ret[1]
-		
-		print "score returned from symalgorithm", score
-		
 		scores.append( score )
-		
-		try:																		#This is used when --reconsiderbad is supplied, in which case the 'spt_symsearch_indx' parameter should exist in the header of the "bad" particles.
-			results.update( { volume['spt_symsearch_indx']:[symxform,score] } )
-			print "writing updated results for low-scoring particle", volume['spt_symsearch_indx']
-		except:
-			results.update( { i:[symxform,score] } )
+		results.update( { score:[symxform,i] } )
 	
-		print "\nwriting output for best alignment found for particle number",i
+		print "\nWriting output for best alignment found for particle number",i
 		
 		if options.shrink and options.shrink > 1:
 			trans = symxform.get_trans()
@@ -266,111 +222,67 @@ def symsearcher( options, infile, averageflag=False, results={} ):
 		print "\nApplying this transform to particle",symxform
 		if options.symmetrize:
 			output = output.process('xform.applysym',{'sym':options.sym})
-			
-		try:																	#This is used when --reconsiderbad is supplied, in which case the 'spt_symsearch_indx' parameter should exist in the header of the "bad" particles.
-			output.write_image( outputstack, volume['spt_symsearch_indx'] )
-			print "writing reconsidered low-scoring particle %d to aliptcls.hdf stack" %( volume['spt_symsearch_indx'] )
-		except:
-			output.write_image( outputstack, -1)
+	
+		output.write_image( outputstack, -1)
 		
 		#Averaging here only makes sense if all particles are going to be kept. Otherwise, different code is needed (below)
-		if averageflag:
-			
-			weight = 1.0
-			if options.weighbyscore:
-				scoreweight = float( score ) / max( scores )
-				print "the score weight is %f because score was %f and the best score was %f" % (scoreweight, score, max(scores) )
-				weight = weight * scoreweight
-			
-			if weight < 1.0:
-				ptcl.mult( weight )
-		
+		if options.average and options.keep == 1.0 and not options.keepsig:
 			avgr.add_image( output )
+
+	#Finalize average of all particles if non were set to be excluded. Otherwise, determine the discrimination threshold and then average the particles that pass it.
+	if options.average: 
 	
-			sptmultinit+=1
+		if options.keep == 1.0 and not options.keepsig:	
+		
+			final_avg = avgr.finish()
+
+			final_avg['origin_x']=0
+			final_avg['origin_y']=0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
+			final_avg['origin_z']=0
+			final_avg['xform.align3d'] = Transform()
+		
+			final_avg.write_image( options.path + '/final_avg.hdf' , 0)
 			
-	#Finalize average of all particles. Then, if --keep or --keepsig provided, determine the discrimination threshold and then average the particles that pass it.
-	if averageflag: 
+			if options.avgiter > 1:
+				print """WARNING: --avgiter > 1 must be accompanied by --keepsing, or by --keep < 1.0"""
+		
+		elif options.keep < 1.0 or options.keepsig:
 			
-		final_avg = avgr.finish()
-		final_avg['spt_multiplicity']=sptmultinit
-		final_avg['origin_x']=0
-		final_avg['origin_y']=0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
-		final_avg['origin_z']=0
-		final_avg['xform.align3d'] = Transform()
+			if options.ref:
+				ref = EMData( options.ref, 0 )
+				refComp( options, outputstack, ref, results, '' )
+				
+				if options.mirror:
+					ref.process_inplace('xform.mirror',{'axis': options.mirror })
+					refComp( options, outputstack, ref, results, '_vsMirror')
+			else:
+				ref2compare =  final_avg
+				refComp( options, outputstack, final_avg, results, '')	
+			
+
+	if log:
+		E2end(logid)
 	
-		return [ final_avg, results ]
-	else:
-		return results
+	return
 	
 	
 def refComp( options, outputstack, ref2compare, results, mirrortag ):
 	
-	lastexcluded=[]
-	meanscores = []
-	
-	stop = 0
-	for it in range( options.iter ):
-		#print "Averaging iteration", it
-				
+	for it in range( options.avgiter ):
+		print "Averaging iteration", it
+		
 		ret = calcScores( outputstack, ref2compare, results )
 		scores = ret[0]
 		results = ret[1]
-		print "in averaging iteration %d scores are" % ( it )
-		print scores
+		
+		ref2compare = makeSsaAverage( options, scores, results, it )
 		
 		meanscore = sum(scores)/len(scores)
-		print "for it %d, avg mean score is %.3f" %( it, meanscore )
-		meanscores.append( meanscore )
-		
-		retm = makeSsaAverage( options, scores, results, it )
-		ref2compare = retm[0]
-		excluded = retm[-1]
+						
+		if it == options.avgiter -1:
+			print "Final mean score is", meanscore
+			ref2compare.write_image( options.path + '/final_avg' + mirrotag + '.hdf', 0)
 	
-		if lastexcluded == excluded:
-			stop = 1
-	
-		if options.savesteps and it < options.iter -1 and not stop:
-		
-			ref2compare.write_image( options.path + '/avgs' + mirrortag + '.hdf', -1)
-		
-			it == options.iter -1
-		
-			cmd = 'e2proc3d.py ' + options.path + '/avgs' + mirrortag + '.hdf ' + options.path + '/final_avg' + mirrortag + '.hdf --first -1 --last -1'
-		
-		elif it == options.iter -1 or stop:
-			print "Final mean score, in iteration %d, is %.4f" % ( it, meanscore )
-			ref2compare.write_image( options.path + '/final_avg' + mirrortag + '.hdf', 0)
-	
-		print "\n\nin it %d, excluded is" %( it )
-		print excluded
-		print "lastexcluded is" 
-		print lastexcluded
-		if stop:
-			print "TERMINATING. The algorithm has converged"
-			break;
-			
-		lastexcluded = list(excluded)	
-	
-		if options.reconsiderbad:
-			print "reconsidering bad particles!"
-			badptclsfile = options.path + '/tmpbadptcls.hdf' 
-			results = symsearcher( options, badptclsfile, False )
-	
-	
-	lines=[]
-	for s in meanscores:
-		line = str(s) + '\n'
-		lines.append( line )
-	
-	print "meanscores are", lines
-	
-	mscoresfile = options.path + '/meanscores.txt' 
-	f = open( mscoresfile,'w' )
-	f.writelines(lines)
-	f.close()
-	
-	print "written to", mscoresfile
 	return
 
 
@@ -381,41 +293,32 @@ def calcScores( stack, avg, results):
 	scores = []
 	print "Stack is", stack
 	n = EMUtil.get_image_count( stack )
-
-	for i in results:
 	
-		indx = i 
-		#results[r][-1]
+	i=0
+	for r in results:
+	
+		indx = results[r][-1]
 	
 		img = EMData( stack, indx )
 	
 		ccmap = avg.calc_ccf( img )
 		ccmap.process_inplace('normalize')
-		maxloc = ccmap.calc_max_location()
-		
-		scoredefault = ccmap.get_value_at(0,0,0)
-		
-		score = ccmap.get_value_at( maxloc[0], maxloc[1], maxloc[2] )
-		
-		print "scoredefault %.3f and score %.3f" %( scoredefault, score )
+		score = ccmap.get_value_at(0,0) * -1
 		scores.append( score )
 		
-		t = results[i][0]
+		t = results[r][0]
 		
-		newresults.update( { i:[t,score] } )
+		newresults.update( { score:[t,indx] } )
+	
+		i+=1
 		
 	return [ scores, newresults ]
 
 
 def makeSsaAverage( options, scores, results, it ):
-	
-	includedptcls = []
-	excludedptcls = []
-	
-	thresh = None
-	
+	thresh = 1.0
 	if options.keep < 1.0 and options.average:
-		print "len of scores is", len(scores)
+		print "Len of scores is", len(scores)
 	
 		vals=[]
 		for p in scores:
@@ -441,82 +344,43 @@ def makeSsaAverage( options, scores, results, it ):
 		thresh = mean+sig* options.keep
 		if options.verbose: 
 			print "\nKeep threshold : %f (mean=%f  sigma=%f)"%(thresh,mean,sig)	
-	
-	ssaavg = None
-	if thresh :	
-															
-		avgr = Averagers.get( options.averager[0], options.averager[1] )
+
+	if thresh < 0.0 :
+		avgr = Averagers.get( options.averager[0], options.averager[1 ])
 	
 		print "Threshold is", thresh
 		print "and scores are", scores
-		
-		sptmult = 0
-		for r in results:
-			indx =  r
-			score = results[r][-1]
-			if score > thresh:
-				includedptcls.append( indx )
-				print "in iteration %d ptcl %d KEPT because its score %.4f was above the threshold %.4f" %(it, indx, score, thresh)
-				
-				a = EMData( options.input, indx )
+		for s in scores:
+			if s < thresh:
+				print "Score kept", s
+			indx =  results[ s ][-1]
+			a = EMData( options.input, indx )
 			
-				if it == options.iter -1:
-					a.write_image( options.path + '/keptPtclsRaw_' + str(it).zfill( len( str( options.iter))) + '.hdf', -1 )
+			if it == options.avgiter -1:
+				a.write_image( options.path + '/keptPtclsRaw_' + str(it).zfill( len( str( options.avgiter))) + '.hdf', -1 )
 			
-				t = results[ r ][0]
-				a.transform( t )
-				#a = a.process('xform',{'transform':symxform})
-				
-				#print "adding image", a, type(a)
-				avgr.add_image( a )
-				
-				sptmult+=1
-				
-				if options.symmetrize:
-					b = a.copy()
-					b.process_inplace('xform.applysym',{'sym':options.sym})
+			t = results[ s ][0]
+			a.transform( t )
+			#a = a.process('xform',{'transform':symxform})
+			avgr.add_image( a )
 			
-					if options.saveali and it == options.iter -1:
-						b.write_image( options.path + '/keptPtclsAli_' + str(it).zfill( len( str( options.iter))) + '.hdf', -1 )
-			else:
-				excludedptcls.append( indx )
-				print "in iteration %d ptcl %d DISCARDED because its score %.4f was under the threshold %.4f" % ( it, indx, score, thresh )
-
-				if options.reconsiderbad:
-					c = EMData( options.input, indx )
-					c['spt_symsearch_indx'] = indx
-					badptcls = options.path + '/tmpbad.hdf'
-					c.write_image( badptcls, -1 )
-					print "however, it will be reconsidered"	
-			
-		ssaavg = avgr.finish()
-		#print "finalizing average", ssaavg, type(ssaavg)
-		if ssaavg:
-			ssaavg['origin_x']=0
-			ssaavg['origin_y']=0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
-			ssaavg['origin_z']=0
-			ssaavg['xform.align3d'] = Transform()
-			ssaavg['spt_multiplicity'] = sptmult
-
 			if options.symmetrize:
-				ssaavg.process_inplace('xform.applysym',{'sym':options.sym})
+				a = a.process('xform.applysym',{'sym':options.sym})
 			
-			print "returning ssaavg"
-			return [ssaavg,includedptcls,excludedptcls]
-		else:
-			print "ERROR! ssaavg = None!!!"
-			sys.exit()
-		#else:
-		#	print "ERROR: in iteration it %d none of the particles had a score higher than the threshold %.4f" %(it, thresh)
-		#	print "scores", scores
-		#	sys.exit()
+			if options.saveali and it == options.avgiter -1:
+				a.write_image( options.path + '/keptPtclsAli_' + str(it).zfill( len( str( options.avgiter))) + '.hdf', -1 )
 
-	else:
-		print "ERROR: threshold=None."
-		sys.exit(1)
-
-		return None
+		ssaavg = avgr.finish()
 	
+		if options.symmetrize:
+			ssaavg = ssaavg.process('xform.applysym',{'sym':options.sym})
+	
+		ssaavg['origin_x']=0
+		ssaavg['origin_y']=0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
+		ssaavg['origin_z']=0
+		ssaavg['xform.align3d'] = Transform()
+	
+	return ssaavg
 
 
 # Use strategy pattern here. Any new stategy needs to inherit this
