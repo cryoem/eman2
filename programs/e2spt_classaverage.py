@@ -1422,13 +1422,13 @@ def compareEvenOdd( options, avgeven, avgodd, it, etc, fscfile, tag, average=Tru
 	transformAliOdd2even = resultsAvgs['final'][0]['xform.align3d']
 	scoreAliOdd2even = resultsAvgs['final'][0]['score']
 	
-	avgsDict = options.path + '/sptali_ir_' + str(it).zfill( len( str(options.iter))) + '_oddAli2even.json'
+	avgsDict = options.path + '/sptali_ir_' + str(it).zfill( len( str(options.iter))) + '_oddali2even.json'
 	
 	if not average and tag == 'refbased':
-		avgsDict = options.path + '/sptali_ir_' + str(it).zfill( len( str( it ))) + '_avgAli2ref.json'
+		avgsDict = options.path + '/sptali_ir_' + str(it).zfill( len( str( it ))) + '_avgali2ref.json'
 	
 	elif tag == 'initial':
-		avgsDict = options.path + '/initialrefs_sptali_ir_oddAli2even.json'
+		avgsDict = options.path + '/initialrefs_sptali_ir_oddali2even.json'
 	
 	jsAvgs = js_open_dict( avgsDict )
 
