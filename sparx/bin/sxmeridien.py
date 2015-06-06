@@ -385,7 +385,7 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 	icurrentres = bcast_number_to_all(icurrentres, source_node = main_node)
 	lowpass    = bcast_number_to_all(lowpass, source_node = main_node)
 	falloff    = bcast_number_to_all(falloff, source_node = main_node)
-	return round(lowpass,4), round(falloff,4), currentres
+	return round(lowpass,4), round(falloff,4), icurrentres
 
 def compute_fscs(stack, outputdir, chunkname, newgoodname, fscoutputdir, doit, keepchecking, nproc, myid, main_node):
 	#  Compute reconstructions per group from good particles only to get FSC curves
@@ -1372,7 +1372,7 @@ def main():
 		doit, keepchecking = checkstep(os.path.join(mainoutputdir,"volf.hdf"), keepchecking, myid, main_node)
 		if  doit:
 			if( myid == main_node ):
-				pinids = map(int, read_text_file(partids[0]) ) + map(int, read_text_file(partids[1]) )
+				pinids = read_text_file(partids[0]) + read_text_file(partids[1])
 				params = read_text_row(partstack[0]) + read_text_row(partstack[1])
 
 				assert(len(pinids) == len(params))
