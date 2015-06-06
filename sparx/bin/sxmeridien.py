@@ -352,7 +352,6 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 					myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2)
 
 			if(type(stack) == str):  del projdata
-
 		else:
 			#  Volumes
 			vol = stack
@@ -370,15 +369,16 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 	icurrentres = 0
 
 	if(myid == main_node):
-		if(nx<nnxo):
+		if(type(stack) == str or ( nz == 1 )):
+			if(nx<nnxo):
+				for procid in xrange(2):
+					for i in xrange(3):
+						for k in xrange(nx,nnxo/2+1):
+							fsc[procid][i].append(0.0)
+					for k in xrange(nnxo/2+1):
+						fsc[procid][0][k] = float(k)/nnxo
 			for procid in xrange(2):
-				for i in xrange(3):
-					for k in xrange(nx,nnxo/2+1):
-						fsc[procid][i].append(0.0)
-				for k in xrange(nnxo/2+1):
-					fsc[procid][0][k] = float(k)/nnxo
-		for procid in xrange(2):
-			write_text_file( fsc[procid], os.path.join(outputdir,"within-fsc%01d.txt"%procid) )
+				write_text_file( fsc[procid], os.path.join(outputdir,"within-fsc%01d.txt"%procid) )
 		lowpass, falloff, icurrentres = get_pixel_resolution(vol, mask, nnxo, outputdir)
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print(  line,"Current resolution  %6.2f (%d), low-pass filter cut-off %6.2f and fall-off %6.2f"%(icurrentres/float(nnxo),icurrentres,lowpass,falloff))
