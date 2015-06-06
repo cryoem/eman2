@@ -1236,7 +1236,7 @@ def main():
 			coutdir = os.path.join(mainoutputdir,"loga%01d"%procid)
 			doit, keepchecking = checkstep(coutdir, keepchecking, myid, main_node)
 			#  here ts has different meaning for standard and continuous
-			subdict( paramsdict, { "nsoft":nsoft, "refvol":os.path.join(mainoutputdir,"fusevol%01d.hdf"%procid) } )
+			subdict( paramsdict, { "nsoft":Tracker["nsoft"], "refvol":os.path.join(mainoutputdir,"fusevol%01d.hdf"%procid) } )
 			#if(len(history)>1):  old_nx = history[-2]["nx"]
 			#else:    old_nx = Tracker["nx"]
 			paramsdict["xr"] = "3.0"#"%s"%max(3,int(1.5*Tracker["nx"]/float(old_nx) +0.5))
@@ -1541,7 +1541,7 @@ def main():
 				nxinit = Tracker["nxinit"]
 				while( nxresolution + cushion > nxinit ): nxinit += 32
 				#  Window size changed, reset projdata
-				if(nxinit> trackeer["nxinit"]):  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
+				if(nxinit> Tracker["nxinit"]):  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
 				nxinit = min(nxinit,nnxo)
 				#  Exhaustive searches
 				if(angular_neighborhood == "-1" and not Tracker["local"]):
@@ -1550,6 +1550,7 @@ def main():
 					Tracker["lowpass"] = paramsdict["initialfl"]
 					paramsdict["lowpass"] = paramsdict["initialfl"]
 					Tracker["applyctf"] = True
+					Tracker["nsoft"] = 0
 				#  Local searches
 				elif(angular_neighborhood != "-1" and not Tracker["local"]):
 					#Tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
@@ -1558,6 +1559,7 @@ def main():
 					Tracker["lowpass"] = paramsdict["initialfl"]
 					paramsdict["lowpass"] = paramsdict["initialfl"]
 					Tracker["applyctf"] = True
+					Tracker["nsoft"] = 0
 				#  Local/gridding  searches, move only as much as the resolution increase allows
 				elif(Tracker["local"]):
 					#Tracker["extension"] =    0.0  # lowpass cannot exceed 0.45
@@ -1566,6 +1568,7 @@ def main():
 					Tracker["lowpass"] = paramsdict["initialfl"]
 					paramsdict["lowpass"] = paramsdict["initialfl"]
 					Tracker["applyctf"] = False
+					Tracker["nsoft"] = 0
 				else:
 					print(" Unknown combination of settings in improved resolution path",angular_neighborhood,Tracker["local"])
 					exit()  #  This will crash the program, but the situation is unlikely to occure
@@ -1588,10 +1591,12 @@ def main():
 					Tracker["extension"] = stepforward + increment # so below it will be set to stepforward
 					mainoutputdir = bestoutputdir
 					keepgoing = 1
+					Tracker["nsoft"] = 0
 					if(myid == main_node):  print("  Switching to local searches with an %s"%angular_neighborhood)
 				elif(angular_neighborhood != "-1" and not Tracker["local"]):
 					Tracker["extension"] = stepforward + increment # so below it will be set to stepforward
 					mainoutputdir = bestoutputdir
+					Tracker["nsoft"] = 0
 					keepgoing = 1
 					if(myid == main_node):  print("  Switching to local/gridding searches")
 				else:
@@ -1667,6 +1672,7 @@ def main():
 				angular_neighborhood = options.an
 				ali3d_options.pwreference = options.pwreference
 				Tracker["PWadjustment"] = ali3d_options.pwreference
+				Tracker["nsoft"] = 0
 				keepgoing = 1
 				if(myid == main_node):
 					print("  Switching to local searches with an %s"%angular_neighborhood)
@@ -1684,6 +1690,7 @@ def main():
 				#angular_neighborhood = options.an
 				ali3d_options.pwreference = options.pwreference
 				Tracker["PWadjustment"] = ali3d_options.pwreference
+				Tracker["nsoft"] = 0
 				keepgoing = 1
 				if(myid == main_node):
 					print("  Switching to local searches with an %s"%angular_neighborhood)
@@ -1695,6 +1702,7 @@ def main():
 				#  for continuous data cannot be ctf applied.
 				projdata = [[model_blank(1,1)],[model_blank(1,1)]]
 				Tracker["applyctf"] = False
+				Tracker["nsoft"] = 0
 				lowpass = currentres + Tracker["extension"]
 				shrink = max(min(2*lowpass + paramsdict["falloff"], 1.0), minshrink)
 				nxresolution = min(int(nnxo*shrink + 0.5),nnxo)
