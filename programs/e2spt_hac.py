@@ -183,6 +183,9 @@ def main():
 
 	parser.add_argument("--weighbyscore",action='store_true',default=False,help="""Default=False. This option will weigh the contribution of each subtomogram to the average by score/bestscore.""")
 
+	parser.add_argument("--tweak",action='store_true',default=False,help="""WARNING: BUGGY. This will perform a final alignment with no downsampling [without using --shrink or --shrinkfine] if --shrinkfine > 1.""")
+
+
 	'''
 	HAC-specific parameters
 	'''
@@ -558,7 +561,7 @@ def allvsall(options):
 			
 				for key in FinalAliStack:
 					aliptcl = FinalAliStack[key]
-					aliptcl.write_image(options.path + '/finalAliStack.hdf',key)
+					aliptcl.write_image(options.path + '/final_ali_stack.hdf',key)
 					#print "Wrote this ptcl to final stack", key
 		
 		if nnew + len(oldptcls) == 1:						#Stop the loop if the data has converged and you're left with one final particle (an average of all)
@@ -819,7 +822,7 @@ def allvsall(options):
 		mm=0												#Counter to track new particles/averages produced and write them to output
 		
 		
-		roundRawInfoFile = options.path + '/aliInfo_'+ str( k ).zfill( len(str( iters )) ) + '.json'
+		roundRawInfoFile = options.path + '/ali_info_'+ str( k ).zfill( len(str( iters )) ) + '.json'
 		
 		roundInfoDict = js_open_dict(roundRawInfoFile) #Write particle orientations to json database.
 		
@@ -885,7 +888,7 @@ def allvsall(options):
 				
 			key = str(z).zfill( len( str( nptcls*(nptcls-1)/2 )) )
 			
-			aliInfo = {}
+			ali_info = {}
 			
 			
 			if results[z]['ptclA'] not in tried and results[z]['ptclB'] not in tried and score < scoreFilter and not multiplicityFilter:
@@ -945,11 +948,11 @@ def allvsall(options):
 						subp1_forFinalAliStack['xform.align3d']=pastt
 						
 						FinalAliStack.update({int(p):subp1_forFinalAliStack})		#But let's keep track of them, and write them out only when the LAST iteration has been reached
-						print "I have CHANGED a particle1 in finalAliStack to have this transform", totalt
+						print "I have CHANGED a particle1 in final_ali_stack to have this transform", totalt
 
 					indx_trans_pairs.update({p:pastt})
 					
-					aliInfo.update( {p:pastt} )
+					ali_info.update( {p:pastt} )
 				
 			
 						
@@ -1013,10 +1016,10 @@ def allvsall(options):
 						subp2_forFinalAliStack['xform.align3d']=totalt
 						
 						FinalAliStack.update({int(p):subp2_forFinalAliStack})			#But let's keep track of them, and write them out only when the LAST iteration has been reached			
-						print "I have CHANGED a particle2 in finalAliStack to have this transform", totalt
+						print "I have CHANGED a particle2 in final_ali_stack to have this transform", totalt
 
 					indx_trans_pairs.update({p:totalt})
-					aliInfo.update( {p:pastt} )
+					ali_info.update( {p:pastt} )
 								
 				avg=avgr.finish()
 				
@@ -1054,7 +1057,7 @@ def allvsall(options):
 						pastt = ptcl1_indxs_transforms[p]
 						totalt = tcenter * pastt
 						indx_trans_pairs.update({p:totalt})
-						aliInfo.update({p:totalt})
+						ali_info.update({p:totalt})
 						
 						
 						subp1 = EMData(options.input,p)
@@ -1066,7 +1069,7 @@ def allvsall(options):
 							subp1_forFinalAliStack['xform.align3d']=totalt
 							
 							FinalAliStack.update({int(p):subp1_forFinalAliStack})		#But let's keep track of them, and write them out only when the LAST iteration has been reached
-							print "After AUTOCENTER have CHANGED a particle1 in finalAliStack to have this transform", totalt
+							print "After AUTOCENTER have CHANGED a particle1 in final_ali_stack to have this transform", totalt
 
 					
 						
@@ -1074,7 +1077,7 @@ def allvsall(options):
 						pastt = ptcl2_indxs_transforms[p]
 						totalt = tcenter * resultingt * pastt
 						indx_trans_pairs.update({p:totalt})
-						aliInfo.update({p:totalt})
+						ali_info.update({p:totalt})
 						
 						subp2 = EMData(options.input,p)
 						subp2.process_inplace("xform",{"transform":totalt})
@@ -1085,7 +1088,7 @@ def allvsall(options):
 							subp2_forFinalAliStack['xform.align3d']=totalt
 							
 							FinalAliStack.update({int(p):subp2_forFinalAliStack})		#But let's keep track of them, and write them out only when the LAST iteration has been reached
-							print "After AUTOCENTER I have CHANGED a particle2 in finalAliStack to have this transform", totalt
+							print "After AUTOCENTER I have CHANGED a particle2 in final_ali_stack to have this transform", totalt
 				
 				#if options.sym != 'c1' and options.sym !='C1' and not options.breaksym:
 				#	if options.verbose > 5:
@@ -1189,7 +1192,7 @@ def allvsall(options):
 				mm+=1
 			
 				
-				roundInfoDict[ key ] = aliInfo
+				roundInfoDict[ key ] = ali_info
 				
 				
 			
