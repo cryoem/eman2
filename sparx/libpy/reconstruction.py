@@ -1620,7 +1620,7 @@ def one_swbp(CUBE, B, transform = None, symmetry="c1"):
 	Util.BPCQ(B, CUBE, (B.get_ysize()-1)//2)  
 	B.set_attr("xform.projection", org_transform)
 
-def prepare_recons(data, symmetry, myid, main_node_half, half_start, step, index, finfo=None, npad = 4, mpi_comm=None):
+def prepare_recons(data, symmetry, myid, main_node_half, half_start, step, index, finfo=None, npad = 2, mpi_comm=None):
 	from random     import randint
 	from utilities  import reduce_EMData_to_root
 	from mpi        import mpi_barrier, MPI_COMM_WORLD
@@ -1675,7 +1675,7 @@ def prepare_recons(data, symmetry, myid, main_node_half, half_start, step, index
 	return None, None
 
 
-def prepare_recons_ctf_fftvol(data, snr, symmetry, myid, main_node_half, pidlist, finfo=None, npad = 4, mpi_comm=None):
+def prepare_recons_ctf_fftvol(data, snr, symmetry, myid, main_node_half, pidlist, finfo=None, npad = 2, mpi_comm=None):
 	from utilities import reduce_EMData_to_root
 	from EMAN2 import Reconstructors
 	from mpi import MPI_COMM_WORLD
@@ -1708,7 +1708,7 @@ def prepare_recons_ctf_fftvol(data, snr, symmetry, myid, main_node_half, pidlist
 
 	return fftvol_half, weight_half
 
-def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start, step, finfo=None, npad = 4, mpi_comm=None):
+def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start, step, finfo=None, npad = 2, mpi_comm=None):
 	from random     import randint
 	from utilities  import reduce_EMData_to_root
 	from mpi        import mpi_barrier, MPI_COMM_WORLD
@@ -1759,7 +1759,7 @@ def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start
 	return None,None
 
 
-def recons_from_fftvol(size, fftvol, weight, symmetry, npad = 4):
+def recons_from_fftvol(size, fftvol, weight, symmetry, npad = 2):
 	from EMAN2 import Reconstructors
 
 	params = {"size":size, "npad":npad, "symmetry":symmetry, "fftvol":fftvol, "weight":weight}
@@ -1769,7 +1769,7 @@ def recons_from_fftvol(size, fftvol, weight, symmetry, npad = 4):
 	return fftvol
 
 
-def recons_ctf_from_fftvol(size, fftvol, weight, snr, symmetry, weighting=1, npad = 4):
+def recons_ctf_from_fftvol(size, fftvol, weight, snr, symmetry, weighting=1, npad = 2):
 	from EMAN2 import Reconstructors
 
 	params = {"size":size, "npad":npad, "snr":snr, "sign":1, "symmetry":symmetry, "fftvol":fftvol, "weight":weight, "weighting":weighting}
@@ -1808,14 +1808,16 @@ def get_image_size( imgdata, myid ):
 	return int(nx[0])
 
 
-def rec3D_MPI(data, snr, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep = 1.0, odd_start=0, eve_start=1, finfo=None, index=-1, npad = 4, mpi_comm=None):
+def rec3D_MPI(data, snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None, \
+		myid = 0, main_node = 0, rstep = 1.0, odd_start=0, eve_start=1, finfo=None, \
+		index=-1, npad = 2, mpi_comm=None):
 	'''
 	  This function is to be called within an MPI program to do a reconstruction on a dataset kept 
 	  in the memory, computes reconstruction and through odd-even, in order to get the resolution
 	'''
 	import os
 	from statistics import fsc_mask
-	from utilities  import model_blank, get_image, send_EMData, recv_EMData
+	from utilities  import model_blank, model_circle, get_image, send_EMData, recv_EMData
 	from mpi        import mpi_comm_size, MPI_COMM_WORLD
 	
 	if mpi_comm == None:
@@ -1878,8 +1880,13 @@ def rec3D_MPI(data, snr, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep
 		weight = get_image(weight_eve_file)
 		voleve = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
 
+		if( not mask3D ):
+			nx = volodd.get_xsize()
+			ny = volodd.get_ysize()
+			nz = volodd.get_zsize()
+			mask3D = model_circle(min(nx,ny,nz) - 2, nx,ny,nz)
 		fscdat = fsc_mask( volodd, voleve, mask3D, rstep, fsc_curve)
-		del  volodd, voleve
+		del  volodd, voleve, mask3d
 
 		fftvol = get_image( fftvol_odd_file )
 		fftvol_tmp = get_image(fftvol_eve_file)
@@ -1903,8 +1910,14 @@ def rec3D_MPI(data, snr, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep
 			weight = get_image( weight_odd_file )
 			volodd = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
 			voleve = recv_EMData(main_node_eve, tag_voleve, mpi_comm)
+			
+			if( not mask3D ):
+				nx = volodd.get_xsize()
+				ny = volodd.get_ysize()
+				nz = volodd.get_zsize()
+				mask3D = model_circle(min(nx,ny,nz) - 2, nx,ny,nz)
 			fscdat = fsc_mask( volodd, voleve, mask3D, rstep, fsc_curve)
-			del  volodd, voleve
+			del  volodd, voleve, mask3D
 		else:
 			assert myid == main_node_eve
 			fftvol = get_image( fftvol_eve_file )
@@ -1955,11 +1968,18 @@ def rec3D_MPI(data, snr, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep
 		volodd = recons_ctf_from_fftvol(nx, fftvol, weight, snr, symmetry, npad = npad)
 		del fftvol, weight
 		voleve = recv_EMData(main_node_eve, tag_voleve, mpi_comm)
+
+		if( not mask3D ):
+			nx = volodd.get_xsize()
+			ny = volodd.get_ysize()
+			nz = volodd.get_zsize()
+			mask3D = model_circle(min(nx,ny,nz) - 2, nx,ny,nz)
+
 		fscdat = fsc_mask(volodd, voleve, mask3D, rstep, fsc_curve)
-		del  volodd, voleve
+		del  volodd, voleve, mask3D
 		volall = recv_EMData(main_node_all, tag_volall, mpi_comm)
 		os.system( "rm -f " + fftvol_odd_file + " " + weight_odd_file );
-		return volall,fscdat
+		return volall, fscdat
 
 	if myid == main_node_eve:
 		ftmp = recv_EMData(main_node_odd, tag_fftvol_odd, mpi_comm)
@@ -1997,7 +2017,8 @@ def rec3D_MPI(data, snr, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep
 	return model_blank(nx,nx,nx),None
 
 
-def rec3D_MPI_noCTF(data, symmetry, mask3D, fsc_curve, myid, main_node = 0, rstep = 1.0, odd_start=0, eve_start=1, finfo=None, index = -1, npad = 4, mpi_comm=None):
+def rec3D_MPI_noCTF(data, symmetry = "c1", mask3D = None, fsc_curve = None, myid = 2, main_node = 0, \
+		rstep = 1.0, odd_start=0, eve_start=1, finfo=None, index = -1, npad = 2, mpi_comm=None):
 	'''
 	  This function is to be called within an MPI program to do a reconstruction on a dataset kept in the memory 
 	  Computes reconstruction and through odd-even, in order to get the resolution

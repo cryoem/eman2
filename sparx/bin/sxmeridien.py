@@ -334,18 +334,20 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 				projdata = getindexdata(stack, partids[procid], partstack[procid], myid, nproc)
 			else:
 				projdata = stack
-			if( nx != nnxo and procid == 0 ):
-				mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(nnxo)),nx,nx,nx)
+			if( procid == 0 ):
+				nx = projdata[0].get_xsize()
+				if( nx != nnxo):
+					mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(nnxo)),nx,nx,nx)
 
 			if CTF:
 				from reconstruction import rec3D_MPI
 				vol[procid],fsc[procid] = rec3D_MPI(projdata, symmetry = ali3d_options.sym, \
-					mask3D = mask, None, \
+					mask3D = mask, fsc_curve = None, \
 					myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2)
 			else:
 				from reconstruction import rec3D_MPI_noCTF
 				vol[procid],fsc[procid] = rec3D_MPI_noCTF(projdata, symmetry = ali3d_options.sym, \
-					mask3D = mask, None, \
+					mask3D = mask, fsc_curve = None, \
 					myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2)
 
 			if(type(stack) == str):  del projdata
