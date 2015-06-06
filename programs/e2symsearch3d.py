@@ -172,7 +172,7 @@ def main():
 	results = {}
 	scores=[]
 	
-	outputstack = options.path + '/allPtclsAli.hdf'
+	outputstack = options.path + '/all_ptcls_ali.hdf'
 	
 	#Determine number of particles in the stack
 	n = EMUtil.get_image_count( options.input )
@@ -254,7 +254,7 @@ def main():
 				
 				if options.mirror:
 					ref.process_inplace('xform.mirror',{'axis': options.mirror })
-					refComp( options, outputstack, ref, results, '_vsMirror')
+					refComp( options, outputstack, ref, results, '_vs_mirror')
 			else:
 				ref2compare =  final_avg
 				refComp( options, outputstack, final_avg, results, '')	
@@ -357,7 +357,7 @@ def makeSsaAverage( options, scores, results, it ):
 			a = EMData( options.input, indx )
 			
 			if it == options.avgiter -1:
-				a.write_image( options.path + '/keptPtclsRaw_' + str(it).zfill( len( str( options.avgiter))) + '.hdf', -1 )
+				a.write_image( options.path + '/kept_ptcls_raw_' + str(it).zfill( len( str( options.avgiter))) + '.hdf', -1 )
 			
 			t = results[ s ][0]
 			a.transform( t )
@@ -368,7 +368,7 @@ def makeSsaAverage( options, scores, results, it ):
 				a = a.process('xform.applysym',{'sym':options.sym})
 			
 			if options.saveali and it == options.avgiter -1:
-				a.write_image( options.path + '/keptPtclsAli_' + str(it).zfill( len( str( options.avgiter))) + '.hdf', -1 )
+				a.write_image( options.path + '/kept_ptcls_ali_' + str(it).zfill( len( str( options.avgiter))) + '.hdf', -1 )
 
 		ssaavg = avgr.finish()
 	
