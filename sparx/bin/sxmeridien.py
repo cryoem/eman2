@@ -276,7 +276,7 @@ def get_pixel_resolution(vol, radi, nnxo, fscoutputdir):
 	else:  mask = radi
 	nx = vol[0].get_xsize()
 	if( nx != nnxo ):
-		mask = Util.window(rot_shift3D(mask,scale=float(n)/float(nnxo)),nx,nx,nx)
+		mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(nnxo)),nx,nx,nx)
 	nfsc = fsc(vol[0]*mask,vol[1]*mask, 1.0,os.path.join(fscoutputdir,"fsc.txt") )
 	ns = len(nfsc[1])
 	currentres = ns
@@ -318,6 +318,10 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 		nz = stack[0].get_zsize()
 	else:
 		nz = 1
+	if(ali3d_options.mask3D is None):  mask = model_circle(radi,nnxo,nnxo,nnxo)
+	else:                              mask = get_im(ali3d_options.mask3D)
+	if( nx != nnxo ):
+		mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(nnxo)),nx,nx,nx)
 
 	for procid in xrange(2):
 		#  sxrecons3d.py  (full size)
@@ -351,8 +355,6 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 			vol[procid].write_image(os.path.join(outputdir,"vol%01d.hdf"%procid))
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			print(  line,"Generated vol #%01d "%procid)
-	if(ali3d_options.mask3D is None):  mask = model_circle(radi,nnxo,nnxo,nnxo)
-	else:                              mask = get_im(ali3d_options.mask3D)
 	del fsc
 	lowpass    = 0.0
 	falloff    = 0.0
