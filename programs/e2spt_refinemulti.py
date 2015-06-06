@@ -2,7 +2,7 @@
 
 #
 # Author: Jesus Galaz-Montoya  November/21/2013
-# Last modification: 19/Feb/2015
+# Last modification: 6/Jun/2016
 # Copyright (c) 2011- Baylor College of Medicine
 
 #
@@ -121,11 +121,11 @@ def main():
 	
 	parser.add_argument("--refrandphase", type=float, default=0, help="""Default=0. Resolution to phase-randomize the reference to.""")
 	
-	parser.add_argument("--hacref",type=int,default=0,help="""Default=0 (not used by default). Size of the SUBSET of particles to use to build an initial reference by calling e2spt_hac.py which does Hierarchical Ascendant Classification (HAC) or 'all vs all' alignments.""") 
+	parser.add_argument("--hacref",type=int,default=0,help="""WARNING: NOT WORKING. Mulst supply references through --ref. Default=0 (not used by default). Size of the SUBSET of particles to use to build an initial reference by calling e2spt_hac.py which does Hierarchical Ascendant Classification (HAC) or 'all vs all' alignments.""") 
 		
-	parser.add_argument("--ssaref",type=int,default=0,help="""Default=0 (not used by default). Size of the SUBSET of particles to use to build an initial reference by calling e2symsearch3d.py, which does self-symmetry alignments. You must provide --sym different than c1 for this to make any sense.""")
+	parser.add_argument("--ssaref",type=int,default=0,help="""WARNING: NOT WORKING. Mulst supply references through --ref. Default=0 (not used by default). Size of the SUBSET of particles to use to build an initial reference by calling e2symsearch3d.py, which does self-symmetry alignments. You must provide --sym different than c1 for this to make any sense.""")
 		
-	parser.add_argument("--btref",type=int,default=0,help="""Default=0 (internally turned on and set to 64). Size of the SUBSET of particles to use to build an initial reference by calling e2spt_binarytree.py. By default, the largest power of two smaller than the number of particles in --input will be used. For example, if you supply a stack with 150 subtomograms, the program will automatically select 128 as the limit to use because it's the largest power of 2 that is smaller than 150. But if you provide, say --btref=100, then the number of particles used will be 64, because it's the largest power of 2 that is still smaller than 100.""")
+	parser.add_argument("--btref",type=int,default=0,help="""WARNING: NOT WORKING. Mulst supply references through --ref. Default=0 (internally turned on and set to 64). Size of the SUBSET of particles to use to build an initial reference by calling e2spt_binarytree.py. By default, the largest power of two smaller than the number of particles in --input will be used. For example, if you supply a stack with 150 subtomograms, the program will automatically select 128 as the limit to use because it's the largest power of 2 that is smaller than 150. But if you provide, say --btref=100, then the number of particles used will be 64, because it's the largest power of 2 that is still smaller than 100.""")
 	
 	parser.add_argument("--radius", type=float, help="""Will make --align and --falign None. Hydrodynamic radius of the particle in Angstroms. This will be used to automatically calculate the angular steps to use in search of the best alignment. Make sure the apix is correct on the particles' headers, sine the radius will be converted from Angstroms to pixels. Then, the fine angular step is equal to 360/(2*pi*radius), and the coarse angular step 4 times that""", default=0)
 	
@@ -232,7 +232,7 @@ def main():
 
 	parser.add_argument("--precision",type=float,default=1.0,help="""Default=1.0. Precision in pixels to use when figuring out alignment parameters automatically using --radius. Precision would be the number of pixels that the the edge of the specimen is moved (rotationally) during the finest sampling, --falign. If precision is 1, then the precision of alignment will be that of the sampling (apix of your images) times the --shrinkfine factor specified.""")
 
-	parser.add_argument("--tweak",action='store_true',default=False,help="""WARNING: BUGGY. [NOT IMPLMEMENTED HERE YET]. This will perform a final alignment with no downsampling [without using --shrink or --shrinkfine] if --shrinkfine > 1.""")
+	parser.add_argument("--tweak",action='store_true',default=False,help="""WARNING: BUGGY. This will perform a final alignment with no downsampling [without using --shrink or --shrinkfine] if --shrinkfine > 1.""")
 
 	(options, args) = parser.parse_args()
 
@@ -474,7 +474,7 @@ def main():
 			
 			reffile = rootpath + '/' + options.path + '/ref' + str( i ).zfill( len( str( ncls ))) + '.hdf'
 			
-			refimg.write_iamge( reffile, 0 )
+			refimg.write_image( reffile, 0 )
 		
 			reffilesrefine.update( {i:reffile} )
 
