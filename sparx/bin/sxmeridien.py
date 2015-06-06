@@ -334,8 +334,10 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 				projdata = getindexdata(stack, partids[procid], partstack[procid], myid, nproc)
 			else:
 				projdata = stack
-			if( nx != nnxo and procid == 0 ):
-				mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(nnxo)),nx,nx,nx)
+			if( procid == 0 ):
+				nx = projdata[0].get_xsize()
+				if( nx != nnxo):
+					mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(nnxo)),nx,nx,nx)
 
 			if CTF:
 				from reconstruction import rec3D_MPI
@@ -361,10 +363,10 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 			vol[procid].write_image(os.path.join(outputdir,"vol%01d.hdf"%procid))
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			print(  line,"Generated vol #%01d "%procid)
-	del fsc
+
 	lowpass    = 0.0
 	falloff    = 0.0
-	currentres = 0.0
+	icurrentres = 0
 
 	if(myid == main_node):
 		if(nx<nnxo):
@@ -374,10 +376,10 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 				for i in xrange(nnxo/2+1):
 					fsc[j][0][i] = float(i)/nnxo
 		for procid in xrange(2):
-			write_text_file( fsc[procifd], os.path.join(outputdir,"within-fsc%01d.txt"%procid) )
+			write_text_file( fsc[procid], os.path.join(outputdir,"within-fsc%01d.txt"%procid) )
 		lowpass, falloff, icurrentres = get_pixel_resolution(vol, mask, nnxo, outputdir)
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(  line,"Current resolution  %6.2 (%6d), low-pass filter cut-off %6.2f and fall-off %6.2f"%(icurrentres/float(nnxo),icurrentres,lowpass,falloff))
+		print(  line,"Current resolution  %6.2f (%d), low-pass filter cut-off %6.2f and fall-off %6.2f"%(icurrentres/float(nnxo),icurrentres,lowpass,falloff))
 		write_text_row([[lowpass, falloff, icurrentres]],os.path.join(outputdir,"current_resolution.txt"))
 	#  Returns: low-pass filter cutoff;  low-pass filter falloff;  current resolution
 	icurrentres = bcast_number_to_all(icurrentres, source_node = main_node)
