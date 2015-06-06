@@ -334,10 +334,8 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 				projdata = getindexdata(stack, partids[procid], partstack[procid], myid, nproc)
 			else:
 				projdata = stack
-			if( procid == 0 ):
-				nx = projdata[0].get_xsize()
-				if( nx != nnxo):
-					mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(nnxo)),nx,nx,nx)
+			if( nx != nnxo and procid == 0 ):
+				mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(nnxo)),nx,nx,nx)
 
 			if CTF:
 				from reconstruction import rec3D_MPI
