@@ -1581,7 +1581,7 @@ def main():
 				bestoutputdir = mainoutputdir
 				keepgoing = 1
 
-		elif( currentres < Tracker["resolution"] ):
+		elif( icurrentres < Tracker["icurrentres"] ):
 			if(myid == main_node):  print("  Cannot improve resolution, the best result is in the directory %s"%bestoutputdir)
 			exit()
 			#  The resolution decreased.  For exhaustive or local, backoff and switch to the next refinement.  For gridding, terminate
@@ -1658,7 +1658,7 @@ def main():
 				Tracker["movedup"] = False
 				keepgoing = 1
 
-		elif( currentres == Tracker["resolution"] ):
+		elif( icurrentres == Tracker["icurrentres"] ):
 			# We need separate rules for each case
 			if(myid == main_node):
 				print("  Resolution did not improve, swith to the next move", angular_neighborhood, Tracker["local"],currentres,lowpass)
