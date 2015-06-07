@@ -148,8 +148,9 @@ def main():
 
 		if options.postdisplay: display([EMData(options.output,i) for i in xrange(nimgs)])
 
+	theta = 2*np.pi/360 * np.array(range(0, 360, options.step) + [0])
+
 	with PdfPages(options.path[:-4] + '.pdf') as pdf:
-		theta = 2*np.pi/360 * np.array(list(range(0, 360, options.step)))
 		for i in xrange(nimgs):
 			if options.verbose > 5: print("Centering image {}/{}".format(i+1,nimgs))
 
@@ -159,9 +160,9 @@ def main():
 			else: ptcl = orig
 			parr = ptcl.numpy()
 
-			fig = plt.figure(figsize=(8,4))
+			fig = plt.figure(figsize=(10,10))
 
-			ax0 = fig.add_subplot(131)
+			ax0 = fig.add_subplot(221)
 			img = ax0.imshow(orig.numpy(),cmap=plt.cm.Greys_r)
 			#fig.colorbar(img, orientation='horizontal')
 			ax0.invert_yaxis()
@@ -169,7 +170,7 @@ def main():
 			ax0.yaxis.set_ticklabels([])
 			ax0.set_title('Original')
 
-			ax1 = fig.add_subplot(132)
+			ax1 = fig.add_subplot(222)
 			proc = ax1.imshow(parr,cmap=plt.cm.Greys_r)
 			#fig.colorbar(proc, orientation='horizontal')
 			ax1.invert_yaxis()
@@ -177,34 +178,42 @@ def main():
 			ax1.yaxis.set_ticklabels([])
 			ax1.set_title('RBF, Binarized')
 
-			# means = np.zeros_like(theta)
-			# stds = np.zeros_like(theta)
-			# for i, angle in enumerate(theta):
-			# 	proj = ptcl.project("standard",Transform({'type':'2d','alpha':angle})).numpy()
-			# 	mu,sigma = weighted_avg_and_std(range(nx*2),proj)
-			# 	means[i] = mu
-			# 	stds[i] = sigma
-			# r = np.array(means)/np.max(means)
-			# s = np.array(stds)/np.max(stds)
+			r = []
+			s = []
+			for i, angle in enumerate(theta):
+				proj = ptcl.project("standard",Transform({'type':'2d','alpha':angle}))
+				projarr = proj.numpy()
+				projarr = projarr/np.max(projarr)
+				nz = np.nonzero(projarr)
+				mu = np.mean(nz)
+				sd = np.std(nz)
+				#mu = np.mean(projarr)
+				#sd = np.std(projarr)
+				#mu,sigma = weighted_avg_and_std(range(nx*2),proj)
+				r.append(mu)
+				s.append(sd)
+			r = np.array(r/np.max(r))
+			s = np.array(s)
 
-			# ax2 = fig.add_subplot(223,polar=True)
-			# ax2.plot(theta, r, "ro") # mu
-			# ax2.errorbar(theta, r, yerr=s, xerr=0, capsize=0) #sigma
-			# ax2.set_ylim([0,1])
+			ax2 = fig.add_subplot(223,polar=True)
+			ax2.plot(theta, r, "ro") # mu
+			ax2.errorbar(theta, r, yerr=s, xerr=0, capsize=0) #sigma
+			ax2.set_ylim([0,1])
+			ax2.set_title('Projections')
 
-			ax2 = fig.add_subplot(133)
+			ax3 = fig.add_subplot(224)
 			centered = orig.copy()
-			mu = np.mean(parr.nonzero(),axis=1) - nx # rough geometric center
+			mu = np.mean(parr.nonzero(),axis=1) # rough geometric center
 			#mu = (np.max(parr.nonzero(),axis=1) + np.min(parr.nonzero(),axis=1) - 2.*nx)/2.
 			if options.verbose > 8: print("Translating image {} by ({},{})".format(i,mu[1]-nx,mu[0]-nx))
-			t = Transform({'type':'eman','tx':mu[0],'ty':mu[1]})
+			t = Transform({'type':'eman','tx':mu[0]-nx,'ty':mu[1]-nx})
 			centered.transform(t)
-			final = ax2.imshow(centered.numpy(),cmap=plt.cm.Greys_r)
-			ax2.invert_yaxis()
+			final = ax3.imshow(centered.numpy(),cmap=plt.cm.Greys_r)
+			ax3.invert_yaxis()
 			#fig.colorbar(final, orientation='horizontal')
-			ax2.xaxis.set_ticklabels([])
-			ax2.yaxis.set_ticklabels([])
-			ax2.set_title('Centered')
+			ax3.xaxis.set_ticklabels([])
+			ax3.yaxis.set_ticklabels([])
+			ax3.set_title('Centered')
 
 			pdf.savefig(fig)
 
