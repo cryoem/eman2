@@ -1529,7 +1529,7 @@ def main():
 			increment   = 0.01
 
 		if(myid == main_node):
-			print(" New resolution %d   Previous resolution %d"%(icurrentres , Tracker["iresolution"]))
+			print(" New resolution %d   Previous resolution %d"%(icurrentres , Tracker["icurrentres"]))
 
 		if( ( icurrentres > Tracker["icurrentres"] ) or (eliminated_outliers and not Tracker["eliminated-outliers"]) or mainiteration == 1):
 			if(myid == main_node):
@@ -1550,7 +1550,7 @@ def main():
 				nxinit = min(nxinit,nnxo)
 				#  Exhaustive searches
 				if(angular_neighborhood == "-1" and not Tracker["local"]):
-					paramsdict["initialfl"] = read_fsc(os.path.join(initdir,"fsc.txt"),icurrentres, myid, main_node)
+					paramsdict["initialfl"] = read_fsc(os.path.join(mainoutputdir,"fsc.txt"),icurrentres, myid, main_node)
 					Tracker["initialfl"]    = paramsdict["initialfl"]
 					Tracker["lowpass"]      = paramsdict["initialfl"]
 					paramsdict["lowpass"]   = paramsdict["initialfl"]
@@ -1559,7 +1559,7 @@ def main():
 				#  Local searches
 				elif(angular_neighborhood != "-1" and not Tracker["local"]):
 					#Tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
-					paramsdict["initialfl"] = read_fsc(os.path.join(initdir,"fsc.txt"),icurrentres, myid, main_node)
+					paramsdict["initialfl"] = read_fsc(os.path.join(mainoutputdir,"fsc.txt"),icurrentres, myid, main_node)
 					Tracker["initialfl"]    = paramsdict["initialfl"]
 					Tracker["lowpass"]      = paramsdict["initialfl"]
 					paramsdict["lowpass"]   = paramsdict["initialfl"]
@@ -1568,7 +1568,7 @@ def main():
 				#  Local/gridding  searches, move only as much as the resolution increase allows
 				elif(Tracker["local"]):
 					#Tracker["extension"]   =    0.0  # lowpass cannot exceed 0.45
-					paramsdict["initialfl"] = read_fsc(os.path.join(initdir,"fsc.txt"),icurrentres, myid, main_node)
+					paramsdict["initialfl"] = read_fsc(os.path.join(mainoutputdir,"fsc.txt"),icurrentres, myid, main_node)
 					Tracker["initialfl"]    = paramsdict["initialfl"]
 					Tracker["lowpass"]      = paramsdict["initialfl"]
 					paramsdict["lowpass"]   = paramsdict["initialfl"]
