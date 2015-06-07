@@ -1300,7 +1300,7 @@ def main():
 					keepchecking = False
 			else:
 				doit = 1
-			if doit:
+			if doit and nsoft>0:
 				vol = []
 				for procid in xrange(2):  vol.append(get_im(os.path.join(mainoutputdir,"loga%01d"%procid,"vol%01d.hdf"%procid) ))
 				fuselowf(vol, fq)
@@ -1353,6 +1353,12 @@ def main():
 				#  Previous phase was hard, so the resolution exists
 				if(myid == main_node):
 					cmd = "{} {} {}".format("cp", os.path.join(mainoutputdir,"acurrent_resolution.txt") , os.path.join(mainoutputdir,"current_resolution.txt"))
+					cmdexecute(cmd)
+					cmd = "{} {} {}".format("cp", os.path.join(mainoutputdir,"afsc.txt") , os.path.join(mainoutputdir,"fsc.txt"))
+					cmdexecute(cmd)
+					for procid in xrange(2):
+						vol.append(get_im(os.path.join(mainoutputdir,"loga%01d"%procid,"vol%01d.hdf"%procid) ))
+						cmd = "{} {} {}".format("cp -p", os.path.join(mainoutputdir,"loga%01d"%procid,"vol%01d.hdf"%procid) , os.path.join(mainoutputdir,"vol%01d.hdf"%procid))
 					cmdexecute(cmd)
 				"""
 				vol = []
