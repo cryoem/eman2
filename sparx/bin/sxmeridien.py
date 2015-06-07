@@ -1351,8 +1351,9 @@ def main():
 														radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
 			else:
 				#  Previous phase was hard, so the resolution exists
-				cmd = "{} {} {}".format("cp", os.path.join(mainoutputdir,"acurrent_resolution.txt") , os.path.join(mainoutputdir,"current_resolution.txt"))
-				cmdexecute(cmd)
+				if(myid == main_node):
+					cmd = "{} {} {}".format("cp", os.path.join(mainoutputdir,"acurrent_resolution.txt") , os.path.join(mainoutputdir,"current_resolution.txt"))
+					cmdexecute(cmd)
 				"""
 				vol = []
 				for procid in xrange(2):  vol.append(get_im(os.path.join(mainoutputdir,"loga%01d"%procid,"vol%01d.hdf"%procid) ))
@@ -1401,7 +1402,14 @@ def main():
 			projdata = getindexdata(stack, os.path.join(mainoutputdir,"indexes.txt"), os.path.join(mainoutputdir,"params.txt"), myid, nproc)
 			volf = do_volume(projdata, ali3d_options, mainiteration, mpi_comm = MPI_COMM_WORLD)
 			projdata = [[model_blank(1,1)],[model_blank(1,1)]]
-			if(myid == main_node): volf.write_image(os.path.join(mainoutputdir,"volf.hdf"))
+			if(myid == main_node):
+				volf.write_image(os.path.join(mainoutputdir,"volf.hdf"))
+				for procid in xrange(2):
+					cmd = "{} {} {}".format("cp -p", partids[procid] , os.path.join(mainoutputdir,"chunk%01d.txt"%procid))
+					cmdexecute(cmd)
+					cmd = "{} {} {}".format("cp -p", partstack[procid], os.path.join(mainoutputdir,"params-chunk%01d.txt"%procid))
+					cmdexecute(cmd)
+					
 
 		mpi_barrier(MPI_COMM_WORLD)
 
@@ -1514,14 +1522,15 @@ def main():
 		lowpass = newlowpass
 		falloff = newfalloff
 
+		"""
 		if(myid == main_node and not eliminated_outliers and doit):  # I had to add here doit, otherwise during the restart it incorrectly copies the files.
-			#  It still has a problem with the restart, has to be corrected.
 			for procid in xrange(2):
 				#  This is standard path, copy parameters to be used to the main
 				cmd = "{} {} {}".format("cp -p", partids[procid] , os.path.join(mainoutputdir,"chunk%01d.txt"%procid))
 				cmdexecute(cmd)
 				cmd = "{} {} {}".format("cp -p", partstack[procid], os.path.join(mainoutputdir,"params-chunk%01d.txt"%procid))
 				cmdexecute(cmd)
+		"""
 
 		keepgoing = 0
 		if(angular_neighborhood == "-1" ):
