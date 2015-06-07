@@ -615,6 +615,10 @@ def get_shrink_data(onx, nx, stack, partids, partstack, myid, main_node, nproc, 
 	#   and assign to them parameters from partstack with optional CTF application and shifting of the data.
 	# So, the lengths of partids and partstack are the same.
 	#  The read data is properly distributed among MPI threads.
+	if( myid == main_node ):
+		print("    ")
+		print("  get_shrink_data  ")
+		print("  onx, nx, stack, partids, partstack, CTF, applyctf, preshift, radi  ",onx, nx, stack, partids, partstack, CTF, applyctf, preshift, radi)
 	if( myid == main_node ): lpartids = read_text_file(partids)
 	else:  lpartids = 0
 	lpartids = wrap_mpi_bcast(lpartids, main_node)
@@ -849,12 +853,12 @@ def main():
 
 	#  
 	#  The program will use three different meanings of x-size
-	#  nnxo - original nx of the data, will not be changed
-	#  nxinit - window size used by the program during given iteration [64 + iter*32], 
-	#           will be increased in steps of 32 with the resolution
+	#  nnxo         - original nx of the data, will not be changed
+	#  nxinit       - window size used by the program during given iteration, 
+	#                 will be increased in steps of 32 with the resolution
 	#  nxresolution - resolution window size in Fourier pixels within nxinit.
-	#             The fl within the reduced data is nxresolution/nxinit/2.0
-	#             The absolute fl is nxresolution/nnxo/2.0
+	#                 The fl within the reduced data is nxresolution/nxinit/2.0
+	#                 The absolute fl is nxresolution/nnxo/2.0
 	#
 
 	nxinit = 64  #int(280*0.3*2)
@@ -1179,6 +1183,7 @@ def main():
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			print(line,"MAIN ITERATION  #%2d     nxinit, nxresolution, icurrentres, resolution, lowpass, falloff "%\
 				mainiteration, nxinit,  nxresolution, icurrentres, icurrentres/float(nnxo), lowpass, falloff)
+			print(line,"  mainoutputdir  previousoutputdir  ",mainoutputdir,previousoutputdir)
 			print_dict(history[-1],"TRACKER")
 
 			if keepchecking:
@@ -1524,7 +1529,7 @@ def main():
 			increment   = 0.01
 
 		if(myid == main_node):
-			print(" New resolution %6d   Previous resolution %d"%(icurrentres , Tracker["resolution"]))
+			print(" New resolution %d   Previous resolution %d"%(icurrentres , Tracker["iresolution"]))
 
 		if( ( icurrentres > Tracker["icurrentres"] ) or (eliminated_outliers and not Tracker["eliminated-outliers"]) or mainiteration == 1):
 			if(myid == main_node):
@@ -1537,9 +1542,7 @@ def main():
 				if( icurrentres > Tracker["resolution"] ):  Tracker["movedup"] = True
 				else:   Tracker["movedup"] = False
 				#  increase resolution
-				icurrentres = Tracker["icurrentres"] + nxstep//2
-				nxresolution = Tracker["nxresolution"]
-				nxresolution += nxstep
+				nxresolution = icurrentres*2 +2
 				nxinit = Tracker["nxinit"]
 				while( nxresolution + cushion > nxinit ): nxinit += 32
 				#  Window size changed, reset projdata
@@ -1548,33 +1551,33 @@ def main():
 				#  Exhaustive searches
 				if(angular_neighborhood == "-1" and not Tracker["local"]):
 					paramsdict["initialfl"] = read_fsc(os.path.join(initdir,"fsc.txt"),icurrentres, myid, main_node)
-					Tracker["initialfl"] = paramsdict["initialfl"]
-					Tracker["lowpass"] = paramsdict["initialfl"]
-					paramsdict["lowpass"] = paramsdict["initialfl"]
-					Tracker["applyctf"] = True
-					Tracker["nsoft"] = 0
+					Tracker["initialfl"]    = paramsdict["initialfl"]
+					Tracker["lowpass"]      = paramsdict["initialfl"]
+					paramsdict["lowpass"]   = paramsdict["initialfl"]
+					Tracker["applyctf"]     = True
+					Tracker["nsoft"]        = 0
 				#  Local searches
 				elif(angular_neighborhood != "-1" and not Tracker["local"]):
 					#Tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
 					paramsdict["initialfl"] = read_fsc(os.path.join(initdir,"fsc.txt"),icurrentres, myid, main_node)
-					Tracker["initialfl"] = paramsdict["initialfl"]
-					Tracker["lowpass"] = paramsdict["initialfl"]
-					paramsdict["lowpass"] = paramsdict["initialfl"]
-					Tracker["applyctf"] = True
-					Tracker["nsoft"] = 0
+					Tracker["initialfl"]    = paramsdict["initialfl"]
+					Tracker["lowpass"]      = paramsdict["initialfl"]
+					paramsdict["lowpass"]   = paramsdict["initialfl"]
+					Tracker["applyctf"]     = True
+					Tracker["nsoft"]        = 0
 				#  Local/gridding  searches, move only as much as the resolution increase allows
 				elif(Tracker["local"]):
-					#Tracker["extension"] =    0.0  # lowpass cannot exceed 0.45
+					#Tracker["extension"]   =    0.0  # lowpass cannot exceed 0.45
 					paramsdict["initialfl"] = read_fsc(os.path.join(initdir,"fsc.txt"),icurrentres, myid, main_node)
-					Tracker["initialfl"] = paramsdict["initialfl"]
-					Tracker["lowpass"] = paramsdict["initialfl"]
-					paramsdict["lowpass"] = paramsdict["initialfl"]
-					Tracker["applyctf"] = False
-					Tracker["nsoft"] = 0
+					Tracker["initialfl"]    = paramsdict["initialfl"]
+					Tracker["lowpass"]      = paramsdict["initialfl"]
+					paramsdict["lowpass"]   = paramsdict["initialfl"]
+					Tracker["applyctf"]     = False
+					Tracker["nsoft"]        = 0
 				else:
 					print(" Unknown combination of settings in improved resolution path",angular_neighborhood,Tracker["local"])
 					exit()  #  This will crash the program, but the situation is unlikely to occure
-				Tracker["nxresolution"]            = nxresolution
+				Tracker["nxresolution"]        = nxresolution
 				Tracker["nxinit"]              = nxinit
 				Tracker["icurrentres"]         = icurrentres
 				Tracker["eliminated-outliers"] = eliminated_outliers
@@ -1661,7 +1664,7 @@ def main():
 		elif( icurrentres == Tracker["icurrentres"] ):
 			# We need separate rules for each case
 			if(myid == main_node):
-				print("  Resolution did not improve, swith to the next move", angular_neighborhood, Tracker["local"],currentres,lowpass)
+				print("  Resolution did not improve, swith to the next move", angular_neighborhood, Tracker["local"],icurrentres,lowpass)
 			#  Exhaustive searches
 			if(angular_neighborhood == "-1" and not Tracker["local"]):
 				if(myid == main_node):
