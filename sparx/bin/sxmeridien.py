@@ -1225,7 +1225,7 @@ def main():
 			ERROR( "ERROR!!   lastring too small  %f    %f   %d"%(radi, lastring), "sxmeridien",1, myid)
 
 		delta = round(degrees(atan(1.0/lastring)), 2)
-		subdict( paramsdict, { "delta":"%f"%delta , "an":angular_neighborhood, "local",Tracker["local"], \
+		subdict( paramsdict, { "delta":"%f"%delta , "an":angular_neighborhood, "local":Tracker["local"], \
 						"lowpass":Tracker["lowpass"], "resolution":Tracker["resolution"], "icurrentres":Tracker["icurrentres"],
 						"nnxo":Tracker["nnxo"], "nxinit":Tracker["nxinit"], "nxresolution":Tracker["nxresolution"],
 						"pixercutoff":get_pixercutoff(radi*float(Tracker["nxinit"])/float(nnxo), delta, 0.5), \
