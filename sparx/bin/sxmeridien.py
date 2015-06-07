@@ -1225,8 +1225,8 @@ def main():
 			ERROR( "ERROR!!   lastring too small  %f    %f   %d"%(radi, lastring), "sxmeridien",1, myid)
 
 		delta = round(degrees(atan(1.0/lastring)), 2)
-		subdict( paramsdict, { "delta":"%f"%delta , "an":angular_neighborhood, \
-						"lowpass":Tracker["lowpass"],"resolution":Tracker["resolution"],"icurrentres":Tracker["icurrentres"],
+		subdict( paramsdict, { "delta":"%f"%delta , "an":angular_neighborhood, "local",Tracker["local"], \
+						"lowpass":Tracker["lowpass"], "resolution":Tracker["resolution"], "icurrentres":Tracker["icurrentres"],
 						"nnxo":Tracker["nnxo"], "nxinit":Tracker["nxinit"], "nxresolution":Tracker["nxresolution"],
 						"pixercutoff":get_pixercutoff(radi*float(Tracker["nxinit"])/float(nnxo), delta, 0.5), \
 						"radius":lastring,"delpreviousmax":True } )
@@ -1691,7 +1691,7 @@ def main():
 					print("  Switching to local searches with an  %s"%options.an)
 				Tracker["applyctf"] = True
 				falloff = 0.2
-				Tracker["local"] = True
+				Tracker["local"] = False
 				#  keep the same resolution
 				icurrentres = Tracker["icurrentres"]
 				angular_neighborhood = options.an
@@ -1728,11 +1728,12 @@ def main():
 				projdata = [[model_blank(1,1)],[model_blank(1,1)]]
 				Tracker["applyctf"] = False
 				Tracker["nsoft"] = 0
+				Tracker["local"] = True
 				lowpass = currentres + Tracker["extension"]
-				shrink = max(min(2*lowpass + paramsdict["falloff"], 1.0), minshrink)
-				nxresolution = min(int(nnxo*shrink + 0.5),nnxo)
-				nxresolution += nxresolution%2
-				shrink = float(nxresolution)/nnxo
+				nxresolution = 2*(nnxo**2)
+				nxinit = nxresolution
+				Tracker["nxresolution"]        = nxresolution
+				Tracker["nxinit"]              = nxinit
 			else:
 				print(" Unknown combination of settings in improved resolution path",angular_neighborhood,Tracker["local"])
 				exit()  #  This will crash the program, but the situation is unlikely to occur
