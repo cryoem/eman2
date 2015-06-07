@@ -385,7 +385,7 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 						fsc[procid][0][k] = float(k)/nnxo
 			for procid in xrange(2):
 				#  Compute adjusted within-fsc as 2*f/(1+f)
-				fsc[procid].append(fsc[procid][1])
+				fsc[procid].append(fsc[procid][1][:])
 				for k in xrange(len(fsc[procid][1])):  fsc[procid][-1][k] = 2*fsc[procid][-1][k]/(1.0+fsc[procid][-1][k])
 				write_text_file( fsc[procid], os.path.join(outputdir,"within-fsc%01d.txt"%procid) )
 		lowpass, falloff, icurrentres = get_pixel_resolution(vol, mask, nnxo, outputdir)
@@ -1357,16 +1357,18 @@ def main():
 					cmd = "{} {} {}".format("cp", os.path.join(mainoutputdir,"afsc.txt") , os.path.join(mainoutputdir,"fsc.txt"))
 					cmdexecute(cmd)
 					for procid in xrange(2):
-						vol.append(get_im(os.path.join(mainoutputdir,"loga%01d"%procid,"vol%01d.hdf"%procid) ))
 						cmd = "{} {} {}".format("cp -p", os.path.join(mainoutputdir,"loga%01d"%procid,"vol%01d.hdf"%procid) , os.path.join(mainoutputdir,"vol%01d.hdf"%procid))
-					cmdexecute(cmd)
-				"""
-				vol = []
-				for procid in xrange(2):  vol.append(get_im(os.path.join(mainoutputdir,"loga%01d"%procid,"vol%01d.hdf"%procid) ))
-				newlowpass, newfalloff, icurrentres = compute_resolution(vol, mainoutputdir, partids, partstack, radi, \
-											nnxo, ali3d_options.CTF, myid, main_node, nproc)
-				del vol
-				"""
+						cmdexecute(cmd)
+					[newlowpass, newfalloff, icurrentres] = read_text_row( os.path.join(mainoutputdir,"current_resolution.txt") )[0]
+				else:
+					newlowpass = 0.0
+					newfalloff = 0.0
+					icurrentres = 0
+				newlowpass = bcast_number_to_all(newlowpass, source_node = main_node)
+				newlowpass = round(newlowpass,4)
+				newfalloff = bcast_number_to_all(newfalloff, source_node = main_node)
+				newfalloff = round(newfalloff,4)
+				icurrentres = bcast_number_to_all(icurrentres, source_node = main_node)
 		else:
 			if(myid == main_node):
 				[newlowpass, newfalloff, icurrentres] = read_text_row( os.path.join(mainoutputdir,"current_resolution.txt") )[0]
