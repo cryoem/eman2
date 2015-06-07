@@ -328,8 +328,14 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 	if(ali3d_options.mask3D is None):  mask = model_circle(radi,nnxo,nnxo,nnxo)
 	else:                              mask = get_im(ali3d_options.mask3D)
 
+
+	if myid == main_node :
+		print("  compute_resolution    type(stack),outputdir, partids, partstack, radi, nnxo, CTF",type(stack),outputdir, partids, partstack, radi, nnxo, CTF)
+
+		if( type(stack) == list ):
+			print("  input is a list ", info(stack[0]) )
+
 	for procid in xrange(2):
-		#  sxrecons3d.py  (full size)
 		if(type(stack) == str or ( nz == 1 )):
 			if(type(stack) == str):
 				projdata = getindexdata(stack, partids[procid], partstack[procid], myid, nproc)
@@ -378,6 +384,9 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 					for k in xrange(nnxo/2+1):
 						fsc[procid][0][k] = float(k)/nnxo
 			for procid in xrange(2):
+				#  Compute adjusted within-fsc as 2*f/(1+f)
+				fsc[procid].append(fsc[procid][1])
+				for k in xrange(len(fsc[procid][1])):  fsc[procid][-1][k] = 2*fsc[procid][-1][k]/(1.0+fsc[procid][-1][k])
 				write_text_file( fsc[procid], os.path.join(outputdir,"within-fsc%01d.txt"%procid) )
 		lowpass, falloff, icurrentres = get_pixel_resolution(vol, mask, nnxo, outputdir)
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
@@ -567,30 +576,14 @@ def compute_fscs(stack, outputdir, chunkname, newgoodname, fscoutputdir, doit, k
 	return  currentres, doit, keepchecking
 
 
-
+"""
+in utilities.py
 def getindexdata(stack, partids, partstack, myid, nproc):
 	# The function will read from stack a subset of images specified in partids
 	#   and assign to them parameters from partstack
 	# So, the lengths of partids and partstack are the same.
 	#  The read data is properly distributed among MPI threads.
-	lpartids  = map(int, read_text_file(partids) )
-	ndata = len(lpartids)
-	partstack = read_text_row(partstack)
-	if( ndata < nproc):
-		if(myid<ndata):
-			image_start = myid
-			image_end   = myid+1
-		else:
-			image_start = 0
-			image_end   = 1			
-	else:
-		image_start, image_end = MPI_start_end(ndata, nproc, myid)
-	lpartids  = lpartids[image_start:image_end]
-	partstack = partstack[image_start:image_end]
-	data = EMData.read_images(stack, lpartids)
-	for i in xrange(len(partstack)):  set_params_proj(data[i], partstack[i])
-	return data
-
+"""
 
 def getalldata(stack, myid, nproc):
 	if(myid == 0):  ndata = EMUtil.get_image_count(stack)
@@ -1239,15 +1232,16 @@ def main():
 						"radius":lastring,"delpreviousmax":True } )
 		#  REFINEMENT
 		#  Part "a"  SHC         <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+		nsoft = Tracker["nsoft"]
 		for procid in xrange(2):
 			coutdir = os.path.join(mainoutputdir,"loga%01d"%procid)
 			doit, keepchecking = checkstep(coutdir, keepchecking, myid, main_node)
 			#  here ts has different meaning for standard and continuous
-			subdict( paramsdict, { "nsoft":Tracker["nsoft"], "refvol":os.path.join(mainoutputdir,"fusevol%01d.hdf"%procid) } )
+			subdict( paramsdict, { "nsoft":nsoft, "refvol":os.path.join(mainoutputdir,"fusevol%01d.hdf"%procid) } )
 			#if(len(history)>1):  old_nx = history[-2]["nx"]
 			#else:    old_nx = Tracker["nx"]
 			paramsdict["xr"] = "3.0"#"%s"%max(3,int(1.5*Tracker["nx"]/float(old_nx) +0.5))
-			if( paramsdict["nsoft"] > 0 ):
+			if( nsoft > 0 ):
 				if( float(paramsdict["an"]) == -1.0 ):
 					paramsdict["saturatecrit"] = 0.75					
 				else:
@@ -1356,12 +1350,16 @@ def main():
 				lowpass, falloff, icurrentres = compute_resolution(stack, mainoutputdir, partids, partstack, \
 														radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
 			else:
-				#  Previous phase was hard, so the volumes exist
+				#  Previous phase was hard, so the resolution exists
+				cmd = "{} {} {}".format("cp", os.path.join(mainoutputdir,"acurrent_resolution.txt") , os.path.join(mainoutputdir,"current_resolution.txt"))
+				cmdexecute(cmd)
+				"""
 				vol = []
 				for procid in xrange(2):  vol.append(get_im(os.path.join(mainoutputdir,"loga%01d"%procid,"vol%01d.hdf"%procid) ))
 				newlowpass, newfalloff, icurrentres = compute_resolution(vol, mainoutputdir, partids, partstack, radi, \
 											nnxo, ali3d_options.CTF, myid, main_node, nproc)
 				del vol
+				"""
 		else:
 			if(myid == main_node):
 				[newlowpass, newfalloff, icurrentres] = read_text_row( os.path.join(mainoutputdir,"current_resolution.txt") )[0]
@@ -1645,7 +1643,7 @@ def main():
 				Tracker["extension"] -= increment
 				lowpass = currentres + Tracker["extension"]
 				if(mainiteration > 1):
-					#  Here to be consistent I would have to know what was shrink for this run
+					#  Here to be consistent I would have to know what shrink was for this run
 					k = -1
 					for i in xrange(len(history)):
 						if(history[i]["directory"] == bestoutputdir[-6:]):

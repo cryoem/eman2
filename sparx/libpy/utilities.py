@@ -4513,7 +4513,7 @@ def getindexdata(stack, partids, partstack, myid, nproc):
 	
 	from applications import MPI_start_end
 
-	lpartids = map(int, read_text_file(partids) )
+	lpartids = read_text_file(partids)
 	ndata = len(lpartids)
 	partstack = read_text_row(partstack)
 

@@ -176,7 +176,7 @@ def recons3d_4nn(stack_name, list_proj=[], symmetry="c1", npad=4, snr=None, weig
 	return fftvol
 
 
-def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad=4, xysize=-1, zsize=-1, mpi_comm=None):
+def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad=2, xysize=-1, zsize=-1, mpi_comm=None):
 	from utilities  import reduce_EMData_to_root, pad
 	from EMAN2      import Reconstructors
 	from utilities  import iterImagesList
@@ -526,7 +526,7 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, 
 	return fftvol
 
 
-def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 1.0, sign=1, symmetry="c1", verbose=0, npad=4, xysize = -1, zsize = -1 ):
+def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 1.0, sign=1, symmetry="c1", verbose=0, npad=2, xysize = -1, zsize = -1 ):
 	"""Perform a 3-D reconstruction using Pawel's FFT Back Projection algoritm.
 	   
 	   Input:
@@ -619,7 +619,7 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 1.0, sign=1, symmetry="c1
 	return fftvol
 
 
-def recons3d_4nn_ctf_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", info=None, npad=4, xysize=-1, zsize=-1, mpi_comm=None):
+def recons3d_4nn_ctf_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", info=None, npad=2, xysize=-1, zsize=-1, mpi_comm=None, params = None):
 	"""
 		recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
 		Input
@@ -631,7 +631,7 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", info=N
 	"""
 	from utilities  import reduce_EMData_to_root, pad
 	from EMAN2      import Reconstructors
-	from utilities  import iterImagesList
+	from utilities  import iterImagesList, set_params_proj
 	from mpi        import MPI_COMM_WORLD
 	import types
 
@@ -677,14 +677,9 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", info=N
 	nimg = 0
 	while prjlist.goToNext():
 		prj = prjlist.image()
-		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
-		# active = prj.get_attr_default('active', 1)
-		# if active == 1:
-		# 	if dopad:
-		# 		prj = pad(prj, imgsize,imgsize, 1, "circumference")
-		# 	insert_slices(r, prj)
 		if dopad:
-			prj = pad(prj, imgsize,imgsize, 1, "circumference")
+			prj = pad(prj, imgsize, imgsize, 1, "circumference")
+		#if params:
 		insert_slices(r, prj)
 		if not (info is None):
 			nimg += 1
