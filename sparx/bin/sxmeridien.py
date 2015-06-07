@@ -1396,8 +1396,13 @@ def main():
 			ali3d_options.fl, ali3d_options.aa = fit_tanh1([[float(i)/nnxo for i in xrange(len(nfsc))],nfsc], 0.01)
 			del nfsc
 			ali3d_options.ou     = radi
+			#  Here something will have to be done.  The idea is to have a presentable structure at full size.  
+			#  However, the data is in smaller window.  O possibility would be to compute structure in smaller window and then pad it
+			#  in Fourier space with zero to the full size.
+			#
 			projdata = getindexdata(stack, os.path.join(mainoutputdir,"indexes.txt"), os.path.join(mainoutputdir,"params.txt"), myid, nproc)
 			volf = do_volume(projdata, ali3d_options, mainiteration, mpi_comm = MPI_COMM_WORLD)
+			projdata = [[model_blank(1,1)],[model_blank(1,1)]]
 			if(myid == main_node): volf.write_image(os.path.join(mainoutputdir,"volf.hdf"))
 
 		mpi_barrier(MPI_COMM_WORLD)
