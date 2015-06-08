@@ -1168,8 +1168,8 @@ def main():
 	test_outliers = True
 	mainiteration = 0
 	keepgoing = 1
-	paramsdict["xr"] = "3"
-	paramsdict["ts"] = "1.0"
+	paramsdict["xr"] = "9 6 3"
+	paramsdict["ts"] = "3.0  2.0  1.0"
 	while(keepgoing):
 		mainiteration += 1
 
@@ -1230,7 +1230,15 @@ def main():
 			ERROR( "ERROR!!   lastring too small  %f    %f   %d"%(radi, lastring), "sxmeridien",1, myid)
 
 		delta = round(degrees(atan(1.0/lastring)), 2)
+		"""
 		subdict( paramsdict, { "delta":"%f"%delta , "an":angular_neighborhood, "local":Tracker["local"], \
+						"lowpass":Tracker["lowpass"], "initialfl":Tracker["initialfl"], "resolution":Tracker["resolution"], \
+						"icurrentres":Tracker["icurrentres"], \
+						"nnxo":Tracker["nnxo"], "nxinit":Tracker["nxinit"], "nxresolution":Tracker["nxresolution"], \
+						"pixercutoff":get_pixercutoff(radi*float(Tracker["nxinit"])/float(nnxo), delta, 0.5), \
+						"radius":lastring,"delpreviousmax":True } )
+		"""
+		subdict( paramsdict, { "delta":"%f  %f  %f"%(delta, delta, delta) , "an":angular_neighborhood, "local":Tracker["local"], \
 						"lowpass":Tracker["lowpass"], "initialfl":Tracker["initialfl"], "resolution":Tracker["resolution"], \
 						"icurrentres":Tracker["icurrentres"], \
 						"nnxo":Tracker["nnxo"], "nxinit":Tracker["nxinit"], "nxresolution":Tracker["nxresolution"], \
@@ -1246,7 +1254,7 @@ def main():
 			subdict( paramsdict, { "nsoft":nsoft, "refvol":os.path.join(mainoutputdir,"fusevol%01d.hdf"%procid) } )
 			#if(len(history)>1):  old_nx = history[-2]["nx"]
 			#else:    old_nx = Tracker["nx"]
-			paramsdict["xr"] = "3.0"#"%s"%max(3,int(1.5*Tracker["nx"]/float(old_nx) +0.5))
+			#paramsdict["xr"] = "3.0"#"%s"%max(3,int(1.5*Tracker["nx"]/float(old_nx) +0.5))
 			if( nsoft > 0 ):
 				if( float(paramsdict["an"]) == -1.0 ):
 					paramsdict["saturatecrit"] = 0.75					
@@ -1555,8 +1563,8 @@ def main():
 			increment   = 0.01
 
 		if(myid == main_node):
-			print(" New resolution %d   Previous resolution %d"%(icurrentres , Tracker["icurrentres"],nxinit,nxresolution))
-			print(" lowpass ",Tracker["lowpass"])
+			print(" New resolution %d   Previous resolution %d"%(icurrentres , Tracker["icurrentres"]))
+			print(" lowpass ",Tracker["lowpass"],nxinit,nxresolution)
 
 		#if( ( icurrentres > Tracker["icurrentres"] ) or (eliminated_outliers and not Tracker["eliminated-outliers"]) or mainiteration == 1):
 		if( Tracker["lowpass"]  <= 0.4):
@@ -1565,7 +1573,7 @@ def main():
 		else:
 			projdata = [[model_blank(1,1)],[model_blank(1,1)]]
 			nxinit = Tracker["nxinit"]
-			print(" Changing window size ",nxinit,Tracker["nxresolution"],nnxo)
+			if(myid == main_node): print(" Changing window size ",nxinit,Tracker["nxresolution"],nnxo)
 			nxinit *= 2
 			if(nxinit > nnxo):  exit()
 			Tracker["nxresolution"] = nxinit - cushion -1

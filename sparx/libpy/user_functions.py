@@ -798,7 +798,7 @@ def constant( ref_data ):
 
 
 def dovolume( ref_data ):
-	from utilities      import print_msg
+	from utilities      import print_msg, read_text_row
 	from filter         import fit_tanh, filt_tanl
 	from fundamentals   import fshift
 	from morphology     import threshold
@@ -822,8 +822,13 @@ def dovolume( ref_data ):
 	Util.mul_scalar(vol, 1.0/stat[1])
 	vol = threshold(vol)
 	#Util.mul_img(vol, ref_data[0])
-	fl = 0.4
-	aa = 0.2
+	try:
+		aa = read_text_row("flaa.txt")[0]
+		fl = aa[0]
+		aa=aa[1]
+	except:
+		fl = 0.4
+		aa = 0.2
 	msg = "Tangent filter:  cut-off frequency = %10.3f        fall-off = %10.3f\n"%(fl, aa)
 	print_msg(msg)
 
