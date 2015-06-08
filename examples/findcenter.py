@@ -56,7 +56,7 @@ def main():
 	parser.add_argument("--deviations", type=float, help="Set the number of standard deviations to exclude when binarizing.",default=3.0)
 	parser.add_argument("--nopreprocess",action="store_true",default=False,help="Choose not to apply filtering to particles.")
 	parser.add_argument("--noedgenorm",action="store_true",default=False,help="Display particles before filtering.")
-	parser.add_argument("--filter",choices=['wavelet','bilateral','rbf'],default='bilateral',help="Select the type of wavelet you wish to utilize.")
+	parser.add_argument("--filter",choices=['wavelet','bilateral','rbf','bandpass'],default='bilateral',help="Select the type of wavelet you wish to utilize.")
 	parser.add_argument("--wavelet",choices=['harr','daub','bspl'],default='daub',help="Select the type of wavelet you wish to utilize.")
 	parser.add_argument("--kernel_mu", type=int, help="Set the mean (mu) of the gaussian kernel for rbf filtering.",default=64)
 	parser.add_argument("--kernel_sigma", type=int, help="Set the standard deviation (sigma) of the gaussian kernel for rbf filtering.",default=8)
@@ -110,8 +110,9 @@ def main():
 		print("The --meanshrink parameter must be an even number.")
 		sys.exit(1)
 
-	gauss1d = scipy.signal.gaussian(options.kernel_mu, options.kernel_sigma)
-	kernel = np.outer(gauss1d,gauss1d)
+	if options.filter == 'rbf':
+		gauss1d = scipy.signal.gaussian(options.kernel_mu, options.kernel_sigma)
+		kernel = np.outer(gauss1d,gauss1d)
 
 	nimgs = EMUtil.get_image_count(options.path)
 	if options.predisplay: display([EMData(options.path,i) for i in xrange(nimgs)])
@@ -120,7 +121,7 @@ def main():
 	if not options.nopreprocess:
 		for i in xrange(nimgs):
 
-			if options.verbose > 5: print("Processing image {}/{}".format(i+1,nimgs))
+			if options.verbose > 5: print("Pre-processing image {}/{}".format(i+1,nimgs))
 
 			ptcl = EMData(options.path,i)
 
@@ -140,6 +141,11 @@ def main():
 					conv2d = scipy.signal.convolve2d(ptcl_array, kernel, boundary='symm', mode='same')
 					ptcl = from_numpy(np.float32(conv2d))
 					ptcl.process_inplace('threshold.belowtozero',{'minval':options.threshold})
+				if options.filter == 'bandpass':
+					apix = ptcl.get_attr('ctf').apix
+					sigma = ptcl.get_attr('sigma') / 20.0
+					ptcl.process_inplace('filter.bandpass.gauss',{'apix':apix,'center':0.0,'cutoff_abs':0.005,'sigma':sigma})
+					ptcl.process_inplace('mask.soft',{'outer_radius': -0.20 * ptcl['nx']})
 
 			if not options.noedgenorm: ptcl.process_inplace('normalize.edgemean')
 			if not options.nobinarize: ptcl.process_inplace('threshold.binary',{'value':ptcl.get_attr('sigma') * options.deviations})
@@ -170,62 +176,64 @@ def main():
 			ax0.yaxis.set_ticklabels([])
 			ax0.set_title('Original')
 
-			ax1 = fig.add_subplot(222)
+			eman_centered = orig.process('xform.center')
+			t = Transform({'type':'2d','alpha':270.0})
+			eman_centered.transform(t)
+			ax2 = fig.add_subplot(222)
+			ax2.imshow(eman_centered.numpy().transpose(),cmap=plt.cm.Greys_r) # mu
+			ax2.set_title('Centered (EMAN)')
+
+			ax1 = fig.add_subplot(223)
 			proc = ax1.imshow(parr,cmap=plt.cm.Greys_r)
 			#fig.colorbar(proc, orientation='horizontal')
 			ax1.invert_yaxis()
 			ax1.xaxis.set_ticklabels([])
 			ax1.yaxis.set_ticklabels([])
-			ax1.set_title('RBF, Binarized')
-
-			r = []
-			s = []
-			for i, angle in enumerate(theta):
-				proj = ptcl.project("standard",Transform({'type':'2d','alpha':angle}))
-				projarr = proj.numpy()
-				projarr = projarr/np.max(projarr)
-				nz = np.nonzero(projarr)
-				mu = np.mean(nz)
-				sd = np.std(nz)
-				#mu = np.mean(projarr)
-				#sd = np.std(projarr)
-				#mu,sigma = weighted_avg_and_std(range(nx*2),proj)
-				r.append(mu)
-				s.append(sd)
-			r = np.array(r/np.max(r))
-			s = np.array(s)
-
-			ax2 = fig.add_subplot(223,polar=True)
-			ax2.plot(theta, r, "ro") # mu
-			ax2.errorbar(theta, r, yerr=s, xerr=0, capsize=0) #sigma
-			ax2.set_ylim([0,1])
-			ax2.set_title('Projections')
+			ax1.set_title('Binarized')
 
 			ax3 = fig.add_subplot(224)
 			centered = orig.copy()
-			mu = np.mean(parr.nonzero(),axis=1) # rough geometric center
-			#mu = (np.max(parr.nonzero(),axis=1) + np.min(parr.nonzero(),axis=1) - 2.*nx)/2.
-			if options.verbose > 8: print("Translating image {} by ({},{})".format(i,mu[1]-nx,mu[0]-nx))
-			t = Transform({'type':'eman','tx':mu[0]-nx,'ty':mu[1]-nx})
+
+			#mu = np.mean(parr.nonzero(),axis=1) # rough geometric center
+			mu = (np.max(parr.nonzero(),axis=1) + np.min(parr.nonzero(),axis=1))/2.
+
+			tx = -(mu[1] - nx)
+			ty = -(mu[0] - nx)
+			if options.verbose > 8: print("Translating image {} by ({},{})".format(i,tx,ty))
+			t = Transform({'type':'eman','tx':tx,'ty':ty})
 			centered.transform(t)
 			final = ax3.imshow(centered.numpy(),cmap=plt.cm.Greys_r)
 			ax3.invert_yaxis()
 			#fig.colorbar(final, orientation='horizontal')
 			ax3.xaxis.set_ticklabels([])
 			ax3.yaxis.set_ticklabels([])
-			ax3.set_title('Centered')
+			ax3.set_title('Centered (New)')
+
+			# r = []
+			# s = []
+			# for i, angle in enumerate(theta):
+			# 	proj = ptcl.project("standard",Transform({'type':'2d','alpha':angle}))
+			# 	projarr = proj.numpy()
+			# 	projarr = projarr/np.max(projarr)
+			# 	nz = np.nonzero(projarr)
+			# 	mu = np.mean(nz)
+			# 	sd = np.std(nz)
+			# 	r.append(mu)
+			# 	s.append(sd)
+			# r = np.array(r/np.max(r))
+			# s = np.array(s)
+			#
+			# ax2 = fig.add_subplot(223,polar=True)
+			# ax2.plot(theta, r, "ro") # mu
+			# ax2.errorbar(theta, r, yerr=s, xerr=0, capsize=0) #sigma
+			# ax2.set_ylim([0,1])
+			# ax2.set_title('Projections')
 
 			pdf.savefig(fig)
 
 			plt.close()
 
 			if not options.nowrite: ptcl.write_image(options.output,-1)
-
-# def weighted_avg_and_std(values, weights):
-# 	weights = np.abs(weights)
-# 	average = np.average(values, weights=weights)
-# 	variance = np.average((values-average)**2, weights=weights)  # Fast and numerically precise
-# 	return (average, np.sqrt(variance))
 
 if __name__ == "__main__":
 	main()
