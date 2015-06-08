@@ -277,6 +277,10 @@ def main():
 		e2bdb.py . --makevstack=bdb:allparticles  --filt=G
 		IMPORTANT:  Please do not move (or remove!) any input/intermediate EMAN2DB files as the information is linked between them.
 
+  10.  Scale 3D shifts.  The shifts in the input five columns text file with 3D orientation parameters will be DIVIDED by the scale factor
+		sxprocess.py  orientationparams.txt  scaledparams.txt  scale=0.5
+
+
 """
 
 	parser = OptionParser(usage,version=SPARXVERSION)
@@ -308,6 +312,9 @@ def main():
 	parser.add_option("--importctf",          	type="string",		default= None,     		  help="Name of the file containing CTF parameters produced by sxcter.")
 	parser.add_option("--defocuserror",       	type="float",  		default=1000000.0,        help="Exclude micrographs whose relative defocus error as estimated by sxcter is larger than defocuserror percent.  The error is computed as (std dev defocus)/defocus*100%")
 	parser.add_option("--astigmatismerror",   	type="float",  		default=360.0,            help="Set to zero astigmatism for micrographs whose astigmatism angular error as estimated by sxcter is larger than astigmatismerror degrees.")
+
+	# import ctf estimates done using cter
+	parser.add_option("--scale",              	type="float", 		default=-1.0,      		  help="Divide shifts in the input 3D orientation parameters text file by the scale factor.")
 
 
  	(options, args) = parser.parse_args()
@@ -748,7 +755,20 @@ def main():
 				
 		cmd = "{} {} {}".format("rm -f",grpfile,ctfpfile)
 		subprocess.call(cmd, shell=True)
-	
+
+	elif options.scale > 0.0:
+		from utilities import read_text_row,write_text_row
+		scale = options.scale
+		nargs = len(args)
+		if nargs != 2:
+			print "Please provide names of input and output file!"
+			return
+		p = read_text_row(args[0])
+		for i in xrange(len(p)):
+			p[i][3] /= scale
+			p[i][4] /= scale
+		write_text_row(p, args[1])
+
 	else:  ERROR("Please provide option name","sxprocess.py",1)	
 
 if __name__ == "__main__":
