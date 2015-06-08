@@ -1158,7 +1158,7 @@ def main():
 				"movedup":False, "eliminated-outliers":False,"applyctf":True,"PWadjustment":"","local":False,"nsoft":nsoft, \
 				"nnxo":nnxo, "icurrentres":icurrentres,"nxinit":nxinit, "nxresolution":nxresolution, "extension":0.0, \
 				"directory":"none"}
-	Tracker["lowpass"] = read_fsc(os.path.join(initdir,"fsc.txt"),icurrentres, myid, main_node)
+	#Tracker["lowpass"] = read_fsc(os.path.join(initdir,"fsc.txt"),icurrentres, myid, main_node)
 	history = [Tracker.copy()]
 	previousoutputdir = initdir
 	#  remove projdata, if it existed, initialize to nonsense
