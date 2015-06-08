@@ -1146,8 +1146,8 @@ def main():
 	# set for the first iteration
 	nxresolution = icurrentres*2 +2
 	assert( nxresolution +cushion <= nnxo )
-	nxresolution = 60
-	nxinit = nxresolution - cushion -1
+	nxinit = 60
+	nxresolution = nxresolution - cushion -1
 	while( nxresolution + cushion > nxinit ): nxinit += 32
 	nxinit = min(nxinit,nnxo)
 	nsoft = options.nsoft
@@ -1556,6 +1556,7 @@ def main():
 
 		if(myid == main_node):
 			print(" New resolution %d   Previous resolution %d"%(icurrentres , Tracker["icurrentres"]))
+			print(" lowpass ",Tracker["lowpass"])
 
 		#if( ( icurrentres > Tracker["icurrentres"] ) or (eliminated_outliers and not Tracker["eliminated-outliers"]) or mainiteration == 1):
 		if( Tracker["lowpass"]  <= 0.4):
@@ -1563,12 +1564,13 @@ def main():
 			Tracker["initialfl"] = Tracker["lowpass"]
 		else:
 			projdata = [[model_blank(1,1)],[model_blank(1,1)]]
+			print(" Changing window size ",nxinit,nxresolution,nnxo)
 			nxinit *= 2
 			if(nxinit > nnxo):  exit()
 			nxresolution = nxinit - cushion -1
 			Tracker["lowpass"] = 0.25
 			Tracker["initialfl"] = Tracker["lowpass"]
-			keepgoing = 1
+		keepgoing = 1
 		"""	
 			if(myid == main_node):
 				if( icurrentres > Tracker["resolution"]):  print("  Resolution improved, full steam ahead!")
