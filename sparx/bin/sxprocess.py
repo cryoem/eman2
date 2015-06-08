@@ -1,4 +1,4 @@
-#!/usr/bin/python2.7
+#!/usr/bin/env python
 
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
