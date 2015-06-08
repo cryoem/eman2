@@ -719,9 +719,8 @@ def metamove(projdata, oldshifts, paramsdict, partids, partstack, outputdir, pro
 
 	#  Run alignment command
 	if(paramsdict["local"]):
-		ERROR("local ali3d not done yet","sxmeridien",1,myid)
-		params = local_ali3d_base_MPI(projdata, get_im(paramsdict["refvol"]), \
-						ali3d_options, paramsdict["shrink"], mpi_comm = MPI_COMM_WORLD, log = log, \
+		params = slocal_ali3d_base_MPI(projdata, get_im(paramsdict["refvol"]), \
+						ali3d_options, mpi_comm = MPI_COMM_WORLD, log = log, \
 		    			chunk = 0.25, \
 		    			saturatecrit = paramsdict["saturatecrit"], pixercutoff =  paramsdict["pixercutoff"])
 	else: params = sali3d_base(projdata, ref_vol, \
@@ -1257,7 +1256,7 @@ def main():
 			#paramsdict["xr"] = "3.0"#"%s"%max(3,int(1.5*Tracker["nx"]/float(old_nx) +0.5))
 			if( nsoft > 0 ):
 				if( float(paramsdict["an"]) == -1.0 ):
-					paramsdict["saturatecrit"] = 0.75					
+					paramsdict["saturatecrit"] = 0.75
 				else:
 					paramsdict["saturatecrit"] = 0.90  # Shake and bake for local
 				paramsdict["maxit"] = 1500
