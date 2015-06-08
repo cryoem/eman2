@@ -286,7 +286,7 @@ def get_pixel_resolution(vol, radi, nnxo, fscoutputdir):
 			nfsc[0][i] = float(i)/nnxo
 	write_text_file( nfsc, os.path.join(fscoutputdir,"fsc.txt") )
 	ns = len(nfsc[1])
-	currentres = ns
+	currentres = -1
 	'''
 	#  This is actual resolution, as computed by 2*f/(1+f)
 	for i in xrange(1,ns-1):
@@ -299,7 +299,7 @@ def get_pixel_resolution(vol, radi, nnxo, fscoutputdir):
 		if ( nfsc[1][i] < 0.5):
 			currentres = i
 			break
-	if(currentres < 0.0):
+	if(currentres < 0):
 		print("  Something wrong with the resolution, cannot continue")
 		mpi_finalize()
 		exit()
@@ -312,7 +312,9 @@ def get_pixel_resolution(vol, radi, nnxo, fscoutputdir):
 			lowpass = nfsc[0][i-1]
 			break
 	"""
-	lowpass, falloff = fit_tanh1(nfsc, 0.01)
+	#lowpass, falloff = fit_tanh1(nfsc, 0.01)
+	lowpass = nfsc[0][currentres]
+	falloff = 0.2
 
 	return  round(lowpass,4), round(falloff,4), currentres
 
@@ -1045,7 +1047,7 @@ def main():
 	inifil = 0.4
 	paramsdict = {	"stack":stack,"delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":angular_neighborhood, \
 					"center":options.center, "maxit":1, "local":False,\
-					"lowpass":inifil, "initialfl":inifil, "falloff":0.1, "radius":radi, \
+					"lowpass":inifil, "initialfl":inifil, "falloff":0.2, "radius":radi, \
 					"icurrentres": nxinit//2, "nxinit":nnxo,"nxresolution":nnxo,\
 					"nsoft":0, "delpreviousmax":True, "saturatecrit":1.0, "pixercutoff":2.0,\
 					"refvol":volinit, "mask3D":options.mask3D  }
@@ -1144,13 +1146,16 @@ def main():
 	# set for the first iteration
 	nxresolution = icurrentres*2 +2
 	assert( nxresolution +cushion <= nnxo )
+	nxresolution = 60
+	nxinit = nxresolution - cushion -1
 	while( nxresolution + cushion > nxinit ): nxinit += 32
 	nxinit = min(nxinit,nnxo)
 	nsoft = options.nsoft
 	falloff = paramsdict["falloff"]
+	lowpass = 0.25
 	paramsdict["initialfl"] = lowpass
 	Tracker = {"resolution":icurrentres/float(nnxo),"lowpass":lowpass, "falloff":falloff, "initialfl":lowpass,  \
-				"movedup":False,"eliminated-outliers":False,"applyctf":True,"PWadjustment":"","local":False,"nsoft":nsoft, \
+				"movedup":False, "eliminated-outliers":False,"applyctf":True,"PWadjustment":"","local":False,"nsoft":nsoft, \
 				"nnxo":nnxo, "icurrentres":icurrentres,"nxinit":nxinit, "nxresolution":nxresolution, "extension":0.0, \
 				"directory":"none"}
 	Tracker["lowpass"] = read_fsc(os.path.join(initdir,"fsc.txt"),icurrentres, myid, main_node)
@@ -1226,8 +1231,9 @@ def main():
 
 		delta = round(degrees(atan(1.0/lastring)), 2)
 		subdict( paramsdict, { "delta":"%f"%delta , "an":angular_neighborhood, "local":Tracker["local"], \
-						"lowpass":Tracker["lowpass"], "resolution":Tracker["resolution"], "icurrentres":Tracker["icurrentres"],
-						"nnxo":Tracker["nnxo"], "nxinit":Tracker["nxinit"], "nxresolution":Tracker["nxresolution"],
+						"lowpass":Tracker["lowpass"], "initialfl":Tracker["initialfl"], "resolution":Tracker["resolution"], \
+						"icurrentres":Tracker["icurrentres"], \
+						"nnxo":Tracker["nnxo"], "nxinit":Tracker["nxinit"], "nxresolution":Tracker["nxresolution"], \
 						"pixercutoff":get_pixercutoff(radi*float(Tracker["nxinit"])/float(nnxo), delta, 0.5), \
 						"radius":lastring,"delpreviousmax":True } )
 		#  REFINEMENT
@@ -1551,7 +1557,19 @@ def main():
 		if(myid == main_node):
 			print(" New resolution %d   Previous resolution %d"%(icurrentres , Tracker["icurrentres"]))
 
-		if( ( icurrentres > Tracker["icurrentres"] ) or (eliminated_outliers and not Tracker["eliminated-outliers"]) or mainiteration == 1):
+		#if( ( icurrentres > Tracker["icurrentres"] ) or (eliminated_outliers and not Tracker["eliminated-outliers"]) or mainiteration == 1):
+		if( Tracker["lowpass"]  <= 0.4):
+			Tracker["lowpass"] += 0.05
+			Tracker["initialfl"] = Tracker["lowpass"]
+		else:
+			projdata = [[model_blank(1,1)],[model_blank(1,1)]]
+			nxinit *= 2
+			if(nxinit > nnxo):  exit()
+			nxresolution = nxinit - cushion -1
+			Tracker["lowpass"] = 0.25
+			Tracker["initialfl"] = Tracker["lowpass"]
+			keepgoing = 1
+		"""	
 			if(myid == main_node):
 				if( icurrentres > Tracker["resolution"]):  print("  Resolution improved, full steam ahead!")
 				else:  print("  While the resolution did not improve, we eliminated outliers so we follow the _resolution_improved_ path.")
@@ -1643,12 +1661,12 @@ def main():
 				if( bestoutputdir != mainoutputdir ):
 					#  This is the key, we just reset the main to previous, so it will be eventually used as a starting in the next iteration
 					mainoutputdir = bestoutputdir
-					"""
+					'''
 					#  Set data from the main previous best to the current.
 					for procid in xrange(2):
 						partids[procid]   = os.path.join(bestoutputdir,"chunk%01d.txt"%procid)
 						partstack[procid] = os.path.join(bestoutputdir,"params-chunk%01d.txt"%procid)
-				"""
+					'''
 				if(myid == main_node):
 					lowpass, falloff, currentres = read_text_row( os.path.join(bestoutputdir,"current_resolution.txt") )[0]
 				currentres = bcast_number_to_all(currentres, source_node = main_node)
@@ -1740,7 +1758,7 @@ def main():
 			Tracker["eliminated-outliers"] = eliminated_outliers
 			bestoutputdir = mainoutputdir
 			keepgoing = 1
-			"""
+
 			if( Tracker["movedup"] ):
 				if(myid == main_node):  print("The resolution did not improve. This is look ahead move.  Let's try to relax slightly and hope for the best")
 				Tracker["extension"]    = min(stepforward,0.45-currentres)
@@ -1825,11 +1843,10 @@ def main():
 							#  We have to decrease angular error as these are "continuous" searches
 							paramsdict["pixercutoff"] = get_pixercutoff(radi*shrink, degrees(atan(1.0/float(radi*shrink)))/4.0, 0.1)
 							keepgoing = 1
-				"""	
+				"""
 #			else:
 #				if(myid == main_node):  print("The resolution did not improve.")
 #				keepgoing = 0
-
 
 		if( keepgoing == 1 ):
 			nsoft = 0
