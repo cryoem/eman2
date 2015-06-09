@@ -184,8 +184,9 @@ def main():
 	
 def buildtree(projs,par,nodes,incomplete,verbose):
 	simxorder={0:"tx",1:"ty",2:"alpha",3:"mirror",4:"scale"}
-	nodepath= os.path.dirname(nodes)
+	nodepath= os.path.abspath(os.path.dirname(nodes))
 	tmpsim='/'.join([nodepath,"tmp_simmix.hdf"])
+	tmplist='/'.join([nodepath,"tmplist.lst"])
 	par="--parallel "+par
 	### Building the similarity matrix for all projections
 	#cmd="e2simmx.py {pj} {pj} {smx} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali -v {vb:d} --force {parallel}".format(pj=projs,smx=tmpsim, parallel=par, vb=verbose-1)
@@ -212,7 +213,7 @@ def buildtree(projs,par,nodes,incomplete,verbose):
 	pms=[EMNumPy.em2numpy(i) for i in epms]
 	ai =range(dst[0].size)		# index of each node in "nodes.hdf"
 	big=(dst.max()+1)
-	tmplist="tmplist.lst"
+	
 
 	dst+=np.identity(dst[0].size)*big
 	om=0
@@ -231,8 +232,9 @@ def buildtree(projs,par,nodes,incomplete,verbose):
 			## FIXME I do not know why I need to write twice here, but e2simmx reads one less line if I don't
 			for r,a in enumerate(ai):
 				rr.write(r,a,nodes)
-				rr.write(r,a,nodes)
-			
+				#rr.write(r,a,nodes)
+			rr=None
+			#print len(ai)
 			if len(ai)<10:
 				par=""
 			cmd="e2simmx.py {lst} {lst} {sim} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1  --ralign=refine --raligncmp=frc:maxres=10.0 --cmp=frc:maxres=10.0 --saveali -v {vb:d} --force {parallel}".format(lst=tmplist, sim=tmpsim, parallel=par, vb=verbose-1)
@@ -240,6 +242,7 @@ def buildtree(projs,par,nodes,incomplete,verbose):
 			#launch_childprocess("e2simmx.py {lst} {lst} {sim} --align=rotate_translate_flip --aligncmp=sqeuclidean:normto=1 --cmp=sqeuclidean --saveali -v {vb:d} --force {parallel}".format(lst=tmplist, sim=tmpsim, parallel=par, vb=verbose-1))
 			simmx=EMData(tmpsim,0)
 			dst=EMNumPy.em2numpy(simmx)
+			#print dst
 			dst+=np.identity(dst[0].size)*big
 			epms=[EMData(tmpsim,i+1) for i in range(5)]
 			#print 'size',epms[0]['nx'],epms[0]['ny']
@@ -290,7 +293,6 @@ def buildtree(projs,par,nodes,incomplete,verbose):
 	
 	os.remove(tmpsim)
 	os.remove(tmplist)
-	
 	return 	
 
 ### Do ref-target comparison
