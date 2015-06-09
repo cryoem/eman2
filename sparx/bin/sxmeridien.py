@@ -1572,7 +1572,6 @@ def main():
 			Tracker["applyctf"] = False
 			Tracker["nsoft"] = 0
 			Tracker["local"] = True
-			lowpass = 
 			Tracker["nxinit"]              = nnxo
 			Tracker["nxresolution"]        = nnxo - cushion -1
 
@@ -1580,6 +1579,7 @@ def main():
 			nxinit = Tracker["nxinit"]
 			Tracker["lowpass"] = 0.19167+ (mainteration-8)*0.00417
 			Tracker["initialfl"] = Tracker["lowpass"]
+			lowpass = Tracker["lowpass"] 
 
 		#if( ( icurrentres > Tracker["icurrentres"] ) or (eliminated_outliers and not Tracker["eliminated-outliers"]) or mainiteration == 1):
 		if( Tracker["lowpass"]  <= 0.4):
