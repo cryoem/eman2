@@ -1581,7 +1581,7 @@ def main():
 			Tracker["initialfl"] = Tracker["lowpass"]
 			lowpass = Tracker["lowpass"]
 			Tracker["PWadjustment"] = ali3d_options.pwreference
-
+		"""
 		#if( ( icurrentres > Tracker["icurrentres"] ) or (eliminated_outliers and not Tracker["eliminated-outliers"]) or mainiteration == 1):
 		if( Tracker["lowpass"]  <= 0.4):
 			Tracker["lowpass"] += 0.05
@@ -1597,6 +1597,7 @@ def main():
 			Tracker["nxinit"] = nxinit
 			Tracker["lowpass"] = 0.25
 			Tracker["initialfl"] = Tracker["lowpass"]
+		"""
 		keepgoing = 1
 		"""	
 			if(myid == main_node):
