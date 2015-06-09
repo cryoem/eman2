@@ -406,18 +406,30 @@ def preciseShrink( options, stack2processSample, stack2processEd, targetApix, ta
 	
 	print "Right before, apix is", EMData(stack2processEd,0,True)['apix_x']
 	print "(e2spt_refprep.py) The final clip box is", targetBox
+
 	cmd = 'e2proc3d.py ' + str(stack2processEd) + ' ' + str(stack2processEd) + ' --process=xform.scale:scale=' + str(scalefactor) 
 	
 	'''
 	Only need to add clipping to scaling if the box wasn't clipped before. Boxes need to be clipped first when you're "scaling up the data" (making it bigger) rather than shrinking it
 	'''
-	if meanshrinkfactor_int > 1:
-		cmd+=+ ':clip=' + str(targetBox)
+	if int(meanshrinkfactor_int) > 1:
+		cmd += ':clip=' + str(targetBox) + ' --apix=' + str(targetApix)
+		cmd += ' && e2fixheaderparam.py --input=' + str(stack2processEd) + ' --stem apix --valtype float --stemval ' + str(targetApix)
+		print "meanshrinkfactor_int > 1, it is", meanshrinkfactor_int
+		print "target apix is", targetApix
+		print "cmd is", cmd
+	elif int(meanshrinkfactor_int) < 1:
+		cmd += ' && e2proc3d.py ' + str(stack2processEd) + ' ' + str(stack2processEd) + ' --clip=' + str(targetBox) + ' --apix=' + str(targetApix)
+		cmd += ' && e2fixheaderparam.py --input=' + str(stack2processEd) + ' --stem apix --valtype float --stemval ' + str(targetApix)
+		print "meanshrinkfactor_int < 1, it is", meanshrinkfactor_int
+		print "target apix is", targetApix
+		print "cmd is", cmd
 	
 	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	text=p.communicate()	
 	p.stdout.close()
 	
+		
 	print "Right after, apix is", EMData(stack2processEd,0,True)['apix_x']
 
 	#print "(e2spt_refprep.py) Feedback from scale and clip is", text
