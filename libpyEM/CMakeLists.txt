@@ -58,6 +58,7 @@ ADD_PYSTE_LIB_WITH_SRC(pyTypeConverter2 typeconverter.cpp)
 ADD_PYSTE_LIB(pyPolarData2)
 ADD_PYSTE_LIB(pyAnalyzer2)
 ADD_PYSTE_LIB(pyPDBReader2)
+ADD_PYSTE_LIB(pyTomoSeg2)
 
 IF(ENABLE_OPENGL)
     ADD_PYSTE_LIB(pyGLUtils2) 

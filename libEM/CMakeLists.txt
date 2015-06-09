@@ -86,6 +86,7 @@ SET(LIB_EM_SOURCE byteorder.cpp
     gorgon/volume_data.cpp
     gorgon/volume.cpp
     gorgon/skeletonizer.cpp
+    tomoseg.cpp
     )
 
 SET(LIB_GLEM_SOURCE 
