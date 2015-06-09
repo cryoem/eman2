@@ -1565,7 +1565,7 @@ def main():
 			print(" New resolution %d   Previous resolution %d"%(icurrentres , Tracker["icurrentres"]))
 			print(" lowpass ",Tracker["lowpass"],nxinit,nxresolution)
 
-		if(mainiteration >= 8):
+		if(mainiteration >= 10):
 			#  Finish up by running continuous at full size
 			#  for continuous data cannot be ctf applied.
 			projdata = [[model_blank(1,1)],[model_blank(1,1)]]
@@ -1577,9 +1577,10 @@ def main():
 
 			nxresolution = Tracker["nxresolution"]
 			nxinit = Tracker["nxinit"]
-			Tracker["lowpass"] = 0.19167+ (mainteration-8)*0.00417
+			Tracker["lowpass"] = 0.19167+ (mainiteration-10)*0.00417
 			Tracker["initialfl"] = Tracker["lowpass"]
-			lowpass = Tracker["lowpass"] 
+			lowpass = Tracker["lowpass"]
+			Tracker["PWadjustment"] = ali3d_options.pwreference
 
 		#if( ( icurrentres > Tracker["icurrentres"] ) or (eliminated_outliers and not Tracker["eliminated-outliers"]) or mainiteration == 1):
 		if( Tracker["lowpass"]  <= 0.4):

@@ -9430,7 +9430,7 @@ def slocal_ali3d_base_MPI(stack, templatevol, ali3d_options, \
 
 	from time import time	
 	if myid == main_node:
-		log.add("Dimensions used (nx, onx, last_ring, shrinkage)  %5d    %5d     %5d     %6.3f\n"%(nx, onx, last_ring, shrinkage))
+		log.add("Dimensions used (nx, last_ring)  %5d    %5d\n"%(nx, last_ring))
 		start_time = time()
 
 
