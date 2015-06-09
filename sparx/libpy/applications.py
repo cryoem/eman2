@@ -9309,32 +9309,24 @@ def slocal_ali3d_base_MPI(stack, templatevol, ali3d_options, \
 		else:                                   dataim = stack[list_of_particles[0]]
 		nx      = dataim.get_xsize()
 		if CTF :
-			ctf_applied = dataim[0].get_attr_default('ctf_applied', 0)
+			ctf_applied = dataim.get_attr_default('ctf_applied', 0)
 			if ctf_applied >0 :  ERROR("Projection data cannot be CTF-applied","local_ali3d_base",1,myid)
 	else:
 		nx = 0
-		onx = 0
+
 	nx  = bcast_number_to_all(nx, source_node = main_node)
 
-	if last_ring < 0:	last_ring = int(onx/2) - 2
-	mask2D  = model_circle(last_ring, onx, onx)
-	if(shrinkage < 1.0):
-		last_ring  = int(last_ring*shrinkage)
-		ali3d_options.ou = last_ring
-
+	if last_ring < 0:	last_ring = int(nx/2) - 2
+	mask2D  = model_circle(last_ring, nx, nx)
 
 	dataim = [None]*nima
 	for im in xrange(nima):
 		if( type(stack) is types.StringType ):  dataim[im] = get_im(stack, list_of_particles[im])
 		else:                                   dataim[im] = stack[list_of_particles[im]]
 		dataim[im].set_attr('ID', list_of_particles[im])
-		ctf_applied = dataim[im].get_attr_default('ctf_applied', 0)
 		if CTF :
 			st = Util.infomask(dataim[im], mask2D, False)
 			dataim[im] -= st[0]
-			dataim[im].set_attr('ctf', ctf_params)
-
-	mask2D  = model_circle(last_ring, nx, nx)
 
 
 	if chunk <= 0.0:  chunk = 1.0
