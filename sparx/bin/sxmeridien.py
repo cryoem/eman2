@@ -1565,6 +1565,22 @@ def main():
 			print(" New resolution %d   Previous resolution %d"%(icurrentres , Tracker["icurrentres"]))
 			print(" lowpass ",Tracker["lowpass"],nxinit,nxresolution)
 
+		if(mainiteration >= 8):
+			#  Finish up by running continuous at full size
+			#  for continuous data cannot be ctf applied.
+			projdata = [[model_blank(1,1)],[model_blank(1,1)]]
+			Tracker["applyctf"] = False
+			Tracker["nsoft"] = 0
+			Tracker["local"] = True
+			lowpass = 
+			Tracker["nxinit"]              = nnxo
+			Tracker["nxresolution"]        = nnxo - cushion -1
+
+			nxresolution = Tracker["nxresolution"]
+			nxinit = Tracker["nxinit"]
+			Tracker["lowpass"] = 0.19167+ (mainteration-8)*0.00417
+			Tracker["initialfl"] = Tracker["lowpass"]
+
 		#if( ( icurrentres > Tracker["icurrentres"] ) or (eliminated_outliers and not Tracker["eliminated-outliers"]) or mainiteration == 1):
 		if( Tracker["lowpass"]  <= 0.4):
 			Tracker["lowpass"] += 0.05
