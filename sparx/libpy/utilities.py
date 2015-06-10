@@ -1857,6 +1857,12 @@ def write_text_file(data, file_name):
 	         First list will be written as a first column, second as a second, and so on...
 		 If only one list is given, the file will contain one column
 	"""
+	
+	if data == []:
+		outf = open(file_name, "w")
+		outf.close()
+		return
+	
 	import types
 	outf = open(file_name, "w")
 	if (type(data[0]) == types.ListType):

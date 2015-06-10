@@ -19,7 +19,11 @@ MAXIMUM_NO_OF_VIPER_RUNS_ANALYZED_TOGETHER = 10
 # NORMALIZED_AREA_THRESHOLD_FOR_OUTLIER_DETECTION = 0.2
 PERCENT_THRESHOLD_X = .8
 PERCENT_THRESHOLD_Y = .2
-
+ANGLE_ERROR_THRESHOLD = 24
+TRIPLET_WITH_ANGLE_ERROR_LESS_THAN_THRESHOLD_HAS_BEEN_FOUND = -100
+MUST_END_PROGRAM_THIS_ITERATION = -101
+EMPTY_VIPER_RUN_INDICES_LIST = -102
+DUMMY_INDEX_USED_AS_BUFFER = -103
 
 def calculate_list_of_independent_viper_run_indices_used_for_outlier_elimination(no_of_viper_runs_analyzed_together, 
 	no_of_viper_runs_analyzed_together_from_user_options, masterdir, rviper_iter, criterion_name):
@@ -55,25 +59,29 @@ def calculate_list_of_independent_viper_run_indices_used_for_outlier_elimination
 
 		mainoutputdir = masterdir + "/main%03d/" % (rviper_iter)
 
-		if criterion_name == "80th percentile":
-			pass_criterion = criterion_measure[index_of_sorted_criterion_measure_list[0]] < PERCENT_THRESHOLD_Y
-		elif criterion_name == "fastest increase in the last quartile":
-			pass_criterion = criterion_measure[index_of_sorted_criterion_measure_list[-1]] > PERCENT_THRESHOLD_Y
+		if criterion_measure[index_of_sorted_criterion_measure_list[0]] == TRIPLET_WITH_ANGLE_ERROR_LESS_THAN_THRESHOLD_HAS_BEEN_FOUND:
+			list_of_viper_run_indices_for_the_current_rrr_viper_iteration.insert(0,MUST_END_PROGRAM_THIS_ITERATION)
 		else:
-			pass_criterion = False
-
-		if not pass_criterion:
-			list_of_viper_run_indices_for_the_current_rrr_viper_iteration = []
+			list_of_viper_run_indices_for_the_current_rrr_viper_iteration.insert(0,DUMMY_INDEX_USED_AS_BUFFER)
+			if criterion_name == "80th percentile":
+				pass_criterion = criterion_measure[index_of_sorted_criterion_measure_list[0]] < PERCENT_THRESHOLD_Y
+			elif criterion_name == "fastest increase in the last quartile":
+				pass_criterion = criterion_measure[index_of_sorted_criterion_measure_list[-1]] > PERCENT_THRESHOLD_Y
+			else:
+				pass_criterion = False
+	
+			if not pass_criterion:
+				list_of_viper_run_indices_for_the_current_rrr_viper_iteration = [EMPTY_VIPER_RUN_INDICES_LIST]
 
 		import json; f = open(mainoutputdir + "list_of_viper_runs_included_in_outlier_elimination.json", 'w')
-		json.dump(list_of_viper_run_indices_for_the_current_rrr_viper_iteration,f); f.close()
+		json.dump(list_of_viper_run_indices_for_the_current_rrr_viper_iteration[1:],f); f.close()
 
 		mpi_barrier(MPI_COMM_WORLD)
 		return list_of_viper_run_indices_for_the_current_rrr_viper_iteration
 
 	mpi_barrier(MPI_COMM_WORLD)
 
-	return []
+	return [EMPTY_VIPER_RUN_INDICES_LIST]
 
 
 def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_together, 
@@ -104,7 +112,8 @@ def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_to
 
 	error_status = 0
 	if (myid == main_node):
-		if len(list_of_independent_viper_run_indices_used_for_outlier_elimination) == 0:
+		# if len(list_of_independent_viper_run_indices_used_for_outlier_elimination) == 0:
+		if list_of_independent_viper_run_indices_used_for_outlier_elimination[0] == EMPTY_VIPER_RUN_INDICES_LIST:
 			if no_of_viper_runs_analyzed_together > MAXIMUM_NO_OF_VIPER_RUNS_ANALYZED_TOGETHER:
 				error_status = 1
 				cmd = "{} {}".format("mkdir ", masterdir + "MAXIMUM_NO_OF_VIPER_RUNS_ANALYZED_TOGETHER__Reached"); cmdexecute(cmd)
@@ -116,14 +125,18 @@ def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_to
 
 		else:
 			# Outliers are eliminated based on the viper runs contained in "list_of_independent_viper_run_indices_used_for_outlier_elimination"
-			found_outliers(list_of_independent_viper_run_indices_used_for_outlier_elimination, outlier_percentile, 
-				rviper_iter, masterdir, bdb_stack_location, outlier_index_threshold_method)
-
-		no_of_viper_runs_analyzed_together_must_be_incremented = mpi_bcast(no_of_viper_runs_analyzed_together_must_be_incremented, 1, MPI_INT, 0, MPI_COMM_WORLD)[0]
-	else:
-		no_of_viper_runs_analyzed_together_must_be_incremented = mpi_bcast(no_of_viper_runs_analyzed_together_must_be_incremented, 1, MPI_INT, 0, MPI_COMM_WORLD)[0]
+			if list_of_independent_viper_run_indices_used_for_outlier_elimination[0] == MUST_END_PROGRAM_THIS_ITERATION:
+				no_of_viper_runs_analyzed_together_must_be_incremented = MUST_END_PROGRAM_THIS_ITERATION
+				found_outliers(list_of_independent_viper_run_indices_used_for_outlier_elimination[1:], outlier_percentile, 
+					rviper_iter, masterdir, bdb_stack_location, "use all images")
+			else:
+				# still need to eliminate DUMMY_INDEX_USED_AS_BUFFER
+				found_outliers(list_of_independent_viper_run_indices_used_for_outlier_elimination[1:], outlier_percentile, 
+					rviper_iter, masterdir, bdb_stack_location, outlier_index_threshold_method)
 
 	if_error_all_processes_quit_program(error_status)
+
+	no_of_viper_runs_analyzed_together_must_be_incremented = mpi_bcast(no_of_viper_runs_analyzed_together_must_be_incremented, 1, MPI_INT, 0, MPI_COMM_WORLD)[0]
 
 	return no_of_viper_runs_analyzed_together_must_be_incremented
 
@@ -272,6 +285,9 @@ def measure_for_outlier_criterion(criterion_name, masterdir, rviper_iter, list_o
 	avg_diff_per_image.sort()
 	x1 = len(avg_diff_per_image)
 	y1 = avg_diff_per_image[-1]
+	
+	if y1 <= ANGLE_ERROR_THRESHOLD:
+		return TRIPLET_WITH_ANGLE_ERROR_LESS_THAN_THRESHOLD_HAS_BEEN_FOUND
 
 	if criterion_name == "80th percentile":
 		return avg_diff_per_image[int(x1*PERCENT_THRESHOLD_X)]/y1
@@ -330,11 +346,16 @@ def found_outliers(list_of_projection_indices, outlier_percentile, rviper_iter, 
 	elif outlier_index_threshold_method == "angle_measure":
 		error_values = [i[0] for i in error_values_and_indices]
 		outlier_index_threshold = min(range(len(error_values)), key=lambda i: abs(error_values[i]-outlier_percentile))
+	elif outlier_index_threshold_method == "use all images":
+		outlier_index_threshold = len(error_values_and_indices)
+
+
 	
-	index_keep_images = [i[1] for i in error_values_and_indices[:(outlier_index_threshold-1)]]
+	index_keep_images = [i[1] for i in error_values_and_indices[:outlier_index_threshold]]
 	index_outliers = [i[1] for i in error_values_and_indices[outlier_index_threshold:]]
 
-	print "error_values_and_indices: %f"%error_values_and_indices
+	# print "error_values_and_indices: %f"%error_values_and_indices
+	print "index_outliers: ", index_outliers
 
 	import copy
 	reversed_sorted_index_outliers = copy.deepcopy(index_outliers)
@@ -353,8 +374,9 @@ def found_outliers(list_of_projection_indices, outlier_percentile, rviper_iter, 
 	#if len(index_outliers) < 3:
 		#return False
 
-	cmd = "{} {} {} {}".format("e2bdb.py ", bdb_stack_location + "_%03d"%(rviper_iter - 1), "--makevstack=" + bdb_stack_location + "_outliers_%03d"%(rviper_iter), "--list=" + mainoutputdir  +  "this_iteration_index_outliers.txt")
-	cmdexecute(cmd)
+	if len(index_outliers) > 0:
+		cmd = "{} {} {} {}".format("e2bdb.py ", bdb_stack_location + "_%03d"%(rviper_iter - 1), "--makevstack=" + bdb_stack_location + "_outliers_%03d"%(rviper_iter), "--list=" + mainoutputdir  +  "this_iteration_index_outliers.txt")
+		cmdexecute(cmd)
 	cmd = "{} {} {} {}".format("e2bdb.py ", bdb_stack_location + "_%03d"%(rviper_iter - 1), "--makevstack=" + bdb_stack_location + "_%03d"%(rviper_iter), "--list=" + mainoutputdir +  "this_iteration_index_keep_images.txt")
 	cmdexecute(cmd)
 	dat = EMData.read_images(bdb_stack_location + "_%03d"%(rviper_iter - 1))
@@ -556,7 +578,7 @@ def main():
 	parser.add_option("--maxit2",    type="float",  default= 50,                help="maximum number of iterations performed for the finishing up part (set to 50) ")
 	parser.add_option("--L2threshold", type="float",  default= 0.03,            help="Stopping criterion of GA given as a maximum relative dispersion of L2 norms (set to 0.03) ")
 	parser.add_option("--doga",     type="float",  default= 0.1,                help="do GA when fraction of orientation changes less than 1.0 degrees is at least doga (default=0.1)")
-	parser.add_option("--n_shc_runs",    type="int",    default= 24,            help="number of quasi-independent runs (shc) (default=3)")
+	parser.add_option("--n_shc_runs",    type="int",    default= 3,            help="number of quasi-independent runs (shc) (default=3)")
 	parser.add_option("--n_rv_runs",       type= "int",   default= 30,          help="number of r_viper runs")
 	parser.add_option("--n_v_runs",       type= "int",   default= 3,            help="number of viper runs for each r_viper cycle")
 	parser.add_option("--outlier_percentile",     type="float",    default= 95, help="percentile above which outliers are removed every iteration")
@@ -671,7 +693,10 @@ def main():
 					cmd = "{} {} {}".format("e2bdb.py", org_stack_location,"--makevstack=" + bdb_stack_location + "_000")
 					cmdexecute(cmd)
 
-					os_return_value = os.system("sxheader.py  " + bdb_stack_location + "_000 --print  --params=original_image_index")
+					try:
+						os_return_value = os.system("sxheader.py  " + bdb_stack_location + "_000 --print  --params=original_image_index")
+					except:
+						pass
 					if os_return_value != 0:
 						cmd = "{} {}".format("sxheader.py  ", bdb_stack_location + "_000 --consecutive  --params=original_image_index")
 						cmdexecute(cmd)
@@ -682,7 +707,10 @@ def main():
 					cmd = "{} {} {}".format("sxcpy.py  ", args[0], bdb_stack_location + "_000")
 					cmdexecute(cmd)
 
-					os_return_value = os.system("sxheader.py  " + bdb_stack_location + "_000 --print  --params=original_image_index")
+					try:
+						os_return_value = os.system("sxheader.py  " + bdb_stack_location + "_000 --print  --params=original_image_index")
+					except:
+						pass
 					if os_return_value != 0:
 						cmd = "{} {}".format("sxheader.py  ", bdb_stack_location + "_000 --consecutive  --params=original_image_index")
 						cmdexecute(cmd)
@@ -789,7 +817,6 @@ def main():
 				independent_run_dir = mpi_bcast(independent_run_dir,dir_len,MPI_CHAR,main_node,MPI_COMM_WORLD)
 				independent_run_dir = string.join(independent_run_dir,"")
 
-			
 			if this_run_is_NOT_complete:
 				mpi_barrier(MPI_COMM_WORLD)
 
@@ -826,14 +853,22 @@ def main():
 				# end of: if this_run_is_NOT_complete:
 
 			if runs_iter >= (no_of_viper_runs_analyzed_together_from_user_options - 1):
-				no_of_viper_runs_analyzed_together += identify_outliers(myid, main_node, rviper_iter,
+				increment_for_current_iteration = identify_outliers(myid, main_node, rviper_iter,
 				no_of_viper_runs_analyzed_together, no_of_viper_runs_analyzed_together_from_user_options, masterdir,
 				bdb_stack_location, outlier_percentile, criterion_name, outlier_index_threshold_method)
+				
+				if increment_for_current_iteration == MUST_END_PROGRAM_THIS_ITERATION:
+					break
+				
+				no_of_viper_runs_analyzed_together += increment_for_current_iteration
 
 		# end of independent viper loop
 
 		calculate_volumes_after_rotation_and_save_them(options, rviper_iter, masterdir, bdb_stack_location, myid,
 		mpi_size, no_of_viper_runs_analyzed_together, no_of_viper_runs_analyzed_together_from_user_options)
+		
+		if increment_for_current_iteration == MUST_END_PROGRAM_THIS_ITERATION:
+			break
 
 	# end of R viper loop
 
