@@ -693,13 +693,13 @@ def main():
 					cmd = "{} {} {}".format("e2bdb.py", org_stack_location,"--makevstack=" + bdb_stack_location + "_000")
 					cmdexecute(cmd)
 
+					from applications import header
 					try:
-						os_return_value = os.system("sxheader.py  " + bdb_stack_location + "_000 --print  --params=original_image_index")
-					except:
-						pass
-					if os_return_value != 0:
-						cmd = "{} {}".format("sxheader.py  ", bdb_stack_location + "_000 --consecutive  --params=original_image_index")
-						cmdexecute(cmd)
+						header(bdb_stack_location + "_000", params='original_image_index', fprint=True)
+						print "Images were already indexed!"
+					except KeyError:
+						print "Indexing images"
+						header(bdb_stack_location + "_000", params='original_image_index', consecutive=True)
 			else:
 				filename = os.path.basename(args[0])
 				bdb_stack_location = "bdb:" + masterdir + os.path.splitext(filename)[0]
@@ -707,13 +707,14 @@ def main():
 					cmd = "{} {} {}".format("sxcpy.py  ", args[0], bdb_stack_location + "_000")
 					cmdexecute(cmd)
 
+					from applications import header
 					try:
-						os_return_value = os.system("sxheader.py  " + bdb_stack_location + "_000 --print  --params=original_image_index")
-					except:
-						pass
-					if os_return_value != 0:
-						cmd = "{} {}".format("sxheader.py  ", bdb_stack_location + "_000 --consecutive  --params=original_image_index")
-						cmdexecute(cmd)
+						header(bdb_stack_location + "_000", params='original_image_index', fprint=True)
+						print "Images were already indexed!"
+					except KeyError:
+						print "Indexing images"
+						header(bdb_stack_location + "_000", params='original_image_index', consecutive=True)
+
 				else:
 					ERROR('Conflicting information: EMAN2DB exists, but provided *.hdf file', "sxrviper", 1)
 					error_status = 1
