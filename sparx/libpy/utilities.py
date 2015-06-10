@@ -4477,7 +4477,7 @@ def if_error_all_processes_quit_program(error_status):
 		mpi_finalize()
 		sys.exit()
 
-def store_value_of_simple_vars_in_json_file(local_vars, exclude_list_of_vars = [], write_or_append = "w", 
+def store_value_of_simple_vars_in_json_file(masterdir, local_vars, exclude_list_of_vars = [], write_or_append = "w", 
 	vars_that_will_show_only_size = []):
 	
 	import json, types, collections
@@ -4506,7 +4506,7 @@ def store_value_of_simple_vars_in_json_file(local_vars, exclude_list_of_vars = [
 
 	ordered_my_vars = collections.OrderedDict(sorted(my_vars.items()))
 	
-	with open('program_state.json', write_or_append) as fp:
+	with open(masterdir + 'program_state.json', write_or_append) as fp:
 		json.dump(ordered_my_vars, fp, indent = 2)
 	fp.close()
 
