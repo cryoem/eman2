@@ -215,9 +215,10 @@ def main():
 				p.stdout.close()
 			
 			print "\n\nWill call ref match\n\n"
+			print "before refmatch, size is", EMData(stack2processEd,0)['nx']
 			refmatch(options, stack2processEd, stack2processSample)
 			print "after refmatch, size is", EMData(stack2processEd,0)['nx']
-			print "becasue targetbox is", targetBox
+			print "because targetbox is", targetBox
 			
 			refpostprocessing(options.stack2process, stack2processEd, options )
 		
