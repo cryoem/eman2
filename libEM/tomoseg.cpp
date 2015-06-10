@@ -30,7 +30,7 @@
 using namespace EMAN;
 
 float DistToLine(int x0,int y0,int x1,int y1,int x2,int y2){
-	return abs((x2-x1)*(y1-y0)-(x1-x0)*(y2-y1))/sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
+	return abs((x2-x1)*(y1-y0)-(x1-x0)*(y2-y1))/sqrt((float)((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1)));
 }
 
 TomoObject::TomoObject(vector<Vec3i> allpt, float md, int slice){
