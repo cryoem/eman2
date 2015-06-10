@@ -2940,7 +2940,8 @@ def get_results(etc,tids,verbose,nptcls,refmethod=''):
 		
 		tidsleft=[j for i,j in enumerate(tidsleft) if proglist[i]!=100]		# remove any completed tasks from the list we ask about
 		if verbose:
-			print "  %d tasks, %d complete, %d waiting to start        \r"%(len(tids),ncomplete,nwait)
+			# removed nwait here. It was giving an incorrect perception, since the tasks are apparently not updating progress as they should
+			print "  %d tasks, %d complete        \r"%(len(tids),ncomplete)
 			sys.stdout.flush()
 	
 		if len(tidsleft)==0: break
