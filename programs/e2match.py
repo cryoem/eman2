@@ -419,7 +419,7 @@ def preciseShrink( options, stack2processSample, stack2processEd, targetApix, ta
 		print "target apix is", targetApix
 		print "cmd is", cmd
 	elif int(meanshrinkfactor_int) < 1:
-		cmd += ' && e2proc3d.py ' + str(stack2processEd) + ' ' + str(stack2processEd) + ' --clip=' + str(targetBox) + ' --apix=' + str(targetApix)
+		cmd += ' && e2proc3d.py ' + str(stack2processEd) + ' ' + str(stack2processEd) + ' --clip=' + str(targetBox)
 		cmd += ' && e2fixheaderparam.py --input=' + str(stack2processEd) + ' --stem apix --valtype float --stemval ' + str(targetApix)
 		print "meanshrinkfactor_int < 1, it is", meanshrinkfactor_int
 		print "target apix is", targetApix
