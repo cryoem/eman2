@@ -216,6 +216,7 @@ def main():
 			
 			print "\n\nWill call ref match\n\n"
 			refmatch(options, stack2processEd, stack2processSample)
+			print "after refmatch, size is", EMData(stack2processEd,0)['nx']
 			
 			refpostprocessing(options.stack2process, stack2processEd, options )
 		
@@ -272,8 +273,8 @@ def main():
 		ny = hdr['ny']
 		nz = hdr['nz']
 		
-		cmd2 = 'e2fixheaderparam.py --input=' + stack2processEd + ' --params=MRC.mx:' + str(nx) + ',MRC.my:' + str(ny) + ',MRC.mz:' + str(nz) + ',MRC.nx:' + str(nx) + ',MRC.ny:' + str(ny) + ',MRC.nz:' + str(nz)
-		cmd2 += ',MRC.xlen:' + str(nx) + ',MRC.ylen:' + str(ny) + ',MRC.zlen:' + str(nz) + ',MRC.nxstart:0,MRC.nystart:0,MRC.nzstart:0'	
+		cmd2 = 'e2fixheaderparam.py --input=' + stack2processEd + ' --params=MRC.mx:' + str(targetBox) + ',MRC.my:' + str(targetBox) + ',MRC.mz:' + str(targetBox) + ',MRC.nx:' + str(targetBox) + ',MRC.ny:' + str(targetBox) + ',MRC.nz:' + str(targetBox)
+		cmd2 += ',MRC.xlen:' + str(targetBox) + ',MRC.ylen:' + str(targetBox) + ',MRC.zlen:' + str(targetBox) + ',MRC.nxstart:0,MRC.nystart:0,MRC.nzstart:0'	
 		print "The second command to fix the header is", cmd2
 		
 		p = subprocess.Popen( cmd2, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
