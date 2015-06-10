@@ -9399,6 +9399,8 @@ def slocal_ali3d_base_MPI(stack, templatevol, ali3d_options, \
 				vol = model_blank(nx, nx, nx)
 		bcast_EMData_to_all(vol, myid, main_node)
 		del templatevol
+		#  Do the 3D
+		vol = do_volume(dataim, ali3d_options, 0, mpi_comm)
 	else:
 		vol = None
 
@@ -9475,7 +9477,7 @@ def slocal_ali3d_base_MPI(stack, templatevol, ali3d_options, \
 						log.add(msg)
 						log.add("Time to center = %d\n"%(time()-start_time))
 						start_time = time()
-				# compute updated 3D before each chunk
+					# compute updated 3D before each chunk
 					# resolution
 				if debug:
 					finfo.write("  begin reconstruction = "+str(image_start))
