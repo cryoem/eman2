@@ -201,8 +201,9 @@ def main():
 		'''
 		If options.apix is supplied, first change the apix of stack2match to that; then make stack2process match it
 		'''
-		targetApix = stack2processSample['apix_x']
-		targetBox = stack2processSample['nx']
+		stack2matchhdr=EMData(options.stack2match,0)
+		targetApix = stack2matchhdr['apix_x']
+		targetBox = stack2matchhdr['nx']
 		
 		if options.stack2match:
 			print "\n\n\n(e2spt_refprep.py) Options stack2match is", options.stack2match
