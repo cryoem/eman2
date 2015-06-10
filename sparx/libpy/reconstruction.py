@@ -1879,7 +1879,7 @@ def rec3D_MPI(data, snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None,
 			nx = volodd.get_xsize()
 			ny = volodd.get_ysize()
 			nz = volodd.get_zsize()
-			mask3D = model_circle(min(nx,ny,nz) - 2, nx,ny,nz)
+			mask3D = model_circle(min(nx,ny,nz)//2 - 2, nx,ny,nz)
 		fscdat = fsc_mask( volodd, voleve, mask3D, rstep, fsc_curve)
 		del  volodd, voleve, mask3d
 
@@ -1910,7 +1910,7 @@ def rec3D_MPI(data, snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None,
 				nx = volodd.get_xsize()
 				ny = volodd.get_ysize()
 				nz = volodd.get_zsize()
-				mask3D = model_circle(min(nx,ny,nz) - 2, nx,ny,nz)
+				mask3D = model_circle(min(nx,ny,nz)//2 - 2, nx,ny,nz)
 			fscdat = fsc_mask( volodd, voleve, mask3D, rstep, fsc_curve)
 			del  volodd, voleve, mask3D
 		else:
@@ -1968,7 +1968,7 @@ def rec3D_MPI(data, snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None,
 			nx = volodd.get_xsize()
 			ny = volodd.get_ysize()
 			nz = volodd.get_zsize()
-			mask3D = model_circle(min(nx,ny,nz) - 2, nx,ny,nz)
+			mask3D = model_circle(min(nx,ny,nz)//2 - 2, nx,ny,nz)
 
 		fscdat = fsc_mask(volodd, voleve, mask3D, rstep, fsc_curve)
 		del  volodd, voleve, mask3D
