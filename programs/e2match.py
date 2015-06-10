@@ -202,7 +202,7 @@ def main():
 		If options.apix is supplied, first change the apix of stack2match to that; then make stack2process match it
 		'''
 		stack2matchhdr=EMData(options.stack2match,0)
-		targetApix = stack2matchhdr['apix_x']
+		targetApix = round(stack2matchhdr['apix_x'],4)
 		targetBox = stack2matchhdr['nx']
 		
 		if options.stack2match:
@@ -227,7 +227,7 @@ def main():
 			print "(e2spt_refprep.py) You have NOT supplied stack2match !!!"
 			
 			if options.shrink > 1.0:
-				targetApix = stack2processSample['apix_x'] * options.shrink
+				targetApix = round(stack2processSample['apix_x'],4) * options.shrink
 				targetBox = stack3processSample['nx'] / options.shrink
 				print "There's shrink >1.0"
 				
@@ -296,7 +296,7 @@ def refmatch( options , stack2processEd, stack2processSample):
 	#if options.refStack:
 
 	print "\nInside refmatch"
-	targetApix = EMData(options.stack2match,0,True)['apix_x']
+	targetApix = round(EMData(options.stack2match,0,True)['apix_x'],4)
 	
 	if options.apix:
 		targetApix = float( options.apix )
@@ -362,7 +362,7 @@ def preciseShrink( options, stack2processSample, stack2processEd, targetApix, ta
 	
 	print "inside preciseshrink targetbox is", targetBox
 	
-	stack2processApix = float( stack2processSample['apix_x'] )
+	stack2processApix = round(float( stack2processSample['apix_x'] ),4)
 	if options.verbose:
 		print "\n(e2spt_refprep.py) I've read the apix of the particles in stack2process, which is", stack2processApix
 
@@ -372,7 +372,7 @@ def preciseShrink( options, stack2processSample, stack2processEd, targetApix, ta
 	meanshrinkfactor_int = int(meanshrinkfactor)
 
 	if options.verbose:
-		print "\n(e2spt_refprep.py) The refStack apix is", EMData( options.stack2match, 0, True)['apix_x']
+		print "\n(e2spt_refprep.py) The refStack apix is", round(EMData( options.stack2match, 0, True)['apix_x'],4)
 		print "(e2spt_refprep.py) And the target apix is", targetApix
 		print "(e2spt_refprep.py) Therefore, the meanshrink factor is", meanshrinkfactor
 		print "(e2spt_refprep.py) Which, for the first step of shrinking (using math.meanshrink), will be rounded to", meanshrinkfactor_int
@@ -393,7 +393,7 @@ def preciseShrink( options, stack2processSample, stack2processEd, targetApix, ta
 		if options.verbose:
 			print "(e2spt_refprep.py) The stack2process was shrunk, to a first approximation, see", EMData(options.stack2process,0,True)['nx']
 	
-		stack2processApix = EMData( stack2processEd, 0 , True)['apix_x']
+		stack2processApix = round(EMData( stack2processEd, 0 , True)['apix_x'],4)
 	
 	else:
 		#targetbox = EMData( options.stack2match,0,True )['nx']
@@ -410,7 +410,7 @@ def preciseShrink( options, stack2processSample, stack2processEd, targetApix, ta
 
 	print "\n\n\n\n(e2spt_refprep.py) The finer scale factor to apply is", scalefactor
 	
-	print "Right before, apix is", EMData(stack2processEd,0,True)['apix_x']
+	print "Right before, apix is", round(EMData(stack2processEd,0,True)['apix_x'],4)
 	print "(e2spt_refprep.py) The final clip box is", targetBox
 
 	cmd = 'e2proc3d.py ' + str(stack2processEd) + ' ' + str(stack2processEd) + ' --process=xform.scale:scale=' + str(scalefactor) 
@@ -436,7 +436,7 @@ def preciseShrink( options, stack2processSample, stack2processEd, targetApix, ta
 	p.stdout.close()
 	
 		
-	print "Right after, apix is", EMData(stack2processEd,0,True)['apix_x']
+	print "Right after, apix is", round(EMData(stack2processEd,0,True)['apix_x'],4)
 
 	#print "(e2spt_refprep.py) Feedback from scale and clip is", text
 
@@ -523,7 +523,7 @@ def refpostprocessing(stack2process, stack2processEd, options ):
 		if options.sharpfiltres:
 			stack2processHdr = EMData(stack2processEd,0,True)
 			stack2processBox = stack2processHdr['nx']
-			stack2processApix = stack2processHdr['apix_x']
+			stack2processApix = round(stack2processHdr['apix_x'],4)
 	
 			resfac = 1.0/float(options.sharpfiltres)
 			npixels = int(round(float( ref_box * ref_apix * res_fac )))
