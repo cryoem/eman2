@@ -406,7 +406,7 @@ def preciseShrink( options, stack2processSample, stack2processEd, targetApix, ta
 		p.stdout.close()
 		
 	
-	scalefactor = float( stack2processApix )/float( targetApix)
+	scalefactor = round(float( stack2processApix ),4)/round(float( targetApix),4)
 
 	print "\n\n\n\n(e2spt_refprep.py) The finer scale factor to apply is", scalefactor
 	
