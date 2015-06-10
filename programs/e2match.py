@@ -359,7 +359,9 @@ def preciseShrink( options, stack2processSample, stack2processEd, targetApix, ta
 	Calculate the scale between the reference model and the data, round to the nearest integer to be able to use math.meanshrink (which preserves features),
 	then calculate the scale factor again and use xform.scale, to get the exact scaling, even if features might become a bit distorted by xform.scale
 	'''	
-
+	
+	print "inside preciseshrink targetbox is", targetBox
+	
 	stack2processApix = float( stack2processSample['apix_x'] )
 	if options.verbose:
 		print "\n(e2spt_refprep.py) I've read the apix of the particles in stack2process, which is", stack2processApix
