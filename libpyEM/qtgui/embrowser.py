@@ -1475,7 +1475,7 @@ class EMDirEntry(object) :
 
 		# Check the cache for metadata
 
-		if not (os.path.isfile(self.path()) or os.path.islink(self.path())) : 
+		if self.path()[:4].lower()!="bdb:" and not (os.path.isfile(self.path()) or os.path.islink(self.path())) : 
 			self.filetype="SPECIAL"
 			return 0
 

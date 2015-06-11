@@ -2629,9 +2629,9 @@ EMData* RT3DTreeAligner::align(EMData * this_img, EMData *to, const string & cmp
 vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, const unsigned int nrsoln, const string & cmp_name, const Dict& cmp_params) const {
 	if (nrsoln == 0) throw InvalidParameterException("ERROR (RT3DTreeAligner): nsoln must be >0"); // What was the user thinking?
 
-	int nsoln = nrsoln;
-	if (nrsoln<3) nsoln=3;		// we need at least 3 solutions for the hierarchical approach
-
+	int nsoln = nrsoln*2;
+	if (nrsoln<8) nsoln=16;		// we start with at least 16 solutions, but then gradually decrease with increasing scale
+	
 	// !!!!!! IMPORTANT NOTE - we are inverting the order of this and to here to match convention in other aligners, to compensate
 	// the Transform is inverted before being returned
 	EMData *base_this;
@@ -2872,6 +2872,25 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 // 				}
 			}
 		}
+		// lazy earlier in defining s_ vectors, so lazy here too and inefficiently sorting
+		// We are sorting inside the outermost loop so we can decrease the number of solutions
+		// before we get to the finest precision
+		for (unsigned int i=0; i<nsoln-1; i++) {
+			for (unsigned int j=i+1; j<nsoln; j++) {
+				if (s_score[i]>s_score[j]) {
+					float t=s_score[i]; s_score[i]=s_score[j]; s_score[j]=t;
+					t=s_coverage[i]; s_coverage[i]=s_coverage[j]; s_coverage[j]=t;
+					Transform tt=s_xform[i]; s_xform[i]=s_xform[j]; s_xform[j]=tt;
+				}
+			}
+		}
+		
+		// At each level of sampling we (potentially) decrease the number of answers we check in detail
+		// assuming we are gradually homing in on the best solution
+		nsoln/=2;
+		if (nsoln<nrsoln) nsoln=nrsoln;
+
+		
 		delete small_this;
 		delete small_to;
 		if (ss==ny) break;
@@ -2880,16 +2899,6 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	delete base_this;
 	delete base_to;
 
-	// lazy earlier in defining s_ vectors, so lazy here too and inefficiently sorting
-	for (unsigned int i=0; i<nsoln-1; i++) {
-		for (unsigned int j=i+1; j<nsoln; j++) {
-			if (s_score[i]>s_score[j]) {
-				float t=s_score[i]; s_score[i]=s_score[j]; s_score[j]=t;
-				t=s_coverage[i]; s_coverage[i]=s_coverage[j]; s_coverage[j]=t;
-				Transform tt=s_xform[i]; s_xform[i]=s_xform[j]; s_xform[j]=tt;
-			}
-		}
-	}
 
 	// initialize results
 	vector<Dict> solns;

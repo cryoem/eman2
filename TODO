@@ -16,6 +16,7 @@ High priority
 6/12/14		new particle picker
 6/14/14		e2markbadptcl
 2/4/15		Isosurface coloring in 3d viewer messed up
+6/11/15		fix --prefilt in e2refine_easy
 
 7/7/14		scale box locations
 7/27/14		ctf interactive seems to autosave parameters without button press
