@@ -25,6 +25,10 @@ MUST_END_PROGRAM_THIS_ITERATION = -101
 EMPTY_VIPER_RUN_INDICES_LIST = -102
 DUMMY_INDEX_USED_AS_BUFFER = -103
 
+NAME_OF_RUN_DIR = "run"
+NAME_OF_MAIN_DIR = "main"
+DIR_DELIM = os.sep
+
 def calculate_list_of_independent_viper_run_indices_used_for_outlier_elimination(no_of_viper_runs_analyzed_together, 
 	no_of_viper_runs_analyzed_together_from_user_options, masterdir, rviper_iter, criterion_name):
 
@@ -57,7 +61,7 @@ def calculate_list_of_independent_viper_run_indices_used_for_outlier_elimination
 		list_of_viper_run_indices_for_the_current_rrr_viper_iteration = list(all_n_minus_1_combinations_taken_k_minus_1_at_a_time[index_of_sorted_criterion_measure_list[0]]) + \
 																		[no_of_viper_runs_analyzed_together - 1]
 
-		mainoutputdir = masterdir + "/main%03d/" % (rviper_iter)
+		mainoutputdir = masterdir + DIR_DELIM + NAME_OF_MAIN_DIR + ("%03d" + DIR_DELIM) % (rviper_iter)
 
 		if criterion_measure[index_of_sorted_criterion_measure_list[0]] == TRIPLET_WITH_ANGLE_ERROR_LESS_THAN_THRESHOLD_HAS_BEEN_FOUND:
 			list_of_viper_run_indices_for_the_current_rrr_viper_iteration.insert(0,MUST_END_PROGRAM_THIS_ITERATION)
@@ -92,9 +96,9 @@ def identify_outliers(myid, main_node, rviper_iter, no_of_viper_runs_analyzed_to
 	do_calculation = 1
 
 	if (myid == main_node):
-		mainoutputdir = masterdir + "/main%03d/" % (rviper_iter)
-		if(os.path.exists(mainoutputdir + "/list_of_viper_runs_included_in_outlier_elimination.json")):
-			# list_of_independent_viper_run_indices_used_for_outlier_elimination = map(int, read_text_file(mainoutputdir + "/list_of_viper_runs_included_in_outlier_elimination.txt"))
+		mainoutputdir = masterdir + DIR_DELIM + NAME_OF_MAIN_DIR + ("%03d" + DIR_DELIM) % (rviper_iter)
+		if(os.path.exists(mainoutputdir + DIR_DELIM + "list_of_viper_runs_included_in_outlier_elimination.json")):
+			# list_of_independent_viper_run_indices_used_for_outlier_elimination = map(int, read_text_file(mainoutputdir + DIR_DELIM + "list_of_viper_runs_included_in_outlier_elimination.txt"))
 			import json; f = open(mainoutputdir + "list_of_viper_runs_included_in_outlier_elimination.json", 'r')
 			list_of_independent_viper_run_indices_used_for_outlier_elimination  = json.load(f); f.close()
 			do_calculation = 0
@@ -149,13 +153,13 @@ def plot_errors_between_any_number_of_projections(masterdir, rviper_iter, list_o
 	# 	plot_errors_between_any_number_of_projections.counter = 0
 	# plot_errors_between_any_number_of_projections.counter += 1
 
-	# main_iterations = ["main" + "%03d" % i for i in range(1, rviper_iter + 1)]
-	main_iterations = ["main" + "%03d" % i for i in range(rviper_iter, rviper_iter + 1)]
+	# main_iterations = [NAME_OF_MAIN_DIR + "%03d" % i for i in range(1, rviper_iter + 1)]
+	main_iterations = [NAME_OF_MAIN_DIR + "%03d" % i for i in range(rviper_iter, rviper_iter + 1)]
 
-	mainoutputdir = masterdir + "/" + main_iterations[0] + "/"
+	mainoutputdir = masterdir + DIR_DELIM + main_iterations[0] + DIR_DELIM
 	p=[]
 	for i1 in list_of_projection_indices:
-		p.append(read_text_row(mainoutputdir + "run%03d"%(i1) + "/params.txt"))
+		p.append(read_text_row(mainoutputdir + NAME_OF_RUN_DIR + "%03d"%(i1) + DIR_DELIM + "params.txt"))
 
 	ti1, ti3, out = find_common_subset(p,0)
 	u = []
@@ -273,13 +277,13 @@ def find_index_of_discontinuity_in_derivative(error_curve_func, list_of_projecti
 
 def measure_for_outlier_criterion(criterion_name, masterdir, rviper_iter, list_of_viper_run_indices):
 
-	# main_iterations = ["main" + "%03d" % i for i in range(1, rviper_iter + 1)]
-	main_iterations = ["main" + "%03d" % i for i in range(rviper_iter, rviper_iter + 1)]
-	mainoutputdir = masterdir + "/" + main_iterations[0] + "/"
+	# main_iterations = [NAME_OF_MAIN_DIR + "%03d" % i for i in range(1, rviper_iter + 1)]
+	main_iterations = [NAME_OF_MAIN_DIR + "%03d" % i for i in range(rviper_iter, rviper_iter + 1)]
+	mainoutputdir = masterdir + DIR_DELIM + main_iterations[0] + DIR_DELIM
 
 	p = []
 	for i1 in list_of_viper_run_indices:
-		p.append(read_text_row(mainoutputdir + "run%03d" % (i1) + "/params.txt"))
+		p.append(read_text_row(mainoutputdir + NAME_OF_RUN_DIR + "%03d" % (i1) + DIR_DELIM + "params.txt"))
 	subset, avg_diff_per_image, outp = find_common_subset(p, 0)
 
 	avg_diff_per_image.sort()
@@ -314,11 +318,11 @@ def found_outliers(list_of_projection_indices, outlier_percentile, rviper_iter, 
 	# sxheader.py bdb:nj  --consecutive  --params=OID
 	import numpy as np
 
-	mainoutputdir = masterdir + "/main%03d/"%(rviper_iter)
+	mainoutputdir = masterdir + DIR_DELIM + NAME_OF_MAIN_DIR + ("%03d" + DIR_DELIM) %(rviper_iter)
 
 	# if this data analysis step was already performed in the past then return
 	for check_run in list_of_projection_indices:
-		if not (os.path.exists(mainoutputdir + "/run%03d"%(check_run) + "/rotated_reduced_params.txt")):
+		if not (os.path.exists(mainoutputdir + DIR_DELIM + NAME_OF_RUN_DIR + "%03d"%(check_run) + DIR_DELIM + "rotated_reduced_params.txt")):
 			break
 	else:
 		return
@@ -326,7 +330,7 @@ def found_outliers(list_of_projection_indices, outlier_percentile, rviper_iter, 
 	print "identify_outliers"
 	projs = []
 	for i1 in list_of_projection_indices:
-		projs.append(read_text_row(mainoutputdir + "run%03d"%(i1) + "/params.txt"))
+		projs.append(read_text_row(mainoutputdir + NAME_OF_RUN_DIR + "%03d"%(i1) + DIR_DELIM + "params.txt"))
 
 	# ti1, ti3, out = find_common_subset(projs, 1.0)
 	subset, avg_diff_per_image, rotated_params = find_common_subset(projs, target_threshold = 0)
@@ -388,7 +392,7 @@ def found_outliers(list_of_projection_indices, outlier_percentile, rviper_iter, 
 
 	# write rotated param files
 	for i1 in range(len(list_of_projection_indices)):
-		write_text_row(rotated_params[i1], mainoutputdir + "run%03d"%(list_of_projection_indices[i1]) + "/rotated_reduced_params.txt")
+		write_text_row(rotated_params[i1], mainoutputdir + NAME_OF_RUN_DIR + "%03d"%(list_of_projection_indices[i1]) + DIR_DELIM + "rotated_reduced_params.txt")
 
 	return True
 
@@ -403,9 +407,9 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 
 	# some arguments are for debugging purposes
 
-	mainoutputdir = masterdir + "/main%03d/"%(rviper_iter)
+	mainoutputdir = masterdir + DIR_DELIM + NAME_OF_MAIN_DIR + ("%03d" + DIR_DELIM) %(rviper_iter)
 
-	# list_of_projection_indices_used_for_outlier_elimination = map(int, read_text_file(mainoutputdir + "/list_of_viper_runs_included_in_outlier_elimination.txt"))
+	# list_of_projection_indices_used_for_outlier_elimination = map(int, read_text_file(mainoutputdir + DIR_DELIM + "list_of_viper_runs_included_in_outlier_elimination.txt"))
 	import json; f = open(mainoutputdir + "list_of_viper_runs_included_in_outlier_elimination.json", 'r')
 	list_of_independent_viper_run_indices_used_for_outlier_elimination  = json.load(f); f.close()
 
@@ -416,14 +420,15 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 
 	# if this data analysis step was already performed in the past then return
 	# for future changes make sure that the file checked is the last one to be processed !!!
-	# if(os.path.exists(mainoutputdir + "/run%03d"%(no_of_viper_runs_analyzed_together - 1) + "/rotated_volume.hdf")):
-	# check_last_run = max(get_latest_directory_increment_value(mainoutputdir, "run", start_value=0), no_of_viper_runs_analyzed_together_from_user_options)
-	# if(os.path.exists(mainoutputdir + "/run%03d"%(check_last_run) + "/rotated_volume.hdf")):
+	
+	# if(os.path.exists(mainoutputdir + DIR_DELIM + NAME_OF_RUN_DIR + "%03d"%(no_of_viper_runs_analyzed_together - 1) + DIR_DELIM + "rotated_volume.hdf")):
+	# check_last_run = max(get_latest_directory_increment_value(mainoutputdir, NAME_OF_RUN_DIR, start_value=0), no_of_viper_runs_analyzed_together_from_user_options)
+	# if(os.path.exists(mainoutputdir + DIR_DELIM + NAME_OF_RUN_DIR + "%03d"%(check_last_run) + DIR_DELIM + "rotated_volume.hdf")):
 	# 	return
 
 	# if this data analysis step was already performed in the past then return
 	for check_run in list_of_independent_viper_run_indices_used_for_outlier_elimination:
-		if not (os.path.exists(mainoutputdir + "/run%03d"%(check_run) + "/rotated_volume.hdf")):
+		if not (os.path.exists(mainoutputdir + DIR_DELIM + NAME_OF_RUN_DIR + "%03d"%(check_run) + DIR_DELIM + "rotated_volume.hdf")):
 			break
 	else:
 		return
@@ -431,7 +436,7 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 	partstack = []
 	# for i1 in range(0,no_of_viper_runs_analyzed_together):
 	for i1 in list_of_independent_viper_run_indices_used_for_outlier_elimination:
-		partstack.append(mainoutputdir + "run%03d"%(i1) + "/rotated_reduced_params.txt")
+		partstack.append(mainoutputdir + NAME_OF_RUN_DIR + "%03d"%(i1) + DIR_DELIM + "rotated_reduced_params.txt")
 	partids_file_name = mainoutputdir + "this_iteration_index_keep_images.txt"
 
 	lpartids = map(int, read_text_file(partids_file_name) )
@@ -452,7 +457,7 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 				vol = do_volume(projdata, ali3d_options, 0, mpi_comm = mpi_subcomm)
 				del projdata
 				if( mpi_rank == 0):
-					vol.write_image(mainoutputdir + "/run%03d"%(i) + "/rotated_volume.hdf")
+					vol.write_image(mainoutputdir + DIR_DELIM + NAME_OF_RUN_DIR + "%03d"%(i) + DIR_DELIM + "rotated_volume.hdf")
 					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " => "
 					print line  + "Generated rec_ref_volume_run #%01d \n"%i
 				del vol
@@ -464,7 +469,7 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 			vol = do_volume(projdata, ali3d_options, 0, mpi_comm = mpi_comm)
 			del projdata
 			if( mpi_rank == 0):
-				vol.write_image(mainoutputdir + "/run%03d"%(i) + "/rotated_volume.hdf")
+				vol.write_image(mainoutputdir + DIR_DELIM + NAME_OF_RUN_DIR + "%03d"%(i) + DIR_DELIM + "rotated_volume.hdf")
 				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " => "
 				print line + "Generated rec_ref_volume_run #%01d"%i
 			del vol
@@ -478,7 +483,7 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 		vls = [None]*len(list_of_independent_viper_run_indices_used_for_outlier_elimination)
 		# for i in xrange(no_of_viper_runs_analyzed_together):
 		for idx, i in enumerate(list_of_independent_viper_run_indices_used_for_outlier_elimination):
-			vls[idx] = get_im(mainoutputdir + "/run%03d"%(i) + "/rotated_volume.hdf")
+			vls[idx] = get_im(mainoutputdir + DIR_DELIM + NAME_OF_RUN_DIR + "%03d"%(i) + DIR_DELIM + "rotated_volume.hdf")
 			set_params3D(vls[idx],[0.,0.,0.,0.,0.,0.,0,1.0])
 		asa,sas = ave_var(vls)
 		# do the alignment
@@ -500,8 +505,8 @@ def calculate_volumes_after_rotation_and_save_them(ali3d_options, rviper_iter, m
 			if(st[0] > goal):  goal = st[0]
 			else:  going = False
 		# over and out
-		asa.write_image(mainoutputdir + "/average_volume.hdf")
-		sas.write_image(mainoutputdir + "/variance_volume.hdf")
+		asa.write_image(mainoutputdir + DIR_DELIM + "average_volume.hdf")
+		sas.write_image(mainoutputdir + DIR_DELIM + "variance_volume.hdf")
 	return
 
 
@@ -534,7 +539,7 @@ def get_already_processed_viper_runs(run_get_already_processed_viper_runs):
 			mpi_finalize()
 			sys.exit()
 	
-		return location_location + "run%03d"%get_already_processed_viper_runs.r_permutation[get_already_processed_viper_runs.counter]
+		return location_location + NAME_OF_RUN_DIR + "%03d"%get_already_processed_viper_runs.r_permutation[get_already_processed_viper_runs.counter]
 	else:
 		get_already_processed_viper_runs.r_permutation = [0]*20
 
@@ -647,8 +652,8 @@ def main():
 	bdb_stack_location = ""
 	if len(args) == 2:
 		masterdir = args[1]
-		if masterdir[-1] != "/":
-			masterdir += "/"
+		if masterdir[-1] != DIR_DELIM:
+			masterdir += DIR_DELIM
 	elif len(args) == 1:
 		if use_latest_master_directory:
 			all_dirs = [d for d in os.listdir(".") if os.path.isdir(d)]
@@ -657,7 +662,7 @@ def main():
 			if len(all_dirs)>0:
 				# all_dirs = max(all_dirs, key=os.path.getctime)
 				masterdir = max(all_dirs, key=os.path.getmtime)
-				masterdir += "/"
+				masterdir += DIR_DELIM
 
 	log = Logger(BaseLogger_Files())
 
@@ -677,7 +682,7 @@ def main():
 		#cmdexecute(cmd)
 
 		if( masterdir == ""):
-			timestring = strftime("%Y_%m_%d__%H_%M_%S/", localtime())
+			timestring = strftime("%Y_%m_%d__%H_%M_%S" + DIR_DELIM, localtime())
 			masterdir = "master"+timestring
 
 			cmd = "{} {}".format("mkdir", masterdir)
@@ -687,8 +692,8 @@ def main():
 				bdb_stack_location = args[0].split(":")[0] + ":" + masterdir + args[0].split(":")[1]
 				org_stack_location = args[0]
 
-				if(not os.path.exists(os.path.join(masterdir,"EMAN2DB/"))):
-					# cmd = "{} {}".format("cp -rp EMAN2DB", masterdir, "EMAN2DB/")
+				if(not os.path.exists(os.path.join(masterdir,"EMAN2DB" + DIR_DELIM))):
+					# cmd = "{} {}".format("cp -rp EMAN2DB", masterdir, "EMAN2DB" DIR_DELIM)
 					# cmdexecute(cmd)
 					cmd = "{} {} {}".format("e2bdb.py", org_stack_location,"--makevstack=" + bdb_stack_location + "_000")
 					cmdexecute(cmd)
@@ -703,7 +708,7 @@ def main():
 			else:
 				filename = os.path.basename(args[0])
 				bdb_stack_location = "bdb:" + masterdir + os.path.splitext(filename)[0]
-				if(not os.path.exists(os.path.join(masterdir,"EMAN2DB/"))):
+				if(not os.path.exists(os.path.join(masterdir,"EMAN2DB" + DIR_DELIM))):
 					cmd = "{} {} {}".format("sxcpy.py  ", args[0], bdb_stack_location + "_000")
 					cmdexecute(cmd)
 
@@ -731,8 +736,8 @@ def main():
 	dir_len = mpi_bcast(dir_len,1,MPI_INT,0,MPI_COMM_WORLD)[0]
 	masterdir = mpi_bcast(masterdir,dir_len,MPI_CHAR,main_node,MPI_COMM_WORLD)
 	masterdir = string.join(masterdir,"")
-	if masterdir[-1] != "/":
-		masterdir += "/"
+	if masterdir[-1] != DIR_DELIM:
+		masterdir += DIR_DELIM
 		
 	global_def.LOGFILE =  os.path.join(masterdir, global_def.LOGFILE)
 	print_program_start_information()
@@ -778,7 +783,7 @@ def main():
 			all_projs = None
 			subset = None
 
-		runs_iter = get_latest_directory_increment_value(masterdir + "main%03d"%rviper_iter, "/run", start_value=0) - 1
+		runs_iter = get_latest_directory_increment_value(masterdir + NAME_OF_MAIN_DIR + "%03d"%rviper_iter, DIR_DELIM + NAME_OF_RUN_DIR, start_value=0) - 1
 		no_of_viper_runs_analyzed_together = max(runs_iter + 2, no_of_viper_runs_analyzed_together_from_user_options)
 
 		first_time_entering_the_loop_need_to_do_full_check_up = True
@@ -792,9 +797,9 @@ def main():
 
 			this_run_is_NOT_complete = 0
 			if (myid == main_node):
-				independent_run_dir = masterdir + '/main%03d/run%03d/'%(rviper_iter, runs_iter)
+				independent_run_dir = masterdir + DIR_DELIM + NAME_OF_MAIN_DIR + ('%03d' + DIR_DELIM + NAME_OF_RUN_DIR + "%03d" + DIR_DELIM)%(rviper_iter, runs_iter)
 				if run_get_already_processed_viper_runs:
-					cmd = "{} {}".format("mkdir -p", masterdir + '/main%03d/'%(rviper_iter)); cmdexecute(cmd)
+					cmd = "{} {}".format("mkdir -p", masterdir + DIR_DELIM + NAME_OF_MAIN_DIR + ('%03d' + DIR_DELIM)%(rviper_iter)); cmdexecute(cmd)
 					cmd = "{} {}".format("rm -rf", independent_run_dir); cmdexecute(cmd)
 					cmd = "{} {}".format("cp -r", get_already_processed_viper_runs() + " " +  independent_run_dir); cmdexecute(cmd)
 				
@@ -821,8 +826,8 @@ def main():
 			if this_run_is_NOT_complete:
 				mpi_barrier(MPI_COMM_WORLD)
 
-				if independent_run_dir[-1] != "/":
-					independent_run_dir += "/"
+				if independent_run_dir[-1] != DIR_DELIM:
+					independent_run_dir += DIR_DELIM
 
 				log.prefix = independent_run_dir
 
