@@ -1167,8 +1167,8 @@ def main():
 	test_outliers = True
 	mainiteration = 0
 	keepgoing = 1
-	paramsdict["xr"] = "9 6 3"
-	paramsdict["ts"] = "3.0  2.0  1.0"
+	paramsdict["xr"] = "9  6  3"
+	paramsdict["ts"] = "3  2  1"
 	while(keepgoing):
 		mainiteration += 1
 
