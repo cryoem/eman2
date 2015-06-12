@@ -2755,7 +2755,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 					t.set_params(aap);
 					
 					// somewhat strangely, rotations are actually much more expensive than FFTs, so we use a CCF for translation
-					EMData *stt=small_this->process("xform",Dict("transform",EMObject(&t),"zerocorners",5));
+					EMData *stt=small_this->process("xform",Dict("transform",EMObject(&t),"zerocorners",1));
 					EMData *ccf=small_to->calc_ccf(stt);
 					IntPoint ml=ccf->calc_max_location_wrap();
 
@@ -2765,7 +2765,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 					t.set_params(aap);
 					delete stt;
 					delete ccf;
-					stt=small_this->process("xform",Dict("transform",EMObject(&t),"zerocorners",5));	// we have to do 1 slow transform here now that we have the translation
+					stt=small_this->process("xform",Dict("transform",EMObject(&t),"zerocorners",1));	// we have to do 1 slow transform here now that we have the translation
 
 //					float sim=stt->cmp("ccc.tomo.thresh",small_to,Dict("sigmaimg",sigmathis,"sigmawith",sigmato));
 					float sim=stt->cmp("ccc.tomo.thresh",small_to);
@@ -2929,7 +2929,7 @@ bool RT3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<float> 
 	t.set_params(aap);
 
 	// rotate in Fourier space then use a CCF to find translation
-	EMData *stt=small_this->process("xform",Dict("transform",EMObject(&t),"zerocorners",5));
+	EMData *stt=small_this->process("xform",Dict("transform",EMObject(&t),"zerocorners",1));
 	EMData *ccf=small_to->calc_ccf(stt);
 	IntPoint ml=ccf->calc_max_location_wrap();
 
@@ -2938,7 +2938,7 @@ bool RT3DTreeAligner::testort(EMData *small_this,EMData *small_to,vector<float> 
 	aap["ty"]=(int)ml[1];
 	aap["tz"]=(int)ml[2];
 	t.set_params(aap);
-	EMData *st2=small_this->process("xform",Dict("transform",EMObject(&t),"zerocorners",5));	// we have to do 1 slow transform here now that we have the translation
+	EMData *st2=small_this->process("xform",Dict("transform",EMObject(&t),"zerocorners",1));	// we have to do 1 slow transform here now that we have the translation
 	
 	float sim=st2->cmp("fsc.tomo.auto",small_to,Dict("sigmaimg",sigmathisv,"sigmawith",sigmatov));
 //	float sim=st2->cmp("ccc.tomo.thresh",small_to,Dict("sigmaimg",sigmathis,"sigmawith",sigmato));
