@@ -36,7 +36,6 @@ import itertools as it
 import numpy as np
 import os
 import sys
-import copy
 import matplotlib
 
 if 'DISPLAY' in os.environ: # user has a display server running
@@ -60,7 +59,7 @@ def main():
 	parser.add_argument("--dark",type=str,default=None,help="Perform dark image correction using the specified image file")
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
 	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.")
-	parser.add_argument("--boxsize", type=int, help="Set the boxsize used to compute power spectra across movie frames",default=256)
+	parser.add_argument("--boxsize", type=int, help="Set the boxsize used to compute power spectra across movie frames",default=256) #FIXME: There is an issue with larger box sizes that needs to be addressed. 256 seems too small.
 	parser.add_argument("--min", type=int, help="Set the minimum translation in pixels",default=-4)
 	parser.add_argument("--max", type=int, help="Set the maximum translation in pixels",default=4)
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 0,1 (first image skipped)")
@@ -111,7 +110,7 @@ def main():
 
 	pid=E2init(sys.argv)
 
-	for fname in args:
+	for fname in args: # TODO: This should be parallelized. The simplex routine is sequential, so this is the level at which parallelization should occur.
 		if options.verbose: print "Processing", fname
 		options.path = fname
 
@@ -278,30 +277,30 @@ class MovieModeAligner:
 		@param Transform t	:	An EMAN Transform object
 		"""
 
-		#print("\n\nUPDATE FRAME PARAMS")
-		#print(i,t)
+		print("\n\nUPDATE FRAME PARAMS")
+		print(i,t)
 
 		self._transforms[i] = t  # update transform
 
-		#print(self._regions[i])
+		print(self._regions[i])
 
 		newregions = [] # update regions
 		for r in self._regions[i]:
 			x = [a+b for a,b in zip(r.get_origin()[:2],t.get_trans_2d())]
 			rnew = Region(x[0],x[1],self._boxsize,self._boxsize)
-			print(x,rnew,rnew.get_origin()[:2],t.get_trans_2d())
+			#print(x,rnew,rnew.get_origin()[:2],t.get_trans_2d())
 			newregions.append(rnew)
 		self._regions[i] = newregions
 
-		#print(self._regions[i])
+		print(self._regions[i])
 
-		#print(len(self._nregions),len(self._nstacks))
+		print(len(self._nregions),len(self._nstacks))
 
 		for ir in xrange(self._nregions): # update stacks
 			print(i,ir,self._stacks[ir][i],self._regions[i][ir])
-			self._stacks[ir][i] = copy.deepcopy(self._regions[i][ir])
+			self._stacks[ir][i] = self._regions[i][ir]
 
-		#print("UPDATED FRAME PARAMS\n\n")
+		print("UPDATED FRAME PARAMS\n\n")
 
 	def _update_energy(self):
 		"""
