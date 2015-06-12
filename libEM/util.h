@@ -525,6 +525,33 @@ namespace EMAN
 					+ (1 - t) * u * v * p7 + t * u * v * p8);
 		}
 
+		/** Calculate trilinear interpolation.
+		 *
+		 * @param[in] p1 The first number. corresponding to (x0,y0,z0).
+		 * @param[in] p2 The second number. corresponding to (x1,y0,z0).
+		 * @param[in] p3 The third number. corresponding to (x0,y1, z0).
+		 * @param[in] p4 The fourth number. corresponding to (x1,y1,z0).
+		 * @param[in] p5 The fifth number. corresponding to (x0,y0,z1).
+		 * @param[in] p6 The sixth number. corresponding to (x1,y0,z1).
+		 * @param[in] p7 The seventh number. corresponding to (x0,y1,z1).
+		 * @param[in] p8 The eighth number. corresponding to (x1,y1,z1).
+		 * @param[in] t t
+		 * @param[in] u u
+		 * @param[in] v v
+		 * @return The trilinear interpolation value.
+		 */
+		static inline std::complex<float> trilinear_interpolate_complex(std::complex<float> p1, std::complex<float> p2, std::complex<float> p3,
+							  std::complex<float> p4, std::complex<float> p5, std::complex<float> p6,
+							 std::complex<float> p7, std::complex<float> p8, float t,
+								  float u, float v)
+		{
+			return ((1 - t) * (1 - u) * (1 - v) * p1 + t * (1 - u) * (1 - v) * p2
+					+ (1 - t) * u * (1 - v) * p3 + t * u * (1 - v) * p4
+					+ (1 - t) * (1 - u) * v * p5 + t * (1 - u) * v * p6
+					+ (1 - t) * u * v * p7 + t * u * v * p8);
+		}
+
+		
 		/** Find the maximum value and (optional) its index in an array.
 		 * @param[in] data data array.
 		 * @param[in] nitems number of items in the data array.
