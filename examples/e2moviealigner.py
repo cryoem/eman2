@@ -276,7 +276,6 @@ class MovieModeAligner:
 		@param int i		: 	An integer specifying which transformation to update
 		@param Transform t	:	An EMAN Transform object
 		"""
-
 		print("\n\nUPDATE FRAME PARAMS")
 		print(i,t)
 
