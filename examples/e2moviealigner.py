@@ -294,7 +294,7 @@ class MovieModeAligner:
 
 		print(self._regions[i])
 
-		print(len(self._nregions),len(self._nstacks))
+		print(self._nregions,self._nstacks)
 
 		for ir in xrange(self._nregions): # update stacks
 			print(i,ir,self._stacks[ir][i],self._regions[i][ir])
