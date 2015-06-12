@@ -60,8 +60,8 @@ def main():
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
 	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.")
 	parser.add_argument("--boxsize", type=int, help="Set the boxsize used to compute power spectra across movie frames",default=512)
-	parser.add_argument("--min", type=int, help="Set the minimum translation in pixels",default=-1)
-	parser.add_argument("--max", type=int, help="Set the maximum translation in pixels",default=1)
+	parser.add_argument("--min", type=int, help="Set the minimum translation in pixels",default=-4)
+	parser.add_argument("--max", type=int, help="Set the maximum translation in pixels",default=4)
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 0,1 (first image skipped)")
 	parser.add_argument("--maxiters", type=int, help="Set the maximum number of iterations for the simplex minimizer to run before stopping. Default is 250.",default=50)
 	parser.add_argument("--epsilon", type=float, help="Set the learning rate for the simplex minimizer. Smaller is better, but takes longer. Default is 0.001.",default=0.001)
@@ -113,7 +113,9 @@ def main():
 
 	pid=E2init(sys.argv)
 
-	for fname in args: # TODO: This should be parallelized. The simplex routine is sequential, so this is the level at which parallelization should occur.
+	# TODO: This should be parallelized.
+	for fname in args: 
+		
 		if options.verbose: print "Processing", fname
 		options.path = fname
 
@@ -160,11 +162,11 @@ def main():
 			aligned_movie_file = alignment.get_aligned_filename()
 			savg2 = MovieModeAligner.simple_average(aligned_movie_file)
 		
-		if options.compareavg:
+		if options.compareavg and len(args) < 2:
 			if options.verbose: print("Showing movie before and after optimized alignment.")
 			display([savg,savg2])
 
-		if options.movie:
+		if options.movie and len(args) < 2:
 			if options.verbose: print("Displaying aligned movie")
 			alignment.show_movie(options.movie)
 
@@ -176,7 +178,7 @@ class MovieModeAligner:
 	MovieModeAligner: Class to hold information for optimized alignment of DDD cameras.
 	"""
 
-	def __init__(self, fname, bgsub=None, boxsize=512, min_shift=-1, max_shift=1, transforms=None):
+	def __init__(self, fname, bgsub=None, boxsize=512, min_shift=-4, max_shift=4, transforms=None):
 		"""
 		Initialization method for MovieModeAligner objects.
 
