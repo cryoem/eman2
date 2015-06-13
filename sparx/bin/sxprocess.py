@@ -253,9 +253,9 @@ def main():
 	7.  Generate a 1D rotationally averaged power spectrum of an image.
 		sxprocess.py  vol.hdf --rotwp=rotpw.txt
     	# Output will contain three columns:
-       (1) integer line number (from zero to approximately to half the image size)
-       (2) rotationally averaged power spectrum
-       (3) logarithm of the rotationally averaged power spectrum
+       (1) rotationally averaged power spectrum
+       (2) logarithm of the rotationally averaged power spectrum
+       (3) integer line number (from zero to approximately to half the image size)
        
     8.  Apply 3D transformation (rotation and/or shift) to a set of orientation parameters associated with projection data.
     	sxprocess.py  --transfromparams=phi,theta,psi,tx,ty,tz      input.txt  output.txt
@@ -485,7 +485,7 @@ def main():
 		x = range(len(t))
 		r = [0.0]*len(x)
 		for i in x:  r[i] = log10(t[i])
-		write_text_file([x,t,r],options.rotpw)
+		write_text_file([t,r,x],options.rotpw)
 
 	elif options.transformparams != None:
 		if len(args) != 2:
