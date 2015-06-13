@@ -9869,7 +9869,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 // 					des_data[2*kxN+1  + nx* kyN +nxny*kzN] = tempIb/tempW;
 		}}}  // end z, y, x loops through new coordinates
 	}   //  end  rotations in Fourier Space  3D
-	if ((nz > 1)&&(image -> is_complex())&&(zerocorners==1)) {
+	if ((nz > 1)&&(image -> is_complex())&&(zerocorners<=1)) {
 		//printf("Hello 3-d complex  TransformProcessor \n");
 		float phi =  t.get_rotation("eman").get("phi"); phi=pi*phi/180;
 		float alt =  t.get_rotation("eman").get("alt"); alt=pi*alt/180;
