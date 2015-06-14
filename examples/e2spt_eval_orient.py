@@ -62,7 +62,7 @@ too look for issues with preferred orientation, etc.
 
 	alts=[ [] for i in xrange(18)]
 	for k in db.keys():
-		xf=db[k][0]
+		xf=db[k][0].inverse()
 		xfd=xf.get_params("eman")
 		out.write("%1.3f,\t%1.3f,\t%1.3f,\t%1.3g\n"%(xfd["az"],xfd["alt"],xfd["phi"],float(db[k][1])))
 		
@@ -96,18 +96,20 @@ too look for issues with preferred orientation, etc.
 #		avg=Averagers.get("mean.tomo",{"save_norm":1})
 		avg=Averagers.get("mean.tomo")
 		for i in xrange(18):
+			print "%d - %d"%(i*10.0,(i+1)*10.0)
 			for p in alts[i]:
 				n=int(p[1].split("_")[1])		# extract the particle number from the name saved by e2spt_classaverage
 				print options.input,n,p
 				img=EMData(options.input,n)
-				xf=db[p[1]][0].inverse()		# inverse of the transform object
+				#xf=db[p[1]][0].inverse()		# inverse of the transform object
+				xf=db[p[1]][0]
 				img.process_inplace("xform",{"transform":xf})
 				imf=img.do_fft()
 				imf.process_inplace("xform.phaseorigin.tocorner")
 				avg.add_image(imf)
 				
-		finalf=avg.finish()
-		final=finalf.do_ift()
+		final=avg.finish()
+#		final=finalf.do_ift()
 		final.process_inplace("xform.phaseorigin.tocenter")
 		final.write_image(options.average,0)
 				
