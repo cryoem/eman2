@@ -81,7 +81,8 @@ too look for issues with preferred orientation, etc.
 	print "See also: ",options.output
 	
 	if options.evendist>0 :
-		ppz=min(alts)*options.evendist
+		# finding the zone with the fewest particles
+		ppz=int(min([len(a) for a in alts])*options.evendist)
 		print "Using ",ppz," particles from each 10 degree zone"
 		
 		for i in xrange(18):
@@ -92,16 +93,18 @@ too look for issues with preferred orientation, etc.
 		if not options.input :
 			print "Error: must specify --input with --average"
 			sys.exit(1)
-		avg=Averagers.get("mean.tomo",{"save_norm":1})
+#		avg=Averagers.get("mean.tomo",{"save_norm":1})
+		avg=Averagers.get("mean.tomo")
 		for i in xrange(18):
 			for p in alts[i]:
-				n=int(alts[i][1].split("_")[1])		# extract the particle number from the name saved by e2spt_classaverage
+				n=int(p[1].split("_")[1])		# extract the particle number from the name saved by e2spt_classaverage
+				print options.input,n,p
 				img=EMData(options.input,n)
-				xf=db[alts[i][1]][0].inverse()		# inverse of the transform object
-				im.process_inplace("xform",{"transform":xf})
-				imf=im.do_fft()
+				xf=db[p[1]][0].inverse()		# inverse of the transform object
+				img.process_inplace("xform",{"transform":xf})
+				imf=img.do_fft()
 				imf.process_inplace("xform.phaseorigin.tocorner")
-				avg.add(imf)
+				avg.add_image(imf)
 				
 		finalf=avg.finish()
 		final=finalf.do_ift()
