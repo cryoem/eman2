@@ -40,8 +40,11 @@ too look for issues with preferred orientation, etc.
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-#	parser.add_argument("--input", default='',type=str, help="The name of the hdf stack of volumes to process.")
-	parser.add_argument("--output", default="orient.txt",type=str, help="The name of the output average volume.")
+	parser.add_argument("--input", default='',type=str, help="File containing particles corresponding to json file. Required for --average.")
+	parser.add_argument("--output", default="orient.txt",type=str, help="A text file containing Az, Alt, Phi, Qual for each particle")
+	parser.add_argument("--average", default=None,type=str, help="Particles will be re-averaged into specified output file based on other provided options")
+	parser.add_argument("--evendist", default=-1, type=float, help="Fraction of best particles to include in least populated 10 degree altitude arc")
+	
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
@@ -57,25 +60,54 @@ too look for issues with preferred orientation, etc.
 
 	out=file(options.output,"w")
 
-	alts=[0]*9
+	alts=[ [] for i in xrange(18)]
 	for k in db.keys():
 		xf=db[k][0]
 		xfd=xf.get_params("eman")
 		out.write("%1.3f,\t%1.3f,\t%1.3f,\t%1.3g\n"%(xfd["az"],xfd["alt"],xfd["phi"],float(db[k][1])))
 		
 		try:
-			an=int(floor(xfd["alt"]/20.0001))
-			alts[an]+=1
+			an=int(floor(xfd["alt"]/10.0001))
+			alts[an].append((db[k][1],k))
 		except: pass
 	
 
 	print "Altitude distribution:"
 
-	for i in xrange(9) :
-		print "%d - %d: %d"%(i*20.0,(i+1)*20.0,alts[i])
+	for i in xrange(18) :
+		print "%d - %d: %d"%(i*10.0,(i+1)*10.0,len(alts[i]))
 
 
 	print "See also: ",options.output
+	
+	if options.evendist>0 :
+		ppz=min(alts)*options.evendist
+		print "Using ",ppz," particles from each 10 degree zone"
+		
+		for i in xrange(18):
+			alts[i].sort()
+			alts[i]=alts[i][:ppz]		# we keep the best ppz particles in each zone
+			
+	if options.average:
+		if not options.input :
+			print "Error: must specify --input with --average"
+			sys.exit(1)
+		avg=Averagers.get("mean.tomo",{"save_norm":1})
+		for i in xrange(18):
+			for p in alts[i]:
+				n=int(alts[i][1].split("_")[1])		# extract the particle number from the name saved by e2spt_classaverage
+				img=EMData(options.input,n)
+				xf=db[alts[i][1]][0].inverse()		# inverse of the transform object
+				im.process_inplace("xform",{"transform":xf})
+				imf=im.do_fft()
+				imf.process_inplace("xform.phaseorigin.tocorner")
+				avg.add(imf)
+				
+		finalf=avg.finish()
+		final=finalf.do_ift()
+		final.process_inplace("xform.phaseorigin.tocenter")
+		final.write_image(options.average,0)
+				
 	E2end(logid)
 	
 
