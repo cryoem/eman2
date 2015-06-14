@@ -147,6 +147,8 @@ def main():
 	parser.add_option("--ralignzphi", type=str ,action="append",
 								help="Refine Z alignment within +-10 pixels  and phi +-15 degrees (for C symmetries), specify name of alignment reference here not with --alignref")
 	parser.add_option("--alignref", metavar="filename", type="string", default=None, help="Alignment reference volume. May only be specified once.")
+	parser.add_option("--alignctod", type=str ,action="append",
+								help="Rotates a map already aligned for C symmetry so the best 2-fold is positioned for specified D symmetry. Does not impose specified symmetry.")
 
 	parser.add_option("--rot",type=str,metavar="az,alt,phi or convention:par=val:...",help="Rotate map. Specify az,alt,phi or convention:par=val:par=val:...  eg - mrc:psi=22:theta=15:omega=7", action="append",default=None)
 
@@ -163,7 +165,7 @@ def main():
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_option("--step",type=str,default=None,help="Specify <init>,<step>. Processes only a subset of the input data. For example, 0,2 would process only the even numbered particles")
 
-	append_options = ["clip", "fftclip", "process", "filter", "meanshrink", "medianshrink", "scale", "sym", "multfile", "trans", "rot", "align","ralignzphi"]
+	append_options = ["clip", "fftclip", "process", "filter", "meanshrink", "medianshrink", "scale", "sym", "multfile", "trans", "rot", "align","ralignzphi","alignctod"]
 
 	optionlist = pyemtbx.options.get_optionlist(sys.argv[1:])
 
@@ -493,6 +495,26 @@ def main():
 				data=best[3]
 				data["xform.align3d"]=Transform({"type":"eman","tz":best[1],"phi":best[2]})
 				if options.verbose>0 : print "Alignment: tz = ",best[1],"  dphi=",best[2]
+
+			elif option1 == "alignctod":
+				if options.alignctod[0][0].lower()!="d" :
+					print "Error: please specify D symmetry as alignctod"
+					sys.exit(1)
+				nsym=int(options.alignctod[0][1:])
+				arange=360.0/nsym		# probably more than necessary, but we'll do it anyway...
+				astep=180.0/pi*atan(2.0/data["nx"])
+				nstep=int(arange/astep)
+				
+				best=(1e23,0)
+				for azi in xrange(nstep):
+					az=azi*astep
+					datad=data.process("xform",{"transform":Transform({"type":"eman","alt":180.0,"az":az})})	# rotate 180, then about z
+					c=data.cmp("ccc",datad)
+					best=min(best,(c,az))
+					if options.verbose: print azi,az,c,best
+				
+				print "alignctod, rotate:",best[1]/2.0
+				data.process_inplace("xform",{"transform":Transform({"type":"eman","az":best[1]/2.0})})	# 1/2 the angle to get it on the 2-fold
 
 			elif option1 == "align":
 				if alignref==None :
