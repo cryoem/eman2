@@ -1412,7 +1412,7 @@ def refprojs( volft, kb, ref_angles, cnx, cny, numr, mode, wr ):
 
 """
 #   This code is a nonsense.  I may come back to it one of these days...  PAP 01/27/2015
-def proj_ali_incore_chunks(data, refrings, numr, xrng, yrng, step, finfo=None):
+def Xproj_ali_incore_chunks(data, refrings, numr, xrng, yrng, step, finfo=None):
 	from utilities    import compose_transform2
 	from EMAN2 import Vec2f
 
@@ -1544,6 +1544,75 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 	#set_params_proj(data, [phi, theta, psi, s2x, s2y])
 	t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 	t2.set_trans(Vec2f(-s2x, -s2y))
+	data.set_attr("xform.projection", t2)
+	data.set_attr("referencenumber", iref)
+	from pixel_error import max_3D_pixel_error
+	pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
+
+	if finfo:
+		finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
+		finfo.flush()
+
+	return peak, pixel_error
+
+def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None):
+	from utilities    import compose_transform2
+	from EMAN2 import Vec2f
+
+	ID = data.get_attr("ID")
+	if finfo:
+		from utilities    import get_params_proj
+		phi, theta, psi, s2x, s2y = get_params_proj(data)
+		finfo.write("Image id: %6d\n"%(ID))
+		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, s2x, s2y))
+		finfo.flush()
+
+	mode = "F"
+	#  center is in SPIDER convention
+	nx   = data.get_xsize()
+	ny   = data.get_ysize()
+	cnx  = nx//2 + 1
+	cny  = ny//2 + 1
+	ou = numr[-3]
+
+
+	#phi, theta, psi, sxo, syo = get_params_proj(data)
+	t1 = data.get_attr("xform.projection")
+	t2 = t1
+	for zi in xrange(xrng):
+		dp = t2.get_params("spider")
+
+		sxi = dp["tx"]
+		syi = dp["ty"]
+		txrng = [0.0]*2 
+		tyrng = [0.0]*2
+		txrng[0] = max(0,min(cnx+sxi-ou, xrng[zi]+sxi))
+		txrng[1] = max(0, min(nx-cnx-sxi-ou, xrng[zi]-sxi))
+		tyrng[0] = max(0,min(cny+syi-ou, yrng[zi]+syi))
+		tyrng[1] = max(0, min(ny-cny-syi-ou, yrng[zi]-syi))
+			
+		[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings, txrng, tyrng, step[zi], mode, numr, cnx+sxi, cny+syi)
+		#print ang, sxs, sys, mirror, iref, peak
+		iref = int(iref)
+		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
+		#  What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
+		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+		if mirror:
+			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
+			theta = 180.0-refrings[iref].get_attr("theta")
+			psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
+			s2x   = sxb - sxi
+			s2y   = syb - syi
+		else:
+			phi   = refrings[iref].get_attr("phi")
+			theta = refrings[iref].get_attr("theta")
+			psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
+			s2x   = sxb - sxi
+			s2y   = syb - syi
+		#set_params_proj(data, [phi, theta, psi, s2x, s2y])
+		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
+		t2.set_trans(Vec2f(-s2x, -s2y))
+
 	data.set_attr("xform.projection", t2)
 	data.set_attr("referencenumber", iref)
 	from pixel_error import max_3D_pixel_error

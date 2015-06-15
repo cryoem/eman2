@@ -2891,7 +2891,7 @@ def no_of_processors_restricted_by_data__do_volume(projections, ali3d_options, i
 # 			 nsoft = 1 shc
 # 			 nsoft >1  shc_multi
 def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi_comm = None, log = None, nsoft = 3, \
-		saturatecrit = 0.95, pixercutoff = 1.0 ):
+		saturatecrit = 0.95, pixercutoff = 1.0, zoom = False):
 
 	from alignment       import Numrinit, prepare_refrings, proj_ali_incore,  proj_ali_incore_local, shc, center_projections_3D
 	from utilities       import bcast_number_to_all, bcast_EMData_to_all, 	wrap_mpi_gatherv, wrap_mpi_bcast, model_blank
@@ -3353,9 +3353,9 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 # 			 nsoft = 1 shc
 # 			 nsoft >1  shc_multi
 def sali3d_base(stack, ref_vol = None, ali3d_options = None, mpi_comm = None, log = None, nsoft = 3, \
-		saturatecrit = 0.95, pixercutoff = 1.0 ):
+		saturatecrit = 0.95, pixercutoff = 1.0, zoom = False ):
 
-	from alignment       import Numrinit, prepare_refrings, proj_ali_incore,  proj_ali_incore_local, shc, center_projections_3D
+	from alignment       import Numrinit, prepare_refrings, proj_ali_incore,  proj_ali_incore_zoom,  proj_ali_incore_local, shc, center_projections_3D
 	from utilities       import bcast_number_to_all, bcast_EMData_to_all, 	wrap_mpi_gatherv, wrap_mpi_bcast, model_blank
 	from utilities       import get_im, file_type, model_circle, get_input_from_string, get_params_proj, set_params_proj
 	from mpi             import mpi_bcast, mpi_comm_size, mpi_comm_rank, MPI_FLOAT, MPI_COMM_WORLD, mpi_barrier, mpi_reduce, MPI_INT, MPI_SUM
@@ -3363,7 +3363,7 @@ def sali3d_base(stack, ref_vol = None, ali3d_options = None, mpi_comm = None, lo
 	from statistics      import hist_list
 	from applications    import MPI_start_end
 	from filter          import filt_ctf
-	from global_def      import Util
+	from EMAN2           import Util
 	from fundamentals    import resample, fshift
 	from multi_shc       import do_volume, shc_multi
 	from EMAN2           import EMUtil, EMData
@@ -3491,6 +3491,7 @@ def sali3d_base(stack, ref_vol = None, ali3d_options = None, mpi_comm = None, lo
 	cs = [0.0]*3
 	total_iter = 0
 	# do the projection matching
+	if zoom: lstp = 1
 	for N_step in xrange(lstp):
 
 		terminate = 0
@@ -3545,10 +3546,14 @@ def sali3d_base(stack, ref_vol = None, ali3d_options = None, mpi_comm = None, lo
 			par_r = [0]*max(2,(nsoft+1))
 			for im in xrange(nima):
 				if(nsoft == 0):
-					if(an[N_step] == -1): peak, pixer[im] = proj_ali_incore(data[im], refrings, numr, \
+					if(an[N_step] == -1):
+						#  In zoom option each projection goes through shift zoom alignment
+						if  zoom: peak, pixer[im] = proj_ali_incore_zoom(data[im], refrings, numr, \
+														xrng, yrng, step)
+						else:  peak, pixer[im] = proj_ali_incore(data[im], refrings, numr, \
 														xrng[N_step], yrng[N_step], step[N_step])
-					else:                 peak, pixer[im] = proj_ali_incore_local(data[im], refrings, numr, \
-														xrng[N_step], yrng[N_step], step[N_step], an[N_step], sym = sym, finfo = finfo)
+					else:   peak, pixer[im] = proj_ali_incore_local(data[im], refrings, numr, \
+									xrng[N_step], yrng[N_step], step[N_step], an[N_step], sym = sym, finfo = finfo)
 					if(pixer[im] == 0.0):  par_r[0] += 1
 				elif(nsoft == 1):
 					peak, pixer[im], number_of_checked_refs, iref = \

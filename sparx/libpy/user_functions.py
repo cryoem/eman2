@@ -842,7 +842,7 @@ def dovolume( ref_data ):
 		#  Here unless I am mistaken it is enough to take the beginning of the reference pw.
 		for i in xrange(1,len(ro)):  ro[i] = (rt[i]/ro[i])**0.5
 		vol = fft( filt_table( filt_tanl(vol, fl, aa), ro) )
-		msg = "Power spectrum adjusted"
+		msg = "Power spectrum adjusted\n"
 		print_msg(msg)
 	except:
 		vol = fft( filt_tanl(vol, fl, aa) )
