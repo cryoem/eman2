@@ -357,6 +357,7 @@ class MovieModeAligner:
 			monitor = 0
 		nm=2*self.hdr['nimg']
 		init=[ np.random.random()*(self._max-self._min)+self._min for i in range(nm)]
+		init=[ np.random.randint(-1,1) for i in range(nm)]
 		if options.verbose: print("Initializing simplex minimizer")
 		sm=Simplex(self._compares,init,[5]*nm,data=self)
 		mn=sm.minimize(epsilon = epsilon, maxiters = maxiters, monitor = monitor)
