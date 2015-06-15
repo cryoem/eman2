@@ -196,6 +196,12 @@ def main():
 	outfile = args[1]
 	is_new_file = not os.path.isfile(outfile)
 
+	out_ext = os.path.splitext(outfile)[1]
+
+	if out_ext == ".lst" :
+		print "Output file extension may not be .lst: " + outfile
+		sys.exit(1)
+
 	# This is a specilalized option which doesn't play nice with ANY other options in the command
 	# it will do piecewise shrinking of a map which is too large for RAM
 	if options.meanshrinkbig>0 :
