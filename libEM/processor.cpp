@@ -9720,7 +9720,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 				// Establish limits for this row and skip if necessary
 				int kyz2=kyNew*kyNew+kzNew*kzNew;
 				if (kyz2>lim) continue;	// Whole y,z row is 'missing'
-				int kxNewMax=(int)floor(sqrt(lim-kyz2));
+				int kxNewMax=(int)floor(sqrt((float)(lim-kyz2)));
 				float kxPre =  MatXY * kyNew +  MatXZ *kzNew;
 				float kyPre =  MatYY * kyNew +  MatYZ*kzNew;
 				float kzPre =  MatZY * kyNew +  MatZZ*kzNew;
