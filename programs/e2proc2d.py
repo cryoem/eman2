@@ -246,6 +246,10 @@ def main():
 			out_ext = inp_ext
 			outfile = outfile + out_ext
 
+		if out_ext == ".lst" :
+			print "Output file extension may not be .lst: " + outfile
+			continue
+
 		if is_inp_bdb :
 #			if os.path.isdir("EMAN2DB") :
 #				if not os.path.isfile("EMAN2DB"+"/"+infile[4:]+".bdb") :
