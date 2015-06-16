@@ -682,6 +682,7 @@ def metamove_mrk01(projdata, oldshifts, Tracker, partids, partstack, outputdir, 
 	#
 	#  Will create outputdir
 	#  Will write to outputdir output parameters: params-chunk0.txt and params-chunk1.txt
+	shrinkage = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
 	if(myid == main_node):
 		#  Create output directory
 		log = Logger(BaseLogger_Files())
@@ -691,7 +692,6 @@ def metamove_mrk01(projdata, oldshifts, Tracker, partids, partstack, outputdir, 
 		log.prefix += "/"
 		ref_vol = get_im(Tracker["constants"]["refvol"])
 		nnn = ref_vol.get_xsize()
-		shrinkage = float(Tracker["nxinit"])/float(nnn)
 		if(Tracker["nxinit"] != nnn ):
 			from fundamentals import resample
 			ref_vol = resample(ref_vol, shrinkage)
@@ -700,6 +700,15 @@ def metamove_mrk01(projdata, oldshifts, Tracker, partids, partstack, outputdir, 
 		ref_vol = model_blank(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
 	mpi_barrier(MPI_COMM_WORLD)
 	bcast_EMData_to_all(ref_vol, myid, main_node)
+	#  
+	#  Compute current values of some parameters.
+	Tracker["radius"] = int(Tracker["constants"]["radius"] * shrinkage +0.5)
+	if(Tracker["radius"] < 2):
+		ERROR( "ERROR!!   lastring too small  %f    %f   %d"%(Tracker["radius"], Tracker["constants"]["radius"]), "sxmeridien",1, myid)
+	Tracker["lowpass"] = float(Tracker["icurrentres"])/float(Tracker["constants"]["nnxo"])
+	delta = min(round(degrees(atan(0.5/Tracker["lowpass"]/Tracker["radius"])), 2), 3.0)
+	Tracker["delta"] = "delta":"%f  %f  %f"%(delta, delta, delta)
+	Tracker["pixercutoff"] = get_pixercutoff(Tracker["radius"], delta, 0.5)
 
 	if(Tracker["delpreviousmax"]):
 		for i in xrange(len(projdata)):
@@ -707,14 +716,13 @@ def metamove_mrk01(projdata, oldshifts, Tracker, partids, partstack, outputdir, 
 			except:  pass
 	if(myid == main_node):
 		print_dict(Tracker,"METAMOVE parameters")
-		#print("                    =>  actual lowpass      :  ",Tracker["lowpass"])
-		#print("                    =>  actual init lowpass :  ",Tracker["initialfl"])
 		if(len(Tracker["PWadjustment"])>0):
 			print("                    =>  PW adjustment       :  ",Tracker["PWadjustment"])
 		print("                    =>  partids             :  ",partids)
 		print("                    =>  partstack           :  ",partstack)
 
 	#if(Tracker["lowpass"] > 0.48):  ERROR("Low pass filter in metamove > 0.48 on the scale of shrank data","sxmeridien",1,myid)
+	if(myid == 0):  Tracker_print_mrk01(history[-1],"TRACKER")
 
 	#  Run alignment command
 	if(Tracker["local"]):
@@ -898,6 +906,7 @@ def main_mrk01():
 	Tracker["local"]        = False
 	Tracker["PWadjustment"] = ""
 	Tracker["applyctf"]     = True  #  Should the data be premultiplied by the CTF.  Set to False for local continues.
+	Tracker["refvol"]       = None
 
 	Tracker["nxinit"]       = 64
 	Tracker["nxresolution"] = -1
@@ -945,6 +954,7 @@ def main_mrk01():
 			del a
 	else:
 		nnxo = 0
+		fq = 0.0
 		pixel_size = 1.0
 	nnxo = bcast_number_to_all(nnxo, source_node = main_node)
 	if( nnxo < 0 ):
@@ -957,8 +967,10 @@ def main_mrk01():
 	Tracker["fuse_freq"]    = fq
 	del fq, nnxo, pixel_size
 
-	if(Tracker["constants"]["radi"]  < 1):  Tracker["constants"]["radi"]  = Tracker["constants"]["nnxo"]//2-2
-	elif((2*Tracker["constants"]["radi"] +2) > Tracker["constants"]["nnxo"]):  ERROR("Particle radius set too large!","sxmeridien",1,myid)
+	if(Tracker["constants"]["radius"]  < 1):
+		Tracker["constants"]["radius"]  = Tracker["constants"]["nnxo"]//2-2
+	elif((2*Tracker["constants"]["radius"] +2) > Tracker["constants"]["nnxo"]):
+		ERROR("Particle radius set too large!","sxmeridien",1,myid)
 
 
 	# ------------------------------------------------------------------------------------
@@ -1117,17 +1129,17 @@ def main_mrk01():
 
 	while(keepgoing):
 		mainiteration += 1
-
+		Tracker["mainteration"] = mainiteration
 		#  prepare output directory
 		history[-1]["directory"] = "main%03d"%mainiteration
 		mainoutputdir = os.path.join(masterdir,history[-1]["directory"])
 
 		if(myid == main_node):
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(line,"MAIN ITERATION  #%2d     nxinit, icurrentres, resolution  %d    %d"%\
-				mainiteration, nxinit,  icurrentres, icurrentres/float(nnxo), lowpass, falloff)
-			print(line,"  mainoutputdir  previousoutputdir  ",mainoutputdir,previousoutputdir)
-			Tracker_print_mrk01(history[-1],"TRACKER")
+			print(line,"MAIN ITERATION  #%2d     nxinit, icurrentres, resolution  %d    %d  %f"%\
+				Tracker["mainiteration"], Tracker["nxinit"],  Tracker["icurrentres"], \
+				Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["icurrentres"]))
+			print(line,"  mainoutputdir  previousoutputdir  ",mainoutputdir, previousoutputdir)
 
 			if keepchecking:
 				if(os.path.exists(mainoutputdir)):
@@ -1169,44 +1181,12 @@ def main_mrk01():
 
 		mpi_barrier(MPI_COMM_WORLD)
 
-		#  Refine two groups at a current resolution
-		lastring = int(radi*float(Tracker["nxinit"])/float(nnxo)+0.5)
-		if(lastring < 2):
-			ERROR( "ERROR!!   lastring too small  %f    %f   %d"%(radi, lastring), "sxmeridien",1, myid)
-
-		delta = round(degrees(atan(1.0/lastring)), 2)
-		"""
-		# subdict( paramsdict, { "delta":"%f"%delta , "an":Tracker["an"], "local":Tracker["local"], \
-		# 				"lowpass":Tracker["lowpass"], "initialfl":Tracker["initialfl"], "resolution":Tracker["resolution"], \
-		# 				"icurrentres":Tracker["icurrentres"], \
-		# 				"nnxo":Tracker["nnxo"], "nxinit":Tracker["nxinit"], "nxresolution":Tracker["nxresolution"], \
-		# 				"pixercutoff":get_pixercutoff(radi*float(Tracker["nxinit"])/float(nnxo), delta, 0.5), \
-		# 				"radius":lastring,"delpreviousmax":True } )
-		# Update Tracker
-		subdict( Tracker, { "delta":"%f"%delta , "an":Tracker["an"], \
-							"pixercutoff":get_pixercutoff(radi*float(Tracker["nxinit"])/float(nnxo), delta, 0.5), \
-							"radius":lastring, "delpreviousmax":True } )
-		"""
-		# subdict( paramsdict, { "delta":"%f  %f  %f"%(delta, delta, delta) , "an":Tracker["an"], "local":Tracker["local"], \
-		# 				"lowpass":Tracker["lowpass"], "initialfl":Tracker["initialfl"], "resolution":Tracker["resolution"], \
-		#				"icurrentres":Tracker["icurrentres"], \
-		# 				"nnxo":Tracker["nnxo"], "nxinit":Tracker["nxinit"], "nxresolution":Tracker["nxresolution"], \
-		# 				"pixercutoff":get_pixercutoff(radi*float(Tracker["nxinit"])/float(nnxo), delta, 0.5), \
-		# 				"radius":lastring,"delpreviousmax":True } )
-
-		# Update Tracker
-		subdict( Tracker, { "delta":"%f  %f  %f"%(delta, delta, delta), "an":Tracker["an"], \
-							"pixercutoff":get_pixercutoff(radi*float(Tracker["nxinit"])/float(nnxo), delta, 0.5), \
-							"radius":lastring, "delpreviousmax":True } )
-
-		#  REFINEMENT
-		#  Part "a"  SHC         <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-		nsoft = Tracker["nsoft"]
+		#  REFINEMENT  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 		for procid in xrange(2):
 			coutdir = os.path.join(mainoutputdir,"loga%01d"%procid)
 			doit, keepchecking = checkstep(coutdir, keepchecking, myid, main_node)
 			#  here ts has different meaning for standard and continuous
-			subdict( Tracker, { "nsoft":nsoft, "refvol":os.path.join(mainoutputdir,"fusevol%01d.hdf"%procid) } )
+			Tracker["refvol"] = os.path.join(mainoutputdir,"fusevol%01d.hdf"%procid)\
 			#if(len(history)>1):  old_nx = history[-2]["nx"]
 			#else:    old_nx = Tracker["nx"]
 			#Tracker["xr"] = "3.0"#"%s"%max(3,int(1.5*Tracker["nx"]/float(old_nx) +0.5))
@@ -1232,7 +1212,7 @@ def main_mrk01():
 				if( Tracker["nxinit"] != projdata[procid][0].get_xsize() ):  \
 					projdata[procid], oldshifts[procid] = get_shrink_data(nnxo, Tracker["nxinit"], \
 						stack, partids[procid], partstack[procid], myid, main_node, nproc, \
-						Tracker["CTF"], Tracker["applyctf"], preshift = False, radi = radi)
+						Tracker["constants"]["CTF"], Tracker["applyctf"], preshift = False, radi = radi)
 				metamove_mrk01(projdata[procid], oldshifts[procid], Tracker, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
 
 		partstack = [None]*2
@@ -1244,7 +1224,8 @@ def main_mrk01():
 
 		if  doit:
 			xlowpass, xfalloff, xcurrentres = compute_resolution_mrk01(stack, mainoutputdir, partids, partstack, \
-													radi, nnxo, Tracker["CTF"], Tracker["mask3D"], Tracker["sym"], myid, main_node, nproc)
+													radi, nnxo, Tracker["constants"]["CTF"], Tracker["constants"]["mask3D"], \
+													Tracker["constants"]["sym"], myid, main_node, nproc)
 			del xlowpass, xfalloff, xcurrentres
 			if( myid == main_node):
 				# Move output to proper directories
