@@ -1089,10 +1089,22 @@ def main_mrk01():
 			write_text_row([[0,0,0,0,0] for i in xrange(len(l1))], partstack[0])
 			write_text_row([[0,0,0,0,0] for i in xrange(len(l2))], partstack[1])
 			del l1, l2
-			# Create 2 independent initial reference models 
+			
+			# Create independent reference models for each particle group
 			for procid in xrange(2):
-				cmd = "{} {} {}".format("cp -p", volinit, os.path.join(initdir,"vol%01d.hdf"%procid))
+				# make a copy of original reference model for this particle group (procid)
+				file_path_viv = os.path.join(initdir,"vol%01d.hdf"%procid)
+				cmd = "{} {} {}".format("cp -p", volinit, file_path_viv)
 				cmdexecute(cmd)
+			    # add small noise to the reference model
+				viv = get_im(file_path_viv)
+				if(options.mask3D == None):  mask33d = model_circle(radi,nnxo,nnxo,nnxo)
+				else:                        mask33d = get_im(options.mask3D)
+				st = Util.infomask(viv, mask33d, False)
+				if( st[0] == 0.0 ):
+					viv += (model_blank(nnxo,nnxo,nnxo,1.0) - mask33d)*model_gauss_noise(st[1]/1000.0,nnxo,nnxo,nnxo)
+				viv.write_image(file_path_viv)
+				del mask33d, viv
 			
 		mpi_barrier(MPI_COMM_WORLD)
 
@@ -1279,7 +1291,7 @@ def main_mrk01():
 				cmdexecute(cmd)
 				cmd = "{} {} {}".format("mv", os.path.join(mainoutputdir,"current_resolution.txt") , os.path.join(mainoutputdir,"acurrent_resolution.txt"))
 				cmdexecute(cmd)
-
+				
 		#  fuse shc volumes to serve as starting point for the next, deterministic part.
 		if(myid == main_node):
 			if keepchecking:
@@ -1342,7 +1354,7 @@ def main_mrk01():
 														radi, nnxo, Tracker["CTF"], Tracker["mask3D"], Tracker["sym"], myid, main_node, nproc)
 			else:
 				# Previous phase was hard, so the resolution exists
-				# MRK_NOTE: 2015/06/15 
+				# MRK_NOTE: 2015/06/15: This need to be incorporate...
 				if(myid == main_node):
 					cmd = "{} {} {}".format("cp", os.path.join(mainoutputdir,"acurrent_resolution.txt") , os.path.join(mainoutputdir,"current_resolution.txt"))
 					cmdexecute(cmd)
