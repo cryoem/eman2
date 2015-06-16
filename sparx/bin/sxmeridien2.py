@@ -726,7 +726,8 @@ def metamove_mrk01(projdata, oldshifts, Tracker, partids, partstack, outputdir, 
 
 	#  Run alignment command
 	if(Tracker["local"]):
-		params = slocal_ali3d_base_MPI_mrk01(projdata, get_im(Tracker["refvol"]), \  # Does it shrink initial volume?
+		# Does it shrink initial volume?
+		params = slocal_ali3d_base_MPI_mrk01(projdata, get_im(Tracker["refvol"]), \
 						Tracker, mpi_comm = MPI_COMM_WORLD, log = log, \
 		    			chunk = 0.25, \
 		    			saturatecrit = Tracker["saturatecrit"], pixercutoff =  Tracker["pixercutoff"])
@@ -943,7 +944,7 @@ def main_mrk01():
 			ERROR("Image size less than minimum permitted $d"%Tracker["nxinit"],"sxmeridien",1)
 			nnxo = -1
 		else:
-			if Tracker["constant"]["CTF"]:
+			if Tracker["constants"]["CTF"]:
 				i = a.get_attr('ctf')
 				pixel_size = i.apix
 				fq = pixel_size/Tracker["fuse_freq"]
