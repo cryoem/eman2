@@ -2630,7 +2630,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 	if (nrsoln == 0) throw InvalidParameterException("ERROR (RT3DTreeAligner): nsoln must be >0"); // What was the user thinking?
 
 	int nsoln = nrsoln*2;
-	if (nrsoln<8) nsoln=16;		// we start with at least 16 solutions, but then gradually decrease with increasing scale
+	if (nrsoln<16) nsoln=32;		// we start with at least 32 solutions, but then gradually decrease with increasing scale
 	
 	// !!!!!! IMPORTANT NOTE - we are inverting the order of this and to here to match convention in other aligners, to compensate
 	// the Transform is inverted before being returned
@@ -2685,10 +2685,10 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 		EMData *small_this=base_this->get_clip(Region(0,(ny-ss)/2,(ny-ss)/2,ss+2,ss,ss));
 		EMData *small_to=  base_to->  get_clip(Region(0,(ny-ss)/2,(ny-ss)/2,ss+2,ss,ss));
 		small_this->process_inplace("xform.fourierorigin.tocorner");					// after clipping back to canonical form
-		small_this->process_inplace("filter.highpass.gauss",Dict("cutoff_pixels",1));
+		small_this->process_inplace("filter.highpass.gauss",Dict("cutoff_pixels",4));
 		small_this->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.33f));
 		small_to->process_inplace("xform.fourierorigin.tocorner");
-		small_to->process_inplace("filter.highpass.gauss",Dict("cutoff_pixels",1));
+		small_to->process_inplace("filter.highpass.gauss",Dict("cutoff_pixels",4));
 		small_to->process_inplace("filter.lowpass.gauss",Dict("cutoff_abs",0.33f));
 
 		// these are cached for speed in the comparator
@@ -2711,7 +2711,8 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 
 		// This is a solid estimate for very complete searching, 2.5 is a bit arbitrary
 		// make sure the altitude step hits 90 degrees, not absolutely necessary for this, but can't hurt
- 		float astep = 89.999/floor(pi/(2.5*2.0*atan(2.0/ss)));
+//		float astep = 89.999/floor(pi/(2.5*2.0*atan(2.0/ss)));
+		float astep = 89.999/floor(pi/(1.5*2.0*atan(2.0/ss)));
 
 		// This is drawn from single particle analysis testing, which in that case insures that enough sampling to
 		// reasonably fill Fourier space is achieved, but doesn't perfectly apply to SPT
@@ -2736,7 +2737,7 @@ vector<Dict> RT3DTreeAligner::xform_align_nbest(EMData * this_img, EMData * to, 
 			// We don't generate for phi, since this can produce a very large number of orientations
 			vector<Transform> transforms = sym->gen_orientations((string)params.set_default("orientgen","eman"),d);
 			if (verbose>0) printf("%d orientations to test (%d)\n",(int)(transforms.size()*(360.0/astep)),transforms.size());
-			if (transforms.size()<25) continue; // for very high symmetries we will go up to 32 instead of 24
+			if (transforms.size()<30) continue; // for very high symmetries we will go up to 32 instead of 24
 
 			// We iterate over all orientations in an asym triangle (alt & az) then deal with phi ourselves
 //			for (std::vector<Transform>::iterator t = transforms.begin(); t!=transforms.end(); ++t) {    // iterator form was causing all sorts of problems

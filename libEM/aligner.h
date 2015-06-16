@@ -316,6 +316,7 @@ namespace EMAN
 			d.put("rfp_mode", EMObject::INT,"Either 0,1 or 2. A temporary flag for testing the rotational foot print. O is the original eman1 way. 1 is just using calc_ccf without padding. 2 is using calc_mutual_correlation without padding.");
 			d.put("zscore", EMObject::INT,"Either 0 or 1. If set, will convert per-radius CCF curves into Z-score significnace curves before averaging. In theory this should produce better results by focusing on radii with more alignment information. (default=false)");
 			d.put("ambig180", EMObject::INT,"Either 0 or 1. If set, will not try and resolve the 180 degree ambiguity. If not set, it will assume the particle is well centered and resolve the ambiguity that way. default=false");
+			d.put("maxshift", EMObject::INT,"This is provided for compatibility with other aligners. It does absolutely nothing here, as there is an implicit maxshift=0.");
 			return d;
 		}
 
