@@ -1004,15 +1004,11 @@ def main_mrk01():
 		partids = os.path.join(masterdir, "ids.txt")
 
 		if(options.startangles):
-
 			if( myid == main_node ):
 				cmd = "mkdir "+initdir
 				cmdexecute(cmd)
 				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 				print(line,"INITIALIZATION")
-				cmd = "{} {}".format("sxheader.py --params=xform.projection  --export="+os.path.join(initdir,"params-chunk0.txt"), stack)
-				cmdexecute(cmd)
-				print(line,"Executed successfully: ","Imported initial parameters from the input stack")
 		else:
 			if( myid == main_node ):
 				cmd = "mkdir "+initdir
@@ -1044,9 +1040,35 @@ def main_mrk01():
 			l2.sort()
 			write_text_file(l1,partids[0])
 			write_text_file(l2,partids[1])
-			write_text_row([[0,0,0,0,0] for i in xrange(len(l1))], partstack[0])
-			write_text_row([[0,0,0,0,0] for i in xrange(len(l2))], partstack[1])
+			
+			if(options.startangles):
+				tp_list = EMUtil.get_all_attributes(stack, "xform.projection") # tp: transformation object for projection parameters
+				
+				dp_list1 = [] # dp: dictionary object for projection parameters
+				for l1_entry in l1:
+					dp = tp_list[l1_entry].get_params("spider")
+					phi, theta, psi, s2x, s2y = dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]
+					dp_list1.append([phi, theta, psi, s2x, s2y])
+				write_text_row(dp_list1, partstack[0])
+				del dp_list1
+				
+				dp_list2 = [] # dp: dictionary object for projection parameters
+				for l2_entry in l2:
+					dp = tp_list[l2_entry].get_params("spider")
+					phi, theta, psi, s2x, s2y = dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]
+					dp_list2.append([phi, theta, psi, s2x, s2y])
+				write_text_row(dp_list2, partstack[0])
+				del dp_list2
+				
+				del tp_list
+				
+			else:
+				write_text_row([[0,0,0,0,0] for i in xrange(len(l1))], partstack[0])
+				write_text_row([[0,0,0,0,0] for i in xrange(len(l2))], partstack[1])
+			
 			del l1, l2
+
+			print(line,"Executed successfully: ","Imported initial parameters from the input stack")
 			
 			# Create independent reference models for each particle group
 			# make sure the initial volume is not set to zero outside of a mask, as if it is it will crash the program
