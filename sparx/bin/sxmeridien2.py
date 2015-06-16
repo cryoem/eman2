@@ -846,6 +846,13 @@ def main_mrk01():
 
 	orgstack = args[0]
 	#print(  orgstack,masterdir,volinit )
+	# ------------------------------------------------------------------------------------
+	# Initialize MPI related variables
+	mpi_init(0, [])
+
+	nproc     = mpi_comm_size(MPI_COMM_WORLD)
+	myid      = mpi_comm_rank(MPI_COMM_WORLD)
+	main_node = 0
 
 	# ------------------------------------------------------------------------------------
 	#  INPUT PARAMETERS
@@ -857,6 +864,7 @@ def main_mrk01():
 	Tracker["stack"]        = args[0]
 	Tracker["ir"]           = options.ir
 	Tracker["rs"]           = 1
+	Tracker["maxit"]        = 1
 	Tracker["radi"]         = options.ou #  radius provided by the user, do not change!
 	Tracker["xr"]           = ""
 	Tracker["yr"]           = ""
@@ -866,40 +874,15 @@ def main_mrk01():
 	Tracker["delta"]        = "2.0"
 	Tracker["npad"]         = 2
 	Tracker["center"]       = options.center
+	Tracker["nsoft"]        = options.nsoft
+	Tracker["local"]        = False
 	Tracker["CTF"]          = options.CTF
 	Tracker["ref_a"]        = options.ref_a
 	Tracker["snr"]          = options.snr
 	Tracker["mask3D"]       = options.mask3D
 	Tracker["PWadjustment"] = ""
 	Tracker["pwreference"]  = options.pwreference
-	Tracker["fl"]           = 0.4
-	Tracker["initfl"]       = 0.4
-	Tracker["aa"]           = 0.1
-	Tracker["pixel_size"]   = 1.0
-	Tracker["fuse_freq"]    = 0.1
-
-
-	subdict( Tracker, {	"stack":stack, "delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":Tracker["an"], \
-						"center":options.center, "maxit":1, "local":False, \
-						"lowpass":inifil, "initialfl":inifil, "falloff":0.2, "radius":radi, \
-						"icurrentres":nxinit//2, "nxinit":nnxo, "nxresolution":nnxo, \
-						"nsoft":0, "delpreviousmax":True, "saturatecrit":1.0, "pixercutoff":2.0, \
-						"refvol":volinit, "mask3D":options.mask3D } )
-
-
-
-	# ------------------------------------------------------------------------------------
-	# Initialize MPI related variables
-	mpi_init(0, [])
-
-	nproc     = mpi_comm_size(MPI_COMM_WORLD)
-	myid      = mpi_comm_rank(MPI_COMM_WORLD)
-	main_node = 0
-
-	#mpi_finalize()
-	#exit()
-
-	#  
+	
 	#  The program will use three different meanings of x-size
 	#  nnxo         - original nx of the data, will not be changed
 	#  nxinit       - window size used by the program during given iteration, 
@@ -908,19 +891,31 @@ def main_mrk01():
 	#                 The fl within the reduced data is nxresolution/nxinit/2.0
 	#                 The absolute fl is nxresolution/nnxo/2.0
 	#
+	Tracker["nnxo"]         = -1
+	Tracker["nxinit"]       = 64
+	Tracker["nxresolution"]  = -1
+	Tracker["icurrentres"]  = -1
+	Tracker["fl"]           = 0.4
+	Tracker["initialfl"]    = 0.4
+	Tracker["aa"]           = 0.1
+	Tracker["pixel_size"]   = 1.0
+	Tracker["fuse_freq"]    = options.inires  # Now in A, convert to absolute before using
+	Tracker["delpreviousmax"] = True
+	Tracker["saturatecrit"]  = 1.0
+	Tracker["pixercutoff"]   = 2.0
+	Tracker["refvol"]        = volinit
+	Tracker["masterdir"]     = masterdir
+
 
 	# ------------------------------------------------------------------------------------
 	#  PARAMETERS OF THE PROCEDURE 
 	#  threshold error
 	thresherr = 0
-	fq = 50 # low-freq resolution to which fuse ref volumes. [A]
-	nxinit   = 64  #int(280*0.3*2)
 	cushion  = 8  #  the window size has to be at least 8 pixels larger than what would follow from resolution
 	nxstep   = 32
 	mempernode = 4.0e9
-	if(radi < 1):  radi = nnxo//2-2
-	elif((2*radi+2)>nnxo):  ERROR("Particle radius set too large!","sxmeridien",1,myid)
-	Tracker["ou"] = radi
+	if(Tracker["radi"]  < 1):  Tracker["radi"]  = nnxo//2-2
+	elif((2*Tracker["radi"] +2)>nnxo):  ERROR("Particle radius set too large!","sxmeridien",1,myid)
 
 	projdata = [[model_blank(1,1)],[model_blank(1,1)]]
 
