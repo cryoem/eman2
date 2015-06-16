@@ -852,6 +852,13 @@ def main():
 
 								#print "Writing dummy"
 
+								try:
+									out3d_img["apix_x"] = d["apix_x"]
+									out3d_img["apix_y"] = d["apix_y"]
+									out3d_img["apix_z"] = d["apix_z"]
+								except:
+									pass
+
 								out3d_img.write_image(outfile, 0, out_type, False, None, out_mode, not_swap)
 								dummy = 1
 
