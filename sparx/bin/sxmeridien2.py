@@ -848,8 +848,15 @@ def main_mrk01():
 	radi  = options.ou
 	global_def.BATCH = True
 	
+	
+	Constants				= {}
+	Constants["a"]          = 1
+	Constants["b"]          = 2
+	Constants["c"]          = 3
+		
 	# Create and initialize Tracker Dictionary with input options
 	Tracker					= {}
+	Tracker["consts"]       = Constants
 	Tracker["stack"]        = args[0]
 	Tracker["ir"]           = options.ir
 	Tracker["rs"]           = 1
