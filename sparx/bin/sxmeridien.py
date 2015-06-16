@@ -1228,7 +1228,7 @@ def main():
 		if(lastring < 2):
 			ERROR( "ERROR!!   lastring too small  %f    %f   %d"%(radi, lastring), "sxmeridien",1, myid)
 
-		delta = round(degrees(atan(1.0/lastring)), 2)
+		delta = min(round(degrees(atan(0.5/Tracker["lowpass"]/lastring)), 2), 3.0)
 		"""
 		subdict( paramsdict, { "delta":"%f"%delta , "an":angular_neighborhood, "local":Tracker["local"], \
 						"lowpass":Tracker["lowpass"], "initialfl":Tracker["initialfl"], "resolution":Tracker["resolution"], \
@@ -1580,6 +1580,7 @@ def main():
 			Tracker["lowpass"] = 0.19167+ (mainiteration-10)*0.00417
 			Tracker["initialfl"] = Tracker["lowpass"]
 			lowpass = Tracker["lowpass"]
+			ali3d_options.pwreference = options.pwreference
 			Tracker["PWadjustment"] = ali3d_options.pwreference
 		"""
 		#if( ( icurrentres > Tracker["icurrentres"] ) or (eliminated_outliers and not Tracker["eliminated-outliers"]) or mainiteration == 1):

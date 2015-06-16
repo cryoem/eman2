@@ -800,31 +800,32 @@ def main_mrk01():
 	# ------------------------------------------------------------------------------------
 	# PARSE COMMAND OPTIONS
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack  [output_directory]  initial_volume  --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood  --center=center_type --fl --aa --ref_a=S --sym=c1"
+	usage = progname + " stack  [output_directory]  initial_volume  --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=Tracker["an"]  --center=center_type --fl --aa --ref_a=S --sym=c1"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",      		type= "int",   default= 1,			help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--ou",      		type= "int",   default= -1,			help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
-	parser.add_option("--rs",      		type= "int",   default= 1,			help="step between rings in rotational correlation >0  (set to 1)" ) 
-	parser.add_option("--xr",      		type="string", default= "-1",		help="range for translation search in x direction, search is +/xr (default 0)")
-	parser.add_option("--yr",      		type="string", default= "-1",		help="range for translation search in y direction, search is +/yr (default = same as xr)")
-	parser.add_option("--ts",      		type="string", default= "1",		help="step size of the translation search in both directions, search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional")
-	parser.add_option("--delta",   		type="string", default= "-1",		help="angular step of reference projections during initialization step (default automatically selected based on radius of the structure.)")
+	##parser.add_option("--rs",      		type= "int",   default= 1,			help="step between rings in rotational correlation >0  (set to 1)" ) 
+	#parser.add_option("--xr",      		type="string", default= "-1",		help="range for translation search in x direction, search is +/xr (default 0)")
+	#parser.add_option("--yr",      		type="string", default= "-1",		help="range for translation search in y direction, search is +/yr (default = same as xr)")
+	#parser.add_option("--ts",      		type="string", default= "1",		help="step size of the translation search in both directions, search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional")
+	#parser.add_option("--delta",   		type="string", default= "-1",		help="angular step of reference projections during initialization step (default automatically selected based on radius of the structure.)")
 	parser.add_option("--an",      		type="string", default= "-1",		help="angular neighborhood for local searches (phi and theta) (Default exhaustive searches)")
 	parser.add_option("--center",  		type="float",  default= -1,			help="-1: average shift method; 0: no centering; 1: center of gravity (default=-1)")
-	parser.add_option("--maxit",   		type="int",  	default= 400,		help="maximum number of iterations performed for the GA part (set to 400) ")
+	#parser.add_option("--maxit",   		type="int",  	default= 400,		help="maximum number of iterations performed for the GA part (set to 400) ")
 	parser.add_option("--outlier_percentile",type="float",    default= 95,	help="percentile above which outliers are removed every iteration")
 	parser.add_option("--iteration_start",type="int",    default= 0,		help="starting iteration for rviper, 0 means go to the most recent one (default).")
 	parser.add_option("--CTF",     		action="store_true", default=False,	help="Use CTF (Default no CTF correction)")
-	parser.add_option("--snr",     		type="float",  default= 1.0,		help="Signal-to-Noise Ratio of the data (default 1.0)")
+	#parser.add_option("--snr",     		type="float",  default= 1.0,		help="Signal-to-Noise Ratio of the data (default 1.0)")
 	parser.add_option("--ref_a",   		type="string", default= "S",		help="method for generating the quasi-uniformly distributed projection directions (default S)")
 	parser.add_option("--sym",     		type="string", default= "c1",		help="symmetry of the refined structure")
-	parser.add_option("--npad",    		type="int",    default= 2,			help="padding size for 3D reconstruction (default=2)")
+	#parser.add_option("--npad",    		type="int",    default= 2,			help="padding size for 3D reconstruction (default=2)")
 	parser.add_option("--nsoft",    	type="int",    default= 1,			help="Use SHC in first phase of refinement iteration (default=1, to turn it off set to 0)")
 	parser.add_option("--startangles",  action="store_true", default=False,	help="Use orientation parameters in the input file header to jumpstart the procedure")
 
 	#options introduced for the do_volume function
-	parser.add_option("--fl",			type="float",	default=0.12,		help="cut-off frequency of hyperbolic tangent low-pass Fourier filte (default 0.12)")
-	parser.add_option("--aa",			type="float",	default=0.1,		help="fall-off of hyperbolic tangent low-pass Fourier filter (default 0.1)")
+	#parser.add_option("--fl",			type="float",	default=0.12,		help="cut-off frequency of hyperbolic tangent low-pass Fourier filter (default 0.12)")
+	#parser.add_option("--aa",			type="float",	default=0.1,		help="fall-off of hyperbolic tangent low-pass Fourier filter (default 0.1)")
+	parser.add_option("--inires",		type="float",	default=25.,		help="Resolution of the initial_volume volume (default 25A)"
 	parser.add_option("--pwreference",	type="string",	default="",			help="text file with a reference power spectrum (default no power spectrum adjustment)")
 	parser.add_option("--mask3D",		type="string",	default=None,		help="3D mask file (default a sphere  WHAT RADIUS??)")
 
@@ -853,28 +854,39 @@ def main_mrk01():
 	
 	# Create and initialize Tracker Dictionary with input options
 	Tracker					= {}
-	Tracker["ir"]           = options.ir     # ali3d_options.ir     = options.ir
-	Tracker["rs"]           = options.rs     # ali3d_options.rs     = options.rs
-	Tracker["ou"]           = options.ou     # ali3d_options.ou     = options.ou
-	Tracker["xr"]           = options.xr     # ali3d_options.xr     = options.xr
-	Tracker["yr"]           = options.yr     # ali3d_options.yr     = options.yr
-	Tracker["ts"]           = options.ts     # ali3d_options.ts     = options.ts
-	Tracker["an"]           = "-1"           # ali3d_options.an     = "-1"
-	Tracker["sym"]          = options.sym    # ali3d_options.sym    = options.sym
-	Tracker["delta"]        = options.delta  # ali3d_options.delta  = options.delta
-	Tracker["npad"]         = options.npad   # ali3d_options.npad   = options.npad
-	Tracker["center"]       = options.center # ali3d_options.center = options.center
-	Tracker["CTF"]          = options.CTF    # ali3d_options.CTF    = options.CTF
-	Tracker["ref_a"]        = options.ref_a  # ali3d_options.ref_a  = options.ref_a
-	Tracker["snr"]          = options.snr    # ali3d_options.snr    = options.snr
-	Tracker["mask3D"]       = options.ir     # ali3d_options.mask3D = options.mask3D
-	Tracker["PWadjustment"] = ""             # ali3d_options.pwreference = ""  #   It will have to be turned on after exhaustive done by setting to options.pwreference
-	Tracker["fl"]           = 0.4            # ali3d_options.fl     = 0.4
-	Tracker["initfl"]       = 0.4            # ali3d_options.initfl = 0.4
-	Tracker["aa"]           = 0.1            # ali3d_options.aa     = 0.1
+	Tracker["stack"]        = args[0]
+	Tracker["ir"]           = options.ir
+	Tracker["rs"]           = 1
+	Tracker["radi"]         = options.ou #  radius provided by the user, do not change!
+	Tracker["xr"]           = ""
+	Tracker["yr"]           = ""
+	Tracker["ts"]           = 1
+	Tracker["an"]           = options.an
+	Tracker["sym"]          = options.sym
+	Tracker["delta"]        = "2.0"
+	Tracker["npad"]         = 2
+	Tracker["center"]       = options.center
+	Tracker["CTF"]          = options.CTF
+	Tracker["ref_a"]        = options.ref_a
+	Tracker["snr"]          = options.snr
+	Tracker["mask3D"]       = options.mask3D
+	Tracker["PWadjustment"] = ""
+	Tracker["pwreference"]  = options.pwreference
+	Tracker["fl"]           = 0.4
+	Tracker["initfl"]       = 0.4
+	Tracker["aa"]           = 0.1
+	Tracker["pixel_size"]   = 1.0
+	Tracker["fuse_freq"]    = 0.1
 
-	if( Tracker["xr"] == "-1" ):  
-		Tracker["xr"] = "2"
+
+	subdict( Tracker, {	"stack":stack, "delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":Tracker["an"], \
+						"center":options.center, "maxit":1, "local":False, \
+						"lowpass":inifil, "initialfl":inifil, "falloff":0.2, "radius":radi, \
+						"icurrentres":nxinit//2, "nxinit":nnxo, "nxresolution":nnxo, \
+						"nsoft":0, "delpreviousmax":True, "saturatecrit":1.0, "pixercutoff":2.0, \
+						"refvol":volinit, "mask3D":options.mask3D } )
+
+
 
 	# ------------------------------------------------------------------------------------
 	# Initialize MPI related variables
@@ -897,25 +909,29 @@ def main_mrk01():
 	#                 The absolute fl is nxresolution/nnxo/2.0
 	#
 
-	nxinit = 64  #int(280*0.3*2)
-	cushion = 8  #  the window size has to be at least 8 pixels larger than what would follow from resolution
-	nxstep = 4
-	projdata = [[model_blank(1,1)],[model_blank(1,1)]]
-
-	mempernode = 4.0e9
-
 	# ------------------------------------------------------------------------------------
 	#  PARAMETERS OF THE PROCEDURE 
 	#  threshold error
 	thresherr = 0
 	fq = 50 # low-freq resolution to which fuse ref volumes. [A]
+	nxinit   = 64  #int(280*0.3*2)
+	cushion  = 8  #  the window size has to be at least 8 pixels larger than what would follow from resolution
+	nxstep   = 32
+	mempernode = 4.0e9
+	if(radi < 1):  radi = nnxo//2-2
+	elif((2*radi+2)>nnxo):  ERROR("Particle radius set too large!","sxmeridien",1,myid)
+	Tracker["ou"] = radi
+
+	projdata = [[model_blank(1,1)],[model_blank(1,1)]]
+
+
 
 	# Get the pixel size, if none set to 1.0, and the original image size
 	if(myid == main_node):
 		a = get_im(orgstack)
 		nnxo = a.get_xsize()
 		if( nnxo%2 == 1 ):
-			ERROR("Only even-dimensioned data allowed","sxmeridien",1)
+			ERROR("Only even-dimensioned data allowed","sxmeridien",1)  #  This will have to be eliminated as we will move only in even dimensioned windowed.
 			nnxo = -1
 		elif( nxinit > nnxo ):
 			ERROR("Image size less than minimum permitted $d"%nxinit,"sxmeridien",1)
@@ -939,12 +955,8 @@ def main_mrk01():
 		exit()
 	pixel_size = bcast_number_to_all(pixel_size, source_node = main_node)
 	fq   = bcast_number_to_all(fq, source_node = main_node)
-
-	if(radi < 1):  radi = nnxo//2-2
-	elif((2*radi+2)>nnxo):  ERROR("Particle radius set too large!","sxmeridien",1,myid)
-	Tracker["ou"] = radi
-	
-	angular_neighborhood = "-1"
+	Tracker["pixel_size"]   = pixel_size
+	Tracker["fuse_freq"]    = fq
 
 	# ------------------------------------------------------------------------------------
 	#  MASTER DIRECTORY
@@ -1020,14 +1032,14 @@ def main_mrk01():
 	inifil = float(nxinit)/2.0/nnxo
 	inifil = 0.4
 	
-	# paramsdict = {	"stack":stack,"delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":angular_neighborhood, \
+	# paramsdict = {	"stack":stack,"delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":Tracker["an"], \
 	# 				"center":options.center, "maxit":1, "local":False,\
 	# 				"lowpass":inifil, "initialfl":inifil, "falloff":0.2, "radius":radi, \
 	# 				"icurrentres": nxinit//2, "nxinit":nnxo,"nxresolution":nnxo,\
 	# 				"nsoft":0, "delpreviousmax":True, "saturatecrit":1.0, "pixercutoff":2.0,\
 	# 				"refvol":volinit, "mask3D":options.mask3D  }
 	
-	subdict( Tracker, {	"stack":stack, "delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":angular_neighborhood, \
+	subdict( Tracker, {	"stack":stack, "delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":Tracker["an"], \
 						"center":options.center, "maxit":1, "local":False, \
 						"lowpass":inifil, "initialfl":inifil, "falloff":0.2, "radius":radi, \
 						"icurrentres":nxinit//2, "nxinit":nnxo, "nxresolution":nnxo, \
@@ -1191,18 +1203,18 @@ def main_mrk01():
 
 		delta = round(degrees(atan(1.0/lastring)), 2)
 		"""
-		# subdict( paramsdict, { "delta":"%f"%delta , "an":angular_neighborhood, "local":Tracker["local"], \
+		# subdict( paramsdict, { "delta":"%f"%delta , "an":Tracker["an"], "local":Tracker["local"], \
 		# 				"lowpass":Tracker["lowpass"], "initialfl":Tracker["initialfl"], "resolution":Tracker["resolution"], \
 		# 				"icurrentres":Tracker["icurrentres"], \
 		# 				"nnxo":Tracker["nnxo"], "nxinit":Tracker["nxinit"], "nxresolution":Tracker["nxresolution"], \
 		# 				"pixercutoff":get_pixercutoff(radi*float(Tracker["nxinit"])/float(nnxo), delta, 0.5), \
 		# 				"radius":lastring,"delpreviousmax":True } )
 		# Update Tracker
-		subdict( Tracker, { "delta":"%f"%delta , "an":angular_neighborhood, \
+		subdict( Tracker, { "delta":"%f"%delta , "an":Tracker["an"], \
 							"pixercutoff":get_pixercutoff(radi*float(Tracker["nxinit"])/float(nnxo), delta, 0.5), \
 							"radius":lastring, "delpreviousmax":True } )
 		"""
-		# subdict( paramsdict, { "delta":"%f  %f  %f"%(delta, delta, delta) , "an":angular_neighborhood, "local":Tracker["local"], \
+		# subdict( paramsdict, { "delta":"%f  %f  %f"%(delta, delta, delta) , "an":Tracker["an"], "local":Tracker["local"], \
 		# 				"lowpass":Tracker["lowpass"], "initialfl":Tracker["initialfl"], "resolution":Tracker["resolution"], \
 		#				"icurrentres":Tracker["icurrentres"], \
 		# 				"nnxo":Tracker["nnxo"], "nxinit":Tracker["nxinit"], "nxresolution":Tracker["nxresolution"], \
@@ -1210,7 +1222,7 @@ def main_mrk01():
 		# 				"radius":lastring,"delpreviousmax":True } )
 
 		# Update Tracker
-		subdict( Tracker, { "delta":"%f  %f  %f"%(delta, delta, delta), "an":angular_neighborhood, \
+		subdict( Tracker, { "delta":"%f  %f  %f"%(delta, delta, delta), "an":Tracker["an"], \
 							"pixercutoff":get_pixercutoff(radi*float(Tracker["nxinit"])/float(nnxo), delta, 0.5), \
 							"radius":lastring, "delpreviousmax":True } )
 
@@ -1433,7 +1445,7 @@ def main_mrk01():
 		"""
 
 		keepgoing = 0
-		if(angular_neighborhood == "-1" ):
+		if(Tracker["an"] == "-1" ):
 			stepforward = 0.05
 			increment   = 0.02
 		else:
@@ -1496,13 +1508,13 @@ def main_mrk01():
 				if(nxinit> Tracker["nxinit"]):  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
 				nxinit = min(nxinit,nnxo)
 				#  Exhaustive searches
-				if(angular_neighborhood == "-1" and not Tracker["local"]):
+				if(Tracker["an"] == "-1" and not Tracker["local"]):
 					Tracker["initialfl"] = read_fsc(os.path.join(mainoutputdir,"fsc.txt"),icurrentres, myid, main_node)
 					Tracker["lowpass"]   = Tracker["initialfl"]
 					Tracker["applyctf"]  = True
 					Tracker["nsoft"]     = 0
 				#  Local searches
-				elif(angular_neighborhood != "-1" and not Tracker["local"]):
+				elif(Tracker["an"] != "-1" and not Tracker["local"]):
 					#Tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
 					Tracker["initialfl"]  = read_fsc(os.path.join(mainoutputdir,"fsc.txt"),icurrentres, myid, main_node)
 					Tracker["lowpass"]    = Tracker["initialfl"]
@@ -1516,7 +1528,7 @@ def main_mrk01():
 					Tracker["applyctf"]    = False
 					Tracker["nsoft"]       = 0
 				else:
-					print(" Unknown combination of settings in improved resolution path",angular_neighborhood,Tracker["local"])
+					print(" Unknown combination of settings in improved resolution path",Tracker["an"],Tracker["local"])
 					exit()  #  This will crash the program, but the situation is unlikely to occure
 				Tracker["nxresolution"]        = nxresolution
 				Tracker["nxinit"]              = nxinit
@@ -1530,14 +1542,14 @@ def main_mrk01():
 			exit()
 			#  The resolution decreased.  For exhaustive or local, backoff and switch to the next refinement.  For gridding, terminate
 			if(not Tracker["movedup"] and Tracker["extension"] < increment and mainiteration > 1):
-				if( angular_neighborhood == "-1" and not Tracker["local"]):
-					angular_neighborhood = options.an
+				if( Tracker["an"] == "-1" and not Tracker["local"]):
+					Tracker["an"] = options.an
 					Tracker["extension"] = stepforward + increment # so below it will be set to stepforward
 					mainoutputdir = bestoutputdir
 					keepgoing = 1
 					Tracker["nsoft"] = 0
-					if(myid == main_node):  print("  Switching to local searches with an %s"%angular_neighborhood)
-				elif(angular_neighborhood != "-1" and not Tracker["local"]):
+					if(myid == main_node):  print("  Switching to local searches with an %s"%Tracker["an"])
+				elif(Tracker["an"] != "-1" and not Tracker["local"]):
 					Tracker["extension"] = stepforward + increment # so below it will be set to stepforward
 					mainoutputdir = bestoutputdir
 					Tracker["nsoft"] = 0
@@ -1602,9 +1614,9 @@ def main_mrk01():
 		elif( icurrentres == Tracker["icurrentres"] ):
 			# We need separate rules for each case
 			if(myid == main_node):
-				print("  Resolution did not improve, swith to the next move", angular_neighborhood, Tracker["local"],icurrentres,lowpass)
+				print("  Resolution did not improve, swith to the next move", Tracker["an"], Tracker["local"],icurrentres,lowpass)
 			#  Exhaustive searches
-			if(angular_neighborhood == "-1" and not Tracker["local"]):
+			if(Tracker["an"] == "-1" and not Tracker["local"]):
 				if(myid == main_node):
 					print("  Switching to local searches with an  %s"%options.an)
 				Tracker["applyctf"] = True
@@ -1612,15 +1624,15 @@ def main_mrk01():
 				Tracker["local"] = False
 				#  keep the same resolution
 				icurrentres = Tracker["icurrentres"]
-				angular_neighborhood = options.an
+				Tracker["an"] = options.an
 				Tracker["nsoft"] = 0
 				keepgoing = 1
 				if(myid == main_node):
-					print("  Switching to local searches with an %s"%angular_neighborhood)
+					print("  Switching to local searches with an %s"%Tracker["an"])
 					if(Tracker["PWadjustment"] != ""):
 						print("  Turning on power spectrum adjustment %s"%Tracker["PWadjustment"])
 			#  Local continuous searches
-			elif(angular_neighborhood != "-1" and not Tracker["local"]):
+			elif(Tracker["an"] != "-1" and not Tracker["local"]):
 				if(myid == main_node):
 					print("  Switching to local continuous")
 				projdata = [[model_blank(1,1)],[model_blank(1,1)]]
@@ -1628,11 +1640,11 @@ def main_mrk01():
 				#  keep the same resolution
 				icurrentres = Tracker["icurrentres"]
 				Tracker["local"] = True
-				#angular_neighborhood = options.an
+				#Tracker["an"] = options.an
 				Tracker["nsoft"] = 0
 				keepgoing = 1
 				if(myid == main_node):
-					print("  Switching to local searches with an %s"%angular_neighborhood)
+					print("  Switching to local searches with an %s"%Tracker["an"])
 					if(Tracker["PWadjustment"] != ""):
 						print("  Turning on power spectrum adjustment %s"%Tracker["PWadjustment"])
 			#  Local/continuous  searches, finishing up
@@ -1649,7 +1661,7 @@ def main_mrk01():
 				Tracker["nxresolution"]        = nxresolution
 				Tracker["nxinit"]              = nxinit
 			else:
-				print(" Unknown combination of settings in improved resolution path",angular_neighborhood,Tracker["local"])
+				print(" Unknown combination of settings in improved resolution path",Tracker["an"],Tracker["local"])
 				exit()  #  This will crash the program, but the situation is unlikely to occur
 			Tracker["eliminated-outliers"] = eliminated_outliers
 			bestoutputdir = mainoutputdir
@@ -1678,15 +1690,15 @@ def main_mrk01():
 				#  The resolution is not moving up.  Check whether this is exhaustive search,
 				#    if yes switch to local searches by activating an, tun on PW adjustment, if given.
 				#
-				if( angular_neighborhood == "-1" ):
-					angular_neighborhood = options.an
+				if( Tracker["an"] == "-1" ):
+					Tracker["an"] = options.an
 					Tracker["movedup"] = True
 					nsoft = 0
 					Tracker["nsoft"] = 0
 					paramsdoct["nsoft"] = 0
-					if(myid == main_node):  print("  Switching to local searches with an %s and turning off SHC"%angular_neighborhood)
+					if(myid == main_node):  print("  Switching to local searches with an %s and turning off SHC"%Tracker["an"])
 					keepgoing = 1
-				elif(angular_neighborhood > 0.0 ):
+				elif(Tracker["an"] > 0.0 ):
 					if( not Tracker["local"] ):
 						Tracker["local"]     = True
 						Tracker["ts"]        = "2.0"
