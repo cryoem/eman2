@@ -689,7 +689,7 @@ def metamove_mrk01(projdata, oldshifts, Tracker, partids, partstack, outputdir, 
 		cmd = "mkdir "+log.prefix
 		cmdexecute(cmd)
 		log.prefix += "/"
-		ref_vol = get_im(Tracker["refvol"])
+		ref_vol = get_im(Tracker["constants"]["refvol"])
 		nnn = ref_vol.get_xsize()
 		shrinkage = float(Tracker["nxinit"])/float(nnn)
 		if(Tracker["nxinit"] != nnn ):
@@ -718,7 +718,7 @@ def metamove_mrk01(projdata, oldshifts, Tracker, partids, partstack, outputdir, 
 
 	#  Run alignment command
 	if(Tracker["local"]):
-		params = slocal_ali3d_base_MPI_mrk01(projdata, get_im(Tracker["refvol"]), \
+		params = slocal_ali3d_base_MPI_mrk01(projdata, get_im(Tracker["refvol"]), \  # Does it shrink initial volume?
 						Tracker, mpi_comm = MPI_COMM_WORLD, log = log, \
 		    			chunk = 0.25, \
 		    			saturatecrit = Tracker["saturatecrit"], pixercutoff =  Tracker["pixercutoff"])
@@ -743,7 +743,8 @@ def print_dict(dict,theme):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	print(line,theme)
 	spaces = "                    "
-	for q in dict:  print("                    => ",q+spaces[len(q):],":  ",dict[q])
+	for q in dict:
+		if(q != "constants"):  print("                    => ",q+spaces[len(q):],":  ",dict[q])
 
 
 # NOTE: 2015/06/11 Toshio Moriya
@@ -847,7 +848,7 @@ def main_mrk01():
 	#  INPUT PARAMETERS
 	global_def.BATCH = True
 	
-	
+
 	#  Constant settings of the project
 	Constants				= {}
 	Constants["stack"]        = args[0]
@@ -855,7 +856,8 @@ def main_mrk01():
 	Constants["rs"]           = 1
 	Constants["radius"]       = options.ou
 	Constants["maxit"]        = 50
-	Constants["sym"]          = options.sym
+	sym = options.sym
+	Constants["sym"]          = sym[0].lower() + sym[1:]
 	Constants["npad"]         = 2
 	Constants["center"]       = options.center
 	Constants["pwreference"]  = options.pwreference
@@ -884,6 +886,8 @@ def main_mrk01():
 	Tracker					= {}
 	Tracker["constants"]    = Constants
 	Tracker["maxit"]        = Tracker["constants"]["maxit"]
+	Tracker["ir"]           = Tracker["constants"]["ir"]
+	Tracker["radius"]       = Tracker["constants"]["radius"]
 	Tracker["xr"]           = ""
 	Tracker["yr"]           = ""
 	Tracker["ts"]           = 1
@@ -1087,12 +1091,12 @@ def main_mrk01():
 
 	#  This is initial setting for the first iteration.
 	#   It will be exhaustive search with zoom option to establish good shifts.
-	Tracker["inires"] = Tracker["pixel_size"]/Tracker["inires"]  # This is in full size image units.
-	i = int(Tracker["nnxo"]*Tracker["inires"]+0.5)*2 + cushion
-	if( i > Tracker["nnxo"] ):  ERROR("Resolution of initial volume at the range of Nyquist frequency for given window and pixel sizes","sxmeridien",1, myid)
+	Tracker["inires"] = Tracker["constants"]["pixel_size"]/Tracker["inires"]  # This is in full size image units.
+	i = int(Tracker["constants"]["nnxo"]*Tracker["inires"]+0.5)*2 + cushion
+	if( i > Tracker["constants"]["nnxo"] ):  ERROR("Resolution of initial volume at the range of Nyquist frequency for given window and pixel sizes","sxmeridien",1, myid)
 	#  Make sure it is at least 64.
 	Tracker["nxinit"] = max(i, Tracker["nxinit"] )
-	
+
 	Tracker["xr"] = "9  6  3"
 	Tracker["ts"] = "3  2  1"
 	
