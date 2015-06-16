@@ -747,7 +747,7 @@ def print_dict(dict,theme):
 
 
 # NOTE: 2015/06/11 Toshio Moriya
-# DESIGNE
+# DESIGN
 # - "options" object 
 #   It keeps the original input option values specified by user.
 #   This object must be constant. That is, you should not assign any parameter values 
@@ -845,42 +845,31 @@ def main_mrk01():
 
 	# ------------------------------------------------------------------------------------
 	#  INPUT PARAMETERS
-	radi  = options.ou
 	global_def.BATCH = True
 	
 	
+	#  Constant settings of the project
 	Constants				= {}
-	Constants["a"]          = 1
-	Constants["b"]          = 2
-	Constants["c"]          = 3
+	Constants["stack"]        = args[0]
+	Constants["ir"]           = options.ir
+	Constants["rs"]           = 1
+	Constants["radius"]       = options.ou
+	Constants["maxit"]        = 50
+	Constants["sym"]          = options.sym
+	Constants["npad"]         = 2
+	Constants["center"]       = options.center
+	Constants["pwreference"]  = options.pwreference
+	Constants["CTF"]          = options.CTF
+	Constants["ref_a"]        = options.ref_a
+	Constants["snr"]          = options.snr
+	Constants["mask3D"]       = options.mask3D
+	Constants["nnxo"]         = -1
+	Constants["pixel_size"]   = 1.0
+	Constants["refvol"]        = volinit
+	Constants["masterdir"]     = masterdir
+	Constants["mempernode"]    = 4.0e9
+
 		
-	# Create and initialize Tracker Dictionary with input options
-	Tracker					= {}
-	Tracker["consts"]       = Constants
-	Tracker["stack"]        = args[0]
-	Tracker["ir"]           = options.ir
-	Tracker["rs"]           = 1
-	Tracker["maxit"]        = 50
-	Tracker["radi"]         = options.ou #  radius provided by the user, do not change!
-	Tracker["xr"]           = ""
-	Tracker["yr"]           = ""
-	Tracker["ts"]           = 1
-	Tracker["an"]           = options.an
-	Tracker["sym"]          = options.sym
-	Tracker["delta"]        = "2.0"
-	Tracker["npad"]         = 2
-	Tracker["center"]       = options.center
-	Tracker["zoom"]         = True
-	Tracker["nsoft"]        = options.nsoft
-	Tracker["local"]        = False
-	Tracker["CTF"]          = options.CTF
-	Tracker["ref_a"]        = options.ref_a
-	Tracker["snr"]          = options.snr
-	Tracker["mask3D"]       = options.mask3D
-	Tracker["PWadjustment"] = ""
-	Tracker["pwreference"]  = options.pwreference
-	Tracker["applyctf"]     = True  #  Should the data be premultiplied by the CTF.  Set to False for local continues.
-	
 	#  The program will use three different meanings of x-size
 	#  nnxo         - original nx of the data, will not be changed
 	#  nxinit       - window size used by the program during given iteration, 
@@ -891,7 +880,21 @@ def main_mrk01():
 	#
 	#  nxstep       - step by wich window size increases
 	#
-	Tracker["nnxo"]         = -1
+	# Create and initialize Tracker Dictionary with input options
+	Tracker					= {}
+	Tracker["constants"]    = Constants
+	Tracker["maxit"]        = Tracker["constants"]["maxit"]
+	Tracker["xr"]           = ""
+	Tracker["yr"]           = ""
+	Tracker["ts"]           = 1
+	Tracker["an"]           = options.an
+	Tracker["delta"]        = "2.0"
+	Tracker["zoom"]         = True
+	Tracker["nsoft"]        = options.nsoft
+	Tracker["local"]        = False
+	Tracker["PWadjustment"] = ""
+	Tracker["applyctf"]     = True  #  Should the data be premultiplied by the CTF.  Set to False for local continues.
+	
 	Tracker["nxinit"]       = 64
 	Tracker["nxresolution"] = -1
 	Tracker["nxstep"]       = 32
@@ -899,14 +902,11 @@ def main_mrk01():
 	Tracker["fl"]           = 0.4
 	Tracker["initialfl"]    = 0.4
 	Tracker["aa"]           = 0.1
-	Tracker["pixel_size"]   = 1.0
 	Tracker["inires"]       = options.inires  # Now in A, convert to absolute before using
 	Tracker["fuse_freq"]    = 50  # Now in A, convert to absolute before using
 	Tracker["delpreviousmax"] = True
 	Tracker["saturatecrit"]  = 1.0
 	Tracker["pixercutoff"]   = 2.0
-	Tracker["refvol"]        = volinit
-	Tracker["masterdir"]     = masterdir
 	Tracker["previousoutputdir"] = ""
 	Tracker["movedup"]       = False
 	Tracker["eliminated-outliers"] = False
@@ -917,9 +917,6 @@ def main_mrk01():
 	#  threshold error
 	thresherr = 0
 	cushion  = 8  #  the window size has to be at least 8 pixels larger than what would follow from resolution
-	mempernode = 4.0e9
-	if(Tracker["radi"]  < 1):  Tracker["radi"]  = nnxo//2-2
-	elif((2*Tracker["radi"] +2)>nnxo):  ERROR("Particle radius set too large!","sxmeridien",1,myid)
 
 	# Get the pixel size; if none, set to 1.0, and the original image size
 	if(myid == main_node):
@@ -950,9 +947,14 @@ def main_mrk01():
 		exit()
 	pixel_size = bcast_number_to_all(pixel_size, source_node = main_node)
 	fq         = bcast_number_to_all(fq, source_node = main_node)
-	Tracker["nnxo"]         = nnxo
-	Tracker["pixel_size"]   = pixel_size
+	Tracker["constants"]["nnxo"]         = nnxo
+	Tracker["constants"]["pixel_size"]   = pixel_size
 	Tracker["fuse_freq"]    = fq
+	del fq, nnxo, pixel_size
+
+	if(Tracker["constants"]["radi"]  < 1):  Tracker["constants"]["radi"]  = Tracker["constants"]["nnxo"]//2-2
+	elif((2*Tracker["constants"]["radi"] +2) > Tracker["constants"]["nnxo"]):  ERROR("Particle radius set too large!","sxmeridien",1,myid)
+
 
 	# ------------------------------------------------------------------------------------
 	#  MASTER DIRECTORY
@@ -1009,25 +1011,13 @@ def main_mrk01():
 	doit, keepchecking = checkstep(initdir, keepchecking, myid, main_node)
 	if  doit:
 		partids = os.path.join(masterdir, "ids.txt")
-
-		if(options.startangles):
-			if( myid == main_node ):
-				cmd = "mkdir "+initdir
-				cmdexecute(cmd)
-				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-				print(line,"INITIALIZATION")
-		else:
-			if( myid == main_node ):
-				cmd = "mkdir "+initdir
-				cmdexecute(cmd)
-				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-				print(line,"INITIALIZATION 3D")
-				write_text_file(range(total_stack), partids)
-			mpi_barrier(MPI_COMM_WORLD)
-
-
-			if(myid == main_node):
-				print(line,"Executed successfully: ","initialization ali3d_base_MPI")
+		if( myid == main_node ):
+			cmd = "mkdir "+initdir
+			cmdexecute(cmd)
+			write_text_file(range(total_stack), partids)
+			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			print(line,"INITIALIZATION OF MERIDIEN")
+		mpi_barrier(MPI_COMM_WORLD)
 
 
 		#  store params
@@ -1049,24 +1039,23 @@ def main_mrk01():
 			write_text_file(l2,partids[1])
 			
 			if(options.startangles):
-				tp_list = EMUtil.get_all_attributes(stack, "xform.projection") # tp: transformation object for projection parameters
+				tp_list = EMUtil.get_all_attributes(stack, "xform.projection")
 				
-				dp_list1 = [] # dp: dictionary object for projection parameters
+				dp_list1 = []
 				for l1_entry in l1:
 					dp = tp_list[l1_entry].get_params("spider")
-					phi, theta, psi, s2x, s2y = dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]
-					dp_list1.append([phi, theta, psi, s2x, s2y])
+					dp_list1.append([dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]])
 				write_text_row(dp_list1, partstack[0])
 				del dp_list1
 				
 				dp_list2 = [] # dp: dictionary object for projection parameters
 				for l2_entry in l2:
 					dp = tp_list[l2_entry].get_params("spider")
-					phi, theta, psi, s2x, s2y = dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]
-					dp_list2.append([phi, theta, psi, s2x, s2y])
-				write_text_row(dp_list2, partstack[0])
+					dp_list2.append([dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]])
+				write_text_row(dp_list2, partstack[1])
 				del dp_list2
-				
+				print(line,"Executed successfully: ","Imported initial parameters from the input stack")
+
 				del tp_list
 				
 			else:
@@ -1075,8 +1064,7 @@ def main_mrk01():
 			
 			del l1, l2
 
-			print(line,"Executed successfully: ","Imported initial parameters from the input stack")
-			
+				
 			# Create independent reference models for each particle group
 			# make sure the initial volume is not set to zero outside of a mask, as if it is it will crash the program
 			for procid in xrange(2):
