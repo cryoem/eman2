@@ -725,7 +725,7 @@ def metamove_mrk01(projdata, oldshifts, Tracker, partids, partstack, outputdir, 
 	else: params = sali3d_base_mrk01(projdata, ref_vol, \
 						Tracker, mpi_comm = MPI_COMM_WORLD, log = log, \
 						nsoft = Tracker["nsoft"], \
-						saturatecrit = Tracker["saturatecrit"],  pixercutoff =  Tracker["pixercutoff"] )
+						saturatecrit = Tracker["saturatecrit"],  pixercutoff =  Tracker["pixercutoff"], zoom = Tracker["zoom"] )
 
 	#  We could calculate here a 3D to get the within group resolution and return it as a result to eventually get crossresolution
 	del log
