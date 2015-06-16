@@ -800,7 +800,7 @@ def main_mrk01():
 	# ------------------------------------------------------------------------------------
 	# PARSE COMMAND OPTIONS
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack  [output_directory]  initial_volume  --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=Tracker["an"]  --center=center_type --fl --aa --ref_a=S --sym=c1"
+	usage = progname + " stack  [output_directory]  initial_volume  --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=an  --center=center_type --fl --aa --ref_a=S --sym=c1"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",      		type= "int",   default= 1,			help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--ou",      		type= "int",   default= -1,			help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
@@ -825,7 +825,7 @@ def main_mrk01():
 	#options introduced for the do_volume function
 	#parser.add_option("--fl",			type="float",	default=0.12,		help="cut-off frequency of hyperbolic tangent low-pass Fourier filter (default 0.12)")
 	#parser.add_option("--aa",			type="float",	default=0.1,		help="fall-off of hyperbolic tangent low-pass Fourier filter (default 0.1)")
-	parser.add_option("--inires",		type="float",	default=25.,		help="Resolution of the initial_volume volume (default 25A)"
+	parser.add_option("--inires",		type="float",	default=25.,		help="Resolution of the initial_volume volume (default 25A)")
 	parser.add_option("--pwreference",	type="string",	default="",			help="text file with a reference power spectrum (default no power spectrum adjustment)")
 	parser.add_option("--mask3D",		type="string",	default=None,		help="3D mask file (default a sphere  WHAT RADIUS??)")
 
@@ -1007,16 +1007,6 @@ def main_mrk01():
 	#  Run exhaustive projection matching to get initial orientation parameters
 	#  Estimate initial resolution
 	initdir = os.path.join(masterdir,"main000")
-	#  make sure the initial volume is not set to zero outside of a mask, as if it is it will crash the program
-	if( myid == main_node and (not options.startangles)):
-		viv = get_im(volinit)
-		if(options.mask3D == None):  mask33d = model_circle(radi,nnxo,nnxo,nnxo)
-		else:  mask33d = get_im(options.mask3D)
-		st = Util.infomask(viv, mask33d, False)
-		if( st[0] == 0.0 ):
-			viv += (model_blank(nnxo,nnxo,nnxo,1.0) - mask33d)*model_gauss_noise(st[1]/1000.0,nnxo,nnxo,nnxo)
-			viv.write_image(volinit)
-		del mask33d, viv
 
 	#  This is initial setting, has to be initialized here, we do not want it to run too long.
 
@@ -1083,6 +1073,7 @@ def main_mrk01():
 			del l1, l2
 			
 			# Create independent reference models for each particle group
+			# make sure the initial volume is not set to zero outside of a mask, as if it is it will crash the program
 			for procid in xrange(2):
 				# make a copy of original reference model for this particle group (procid)
 				file_path_viv = os.path.join(initdir,"vol%01d.hdf"%procid)
@@ -1095,7 +1086,7 @@ def main_mrk01():
 				st = Util.infomask(viv, mask33d, False)
 				if( st[0] == 0.0 ):
 					viv += (model_blank(nnxo,nnxo,nnxo,1.0) - mask33d)*model_gauss_noise(st[1]/1000.0,nnxo,nnxo,nnxo)
-				viv.write_image(file_path_viv)
+					viv.write_image(file_path_viv)
 				del mask33d, viv
 			
 		mpi_barrier(MPI_COMM_WORLD)
