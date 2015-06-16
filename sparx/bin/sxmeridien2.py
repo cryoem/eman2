@@ -677,19 +677,7 @@ def get_shrink_data(onx, nx, stack, partids, partstack, myid, main_node, nproc, 
 # However, it uses dictionary object (Tracker) instead of class ali3d_options
 #
 def metamove_mrk01(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid, myid, main_node, nproc):
-
-	# Check the required keys exist in parameter dictionary
-	assert(Tracker.has_key("refvol"))       
-	assert(Tracker.has_key("nxinit"))
-	assert(Tracker.has_key("delpreviousmax"))
-	# assert(Tracker.has_key("lowpass"))
-	# assert(Tracker.has_key("initialfl"))
-	assert(Tracker.has_key("PWadjustment")) 
-	assert(Tracker.has_key("local"))
-	assert(Tracker.has_key("saturatecrit"))
-	assert(Tracker.has_key("pixercutoff"))
-	assert(Tracker.has_key("nsoft"))
-
+	from development import sali3d_base_mrk01
 	#  Takes preshrunk data and does the refinement as specified in Tracker
 	#
 	#  Will create outputdir
@@ -721,8 +709,8 @@ def metamove_mrk01(projdata, oldshifts, Tracker, partids, partstack, outputdir, 
 		print_dict(Tracker,"METAMOVE parameters")
 		#print("                    =>  actual lowpass      :  ",Tracker["lowpass"])
 		#print("                    =>  actual init lowpass :  ",Tracker["initialfl"])
-		if(len(Tracker["PWadjustment"])>0): \
-		print("                    =>  PW adjustment       :  ",Tracker["PWadjustment"])
+		if(len(Tracker["PWadjustment"])>0):
+			print("                    =>  PW adjustment       :  ",Tracker["PWadjustment"])
 		print("                    =>  partids             :  ",partids)
 		print("                    =>  partstack           :  ",partstack)
 
@@ -790,7 +778,8 @@ def main_mrk01():
 	from optparse import OptionParser
 	from global_def import SPARXVERSION
 	from EMAN2 import EMData
-	from multi_shc import multi_shc, do_volume
+	from multi_shc import multi_shc
+	from development import do_volume_mrk01
 	from logger import Logger, BaseLogger_Files
 	import sys
 	import os
@@ -864,7 +853,7 @@ def main_mrk01():
 	Tracker["stack"]        = args[0]
 	Tracker["ir"]           = options.ir
 	Tracker["rs"]           = 1
-	Tracker["maxit"]        = 1
+	Tracker["maxit"]        = 50
 	Tracker["radi"]         = options.ou #  radius provided by the user, do not change!
 	Tracker["xr"]           = ""
 	Tracker["yr"]           = ""
@@ -1083,34 +1072,26 @@ def main_mrk01():
 	#   It will be exhaustive search with zoom option to establish good shifts.
 	Tracker["inires"] = Tracker["pixel_size"]/Tracker["inires"]  # This is in full size image units.
 	i = int(Tracker["nnxo"]*Tracker["inires"]+0.5)*2 + cushion
-	if(i > Tracker["nnxo"] ):  ERROR("Resolution of initial volume at the range of Nyquist frequency for given window and pixel sizes","sxmeridien",1, myid)
-	Tracker[""] = 
+	if( i > Tracker["nnxo"] ):  ERROR("Resolution of initial volume at the range of Nyquist frequency for given window and pixel sizes","sxmeridien",1, myid)
+	#  Make sure it is at least 64.
+	Tracker["nxinit"] = max(i, Tracker["nxinit"] )
 	
-	delta = int(options.delta)
-	if(delta <= 0.0):
-		delta = "%f"%round(degrees(atan(1.0/float(radi))), 2)
-	inifil = float(nxinit)/2.0/nnxo
-	inifil = 0.4
+	Tracker["xr"] = "9  6  3"
+	Tracker["ts"] = "3  2  1"
 	
+
 	# Set reasonable values for the following parameters
 	lowpass     = 0.25
-	falloff     = 0.2
 	icurrentres = 32
 
 	# set for the first iteration
 	nxresolution = icurrentres*2 +2
 	assert( nxresolution +cushion <= nnxo )
-	nxinit = 60
-	nxresolution = nxinit - cushion -1
-	while( nxresolution + cushion > nxinit ): nxinit += 32
-	nxinit = min(nxinit,nnxo)
-	nsoft = options.nsoft
+
 	lowpass = 0.25
 	test_outliers = True
 	mainiteration = 0
 	keepgoing = 1
-	Tracker["xr"] = "9  6  3"
-	Tracker["ts"] = "3  2  1"
 
 	# Update Tracker
 	subdict( Tracker, {	"stack":stack, "delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":Tracker["an"], \
