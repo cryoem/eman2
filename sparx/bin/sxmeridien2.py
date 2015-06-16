@@ -863,7 +863,7 @@ def main_mrk01():
 	Constants["pwreference"]  = options.pwreference
 	Constants["CTF"]          = options.CTF
 	Constants["ref_a"]        = options.ref_a
-	Constants["snr"]          = options.snr
+	Constants["snr"]          = 1.0
 	Constants["mask3D"]       = options.mask3D
 	Constants["nnxo"]         = -1
 	Constants["pixel_size"]   = 1.0
@@ -898,7 +898,7 @@ def main_mrk01():
 	Tracker["local"]        = False
 	Tracker["PWadjustment"] = ""
 	Tracker["applyctf"]     = True  #  Should the data be premultiplied by the CTF.  Set to False for local continues.
-	
+
 	Tracker["nxinit"]       = 64
 	Tracker["nxresolution"] = -1
 	Tracker["nxstep"]       = 32
@@ -911,6 +911,7 @@ def main_mrk01():
 	Tracker["delpreviousmax"] = True
 	Tracker["saturatecrit"]  = 1.0
 	Tracker["pixercutoff"]   = 2.0
+	Tracker["directory"]     = ""
 	Tracker["previousoutputdir"] = ""
 	Tracker["movedup"]       = False
 	Tracker["eliminated-outliers"] = False
@@ -933,7 +934,7 @@ def main_mrk01():
 			ERROR("Image size less than minimum permitted $d"%Tracker["nxinit"],"sxmeridien",1)
 			nnxo = -1
 		else:
-			if Tracker["CTF"]:
+			if Tracker["constant"]["CTF"]:
 				i = a.get_attr('ctf')
 				pixel_size = i.apix
 				fq = pixel_size/Tracker["fuse_freq"]
@@ -1010,7 +1011,6 @@ def main_mrk01():
 	#  INITIALIZATION
 	initdir = os.path.join(masterdir,"main000")
 
-
 	# Create first fake directory main000 with parameters filled with zeroes or copied from headers.  Copy initial volume in.
 	doit, keepchecking = checkstep(initdir, keepchecking, myid, main_node)
 	if  doit:
@@ -1067,9 +1067,8 @@ def main_mrk01():
 				write_text_row([[0,0,0,0,0] for i in xrange(len(l2))], partstack[1])
 			
 			del l1, l2
-
 				
-			# Create independent reference models for each particle group
+			# Create reference models for each particle group
 			# make sure the initial volume is not set to zero outside of a mask, as if it is it will crash the program
 			for procid in xrange(2):
 				# make a copy of original reference model for this particle group (procid)
@@ -1085,60 +1084,36 @@ def main_mrk01():
 					viv += (model_blank(nnxo,nnxo,nnxo,1.0) - mask33d)*model_gauss_noise(st[1]/1000.0,nnxo,nnxo,nnxo)
 					viv.write_image(file_path_viv)
 				del mask33d, viv
-			
+
 		mpi_barrier(MPI_COMM_WORLD)
 
 
 	#  This is initial setting for the first iteration.
 	#   It will be exhaustive search with zoom option to establish good shifts.
 	Tracker["inires"] = Tracker["constants"]["pixel_size"]/Tracker["inires"]  # This is in full size image units.
-	i = int(Tracker["constants"]["nnxo"]*Tracker["inires"]+0.5)*2 + cushion
-	if( i > Tracker["constants"]["nnxo"] ):  ERROR("Resolution of initial volume at the range of Nyquist frequency for given window and pixel sizes","sxmeridien",1, myid)
-	#  Make sure it is at least 64.
-	Tracker["nxinit"] = max(i, Tracker["nxinit"] )
+	Tracker["icurrentres"] = int(Tracker["constants"]["nnxo"]*Tracker["inires"]+0.5)
+	#  Make sure nxinit is at least what it was set to as an initial size.
+	Tracker["nxinit"] =  max(Tracker["icurrentres"]*2 + cushion , Tracker["nxinit"])
+	if( Tracker["nxinit"] > Tracker["constants"]["nnxo"] ):
+			ERROR("Resolution of initial volume at the range of Nyquist frequency for given window and pixel sizes","sxmeridien",1, myid)
 
+	#  Here we need an algorithm to set things correctly
 	Tracker["xr"] = "9  6  3"
 	Tracker["ts"] = "3  2  1"
-	
-
-	# Set reasonable values for the following parameters
-	lowpass     = 0.25
-	icurrentres = 32
-
-	# set for the first iteration
-	nxresolution = icurrentres*2 +2
-	assert( nxresolution +cushion <= nnxo )
-
-	lowpass = 0.25
-	test_outliers = True
-	mainiteration = 0
-	keepgoing = 1
+	Tracker["previousoutputdir"] = initdir
+	subdict( Tracker, { "nxinit":nxinit, "icurrentres":icurrentres, "inires":inires, "zoom":True} )
 
 	# Update Tracker
-	subdict( Tracker, {	"stack":stack, "delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":Tracker["an"], \
-						"center":options.center, "maxit":1, "local":False, \
-						"lowpass":inifil, "initialfl":inifil, "falloff":0.2, "radius":radi, \
-						"icurrentres":nxinit//2, "nxinit":nnxo, "nxresolution":nnxo, \
-						"nsoft":0, "delpreviousmax":True, "saturatecrit":1.0, "pixercutoff":2.0, \
-						"refvol":volinit, "mask3D":options.mask3D } )
-	subdict( Tracker, {	"stack":stack, "delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":Tracker["an"], \
-						"center":options.center, "maxit":1, "local":False, \
-						"lowpass":inifil, "initialfl":inifil, "falloff":0.2, "radius":radi, \
-						"icurrentres":nxinit//2, "nxinit":nnxo, "nxresolution":nnxo, \
-						"nsoft":0, "delpreviousmax":True, "saturatecrit":1.0, "pixercutoff":2.0, \
-						"refvol":volinit, "mask3D":options.mask3D } )
-	subdict( Tracker, { "resolution":icurrentres/float(nnxo), "lowpass":lowpass, "initialfl":lowpass,  \
-						"movedup":False, "eliminated-outliers":False, "applyctf":True, "PWadjustment":"", "local":False, "nsoft":nsoft, \
-						"nnxo":nnxo, "icurrentres":icurrentres, "nxinit":nxinit, "nxresolution":nxresolution, "extension":0.0, \
-						"directory":"none"} )
 	history = [Tracker.copy()]
-	previousoutputdir = initdir
 	#  remove projdata, if it existed, initialize to nonsense
 	projdata = [[model_blank(1,1)], [model_blank(1,1)]]
 	oldshifts = [[],[]]
 	
 	# ------------------------------------------------------------------------------------
 	#  MAIN ITERATION
+
+	mainiteration = 0
+	keepgoing = 1
 
 	while(keepgoing):
 		mainiteration += 1
@@ -1149,8 +1124,8 @@ def main_mrk01():
 
 		if(myid == main_node):
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(line,"MAIN ITERATION  #%2d     nxinit, nxresolution, icurrentres, resolution, lowpass, falloff "%\
-				mainiteration, nxinit,  nxresolution, icurrentres, icurrentres/float(nnxo), lowpass, falloff)
+			print(line,"MAIN ITERATION  #%2d     nxinit, icurrentres, resolution  %d    %d"%\
+				mainiteration, nxinit,  icurrentres, icurrentres/float(nnxo), lowpass, falloff)
 			print(line,"  mainoutputdir  previousoutputdir  ",mainoutputdir,previousoutputdir)
 			Tracker_print_mrk01(history[-1],"TRACKER")
 
