@@ -891,15 +891,19 @@ def main_mrk01():
 	#                 The fl within the reduced data is nxresolution/nxinit/2.0
 	#                 The absolute fl is nxresolution/nnxo/2.0
 	#
+	#  nxstep       - step by wich window size increases
+	#
 	Tracker["nnxo"]         = -1
 	Tracker["nxinit"]       = 64
-	Tracker["nxresolution"]  = -1
+	Tracker["nxresolution"] = -1
+	Tracker["nxstep"]       = 32
 	Tracker["icurrentres"]  = -1
 	Tracker["fl"]           = 0.4
 	Tracker["initialfl"]    = 0.4
 	Tracker["aa"]           = 0.1
 	Tracker["pixel_size"]   = 1.0
-	Tracker["fuse_freq"]    = options.inires  # Now in A, convert to absolute before using
+	Tracker["inires"]       = options.inires  # Now in A, convert to absolute before using
+	Tracker["fuse_freq"]    = 50  # Now in A, convert to absolute before using
 	Tracker["delpreviousmax"] = True
 	Tracker["saturatecrit"]  = 1.0
 	Tracker["pixercutoff"]   = 2.0
@@ -912,7 +916,6 @@ def main_mrk01():
 	#  threshold error
 	thresherr = 0
 	cushion  = 8  #  the window size has to be at least 8 pixels larger than what would follow from resolution
-	nxstep   = 32
 	mempernode = 4.0e9
 	if(Tracker["radi"]  < 1):  Tracker["radi"]  = nnxo//2-2
 	elif((2*Tracker["radi"] +2)>nnxo):  ERROR("Particle radius set too large!","sxmeridien",1,myid)
@@ -935,7 +938,7 @@ def main_mrk01():
 			if Tracker["CTF"]:
 				i = a.get_attr('ctf')
 				pixel_size = i.apix
-				fq = pixel_size/fq
+				fq = pixel_size/Tracker["fuse_freq"]
 			else:
 				pixel_size = 1.0
 				#  No pixel size, fusing computed as 5 Fourier pixels
@@ -1016,23 +1019,12 @@ def main_mrk01():
 		del mask33d, viv
 
 	#  This is initial setting, has to be initialized here, we do not want it to run too long.
-	#    INITIALIZATION THAT FOLLOWS WILL HAVE TO BE CHANGED SO THE USER CAN PROVIDE INITIAL GUESS OF RESOLUTION
-	#  If we new the initial resolution, it could be done more densely
-	xr = 1.0
-	ts = "1.0"
 
 	delta = int(options.delta)
 	if(delta <= 0.0):
 		delta = "%f"%round(degrees(atan(1.0/float(radi))), 2)
 	inifil = float(nxinit)/2.0/nnxo
 	inifil = 0.4
-	
-	# paramsdict = {	"stack":stack,"delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":Tracker["an"], \
-	# 				"center":options.center, "maxit":1, "local":False,\
-	# 				"lowpass":inifil, "initialfl":inifil, "falloff":0.2, "radius":radi, \
-	# 				"icurrentres": nxinit//2, "nxinit":nnxo,"nxresolution":nnxo,\
-	# 				"nsoft":0, "delpreviousmax":True, "saturatecrit":1.0, "pixercutoff":2.0,\
-	# 				"refvol":volinit, "mask3D":options.mask3D  }
 	
 	subdict( Tracker, {	"stack":stack, "delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":Tracker["an"], \
 						"center":options.center, "maxit":1, "local":False, \
