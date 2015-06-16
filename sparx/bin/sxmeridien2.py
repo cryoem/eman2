@@ -874,6 +874,7 @@ def main_mrk01():
 	Tracker["delta"]        = "2.0"
 	Tracker["npad"]         = 2
 	Tracker["center"]       = options.center
+	Tracker["zoom"]         = True
 	Tracker["nsoft"]        = options.nsoft
 	Tracker["local"]        = False
 	Tracker["CTF"]          = options.CTF
@@ -882,6 +883,7 @@ def main_mrk01():
 	Tracker["mask3D"]       = options.mask3D
 	Tracker["PWadjustment"] = ""
 	Tracker["pwreference"]  = options.pwreference
+	Tracker["applyctf"]     = True  #  Should the data be premultiplied by the CTF.  Set to False for local continues.
 	
 	#  The program will use three different meanings of x-size
 	#  nnxo         - original nx of the data, will not be changed
@@ -909,7 +911,10 @@ def main_mrk01():
 	Tracker["pixercutoff"]   = 2.0
 	Tracker["refvol"]        = volinit
 	Tracker["masterdir"]     = masterdir
-
+	Tracker["previousoutputdir"] = ""
+	Tracker["movedup"]       = False
+	Tracker["eliminated-outliers"] = False
+	Tracker["mainteration"]  = 0
 
 	# ------------------------------------------------------------------------------------
 	#  PARAMETERS OF THE PROCEDURE 
@@ -920,19 +925,15 @@ def main_mrk01():
 	if(Tracker["radi"]  < 1):  Tracker["radi"]  = nnxo//2-2
 	elif((2*Tracker["radi"] +2)>nnxo):  ERROR("Particle radius set too large!","sxmeridien",1,myid)
 
-	projdata = [[model_blank(1,1)],[model_blank(1,1)]]
-
-
-
-	# Get the pixel size, if none set to 1.0, and the original image size
+	# Get the pixel size; if none, set to 1.0, and the original image size
 	if(myid == main_node):
 		a = get_im(orgstack)
 		nnxo = a.get_xsize()
 		if( nnxo%2 == 1 ):
 			ERROR("Only even-dimensioned data allowed","sxmeridien",1)  #  This will have to be eliminated as we will move only in even dimensioned windowed.
 			nnxo = -1
-		elif( nxinit > nnxo ):
-			ERROR("Image size less than minimum permitted $d"%nxinit,"sxmeridien",1)
+		elif( Tracker["nxinit"] > nnxo ):
+			ERROR("Image size less than minimum permitted $d"%Tracker["nxinit"],"sxmeridien",1)
 			nnxo = -1
 		else:
 			if Tracker["CTF"]:
@@ -952,7 +953,8 @@ def main_mrk01():
 		mpi_finalize()
 		exit()
 	pixel_size = bcast_number_to_all(pixel_size, source_node = main_node)
-	fq   = bcast_number_to_all(fq, source_node = main_node)
+	fq         = bcast_number_to_all(fq, source_node = main_node)
+	Tracker["nnxo"]         = nnxo
 	Tracker["pixel_size"]   = pixel_size
 	Tracker["fuse_freq"]    = fq
 
@@ -1004,25 +1006,10 @@ def main_mrk01():
 
 	# ------------------------------------------------------------------------------------
 	#  INITIALIZATION
-	#  Run exhaustive projection matching to get initial orientation parameters
-	#  Estimate initial resolution
 	initdir = os.path.join(masterdir,"main000")
 
-	#  This is initial setting, has to be initialized here, we do not want it to run too long.
 
-	delta = int(options.delta)
-	if(delta <= 0.0):
-		delta = "%f"%round(degrees(atan(1.0/float(radi))), 2)
-	inifil = float(nxinit)/2.0/nnxo
-	inifil = 0.4
-	
-	subdict( Tracker, {	"stack":stack, "delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":Tracker["an"], \
-						"center":options.center, "maxit":1, "local":False, \
-						"lowpass":inifil, "initialfl":inifil, "falloff":0.2, "radius":radi, \
-						"icurrentres":nxinit//2, "nxinit":nnxo, "nxresolution":nnxo, \
-						"nsoft":0, "delpreviousmax":True, "saturatecrit":1.0, "pixercutoff":2.0, \
-						"refvol":volinit, "mask3D":options.mask3D } )
-
+	# Create first fake directory main000 with parameters filled with zeroes or copied from headers.  Copy initial volume in.
 	doit, keepchecking = checkstep(initdir, keepchecking, myid, main_node)
 	if  doit:
 		partids = os.path.join(masterdir, "ids.txt")
@@ -1091,10 +1078,24 @@ def main_mrk01():
 			
 		mpi_barrier(MPI_COMM_WORLD)
 
-		# Set reasonable values for the following paramters
-		lowpass     = 0.25
-		falloff     = 0.2
-		icurrentres = 32
+
+	#  This is initial setting for the first iteration.
+	#   It will be exhaustive search with zoom option to establish good shifts.
+	Tracker["inires"] = Tracker["pixel_size"]/Tracker["inires"]  # This is in full size image units.
+	i = int(Tracker["nnxo"]*Tracker["inires"]+0.5)*2 + cushion
+	if(i > Tracker["nnxo"] ):  ERROR("Resolution of initial volume at the range of Nyquist frequency for given window and pixel sizes","sxmeridien",1, myid)
+	Tracker[""] = 
+	
+	delta = int(options.delta)
+	if(delta <= 0.0):
+		delta = "%f"%round(degrees(atan(1.0/float(radi))), 2)
+	inifil = float(nxinit)/2.0/nnxo
+	inifil = 0.4
+	
+	# Set reasonable values for the following parameters
+	lowpass     = 0.25
+	falloff     = 0.2
+	icurrentres = 32
 
 	# set for the first iteration
 	nxresolution = icurrentres*2 +2
@@ -1105,19 +1106,29 @@ def main_mrk01():
 	nxinit = min(nxinit,nnxo)
 	nsoft = options.nsoft
 	lowpass = 0.25
-	
-	# Initialize Tracker
-	# Tracker = {"resolution":icurrentres/float(nnxo),"lowpass":lowpass, "initialfl":lowpass,  \
-	# 			"movedup":False, "eliminated-outliers":False,"applyctf":True,"PWadjustment":"","local":False,"nsoft":nsoft, \
-	# 			"nnxo":nnxo, "icurrentres":icurrentres,"nxinit":nxinit, "nxresolution":nxresolution, "extension":0.0, \
-	# 			"directory":"none"}
+	test_outliers = True
+	mainiteration = 0
+	keepgoing = 1
+	Tracker["xr"] = "9  6  3"
+	Tracker["ts"] = "3  2  1"
 
 	# Update Tracker
+	subdict( Tracker, {	"stack":stack, "delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":Tracker["an"], \
+						"center":options.center, "maxit":1, "local":False, \
+						"lowpass":inifil, "initialfl":inifil, "falloff":0.2, "radius":radi, \
+						"icurrentres":nxinit//2, "nxinit":nnxo, "nxresolution":nnxo, \
+						"nsoft":0, "delpreviousmax":True, "saturatecrit":1.0, "pixercutoff":2.0, \
+						"refvol":volinit, "mask3D":options.mask3D } )
+	subdict( Tracker, {	"stack":stack, "delta":"2.0", "ts":ts, "xr":"%f"%xr, "an":Tracker["an"], \
+						"center":options.center, "maxit":1, "local":False, \
+						"lowpass":inifil, "initialfl":inifil, "falloff":0.2, "radius":radi, \
+						"icurrentres":nxinit//2, "nxinit":nnxo, "nxresolution":nnxo, \
+						"nsoft":0, "delpreviousmax":True, "saturatecrit":1.0, "pixercutoff":2.0, \
+						"refvol":volinit, "mask3D":options.mask3D } )
 	subdict( Tracker, { "resolution":icurrentres/float(nnxo), "lowpass":lowpass, "initialfl":lowpass,  \
 						"movedup":False, "eliminated-outliers":False, "applyctf":True, "PWadjustment":"", "local":False, "nsoft":nsoft, \
 						"nnxo":nnxo, "icurrentres":icurrentres, "nxinit":nxinit, "nxresolution":nxresolution, "extension":0.0, \
 						"directory":"none"} )
-	#Tracker["lowpass"] = read_fsc(os.path.join(initdir,"fsc.txt"),icurrentres, myid, main_node)
 	history = [Tracker.copy()]
 	previousoutputdir = initdir
 	#  remove projdata, if it existed, initialize to nonsense
@@ -1126,11 +1137,6 @@ def main_mrk01():
 	
 	# ------------------------------------------------------------------------------------
 	#  MAIN ITERATION
-	test_outliers = True
-	mainiteration = 0
-	keepgoing = 1
-	Tracker["xr"] = "9  6  3"
-	Tracker["ts"] = "3  2  1"
 
 	while(keepgoing):
 		mainiteration += 1

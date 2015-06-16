@@ -995,7 +995,7 @@ def main():
 						False, 90.0, -1, 14, options.CTF, 1.0, False, \
 						"ref_ali2d", "", log2d, nproc, myid, main_node, MPI_COMM_WORLD, write_headers = False)
 			if( myid == main_node ):
-				write_text_row(params2d,os.path.join(init2dir, "initial2Dparams.txt"))		
+				write_text_row(params2d,os.path.join(init2dir, "initial2Dparams.txt"))
 				outcome = subprocess.call("sxheader.py  "+stack+"   --params=xform.align2d  --import="+os.path.join(init2dir, "initial2Dparams.txt"), shell=True)
 			mpi_barrier(MPI_COMM_WORLD)
 			txr = "%d"%((nnxo - 2*(radi+1))//2)
