@@ -1303,86 +1303,31 @@ def main_mrk01():
 		else:  doit = 0
 		mpi_barrier(MPI_COMM_WORLD)
 		doit = bcast_number_to_all(doit, source_node = main_node)
-
-		#  Part "b"  deterministic   <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-		partstack = [None]*2
-		for procid in xrange(2):  partstack[procid] = os.path.join(mainoutputdir,"loga%01d"%procid,"params-chunk%01d.txt"%procid)
-
-		for procid in xrange(2):
-			coutdir = os.path.join(mainoutputdir,"logb%01d"%procid)
-			doit, keepchecking = checkstep(coutdir, keepchecking, myid, main_node)
-			if( nsoft > 0 and doit):  #  Only do finishing up when the previous step was SHC
-				#  Run hard to finish up matching
-				subdict(Tracker, \
-				{ "maxit":10, "nsoft":0, "saturatecrit":0.95, "pixercutoff":0.5,"delpreviousmax":True, \
-				"refvol":os.path.join(mainoutputdir,"loga%01d"%procid,"fusevol%01d.hdf"%procid)} )
-
-				if  doit:
-					if( Tracker["nxinit"] != projdata[procid][0].get_xsize() ):
-						projdata[procid], oldshifts[procid] = get_shrink_data(nnxo, Tracker["nxinit"], \
-											stack, partids[procid], partstack[procid], myid, main_node, nproc, \
-											Tracker["CTF"], Tracker["applyctf"], preshift = False, radi = radi)
-					metamove_mrk01(projdata[procid], oldshifts[procid], Tracker, partids[procid], partstack[procid], \
-									coutdir, procid, myid, main_node, nproc)
-			else:
-				if( myid == main_node and doit):
-					#  Simply copy from loga to logb the necessary stuff
-					cmd = "{} {}".format("mkdir",coutdir)
-					cmdexecute(cmd)
-					cmd = "{} {} {}".format("cp -p", os.path.join(mainoutputdir,"loga%01d"%procid,"params-chunk%01d.txt"%procid) , os.path.join(coutdir,"params-chunk%01d.txt"%procid))
-					cmdexecute(cmd)
-
-		partstack = [None]*2
-		for procid in xrange(2):  partstack[procid] = os.path.join(mainoutputdir,"logb%01d"%procid,"params-chunk%01d.txt"%procid)
-
-		#  Compute current resolution, store result in the main directory
-		doit, keepchecking = checkstep(os.path.join(mainoutputdir,"current_resolution.txt"), keepchecking, myid, main_node)
-		if doit:
-			if( nsoft > 0 ):
-				#  There was first soft phase, so the volumes have to be computed
-				#  low-pass filter, current resolution
-				lowpass, falloff, icurrentres = compute_resolution_mrk01(stack, mainoutputdir, partids, partstack, \
-														radi, nnxo, Tracker["CTF"], Tracker["mask3D"], Tracker["sym"], myid, main_node, nproc)
-			else:
-				# Previous phase was hard, so the resolution exists
-				# MRK_NOTE: 2015/06/15: This need to be incorporate...
-				if(myid == main_node):
-					cmd = "{} {} {}".format("cp", os.path.join(mainoutputdir,"acurrent_resolution.txt") , os.path.join(mainoutputdir,"current_resolution.txt"))
-					cmdexecute(cmd)
-					cmd = "{} {} {}".format("cp", os.path.join(mainoutputdir,"afsc.txt") , os.path.join(mainoutputdir,"fsc.txt"))
-					cmdexecute(cmd)
-					for procid in xrange(2):
-						cmd = "{} {} {}".format("cp -p", os.path.join(mainoutputdir,"loga%01d"%procid,"vol%01d.hdf"%procid) , os.path.join(mainoutputdir,"vol%01d.hdf"%procid))
-						cmdexecute(cmd)
-					[newlowpass, newfalloff, icurrentres] = read_text_row( os.path.join(mainoutputdir,"current_resolution.txt") )[0]
-				else:
-					newlowpass = 0.0
-					newfalloff = 0.0
-					icurrentres = 0
-				newlowpass = bcast_number_to_all(newlowpass, source_node = main_node)
-				newlowpass = round(newlowpass,4)
-				newfalloff = bcast_number_to_all(newfalloff, source_node = main_node)
-				newfalloff = round(newfalloff,4)
-				icurrentres = bcast_number_to_all(icurrentres, source_node = main_node)
+		
+		# NOTE_MRK: 2015/06/16
+		# Not to change Part "a" implementation, the following the codes are left here 
+		# However, this will be unnecessary after, we clean up Part "a" implementation
+		if(myid == main_node):
+			cmd = "{} {} {}".format("cp", os.path.join(mainoutputdir,"acurrent_resolution.txt") , os.path.join(mainoutputdir,"current_resolution.txt"))
+			cmdexecute(cmd)
+			cmd = "{} {} {}".format("cp", os.path.join(mainoutputdir,"afsc.txt") , os.path.join(mainoutputdir,"fsc.txt"))
+			cmdexecute(cmd)
+			for procid in xrange(2):
+				cmd = "{} {} {}".format("cp -p", os.path.join(mainoutputdir,"loga%01d"%procid,"vol%01d.hdf"%procid) , os.path.join(mainoutputdir,"vol%01d.hdf"%procid))
+				cmdexecute(cmd)
+			[newlowpass, newfalloff, icurrentres] = read_text_row( os.path.join(mainoutputdir,"current_resolution.txt") )[0]
 		else:
-			if(myid == main_node):
-				[newlowpass, newfalloff, icurrentres] = read_text_row( os.path.join(mainoutputdir,"current_resolution.txt") )[0]
-			else:
-				newlowpass = 0.0
-				newfalloff = 0.0
-				icurrentres = 0
-			newlowpass = bcast_number_to_all(newlowpass, source_node = main_node)
-			newlowpass = round(newlowpass,4)
-			newfalloff = bcast_number_to_all(newfalloff, source_node = main_node)
-			newfalloff = round(newfalloff,4)
-			icurrentres = bcast_number_to_all(icurrentres, source_node = main_node)
+			newlowpass = 0.0
+			newfalloff = 0.0
+			icurrentres = 0
+		newlowpass = bcast_number_to_all(newlowpass, source_node = main_node)
+		newlowpass = round(newlowpass,4)
+		newfalloff = bcast_number_to_all(newfalloff, source_node = main_node)
+		newfalloff = round(newfalloff,4)
+		icurrentres = bcast_number_to_all(icurrentres, source_node = main_node)
 
-
-
-
-
-
-
+		#  PRESENTABLE RESULT
+		#  Part         <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 		#  Here I have code to generate presentable results.  IDs and params have to be merged and stored and the overall volume computed.
 		doit, keepchecking = checkstep(os.path.join(mainoutputdir,"volf.hdf"), keepchecking, myid, main_node)
 		if  doit:
