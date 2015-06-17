@@ -64,6 +64,10 @@ def main():
 	parser.add_argument("--min", type=int, help="Set the minimum translation in pixels",default=-50.0)
 	parser.add_argument("--max", type=int, help="Set the maximum translation in pixels",default=50.0)
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 0,1 (first image skipped)")
+	parser.add_argument("--tmax", type=float, help="Set the maximum achievable temperature for simulated annealing. Default is 25000.0.",default=25000.0)
+	parser.add_argument("--tmin", type=float, help="Set the minimum achievable temperature for simulated annealing. Default is 2.5.",default=2.5)
+	parser.add_argument("--steps", type=int, help="Set the number of steps to run simulated annealing. Default is 50000.",default=50000)
+	parser.add_argument("--updates", type=int, help="Set the number of times to update the temperature when running simulated annealing. Default is 100.",default=100)
 	parser.add_argument("--maxiters", type=int, help="Set the maximum number of iterations for the simplex minimizer to run before stopping. Default is 250.",default=250)
 	parser.add_argument("--epsilon", type=float, help="Set the learning rate for the simplex minimizer. Smaller is better, but takes longer. Default is 0.001.",default=0.001)
 	parser.add_argument("--fixbadpixels",action="store_true",default=False,help="Tries to identify bad pixels in the dark/gain reference, and fills images in with sane values instead")
@@ -332,7 +336,7 @@ class MovieModeAligner:
 			return
 
 		if options.verbose: print("Starting coarse-grained alignment")
-		cs = CoarseSearch(self)#,tmax=options.tmax,tmin=options.tmin,steps=options.steps,updates=options.updates)
+		cs = CoarseSearch(self,tmax=options.tmax,tmin=options.tmin,steps=options.steps,updates=options.updates)
 		state, energy = cs.anneal()
 
 		if options.verbose: print("Starting fine-grained alignment")
@@ -619,6 +623,10 @@ class MovieModeAligner:
 
 class FineSearch(Simplex):
 
+	"""
+	Simplex minimizer to finely search the annealed minimum yielded by "CoarseSearch".
+	"""
+
 	def __init__(self, aligner, guess, increments=None, kR=-1.0, kE=2.0, kC=0.5):
 		self.aligner = aligner
 		if increments == None: increments = [5] * 2 * aligner.hdr['nimg']
@@ -629,28 +637,36 @@ class FineSearch(Simplex):
 
 class CoarseSearch(BaseAnnealer):
 
+	"""
+	Simulated Annealer to coarsely search the translational alignment parameter space
+	"""
+
 	def __init__(self, aligner, state=None, Tmax = 25000.0, Tmin = 2.5, steps=50000, updates=100):
-		self.aligner = aligner
-		if state == None: self.state = [s for s in t.get_trans_2d() for t in aligner._transforms]
-		super(CoarseSearch, self).__init__(state)
+		if state == None:
+			self.state = []
+			for trans in aligner._transforms:
+				for s in trans.get_trans_2d():
+					self.state.append(s)
+		super(CoarseSearch, self).__init__(self.state)
 		self.Tmax = Tmax
 		self.Tmin = Tmin
 		self.steps = steps
 		self.updates = updates
+		self.aligner = aligner
 		self.slen = len(self.state)
-		self.srange = range(0,self.slen,1)
+		self.srange = range(0,self.slen-1,2)
 		self.count = 0
 
-	def move(self,scale=1.0):
+	def move(self,scale=1.0,incr=1):
 		self.state[self.count] = self.state[self.count]+scale*(2*np.random.random()-1)
-		self.count = (self.count+i) % self.slen
+		self.count = (self.count+incr) % self.slen
 
 	def energy(self):
 		for vi in self.srange:
 			t = Transform({'type':'eman','tx':self.state[vi],'ty':self.state[vi+1]})
 			self.aligner._update_frame_params(vi/2,t)
 		self.aligner._update_energy()
-		return np.log(1+aligner.get_energy())
+		return np.log(1+self.aligner.get_energy())
 
 if __name__ == "__main__":
 	main()
