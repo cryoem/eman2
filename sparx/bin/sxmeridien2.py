@@ -723,8 +723,8 @@ def metamove_mrk01(projdata, oldshifts, Tracker, partids, partstack, outputdir, 
 	Tracker["lowpass"] = float(Tracker["icurrentres"])/float(Tracker["constants"]["nnxo"])
 	delta = "%f  "%min(round(degrees(atan(0.5/Tracker["lowpass"]/Tracker["radius"])), 2), 3.0)
 	Tracker["delta"] = ""
-	for i in xrange(len(get_input_from_string(Tracker["xr"]))):  Tracker["delta"] += "%f  %f  %f"%delta
-	Tracker["pixercutoff"] = get_pixercutoff(Tracker["radius"], delta, 0.5)
+	for i in xrange(len(get_input_from_string(Tracker["xr"]))):  Tracker["delta"] += %delta
+	Tracker["pixercutoff"] = get_pixercutoff(Tracker["radius"], float(delta), 0.5)
 
 	if(Tracker["delpreviousmax"]):
 		for i in xrange(len(projdata)):
