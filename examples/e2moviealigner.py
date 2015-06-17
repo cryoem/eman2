@@ -622,13 +622,13 @@ class FineSearch(Simplex):
 	Simplex minimizer to finely search the annealed minimum yielded by "CoarseSearch".
 	"""
 
-	def __init__(self, aligner, guess, increments=None, kR=-1.0, kE=2.0, kC=0.5):
+	def __init__(self, aligner, init, increments=None, kR=-1.0, kE=2.0, kC=0.5):
 		self.aligner = aligner
-		if increments == None: increments = [5] * len(guess)
+		if increments == None: increments = [5] * len(init)
 		self.kR = kR
 		self.kE = kE
 		self.kC = kC
-		super(FineSearch, self).__init__(aligner._compares,guess,increments,kR,kE,kC,aligner)
+		super(FineSearch, self).__init__(aligner._compares,init,increments,kR,kE,kC,aligner)
 
 class CoarseSearch(BaseAnnealer):
 
@@ -658,7 +658,7 @@ class CoarseSearch(BaseAnnealer):
 			t = Transform({'type':'eman','tx':self.state[vi],'ty':self.state[vi+1]})
 			self.aligner._update_frame_params(vi/2,t)
 		self.aligner._update_energy()
-		return np.log(1+self.aligner.get_energy())
+		return self.aligner.get_energy()
 
 if __name__ == "__main__":
 	main()
