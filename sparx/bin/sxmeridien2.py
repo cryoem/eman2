@@ -36,8 +36,6 @@ def subdict(d,u):
 
 
 def stepali(nxinit, nnxo, irad, nxrsteps = 4):
-	print(nxinit, nnxo, irad)
-
 	txrm = (nxinit - 2*(int(irad*float(nxinit)/float(nnxo) + 0.5)+1))//2
 	if (txrm < 0): ERROR("ERROR!! Shift value ($d) is too large for the mask size"%txrm)
 	
@@ -738,7 +736,7 @@ def metamove_mrk01(projdata, oldshifts, Tracker, partids, partstack, outputdir, 
 		print("                    =>  partstack           :  ",partstack)
 
 	#if(Tracker["lowpass"] > 0.48):  ERROR("Low pass filter in metamove > 0.48 on the scale of shrank data","sxmeridien",1,myid)
-	if(myid == 0):  Tracker_print_mrk01(history[-1],"TRACKER")
+	if(myid == 0):  Tracker_print_mrk01(Tracker,"TRACKER")
 
 	#  Run alignment command
 	if(Tracker["local"]):
@@ -929,9 +927,9 @@ def main_mrk01():
 	Tracker["nxresolution"] = -1
 	Tracker["nxstep"]       = 32
 	Tracker["icurrentres"]  = -1
-	Tracker["fl"]           = 0.4
+	Tracker["lowpass"]      = 0.4
 	Tracker["initialfl"]    = 0.4
-	Tracker["aa"]           = 0.1
+	Tracker["falloff"]      = 0.1
 	Tracker["inires"]       = options.inires  # Now in A, convert to absolute before using
 	Tracker["fuse_freq"]    = 50  # Now in A, convert to absolute before using
 	Tracker["delpreviousmax"] = True
@@ -1324,7 +1322,7 @@ def main_mrk01():
 				write_text_row( [pinids[i][1] for i in xrange(len(pinids))], os.path.join(mainoutputdir,"params.txt"))
 			mpi_barrier(MPI_COMM_WORLD)
 			nfsc = read_fsc(os.path.join(mainoutputdir,"fsc.txt"),nnxo, myid, main_node)
-			Tracker["fl"], Tracker["aa"] = fit_tanh1([[float(i)/nnxo for i in xrange(len(nfsc))],nfsc], 0.01)
+			Tracker["lowpass"], Tracker["falloff"] = fit_tanh1([[float(i)/nnxo for i in xrange(len(nfsc))],nfsc], 0.01)
 			del nfsc
 
 			#  Here something will have to be done.  The idea is to have a presentable structure at full size.
