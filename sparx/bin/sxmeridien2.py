@@ -35,6 +35,24 @@ def subdict(d,u):
 	for q in u:  d[q] = u[q]
 
 
+def stepali(nxinit, nnxo, nxrsteps = 4):
+	radi = int(80*float(nxinit)/float(nnxo) + 0.5)
+	nxrsteps = 4
+
+	txrm = (nxinit - 2*(radi+1))//2
+	if(txrm < 0):  			print "error"
+	if(txrm/nxrsteps>0):
+		tss = ""
+		txr = ""
+		while(txrm/nxrsteps>0):
+			tts=txrm/nxrsteps
+			tss += "%d  "%tts
+			txr += "%d  "%(tts*nxrsteps)
+			txrm =txrm//2
+	return txr, tss
+
+
+
 """
 def cmdexecute(cmd):
 	from   time import localtime, strftime
@@ -47,8 +65,6 @@ def cmdexecute(cmd):
 	else:  print(line,"Executed successfully: ",cmd)
 """
 
-# NOTE: 2015/06/12 Toshio Moriya
-# This function seems to be not used
 def volshiftali(vv, mask3d=None):
 	nv = len(vv)
 	ni = vv[0].get_xsize()
@@ -1111,8 +1127,7 @@ def main_mrk01():
 			ERROR("Resolution of initial volume at the range of Nyquist frequency for given window and pixel sizes","sxmeridien",1, myid)
 
 	#  Here we need an algorithm to set things correctly
-	Tracker["xr"] = "9  6  3"
-	Tracker["ts"] = "3  2  1"
+	Tracker["xr"] , Tracker["ts"] = stepali(Tracker["nxinit"] , Tracker["constants"]["nnxo"])
 	Tracker["previousoutputdir"] = initdir
 	subdict( Tracker, { "nxinit":nxinit, "icurrentres":icurrentres, "inires":inires, "zoom":True} )
 
