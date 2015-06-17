@@ -244,8 +244,6 @@ def read_fsc(fsclocation, lc, myid, main_node, comm = -1):
 	return f
 
 
-# NOTE: 2015/06/11 Toshio Moriya
-# This function seems to be not used
 def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 	# this function is single processor
 	#  Get updated FSC curves, user can also provide a mask using radi variable
@@ -605,8 +603,6 @@ def getindexdata(stack, partids, partstack, myid, nproc):
 	#  The read data is properly distributed among MPI threads.
 """
 
-# NOTE: 2015/06/12 Toshio Moriya
-# This function seems to be not used
 def getalldata(stack, myid, nproc):
 	if(myid == 0):  ndata = EMUtil.get_image_count(stack)
 	else:           ndata = 0
@@ -686,11 +682,7 @@ def get_shrink_data(onx, nx, stack, partids, partstack, myid, main_node, nproc, 
 	return data, oldshifts
 
 
-# NOTE: 2015/06/10 Toshio Moriya
-# This is the same function as metamove() in sxmeridien.py
-# However, it uses dictionary object (Tracker) instead of class ali3d_options
-#
-def metamove_mrk01(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid, myid, main_node, nproc):
+def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid, myid, main_node, nproc):
 	from development import sali3d_base_mrk01
 	#  Takes preshrunk data and does the refinement as specified in Tracker
 	#
@@ -721,7 +713,7 @@ def metamove_mrk01(projdata, oldshifts, Tracker, partids, partstack, outputdir, 
 	if(Tracker["radius"] < 2):
 		ERROR( "ERROR!!   lastring too small  %f    %f   %d"%(Tracker["radius"], Tracker["constants"]["radius"]), "sxmeridien",1, myid)
 	Tracker["ir"] = max(int(Tracker["constants"]["ir"] * shrinkage +0.5), 1)
-	Tracker["lowpass"] = float(Tracker["icurrentres"])/float(Tracker["constants"]["nnxo"])
+	Tracker["lowpass"] = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
 	delta = "%f  "%min(round(degrees(atan(0.5/Tracker["lowpass"]/Tracker["radius"])), 2), 3.0)
 	Tracker["delta"] = ""
 	for i in xrange(len(get_input_from_string(Tracker["xr"]))):  Tracker["delta"] += delta
@@ -1131,10 +1123,9 @@ def main_mrk01():
 	Tracker["previousoutputdir"] = initdir
 	subdict( Tracker, {"zoom":True} )
 
-	# Update Tracker
-	history = [Tracker.copy()]
 	#  remove projdata, if it existed, initialize to nonsense
 	projdata = [[model_blank(1,1)], [model_blank(1,1)]]
+	HISTORY = []
 	oldshifts = [[],[]]
 	
 	# ------------------------------------------------------------------------------------
@@ -1231,7 +1222,9 @@ def main_mrk01():
 					projdata[procid], oldshifts[procid] = get_shrink_data(Tracker["constants"]["nnxo"], Tracker["nxinit"], \
 						Tracker["constants"]["stack"], partids[procid], partstack[procid], myid, main_node, nproc, \
 						Tracker["constants"]["CTF"], Tracker["applyctf"], preshift = False, radi = Tracker["constants"]["radius"])
-				metamove_mrk01(projdata[procid], oldshifts[procid], Tracker, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
+				metamove(projdata[procid], oldshifts[procid], Tracker, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
+		# Update HISTORY
+		HISTORY.append(Tracker.copy())
 
 		partstack = [None]*2
 		for procid in xrange(2):  partstack[procid] = os.path.join(Tracker["directory"], "params-chunk%01d.txt"%procid)
@@ -1304,6 +1297,44 @@ def main_mrk01():
 		#mpi_barrier(MPI_COMM_WORLD)
 		#mpi_finalize()
 		#exit()
+		keepgoing = 0
+		if(Tracker["mainiteration"] == 1):
+			nxinit = Tracker["nxinit"]
+			while( icurrentres + cushion > nxinit ): nxinit += Tracker["nxstep"]
+			#  Window size changed, reset projdata
+			if(nxinit> Tracker["nxinit"]):  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
+			Tracker["nxinit"] = min(nxinit,nnxo)
+			Tracker["icurrentres"] = icurrentres
+			Tracker["zoom"] = True
+			#  Develop something intelligent
+			Tracker["xr"] = "6 2"
+			Tracker["ts"] = "2 1"
+			keepgoing = 1
+		elif(Tracker["mainiteration"] == 2):
+			#  Go back to initial window size and exhaustive search to improve centering of the data.
+			nxinit = HISTORY[0]["nxinit"]
+			#  Window size changed, reset projdata
+			if(nxinit != Tracker["nxinit"]):  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
+			Tracker["nxinit"] = nxinit
+			Tracker["icurrentres"] = min(icurrentres, nxinit//2-4)
+			Tracker["zoom"] = True
+			#  Go back ti initial settings
+			Tracker["xr"] , Tracker["ts"] = stepali(Tracker["nxinit"] , Tracker["constants"]["nnxo"], Tracker["constants"]["radius"])
+			keepgoing = 1
+		elif(Tracker["mainiteration"] > 2):
+			if(Tracker["icurrentres"] <= icurrentres):  keepgoing = 0
+			else:
+				nxinit = Tracker["nxinit"]
+				while( icurrentres + cushion > nxinit ): nxinit += Tracker["nxstep"]
+				#  Window size changed, reset projdata
+				if(nxinit> Tracker["nxinit"]):  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
+				Tracker["nxinit"] = min(nxinit,nnxo)
+				Tracker["icurrentres"] = icurrentres
+				Tracker["zoom"] = True
+				#  Develop something intelligent
+				Tracker["xr"] = "6 2"
+				Tracker["ts"] = "2 1"
+				keepgoing = 1
 		"""
 		test_outliers = True
 		eliminated_outliers = False
@@ -1328,7 +1359,6 @@ def main_mrk01():
 
 
 		"""
-		keepgoing = 0
 		if(Tracker["an"] == "-1" ):
 			stepforward = 0.05
 			increment   = 0.02
@@ -1376,8 +1406,6 @@ def main_mrk01():
 			Tracker["lowpass"] = 0.25
 			Tracker["initialfl"] = Tracker["lowpass"]
 		"""
-		keepgoing = 1
-		Tracker["icurrentres"] = icurrentres
 		"""
 			if(myid == main_node):
 				if( icurrentres > Tracker["resolution"]):  print("  Resolution improved, full steam ahead!")
@@ -1654,8 +1682,6 @@ def main_mrk01():
 						cmdexecute(cmd)
 				"""
 			Tracker["previousoutputdir"] = Tracker["directory"]
-			#  maybe resolution should be kept in abs freq units?
-			Tracker["resolution"] = Tracker["icurrentres"]
 			history.append(Tracker.copy())
 
 		else:
