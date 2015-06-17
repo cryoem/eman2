@@ -34,8 +34,8 @@ from EMAN2 import *
 from Simplex import Simplex
 from Anneal import SimulatedAnnealer
 import numpy as np
-import os
 import sys
+import os
 import matplotlib
 if 'DISPLAY' in os.environ: # user has a display server running
 	import matplotlib.pyplot as plt
@@ -517,10 +517,10 @@ class MovieModeAligner:
 			gain=a.finish()
 			sigg.write_image(options.gain.rsplit(".",1)[0]+"_sig.hdf")
 			if options.fixbadpixels: sigg.process_inplace("threshold.binary",{"value":sigg["sigma"]/10.0})  # Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
-				if dark!=None:
-					sigd=EMData(options.dark.rsplit(".",1)[0]+"_sig.hdf",0,False)
-					sigg.mult(sigd)
-				gain.mult(sigg)
+			if dark!=None:
+				sigd=EMData(options.dark.rsplit(".",1)[0]+"_sig.hdf",0,False)
+				sigg.mult(sigd)
+			gain.mult(sigg)
 			gain.write_image(options.gain.rsplit(".",1)[0]+"_sum.hdf")
 		if dark!=None : gain.sub(dark)  # dark correct the gain-reference
 		gain.mult(1.0/gain["mean"])  # normalize so gain reference on average multiplies by 1.0
