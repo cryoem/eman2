@@ -880,6 +880,7 @@ def main_mrk01():
 	Constants["ir"]           = options.ir
 	Constants["rs"]           = 1
 	Constants["radius"]       = options.ou
+	Constants["an"]           = options.an
 	Constants["maxit"]        = 50
 	sym = options.sym
 	Constants["sym"]          = sym[0].lower() + sym[1:]
@@ -916,7 +917,7 @@ def main_mrk01():
 	Tracker["xr"]           = ""
 	Tracker["yr"]           = "-1"  # Do not change!
 	Tracker["ts"]           = 1
-	Tracker["an"]           = options.an
+	Tracker["an"]           = "-1"
 	Tracker["delta"]        = "2.0"
 	Tracker["zoom"]         = True
 	Tracker["nsoft"]        = options.nsoft
