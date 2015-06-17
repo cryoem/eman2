@@ -32,6 +32,7 @@
 
 from EMAN2 import *
 from Simplex import Simplex
+from Anneal import BaseAnnealer
 import itertools as it
 import numpy as np
 import os
@@ -46,7 +47,7 @@ else: # user is logged in via SSH without X-Forwarding
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """e2moviealigner.py [options] <ddd_movie_stack> <ddd_movie_stack> ... <ddd_movie_stack> 
+	usage = """e2moviealigner.py [options] <ddd_movie_stack> <ddd_movie_stack> ... <ddd_movie_stack>
 
 	Determines the optimal whole-frame alignment of a DDD movie. It can be used
 	to generate the affine transforms for each image and can perform the actual
@@ -64,15 +65,13 @@ def main():
 	parser.add_argument("--max", type=int, help="Set the maximum translation in pixels",default=50.0)
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 0,1 (first image skipped)")
 	parser.add_argument("--maxiters", type=int, help="Set the maximum number of iterations for the simplex minimizer to run before stopping. Default is 250.",default=250)
-	parser.add_argument("--epsilon", type=float, help="Set the learning rate for the simplex minimizer. Smaller is better, but takes longer. Default is 0.0001.",default=0.001)
+	parser.add_argument("--epsilon", type=float, help="Set the learning rate for the simplex minimizer. Smaller is better, but takes longer. Default is 0.001.",default=0.001)
 	parser.add_argument("--fixbadpixels",action="store_true",default=False,help="Tries to identify bad pixels in the dark/gain reference, and fills images in with sane values instead")
 	parser.add_argument("--frames",action="store_true",default=False,help="Save the dark/gain corrected frames")
 	parser.add_argument("--normalize",action="store_true",default=False,help="Apply edgenormalization to input images after dark/gain")
 	parser.add_argument("--simpleavg", action="store_true",help="Will save a simple average of the dark/gain corrected frames (no alignment or weighting)",default=False)
 	parser.add_argument("--compareavg",action="store_true",help="Display averaged movie frames from before and after alignment for a visual comparison.", default=False)
 	parser.add_argument("--movie", type=int,help="Display an n-frame averaged 'movie' of the stack, specify number of frames to average",default=0)
-	parser.add_argument("--parallel", default=None, help="parallelism argument. This program supports only thread:<n>")
-	parser.add_argument("--threads", default=1,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement[4]")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 
@@ -81,18 +80,6 @@ def main():
 	if len(args)<1:
 		print usage
 		parser.error("You must specify at least one input DDD stack.")
-
-	#if options.path: args.append(options.path) # will eventually convert to nargs=+ or nargs=*
-
-	if options.parallel!=None :
-		if options.parallel[:7]!="thread:":
-			print "ERROR: only thread:<n> parallelism supported by this program. It is i/o limited."
-			sys.exit(1)
-		threads=int(options.parallel[7:])
-	else: threads=1
-
-	if options.threads>1: threads=max(threads,options.threads)
-	if threads>1: print "Sorry, limited to one thread at the moment."
 
 	if options.boxsize: bs = options.boxsize
 	hdr = EMData(args[0],0,True).get_attr_dict()
@@ -113,8 +100,8 @@ def main():
 
 	pid=E2init(sys.argv)
 
-	for fname in args: 
-		
+	for fname in args:
+
 		if options.verbose: print "Processing", fname
 		options.path = fname
 
@@ -142,7 +129,7 @@ def main():
 			if options.verbose: print("Generating unaligned average")
 			if bgsub: savg = MovieModeAligner.simple_average(bgsub)
 			else: savg = MovieModeAligner.simple_average(fname)
-		
+
 		if options.verbose: print("Creating movie aligner object")
 		alignment = MovieModeAligner(fname,bgsub,bs,options.min,options.max)
 
@@ -155,12 +142,12 @@ def main():
 
 		if options.verbose: print("Writing aligned frames to disk")
 		alignment.write()
-		
+
 		if options.simpleavg or options.compareavg:
 			if options.verbose: print("Generating simple aligned average")
 			aligned_movie_file = alignment.get_aligned_filename()
 			savg2 = MovieModeAligner.simple_average(aligned_movie_file)
-			
+
 		if options.compareavg and len(args) < 2:
 			if options.verbose: print("Showing averaged movie frames before and after optimized alignment.")
 			display([savg,savg2])
@@ -190,23 +177,23 @@ class MovieModeAligner:
 		"""
 		self.orig = fname
 		self.hdr = EMData(fname,0).get_attr_dict()
-		if bgsub == None: 
+		if bgsub == None:
 			self.path = fname
-		else: 
+		else:
 			self.path = bgsub
-		if fname[-4:].lower() in (".mrc"): 
+		if fname[-4:].lower() in (".mrc"):
 			self.hdr['nimg'] = self.hdr['nz']
-		else: 
+		else:
 			self.hdr['nimg'] = EMUtil.get_image_count(fname)
 		self.outfile = fname.rsplit(".",1)[0]+"_align.hdf"
 		self._dir = os.path.dirname(os.path.abspath(fname))
 		self._initialize_params(boxsize,transforms,min_shift,max_shift)
 		self._computed_objective = False
-		if os.path.isfile(self._dir+'/'+fname[:-4]+'_incoherent.hdf'): 
+		if os.path.isfile(self._dir+'/'+fname[:-4]+'_incoherent.hdf'):
 			os.remove(self._dir+'/'+fname[:-4]+'_incoherent.hdf')
 		self._calc_incoherent_power_spectrum()
 		self.write_incoherent_power_spectrum(name=fname[:-4]+'_incoherent.hdf')
-		if os.path.isfile(self._dir+'/'+fname[:-4]+'_coherent.hdf'): 
+		if os.path.isfile(self._dir+'/'+fname[:-4]+'_coherent.hdf'):
 			os.remove(self._dir+'/'+fname[:-4]+'_coherent.hdf')
 		self._calc_coherent_power_spectrum()
 		self.write_coherent_power_spectrum(name=fname[:-4]+'_coherent.hdf')
@@ -239,9 +226,9 @@ class MovieModeAligner:
 		for ir in xrange(self._norigins): #self._nregions):
 			self._stacks[ir] = [self._regions[i][ir] for i in xrange(self.hdr['nimg'])]
 		self._nstacks = len(self._stacks)
-		if transforms: 
+		if transforms:
 			self._transforms = transforms
-		else: 
+		else:
 			self._transforms = np.repeat(Transform({"type":"eman","tx":0.0,"ty":0.0}), self.hdr['nimg']).tolist()
 		self.optimal_transforms = self._transforms
 		self._cboxes = EMData(self._boxsize,self._boxsize).do_fft()
@@ -332,7 +319,7 @@ class MovieModeAligner:
 			self._energies.append(energy)
 			self.optimal_transforms = self._transforms
 
-	def optimize(self, options):
+	def optimize(self, options,monitor=1):
 		"""
 		Method to perform optimization of movie alignment.
 
@@ -343,26 +330,17 @@ class MovieModeAligner:
 		if self._optimized:
 			print("Optimal alignment already determined.")
 			return
-		if options.epsilon: 
-			epsilon = options.epsilon
-		else: 
-			epsilon = 0.001
-		if options.maxiters: 
-			maxiters = options.maxiters
-		else: 
-			maxiters = 250
-		if options.verbose: 
-			monitor = 1
-		else:
-			monitor = 0
-		nm=2*self.hdr['nimg']
-		init=[ np.random.random()*(self._max-self._min)+self._min for i in range(nm)]
-		init=[ np.random.randint(-1,1) for i in range(nm)]
+
+		if options.verbose: print("Starting coarse-grained alignment")
+		cs = CoarseSearch(self)#,tmax=options.tmax,tmin=options.tmin,steps=options.steps,updates=options.updates)
+		state, energy = cs.anneal()
+
+		if options.verbose: print("Starting fine-grained alignment")
+		fs = FineSearch(self,state)
+		result, error, itr = fs.minimize(options.epsilon,options.maxiters,monitor=monitor)
+
 		if options.verbose: print("Initializing simplex minimizer")
-		sm=Simplex(self._compares,init,[5]*nm,data=self)
-		mn=sm.minimize(epsilon = epsilon, maxiters = maxiters, monitor = monitor)
-		if options.verbose: 
-			print("\n\nBest Parameters: {}\nError: {}\nIterations: {}\n".format(mn[0],mn[1],mn[2]))
+		if options.verbose: print("\n\nBest Parameters: {}\nError: {}\nIterations: {}\n".format(mn[0],mn[1],mn[2]))
 		self._optimized = True
 
 	@staticmethod
@@ -371,8 +349,7 @@ class MovieModeAligner:
 			t = Transform({'type':'eman','tx':vec[vi],'ty':vec[vi+1]})
 			aligner._update_frame_params(vi/2,t)
 		aligner._update_energy()
-		energy=np.log(1+aligner.get_energy())
-		return energy
+		return np.log(1+aligner.get_energy())
 
 	def write(self,name=None):
 		"""
@@ -384,7 +361,7 @@ class MovieModeAligner:
 			name=self.outfile
 		elif name[:-4] != '.hdf':
 			name = name[:-4] + '.hdf'  # force HDF
-		if not self._optimized: 
+		if not self._optimized:
 			print("Warning: Saving non-optimal alignment. Run the optimize method to determine best frame translations.")
 		for i in xrange(self.hdr['nimg']):
 			im = EMData(self.orig,i)
@@ -401,9 +378,9 @@ class MovieModeAligner:
 		if not name:
 			name = self.orig[:-4] + '_coherent.hdf'
 		rcps = self._cps.do_ift()
-		if num and self._cpsflag: 
+		if num and self._cpsflag:
 			rcps.write_image(self._dir+'/'+name,num)
-		else: 
+		else:
 			rcps.write_image(self._dir+'/'+name)
 		self._cpsflag = True
 
@@ -417,45 +394,24 @@ class MovieModeAligner:
 		if not name:
 			name = self.orig[:-4] + '_coherent.hdf'
 		rips = self._ips.do_ift()
-		if num and self._ipsflag: 
+		if num and self._ipsflag:
 			rips.write_image(self._dir+'/'+name,num)
-		else: 
+		else:
 			rips.write_image(self._dir+'/'+name)
 		self._ipsflag = True
 
-	def get_transforms(self):
-		return self.optimal_transforms
+	def get_transforms(self): return self.optimal_transforms
+	def get_data(self): return EMData(self.path)
+	def get_header(self): return self.hdr
+	def get_aligned_filename(self): return self.outfile
+	def get_energies(self): return self._energies[1:]
+	def get_energy(self): return self._energies[-1]
+	def get_incoherent_power_spectrum(self): return self._ips
+	def get_coherent_power_spectrum(self): return self._cps
 
-	def get_data(self):
-		return EMData(self.path)
-
-	def get_header(self):
-		return self.hdr
-
-	def get_aligned_filename(self):
-		return self.outfile
-
-	def get_energies(self):
-		return self._energies[1:]
-
-	def get_energy(self):
-		return self._energies[-1]
-
-	def get_incoherent_power_spectrum(self):
-		return self._ips
-
-	def get_coherent_power_spectrum(self):
-		return self._cps
-
-	def show_power_spectra(self):
-		print("Displaying incoherent (1) and coherent (2) power spectra.")
-		display([self._ips,self._cps])
-
-	def show_bgsub(self):
-		display([EMData(self.bgsub,i) for i in xrange(self.hdr['nimg'])])
-
-	def show_orig(self):
-		display([EMData(self.orig,i) for i in xrange(self.hdr['nimg'])])
+	def show_power_spectra(self): display([self._ips,self._cps])
+	def show_bgsub(self): display([EMData(self.bgsub,i) for i in xrange(self.hdr['nimg'])])
+	def show_orig(self): display([EMData(self.orig,i) for i in xrange(self.hdr['nimg'])])
 
 	def show_movie(self,f2avg=5):
 		"""
@@ -482,9 +438,9 @@ class MovieModeAligner:
 		ax = fig.add_subplot(1,1,1)
 		ax.plot(self._energies[1:])
 		ax.set_title('DDD Movie Alignment: Energy')
-		if savefig: 
+		if savefig:
 			plt.savefig(fname)
-		if showfig: 
+		if showfig:
 			plt.show()
 		return fig
 
@@ -507,9 +463,9 @@ class MovieModeAligner:
 		ax.set_ylim([np.min(Y),np.max(V)])
 		ax.set_title('DDD Movie Alignment: Frame Motion')
 		plt.draw()
-		if savefig: 
+		if savefig:
 			plt.savefig(fname)
-		if showfig: 
+		if showfig:
 			plt.show()
 
 	@classmethod
@@ -553,9 +509,9 @@ class MovieModeAligner:
 		@param namespace options	:	"argparse" options from e2ddd_movie.py
 		"""
 		hdr = EMData(options.gain,0,True).get_attr_dict()
-		if options.path[-4:].lower() in (".mrc"): 
+		if options.path[-4:].lower() in (".mrc"):
 			nd = hdr['nz']
-		else: 
+		else:
 			nd = EMUtil.get_image_count(options.gain)
 		gain=EMData(options.gain,0)
 		if nd>1:
@@ -574,7 +530,9 @@ class MovieModeAligner:
 			sigg.write_image(options.gain.rsplit(".",1)[0]+"_sig.hdf")
 			if options.fixbadpixels:
 				sigg.process_inplace("threshold.binary",{"value":sigg["sigma"]/10.0})  # Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
-				if dark!=None : sigg.mult(sigd)
+				if dark!=None:
+					sigd=EMData(options.dark.rsplit(".",1)[0]+"_sig.hdf",0,False)
+					sigg.mult(sigd)
 				gain.mult(sigg)
 			gain.write_image(options.gain.rsplit(".",1)[0]+"_sum.hdf")
 		if dark!=None : gain.sub(dark)  # dark correct the gain-reference
@@ -594,16 +552,16 @@ class MovieModeAligner:
 		@param str outfile		:	(optional) name of the file to be written with background subtracted movie
 		"""
 		hdr = EMData(options.path,0,True).get_attr_dict()
-		if options.path[-4:].lower() in (".mrc"): 
+		if options.path[-4:].lower() in (".mrc"):
 			nd = hdr['nz']
-		else: 
+		else:
 			nd = EMUtil.get_image_count(options.path)
-		if not outfile: 
+		if not outfile:
 			outfile = options.path.rsplit(".",1)[0]+"_bgsub.hdf"
 		step = options.step.split(",")
-		if len(step) == 3: 
+		if len(step) == 3:
 			last = int(step[2])
-		else: 
+		else:
 			last = nd
 		first = int(step[0])
 		step  = int(step[1])
@@ -613,18 +571,18 @@ class MovieModeAligner:
 			if options.path[-4:].lower() in (".mrc"):
 				r = Region(0,0,i,nx,ny,1)
 				im=EMData(path,0,False,r)
-			else: 
+			else:
 				im=EMData(options.path,i)
-			if dark: 
+			if dark:
 				im.sub(dark)
-			if gain: 
+			if gain:
 				im.mult(gain)
 			im.process_inplace("threshold.clampminmax",{"minval":0,"maxval":im["mean"]+im["sigma"]*3.5,"tozero":1})
-			if options.fixbadpixels: 
+			if options.fixbadpixels:
 				im.process_inplace("threshold.outlier.localmean",{"sigma":3.5,"fix_zero":1})  # fixes clear outliers as well as values which were exactly zero
-			if options.normalize: 
+			if options.normalize:
 				im.process_inplace("normalize.edgemean")
-			if options.frames: 
+			if options.frames:
 				im.write_image(outfile,i-first)
 			im.write_image(outfile,i)
 		return outfile
@@ -654,10 +612,45 @@ class MovieModeAligner:
 			else:
 				avgr.add_image(EMData(path,i))
 		av=avgr.finish()
-		if not outfile: 
+		if not outfile:
 			outfile = path[:-4] + '_mean.hdf'
 		av.write_image(outfile,0)
 		return av
+
+class FineSearch(Simplex):
+
+	def __init__(self, aligner, guess, increments=None, kR=-1.0, kE=2.0, kC=0.5):
+		self.aligner = aligner
+		if increments == None: increments = [5] * 2 * aligner.hdr['nimg']
+		self.kR = kR
+		self.kE = kE
+		self.kC = kC
+		super(FineSearch, self).__init__(aligner._compares,guess,increments,kR,kE,kC,aligner)
+
+class CoarseSearch(BaseAnnealer):
+
+	def __init__(self, aligner, state=None, Tmax = 25000.0, Tmin = 2.5, steps=50000, updates=100):
+		self.aligner = aligner
+		if state == None: self.state = [s for s in t.get_trans_2d() for t in aligner._transforms]
+		super(CoarseSearch, self).__init__(state)
+		self.Tmax = Tmax
+		self.Tmin = Tmin
+		self.steps = steps
+		self.updates = updates
+		self.slen = len(self.state)
+		self.srange = range(0,self.slen,1)
+		self.count = 0
+
+	def move(self,scale=1.0):
+		self.state[self.count] = self.state[self.count]+scale*(2*np.random.random()-1)
+		self.count = (self.count+i) % self.slen
+
+	def energy(self):
+		for vi in self.srange:
+			t = Transform({'type':'eman','tx':self.state[vi],'ty':self.state[vi+1]})
+			self.aligner._update_frame_params(vi/2,t)
+		self.aligner._update_energy()
+		return np.log(1+aligner.get_energy())
 
 if __name__ == "__main__":
 	main()
