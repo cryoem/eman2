@@ -1180,6 +1180,7 @@ def main():
 		#print("RACING  A ",myid)
 		outvol = [os.path.join(Tracker["previousoutputdir"],"vol%01d.hdf"%procid) for procid in xrange(2)]
 
+		doit, keepchecking = checkstep(outvol, keepchecking, myid, main_node)
 		if(myid == main_node):
 			if  doit:
 				vol = [ get_im(outvol[procid]) for procid in xrange(2) ]
@@ -1229,7 +1230,7 @@ def main():
 		for procid in xrange(2):  partstack[procid] = os.path.join(Tracker["directory"], "params-chunk%01d.txt"%procid)
 
 		#  check it for the first, if it does not exist, run the program
-		os.path.join(Tracker["directory"] ,"current_resolution.txt")
+		outvol = os.path.join(Tracker["directory"] ,"current_resolution.txt")
 		doit, keepchecking = checkstep(outvol, keepchecking, myid, main_node)
 
 		if  doit:
