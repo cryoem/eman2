@@ -130,7 +130,7 @@ class SimpleAnnealer:
     Copyright (c) 2003 Richard P. Muller (rmuller@sandia.gov). All rights
     reserved. See the LICENSE file for licensing details.
     """
-    
+
     def __init__(self,objective,bounds):
         self.objective = objective
         self.bounds = bounds
@@ -198,7 +198,7 @@ class BaseAnnealer(object):
     Tmin = 2.5
     steps = 50000
     updates = 100
-    copy_strategy = 'deepcopy'
+    copy_strategy = 'slice'
     user_exit = False
     save_state_on_exit = False
 
@@ -247,19 +247,22 @@ class BaseAnnealer(object):
         pass
 
     def set_user_exit(self, signum, frame):
-        """Raises the user_exit flag, further iterations are stopped
+        """
+        Raises the user_exit flag, further iterations are stopped
         """
         self.user_exit = True
 
     def set_schedule(self, schedule):
-        """Takes the output from `auto` and sets the attributes
+        """
+        Takes the output from `auto` and sets the attributes
         """
         self.Tmax = schedule['tmax']
         self.Tmin = schedule['tmin']
         self.steps = int(schedule['steps'])
 
     def copy_state(self, state):
-        """Returns an exact copy of the provided state
+        """
+        Returns an exact copy of the provided state
         Implemented according to self.copy_strategy, one of
         * deepcopy : use copy.deepcopy (slow but reliable)
         * slice: use list slices (faster but only works if state is list-like)
