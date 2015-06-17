@@ -769,8 +769,8 @@ def print_dict(dict,theme):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 	print(line,theme)
 	spaces = "                    "
-	for q in dict:
-		if(q != "constants"):  print("                    => ",q+spaces[len(q):],":  ",dict[q])
+	for key, value in sorted( dict.items() ):
+		if(key != "constants"):  print("                    => ", key+spaces[len(key):],":  ",value)
 
 
 # NOTE: 2015/06/11 Toshio Moriya
