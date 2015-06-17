@@ -1016,7 +1016,7 @@ def main_mrk01():
 
 	#  create a vstack from input stack to the local stack in masterdir
 	#  Stack name set to default
-	stack = "bdb:"+masterdir+"/rdata"
+	Tracker["constants"]["stack"] = "bdb:"+masterdir+"/rdata"
 	# Initialization of stacks
 	if(myid == main_node):
 		if keepchecking:
@@ -1024,13 +1024,13 @@ def main_mrk01():
 			else:  doit = True
 		else:  doit = True
 		if  doit:
-			if(orgstack[:4] == "bdb:"):	cmd = "{} {} {}".format("e2bdb.py", orgstack,"--makevstack="+stack)
-			else:  cmd = "{} {} {}".format("sxcpy.py", orgstack, stack)
+			if(orgstack[:4] == "bdb:"):	cmd = "{} {} {}".format("e2bdb.py", orgstack,"--makevstack="+Tracker["constants"]["stack"])
+			else:  cmd = "{} {} {}".format("sxcpy.py", orgstack, Tracker["constants"]["stack"])
 			cmdexecute(cmd)
-			cmd = "{} {}".format("sxheader.py  --consecutive  --params=originalid", stack)
+			cmd = "{} {}".format("sxheader.py  --consecutive  --params=originalid", Tracker["constants"]["stack"])
 			cmdexecute(cmd)
 			keepchecking = False
-		total_stack = EMUtil.get_image_count(stack)
+		total_stack = EMUtil.get_image_count(Tracker["constants"]["stack"])
 	else:
 		total_stack = 0
 
@@ -1072,7 +1072,7 @@ def main_mrk01():
 			write_text_file(l2,partids[1])
 			
 			if(options.startangles):
-				tp_list = EMUtil.get_all_attributes(stack, "xform.projection")
+				tp_list = EMUtil.get_all_attributes(Tracker["constants"]["stack"], "xform.projection")
 				
 				dp_list1 = []
 				for l1_entry in l1:
@@ -1229,7 +1229,7 @@ def main_mrk01():
 				mpi_barrier(MPI_COMM_WORLD)
 				if( Tracker["nxinit"] != projdata[procid][0].get_xsize() ):  \
 					projdata[procid], oldshifts[procid] = get_shrink_data(Tracker["constants"]["nnxo"], Tracker["nxinit"], \
-						stack, partids[procid], partstack[procid], myid, main_node, nproc, \
+						Tracker["constants"]["stack"], partids[procid], partstack[procid], myid, main_node, nproc, \
 						Tracker["constants"]["CTF"], Tracker["applyctf"], preshift = False, radi = radi)
 				metamove_mrk01(projdata[procid], oldshifts[procid], Tracker, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
 
@@ -1241,8 +1241,10 @@ def main_mrk01():
 		doit, keepchecking = checkstep(outvol, keepchecking, myid, main_node)
 
 		if  doit:
-			xlowpass, xfalloff, xcurrentres = compute_resolution_mrk01(stack, mainoutputdir, partids, partstack, \
-													radi, nnxo, Tracker["constants"]["CTF"], Tracker["constants"]["mask3D"], \
+			xlowpass, xfalloff, xcurrentres = compute_resolution_mrk01(Tracker["constants"]["stack"], \
+													mainoutputdir, partids, partstack, \
+													Tracker["constants"]["radius"], Tracker["constants"]["nnxo"], \
+													Tracker["constants"]["CTF"], Tracker["constants"]["mask3D"], \
 													Tracker["constants"]["sym"], myid, main_node, nproc)
 			del xlowpass, xfalloff, xcurrentres
 			if( myid == main_node):
@@ -1328,7 +1330,8 @@ def main_mrk01():
 			#  However, the data is in smaller window.  O possibility would be to compute structure in smaller window and then pad it
 			#  in Fourier space with zero to the full size.
 			#
-			projdata = getindexdata(stack, os.path.join(mainoutputdir,"indexes.txt"), os.path.join(mainoutputdir,"params.txt"), myid, nproc)
+			projdata = getindexdata(Tracker["constants"]["stack"], os.path.join(mainoutputdir,"indexes.txt"), \
+						os.path.join(mainoutputdir,"params.txt"), myid, nproc)
 			volf = do_volume_mrk01(projdata, Tracker, mainiteration, mpi_comm = MPI_COMM_WORLD)
 			projdata = [[model_blank(1,1)],[model_blank(1,1)]]
 			if(myid == main_node):
