@@ -1149,10 +1149,9 @@ def main_mrk01():
 	while(keepgoing):
 		mainiteration += 1
 		Tracker["mainiteration"] = mainiteration
-		#  prepare output directory
+		#  prepare output directory,  the settings are awkward
 		history[-1]["directory"] = "main%03d"%mainiteration
-		mainoutputdir = os.path.join(masterdir,history[-1]["directory"])
-		Tracker["directory"]     = mainoutputdir
+		Tracker["directory"]     = os.path.join(masterdir,history[-1]["directory"])
 
 		if(myid == main_node):
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
@@ -1162,9 +1161,9 @@ def main_mrk01():
 			print(line,"  mainoutputdir  previousoutputdir  ",Tracker["directory"], Tracker["previousoutputdir"])
 
 			if keepchecking:
-				if(os.path.exists(mainoutputdir)):
+				if(os.path.exists(Tracker["directory"] )):
 					doit = 0
-					print("Directory  ",mainoutputdir,"  exists!")
+					print("Directory  ",Tracker["directory"] ,"  exists!")
 				else:
 					doit = 1
 					keepchecking = False
@@ -1172,7 +1171,7 @@ def main_mrk01():
 				doit = 1
 
 			if doit:
-				cmd = "{} {}".format("mkdir", mainoutputdir)
+				cmd = "{} {}".format("mkdir", Tracker["directory"])
 				cmdexecute(cmd)
 
 		mpi_barrier(MPI_COMM_WORLD)
@@ -1198,17 +1197,17 @@ def main_mrk01():
 			if  doit:
 				vol = [ get_im(outvol[procid]) for procid in xrange(2) ]
 				fuselowf(vol, Tracker["fuse_freq"])
-				for procid in xrange(2):  vol[procid].write_image(os.path.join(mainoutputdir,"fusevol%01d.hdf"%procid) )
+				for procid in xrange(2):  vol[procid].write_image(os.path.join(Tracker["directory"], "fusevol%01d.hdf"%procid) )
 				del vol
 
 		mpi_barrier(MPI_COMM_WORLD)
 
 		#  REFINEMENT  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 		for procid in xrange(2):
-			coutdir = os.path.join(mainoutputdir,"loga%01d"%procid)
+			coutdir = os.path.join(Tracker["directory"], "loga%01d"%procid)
 			doit, keepchecking = checkstep(coutdir, keepchecking, myid, main_node)
 			#  here ts has different meaning for standard and continuous
-			Tracker["refvol"] = os.path.join(mainoutputdir,"fusevol%01d.hdf"%procid)\
+			Tracker["refvol"] = os.path.join(Tracker["directory"], "fusevol%01d.hdf"%procid)\
 			#if(len(history)>1):  old_nx = history[-2]["nx"]
 			#else:    old_nx = Tracker["nx"]
 			#Tracker["xr"] = "3.0"#"%s"%max(3,int(1.5*Tracker["nx"]/float(old_nx) +0.5))
@@ -1238,28 +1237,28 @@ def main_mrk01():
 				metamove_mrk01(projdata[procid], oldshifts[procid], Tracker, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
 
 		partstack = [None]*2
-		for procid in xrange(2):  partstack[procid] = os.path.join(mainoutputdir, "params-chunk%01d.txt"%procid)
+		for procid in xrange(2):  partstack[procid] = os.path.join(Tracker["directory"], "params-chunk%01d.txt"%procid)
 
 		#  check it for the first, if it does not exist, run the program
-		os.path.join(mainoutputdir,"current_resolution.txt")
+		os.path.join(Tracker["directory"] ,"current_resolution.txt")
 		doit, keepchecking = checkstep(outvol, keepchecking, myid, main_node)
 
 		if  doit:
 			xlowpass, xfalloff, xcurrentres = compute_resolution_mrk01(Tracker["constants"]["stack"], \
-													mainoutputdir, partids, partstack, \
+													Tracker["directory"], partids, partstack, \
 													Tracker["constants"]["radius"], Tracker["constants"]["nnxo"], \
 													Tracker["constants"]["CTF"], Tracker["constants"]["mask3D"], \
 													Tracker["constants"]["sym"], myid, main_node, nproc)
 			del xlowpass, xfalloff, xcurrentres
-			"""
 			if( myid == main_node):
-				# Move output to proper directories
+				# Carry over chunk information
 				for procid in xrange(2):
-					cmd = "{} {} {}".format("mv", os.path.join(mainoutputdir,"within-fsc%01d.txt"%procid), os.path.join(mainoutputdir,"loga%01d"%procid) )
+					cmd = "{} {} {}".format("cp -p", os.path.join(Tracker["previousoutputdir"],"chunk%01d.txt"%procid), \
+											os.path.join(Tracker["directory"],"chunk%01d.txt"%procid) )
 					cmdexecute(cmd)
-			"""
+
 		if( myid == main_node):
-			[newlowpass, newfalloff, icurrentres] = read_text_row( os.path.join(mainoutputdir,"current_resolution.txt") )[0]
+			[newlowpass, newfalloff, icurrentres] = read_text_row( os.path.join(Tracker["directory"],"current_resolution.txt") )[0]
 		else:
 			newlowpass = 0.0
 			newfalloff = 0.0
@@ -1273,7 +1272,7 @@ def main_mrk01():
 		#  PRESENTABLE RESULT
 		#  Part         <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 		#  Here I have code to generate presentable results.  IDs and params have to be merged and stored and the overall volume computed.
-		doit, keepchecking = checkstep(os.path.join(mainoutputdir,"volf.hdf"), keepchecking, myid, main_node)
+		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"volf.hdf"), keepchecking, myid, main_node)
 		if  doit:
 			if( myid == main_node ):
 				pinids = read_text_file(partids[0]) + read_text_file(partids[1])
@@ -1286,10 +1285,10 @@ def main_mrk01():
 				del params
 				pinids.sort()
 
-				write_text_file([pinids[i][0] for i in xrange(len(pinids))], os.path.join(mainoutputdir,"indexes.txt"))
-				write_text_row( [pinids[i][1] for i in xrange(len(pinids))], os.path.join(mainoutputdir,"params.txt"))
+				write_text_file([pinids[i][0] for i in xrange(len(pinids))], os.path.join(Tracker["directory"] ,"indexes.txt"))
+				write_text_row( [pinids[i][1] for i in xrange(len(pinids))], os.path.join(Tracker["directory"] ,"params.txt"))
 			mpi_barrier(MPI_COMM_WORLD)
-			nfsc = read_fsc(os.path.join(mainoutputdir,"fsc.txt"),Tracker["constants"]["nnxo"], myid, main_node)
+			nfsc = read_fsc(os.path.join(Tracker["directory"] ,"fsc.txt"),Tracker["constants"]["nnxo"], myid, main_node)
 			Tracker["lowpass"], Tracker["falloff"] = fit_tanh1([[float(i)/Tracker["constants"]["nnxo"] for i in xrange(len(nfsc))],nfsc], 0.01)
 			del nfsc
 
@@ -1297,18 +1296,18 @@ def main_mrk01():
 			#  However, the data is in smaller window.  O possibility would be to compute structure in smaller window and then pad it
 			#  in Fourier space with zero to the full size.
 			#
-			projdata = getindexdata(Tracker["constants"]["stack"], os.path.join(mainoutputdir,"indexes.txt"), \
-						os.path.join(mainoutputdir,"params.txt"), myid, nproc)
+			projdata = getindexdata(Tracker["constants"]["stack"], os.path.join(Tracker["directory"] ,"indexes.txt"), \
+						os.path.join(Tracker["directory"] ,"params.txt"), myid, nproc)
 			volf = do_volume_mrk01(projdata, Tracker, mainiteration, mpi_comm = MPI_COMM_WORLD)
 			projdata = [[model_blank(1,1)],[model_blank(1,1)]]
 			if(myid == main_node):
-				volf.write_image(os.path.join(mainoutputdir,"volf.hdf"))
+				volf.write_image(os.path.join(Tracker["directory"] ,"volf.hdf"))
 
 
 		#mpi_barrier(MPI_COMM_WORLD)
 		#mpi_finalize()
 		#exit()
-
+		"""
 		test_outliers = True
 		eliminated_outliers = False
 		newlowpass = lowpass
@@ -1317,6 +1316,7 @@ def main_mrk01():
 		#  HERE the lowpass has the true meaning
 		lowpass = newlowpass
 		falloff = newfalloff
+		"""
 
 		"""
 		if(myid == main_node and not eliminated_outliers and doit):  # I had to add here doit, otherwise during the restart it incorrectly copies the files.
@@ -1380,6 +1380,7 @@ def main_mrk01():
 			Tracker["initialfl"] = Tracker["lowpass"]
 		"""
 		keepgoing = 1
+		Tracker["icurrentres"] = icurrentres
 		"""
 			if(myid == main_node):
 				if( icurrentres > Tracker["resolution"]):  print("  Resolution improved, full steam ahead!")
@@ -1655,7 +1656,7 @@ def main_mrk01():
 						cmd = "{} {} {}".format("cp -p", partstack[procid], os.path.join(mainoutputdir,"params-chunk%01d.txt"%procid))
 						cmdexecute(cmd)
 				"""
-			Tracker["previousoutputdir"] = mainoutputdir
+			Tracker["previousoutputdir"] = Tracker["directory"]
 			#  maybe resolution should be kept in abs freq units?
 			Tracker["resolution"] = Tracker["icurrentres"]
 			history.append(Tracker.copy())
