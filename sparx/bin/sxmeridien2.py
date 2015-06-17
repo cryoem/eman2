@@ -761,7 +761,7 @@ def metamove_mrk01(projdata, oldshifts, Tracker, partids, partstack, outputdir, 
 		for i in xrange(len(params)):
 			params[i][3] = params[i][3]/shrinkage + oldshifts[i][0]
 			params[i][4] = params[i][4]/shrinkage + oldshifts[i][1]
-		write_text_row(params, os.path.join(Tracker["mainoutputdir"],"params-chunk%01d.txt"%procid) )
+		write_text_row(params, os.path.join(Tracker["directory"],"params-chunk%01d.txt"%procid) )
 
 
 def print_dict(dict,theme):
@@ -1238,7 +1238,7 @@ def main_mrk01():
 				metamove_mrk01(projdata[procid], oldshifts[procid], Tracker, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
 
 		partstack = [None]*2
-		for procid in xrange(2):  partstack[procid] = os.path.join(mainoutputdir, "loga%01d"%procid, "params-chunk%01d.txt"%procid)
+		for procid in xrange(2):  partstack[procid] = os.path.join(mainoutputdir, "params-chunk%01d.txt"%procid)
 
 		#  check it for the first, if it does not exist, run the program
 		os.path.join(mainoutputdir,"current_resolution.txt")
