@@ -696,7 +696,7 @@ def metamove_mrk01(projdata, oldshifts, Tracker, partids, partstack, outputdir, 
 	#
 	#  Will create outputdir
 	#  Will write to outputdir output parameters: params-chunk0.txt and params-chunk1.txt
-	from utilities       import gget_input_from_string
+	from utilities  import get_input_from_string
 	shrinkage = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
 	if(myid == main_node):
 		#  Create output directory
