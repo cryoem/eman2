@@ -1492,11 +1492,9 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 	from utilities    import compose_transform2
 	from EMAN2 import Vec2f
 
-	ID = data.get_attr("ID")
 	if finfo:
 		from utilities    import get_params_proj
 		phi, theta, psi, s2x, s2y = get_params_proj(data)
-		finfo.write("Image id: %6d\n"%(ID))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, s2x, s2y))
 		finfo.flush()
 
@@ -1559,11 +1557,9 @@ def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None):
 	from utilities    import compose_transform2
 	from EMAN2 import Vec2f
 
-	ID = data.get_attr("ID")
 	if finfo:
 		from utilities    import get_params_proj
 		phi, theta, psi, s2x, s2y = get_params_proj(data)
-		finfo.write("Image id: %6d\n"%(ID))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, s2x, s2y))
 		finfo.flush()
 
@@ -1630,8 +1626,6 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 	from math         import cos, sin, pi, radians
 	from EMAN2        import Vec2f
 
-	ID = data.get_attr("ID")
-
 	mode = "F"
 	nx   = data.get_xsize()
 	ny   = data.get_ysize()
@@ -1645,7 +1639,6 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 	dp = t1.get_params("spider")
 	#print  dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]
 	if finfo:
-		finfo.write("Image id: %6d\n"%(ID))
 		#finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, sxo, syo))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
 		finfo.flush()
@@ -1721,7 +1714,6 @@ def proj_ali_incore_local_chunks(data, refrings, numr, xrng, yrng, step, an, fin
 	from math         import cos, sin, pi, radians
 	from EMAN2        import Vec2f
 
-	ID = data.get_attr("ID")
 
 	mode = "F"
 	nx   = data.get_xsize()
@@ -1736,7 +1728,6 @@ def proj_ali_incore_local_chunks(data, refrings, numr, xrng, yrng, step, an, fin
 	dp = t1.get_params("spider")
 	#print  dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]
 	if finfo:
-		finfo.write("Image id: %6d\n"%(ID))
 		#finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, sxo, syo))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
 		finfo.flush()
@@ -1809,8 +1800,6 @@ def proj_ali_incore_delta(data, refrings, numr, xrng, yrng, step, start, delta, 
 	from utilities    import compose_transform2
 	from EMAN2 import Vec2f
 
-	ID = data.get_attr("ID")
-
 	mode = "F"
 	#  center is in SPIDER convention
 	nx   = data.get_xsize()
@@ -1822,7 +1811,6 @@ def proj_ali_incore_delta(data, refrings, numr, xrng, yrng, step, start, delta, 
 	t1 = data.get_attr("xform.projection")
 	dp = t1.get_params("spider")
 	if finfo:
-		finfo.write("Image id: %6d\n"%(ID))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
 		finfo.flush()
 
@@ -1888,10 +1876,8 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, dpsi=1
 	from EMAN2 import Vec2f
 	from math         import cos, sin, pi
 	
-	ID = data.get_attr("ID")
 	if finfo:
 		phi, theta, psi, s2x, s2y = get_params_proj(data)
-		finfo.write("Image id: %6d\n"%(ID))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, s2x, s2y))
 		finfo.flush()
 
@@ -1907,7 +1893,6 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, dpsi=1
 	t1 = data.get_attr("xform.projection")
 	dp = t1.get_params("spider")
 	if finfo:
-		finfo.write("Image id: %6d\n"%(ID))
 		#finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, sxo, syo))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
 		finfo.flush()
@@ -1973,8 +1958,6 @@ def proj_ali_helical(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_max=1
 	"""
 	from utilities    import compose_transform2, get_params_proj
 	from math         import cos, sin, pi
-	
-	ID = data.get_attr("ID")
 
 	mode = "F"
 	nx   = data.get_xsize()
@@ -1984,7 +1967,6 @@ def proj_ali_helical(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_max=1
 	cny  = ny//2 + 1
 	phi, theta, psi, tx, ty = get_params_proj(data)
 	if finfo:
-		finfo.write("Image id: %6d\n"%(ID))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
 
@@ -2027,8 +2009,6 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	"""
 	from utilities    import compose_transform2, get_params_proj
 	from math         import cos, sin, radians
-	
-	ID = data.get_attr("ID")
 
 	mode = "F"
 	nx   = data.get_xsize()
@@ -2039,7 +2019,6 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	ant = cos(radians(an))
 	phi, theta, psi, tx, ty = get_params_proj(data)
 	if finfo:
-		finfo.write("Image id: %6d\n"%(ID))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
 	
@@ -2086,8 +2065,6 @@ def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_ma
 	"""
 	from utilities    import compose_transform2, get_params_proj
 
-	ID = data.get_attr("ID")
-
 	mode = "F"
 	nx   = data.get_xsize()
 	ny   = data.get_ysize()
@@ -2096,7 +2073,6 @@ def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_ma
 	cny  = ny//2 + 1
 	phi, theta, psi, tx, ty = get_params_proj(data)
 	if finfo:
-		finfo.write("Image id: %6d\n"%(ID))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
 
@@ -2134,8 +2110,6 @@ def proj_ali_helical_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 	from utilities    import compose_transform2, get_params_proj
 	from math         import cos, sin, radians
 
-	ID = data.get_attr("ID")
-
 	mode = "F"
 	nx   = data.get_xsize()
 	ny   = data.get_ysize()
@@ -2145,7 +2119,6 @@ def proj_ali_helical_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 	ant = cos(radians(an))
 	phi, theta, psi, tx, ty = get_params_proj(data)
 	if finfo:
-		finfo.write("Image id: %6d\n"%(ID))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
 
@@ -2183,8 +2156,6 @@ def proj_ali_helicon_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	from utilities    import compose_transform2, get_params_proj
 	from math         import cos, sin, radians
 
-	ID = data.get_attr("ID")
-
 	mode = "F"
 	nx   = data.get_xsize()
 	ny   = data.get_ysize()
@@ -2194,7 +2165,6 @@ def proj_ali_helicon_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	ant = cos(radians(an))
 	phi, theta, psi, tx, ty = get_params_proj(data)
 	if finfo:
-		finfo.write("Image id: %6d\n"%(ID))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
 
@@ -2244,8 +2214,6 @@ def proj_ali_helicon_90_local_direct(data, refrings, xrng, yrng, \
 	from alignment    import directaligridding
 	from math         import cos, sin, radians
 
-	ID = data.get_attr("ID")
-
 	mode = "F"
 	nx   = data.get_xsize()
 	ny   = data.get_ysize()
@@ -2255,7 +2223,6 @@ def proj_ali_helicon_90_local_direct(data, refrings, xrng, yrng, \
 	ant = cos(radians(an))
 	phi, theta, psi, tx, ty = get_params_proj(data)
 	if finfo:
-		finfo.write("Image id: %6d\n"%(ID))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
 	#  Determine whether segment is up and down and search for psi in one orientation only.
@@ -2336,8 +2303,6 @@ def proj_ali_helicon_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 	"""
 	from utilities    import compose_transform2, get_params_proj
 	from math         import cos, sin, pi
-	
-	ID = data.get_attr("ID")
 
 	mode = "F"
 	nx   = data.get_xsize()
@@ -2348,7 +2313,6 @@ def proj_ali_helicon_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 	ant = cos(an*pi/180.0)
 	phi, theta, psi, tx, ty = get_params_proj(data)
 	if finfo:
-		finfo.write("Image id: %6d\n"%(ID))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
 
