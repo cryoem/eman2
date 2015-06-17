@@ -654,6 +654,8 @@ class CoarseSearch(BaseAnnealer):
 		self.slen = len(self.state)
 		self.srange = range(0,self.slen-1,2)
 		self.count = 0
+		self.copy_strategy = 'slice'
+		self.save_state_on_exit = False
 
 	def move(self,scale=25.0,incr=1):
 		self.state[self.count] = self.state[self.count]+scale*(2*np.random.random()-1)
