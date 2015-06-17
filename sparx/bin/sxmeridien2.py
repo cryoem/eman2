@@ -720,6 +720,7 @@ def metamove_mrk01(projdata, oldshifts, Tracker, partids, partstack, outputdir, 
 	Tracker["radius"] = int(Tracker["constants"]["radius"] * shrinkage +0.5)
 	if(Tracker["radius"] < 2):
 		ERROR( "ERROR!!   lastring too small  %f    %f   %d"%(Tracker["radius"], Tracker["constants"]["radius"]), "sxmeridien",1, myid)
+	Tracker["ir"] = max(int(Tracker["constants"]["ir"] * shrinkage +0.5), 1)
 	Tracker["lowpass"] = float(Tracker["icurrentres"])/float(Tracker["constants"]["nnxo"])
 	delta = "%f  "%min(round(degrees(atan(0.5/Tracker["lowpass"]/Tracker["radius"])), 2), 3.0)
 	Tracker["delta"] = ""
@@ -902,9 +903,6 @@ def main_mrk01():
 	#  nnxo         - original nx of the data, will not be changed
 	#  nxinit       - window size used by the program during given iteration, 
 	#                 will be increased in steps of 32 with the resolution
-	#  nxresolution - resolution window size in Fourier pixels within nxinit.
-	#                 The fl within the reduced data is nxresolution/nxinit/2.0
-	#                 The absolute fl is nxresolution/nnxo/2.0
 	#
 	#  nxstep       - step by wich window size increases
 	#
@@ -927,7 +925,6 @@ def main_mrk01():
 	Tracker["refvol"]       = None
 
 	Tracker["nxinit"]       = 64
-	Tracker["nxresolution"] = -1
 	Tracker["nxstep"]       = 32
 	Tracker["icurrentres"]  = -1
 	Tracker["lowpass"]      = 0.4
