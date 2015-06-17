@@ -1572,7 +1572,7 @@ def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None):
 	#phi, theta, psi, sxo, syo = get_params_proj(data)
 	t1 = data.get_attr("xform.projection")
 	t2 = t1
-	for zi in xrange(xrng):
+	for zi in xrange(len(xrng)):
 		dp = t2.get_params("spider")
 
 		sxi = dp["tx"]
