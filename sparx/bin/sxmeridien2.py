@@ -1106,11 +1106,13 @@ def main_mrk01():
 				cmdexecute(cmd)
 			    # add small noise to the reference model
 				viv = get_im(file_path_viv)
-				if(options.mask3D == None):  mask33d = model_circle(radi,nnxo,nnxo,nnxo)
+				if(options.mask3D == None):  mask33d = model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],\
+													Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 				else:                        mask33d = get_im(options.mask3D)
 				st = Util.infomask(viv, mask33d, False)
 				if( st[0] == 0.0 ):
-					viv += (model_blank(nnxo,nnxo,nnxo,1.0) - mask33d)*model_gauss_noise(st[1]/1000.0,nnxo,nnxo,nnxo)
+					viv += (model_blank(Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],1.0) - mask33d)*\
+							model_gauss_noise(st[1]/1000.0,Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 					viv.write_image(file_path_viv)
 				del mask33d, viv
 
@@ -1230,7 +1232,7 @@ def main_mrk01():
 				if( Tracker["nxinit"] != projdata[procid][0].get_xsize() ):  \
 					projdata[procid], oldshifts[procid] = get_shrink_data(Tracker["constants"]["nnxo"], Tracker["nxinit"], \
 						Tracker["constants"]["stack"], partids[procid], partstack[procid], myid, main_node, nproc, \
-						Tracker["constants"]["CTF"], Tracker["applyctf"], preshift = False, radi = radi)
+						Tracker["constants"]["CTF"], Tracker["applyctf"], preshift = False, radi = Tracker["constants"]["radius"])
 				metamove_mrk01(projdata[procid], oldshifts[procid], Tracker, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
 
 		partstack = [None]*2
@@ -1324,7 +1326,6 @@ def main_mrk01():
 			nfsc = read_fsc(os.path.join(mainoutputdir,"fsc.txt"),nnxo, myid, main_node)
 			Tracker["fl"], Tracker["aa"] = fit_tanh1([[float(i)/nnxo for i in xrange(len(nfsc))],nfsc], 0.01)
 			del nfsc
-			Tracker["ou"] = radi
 
 			#  Here something will have to be done.  The idea is to have a presentable structure at full size.
 			#  However, the data is in smaller window.  O possibility would be to compute structure in smaller window and then pad it
