@@ -834,7 +834,7 @@ def main_mrk01():
 	parser.add_option("--ref_a",   		type="string", default= "S",		help="method for generating the quasi-uniformly distributed projection directions (default S)")
 	parser.add_option("--sym",     		type="string", default= "c1",		help="symmetry of the refined structure")
 	#parser.add_option("--npad",    		type="int",    default= 2,			help="padding size for 3D reconstruction (default=2)")
-	parser.add_option("--nsoft",    	type="int",    default= 1,			help="Use SHC in first phase of refinement iteration (default=1, to turn it off set to 0)")
+	parser.add_option("--nsoft",    	type="int",    default= 0,			help="Use SHC in first phase of refinement iteration (default=1, to turn it off set to 0)")
 	parser.add_option("--startangles",  action="store_true", default=False,	help="Use orientation parameters in the input file header to jumpstart the procedure")
 
 	#options introduced for the do_volume function
