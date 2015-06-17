@@ -56,7 +56,6 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	#parser.add_argument("--path",type=str,default=None,help="Specify the path to the DDD movie you wish to align.")
 	parser.add_argument("--dark",type=str,default=None,help="Perform dark image correction using the specified image file")
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
 	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.")
@@ -323,13 +322,9 @@ class MovieModeAligner:
 			self._energies.append(energy)
 			self.optimal_transforms = self._transforms
 
-	def optimize(self, options,monitor=1):
+	def optimize(self, options):
 		"""
 		Method to perform optimization of movie alignment.
-
-		@param float epsilon	: the learning rate for the simplex optimizer
-		@param int maxiters		: the maximum number of iterations to be computed by the simplex optimizer
-		@param int verbose		: 1 or 0 specifying whether (or not) simplex optimization steps will be printed
 		"""
 		if self._optimized:
 			print("Optimal alignment already determined.")
@@ -629,7 +624,7 @@ class FineSearch(Simplex):
 
 	def __init__(self, aligner, guess, increments=None, kR=-1.0, kE=2.0, kC=0.5):
 		self.aligner = aligner
-		if increments == None: increments = [5] * 2 * aligner.hdr['nimg']
+		if increments == None: increments = [5] * len(guess)
 		self.kR = kR
 		self.kE = kE
 		self.kC = kC
@@ -641,15 +636,12 @@ class CoarseSearch(BaseAnnealer):
 	Simulated Annealer to coarsely search the translational alignment parameter space
 	"""
 
-	def __init__(self, aligner, state=None, Tmax = 25000.0, Tmin = 2.5, steps=50000, updates=100):
+	def __init__(self,aligner,state=None,tmax=25000.0,tmin=2.5,steps=50000,updates=100):
 		if state == None:
-			self.state = []
-			for trans in aligner._transforms:
-				for s in trans.get_trans_2d():
-					self.state.append(s)
+			self.state = [s for trans in aligner._transforms for s in trans.get_trans_2d()]
 		super(CoarseSearch, self).__init__(self.state)
-		self.Tmax = Tmax
-		self.Tmin = Tmin
+		self.Tmax = tmax
+		self.Tmin = tmin
 		self.steps = steps
 		self.updates = updates
 		self.aligner = aligner
@@ -657,7 +649,7 @@ class CoarseSearch(BaseAnnealer):
 		self.srange = range(0,self.slen-1,2)
 		self.count = 0
 
-	def move(self,scale=1.0,incr=1):
+	def move(self,scale=25.0,incr=1):
 		self.state[self.count] = self.state[self.count]+scale*(2*np.random.random()-1)
 		self.count = (self.count+incr) % self.slen
 
