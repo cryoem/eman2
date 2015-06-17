@@ -1152,13 +1152,14 @@ def main_mrk01():
 		#  prepare output directory
 		history[-1]["directory"] = "main%03d"%mainiteration
 		mainoutputdir = os.path.join(masterdir,history[-1]["directory"])
+		Tracker["directory"]     = mainoutputdir
 
 		if(myid == main_node):
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			print(line,"MAIN ITERATION  #%2d     nxinit, icurrentres, resolution  %d   %d  %f"%\
 				(Tracker["mainiteration"], Tracker["nxinit"],  Tracker["icurrentres"], \
 				Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["icurrentres"])))
-			print(line,"  mainoutputdir  previousoutputdir  ",mainoutputdir, Tracker["previousoutputdir"])
+			print(line,"  mainoutputdir  previousoutputdir  ",Tracker["directory"], Tracker["previousoutputdir"])
 
 			if keepchecking:
 				if(os.path.exists(mainoutputdir)):
@@ -1240,7 +1241,7 @@ def main_mrk01():
 		for procid in xrange(2):  partstack[procid] = os.path.join(mainoutputdir, "loga%01d"%procid, "params-chunk%01d.txt"%procid)
 
 		#  check it for the first, if it does not exist, run the program
-		outvol = os.path.join(mainoutputdir,"loga0","vol0.hdf")
+		os.path.join(mainoutputdir,"current_resolution.txt")
 		doit, keepchecking = checkstep(outvol, keepchecking, myid, main_node)
 
 		if  doit:
@@ -1250,50 +1251,14 @@ def main_mrk01():
 													Tracker["constants"]["CTF"], Tracker["constants"]["mask3D"], \
 													Tracker["constants"]["sym"], myid, main_node, nproc)
 			del xlowpass, xfalloff, xcurrentres
+			"""
 			if( myid == main_node):
 				# Move output to proper directories
 				for procid in xrange(2):
-					cmd = "{} {} {}".format("mv", os.path.join(mainoutputdir,"vol%01d.hdf"%procid), os.path.join(mainoutputdir,"loga%01d"%procid) )
-					cmdexecute(cmd)
 					cmd = "{} {} {}".format("mv", os.path.join(mainoutputdir,"within-fsc%01d.txt"%procid), os.path.join(mainoutputdir,"loga%01d"%procid) )
 					cmdexecute(cmd)
-				cmd = "{} {} {}".format("mv", os.path.join(mainoutputdir,"fsc.txt") , os.path.join(mainoutputdir,"afsc.txt"))
-				cmdexecute(cmd)
-				cmd = "{} {} {}".format("mv", os.path.join(mainoutputdir,"current_resolution.txt") , os.path.join(mainoutputdir,"acurrent_resolution.txt"))
-				cmdexecute(cmd)
-
-		#  fuse shc volumes to serve as starting point for the next, deterministic part.
-		if(myid == main_node):
-			if keepchecking:
-				procid = 1
-				if(os.path.join(mainoutputdir,"loga%01d"%procid,"fusevol%01d.hdf"%procid) ):
-					doit = 0
-				else:
-					doit = 1
-					keepchecking = False
-			else:
-				doit = 1
-			if doit and nsoft>0:
-				vol = []
-				for procid in xrange(2):  vol.append(get_im(os.path.join(mainoutputdir,"loga%01d"%procid,"vol%01d.hdf"%procid) ))
-				fuselowf(vol, fq)
-				for procid in xrange(2):  vol[procid].write_image( os.path.join(mainoutputdir,"loga%01d"%procid,"fusevol%01d.hdf"%procid) )
-				del vol
-		else:  doit = 0
-		mpi_barrier(MPI_COMM_WORLD)
-		doit = bcast_number_to_all(doit, source_node = main_node)
-		
-		# NOTE_MRK: 2015/06/16
-		# Not to change Part "a" implementation, the following the codes are left here 
-		# However, this will be unnecessary after, we clean up Part "a" implementation
-		if(myid == main_node):
-			cmd = "{} {} {}".format("cp", os.path.join(mainoutputdir,"acurrent_resolution.txt") , os.path.join(mainoutputdir,"current_resolution.txt"))
-			cmdexecute(cmd)
-			cmd = "{} {} {}".format("cp", os.path.join(mainoutputdir,"afsc.txt") , os.path.join(mainoutputdir,"fsc.txt"))
-			cmdexecute(cmd)
-			for procid in xrange(2):
-				cmd = "{} {} {}".format("cp -p", os.path.join(mainoutputdir,"loga%01d"%procid,"vol%01d.hdf"%procid) , os.path.join(mainoutputdir,"vol%01d.hdf"%procid))
-				cmdexecute(cmd)
+			"""
+		if( myid == main_node):
 			[newlowpass, newfalloff, icurrentres] = read_text_row( os.path.join(mainoutputdir,"current_resolution.txt") )[0]
 		else:
 			newlowpass = 0.0
@@ -1324,8 +1289,8 @@ def main_mrk01():
 				write_text_file([pinids[i][0] for i in xrange(len(pinids))], os.path.join(mainoutputdir,"indexes.txt"))
 				write_text_row( [pinids[i][1] for i in xrange(len(pinids))], os.path.join(mainoutputdir,"params.txt"))
 			mpi_barrier(MPI_COMM_WORLD)
-			nfsc = read_fsc(os.path.join(mainoutputdir,"fsc.txt"),nnxo, myid, main_node)
-			Tracker["lowpass"], Tracker["falloff"] = fit_tanh1([[float(i)/nnxo for i in xrange(len(nfsc))],nfsc], 0.01)
+			nfsc = read_fsc(os.path.join(mainoutputdir,"fsc.txt"),Tracker["constants"]["nnxo"], myid, main_node)
+			Tracker["lowpass"], Tracker["falloff"] = fit_tanh1([[float(i)/Tracker["constants"]["nnxo"] for i in xrange(len(nfsc))],nfsc], 0.01)
 			del nfsc
 
 			#  Here something will have to be done.  The idea is to have a presentable structure at full size.
@@ -1338,14 +1303,11 @@ def main_mrk01():
 			projdata = [[model_blank(1,1)],[model_blank(1,1)]]
 			if(myid == main_node):
 				volf.write_image(os.path.join(mainoutputdir,"volf.hdf"))
-				for procid in xrange(2):
-					cmd = "{} {} {}".format("cp -p", partids[procid] , os.path.join(mainoutputdir,"chunk%01d.txt"%procid))
-					cmdexecute(cmd)
-					cmd = "{} {} {}".format("cp -p", partstack[procid], os.path.join(mainoutputdir,"params-chunk%01d.txt"%procid))
-					cmdexecute(cmd)
 
 
 		mpi_barrier(MPI_COMM_WORLD)
+		mpi_finalize()
+		exit()
 
 		test_outliers = True
 		eliminated_outliers = False
