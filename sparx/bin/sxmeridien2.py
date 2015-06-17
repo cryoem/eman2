@@ -1322,7 +1322,7 @@ def main():
 			Tracker["xr"] , Tracker["ts"] = stepali(Tracker["nxinit"] , Tracker["constants"]["nnxo"], Tracker["constants"]["radius"])
 			keepgoing = 1
 		elif(Tracker["mainiteration"] > 2):
-			if(Tracker["icurrentres"] <= icurrentres):  keepgoing = 0
+			if(Tracker["mainiteration"] > 3  and Tracker["icurrentres"] <= icurrentres):  keepgoing = 0
 			else:
 				nxinit = Tracker["nxinit"]
 				while( icurrentres + cushion > nxinit ): nxinit += Tracker["nxstep"]
