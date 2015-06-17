@@ -113,7 +113,6 @@ def shiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fourvar=Fa
 
 	max_iter=int(maxit)
 
-	# horatio active_refactoring ﻿Jy51i1EwmLD4tWZ9_00000_2
 	if myid == main_node:
 		if ftp == "bdb":
 			from EMAN2db import db_open_dict
