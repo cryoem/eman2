@@ -789,7 +789,7 @@ def print_dict(dict,theme):
 # - make paramsdict to be Tracker (dictionary) 
 #   paramsdict was earlier version of Tracker (Pawel)...
 #
-def main_mrk01():
+def main():
 
 	from utilities import write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle
 	import user_functions
