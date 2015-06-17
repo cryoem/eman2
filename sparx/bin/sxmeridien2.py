@@ -1300,7 +1300,7 @@ def main():
 		keepgoing = 0
 		if(Tracker["mainiteration"] == 1):
 			nxinit = Tracker["nxinit"]
-			while( icurrentres + cushion > nxinit ): nxinit += Tracker["nxstep"]
+			while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
 			#  Window size changed, reset projdata
 			if(nxinit> Tracker["nxinit"]):  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
 			Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
@@ -1325,7 +1325,7 @@ def main():
 			if(Tracker["mainiteration"] > 3  and Tracker["icurrentres"] <= icurrentres):  keepgoing = 0
 			else:
 				nxinit = Tracker["nxinit"]
-				while( icurrentres + cushion > nxinit ): nxinit += Tracker["nxstep"]
+				while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
 				#  Window size changed, reset projdata
 				if(nxinit> Tracker["nxinit"]):  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
 				Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
