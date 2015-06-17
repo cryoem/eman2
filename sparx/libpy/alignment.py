@@ -1415,12 +1415,9 @@ def refprojs( volft, kb, ref_angles, cnx, cny, numr, mode, wr ):
 def Xproj_ali_incore_chunks(data, refrings, numr, xrng, yrng, step, finfo=None):
 	from utilities    import compose_transform2
 	from EMAN2 import Vec2f
-
-	ID = data.get_attr("ID")
 	if finfo:
 		from utilities    import get_params_proj
 		phi, theta, psi, s2x, s2y = get_params_proj(data)
-		finfo.write("Image id: %6d\n"%(ID))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, s2x, s2y))
 		finfo.flush()
 
@@ -4439,8 +4436,6 @@ def Xshc0(data, cimages, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1"
 	from math         import cos, sin, degrees, radians
 	from EMAN2 import Vec2f
 
-	ID = data.get_attr("ID")
-
 	number_of_checked_refs = 0
 
 	mode = "F"
@@ -4456,7 +4451,6 @@ def Xshc0(data, cimages, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1"
 	t1 = data.get_attr("xform.projection")
 	#dp = t1.get_params("spider")
 	if finfo:
-		finfo.write("Image id: %6d\n"%(ID))
 		#finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, sxo, syo))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
 		finfo.flush()
@@ -4535,8 +4529,6 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 	#  Templates have to have psi zero, remove once tested.
 	assert(refrings[0].get_attr("psi") == 0.0)
 
-	ID = data.get_attr("ID")
-
 	number_of_checked_refs = 0
 
 	mode = "F"
@@ -4564,7 +4556,6 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 	tyrng[1] = max(0, min(ny-cny-syi-ou, yrng-syi))
 
 	if finfo:
-		finfo.write("Image id: %6d\n"%(ID))
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
 		finfo.flush()
 		from utilities import get_params_proj

@@ -1135,7 +1135,7 @@ def get_input_from_string(str_input):
 	o = []
 	for i in xrange(len(qq)):
 		if(qq[i].find(".") >= 0):  o.append(int(qq[i]))
-		else:  o.append(floar(qq[i]))
+		else:  o.append(float(qq[i]))
 	return o
 
 def hist_func(args, data):
