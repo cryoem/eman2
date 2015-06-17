@@ -130,7 +130,7 @@ class SimpleAnnealer:
     Copyright (c) 2003 Richard P. Muller (rmuller@sandia.gov). All rights
     reserved. See the LICENSE file for licensing details.
     """
-
+    
     def __init__(self,objective,bounds):
         self.objective = objective
         self.bounds = bounds
