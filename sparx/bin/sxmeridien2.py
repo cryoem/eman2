@@ -696,6 +696,7 @@ def metamove_mrk01(projdata, oldshifts, Tracker, partids, partstack, outputdir, 
 	#
 	#  Will create outputdir
 	#  Will write to outputdir output parameters: params-chunk0.txt and params-chunk1.txt
+	from utilities       import gget_input_from_string
 	shrinkage = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
 	if(myid == main_node):
 		#  Create output directory
@@ -720,8 +721,9 @@ def metamove_mrk01(projdata, oldshifts, Tracker, partids, partstack, outputdir, 
 	if(Tracker["radius"] < 2):
 		ERROR( "ERROR!!   lastring too small  %f    %f   %d"%(Tracker["radius"], Tracker["constants"]["radius"]), "sxmeridien",1, myid)
 	Tracker["lowpass"] = float(Tracker["icurrentres"])/float(Tracker["constants"]["nnxo"])
-	delta = min(round(degrees(atan(0.5/Tracker["lowpass"]/Tracker["radius"])), 2), 3.0)
-	Tracker["delta"] = "%f  %f  %f"%(delta, delta, delta)
+	delta = "%f  "%min(round(degrees(atan(0.5/Tracker["lowpass"]/Tracker["radius"])), 2), 3.0)
+	Tracker["delta"] = ""
+	for i in xrange(len(get_input_from_string(Tracker["xr"]))):  Tracker["delta"] += "%f  %f  %f"%delta
 	Tracker["pixercutoff"] = get_pixercutoff(Tracker["radius"], delta, 0.5)
 
 	if(Tracker["delpreviousmax"]):
@@ -912,7 +914,7 @@ def main_mrk01():
 	Tracker["ir"]           = Tracker["constants"]["ir"]
 	Tracker["radius"]       = Tracker["constants"]["radius"]
 	Tracker["xr"]           = ""
-	Tracker["yr"]           = ""
+	Tracker["yr"]           = "-1"  # Do not change!
 	Tracker["ts"]           = 1
 	Tracker["an"]           = options.an
 	Tracker["delta"]        = "2.0"
@@ -1258,7 +1260,7 @@ def main_mrk01():
 				cmdexecute(cmd)
 				cmd = "{} {} {}".format("mv", os.path.join(mainoutputdir,"current_resolution.txt") , os.path.join(mainoutputdir,"acurrent_resolution.txt"))
 				cmdexecute(cmd)
-				
+
 		#  fuse shc volumes to serve as starting point for the next, deterministic part.
 		if(myid == main_node):
 			if keepchecking:
