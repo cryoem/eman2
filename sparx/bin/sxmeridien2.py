@@ -35,13 +35,13 @@ def subdict(d,u):
 	for q in u:  d[q] = u[q]
 
 
-def stepali(nxinit, nnxo, nxrsteps = 4):
-	radi = int(80*float(nxinit)/float(nnxo) + 0.5)
-	nxrsteps = 4
+def stepali(nxinit, nnxo, irad, nxrsteps = 4):
+	print(nxinit, nnxo, irad)
 
-	txrm = (nxinit - 2*(radi+1))//2
-	if(txrm < 0):  			print "error"
-	if(txrm/nxrsteps>0):
+	txrm = (nxinit - 2*(int(irad*float(nxinit)/float(nnxo) + 0.5)+1))//2
+	if (txrm < 0): ERROR("ERROR!! Shift value ($d) is too large for the mask size"%txrm)
+	
+	if (txrm/nxrsteps>0):
 		tss = ""
 		txr = ""
 		while(txrm/nxrsteps>0):
@@ -723,7 +723,7 @@ def metamove_mrk01(projdata, oldshifts, Tracker, partids, partstack, outputdir, 
 		ERROR( "ERROR!!   lastring too small  %f    %f   %d"%(Tracker["radius"], Tracker["constants"]["radius"]), "sxmeridien",1, myid)
 	Tracker["lowpass"] = float(Tracker["icurrentres"])/float(Tracker["constants"]["nnxo"])
 	delta = min(round(degrees(atan(0.5/Tracker["lowpass"]/Tracker["radius"])), 2), 3.0)
-	Tracker["delta"] = "delta":"%f  %f  %f"%(delta, delta, delta)
+	Tracker["delta"] = "%f  %f  %f"%(delta, delta, delta)
 	Tracker["pixercutoff"] = get_pixercutoff(Tracker["radius"], delta, 0.5)
 
 	if(Tracker["delpreviousmax"]):
@@ -1127,9 +1127,9 @@ def main_mrk01():
 			ERROR("Resolution of initial volume at the range of Nyquist frequency for given window and pixel sizes","sxmeridien",1, myid)
 
 	#  Here we need an algorithm to set things correctly
-	Tracker["xr"] , Tracker["ts"] = stepali(Tracker["nxinit"] , Tracker["constants"]["nnxo"])
+	Tracker["xr"] , Tracker["ts"] = stepali(Tracker["nxinit"] , Tracker["constants"]["nnxo"], Tracker["constants"]["radius"])
 	Tracker["previousoutputdir"] = initdir
-	subdict( Tracker, { "nxinit":nxinit, "icurrentres":icurrentres, "inires":inires, "zoom":True} )
+	subdict( Tracker, {"zoom":True} )
 
 	# Update Tracker
 	history = [Tracker.copy()]
@@ -1145,17 +1145,17 @@ def main_mrk01():
 
 	while(keepgoing):
 		mainiteration += 1
-		Tracker["mainteration"] = mainiteration
+		Tracker["mainiteration"] = mainiteration
 		#  prepare output directory
 		history[-1]["directory"] = "main%03d"%mainiteration
 		mainoutputdir = os.path.join(masterdir,history[-1]["directory"])
 
 		if(myid == main_node):
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(line,"MAIN ITERATION  #%2d     nxinit, icurrentres, resolution  %d    %d  %f"%\
-				Tracker["mainiteration"], Tracker["nxinit"],  Tracker["icurrentres"], \
-				Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["icurrentres"]))
-			print(line,"  mainoutputdir  previousoutputdir  ",mainoutputdir, previousoutputdir)
+			print(line,"MAIN ITERATION  #%2d     nxinit, icurrentres, resolution  %d   %d  %f"%\
+				(Tracker["mainiteration"], Tracker["nxinit"],  Tracker["icurrentres"], \
+				Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["icurrentres"])))
+			print(line,"  mainoutputdir  previousoutputdir  ",mainoutputdir, Tracker["previousoutputdir"])
 
 			if keepchecking:
 				if(os.path.exists(mainoutputdir)):
@@ -1171,12 +1171,14 @@ def main_mrk01():
 				cmd = "{} {}".format("mkdir", mainoutputdir)
 				cmdexecute(cmd)
 
+		mpi_barrier(MPI_COMM_WORLD)
+		
 		# prepare names of input file names, they are in main directory,
 		#   log subdirectories contain outputs from specific refinements
 		partids = [None]*2
-		for procid in xrange(2):  partids[procid] = os.path.join(previousoutputdir,"chunk%01d.txt"%procid)
+		for procid in xrange(2):  partids[procid] = os.path.join(Tracker["previousoutputdir"],"chunk%01d.txt"%procid)
 		partstack = [None]*2
-		for procid in xrange(2):  partstack[procid] = os.path.join(previousoutputdir,"params-chunk%01d.txt"%procid)
+		for procid in xrange(2):  partstack[procid] = os.path.join(Tracker["previousoutputdir"],"params-chunk%01d.txt"%procid)
 
 		mpi_barrier(MPI_COMM_WORLD)
 		doit = bcast_number_to_all(doit, source_node = main_node)
@@ -1186,12 +1188,12 @@ def main_mrk01():
 		#exit()
 
 		#print("RACING  A ",myid)
-		outvol = [os.path.join(previousoutputdir,"vol%01d.hdf"%procid) for procid in xrange(2)]
+		outvol = [os.path.join(Tracker["previousoutputdir"],"vol%01d.hdf"%procid) for procid in xrange(2)]
 
 		if(myid == main_node):
 			if  doit:
 				vol = [ get_im(outvol[procid]) for procid in xrange(2) ]
-				fuselowf(vol, fq)
+				fuselowf(vol, Tracker["fuse_freq"])
 				for procid in xrange(2):  vol[procid].write_image(os.path.join(mainoutputdir,"fusevol%01d.hdf"%procid) )
 				del vol
 
@@ -1206,7 +1208,7 @@ def main_mrk01():
 			#if(len(history)>1):  old_nx = history[-2]["nx"]
 			#else:    old_nx = Tracker["nx"]
 			#Tracker["xr"] = "3.0"#"%s"%max(3,int(1.5*Tracker["nx"]/float(old_nx) +0.5))
-			if( nsoft > 0 ):
+			if( Tracker["nsoft"] > 0 ):
 				if( float(Tracker["an"]) == -1.0 ):
 					Tracker["saturatecrit"] = 0.75
 				else:
@@ -1226,7 +1228,7 @@ def main_mrk01():
 			if  doit:
 				mpi_barrier(MPI_COMM_WORLD)
 				if( Tracker["nxinit"] != projdata[procid][0].get_xsize() ):  \
-					projdata[procid], oldshifts[procid] = get_shrink_data(nnxo, Tracker["nxinit"], \
+					projdata[procid], oldshifts[procid] = get_shrink_data(Tracker["constants"]["nnxo"], Tracker["nxinit"], \
 						stack, partids[procid], partstack[procid], myid, main_node, nproc, \
 						Tracker["constants"]["CTF"], Tracker["applyctf"], preshift = False, radi = radi)
 				metamove_mrk01(projdata[procid], oldshifts[procid], Tracker, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
@@ -1681,7 +1683,7 @@ def main_mrk01():
 						cmd = "{} {} {}".format("cp -p", partstack[procid], os.path.join(mainoutputdir,"params-chunk%01d.txt"%procid))
 						cmdexecute(cmd)
 				"""
-			previousoutputdir = mainoutputdir
+			Tracker["previousoutputdir"] = mainoutputdir
 			#  maybe resolution should be kept in abs freq units?
 			Tracker["resolution"] = Tracker["icurrentres"]
 			history.append(Tracker.copy())
