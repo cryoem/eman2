@@ -1681,7 +1681,6 @@ def main():
 						cmdexecute(cmd)
 				"""
 			Tracker["previousoutputdir"] = Tracker["directory"]
-			history.append(Tracker.copy())
 
 		else:
 			if(myid == main_node):
