@@ -779,9 +779,9 @@ def print_dict(dict,theme):
 #   if necessary. This happes especially when type of 3D Refinement or metamove changes.
 #   Conceptually, each iteration will be associated to a specific Tracker state.
 #   Therefore, the list of Tracker state represents the history of process.
-#   (history is doing this now)
+#   (HISTORY is doing this now)
 #   This can be used to restart process from an arbitrary iteration.
-#   The program will store the history in the form of file.
+#   The program will store the HISTORY in the form of file.
 #   
 # NOTE: 2015/06/11 Toshio Moriya
 # MODIFICATION
@@ -1138,8 +1138,7 @@ def main_mrk01():
 		mainiteration += 1
 		Tracker["mainiteration"] = mainiteration
 		#  prepare output directory,  the settings are awkward
-		history[-1]["directory"] = "main%03d"%mainiteration
-		Tracker["directory"]     = os.path.join(masterdir,history[-1]["directory"])
+		Tracker["directory"]     = os.path.join(masterdir,"main%03d"%Tracker["mainiteration"])
 
 		if(myid == main_node):
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
