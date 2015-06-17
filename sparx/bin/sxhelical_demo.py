@@ -163,8 +163,6 @@ def main():
 				stat = Util.infomask(prj , mask, False )
 				prj= (prj-stat[0])/stat[1]
 				ctf_params = prj.get_attr("ctf")
-				# # horatio active_refactoring ﻿Jy51i1EwmLD4tWZ9_00001_1				
-				# prj.set_attr('active', 1)
 				prj.set_attr('ctf_applied', 0)
 				prj.write_image(newstack, im)
 

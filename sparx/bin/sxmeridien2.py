@@ -1320,8 +1320,8 @@ def main():
 			Tracker["xr"] , Tracker["ts"] = stepali(Tracker["nxinit"] , Tracker["constants"]["nnxo"], Tracker["constants"]["radius"])
 			keepgoing = 1
 		elif(Tracker["mainiteration"] > 2):
-			if(Tracker["mainiteration"] > 3  and Tracker["icurrentres"] < icurrentres):  keepgoing = 0
-			elif(Tracker["icurrentres"] > icurrentres):
+			if(Tracker["mainiteration"] > 3  and Tracker["icurrentres"] > icurrentres):  keepgoing = 0
+			elif(Tracker["icurrentres"] < icurrentres):
 				nxinit = Tracker["nxinit"]
 				while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
 				#  Window size changed, reset projdata
