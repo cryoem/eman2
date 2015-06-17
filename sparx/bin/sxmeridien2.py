@@ -1180,7 +1180,7 @@ def main():
 		#print("RACING  A ",myid)
 		outvol = [os.path.join(Tracker["previousoutputdir"],"vol%01d.hdf"%procid) for procid in xrange(2)]
 
-		doit, keepchecking = checkstep(outvol, keepchecking, myid, main_node)
+		doit, keepchecking = checkstep(outvol[1], keepchecking, myid, main_node)
 		if(myid == main_node):
 			if  doit:
 				vol = [ get_im(outvol[procid]) for procid in xrange(2) ]
