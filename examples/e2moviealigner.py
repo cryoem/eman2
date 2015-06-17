@@ -67,6 +67,9 @@ def main():
 	parser.add_argument("--tmin", type=float, help="Set the minimum achievable temperature for simulated annealing. Default is 2.5.",default=2.5)
 	parser.add_argument("--steps", type=int, help="Set the number of steps to run simulated annealing. Default is 50000.",default=50000)
 	parser.add_argument("--updates", type=int, help="Set the number of times to update the temperature when running simulated annealing. Default is 100.",default=100)
+	parser.add_argument("--nopresearch",action="store_true",default=False,help="D not run a search of the parameter space before annealing to determine 'best' max and min temperatures as well as the annealing duration.")
+	parser.add_argument("--presteps",type=int,default=2000,help="The number of steps to run the exploratory pre-annealing phase.")
+	parser.add_argument("--premins",type=float,default=1.0,help="The number of minutes to run each phase of the exploratory phase before annealing.")
 	parser.add_argument("--maxiters", type=int, help="Set the maximum number of iterations for the simplex minimizer to run before stopping. Default is 250.",default=250)
 	parser.add_argument("--epsilon", type=float, help="Set the learning rate for the simplex minimizer. Smaller is better, but takes longer. Default is 0.001.",default=0.001)
 	parser.add_argument("--fixbadpixels",action="store_true",default=False,help="Tries to identify bad pixels in the dark/gain reference, and fills images in with sane values instead")
@@ -331,12 +334,15 @@ class MovieModeAligner:
 			return
 
 		if options.verbose: print("Starting coarse-grained alignment")
-		cs = CoarseSearch(self,tmax=options.tmax,tmin=options.tmin,steps=options.steps,updates=options.updates)
+		cs = CoarseSearch(self, tmax=options.tmax, tmin=options.tmin, steps=options.steps, updates=options.updates)
+		if not options.nopresearch:
+			schedule = cs.auto(options.premins,options.presteps)
+			cs.set_schedule(schedule)
 		state, energy = cs.anneal()
 
 		if options.verbose: print("Starting fine-grained alignment")
 		fs = FineSearch(self,state)
-		result, error, itr = fs.minimize(options.epsilon,options.maxiters,monitor=monitor)
+		result, error, itr = fs.minimize(options.epsilon,options.maxiters,monitor=1)
 
 		if options.verbose: print("Initializing simplex minimizer")
 		if options.verbose: print("\n\nBest Parameters: {}\nError: {}\nIterations: {}\n".format(mn[0],mn[1],mn[2]))
