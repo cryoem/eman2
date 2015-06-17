@@ -414,9 +414,7 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, ma
 	return round(lowpass,4), round(falloff,4), icurrentres
 
 
-# NOTE: 2015/06/11 Toshio Moriya
-# This function seems to be not used
-def compute_fscs_mrk01(stack, outputdir, chunkname, newgoodname, fscoutputdir, CTF, mask_option, sym, doit, keepchecking, nproc, myid, main_node):
+def compute_fscs(stack, outputdir, chunkname, newgoodname, fscoutputdir, CTF, mask_option, sym, doit, keepchecking, nproc, myid, main_node):
 	#  Compute reconstructions per group from good particles only to get FSC curves
 	#  We will compute two FSC curves - from not averaged parameters and from averaged parameters
 	#     So, we have to build two sets:
@@ -1322,8 +1320,8 @@ def main():
 			Tracker["xr"] , Tracker["ts"] = stepali(Tracker["nxinit"] , Tracker["constants"]["nnxo"], Tracker["constants"]["radius"])
 			keepgoing = 1
 		elif(Tracker["mainiteration"] > 2):
-			if(Tracker["mainiteration"] > 3  and Tracker["icurrentres"] <= icurrentres):  keepgoing = 0
-			else:
+			if(Tracker["mainiteration"] > 3  and Tracker["icurrentres"] < icurrentres):  keepgoing = 0
+			elif(Tracker["icurrentres"] > icurrentres):
 				nxinit = Tracker["nxinit"]
 				while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
 				#  Window size changed, reset projdata
@@ -1335,6 +1333,21 @@ def main():
 				Tracker["xr"] = "6 2"
 				Tracker["ts"] = "2 1"
 				keepgoing = 1
+			elif(Tracker["icurrentres"] == icurrentres):
+				# turn on PW adjsutment
+				Tracker["PWadjustment"] = Tracker["constants"]["pwreference"]
+				nxinit = Tracker["nxinit"]
+				while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
+				#  Window size changed, reset projdata
+				if(nxinit> Tracker["nxinit"]):  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
+				Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
+				Tracker["icurrentres"] = icurrentres
+				Tracker["zoom"] = True
+				#  Develop something intelligent
+				Tracker["xr"] = "6 2"
+				Tracker["ts"] = "2 1"
+				keepgoing = 1
+				
 		"""
 		test_outliers = True
 		eliminated_outliers = False
@@ -1685,7 +1698,7 @@ def main():
 
 		else:
 			if(myid == main_node):
-				print("  Terminating, the best solution is in the directory main%03d" % Tracker["bestsolution"])
+				print("  Terminating  ")#, the best solution is in the directory main%03d" % Tracker["bestsolution"])
 		mpi_barrier(MPI_COMM_WORLD)
 
 	mpi_finalize()
