@@ -761,7 +761,7 @@ def metamove_mrk01(projdata, oldshifts, Tracker, partids, partstack, outputdir, 
 		for i in xrange(len(params)):
 			params[i][3] = params[i][3]/shrinkage + oldshifts[i][0]
 			params[i][4] = params[i][4]/shrinkage + oldshifts[i][1]
-		write_text_row(params, os.path.join(outputdir,"params-chunk%01d.txt"%procid) )
+		write_text_row(params, os.path.join(Tracker["mainoutputdir"],"params-chunk%01d.txt"%procid) )
 
 
 def print_dict(dict,theme):
@@ -1305,9 +1305,9 @@ def main_mrk01():
 				volf.write_image(os.path.join(mainoutputdir,"volf.hdf"))
 
 
-		mpi_barrier(MPI_COMM_WORLD)
-		mpi_finalize()
-		exit()
+		#mpi_barrier(MPI_COMM_WORLD)
+		#mpi_finalize()
+		#exit()
 
 		test_outliers = True
 		eliminated_outliers = False
@@ -1328,6 +1328,9 @@ def main_mrk01():
 				cmdexecute(cmd)
 		"""
 
+
+
+		"""
 		keepgoing = 0
 		if(Tracker["an"] == "-1" ):
 			stepforward = 0.05
@@ -1355,6 +1358,9 @@ def main_mrk01():
 			Tracker["lowpass"] = 0.19167+ (mainiteration-10)*0.00417
 			Tracker["initialfl"] = Tracker["lowpass"]
 			lowpass = Tracker["lowpass"]
+
+
+		"""
 
 		"""
 		#if( ( icurrentres > Tracker["icurrentres"] ) or (eliminated_outliers and not Tracker["eliminated-outliers"]) or mainiteration == 1):
@@ -1635,9 +1641,8 @@ def main_mrk01():
 #				keepgoing = 0
 
 		if( keepgoing == 1 ):
-			nsoft = 0
 			if(myid == main_node):
-				print("  New shrink and image dimension :",nxresolution, nxinit)
+				print("  New image dimension :", Tracker["nxinit"])
 				"""
 				#  It does not look like it is necessary, we just have to point to the directory as the files should be there.
 				#  Will continue, so update the params files
