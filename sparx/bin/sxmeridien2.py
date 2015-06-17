@@ -331,7 +331,7 @@ def get_pixel_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 	return  round(lowpass,4), round(falloff,4), currentres
 
 
-def compute_resolution_mrk01(stack, outputdir, partids, partstack, radi, nnxo, CTF, mask_option, sym, myid, main_node, nproc):
+def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, mask_option, sym, myid, main_node, nproc):
 	import types
 	vol = [None]*2
 	fsc = [None]*2
@@ -1233,7 +1233,7 @@ def main_mrk01():
 		doit, keepchecking = checkstep(outvol, keepchecking, myid, main_node)
 
 		if  doit:
-			xlowpass, xfalloff, xcurrentres = compute_resolution_mrk01(Tracker["constants"]["stack"], \
+			xlowpass, xfalloff, xcurrentres = compute_resolution(Tracker["constants"]["stack"], \
 													Tracker["directory"], partids, partstack, \
 													Tracker["constants"]["radius"], Tracker["constants"]["nnxo"], \
 													Tracker["constants"]["CTF"], Tracker["constants"]["mask3D"], \
@@ -1302,7 +1302,7 @@ def main_mrk01():
 			while( icurrentres + cushion > nxinit ): nxinit += Tracker["nxstep"]
 			#  Window size changed, reset projdata
 			if(nxinit> Tracker["nxinit"]):  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
-			Tracker["nxinit"] = min(nxinit,nnxo)
+			Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
 			Tracker["icurrentres"] = icurrentres
 			Tracker["zoom"] = True
 			#  Develop something intelligent
@@ -1327,7 +1327,7 @@ def main_mrk01():
 				while( icurrentres + cushion > nxinit ): nxinit += Tracker["nxstep"]
 				#  Window size changed, reset projdata
 				if(nxinit> Tracker["nxinit"]):  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
-				Tracker["nxinit"] = min(nxinit,nnxo)
+				Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
 				Tracker["icurrentres"] = icurrentres
 				Tracker["zoom"] = True
 				#  Develop something intelligent
@@ -1692,5 +1692,5 @@ def main_mrk01():
 
 
 if __name__=="__main__":
-	main_mrk01()
+	main()
 
