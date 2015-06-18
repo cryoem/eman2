@@ -227,11 +227,11 @@ class MovieModeAligner:
 		if transforms: self._transforms = transforms
 		else: self._transforms = np.repeat(Transform({"type":"eman","tx":0.0,"ty":0.0}), self.hdr['nimg']).tolist()
 		self.optimal_transforms = self._transforms
-		self._cboxes = EMData(self._boxsize,self._boxsize).do_fft()
-		self._ips = EMData(self._boxsize,self._boxsize).do_fft()
-		self._cps = EMData(self._boxsize,self._boxsize).do_fft()
 		self._cpsflag = False
 		self._ipsflag = False
+		#self._cboxes = EMData(self._boxsize,self._boxsize).do_fft()
+		#self._ips = EMData(self._boxsize,self._boxsize).do_fft()
+		#self._cps = EMData(self._boxsize,self._boxsize).do_fft()
 
 	def _calc_incoherent_power_spectrum(self):
 		"""
@@ -239,46 +239,41 @@ class MovieModeAligner:
 		This 2D function represents our objective and is only computed once
 		during object initialiation.
 		"""
-		if self._computed_objective: print("Incoherent power spectrum has been computed. It is attainable via the get_incoherent_power_spectrum method.")
-		else:
-			self._ips.to_zero()
-			for i in xrange(self.hdr['nimg']):
-				img = EMData(self.path,i)
-				for r in self._regions[i]: # get region
-					box = img.get_clip(r)
-					box.process_inplace("normalize.edgemean")
-					box.do_fft_inplace() # fft region
-					box.ri2inten() # convert to intensities
-					self._cboxes += box # sum across regions
-				self._cboxes /= self._nregions
-				self._ips += self._cboxes # sum across frames
-				self._cboxes.to_zero()
-			self._ips /= self.hdr['nimg']
-			self._ips.process_inplace('math.rotationalaverage') # smooth
-			self._computed_objective = True
+		if self._computed_objective: 
+			print("Incoherent power spectrum has been computed.")
+			return
+		else: self._computed_objective = True
+		self._ips = sum([self._get_img_ips(i) for i in xrange(self.hdr['nimg'])])/self.hdr['nimg']
+		self._ips.process_inplace('math.rotationalaverage') # smooth
+	
+	def _get_img_ips(self,i):
+		img = EMData(self.path,i)
+		regs = [self._get_region(img,r) for r in self.regions[i]]
+		return sum(regs)/self._nregions
 
+	def _get_region(self,img,r):
+		b = img.get_clip(r)
+		b.process_inplace("normalize.edgemean")
+		b.do_fft_inplace() # fft region
+		b.ri2inten() # convert to intensities
+		return b
+		
 	def _calc_coherent_power_spectrum(self):
 		"""
 		Private method to compute and store the 2D coherent power spectrum.
 		Regions are updated by the _update_frame_params method, which
 		is called by the _update_energy method.
 		"""
-		self._cps.to_zero()
-		self._cboxes.to_zero()
-		b = self._cboxes.do_ift()
-		for s in xrange(self._nstacks):
-			for i,r in enumerate(self._stacks[s]):
-				img = EMData(self.orig,i,False,r)
-				b += img
-			b /= self.hdr['nimg'] # average each region across all movie frames
-			b.process_inplace("normalize.edgemean")
-			self._cboxes = b.do_fft() # fft
-			b.to_zero()
-			self._cboxes.ri2inten() # ri2inten
-			self._cps += self._cboxes
-			self._cboxes.to_zero()
-		self._cps /= self._nregions # average
+		self._cps = sum([self._stack_sum(s) for s in xrange(self._nstacks)])/self._nregions # average movie frame power spectra
 		self._cps.process_inplace('math.rotationalaverage') # smooth
+
+	def _stack_sum(self,s):
+		b = [EMData(self.orig,i,False,r) for i,r in enumerate(self._stacks[s])]
+		b = sum(b)/self.hdr['nimg']  # average each region across all movie frames
+		b.process_inplace("normalize.edgemean")
+		b.do_fft_inplace()
+		b.ri2inten()
+		return b
 
 	def _update_frame_params(self,i,t):
 		"""
@@ -290,11 +285,11 @@ class MovieModeAligner:
 		"""
 		self._transforms[i] = t  # update transform
 		newregions = [] # update regions
-		for ir in xrange(self._norigins): #self._nregions): # update stacks
+		for ir in xrange(self._norigins): # update stacks
 			x = np.add(self._origins[ir][:2],t.get_trans_2d())
 			newregions.append(Region(x[0],x[1],self._boxsize,self._boxsize))
 		self._regions[i] = newregions
-		for ir in xrange(self._norigins): #self._nregions): # update stacks
+		for ir in xrange(self._norigins): # update stacks
 			self._stacks[ir][i] = self._regions[i][ir]
 
 	def _update_energy(self):
@@ -622,18 +617,17 @@ class CoarseSearch(SimulatedAnnealer):
 		self.updates = updates
 		self.aligner = aligner
 		self.slen = len(self.state)
-		self.srange = range(0,self.slen-1,2)
 		self.count = 0
 		self.copy_strategy = 'slice'
 		self.save_state_on_exit = False
 
-	def move(self,scale=12.5,incr=1):
-		self.state[self.count] = self.state[self.count]+scale*(2*np.random.random()-1)
-		self.count = (self.count+incr) % self.slen
-		for vi in self.srange:
-			t = Transform({'type':'eman','tx':self.state[vi],'ty':self.state[vi+1]})
-			self.aligner._update_frame_params(vi/2,t)
+	def move(self,scale=12.5):
+		tx = self.state[self.count] + scale*(2*np.random.random()-1)
+		ty = self.state[self.count+1] + scale*(2*np.random.random()-1)
+		t = Transform({'type':'eman','tx':tx,'ty':ty})
+		self.aligner._update_frame_params(self.count/2,t)
 		self.aligner._update_energy()
+		self.count = (self.count+2) % self.slen
 
 	def energy(self):
 		return self.aligner.get_energy()
