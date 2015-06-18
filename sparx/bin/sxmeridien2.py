@@ -808,7 +808,7 @@ def main():
 	usage = progname + " stack  [output_directory]  initial_volume  --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=an  --center=center_type --fl --aa --ref_a=S --sym=c1"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	#parser.add_option("--ir",      		type= "int",   default= 1,			help="inner radius for rotational correlation > 0 (set to 1)")
-	parser.add_option("--ou",      		type= "int",   default= -1,			help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
+	parser.add_option("--radius",      		type= "int",   default= -1,			help="Outer radius [in pixels] for rotational correlation < int(nx/2)-1 (Please set to the radius of the particle)")
 	##parser.add_option("--rs",      		type= "int",   default= 1,			help="step between rings in rotational correlation >0  (set to 1)" ) 
 	#parser.add_option("--xr",      		type="string", default= "-1",		help="range for translation search in x direction, search is +/xr (default 0)")
 	#parser.add_option("--yr",      		type="string", default= "-1",		help="range for translation search in y direction, search is +/yr (default = same as xr)")
@@ -822,9 +822,9 @@ def main():
 	parser.add_option("--CTF",     		action="store_true", default=False,	help="Use CTF (Default no CTF correction)")
 	#parser.add_option("--snr",     		type="float",  default= 1.0,		help="Signal-to-Noise Ratio of the data (default 1.0)")
 	parser.add_option("--ref_a",   		type="string", default= "S",		help="method for generating the quasi-uniformly distributed projection directions (default S)")
-	parser.add_option("--sym",     		type="string", default= "c1",		help="symmetry of the refined structure")
+	parser.add_option("--sym",     		type="string", default= "c1",		help="Point-group symmetry of the refined structure")
 	#parser.add_option("--npad",    		type="int",    default= 2,			help="padding size for 3D reconstruction (default=2)")
-	parser.add_option("--nsoft",    	type="int",    default= 0,			help="Use SHC in first phase of refinement iteration (default=1, to turn it off set to 0)")
+	parser.add_option("--nsoft",    	type="int",    default= 0,			help="Use SHC in first phase of refinement iteration (default=0, to turn it on set to 1)")
 	parser.add_option("--startangles",  action="store_true", default=False,	help="Use orientation parameters in the input file header to jumpstart the procedure")
 
 	#options introduced for the do_volume function
@@ -832,7 +832,7 @@ def main():
 	#parser.add_option("--aa",			type="float",	default=0.1,		help="fall-off of hyperbolic tangent low-pass Fourier filter (default 0.1)")
 	parser.add_option("--inires",		type="float",	default=25.,		help="Resolution of the initial_volume volume (default 25A)")
 	parser.add_option("--pwreference",	type="string",	default="",			help="text file with a reference power spectrum (default no power spectrum adjustment)")
-	parser.add_option("--mask3D",		type="string",	default=None,		help="3D mask file (default a sphere  WHAT RADIUS??)")
+	parser.add_option("--mask3D",		type="string",	default=None,		help="3D mask file (default a sphere with radius (nx/2)-1)")
 
 
 	(options, args) = parser.parse_args(sys.argv[1:])
@@ -868,7 +868,7 @@ def main():
 	Constants				= {}
 	Constants["stack"]        = args[0]
 	Constants["rs"]           = 1
-	Constants["radius"]       = options.ou
+	Constants["radius"]       = options.radius
 	Constants["an"]           = options.an
 	Constants["maxit"]        = 50
 	sym = options.sym
@@ -1200,7 +1200,7 @@ def main():
 			#Tracker["xr"] = "3.0"#"%s"%max(3,int(1.5*Tracker["nx"]/float(old_nx) +0.5))
 			if( Tracker["nsoft"] > 0 ):
 				if( float(Tracker["an"]) == -1.0 ):
-					Tracker["saturatecrit"] = 0.75
+					Tracker["saturatecrit"] = 0.90
 				else:
 					Tracker["saturatecrit"] = 0.90  # Shake and bake for local
 				Tracker["maxit"] = 1500
@@ -1335,6 +1335,7 @@ def main():
 			keepgoing = 1
 		elif(Tracker["mainiteration"] > 3):
 			if(Tracker["mainiteration"] > 4  and Tracker["icurrentres"] > icurrentres):  keepgoing = 0
+			Tracker["nsoft"] = 0
 			elif(Tracker["icurrentres"] < icurrentres):
 				nxinit = Tracker["nxinit"]
 				while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
