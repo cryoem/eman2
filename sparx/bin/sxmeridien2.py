@@ -1320,14 +1320,13 @@ def main():
 			#  Window size changed, reset projdata
 			if(nxinit != Tracker["nxinit"]):  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
 			Tracker["nxinit"] = nxinit
-			Tracker["icurrentres"] = min(icurrentres, nxinit//2-4)
+			Tracker["icurrentres"] = min(icurrentres, nxinit//2-3)
 			Tracker["zoom"] = True
 			#  Go back to initial settings
 			Tracker["xr"] , Tracker["ts"] = stepali(Tracker["nxinit"] , Tracker["constants"]["nnxo"], Tracker["constants"]["radius"])
 			keepgoing = 1
 		elif(Tracker["mainiteration"] == 3):
-			#  Go back to initial window size and exhaustive search to improve centering of the data.
-			nxinit = HISTORY[0]["nxinit"]
+			nxinit = Tracker["nxinit"]
 			#  Window size changed, reset projdata
 			if(nxinit != Tracker["nxinit"]):  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
 			Tracker["nxinit"] = nxinit
