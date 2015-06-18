@@ -415,7 +415,7 @@ def helicalshiftali_MPI(stack, maskfile=None, maxit=100, CTF=False, snr=1.0, Fou
 	del tfilaments,inidl
 
 	if myid == main_node:
-		print "total number of filaments: ", total_nfils
+		print_msg( "total number of filaments: %d"%total_nfils)
 	if total_nfils< nproc:
 		ERROR('number of CPUs (%i) is larger than the number of filaments (%i), please reduce the number of CPUs used'%(nproc, total_nfils), "ehelix_MPI", 1,myid)
 

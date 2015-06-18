@@ -930,8 +930,7 @@ def main():
 	#  PARAMETERS OF THE PROCEDURE 
 	#  threshold error
 	thresherr = 0
-	cushion  = 8  #  the window size has to be at least 8 pixels larger than what would follow from resolution
-		
+	cushion  = 8  #  the window size has to be at least 8 pixels larger than what would follow from resolution		
 
 	# Get the pixel size; if none, set to 1.0, and the original image size
 	if(myid == main_node):
@@ -1318,11 +1317,24 @@ def main():
 			Tracker["nxinit"] = nxinit
 			Tracker["icurrentres"] = min(icurrentres, nxinit//2-4)
 			Tracker["zoom"] = True
-			#  Go back ti initial settings
+			#  Go back to initial settings
 			Tracker["xr"] , Tracker["ts"] = stepali(Tracker["nxinit"] , Tracker["constants"]["nnxo"], Tracker["constants"]["radius"])
 			keepgoing = 1
-		elif(Tracker["mainiteration"] > 2):
-			if(Tracker["mainiteration"] > 3  and Tracker["icurrentres"] > icurrentres):  keepgoing = 0
+		elif(Tracker["mainiteration"] == 3):
+			#  Go back to initial window size and exhaustive search to improve centering of the data.
+			nxinit = HISTORY[0]["nxinit"]
+			#  Window size changed, reset projdata
+			if(nxinit != Tracker["nxinit"]):  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
+			Tracker["nxinit"] = nxinit
+			Tracker["icurrentres"] = min(icurrentres, nxinit//2-4)
+			Tracker["nsoft"] = 1
+			Tracker["zoom"] = False
+			#  This is for soft
+			Tracker["xr"] = "3"
+			Tracker["ts"] = "1"
+			keepgoing = 1
+		elif(Tracker["mainiteration"] > 3):
+			if(Tracker["mainiteration"] > 4  and Tracker["icurrentres"] > icurrentres):  keepgoing = 0
 			elif(Tracker["icurrentres"] < icurrentres):
 				nxinit = Tracker["nxinit"]
 				while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
