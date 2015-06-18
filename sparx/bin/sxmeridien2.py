@@ -35,7 +35,7 @@ def subdict(d,u):
 	for q in u:  d[q] = u[q]
 
 
-def stepali(nxinit, nnxo, irad, nxrsteps = 4):
+def stepali(nxinit, nnxo, irad, nxrsteps = 3):
 	txrm = (nxinit - 2*(int(irad*float(nxinit)/float(nnxo) + 0.5)+1))//2
 	if (txrm < 0): ERROR("ERROR!! Shift value ($d) is too large for the mask size"%txrm)
 	
@@ -46,7 +46,7 @@ def stepali(nxinit, nnxo, irad, nxrsteps = 4):
 			tts=txrm/nxrsteps
 			tss += "%d  "%tts
 			txr += "%d  "%(tts*nxrsteps)
-			txrm =txrm//2
+			txrm -= nxrsteps
 	else:
 		txr = "%d"%txrm
 		tss = "1"
@@ -1311,7 +1311,7 @@ def main():
 			Tracker["icurrentres"] = icurrentres
 			Tracker["zoom"] = True
 			#  Develop something intelligent
-			Tracker["xr"] = "6 2"
+			Tracker["xr"] = "6 3"
 			Tracker["ts"] = "2 1"
 			keepgoing = 1
 		elif(Tracker["mainiteration"] == 2):
@@ -1350,7 +1350,7 @@ def main():
 				Tracker["icurrentres"] = icurrentres
 				Tracker["zoom"] = True
 				#  Develop something intelligent
-				Tracker["xr"] = "6 2"
+				Tracker["xr"] = "6 3"
 				Tracker["ts"] = "2 1"
 				keepgoing = 1
 			elif(Tracker["icurrentres"] == icurrentres):
@@ -1364,7 +1364,7 @@ def main():
 				Tracker["icurrentres"] = icurrentres
 				Tracker["zoom"] = True
 				#  Develop something intelligent
-				Tracker["xr"] = "6 2"
+				Tracker["xr"] = "6 3"
 				Tracker["ts"] = "2 1"
 				keepgoing = 1
 				
