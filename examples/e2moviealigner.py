@@ -61,9 +61,9 @@ def main():
 	parser.add_argument("--min", type=int, help="Set the minimum translation in pixels",default=-50.0)
 	parser.add_argument("--max", type=int, help="Set the maximum translation in pixels",default=50.0)
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 0,1 (first image skipped)")
-	parser.add_argument("--tmax", type=float, help="Set the maximum achievable temperature for simulated annealing. Default is 25000.0.",default=25000.0)
+	parser.add_argument("--tmax", type=float, help="Set the maximum achievable temperature for simulated annealing. Default is 12500.0.",default=12500.0)
 	parser.add_argument("--tmin", type=float, help="Set the minimum achievable temperature for simulated annealing. Default is 2.5.",default=2.5)
-	parser.add_argument("--steps", type=int, help="Set the number of steps to run simulated annealing. Default is 50000.",default=50000)
+	parser.add_argument("--steps", type=int, help="Set the number of steps to run simulated annealing. Default is 25000.",default=25000)
 	parser.add_argument("--updates", type=int, help="Set the number of times to update the temperature when running simulated annealing. Default is 100.",default=100)
 	parser.add_argument("--nopresearch",action="store_true",default=False,help="D not run a search of the parameter space before annealing to determine 'best' max and min temperatures as well as the annealing duration.")
 	parser.add_argument("--presteps",type=int,default=2000,help="The number of steps to run the exploratory pre-annealing phase.")
@@ -263,12 +263,13 @@ class MovieModeAligner:
 		Regions are updated by the _update_frame_params method, which
 		is called by the _update_energy method.
 		"""
-		self._cps = sum((self._stack_sum(s) for s in xrange(self._nstacks)))/self._nregions # average movie frame power spectra
+		# average movie frame power spectra
+		self._cps = sum((self._stack_sum(s) for s in xrange(self._nstacks)))/self._nregions 
 		self._cps.process_inplace('math.rotationalaverage') # smooth
 
 	def _stack_sum(self,s):
-		b = [EMData(self.orig,i,False,r) for i,r in enumerate(self._stacks[s])]
-		b = sum(b)/self.hdr['nimg']  # average each region across all movie frames
+		# average each region across all movie frames
+		b = sum((EMData(self.orig,i,False,r) for i,r in enumerate(self._stacks[s])))/self.hdr['nimg']  
 		b.process_inplace("normalize.edgemean")
 		b.do_fft_inplace()
 		b.ri2inten()
@@ -617,7 +618,7 @@ class CoarseSearch(SimulatedAnnealer):
 		self.copy_strategy = 'slice'
 		self.save_state_on_exit = False
 
-	def move(self,scale=1):
+	def move(self,scale=6.0):
 		tx = self.state[self.count] + scale*(2*np.random.random()-1)
 		ty = self.state[self.count+1] + scale*(2*np.random.random()-1)
 		t = Transform({'type':'eman','tx':tx,'ty':ty})
