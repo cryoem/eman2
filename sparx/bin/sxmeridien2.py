@@ -47,6 +47,9 @@ def stepali(nxinit, nnxo, irad, nxrsteps = 4):
 			tss += "%d  "%tts
 			txr += "%d  "%(tts*nxrsteps)
 			txrm =txrm//2
+	else:
+		txr = "%d"%txrm
+		tss = "1"
 	return txr, tss
 
 
@@ -331,7 +334,7 @@ def get_pixel_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 	return  round(lowpass,4), round(falloff,4), currentres
 
 
-def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, mask_option, sym, myid, main_node, nproc):
+def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, mask_option, sym, myid, main_node, nproc, pixel=1.0):
 	import types
 	vol = [None]*2
 	fsc = [None]*2
@@ -405,7 +408,8 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, ma
 				write_text_file( fsc[procid], os.path.join(outputdir,"within-fsc%01d.txt"%procid) )
 		lowpass, falloff, icurrentres = get_pixel_resolution_mrk01(vol, mask, nnxo, outputdir, mask_option)
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(  line,"Current resolution  %6.2f (%d), low-pass filter cut-off %6.2f and fall-off %6.2f"%(icurrentres/float(nnxo),icurrentres,lowpass,falloff))
+		print(  line,"Current resolution  %6.2f  %6.2fA (%d), low-pass filter cut-off %6.2f and fall-off %6.2f"%\
+						(icurrentres/float(nnxo),pixel*float(nnxo)/float(icurrentres),lowpass,falloff))
 		write_text_row([[lowpass, falloff, icurrentres]],os.path.join(outputdir,"current_resolution.txt"))
 	#  Returns: low-pass filter cutoff;  low-pass filter falloff;  current resolution
 	icurrentres = bcast_number_to_all(icurrentres, source_node = main_node)
@@ -1238,7 +1242,7 @@ def main():
 													Tracker["directory"], partids, partstack, \
 													Tracker["constants"]["radius"], Tracker["constants"]["nnxo"], \
 													Tracker["constants"]["CTF"], Tracker["constants"]["mask3D"], \
-													Tracker["constants"]["sym"], myid, main_node, nproc)
+													Tracker["constants"]["sym"], myid, main_node, nproc, Tracker["constants"]["pixel_size"])
 			del xlowpass, xfalloff, xcurrentres
 			if( myid == main_node):
 				# Carry over chunk information
