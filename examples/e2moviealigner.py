@@ -243,13 +243,12 @@ class MovieModeAligner:
 			print("Incoherent power spectrum has been computed.")
 			return
 		else: self._computed_objective = True
-		self._ips = sum([self._get_img_ips(i) for i in xrange(self.hdr['nimg'])])/self.hdr['nimg']
+		self._ips = sum((self._get_img_ips(i) for i in xrange(self.hdr['nimg'])))/self.hdr['nimg']
 		self._ips.process_inplace('math.rotationalaverage') # smooth
 	
 	def _get_img_ips(self,i):
 		img = EMData(self.path,i)
-		regs = [self._get_region(img,r) for r in self._regions[i]]
-		return sum(regs)/self._nregions
+		return sum((self._get_region(img,r) for r in self._regions[i]))/self._nregions
 
 	def _get_region(self,img,r):
 		b = img.get_clip(r)
@@ -264,7 +263,7 @@ class MovieModeAligner:
 		Regions are updated by the _update_frame_params method, which
 		is called by the _update_energy method.
 		"""
-		self._cps = sum([self._stack_sum(s) for s in xrange(self._nstacks)])/self._nregions # average movie frame power spectra
+		self._cps = sum((self._stack_sum(s) for s in xrange(self._nstacks)))/self._nregions # average movie frame power spectra
 		self._cps.process_inplace('math.rotationalaverage') # smooth
 
 	def _stack_sum(self,s):
