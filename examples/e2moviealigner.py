@@ -229,9 +229,6 @@ class MovieModeAligner:
 		self.optimal_transforms = self._transforms
 		self._cpsflag = False
 		self._ipsflag = False
-		#self._cboxes = EMData(self._boxsize,self._boxsize).do_fft()
-		#self._ips = EMData(self._boxsize,self._boxsize).do_fft()
-		#self._cps = EMData(self._boxsize,self._boxsize).do_fft()
 
 	def _calc_incoherent_power_spectrum(self):
 		"""
@@ -243,7 +240,8 @@ class MovieModeAligner:
 			print("Incoherent power spectrum has been computed.")
 			return
 		else: self._computed_objective = True
-		self._ips = sum((self._get_img_ips(i) for i in xrange(self.hdr['nimg'])))/self.hdr['nimg']
+		ipss = (self._get_img_ips(i) for i in xrange(self.hdr['nimg']))
+		self._ips = sum(ipss)/self.hdr['nimg']
 		self._ips.process_inplace('math.rotationalaverage') # smooth
 	
 	def _get_img_ips(self,i):
@@ -264,12 +262,14 @@ class MovieModeAligner:
 		is called by the _update_energy method.
 		"""
 		# average movie frame power spectra
-		self._cps = sum((self._stack_sum(s) for s in xrange(self._nstacks)))/self._nregions 
+		cpss = (self._stack_sum(s) for s in xrange(self._nstacks))
+		self._cps = sum(cpss)/self._nregions 
 		self._cps.process_inplace('math.rotationalaverage') # smooth
 
 	def _stack_sum(self,s):
 		# average each region across all movie frames
-		b = sum((EMData(self.orig,i,False,r) for i,r in enumerate(self._stacks[s])))/self.hdr['nimg']  
+		stack = (EMData(self.orig,i,False,r) for i,r in enumerate(self._stacks[s]))
+		b = sum(stack)/self.hdr['nimg']  
 		b.process_inplace("normalize.edgemean")
 		b.do_fft_inplace()
 		b.ri2inten()
