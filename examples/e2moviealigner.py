@@ -327,17 +327,19 @@ class MovieModeAligner:
 		if options.verbose: print("Starting coarse-grained alignment")
 		cs = CoarseSearch(self, tmax=options.tmax, tmin=options.tmin, steps=options.steps, updates=options.updates)
 		if not options.nopresearch:
+			if options.verbose: print("Determining the best annealing parameters")
 			schedule = cs.auto(options.premins,options.presteps)
 			cs.set_schedule(schedule)
+		if options.verbose: print("Running simulated annealing")
 		state, energy = cs.anneal()
 		if options.verbose: print("\n\nBest Parameters: {}\nEnergy: {}\nIterations: {}\n".format(state,energy,iters))
 
 		if options.verbose: print("Starting fine-grained alignment")
 		fs = FineSearch(self,state)
-		result, error, iters = fs.minimize(options.epsilon,options.maxiters,monitor=1)
-
 		if options.verbose: print("Initializing simplex minimizer")
+		result, error, iters = fs.minimize(options.epsilon,options.maxiters,monitor=1)
 		if options.verbose: print("\n\nBest Parameters: {}\nError: {}\nIterations: {}\n".format(result,error,iters))
+		
 		self._optimized = True
 
 	@staticmethod
@@ -625,15 +627,15 @@ class CoarseSearch(SimulatedAnnealer):
 		self.copy_strategy = 'slice'
 		self.save_state_on_exit = False
 
-	def move(self,scale=25.0,incr=1):
+	def move(self,scale=12.5,incr=1):
 		self.state[self.count] = self.state[self.count]+scale*(2*np.random.random()-1)
 		self.count = (self.count+incr) % self.slen
-
-	def energy(self):
 		for vi in self.srange:
 			t = Transform({'type':'eman','tx':self.state[vi],'ty':self.state[vi+1]})
 			self.aligner._update_frame_params(vi/2,t)
 		self.aligner._update_energy()
+
+	def energy(self):
 		return self.aligner.get_energy()
 
 if __name__ == "__main__":
