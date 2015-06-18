@@ -353,8 +353,6 @@ def found_outliers(list_of_projection_indices, outlier_percentile, rviper_iter, 
 	elif outlier_index_threshold_method == "use all images":
 		outlier_index_threshold = len(error_values_and_indices)
 
-
-	
 	index_keep_images = [i[1] for i in error_values_and_indices[:outlier_index_threshold]]
 	index_outliers = [i[1] for i in error_values_and_indices[outlier_index_threshold:]]
 
@@ -552,8 +550,6 @@ def main():
 	from global_def import SPARXVERSION
 	from EMAN2 import EMData
 
-
-
 	main_node = 0
 	mpi_init(0, [])
 	mpi_comm = MPI_COMM_WORLD
@@ -648,8 +644,10 @@ def main():
 	else:
 		ref_vol = None
 
-	masterdir = ""
+
 	bdb_stack_location = ""
+
+	masterdir = ""
 	if len(args) == 2:
 		masterdir = args[1]
 		if masterdir[-1] != DIR_DELIM:
@@ -842,9 +840,9 @@ def main():
 					#cmdexecute(cmd)
 
 				if (myid == main_node):
-					store_value_of_simple_vars_in_json_file(masterdir, locals(), exclude_list_of_vars=["usage"], 
+					store_value_of_simple_vars_in_json_file(masterdir + 'program_state.json', locals(), exclude_list_of_vars=["usage"], 
 						vars_that_will_show_only_size = ["subset"])
-					store_value_of_simple_vars_in_json_file(masterdir, options.__dict__, write_or_append='a')
+					store_value_of_simple_vars_in_json_file(masterdir + 'program_state.json', options.__dict__, write_or_append='a')
 				
 				# mpi_barrier(mpi_comm)
 				# from mpi import mpi_finalize

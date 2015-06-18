@@ -832,6 +832,8 @@ def ali2d_MPI(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr=
 	else:           send_attr_dict(main_node, data, par_str, image_start, image_end)
 	if myid == main_node: print_end_msg("ali2d_MPI")
 
+
+
 def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", \
 			nomirror = False, dst=0.0, center=-1, maxit=0, CTF=False, snr=1.0, \
 			Fourvar=False, user_func_name="ref_ali2d", random_method = "", log = None, \
@@ -882,7 +884,7 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 
 	import types
 	if( type(stack) is types.StringType ):
-		if myid == main_node:	total_nima = EMUtil.get_image_count(stack)
+		if myid == main_node:	print "stack:::::::", stack ; total_nima = EMUtil.get_image_count(stack)
 		else:					total_nima = 0
 	total_nima = bcast_number_to_all(total_nima, source_node = main_node)
 	list_of_particles = range(total_nima)
@@ -961,9 +963,9 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 		mask = model_circle(last_ring, nx, nx)
 
 	cnx  = nx/2+1
- 	cny  = cnx
- 	if  random_method == "SCF":		mode = "H"
- 	else: 							mode = "F"
+	cny  = cnx
+	if  random_method == "SCF":		mode = "H"
+	else: 							mode = "F"
 	data = []
 	if CTF:
 		from filter import filt_ctf
@@ -999,7 +1001,7 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 
 	# startup
 	numr = Numrinit(first_ring, last_ring, rstep, mode) 	#precalculate rings
- 	wr = ringwe(numr, mode)
+	wr = ringwe(numr, mode)
 
 	if myid == main_node:
 		# initialize data for the reference preparation function
@@ -1165,15 +1167,30 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 				recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 		else:           send_attr_dict(main_node, data, par_str, image_start, image_end)
 
+
+	if ou < 1:
+		ou = (nx - 1)/2 - 2
+
+	shrink_ratio = 32.0/ou
+	# print "shrink_ratio", shrink_ratio
+	needs_windowing = nx*shrink_ratio > 64
+	# print "needs_windowing", needs_windowing
+
+	from fundamentals import rot_shift2D, resample
 	params = []
 	for im in xrange(nima):  
 		alpha, sx, sy, mirror, scale = get_params2D(data[im])
+		data[im] = rot_shift2D(data[im], alpha, sx, sy)
+		if shrink_ratio < 1:
+			data[im]  = resample(data[im], shrink_ratio)
+			if needs_windowing:
+				data[im] = Util.window(data[im], 64, 64, 1)
 		params.append([alpha, sx, sy, mirror])
 	params = wrap_mpi_gatherv(params, main_node, mpi_comm)
 
-
 	if myid == main_node: log.add("Finished ali2d_base")
-	return params
+	
+	return params, data
 
 '''
 def ORGali2d_c(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr="-1", ts="2 1 0.5 0.25", center=-1, maxit=0, \

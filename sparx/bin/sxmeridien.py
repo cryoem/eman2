@@ -375,7 +375,7 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, my
 	lowpass    = 0.0
 	falloff    = 0.0
 	icurrentres = 0
-
+	
 	if(myid == main_node):
 		if(type(stack) == str or ( nz == 1 )):
 			if(nx<nnxo):
@@ -960,7 +960,8 @@ def main():
 		if  doit:
 			if( myid == main_node ):
 				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-				print(line,"INITIALIZATION 2D")
+			
+					print(line,"INITIALIZATION 2D")
 
 			from applications import ali2d_base
 

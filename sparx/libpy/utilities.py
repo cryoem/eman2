@@ -1815,6 +1815,7 @@ def write_text_row(data, file_name):
 			else:
 				outf.write("  %s"%data[j])
 		outf.write("  \n")
+	outf.flush()
 	outf.close()
 
 
@@ -2307,6 +2308,115 @@ def bcast_compacted_EMData_to_all(list_of_em_objects, myid, comm=-1):
 
 				list_of_em_objects[i] = em_object
 
+def gather_compacted_EMData_to_root(number_of_all_em_objects_distributed_across_processes, list_of_em_objects_for_myid_process, myid, comm=-1):
+
+	"""
+	
+	The assumption in <<gather_compacted_EMData_to_root>> is that each processor
+	calculates part of the list of elements and then each processor sends
+	its results to the root
+
+	Therefore, each processor has access to the header. If we assume that the
+	attributes of interest from the header are the same for all elements then
+	we can copy the header and no mpi message is necessary for the
+	header.
+
+	"""
+	from applications import MPI_start_end
+	from EMAN2 import EMNumPy
+	from numpy import concatenate, shape, array, split
+	from mpi import mpi_comm_size, mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
+	from numpy import reshape
+
+	if comm == -1 or comm == None: comm = MPI_COMM_WORLD
+
+	ncpu = mpi_comm_size(comm)	# Total number of processes, passed by --np option.
+
+	ref_start, ref_end = MPI_start_end(number_of_all_em_objects_distributed_across_processes, ncpu, myid)
+	ref_end -= ref_start
+	ref_start = 0
+	
+	# used for copying the header
+	reference_em_object = list_of_em_objects_for_myid_process[ref_start]
+	nx = reference_em_object.get_xsize()
+	ny = reference_em_object.get_ysize()
+	nz = reference_em_object.get_zsize()
+	# is_complex = reference_em_object.is_complex()
+	is_ri = reference_em_object.is_ri()
+	changecount = reference_em_object.get_attr("changecount")
+	is_complex_x = reference_em_object.is_complex_x()
+	is_complex_ri = reference_em_object.get_attr("is_complex_ri")
+	apix_x = reference_em_object.get_attr("apix_x")
+	apix_y = reference_em_object.get_attr("apix_y")
+	apix_z = reference_em_object.get_attr("apix_z")
+	is_complex = reference_em_object.get_attr_default("is_complex",1)
+	is_fftpad = reference_em_object.get_attr_default("is_fftpad",1)
+	is_fftodd = reference_em_object.get_attr_default("is_fftodd", nz%2)
+	
+	data = EMNumPy.em2numpy(list_of_em_objects_for_myid_process[ref_start])
+	size_of_one_refring_assumed_common_to_all = data.size
+	
+	# n = shape(data)
+	# size_of_one_refring_assumed_common_to_all = 1
+	# for i in n: size_of_one_refring_assumed_common_to_all *= i
+
+	if size_of_one_refring_assumed_common_to_all*(ref_end-ref_start) > (2**31-1):
+		print "Sending refrings: size of data to broadcast is greater than 2GB"
+
+	for sender_id in range(1,ncpu):
+		if sender_id == myid:
+			data = EMNumPy.em2numpy(list_of_em_objects_for_myid_process[ref_start])  #array([], dtype = 'float32')
+			for i in xrange(ref_start+1,ref_end):
+				data = concatenate([data, EMNumPy.em2numpy(list_of_em_objects_for_myid_process[i])])
+		else:
+			data = array([], dtype = 'float32')
+
+		sender_ref_start, sender_ref_end = MPI_start_end(number_of_all_em_objects_distributed_across_processes, ncpu, sender_id)
+
+		sender_size_of_refrings = (sender_ref_end - sender_ref_start)*size_of_one_refring_assumed_common_to_all
+		
+		from mpi import mpi_recv, mpi_send, MPI_TAG_UB, mpi_barrier
+		if myid == 0:
+			print "root, receiving from ", sender_id, "  sender_size_of_refrings = ", sender_size_of_refrings
+			data = mpi_recv(sender_size_of_refrings,MPI_FLOAT, sender_id, MPI_TAG_UB, MPI_COMM_WORLD)
+		elif sender_id == myid:
+			print "sender_id = ", sender_id, "sender_size_of_refrings = ", sender_size_of_refrings
+			mpi_send(data, sender_size_of_refrings, MPI_FLOAT, 0, MPI_TAG_UB, MPI_COMM_WORLD)
+		
+		mpi_barrier(MPI_COMM_WORLD)
+
+		# if myid != sender_id:
+		if myid == 0:
+			for i in xrange(sender_ref_start, sender_ref_end):
+				offset_ring = sender_ref_start
+				start_p = (i-offset_ring)*size_of_one_refring_assumed_common_to_all
+				end_p   = (i+1-offset_ring)*size_of_one_refring_assumed_common_to_all
+				image_data = data[start_p:end_p]
+
+				if int(nz) != 1:
+					image_data = reshape(image_data, (nz, ny, nx))
+				elif ny != 1:
+					image_data = reshape(image_data, (ny, nx))
+					
+				em_object = EMNumPy.numpy2em(image_data)
+
+				# em_object.set_complex(is_complex)
+				em_object.set_ri(is_ri)
+				em_object.set_attr_dict({
+				"changecount":changecount,
+				"is_complex_x":is_complex_x,
+				"is_complex_ri":is_complex_ri,
+				"apix_x":apix_x,
+				"apix_y":apix_y,
+				"apix_z":apix_z,
+				'is_complex':is_complex,
+				'is_fftodd':is_fftodd,
+				'is_fftpad':is_fftpad})
+
+				# list_of_em_objects[i] = em_object
+				list_of_em_objects_for_myid_process.append(em_object)
+				
+		mpi_barrier(MPI_COMM_WORLD)
 
 
 def bcast_EMData_to_all(tavg, myid, source_node = 0, comm = -1):
@@ -2563,6 +2673,17 @@ def bcast_string_to_all(str_to_send, source_node = 0):
 	str_TMP = mpi_bcast(str_to_send, len(str_to_send), MPI_INT, source_node, MPI_COMM_WORLD)
 	for i in xrange(len(str_to_send)):  str_tmp += chr(str_TMP[i])
 	return str_tmp
+	
+def send_string_to_all(str_to_send, source_node = 0):
+	from mpi import MPI_COMM_WORLD, MPI_INT, MPI_CHAR, mpi_bcast, mpi_comm_rank 
+
+	myid = mpi_comm_rank(MPI_COMM_WORLD)
+	str_to_send_len  = len(str_to_send)*int(myid == source_node)
+	str_to_send_len = mpi_bcast(str_to_send_len,1,MPI_INT,0,MPI_COMM_WORLD)[0]
+	str_to_send = mpi_bcast(str_to_send,str_to_send_len,MPI_CHAR,source_node,MPI_COMM_WORLD)
+	return "".join(str_to_send)
+
+	
 	
 def bcast_number_to_all(number_to_send, source_node = 0):
 	"""
@@ -4481,7 +4602,7 @@ def if_error_all_processes_quit_program(error_status):
 		mpi_finalize()
 		sys.exit()
 
-def store_value_of_simple_vars_in_json_file(masterdir, local_vars, exclude_list_of_vars = [], write_or_append = "w", 
+def store_value_of_simple_vars_in_json_file(filename, local_vars, exclude_list_of_vars = [], write_or_append = "w", 
 	vars_that_will_show_only_size = []):
 	
 	import json, types, collections
@@ -4510,7 +4631,7 @@ def store_value_of_simple_vars_in_json_file(masterdir, local_vars, exclude_list_
 
 	ordered_my_vars = collections.OrderedDict(sorted(my_vars.items()))
 	
-	with open(masterdir + 'program_state.json', write_or_append) as fp:
+	with open(filename, write_or_append) as fp:
 		json.dump(ordered_my_vars, fp, indent = 2)
 	fp.close()
 
