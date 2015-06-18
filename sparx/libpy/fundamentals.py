@@ -427,7 +427,7 @@ def fftip(e):
 		# forward fft
 		e.do_fft_inplace()
 
-def fpol(image, nnx, nny=0, nnz=0, RetReal = True):
+def fpol(image, nnx, nny=1, nnz=1, RetReal = True):
 	"""
 		Name
 			fpol -Interpolate image up by padding its Fourier transform with zeroes
@@ -440,6 +440,19 @@ def fpol(image, nnx, nny=0, nnz=0, RetReal = True):
 		Output
 			the output interpolated up image
 	"""
+	from fundamentals import fft
+	
+	nx = image.get_xsize()
+	ny = image.get_ysize()
+	nz = image.get_zsize()
+	
+	if image.is_complex():
+		nx -= (2-nx%2)
+	
+	if nx == nnx and ny == nny and nz == nnz:
+		if image.is_complex() and RetReal: return fft(image)
+		else: return image
+	
 	return  image.FourInterpol(nnx, nny, nnz, RetReal)
 
 def fdecimate(image, nnx, nny=0, nnz=0, RetReal = True):
