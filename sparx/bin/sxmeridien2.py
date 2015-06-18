@@ -1334,8 +1334,8 @@ def main():
 			Tracker["ts"] = "1"
 			keepgoing = 1
 		elif(Tracker["mainiteration"] > 3):
-			if(Tracker["mainiteration"] > 4  and Tracker["icurrentres"] > icurrentres):  keepgoing = 0
 			Tracker["nsoft"] = 0
+			if(Tracker["mainiteration"] > 4  and Tracker["icurrentres"] > icurrentres):  keepgoing = 0
 			elif(Tracker["icurrentres"] < icurrentres):
 				nxinit = Tracker["nxinit"]
 				while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
