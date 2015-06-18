@@ -206,8 +206,8 @@ class MovieModeAligner:
 		This function takes care of initializing the variables (and allocating the
 		subsequent memory) that will be used through the lifetime of the MovieModeAligner.
 
-		@param int boxsize		:	Size of boxes used to compute average power spectra.
-		@param list transforms	:	A list of Transform objects.
+		@param int boxsize :		Size of boxes used to compute average power spectra.
+		@param list transforms :	A list of Transform objects.
 		"""
 		self._boxsize = boxsize
 		self._min = min_shift
@@ -221,7 +221,7 @@ class MovieModeAligner:
 		self._origins = [r.get_origin() for r in self._regions[0]]
 		self._norigins = len(self._origins)
 		self._stacks = {}
-		for ir in xrange(self._norigins): #self._nregions):
+		for ir in xrange(self._norigins):
 			self._stacks[ir] = [self._regions[i][ir] for i in xrange(self.hdr['nimg'])]
 		self._nstacks = len(self._stacks)
 		if transforms: self._transforms = transforms
@@ -248,7 +248,7 @@ class MovieModeAligner:
 	
 	def _get_img_ips(self,i):
 		img = EMData(self.path,i)
-		regs = [self._get_region(img,r) for r in self.regions[i]]
+		regs = [self._get_region(img,r) for r in self._regions[i]]
 		return sum(regs)/self._nregions
 
 	def _get_region(self,img,r):
@@ -280,8 +280,8 @@ class MovieModeAligner:
 		Private method to update a single image according to an affine transformation.
 		Note that transformations should by be in 2D.
 
-		@param int i		: 	An integer specifying which transformation to update
-		@param Transform t	:	An EMAN Transform object
+		@param int i :		 	An integer specifying which transformation to update
+		@param Transform t :	An EMAN Transform object
 		"""
 		self._transforms[i] = t  # update transform
 		newregions = [] # update regions
@@ -300,7 +300,7 @@ class MovieModeAligner:
 		the alignment is improved, the transforms supplied will be stored in the
 		optimal_transforms variable for later access.
 
-		@param list transforms	: 	List of proposed EMAN Transform objects, one for each frame in movie.
+		@param list transforms : 	List of proposed EMAN Transform objects, one for each frame in movie.
 		"""
 		self._calc_coherent_power_spectrum()
 		energy = EMData.cmp(self._ips,'dot',self._cps,{'normalize':1})
@@ -313,12 +313,11 @@ class MovieModeAligner:
 		"""
 		Method to perform optimization of movie alignment.
 		
-		@param namespace options	:	"argparse" options from e2ddd_movie.py
+		@param namespace options :	"argparse" options from e2ddd_movie.py
 		"""
 		if self._optimized:
 			print("Optimal alignment already determined.")
 			return
-
 		if options.verbose: print("Starting coarse-grained alignment")
 		cs = CoarseSearch(self, tmax=options.tmax, tmin=options.tmin, steps=options.steps, updates=options.updates)
 		if not options.nopresearch:
@@ -327,14 +326,12 @@ class MovieModeAligner:
 			cs.set_schedule(schedule)
 		if options.verbose: print("Running simulated annealing")
 		state, energy = cs.anneal()
-		if options.verbose: print("\n\nBest Parameters: {}\nEnergy: {}\nIterations: {}\n".format(state,energy,iters))
-
+		if options.verbose: print("\n\nBest Parameters: {}\nEnergy: {}\nIterations: {}\n".format(state,energy))
 		if options.verbose: print("Starting fine-grained alignment")
 		fs = FineSearch(self,state)
 		if options.verbose: print("Initializing simplex minimizer")
 		result, error, iters = fs.minimize(options.epsilon,options.maxiters,monitor=1)
 		if options.verbose: print("\n\nBest Parameters: {}\nError: {}\nIterations: {}\n".format(result,error,iters))
-		
 		self._optimized = True
 
 	@staticmethod
@@ -621,7 +618,7 @@ class CoarseSearch(SimulatedAnnealer):
 		self.copy_strategy = 'slice'
 		self.save_state_on_exit = False
 
-	def move(self,scale=12.5):
+	def move(self,scale=1):
 		tx = self.state[self.count] + scale*(2*np.random.random()-1)
 		ty = self.state[self.count+1] + scale*(2*np.random.random()-1)
 		t = Transform({'type':'eman','tx':tx,'ty':ty})
