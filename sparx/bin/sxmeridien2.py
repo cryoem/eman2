@@ -1076,7 +1076,8 @@ def main():
 					dp_list2.append([dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]])
 				write_text_row(dp_list2, partstack[1])
 				del dp_list2
-				print(line,"Executed successfully: ","Imported initial parameters from the input stack")
+				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+				print(line,"Executed successfully: Imported initial parameters from the input stack")
 
 				del tp_list
 				
