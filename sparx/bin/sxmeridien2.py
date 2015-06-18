@@ -710,7 +710,6 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 	Tracker["radius"] = int(Tracker["constants"]["radius"] * shrinkage +0.5)
 	if(Tracker["radius"] < 2):
 		ERROR( "ERROR!!   lastring too small  %f    %f   %d"%(Tracker["radius"], Tracker["constants"]["radius"]), "sxmeridien",1, myid)
-	Tracker["ir"] = max(int(Tracker["constants"]["ir"] * shrinkage +0.5), 1)
 	Tracker["lowpass"] = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
 	delta = "%f  "%min(round(degrees(atan(0.5/Tracker["lowpass"]/Tracker["radius"])), 2), 3.0)
 	Tracker["delta"] = ""
@@ -808,7 +807,7 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack  [output_directory]  initial_volume  --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=an  --center=center_type --fl --aa --ref_a=S --sym=c1"
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--ir",      		type= "int",   default= 1,			help="inner radius for rotational correlation > 0 (set to 1)")
+	#parser.add_option("--ir",      		type= "int",   default= 1,			help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--ou",      		type= "int",   default= -1,			help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
 	##parser.add_option("--rs",      		type= "int",   default= 1,			help="step between rings in rotational correlation >0  (set to 1)" ) 
 	#parser.add_option("--xr",      		type="string", default= "-1",		help="range for translation search in x direction, search is +/xr (default 0)")
@@ -868,7 +867,6 @@ def main():
 	#  Constant settings of the project
 	Constants				= {}
 	Constants["stack"]        = args[0]
-	Constants["ir"]           = options.ir
 	Constants["rs"]           = 1
 	Constants["radius"]       = options.ou
 	Constants["an"]           = options.an
