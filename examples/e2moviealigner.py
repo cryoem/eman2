@@ -66,7 +66,7 @@ def main():
 	parser.add_argument("--steps", type=int, help="Set the number of steps to run simulated annealing. Default is 25000.",default=25000)
 	parser.add_argument("--updates", type=int, help="Set the number of times to update the temperature when running simulated annealing. Default is 100.",default=100)
 	parser.add_argument("--nopresearch",action="store_true",default=False,help="D not run a search of the parameter space before annealing to determine 'best' max and min temperatures as well as the annealing duration.")
-	parser.add_argument("--presteps",type=int,default=2000,help="The number of steps to run the exploratory pre-annealing phase.")
+	parser.add_argument("--presteps",type=int,default=500,help="The number of steps to run the exploratory pre-annealing phase.")
 	parser.add_argument("--premins",type=float,default=1.0,help="The number of minutes to run each phase of the exploratory phase before annealing.")
 	parser.add_argument("--maxiters", type=int, help="Set the maximum number of iterations for the simplex minimizer to run before stopping. Default is 250.",default=250)
 	parser.add_argument("--epsilon", type=float, help="Set the learning rate for the simplex minimizer. Smaller is better, but takes longer. Default is 0.001.",default=0.001)
@@ -246,14 +246,15 @@ class MovieModeAligner:
 	
 	def _get_img_ips(self,i):
 		img = EMData(self.path,i)
-		return sum((self._get_region(img,r) for r in self._regions[i]))/self._nregions
+		region_ipss = (self._get_region(img,r) for r in self._regions[i])
+		return sum(region_ipss)/self._nregions
 
 	def _get_region(self,img,r):
-		b = img.get_clip(r)
-		b.process_inplace("normalize.edgemean")
-		b.do_fft_inplace() # fft region
-		b.ri2inten() # convert to intensities
-		return b
+		reg = img.get_clip(r)
+		reg.process_inplace("normalize.edgemean")
+		reg.do_fft_inplace() # fft region
+		reg.ri2inten() # convert to intensities
+		return reg
 		
 	def _calc_coherent_power_spectrum(self):
 		"""
@@ -261,19 +262,17 @@ class MovieModeAligner:
 		Regions are updated by the _update_frame_params method, which
 		is called by the _update_energy method.
 		"""
-		# average movie frame power spectra
-		cpss = (self._stack_sum(s) for s in xrange(self._nstacks))
+		cpss = (self._average_stack(s) for s in xrange(self._nstacks))
 		self._cps = sum(cpss)/self._nregions 
 		self._cps.process_inplace('math.rotationalaverage') # smooth
 
-	def _stack_sum(self,s):
-		# average each region across all movie frames
+	def _average_stack(self,s):
 		stack = (EMData(self.orig,i,False,r) for i,r in enumerate(self._stacks[s]))
-		b = sum(stack)/self.hdr['nimg']  
-		b.process_inplace("normalize.edgemean")
-		b.do_fft_inplace()
-		b.ri2inten()
-		return b
+		avg = sum(stack)/self.hdr['nimg']  
+		avg.process_inplace("normalize.edgemean")
+		avg.do_fft_inplace()
+		avg.ri2inten()
+		return avg
 
 	def _update_frame_params(self,i,t):
 		"""
