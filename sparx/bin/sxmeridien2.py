@@ -885,7 +885,10 @@ def main():
 	Constants["refvol"]        = volinit
 	Constants["masterdir"]     = masterdir
 	Constants["mempernode"]    = 4.0e9
-
+	if(myid == main_node):
+		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		print(line,"INITIALIZATION OF MERIDIEN")
+		print_dict(Tracker["constants"], "Permanent settings of meridien")
 		
 	#  The program will use three different meanings of x-size
 	#  nnxo         - original nx of the data, will not be changed
@@ -939,10 +942,7 @@ def main():
 	if(myid == main_node):
 		a = get_im(orgstack)
 		nnxo = a.get_xsize()
-		if( nnxo%2 == 1 ):
-			ERROR("Only even-dimensioned data allowed","sxmeridien",1)  #  This will have to be eliminated as we will move only in even dimensioned windowed.
-			nnxo = -1
-		elif( Tracker["nxinit"] > nnxo ):
+		if( Tracker["nxinit"] > nnxo ):
 			ERROR("Image size less than minimum permitted $d"%Tracker["nxinit"],"sxmeridien",1)
 			nnxo = -1
 		else:
@@ -1034,8 +1034,6 @@ def main():
 			cmd = "mkdir "+initdir
 			cmdexecute(cmd)
 			write_text_file(range(total_stack), partids)
-			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(line,"INITIALIZATION OF MERIDIEN")
 		mpi_barrier(MPI_COMM_WORLD)
 
 
