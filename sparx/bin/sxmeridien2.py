@@ -885,11 +885,6 @@ def main():
 	Constants["refvol"]        = volinit
 	Constants["masterdir"]     = masterdir
 	Constants["mempernode"]    = 4.0e9
-	if(myid == main_node):
-		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(line,"INITIALIZATION OF MERIDIEN")
-		print_dict(Tracker["constants"], "Permanent settings of meridien")
-		
 	#  The program will use three different meanings of x-size
 	#  nnxo         - original nx of the data, will not be changed
 	#  nxinit       - window size used by the program during given iteration, 
@@ -901,7 +896,6 @@ def main():
 	Tracker					= {}
 	Tracker["constants"]    = Constants
 	Tracker["maxit"]        = Tracker["constants"]["maxit"]
-	Tracker["ir"]           = Tracker["constants"]["ir"]
 	Tracker["radius"]       = Tracker["constants"]["radius"]
 	Tracker["xr"]           = ""
 	Tracker["yr"]           = "-1"  # Do not change!
@@ -937,9 +931,15 @@ def main():
 	#  threshold error
 	thresherr = 0
 	cushion  = 8  #  the window size has to be at least 8 pixels larger than what would follow from resolution
+		
 
 	# Get the pixel size; if none, set to 1.0, and the original image size
 	if(myid == main_node):
+		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		print(line,"INITIALIZATION OF MERIDIEN")
+
+
+
 		a = get_im(orgstack)
 		nnxo = a.get_xsize()
 		if( Tracker["nxinit"] > nnxo ):
@@ -999,6 +999,12 @@ def main():
 	if( li > 0 ):
 		masterdir = mpi_bcast(masterdir,li,MPI_CHAR,main_node,MPI_COMM_WORLD)
 		masterdir = string.join(masterdir,"")
+
+
+
+	if(myid == main_node):
+		print_dict(Tracker["constants"], "Permanent settings of meridien")
+
 
 	#  create a vstack from input stack to the local stack in masterdir
 	#  Stack name set to default
