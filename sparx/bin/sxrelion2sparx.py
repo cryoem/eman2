@@ -35,7 +35,7 @@ def main():
 
 	parser.add_option("--output_dir",	   type="string",       default='work',     help="output directory path")
 	parser.add_option("--star_section",	   type="string",       default='data_',    help="section title in the star file where data should be extracted (default: 'data_')")
-	parser.add_option("--create_stack",	   action="store_true", default=True,       help="create particle stack (default: True)")
+	parser.add_option("--create_stack",	   action="store_true", default=False,      help="create particle stack (default: False)")
 	
 	(options,args) = parser.parse_args( arglist[1:] )
 
@@ -139,10 +139,13 @@ def main():
 	i_col_relion_item = 0
 	
 	# Storages
-	relion_entry_id = 0
+	entry_id = 0           # Let's tart from 0
 	sprax_particle_id = 0
 	if is_enable_create_stack: 
 		img_particle = EMData()
+	
+	sparx_chunk_id_max = 0
+	params_chunk_dict = {}
 	
 	# Open input/output files
 	assert(os.path.exists(file_path_relion_params) == True)
@@ -222,8 +225,6 @@ def main():
 									
 			# Then, read the data entries
 			elif n_tokens_line == i_col_relion_item:
-				relion_entry_id += 1 # start from 1
-			
 				# Parse this entry line and covert the parameters from RELION to SPARX formats
 				sparx_acc_vol = float(tokens_line[col_relion_item_acc_vol - 1])
 
@@ -270,14 +271,21 @@ def main():
 				file_stack_sparx_params_proj3d.write('%12.6f %12.6f %12.6f %12.6f %12.6f \n' % (sparx_phi, sparx_theta, sparx_psi, sparx_s2x, sparx_s2y))
 
 				# Store the entry id (particle id) in the corresponding subset
+				# relion_random_subset starts from 1 in RELION
 				relion_random_subset = int(tokens_line[col_relion_item_random_subset - 1])
-
-				file_name_stack_sparx_params_chunk = name_pattern_stack_sparx_params_chunk.replace('*', "%1d" % relion_random_subset)
-				file_path_stack_sparx_params_chunk = dir_path_work + '/' + file_name_stack_sparx_params_chunk
-				file_stack_sparx_params_chunk = open(file_path_stack_sparx_params_chunk,'a')
-				file_stack_sparx_params_chunk.write('%d \n' % (relion_entry_id))
-				file_stack_sparx_params_chunk.close()
 				
+				# chunk_id starts from 0 in SPARX
+				sparx_chunk_id = relion_random_subset - 1
+								
+				if (sparx_chunk_id_max < sparx_chunk_id):
+					sparx_chunk_id_max = sparx_chunk_id
+				
+				sparx_chunk_key = "%1d" % sparx_chunk_id
+				if params_chunk_dict.has_key(sparx_chunk_key) == False:
+					params_chunk_dict[sparx_chunk_key] = []
+				params_chunk_dict[sparx_chunk_key].append(entry_id)	
+				entry_id += 1
+			
 				if is_enable_create_stack: 
 					# Now read image
 					str_particle_source = tokens_line[col_relion_item_particle_source - 1]
@@ -301,7 +309,7 @@ def main():
 			else:
 				print '# An Empty Line is detected after data entries. Breaking the loop...'
 				print '# Detected Column Counts      := %d ' % (i_col_relion_item)
-				print '# Detected Entry Counts       := %d ' % (relion_entry_id)				
+				print '# Detected Entry Counts       := %d ' % (entry_id)				
 				print '# Image counts added to stack := %d ' % (sprax_particle_id)				
 				break;
 	
@@ -318,7 +326,18 @@ def main():
 	file_stack_sparx_params_ctf.close()
 	file_stack_sparx_params_proj3d.close()
 	
-	
+	for sparx_chunk_key in params_chunk_dict:
+		# Open the files for this chunk key
+		file_name_stack_sparx_params_chunk = name_pattern_stack_sparx_params_chunk.replace('*', sparx_chunk_key)
+		file_path_stack_sparx_params_chunk = dir_path_work + '/' + file_name_stack_sparx_params_chunk
+		file_stack_sparx_params_chunk = open(file_path_stack_sparx_params_chunk,'w+')
+		
+		for entry_id in params_chunk_dict[sparx_chunk_key]:
+			file_stack_sparx_params_chunk.write('%d \n' % (entry_id))
+				
+		# Close the files for this chunk key
+		file_stack_sparx_params_chunk.close()
+
 	# Restore the original current dir
 	os.chdir(dir_origin)
 
