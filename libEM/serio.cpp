@@ -178,7 +178,7 @@ int SerIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 	tag_offset_array = new uint64_t[tot];
 	if (hitem1[2]==0x210) {
 		int *off=new int[tot*2];
-		if (fread(off, 4, tot*2, serfile) != (unsigned int)tot) {
+		if (fread(off, 4, tot*2, serfile) != (unsigned int)tot*2) {
 			throw ImageReadException(filename, "SER header");
 		}
 		for (int i=0; i<tot; i++) {
