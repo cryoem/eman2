@@ -7067,23 +7067,13 @@ void EMData::center_origin_fft()
 
 #define  fint(i,j,k)  fint[(i-1) + ((j-1) + (k-1)*ny)*(size_t)lsd]
 #define  fout(i,j,k)  fout[(i-1) + ((j-1) + (k-1)*nyn)*(size_t)lsdn]
-EMData *EMData::FourInterpol(int nxn, int nyni, int nzni, bool RetReal) {
+EMData *EMData::FourInterpol(int nxn, int nyn, int nzn, bool RetReal) {
 
-	int nyn, nzn, lsd, lsdn, inx, iny, inz;
+	int lsd, lsdn, inx, iny, inz;
 	int i, j, k;
 	if (is_complex())
 		throw ImageFormatException("Input image has to be real");
 
-	if(ny > 1) {
-		nyn = nyni;
-		if(nz > 1) {
-			nzn = nzni;
-		}  else {
-			nzn = 1;
-		}
-	} else {
-		nyn = 1; nzn = 1;
-	}
 	if(nxn<nx || nyn<ny || nzn<nz)	throw ImageDimensionException("Cannot reduce the image size");
 	lsd = nx + 2 - nx%2;
 	lsdn = nxn + 2 - nxn%2;
