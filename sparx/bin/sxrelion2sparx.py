@@ -7,7 +7,6 @@
 # After running this script, use the following commands...
 # $ sxheader.py sparx_stack.hdf --params=ctf --import=sprax_stack_params_ctf.txt
 # $ sxheader.py sparx_stack.hdf --params=xform.projection --import=sparx_stack_params_proj3d.txt
-# $ sxheader.py sparx_stack.hdf --params=active --one
 # 
 # ========================================================================================
 
@@ -87,9 +86,9 @@ def main():
 	# SPARX params file related
 	if is_enable_create_stack: 
 		file_name_stack_sparx             = 'sparx_stack.hdf'
-	file_name_stack_sparx_params_ctf      = 'sparx_stack_params_ctf.txt'
-	file_name_stack_sparx_params_proj3d   = 'sparx_stack_params_proj3d.txt'
-	name_pattern_stack_sparx_params_chunk = 'sparx_stack_params_chunk*.txt'
+	file_name_stack_sparx_params_ctf      = 'sparx_params_ctf.txt'
+	file_name_stack_sparx_params_proj3d   = 'sparx_params_proj3d.txt'
+	name_pattern_stack_sparx_params_chunk = 'chunk*.txt'
 
 	# ------------------------------------------------------------------------------------
 	# STEP 1: Prepare input/output file paths
@@ -313,8 +312,6 @@ def main():
 		assert(sprax_particle_id == n_img_stack_sparx)
 	
 	# Create parameter files for sparx 
-	# write_text_row(list_sparx_params_ctf, file_path_stack_sparx_params_ctf)
-	# write_text_row(list_sparx_params_proj3d, file_path_stack_sparx_params_proj3d)
 	
 	# Close input/output files
 	file_relion_params.close()
