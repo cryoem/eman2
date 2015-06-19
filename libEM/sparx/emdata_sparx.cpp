@@ -7191,25 +7191,15 @@ EMData *EMData::FourInterpol(int nxn, int nyn, int nzn, bool RetReal) {
 	return ret;
 }
 
-EMData *EMData::FourTruncate(int nxn, int nyni, int nzni, bool RetReal) {
+EMData *EMData::FourTruncate(int nxn, int nyn, int nzn, bool RetReal) {
 
-	int nyn, nzn, lsd, lsdn, inx, iny, inz;
+	int lsd, lsdn, inx, iny, inz;
 	int i, j, k;
 	float  *fint;
 	EMData *temp_ft = NULL;
 	//if (is_complex())
 	//	throw ImageFormatException("Input image has to be real");
 
-	if(ny > 1) {
-		nyn = nyni;
-		if(nz > 1) {
-			nzn = nzni;
-		}  else {
-			nzn = 1;
-		}
-	} else {
-		nyn = 1; nzn = 1;
-	}
 	if (is_complex()) {
 		nx = nx - 2 + nx%2;
 		fint = get_data();

@@ -720,6 +720,9 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 	for i in xrange(len(get_input_from_string(Tracker["xr"]))):  Tracker["delta"] += delta
 	Tracker["pixercutoff"] = get_pixercutoff(Tracker["radius"], float(delta), 0.5)
 
+	Tracker["zoom"] = False
+
+
 	if(Tracker["delpreviousmax"]):
 		for i in xrange(len(projdata)):
 			try:  projdata[i].del_attr("previousmax")
@@ -1302,6 +1305,7 @@ def main():
 		#mpi_finalize()
 		#exit()
 		keepgoing = 0
+		if myid == main_node:  print("   AAAA   A  ",Tracker["mainiteration"] ,icurrentres,Tracker["icurrentres"])
 		if(Tracker["mainiteration"] == 1):
 			nxinit = Tracker["nxinit"]
 			while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
