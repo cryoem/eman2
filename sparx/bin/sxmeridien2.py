@@ -295,8 +295,9 @@ def get_pixel_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 	nfsc = fsc(vol[0]*mask,vol[1]*mask, 1.0 )
 	if(nx<nnxo):
 		for i in xrange(3):
-			for k in xrange(nx,nnxo/2+1):
-				nfsc[i][k].append(0.0)
+			for k in xrange(nx/2+1,nnxo/2+1):
+				# nfsc[i][k].append(0.0)
+				nfsc[i].append(0.0)
 		for i in xrange(nnxo/2+1):
 			nfsc[0][i] = float(i)/nnxo
 	write_text_file( nfsc, os.path.join(fscoutputdir,"fsc.txt") )
@@ -334,57 +335,43 @@ def get_pixel_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 	return  round(lowpass,4), round(falloff,4), currentres
 
 
-def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, mask_option, sym, myid, main_node, nproc, pixel=1.0):
+def compute_resolution(projdata, outputdir, partids, partstack, radi, nnxo, CTF, mask_option, sym, myid, main_node, nproc, pixel=1.0):
 	import types
 	vol = [None]*2
 	fsc = [None]*2
-	if( type(stack) == list ):
-		nx = stack[0].get_xsize()
-		nz = stack[0].get_zsize()
-	else:
-		nz = 1
+
 	if(mask_option is None):  mask = model_circle(radi,nnxo,nnxo,nnxo)
 	else:                     mask = get_im(mask_option)
 
-
 	if myid == main_node :
-		print("  compute_resolution    type(stack),outputdir, partids, partstack, radi, nnxo, CTF",type(stack),outputdir, partids, partstack, radi, nnxo, CTF)
+		print("  compute_resolution    type(projdata),outputdir, partids, partstack, radi, nnxo, CTF",type(projdata),outputdir, partids, partstack, radi, nnxo, CTF)
 
-		if( type(stack) == list ):
-			print("  input is a list ", info(stack[0]) )
+	# Initialize size with dummy value
+	nx = -1
+	nz = -1
 
 	for procid in xrange(2):
-		if(type(stack) == str or ( nz == 1 )):
-			if(type(stack) == str):
-				projdata = getindexdata(stack, partids[procid], partstack[procid], myid, nproc)
-			else:
-				projdata = stack
-			if( procid == 0 ):
-				nx = projdata[0].get_xsize()
-				if( nx != nnxo):
-					mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(nnxo)),nx,nx,nx)
-
-			if CTF:
-				from reconstruction import rec3D_MPI
-				vol[procid],fsc[procid] = rec3D_MPI(projdata, symmetry = sym, \
-					mask3D = mask, fsc_curve = None, \
-					myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2)
-			else:
-				from reconstruction import rec3D_MPI_noCTF
-				vol[procid],fsc[procid] = rec3D_MPI_noCTF(projdata, symmetry = sym, \
-					mask3D = mask, fsc_curve = None, \
-					myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2)
-
-			if(type(stack) == str):  del projdata
-		else:
-			#  Volumes
-			vol = stack
-			nx = vol[0].get_xsize()
-			if( nx != nnxo ):
+		if( procid == 0 ):
+			# Assigne current size
+			nx = projdata[procid][0].get_xsize()
+			nz = projdata[procid][0].get_zsize()
+			if( nx != nnxo):
 				mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(nnxo)),nx,nx,nx)
 
+		if CTF:
+			from reconstruction import rec3D_MPI
+			vol[procid],fsc[procid] = rec3D_MPI(projdata[procid], symmetry = sym, \
+				mask3D = mask, fsc_curve = None, \
+				myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2)
+		else:
+			from reconstruction import rec3D_MPI_noCTF
+			vol[procid],fsc[procid] = rec3D_MPI_noCTF(projdata[procid], symmetry = sym, \
+				mask3D = mask, fsc_curve = None, \
+				myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2)
+		
 		if( myid == main_node):
-			vol[procid].write_image(os.path.join(outputdir,"vol%01d.hdf"%procid))
+			# Save the volume with the original size
+			fpol(vol[procid], nnxo, nnxo, nnxo).write_image(os.path.join(outputdir,"vol%01d.hdf"%procid))
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			print(  line,"Generated vol #%01d "%procid)
 
@@ -393,19 +380,19 @@ def compute_resolution(stack, outputdir, partids, partstack, radi, nnxo, CTF, ma
 	icurrentres = 0
 
 	if(myid == main_node):
-		if(type(stack) == str or ( nz == 1 )):
-			if(nx<nnxo):
-				for procid in xrange(2):
-					for i in xrange(3):
-						for k in xrange(nx,nnxo/2+1):
-							fsc[procid][i].append(0.0)
-					for k in xrange(nnxo/2+1):
-						fsc[procid][0][k] = float(k)/nnxo
+		if(nx<nnxo):
+			# Pad the high-frequency of the original size with zeros
 			for procid in xrange(2):
-				#  Compute adjusted within-fsc as 2*f/(1+f)
-				fsc[procid].append(fsc[procid][1][:])
-				for k in xrange(len(fsc[procid][1])):  fsc[procid][-1][k] = 2*fsc[procid][-1][k]/(1.0+fsc[procid][-1][k])
-				write_text_file( fsc[procid], os.path.join(outputdir,"within-fsc%01d.txt"%procid) )
+				for i in xrange(3):
+					for k in xrange(nx/2+1,nnxo/2+1):
+						fsc[procid][i].append(0.0)
+				for k in xrange(nnxo/2+1):
+					fsc[procid][0][k] = float(k)/nnxo
+		for procid in xrange(2):
+			#  Compute adjusted within-fsc as 2*f/(1+f)
+			fsc[procid].append(fsc[procid][1][:])
+			for k in xrange(len(fsc[procid][1])):  fsc[procid][-1][k] = 2*fsc[procid][-1][k]/(1.0+fsc[procid][-1][k])
+			write_text_file( fsc[procid], os.path.join(outputdir,"within-fsc%01d.txt"%procid) )
 		lowpass, falloff, icurrentres = get_pixel_resolution_mrk01(vol, mask, nnxo, outputdir, mask_option)
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print(  line,"Current resolution  %6.2f  %6.2f A  (%d), low-pass filter cut-off %6.2f and fall-off %6.2f"%\
@@ -1241,7 +1228,15 @@ def main():
 		doit, keepchecking = checkstep(outvol, keepchecking, myid, main_node)
 
 		if  doit:
-			xlowpass, xfalloff, xcurrentres = compute_resolution(Tracker["constants"]["stack"], \
+			# NOTE: 2015/06/19 Toshio Moriya
+			# This is temporary solution to continue processing from resolution calculation Again shiringking
+			# However, this process to shrink data is duplication. Need to think a better solution in future.
+			for procid in range(2):
+				projdata[procid], oldshifts[procid] = get_shrink_data(Tracker["constants"]["nnxo"], Tracker["nxinit"], \
+					Tracker["constants"]["stack"], partids[procid], partstack[procid], myid, main_node, nproc, \
+					Tracker["constants"]["CTF"], Tracker["applyctf"], preshift = False, radi = Tracker["constants"]["radius"])
+
+			xlowpass, xfalloff, xcurrentres = compute_resolution(projdata, \
 													Tracker["directory"], partids, partstack, \
 													Tracker["constants"]["radius"], Tracker["constants"]["nnxo"], \
 													Tracker["constants"]["CTF"], Tracker["constants"]["mask3D"], \
