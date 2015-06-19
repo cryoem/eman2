@@ -2377,10 +2377,10 @@ def gather_compacted_EMData_to_root(number_of_all_em_objects_distributed_across_
 		
 		from mpi import mpi_recv, mpi_send, MPI_TAG_UB, mpi_barrier
 		if myid == 0:
-			print "root, receiving from ", sender_id, "  sender_size_of_refrings = ", sender_size_of_refrings
+			# print "root, receiving from ", sender_id, "  sender_size_of_refrings = ", sender_size_of_refrings
 			data = mpi_recv(sender_size_of_refrings,MPI_FLOAT, sender_id, MPI_TAG_UB, MPI_COMM_WORLD)
 		elif sender_id == myid:
-			print "sender_id = ", sender_id, "sender_size_of_refrings = ", sender_size_of_refrings
+			# print "sender_id = ", sender_id, "sender_size_of_refrings = ", sender_size_of_refrings
 			mpi_send(data, sender_size_of_refrings, MPI_FLOAT, 0, MPI_TAG_UB, MPI_COMM_WORLD)
 		
 		mpi_barrier(MPI_COMM_WORLD)

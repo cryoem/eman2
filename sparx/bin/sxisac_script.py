@@ -20,13 +20,16 @@ from math  import  *
 
 from utilities import send_string_to_all
 
+from applications import  ali2d_base
+
 import string
 
 NAME_OF_ORIGINAL_IMAGE_INDEX = "originalid"
 NAME_OF_RUN_DIR = "run"
-NAME_OF_MAIN_DIR = "main"
+NAME_OF_MAIN_DIR = "generation_"
 DIR_DELIM = os.sep
 
+PROGRAM_STATE_VARIABLES = {"isac_generation"}
 
 class ali3d_options:
 	ir     = 1
@@ -78,6 +81,74 @@ def preparing_test_data():
 		
 		
 
+
+# def program_state(current_state, frameinfo, file_name_of_saved_state=None, last_call="", force_starting_execution = False):
+# 	# first call needs to contain file_name_of_saved_state
+# 	# then call is with program_state(locals(), getframeinfo(currentframe()))
+# 	# needs from inspect import currentframe, getframeinfo
+# 	
+# 	from mpi import mpi_comm_rank, mpi_bcast, MPI_COMM_WORLD, mpi_finalize, MPI_INT
+# 	from utilities import store_value_of_simple_vars_in_json_file, if_error_all_processes_quit_program
+# 	
+# 	location_in_program = frameinfo.filename + "_" + str(frameinfo.lineno) + "_" + last_call
+# 
+# 	error_status = 0
+# 
+# 
+# 	if mpi_comm_rank(MPI_COMM_WORLD) == 0:
+# 		if "file_name_of_saved_state" not in program_state.__dict__:
+# 			if type(file_name_of_saved_state) != type(""):
+# 				print "Must provide the file name of saved state as a string in the first call of the function!"
+# 				error_status = 1
+# 				
+# 			program_state.file_name_of_saved_state = file_name_of_saved_state
+# 			program_state.counter = 0
+# 			
+# 			
+# 			if (os.path.exists(file_name_of_saved_state)):
+# 				import json; f = open(file_name_of_saved_state, 'r')
+# 				program_state.saved_state = json.load(f); f.close()
+# 				program_state.start_executing = 0
+# 			else:
+# 				# check to see if file can be created
+# 				f = open(file_name_of_saved_state, "w")
+# 				f.close()
+# 				program_state.start_executing = 1
+# 		else:
+# 			program_state.counter += 1
+# 			current_state["location_in_program"] = location_in_program
+# 			if program_state.start_executing == 1 or last_call != "" or force_starting_execution:
+# 				# import json; f = open(program_state.file_name_of_saved_state, 'w')
+# 				# json.dump(current_state,f); f.close()
+# 				store_value_of_simple_vars_in_json_file(program_state.file_name_of_saved_state, current_state,
+# 				exclude_list_of_vars = ["MPI_COMM_WORLD", "myid"])
+# 				program_state.start_executing = 1
+# 			else:
+# 				for key in set(program_state.saved_state) & set(current_state):
+# 					# print key, current_state[key], program_state.saved_state[key]
+# 					if current_state[key] != program_state.saved_state[key]:
+# 						break
+# 				else:
+# 					program_state.start_executing = 1
+# 					print "////////////////////////////" 
+# 					print "Start executing: ", location_in_program
+# 					print "////////////////////////////"
+# 		
+# 		store_value_of_simple_vars_in_json_file("/home/hvoicu/Analysis/sxisac_scripts/test043/ccc%04d"%program_state.counter, current_state,
+# 				exclude_list_of_vars = ["MPI_COMM_WORLD", "myid"])
+# 		
+# 	else:
+# 		program_state.start_executing = 0
+# 		
+# 	if_error_all_processes_quit_program(error_status)	
+# 		
+# 	program_state.start_executing = mpi_bcast(program_state.start_executing, 1, MPI_INT, 0, MPI_COMM_WORLD)
+# 	program_state.start_executing = int(program_state.start_executing[0])
+# 
+# 	# print "program_state.start_executing ", program_state.start_executing
+# 
+# 	return program_state.start_executing
+
 def program_state(current_state, frameinfo, file_name_of_saved_state=None, last_call="", force_starting_execution = False):
 	# first call needs to contain file_name_of_saved_state
 	# then call is with program_state(locals(), getframeinfo(currentframe()))
@@ -89,15 +160,17 @@ def program_state(current_state, frameinfo, file_name_of_saved_state=None, last_
 	location_in_program = frameinfo.filename + "_" + str(frameinfo.lineno) + "_" + last_call
 
 	error_status = 0
-	
-	
+
+
 	if mpi_comm_rank(MPI_COMM_WORLD) == 0:
 		if "file_name_of_saved_state" not in program_state.__dict__:
 			if type(file_name_of_saved_state) != type(""):
 				print "Must provide the file name of saved state as a string in the first call of the function!"
 				error_status = 1
 				
-			program_state.file_name_of_saved_state = file_name_of_saved_state
+			program_state.file_name_of_saved_state = os.getcwd() + DIR_DELIM + file_name_of_saved_state
+			program_state.counter = 0
+			
 			
 			if (os.path.exists(file_name_of_saved_state)):
 				import json; f = open(file_name_of_saved_state, 'r')
@@ -109,20 +182,31 @@ def program_state(current_state, frameinfo, file_name_of_saved_state=None, last_
 				f.close()
 				program_state.start_executing = 1
 		else:
-			current_state["location_in_program"] = location_in_program
+			program_state.counter += 1
+			reduced_current_state = dict()
+			reduced_current_state["location_in_program"] = location_in_program
+			for var in PROGRAM_STATE_VARIABLES & set(current_state) :
+				reduced_current_state[var] =  current_state[var]
 			if program_state.start_executing == 1 or last_call != "" or force_starting_execution:
 				# import json; f = open(program_state.file_name_of_saved_state, 'w')
 				# json.dump(current_state,f); f.close()
-				store_value_of_simple_vars_in_json_file(program_state.file_name_of_saved_state, current_state,
+				store_value_of_simple_vars_in_json_file(program_state.file_name_of_saved_state, reduced_current_state,
 				exclude_list_of_vars = ["MPI_COMM_WORLD", "myid"])
 				program_state.start_executing = 1
 			else:
-				for key in set(program_state.saved_state) & set(current_state):
+				for key in set(program_state.saved_state) & set(reduced_current_state):
 					# print key, current_state[key], program_state.saved_state[key]
-					if current_state[key] != program_state.saved_state[key]:
+					if reduced_current_state[key] != program_state.saved_state[key]:
 						break
 				else:
 					program_state.start_executing = 1
+					print "////////////////////////////" 
+					print "Start executing: ", location_in_program
+					print "////////////////////////////"
+		
+			store_value_of_simple_vars_in_json_file("/home/hvoicu/Analysis/sxisac_scripts/test043/ccc%04d"%program_state.counter, reduced_current_state,
+				exclude_list_of_vars = ["MPI_COMM_WORLD", "myid"])
+		
 	else:
 		program_state.start_executing = 0
 		
@@ -221,8 +305,8 @@ def main():
 	from isac import iter_isac
 	global_def.BATCH = True
 
-	orgstack = args[0]
-
+	# orgstack = args[0]
+	command_line_provided_stack_filename = args[0]
 
 	radi  = options.ou
 	global_def.BATCH = True
@@ -257,7 +341,6 @@ def main():
 	
 	
 	use_latest_master_directory = options.use_latest_master_directory	
-
 
 	# plan for sxisac_script
 	"""
@@ -296,19 +379,18 @@ def main():
 	
 	program_state(locals(), getframeinfo(currentframe()), "my_state.json")
 
-	if program_state(locals(), getframeinfo(currentframe())):
-		if(myid == main_node):
-			preparing_test_data()
+	# if program_state(locals(), getframeinfo(currentframe())):
+	# 	if(myid == main_node):
+	# 		preparing_test_data()
+	# 
+	# mpi_barrier(MPI_COMM_WORLD)
 
-	mpi_barrier(MPI_COMM_WORLD)
+	# if program_state(locals(), getframeinfo(currentframe()), force_starting_execution = True):
+	# # if 1:		
+	# 	pass
 
-	if program_state(locals(), getframeinfo(currentframe()), force_starting_execution = True):
-	# if 1:		
-		pass
-
-
-	bdb_stack_location = send_string_to_all(bdb_stack_location)
-	bdb_stack_location_for_ali2d = send_string_to_all(bdb_stack_location_for_ali2d)
+	# bdb_stack_location = send_string_to_all(bdb_stack_location)
+	# bdb_stack_location_for_ali2d = send_string_to_all(bdb_stack_location_for_ali2d)
 		
 		
 	# global_def.LOGFILE =  os.path.join(masterdir, global_def.LOGFILE)
@@ -329,6 +411,8 @@ def main():
 
 	# create or reuse master directory
 	masterdir = ""
+	stack_processed_by_ali2d_base__filename = ""
+	stack_processed_by_ali2d_base__filename__without_master_dir = ""
 	error_status = 0
 	if len(args) == 2:
 		masterdir = args[1]
@@ -352,14 +436,16 @@ def main():
 			cmd = "{} {}".format("mkdir", masterdir)
 			cmdexecute(cmd)
 		if os.path.exists(masterdir):
-				bdb_stack_location = args[0]
-				org_stack_location = args[0]
+			# bdb_stack_location = args[0]
+			# org_stack_location = args[0]
 
 			if ':' in args[0]:
-				aligned2d_stack = args[0].split(":")[0] + ":" + masterdir + args[0].split(":")[1]
+				stack_processed_by_ali2d_base__filename = args[0].split(":")[0] + ":" + masterdir + args[0].split(":")[1]
+				stack_processed_by_ali2d_base__filename__without_master_dir = args[0].split(":")[0] + ":" + args[0].split(":")[1]
 			else:
 				filename = os.path.basename(args[0])
-				aligned2d_stack  = "bdb:" + masterdir + os.path.splitext(filename)[0]
+				stack_processed_by_ali2d_base__filename  = "bdb:" + masterdir + os.path.splitext(filename)[0]
+				stack_processed_by_ali2d_base__filename__without_master_dir  = "bdb:" + os.path.splitext(filename)[0]
 		else:
 			# os.path.exists(masterdir) does not exist
 			ERROR('Output directory does not exist, please change the name and restart the program', "sxrviper", 1)
@@ -367,17 +453,17 @@ def main():
 
 	if_error_all_processes_quit_program(error_status)
 				
-
 	# send masterdir to all processes
 	masterdir = send_string_to_all(masterdir)
 	if masterdir[-1] != DIR_DELIM:
 		masterdir += DIR_DELIM
 
+	stack_processed_by_ali2d_base__filename = send_string_to_all(stack_processed_by_ali2d_base__filename)
+	stack_processed_by_ali2d_base__filename__without_master_dir = \
+		send_string_to_all(stack_processed_by_ali2d_base__filename__without_master_dir)
 
+	
 
-
-
-	orgstack = args[0]
 	#  INPUT PARAMETERS
 	radi  = options.ou
 	global_def.BATCH = True
@@ -403,6 +489,13 @@ def main():
 
 	if( ali3d_options.xr == "-1" ):  ali3d_options.xr = "2"
 	
+
+	# mpi_barrier(MPI_COMM_WORLD)
+	# from mpi import mpi_finalize
+	# mpi_finalize()
+	# print "mpi finalize"
+	# from sys import exit
+	# exit()
 
 
 	# ali2d_base
@@ -430,7 +523,7 @@ def main():
 		
 		# Get the pixel size, if none set to 1.0, and the original image size
 		if(myid == main_node):
-			a = get_im(orgstack)
+			a = get_im(command_line_provided_stack_filename)
 			nnxo = a.get_xsize()
 			if( nnxo%2 == 1 ):
 				ERROR("Only even-dimensioned data allowed","sxmeridien",1)
@@ -467,9 +560,9 @@ def main():
 		#  create a vstack from input stack to the local stack in masterdir
 		#  Stack name set to default
 		# stack = "bdb:"+masterdir+"/rdata"
-		stack = bdb_stack_location + "_rdata"
-		stack_for_ali2d = bdb_stack_location_for_ali2d + "_rdata"
-		aligned2d_stack = bdb_stack_location + "_adata"
+		# stack = bdb_stack_location + "_rdata"
+		# stack_for_ali2d = bdb_stack_location_for_ali2d + "_rdata"
+		# stack_processed_by_ali2d_base__filename = bdb_stack_location + "_adata"
 		# Initialization of stacks
 		if(myid == main_node):
 			# if not (os.path.exists(os.path.join(masterdir,"EMAN2DB/rdata.bdb"))):
@@ -478,7 +571,7 @@ def main():
 			# 	cmdexecute(cmd)
 			# 	cmd = "{} {}".format("sxheader.py  --consecutive  --params=originalid", stack)
 			# 	cmdexecute(cmd)
-			number_of_images_in_stack = EMUtil.get_image_count(stack)
+			number_of_images_in_stack = EMUtil.get_image_count(command_line_provided_stack_filename)
 		else:
 			number_of_images_in_stack = 0
 	
@@ -497,7 +590,7 @@ def main():
 			cmd = "mkdir "+log2d.prefix
 			outcome = subprocess.call(cmd, shell=True)
 			log2d.prefix += "/"
-			outcome = subprocess.call("sxheader.py  "+stack+"   --params=xform.align2d  --zero", shell=True)
+			# outcome = subprocess.call("sxheader.py  "+command_line_provided_stack_filename+"   --params=xform.align2d  --zero", shell=True)
 		else:
 			outcome = 0
 			log2d = None
@@ -515,8 +608,8 @@ def main():
 			tss = "1"
 			txr = "%d"%txrm
 
-		from applications import  ali2d_base
-		params2d, aligned_images = ali2d_base(stack, init2dir, None, 1, radi, 1, txr, txr, tss, \
+		
+		params2d, aligned_images = ali2d_base(command_line_provided_stack_filename, init2dir, None, 1, radi, 1, txr, txr, tss, \
 					False, 90.0, -1, 14, options.CTF, 1.0, False, \
 					"ref_ali2d", "", log2d, nproc, myid, main_node, MPI_COMM_WORLD, write_headers = False)
 	
@@ -525,21 +618,32 @@ def main():
 		if( myid == main_node ):
 		
 			for i in range(number_of_images_in_stack):
-				aligned_images[i].write_image(aligned2d_stack, i)
+				aligned_images[i].write_image(stack_processed_by_ali2d_base__filename, i)
 
 			write_text_row(params2d,os.path.join(init2dir, "initial2Dparams.txt"))		
 			# outcome = subprocess.call("sxheader.py  "+stack+"   --params=xform.align2d  --import="+os.path.join(init2dir, "initial2Dparams.txt"), shell=True)
 
 
 		mpi_barrier(MPI_COMM_WORLD)
-	
-
-	from mpi import mpi_finalize
-	mpi_finalize()
-	# import  sys
-	sys.exit()
 
 
+	# # ali2d_base
+	# if program_state(locals(), getframeinfo(currentframe())):
+	# # if 1:
+	# 	pass
+	# 
+	# 
+	# 
+	# 
+	# program_state(locals(), getframeinfo(currentframe()), last_call="LastCall")
+	# 
+	# from mpi import mpi_finalize
+	# mpi_finalize()
+	# # import  sys
+	# sys.exit()
+
+
+	# might not need to use this
 	# create or reuse master directory
 	masterdir = ""
 	bdb_stack_location = ""
@@ -619,75 +723,39 @@ def main():
 		masterdir += DIR_DELIM
 
 
-###############################################################
-						
-	if program_state(locals(), getframeinfo(currentframe())):
-	# if 1:
-		pass
-
-		no_of_processors = mpi_comm_size(MPI_COMM_WORLD)
-		my_rank = mpi_comm_rank(MPI_COMM_WORLD)
-								
-		params2d = read_text_row(os.path.join(init2dir, "initial3Dshifts.txt"))
-		# mask = model_circle( nx//2-2, nx, ny)
-		
-		for i in range(EMUtil.get_image_count(stack)):
-			if (my_rank == i % no_of_processors):
-				img = get_im(stack, i)
-				img = rot_shift2D(img, params2d[i][2], params2d[i][3], params2d[i][4])
-				
-				x_size_of_image = img.get_xsize()
-
-				if radi < 0:
-					radi = (x_size_of_image - 1)/2 - 2 - 5
-					
-				shrink_ratio = 30.0/radi
-				print "shrink_ratio", shrink_ratio
-	
-				needs_windowing = x_size_of_image*shrink_ratio > 64
-				print "needs_windowing", needs_windowing
-				
-				if shrink_ratio < 1:
-					for i in range(EMUtil.get_image_count(rotated_stack)):
-						img  = resample(get_im(rotated_stack, i), shrink_ratio)
-						if needs_windowing:
-							img = Util.window(img, 64,64,1)
-							img.write_image(data64_stack, i)
-						else:
-							img.write_image(data64_stack, i)
-
-				img.write_image(rotated_stack, i)
-						
-						
-						
-###############################################################
-
-
-
-
-
-
 
 	global_def.BATCH = True
 	
-
 	if program_state(locals(), getframeinfo(currentframe())):
 	# if 1:
 		pass
-		data64_stack = "bdb:"+masterdir+"/data64"
 		if (myid == main_node):
-			cmdexecute("e2bdb.py %s --makevstack=%s_001"%(data64_stack, data64_stack))
-
+			cmdexecute("sxheader.py  --consecutive  --params=originalid %s"%stack_processed_by_ali2d_base__filename)
+			cmdexecute("e2bdb.py %s --makevstack=%s_001"%(stack_processed_by_ali2d_base__filename, stack_processed_by_ali2d_base__filename))
 	
-	# # if program_state(locals(), getframeinfo(currentframe())):
+	if program_state(locals(), getframeinfo(currentframe())):
 	# if 1:
-	# 	pass
+		pass
+
+	os.chdir(masterdir + DIR_DELIM)
 
 	# for isac_generation in range(1,10):
-	for isac_generation in range(1,2):
+	for isac_generation in range(1,10):
 		
-		data64_stack_current = data64_stack + "_%03d"%isac_generation    
-		data64_stack_next = data64_stack + "_%03d"%(isac_generation + 1)    
+		data64_stack_current = stack_processed_by_ali2d_base__filename__without_master_dir.split(":")[0]
+		data64_stack_current += ":../" + stack_processed_by_ali2d_base__filename__without_master_dir.split(":")[1]
+		data64_stack_current += "_%03d"%isac_generation    
+
+		data64_stack_next = stack_processed_by_ali2d_base__filename__without_master_dir.split(":")[0]
+		data64_stack_next += ":../" + stack_processed_by_ali2d_base__filename__without_master_dir.split(":")[1]
+		data64_stack_next += "_%03d"%(isac_generation + 1)
+		
+		
+		if (myid == main_node):
+			cmdexecute("mkdir -p " + NAME_OF_MAIN_DIR + "%04d"%isac_generation + DIR_DELIM)
+			
+		mpi_barrier(MPI_COMM_WORLD)
+		os.chdir(NAME_OF_MAIN_DIR + "%04d"%isac_generation + DIR_DELIM)
 
 		if (myid == main_node):
 			print "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
@@ -708,27 +776,32 @@ def main():
 		if program_state(locals(), getframeinfo(currentframe())):
 		# if 1:
 			pass
+
 			if (myid == main_node):
 				
-				number_of_accounted_images = sum(1 for line in open("generation_%d_accounted.txt"%isac_generation))
-				number_of_unaccounted_images = sum(1 for line in open("generation_%d_unaccounted.txt"%isac_generation))
+				# number_of_accounted_images = sum(1 for line in open("generation_%04d/generation_%d_accounted.txt"%(isac_generation, isac_generation))
+				# number_of_unaccounted_images = sum(1 for line in open("generation_%04d/generation_%d_unaccounted.txt"%(isac_generation, isac_generation))
+				number_of_accounted_images = sum(1 for line in open("generation_%d_accounted.txt"%(isac_generation)))
+				number_of_unaccounted_images = sum(1 for line in open("generation_%d_unaccounted.txt"%(isac_generation)))
 				
 				if number_of_accounted_images == 0:
-					error_status = 0
+					error_status = 1
 					break
 		
 				if number_of_unaccounted_images < 5*options.img_per_grp:
-					error_status = 0
+					error_status = 1
 					break
 				
-				cmdexecute("e2bdb.py %s --makevstack=%s --list=generation_%d_unaccounted.txt"%(data64_stack_current, data64_stack_next, isac_generation))
+				# cmdexecute("e2bdb.py %s --makevstack=%s --list=%s%04d/generation_%d_unaccounted.txt"%
+				# 		   (data64_stack_current, data64_stack_next, NAME_OF_MAIN_DIR, isac_generation, isac_generation))
+				cmdexecute("e2bdb.py %s --makevstack=%s --list=this_generation_%d_unaccounted.txt"%
+						   (data64_stack_current, data64_stack_next, isac_generation))
+	
+			os.chdir("..")
 				
 			if_error_all_processes_quit_program(error_status)
 		
-	
-
 	global_def.BATCH = False
-
 
 	if program_state(locals(), getframeinfo(currentframe())):
 	# if 1:
