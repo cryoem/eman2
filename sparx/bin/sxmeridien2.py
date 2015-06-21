@@ -1283,7 +1283,7 @@ def main():
 				write_text_row( [pinids[i][1] for i in xrange(len(pinids))], os.path.join(Tracker["directory"] ,"params.txt"))
 			mpi_barrier(MPI_COMM_WORLD)
 			nfsc = read_fsc(os.path.join(Tracker["directory"] ,"fsc.txt"),Tracker["constants"]["nnxo"], myid, main_node)
-			Tracker["lowpass"], Tracker["falloff"] = fit_tanh1([[float(i)/Tracker["constants"]["nnxo"] for i in xrange(len(nfsc))],nfsc], 0.01)
+			Tracker["lowpass"], Tracker["falloff"] = fit_tanh([[float(i)/Tracker["constants"]["nnxo"] for i in xrange(len(nfsc))],nfsc], 0.01)
 			del nfsc
 
 			#  Here something will have to be done.  The idea is to have a presentable structure at full size.

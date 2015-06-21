@@ -722,7 +722,7 @@ def fit_tanh1(dres, low = 0.1):
 	setzero = False
 	for i in xrange(1,len(dres[0])):
 		if not setzero:
-			if(2*dres[1][i]/(1.0+dres[1][i]) <low):  setzero = True
+			if(dres[1][i] <low):  setzero = True
 		if setzero:  dres[1][i] = 0.0
 
 	freq = -1.0

@@ -267,7 +267,7 @@ def eqproj_cascaded_ccc(args, data):
 	refprj.process_inplace("normalize.mask", {"mask":mask2D, "no_sigma":1})
 	Util.mul_img(refprj, mask2D)
 
-	product = ccf(fpol(refprj, MM, MM, 0, False), data[4])
+	product = ccf(fpol(refprj, MM, MM, 1, False), data[4])
 	nx = product.get_ysize()
 	sx = nx//2
 	sy = sx

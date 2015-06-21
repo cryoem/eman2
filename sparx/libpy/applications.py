@@ -7577,7 +7577,7 @@ def local_ali3dm_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25,
 						finfo.flush()
 				else:
 					refi = img.process( "normalize.mask", {"mask":mask2D, "no_sigma":0} )
-					refi = refi.FourInterpol(nx*2,nx*2,0,True)
+					refi = refi.FourInterpol(nx*2,nx*2,1,True)
 					refi = Processor.EMFourierFilter(refi, refiparams)
 					refdata = [None]*7
 					refdata[0] = volft
@@ -7972,7 +7972,7 @@ def local_ali3dm_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, 
 						finfo.flush()
 				else:
 					refi = img.process( "normalize.mask", {"mask":mask2D, "no_sigma":0} )
-					refi = refi.FourInterpol(nx*2,nx*2,0,True)
+					refi = refi.FourInterpol(nx*2,nx*2,1,True)
 					refi = Processor.EMFourierFilter(refi, refiparams)
 					refdata = [None]*7
 					refdata[0] = volft
