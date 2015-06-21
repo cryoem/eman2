@@ -9417,7 +9417,7 @@ def slocal_ali3d_base_MPI(stack, templatevol, ali3d_options, \
 		bcast_EMData_to_all(vol, myid, main_node)
 		del templatevol
 		#  Do the 3D
-		vol = do_volume(dataim, ali3d_options, 0, mpi_comm)
+		vol = do_volume(vol, ali3d_options, 0, mpi_comm)
 	else:
 		vol = None
 

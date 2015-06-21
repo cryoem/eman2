@@ -672,7 +672,7 @@ def get_shrink_data(onx, nx, stack, partids, partstack, myid, main_node, nproc, 
 
 
 def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid, myid, main_node, nproc):
-	from development import sali3d_base_mrk01
+	from development import sali3d_base_mrk01, slocal_ali3d_base_MPI_mrk01
 	#  Takes preshrunk data and does the refinement as specified in Tracker
 	#
 	#  Will create outputdir
@@ -702,9 +702,12 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 	if(Tracker["radius"] < 2):
 		ERROR( "ERROR!!   lastring too small  %f    %f   %d"%(Tracker["radius"], Tracker["constants"]["radius"]), "sxmeridien",1, myid)
 	Tracker["lowpass"] = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
-	delta = "%f  "%min(round(degrees(atan(0.5/Tracker["lowpass"]/Tracker["radius"])), 2), 3.0)
-	Tracker["delta"] = ""
-	for i in xrange(len(get_input_from_string(Tracker["xr"]))):  Tracker["delta"] += delta
+	if  Tracker["local"]:
+		delta = "2.0"
+	else:
+		delta = "%f  "%min(round(degrees(atan(0.5/Tracker["lowpass"]/Tracker["radius"])), 2), 3.0)
+		Tracker["delta"] = ""
+		for i in xrange(len(get_input_from_string(Tracker["xr"]))):  Tracker["delta"] += delta
 	Tracker["pixercutoff"] = get_pixercutoff(Tracker["radius"], float(delta), 0.5)
 
 	Tracker["zoom"] = False
@@ -726,7 +729,6 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 
 	#  Run alignment command
 	if(Tracker["local"]):
-		# Does it shrink initial volume?
 		params = slocal_ali3d_base_MPI_mrk01(projdata, get_im(Tracker["refvol"]), \
 						Tracker, mpi_comm = MPI_COMM_WORLD, log = log, \
 		    			chunk = 0.25, \
@@ -918,7 +920,7 @@ def main():
 	Tracker["previousoutputdir"] = ""
 	Tracker["movedup"]       = False
 	Tracker["eliminated-outliers"] = False
-	Tracker["mainteration"]  = 0
+	Tracker["mainiteration"]  = 0
 
 	# ------------------------------------------------------------------------------------
 	#  PARAMETERS OF THE PROCEDURE 
