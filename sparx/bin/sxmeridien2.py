@@ -281,7 +281,7 @@ def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 	return  round(lowpass,4), round(falloff,4), round(currentres,2)
 
 
-def get_pixel_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
+def get_pixel_resolution(vol, radi, nnxo, fscoutputdir, mask_option):
 	# this function is single processor
 	#  Get updated FSC curves, user can also provide a mask using radi variable
 	import types
@@ -295,9 +295,8 @@ def get_pixel_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 	nfsc = fsc(vol[0]*mask,vol[1]*mask, 1.0 )
 	if(nx<nnxo):
 		for i in xrange(3):
-			for k in xrange(nx/2+1,nnxo/2+1):
-				# nfsc[i][k].append(0.0)
-				nfsc[i].append(0.0)
+			for k in xrange(nx//2+1,nnxo/2+1):
+				nfsc[i][k].append(0.0)
 		for i in xrange(nnxo/2+1):
 			nfsc[0][i] = float(i)/nnxo
 	write_text_file( nfsc, os.path.join(fscoutputdir,"fsc.txt") )
@@ -335,65 +334,83 @@ def get_pixel_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 	return  round(lowpass,4), round(falloff,4), currentres
 
 
-def compute_resolution(projdata, outputdir, partids, partstack, radi, nnxo, CTF, mask_option, sym, myid, main_node, nproc, pixel=1.0):
+def compute_resolution(stack, outputdir, partids, partstack, org_radi, nnxo, CTF, mask_option, sym, myid, main_node, nproc, pixel=1.0):
 	import types
 	vol = [None]*2
 	fsc = [None]*2
-
-	if(mask_option is None):  mask = model_circle(radi,nnxo,nnxo,nnxo)
+	if( type(stack[0]) == list ):
+		nx = stack[0][0].get_xsize()
+		nz = stack[0][0].get_zsize()
+	else:
+		nz = 1
+	if(mask_option is None):  mask = model_circle(org_radi,nnxo,nnxo,nnxo)
 	else:                     mask = get_im(mask_option)
 
+
 	if myid == main_node :
-		print("  compute_resolution    type(projdata),outputdir, partids, partstack, radi, nnxo, CTF",type(projdata),outputdir, partids, partstack, radi, nnxo, CTF)
+		print("  compute_resolution    type(stack),outputdir, partids, partstack, radi, nnxo, CTF",type(stack),outputdir, partids, partstack, radi, nnxo, CTF)
 
-	# Initialize size with dummy value
-	nx = -1
-	nz = -1
-
+		if( type(stack[0]) == list ):
+			print("  input is a list ", info(stack[0]) )
+	projdata = []
 	for procid in xrange(2):
-		if( procid == 0 ):
-			# Assigne current size
-			nx = projdata[procid][0].get_xsize()
-			nz = projdata[procid][0].get_zsize()
-			if( nx != nnxo):
+		if(type(stack[0]) == str or ( nz == 1 )):
+			if(type(stack[0]) == str):
+				projdata.append(getindexdata(stack, partids[procid], partstack[procid], myid, nproc))
+			else:
+				projdata.append(None)
+				projdata[procid] = stack[procid]
+			if( procid == 0 ):
+				nx = projdata[0].get_xsize()
+				if( nx != nnxo):
+					mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(nnxo)),nx,nx,nx)
+
+			if CTF:
+				from reconstruction import rec3D_MPI
+				vol[procid],fsc[procid] = rec3D_MPI(projdata[procid], symmetry = sym, \
+					mask3D = mask, fsc_curve = None, \
+					myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2)
+			else:
+				from reconstruction import rec3D_MPI_noCTF
+				vol[procid],fsc[procid] = rec3D_MPI_noCTF(projdata[procid], symmetry = sym, \
+					mask3D = mask, fsc_curve = None, \
+					myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2)
+
+			if(type(stack) == str):  del projdata
+		else:
+			#  Volumes
+			vol[procid] = stack[procid]
+			nx = vol[0].get_xsize()
+			if( nx != nnxo ):
 				mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(nnxo)),nx,nx,nx)
 
-		if CTF:
-			from reconstruction import rec3D_MPI
-			vol[procid],fsc[procid] = rec3D_MPI(projdata[procid], symmetry = sym, \
-				mask3D = mask, fsc_curve = None, \
-				myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2)
-		else:
-			from reconstruction import rec3D_MPI_noCTF
-			vol[procid],fsc[procid] = rec3D_MPI_noCTF(projdata[procid], symmetry = sym, \
-				mask3D = mask, fsc_curve = None, \
-				myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2)
-		
 		if( myid == main_node):
-			# Save the volume with the original size
+			from fundamentals import fpol
 			fpol(vol[procid], nnxo, nnxo, nnxo).write_image(os.path.join(outputdir,"vol%01d.hdf"%procid))
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			print(  line,"Generated vol #%01d "%procid)
+
 
 	lowpass    = 0.0
 	falloff    = 0.0
 	icurrentres = 0
 
 	if(myid == main_node):
-		if(nx<nnxo):
-			# Pad the high-frequency of the original size with zeros
+		if(type(stack) == str or ( nz == 1 )):
+			if(nx<nnxo):
+				for procid in xrange(2):
+					for i in xrange(3):
+						for k in xrange(nx/2+1, nnxo/2+1):
+							fsc[procid][i].append(0.0)
+					for k in xrange(nnxo/2+1):
+						fsc[procid][0][k] = float(k)/nnxo
 			for procid in xrange(2):
-				for i in xrange(3):
-					for k in xrange(nx/2+1,nnxo/2+1):
-						fsc[procid][i].append(0.0)
-				for k in xrange(nnxo/2+1):
-					fsc[procid][0][k] = float(k)/nnxo
-		for procid in xrange(2):
-			#  Compute adjusted within-fsc as 2*f/(1+f)
-			fsc[procid].append(fsc[procid][1][:])
-			for k in xrange(len(fsc[procid][1])):  fsc[procid][-1][k] = 2*fsc[procid][-1][k]/(1.0+fsc[procid][-1][k])
-			write_text_file( fsc[procid], os.path.join(outputdir,"within-fsc%01d.txt"%procid) )
-		lowpass, falloff, icurrentres = get_pixel_resolution_mrk01(vol, mask, nnxo, outputdir, mask_option)
+				#  Compute adjusted within-fsc as 2*f/(1+f)
+				fsc[procid].append(fsc[procid][1][:])
+				for k in xrange(len(fsc[procid][1])):  fsc[procid][-1][k] = 2*fsc[procid][-1][k]/(1.0+fsc[procid][-1][k])
+				write_text_file( fsc[procid], os.path.join(outputdir,"within-fsc%01d.txt"%procid) )
+
+		lowpass, falloff, icurrentres = get_pixel_resolution(vol, mask, nnxo, outputdir, mask_option)
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print(  line,"Current resolution  %6.2f  %6.2f A  (%d), low-pass filter cut-off %6.2f and fall-off %6.2f"%\
 						(icurrentres/float(nnxo),pixel*float(nnxo)/float(icurrentres),icurrentres,lowpass,falloff))
@@ -702,7 +719,7 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 	if(Tracker["radius"] < 2):
 		ERROR( "ERROR!!   lastring too small  %f    %f   %d"%(Tracker["radius"], Tracker["constants"]["radius"]), "sxmeridien",1, myid)
 	Tracker["lowpass"] = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
-	if  Tracker["local"]:
+	if(Tracker["local"]):
 		delta = "2.0"
 	else:
 		delta = "%f  "%min(round(degrees(atan(0.5/Tracker["lowpass"]/Tracker["radius"])), 2), 3.0)
@@ -730,8 +747,8 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 	#  Run alignment command
 	if(Tracker["local"]):
 		params = slocal_ali3d_base_MPI_mrk01(projdata, get_im(Tracker["refvol"]), \
-						Tracker, mpi_comm = MPI_COMM_WORLD, log = log, \
-		    			chunk = 0.25, \
+					Tracker, mpi_comm = MPI_COMM_WORLD, log = log, \
+		    			chunk = 1.0, \
 		    			saturatecrit = Tracker["saturatecrit"], pixercutoff =  Tracker["pixercutoff"])
 	else: params = sali3d_base_mrk01(projdata, ref_vol, \
 						Tracker, mpi_comm = MPI_COMM_WORLD, log = log, \
@@ -1206,18 +1223,21 @@ def main():
 					Tracker["saturatecrit"] = 0.95
 					#Tracker["pixercutoff"]  = 0.5
 					Tracker["xr"] = "2.0"
-					Tracker["maxit"] = 5 #  ?? Lucky guess
+					#Tracker["maxit"] = 5 #  ?? Lucky guess
 				else:
 					Tracker["saturatecrit"] = 0.95
 					Tracker["pixercutoff"]  = 0.5
-					Tracker["maxit"] = 50 #  ?? Lucky guess
+					#Tracker["maxit"] = 50 #  ?? Lucky guess
 
 			if  doit:
 				mpi_barrier(MPI_COMM_WORLD)
-				if( Tracker["nxinit"] != projdata[procid][0].get_xsize() ):  \
+				if( Tracker["nxinit"] != projdata[procid][0].get_xsize() ):
+					projdata[procid] = []
 					projdata[procid], oldshifts[procid] = get_shrink_data(Tracker["constants"]["nnxo"], Tracker["nxinit"], \
 						Tracker["constants"]["stack"], partids[procid], partstack[procid], myid, main_node, nproc, \
 						Tracker["constants"]["CTF"], Tracker["applyctf"], preshift = False, radi = Tracker["constants"]["radius"])
+
+				# METAMOVE
 				metamove(projdata[procid], oldshifts[procid], Tracker, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
 		# Update HISTORY
 		HISTORY.append(Tracker.copy())
@@ -1230,19 +1250,27 @@ def main():
 		doit, keepchecking = checkstep(outvol, keepchecking, myid, main_node)
 
 		if  doit:
-			# NOTE: 2015/06/19 Toshio Moriya
-			# This is temporary solution to continue processing from resolution calculation Again shiringking
-			# However, this process to shrink data is duplication. Need to think a better solution in future.
-			for procid in range(2):
-				projdata[procid], oldshifts[procid] = get_shrink_data(Tracker["constants"]["nnxo"], Tracker["nxinit"], \
-					Tracker["constants"]["stack"], partids[procid], partstack[procid], myid, main_node, nproc, \
-					Tracker["constants"]["CTF"], Tracker["applyctf"], preshift = False, radi = Tracker["constants"]["radius"])
+			#  Projections have to be read
+			repeat = True
+			nxinit = Tracker["nxinit"]
+			while  repeat:
+				if( nxinit != projdata[procid][0].get_xsize() ):
+					projdata = [[],[]]
+					for procid in xrange(2):
+						projdata[procid], oldshifts[procid] = get_shrink_data(Tracker["constants"]["nnxo"], nxinit, \
+							Tracker["constants"]["stack"], partids[procid], partstack[procid], myid, main_node, nproc, \
+							Tracker["constants"]["CTF"], Tracker["applyctf"], preshift = False, radi = Tracker["constants"]["radius"])
 
-			xlowpass, xfalloff, xcurrentres = compute_resolution(projdata, \
+				xlowpass, xfalloff, xcurrentres = compute_resolution(projdata, \
 													Tracker["directory"], partids, partstack, \
 													Tracker["constants"]["radius"], Tracker["constants"]["nnxo"], \
 													Tracker["constants"]["CTF"], Tracker["constants"]["mask3D"], \
 													Tracker["constants"]["sym"], myid, main_node, nproc, Tracker["constants"]["pixel_size"])
+				if( xcurrentres > (nxinit-cushion)/2 and nxinit < Tracker["constants"]["nnxo"] ):
+					nxinit = Tracker["constants"]["nnxo"]
+					projdata = [[model_blank(1,1)], [model_blank(1,1)]]
+				else:  repeat = False
+				
 			del xlowpass, xfalloff, xcurrentres
 			if( myid == main_node):
 				# Carry over chunk information
@@ -1283,19 +1311,19 @@ def main():
 				write_text_row( [pinids[i][1] for i in xrange(len(pinids))], os.path.join(Tracker["directory"] ,"params.txt"))
 			mpi_barrier(MPI_COMM_WORLD)
 			nfsc = read_fsc(os.path.join(Tracker["directory"] ,"fsc.txt"),Tracker["constants"]["nnxo"], myid, main_node)
-			Tracker["lowpass"], Tracker["falloff"] = fit_tanh([[float(i)/Tracker["constants"]["nnxo"] for i in xrange(len(nfsc))],nfsc], 0.01)
+			Tracker["lowpass"], Tracker["falloff"] = fit_tanh1([[float(i)/Tracker["constants"]["nnxo"] for i in xrange(len(nfsc))],nfsc], 0.01)
 			del nfsc
 
 			#  Here something will have to be done.  The idea is to have a presentable structure at full size.
 			#  However, the data is in smaller window.  O possibility would be to compute structure in smaller window and then pad it
 			#  in Fourier space with zero to the full size.
 			#
-			projdata = getindexdata(Tracker["constants"]["stack"], os.path.join(Tracker["directory"] ,"indexes.txt"), \
+			if not projdata[0]:
+				projdata = getindexdata(Tracker["constants"]["stack"], os.path.join(Tracker["directory"] ,"indexes.txt"), \
 						os.path.join(Tracker["directory"] ,"params.txt"), myid, nproc)
 			volf = do_volume_mrk01(projdata, Tracker, mainiteration, mpi_comm = MPI_COMM_WORLD)
-			projdata = [[model_blank(1,1)],[model_blank(1,1)]]
 			if(myid == main_node):
-				volf.write_image(os.path.join(Tracker["directory"] ,"volf.hdf"))
+				fpol(volf, Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"] ,"volf.hdf"))
 
 
 		#mpi_barrier(MPI_COMM_WORLD)
@@ -1338,7 +1366,7 @@ def main():
 			Tracker["xr"] = "3"
 			Tracker["ts"] = "1"
 			keepgoing = 1
-		elif(Tracker["mainiteration"] > 3):
+		elif(Tracker["mainiteration"] > 3 and Tracker["mainiteration"]<9):
 			Tracker["nsoft"] = 0
 			if(Tracker["mainiteration"] > 4  and Tracker["icurrentres"] > icurrentres):  keepgoing = 0
 			elif(Tracker["icurrentres"] < icurrentres):
@@ -1367,7 +1395,55 @@ def main():
 				Tracker["xr"] = "6 3"
 				Tracker["ts"] = "2 1"
 				keepgoing = 1
-				
+		elif(Tracker["mainiteration"] > 8 and Tracker["PWadjustment"] ):
+			Tracker["PWadjustment"] = Tracker["constants"]["pwreference"]
+			nxinit = Tracker["nxinit"]
+			while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
+			#  Window size changed, reset projdata
+			if(nxinit> Tracker["nxinit"]):  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
+			Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
+			if(Tracker["mainiteration"] > 12):  Tracker["nxinit"] = Tracker["constants"]["nnxo"]
+			Tracker["icurrentres"] = icurrentres
+			Tracker["zoom"] = False
+			Tracker["an"] = "-1"#"5.0"
+			Tracker["local"] = True
+			Tracker["maxit"] = 3
+			Tracker["xr"] = "2"
+			Tracker["ts"] = "2"
+			Tracker["applyctf"]     = False
+			keepgoing = 1
+
+			"""
+			if(Tracker["icurrentres"] < icurrentres):
+                                nxinit = Tracker["nxinit"]
+                                while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
+                                #  Window size changed, reset projdata
+                                if(nxinit> Tracker["nxinit"]):  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
+                                Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
+                                Tracker["icurrentres"] = icurrentres
+                                Tracker["zoom"] = False
+				Tracker["an"] = "5.0"
+                                #  Develop something intelligent
+                                Tracker["xr"] = "2"
+                                Tracker["ts"] = "0.5"
+                                keepgoing = 1
+                        elif(Tracker["icurrentres"] == icurrentres):
+                                # turn on local searches
+                                Tracker["PWadjustment"] = Tracker["constants"]["pwreference"]
+                                nxinit = Tracker["nxinit"]
+                                while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
+                                #  Window size changed, reset projdata
+                                if(nxinit> Tracker["nxinit"]):  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
+                                Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
+                                Tracker["icurrentres"] = icurrentres
+                                Tracker["zoom"] = False
+				Tracker["an"] = "-1"#"5.0"
+				Tracker["maxit"] = 1
+                                #  Develop something intelligent
+                                Tracker["xr"] = "3"
+                                Tracker["ts"] = "1"
+                                keepgoing = 1
+			"""
 		"""
 		test_outliers = True
 		eliminated_outliers = False

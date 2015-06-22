@@ -262,9 +262,9 @@ def main():
 				relion_params_proj3d = Transform({'phi':relion_rot, 'theta':relion_tilt, 'omega':relion_psi, 'tx':relion_tx, 'ty':relion_ty, 'type':'mrc', 'tz':0})
 				sparx_params_proj3d = relion_params_proj3d.get_params('spider')
 				sparx_phi   = sparx_params_proj3d['phi']
-				sparx_theta = sparx_params_proj3d['theta'] 
+				sparx_theta = sparx_params_proj3d['theta']
 				sparx_psi   = sparx_params_proj3d['psi']
-				sparx_s2x   = sparx_params_proj3d['tx'] 
+				sparx_s2x   = sparx_params_proj3d['tx']
 				sparx_s2y   = sparx_params_proj3d['ty']
 				
 				# list_sparx_params_proj3d.append([sparx_phi, sparx_theta, sparx_psi, sparx_s2x, sparx_s2y])
