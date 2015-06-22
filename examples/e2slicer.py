@@ -159,95 +159,104 @@ def main():
 	'''
 	
 	sliceRs = []
-	a=EMData(options.input,0)
-	nx=a['nx']
-	ny=a['ny']
-	nz=a['nz']
 	
-	if options.onlymidz:	
-		rmidz=Region(0, 0, nz/2, nx, ny, 1)
-		print "The region for the orthogonal y slice is", rmidz
-		slicemidz=a.get_clip(rmidz)
-		slicemidz.write_image(options.path + '/' + options.input.replace('.','_SLICEmidz.'),0)
+	n = EMUtil.get_image_count( options.input )
 	
-	elif options.onlymidx:
-		rmidx=Region(nx/2, 0, 0, 1, ny, nz)
-		print "The region for the orthogonal y slice is", rmidx
+	for i in range(n):
+	
+		a=EMData(options.input,0)
+		nx=a['nx']
+		ny=a['ny']
+		nz=a['nz']
+		
+		ptcltag = ''
+		if n > 1:
+			ptcltag = + '_ptcl' + str(i).zfill( len( str(n) ))
+	
+		if options.onlymidz:	
+			rmidz=Region(0, 0, nz/2, nx, ny, 1)
+			print "The region for the orthogonal y slice is", rmidz
+			slicemidz=a.get_clip(rmidz)
+			slicemidz.write_image(options.path + '/' + options.input.replace('.',ptcltag+'_SLICEmidz.'),0)
+	
+		elif options.onlymidx:
+			rmidx=Region(nx/2, 0, 0, 1, ny, nz)
+			print "The region for the orthogonal y slice is", rmidx
 
-		slicemidx=a.get_clip(rmidx)
-		slicemidx.write_image(options.path + '/' + options.input.replace('.','_SLICEmidx.'),0)
+			slicemidx=a.get_clip(rmidx)
+			slicemidx.write_image(options.path + '/' + options.input.replace('.',ptcltag+'_SLICEmidx.'),0)
 			
-	elif options.onlymidy:
-		rmidy=Region(0, ny/2, 0, nx, 1, nz)
-		print "The region for the orthogonal y slice is", rmidy
-		slicemidy=a.get_clip(rmidy)
-		slicemidy.write_image(options.path + '/' + options.input.replace('.','_SLICEmidy.'),0)
-	else:
+		elif options.onlymidy:
+			rmidy=Region(0, ny/2, 0, nx, 1, nz)
+			print "The region for the orthogonal y slice is", rmidy
+			slicemidy=a.get_clip(rmidy)
+			slicemidy.write_image(options.path + '/' + options.input.replace('.',ptcltag+'_SLICEmidy.'),0)
+		else:
 	
-		#regions={}
-		if not options.orthogonaloff:
-			print "Generating orthogonal slices"
-			rmidz = Region(0, 0, nz/2, nx, ny, 1)
-			rmidx = Region(nx/2, 0, 0, 1, ny, nz)
-			rmidy = Region(0, ny/2, 0, nx, 1, nz)
-			#tz = Transform({'type':'eman','az':0,'alt':0,'phi':0})
+			#regions={}
+			if not options.orthogonaloff:
+				print "Generating orthogonal slices"
+				rmidz = Region(0, 0, nz/2, nx, ny, 1)
+				rmidx = Region(nx/2, 0, 0, 1, ny, nz)
+				rmidy = Region(0, ny/2, 0, nx, 1, nz)
+				#tz = Transform({'type':'eman','az':0,'alt':0,'phi':0})
 
-			regions={0:rmidz,1:rmidx,2:rmidy}
-			#k=0
-			for kk in regions:
-				z=1
-				if kk == 0:
-					x=nx
-					y=ny
+				regions={0:rmidz,1:rmidx,2:rmidy}
+				#k=0
+				for kk in regions:
+					z=1
+					if kk == 0:
+						x=nx
+						y=ny
 				
-				elif kk == 1:
-					x=nz
-					y=ny
+					elif kk == 1:
+						x=nz
+						y=ny
 					
-				elif kk == 2:
-					x=nx
-					y=nz
+					elif kk == 2:
+						x=nx
+						y=nz
 				
-				#if options.threed2threed or options.threed2twod:
-				#d = EMData()
-				#d.read_image(options.input, 0, False, regions[tag])
+					#if options.threed2threed or options.threed2twod:
+					#d = EMData()
+					#d.read_image(options.input, 0, False, regions[tag])
 				
-				print "I have extracted this orthogonal region", regions[kk]
-				slice = a.get_clip(regions[kk])
-				slice.set_size(x,y,1)
-				slice.write_image(options.path + '/' + options.input.replace('.','_SLICESortho.'),kk)
-				print "The mean and index are", slice['mean'],kk
-				#k+=1
+					print "I have extracted this orthogonal region", regions[kk]
+					slice = a.get_clip(regions[kk])
+					slice.set_size(x,y,1)
+					slice.write_image(options.path + '/' + options.input.replace('.',ptcltag+'_SLICESortho.'),kk)
+					print "The mean and index are", slice['mean'],kk
+					#k+=1
 				
-		if options.allz:
-			print "Generating all z slices"
-			tz = Transform({'type':'eman','az':0,'alt':0,'phi':0})
-			outname = options.path + '/' + options.input.replace('.','_SLICESz.')
-			os.system('e2proc2d.py ' + options.input + ' ' + outname + ' --threed2twod')
+			if options.allz:
+				print "Generating all z slices"
+				tz = Transform({'type':'eman','az':0,'alt':0,'phi':0})
+				outname = options.path + '/' + options.input.replace('.',ptcltag+'_SLICESz.')
+				os.system('e2proc2d.py ' + options.input + ' ' + outname + ' --threed2twod')
 		
-		if options.allx:
-			print "Generating all x slices"
-			tx = Transform({'type':'eman','az':0,'alt':-90,'phi':0})
-			volx=a.copy()
-			volx.transform(tx)
-			rotvolxname = options.path + '/' + options.input.replace('.', 'rotx.')
-			volx.write_image(rotvolxname,0)
+			if options.allx:
+				print "Generating all x slices"
+				tx = Transform({'type':'eman','az':0,'alt':-90,'phi':0})
+				volx=a.copy()
+				volx.transform(tx)
+				rotvolxname = options.path + '/' + options.input.replace('.', ptcltag+'rotx.')
+				volx.write_image(rotvolxname,0)
 			
-			outname = options.path + '/' + options.input.replace('.','_SLICESx.')
+				outname = options.path + '/' + options.input.replace('.',ptcltag+'_SLICESx.')
 			
-			os.system('e2proc2d.py ' + rotvolxname + ' ' + outname + ' --threed2twod')
+				os.system('e2proc2d.py ' + rotvolxname + ' ' + outname + ' --threed2twod')
 		
-		if options.ally:	
-			print "Generating all y slices"
-			ty = Transform({'type':'eman','az':-90,'alt':-90,'phi':0})
-			voly=a.copy()
-			voly.transform(ty)
-			rotvolyname = options.path + '/' + options.input.replace('.', 'roty.')
-			voly.write_image(rotvolyname,0)
+			if options.ally:	
+				print "Generating all y slices"
+				ty = Transform({'type':'eman','az':-90,'alt':-90,'phi':0})
+				voly=a.copy()
+				voly.transform(ty)
+				rotvolyname = options.path + '/' + options.input.replace('.', ptcltag+'roty.')
+				voly.write_image(rotvolyname,0)
 			
-			outname = options.path + '/' + options.input.replace('.','_SLICESy.')
+				outname = options.path + '/' + options.input.replace('.',ptcltag+'_SLICESy.')
 			
-			os.system('e2proc2d.py ' + rotvolyname + ' ' + outname + ' --threed2twod')
+				os.system('e2proc2d.py ' + rotvolyname + ' ' + outname + ' --threed2twod')
 			
 	return()	
 
