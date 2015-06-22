@@ -296,7 +296,7 @@ def get_pixel_resolution(vol, radi, nnxo, fscoutputdir, mask_option):
 	if(nx<nnxo):
 		for i in xrange(3):
 			for k in xrange(nx//2+1,nnxo/2+1):
-				nfsc[i][k].append(0.0)
+				nfsc[i].append(0.0)
 		for i in xrange(nnxo/2+1):
 			nfsc[0][i] = float(i)/nnxo
 	write_text_file( nfsc, os.path.join(fscoutputdir,"fsc.txt") )
@@ -1244,9 +1244,9 @@ def main():
 		partstack = [None]*2
 		for procid in xrange(2):  partstack[procid] = os.path.join(Tracker["directory"], "params-chunk%01d.txt"%procid)
 
-		#  check it for the first, if it does not exist, run the program
+		#  Due to efficiency reasons, we have to check it for the volf, if it does not exist, estimate the resolution and compute volf
 		outvol = os.path.join(Tracker["directory"] ,"current_resolution.txt")
-		doit, keepchecking = checkstep(outvol, keepchecking, myid, main_node)
+		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"volf.hdf"), keepchecking, myid, main_node)
 
 		if  doit:
 			#  Projections have to be read
@@ -1269,7 +1269,7 @@ def main():
 					nxinit = Tracker["constants"]["nnxo"]
 					projdata = [[model_blank(1,1)], [model_blank(1,1)]]
 				else:  repeat = False
-				
+
 			del xlowpass, xfalloff, xcurrentres
 			if( myid == main_node):
 				# Carry over chunk information
@@ -1278,23 +1278,9 @@ def main():
 											os.path.join(Tracker["directory"],"chunk%01d.txt"%procid) )
 					cmdexecute(cmd)
 
-		if( myid == main_node):
-			[newlowpass, newfalloff, icurrentres] = read_text_row( os.path.join(Tracker["directory"],"current_resolution.txt") )[0]
-		else:
-			newlowpass = 0.0
-			newfalloff = 0.0
-			icurrentres = 0
-		newlowpass = bcast_number_to_all(newlowpass, source_node = main_node)
-		newlowpass = round(newlowpass,4)
-		newfalloff = bcast_number_to_all(newfalloff, source_node = main_node)
-		newfalloff = round(newfalloff,4)
-		icurrentres = bcast_number_to_all(icurrentres, source_node = main_node)
-
 		#  PRESENTABLE RESULT
 		#  Part         <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 		#  Here I have code to generate presentable results.  IDs and params have to be merged and stored and the overall volume computed.
-		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"volf.hdf"), keepchecking, myid, main_node)
-		if  doit:
 			if( myid == main_node ):
 				pinids = read_text_file(partids[0]) + read_text_file(partids[1])
 				params = read_text_row(partstack[0]) + read_text_row(partstack[1])
@@ -1313,16 +1299,32 @@ def main():
 			Tracker["lowpass"], Tracker["falloff"] = fit_tanh1([[float(i)/Tracker["constants"]["nnxo"] for i in xrange(len(nfsc))],nfsc], 0.01)
 			del nfsc
 
-			#  Here something will have to be done.  The idea is to have a presentable structure at full size.
-			#  However, the data is in smaller window.  O possibility would be to compute structure in smaller window and then pad it
-			#  in Fourier space with zero to the full size.
-			#
-			if not projdata[0]:
+			# The next will have to be decided later, i.e., under which circumstances we should recalculate full size volume.
+			#  Most likely it should be done only when the program terminates.
+			"""
+			if( nxinit == Tracker["constants"]["nnxo"] ):
 				projdata = getindexdata(Tracker["constants"]["stack"], os.path.join(Tracker["directory"] ,"indexes.txt"), \
 						os.path.join(Tracker["directory"] ,"params.txt"), myid, nproc)
-			volf = do_volume_mrk01(projdata, Tracker, mainiteration, mpi_comm = MPI_COMM_WORLD)
+			"""
+			if( myid == main_node ):\
+				volf = 0.5*(get_im(os.path.join(Tracker["directory"] ,"vol0.hdf"))+get_im(os.path.join(Tracker["directory"] ,"vol0.hdf")))
+			else:  volf = model_blank(Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+			volf = do_volume_mrk01(volf, Tracker, mainiteration, mpi_comm = MPI_COMM_WORLD)
 			if(myid == main_node):
 				fpol(volf, Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"] ,"volf.hdf"))
+
+
+		if( myid == main_node):
+			[newlowpass, newfalloff, icurrentres] = read_text_row( os.path.join(Tracker["directory"],"current_resolution.txt") )[0]
+		else:
+			newlowpass = 0.0
+			newfalloff = 0.0
+			icurrentres = 0
+		newlowpass = bcast_number_to_all(newlowpass, source_node = main_node)
+		newlowpass = round(newlowpass,4)
+		newfalloff = bcast_number_to_all(newfalloff, source_node = main_node)
+		newfalloff = round(newfalloff,4)
+		icurrentres = bcast_number_to_all(icurrentres, source_node = main_node)
 
 
 		#mpi_barrier(MPI_COMM_WORLD)
