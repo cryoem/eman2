@@ -171,7 +171,7 @@ def main():
 		
 		ptcltag = ''
 		if n > 1:
-			ptcltag = + '_ptcl' + str(i).zfill( len( str(n) ))
+			ptcltag = '_ptcl' + str(i).zfill( len( str(n) ))
 	
 		if options.onlymidz:	
 			rmidz=Region(0, 0, nz/2, nx, ny, 1)
