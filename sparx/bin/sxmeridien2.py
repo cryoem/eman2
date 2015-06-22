@@ -335,6 +335,7 @@ def get_pixel_resolution(vol, radi, nnxo, fscoutputdir, mask_option):
 
 
 def compute_resolution(stack, outputdir, partids, partstack, org_radi, nnxo, CTF, mask_option, sym, myid, main_node, nproc, pixel=1.0):
+	#  while the code pretends to accept volumes as input, it actually does not.
 	import types
 	vol = [None]*2
 	fsc = [None]*2
@@ -348,10 +349,8 @@ def compute_resolution(stack, outputdir, partids, partstack, org_radi, nnxo, CTF
 
 
 	if myid == main_node :
-		print("  compute_resolution    type(stack),outputdir, partids, partstack, radi, nnxo, CTF",type(stack),outputdir, partids, partstack, radi, nnxo, CTF)
+		print("  compute_resolution    type(stack),outputdir, partids, partstack, radi, nnxo, CTF",type(stack),outputdir, partids, partstack, org_radi, nnxo, CTF)
 
-		if( type(stack[0]) == list ):
-			print("  input is a list ", info(stack[0]) )
 	projdata = []
 	for procid in xrange(2):
 		if(type(stack[0]) == str or ( nz == 1 )):
@@ -361,7 +360,7 @@ def compute_resolution(stack, outputdir, partids, partstack, org_radi, nnxo, CTF
 				projdata.append(None)
 				projdata[procid] = stack[procid]
 			if( procid == 0 ):
-				nx = projdata[0].get_xsize()
+				nx = projdata[procid][0].get_xsize()
 				if( nx != nnxo):
 					mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(nnxo)),nx,nx,nx)
 
