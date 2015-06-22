@@ -231,17 +231,16 @@ def main():
 
 	#Finalize average of all particles if non were set to be excluded. Otherwise, determine the discrimination threshold and then average the particles that pass it.
 	if options.average: 
-	
-		if options.keep == 1.0 and not options.keepsig:	
-		
-			final_avg = avgr.finish()
+			
+		final_avg = avgr.finish()
 
-			final_avg['origin_x']=0
-			final_avg['origin_y']=0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
-			final_avg['origin_z']=0
-			final_avg['xform.align3d'] = Transform()
-		
-			final_avg.write_image( options.path + '/final_avg.hdf' , 0)
+		final_avg['origin_x']=0
+		final_avg['origin_y']=0		#The origin needs to be reset to ZERO to avoid display issues in Chimera
+		final_avg['origin_z']=0
+		final_avg['xform.align3d'] = Transform()
+			
+			if options.keep == 1.0 and not options.keepsig:
+				final_avg.write_image( options.path + '/final_avg.hdf' , 0)
 			
 			if options.avgiter > 1:
 				print """WARNING: --avgiter > 1 must be accompanied by --keepsing, or by --keep < 1.0"""
@@ -256,7 +255,7 @@ def main():
 					ref.process_inplace('xform.mirror',{'axis': options.mirror })
 					refComp( options, outputstack, ref, results, '_vs_mirror')
 			else:
-				ref2compare =  final_avg
+				ref2compare = final_avg
 				refComp( options, outputstack, final_avg, results, '')	
 			
 
