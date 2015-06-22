@@ -241,11 +241,11 @@ def main():
 		final_avg['origin_z']=0
 		final_avg['xform.align3d'] = Transform()
 			
-			if options.keep == 1.0 and not options.keepsig:
-				final_avg.write_image( options.path + '/final_avg.hdf' , 0)
-			
+		if options.keep == 1.0 and not options.keepsig:
+			final_avg.write_image( options.path + '/final_avg.hdf' , 0)
+		
 			if options.avgiter > 1:
-				print """WARNING: --avgiter > 1 must be accompanied by --keepsing, or by --keep < 1.0"""
+				print """WARNING: --avgiter > 1 must be accompanied by --keepsig, or by --keep < 1.0"""
 		
 		elif options.keep < 1.0 or options.keepsig:
 			
