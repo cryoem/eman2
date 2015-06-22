@@ -223,6 +223,8 @@ def main():
 		if options.symmetrize:
 			output = output.process('xform.applysym',{'sym':options.sym})
 	
+		
+		output['spt_score'] = score
 		output.write_image( outputstack, -1)
 		
 		#Averaging here only makes sense if all particles are going to be kept. Otherwise, different code is needed (below)
@@ -303,6 +305,10 @@ def calcScores( stack, avg, results):
 		ccmap = avg.calc_ccf( img )
 		ccmap.process_inplace('normalize')
 		score = ccmap.get_value_at(0,0) * -1
+		
+		img['spt_score'] = score
+	
+		img.write_image( stack, indx, EMUtil.ImageType.IMAGE_HDF, True, None, file_mode_map['float'] )
 		scores.append( score )
 		
 		t = results[r][0]
