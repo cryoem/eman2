@@ -25,11 +25,6 @@ import string
 from   sys import exit
 from   time import localtime, strftime
 
-def Tracker_print_mrk01(string, myid=0):
-	if myid == 0:
-		print("I am supposed to be track")
-	return
-
 def subdict(d,u):
 	# substitute values in dictionary d by those given by dictionary u
 	for q in u:  d[q] = u[q]
@@ -52,19 +47,6 @@ def stepali(nxinit, nnxo, irad, nxrsteps = 3):
 		tss = "1"
 	return txr, tss
 
-
-
-"""
-def cmdexecute(cmd):
-	from   time import localtime, strftime
-	import subprocess
-	outcome = subprocess.call(cmd, shell=True)
-	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-	if(outcome == 1):
-		print(  line,"ERROR!!   Command failed:  ", cmd)
-		exit()
-	else:  print(line,"Executed successfully: ",cmd)
-"""
 
 def volshiftali(vv, mask3d=None):
 	nv = len(vv)
@@ -156,9 +138,7 @@ def checkstep(item, keepchecking, myid, main_node):
 	doit = bcast_number_to_all(doit, source_node = main_node)
 	return doit, keepchecking
 
-
-# NOTE: 2015/06/12 Toshio Moriya
-# This function seems to be not used
+"""
 def doXfiles(path, source = "chunk", inparams = "params", params = "params", dest = "X"):
 	#  will produce X*.txt and paramsX*.txt
 	#  Generate six Xfiles from four chunks and export parameters.  This is hardwired as it is always done in the same way
@@ -209,8 +189,6 @@ def doXfiles(path, source = "chunk", inparams = "params", params = "params", des
 	return
 
 
-# NOTE: 2015/06/12 Toshio Moriya
-# This function seems to be not used
 def	mergeparfiles(i1,i2,io,p1,p2,po):
 	#  1 - rescued
 	#  2 - good old
@@ -232,6 +210,187 @@ def	mergeparfiles(i1,i2,io,p1,p2,po):
 			write_text_row([p[t[i][1]] for i in xrange(len(t))], po+"%01d.txt"%ll)
 	return
 
+
+
+
+def compute_fscs(stack, outputdir, chunkname, newgoodname, fscoutputdir, CTF, mask_option, sym, doit, keepchecking, nproc, myid, main_node):
+	#  Compute reconstructions per group from good particles only to get FSC curves
+	#  We will compute two FSC curves - from not averaged parameters and from averaged parameters
+	#     So, we have to build two sets:
+	#    not averaged  (A2+C3) versus (B0+D5)
+	#          averaged  (A0+C1) versus (B3+D4)
+	#    This requires pulling good subsets given by goodX*;  I am not sure why good, sxconsistency above produced newgood text files.
+	#                                                                 Otherwise, I am not sure what newbad will contain.
+	# Input that should vary:  
+	#    "bdb:"+os.path.join(outputdir,"chunk%01d%01d"%(procid,i))
+	#    os.path.join(outputdir,"newgood%01d.txt"%procid)
+	#  Output should be in a separate directory "fscoutputdir"
+
+	if(myid == main_node):
+		if keepchecking:
+			if(os.path.exists(fscoutputdir)):
+				doit = 0
+				print("Directory  ",fscoutputdir,"  exists!")
+			else:
+				doit = 1
+				keepchecking = False
+		else:
+			doit = 1
+		if doit:
+			cmd = "{} {}".format("mkdir", fscoutputdir)
+			cmdexecute(cmd)
+	mpi_barrier(MPI_COMM_WORLD)
+	
+	#  not averaged
+	doit, keepchecking = checkstep(os.path.join(fscoutputdir,"volfscn0.hdf"), keepchecking, myid, main_node)
+	if doit:
+		if(myid == main_node):
+			#  A2+C3
+			#     indices
+			write_text_file( \
+				map(int, read_text_file(os.path.join(outputdir,chunkname+"0.txt")))+map(int, read_text_file(os.path.join(outputdir,chunkname+"2.txt"))),   \
+				os.path.join(fscoutputdir,"chunkfn0.txt"))
+			#  params
+			write_text_row( \
+				read_text_row(os.path.join(outputdir,newgoodname+"02.txt"))+read_text_row(os.path.join(outputdir,newgoodname+"22.txt")), \
+				os.path.join(fscoutputdir,"params-chunkfn0.txt"))
+
+		mpi_barrier(MPI_COMM_WORLD)
+
+		projdata = getindexdata(stack, os.path.join(fscoutputdir,"chunkfn0.txt"), os.path.join(fscoutputdir,"params-chunkfn0.txt"), myid, nproc)
+		if CTF:  vol = recons3d_4nn_ctf_MPI(myid, projdata, symmetry=sym, npad = 2)
+		else:    vol = recons3d_4nn_MPI    (myid, projdata, symmetry=sym, npad = 2)
+		del projdata
+		if(myid == main_node):
+			vol.write_image(os.path.join(fscoutputdir,"volfscn0.hdf"))
+			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			print(line,"Executed successfully: 3D reconstruction of", os.path.join(fscoutputdir,"volfscn0.hdf"))
+		del vol
+
+
+	doit, keepchecking = checkstep(os.path.join(fscoutputdir,"volfscn1.hdf"), keepchecking, myid, main_node)
+	if doit:
+		if(myid == main_node):
+			#  B0+D5
+			#     indices
+			write_text_file( \
+				map(int, read_text_file(os.path.join(outputdir,chunkname+"1.txt")))+map(int, read_text_file(os.path.join(outputdir,chunkname+"3.txt"))),   \
+				os.path.join(fscoutputdir,"chunkfn1.txt"))
+			#  params
+			write_text_row( \
+				read_text_row(os.path.join(outputdir,newgoodname+"10.txt"))+read_text_row(os.path.join(outputdir,newgoodname+"32.txt")), \
+				os.path.join(fscoutputdir,"params-chunkfn1.txt"))
+
+		mpi_barrier(MPI_COMM_WORLD)
+
+		projdata = getindexdata(stack, os.path.join(fscoutputdir,"chunkfn1.txt"), os.path.join(fscoutputdir,"params-chunkfn1.txt"), myid, nproc)
+		if CTF:  vol = recons3d_4nn_ctf_MPI(myid, projdata, symmetry=sym, npad = 2)
+		else:    vol = recons3d_4nn_MPI    (myid, projdata, symmetry=sym, npad = 2)
+		del projdata
+		if(myid == main_node):
+			vol.write_image(os.path.join(fscoutputdir,"volfscn1.hdf"))
+			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			print(line,"Executed successfully: 3D reconstruction of", os.path.join(fscoutputdir,"volfscn1.hdf"))
+		del vol
+
+	#      averaged
+	doit, keepchecking = checkstep(os.path.join(fscoutputdir,"volfsca0.hdf"), keepchecking, myid, main_node)
+	if doit:
+		if(myid == main_node):
+			#  A0+C1
+			#     indices
+			write_text_file( \
+				map(int, read_text_file(os.path.join(outputdir,chunkname+"0.txt")))+map(int, read_text_file(os.path.join(outputdir,chunkname+"2.txt"))),   \
+				os.path.join(fscoutputdir,"chunkfa0.txt"))
+			#  params
+			write_text_row( \
+				read_text_row(os.path.join(outputdir,newgoodname+"00.txt"))+read_text_row(os.path.join(outputdir,newgoodname+"20.txt")), \
+				os.path.join(fscoutputdir,"params-chunkfa0.txt"))
+		mpi_barrier(MPI_COMM_WORLD)
+
+		projdata = getindexdata(stack, os.path.join(fscoutputdir,"chunkfa0.txt"), os.path.join(fscoutputdir,"params-chunkfa0.txt"), myid, nproc)
+		if CTF:  vol = recons3d_4nn_ctf_MPI(myid, projdata, symmetry=sym, npad = 2)
+		else:    vol = recons3d_4nn_MPI    (myid, projdata, symmetry=sym, npad = 2)
+		del projdata
+		if(myid == main_node):
+			vol.write_image(os.path.join(fscoutputdir,"volfsca0.hdf"))
+			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			print(line,"Executed successfully: 3D reconstruction of", os.path.join(fscoutputdir,"volfsca0.hdf"))
+		del vol
+
+
+	doit, keepchecking = checkstep(os.path.join(fscoutputdir,"volfsca1.hdf"), keepchecking, myid, main_node)
+	if doit:
+		if(myid == main_node):
+			#  B3+D4
+			write_text_file( \
+				map(int, read_text_file(os.path.join(outputdir,chunkname+"1.txt")))+map(int, read_text_file(os.path.join(outputdir,chunkname+"3.txt"))),   \
+				os.path.join(fscoutputdir,"chunkfa1.txt"))
+			#  params
+			write_text_row( \
+				read_text_row(os.path.join(outputdir,newgoodname+"11.txt"))+read_text_row(os.path.join(outputdir,newgoodname+"31.txt")), \
+				os.path.join(fscoutputdir,"params-chunkfa1.txt"))
+		mpi_barrier(MPI_COMM_WORLD)
+
+		projdata = getindexdata(stack, os.path.join(fscoutputdir,"chunkfa1.txt"), os.path.join(fscoutputdir,"params-chunkfa1.txt"), myid, nproc)
+		if CTF:  vol = recons3d_4nn_ctf_MPI(myid, projdata, symmetry=sym, npad = 2)
+		else:    vol = recons3d_4nn_MPI    (myid, projdata, symmetry=sym, npad = 2)
+		del projdata
+		if(myid == main_node):
+			vol.write_image(os.path.join(fscoutputdir,"volfsca1.hdf"))
+			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			print(line,"Executed successfully: 3D reconstruction of", os.path.join(fscoutputdir,"volfsca1.hdf"))
+		del vol
+
+
+ 
+	#  Get updated FSC curves
+	if(myid == main_node):
+		if(mask_option is None):  mask = model_circle(radi,nnxo,nnxo,nnxo)
+		else:
+			mask = get_im(mask_option)
+		if keepchecking:
+			if(os.path.exists(os.path.join(fscoutputdir,"fscn.txt"))):
+				doit = 0
+			else:
+				doit = 1
+				keepchecking = False
+		else:  doit = 1
+		if  doit:  fsc(get_im(os.path.join(fscoutputdir,"volfscn0.hdf"))*mask,\
+				get_im(os.path.join(fscoutputdir,"volfscn1.hdf"))*mask,\
+				1.0,os.path.join(fscoutputdir,"fscn.txt") )
+		if keepchecking:
+			if(os.path.exists(os.path.join(fscoutputdir,"fsca.txt"))):
+				doit = 0
+			else:
+				doit = 1
+				keepchecking = False
+		else:  doit = 1
+		if  doit:  fsc(get_im(os.path.join(fscoutputdir,"volfsca0.hdf"))*mask,\
+				get_im(os.path.join(fscoutputdir,"volfsca1.hdf"))*mask,\
+				1.0,os.path.join(fscoutputdir,"fsca.txt") )
+
+		nfsc = read_text_file(os.path.join(fscoutputdir,"fscn.txt") ,-1)
+		currentres = 0.5
+		ns = len(nfsc[1])
+		for i in xrange(1,ns-1):
+			if ( (2*nfsc[1][i]/(1.0+nfsc[1][i]) ) < 0.5):
+				currentres = nfsc[0][i-1]
+				break
+		print("  Current resolution ",i,currentres)
+	else:
+		currentres = 0.0
+	currentres = bcast_number_to_all(currentres, source_node = main_node)
+	if(currentres < 0.0):
+		if(myid == main_node):
+			print("  Something wrong with the resolution, cannot continue")
+		mpi_finalize()
+		exit()
+
+	mpi_barrier(MPI_COMM_WORLD)
+	return  currentres, doit, keepchecking
+
+"""
 
 def read_fsc(fsclocation, lc, myid, main_node, comm = -1):
 	# read fsc and fill it with zeroes pass lc location
@@ -421,192 +580,6 @@ def compute_resolution(stack, outputdir, partids, partstack, org_radi, nnxo, CTF
 	return round(lowpass,4), round(falloff,4), icurrentres
 
 
-def compute_fscs(stack, outputdir, chunkname, newgoodname, fscoutputdir, CTF, mask_option, sym, doit, keepchecking, nproc, myid, main_node):
-	#  Compute reconstructions per group from good particles only to get FSC curves
-	#  We will compute two FSC curves - from not averaged parameters and from averaged parameters
-	#     So, we have to build two sets:
-	#    not averaged  (A2+C3) versus (B0+D5)
-	#          averaged  (A0+C1) versus (B3+D4)
-	#    This requires pulling good subsets given by goodX*;  I am not sure why good, sxconsistency above produced newgood text files.
-	#                                                                 Otherwise, I am not sure what newbad will contain.
-	# Input that should vary:  
-	#    "bdb:"+os.path.join(outputdir,"chunk%01d%01d"%(procid,i))
-	#    os.path.join(outputdir,"newgood%01d.txt"%procid)
-	#  Output should be in a separate directory "fscoutputdir"
-
-	if(myid == main_node):
-		if keepchecking:
-			if(os.path.exists(fscoutputdir)):
-				doit = 0
-				print("Directory  ",fscoutputdir,"  exists!")
-			else:
-				doit = 1
-				keepchecking = False
-		else:
-			doit = 1
-		if doit:
-			cmd = "{} {}".format("mkdir", fscoutputdir)
-			cmdexecute(cmd)
-	mpi_barrier(MPI_COMM_WORLD)
-	
-	#  not averaged
-	doit, keepchecking = checkstep(os.path.join(fscoutputdir,"volfscn0.hdf"), keepchecking, myid, main_node)
-	if doit:
-		if(myid == main_node):
-			#  A2+C3
-			#     indices
-			write_text_file( \
-				map(int, read_text_file(os.path.join(outputdir,chunkname+"0.txt")))+map(int, read_text_file(os.path.join(outputdir,chunkname+"2.txt"))),   \
-				os.path.join(fscoutputdir,"chunkfn0.txt"))
-			#  params
-			write_text_row( \
-				read_text_row(os.path.join(outputdir,newgoodname+"02.txt"))+read_text_row(os.path.join(outputdir,newgoodname+"22.txt")), \
-				os.path.join(fscoutputdir,"params-chunkfn0.txt"))
-
-		mpi_barrier(MPI_COMM_WORLD)
-
-		projdata = getindexdata(stack, os.path.join(fscoutputdir,"chunkfn0.txt"), os.path.join(fscoutputdir,"params-chunkfn0.txt"), myid, nproc)
-		if CTF:  vol = recons3d_4nn_ctf_MPI(myid, projdata, symmetry=sym, npad = 2)
-		else:    vol = recons3d_4nn_MPI    (myid, projdata, symmetry=sym, npad = 2)
-		del projdata
-		if(myid == main_node):
-			vol.write_image(os.path.join(fscoutputdir,"volfscn0.hdf"))
-			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(line,"Executed successfully: 3D reconstruction of", os.path.join(fscoutputdir,"volfscn0.hdf"))
-		del vol
-
-
-	doit, keepchecking = checkstep(os.path.join(fscoutputdir,"volfscn1.hdf"), keepchecking, myid, main_node)
-	if doit:
-		if(myid == main_node):
-			#  B0+D5
-			#     indices
-			write_text_file( \
-				map(int, read_text_file(os.path.join(outputdir,chunkname+"1.txt")))+map(int, read_text_file(os.path.join(outputdir,chunkname+"3.txt"))),   \
-				os.path.join(fscoutputdir,"chunkfn1.txt"))
-			#  params
-			write_text_row( \
-				read_text_row(os.path.join(outputdir,newgoodname+"10.txt"))+read_text_row(os.path.join(outputdir,newgoodname+"32.txt")), \
-				os.path.join(fscoutputdir,"params-chunkfn1.txt"))
-
-		mpi_barrier(MPI_COMM_WORLD)
-
-		projdata = getindexdata(stack, os.path.join(fscoutputdir,"chunkfn1.txt"), os.path.join(fscoutputdir,"params-chunkfn1.txt"), myid, nproc)
-		if CTF:  vol = recons3d_4nn_ctf_MPI(myid, projdata, symmetry=sym, npad = 2)
-		else:    vol = recons3d_4nn_MPI    (myid, projdata, symmetry=sym, npad = 2)
-		del projdata
-		if(myid == main_node):
-			vol.write_image(os.path.join(fscoutputdir,"volfscn1.hdf"))
-			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(line,"Executed successfully: 3D reconstruction of", os.path.join(fscoutputdir,"volfscn1.hdf"))
-		del vol
-
-	#      averaged
-	doit, keepchecking = checkstep(os.path.join(fscoutputdir,"volfsca0.hdf"), keepchecking, myid, main_node)
-	if doit:
-		if(myid == main_node):
-			#  A0+C1
-			#     indices
-			write_text_file( \
-				map(int, read_text_file(os.path.join(outputdir,chunkname+"0.txt")))+map(int, read_text_file(os.path.join(outputdir,chunkname+"2.txt"))),   \
-				os.path.join(fscoutputdir,"chunkfa0.txt"))
-			#  params
-			write_text_row( \
-				read_text_row(os.path.join(outputdir,newgoodname+"00.txt"))+read_text_row(os.path.join(outputdir,newgoodname+"20.txt")), \
-				os.path.join(fscoutputdir,"params-chunkfa0.txt"))
-		mpi_barrier(MPI_COMM_WORLD)
-
-		projdata = getindexdata(stack, os.path.join(fscoutputdir,"chunkfa0.txt"), os.path.join(fscoutputdir,"params-chunkfa0.txt"), myid, nproc)
-		if CTF:  vol = recons3d_4nn_ctf_MPI(myid, projdata, symmetry=sym, npad = 2)
-		else:    vol = recons3d_4nn_MPI    (myid, projdata, symmetry=sym, npad = 2)
-		del projdata
-		if(myid == main_node):
-			vol.write_image(os.path.join(fscoutputdir,"volfsca0.hdf"))
-			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(line,"Executed successfully: 3D reconstruction of", os.path.join(fscoutputdir,"volfsca0.hdf"))
-		del vol
-
-
-	doit, keepchecking = checkstep(os.path.join(fscoutputdir,"volfsca1.hdf"), keepchecking, myid, main_node)
-	if doit:
-		if(myid == main_node):
-			#  B3+D4
-			write_text_file( \
-				map(int, read_text_file(os.path.join(outputdir,chunkname+"1.txt")))+map(int, read_text_file(os.path.join(outputdir,chunkname+"3.txt"))),   \
-				os.path.join(fscoutputdir,"chunkfa1.txt"))
-			#  params
-			write_text_row( \
-				read_text_row(os.path.join(outputdir,newgoodname+"11.txt"))+read_text_row(os.path.join(outputdir,newgoodname+"31.txt")), \
-				os.path.join(fscoutputdir,"params-chunkfa1.txt"))
-		mpi_barrier(MPI_COMM_WORLD)
-
-		projdata = getindexdata(stack, os.path.join(fscoutputdir,"chunkfa1.txt"), os.path.join(fscoutputdir,"params-chunkfa1.txt"), myid, nproc)
-		if CTF:  vol = recons3d_4nn_ctf_MPI(myid, projdata, symmetry=sym, npad = 2)
-		else:    vol = recons3d_4nn_MPI    (myid, projdata, symmetry=sym, npad = 2)
-		del projdata
-		if(myid == main_node):
-			vol.write_image(os.path.join(fscoutputdir,"volfsca1.hdf"))
-			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(line,"Executed successfully: 3D reconstruction of", os.path.join(fscoutputdir,"volfsca1.hdf"))
-		del vol
-
-
- 
-	#  Get updated FSC curves
-	if(myid == main_node):
-		if(mask_option is None):  mask = model_circle(radi,nnxo,nnxo,nnxo)
-		else:
-			mask = get_im(mask_option)
-		if keepchecking:
-			if(os.path.exists(os.path.join(fscoutputdir,"fscn.txt"))):
-				doit = 0
-			else:
-				doit = 1
-				keepchecking = False
-		else:  doit = 1
-		if  doit:  fsc(get_im(os.path.join(fscoutputdir,"volfscn0.hdf"))*mask,\
-				get_im(os.path.join(fscoutputdir,"volfscn1.hdf"))*mask,\
-				1.0,os.path.join(fscoutputdir,"fscn.txt") )
-		if keepchecking:
-			if(os.path.exists(os.path.join(fscoutputdir,"fsca.txt"))):
-				doit = 0
-			else:
-				doit = 1
-				keepchecking = False
-		else:  doit = 1
-		if  doit:  fsc(get_im(os.path.join(fscoutputdir,"volfsca0.hdf"))*mask,\
-				get_im(os.path.join(fscoutputdir,"volfsca1.hdf"))*mask,\
-				1.0,os.path.join(fscoutputdir,"fsca.txt") )
-
-		nfsc = read_text_file(os.path.join(fscoutputdir,"fscn.txt") ,-1)
-		currentres = 0.5
-		ns = len(nfsc[1])
-		for i in xrange(1,ns-1):
-			if ( (2*nfsc[1][i]/(1.0+nfsc[1][i]) ) < 0.5):
-				currentres = nfsc[0][i-1]
-				break
-		print("  Current resolution ",i,currentres)
-	else:
-		currentres = 0.0
-	currentres = bcast_number_to_all(currentres, source_node = main_node)
-	if(currentres < 0.0):
-		if(myid == main_node):
-			print("  Something wrong with the resolution, cannot continue")
-		mpi_finalize()
-		exit()
-
-	mpi_barrier(MPI_COMM_WORLD)
-	return  currentres, doit, keepchecking
-
-
-"""
-in utilities.py
-def getindexdata(stack, partids, partstack, myid, nproc):
-	# The function will read from stack a subset of images specified in partids
-	#   and assign to them parameters from partstack
-	# So, the lengths of partids and partstack are the same.
-	#  The read data is properly distributed among MPI threads.
-"""
 
 def getalldata(stack, myid, nproc):
 	if(myid == 0):  ndata = EMUtil.get_image_count(stack)
@@ -741,7 +714,6 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 		print("                    =>  partstack           :  ",partstack)
 
 	#if(Tracker["lowpass"] > 0.48):  ERROR("Low pass filter in metamove > 0.48 on the scale of shrank data","sxmeridien",1,myid)
-	if(myid == 0):  Tracker_print_mrk01(Tracker,"TRACKER")
 
 	#  Run alignment command
 	if(Tracker["local"]):
@@ -924,9 +896,9 @@ def main():
 	Tracker["nxinit"]       = 64
 	Tracker["nxstep"]       = 32
 	Tracker["icurrentres"]  = -1
-	Tracker["lowpass"]      = 0.4
-	Tracker["initialfl"]    = 0.4
-	Tracker["falloff"]      = 0.1
+	#Tracker["lowpass"]      = 0.4
+	#Tracker["initialfl"]    = 0.4
+	Tracker["falloff"]      = 0.2
 	Tracker["inires"]       = options.inires  # Now in A, convert to absolute before using
 	Tracker["fuse_freq"]    = 50  # Now in A, convert to absolute before using
 	Tracker["delpreviousmax"] = True
@@ -934,8 +906,8 @@ def main():
 	Tracker["pixercutoff"]   = 2.0
 	Tracker["directory"]     = ""
 	Tracker["previousoutputdir"] = ""
-	Tracker["movedup"]       = False
-	Tracker["eliminated-outliers"] = False
+	#Tracker["movedup"]       = False
+	#Tracker["eliminated-outliers"] = False
 	Tracker["mainiteration"]  = 0
 
 	# ------------------------------------------------------------------------------------
@@ -1296,7 +1268,7 @@ def main():
 				write_text_row( [pinids[i][1] for i in xrange(len(pinids))], os.path.join(Tracker["directory"] ,"params.txt"))
 			mpi_barrier(MPI_COMM_WORLD)
 			nfsc = read_fsc(os.path.join(Tracker["directory"] ,"fsc.txt"),Tracker["constants"]["nnxo"], myid, main_node)
-			Tracker["lowpass"], Tracker["falloff"] = fit_tanh1([[float(i)/Tracker["constants"]["nnxo"] for i in xrange(len(nfsc))],nfsc], 0.01)
+			Tracker["lowpass"], Tracker["falloff"] = fit_tanh([[float(i)/Tracker["constants"]["nnxo"] for i in xrange(len(nfsc))],nfsc], 0.01)
 			del nfsc
 
 			# The next will have to be decided later, i.e., under which circumstances we should recalculate full size volume.
@@ -1323,7 +1295,7 @@ def main():
 		newlowpass = bcast_number_to_all(newlowpass, source_node = main_node)
 		newlowpass = round(newlowpass,4)
 		newfalloff = bcast_number_to_all(newfalloff, source_node = main_node)
-		newfalloff = round(newfalloff,4)
+		Tracker["falloff"] = round(newfalloff,4)  # For the time being
 		icurrentres = bcast_number_to_all(icurrentres, source_node = main_node)
 
 
@@ -1335,8 +1307,6 @@ def main():
 		if(Tracker["mainiteration"] == 1):
 			nxinit = Tracker["nxinit"]
 			while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
-			#  Window size changed, reset projdata
-			if(nxinit> Tracker["nxinit"]):  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
 			Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
 			Tracker["icurrentres"] = icurrentres
 			Tracker["zoom"] = True
@@ -1347,8 +1317,6 @@ def main():
 		elif(Tracker["mainiteration"] == 2):
 			#  Go back to initial window size and exhaustive search to improve centering of the data.
 			nxinit = HISTORY[0]["nxinit"]
-			#  Window size changed, reset projdata
-			if(nxinit != Tracker["nxinit"]):  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
 			Tracker["nxinit"] = nxinit
 			Tracker["icurrentres"] = min(icurrentres, nxinit//2-3)
 			Tracker["zoom"] = True
@@ -1356,17 +1324,84 @@ def main():
 			Tracker["xr"] , Tracker["ts"] = stepali(Tracker["nxinit"] , Tracker["constants"]["nnxo"], Tracker["constants"]["radius"])
 			keepgoing = 1
 		elif(Tracker["mainiteration"] == 3):
+			#  Here we do soft with the initial window size
 			nxinit = Tracker["nxinit"]
-			#  Window size changed, reset projdata
-			if(nxinit != Tracker["nxinit"]):  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
-			Tracker["nxinit"] = nxinit
-			Tracker["icurrentres"] = min(icurrentres, nxinit//2-4)
+			Tracker["icurrentres"] = min(icurrentres, nxinit//2-3)
 			Tracker["nsoft"] = 1
 			Tracker["zoom"] = False
 			#  This is for soft
 			Tracker["xr"] = "3"
 			Tracker["ts"] = "1"
 			keepgoing = 1
+		#  First four steps were preset mainly to astablish shifts and decent initial structure.
+		#    Now the program has to start making decisions.
+		elif(Tracker["mainiteration"] > 3):
+			#  Each case needs its own settings.  We arrived here after soft at initial window size.
+			#  Possibilities we will consider:
+			#    1.  resolution improved: keep going with current settings.
+			#    2.  resolution stalled and no pwadjust: turn on pwadjust
+			#    3.  resolution stalled and pwadjust: move to the next phase
+			#    4.  resolution decreased: back off and move to the next phase
+			#    5.  All phases tried and nxinit < nnxo: set nxinit == nnxo and run local searches.
+			keepgoing = decision( icurrentres, Tracker, HISTORY)
+		def decision( icurrentres, Tracker, HISTORY):
+			#  Each case needs its own settings.  We arrived here after soft at initial window size.
+			#  Possibilities we will consider:
+			#    1.  resolution improved: keep going with current settings.
+			#    2.  resolution stalled and no pwadjust: turn on pwadjust
+			#    3.  resolution stalled and pwadjust: move to the next phase
+			#    4.  resolution decreased: back off and move to the next phase
+			#    5.  All phases tried and nxinit < nnxo: set nxinit == nnxo and run local searches.
+			direction = icurrentres - Tracker["icurrentres"]
+			trying = True
+			while(trying):
+				if direction > 0:
+				elif direction == 0:
+					if( Tracker["PWadjustment"] == ""):
+						Tracker["PWadjustment"] = Tracker["constants"]["pwreference"]
+						trying = False
+					else:
+						move_up_phase = True
+				elif direction < 0:
+
+
+			#  Exhaustive searches
+			if(Tracker["an"] == "-1" and not Tracker["local"]):
+				nxinit = Tracker["nxinit"]
+				while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
+				Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
+				Tracker["icurrentres"] = icurrentres
+				Tracker["zoom"] = True
+				#  Develop something intelligent
+				Tracker["xr"] = "6 3"
+				Tracker["ts"] = "2 1"
+				keepgoing = 1
+			#  Local searches
+			elif(Tracker["an"] != "-1" and not Tracker["local"]):
+				#Tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
+				Tracker["initialfl"]  = read_fsc(os.path.join(mainoutputdir,"fsc.txt"),icurrentres, myid, main_node)
+				Tracker["lowpass"]    = Tracker["initialfl"]
+				Tracker["applyctf"]   = True
+				Tracker["nsoft"]      = 0
+			#  Local/gridding  searches, move only as much as the resolution increase allows
+			elif(Tracker["local"] and (nxinit < Tracker["constants"]["nnxo"])):
+				#Tracker["extension"]  =    0.0  # lowpass cannot exceed 0.45
+				Tracker["initialfl"]   = read_fsc(os.path.join(mainoutputdir,"fsc.txt"),icurrentres, myid, main_node)
+				Tracker["lowpass"]     = Tracker["initialfl"]
+				Tracker["applyctf"]    = False
+				Tracker["nsoft"]       = 0
+			elif(Tracker["local"] and (nxinit == Tracker["constants"]["nnxo"])):
+				#Tracker["extension"]  =    0.0  # lowpass cannot exceed 0.45
+				Tracker["initialfl"]   = read_fsc(os.path.join(mainoutputdir,"fsc.txt"),icurrentres, myid, main_node)
+				Tracker["lowpass"]     = Tracker["initialfl"]
+				Tracker["applyctf"]    = False
+				Tracker["nsoft"]       = 0
+			else:
+				print(" Unknown combination of settings in improved resolution path",Tracker["an"],Tracker["local"])
+				exit()  #  This will crash the program, but the situation is unlikely to occure
+
+
+
 		elif(Tracker["mainiteration"] > 3 and Tracker["mainiteration"]<9):
 			Tracker["nsoft"] = 0
 			if(Tracker["mainiteration"] > 4  and Tracker["icurrentres"] > icurrentres):  keepgoing = 0
@@ -1400,8 +1435,6 @@ def main():
 			Tracker["PWadjustment"] = Tracker["constants"]["pwreference"]
 			nxinit = Tracker["nxinit"]
 			while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
-			#  Window size changed, reset projdata
-			if(nxinit> Tracker["nxinit"]):  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
 			Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
 			if(Tracker["mainiteration"] > 12):  Tracker["nxinit"] = Tracker["constants"]["nnxo"]
 			Tracker["icurrentres"] = icurrentres
