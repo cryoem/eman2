@@ -241,35 +241,6 @@ def stepali(nxinit, nnxo, irad, nxrsteps = 3):
 	return txr, tss
 
 
-def volshiftali(vv, mask3d=None):
-	nv = len(vv)
-	ni = vv[0].get_xsize()
-	if(mask3d == None):
-		mask3d = model_circle(ni//2-2, ni, ni, ni)
-
-	for i in xrange(nv):
-		Util.mul_img(vv[i], mask3d)
-		fftip(vv[i])
-
-	del mask3d
-	ps = [[0.,0.,0.] for i in xrange(nv)]
-	changed = True
-	while(changed):
-		a = EMData(ni, ni, ni, False)
-		for i in vv:
-			Util.add_img(a,i)
-
-		changed = False
-		for i in xrange(nv):
-			pp = peak_search(ccf(vv[i],a), 1)
-			for j in xrange(3):
-				if(pp[0][5+j] != ps[i][j]):
-					ps[i][j] = pp[0][5+j]
-					changed = True
-
-	return ps
-
-
 def fuselowf(vs, fq):
 	n = len(vs)
 	for i in xrange(n): fftip(vs[i])
@@ -281,15 +252,6 @@ def fuselowf(vs, fq):
 	for i in xrange(n):
 		vs[i] = fft(Util.addn_img(a, filt_tophath(vs[i], fq)))
 	return
-
-
-global passlastring, mempernode
-
-
-# NOTE: 2015/06/12 Toshio Moriya
-# This function seems to be not used
-def hlfmem(x):
-	return (len(even_angles(x))*4.*passlastring**2*4./ mempernode - 0.5)**2
 
 
 def get_pixercutoff(radius, delta = 2.0, dsx = 0.5):
@@ -332,6 +294,43 @@ def checkstep(item, keepchecking, myid, main_node):
 	return doit, keepchecking
 
 """
+
+
+def volshiftali(vv, mask3d=None):
+	nv = len(vv)
+	ni = vv[0].get_xsize()
+	if(mask3d == None):
+		mask3d = model_circle(ni//2-2, ni, ni, ni)
+
+	for i in xrange(nv):
+		Util.mul_img(vv[i], mask3d)
+		fftip(vv[i])
+
+	del mask3d
+	ps = [[0.,0.,0.] for i in xrange(nv)]
+	changed = True
+	while(changed):
+		a = EMData(ni, ni, ni, False)
+		for i in vv:
+			Util.add_img(a,i)
+
+		changed = False
+		for i in xrange(nv):
+			pp = peak_search(ccf(vv[i],a), 1)
+			for j in xrange(3):
+				if(pp[0][5+j] != ps[i][j]):
+					ps[i][j] = pp[0][5+j]
+					changed = True
+
+	return ps
+
+
+global passlastring, mempernode
+
+def hlfmem(x):
+	return (len(even_angles(x))*4.*passlastring**2*4./ mempernode - 0.5)**2
+
+
 def doXfiles(path, source = "chunk", inparams = "params", params = "params", dest = "X"):
 	#  will produce X*.txt and paramsX*.txt
 	#  Generate six Xfiles from four chunks and export parameters.  This is hardwired as it is always done in the same way
@@ -699,10 +698,6 @@ def compute_resolution(stack, outputdir, partids, partstack, org_radi, nnxo, CTF
 	if(mask_option is None):  mask = model_circle(org_radi,nnxo,nnxo,nnxo)
 	else:                     mask = get_im(mask_option)
 
-
-	if myid == main_node :
-		print("  compute_resolution    type(stack),outputdir, partids, partstack, radi, nnxo, CTF",type(stack),outputdir, partids, partstack, org_radi, nnxo, CTF)
-
 	projdata = []
 	for procid in xrange(2):
 		if(type(stack[0]) == str or ( nz == 1 )):
@@ -739,7 +734,7 @@ def compute_resolution(stack, outputdir, partids, partstack, org_radi, nnxo, CTF
 			from fundamentals import fpol
 			fpol(vol[procid], nnxo, nnxo, nnxo).write_image(os.path.join(outputdir,"vol%01d.hdf"%procid))
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(  line,"Generated vol #%01d "%procid)
+			print(  line,"Generated vol #%01d  using  image size %d "%(procid, nx))
 
 
 	lowpass    = 0.0
@@ -768,8 +763,8 @@ def compute_resolution(stack, outputdir, partids, partstack, org_radi, nnxo, CTF
 		write_text_row([[lowpass, falloff, icurrentres]],os.path.join(outputdir,"current_resolution.txt"))
 	#  Returns: low-pass filter cutoff;  low-pass filter falloff;  current resolution
 	icurrentres = bcast_number_to_all(icurrentres, source_node = main_node)
-	lowpass    = bcast_number_to_all(lowpass, source_node = main_node)
-	falloff    = bcast_number_to_all(falloff, source_node = main_node)
+	lowpass     = bcast_number_to_all(lowpass, source_node = main_node)
+	falloff     = bcast_number_to_all(falloff, source_node = main_node)
 	return round(lowpass,4), round(falloff,4), icurrentres
 
 
@@ -799,8 +794,10 @@ def get_shrink_data(onx, nx, stack, partids, partstack, myid, main_node, nproc, 
 	#  The read data is properly distributed among MPI threads.
 	if( myid == main_node ):
 		print("    ")
-		print("  get_shrink_data  ")
-		print("  onx, nx, stack, partids, partstack, CTF, applyctf, preshift, radi  ",onx, nx, stack, partids, partstack, CTF, applyctf, preshift, radi)
+		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		print(  line, "Reading data  onx: %3d, nx: %3d,  stack: %s, partids: %s, partstack: %s, CTF: %s, applyctf: %s, preshift: %s, radi: %3d."\
+						%(onx, nx, stack, partids, partstack, CTF, applyctf, preshift, radi) )
+		print("    ")
 	if( myid == main_node ): lpartids = read_text_file(partids)
 	else:  lpartids = 0
 	lpartids = wrap_mpi_bcast(lpartids, main_node)
@@ -884,7 +881,7 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 	if(Tracker["radius"] < 2):
 		ERROR( "ERROR!!   lastring too small  %f    %f   %d"%(Tracker["radius"], Tracker["constants"]["radius"]), "sxmeridien",1, myid)
 	Tracker["lowpass"] = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
-	if( Tracker["state"] == "LOCAL" ):
+	if( Tracker["state"] == "LOCAL" or Tracker["state"] == "FINAL"):
 		delta = "2.0"
 	else:
 		delta = "%f  "%min(round(degrees(atan(0.5/Tracker["lowpass"]/Tracker["radius"])), 2), 3.0)
@@ -899,7 +896,7 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 			except:  pass
 	if(myid == main_node):
 		print_dict(Tracker,"METAMOVE parameters")
-		if(len(Tracker["PWadjustment"])>0):
+		if Tracker["PWadjustment"] :
 			print("                    =>  PW adjustment       :  ",Tracker["PWadjustment"])
 		print("                    =>  partids             :  ",partids)
 		print("                    =>  partstack           :  ",partstack)
@@ -909,13 +906,11 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 	#  Run alignment command
 	if( Tracker["state"] == "LOCAL" ):
 		params = slocal_ali3d_base_MPI_mrk01(projdata, get_im(Tracker["refvol"]), \
-					Tracker, mpi_comm = MPI_COMM_WORLD, log = log, \
-		    			chunk = 1.0, \
-		    			saturatecrit = Tracker["saturatecrit"], pixercutoff =  Tracker["pixercutoff"])
+				Tracker, mpi_comm = MPI_COMM_WORLD, log = log, chunk = 1.0, \
+		    	saturatecrit = Tracker["saturatecrit"], pixercutoff =  Tracker["pixercutoff"])
 	else: params = sali3d_base_mrk01(projdata, ref_vol, \
-						Tracker, mpi_comm = MPI_COMM_WORLD, log = log, \
-						nsoft = Tracker["nsoft"], \
-						saturatecrit = Tracker["saturatecrit"],  pixercutoff =  Tracker["pixercutoff"], zoom = Tracker["zoom"] )
+				Tracker, mpi_comm = MPI_COMM_WORLD, log = log, nsoft = Tracker["nsoft"], \
+				saturatecrit = Tracker["saturatecrit"],  pixercutoff =  Tracker["pixercutoff"], zoom = Tracker["zoom"] )
 
 	#  We could calculate here a 3D to get the within group resolution and return it as a result to eventually get crossresolution
 	del log
@@ -927,7 +922,6 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 			params[i][3] = params[i][3]/shrinkage + oldshifts[i][0]
 			params[i][4] = params[i][4]/shrinkage + oldshifts[i][1]
 		write_text_row(params, os.path.join(Tracker["directory"],"params-chunk%01d.txt"%procid) )
-
 
 def print_dict(dict,theme):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
@@ -1156,7 +1150,6 @@ def main():
 	# ------------------------------------------------------------------------------------
 	#  MASTER DIRECTORY
 	if(myid == main_node):
-		print( "   masterdir   ",masterdir)
 		if( masterdir == ""):
 			timestring = strftime("_%d_%b_%Y_%H_%M_%S", localtime())
 			masterdir = "master"+timestring
