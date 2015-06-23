@@ -32,7 +32,7 @@
 
 from EMAN2 import *
 from Simplex import Simplex
-from Anneal import SimulatedAnnealer
+from Anneal import BaseAnnealer
 import numpy as np
 import sys
 import os
@@ -48,7 +48,7 @@ def main():
 	usage = """e2moviealigner.py [options] <ddd_movie_stack> <ddd_movie_stack> ... <ddd_movie_stack>
 
 	Determines the optimal whole-frame alignment of a DDD movie. It can be used
-	to determine the proper x and y translations for each movie frame and can 
+	to determine the proper x and y translations for each movie frame and can
 	perform the actual alignment according to the translations.
 	"""
 
@@ -196,8 +196,8 @@ class MovieModeAligner:
 		self._calc_coherent_power_spectrum()
 		self.write_coherent_power_spectrum(name=fname[:-4]+'_coherent.hdf')
 		self.write_coherent_power_spectrum()
-		self._energies = [sys.float_info.max]
-		self._all_energies = []
+		self._energies = []
+		self._update_energy()
 		self._optimized = False
 
 	def _initialize_params(self,boxsize,transforms,min_shift,max_shift):
@@ -236,14 +236,14 @@ class MovieModeAligner:
 		This 2D function represents our objective and is only computed once
 		during object initialiation.
 		"""
-		if self._computed_objective: 
+		if self._computed_objective:
 			print("Incoherent power spectrum has been computed.")
 			return
 		else: self._computed_objective = True
 		ipss = (self._get_img_ips(i) for i in xrange(self.hdr['nimg']))
 		self._ips = sum(ipss)/self.hdr['nimg']
 		self._ips.process_inplace('math.rotationalaverage') # smooth
-	
+
 	def _get_img_ips(self,i):
 		img = EMData(self.path,i)
 		region_ipss = (self._get_region(img,r) for r in self._regions[i])
@@ -255,7 +255,7 @@ class MovieModeAligner:
 		reg.do_fft_inplace() # fft region
 		reg.ri2inten() # convert to intensities
 		return reg
-		
+
 	def _calc_coherent_power_spectrum(self):
 		"""
 		Private method to compute and store the 2D coherent power spectrum.
@@ -263,12 +263,12 @@ class MovieModeAligner:
 		is called by the _update_energy method.
 		"""
 		cpss = (self._average_stack(s) for s in xrange(self._nstacks))
-		self._cps = sum(cpss)/self._nregions 
+		self._cps = sum(cpss)/self._nregions
 		self._cps.process_inplace('math.rotationalaverage') # smooth
 
 	def _average_stack(self,s):
 		stack = (EMData(self.orig,i,False,r) for i,r in enumerate(self._stacks[s]))
-		avg = sum(stack)/self.hdr['nimg']  
+		avg = sum(stack)/self.hdr['nimg']
 		avg.process_inplace("normalize.edgemean")
 		avg.do_fft_inplace()
 		avg.ri2inten()
@@ -303,7 +303,7 @@ class MovieModeAligner:
 		"""
 		self._calc_coherent_power_spectrum()
 		energy = EMData.cmp(self._ips,'dot',self._cps,{'normalize':1})
-		if energy < self._energies[-1]:
+		if not self._energies or energy < self._energies[-1]:
 			self.write_coherent_power_spectrum(num=-1)
 			self._energies.append(energy)
 			self.optimal_transforms = self._transforms
@@ -311,7 +311,7 @@ class MovieModeAligner:
 	def optimize(self, options):
 		"""
 		Method to perform optimization of movie alignment.
-		
+
 		@param namespace options :	"argparse" options from e2ddd_movie.py
 		"""
 		if self._optimized:
@@ -325,7 +325,7 @@ class MovieModeAligner:
 			cs.set_schedule(schedule)
 		if options.verbose: print("Running simulated annealing")
 		state, energy = cs.anneal()
-		if options.verbose: print("\n\nBest Parameters: {}\nEnergy: {}\nIterations: {}\n".format(state,energy))
+		if options.verbose: print("\n\nBest Parameters: {}\nEnergy: {}".format(state,energy))
 		if options.verbose: print("Starting fine-grained alignment")
 		fs = FineSearch(self,state)
 		if options.verbose: print("Initializing simplex minimizer")
@@ -337,7 +337,7 @@ class MovieModeAligner:
 	def _compares(vec,aligner):
 		"""
 		Energy functon which also updates parameters
-		
+
 		@param list options vectors		:	translations [x1,y1,x2,y2,...] of the movie frames
 		@param MovieModeAligner aligner	:	aligner object
 		"""
@@ -391,7 +391,7 @@ class MovieModeAligner:
 	def get_data(self): return EMData(self.path)
 	def get_header(self): return self.hdr
 	def get_aligned_filename(self): return self.outfile
-	def get_energies(self): return self._energies[1:]
+	def get_energies(self): return self._energies
 	def get_energy(self): return self._energies[-1]
 	def get_incoherent_power_spectrum(self): return self._ips
 	def get_coherent_power_spectrum(self): return self._cps
@@ -598,7 +598,7 @@ class FineSearch(Simplex):
 		self.kC = kC
 		super(FineSearch, self).__init__(aligner._compares,init,increments,kR,kE,kC,aligner)
 
-class CoarseSearch(SimulatedAnnealer):
+class CoarseSearch(BaseAnnealer):
 
 	"""
 	Simulated Annealer to coarsely search the translational alignment parameter space
