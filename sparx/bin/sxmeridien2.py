@@ -25,6 +25,199 @@ import string
 from   sys import exit
 from   time import localtime, strftime
 
+
+
+def AI( icurrentres, Tracker, HISTORY):
+	#  
+	#  Possibilities we will consider:
+	#    1.  resolution improved: keep going with current settings.
+	#    2.  resolution stalled and no pwadjust: turn on pwadjust
+	#    3.  resolution stalled and pwadjust: move to the next phase
+	#    4.  resolution decreased: back off and move to the next phase
+	#    5.  All phases tried and nxinit < nnxo: set nxinit == nnxo and run local searches.
+	from sys import exit
+	if(Tracker["mainiteration"] == 1):
+		nxinit                 = Tracker["nxinit"]
+		while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
+		Tracker["nxinit"]      = min(nxinit,Tracker["constants"]["nnxo"])
+		Tracker["icurrentres"] = icurrentres
+		Tracker["nsoft"]       = 0
+		Tracker["zoom"]        = True
+		Tracker["applyctf"]    = True
+		#  Develop something intelligent
+		Tracker["xr"] = "6 3"
+		Tracker["ts"] = "2 1"
+		Tracker["constants"]["best"] = Tracker["mainiteration"]
+		keepgoing = 1
+	elif(Tracker["mainiteration"] == 2):
+		#  Go back to initial window size and exhaustive search to improve centering of the data.
+		nxinit = HISTORY[0]["nxinit"]
+		Tracker["nxinit"]       = nxinit
+		Tracker["icurrentres"] = min(icurrentres, nxinit//2-3)
+		Tracker["nsoft"]       = 0
+		Tracker["zoom"]        = True
+		Tracker["applyctf"]    = True
+		#  Go back to initial settings
+		Tracker["xr"] , Tracker["ts"] = stepali(Tracker["nxinit"] , Tracker["constants"]["nnxo"], Tracker["constants"]["radius"])
+		Tracker["constants"]["best"] = Tracker["mainiteration"]
+		keepgoing = 1
+	elif(Tracker["mainiteration"] == 3):
+		#  Here we do soft with the initial window size
+		nxinit                 = Tracker["nxinit"]
+		Tracker["icurrentres"] = min(icurrentres, nxinit//2-3)
+		Tracker["nsoft"]       = 1
+		Tracker["zoom"]        = False
+		Tracker["applyctf"]    = True
+		#  This is for soft
+		Tracker["xr"] = "3"
+		Tracker["ts"] = "1"
+		Tracker["constants"]["best"] = Tracker["mainiteration"]
+		keepgoing = 1
+	#  First four steps were preset mainly to establish shifts and decent initial structure.
+	#    Now the program has to start making decisions.
+	elif(Tracker["mainiteration"] > 3):
+		#  Each case needs its own settings.  We arrived here after soft at initial window size.
+		#  Possibilities we will consider:
+		#    1.  resolution improved: keep going with current settings.
+		#    2.  resolution stalled and no pwadjust: turn on pwadjust
+		#    3.  resolution stalled and pwadjust: move to the next phase
+		#    4.  resolution decreased: back off and move to the next phase
+		#    5.  All phases tried and nxinit < nnxo: set nxinit == nnxo and run local searches.
+		if( Tracker["state"] == "INITIAL" ):
+			move_up_phase = True
+		else:
+			#  For all other states make a decision based on resolution change
+			direction = icurrentres - Tracker["icurrentres"]
+			if Tracker["movedback"] :
+				# previous move was back, but the resolution did not improve
+				if direction <= 0 :
+					if Tracker["constants"]["pwreference"] :
+						if Tracker["PWadjustment"] :
+							keepgoing = 0
+						else:
+							Tracker["PWadjustment"] = Tracker["constants"]["pwreference"]
+							Tracker["movedback"] = False
+							keepgoing = 1
+					else:
+						keepgoing = 0
+				else:
+					#  Resolution improved
+					Tracker["movedback"] = False
+					#  And then continue with normal moves
+
+			move_up_phase = False
+			#  Resolution improved, adjust window size and keep going
+			if(  direction > 0 ):
+				keepgoing = 1
+				if(Tracker["state"] == "FINAL"):
+					if( icurrentres + 4 > Tracker["constants"]["nnxo"]): keepgoing = 0
+				else:
+					nxinit = Tracker["nxinit"]
+					while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
+					Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
+				Tracker["icurrentres"] = icurrentres
+				Tracker["constants"]["best"] = Tracker["mainiteration"]
+	
+			#  Resolution stalled
+			elif( direction == 0 ):
+				if Tracker["constants"]["pwreference"] :
+					if Tracker["PWadjustment"] :
+						# move up with the state
+						move_up_phase = True
+					else:
+						# turn on pwadjustment
+						Tracker["PWadjustment"] = Tracker["constants"]["pwreference"]
+						keepgoing = 1
+				else:
+					# move up with the state
+					move_up_phase = True
+				Tracker["constants"]["best"] = Tracker["mainiteration"]
+	
+			# Resolution decreased
+			elif( direction < 1 ):
+				# Come up with rules
+				lb = -1
+				for i in xrange(len(HISTORY)):
+					if( HISTORY[i]["mainiteration"] == Tracker["constants"]["best"] ):
+						lb = i
+						break
+				if( lb == -1 ):
+					ERROR("No best solution in HISTORY, cannot be","sxmeridien",1)
+					exit()
+				#  Here we have to jump over the current state
+				#  However, how to avoid cycling between two states?
+				Tracker["movedback"] = True
+				stt = [Tracker["state"], Tracker["PWadjustment"], Tracker["mainiteration"] ]
+				Tracker = HISTORY[lb].copy()
+				Tracker["state"]          = stt[0]
+				Tracker["PWadjustment"]   = stt[1]
+				Tracker["mainiteration"]  = stt[2]
+				icurrentres               = Tracker["icurrentres"]
+				#  This will set previousoutputdir to the best parames back then.
+				move_up_phase = True
+				
+	
+	
+		if move_up_phase:
+
+			#  INITIAL
+			if(Tracker["state"] == "INITIAL"):
+				#  Switch to EXHAUSTIVE
+				nxinit = Tracker["nxinit"]
+				while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
+				Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
+				Tracker["icurrentres"] = icurrentres
+				Tracker["nsoft"]       = 0
+				Tracker["zoom"]        = True
+				Tracker["applyctf"]    = True
+				#  Switch to exhaustive
+				Tracker["state"]       = "EXHAUSTIVE"
+				#  Develop something intelligent
+				Tracker["xr"] = "6 3"
+				Tracker["ts"] = "2 1"
+				keepgoing = 1
+			#  Exhaustive searches
+			elif(Tracker["state"] == "EXHAUSTIVE"):
+				#  Switch to LOCAL
+				nxinit = Tracker["nxinit"]
+				while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
+				Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
+				Tracker["icurrentres"] = icurrentres
+				Tracker["nsoft"]       = 0
+				Tracker["zoom"]        = False
+				Tracker["applyctf"]     = False
+				Tracker["an"]          = "-1"#"5.0"
+				Tracker["state"]       = "LOCAL"
+				Tracker["maxit"]       = 1
+				Tracker["xr"] = "2"
+				Tracker["ts"] = "2"
+				keepgoing = 1
+			#  Local searches
+			elif(Tracker["state"] == "LOCAL"):
+				#  Switch to FINAL
+				Tracker["nxinit"] = Tracker["constants"]["nnxo"]
+				Tracker["icurrentres"] = icurrentres
+				Tracker["nsoft"]       = 0
+				Tracker["zoom"]        = False
+				Tracker["applyctf"]     = False
+				Tracker["an"]          = "-1"#"5.0"
+				Tracker["state"]       = "FINAL"
+				Tracker["maxit"]       = 1
+				Tracker["xr"] = "2"
+				Tracker["ts"] = "2"
+				keepgoing = 1
+			else:
+				ERROR(" Unknown phase","sxmeridien",1)
+				exit()  #  This will crash the program, but the situation cannot occur
+
+	Tracker["previousoutputdir"] = Tracker["directory"]
+	return keepgoing
+
+
+
+
+
+
 def subdict(d,u):
 	# substitute values in dictionary d by those given by dictionary u
 	for q in u:  d[q] = u[q]
@@ -691,15 +884,13 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 	if(Tracker["radius"] < 2):
 		ERROR( "ERROR!!   lastring too small  %f    %f   %d"%(Tracker["radius"], Tracker["constants"]["radius"]), "sxmeridien",1, myid)
 	Tracker["lowpass"] = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
-	if(Tracker["local"]):
+	if( Tracker["state"] == "LOCAL" ):
 		delta = "2.0"
 	else:
 		delta = "%f  "%min(round(degrees(atan(0.5/Tracker["lowpass"]/Tracker["radius"])), 2), 3.0)
 		Tracker["delta"] = ""
 		for i in xrange(len(get_input_from_string(Tracker["xr"]))):  Tracker["delta"] += delta
 	Tracker["pixercutoff"] = get_pixercutoff(Tracker["radius"], float(delta), 0.5)
-
-	Tracker["zoom"] = False
 
 
 	if(Tracker["delpreviousmax"]):
@@ -716,7 +907,7 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 	#if(Tracker["lowpass"] > 0.48):  ERROR("Low pass filter in metamove > 0.48 on the scale of shrank data","sxmeridien",1,myid)
 
 	#  Run alignment command
-	if(Tracker["local"]):
+	if( Tracker["state"] == "LOCAL" ):
 		params = slocal_ali3d_base_MPI_mrk01(projdata, get_im(Tracker["refvol"]), \
 					Tracker, mpi_comm = MPI_COMM_WORLD, log = log, \
 		    			chunk = 1.0, \
@@ -866,9 +1057,11 @@ def main():
 	Constants["mask3D"]       = options.mask3D
 	Constants["nnxo"]         = -1
 	Constants["pixel_size"]   = 1.0
-	Constants["refvol"]        = volinit
-	Constants["masterdir"]     = masterdir
-	Constants["mempernode"]    = 4.0e9
+	Constants["refvol"]       = volinit
+	Constants["masterdir"]    = masterdir
+	Constants["best"]         = 0
+	Constants["states"]       = ["INITIAL", "EXHAUSTIVE", "LOCAL", "FINAL"]
+	#Constants["mempernode"]   = 4.0e9
 	#  The program will use three different meanings of x-size
 	#  nnxo         - original nx of the data, will not be changed
 	#  nxinit       - window size used by the program during given iteration, 
@@ -877,38 +1070,39 @@ def main():
 	#  nxstep       - step by wich window size increases
 	#
 	# Create and initialize Tracker Dictionary with input options
-	Tracker					= {}
-	Tracker["constants"]    = Constants
-	Tracker["maxit"]        = Tracker["constants"]["maxit"]
-	Tracker["radius"]       = Tracker["constants"]["radius"]
-	Tracker["xr"]           = ""
-	Tracker["yr"]           = "-1"  # Do not change!
-	Tracker["ts"]           = 1
-	Tracker["an"]           = "-1"
-	Tracker["delta"]        = "2.0"
-	Tracker["zoom"]         = True
-	Tracker["nsoft"]        = options.nsoft
-	Tracker["local"]        = False
-	Tracker["PWadjustment"] = ""
-	Tracker["applyctf"]     = True  #  Should the data be premultiplied by the CTF.  Set to False for local continues.
-	Tracker["refvol"]       = None
+	Tracker					  = {}
+	Tracker["constants"]      = Constants
+	Tracker["maxit"]          = Tracker["constants"]["maxit"]
+	Tracker["radius"]         = Tracker["constants"]["radius"]
+	Tracker["xr"]             = ""
+	Tracker["yr"]             = "-1"  # Do not change!
+	Tracker["ts"]             = 1
+	Tracker["an"]             = "-1"
+	Tracker["delta"]          = "2.0"
+	Tracker["zoom"]           = True
+	Tracker["nsoft"]          = options.nsoft
+	Tracker["local"]          = False
+	Tracker["PWadjustment"]   = ""
+	Tracker["applyctf"]       = True  #  Should the data be premultiplied by the CTF.  Set to False for local continues.
+	Tracker["refvol"]         = None
 
-	Tracker["nxinit"]       = 64
-	Tracker["nxstep"]       = 32
-	Tracker["icurrentres"]  = -1
+	Tracker["nxinit"]         = 64
+	Tracker["nxstep"]         = 32
+	Tracker["icurrentres"]    = -1
 	#Tracker["lowpass"]      = 0.4
 	#Tracker["initialfl"]    = 0.4
-	Tracker["falloff"]      = 0.2
-	Tracker["inires"]       = options.inires  # Now in A, convert to absolute before using
-	Tracker["fuse_freq"]    = 50  # Now in A, convert to absolute before using
+	Tracker["falloff"]        = 0.2
+	Tracker["inires"]         = options.inires  # Now in A, convert to absolute before using
+	Tracker["fuse_freq"]      = 50  # Now in A, convert to absolute before using
 	Tracker["delpreviousmax"] = True
-	Tracker["saturatecrit"]  = 1.0
-	Tracker["pixercutoff"]   = 2.0
-	Tracker["directory"]     = ""
+	Tracker["saturatecrit"]   = 1.0
+	Tracker["pixercutoff"]    = 2.0
+	Tracker["directory"]      = ""
 	Tracker["previousoutputdir"] = ""
-	#Tracker["movedup"]       = False
 	#Tracker["eliminated-outliers"] = False
 	Tracker["mainiteration"]  = 0
+	Tracker["movedback"]      = False
+	Tracker["state"]          = Tracker["constants"]["states"][0]
 
 	# ------------------------------------------------------------------------------------
 	#  PARAMETERS OF THE PROCEDURE 
@@ -1302,533 +1496,16 @@ def main():
 		#mpi_barrier(MPI_COMM_WORLD)
 		#mpi_finalize()
 		#exit()
-		keepgoing = 0
-		if myid == main_node:  print("   AAAA   A  ",Tracker["mainiteration"] ,icurrentres,Tracker["icurrentres"])
-		if(Tracker["mainiteration"] == 1):
-			nxinit = Tracker["nxinit"]
-			while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
-			Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
-			Tracker["icurrentres"] = icurrentres
-			Tracker["zoom"] = True
-			#  Develop something intelligent
-			Tracker["xr"] = "6 3"
-			Tracker["ts"] = "2 1"
-			keepgoing = 1
-		elif(Tracker["mainiteration"] == 2):
-			#  Go back to initial window size and exhaustive search to improve centering of the data.
-			nxinit = HISTORY[0]["nxinit"]
-			Tracker["nxinit"] = nxinit
-			Tracker["icurrentres"] = min(icurrentres, nxinit//2-3)
-			Tracker["zoom"] = True
-			#  Go back to initial settings
-			Tracker["xr"] , Tracker["ts"] = stepali(Tracker["nxinit"] , Tracker["constants"]["nnxo"], Tracker["constants"]["radius"])
-			keepgoing = 1
-		elif(Tracker["mainiteration"] == 3):
-			#  Here we do soft with the initial window size
-			nxinit = Tracker["nxinit"]
-			Tracker["icurrentres"] = min(icurrentres, nxinit//2-3)
-			Tracker["nsoft"] = 1
-			Tracker["zoom"] = False
-			#  This is for soft
-			Tracker["xr"] = "3"
-			Tracker["ts"] = "1"
-			keepgoing = 1
-		#  First four steps were preset mainly to astablish shifts and decent initial structure.
-		#    Now the program has to start making decisions.
-		elif(Tracker["mainiteration"] > 3):
-			#  Each case needs its own settings.  We arrived here after soft at initial window size.
-			#  Possibilities we will consider:
-			#    1.  resolution improved: keep going with current settings.
-			#    2.  resolution stalled and no pwadjust: turn on pwadjust
-			#    3.  resolution stalled and pwadjust: move to the next phase
-			#    4.  resolution decreased: back off and move to the next phase
-			#    5.  All phases tried and nxinit < nnxo: set nxinit == nnxo and run local searches.
-			keepgoing = decision( icurrentres, Tracker, HISTORY)
-		def decision( icurrentres, Tracker, HISTORY):
-			#  Each case needs its own settings.  We arrived here after soft at initial window size.
-			#  Possibilities we will consider:
-			#    1.  resolution improved: keep going with current settings.
-			#    2.  resolution stalled and no pwadjust: turn on pwadjust
-			#    3.  resolution stalled and pwadjust: move to the next phase
-			#    4.  resolution decreased: back off and move to the next phase
-			#    5.  All phases tried and nxinit < nnxo: set nxinit == nnxo and run local searches.
-			direction = icurrentres - Tracker["icurrentres"]
-			trying = True
-			while(trying):
-				if direction > 0:
-				elif direction == 0:
-					if( Tracker["PWadjustment"] == ""):
-						Tracker["PWadjustment"] = Tracker["constants"]["pwreference"]
-						trying = False
-					else:
-						move_up_phase = True
-				elif direction < 0:
+		if myid == main_node:  print("   >>> AI  <<<  ",Tracker["mainiteration"] ,icurrentres,Tracker["icurrentres"])
 
-
-			#  Exhaustive searches
-			if(Tracker["an"] == "-1" and not Tracker["local"]):
-				nxinit = Tracker["nxinit"]
-				while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
-				Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
-				Tracker["icurrentres"] = icurrentres
-				Tracker["zoom"] = True
-				#  Develop something intelligent
-				Tracker["xr"] = "6 3"
-				Tracker["ts"] = "2 1"
-				keepgoing = 1
-			#  Local searches
-			elif(Tracker["an"] != "-1" and not Tracker["local"]):
-				#Tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
-				Tracker["initialfl"]  = read_fsc(os.path.join(mainoutputdir,"fsc.txt"),icurrentres, myid, main_node)
-				Tracker["lowpass"]    = Tracker["initialfl"]
-				Tracker["applyctf"]   = True
-				Tracker["nsoft"]      = 0
-			#  Local/gridding  searches, move only as much as the resolution increase allows
-			elif(Tracker["local"] and (nxinit < Tracker["constants"]["nnxo"])):
-				#Tracker["extension"]  =    0.0  # lowpass cannot exceed 0.45
-				Tracker["initialfl"]   = read_fsc(os.path.join(mainoutputdir,"fsc.txt"),icurrentres, myid, main_node)
-				Tracker["lowpass"]     = Tracker["initialfl"]
-				Tracker["applyctf"]    = False
-				Tracker["nsoft"]       = 0
-			elif(Tracker["local"] and (nxinit == Tracker["constants"]["nnxo"])):
-				#Tracker["extension"]  =    0.0  # lowpass cannot exceed 0.45
-				Tracker["initialfl"]   = read_fsc(os.path.join(mainoutputdir,"fsc.txt"),icurrentres, myid, main_node)
-				Tracker["lowpass"]     = Tracker["initialfl"]
-				Tracker["applyctf"]    = False
-				Tracker["nsoft"]       = 0
-			else:
-				print(" Unknown combination of settings in improved resolution path",Tracker["an"],Tracker["local"])
-				exit()  #  This will crash the program, but the situation is unlikely to occure
-
-
-
-		elif(Tracker["mainiteration"] > 3 and Tracker["mainiteration"]<9):
-			Tracker["nsoft"] = 0
-			if(Tracker["mainiteration"] > 4  and Tracker["icurrentres"] > icurrentres):  keepgoing = 0
-			elif(Tracker["icurrentres"] < icurrentres):
-				nxinit = Tracker["nxinit"]
-				while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
-				#  Window size changed, reset projdata
-				if(nxinit> Tracker["nxinit"]):  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
-				Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
-				Tracker["icurrentres"] = icurrentres
-				Tracker["zoom"] = True
-				#  Develop something intelligent
-				Tracker["xr"] = "6 3"
-				Tracker["ts"] = "2 1"
-				keepgoing = 1
-			elif(Tracker["icurrentres"] == icurrentres):
-				# turn on PW adjsutment
-				Tracker["PWadjustment"] = Tracker["constants"]["pwreference"]
-				nxinit = Tracker["nxinit"]
-				while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
-				#  Window size changed, reset projdata
-				if(nxinit> Tracker["nxinit"]):  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
-				Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
-				Tracker["icurrentres"] = icurrentres
-				Tracker["zoom"] = True
-				#  Develop something intelligent
-				Tracker["xr"] = "6 3"
-				Tracker["ts"] = "2 1"
-				keepgoing = 1
-		elif(Tracker["mainiteration"] > 8 and Tracker["PWadjustment"] ):
-			Tracker["PWadjustment"] = Tracker["constants"]["pwreference"]
-			nxinit = Tracker["nxinit"]
-			while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
-			Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
-			if(Tracker["mainiteration"] > 12):  Tracker["nxinit"] = Tracker["constants"]["nnxo"]
-			Tracker["icurrentres"] = icurrentres
-			Tracker["zoom"] = False
-			Tracker["an"] = "-1"#"5.0"
-			Tracker["local"] = True
-			Tracker["maxit"] = 3
-			Tracker["xr"] = "2"
-			Tracker["ts"] = "2"
-			Tracker["applyctf"]     = False
-			keepgoing = 1
-
-			"""
-			if(Tracker["icurrentres"] < icurrentres):
-                                nxinit = Tracker["nxinit"]
-                                while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
-                                #  Window size changed, reset projdata
-                                if(nxinit> Tracker["nxinit"]):  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
-                                Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
-                                Tracker["icurrentres"] = icurrentres
-                                Tracker["zoom"] = False
-				Tracker["an"] = "5.0"
-                                #  Develop something intelligent
-                                Tracker["xr"] = "2"
-                                Tracker["ts"] = "0.5"
-                                keepgoing = 1
-                        elif(Tracker["icurrentres"] == icurrentres):
-                                # turn on local searches
-                                Tracker["PWadjustment"] = Tracker["constants"]["pwreference"]
-                                nxinit = Tracker["nxinit"]
-                                while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
-                                #  Window size changed, reset projdata
-                                if(nxinit> Tracker["nxinit"]):  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
-                                Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
-                                Tracker["icurrentres"] = icurrentres
-                                Tracker["zoom"] = False
-				Tracker["an"] = "-1"#"5.0"
-				Tracker["maxit"] = 1
-                                #  Develop something intelligent
-                                Tracker["xr"] = "3"
-                                Tracker["ts"] = "1"
-                                keepgoing = 1
-			"""
-		"""
-		test_outliers = True
-		eliminated_outliers = False
-		newlowpass = lowpass
-		newfalloff = falloff
-		
-		#  HERE the lowpass has the true meaning
-		lowpass = newlowpass
-		falloff = newfalloff
-		"""
-
-		"""
-		if(myid == main_node and not eliminated_outliers and doit):  # I had to add here doit, otherwise during the restart it incorrectly copies the files.
-			for procid in xrange(2):
-				#  This is standard path, copy parameters to be used to the main
-				cmd = "{} {} {}".format("cp -p", partids[procid] , os.path.join(mainoutputdir,"chunk%01d.txt"%procid))
-				cmdexecute(cmd)
-				cmd = "{} {} {}".format("cp -p", partstack[procid], os.path.join(mainoutputdir,"params-chunk%01d.txt"%procid))
-				cmdexecute(cmd)
-		"""
-
-
-
-		"""
-		if(Tracker["an"] == "-1" ):
-			stepforward = 0.05
-			increment   = 0.02
-		else:
-			stepforward = 0.02
-			increment   = 0.01
-
-		if(myid == main_node):
-			print(" New resolution %d   Previous resolution %d"%(icurrentres , Tracker["icurrentres"]))
-			print(" lowpass ",Tracker["lowpass"],nxinit,nxresolution)
-
-		if(mainiteration >= 10):
-			#  Finish up by running continuous at full size
-			#  for continuous data cannot be ctf applied.
-			projdata = [[model_blank(1,1)],[model_blank(1,1)]]
-			Tracker["applyctf"] = False
-			Tracker["nsoft"] = 0
-			Tracker["local"] = True
-			Tracker["nxinit"] = nnxo
-			Tracker["nxresolution"] = nnxo - cushion -1
-
-			nxresolution = Tracker["nxresolution"]
-			nxinit = Tracker["nxinit"]
-			Tracker["lowpass"] = 0.19167+ (mainiteration-10)*0.00417
-			Tracker["initialfl"] = Tracker["lowpass"]
-			lowpass = Tracker["lowpass"]
-
-
-		"""
-
-		"""
-		#if( ( icurrentres > Tracker["icurrentres"] ) or (eliminated_outliers and not Tracker["eliminated-outliers"]) or mainiteration == 1):
-		if( Tracker["lowpass"] <= 0.4):
-			Tracker["lowpass"] += 0.05
-			Tracker["initialfl"] = Tracker["lowpass"]
-		else:
-			projdata = [[model_blank(1,1)],[model_blank(1,1)]]
-			nxinit = Tracker["nxinit"]
-			if(myid == main_node): print(" Changing window size ",nxinit,Tracker["nxresolution"],nnxo)
-			nxinit *= 2
-			if(nxinit > nnxo):  exit()
-			Tracker["nxresolution"] = nxinit - cushion -1
-			nxresolution = Tracker["nxresolution"]
-			Tracker["nxinit"] = nxinit
-			Tracker["lowpass"] = 0.25
-			Tracker["initialfl"] = Tracker["lowpass"]
-		"""
-		"""
-			if(myid == main_node):
-				if( icurrentres > Tracker["resolution"]):  print("  Resolution improved, full steam ahead!")
-				else:  print("  While the resolution did not improve, we eliminated outliers so we follow the _resolution_improved_ path.")
-			if(Tracker["icurrentres"] + nxstep//2 >= nnxo ):
-				if(myid == main_node): print(" Resolution approached Nyquist limit, program will terminate")
-			else:
-				# We need separate rules for each case
-				if( icurrentres > Tracker["resolution"] ):  Tracker["movedup"] = True
-				else:   Tracker["movedup"] = False
-				#  increase resolution
-				nxresolution = icurrentres*2 +2
-				nxinit = Tracker["nxinit"]
-				while( nxresolution + cushion > nxinit ): nxinit += 32
-				#  Window size changed, reset projdata
-				if(nxinit> Tracker["nxinit"]):  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
-				nxinit = min(nxinit,nnxo)
-				#  Exhaustive searches
-				if(Tracker["an"] == "-1" and not Tracker["local"]):
-					Tracker["initialfl"] = read_fsc(os.path.join(mainoutputdir,"fsc.txt"),icurrentres, myid, main_node)
-					Tracker["lowpass"]   = Tracker["initialfl"]
-					Tracker["applyctf"]  = True
-					Tracker["nsoft"]     = 0
-				#  Local searches
-				elif(Tracker["an"] != "-1" and not Tracker["local"]):
-					#Tracker["extension"] = min(stepforward, 0.45 - currentres)  # lowpass cannot exceed 0.45
-					Tracker["initialfl"]  = read_fsc(os.path.join(mainoutputdir,"fsc.txt"),icurrentres, myid, main_node)
-					Tracker["lowpass"]    = Tracker["initialfl"]
-					Tracker["applyctf"]   = True
-					Tracker["nsoft"]      = 0
-				#  Local/gridding  searches, move only as much as the resolution increase allows
-				elif(Tracker["local"]):
-					#Tracker["extension"]  =    0.0  # lowpass cannot exceed 0.45
-					Tracker["initialfl"]   = read_fsc(os.path.join(mainoutputdir,"fsc.txt"),icurrentres, myid, main_node)
-					Tracker["lowpass"]     = Tracker["initialfl"]
-					Tracker["applyctf"]    = False
-					Tracker["nsoft"]       = 0
-				else:
-					print(" Unknown combination of settings in improved resolution path",Tracker["an"],Tracker["local"])
-					exit()  #  This will crash the program, but the situation is unlikely to occure
-				Tracker["nxresolution"]        = nxresolution
-				Tracker["nxinit"]              = nxinit
-				Tracker["icurrentres"]         = icurrentres
-				Tracker["eliminated-outliers"] = eliminated_outliers
-				bestoutputdir = mainoutputdir
-				keepgoing = 1
-
-		elif( icurrentres < Tracker["icurrentres"] ):
-			if(myid == main_node):  print("  Cannot improve resolution, the best result is in the directory %s"%bestoutputdir)
-			exit()
-			#  The resolution decreased.  For exhaustive or local, backoff and switch to the next refinement.  For gridding, terminate
-			if(not Tracker["movedup"] and Tracker["extension"] < increment and mainiteration > 1):
-				if( Tracker["an"] == "-1" and not Tracker["local"]):
-					Tracker["an"] = options.an
-					Tracker["extension"] = stepforward + increment # so below it will be set to stepforward
-					mainoutputdir = bestoutputdir
-					keepgoing = 1
-					Tracker["nsoft"] = 0
-					if(myid == main_node):  print("  Switching to local searches with an %s"%Tracker["an"])
-				elif(Tracker["an"] != "-1" and not Tracker["local"]):
-					Tracker["extension"] = stepforward + increment # so below it will be set to stepforward
-					mainoutputdir = bestoutputdir
-					Tracker["nsoft"] = 0
-					keepgoing = 1
-					if(myid == main_node):  print("  Switching to local/gridding searches")
-				else:
-					keepgoing = 0
-					if(myid == main_node):  print("  Cannot improve resolution, the best result is in the directory %s"%bestoutputdir)
-			else:
-				if(not Tracker["movedup"] and Tracker["extension"] > 0.01 and mainiteration > 1):
-					if(myid == main_node):  print("  Resolution decreased.  Will decrease target resolution and will fall back on the best so far:  main%03d"%Tracker["bestsolution"])
-					bestoutputdir = os.path.join(masterdir,"main%03d"%Tracker["bestsolution"])
-				elif( Tracker["movedup"] and Tracker["extension"] > 0.01 and mainiteration > 1):
-					if(myid == main_node):  print("  Resolution decreased.  Will decrease target resolution and will try starting from previous stage:  main%03d"%(mainiteration - 1))
-					bestoutputdir = os.path.join(masterdir,"main%03d"%(mainiteration-1))
-				elif( mainiteration == 1):
-					if(myid == main_node):  print("  Resolution decreased in the first iteration.  It is expected, not to worry")
-					bestoutputdir = mainoutputdir
-					Tracker["extension"] = increment  # so it will become zero
-				else:  # missing something here?
-					ERROR(" Should not be here, ERROR 175!", "sxmeridien", 1, myid)
-				if( bestoutputdir != mainoutputdir ):
-					#  This is the key, we just reset the main to previous, so it will be eventually used as a starting in the next iteration
-					mainoutputdir = bestoutputdir
-					'''
-					#  Set data from the main previous best to the current.
-					for procid in xrange(2):
-						partids[procid]   = os.path.join(bestoutputdir,"chunk%01d.txt"%procid)
-						partstack[procid] = os.path.join(bestoutputdir,"params-chunk%01d.txt"%procid)
-					'''
-				if(myid == main_node):
-					lowpass, falloff, currentres = read_text_row( os.path.join(bestoutputdir,"current_resolution.txt") )[0]
-				currentres = bcast_number_to_all(currentres, source_node = main_node)
-				currentres = round(currentres,2)
-				#lowpass = bcast_number_to_all(lowpass, source_node = main_node)
-				#lowpass = round(lowpass,4)
-				#falloff = bcast_number_to_all(falloff, source_node = main_node)
-				#falloff = round(falloff,4)
-				Tracker["extension"] -= increment
-				lowpass = currentres + Tracker["extension"]
-				if(mainiteration > 1):
-					#  Here to be consistent I would have to know what shrink was for this run
-					k = -1
-					for i in xrange(len(history)):
-						if(history[i]["directory"] == bestoutputdir[-6:]):
-							k = i
-							break
-					if(k == -1):
-						print("  something wrong with bestoutputdir")
-						exit()
-					shrink                = history[i]["shrink"]
-					nxresolution          = history[i]["nxresolution"]
-					Tracker["initialfl"]  = history[i]["initialfl"]
-					Tracker["falloff"]    = history[i]["falloff"]
-					Tracker["initialfl"]  = history[i]["initialfl"]
-				Tracker["resolution"]  = currentres
-				Tracker["lowpass"]     = lowpass
-				Tracker["eliminated-outliers"] = eliminated_outliers
-				Tracker["movedup"] = False
-				keepgoing = 1
-
-		elif( icurrentres == Tracker["icurrentres"] ):
-			# We need separate rules for each case
-			if(myid == main_node):
-				print("  Resolution did not improve, swith to the next move", Tracker["an"], Tracker["local"],icurrentres,lowpass)
-			#  Exhaustive searches
-			if(Tracker["an"] == "-1" and not Tracker["local"]):
-				if(myid == main_node):
-					print("  Switching to local searches with an  %s"%options.an)
-				Tracker["applyctf"] = True
-				falloff = 0.2
-				Tracker["local"] = False
-				#  keep the same resolution
-				icurrentres = Tracker["icurrentres"]
-				Tracker["an"] = options.an
-				Tracker["nsoft"] = 0
-				keepgoing = 1
-				if(myid == main_node):
-					print("  Switching to local searches with an %s"%Tracker["an"])
-					if(Tracker["PWadjustment"] != ""):
-						print("  Turning on power spectrum adjustment %s"%Tracker["PWadjustment"])
-			#  Local continuous searches
-			elif(Tracker["an"] != "-1" and not Tracker["local"]):
-				if(myid == main_node):
-					print("  Switching to local continuous")
-				projdata = [[model_blank(1,1)],[model_blank(1,1)]]
-				Tracker["applyctf"] = False
-				#  keep the same resolution
-				icurrentres = Tracker["icurrentres"]
-				Tracker["local"] = True
-				#Tracker["an"] = options.an
-				Tracker["nsoft"] = 0
-				keepgoing = 1
-				if(myid == main_node):
-					print("  Switching to local searches with an %s"%Tracker["an"])
-					if(Tracker["PWadjustment"] != ""):
-						print("  Turning on power spectrum adjustment %s"%Tracker["PWadjustment"])
-			#  Local/continuous  searches, finishing up
-			elif(Tracker["local"]):
-				#  Finish up by running continuous at full size
-				#  for continuous data cannot be ctf applied.
-				projdata = [[model_blank(1,1)],[model_blank(1,1)]]
-				Tracker["applyctf"] = False
-				Tracker["nsoft"] = 0
-				Tracker["local"] = True
-				lowpass = currentres + Tracker["extension"]
-				nxresolution = 2*(nnxo**2)
-				nxinit = nxresolution
-				Tracker["nxresolution"]        = nxresolution
-				Tracker["nxinit"]              = nxinit
-			else:
-				print(" Unknown combination of settings in improved resolution path",Tracker["an"],Tracker["local"])
-				exit()  #  This will crash the program, but the situation is unlikely to occur
-			Tracker["eliminated-outliers"] = eliminated_outliers
-			bestoutputdir = mainoutputdir
-			keepgoing = 1
-
-			if( Tracker["movedup"] ):
-				if(myid == main_node):  print("The resolution did not improve. This is look ahead move.  Let's try to relax slightly and hope for the best")
-				Tracker["extension"]    = min(stepforward,0.45-currentres)
-				Tracker["movedup"]      = False
-				Tracker["initialfl"]    = lowpass
-				Tracker["falloff"]      = falloff
-				lowpass = currentres + Tracker["extension"]
-				shrink  = max(min(2*lowpass + Tracker["falloff"], 1.0), minshrink)
-				nxresolution = min(int(nnxo*shrink + 0.5) + Tracker["extension"],nnxo)
-				nxresolution += nxresolution%2
-				shrink = float(nxresolution)/nnxo
-				if( Tracker["nx"] == nnxo):
-					keepgoing = 0
-				else:
-					Tracker["resolution"] = currentres
-					Tracker["lowpass"]    = lowpass
-					Tracker["falloff"]    = falloff
-					Tracker["eliminated-outliers"] = eliminated_outliers
-					keepgoing = 1
-			else:
-				#  The resolution is not moving up.  Check whether this is exhaustive search,
-				#    if yes switch to local searches by activating an, tun on PW adjustment, if given.
-				#
-				if( Tracker["an"] == "-1" ):
-					Tracker["an"] = options.an
-					Tracker["movedup"] = True
-					nsoft = 0
-					Tracker["nsoft"] = 0
-					paramsdoct["nsoft"] = 0
-					if(myid == main_node):  print("  Switching to local searches with an %s and turning off SHC"%Tracker["an"])
-					keepgoing = 1
-				elif(Tracker["an"] > 0.0 ):
-					if( not Tracker["local"] ):
-						Tracker["local"]     = True
-						Tracker["ts"]        = "2.0"
-						Tracker["falloff"]   = falloff
-						Tracker["movedup"]   = False
-						Tracker["initialfl"] = lowpass
-						lowpass = currentres + Tracker["extension"]
-						shrink  = max(min(2*lowpass + Tracker["falloff"], 1.0), minshrink)
-						nxresolution = min(int(nnxo*shrink + 0.5) + Tracker["extension"],nnxo)
-						nxresolution += nxresolution%2
-						shrink = float(nxresolution)/nnxo
-						if( Tracker["nx"] == nnxo):
-							if(myid == main_node):  print("The resolution did not improve and image we reached the full image size.")
-							keepgoing = 0
-						else:
-							Tracker["resolution"] = currentres
-							Tracker["lowpass"]    = lowpass
-							Tracker["falloff"]    = falloff
-							Tracker["eliminated-outliers"] = eliminated_outliers
-							Tracker["movedup"] = False
-							if(myid == main_node):  print("  Switching to local searches")
-							#  We have to decrease angular error as these are "continuous" searches
-							Tracker["pixercutoff"] = get_pixercutoff(radi*shrink, degrees(atan(1.0/float(radi*shrink)))/4.0, 0.1)
-							keepgoing = 1
-					else:
-						#  If the resolution did not improve for local, keep current parameters, but increase the image size to full.
-						Tracker["ts"]        = "2.0"
-						Tracker["falloff"]   = falloff
-						Tracker["local"]     = True
-						Tracker["movedup"]   = False
-						Tracker["initialfl"] = lowpass
-						nxresolution = nnxo
-						shrink = float(nxresolution)/nnxo
-						if( Tracker["nx"] == nnxo):
-							if(myid == main_node):  print("The resolution did not improve and image we reached the full image size.")
-							keepgoing = 0
-						else:
-							Tracker["resolution"] = currentres
-							Tracker["lowpass"]    = lowpass
-							Tracker["falloff"]    = falloff
-							Tracker["eliminated-outliers"] = eliminated_outliers
-							Tracker["movedup"] = False
-							if(myid == main_node):  print("  Resolution id not improve, do local searches at full size")
-							#  We have to decrease angular error as these are "continuous" searches
-							Tracker["pixercutoff"] = get_pixercutoff(radi*shrink, degrees(atan(1.0/float(radi*shrink)))/4.0, 0.1)
-							keepgoing = 1
-				"""
-#			else:
-#				if(myid == main_node):  print("The resolution did not improve.")
-#				keepgoing = 0
+		keepgoing = AI( icurrentres, Tracker, HISTORY)
 
 		if( keepgoing == 1 ):
 			if(myid == main_node):
 				print("  New image dimension :", Tracker["nxinit"])
-				"""
-				#  It does not look like it is necessary, we just have to point to the directory as the files should be there.
-				#  Will continue, so update the params files
-				for procid in xrange(2):
-					#  partids ads partstack contain parameters to be used as starting in the next iteration
-					if(not os.path.exists(os.path.join(mainoutputdir,"chunk%01d.txt"%procid))):
-						cmd = "{} {} {}".format("cp -p", partids[procid] , os.path.join(mainoutputdir,"chunk%01d.txt"%procid))
-						cmdexecute(cmd)
-					if(not os.path.exists(os.path.join(mainoutputdir,"params-chunk%01d.txt"%procid))):
-						cmd = "{} {} {}".format("cp -p", partstack[procid], os.path.join(mainoutputdir,"params-chunk%01d.txt"%procid))
-						cmdexecute(cmd)
-				"""
-			Tracker["previousoutputdir"] = Tracker["directory"]
-
 		else:
 			if(myid == main_node):
-				print("  Terminating  ")#, the best solution is in the directory main%03d" % Tracker["bestsolution"])
+				print("  Terminating  , the best solution is in the directory  %s"%Tracker["constants"]["best"])
 		mpi_barrier(MPI_COMM_WORLD)
 
 	mpi_finalize()
