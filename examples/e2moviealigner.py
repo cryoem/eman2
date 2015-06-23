@@ -61,15 +61,18 @@ def main():
 	parser.add_argument("--min", type=int, help="Set the minimum translation in pixels",default=-50.0)
 	parser.add_argument("--max", type=int, help="Set the maximum translation in pixels",default=50.0)
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 0,1 (first image skipped)")
-	parser.add_argument("--tmax", type=float, help="Set the maximum achievable temperature for simulated annealing. Default is 12500.0.",default=12500.0)
+	parser.add_argument("--tmax", type=float, help="Set the maximum achievable temperature for simulated annealing. Default is 12500.0.",default=25000.0)
 	parser.add_argument("--tmin", type=float, help="Set the minimum achievable temperature for simulated annealing. Default is 2.5.",default=2.5)
-	parser.add_argument("--steps", type=int, help="Set the number of steps to run simulated annealing. Default is 25000.",default=25000)
+	parser.add_argument("--steps", type=int, help="Set the number of steps to run simulated annealing. Default is 100.",default=100)
 	parser.add_argument("--updates", type=int, help="Set the number of times to update the temperature when running simulated annealing. Default is 100.",default=100)
 	parser.add_argument("--nopresearch",action="store_true",default=False,help="D not run a search of the parameter space before annealing to determine 'best' max and min temperatures as well as the annealing duration.")
 	parser.add_argument("--presteps",type=int,default=500,help="The number of steps to run the exploratory pre-annealing phase.")
-	parser.add_argument("--premins",type=float,default=1.0,help="The number of minutes to run each phase of the exploratory phase before annealing.")
+	parser.add_argument("--premins",type=float,default=2.0,help="The number of minutes to run each phase of the exploratory phase before annealing.")
 	parser.add_argument("--maxiters", type=int, help="Set the maximum number of iterations for the simplex minimizer to run before stopping. Default is 250.",default=250)
 	parser.add_argument("--epsilon", type=float, help="Set the learning rate for the simplex minimizer. Smaller is better, but takes longer. Default is 0.001.",default=0.001)
+	parser.add_argument("--kR", type=float, help="Set the reflection constant for simplex minimization.",default=-1.0)
+	parser.add_argument("--kE", type=float, help="Set the expansion constant for simplex minimization.",default=2.0)
+	parser.add_argument("--kC", type=float, help="Set the contraction constant for simplex minimization..",default=0.5)
 	parser.add_argument("--fixbadpixels",action="store_true",default=False,help="Tries to identify bad pixels in the dark/gain reference, and fills images in with sane values instead")
 	parser.add_argument("--frames",action="store_true",default=False,help="Save the dark/gain corrected frames")
 	parser.add_argument("--normalize",action="store_true",default=False,help="Apply edgenormalization to input images after dark/gain")
@@ -106,7 +109,7 @@ def main():
 
 	for fname in args:
 
-		if options.verbose: print "Processing", fname
+		if options.verbose: print "\nProcessing", fname
 		options.path = fname
 
 		if options.dark:
@@ -323,14 +326,14 @@ class MovieModeAligner:
 			if options.verbose: print("Determining the best annealing parameters")
 			schedule = cs.auto(options.premins,options.presteps)
 			cs.set_schedule(schedule)
-		if options.verbose: print("Running simulated annealing")
-		state, energy = cs.anneal()
-		if options.verbose: print("\n\nBest Parameters: {}\nEnergy: {}".format(state,energy))
+		if options.verbose: print("Running simulated annealing\n")
+		state, energy, iters = cs.anneal()
+		if options.verbose: print("\nBest Parameters: {}\n\nEnergy: {}\nIterations: {}\n".format(state,energy,iters))
 		if options.verbose: print("Starting fine-grained alignment")
-		fs = FineSearch(self,state)
+		sm = Simplex(self._compares,state,[4]*len(state),kC=options.kC,kE=options.kE,kR=options.kR,data=self)
 		if options.verbose: print("Initializing simplex minimizer")
-		result, error, iters = fs.minimize(options.epsilon,options.maxiters,monitor=1)
-		if options.verbose: print("\n\nBest Parameters: {}\nError: {}\nIterations: {}\n".format(result,error,iters))
+		result, error, iters = sm.minimize(options.epsilon,options.maxiters,monitor=1)
+		if options.verbose: print("\n\nBest Parameters: {}\n\nEstimated Error: {}\nIterations: {}\n".format(result,error,iters))
 		self._optimized = True
 
 	@staticmethod
@@ -345,6 +348,7 @@ class MovieModeAligner:
 			t = Transform({'type':'eman','tx':vec[vi],'ty':vec[vi+1]})
 			aligner._update_frame_params(vi/2,t)
 		aligner._update_energy()
+
 		return np.log(1+aligner.get_energy())
 
 	def write(self,name=None):
@@ -584,19 +588,15 @@ class MovieModeAligner:
 		av.write_image(outfile,0)
 		return av
 
-class FineSearch(Simplex):
-
-	"""
-	Simplex minimizer to finely search the annealed minimum yielded by CoarseSearch.
-	"""
-
-	def __init__(self, aligner, init, increments=None, kR=-1.0, kE=2.0, kC=0.5):
-		self.aligner = aligner
-		if increments == None: increments = [5] * len(init)
-		self.kR = kR
-		self.kE = kE
-		self.kC = kC
-		super(FineSearch, self).__init__(aligner._compares,init,increments,kR,kE,kC,aligner)
+# class FineSearch(Simplex):
+#
+# 	"""
+# 	Simplex minimizer to finely search the annealed minimum yielded by CoarseSearch.
+# 	"""
+#
+# 	def __init__(self, func, init, increments=None, kR=-1.0, kE=2.0, kC=0.5):
+# 		if increments == None: increments = [5] * len(init)
+# 		super(FineSearch, self).__init__(func,init,increments,kR,kE,kC)
 
 class CoarseSearch(BaseAnnealer):
 
