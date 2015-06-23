@@ -7577,7 +7577,7 @@ def local_ali3dm_MPI_(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25,
 						finfo.flush()
 				else:
 					refi = img.process( "normalize.mask", {"mask":mask2D, "no_sigma":0} )
-					refi = refi.FourInterpol(nx*2,nx*2,1,True)
+					refi = refi.FourInterpol(nx*2, nx*2, 1, True)
 					refi = Processor.EMFourierFilter(refi, refiparams)
 					refdata = [None]*7
 					refdata[0] = volft
@@ -7972,7 +7972,7 @@ def local_ali3dm_MPI(stack, refvol, outdir, maskfile, ou=-1,  delta=2, ts=0.25, 
 						finfo.flush()
 				else:
 					refi = img.process( "normalize.mask", {"mask":mask2D, "no_sigma":0} )
-					refi = refi.FourInterpol(nx*2,nx*2,1,True)
+					refi = refi.FourInterpol(nx*2, nx*2, 1, True)
 					refi = Processor.EMFourierFilter(refi, refiparams)
 					refdata = [None]*7
 					refdata[0] = volft
@@ -8330,7 +8330,7 @@ def local_ali3d(stack, outdir, maskfile = None, ou = -1,  delta = 2, ts=0.25, ce
 				data[2] = dataim[imn]
 
 				if ts > 0.0:
-					refi = dataim[imn].FourInterpol(nx*2, nx*2, 0, False)
+					refi = dataim[imn].FourInterpol(nx*2, nx*2, 1, False)
 					data[4] = Processor.EMFourierFilter(refi, params)
 				
 				phi, theta, psi, tx, ty = get_params_proj(dataim[imn])
@@ -8639,7 +8639,7 @@ def local_ali3d_MPI(stack, outdir, maskfile, ou = -1,  delta = 2, ts=0.25, cente
 
 				data[2] = dataim[imn-image_start]
 				if ts > 0.0:
-					refi = dataim[imn-image_start].FourInterpol(nx*2, nx*2, 0, True)
+					refi = dataim[imn-image_start].FourInterpol(nx*2, nx*2, 1, True)
 					data[4] = Processor.EMFourierFilter(refi, params)
 
 				#phi, theta, psi, tx, ty = get_params_proj(dataim[imn-image_start])
@@ -9089,7 +9089,7 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 
 				data[2] = dataim[imn]
 				if ts > 0.0:
-					refi = dataim[imn].FourInterpol(nx*2, nx*2, 0, True)
+					refi = dataim[imn].FourInterpol(nx*2, nx*2, 1, True)
 					data[4] = Processor.EMFourierFilter(refi, params)
 
 				#phi, theta, psi, tx, ty = get_params_proj(dataim[imn])
@@ -9543,7 +9543,7 @@ def slocal_ali3d_base_MPI(stack, templatevol, ali3d_options, \
 
 				data[2] = dataim[imn]
 				if ts > 0.0:
-					refi = dataim[imn].FourInterpol(nx*2, nx*2, 0, True)
+					refi = dataim[imn].FourInterpol(nx*2, nx*2, 1, True)
 					data[4] = Processor.EMFourierFilter(refi, params)
 
 				#phi, theta, psi, tx, ty = get_params_proj(dataim[imn])
