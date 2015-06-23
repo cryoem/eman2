@@ -312,6 +312,7 @@ class BaseAnnealer(object):
         Returns
         (state, energy): the best state and energy found.
         """
+        niters = 0
         step = 0
         self.start = time.time()
 
@@ -360,6 +361,7 @@ class BaseAnnealer(object):
                     self.update(
                         step, T, E, accepts / trials, improves / trials)
                     trials, accepts, improves = 0, 0, 0
+            niters += 1
 
         # line break after progress output
         print('')
@@ -368,7 +370,7 @@ class BaseAnnealer(object):
         if self.save_state_on_exit:
             self.save_state()
         # Return best state and energy
-        return bestState, bestEnergy
+        return bestState, bestEnergy, niters
 
     def auto(self, minutes, steps=2000):
         """Minimizes the energy of a system by simulated annealing with
