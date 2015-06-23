@@ -25,6 +25,8 @@ import string
 from   sys import exit
 from   time import localtime, strftime
 
+global cushion
+cushion = 8
 
 
 def AI( icurrentres, Tracker, HISTORY):
@@ -1098,10 +1100,6 @@ def main():
 	Tracker["state"]          = Tracker["constants"]["states"][0]
 
 	# ------------------------------------------------------------------------------------
-	#  PARAMETERS OF THE PROCEDURE 
-	#  threshold error
-	thresherr = 0
-	global cushion  = 8  #  the window size has to be at least 8 pixels larger than what would follow from resolution		
 
 	# Get the pixel size; if none, set to 1.0, and the original image size
 	if(myid == main_node):
