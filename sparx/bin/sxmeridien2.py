@@ -795,9 +795,8 @@ def get_shrink_data(onx, nx, stack, partids, partstack, myid, main_node, nproc, 
 	if( myid == main_node ):
 		print("    ")
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(  line, "Reading data  onx: %3d, nx: %3d,  stack: %s, partids: %s, partstack: %s, CTF: %s, applyctf: %s, preshift: %s, radi: %3d."\
-						%(onx, nx, stack, partids, partstack, CTF, applyctf, preshift, radi) )
-		print("    ")
+		print(  line, "Reading data  onx: %3d, nx: %3d, CTF: %s, applyctf: %s, preshift: %s."%(onx, nx, CTF, applyctf, preshift) )
+		print("                       stack: %s\n                       partids: %s\n                       partstack:%s\n"%(stack, partids, partstack) )
 	if( myid == main_node ): lpartids = read_text_file(partids)
 	else:  lpartids = 0
 	lpartids = wrap_mpi_bcast(lpartids, main_node)
@@ -1102,7 +1101,7 @@ def main():
 	#  PARAMETERS OF THE PROCEDURE 
 	#  threshold error
 	thresherr = 0
-	cushion  = 8  #  the window size has to be at least 8 pixels larger than what would follow from resolution		
+	global cushion  = 8  #  the window size has to be at least 8 pixels larger than what would follow from resolution		
 
 	# Get the pixel size; if none, set to 1.0, and the original image size
 	if(myid == main_node):
