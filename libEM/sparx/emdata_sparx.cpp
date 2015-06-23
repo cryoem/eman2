@@ -1885,7 +1885,7 @@ void EMData::onelinenn_ctf_applied(int j, int n, int n2,
 	for (int i = 0; i <= n2; i++) {
 	        int r2 = i*i + j*j;
 		if ( (r2< n*n/4) && !((0==i) && (j< 0)) ) {
-                        float  ctf = ctf_store::get_ctf(r2, i, j);
+			float  ctf = ctf_store::get_ctf(r2, i, j);
 
 			 //	   if ( !((0 == i) && (j < 0))) {
 			float xnew = i*tf[0][0] + j*tf[1][0];
@@ -1901,7 +1901,7 @@ void EMData::onelinenn_ctf_applied(int j, int n, int n2,
 			int ixn = int(xnew + 0.5 + n) - n;
 			int iyn = int(ynew + 0.5 + n) - n;
 			int izn = int(znew + 0.5 + n) - n;
-			
+
 			int iza, iya;
 			if (izn >= 0)  iza = izn + 1;
 			else           iza = n + izn + 1;
@@ -1971,10 +1971,9 @@ void EMData::nn_ctf_applied(EMData* w, EMData* myfft, const Transform& tf, float
 	set_array_offsets(0,1,1);
 	myfft->set_array_offsets(0,1);
 
-        Ctf* ctf = myfft->get_attr( "ctf" );
-        ctf_store::init( ny, ctf );
-        if(ctf) {delete ctf; ctf=0;}
-	//}
+	Ctf* ctf = myfft->get_attr( "ctf" );
+	ctf_store::init( ny, ctf );
+	if(ctf) {delete ctf; ctf=0;}
 
 	// loop over frequencies in y
 	for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn_ctf_applied(iy, ny, nxc, w, myfft, tf, mult);
