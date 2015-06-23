@@ -1735,7 +1735,7 @@ float ctf_store::m_cs, ctf_store::m_voltage, ctf_store::m_pixel;
 float ctf_store::m_ampcont, ctf_store::m_bfactor;
 float ctf_store::m_defocus, ctf_store::m_dza, ctf_store::m_azz;
 
-
+//  This class was for some reason introduced for rectangular reconstruction, which in any case is not used anymore PAP 06/23/2015
 class ctf_store_new
 {
 public:
