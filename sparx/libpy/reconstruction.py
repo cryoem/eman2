@@ -199,9 +199,7 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad=2, xysize=-1,
 		dopad = False
 	prjlist.goToPrev()
 
-	fftvol = EMData()
-	# fftvol.set_attr("abc", [1, 2, 3, 4, 11, 12, 13, 14, 21, 22, 23, 24])
-		
+	fftvol = EMData()		
 	weight = EMData()
 	if (xysize == -1 and zsize == -1 ):
 		params = {"size":imgsize, "npad":npad, "symmetry":symmetry, "fftvol":fftvol, "weight":weight}
@@ -652,6 +650,20 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", info=N
 	prjlist.goToPrev()
 
 	fftvol = EMData()
+
+	if( snr == -1.0 ):
+		snr = 1.0
+		if myid == 0:  print "  Setting smear"
+		ns = 1
+		astep = 0.75
+		smear = []
+		for i in xrange(-ns,ns+1):
+			for j in xrange(-ns,ns+1):
+				for k in xrange(-ns,ns+1):
+					smear+= [i*step,j*step,k*step,1.0]
+		if myid == 0:  print "  Smear  ",smear
+		fftvol.set_attr("abc", smear)
+
 	weight = EMData()
 	if (xysize == -1 and zsize == -1 ):
 		params = {"size":imgsize, "npad":npad, "snr":snr, "sign":sign, "symmetry":symmetry, "fftvol":fftvol, "weight":weight}
@@ -1974,7 +1986,7 @@ def rec3D_MPI(data, snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None,
 		fscdat = fsc_mask(volodd, voleve, mask3D, rstep, fsc_curve)
 		del  volodd, voleve, mask3D
 		volall = recv_EMData(main_node_all, tag_volall, mpi_comm)
-		os.system( "rm -f " + fftvol_odd_file + " " + weight_odd_file );
+		os.system( "rm -f " + fftvol_odd_file + " " + weight_odd_file )
 		return volall, fscdat
 
 	if myid == main_node_eve:
