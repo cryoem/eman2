@@ -38,6 +38,7 @@ def AI( icurrentres, Tracker, HISTORY):
 	#    4.  resolution decreased: back off and move to the next phase
 	#    5.  All phases tried and nxinit < nnxo: set nxinit == nnxo and run local searches.
 	from sys import exit
+	reset_data = False
 	if(Tracker["mainiteration"] == 1):
 		nxinit                 = Tracker["nxinit"]
 		while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
@@ -45,6 +46,7 @@ def AI( icurrentres, Tracker, HISTORY):
 		Tracker["icurrentres"] = icurrentres
 		Tracker["nsoft"]       = 0
 		Tracker["zoom"]        = True
+		if not Tracker["applyctf"] :  reset_data  = True
 		Tracker["applyctf"]    = True
 		#  Develop something intelligent
 		Tracker["xr"] = "6 3"
@@ -58,6 +60,7 @@ def AI( icurrentres, Tracker, HISTORY):
 		Tracker["icurrentres"] = min(icurrentres, nxinit//2-3)
 		Tracker["nsoft"]       = 0
 		Tracker["zoom"]        = True
+		if not Tracker["applyctf"] :  reset_data  = True
 		Tracker["applyctf"]    = True
 		#  Go back to initial settings
 		Tracker["xr"] , Tracker["ts"] = stepali(Tracker["nxinit"] , Tracker["constants"]["nnxo"], Tracker["constants"]["radius"])
@@ -69,6 +72,7 @@ def AI( icurrentres, Tracker, HISTORY):
 		Tracker["icurrentres"] = min(icurrentres, nxinit//2-3)
 		Tracker["nsoft"]       = 1
 		Tracker["zoom"]        = False
+		if not Tracker["applyctf"] :  reset_data  = True
 		Tracker["applyctf"]    = True
 		#  This is for soft
 		Tracker["xr"] = "3"
@@ -171,6 +175,7 @@ def AI( icurrentres, Tracker, HISTORY):
 				Tracker["icurrentres"] = icurrentres
 				Tracker["nsoft"]       = 0
 				Tracker["zoom"]        = True
+				if not Tracker["applyctf"] :  reset_data  = True
 				Tracker["applyctf"]    = True
 				#  Switch to exhaustive
 				Tracker["state"]       = "EXHAUSTIVE"
@@ -187,8 +192,9 @@ def AI( icurrentres, Tracker, HISTORY):
 				Tracker["icurrentres"] = icurrentres
 				Tracker["nsoft"]       = 0
 				Tracker["zoom"]        = False
+				if Tracker["applyctf"] :  reset_data  = True
 				Tracker["applyctf"]     = False
-				Tracker["an"]          = "-1"#"5.0"
+				Tracker["an"]          = "-1"
 				Tracker["state"]       = "LOCAL"
 				Tracker["maxit"]       = 1
 				Tracker["xr"] = "2"
@@ -201,8 +207,9 @@ def AI( icurrentres, Tracker, HISTORY):
 				Tracker["icurrentres"] = icurrentres
 				Tracker["nsoft"]       = 0
 				Tracker["zoom"]        = False
+				if Tracker["applyctf"] :  reset_data  = True
 				Tracker["applyctf"]     = False
-				Tracker["an"]          = "-1"#"5.0"
+				Tracker["an"]          = "-1"
 				Tracker["state"]       = "FINAL"
 				Tracker["maxit"]       = 1
 				Tracker["xr"] = "2"
@@ -213,7 +220,7 @@ def AI( icurrentres, Tracker, HISTORY):
 				exit()  #  This will crash the program, but the situation cannot occur
 
 	Tracker["previousoutputdir"] = Tracker["directory"]
-	return keepgoing
+	return keepgoing, reset_data
 
 
 
@@ -1488,9 +1495,10 @@ def main():
 		#exit()
 		if myid == main_node:  print("   >>> AI  <<<  ",Tracker["mainiteration"] ,icurrentres,Tracker["icurrentres"])
 
-		keepgoing = AI( icurrentres, Tracker, HISTORY)
+		keepgoing. reset_data = AI( icurrentres, Tracker, HISTORY)
 
 		if( keepgoing == 1 ):
+			if reset_data :  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
 			if(myid == main_node):
 				print("  New image dimension :", Tracker["nxinit"])
 		else:
