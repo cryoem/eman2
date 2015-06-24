@@ -7,13 +7,13 @@
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
 # complete EMAN2 and SPARX software packages have some GPL dependencies,
-# so you are responsible for compliance with the licenses of these packages
-# if you opt to use BSD licensing. The warranty disclaimer below holds
-# in either instance.
+# so you are responsible for compliance with the licenses of these
+# packages if you opt to use BSD licensing. The warranty disclaimer below
+# holds in either instance.
 #
-# This complete copyright notice must be included in any revised version of the
-# source code. Additional authorship citations may be added, but existing
-# author citations must be preserved.
+# This complete copyright notice must be included in any revised version
+# of the source code. Additional authorship citations may be added, but
+# existing author citations must be preserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA	2111-1307 USA
 #
 
 from EMAN2 import *
@@ -47,9 +47,9 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """e2moviealigner.py [options] <ddd_movie_stack> <ddd_movie_stack> ... <ddd_movie_stack>
 
-	Determines the optimal whole-frame alignment of a DDD movie. It can be used
-	to determine the proper x and y translations for each movie frame and can
-	perform the actual alignment according to the translations.
+	Determines the optimal whole-frame alignment of a DDD movie. It can be
+	used to determine the proper x and y translations for each movie frame and
+	can perform the actual alignment according to the translations.
 	"""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
@@ -65,7 +65,8 @@ def main():
 	parser.add_argument("--tmin", type=float, help="Set the minimum achievable temperature for simulated annealing. Default is 2.5.",default=2.5)
 	parser.add_argument("--steps", type=int, help="Set the number of steps to run simulated annealing. Default is 100.",default=100)
 	parser.add_argument("--updates", type=int, help="Set the number of times to update the temperature when running simulated annealing. Default is 100.",default=100)
-	parser.add_argument("--nopresearch",action="store_true",default=False,help="D not run a search of the parameter space before annealing to determine 'best' max and min temperatures as well as the annealing duration.")
+	#parser.add_argument("--nopresearch",action="store_true",default=False,help="Do not run a search of the parameter space before annealing to determine 'best' max and min temperatures as well as the annealing duration.")
+	parser.add_argument("--nofinesearch",action="store_true",default=False,help="Do not run Simplex fine-tuning alignment.")
 	parser.add_argument("--presteps",type=int,default=500,help="The number of steps to run the exploratory pre-annealing phase.")
 	parser.add_argument("--premins",type=float,default=2.0,help="The number of minutes to run each phase of the exploratory phase before annealing.")
 	parser.add_argument("--maxiters", type=int, help="Set the maximum number of iterations for the simplex minimizer to run before stopping. Default is 250.",default=250)
@@ -116,7 +117,6 @@ def main():
 			if options.verbose: print("Performing dark reference correction")
 			dark = MovieModeAligner.dark_correct(options)
 		else: dark=None
-
 		if options.gain:
 			if options.verbose: print("Performing gain reference correction")
 			gain = MovieModeAligner.gain_correct(options,dark)
@@ -124,7 +124,6 @@ def main():
 			if options.verbose: print("Performing K2 gain reference correction")
 			gain = EMData(options.gaink2)
 		else: gain = None
-
 		if options.gain or options.dark:
 			if options.verbose: print("Performing background subtraction")
 			bgsub = MovieModeAligner.background_subtract(options,dark,gain)
@@ -139,14 +138,11 @@ def main():
 
 		if options.verbose: print("Creating movie aligner object")
 		alignment = MovieModeAligner(fname,bgsub,bs,options.min,options.max)
-
 		if options.verbose: print("Optimizing movie frame alignment")
 		alignment.optimize(options)
-
 		if options.verbose: print("Plotting derived alignment data")
 		alignment.plot_energies(fname=fname[:-4]+'_energies.png')
 		alignment.plot_translations(fname=fname[:-4]+'_translations.png')
-
 		if options.verbose: print("Writing aligned frames to disk")
 		alignment.write()
 
@@ -175,12 +171,15 @@ class MovieModeAligner:
 		"""
 		Initialization method for MovieModeAligner objects.
 
-		@param str fname 		:	File location original data
-		@param str bgsub		:	File location of background subtracted data
-		@param int boxsize  	:	(optional) Size of boxes used to compute average power spectra. Default is 512.
-		@param list transforms	: 	(optional) A list of Transform objects.
-		@param float min	:	(optional) The minimum alignment translation in pixels. Default is -4
-		@param float max	:	(optional) The maximum alignment translation in pixels. Default is 4
+		@param str fname: File location original data
+		@param str bgsub: File location of background subtracted data
+		@param int boxsize: (optional) Size of boxes used to compute average
+			power spectra. Default is 512.
+		@param list transforms: (optional) A list of Transform objects.
+		@param float min: (optional) The minimum alignment translation in
+			pixels. Default is -4
+		@param float max: (optional) The maximum alignment translation in
+			pixels. Default is 4
 		"""
 		self.orig = fname
 		self.hdr = EMData(fname,0).get_attr_dict()
@@ -200,17 +199,20 @@ class MovieModeAligner:
 		self.write_coherent_power_spectrum(name=fname[:-4]+'_coherent.hdf')
 		self.write_coherent_power_spectrum()
 		self._energies = []
+		self._minimization_path = []
 		self._update_energy()
 		self._optimized = False
 
 	def _initialize_params(self,boxsize,transforms,min_shift,max_shift):
 		"""
-		A purely organizational private method to keep the initialization code clean and readable.
-		This function takes care of initializing the variables (and allocating the
-		subsequent memory) that will be used through the lifetime of the MovieModeAligner.
+		A purely organizational private method to keep the initialization code
+		clean and readable. This function takes care of initializing the
+		variables (and allocating the subsequent memory) that will be used
+		through the lifetime of the MovieModeAligner.
 
-		@param int boxsize :		Size of boxes used to compute average power spectra.
-		@param list transforms :	A list of Transform objects.
+		@param int boxsize: Size of boxes used to compute average power
+			spectra.
+		@param list transforms: A list of Transform objects.
 		"""
 		self._boxsize = boxsize
 		self._min = min_shift
@@ -279,13 +281,13 @@ class MovieModeAligner:
 
 	def _update_frame_params(self,i,t):
 		"""
-		Private method to update a single image according to an affine transformation.
-		Note that transformations should by be in 2D.
+		Private method to update a single image according to an affine
+		transformation. Note that transformations should by be in 2D.
 
-		@param int i :		 	An integer specifying which transformation to update
-		@param Transform t :	An EMAN Transform object
+		@param int i: An integer specifying which transformation to update
+		@param Transform t: An EMAN Transform object
 		"""
-		self._transforms[i] = t  # update transform
+		self._transforms[i] = t	 # update transform
 		newregions = [] # update regions
 		for ir in xrange(self._norigins): # update stacks
 			x = np.add(self._origins[ir][:2],t.get_trans_2d())
@@ -296,20 +298,23 @@ class MovieModeAligner:
 
 	def _update_energy(self):
 		"""
-		Private method to update the energy associated with a particular set of frame alignments.
-		Our energy function is the dot product of the incoherent and coherent 2D power spectra.
-		The optimizer needs to pass a list of transformations which will then be applied. If
-		the alignment is improved, the transforms supplied will be stored in the
+		Private method to update the energy associated with a particular set
+		of frame alignments. Our energy function is the dot product of the
+		incoherent and coherent 2D power spectra. The optimizer needs to pass
+		a list of transformations which will then be applied. If the alignment
+		is improved, the transforms supplied will be stored in the
 		optimal_transforms variable for later access.
 
-		@param list transforms : 	List of proposed EMAN Transform objects, one for each frame in movie.
+		@param list transforms: List of proposed EMAN Transform objects, one
+			for each frame in movie.
 		"""
 		self._calc_coherent_power_spectrum()
-		energy = EMData.cmp(self._ips,'dot',self._cps,{'normalize':1})
-		if not self._energies or energy < self._energies[-1]:
+		energy = -np.log(1+EMData.cmp(self._ips,'dot',self._cps,{'normalize':1}))
+		if not self._energies or energy < min(self._energies):
 			self.write_coherent_power_spectrum(num=-1)
-			self._energies.append(energy)
 			self.optimal_transforms = self._transforms
+			self._minimization_path.append(energy)
+		self._energies.append(energy)
 
 	def optimize(self, options):
 		"""
@@ -322,18 +327,22 @@ class MovieModeAligner:
 			return
 		if options.verbose: print("Starting coarse-grained alignment")
 		cs = CoarseSearch(self, tmax=options.tmax, tmin=options.tmin, steps=options.steps, updates=options.updates)
-		if not options.nopresearch:
-			if options.verbose: print("Determining the best annealing parameters")
-			schedule = cs.auto(options.premins,options.presteps)
-			cs.set_schedule(schedule)
+		#if not options.nopresearch:
+		#	if options.verbose: print("Determining the best annealing parameters")
+		#	schedule = cs.auto(options.premins,options.presteps)
+		#	cs.set_schedule(schedule)
 		if options.verbose: print("Running simulated annealing\n")
-		state, energy, iters = cs.anneal()
-		if options.verbose: print("\nBest Parameters: {}\n\nEnergy: {}\nIterations: {}\n".format(state,energy,iters))
-		if options.verbose: print("Starting fine-grained alignment")
-		sm = Simplex(self._compares,state,[4]*len(state),kC=options.kC,kE=options.kE,kR=options.kR,data=self)
-		if options.verbose: print("Initializing simplex minimizer")
-		result, error, iters = sm.minimize(options.epsilon,options.maxiters,monitor=1)
-		if options.verbose: print("\n\nBest Parameters: {}\n\nEstimated Error: {}\nIterations: {}\n".format(result,error,iters))
+		annealed = cs.anneal()
+		state = [t for tform in self.optimal_transforms for t in tform.get_trans_2d()]
+		energy = self.get_lowest_energy()
+		if options.verbose: print("\nBest Parameters:\n{}\n\n".format(state))
+
+		if not options.nofinesearch:
+			if options.verbose: print("Starting fine-grained alignment")
+			sm = Simplex(self._compares,state,[4]*len(state),kC=options.kC,kE=options.kE,kR=options.kR,data=self)
+			if options.verbose: print("Initializing simplex minimizer")
+			result, error, iters = sm.minimize(options.epsilon,options.maxiters,monitor=1)
+			if options.verbose: print("\n\nBest Parameters: {}\n\nEstimated Error: {}\nIterations: {}\n".format(result,error,iters))
 		self._optimized = True
 
 	@staticmethod
@@ -341,15 +350,15 @@ class MovieModeAligner:
 		"""
 		Energy functon which also updates parameters
 
-		@param list options vectors		:	translations [x1,y1,x2,y2,...] of the movie frames
-		@param MovieModeAligner aligner	:	aligner object
+		@param list options vectors: translations [x1,y1,x2,y2,...] of the
+			movie frames
+		@param MovieModeAligner aligner: aligner object
 		"""
 		for vi in range(0,len(vec),2):
 			t = Transform({'type':'eman','tx':vec[vi],'ty':vec[vi+1]})
 			aligner._update_frame_params(vi/2,t)
 		aligner._update_energy()
-
-		return np.log(1+aligner.get_energy())
+		return aligner.get_last_energy()
 
 	def write(self,name=None):
 		"""
@@ -358,7 +367,7 @@ class MovieModeAligner:
 		@param str name: (optional) file name to write aligned movie stack
 		"""
 		if not name: name=self.outfile
-		elif name[:-4] != '.hdf': name = name[:-4] + '.hdf'  # force HDF
+		elif name[:-4] != '.hdf': name = name[:-4] + '.hdf'	 # force HDF
 		if not self._optimized: print("Warning: Saving non-optimal alignment. Run the optimize method to determine best frame translations.")
 		for i in xrange(self.hdr['nimg']):
 			im = EMData(self.orig,i)
@@ -369,8 +378,10 @@ class MovieModeAligner:
 		"""
 		Method to write coherent power spectrum to current directory.
 
-		@param str name	: name of coherent power spectrum to be written to disk
-		@param int num	: image slice into which the coherent power spectrum will be saved
+		@param str name : name of coherent power spectrum to be written to
+			disk
+		@param int num	: image slice into which the coherent power spectrum
+			will be saved
 		"""
 		if not name: name = self.orig[:-4] + '_coherent.hdf'
 		rcps = self._cps.do_ift()
@@ -382,8 +393,10 @@ class MovieModeAligner:
 		"""
 		Method to write incoherent power spectrum to current directory.
 
-		@param str name	: name of incoherent power spectrum to be written to disk
-		@param int num	: image slice into which the incoherent power spectrum will be saved
+		@param str name: name of incoherent power spectrum to be written to
+			disk
+		@param int num: image slice into which the incoherent power spectrum
+			will be saved
 		"""
 		if not name: name = self.orig[:-4] + '_coherent.hdf'
 		rips = self._ips.do_ift()
@@ -395,8 +408,12 @@ class MovieModeAligner:
 	def get_data(self): return EMData(self.path)
 	def get_header(self): return self.hdr
 	def get_aligned_filename(self): return self.outfile
+
 	def get_energies(self): return self._energies
-	def get_energy(self): return self._energies[-1]
+	def get_minimization_path(self): return self._minimization_path
+	def get_lowest_energy(self): return min(self._energies)
+	def get_last_energy(self): return self._energies[-1]
+
 	def get_incoherent_power_spectrum(self): return self._ips
 	def get_coherent_power_spectrum(self): return self._cps
 
@@ -408,7 +425,7 @@ class MovieModeAligner:
 		"""
 		Method to display 'movie' of averaged frames
 
-		@param int f2avg : 	number of frames to average. Default is 5.
+		@param int f2avg :	number of frames to average. Default is 5.
 		"""
 		mov=[]
 		for i in xrange(f2avg+1,self.hdr['nimg']):
@@ -435,7 +452,8 @@ class MovieModeAligner:
 
 	def plot_translations(self,fname=None,savefig=True,showfig=False):
 		"""
-		Method to display optimized, labeled whole-frame translation vectors in 2D.
+		Method to display optimized, labeled whole-frame translation vectors
+		in 2D.
 		"""
 		if not fname: fname = self._dir + '/' + 'trans.png'
 		trans2d = []
@@ -458,9 +476,10 @@ class MovieModeAligner:
 	@classmethod
 	def dark_correct(cls,options):
 		"""
-		Class method to dark correct a DDD movie stack according to a dark reference.
+		Class method to dark correct a DDD movie stack according to a dark
+		reference.
 
-		@param namespace options	:	"argparse" options from e2ddd_movie.py
+		@param namespace options: "argparse" options from e2ddd_movie.py
 		"""
 		hdr = EMData(options.dark,0,True).get_attr_dict()
 		if options.path[-4:].lower() in (".mrc"): nd = hdr['nz']
@@ -473,7 +492,7 @@ class MovieModeAligner:
 			if options.verbose > 2: print "Summing dark"
 			for i in xrange(0,nd):
 				if options.verbose:
-					print " {}/{}   \r".format(i+1,nd),
+					print " {}/{}	\r".format(i+1,nd),
 					sys.stdout.flush()
 				t=EMData(options.dark,i)
 				t.process_inplace("threshold.clampminmax",{"minval":0,"maxval":t["mean"]+t["sigma"]*3.5,"tozero":1})
@@ -493,7 +512,7 @@ class MovieModeAligner:
 		"""
 		Class method to gain correct a DDD movie stack.
 
-		@param namespace options	:	"argparse" options from e2ddd_movie.py
+		@param namespace options: "argparse" options from e2ddd_movie.py
 		"""
 		hdr = EMData(options.gain,0,True).get_attr_dict()
 		if options.path[-4:].lower() in (".mrc"): nd = hdr['nz']
@@ -506,22 +525,22 @@ class MovieModeAligner:
 			if options.verbose > 2: print "Summing gain"
 			for i in xrange(0,nd):
 				if options.verbose:
-					print " {}/{}   \r".format(i+1,nd),
+					print " {}/{}	\r".format(i+1,nd),
 					sys.stdout.flush()
 				t=EMData(options.gain,i)
 				t.process_inplace("threshold.clampminmax",{"minval":0,"maxval":t["mean"]+t["sigma"]*3.5,"tozero":1})
 				a.add_image(t)
 			gain=a.finish()
 			sigg.write_image(options.gain.rsplit(".",1)[0]+"_sig.hdf")
-			if options.fixbadpixels: sigg.process_inplace("threshold.binary",{"value":sigg["sigma"]/10.0})  # Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
+			if options.fixbadpixels: sigg.process_inplace("threshold.binary",{"value":sigg["sigma"]/10.0})	# Theoretically a "perfect" pixel would have zero sigma, but in reality, the opposite is true
 			if dark!=None:
 				sigd=EMData(options.dark.rsplit(".",1)[0]+"_sig.hdf",0,False)
 				sigg.mult(sigd)
 			gain.mult(sigg)
 			gain.write_image(options.gain.rsplit(".",1)[0]+"_sum.hdf")
-		if dark!=None : gain.sub(dark)  # dark correct the gain-reference
-		gain.mult(1.0/gain["mean"])  # normalize so gain reference on average multiplies by 1.0
-		gain.process_inplace("math.reciprocal",{"zero_to":0.0})  # setting zero values to zero helps identify bad pixels
+		if dark!=None : gain.sub(dark)	# dark correct the gain-reference
+		gain.mult(1.0/gain["mean"])	 # normalize so gain reference on average multiplies by 1.0
+		gain.process_inplace("math.reciprocal",{"zero_to":0.0})	 # setting zero values to zero helps identify bad pixels
 		return gain
 
 	@classmethod
@@ -529,11 +548,11 @@ class MovieModeAligner:
 		"""
 		Class method to background subtract and gain correct a DDD movie
 
-		@param namespace options	:	"argparse" options from e2ddd_movie.py
-		@param str path			:	path of movie to be background subtracted
-		@param str dark			:	dark reference image
-		@param str gain			: 	gain reference image
-		@param str outfile		:	(optional) name of the file to be written with background subtracted movie
+		@param namespace options: "argparse" options from e2ddd_movie.py
+		@param str path: path of movie to be background subtracted
+		@param str dark: dark reference image
+		@param str gain: gain reference image
+		@param str outfile: (optional) name of the file to be written with background subtracted movie
 		"""
 		hdr = EMData(options.path,0,True).get_attr_dict()
 		if options.path[-4:].lower() in (".mrc"): nd = hdr['nz']
@@ -563,9 +582,10 @@ class MovieModeAligner:
 	@classmethod
 	def simple_average(cls, path, outfile=None):
 		"""
-		Class method to compute a simple averge of all frames in a DDD movie stack.
+		Class method to compute a simple averge of all frames in a DDD movie
+		stack.
 
-		@param str path:	file location DDD movie stack
+		@param str path: file location DDD movie stack
 		"""
 		hdr = EMData(path,0,True).get_attr_dict()
 		nx = hdr['nx']
@@ -590,18 +610,19 @@ class MovieModeAligner:
 
 # class FineSearch(Simplex):
 #
-# 	"""
-# 	Simplex minimizer to finely search the annealed minimum yielded by CoarseSearch.
-# 	"""
+#	"""
+#	Simplex minimizer to finely search the annealed minimum yielded by CoarseSearch.
+#	"""
 #
-# 	def __init__(self, func, init, increments=None, kR=-1.0, kE=2.0, kC=0.5):
-# 		if increments == None: increments = [5] * len(init)
-# 		super(FineSearch, self).__init__(func,init,increments,kR,kE,kC)
+#	def __init__(self, func, init, increments=None, kR=-1.0, kE=2.0, kC=0.5):
+#		if increments == None: increments = [5] * len(init)
+#		super(FineSearch, self).__init__(func,init,increments,kR,kE,kC)
 
 class CoarseSearch(BaseAnnealer):
 
 	"""
-	Simulated Annealer to coarsely search the translational alignment parameter space
+	Simulated Annealer to coarsely search the translational alignment
+	parameter space
 	"""
 
 	def __init__(self,aligner,state=None,tmax=25000.0,tmin=2.5,steps=50000,updates=100):
@@ -617,16 +638,16 @@ class CoarseSearch(BaseAnnealer):
 		self.copy_strategy = 'slice'
 		self.save_state_on_exit = False
 
-	def move(self,scale=6.0):
-		tx = self.state[self.count] + scale*(2*np.random.random()-1)
-		ty = self.state[self.count+1] + scale*(2*np.random.random()-1)
-		t = Transform({'type':'eman','tx':tx,'ty':ty})
+	def move(self,scale=1.0):
+		self.state[self.count] += scale * (2*np.random.random()-1)
+		self.state[self.count+1] += scale * (2*np.random.random()-1)
+		t = Transform({'type':'eman','tx':self.state[self.count],'ty':self.state[self.count+1]})
 		self.aligner._update_frame_params(self.count/2,t)
-		self.aligner._update_energy()
 		self.count = (self.count+2) % self.slen
 
 	def energy(self):
-		return self.aligner.get_energy()
+		self.aligner._update_energy()
+		return self.aligner.get_last_energy()
 
 if __name__ == "__main__":
 	main()
