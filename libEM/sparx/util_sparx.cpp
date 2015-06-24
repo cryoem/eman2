@@ -21930,6 +21930,50 @@ EMData* Util::get_biggest_cluster( EMData* mg )
 
 }
 
+EMData* Util::ctf_img_real(int nx, int ny, int nz, float dz,float ps,float voltage,float cs, float wgh, float b_factor,float dza, float azz, float sign)
+{
+	int    ix, iy, iz;
+	int    i,  j, k;
+	int    nr2, nl2;
+	float  ak;
+	float  scx, scy, scz;
+	int    offset = 2 - nx%2;
+	int    lsm = nx + offset;
+	EMData* ctf_img1 = new EMData();
+	ctf_img1->set_size(lsm/2, ny, nz);
+	float freq = 1.0f/(2.0f*ps);
+	scx = 2.0f/float(nx);
+	if(ny>=1) scy = 2.0f/float(ny); else scy=0.0f;
+	if(nz>=1) scz = 2.0f/float(nz); else scz=0.0f;
+	nr2 = ny/2 ;
+	nl2 = nz/2 ;
+	for ( k=0; k<nz;k++) {
+		iz = k;  if(k>nl2) iz=k-nz;
+		float oz2 = iz*scz*iz*scz;
+		for ( j=0; j<ny;j++) {
+			iy = j;  if(j>nr2) iy=j - ny;
+			float oy = iy*scy;
+			float oy2 = oy*oy;
+			for ( i=0; i<lsm/2; i++) {
+				ix=i;
+				if( dza == 0.0f) {
+					ak=pow(ix*ix*scx*scx + oy2 + oz2, 0.5f)*freq;
+					(*ctf_img1) (i,j,k)   = Util::tf(dz, ak, voltage, cs, wgh, b_factor, sign);
+				} else {
+					float ox = ix*scx;
+					ak=pow(ox*ox + oy2 + oz2, 0.5f)*freq;
+					float dzz = dz - dza/2.0f*sin(2*(atan2(oy, ox)+azz*M_PI/180.0f));
+					(*ctf_img1) (i,j,k)   = Util::tf(dzz, ak, voltage, cs, wgh, b_factor, sign);
+				}
+				//(*ctf_img1) (i*2+1,j,k) = 0.0f;  PAP  I assumed new EMData sets to zero
+			}
+		}
+	}
+	ctf_img1->update();
+	if(nx%2==0) ctf_img1->set_fftodd(false); else ctf_img1->set_fftodd(true);
+	return ctf_img1;
+}
+
 EMData* Util::ctf_img(int nx, int ny, int nz, float dz,float ps,float voltage,float cs, float wgh, float b_factor,float dza, float azz, float sign)
 {
 	int    ix, iy, iz;
@@ -21977,7 +22021,6 @@ EMData* Util::ctf_img(int nx, int ny, int nz, float dz,float ps,float voltage,fl
 	if(nx%2==0) ctf_img1->set_fftodd(false); else ctf_img1->set_fftodd(true);
 	return ctf_img1;
 }
-
 
 
 EMData* Util::ctf_rimg(int nx, int ny, int nz, float dz, float ps, float voltage, float cs, float wgh, float b_factor, float dza, float azz, float sign)

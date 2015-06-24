@@ -376,7 +376,7 @@ def ctf_img(nx, ctf, sign = 1, ny = 0, nz = 1):
 
 def ctf_rimg(nx, ctf, sign = 1, ny = 0, nz = 1):
 	"""
-		Generate a 1-2-3-D real image containing the CTF^2.
+		Generate a 1-2-3-D real image containing the CTF.
 	 	Default is 2D output.
 	  	Input
 			nx: x image size.

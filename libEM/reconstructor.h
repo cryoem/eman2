@@ -1282,7 +1282,7 @@ namespace EMAN
 
 		void setup( const string& symmetry, int size, int npad, float snr, int sign );
 
-		int insert_padfft_slice( EMData* padfft, const Transform& trans, float mult=1);
+		int insert_padfft_slice( EMData* padfft, EMData* ctf2d2, const Transform& trans, float mult=1);
 
 		int insert_buffed_slice( const EMData* buffer, float mult );
 

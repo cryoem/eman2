@@ -267,6 +267,7 @@ void insert_rect_slice_ctf_applied(EMData* w, EMData* myfft, const Transform& tr
  * @param mult
  */
 void onelinenn_ctf_applied(int j, int n, int n2, EMData* w, EMData* bi, const Transform& tf, float mult);
+void onelinenn_ctf_exists(int j, int n, int n2, EMData* w, EMData* bi, EMData* c2, const Transform& tf, float mult);
 
 /** Nearest Neighbor interpolation.
  *  Modifies the current object.
@@ -278,6 +279,8 @@ void onelinenn_ctf_applied(int j, int n, int n2, EMData* w, EMData* bi, const Tr
  * @param mult
  */
 void nn_ctf_applied(EMData* w, EMData* myfft, const Transform& tf, float mult );
+
+void nn_ctf_exists(EMData* w, EMData* myfft, EMData* ctf2d2, const Transform& tf, float mult );
 
 /** Symmetrize plane 0
  *  Modifies the current object.

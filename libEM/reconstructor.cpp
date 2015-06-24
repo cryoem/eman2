@@ -105,6 +105,61 @@ template <> Factory < Reconstructor >::Factory()
 //	force_add<XYZReconstructor>();
 }
 
+class ctf_store_real
+{
+public:
+
+    static void init( int winsize, const Ctf* ctf ) {
+		Dict params = ctf->to_dict();
+
+		m_winsize = winsize;
+
+		m_voltage = params["voltage"];
+		m_pixel   = params["apix"];
+		m_cs      = params["cs"];
+		m_ampcont = params["ampcont"];
+		m_bfactor = params["bfactor"];
+		m_defocus = params["defocus"];
+		m_dza     = params["dfdiff"];
+		m_azz     = params["dfang"];
+		m_winsize2= m_winsize*m_winsize;
+		m_vecsize = m_winsize2/4;
+    }
+
+    // static float get_ctf( int r2 ,int i, int j) {
+	// 	float  ak = std::sqrt( r2/float(m_winsize2) )/m_pixel;
+	// 	if(m_dza == 0.0f)  return Util::tf( m_defocus, ak, m_voltage, m_cs, m_ampcont, m_bfactor, 1);
+	// 	else {
+	// 		float az = atan2(float(j), float(i));
+	// 		float dzz = m_defocus - m_dza/2.0f*sin(2*(az+m_azz*M_PI/180.0f));
+	// 		return Util::tf( dzz, ak, m_voltage, m_cs, m_ampcont, m_bfactor, 1);
+	// 	}
+	// }
+	
+    static EMData* get_ctf_real() {
+		return Util::ctf_img_real(m_winsize, m_winsize, 1, m_defocus, m_pixel, m_voltage, m_cs, m_ampcont, m_bfactor, m_dza, m_azz, 1);
+	}
+
+private:
+
+	static int m_winsize, m_winsize2, m_vecsize;
+	static float m_cs;
+	static float m_voltage;
+	static float m_pixel;
+	static float m_ampcont;
+	static float m_bfactor;
+	static float m_defocus;
+	static float m_dza;
+	static float m_azz;
+};
+
+int ctf_store_real::m_winsize, ctf_store_real::m_winsize2, ctf_store_real::m_vecsize;
+
+float ctf_store_real::m_cs, ctf_store_real::m_voltage, ctf_store_real::m_pixel;
+float ctf_store_real::m_ampcont, ctf_store_real::m_bfactor;
+float ctf_store_real::m_defocus, ctf_store_real::m_dza, ctf_store_real::m_azz;
+
+
 void FourierReconstructorSimple2D::setup()
 {
 	nx = params.set_default("nx",0);
@@ -3340,9 +3395,27 @@ int nn4_ctfReconstructor::insert_slice(const EMData* const slice, const Transfor
 
 		if( padffted != 0 ) padfft = new EMData(*slice);
 		else                padfft = padfft_slice( slice, t, m_npad );
+		
+		float tmp = padfft->get_attr_default("ctf_applied", 0);
+		int   ctf_applied = (int) tmp;
 
-		insert_padfft_slice( padfft, t, weight );
+		// Generate 2D CTF (EMData object)
+    	ctf_store_real::init( padfft->get_ysize(), padfft->get_attr( "ctf" ) );
+    	EMData* ctf2d = ctf_store_real::get_ctf_real(); //This is in 2D projection plane
+ 		 		
+		int nx=ctf2d->get_xsize(),ny=ctf2d->get_ysize(),nz=ctf2d->get_zsize();
+		float *ctf2d_ptr  = ctf2d->get_data();
+		
+		size_t size = (size_t)nx*ny*nz;
+		if (!ctf_applied) {
+			for (int i = 0; i < size; ++i) padfft->cmplx(i) *= ctf2d_ptr[i]; // Multiply padfft by CTF
+		}
 
+		for (int i = 0; i < size; ++i) ctf2d_ptr[i] *= ctf2d_ptr[i];     // Square 2D CTF 
+		
+		insert_padfft_slice(padfft, ctf2d, t, weight);
+
+		checked_delete( ctf2d );  
 		checked_delete( padfft );
 
 		return 0;
@@ -3372,16 +3445,27 @@ int nn4_ctfReconstructor::insert_buffed_slice( const EMData* buffed, float weigh
 	return 0;
 }
 
-int nn4_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transform& t, float weight )
+int nn4_ctfReconstructor::insert_padfft_slice( EMData* padfft, EMData* ctf2d2, const Transform& t, float weight)
 {
 	Assert( padfft != NULL );
-	float tmp = padfft->get_attr_default("ctf_applied", 0);
-	int   ctf_applied = (int) tmp;
 	
+	vector<float> abc_list;
+	int abc_list_len = 0;	
+	if (m_volume->has_attr("abc"))
+	{
+		vector<float> abc_list = m_volume->get_attr("abc");
+		abc_list_len = abc_list.size();
+	}
+				
 	vector<Transform> tsym = t.get_sym_proj(m_symmetry);
 	for (unsigned int isym=0; isym < tsym.size(); isym++) {
-		if(ctf_applied) m_volume->nn_ctf_applied(m_wptr, padfft, tsym[isym], weight);
-		else            m_volume->nn_ctf(m_wptr, padfft, tsym[isym], weight);
+		if (abc_list_len == 0)
+			m_volume->nn_ctf_exists(m_wptr, padfft, ctf2d2, tsym[isym], weight);
+		else
+			for (int i = 0; i < abc_list_len; i += 4) {
+				m_volume->nn_ctf_exists(m_wptr, padfft, ctf2d2, tsym[isym] * Transform(Dict("type", "SPIDER", "phi",  abc_list[i], "theta", abc_list[i+1], "psi", abc_list[i+2])), weight * abc_list[i+3]);
+			}
+			
 	}
 
 	return 0;

@@ -1683,7 +1683,6 @@ void EMData::symplane2(EMData* wptr, EMData* wptr2, EMData* wptr3) {
 	EXITFUNC;
 }
 
-
 class ctf_store
 {
 public:
@@ -1714,7 +1713,7 @@ public:
 			return Util::tf( dzz, ak, m_voltage, m_cs, m_ampcont, m_bfactor, 1);
 		}
 	}
-
+	
 private:
 
 	static int m_winsize, m_winsize2, m_vecsize;
@@ -1727,7 +1726,6 @@ private:
 	static float m_dza;
 	static float m_azz;
 };
-
 
 int ctf_store::m_winsize, ctf_store::m_winsize2, ctf_store::m_vecsize;
 
@@ -1921,6 +1919,54 @@ void EMData::onelinenn_ctf_applied(int j, int n, int n2,
 	}
 }
 
+void EMData::onelinenn_ctf_exists(int j, int n, int n2,
+		          EMData* w, EMData* bi, EMData* c2, const Transform& tf, float mult) {//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
+
+        int remove = bi->get_attr_default( "remove", 0 );
+
+	int jp = (j >= 0) ? j+1 : n+j+1;
+	// loop over x
+	for (int i = 0; i <= n2; i++) {
+	        int r2 = i*i + j*j;
+		if ( (r2< n*n/4) && !((0==i) && (j< 0)) ) {
+
+			 //	   if ( !((0 == i) && (j < 0))) {
+			float xnew = i*tf[0][0] + j*tf[1][0];
+			float ynew = i*tf[0][1] + j*tf[1][1];
+			float znew = i*tf[0][2] + j*tf[1][2];
+			std::complex<float> btq;
+			if (xnew < 0.) {
+				xnew = -xnew;
+				ynew = -ynew;
+				znew = -znew;
+				btq = conj(bi->cmplx(i,jp));
+			} else  btq = bi->cmplx(i,jp);
+			
+			float c2val = (*c2)(i,jp);
+			
+			int ixn = int(xnew + 0.5 + n) - n;
+			int iyn = int(ynew + 0.5 + n) - n;
+			int izn = int(znew + 0.5 + n) - n;
+			
+			int iza, iya;
+			if (izn >= 0)  iza = izn + 1;
+			else           iza = n + izn + 1;
+
+			if (iyn >= 0) iya = iyn + 1;
+			else          iya = n + iyn + 1;
+
+			if( remove > 0 ) {
+				cmplx(ixn,iya,iza) -= btq*mult;
+				(*w)(ixn,iya,iza) -= c2val*mult;
+			} else {
+				cmplx(ixn,iya,iza) += btq*mult;
+				(*w)(ixn,iya,iza) += c2val*mult;
+			}
+
+		}
+	}
+}
+
 void EMData::nn_ctf(EMData* w, EMData* myfft, const Transform& tf, float mult) {
 	ENTERFUNC;
 	int nxc = attr_dict["nxc"]; // # of complex elements along x
@@ -1982,6 +2028,25 @@ void EMData::nn_ctf_applied(EMData* w, EMData* myfft, const Transform& tf, float
 	EXITFUNC;
 }
 
+void EMData::nn_ctf_exists(EMData* w, EMData* myfft, EMData* ctf2d2, const Transform& tf, float mult) {
+	ENTERFUNC;
+	int nxc = attr_dict["nxc"]; // # of complex elements along x
+	// let's treat nr, bi, and local data as matrices
+	vector<int> saved_offsets = get_array_offsets();
+	vector<int> myfft_saved_offsets = myfft->get_array_offsets();
+	set_array_offsets(0,1,1);
+	myfft->set_array_offsets(0,1);
+
+	vector<int> ctf2d2_saved_offsets = ctf2d2->get_array_offsets();
+	ctf2d2->set_array_offsets(0,1);
+
+	// loop over frequencies in y
+	for (int iy = -ny/2 + 1; iy <= ny/2; iy++) onelinenn_ctf_exists(iy, ny, nxc, w, myfft, ctf2d2, tf, mult);
+	set_array_offsets(saved_offsets);
+	myfft->set_array_offsets(myfft_saved_offsets);
+	ctf2d2->set_array_offsets(ctf2d2_saved_offsets);
+	EXITFUNC;
+}
 
 void EMData::insert_rect_slice_ctf(EMData* w, EMData* myfft, const Transform& trans, int sizeofprojection, float xratio, float yratio, float zratio, int npad, float mult)
 {

@@ -8,7 +8,6 @@
 # so you are responsible for compliance with the licenses of these packages
 # if you opt to use BSD licensing. The warranty disclaimer below holds
 # in either instance.
-#
 # This complete copyright notice must be included in any revised version of the
 # source code. Additional authorship citations may be added, but existing
 # author citations must be preserved.
@@ -201,6 +200,8 @@ def recons3d_4nn_MPI(myid, prjlist, symmetry="c1", info=None, npad=2, xysize=-1,
 	prjlist.goToPrev()
 
 	fftvol = EMData()
+	# fftvol.set_attr("abc", [1, 2, 3, 4, 11, 12, 13, 14, 21, 22, 23, 24])
+		
 	weight = EMData()
 	if (xysize == -1 and zsize == -1 ):
 		params = {"size":imgsize, "npad":npad, "symmetry":symmetry, "fftvol":fftvol, "weight":weight}
