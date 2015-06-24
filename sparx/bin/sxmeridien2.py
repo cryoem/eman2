@@ -1495,7 +1495,7 @@ def main():
 		#exit()
 		if myid == main_node:  print("   >>> AI  <<<  ",Tracker["mainiteration"] ,icurrentres,Tracker["icurrentres"])
 
-		keepgoing. reset_data = AI( icurrentres, Tracker, HISTORY)
+		keepgoing, reset_data = AI( icurrentres, Tracker, HISTORY)
 
 		if( keepgoing == 1 ):
 			if reset_data :  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
