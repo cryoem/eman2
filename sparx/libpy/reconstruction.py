@@ -660,7 +660,7 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", info=N
 		for i in xrange(-ns,ns+1):
 			for j in xrange(-ns,ns+1):
 				for k in xrange(-ns,ns+1):
-					smear+= [i*step,j*step,k*step,1.0]
+					smear+= [i*astep,j*astep,k*astep,1.0]
 		if myid == 0:  print "  Smear  ",smear
 		fftvol.set_attr("abc", smear)
 
