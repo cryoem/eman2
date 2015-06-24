@@ -1384,7 +1384,7 @@ def main():
 				if(Tracker["local"]):
 					Tracker["saturatecrit"] = 0.95
 					#Tracker["pixercutoff"]  = 0.5
-					Tracker["xr"] = "2.0"
+					#Tracker["xr"] = "2.0"
 					#Tracker["maxit"] = 5 #  ?? Lucky guess
 				else:
 					Tracker["saturatecrit"] = 0.95
@@ -1504,9 +1504,8 @@ def main():
 		else:
 			if(myid == main_node):
 				print("  Terminating  , the best solution is in the directory  %s"%Tracker["constants"]["best"])
-		mpi_barrier(MPI_COMM_WORLD)
-
-	mpi_finalize()
+			mpi_barrier(MPI_COMM_WORLD)
+			mpi_finalize()
 
 
 if __name__=="__main__":
