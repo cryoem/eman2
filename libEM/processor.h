@@ -7684,7 +7684,6 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 	
 	/**  Replace the value of each pixel with the sum of density of the object it belongs to. 
 	 *   Objects are defined by continius density above the given threshold.
-	 *   Currently only works in 2D images.
 	 *   @author: Muyuan Chen
 	 *   @date: 03/2015
 	 */	
@@ -7704,19 +7703,18 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 		}
 		string get_desc() const
 		{
-			return "Sum of density of each object above threshold";
+			return "Sum of density of each object above threshold. Treats a 3D volume as 2D slices.";
 		}
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("thresh", EMObject::FLOAT, "The threshold to seperate objects.");
-			d.put("more_neighbor", EMObject::BOOL, "Using 8 neighbors(2D) or 26 neighbors(3D). (default is 4/8 neighbors(2D/3D)).");
 			return d;
 		}
 		static const string NAME;
 	};
 	
-	/**  Label each object above threshold. Also return the center of each object.
+	/**  Label each object in a black-white image. Also return the center of each object.
 	 *   @author: Muyuan Chen
 	 *   @date: 03/2015
 	 */	
@@ -7736,14 +7734,11 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 		}
 		string get_desc() const
 		{
-			return "Label each object above threshold. Also return the center of each object.";
+			return "Label each object above threshold. Also return the center of each object. Treats a 3D volume as 2D slices.";
 		}
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("thresh", EMObject::FLOAT, "The threshold to seperate objects.");
-			d.put("more_neighbor", EMObject::BOOL, "Using 8 neighbors(2D) or 26 neighbors(3D). (default is 4/8 neighbors(2D/3D)).");
-			d.put("write_centers", EMObject::BOOL, "Write the center of each object into the attribute of image.(May cause error when there are too many objects)");
 			return d;
 		}
 		static const string NAME;

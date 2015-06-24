@@ -129,6 +129,12 @@ void TomoObject::enlong(EMData *bwmap,EMData *skelmap){
 	
 }
 
+
+//////////////////////////
+///// Class TomoSeg //////
+//////////////////////////
+
+
 int TomoSeg::read_skelmap(EMData *map){
 	if (!map)
 		return 0;
