@@ -196,8 +196,19 @@ def main():
 	tiltanglesfloatabs = [ math.fabs( float( alines[i].replace('\n','') ) ) for i in range(len(alines)) ]
 
 	tiltanglesfloat = [ float( alines[i].replace('\n','') ) for i in range(len(alines)) ]
+	
+	#if options.invertangles:
+	#	tiltanglesfloat = [ -1*float( alines[i].replace('\n','') ) for i in range(len(alines)) ]
+	#	print "INVERTED tiltanglesfloat", tiltanglesfloat
+	#else:
+	print "tiltanglesfloat", tiltanglesfloat
 
-
+		
+	
+	#tiltanglesfloat.sort()
+	
+	#print "sorted tiltangles",tiltanglesfloat
+	
 	ntiltangles = len( tiltanglesfloat )
 	
 	'''
@@ -321,7 +332,9 @@ def main():
 			else:
 				print "\nBad line removed", line
 	
+	print "icethicknessauto before if is", options.icethicknessauto
 	if zs and options.icethicknessauto:
+		print "icethicknessauto after if is", options.icethicknessauto
 	
 		icethicknessfile = options.path + '/icethickness_estimate.txt'
 	
@@ -430,16 +443,29 @@ def main():
 	for ang in tiltanglesfloat:
 		#print "\nAngle is", ang
 		if float(ang) < float(zerotiltangle):
+			#if not options.invertangles:
 			anglesBelowZeroTilt.append( float(ang) )
+			#else:
+			#	anglesAboveZeroTilt.append( -1*float(ang) )
+				
 			#print "Therefore it was added to the below group"
 		elif float(ang) > float(zerotiltangle):
+			#if not options.invertangles:
 			anglesAboveZeroTilt.append( float(ang) )
+			#else:
+			#	anglesBelowZeroTilt.append( -1*float(ang) )
 			#print "Therefore it was added to the above group"
 	
 	nLangles = len( anglesBelowZeroTilt )
 	nUangles = len( anglesAboveZeroTilt )
 	mostangles = max( nLangles, nUangles )
 	
+	#if not options.invertangles:
+	print "anglesBelowZeroTilt", anglesBelowZeroTilt
+	print "anglesAboveZeroTilt", anglesAboveZeroTilt
+	#else:
+	#print "INVERTED anglesBelowZeroTilt", anglesBelowZeroTilt
+	#print "INVERTED anglesAboveZeroTilt", anglesAboveZeroTilt
 	#print "nLangles and nUangles are", nLangles, nUangles
 	#sys.exit()
 	anglestackslist = options.saveanglestacks.split(',')
@@ -500,6 +526,10 @@ def main():
 			
 			retm = extract2D( options, zerotiltangle, icethickness, tomox, xc, yc, zc, 0, 0, zerotiltindx )
 			middleslice = retm[0]
+			
+			if options.coords3d:
+				sptcoords = ( xc, yc, zc )
+				middleslice['ptcl_source_coord']=sptcoords
 
 			cumulativeLdx = cumulativeLdy = cumulativeUdx = cumulativeUdy = 0	
 			
@@ -570,6 +600,10 @@ def main():
 				middleslice = retm2[0]
 				midscoordx = retm2[1]
 				midscoordy = retm2[2]
+				
+				if options.coords3d:
+					sptcoords = ( midscoordx, midscoordy, zc )
+					middleslice['ptcl_source_coord']=sptcoords
 			
 			
 			#middleslice.process_inplace('normalize')
@@ -585,6 +619,8 @@ def main():
 			middleslice['apix_x'] = apix
 			middleslice['apix_y'] = apix
 			middleslice['apix_z'] = apix
+			
+			
 				
 			middleslice.write_image( ptclfile, 0 )
 			
@@ -597,6 +633,10 @@ def main():
 			
 			refL = middleslice.copy()
 			refU = middleslice.copy()
+			
+			print "mostangles is", mostangles
+			print "nLangles is", nLangles
+			print "nUangles is", nUangles
 			
 			for k in range( mostangles ):
 				
@@ -615,14 +655,20 @@ def main():
 				if k < nLangles and not options.ntiltslowpos:
 					#print "\n k and nLangles are", k, nLangles
 					lowerindx = zerotiltindx - (k+1)
+					#if not options.negativetiltseries:
+					#	lowerindx = zerotiltindx + (k+1)
+						
 					
 					#if options.ntiltslow:
 					#	lowerindx = zerotiltindx - (k+1) - zerotiltiltidx
 					
 					lowerangle = tiltanglesfloat[ lowerindx ]
-					if options.invertangles:
-						lowerangle *= -1
 					
+					#if options.invertangles:
+					#	lowerangle *= -1
+					#	print "stacking INVERTED lowerangle", lowerangle
+					
+					print "stacking lowerangle", lowerangle
 					print "Lower slice index to send is", lowerindx
 					
 					retL = write2D( options, lowerangle, icethickness, tomox, tomoy, xc, yc, zc, cumulativeLdx, cumulativeLdy, refL, apix, 'lower', ptclfile, maxtilt, lowerindx )
@@ -657,10 +703,16 @@ def main():
 				if k < nUangles and not options.ntiltslowneg:
 					#print "\n k and nUangles are", k, nUangles
 					upperindx = zerotiltindx + (k+1)
+					#if not options.negativetiltseries:
+					#	upperindx = zerotiltindx - (k+1)
+					
 					upperangle = tiltanglesfloat[ upperindx ]
-					if options.invertangles:
-						upperangle *= -1
-				
+					
+					#if options.invertangles:
+					#	upperangle *= -1
+					#	print "stacking INVERTED upperangle", upperangle
+						
+					print "stacking upperangle", upperangle
 					print "Upper slice index to send is", upperindx
 					retU = write2D( options, upperangle, icethickness, tomox, tomoy, xc, yc, zc, cumulativeUdx, cumulativeUdy, refU, apix, 'upper', ptclfile, maxtilt, upperindx )
 					if retU:
@@ -690,6 +742,46 @@ def main():
 	E2end(logger)
 	
 	return
+
+
+
+
+def checkcorners( img, options ):
+	
+	nx = img['nx']
+	#ny = img['ny']
+	
+	#cornernx = round( nx * 0.05 ) #cornernx = round( nx * options.prunetest ) 
+	
+	#if not cornernx:
+	
+	cornernx = 8
+	
+	#cornerny
+	#clipr = imgt.get_clip(Region(x,y, options.tilesize, options.tilesize))
+	
+	corner1 = img.get_clip( Region(0,0, cornernx, cornernx))
+	corner2 = img.get_clip( Region(nx-cornernx,0, cornernx, cornernx))
+	corner3 = img.get_clip( Region(nx-cornernx,nx-cornernx, cornernx, cornernx))
+	corner4 = img.get_clip( Region(0,nx-cornernx, cornernx, cornernx))
+	
+	if not corner1['sigma']:
+		return 0
+	elif not corner2['sigma']:
+		return 0
+	elif not corner3['sigma']:
+		return 0
+	elif not corner4['sigma']:
+		return 0
+	else:
+		return 1
+
+
+
+
+
+
+
 
 
 def write2D( options, angle, icethickness, tomox, tomoy, xc, yc, zc, cumulativedx, cumulativedy, ref, apix, tag, ptclfile, maxtilt, sliceindx ):
@@ -742,8 +834,13 @@ def write2D( options, angle, icethickness, tomox, tomoy, xc, yc, zc, cumulatived
 	threshy2 = float( tomoy ) - options.excludeedge
 	threshx2 = float( tomox ) - options.excludeedge
 	
-	if float( fx ) > threshx1 and float(xc) > threshx1 and float( fx ) < threshx2 and float (xc) < threshx2 and float( fy ) > threshy1 and float(yc) > threshy1 and float( fy ) < threshy2 and float(yc) < threshy2:
-			
+	
+	
+	allgood = checkcorners( finalimg, options )	
+	
+	#if float( fx ) > threshx1 and float(xc) > threshx1 and float( fx ) < threshx2 and float (xc) < threshx2 and float( fy ) > threshy1 and float(yc) > threshy1 and float( fy ) < threshy2 and float(yc) < threshy2:
+	if allgood and float( fx ) > threshx1 and float( fx ) < threshx2 and float( fy ) > threshy1 and float( fy ) < threshy2:
+		
 		finalimg['spt_tiltangle'] = angle
 		finalimg['spt_tiltaxis'] = 'y'
 		finalimg['spt_subtilt_x'] = fx
@@ -781,11 +878,24 @@ def write2D( options, angle, icethickness, tomox, tomoy, xc, yc, zc, cumulatived
 		return [finalimg, cumulativedx, cumulativedy]
 	else:
 		print "\nWARNING! Particle excluded from angle view %.2f since its center %.2f, %.2f is outside the --excludeedge limits x=[%.2f,%.2f] and y[%.2f,%.2f]" %(angle,fx,fy,threshx1,threshx2,threshy1,threshy2) 
+		
+		print "float( fx ) > threshx1", float( fx ) > threshx1
+		print "float(xc) > threshx1", float(xc) > threshx1  
+		print "float( fx ) < threshx2", float( fx ) < threshx2  
+		print "float (xc) < threshx2", float (xc) < threshx2
+		print "float( fy ) > threshy1", float( fy ) > threshy1
+		print "float(yc) > threshy1", float(yc) > threshy1 
+		print "float( fy ) < threshy2", float( fy ) < threshy2 
+		print "float(yc) < threshy2", float(yc) < threshy2
+		
 		return None
 		
 
 def extract2D( options, angle, icethickness, tomox, xc, yc, zc, cumulativedx, cumulativedy, sliceindx ):
-
+	
+	if options.invertangles:
+		angle *= -1
+	
 	tAxisShift = tomox/2.0
 	xcToAxis = xc - tAxisShift
 
@@ -798,10 +908,26 @@ def extract2D( options, angle, icethickness, tomox, xc, yc, zc, cumulativedx, cu
 	
 	zcToMidSection = zc + zSectionShift
 
+	
+	'''
+	Particles to the left of the tilt axis experience a POSITIVE shift in X when tilted, regardless of what the tilt angle is.
+	Particles to the right of the tilt axis experience a NEGATIVE shift in X, regardless of what the tilt angle is.
+	To account for this, we multiply times -1.
+	'''
+	cosTerm = -1*xcToAxis * math.cos( math.radians(angle)  )
+	
+	'''
+	Particles undergo additional movement in X upon tilting, due to their distance from the midZ plane of the tomogram.
+	
+	Particles ABOVE the middle Z plane, tilted NEGatively, are displaced NEGatively, to the left, compared to particles in the middle Z plane.
+	Particles ABOVE the middle Z plane, tilted POSitively, are displaced POSitively, to the right, compared to particles in the middle Z plane.
 
-	cosTerm = xcToAxis * math.cos( math.radians(angle)  )
+	Particles BELOW the middle Z plane, tilted NEGatively, are displaced POSTitively, to the right, compared to particles in the middle Z plane.
+	Particles BELOW the middle Z plane, tilted POSTitively, are displaced NEGatively, to the left, compared to particles in the middle Z plane.
+	'''
+	
 	sinTerm = zcToMidSection * math.sin( math.radians(angle)  )
-
+	
 	xtToAxis = zcToMidSection * math.sin( math.radians(angle)  ) + xcToAxis * math.cos( math.radians(angle)  )
 
 	yt = yc
@@ -970,7 +1096,7 @@ def subtractBackground():
 		causing higher density in projections along the diagonal of the cube
 		'''
 		#angle = angle *-1
-		t= Transform({'type':'eman','az':90,'alt':angle,'phi':-90})
+		t= Transform({'type':'eman','az':-90,'alt':angle,'phi':90})
 		#t= Transform({'type':'eman','az':90,'alt':angle})
 		#t= Transform({'type':'eman','alt':angle})
 
