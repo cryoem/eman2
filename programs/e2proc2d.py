@@ -89,6 +89,26 @@ def changed_file_name (input_name, output_pattern, input_number, multiple_inputs
 
 	return outname
 
+def image_from_formula(n_x, n_y, n_z, formula) :
+	# Create a 2D or 3D image from a formula in x, y, z,
+	# with 0 <= x <= n_x-1, 0 <= y <= n_y-1, 0 <= z <= n_z-1,
+	# with a formula like "x+y+z" or "x*y+10*z" or "x+y".
+
+	emd  = EMData(n_x, n_y, n_z)
+	emdn = EMNumPy.em2numpy(emd)
+
+	for z in xrange(0, n_z) :
+		for y in xrange(0, n_y) :
+			for x in xrange(0, n_x) :
+				v = eval(formula)
+
+				if n_z > 1 :
+					emdn[z][y][x] = v
+				else :
+					emdn[y][x] = v
+
+	return EMNumPy.numpy2em(emdn)
+
 # usage: e2proc2d.py [options] input ... input output
 
 def main():
@@ -104,8 +124,9 @@ def main():
 	Generic 2-D image processing and file format conversion program. Acts on stacks of 2-D images
 	(multiple images in one file). All EMAN2 recognized file formats accepted (see Wiki for list).
 
-	You can create a new 2-D image from scratch instead of reading from a file by specifing 
-	':<nx>:<ny>:<fillvalue>' as an input filename.
+	You can create a new 2-D or 3-D image from scratch instead of reading from a file by specifying 
+	':<nx>:<ny>:<expression_in_x_y>' or ':<nx>:<ny>:<nz>:<expression_in_x_y_z>' as an input filename,
+	where 0 <= x < nx, 0 <= y < ny, 0 <= z < nz, and the expression can be just a number.
 
 	Examples:
 
@@ -457,14 +478,35 @@ def main():
 				if options.threed2threed or options.threed2twod:
 					d = EMData()
 					d.read_image(infile, 0, False, Region(0,0,i,threed_xsize,threed_ysize,1))
-				elif infile[0]==":":
-					vals=infile.split(":")
-					if len(vals) not in (3,4) : 
-						print "Error: Specify new images as ':X:Y:fillvalue'"
+				elif infile[0] == ":" :
+					vals = infile.split(":")
+
+					if len(vals) not in (3,4,5) : 
+						print "Error: Specify new images as ':X:Y:f(x,y)' or ':X:Y:Z:f(x,y,z)', 0<=x<X, 0<=y<Y, 0<=z<Z"
 						sys.exit(1)
-					d=EMData(int(vals[1]),int(vals[2]),1)
-					if len(vals)==3: vals.append(0)
-					d.to_value(float(vals[-1]))
+
+					n_x = int(vals[1])
+					n_y = int(vals[2])
+					n_z = 1
+					if len(vals) > 4 : n_z = int(vals[3])
+
+					if n_x <= 0 or n_y <= 0 or n_z <= 0 :
+						print "Error: Image dimensions must be positive integers:", n_x, n_y, n_z
+						sys.exit(1)
+
+					func = "0"
+					if len(vals) >= 4 : func = vals[-1]
+
+					try :
+						x = 0.0
+						y = 0.0
+						z = 0.0
+						w = eval(func)
+					except :
+						print "Error: Syntax error in image expression '" + func + "'"
+						sys.exit(1)
+
+					d = image_from_formula(n_x, n_y, n_z, func)
 				else:
 					d = EMData()
 					d.read_image(infile, i)
