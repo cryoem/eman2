@@ -259,6 +259,7 @@ class BaseAnnealer(object):
         self.Tmax = schedule['tmax']
         self.Tmin = schedule['tmin']
         self.steps = int(schedule['steps'])
+        self.updates = schedule['updates']
 
     def copy_state(self, state):
         """
