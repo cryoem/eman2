@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# Muyuan June 2015
 import os
 import sys
 import time
@@ -14,17 +15,20 @@ import cPickle
 def main():
 
 
-	usage="datest.py <projections> <particles> [options]"
+	usage="datest.py <particles> [options]
+	Run a stacked denoise auto-encoder on the data set."
+	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--learnrate", type=float,help="learning rate", default=.01)
-	parser.add_argument("--niter", type=int,help="training iterations", default=10)
-	parser.add_argument("--weightdecay", type=float,help="learning rate", default=1e-5)	
-	parser.add_argument("--batch", type=int,help="batch size", default=50)
-	parser.add_argument("--shrink", type=int,help="shrink", default=1)
-	parser.add_argument("--pretrainnet", type=str,help="output pretain net file name", default="da.save")
-	parser.add_argument("--sdaout", action="store_true", default=False ,help="output sda result")
-	parser.add_argument("--fromlast", action="store_true", default=False ,help="fromlast")
-	parser.add_argument("--writeall", type=str, default=None ,help="writeall")
+	parser.add_argument("--learnrate", type=float,help="Learning rate for the auto-encoder", default=.01)
+	parser.add_argument("--niter", type=int,help="Training iterations", default=10)
+	parser.add_argument("--weightdecay", type=float,help="Weight decay. Used for regularization.", default=1e-5)
+	parser.add_argument("--batch", type=int,help="Batch size for the stochastic gradient descent.", default=50)
+	parser.add_argument("--shrink", type=int,help="Shrink the image.", default=1)
+	parser.add_argument("--pretrainnet", type=str,help="Output pretrained autoencoder file name", default="da.save")
+	parser.add_argument("--hidden", type=str,help="Size of hidden layers: n1,n2,n3...", default="1000,500")
+	parser.add_argument("--sdaout", action="store_true", default=False ,help="Output the result of the autoencoder")
+	parser.add_argument("--fromlast", action="store_true", default=False ,help="Start from previous pretrained network")
+	parser.add_argument("--writeall", type=str, default=None ,help="write all output")
 	parser.add_argument("--weights", type=str,help="output file name for the weights", default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -33,7 +37,7 @@ def main():
 	training_epochs=options.niter
 	
 	batch_size=options.batch
-	
+	hidden=[int(i) for i in options.hidden.split(',')]
 	#### Train da with particles first.
 	
 
@@ -44,9 +48,12 @@ def main():
 	train_set_x= particles
 	
 	ltrain=train_set_x.get_value().shape[1]
-	lth=int(sqrt(ltrain))
+	#lth=int(sqrt(ltrain))
 	
 	
+	ptl=EMData(args[0],0)
+	shape=[ptl["nx"],ptl["ny"],ptl["nz"]]
+	#print shape
 	# compute number of minibatches 
 	
 
@@ -57,7 +64,6 @@ def main():
 	
 	print "setting up model"
 	rng = np.random.RandomState(123)
-	theano_rng = RandomStreams(rng.randint(2 ** 30))
 	
 	if options.fromlast:
 		print "loading {}...".format(options.pretrainnet)
@@ -69,31 +75,26 @@ def main():
 	else:
 		sda = SdA(
 			numpy_rng=rng,
-			theano_rng=theano_rng,
 			n_ins=ltrain,
-			#hidden_layers_sizes=[5000],
-			hidden_layers_sizes=[5000,1000]
+			hidden_layers_sizes=hidden
 		)
-	batch=[50,50,50,20,20,10]
-	pretraining_fns = sda.pretraining_functions(train_set_x=train_set_x,batch_size=batch)
+	pretraining_fns = sda.pretraining_functions(train_set_x=train_set_x,batch_size=batch_size)
 	
 	#test_imgs = sda.pretraining_get_result(train_set_x=train_set_x,batch_size=1)
 	
 	
 	print '... pre-training the model'
 	### Pre-train layer-wise
-	corruption_levels = [0,0,0,0,0,0]
 	for i in xrange(sda.n_layers):
 		learning_rate=options.learnrate
 
-		n_train_batches = train_set_x.get_value(borrow=True).shape[0] / batch[i]
+		n_train_batches = train_set_x.get_value(borrow=True).shape[0] / batch_size
 		# go through pretraining epochs
 		for epoch in xrange(training_epochs):
 		# go through the training set
 			c = []
 			for batch_index in xrange(n_train_batches):
 				err=pretraining_fns[i](index=batch_index,
-					corruption=corruption_levels[i],
 					lr=learning_rate,
 					wd=options.weightdecay)
 				c.append(err)
@@ -120,13 +121,16 @@ def main():
 			for idi in range(n_train_batches):
 				rt=test_imgs[sda.n_layers-4](index=idi)
 				for t in range(len(rt)):
-					#img=rt[t].reshape(lth,lth)
+					if shape[2]>1:
+						img=rt[t].reshape(shape[0],shape[1],shape[2])
+					else:
+						img=rt[t].reshape(shape[0],shape[1])
 					e = EMNumPy.numpy2em(img.astype("float32"))
 					e.process_inplace("normalize")
 					e.process_inplace("filter.highpass.gauss",{"cutoff_abs":.02})
 					e.write_image(fname,-1)
 		else:
-			batch_size=200
+			batch_size=100
 			test_imgs = sda.pretraining_get_result(train_set_x=train_set_x,batch_size=batch_size)
 			
 			for ni in xrange(sda.n_layers):
@@ -141,11 +145,18 @@ def main():
 					for t in range(len(rt)):
 						#img=ipt[t].reshape(lth,lth)
 						#print np.shape(rt[t])
-						img=ipt[t].reshape(32,32,32)
+						if shape[2]>1:
+							img=ipt[t].reshape(shape[0],shape[1],shape[2])
+						else:
+							img=ipt[t].reshape(shape[0],shape[1])
 						e = EMNumPy.numpy2em(img.astype("float32"))
 						e.write_image(fname,-1)
 						#print len(rt[t]),len(ipt[t])
-						img=rt[t].reshape(32,32,32)
+						
+						if shape[2]>1:
+							img=rt[t].reshape(shape[0],shape[1],shape[2])
+						else:
+							img=rt[t].reshape(shape[0],shape[1])
 						e = EMNumPy.numpy2em(img.astype("float32"))
 						e.write_image(fname,-1)
 		
@@ -168,62 +179,25 @@ def main():
 	E2progress(E2n,1.0)
 	E2end(E2n)
 	
-def generate_projections(ptcls,fname,shrink=2,noise=.001,astep=10):
+
+def load_particles(ptcls,shrink=3,mask=12):
 	num=EMUtil.get_image_count(ptcls)
-	
-	try:os.remove(fname)
-	except: pass
-	
 	mx=0
+	mn=1e10
+	data=[]
 	for i in range(num):
 		ptl=EMData(ptcls,i)
 		if ptl["maximum"]>mx:
 			mx=ptl["maximum"]
-		
-	
+		if ptl["minimum"]<mn:
+			mn=ptl["minimum"]
+			
 	for i in range(num):
 		ptl=EMData(ptcls,i)
 		if shrink>1:
 			ptl.process_inplace("math.meanshrink",{"n":shrink})
-			
-		
-		#ptl.process_inplace("normalize.edgemean")
-		ptl.process_inplace("filter.highpass.gauss",{"cutoff_abs":.02})
-		for ni in range(0,359,astep):
-			
-			cp=ptl.copy()
-			tr=Transform()
-			tr.set_rotation({"type":"2d","alpha":ni})
-			noiseimg=ptl.process("xform",{"transform":tr})
-			noiseimg.process_inplace("math.addnoise",{"noise":noise})
-			noiseimg.div(mx)
-			noiseimg["projid"]=i
-			noiseimg.write_image(fname,-1)
-	
-	
 
-def load_particles(ptcls,shrink=3,mask=12):
-	num=EMUtil.get_image_count(ptcls)
-	data=[]
-	for i in range(num):
-		ptl=EMData(ptcls,i)
-		if shrink>1:
-			ptl.process_inplace("math.meanshrink",{"n":shrink})
-		#ptl.process_inplace("normalize.edgemean")
-		#if mask>0:
-			##ptl.process_inplace("mask.gaussian",{"outer_radius":mask})
-			#ptl.process_inplace("threshold.belowtozero",{"minval":0})
-		#for j in range(100):
-			
-			#noiseimg=ptl.process("math.addnoise",{"noise":.5})
-			
-			##noiseimg.sub(noiseimg["minimum"])
-			##noiseimg.process_inplace("threshold.belowtozero",{"minval":0})
-			#noiseimg.div(noiseimg["maximum"])
-			#ar=EMNumPy.em2numpy(noiseimg)
-			#ar=ar.flatten()
-			#data.append(ar)
-		#ptl.div(ptl["maximum"])
+		ptl.div(mx)
 		ar=EMNumPy.em2numpy(ptl)
 		ar=ar.flatten()
 		data.append(ar)
@@ -231,108 +205,6 @@ def load_particles(ptcls,shrink=3,mask=12):
 	shared_x = theano.shared(np.asarray(data,dtype=theano.config.floatX),borrow=True)
 	return shared_x
 	
-def load_projections(ptcls,shrink=3,noise=.1,copy=100):
-	num=EMUtil.get_image_count(ptcls)
-	data=[]
-	lbs=[]
-	tr=Transform()
-	for i in range(num):
-		ptl=EMData(ptcls,i)
-		if shrink>1:
-			ptl.process_inplace("math.meanshrink",{"n":shrink})
-		
-		ptl.process_inplace("normalize.edgemean")
-		ptl.sub(ptl["minimum"])
-		ptl.div(ptl["maximum"])
-		for ni in range(copy):
-			### random rotation
-			rd=random.random()*360.0
-			tr.set_rotation({"type":"2d","alpha":rd})
-			noiseimg=ptl.process("xform",{"transform":tr})
-			noiseimg.process_inplace("math.addnoise",{"noise":noise})
-			#noiseimg.sub(noiseimg["minimum"])
-			#noiseimg.div(noiseimg["maximum"])
-			ar=EMNumPy.em2numpy(noiseimg)
-			ar=ar.flatten()
-			data.append(ar)
-			lbs.append(i)
-	
-	### shuffle the dataset
-	rndid=range(num)
-	random.shuffle(rndid)	
-	data=[data[i] for i in rndid]
-	lbs=[lbs[i] for i in rndid]
-	
-	### split to tain/validation/test sets
-	tr=int(num*.7)
-	va=int(num*.2)+tr
-	te=int(num*.1)+va
-	
-	train_set=(np.array(data[:tr]),lbs[:tr])
-	valid_set=(np.array(data[tr:va]),lbs[tr:va])
-	test_set=(np.array(data[va:te]),lbs[va:te])
-	
-	### convert to theano share format
-	def shared_dataset_label(data_xy, borrow=True):
-		data_x, data_y = data_xy
-		shared_x = theano.shared(np.asarray(data_x,dtype=theano.config.floatX),borrow=borrow)
-		shared_y = theano.shared(np.asarray(data_y,dtype=theano.config.floatX),borrow=borrow)
-		return shared_x, T.cast(shared_y, 'int32')
-
-	test_set_x, test_set_y = shared_dataset_label(test_set)
-	valid_set_x, valid_set_y = shared_dataset_label(valid_set)
-	train_set_x, train_set_y = shared_dataset_label(train_set)
-
-	rval = [(train_set_x, train_set_y), (valid_set_x, valid_set_y),(test_set_x, test_set_y)]
-	
-	return rval
-	
-
-def load_mat(ptcls,):
-	import scipy.io
-	mat = scipy.io.loadmat(ptcls)
-	data=mat['realpms']
-	#print data
-	try: lbs=mat['alllabel'].flatten()
-	except: 
-		print "No label!"
-		shared_x = theano.shared(np.asarray(data,dtype=theano.config.floatX),borrow=True)
-		return shared_x
-	
-	### shuffle the dataset
-	#print lbs
-	data=np.tile(data,(2,1))
-	lbs=np.tile(lbs,(1,2))[0]
-	num=len(data)
-	print data,num,len(lbs)
-	rndid=range(num)
-	random.shuffle(rndid)	
-	data=[data[i] for i in rndid]
-	lbs=[lbs[i] for i in rndid]
-	
-	### split to tain/validation/test sets
-	tr=int(num*.7)
-	va=int(num*.2)+tr
-	te=int(num*.1)+va
-	
-	train_set=(np.array(data[:tr]),lbs[:tr])
-	valid_set=(np.array(data[tr:va]),lbs[tr:va])
-	test_set=(np.array(data[va:te]),lbs[va:te])
-	
-	### convert to theano share format
-	def shared_dataset_label(data_xy, borrow=True):
-		data_x, data_y = data_xy
-		shared_x = theano.shared(np.asarray(data_x,dtype=theano.config.floatX),borrow=borrow)
-		shared_y = theano.shared(np.asarray(data_y,dtype=theano.config.floatX),borrow=borrow)
-		return shared_x, T.cast(shared_y, 'int32')
-
-	test_set_x, test_set_y = shared_dataset_label(test_set)
-	valid_set_x, valid_set_y = shared_dataset_label(valid_set)
-	train_set_x, train_set_y = shared_dataset_label(train_set)
-
-	rval = [(train_set_x, train_set_y), (valid_set_x, valid_set_y),(test_set_x, test_set_y)]
-	
-	return rval
 
 ###############################################################
 ###  deep learning classes borrowed from the tutorial
@@ -424,9 +296,6 @@ class dA(object):
 		self.n_hidden = n_hidden
 
 		# create a Theano random generator that gives symbolic random values
-		if not theano_rng:
-			theano_rng = RandomStreams(numpy_rng.randint(2 ** 30))
-
 		# note : W' was written as `W_prime` and b' as `b_prime`
 		if not W:
 			# W is initialized with `initial_W` which is uniformely sampled
@@ -481,7 +350,6 @@ class dA(object):
 		# tied weights, therefore W_prime is W transpose
 		self.W_prime = W.T
 		#self.W_prime = Wt
-		self.theano_rng = theano_rng
 		# if no input is given, generate a variable representing the input
 		if input is None:
 			# we use a matrix because we expect a minibatch of several
@@ -492,29 +360,6 @@ class dA(object):
 
 		self.params = [self.W, self.b, self.b_prime]
 
-	def get_corrupted_input(self, input, corruption_level):
-		"""This function keeps ``1-corruption_level`` entries of the inputs the
-		same and zero-out randomly selected subset of size ``coruption_level``
-		Note : first argument of theano.rng.binomial is the shape(size) of
-			   random numbers that it should produce
-			   second argument is the number of trials
-			   third argument is the probability of success of any trial
-
-				this will produce an array of 0s and 1s where 1 has a
-				probability of 1 - ``corruption_level`` and 0 with
-				``corruption_level``
-
-				The binomial function return int64 data type by
-				default.  int64 multiplicated by the input
-				type(floatX) always return float64.  To keep all data
-				in floatX when floatX is float32, we set the dtype of
-				the binomial to floatX. As in our case the value of
-				the binomial is always 0 or 1, this don't change the
-				result. This is needed to allow the gpu to work
-				correctly as it only support float32 for now.
-
-		"""
-		return self.theano_rng.binomial(size=input.shape, n=1, p=1 - corruption_level,dtype=theano.config.floatX) * input
 
 	def get_hidden_values(self, input):
 		""" Computes the values of the hidden layer """
@@ -528,13 +373,12 @@ class dA(object):
 		"""
 		#return T.nnet.sigmoid(T.dot(hidden, self.W_prime) + self.b_prime)
 		return T.tanh(T.dot(hidden, self.W_prime) + self.b_prime)
-
-	def get_cost_updates(self, corruption_level, learning_rate,weight_decay):
+	
+	def get_cost_updates(self, learning_rate,weight_decay):
 		""" This function computes the cost and the updates for one trainng
 		step of the dA """
 
-		tilde_x = self.get_corrupted_input(self.x, corruption_level)
-		y = self.get_hidden_values(tilde_x)
+		y = self.get_hidden_values(self.x)
 		z = self.get_reconstructed_input(y)
 		# note : we sum over the size of a datapoint; if we are using
 		#	minibatches, L will be a vector, with one entry per
@@ -559,12 +403,11 @@ class dA(object):
 
 		return (cost, updates)
 	
-	def get_result(self, corruption_level):
+	def get_result(self):
 		""" This function computes the cost and the updates for one trainng
 		step of the dA """
 
-		tilde_x = self.get_corrupted_input(self.x, corruption_level)
-		y = self.get_hidden_values(tilde_x)
+		y = self.get_hidden_values(self.x)
 		z = self.get_reconstructed_input(y)
 		
 		return z
@@ -773,7 +616,7 @@ class SdA(object):
 		ret_imgs=[]
 		for nl in xrange(self.n_layers):
 			da=self.dA_layers[nl]
-			result_da = da.get_result(corruption_level=0.)
+			result_da = da.get_result()
 			### feed forward for result
 			for li in xrange(nl):
 				nda=self.dA_layers[nl-1-li]
@@ -811,23 +654,21 @@ class SdA(object):
 
 		# index to a [mini]batch
 		index = T.lscalar('index')  # index to a minibatch
-		corruption_level = T.scalar('corruption')  # % of corruption to use
 		learning_rate = T.scalar('lr')  # learning rate to use
 		weight_decay = T.scalar('wd')  # learning rate to use
 		pretrain_fns = []
 		ct=0
 		for dA in self.dA_layers:
 				
-			batch_begin = index * batch_size[ct]
-			batch_end = batch_begin + batch_size[ct]
+			batch_begin = index * batch_size
+			batch_end = batch_begin + batch_size
 			ct+=1
 			# get the cost and the updates list
-			cost, updates = dA.get_cost_updates(corruption_level,learning_rate,weight_decay)
+			cost, updates = dA.get_cost_updates(learning_rate,weight_decay)
 			# compile the theano function
 			fn = theano.function(
 				inputs=[
 					index,
-					theano.Param(corruption_level, default=0.2),
 					theano.Param(learning_rate, default=0.1),
 					theano.Param(weight_decay, default=1e-5)
 				],
