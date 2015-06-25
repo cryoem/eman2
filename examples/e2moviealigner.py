@@ -57,28 +57,28 @@ def main():
 	parser.add_argument("--dark",type=str,default=None,help="Perform dark image correction using the specified image file")
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
 	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.")
-	parser.add_argument("--boxsize", type=int, help="Set the boxsize used to compute power spectra across movie frames",default=512)
-	parser.add_argument("--min", type=int, help="Set the minimum translation in pixels",default=-50.0)
-	parser.add_argument("--max", type=int, help="Set the maximum translation in pixels",default=50.0)
+	parser.add_argument("--boxsize", type=int, help="Set the boxsize used to compute power spectra across movie frames",default=1024)
+	#parser.add_argument("--min", type=int, help="Set the minimum translation in pixels",default=-50.0)
+	#parser.add_argument("--max", type=int, help="Set the maximum translation in pixels",default=50.0)
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 0,1 (first image skipped)")
-	parser.add_argument("--tmax", type=float, help="Set the maximum achievable temperature for simulated annealing. Default is 12500.0.",default=25000.0)
+	parser.add_argument("--tmax", type=float, help="Set the maximum achievable temperature for simulated annealing. Default is 25000.0.",default=25000.0)
 	parser.add_argument("--tmin", type=float, help="Set the minimum achievable temperature for simulated annealing. Default is 2.5.",default=2.5)
-	parser.add_argument("--steps", type=int, help="Set the number of steps to run simulated annealing. Default is 100.",default=100)
-	parser.add_argument("--updates", type=int, help="Set the number of times to update the temperature when running simulated annealing. Default is 100.",default=100)
+	parser.add_argument("--steps", type=int, help="Set the number of steps to run simulated annealing. Default is 100.",default=2500)
+	#parser.add_argument("--updates", type=int, help="Set the number of times to update the temperature when running simulated annealing. Default is 100.",default=100)
 	#parser.add_argument("--nopresearch",action="store_true",default=False,help="Do not run a search of the parameter space before annealing to determine 'best' max and min temperatures as well as the annealing duration.")
-	parser.add_argument("--nofinesearch",action="store_true",default=False,help="Do not run Simplex fine-tuning alignment.")
-	parser.add_argument("--presteps",type=int,default=500,help="The number of steps to run the exploratory pre-annealing phase.")
-	parser.add_argument("--premins",type=float,default=2.0,help="The number of minutes to run each phase of the exploratory phase before annealing.")
-	parser.add_argument("--maxiters", type=int, help="Set the maximum number of iterations for the simplex minimizer to run before stopping. Default is 250.",default=250)
-	parser.add_argument("--epsilon", type=float, help="Set the learning rate for the simplex minimizer. Smaller is better, but takes longer. Default is 0.001.",default=0.001)
-	parser.add_argument("--kR", type=float, help="Set the reflection constant for simplex minimization.",default=-1.0)
-	parser.add_argument("--kE", type=float, help="Set the expansion constant for simplex minimization.",default=2.0)
-	parser.add_argument("--kC", type=float, help="Set the contraction constant for simplex minimization..",default=0.5)
+	#parser.add_argument("--finesearch",action="store_true",default=False,help="Run Simplex fine-tuning after simulated annealing.")
+	#parser.add_argument("--presteps",type=int,default=500,help="The number of steps to run the exploratory pre-annealing phase.")
+	#parser.add_argument("--premins",type=float,default=2.0,help="The number of minutes to run each phase of the exploratory phase before annealing.")
+	#parser.add_argument("--maxiters", type=int, help="Set the maximum number of iterations for the simplex minimizer to run before stopping. Default is 250.",default=250)
+	#parser.add_argument("--epsilon", type=float, help="Set the learning rate for the simplex minimizer. Smaller is better, but takes longer. Default is 0.001.",default=0.001)
+	#parser.add_argument("--kR", type=float, help="Set the reflection constant for simplex minimization.",default=-1.0)
+	#parser.add_argument("--kE", type=float, help="Set the expansion constant for simplex minimization.",default=2.0)
+	#parser.add_argument("--kC", type=float, help="Set the contraction constant for simplex minimization..",default=0.5)
 	parser.add_argument("--fixbadpixels",action="store_true",default=False,help="Tries to identify bad pixels in the dark/gain reference, and fills images in with sane values instead")
 	parser.add_argument("--frames",action="store_true",default=False,help="Save the dark/gain corrected frames")
 	parser.add_argument("--normalize",action="store_true",default=False,help="Apply edgenormalization to input images after dark/gain")
 	parser.add_argument("--simpleavg", action="store_true",help="Will save a simple average of the dark/gain corrected frames (no alignment or weighting)",default=False)
-	parser.add_argument("--compareavg",action="store_true",help="Display averaged movie frames from before and after alignment for a visual comparison.", default=False)
+	#parser.add_argument("--compareavg",action="store_true",help="Display averaged movie frames from before and after alignment for a visual comparison.", default=False)
 	parser.add_argument("--movie", type=int,help="Display an n-frame averaged 'movie' of the stack, specify number of frames to average",default=0)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -91,26 +91,26 @@ def main():
 
 	if options.boxsize: bs = options.boxsize
 	hdr = EMData(args[0],0,True).get_attr_dict()
-	if (hdr['nx'] / bs - 1) < 3 or (hdr['ny'] / bs - 1) < 3:
+	if (hdr['nx'] / bs - 1) < 2 or (hdr['ny'] / bs - 1) < 2:
 		print("You will need to use a smaller box size with your data.")
 		sys.exit(1)
 
-	if options.min:
-		if options.min > 0: min = -options.min
-		else: min = options.min
+	#if options.min:
+		#if options.min > 0: min = -options.min
+		#else: min = options.min
 
-	if options.max:
-		if options.max < 0: max = -options.max
-		elif options.max < min:
-			print("The parameter '--max' must be greater than --min")
-			sys.exit(1)
-		else: max = options.max
+	#if options.max:
+		#if options.max < 0: max = -options.max
+		#elif options.max < min:
+			#print("The parameter '--max' must be greater than --min")
+			#sys.exit(1)
+		#else: max = options.max
 
 	pid=E2init(sys.argv)
 
 	for fname in args:
 
-		if options.verbose: print "\nProcessing", fname
+		if options.verbose: print("\nProcessing {}\n".format(fname))
 		options.path = fname
 
 		if options.dark:
@@ -131,13 +131,13 @@ def main():
 			if options.verbose: print("No dark or gain references supplied. Skipping background subtraction.")
 			bgsub = None
 
-		if options.simpleavg or options.compareavg:
+		if options.simpleavg: # or options.compareavg:
 			if options.verbose: print("Generating unaligned average")
 			if bgsub: savg = MovieModeAligner.simple_average(bgsub)
 			else: savg = MovieModeAligner.simple_average(fname)
 
 		if options.verbose: print("Creating movie aligner object")
-		alignment = MovieModeAligner(fname,bgsub,bs,options.min,options.max)
+		alignment = MovieModeAligner(fname,bgsub,options.boxsize)
 		if options.verbose: print("Optimizing movie frame alignment")
 		alignment.optimize(options)
 		if options.verbose: print("Plotting derived alignment data")
@@ -146,14 +146,14 @@ def main():
 		if options.verbose: print("Writing aligned frames to disk")
 		alignment.write()
 
-		if options.simpleavg or options.compareavg:
+		if options.simpleavg: # or options.compareavg:
 			if options.verbose: print("Generating simple aligned average")
 			aligned_movie_file = alignment.get_aligned_filename()
 			savg2 = MovieModeAligner.simple_average(aligned_movie_file)
 
-		if options.compareavg and len(args) < 2:
-			if options.verbose: print("Showing averaged movie frames before and after optimized alignment.")
-			display([savg,savg2])
+		#if options.compareavg and len(args) < 2:
+			#if options.verbose: print("Showing averaged movie frames before and after optimized alignment.")
+			#display([savg,savg2])
 
 		if options.movie and len(args) < 2:
 			if options.verbose: print("Displaying aligned movie")
@@ -167,7 +167,7 @@ class MovieModeAligner:
 	MovieModeAligner: Class to hold information for optimized alignment of DDD cameras.
 	"""
 
-	def __init__(self, fname, bgsub=None, boxsize=512, min_shift=-4, max_shift=4, transforms=None):
+	def __init__(self, fname, bgsub=None, boxsize=1024, transforms=None):
 		"""
 		Initialization method for MovieModeAligner objects.
 
@@ -189,8 +189,7 @@ class MovieModeAligner:
 		else: self.hdr['nimg'] = EMUtil.get_image_count(fname)
 		self.outfile = fname.rsplit(".",1)[0]+"_align.hdf"
 		self._dir = os.path.dirname(os.path.abspath(fname))
-		self._initialize_params(boxsize,transforms,min_shift,max_shift)
-		self._computed_objective = False
+		self._initialize_params(boxsize,transforms)
 		if os.path.isfile(self._dir+'/'+fname[:-4]+'_incoherent.hdf'): os.remove(self._dir+'/'+fname[:-4]+'_incoherent.hdf')
 		self._calc_incoherent_power_spectrum()
 		self.write_incoherent_power_spectrum(name=fname[:-4]+'_incoherent.hdf')
@@ -202,8 +201,9 @@ class MovieModeAligner:
 		self._minimization_path = []
 		self._update_energy()
 		self._optimized = False
+		#sys.exit(1)
 
-	def _initialize_params(self,boxsize,transforms,min_shift,max_shift):
+	def _initialize_params(self,boxsize,transforms):
 		"""
 		A purely organizational private method to keep the initialization code
 		clean and readable. This function takes care of initializing the
@@ -215,8 +215,6 @@ class MovieModeAligner:
 		@param list transforms: A list of Transform objects.
 		"""
 		self._boxsize = boxsize
-		self._min = min_shift
-		self._max = max_shift
 		self._regions = {}
 		mx = xrange(1,self.hdr['nx'] / boxsize - 1,1)
 		my = xrange(1,self.hdr['ny'] / boxsize - 1,1)
@@ -234,6 +232,7 @@ class MovieModeAligner:
 		self.optimal_transforms = self._transforms
 		self._cpsflag = False
 		self._ipsflag = False
+		self._computed_objective = False
 
 	def _calc_incoherent_power_spectrum(self):
 		"""
@@ -247,12 +246,15 @@ class MovieModeAligner:
 		else: self._computed_objective = True
 		ipss = (self._get_img_ips(i) for i in xrange(self.hdr['nimg']))
 		self._ips = sum(ipss)/self.hdr['nimg']
+		self._ips.process_inplace('xform.phaseorigin.tocenter')
+		self._ips.set_complex(False)
 		self._ips.process_inplace('math.rotationalaverage') # smooth
+		#display(self._ips)
+		
 
 	def _get_img_ips(self,i):
 		img = EMData(self.path,i)
-		region_ipss = (self._get_region(img,r) for r in self._regions[i])
-		return sum(region_ipss)/self._nregions
+		return sum(self._get_region(img,r) for r in self._regions[i]) / self._nregions
 
 	def _get_region(self,img,r):
 		reg = img.get_clip(r)
@@ -269,8 +271,8 @@ class MovieModeAligner:
 		"""
 		cpss = (self._average_stack(s) for s in xrange(self._nstacks))
 		self._cps = sum(cpss)/self._nregions
-		self._cps.process_inplace('math.rotationalaverage') # smooth
-
+		#self._cps.process_inplace('math.rotationalaverage')
+		
 	def _average_stack(self,s):
 		stack = (EMData(self.orig,i,False,r) for i,r in enumerate(self._stacks[s]))
 		avg = sum(stack)/self.hdr['nimg']
@@ -326,7 +328,7 @@ class MovieModeAligner:
 			print("Optimal alignment already determined.")
 			return
 		if options.verbose: print("Starting coarse-grained alignment")
-		cs = CoarseSearch(self, tmax=options.tmax, tmin=options.tmin, steps=options.steps, updates=options.updates)
+		cs = ParameterSampler(self, tmax=options.tmax, tmin=options.tmin, steps=options.steps, updates=options.steps)
 		#if not options.nopresearch:
 		#	if options.verbose: print("Determining the best annealing parameters")
 		#	schedule = cs.auto(options.premins,options.presteps)
@@ -336,13 +338,12 @@ class MovieModeAligner:
 		state = [t for tform in self.optimal_transforms for t in tform.get_trans_2d()]
 		energy = self.get_lowest_energy()
 		if options.verbose: print("\nBest Parameters:\n{}\n\n".format(state))
-
-		if not options.nofinesearch:
-			if options.verbose: print("Starting fine-grained alignment")
-			sm = Simplex(self._compares,state,[4]*len(state),kC=options.kC,kE=options.kE,kR=options.kR,data=self)
-			if options.verbose: print("Initializing simplex minimizer")
-			result, error, iters = sm.minimize(options.epsilon,options.maxiters,monitor=1)
-			if options.verbose: print("\n\nBest Parameters: {}\n\nEstimated Error: {}\nIterations: {}\n".format(result,error,iters))
+		#if options.finesearch:
+			#if options.verbose: print("Starting fine-grained alignment")
+			#sm = Simplex(self._compares,state,[4]*len(state),kC=options.kC,kE=options.kE,kR=options.kR,data=self)
+			#if options.verbose: print("Initializing simplex minimizer")
+			#result, error, iters = sm.minimize(options.epsilon,options.maxiters,monitor=1)
+			#if options.verbose: print("\n\nBest Parameters: {}\n\nEstimated Error: {}\nIterations: {}\n".format(result,error,iters))
 		self._optimized = True
 
 	@staticmethod
@@ -372,7 +373,7 @@ class MovieModeAligner:
 		for i in xrange(self.hdr['nimg']):
 			im = EMData(self.orig,i)
 			im.transform(self._transforms[i])
-			im.write_image_c(name,i)
+			im.write_image(name,i)
 
 	def write_coherent_power_spectrum(self,name=None,num=None):
 		"""
@@ -399,9 +400,8 @@ class MovieModeAligner:
 			will be saved
 		"""
 		if not name: name = self.orig[:-4] + '_coherent.hdf'
-		rips = self._ips.do_ift()
-		if num and self._ipsflag: rips.write_image(self._dir+'/'+name,num)
-		else: rips.write_image(self._dir+'/'+name)
+		if num and self._ipsflag: self._ips.write_image(self._dir+'/'+name,num)
+		else: self._ips.write_image(self._dir+'/'+name)
 		self._ipsflag = True
 
 	def get_transforms(self): return self.optimal_transforms
@@ -489,10 +489,9 @@ class MovieModeAligner:
 			sigd=dark.copy()
 			sigd.to_zero()
 			a=Averagers.get("mean",{"sigma":sigd,"ignore0":1})
-			if options.verbose > 2: print "Summing dark"
 			for i in xrange(0,nd):
 				if options.verbose:
-					print " {}/{}	\r".format(i+1,nd),
+					print "Summing dark: {}/{}	\r".format(i+1,nd),
 					sys.stdout.flush()
 				t=EMData(options.dark,i)
 				t.process_inplace("threshold.clampminmax",{"minval":0,"maxval":t["mean"]+t["sigma"]*3.5,"tozero":1})
@@ -522,10 +521,9 @@ class MovieModeAligner:
 			sigg=gain.copy()
 			sigg.to_zero()
 			a=Averagers.get("mean",{"sigma":sigg,"ignore0":1})
-			if options.verbose > 2: print "Summing gain"
 			for i in xrange(0,nd):
 				if options.verbose:
-					print " {}/{}	\r".format(i+1,nd),
+					print "Summing gain: {}/{}	\r".format(i+1,nd),
 					sys.stdout.flush()
 				t=EMData(options.gain,i)
 				t.process_inplace("threshold.clampminmax",{"minval":0,"maxval":t["mean"]+t["sigma"]*3.5,"tozero":1})
@@ -564,7 +562,6 @@ class MovieModeAligner:
 		first = int(step[0])
 		step  = int(step[1])
 		if not outfile: outfile = options.path[:-4] + '_corr.hdf'
-		#if options.verbose > 5: print("Range = {} - {}, Step = {}".format(first, last, step))
 		for i in xrange(first,last,step):
 			if options.path[-4:].lower() in (".mrc"):
 				r = Region(0,0,i,nx,ny,1)
@@ -618,7 +615,7 @@ class MovieModeAligner:
 #		if increments == None: increments = [5] * len(init)
 #		super(FineSearch, self).__init__(func,init,increments,kR,kE,kC)
 
-class CoarseSearch(BaseAnnealer):
+class ParameterSampler(BaseAnnealer):
 
 	"""
 	Simulated Annealer to coarsely search the translational alignment
@@ -627,18 +624,15 @@ class CoarseSearch(BaseAnnealer):
 
 	def __init__(self,aligner,state=None,tmax=25000.0,tmin=2.5,steps=50000,updates=100):
 		if state == None: self.state = [s for trans in aligner._transforms for s in trans.get_trans_2d()]
-		super(CoarseSearch, self).__init__(self.state)
-		self.Tmax = tmax
-		self.Tmin = tmin
-		self.steps = steps
-		self.updates = updates
+		super(ParameterSampler, self).__init__(self.state)
+		self.set_schedule({'tmax':tmax,'tmin':tmin,'steps':steps,'updates':updates})
 		self.aligner = aligner
 		self.slen = len(self.state)
 		self.count = 0
 		self.copy_strategy = 'slice'
 		self.save_state_on_exit = False
 
-	def move(self,scale=1.0):
+	def move(self,scale=10.0):
 		self.state[self.count] += scale * (2*np.random.random()-1)
 		self.state[self.count+1] += scale * (2*np.random.random()-1)
 		t = Transform({'type':'eman','tx':self.state[self.count],'ty':self.state[self.count+1]})
