@@ -134,6 +134,7 @@ def AI( icurrentres, Tracker, HISTORY):
 						# turn on pwadjustment
 						Tracker["PWadjustment"] = Tracker["constants"]["pwreference"]
 						keepgoing = 1
+				elif( Tracker["state"] == "FINAL"):  keepgoing = 0
 				else:
 					# move up with the state
 					move_up_phase = True
@@ -215,6 +216,8 @@ def AI( icurrentres, Tracker, HISTORY):
 				Tracker["xr"] = "2"
 				Tracker["ts"] = "2"
 				keepgoing = 1
+			elif(Tracker["state"] == "FINAL"):
+				keepgoing = 0
 			else:
 				ERROR(" Unknown phase","sxmeridien",1)
 				exit()  #  This will crash the program, but the situation cannot occur
@@ -641,17 +644,9 @@ def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 	return  round(lowpass,4), round(falloff,4), round(currentres,2)
 
 
-def get_pixel_resolution(vol, radi, nnxo, fscoutputdir, mask_option):
+def get_pixel_resolution(vol, mask, nnxo, fscoutputdir):
 	# this function is single processor
-	#  Get updated FSC curves, user can also provide a mask using radi variable
-	import types
-	if(type(radi) == int):
-		if(mask_option is None):  mask = model_circle(radi,nnxo,nnxo,nnxo)
-		else:                       mask = get_im(mask_option)
-	else:  mask = radi
 	nx = vol[0].get_xsize()
-	if( nx != nnxo ):
-		mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(nnxo)),nx,nx,nx)
 	nfsc = fsc(vol[0]*mask,vol[1]*mask, 1.0 )
 	if(nx<nnxo):
 		for i in xrange(3):
@@ -765,7 +760,7 @@ def compute_resolution(stack, outputdir, partids, partstack, org_radi, nnxo, CTF
 				for k in xrange(len(fsc[procid][1])):  fsc[procid][-1][k] = 2*fsc[procid][-1][k]/(1.0+fsc[procid][-1][k])
 				write_text_file( fsc[procid], os.path.join(outputdir,"within-fsc%01d.txt"%procid) )
 
-		lowpass, falloff, icurrentres = get_pixel_resolution(vol, mask, nnxo, outputdir, mask_option)
+		lowpass, falloff, icurrentres = get_pixel_resolution(vol, mask, nnxo, outputdir)
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print(  line,"Current resolution  %6.2f  %6.2f A  (%d), low-pass filter cut-off %6.2f and fall-off %6.2f"%\
 						(icurrentres/float(nnxo),pixel*float(nnxo)/float(icurrentres),icurrentres,lowpass,falloff))
@@ -1433,7 +1428,8 @@ def main():
 					projdata = [[model_blank(1,1)], [model_blank(1,1)]]
 				else:  repeat = False
 
-			del xlowpass, xfalloff, xcurrentres
+			#  Make sure these variables are not carried
+			del xlowpass, xfalloff, xcurrentres, nxinit
 			if( myid == main_node):
 				# Carry over chunk information
 				for procid in xrange(2):
