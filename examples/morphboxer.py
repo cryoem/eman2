@@ -79,8 +79,8 @@ class AutoBoxer(EMBoxerModule):
 				if options.xmax == -1: lx = int(hdr['nx']-options.boxsize)
 				if options.ymax == -1: ly = int(hdr['ny']-options.boxsize)
 				boxes = []
-				for x in xrange(fx,lx,options.xstep):
-					for y in xrange(fy,ly,options.ystep):
+				for y in xrange(fy,ly,options.ystep):
+					for x in xrange(fx,lx,options.xstep):
 						boxes.append([x,y,type])
 				self.add_boxes(boxes)
 	
@@ -124,22 +124,24 @@ class MorphBoxList(EMBoxList):
 	
 	def process_box(self,image):
 		img = image.copy()
-		img.process('normalize.maxmin')
-		img.process_inplace('filter.highpass.gauss',{'cutoff_freq':0.005})
-		img.process_inplace('normalize.edgemean')
+		#img.process('normalize.maxmin')
+		img.process_inplace('filter.highpass.gauss',{'sigma':0.015})
+		#img.process_inplace('normalize.edgemean')
 		#img.process_inplace('math.sigma',{'value1':15.0,'value2':0.0})
 		#img.process_inplace('normalize.edgemean')
-		img.process_inplace('filter.lowpass.gauss',{'cutoff_freq':0.02})
-		img.process_inplace('normalize.edgemean')
+		img.process_inplace('filter.lowpass.gauss',{'sigma':0.12})
+		#img.process_inplace('normalize.edgemean')
 		#img.process_inplace('threshold.belowtozero',{'minval':0.098})
-		img.process_inplace('math.edge.magnitude')
-		img.process_inplace('morph.object.density',{'thresh':10.0})
+		#img.process_inplace('math.gradient.magnitude')
+		img.process_inplace('math.gradient.magnitude')
+		img.process_inplace('morph.object.density',{'thresh':5.0})
 		#img.process_inplace('morph.majority',{'nmaj':1,'thresh':0.0})
 		#img.process_inplace('morph.object.density',{'thresh':0.0})
 		#img.process_inplace('mask.addshells.multilevel',{'nshells':3})
-		img.process_inplace('threshold.belowtozero',{'minval':250})
+		#img.process_inplace('threshold.belowtozero',{'minval':250})
 		#img.process_inplace('histogram.bin',{'nbins':3})
 		#img.process_inplace('normalize.maxmin')
+		img.process_inplace('normalize.edgemean')
 		return self.center_particle_in_box(img)
 	
 	def center_particle_in_box(self,img):
