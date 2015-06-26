@@ -11610,7 +11610,8 @@ void SDGDProcessor::process_inplace( EMData* image )
 	dx->mult(*dx);
 	dx->addsquare(*dy);
 	
-	image = dxdx;
+	image->to_zero();
+	image->add(*dxdx);
 	image->add(*dxdy);
 	image->add(*dydy);
 	image->div(*dx);
