@@ -52,13 +52,11 @@ def main():
 	parser.add_argument("--ymax",type=int,default=-1)
 	parser.add_argument("--ystep",type=int,default=16)
 	(options, args) = parser.parse_args()
-
+	
 	app = EMApp()
 	boxer = AutoBoxer(args,options)
 	boxer.show_interfaces()
 	app.execute()
-	
-	#FilterTester(args[1]).display_processing()
 
 
 class AutoBoxer(EMBoxerModule):
@@ -104,9 +102,9 @@ class AutoBoxer(EMBoxerModule):
 	
 	@staticmethod
 	def get_num_boxes(file_name):
-		'''
+		"""
 		A static function for getting the number of boxes associated with each file
-		'''
+		"""
 		box_list = EMBoxList()
 		box_list.load_boxes_from_database(file_name)
 		return len(box_list)
@@ -114,30 +112,42 @@ class AutoBoxer(EMBoxerModule):
 
 class MorphBoxList(EMBoxList):
 
+	"""
+	Class to show filtered particles. Needs an on/off switch!
+	"""
+
 	def __init__(self,target):
 		super(MorphBoxList,self).__init__(target)
-
+	
 	def get_particle_images(self,image_name,box_size):
-		filtered = []
-		for box in self.boxes:
-			im = box.get_image(image_name,box_size,"normalize.edgemean")
-			fl = self.process_box(im)
-			filtered.append(fl)
-		return filtered #[box.get_image(image_name,box_size,"normalize.edgemean") for box in self.boxes]
-
+		return [self.process_box(box.get_image(image_name,box_size,"normalize.edgemean")) for box in self.boxes]
+	
 	def process_box(self,image):
 		img = image.copy()
-		img.process_inplace('filter.highpass.gauss',{'cutoff_abs':0.02})
+		img.process('normalize.maxmin')
+		img.process_inplace('filter.highpass.gauss',{'cutoff_freq':0.005})
 		img.process_inplace('normalize.edgemean')
-		img.process_inplace('math.sigma',{'value1':15.0,'value2':0.0})
+		#img.process_inplace('math.sigma',{'value1':15.0,'value2':0.0})
+		#img.process_inplace('normalize.edgemean')
+		img.process_inplace('filter.lowpass.gauss',{'cutoff_freq':0.02})
 		img.process_inplace('normalize.edgemean')
-		img.process_inplace('filter.lowpass.gauss',{'cutoff_abs':0.088})
-		img.process_inplace('threshold.belowtozero',{'minval':0.098})
-		img.process_inplace('morph.majority',{'nmaj':1,'thresh':0.0})
-		img.process_inplace('morph.object.density',{'thresh':0.0})
-		img.process_inplace('mask.addshells.multilevel',{'nshells':0})
-		img.process_inplace('histogram.bin',{'nbins':2})
-		img.process_inplace('normalize.maxmin')
+		#img.process_inplace('threshold.belowtozero',{'minval':0.098})
+		img.process_inplace('math.edge.magnitude')
+		img.process_inplace('morph.object.density',{'thresh':10.0})
+		#img.process_inplace('morph.majority',{'nmaj':1,'thresh':0.0})
+		#img.process_inplace('morph.object.density',{'thresh':0.0})
+		#img.process_inplace('mask.addshells.multilevel',{'nshells':3})
+		img.process_inplace('threshold.belowtozero',{'minval':250})
+		#img.process_inplace('histogram.bin',{'nbins':3})
+		#img.process_inplace('normalize.maxmin')
+		return self.center_particle_in_box(img)
+	
+	def center_particle_in_box(self,img):
+		# will iteratively move box to center on peak of density
+		# possibly a good opportunity to use the image gradient? (contour plot)
+		
+		#img.process_inplace('xform.center')
+		
 		return img
 
 
@@ -166,9 +176,9 @@ class MorphBoxingTool(EMBoxingTool):
 	def unique_name(self): return MorphBoxingTool.BOX_TYPE
 
 	def set_current_file(self,file_name,active_tool=False):
-		'''
+		"""
 		If the behavior of this Handler does not if the file changes, but the function needs to be supplied
-		'''
+		"""
 		pass
 
 	def get_2d_window(self): return self.target().get_2d_window()
@@ -182,7 +192,6 @@ class MorphBoxingTool(EMBoxingTool):
 			box_num = self.target().add_box(m[0],m[1],MorphBoxingTool.BOX_TYPE)
 			if self.panel_object.auto_center_checkbox.isChecked():
 				self.try_to_center_ref(box_num)
-
 			self.moving=[m,box_num]
 		else:
 			box = self.target().get_box(box_num)
@@ -190,9 +199,7 @@ class MorphBoxingTool(EMBoxingTool):
 		 		if event.modifiers()&Qt.ShiftModifier :
 					self.target().remove_box(box_num)
 				else:
-					# if we make it here than the we're moving a box
 					self.moving=[m,box_num]
-					#self.target().moving_box_established(box_num)
 			else:
 				raise EMUnknownBoxType,box.type
 
@@ -210,7 +217,6 @@ class MorphBoxingTool(EMBoxingTool):
 
 		elif self.moving != None:
 			oldm = self.moving[0]
-
 			self.target().move_box(self.moving[1],m[0]-oldm[0],m[1]-oldm[1])
 			self.moving[0] = m
 
@@ -228,7 +234,6 @@ class MorphBoxingTool(EMBoxingTool):
 		box = self.target().get_box(box_num)
 		if box.type != MorphBoxingTool.BOX_TYPE:
 			raise EMUnknownBoxType,box.type
-
 		self.moving_data = [x,y,box_num]
 
 	def move_ptcl(self,box_num,x,y,scale):
@@ -236,7 +241,6 @@ class MorphBoxingTool(EMBoxingTool):
 		dx = self.moving_data[0] - x
 		dy = y - self.moving_data[1]
 		self.target().move_box(self.moving_data[2],dx,dy)
-
 		self.moving_data = [x,y,self.moving_data[2]]
 
 	def release_moving_ptcl(self,box_num,x,y):
@@ -254,15 +258,13 @@ class MorphBoxingTool(EMBoxingTool):
 		return [MorphBoxingTool.BOX_TYPE]
 
 	def boxes_erased(self,list_of_boxes):
-		'''
+		"""
 		No need to act here for the morph boxing tool - everything is fine?
-		'''
+		"""
 		pass
 
-	#TODO: better code reuse, not copy and paste, here
-	#COPIED FROM e2boxer's SwarmBoxer !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	def xform_center_propagate(self,box,image_name,template,box_size):
-		'''
+		"""
 		Centers a box that was generated in a shrunken image by getting the 'real particle' out of the large
 		image on disk and doing a ccf with the template - then I just find the peak and use that to center
 		@param box a list like [x,y,type,float] - only x and y are used
@@ -270,10 +272,9 @@ class MorphBoxingTool(EMBoxingTool):
 		@param template the template correctly scaled to the have the same angstrom per pixel as the image (named image_name) stored on disk
 		@param box_size the size of the box used to center
 		Returns the dx and dy parameters, i.e. does not actually alter the box
-		'''
-	  	global BigImageCache
-	  	image = BigImageCache.get_image_directly(image_name)
-
+		"""
+		global BigImageCache
+		image = BigImageCache.get_image_directly(image_name)
 		xc = box[0]-box_size/2
 		yc = box[1]-box_size/2
 		r = Region(xc,yc,box_size,box_size)
