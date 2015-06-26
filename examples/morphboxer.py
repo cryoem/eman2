@@ -317,6 +317,57 @@ class MorphBoxingPanel:
 	def clear_clicked(self,val):
 		self.target().clear_all()
 
+class ErasingPanel:
+	def __init__(self,target,erase_radius=128):
+		self.busy = True
+		self.erase_radius = erase_radius
+		self.target = weakref.ref(target)
+		self.erase_rad_edit = None
+		self.widget = None
+		self.busy = False
+
+
+	def set_erase_radius(self, erase_rad_edit):
+		self.busy=True
+		self.erase_radius = erase_rad_edit
+		if self.erase_rad_edit != None: self.erase_rad_edit.setValue(erase_rad_edit)
+		self.busy=False
+
+	def get_widget(self):
+		if self.widget == None:
+			from PyQt4 import QtCore, QtGui, Qt
+			self.widget = QtGui.QWidget()
+			vbl = QtGui.QVBoxLayout(self.widget)
+			vbl.setMargin(0)
+			vbl.setSpacing(6)
+			vbl.setObjectName("vbl")
+
+			hbl = QtGui.QHBoxLayout()
+			hbl.addWidget(QtGui.QLabel("Erase Radius:"))
+			from valslider import ValSlider
+			self.erase_rad_edit = ValSlider(None,(0.0,1000.0),"")
+			self.erase_rad_edit.setValue(int(self.erase_radius))
+			self.erase_rad_edit.setEnabled(True)
+			hbl.addWidget(self.erase_rad_edit)
+
+
+			self.unerase = QtGui.QCheckBox("Unerase")
+			self.unerase.setChecked(False)
+
+			vbl.addLayout(hbl)
+			vbl.addWidget(self.unerase)
+			QtCore.QObject.connect(self.erase_rad_edit,QtCore.SIGNAL("sliderReleased"),self.new_erase_radius) #"editingFinished()"
+			QtCore.QObject.connect(self.unerase,QtCore.SIGNAL("clicked(bool)"),self.unerase_checked)
+
+		return self.widget
+
+	def new_erase_radius(self, erase_rad_edit):
+		if self.busy: return
+		self.target().set_erase_radius(erase_rad_edit)
+
+	def unerase_checked(self,val):
+		if self.busy: return
+		self.target().toggle_unerase(val)
 
 # class MicrographSampler:
 # 
