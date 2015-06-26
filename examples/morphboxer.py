@@ -124,7 +124,7 @@ class MorphBoxList(EMBoxList):
 	
 	def process_box(self,image):
 		img = image.copy()
-		#img.process('normalize.maxmin')
+		img.process_inplace('math.meanshrink',{'n':2})
 		img.process_inplace('filter.highpass.gauss',{'sigma':0.015})
 		#img.process_inplace('normalize.edgemean')
 		#img.process_inplace('math.sigma',{'value1':15.0,'value2':0.0})
