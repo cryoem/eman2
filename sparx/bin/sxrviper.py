@@ -840,9 +840,9 @@ def main():
 					#cmdexecute(cmd)
 
 				if (myid == main_node):
-					store_value_of_simple_vars_in_json_file(masterdir + 'program_state.json', locals(), exclude_list_of_vars=["usage"], 
+					store_value_of_simple_vars_in_json_file(masterdir + 'program_state_stack.json', locals(), exclude_list_of_vars=["usage"], 
 						vars_that_will_show_only_size = ["subset"])
-					store_value_of_simple_vars_in_json_file(masterdir + 'program_state.json', options.__dict__, write_or_append='a')
+					store_value_of_simple_vars_in_json_file(masterdir + 'program_state_stack.json', options.__dict__, write_or_append='a')
 				
 				# mpi_barrier(mpi_comm)
 				# from mpi import mpi_finalize

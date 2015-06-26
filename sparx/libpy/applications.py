@@ -979,6 +979,7 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 
 	for im in xrange(nima):
 		data[im].set_attr('ID', list_of_particles[im])
+		set_params2D(data[im], [0.0, 0.0, 0.0, 0, 1.0], 'xform.align2d')
 		st = Util.infomask(data[im], mask, False)
 		data[im] -= st[0]
 		if CTF:
@@ -4946,6 +4947,7 @@ def ali3dlocal_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs 
 
 # Auxiliary function to compute number of cones in ali3dlocal
 def computenumberofrefs(x, dat):
+	from utilities import even_angles
 	#  dat = [sym, desired number of refs, ref_a]
 	return (len(even_angles(x, method = dat[2], symmetry = dat[0])) - dat[1])**2
 
