@@ -43,14 +43,14 @@ def main():
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_pos_argument(name="micrographs",help="List the file to process with e2boxer here.", default="", guitype='filebox', browser="EMBoxesTable(withmodal=True,multiselect=True)",row=0,col=0,rowspan=1,colspan=3,mode="boxing,extraction")
-	parser.add_argument("--xmin",type=int,default=0)
-	parser.add_argument("--xmax",type=int,default=-1)
-	parser.add_argument("--xstep",type=int,default=128)
-	parser.add_argument("--ymin",type=int,default=0)
-	parser.add_argument("--ymax",type=int,default=-1)
-	parser.add_argument("--ystep",type=int,default=128)
 	parser.add_header(name="boxerheader", help='Options below this label are specific to e2boxer', title="### e2boxer options ###", row=1, col=0, rowspan=1, colspan=3, mode="boxing,extraction")
 	parser.add_argument("--boxsize","-b",type=int,help="Box size in pixels",default=-1, guitype='intbox', row=2, col=0, rowspan=1, colspan=3, mode="boxing,extraction")
+	parser.add_argument("--xmin",type=int,default=0)
+	parser.add_argument("--xmax",type=int,default=-1)
+	parser.add_argument("--xstep",type=int,default=16)
+	parser.add_argument("--ymin",type=int,default=0)
+	parser.add_argument("--ymax",type=int,default=-1)
+	parser.add_argument("--ystep",type=int,default=16)
 	(options, args) = parser.parse_args()
 
 	app = EMApp()
@@ -69,7 +69,10 @@ class AutoBoxer(EMBoxerModule):
 	
 	def __init__(self,micrographs,options):
 		super(AutoBoxer,self).__init__(micrographs,options.boxsize)
+		self.box_list = MorphBoxList(self)
+		
 		self.add_tool(MorphBoxingTool)
+		
 		for i, mgph in enumerate(micrographs):
 			self.set_current_file_by_idx(i)
 			f = self.current_file()
@@ -107,6 +110,45 @@ class AutoBoxer(EMBoxerModule):
 		# Just like the filtertool. Allow user to adjust all parameters in the morph panel.
 		pass
 
+class MorphBoxList(EMBoxList):
+
+	def __init__(self,target):
+		super(MorphBoxList,self).__init__(target)
+
+	def get_particle_images(self,image_name,box_size):
+		filtered = []
+		for box in self.boxes:
+			im = box.get_image(image_name,box_size,"normalize.edgemean")
+			fl = self.filter(im)
+			filtered.append(fl)
+		return filtered #[box.get_image(image_name,box_size,"normalize.edgemean") for box in self.boxes]
+
+	def filter(self,image):
+		img = image.copy()
+		img.process_inplace('filter.highpass.gauss',{'cutoff_abs':0.02})
+		img.process_inplace('normalize.edgemean')
+		#img.process_inplace('normalize.maxmin')
+		img.process_inplace('math.sigma',{'value1':15.0,'value2':0.0})
+		img.process_inplace('normalize.edgemean')
+		#img.process_inplace('normalize.maxmin')
+		img.process_inplace('filter.lowpass.gauss',{'cutoff_abs':0.088})
+		#img.process_inplace('normalize.maxmin')
+		#img.process_inplace('normalize.edgemean')
+		img.process_inplace('threshold.belowtozero',{'minval':0.098})
+		#img.process_inplace('normalize.maxmin')
+		#img.process_inplace('normalize.edgemean')
+		img.process_inplace('morph.majority',{'nmaj':1,'thresh':0.0})
+		#img.process_inplace('normalize.maxmin')
+		#img.process_inplace('normalize.edgemean')
+		img.process_inplace('morph.object.density',{'thresh':0.0})
+		#img.process_inplace('normalize.maxmin')
+		#img.process_inplace('normalize.edgemean')
+		#img.process_inplace('mask.addshells.multilevel',{'nshells':2})
+		#img.process_inplace('normalize.maxmin')
+		#img.process_inplace('normalize.edgemean')
+		img.process_inplace('histogram.bin',{'nbins':3})
+		img.process_inplace('normalize.maxmin')
+		return img
 
 class MorphBoxingTool(EMBoxingTool):
 
@@ -119,41 +161,6 @@ class MorphBoxingTool(EMBoxingTool):
 		self.moving = None
 		self.panel_object = None
 		self.moving_data = None
-		#self.mgph = EMData(micrograph)
-		#self.metadata = self.mgph.get_attr_dict()
-		#self.particles = {}
-		#self._tilesize = 1.5*boxsize
-		#self._tile()
-		#self._filter()
-	
-	def _tile(self):
-		# Use e2boxer style. generate coordinates: "{}\t{}\t{}\t{}".format(x,y,boxsize,boxsize)
-		# use EMBoxList class from emboxerbase?
-		raise(NotImplementedError)
-		
-	def _filter(self):
-		# need data driven filtration, but this will do for now
-		for tile in self._tiles:
-			tile.process_inplace('filter.highpass.gauss',{'cutoff_abs':0.02})
-			tile.process_inplace('math.sigma',{'value1':15.0,'value2':0.0})
-			tile.process_inplace('filter.lowpass.gauss',{'cutoff_abs':0.088})
-			tile.process_inplace('threshold.belowtozero',{'minval':0.098})
-			tile.process_inplace('morph.majority',{'nmaj':1,'thresh':0.0})
-			tile.process_inplace('morph.object.density',{'thresh':0.0})
-			tile.process_inplace('mask.addshells.multilevel',{'nshells':2})
-			tile.process_inplace('histogram.bin',{'nbins':2})
-
-	def _search(self):
-		"""
-		Find possible particle coordinates
-		"""
-		raise(NotImplementedError)
-	
-	def _classify(self):
-		"""
-		Performs a classification to discriminate between particles and pure background
-		"""
-		raise(NotImplementedError)
 
 	def get_widget(self):
 		if self.panel_object == None:
@@ -295,6 +302,41 @@ class MorphBoxingTool(EMBoxingTool):
 		dx,dy = self.xform_center_propagate([box.x,box.y],img_filename,centered_ptcl,box_size)
 		self.target().move_box(box_num, dx, dy)
 
+		#self.mgph = EMData(micrograph)
+		#self.metadata = self.mgph.get_attr_dict()
+		#self.particles = {}
+		#self._tilesize = 1.5*boxsize
+		#self._tile()
+		#self._filter()
+	
+# 	def _tile(self):
+# 		# Use e2boxer style. generate coordinates: "{}\t{}\t{}\t{}".format(x,y,boxsize,boxsize)
+# 		# use EMBoxList class from emboxerbase?
+# 		raise(NotImplementedError)
+# 		
+# 	def _filter(self):
+# 		# need data driven filtration, but this will do for now
+# 		for tile in self._tiles:
+# 			tile.process_inplace('filter.highpass.gauss',{'cutoff_abs':0.02})
+# 			tile.process_inplace('math.sigma',{'value1':15.0,'value2':0.0})
+# 			tile.process_inplace('filter.lowpass.gauss',{'cutoff_abs':0.088})
+# 			tile.process_inplace('threshold.belowtozero',{'minval':0.098})
+# 			tile.process_inplace('morph.majority',{'nmaj':1,'thresh':0.0})
+# 			tile.process_inplace('morph.object.density',{'thresh':0.0})
+# 			tile.process_inplace('mask.addshells.multilevel',{'nshells':2})
+# 			tile.process_inplace('histogram.bin',{'nbins':2})
+
+# 	def _search(self):
+# 		"""
+# 		Find possible particle coordinates
+# 		"""
+# 		raise(NotImplementedError)
+# 	
+# 	def _classify(self):
+# 		"""
+# 		Performs a classification to discriminate between particles and pure background
+# 		"""
+# 		raise(NotImplementedError)
 
 class MorphBoxingPanel:
 	
