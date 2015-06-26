@@ -249,8 +249,6 @@ class MovieModeAligner:
 		self._ips.process_inplace('xform.phaseorigin.tocenter')
 		self._ips.set_complex(False)
 		self._ips.process_inplace('math.rotationalaverage') # smooth
-		#display(self._ips)
-		
 
 	def _get_img_ips(self,i):
 		img = EMData(self.path,i)
@@ -271,7 +269,6 @@ class MovieModeAligner:
 		"""
 		cpss = (self._average_stack(s) for s in xrange(self._nstacks))
 		self._cps = sum(cpss)/self._nregions
-		#self._cps.process_inplace('math.rotationalaverage')
 		
 	def _average_stack(self,s):
 		stack = (EMData(self.orig,i,False,r) for i,r in enumerate(self._stacks[s]))
@@ -632,9 +629,9 @@ class ParameterSampler(BaseAnnealer):
 		self.copy_strategy = 'slice'
 		self.save_state_on_exit = False
 
-	def move(self,scale=10.0):
-		self.state[self.count] += scale * (2*np.random.random()-1)
-		self.state[self.count+1] += scale * (2*np.random.random()-1)
+	def move(self,scale=12.0):
+		self.state[self.count] += round(scale * (2.0*np.random.random()-1.0))
+		self.state[self.count+1] += round(scale * (2.0*np.random.random()-1.0))
 		t = Transform({'type':'eman','tx':self.state[self.count],'ty':self.state[self.count+1]})
 		self.aligner._update_frame_params(self.count/2,t)
 		self.count = (self.count+2) % self.slen
