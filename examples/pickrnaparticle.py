@@ -56,12 +56,15 @@ def main():
 	#img.process_inplace("threshold.binaryrange",{"low":img["mean"],"high":100})
 	#exit()
 	img.process_inplace("mask.fromfile",{"filename":"masktmp.hdf"})
-	img.process_inplace("threshold.abovetozero",{"maxval":img["mean_nonzero"]+img["sigma_nonzero"]*options.ub})
-	img.process_inplace("threshold.belowtozero",{"minval":img["mean_nonzero"]+img["sigma_nonzero"]*options.lb})
+	#img.process_inplace("threshold.abovetozero",{"maxval":img["mean_nonzero"]+img["sigma_nonzero"]*options.ub})
+	#img.process_inplace("threshold.belowtozero",{"minval":img["mean_nonzero"]+img["sigma_nonzero"]*options.lb})
 	
+	#img.process_inplace("threshold.belowtozero",{"minval":img["mean"]})
 	
 	print "Find centers.."
-	imlabel=img.process("morph.object.label",{"thresh":img["mean"],"write_centers":True})
+	img.process_inplace("morph.object.label")
+	img.write_image(args[1])
+	#imlabel=img.process("segment.distance",{"thr":0,"maxsegsep")
 	cnts=imlabel["obj_centers"]
 	ct=[]
 	for c in cnts:
@@ -81,7 +84,7 @@ def main():
 	json.dump(jn, f, indent=0)
 	f.close()
 	
-	#img.write_image(sys.argv[2])
+	
 
 
 if __name__ == '__main__':
