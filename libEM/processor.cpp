@@ -73,8 +73,10 @@ const string ConvolutionProcessor::NAME = "math.convolution";
 const string XGradientProcessor::NAME = "math.edge.xgradient";
 const string YGradientProcessor::NAME = "math.edge.ygradient";
 const string ZGradientProcessor::NAME = "math.edge.zgradient";
-const string GradientMagnitudeProcessor::NAME = "math.edge.magnitude";
-const string GradientDirectionProcessor::NAME = "math.edge.direction";
+const string GradientMagnitudeProcessor::NAME = "math.gradient.magnitude";
+const string GradientDirectionProcessor::NAME = "math.gradient.direction";
+const string LaplacianDirectionProcessor::NAME = "math.laplacian.direction";
+const string LaplacianMagnitudeProcessor::NAME = "math.laplacian.magnitude";
 const string Wiener2DAutoAreaProcessor::NAME = "filter.wiener2dauto";
 const string Wiener2DFourierProcessor::NAME = "filter.wiener2d";
 const string CtfSimProcessor::NAME = "math.simulatectf";
@@ -440,8 +442,11 @@ template <> Factory < Processor >::Factory()
 	force_add<XGradientProcessor>();
 	force_add<YGradientProcessor>();
 	force_add<ZGradientProcessor>();
+	
 	force_add<GradientMagnitudeProcessor>();
 	force_add<GradientDirectionProcessor>();
+	force_add<LaplacianMagnitudeProcessor>();
+	force_add<LaplacianDirectionProcessor>();
 
 //	force_add<FileFourierProcessor>();
 
@@ -11459,37 +11464,6 @@ void YGradientProcessor::process_inplace( EMData* image )
 	delete e;
 }
 
-void GradientMagnitudeProcessor::process_inplace( EMData* image )
-{
-	EMData* d = new EMData();
-	image->process_inplace("math.edge.xgradient");
-	image->process_inplace("math.squared");
-	d = image->process("math.edge.ygradient");
-	image->addsquare(*d);
-	image->process_inplace("math.sqrt");
-	delete d;
-}
-
-void GradientDirectionProcessor::process_inplace( EMData* image )
-{
-	EMData* d = new EMData();
-	double x;
-	double y;
-	
-	int size = image->get_xsize() * image->get_ysize();
-	
-	image->process_inplace("math.edge.xgradient");
-	d = image->process("math.edge.ygradient");
-	
-	for ( int i = 0; i < size; ++i ) {
-		x = image->get_value_at_index(i);
-		y = d->get_value_at_index(i);
-		image->set_value_at_index(i,atan2(x,y));
-	}
-	
-	delete d;
-}
-
 void ZGradientProcessor::process_inplace( EMData* image )
 {
 	if (image->is_complex()) throw ImageFormatException("Cannot edge detect a complex image");
@@ -11531,6 +11505,57 @@ void ZGradientProcessor::process_inplace( EMData* image )
 	image->process_inplace("xform.phaseorigin.tocenter");
 
 	delete e;
+}
+
+void GradientMagnitudeProcessor::process_inplace( EMData* image )
+{
+	EMData* d = new EMData();
+	image->process_inplace("math.edge.xgradient");
+	image->process_inplace("math.squared");
+	d = image->process("math.edge.ygradient");
+	image->addsquare(*d);
+	image->process_inplace("math.sqrt");
+	delete d;
+}
+
+void GradientDirectionProcessor::process_inplace( EMData* image )
+{
+	EMData* d = new EMData();
+	int size = image->get_xsize() * image->get_ysize();
+	image->process_inplace("math.edge.xgradient");
+	d = image->process("math.edge.ygradient");
+	for ( int i = 0; i < size; ++i ) {
+		image->set_value_at_index(i,atan2(image->get_value_at_index(i),d->get_value_at_index(i)));
+	}
+	delete d;
+}
+
+void LaplacianMagnitudeProcessor::process_inplace( EMData* image )
+{
+	EMData* d = new EMData();
+	image->process_inplace("math.edge.xgradient");
+	image->process_inplace("math.edge.xgradient");
+	image->process_inplace("math.squared");
+	d = image->process("math.edge.ygradient");
+	d->process_inplace("math.edge.ygradient");
+	image->addsquare(*d);
+	image->process_inplace("math.sqrt");
+	delete d;
+}
+
+void LaplacianDirectionProcessor::process_inplace( EMData* image )
+{
+	EMData* d = new EMData();
+	int size = image->get_xsize() * image->get_ysize();
+	image->process_inplace("math.edge.xgradient");
+	image->process_inplace("math.edge.xgradient");
+	image->process_inplace("math.squared");
+	d = image->process("math.edge.ygradient");
+	d->process_inplace("math.edge.ygradient");
+	for ( int i = 0; i < size; ++i ) {
+		image->set_value_at_index(i,atan2(image->get_value_at_index(i),d->get_value_at_index(i)));
+	}
+	delete d;
 }
 
 void EMAN::dump_processors()
