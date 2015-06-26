@@ -1,4 +1,5 @@
-#!/home/ahmad/EMAN2/python/Python-2.5.4-ucs4/bin/python
+#!/usr/bin/env python
+
 # Author: David Woolford (woolford@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
 
@@ -358,7 +359,7 @@ class EMBox:
 		else: return False
 
 
-class EMBoxingTool:
+class EMBoxingTool(object):
 	'''
 	This class defines the interface necessary for integration of a custom tool, such as an automatic boxer,
 	into EMBoxerModule.
@@ -1194,7 +1195,7 @@ class EMThumbsTools:
 
 
 
-class EMBoxList:
+class EMBoxList(object):
 	'''
 	A list of boxes
 	'''
