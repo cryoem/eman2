@@ -15,8 +15,8 @@ import cPickle
 def main():
 
 
-	usage="datest.py <particles> [options]
-	Run a stacked denoise auto-encoder on the data set."
+	usage="""datest.py <particles> [options]
+	Run a stacked denoise auto-encoder on the data set."""
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--learnrate", type=float,help="Learning rate for the auto-encoder", default=.01)
@@ -111,24 +111,25 @@ def main():
 		print "Generating results ..."
 		
 		if options.writeall:
-			batch_size=1
-			n_train_batches = train_set_x.get_value(borrow=True).shape[0] / batch_size
-			test_imgs = sda.pretraining_get_result(train_set_x=train_set_x,batch_size=batch_size)
+			n_imgs= train_set_x.get_value(borrow=True).shape[0] 
+			test_imgs = sda.pretraining_get_result(train_set_x=train_set_x,batch_size=1)
 			
 			fname=options.writeall
 			try:os.remove(fname)
 			except: pass
-			for idi in range(n_train_batches):
-				rt=test_imgs[sda.n_layers-4](index=idi)
-				for t in range(len(rt)):
-					if shape[2]>1:
-						img=rt[t].reshape(shape[0],shape[1],shape[2])
-					else:
-						img=rt[t].reshape(shape[0],shape[1])
-					e = EMNumPy.numpy2em(img.astype("float32"))
-					e.process_inplace("normalize")
-					e.process_inplace("filter.highpass.gauss",{"cutoff_abs":.02})
-					e.write_image(fname,-1)
+			for i in range(n_imgs):
+				rt=test_imgs[sda.n_layers-1](index=i)[0]
+			
+				if shape[2]>1:
+					img=rt.reshape(shape[0],shape[1],shape[2])
+				else:
+					img=rt.reshape(shape[0],shape[1])
+				e = EMNumPy.numpy2em(img.astype("float32"))
+				e.process_inplace("normalize")
+				e.process_inplace("filter.highpass.gauss",{"cutoff_abs":.02})
+				e.write_image(fname,i)
+				hdr=EMData(args[0],i,True)
+				hdr.write_image(fname,i)
 		else:
 			batch_size=100
 			test_imgs = sda.pretraining_get_result(train_set_x=train_set_x,batch_size=batch_size)
