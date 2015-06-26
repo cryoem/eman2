@@ -724,6 +724,42 @@ The basic design of EMAN Processors: <br>\
 			static const string NAME;
 	};
 
+	/** Computes the image gradient using David's image gradient processors
+	 *
+	 *@author James Michael Bell
+	 *@date 06/26/2015
+	 */
+	class GradientProcessor : public Processor
+	{
+	 public:
+		GradientProcessor() {}
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		void process_inplace(EMData *image);
+
+		static Processor *NEW()
+		{
+			return new GradientProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Determines the gradient of a 2D image.";
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			return d;
+		}
+
+		static const string NAME;
+	};
+
 	/** Determines the magnitude of an approximate image gradient using David's image gradient processors
 	 *
 	 *@author James Michael Bell

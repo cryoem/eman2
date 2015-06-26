@@ -73,8 +73,10 @@ const string ConvolutionProcessor::NAME = "math.convolution";
 const string XGradientProcessor::NAME = "math.edge.xgradient";
 const string YGradientProcessor::NAME = "math.edge.ygradient";
 const string ZGradientProcessor::NAME = "math.edge.zgradient";
+const string GradientProcessor::NAME = "math.gradient";
 const string GradientMagnitudeProcessor::NAME = "math.gradient.magnitude";
 const string GradientDirectionProcessor::NAME = "math.gradient.direction";
+const string LaplacianProcessor::NAME = "math.laplacian";
 const string LaplacianDirectionProcessor::NAME = "math.laplacian.direction";
 const string LaplacianMagnitudeProcessor::NAME = "math.laplacian.magnitude";
 const string Wiener2DAutoAreaProcessor::NAME = "filter.wiener2dauto";
@@ -130,7 +132,6 @@ const string LinearPyramidProcessor::NAME = "math.linearpyramid";
 const string MakeRadiusSquaredProcessor::NAME = "math.toradiussqr";
 const string MakeRadiusProcessor::NAME = "math.toradius";
 const string ComplexNormPixel::NAME = "complex.normpixels";
-const string LaplacianProcessor::NAME = "math.laplacian";
 const string ZeroConstantProcessor::NAME = "mask.contract";	// This is broken, it never worked. Somebody didn't think it through properly
 const string BoxMedianProcessor::NAME = "eman1.filter.median";
 const string BoxSigmaProcessor::NAME = "math.localsigma";
@@ -443,6 +444,7 @@ template <> Factory < Processor >::Factory()
 	force_add<YGradientProcessor>();
 	force_add<ZGradientProcessor>();
 	
+	force_add<GradientProcessor>();
 	force_add<GradientMagnitudeProcessor>();
 	force_add<GradientDirectionProcessor>();
 	force_add<LaplacianMagnitudeProcessor>();
@@ -1808,9 +1810,16 @@ void AreaProcessor::process_inplace(EMData * image)
 	image->update();
 }
 
-void LaplacianProcessor::process_inplace(EMData* iage)
+void LaplacianProcessor::process_inplace(EMData* image)
 {
-	throw UnexpectedBehaviorException("Not implemented yet");
+	EMData* d = new EMData();
+	d = image->process("math.edge.xgradient");
+	d->process_inplace("math.edge.xgradient");
+	image->process_inplace("math.edge.ygradient");
+	image->process_inplace("math.edge.xgradient");
+	image->add(*d);
+	image->process_inplace("normalize");
+	delete d;
 }
 
 void LaplacianProcessor::create_kernel() const
@@ -11509,6 +11518,16 @@ void ZGradientProcessor::process_inplace( EMData* image )
 	image->process_inplace("xform.phaseorigin.tocenter");
 
 	delete e;
+}
+
+void GradientProcessor::process_inplace(EMData* image)
+{
+	EMData* d = new EMData();
+	d = image->process("math.edge.xgradient");
+	image->process_inplace("math.edge.ygradient");
+	image->add(*d);
+	image->process_inplace("normalize");
+	delete d;
 }
 
 void GradientMagnitudeProcessor::process_inplace( EMData* image )
