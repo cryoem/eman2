@@ -11529,7 +11529,7 @@ void GradientDirectionProcessor::process_inplace( EMData* image )
 	image->process_inplace("math.edge.xgradient");
 	d = image->process("math.edge.ygradient");
 	for ( int i = 0; i < size; ++i ) {
-		image->set_value_at_index(i,atan2(image->get_value_at_index(i),d->get_value_at_index(i)));
+		image->set_value_at_index(i,atan2(d->get_value_at_index(i),image->get_value_at_index(i)));
 	}
 	delete d;
 }
@@ -11557,7 +11557,7 @@ void LaplacianDirectionProcessor::process_inplace( EMData* image )
 	d = image->process("math.edge.ygradient");
 	d->process_inplace("math.edge.ygradient");
 	for ( int i = 0; i < size; ++i ) {
-		image->set_value_at_index(i,atan2(image->get_value_at_index(i),d->get_value_at_index(i)));
+		image->set_value_at_index(i,atan2(d->get_value_at_index(i),image->get_value_at_index(i)));
 	}
 	delete d;
 }
