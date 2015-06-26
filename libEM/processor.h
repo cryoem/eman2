@@ -724,6 +724,78 @@ The basic design of EMAN Processors: <br>\
 			static const string NAME;
 	};
 
+	/** Determines the magnitude of an approximate image gradient using David's image gradient processors
+	 *
+	 *@author James Michael Bell
+	 *@date 06/26/2015
+	 */
+	class GradientMagnitudeProcessor : public Processor
+	{
+	 public:
+		GradientMagnitudeProcessor() {}
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		void process_inplace(EMData *image);
+
+		static Processor *NEW()
+		{
+			return new GradientMagnitudeProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Determines the magnitude of the gradient of a 2D image.";
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			return d;
+		}
+
+		static const string NAME;
+	};
+
+	/** Determines the direction of an approximate image gradient using David's image gradient processors
+	 *
+	 *@author James Michael Bell
+	 *@date 06/26/2015
+	 */
+	class GradientDirectionProcessor : public Processor
+	{
+	 public:
+		GradientDirectionProcessor() {}
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		void process_inplace(EMData *image);
+
+		static Processor *NEW()
+		{
+			return new GradientDirectionProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Determines the direction of the gradient of a 2D image.";
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			return d;
+		}
+
+		static const string NAME;
+	};
+
 	/** Automatically determines the background for the image then uses this to perform
 	 * Wiener filters on overlapping subregions of the image, which are then
 	 * combined using linear interpolation
