@@ -3287,6 +3287,9 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		{
 			return NAME;
 		}
+		
+		void process_inplace(EMData *image);
+		
 		static Processor *NEW()
 		{
 			return new LaplacianProcessor();
@@ -3298,6 +3301,7 @@ width is also nonisotropic and relative to the radii, with 1 being equal to the 
 		}
 
 		static const string NAME;
+		
 
 	  protected:
 		void create_kernel() const;

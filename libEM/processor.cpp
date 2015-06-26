@@ -1808,6 +1808,10 @@ void AreaProcessor::process_inplace(EMData * image)
 	image->update();
 }
 
+void LaplacianProcessor::process_inplace(EMData* iage)
+{
+	throw UnexpectedBehaviorException("Not implemented yet");
+}
 
 void LaplacianProcessor::create_kernel() const
 {
