@@ -76,6 +76,7 @@ const string ZGradientProcessor::NAME = "math.edge.zgradient";
 const string GradientProcessor::NAME = "math.gradient";
 const string GradientMagnitudeProcessor::NAME = "math.gradient.magnitude";
 const string GradientDirectionProcessor::NAME = "math.gradient.direction";
+const string SDGDProcessor::NAME = "math.sdgd";
 const string LaplacianProcessor::NAME = "math.laplacian";
 const string LaplacianDirectionProcessor::NAME = "math.laplacian.direction";
 const string LaplacianMagnitudeProcessor::NAME = "math.laplacian.magnitude";
@@ -449,6 +450,7 @@ template <> Factory < Processor >::Factory()
 	force_add<GradientDirectionProcessor>();
 	force_add<LaplacianMagnitudeProcessor>();
 	force_add<LaplacianDirectionProcessor>();
+	force_add<SDGDProcessor>();
 
 //	force_add<FileFourierProcessor>();
 
@@ -11579,6 +11581,39 @@ void LaplacianDirectionProcessor::process_inplace( EMData* image )
 		image->set_value_at_index(i,atan2(d->get_value_at_index(i),image->get_value_at_index(i)));
 	}
 	delete d;
+}
+
+void SDGDProcessor::process_inplace( EMData* image )
+{
+	EMData* dx = new EMData();
+	EMData* dy = new EMData();
+	EMData* dxdx = new EMData();
+	EMData* dxdy = new EMData();
+	EMData* dydy = new EMData();
+
+	dx = image->process("math.edge.xgradient");
+	dy = image->process("math.edge.ygradient");
+	dxdx = dx->process("math.edge.xgradient");
+	dxdy = dx->process("math.edge.ygradient");
+	dydy = dy->process("math.edge.ygradient");
+	
+	dxdx->mult(*dx);
+	dxdx->mult(*dx);
+	
+	dxdy->mult(2);
+	dxdy->mult(*dx);
+	dxdy->mult(*dy);
+	
+	dydy->mult(*dx);
+	dydy->mult(*dy);
+	
+	dx->mult(*dx);
+	dx->addsquare(*dy);
+	
+	image = dxdx;
+	image->add(*dxdy);
+	image->add(*dydy);
+	image->div(*dx);
 }
 
 void EMAN::dump_processors()
