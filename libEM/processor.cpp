@@ -12159,22 +12159,30 @@ EMData* ObjLabelProcessor::process(const EMData* const image) //
 void ObjLabelProcessor::process_inplace(EMData * image)
 {
 	// Now treats 3d volume as 2d slices
-
+	bool writecenter=params.set_default("write_centers",false);
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 
 	int y1;
 	bool spanLeft, spanRight;
-
 	vector<Vec3i> pvec;
+	float cx,cy;
+	int npx;
 	int count=0;
+	vector<float> centers(2);
 	for (int zz = 0; zz < nz; zz++) {
 
 		for (int yy = 0; yy < ny; yy++) {
 			for (int xx = 0; xx < nx; xx++) {
 				if (image->get_value_at(xx,yy,zz)>0){
 					pvec.push_back(Vec3i(xx,yy,zz));
+					if (writecenter && count<0){
+						cx/=npx;cy/=npx;
+						centers.push_back(cx);
+						centers.push_back(cy);
+						cx=cy=0;npx=0;
+					}
 					count--;
 				}
 				while(!pvec.empty())
@@ -12190,8 +12198,12 @@ void ObjLabelProcessor::process_inplace(EMData * image)
 					bool nowstop=0;
 					while(1)
 					{
-						if(image->get_value_at(x,y1,zz)>0)
+						if(image->get_value_at(x,y1,zz)>0){
 							image->set_value_at(x,y1,zz,count);
+							if (writecenter){
+								cx+=x;cy+=y1;npx++;
+							}
+						}
 
 // 						printf("\t %d\t%d\t%d\n",x,y1,z);
 						if(!spanLeft && x > 0 && image->get_value_at(x-1,y1,zz)>0)
@@ -12219,11 +12231,14 @@ void ObjLabelProcessor::process_inplace(EMData * image)
 							nowstop=1;
 					}
 				}
+				
 
 			}
 		}
 	}
+	printf("%d objects.\n",-count);
 	image->mult(-1);
+	if (writecenter) image->set_attr("obj_centers",centers);
 }
 
 EMData* BwThinningProcessor::process(const EMData* const image) //

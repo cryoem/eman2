@@ -7739,6 +7739,7 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 		virtual TypeDict get_param_types() const
 		{
 			TypeDict d;
+			d.put("write_centers", EMObject::BOOL, "Write the center of each object in the attribute obj_centers.");
 			return d;
 		}
 		static const string NAME;
