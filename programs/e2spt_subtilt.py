@@ -279,14 +279,14 @@ def main():
 	
 	clines=[]
 	if options.coords2d:
-		cfile = open(options.coords2d,'r')				#Open coordinates file
-		clines = cfile.readlines()						#Read its lines
-		cfile.close()									#Close the file
+		cfile = open(options.coords2d,'r')				
+		clines = cfile.readlines()						
+		cfile.close()									
 	
 	elif options.coords3d:
-		cfile = open(options.coords3d,'r')				#Open coordinates file
-		clines = cfile.readlines()						#Read its lines
-		cfile.close()									#Close the file
+		cfile = open(options.coords3d,'r')				
+		clines = cfile.readlines()						
+		cfile.close()									
 		
 	
 	'''
@@ -493,7 +493,7 @@ def main():
 			yc = float(line[1])
 			zc = 0
 		else:	
-			print "\nThere's still an aberrant line in your file, see", line
+			print "\nThere's still an aberrant line in your coordinates file, see", line
 			sys.exit()
 		
 		if options.verbose:
@@ -520,8 +520,8 @@ def main():
 			
 			
 			'''
-			The middle or zero-tilt or lowest-tilt image will serve to align all the rest.
-			Find it, extract it, recenter it using autocentering based on mirror images, and reextract.
+			The middle or zero-tilt or lowest-tilt image will serve to align all the rest if --track is on.
+			If --centerzerotilt is on, find it, extract it, recenter it using autocentering based on mirror images, and reextract.
 			'''
 			
 			retm = extract2D( options, zerotiltangle, icethickness, tomox, xc, yc, zc, 0, 0, zerotiltindx )
@@ -629,7 +629,7 @@ def main():
 				middleslice.write_image( zeroanglestackname, -1 )
 			
 			
-			print "Will now iterate over all other tilt angles"
+			print "Iteration over all tilt angles (other than the least tilted one) starting now."
 			
 			refL = middleslice.copy()
 			refU = middleslice.copy()
@@ -637,6 +637,12 @@ def main():
 			print "mostangles is", mostangles
 			print "nLangles is", nLangles
 			print "nUangles is", nUangles
+			print "tiltanglesfloat are", tiltanglesfloat
+			
+			
+			leftanglesN = len( tiltanglesfloat[ 0: zerotiltindx ] )
+			
+			rightanglesN = len( tiltanglesfloat[ zerotiltindx: -1 ] )
 			
 			for k in range( mostangles ):
 				
@@ -652,9 +658,10 @@ def main():
 					if k == options.ntiltslowpos:
 						break
 				
-				if k < nLangles and not options.ntiltslowpos:
+				if k < leftanglesN and not options.ntiltslowpos: # and zerotiltindx - (k+1) > -1:
 					#print "\n k and nLangles are", k, nLangles
 					lowerindx = zerotiltindx - (k+1)
+					
 					#if not options.negativetiltseries:
 					#	lowerindx = zerotiltindx + (k+1)
 						
@@ -668,8 +675,8 @@ def main():
 					#	lowerangle *= -1
 					#	print "stacking INVERTED lowerangle", lowerangle
 					
-					print "stacking lowerangle", lowerangle
-					print "Lower slice index to send is", lowerindx
+					print "stacking angle %f from the LEFT of lowest tiltangle in the angles list" %( lowerangle )
+					print "found at lowerindx", lowerindx
 					
 					retL = write2D( options, lowerangle, icethickness, tomox, tomoy, xc, yc, zc, cumulativeLdx, cumulativeLdy, refL, apix, 'lower', ptclfile, maxtilt, lowerindx )
 					
@@ -700,7 +707,7 @@ def main():
 							
 							refL.write_image( anglestackname, -1 )
 				
-				if k < nUangles and not options.ntiltslowneg:
+				if k < rightanglesN and not options.ntiltslowneg:
 					#print "\n k and nUangles are", k, nUangles
 					upperindx = zerotiltindx + (k+1)
 					#if not options.negativetiltseries:
@@ -712,8 +719,8 @@ def main():
 					#	upperangle *= -1
 					#	print "stacking INVERTED upperangle", upperangle
 						
-					print "stacking upperangle", upperangle
-					print "Upper slice index to send is", upperindx
+					print "stacking angle %f from the RIGHT lowest tiltangle in the angles list" %( upperangle )
+					print "found at upperindx", upperindx
 					retU = write2D( options, upperangle, icethickness, tomox, tomoy, xc, yc, zc, cumulativeUdx, cumulativeUdy, refU, apix, 'upper', ptclfile, maxtilt, upperindx )
 					if retU:
 						refU = retU[0]
@@ -760,18 +767,37 @@ def checkcorners( img, options ):
 	#cornerny
 	#clipr = imgt.get_clip(Region(x,y, options.tilesize, options.tilesize))
 	
-	corner1 = img.get_clip( Region(0,0, cornernx, cornernx))
-	corner2 = img.get_clip( Region(nx-cornernx,0, cornernx, cornernx))
-	corner3 = img.get_clip( Region(nx-cornernx,nx-cornernx, cornernx, cornernx))
-	corner4 = img.get_clip( Region(0,nx-cornernx, cornernx, cornernx))
+	r1 = Region(0,0, cornernx, cornernx)
+	corner1 = img.get_clip( r1 )
+	
+	r2 = Region(nx-cornernx,0, cornernx, cornernx)
+	corner2 = img.get_clip( r2 )
+	
+	r3 = Region(nx-cornernx,nx-cornernx, cornernx, cornernx)
+	corner3 = img.get_clip( r3 )
+	
+	r4 = Region(0,nx-cornernx, cornernx, cornernx)
+	corner4 = img.get_clip( r4 )
 	
 	if not corner1['sigma']:
+		print "\nimgsize is %d and sigma is %f" % (img['nx'], img['sigma'])
+		print "region r1 is", r1
+		print "empty sigma for corner1", corner1['sigma']
 		return 0
 	elif not corner2['sigma']:
+		print "\nimgsize is %d and sigma is %f" % (img['nx'], img['sigma'])
+		print "region r2 is", r2
+		print "empty sigma for corner2", corner2['sigma']
 		return 0
 	elif not corner3['sigma']:
+		print "\nimgsize is %d and sigma is %f" % (img['nx'], img['sigma'])
+		print "region r3 is", r3
+		print "empty sigma for corner3", corner3['sigma']
 		return 0
 	elif not corner4['sigma']:
+		print "\nimgsize is %d and sigma is %f" % (img['nx'], img['sigma'])
+		print "region r4 is", r4
+		print "empty sigma for corner4", corner4['sigma']
 		return 0
 	else:
 		return 1
@@ -796,7 +822,11 @@ def write2D( options, angle, icethickness, tomox, tomoy, xc, yc, zc, cumulatived
 	fx = ret1[1]
 	fy = ret1[2]
 	finalimg = img.copy()
-
+	
+	if not finalimg['sigma']:
+		print "ERROR: The extracted image is completely empty. Mean and sigma are", finalimg['mean'],finalimg['sigma']
+		sys.exit()
+			
 	if options.track:
 		'''
 		Preprocess the extracted images inside align2D, since preprocessing is needed only if alignment is performed.
@@ -887,6 +917,8 @@ def write2D( options, angle, icethickness, tomox, tomoy, xc, yc, zc, cumulatived
 		print "float(yc) > threshy1", float(yc) > threshy1 
 		print "float( fy ) < threshy2", float( fy ) < threshy2 
 		print "float(yc) < threshy2", float(yc) < threshy2
+		
+		print "but 'allgood' is", allgood
 		
 		return None
 		
