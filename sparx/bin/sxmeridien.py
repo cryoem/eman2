@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 #
-#  06/01/2015
+#  06/27/2015
 #  New version.  
-#  Data is shrank in few major steps and processed by ali3d_base in small resolution steps.
 #
 #
 
@@ -29,7 +28,7 @@ global cushion
 cushion = 8
 
 
-def AI( icurrentres, Tracker, HISTORY):
+def AI( icurrentres, Tracker, HISTORY ):
 	#  
 	#  Possibilities we will consider:
 	#    1.  resolution improved: keep going with current settings.
@@ -212,7 +211,7 @@ def AI( icurrentres, Tracker, HISTORY):
 				Tracker["applyctf"]     = False
 				Tracker["an"]          = "-1"
 				Tracker["state"]       = "FINAL"
-				Tracker["maxit"]       = 1
+				Tracker["maxit"]       = 10
 				Tracker["xr"] = "2"
 				Tracker["ts"] = "2"
 				keepgoing = 1
@@ -563,7 +562,7 @@ def get_shrink_data(onx, nx, stack, partids, partstack, myid, main_node, nproc, 
 
 
 def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid, myid, main_node, nproc):
-	from development import sali3d_base_mrk01, slocal_ali3d_base_MPI_mrk01
+	from aplications import slocal_ali3d_base, sali3d_base
 	#  Takes preshrunk data and does the refinement as specified in Tracker
 	#
 	#  Will create outputdir
@@ -612,8 +611,6 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 			print("                    =>  PW adjustment       :  ",Tracker["PWadjustment"])
 		print("                    =>  partids             :  ",partids)
 		print("                    =>  partstack           :  ",partstack)
-
-	#if(Tracker["lowpass"] > 0.48):  ERROR("Low pass filter in metamove > 0.48 on the scale of shrank data","sxmeridien",1,myid)
 
 	#  Run alignment command
 	if( Tracker["state"] == "LOCAL" ):
@@ -801,7 +798,7 @@ def main():
 	Tracker["inires"]         = options.inires  # Now in A, convert to absolute before using
 	Tracker["fuse_freq"]      = 50  # Now in A, convert to absolute before using
 	Tracker["delpreviousmax"] = True
-	Tracker["saturatecrit"]   = 1.0
+	Tracker["saturatecrit"]   = 0.95
 	Tracker["pixercutoff"]    = 2.0
 	Tracker["directory"]      = ""
 	Tracker["previousoutputdir"] = ""
@@ -1075,33 +1072,7 @@ def main():
 			doit, keepchecking = checkstep(coutdir, keepchecking, myid, main_node)
 			#  here ts has different meaning for standard and continuous
 			Tracker["refvol"] = os.path.join(Tracker["directory"], "fusevol%01d.hdf"%procid)\
-			#if(len(history)>1):  old_nx = history[-2]["nx"]
-			#else:    old_nx = Tracker["nx"]
-			#Tracker["xr"] = "3.0"#"%s"%max(3,int(1.5*Tracker["nx"]/float(old_nx) +0.5))
-			if( Tracker["nsoft"] > 0 ):
-				if( float(Tracker["an"]) == -1.0 ):
-					Tracker["saturatecrit"] = 0.90
-				else:
-					Tracker["saturatecrit"] = 0.90  # Shake and bake for local
-				Tracker["maxit"] = 1500
-			else:
-				if(Tracker["local"]):
-					Tracker["saturatecrit"] = 0.95
-					#Tracker["pixercutoff"]  = 0.5
-					#Tracker["xr"] = "2.0"
-					#Tracker["maxit"] = 5 #  ?? Lucky guess
-				else:
-					Tracker["saturatecrit"] = 0.95
-					Tracker["pixercutoff"]  = 0.5
-					#Tracker["maxit"] = 50 #  ?? Lucky guess
 
-			if  doit:
-				mpi_barrier(MPI_COMM_WORLD)
-				if( Tracker["nxinit"] != projdata[procid][0].get_xsize() ):
-					projdata[procid] = []
-					projdata[procid], oldshifts[procid] = get_shrink_data(Tracker["constants"]["nnxo"], Tracker["nxinit"], \
-						Tracker["constants"]["stack"], partids[procid], partstack[procid], myid, main_node, nproc, \
-						Tracker["constants"]["CTF"], Tracker["applyctf"], preshift = False, radi = Tracker["constants"]["radius"])
 
 				# METAMOVE
 				metamove(projdata[procid], oldshifts[procid], Tracker, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)

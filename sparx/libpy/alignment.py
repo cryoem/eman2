@@ -1410,81 +1410,6 @@ def refprojs( volft, kb, ref_angles, cnx, cny, numr, mode, wr ):
 
 	return ref_proj_rings
 
-"""
-#   This code is a nonsense.  I may come back to it one of these days...  PAP 01/27/2015
-def Xproj_ali_incore_chunks(data, refrings, numr, xrng, yrng, step, finfo=None):
-	from utilities    import compose_transform2
-	from EMAN2 import Vec2f
-	if finfo:
-		from utilities    import get_params_proj
-		phi, theta, psi, s2x, s2y = get_params_proj(data)
-		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, s2x, s2y))
-		finfo.flush()
-
-	mode = "F"
-	#  center is in SPIDER convention
-	nx   = data.get_xsize()
-	ny   = data.get_ysize()
-	cnx  = nx//2 + 1
-	cny  = ny//2 + 1
-
-	#phi, theta, psi, sxo, syo = get_params_proj(data)
-	t1 = data.get_attr("xform.projection")
-	dp = t1.get_params("spider")
-	#[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
-
-	max_peak = 0
-	num_refrings = len(refrings)
-	for i in xrange(num_refrings):
-		[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings[i], xrng, yrng, step, mode, numr, cnx+dp["tx"], cny+dp["ty"])
-		if peak > max_peak:
- 			res = [ang, sxs, sys, mirror, iref, peak]
- 			max_peak = peak
-	[ang, sxs, sys, mirror, iref, peak] = res
-	#print ang, sxs, sys, mirror, iref, peak
-	iref = int(iref)
-	#[ang,sxs,sys,mirror,peak,numref] = apmq(projdata[imn], ref_proj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
-	#ang = (ang+360.0)%360.0
-	# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
-	#  What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-	angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
-	if mirror:
-		phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
-		theta = 180.0-refrings[iref].get_attr("theta")
-		psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
-		s2x   = sxb - dp["tx"]
-		s2y   = syb - dp["ty"]
-	else:
-		phi   = refrings[iref].get_attr("phi")
-		theta = refrings[iref].get_attr("theta")
-		psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-		s2x   = sxb - dp["tx"]
-		s2y   = syb - dp["ty"]
-	#set_params_proj(data, [phi, theta, psi, s2x, s2y])
-	t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
-	t2.set_trans(Vec2f(-s2x, -s2y))
-	data.set_attr("xform.projection", t2)
-	data.set_attr("referencenumber", iref)
-	from utilities import get_symt
-	from pixel_error import max_3D_pixel_error
-	ts = get_symt(sym)
-	if(len(ts) > 1):
-		# only do it if it is not c1
-		pixel_error = +1.0e23
-		for kts in ts:
-			ut = t2*kts
-			# we do not care which position minimizes the error
-			pixel_error = min(max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
-	else:
-		pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
-
-	if finfo:
-		finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
-		finfo.flush()
-
-	return peak, pixel_error
-"""
-
 def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 	from utilities    import compose_transform2
 	from EMAN2 import Vec2f
@@ -1543,11 +1468,14 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 	data.set_attr("referencenumber", iref)
 	from pixel_error import max_3D_pixel_error
 	pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
+	
 
 	if finfo:
 		finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 		finfo.flush()
 
+	from utilities import getang3
+	#return peak, pixel_error, getang3([dp["phi"], dp["theta"]],[phi, theta]),max(abs(dp["tx"]+s2x),abs(dp["ty"]+s2y))
 	return peak, pixel_error
 
 def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None):
@@ -1615,6 +1543,10 @@ def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None):
 		finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 		finfo.flush()
 
+	from utilities import getang3
+	dp = t1.get_params("spider")
+	du = t2.get_params("spider")
+	#return peak, pixel_error, getang3([dp["phi"], dp["theta"]],[du["phi"], du["theta"]]),max(abs(dp["tx"]-du["tx"]),abs(dp["ty"]-du["ty"]))
 	return peak, pixel_error
 
 def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None, sym='c1'):
@@ -1686,19 +1618,28 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 		from utilities import get_symt
 		from pixel_error import max_3D_pixel_error
 		ts = get_symt(sym)
+		from utilities import getang3
 		if(len(ts) > 1):
 			# only do it if it is not c1
+			anger = 360.0
+			shifter = 1.0e23
 			pixel_error = +1.0e23
 			for kts in ts:
 				ut = t2*kts
 				# we do not care which position minimizes the error
+				du = ut.get_params("spider")
+				anger = min(getang3([dp["phi"], dp["theta"]], [du["phi"], du["theta"]]),anger)
+				shifter = min(max(abs(dp["tx"]-du["tx"]),abs(dp["ty"]-dp["ty"])), shifter)
 				pixel_error = min(max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
 		else:
+			anger = getang3([dp["phi"], dp["theta"]],[phi, theta])
+			shifter = max(abs(dp["tx"]+s2x),abs(dp["ty"]+s2y))
 			pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
 		#print phi, theta, psi, s2x, s2y, peak, pixel_error
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 			finfo.flush()
+		#return peak, pixel_error, anger, shifter
 		return peak, pixel_error
 	else:
 		return -1.0e23, 0.0
@@ -1776,114 +1717,37 @@ def proj_ali_incore_local_zoom(data, refrings, numr, xrng, yrng, step, an, finfo
 		data.set_attr("xform.projection", t2)
 		from utilities import get_symt
 		from pixel_error import max_3D_pixel_error
+		from utilities import getang3
+		du = t1.get_params("spider")
 		ts = get_symt(sym)
 		if(len(ts) > 1):
 			# only do it if it is not c1
+			anger = 360.0
+			shifter = 1.0e23
 			pixel_error = +1.0e23
 			for kts in ts:
 				ut = t2*kts
 				# we do not care which position minimizes the error
+				du = ut.get_params("spider")
+				anger = min(getang3([dp["phi"], dp["theta"]], [du["phi"], du["theta"]]),anger)
+				shifter = min(max(abs(dp["tx"]-du["tx"]),abs(dp["ty"]-dp["ty"])), shifter)
 				pixel_error = min(max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
 		else:
+			anger = getang3([dp["phi"], dp["theta"]],[du["phi"], du["theta"]])
+			shifter = max(abs(dp["tx"]-du["tx"]),abs(dp["ty"]-dp["ty"]))
 			pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
+
+
 		#print phi, theta, psi, s2x, s2y, peak, pixel_error
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 			finfo.flush()
+		#return peak, pixel_error, anger, shifter
 		return peak, pixel_error
 	else:
 		return -1.0e23, 0.0
 
-"""
-#  This code is a nonsense
-def proj_ali_incore_local_chunks(data, refrings, numr, xrng, yrng, step, an, finfo=None, sym='c1'):
-	from utilities    import compose_transform2
-	#from utilities    import set_params_proj, get_params_proj
-	from math         import cos, sin, pi, radians
-	from EMAN2        import Vec2f
-
-
-	mode = "F"
-	nx   = data.get_xsize()
-	ny   = data.get_ysize()
-	#  center is in SPIDER convention
-	cnx  = nx//2 + 1
-	cny  = ny//2 + 1
-
-	ant = cos(radians(an))
-	#phi, theta, psi, sxo, syo = get_params_proj(data)
-	t1 = data.get_attr("xform.projection")
-	dp = t1.get_params("spider")
-	#print  dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]
-	if finfo:
-		#finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, sxo, syo))
-		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
-		finfo.flush()
-
-	#[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data, refrings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
-# 	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data, refrings, xrng, yrng, step, ant, mode, numr, cnx+dp["tx"], cny+dp["ty"])
-	
-	max_peak = 0
-	num_refrings = len(refrings)
-	for i in xrange(num_refrings):
-		[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings[i], xrng, yrng, step, mode, numr, cnx+dp["tx"], cny+dp["ty"])
-		if peak > max_peak:
- 			res = [ang, sxs, sys, mirror, iref, peak]
- 			max_peak = peak
-	[ang, sxs, sys, mirror, iref, peak] = res
-
-	iref=int(iref)
-	#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
-	#ang = (ang+360.0)%360.0
-	#print  ang, sxs, sys, mirror, iref, peak
-	if iref > -1:
-		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
-		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
-		isym = int(sym[1:])
-		phi   = refrings[iref].get_attr("phi")
-		if(isym > 1 and an > 0.0):
-			qsym = 360.0/isym
-			if(phi < 0.0 or phi >= qsym ):  phi = phi%qsym
-		if  mirror:
-			phi   = (phi+540.0)%360.0
-			theta = 180.0-refrings[iref].get_attr("theta")
-			psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
-			s2x   = sxb - dp["tx"]
-			s2y   = syb - dp["ty"]
-		else:			
-			theta = refrings[iref].get_attr("theta")
-			psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-			s2x   = sxb - dp["tx"]
-			s2y   = syb - dp["ty"]
-			
-			
-
-		#set_params_proj(data, [phi, theta, psi, s2x, s2y])
-		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
-		t2.set_trans(Vec2f(-s2x, -s2y))
-		data.set_attr("xform.projection", t2)
-		from utilities import get_symt
-		from pixel_error import max_3D_pixel_error
-		ts = get_symt(sym)
-		if(len(ts) > 1):
-			# only do it if it is not c1
-			pixel_error = +1.0e23
-			for kts in ts:
-				ut = t2*kts
-				# we do not care which position minimizes the error
-				pixel_error = min(max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
-		else:
-			pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
-		#print phi, theta, psi, s2x, s2y, peak, pixel_error
-		if finfo:
-			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
-			finfo.flush()
-		return peak, pixel_error
-	else:
-		return -1.0e23, 0.0
-"""
-
+#  The next two should not be used anymore.
 def proj_ali_incore_delta(data, refrings, numr, xrng, yrng, step, start, delta, finfo=None):
 	from utilities    import compose_transform2
 	from EMAN2 import Vec2f
