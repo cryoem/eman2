@@ -36,6 +36,7 @@ from Anneal import BaseAnnealer
 import numpy as np
 import sys
 import os
+import signal
 import matplotlib
 if 'DISPLAY' in os.environ: # user has a display server running
 	import matplotlib.pyplot as plt
@@ -59,7 +60,8 @@ def main():
 	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.")
 	parser.add_argument("--boxsize", type=int, help="Set the boxsize used to compute power spectra across movie frames",default=1024)
 	#parser.add_argument("--min", type=int, help="Set the minimum translation in pixels",default=-50.0)
-	#parser.add_argument("--max", type=int, help="Set the maximum translation in pixels",default=50.0)
+	parser.add_argument("--maxshift", type=int, help="Set the maximum radial frame translation distance (in pixels) from the initial frame alignment.",default=10)
+	parser.add_argument("--tolerance", type=int, help="Set the maximum number of times a frame can be sampled beyond maxshift before exiting prematurely.",default=5)
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 0,1 (first image skipped)")
 	parser.add_argument("--tmax", type=float, help="Set the maximum achievable temperature for simulated annealing. Default is 25000.0.",default=25000.0)
 	parser.add_argument("--tmin", type=float, help="Set the minimum achievable temperature for simulated annealing. Default is 2.5.",default=2.5)
@@ -88,6 +90,7 @@ def main():
 	if len(args)<1:
 		print usage
 		parser.error("You must specify at least one input DDD stack.")
+		sys.exit(1)
 
 	if options.boxsize: bs = options.boxsize
 	hdr = EMData(args[0],0,True).get_attr_dict()
@@ -95,16 +98,9 @@ def main():
 		print("You will need to use a smaller box size with your data.")
 		sys.exit(1)
 
-	#if options.min:
-		#if options.min > 0: min = -options.min
-		#else: min = options.min
-
-	#if options.max:
-		#if options.max < 0: max = -options.max
-		#elif options.max < min:
-			#print("The parameter '--max' must be greater than --min")
-			#sys.exit(1)
-		#else: max = options.max
+	if options.maxshift < 0:
+		print("The parameter '--maxshift' must be greater than 0")
+		sys.exit(1)
 
 	pid=E2init(sys.argv)
 
@@ -138,11 +134,14 @@ def main():
 
 		if options.verbose: print("Creating movie aligner object")
 		alignment = MovieModeAligner(fname,bgsub,options.boxsize)
+		
 		if options.verbose: print("Optimizing movie frame alignment")
 		alignment.optimize(options)
+		
 		if options.verbose: print("Plotting derived alignment data")
 		alignment.plot_energies(fname=fname[:-4]+'_energies.png')
 		alignment.plot_translations(fname=fname[:-4]+'_translations.png')
+		
 		if options.verbose: print("Writing aligned frames to disk")
 		alignment.write()
 
@@ -244,22 +243,22 @@ class MovieModeAligner:
 			print("Incoherent power spectrum has been computed.")
 			return
 		else: self._computed_objective = True
-		ipss = (self._get_img_ips(i) for i in xrange(self.hdr['nimg']))
-		self._ips = sum(ipss)/self.hdr['nimg']
+		ips = Averagers.get('mean')
+		for i in xrange(self.hdr['nimg']):
+			img = EMData(self.path,i)
+			img_ips = Averagers.get('mean')
+			for r in self._regions[i]:
+				reg = img.get_clip(r)
+				reg.process_inplace("normalize.edgemean")
+				reg.do_fft_inplace()
+				reg.ri2inten()
+				img_ips.add_image(reg)
+			ips.add_image(img_ips.finish())
+		self._ips = ips.finish()	   
 		self._ips.process_inplace('xform.phaseorigin.tocenter')
 		self._ips.set_complex(False)
-		self._ips.process_inplace('math.rotationalaverage') # smooth
-
-	def _get_img_ips(self,i):
-		img = EMData(self.path,i)
-		return sum(self._get_region(img,r) for r in self._regions[i]) / self._nregions
-
-	def _get_region(self,img,r):
-		reg = img.get_clip(r)
-		reg.process_inplace("normalize.edgemean")
-		reg.do_fft_inplace() # fft region
-		reg.ri2inten() # convert to intensities
-		return reg
+		self._ips.process_inplace('math.rotationalaverage')
+		self._ips.process_inplace('normalize.edgemean')
 
 	def _calc_coherent_power_spectrum(self):
 		"""
@@ -267,16 +266,17 @@ class MovieModeAligner:
 		Regions are updated by the _update_frame_params method, which
 		is called by the _update_energy method.
 		"""
-		cpss = (self._average_stack(s) for s in xrange(self._nstacks))
-		self._cps = sum(cpss)/self._nregions
-		
-	def _average_stack(self,s):
-		stack = (EMData(self.orig,i,False,r) for i,r in enumerate(self._stacks[s]))
-		avg = sum(stack)/self.hdr['nimg']
-		avg.process_inplace("normalize.edgemean")
-		avg.do_fft_inplace()
-		avg.ri2inten()
-		return avg
+		cps = Averagers.get('mean')
+		for s in xrange(self._nstacks):
+			stack_cps = Averagers.get('mean')
+			for i,r in enumerate(self._stacks[s]):
+				stack_cps.add_image(EMData(self.orig,i,False,r))
+			avg = stack_cps.finish()
+			avg.process_inplace('normalize.edgemean')
+			avg.do_fft_inplace()
+			avg.ri2inten()
+			cps.add_image(avg)
+		self._cps = cps.finish()
 
 	def _update_frame_params(self,i,t):
 		"""
@@ -308,8 +308,8 @@ class MovieModeAligner:
 			for each frame in movie.
 		"""
 		self._calc_coherent_power_spectrum()
-		energy = -np.log(1+EMData.cmp(self._ips,'dot',self._cps,{'normalize':1}))
-		if not self._energies or energy < min(self._energies):
+		energy = np.log(1+EMData.cmp(self._ips,'dot',self._cps,{'normalize':1})) #-np.log(1+EMData.cmp(self._ips,'dot',self._cps,{'normalize':1}))
+		if not self._energies or energy < self.get_lowest_energy():
 			self.write_coherent_power_spectrum(num=-1)
 			self.optimal_transforms = self._transforms
 			self._minimization_path.append(energy)
@@ -325,7 +325,7 @@ class MovieModeAligner:
 			print("Optimal alignment already determined.")
 			return
 		if options.verbose: print("Starting coarse-grained alignment")
-		cs = ParameterSampler(self, tmax=options.tmax, tmin=options.tmin, steps=options.steps, updates=options.steps)
+		cs = Annealer(self, tmax=options.tmax, tmin=options.tmin, steps=options.steps, updates=options.steps, maxshift=options.maxshift, tolerance=options.tolerance)
 		#if not options.nopresearch:
 		#	if options.verbose: print("Determining the best annealing parameters")
 		#	schedule = cs.auto(options.premins,options.presteps)
@@ -334,7 +334,10 @@ class MovieModeAligner:
 		annealed = cs.anneal()
 		state = [t for tform in self.optimal_transforms for t in tform.get_trans_2d()]
 		energy = self.get_lowest_energy()
-		if options.verbose: print("\nBest Parameters:\n{}\n\n".format(state))
+		if options.verbose:
+			print("\Optimal Frame Translations:")
+			for s in xrange(len(state)):
+				if s % 2 == 0: print("Frame {}\t({:.2},{:.2})".format((s/2)+1,state[s],state[s+1]))
 		#if options.finesearch:
 			#if options.verbose: print("Starting fine-grained alignment")
 			#sm = Simplex(self._compares,state,[4]*len(state),kC=options.kC,kE=options.kE,kR=options.kR,data=self)
@@ -612,32 +615,40 @@ class MovieModeAligner:
 #		if increments == None: increments = [5] * len(init)
 #		super(FineSearch, self).__init__(func,init,increments,kR,kE,kC)
 
-class ParameterSampler(BaseAnnealer):
+class Annealer(BaseAnnealer):
 
 	"""
-	Simulated Annealer to coarsely search the translational alignment
-	parameter space
+	Simulated Annealer to search the translational alignment parameter space
 	"""
 
-	def __init__(self,aligner,state=None,tmax=25000.0,tmin=2.5,steps=50000,updates=100):
+	def __init__(self,aligner,state=None,tmax=25000.0,tmin=2.5,steps=50000,updates=100,maxshift=12,tolerance=5):
 		if state == None: self.state = [s for trans in aligner._transforms for s in trans.get_trans_2d()]
-		super(ParameterSampler, self).__init__(self.state)
+		super(Annealer, self).__init__(self.state)
 		self.set_schedule({'tmax':tmax,'tmin':tmin,'steps':steps,'updates':updates})
 		self.aligner = aligner
+		self.maxshift = maxshift
 		self.slen = len(self.state)
+		self.edge_tolerance = 5 # Allow up to 5 of the frames to hit the edge of the allowed translations before signaling to exit
+		self.edge_strikes = [0 for t in aligner._transforms] # making this a list to allow for easier debugging if need be.
 		self.count = 0
-		self.copy_strategy = 'slice'
-		self.save_state_on_exit = False
 
-	def move(self,scale=12.0):
-		self.state[self.count] += round(scale * (2.0*np.random.random()-1.0))
-		self.state[self.count+1] += round(scale * (2.0*np.random.random()-1.0))
-		t = Transform({'type':'eman','tx':self.state[self.count],'ty':self.state[self.count+1]})
-		self.aligner._update_frame_params(self.count/2,t)
-		self.count = (self.count+2) % self.slen
-
+	def move(self,):
+		p = self.state[self.count:self.count+2] + (2.0 * np.random.random(2) - 1.0)
+		if np.linalg.norm(p) < self.maxshift: # only allow samples within maxshift radius
+			self.state[self.count:self.count+2] = p
+			t = Transform({'type':'eman','tx':self.state[self.count],'ty':self.state[self.count+1]})
+			self.aligner._update_frame_params(self.count/2,t)
+			self.count = (self.count+2) % self.slen
+			self.aligner._update_energy()
+		else:
+			#print("\nSampler reached edge of allowable translations on image {}/{}.".format(self.count/2,self.slen))
+			self.edge_strikes[self.count/2] = 1
+			if sum(self.edge_strikes) > self.edge_tolerance:
+				print("Annealer has reached the maximum tolerance of edge strikes ({}).\nStopping optimization prematurely...".format(self.slen/8))
+				signal.signal(signal.SIGINT, self.set_user_exit)
+				print("You can supply a larger --maxshift or higher --tolerance to allow for frame alignment to take place beyond this radius; however, we cannot guarantee successful alignment under such circumstances.")
+	
 	def energy(self):
-		self.aligner._update_energy()
 		return self.aligner.get_last_energy()
 
 if __name__ == "__main__":
