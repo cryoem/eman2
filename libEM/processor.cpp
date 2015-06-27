@@ -12882,7 +12882,8 @@ void BinaryBlackHat2DProcessor::process_inplace(EMData *image)
 {
 	EMData* closed = image->process("morph.close.binary",params);
 	closed->sub(*image);
-	image = closed;
+	image->to_zero();
+	image->add(*closed);
 }
 
 
