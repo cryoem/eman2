@@ -940,6 +940,126 @@ The basic design of EMAN Processors: <br>\
 		static const string NAME;
 	};
 
+
+	/** Sets pixel values in a binary image equal to their element wise manhattan distance.
+	 * Credit for this code goes to Stephen Ostermiller (http://blog.ostermiller.org/dilate-and-erode).
+	 *
+	 *@author James Michael Bell
+	 *@date 06/27/2015
+	 */
+	class ManhattanDistanceProcessor: public Processor
+	{
+	 public:
+		ManhattanDistanceProcessor() {}
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual EMData* process(const EMData * const image);
+		
+		void process_inplace(EMData * image);
+		
+		static Processor *NEW()
+		{
+			return new ManhattanDistanceProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Sets pixel values in a binary image equal to their element wise manhattan distance.";
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			return d;
+		}
+
+		static const string NAME;
+	};
+
+
+	/** Performs a morphological dilation operation on an image.
+	 *
+	 *@author James Michael Bell
+	 *@date 06/27/2015
+	 */
+	class BinaryDilation2DProcessor: public Processor
+	{
+	 public:
+		BinaryDilation2DProcessor() {}
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual EMData* process(const EMData * const image);
+		
+		void process_inplace(EMData *image);
+
+		static Processor *NEW()
+		{
+			return new BinaryDilation2DProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Performs a morphological k-pixel dilation of a (binary) 2D image.";
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("k", EMObject::INT, "The number of pixels to dilate the input image.");
+			return d;
+		}
+
+		static const string NAME;
+	};
+
+	/** Performs a morphological erosion operation on an image.
+	 *
+	 *@author James Michael Bell
+	 *@date 06/27/2015
+	 */
+	class BinaryErosion2DProcessor: public Processor
+	{
+	 public:
+		BinaryErosion2DProcessor() {}
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual EMData* process(const EMData * const image);
+		
+		void process_inplace(EMData *image);
+
+		static Processor *NEW()
+		{
+			return new BinaryErosion2DProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Performs a morphological k-pixel erosion of a (binary) 2D image.";
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("k", EMObject::INT, "The number of pixels to close the input image.");
+			return d;
+		}
+
+		static const string NAME;
+	};
+
+
 	/** Automatically determines the background for the image then uses this to perform
 	 * Wiener filters on overlapping subregions of the image, which are then
 	 * combined using linear interpolation

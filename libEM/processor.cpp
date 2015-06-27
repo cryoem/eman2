@@ -76,7 +76,7 @@ const string ZGradientProcessor::NAME = "math.edge.zgradient";
 const string GradientProcessor::NAME = "math.gradient";
 const string GradientMagnitudeProcessor::NAME = "math.gradient.magnitude";
 const string GradientDirectionProcessor::NAME = "math.gradient.direction";
-const string SDGDProcessor::NAME = "math.sdgd";
+const string SDGDProcessor::NAME = "math.laplacian.sdgd";
 const string LaplacianProcessor::NAME = "math.laplacian";
 const string LaplacianDirectionProcessor::NAME = "math.laplacian.direction";
 const string LaplacianMagnitudeProcessor::NAME = "math.laplacian.magnitude";
@@ -276,6 +276,10 @@ const string ObjLabelProcessor::NAME = "morph.object.label";
 const string BwThinningProcessor::NAME = "morph.thin";
 const string BwMajorityProcessor::NAME = "morph.majority";
 const string PruneSkeletonProcessor::NAME = "morph.prune";
+const string ManhattanDistanceProcessor::NAME = "math.distance.manhattan";
+const string BinaryDilation2DProcessor::NAME = "morph.dilate.binary";
+const string BinaryErosion2DProcessor::NAME = "morph.erode.binary";
+
 //#ifdef EMAN2_USING_CUDA
 //const string CudaMultProcessor::NAME = "cuda.math.mult";
 //const string CudaCorrelationProcessor::NAME = "cuda.correlate";
@@ -531,6 +535,10 @@ template <> Factory < Processor >::Factory()
 	force_add<BwThinningProcessor>();
 	force_add<BwMajorityProcessor>();
 	force_add<PruneSkeletonProcessor>();
+	
+	force_add<ManhattanDistanceProcessor>();
+	force_add<BinaryDilation2DProcessor>();
+	force_add<BinaryErosion2DProcessor>();
 
 
 //#ifdef EMAN2_USING_CUDA
@@ -12716,6 +12724,86 @@ void PruneSkeletonProcessor::process_inplace(EMData * image){
 	}
 
 }
+
+
+EMData* ManhattanDistanceProcessor::process(const EMData* const image)
+{
+	EMData* proc = image->copy();
+	proc->process_inplace("math.distance.manhattan");
+	return proc;
+}
+
+void ManhattanDistanceProcessor::process_inplace(EMData * image)
+{
+	int nz = image->get_zsize();
+	if (nz != 1) throw ImageDimensionException("Only 2-D images supported");
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int size = nx*ny;
+	// traverse from top left to bottom right
+	for (int i=0; i<nx; i++) {
+		for (int j=0; j<ny; j++) {
+			if (image->get_value_at(i,j) == 1) image->set_value_at_fast(i,j,0); // first pass and pixel was on, it gets a zero
+			else {
+				image->set_value_at_fast(i,j,size+nx); // pixel was off. It is at most the sum of the lengths of the array away from a pixel that is on
+				if (i>0) image->set_value_at_fast(i,j,std::min(image->get_value_at(i,j),image->get_value_at(i-1,j)+1)); // or one more than the pixel to the north
+				if (j>0) image->set_value_at_fast(i,j,std::min(image->get_value_at(i,j),image->get_value_at(i,j-1)+1)); // or one more than the pixel to the west
+			}
+		}
+	}
+	// traverse from bottom right to top left. Pixels will either be what we had on the first pass...
+	for (int i=nx-1; i>=0; i--) {
+		for (int j=ny-1; j>=0; j--) {
+			if (i+1<nx) image->set_value_at_fast(i,j,std::min(image->get_value_at(i,j),image->get_value_at(i+1,j)+1)); // or one more than the pixel to the south
+			if (j+1<ny) image->set_value_at_fast(i,j,std::min(image->get_value_at(i,j),image->get_value_at(i,j+1)+1)); // or one more than the pixel to the east
+		}
+	}
+}
+
+
+EMData* BinaryDilation2DProcessor::process(const EMData* const image)
+{
+	EMData* proc = image->copy();
+	proc->process_inplace("morph.dilate.binary",params);
+	return proc;
+}
+
+void BinaryDilation2DProcessor::process_inplace(EMData *image)
+{
+	if (image->get_zsize() != 1) throw ImageDimensionException("Only 2-D images supported");
+	image->process_inplace("math.distance.manhattan");
+	int k=params.set_default("k",1);
+	for (int i=0; i < image->get_xsize(); i++){
+		for (int j=0; j < image->get_ysize(); j++){
+			image->set_value_at_fast(i,j,(image->get_value_at(i,j)<=k)?1:0);
+		}
+	}
+}
+
+
+EMData* BinaryErosion2DProcessor::process(const EMData* const image)
+{
+	EMData* proc = image->copy();
+	proc->process_inplace("morph.dilate.binary",params);
+	return proc;
+}
+
+void BinaryErosion2DProcessor::process_inplace(EMData *image)
+{
+	if (image->get_zsize() != 1) throw ImageDimensionException("Only 2-D images supported");
+	image->mult(-1);
+	image->add(1);
+	int k=params.set_default("k",1);
+	image->process_inplace("math.distance.manhattan");
+	for (int i=0; i < image->get_xsize(); i++){
+		for (int j=0; j < image->get_ysize(); j++){
+			image->set_value_at_fast(i,j,(image->get_value_at(i,j)<=k)?1:0);
+		}
+	}
+	image->sub(1);
+	image->mult(-1);
+}
+
 
 #ifdef SPARX_USING_CUDA
 
