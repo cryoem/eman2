@@ -986,10 +986,10 @@ The basic design of EMAN Processors: <br>\
 	 *@author James Michael Bell
 	 *@date 06/27/2015
 	 */
-	class BinaryDilation2DProcessor: public Processor
+	class BinaryDilationProcessor: public Processor
 	{
 	 public:
-		BinaryDilation2DProcessor() {}
+		BinaryDilationProcessor() {}
 
 		string get_name() const
 		{
@@ -1002,7 +1002,7 @@ The basic design of EMAN Processors: <br>\
 
 		static Processor *NEW()
 		{
-			return new BinaryDilation2DProcessor();
+			return new BinaryDilationProcessor();
 		}
 
 		string get_desc() const
@@ -1025,10 +1025,10 @@ The basic design of EMAN Processors: <br>\
 	 *@author James Michael Bell
 	 *@date 06/27/2015
 	 */
-	class BinaryErosion2DProcessor: public Processor
+	class BinaryErosionProcessor: public Processor
 	{
 	 public:
-		BinaryErosion2DProcessor() {}
+		BinaryErosionProcessor() {}
 
 		string get_name() const
 		{
@@ -1041,7 +1041,7 @@ The basic design of EMAN Processors: <br>\
 
 		static Processor *NEW()
 		{
-			return new BinaryErosion2DProcessor();
+			return new BinaryErosionProcessor();
 		}
 
 		string get_desc() const
@@ -1065,10 +1065,10 @@ The basic design of EMAN Processors: <br>\
 	 *@author James Michael Bell
 	 *@date 06/27/2015
 	 */
-	class BinaryOpening2DProcessor: public Processor
+	class BinaryOpeningProcessor: public Processor
 	{
 	 public:
-		BinaryOpening2DProcessor() {}
+		BinaryOpeningProcessor() {}
 
 		string get_name() const
 		{
@@ -1081,7 +1081,7 @@ The basic design of EMAN Processors: <br>\
 
 		static Processor *NEW()
 		{
-			return new BinaryOpening2DProcessor();
+			return new BinaryOpeningProcessor();
 		}
 
 		string get_desc() const
@@ -1105,10 +1105,10 @@ The basic design of EMAN Processors: <br>\
 	 *@author James Michael Bell
 	 *@date 06/27/2015
 	 */
-	class BinaryClosing2DProcessor: public Processor
+	class BinaryClosingProcessor: public Processor
 	{
 	 public:
-		BinaryClosing2DProcessor() {}
+		BinaryClosingProcessor() {}
 
 		string get_name() const
 		{
@@ -1121,7 +1121,7 @@ The basic design of EMAN Processors: <br>\
 
 		static Processor *NEW()
 		{
-			return new BinaryClosing2DProcessor();
+			return new BinaryClosingProcessor();
 		}
 
 		string get_desc() const
@@ -1140,15 +1140,15 @@ The basic design of EMAN Processors: <br>\
 	};
 
 
-	/** Computes a morphological gradient operation on an image.
+	/** Computes an internal morphological gradient operation on an image.
 	 *
 	 *@author James Michael Bell
 	 *@date 06/27/2015
 	 */
-	class BinaryMorphGradient2DProcessor: public Processor
+	class BinaryInternalGradientProcessor: public Processor
 	{
 	 public:
-		BinaryMorphGradient2DProcessor() {}
+		BinaryInternalGradientProcessor() {}
 
 		string get_name() const
 		{
@@ -1161,12 +1161,92 @@ The basic design of EMAN Processors: <br>\
 
 		static Processor *NEW()
 		{
-			return new BinaryMorphGradient2DProcessor();
+			return new BinaryInternalGradientProcessor();
 		}
 
 		string get_desc() const
 		{
-			return "Computes a morphological graduent using k-pixel-width operations on a (binary) 2D image.";
+			return "Computes an internal morphological graduent using k-pixel-width operations on a (binary) 2D image.";
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("k", EMObject::INT, "The number of pixels to close the input image.");
+			return d;
+		}
+
+		static const string NAME;
+	};
+	
+	
+	/** Computes an external morphological gradient operation on an image.
+	 *
+	 *@author James Michael Bell
+	 *@date 06/27/2015
+	 */
+	class BinaryExternalGradientProcessor: public Processor
+	{
+	 public:
+		BinaryExternalGradientProcessor() {}
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual EMData* process(const EMData * const image);
+		
+		void process_inplace(EMData *image);
+
+		static Processor *NEW()
+		{
+			return new BinaryExternalGradientProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Computes an external morphological graduent using k-pixel-width operations on a (binary) 2D image.";
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("k", EMObject::INT, "The number of pixels to close the input image.");
+			return d;
+		}
+
+		static const string NAME;
+	};
+	
+	
+	/** Computes the morphological gradient operation on an image.
+	 *
+	 *@author James Michael Bell
+	 *@date 06/27/2015
+	 */
+	class BinaryMorphGradientProcessor: public Processor
+	{
+	 public:
+		BinaryMorphGradientProcessor() {}
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual EMData* process(const EMData * const image);
+		
+		void process_inplace(EMData *image);
+
+		static Processor *NEW()
+		{
+			return new BinaryMorphGradientProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Computes the morphological graduent using k-pixel-width operations on a (binary) 2D image.";
 		}
 
 		TypeDict get_param_types() const
@@ -1185,10 +1265,10 @@ The basic design of EMAN Processors: <br>\
 	 *@author James Michael Bell
 	 *@date 06/27/2015
 	 */
-	class BinaryTopHat2DProcessor: public Processor
+	class BinaryTopHatProcessor: public Processor
 	{
 	 public:
-		BinaryTopHat2DProcessor() {}
+		BinaryTopHatProcessor() {}
 
 		string get_name() const
 		{
@@ -1201,7 +1281,7 @@ The basic design of EMAN Processors: <br>\
 
 		static Processor *NEW()
 		{
-			return new BinaryTopHat2DProcessor();
+			return new BinaryTopHatProcessor();
 		}
 
 		string get_desc() const
@@ -1225,10 +1305,10 @@ The basic design of EMAN Processors: <br>\
 	 *@author James Michael Bell
 	 *@date 06/27/2015
 	 */
-	class BinaryBlackHat2DProcessor: public Processor
+	class BinaryBlackHatProcessor: public Processor
 	{
 	 public:
-		BinaryBlackHat2DProcessor() {}
+		BinaryBlackHatProcessor() {}
 
 		string get_name() const
 		{
@@ -1241,7 +1321,7 @@ The basic design of EMAN Processors: <br>\
 
 		static Processor *NEW()
 		{
-			return new BinaryBlackHat2DProcessor();
+			return new BinaryBlackHatProcessor();
 		}
 
 		string get_desc() const
