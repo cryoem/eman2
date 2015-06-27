@@ -1060,6 +1060,205 @@ The basic design of EMAN Processors: <br>\
 	};
 
 
+	/** Performs a morphological opening operation on an image.
+	 *
+	 *@author James Michael Bell
+	 *@date 06/27/2015
+	 */
+	class BinaryOpening2DProcessor: public Processor
+	{
+	 public:
+		BinaryOpening2DProcessor() {}
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual EMData* process(const EMData * const image);
+		
+		void process_inplace(EMData *image);
+
+		static Processor *NEW()
+		{
+			return new BinaryOpening2DProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Performs a morphological k-pixel opening of a (binary) 2D image.";
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("k", EMObject::INT, "The number of pixels to close the input image.");
+			return d;
+		}
+
+		static const string NAME;
+	};
+
+
+	/** Performs a morphological closing operation on an image.
+	 *
+	 *@author James Michael Bell
+	 *@date 06/27/2015
+	 */
+	class BinaryClosing2DProcessor: public Processor
+	{
+	 public:
+		BinaryClosing2DProcessor() {}
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual EMData* process(const EMData * const image);
+		
+		void process_inplace(EMData *image);
+
+		static Processor *NEW()
+		{
+			return new BinaryClosing2DProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Performs a morphological k-pixel closing of a (binary) 2D image.";
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("k", EMObject::INT, "The number of pixels to close the input image.");
+			return d;
+		}
+
+		static const string NAME;
+	};
+
+
+	/** Computes a morphological gradient operation on an image.
+	 *
+	 *@author James Michael Bell
+	 *@date 06/27/2015
+	 */
+	class BinaryMorphGradient2DProcessor: public Processor
+	{
+	 public:
+		BinaryMorphGradient2DProcessor() {}
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual EMData* process(const EMData * const image);
+		
+		void process_inplace(EMData *image);
+
+		static Processor *NEW()
+		{
+			return new BinaryMorphGradient2DProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Computes a morphological graduent using k-pixel-width operations on a (binary) 2D image.";
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("k", EMObject::INT, "The number of pixels to close the input image.");
+			return d;
+		}
+
+		static const string NAME;
+	};
+	
+	
+	/** Performs a morphological top hat operation on an image.
+	 *
+	 *@author James Michael Bell
+	 *@date 06/27/2015
+	 */
+	class BinaryTopHat2DProcessor: public Processor
+	{
+	 public:
+		BinaryTopHat2DProcessor() {}
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual EMData* process(const EMData * const image);
+		
+		void process_inplace(EMData *image);
+
+		static Processor *NEW()
+		{
+			return new BinaryTopHat2DProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Performs a morphological top hat operation on a (binary) 2D image.";
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("k", EMObject::INT, "The number of pixels to close the input image.");
+			return d;
+		}
+
+		static const string NAME;
+	};
+
+
+	/** Performs a morphological black hat operation on an image.
+	 *
+	 *@author James Michael Bell
+	 *@date 06/27/2015
+	 */
+	class BinaryBlackHat2DProcessor: public Processor
+	{
+	 public:
+		BinaryBlackHat2DProcessor() {}
+
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		virtual EMData* process(const EMData * const image);
+		
+		void process_inplace(EMData *image);
+
+		static Processor *NEW()
+		{
+			return new BinaryBlackHat2DProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Performs a morphological black hat operation on a (binary) 2D image.";
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("k", EMObject::INT, "The number of pixels to close the input image.");
+			return d;
+		}
+
+		static const string NAME;
+	};
+
 	/** Automatically determines the background for the image then uses this to perform
 	 * Wiener filters on overlapping subregions of the image, which are then
 	 * combined using linear interpolation

@@ -279,6 +279,11 @@ const string PruneSkeletonProcessor::NAME = "morph.prune";
 const string ManhattanDistanceProcessor::NAME = "math.distance.manhattan";
 const string BinaryDilation2DProcessor::NAME = "morph.dilate.binary";
 const string BinaryErosion2DProcessor::NAME = "morph.erode.binary";
+const string BinaryOpening2DProcessor::NAME = "morph.open.binary";
+const string BinaryClosing2DProcessor::NAME = "morph.close.binary";
+const string BinaryMorphGradient2DProcessor::NAME = "morph.gradient.binary";
+const string BinaryTopHat2DProcessor::NAME = "morph.tophat.binary";
+const string BinaryBlackHat2DProcessor::NAME = "morph.blackhat.binary";
 
 //#ifdef EMAN2_USING_CUDA
 //const string CudaMultProcessor::NAME = "cuda.math.mult";
@@ -539,7 +544,11 @@ template <> Factory < Processor >::Factory()
 	force_add<ManhattanDistanceProcessor>();
 	force_add<BinaryDilation2DProcessor>();
 	force_add<BinaryErosion2DProcessor>();
-
+	force_add<BinaryOpening2DProcessor>();
+	force_add<BinaryClosing2DProcessor>();
+	force_add<BinaryMorphGradient2DProcessor>();
+	force_add<BinaryTopHat2DProcessor>();
+	force_add<BinaryBlackHat2DProcessor>();
 
 //#ifdef EMAN2_USING_CUDA
 //	force_add<CudaMultProcessor>();
@@ -12802,6 +12811,78 @@ void BinaryErosion2DProcessor::process_inplace(EMData *image)
 	}
 	image->sub(1);
 	image->mult(-1);
+}
+
+
+EMData* BinaryOpening2DProcessor::process(const EMData* const image)
+{
+	EMData* proc = image->copy();
+	proc->process_inplace("morph.open.binary",params);
+	return proc;
+}
+
+void BinaryOpening2DProcessor::process_inplace(EMData *image)
+{
+	image->process_inplace("morph.dilate.binary",params);
+	image->process_inplace("morph.erode.binary",params);
+}
+
+
+EMData* BinaryClosing2DProcessor::process(const EMData* const image)
+{
+	EMData* proc = image->copy();
+	proc->process_inplace("morph.open.binary",params);
+	return proc;
+}
+
+void BinaryClosing2DProcessor::process_inplace(EMData *image)
+{
+	image->process_inplace("morph.erode.binary",params);
+	image->process_inplace("morph.dilate.binary",params);
+}
+
+
+EMData* BinaryMorphGradient2DProcessor::process(const EMData* const image)
+{
+	EMData* proc = image->copy();
+	proc->process_inplace("morph.gradient.binary",params);
+	return proc;
+}
+
+void BinaryMorphGradient2DProcessor::process_inplace(EMData *image)
+{
+	EMData *eroded = image->process("morph.erode.binary",params);
+	image->process_inplace("morph.dilate.binary",params);
+	image->sub(*eroded);
+}
+
+
+EMData* BinaryTopHat2DProcessor::process(const EMData* const image)
+{
+	EMData* proc = image->copy();
+	proc->process_inplace("morph.tophat.binary",params);
+	return proc;
+}
+
+void BinaryTopHat2DProcessor::process_inplace(EMData *image)
+{
+	EMData* opened = image->process("morph.open.binary",params);
+	image->sub(*opened);
+}
+
+
+EMData* BinaryBlackHat2DProcessor::process(const EMData* const image)
+{
+	EMData* proc = image->copy();
+	proc->process_inplace("morph.blackhat.binary",params);
+	return proc;
+}
+
+void BinaryBlackHat2DProcessor::process_inplace(EMData *image)
+{
+	EMData* closed = image->process("morph.close.binary",params);
+	closed->sub(*image);
+	image = closed;
 }
 
 
