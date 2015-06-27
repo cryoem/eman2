@@ -324,7 +324,7 @@ class MovieModeAligner:
 		if self._optimized:
 			print("Optimal alignment already determined.")
 			return
-		if options.verbose: print("Starting coarse-grained alignment")
+		#if options.verbose: print("Starting coarse-grained alignment")
 		cs = Annealer(self, tmax=options.tmax, tmin=options.tmin, steps=options.steps, updates=options.steps, maxshift=options.maxshift, tolerance=options.tolerance)
 		#if not options.nopresearch:
 		#	if options.verbose: print("Determining the best annealing parameters")
@@ -335,9 +335,10 @@ class MovieModeAligner:
 		state = [t for tform in self.optimal_transforms for t in tform.get_trans_2d()]
 		energy = self.get_lowest_energy()
 		if options.verbose:
-			print("\Optimal Frame Translations:")
+			print("\nOptimal Frame Translations:\n")
 			for s in xrange(len(state)):
-				if s % 2 == 0: print("Frame {}\t({:.2},{:.2})".format((s/2)+1,state[s],state[s+1]))
+				if s % 2 == 0: print("Frame {} \t( {:.2}, {:.2} )".format((s/2)+1,state[s],state[s+1]))
+			print("\nBest Energy: {}\n".format(energy))
 		#if options.finesearch:
 			#if options.verbose: print("Starting fine-grained alignment")
 			#sm = Simplex(self._compares,state,[4]*len(state),kC=options.kC,kE=options.kE,kR=options.kR,data=self)
@@ -621,7 +622,7 @@ class Annealer(BaseAnnealer):
 	Simulated Annealer to search the translational alignment parameter space
 	"""
 
-	def __init__(self,aligner,state=None,tmax=25000.0,tmin=2.5,steps=50000,updates=100,maxshift=12,tolerance=5):
+	def __init__(self,aligner,state=None,tmax=25000.0,tmin=2.5,steps=50000,updates=100,maxshift=10,tolerance=5):
 		if state == None: self.state = [s for trans in aligner._transforms for s in trans.get_trans_2d()]
 		super(Annealer, self).__init__(self.state)
 		self.set_schedule({'tmax':tmax,'tmin':tmin,'steps':steps,'updates':updates})
@@ -631,24 +632,27 @@ class Annealer(BaseAnnealer):
 		self.edge_tolerance = 5 # Allow up to 5 of the frames to hit the edge of the allowed translations before signaling to exit
 		self.edge_strikes = [0 for t in aligner._transforms] # making this a list to allow for easier debugging if need be.
 		self.count = 0
+		self._energy_update_flag = True
 
 	def move(self,):
 		p = self.state[self.count:self.count+2] + (2.0 * np.random.random(2) - 1.0)
 		if np.linalg.norm(p) < self.maxshift: # only allow samples within maxshift radius
+			self._energy_update_flag = True
 			self.state[self.count:self.count+2] = p
 			t = Transform({'type':'eman','tx':self.state[self.count],'ty':self.state[self.count+1]})
 			self.aligner._update_frame_params(self.count/2,t)
-			self.count = (self.count+2) % self.slen
-			self.aligner._update_energy()
-		else:
-			#print("\nSampler reached edge of allowable translations on image {}/{}.".format(self.count/2,self.slen))
-			self.edge_strikes[self.count/2] = 1
-			if sum(self.edge_strikes) > self.edge_tolerance:
-				print("Annealer has reached the maximum tolerance of edge strikes ({}).\nStopping optimization prematurely...".format(self.slen/8))
-				signal.signal(signal.SIGINT, self.set_user_exit)
-				print("You can supply a larger --maxshift or higher --tolerance to allow for frame alignment to take place beyond this radius; however, we cannot guarantee successful alignment under such circumstances.")
+		else: #print("\nSampler reached edge of allowable translations on image {}/{}.".format(self.count/2,self.slen))
+		    self._energy_update_flag = False
+		    self.edge_strikes[self.count/2] = 1
+		    if sum(self.edge_strikes) > self.edge_tolerance:
+			    print("Annealer has reached the maximum tolerance of edge strikes ({}).\nStopping optimization prematurely...".format(self.slen/8))
+			    signal.signal(signal.SIGINT, self.set_user_exit)
+			    print("You can supply a larger --maxshift or higher --tolerance to allow for frame alignment to take place beyond this radius; however, we cannot guarantee successful alignment under such circumstances.")
+		self.count = (self.count+2) % self.slen
 	
 	def energy(self):
+	    if self._energy_update_flag: 
+	        self.aligner._update_energy()
 		return self.aligner.get_last_energy()
 
 if __name__ == "__main__":
