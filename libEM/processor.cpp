@@ -133,7 +133,7 @@ const string LinearPyramidProcessor::NAME = "math.linearpyramid";
 const string MakeRadiusSquaredProcessor::NAME = "math.toradiussqr";
 const string MakeRadiusProcessor::NAME = "math.toradius";
 const string ComplexNormPixel::NAME = "complex.normpixels";
-const string ZeroConstantProcessor::NAME = "mask.contract";	// This is broken, it never worked. Somebody didn't think it through properly
+const string ZeroConstantProcessor::NAME = "mask.contract"; // This is broken, it never worked. Somebody didn't think it through properly
 const string BoxMedianProcessor::NAME = "eman1.filter.median";
 const string BoxSigmaProcessor::NAME = "math.localsigma";
 const string NonConvexProcessor::NAME = "math.nonconvex";
@@ -374,7 +374,7 @@ template <> Factory < Processor >::Factory()
 	force_add<ComplexNormPixel>();
 
 	force_add<LaplacianProcessor>();
-//	force_add<ZeroConstantProcessor>();   // this is badly written, it does not work and never did. Who wrote this !?!?
+//	force_add<ZeroConstantProcessor>();	  // this is badly written, it does not work and never did. Who wrote this !?!?
 
 	force_add<BoxMedianProcessor>();
 	force_add<BoxSigmaProcessor>();
@@ -676,10 +676,10 @@ void FourierAnlProcessor::process_inplace(EMData * image)
 
 	preprocess(image);
 
-// 	int array_size = FFTRADIALOVERSAMPLE * image->get_ysize();
-// 	float step=0.5f/array_size;
+//	int array_size = FFTRADIALOVERSAMPLE * image->get_ysize();
+//	float step=0.5f/array_size;
 //
-// 	vector < float >yarray(array_size);
+//	vector < float >yarray(array_size);
 
 	bool return_radial=(bool)params.set_default("return_radial",0);
 	bool interpolate=(bool)params.set_default("interpolate",1);
@@ -773,7 +773,7 @@ void LowpassAutoBProcessor::create_radial_func(vector < float >&radial_mask,EMDa
 	}
 
 	FILE *out=NULL;
-	if (verbose>2)  {
+	if (verbose>2)	{
 		printf("Autob -> %d - %d  ds=%g apix=%g rdlmsk=%d\n",start,end,ds,apix,int(radial_mask.size()));
 		out=fopen("fitplot.txt","w");
 	}
@@ -799,7 +799,7 @@ void LowpassAutoBProcessor::create_radial_func(vector < float >&radial_mask,EMDa
 	float B=(float)params["bfactor"]+slope*4.0f/2.0f;		// *4 is for Henderson definition, 2.0 is for intensity vs amplitude
 	float B2=(float)params["bfactor"];
 
-	if (verbose) printf("User B = %1.2f  Corrective B = %1.2f  Total B=%1.3f\n",(float)params["bfactor"],slope*2.0,B);
+	if (verbose) printf("User B = %1.2f	 Corrective B = %1.2f  Total B=%1.3f\n",(float)params["bfactor"],slope*2.0,B);
 
 	float cutval=exp(-B*pow(end*ds,2.0f)/4.0f)/exp(-B2*pow(end*ds,2.0f)/4.0f);
 	for (unsigned int i=0; i<radial_mask.size(); i++) {
@@ -836,7 +836,7 @@ mask1=EMData(ys2,ys2,1)
 		mask2.process_inplace("mask.decayedge2d",{"width":4})
 		mask1.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
 		mask2.clip_inplace(Region(-(ys2*(oversamp-1)/2),-(ys2*(oversamp-1)/2),ys,ys))
-		ratio1=mask1.get_attr("square_sum")/(ys*ys)	#/1.035
+		ratio1=mask1.get_attr("square_sum")/(ys*ys) #/1.035
 		ratio2=mask2.get_attr("square_sum")/(ys*ys)
 		masks[(ys,radius)]=(mask1,ratio1,mask2,ratio2)
 
@@ -913,7 +913,7 @@ void AmpweightFourierProcessor::process_inplace(EMData * image)
 	}
 	float *sumd = NULL;
 	if (sum) sumd=sum->get_data();
-//printf("%d %d    %d %d\n",fft->get_xsize(),fft->get_ysize(),sum->get_xsize(),sum->get_ysize());
+//printf("%d %d	   %d %d\n",fft->get_xsize(),fft->get_ysize(),sum->get_xsize(),sum->get_ysize());
 	size_t n = (size_t)fft->get_xsize()*fft->get_ysize()*fft->get_zsize();
 	for (size_t i=0; i<n; i+=2) {
 		float c;
@@ -1015,7 +1015,7 @@ EMData *DistanceSegmentProcessor::process(const EMData * const image)
 					centers.push_back((float)p.x);
 					centers.push_back((float)p.y);
 					centers.push_back((float)p.z);
-					pixels.erase(pixels.begin()+i);	// in the centers list now, don't need it any more
+					pixels.erase(pixels.begin()+i); // in the centers list now, don't need it any more
 					found=1;
 					break;
 				}
@@ -1164,14 +1164,14 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 				if (nsum<nseg) r=th;
 				if ((r-l)<.01) break;
 			}
-	// 		nseg=nsum;
+	//		nseg=nsum;
 			int q=0;
 			for (int i=0; i<sx; i++){
 				for (int j=0; j<sy; j++){
 					for (int k=0; k<sz; k++){
 						if (m.get_value_at(i,j,k)>th){
 							if(q<nseg*3){
-								centers[q]=  float(i+.5)*sep;
+								centers[q]=	 float(i+.5)*sep;
 								centers[q+1]=float(j+.5)*sep;
 								centers[q+2]=float(k+.5)*sep;
 								q+=3;
@@ -1191,7 +1191,7 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 	// Default: random seeding.
 	else{
 		for (int i=0; i<nseg*3; i+=3) {
-			centers[i]=  Util::get_frand(0.0f,(float)nx);
+			centers[i]=	 Util::get_frand(0.0f,(float)nx);
 			centers[i+1]=Util::get_frand(0.0f,(float)ny);
 			centers[i+2]=Util::get_frand(0.0f,(float)nz);
 		}
@@ -1266,7 +1266,7 @@ EMData* KmeansSegmentProcessor::process(const EMData * const image)
 					if (Util::hypot3(centers[c1*3]-centers[c2*3],centers[c1*3+1]-centers[c2*3+1],centers[c1*3+2]-centers[c2*3+2])<=minsegsep) {
 						nreseed++;
 						do {
-							centers[c1*3]=  Util::get_frand(0.0f,(float)nx);
+							centers[c1*3]=	Util::get_frand(0.0f,(float)nx);
 							centers[c1*3+1]=Util::get_frand(0.0f,(float)ny);
 							centers[c1*3+2]=Util::get_frand(0.0f,(float)nz);
 						} while (image->get_value_at((int)centers[c1*3],(int)centers[c1*3+1],(int)centers[c1*3+2])<thr);
@@ -1314,8 +1314,8 @@ EMData * Wiener2DAutoAreaProcessor::process(const EMData * image)
 // TODO NOT IMPLEMENTED YET !!!
 	EMData *ret = 0;
 	const EMData *fft;
-// 	float *fftd;
-// 	int f=0;
+//	float *fftd;
+//	int f=0;
 
 	if (!image) {
 		LOGWARN("NULL Image");
@@ -1323,15 +1323,15 @@ EMData * Wiener2DAutoAreaProcessor::process(const EMData * image)
 	}
 	throw NullPointerException("Processor not yet implemented");
 
-// 	if (!image->is_complex()) {
-// 		fft = image->do_fft();
-// 		fftd = fft->get_data();
-// 		f=1;
-// 	}
-// 	else {
-// 		fft=image;
-// 		fftd=image->get_data();
-// 	}
+//	if (!image->is_complex()) {
+//		fft = image->do_fft();
+//		fftd = fft->get_data();
+//		f=1;
+//	}
+//	else {
+//		fft=image;
+//		fftd=image->get_data();
+//	}
 
 	return ret;
 }
@@ -1570,8 +1570,8 @@ void RealPixelProcessor::process_inplace(EMData * image)
 	calc_locals(image);
 
 	size_t size = (size_t)image->get_xsize() *
-		          (size_t)image->get_ysize() *
-		          (size_t)image->get_zsize();
+				  (size_t)image->get_ysize() *
+				  (size_t)image->get_zsize();
 	float *data = image->get_data();
 
 	for (size_t i = 0; i < size; ++i) {
@@ -1708,8 +1708,8 @@ void ToMinvalProcessor::process_inplace(EMData * image)
 	float newval = params.set_default("newval",minval);
 
 	size_t size = (size_t)image->get_xsize() *
-		          (size_t)image->get_ysize() *
-		          (size_t)image->get_zsize();
+				  (size_t)image->get_ysize() *
+				  (size_t)image->get_zsize();
 	float *data = image->get_data();
 
 
@@ -1733,8 +1733,8 @@ void ComplexPixelProcessor::process_inplace(EMData * image)
 	}
 
 	size_t size = (size_t)image->get_xsize() *
-		          (size_t)image->get_ysize() *
-		          (size_t)image->get_zsize();
+				  (size_t)image->get_ysize() *
+				  (size_t)image->get_zsize();
 	float *data = image->get_data();
 
 	image->ri2ap();
@@ -2077,7 +2077,7 @@ void MedianShrinkProcessor::process_inplace(EMData * image)
 {
 	if (image->is_complex()) throw ImageFormatException("Error, the median shrink processor does not work on complex images");
 
-	int shrink_factor =  params.set_default("n",0);
+	int shrink_factor =	 params.set_default("n",0);
 	if (shrink_factor <= 1) {
 		throw InvalidValueException(shrink_factor,
 									"median shrink: shrink factor must > 1");
@@ -2087,9 +2087,9 @@ void MedianShrinkProcessor::process_inplace(EMData * image)
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 
-// 	if ((nx % shrink_factor != 0) || (ny % shrink_factor != 0) || (nz > 1 && (nz % shrink_factor != 0))) {
-// 		throw InvalidValueException(shrink_factor, "Image size not divisible by shrink factor");
-// 	}
+//	if ((nx % shrink_factor != 0) || (ny % shrink_factor != 0) || (nz > 1 && (nz % shrink_factor != 0))) {
+//		throw InvalidValueException(shrink_factor, "Image size not divisible by shrink factor");
+//	}
 
 
 	int shrunken_nx = nx / shrink_factor;
@@ -2113,7 +2113,7 @@ EMData* MedianShrinkProcessor::process(const EMData *const image)
 {
 	if (image->is_complex()) throw ImageFormatException("Error, the median shrink processor does not work on complex images");
 
-	int shrink_factor =  params.set_default("n",0);
+	int shrink_factor =	 params.set_default("n",0);
 	if (shrink_factor <= 1) {
 		throw InvalidValueException(shrink_factor,
 									"median shrink: shrink factor must > 1");
@@ -2123,9 +2123,9 @@ EMData* MedianShrinkProcessor::process(const EMData *const image)
 	int nz = image->get_zsize();
 
 
-// 	if ((nx % shrink_factor != 0) || (ny % shrink_factor != 0) || (nz > 1 && (nz % shrink_factor != 0))) {
-// 		throw InvalidValueException(shrink_factor, "Image size not divisible by shrink factor");
-// 	}
+//	if ((nx % shrink_factor != 0) || (ny % shrink_factor != 0) || (nz > 1 && (nz % shrink_factor != 0))) {
+//		throw InvalidValueException(shrink_factor, "Image size not divisible by shrink factor");
+//	}
 
 
 	int shrunken_nx = nx / shrink_factor;
@@ -2223,7 +2223,7 @@ void MedianShrinkProcessor::accrue_median(EMData* to, const EMData* const from,c
 EMData* FFTResampleProcessor::process(const EMData *const image)
 {
 	float sample_rate = params.set_default("n",0.0f);
-	if (sample_rate <= 0.0F  )  {
+	if (sample_rate <= 0.0F	 )	{
 		throw InvalidValueException(sample_rate,	"sample rate must be >0 ");
 	}
 
@@ -2243,7 +2243,7 @@ void FFTResampleProcessor::process_inplace(EMData * image)
 
 
 	float sample_rate = params.set_default("n",0.0f);
-	if (sample_rate <= 0.0F  )  {
+	if (sample_rate <= 0.0F	 )	{
 		throw InvalidValueException(sample_rate,	"sample rate (n) must be >0 ");
 	}
 
@@ -2944,8 +2944,8 @@ void NonConvexProcessor::process_inplace(EMData * image) {
 		}
 		image->set_value_at_fast(nx2+1,ny2,(*binary)(2,ny2));	// We keep the points near the Fourier origin as a central anchor even though it's convex
 		image->set_value_at_fast(nx2-1,ny2,(*binary)(2,ny2));	// We keep the points near the Fourier origin as a central anchor even though it's convex
-		image->set_value_at_fast(nx2,ny2+1,(*binary)(0,ny2+1));	// We keep the points near the Fourier origin as a central anchor even though it's convex
-		image->set_value_at_fast(nx2,ny2-1,(*binary)(0,ny2-1));	// We keep the points near the Fourier origin as a central anchor even though it's convex
+		image->set_value_at_fast(nx2,ny2+1,(*binary)(0,ny2+1)); // We keep the points near the Fourier origin as a central anchor even though it's convex
+		image->set_value_at_fast(nx2,ny2-1,(*binary)(0,ny2-1)); // We keep the points near the Fourier origin as a central anchor even though it's convex
 		for (int y=0; y<ny2*2; y++) image->set_value_at_fast(0,y,0.0f);
 
 		// Now make a binary version of the convex points
@@ -3045,7 +3045,7 @@ void GradientPlaneRemoverProcessor::process_inplace(EMData * image)
 					m[1]+=j;	// y
 					m[2]+=d[ij];	// z
 					/*printf("index=%d/%d\ti,j=%d,%d\tval=%g\txm,ym,zm=%g,%g,%g\n", \
-					        index,count,i,j,d[ij],m[0]/(index+1),m[1]/(index+1),m[2]/(index+1));*/
+							index,count,i,j,d[ij],m[0]/(index+1),m[1]/(index+1),m[2]/(index+1));*/
 					index++;
 				}
 			}
@@ -3059,13 +3059,13 @@ void GradientPlaneRemoverProcessor::process_inplace(EMData * image)
 					m[1]+=j;	// y
 					m[2]+=d[ij];	// z
 					/*printf("index=%d/%d\ti,j=%d,%d\tval=%g\txm,ym,zm=%g,%g,%g\n", \
-					        index,count,i,j,d[ij],m[0]/(index+1),m[1]/(index+1),m[2]/(index+1));*/
+							index,count,i,j,d[ij],m[0]/(index+1),m[1]/(index+1),m[2]/(index+1));*/
 					index++;
 			}
 		}
 	}
 
-	for(int i=0; i<3; i++) m[i]/=count;	// compute center of the plane
+	for(int i=0; i<3; i++) m[i]/=count; // compute center of the plane
 
 	index=0;
 	if (dm) {
@@ -3765,11 +3765,11 @@ void ZeroEdgePlaneProcessor::process_inplace(EMData * image)
 	size_t x1size = x1*sizeof(float);
 
 	memset(d,0,z0*sec_size);					// zero -z
-	memset(d+(nxy*(nz-z1)),0,sec_size*z1);	    // zero +z
+	memset(d+(nxy*(nz-z1)),0,sec_size*z1);		// zero +z
 
 	for (int z=z0; z<nz-z1; z++) {
 		memset(d+z*nxy,0,y0row);			// zero -y
-		memset(d+z*nxy+(ny-y1)*nx,0,y1row);	// zero +y
+		memset(d+z*nxy+(ny-y1)*nx,0,y1row); // zero +y
 
 		int znxy = z * nxy;
 		int znxy2 = znxy + nx - x1;
@@ -4023,7 +4023,7 @@ float NormalizeCircleMeanProcessor::calc_mean(EMData * image) const
 	float radius = params.set_default("radius",((float)ny/2-2));
 	if (radius<0) radius=ny/2+radius;
 
- 	static bool busy = false;		// avoid problems with threads and different image sizes
+	static bool busy = false;		// avoid problems with threads and different image sizes
 	static EMData *mask = 0;
 	static int oldradius=radius;
 
@@ -4211,9 +4211,9 @@ EMData *SubtractOptProcessor::process(const EMData * const image)
 	}
 	for (int i=0; i<ny2; i++) rad[i]/=norm[i];
 
-// 	FILE *out=fopen("dbug.txt","w");
-// 	for (int i=0; i<ny2; i++) fprintf(out,"%lf\t%lf\t%lf\n",(float)i,rad[i],norm[i]);
-// 	fclose(out);
+//	FILE *out=fopen("dbug.txt","w");
+//	for (int i=0; i<ny2; i++) fprintf(out,"%lf\t%lf\t%lf\n",(float)i,rad[i],norm[i]);
+//	fclose(out);
 
 	float oldsig=-1.0;
 	// This option computes the real-space sigma on the input-image after the specified filter
@@ -4363,7 +4363,7 @@ void BinarizeFourierProcessor::process_inplace(EMData* image) {
 	if (!image->is_complex()) throw ImageFormatException("Fourier binary thresholding processor only works for complex images");
 
 	float threshold = params.set_default("value",0.0f);
-	image->ri2ap(); //  works for cuda
+	image->ri2ap(); //	works for cuda
 
 	float* d = image->get_data();
 	for( size_t i = 0; i < image->get_size()/2; ++i, d+=2) {
@@ -4372,7 +4372,7 @@ void BinarizeFourierProcessor::process_inplace(EMData* image) {
 			*(d+1) = 0;
 		}
 	}
-        image->ap2ri();
+		image->ap2ri();
 	image->set_ri(true); // So it can be used for fourier multiplaction, for example
 	image->update();
 	EXITFUNC;
@@ -4408,15 +4408,15 @@ void BilateralProcessor::process_inplace(EMData * image)
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 
-	if(nz==1) {	//for 2D image
+	if(nz==1) { //for 2D image
 		int width=nx, height=ny;
 
 		int i,j,m,n;
 
 		float tempfloat1,tempfloat2,tempfloat3;
-		int   index1,index2,index;
-		int   Iter;
-		int   tempint1,tempint3;
+		int	  index1,index2,index;
+		int	  Iter;
+		int	  tempint1,tempint3;
 
 		tempint1=width;
 		tempint3=width+2*half_width;
@@ -4427,26 +4427,26 @@ void BilateralProcessor::process_inplace(EMData * image)
 
 		for(m=-(half_width);m<=half_width;m++)
 			for(n=-(half_width);n<=half_width;n++) {
-	       	   index=(m+half_width)*(2*half_width+1)+(n+half_width);
-	       	   mask[index]=exp((float)(-(m*m+n*n)/distance_sigma/2.0));
-	  	}
+			   index=(m+half_width)*(2*half_width+1)+(n+half_width);
+			   mask[index]=exp((float)(-(m*m+n*n)/distance_sigma/2.0));
+		}
 
 		//printf("entering bilateral filtering process \n");
 
 		Iter=0;
 		while(Iter<max_iter) {
 			for(i=0;i<height;i++)
-	    		for(j=0;j<width;j++) {
-		    		index1=(i+half_width)*tempint3+(j+half_width);
+				for(j=0;j<width;j++) {
+					index1=(i+half_width)*tempint3+(j+half_width);
 					index2=i*tempint1+j;
-	        		OrgImg[index1]=NewImg[index2];
-	   		}
+					OrgImg[index1]=NewImg[index2];
+			}
 
 			// Mirror Padding
 			for(i=0;i<height;i++){
 				for(j=0;j<half_width;j++) OrgImg[(i+half_width)*tempint3+(j)]=OrgImg[(i+half_width)*tempint3+(2*half_width-j)];
 				for(j=0;j<half_width;j++) OrgImg[(i+half_width)*tempint3+(j+width+half_width)]=OrgImg[(i+half_width)*tempint3+(width+half_width-j-2)];
-	   		}
+			}
 			for(i=0;i<half_width;i++){
 				for(j=0;j<(width+2*half_width);j++) OrgImg[i*tempint3+j]=OrgImg[(2*half_width-i)*tempint3+j];
 				for(j=0;j<(width+2*half_width);j++) OrgImg[(i+height+half_width)*tempint3+j]=OrgImg[(height+half_width-2-i)*tempint3+j];
@@ -4467,18 +4467,18 @@ void BilateralProcessor::process_inplace(EMData * image)
 							tempfloat3=(OrgImg[index1]-OrgImg[index2])*(OrgImg[index1]-OrgImg[index2]);
 
 							tempfloat3=mask[index]*(1.0f/(1+tempfloat3/value_sigma));	// Lorentz kernel
-							//tempfloat3=mask[index]*exp(tempfloat3/Sigma2/(-2.0));	// Guassian kernel
+							//tempfloat3=mask[index]*exp(tempfloat3/Sigma2/(-2.0)); // Guassian kernel
 							tempfloat1+=tempfloat3;
 
 							tempfloat2+=tempfloat3*OrgImg[(i+half_width+m)*tempint3+(j+half_width+n)];
-	        			}
+						}
 					NewImg[i*width+j]=tempfloat2/tempfloat1;
 				}
 			}
-	   		Iter++;
-	    }
+			Iter++;
+		}
 
-	    //printf("have finished %d  th iteration\n ",Iter);
+		//printf("have finished %d	th iteration\n ",Iter);
 //		doneData();
 		free(mask);
 		free(OrgImg);
@@ -4803,7 +4803,7 @@ void FlipProcessor::process_inplace(EMData * image)
 		//cout << "flip processor" << endl;
 		float array[12] = {1.0, 0.0, 0.0, 0.0,
 						   0.0, 1.0, 0.0, 0.0,
-		 				   0.0, 0.0, 1.0, 0.0};
+						   0.0, 0.0, 1.0, 0.0};
 		if (axis == "x" || axis == "X") {		// horizontal flip
 			array[0] = -1.0;
 		}else if (axis == "y" || axis == "Y") {		// vertical flip
@@ -4930,7 +4930,7 @@ void FourierToCornerProcessor::process_inplace(EMData * image)
 	int nxy = nx*ny;
 
 	if ( ny == 1 && nz == 1 ){
-		cout << "Warning- attempted	Fourier origin shift a 1D image - no action taken" << endl;
+		cout << "Warning- attempted Fourier origin shift a 1D image - no action taken" << endl;
 		return;
 	}
 	int yodd = (ny%2==1);
@@ -5058,7 +5058,7 @@ void FourierToCenterProcessor::process_inplace(EMData * image)
 	int nxy = nx*ny;
 
 	if ( ny == 1 && nz == 1 ){
-		cout << "Warning- attempted	Fourier origin shift a 1D image - no action taken" << endl;
+		cout << "Warning- attempted Fourier origin shift a 1D image - no action taken" << endl;
 		return;
 	}
 
@@ -5142,7 +5142,7 @@ void FourierToCenterProcessor::process_inplace(EMData * image)
 		}
 	}
 
-	if ( nz != 1 )  {
+	if ( nz != 1 )	{
 		if (zodd){
 			// Swap the front slice (with respect to the z direction) and the middle slice
 			// shifting all slices behind the middles slice towards the front slice 1 voxel.
@@ -5353,7 +5353,7 @@ void Phase180Processor::swap_central_slices_180(EMData * image)
 			}
 		}
 
-		if ( xodd )	{
+		if ( xodd ) {
 			// Iterate along the central column, swapping values where appropriate
 			int c = nx/2;
 			for (  int r = 0; r < ny/2; ++r ) {
@@ -5445,7 +5445,7 @@ void Phase180Processor::swap_central_slices_180(EMData * image)
 
 void PhaseToCornerProcessor::process_inplace(EMData * image)
 {
-	if (!image)	throw NullPointerException("Error: attempt to phase shift a null image");
+	if (!image) throw NullPointerException("Error: attempt to phase shift a null image");
 
 #ifdef EMAN2_USING_CUDA
 	if (EMData::usecuda == 1 && image->getcudarwdata() && image->get_ndim() == 2) { // Because CUDA phase origin to center only works for 2D atm
@@ -5515,7 +5515,7 @@ void PhaseToCornerProcessor::process_inplace(EMData * image)
 		if (xodd) {
 			// Transfer the right most column into the center column
 			// Shift all columns right of and including center to the right one pixel
-			for ( int r  = 0; r < ny; ++r ) {
+			for ( int r	 = 0; r < ny; ++r ) {
 				float last_val = rdata[(r+1)*nx -1];
 				float tmp;
 				for ( int c = nx/2; c < nx; ++c ){
@@ -5593,7 +5593,7 @@ void PhaseToCornerProcessor::process_inplace(EMData * image)
 
 void PhaseToCenterProcessor::process_inplace(EMData * image)
 {
-	if (!image)	throw NullPointerException("Error: attempt to phase shift a null image");
+	if (!image) throw NullPointerException("Error: attempt to phase shift a null image");
 
 #ifdef EMAN2_USING_CUDA
 	if (EMData::usecuda == 1 && image->getcudarwdata() && image->get_ndim() == 2) { // Because CUDA phase origin to center only works for 2D atm
@@ -5655,7 +5655,7 @@ void PhaseToCenterProcessor::process_inplace(EMData * image)
 		if (xodd) {
 			// Transfer the middle column to the far right
 			// Shift all from the far right to (but not including the) middle one to the left
-			for ( int r  = 0; r < ny; ++r ) {
+			for ( int r	 = 0; r < ny; ++r ) {
 				float last_val = rdata[r*nx+nx/2];
 				for ( int c = nx-1; c >=  nx/2; --c ){
 					int idx = r*nx+c;
@@ -5667,7 +5667,7 @@ void PhaseToCenterProcessor::process_inplace(EMData * image)
 		}
 		if (yodd) {
 			// Tranfer the middle row to the top,
-			// shifting all pixels from the top row down one, until  but not including the) middle
+			// shifting all pixels from the top row down one, until	 but not including the) middle
 			for ( int c = 0; c < nx; ++c ) {
 				// Get the value in the top row
 				float last_val = rdata[ny/2*nx + c];
@@ -5768,7 +5768,7 @@ void AutoMaskAsymUnit::process_inplace(EMData* image) {
 			for (int i = 0; i< nx; ++i, ++d) {
 				//cout << i << " " << j << " " << k << endl;
 				Vec3f v(i-ox,j-oy,k-oz);
-// 				v.normalize();
+//				v.normalize();
 				int a = sym->point_in_which_asym_unit(v);
 				if (au == -1) {
 					*d = (float)a;
@@ -5931,10 +5931,10 @@ EMData* CtfSimProcessor::process(const EMData * const image) {
 	// compute and apply the CTF
 	vector <float> ctfc = ctf.compute_1d(fft->get_ysize()*6,ctf.dsbg,ctf.CTF_AMP,NULL); // *6 goes to corner, remember you provide 2x the number of points you need
 
-// 	printf("%1.3f\t%1.3f\t%1.3f\t%1.3f\t%1.3f\t%d\n",ctf.defocus,ctf.bfactor,ctf.ampcont,ctf.dsbg,ctf.apix,fft->get_ysize());
-// 	FILE *out=fopen("x.txt","w");
-// 	for (int i=0; i<ctfc.size(); i++) fprintf(out,"%f\t%1.3g\n",0.25*i/(float)fft->get_ysize(),ctfc[i]);
-// 	fclose(out);
+//	printf("%1.3f\t%1.3f\t%1.3f\t%1.3f\t%1.3f\t%d\n",ctf.defocus,ctf.bfactor,ctf.ampcont,ctf.dsbg,ctf.apix,fft->get_ysize());
+//	FILE *out=fopen("x.txt","w");
+//	for (int i=0; i<ctfc.size(); i++) fprintf(out,"%f\t%1.3g\n",0.25*i/(float)fft->get_ysize(),ctfc[i]);
+//	fclose(out);
 
 	fft->apply_radial_func(0,0.25f/fft->get_ysize(),ctfc,1);
 
@@ -6086,7 +6086,7 @@ void IterMultiMaskProcessor::process_inplace(EMData * image)
 					// Note that this produces a directional bias in the case of ambiguous pixels
 					// While this could be improved upon slightly, there can be truly ambiguous cases
 					// and at least this method is deterministic
-					if      (image1->get_value_at(x-1,y)>0) image2->set_value_at_fast(x,y,image1->get_value_at(x-1,y));
+					if		(image1->get_value_at(x-1,y)>0) image2->set_value_at_fast(x,y,image1->get_value_at(x-1,y));
 					else if (image1->get_value_at(x+1,y)>0) image2->set_value_at_fast(x,y,image1->get_value_at(x+1,y));
 					else if (image1->get_value_at(x,y-1)>0) image2->set_value_at_fast(x,y,image1->get_value_at(x,y-1));
 					else if (image1->get_value_at(x,y+1)>0) image2->set_value_at_fast(x,y,image1->get_value_at(x,y+1));
@@ -6106,7 +6106,7 @@ void IterMultiMaskProcessor::process_inplace(EMData * image)
 						// Note that this produces a directional bias in the case of ambiguous pixels
 						// While this could be improved upon slightly, there can be truly ambiguous cases
 						// and at least this method is deterministic
-						if      (image1->get_value_at(x-1,y,z)>0) image2->set_value_at_fast(x,y,z,image1->get_value_at(x-1,y,z));
+						if		(image1->get_value_at(x-1,y,z)>0) image2->set_value_at_fast(x,y,z,image1->get_value_at(x-1,y,z));
 						else if (image1->get_value_at(x+1,y,z)>0) image2->set_value_at_fast(x,y,z,image1->get_value_at(x+1,y,z));
 						else if (image1->get_value_at(x,y-1,z)>0) image2->set_value_at_fast(x,y,z,image1->get_value_at(x,y-1,z));
 						else if (image1->get_value_at(x,y+1,z)>0) image2->set_value_at_fast(x,y,z,image1->get_value_at(x,y+1,z));
@@ -6230,7 +6230,7 @@ void ToCenterProcessor::process_inplace(EMData * image)
 		if (tot>nx*ny*nz/10) break;		// find a threshold encompassing a specific fraction of the total area/volume
 	}
 	float thr=(i*hmax+(99-i)*hmin)/99.0;		// this should now be a threshold encompasing ~1/10 of the area in the image
-//	printf("mean %f   sigma %f   thr %f\n",(float)image2->get_attr("mean"),(float)image2->get_attr("sigma"),thr);
+//	printf("mean %f	  sigma %f	 thr %f\n",(float)image2->get_attr("mean"),(float)image2->get_attr("sigma"),thr);
 
 	// threshold so we are essentially centering the object silhouette
 	image2->process_inplace("threshold.belowtozero",Dict("minval",thr));
@@ -6385,7 +6385,7 @@ void PhaseToMassCenterProcessor::process_inplace(EMData * image)
 		else if (dims == 2) image->set_attr("xform.align2d",&t);
 
 		image->translate(dx,dy,dz);
-	} else  {
+	} else	{
 		float dx=-pcog[0],dy=0.0,dz=0.0;
 		if ( dims >= 2 ) dy = -pcog[1];
 		if ( dims == 3 ) dz = -pcog[2];
@@ -7866,8 +7866,8 @@ void CTFSNRWeightProcessor::process_inplace(EMData* image) {
 	vector<float> noise = params["noise"];
 	vector<float> snr = params["snr"];
 
-// 	copy(snr.begin(), snr.end(), ostream_iterator<float>(cout, "\n"));
-// 	copy(noise.begin(), noise.end(), ostream_iterator<float>(cout, "\n"));
+//	copy(snr.begin(), snr.end(), ostream_iterator<float>(cout, "\n"));
+//	copy(noise.begin(), noise.end(), ostream_iterator<float>(cout, "\n"));
 
 	for(vector<float>::iterator it = noise.begin(); it != noise.end(); ++it){
 		if ((*it) == 0) *it = 1;
@@ -7878,14 +7878,14 @@ void CTFSNRWeightProcessor::process_inplace(EMData* image) {
 	// Subtract the mean from the data and store it in data_mm
 	transform(snr.begin(),snr.end(),noise.begin(),snr.begin(),std::multiplies<float>());
 	transform(snr.begin(),snr.end(),snr.begin(),sqrtf);
-// 	copy(snr.begin(), snr.end(), ostream_iterator<float>(cout, "\n"));
-// 	copy(noise.begin(), noise.end(), ostream_iterator<float>(cout, "\n"));
+//	copy(snr.begin(), snr.end(), ostream_iterator<float>(cout, "\n"));
+//	copy(noise.begin(), noise.end(), ostream_iterator<float>(cout, "\n"));
 
 	int i = static_cast<int>(snr.size());
 
 	float * d = image->get_data();
 	int nx = image->get_xsize();
-// 	int ny = image->get_ysize();
+//	int ny = image->get_ysize();
 	int nxy = image->get_ysize()*nx;
 	int nzon2 = image->get_zsize()/2;
 	int nyon2 = image->get_ysize()/2;
@@ -7908,8 +7908,8 @@ void CTFSNRWeightProcessor::process_inplace(EMData* image) {
 					continue;
 				} else {
 					amp = boost*snr[length];
-// 					if (amp > 0) amp =sqrtf(amp);
-// 					else amp = 0;
+//					if (amp > 0) amp =sqrtf(amp);
+//					else amp = 0;
 				}
 
 				if (sf[length] == 0) {
@@ -7917,15 +7917,15 @@ void CTFSNRWeightProcessor::process_inplace(EMData* image) {
 					continue;
 				}
 
-// 				size_t idx2 = idx1 + 1;
-// 				cout << d[idx1] << " " << sf[length] << endl;
+//				size_t idx2 = idx1 + 1;
+//				cout << d[idx1] << " " << sf[length] << endl;
 				d[idx1] /= sf[length];
 				if (d[idx1] < 0) {
 					d[idx1] *= amp;
 				}else {
 					d[idx1] *= -amp;
 				}
-// 				d[idx2] = phase;
+//				d[idx2] = phase;
 
 			}
 		}
@@ -8179,7 +8179,7 @@ void TestImageAxes::process_inplace(EMData * image)
 	// This should never occur - but if indeed it did occur, the code in this function
 	// would break - the function would proceed into the final "else" and seg fault
 	// It is commented out but left for clarity
-// 	if ( nx < 1 || ny < 1 || nz < 1 ) throw ImageDimensionException("Error: one of the image dimensions was less than zero");
+//	if ( nx < 1 || ny < 1 || nz < 1 ) throw ImageDimensionException("Error: one of the image dimensions was less than zero");
 
 	if ( nx == 1 && ny == 1 && nz == 1 )
 	{
@@ -8291,7 +8291,7 @@ void TestImagePureGaussian::process_inplace(EMData * image)
 	float z_twosig2 = 2*z_sigma*z_sigma;
 
 	float sr2pi = sqrt( 2.0f*(float)pi );
-	float norm  = 1.0f/ ( x_sigma*sr2pi );
+	float norm	= 1.0f/ ( x_sigma*sr2pi );
 	if (ny > 1) {
 		norm *= 1.0f/ ( y_sigma*sr2pi );
 		if (nz > 1) norm  *= 1.0f/ ( z_sigma*sr2pi );
@@ -8983,7 +8983,7 @@ void CCDNormProcessor::process_inplace(EMData * image)
 	// width of sample area on either side of the seams
 	int width = params["width"];
 
-	width%=(xs > ys ? xs/2 : ys/2);  // make sure width is a valid value
+	width%=(xs > ys ? xs/2 : ys/2);	 // make sure width is a valid value
 	if (width==0) {
 	  width=1;
 	}
@@ -9014,28 +9014,28 @@ void CCDNormProcessor::process_inplace(EMData * image)
 	for (z=0; z<width; z++) {
 	  left = image->get_col(xs/2 -1-z)->get_data();
 	  for (y=0; y<ys; y++)
-	    temp[z*ys+y]=left[y];
+		temp[z*ys+y]=left[y];
 	}
 	mL=gsl_stats_mean(temp,1,ys*width);
 
 	for (z=0; z<width; z++) {
 	  right = image->get_col(xs/2 +z)->get_data();
 	  for (y=0; y<ys; y++)
-	    temp[z*ys+y]=right[y];
+		temp[z*ys+y]=right[y];
 	}
 	mR=gsl_stats_mean(temp,1,ys*width);
 
 	for (z=0; z<width; z++) {
 	  top = image->get_row(ys/2 -1-z)->get_data();
 	  for (x=0; x<xs; x++)
-	    temp[z*xs+x]=top[x];
+		temp[z*xs+x]=top[x];
 	}
 	mT=gsl_stats_mean(temp,1,xs*width);
 
 	for (z=0; z<width; z++) {
 	  bottom = image->get_row(ys/2 +z)->get_data();
 	  for (x=0; x<xs; x++)
-	    temp[z*xs+x]=bottom[x];
+		temp[z*xs+x]=bottom[x];
 	}
 	mB=gsl_stats_mean(temp,1,xs*width);
 
@@ -9054,19 +9054,19 @@ void CCDNormProcessor::process_inplace(EMData * image)
 	// change the pixel values
 	for (x = 0; x < xs / 2; x++)
 	  for (y = 0; y < ys / 2; y++) {
-	    image->set_value_at_fast(x, y, image->get_value_at(x, y) + static_cast<float>(q1));
+		image->set_value_at_fast(x, y, image->get_value_at(x, y) + static_cast<float>(q1));
 	  }
 	for (x = xs / 2; x < xs; x++)
 	  for (y = 0; y < ys / 2; y++) {
-	    image->set_value_at_fast(x, y, image->get_value_at(x, y) + static_cast<float>(q2));
+		image->set_value_at_fast(x, y, image->get_value_at(x, y) + static_cast<float>(q2));
 	  }
 	for (x = xs / 2; x < xs; x++)
 	  for (y = ys / 2; y < ys; y++) {
-	    image->set_value_at_fast(x, y, image->get_value_at(x, y) + static_cast<float>(q3));
+		image->set_value_at_fast(x, y, image->get_value_at(x, y) + static_cast<float>(q3));
 	  }
 	for (x = 0; x < xs / 2; x++)
 	  for (y = ys / 2; y < ys; y++) {
-	    image->set_value_at_fast(x, y, image->get_value_at(x, y) + static_cast<float>(q4));
+		image->set_value_at_fast(x, y, image->get_value_at(x, y) + static_cast<float>(q4));
 	  }
 
 }
@@ -9105,7 +9105,7 @@ void WaveletProcessor::process_inplace(EMData *image)
 	gsl_wavelet_direction dir;
 
 	if ((int)params["dir"]==1) dir=(gsl_wavelet_direction)1;	// defined as 'forward', but name is broken on mac
-	else dir=(gsl_wavelet_direction)-1;	// backward
+	else dir=(gsl_wavelet_direction)-1; // backward
 
 	gsl_wavelet *w = gsl_wavelet_alloc(T, K);
 	gsl_wavelet_workspace *work = gsl_wavelet_workspace_alloc(nx);
@@ -9233,15 +9233,15 @@ void MirrorProcessor::process_inplace(EMData *image)
 	int z_start = 1-nz%2;
 
 	if (axis == "x" || axis == "X") {
-	        for (int iz = 0; iz < nz; iz++)
+			for (int iz = 0; iz < nz; iz++)
 			for (int iy = 0; iy < ny; iy++) {
 				int offset = nx*iy + nxy*iz;
 				reverse(&data[offset+x_start],&data[offset+nx]);
 			}
 	} else if (axis == "y" || axis == "Y") {
 		float *tmp = new float[nx];
-		int nhalf   = ny/2;
-		size_t beg     = 0;
+		int nhalf	= ny/2;
+		size_t beg	   = 0;
 		for (int iz = 0; iz < nz; iz++) {
 			beg = iz*nxy;
 			for (int iy = y_start; iy < nhalf; iy++) {
@@ -9263,8 +9263,8 @@ void MirrorProcessor::process_inplace(EMData *image)
 			delete[] tmp;
 		} else {
 			float *tmp = new float[nx];
-			int nhalf   = nz/2;
-			size_t beg     = 0;
+			int nhalf	= nz/2;
+			size_t beg	   = 0;
 			for (int iy = 0; iy < ny; iy++) {
 				beg = iy*nx;
 				for (int iz = z_start; iz < nhalf; iz++) {
@@ -9302,7 +9302,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 	int ny = image->get_ysize();
 	int nz = image->get_zsize();
 	int nxy = nx*ny;
-	int N   = ny;
+	int N	= ny;
 
 	int zerocorners = params.set_default("zerocorners",0);
 
@@ -9350,21 +9350,21 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			}
 		}
 	}
-	if ((nz == 1)&&(image -> is_complex())&&(nx%2==0)&&((2*(nx-ny)-3)*(2*(nx-ny)-3)==1)&&(zerocorners==0) )  {
- 	  //printf("Hello 2-d complex  TransformProcessor \n");
+	if ((nz == 1)&&(image -> is_complex())&&(nx%2==0)&&((2*(nx-ny)-3)*(2*(nx-ny)-3)==1)&&(zerocorners==0) )	 {
+	  //printf("Hello 2-d complex  TransformProcessor \n");
 	  // make sure there was a realImage.process('xform.phaseorigin.tocorner')
-	 //           before transformation to Fourier Space
+	 //			  before transformation to Fourier Space
 // This rotates a complex image that is a FT of a real space image: it has Friedel symmetries
 // An arbitrary complex image, F, can be decomposed into two Friedel images
-//         G(k) = (F(k) + F*(-k))/2 ,  H(k) = (-i(F(k) - F*(k)))/2;
-//          via   F(k) = G(k) + i H(k); notice G and H are Friedel symmetric (not necessarily real)
-//	           But g,h are real, using f=g+ih.
-// 		First make sure that image has proper size;
-//         if 2N is side of real image, then sizes of FFT are (2N+2,2N)
-//         if 2N+1 is side of real image, then sizes of FFT are (2N+2,2N+1)
-//         so we need nx =ny+2, and ny  even
-//	          or  nx = ny+1  and ny odd
-//         so nx even, and 2 *(nx -ny) -3=  +- 1; So  abs(2*(nx-ny)-3) == 1
+//		   G(k) = (F(k) + F*(-k))/2 ,  H(k) = (-i(F(k) - F*(k)))/2;
+//			via	  F(k) = G(k) + i H(k); notice G and H are Friedel symmetric (not necessarily real)
+//			   But g,h are real, using f=g+ih.
+//		First make sure that image has proper size;
+//		   if 2N is side of real image, then sizes of FFT are (2N+2,2N)
+//		   if 2N+1 is side of real image, then sizes of FFT are (2N+2,2N+1)
+//		   so we need nx =ny+2, and ny	even
+//			  or  nx = ny+1	 and ny odd
+//		   so nx even, and 2 *(nx -ny) -3=	+- 1; So  abs(2*(nx-ny)-3) == 1
 		float theta =  t.get_rotation("eman").get("phi"); theta=theta*pi/180;
 		Vec3f transNow= t.get_trans();
 		float xshift= transNow[0]; float yshift= transNow[1];
@@ -9372,106 +9372,106 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 //		int kNy= ny; //size of the real space image
 //		int kNx= nx/2; //
 		Vec2f offset(nx/2,ny/2);
-		float Mid =(N+1.0)/2.0;  // Check this
+		float Mid =(N+1.0)/2.0;	 // Check this
 		for (int kyN = 0; kyN < ny; kyN++) {
 			int kyNew = kyN;
-			if (kyN>=nx/2) kyNew=kyN-ny;  // Step 0     Unalias
-			float kxOldPre=  - sin(theta)* kyNew;
-			float kyOldPre=    cos(theta)* kyNew;
-    		        float phaseY = -2*pi*kyNew*yshift/ny;
+			if (kyN>=nx/2) kyNew=kyN-ny;  // Step 0		Unalias
+			float kxOldPre=	 - sin(theta)* kyNew;
+			float kyOldPre=	   cos(theta)* kyNew;
+					float phaseY = -2*pi*kyNew*yshift/ny;
 
 			for (int kxN = 0; kxN < (nx/2); kxN++) {
 				int kxNew=kxN;
 				if (kxN >= nx/2) kxNew=kxN-ny;//  Step 0   Unalias
-				//  Step 1, Do rotation and find 4 nn
+				//	Step 1, Do rotation and find 4 nn
 				float kxOld=  kxOldPre + cos(theta)* kxNew ;
 				float kyOld=  kyOldPre + sin(theta)* kxNew ;
 				//
-				int kxLower= floor(kxOld); int kxUpper= kxLower+1;    // All these values
-				int kyLower= floor(kyOld); int kyUpper= kyLower+1;    // may be neg
-				float dkxLower= (kxUpper-kxOld);    float dkxUpper= (kxOld-kxLower);
-				float dkyLower= (kyUpper-kyOld);    float dkyUpper= (kyOld-kyLower);
+				int kxLower= floor(kxOld); int kxUpper= kxLower+1;	  // All these values
+				int kyLower= floor(kyOld); int kyUpper= kyLower+1;	  // may be neg
+				float dkxLower= (kxUpper-kxOld);	float dkxUpper= (kxOld-kxLower);
+				float dkyLower= (kyUpper-kyOld);	float dkyUpper= (kyOld-kyLower);
 //
 				int kxL= kxLower; int kyL=kyLower;
 				float dataLL_R= 0; float dataLL_I=0; int flag=1;
-				if ((abs(kxL)<Mid) && (abs(kyL)<Mid)) { //   Step 2 Make sure to be in First BZ
-				    kxL = (N+kxL)%N;  kyL = (N+kyL)%N;
-				    if (kxL> N/2){ kxL=(N-kxL)%N; kyL=(N-kyL)%N ;flag=-1;} // Step 3: if nec, use Friedel paired
-				    dataLL_R=      src_data[2*kxL+   kyL*nx]; //  image -> get_value_at(2*kxL,kyL);
-				    dataLL_I= flag*src_data[2*kxL+1+ kyL*nx]; //  image -> get_value_at(2*kxL+1,kyL);
+				if ((abs(kxL)<Mid) && (abs(kyL)<Mid)) { //	 Step 2 Make sure to be in First BZ
+					kxL = (N+kxL)%N;  kyL = (N+kyL)%N;
+					if (kxL> N/2){ kxL=(N-kxL)%N; kyL=(N-kyL)%N ;flag=-1;} // Step 3: if nec, use Friedel paired
+					dataLL_R=	   src_data[2*kxL+	 kyL*nx]; //  image -> get_value_at(2*kxL,kyL);
+					dataLL_I= flag*src_data[2*kxL+1+ kyL*nx]; //  image -> get_value_at(2*kxL+1,kyL);
 				}
 
-			        kxL=kxLower; int kyU=kyUpper;
-			        float dataLU_R= 0; float dataLU_I=0; flag=1;
-				if ((abs(kxL)<Mid) && (abs(kyU)<Mid)){ //       Step 2 Make sure to be in First BZ
-				    kxL = (N+kxL)%N;  kyU = (N+kyU)%N;
-				    if (kxL> N/2){ kxL=(N-kxL)%N; kyU=(N-kyU)%N;flag=-1;} // Step 3
-				    dataLU_R=	    src_data[2*kxL+   kyU*nx];//  image -> get_value_at(2*kxL,kyU);
-				    dataLU_I=  flag*src_data[2*kxL+1+ kyU*nx];// flag*image -> get_value_at(2*kxL+1,kyU);
-			        }
+					kxL=kxLower; int kyU=kyUpper;
+					float dataLU_R= 0; float dataLU_I=0; flag=1;
+				if ((abs(kxL)<Mid) && (abs(kyU)<Mid)){ //		Step 2 Make sure to be in First BZ
+					kxL = (N+kxL)%N;  kyU = (N+kyU)%N;
+					if (kxL> N/2){ kxL=(N-kxL)%N; kyU=(N-kyU)%N;flag=-1;} // Step 3
+					dataLU_R=		src_data[2*kxL+	  kyU*nx];//  image -> get_value_at(2*kxL,kyU);
+					dataLU_I=  flag*src_data[2*kxL+1+ kyU*nx];// flag*image -> get_value_at(2*kxL+1,kyU);
+					}
 
 				int kxU= kxUpper; kyL=kyLower;
 				float dataUL_R= 0; float dataUL_I=0; flag=1;
-				if ((abs(kxU)<Mid) && (abs(kyL)<Mid)) {   //       Step 2
-				    kxU = (N+kxU)%N; kyL = (N+kyL)%N;
-				    if (kxU> N/2) { kxU=(N-kxU)%N; kyL=(N-kyL)%N;flag=-1;} // Step 3
-				    dataUL_R=	    src_data[2*kxU   +   kyL*nx]; //  image -> get_value_at(2*kxU,kyL);
-				    dataUL_I=  flag*src_data[2*kxU+1 +   kyL*nx]; // flag*image -> get_value_at(2*kxU+1,kyL);
+				if ((abs(kxU)<Mid) && (abs(kyL)<Mid)) {	  //	   Step 2
+					kxU = (N+kxU)%N; kyL = (N+kyL)%N;
+					if (kxU> N/2) { kxU=(N-kxU)%N; kyL=(N-kyL)%N;flag=-1;} // Step 3
+					dataUL_R=		src_data[2*kxU	 +	 kyL*nx]; //  image -> get_value_at(2*kxU,kyL);
+					dataUL_I=  flag*src_data[2*kxU+1 +	 kyL*nx]; // flag*image -> get_value_at(2*kxU+1,kyL);
 				}
 
-			      kxU= kxUpper; kyU=kyUpper;
-			      float dataUU_R= 0; float dataUU_I=0; flag=1;
-			      if ((abs(kxU)<Mid) & (abs(kyU)<Mid)){  //       Step 2
-				    kxU = (N+kxU)%N; kyU = (N+kyU)%N;
-				    if (kxU> N/2) { kxU=(N-kxU)%N; kyU=(N-kyU)%N;flag=-1;} // Step 3
-				    dataUU_R=	    src_data[2*kxU   +   kyU*nx]; //   image -> get_value_at(2*kxU,kyU);
-				    dataUU_I=  flag*src_data[2*kxU+1 +   kyU*nx]; //flag*image -> get_value_at(2*kxU+1,kyU);
-			      }
-			      //            Step 4    Assign Weights
-			      float WLL = dkxLower*dkyLower  ;
-			      float WLU = dkxLower*dkyUpper  ;// make more intricated weightings here
-			      float WUL = dkxUpper*dkyLower  ;// WLL(dkxLower,dkyLower)
-			      float WUU = dkxUpper*dkyUpper  ;//  etc
-			      tempW = WLL  +  WLU + WUL +  WUU ;
+				  kxU= kxUpper; kyU=kyUpper;
+				  float dataUU_R= 0; float dataUU_I=0; flag=1;
+				  if ((abs(kxU)<Mid) & (abs(kyU)<Mid)){	 //		  Step 2
+					kxU = (N+kxU)%N; kyU = (N+kyU)%N;
+					if (kxU> N/2) { kxU=(N-kxU)%N; kyU=(N-kyU)%N;flag=-1;} // Step 3
+					dataUU_R=		src_data[2*kxU	 +	 kyU*nx]; //   image -> get_value_at(2*kxU,kyU);
+					dataUU_I=  flag*src_data[2*kxU+1 +	 kyU*nx]; //flag*image -> get_value_at(2*kxU+1,kyU);
+				  }
+				  //			Step 4	  Assign Weights
+				  float WLL = dkxLower*dkyLower	 ;
+				  float WLU = dkxLower*dkyUpper	 ;// make more intricated weightings here
+				  float WUL = dkxUpper*dkyLower	 ;// WLL(dkxLower,dkyLower)
+				  float WUU = dkxUpper*dkyUpper	 ;//  etc
+				  tempW = WLL  +  WLU + WUL +  WUU ;
 
-			      //            Step 5    Assign Real, then Imaginar Values
-			      tempR = WLL*dataLL_R  +   WLU*dataLU_R + WUL* dataUL_R +   WUU * dataUU_R ;
-			      tempI = WLL*dataLL_I  +   WLU*dataLU_I + WUL* dataUL_I +   WUU * dataUU_I ;
-			      //
-			      float phase = phaseY -2*pi*kxNew*xshift/ny;
-			      float tempRb=tempR*cos(phase) - tempI*sin(phase);
-			      float tempIb=tempR*sin(phase) + tempI*cos(phase);
-			      //
-			      des_data[2*kxN   + nx* kyN] = tempRb/tempW;
-			      des_data[2*kxN+1 + nx* kyN] = tempIb/tempW;
-			      //printf(" kxNew = %d, kyNew = %d,kxOld = %3.2f, kyOld = %3.2f,  xl = %d,xU = %d,yl = %d,yu = %d, tempR = %3.2f, tempI=%3.2f,  \n",
-				//      kxNew,kyNew, kxOld, kyOld, kxLower,kxUpper,kyLower,kyUpper, tempR, tempI);
+				  //			Step 5	  Assign Real, then Imaginar Values
+				  tempR = WLL*dataLL_R	+	WLU*dataLU_R + WUL* dataUL_R +	 WUU * dataUU_R ;
+				  tempI = WLL*dataLL_I	+	WLU*dataLU_I + WUL* dataUL_I +	 WUU * dataUU_I ;
+				  //
+				  float phase = phaseY -2*pi*kxNew*xshift/ny;
+				  float tempRb=tempR*cos(phase) - tempI*sin(phase);
+				  float tempIb=tempR*sin(phase) + tempI*cos(phase);
+				  //
+				  des_data[2*kxN   + nx* kyN] = tempRb/tempW;
+				  des_data[2*kxN+1 + nx* kyN] = tempIb/tempW;
+				  //printf(" kxNew = %d, kyNew = %d,kxOld = %3.2f, kyOld = %3.2f,  xl = %d,xU = %d,yl = %d,yu = %d, tempR = %3.2f, tempI=%3.2f,	 \n",
+				//		kxNew,kyNew, kxOld, kyOld, kxLower,kxUpper,kyLower,kyUpper, tempR, tempI);
 			}
 		}
 	}
 
-	if ((nz == 1)&&(image -> is_complex())&&(nx%2==0)&&((2*(nx-ny)-3)*(2*(nx-ny)-3)==1)&&(zerocorners==1) )  {
- 	  //printf("Hello 2-d complex  TransformProcessor \n");
+	if ((nz == 1)&&(image -> is_complex())&&(nx%2==0)&&((2*(nx-ny)-3)*(2*(nx-ny)-3)==1)&&(zerocorners==1) )	 {
+	  //printf("Hello 2-d complex  TransformProcessor \n");
 	  // make sure there was a realImage.process('xform.phaseorigin.tocorner')
-	 //           before transformation to Fourier Space
+	 //			  before transformation to Fourier Space
 // This rotates a complex image that is a FT of a real space image: it has Friedel symmetries
 // An arbitrary complex image, F, can be decomposed into two Friedel images
-//         G(k) = (F(k) + F*(-k))/2 ,  H(k) = (-i(F(k) - F*(k)))/2;
-//          via   F(k) = G(k) + i H(k); notice G and H are Friedel symmetric (not necessarily real)
-//	           But g,h are real, using f=g+ih.
-// 		First make sure that image has proper size;
-//         if 2N is side of real image, then sizes of FFT are (2N+2,2N)
-//         if 2N+1 is side of real image, then sizes of FFT are (2N+2,2N+1)
-//         so we need nx =ny+2, and ny  even
-//	          or  nx = ny+1  and ny odd
-//         so nx even, and 2 *(nx -ny) -3=  +- 1; So  abs(2*(nx-ny)-3) == 1
+//		   G(k) = (F(k) + F*(-k))/2 ,  H(k) = (-i(F(k) - F*(k)))/2;
+//			via	  F(k) = G(k) + i H(k); notice G and H are Friedel symmetric (not necessarily real)
+//			   But g,h are real, using f=g+ih.
+//		First make sure that image has proper size;
+//		   if 2N is side of real image, then sizes of FFT are (2N+2,2N)
+//		   if 2N+1 is side of real image, then sizes of FFT are (2N+2,2N+1)
+//		   so we need nx =ny+2, and ny	even
+//			  or  nx = ny+1	 and ny odd
+//		   so nx even, and 2 *(nx -ny) -3=	+- 1; So  abs(2*(nx-ny)-3) == 1
 		float theta =  t.get_rotation("eman").get("phi"); theta=theta*pi/180;
 		float Ctheta= cos(theta);
 		float Stheta= sin(theta);
 		Vec3f transNow= t.get_trans();
 		float xshift= transNow[0]; float yshift= transNow[1];
 		float tempR; float tempI; // float tempW;
-		float Mid =(N+1.0)/2.0;  // Check this
+		float Mid =(N+1.0)/2.0;	 // Check this
 //		int kNy= ny; //size of the real space image
 //		int kNx= nx/2; //
 		Vec2f offset(nx/2,ny/2);
@@ -9481,10 +9481,10 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 
 		for (int kyN = 0; kyN < ny; kyN++) {
 			int kyNew = kyN;
-			if (kyN>=nx/2) kyNew=kyN-ny;  // Step 0     Unalias
+			if (kyN>=nx/2) kyNew=kyN-ny;  // Step 0		Unalias
 			float kxOld=  - Stheta* kyNew - Ctheta;
-			float kyOld=    Ctheta* kyNew - Stheta;
-    		        float phase = -2*pi*kyNew*yshift/ny - phaseConstx ;
+			float kyOld=	Ctheta* kyNew - Stheta;
+					float phase = -2*pi*kyNew*yshift/ny - phaseConstx ;
 			float Cphase = cos(phase);
 			float Sphase = sin(phase);
 			int kx,ky;
@@ -9492,22 +9492,22 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			for (int kxN = 0; kxN < (nx/2); kxN++) {
 				IndexOut += 2;
 				// int kxNew=kxN;
-				// if (kxN >= nx/2) kxNew=kxN-ny;//  Step 0   Unalias, but this won't happen
-				//  Step 1, Do rotation and find 4 nn
+				// if (kxN >= nx/2) kxNew=kxN-ny;//	 Step 0	  Unalias, but this won't happen
+				//	Step 1, Do rotation and find 4 nn
 				kxOld +=  Ctheta ;// was using kxNew instead of kxN
 				kyOld +=  Stheta ;
 				phase += phaseConstx;
-			        Cphase = Cphase*k1 -Sphase*k2; //update using trig addition; this is   cos = cos cos  -sin sin
-			        Sphase = Sphase*k3+ Cphase*k4;  //   and   sin = sin  (1/ cos) + cos * tan;
+					Cphase = Cphase*k1 -Sphase*k2; //update using trig addition; this is   cos = cos cos  -sin sin
+					Sphase = Sphase*k3+ Cphase*k4;	//	 and   sin = sin  (1/ cos) + cos * tan;
 
 				if ((abs(kxOld)>=Mid) || (abs(kyOld)>=Mid)) { // out of bounds
-         			      des_data[IndexOut] = 0;
-	        		      des_data[IndexOut+1] = 0;
+						  des_data[IndexOut] = 0;
+						  des_data[IndexOut+1] = 0;
 				   continue;}
 
 				//
-				int kxLower= floor(kxOld);     // All these values
-				int kyLower= floor(kyOld);    // may be neg
+				int kxLower= floor(kxOld);	   // All these values
+				int kyLower= floor(kyOld);	  // may be neg
 				//float dkxLower= (kxLower+1-kxOld);
 				float dkxUpper= (kxOld-kxLower);
 				//float dkyLower= (kyLower+1-kyOld);
@@ -9515,63 +9515,63 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 //
 				kx= kxLower; ky =kyLower;
 				int flagLL=1;
-				    if (kx<0) kx += N;
-				    if (ky<0) ky += N;
-				    if (kx> N/2){ kx=(N-kx) ; ky=(N-ky)  ;flagLL=-1;} // Step 3: if nec, use Friedel paired
-				    int kLL =2*kx+ky*nx;
+					if (kx<0) kx += N;
+					if (ky<0) ky += N;
+					if (kx> N/2){ kx=(N-kx) ; ky=(N-ky)	 ;flagLL=-1;} // Step 3: if nec, use Friedel paired
+					int kLL =2*kx+ky*nx;
 
-			        kx = kxLower; ky = kyLower+1;
+					kx = kxLower; ky = kyLower+1;
 				int flagLU =1;
-				    if (kx<0) kx += N;
-				    if (ky<0) ky += N;
-				    if (kx> N/2){ kx=(N-kx) ; ky=(N-ky)  ;flagLU=-1;} // Step 3: if nec, use Friedel paired
-				    int kLU =2*kx+ky*nx;
+					if (kx<0) kx += N;
+					if (ky<0) ky += N;
+					if (kx> N/2){ kx=(N-kx) ; ky=(N-ky)	 ;flagLU=-1;} // Step 3: if nec, use Friedel paired
+					int kLU =2*kx+ky*nx;
 
 				kx = kxLower+1; ky=kyLower;
 				int flagUL=1;
-				    if (kx<0) kx += N;
-				    if (ky<0) ky += N;
-				    if (kx> N/2){ kx=(N-kx) ; ky=(N-ky)  ;flagUL=-1;} // Step 3: if nec, use Friedel paired
-				    int kUL =2*kx+ky*nx;
+					if (kx<0) kx += N;
+					if (ky<0) ky += N;
+					if (kx> N/2){ kx=(N-kx) ; ky=(N-ky)	 ;flagUL=-1;} // Step 3: if nec, use Friedel paired
+					int kUL =2*kx+ky*nx;
 
-			        kx = kxLower+1; ky = kyLower+1;
-			        int flagUU =1;
-				    if (kx<0) kx += N;
-				    if (ky<0) ky += N;
-				    if (kx> N/2){ kx=(N-kx) ; ky=(N-ky)  ;flagUU=-1;} // Step 3: if nec, use Friedel paired
-				    int kUU =2*kx+ky*nx;
+					kx = kxLower+1; ky = kyLower+1;
+					int flagUU =1;
+					if (kx<0) kx += N;
+					if (ky<0) ky += N;
+					if (kx> N/2){ kx=(N-kx) ; ky=(N-ky)	 ;flagUU=-1;} // Step 3: if nec, use Friedel paired
+					int kUU =2*kx+ky*nx;
 
-			      //            Step 4    Assign Weights
-// 			      float WLL = dkxLower*dkyLower  ;
-// 			      float WLU = dkxLower*dkyUpper  ;// make more intricated weightings here
-// 			      float WUL = dkxUpper*dkyLower  ;// WLL(dkxLower,dkyLower)
-// 			      float WUU = dkxUpper*dkyUpper  ;//  etc
-// 			      tempW = WLL  +  WLU + WUL +  WUU ;
+				  //			Step 4	  Assign Weights
+//				  float WLL = dkxLower*dkyLower	 ;
+//				  float WLU = dkxLower*dkyUpper	 ;// make more intricated weightings here
+//				  float WUL = dkxUpper*dkyLower	 ;// WLL(dkxLower,dkyLower)
+//				  float WUU = dkxUpper*dkyUpper	 ;//  etc
+//				  tempW = WLL  +  WLU + WUL +  WUU ;
 
-			      //            Step 5    Assign Real, then Imaginary Values
-			      tempR = Util::bilinear_interpolate(src_data[kLL],src_data[kUL], src_data[kLU], src_data[kUU],dkxUpper,dkyUpper);//
-			               //WLL*dataLL_R  +   WLU*dataLU_R + WUL* dataUL_R +   WUU * dataUU_R ;
-			      tempI = Util::bilinear_interpolate(flagLL* src_data[kLL+1],flagUL*src_data[kUL+1],
-					                   flagLU*src_data[kLU+1], flagUU*src_data[kUU+1],dkxUpper,dkyUpper);
-			               //WLL*dataLL_I  +   WLU*dataLU_I + WUL* dataUL_I +   WUU * dataUU_I ;
-			      //
+				  //			Step 5	  Assign Real, then Imaginary Values
+				  tempR = Util::bilinear_interpolate(src_data[kLL],src_data[kUL], src_data[kLU], src_data[kUU],dkxUpper,dkyUpper);//
+						   //WLL*dataLL_R  +   WLU*dataLU_R + WUL* dataUL_R +	WUU * dataUU_R ;
+				  tempI = Util::bilinear_interpolate(flagLL* src_data[kLL+1],flagUL*src_data[kUL+1],
+									   flagLU*src_data[kLU+1], flagUU*src_data[kUU+1],dkxUpper,dkyUpper);
+						   //WLL*dataLL_I  +   WLU*dataLU_I + WUL* dataUL_I +	WUU * dataUU_I ;
+				  //
 
-			      float tempRb=tempR*Cphase - tempI*Sphase;
-			      float tempIb=tempR*Sphase + tempI*Cphase;
-			      //
-			      des_data[IndexOut]   = tempRb;
-			      des_data[IndexOut+1] = tempIb;
-			      //printf(" kxNew = %d, kyNew = %d,kxOld = %3.2f, kyOld = %3.2f,  xl = %d,xU = %d,yl = %d,yu = %d, tempR = %3.2f, tempI=%3.2f,  \n",
-				//      kxNew,kyNew, kxOld, kyOld, kxLower,kxUpper,kyLower,kyUpper, tempR, tempI);
+				  float tempRb=tempR*Cphase - tempI*Sphase;
+				  float tempIb=tempR*Sphase + tempI*Cphase;
+				  //
+				  des_data[IndexOut]   = tempRb;
+				  des_data[IndexOut+1] = tempIb;
+				  //printf(" kxNew = %d, kyNew = %d,kxOld = %3.2f, kyOld = %3.2f,  xl = %d,xU = %d,yl = %d,yu = %d, tempR = %3.2f, tempI=%3.2f,	 \n",
+				//		kxNew,kyNew, kxOld, kyOld, kxLower,kxUpper,kyLower,kyUpper, tempR, tempI);
 			}
 		}
 	}
 
 	if ((nz > 1)&&(image -> is_complex())&&(zerocorners==3)) {
-		//printf("Hello 3-d complex  TransformProcessor \n");
-		float phi =  t.get_rotation("eman").get("phi"); phi=pi*phi/180;
-		float alt =  t.get_rotation("eman").get("alt"); alt=pi*alt/180;
-		float az  =  t.get_rotation("eman").get("az");   az=pi*az /180;
+		//printf("Hello 3-d complex	 TransformProcessor \n");
+		float phi =	 t.get_rotation("eman").get("phi"); phi=pi*phi/180;
+		float alt =	 t.get_rotation("eman").get("alt"); alt=pi*alt/180;
+		float az  =	 t.get_rotation("eman").get("az");	 az=pi*az /180;
 		Vec3f transNow= t.get_trans();
 		float xshift= transNow[0]; float yshift= transNow[1];float zshift= transNow[2];
 
@@ -9583,25 +9583,25 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 		float MatXY = (- cos(az)*sin(phi) - sin(az)*cos(alt)*cos(phi) ) ;
 		float MatXZ = sin(az)*sin(alt) ;
 		float MatYX = (sin(az)*cos(phi) + cos(az)*cos(alt)*sin(phi) );
-		float MatYY = (- sin(az)*sin(phi) + cos(az)*cos(alt)*cos(phi) )  ;
+		float MatYY = (- sin(az)*sin(phi) + cos(az)*cos(alt)*cos(phi) )	 ;
 		float MatYZ = - cos(az)*sin(alt) ;
 		float MatZX = sin(alt)*sin(phi);
 		float MatZY = sin(alt)*cos(phi);
-		float MatZZ = cos(alt)  ;
+		float MatZZ = cos(alt)	;
 		float tempR; float tempI; float tempW;
-		float Mid =(N+1.0)/2.0;  // Check this
+		float Mid =(N+1.0)/2.0;	 // Check this
 		int nxny = nx*ny;
 
 		for (int kzN = 0; kzN < ny; kzN++) {
-		    int kzNew=kzN;
-		    if (kzN >= nx/2) kzNew=kzN-N; //            Step 0 Unalias new coords;
-		    for (int kyN = 0; kyN < ny; kyN++) {//       moves them to lesser mag
+			int kzNew=kzN;
+			if (kzN >= nx/2) kzNew=kzN-N; //			Step 0 Unalias new coords;
+			for (int kyN = 0; kyN < ny; kyN++) {//		 moves them to lesser mag
 			int kyNew=kyN;
-			if (kyN>=nx/2) kyNew=kyN-ny;  //        Step 0   Unalias
-		        float kxPre =  MatXY * kyNew +  MatXZ *kzNew;
-	                float kyPre =  MatYY * kyNew +  MatYZ*kzNew;
-			float kzPre =  MatZY * kyNew +  MatZZ*kzNew;
-    		        float phase = -2*pi*kzNew*zshift/ny-2*pi*kyNew*yshift/ny - phaseConstx ;
+			if (kyN>=nx/2) kyNew=kyN-ny;  //		Step 0	 Unalias
+				float kxPre =  MatXY * kyNew +	MatXZ *kzNew;
+					float kyPre =  MatYY * kyNew +	MatYZ*kzNew;
+			float kzPre =  MatZY * kyNew +	MatZZ*kzNew;
+					float phase = -2*pi*kzNew*zshift/ny-2*pi*kyNew*yshift/ny - phaseConstx ;
 			float Cphase = cos(phase);
 			float Sphase = sin(phase);
 
@@ -9610,136 +9610,136 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			if (OutBounds2< 0) kxNewMax=0;
 			else if (OutBounds2<(nx*nx/4)) kxNewMax=sqrt(OutBounds2);
 			for (int kxN = kxNewMax; kxN < nx/2 ; kxN++ ) {
-       			      des_data[2*kxN    + nx* kyN +nxny*kzN] = 0;
-        		      des_data[2*kxN    + nx* kyN +nxny*kzN+1] = 0;
+					  des_data[2*kxN	+ nx* kyN +nxny*kzN] = 0;
+					  des_data[2*kxN	+ nx* kyN +nxny*kzN+1] = 0;
 			}
 
 
 			for (int kxN = 0; kxN < kxNewMax; kxN++ ) {
-			     Cphase = Cphase*k1 -Sphase*k2; //update using trig addition; this is   cos = cos cos  -sin sin
-			     Sphase = Sphase*k3+ Cphase*k4;  //   and   sin = sin  (1/ cos) + cos * tan;
-			    //  Step 1: Do inverse Rotation to get former values, and alias   Step1
-			    float kxOld=  MatXX * kxN + kxPre;
-			    float kyOld=  MatYX * kxN + kyPre;
-			    float kzOld=  MatZX * kxN + kzPre;
-			    //
+				 Cphase = Cphase*k1 -Sphase*k2; //update using trig addition; this is	cos = cos cos  -sin sin
+				 Sphase = Sphase*k3+ Cphase*k4;	 //	  and	sin = sin  (1/ cos) + cos * tan;
+				//	Step 1: Do inverse Rotation to get former values, and alias	  Step1
+				float kxOld=  MatXX * kxN + kxPre;
+				float kyOld=  MatYX * kxN + kyPre;
+				float kzOld=  MatZX * kxN + kzPre;
+				//
 				if ((abs(kxOld)>=Mid) || (abs(kyOld)>=Mid) || (abs(kzOld)>=Mid) ) { // out of bounds
-         			      des_data[2*kxN    + nx* kyN +nxny*kzN] = 0;
-	        		      des_data[2*kxN    + nx* kyN +nxny*kzN+1] = 0;
+						  des_data[2*kxN	+ nx* kyN +nxny*kzN] = 0;
+						  des_data[2*kxN	+ nx* kyN +nxny*kzN+1] = 0;
 				   continue;}
 				//
-			    int kxLower= floor(kxOld); int kxUpper= kxLower+1;
-			    int kyLower= floor(kyOld); int kyUpper= kyLower+1;
-			    int kzLower= floor(kzOld); int kzUpper= kzLower+1;
-			    //
-			    float dkxLower= (kxUpper-kxOld); float dkxUpper= (kxOld-kxLower);
-			    float dkyLower= (kyUpper-kyOld); float dkyUpper= (kyOld-kyLower);
-			    float dkzLower= (kzUpper-kzOld); float dkzUpper= (kzOld-kzLower);
-			    //      LLL  1
-			    int kxL= kxLower; int kyL=kyLower; int kzL=kzLower;
-			    float dataLLL_R= 0; float dataLLL_I=0; int flag=1;
-			    if ( (abs(kxL)<Mid) && (abs(kyL)<Mid) && (abs(kzL)<Mid) ) { //   Step 2 Make sure to be in First BZ
+				int kxLower= floor(kxOld); int kxUpper= kxLower+1;
+				int kyLower= floor(kyOld); int kyUpper= kyLower+1;
+				int kzLower= floor(kzOld); int kzUpper= kzLower+1;
+				//
+				float dkxLower= (kxUpper-kxOld); float dkxUpper= (kxOld-kxLower);
+				float dkyLower= (kyUpper-kyOld); float dkyUpper= (kyOld-kyLower);
+				float dkzLower= (kzUpper-kzOld); float dkzUpper= (kzOld-kzLower);
+				//		LLL	 1
+				int kxL= kxLower; int kyL=kyLower; int kzL=kzLower;
+				float dataLLL_R= 0; float dataLLL_I=0; int flag=1;
+				if ( (abs(kxL)<Mid) && (abs(kyL)<Mid) && (abs(kzL)<Mid) ) { //	 Step 2 Make sure to be in First BZ
 				kxL = (N+kxL)%N;  kyL = (N+kyL)%N; kzL = (N+kzL)%N;
 				if (kxL> N/2){kxL=(N-kxL)%N; kyL=(N-kyL)%N ; kzL=(N-kzL)%N ;flag=-1;} // Step 3: use Friedel paired
-				dataLLL_R=     src_data[ 2*kxL   + nx*kyL+ nxny*kzL ]; //get_value_at(2*kxL,kyL,kzL);
+				dataLLL_R=	   src_data[ 2*kxL	 + nx*kyL+ nxny*kzL ]; //get_value_at(2*kxL,kyL,kzL);
 				dataLLL_I=flag*src_data[ 2*kxL+1 + nx*kyL+ nxny*kzL ];//get_value_at(2*kxL+1,kyL,kzL);
-			    }
-			    //      LLU 2
-			    kxL= kxLower; kyL=kyLower; int kzU=kzUpper;
-			    float dataLLU_R= 0; float dataLLU_I=0; flag=1;
-			    if ( (abs(kxL)<Mid) && (abs(kyL)<Mid) && (abs(kzU)<Mid) ) {//   Step 2 Make sure to be in First BZ
+				}
+				//		LLU 2
+				kxL= kxLower; kyL=kyLower; int kzU=kzUpper;
+				float dataLLU_R= 0; float dataLLU_I=0; flag=1;
+				if ( (abs(kxL)<Mid) && (abs(kyL)<Mid) && (abs(kzU)<Mid) ) {//	Step 2 Make sure to be in First BZ
 				kxL = (N+kxL)%N;  kyL = (N+kyL)%N; kzU = (N+kzU)%N;
 				if (kxL> N/2){kxL=(N-kxL)%N; kyL=(N-kyL)%N ; kzU=(N-kzU)%N ;flag=-1;} // Step 3: use Friedel paired
-				dataLLU_R=      src_data[ 2*kxL   + nx*kyL+ nxny*kzU ]; //   image -> get_value_at(2*kxL  ,kyL,kzU);
-				dataLLU_I= flag*src_data[ 2*kxL+1 + nx*kyL+ nxny*kzU ]; //   image -> get_value_at(2*kxL+1,kyL,kzU);
-			    }
-			    //      LUL 3
-			    kxL= kxLower; int kyU=kyUpper; kzL=kzLower;
-			    float dataLUL_R= 0; float dataLUL_I=0; flag=1;
-			    if ( (abs(kxL)<Mid) && (abs(kyU)<Mid)&& (abs(kzL)<Mid) ) {//  Step 2 Make sure to be in First BZ
+				dataLLU_R=		src_data[ 2*kxL	  + nx*kyL+ nxny*kzU ]; //	 image -> get_value_at(2*kxL  ,kyL,kzU);
+				dataLLU_I= flag*src_data[ 2*kxL+1 + nx*kyL+ nxny*kzU ]; //	 image -> get_value_at(2*kxL+1,kyL,kzU);
+				}
+				//		LUL 3
+				kxL= kxLower; int kyU=kyUpper; kzL=kzLower;
+				float dataLUL_R= 0; float dataLUL_I=0; flag=1;
+				if ( (abs(kxL)<Mid) && (abs(kyU)<Mid)&& (abs(kzL)<Mid) ) {//  Step 2 Make sure to be in First BZ
 				kxL = (N+kxL)%N;  kyU = (N+kyU)%N; kzL = (N+kzL)%N;
 				if (kxL> N/2){ kxL=(N-kxL)%N; kyU=(N-kyU)%N; kzL=(N-kzL)%N ;flag=-1;}// Step 3
-				dataLUL_R=     src_data[ 2*kxL   + nx*kyU+ nxny*kzL ]; // image -> get_value_at(2*kxL  ,kyU,kzL);
+				dataLUL_R=	   src_data[ 2*kxL	 + nx*kyU+ nxny*kzL ]; // image -> get_value_at(2*kxL  ,kyU,kzL);
 				dataLUL_I=flag*src_data[ 2*kxL+1 + nx*kyU+ nxny*kzL ]; // image -> get_value_at(2*kxL+1,kyU,kzL);
-			    }
-			    //      LUU 4
-			    kxL= kxLower; kyU=kyUpper; kzL=kzUpper;
-			    float dataLUU_R= 0; float dataLUU_I=0; flag=1;
-			    if ( (abs(kxL)<Mid) && (abs(kyU)<Mid)&& (abs(kzU)<Mid)) {//   Step 2 Make sure to be in First BZ
+				}
+				//		LUU 4
+				kxL= kxLower; kyU=kyUpper; kzL=kzUpper;
+				float dataLUU_R= 0; float dataLUU_I=0; flag=1;
+				if ( (abs(kxL)<Mid) && (abs(kyU)<Mid)&& (abs(kzU)<Mid)) {//	  Step 2 Make sure to be in First BZ
 				kxL = (N+kxL)%N;  kyU = (N+kyU)%N; kzU = (N+kzU)%N;
 				if (kxL> N/2){kxL=(N-kxL)%N; kyU=(N-kyU)%N; kzL=(N-kzL)%N ;flag=-1;} // Step 3
-				dataLUU_R=     src_data[ 2*kxL   + nx*kyU+ nxny*kzU ]; // image -> get_value_at(2*kxL  ,kyU,kzU);
+				dataLUU_R=	   src_data[ 2*kxL	 + nx*kyU+ nxny*kzU ]; // image -> get_value_at(2*kxL  ,kyU,kzU);
 				dataLUU_I=flag*src_data[ 2*kxL+1 + nx*kyU+ nxny*kzU ]; // image -> get_value_at(2*kxL+1,kyU,kzU);
-			    }
-			     //     ULL  5
-			    int kxU= kxUpper; kyL=kyLower; kzL=kzLower;
-			    float dataULL_R= 0; float dataULL_I=0; flag=1;
-			    if ( (abs(kxU)<Mid) && (abs(kyL)<Mid) && (abs(kzL)<Mid) ) {//    Step 2
+				}
+				 //		ULL	 5
+				int kxU= kxUpper; kyL=kyLower; kzL=kzLower;
+				float dataULL_R= 0; float dataULL_I=0; flag=1;
+				if ( (abs(kxU)<Mid) && (abs(kyL)<Mid) && (abs(kzL)<Mid) ) {//	 Step 2
 				kxU = (N+kxU)%N; kyL = (N+kyL)%N; kzL = (N+kzL)%N;
 				if (kxU> N/2){kxU=(N-kxU)%N; kyL=(N-kyL)%N; kzL=(N-kzL)%N ;flag=-1;} // Step 3
-				dataULL_R=     src_data[ 2*kxU   + nx*kyL+ nxny*kzL ]; // image -> get_value_at(2*kxU  ,kyL,kzL);
+				dataULL_R=	   src_data[ 2*kxU	 + nx*kyL+ nxny*kzL ]; // image -> get_value_at(2*kxU  ,kyL,kzL);
 				dataULL_I=flag*src_data[ 2*kxU+1 + nx*kyL+ nxny*kzL ]; // image -> get_value_at(2*kxU+1,kyL,kzL);
-			    }
-			    //   ULU 6
-			    kxU= kxUpper; kyL=kyLower; kzU=kzUpper;
-			    float dataULU_R= 0; float dataULU_I=0; flag=1;
-			    if ( (abs(kxU)<Mid) && (abs(kyL)<Mid)&& (abs(kzU)<Mid) ) {//      Step 2
+				}
+				//	 ULU 6
+				kxU= kxUpper; kyL=kyLower; kzU=kzUpper;
+				float dataULU_R= 0; float dataULU_I=0; flag=1;
+				if ( (abs(kxU)<Mid) && (abs(kyL)<Mid)&& (abs(kzU)<Mid) ) {//	  Step 2
 				kxU = (N+kxU)%N; kyL = (N+kyL)%N; kzU = (N+kzU)%N;
 				if (kxU> N/2){kxU=(N-kxU)%N; kyL=(N-kyL)%N; kzU=(N-kzU)%N ;flag=-1;} // Step 3
-				dataULU_R=     src_data[ 2*kxU   + nx*kyL+ nxny*kzU ]; // image -> get_value_at(2*kxU  ,kyL,kzU);
+				dataULU_R=	   src_data[ 2*kxU	 + nx*kyL+ nxny*kzU ]; // image -> get_value_at(2*kxU  ,kyL,kzU);
 				dataULU_I=flag*src_data[ 2*kxU+1 + nx*kyL+ nxny*kzU ]; // image -> get_value_at(2*kxU+1,kyL,kzU);
-			    }
-			    //     UUL 7
-			    kxU= kxUpper; kyU=kyUpper; kzL=kzLower;
-			    float dataUUL_R= 0; float dataUUL_I=0; flag=1;
-			    if ( (abs(kxU)<Mid) && (abs(kyU)<Mid) && (abs(kzL)<Mid) ) {//      Step 2
+				}
+				//	   UUL 7
+				kxU= kxUpper; kyU=kyUpper; kzL=kzLower;
+				float dataUUL_R= 0; float dataUUL_I=0; flag=1;
+				if ( (abs(kxU)<Mid) && (abs(kyU)<Mid) && (abs(kzL)<Mid) ) {//	   Step 2
 				kxU = (N+kxU)%N; kyU = (N+kyU)%N; kzL = (N+kzL)%N;
 				if (kxU> N/2){kxU=(N-kxU)%N; kyU=(N-kyU)%N; kzL=(N-kzL)%N ;flag=-1;} // Step 3
-				dataUUL_R=     src_data[ 2*kxU   + nx*kyU+ nxny*kzL ]; // image -> get_value_at(2*kxU  ,kyU,kzL);
+				dataUUL_R=	   src_data[ 2*kxU	 + nx*kyU+ nxny*kzL ]; // image -> get_value_at(2*kxU  ,kyU,kzL);
 				dataUUL_I=flag*src_data[ 2*kxU+1 + nx*kyU+ nxny*kzL ]; // image -> get_value_at(2*kxU+1,kyU,kzL);
-			    }
-			    //    UUU 8
-			    kxU= kxUpper; kyU=kyUpper; kzU=kzUpper;
-			    float dataUUU_R= 0; float dataUUU_I=0; flag=1;
-			    if ( (abs(kxU)<Mid) && (abs(kyU)<Mid) && (abs(kzU)<Mid) ) { //       Step 2
+				}
+				//	  UUU 8
+				kxU= kxUpper; kyU=kyUpper; kzU=kzUpper;
+				float dataUUU_R= 0; float dataUUU_I=0; flag=1;
+				if ( (abs(kxU)<Mid) && (abs(kyU)<Mid) && (abs(kzU)<Mid) ) { //		 Step 2
 				kxU = (N+kxU)%N; kyU = (N+kyU)%N; kzU = (N+kzU)%N;
 				if (kxU> N/2) {kxU=(N-kxU)%N; kyU=(N-kyU)%N; kzU=(N-kzU)%N ;flag=-1;} // Step 3
-				dataUUU_R=     src_data[ 2*kxU   + nx*kyU+ nxny*kzU ]; // image -> get_value_at(2*kxU  ,kyU,kzU);
+				dataUUU_R=	   src_data[ 2*kxU	 + nx*kyU+ nxny*kzU ]; // image -> get_value_at(2*kxU  ,kyU,kzU);
 				dataUUU_I=flag*src_data[ 2*kxU+1 + nx*kyU+ nxny*kzU ]; // image -> get_value_at(2*kxU+1,kyU,kzU);
-			    }
-			    //          Step 4    Assign Weights
-			    float WLLL = dkxLower*dkyLower*dkzLower ;
-			    // WLLL = sqrt(pow(dkxUpper,2)+ pow(dkyUpper,2) + pow(dkzUpper,2)) ;
-			    // WLLL = sin(pi* WLLL+.00000001)/(pi* WLLL+.00000001);
-			    float WLLU = dkxLower*dkyLower*dkzUpper ;
-			    float WLUL = dkxLower*dkyUpper*dkzLower ;
-			    float WLUU = dkxLower*dkyUpper*dkzUpper ;
-			    float WULL = dkxUpper*dkyLower*dkzLower ;
-			    float WULU = dkxUpper*dkyLower*dkzUpper ;
-			    float WUUL = dkxUpper*dkyUpper*dkzLower;
-			    float WUUU = dkxUpper*dkyUpper*dkzUpper;
-			    tempW = WLLL  +  WLLU  +   WLUL  + WLUU  + WULL + WULU +   WUUL +   WUUU ;
-			    //           Step 5    Assign Real, then Imaginary Values
-			    tempR =  WLLL*dataLLL_R + WLLU*dataLLU_R + WLUL*dataLUL_R + WLUU*dataLUU_R ;
-			    tempR += WULL*dataULL_R + WULU*dataULU_R + WUUL*dataUUL_R + WUUU*dataUUU_R ;
-			    //
-			    tempI  = WLLL*dataLLL_I + WLLU*dataLLU_I + WLUL*dataLUL_I + WLUU*dataLUU_I ;
-			    tempI += WULL*dataULL_I + WULU*dataULU_I + WUUL*dataUUL_I + WUUU*dataUUU_I ;
-			    //
-//			    float phase = -2*pi*(kxNew*xshift+kyNew*yshift+kzNew*zshift)/ny;
-			    float tempRb=tempR*Cphase - tempI*Sphase;
-			    float tempIb=tempR*Sphase + tempI*Cphase;
-			    //
-			    des_data[2*kxN    + nx* kyN +nxny*kzN] = tempRb/tempW;
-			    des_data[2*kxN+1  + nx* kyN +nxny*kzN] = tempIb/tempW;
-		}}}  // end z, y, x loops through new coordinates
-	}   //  end  rotations in Fourier Space  3D
+				}
+				//			Step 4	  Assign Weights
+				float WLLL = dkxLower*dkyLower*dkzLower ;
+				// WLLL = sqrt(pow(dkxUpper,2)+ pow(dkyUpper,2) + pow(dkzUpper,2)) ;
+				// WLLL = sin(pi* WLLL+.00000001)/(pi* WLLL+.00000001);
+				float WLLU = dkxLower*dkyLower*dkzUpper ;
+				float WLUL = dkxLower*dkyUpper*dkzLower ;
+				float WLUU = dkxLower*dkyUpper*dkzUpper ;
+				float WULL = dkxUpper*dkyLower*dkzLower ;
+				float WULU = dkxUpper*dkyLower*dkzUpper ;
+				float WUUL = dkxUpper*dkyUpper*dkzLower;
+				float WUUU = dkxUpper*dkyUpper*dkzUpper;
+				tempW = WLLL  +	 WLLU  +   WLUL	 + WLUU	 + WULL + WULU +   WUUL +	WUUU ;
+				//			 Step 5	   Assign Real, then Imaginary Values
+				tempR =	 WLLL*dataLLL_R + WLLU*dataLLU_R + WLUL*dataLUL_R + WLUU*dataLUU_R ;
+				tempR += WULL*dataULL_R + WULU*dataULU_R + WUUL*dataUUL_R + WUUU*dataUUU_R ;
+				//
+				tempI  = WLLL*dataLLL_I + WLLU*dataLLU_I + WLUL*dataLUL_I + WLUU*dataLUU_I ;
+				tempI += WULL*dataULL_I + WULU*dataULU_I + WUUL*dataUUL_I + WUUU*dataUUU_I ;
+				//
+//				float phase = -2*pi*(kxNew*xshift+kyNew*yshift+kzNew*zshift)/ny;
+				float tempRb=tempR*Cphase - tempI*Sphase;
+				float tempIb=tempR*Sphase + tempI*Cphase;
+				//
+				des_data[2*kxN	  + nx* kyN +nxny*kzN] = tempRb/tempW;
+				des_data[2*kxN+1  + nx* kyN +nxny*kzN] = tempIb/tempW;
+		}}}	 // end z, y, x loops through new coordinates
+	}	//	end	 rotations in Fourier Space	 3D
 	// Steve trying for more optimization
 	if ((nz > 1)&&(image -> is_complex())&&(zerocorners==2)) {
-		//printf("Hello 3-d complex  TransformProcessor \n");
-		float phi =  t.get_rotation("eman").get("phi"); phi=pi*phi/180;
-		float alt =  t.get_rotation("eman").get("alt"); alt=pi*alt/180;
-		float az  =  t.get_rotation("eman").get("az");   az=pi*az /180;
+		//printf("Hello 3-d complex	 TransformProcessor \n");
+		float phi =	 t.get_rotation("eman").get("phi"); phi=pi*phi/180;
+		float alt =	 t.get_rotation("eman").get("alt"); alt=pi*alt/180;
+		float az  =	 t.get_rotation("eman").get("az");	 az=pi*az /180;
 		Vec3f transNow= t.get_trans();
 		float xshift= transNow[0]; float yshift= transNow[1];float zshift= transNow[2];
 
@@ -9751,53 +9751,53 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 		float MatXY = (- cos(az)*sin(phi) - sin(az)*cos(alt)*cos(phi) ) ;
 		float MatXZ = sin(az)*sin(alt) ;
 		float MatYX = (sin(az)*cos(phi) + cos(az)*cos(alt)*sin(phi) );
-		float MatYY = (- sin(az)*sin(phi) + cos(az)*cos(alt)*cos(phi) )  ;
+		float MatYY = (- sin(az)*sin(phi) + cos(az)*cos(alt)*cos(phi) )	 ;
 		float MatYZ = - cos(az)*sin(alt) ;
 		float MatZX = sin(alt)*sin(phi);
 		float MatZY = sin(alt)*cos(phi);
-		float MatZZ = cos(alt)  ;
+		float MatZZ = cos(alt)	;
 		float tempR; float tempI; float tempW;
-		float Mid =(N+1.0)/2.0;  // Check this
+		float Mid =(N+1.0)/2.0;	 // Check this
 		int lim=(N/2)*(N/2); // this is NOT N*N/4 !
 		int nxny = nx*ny;
 
 		for (int kzN = 0; kzN < ny; kzN++) {
-		    int kzNew=kzN;
-		    if (kzN >= nx/2) kzNew=kzN-N; //            Step 0 Unalias new coords;
-		    for (int kyN = 0; kyN < ny; kyN++) {//       moves them to lesser mag
+			int kzNew=kzN;
+			if (kzN >= nx/2) kzNew=kzN-N; //			Step 0 Unalias new coords;
+			for (int kyN = 0; kyN < ny; kyN++) {//		 moves them to lesser mag
 				int kyNew=kyN;
-				if (kyN>=nx/2) kyNew=kyN-ny;  //        Step 0   Unalias
+				if (kyN>=nx/2) kyNew=kyN-ny;  //		Step 0	 Unalias
 
 				// Establish limits for this row and skip if necessary
 				int kyz2=kyNew*kyNew+kzNew*kzNew;
-				if (kyz2>lim) continue;	// Whole y,z row is 'missing'
+				if (kyz2>lim) continue; // Whole y,z row is 'missing'
 				int kxNewMax=(int)floor(sqrt((float)(lim-kyz2)));
-				float kxPre =  MatXY * kyNew +  MatXZ *kzNew;
-				float kyPre =  MatYY * kyNew +  MatYZ*kzNew;
-				float kzPre =  MatZY * kyNew +  MatZZ*kzNew;
+				float kxPre =  MatXY * kyNew +	MatXZ *kzNew;
+				float kyPre =  MatYY * kyNew +	MatYZ*kzNew;
+				float kzPre =  MatZY * kyNew +	MatZZ*kzNew;
 				float phase = -2*pi*kzNew*zshift/ny-2*pi*kyNew*yshift/ny - phaseConstx ;
 				float Cphase = cos(phase);
 				float Sphase = sin(phase);
 
-// 				for (int kxN = kxNewMax; kxN < nx/2 ; kxN++ ) {
-// 						des_data[2*kxN    + nx* kyN +nxny*kzN] = 0;
-// 						des_data[2*kxN    + nx* kyN +nxny*kzN+1] = 0;
-// 				}
+//				for (int kxN = kxNewMax; kxN < nx/2 ; kxN++ ) {
+//						des_data[2*kxN	  + nx* kyN +nxny*kzN] = 0;
+//						des_data[2*kxN	  + nx* kyN +nxny*kzN+1] = 0;
+//				}
 
 
 				for (int kxN = 0; kxN < kxNewMax; kxN++ ) {
 					Cphase = Cphase*k1 -Sphase*k2; //update using trig addition; this is   cos = cos cos  -sin sin
-					Sphase = Sphase*k3+ Cphase*k4;  //   and   sin = sin  (1/ cos) + cos * tan;
-					//  Step 1: Do inverse Rotation to get former values, and alias   Step1
+					Sphase = Sphase*k3+ Cphase*k4;	//	 and   sin = sin  (1/ cos) + cos * tan;
+					//	Step 1: Do inverse Rotation to get former values, and alias	  Step1
 					float kxOld=  MatXX * kxN + kxPre;
 					float kyOld=  MatYX * kxN + kyPre;
 					float kzOld=  MatZX * kxN + kzPre;
 					//
 					// This is impossible
-// 					if ((abs(kxOld)>=Mid) || (abs(kyOld)>=Mid) || (abs(kzOld)>=Mid) ) { // out of bounds
-// 							des_data[2*kxN    + nx* kyN +nxny*kzN] = 0;
-// 							des_data[2*kxN    + nx* kyN +nxny*kzN+1] = 0;
-// 					continue;}
+//					if ((abs(kxOld)>=Mid) || (abs(kyOld)>=Mid) || (abs(kzOld)>=Mid) ) { // out of bounds
+//							des_data[2*kxN	  + nx* kyN +nxny*kzN] = 0;
+//							des_data[2*kxN	  + nx* kyN +nxny*kzN+1] = 0;
+//					continue;}
 					//
 					int kx0= floor(kxOld);
 					int ky0= floor(kyOld);
@@ -9807,124 +9807,124 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 					float dky0= (kyOld-ky0);
 					float dkz0= (kzOld-kz0);
 
-					std::complex<float> c0 = image->get_complex_at(kx0  ,ky0  ,kz0  );
-					std::complex<float> c1 = image->get_complex_at(kx0+1,ky0  ,kz0  );
-					std::complex<float> c2 = image->get_complex_at(kx0  ,ky0+1,kz0  );
-					std::complex<float> c3 = image->get_complex_at(kx0+1,ky0+1,kz0  );
-					std::complex<float> c4 = image->get_complex_at(kx0  ,ky0  ,kz0+1);
+					std::complex<float> c0 = image->get_complex_at(kx0	,ky0  ,kz0	);
+					std::complex<float> c1 = image->get_complex_at(kx0+1,ky0  ,kz0	);
+					std::complex<float> c2 = image->get_complex_at(kx0	,ky0+1,kz0	);
+					std::complex<float> c3 = image->get_complex_at(kx0+1,ky0+1,kz0	);
+					std::complex<float> c4 = image->get_complex_at(kx0	,ky0  ,kz0+1);
 					std::complex<float> c5 = image->get_complex_at(kx0+1,ky0  ,kz0+1);
-					std::complex<float> c6 = image->get_complex_at(kx0  ,ky0+1,kz0+1);
+					std::complex<float> c6 = image->get_complex_at(kx0	,ky0+1,kz0+1);
 					std::complex<float> c7 = image->get_complex_at(kx0+1,ky0+1,kz0+1);
 
 					std::complex<float> nwv = Util::trilinear_interpolate_complex(c0,c1,c2,c3,c4,c5,c6,c7,dkx0,dky0,dkz0);
 
- 					des_data[2*kxN    + nx* kyN +nxny*kzN] = nwv.real()*Cphase - nwv.imag()*Sphase;
- 					des_data[2*kxN+1  + nx* kyN +nxny*kzN] = nwv.real()*Sphase + nwv.imag()*Cphase;
+					des_data[2*kxN	  + nx* kyN +nxny*kzN] = nwv.real()*Cphase - nwv.imag()*Sphase;
+					des_data[2*kxN+1  + nx* kyN +nxny*kzN] = nwv.real()*Sphase + nwv.imag()*Cphase;
 
-// 					//      LLL  1
-// 					int kxL= kxLower; int kyL=kyLower; int kzL=kzLower;
-// 					float dataLLL_R= 0; float dataLLL_I=0; int flag=1;
-// 					if ( (abs(kxL)<Mid) && (abs(kyL)<Mid) && (abs(kzL)<Mid) ) { //   Step 2 Make sure to be in First BZ
-// 					kxL = (N+kxL)%N;  kyL = (N+kyL)%N; kzL = (N+kzL)%N;
-// 					if (kxL> N/2){kxL=(N-kxL)%N; kyL=(N-kyL)%N ; kzL=(N-kzL)%N ;flag=-1;} // Step 3: use Friedel paired
-// 					dataLLL_R=     src_data[ 2*kxL   + nx*kyL+ nxny*kzL ]; //get_value_at(2*kxL,kyL,kzL);
-// 					dataLLL_I=flag*src_data[ 2*kxL+1 + nx*kyL+ nxny*kzL ];//get_value_at(2*kxL+1,kyL,kzL);
-// 					}
-// 					//      LLU 2
-// 					kxL= kxLower; kyL=kyLower; int kzU=kzUpper;
-// 					float dataLLU_R= 0; float dataLLU_I=0; flag=1;
-// 					if ( (abs(kxL)<Mid) && (abs(kyL)<Mid) && (abs(kzU)<Mid) ) {//   Step 2 Make sure to be in First BZ
-// 					kxL = (N+kxL)%N;  kyL = (N+kyL)%N; kzU = (N+kzU)%N;
-// 					if (kxL> N/2){kxL=(N-kxL)%N; kyL=(N-kyL)%N ; kzU=(N-kzU)%N ;flag=-1;} // Step 3: use Friedel paired
-// 					dataLLU_R=      src_data[ 2*kxL   + nx*kyL+ nxny*kzU ]; //   image -> get_value_at(2*kxL  ,kyL,kzU);
-// 					dataLLU_I= flag*src_data[ 2*kxL+1 + nx*kyL+ nxny*kzU ]; //   image -> get_value_at(2*kxL+1,kyL,kzU);
-// 					}
-// 					//      LUL 3
-// 					kxL= kxLower; int kyU=kyUpper; kzL=kzLower;
-// 					float dataLUL_R= 0; float dataLUL_I=0; flag=1;
-// 					if ( (abs(kxL)<Mid) && (abs(kyU)<Mid)&& (abs(kzL)<Mid) ) {//  Step 2 Make sure to be in First BZ
-// 					kxL = (N+kxL)%N;  kyU = (N+kyU)%N; kzL = (N+kzL)%N;
-// 					if (kxL> N/2){ kxL=(N-kxL)%N; kyU=(N-kyU)%N; kzL=(N-kzL)%N ;flag=-1;}// Step 3
-// 					dataLUL_R=     src_data[ 2*kxL   + nx*kyU+ nxny*kzL ]; // image -> get_value_at(2*kxL  ,kyU,kzL);
-// 					dataLUL_I=flag*src_data[ 2*kxL+1 + nx*kyU+ nxny*kzL ]; // image -> get_value_at(2*kxL+1,kyU,kzL);
-// 					}
-// 					//      LUU 4
-// 					kxL= kxLower; kyU=kyUpper; kzL=kzUpper;
-// 					float dataLUU_R= 0; float dataLUU_I=0; flag=1;
-// 					if ( (abs(kxL)<Mid) && (abs(kyU)<Mid)&& (abs(kzU)<Mid)) {//   Step 2 Make sure to be in First BZ
-// 					kxL = (N+kxL)%N;  kyU = (N+kyU)%N; kzU = (N+kzU)%N;
-// 					if (kxL> N/2){kxL=(N-kxL)%N; kyU=(N-kyU)%N; kzL=(N-kzL)%N ;flag=-1;} // Step 3
-// 					dataLUU_R=     src_data[ 2*kxL   + nx*kyU+ nxny*kzU ]; // image -> get_value_at(2*kxL  ,kyU,kzU);
-// 					dataLUU_I=flag*src_data[ 2*kxL+1 + nx*kyU+ nxny*kzU ]; // image -> get_value_at(2*kxL+1,kyU,kzU);
-// 					}
-// 					//     ULL  5
-// 					int kxU= kxUpper; kyL=kyLower; kzL=kzLower;
-// 					float dataULL_R= 0; float dataULL_I=0; flag=1;
-// 					if ( (abs(kxU)<Mid) && (abs(kyL)<Mid) && (abs(kzL)<Mid) ) {//    Step 2
-// 					kxU = (N+kxU)%N; kyL = (N+kyL)%N; kzL = (N+kzL)%N;
-// 					if (kxU> N/2){kxU=(N-kxU)%N; kyL=(N-kyL)%N; kzL=(N-kzL)%N ;flag=-1;} // Step 3
-// 					dataULL_R=     src_data[ 2*kxU   + nx*kyL+ nxny*kzL ]; // image -> get_value_at(2*kxU  ,kyL,kzL);
-// 					dataULL_I=flag*src_data[ 2*kxU+1 + nx*kyL+ nxny*kzL ]; // image -> get_value_at(2*kxU+1,kyL,kzL);
-// 					}
-// 					//   ULU 6
-// 					kxU= kxUpper; kyL=kyLower; kzU=kzUpper;
-// 					float dataULU_R= 0; float dataULU_I=0; flag=1;
-// 					if ( (abs(kxU)<Mid) && (abs(kyL)<Mid)&& (abs(kzU)<Mid) ) {//      Step 2
-// 					kxU = (N+kxU)%N; kyL = (N+kyL)%N; kzU = (N+kzU)%N;
-// 					if (kxU> N/2){kxU=(N-kxU)%N; kyL=(N-kyL)%N; kzU=(N-kzU)%N ;flag=-1;} // Step 3
-// 					dataULU_R=     src_data[ 2*kxU   + nx*kyL+ nxny*kzU ]; // image -> get_value_at(2*kxU  ,kyL,kzU);
-// 					dataULU_I=flag*src_data[ 2*kxU+1 + nx*kyL+ nxny*kzU ]; // image -> get_value_at(2*kxU+1,kyL,kzU);
-// 					}
-// 					//     UUL 7
-// 					kxU= kxUpper; kyU=kyUpper; kzL=kzLower;
-// 					float dataUUL_R= 0; float dataUUL_I=0; flag=1;
-// 					if ( (abs(kxU)<Mid) && (abs(kyU)<Mid) && (abs(kzL)<Mid) ) {//      Step 2
-// 					kxU = (N+kxU)%N; kyU = (N+kyU)%N; kzL = (N+kzL)%N;
-// 					if (kxU> N/2){kxU=(N-kxU)%N; kyU=(N-kyU)%N; kzL=(N-kzL)%N ;flag=-1;} // Step 3
-// 					dataUUL_R=     src_data[ 2*kxU   + nx*kyU+ nxny*kzL ]; // image -> get_value_at(2*kxU  ,kyU,kzL);
-// 					dataUUL_I=flag*src_data[ 2*kxU+1 + nx*kyU+ nxny*kzL ]; // image -> get_value_at(2*kxU+1,kyU,kzL);
-// 					}
-// 					//    UUU 8
-// 					kxU= kxUpper; kyU=kyUpper; kzU=kzUpper;
-// 					float dataUUU_R= 0; float dataUUU_I=0; flag=1;
-// 					if ( (abs(kxU)<Mid) && (abs(kyU)<Mid) && (abs(kzU)<Mid) ) { //       Step 2
-// 					kxU = (N+kxU)%N; kyU = (N+kyU)%N; kzU = (N+kzU)%N;
-// 					if (kxU> N/2) {kxU=(N-kxU)%N; kyU=(N-kyU)%N; kzU=(N-kzU)%N ;flag=-1;} // Step 3
-// 					dataUUU_R=     src_data[ 2*kxU   + nx*kyU+ nxny*kzU ]; // image -> get_value_at(2*kxU  ,kyU,kzU);
-// 					dataUUU_I=flag*src_data[ 2*kxU+1 + nx*kyU+ nxny*kzU ]; // image -> get_value_at(2*kxU+1,kyU,kzU);
-// 					}
-// 					//          Step 4    Assign Weights
-// 					float WLLL = dkxLower*dkyLower*dkzLower ;
-// 					// WLLL = sqrt(pow(dkxUpper,2)+ pow(dkyUpper,2) + pow(dkzUpper,2)) ;
-// 					// WLLL = sin(pi* WLLL+.00000001)/(pi* WLLL+.00000001);
-// 					float WLLU = dkxLower*dkyLower*dkzUpper ;
-// 					float WLUL = dkxLower*dkyUpper*dkzLower ;
-// 					float WLUU = dkxLower*dkyUpper*dkzUpper ;
-// 					float WULL = dkxUpper*dkyLower*dkzLower ;
-// 					float WULU = dkxUpper*dkyLower*dkzUpper ;
-// 					float WUUL = dkxUpper*dkyUpper*dkzLower;
-// 					float WUUU = dkxUpper*dkyUpper*dkzUpper;
-// 					tempW = WLLL  +  WLLU  +   WLUL  + WLUU  + WULL + WULU +   WUUL +   WUUU ;
-// 					//           Step 5    Assign Real, then Imaginary Values
-// 					tempR =  WLLL*dataLLL_R + WLLU*dataLLU_R + WLUL*dataLUL_R + WLUU*dataLUU_R ;
-// 					tempR += WULL*dataULL_R + WULU*dataULU_R + WUUL*dataUUL_R + WUUU*dataUUU_R ;
-// 					//
-// 					tempI  = WLLL*dataLLL_I + WLLU*dataLLU_I + WLUL*dataLUL_I + WLUU*dataLUU_I ;
-// 					tempI += WULL*dataULL_I + WULU*dataULU_I + WUUL*dataUUL_I + WUUU*dataUUU_I ;
-// 					//
-// 	//			    float phase = -2*pi*(kxNew*xshift+kyNew*yshift+kzNew*zshift)/ny;
-// 					float tempRb=tempR*Cphase - tempI*Sphase;
-// 					float tempIb=tempR*Sphase + tempI*Cphase;
-// 					//
-// 					des_data[2*kxN    + nx* kyN +nxny*kzN] = tempRb/tempW;
-// 					des_data[2*kxN+1  + nx* kyN +nxny*kzN] = tempIb/tempW;
-		}}}  // end z, y, x loops through new coordinates
-	}   //  end  rotations in Fourier Space  3D
+//					//		LLL	 1
+//					int kxL= kxLower; int kyL=kyLower; int kzL=kzLower;
+//					float dataLLL_R= 0; float dataLLL_I=0; int flag=1;
+//					if ( (abs(kxL)<Mid) && (abs(kyL)<Mid) && (abs(kzL)<Mid) ) { //	 Step 2 Make sure to be in First BZ
+//					kxL = (N+kxL)%N;  kyL = (N+kyL)%N; kzL = (N+kzL)%N;
+//					if (kxL> N/2){kxL=(N-kxL)%N; kyL=(N-kyL)%N ; kzL=(N-kzL)%N ;flag=-1;} // Step 3: use Friedel paired
+//					dataLLL_R=	   src_data[ 2*kxL	 + nx*kyL+ nxny*kzL ]; //get_value_at(2*kxL,kyL,kzL);
+//					dataLLL_I=flag*src_data[ 2*kxL+1 + nx*kyL+ nxny*kzL ];//get_value_at(2*kxL+1,kyL,kzL);
+//					}
+//					//		LLU 2
+//					kxL= kxLower; kyL=kyLower; int kzU=kzUpper;
+//					float dataLLU_R= 0; float dataLLU_I=0; flag=1;
+//					if ( (abs(kxL)<Mid) && (abs(kyL)<Mid) && (abs(kzU)<Mid) ) {//	Step 2 Make sure to be in First BZ
+//					kxL = (N+kxL)%N;  kyL = (N+kyL)%N; kzU = (N+kzU)%N;
+//					if (kxL> N/2){kxL=(N-kxL)%N; kyL=(N-kyL)%N ; kzU=(N-kzU)%N ;flag=-1;} // Step 3: use Friedel paired
+//					dataLLU_R=		src_data[ 2*kxL	  + nx*kyL+ nxny*kzU ]; //	 image -> get_value_at(2*kxL  ,kyL,kzU);
+//					dataLLU_I= flag*src_data[ 2*kxL+1 + nx*kyL+ nxny*kzU ]; //	 image -> get_value_at(2*kxL+1,kyL,kzU);
+//					}
+//					//		LUL 3
+//					kxL= kxLower; int kyU=kyUpper; kzL=kzLower;
+//					float dataLUL_R= 0; float dataLUL_I=0; flag=1;
+//					if ( (abs(kxL)<Mid) && (abs(kyU)<Mid)&& (abs(kzL)<Mid) ) {//  Step 2 Make sure to be in First BZ
+//					kxL = (N+kxL)%N;  kyU = (N+kyU)%N; kzL = (N+kzL)%N;
+//					if (kxL> N/2){ kxL=(N-kxL)%N; kyU=(N-kyU)%N; kzL=(N-kzL)%N ;flag=-1;}// Step 3
+//					dataLUL_R=	   src_data[ 2*kxL	 + nx*kyU+ nxny*kzL ]; // image -> get_value_at(2*kxL  ,kyU,kzL);
+//					dataLUL_I=flag*src_data[ 2*kxL+1 + nx*kyU+ nxny*kzL ]; // image -> get_value_at(2*kxL+1,kyU,kzL);
+//					}
+//					//		LUU 4
+//					kxL= kxLower; kyU=kyUpper; kzL=kzUpper;
+//					float dataLUU_R= 0; float dataLUU_I=0; flag=1;
+//					if ( (abs(kxL)<Mid) && (abs(kyU)<Mid)&& (abs(kzU)<Mid)) {//	  Step 2 Make sure to be in First BZ
+//					kxL = (N+kxL)%N;  kyU = (N+kyU)%N; kzU = (N+kzU)%N;
+//					if (kxL> N/2){kxL=(N-kxL)%N; kyU=(N-kyU)%N; kzL=(N-kzL)%N ;flag=-1;} // Step 3
+//					dataLUU_R=	   src_data[ 2*kxL	 + nx*kyU+ nxny*kzU ]; // image -> get_value_at(2*kxL  ,kyU,kzU);
+//					dataLUU_I=flag*src_data[ 2*kxL+1 + nx*kyU+ nxny*kzU ]; // image -> get_value_at(2*kxL+1,kyU,kzU);
+//					}
+//					//	   ULL	5
+//					int kxU= kxUpper; kyL=kyLower; kzL=kzLower;
+//					float dataULL_R= 0; float dataULL_I=0; flag=1;
+//					if ( (abs(kxU)<Mid) && (abs(kyL)<Mid) && (abs(kzL)<Mid) ) {//	 Step 2
+//					kxU = (N+kxU)%N; kyL = (N+kyL)%N; kzL = (N+kzL)%N;
+//					if (kxU> N/2){kxU=(N-kxU)%N; kyL=(N-kyL)%N; kzL=(N-kzL)%N ;flag=-1;} // Step 3
+//					dataULL_R=	   src_data[ 2*kxU	 + nx*kyL+ nxny*kzL ]; // image -> get_value_at(2*kxU  ,kyL,kzL);
+//					dataULL_I=flag*src_data[ 2*kxU+1 + nx*kyL+ nxny*kzL ]; // image -> get_value_at(2*kxU+1,kyL,kzL);
+//					}
+//					//	 ULU 6
+//					kxU= kxUpper; kyL=kyLower; kzU=kzUpper;
+//					float dataULU_R= 0; float dataULU_I=0; flag=1;
+//					if ( (abs(kxU)<Mid) && (abs(kyL)<Mid)&& (abs(kzU)<Mid) ) {//	  Step 2
+//					kxU = (N+kxU)%N; kyL = (N+kyL)%N; kzU = (N+kzU)%N;
+//					if (kxU> N/2){kxU=(N-kxU)%N; kyL=(N-kyL)%N; kzU=(N-kzU)%N ;flag=-1;} // Step 3
+//					dataULU_R=	   src_data[ 2*kxU	 + nx*kyL+ nxny*kzU ]; // image -> get_value_at(2*kxU  ,kyL,kzU);
+//					dataULU_I=flag*src_data[ 2*kxU+1 + nx*kyL+ nxny*kzU ]; // image -> get_value_at(2*kxU+1,kyL,kzU);
+//					}
+//					//	   UUL 7
+//					kxU= kxUpper; kyU=kyUpper; kzL=kzLower;
+//					float dataUUL_R= 0; float dataUUL_I=0; flag=1;
+//					if ( (abs(kxU)<Mid) && (abs(kyU)<Mid) && (abs(kzL)<Mid) ) {//	   Step 2
+//					kxU = (N+kxU)%N; kyU = (N+kyU)%N; kzL = (N+kzL)%N;
+//					if (kxU> N/2){kxU=(N-kxU)%N; kyU=(N-kyU)%N; kzL=(N-kzL)%N ;flag=-1;} // Step 3
+//					dataUUL_R=	   src_data[ 2*kxU	 + nx*kyU+ nxny*kzL ]; // image -> get_value_at(2*kxU  ,kyU,kzL);
+//					dataUUL_I=flag*src_data[ 2*kxU+1 + nx*kyU+ nxny*kzL ]; // image -> get_value_at(2*kxU+1,kyU,kzL);
+//					}
+//					//	  UUU 8
+//					kxU= kxUpper; kyU=kyUpper; kzU=kzUpper;
+//					float dataUUU_R= 0; float dataUUU_I=0; flag=1;
+//					if ( (abs(kxU)<Mid) && (abs(kyU)<Mid) && (abs(kzU)<Mid) ) { //		 Step 2
+//					kxU = (N+kxU)%N; kyU = (N+kyU)%N; kzU = (N+kzU)%N;
+//					if (kxU> N/2) {kxU=(N-kxU)%N; kyU=(N-kyU)%N; kzU=(N-kzU)%N ;flag=-1;} // Step 3
+//					dataUUU_R=	   src_data[ 2*kxU	 + nx*kyU+ nxny*kzU ]; // image -> get_value_at(2*kxU  ,kyU,kzU);
+//					dataUUU_I=flag*src_data[ 2*kxU+1 + nx*kyU+ nxny*kzU ]; // image -> get_value_at(2*kxU+1,kyU,kzU);
+//					}
+//					//			Step 4	  Assign Weights
+//					float WLLL = dkxLower*dkyLower*dkzLower ;
+//					// WLLL = sqrt(pow(dkxUpper,2)+ pow(dkyUpper,2) + pow(dkzUpper,2)) ;
+//					// WLLL = sin(pi* WLLL+.00000001)/(pi* WLLL+.00000001);
+//					float WLLU = dkxLower*dkyLower*dkzUpper ;
+//					float WLUL = dkxLower*dkyUpper*dkzLower ;
+//					float WLUU = dkxLower*dkyUpper*dkzUpper ;
+//					float WULL = dkxUpper*dkyLower*dkzLower ;
+//					float WULU = dkxUpper*dkyLower*dkzUpper ;
+//					float WUUL = dkxUpper*dkyUpper*dkzLower;
+//					float WUUU = dkxUpper*dkyUpper*dkzUpper;
+//					tempW = WLLL  +	 WLLU  +   WLUL	 + WLUU	 + WULL + WULU +   WUUL +	WUUU ;
+//					//			 Step 5	   Assign Real, then Imaginary Values
+//					tempR =	 WLLL*dataLLL_R + WLLU*dataLLU_R + WLUL*dataLUL_R + WLUU*dataLUU_R ;
+//					tempR += WULL*dataULL_R + WULU*dataULU_R + WUUL*dataUUL_R + WUUU*dataUUU_R ;
+//					//
+//					tempI  = WLLL*dataLLL_I + WLLU*dataLLU_I + WLUL*dataLUL_I + WLUU*dataLUU_I ;
+//					tempI += WULL*dataULL_I + WULU*dataULU_I + WUUL*dataUUL_I + WUUU*dataUUU_I ;
+//					//
+//	//				float phase = -2*pi*(kxNew*xshift+kyNew*yshift+kzNew*zshift)/ny;
+//					float tempRb=tempR*Cphase - tempI*Sphase;
+//					float tempIb=tempR*Sphase + tempI*Cphase;
+//					//
+//					des_data[2*kxN	  + nx* kyN +nxny*kzN] = tempRb/tempW;
+//					des_data[2*kxN+1  + nx* kyN +nxny*kzN] = tempIb/tempW;
+		}}}	 // end z, y, x loops through new coordinates
+	}	//	end	 rotations in Fourier Space	 3D
 	if ((nz > 1)&&(image -> is_complex())&&(zerocorners<=1)) {
-		//printf("Hello 3-d complex  TransformProcessor \n");
-		float phi =  t.get_rotation("eman").get("phi"); phi=pi*phi/180;
-		float alt =  t.get_rotation("eman").get("alt"); alt=pi*alt/180;
-		float az  =  t.get_rotation("eman").get("az");   az=pi*az /180;
+		//printf("Hello 3-d complex	 TransformProcessor \n");
+		float phi =	 t.get_rotation("eman").get("phi"); phi=pi*phi/180;
+		float alt =	 t.get_rotation("eman").get("alt"); alt=pi*alt/180;
+		float az  =	 t.get_rotation("eman").get("az");	 az=pi*az /180;
 		Vec3f transNow= t.get_trans();
 		float xshift= transNow[0]; float yshift= transNow[1];float zshift= transNow[2];
 
@@ -9932,13 +9932,13 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 		float MatXY = (- cos(az)*sin(phi) - sin(az)*cos(alt)*cos(phi) ) ;
 		float MatXZ = sin(az)*sin(alt) ;
 		float MatYX = (sin(az)*cos(phi) + cos(az)*cos(alt)*sin(phi) );
-		float MatYY = (- sin(az)*sin(phi) + cos(az)*cos(alt)*cos(phi) )  ;
+		float MatYY = (- sin(az)*sin(phi) + cos(az)*cos(alt)*cos(phi) )	 ;
 		float MatYZ = - cos(az)*sin(alt) ;
 		float MatZX = sin(alt)*sin(phi);
 		float MatZY = sin(alt)*cos(phi);
-		float MatZZ = cos(alt)  ;
+		float MatZZ = cos(alt)	;
 		float tempR=0; float tempI=0;
-		float Mid =(N+1.0)/2.0;  // Check this
+		float Mid =(N+1.0)/2.0;	 // Check this
 		float phaseConstx  = -2*pi*xshift/ny ;
 		float k1= cos(phaseConstx); float k2= sin(phaseConstx);
 		float k3= 1.0/k1; float k4= k2/k1; // that is 1/cos and tan()
@@ -9949,16 +9949,16 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 		int nxny = nx*ny;
 
 		for (int kzN = 0; kzN < ny; kzN++) {
-		    int kzNew=kzN;
-		    if (kzN >= nx/2) kzNew=kzN-N; //            Step 0 Unalias new coords;
-		    for (int kyN = 0; kyN < ny; kyN++) {//       moves them to lesser mag
+			int kzNew=kzN;
+			if (kzN >= nx/2) kzNew=kzN-N; //			Step 0 Unalias new coords;
+			for (int kyN = 0; kyN < ny; kyN++) {//		 moves them to lesser mag
 			int kyNew=kyN;
-			if (kyN>=nx/2) kyNew=kyN-ny;  //        Step 0   Unalias
-			  //  Step 1: Do inverse Rotation to get former values, and alias   Step1
-		        float kxOld =  MatXY * kyNew +  MatXZ *kzNew - MatXX;
-	                float kyOld =  MatYY * kyNew +  MatYZ*kzNew  - MatYX;
-			float kzOld =  MatZY * kyNew +  MatZZ*kzNew  - MatZX;
-    		        float phase = -2*pi*kzNew*zshift/ny-2*pi*kyNew*yshift/ny - phaseConstx ;
+			if (kyN>=nx/2) kyNew=kyN-ny;  //		Step 0	 Unalias
+			  //  Step 1: Do inverse Rotation to get former values, and alias	Step1
+				float kxOld =  MatXY * kyNew +	MatXZ *kzNew - MatXX;
+					float kyOld =  MatYY * kyNew +	MatYZ*kzNew	 - MatYX;
+			float kzOld =  MatZY * kyNew +	MatZZ*kzNew	 - MatZX;
+					float phase = -2*pi*kzNew*zshift/ny-2*pi*kyNew*yshift/ny - phaseConstx ;
 			float Cphase = cos(phase);
 			float Sphase = sin(phase);
 			int kx, ky,kz, II;
@@ -9970,170 +9970,170 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 			if (OutBounds2< 0) kxNewMax=0;
 			else if (OutBounds2<(nx*nx/4)) kxNewMax=sqrt(OutBounds2);
 			for (int kxN = kxNewMax; kxN < nx/2 ; kxN++ ) {
-       			      des_data[2*kxN    + nx* kyN +nxny*kzN] = 0;
-        		      des_data[2*kxN    + nx* kyN +nxny*kzN+1] = 0;
+					  des_data[2*kxN	+ nx* kyN +nxny*kzN] = 0;
+					  des_data[2*kxN	+ nx* kyN +nxny*kzN+1] = 0;
 			}
 
 
 			for (int kxNew = 0; kxNew < kxNewMax; kxNew++ ) {
-/*			      printf(" kxNew = %d, kyNew = %d, kzNew = %d,kxOld = %3.2f, kyOld = %3.2f, kzOld = %3.2f \n",
-				      kxNew,kyNew,kzNew, kxOld, kyOld, kzOld);*/
+/*				  printf(" kxNew = %d, kyNew = %d, kzNew = %d,kxOld = %3.2f, kyOld = %3.2f, kzOld = %3.2f \n",
+					  kxNew,kyNew,kzNew, kxOld, kyOld, kzOld);*/
 
-			     IndexOut +=2;
+				 IndexOut +=2;
 
-			     kxOld +=  MatXX ;
-			     kyOld +=  MatYX ;
-			     kzOld +=  MatZX ;
-                             phase += phaseConstx;
-			     Cphase = Cphase*k1 -Sphase*k2; //update using trig addition; this is   cos = cos cos  -sin sin
-			     Sphase = Sphase*k3+ Cphase*k4;  //   and   sin = sin  (1/ cos) + cos * tan;
+				 kxOld +=  MatXX ;
+				 kyOld +=  MatYX ;
+				 kzOld +=  MatZX ;
+							 phase += phaseConstx;
+				 Cphase = Cphase*k1 -Sphase*k2; //update using trig addition; this is	cos = cos cos  -sin sin
+				 Sphase = Sphase*k3+ Cphase*k4;	 //	  and	sin = sin  (1/ cos) + cos * tan;
 
-			    //
+				//
 				if ((abs(kxOld)>=Mid) || (abs(kyOld)>=Mid) || (abs(kzOld)>=Mid) ) { // out of bounds
-          			      des_data[IndexOut] = 0;
-	        		      des_data[IndexOut+1] = 0;
+						  des_data[IndexOut] = 0;
+						  des_data[IndexOut+1] = 0;
 				   continue;}
 /*				if (kxOld*kxOld+OutBounds> 2*Mid*Mid){ // out of bounds
-          			      des_data[IndexOut] = 0;
-	        		      des_data[IndexOut+1] = 0;
+						  des_data[IndexOut] = 0;
+						  des_data[IndexOut+1] = 0;
 				   continue;}  */
 				//
-			    int kxLower= floor(kxOld);
-			    int kyLower= floor(kyOld);
-			    int kzLower= floor(kzOld);
-			    //
-			    float dkxUpper= (kxOld-kxLower);
-			    float dkyUpper= (kyOld-kyLower);
-			    float dkzUpper= (kzOld-kzLower);
+				int kxLower= floor(kxOld);
+				int kyLower= floor(kyOld);
+				int kzLower= floor(kzOld);
+				//
+				float dkxUpper= (kxOld-kxLower);
+				float dkyUpper= (kyOld-kyLower);
+				float dkzUpper= (kzOld-kzLower);
 
-			    //      LLL  1
-			    kx= kxLower; ky =kyLower; kz=kzLower;
-//			    dataRLLL=0;   dataILLL=0;
-//			    if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //   Step 2 Make sure to be in First BZ
-			      int flagLLL=1;
-			      if (kx<0) kx += N; if (ky<0) ky += N; if (kz<0) kz += N;
-			      if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagLLL=-1;} // Step 3: if nec, use Friedel paired
-			      int kLLL =2*kx   + nx*ky+ nxny*kz ;
-//			      dataRLLL =         src_data[     kLLL ];
-//			      dataILLL = flagLLL*src_data[ 1 + kLLL ]; //
-//			 	}
+				//		LLL	 1
+				kx= kxLower; ky =kyLower; kz=kzLower;
+//				dataRLLL=0;	  dataILLL=0;
+//				if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //	  Step 2 Make sure to be in First BZ
+				  int flagLLL=1;
+				  if (kx<0) kx += N; if (ky<0) ky += N; if (kz<0) kz += N;
+				  if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagLLL=-1;} // Step 3: if nec, use Friedel paired
+				  int kLLL =2*kx   + nx*ky+ nxny*kz ;
+//				  dataRLLL =		 src_data[	   kLLL ];
+//				  dataILLL = flagLLL*src_data[ 1 + kLLL ]; //
+//				}
 
-			    //      LLU  2
-			    kx= kxLower; ky =kyLower; kz=kzLower+1;
-//			    dataRLLU=0;	    dataILLU=0;
-//			    if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //   Step 2 Make sure to be in First BZ
-			      int flagLLU=1;
-			      if (kx<0) kx += N; if (ky<0) ky += N; if (kz<0) kz += N;
-			      if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagLLU=-1;} // Step 3: if nec, use Friedel paired
-			      int kLLU =2*kx   + nx*ky+ nxny*kz ;
-//			      dataRLLU =         src_data[  kLLU];
-//			      dataILLU = flagLLU*src_data[1+kLLU];
-//			       }
+				//		LLU	 2
+				kx= kxLower; ky =kyLower; kz=kzLower+1;
+//				dataRLLU=0;		dataILLU=0;
+//				if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //	  Step 2 Make sure to be in First BZ
+				  int flagLLU=1;
+				  if (kx<0) kx += N; if (ky<0) ky += N; if (kz<0) kz += N;
+				  if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagLLU=-1;} // Step 3: if nec, use Friedel paired
+				  int kLLU =2*kx   + nx*ky+ nxny*kz ;
+//				  dataRLLU =		 src_data[	kLLU];
+//				  dataILLU = flagLLU*src_data[1+kLLU];
+//				   }
 
-			    //      LUL  3
-			    kx= kxLower; ky =kyLower+1; kz=kzLower;
-//			    dataRLUL=0;    dataILUL=0;
-//			    if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //   Step 2 Make sure to be in First BZ
-			      int flagLUL=1;
-			      if (kx<0) kx += N; if (ky<0) ky += N; if (kz<0) kz += N;
-			      if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagLUL=-1;} // Step 3: if nec, use Friedel paired
-			      int kLUL =2*kx   + nx*ky+ nxny*kz ;
-//			      dataRLUL =         src_data[  kLUL];
-//			      dataILUL = flagLUL*src_data[1+kLUL];
-//			      }
+				//		LUL	 3
+				kx= kxLower; ky =kyLower+1; kz=kzLower;
+//				dataRLUL=0;	   dataILUL=0;
+//				if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //	  Step 2 Make sure to be in First BZ
+				  int flagLUL=1;
+				  if (kx<0) kx += N; if (ky<0) ky += N; if (kz<0) kz += N;
+				  if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagLUL=-1;} // Step 3: if nec, use Friedel paired
+				  int kLUL =2*kx   + nx*ky+ nxny*kz ;
+//				  dataRLUL =		 src_data[	kLUL];
+//				  dataILUL = flagLUL*src_data[1+kLUL];
+//				  }
 
-			    //      LUU  4
-			    kx= kxLower; ky =kyLower+1; kz=kzLower+1;
-//			    dataRLUU=0;	    dataILUU=0;
-//			    if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //   Step 2 Make sure to be in First BZ
-			      int flagLUU=1;
-			      if (kx<0) kx += N; if (ky<0) ky += N; if (kz<0) kz += N;
-			      if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagLUU=-1;} // Step 3: if nec, use Friedel paired
-			      int kLUU =2*kx   + nx*ky+ nxny*kz ;
-//			      dataRLUU =         src_data[  kLUU];
-//			      dataILUU = flagLUU*src_data[1+kLUU];
-//			      }
+				//		LUU	 4
+				kx= kxLower; ky =kyLower+1; kz=kzLower+1;
+//				dataRLUU=0;		dataILUU=0;
+//				if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //	  Step 2 Make sure to be in First BZ
+				  int flagLUU=1;
+				  if (kx<0) kx += N; if (ky<0) ky += N; if (kz<0) kz += N;
+				  if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagLUU=-1;} // Step 3: if nec, use Friedel paired
+				  int kLUU =2*kx   + nx*ky+ nxny*kz ;
+//				  dataRLUU =		 src_data[	kLUU];
+//				  dataILUU = flagLUU*src_data[1+kLUU];
+//				  }
 
-			    //      ULL  5
-			    kx= kxLower+1; ky =kyLower; kz=kzLower;
-//			    dataRULL=0;	    dataIULL=0;
-//			    if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //   Step 2 Make sure to be in First BZ
-			      int flagULL=1;
-			      if (kx<0) kx += N; if (ky<0) ky += N; if (kz<0) kz += N;
-			      if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagULL=-1;} // Step 3: if nec, use Friedel paired
-			      int kULL =2*kx   + nx*ky+ nxny*kz ;
-//			      dataRULL =         src_data[  kULL];
-//			      dataIULL = flagULL*src_data[1+kULL];
-//			      }
+				//		ULL	 5
+				kx= kxLower+1; ky =kyLower; kz=kzLower;
+//				dataRULL=0;		dataIULL=0;
+//				if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //	  Step 2 Make sure to be in First BZ
+				  int flagULL=1;
+				  if (kx<0) kx += N; if (ky<0) ky += N; if (kz<0) kz += N;
+				  if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagULL=-1;} // Step 3: if nec, use Friedel paired
+				  int kULL =2*kx   + nx*ky+ nxny*kz ;
+//				  dataRULL =		 src_data[	kULL];
+//				  dataIULL = flagULL*src_data[1+kULL];
+//				  }
 
-			    //      ULU  6
-			    kx= kxLower+1; ky =kyLower; kz=kzLower+1;
-//			    dataRULU=0;	    dataIULU=0;
-//			    if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //   Step 2 Make sure to be in First BZ
-			      int flagULU=1;
-			      if (kx<0) kx += N; if (ky<0) ky += N;if (kz<0) kz += N;
-			      if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagULU=-1;} // Step 3: if nec, use Friedel paired
-			      int kULU =2*kx   + nx*ky+ nxny*kz ;
-//			      dataRULU =         src_data[  kULU];
-//			      dataIULU = flagULU*src_data[1+kULU];
-//			      }
+				//		ULU	 6
+				kx= kxLower+1; ky =kyLower; kz=kzLower+1;
+//				dataRULU=0;		dataIULU=0;
+//				if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //	  Step 2 Make sure to be in First BZ
+				  int flagULU=1;
+				  if (kx<0) kx += N; if (ky<0) ky += N;if (kz<0) kz += N;
+				  if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagULU=-1;} // Step 3: if nec, use Friedel paired
+				  int kULU =2*kx   + nx*ky+ nxny*kz ;
+//				  dataRULU =		 src_data[	kULU];
+//				  dataIULU = flagULU*src_data[1+kULU];
+//				  }
 
-			    //      UUL  7
-			    kx= kxLower+1; ky =kyLower+1; kz=kzLower;
-//			    dataRUUL=0;    dataIUUL=0;
-//			    if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //   Step 2 Make sure to be in First BZ
-			      int flagUUL=1;
-			      if (kx<0) kx += N; if (ky<0) ky += N;if (kz<0) kz += N;
-			      if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagUUL=-1;} // Step 3: if nec, use Friedel paired
-			      int kUUL =2*kx   + nx*ky+ nxny*kz ;
-//			      dataRUUL =         src_data[  kUUL];
-//			      dataIUUL = flagUUL*src_data[1+kUUL];
-//			    }
+				//		UUL	 7
+				kx= kxLower+1; ky =kyLower+1; kz=kzLower;
+//				dataRUUL=0;	   dataIUUL=0;
+//				if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //	  Step 2 Make sure to be in First BZ
+				  int flagUUL=1;
+				  if (kx<0) kx += N; if (ky<0) ky += N;if (kz<0) kz += N;
+				  if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagUUL=-1;} // Step 3: if nec, use Friedel paired
+				  int kUUL =2*kx   + nx*ky+ nxny*kz ;
+//				  dataRUUL =		 src_data[	kUUL];
+//				  dataIUUL = flagUUL*src_data[1+kUUL];
+//				}
 
-			    //      UUU  8
-			    kx= kxLower+1; ky =kyLower+1; kz=kzLower+1;
-//			    dataRUUU=0;    dataIUUU=0;
-//			    if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //   Step 2 Make sure to be in First BZ
-			      int flagUUU=1;
-			      if (kx<0) kx += N; if (ky<0) ky += N;if (kz<0) kz += N;
-			      if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagUUU=-1;} // Step 3: if nec, use Friedel paired
-			      int kUUU =2*kx   + nx*ky+ nxny*kz ;
-//			      dataRUUU =         src_data[  kUUU];
-//			      dataIUUU = flagUUU*src_data[1+kUUU];
-//			    }
+				//		UUU	 8
+				kx= kxLower+1; ky =kyLower+1; kz=kzLower+1;
+//				dataRUUU=0;	   dataIUUU=0;
+//				if ( (abs(kx)<Mid) && (abs(ky)<Mid) && (abs(kz)<Mid) ) { //	  Step 2 Make sure to be in First BZ
+				  int flagUUU=1;
+				  if (kx<0) kx += N; if (ky<0) ky += N;if (kz<0) kz += N;
+				  if (kx> N/2){kx=N-kx;ky=(N-ky)%N;kz=(N-kz)%N; flagUUU=-1;} // Step 3: if nec, use Friedel paired
+				  int kUUU =2*kx   + nx*ky+ nxny*kz ;
+//				  dataRUUU =		 src_data[	kUUU];
+//				  dataIUUU = flagUUU*src_data[1+kUUU];
+//				}
 
-			    //           Step 4    Assign Real, then Imaginary Values
-/*			      printf(" kxNew = %d, kyNew = %d, kzNew = %d,kxOld = %3.2f, kyOld = %3.2f, kzOld = %3.2f \n",
-				      kxNew,kyNew,kzNew, kxOld, kyOld, kzOld);
-			      printf("  dataRLLL= %f, dataRULL = %f, dataRLUL = %f,dataRUUL = %f, dataRLLU = %f, dataRULU = %f, dataRLUU = %f, dataRUUU = %f \n",
-				      dataRLLL,dataRULL,dataRLUL, dataRUUL,dataRLLU, dataRULU,dataRLUU, dataRUUU);
-			      printf("  dataILLL= %f, dataIULL = %f, dataILUL = %f,dataIUUL = %f, dataILLU = %f, dataIULU = %f, dataILUU = %f, dataIUUU = %f \n",
-				      dataILLL,dataIULL,dataILUL, dataIUUL,dataILLU, dataIULU,dataILUU, dataIUUU);*/
-/*			      printf("  kLLL= %f, kULL = %d, kLUL = %d,kUUL = %d, kLLU = %d, kULU = %d, kLUU = %d, kUUU = %d \n",
-				      kLLL,kULL,kLUL, kUUL,kLLU, kULU,kLUU, kUUU);*/
+				//			 Step 4	   Assign Real, then Imaginary Values
+/*				  printf(" kxNew = %d, kyNew = %d, kzNew = %d,kxOld = %3.2f, kyOld = %3.2f, kzOld = %3.2f \n",
+					  kxNew,kyNew,kzNew, kxOld, kyOld, kzOld);
+				  printf("	dataRLLL= %f, dataRULL = %f, dataRLUL = %f,dataRUUL = %f, dataRLLU = %f, dataRULU = %f, dataRLUU = %f, dataRUUU = %f \n",
+					  dataRLLL,dataRULL,dataRLUL, dataRUUL,dataRLLU, dataRULU,dataRLUU, dataRUUU);
+				  printf("	dataILLL= %f, dataIULL = %f, dataILUL = %f,dataIUUL = %f, dataILLU = %f, dataIULU = %f, dataILUU = %f, dataIUUU = %f \n",
+					  dataILLL,dataIULL,dataILUL, dataIUUL,dataILLU, dataIULU,dataILUU, dataIUUU);*/
+/*				  printf("	kLLL= %f, kULL = %d, kLUL = %d,kUUL = %d, kLLU = %d, kULU = %d, kLUU = %d, kUUU = %d \n",
+					  kLLL,kULL,kLUL, kUUL,kLLU, kULU,kLUU, kUUU);*/
 
-			      tempR = Util::trilinear_interpolate(
+				  tempR = Util::trilinear_interpolate(
 				 src_data[kLLL] , src_data[kULL],
 				 src_data[kLUL] , src_data[kUUL],
 				 src_data[kLLU] , src_data[kULU],
 				 src_data[kLUU] , src_data[kUUU],
 				 dkxUpper,dkyUpper,dkzUpper);
 
-			      tempI = Util::trilinear_interpolate(
+				  tempI = Util::trilinear_interpolate(
 				 flagLLL*src_data[kLLL+1], flagULL*src_data[kULL+1],
 				 flagLUL*src_data[kLUL+1], flagUUL*src_data[kUUL+1],
 				 flagLLU*src_data[kLLU+1], flagULU*src_data[kULU+1],
 				 flagLUU*src_data[kLUU+1], flagUUU*src_data[kUUU+1],
 				 dkxUpper,dkyUpper,dkzUpper);
 
-			      //           Step 5    Apply translation
-			      float tempRb=tempR*Cphase - tempI*Sphase;
-			      float tempIb=tempR*Sphase + tempI*Cphase;
-			      //
-			      des_data[IndexOut]   = tempRb;
-			      des_data[IndexOut+1] = tempIb;
-		}}}  // end z, y, x loops through new coordinates
-	}   //  end  rotations in Fourier Space  3D
+				  //		   Step 5	 Apply translation
+				  float tempRb=tempR*Cphase - tempI*Sphase;
+				  float tempIb=tempR*Sphase + tempI*Cphase;
+				  //
+				  des_data[IndexOut]   = tempRb;
+				  des_data[IndexOut+1] = tempIb;
+		}}}	 // end z, y, x loops through new coordinates
+	}	//	end	 rotations in Fourier Space	 3D
 	if ((nz > 1)&&(image -> is_real())) {
 		size_t l=0, ii, k0, k1, k2, k3, k4, k5, k6, k7;
 		Vec3f offset(nx/2,ny/2,nz/2);
@@ -10150,7 +10150,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 					y2 = soln[1];
 					z2 = soln[2];
 
-					if (x2 < 0 || y2 < 0 || z2 < 0 || x2 >= nx  || y2 >= ny  || z2>= nz ) {
+					if (x2 < 0 || y2 < 0 || z2 < 0 || x2 >= nx	|| y2 >= ny	 || z2>= nz ) {
 						des_data[l] = 0;
 					}
 					else {
@@ -10192,7 +10192,7 @@ float* TransformProcessor::transform(const EMData* const image, const Transform&
 
 						des_data[l] = Util::trilinear_interpolate(src_data[k0],
 								src_data[k1], src_data[k2], src_data[k3], src_data[k4],
-								src_data[k5], src_data[k6],	src_data[k7], tuvx, tuvy, tuvz);
+								src_data[k5], src_data[k6], src_data[k7], tuvx, tuvy, tuvz);
 					}
 				}
 			}
@@ -10252,7 +10252,7 @@ EMData* TransformProcessor::process(const EMData* const image) {
 	EMData* p  = 0;
 #ifdef EMAN2_USING_CUDA
 	if(EMData::usecuda == 1 && image->isrodataongpu()){
-	        //cout << "using CUDA xform" << endl;
+			//cout << "using CUDA xform" << endl;
 		p = new EMData(0,0,image->get_xsize(),image->get_ysize(),image->get_zsize(),image->get_attr_dict());
 		float * m = new float[12];
 		Transform inv = t->inverse();
@@ -10270,7 +10270,7 @@ EMData* TransformProcessor::process(const EMData* const image) {
 		p = new EMData(des_data,image->get_xsize(),image->get_ysize(),image->get_zsize(),image->get_attr_dict());
 	}
 
-	// 	all_translation += transform.get_trans();
+	//	all_translation += transform.get_trans();
 
 	float scale = t->get_scale();
 	if (scale != 1.0) {
@@ -10290,7 +10290,7 @@ void TransformProcessor::process_inplace(EMData* image) {
 
 	Transform* t = params["transform"];
 
-	// 	all_translation += transform.get_trans();
+	//	all_translation += transform.get_trans();
 	bool use_cpu = true;
 
 #ifdef EMAN2_USING_CUDA
@@ -10587,7 +10587,7 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 			}
 			mx->update();
 			nseg--;					// number of segments left
-			if (verbose && sub1==-1) { mx->write_image("contactmx.hdf",0); } 		// for debugging
+			if (verbose && sub1==-1) { mx->write_image("contactmx.hdf",0); }		// for debugging
 
 			sub1=-1;
 			sub2=-1;
@@ -10604,7 +10604,7 @@ EMData *WatershedProcessor::process(const EMData* const image) {
 //					v/=(pow(mxd[s1+s1*nsegstart],0.6667f)+pow(mxd[s2+s2*nsegstart],0.6667f));	// normalize by the sum of the estimated surface areas (no shape effects)
 					v/=max(mxd[s1+s1*nsegstart],mxd[s2+s2*nsegstart]);	// normalize by the sum of the estimated surface areas (no shape effects)
 					if (v>bestv) { bestv=v; sub1=s1; sub2=s2; }
-			 	}
+				}
 			}
 			float mv=0;
 			int mvl=0;
@@ -11167,12 +11167,12 @@ void TestTomoImage::process_inplace( EMData* image )
 		image->process_inplace("testimage.ellipsoid",d);
 	}
 	// Insert feducials around the outside of the "cell"
-// 	for ( float i = 0.; i < 3.; i += 1. ) {
-// 		for ( float j = 0.; j < 3.; j += 1. ) {
-// 			Region region(nx*2.+i*inc,ny*2.+j*inc,nz/2.,0.05*inc*nx,0.05*inc*ny,0.05*inc*nz);
-// 			insert_solid_ellipse(image, region, 2.0);
-// 		}
-// 	}
+//	for ( float i = 0.; i < 3.; i += 1. ) {
+//		for ( float j = 0.; j < 3.; j += 1. ) {
+//			Region region(nx*2.+i*inc,ny*2.+j*inc,nz/2.,0.05*inc*nx,0.05*inc*ny,0.05*inc*nz);
+//			insert_solid_ellipse(image, region, 2.0);
+//		}
+//	}
 
 }
 
@@ -11239,9 +11239,9 @@ void ConvolutionProcessor::process_inplace(EMData* image)
 
 	float* orig = image->get_data();
 	float* work = newimage->get_data();
-	int nx  = image->get_xsize();
-	int ny  = image->get_ysize();
-	int nz  = image->get_zsize();
+	int nx	= image->get_xsize();
+	int ny	= image->get_ysize();
+	int nz	= image->get_zsize();
 	memcpy(orig,work,nx*ny*nz*sizeof(float));
 	image->update();
 
@@ -11659,19 +11659,19 @@ map<string, vector<string> > EMAN::group_processors()
 		if (dynamic_cast<RealPixelProcessor*>(f) != 0) {
 			processor_groups["RealPixelProcessor"].push_back(f->get_name());
 		}
-		else if (dynamic_cast<BoxStatProcessor*>(f)  != 0) {
+		else if (dynamic_cast<BoxStatProcessor*>(f)	 != 0) {
 			processor_groups["BoxStatProcessor"].push_back(f->get_name());
 		}
 		else if (dynamic_cast<ComplexPixelProcessor*>(f)  != 0) {
 			processor_groups["ComplexPixelProcessor"].push_back(f->get_name());
 		}
-		else if (dynamic_cast<CoordinateProcessor*>(f)  != 0) {
+		else if (dynamic_cast<CoordinateProcessor*>(f)	!= 0) {
 			processor_groups["CoordinateProcessor"].push_back(f->get_name());
 		}
-		else if (dynamic_cast<FourierProcessor*>(f)  != 0) {
+		else if (dynamic_cast<FourierProcessor*>(f)	 != 0) {
 			processor_groups["FourierProcessor"].push_back(f->get_name());
 		}
-		else if (dynamic_cast<NewFourierProcessor*>(f)  != 0) {
+		else if (dynamic_cast<NewFourierProcessor*>(f)	!= 0) {
 			processor_groups["FourierProcessor"].push_back(f->get_name());
 		}
 		else if (dynamic_cast<NormalizeProcessor*>(f)  != 0) {
@@ -11925,10 +11925,10 @@ void ConvolutionKernelProcessor::process_inplace(EMData * image )
 EMData* RotateInFSProcessor::process(const EMData* const image) //
 {
 
-    EMData* imageCp        = image -> copy(); // This is the rotated image
-    process_inplace(imageCp);
+	EMData* imageCp		   = image -> copy(); // This is the rotated image
+	process_inplace(imageCp);
 
-    return imageCp;
+	return imageCp;
 }
 
 
@@ -11939,9 +11939,9 @@ void RotateInFSProcessor::process_inplace(EMData * image) // right now for 2d im
 
 //	Transform *rotNow  = params.set_default("transform",&Transform());
 	Transform *rotNow  = params["transform"];
-	float interpCutoff = params.set_default("interpCutoff",0.8f);   // JFF, can you move this to input parameter?
+	float interpCutoff = params.set_default("interpCutoff",0.8f);	// JFF, can you move this to input parameter?
 //	float interpCutoff = params["interpCutoff"];   // JFF, can you move this to input parameter?
-//	float interpCutoff =.8;   // JFF, can you move this to input parameter?
+//	float interpCutoff =.8;	  // JFF, can you move this to input parameter?
 
 
 	int debug=0;
@@ -11950,7 +11950,7 @@ void RotateInFSProcessor::process_inplace(EMData * image) // right now for 2d im
 
 
 	// if 2N is size of image, then sizes of FFT are (2N+2,2N,2N) or  (2N+2,2N,1)
-	// if 2N+1 is size of image, then sizes of FFT are (2N+2,2N+1,2N+1) or  (2N+2,2N+1,1)
+	// if 2N+1 is size of image, then sizes of FFT are (2N+2,2N+1,2N+1) or	(2N+2,2N+1,1)
 
 	int x_size = image->get_xsize();  //16
 	int y_size = image->get_ysize();  int y_odd=  (y_size%2);
@@ -11961,24 +11961,24 @@ void RotateInFSProcessor::process_inplace(EMData * image) // right now for 2d im
 	int size_check = abs(x_size-y_size-2+y_odd)+ abs(z_size-1)*abs(z_size-y_size);
 	int N = x_size/2-1;
 	int Mid = N+1;
-	if (size_check!=0) throw ImageDimensionException("Only square or cubic  images for now");
+	if (size_check!=0) throw ImageDimensionException("Only square or cubic	images for now");
 	if (image->is_real()) throw ImageDimensionException("Only for Fourier images");
 //	if (y_odd==0) throw ImageDimensionException("Only use odd images for now");
 
 	if (debug) printf("Mid=%d, x_size=%d, y_size=%d, N=%d, z_size=%d \n", Mid,x_size,y_size, N, z_size );
 
-	EMData* RotIm        = image -> copy(); // This is the rotated image
-	EMData* WeightIm     = image -> copy(); WeightIm     ->to_zero();// This is the Weight image for rotated image
-	EMData* PhaseOrigIm  = new EMData(N+1,2*N+1,z_size) ; PhaseOrigIm  ->to_zero();// This is the Weight image for rotated image
+	EMData* RotIm		 = image -> copy(); // This is the rotated image
+	EMData* WeightIm	 = image -> copy(); WeightIm	 ->to_zero();// This is the Weight image for rotated image
+	EMData* PhaseOrigIm	 = new EMData(N+1,2*N+1,z_size) ; PhaseOrigIm  ->to_zero();// This is the Weight image for rotated image
 	EMData* PhaseFinalIm = PhaseOrigIm -> copy(); PhaseFinalIm ->to_zero();// This is the Weight image for rotated image
-	EMData* MagFinalIm   = PhaseOrigIm -> copy(); MagFinalIm   ->to_zero();// This is the Weight image for rotated image
+	EMData* MagFinalIm	 = PhaseOrigIm -> copy(); MagFinalIm   ->to_zero();// This is the Weight image for rotated image
 
-//	float*   data      = image    -> get_data();
-//	float* Rotdata     = RotIm    -> get_data();  // This is the data of the rotated image
+//	float*	 data	   = image	  -> get_data();
+//	float* Rotdata	   = RotIm	  -> get_data();  // This is the data of the rotated image
 //	float* WeightData  = WeightIm -> get_data();  //
 
 	float  WeightNowX, WeightNowY, WeightNowZ ;
-	int    kxMin,kxMax, kyMin, kyMax,  kzMin, kzMax, kxBefore, kyBefore, kzBefore ;
+	int	   kxMin,kxMax, kyMin, kyMax,  kzMin, kzMax, kxBefore, kyBefore, kzBefore ;
 	float  kxRT, kyRT, kzRT ;
 
 	Vec3f PosAfter;
@@ -11989,114 +11989,114 @@ void RotateInFSProcessor::process_inplace(EMData * image) // right now for 2d im
 	//int kz=0;
 
 	if (debug) {image -> write_image("OrigImageFFT.hdf");
-	            printf("Just wrote OrigImageFFT.hdf \n"); }
+				printf("Just wrote OrigImageFFT.hdf \n"); }
 
 
-	for (kxBefore = 0; kxBefore <=  N      ; ++kxBefore) {  // These are the  kx, ky coordinates of the original image
-	   for (kyBefore = 0; kyBefore < y_size ; ++kyBefore)  {         //  We need to rephase
-	      for (kzBefore = 0; kzBefore < z_size ; ++kzBefore)  {         //  We need to rephase
+	for (kxBefore = 0; kxBefore <=	N	   ; ++kxBefore) {	// These are the  kx, ky coordinates of the original image
+	   for (kyBefore = 0; kyBefore < y_size ; ++kyBefore)  {		 //	 We need to rephase
+		  for (kzBefore = 0; kzBefore < z_size ; ++kzBefore)  {			//	We need to rephase
 
-	    // Now we need a
-	      float CurrentReal = RotIm -> get_value_at(2*kxBefore  ,kyBefore, kzBefore);
-	      float CurrentImag = RotIm -> get_value_at(2*kxBefore+1,kyBefore, kzBefore);
+		// Now we need a
+		  float CurrentReal = RotIm -> get_value_at(2*kxBefore	,kyBefore, kzBefore);
+		  float CurrentImag = RotIm -> get_value_at(2*kxBefore+1,kyBefore, kzBefore);
 
-//         fftOfxPRB3(1+mod(ik-Mid,N))=Grand*exp(-2*pi*1i*Mid*(ik-Mid)/x_size); % Phase to apply to centered version
+//		   fftOfxPRB3(1+mod(ik-Mid,N))=Grand*exp(-2*pi*1i*Mid*(ik-Mid)/x_size); % Phase to apply to centered version
 
-//	      float Phase    = -2*pi*(kxBefore+kyBefore + kzBefore)*(Mid)/y_size;
-	      float Phase    = -pi*(kxBefore+kyBefore + kzBefore)*x_size/y_size;
-	      // Phase    = 0;
-	      float CosPhase = cos( Phase);
-	      float SinPhase = sin( Phase);
+//		  float Phase	 = -2*pi*(kxBefore+kyBefore + kzBefore)*(Mid)/y_size;
+		  float Phase	 = -pi*(kxBefore+kyBefore + kzBefore)*x_size/y_size;
+		  // Phase	  = 0;
+		  float CosPhase = cos( Phase);
+		  float SinPhase = sin( Phase);
 
-	      float NewRealValue = CosPhase*CurrentReal -SinPhase*CurrentImag;
-	      float NewImagValue = SinPhase*CurrentReal +CosPhase*CurrentImag;
+		  float NewRealValue = CosPhase*CurrentReal -SinPhase*CurrentImag;
+		  float NewImagValue = SinPhase*CurrentReal +CosPhase*CurrentImag;
 
-	      RotIm ->set_value_at(2*kxBefore  ,kyBefore, kzBefore, NewRealValue);
-	      RotIm ->set_value_at(2*kxBefore+1,kyBefore, kzBefore, NewImagValue);
+		  RotIm ->set_value_at(2*kxBefore  ,kyBefore, kzBefore, NewRealValue);
+		  RotIm ->set_value_at(2*kxBefore+1,kyBefore, kzBefore, NewImagValue);
 	}}}
 
 	if (debug) {RotIm  -> write_image("OrigImageFFTAfterPhaseCorrection.hdf");
-	            printf("  Just wrote OrigImageFFTAfterPhaseCorrection.hdf \n");}
+				printf("  Just wrote OrigImageFFTAfterPhaseCorrection.hdf \n");}
 
-        // RotIm ->set_value_at(2*Mid-1,0, 0, 0);
-        if (debug) printf("  Just about to start second loop  \n");
+		// RotIm ->set_value_at(2*Mid-1,0, 0, 0);
+		if (debug) printf("	 Just about to start second loop  \n");
 
 	image ->to_zero();
-        invRotNow = rotNow ->inverse(); //  no match for 'operator=' in 'PosBefore = EMAN::operator*(const EMAN::Transform&, const EMAN::Transform&)((
+		invRotNow = rotNow ->inverse(); //	no match for 'operator=' in 'PosBefore = EMAN::operator*(const EMAN::Transform&, const EMAN::Transform&)((
 
 
-	for (int kxAfter = 0; kxAfter <= N  ; ++kxAfter) {  // These are the  kx, ky, kz coordinates of the rotated image
-	  for (int kyAfter = -N; kyAfter < y_size-N     ; ++kyAfter)  {     // referring to a properly centered version
-	     for (int kzAfter = -z_size/2; kzAfter <= z_size/2  ; ++kzAfter)  {
+	for (int kxAfter = 0; kxAfter <= N	; ++kxAfter) {	// These are the  kx, ky, kz coordinates of the rotated image
+	  for (int kyAfter = -N; kyAfter < y_size-N		; ++kyAfter)  {		// referring to a properly centered version
+		 for (int kzAfter = -z_size/2; kzAfter <= z_size/2	; ++kzAfter)  {
 
-	    // Now we need a
+		// Now we need a
 
-	      PosAfter = Vec3f(kxAfter, kyAfter, kzAfter);
-	      PosBefore = invRotNow*PosAfter;
-	      kxRT = PosBefore[0]; // This will be the off-lattice site, where the point was rotated from
-	      kyRT = PosBefore[1]; //
-	      kzRT = PosBefore[2]; //
-
-
-	      kxMin = ceil( kxRT-interpCutoff); kxMax = floor(kxRT+interpCutoff);
-	      kyMin = ceil( kyRT-interpCutoff); kyMax = floor(kyRT+interpCutoff);
-	      kzMin = ceil( kzRT-interpCutoff); kzMax = floor(kzRT+interpCutoff);
+		  PosAfter = Vec3f(kxAfter, kyAfter, kzAfter);
+		  PosBefore = invRotNow*PosAfter;
+		  kxRT = PosBefore[0]; // This will be the off-lattice site, where the point was rotated from
+		  kyRT = PosBefore[1]; //
+		  kzRT = PosBefore[2]; //
 
 
-//              printf("Block 0,kx=%d, ky=%d,kxMin=%d, kyMin=%d, kxMax=%d, kyMax=%d, kyAfter=%d  \n",kxAfter,kyAfter,kxMin,kyMin, kxMax, kyMax, kyAfter);
-	      //continue;
-	      for (int kxI= kxMin; kxI <= kxMax; ++kxI){  // go through this
-		for (int kyI= kyMin; kyI <= kyMax; ++kyI){  // and get values to interp
+		  kxMin = ceil( kxRT-interpCutoff); kxMax = floor(kxRT+interpCutoff);
+		  kyMin = ceil( kyRT-interpCutoff); kyMax = floor(kyRT+interpCutoff);
+		  kzMin = ceil( kzRT-interpCutoff); kzMax = floor(kzRT+interpCutoff);
+
+
+//				printf("Block 0,kx=%d, ky=%d,kxMin=%d, kyMin=%d, kxMax=%d, kyMax=%d, kyAfter=%d	 \n",kxAfter,kyAfter,kxMin,kyMin, kxMax, kyMax, kyAfter);
+		  //continue;
+		  for (int kxI= kxMin; kxI <= kxMax; ++kxI){  // go through this
+		for (int kyI= kyMin; kyI <= kyMax; ++kyI){	// and get values to interp
 		   for (int kzI= kzMin; kzI <= kzMax; ++kzI){ //
 
 //
-		     if (abs(kxI) >N) continue; // don't go off the lattice
-		     if (abs(kyI) >N) continue;
-		     if (abs(kzI) >z_size/2) continue;
+			 if (abs(kxI) >N) continue; // don't go off the lattice
+			 if (abs(kyI) >N) continue;
+			 if (abs(kzI) >z_size/2) continue;
 
-		     float distx= abs(kxI-kxRT);
-		     float disty= abs(kyI-kyRT);
-		     float distz= abs(kzI-kzRT);
+			 float distx= abs(kxI-kxRT);
+			 float disty= abs(kyI-kyRT);
+			 float distz= abs(kzI-kzRT);
 
-		     // fold kxI, kyI back into lattice if possible
-		     int IsComplexConj= 1;
+			 // fold kxI, kyI back into lattice if possible
+			 int IsComplexConj= 1;
 
-		     if (kxI<0) IsComplexConj=-1;
-		     kxBefore= IsComplexConj*kxI; // The Proper coordinates will be
-		     kyBefore= IsComplexConj*kyI; // where the original data is stored
-		     kzBefore= IsComplexConj*kzI; // At this point kxBefore >=0, but not necessarily kyBefore
+			 if (kxI<0) IsComplexConj=-1;
+			 kxBefore= IsComplexConj*kxI; // The Proper coordinates will be
+			 kyBefore= IsComplexConj*kyI; // where the original data is stored
+			 kzBefore= IsComplexConj*kzI; // At this point kxBefore >=0, but not necessarily kyBefore
 
-		     if ( kyBefore<0 ) kyBefore += y_size; // makes sure kyBefore is also >0
-		     if ( kzBefore<0 ) kzBefore += y_size; // makes sure kzBefore is also >0
+			 if ( kyBefore<0 ) kyBefore += y_size; // makes sure kyBefore is also >0
+			 if ( kzBefore<0 ) kzBefore += y_size; // makes sure kzBefore is also >0
 
-		     WeightNowX  = (distx ==0)? 1: (sin(pi*distx) /(pi*distx)) ;
-		     WeightNowY  = (disty ==0)? 1: (sin(pi*disty) /(pi*disty)) ;
-		     WeightNowZ  = (distz ==0)? 1: (sin(pi*distz) /(pi*distz)) ;
-
-
-		     float CurrentValue;
-		     float ToAdd;
-		     int kyAfterInd = (kyAfter+y_size)%(y_size);
-		     int kzAfterInd = (kzAfter+z_size)%(z_size);
-
-		    // if (kxAfter==0) IsComplexConj*=-1;
-
-//		     if ((kxI+kyI)%1 ==0)
-//		         printf("Block5,kx=%d, ky=%d,kxI=%d, kyI=%d, kxBefore=%d, kyBefore=%d  \n",kxAfter,kyAfter,kxI,kyI, kxBefore,kyBefore);
-//		         printf("  %d,     %d,  %d,  %d,        %d,  %d,       %d, %d \n",IsComplexConj,kxAfter,kyAfter, kyAfterInd,kxI,kyI, kxBefore,kyBefore);
-
-		     CurrentValue =   image -> get_value_at(2*kxAfter,kyAfterInd, kzAfterInd);  // Update real part of Image
-		     ToAdd =   WeightNowX*WeightNowY*WeightNowZ*(RotIm -> get_value_at(2*kxBefore,kyBefore, kzBefore));
-		     image -> set_value_at(2*kxAfter  ,kyAfterInd  , kzAfterInd,  ToAdd   + CurrentValue );
+			 WeightNowX	 = (distx ==0)? 1: (sin(pi*distx) /(pi*distx)) ;
+			 WeightNowY	 = (disty ==0)? 1: (sin(pi*disty) /(pi*disty)) ;
+			 WeightNowZ	 = (distz ==0)? 1: (sin(pi*distz) /(pi*distz)) ;
 
 
-		     CurrentValue =   WeightIm -> get_value_at(kxAfter,kyAfterInd, kzAfterInd);    // Update real  part of Weight image
-		     ToAdd =   WeightNowX*WeightNowY;
-		     WeightIm -> set_value_at(kxAfter  , kyAfterInd , kzAfterInd,  abs(ToAdd)   + CurrentValue );
+			 float CurrentValue;
+			 float ToAdd;
+			 int kyAfterInd = (kyAfter+y_size)%(y_size);
+			 int kzAfterInd = (kzAfter+z_size)%(z_size);
 
-		     CurrentValue = image -> get_value_at(2*kxAfter+1,kyAfterInd);    // Update imaginary   part of image
-		     ToAdd =   IsComplexConj*WeightNowX*WeightNowY*RotIm -> get_value_at(2*kxBefore+1,kyBefore, kzBefore );
-		     image -> set_value_at(2*kxAfter+1  , kyAfterInd , kzAfterInd,  ToAdd   + CurrentValue );
+			// if (kxAfter==0) IsComplexConj*=-1;
+
+//			 if ((kxI+kyI)%1 ==0)
+//				 printf("Block5,kx=%d, ky=%d,kxI=%d, kyI=%d, kxBefore=%d, kyBefore=%d  \n",kxAfter,kyAfter,kxI,kyI, kxBefore,kyBefore);
+//				 printf("  %d,	   %d,	%d,	 %d,		%d,	 %d,	   %d, %d \n",IsComplexConj,kxAfter,kyAfter, kyAfterInd,kxI,kyI, kxBefore,kyBefore);
+
+			 CurrentValue =	  image -> get_value_at(2*kxAfter,kyAfterInd, kzAfterInd);	// Update real part of Image
+			 ToAdd =   WeightNowX*WeightNowY*WeightNowZ*(RotIm -> get_value_at(2*kxBefore,kyBefore, kzBefore));
+			 image -> set_value_at(2*kxAfter  ,kyAfterInd  , kzAfterInd,  ToAdd	  + CurrentValue );
+
+
+			 CurrentValue =	  WeightIm -> get_value_at(kxAfter,kyAfterInd, kzAfterInd);	   // Update real  part of Weight image
+			 ToAdd =   WeightNowX*WeightNowY;
+			 WeightIm -> set_value_at(kxAfter  , kyAfterInd , kzAfterInd,  abs(ToAdd)	+ CurrentValue );
+
+			 CurrentValue = image -> get_value_at(2*kxAfter+1,kyAfterInd);	  // Update imaginary	part of image
+			 ToAdd =   IsComplexConj*WeightNowX*WeightNowY*RotIm -> get_value_at(2*kxBefore+1,kyBefore, kzBefore );
+			 image -> set_value_at(2*kxAfter+1	, kyAfterInd , kzAfterInd,	ToAdd	+ CurrentValue );
 
 
 		}}}
@@ -12104,61 +12104,61 @@ void RotateInFSProcessor::process_inplace(EMData * image) // right now for 2d im
 
 	  }}}
 
-//        Set the image values to the rotated image, because we do it in place
+//		  Set the image values to the rotated image, because we do it in place
 
 
-	if (debug) { image        -> write_image("RotImageBeforeFinalPhaseCorrection.hdf");
-	             printf("  Just wrote RotImageBeforeFinalPhaseCorrection.hdf \n");   }
+	if (debug) { image		  -> write_image("RotImageBeforeFinalPhaseCorrection.hdf");
+				 printf("  Just wrote RotImageBeforeFinalPhaseCorrection.hdf \n");	 }
 
 
-	for (kxBefore = 0; kxBefore <= N     ; ++kxBefore) {      // This is  the normalization step
-	  for (kyBefore = 0; kyBefore < y_size   ; ++kyBefore)  {  // These are the  kx, ky, kz coordinates of the original image
-              for (kzBefore = 0; kzBefore < z_size   ; ++kzBefore)  {
+	for (kxBefore = 0; kxBefore <= N	 ; ++kxBefore) {	  // This is  the normalization step
+	  for (kyBefore = 0; kyBefore < y_size	 ; ++kyBefore)	{  // These are the	 kx, ky, kz coordinates of the original image
+			  for (kzBefore = 0; kzBefore < z_size	 ; ++kzBefore)	{
 
-	      float CurrentReal = image -> get_value_at(2*kxBefore   , kyBefore, kzBefore);
-	      float CurrentImag = image -> get_value_at(2*kxBefore+1 , kyBefore, kzBefore);
+		  float CurrentReal = image -> get_value_at(2*kxBefore	 , kyBefore, kzBefore);
+		  float CurrentImag = image -> get_value_at(2*kxBefore+1 , kyBefore, kzBefore);
 
-              PhaseFinalIm -> set_value_at(kxBefore,kyBefore, kzBefore, atan2(CurrentImag,CurrentReal));
-              MagFinalIm   -> set_value_at(kxBefore,kyBefore, kzBefore, sqrt(CurrentImag*CurrentImag+CurrentReal*CurrentReal) );
-	      float WeightNow    = WeightIm -> get_value_at(kxBefore,kyBefore, kzBefore);
-	      if (WeightNow>0) {
-		 float val =  (image->get_value_at(2*kxBefore   , kyBefore, kzBefore))/WeightNow;
-	         image -> set_value_at(2*kxBefore   , kyBefore, kzBefore, val);
-		 val      =  (image->get_value_at(2*kxBefore +1  , kyBefore, kzBefore))/WeightNow;
-	         image -> set_value_at(2*kxBefore +1  , kyBefore, kzBefore,  val);
-	      }
+			  PhaseFinalIm -> set_value_at(kxBefore,kyBefore, kzBefore, atan2(CurrentImag,CurrentReal));
+			  MagFinalIm   -> set_value_at(kxBefore,kyBefore, kzBefore, sqrt(CurrentImag*CurrentImag+CurrentReal*CurrentReal) );
+		  float WeightNow	 = WeightIm -> get_value_at(kxBefore,kyBefore, kzBefore);
+		  if (WeightNow>0) {
+		 float val =  (image->get_value_at(2*kxBefore	, kyBefore, kzBefore))/WeightNow;
+			 image -> set_value_at(2*kxBefore	, kyBefore, kzBefore, val);
+		 val	  =	 (image->get_value_at(2*kxBefore +1	 , kyBefore, kzBefore))/WeightNow;
+			 image -> set_value_at(2*kxBefore +1  , kyBefore, kzBefore,	 val);
+		  }
 
 	}}}
 
 	if (debug) { printf("  Just did normalization step \n");}
 
 
-	for ( kxBefore = 0; kxBefore < Mid     ; ++kxBefore) {     //  This is the rephase step
-	  for ( kyBefore = 0; kyBefore < y_size   ; ++kyBefore)  {
-  	    for ( kzBefore = 0; kzBefore < z_size   ; ++kzBefore)  {
+	for ( kxBefore = 0; kxBefore < Mid	   ; ++kxBefore) {	   //  This is the rephase step
+	  for ( kyBefore = 0; kyBefore < y_size	  ; ++kyBefore)	 {
+		for ( kzBefore = 0; kzBefore < z_size	; ++kzBefore)  {
 
-	      float CurrentReal = image -> get_value_at(2*kxBefore  ,kyBefore, kzBefore);
-	      float CurrentImag = image -> get_value_at(2*kxBefore+1,kyBefore, kzBefore);
+		  float CurrentReal = image -> get_value_at(2*kxBefore	,kyBefore, kzBefore);
+		  float CurrentImag = image -> get_value_at(2*kxBefore+1,kyBefore, kzBefore);
 
-//	      float Phase    = +2*pi*(kxBefore+kyBefore+kzBefore)*(Mid)/y_size;
-	      float Phase    =  pi*(kxBefore + kyBefore + kzBefore)*x_size/y_size;
-	      // Phase    = 0; // Offset should be Mid-1
-	      float CosPhase = cos( Phase);
-	      float SinPhase = sin( Phase);
+//		  float Phase	 = +2*pi*(kxBefore+kyBefore+kzBefore)*(Mid)/y_size;
+		  float Phase	 =	pi*(kxBefore + kyBefore + kzBefore)*x_size/y_size;
+		  // Phase	  = 0; // Offset should be Mid-1
+		  float CosPhase = cos( Phase);
+		  float SinPhase = sin( Phase);
 
-	      float NewRealValue = CosPhase*CurrentReal -SinPhase*CurrentImag;
-	      float NewImagValue = SinPhase*CurrentReal +CosPhase*CurrentImag;
+		  float NewRealValue = CosPhase*CurrentReal -SinPhase*CurrentImag;
+		  float NewImagValue = SinPhase*CurrentReal +CosPhase*CurrentImag;
 
-	      image ->set_value_at(2*kxBefore,  kyBefore,  kzBefore, NewRealValue);
-	      image ->set_value_at(2*kxBefore+1,kyBefore,  kzBefore, NewImagValue);
+		  image ->set_value_at(2*kxBefore,	kyBefore,  kzBefore, NewRealValue);
+		  image ->set_value_at(2*kxBefore+1,kyBefore,  kzBefore, NewImagValue);
 	}}}
 
 	if (debug) {
-	   image        -> write_image("RotatedImageFFT.hdf");
-	   PhaseFinalIm -> write_image("PhaseImInFS.hdf");   // These are the phases,mags of the image when properly centered
-	   MagFinalIm   -> write_image("MagFinalImInFS.hdf");
-	   WeightIm     -> write_image("WeightIm.hdf");
-	   printf("  Just wrote RotatedImageFFT.hdf \n");
+	   image		-> write_image("RotatedImageFFT.hdf");
+	   PhaseFinalIm -> write_image("PhaseImInFS.hdf");	 // These are the phases,mags of the image when properly centered
+	   MagFinalIm	-> write_image("MagFinalImInFS.hdf");
+	   WeightIm		-> write_image("WeightIm.hdf");
+	   printf("	 Just wrote RotatedImageFFT.hdf \n");
 	}
 
 	image -> update();
@@ -12239,10 +12239,10 @@ void CircularAverageBinarizeProcessor::process_inplace(EMData * image)
 EMData* ObjDensityProcessor::process(const EMData* const image) //
 {
 
-    EMData* imageCp= image -> copy();
-    process_inplace(imageCp);
+	EMData* imageCp= image -> copy();
+	process_inplace(imageCp);
 
-    return imageCp;
+	return imageCp;
 }
 
 void ObjDensityProcessor::process_inplace(EMData * image)
@@ -12289,10 +12289,10 @@ void ObjDensityProcessor::process_inplace(EMData * image)
 EMData* ObjLabelProcessor::process(const EMData* const image) //
 {
 
-    EMData* imageCp= image -> copy();
-    process_inplace(imageCp);
+	EMData* imageCp= image -> copy();
+	process_inplace(imageCp);
 
-    return imageCp;
+	return imageCp;
 }
 
 void ObjLabelProcessor::process_inplace(EMData * image)
@@ -12328,11 +12328,11 @@ void ObjLabelProcessor::process_inplace(EMData * image)
 				{
 					Vec3i v=pvec.back();
 					int x=v[0],y=v[1],z=v[2];
-// 					printf("%d\t%d\t%d\n",x,y,z);
+//					printf("%d\t%d\t%d\n",x,y,z);
 					pvec.pop_back();
 					y1 = y;
 					while(y1 > 0 && image->get_value_at(x,y1,zz)>0) y1--;
-// 					y1++;
+//					y1++;
 					spanLeft = spanRight = 0;
 					bool nowstop=0;
 					while(1)
@@ -12344,7 +12344,7 @@ void ObjLabelProcessor::process_inplace(EMData * image)
 							}
 						}
 
-// 						printf("\t %d\t%d\t%d\n",x,y1,z);
+//						printf("\t %d\t%d\t%d\n",x,y1,z);
 						if(!spanLeft && x > 0 && image->get_value_at(x-1,y1,zz)>0)
 						{
 							pvec.push_back(Vec3i(x-1,y1,zz));
@@ -12383,10 +12383,10 @@ void ObjLabelProcessor::process_inplace(EMData * image)
 EMData* BwThinningProcessor::process(const EMData* const image) //
 {
 
-    EMData* imageCp= image -> copy();
-    process_inplace(imageCp);
+	EMData* imageCp= image -> copy();
+	process_inplace(imageCp);
 
-    return imageCp;
+	return imageCp;
 }
 
 void BwThinningProcessor::process_inplace(EMData * image){
@@ -12663,7 +12663,7 @@ void PruneSkeletonProcessor::process_inplace(EMData * image){
 						continue;
 					if (data[knxy+i+jnx]<=maxdist)
 						continue;
-					int db=maxdist;	// distance from nearest branch point.
+					int db=maxdist; // distance from nearest branch point.
 					for (int i2=i-1; i2<=i+1; i2++) {
 						for (int j2=j-1; j2<=j+1; j2++) {
 							db=(data[knxy+i2+j2*nx]==dt ? dt : db);
@@ -12691,8 +12691,8 @@ void PruneSkeletonProcessor::process_inplace(EMData * image){
 						nb+=(data2[knxy+i2+j2*nx]>threshold ? 1 : 0);
 					}
 				}
-				if (nb==1){	// endpoint found
-					data[knxy+i+jnx]=-data[knxy+i+jnx];	//mark for deletion
+				if (nb==1){ // endpoint found
+					data[knxy+i+jnx]=-data[knxy+i+jnx]; //mark for deletion
 					data2[knxy+i+jnx]=threshold;
 					nend++;
 				}
@@ -12797,7 +12797,7 @@ void BinaryDilationProcessor::process_inplace(EMData *image)
 EMData* BinaryErosionProcessor::process(const EMData* const image)
 {
 	EMData* proc = image->copy();
-	proc->process_inplace("morph.dilate.binary",params);
+	proc->process_inplace("morph.erode.binary",params);
 	return proc;
 }
 
@@ -12805,6 +12805,7 @@ void BinaryErosionProcessor::process_inplace(EMData *image)
 {
 	int k=params.set_default("k",1);
 	if (image->get_zsize() != 1) throw ImageDimensionException("Only 2-D images supported");
+	
 	image->mult(-1);
 	image->add(1);
 	image->process_inplace("math.distance.manhattan");
@@ -12861,6 +12862,7 @@ void BinaryInternalGradientProcessor::process_inplace(EMData *image)
 	EMData *eroded = image->process("morph.erode.binary",params);
 	image->process_inplace("morph.dilate.binary",params);
 	image->sub(*eroded);
+	delete eroded;
 }
 
 
@@ -12874,11 +12876,10 @@ EMData* BinaryExternalGradientProcessor::process(const EMData* const image)
 void BinaryExternalGradientProcessor::process_inplace(EMData *image)
 {
 	int k=params.set_default("k",1);
-	EMData *opened = image->process("morph.open.binary",params);
-	image->process_inplace("morph.dilate.binary",params);
-	opened->sub(*image);
-	image->to_zero();
-	image->add(*opened);
+	EMData *dilated = image->process("morph.dilate.binary",params);
+	image->process_inplace("morph.open.binary",params);
+	image->sub(*dilated);
+	delete dilated;
 }
 
 
@@ -12895,6 +12896,7 @@ void BinaryMorphGradientProcessor::process_inplace(EMData *image)
 	EMData *eroded = image->process("morph.erode.binary",params);
 	image->process_inplace("morph.dilate.binary",params);
 	image->sub(*eroded);
+	delete eroded;
 }
 
 
@@ -12908,8 +12910,9 @@ EMData* BinaryTopHatProcessor::process(const EMData* const image)
 void BinaryTopHatProcessor::process_inplace(EMData *image)
 {
 	int k=params.set_default("k",1);
-	EMData* opened = image->process("morph.open.binary",params);
-	image->sub(*opened);
+	EMData* open = image->process("morph.open.binary",params);
+	image->sub(*open);
+	delete open;
 }
 
 
@@ -12923,10 +12926,9 @@ EMData* BinaryBlackHatProcessor::process(const EMData* const image)
 void BinaryBlackHatProcessor::process_inplace(EMData *image)
 {
 	int k=params.set_default("k",1);
-	EMData* closed = image->process("morph.close.binary",params);
-	closed->sub(*image);
-	image->to_zero();
-	image->add(*closed);
+	EMData* close = image->process("morph.close.binary",params);
+	image->sub(*close);
+	delete close;
 }
 
 
@@ -12937,389 +12939,389 @@ void BinaryBlackHatProcessor::process_inplace(EMData *image)
  */
 #include "sparx/cuda/cuda_mpi_kmeans.h"
 MPICUDA_kmeans::MPICUDA_kmeans() {
-    h_IM = NULL;
-    h_AVE = NULL;
-    h_ASG = NULL;
-    h_dist = NULL;
-    h_AVE2 = NULL;
-    h_im2 = NULL;
-    h_NC = NULL;
-    params = NULL;
-    d_im = NULL;
-    d_AVE = NULL;
-    d_dist = NULL;
+	h_IM = NULL;
+	h_AVE = NULL;
+	h_ASG = NULL;
+	h_dist = NULL;
+	h_AVE2 = NULL;
+	h_im2 = NULL;
+	h_NC = NULL;
+	params = NULL;
+	d_im = NULL;
+	d_AVE = NULL;
+	d_dist = NULL;
 }
 
 MPICUDA_kmeans::~MPICUDA_kmeans() {
-    if (h_IM) delete h_IM;
-    if (h_ASG) delete h_ASG;
-    if (h_AVE) delete h_AVE;
-    if (h_dist) delete h_dist;
-    if (h_AVE2) delete h_AVE2;
-    if (h_im2) delete h_im2;
-    if (h_NC) delete h_NC;
-    if (params) delete params;
+	if (h_IM) delete h_IM;
+	if (h_ASG) delete h_ASG;
+	if (h_AVE) delete h_AVE;
+	if (h_dist) delete h_dist;
+	if (h_AVE2) delete h_AVE2;
+	if (h_im2) delete h_im2;
+	if (h_NC) delete h_NC;
+	if (params) delete params;
 }
 
 #include "sparx/cuda/cuda_mpi_kmeans.h"
 int MPICUDA_kmeans::setup(int extm, int extN, int extn, int extK, int extn_start) {
-    m = extm;				// number of pixels per image
-    N = extN;				// Total number of images
-    n = extn;                           // Number of images used locally
-    K = extK;				// number of classes
-    n_start = extn_start;               // Starting point to local images
-    size_IM = m * N;                    // nb elements in IM
-    size_im = m * n;                    // nb elements in im
-    size_AVE = m * K;                   // nb elements in ave
-    size_dist = n * K;                  // nb elements in dist
-    ite = 0;                            // init nb of iterations
-    BLOCK_SIZE = 512;
-    NB = size_dist / BLOCK_SIZE;
-    ins_BLOCK = NB * BLOCK_SIZE;
-    // Host memory allocation for images
-    h_IM = (float*)malloc(size_IM * sizeof(float));
-    if (h_IM == 0) return 1;
-    h_im = &h_IM[n_start * m]; // for local images
-    // Host memory allocation for the averages
-    h_AVE = (float*)malloc(size_AVE * sizeof(float));
-    if (h_AVE == 0) return 1;
-    // Host memory allocation for all assignment
-    h_ASG = (unsigned short int*)malloc(N * sizeof(unsigned short int));
-    if (h_ASG == 0) return 1;
-    h_asg = &h_ASG[n_start]; // for local assignment
-    // allocate the memory for the sum squared of averages
-    h_AVE2 = (float*)malloc(K * sizeof(float));
-    if (h_AVE2 == 0) return 1;
-    // allocate the memory for the sum squared of images
-    h_im2 = (float*)malloc(n * sizeof(float));
-    if (h_im2 == 0) return 1;
-    // allocate the memory for the distances
-    h_dist = (float*)malloc(size_dist * sizeof(float));
-    if (h_dist == 0) return 1;
-    // allocate the memory for the number of images per class
-    h_NC = (unsigned int*)malloc(K * sizeof(unsigned int));
-    if (h_NC == 0) return 1;
-    // allocate the memory to parameters
-    params = (int*)malloc(8 * sizeof(int));
-    if (params == 0) return 1;
-    params[0] = n;
-    params[1] = m;
-    params[2] = K;
-    params[3] = 0;          // Reserve for flag_stop_iteration
-    params[4] = 0;          // Reserve for ct_im_mv (debug)
-    params[5] = BLOCK_SIZE; // Size of threads block (512)
-    params[6] = NB;         // Number of blocks which fit with BLOCK_SIZE
-    params[7] = ins_BLOCK;  // Number of blocks remaining
+	m = extm;				// number of pixels per image
+	N = extN;				// Total number of images
+	n = extn;							// Number of images used locally
+	K = extK;				// number of classes
+	n_start = extn_start;				// Starting point to local images
+	size_IM = m * N;					// nb elements in IM
+	size_im = m * n;					// nb elements in im
+	size_AVE = m * K;					// nb elements in ave
+	size_dist = n * K;					// nb elements in dist
+	ite = 0;							// init nb of iterations
+	BLOCK_SIZE = 512;
+	NB = size_dist / BLOCK_SIZE;
+	ins_BLOCK = NB * BLOCK_SIZE;
+	// Host memory allocation for images
+	h_IM = (float*)malloc(size_IM * sizeof(float));
+	if (h_IM == 0) return 1;
+	h_im = &h_IM[n_start * m]; // for local images
+	// Host memory allocation for the averages
+	h_AVE = (float*)malloc(size_AVE * sizeof(float));
+	if (h_AVE == 0) return 1;
+	// Host memory allocation for all assignment
+	h_ASG = (unsigned short int*)malloc(N * sizeof(unsigned short int));
+	if (h_ASG == 0) return 1;
+	h_asg = &h_ASG[n_start]; // for local assignment
+	// allocate the memory for the sum squared of averages
+	h_AVE2 = (float*)malloc(K * sizeof(float));
+	if (h_AVE2 == 0) return 1;
+	// allocate the memory for the sum squared of images
+	h_im2 = (float*)malloc(n * sizeof(float));
+	if (h_im2 == 0) return 1;
+	// allocate the memory for the distances
+	h_dist = (float*)malloc(size_dist * sizeof(float));
+	if (h_dist == 0) return 1;
+	// allocate the memory for the number of images per class
+	h_NC = (unsigned int*)malloc(K * sizeof(unsigned int));
+	if (h_NC == 0) return 1;
+	// allocate the memory to parameters
+	params = (int*)malloc(8 * sizeof(int));
+	if (params == 0) return 1;
+	params[0] = n;
+	params[1] = m;
+	params[2] = K;
+	params[3] = 0;			// Reserve for flag_stop_iteration
+	params[4] = 0;			// Reserve for ct_im_mv (debug)
+	params[5] = BLOCK_SIZE; // Size of threads block (512)
+	params[6] = NB;			// Number of blocks which fit with BLOCK_SIZE
+	params[7] = ins_BLOCK;	// Number of blocks remaining
 
 
-    return 0;
+	return 0;
 }
 
 // add image pre-process by Util.compress_image_mask
 void MPICUDA_kmeans::append_flat_image(EMData* im, int pos) {
 
-    for (int i = 0; i < m ; ++i) h_IM[pos * m + i] = (*im)(i);
+	for (int i = 0; i < m ; ++i) h_IM[pos * m + i] = (*im)(i);
 
 }
 
 // cuda init mem device, cublas (get device ptr)
 int MPICUDA_kmeans::init_mem(int numdev) {
-    int stat = 1;
-    float** hd_AVE = NULL;
-    float** hd_im = NULL;
-    float** hd_dist = NULL;
-    hd_AVE = &d_AVE;
-    hd_im = &d_im;
-    hd_dist = &d_dist;
-    stat = cuda_mpi_init(h_im, hd_im, hd_AVE, hd_dist, size_im, size_AVE, size_dist, numdev);
-    //printf("C++ get this pointer for d_AVE: %p\n", d_AVE);
-    //printf("C++ get this pointer for d_im: %p\n", d_im);
-    //printf("C++ get this pointer for d_dist: %p\n", d_dist);
-    return stat;
+	int stat = 1;
+	float** hd_AVE = NULL;
+	float** hd_im = NULL;
+	float** hd_dist = NULL;
+	hd_AVE = &d_AVE;
+	hd_im = &d_im;
+	hd_dist = &d_dist;
+	stat = cuda_mpi_init(h_im, hd_im, hd_AVE, hd_dist, size_im, size_AVE, size_dist, numdev);
+	//printf("C++ get this pointer for d_AVE: %p\n", d_AVE);
+	//printf("C++ get this pointer for d_im: %p\n", d_im);
+	//printf("C++ get this pointer for d_dist: %p\n", d_dist);
+	return stat;
 }
 
 // precalculate im2
 void MPICUDA_kmeans::compute_im2() {
-    for (int i = 0; i < n; i++) {
+	for (int i = 0; i < n; i++) {
 	h_im2[i] = 0.0f;
 	for (int j = 0; j < m; j++) h_im2[i] += (h_im[i * m + j] * h_im[i * m + j]);
-    }
+	}
 }
 
 // init randomly the first assignment
 int MPICUDA_kmeans::random_ASG(long int rnd) {
-    srand(rnd);
-    int ret = 20;
-    int flag = 0;
-    int i, k;
-    std::cout<<"111111111  number of image==="<<N<<"number cluster=="<<K<<"img size"<<m<<std::endl;
-    for (k = 0; k < K; k++) h_NC[k] = 0;
-    while (ret > 0) {
+	srand(rnd);
+	int ret = 20;
+	int flag = 0;
+	int i, k;
+	std::cout<<"111111111  number of image==="<<N<<"number cluster=="<<K<<"img size"<<m<<std::endl;
+	for (k = 0; k < K; k++) h_NC[k] = 0;
+	while (ret > 0) {
 	ret--;
 	for (i = 0; i < N; i++) {
-	    h_ASG[i] = rand() % K;
-	    h_NC[h_ASG[i]]++;
+		h_ASG[i] = rand() % K;
+		h_NC[h_ASG[i]]++;
 	}
 	flag = 1;
 	k = K;
 	while (k > 0 && flag) {
-	    k--;
-	    if (h_NC[k] <= 1) {
+		k--;
+		if (h_NC[k] <= 1) {
 		flag = 0;
 		if (ret == 0) {
-		    //printf("Erreur randomize assignment\n");
-		    return -1;
+			//printf("Erreur randomize assignment\n");
+			return -1;
 		}
 		for (k = 0; k < K; k++) h_NC[k] = 0;
-	    }
+		}
 	if (flag == 1) ret = 0;
 	}
-    }
+	}
 
-    return 0;
+	return 0;
 }
 
 // get back the assignment
 vector <int> MPICUDA_kmeans::get_ASG() {
-    vector <int> ASG(h_ASG, &h_ASG[N]);
-    return ASG;
+	vector <int> ASG(h_ASG, &h_ASG[N]);
+	return ASG;
 }
 
 // get back the global assignment
 vector <int> MPICUDA_kmeans::get_asg() {
-    vector <int> asg(h_asg, &h_asg[n]);
-    return asg;
+	vector <int> asg(h_asg, &h_asg[n]);
+	return asg;
 }
 
 // compute NC from ASG
 void MPICUDA_kmeans::compute_NC() {
-    for (int i = 0; i < K; ++i) h_NC[i] = 0;
-    for (int i = 0; i < N; ++i) h_NC[h_ASG[i]]++;
+	for (int i = 0; i < K; ++i) h_NC[i] = 0;
+	for (int i = 0; i < N; ++i) h_NC[h_ASG[i]]++;
 }
 
 // get NC
 vector <int> MPICUDA_kmeans::get_NC() {
-    vector <int> NC(h_NC, &h_NC[K]);
-    return NC;
+	vector <int> NC(h_NC, &h_NC[K]);
+	return NC;
 }
 
 // set a new global assignment
 void MPICUDA_kmeans::set_ASG(const vector <int>& ASG) {
-    for (int i = 0; i < N ; ++i) h_ASG[i] = ASG[i];
+	for (int i = 0; i < N ; ++i) h_ASG[i] = ASG[i];
 }
 
 // set number of objects per group
 void MPICUDA_kmeans::set_NC(const vector <int>& NC) {
-    for (int i = 0; i < K; ++i) h_NC[i] = NC[i];
+	for (int i = 0; i < K; ++i) h_NC[i] = NC[i];
 }
 
 // get back some information (ite and T0)
 int MPICUDA_kmeans::get_ct_im_mv() {
-    return params[4]; // ct_im_mov
+	return params[4]; // ct_im_mov
 }
 
 // set the value of T
 void MPICUDA_kmeans::set_T(float extT) {
-    T = extT;
+	T = extT;
 }
 
 // get the T value
 float MPICUDA_kmeans::get_T() {
-    return T;
+	return T;
 }
 
 // compute ave and ave2
 void MPICUDA_kmeans::compute_AVE() {
-    float buf = 0.0f;
-    int i, j, c, d, ind;
-    // compute the averages according ASG
-    for (i = 0; i < size_AVE; ++i) h_AVE[i] = 0.0f;                          // set averages to zero
-    for (i = 0; i < N; ++i) {
+	float buf = 0.0f;
+	int i, j, c, d, ind;
+	// compute the averages according ASG
+	for (i = 0; i < size_AVE; ++i) h_AVE[i] = 0.0f;							 // set averages to zero
+	for (i = 0; i < N; ++i) {
 	c = h_ASG[i] * m;
 	d = i * m;
-	for (j = 0; j < m; ++j) h_AVE[c + j] += h_IM[d + j];                 // accumulate images
-    }
-    for (i = 0; i < K; i++) {
+	for (j = 0; j < m; ++j) h_AVE[c + j] += h_IM[d + j];				 // accumulate images
+	}
+	for (i = 0; i < K; i++) {
 	buf = 0.0f;
 	for (j = 0 ; j < m; j++) {
-	    ind = i * m + j;
-	    h_AVE[ind] /= (float)h_NC[i];                                    // compute average
-	    buf += (h_AVE[ind] * h_AVE[ind]);                                // do sum squared AVE
+		ind = i * m + j;
+		h_AVE[ind] /= (float)h_NC[i];									 // compute average
+		buf += (h_AVE[ind] * h_AVE[ind]);								 // do sum squared AVE
 	}
 	h_AVE2[i] = buf;
-    }
+	}
 
-    /*for (i = 0; i < K; i++) {
-    	std::cout<<"average image"<<std::endl;
-    	std::cout<<h_AVE[i*m+0]<<"  "<<h_AVE[i*m+1]<<"  "<<h_AVE[i*m+2]<<"  "<<h_AVE[i*m+3]<<"  "<<h_AVE[i*m+4]<<std::endl;
-    }*/
+	/*for (i = 0; i < K; i++) {
+		std::cout<<"average image"<<std::endl;
+		std::cout<<h_AVE[i*m+0]<<"	"<<h_AVE[i*m+1]<<"	"<<h_AVE[i*m+2]<<"	"<<h_AVE[i*m+3]<<"	"<<h_AVE[i*m+4]<<std::endl;
+	}*/
 
 }
 
 // set averages
 void MPICUDA_kmeans::set_AVE(EMData* im, int pos) {
-    for (int i = 0; i < m ; ++i) h_AVE[pos * m + i] = (*im)(i);
+	for (int i = 0; i < m ; ++i) h_AVE[pos * m + i] = (*im)(i);
 }
 
 // get back the averages
 vector<EMData*> MPICUDA_kmeans::get_AVE() {
-    vector<EMData*> ave(K);
-    for (int k = 0; k < K; ++k) {
+	vector<EMData*> ave(K);
+	for (int k = 0; k < K; ++k) {
 	EMData* im = new EMData();
 	im->set_size(m, 1, 1);
 	float *ptr = im->get_data();
 	for (int i = 0; i < m; ++i) {ptr[i] =  h_AVE[k * m + i];}
 	ave[k] = im->copy();
 	delete im;
-    }
-    return ave;
+	}
+	return ave;
 }
 
 // k-means one iteration
 int MPICUDA_kmeans::one_iter() {
-    int status = cuda_mpi_kmeans(h_AVE, d_AVE, h_dist, d_dist, d_im, h_im2, h_AVE2, h_asg, h_NC, params);
-    ite++;
-    return status;
+	int status = cuda_mpi_kmeans(h_AVE, d_AVE, h_dist, d_dist, d_im, h_im2, h_AVE2, h_asg, h_NC, params);
+	ite++;
+	return status;
 }
 // k-means SSE one iteration help function
 /*int MPICUDA_kmeans::init_dist() {
 
-    int status = cuda_mpi_kmeans_dist_SSE(h_AVE, d_AVE, h_dist, d_dist, d_im, h_im2, h_AVE2, h_asg, h_NC, params);
+	int status = cuda_mpi_kmeans_dist_SSE(h_AVE, d_AVE, h_dist, d_dist, d_im, h_im2, h_AVE2, h_asg, h_NC, params);
 
-    return status;
+	return status;
 }*/
 
 /*int MPICUDA_kmeans::AVE_to_host() {
 
-    int status = cuda_mpi_kmeans_copy_ave_from_device(h_AVE, d_AVE, params);
+	int status = cuda_mpi_kmeans_copy_ave_from_device(h_AVE, d_AVE, params);
 
-    return status;
+	return status;
 }*/
 
 
 int one_iter_SA();
 // k-means SSE one iteration
 /*int MPICUDA_kmeans::one_iter_SSE() {
-    //if ( ite == 0)
+	//if ( ite == 0)
 
-    if( ite ==0) {
-    	 int status_init=init_dist();
-    	 ttt = compute_tt();//int status = 0;
-    	 printf("intial energy ===%f\n",ttt);
-    }
-    //std::cout<<bb<<BB<<std::endl;
-    int status = cuda_mpi_kmeans_SSE(h_AVE, d_AVE, h_dist, d_dist, d_im, h_im2, h_AVE2, h_asg, h_NC, params, ite, ttt);
+	if( ite ==0) {
+		 int status_init=init_dist();
+		 ttt = compute_tt();//int status = 0;
+		 printf("intial energy ===%f\n",ttt);
+	}
+	//std::cout<<bb<<BB<<std::endl;
+	int status = cuda_mpi_kmeans_SSE(h_AVE, d_AVE, h_dist, d_dist, d_im, h_im2, h_AVE2, h_asg, h_NC, params, ite, ttt);
 
-    //float t = compute_tt();//int status = 0;
-    //std::cout<<"engery at iteration"<<ite<<"==="<<t<<std::endl;
+	//float t = compute_tt();//int status = 0;
+	//std::cout<<"engery at iteration"<<ite<<"==="<<t<<std::endl;
 
-    ite++;
-    return status;
+	ite++;
+	return status;
 }*/
 // k-means SA one iteration
 int MPICUDA_kmeans::one_iter_SA() {
-    int status = cuda_mpi_kmeans_SA(h_AVE, d_AVE, h_dist, d_dist, d_im, h_im2, h_AVE2, h_asg, h_NC, T, params);
-    ite++;
-    return status;
+	int status = cuda_mpi_kmeans_SA(h_AVE, d_AVE, h_dist, d_dist, d_im, h_im2, h_AVE2, h_asg, h_NC, T, params);
+	ite++;
+	return status;
 }
 
 // compute ji
 vector <float> MPICUDA_kmeans::compute_ji() {
-    int status = cuda_mpi_dist(h_AVE, d_AVE, h_dist, d_dist, d_im, n, K, m);
-    vector <float> ji(K);
-    int i;
-    if (status != 0) {
+	int status = cuda_mpi_dist(h_AVE, d_AVE, h_dist, d_dist, d_im, n, K, m);
+	vector <float> ji(K);
+	int i;
+	if (status != 0) {
 	for (i = 0; i < K; ++i) ji[i] = -1.0;
 	return ji;
-    }
-    for (i = 0; i < n; ++i) ji[h_asg[i]] += (h_im2[i] + h_AVE2[h_asg[i]] - 2 * h_dist[i * K + h_asg[i]]);
-    return ji;
+	}
+	for (i = 0; i < n; ++i) ji[h_asg[i]] += (h_im2[i] + h_AVE2[h_asg[i]] - 2 * h_dist[i * K + h_asg[i]]);
+	return ji;
 }
 
 
 float MPICUDA_kmeans::compute_tt() {
-    /*int status = cuda_mpi_dist(h_AVE, d_AVE, h_dist, d_dist, d_im, n, K, m);
-    vector <float> ji(K);
-    int i;
-    if (status != 0) {
-        for (i = 0; i < K; ++i) ji[i] = -1.0;
-        return -11111111;
-    }
-    for (i = 0; i < n; ++i) ji[h_asg[i]] += (h_im2[i] + h_AVE2[h_asg[i]] - 2 * h_dist[i * K + h_asg[i]]);
+	/*int status = cuda_mpi_dist(h_AVE, d_AVE, h_dist, d_dist, d_im, n, K, m);
+	vector <float> ji(K);
+	int i;
+	if (status != 0) {
+		for (i = 0; i < K; ++i) ji[i] = -1.0;
+		return -11111111;
+	}
+	for (i = 0; i < n; ++i) ji[h_asg[i]] += (h_im2[i] + h_AVE2[h_asg[i]] - 2 * h_dist[i * K + h_asg[i]]);
    float t =0.0;
    for (i =0; i<K;i++)
-       t +=ji[i];
-    return t;*/
+	   t +=ji[i];
+	return t;*/
 
 
-    vector <float> ji(K);
-    int i,j;
-    float dist, temp;
-    for (i = 0; i < n; ++i)
-    {
-    	dist =0;
+	vector <float> ji(K);
+	int i,j;
+	float dist, temp;
+	for (i = 0; i < n; ++i)
+	{
+		dist =0;
 	for ( j=0; j<m; j++)	 {
-	    temp = (h_im[i*m+j] -h_AVE[ h_asg[i]*m+j]);
-	    dist = dist + temp*temp;
+		temp = (h_im[i*m+j] -h_AVE[ h_asg[i]*m+j]);
+		dist = dist + temp*temp;
 	 }
-    	ji[h_asg[i]] = ji[h_asg[i]]+ dist;
+		ji[h_asg[i]] = ji[h_asg[i]]+ dist;
    }
 
    float t =0.0;
    for (i =0; i<K;i++)
-       t +=ji[i];
-    return t;
+	   t +=ji[i];
+	return t;
 }
 
 
 //
 vector <float> MPICUDA_kmeans::compute_criterion(const vector <float>& Ji) {
-    float buf = 0.0f;
-    float Je = 0.0f;
-    float Tr_AVE = 0.0f;
-    float v_max = 0.0f;
-    float* S_AVE2 = (float*)calloc(m, sizeof(float));
-    float* S_AVE = (float*)calloc(m, sizeof(float));
-    vector <float> crit(4);
-    int i, j, k;
-    // Je
-    for (i = 0; i < K; ++i) Je += (Ji[i] / float(m));
-    crit[0] = Je;
-    // trace ave
-    for (i = 0; i < K; ++i) {
+	float buf = 0.0f;
+	float Je = 0.0f;
+	float Tr_AVE = 0.0f;
+	float v_max = 0.0f;
+	float* S_AVE2 = (float*)calloc(m, sizeof(float));
+	float* S_AVE = (float*)calloc(m, sizeof(float));
+	vector <float> crit(4);
+	int i, j, k;
+	// Je
+	for (i = 0; i < K; ++i) Je += (Ji[i] / float(m));
+	crit[0] = Je;
+	// trace ave
+	for (i = 0; i < K; ++i) {
 	for (j = 0; j < m; ++j) {
-	    S_AVE[j] += h_AVE[i * m + j];
-	    S_AVE2[j] += (h_AVE[i * m + j] * h_AVE[i * m +j]);
+		S_AVE[j] += h_AVE[i * m + j];
+		S_AVE2[j] += (h_AVE[i * m + j] * h_AVE[i * m +j]);
 	}
-    }
-    buf = 1 / (float)K;
-    for (i = 0; i < m; ++i) Tr_AVE += (buf * (S_AVE2[i] - buf * S_AVE[i] * S_AVE[i]));
-    // Coleman
-    crit[1] = Tr_AVE * Je;
-    // Harabasz
-    crit[2] = (Tr_AVE * (float)(N - K)) / (Je * (float)(K - 1));
-    // Davies-Bouldin
-    for (i = 0; i < K; ++i) {
+	}
+	buf = 1 / (float)K;
+	for (i = 0; i < m; ++i) Tr_AVE += (buf * (S_AVE2[i] - buf * S_AVE[i] * S_AVE[i]));
+	// Coleman
+	crit[1] = Tr_AVE * Je;
+	// Harabasz
+	crit[2] = (Tr_AVE * (float)(N - K)) / (Je * (float)(K - 1));
+	// Davies-Bouldin
+	for (i = 0; i < K; ++i) {
 	v_max = 0.0f;
 	for (j = 0; j < K; ++j) {
-	    if (j != i) {
+		if (j != i) {
 		buf = 0.0f;
 		for (k = 0; k < m; ++k) buf += ((h_AVE[j * m + k] - h_AVE[i * m + k]) * (h_AVE[j * m + k] - h_AVE[i * m + k]));
 		buf = (Ji[i] / (float)h_NC[i] + Ji[j] / (float)h_NC[j]) * ((float)m / buf);
-	    }
-	    if (buf > v_max) v_max = buf;
+		}
+		if (buf > v_max) v_max = buf;
 	}
 	crit[3] += v_max;
-    }
-    crit[3] /= (float)K;
-    free(S_AVE);
-    free(S_AVE2);
-    return crit;
+	}
+	crit[3] /= (float)K;
+	free(S_AVE);
+	free(S_AVE2);
+	return crit;
 }
 
 // shutdown cublas and release device mem
 int MPICUDA_kmeans::shutdown() {
-    return cuda_mpi_shutdown(d_im, d_AVE, d_dist);
+	return cuda_mpi_shutdown(d_im, d_AVE, d_dist);
 }
 //// END OF CUDA KMEANS /////////////////////////
 
