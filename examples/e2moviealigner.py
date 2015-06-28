@@ -632,28 +632,24 @@ class Annealer(BaseAnnealer):
 		self.edge_tolerance = 5 # Allow up to 5 of the frames to hit the edge of the allowed translations before signaling to exit
 		self.edge_strikes = [0 for t in aligner._transforms] # making this a list to allow for easier debugging if need be.
 		self.count = 0
-		self._energy_update_flag = True
 
 	def move(self,):
 		p = self.state[self.count:self.count+2] + (2.0 * np.random.random(2) - 1.0)
 		if np.linalg.norm(p) < self.maxshift: # only allow samples within maxshift radius
-			self._energy_update_flag = True
 			self.state[self.count:self.count+2] = p
 			t = Transform({'type':'eman','tx':self.state[self.count],'ty':self.state[self.count+1]})
 			self.aligner._update_frame_params(self.count/2,t)
-		else: #print("\nSampler reached edge of allowable translations on image {}/{}.".format(self.count/2,self.slen))
-		    self._energy_update_flag = False
-		    self.edge_strikes[self.count/2] = 1
-		    if sum(self.edge_strikes) > self.edge_tolerance:
-			    print("Annealer has reached the maximum tolerance of edge strikes ({}).\nStopping optimization prematurely...".format(self.slen/8))
-			    signal.signal(signal.SIGINT, self.set_user_exit)
-			    print("You can supply a larger --maxshift or higher --tolerance to allow for frame alignment to take place beyond this radius; however, we cannot guarantee successful alignment under such circumstances.")
-		self.count = (self.count+2) % self.slen
+			self.count = (self.count+2) % self.slen
+		else:
+			self.edge_strikes[self.count/2] = 1
+			if sum(self.edge_strikes) > self.edge_tolerance:
+				print("Annealer has reached the maximum tolerance of edge strikes ({}).\nStopping optimization prematurely...".format(self.slen/8))
+				signal.signal(signal.SIGINT, self.set_user_exit)
+				print("You can supply a larger --maxshift or higher --tolerance to allow for frame alignment to take place beyond this radius; however, we cannot guarantee successful alignment under such circumstances.")
 	
 	def energy(self):
-	    if self._energy_update_flag: 
-	        self.aligner._update_energy()
-		return self.aligner.get_last_energy()
+	    self.aligner._update_energy()
+	    return self.aligner.get_last_energy()
 
 if __name__ == "__main__":
 	main()
