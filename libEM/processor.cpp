@@ -12783,9 +12783,9 @@ EMData* BinaryDilationProcessor::process(const EMData* const image)
 
 void BinaryDilationProcessor::process_inplace(EMData *image)
 {
+	int k=params.set_default("k",1);
 	if (image->get_zsize() != 1) throw ImageDimensionException("Only 2-D images supported");
 	image->process_inplace("math.distance.manhattan");
-	int k=params.set_default("k",1);
 	for (int i=0; i < image->get_xsize(); i++){
 		for (int j=0; j < image->get_ysize(); j++){
 			image->set_value_at_fast(i,j,(image->get_value_at(i,j)<=k)?1:0);
@@ -12803,10 +12803,10 @@ EMData* BinaryErosionProcessor::process(const EMData* const image)
 
 void BinaryErosionProcessor::process_inplace(EMData *image)
 {
+	int k=params.set_default("k",1);
 	if (image->get_zsize() != 1) throw ImageDimensionException("Only 2-D images supported");
 	image->mult(-1);
 	image->add(1);
-	int k=params.set_default("k",1);
 	image->process_inplace("math.distance.manhattan");
 	for (int i=0; i < image->get_xsize(); i++){
 		for (int j=0; j < image->get_ysize(); j++){
@@ -12827,6 +12827,7 @@ EMData* BinaryOpeningProcessor::process(const EMData* const image)
 
 void BinaryOpeningProcessor::process_inplace(EMData *image)
 {
+	int k=params.set_default("k",1);
 	image->process_inplace("morph.dilate.binary",params);
 	image->process_inplace("morph.erode.binary",params);
 }
@@ -12841,6 +12842,7 @@ EMData* BinaryClosingProcessor::process(const EMData* const image)
 
 void BinaryClosingProcessor::process_inplace(EMData *image)
 {
+	int k=params.set_default("k",1);
 	image->process_inplace("morph.erode.binary",params);
 	image->process_inplace("morph.dilate.binary",params);
 }
@@ -12855,6 +12857,7 @@ EMData* BinaryInternalGradientProcessor::process(const EMData* const image)
 
 void BinaryInternalGradientProcessor::process_inplace(EMData *image)
 {
+	int k=params.set_default("k",1);
 	EMData *eroded = image->process("morph.erode.binary",params);
 	image->process_inplace("morph.dilate.binary",params);
 	image->sub(*eroded);
@@ -12870,6 +12873,7 @@ EMData* BinaryExternalGradientProcessor::process(const EMData* const image)
 
 void BinaryExternalGradientProcessor::process_inplace(EMData *image)
 {
+	int k=params.set_default("k",1);
 	EMData *opened = image->process("morph.open.binary",params);
 	image->process_inplace("morph.dilate.binary",params);
 	opened->sub(*image);
@@ -12887,6 +12891,7 @@ EMData* BinaryMorphGradientProcessor::process(const EMData* const image)
 
 void BinaryMorphGradientProcessor::process_inplace(EMData *image)
 {
+	int k=params.set_default("k",1);
 	EMData *eroded = image->process("morph.erode.binary",params);
 	image->process_inplace("morph.dilate.binary",params);
 	image->sub(*eroded);
@@ -12902,6 +12907,7 @@ EMData* BinaryTopHatProcessor::process(const EMData* const image)
 
 void BinaryTopHatProcessor::process_inplace(EMData *image)
 {
+	int k=params.set_default("k",1);
 	EMData* opened = image->process("morph.open.binary",params);
 	image->sub(*opened);
 }
@@ -12916,6 +12922,7 @@ EMData* BinaryBlackHatProcessor::process(const EMData* const image)
 
 void BinaryBlackHatProcessor::process_inplace(EMData *image)
 {
+	int k=params.set_default("k",1);
 	EMData* closed = image->process("morph.close.binary",params);
 	closed->sub(*image);
 	image->to_zero();
