@@ -117,7 +117,7 @@ def AI( icurrentres, Tracker, HISTORY ):
 			#  Resolution improved, adjust window size and keep going
 			if(  direction > 0 ):
 				keepgoing = 1
-				if(Tracker["state"] == "FINAL"):
+				if(Tracker["state"] == "FINAL2"):
 					if( icurrentres + 4 > Tracker["constants"]["nnxo"]): keepgoing = 0
 				else:
 					nxinit = Tracker["nxinit"]
@@ -136,7 +136,7 @@ def AI( icurrentres, Tracker, HISTORY ):
 						# turn on pwadjustment
 						Tracker["PWadjustment"] = Tracker["constants"]["pwreference"]
 						keepgoing = 1
-				elif( Tracker["state"] == "FINAL"):  keepgoing = 0
+				elif( Tracker["state"] == "FINAL2"):  keepgoing = 0
 				else:
 					# move up with the state
 					move_up_phase = True
@@ -182,6 +182,7 @@ def AI( icurrentres, Tracker, HISTORY ):
 				if not Tracker["applyctf"] :  reset_data  = True
 				Tracker["applyctf"]    = True
 				#  Switch to exhaustive
+				Tracker["upscale"]     = 0.5
 				Tracker["state"]       = "EXHAUSTIVE"
 				#  Develop something intelligent
 				Tracker["xr"] = "6 3"
@@ -198,6 +199,7 @@ def AI( icurrentres, Tracker, HISTORY ):
 				Tracker["local"]       = True
 				Tracker["zoom"]        = False
 				if Tracker["applyctf"] :  reset_data  = True
+				Tracker["upscale"]     = 0.5
 				Tracker["applyctf"]    = False
 				Tracker["an"]          = "-1"
 				Tracker["state"]       = "LOCAL"
@@ -215,13 +217,30 @@ def AI( icurrentres, Tracker, HISTORY ):
 				Tracker["zoom"]        = False
 				if Tracker["applyctf"] :  reset_data  = True
 				Tracker["applyctf"]    = False
+				Tracker["upscale"]     = 0.5
 				Tracker["an"]          = "-1"
-				Tracker["state"]       = "FINAL"
+				Tracker["state"]       = "FINAL1"
 				Tracker["maxit"]       = 10
 				Tracker["xr"] = "2"
 				Tracker["ts"] = "2"
 				keepgoing = 1
-			elif(Tracker["state"] == "FINAL"):
+			elif(Tracker["state"] == "FINAL1"):
+				#  Switch to FINAL
+				Tracker["nxinit"] = Tracker["constants"]["nnxo"]
+				Tracker["icurrentres"] = icurrentres
+				Tracker["nsoft"]       = 0
+				Tracker["local"]       = True
+				Tracker["zoom"]        = False
+				if Tracker["applyctf"] :  reset_data  = True
+				Tracker["upscale"]     = 1.0
+				Tracker["applyctf"]    = False
+				Tracker["an"]          = "-1"
+				Tracker["state"]       = "FINAL2"
+				Tracker["maxit"]       = 10
+				Tracker["xr"] = "2"
+				Tracker["ts"] = "2"
+				keepgoing = 1
+			elif(Tracker["state"] == "FINAL2"):
 				keepgoing = 0
 			else:
 				ERROR(" Unknown phase","sxmeridien",1)
@@ -619,7 +638,7 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 		print("                    =>  partstack           :  ",partstack)
 
 	#  Run alignment command
-	if( Tracker["state"] == "LOCAL" ):
+	if Tracker["local"] :
 		params = slocal_ali3d_base_MPI_mrk01(projdata, get_im(Tracker["refvol"]), \
 				Tracker, mpi_comm = MPI_COMM_WORLD, log = log, chunk = 1.0, \
 		    	saturatecrit = Tracker["saturatecrit"], pixercutoff =  Tracker["pixercutoff"])
@@ -646,12 +665,6 @@ def print_dict(dict,theme):
 		if(key != "constants"):  print("                    => ", key+spaces[len(key):],":  ",value)
 
 
-# NOTE: 2015/06/11 Toshio Moriya
-# DESIGN
-# - "options" object 
-#   It keeps the original input option values specified by user.
-#   This object must be constant. That is, you should not assign any parameter values 
-#   to this after the initialization.
 # 
 # - "Tracker" (dictionary) object
 #   Keeps the current state of option settings and dataset 
@@ -664,11 +677,6 @@ def print_dict(dict,theme):
 #   This can be used to restart process from an arbitrary iteration.
 #   The program will store the HISTORY in the form of file.
 #   
-# NOTE: 2015/06/11 Toshio Moriya
-# MODIFICATION
-# - merge ali3d_options to Tracker (dictionary)
-# - make paramsdict to be Tracker (dictionary) 
-#   paramsdict was earlier version of Tracker (Pawel)...
 #
 def main():
 
@@ -769,7 +777,7 @@ def main():
 	Constants["refvol"]       = volinit
 	Constants["masterdir"]    = masterdir
 	Constants["best"]         = 0
-	Constants["states"]       = ["INITIAL", "EXHAUSTIVE", "LOCAL", "FINAL"]
+	Constants["states"]       = ["INITIAL", "EXHAUSTIVE", "LOCAL", "FINAL1", "FINAL1"]
 	#Constants["mempernode"]   = 4.0e9
 	#  The program will use three different meanings of x-size
 	#  nnxo         - original nx of the data, will not be changed
@@ -792,6 +800,7 @@ def main():
 	Tracker["nsoft"]          = options.nsoft
 	Tracker["local"]          = False
 	Tracker["PWadjustment"]   = ""
+	Tracker["upscale"]        = 0.5
 	Tracker["applyctf"]       = True  #  Should the data be premultiplied by the CTF.  Set to False for local continues.
 	Tracker["refvol"]         = None
 
