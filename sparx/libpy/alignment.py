@@ -1474,8 +1474,6 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 		finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 		finfo.flush()
 
-	from utilities import getang3
-	#return peak, pixel_error, getang3([dp["phi"], dp["theta"]],[phi, theta]),max(abs(dp["tx"]+s2x),abs(dp["ty"]+s2y))
 	return peak, pixel_error
 
 def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None):
@@ -1543,10 +1541,6 @@ def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None):
 		finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 		finfo.flush()
 
-	from utilities import getang3
-	dp = t1.get_params("spider")
-	du = t2.get_params("spider")
-	#return peak, pixel_error, getang3([dp["phi"], dp["theta"]],[du["phi"], du["theta"]]),max(abs(dp["tx"]-du["tx"]),abs(dp["ty"]-du["ty"]))
 	return peak, pixel_error
 
 def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None, sym='c1'):
@@ -1618,28 +1612,19 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 		from utilities import get_symt
 		from pixel_error import max_3D_pixel_error
 		ts = get_symt(sym)
-		from utilities import getang3
 		if(len(ts) > 1):
 			# only do it if it is not c1
-			anger = 360.0
-			shifter = 1.0e23
 			pixel_error = +1.0e23
 			for kts in ts:
 				ut = t2*kts
 				# we do not care which position minimizes the error
-				du = ut.get_params("spider")
-				anger = min(getang3([dp["phi"], dp["theta"]], [du["phi"], du["theta"]]),anger)
-				shifter = min(max(abs(dp["tx"]-du["tx"]),abs(dp["ty"]-dp["ty"])), shifter)
 				pixel_error = min(max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
 		else:
-			anger = getang3([dp["phi"], dp["theta"]],[phi, theta])
-			shifter = max(abs(dp["tx"]+s2x),abs(dp["ty"]+s2y))
 			pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
 		#print phi, theta, psi, s2x, s2y, peak, pixel_error
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 			finfo.flush()
-		#return peak, pixel_error, anger, shifter
 		return peak, pixel_error
 	else:
 		return -1.0e23, 0.0
@@ -1717,24 +1702,15 @@ def proj_ali_incore_local_zoom(data, refrings, numr, xrng, yrng, step, an, finfo
 		data.set_attr("xform.projection", t2)
 		from utilities import get_symt
 		from pixel_error import max_3D_pixel_error
-		from utilities import getang3
-		du = t1.get_params("spider")
 		ts = get_symt(sym)
 		if(len(ts) > 1):
 			# only do it if it is not c1
-			anger = 360.0
-			shifter = 1.0e23
 			pixel_error = +1.0e23
 			for kts in ts:
 				ut = t2*kts
 				# we do not care which position minimizes the error
-				du = ut.get_params("spider")
-				anger = min(getang3([dp["phi"], dp["theta"]], [du["phi"], du["theta"]]),anger)
-				shifter = min(max(abs(dp["tx"]-du["tx"]),abs(dp["ty"]-dp["ty"])), shifter)
 				pixel_error = min(max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
 		else:
-			anger = getang3([dp["phi"], dp["theta"]],[du["phi"], du["theta"]])
-			shifter = max(abs(dp["tx"]-du["tx"]),abs(dp["ty"]-dp["ty"]))
 			pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
 
 
@@ -1742,12 +1718,10 @@ def proj_ali_incore_local_zoom(data, refrings, numr, xrng, yrng, step, an, finfo
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 			finfo.flush()
-		#return peak, pixel_error, anger, shifter
 		return peak, pixel_error
 	else:
 		return -1.0e23, 0.0
 
-#  The next two should not be used anymore.
 def proj_ali_incore_delta(data, refrings, numr, xrng, yrng, step, start, delta, finfo=None):
 	from utilities    import compose_transform2
 	from EMAN2 import Vec2f
