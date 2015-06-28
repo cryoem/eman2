@@ -44,6 +44,7 @@ def AI( icurrentres, Tracker, HISTORY ):
 		Tracker["nxinit"]      = min(nxinit,Tracker["constants"]["nnxo"])
 		Tracker["icurrentres"] = icurrentres
 		Tracker["nsoft"]       = 0
+		Tracker["local"]       = False
 		Tracker["zoom"]        = True
 		if not Tracker["applyctf"] :  reset_data  = True
 		Tracker["applyctf"]    = True
@@ -58,6 +59,7 @@ def AI( icurrentres, Tracker, HISTORY ):
 		Tracker["nxinit"]       = nxinit
 		Tracker["icurrentres"] = min(icurrentres, nxinit//2-3)
 		Tracker["nsoft"]       = 0
+		Tracker["local"]       = False
 		Tracker["zoom"]        = True
 		if not Tracker["applyctf"] :  reset_data  = True
 		Tracker["applyctf"]    = True
@@ -70,6 +72,7 @@ def AI( icurrentres, Tracker, HISTORY ):
 		nxinit                 = Tracker["nxinit"]
 		Tracker["icurrentres"] = min(icurrentres, nxinit//2-3)
 		Tracker["nsoft"]       = 1
+		Tracker["local"]       = False
 		Tracker["zoom"]        = False
 		if not Tracker["applyctf"] :  reset_data  = True
 		Tracker["applyctf"]    = True
@@ -174,6 +177,7 @@ def AI( icurrentres, Tracker, HISTORY ):
 				Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
 				Tracker["icurrentres"] = icurrentres
 				Tracker["nsoft"]       = 0
+				Tracker["local"]       = False
 				Tracker["zoom"]        = True
 				if not Tracker["applyctf"] :  reset_data  = True
 				Tracker["applyctf"]    = True
@@ -191,9 +195,10 @@ def AI( icurrentres, Tracker, HISTORY ):
 				Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
 				Tracker["icurrentres"] = icurrentres
 				Tracker["nsoft"]       = 0
+				Tracker["local"]       = True
 				Tracker["zoom"]        = False
 				if Tracker["applyctf"] :  reset_data  = True
-				Tracker["applyctf"]     = False
+				Tracker["applyctf"]    = False
 				Tracker["an"]          = "-1"
 				Tracker["state"]       = "LOCAL"
 				Tracker["maxit"]       = 1
@@ -206,9 +211,10 @@ def AI( icurrentres, Tracker, HISTORY ):
 				Tracker["nxinit"] = Tracker["constants"]["nnxo"]
 				Tracker["icurrentres"] = icurrentres
 				Tracker["nsoft"]       = 0
+				Tracker["local"]       = True
 				Tracker["zoom"]        = False
 				if Tracker["applyctf"] :  reset_data  = True
-				Tracker["applyctf"]     = False
+				Tracker["applyctf"]    = False
 				Tracker["an"]          = "-1"
 				Tracker["state"]       = "FINAL"
 				Tracker["maxit"]       = 10
