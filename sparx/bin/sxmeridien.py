@@ -735,10 +735,10 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 
 	#  Run alignment command
 	if Tracker["local"] :
-		params = slocal_ali3d_base_MPI_mrk01(projdata, get_im(Tracker["refvol"]), \
+		params = slocal_ali3d_base_MPI(projdata, get_im(Tracker["refvol"]), \
 				Tracker, mpi_comm = MPI_COMM_WORLD, log = log, chunk = 1.0, \
 		    	saturatecrit = Tracker["saturatecrit"], pixercutoff =  Tracker["pixercutoff"])
-	else: params = sali3d_base_mrk01(projdata, ref_vol, \
+	else: params = sali3d_base(projdata, ref_vol, \
 				Tracker, mpi_comm = MPI_COMM_WORLD, log = log, nsoft = Tracker["nsoft"], \
 				saturatecrit = Tracker["saturatecrit"],  pixercutoff =  Tracker["pixercutoff"], zoom = Tracker["zoom"] )
 
@@ -873,7 +873,7 @@ def main():
 	Constants["refvol"]       = volinit
 	Constants["masterdir"]    = masterdir
 	Constants["best"]         = 0
-	Constants["states"]       = ["INITIAL", "EXHAUSTIVE", "RESTRICTED", "LOCAL", "FINAL1", "FINAL1"]
+	Constants["states"]       = ["INITIAL", "EXHAUSTIVE", "RESTRICTED", "LOCAL", "FINAL1", "FINAL2"]
 	#Constants["mempernode"]   = 4.0e9
 	#  The program will use three different meanings of x-size
 	#  nnxo         - original nx of the data, will not be changed
