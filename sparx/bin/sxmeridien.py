@@ -1281,6 +1281,12 @@ def main():
 			else:
 				anger   = 0.0
 				shifter = 0.0
+
+
+		if( myid == main_node):
+			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			print(line,"Maximum displacememnts at 0.95 level for angular directions  %6.2f  and shifts %6.1f"%(anger, shifter) )
+
 		anger   = bcast_number_to_all(anger,   source_node = main_node)
 		shifter = bcast_number_to_all(shifter, source_node = main_node)
 
