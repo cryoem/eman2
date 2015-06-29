@@ -28,7 +28,7 @@ global cushion
 cushion = 8
 
 
-def AI( icurrentres, Tracker, HISTORY ):
+def AI( icurrentres, anger, shifter, Tracker, HISTORY ):
 	#  
 	#  Possibilities we will consider:
 	#    1.  resolution improved: keep going with current settings.
@@ -178,18 +178,37 @@ def AI( icurrentres, Tracker, HISTORY ):
 				Tracker["icurrentres"] = icurrentres
 				Tracker["nsoft"]       = 0
 				Tracker["local"]       = False
-				Tracker["zoom"]        = True
+				Tracker["zoom"]        = False
 				if not Tracker["applyctf"] :  reset_data  = True
 				Tracker["applyctf"]    = True
 				#  Switch to exhaustive
 				Tracker["upscale"]     = 0.5
 				Tracker["state"]       = "EXHAUSTIVE"
 				#  Develop something intelligent
-				Tracker["xr"] = "6 3"
-				Tracker["ts"] = "2 1"
+				Tracker["xr"] = "%d"%(int(shifter)+1)
+				Tracker["ts"] = "1"
 				keepgoing = 1
 			#  Exhaustive searches
 			elif(Tracker["state"] == "EXHAUSTIVE"):
+				#  Switch to LOCAL
+				nxinit = Tracker["nxinit"]
+				while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
+				Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
+				Tracker["icurrentres"] = icurrentres
+				Tracker["nsoft"]       = 0
+				Tracker["local"]       = False
+				Tracker["zoom"]        = False
+				if Tracker["applyctf"] :  reset_data  = True
+				Tracker["upscale"]     = 0.5
+				Tracker["applyctf"]    = False
+				Tracker["an"]          = "30"
+				Tracker["state"]       = "RESTRICTED"
+				Tracker["maxit"]       = 1
+				Tracker["xr"] = "%d"%(int(shifter)+1)
+				Tracker["ts"] = "1"
+				keepgoing = 1
+			#  Exhaustive searches
+			elif(Tracker["state"] == "RESTRICTED"):
 				#  Switch to LOCAL
 				nxinit = Tracker["nxinit"]
 				while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
@@ -250,7 +269,84 @@ def AI( icurrentres, Tracker, HISTORY ):
 	return keepgoing, reset_data
 
 
+def threshold_params_changes(currentdir, previousdir, th = 0.95, sym = "c1"):
+	#  Indexes contain list of images processed - sorted integers, subset of the full range.
+	#  params - contain parameters associated with these images
+	#  Both lists can be of different sizes, so we have to find a common subset
+	from utilities    import getang3
+	from pixel_error  import max_3D_pixel_error
+	from EMAN2        import Vec2f
+	import sets
 
+	cids    = read_text_file(os.path.join(currentdir,"indexes.txt"))
+	pids    = read_text_file(os.path.join(previousdir,"indexes.txt"))
+	cparams = read_text_row(os.path.join(currentdir,"params.txt"))
+	pparams = read_text_row(os.path.join(previousdir,"params.txt"))
+	u = list(set(cids) & set(pids))
+	u.sort()
+	#  Extract common subsets of parameters
+	cp = []
+	pp = []
+	i = 0
+	for q in u:
+		l = cids.index(q,i)
+		cp.append(cparams[l])
+		i = l+1
+	i = 0
+	for q in u:
+		l = pids.index(q,i)
+		pp.append(pparams[l])
+		i = l+1
+	del pparams,cparams
+	n = len(u)
+	anger       = [360.0]*n
+	shifter     = [1.0e23]*n
+	#pixel_error = [1.0e23]*n
+	if(sym == "c1"):
+		for i in xrange(n):
+			anger[i]       = getang3([cp[i][0], cp[i][1]],[pp[i][0], pp[i][1]])
+			shifter[i]     = max(abs(cp[i][3] - pp[i][3]),abs(cp[i][4] - pp[i][4]))
+			#pixel_error[i] = max_3D_pixel_error(t1, t2, radius)
+	else:
+		from utilities import get_symt
+		ts = get_symt(sym)
+		for i in xrange(n):
+			t1 = Transform({"type":"spider","phi":pp[i][0],"theta":pp[i][1],"psi":pp[i][2]})
+			t1.set_trans(Vec2f(-pp[i][3], -pp[i][4]))
+			t2 = Transform({"type":"spider","phi":cp[i][0],"theta":cp[i][1],"psi":cp[i][2]})
+			t2.set_trans(Vec2f(-cp[i][3], -cp[i][4]))
+			pixel_error = 1.0e23
+			for kts in ts:
+				ut = t2*kts
+				# we do not care which position minimizes the error
+				du = ut.get_params("spider")
+				qt = max_3D_pixel_error(t1, ut, 1)
+				if(qt < pixel_error):
+					pixel_error = qt
+					anger[i] = getang3([pp[i][0], pp[i][1]], [du["phi"], du["theta"]])
+					shifter[i] = max(abs(du["tx"] + pp[i][3]),abs(du["ty"] + pp[i][4]))
+
+	anger.sort()
+	shifter.sort()
+	la = int(th*n + 0.5)
+	#  Returns error thresholds under which one has th fraction of images
+	return anger[la], shifter[la]
+	"""
+
+	h1,h2 = hist_list(anger,32)
+	#print h1
+	#print h2
+	h3 = h2[:]
+	for i in xrange(1,len(h3)):
+		h3[i] = h3[i-1]+h2[i]
+	u1,u2 = hist_list(shifter,32)
+	#print u1
+	#print u2
+	u3 = u2[:]
+	for i in xrange(1,len(u3)):
+		u3[i] = u3[i-1]+u2[i]
+	return h1,h2,h3,u1,u2,u3
+	"""
 
 
 
@@ -777,7 +873,7 @@ def main():
 	Constants["refvol"]       = volinit
 	Constants["masterdir"]    = masterdir
 	Constants["best"]         = 0
-	Constants["states"]       = ["INITIAL", "EXHAUSTIVE", "LOCAL", "FINAL1", "FINAL1"]
+	Constants["states"]       = ["INITIAL", "EXHAUSTIVE", "RESTRICTED", "LOCAL", "FINAL1", "FINAL1"]
 	#Constants["mempernode"]   = 4.0e9
 	#  The program will use three different meanings of x-size
 	#  nnxo         - original nx of the data, will not be changed
@@ -925,7 +1021,7 @@ def main():
 	# Create first fake directory main000 with parameters filled with zeroes or copied from headers.  Copy initial volume in.
 	doit, keepchecking = checkstep(initdir, keepchecking, myid, main_node)
 	if  doit:
-		partids = os.path.join(masterdir, "ids.txt")
+		partids = os.path.join(initdir, "indexes.txt")
 		if( myid == main_node ):
 			cmd = "mkdir "+initdir
 			cmdexecute(cmd)
@@ -1081,24 +1177,26 @@ def main():
 
 		mpi_barrier(MPI_COMM_WORLD)
 
-		#  REFINEMENT  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+		#  REFINEMENT   ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 		for procid in xrange(2):
 			coutdir = os.path.join(Tracker["directory"], "loga%01d"%procid)
 			doit, keepchecking = checkstep(coutdir, keepchecking, myid, main_node)
 			#  here ts has different meaning for standard and continuous
 			Tracker["refvol"] = os.path.join(Tracker["directory"], "fusevol%01d.hdf"%procid)\
 
+			# METAMOVE
+			metamove(projdata[procid], oldshifts[procid], Tracker, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
 
-				# METAMOVE
-				metamove(projdata[procid], oldshifts[procid], Tracker, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
 		# Update HISTORY
 		HISTORY.append(Tracker.copy())
+
+
+		#  REFINEMENT  ASSESSMENT  <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 		partstack = [None]*2
 		for procid in xrange(2):  partstack[procid] = os.path.join(Tracker["directory"], "params-chunk%01d.txt"%procid)
 
 		#  Due to efficiency reasons, we have to check it for the volf, if it does not exist, estimate the resolution and compute volf
-		outvol = os.path.join(Tracker["directory"] ,"current_resolution.txt")
 		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"volf.hdf"), keepchecking, myid, main_node)
 
 		if  doit:
@@ -1132,9 +1230,20 @@ def main():
 											os.path.join(Tracker["directory"],"chunk%01d.txt"%procid) )
 					cmdexecute(cmd)
 
-		#  PRESENTABLE RESULT
-		#  Part         <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-		#  Here I have code to generate presentable results.  IDs and params have to be merged and stored and the overall volume computed.
+
+			#  ANALYZE CHANGES IN OUTPUT PARAMETERS WITH RESPECT TO PREVIOUS INTERATION  <><><><><><><><><><><><><><><><><><><><><><><><><><><>
+			if(myid == main_node):
+				anger, shifter = threshold_params_changes( Tracker["directory"], Tracker["previousoutputdir"], 0.95, Tracker["constants"]["sym"])
+				write_text_row( [[anger, shifter]], os.path.join(Tracker["directory"] ,"error_thresholds.txt") )
+			else:
+				anger   = 0.0
+				shifter = 0.0
+			anger   = bcast_number_to_all(anger,   source_node = main_node)
+			shifter = bcast_number_to_all(shifter, source_node = main_node)
+
+
+			#  PRESENTABLE RESULT                <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+			#  Here I have code to generate presentable results.  IDs and params have to be merged and stored and the overall volume computed.
 			if( myid == main_node ):
 				pinids = read_text_file(partids[0]) + read_text_file(partids[1])
 				params = read_text_row(partstack[0]) + read_text_row(partstack[1])
@@ -1166,7 +1275,14 @@ def main():
 			volf = do_volume_mrk01(volf, Tracker, mainiteration, mpi_comm = MPI_COMM_WORLD)
 			if(myid == main_node):
 				fpol(volf, Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"] ,"volf.hdf"))
-
+		else:
+			if(myid == main_node):
+				[anger, shifter] = read_text_row( os.path.join(Tracker["directory"] ,"error_thresholds.txt") )
+			else:
+				anger   = 0.0
+				shifter = 0.0
+			anger   = bcast_number_to_all(anger,   source_node = main_node)
+			shifter = bcast_number_to_all(shifter, source_node = main_node)
 
 		if( myid == main_node):
 			[newlowpass, newfalloff, icurrentres] = read_text_row( os.path.join(Tracker["directory"],"current_resolution.txt") )[0]
@@ -1186,7 +1302,7 @@ def main():
 		#exit()
 		if myid == main_node:  print("   >>> AI  <<<  ",Tracker["mainiteration"] ,icurrentres,Tracker["icurrentres"])
 
-		keepgoing, reset_data = AI( icurrentres, Tracker, HISTORY)
+		keepgoing, reset_data = AI( icurrentres, anger, shifter, Tracker, HISTORY)
 
 		if( keepgoing == 1 ):
 			if reset_data :  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
