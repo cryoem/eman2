@@ -1049,29 +1049,19 @@ def main():
 			
 			if(options.startangles):
 				tp_list = EMUtil.get_all_attributes(Tracker["constants"]["stack"], "xform.projection")
+				for i in xrange(len(tp_list)):
+					dp = tp_list[i].get_params("spider")
+					tp_list[i] = [dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]]
 				write_text_row(tp_list, os.path.join(initdir,"params.txt"))
-				dp_list1 = []
-				for l1_entry in l1:
-					dp = tp_list[l1_entry].get_params("spider")
-					dp_list1.append([dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]])
-				write_text_row(dp_list1, partstack[0])
-				del dp_list1
-				
-				dp_list2 = [] # dp: dictionary object for projection parameters
-				for l2_entry in l2:
-					dp = tp_list[l2_entry].get_params("spider")
-					dp_list2.append([dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]])
-				write_text_row(dp_list2, partstack[1])
-				del dp_list2
+				write_text_row([tp_list[i] for i in l1], partstack[0])
+				write_text_row([tp_list[i] for i in l2], partstack[1])
 				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 				print(line,"Executed successfully: Imported initial parameters from the input stack")
-
-				del tp_list
 				
 			else:
 				write_text_row([[0,0,0,0,0] for i in xrange(len(l1))], partstack[0])
 				write_text_row([[0,0,0,0,0] for i in xrange(len(l2))], partstack[1])
-				write_text_row([[0,0,0,0,0] for i in xrange(ll)], os.path.join(initdir,"params.txt"))
+				write_text_row([[0,0,0,0,0] for i in xrange(len(l1)+len(l2))], os.path.join(initdir,"params.txt"))
 			
 			del l1, l2
 				
