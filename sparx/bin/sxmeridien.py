@@ -1049,7 +1049,7 @@ def main():
 			
 			if(options.startangles):
 				tp_list = EMUtil.get_all_attributes(Tracker["constants"]["stack"], "xform.projection")
-				
+				write_text_row(tp_list, os.path.join(initdir,"params.txt"))
 				dp_list1 = []
 				for l1_entry in l1:
 					dp = tp_list[l1_entry].get_params("spider")
@@ -1071,6 +1071,7 @@ def main():
 			else:
 				write_text_row([[0,0,0,0,0] for i in xrange(len(l1))], partstack[0])
 				write_text_row([[0,0,0,0,0] for i in xrange(len(l2))], partstack[1])
+				write_text_row([[0,0,0,0,0] for i in xrange(ll)], os.path.join(initdir,"params.txt"))
 			
 			del l1, l2
 				
