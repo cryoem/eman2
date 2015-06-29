@@ -1239,17 +1239,6 @@ def main():
 					cmdexecute(cmd)
 
 
-			#  ANALYZE CHANGES IN OUTPUT PARAMETERS WITH RESPECT TO PREVIOUS INTERATION  <><><><><><><><><><><><><><><><><><><><><><><><><><><>
-			if(myid == main_node):
-				anger, shifter = threshold_params_changes( Tracker["directory"], Tracker["previousoutputdir"], 0.95, Tracker["constants"]["sym"])
-				write_text_row( [[anger, shifter]], os.path.join(Tracker["directory"] ,"error_thresholds.txt") )
-			else:
-				anger   = 0.0
-				shifter = 0.0
-			anger   = bcast_number_to_all(anger,   source_node = main_node)
-			shifter = bcast_number_to_all(shifter, source_node = main_node)
-
-
 			#  PRESENTABLE RESULT                <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 			#  Here I have code to generate presentable results.  IDs and params have to be merged and stored and the overall volume computed.
 			if( myid == main_node ):
@@ -1283,14 +1272,27 @@ def main():
 			volf = do_volume_mrk01(volf, Tracker, mainiteration, mpi_comm = MPI_COMM_WORLD)
 			if(myid == main_node):
 				fpol(volf, Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"] ,"volf.hdf"))
-		else:
+
+
+
+		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"error_thresholds.txt"), keepchecking, myid, main_node)
+		if  doit:
+			#  ANALYZE CHANGES IN OUTPUT PARAMETERS WITH RESPECT TO PREVIOUS INTERATION  <><><><><><><><><><><><><><><><><><><><><><><><><><><>
 			if(myid == main_node):
-				[anger, shifter] = read_text_row( os.path.join(Tracker["directory"] ,"error_thresholds.txt") )
+				anger, shifter = threshold_params_changes( Tracker["directory"], Tracker["previousoutputdir"], 0.95, Tracker["constants"]["sym"])
+				write_text_row( [[anger, shifter]], os.path.join(Tracker["directory"] ,"error_thresholds.txt") )
 			else:
 				anger   = 0.0
 				shifter = 0.0
-			anger   = bcast_number_to_all(anger,   source_node = main_node)
-			shifter = bcast_number_to_all(shifter, source_node = main_node)
+		else:
+			if(myid == main_node):
+				[anger, shifter] = read_text_row( os.path.join(Tracker["directory"] ,"error_thresholds.txt") )[0]
+			else:
+				anger   = 0.0
+				shifter = 0.0
+		anger   = bcast_number_to_all(anger,   source_node = main_node)
+		shifter = bcast_number_to_all(shifter, source_node = main_node)
+
 
 		if( myid == main_node):
 			[newlowpass, newfalloff, icurrentres] = read_text_row( os.path.join(Tracker["directory"],"current_resolution.txt") )[0]
