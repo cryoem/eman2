@@ -3205,7 +3205,7 @@ def getang3(p1,p2):
 	from math import acos, degrees
 	n1 = getfvec(p1[0],p1[1])
 	n2 = getfvec(p2[0],p2[1])
-	return degrees(acos(n1[0]*n2[0]+n1[1]*n2[1]+n1[2]*n2[2]))
+	return degrees(acos(max(min((n1[0]*n2[0]+n1[1]*n2[1]+n1[2]*n2[2]),1.0),-1.0)))
 
 def getvec( phi, tht ):
 	from math import radians,cos,sin
