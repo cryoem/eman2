@@ -1184,8 +1184,16 @@ def main():
 			#  here ts has different meaning for standard and continuous
 			Tracker["refvol"] = os.path.join(Tracker["directory"], "fusevol%01d.hdf"%procid)\
 
-			# METAMOVE
-			metamove(projdata[procid], oldshifts[procid], Tracker, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
+			if  doit:
+				mpi_barrier(MPI_COMM_WORLD)
+				if( Tracker["nxinit"] != projdata[procid][0].get_xsize() ):
+					projdata[procid] = []
+					projdata[procid], oldshifts[procid] = get_shrink_data(Tracker["constants"]["nnxo"], Tracker["nxinit"], \
+						Tracker["constants"]["stack"], partids[procid], partstack[procid], myid, main_node, nproc, \
+						Tracker["constants"]["CTF"], Tracker["applyctf"], preshift = False, radi = Tracker["constants"]["radius"])
+
+				# METAMOVE
+				metamove(projdata[procid], oldshifts[procid], Tracker, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
 
 		# Update HISTORY
 		HISTORY.append(Tracker.copy())
