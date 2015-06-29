@@ -51,6 +51,8 @@ def main():
 	Determines the optimal whole-frame alignment of a DDD movie. It can be
 	used to determine the proper x and y translations for each movie frame and
 	can perform the actual alignment according to the translations.
+	
+	Example: e2moviealigner.py --dark dark.hdf --gain gain.hdf movie.hdf -v 9
 	"""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
