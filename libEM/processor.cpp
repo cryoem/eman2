@@ -4637,16 +4637,17 @@ void BilateralProcessor::process_inplace(EMData * image)
 	image->update();
 }
 
+
+
 void RotationalAverageProcessor::process_inplace(EMData * image)
 {
 	int isinten=image->get_attr_default("is_intensity",0);
-	if (!image || ((image->is_complex() && isinten == 0)))
-	{
-		LOGWARN("only works on real or intensity images. do nothing.");
+	if (!image || ((image->is_complex() && image->get_ndim() > 2))){
+		LOGWARN("only works on real or 2D intensity images. do nothing.");
 		return;
 	}
 
-	if (image->get_ndim() <= 0 || image->get_ndim() > 3)	throw ImageDimensionException("radial average processor only works for 2D and 3D images");
+	if (image->get_ndim() <= 0 || image->get_ndim() > 3)	throw ImageDimensionException("radial average processor only works for real and 2D intensity images");
 
 	float *rdata = image->get_data();
 	int nx = image->get_xsize();
@@ -4662,7 +4663,29 @@ void RotationalAverageProcessor::process_inplace(EMData * image)
 	float midy = (float)((int)ny/2);
 
 	size_t c = 0;
-	if (image->get_ndim() == 2) {
+	if (image->is_complex() && image->get_ndim() == 2) {
+		for (int y = -ny/2; y < ny/2; y++) {
+			for (int x = -ny/2-1; x < nx/2+1; x++) {
+	#ifdef	_WIN32
+				float r = (float) _hypot(x,y);
+	#else
+				float r = (float) hypot(x,y);
+	#endif	//_WIN32
+				int i = (int) floor(r);
+				r -= i;
+				if (i >= 0 && i < nx / 2 - 1) {
+					image->set_complex_at(x, y, dist[i] * (1.0f - r) + dist[i + 1] * r);
+				}
+				else if (i < 0) {
+					image->set_complex_at(x, y, dist[0]);
+				}
+				else {
+					image->set_complex_at(x, y, 0);
+				}
+			}
+		}
+	}
+	else if (image->get_ndim() == 2) {
 		for (int y = 0; y < ny; y++) {
 			for (int x = 0; x < nx; x++, c++) {
 	#ifdef	_WIN32
@@ -4670,7 +4693,6 @@ void RotationalAverageProcessor::process_inplace(EMData * image)
 	#else
 				float r = (float) hypot(x - midx, y - midy);
 	#endif	//_WIN32
-
 
 				int i = (int) floor(r);
 				r -= i;
