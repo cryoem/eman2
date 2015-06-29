@@ -683,7 +683,7 @@ def get_shrink_data(onx, nx, stack, partids, partstack, myid, main_node, nproc, 
 
 
 def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid, myid, main_node, nproc):
-	from aplications import slocal_ali3d_base, sali3d_base
+	from applications import slocal_ali3d_base, sali3d_base
 	#  Takes preshrunk data and does the refinement as specified in Tracker
 	#
 	#  Will create outputdir
