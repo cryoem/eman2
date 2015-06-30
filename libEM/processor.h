@@ -8475,6 +8475,38 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 		static const string NAME;
 	};
 	
+	/**  Grow a skeleton map toward a local direction. Image should be binarized.
+	 *   @author: Muyuan Chen
+	 *   @date: 06/2015
+	 */	
+	class GrowSkeletonProcessor:public Processor
+	{
+	public:
+		virtual void process_inplace(EMData * image);
+		virtual EMData* process(const EMData* const image);
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new GrowSkeletonProcessor();
+		}
+		string get_desc() const
+		{
+			return "Grow a skeleton map toward a local direction.";
+		}
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("verbose", EMObject::INT, "Verbose");
+			d.put("radius", EMObject::INT, "Half of the box size to determine the local direction.");
+			return d;
+		}
+		static const string NAME;
+	};
+	
 	
 #ifdef SPARX_USING_CUDA
 	/* class MPI CUDA kmeans processor

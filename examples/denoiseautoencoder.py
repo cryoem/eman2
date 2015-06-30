@@ -48,11 +48,12 @@ def main():
 	train_set_x= particles
 	
 	ltrain=train_set_x.get_value().shape[1]
-	#lth=int(sqrt(ltrain))
+	lth=int(sqrt(ltrain))
 	
 	
 	ptl=EMData(args[0],0)
 	shape=[ptl["nx"],ptl["ny"],ptl["nz"]]
+	shape=[i/options.shrink for i in shape]
 	#print shape
 	# compute number of minibatches 
 	
@@ -104,6 +105,9 @@ def main():
 			print 'Pre-training layer %i, epoch %d, cost ' % (i, epoch),
 			print np.mean(c),", learning rate",learning_rate
 
+	f = file(options.pretrainnet, 'wb')
+	cPickle.dump(sda, f, protocol=cPickle.HIGHEST_PROTOCOL)
+	f.close()
 			
 	
 	### testing..
@@ -125,11 +129,12 @@ def main():
 				else:
 					img=rt.reshape(shape[0],shape[1])
 				e = EMNumPy.numpy2em(img.astype("float32"))
+				#print img
 				e.process_inplace("normalize")
 				e.process_inplace("filter.highpass.gauss",{"cutoff_abs":.02})
 				e.write_image(fname,i)
-				hdr=EMData(args[0],i,True)
-				hdr.write_image(fname,i)
+				#hdr=EMData(args[0],i,True)
+				#hdr.write_image(fname,i)
 		else:
 			batch_size=100
 			test_imgs = sda.pretraining_get_result(train_set_x=train_set_x,batch_size=batch_size)
@@ -162,9 +167,6 @@ def main():
 						e.write_image(fname,-1)
 		
 		
-		f = file(options.pretrainnet, 'wb')
-		cPickle.dump(sda, f, protocol=cPickle.HIGHEST_PROTOCOL)
-		f.close()
 
 	### save the weights (first layer only)
 	if options.weights!=None:

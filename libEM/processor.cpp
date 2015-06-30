@@ -286,6 +286,7 @@ const string BinaryExternalGradientProcessor::NAME = "morph.gradient.external";
 const string BinaryInternalGradientProcessor::NAME = "morph.gradient.internal";
 const string BinaryTopHatProcessor::NAME = "morph.tophat.binary";
 const string BinaryBlackHatProcessor::NAME = "morph.blackhat.binary";
+const string GrowSkeletonProcessor::NAME = "morph.grow";
 
 //#ifdef EMAN2_USING_CUDA
 //const string CudaMultProcessor::NAME = "cuda.math.mult";
@@ -542,6 +543,7 @@ template <> Factory < Processor >::Factory()
 	force_add<BwThinningProcessor>();
 	force_add<BwMajorityProcessor>();
 	force_add<PruneSkeletonProcessor>();
+	force_add<GrowSkeletonProcessor>();
 	
 	force_add<ManhattanDistanceProcessor>();
 	force_add<BinaryDilationProcessor>();
@@ -12605,10 +12607,10 @@ void PruneSkeletonProcessor::process_inplace(EMData * image){
 	float threshold=params.set_default("thresh",0);
 	int verbose=params.set_default("verbose",0);
 	int maxdist=params.set_default("maxdist",3);
-
+/*
 	if (nz > 1) {
 		ImageDimensionException("Only 2-D images supported");
-	}
+	}*/
 
 	float *data = image->get_data();
 	size_t total_size = (size_t)nx * (size_t)ny * (size_t)nz;
@@ -12760,6 +12762,90 @@ void PruneSkeletonProcessor::process_inplace(EMData * image){
 
 }
 
+
+EMData* GrowSkeletonProcessor::process(const EMData* const image) //
+{
+	EMData* imageCp= image -> copy();
+	process_inplace(imageCp);
+	return imageCp;
+}
+
+void GrowSkeletonProcessor::process_inplace(EMData * image){
+	// This function is far from optimized, but it works...
+
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+	
+	int verbose=params.set_default("verbose",0);
+	int rad=params.set_default("radius",3);
+
+	
+	float *data = image->get_data();
+	// the index of the boundary points of the box
+	int *xlist=new int[2*rad*4];
+	int *ylist=new int[2*rad*4];
+	int count=0;
+	for (int i=-rad; i<rad; i++){ xlist[count]=-rad; ylist[count]=i; count++;}
+	for (int i=-rad; i<rad; i++){ xlist[count]=i; ylist[count]=rad; count++;}
+	for (int i=-rad; i<rad; i++){ xlist[count]=rad; ylist[count]=-i; count++;}
+	for (int i=-rad; i<rad; i++){ xlist[count]=-i; ylist[count]=-rad; count++;}
+	size_t nxy = nx * ny;
+	for (int k=0; k<nz; k++){
+		if (verbose>0)
+			printf("Processing layer %d \n",k);
+		
+		size_t knxy = (size_t)k * nxy;
+		// only grow on the endpoints
+		for (int j=rad; j < ny-rad; j++) {
+			int jnx=j*nx;
+			for (int i=rad; i<nx-rad; i++) {
+
+				if (data[knxy+i+jnx]==0)
+					continue;
+				int nb=-1;	// number of neighbors
+				for (int i2=i-1; i2<=i+1; i2++) {
+					for (int j2=j-1; j2<=j+1; j2++) {
+						nb+=(data[knxy+i2+j2*nx]>0 ? 1 : 0);
+					}
+				}
+				if (nb==1){ // endpoint found
+					int nv=0,cp=0;
+					for (int ic=0; ic<count; ic++){
+						int ix=i+xlist[ic], jy=j+ylist[ic];
+						float v=data[knxy+ix+jy*nx];
+						if (v>0){
+							nv++;
+							cp=ic;
+						}
+					}
+					if (nv != 1)
+						// more than one possible directions
+						continue;
+					
+					// grow towards the oppisite direction
+					for (int ig=1; ig<=rad; ig++){
+						int ix=i-(float)xlist[cp]/rad*ig;
+						int jy=j-(float)ylist[cp]/rad*ig;
+						data[knxy+ix+jy*nx]=-1;
+					}
+				}
+			}
+		}
+		
+		for (int j=rad; j < ny-rad; j++) {
+			int jnx=j*nx;
+			for (int i=rad; i<nx-rad; i++) {
+				if (data[knxy+i+jnx]==-1)
+					data[knxy+i+jnx]=1;
+			}
+		}
+	}
+	image->update();
+	
+	delete xlist,ylist;
+	
+}
 
 EMData* ManhattanDistanceProcessor::process(const EMData* const image)
 {
