@@ -200,7 +200,7 @@ def AI( icurrentres, anger, shifter, Tracker, HISTORY ):
 				Tracker["zoom"]        = False
 				if Tracker["applyctf"] :  reset_data  = True
 				Tracker["upscale"]     = 0.5
-				Tracker["applyctf"]    = False
+				Tracker["applyctf"]    = True
 				Tracker["an"]          = "30"
 				Tracker["state"]       = "RESTRICTED"
 				Tracker["maxit"]       = 1
