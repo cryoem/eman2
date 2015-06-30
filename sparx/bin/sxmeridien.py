@@ -190,7 +190,7 @@ def AI( icurrentres, anger, shifter, Tracker, HISTORY ):
 				keepgoing = 1
 			#  Exhaustive searches
 			elif(Tracker["state"] == "EXHAUSTIVE"):
-				#  Switch to LOCAL
+				#  Switch to RESTRICTED
 				nxinit = Tracker["nxinit"]
 				while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
 				Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
@@ -207,7 +207,7 @@ def AI( icurrentres, anger, shifter, Tracker, HISTORY ):
 				Tracker["xr"] = "%d"%(int(shifter)+1)
 				Tracker["ts"] = "1"
 				keepgoing = 1
-			#  Exhaustive searches
+			#  Restricted searches
 			elif(Tracker["state"] == "RESTRICTED"):
 				#  Switch to LOCAL
 				nxinit = Tracker["nxinit"]
@@ -228,7 +228,7 @@ def AI( icurrentres, anger, shifter, Tracker, HISTORY ):
 				keepgoing = 1
 			#  Local searches
 			elif(Tracker["state"] == "LOCAL"):
-				#  Switch to FINAL
+				#  Switch to FINAL1
 				Tracker["nxinit"] = Tracker["constants"]["nnxo"]
 				Tracker["icurrentres"] = icurrentres
 				Tracker["nsoft"]       = 0
@@ -244,7 +244,7 @@ def AI( icurrentres, anger, shifter, Tracker, HISTORY ):
 				Tracker["ts"] = "2"
 				keepgoing = 1
 			elif(Tracker["state"] == "FINAL1"):
-				#  Switch to FINAL
+				#  Switch to FINAL2
 				Tracker["nxinit"] = Tracker["constants"]["nnxo"]
 				Tracker["icurrentres"] = icurrentres
 				Tracker["nsoft"]       = 0
@@ -266,7 +266,7 @@ def AI( icurrentres, anger, shifter, Tracker, HISTORY ):
 				exit()  #  This will crash the program, but the situation cannot occur
 
 	Tracker["previousoutputdir"] = Tracker["directory"]
-	return keepgoing, reset_data
+	return keepgoing, reset_data, Tracker
 
 
 def threshold_params_changes(currentdir, previousdir, th = 0.95, sym = "c1"):
@@ -713,7 +713,7 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 	if(Tracker["radius"] < 2):
 		ERROR( "ERROR!!   lastring too small  %f    %f   %d"%(Tracker["radius"], Tracker["constants"]["radius"]), "sxmeridien",1, myid)
 	Tracker["lowpass"] = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
-	if( Tracker["state"] == "LOCAL" or Tracker["state"] == "FINAL"):
+	if( Tracker["state"] == "LOCAL" or Tracker["state"][:-1] == "FINAL"):
 		delta = "2.0"
 	else:
 		delta = "%f  "%min(round(degrees(atan(0.5/Tracker["lowpass"]/Tracker["radius"])), 2), 3.0)
@@ -752,6 +752,7 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 			params[i][3] = params[i][3]/shrinkage + oldshifts[i][0]
 			params[i][4] = params[i][4]/shrinkage + oldshifts[i][1]
 		write_text_row(params, os.path.join(Tracker["directory"],"params-chunk%01d.txt"%procid) )
+	return  Tracker
 
 def print_dict(dict,theme):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
@@ -850,7 +851,7 @@ def main():
 	# ------------------------------------------------------------------------------------
 	#  INPUT PARAMETERS
 	global_def.BATCH = True
-	
+
 
 	#  Constant settings of the project
 	Constants				= {}
@@ -1184,7 +1185,7 @@ def main():
 						Tracker["constants"]["CTF"], Tracker["applyctf"], preshift = False, radi = Tracker["constants"]["radius"])
 
 				# METAMOVE
-				metamove(projdata[procid], oldshifts[procid], Tracker, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
+				Tracker = metamove(projdata[procid], oldshifts[procid], Tracker, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
 
 		# Update HISTORY
 		HISTORY.append(Tracker.copy())
@@ -1309,7 +1310,7 @@ def main():
 		#exit()
 		if myid == main_node:  print("   >>> AI  <<<  ",Tracker["mainiteration"] ,icurrentres,Tracker["icurrentres"])
 
-		keepgoing, reset_data = AI( icurrentres, anger, shifter, Tracker, HISTORY)
+		keepgoing, reset_data, Tracker = AI( icurrentres, anger, shifter, Tracker, HISTORY)
 
 		if( keepgoing == 1 ):
 			if reset_data :  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
