@@ -18893,7 +18893,7 @@ vector<float> Util::multiref_polar_ali_2d_peaklist_local(EMData* image, const ve
 			for (int iref = 0; iref < (int)crefim_len; iref++) {
 // UUU
 //cout<<"  "<<n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3<<"  "<<ant<<endl;
-				if( n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3 >=ant ) {
+				if( n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3 >= ant ) {
 					Dict retvals = Crosrng_e(crefim[iref], cimage, numr, 0);
 					const float ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
 					const float sx  = -ix;
@@ -19416,7 +19416,7 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 
 		for (isym = 0; isym < nsym; ++isym) {
 			float dot_product = n1*vIms[isym].ims1 + n2*vIms[isym].ims2 + n3*vIms[isym].ims3;
-			if(abs(dot_product)>=ant) {
+			if(dot_product >= ant) {
 				mirror = dot_product < 0;
 
 				for (int i = -lky; i <= rky; i++) {
@@ -19555,7 +19555,8 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 			for (isym = 0; isym < nsym; ++isym) {
 
                 float dot_product = n1*vIms[isym].ims1 + n2*vIms[isym].ims2 + n3*vIms[isym].ims3;
-                if(abs(dot_product)>=ant) {
+                // Clarify abs here   06/30/2015 PAP
+                if( abs(dot_product)>=ant ) {
                     mirror_crefim.push_back(int(dot_product < 0));
 					index_crefim.push_back(i);
 					break;
@@ -19943,7 +19944,7 @@ vector<float> Util::multiref_polar_ali_2d_local_psi(EMData* image, const vector<
 			//  compare with all reference images
 			// for iref in xrange(len(crefim)):
 			for (iref = 0; iref < (int)crefim_len; iref++) {
-				if (abs(n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3)>=ant) {
+				if ( n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3 >=ant ) {
 					float refpsi = crefim[iref]->get_attr("psi");
 					if (nomirror) {
 						Dict retvals = Crosrng_sm_psi(crefim[iref], cimage, numr, fmod(360.0+psi+refpsi, 360.0), 0, psi_max);
