@@ -30,6 +30,11 @@
 #
 #
 
+
+from EMAN2 import *
+from sparx import *
+
+
 import	global_def
 from	global_def 	import *
 from	optparse 	import OptionParser
@@ -38,68 +43,6 @@ import	os
 import	sys
 from 	time		import	time
 
-def cmdexecute(cmd):
-	from   time import localtime, strftime
-	import subprocess
-	outcome = subprocess.call(cmd, shell=True)
-	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-	if(outcome == 1):
-		print(  line,"ERROR!!   Command failed:  ", cmd)
-		from sys import exit
-		exit()
-	else:  print(line,"Executed successfully: ",cmd)
-
-# instack : dir path to the input stack
-# instack : dir path to the out stack
-# sym     : string to specify point group symmetry (e.g. 'd3') 
-def prepare_symmetry(instack, outstack, sym):
-	from utilities import delete_bdb, get_symt, get_im
-	from EMAN2db import db_open_dict
-
-	# Make sure input stack format is bdb
-	if(instack[:4] !="bdb:"):
-		stack = "bdb:temp_sx3dvariability_data"  # Make sure use the name which is unlikely to be used...
-		delete_bdb(stack)
-		cmdexecute("sxcpy.py  "+instack+"  "+stack)
-	else:
-		stack = instack
-	
-	try:
-		qt = EMUtil.get_all_attributes(stack,'xform.projection')
-	except:
-		ERROR("Input stack is expected to have projection paramters (xform.projection) in the header", "sx3dvariability", myid=myid)
-		exit()
-	
-	na = len(qt)        # Num. of projection angles
-	ts = get_symt(sym)  # get a list of point-group symmetry transformations
-	ks = len(ts)        # Num. of point-group symmetry transformations
-	angsa = [None]*na
-	# Loop through all point-group symmetry transformations
-	for k in xrange(ks):
-		delete_bdb("bdb:Q%1d"%k)
-		cmdexecute("e2bdb.py  "+stack+"  --makevstack=bdb:Q%1d"%k)
-		DB = db_open_dict("bdb:Q%1d"%k)
-		# Loop through all projection angles
-		for i in xrange(na):
-			# Compute all transformations necessary to the symmetry for this projection angle 
-			# and store the trans formation as a image
-			ut = qt[i]*ts[k]
-			DB.set_attr(i, "xform.projection", ut)
-			#bt = ut.get_params("spider")
-			#angsa[i] = [round(bt["phi"],3)%360.0, round(bt["theta"],3)%360.0, bt["psi"], -bt["tx"], -bt["ty"]]
-		#write_text_row(angsa, 'ptsma%1d.txt'%k)
-		#cmdexecute("e2bdb.py  "+stack+"  --makevstack=bdb:Q%1d"%k)
-		#cmdexecute("sxheader.py  bdb:Q%1d  --params=xform.projection  --import=ptsma%1d.txt"%(k,k))
-		DB.close()
-	delete_bdb(outstack)
-	cmdexecute("e2bdb.py . --makevstack=%s --filt=Q" % outstack)
-	# cmdexecute("ls  EMAN2DB/temp_sx3dvariability_sdata*")
-	a = get_im(outstack)
-	a.set_attr("variabilitysymmetry",sym)
-	a.write_image(outstack)
-	
-	
-t0 = time()
 
 def main():
 
@@ -113,7 +56,7 @@ def main():
 		return  alpha, sx, sy, m
 	
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " prj_stack  --ave2D= --var2D=  --ave3D= --var3D= --img_per_grp= --fl=0.2 --aa=0.1 --sym=symmetry --CTF"
+	usage = progname + " prj_stack  --ave2D= --var2D=  --ave3D= --var3D= --img_per_grp= --fl=0.2 --aa=0.1  --sym=symmetry --CTF"
 	parser = OptionParser(usage, version=SPARXVERSION)
 
 	parser.add_option("--ave2D",		type="string"	   ,	default=False,				help="write to the disk a stack of 2D averages")
@@ -138,54 +81,82 @@ def main():
 	parser.add_option("--VAR" , 		action="store_true",	default=False,				help="stack on input consists of 2D variances (Default False)")
 	parser.add_option("--SND",			action="store_true",	default=False,				help="compute squared normalized differences (Default False)")
 	#parser.add_option("--nvec",			type="int"         ,	default=0    ,				help="number of eigenvectors, default = 0 meaning no PCA calculated")
-	parser.add_option("--prep_sym",	    action="store_true",	default=False,				help="Do only the preparation for symmetry (Default False)")
+	parser.add_option("--symmetrize",	action="store_true",	default=False,				help="Prepare input stack for handling symmetry (Default False)")
+
 
 	(options,args) = parser.parse_args()
 	
-	if options.prep_sym:
-		from utilities import print_begin_msg, print_end_msg, print_msg
-		
-		if len(args) == 2:
-			prj_stack_in = args[0]
-			prj_stack_out = args[1]
+	from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, mpi_recv, MPI_COMM_WORLD, MPI_TAG_UB
+	from mpi import mpi_barrier, mpi_reduce, mpi_bcast, mpi_send, MPI_FLOAT, MPI_SUM, MPI_INT, MPI_MAX
+	from applications import MPI_start_end
+	from reconstruction import recons3d_em, recons3d_em_MPI
+	from reconstruction	import recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
+	from utilities import print_begin_msg, print_end_msg, print_msg
+	from utilities import read_text_row, get_image, get_im
+	from utilities import bcast_EMData_to_all, bcast_number_to_all
+	from utilities import get_symt
+
+	#  This is code for handling symmetries by the above program.  To be incorporated. PAP 01/27/2015
+
+	from EMAN2db import db_open_dict
+
+
+
+	if options.symmetrize :
+		try:
+			sys.argv = mpi_init(len(sys.argv), sys.argv)
+			try:	
+				number_of_proc = mpi_comm_size(MPI_COMM_WORLD)
+				if( number_of_proc > 1 ):
+					ERROR("Cannot use more than one CPU for symmetry prepration","sx3dvariability",1)
+			except:
+				pass
+		except:
+			pass
+
+		#  Input
+		#instack = "Clean_NORM_CTF_start_wparams.hdf"
+		#instack = "bdb:data"
+		instack = args[0]
+		sym = options.sym
+		if( sym == "c1" ):
+			ERROR("Thre is no need to symmetrize stack for C1 symmetry","sx3dvariability",1)
+
+		if(instack[:4] !="bdb:"):
+			stack = "bdb:data"
+			delete_bdb(stack)
+			cmdexecute("sxcpy.py  "+instack+"  "+stack)
 		else:
-			print( "usage: " + progname + "  prj_stack_in  prj_stack_out  --prep_sym  --sym=symmetry ")
-			# print( "Please run '" + progname + " -h' for detailed options")
-			return 1
-		
-		if prj_stack_out[:4] != "bdb:":
-			print("ERROR: Output stack must be bdb format for momery efficiency reason")
-			exit()
-	
-		if options.sym == "c1":
-			print("ERROR: Preparation for symmetry expects other than c1. Please set correct point group symmetry to --sym")
-			exit()
-			
-		import string
-		options.sym = options.sym.lower()
-		
-		if global_def.CACHE_DISABLE:
-			from utilities import disable_bdb_cache
-			disable_bdb_cache()
-		global_def.BATCH = True
+			stack = instack
 
-		print_begin_msg("sx3dvariability (Symmetry Preparation Mode)")
-		print_msg("%-70s:  %s\n"%("Input stack", prj_stack_in))
-		print_msg("%-70s:  %s\n"%("Output stack", prj_stack_out))
+		qt = EMUtil.get_all_attributes(stack,'xform.projection')
 
-		prepare_symmetry(prj_stack_in, prj_stack_out, options.sym)
-		
-		print_end_msg("sx3dvariability (Symmetry Preparation Mode)")
+		na = len(qt)
+		ts = get_symt(sym)
+		ks = len(ts)
+		angsa = [None]*na
+		for k in xrange(ks):
+			delete_bdb("bdb:Q%1d"%k)
+			cmdexecute("e2bdb.py  "+stack+"  --makevstack=bdb:Q%1d"%k)
+			DB = db_open_dict("bdb:Q%1d"%k)
+			for i in xrange(na):
+				ut = qt[i]*ts[k]
+				DB.set_attr(i, "xform.projection", ut)
+				#bt = ut.get_params("spider")
+				#angsa[i] = [round(bt["phi"],3)%360.0, round(bt["theta"],3)%360.0, bt["psi"], -bt["tx"], -bt["ty"]]
+			#write_text_row(angsa, 'ptsma%1d.txt'%k)
+			#cmdexecute("e2bdb.py  "+stack+"  --makevstack=bdb:Q%1d"%k)
+			#cmdexecute("sxheader.py  bdb:Q%1d  --params=xform.projection  --import=ptsma%1d.txt"%(k,k))
+			DB.close()
+		delete_bdb("bdb:sdata")
+		cmdexecute("e2bdb.py . --makevstack=bdb:sdata --filt=Q")
+		#cmdexecute("ls  EMAN2DB/sdata*")
+		a = get_im("bdb:sdata")
+		a.set_attr("variabilitysymmetry",sym)
+		a.write_image("bdb:sdata")
+
 
 	else:
-		from mpi import mpi_init, mpi_comm_rank, mpi_comm_size, mpi_recv, MPI_COMM_WORLD, MPI_TAG_UB
-		from mpi import mpi_barrier, mpi_reduce, mpi_bcast, mpi_send, MPI_FLOAT, MPI_SUM, MPI_INT, MPI_MAX
-		from applications import MPI_start_end
-		from reconstruction import recons3d_em, recons3d_em_MPI
-		from reconstruction	import recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
-		from utilities import print_begin_msg, print_end_msg, print_msg
-		from utilities import read_text_row, get_image, get_im
-		from utilities import bcast_EMData_to_all, bcast_number_to_all
 
 		sys.argv = mpi_init(len(sys.argv), sys.argv)
 		myid = mpi_comm_rank(MPI_COMM_WORLD)
@@ -198,8 +169,10 @@ def main():
 			print( "usage: " + usage)
 			print( "Please run '" + progname + " -h' for detailed options")
 			return 1
+
+		t0 = time()
 	
-		# oboslete flags
+		# obsolete flags
 		options.MPI = True
 		options.nvec = 0
 		options.radiuspca = -1
@@ -227,10 +200,6 @@ def main():
 		import string
 		options.sym = options.sym.lower()
 		 
-		if options.sym != "c1" :
-			if stack[:4] != "bdb:":
-				ERROR("Symmetry prepared stack must be bdb format for momery efficiency reason", "sx3dvariability", 1, myid)
-				exit()
 
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
@@ -262,7 +231,7 @@ def main():
 				from utilities import get_symt
 				i = len(get_symt(options.sym))
 				if((nima/i)*i != nima):
-					ERROR("The length of the input stack (%d) is incorrect for symmetry processing (%d)" % (nima, i), "sx3dvariability", myid=myid)
+					ERROR("The length of the input stack is incorrect for symmetry processing", "sx3dvariability", myid=myid)
 				symbaselen = nima/i
 			else:  symbaselen = nima
 		else:
@@ -677,65 +646,3 @@ def main():
 if __name__=="__main__":
 	main()
 
-
-"""
-#  This is code for handling symmetries by the above program.  To be incorporated. PAP 01/27/2015
-from __future__ import print_function
-
-from EMAN2 import *
-from sparx import *
-from EMAN2db import db_open_dict
-
-
-def cmdexecute(cmd):
-	from   time import localtime, strftime
-	import subprocess
-	outcome = subprocess.call(cmd, shell=True)
-	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-	if(outcome == 1):
-		print(  line,"ERROR!!   Command failed:  ", cmd)
-		from sys import exit
-		exit()
-	else:  print(line,"Executed successfully: ",cmd)
-
-#  Input
-instack = "Clean_NORM_CTF_start_wparams.hdf"
-instack = "bdb:data"
-sym = 'd3'
-
-if(instack[:4] !="bdb:"):
-	stack = "bdb:data"
-	delete_bdb(stack)
-	cmdexecute("sxcpy.py  "+instack+"  "+stack)
-else:
-	stack = instack
-
-qt = EMUtil.get_all_attributes(stack,'xform.projection')
-
-if True:
-	na = len(qt)
-	ts = get_symt(sym)
-	ks = len(ts)
-	angsa = [None]*na
-	for k in xrange(ks):
-		delete_bdb("bdb:Q%1d"%k)
-		cmdexecute("e2bdb.py  "+stack+"  --makevstack=bdb:Q%1d"%k)
-		DB = db_open_dict("bdb:Q%1d"%k)
-		for i in xrange(na):
-			ut = qt[i]*ts[k]
-			DB.set_attr(i, "xform.projection", ut)
-			#bt = ut.get_params("spider")
-			#angsa[i] = [round(bt["phi"],3)%360.0, round(bt["theta"],3)%360.0, bt["psi"], -bt["tx"], -bt["ty"]]
-		#write_text_row(angsa, 'ptsma%1d.txt'%k)
-		#cmdexecute("e2bdb.py  "+stack+"  --makevstack=bdb:Q%1d"%k)
-		#cmdexecute("sxheader.py  bdb:Q%1d  --params=xform.projection  --import=ptsma%1d.txt"%(k,k))
-		DB.close()
-	delete_bdb("bdb:sdata")
-	cmdexecute("e2bdb.py . --makevstack=bdb:sdata --filt=Q")
-        cmdexecute("ls  EMAN2DB/sdata*")
-	a = get_im("bdb:sdata")
-	a.set_attr("variabilitysymmetry","d3")
-	a.write_image("bdb:sdata")
-
-
-"""
