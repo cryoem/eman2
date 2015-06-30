@@ -3702,7 +3702,7 @@ void Util::prb1d(double *b, int npoint, float *pos) {
 #define  b(i)            b[i-1]
 #define  t7(i)           t7[i-1]
 Dict Util::Crosrng_e(EMData*  circ1p, EMData* circ2p, vector<int> numr, int neg) {
-	//  neg = 0 straight,  neg = 1 mirrored
+	//  neg = 1 mirrored; otherwise straight
 	int nring = numr.size()/3;
 	//int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
 	int maxrin = numr[numr.size()-1];
@@ -3744,7 +3744,7 @@ c       automatic arrays
 			 // test .ne. first for speed on some compilers
 			q(numr3i+1) += circ1(numr2i+1) * circ2(numr2i+1);
 
-			if (neg) {
+			if (neg == 1) {
 				// first set is conjugated (mirrored)
 				for (j=3;j<=numr3i;j=j+2) {
 					jc = j+numr2i-1;
@@ -3760,7 +3760,7 @@ c       automatic arrays
 			}
 		} else {
 			q(2) += circ1(numr2i+1) * circ2(numr2i+1);
-			if (neg) {
+			if (neg == 1) {
 				// first set is conjugated (mirrored)
 				for (j=3;j<=maxrin;j=j+2) {
 					jc = j+numr2i-1;
@@ -3818,10 +3818,10 @@ Dict Util::Crosrng_rand_e(EMData*  circ1p, EMData* circ2p, vector<int> numr, int
 c checks single position, neg is flag for checking mirrored position
 c
 c  input - fourier transforms of rings!
-c  first set is conjugated (mirrored) if neg
+c  first set is conjugated (mirrored) if neg=1
 c  circ1 already multiplied by weights!
 c       automatic arrays
-c   neg = 0 straight,  neg = 1 mirrored
+c   neg = 1 mirrored, otherwise straight
 	double precision  q(maxrin)
 	double precision  t7(-3:3)
 */
@@ -3852,7 +3852,7 @@ c   neg = 0 straight,  neg = 1 mirrored
 			 // test .ne. first for speed on some compilers
 			q(numr3i+1) += circ1(numr2i+1) * circ2(numr2i+1);
 
-			if (neg) {
+			if (neg == 1) {
 				// first set is conjugated (mirrored)
 				for (j=3;j<=numr3i;j=j+2) {
 					jc = j+numr2i-1;
@@ -3868,7 +3868,7 @@ c   neg = 0 straight,  neg = 1 mirrored
 			}
 		} else {
 			q(2) += circ1(numr2i+1) * circ2(numr2i+1);
-			if (neg) {
+			if (neg == 1) {
 				// first set is conjugated (mirrored)
 				for (j=3;j<=maxrin;j=j+2) {
 					jc = j+numr2i-1;
@@ -3932,7 +3932,7 @@ c   neg = 0 straight,  neg = 1 mirrored
 }
 
 Dict Util::Crosrng_ew(EMData*  circ1p, EMData* circ2p, vector<int> numr, vector<float> w, int neg) {
-   //  neg = 0 straight,  neg = 1 mirrored
+   //  neg = 1 mirrored, otherwise straight
 	int nring = numr.size()/3;
 	//int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
 	int maxrin = numr[numr.size()-1];
@@ -3976,7 +3976,7 @@ c       automatic arrays
 			t(numr3i+1) = circ1(numr2i+1) * circ2(numr2i+1);
 			t(2)  	  = 0.0;
 
-			if (neg) {
+			if (neg == 1) {
 				// first set is conjugated (mirrored)
 				for (j=3; j<=numr3i; j=j+2) {
 					jc = j+numr2i-1;
@@ -3993,7 +3993,7 @@ c       automatic arrays
 			for (j=1;j<=numr3i+1;j++) q(j) += t(j)*w[i-1];
 		} else {
 			t(2) = circ1(numr2i+1) * circ2(numr2i+1);
-			if (neg) {
+			if (neg == 1) {
 				// first set is conjugated (mirrored)
 				for (j=3; j<=maxrin; j=j+2) {
 					jc = j+numr2i-1;
@@ -19369,7 +19369,7 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 	int rkx = int(xrng[1]/step);
 	int lky = int(yrng[0]/step);
 	int rky = int(yrng[1]/step);
-	int   iref, nref=0, mirror=0, report_mirror=0;
+	int   iref, nref=0, mirror=0;
 	float iy, ix, sx=0, sy=0;
 	float peak = -1.0E23f;
 	float ang  = 0.0f;
@@ -19377,10 +19377,12 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 	size_t crefim_len = crefim.size();
 	const float qv = static_cast<float>( pi/180.0 );
 
+	// set mirror flag
 	Transform * t = image->get_attr("xform.projection");
-//	Dict d = t->get_params("spider");
-//	float theta1 = d["theta"];
-//	mirror = (int)(theta1 > 90.0f);
+	Dict d = t->get_params("spider");
+	float theta1 = d["theta"];
+	if(theta1 > 90.0f) mirror = 1;
+	else               mirror = -1;
 
     // sym is a symmetry string, t is the projection transform of the input image, tsym is a vector of transforms that are input transofrmation multiplied by all symmetries.
     // its length is number of symmetries.
@@ -19415,10 +19417,8 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 
 
 		for (isym = 0; isym < nsym; ++isym) {
-			float dot_product = n1*vIms[isym].ims1 + n2*vIms[isym].ims2 + n3*vIms[isym].ims3;
+			float dot_product = -mirror*(n1*vIms[isym].ims1 + n2*vIms[isym].ims2 + n3*vIms[isym].ims3);
 			if(dot_product >= ant) {
-				mirror = dot_product < 0;
-
 				for (int i = -lky; i <= rky; i++) {
 					iy = i * step ;
 					for (int j = -lkx; j <= rkx; j++) {
@@ -19431,7 +19431,6 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 							double qn = retvals["qn"];
 
 							if(qn >= peak) {
-								report_mirror = mirror;
 								sx = -ix;
 								sy = -iy;
 								nref = iref;
@@ -19455,7 +19454,7 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 		so  = -sin(ang*qv);
 		sxs = sx*co - sy*so;
 		sys = sx*so + sy*co;
-		mirror = report_mirror;
+		if( mirror == -1)  mirror=0;
 	}
 
 	vector<float> res;

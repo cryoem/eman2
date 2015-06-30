@@ -1576,8 +1576,6 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 	tyrng[0] = max(0,min(cny+syi-ou, yrng+syi))
 	tyrng[1] = max(0, min(ny-cny-syi-ou, yrng-syi))
 	
-	#[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data, refrings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
-	#  multiref_polar_ali_2d_local has to be modified to work properly with symmetries, i.e., to consider wrapping of refrings distribution PAP 01/27/2015
 	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data, refrings, txrng, tyrng, step, ant, mode, numr, cnx+sxi, cny+syi, sym)
 
 	iref=int(iref)
