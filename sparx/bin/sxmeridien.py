@@ -735,7 +735,7 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 
 	#  Run alignment command
 	if Tracker["local"] :
-		params = slocal_ali3d_base_MPI(projdata, get_im(Tracker["refvol"]), \
+		params = slocal_ali3d_base(projdata, get_im(Tracker["refvol"]), \
 				Tracker, mpi_comm = MPI_COMM_WORLD, log = log, chunk = 1.0, \
 		    	saturatecrit = Tracker["saturatecrit"], pixercutoff =  Tracker["pixercutoff"])
 	else: params = sali3d_base(projdata, ref_vol, \

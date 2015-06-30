@@ -4599,6 +4599,7 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = None, nsoft = 3, \
 		saturatecrit = 0.95, pixercutoff = 1.0, zoom = False  ):
 	"""
+		Most parameters passed in Tracker, but not all FIT IT 06/30/2015
 		parameters: list of (all) projections | reference volume is optional, the data is shrank, 
 		  the program does not know anything about shrinking| ...
 		 The alignment done depends on nsoft:
@@ -10062,7 +10063,7 @@ def local_ali3d_base_MPI(stack, templatevol, ali3d_options, shrinkage = 1.0,
 	return  params
 
 
-
+#  OLD VERSION WITHOUT Tracker, eventually remove 06/30/2015
 def slocal_ali3d_base_MPI(stack, templatevol, ali3d_options, \
 		    	mpi_comm = None, log= None, chunk = -1.0, saturatecrit = 0.95, pixercutoff = 1.0, debug = False ):
 	"""

@@ -45,19 +45,6 @@ correct places in ISAC and printed as histograms ro something
 for clustering of images.  This is where program crashes on memory.  I left lengthy explanations
 and suggestion around line #865.  Something has to be done.
 
-3.  restarting:  two levels
-
-3a. the current code has to be done better.  It has two major phases: first, calculation of 'candidate'
-averages, 'proper' ISAC.  Each takes about the same time.  I added a trivial switch that allows the user
-to start the program from existing candidate averages, but of course it has to be automated.  In the
-second part, there are natural steps of 2-3-4-way matching, I would add restart points there.
-
-3b.  As explained in the documentation, the program works through 'geberations', which simply
-means it has to be started all over again on the subset of the data that did not go to averages
-(is unaccounted for).  This has to be automated with restarts.  Note the memory remains a problem.
-Python is generally reasonably good at garbage collection upon exiting a python function,
-but C objects are tricky and can cause problems, so they have to be coded with care.
-
 4. Add reusing of candidate averages.  Since calculation of candidates takes so much time,
 I had an idea of reusing them, i.e., instead of starting the program in the next generation all over from
 preparation of candidates, one could cycle phase two couple of times reusing existing candidates.

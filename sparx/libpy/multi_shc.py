@@ -3344,7 +3344,7 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 	#	return #None, None, None, None  # results for the other processes
 
 
-
+#  OLD VERSION WITHOUT Tracker
 # parameters: list of (all) projections | reference volume is optional, the data is shrank, 
 #   the program does not know anything about shrinking| ...
 #  The alignment done depends on nsoft:
@@ -3352,7 +3352,7 @@ def ali3d_base(stack, ref_vol = None, ali3d_options = None, shrinkage = 1.0, mpi
 # 			 nsoft = 0 & an > 0 : local deterministic
 # 			 nsoft = 1 shc
 # 			 nsoft >1  shc_multi
-def sali3d_base(stack, ref_vol = None, ali3d_options = None, mpi_comm = None, log = None, nsoft = 3, \
+def Xsali3d_base(stack, ref_vol = None, ali3d_options = None, mpi_comm = None, log = None, nsoft = 3, \
 		saturatecrit = 0.95, pixercutoff = 1.0, zoom = False ):
 
 	from alignment       import Numrinit, prepare_refrings, proj_ali_incore,  proj_ali_incore_zoom,  proj_ali_incore_local
