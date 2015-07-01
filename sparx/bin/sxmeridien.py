@@ -28,7 +28,7 @@ global cushion
 cushion = 8
 
 
-def AI( icurrentres, anger, shifter, Tracker, HISTORY ):
+def AI( icurrentres, Tracker, HISTORY ):
 	#  
 	#  Possibilities we will consider:
 	#    1.  resolution improved: keep going with current settings.
@@ -185,7 +185,7 @@ def AI( icurrentres, anger, shifter, Tracker, HISTORY ):
 				Tracker["upscale"]     = 0.5
 				Tracker["state"]       = "EXHAUSTIVE"
 				#  Develop something intelligent
-				Tracker["xr"] = "%d"%(int(shifter)+1)
+				Tracker["xr"] = "%d"%(int(Tracker["shifter"])+1)
 				Tracker["ts"] = "1"
 				keepgoing = 1
 			#  Exhaustive searches
@@ -204,7 +204,7 @@ def AI( icurrentres, anger, shifter, Tracker, HISTORY ):
 				Tracker["an"]          = "30"
 				Tracker["state"]       = "RESTRICTED"
 				Tracker["maxit"]       = 1
-				Tracker["xr"] = "%d"%(int(shifter)+1)
+				Tracker["xr"] = "%d"%(int(Tracker["shifter"])+1)
 				Tracker["ts"] = "1"
 				keepgoing = 1
 			#  Restricted searches
@@ -301,15 +301,14 @@ def threshold_params_changes(currentdir, previousdir, th = 0.95, sym = "c1"):
 	n = len(u)
 	anger       = [360.0]*n
 	shifter     = [1.0e23]*n
-	#pixel_error = [1.0e23]*n
 	if(sym == "c1"):
 		for i in xrange(n):
 			anger[i]       = getang3([cp[i][0], cp[i][1]],[pp[i][0], pp[i][1]])
 			shifter[i]     = max(abs(cp[i][3] - pp[i][3]),abs(cp[i][4] - pp[i][4]))
 			#pixel_error[i] = max_3D_pixel_error(t1, t2, radius)
 	else:
-		from utilities import get_symt
-		ts = get_symt(sym)
+		#from utilities import get_symt
+		#ts = get_symt(sym)
 		for i in xrange(n):
 			#t1 = Transform({"type":"spider","phi":pp[i][0],"theta":pp[i][1],"psi":pp[i][2]})
 			#t1.set_trans(Vec2f(-pp[i][3], -pp[i][4]))
@@ -321,13 +320,13 @@ def threshold_params_changes(currentdir, previousdir, th = 0.95, sym = "c1"):
 				# we do not care which position minimizes the error
 				du = kts.get_params("spider")
 				qt = getang3([pp[i][0], pp[i][1]], [du["phi"], du["theta"]])
-				if(qt < anger[i]):
-					anger[i] = qt
+				if(qt < anger[i]):   anger[i] = qt
 
 	anger.sort()
 	shifter.sort()
 	la = min(int(th*n + 0.5), n-1)
 	#  Returns error thresholds under which one has th fraction of images
+	#  The shifter is given in the full scale displacement
 	return anger[la], shifter[la]
 	"""
 
@@ -650,7 +649,7 @@ def get_shrink_data(onx, nx, stack, partids, partstack, myid, main_node, nproc, 
 	if radi < 0:	radi = onx//2 - 2
 	mask2D  = model_circle(radi,onx,onx)
 	nima = image_end - image_start
-	oldshifts = [[0.0,0.0]]*nima
+	oldshifts = [[0.0,0.0]]#*nima
 	data = [None]*nima
 	shrinkage = float(nx)/float(onx)
 	for im in xrange(nima):
@@ -659,7 +658,7 @@ def get_shrink_data(onx, nx, stack, partids, partstack, myid, main_node, nproc, 
 		if preshift:
 			data[im] = fshift(data[im], sx, sy)
 			set_params_proj(data[im],[phi,theta,psi,0.0,0.0])
-			oldshifts[im] = [sx,sy]
+			#oldshifts[im] = [sx,sy]
 		else:
 			set_params_proj(data[im],[phi,theta,psi,sx,sy])
 		#  For local SHC set anchor
@@ -676,7 +675,7 @@ def get_shrink_data(onx, nx, stack, partids, partstack, myid, main_node, nproc, 
 			#  resample will properly adjusts shifts and pixel size in ctf
 			data[im] = resample(data[im], shrinkage)
 	assert( nx == data[0].get_xsize() )  #  Just to make sure.
-	oldshifts = wrap_mpi_gatherv(oldshifts, main_node, MPI_COMM_WORLD)
+	#oldshifts = wrap_mpi_gatherv(oldshifts, main_node, MPI_COMM_WORLD)
 	return data, oldshifts
 
 
@@ -712,7 +711,8 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 		ERROR( "ERROR!!   lastring too small  %f    %f   %d"%(Tracker["radius"], Tracker["constants"]["radius"]), "sxmeridien",1, myid)
 	Tracker["lowpass"] = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
 	if( Tracker["state"] == "LOCAL" or Tracker["state"][:-1] == "FINAL"):
-		delta = "2.0"
+		Tracker["delta"] = "2.0"
+		Tracker["ts"]    = "2.0"
 	else:
 		delta = "%f  "%min(round(degrees(atan(0.5/Tracker["lowpass"]/Tracker["radius"])), 2), 3.0)
 		Tracker["delta"] = ""
@@ -724,6 +724,7 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 		for i in xrange(len(projdata)):
 			try:  projdata[i].del_attr("previousmax")
 			except:  pass
+
 	if(myid == main_node):
 		print_dict(Tracker,"METAMOVE parameters")
 		if Tracker["PWadjustment"] :
@@ -732,23 +733,18 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 		print("                    =>  partstack           :  ",partstack)
 
 	#  Run alignment command
-	if Tracker["local"] :
-		params = slocal_ali3d_base(projdata, get_im(Tracker["refvol"]), \
-				Tracker, mpi_comm = MPI_COMM_WORLD, log = log, chunk = 1.0, \
-		    	saturatecrit = Tracker["saturatecrit"], pixercutoff =  Tracker["pixercutoff"])
-	else: params = sali3d_base(projdata, ref_vol, \
-				Tracker, mpi_comm = MPI_COMM_WORLD, log = log, nsoft = Tracker["nsoft"], \
-				saturatecrit = Tracker["saturatecrit"],  pixercutoff =  Tracker["pixercutoff"], zoom = Tracker["zoom"] )
+	if Tracker["local"] : params = slocal_ali3d_base(projdata, get_im(Tracker["refvol"]), \
+									Tracker, mpi_comm = MPI_COMM_WORLD, log = log, chunk = 1.0)
+	else: params = sali3d_base(projdata, ref_vol, Tracker, mpi_comm = MPI_COMM_WORLD, log = log )
 
-	#  We could calculate here a 3D to get the within group resolution and return it as a result to eventually get crossresolution
 	del log
 	#  store params
 	if(myid == main_node):
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print(line,"Executed successfully: ","sali3d_base_MPI, nsoft = %d"%Tracker["nsoft"],"  number of images:%7d"%len(params))
 		for i in xrange(len(params)):
-			params[i][3] = params[i][3]/shrinkage + oldshifts[i][0]
-			params[i][4] = params[i][4]/shrinkage + oldshifts[i][1]
+			params[i][3] = params[i][3]/shrinkage# + oldshifts[i][0]
+			params[i][4] = params[i][4]/shrinkage# + oldshifts[i][1]
 		write_text_row(params, os.path.join(Tracker["directory"],"params-chunk%01d.txt"%procid) )
 	return  Tracker
 
@@ -908,6 +904,8 @@ def main():
 	Tracker["inires"]         = options.inires  # Now in A, convert to absolute before using
 	Tracker["fuse_freq"]      = 50  # Now in A, convert to absolute before using
 	Tracker["delpreviousmax"] = True
+	Tracker["anger"]          = -1.0
+	Tracker["shifter"]        = -1.0
 	Tracker["saturatecrit"]   = 0.95
 	Tracker["pixercutoff"]    = 2.0
 	Tracker["directory"]      = ""
@@ -1281,13 +1279,14 @@ def main():
 				anger   = 0.0
 				shifter = 0.0
 
-
 		if( myid == main_node):
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			print(line,"Maximum displacements at 0.95 level for angular directions  %6.2f  and shifts %6.1f"%(anger, shifter) )
 
 		anger   = bcast_number_to_all(anger,   source_node = main_node)
 		shifter = bcast_number_to_all(shifter, source_node = main_node)
+		Tracker["anger"]   = anger
+		Tracker["shifter"] = shifter
 
 
 		if( myid == main_node):
@@ -1308,7 +1307,7 @@ def main():
 		#exit()
 		if myid == main_node:  print("   >>> AI  <<<  ",Tracker["mainiteration"] ,icurrentres,Tracker["icurrentres"])
 
-		keepgoing, reset_data, Tracker = AI( icurrentres, anger, shifter, Tracker, HISTORY)
+		keepgoing, reset_data, Tracker = AI( icurrentres, Tracker, HISTORY)
 
 		if( keepgoing == 1 ):
 			if reset_data :  projdata = [[model_blank(1,1)],[model_blank(1,1)]]

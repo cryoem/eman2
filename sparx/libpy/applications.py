@@ -4596,10 +4596,8 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 	if myid == main_node: print_end_msg("ali3d_MPI")
 
 
-def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = None, nsoft = 3, \
-		saturatecrit = 0.95, pixercutoff = 1.0, zoom = False  ):
+def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = None):
 	"""
-		Most parameters passed in Tracker, but not all FIX IT 06/30/2015
 		parameters: list of (all) projections | reference volume is optional, the data is shrank, 
 		  the program does not know anything about shrinking| ...
 		Data is assumed to be CTF multiplied and the ctf_applied flag to be set.
@@ -4628,6 +4626,10 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 	import types
 	from time            import time
 
+	nsoft            = Tracker["nsoft"]
+	saturatecrit     = Tracker["saturatecrit"]
+	pixercutoff      = Tracker["pixercutoff"]
+	zoom             = Tracker["zoom"]
 	center           = Tracker["constants"]["center"]
 	CTF              = Tracker["constants"]["CTF"]
 	ref_a            = Tracker["constants"]["ref_a"]
@@ -4993,8 +4995,7 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 		log.add("Finish sali3d_base, nsoft = %1d"%nsoft)
 	return params
 
-def slocal_ali3d_base(stack, templatevol, Tracker, \
-		    	mpi_comm = None, log= None, chunk = -1.0, saturatecrit = 0.95, pixercutoff = 1.0, debug = False ):
+def slocal_ali3d_base(stack, templatevol, Tracker, mpi_comm = None, log= None, chunk = -1.0, debug = False ):
 	"""
 
 	"""
@@ -5018,17 +5019,17 @@ def slocal_ali3d_base(stack, templatevol, Tracker, \
 	import sys
 	import types
 
-	maxit  = Tracker["maxit"]
-	ou     = Tracker["radius"]
-	ts     = get_input_from_string(Tracker["ts"])[0]
-	delta  = get_input_from_string(Tracker["delta"])[0]
-	sym    = Tracker["constants"]["sym"]
-	sym    = sym[0].lower() + sym[1:]
-	center = Tracker["constants"]["center"]
-	CTF    = Tracker["constants"]["CTF"]
+	maxit         = Tracker["maxit"]
+	saturatecrit  = Tracker["saturatecrit"]
+	pixercutoff   = Tracker["pixercutoff"]
+	ou            = Tracker["radius"]
+	ts            = get_input_from_string(Tracker["ts"])[0]
+	delta         = get_input_from_string(Tracker["delta"])[0]
+	sym           = Tracker["constants"]["sym"]
+	sym           = sym[0].lower() + sym[1:]
+	center        = Tracker["constants"]["center"]
+	CTF           = Tracker["constants"]["CTF"]
 	fourvar = False
-
-
 
 	if log == None:
 		from logger import Logger

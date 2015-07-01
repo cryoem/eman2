@@ -1600,9 +1600,8 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 		t2.set_trans(Vec2f(-s2x, -s2y))
 		data.set_attr("xform.projection", t2)
-		from utilities import get_symt
 		from pixel_error import max_3D_pixel_error
-		ts = get_symt(sym)
+		ts = t2.get_sym_proj(sym)
 		if(len(ts) > 1):
 			# only do it if it is not c1
 			pixel_error = +1.0e23
@@ -1689,9 +1688,8 @@ def proj_ali_incore_local_zoom(data, refrings, numr, xrng, yrng, step, an, finfo
 	# This trick assures that transformation is only set when at least one reference is found.
 	if( s2x ):
 		data.set_attr("xform.projection", t2)
-		from utilities import get_symt
 		from pixel_error import max_3D_pixel_error
-		ts = get_symt(sym)
+\		ts = t2.get_sym_proj(sym)
 		if(len(ts) > 1):
 			# only do it if it is not c1
 			pixel_error = +1.0e23
@@ -1761,9 +1759,8 @@ def proj_ali_incore_delta(data, refrings, numr, xrng, yrng, step, start, delta, 
 	t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 	t2.set_trans(Vec2f(-s2x, -s2y))
 	data.set_attr("xform.projection", t2)
-	from utilities import get_symt
 	from pixel_error import max_3D_pixel_error
-	ts = get_symt(sym)
+	ts = t2.get_sym_proj(sym)
 	if(len(ts) > 1):
 		# only do it if it is not c1
 		pixel_error = +1.0e23
@@ -1844,9 +1841,8 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, dpsi=1
 		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 		t2.set_trans(Vec2f(-s2x, -s2y))
 		data.set_attr("xform.projection", t2)
-		from utilities import get_symt
 		from pixel_error import max_3D_pixel_error
-		ts = get_symt(sym)
+		ts = t2.get_sym_proj(sym)
 		if(len(ts) > 1):
 			# only do it if it is not c1
 			pixel_error = +1.0e23
@@ -4419,9 +4415,8 @@ def Xshc0(data, cimages, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1"
 		data.set_attr("xform.projection", t2)
 		data.set_attr("previousmax", peak)
 		#  Find the pixel error that is minimum over symmetry transformations
-		from utilities import get_symt
 		from pixel_error import max_3D_pixel_error
-		ts = get_symt(sym)
+		ts = t2.get_sym_proj(sym)
 		if(len(ts) > 1):
 			# only do it if it is not c1
 			pixel_error = +1.0e23
@@ -4516,9 +4511,8 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 		data.set_attr("xform.projection", t2)
 		data.set_attr("previousmax", peak)
 		#  Find the pixel error that is minimum over symmetry transformations
-		from utilities import get_symt
 		from pixel_error import max_3D_pixel_error
-		ts = get_symt(sym)
+		ts = t2.get_sym_proj(sym)
 		if(len(ts) > 1):
 			# only do it if it is not c1
 			pixel_error = +1.0e23
