@@ -1570,7 +1570,8 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 	tyrng[0] = max(0,min(cny+syi-ou, yrng+syi))
 	tyrng[1] = max(0, min(ny-cny-syi-ou, yrng-syi))
 	if finfo:
-		finfo.write("Old parameters: %6.2f %6.2f %6.2f %6.2f %6.2f   %4.1f  %4.1f %4.1f %4.1f"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"],txrng[0],txrng[1],tyrng[0],tyrng[1]))
+		finfo.write("Old parameters: %6.2f %6.2f %6.2f %6.2f %6.2f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
+		finfo.write("              :   %4.1f  %4.1f %4.1f %4.1f   %4.1f  %4.1f   %4.1f  %4.1f %4.1f %4.1f\n"%(xrng, yrng, cnx, cny, sxi, syi, txrng[0],txrng[1],tyrng[0],tyrng[1]))
 		finfo.flush()
 
 	
