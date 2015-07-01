@@ -61,12 +61,13 @@ def main():
 	parser.add_argument("--gain",type=str,default=None,help="Perform gain image correction using the specified image file")
 	parser.add_argument("--gaink2",type=str,default=None,help="Perform gain image correction. Gatan K2 gain images are the reciprocal of DDD gain images.")
 	parser.add_argument("--boxsize", type=int, help="Set the boxsize used to compute power spectra across movie frames",default=1024)
-	parser.add_argument("--maxshift", type=int, help="Set the maximum radial frame translation distance (in pixels) from the initial frame alignment.",default=10)
+	parser.add_argument("--minimizer", choices=['annealing','simplex'], help="Choose to optimize alignment via simplex method or simulated annealing. Default is simplex.",default='simplex')
+	parser.add_argument("--maxshift", type=int, help="Set the maximum radial frame translation distance (in pixels) from the initial frame alignment.",default=4)
 	parser.add_argument("--tolerance", type=int, help="Set the maximum number of times a frame can be sampled beyond maxshift before exiting prematurely.",default=5)
 	parser.add_argument("--step",type=str,default="0,1",help="Specify <first>,<step>,[last]. Processes only a subset of the input data. ie- 0,2 would process all even particles. Same step used for all input files. [last] is exclusive. Default= 0,1 (first image skipped)")
 	parser.add_argument("--tmax", type=float, help="Set the maximum achievable temperature for simulated annealing. Default is 25000.0.",default=25000.0)
 	parser.add_argument("--tmin", type=float, help="Set the minimum achievable temperature for simulated annealing. Default is 2.5.",default=2.5)
-	parser.add_argument("--steps", type=int, help="Set the number of steps to run simulated annealing. Default is 100.",default=2500)
+	parser.add_argument("--steps", type=int, help="Set the number of steps to run simulated annealing. Default is 500.",default=500)
 	parser.add_argument("--fixbadpixels",action="store_true",default=False,help="Tries to identify bad pixels in the dark/gain reference, and fills images in with sane values instead")
 	parser.add_argument('--xybadlines', help="specify the list of bad pixel coordinates for your detector.", nargs=2, default=['3106,3093','3621,3142','4719,3494'])
 	parser.add_argument("--frames",action="store_true",default=False,help="Save the dark/gain corrected frames")
@@ -75,17 +76,15 @@ def main():
 	parser.add_argument("--movie", type=int,help="Display an n-frame averaged 'movie' of the stack, specify number of frames to average",default=0)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
-
-	#parser.add_argument("--updates", type=int, help="Set the number of times to update the temperature when running simulated annealing. Default is 100.",default=100)
-	#parser.add_argument("--nopresearch",action="store_true",default=False,help="Do not run a search of the parameter space before annealing to determine 'best' max and min temperatures as well as the annealing duration.")
-	#parser.add_argument("--finesearch",action="store_true",default=False,help="Run Simplex fine-tuning after simulated annealing.")
-	#parser.add_argument("--presteps",type=int,default=500,help="The number of steps to run the exploratory pre-annealing phase.")
-	#parser.add_argument("--premins",type=float,default=2.0,help="The number of minutes to run each phase of the exploratory phase before annealing.")
-	#parser.add_argument("--maxiters", type=int, help="Set the maximum number of iterations for the simplex minimizer to run before stopping. Default is 250.",default=250)
-	#parser.add_argument("--epsilon", type=float, help="Set the learning rate for the simplex minimizer. Smaller is better, but takes longer. Default is 0.001.",default=0.001)
-	#parser.add_argument("--kR", type=float, help="Set the reflection constant for simplex minimization.",default=-1.0)
-	#parser.add_argument("--kE", type=float, help="Set the expansion constant for simplex minimization.",default=2.0)
-	#parser.add_argument("--kC", type=float, help="Set the contraction constant for simplex minimization..",default=0.5)
+	parser.add_argument("--updates", type=int, help="Set the number of times to update the temperature when running simulated annealing. Default is 100.",default=100)
+	parser.add_argument("--presearch",action="store_true",default=False,help="Run a search of the parameter space before annealing to determine 'best' max and min temperatures as well as the annealing duration.")
+	parser.add_argument("--presteps",type=int,default=500,help="The number of steps to run the exploratory pre-annealing phase.")
+	parser.add_argument("--premins",type=float,default=2.0,help="The number of minutes to run each phase of the exploratory phase before annealing.")
+	parser.add_argument("--maxiters", type=int, help="Set the maximum number of iterations for the simplex minimizer to run before stopping. Default is 250.",default=250)
+	parser.add_argument("--epsilon", type=float, help="Set the learning rate for the simplex minimizer. Smaller is better, but takes longer. Default is 0.001.",default=0.001)
+	parser.add_argument("--kR", type=float, help="Set the reflection constant for simplex minimization.",default=-1.0)
+	parser.add_argument("--kE", type=float, help="Set the expansion constant for simplex minimization.",default=2.0)
+	parser.add_argument("--kC", type=float, help="Set the contraction constant for simplex minimization..",default=0.5)
 
 	(options, args) = parser.parse_args()
 
@@ -115,14 +114,14 @@ def main():
 		options.path = fname
 		
 		if options.dark or options.gain:
-			if options.verbose: print("Performing dark/gain correction.")
+			if options.verbose: print("Performing dark/gain correction")
 			dgc = MovieModeAligner.dark_gain_correct(options)
 		else:
 			if options.verbose: print("No dark or gain references supplied. No correction applied.")
 			dgc = None
 		
 		if options.xybadlines:
-			if options.verbose: print("Removing bad lines	")
+			if options.verbose: print("Removing bad lines from movie frames")
 			fname = MovieModeAligner.remove_bad_lines(options)
 			options.path = fname
 		
@@ -184,8 +183,8 @@ class MovieModeAligner:
 		if os.path.isfile(self._dir+'/'+fname[:-4]+'_coherent.hdf'): os.remove(self._dir+'/'+fname[:-4]+'_coherent.hdf')
 		self._calc_coherent_power_spectrum()
 		self.write_coherent_power_spectrum(name=fname[:-4]+'_coherent.hdf')
-		self.write_coherent_power_spectrum()
-		self._energies = []
+		#self.write_coherent_power_spectrum()
+		self._energies = [np.inf]
 		self._minimization_path = []
 		self._update_energy()
 		self._optimized = False
@@ -300,8 +299,8 @@ class MovieModeAligner:
 		@param list transforms: List of proposed EMAN Transform objects, one for each frame in movie.
 		"""
 		self._calc_coherent_power_spectrum()
-		energy = np.log(1+EMData.cmp(self._ips,'dot',self._cps,{'normalize':1}))
-		if not self._energies or energy < self.get_lowest_energy():
+		energy = EMData.cmp(self._ips,'dot',self._cps,{'normalize':1})
+		if energy < self.get_lowest_energy():
 			self.write_coherent_power_spectrum(num=-1)
 			self.optimal_transforms = self._transforms
 			self._minimization_path.append(energy)
@@ -316,27 +315,27 @@ class MovieModeAligner:
 		if self._optimized:
 			print("Optimal alignment already determined.")
 			return
-		#if options.verbose: print("Starting coarse-grained alignment")
-		cs = Annealer(self, tmax=options.tmax, tmin=options.tmin, steps=options.steps, updates=options.steps, maxshift=options.maxshift, tolerance=options.tolerance)
-		#if not options.nopresearch:
-		#	if options.verbose: print("Determining the best annealing parameters")
-		#	schedule = cs.auto(options.premins,options.presteps)
-		#	cs.set_schedule(schedule)
-		if options.verbose: print("Running simulated annealing\n")
-		annealed = cs.anneal()
-		state = [t for tform in self.optimal_transforms for t in tform.get_trans_2d()]
-		energy = self.get_lowest_energy()
+		if options.minimizer == 'annealing':
+			cs = Annealer(self, tmax=options.tmax, tmin=options.tmin, steps=options.steps, updates=options.steps, maxshift=options.maxshift, tolerance=options.tolerance)
+			if options.presearch:
+				if options.verbose: print("Determining the best annealing parameters")
+				schedule = cs.auto(options.premins,options.presteps)
+				cs.set_schedule(schedule)
+			if options.verbose: print("Running simulated annealing\n")
+			annealed = cs.anneal()
+		if options.minimizer == 'simplex':
+			if options.verbose: print("Organizing simplex minimizer")
+			#state = [t for tform in self.optimal_transforms for t in tform.get_trans_2d()]
+			state = [np.random.randint(-2,2) for tform in self.optimal_transforms for t in tform.get_trans_2d()]
+			sm = Simplex(self._compares,state,[1]*len(state),kC=options.kC,kE=options.kE,kR=options.kR,data=self)
+			if options.verbose: print("Initializing simplex minimization\n")
+			result, error, iters = sm.minimize(options.epsilon,options.maxiters,monitor=1)
 		if options.verbose:
-			print("\nOptimal Frame Translations:\n")
-			for s in xrange(len(state)):
-				if s % 2 == 0: print("Frame {} \t( {:.2}, {:.2} )".format((s/2)+1,state[s],state[s+1]))
-			print("\nBest Energy: {}\n".format(energy))
-		#if options.finesearch:
-			#if options.verbose: print("Starting fine-grained alignment")
-			#sm = Simplex(self._compares,state,[4]*len(state),kC=options.kC,kE=options.kE,kR=options.kR,data=self)
-			#if options.verbose: print("Initializing simplex minimizer")
-			#result, error, iters = sm.minimize(options.epsilon,options.maxiters,monitor=1)
-			#if options.verbose: print("\n\nBest Parameters: {}\n\nEstimated Error: {}\nIterations: {}\n".format(result,error,iters))
+			print("\n\nOptimal Frame Translations:\n")
+			ts = [t for tform in self.optimal_transforms for t in tform.get_trans_2d()]
+			for s in xrange(len(ts)):
+				if s % 2 == 0: print("Frame {} \t( {:.2}, {:.2} )".format((s/2)+1,ts[s],ts[s+1]))
+			print("")
 		self._optimized = True
 
 	@staticmethod
@@ -348,8 +347,9 @@ class MovieModeAligner:
 		@param MovieModeAligner aligner: aligner object
 		"""
 		for vi in range(0,len(vec),2):
-			t = Transform({'type':'eman','tx':vec[vi],'ty':vec[vi+1]})
-			aligner._update_frame_params(vi/2,t)
+			if vi != len(vec)/2 and vi != len(vec)/2-1:
+				t = Transform({'type':'eman','tx':vec[vi],'ty':vec[vi+1]})
+				aligner._update_frame_params(vi/2,t)
 		aligner._update_energy()
 		return aligner.get_last_energy()
 
@@ -641,34 +641,28 @@ class Annealer(BaseAnnealer):
 		self.edge_tolerance = 5 # Allow up to 5 of the frames to hit the edge of the allowed translations before signaling to exit
 		self.edge_strikes = [0 for t in aligner._transforms] # making this a list to allow for easier debugging if need be.
 		self.count = 0
-
-	def move(self,):
-		p = self.state[self.count:self.count+2] + (2.0 * np.random.random(2) - 1.0)
-		if np.linalg.norm(p) < self.maxshift: # only allow samples within maxshift radius
-			self.state[self.count:self.count+2] = p
-			t = Transform({'type':'eman','tx':self.state[self.count],'ty':self.state[self.count+1]})
-			self.aligner._update_frame_params(self.count/2,t)
-			self.count = (self.count+2) % self.slen
-		else:
-			self.edge_strikes[self.count/2] = 1
-			if sum(self.edge_strikes) > self.edge_tolerance:
-				print("Annealer has reached the maximum tolerance of edge strikes ({}).\nStopping optimization prematurely...".format(self.slen/8))
-				signal.signal(signal.SIGINT, self.set_user_exit)
-				print("You can supply a larger --maxshift or higher --tolerance to allow for frame alignment to take place beyond this radius; however, we cannot guarantee successful alignment under such circumstances.")
+		self.check = self.slen/2
+		if self.slen/2 % 2 != 0: self.check -= 1
+	
+	def move(self):
+		if self.count != self.check:
+			p = self.state[self.count:self.count+2] + (2.0 * np.random.random(2) - 1.0)
+			if np.linalg.norm(p) < self.maxshift: # only allow samples within maxshift radius
+				self.state[self.count:self.count+2] = p
+				t = Transform({'type':'eman','tx':self.state[self.count],'ty':self.state[self.count+1]})
+				self.aligner._update_frame_params(self.count/2,t)
+				self.aligner._update_energy()
+			else:
+				self.edge_strikes[self.count/2] = 1
+				if sum(self.edge_strikes) > self.edge_tolerance:
+					print("Annealer has reached the maximum tolerance of edge strikes ({}).\nStopping optimization prematurely...".format(self.slen/8))
+					signal.signal(signal.SIGINT, self.set_user_exit)
+					print("You can supply a larger --maxshift or higher --tolerance to allow for frame alignment to take place beyond this radius; however, we cannot guarantee successful alignment under such circumstances.")
+		self.count = (self.count+2) % self.slen
 	
 	def energy(self):
-	    self.aligner._update_energy()
-	    return self.aligner.get_last_energy()
-
-# class FineSearch(Simplex):
-#
-#	"""
-#	Simplex minimizer to finely search the annealed minimum yielded by CoarseSearch.
-#	"""
-#
-#	def __init__(self, func, init, increments=None, kR=-1.0, kE=2.0, kC=0.5):
-#		if increments == None: increments = [5] * len(init)
-#		super(FineSearch, self).__init__(func,init,increments,kR,kE,kC)
+		#return self.aligner.get_last_energy() 
+		return self.aligner.get_lowest_energy()
 
 if __name__ == "__main__":
 	main()
