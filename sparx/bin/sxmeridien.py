@@ -311,24 +311,22 @@ def threshold_params_changes(currentdir, previousdir, th = 0.95, sym = "c1"):
 		from utilities import get_symt
 		ts = get_symt(sym)
 		for i in xrange(n):
-			t1 = Transform({"type":"spider","phi":pp[i][0],"theta":pp[i][1],"psi":pp[i][2]})
-			t1.set_trans(Vec2f(-pp[i][3], -pp[i][4]))
+			#t1 = Transform({"type":"spider","phi":pp[i][0],"theta":pp[i][1],"psi":pp[i][2]})
+			#t1.set_trans(Vec2f(-pp[i][3], -pp[i][4]))
 			t2 = Transform({"type":"spider","phi":cp[i][0],"theta":cp[i][1],"psi":cp[i][2]})
 			t2.set_trans(Vec2f(-cp[i][3], -cp[i][4]))
-			pixel_error = 1.0e23
+			ts = t2.get_sym_proj(sym)
+			shifter[i] = max(abs(cp[i][3] - pp[i][3]),abs(cp[i][4] - pp[i][4]))
 			for kts in ts:
-				ut = t2*kts
 				# we do not care which position minimizes the error
-				du = ut.get_params("spider")
-				qt = max_3D_pixel_error(t1, ut, 1)
-				if(qt < pixel_error):
-					pixel_error = qt
-					anger[i] = getang3([pp[i][0], pp[i][1]], [du["phi"], du["theta"]])
-					shifter[i] = max(abs(du["tx"] + pp[i][3]),abs(du["ty"] + pp[i][4]))
+				du = kts.get_params("spider")
+				qt = getang3([pp[i][0], pp[i][1]], [du["phi"], du["theta"]])
+				if(qt < anger[i]):
+					anger[i] = qt
 
 	anger.sort()
 	shifter.sort()
-	la = int(th*n + 0.5)
+	la = min(int(th*n + 0.5), n-1)
 	#  Returns error thresholds under which one has th fraction of images
 	return anger[la], shifter[la]
 	"""
@@ -1286,7 +1284,7 @@ def main():
 
 		if( myid == main_node):
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(line,"Maximum displacememnts at 0.95 level for angular directions  %6.2f  and shifts %6.1f"%(anger, shifter) )
+			print(line,"Maximum displacements at 0.95 level for angular directions  %6.2f  and shifts %6.1f"%(anger, shifter) )
 
 		anger   = bcast_number_to_all(anger,   source_node = main_node)
 		shifter = bcast_number_to_all(shifter, source_node = main_node)

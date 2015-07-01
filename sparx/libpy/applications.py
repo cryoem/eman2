@@ -4599,10 +4599,11 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = None, nsoft = 3, \
 		saturatecrit = 0.95, pixercutoff = 1.0, zoom = False  ):
 	"""
-		Most parameters passed in Tracker, but not all FIT IT 06/30/2015
+		Most parameters passed in Tracker, but not all FIX IT 06/30/2015
 		parameters: list of (all) projections | reference volume is optional, the data is shrank, 
 		  the program does not know anything about shrinking| ...
-		 The alignment done depends on nsoft:
+		Data is assumed to be CTF multiplied and the ctf_applied flag to be set.
+		The alignment done depends on nsoft:
 					 nsoft = 0 & an = -1: exhaustive deterministic
 					 nsoft = 0 & an > 0 : local deterministic
 					 nsoft = 1 shc
