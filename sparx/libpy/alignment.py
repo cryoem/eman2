@@ -1560,12 +1560,6 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 	#phi, theta, psi, sxo, syo = get_params_proj(data)
 	t1 = data.get_attr("xform.projection")
 	dp = t1.get_params("spider")
-	#print  dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]
-	if finfo:
-		#finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, sxo, syo))
-		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
-		finfo.flush()
-
 	ou = numr[-3]
 	sxi = dp["tx"]
 	syi = dp["ty"]
@@ -1575,6 +1569,10 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 	txrng[1] = max(0, min(nx-cnx-sxi-ou, xrng-sxi))
 	tyrng[0] = max(0,min(cny+syi-ou, yrng+syi))
 	tyrng[1] = max(0, min(ny-cny-syi-ou, yrng-syi))
+	if finfo:
+		finfo.write("Old parameters: %6.2f %6.2f %6.2f %6.2f %6.2f    %4.1f %4.1\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"],txrng[0],txrng[1],tyrng[0],tyrng[1]))
+		finfo.flush()
+
 	
 	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data, refrings, txrng, tyrng, step, ant, mode, numr, cnx+sxi, cny+syi, sym)
 
@@ -1621,7 +1619,7 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 			pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
 		#print phi, theta, psi, s2x, s2y, peak, pixel_error
 		if finfo:
-			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
+			finfo.write( "New parameters: %6.2f %6.2f %6.2f %6.2f %6.2f   %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 			finfo.flush()
 		return peak, pixel_error
 	else:

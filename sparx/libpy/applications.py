@@ -4689,12 +4689,10 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 
 	if myid == 0:
 		finfo = None
-		"""
 		import os
 		outdir = "./"
 		info_file = os.path.join(outdir, "progress%04d"%myid)
 		finfo = open(info_file, 'w')
-		"""
 	else:
 		finfo = None
 
