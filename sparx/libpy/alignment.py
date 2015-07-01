@@ -1494,6 +1494,8 @@ def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None):
 	ou = numr[-3]
 
 
+	txrng = [0.0]*2 
+	tyrng = [0.0]*2
 	#phi, theta, psi, sxo, syo = get_params_proj(data)
 	t1 = data.get_attr("xform.projection")
 	t2 = t1
@@ -1501,12 +1503,10 @@ def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None):
 		dp = t2.get_params("spider")
 		sxi = -dp["tx"]
 		syi = -dp["ty"]
-		txrng = [0.0]*2 
-		tyrng = [0.0]*2
-		txrng[0] = max(cnx+sxi-max(cnx+sxi-xrng,1),0)  # lower end is positive
-		txrng[1] = max(min(min(cnx+sxi+xrng,nx-1)-cnx-sxi,xrng),0)  # upper end
-		tyrng[0] = max(cny+syi-max(cny+syi-yrng,1),0)
-		tyrng[1] = max(min(min(cny+syi+yrng,ny-1)-cny-syi,yrng),0)
+		txrng[0] = max(cnx+sxi-max(cnx+sxi-xrng[zi],1),0)  # lower end is positive
+		txrng[1] = max(min(min(cnx+sxi+xrng[zi],nx-1)-cnx-sxi,xrng[zi]),0)  # upper end
+		tyrng[0] = max(cny+syi-max(cny+syi-yrng[zi],1),0)
+		tyrng[1] = max(min(min(cny+syi+yrng[zi],ny-1)-cny-syi,yrng[zi]),0)
 			
 		[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings, txrng, tyrng, step[zi], mode, numr, cnx-sxi, cny-syi)
 		#print ang, sxs, sys, mirror, iref, peak
