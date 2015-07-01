@@ -1431,8 +1431,8 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 	t1 = data.get_attr("xform.projection")
 	dp = t1.get_params("spider")
 	ou = numr[-3]
-	sxi = dp["tx"]
-	syi = dp["ty"]
+	sxi = -dp["tx"]
+	syi = -dp["ty"]
 	txrng = [0.0]*2 
 	tyrng = [0.0]*2
 	txrng[0] = max(0,min(cnx+sxi-ou, xrng+sxi))
@@ -1501,8 +1501,8 @@ def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None):
 	for zi in xrange(len(xrng)):
 		dp = t2.get_params("spider")
 
-		sxi = dp["tx"]
-		syi = dp["ty"]
+		sxi = -dp["tx"]
+		syi = -dp["ty"]
 		txrng = [0.0]*2 
 		tyrng = [0.0]*2
 		txrng[0] = max(0,min(cnx+sxi-ou, xrng[zi]+sxi))
@@ -1561,8 +1561,8 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 	t1 = data.get_attr("xform.projection")
 	dp = t1.get_params("spider")
 	ou = numr[-3]
-	sxi = dp["tx"]
-	syi = dp["ty"]
+	sxi = -dp["tx"]
+	syi = -dp["ty"]
 	txrng = [0.0]*2 
 	tyrng = [0.0]*2
 	txrng[0] = max(0,min(cnx+sxi-ou, xrng+sxi))
@@ -1571,7 +1571,7 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 	tyrng[1] = max(0, min(ny-cny-syi-ou, yrng-syi))
 	if finfo:
 		finfo.write("Old parameters: %6.2f %6.2f %6.2f %6.2f %6.2f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
-		finfo.write("              :   %4.1f  %4.1f %4.1f %4.1f   %4.1f  %4.1f   %4.1f  %4.1f %4.1f %4.1f\n"%(xrng, yrng, cnx, cny, sxi, syi, txrng[0],txrng[1],tyrng[0],tyrng[1]))
+		finfo.write("              : %3d  %3d  %3d    %4.1f  %4.1f %4.1f %4.1f   %4.1f  %4.1f     %4.1f  %4.1f %4.1f %4.1f\n"%(ou, nx, ny, xrng, yrng, cnx, cny, sxi, syi, txrng[0],txrng[1],tyrng[0],tyrng[1]))
 		finfo.flush()
 
 	
@@ -1652,15 +1652,15 @@ def proj_ali_incore_local_zoom(data, refrings, numr, xrng, yrng, step, an, finfo
 			finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
 			finfo.flush()
 
-		sxi = dp["tx"]
-		syi = dp["ty"]
+		sxi = -dp["tx"]
+		syi = -dp["ty"]
 		txrng = [0.0]*2 
 		tyrng = [0.0]*2
 		txrng[0] = max(0,min(cnx+sxi-ou, xrng+sxi))
 		txrng[1] = max(0, min(nx-cnx-sxi-ou, xrng-sxi))
 		tyrng[0] = max(0,min(cny+syi-ou, yrng+syi))
 		tyrng[1] = max(0, min(ny-cny-syi-ou, yrng-syi))
-	
+
 		#[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data, refrings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
 		#  multiref_polar_ali_2d_local has to be modified to work properly with symmetries, i.e., to consider wrapping of refrings distribution PAP 01/27/2015
 		[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data, refrings, txrng, tyrng, step, ant, mode, numr, cnx+sxi, cny+syi, sym)
@@ -1738,8 +1738,8 @@ def proj_ali_incore_delta(data, refrings, numr, xrng, yrng, step, start, delta, 
 		finfo.flush()
 
 	ou = numr[-3]
-	sxi = dp["tx"]
-	syi = dp["ty"]
+	sxi = -dp["tx"]
+	syi = -dp["ty"]
 	txrng = [0.0]*2 
 	tyrng = [0.0]*2
 	txrng[0] = max(0,min(cnx+sxi-ou, xrng+sxi))
@@ -1821,8 +1821,8 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, dpsi=1
 		finfo.flush()
 		
 	ou = numr[-3]
-	sxi = dp["tx"]
-	syi = dp["ty"]
+	sxi = -dp["tx"]
+	syi = -dp["ty"]
 	txrng = [0.0]*2 
 	tyrng = [0.0]*2
 	txrng[0] = max(0,min(cnx+sxi-ou, xrng+sxi))
@@ -4469,11 +4469,9 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 	#phi, theta, psi, sxo, syo = get_params_proj(data)
 	t1 = data.get_attr("xform.projection")
 	dp = t1.get_params("spider")
-	t1 = data.get_attr("xform.projection")
-	dp = t1.get_params("spider")
 	ou = numr[-3]
-	sxi = dp["tx"]
-	syi = dp["ty"]
+	sxi = -dp["tx"]
+	syi = -dp["ty"]
 	txrng = [0.0]*2 
 	tyrng = [0.0]*2
 	txrng[0] = max(0,min(cnx+sxi-ou, xrng+sxi))
