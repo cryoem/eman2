@@ -83,6 +83,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 		ny = ima.get_ysize()
 		txrng = [0.0]*2 
 		tyrng = [0.0]*2
+		# Possible problem here
 		txrng[0] = max(0,min(cnx+sxi-ou, xrng+sxi))
 		txrng[1] = max(0, min(nx-cnx-sxi-ou, xrng-sxi))
 		tyrng[0] = max(0,min(cny+syi-ou, yrng+syi))
@@ -642,6 +643,7 @@ def ormq_peaks(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	ny = image.get_ysize()
 	txrng = [0.0]*2 
 	tyrng = [0.0]*2
+	# possible problem here
 	txrng[0] = max(0,min(cnx-ou, xrng))
 	txrng[1] = max(0, min(nx-cnx-ou, xrng))
 	tyrng[0] = max(0,min(cny-ou, yrng))
@@ -1435,13 +1437,12 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 	syi = -dp["ty"]
 	txrng = [0.0]*2 
 	tyrng = [0.0]*2
-	txrng[0] = max(0,min(cnx+sxi-ou, xrng+sxi))
-	txrng[1] = max(0, min(nx-cnx-sxi-ou, xrng-sxi))
-	tyrng[0] = max(0,min(cny+syi-ou, yrng+syi))
-	tyrng[1] = max(0, min(ny-cny-syi-ou, yrng-syi))
+	txrng[0] = max(cnx+sxi-max(cnx+sxi-xrng,1),0)  # lower end is positive
+	txrng[1] = max(min(min(cnx+sxi+xrng,nx-1)-cnx-sxi,xrng),0)  # upper end
+	tyrng[0] = max(cny+syi-max(cny+syi-yrng,1),0)
+	tyrng[1] = max(min(min(cny+syi+yrng,ny-1)-cny-syi,yrng),0)
 			
-	#[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
-	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi)
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings, txrng, tyrng, step, mode, numr, cnx-sxi, cny-syi)
 	#print ang, sxs, sys, mirror, iref, peak
 	iref = int(iref)
 	#[ang,sxs,sys,mirror,peak,numref] = apmq(projdata[imn], ref_promulj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
@@ -1453,14 +1454,12 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 		phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 		theta = 180.0-refrings[iref].get_attr("theta")
 		psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
-		s2x   = sxb - sxi
-		s2y   = syb - syi
 	else:
 		phi   = refrings[iref].get_attr("phi")
 		theta = refrings[iref].get_attr("theta")
 		psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-		s2x   = sxb - sxi
-		s2y   = syb - syi
+	s2x   = sxb + sxi
+	s2y   = syb + syi
 	#set_params_proj(data, [phi, theta, psi, s2x, s2y])
 	t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 	t2.set_trans(Vec2f(-s2x, -s2y))
@@ -1500,17 +1499,16 @@ def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None):
 	t2 = t1
 	for zi in xrange(len(xrng)):
 		dp = t2.get_params("spider")
-
 		sxi = -dp["tx"]
 		syi = -dp["ty"]
 		txrng = [0.0]*2 
 		tyrng = [0.0]*2
-		txrng[0] = max(0,min(cnx+sxi-ou, xrng[zi]+sxi))
-		txrng[1] = max(0, min(nx-cnx-sxi-ou, xrng[zi]-sxi))
-		tyrng[0] = max(0,min(cny+syi-ou, yrng[zi]+syi))
-		tyrng[1] = max(0, min(ny-cny-syi-ou, yrng[zi]-syi))
+		txrng[0] = max(cnx+sxi-max(cnx+sxi-xrng,1),0)  # lower end is positive
+		txrng[1] = max(min(min(cnx+sxi+xrng,nx-1)-cnx-sxi,xrng),0)  # upper end
+		tyrng[0] = max(cny+syi-max(cny+syi-yrng,1),0)
+		tyrng[1] = max(min(min(cny+syi+yrng,ny-1)-cny-syi,yrng),0)
 			
-		[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings, txrng, tyrng, step[zi], mode, numr, cnx+sxi, cny+syi)
+		[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings, txrng, tyrng, step[zi], mode, numr, cnx-sxi, cny-syi)
 		#print ang, sxs, sys, mirror, iref, peak
 		iref = int(iref)
 		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
@@ -1520,14 +1518,12 @@ def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None):
 			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 			theta = 180.0-refrings[iref].get_attr("theta")
 			psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
-			s2x   = sxb - sxi
-			s2y   = syb - syi
 		else:
 			phi   = refrings[iref].get_attr("phi")
 			theta = refrings[iref].get_attr("theta")
 			psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-			s2x   = sxb - sxi
-			s2y   = syb - syi
+		s2x   = sxb + sxi
+		s2y   = syb + syi
 		#set_params_proj(data, [phi, theta, psi, s2x, s2y])
 		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 		t2.set_trans(Vec2f(-s2x, -s2y))
@@ -1563,7 +1559,7 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 	ou = numr[-3]
 	sxi = -dp["tx"]
 	syi = -dp["ty"]
-	txrng = [0.0]*2 
+	txrng = [0.0]*2
 	tyrng = [0.0]*2
 	txrng[0] = max(cnx+sxi-max(cnx+sxi-xrng,1),0)  # lower end is positive
 	txrng[1] = max(min(min(cnx+sxi+xrng,nx-1)-cnx-sxi,xrng),0)  # upper end
@@ -1575,7 +1571,7 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 		finfo.flush()
 
 	
-	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data, refrings, txrng, tyrng, step, ant, mode, numr, cnx+sxi, cny+syi, sym)
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data, refrings, txrng, tyrng, step, ant, mode, numr, cnx-sxi, cny-syi, sym)
 
 	iref=int(iref)
 	#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
@@ -1594,13 +1590,11 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 			phi   = (phi+540.0)%360.0
 			theta = 180.0-refrings[iref].get_attr("theta")
 			psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
-			s2x   = sxb - sxi
-			s2y   = syb - syi
 		else:			
 			theta = refrings[iref].get_attr("theta")
 			psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-			s2x   = sxb - sxi
-			s2y   = syb - syi
+		s2x   = sxb + sxi
+		s2y   = syb + syi
 
 		#set_params_proj(data, [phi, theta, psi, s2x, s2y])
 		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
@@ -1658,14 +1652,12 @@ def proj_ali_incore_local_zoom(data, refrings, numr, xrng, yrng, step, an, finfo
 		syi = -dp["ty"]
 		txrng = [0.0]*2 
 		tyrng = [0.0]*2
-		txrng[0] = max(0,min(cnx+sxi-ou, xrng+sxi))
-		txrng[1] = max(0, min(nx-cnx-sxi-ou, xrng-sxi))
-		tyrng[0] = max(0,min(cny+syi-ou, yrng+syi))
-		tyrng[1] = max(0, min(ny-cny-syi-ou, yrng-syi))
+		txrng[0] = max(cnx+sxi-max(cnx+sxi-xrng,1),0)  # lower end is positive
+		txrng[1] = max(min(min(cnx+sxi+xrng,nx-1)-cnx-sxi,xrng),0)  # upper end
+		tyrng[0] = max(cny+syi-max(cny+syi-yrng,1),0)
+		tyrng[1] = max(min(min(cny+syi+yrng,ny-1)-cny-syi,yrng),0)
 
-		#[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data, refrings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
-		#  multiref_polar_ali_2d_local has to be modified to work properly with symmetries, i.e., to consider wrapping of refrings distribution PAP 01/27/2015
-		[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data, refrings, txrng, tyrng, step, ant, mode, numr, cnx+sxi, cny+syi, sym)
+		[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data, refrings, txrng, tyrng, step, ant, mode, numr, cnx-sxi, cny-syi, sym)
 
 		iref=int(iref)
 		#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
@@ -1684,13 +1676,11 @@ def proj_ali_incore_local_zoom(data, refrings, numr, xrng, yrng, step, an, finfo
 				phi   = (phi+540.0)%360.0
 				theta = 180.0-refrings[iref].get_attr("theta")
 				psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
-				s2x   = sxb - sxi
-				s2y   = syb - syi
 			else:			
 				theta = refrings[iref].get_attr("theta")
 				psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-				s2x   = sxb - sxi
-				s2y   = syb - syi
+			s2x   = sxb + sxi
+			s2y   = syb + syi
 
 			#set_params_proj(data, [phi, theta, psi, s2x, s2y])
 			t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
@@ -1744,13 +1734,13 @@ def proj_ali_incore_delta(data, refrings, numr, xrng, yrng, step, start, delta, 
 	syi = -dp["ty"]
 	txrng = [0.0]*2 
 	tyrng = [0.0]*2
-	txrng[0] = max(0,min(cnx+sxi-ou, xrng+sxi))
-	txrng[1] = max(0, min(nx-cnx-sxi-ou, xrng-sxi))
-	tyrng[0] = max(0,min(cny+syi-ou, yrng+syi))
-	tyrng[1] = max(0, min(ny-cny-syi-ou, yrng-syi))
-	#[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
+	txrng[0] = max(cnx+sxi-max(cnx+sxi-xrng,1),0)  # lower end is positive
+	txrng[1] = max(min(min(cnx+sxi+xrng,nx-1)-cnx-sxi,xrng),0)  # upper end
+	tyrng[0] = max(cny+syi-max(cny+syi-yrng,1),0)
+	tyrng[1] = max(min(min(cny+syi+yrng,ny-1)-cny-syi,yrng),0)
+
 	#  This function should be modified to work properly for refrings wrapping due to symmetries 01/27/2015
-	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_delta(data, refrings, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi, start, delta)
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_delta(data, refrings, txrng, tyrng, step, mode, numr, cnx-sxi, cny-syi, start, delta)
 	iref = int(iref)
 	#[ang,sxs,sys,mirror,peak,numref] = apmq(projdata[imn], ref_proj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
 	#ang = (ang+360.0)%360.0
@@ -1761,14 +1751,12 @@ def proj_ali_incore_delta(data, refrings, numr, xrng, yrng, step, start, delta, 
 		phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 		theta = 180.0-refrings[iref].get_attr("theta")
 		psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
-		s2x   = sxb - sxi
-		s2y   = syb - syi
 	else:
 		phi   = refrings[iref].get_attr("phi")
 		theta = refrings[iref].get_attr("theta")
 		psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-		s2x   = sxb - sxi
-		s2y   = syb - syi
+	s2x   = sxb + sxi
+	s2y   = syb + syi
 	#set_params_proj(data, [phi, theta, psi, s2x, s2y])
 	t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 	t2.set_trans(Vec2f(-s2x, -s2y))
@@ -1827,12 +1815,12 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, dpsi=1
 	syi = -dp["ty"]
 	txrng = [0.0]*2 
 	tyrng = [0.0]*2
-	txrng[0] = max(0,min(cnx+sxi-ou, xrng+sxi))
-	txrng[1] = max(0, min(nx-cnx-sxi-ou, xrng-sxi))
-	tyrng[0] = max(0,min(cny+syi-ou, yrng+syi))
-	tyrng[1] = max(0, min(ny-cny-syi-ou, yrng-syi))	
-	#[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local_psi(data, refrings, xrng, yrng, step, ant, 180.0, mode, numr, cnx-sxo, cny-syo)
-	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local_psi(data, refrings, txrng, tyrng, step, ant, dpsi, mode, numr, cnx+sxi, cny+syi)
+	txrng[0] = max(cnx+sxi-max(cnx+sxi-xrng,1),0)  # lower end is positive
+	txrng[1] = max(min(min(cnx+sxi+xrng,nx-1)-cnx-sxi,xrng),0)  # upper end
+	tyrng[0] = max(cny+syi-max(cny+syi-yrng,1),0)
+	tyrng[1] = max(min(min(cny+syi+yrng,ny-1)-cny-syi,yrng),0)
+
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local_psi(data, refrings, txrng, tyrng, step, ant, dpsi, mode, numr, cnx-sxi, cny-syi)
 	iref = int(iref)
 	#Util.multiref_peaks_ali(data[imn].process("normalize.mask", {"mask":mask2D, "no_sigma":1}), ref_proj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo, ccfs, ccfm, nphi, ntheta)
 	#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
@@ -1845,14 +1833,12 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, dpsi=1
 			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 			theta = 180.0-refrings[iref].get_attr("theta")
 			psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
-			s2x   = sxb - sxi
-			s2y   = syb - syi
 		else:
 			phi   = refrings[iref].get_attr("phi")
 			theta = refrings[iref].get_attr("theta")
 			psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-			s2x   = sxb - sxi
-			s2y   = syb - syi
+		s2x   = sxb + sxi
+		s2y   = syb + syi
 
 		#set_params_proj(data, [phi, theta, psi, s2x, s2y])
 		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
@@ -1890,7 +1876,7 @@ def proj_ali_helical(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_max=1
 	#  center is in SPIDER convention
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
-	phi, theta, psi, tx, ty = get_params_proj(data)
+	phi, theta, psi, sxi, syi = get_params_proj(data)
 	if finfo:
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
@@ -1898,12 +1884,13 @@ def proj_ali_helical(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_max=1
 	ou = numr[-3]
 	txrng = [0.0]*2 
 	tyrng = [0.0]*2
-	txrng[0] = max(0,min(cnx-tx-ou, xrng-tx))				#here tx is not spider format.@ming
-	txrng[1] = max(0, min(nx-cnx+tx-ou, xrng+tx))
-	tyrng[0] = max(0,min(cny-ty-ou, yrng-ty))
-	tyrng[1] = max(0, min(ny-cny+ty-ou, yrng+ty))	
+	txrng[0] = max(cnx+sxi-max(cnx+sxi-xrng,1),0)  # lower end is positive
+	txrng[1] = max(min(min(cnx+sxi+xrng,nx-1)-cnx-sxi,xrng),0)  # upper end
+	tyrng[0] = max(cny+syi-max(cny+syi-yrng,1),0)
+	tyrng[1] = max(min(min(cny+syi+yrng,ny-1)-cny-syi,yrng),0)
+
 	[ang, sxs, sys, mirror, iref, peak] = \
-		Util.multiref_polar_ali_helical(data, refrings, txrng, tyrng, stepx, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber))
+		Util.multiref_polar_ali_helical(data, refrings, txrng, tyrng, stepx, psi_max, mode, numr, cnx-sxi, cny-syi, int(ynumber))
 	iref = int(iref)
 	#print  " IN ", ang, sxs, sys, mirror, iref, peak
 	if iref > -1:
@@ -1918,8 +1905,8 @@ def proj_ali_helical(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_max=1
 			phi   = refrings[iref].get_attr("phi")
 			theta = refrings[iref].get_attr("theta")
 			psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-		s2x   = sxb + tx
-		s2y   = syb + ty
+		s2x   = sxb + sxi
+		s2y   = syb + syi
 
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f\n\n" %(phi, theta, psi, s2x, s2y, peak))
@@ -1942,7 +1929,7 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
 	ant = cos(radians(an))
-	phi, theta, psi, tx, ty = get_params_proj(data)
+	phi, theta, psi, sxi, syi = get_params_proj(data)
 	if finfo:
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
@@ -1950,13 +1937,13 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	ou = numr[-3]
 	txrng = [0.0]*2 
 	tyrng = [0.0]*2
-	txrng[0] = max(0,min(cnx-tx-ou, xrng-tx))				#here tx is not spider format.@ming
-	txrng[1] = max(0, min(nx-cnx+tx-ou, xrng+tx))
-	tyrng[0] = max(0,min(cny-ty-ou, yrng-ty))
-	tyrng[1] = max(0, min(ny-cny+ty-ou, yrng+ty))
+	txrng[0] = max(cnx+sxi-max(cnx+sxi-xrng,1),0)  # lower end is positive
+	txrng[1] = max(min(min(cnx+sxi+xrng,nx-1)-cnx-sxi,xrng),0)  # upper end
+	tyrng[0] = max(cny+syi-max(cny+syi-yrng,1),0)
+	tyrng[1] = max(min(min(cny+syi+yrng,ny-1)-cny-syi,yrng),0)
 
 	[ang, sxs, sys, mirror, iref, peak] = \
-		Util.multiref_polar_ali_helical_local(data, refrings, txrng, tyrng, stepx, ant, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber), yrnglocal)
+		Util.multiref_polar_ali_helical_local(data, refrings, txrng, tyrng, stepx, ant, psi_max, mode, numr, cnx-sxi, cny-syi, int(ynumber), yrnglocal)
 
 	iref = int(iref)
 
@@ -1972,8 +1959,8 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 			phi   = refrings[iref].get_attr("phi")
 			theta = refrings[iref].get_attr("theta")
 			psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-		s2x   = sxb + tx
-		s2y   = syb + ty
+		s2x   = sxb + sxi
+		s2y   = syb + syi
 
 		if finfo:
 			finfo.write("ref phi: %9.4f\n"%(refrings[iref].get_attr("phi")))
@@ -1996,7 +1983,7 @@ def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_ma
 	#  center is in SPIDER convention
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
-	phi, theta, psi, tx, ty = get_params_proj(data)
+	phi, theta, psi, sxi, syi = get_params_proj(data)
 	if finfo:
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
@@ -2004,13 +1991,13 @@ def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_ma
 	ou = numr[-3]
 	txrng = [0.0]*2 
 	tyrng = [0.0]*2
-	txrng[0] = max(0,min(cnx-tx-ou, xrng-tx))				#here tx is not spider format.@ming
-	txrng[1] = max(0, min(nx-cnx+tx-ou, xrng+tx))
-	tyrng[0] = max(0,min(cny-ty-ou, yrng-ty))
-	tyrng[1] = max(0, min(ny-cny+ty-ou, yrng+ty))
+	txrng[0] = max(cnx+sxi-max(cnx+sxi-xrng,1),0)  # lower end is positive
+	txrng[1] = max(min(min(cnx+sxi+xrng,nx-1)-cnx-sxi,xrng),0)  # upper end
+	tyrng[0] = max(cny+syi-max(cny+syi-yrng,1),0)
+	tyrng[1] = max(min(min(cny+syi+yrng,ny-1)-cny-syi,yrng),0)
 	
 	[ang, sxs, sys, mirror, iref, peak] = \
-		Util.multiref_polar_ali_helical_90(data, refrings, txrng, tyrng, stepx, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber))
+		Util.multiref_polar_ali_helical_90(data, refrings, txrng, tyrng, stepx, psi_max, mode, numr, cnx-sxi, cny-syi, int(ynumber))
 	iref = int(iref)
 	#print  " IN ", ang, sxs, sys, mirror, iref, peak
 	if iref > -1:
@@ -2018,8 +2005,8 @@ def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_ma
 		phi   = refrings[iref].get_attr("phi")
 		theta = refrings[iref].get_attr("theta")
 		psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-		s2x   = sxb + tx
-		s2y   = syb + ty
+		s2x   = sxb + sxi
+		s2y   = syb + syi
 
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f\n\n" %(phi, theta, psi, s2x, s2y, peak))
@@ -2042,7 +2029,7 @@ def proj_ali_helical_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
 	ant = cos(radians(an))
-	phi, theta, psi, tx, ty = get_params_proj(data)
+	phi, theta, psi, sxi, syi = get_params_proj(data)
 	if finfo:
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
@@ -2050,21 +2037,21 @@ def proj_ali_helical_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 	ou = numr[-3]
 	txrng = [0.0]*2 
 	tyrng = [0.0]*2
-	txrng[0] = max(0,min(cnx-tx-ou, xrng-tx))				#here tx is not spider format.@ming
-	txrng[1] = max(0, min(nx-cnx+tx-ou, xrng+tx))
-	tyrng[0] = max(0,min(cny-ty-ou, yrng-ty))
-	tyrng[1] = max(0, min(ny-cny+ty-ou, yrng+ty))
+	txrng[0] = max(cnx+sxi-max(cnx+sxi-xrng,1),0)  # lower end is positive
+	txrng[1] = max(min(min(cnx+sxi+xrng,nx-1)-cnx-sxi,xrng),0)  # upper end
+	tyrng[0] = max(cny+syi-max(cny+syi-yrng,1),0)
+	tyrng[1] = max(min(min(cny+syi+yrng,ny-1)-cny-syi,yrng),0)
 	
 	[ang, sxs, sys, mirror, iref, peak] = \
-		Util.multiref_polar_ali_helical_90_local(data, refrings, txrng, tyrng, stepx, ant, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber), yrnglocal)
+		Util.multiref_polar_ali_helical_90_local(data, refrings, txrng, tyrng, stepx, ant, psi_max, mode, numr, cnx-sxi, cny-syi, int(ynumber), yrnglocal)
 	iref = int(iref)
 	if iref > -1:
 		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
 		phi   = refrings[iref].get_attr("phi")
 		theta = refrings[iref].get_attr("theta")
 		psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-		s2x   = sxb + tx
-		s2y   = syb + ty
+		s2x   = sxb + sxi
+		s2y   = syb + syi
 
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f\n\n" %(phi, theta, psi, s2x, s2y, peak))
@@ -2088,7 +2075,7 @@ def proj_ali_helicon_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
 	ant = cos(radians(an))
-	phi, theta, psi, tx, ty = get_params_proj(data)
+	phi, theta, psi, sxi, syi = get_params_proj(data)
 	if finfo:
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
@@ -2096,13 +2083,13 @@ def proj_ali_helicon_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	ou = numr[-3]
 	txrng = [0.0]*2 
 	tyrng = [0.0]*2
-	txrng[0] = max(0,min(cnx-tx-ou, xrng-tx))				#here tx is not spider format.@ming
-	txrng[1] = max(0, min(nx-cnx+tx-ou, xrng+tx))
-	tyrng[0] = max(0,min(cny-ty-ou, yrng-ty))
-	tyrng[1] = max(0, min(ny-cny+ty-ou, yrng+ty))
+	txrng[0] = max(cnx+sxi-max(cnx+sxi-xrng,1),0)  # lower end is positive
+	txrng[1] = max(min(min(cnx+sxi+xrng,nx-1)-cnx-sxi,xrng),0)  # upper end
+	tyrng[0] = max(cny+syi-max(cny+syi-yrng,1),0)
+	tyrng[1] = max(min(min(cny+syi+yrng,ny-1)-cny-syi,yrng),0)
 	
 	[ang, sxs, sys, mirror, iref, peak] = \
-		Util.multiref_polar_ali_helicon_local(data, refrings, txrng, tyrng, stepx, ant, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber), yrnglocal)
+		Util.multiref_polar_ali_helicon_local(data, refrings, txrng, tyrng, stepx, ant, psi_max, mode, numr, cnx-sxi, cny-syi, int(ynumber), yrnglocal)
 
 	iref = int(iref)
 
@@ -2118,8 +2105,8 @@ def proj_ali_helicon_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 			phi   = refrings[iref].get_attr("phi")
 			theta = refrings[iref].get_attr("theta")
 			psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-		s2x   = sxb + tx
-		s2y   = syb + ty
+		s2x   = sxb + sxi
+		s2y   = syb + syi
 
 		if finfo:
 			finfo.write("ref phi: %9.4f\n"%(refrings[iref].get_attr("phi")))
@@ -2236,7 +2223,7 @@ def proj_ali_helicon_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 	cnx  = nx//2 + 1
 	cny  = ny//2 + 1
 	ant = cos(an*pi/180.0)
-	phi, theta, psi, tx, ty = get_params_proj(data)
+	phi, theta, psi, sxi, syi = get_params_proj(data)
 	if finfo:
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, tx, ty))
 		finfo.flush()
@@ -2244,21 +2231,21 @@ def proj_ali_helicon_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 	ou = numr[-3]
 	txrng = [0.0]*2 
 	tyrng = [0.0]*2
-	txrng[0] = max(0,min(cnx-tx-ou, xrng-tx))				#here tx is not spider format.@ming
-	txrng[1] = max(0, min(nx-cnx+tx-ou, xrng+tx))
-	tyrng[0] = max(0,min(cny-ty-ou, yrng-ty))
-	tyrng[1] = max(0, min(ny-cny+ty-ou, yrng+ty))
+	txrng[0] = max(cnx+sxi-max(cnx+sxi-xrng,1),0)  # lower end is positive
+	txrng[1] = max(min(min(cnx+sxi+xrng,nx-1)-cnx-sxi,xrng),0)  # upper end
+	tyrng[0] = max(cny+syi-max(cny+syi-yrng,1),0)
+	tyrng[1] = max(min(min(cny+syi+yrng,ny-1)-cny-syi,yrng),0)
 	
 	[ang, sxs, sys, mirror, iref, peak] = \
-		Util.multiref_polar_ali_helicon_90_local(data, refrings, txrng, tyrng, stepx, ant, psi_max, mode, numr, cnx-tx, cny-ty, int(ynumber), yrnglocal)
+		Util.multiref_polar_ali_helicon_90_local(data, refrings, txrng, tyrng, stepx, ant, psi_max, mode, numr, cnx-sxi, cny-syi, int(ynumber), yrnglocal)
 	iref = int(iref)
 	if iref > -1:
 		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
 		phi   = refrings[iref].get_attr("phi")
 		theta = refrings[iref].get_attr("theta")
 		psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-		s2x   = sxb + tx
-		s2y   = syb + ty
+		s2x   = sxb + sxi
+		s2y   = syb + syi
 
 		if finfo:
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f\n\n" %(phi, theta, psi, s2x, s2y, peak))
@@ -4476,10 +4463,10 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 	syi = -dp["ty"]
 	txrng = [0.0]*2 
 	tyrng = [0.0]*2
-	txrng[0] = max(0,min(cnx+sxi-ou, xrng+sxi))
-	txrng[1] = max(0, min(nx-cnx-sxi-ou, xrng-sxi))
-	tyrng[0] = max(0,min(cny+syi-ou, yrng+syi))
-	tyrng[1] = max(0, min(ny-cny-syi-ou, yrng-syi))
+	txrng[0] = max(cnx+sxi-max(cnx+sxi-xrng,1),0)  # lower end is positive
+	txrng[1] = max(min(min(cnx+sxi+xrng,nx-1)-cnx-sxi,xrng),0)  # upper end
+	tyrng[0] = max(cny+syi-max(cny+syi-yrng,1),0)
+	tyrng[1] = max(min(min(cny+syi+yrng,ny-1)-cny-syi,yrng),0)
 
 	if finfo:
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
@@ -4490,7 +4477,7 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 		finfo.flush()
 
 	previousmax = data.get_attr("previousmax")
-	[ang, sxs, sys, mirror, iref, peak, checked_refs] = Util.shc(data, refrings, txrng, tyrng, step, ant, mode, numr, cnx+sxi, cny+syi, sym)
+	[ang, sxs, sys, mirror, iref, peak, checked_refs] = Util.shc(data, refrings, txrng, tyrng, step, ant, mode, numr, cnx-sxi, cny-syi, sym)
 	iref=int(iref)
 	number_of_checked_refs += int(checked_refs)
 	if peak <= previousmax:
@@ -4516,14 +4503,12 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 			theta = 180.0-refrings[iref].get_attr("theta")
 			psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
-			s2x   = sxb - sxi
-			s2y   = syb - syi
 		else:
 			phi   = refrings[iref].get_attr("phi")
 			theta = refrings[iref].get_attr("theta")
 			psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-			s2x   = sxb - sxi
-			s2y   = syb - syi
+		s2x   = sxb + sxi
+		s2y   = syb + syi
 
 		#set_params_proj(data, [phi, theta, psi, s2x, s2y])
 		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})

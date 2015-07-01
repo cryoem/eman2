@@ -875,11 +875,17 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			ny = nx
 			txrng = [0.0]*2 
 			tyrng = [0.0]*2
+			"""
 			txrng[0] = max(0,min(cnx+sxi-ou, xrng+sxi))
 			txrng[1] = max(0, min(nx-cnx-sxi-ou, xrng-sxi))
 			tyrng[0] = max(0,min(cny+syi-ou, yrng+syi))
 			tyrng[1] = max(0, min(ny-cny-syi-ou, yrng-syi))
-		
+			"""
+			txrng[0] = max(cnx+sxi-max(cnx+sxi-xrng,1),0)  # lower end is positive
+			txrng[1] = max(min(min(cnx+sxi+xrng,nx-1)-cnx-sxi,xrng),0)  # upper end
+			tyrng[0] = max(cny+syi-max(cny+syi-yrng,1),0)
+			tyrng[1] = max(min(min(cny+syi+yrng,ny-1)-cny-syi,yrng),0)
+
 			# align current image to all references - THIS IS REALLY TIME CONSUMING PAP 01/17/2015
 			temp = Util.multiref_polar_ali_2d_peaklist(alldata[im], refi, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi)
 			for iref in xrange(numref):
