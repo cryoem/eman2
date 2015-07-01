@@ -1620,6 +1620,8 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 			pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
 		#print phi, theta, psi, s2x, s2y, peak, pixel_error
 		if finfo:
+			from utilities import get_params_proj
+			phi, theta, psi, s2x, s2y = get_params_proj(data)
 			finfo.write( "New parameters: %6.2f %6.2f %6.2f %6.2f %6.2f   %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 			finfo.flush()
 		return peak, pixel_error
