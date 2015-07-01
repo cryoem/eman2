@@ -51,6 +51,9 @@ def AI( icurrentres, Tracker, HISTORY ):
 		#  Develop something intelligent
 		Tracker["xr"] = "6 3"
 		Tracker["ts"] = "2 1"
+		Tracker["an"]          = "-1"
+		Tracker["anger"]       = -1.0
+		Tracker["shifter"]     = -1.0
 		Tracker["constants"]["best"] = Tracker["mainiteration"]
 		keepgoing = 1
 	elif(Tracker["mainiteration"] == 2):
@@ -65,6 +68,9 @@ def AI( icurrentres, Tracker, HISTORY ):
 		Tracker["applyctf"]    = True
 		#  Go back to initial settings
 		Tracker["xr"] , Tracker["ts"] = stepali(Tracker["nxinit"] , Tracker["constants"]["nnxo"], Tracker["constants"]["radius"])
+		Tracker["an"]          = "-1"
+		Tracker["anger"]       = -1.0
+		Tracker["shifter"]     = -1.0
 		Tracker["constants"]["best"] = Tracker["mainiteration"]
 		keepgoing = 1
 	elif(Tracker["mainiteration"] == 3):
@@ -79,6 +85,9 @@ def AI( icurrentres, Tracker, HISTORY ):
 		#  This is for soft
 		Tracker["xr"] = "3"
 		Tracker["ts"] = "1"
+		Tracker["an"]          = "-1"
+		Tracker["anger"]       = -1.0
+		Tracker["shifter"]     = -1.0
 		Tracker["constants"]["best"] = Tracker["mainiteration"]
 		keepgoing = 1
 	#  First four steps were preset mainly to establish shifts and decent initial structure.
@@ -125,7 +134,26 @@ def AI( icurrentres, Tracker, HISTORY ):
 					Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
 				Tracker["icurrentres"] = icurrentres
 				Tracker["constants"]["best"] = Tracker["mainiteration"]
-	
+
+				if(Tracker["state"] == "EXHAUSTIVE"):
+					#  Move up if changes in angles are less than 30 degrees (why 30??)
+					if(Tracker["anger"]   < 30.0 ):  move_up_phase = True
+					else:
+						Tracker["xr"] = "%d"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
+				elif(Tracker["state"] == "RESTRICTED"):
+					#switch to the next phase if restricted searches make no sense anymore
+					#  The next sadly repeats what is in the function that launches refinement, but I do nto know how to do it better.
+					sh = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
+					rd = int(Tracker["constants"]["radius"] * sh +0.5)
+					rl = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
+					dd = degrees(atan(0.5/rl/rd))
+					if( Tracker["anger"]  < dd ):  move_up_phase = True
+					else:
+						Tracker["xr"] = "%d"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
+				else:
+					Tracker["anger"]   = -1.0
+					Tracker["shifter"] = -1.0
+
 			#  Resolution stalled
 			elif( direction == 0 ):
 				if Tracker["constants"]["pwreference"] :
@@ -135,6 +163,17 @@ def AI( icurrentres, Tracker, HISTORY ):
 					else:
 						# turn on pwadjustment
 						Tracker["PWadjustment"] = Tracker["constants"]["pwreference"]
+						if(Tracker["state"] == "EXHAUSTIVE"):
+								xr = int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1
+								Tracker["zoom"] = True
+								Tracker["xr"] = "%d   %d"%(2*xr, xr)
+								Tracker["ts"] =  "2 1"
+						elif(Tracker["state"] == "RESTRICTED"):
+								xr = int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1
+								Tracker["zoom"] = True
+								Tracker["xr"] = "%d   %d"%(2*xr, xr)
+								Tracker["ts"] =  "2 1"
+								Tracker["an"] =  "%6.2f  %6.2f"(2*Tracker["anger"],2*Tracker["anger"])					
 						keepgoing = 1
 				elif( Tracker["state"] == "FINAL2"):  keepgoing = 0
 				else:
@@ -185,7 +224,7 @@ def AI( icurrentres, Tracker, HISTORY ):
 				Tracker["upscale"]     = 0.5
 				Tracker["state"]       = "EXHAUSTIVE"
 				#  Develop something intelligent
-				Tracker["xr"] = "%d"%(int(Tracker["shifter"])+1)
+				Tracker["xr"] = "%d"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
 				Tracker["ts"] = "1"
 				keepgoing = 1
 			#  Exhaustive searches
@@ -204,7 +243,7 @@ def AI( icurrentres, Tracker, HISTORY ):
 				Tracker["an"]          = "30"
 				Tracker["state"]       = "RESTRICTED"
 				Tracker["maxit"]       = 1
-				Tracker["xr"] = "%d"%(int(Tracker["shifter"])+1)
+				Tracker["xr"] = "%d"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
 				Tracker["ts"] = "1"
 				keepgoing = 1
 			#  Restricted searches

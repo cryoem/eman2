@@ -1689,7 +1689,7 @@ def proj_ali_incore_local_zoom(data, refrings, numr, xrng, yrng, step, an, finfo
 	if( s2x ):
 		data.set_attr("xform.projection", t2)
 		from pixel_error import max_3D_pixel_error
-\		ts = t2.get_sym_proj(sym)
+		ts = t2.get_sym_proj(sym)
 		if(len(ts) > 1):
 			# only do it if it is not c1
 			pixel_error = +1.0e23
