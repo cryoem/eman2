@@ -1565,13 +1565,13 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 	syi = -dp["ty"]
 	txrng = [0.0]*2 
 	tyrng = [0.0]*2
-	txrng[0] = max(0,min(cnx+sxi-ou, xrng+sxi))
-	txrng[1] = max(0, min(nx-cnx-sxi-ou, xrng-sxi))
-	tyrng[0] = max(0,min(cny+syi-ou, yrng+syi))
-	tyrng[1] = max(0, min(ny-cny-syi-ou, yrng-syi))
+	txrng[0] = max(cnx+sxi-max(cnx+sxi-xrng,1),0)  # lower end is positive
+	txrng[1] = max(min(min(cnx+sxi+xrng,nx-1)-cnx-sxi,xrng),0)  # upper end
+	tyrng[0] = max(cny+syi-max(cny+syi-yrng,1),0)
+	tyrng[1] = max(min(min(cny+syi+yrng,ny-1)-cny-syi,yrng),0)
 	if finfo:
 		finfo.write("Old parameters: %6.2f %6.2f %6.2f %6.2f %6.2f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
-		finfo.write("              : %3d  %3d  %3d    %4.1f  %4.1f %4.1f %4.1f   %4.1f  %4.1f     %4.1f  %4.1f %4.1f %4.1f\n"%(ou, nx, ny, xrng, yrng, cnx, cny, sxi, syi, txrng[0],txrng[1],tyrng[0],tyrng[1]))
+		finfo.write("              : %3d  %3d  %3d    %4.1f  %4.1f %3d %3d   %4.1f  %4.1f     %4.1f  %4.1f %4.1f %4.1f\n"%(ou, nx, ny, xrng, yrng, cnx, cny, sxi, syi, txrng[0],txrng[1],tyrng[0],tyrng[1]))
 		finfo.flush()
 
 	
