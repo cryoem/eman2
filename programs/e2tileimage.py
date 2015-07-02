@@ -64,7 +64,6 @@ def main():
 	for i,fname in enumerate(args):
 		if options.verbose > 2: print("Processing {}".format(fname))
 		outfile = os.path.relpath(fname).split('.')[-2] + '_tiles.hdf'
-		print(outfile)
 		
 		hdr = EMData(fname,0,True).get_attr_dict()
 		
@@ -82,13 +81,12 @@ def main():
 		elif options.ymax == -1: options.ymax = hdr['ny'] - options.boxsize
 		
 		t=0
-		ntiles = ((options.xmax-options.xmin)/options.xstep) * ((options.ymax-options.ymin)/options.ystep)
 		for y in xrange(options.ymin,options.ymax,options.ystep):
 			for x in xrange(options.xmin,options.xmax,options.xstep):
-				if options.verbose > 6:
-					print("Tile {}/{}".format(t+1,ntiles),end="\r")
-					sys.stdout.flush()
 				tile = EMData(fname,0,False,Region(x,y,options.boxsize,options.boxsize))
+				if options.verbose > 6:
+					print("Writing tile {}".format(t+1),end="\r")
+					sys.stdout.flush()
 				tile.write_image(outfile,t)
 				t+=1
 
