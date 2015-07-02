@@ -61,34 +61,36 @@ def main():
 		print("--xmin and --ymin must be nonnegative")
 		sys.exit(1)
 	
+	if options.xmin == 1: options.xmin = options.boxsize
+	if options.ymin == 1: options.xmin = options.boxsize
+	
 	for i,fname in enumerate(args):
 		if options.verbose > 2: print("Processing {}".format(fname))
 		outfile = os.path.relpath(fname).split('.')[-2] + '_tiles.hdf'
 		
-		hdr = EMData(fname,0,True).get_attr_dict()
-		
-		if options.xmin == 1: fx = options.boxsize
-		if options.ymin == 1: fy = options.boxsize
-		
+		hdr = EMData(fname,0,True)
 		if options.xmax > hdr['nx']-options.boxsize:
 			print("--xmax is too large for file")
 			continue
-		elif options.xmax == -1: options.xmax = hdr['nx'] - options.boxsize
-		
 		if options.ymax > hdr['ny']-options.boxsize:
 			print("--ymax is too large for file")
 			continue
-		elif options.ymax == -1: options.ymax = hdr['ny'] - options.boxsize
 		
-		t=0
-		for y in xrange(options.ymin,options.ymax,options.ystep):
-			for x in xrange(options.xmin,options.xmax,options.xstep):
+		if options.xmax == -1: options.xmax = hdr['nx'] - options.boxsize
+		if options.ymax == -1: options.ymax = hdr['ny'] - options.boxsize
+		
+		t = 0
+		ys = xrange(options.ymin,options.ymax,options.ystep)
+		xs = xrange(options.xmin,options.xmax,options.xstep)
+		nt = len(ys)*len(xs)
+		for y in ys:
+			for x in xs:
 				tile = EMData(fname,0,False,Region(x,y,options.boxsize,options.boxsize))
 				if options.verbose > 6:
-					print("Writing tile {}".format(t+1),end="\r")
+					print("tile {}/{}".format(t+1,nt),end="\r")
 					sys.stdout.flush()
 				tile.write_image(outfile,t)
-				t+=1
+				t += 1
 
 if __name__ == "__main__":
 	main()
