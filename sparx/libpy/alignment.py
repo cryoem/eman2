@@ -4662,7 +4662,6 @@ def search_range(n, radius, shift, range):
 	cn = n//2 +1
 	ql = cn+shift-radius -2   # lower end is positive
 	qe = n - cn-shift-radius    # upper end
-	print "  ql, qe  ",  n, radius, shift, range,ql, qe
 	if( ql < 0 or qe < 0 ):
 		ERROR("search_range","Shift of particle too large, results may be incorrect:  %4d   %3d   %f  %f  %f  %4d  %4d"%(n, cn, radius, shift, range, ql, qe),0)
 		ql = max(ql,0)
