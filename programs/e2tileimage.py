@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+#!/usr/bin/env python
 
 #
 # Authors: James Michael Bell, 06/03/2015
@@ -30,8 +31,8 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA	2111-1307 USA
 #
 
-from EMAN2 import *
 from __future__ import print_function
+from EMAN2 import *
 import sys
 
 def main():
@@ -52,20 +53,19 @@ def main():
 	parser.add_argument("--ymin",type=int,default=1)
 	parser.add_argument("--ymax",type=int,default=-1)
 	parser.add_argument("--ystep",type=int,default=16)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
-	
-	print(args)
-	
-	sys.exit(1)
 	
 	if options.xmin < 0 or options.ymin < 0:
 		print("--xmin and --ymin must be nonnegative")
 		sys.exit(1)
 	
 	for i,fname in enumerate(args):
-		if options.verbose: print("Processing {}".format(fname),end='')
-		outfile = fname.split('.')[0] + '_tiles.hdf'
+		if options.verbose > 2: print("Processing {}".format(fname))
+		outfile = os.path.relpath(fname).split('.')[-2] + '_tiles.hdf'
+		print(outfile)
+		
 		hdr = EMData(fname,0,True).get_attr_dict()
 		
 		if options.xmin == 1: fx = options.boxsize
@@ -74,18 +74,20 @@ def main():
 		if options.xmax > hdr['nx']-options.boxsize:
 			print("--xmax is too large for file {}/{}".format(i,len(args)))
 			continue
-		elif options.xmax == -1: lx = hdr['nx'] - options.boxsize
-		else: lx = options.xmax
+		elif options.xmax == -1: options.xmax = hdr['nx'] - options.boxsize
 		
 		if options.ymax > hdr['ny']-options.boxsize:
 			print("--ymax is too large for file {}/{}".format(i,len(args)))
 			continue
-		elif options.ymax == -1: ly = hdr['ny'] - options.boxsize
-		else: ly = options.ymax
+		elif options.ymax == -1: options.ymax = hdr['ny'] - options.boxsize
 		
 		t=0
-		for y in xrange(fy,ly,options.ystep):
-			for x in xrange(fx,lx,options.xstep):
+		ntiles = ((options.xmax-options.xmin)/options.xstep) * ((options.ymax-options.ymin)/options.ystep)
+		for y in xrange(options.ymin,options.ymax,options.ystep):
+			for x in xrange(options.xmin,options.xmax,options.xstep):
+				if options.verbose > 6:
+					print("Tile {}/{}".format(t+1,ntiles),end="\r")
+					sys.stdout.flush()
 				tile = EMData(fname,0,False,Region(x,y,options.boxsize,options.boxsize))
 				tile.write_image(outfile,t)
 				t+=1
