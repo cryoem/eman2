@@ -743,6 +743,27 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 
 
+
+
+def mpi_assign_groups(d, nref, nima):
+	pass
+
+	index_of_sorted_d = [i[0] for i in sorted(enumerate(d), reverse=False, key=lambda x: x[1])]
+	
+	del_row = [False]*nref
+	del_col = [False]*nima
+	
+	kt = nref
+	begin = 0
+	while kt > 0:
+		flag = True
+		while flag:
+			l = dd[begin];
+			group = l/nima;
+			ima = l%nima;
+			if (del_col[ima] || del_row[group]) begin++;
+
+
 # stack - list of images (filename also accepted)
 # refim - list of reference images (filename also accepted)
 # maskfile - image with mask (filename also accepted)

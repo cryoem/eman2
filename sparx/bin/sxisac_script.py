@@ -172,6 +172,12 @@ def main():
 	from isac import iter_isac
 	global_def.BATCH = True
 
+	import cProfile
+	import profile
+	
+	
+	
+	
 	# orgstack = args[0]
 	command_line_provided_stack_filename = args[0]
 
@@ -206,6 +212,18 @@ def main():
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 	nproc = mpi_comm_size(MPI_COMM_WORLD)
 	
+	if (myid == 0):
+		import cProfile, pstats, StringIO
+		pr = cProfile.Profile()
+		pr.enable()
+		
+		from pycallgraph import PyCallGraph
+		from pycallgraph.output import GraphvizOutput
+		
+		graphviz = GraphvizOutput()
+		graphviz.output_file = '../isac_profiling.png'
+	
+
 	
 	use_latest_master_directory = options.use_latest_master_directory	
 
@@ -562,11 +580,20 @@ def main():
 		# if 1:
 			pass
 
-			iter_isac(data64_stack_current, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.maxit, False, 1.0,\
-				#options.CTF, options.snr, \
-				options.dst, options.FL, options.FH, options.FF, options.init_iter, options.main_iter, options.iter_reali, options.match_first, \
-				options.max_round, options.match_second, options.stab_ali, options.thld_err, options.indep_run, options.thld_grp, \
-				options.img_per_grp, isac_generation, options.candidatesexist, random_seed=options.rand_seed, new=False)#options.new)
+			if (myid == 0):
+				with PyCallGraph(output=graphviz):
+					iter_isac(data64_stack_current, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.maxit, False, 1.0,\
+						#options.CTF, options.snr, \
+						options.dst, options.FL, options.FH, options.FF, options.init_iter, options.main_iter, options.iter_reali, options.match_first, \
+						options.max_round, options.match_second, options.stab_ali, options.thld_err, options.indep_run, options.thld_grp, \
+						options.img_per_grp, isac_generation, options.candidatesexist, random_seed=options.rand_seed, new=False)#options.new)
+			else:
+					iter_isac(data64_stack_current, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.maxit, False, 1.0,\
+						#options.CTF, options.snr, \
+						options.dst, options.FL, options.FH, options.FF, options.init_iter, options.main_iter, options.iter_reali, options.match_first, \
+						options.max_round, options.match_second, options.stab_ali, options.thld_err, options.indep_run, options.thld_grp, \
+						options.img_per_grp, isac_generation, options.candidatesexist, random_seed=options.rand_seed, new=False)#options.new)
+				
 	
 		error_status = 0
 		if program_state_stack(locals(), getframeinfo(currentframe())):
@@ -582,10 +609,22 @@ def main():
 				
 				if number_of_accounted_images == 0:
 					error_status = 1
+					pr.disable()
+					s = StringIO.StringIO()
+					sortby = 'cumulative'
+					ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+					ps.print_stats()
+					print s.getvalue()
 					break
 					
 				if number_of_unaccounted_images < 2*options.img_per_grp:
 					error_status = 1
+					pr.disable()
+					s = StringIO.StringIO()
+					sortby = 'cumulative'
+					ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+					ps.print_stats()
+					print s.getvalue()
 					break
 			
 				# cmdexecute("e2bdb.py %s --makevstack=%s --list=%s%04d/generation_%d_unaccounted.txt"%
