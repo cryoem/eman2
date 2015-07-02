@@ -2859,6 +2859,7 @@ c  purpose: linear interpolation
 	iyold   = (int) yold;
 	ydif = yold - iyold;
 	xdif = xold - ixold;
+	if( ixold < 1 || ixold > 64 || iyold < 1 || iyold > 64)  printf(" OUT OF RANGE  %3d  %3d \n",ixold,iyold);
 	bilinear = xim(ixold, iyold) + ydif* (xim(ixold, iyold+1) - xim(ixold, iyold)) +
 	           xdif* (xim(ixold+1, iyold) - xim(ixold, iyold) +
 			   ydif* (xim(ixold+1, iyold+1) - xim(ixold+1, iyold) - xim(ixold, iyold+1) + xim(ixold, iyold)) );
@@ -18814,6 +18815,7 @@ vector<float> Util::multiref_polar_ali_3d(EMData* image, const vector< EMData* >
 		iy = i * step ;
 		for (int j = -lkx; j <= rkx; j++) {
 			ix = j*step ;
+			//printf(" within loop  %3d  %3d  %3d  %3d     %3d  %4.1f  %3d  %4.1f  \n",lkx,rkx,lky,rky,j,ix,i,iy);
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 
 			Normalize_ring( cimage, numr );
@@ -19498,17 +19500,17 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 						Normalize_ring( cimage, numr );
 						Frngs(cimage, numr);
 						//  compare with all reference images that are on a new list
-							Dict retvals = Crosrng_e(crefim[iref], cimage, numr, mirror);
-							double qn = retvals["qn"];
+						Dict retvals = Crosrng_e(crefim[iref], cimage, numr, mirror);
+						double qn = retvals["qn"];
 
-							if(qn >= peak) {
-								sx = -ix;
-								sy = -iy;
-								nref = iref;
-								ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-								peak = static_cast<float>( qn );
-							}
-						  delete cimage; cimage = 0;
+						if(qn >= peak) {
+							sx = -ix;
+							sy = -iy;
+							nref = iref;
+							ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+							peak = static_cast<float>( qn );
+						}
+						delete cimage; cimage = 0;
 					}
 				}
 				break;
@@ -19527,6 +19529,100 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 		sys = sx*so + sy*co;
 		if( mirror == -1)  mirror=0;
 	}
+
+	vector<float> res;
+	res.push_back(ang);
+	res.push_back(sxs);
+	res.push_back(sys);
+	res.push_back(static_cast<float>(mirror));
+	res.push_back(static_cast<float>(nref));
+	res.push_back(peak);
+	return res;
+}
+
+vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMData* >& crefim,
+                vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
+                vector<int>numr, float cnx, float cny, string sym) {
+
+	int lkx = int(xrng[0]/step);
+	int rkx = int(xrng[1]/step);
+	int lky = int(yrng[0]/step);
+	int rky = int(yrng[1]/step);
+	int   iref, nref=0, mirror=0;
+	float iy, ix, sxs=0, sys=0;
+	float peak = -1.0E23f;
+	float ang  = 0.0f;
+
+	size_t crefim_len = crefim.size();
+	const float qv = static_cast<float>( pi/180.0 );
+
+	// set mirror flag
+	Transform * t = image->get_attr("xform.projection");
+	Dict d = t->get_params("spider");
+	float theta1 = d["theta"];
+	if(theta1 > 90.0f) mirror = 1;
+	else               mirror = -1;
+
+    // sym is a symmetry string, t is the projection transform of the input image, tsym is a vector of transforms that are input transofrmation multiplied by all symmetries.
+    // its length is number of symmetries.
+    vector<Transform> tsym = t->get_sym_proj(sym);
+
+    int isym = 0;
+    int nsym = tsym.size();
+    vector<Ims> vIms(nsym);
+
+    for (isym = 0; isym < nsym; ++isym) {
+        Dict u = tsym[isym].get_params("spider");
+        float phi   = u["phi"];
+        float theta = u["theta"];
+        vIms[isym].ims1 = sin(theta*qv)*cos(phi*qv);
+        vIms[isym].ims2 = sin(theta*qv)*sin(phi*qv);
+        vIms[isym].ims3 = cos(theta*qv);
+    }
+
+	for (iref = 0; iref < crefim_len; iref++) {
+
+	    float ref_theta = crefim[iref]->get_attr("theta");
+	    float ref_phi = crefim[iref]->get_attr("phi");
+	    float ref_psi = crefim[iref]->get_attr("psi");
+
+		float n1 = crefim[iref]->get_attr("n1");
+		float n2 = crefim[iref]->get_attr("n2");
+		float n3 = crefim[iref]->get_attr("n3");
+
+		for (isym = 0; isym < nsym; ++isym) {
+			float dot_product = -mirror*(n1*vIms[isym].ims1 + n2*vIms[isym].ims2 + n3*vIms[isym].ims3);
+			if(dot_product >= ant) {
+				for (int i = -lky; i <= rky; i++) {
+					iy = i * step ;
+					for (int j = -lkx; j <= rkx; j++) {
+						ix = j*step;
+						EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+						Normalize_ring( cimage, numr );
+						Frngs(cimage, numr);
+						//  compare with all reference images that are on a new list
+						Dict retvals = Crosrng_e(crefim[iref], cimage, numr, mirror);
+						double qn = retvals["qn"];
+
+						if(qn >= peak) {
+							sxs = -ix;
+							sys = -iy;
+							nref = iref;
+							ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+							peak = static_cast<float>( qn );
+						}
+						delete cimage; cimage = 0;
+					}
+				}
+				break;
+			}
+		}
+	}
+
+	if(peak == -1.0E23) {
+		ang=0.0; sxs=0.0; sys=0.0; mirror=0;
+		nref = -1;
+	} else if( mirror == -1)  mirror=0;
 
 	vector<float> res;
 	res.push_back(ang);
@@ -19565,7 +19661,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
     Transform * t = 0;
 
     float ang = 0.0f;
-    float sx=0.0f, sy=0.0f;
+    float sxs=0.0f, sys=0.0f;
     float peak = -1.0e23f;
     int   nref = -1, mirror = 0;
     bool  found_better = false;
@@ -19676,8 +19772,8 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 					const float new_peak = static_cast<float>( retvals["qn"] );
 					//cout << new_peak <<endl;
 					if (new_peak > peak) {
-						sx = -ix;
-						sy = -iy;
+						sxs = -ix;
+						sys = -iy;
 						nref = iref;
 						ang = ang_n(retvals["tot"], mode, maxrin);
 						peak = new_peak;
@@ -19698,10 +19794,6 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 			}
 		}
 		//cout << "  JUMPED OUT " <<endl;
-		const float co =  cos(ang*qv);
-		const float so = -sin(ang*qv);
-		const float sxs = sx*co - sy*so;
-		const float sys = sx*so + sy*co;
 		//printf("\n OUTPUT   %f    %d    %f   %f   %d   %d   %f\n",360.0f - psi, psi_pos, ang, peak, mirror, maxrin,an);
 		vector<float> res;
 		res.push_back(ang);
@@ -19756,8 +19848,8 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 				const float new_peak = static_cast<float>( retvals["qn"] );
 				//cout << new_peak <<endl;
 				if (new_peak > peak) {
-					sx = -ix;
-					sy = -iy;
+					sxs = -ix;
+					sys = -iy;
 					nref = iref;
 					ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
 					peak = new_peak;
@@ -19777,11 +19869,6 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 				cimages[i][j] = NULL;
 			}
 		}
-
-		const float co =  cos(ang*qv);
-		const float so = -sin(ang*qv);
-		const float sxs = sx*co - sy*so;
-		const float sys = sx*so + sy*co;
 
 		vector<float> res;
 		res.push_back(ang);

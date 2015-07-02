@@ -1411,7 +1411,6 @@ def refprojs( volft, kb, ref_angles, cnx, cny, numr, mode, wr ):
 
 def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 	from alignment import search_range
-	from utilities    import compose_transform2
 	from EMAN2 import Vec2f
 
 	if finfo:
@@ -1436,24 +1435,21 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 	txrng = search_range(nx, ou, sxi, xrng)
 	tyrng = search_range(ny, ou, syi, yrng)
 			
-	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings, txrng, tyrng, step, mode, numr, cnx-sxi, cny-syi)
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_3d(data, refrings, txrng, tyrng, step, mode, numr, cnx-sxi, cny-syi)
 	#print ang, sxs, sys, mirror, iref, peak
 	iref = int(iref)
-	#[ang,sxs,sys,mirror,peak,numref] = apmq(projdata[imn], ref_promulj_rings, xrng, yrng, step, mode, numr, cnx-sxo, cny-syo)
-	#ang = (ang+360.0)%360.0
-	# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 	#  What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-	angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
+	#  rotation has to be reversed
 	if mirror:
 		phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 		theta = 180.0-refrings[iref].get_attr("theta")
-		psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
+		psi   = (540.0-refrings[iref].get_attr("psi")-ang)%360.0
 	else:
 		phi   = refrings[iref].get_attr("phi")
 		theta = refrings[iref].get_attr("theta")
-		psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-	s2x   = sxb + sxi
-	s2y   = syb + syi
+		psi   = (360.0+refrings[iref].get_attr("psi")-ang)%360.0
+	s2x   = sxs + sxi
+	s2y   = sys + syi
 	#set_params_proj(data, [phi, theta, psi, s2x, s2y])
 	t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 	t2.set_trans(Vec2f(-s2x, -s2y))
@@ -1471,7 +1467,6 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 
 def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None):
 	from alignment import search_range
-	from utilities    import compose_transform2
 	from EMAN2 import Vec2f
 
 	if finfo:
@@ -1498,22 +1493,20 @@ def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None):
 		txrng = search_range(nx, ou, sxi, xrng[zi])
 		tyrng = search_range(ny, ou, syi, yrng[zi])
 
-		[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings, txrng, tyrng, step[zi], mode, numr, cnx-sxi, cny-syi)
+		[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_3d(data, refrings, txrng, tyrng, step[zi], mode, numr, cnx-sxi, cny-syi)
 		#print ang, sxs, sys, mirror, iref, peak
 		iref = int(iref)
-		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 		#  What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
 		if mirror:
 			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 			theta = 180.0-refrings[iref].get_attr("theta")
-			psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
+			psi   = (540.0-refrings[iref].get_attr("psi")-ang)%360.0
 		else:
 			phi   = refrings[iref].get_attr("phi")
 			theta = refrings[iref].get_attr("theta")
-			psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-		s2x   = sxb + sxi
-		s2y   = syb + syi
+			psi   = (360.0+refrings[iref].get_attr("psi")-ang)%360.0
+		s2x   = sxs + sxi
+		s2y   = sys + syi
 		#set_params_proj(data, [phi, theta, psi, s2x, s2y])
 		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
 		t2.set_trans(Vec2f(-s2x, -s2y))
@@ -1530,8 +1523,7 @@ def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None):
 	return peak, pixel_error
 
 def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None, sym='c1'):
-	from alignment import search_range
-	from utilities    import compose_transform2
+	from alignment    import search_range
 	#from utilities    import set_params_proj, get_params_proj
 	from math         import cos, sin, pi, radians
 	from EMAN2        import Vec2f
@@ -1556,14 +1548,10 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 		finfo.write("Old parameters: %6.2f %6.2f %6.2f %6.2f %6.2f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
 		finfo.write("              : %3d  %3d  %3d    %4.1f  %4.1f %3d %3d   %4.1f  %4.1f     %4.1f  %4.1f %4.1f %4.1f\n"%(ou, nx, ny, xrng, yrng, cnx, cny, sxi, syi, txrng[0],txrng[1],tyrng[0],tyrng[1]))
 		finfo.flush()
-
 	
-	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data, refrings, txrng, tyrng, step, ant, mode, numr, cnx-sxi, cny-syi, sym)
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_3d_local(data, refrings, txrng, tyrng, step, ant, mode, numr, cnx-sxi, cny-syi, sym)
 
 	iref=int(iref)
-	#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
-	#ang = (ang+360.0)%360.0
-	#print  ang, sxs, sys, mirror, iref, peak
 	if iref > -1:
 		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
@@ -1576,12 +1564,12 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 		if  mirror:
 			phi   = (phi+540.0)%360.0
 			theta = 180.0-refrings[iref].get_attr("theta")
-			psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
+			psi   = (540.0-refrings[iref].get_attr("psi")-ang)%360.0
 		else:			
 			theta = refrings[iref].get_attr("theta")
-			psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-		s2x   = sxb + sxi
-		s2y   = syb + syi
+			psi   = (360.0+refrings[iref].get_attr("psi")-ang)%360.0
+		s2x   = sxs + sxi
+		s2y   = sys + syi
 
 		#set_params_proj(data, [phi, theta, psi, s2x, s2y])
 		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
@@ -1641,7 +1629,7 @@ def proj_ali_incore_local_zoom(data, refrings, numr, xrng, yrng, step, an, finfo
 		txrng = search_range(nx, ou, sxi, xrng[zi])
 		tyrng = search_range(ny, ou, syi, yrng[zi])
 
-		[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data, refrings, txrng, tyrng, step, ant, mode, numr, cnx-sxi, cny-syi, sym)
+		[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_3d_local(data, refrings, txrng, tyrng, step, ant, mode, numr, cnx-sxi, cny-syi, sym)
 
 		iref=int(iref)
 		#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
@@ -1659,12 +1647,12 @@ def proj_ali_incore_local_zoom(data, refrings, numr, xrng, yrng, step, an, finfo
 			if  mirror:
 				phi   = (phi+540.0)%360.0
 				theta = 180.0-refrings[iref].get_attr("theta")
-				psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
+				psi   = (540.0-refrings[iref].get_attr("psi")-ang)%360.0
 			else:			
 				theta = refrings[iref].get_attr("theta")
-				psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-			s2x   = sxb + sxi
-			s2y   = syb + syi
+				psi   = (360.0+refrings[iref].get_attr("psi")-ang)%360.0
+			s2x   = sxb + sxs
+			s2y   = syb + sys
 
 			#set_params_proj(data, [phi, theta, psi, s2x, s2y])
 			t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
@@ -1698,6 +1686,7 @@ def proj_ali_incore_delta(data, refrings, numr, xrng, yrng, step, start, delta, 
 	from alignment import search_range
 	from utilities    import compose_transform2
 	from EMAN2 import Vec2f
+	ERROR("proj_ali_incore_delta","OBSOLETED",1)
 
 	mode = "F"
 	#  center is in SPIDER convention
@@ -1768,7 +1757,7 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, dpsi=1
 	#from utilities   import set_params_proj, get_params_proj
 	from EMAN2 import Vec2f
 	from math         import cos, sin, pi
-	
+	ERROR("proj_ali_incore_local_psi","OBSOLETED",1)
 	if finfo:
 		phi, theta, psi, s2x, s2y = get_params_proj(data)
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, s2x, s2y))
@@ -4671,11 +4660,13 @@ def search_range(n, radius, shift, range):
 		NOTE - ranges are with respect to the point n//2+1-shift within image (in 3D)
 	"""
 	cn = n//2 +1
-	ql = cn+shift-radius   # lower end is positive
-	qe = n - cn-shift-radius  # upper end
-	if( ql < 1 or qe < 1 ):
+	ql = cn+shift-radius -2   # lower end is positive
+	qe = n - cn-shift-radius    # upper end
+	print "  ql, qe  ",  n, radius, shift, range,ql, qe
+	if( ql < 0 or qe < 0 ):
 		ERROR("search_range","Shift of particle too large, results may be incorrect:  %4d   %3d   %f  %f  %f  %4d  %4d"%(n, cn, radius, shift, range, ql, qe),0)
-		ql = max(ql,1)
-		qe = max(qe,1)
-	return  [ min( ql, range), min(qe, range) ]
+		ql = max(ql,0)
+		qe = max(qe,0)
+	# ???for mysterious reasons it has to be this way as C code changes the order of searches.
+	return  [ min( qe, range), min(ql, range) ]
 

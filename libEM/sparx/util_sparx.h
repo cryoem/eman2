@@ -961,6 +961,11 @@ public:
                 vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
                 vector< int >numr, float cnx, float cny, string sym);
 
+	/* Does not invert order of operations */
+	static vector<float> multiref_polar_ali_3d_local(EMData* image, const vector< EMData* >& crefim,
+                vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
+                vector< int >numr, float cnx, float cny, string sym);
+
 	/* Returns first match with peak greater than previousmax or the best match in whole space (when there are no peaks > previousmax).
 	 * The reference rings are checked in random order.
 	 * */
