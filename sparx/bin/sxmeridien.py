@@ -937,8 +937,7 @@ def main():
 	Tracker["nxinit"]         = 64
 	Tracker["nxstep"]         = 32
 	Tracker["icurrentres"]    = -1
-	#Tracker["lowpass"]      = 0.4
-	#Tracker["initialfl"]    = 0.4
+	Tracker["lowpass"]        = 0.4
 	Tracker["falloff"]        = 0.2
 	Tracker["inires"]         = options.inires  # Now in A, convert to absolute before using
 	Tracker["fuse_freq"]      = 50  # Now in A, convert to absolute before using

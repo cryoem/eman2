@@ -61,9 +61,6 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 		Util.Frngs(cimage, numr)
 		Util.Applyws(cimage, numr, wr)
 
-	#  commented out, not used anywhere PAP 03/02/2015
-	#sxilimt = cnx - ou - 2*xrng
-	#syilimt = cny - ou - 2*yrng
 	sx_sum = 0.0
 	sy_sum = 0.0
 	nope = 0
@@ -1413,6 +1410,7 @@ def refprojs( volft, kb, ref_angles, cnx, cny, numr, mode, wr ):
 	return ref_proj_rings
 
 def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
+	from alignment import search_range
 	from utilities    import compose_transform2
 	from EMAN2 import Vec2f
 
@@ -1435,12 +1433,8 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 	ou = numr[-3]
 	sxi = -dp["tx"]
 	syi = -dp["ty"]
-	txrng = [0.0]*2 
-	tyrng = [0.0]*2
-	txrng[0] = max(cnx+sxi-max(cnx+sxi-xrng,1),0)  # lower end is positive
-	txrng[1] = max(min(min(cnx+sxi+xrng,nx-1)-cnx-sxi,xrng),0)  # upper end
-	tyrng[0] = max(cny+syi-max(cny+syi-yrng,1),0)
-	tyrng[1] = max(min(min(cny+syi+yrng,ny-1)-cny-syi,yrng),0)
+	txrng = search_range(nx, ou, sxi, xrng)
+	tyrng = search_range(ny, ou, syi, yrng)
 			
 	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings, txrng, tyrng, step, mode, numr, cnx-sxi, cny-syi)
 	#print ang, sxs, sys, mirror, iref, peak
@@ -1476,6 +1470,7 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 	return peak, pixel_error
 
 def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None):
+	from alignment import search_range
 	from utilities    import compose_transform2
 	from EMAN2 import Vec2f
 
@@ -1493,9 +1488,6 @@ def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None):
 	cny  = ny//2 + 1
 	ou = numr[-3]
 
-
-	txrng = [0.0]*2 
-	tyrng = [0.0]*2
 	#phi, theta, psi, sxo, syo = get_params_proj(data)
 	t1 = data.get_attr("xform.projection")
 	t2 = t1
@@ -1503,10 +1495,8 @@ def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None):
 		dp = t2.get_params("spider")
 		sxi = -dp["tx"]
 		syi = -dp["ty"]
-		txrng[0] = max(cnx+sxi-max(cnx+sxi-xrng[zi],1),0)  # lower end is positive
-		txrng[1] = max(min(min(cnx+sxi+xrng[zi],nx-1)-cnx-sxi,xrng[zi]),0)  # upper end
-		tyrng[0] = max(cny+syi-max(cny+syi-yrng[zi],1),0)
-		tyrng[1] = max(min(min(cny+syi+yrng[zi],ny-1)-cny-syi,yrng[zi]),0)
+		txrng = search_range(nx, ou, sxi, xrng[zi])
+		tyrng = search_range(ny, ou, syi, yrng[zi])
 			
 		[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings, txrng, tyrng, step[zi], mode, numr, cnx-sxi, cny-syi)
 		#print ang, sxs, sys, mirror, iref, peak
@@ -1540,6 +1530,7 @@ def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None):
 	return peak, pixel_error
 
 def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None, sym='c1'):
+	from alignment import search_range
 	from utilities    import compose_transform2
 	#from utilities    import set_params_proj, get_params_proj
 	from math         import cos, sin, pi, radians
@@ -1559,12 +1550,8 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 	ou = numr[-3]
 	sxi = -dp["tx"]
 	syi = -dp["ty"]
-	txrng = [0.0]*2
-	tyrng = [0.0]*2
-	txrng[0] = max(cnx+sxi-max(cnx+sxi-xrng,1),0)  # lower end is positive
-	txrng[1] = max(min(min(cnx+sxi+xrng,nx-1)-cnx-sxi,xrng),0)  # upper end
-	tyrng[0] = max(cny+syi-max(cny+syi-yrng,1),0)
-	tyrng[1] = max(min(min(cny+syi+yrng,ny-1)-cny-syi,yrng),0)
+	txrng = search_range(nx, ou, sxi, xrng)
+	tyrng = search_range(ny, ou, syi, yrng)
 	if finfo:
 		finfo.write("Old parameters: %6.2f %6.2f %6.2f %6.2f %6.2f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
 		finfo.write("              : %3d  %3d  %3d    %4.1f  %4.1f %3d %3d   %4.1f  %4.1f     %4.1f  %4.1f %4.1f %4.1f\n"%(ou, nx, ny, xrng, yrng, cnx, cny, sxi, syi, txrng[0],txrng[1],tyrng[0],tyrng[1]))
@@ -1621,7 +1608,9 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 	else:
 		return -1.0e23, 0.0
 
+
 def proj_ali_incore_local_zoom(data, refrings, numr, xrng, yrng, step, an, finfo=None, sym='c1'):
+	from alignment import search_range
 	from utilities    import compose_transform2
 	#from utilities    import set_params_proj, get_params_proj
 	from math         import cos, sin, pi, radians
@@ -1649,12 +1638,8 @@ def proj_ali_incore_local_zoom(data, refrings, numr, xrng, yrng, step, an, finfo
 
 		sxi = -dp["tx"]
 		syi = -dp["ty"]
-		txrng = [0.0]*2 
-		tyrng = [0.0]*2
-		txrng[0] = max(cnx+sxi-max(cnx+sxi-xrng,1),0)  # lower end is positive
-		txrng[1] = max(min(min(cnx+sxi+xrng,nx-1)-cnx-sxi,xrng),0)  # upper end
-		tyrng[0] = max(cny+syi-max(cny+syi-yrng,1),0)
-		tyrng[1] = max(min(min(cny+syi+yrng,ny-1)-cny-syi,yrng),0)
+		txrng = search_range(nx, ou, sxi, xrng[zi])
+		tyrng = search_range(ny, ou, syi, yrng[zi])
 
 		[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local(data, refrings, txrng, tyrng, step, ant, mode, numr, cnx-sxi, cny-syi, sym)
 
@@ -1710,6 +1695,7 @@ def proj_ali_incore_local_zoom(data, refrings, numr, xrng, yrng, step, an, finfo
 		return -1.0e23, 0.0
 
 def proj_ali_incore_delta(data, refrings, numr, xrng, yrng, step, start, delta, finfo=None):
+	from alignment import search_range
 	from utilities    import compose_transform2
 	from EMAN2 import Vec2f
 
@@ -1730,12 +1716,8 @@ def proj_ali_incore_delta(data, refrings, numr, xrng, yrng, step, start, delta, 
 	ou = numr[-3]
 	sxi = -dp["tx"]
 	syi = -dp["ty"]
-	txrng = [0.0]*2 
-	tyrng = [0.0]*2
-	txrng[0] = max(cnx+sxi-max(cnx+sxi-xrng,1),0)  # lower end is positive
-	txrng[1] = max(min(min(cnx+sxi+xrng,nx-1)-cnx-sxi,xrng),0)  # upper end
-	tyrng[0] = max(cny+syi-max(cny+syi-yrng,1),0)
-	tyrng[1] = max(min(min(cny+syi+yrng,ny-1)-cny-syi,yrng),0)
+	txrng = search_range(nx, ou, sxi, xrng)
+	tyrng = search_range(ny, ou, syi, yrng)
 
 	#  This function should be modified to work properly for refrings wrapping due to symmetries 01/27/2015
 	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_delta(data, refrings, txrng, tyrng, step, mode, numr, cnx-sxi, cny-syi, start, delta)
@@ -1781,6 +1763,7 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, dpsi=1
 	"""
 	  dpsi - how far psi can be from the original value.
 	"""
+	from alignment import search_range
 	from utilities    import compose_transform2
 	#from utilities   import set_params_proj, get_params_proj
 	from EMAN2 import Vec2f
@@ -1810,12 +1793,8 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, dpsi=1
 	ou = numr[-3]
 	sxi = -dp["tx"]
 	syi = -dp["ty"]
-	txrng = [0.0]*2 
-	tyrng = [0.0]*2
-	txrng[0] = max(cnx+sxi-max(cnx+sxi-xrng,1),0)  # lower end is positive
-	txrng[1] = max(min(min(cnx+sxi+xrng,nx-1)-cnx-sxi,xrng),0)  # upper end
-	tyrng[0] = max(cny+syi-max(cny+syi-yrng,1),0)
-	tyrng[1] = max(min(min(cny+syi+yrng,ny-1)-cny-syi,yrng),0)
+	txrng = search_range(nx, ou, sxi, xrng)
+	tyrng = search_range(ny, ou, syi, yrng)
 
 	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d_local_psi(data, refrings, txrng, tyrng, step, ant, dpsi, mode, numr, cnx-sxi, cny-syi)
 	iref = int(iref)
@@ -1863,6 +1842,7 @@ def proj_ali_helical(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_max=1
 	"""
 	  psi_max - how much psi can differ from 90 or 270 degrees
 	"""
+	from alignment import search_range
 	from utilities    import compose_transform2, get_params_proj
 	from math         import cos, sin, pi
 
@@ -1878,12 +1858,8 @@ def proj_ali_helical(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_max=1
 		finfo.flush()
 
 	ou = numr[-3]
-	txrng = [0.0]*2 
-	tyrng = [0.0]*2
-	txrng[0] = max(cnx+sxi-max(cnx+sxi-xrng,1),0)  # lower end is positive
-	txrng[1] = max(min(min(cnx+sxi+xrng,nx-1)-cnx-sxi,xrng),0)  # upper end
-	tyrng[0] = max(cny+syi-max(cny+syi-yrng,1),0)
-	tyrng[1] = max(min(min(cny+syi+yrng,ny-1)-cny-syi,yrng),0)
+	txrng = search_range(nx, ou, sxi, xrng)
+	tyrng = search_range(ny, ou, syi, yrng)
 
 	[ang, sxs, sys, mirror, iref, peak] = \
 		Util.multiref_polar_ali_helical(data, refrings, txrng, tyrng, stepx, psi_max, mode, numr, cnx-sxi, cny-syi, int(ynumber))
@@ -1915,6 +1891,7 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	"""
 	  psi_max - how much psi can differ from 90 or 270 degrees
 	"""
+	from alignment import search_range
 	from utilities    import compose_transform2, get_params_proj
 	from math         import cos, sin, radians
 
@@ -1931,12 +1908,8 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 		finfo.flush()
 	
 	ou = numr[-3]
-	txrng = [0.0]*2 
-	tyrng = [0.0]*2
-	txrng[0] = max(cnx+sxi-max(cnx+sxi-xrng,1),0)  # lower end is positive
-	txrng[1] = max(min(min(cnx+sxi+xrng,nx-1)-cnx-sxi,xrng),0)  # upper end
-	tyrng[0] = max(cny+syi-max(cny+syi-yrng,1),0)
-	tyrng[1] = max(min(min(cny+syi+yrng,ny-1)-cny-syi,yrng),0)
+	txrng = search_range(nx, ou, sxi, xrng)
+	tyrng = search_range(ny, ou, syi, yrng)
 
 	[ang, sxs, sys, mirror, iref, peak] = \
 		Util.multiref_polar_ali_helical_local(data, refrings, txrng, tyrng, stepx, ant, psi_max, mode, numr, cnx-sxi, cny-syi, int(ynumber), yrnglocal)
@@ -1971,6 +1944,7 @@ def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_ma
 	"""
 	  psi_max - how much psi can differ from 90 or 270 degrees
 	"""
+	from alignment import search_range
 	from utilities    import compose_transform2, get_params_proj
 
 	mode = "F"
@@ -1985,12 +1959,8 @@ def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_ma
 		finfo.flush()
 
 	ou = numr[-3]
-	txrng = [0.0]*2 
-	tyrng = [0.0]*2
-	txrng[0] = max(cnx+sxi-max(cnx+sxi-xrng,1),0)  # lower end is positive
-	txrng[1] = max(min(min(cnx+sxi+xrng,nx-1)-cnx-sxi,xrng),0)  # upper end
-	tyrng[0] = max(cny+syi-max(cny+syi-yrng,1),0)
-	tyrng[1] = max(min(min(cny+syi+yrng,ny-1)-cny-syi,yrng),0)
+	txrng = search_range(nx, ou, sxi, xrng)
+	tyrng = search_range(ny, ou, syi, yrng)
 	
 	[ang, sxs, sys, mirror, iref, peak] = \
 		Util.multiref_polar_ali_helical_90(data, refrings, txrng, tyrng, stepx, psi_max, mode, numr, cnx-sxi, cny-syi, int(ynumber))
@@ -2015,6 +1985,7 @@ def proj_ali_helical_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 	"""
 	  psi_max - how much psi can differ from 90 or 270 degrees
 	"""
+	from alignment import search_range
 	from utilities    import compose_transform2, get_params_proj
 	from math         import cos, sin, radians
 
@@ -2031,12 +2002,8 @@ def proj_ali_helical_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 		finfo.flush()
 
 	ou = numr[-3]
-	txrng = [0.0]*2 
-	tyrng = [0.0]*2
-	txrng[0] = max(cnx+sxi-max(cnx+sxi-xrng,1),0)  # lower end is positive
-	txrng[1] = max(min(min(cnx+sxi+xrng,nx-1)-cnx-sxi,xrng),0)  # upper end
-	tyrng[0] = max(cny+syi-max(cny+syi-yrng,1),0)
-	tyrng[1] = max(min(min(cny+syi+yrng,ny-1)-cny-syi,yrng),0)
+	txrng = search_range(nx, ou, sxi, xrng)
+	tyrng = search_range(ny, ou, syi, yrng)
 	
 	[ang, sxs, sys, mirror, iref, peak] = \
 		Util.multiref_polar_ali_helical_90_local(data, refrings, txrng, tyrng, stepx, ant, psi_max, mode, numr, cnx-sxi, cny-syi, int(ynumber), yrnglocal)
@@ -2061,6 +2028,7 @@ def proj_ali_helicon_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 	"""
 	  psi_max - how much psi can differ from 90 or 270 degrees
 	"""
+	from alignment import search_range
 	from utilities    import compose_transform2, get_params_proj
 	from math         import cos, sin, radians
 
@@ -2077,12 +2045,8 @@ def proj_ali_helicon_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 		finfo.flush()
 
 	ou = numr[-3]
-	txrng = [0.0]*2 
-	tyrng = [0.0]*2
-	txrng[0] = max(cnx+sxi-max(cnx+sxi-xrng,1),0)  # lower end is positive
-	txrng[1] = max(min(min(cnx+sxi+xrng,nx-1)-cnx-sxi,xrng),0)  # upper end
-	tyrng[0] = max(cny+syi-max(cny+syi-yrng,1),0)
-	tyrng[1] = max(min(min(cny+syi+yrng,ny-1)-cny-syi,yrng),0)
+	txrng = search_range(nx, ou, sxi, xrng)
+	tyrng = search_range(ny, ou, syi, yrng)
 	
 	[ang, sxs, sys, mirror, iref, peak] = \
 		Util.multiref_polar_ali_helicon_local(data, refrings, txrng, tyrng, stepx, ant, psi_max, mode, numr, cnx-sxi, cny-syi, int(ynumber), yrnglocal)
@@ -2209,6 +2173,7 @@ def proj_ali_helicon_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 	"""
 	  psi_max - how much psi can differ from 90 or 270 degrees
 	"""
+	from alignment import search_range
 	from utilities    import compose_transform2, get_params_proj
 	from math         import cos, sin, pi
 
@@ -2225,12 +2190,8 @@ def proj_ali_helicon_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 		finfo.flush()
 
 	ou = numr[-3]
-	txrng = [0.0]*2 
-	tyrng = [0.0]*2
-	txrng[0] = max(cnx+sxi-max(cnx+sxi-xrng,1),0)  # lower end is positive
-	txrng[1] = max(min(min(cnx+sxi+xrng,nx-1)-cnx-sxi,xrng),0)  # upper end
-	tyrng[0] = max(cny+syi-max(cny+syi-yrng,1),0)
-	tyrng[1] = max(min(min(cny+syi+yrng,ny-1)-cny-syi,yrng),0)
+	txrng = search_range(nx, ou, sxi, xrng)
+	tyrng = search_range(ny, ou, syi, yrng)
 	
 	[ang, sxs, sys, mirror, iref, peak] = \
 		Util.multiref_polar_ali_helicon_90_local(data, refrings, txrng, tyrng, stepx, ant, psi_max, mode, numr, cnx-sxi, cny-syi, int(ynumber), yrnglocal)
@@ -4434,6 +4395,7 @@ def Xshc0(data, cimages, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1"
 
 def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=None):
 	from utilities    import compose_transform2
+	from alignment import search_range
 	from math         import cos, sin, degrees, radians
 	from EMAN2 import Vec2f
 	#  Templates have to have psi zero, remove once tested.
@@ -4456,12 +4418,8 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 	ou = numr[-3]
 	sxi = -dp["tx"]
 	syi = -dp["ty"]
-	txrng = [0.0]*2 
-	tyrng = [0.0]*2
-	txrng[0] = max(cnx+sxi-max(cnx+sxi-xrng,1),0)  # lower end is positive
-	txrng[1] = max(min(min(cnx+sxi+xrng,nx-1)-cnx-sxi,xrng),0)  # upper end
-	tyrng[0] = max(cny+syi-max(cny+syi-yrng,1),0)
-	tyrng[1] = max(min(min(cny+syi+yrng,ny-1)-cny-syi,yrng),0)
+	txrng = search_range(nx, ou, sxi, xrng)
+	tyrng = search_range(ny, ou, syi, yrng)
 
 	if finfo:
 		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
@@ -4700,4 +4658,24 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, onx = -1, 
 		log.add("End 3D centering")
 	return params
 
+
+
+def search_range(n, radius, shift, range):
+	"""
+		Find permissible ranges for translational searches by resampling into polar coordinates
+		n - image size; radius - particle radius, the circle has to fit into the square image;
+		shift - current particle shift; range - desired maximum range search
+		Output: a list of two elements:
+		  left range (positive)
+		  right range
+		NOTE - ranges are with respect to the point n//2+1-shift within image (in 3D)
+	"""
+	cn = n//2 +1
+	ql = cn+shift-radius   # lower end is positive
+	qe = n - cn-shift-radius  # upper end
+	if( ql < 1 or qe < 1 ):
+		ERROR("search_range","Shift of the particle too larger, results may be incorrect:  %4d   %3d   %f  %f  %f  %4d  %4d"%(n, cn, radius, shift, range, ql, qe),0)
+		ql = max(ql,1)
+		qe = max(qe,1)
+	return  [ min( ql, range), min(qe, range) ]
 
