@@ -45,23 +45,23 @@ def main():
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
-	parser.add_argument("--boxsize",type=int,help="Box size in pixels",default=256)
-	parser.add_argument("--xmin",type=int,default=1)
-	parser.add_argument("--xmax",type=int,default=-1)
-	parser.add_argument("--xstep",type=int,default=16)
-	parser.add_argument("--ymin",type=int,default=1)
-	parser.add_argument("--ymax",type=int,default=-1)
-	parser.add_argument("--ystep",type=int,default=16)
+	parser.add_argument("--boxsize",type=int,help="Box size for each tile in pixels. Default is 512.",default=512)
+	parser.add_argument("--xmin",type=int,help="Start tiling on this x-pixel. If -1, will start one boxsize inward.",default=-1)
+	parser.add_argument("--xmax",type=int,help="Generate tiles in x-direction until this many pixels. If -1, will tile the entire image.",default=-1)
+	parser.add_argument("--xstep",type=int,help="Step length in x-direction. If less than --boxsize, tiles will overlap. Default is 256.",default=256)
+	parser.add_argument("--ymin",type=int,help="Start tiling on this y-pixel. If -1, will start one boxsize inward.",default=-1)
+	parser.add_argument("--ymax",type=int,help="Generate tiles in y-direction until this many pixels. If -1, will tile the entire image.",default=-1)
+	parser.add_argument("--ystep",type=int,help="Step length in y-direction. If less than --boxsize, tiles will overlap. Default is 256.",default=256)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
 	
-	if options.xmin < 0 or options.ymin < 0:
-		print("--xmin and --ymin must be nonnegative")
+	if options.xmin < -1 or options.ymin < -1:
+		print("--xmin and --ymin must be greater than or equal to -1.")
 		sys.exit(1)
 	
-	if options.xmin == 1: options.xmin = options.boxsize
-	if options.ymin == 1: options.xmin = options.boxsize
+	if options.xmin == -1: options.xmin = options.boxsize
+	if options.ymin == -1: options.xmin = options.boxsize
 	
 	for i,fname in enumerate(args):
 		if options.verbose > 2: print("Processing {}".format(fname))
