@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-#!/usr/bin/env python
 
 #
 # Authors: James Michael Bell, 06/03/2015
