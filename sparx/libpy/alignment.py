@@ -1477,7 +1477,7 @@ def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None):
 	if finfo:
 		from utilities    import get_params_proj
 		phi, theta, psi, s2x, s2y = get_params_proj(data)
-		finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, s2x, s2y))
+		finfo.write("Old parameters: %7.2f  %7.2f  %7.2f  %7.2f  %7.2f\n"%(phi, theta, psi, s2x, s2y))
 		finfo.flush()
 
 	mode = "F"
@@ -1497,7 +1497,7 @@ def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None):
 		syi = -dp["ty"]
 		txrng = search_range(nx, ou, sxi, xrng[zi])
 		tyrng = search_range(ny, ou, syi, yrng[zi])
-			
+
 		[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_2d(data, refrings, txrng, tyrng, step[zi], mode, numr, cnx-sxi, cny-syi)
 		#print ang, sxs, sys, mirror, iref, peak
 		iref = int(iref)
@@ -1524,7 +1524,7 @@ def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None):
 	pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
 
 	if finfo:
-		finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
+		finfo.write( "New parameters: %7.2f  %7.2f  %7.2f  %7.2f  %7.2f  %11.3e  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 		finfo.flush()
 
 	return peak, pixel_error

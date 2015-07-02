@@ -882,6 +882,12 @@ public:
                 vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
                 vector< int >numr, float cnx, float cny);
 
+	/* In this version order of rotation/shift is not changed*/
+	static vector<float> multiref_polar_ali_3d(EMData* image, const vector< EMData* >& crefim,
+                vector<float> xrng, vector<float> yrng, float step, string mode,
+                vector< int >numr, float cnx, float cny);
+
+
 	/* This is used in ISAC program to assigning particles equally to grops */
 	static vector<int> assign_groups(std::string matrix_address, int nref, int nima);
 

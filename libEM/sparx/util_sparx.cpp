@@ -18782,6 +18782,77 @@ vector<float> Util::multiref_polar_ali_2d(EMData* image, const vector< EMData* >
 	return res;
 }
 
+vector<float> Util::multiref_polar_ali_3d(EMData* image, const vector< EMData* >& crefim,
+                vector<float> xrng, vector<float> yrng, float step, string mode,
+                vector<int>numr, float cnx, float cny) {
+
+    // Manually extract.
+/*    vector< EMAN::EMData* > crefim;
+    std::size_t crefim_len = PyObject_Length(crefim_list.ptr());
+    crefim.reserve(crefim_len);
+
+    for(std::size_t i=0;i<crefim_len;i++) {
+        boost::python::extract<EMAN::EMData*> proxy(crefim_list[i]);
+        crefim.push_back(proxy());
+    }
+*/
+	const float qv = static_cast<float>( pi/180.0 );
+	size_t crefim_len = crefim.size();
+
+// 	int   ky = int(2*yrng/step+0.5)/2;
+// 	int   kx = int(2*xrng/step+0.5)/2;
+	int lkx = int(xrng[0]/step);
+	int rkx = int(xrng[1]/step);
+	int lky = int(yrng[0]/step);
+	int rky = int(yrng[1]/step);
+	
+	int   iref, nref=0, mirror=0;
+	float iy, ix, sxs=0, sys=0;
+	float peak = -1.0E23f;
+	float ang=0.0f;
+	for (int i = -lky; i <= rky; i++) {
+		iy = i * step ;
+		for (int j = -lkx; j <= rkx; j++) {
+			ix = j*step ;
+			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+
+			Normalize_ring( cimage, numr );
+
+			Frngs(cimage, numr);
+			//  compare with all reference images
+			// for iref in xrange(len(crefim)):
+			for ( iref = 0; iref < (int)crefim_len; iref++) {
+				Dict retvals = Crosrng_ms(crefim[iref], cimage, numr);
+				double qn = retvals["qn"];
+				double qm = retvals["qm"];
+				if(qn >= peak || qm >= peak) {
+					sxs = -ix;
+					sys = -iy;
+					nref = iref;
+					if (qn >= qm) {
+						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+						peak = static_cast<float>(qn);
+						mirror = 0;
+					} else {
+						ang = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
+						peak = static_cast<float>(qm);
+						mirror = 1;
+					}
+				}
+			}  delete cimage; cimage = 0;
+		}	
+	}
+
+	vector<float> res;
+	res.push_back(ang);
+	res.push_back(sxs);
+	res.push_back(sys);
+	res.push_back(static_cast<float>(mirror));
+	res.push_back(static_cast<float>(nref));
+	res.push_back(peak);
+	return res;
+}
+
 vector<float> Util::multiref_polar_ali_2d_peaklist(EMData* image, const vector< EMData* >& crefim,
                 vector<float> xrng, vector<float> yrng, float step, string mode,
                 vector<int>numr, float cnx, float cny) {
