@@ -71,12 +71,12 @@ def main():
 		if options.ymin == 1: fy = options.boxsize
 		
 		if options.xmax > hdr['nx']-options.boxsize:
-			print("--xmax is too large for file {}/{}".format(i,len(args)))
+			print("--xmax is too large for file")
 			continue
 		elif options.xmax == -1: options.xmax = hdr['nx'] - options.boxsize
 		
 		if options.ymax > hdr['ny']-options.boxsize:
-			print("--ymax is too large for file {}/{}".format(i,len(args)))
+			print("--ymax is too large for file")
 			continue
 		elif options.ymax == -1: options.ymax = hdr['ny'] - options.boxsize
 		
