@@ -262,7 +262,14 @@ def main():
 	
 	# mpirun -np 1  sxisac_script.py
 	
-	program_state_stack.PROGRAM_STATE_VARIABLES = {"isac_generation", "i", "j"}
+	from utilities import qw
+	program_state_stack.PROGRAM_STATE_VARIABLES = set(qw("""
+		isac_generation
+		i j
+		generation
+		
+		mloop
+	"""))
 	program_state_stack(locals(), getframeinfo(currentframe()), "my_state.json")
 	
 

@@ -4840,3 +4840,8 @@ def program_state_stack(full_current_state, frameinfo, file_name_of_saved_state=
 	# print "program_state_stack.start_executing ", program_state_stack.start_executing
 
 	return program_state_stack.start_executing
+
+def qw(s):
+	s = s.replace("\n"," ")
+	s = s.replace("\t"," ")
+	return tuple(s.split())
