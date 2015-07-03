@@ -12770,9 +12770,6 @@ void PruneSkeletonProcessor::process_inplace(EMData * image){
 
 }
 
-<<<<<<< processor.cpp
-=======
-
 EMData* GrowSkeletonProcessor::process(const EMData* const image) //
 {
 	EMData* imageCp= image -> copy();
@@ -12857,7 +12854,6 @@ void GrowSkeletonProcessor::process_inplace(EMData * image){
 	
 }
 
->>>>>>> 1.492
 EMData* ManhattanDistanceProcessor::process(const EMData* const image)
 {
 	EMData* proc = image->copy();
