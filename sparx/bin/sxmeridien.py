@@ -656,7 +656,7 @@ def getalldata(stack, myid, nproc):
 
 
 
-def get_shrink_data(onx, nx, stack, partids, partstack, myid, main_node, nproc, CTF = False, applyctf = True, preshift = False, radi = -1):
+def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc, preshift = False):
 	# The function will read from stack a subset of images specified in partids
 	#   and assign to them parameters from partstack with optional CTF application and shifting of the data.
 	# So, the lengths of partids and partstack are the same.
@@ -664,7 +664,7 @@ def get_shrink_data(onx, nx, stack, partids, partstack, myid, main_node, nproc, 
 	if( myid == main_node ):
 		print("    ")
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(  line, "Reading data  onx: %3d, nx: %3d, CTF: %s, applyctf: %s, preshift: %s."%(onx, nx, CTF, applyctf, preshift) )
+		print(  line, "Reading data  onx: %3d, nx: %3d, CTF: %s, applyctf: %s, preshift: %s."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["constants"]["CTF"], Tracker["applyctf"], preshift) )
 		print("                       stack: %s\n                       partids: %s\n                       partstack:%s\n"%(stack, partids, partstack) )
 	if( myid == main_node ): lpartids = read_text_file(partids)
 	else:  lpartids = 0
@@ -685,34 +685,36 @@ def get_shrink_data(onx, nx, stack, partids, partstack, myid, main_node, nproc, 
 	lpartids  = lpartids[image_start:image_end]
 	partstack = partstack[image_start:image_end]
 	#  Preprocess the data
-	if radi < 0:	radi = onx//2 - 2
-	mask2D  = model_circle(radi,onx,onx)
+	mask2D  = model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 	nima = image_end - image_start
 	oldshifts = [[0.0,0.0]]#*nima
 	data = [None]*nima
-	shrinkage = float(nx)/float(onx)
+	shrinkage = nxinit/float(Tracker["constants"]["nnxo"])
+	radius = int(Tracker["constants"]["radius"] * shrinkage +0.5)
+	#  Note these are in Fortran notation for polar searches
+	txm = float(nxinit-(nxinit//2+1) - radius -1)
+	txl = float(nxinit//2+1 - radius -2)
 	for im in xrange(nima):
-		data[im] = get_im(stack, lpartids[im])
+		data[im] = get_im(Tracker["constants"]["stack"], lpartids[im])
 		phi,theta,psi,sx,sy = partstack[im][0], partstack[im][1], partstack[im][2], partstack[im][3], partstack[im][4]
-		if preshift:
-			data[im] = fshift(data[im], sx, sy)
-			set_params_proj(data[im],[phi,theta,psi,0.0,0.0])
-			#oldshifts[im] = [sx,sy]
-		else:
-			set_params_proj(data[im],[phi,theta,psi,sx,sy])
-		#  For local SHC set anchor
-		#if(nsoft == 1 and an[0] > -1):
-		#  We will always set it to simplify the code
-		set_params_proj(data[im],[phi,theta,psi,0.0,0.0], "xform.anchor")
-		if CTF and applyctf:
+		if( Tracker["constants"]["CTF"] and Tracker["applyctf"] ):
 			ctf_params = data[im].get_attr("ctf")
 			st = Util.infomask(data[im], mask2D, False)
 			data[im] -= st[0]
 			data[im] = filt_ctf(data[im], ctf_params)
 			data[im].set_attr('ctf_applied', 1)
-		if(shrinkage < 1.0):
-			#  resample will properly adjusts shifts and pixel size in ctf
-			data[im] = resample(data[im], shrinkage)
+		if preshift:
+			data[im] = fshift(data[im], sx, sy)
+			set_params_proj(data[im],[phi,theta,psi,0.0,0.0])
+		#oldshifts[im] = [sx,sy]
+		#  resample will properly adjusts shifts and pixel size in ctf
+		data[im] = resample(data[im], shrinkage)
+		#  We have to make sure the shifts are within correct range, shrinkage or not
+		set_params_proj(data[im],[phi,theta,psi,max(min(sx*shrinkage,txm),txl),max(min(sy*shrinkage,txm),txl)])
+		#  For local SHC set anchor
+		#if(nsoft == 1 and an[0] > -1):
+		#  We will always set it to simplify the code
+		set_params_proj(data[im],[phi,theta,psi,0.0,0.0], "xform.anchor")
 	assert( nx == data[0].get_xsize() )  #  Just to make sure.
 	#oldshifts = wrap_mpi_gatherv(oldshifts, main_node, MPI_COMM_WORLD)
 	return data, oldshifts
@@ -1214,9 +1216,8 @@ def main():
 				mpi_barrier(MPI_COMM_WORLD)
 				if( Tracker["nxinit"] != projdata[procid][0].get_xsize() ):
 					projdata[procid] = []
-					projdata[procid], oldshifts[procid] = get_shrink_data(Tracker["constants"]["nnxo"], Tracker["nxinit"], \
-						Tracker["constants"]["stack"], partids[procid], partstack[procid], myid, main_node, nproc, \
-						Tracker["constants"]["CTF"], Tracker["applyctf"], preshift = False, radi = Tracker["constants"]["radius"])
+					projdata[procid], oldshifts[procid] = get_shrink_data(Tracker, Tracker["nxinit"],\
+						partids[procid], partstack[procid], myid, main_node, nproc, preshift = False)
 
 				# METAMOVE
 				Tracker = metamove(projdata[procid], oldshifts[procid], Tracker, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
@@ -1241,9 +1242,8 @@ def main():
 				if( nxinit != projdata[procid][0].get_xsize() ):
 					projdata = [[],[]]
 					for procid in xrange(2):
-						projdata[procid], oldshifts[procid] = get_shrink_data(Tracker["constants"]["nnxo"], nxinit, \
-							Tracker["constants"]["stack"], partids[procid], partstack[procid], myid, main_node, nproc, \
-							Tracker["constants"]["CTF"], Tracker["applyctf"], preshift = False, radi = Tracker["constants"]["radius"])
+						projdata[procid], oldshifts[procid] = get_shrink_data(Tracker, nxinit,\
+									partids[procid], partstack[procid], myid, main_node, nproc, preshift = False)
 
 				xlowpass, xfalloff, xcurrentres = compute_resolution(projdata, \
 													Tracker["directory"], partids, partstack, \
