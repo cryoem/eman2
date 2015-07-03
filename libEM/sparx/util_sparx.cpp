@@ -2859,7 +2859,7 @@ c  purpose: linear interpolation
 	iyold   = (int) yold;
 	ydif = yold - iyold;
 	xdif = xold - ixold;
-	if( ixold < 1 || ixold > 64 || iyold < 1 || iyold > 64)  printf(" OUT OF RANGE  %3d  %3d \n",ixold,iyold);
+	//if( ixold < 1 || ixold > 64 || iyold < 1 || iyold > 64)  printf(" OUT OF RANGE  %3d  %3d \n",ixold,iyold);
 	bilinear = xim(ixold, iyold) + ydif* (xim(ixold, iyold+1) - xim(ixold, iyold)) +
 	           xdif* (xim(ixold+1, iyold) - xim(ixold, iyold) +
 			   ydif* (xim(ixold+1, iyold+1) - xim(ixold+1, iyold) - xim(ixold, iyold+1) + xim(ixold, iyold)) );
