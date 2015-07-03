@@ -19563,22 +19563,22 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 	if(theta1 > 90.0f) mirror = 1;
 	else               mirror = -1;
 
-    // sym is a symmetry string, t is the projection transform of the input image, tsym is a vector of transforms that are input transofrmation multiplied by all symmetries.
-    // its length is number of symmetries.
-    vector<Transform> tsym = t->get_sym_proj(sym);
+	// sym is a symmetry string, t is the projection transform of the input image, tsym is a vector of transforms that are input transofrmation multiplied by all symmetries.
+	// its length is number of symmetries.
+	vector<Transform> tsym = t->get_sym_proj(sym);
 
-    int isym = 0;
-    int nsym = tsym.size();
-    vector<Ims> vIms(nsym);
+	int isym = 0;
+	int nsym = tsym.size();
+	vector<Ims> vIms(nsym);
 
-    for (isym = 0; isym < nsym; ++isym) {
-        Dict u = tsym[isym].get_params("spider");
-        float phi   = u["phi"];
-        float theta = u["theta"];
-        vIms[isym].ims1 = sin(theta*qv)*cos(phi*qv);
-        vIms[isym].ims2 = sin(theta*qv)*sin(phi*qv);
-        vIms[isym].ims3 = cos(theta*qv);
-    }
+	for (isym = 0; isym < nsym; ++isym) {
+		Dict u = tsym[isym].get_params("spider");
+		float phi   = u["phi"];
+		float theta = u["theta"];
+		vIms[isym].ims1 = sin(theta*qv)*cos(phi*qv);
+		vIms[isym].ims2 = sin(theta*qv)*sin(phi*qv);
+		vIms[isym].ims3 = cos(theta*qv);
+	}
 
 	for (iref = 0; iref < crefim_len; iref++) {
 

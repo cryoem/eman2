@@ -694,8 +694,10 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc,
 	shrinkage = nxinit/float(Tracker["constants"]["nnxo"])
 	radius = int(Tracker["constants"]["radius"] * shrinkage +0.5)
 	#  Note these are in Fortran notation for polar searches
-	txm = float(nxinit-(nxinit//2+1) - radius -1)
-	txl = float(2 + radius - nxinit//2+1)
+	#txm = float(nxinit-(nxinit//2+1) - radius -1)
+	#txl = float(2 + radius - nxinit//2+1)
+	txm = float(nxinit-(nxinit//2+1) - radius)
+	txl = float(radius - nxinit//2+1)
 	for im in xrange(nima):
 		data[im] = get_im(Tracker["constants"]["stack"], lpartids[im])
 		phi,theta,psi,sx,sy = partstack[im][0], partstack[im][1], partstack[im][2], partstack[im][3], partstack[im][4]
