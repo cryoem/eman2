@@ -13,8 +13,8 @@ from theano.tensor.signal import downsample
 def main():
 
 
-	usage="""datest.py <particles> [options]
-	Run a stacked denoise auto-encoder on the data set."""
+	usage="""convnetda.py <particles> [options]
+	Run a convolution auto-encoder on the data set."""
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--learnrate", type=float,help="Learning rate for the auto-encoder", default=.0001)

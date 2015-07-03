@@ -15,7 +15,7 @@ import cPickle
 def main():
 
 
-	usage="""datest.py <particles> [options]
+	usage="""denoiseautoencoder.py <particles> [options]
 	Run a stacked denoise auto-encoder on the data set."""
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
