@@ -38,6 +38,7 @@ def AI( icurrentres, Tracker, HISTORY ):
 	#    5.  All phases tried and nxinit < nnxo: set nxinit == nnxo and run local searches.
 	from sys import exit
 	reset_data = False
+	Tracker["delpreviousmax"] = False
 	if(Tracker["mainiteration"] == 1):
 		nxinit                 = Tracker["nxinit"]
 		while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
@@ -78,6 +79,7 @@ def AI( icurrentres, Tracker, HISTORY ):
 		nxinit                 = Tracker["nxinit"]
 		Tracker["icurrentres"] = min(icurrentres, nxinit//2-3)
 		Tracker["nsoft"]       = 1
+		Tracker["delpreviousmax"] = True
 		Tracker["local"]       = False
 		Tracker["zoom"]        = False
 		if not Tracker["applyctf"] :  reset_data  = True
@@ -943,7 +945,7 @@ def main():
 	Tracker["falloff"]        = 0.2
 	Tracker["inires"]         = options.inires  # Now in A, convert to absolute before using
 	Tracker["fuse_freq"]      = 50  # Now in A, convert to absolute before using
-	Tracker["delpreviousmax"] = True
+	Tracker["delpreviousmax"] = False
 	Tracker["anger"]          = -1.0
 	Tracker["shifter"]        = -1.0
 	Tracker["saturatecrit"]   = 0.95
