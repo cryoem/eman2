@@ -4655,7 +4655,7 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 	main_node      = 0
 
 	if myid == main_node:
-		log.add("Start sali3d_base_mrk01, nsoft = %1d"%nsoft)
+		log.add("Start sali3d_base, nsoft = %1d"%nsoft)
 
 	xrng        = get_input_from_string(xr)
 	if  yr == "-1":  yrng = xrng

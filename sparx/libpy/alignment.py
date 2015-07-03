@@ -1553,9 +1553,7 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 
 	iref=int(iref)
 	if iref > -1:
-		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
 		isym = int(sym[1:])
 		phi   = refrings[iref].get_attr("phi")
 		if(isym > 1 and an > 0.0):
@@ -4383,7 +4381,6 @@ def Xshc0(data, cimages, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1"
 '''
 
 def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=None):
-	from utilities    import compose_transform2
 	from alignment import search_range
 	from math         import cos, sin, degrees, radians
 	from EMAN2 import Vec2f
@@ -4440,17 +4437,16 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 	else:
 		# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-		angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
 		if  mirror:
 			phi   = (refrings[iref].get_attr("phi")+540.0)%360.0
 			theta = 180.0-refrings[iref].get_attr("theta")
-			psi   = (540.0-refrings[iref].get_attr("psi")+angb)%360.0
+			psi   = (540.0-refrings[iref].get_attr("psi")-ang)%360.0
 		else:
 			phi   = refrings[iref].get_attr("phi")
 			theta = refrings[iref].get_attr("theta")
-			psi   = (refrings[iref].get_attr("psi")+angb+360.0)%360.0
-		s2x   = sxb + sxi
-		s2y   = syb + syi
+			psi   = (360.0+refrings[iref].get_attr("psi")-ang)%360.0
+		s2x   = sxs + sxi
+		s2y   = sys + syi
 
 		#set_params_proj(data, [phi, theta, psi, s2x, s2y])
 		t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})
@@ -4473,9 +4469,6 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 			finfo.write( "New parameters: %9.4f %9.4f %9.4f %9.4f %9.4f %10.5f  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
 			finfo.flush()
 		return peak, pixel_error, number_of_checked_refs, iref
-
-
-
 
 
 
