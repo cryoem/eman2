@@ -582,7 +582,7 @@ hyb -- y- mesh spacing above f0\nhya -- y- mesh spacing below f0\n \nInterpolant
 		.def("group_proj_by_phitheta", &EMAN::Util::group_proj_by_phitheta)
 		.def("multiref_polar_ali_2d_nom", &EMAN::Util::multiref_polar_ali_2d_nom)
 		.def("multiref_polar_ali_2d_local", &EMAN::Util::multiref_polar_ali_2d_local)
-		.def("multiref_polar_ali_3d_local", &EMAN::Util::multiref_polar_ali_2d_local)
+		.def("multiref_polar_ali_3d_local", &EMAN::Util::multiref_polar_ali_3d_local)
 		.def("multiref_polar_ali_2d_local_psi", &EMAN::Util::multiref_polar_ali_2d_local_psi)
 		.def("multiref_polar_ali_helical", &EMAN::Util::multiref_polar_ali_helical)
 		.def("multiref_polar_ali_helical_local", &EMAN::Util::multiref_polar_ali_helical_local)
