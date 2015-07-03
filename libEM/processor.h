@@ -940,7 +940,6 @@ The basic design of EMAN Processors: <br>\
 		static const string NAME;
 	};
 
-
 	/** Sets pixel values in a binary image equal to their element wise manhattan distance.
 	 * Credit for this code goes to Stephen Ostermiller (http://blog.ostermiller.org/dilate-and-erode).
 	 *
@@ -1007,13 +1006,14 @@ The basic design of EMAN Processors: <br>\
 
 		string get_desc() const
 		{
-			return "Performs a morphological k-pixel dilation of a (binary) 2D image.";
+			return "Performs a morphological dilation of a (binary) 2D image.";
 		}
 
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
 			d.put("k", EMObject::INT, "The number of pixels to dilate the input image.");
+			d.put("selem",EMObject::EMDATA, "The structuring element with which you want to dilate.");
 			return d;
 		}
 
@@ -8231,6 +8231,7 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 		{
 			TypeDict d;
 			d.put("kernel", EMObject::FLOATARRAY, "the convolution kernel");
+			d.put("selem", EMObject::EMDATA, "the structuring element");
 			return d;
 		}
 		static const string NAME;

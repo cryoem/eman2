@@ -281,9 +281,9 @@ const string BinaryDilationProcessor::NAME = "morph.dilate.binary";
 const string BinaryErosionProcessor::NAME = "morph.erode.binary";
 const string BinaryOpeningProcessor::NAME = "morph.open.binary";
 const string BinaryClosingProcessor::NAME = "morph.close.binary";
-const string BinaryMorphGradientProcessor::NAME = "morph.gradient";
-const string BinaryExternalGradientProcessor::NAME = "morph.gradient.external";
-const string BinaryInternalGradientProcessor::NAME = "morph.gradient.internal";
+const string BinaryMorphGradientProcessor::NAME = "morph.gradient.binary";
+const string BinaryExternalGradientProcessor::NAME = "morph.ext_grad.binary";
+const string BinaryInternalGradientProcessor::NAME = "morph.int_grad.binary";
 const string BinaryTopHatProcessor::NAME = "morph.tophat.binary";
 const string BinaryBlackHatProcessor::NAME = "morph.blackhat.binary";
 const string GrowSkeletonProcessor::NAME = "morph.grow";
@@ -11905,30 +11905,38 @@ void BinarySkeletonizerProcessor::process_inplace(EMData * image)
 EMData* ConvolutionKernelProcessor::process(const EMData* const image)
 {
 	if (image->get_zsize()!=1) throw ImageDimensionException("Only 2-D images supported");
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
 
 	EMData* conv = new EMData(image->get_xsize(),image->get_ysize(),1);
-	vector<float>kernel = params["kernel"];
-
-	if (fmod(sqrt((float)kernel.size()), 1.0f) != 0) throw InvalidParameterException("Convolution kernel must be square!!");
+	
+	int ks;
+	vector<float> kernel;
+	if (params.has_key("selem")) {
+		EMData* selem = params["selem"];
+		float *sd = selem->get_data();
+		kernel = vector<float>(sd, sd + sizeof sd / sizeof sd[0]);
+	}
+	else {
+		kernel = params["kernel"];
+	}
+	ks = int(sqrt(float(kernel.size())));
+	if (fmod(sqrt((float) ks), 1.0f) != 0) throw InvalidParameterException("Convolution kernel must be square!!");
 
 	float* data = image->get_data();
 	float* cdata = conv->get_data();	// Yes I could use set_value_at_fast, but is still slower than this....
 
 	//I could do the edges by wrapping around, but this is not necessary(such functionality can be iplemented later)
-	int ks = int(sqrt(float(kernel.size())));
 	int n = (ks - 1)/2;
-	int nx = image->get_xsize();
-	int ny = image->get_ysize();
 	for (int i = n; i < (nx - n); i++) {
 		for (int j = n; j < (ny - n); j++) {
 			//now do the convolution
 			float cpixel = 0;
 			int idx = 0;
-			// Perahps I could use some ofrm of Caching to speed things up?
+			// Perahps I could use some form of Caching to speed things up?
 			for (int cx = -n; cx <= n; cx++) {
-				for (int cy = -n; cy <= n; cy++) {
-					cpixel += data[(i+cx) + (j+cy) * nx]*kernel[idx];
-					idx++;
+				for (int cy = -n; cy <= n; cy++, idx++) {
+					cpixel += data[(i+cx)+(j+cy)*nx]*kernel[idx];
 				}
 			}
 			cdata[i + j * nx] = cpixel;
@@ -12762,6 +12770,8 @@ void PruneSkeletonProcessor::process_inplace(EMData * image){
 
 }
 
+<<<<<<< processor.cpp
+=======
 
 EMData* GrowSkeletonProcessor::process(const EMData* const image) //
 {
@@ -12847,6 +12857,7 @@ void GrowSkeletonProcessor::process_inplace(EMData * image){
 	
 }
 
+>>>>>>> 1.492
 EMData* ManhattanDistanceProcessor::process(const EMData* const image)
 {
 	EMData* proc = image->copy();
@@ -12856,8 +12867,7 @@ EMData* ManhattanDistanceProcessor::process(const EMData* const image)
 
 void ManhattanDistanceProcessor::process_inplace(EMData * image)
 {
-	int nz = image->get_zsize();
-	if (nz != 1) throw ImageDimensionException("Only 2-D images supported");
+	if (image->get_zsize() != 1) throw ImageDimensionException("Only 2-D images supported");
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
 	int size = nx*ny;
@@ -12891,12 +12901,33 @@ EMData* BinaryDilationProcessor::process(const EMData* const image)
 
 void BinaryDilationProcessor::process_inplace(EMData *image)
 {
-	int k=params.set_default("k",1);
-	if (image->get_zsize() != 1) throw ImageDimensionException("Only 2-D images supported");
-	image->process_inplace("math.distance.manhattan");
-	for (int i=0; i < image->get_xsize(); i++){
-		for (int j=0; j < image->get_ysize(); j++){
-			image->set_value_at_fast(i,j,(image->get_value_at(i,j)<=k)?1:0);
+	if (!image) {
+		LOGWARN("NULL Image");
+		return;
+	}
+	if (image->get_zsize() > 1) {
+		LOGERR("%s Processor doesn't support 3D data",get_name().c_str());
+		throw ImageDimensionException("Only 2-D images supported");
+	}
+	if (params.has_key("selem")) {
+		EMData* selem = params["selem"];
+		if ( selem->get_xsize() % 2 == 0 || selem->get_ysize() % 2 == 0 ) {
+			LOGERR("%s Processor requires odd dimension mask (3,5,7,etc.).", get_name().c_str());
+			throw ImageDimensionException("Mask dimensions must be odd.");
+		}
+		EMData* proc = image->process("filter.convolution.kernel",params);
+		image->to_zero();
+		image->add(*proc);
+	}
+	else {
+		int k=params.set_default("k",1);
+		int nx = image->get_xsize();
+		int ny = image->get_ysize();
+		image->process_inplace("math.distance.manhattan");
+		for (int i=0; i < nx; i++){
+			for (int j=0; j < ny; j++){
+				image->set_value_at_fast(i,j,(image->get_value_at(i,j)<=k)?1:0);
+			}
 		}
 	}
 }
