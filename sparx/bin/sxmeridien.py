@@ -717,7 +717,7 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc,
 		#if(nsoft == 1 and an[0] > -1):
 		#  We will always set it to simplify the code
 		set_params_proj(data[im],[phi,theta,psi,0.0,0.0], "xform.anchor")
-	assert( Tracker["nxinit"] == data[0].get_xsize() )  #  Just to make sure.
+	assert( nxinit == data[0].get_xsize() )  #  Just to make sure.
 	#oldshifts = wrap_mpi_gatherv(oldshifts, main_node, MPI_COMM_WORLD)
 	return data, oldshifts
 
