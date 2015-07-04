@@ -1409,7 +1409,7 @@ def refprojs( volft, kb, ref_angles, cnx, cny, numr, mode, wr ):
 
 	return ref_proj_rings
 
-def proj_ali_incore(data, refrings, numr, xrng, yrng, step, sym = "c1", finfo=None):
+def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None, sym = "c1"):
 	from alignment import search_range
 	from EMAN2 import Vec2f
 
@@ -1473,7 +1473,7 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, sym = "c1", finfo=No
 
 	return peak, pixel_error
 
-def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None):
+def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None, sym = "c1"):
 	from alignment import search_range
 	from EMAN2 import Vec2f
 
