@@ -28,7 +28,7 @@ global cushion
 cushion = 8
 
 
-def AI( icurrentres, Tracker, HISTORY ):
+def AI( Tracker, HISTORY ):
 	#  
 	#  Possibilities we will consider:
 	#    1.  resolution improved: keep going with current settings.
@@ -41,9 +41,9 @@ def AI( icurrentres, Tracker, HISTORY ):
 	Tracker["delpreviousmax"] = False
 	if(Tracker["mainiteration"] == 1):
 		nxinit                 = Tracker["nxinit"]
-		while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
+		while( Tracker["ireachedres"] + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
 		Tracker["nxinit"]      = min(nxinit,Tracker["constants"]["nnxo"])
-		Tracker["icurrentres"] = icurrentres
+		Tracker["icurrentres"] = Tracker["ireachedres"]
 		Tracker["nsoft"]       = 0
 		Tracker["local"]       = False
 		Tracker["zoom"]        = True
@@ -61,7 +61,7 @@ def AI( icurrentres, Tracker, HISTORY ):
 		#  Go back to initial window size and exhaustive search to improve centering of the data.
 		nxinit = HISTORY[0]["nxinit"]
 		Tracker["nxinit"]       = nxinit
-		Tracker["icurrentres"] = min(icurrentres, nxinit//2-3)
+		Tracker["icurrentres"] = min(Tracker["ireachedres"], nxinit//2-3)
 		Tracker["nsoft"]       = 0
 		Tracker["local"]       = False
 		Tracker["zoom"]        = True
@@ -77,7 +77,7 @@ def AI( icurrentres, Tracker, HISTORY ):
 	elif(Tracker["mainiteration"] == 3):
 		#  Here we do soft with the initial window size
 		nxinit                 = Tracker["nxinit"]
-		Tracker["icurrentres"] = min(icurrentres, nxinit//2-3)
+		Tracker["icurrentres"] = min(Tracker["ireachedres"], nxinit//2-3)
 		Tracker["nsoft"]       = 1
 		Tracker["delpreviousmax"] = True
 		Tracker["local"]       = False
@@ -106,7 +106,7 @@ def AI( icurrentres, Tracker, HISTORY ):
 			move_up_phase = True
 		else:
 			#  For all other states make a decision based on resolution change
-			direction = icurrentres - Tracker["icurrentres"]
+			direction = Tracker["ireachedres"] - Tracker["icurrentres"]
 			if Tracker["movedback"] :
 				# previous move was back, but the resolution did not improve
 				if direction <= 0 :
@@ -129,12 +129,12 @@ def AI( icurrentres, Tracker, HISTORY ):
 			if(  direction > 0 ):
 				keepgoing = 1
 				if(Tracker["state"] == "FINAL2"):
-					if( icurrentres + 4 > Tracker["constants"]["nnxo"]): keepgoing = 0
+					if( Tracker["ireachedres"] + 4 > Tracker["constants"]["nnxo"]): keepgoing = 0
 				else:
 					nxinit = Tracker["nxinit"]
-					while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
+					while( Tracker["ireachedres"] + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
 					Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
-				Tracker["icurrentres"] = icurrentres
+				Tracker["icurrentres"] = Tracker["ireachedres"]
 				Tracker["constants"]["best"] = Tracker["mainiteration"]
 
 				if(Tracker["state"] == "EXHAUSTIVE"):
@@ -204,7 +204,7 @@ def AI( icurrentres, Tracker, HISTORY ):
 				Tracker["state"]          = stt[0]
 				Tracker["PWadjustment"]   = stt[1]
 				Tracker["mainiteration"]  = stt[2]
-				icurrentres               = Tracker["icurrentres"]
+				Tracker["icurrentres"]    = Tracker["ireachedres"]
 				#  This will set previousoutputdir to the best parames back then.
 				move_up_phase = True
 				
@@ -216,9 +216,9 @@ def AI( icurrentres, Tracker, HISTORY ):
 			if(Tracker["state"] == "INITIAL"):
 				#  Switch to EXHAUSTIVE
 				nxinit = Tracker["nxinit"]
-				while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
+				while( Tracker["ireachedres"] + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
 				Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
-				Tracker["icurrentres"] = icurrentres
+				Tracker["icurrentres"] = Tracker["ireachedres"]
 				Tracker["nsoft"]       = 0
 				Tracker["local"]       = False
 				Tracker["zoom"]        = False
@@ -235,9 +235,9 @@ def AI( icurrentres, Tracker, HISTORY ):
 			elif(Tracker["state"] == "EXHAUSTIVE"):
 				#  Switch to RESTRICTED
 				nxinit = Tracker["nxinit"]
-				while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
+				while( Tracker["ireachedres"] + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
 				Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
-				Tracker["icurrentres"] = icurrentres
+				Tracker["icurrentres"] = Tracker["ireachedres"]
 				Tracker["nsoft"]       = 0
 				Tracker["local"]       = False
 				Tracker["zoom"]        = False
@@ -254,9 +254,9 @@ def AI( icurrentres, Tracker, HISTORY ):
 			elif(Tracker["state"] == "RESTRICTED"):
 				#  Switch to LOCAL
 				nxinit = Tracker["nxinit"]
-				while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
+				while( Tracker["ireachedres"] + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
 				Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
-				Tracker["icurrentres"] = icurrentres
+				Tracker["icurrentres"] = Tracker["ireachedres"]
 				Tracker["nsoft"]       = 0
 				Tracker["local"]       = True
 				Tracker["zoom"]        = False
@@ -273,7 +273,7 @@ def AI( icurrentres, Tracker, HISTORY ):
 			elif(Tracker["state"] == "LOCAL"):
 				#  Switch to FINAL1
 				Tracker["nxinit"] = Tracker["constants"]["nnxo"]
-				Tracker["icurrentres"] = icurrentres
+				Tracker["icurrentres"] = Tracker["ireachedres"]
 				Tracker["nsoft"]       = 0
 				Tracker["local"]       = True
 				Tracker["zoom"]        = False
@@ -289,7 +289,7 @@ def AI( icurrentres, Tracker, HISTORY ):
 			elif(Tracker["state"] == "FINAL1"):
 				#  Switch to FINAL2
 				Tracker["nxinit"] = Tracker["constants"]["nnxo"]
-				Tracker["icurrentres"] = icurrentres
+				Tracker["icurrentres"] = Tracker["ireachedres"]
 				Tracker["nsoft"]       = 0
 				Tracker["local"]       = True
 				Tracker["zoom"]        = False
@@ -947,6 +947,7 @@ def main():
 	Tracker["nxinit"]         = 64
 	Tracker["nxstep"]         = 32
 	Tracker["icurrentres"]    = -1
+	Tracker["ireachedres"]    = -1
 	Tracker["lowpass"]        = 0.4
 	Tracker["falloff"]        = 0.2
 	Tracker["inires"]         = options.inires  # Now in A, convert to absolute before using
@@ -1351,9 +1352,10 @@ def main():
 		#mpi_barrier(MPI_COMM_WORLD)
 		#mpi_finalize()
 		#exit()
-		if myid == main_node:  print("   >>> AI  <<<  ",Tracker["mainiteration"] ,icurrentres,Tracker["icurrentres"])
+		Tracker["ireachedres"] = icurrentres
+		if myid == main_node:  print("   >>> AI  <<<  ",Tracker["mainiteration"] ,Tracker["ireachedres"],Tracker["icurrentres"])
 
-		keepgoing, reset_data, Tracker = AI( icurrentres, Tracker, HISTORY)
+		keepgoing, reset_data, Tracker = AI( Tracker, HISTORY )
 
 		if( keepgoing == 1 ):
 			if reset_data :  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
