@@ -151,8 +151,9 @@ def AI( icurrentres, Tracker, HISTORY ):
 					dd = degrees(atan(0.5/rl/rd))
 					if( Tracker["anger"]  < dd ):  move_up_phase = True
 					else:
-						Tracker["an"] = "%f"%Tracker["anger"]
 						Tracker["xr"] = "%d"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
+						Tracker["an"] = "%f"%Tracker["anger"]
+						Tracker["ts"] = "1"
 				else:
 					Tracker["anger"]   = -1.0
 					Tracker["shifter"] = -1.0
