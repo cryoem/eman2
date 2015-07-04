@@ -1409,7 +1409,7 @@ def refprojs( volft, kb, ref_angles, cnx, cny, numr, mode, wr ):
 
 	return ref_proj_rings
 
-def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
+def proj_ali_incore(data, refrings, numr, xrng, yrng, step, sym = "c1", finfo=None):
 	from alignment import search_range
 	from EMAN2 import Vec2f
 
@@ -1456,7 +1456,15 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None):
 	data.set_attr("xform.projection", t2)
 	data.set_attr("referencenumber", iref)
 	from pixel_error import max_3D_pixel_error
-	pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
+	ts = t2.get_sym_proj(sym)
+	if(len(ts) > 1):
+		# only do it if it is not c1
+		pixel_error = +1.0e23
+		for ut in ts:
+			# we do not care which position minimizes the error
+			pixel_error = min(max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
+	else:
+		pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
 	
 
 	if finfo:
@@ -1514,7 +1522,15 @@ def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None):
 	data.set_attr("xform.projection", t2)
 	data.set_attr("referencenumber", iref)
 	from pixel_error import max_3D_pixel_error
-	pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
+	ts = t2.get_sym_proj(sym)
+	if(len(ts) > 1):
+		# only do it if it is not c1
+		pixel_error = +1.0e23
+		for ut in ts:
+			# we do not care which position minimizes the error
+			pixel_error = min(max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
+	else:
+		pixel_error = max_3D_pixel_error(t1, t2, numr[-3])
 
 	if finfo:
 		finfo.write( "New parameters: %7.2f  %7.2f  %7.2f  %7.2f  %7.2f  %11.3e  %11.3e\n\n" %(phi, theta, psi, s2x, s2y, peak, pixel_error))
@@ -1578,8 +1594,7 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 		if(len(ts) > 1):
 			# only do it if it is not c1
 			pixel_error = +1.0e23
-			for kts in ts:
-				ut = t2*kts
+			for ut in ts:
 				# we do not care which position minimizes the error
 				pixel_error = min(max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
 		else:
@@ -1664,8 +1679,7 @@ def proj_ali_incore_local_zoom(data, refrings, numr, xrng, yrng, step, an, finfo
 		if(len(ts) > 1):
 			# only do it if it is not c1
 			pixel_error = +1.0e23
-			for kts in ts:
-				ut = t2*kts
+			for ut in ts:
 				# we do not care which position minimizes the error
 				pixel_error = min(max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
 		else:
@@ -1733,8 +1747,7 @@ def proj_ali_incore_delta(data, refrings, numr, xrng, yrng, step, start, delta, 
 	if(len(ts) > 1):
 		# only do it if it is not c1
 		pixel_error = +1.0e23
-		for kts in ts:
-			ut = t2*kts
+		for ut in ts:
 			# we do not care which position minimizes the error
 			pixel_error = min(max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
 	else:
@@ -1812,8 +1825,7 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, dpsi=1
 		if(len(ts) > 1):
 			# only do it if it is not c1
 			pixel_error = +1.0e23
-			for kts in ts:
-				ut = t2*kts
+			for ut in ts:
 				# we do not care which position minimizes the error
 				pixel_error = min(max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
 		else:
@@ -4368,8 +4380,7 @@ def Xshc0(data, cimages, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1"
 		if(len(ts) > 1):
 			# only do it if it is not c1
 			pixel_error = +1.0e23
-			for kts in ts:
-				ut = t2*kts
+			for ut in ts:
 				# we do not care which position minimizes the error
 				pixel_error = min(max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
 		else:
@@ -4459,8 +4470,7 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 		if(len(ts) > 1):
 			# only do it if it is not c1
 			pixel_error = +1.0e23
-			for kts in ts:
-				ut = t2*kts
+			for ut in ts:
 				# we do not care which position minimizes the error
 				pixel_error = min(max_3D_pixel_error(t1, ut, numr[-3]), pixel_error)
 		else:
