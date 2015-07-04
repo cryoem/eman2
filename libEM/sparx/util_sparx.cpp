@@ -19670,16 +19670,16 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 
 	// cout << ant <<endl;
     if( ant > 0.0f) {  //LOCAL SEARCHES
-    /*
-    Sequence of operations:
-    	1. image should have reference projection orientation xform.anchor in addition to current projection orientation
-    	2. find a subset of reference projections within ant of the reference projection orientation of image,
-    			the similarity should include the symmetry
-    	3. shuffle the indexes of the subset
-    	4. Do the random matching
-    With the above, local searches could be also used for randomization tests as it would be enough to call
-    shc with previousmax=-1.0e23 and reference projection direction set to the current angle.
-    */
+		/*
+		Sequence of operations:
+			1. image should have reference projection orientation xform.anchor in addition to current projection orientation
+			2. find a subset of reference projections within ant of the reference projection orientation of image,
+					the similarity should include the symmetry
+			3. shuffle the indexes of the subset
+			4. Do the random matching
+		With the above, local searches could be also used for randomization tests as it would be enough to call
+		shc with previousmax=-1.0e23 and reference projection direction set to the current angle.
+		*/
 		t = image->get_attr("xform.anchor");
 		Dict d = t->get_params("spider");
 		//float phi   = d["phi"];
@@ -21841,7 +21841,7 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 		throw NullPointerException("NULL input image");
 	}
 
-	cout <<"  VERSION  07/03/2015  05:00 PM"<<endl;
+	cout <<"  VERSION  07/04/2015  11:00 AM"<<endl;
 
 	exit(0);
 

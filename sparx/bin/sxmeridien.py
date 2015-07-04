@@ -244,7 +244,7 @@ def AI( icurrentres, Tracker, HISTORY ):
 				Tracker["applyctf"]    = True
 				Tracker["an"]          = "30"
 				Tracker["state"]       = "RESTRICTED"
-				Tracker["maxit"]       = 1
+				Tracker["maxit"]       = 50
 				Tracker["xr"] = "%d"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
 				Tracker["ts"] = "1"
 				keepgoing = 1
@@ -742,8 +742,10 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 		ref_vol = get_im(Tracker["constants"]["refvol"])
 		nnn = ref_vol.get_xsize()
 		if(Tracker["nxinit"] != nnn ):
-			from fundamentals import resample
-			ref_vol = resample(ref_vol, shrinkage)
+			# Good enough?
+			ref_vol = Util.window(rot_shift3D(ref_vol,scale=shrinkage),Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
+			#from fundamentals import resample
+			#ref_vol = resample(ref_vol, shrinkage)
 	else:
 		log = None
 		ref_vol = model_blank(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
@@ -762,7 +764,7 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 		delta = "%f  "%min(round(degrees(atan(0.5/Tracker["lowpass"]/Tracker["radius"])), 2), 3.0)
 		Tracker["delta"] = ""
 		for i in xrange(len(get_input_from_string(Tracker["xr"]))):  Tracker["delta"] += delta
-	Tracker["pixercutoff"] = get_pixercutoff(Tracker["radius"], float(delta), 0.5)
+	Tracker["pixercutoff"] = get_pixercutoff(Tracker["radius"], float(get_input_from_string(Tracker["delta"])[0]), 0.5)
 
 
 	if(Tracker["delpreviousmax"]):
