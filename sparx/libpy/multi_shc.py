@@ -2079,7 +2079,7 @@ def Xali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, 
 """
 
 
-def proj_ali_incore_multi(data, refrings, numr, xrng = 0.0, yrng = 0.0, step=1.0, an = 1.0, nsoft = -1, finfo=None, sym=sym):
+def proj_ali_incore_multi(data, refrings, numr, xrng = 0.0, yrng = 0.0, step=1.0, an = 1.0, nsoft = -1, finfo=None, sym="c1"):
 	from utilities    import compose_transform2
 	from math         import cos, pi, radians, degrees
 	from EMAN2 import Vec2f, Transform
