@@ -4809,7 +4809,7 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 														xrng[N_step], yrng[N_step], step[N_step], sym=sym)
 					else:
 						if  zoom: peak, pixer[im] = proj_ali_incore_local_zoom(data[im], refrings, numr, \
-									xrng[N_step], yrng[N_step], step[N_step], an[N_step], finfo = finfo, sym=sym)
+									xrng, yrng, step, an, finfo = finfo, sym=sym)
 						else:  peak, pixer[im] = proj_ali_incore_local(data[im], refrings, numr, \
 									xrng[N_step], yrng[N_step], step[N_step], an[N_step], finfo = finfo, sym=sym)
 					if(pixer[im] == 0.0):  par_r[0] += 1

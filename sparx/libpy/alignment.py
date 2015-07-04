@@ -1625,12 +1625,12 @@ def proj_ali_incore_local_zoom(data, refrings, numr, xrng, yrng, step, an, finfo
 	cny  = ny//2 + 1
 	ou = numr[-3]
 
-	ant = cos(radians(an))
 	#phi, theta, psi, sxo, syo = get_params_proj(data)
 	t1 = data.get_attr("xform.projection")
 	t2 = t1
 	s2x = None
 	for zi in xrange(len(xrng)):
+		ant = cos(radians(an[zi]))
 		dp = t2.get_params("spider")
 		if finfo and zi == 0:
 			#finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(phi, theta, psi, sxo, syo))
@@ -1642,7 +1642,7 @@ def proj_ali_incore_local_zoom(data, refrings, numr, xrng, yrng, step, an, finfo
 		txrng = search_range(nx, ou, sxi, xrng[zi])
 		tyrng = search_range(ny, ou, syi, yrng[zi])
 
-		[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_3d_local(data, refrings, txrng, tyrng, step, ant, mode, numr, cnx-sxi, cny-syi, sym)
+		[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_3d_local(data, refrings, txrng, tyrng, step[zi], ant, mode, numr, cnx-sxi, cny-syi, sym)
 
 		iref=int(iref)
 		#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
@@ -1651,7 +1651,6 @@ def proj_ali_incore_local_zoom(data, refrings, numr, xrng, yrng, step, an, finfo
 		if iref > -1:
 			# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 			# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-			angb, sxb, syb, ct = compose_transform2(0.0, sxs, sys, 1, -ang, 0.0, 0.0, 1)
 			isym = int(sym[1:])
 			phi   = refrings[iref].get_attr("phi")
 			if(isym > 1 and an > 0.0):
@@ -1664,8 +1663,8 @@ def proj_ali_incore_local_zoom(data, refrings, numr, xrng, yrng, step, an, finfo
 			else:			
 				theta = refrings[iref].get_attr("theta")
 				psi   = (360.0+refrings[iref].get_attr("psi")-ang)%360.0
-			s2x   = sxb + sxs
-			s2y   = syb + sys
+			s2x   = sxi + sxs
+			s2y   = syi + sys
 
 			#set_params_proj(data, [phi, theta, psi, s2x, s2y])
 			t2 = Transform({"type":"spider","phi":phi,"theta":theta,"psi":psi})

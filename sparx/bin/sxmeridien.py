@@ -151,6 +151,7 @@ def AI( icurrentres, Tracker, HISTORY ):
 					dd = degrees(atan(0.5/rl/rd))
 					if( Tracker["anger"]  < dd ):  move_up_phase = True
 					else:
+						Tracker["an"] = "%f"%Tracker["anger"]
 						Tracker["xr"] = "%d"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
 				else:
 					Tracker["anger"]   = -1.0
@@ -168,14 +169,14 @@ def AI( icurrentres, Tracker, HISTORY ):
 						if(Tracker["state"] == "EXHAUSTIVE"):
 								xr = int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1
 								Tracker["zoom"] = True
-								Tracker["xr"] = "%d   %d"%(2*xr, xr)
-								Tracker["ts"] =  "2 1"
+								Tracker["xr"] = "%d  %d"%(2*xr, xr)
+								Tracker["ts"] = "%d  %d"%(min(2*xr,2),1)
 						elif(Tracker["state"] == "RESTRICTED"):
 								xr = int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1
 								Tracker["zoom"] = True
-								Tracker["xr"] = "%d   %d"%(2*xr, xr)
-								Tracker["ts"] =  "2 1"
-								Tracker["an"] =  "%6.2f  %6.2f"(2*Tracker["anger"],2*Tracker["anger"])					
+								Tracker["xr"] = "%d  %d"%(2*xr, xr)
+								Tracker["ts"] = "%d  %d"%(min(2*xr,2),1)
+								Tracker["an"] =  "%6.2f  %6.2f"%(2*Tracker["anger"],2*Tracker["anger"])					
 						keepgoing = 1
 				elif( Tracker["state"] == "FINAL2"):  keepgoing = 0
 				else:
@@ -368,7 +369,7 @@ def threshold_params_changes(currentdir, previousdir, th = 0.95, sym = "c1"):
 	la = min(int(th*n + 0.5), n-1)
 	#  Returns error thresholds under which one has th fraction of images
 	#  The shifter is given in the full scale displacement
-	return anger[la], shifter[la]
+	return round(anger[la],2), round(shifter[la],2)
 	"""
 
 	h1,h2 = hist_list(anger,32)
