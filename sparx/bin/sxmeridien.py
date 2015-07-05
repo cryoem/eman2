@@ -1231,10 +1231,6 @@ def main():
 				# METAMOVE
 				Tracker = metamove(projdata[procid], oldshifts[procid], Tracker, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
 
-		# Update HISTORY
-		HISTORY.append(Tracker.copy())
-
-
 		#  REFINEMENT  ASSESSMENT  <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 		partstack = [None]*2
@@ -1355,6 +1351,8 @@ def main():
 		Tracker["ireachedres"] = icurrentres
 		if myid == main_node:  print("   >>> AI  <<<  ",Tracker["mainiteration"] ,Tracker["ireachedres"],Tracker["icurrentres"])
 
+		# Update HISTORY
+		HISTORY.append(Tracker.copy())
 		keepgoing, reset_data, Tracker = AI( Tracker, HISTORY )
 
 		if( keepgoing == 1 ):
