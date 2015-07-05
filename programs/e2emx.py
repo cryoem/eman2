@@ -31,8 +31,8 @@ print "Running e2emx.py"
 # Required Program Options and Parameters (GUI and Command Line)
 parser = EMArgumentParser(usage, version=EMANVERSION)
 parser.add_argument("--export_whole_project", action="store_true", help="This option will create an emx directory, where it will export the eman2 project into EMX format", default=False)
-parser.add_argument("--import_box_coordinates", type=str, help="Import box coordinates and corresponding micrographs")
-parser.add_argument("--import_ctf", type=str, help="Import ctf information and corresponding micrographs")
+#parser.add_argument("--import_box_coordinates", type=str, help="Import box coordinates and corresponding micrographs")
+parser.add_argument("--import_emx", type=str, help="Import emx information and corresponding micrographs")
 parser.add_argument("--import_2d_alignment", type=str, help="Import particles and corresponding transformation information")
 parser.add_argument("--refinedefocus",  action="store_true", help="Will use EMAN2 CTF fitting to refine the defocus by SNR optimization (+-0.1 micron from the current values, no astigmatism adjustment)")
 parser.add_argument("--refitdefocus",  action="store_true", help="Will use EMAN2 CTF fitting to refit the defocus values (+-0.1 micron, astigmatism unchanged)")
@@ -127,15 +127,19 @@ for option1 in optionList:
 						index = index + 1
 		f.write("</EMX>")
 		f.close()
-	elif option1 == "import_ctf":
+		
+	elif option1 == "import_emx":
 		found_per_particle = False
-		et = xml.etree.ElementTree.parse(options.import_ctf)
+		et = xml.etree.ElementTree.parse(options.import_emx)
 		emx = et.getroot()
 		micro_dict = {}
 		part_dict = {}
 		part_list = []
+		transform_dict = {}
 		first_index = 0
 		last_part_filename=""
+		current_micrograph = ""
+		boxsize=centercoord=twod_xform=False
 		for item in emx:
 			if item.tag == "micrograph":
 				micrograph_filename = item.attrib['fileName']
@@ -145,7 +149,7 @@ for option1 in optionList:
 						micrograph_index = item.attrib['index']
 						temp_dict['index']= micrograph_index
 					elif micrograph_attrib == "fileName":
-						pass
+						micrograph_filename = item.attrib['fileName']
 					else:
 						print "Unknown tag: " + micrograph_attrib
 				for item2 in item:
@@ -191,7 +195,6 @@ for option1 in optionList:
 				jdb.setval("ctf_frame",jdb['ctf_frame'],deferupdate=True)
 				micro_dict[micrograph_filename]['stack']=micrograph_filename
 			elif item.tag == "particle":
-				print "particle"
 				temp_dict={}
 				foundU=foundV=foundAng=foundapix = False
 				for particle_attrib in item.attrib:
@@ -204,7 +207,6 @@ for option1 in optionList:
 					else:
 						print "Unknown tag: " + particle_attrib
 				for item2 in item:
-					#temp_dict={}
 					if item2.tag == "defocusU":
 						temp_dict['defocusU'] = float(item2.text) / 1000 # in nm
 						foundU = True
@@ -237,6 +239,33 @@ for option1 in optionList:
 								apix_z = float(item3.text)
 							else:
 								print "Unknown Tag: " + item3.tag
+					elif item2.tag == "boxSize":
+						for item3 in item2:
+							if item3.tag == "X":
+								nx = item3.text #in pixels
+							elif item3.tag == "Y":
+								ny = item3.text #in pixels
+							elif item3.tag == "Z":
+								nz = item3.text #in pixels
+					elif item2.tag == "centerCoord":
+						for item3 in item2:
+							if item3.tag == "X":
+								center_x = item3.text #in pixels
+							elif item3.tag == "Y":
+								center_y = item3.text #in pixels
+							elif item3.tag == "Z":
+								center_z = item3.text #in pixels
+						centercoord = True
+					elif item2.tag == "fom":
+						particle_fom = item2.text # figure-of-merit (0->1)
+					
+					elif item2.tag == "transformationMatrix":
+						t = Transform([float(item2.find('t11').text),float(item2.find('t12').text),float(item2.find('t13').text),float(item2.find('t14').text),float(item2.find('t21').text),float(item2.find('t22').text),float(item2.find('t23').text),float(item2.find('t24').text),float(item2.find('t31').text),float(item2.find('t32').text),float(item2.find('t33').text),float(item2.find('t34').text)])
+						if item.find('micrograph').get('fileName') in transform_dict.keys():
+							transform_dict[item.find('micrograph').get('fileName')].append(t)
+						else:
+							transform_dict[item.find('micrograph').get('fileName')] = [t]
+						twod_xform = True
 				part_list.append(temp_dict)
 				if particle_micrograph_filename != last_part_filename:
 					micro_dict[particle_micrograph_filename]['first_index'] = int(particle) - 1
@@ -256,6 +285,15 @@ for option1 in optionList:
 				jdb['ctf']=[512,ctf,(256,256),tuple(),5,1]
 				jdb.setval("ctf",jdb['ctf'],deferupdate=True)
 				micro_dict[particle_micrograph_filename]['stack']=particle_filename
+				if centercoord:
+					db = js_open_dict(info_name(particle_micrograph_filename))
+					tup = (float(center_x),float(center_y),"manual")
+					if 'boxes' not in db:
+						db['boxes'] = [tup]
+					else:
+						db['boxes'].append(tup)
+						db.setval("boxes",db['boxes'],deferupdate=True)
+		
 		if options.refinedefocus : 
 			dfopt="--curdefocushint --refinebysnr"
 			if options.verbose>0 : print "CTF Refinement"
@@ -271,116 +309,115 @@ for option1 in optionList:
 			print "e2proc2d.py {} particles/{}_ptcls.hdf --threed2twod --first {} --last {}".format(micro_dict[item]['stack'],base_name(item),micro_dict[item]['first_index'],micro_dict[item]['last_index']) 
 			launch_childprocess("e2proc2d.py {} particles/{}_ptcls.hdf --threed2twod --first {} --last {}".format(micro_dict[item]['stack'],base_name(item),micro_dict[item]['first_index'],micro_dict[item]['last_index']))
 			launch_childprocess("e2ctf.py particles/{}_ptcls.hdf --voltage {} --cs {} --ac {} --apix {} --autofit --zerook --storeparm --astigmatism {} -v {}".format(base_name(item),micro_dict[item]['voltage'],micro_dict[item]['cs'],micro_dict[item]['ampcont'],micro_dict[item]['apix_x'],dfopt,options.verbose-1))
+		if twod_xform:
+			for micrograph_xform in transform_dict.keys():
+				temp_images = EMData.read_images("particles/" + base_name(micrograph_xform) + "_ptcls.hdf")
+				for i in range(len(transform_dict[micrograph_xform])):
+					temp_images[i]['xform.projection'] = transform_dict[micrograph_xform][i]
+					temp_images[i].write_image("particles/" + base_name(micrograph_xform) + "_ptcls.hdf",i)
 		if found_per_particle:
 			print "Per-particle defocus values or angles found. Please note that we do not support import of this information at the moment. Using the per-micrograph information provided"
-			for part in part_list:
-				pdb = EMData("particles/"+base_name(part['particle_micrograph_filename'])+"_ptcls.hdf",int(part['index'])-1,True)
-				pdbctf = pdb['ctf'].to_dict()
-				pdbctf['dfang'] = part['defocusUAngle']
-				pdbctf['defocus'] = (float(part['defocusU'])+float(part['defocusV']))/2
-				pdbctf['dfdiff'] = abs(float(part['defocusU'])-float(part['defocusV']))
-				ctf = EMAN2Ctf()
-				ctf.from_dict(pdbctf)
-				pdb['ctf'] = ctf
-				pdb.write_image("particles/"+base_name(part['particle_micrograph_filename'])+"_ptcls.hdf",int(part['index'])-1)
-	elif option1 == "import_box_coordinates":
-		current_micrograph = ""
-		et = xml.etree.ElementTree.parse(options.import_box_coordinates)
-		emx = et.getroot()
-		for item in emx:
-			if item.tag == "micrograph":
-				for micrograph_attrib in item.attrib:
-					if micrograph_attrib == "fileName":
-						micrograph_filename = item.attrib['fileName']
-					elif micrograph_attrib == "index":
-						micrograph_index = item.attrib['index']
-					else:
-						print "Unknown tag: " + micrograph_attrib
-				for item2 in item:
-					if item2.tag == "acceleratingVoltage":
-						voltage = item2.text #in kilovolts
-					elif item2.tag == "amplitudeContrast":
-						ampcont = item2.text #0->1
-					elif item2.tag == "cs":
-						cs = item2.text #in mm
-					elif item2.tag == "defocusU":
-						defocus1 = item2.text # in nm
-					elif item2.tag == "defocusV":
-						defocus2 = item2.text # in nm
-					elif item2.tag == "defocusUAngle":
-						defocus_angle = item2.text # in degrees (0->180)
-					elif item2.tag == "fom":
-						fom = item2.text # figure-of-merit (0->1)
-					elif item2.tag == "pixelSpacing":
-						for item3 in item2:
-							if item3.tag == "X":
-								apix_x = item3.text
-							elif item3.tag == "Y":
-								apix_y = item3.text
-							elif item3.tag == "Z":
-								apix_z = item3.text
-					else:
-						print "Unknown tag: " + item2.tag
-			elif item.tag == "particle":
-				for particle_attrib in item.attrib:
-					if particle_attrib == "fileName":
-						particle_filename = item.attrib['fileName']
-					elif particle_attrib == "index":
-						particle = item.attrib['index']
-					else:
-						print "Unknown tag: " + particle_attrib
-				for item2 in item:
-					if item2.tag == "boxSize":
-						for item3 in item2:
-							if item3.tag == "X":
-								nx = item3.text #in pixels
-							elif item3.tag == "Y":
-								ny = item3.text #in pixels
-							elif item3.tag == "Z":
-								nz = item3.text #in pixels
-					elif item2.tag == "centerCoord":
-						for item3 in item2:
-							if item3.tag == "X":
-								center_x = item3.text #in pixels
-							elif item3.tag == "Y":
-								center_y = item3.text #in pixels
-							elif item3.tag == "Z":
-								center_z = item3.text #in pixels
-					elif item2.tag == "defocusU":
-						defocus_particle_1 = item2.text # in nm
-					elif item2.tag == "defocusV":
-						defocus_particle_2 = item2.text # in nm
-					elif item2.tag == "defocusUAngle":
-						defocus_particle_angle = item2.text # in degrees (0->180)
-					elif item2.tag == "fom":
-						particle_fom = item2.text # figure-of-merit (0->1)
-					elif item2.tag == "micrograph":
-						for micrograph_attrib in item2.attrib:
-							if micrograph_attrib == "fileName":
-								particle_micrograph_filename = item2.attrib['fileName']
-							elif micrograph_attrib == "index":
-								particle_micrograph_index = item2.attrib['index']
-							else:
-								print "Unknown tag: " + micrograph_attrib
-					elif item2.tag == "pixelSpacing":
-						for item3 in item2:
-							if item3.tag == "X":
-								apix_x = item3.text
-							elif item3.tag == "Y":
-								apix_y = item3.text
-							elif item3.tag == "Z":
-								apix_z = item3.text
-					#elif item2.tag == "transformationMatrix":
-						#do something...
-					else:
-						print "Unknown Tag: " + item2.tag
-				db = js_open_dict(info_name(particle_micrograph_filename))
-				tup = (float(center_x),float(center_y),"manual")
-				if 'boxes' not in db:
-					db['boxes'] = [tup]
-				else:
-					db['boxes'].append(tup)
-					db.setval("boxes",db['boxes'],deferupdate=True)
+			
+	
+	
+	#elif option1 == "import_box_coordinates":
+		#current_micrograph = ""
+		#et = xml.etree.ElementTree.parse(options.import_box_coordinates)
+		#emx = et.getroot()
+		#for item in emx:
+			#if item.tag == "micrograph":
+				#for micrograph_attrib in item.attrib:
+					#if micrograph_attrib == "fileName":
+						#micrograph_filename = item.attrib['fileName']
+					#elif micrograph_attrib == "index":
+						#micrograph_index = item.attrib['index']
+					#else:
+						#print "Unknown tag: " + micrograph_attrib
+				#for item2 in item:
+					#if item2.tag == "acceleratingVoltage":
+						#voltage = item2.text #in kilovolts
+					#elif item2.tag == "amplitudeContrast":
+						#ampcont = item2.text #0->1
+					#elif item2.tag == "cs":
+						#cs = item2.text #in mm
+					#elif item2.tag == "defocusU":
+						#defocus1 = item2.text # in nm
+					#elif item2.tag == "defocusV":
+						#defocus2 = item2.text # in nm
+					#elif item2.tag == "defocusUAngle":
+						#defocus_angle = item2.text # in degrees (0->180)
+					#elif item2.tag == "fom":
+						#fom = item2.text # figure-of-merit (0->1)
+					#elif item2.tag == "pixelSpacing":
+						#for item3 in item2:
+							#if item3.tag == "X":
+								#apix_x = item3.text
+							#elif item3.tag == "Y":
+								#apix_y = item3.text
+							#elif item3.tag == "Z":
+								#apix_z = item3.text
+					#else:
+						#print "Unknown tag: " + item2.tag
+			#elif item.tag == "particle":
+				#for particle_attrib in item.attrib:
+					#if particle_attrib == "fileName":
+						#particle_filename = item.attrib['fileName']
+					#elif particle_attrib == "index":
+						#particle = item.attrib['index']
+					#else:
+						#print "Unknown tag: " + particle_attrib
+				#for item2 in item:
+					#if item2.tag == "boxSize":
+						#for item3 in item2:
+							#if item3.tag == "X":
+								#nx = item3.text #in pixels
+							#elif item3.tag == "Y":
+								#ny = item3.text #in pixels
+							#elif item3.tag == "Z":
+								#nz = item3.text #in pixels
+					#elif item2.tag == "centerCoord":
+						#for item3 in item2:
+							#if item3.tag == "X":
+								#center_x = item3.text #in pixels
+							#elif item3.tag == "Y":
+								#center_y = item3.text #in pixels
+							#elif item3.tag == "Z":
+								#center_z = item3.text #in pixels
+					#elif item2.tag == "defocusU":
+						#defocus_particle_1 = item2.text # in nm
+					#elif item2.tag == "defocusV":
+						#defocus_particle_2 = item2.text # in nm
+					#elif item2.tag == "defocusUAngle":
+						#defocus_particle_angle = item2.text # in degrees (0->180)
+					#elif item2.tag == "fom":
+						#particle_fom = item2.text # figure-of-merit (0->1)
+					#elif item2.tag == "micrograph":
+						#for micrograph_attrib in item2.attrib:
+							#if micrograph_attrib == "fileName":
+								#particle_micrograph_filename = item2.attrib['fileName']
+							#elif micrograph_attrib == "index":
+								#particle_micrograph_index = item2.attrib['index']
+							#else:
+								#print "Unknown tag: " + micrograph_attrib
+					#elif item2.tag == "pixelSpacing":
+						#for item3 in item2:
+							#if item3.tag == "X":
+								#apix_x = item3.text
+							#elif item3.tag == "Y":
+								#apix_y = item3.text
+							#elif item3.tag == "Z":
+								#apix_z = item3.text
+					##elif item2.tag == "transformationMatrix":
+						##do something...
+					#else:
+						#print "Unknown Tag: " + item2.tag
+				#db = js_open_dict(info_name(particle_micrograph_filename))
+				#tup = (float(center_x),float(center_y),"manual")
+				#if 'boxes' not in db:
+					#db['boxes'] = [tup]
+				#else:
+					#db['boxes'].append(tup)
+					#db.setval("boxes",db['boxes'],deferupdate=True)
 
 
 	elif option1 == "import_2d_alignment":
@@ -409,6 +446,21 @@ for option1 in optionList:
 
 
 
+
+		#--Legacy for import _ctf
+			#for part in part_list:
+				#pdb = EMData("particles/"+base_name(part['particle_micrograph_filename'])+"_ptcls.hdf",int(part['index'])-1,True)
+				#print "particles/"+base_name(part['particle_micrograph_filename'])+"_ptcls.hdf"
+				#pdbctf = pdb['ctf'].to_dict()
+				#print pdbctf
+				#pdbctf['dfang'] = part['defocusUAngle']
+				#pdbctf['defocus'] = (float(part['defocusU'])+float(part['defocusV']))/2
+				#pdbctf['dfdiff'] = abs(float(part['defocusU'])-float(part['defocusV']))
+				#ctf = EMAN2Ctf()
+				#ctf.from_dict(pdbctf)
+				#pdb['ctf'] = ctf
+				#pdb.write_image("particles/"+base_name(part['particle_micrograph_filename'])+"_ptcls.hdf",int(part['index'])-1)
+	
 
 
 
