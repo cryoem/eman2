@@ -507,9 +507,9 @@ def main():
 					print "Error: please specify D symmetry as alignctod"
 					sys.exit(1)
 				nsym=int(options.alignctod[0][1:])
-				arange=360.0/nsym		# probably more than necessary, but we'll do it anyway...
+				angrange=360.0/nsym		# probably more than necessary, but we'll do it anyway...
 				astep=180.0/pi*atan(2.0/data["nx"])
-				nstep=int(arange/astep)
+				nstep=int(angrange/astep)
 				
 				best=(1e23,0)
 				for azi in xrange(nstep):

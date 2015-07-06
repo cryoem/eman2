@@ -28,6 +28,9 @@ def main():
 	parser.add_argument("--hidden", type=str,help="Size of hidden layers: n1,n2,n3...", default="1000,500")
 	parser.add_argument("--sdaout", action="store_true", default=False ,help="Output the result of the autoencoder")
 	parser.add_argument("--fromlast", action="store_true", default=False ,help="Start from previous pretrained network")
+	parser.add_argument("--append", type=int,help="Append a layer", default=-1)
+	parser.add_argument("--layer", type=str,help="train only these layers", default=None)
+
 	parser.add_argument("--writeall", type=str, default=None ,help="write all output")
 	parser.add_argument("--weights", type=str,help="output file name for the weights", default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -79,6 +82,9 @@ def main():
 			n_ins=ltrain,
 			hidden_layers_sizes=hidden
 		)
+	if options.append>0:
+		sda.appendlayer(options.append)	
+		
 	pretraining_fns = sda.pretraining_functions(train_set_x=train_set_x,batch_size=batch_size)
 	
 	#test_imgs = sda.pretraining_get_result(train_set_x=train_set_x,batch_size=1)
@@ -86,7 +92,13 @@ def main():
 	
 	print '... pre-training the model'
 	### Pre-train layer-wise
-	for i in xrange(sda.n_layers):
+	
+	if options.layer==None:
+		totrain=range(sda.n_layers)
+	else:
+		totrain=[int(i) for i in options.layer.split(',')]
+	
+	for i in totrain:
 		learning_rate=options.learnrate
 
 		n_train_batches = train_set_x.get_value(borrow=True).shape[0] / batch_size
@@ -104,10 +116,10 @@ def main():
 			#print test_imgs[sda.n_layers-1](index=0)
 			print 'Pre-training layer %i, epoch %d, cost ' % (i, epoch),
 			print np.mean(c),", learning rate",learning_rate
-
-	f = file(options.pretrainnet, 'wb')
-	cPickle.dump(sda, f, protocol=cPickle.HIGHEST_PROTOCOL)
-	f.close()
+	if ( training_epochs>0):
+		f = file(options.pretrainnet, 'wb')
+		cPickle.dump(sda, f, protocol=cPickle.HIGHEST_PROTOCOL)
+		f.close()
 			
 	
 	### testing..
@@ -241,7 +253,6 @@ class dA(object):
 	def __init__(
 		self,
 		numpy_rng,
-		theano_rng=None,
 		input=None,
 		n_visible=784,
 		n_hidden=500,
@@ -503,7 +514,6 @@ class SdA(object):
 	def __init__(
 		self,
 		numpy_rng,
-		theano_rng=None,
 		n_ins=784,
 		hidden_layers_sizes=[500, 500],
 		n_outs=10,
@@ -541,8 +551,6 @@ class SdA(object):
 
 		assert self.n_layers > 0
 
-		if not theano_rng:
-			theano_rng = RandomStreams(numpy_rng.randint(2 ** 30))
 		# allocate symbolic variables for the data
 		self.x = T.matrix('x')  # the data is presented as rasterized images
 		self.y = T.ivector('y')  # the labels are presented as 1D vector of
@@ -583,7 +591,6 @@ class SdA(object):
 			# Construct a denoising autoencoder that shared weights with this
 			# layer
 			dA_layer = dA(numpy_rng=numpy_rng,
-						  theano_rng=theano_rng,
 						  input=layer_input,
 						  n_visible=input_size,
 						  n_hidden=hidden_layers_sizes[i])
@@ -686,6 +693,30 @@ class SdA(object):
 
 		return pretrain_fns
 	
+	def appendlayer(self, layersize):
+		self.n_layers+=1
+		numpy_rng = np.random.RandomState(123)
+		input_size = self.dA_layers[-1].n_hidden
+		
+
+		layer_input = self.sigmoid_layers[-1].output
+
+		dA_layer = dA(numpy_rng=numpy_rng,
+						input=layer_input,
+						n_visible=input_size,
+						n_hidden=layersize)
+		
+		sigmoid_layer = HiddenLayer(rng=numpy_rng,
+					input=layer_input,
+					W=dA_layer.W,
+					b=dA_layer.b,
+					n_in=input_size,
+					n_out=layersize,
+					#activation=T.nnet.sigmoid)
+					activation=T.tanh)
+		self.sigmoid_layers.append(sigmoid_layer)
+		self.params.extend(sigmoid_layer.params)
+		self.dA_layers.append(dA_layer)	
 	
 		
 
