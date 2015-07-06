@@ -242,7 +242,7 @@ def AI( Tracker, HISTORY ):
 				Tracker["nsoft"]       = 0
 				Tracker["local"]       = False
 				Tracker["zoom"]        = False
-				Tracker["saturatecrit"]= 0.97
+				Tracker["saturatecrit"]= 0.95
 				if Tracker["applyctf"] :  reset_data  = True
 				Tracker["upscale"]     = 0.5
 				Tracker["applyctf"]    = True
@@ -262,7 +262,7 @@ def AI( Tracker, HISTORY ):
 				Tracker["nsoft"]       = 0
 				Tracker["local"]       = True
 				Tracker["zoom"]        = False
-				Tracker["saturatecrit"]= 0.99
+				Tracker["saturatecrit"]= 0.95
 				if Tracker["applyctf"] :  reset_data  = True
 				Tracker["upscale"]     = 0.5
 				Tracker["applyctf"]    = False
@@ -280,13 +280,13 @@ def AI( Tracker, HISTORY ):
 				Tracker["nsoft"]       = 0
 				Tracker["local"]       = True
 				Tracker["zoom"]        = False
-				Tracker["saturatecrit"]= 0.95
+				Tracker["saturatecrit"]= 0.99
 				if Tracker["applyctf"] :  reset_data  = True
 				Tracker["applyctf"]    = False
 				Tracker["upscale"]     = 0.5
 				Tracker["an"]          = "-1"
 				Tracker["state"]       = "FINAL1"
-				Tracker["maxit"]       = 10
+				Tracker["maxit"]       = 1
 				Tracker["xr"] = "2"
 				Tracker["ts"] = "2"
 				keepgoing = 1
@@ -302,7 +302,7 @@ def AI( Tracker, HISTORY ):
 				Tracker["applyctf"]    = False
 				Tracker["an"]          = "-1"
 				Tracker["state"]       = "FINAL2"
-				Tracker["maxit"]       = 10
+				Tracker["maxit"]       = 1
 				Tracker["xr"] = "2"
 				Tracker["ts"] = "2"
 				keepgoing = 1
@@ -842,7 +842,7 @@ def main():
 	# ------------------------------------------------------------------------------------
 	# PARSE COMMAND OPTIONS
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack  [output_directory]  initial_volume  --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=an  --center=center_type --fl --aa --ref_a=S --sym=c1"
+	usage = progname + " stack  [output_directory]  initial_volume  --radius=particle_radius --ref_a=S --sym=c1 --startangles --inires  --mask3D --CTF"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	#parser.add_option("--ir",      		type= "int",   default= 1,			help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--radius",      		type= "int",   default= -1,			help="Outer radius [in pixels] for rotational correlation < int(nx/2)-1 (Please set to the radius of the particle)")
@@ -851,8 +851,8 @@ def main():
 	#parser.add_option("--yr",      		type="string", default= "-1",		help="range for translation search in y direction, search is +/yr (default = same as xr)")
 	#parser.add_option("--ts",      		type="string", default= "1",		help="step size of the translation search in both directions, search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional")
 	#parser.add_option("--delta",   		type="string", default= "-1",		help="angular step of reference projections during initialization step (default automatically selected based on radius of the structure.)")
-	parser.add_option("--an",      		type="string", default= "-1",		help="angular neighborhood for local searches (phi and theta) (Default exhaustive searches)")
-	parser.add_option("--center",  		type="int",  default= 0,			help="-1: average shift method; 0: no centering; 1: center of gravity (default=0)")
+	#parser.add_option("--an",      		type="string", default= "-1",		help="angular neighborhood for local searches (phi and theta) (Default exhaustive searches)")
+	#parser.add_option("--center",  		type="int",  default= 0,			help="-1: average shift method; 0: no centering; 1: center of gravity (default=0)")
 	#parser.add_option("--maxit",   		type="int",  	default= 400,		help="maximum number of iterations performed for the GA part (set to 400) ")
 	parser.add_option("--outlier_percentile",type="float",    default= 95,	help="percentile above which outliers are removed every iteration")
 	parser.add_option("--iteration_start",type="int",    default= 0,		help="starting iteration for rviper, 0 means go to the most recent one (default).")
@@ -861,7 +861,7 @@ def main():
 	parser.add_option("--ref_a",   		type="string", default= "S",		help="method for generating the quasi-uniformly distributed projection directions (default S)")
 	parser.add_option("--sym",     		type="string", default= "c1",		help="Point-group symmetry of the refined structure")
 	#parser.add_option("--npad",    		type="int",    default= 2,			help="padding size for 3D reconstruction (default=2)")
-	parser.add_option("--nsoft",    	type="int",    default= 0,			help="Use SHC in first phase of refinement iteration (default=0, to turn it on set to 1)")
+	#parser.add_option("--nsoft",    	type="int",    default= 0,			help="Use SHC in first phase of refinement iteration (default=0, to turn it on set to 1)")
 	parser.add_option("--startangles",  action="store_true", default=False,	help="Use orientation parameters in the input file header to jumpstart the procedure")
 
 	#options introduced for the do_volume function
@@ -906,12 +906,12 @@ def main():
 	Constants["stack"]        = args[0]
 	Constants["rs"]           = 1
 	Constants["radius"]       = options.radius
-	Constants["an"]           = options.an
+	Constants["an"]           = "-1"
 	Constants["maxit"]        = 50
 	sym = options.sym
 	Constants["sym"]          = sym[0].lower() + sym[1:]
 	Constants["npad"]         = 2
-	Constants["center"]       = options.center
+	Constants["center"]       = 0
 	Constants["pwreference"]  = options.pwreference
 	Constants["CTF"]          = options.CTF
 	Constants["ref_a"]        = options.ref_a
@@ -942,7 +942,7 @@ def main():
 	Tracker["an"]             = "-1"
 	Tracker["delta"]          = "2.0"
 	Tracker["zoom"]           = True
-	Tracker["nsoft"]          = options.nsoft
+	Tracker["nsoft"]          = 0
 	Tracker["local"]          = False
 	Tracker["PWadjustment"]   = ""
 	Tracker["upscale"]        = 0.5

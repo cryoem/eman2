@@ -43,7 +43,7 @@ def main():
         for arg in sys.argv:
         	arglist.append( arg )
 	progname = os.path.basename(arglist[0])
-	usage = progname + " stack ref_vol outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood --deltapsi=Delta_psi --startpsi=Start_psi --center=center_type --maxit=max_iter --stoprnct=percentage_to_stop --CTF --snr=SNR  --ref_a=S --sym=c1 --function=user_function --Fourvar=Fourier_variance --debug --MPI"
+	usage = progname + " stack ref_vol outdir <maskfile> --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood --deltapsi=Delta_psi --startpsi=Start_psi --maxit=max_iter --stoprnct=percentage_to_stop --CTF --snr=SNR  --ref_a=S --sym=c1 --function=user_function --Fourvar=Fourier_variance --debug --MPI"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",       type= "int",         default= 1,                  help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--ou",       type= "int",         default= -1,                 help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
@@ -56,7 +56,7 @@ def main():
 	parser.add_option("--apsi",     type="string",       default= "-1",               help="angular neighborhood for local searches (psi)")
 	parser.add_option("--deltapsi", type="string",       default= "-1",               help="Delta psi for coarse search")
 	parser.add_option("--startpsi", type="string",       default= "-1",               help="Start psi for coarse search")
-	parser.add_option("--center",   type="float",        default= -1,                 help="-1: average shift method; 0: no centering; 1: center of gravity (default=-1)")
+	#parser.add_option("--center",   type="float",        default= -1,                 help="-1: average shift method; 0: no centering; 1: center of gravity (default=-1)")
 	parser.add_option("--maxit",    type="float",        default= 5,                  help="maximum number of iterations performed for each angular step (set to 5) ")
 	parser.add_option("--stoprnct", type="float",        default=0.0,                 help="Minimum percentage of particles that change orientation to stop the program")
 	parser.add_option("--CTF",      action="store_true", default=False,               help="Consider CTF correction during the alignment ")
@@ -93,13 +93,14 @@ def main():
 		if global_def.CACHE_DISABLE:
 			from utilities import disable_bdb_cache
 			disable_bdb_cache()
-
+		#  centering permanently disabled due to the way new polar searches are done
+		center = 0
 		if(options.ns):
 			global_def.BATCH = True
 			from development import  ali3d_saturn
 			ali3d_saturn(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
 				options.yr, options.ts, options.delta, options.an, options.apsi, options.deltapsi, options.startpsi,
-				options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
+				center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
 				options.function, options.Fourvar, options.npad, options.debug, options.MPI, options.stoprnct, gamma=options.gamma)
 			global_def.BATCH = False
 		elif(options.ns2):
@@ -107,7 +108,7 @@ def main():
 			from development import  ali3d_saturn2
 			ali3d_saturn2(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
 				options.yr, options.ts, options.delta, options.an, options.apsi, options.deltapsi, options.startpsi,
-				options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
+				center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
 				options.function, options.Fourvar, options.npad, options.debug, options.MPI, options.stoprnct)
 			global_def.BATCH = False
 		elif(options.shc):
@@ -119,13 +120,13 @@ def main():
 					from applications import ali3d_shcMPI
 					ali3d_shcMPI(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
 					options.yr, options.ts, options.delta, options.an, options.apsi, options.deltapsi, options.startpsi,
-					options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
+					center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
 					options.function, options.Fourvar, options.npad, options.debug, options.stoprnct, gamma=options.gamma)
 				elif(options.nsoft == 0):
 					from applications import ali3d_shc0MPI
 					ali3d_shc0MPI(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
 					options.yr, options.ts, options.delta, options.an, options.apsi, options.deltapsi, options.startpsi,
-					options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
+					center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
 					options.function, options.Fourvar, options.npad, options.debug, options.stoprnct, gamma=options.gamma)
 				else:
 					from multi_shc import ali3d_multishc_soft
@@ -138,7 +139,7 @@ def main():
 			from development import ali3d_shc2
 			ali3d_shc2(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
 				options.yr, options.ts, options.delta, options.an, options.apsi, options.deltapsi, options.startpsi,
-				options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
+				center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
 				options.function, options.Fourvar, options.npad, options.debug, options.MPI, options.stoprnct)
 			global_def.BATCH = False
 		elif options.searchpsi:
@@ -146,7 +147,7 @@ def main():
 			global_def.BATCH = True
 			ali3dpsi_MPI(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
 			options.yr, options.ts, options.delta, options.an, options.apsi, options.deltapsi, options.startpsi,
-			options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
+			center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
 			options.function, options.Fourvar, options.npad, options.debug, options.stoprnct)
 			global_def.BATCH = False
 		else:
@@ -155,7 +156,7 @@ def main():
 				global_def.BATCH = True
 				ali3d_rantest(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
 				options.yr, options.ts, options.delta, options.an, options.deltapsi, options.startpsi,
-				options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
+				center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
 				options.function, options.Fourvar, options.npad, options.debug, options.stoprnct)
 				global_def.BATCH = False
 			else:
@@ -163,7 +164,7 @@ def main():
 				global_def.BATCH = True
 				ali3d(args[0], args[1], args[2], mask, options.ir, options.ou, options.rs, options.xr,
 				options.yr, options.ts, options.delta, options.an, options.apsi, options.deltapsi, options.startpsi,
-				options.center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
+				center, options.maxit, options.CTF, options.snr, options.ref_a, options.sym,
 				options.function, options.Fourvar, options.npad, options.debug, options.MPI, options.stoprnct)
 				global_def.BATCH = False
 

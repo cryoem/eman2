@@ -49,7 +49,7 @@ def main():
 	parser.add_option("--ou",       type="float",        default=-1,      help="outer radius of a circular mask that should encompass the particle< int(nx/2)-1 (set to int(nx/2)-1)")
 	parser.add_option("--delta",    type="float",        default=2,       help="angular bracket (set to 2)")
 	parser.add_option("--ts",       type="float",        default=2,       help="shift bracket (set to 2)")
-	parser.add_option("--center",   type="float",        default=-1,      help="-1 - average centering method (default) 0 - if you do not want the volume to be centered, 1 - center the volume using cog")
+	parser.add_option("--center",   type="float",        default=0,       help="-1 - average centering method; 0 - no cetnering of template volume (default), 1 - center the volume using center of gravity")
 	parser.add_option("--maxit",    type="int",          default=10,      help="maximum number of iterations (set to 10)")
 	parser.add_option("--chunk",    type="float",        default=1.0,     help="chunk of data after which the 3-D structure will be updated 0<chunk<=1.0 (set to 1.0)")
 	parser.add_option("--CTF",      action="store_true", default=False,   help="Consider CTF correction during the alignments")
