@@ -222,6 +222,7 @@ def AI( Tracker, HISTORY ):
 				Tracker["nsoft"]       = 0
 				Tracker["local"]       = False
 				Tracker["zoom"]        = False
+				Tracker["saturatecrit"]= 0.95
 				if not Tracker["applyctf"] :  reset_data  = True
 				Tracker["applyctf"]    = True
 				#  Switch to exhaustive
@@ -241,6 +242,7 @@ def AI( Tracker, HISTORY ):
 				Tracker["nsoft"]       = 0
 				Tracker["local"]       = False
 				Tracker["zoom"]        = False
+				Tracker["saturatecrit"]= 0.97
 				if Tracker["applyctf"] :  reset_data  = True
 				Tracker["upscale"]     = 0.5
 				Tracker["applyctf"]    = True
@@ -260,12 +262,13 @@ def AI( Tracker, HISTORY ):
 				Tracker["nsoft"]       = 0
 				Tracker["local"]       = True
 				Tracker["zoom"]        = False
+				Tracker["saturatecrit"]= 0.99
 				if Tracker["applyctf"] :  reset_data  = True
 				Tracker["upscale"]     = 0.5
 				Tracker["applyctf"]    = False
 				Tracker["an"]          = "-1"
 				Tracker["state"]       = "LOCAL"
-				Tracker["maxit"]       = 1
+				Tracker["maxit"]       = 10
 				Tracker["xr"] = "2"
 				Tracker["ts"] = "2"
 				keepgoing = 1
@@ -277,6 +280,7 @@ def AI( Tracker, HISTORY ):
 				Tracker["nsoft"]       = 0
 				Tracker["local"]       = True
 				Tracker["zoom"]        = False
+				Tracker["saturatecrit"]= 0.95
 				if Tracker["applyctf"] :  reset_data  = True
 				Tracker["applyctf"]    = False
 				Tracker["upscale"]     = 0.5
@@ -760,13 +764,14 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 		ERROR( "ERROR!!   lastring too small  %f    %f   %d"%(Tracker["radius"], Tracker["constants"]["radius"]), "sxmeridien",1, myid)
 	Tracker["lowpass"] = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
 	if( Tracker["state"] == "LOCAL" or Tracker["state"][:-1] == "FINAL"):
+		Tracker["pixercutoff"] = 0.5
 		Tracker["delta"] = "2.0"
 		Tracker["ts"]    = "2.0"
 	else:
 		delta = "%f  "%min(round(degrees(atan(0.5/Tracker["lowpass"]/Tracker["radius"])), 2), 3.0)
 		Tracker["delta"] = ""
 		for i in xrange(len(get_input_from_string(Tracker["xr"]))):  Tracker["delta"] += delta
-	Tracker["pixercutoff"] = get_pixercutoff(Tracker["radius"], float(get_input_from_string(Tracker["delta"])[0]), 0.5)
+		Tracker["pixercutoff"] = get_pixercutoff(Tracker["radius"], float(get_input_from_string(Tracker["delta"])[0]), 0.5)
 
 
 	if(Tracker["delpreviousmax"]):
@@ -847,7 +852,7 @@ def main():
 	#parser.add_option("--ts",      		type="string", default= "1",		help="step size of the translation search in both directions, search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional")
 	#parser.add_option("--delta",   		type="string", default= "-1",		help="angular step of reference projections during initialization step (default automatically selected based on radius of the structure.)")
 	parser.add_option("--an",      		type="string", default= "-1",		help="angular neighborhood for local searches (phi and theta) (Default exhaustive searches)")
-	parser.add_option("--center",  		type="float",  default= -1,			help="-1: average shift method; 0: no centering; 1: center of gravity (default=-1)")
+	parser.add_option("--center",  		type="int",  default= 0,			help="-1: average shift method; 0: no centering; 1: center of gravity (default=0)")
 	#parser.add_option("--maxit",   		type="int",  	default= 400,		help="maximum number of iterations performed for the GA part (set to 400) ")
 	parser.add_option("--outlier_percentile",type="float",    default= 95,	help="percentile above which outliers are removed every iteration")
 	parser.add_option("--iteration_start",type="int",    default= 0,		help="starting iteration for rviper, 0 means go to the most recent one (default).")
