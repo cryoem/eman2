@@ -1676,18 +1676,11 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 			
 			ny = nx
-			txrng = [0.0]*2 
-			tyrng = [0.0]*2
-			"""
-			txrng[0] = max(0,min(cnx+sxi-ou, xrng+sxi))
-			txrng[1] = max(0, min(nx-cnx-sxi-ou, xrng-sxi))
-			tyrng[0] = max(0,min(cny+syi-ou, yrng+syi))
-			tyrng[1] = max(0, min(ny-cny-syi-ou, yrng-syi))
-			"""
-			txrng[0] = max(cnx+sxi-max(cnx+sxi-xrng,1),0)  # lower end is positive
-			txrng[1] = max(min(min(cnx+sxi+xrng,nx-1)-cnx-sxi,xrng),0)  # upper end
-			tyrng[0] = max(cny+syi-max(cny+syi-yrng,1),0)
-			tyrng[1] = max(min(min(cny+syi+yrng,ny-1)-cny-syi,yrng),0)
+			#  The search range procedure was adjusted for 3D searches, so since in 2D the order of operations is inverted, we have to invert ranges
+			txrng = search_range(nx, ou, sxi, xrng)
+			txrng = [txrng[1],txrng[0]]
+			tyrng = search_range(ny, ou, syi, yrng)
+			tyrng = [tyrng[1],tyrng[0]]
 
 			# align current image to all references - THIS IS REALLY TIME CONSUMING PAP 01/17/2015
 			temp = Util.multiref_polar_ali_2d_peaklist(alldata[im], refi, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi)
@@ -2339,26 +2332,25 @@ def get_unique_averages(data, indep_run, m_th=0.45):
 	return data_good
 
 
-"""
 #  Not used anywhere
-def prepref(data,maskfile, cnx, cny, numr, mode, maxrangex, maxrangey):
+def prepref(data, maskfile, cnx, cny, numr, mode, maxrangex, maxrangey, step):
 	from EMAN2 import Util
 	#step = 1
-	nima = len(data) 
-	dimage = [[[None for j in xrange(2*maxrangey+1)] for i in xrange(2*maxrangex+1)] for im in xrange(nima) ]
+	nima = len(data)
+	istep = int(1.0/step)
+	dimage = [[[None for j in xrange(2*maxrangey*istep+1)] for i in xrange(2*maxrangex*istep+1)] for im in xrange(nima) ]
 	for im in xrange(nima):
 		sts = Util.infomask(data[im], maskfile, False)
 		data[im] -= sts[0]
 		data[im] /= sts[1]
-		for j in xrange(-maxrangey, maxrangey+1):
-			#iy = j*step
-			for i in xrange(-maxrangex, maxrangex+1):
-				#ix = i*step
-				dimage[im][i+maxrangex][j+maxrangey] = Util.Polar2Dm(data[im], cnx+i, cny+j, numr, mode)
-				print ' prepref  ',j,i,j+maxrangey,i+maxrangex
+		for j in xrange(-maxrangey*istep, maxrangey*istep+1):
+			iy = j*step
+			for i in xrange(-maxrangex*istep, maxrangex*istep+1):
+				ix = i*step
+				dimage[im][i+maxrangex][j+maxrangey] = Util.Polar2Dm(data[im], cnx+ix, cny+iy, numr, mode)
+				#print ' prepref  ',j,i,j+maxrangey,i+maxrangex
 				Util.Frngs(dimage[im][i+maxrangex][j+maxrangey], numr)
-	return dimag
-"""
+	return dimage
 
 """
 #  This program removes from candidate averages numbers of accounted for images

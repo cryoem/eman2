@@ -63,6 +63,9 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 
 	sx_sum = 0.0
 	sy_sum = 0.0
+	sxn = 0.
+	syn = 0.
+	mn = 0
 	nope = 0
 	for im in xrange(len(data)):
 		if CTF:
@@ -72,19 +75,23 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 		else:
 			ima = data[im]
 
-		alpha, sx, sy, mirror, dummy = get_params2D(data[im], ali_params)
-		alpha, sx, sy, mirror        = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
-		alphai, sxi, syi, scalei     = inverse_transform2(alpha, sx, sy)
+		if( random_method == "PCP"):
+			sxi = data[im][0][0].get_attr('sxi')
+			syi = data[im][0][0].get_attr('syi')
+			nx = ny = data[im][0][0].get_attr('inx')
+		else:
+			nx = ima.get_xsize()
+			ny = ima.get_ysize()
+			alpha, sx, sy, mirror, dummy = get_params2D(data[im], ali_params)
+			alpha, sx, sy, mirror        = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
+			alphai, sxi, syi, scalei     = inverse_transform2(alpha, sx, sy)
 
-		nx = ima.get_xsize()
-		ny = ima.get_ysize()
-		txrng = [0.0]*2 
-		tyrng = [0.0]*2
-		# Possible problem here
-		txrng[0] = max(0,min(cnx+sxi-ou, xrng+sxi))
-		txrng[1] = max(0, min(nx-cnx-sxi-ou, xrng-sxi))
-		tyrng[0] = max(0,min(cny+syi-ou, yrng+syi))
-		tyrng[1] = max(0, min(ny-cny-syi-ou, yrng-syi))
+		#  The search range procedure was adjusted for 3D searches, so since in 2D the order of operations is inverted, we have to invert ranges
+		txrng = search_range(nx, ou, sxi, xrng)
+		txrng = [txrng[1],txrng[0]]
+		tyrng = search_range(ny, ou, syi, yrng)
+		tyrng = [tyrng[1],tyrng[0]]
+		#print im, "B",cnx,sxi,syi,txrng, tyrng
 		# align current image to the reference
 		if random_method == "SHC":
 			"""
@@ -123,7 +130,14 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 			sxst,syst,iref,angt,mirrort,totpeak = multalign2d_scf(data[im], [cimage], frotim, numr, xrng, yrng, ou = ou)
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
 			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
+		elif random_method == "PCP":
+			[angt, sxst, syst, mirrort, peakt] = ormq_fast(data[im], cimage, txrng, tyrng, step, sxi, syi, numr, mode, delta)
+			data[im][0][0].set_attr('sxi', int(sxst))
+			data[im][0][0].set_attr('syi', int(syst))
+			angt, sxst, syst, mirrort = combine_params2(0.0, -sxst, -syst, 0, angt, 0, 0, mirrort)
+			set_params2D(data[im][0][0], [angt, sxst, syst, mirrort, 1.0], ali_params)
 		else:
+			#print im, round(sxi,3), round(syi,3)
 			if nomirror:  [angt, sxst, syst, mirrort, peakt] = ornq(ima, cimage, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi)
 			else:	      [angt, sxst, syst, mirrort, peakt] = ormq(ima, cimage, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi, delta)
 			# combine parameters and set them to the header, ignore previous angle and mirror
@@ -532,7 +546,7 @@ def ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0):
 
 	lky = int(yrng[0]/step)
 	rky = int(yrng[-1]/step)
-	
+
 	for i in xrange(-lky, rky+1):
 		iy = i*step
 		for j in xrange(-lkx, rkx+1):
@@ -574,7 +588,7 @@ def ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0):
 	sys = sx*so + sy*co
 	return  ang, sxs, sys, mirror, peak
 
-def ormq_fast(dimage, crefim, xrng, yrng, step, isx, isy, maxrange, numr, mode, delta = 0.0):
+def ormq_fast(dimage, crefim, xrng, yrng, step, sxi, syi, numr, mode, delta = 0.0):
 	"""Determine shift and rotation between image and reference image (crefim)
 		crefim should be as FT of polar coords with applied weights
 	        consider mirror
@@ -583,17 +597,17 @@ def ormq_fast(dimage, crefim, xrng, yrng, step, isx, isy, maxrange, numr, mode, 
 	"""
 	#from math import pi, cos, sin, radians
 	#print "ORMQ_FAST"
-	#maxrange = 4
+	maxrange = len(dimage)//2
+	istep = int(2*step)
+	lkx = int(xrng[0]*istep)
+	rkx = int(xrng[-1]*istep)
+
+	lky = int(yrng[0]*istep)
+	rky = int(yrng[-1]*istep)
+
 	peak = -1.0E23
-	#print ' isx, isy',isx, isy
-	ky = int(yrng)#int(2*yrng/step+0.5)//2
-	kx = int(xrng)#int(2*xrng/step+0.5)//2
-	#print  ' y ',max(-ky+isy,-maxrange), min(ky+isy+1,maxrange+1)
-	for j in xrange(max(-ky+isy,-maxrange), min(ky+isy+1,maxrange+1)):
-		#iy = i*step
-		#print  ' x ',max(-kx+isx,-maxrange), min(kx+isx+1,maxrange+1)
-		for i in xrange(max(-kx+isx,-maxrange), min(kx+isx+1,maxrange+1)):
-			#ix = j*step
+	for j in xrange(-lky, rky+1, istep):
+		for i in xrange(-lkx, rkx+1, istep):
 			# The following code is used when mirror is considered
 			if delta == 0.0: retvals = Util.Crosrng_ms(crefim, dimage[i+maxrange][j+maxrange], numr)
 			else:            retvals = Util.Crosrng_ms_delta(crefim, dimage[i+maxrange][j+maxrange], numr, 0.0, delta)
@@ -620,7 +634,7 @@ def ormq_fast(dimage, crefim, xrng, yrng, step, isx, isy, maxrange, numr, mode, 
 		print " ORMQ_FAST failed, most likelt due to search ranges "
 		from sys import exit
 		exit()
-	return  ang, sx, sy, mirror, peak
+	return  ang, sx/2.0, sy/2.0, mirror, peak
 			
 
 def ormq_peaks(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
@@ -638,13 +652,11 @@ def ormq_peaks(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	ou = numr[-3]
 	nx = image.get_xsize()
 	ny = image.get_ysize()
-	txrng = [0.0]*2 
-	tyrng = [0.0]*2
-	# possible problem here
-	txrng[0] = max(0,min(cnx-ou, xrng))
-	txrng[1] = max(0, min(nx-cnx-ou, xrng))
-	tyrng[0] = max(0,min(cny-ou, yrng))
-	tyrng[1] = max(0, min(ny-cny-ou, yrng))
+	#  The search range procedure was adjusted for 3D searches, so since in 2D the order of operations is inverted, we have to invert ranges
+	txrng = search_range(nx, ou, 0, xrng)
+	txrng = [txrng[1],txrng[0]]
+	tyrng = search_range(ny, ou, 0, yrng)
+	tyrng = [tyrng[1],tyrng[0]]
 	Util.multiref_peaks_ali2d(image, crefim, txrng, tyrng, step, mode, numr, cnx, cny, ccfs, ccfm)
 
 	peaks = peak_search(ccfs, 1000)

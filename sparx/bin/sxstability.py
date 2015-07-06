@@ -40,13 +40,13 @@ import sys
 def main():
 	from utilities import get_input_from_string
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack average --ou=ou --xr=xr --yr=yr --ts=ts --thld_err=thld_err --num_ali=num_ali --fl=fl --aa=aa --CTF --verbose --stables"
+	usage = progname + " stack output_average --radius=particle_radius --xr=xr --yr=yr --ts=ts --thld_err=thld_err --num_ali=num_ali --fl=fl --aa=aa --CTF --verbose --stables"
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--ou",           type="int",              default=-1,          help=" outer radius for alignment")
+	parser.add_option("--radius",           type="int",              default=-1,          help=" particle radius for alignment")
 	parser.add_option("--xr",           type="string"      ,     default="2 1",       help="range for translation search in x direction, search is +/xr (default 2,1)")
 	parser.add_option("--yr",           type="string"      ,     default="-1",        help="range for translation search in y direction, search is +/yr (default = same as xr)")
 	parser.add_option("--ts",           type="string"      ,     default="1 0.5",     help="step size of the translation search in both directions, search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional (default: 1,0.5)")
-	parser.add_option("--thld_err",     type="float",            default=0.75,        help="threshld of pixel error (default = 1.732)")
+	parser.add_option("--thld_err",     type="float",            default=0.75,        help="threshld of pixel error (default = 0.75)")
 	parser.add_option("--num_ali",      type="int",              default=5,           help="number of alignments performed for stability (default = 5)")
 	parser.add_option("--maxit",        type="int",              default=30,          help="number of iterations for each xr (default = 30)")
 	parser.add_option("--fl",           type="float"       ,     default=0.3,         help="cut-off frequency of hyperbolic tangent low-pass Fourier filter (default = 0.3)")
@@ -54,7 +54,7 @@ def main():
 	parser.add_option("--CTF",          action="store_true",     default=False,       help="Use CTF correction during the alignment ")
 	parser.add_option("--verbose",      action="store_true",     default=False,       help="print individual pixel error (default = False)")
 	parser.add_option("--stables",		action="store_true",	 default=False,	      help="output the stable particles number in file (default = False)")
-	parser.add_option("--method",		type="string"      ,	 default=" ",	      help="SHC (default when ommitted is standard method)")
+	parser.add_option("--method",		type="string"      ,	 default=" ",	      help="SHC (standard method is default when flag is ommitted)")
 	(options, args) = parser.parse_args()
 	if len(args) != 1 and len(args) != 2:
     		print "usage: " + usage
@@ -76,10 +76,9 @@ def main():
 		step        = get_input_from_string(options.ts)
 
 		class_data = EMData.read_images(args[0])
-		fofo = args[1]
 
 		nx = class_data[0].get_xsize()
-		ou = options.ou
+		ou = options.radius
 		num_ali = options.num_ali
 		if ou == -1: ou = nx/2-2
 		from utilities import model_circle, get_params2D, set_params2D
@@ -88,6 +87,7 @@ def main():
 		if options.CTF :
 			from filter import filt_ctf
 			for im in xrange(len(class_data)):
+				#  Flip phases
 				class_data[im] = filt_ctf(class_data[im], class_data[im].get_attr("ctf"), binary=1)
 		for im in class_data:
 			im.set_attr("previousmax", -1.0e10)
@@ -115,6 +115,8 @@ def main():
 			else:
 				avet = within_group_refinement(class_data, mask, True, 1, ou, 1, xrng, yrng, step, 90.0, \
 						maxit = options.maxit, FH=options.fl, FF=options.aa, method = options.method)
+				from utilities import info
+				print "  avet  ",info(avet)
 			for im in class_data:
 				alpha, sx, sy, mirror, scale = get_params2D(im)
 				ali_params.extend([alpha, sx, sy, mirror])
@@ -166,7 +168,7 @@ def main():
 			avet.set_attr('members', stable_set_id)
 			avet.set_attr('pix_err', pix_err)
 			avet.set_attr('pixerr', particle_pixerr)
-			avet.write_image(fofo)
+			avet.write_image(args[1])
 
 
 
