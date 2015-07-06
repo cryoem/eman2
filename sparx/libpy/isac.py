@@ -1826,6 +1826,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			alpha, sx, sy, mirror, scale = get_params2D(alldata[im])
 			alphan, sxn, syn, mirrorn = combine_params2(alpha, sx, sy, mirror, ref_ali_params[matchref*4], ref_ali_params[matchref*4+1], \
 				ref_ali_params[matchref*4+2], int(ref_ali_params[matchref*4+3]))
+			#  If we really want to transfer the parameters from centering we woud have to make sure shifts are within permissible range PAP 07/06/2015
 			set_params2D(alldata[im], [alphan, sxn, syn, int(mirrorn), 1.0])
 
 		do_within_group = 0
