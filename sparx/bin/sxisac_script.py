@@ -406,11 +406,12 @@ def main():
 					"ref_ali2d", "", log2d, nproc, myid, main_node, MPI_COMM_WORLD, write_headers = False)
 
 		if( myid == main_node ):
-			write_text_row(params2d,os.path.join(init2dir, "initial2Dparams.txt"))		
+			write_text_row(params2d,os.path.join(init2dir, "initial2Dparams.txt"))
 
-		#  We assume the target image size will be 64, radius will be 29, and xr = 2.  Note images can be also upscaled.
+		#  We assume the target image size will be 64, radius will be 29, and xr = 2.  Note images can be also upscaled, in which case shrink_ratio > 1.
 		shrink_ratio = float(radi)/29.0
 		# print "shrink_ratio", shrink_ratio
+		nx = aligned_images[0].get_xsize()
 		needs_windowing = int(nx*shrink_ratio+0.5) > 64
 
 		from fundamentals import rot_shift2D, resample
@@ -418,7 +419,7 @@ def main():
 		for im in xrange(nima):  
 			alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
 			aligned_images[im] = rot_shift2D(aligned_images[im], alpha, sx, sy)
-			if shrink_ratio < 1:
+			if shrink_ratio < 1.0:
 				aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
 				if needs_windowing:
 					aligned_images[im] = Util.window(aligned_images[im], 64, 64, 1)
@@ -445,10 +446,10 @@ def main():
 	# 
 	# program_state_stack(locals(), getframeinfo(currentframe()), last_call="LastCall")
 	# 
-	# from mpi import mpi_finalize
-	# mpi_finalize()
-	# # import  sys
-	# sys.exit()
+	from mpi import mpi_finalize
+	mpi_finalize()
+	import  sys
+	sys.exit()
 
 
 	global_def.BATCH = True
@@ -470,7 +471,7 @@ def main():
 	# for isac_generation in range(1,10):
 	isac_generation = 0
 	#  Stopping criterion should be inside the program.
-	while True:
+	for q12345 in xrange(1):
 		isac_generation += 1
 		
 		data64_stack_current = stack_processed_by_ali2d_base__filename__without_master_dir.split(":")[0]
@@ -494,30 +495,16 @@ def main():
 			print "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 
 		if program_state_stack(locals(), getframeinfo(currentframe())):
-		# if 1:
-			pass
-
-			if (myid == 0):
-				with PyCallGraph(output=graphviz):
-					iter_isac(data64_stack_current, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.maxit, False, 1.0,\
-						#options.CTF, options.snr, \
-						options.dst, options.FL, options.FH, options.FF, options.init_iter, options.main_iter, options.iter_reali, options.match_first, \
-						options.max_round, options.match_second, options.stab_ali, options.thld_err, options.indep_run, options.thld_grp, \
-						options.img_per_grp, isac_generation, options.candidatesexist, random_seed=options.rand_seed, new=False)#options.new)
-			else:
-					iter_isac(data64_stack_current, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.maxit, False, 1.0,\
-						#options.CTF, options.snr, \
-						options.dst, options.FL, options.FH, options.FF, options.init_iter, options.main_iter, options.iter_reali, options.match_first, \
-						options.max_round, options.match_second, options.stab_ali, options.thld_err, options.indep_run, options.thld_grp, \
-						options.img_per_grp, isac_generation, options.candidatesexist, random_seed=options.rand_seed, new=False)#options.new)
+			iter_isac(data64_stack_current, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.maxit, False, 1.0,\
+				#options.CTF, options.snr, \
+				options.dst, options.FL, options.FH, options.FF, options.init_iter, options.main_iter, options.iter_reali, options.match_first, \
+				options.max_round, options.match_second, options.stab_ali, options.thld_err, options.indep_run, options.thld_grp, \
+				options.img_per_grp, isac_generation, options.candidatesexist, random_seed=options.rand_seed, new=False)#options.new)
 				
 	
 		error_status = 0
 		if program_state_stack(locals(), getframeinfo(currentframe())):
-		# if 1:
-			pass
-
-			while (myid == main_node):
+			if(myid == main_node):
 				
 				# number_of_accounted_images = sum(1 for line in open("generation_%04d/generation_%d_accounted.txt"%(isac_generation, isac_generation))
 				# number_of_unaccounted_images = sum(1 for line in open("generation_%04d/generation_%d_unaccounted.txt"%(isac_generation, isac_generation))
@@ -548,8 +535,6 @@ def main():
 				# 		   (data64_stack_current, data64_stack_next, NAME_OF_MAIN_DIR, isac_generation, isac_generation))
 				cmdexecute("e2bdb.py %s --makevstack=%s --list=this_generation_%d_unaccounted.txt"%
 						   (data64_stack_current, data64_stack_next, isac_generation))
-			
-				break
 
 		if_error_all_processes_quit_program(error_status, report_program_state=True)
 
