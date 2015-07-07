@@ -248,9 +248,9 @@ def main():
 			cmdexecute(cmd)
 
 		filename = os.path.basename(args[0])
-		stack_processed_by_ali2d_base__filename  = "bdb:" + os.path.join(masterdir, os.path.splitext(filename)[0] )
-		stack_processed_by_ali2d_base__filename__without_master_dir  = "bdb:" + os.path.splitext(filename)[0]
-
+		stack_processed_by_ali2d_base__filename  = "bdb:" + os.path.join(masterdir, filename )
+		stack_processed_by_ali2d_base__filename__without_master_dir  = "bdb:" + filename
+		print stack_processed_by_ali2d_base__filename, stack_processed_by_ali2d_base__filename__without_master_dir
 	if_error_all_processes_quit_program(error_status, report_program_state=True)
 
 	# send masterdir to all processes
@@ -364,6 +364,8 @@ def main():
 		nima = len(aligned_images)
 		for im in xrange(nima):  
 			alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
+			#  Here we should use only shifts, will have o figure it
+			#alpha, sx, sy, mirror = inverse_transform2(alpha, sx, sy, mirror)
 			aligned_images[im] = rot_shift2D(aligned_images[im], alpha, sx, sy, mirror)
 			if shrink_ratio < 1.0:
 				aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
