@@ -359,7 +359,7 @@ def main():
 			write_text_row(params2d,os.path.join(init2dir, "initial2Dparams.txt"))
 
 		#  We assume the target image size will be 64, radius will be 29, and xr = 2.  Note images can be also upscaled, in which case shrink_ratio > 1.
-		shrink_ratio = float(radi)/29.0
+		shrink_ratio = 29.0/float(radi)
 		# print "shrink_ratio", shrink_ratio
 		nx = aligned_images[0].get_xsize()
 		needs_windowing = int(nx*shrink_ratio+0.5) > 64
