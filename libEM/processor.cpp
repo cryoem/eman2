@@ -8878,11 +8878,8 @@ void TestImageCylinder::process_inplace(EMData * image)
 	}
 
 	float radius = params["radius"];
-#ifdef _WIN32
-	if(radius > _cpp_min(nx, ny)/2.0) {
-#else
-	if(radius > std::min(nx, ny)/2.0) {
-#endif
+
+	if(radius > Util::get_min(nx, ny)/2.0) {
 		throw InvalidValueException(radius, "radius must be <= min(nx, ny)/2");
 	}
 
@@ -12873,16 +12870,16 @@ void ManhattanDistanceProcessor::process_inplace(EMData * image)
 			if (image->get_value_at(i,j) == 1) image->set_value_at_fast(i,j,0); // first pass and pixel was on, it gets a zero
 			else {
 				image->set_value_at_fast(i,j,size+nx); // pixel was off. It is at most the sum of the lengths of the array away from a pixel that is on
-				if (i>0) image->set_value_at_fast(i,j,std::min(image->get_value_at(i,j),image->get_value_at(i-1,j)+1)); // or one more than the pixel to the north
-				if (j>0) image->set_value_at_fast(i,j,std::min(image->get_value_at(i,j),image->get_value_at(i,j-1)+1)); // or one more than the pixel to the west
+				if (i>0) image->set_value_at_fast(i,j,Util::get_min(image->get_value_at(i,j),image->get_value_at(i-1,j)+1)); // or one more than the pixel to the north
+				if (j>0) image->set_value_at_fast(i,j,Util::get_min(image->get_value_at(i,j),image->get_value_at(i,j-1)+1)); // or one more than the pixel to the west
 			}
 		}
 	}
 	// traverse from bottom right to top left. Pixels will either be what we had on the first pass...
 	for (int i=nx-1; i>=0; i--) {
 		for (int j=ny-1; j>=0; j--) {
-			if (i+1<nx) image->set_value_at_fast(i,j,std::min(image->get_value_at(i,j),image->get_value_at(i+1,j)+1)); // or one more than the pixel to the south
-			if (j+1<ny) image->set_value_at_fast(i,j,std::min(image->get_value_at(i,j),image->get_value_at(i,j+1)+1)); // or one more than the pixel to the east
+			if (i+1<nx) image->set_value_at_fast(i,j,Util::get_min(image->get_value_at(i,j),image->get_value_at(i+1,j)+1)); // or one more than the pixel to the south
+			if (j+1<ny) image->set_value_at_fast(i,j,Util::get_min(image->get_value_at(i,j),image->get_value_at(i,j+1)+1)); // or one more than the pixel to the east
 		}
 	}
 }
