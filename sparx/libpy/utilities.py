@@ -480,29 +480,22 @@ def center_2D(image_to_be_centered, center_method = 1, searching_range = -1, Gau
 		from morphology   import binarize
 		p = Util.infomask(image_to_be_centered,None,True)
 		cc = binarize(image_to_be_centered,p[0]+p[1])
-		peak  = peak_search(ccf(cc, self_defined_reference))
-		shiftx = int(peak[0][4])
-		shifty = int(peak[0][5])
+		c = ccf(cc, self_defined_reference)
+		p = Util.infomask(c,None,True)[3]
+		nx = c.get_xsize()
+		ny = c .get_ysize()
+		n = 0
+		for i in xrange(nx):
+			for j in xrange(ny):
+				if c.get_value_at(i,j) == p :
+					x = 0
+					x+=i
+					y+=j
+					y = 0
+					n+=1
+		shiftx = -x/n
+		shifty = -y/n
 		cc = cyclic_shift(cc, -shiftx, -shifty)
-		nx = cc.get_xsize()
-		g= []
-		k = min(nx//2-3, 30)
-		for i in xrange(-k,k+1):
-			for j in xrange(-k,k+1):
-				 g.append([i,j,Util.infomask(cyclic_shift(cc,i,j)*self_defined_reference,None,True)[0]])
-		gm = max([g[k][-1] for k in xrange(len(g))])
-		n=0
-		x = 0
-		y = 0
-		for i in xrange(len(g)):
-			if g[i][-1] == gm :
-				x+=g[i][0]
-				y+=g[i][1]
-				n+=1
-		x/=n
-		y/=n
-		shiftx -= x
-		shifty -= y
 		if searching_range > 0 :
 			if(abs(shiftx) > searching_range):  shiftx=0
 			if(abs(shifty) > searching_range):  shifty=0
