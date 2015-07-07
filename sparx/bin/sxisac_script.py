@@ -252,7 +252,6 @@ def main():
 		filename = os.path.basename(filename)
 		stack_processed_by_ali2d_base__filename  = "bdb:" + os.path.join(masterdir, filename )
 		stack_processed_by_ali2d_base__filename__without_master_dir  = "bdb:" + filename
-		print stack_processed_by_ali2d_base__filename, stack_processed_by_ali2d_base__filename__without_master_dir
 	if_error_all_processes_quit_program(error_status, report_program_state=True)
 
 	# send masterdir to all processes
@@ -396,11 +395,12 @@ def main():
 	# 
 	# program_state_stack(locals(), getframeinfo(currentframe()), last_call="LastCall")
 	# 
+	"""
 	from mpi import mpi_finalize
 	mpi_finalize()
 	import  sys
 	sys.exit()
-
+	"""
 
 	global_def.BATCH = True
 	
@@ -421,16 +421,12 @@ def main():
 	# for isac_generation in range(1,10):
 	isac_generation = 0
 	#  Stopping criterion should be inside the program.
-	for q12345 in xrange(1):
+	for q12345 in xrange(10):
 		isac_generation += 1
-		
-		data64_stack_current = stack_processed_by_ali2d_base__filename__without_master_dir.split(":")[0]
-		data64_stack_current += ":../" + stack_processed_by_ali2d_base__filename__without_master_dir.split(":")[1]
-		data64_stack_current += "_%03d"%isac_generation    
 
-		data64_stack_next = stack_processed_by_ali2d_base__filename__without_master_dir.split(":")[0]
-		data64_stack_next += ":../" + stack_processed_by_ali2d_base__filename__without_master_dir.split(":")[1]
-		data64_stack_next += "_%03d"%(isac_generation + 1)
+		data64_stack_current = stack_processed_by_ali2d_base__filename__without_master_dir+"_%03d"%isac_generation    
+
+		data64_stack_next = stack_processed_by_ali2d_base__filename__without_master_dir+"_%03d"%(isac_generation + 1)
 		
 		
 		if (myid == main_node):
