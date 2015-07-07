@@ -1559,7 +1559,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			 stability=False, stab_ali=5, iter_reali=1, thld_err=1.732, FL=0.1, FH=0.3, FF=0.2, dst=90.0, method = ""):
 	
 	from global_def   import EMData, Util
-	from alignment	  import Numrinit, ringwe
+	from alignment	  import Numrinit, ringwe, search_range
 	from applications import MPI_start_end, within_group_refinement
 	from filter	      import filt_tanl
 	from fundamentals import rot_shift2D, fshift, fft
