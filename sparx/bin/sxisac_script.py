@@ -150,11 +150,13 @@ def main():
 	if(radi < 1):  ERROR("Particle radius has to be provided!","sxisac",1,myid)
 
 	global_def.BATCH = True
+	"""
 	ali3d_options.ir     = options.ir
 	ali3d_options.rs     = options.rs
 	ali3d_options.ou     = options.radius
 	ali3d_options.xr     = options.xr
 	ali3d_options.yr     = options.yr
+	"""
 
 
 
@@ -200,7 +202,7 @@ def main():
 	"""
 	
 	# mpirun -np 1  sxisac_script.py
-	
+	'''
 	from utilities import qw
 	program_state_stack.PROGRAM_STATE_VARIABLES = set(qw("""
 		isac_generation
@@ -210,7 +212,7 @@ def main():
 		mloop
 	"""))
 	program_state_stack(locals(), getframeinfo(currentframe()), "my_state.json")
-	
+	'''
 
 	# if program_state_stack(locals(), getframeinfo(currentframe())):
 	# 	if(myid == main_node):
@@ -293,10 +295,9 @@ def main():
 	stack_processed_by_ali2d_base__filename__without_master_dir = \
 		send_string_to_all(stack_processed_by_ali2d_base__filename__without_master_dir)
 
-	
 
 	#  INPUT PARAMETERS
-	radi  = options.ou
+	radi  = options.radius
 	global_def.BATCH = True
 	"""
 	These are irrelevant
