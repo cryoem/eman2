@@ -492,10 +492,8 @@ def center_2D(image_to_be_centered, center_method = 1, searching_range = -1, Gau
 		for i in xrange(nx):
 			for j in xrange(ny):
 				if c.get_value_at(i,j) == p :
-					x = 0
 					x+=(i-cx)
 					y+=(j-cy)
-					y = 0
 					n+=1
 		shiftx = -x/n
 		shifty = -y/n

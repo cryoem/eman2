@@ -140,7 +140,7 @@ def main():
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 	nproc = mpi_comm_size(MPI_COMM_WORLD)
 	
-	use_latest_master_directory = options.use_latest_master_directory	
+	use_latest_master_directory = options.use_latest_master_directory
 
 	# plan for sxisac_script
 	"""
@@ -378,7 +378,7 @@ def main():
 		gather_compacted_EMData_to_root(number_of_images_in_stack, aligned_images, myid)
 
 		if( myid == main_node ):
-			for i in range(number_of_images_in_stack):  aligned_images[i].write_image(stack_processed_by_ali2d_base__filename)
+			for i in range(number_of_images_in_stack):  aligned_images[i].write_image(stack_processed_by_ali2d_base__filename,i)
 
 
 		del params2d
