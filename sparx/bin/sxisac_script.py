@@ -247,13 +247,9 @@ def main():
 			cmd = "{} {}".format("mkdir", masterdir)
 			cmdexecute(cmd)
 
-		if ':' in args[0]:
-			stack_processed_by_ali2d_base__filename = "bdb:" + os.path.join(masterdir, os.path.splitext(filename)[0] )
-			stack_processed_by_ali2d_base__filename__without_master_dir = "bdb:" + os.path.splitext(filename)[0]
-		else:
-			filename = os.path.basename(args[0])
-			stack_processed_by_ali2d_base__filename  = "bdb:" + os.path.join(masterdir, os.path.splitext(filename)[0] )
-			stack_processed_by_ali2d_base__filename__without_master_dir  = "bdb:" + os.path.splitext(filename)[0]
+		filename = os.path.basename(args[0])
+		stack_processed_by_ali2d_base__filename  = "bdb:" + os.path.join(masterdir, os.path.splitext(filename)[0] )
+		stack_processed_by_ali2d_base__filename__without_master_dir  = "bdb:" + os.path.splitext(filename)[0]
 
 	if_error_all_processes_quit_program(error_status, report_program_state=True)
 

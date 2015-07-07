@@ -139,7 +139,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 			data[im][0][0].set_attr('sxi', int(sxst))
 			data[im][0][0].set_attr('syi', int(syst))
 			angt, sxn, syn, mn = combine_params2(0.0, -sxst, -syst, 0, angt, 0, 0, mirrort)
-			set_params2D(data[im][0][0], [sxn, sxst, syn, mirrort, 1.0], ali_params)
+			set_params2D(data[im][0][0], [angt, sxn, syn, mn, 1.0], ali_params)
 		else:
 			#print im, round(sxi,3), round(syi,3)
 			if nomirror:  [angt, sxst, syst, mirrort, peakt] = ornq(ima, cimage, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi)
