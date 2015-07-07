@@ -201,8 +201,6 @@ def main():
 	
 	"""
 	
-	# mpirun -np 1  sxisac_script.py
-	
 	from utilities import qw
 	program_state_stack.PROGRAM_STATE_VARIABLES = set(qw("""
 		isac_generation
@@ -212,7 +210,6 @@ def main():
 		mloop
 	"""))
 	program_state_stack(locals(), getframeinfo(currentframe()), "my_state.json")
-	
 
 	# if program_state_stack(locals(), getframeinfo(currentframe())):
 	# 	if(myid == main_node):
@@ -408,8 +405,11 @@ def main():
 					False, 90.0, 0, 14, options.CTF, 1.0, False, \
 					"ref_ali2d", "", log2d, nproc, myid, main_node, MPI_COMM_WORLD, write_headers = False)
 
+		if( myid == main_node ):
+			write_text_row(params2d,os.path.join(init2dir, "initial2Dparams.txt"))		
+
 		#  We assume the target image size will be 64, radius will be 29, and xr = 2.  Note images can be also upscaled.
-		shrink_ratio = float(radius)/29.0
+		shrink_ratio = float(radi)/29.0
 		# print "shrink_ratio", shrink_ratio
 		needs_windowing = int(nx*shrink_ratio+0.5) > 64
 
@@ -427,15 +427,10 @@ def main():
 		gather_compacted_EMData_to_root(number_of_images_in_stack, aligned_images, myid)
 
 		if( myid == main_node ):
-			from EMAN2db import db_open_dict
 			for i in range(number_of_images_in_stack):  aligned_images[i].write_image(stack_processed_by_ali2d_base__filename)
-			# for i in range(number_of_images_in_stack):
-			# 	# aligned_images[i].set_attr("originalid", i)
-			# 	aligned_images[i].write_image(stack_processed_by_ali2d_base__filename)
 
-			write_text_row(params2d,os.path.join(init2dir, "initial2Dparams.txt"))		
-			# outcome = subprocess.call("sxheader.py  "+stack+"   --params=xform.align2d  --import="+os.path.join(init2dir, "initial2Dparams.txt"), shell=True)
 
+		del params2d
 
 		mpi_barrier(MPI_COMM_WORLD)
 
