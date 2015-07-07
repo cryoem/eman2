@@ -504,8 +504,8 @@ def main():
 	
 		error_status = 0
 		if program_state_stack(locals(), getframeinfo(currentframe())):
-			if(myid == main_node):
-				
+			while(myid == main_node):
+
 				# number_of_accounted_images = sum(1 for line in open("generation_%04d/generation_%d_accounted.txt"%(isac_generation, isac_generation))
 				# number_of_unaccounted_images = sum(1 for line in open("generation_%04d/generation_%d_unaccounted.txt"%(isac_generation, isac_generation))
 				number_of_accounted_images = sum(1 for line in open("generation_%d_accounted.txt"%(isac_generation)))
@@ -535,6 +535,7 @@ def main():
 				# 		   (data64_stack_current, data64_stack_next, NAME_OF_MAIN_DIR, isac_generation, isac_generation))
 				cmdexecute("e2bdb.py %s --makevstack=%s --list=this_generation_%d_unaccounted.txt"%
 						   (data64_stack_current, data64_stack_next, isac_generation))
+				break
 
 		if_error_all_processes_quit_program(error_status, report_program_state=True)
 
