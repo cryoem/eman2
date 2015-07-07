@@ -124,7 +124,7 @@ def main():
 
 	(options, args) = parser.parse_args()
 	
-	if len(args) != 1:
+	if len(args) > 2:
 		print "usage: " + usage
 		print "Please run '" + progname + " -h' for detailed options"
 		sys.exit()
@@ -163,19 +163,6 @@ def main():
 	mpi_init(0, [])
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 	nproc = mpi_comm_size(MPI_COMM_WORLD)
-	
-	if (myid == 0):
-		import cProfile, pstats, StringIO
-		pr = cProfile.Profile()
-		pr.enable()
-		
-		from pycallgraph import PyCallGraph
-		from pycallgraph.output import GraphvizOutput
-		
-		graphviz = GraphvizOutput()
-		graphviz.output_file = '../isac_profiling.png'
-	
-
 	
 	use_latest_master_directory = options.use_latest_master_directory	
 
@@ -281,21 +268,19 @@ def main():
 			masterdir = "master"+timestring
 			cmd = "{} {}".format("mkdir", masterdir)
 			cmdexecute(cmd)
-		if os.path.exists(masterdir):
-			# bdb_stack_location = args[0]
-			# org_stack_location = args[0]
-
-			if ':' in args[0]:
-				stack_processed_by_ali2d_base__filename = args[0].split(":")[0] + ":" + masterdir + args[0].split(":")[1]
-				stack_processed_by_ali2d_base__filename__without_master_dir = args[0].split(":")[0] + ":" + args[0].split(":")[1]
-			else:
-				filename = os.path.basename(args[0])
-				stack_processed_by_ali2d_base__filename  = "bdb:" + masterdir + os.path.splitext(filename)[0]
-				stack_processed_by_ali2d_base__filename__without_master_dir  = "bdb:" + os.path.splitext(filename)[0]
-		else:
+		elif not os.path.exists(masterdir):
 			# os.path.exists(masterdir) does not exist
-			ERROR('Output directory does not exist, please change the name and restart the program', "sxrviper", 1)
-			error_status = 1
+			masterdir = args[1]
+			cmd = "{} {}".format("mkdir", masterdir)
+			cmdexecute(cmd)
+
+		if ':' in args[0]:
+			stack_processed_by_ali2d_base__filename = args[0].split(":")[0] + ":" + masterdir + args[0].split(":")[1]
+			stack_processed_by_ali2d_base__filename__without_master_dir = args[0].split(":")[0] + ":" + args[0].split(":")[1]
+		else:
+			filename = os.path.basename(args[0])
+			stack_processed_by_ali2d_base__filename  = "bdb:" + masterdir + os.path.splitext(filename)[0]
+			stack_processed_by_ali2d_base__filename__without_master_dir  = "bdb:" + os.path.splitext(filename)[0]
 
 	if_error_all_processes_quit_program(error_status, report_program_state=True)
 				
