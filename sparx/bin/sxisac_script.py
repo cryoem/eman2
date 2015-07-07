@@ -416,7 +416,7 @@ def main():
 	# if 1:
 		pass
 
-	os.chdir(masterdir + DIR_DELIM)
+	os.chdir(masterdir)
 
 	# for isac_generation in range(1,10):
 	isac_generation = 0
@@ -424,16 +424,16 @@ def main():
 	for q12345 in xrange(10):
 		isac_generation += 1
 
-		data64_stack_current = stack_processed_by_ali2d_base__filename__without_master_dir+"_%03d"%isac_generation    
+		data64_stack_current = "bdb:../"+stack_processed_by_ali2d_base__filename__without_master_dir[4:]+"_%03d"%isac_generation
 
-		data64_stack_next = stack_processed_by_ali2d_base__filename__without_master_dir+"_%03d"%(isac_generation + 1)
+		data64_stack_next    = "bdb:../"+stack_processed_by_ali2d_base__filename__without_master_dir[4:]++"_%03d"%(isac_generation + 1)
 		
 		
 		if (myid == main_node):
-			cmdexecute("mkdir -p " + NAME_OF_MAIN_DIR + "%04d"%isac_generation + DIR_DELIM)
+			cmdexecute("mkdir -p " + NAME_OF_MAIN_DIR + "%04d"%isac_generation)
 			
 		mpi_barrier(MPI_COMM_WORLD)
-		os.chdir(NAME_OF_MAIN_DIR + "%04d"%isac_generation + DIR_DELIM)
+		os.chdir(NAME_OF_MAIN_DIR + "%04d"%isac_generation)
 
 		if (myid == main_node):
 			print "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
@@ -442,7 +442,6 @@ def main():
 
 		if program_state_stack(locals(), getframeinfo(currentframe())):
 			iter_isac(data64_stack_current, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.maxit, False, 1.0,\
-				#options.CTF, options.snr, \
 				options.dst, options.FL, options.FH, options.FF, options.init_iter, options.main_iter, options.iter_reali, options.match_first, \
 				options.max_round, options.match_second, options.stab_ali, options.thld_err, options.indep_run, options.thld_grp, \
 				options.img_per_grp, isac_generation, options.candidatesexist, random_seed=options.rand_seed, new=False)#options.new)
