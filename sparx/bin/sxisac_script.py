@@ -6,7 +6,7 @@ import sys
 import global_def
 from   global_def import *
 from   optparse import OptionParser
-import sys, ConfigParser
+import ConfigParser
 from inspect import currentframe, getframeinfo
 
 # from __future__ import print_function
@@ -30,18 +30,6 @@ NAME_OF_ORIGINAL_IMAGE_INDEX = "originalid"
 NAME_OF_RUN_DIR = "run"
 NAME_OF_MAIN_DIR = "generation_"
 DIR_DELIM = os.sep
-
-class ali3d_options:
-	ir     = 1
-	rs     = 1
-	ou     = -1
-	xr     = "-1"
-	yr     = "-1"
-	ts     = "1"
-	CTF    = True
-	fl     = 0.4
-	aa     = 0.1
-
 
 def preparing_test_data():
 	
@@ -68,16 +56,11 @@ def preparing_test_data():
 	
 
 	# os.system("mpirun -np 5 sxcter.py pwrot partres --indir=. --nameroot=mic --micsuffix=hdf --wn=512 --apix=5.2 --Cs=2.0 --voltage=120 --ac=10.0 --f_start=0.02 --f_stop=0.1 --MPI")
-		
-		
-
-
-
-
 
 
 
 def main():
+	import sys
 	progname = os.path.basename(sys.argv[0])
 	usage = ( progname + " stack_file  <output_directory> --radius=particle_radius --img_per_grp=img_per_grp --CTF <The remaining parameters are optional --ir=ir --rs=rs --xr=xr --yr=yr --ts=ts --maxit=maxit --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --main_maxit=main_iter" +
 			" --iter_reali=iter_reali --match_first=match_first --max_round=max_round --match_second=match_second --stab_ali=stab_ali --thld_err=thld_err --indep_run=indep_run --thld_grp=thld_grp" +
@@ -150,15 +133,6 @@ def main():
 	if(radi < 1):  ERROR("Particle radius has to be provided!","sxisac",1,myid)
 
 	global_def.BATCH = True
-	"""
-	ali3d_options.ir     = options.ir
-	ali3d_options.rs     = options.rs
-	ali3d_options.ou     = options.radius
-	ali3d_options.xr     = options.xr
-	ali3d_options.yr     = options.yr
-	"""
-
-
 
 	from mpi import mpi_init, mpi_comm_rank, MPI_COMM_WORLD
 	main_node = 0
@@ -296,30 +270,6 @@ def main():
 	#  INPUT PARAMETERS
 	radi  = options.radius
 	global_def.BATCH = True
-	"""
-	These are irrelevant
-	ali3d_options.ir     = options.ir
-	ali3d_options.rs     = options.rs
-	ali3d_options.ou     = options.ou
-	ali3d_options.xr     = options.xr
-	ali3d_options.yr     = options.yr
-	ali3d_options.ts     = options.ts
-	ali3d_options.an     = "-1"
-	ali3d_options.sym    = options.sym
-	ali3d_options.delta  = options.delta
-	ali3d_options.npad   = options.npad
-	ali3d_options.center = options.center
-	ali3d_options.CTF    = options.CTF
-	ali3d_options.ref_a  = options.ref_a
-	ali3d_options.snr    = options.snr
-	ali3d_options.mask3D = options.mask3D
-	ali3d_options.pwreference = ""  #   It will have to be turned on after exhaustive done by setting to options.pwreference
-	ali3d_options.fl     = 0.4
-	ali3d_options.initfl = 0.4
-	ali3d_options.aa     = 0.1
-
-	if( ali3d_options.xr == "-1" ):  ali3d_options.xr = "2"
-	"""
 
 	# mpi_barrier(MPI_COMM_WORLD)
 	# from mpi import mpi_finalize
