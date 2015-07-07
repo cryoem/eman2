@@ -969,16 +969,14 @@ float EMData::max_3D_pixel_error(const Transform &t1, const Transform & t2, floa
 	float ddmax = 0.0f;
 
 	t = t2*t1.inverse();
+
 	for (int i=0; i<int(2*M_PI*r0+0.5); i++) {
 		float ang = (float)i/r;
 		Vec3f v = Vec3f(r0*cos(ang), r0*sin(ang), 0.0f);
 		Vec3f d = t*v-v;
-#ifdef _WIN32
-		ddmax = _cpp_max(ddmax,d[0]*d[0]+d[1]*d[1]+d[2]*d[2]);
-#else
-		ddmax = std::max(ddmax,d[0]*d[0]+d[1]*d[1]+d[2]*d[2]);
-#endif	//_WIN32
+		ddmax = Util::get_max(ddmax, d[0]*d[0]+d[1]*d[1]+d[2]*d[2]);
 	}
+
 	return std::sqrt(ddmax);
 }
 
@@ -3088,33 +3086,24 @@ void EMData::update_stat() const
 	int n_nonzero = 0;
 
 	size_t size = (size_t)nx*ny*nz;
+
 	for (size_t i = 0; i < size; i += step) {
 		float v = data[i];
-	#ifdef _WIN32
-		max = _cpp_max(max,v);
-		min = _cpp_min(min,v);
-	#else
-		max=std::max<float>(max,v);
-		min=std::min<float>(min,v);
-	#endif	//_WIN32
+		max = Util::get_max(max, v);
+		min = Util::get_min(min, v);
 		sum += v;
 		square_sum += v * (double)(v);
 		if (v != 0) n_nonzero++;
 	}
 
-	size_t n = size / step;
-	double mean = sum / n;
-
-#ifdef _WIN32
-	float sigma = (float)std::sqrt( _cpp_max(0.0,(square_sum - sum*sum / n)/(n-1)));
-	n_nonzero = _cpp_max(1,n_nonzero);
-	double sigma_nonzero = std::sqrt( _cpp_max(0,(square_sum  - sum*sum/n_nonzero)/(n_nonzero-1)));
-#else
-	float sigma = (float)std::sqrt(std::max<double>(0.0,(square_sum - sum*sum / n)/(n-1)));
-	n_nonzero = std::max<int>(1,n_nonzero);
-	double sigma_nonzero = std::sqrt(std::max<double>(0,(square_sum  - sum*sum/n_nonzero)/(n_nonzero-1)));
-#endif	//_WIN32
-	double mean_nonzero = sum / n_nonzero; // previous version overcounted! G2
+	size_t n     = size / step;
+	double mean  = sum  / n;
+	double var   = (square_sum - sum*sum / n) / (n-1);
+	double sigma = var >= 0.0 ? std::sqrt(var) : 0.0;
+	n_nonzero    = Util::get_max(1, n_nonzero);
+	double varn  = (square_sum - sum*sum / n_nonzero) / (n_nonzero-1);
+	double sigma_nonzero = varn >= 0.0 ? std::sqrt(varn) : 0.0;
+	double mean_nonzero  = sum / n_nonzero; // previous version overcounted! G2
 
 	attr_dict["minimum"] = min;
 	attr_dict["maximum"] = max;
@@ -4385,13 +4374,9 @@ EMData* EMData::compute_missingwedge(float wedgeangle, float start, float stop)
 		}
 	}
 	
-	float mean = sum / step;
-	
-	#ifdef _WIN32
-	float sigma = (float)std::sqrt( _cpp_max(0.0,(square_sum - sum*mean)/(step-1)));
-	#else
-	float sigma = (float)std::sqrt(std::max<double>(0.0,(square_sum - sum*mean)/(step-1)));
-	#endif	//_WIN32
+	float  mean  = sum / step;
+	double var   = (square_sum - sum*mean) / (step-1);
+	float  sigma = var >= 0.0 ? (float) std::sqrt(var) : 0.0;
 	
 	cout << "Mean sqr wedge amp " << mean << " Sigma Squ wedge Amp " << sigma << endl;
 	set_attr("spt_wedge_mean", mean);
@@ -4399,9 +4384,3 @@ EMData* EMData::compute_missingwedge(float wedgeangle, float start, float stop)
 	
 	return test;
 }
-
-
-
-
-	
-	
