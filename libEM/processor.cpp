@@ -73,7 +73,7 @@ const string ConvolutionProcessor::NAME = "math.convolution";
 const string XGradientProcessor::NAME = "math.edge.xgradient";
 const string YGradientProcessor::NAME = "math.edge.ygradient";
 const string ZGradientProcessor::NAME = "math.edge.zgradient";
-const string GradientProcessor::NAME = "math.gradient";
+const string ImageDivergenceProcessor::NAME = "math.divergence";
 const string GradientMagnitudeProcessor::NAME = "math.gradient.magnitude";
 const string GradientDirectionProcessor::NAME = "math.gradient.direction";
 const string SDGDProcessor::NAME = "math.laplacian.sdgd";
@@ -457,7 +457,7 @@ template <> Factory < Processor >::Factory()
 	force_add<YGradientProcessor>();
 	force_add<ZGradientProcessor>();
 	
-	force_add<GradientProcessor>();
+	force_add<ImageDivergenceProcessor>();
 	force_add<GradientMagnitudeProcessor>();
 	force_add<GradientDirectionProcessor>();
 	force_add<LaplacianMagnitudeProcessor>();
@@ -11567,7 +11567,7 @@ void ZGradientProcessor::process_inplace( EMData* image )
 	delete e;
 }
 
-void GradientProcessor::process_inplace(EMData* image)
+void ImageDivergenceProcessor::process_inplace(EMData* image)
 {
 	EMData* d = new EMData();
 	d = image->process("math.edge.xgradient");

@@ -724,15 +724,15 @@ The basic design of EMAN Processors: <br>\
 			static const string NAME;
 	};
 
-	/** Computes the image gradient using David's image gradient processors
+	/** Computes the image divergence using David's partial derivative processors
 	 *
 	 *@author James Michael Bell
 	 *@date 06/26/2015
 	 */
-	class GradientProcessor : public Processor
+	class ImageDivergenceProcessor : public Processor
 	{
 	 public:
-		GradientProcessor() {}
+		ImageDivergenceProcessor() {}
 
 		string get_name() const
 		{
@@ -743,12 +743,12 @@ The basic design of EMAN Processors: <br>\
 
 		static Processor *NEW()
 		{
-			return new GradientProcessor();
+			return new ImageDivergenceProcessor();
 		}
 
 		string get_desc() const
 		{
-			return "Determines the gradient of a 2D image.";
+			return "Determines the divergence of a 2D image.";
 		}
 
 		TypeDict get_param_types() const
@@ -1882,12 +1882,12 @@ The basic design of EMAN Processors: <br>\
 				value = dict_values[0];
 			}
 		}
-
+		
 		static string get_group_desc()
 		{
 			return "The base class for real space processor working on individual pixels. The processor won't consider the pixel's coordinates and neighbors.";
 		}
-
+		
 	  protected:
 		virtual void process_pixel(float *x) const = 0;
 		virtual void calc_locals(EMData *)
@@ -8267,6 +8267,46 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 			}
 			static const string NAME;
 		};
+	
+	/*
+	 * The base class for morphological processors. 
+	 */
+	class MorphologicalProcessor:public Processor
+	{
+	  public:
+		MorphologicalProcessor(): value(0), maxval(1), mean(0), sigma(0)
+		{
+		}
+		void process_inplace(EMData * image);
+		
+		virtual void set_params(const Dict & new_params)
+		{
+			params = new_params;
+			if (params.size() == 1) {
+				vector < EMObject > dict_values = params.values();
+				value = dict_values[0];
+			}
+		}
+		
+		static string get_group_desc()
+		{
+			return "The base class for morphological image processors.";
+		}
+		
+	  protected:
+		virtual void process_pixel(float *x) const = 0;
+		virtual void calc_locals(EMData *)
+		{
+		}
+		virtual void normalize(EMData *) const
+		{
+		}
+
+		float value;
+		float maxval;
+		float mean;
+		float sigma;
+	};
 		
 	/**  Binarize an image based on the circular average around each pixel in real space.
 	 *   The pixel is set to 1 when the ring average around the pixel keeps decreasing for n 
