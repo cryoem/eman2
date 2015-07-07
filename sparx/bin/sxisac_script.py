@@ -247,7 +247,9 @@ def main():
 			cmd = "{} {}".format("mkdir", masterdir)
 			cmdexecute(cmd)
 
-		filename = os.path.basename(args[0])
+		if(args[0][:4] == "bdb:"): filename = args[0][4:]
+		else:                      filename = args[0][-4]
+		filename = os.path.basename(filename)
 		stack_processed_by_ali2d_base__filename  = "bdb:" + os.path.join(masterdir, filename )
 		stack_processed_by_ali2d_base__filename__without_master_dir  = "bdb:" + filename
 		print stack_processed_by_ali2d_base__filename, stack_processed_by_ali2d_base__filename__without_master_dir
