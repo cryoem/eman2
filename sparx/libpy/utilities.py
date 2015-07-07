@@ -460,6 +460,7 @@ def center_2D(image_to_be_centered, center_method = 1, searching_range = -1, Gau
 		3. cross-correlate with donut shape image
 		4. cross-correlate with reference image provided by user
 		5. cross-correlate with self-rotated average
+		7. binarize at ave+sigma and cross-correlate with a circle
 	        The function will return centered_image, and shifts
 	"""
 	from   utilities import peak_search
@@ -474,6 +475,18 @@ def center_2D(image_to_be_centered, center_method = 1, searching_range = -1, Gau
 			if(abs(cs[1]) > searching_range):  cs[1]=0.0
 		return fshift(image_to_be_centered, -cs[0], -cs[1]), cs[0], cs[1]
 
+	elif center_method == 7:
+		from fundamentals import ccf, cyclic_shift
+		from morphology   import binarize
+		p = Util.infomask(image_to_be_centered,None,True)
+		peak  = peak_search(ccf(binarize(image_to_be_centered,p[0]+p[1]), self_defined_reference))
+		shiftx = int(peak[0][4])
+		shifty = int(peak[0][5])
+		if searching_range > 0 :
+			if(abs(shiftx) > searching_range):  shiftx=0
+			if(abs(shifty) > searching_range):  shifty=0
+		return cyclic_shift(image_to_be_centered, -shiftx, -shifty), shiftx, shifty
+		
 	elif center_method == 5:
 		from fundamentals import rot_avg_image,ccf
 		from math import sqrt

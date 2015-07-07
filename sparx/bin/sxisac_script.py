@@ -350,9 +350,9 @@ def main():
 			tss = "1"
 			txr = "%d"%txrm
 
-		#  center is turned off
+		#  center is set to #7
 		params2d, aligned_images = ali2d_base(command_line_provided_stack_filename, init2dir, None, 1, radi, 1, txr, txr, tss, \
-					False, 90.0, 0, 14, options.CTF, 1.0, False, \
+					False, 90.0, 7, 14, options.CTF, 1.0, False, \
 					"ref_ali2d", "", log2d, nproc, myid, main_node, MPI_COMM_WORLD, write_headers = False)
 
 		if( myid == main_node ):
@@ -374,7 +374,7 @@ def main():
 				if needs_windowing:
 					aligned_images[im] = Util.window(aligned_images[im], 64, 64, 1)
 	
-		assert(aligned_images[0] == 64)  #  Just to make sure
+		assert(aligned_images[0].get_xsize() == 64)  #  Just to make sure
 		gather_compacted_EMData_to_root(number_of_images_in_stack, aligned_images, myid)
 
 		if( myid == main_node ):

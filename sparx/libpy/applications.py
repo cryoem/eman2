@@ -921,7 +921,7 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 	
 	if myid == main_node:
 		log.add("Input stack                 : %s"%(stack))
-		log.add("Number of images              : %d"%(nima))
+		log.add("Number of images            : %d"%(nima))
 		log.add("Output directory            : %s"%(outdir))
 		log.add("Inner radius                : %i"%(first_ring))
 		log.add("Outer radius                : %i"%(last_ring))
@@ -1088,7 +1088,7 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 				# write the current filtered average
 				if outdir:
 					tavg.write_image(os.path.join(outdir, "aqf.hdf"), total_iter-1)
-				
+
 				if a1 < a0:
 					if auto_stop: 	again = 0
 				else:	a0 = a1
@@ -1146,7 +1146,7 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 						pixel_error_list = map(float, pixel_error_list)
 						for i in xrange(total_nima-1, -1, -1):
 							if pixel_error_list[i] < 0:  del pixel_error_list[i]
-						region, hist = hist_list(pixel_error_list, 20)	
+						region, hist = hist_list(pixel_error_list, 20)
 						for p in xrange(20):
 							log.add("      %14.2f: %6d"%(region[p], hist[p]))
 					log.add("\n\n")
