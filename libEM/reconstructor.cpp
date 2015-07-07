@@ -3133,13 +3133,9 @@ EMData* nnSSNR_Reconstructor::finish(bool)
 
 	float dx2 = 1.0f/float(m_vnxc)/float(m_vnxc);
 	float dy2 = 1.0f/float(m_vnyc)/float(m_vnyc);
-#ifdef _WIN32
-	float dz2 = 1.0f/_cpp_max(float(m_vnzc),1.0f)/_cpp_max(float(m_vnzc),1.0f);
-	int  inc = Util::round(float(_cpp_max(_cpp_max(m_vnxc,m_vnyc),m_vnzc))/w);
-#else
-	float dz2 = 1.0f/std::max(float(m_vnzc),1.0f)/std::max(float(m_vnzc),1.0f);
-	int  inc = Util::round(float(std::max(std::max(m_vnxc,m_vnyc),m_vnzc))/w);
-#endif	//_WIN32
+	float dz2 = 1.0f/Util::get_max(float(m_vnzc),1.0f)/Util::get_max(float(m_vnzc),1.0f);
+	int   inc = Util::round(float(Util::get_max(m_vnxc,m_vnyc,m_vnzc))/w);
+
 	SSNR->set_size(inc+1,4,1);
 
 	float *nom    = new float[inc+1];
@@ -3218,11 +3214,7 @@ EMData* nnSSNR_Reconstructor::finish(bool)
 							ka[r]    += int(Kn);
 						}
 /*
-#ifdef	_WIN32
-						//#float  tmp = _cpp_max(nominator/denominator/Kn-1.0f,0.0f);
-#else
-						//#float  tmp = std::max(nominator/denominator/Kn-1.0f,0.0f);
-#endif	//_WIN32
+						//#float  tmp = Util::get_max(nominator/denominator/Kn-1.0f,0.0f);
 						//  Create SSNR as a 3D array (-n/2:n/2+n%2-1)
 						iix = m_vnxc + ix; iiy = m_vnyc + ky; iiz = m_vnzc + kz;
 						if( iix >= 0 && iix < m_vnxp && iiy >= 0 && iiy < m_vnyp && iiz >= 0 && iiz < m_vnzp )
@@ -3779,11 +3771,7 @@ EMData* nn4_ctfwReconstructor::finish(bool)
     // now counter will serve to keep fsc-derived stuff
 
     for (ix = 0; ix <= m_vnyc+1; ix++)
-#ifdef _WIN32
-        count[ix] = _cpp_max(0.0f, _cpp_min( 0.999f, (*m_refvol)(ix) ) );
-#else
-	    count[ix] = std::max(0.0f, std::min( 0.999f, (*m_refvol)(ix) ) );
-#endif	//_WIN32
+		  count[ix] = Util::get_max(0.0f, Util::get_min( 0.999f, (*m_refvol)(ix) ) );
     for (ix = 0; ix <= m_vnyc+1; ix++)  count[ix] = count[ix]/(1.0f - count[ix]) * sigma2[ix];
     for (ix = 0; ix <= m_vnyc+1; ix++)  {
         if ( count[ix] >0.0f) count[ix] = 1.0f/count[ix];  //fudge?
@@ -4367,13 +4355,8 @@ EMData* nnSSNR_ctfReconstructor::finish(bool)
 	float w = params["w"];
 	float dx2 = 1.0f/float(m_vnxc)/float(m_vnxc);
 	float dy2 = 1.0f/float(m_vnyc)/float(m_vnyc);
-#ifdef	_WIN32
-	float dz2 = 1.0f/_cpp_max(float(m_vnzc),1.0f)/_cpp_max(float(m_vnzc),1.0f);
-	int inc = Util::round(float(_cpp_max(_cpp_max(m_vnxc,m_vnyc),m_vnzc))/w);
-#else
-	float dz2 = 1.0f/std::max(float(m_vnzc),1.0f)/std::max(float(m_vnzc),1.0f);
-	int inc = Util::round(float(std::max(std::max(m_vnxc,m_vnyc),m_vnzc))/w);
-#endif	//_WIN32
+	float dz2 = 1.0f/Util::get_max(float(m_vnzc),1.0f)/Util::get_max(float(m_vnzc),1.0f);
+	int inc = Util::round(float(Util::get_max(m_vnxc,m_vnyc,m_vnzc))/w);
 
 	EMData* SSNR = params["SSNR"];
 	SSNR->set_size(inc+1,4,1);
@@ -4464,11 +4447,7 @@ EMData* nnSSNR_ctfReconstructor::finish(bool)
 							ka[r]	 += int(Kn);
 						}
 /*
-#ifdef	_WIN32
-						float  tmp = _cpp_max(nominator/denominator/(*m_wptr)(ix,iy,iz)-1.0f,0.0f);
-#else
-						float  tmp = std::max(nominator/denominator/(*m_wptr)(ix,iy,iz)-1.0f,0.0f);
-#endif	//_WIN32
+						float  tmp = Util::get_max(nominator/denominator/(*m_wptr)(ix,iy,iz)-1.0f,0.0f);
 						//  Create SSNR as a 3D array (-n/2:n/2+n%2-1)
 						int iix = m_vnxc + ix; int iiy = m_vnyc + ky; int iiz = m_vnzc + kz;
 						if( iix >= 0 && iix < m_vnxp && iiy >= 0 && iiy < m_vnyp && iiz >= 0 && iiz < m_vnzp )
