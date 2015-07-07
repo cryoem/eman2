@@ -193,8 +193,6 @@ def main():
 	error_status = 0
 	if len(args) == 2:
 		masterdir = args[1]
-		if masterdir[-1] != DIR_DELIM:
-			masterdir += DIR_DELIM
 	elif len(args) == 1:
 		if use_latest_master_directory:
 			all_dirs = [d for d in os.listdir(".") if os.path.isdir(d)]
@@ -384,10 +382,10 @@ def main():
 	# if 1:
 		pass
 
-	if(myid == 0): print "Location: A" + os.getcwd()
+	if(myid == 0): print "Location: A   " + os.getcwd()
 
 	os.chdir(masterdir)
-	if(myid == 0): print "Location: B" + os.getcwd()
+	if(myid == 0): print "Location: B   " + os.getcwd()
 
 	# for isac_generation in range(1,10):
 	isac_generation = 0
