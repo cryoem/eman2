@@ -256,7 +256,7 @@ def main():
 			stack_processed_by_ali2d_base__filename__without_master_dir  = "bdb:" + os.path.splitext(filename)[0]
 
 	if_error_all_processes_quit_program(error_status, report_program_state=True)
-				
+
 	# send masterdir to all processes
 	masterdir = send_string_to_all(masterdir)
 	if masterdir[-1] != DIR_DELIM:

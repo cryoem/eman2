@@ -495,8 +495,8 @@ def center_2D(image_to_be_centered, center_method = 1, searching_range = -1, Gau
 					x+=(i-cx)
 					y+=(j-cy)
 					n+=1
-		shiftx = -x/n
-		shifty = -y/n
+		shiftx = x/n
+		shifty = y/n
 		cc = cyclic_shift(cc, -shiftx, -shifty)
 		if searching_range > 0 :
 			if(abs(shiftx) > searching_range):  shiftx=0
