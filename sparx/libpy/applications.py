@@ -1022,7 +1022,7 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 	again = 1
 	total_iter = 0
 	cs = [0.0]*2
-
+	delta = 0.0
 	for N_step in xrange(len(xrng)):
 
 		for Iter in xrange(max_iter):
@@ -1083,8 +1083,12 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 					msg = "Average center x =      %10.3f        Center y       = %10.3f"%(cs[0], cs[1])
 					log.add(msg)
 				else:
+					if delta != 0.0:
+						cnt = ref_data[1]
+						ref_data[1] = 0
 					tavg, cs = user_func(ref_data)
-
+					if delta != 0.0:
+						ref_data[1] = cnt
 				# write the current filtered average
 				if outdir:
 					tavg.write_image(os.path.join(outdir, "aqf.hdf"), total_iter-1)
@@ -1110,7 +1114,7 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 					alpha, sx, sy, mirror, scale = get_params2D(data[im])
 					old_ali_params.extend([alpha, sx, sy, mirror])
 
-				if Iter%4 != 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0 
+				if Iter%4 != 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0
 				else: delta = dst
 				sx_sum, sy_sum, nope = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 												xrng[N_step], yrng[N_step], step[N_step], \
