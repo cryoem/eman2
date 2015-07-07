@@ -1166,24 +1166,9 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 				recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 		else:           send_attr_dict(main_node, data, par_str, image_start, image_end)
 
-
-	if ou < 1:
-		ou = (nx - 1)/2 - 2
-
-	shrink_ratio = 32.0/ou
-	# print "shrink_ratio", shrink_ratio
-	needs_windowing = nx*shrink_ratio > 64
-	# print "needs_windowing", needs_windowing
-
-	from fundamentals import rot_shift2D, resample
 	params = []
 	for im in xrange(nima):  
 		alpha, sx, sy, mirror, scale = get_params2D(data[im])
-		data[im] = rot_shift2D(data[im], alpha, sx, sy)
-		if shrink_ratio < 1:
-			data[im]  = resample(data[im], shrink_ratio)
-			if needs_windowing:
-				data[im] = Util.window(data[im], 64, 64, 1)
 		params.append([alpha, sx, sy, mirror])
 	params = wrap_mpi_gatherv(params, main_node, mpi_comm)
 
