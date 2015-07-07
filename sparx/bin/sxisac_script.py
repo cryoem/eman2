@@ -403,23 +403,35 @@ def main():
 			tss = "1"
 			txr = "%d"%txrm
 
+		#  center is turned off
 		params2d, aligned_images = ali2d_base(command_line_provided_stack_filename, init2dir, None, 1, radi, 1, txr, txr, tss, \
-					False, 90.0, -1, 14, options.CTF, 1.0, False, \
+					False, 90.0, 0, 14, options.CTF, 1.0, False, \
 					"ref_ali2d", "", log2d, nproc, myid, main_node, MPI_COMM_WORLD, write_headers = False)
+
+		#  We assume the target image size will be 64, radius will be 29, and xr = 2.  Note images can be also upscaled.
+		shrink_ratio = float(radius)/29.0
+		# print "shrink_ratio", shrink_ratio
+		needs_windowing = int(nx*shrink_ratio+0.5) > 64
+
+		from fundamentals import rot_shift2D, resample
+		nima = len(aligned_images)
+		for im in xrange(nima):  
+			alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
+			aligned_images[im] = rot_shift2D(aligned_images[im], alpha, sx, sy)
+			if shrink_ratio < 1:
+				aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
+				if needs_windowing:
+					aligned_images[im] = Util.window(aligned_images[im], 64, 64, 1)
 	
+		assert(aligned_images[0] == 64)  #  Just to make sure
 		gather_compacted_EMData_to_root(number_of_images_in_stack, aligned_images, myid)
 
 		if( myid == main_node ):
 			from EMAN2db import db_open_dict
-			DB = db_open_dict(stack_processed_by_ali2d_base__filename)
-			for i in range(number_of_images_in_stack):
-				DB[i] = aligned_images[i]
-			DB.close()
-
+			for i in range(number_of_images_in_stack):  aligned_images[i].write_image(stack_processed_by_ali2d_base__filename)
 			# for i in range(number_of_images_in_stack):
 			# 	# aligned_images[i].set_attr("originalid", i)
 			# 	aligned_images[i].write_image(stack_processed_by_ali2d_base__filename)
-				
 
 			write_text_row(params2d,os.path.join(init2dir, "initial2Dparams.txt"))		
 			# outcome = subprocess.call("sxheader.py  "+stack+"   --params=xform.align2d  --import="+os.path.join(init2dir, "initial2Dparams.txt"), shell=True)
@@ -453,7 +465,7 @@ def main():
 			cmdexecute("e2bdb.py -c %s"%(stack_processed_by_ali2d_base__filename))
 			cmdexecute("sxheader.py  --consecutive  --params=originalid %s"%stack_processed_by_ali2d_base__filename)
 			cmdexecute("e2bdb.py %s --makevstack=%s_001"%(stack_processed_by_ali2d_base__filename, stack_processed_by_ali2d_base__filename))
-	
+
 	if program_state_stack(locals(), getframeinfo(currentframe())):
 	# if 1:
 		pass
@@ -461,7 +473,10 @@ def main():
 	os.chdir(masterdir + DIR_DELIM)
 
 	# for isac_generation in range(1,10):
-	for isac_generation in range(1,10):
+	isac_generation = 0
+	#  Stopping criterion should be inside the program.
+	while True:
+		isac_generation += 1
 		
 		data64_stack_current = stack_processed_by_ali2d_base__filename__without_master_dir.split(":")[0]
 		data64_stack_current += ":../" + stack_processed_by_ali2d_base__filename__without_master_dir.split(":")[1]
