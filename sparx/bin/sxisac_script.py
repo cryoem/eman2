@@ -142,39 +142,10 @@ def main():
 	
 	use_latest_master_directory = options.use_latest_master_directory
 
-	# plan for sxisac_script
-	"""
+	#  Hardwired settings of the program
+	target_radius = 29
+	target_xr = 2
 
-	(*)
-	sxprocess.py bdb:data bdb:flip_data --phase_flip
-
-	sxali2d get it from meridien
-	
-	
-	applyparameters rotshift2d on all of them
-	
-	reduce to 64 
-	
-	make sure it is zoomed in
-	
-	
-	particles on different proc, brinbg them to zero and write to disk.
-	
-	
-
-
-	(*)
-	Reduce images to 64X64
-	sxprocess.py bdb:orgstack bdb:stack --changesize --ratio=????
-	
-	(*)
-	sxheader.py bdb:flip_data --params=xform.align2d --zero
-	
-	(*)
-	Pre-align the particles in the stack and apply the resulting parameters to create a pre-aligned stack
-	
-	"""
-	
 	from utilities import qw
 	program_state_stack.PROGRAM_STATE_VARIABLES = set(qw("""
 		isac_generation
@@ -256,8 +227,6 @@ def main():
 
 	# send masterdir to all processes
 	masterdir = send_string_to_all(masterdir)
-	if masterdir[-1] != DIR_DELIM:
-		masterdir += DIR_DELIM
 
 	stack_processed_by_ali2d_base__filename = send_string_to_all(stack_processed_by_ali2d_base__filename)
 	stack_processed_by_ali2d_base__filename__without_master_dir = \
@@ -408,15 +377,17 @@ def main():
 	# if 1:
 		pass
 		if (myid == main_node):
-			cmdexecute("e2bdb.py -c %s"%(stack_processed_by_ali2d_base__filename))
-			cmdexecute("sxheader.py  --consecutive  --params=originalid %s"%stack_processed_by_ali2d_base__filename)
+			cmdexecute("sxheader.py  --consecutive  --params=originalid   %s"%stack_processed_by_ali2d_base__filename)
 			cmdexecute("e2bdb.py %s --makevstack=%s_001"%(stack_processed_by_ali2d_base__filename, stack_processed_by_ali2d_base__filename))
 
 	if program_state_stack(locals(), getframeinfo(currentframe())):
 	# if 1:
 		pass
 
+	if(myid == 0): print "Location: A" + os.getcwd()
+
 	os.chdir(masterdir)
+	if(myid == 0): print "Location: B" + os.getcwd()
 
 	# for isac_generation in range(1,10):
 	isac_generation = 0
@@ -426,7 +397,7 @@ def main():
 
 		data64_stack_current = "bdb:../"+stack_processed_by_ali2d_base__filename__without_master_dir[4:]+"_%03d"%isac_generation
 
-		data64_stack_next    = "bdb:../"+stack_processed_by_ali2d_base__filename__without_master_dir[4:]++"_%03d"%(isac_generation + 1)
+		data64_stack_next    = "bdb:../"+stack_processed_by_ali2d_base__filename__without_master_dir[4:]+"_%03d"%(isac_generation + 1)
 		
 		
 		if (myid == main_node):
@@ -441,7 +412,7 @@ def main():
 			print "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 
 		if program_state_stack(locals(), getframeinfo(currentframe())):
-			iter_isac(data64_stack_current, options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.maxit, False, 1.0,\
+			iter_isac(data64_stack_current, options.ir, target_radius, options.rs, target_xr, target_xr, options.ts, options.maxit, False, 1.0,\
 				options.dst, options.FL, options.FH, options.FF, options.init_iter, options.main_iter, options.iter_reali, options.match_first, \
 				options.max_round, options.match_second, options.stab_ali, options.thld_err, options.indep_run, options.thld_grp, \
 				options.img_per_grp, isac_generation, options.candidatesexist, random_seed=options.rand_seed, new=False)#options.new)

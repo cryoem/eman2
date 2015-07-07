@@ -1591,8 +1591,6 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 	else:
 		alldata = stack
 	nx = alldata[0].get_xsize()
-	# default value for the last ring
-	if last_ring == -1: last_ring = nx//2-2
 
 	nima = len(alldata)
 	
