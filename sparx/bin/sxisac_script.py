@@ -38,19 +38,9 @@ class ali3d_options:
 	xr     = "-1"
 	yr     = "-1"
 	ts     = "1"
-	an     = "-1"
-	sym    = "d2"
-	delta  = "2"
-	npad   = 2
-	center = 0
 	CTF    = True
-	ref_a  = "S"
-	snr    = 1.0
-	mask3D = "startm.hdf"
 	fl     = 0.4
 	aa     = 0.1
-	initfl = 0.4
-	pwreference = "rotpw3i3.txt"
 
 
 def preparing_test_data():
@@ -89,20 +79,21 @@ def preparing_test_data():
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = ( progname + " stack_file --ir=ir --ou=ou --rs=rs --xr=xr --yr=yr --ts=ts --maxit=maxit --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --main_maxit=main_iter" +
+	usage = ( progname + " stack_file  <output_directory> --radius=particle_radius --img_per_grp=img_per_grp --CTF <The remaining parameters are optional --ir=ir --rs=rs --xr=xr --yr=yr --ts=ts --maxit=maxit --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --main_maxit=main_iter" +
 			" --iter_reali=iter_reali --match_first=match_first --max_round=max_round --match_second=match_second --stab_ali=stab_ali --thld_err=thld_err --indep_run=indep_run --thld_grp=thld_grp" +
-			" --img_per_grp=img_per_grp --generation=generation --candidatesexist --rand_seed=rand_seed" )
+			"  --generation=generation --candidatesexist --rand_seed=rand_seed>" )
 	
 	parser = OptionParser(usage,version=SPARXVERSION)
+	parser.add_option("--radius",         type="int",          default=-1,      help="Particle radius, it has to be provided.")
+	parser.add_option("--img_per_grp",    type="int",          default=100,     help="number of images per group in the ideal case (essentially maximum size of class) (100)")
+	parser.add_option("--CTF",            action="store_true", default=False,   help="CTF flag, if set the data will be phase-flipped")
 	parser.add_option("--ir",             type="int",          default=1,       help="inner ring of the resampling to polar coordinates (1)")
-	parser.add_option("--ou",             type="int",          default=-1,      help="outer ring of the resampling to polar coordinates (max)")
 	parser.add_option("--rs",             type="int",          default=1,       help="ring step of the resampling to polar coordinates (1)")
-	parser.add_option("--xr",             type="float",        default=1.0,     help="x range of translational search (1.0)")
-	parser.add_option("--yr",             type="float",        default=1.0,     help="y range of translational search (1.0)")
+	parser.add_option("--xr",             type="int",          default=-1,      help="x range of translational search (By default set by the program)")
+	parser.add_option("--yr",             type="int",          default=-1,      help="y range of translational search (same as xr")
 	parser.add_option("--ts",             type="float",        default=1.0,     help="search step of translational search (1.0)")
 	parser.add_option("--maxit",          type="int",          default=30,      help="number of iterations for reference-free alignment (30)")
-	parser.add_option("--CTF",            action="store_true", default=False,   help="whether to use CTF information (default=False, currently True is not supported)")
-	parser.add_option("--snr",            type="float",        default=1.0,     help="signal-to-noise ratio (only meaningful when CTF is enabled, currently not supported)")
+	#parser.add_option("--snr",            type="float",        default=1.0,     help="signal-to-noise ratio (only meaningful when CTF is enabled, currently not supported)")
 	parser.add_option("--dst",            type="float",        default=90.0,    help="discrete angle used in within group alignment ")
 	parser.add_option("--FL",             type="float",        default=0.1,     help="lowest stopband frequency used in the tangent filter (0.1)")
 	parser.add_option("--FH",             type="float",        default=0.3,     help="highest stopband frequency used in the tangent filter (0.3)")
@@ -117,38 +108,11 @@ def main():
 	parser.add_option("--thld_err",       type="float",        default=0.7,     help="the threshold of pixel error when checking stability (0.7)")
 	parser.add_option("--indep_run",      type="int",          default=4,       help="number of indepentdent runs for reproducibility (default=4, only values 2, 3 and 4 are supported (4)")
 	parser.add_option("--thld_grp",       type="int",          default=10,      help="the threshold of size of reproducible class (essentially minimum size of class) (10)")
-	parser.add_option("--img_per_grp",    type="int",          default=100,     help="number of images per group in the ideal case (essentially maximum size of class) (100)")
 	parser.add_option("--generation",     type="int",          default=1,       help="current generation number (1)")
 	parser.add_option("--candidatesexist",action="store_true", default=False,   help="Candidate class averages exist use them (default False)")
 	parser.add_option("--rand_seed",      type="int",          default=None,    help="random seed set before calculations, useful for testing purposes (default None - total randomness)")
-	#parser.add_option("--new",            action="store_true", default=False,   help="use new code (default = False)")
+	parser.add_option("--new",            action="store_true", default=False,   help="use new code (default = False)")
 
-	#options introduced from sxmeridien
-	# parser.add_option("--ir",      		type= "int",   default= 1,			help="inner radius for rotational correlation > 0 (set to 1)")
-	# parser.add_option("--ou",      		type= "int",   default= -1,			help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
-	# parser.add_option("--rs",      		type= "int",   default= 1,			help="step between rings in rotational correlation >0  (set to 1)" ) 
-	# parser.add_option("--xr",      		type="string", default= "-1",		help="range for translation search in x direction, search is +/xr (default 0)")
-	# parser.add_option("--yr",      		type="string", default= "-1",		help="range for translation search in y direction, search is +/yr (default = same as xr)")
-	# parser.add_option("--ts",      		type="string", default= "1",		help="step size of the translation search in both directions, search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional")
-	parser.add_option("--delta",   		type="string", default= "-1",		help="angular step of reference projections during initialization step (default automatically selected based on radius of the structure.)")
-	parser.add_option("--an",      		type="string", default= "-1",		help="angular neighborhood for local searches (phi and theta) (Default exhaustive searches)")
-	parser.add_option("--center",  		type="float",  default= -1,			help="-1: average shift method; 0: no centering; 1: center of gravity (default=-1)")
-	# parser.add_option("--maxit",   		type="int",  	default= 400,		help="maximum number of iterations performed for the GA part (set to 400) ")
-	parser.add_option("--outlier_percentile",type="float",    default= 95,	help="percentile above which outliers are removed every iteration")
-	parser.add_option("--iteration_start",type="int",    default= 0,		help="starting iteration for rviper, 0 means go to the most recent one (default).")
-	# parser.add_option("--CTF",     		action="store_true", default=False,	help="Use CTF (Default no CTF correction)")
-	# parser.add_option("--snr",     		type="float",  default= 1.0,		help="Signal-to-Noise Ratio of the data (default 1.0)")
-	parser.add_option("--ref_a",   		type="string", default= "S",		help="method for generating the quasi-uniformly distributed projection directions (default S)")
-	parser.add_option("--sym",     		type="string", default= "c1",		help="symmetry of the refined structure")
-	parser.add_option("--npad",    		type="int",    default= 2,			help="padding size for 3D reconstruction (default=2)")
-	parser.add_option("--nsoft",    	type="int",    default= 1,			help="Use SHC in first phase of refinement iteration (default=1, to turn it off set to 0)")
-	parser.add_option("--startangles",  action="store_true", default=False,	help="Use orientation parameters in the input file header to jumpstart the procedure")
-
-	#options introduced for the do_volume function
-	parser.add_option("--fl",			type="float",	default=0.12,		help="cut-off frequency of hyperbolic tangent low-pass Fourier filte (default 0.12)")
-	parser.add_option("--aa",			type="float",	default=0.1,		help="fall-off of hyperbolic tangent low-pass Fourier filter (default 0.1)")
-	parser.add_option("--pwreference",	type="string",	default="",			help="text file with a reference power spectrum (default no power spectrum adjustment)")
-	parser.add_option("--mask3D",		type="string",	default=None,		help="3D mask file (default a sphere  WHAT RADIUS??)")
 
 	parser.add_option("--use_latest_master_directory", action="store_true", dest="use_latest_master_directory", default=True)
 
@@ -181,29 +145,17 @@ def main():
 	# orgstack = args[0]
 	command_line_provided_stack_filename = args[0]
 
-	radi  = options.ou
+	radi  = options.radius
+	
+	if(radi < 1):  ERROR("Particle radius has to be provided!","sxisac",1,myid)
+
 	global_def.BATCH = True
 	ali3d_options.ir     = options.ir
 	ali3d_options.rs     = options.rs
-	ali3d_options.ou     = options.ou
+	ali3d_options.ou     = options.radius
 	ali3d_options.xr     = options.xr
 	ali3d_options.yr     = options.yr
-	ali3d_options.ts     = options.ts
-	ali3d_options.an     = "-1"
-	ali3d_options.sym    = options.sym
-	ali3d_options.delta  = options.delta
-	ali3d_options.npad   = options.npad
-	ali3d_options.center = options.center
-	ali3d_options.CTF    = options.CTF
-	ali3d_options.ref_a  = options.ref_a
-	ali3d_options.snr    = options.snr
-	ali3d_options.mask3D = options.mask3D
-	ali3d_options.pwreference = ""  #   It will have to be turned on after exhaustive done by setting to options.pwreference
-	ali3d_options.fl     = 0.4
-	ali3d_options.initfl = 0.4
-	ali3d_options.aa     = 0.1
 
-	if( ali3d_options.xr == "-1" ):  ali3d_options.xr = "2"
 
 
 	from mpi import mpi_init, mpi_comm_rank, MPI_COMM_WORLD
@@ -361,6 +313,8 @@ def main():
 	#  INPUT PARAMETERS
 	radi  = options.ou
 	global_def.BATCH = True
+	"""
+	These are irrelevant
 	ali3d_options.ir     = options.ir
 	ali3d_options.rs     = options.rs
 	ali3d_options.ou     = options.ou
@@ -382,7 +336,7 @@ def main():
 	ali3d_options.aa     = 0.1
 
 	if( ali3d_options.xr == "-1" ):  ali3d_options.xr = "2"
-	
+	"""
 
 	# mpi_barrier(MPI_COMM_WORLD)
 	# from mpi import mpi_finalize
@@ -401,55 +355,16 @@ def main():
 		main_node = 0
 		
 		mpi_barrier(MPI_COMM_WORLD)
-
-		# preparing variables	
-		nxinit = 64  #int(280*0.3*2)
-		cushion = 8  #  the window size has to be at least 8 pixels larger than what would follow from resolution
-		nxstep = 4
-		projdata = [[model_blank(1,1)],[model_blank(1,1)]]
 		
-		mempernode = 4.0e9
-		
-		#  PARAMETERS OF THE PROCEDURE 
-		#  threshold error
-		thresherr = 0
-		fq = 50 # low-freq resolution to which fuse ref volumes. [A]
+		#  PARAMETERS OF THE PROCEDURE
 		
 		# Get the pixel size, if none set to 1.0, and the original image size
 		if(myid == main_node):
 			a = get_im(command_line_provided_stack_filename)
 			nnxo = a.get_xsize()
-			if( nnxo%2 == 1 ):
-				ERROR("Only even-dimensioned data allowed","sxmeridien",1)
-				nnxo = -1
-			elif( nxinit > nnxo ):
-				ERROR("Image size less than minimum permitted $d"%nxinit,"sxmeridien",1)
-				nnxo = -1
-			else:
-				if ali3d_options.CTF:
-					i = a.get_attr('ctf')
-					pixel_size = i.apix
-					fq = pixel_size/fq
-				else:
-					pixel_size = 1.0
-					#  No pixel size, fusing computed as 5 Fourier pixels
-					fq = 5.0/nnxo
-				del a
 		else:
 			nnxo = 0
-			pixel_size = 1.0
 		nnxo = bcast_number_to_all(nnxo, source_node = main_node)
-		if( nnxo < 0 ):
-			mpi_finalize()
-			exit()
-		pixel_size = bcast_number_to_all(pixel_size, source_node = main_node)
-		fq   = bcast_number_to_all(fq, source_node = main_node)
-	
-	
-		if(radi < 1):  radi = nnxo//2-2
-		elif((2*radi+2)>nnxo):  ERROR("Particle radius set too large!","sxmeridien",1,myid)
-		ali3d_options.ou = radi
-
 
 		#  create a vstack from input stack to the local stack in masterdir
 		#  Stack name set to default
@@ -468,7 +383,7 @@ def main():
 			number_of_images_in_stack = EMUtil.get_image_count(command_line_provided_stack_filename)
 		else:
 			number_of_images_in_stack = 0
-	
+
 		number_of_images_in_stack = bcast_number_to_all(number_of_images_in_stack, source_node = main_node)
 		
 		nxrsteps = 4
@@ -489,7 +404,7 @@ def main():
 			outcome = 0
 			log2d = None
 		txrm = (nnxo - 2*(radi+1))//2
-		if(txrm < 0):  			ERROR( "ERROR!!   Radius of the structure larger than the window data size permits   %d"%(radi), "sxmeridien",1, myid)
+		if(txrm < 0):  			ERROR( "ERROR!!   Radius of the structure larger than the window data size permits   %d"%(radi), "sxisac",1, myid)
 		if(txrm/nxrsteps>0):
 			tss = ""
 			txr = ""
@@ -502,7 +417,6 @@ def main():
 			tss = "1"
 			txr = "%d"%txrm
 
-		
 		params2d, aligned_images = ali2d_base(command_line_provided_stack_filename, init2dir, None, 1, radi, 1, txr, txr, tss, \
 					False, 90.0, -1, 14, options.CTF, 1.0, False, \
 					"ref_ali2d", "", log2d, nproc, myid, main_node, MPI_COMM_WORLD, write_headers = False)
