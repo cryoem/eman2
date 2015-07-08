@@ -1677,8 +1677,6 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			alldata[im].process_inplace("normalize.mask", {"mask":mask, "no_sigma":0}) # subtract average under the mask
 
 			ny = nx
-			sxi = round(sxi,0)
-			syi = round(syi,0)
 			#  The search range procedure was adjusted for 3D searches, so since in 2D the order of operations is inverted, we have to invert ranges
 			txrng = search_range(nx, ou, sxi, xrng, "ISAC")
 			txrng = [txrng[1],txrng[0]]
@@ -1892,8 +1890,10 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 	
 			# When there is no stability checking or estimated calculation time of new method is greater than 80% of estimated calculation time of original method 
 			# then the original method is used. In other case. the second (new) method is used.
-			if (not check_stability) or (stab_calc_time_method_2 > 0.80 * stab_calc_time_method_1):
-				if my_abs_id == main_node: print "Checking within group stability, original approach .......", localtime()[0:5]
+			#if (not check_stability) or (stab_calc_time_method_2 > 0.80 * stab_calc_time_method_1):
+			#  For the time being only use this method as the other one is not worked out as far as parameter ranges go.
+			if (not check_stability) :
+				if my_abs_id == main_node: print "Within group refinement and checking within group stability, original approach .......", check_stability, "  ",localtime()[0:5]
 				# ====================================== standard approach is used, calculations are parallelized by scatter groups (averages) among MPI processes
 				for j in xrange(myid, numref, number_of_proc):
 					assign = []
@@ -1936,6 +1936,43 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 									if p == ss[1]: duplicate = True
 							stable_set.append([100.0, p, [0.0, 0.0, 0.0, 0]])
 
+						# Force average parameters into permissible range
+						mashi = cnx-ou-2
+						axa=1.0e10;axb=-1.0e10;aya=1.0e10;ayb=-1.0e10
+						temp = []
+						for err in stable_set:
+							#  TEST WHETHER PARAMETERS ARE WITHIN RANGE
+							alpha, sx, sy, mirror = inverse_transform2(err[2][0], err[2][1], err[2][2], int(err[2][3]))
+							temp.append([alpha, sx, sy, mirror])
+							axa=min(axa,sx);axb=max(axb,sx);aya=min(aya,sy);ayb=max(ayb,sy);
+						aa = [axa,aya]
+						ab = [axb,ayb]
+						axa = False
+						for k in xrange(2):
+							if(aa[k]<mashi or ab[k]>mashi):
+								axa = True
+								#  Do both ranges stick out?
+								if(aa[k]<-mashi and ab[k]>mashi):
+									#  Shift such that both ends stick out about the same
+									ss = (aa[k]+ab[k])/2.0
+								else:
+									if(aa[k]<-mashi):
+										ss = aa[k] + mashi
+										if( ab[k] - ss > mashi): ss=(aa[k] + ab[k])/2.0
+									else:
+										ss = ab[k] - mashi
+										if( aa[k] - ss < -mashi): ss=(aa[k] + ab[k])/2.0
+								for im in xrange(len(temp)):
+									temp[im][k+1] = min(max(temp[im][k+1] - ss,-mashi), mashi)
+						if axa:
+							#  There was a shift, restore shifted parameters
+							for i in in xrange(len(stable_set)):
+								#  TEST WHETHER PARAMETERS ARE WITHIN RANGE
+								stable_set[i][2][0], stable_set[i][2][1], stable_set[i][2][2], stable_set[i][2][3] = inverse_transform2(temp[i][0], temp[i][1], temp[i][2], temp[i][3])
+								mashi = cnx-ou-2
+								if(abs(temp[i][1])>mashi or abs(temp[i][2])>mashi):  print  "PARAMETERS OUTSIDE THE RANGE 22222 ::::: ",i,mashi,temp[i][0], temp[i][1], temp[i][2], temp[i][3]
+								
+
 						stable_data = []
 						stable_members = []
 						for err in stable_set:
@@ -1943,10 +1980,6 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 							stable_members.append(assign[im])
 							stable_data.append(class_data[im])
 							set_params2D( class_data[im], [err[2][0], err[2][1], err[2][2], int(err[2][3]), 1.0] )
-							#  TEST WHETHER PARAMETERS ARE WITHIN RANGE
-							alpha, sx, sy, mirror = inverse_transform2(err[2][0], err[2][1], err[2][2], int(err[2][3]))
-							mashi = cnx-ou-2
-							if(abs(sx)>mashi or abs(sy)>mashi):  print  "PARAMETERS OUTSIDE THE RANGE 22222 ::::: ",mashi,err[2][0], err[2][1], err[2][2], int(err[2][3]),alpha, sx, sy, mirror
 						stable_members.sort()
 
 						refi[j] = filt_tanl(ave_series(stable_data), FH, FF)
