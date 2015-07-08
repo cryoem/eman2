@@ -644,7 +644,7 @@ def compose_transform3(phi1,theta1,psi1,sx1,sy1,sz1,scale1,phi2,theta2,psi2,sx2,
    
 def combine_params2(alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2):
 	"""
-	  Combine 2D alignent parameters including mirror
+	  Combine 2D alignent parameters including mirror: tt = t2*t1
 	"""
 
 	t1 = Transform({"type":"2D","alpha":alpha1,"tx":sx1,"ty":sy1,"mirror":mirror1,"scale":1.0})
