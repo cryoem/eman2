@@ -67,6 +67,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 	syn = 0.
 	mn = 0
 	nope = 0
+	mashi = cnx-ou-2
 	for im in xrange(len(data)):
 		if CTF:
 			#Apply CTF to image
@@ -86,7 +87,6 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 			alpha, sx, sy, mirror        = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
 			alphai, sxi, syi, scalei     = inverse_transform2(alpha, sx, sy)
 			#  introduce constraints on parameters to accomodate use of cs centering
-			mashi = cnx-ou-2
 			sxi = min(max(round(sxi,2),-mashi),mashi)
 			syi = min(max(round(syi,2),-mashi),mashi)
 
@@ -146,6 +146,10 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 			else:	      [angt, sxst, syst, mirrort, peakt] = ormq(ima, cimage, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi, delta)
 			# combine parameters and set them to the header, ignore previous angle and mirror
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
+			alphan, sxn, syn, mn = inverse_transform2(alphan, sxn, syn, mn)
+			sxn = min(max(round(sxn,2),-mashi),mashi)
+			syn = min(max(round(syn,2),-mashi),mashi)
+			alphan, sxn, syn, mn = inverse_transform2(alphan, sxn, syn, mn)
 			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
 
 		if mn == 0: sx_sum += sxn
