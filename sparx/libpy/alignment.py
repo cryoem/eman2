@@ -4681,7 +4681,7 @@ def search_range(n, radius, shift, range):
 	ql = cn+shift-radius -2   # lower end is positive
 	qe = n - cn-shift-radius    # upper end
 	if( ql < 0 or qe < 0 ):
-		ERROR("search_range","Shift of particle too large, results may be incorrect:  %4d   %3d   %f  %f  %f  %4d  %4d"%(n, cn, radius, shift, range, ql, qe),0)
+		ERROR("search_range","Shift of particle too large, results may be incorrect:  %4d   %3d   %f  %f  %f  %f  %f"%(n, cn, radius, shift, range, ql, qe),0)
 		ql = max(ql,0)
 		qe = max(qe,0)
 	# ???for mysterious reasons it has to be this way as C code changes the order of searches.

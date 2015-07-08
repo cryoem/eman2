@@ -1593,6 +1593,9 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 	nx = alldata[0].get_xsize()
 
 	nima = len(alldata)
+	#  Explicitly force all parameters to be zero on input  08/07/2015  PAP
+	for im in xrange(nima):  set_params2D(alldata[im], [0.,0.,0.,0, 1.0])
+		
 	
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
 
@@ -1672,7 +1675,6 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			# normalize
 			alldata[im].process_inplace("normalize.mask", {"mask":mask, "no_sigma":0}) # subtract average under the mask
 
-			
 			ny = nx
 			#  The search range procedure was adjusted for 3D searches, so since in 2D the order of operations is inverted, we have to invert ranges
 			txrng = search_range(nx, ou, sxi, xrng)
@@ -1738,10 +1740,14 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		belongsto = map(int, belongsto)
 		#if my_abs_id == main_node: print "Completed EQ-mref within isac_MPI = ", Iter, "	main_iter = ", main_iter , localtime()[0:5], myid
 
+		#  I have to brutally remove centering of averages based on average shift method as 
+		#    it results in inadmissible shifts of individual images.  It remains to be seen 
+		#    whether the average itself should be shifted, but this is risky business,
+		#     so for the time being all shifting is commented out with ##.  07/08/2015  PAP
 		#  Compute partial averages
 		members = [0]*numref
-		sx_sum = [0.0]*numref
-		sy_sum = [0.0]*numref
+		##sx_sum = [0.0]*numref
+		##sy_sum = [0.0]*numref
 		refi = [model_blank(nx,nx) for j in xrange(numref)]
 		for im in xrange(image_start, image_end):
 			matchref = belongsto[im]
@@ -1749,9 +1755,9 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			sxn    = float(peak_list[matchref][(im-image_start)*4+1])
 			syn    = float(peak_list[matchref][(im-image_start)*4+2])
 			mn     = int(peak_list[matchref][(im-image_start)*4+3])
-			if mn == 0: sx_sum[matchref] += sxn
-			else:	    sx_sum[matchref] -= sxn
-			sy_sum[matchref] += syn
+			##if mn == 0: sx_sum[matchref] += sxn
+			##else:	    sx_sum[matchref] -= sxn
+			##sy_sum[matchref] += syn
 			# apply current parameters and add to the average
 			Util.add_img(refi[matchref], rot_shift2D(alldata[im], alphan, sxn, syn, mn))
 #			if CTF:
@@ -1760,23 +1766,23 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			members[matchref] += 1
 		#  HERE SHIFTS ARE USED FOR CENTERING based on principle that original images are shifted randomly,
 		#    so after alignment sum of shifts should be zero PAP 01/17/2015
-		sx_sum  = mpi_reduce(sx_sum, numref, MPI_FLOAT, MPI_SUM, main_node, comm)
-		sy_sum  = mpi_reduce(sy_sum, numref, MPI_FLOAT, MPI_SUM, main_node, comm)
+		##sx_sum  = mpi_reduce(sx_sum, numref, MPI_FLOAT, MPI_SUM, main_node, comm)
+		##sy_sum  = mpi_reduce(sy_sum, numref, MPI_FLOAT, MPI_SUM, main_node, comm)
 		members = mpi_reduce(members, numref, MPI_INT, MPI_SUM, main_node, comm)
 		if myid != main_node:
-			sx_sum  = [0.0]*numref
-			sy_sum  = [0.0]*numref
+			##sx_sum  = [0.0]*numref
+			s##y_sum  = [0.0]*numref
 			members = [0.0]*numref
-		sx_sum  = mpi_bcast(sx_sum, numref, MPI_FLOAT, main_node, comm)
-		sy_sum  = mpi_bcast(sy_sum, numref, MPI_FLOAT, main_node, comm)
+		##sx_sum  = mpi_bcast(sx_sum, numref, MPI_FLOAT, main_node, comm)
+		##sy_sum  = mpi_bcast(sy_sum, numref, MPI_FLOAT, main_node, comm)
 		members = mpi_bcast(members, numref, MPI_INT, main_node, comm)
-		sx_sum  = map(float, sx_sum)
-		sy_sum  = map(float, sy_sum)
+		##sx_sum  = map(float, sx_sum)
+		##sy_sum  = map(float, sy_sum)
 		members = map(int, members)
 
-		for j in xrange(numref):
-			sx_sum[j] /= float(members[j])
-			sy_sum[j] /= float(members[j])
+		##for j in xrange(numref):
+		##	sx_sum[j] /= float(members[j])
+		##	sy_sum[j] /= float(members[j])
 
 		for im in xrange(image_start, image_end):
 			matchref = belongsto[im]
@@ -1784,10 +1790,14 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			sxn = float(peak_list[matchref][(im-image_start)*4+1])
 			syn = float(peak_list[matchref][(im-image_start)*4+2])
 			mn  = int(peak_list[matchref][(im-image_start)*4+3])
+			##if mn == 0:
+			##	set_params2D(alldata[im], [alphan, sxn-sx_sum[matchref], syn-sy_sum[matchref], mn, scale])
+			##else:
+			##	set_params2D(alldata[im], [alphan, sxn+sx_sum[matchref], syn-sy_sum[matchref], mn, scale])
 			if mn == 0:
-				set_params2D(alldata[im], [alphan, sxn-sx_sum[matchref], syn-sy_sum[matchref], mn, scale])
+				set_params2D(alldata[im], [alphan, sxn, syn, mn, scale])
 			else:
-				set_params2D(alldata[im], [alphan, sxn+sx_sum[matchref], syn-sy_sum[matchref], mn, scale])
+				set_params2D(alldata[im], [alphan, sxn, syn, mn, scale])
 
 		del peak_list
 
@@ -1796,15 +1806,16 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			if myid == main_node:
 				# Golden rule when to do within-group refinement
 				Util.mul_scalar(refi[j], 1.0/float(members[j]))
-				refi[j] = fft( fshift(filt_tanl( fft(refi[j]), fl, FF), -sx_sum[j], -sy_sum[j]) )
+				#refi[j] = fft( fshift(filt_tanl( fft(refi[j]), fl, FF), -sx_sum[j], -sy_sum[j]) )
+				refi[j] = filt_tanl( refi[j], fl, FF)
 				set_params2D(refi[j], [0.0, 0.0, 0.0, 0, 1.0])
-		
+
 		if myid == main_node:
 			#  this is most likely meant to center them, if so, it works poorly, 
 			#      it has to be checked and probably a better method used PAP 01/17/2015
 			#  There is additional inconsistency.  Above the lowpass is set to fl, here it is FH
-			dummy = within_group_refinement(refi, mask, True, first_ring, last_ring, rstep, [xrng], [yrng], [step], \
-											dst, maxit, FH, FF, method )
+			dummy = within_group_refinement(refi, mask, True, first_ring, last_ring, rstep, \
+											[xrng], [yrng], [step], dst, maxit, FH, FF, method )
 			ref_ali_params = []
 			for j in xrange(numref):
 				alpha, sx, sy, mirror, scale = get_params2D(refi[j])
@@ -1818,14 +1829,14 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		for j in xrange(numref):
 			bcast_EMData_to_all(refi[j], myid, main_node, comm)
 
-		# Compensate the centering to averages
-		for im in xrange(image_start, image_end):
-			matchref = belongsto[im]
-			alpha, sx, sy, mirror, scale = get_params2D(alldata[im])
-			alphan, sxn, syn, mirrorn = combine_params2(alpha, sx, sy, mirror, ref_ali_params[matchref*4], ref_ali_params[matchref*4+1], \
-				ref_ali_params[matchref*4+2], int(ref_ali_params[matchref*4+3]))
-			#  If we really want to transfer the parameters from centering we woud have to make sure shifts are within permissible range PAP 07/06/2015
-			set_params2D(alldata[im], [alphan, sxn, syn, int(mirrorn), 1.0])
+		## # Compensate the centering to averages
+		## for im in xrange(image_start, image_end):
+		## 	matchref = belongsto[im]
+		## 	alpha, sx, sy, mirror, scale = get_params2D(alldata[im])
+		## 	alphan, sxn, syn, mirrorn = combine_params2(alpha, sx, sy, mirror, ref_ali_params[matchref*4], ref_ali_params[matchref*4+1], \
+		## 		ref_ali_params[matchref*4+2], int(ref_ali_params[matchref*4+3]))
+		## 	#  If we really want to transfer the parameters from centering we would have to make sure shifts are within permissible range PAP 07/06/2015
+		## 	set_params2D(alldata[im], [alphan, sxn, syn, int(mirrorn), 1.0])
 
 		do_within_group = 0
 		fl += 0.05
@@ -1881,8 +1892,8 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 					randomize = True  # I think there is no reason not to be True
 					class_data = [alldata[im] for im in assign]
-					refi[j] = within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep, [xrng], [yrng], [step], \
-														dst, maxit, FH, FF, method = method)
+					refi[j] = within_group_refinement(class_data, mask, randomize, first_ring, last_ring, rstep, \
+													[xrng], [yrng], [step], dst, maxit, FH, FF, method = method)
 
 					if check_stability:
 						ali_params = [[] for qq in xrange(stab_ali)]
