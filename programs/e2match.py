@@ -290,14 +290,14 @@ def main():
 
 def runcmd(options,cmd):
 	if options.verbose > 9:
-		print "(e2spt_autoboxer.py)(runcmd) Running command", cmd
+		print "(e2match)(runcmd) Running command", cmd
 	
 	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	text=p.communicate()	
 	p.stdout.close()
 	
 	if options.verbose > 9:
-		print "(e2spt_autoboxer.py)(runcmd) Done"
+		print "(e2match)(runcmd) done"
 	return
 	
 
