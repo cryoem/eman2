@@ -1697,7 +1697,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 				peak_list[iref][(im-image_start)*4+2] = syn
 				peak_list[iref][(im-image_start)*4+3] = mn
 				qd0,qd1,qd2,qd3 = inverse_transform2(alphan, sxn, syn, mn)
-				if(abs(qd1)>xrng or abs(qd2)>yrng):  print  " multiref2 ",qd0,qd1,qd2,qd3
+				if(abs(qd1)>xrng or abs(qd2)>yrng):  print  " multiref2 ",sxi,syi,alphan, sxn, syn, mn,qd0,qd1,qd2,qd3
 				d[iref*nima+im] = temp[iref*5]
 		del refi, temp
 
