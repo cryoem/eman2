@@ -479,7 +479,7 @@ def iter_isac_with_program_state_stack_restart(stack, ir, ou, rs, xr, yr, ts, ma
 			if K_left > 0:
 				if myid == main_node: 
 					print "**********************************************************************"
-					print "        Generating initial averages for unaccounted for images"+strftime("%a, %d %b %Y %H:%M:%S", localtime())
+					print "        Generating initial averages for unaccounted for images   "+strftime("%a, %d %b %Y %H:%M:%S", localtime())
 					print "**********************************************************************"
 					print "   Number of images unaccounted for = %d     Number of groups = %d"%(nleft, K_left)
 	
@@ -520,7 +520,7 @@ def iter_isac_with_program_state_stack_restart(stack, ir, ou, rs, xr, yr, ts, ma
 			# Run ISAC
 			if myid == main_node:
 				print "**********************************************************************"
-				print "                 Run the main part of ISAC program "+strftime("%a, %d %b %Y %H:%M:%S", localtime())
+				print "                 Run the main part of ISAC program   "+strftime("%a, %d %b %Y %H:%M:%S", localtime())
 				print "**********************************************************************"
 				print "    Number of images = %d               Number of groups = %d"%(ndata, K)
 	
@@ -1004,13 +1004,13 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			# Run ISAC
 			if myid == main_node:
 				print "**********************************************************************"
-				print "                     The main part of ISAC program"+strftime("%a, %d %b %Y %H:%M:%S", localtime())
+				print "                     The main part of ISAC program   "+strftime("%a, %d %b %Y %H:%M:%S", localtime())
 				print "**********************************************************************"
 	
 			for mloop in xrange(1, match_first+1):
 				if myid == main_node:
 					print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-					print "                  Loop %3d for 2-way matching"%mloop+strftime("%a, %d %b %Y %H:%M:%S", localtime())
+					print "                  Loop %3d for 2-way matching   "%mloop+strftime("%a, %d %b %Y %H:%M:%S", localtime())
 					print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 				refi = isac_MPI(data, current_refim, maskfile=None, outname=None, ir=ir, ou=ou, rs=rs, xrng=xr, yrng=yr, step=ts,
 						maxit=maxit, isac_iter=main_iter, CTF=CTF, snr=snr, rand_seed=-1, color=color, comm=group_comm,
@@ -1236,7 +1236,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		# Run ISAC
 		if myid == main_node:
 			print "**********************************************************************"
-			print "                 Run the main part of ISAC program "+strftime("%a, %d %b %Y %H:%M:%S", localtime())
+			print "                 Run the main part of ISAC program   "+strftime("%a, %d %b %Y %H:%M:%S", localtime())
 			print "**********************************************************************"
 			print "    Number of images = %d               Number of groups = %d"%(ndata, K)
 
@@ -1697,7 +1697,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 				peak_list[iref][(im-image_start)*4+2] = syn
 				peak_list[iref][(im-image_start)*4+3] = mn
 				qd0,qd1,qd2,qd3 = inverse_transform2(alphan, sxn, syn, mn)
-				if(abs(qd1)>xrng or abs(qd2)>yrng):  print  " multiref2 ",sxi,syi,alphan, sxn, syn, mn,qd0,qd1,qd2,qd3
+				if(abs(qd1)>xrng or abs(qd2)>yrng):  print  " multiref2 ",sxi,syi,temp[iref*5+1], temp[iref*5+2], temp[iref*5+3], int(temp[iref*5+4]),alphan, sxn, syn, mn,qd0,qd1,qd2,qd3
 				d[iref*nima+im] = temp[iref*5]
 		del refi, temp
 
