@@ -1966,7 +1966,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 									temp[im][k+1] = min(max(temp[im][k+1] - ss,-mashi), mashi)
 						if axa:
 							#  There was a shift, restore shifted parameters
-							for i in in xrange(len(stable_set)):
+							for i in xrange(len(stable_set)):
 								#  TEST WHETHER PARAMETERS ARE WITHIN RANGE
 								stable_set[i][2][0], stable_set[i][2][1], stable_set[i][2][2], stable_set[i][2][3] = inverse_transform2(temp[i][0], temp[i][1], temp[i][2], temp[i][3])
 								mashi = cnx-ou-2

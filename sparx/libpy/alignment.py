@@ -87,8 +87,8 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 			alpha, sx, sy, mirror        = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
 			alphai, sxi, syi, scalei     = inverse_transform2(alpha, sx, sy)
 			#  introduce constraints on parameters to accomodate use of cs centering
-			sxi = min(max(round(sxi,2),-mashi),mashi)
-			syi = min(max(round(syi,2),-mashi),mashi)
+			sxi = min(max(sxi,-mashi),mashi)
+			syi = min(max(syi,-mashi),mashi)
 
 		#  The search range procedure was adjusted for 3D searches, so since in 2D the order of operations is inverted, we have to invert ranges
 		txrng = search_range(nx, ou, sxi, xrng, "ali2d_single_iter")
@@ -147,8 +147,8 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 			# combine parameters and set them to the header, ignore previous angle and mirror
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
 			alphan, sxn, syn, mn = inverse_transform2(alphan, sxn, syn, mn)
-			sxn = min(max(round(sxn,2),-mashi),mashi)
-			syn = min(max(round(syn,2),-mashi),mashi)
+			sxn = min(max(sxn,-mashi),mashi)
+			syn = min(max(syn,-mashi),mashi)
 			alphan, sxn, syn, mn = inverse_transform2(alphan, sxn, syn, mn)
 			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
 

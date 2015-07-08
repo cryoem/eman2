@@ -651,7 +651,30 @@ def combine_params2(alpha1, sx1, sy1, mirror1, alpha2, sx2, sy2, mirror2):
 	t2 = Transform({"type":"2D","alpha":alpha2,"tx":sx2,"ty":sy2,"mirror":mirror2,"scale":1.0})
 	tt = t2*t1
 	d = tt.get_params("2D")
-	return d[ "alpha" ], d[ "tx" ], d[ "ty" ], d[ "mirror" ]
+	return d[ "alpha" ], d[ "tx" ], d[ "ty" ], int(d[ "mirror" ]+0.1)
+
+def inverse_transform2(alpha, tx = 0.0, ty = 0.0, mirror = 0):
+	"""Returns the inverse of the 2d rot and trans matrix
+
+	    Usage: nalpha, ntx, nty, mirror = inverse_transform2(alpha,tx,ty,mirror)
+	"""
+
+	t = Transform({"type":"2D","alpha":alpha,"tx":tx,"ty":ty,"mirror":mirror,"scale":1.0})
+	t = t.inverse()
+	t = t.get_params("2D")
+	return t[ "alpha" ], t[ "tx" ], t[ "ty" ], int(t[ "mirror" ]+0.1)
+
+def inverse_transform3(phi, theta=0.0, psi=0.0, tx=0.0, ty=0.0, tz=0.0, mirror = 0, scale=1.0):
+	"""Returns the inverse of the 3d rot and trans matrix
+
+	    Usage: nphi,ntheta,npsi,ntx,nty,ntz,nmirror,nscale = inverse_transform3(phi,theta,psi,tx,ty,tz,mirror,scale)
+	       angles in degrees
+	"""
+
+	d = Transform({'type': 'spider', 'phi': phi, 'theta': theta, 'psi': psi, 'tx': tx, 'ty': ty, 'tz': tz, "mirror":mirror,"scale":scale})
+	d = d.inverse()
+	d = d.get_params("spider")
+	return  d["phi"],d["theta"],d["psi"],d["tx"],d["ty"],d["tz"],int(d["mirror"]+0.1),d["scale"]
 
 def create_spider_doc(fname,spiderdoc):
 	"""Convert a text file that is composed of columns of numbers into spider doc file
@@ -1230,29 +1253,6 @@ def image_decimate(img, decimation=2, fit_to_fft=1,frequency_low=0, frequency_hi
 		e1  = filt_btwl(img, frequency_low, frequency_high)
 		img = Util.decimate(e1, int(decimation), int(decimation), 1)
 	return  img
-
-def inverse_transform2(alpha, tx = 0.0, ty = 0.0, mirror = 0):
-	"""Returns the inverse of the 2d rot and trans matrix
-
-	    Usage: nalpha, ntx, nty, mirror = inverse_transform2(alpha,tx,ty,mirror)
-	"""
-
-	t = Transform({"type":"2D","alpha":alpha,"tx":tx,"ty":ty,"mirror":mirror,"scale":1.0})
-	t = t.inverse()
-	t = t.get_params("2D")
-	return t[ "alpha" ], t[ "tx" ], t[ "ty" ], t[ "mirror" ]
-
-def inverse_transform3(phi, theta=0.0, psi=0.0, tx=0.0, ty=0.0, tz=0.0, mirror = 0, scale=1.0):
-	"""Returns the inverse of the 3d rot and trans matrix
-
-	    Usage: nphi,ntheta,npsi,ntx,nty,ntz,nmirror,nscale = inverse_transform3(phi,theta,psi,tx,ty,tz,mirror,scale)
-	       angles in degrees
-	"""
-
-	d = Transform({'type': 'spider', 'phi': phi, 'theta': theta, 'psi': psi, 'tx': tx, 'ty': ty, 'tz': tz, "mirror":mirror,"scale":scale})
-	d = d.inverse()
-	d = d.get_params("spider")
-	return  d["phi"],d["theta"],d["psi"],d["tx"],d["ty"],d["tz"],d["mirror"],d["scale"]
 
 def list_syms():
 	"""Create a list of available symmetries
