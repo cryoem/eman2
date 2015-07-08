@@ -1676,6 +1676,8 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			alldata[im].process_inplace("normalize.mask", {"mask":mask, "no_sigma":0}) # subtract average under the mask
 
 			ny = nx
+			sxi = round(sxi,2)
+			syi = round(syi,2)
 			#  The search range procedure was adjusted for 3D searches, so since in 2D the order of operations is inverted, we have to invert ranges
 			txrng = search_range(nx, ou, sxi, xrng)
 			txrng = [txrng[1],txrng[0]]
