@@ -91,7 +91,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 			syi = min(max(round(syi,2),-mashi),mashi)
 
 		#  The search range procedure was adjusted for 3D searches, so since in 2D the order of operations is inverted, we have to invert ranges
-		txrng = search_range(nx, ou, sxi, xrng)
+		txrng = search_range(nx, ou, sxi, xrng, "ali2d_single_iter")
 		txrng = [txrng[1],txrng[0]]
 		tyrng = search_range(ny, ou, syi, yrng)
 		tyrng = [tyrng[1],tyrng[0]]
@@ -4679,7 +4679,7 @@ def center_projections_3D(data, ref_vol = None, ali3d_options = None, onx = -1, 
 
 
 
-def search_range(n, radius, shift, range):
+def search_range(n, radius, shift, range, location = ""):
 	"""
 		Find permissible ranges for translational searches by resampling into polar coordinates
 		n - image size; radius - particle radius, the circle has to fit into the square image;
@@ -4693,7 +4693,7 @@ def search_range(n, radius, shift, range):
 	ql = cn+shift-radius -2   # lower end is positive
 	qe = n - cn-shift-radius    # upper end
 	if( ql < 0 or qe < 0 ):
-		ERROR("search_range","Shift of particle too large, results may be incorrect:  %4d   %3d   %f  %f  %f  %f  %f"%(n, cn, radius, shift, range, ql, qe),0)
+		ERROR("search_range  "+location,"Shift of particle too large, results may be incorrect:  %4d   %3d   %f  %f  %f  %f  %f"%(n, cn, radius, shift, range, ql, qe),0)
 		ql = max(ql,0)
 		qe = max(qe,0)
 	# ???for mysterious reasons it has to be this way as C code changes the order of searches.

@@ -95,6 +95,7 @@ def main():
 	parser.add_option("--candidatesexist",action="store_true", default=False,   help="Candidate class averages exist use them (default False)")
 	parser.add_option("--rand_seed",      type="int",          default=None,    help="random seed set before calculations, useful for testing purposes (default None - total randomness)")
 	parser.add_option("--new",            action="store_true", default=False,   help="use new code (default = False)")
+	parser.add_option("--debug",          action="store_true", default=False,   help="debug info printout (default = False)")
 
 
 	parser.add_option("--use_latest_master_directory", action="store_true", dest="use_latest_master_directory", default=True)
@@ -171,7 +172,7 @@ def main():
 		
 		
 	# global_def.LOGFILE =  os.path.join(masterdir, global_def.LOGFILE)
-	print_program_start_information()
+	if debug:  print_program_start_information()
 	
 	# mpi_barrier(mpi_comm)
 	# from mpi import mpi_finalize

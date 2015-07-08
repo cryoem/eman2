@@ -282,7 +282,7 @@ def iter_isac_with_program_state_stack_restart(stack, ir, ou, rs, xr, yr, ts, ma
 			# Run ISAC
 			if myid == main_node:
 				print "**********************************************************************"
-				print "                     The main part of ISAC program  "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"
+				print "                     The main part of ISAC program  "+strftime("%a, %d %b %Y %H:%M:%S", localtime())
 				print "**********************************************************************"
 	
 			for mloop in xrange(1, match_first+1):
@@ -479,7 +479,7 @@ def iter_isac_with_program_state_stack_restart(stack, ir, ou, rs, xr, yr, ts, ma
 			if K_left > 0:
 				if myid == main_node: 
 					print "**********************************************************************"
-					print "        Generating initial averages for unaccounted for images"+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"
+					print "        Generating initial averages for unaccounted for images"+strftime("%a, %d %b %Y %H:%M:%S", localtime())
 					print "**********************************************************************"
 					print "   Number of images unaccounted for = %d     Number of groups = %d"%(nleft, K_left)
 	
@@ -520,7 +520,7 @@ def iter_isac_with_program_state_stack_restart(stack, ir, ou, rs, xr, yr, ts, ma
 			# Run ISAC
 			if myid == main_node:
 				print "**********************************************************************"
-				print "                 Run the main part of ISAC program "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"
+				print "                 Run the main part of ISAC program "+strftime("%a, %d %b %Y %H:%M:%S", localtime())
 				print "**********************************************************************"
 				print "    Number of images = %d               Number of groups = %d"%(ndata, K)
 	
@@ -1004,7 +1004,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			# Run ISAC
 			if myid == main_node:
 				print "**********************************************************************"
-				print "                     The main part of ISAC program"+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"
+				print "                     The main part of ISAC program"+strftime("%a, %d %b %Y %H:%M:%S", localtime())
 				print "**********************************************************************"
 	
 			for mloop in xrange(1, match_first+1):
@@ -1236,7 +1236,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		# Run ISAC
 		if myid == main_node:
 			print "**********************************************************************"
-			print "                 Run the main part of ISAC program "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"
+			print "                 Run the main part of ISAC program "+strftime("%a, %d %b %Y %H:%M:%S", localtime())
 			print "**********************************************************************"
 			print "    Number of images = %d               Number of groups = %d"%(ndata, K)
 
