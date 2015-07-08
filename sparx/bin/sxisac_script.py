@@ -172,7 +172,7 @@ def main():
 		
 		
 	# global_def.LOGFILE =  os.path.join(masterdir, global_def.LOGFILE)
-	if debug:  print_program_start_information()
+	if options.debug:  print_program_start_information()
 	
 	# mpi_barrier(mpi_comm)
 	# from mpi import mpi_finalize
