@@ -288,7 +288,7 @@ def iter_isac_with_program_state_stack_restart(stack, ir, ou, rs, xr, yr, ts, ma
 			for mloop in xrange(1, match_first+1):
 				if myid == main_node:
 					print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-					print "                  Loop %3d for 2-way matching "%mloop+strftime("%a, %d %b %Y %H:%M:%S", localtime())+" 
+					print "                  Loop %3d for 2-way matching "%mloop+strftime("%a, %d %b %Y %H:%M:%S", localtime())
 					print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 				refi = isac_MPI(data, current_refim, maskfile=None, outname=None, ir=ir, ou=ou, rs=rs, xrng=xr, yrng=yr, step=ts,
 						maxit=maxit, isac_iter=main_iter, CTF=CTF, snr=snr, rand_seed=-1, color=color, comm=group_comm,
@@ -551,7 +551,7 @@ def iter_isac_with_program_state_stack_restart(stack, ir, ou, rs, xr, yr, ts, ma
 			if mloop != match_second:
 				if myid == main_node:
 					print "**********************************************************************"
-					print "                           Run the %d-way matching algorithm"%wayness+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"
+					print "                           Run the %d-way matching algorithm"%wayness+strftime("%a, %d %b %Y %H:%M:%S", localtime())
 					print "**********************************************************************"
 					# In this last two-way loop, we find all unique 2-way matches and use it as the starting
 					# point of three-way match
@@ -597,7 +597,7 @@ def iter_isac_with_program_state_stack_restart(stack, ir, ou, rs, xr, yr, ts, ma
 
 	if myid == main_node:
 		print "**********************************************************************"
-		print "                   Run the final %d-way matching algorithm"%indep_run+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"
+		print "                   Run the final %d-way matching algorithm"%indep_run+strftime("%a, %d %b %Y %H:%M:%S", localtime())
 		print "**********************************************************************"
 
 	# Run 4-way Matching
@@ -1010,7 +1010,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			for mloop in xrange(1, match_first+1):
 				if myid == main_node:
 					print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-					print "                  Loop %3d for 2-way matching"%mloop+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"
+					print "                  Loop %3d for 2-way matching"%mloop+strftime("%a, %d %b %Y %H:%M:%S", localtime())
 					print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 				refi = isac_MPI(data, current_refim, maskfile=None, outname=None, ir=ir, ou=ou, rs=rs, xrng=xr, yrng=yr, step=ts,
 						maxit=maxit, isac_iter=main_iter, CTF=CTF, snr=snr, rand_seed=-1, color=color, comm=group_comm,
@@ -1267,7 +1267,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		if mloop != match_second:
 			if myid == main_node:
 				print "**********************************************************************"
-				print "                  Run the %d-way matching algorithm  "%wayness+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"
+				print "                  Run the %d-way matching algorithm  "%wayness+strftime("%a, %d %b %Y %H:%M:%S", localtime())
 				print "**********************************************************************"
 				# In this last two-way loop, we find all unique 2-way matches and use it as the starting
 				# point of three-way match
@@ -1313,7 +1313,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 	if myid == main_node:
 		print "**********************************************************************"
-		print "       Run the final %d-way matching algorithm  "%indep_run+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"
+		print "       Run the final %d-way matching algorithm  "%indep_run+strftime("%a, %d %b %Y %H:%M:%S", localtime())
 		print "**********************************************************************"
 
 	# Run 4-way Matching
