@@ -15845,7 +15845,6 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 	else: mask = model_circle(last_ring, nx, nx)
 
 	if randomize :
-		print  "randomize orientations"
 		for im in data:
 			alpha, sx, sy, mirror, scale = get_params2D(im)
 			alphai, sxi, syi, mirrori    = inverse_transform2(alpha, sx, sy)
@@ -15969,7 +15968,6 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 	else:
 		tavg = ave_series(data)
 		for N_step in xrange(len(xrng)):
-			print " xrng ",xrng[N_step]
 			for Iter in xrange(max_iter):
 				total_iter += 1
 				if( FH > 0.0):

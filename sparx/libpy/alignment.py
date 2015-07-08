@@ -87,8 +87,8 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 			alphai, sxi, syi, scalei     = inverse_transform2(alpha, sx, sy)
 			#  introduce constraints on parameters to accomodate use of cs centering
 			mashi = cnx-ou-2
-			sxi = min(max(sxi,-mashi),mashi)
-			syi = min(max(syi,-mashi),mashi)
+			sxi = min(max(round(sxi,2),-mashi),mashi)
+			syi = min(max(round(syi,2),-mashi),mashi)
 
 		#  The search range procedure was adjusted for 3D searches, so since in 2D the order of operations is inverted, we have to invert ranges
 		txrng = search_range(nx, ou, sxi, xrng)
@@ -1446,8 +1446,8 @@ def proj_ali_incore(data, refrings, numr, xrng, yrng, step, finfo=None, sym = "c
 	t1 = data.get_attr("xform.projection")
 	dp = t1.get_params("spider")
 	ou = numr[-3]
-	sxi = -dp["tx"]
-	syi = -dp["ty"]
+	sxi = round(-dp["tx"],2)
+	syi = round(-dp["ty"],2)
 	txrng = search_range(nx, ou, sxi, xrng)
 	tyrng = search_range(ny, ou, syi, yrng)
 			
@@ -1512,8 +1512,8 @@ def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None, sym
 	t2 = t1
 	for zi in xrange(len(xrng)):
 		dp = t2.get_params("spider")
-		sxi = -dp["tx"]
-		syi = -dp["ty"]
+		sxi = round(-dp["tx"],2)
+		syi = round(-dp["ty"],2)
 		txrng = search_range(nx, ou, sxi, xrng[zi])
 		tyrng = search_range(ny, ou, syi, yrng[zi])
 
@@ -1572,8 +1572,8 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 	t1 = data.get_attr("xform.projection")
 	dp = t1.get_params("spider")
 	ou = numr[-3]
-	sxi = -dp["tx"]
-	syi = -dp["ty"]
+	sxi = round(-dp["tx"],2)
+	syi = round(-dp["ty"],2)
 	txrng = search_range(nx, ou, sxi, xrng)
 	tyrng = search_range(ny, ou, syi, yrng)
 	if finfo:
@@ -1653,8 +1653,8 @@ def proj_ali_incore_local_zoom(data, refrings, numr, xrng, yrng, step, an, finfo
 			finfo.write("Old parameters: %9.4f %9.4f %9.4f %9.4f %9.4f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
 			finfo.flush()
 
-		sxi = -dp["tx"]
-		syi = -dp["ty"]
+		sxi = round(-dp["tx"],2)
+		syi = round(-dp["ty"],2)
 		txrng = search_range(nx, ou, sxi, xrng[zi])
 		tyrng = search_range(ny, ou, syi, yrng[zi])
 
@@ -1730,8 +1730,8 @@ def proj_ali_incore_delta(data, refrings, numr, xrng, yrng, step, start, delta, 
 		finfo.flush()
 
 	ou = numr[-3]
-	sxi = -dp["tx"]
-	syi = -dp["ty"]
+	sxi = round(-dp["tx"],2)
+	syi = round(-dp["ty"],2)
 	txrng = search_range(nx, ou, sxi, xrng)
 	tyrng = search_range(ny, ou, syi, yrng)
 
@@ -1806,8 +1806,8 @@ def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, dpsi=1
 		finfo.flush()
 		
 	ou = numr[-3]
-	sxi = -dp["tx"]
-	syi = -dp["ty"]
+	sxi = round(-dp["tx"],2)
+	syi = round(-dp["ty"],2)
 	txrng = search_range(nx, ou, sxi, xrng)
 	tyrng = search_range(ny, ou, syi, yrng)
 
@@ -1872,6 +1872,8 @@ def proj_ali_helical(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_max=1
 		finfo.flush()
 
 	ou = numr[-3]
+	sxi = round(sxi,2)
+	syi = round(syi,2)
 	txrng = search_range(nx, ou, sxi, xrng)
 	tyrng = search_range(ny, ou, syi, yrng)
 
@@ -1922,6 +1924,8 @@ def proj_ali_helical_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 		finfo.flush()
 	
 	ou = numr[-3]
+	sxi = round(sxi,2)
+	syi = round(syi,2)
 	txrng = search_range(nx, ou, sxi, xrng)
 	tyrng = search_range(ny, ou, syi, yrng)
 
@@ -1973,6 +1977,8 @@ def proj_ali_helical_90(data, refrings, numr, xrng, yrng, stepx, ynumber, psi_ma
 		finfo.flush()
 
 	ou = numr[-3]
+	sxi = round(sxi,2)
+	syi = round(syi,2)
 	txrng = search_range(nx, ou, sxi, xrng)
 	tyrng = search_range(ny, ou, syi, yrng)
 	
@@ -2016,6 +2022,8 @@ def proj_ali_helical_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 		finfo.flush()
 
 	ou = numr[-3]
+	sxi = round(sxi,2)
+	syi = round(syi,2)
 	txrng = search_range(nx, ou, sxi, xrng)
 	tyrng = search_range(ny, ou, syi, yrng)
 	
@@ -2059,6 +2067,8 @@ def proj_ali_helicon_local(data, refrings, numr, xrng, yrng, stepx,ynumber, an, 
 		finfo.flush()
 
 	ou = numr[-3]
+	sxi = round(sxi,2)
+	syi = round(syi,2)
 	txrng = search_range(nx, ou, sxi, xrng)
 	tyrng = search_range(ny, ou, syi, yrng)
 	
@@ -2204,6 +2214,8 @@ def proj_ali_helicon_90_local(data, refrings, numr, xrng, yrng, stepx, ynumber, 
 		finfo.flush()
 
 	ou = numr[-3]
+	sxi = round(sxi,2)
+	syi = round(syi,2)
 	txrng = search_range(nx, ou, sxi, xrng)
 	tyrng = search_range(ny, ou, syi, yrng)
 	
@@ -4428,8 +4440,8 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 	t1 = data.get_attr("xform.projection")
 	dp = t1.get_params("spider")
 	ou = numr[-3]
-	sxi = -dp["tx"]
-	syi = -dp["ty"]
+	sxi = round(-dp["tx"],2)
+	syi = round(-dp["ty"],2)
 	txrng = search_range(nx, ou, sxi, xrng)
 	tyrng = search_range(ny, ou, syi, yrng)
 

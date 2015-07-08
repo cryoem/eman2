@@ -1771,7 +1771,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		members = mpi_reduce(members, numref, MPI_INT, MPI_SUM, main_node, comm)
 		if myid != main_node:
 			##sx_sum  = [0.0]*numref
-			s##y_sum  = [0.0]*numref
+			##sy_sum  = [0.0]*numref
 			members = [0.0]*numref
 		##sx_sum  = mpi_bcast(sx_sum, numref, MPI_FLOAT, main_node, comm)
 		##sy_sum  = mpi_bcast(sy_sum, numref, MPI_FLOAT, main_node, comm)
