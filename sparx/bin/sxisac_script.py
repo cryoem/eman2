@@ -124,6 +124,7 @@ def main():
 	import profile
 	
 	
+	global_def.BATCH = True
 	
 	
 	# orgstack = args[0]
@@ -143,9 +144,6 @@ def main():
 	
 	use_latest_master_directory = options.use_latest_master_directory
 
-	#  Hardwired settings of the program
-	target_radius = 29
-	target_xr = 2
 
 	from utilities import qw
 	program_state_stack.PROGRAM_STATE_VARIABLES = set(qw("""
@@ -156,35 +154,6 @@ def main():
 		mloop
 	"""))
 	program_state_stack(locals(), getframeinfo(currentframe()), "my_state.json")
-
-	# if program_state_stack(locals(), getframeinfo(currentframe())):
-	# 	if(myid == main_node):
-	# 		preparing_test_data()
-	# 
-	# mpi_barrier(MPI_COMM_WORLD)
-
-	# if program_state_stack(locals(), getframeinfo(currentframe()), force_starting_execution = True):
-	# # if 1:		
-	# 	pass
-
-	# bdb_stack_location = send_string_to_all(bdb_stack_location)
-	# bdb_stack_location_for_ali2d = send_string_to_all(bdb_stack_location_for_ali2d)
-		
-		
-	# global_def.LOGFILE =  os.path.join(masterdir, global_def.LOGFILE)
-	if options.debug:  print_program_start_information()
-	
-	# mpi_barrier(mpi_comm)
-	# from mpi import mpi_finalize
-	# mpi_finalize()
-	# print "mpi finalize"
-	# from sys import exit
-	# exit()
-	
-	# if program_state_stack(locals(), getframeinfo(currentframe())):
-	# 	os.system("sxheader.py  bdb:particles --params=xform.align2d  --zero")
-	# 	os.system("sxheader.py  bdb:particles --consecutive  --params=originalid")
-
 
 
 	# create or reuse master directory
@@ -232,9 +201,15 @@ def main():
 		send_string_to_all(stack_processed_by_ali2d_base__filename__without_master_dir)
 
 
-	#  INPUT PARAMETERS
-	radi  = options.radius
-	global_def.BATCH = True
+	
+	#  PARAMETERS OF THE PROCEDURE
+	if( options.xr == -1 ):
+		#  Default values
+		target_radius = 29
+		target_xr = 2
+	else:  #  nx//2
+		target_radius = 31 - options.xr
+		target_xr = options.xr
 
 	# mpi_barrier(MPI_COMM_WORLD)
 	# from mpi import mpi_finalize
@@ -243,41 +218,19 @@ def main():
 	# from sys import exit
 	# exit()
 
-
 	# ali2d_base
 	if program_state_stack(locals(), getframeinfo(currentframe())):
 	# if 1:		
 
+
 		nproc     = mpi_comm_size(MPI_COMM_WORLD)
 		myid      = mpi_comm_rank(MPI_COMM_WORLD)
 		main_node = 0
-		
+	
 		mpi_barrier(MPI_COMM_WORLD)
-		
-		#  PARAMETERS OF THE PROCEDURE
-		
-		# Get the pixel size, if none set to 1.0, and the original image size
-		if(myid == main_node):
-			a = get_im(command_line_provided_stack_filename)
-			nnxo = a.get_xsize()
-		else:
-			nnxo = 0
-		nnxo = bcast_number_to_all(nnxo, source_node = main_node)
 
-		#  create a vstack from input stack to the local stack in masterdir
-		#  Stack name set to default
-		# stack = "bdb:"+masterdir+"/rdata"
-		# stack = bdb_stack_location + "_rdata"
-		# stack_for_ali2d = bdb_stack_location_for_ali2d + "_rdata"
-		# stack_processed_by_ali2d_base__filename = bdb_stack_location + "_adata"
 		# Initialization of stacks
 		if(myid == main_node):
-			# if not (os.path.exists(os.path.join(masterdir,"EMAN2DB/rdata.bdb"))):
-			# 	if(orgstack[:4] == "bdb:"):	cmd = "{} {} {}".format("e2bdb.py", orgstack,"--makevstack="+stack)
-			# 	else:  cmd = "{} {} {}".format("sxcpy.py", orgstack, stack)
-			# 	cmdexecute(cmd)
-			# 	cmd = "{} {}".format("sxheader.py  --consecutive  --params=originalid", stack)
-			# 	cmdexecute(cmd)
 			number_of_images_in_stack = EMUtil.get_image_count(command_line_provided_stack_filename)
 		else:
 			number_of_images_in_stack = 0
@@ -301,6 +254,15 @@ def main():
 		else:
 			outcome = 0
 			log2d = None
+
+	
+		if(myid == main_node):
+			a = get_im(command_line_provided_stack_filename)
+			nnxo = a.get_xsize()
+		else:
+			nnxo = 0
+		nnxo = bcast_number_to_all(nnxo, source_node = main_node)
+
 		txrm = (nnxo - 2*(radi+1))//2
 		if(txrm < 0):  			ERROR( "ERROR!!   Radius of the structure larger than the window data size permits   %d"%(radi), "sxisac",1, myid)
 		if(txrm/nxrsteps>0):
@@ -315,7 +277,7 @@ def main():
 			tss = "1"
 			txr = "%d"%txrm
 
-		#  center is set to #7
+		#  centering method is set to #7
 		params2d, aligned_images = ali2d_base(command_line_provided_stack_filename, init2dir, None, 1, radi, 1, txr, txr, tss, \
 					False, 90.0, 7, 14, options.CTF, 1.0, False, \
 					"ref_ali2d", "", log2d, nproc, myid, main_node, MPI_COMM_WORLD, write_headers = False)
@@ -324,7 +286,7 @@ def main():
 			write_text_row(params2d,os.path.join(init2dir, "initial2Dparams.txt"))
 
 		#  We assume the target image size will be 64, radius will be 29, and xr = 2.  Note images can be also upscaled, in which case shrink_ratio > 1.
-		shrink_ratio = 29.0/float(radi)
+		shrink_ratio = float(target_radius)/float(radi)
 		# print "shrink_ratio", shrink_ratio
 		nx = aligned_images[0].get_xsize()
 		needs_windowing = int(nx*shrink_ratio+0.5) > 64
@@ -352,17 +314,6 @@ def main():
 
 		mpi_barrier(MPI_COMM_WORLD)
 
-
-	# # ali2d_base
-	# if program_state_stack(locals(), getframeinfo(currentframe())):
-	# # if 1:
-	# 	pass
-	# 
-	# 
-	# 
-	# 
-	# program_state_stack(locals(), getframeinfo(currentframe()), last_call="LastCall")
-	# 
 	"""
 	from mpi import mpi_finalize
 	mpi_finalize()
@@ -456,8 +407,6 @@ def main():
 		if_error_all_processes_quit_program(error_status, report_program_state=True)
 
 		os.chdir("..")
-		
-	global_def.BATCH = False
 
 	if program_state_stack(locals(), getframeinfo(currentframe())):
 	# if 1:

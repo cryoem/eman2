@@ -113,7 +113,7 @@ def iter_isac_with_program_state_stack_restart(stack, ir, ou, rs, xr, yr, ts, ma
 	if myid == main_node:
 		print "****************************************************************************************************"
 		print "*                                                                                                  *"
-		print "*                 Beginning of the ISAC program               "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"          *"
+		print "*                 Beginning of the ISAC program               "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"           *"
 		print "*                                                                                                  *"
 		print "* Iterative Stable Alignment and Clustering                                                        *"
 		print "* By Zhengfan Yang, Jia Fang, Francisco Asturias and Pawel A. Penczek                              *"
@@ -197,7 +197,7 @@ def iter_isac_with_program_state_stack_restart(stack, ir, ou, rs, xr, yr, ts, ma
 
 	if myid == main_node:
 		print "******************************************************************************************"
-		print "*            Beginning of the first phase           "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"          *"
+		print "*            Beginning of the first phase           "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"           *"
 		print "*                                                                                        *"
 		print "* The first phase is an exploratory phase. In this phase, we set the criteria very       *"
 		print "* loose and try to find as many candidate class averages as possible. This phase         *"
@@ -222,7 +222,7 @@ def iter_isac_with_program_state_stack_restart(stack, ir, ou, rs, xr, yr, ts, ma
 		while Iter <= max_round and couldnt_find_stable < 3 and K > 3:
 			if myid == main_node: 
 				print "################################################################################"
-				print "#           Beginning of Round %2d           "%Iter+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"        #"
+				print "#           Beginning of Round %2d             "%Iter+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"        #"
 				print "################################################################################"
 				print "********************************************************************************"
 				print "               Initialization of averages using EQ-mref"
@@ -381,11 +381,11 @@ def iter_isac_with_program_state_stack_restart(stack, ir, ou, rs, xr, yr, ts, ma
 
 	if myid == main_node:
 		print "******************************************************************************************"
-		print "*              End of the first phase             "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"            *"
+		print "*              End of the first phase             "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"             *"
 		print "******************************************************************************************"
 		print ""
 		print "******************************************************************************************"
-		print "*           Beginning of the second phase         "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"          *"
+		print "*           Beginning of the second phase         "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"           *"
 		print "*                                                                                        *"
 		print "* The second phase is where the actual class averages are generated, it typically has    *"
 		print "* 3~9 iterations (default = 5) of matching. The first half of iterations are 2-way       *"
@@ -746,7 +746,7 @@ def iter_isac_with_program_state_stack_restart(stack, ir, ou, rs, xr, yr, ts, ma
 	if myid == main_node:
 		print "****************************************************************************************************"
 		print "*                                                                                                  *"
-		print "*                   End of the ISAC program                 "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"            *"
+		print "*                   End of the ISAC program                 "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"             *"
 		print "*                                                                                                  *"
 		print "****************************************************************************************************"
 
@@ -835,7 +835,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	if myid == main_node:
 		print "****************************************************************************************************"
 		print "*                                                                                                  *"
-		print "*                 Beginning of the ISAC program               "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"          *"
+		print "*                 Beginning of the ISAC program               "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"           *"
 		print "*                                                                                                  *"
 		print "* Iterative Stable Alignment and Clustering                                                        *"
 		print "* By Zhengfan Yang, Jia Fang, Francisco Asturias and Pawel A. Penczek                              *"
@@ -919,7 +919,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 	if myid == main_node:
 		print "******************************************************************************************"
-		print "*            Beginning of the first phase           "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"          *"
+		print "*            Beginning of the first phase           "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"           *"
 		print "*                                                                                        *"
 		print "* The first phase is an exploratory phase. In this phase, we set the criteria very       *"
 		print "* loose and try to find as many candidate class averages as possible. This phase         *"
@@ -944,7 +944,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		while Iter <= max_round and couldnt_find_stable < 3 and K > 3:
 			if myid == main_node: 
 				print "################################################################################"
-				print "#           Beginning of Round %2d           "%Iter+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"        #"
+				print "#           Beginning of Round %2d           "%Iter+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"         #"
 				print "################################################################################"
 				print "**********************************************************************"
 				print "               Initialization of averages using EQ-mref               "
@@ -1102,11 +1102,11 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 	if myid == main_node:
 		print "******************************************************************************************"
-		print "*              End of the first phase             "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"            *"
+		print "*              End of the first phase             "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"             *"
 		print "******************************************************************************************"
 		print ""
 		print "******************************************************************************************"
-		print "*           Beginning of the second phase         "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"          *"
+		print "*           Beginning of the second phase         "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"           *"
 		print "*                                                                                        *"
 		print "* The second phase is where the actual class averages are generated, it typically has    *"
 		print "* 3~9 iterations (default = 5) of matching. The first half of iterations are 2-way       *"
@@ -1893,7 +1893,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			# When there is no stability checking or estimated calculation time of new method is greater than 80% of estimated calculation time of original method 
 			# then the original method is used. In other case. the second (new) method is used.
 			if (not check_stability) or (stab_calc_time_method_2 > 0.80 * stab_calc_time_method_1):
-				#if my_abs_id == main_node: print "Checking within group stability, original approach .......", localtime()[0:5]
+				if my_abs_id == main_node: print "Checking within group stability, original approach .......", localtime()[0:5]
 				# ====================================== standard approach is used, calculations are parallelized by scatter groups (averages) among MPI processes
 				for j in xrange(myid, numref, number_of_proc):
 					assign = []
@@ -1914,6 +1914,12 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 							for im in xrange(len(class_data)):
 								alpha, sx, sy, mirror, scale = get_params2D(class_data[im])
 								ali_params[ii].extend([alpha, sx, sy, mirror])
+								#  TEST WHETHER PARAMETERS ARE WITHIN RANGE
+								alpha, sx, sy, mirror = inverse_transform2(alpha, sx, sy, mirror)
+								mashi = cnx-ou-2
+								if(abs(sx)>mashi or abs(sy)>mashi):  print  "PARAMETERS OUTSIDE THE RANGE 11111 ::::: ",mashi,get_params2D(class_data[im]),alpha, sx, sy, mirror
+
+
 
 						stable_set, mirror_consistent_rate, err = multi_align_stability(ali_params, 0.0, 10000.0, thld_err, False, last_ring*2)
 
@@ -1937,6 +1943,10 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 							stable_members.append(assign[im])
 							stable_data.append(class_data[im])
 							set_params2D( class_data[im], [err[2][0], err[2][1], err[2][2], int(err[2][3]), 1.0] )
+							#  TEST WHETHER PARAMETERS ARE WITHIN RANGE
+							alpha, sx, sy, mirror = inverse_transform2(err[2][0], err[2][1], err[2][2], int(err[2][3]))
+							mashi = cnx-ou-2
+							if(abs(sx)>mashi or abs(sy)>mashi):  print  "PARAMETERS OUTSIDE THE RANGE 22222 ::::: ",mashi,err[2][0], err[2][1], err[2][2], int(err[2][3]),alpha, sx, sy, mirror
 						stable_members.sort()
 
 						refi[j] = filt_tanl(ave_series(stable_data), FH, FF)
@@ -1959,7 +1969,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 					set_params2D(alldata[im], [ali_params[0], ali_params[1], ali_params[2], int(ali_params[3]), 1.0])
 
 			else:
-				#if my_abs_id == main_node: print "Checking within group stability, new approach .......", localtime()[0:5]
+				if my_abs_id == main_node: print "Checking within group stability, new approach .......", localtime()[0:5]
 				# ================================================ more complicated approach is used - runs of within_group_refinement are scattered among MPI processes
 				refi = isac_stability_check_mpi(alldata, numref, belongsto, stab_ali, thld_err, mask, first_ring, last_ring, rstep, xrng, yrng, step, \
 												dst, maxit, FH, FF, method, comm)
