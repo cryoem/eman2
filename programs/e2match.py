@@ -44,41 +44,41 @@ def main():
 	"""
 	
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument('--stack2process', type=str, default='', help="""Path to the stack 
-		that needs to be processed to match stack2match. If you want to process multiple stacks 
-		or files, just separate them by commas --stacks2process=vo1.mrc,vol2.hdf,file.pdb""")
+	parser.add_argument('--img2process', type=str, default='', help="""Path to the stack 
+		that needs to be processed to match img2match. If you want to process multiple stacks 
+		or files, just separate them by commas --imgs2process=vo1.mrc,vol2.hdf,file.pdb""")
 		
-	parser.add_argument('--stack2match', type=str, default='', help="Path to the image or stack of images which stack2process will match after processing.")
-	parser.add_argument('--output', type=str, default='', help="Specify the name of the file to which the edited stack2process will be written.")
+	parser.add_argument('--img2match', type=str, default='', help="Path to the image or stack of images which --img2process will match after processing. Not compulsory if --apix is provided.")
+	parser.add_argument('--output', type=str, default='', help="Specify the name of the file to which the edited img2process will be written.")
 	parser.add_argument("--boxsize",type=int,default=0,help="If NOT specified, the reference's box size will match that of the data. If specified, both the reference and the data will be resized.")
-	parser.add_argument("--sym", type=str, default='', help='Will apply the specified symmetry to the edited stack2process.')
+	parser.add_argument("--sym", type=str, default='', help='Will apply the specified symmetry to the edited img2process.')
 	
 	parser.add_argument("--apix",type=float,default=0.0,help="""If specified, the program 
-		will assume this is the correct apix for the stack2match, which will be written to 
-		the data's header if the data is in .hdf format, and will also be used to scale 
-		the files in stack2process.""")
+		will assume this is the correct apix for --img2match if --img2match is provided,
+		so the current value will be overwritten if --img2match is in .hdf format. 
+		This value will also be used to scale the images in --img2process.""")
 	
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	
-	parser.add_argument("--preprocess",type=str,help="Any processor (as in e2proc3d.py) to be applied to the edited stack2process.", default='')
-	parser.add_argument("--lowpass",type=str,help="A lowpass filtering processor (as in e2proc3d.py) be applied to the edited stack2process.", default='')
-	parser.add_argument("--highpass",type=str,help="A highpass filtering processor (as in e2proc3d.py) to be applied to the edited stack2process.", default='')
+	parser.add_argument("--preprocess",type=str,help="Any processor (as in e2proc3d.py) to be applied to the edited img2process.", default='')
+	parser.add_argument("--lowpass",type=str,help="A lowpass filtering processor (as in e2proc3d.py) be applied to the edited img2process.", default='')
+	parser.add_argument("--highpass",type=str,help="A highpass filtering processor (as in e2proc3d.py) to be applied to the edited img2process.", default='')
 	parser.add_argument("--mask",type=str,help="Mask processor applied to particles before alignment. Default is None", default='')
 	parser.add_argument("--normproc",type=str,default='',help="""Normalization processor applied to 
 		particles before alignment. Default is None. If normalize.mask is used, 
 		results of the mask option will be passed in automatically.""")
 
 	parser.add_argument("--threshold",type=str,default='',help="""EMAN2 processor to be used
-		to threshold the stack2process. See available thresholds by typing 
+		to threshold the img2process. See available thresholds by typing 
 		e2help.py processors --verbose=10
 		at the command line.""")
 		
-	parser.add_argument("--shrink",type=float,default=0.0,help="""This will scale the stack2process
+	parser.add_argument("--shrink",type=float,default=0.0,help="""This will scale the img2process
 		by the factor specified. This does NOT need to be an integer. You can enter 1.5, 2.7, etc.
 		any decimal number > 1.0 is valid.""")	
 	
-	parser.add_argument("--mirror", action="store_true", help="Will generate a mirrored copy of the edited stack2process.", default=False)
-	parser.add_argument("--sharpfiltres",type=float,default=0.0,help="If specified, the edited stack2process will be sharply filtered to this resolution.")
+	parser.add_argument("--mirror", action="store_true", help="Will generate a mirrored copy of the edited img2process.", default=False)
+	parser.add_argument("--sharpfiltres",type=float,default=0.0,help="If specified, the edited img2process will be sharply filtered to this resolution.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -86,367 +86,309 @@ def main():
 	logger = E2init(sys.argv, options.ppid)
 	
 	'''
-	Check for sane formats for stack2process and output
+	make sure apix values are consistently float and rounded to 4 significant digits
 	'''
-	
-	stacks2process = options.stack2process.split(',')
-	
-	for stack2p in stacks2process:
-		
-		options.stack2process = stack2p
-		
-		if len(stacks2process) > 1 or not options.output:
-			options.output = stack2p.split('.')[0] + '_PREP.hdf'
+	if options.apix:
+		options.apix = round(float(options.apix),4)
 			
-		print "Options.output is", options.output
+	'''
+	if --apix and/or --boxsize are supplied, first change these values for --img2match if supplied; further down --img2process will be made to match them
+	'''
+	if options.img2match:
+		'''
+		check that --img2match has a valid format
+		'''
+		if '.mrc' not in options.img2match and '.hdf' not in options.img2match:
+			print "\nERROR: --img2match must be in .hdf or .mrc format. Use e2proc3d.py or e2pdb2mrc.py to convert the file provided, %s, to a valid image format." %( options.img2match )
+			sys.exit()
+		else:
+			
+			img2matchhdr = EMData(options.img2match,0, True)
+			img2matchhdrx = img2matchhdr['nx']
+			img2matchhdry = img2matchhdr['ny']
+			img2matchhdrz = img2matchhdr['nz']
+			
+			if options.boxsize or options.apix or img2matchhdrx!= img2matchhdry or img2matchhdrx != img2matchhdrz or img2matchhdry != img2matchhdrz:
+				img2matchED = os.path.basename( options.img2match ).replace( '.','_ED.')
+				cmd = 'cp ' + options.img2match + ' ' + img2matchED
+				runcmd( options, cmd )
+				options.img2match = img2matchED
+			
+			'''
+			make all sides of --img2match equally sized and even, if they're not
+			'''
+			if img2matchhdrx!= img2matchhdry or img2matchhdrx != img2matchhdrz or img2matchhdry != img2matchhdrz:	
+	
+				newsize = max(img2matchhdrx,img2matchhdry,img2matchhdrz)
+				if newsize % 2:
+					newsize += 1
+		
+				cmd = 'e2proc3d.py ' + options.img2match + ' ' + options.img2match + ' --clip=' + str( newsize )
+				runcmd( options, cmd )
+			
+			img2matchapix = round( float(img2matchhdr['apix_x']),4 )
+		
+			if options.boxsize:
+				if int( options.boxsize ) != int( img2matchhdrx ) or int( options.boxsize ) != int( img2matchhdry ) or int( options.boxsize ) != int( img2matchhdrz ):
+					cmd ='e2proc3d.py ' + options.img2match + ' ' + options.img2match + ' --clip=' + str( options.boxsize )
+					runcmd( options, cmd )
+				else:
+					print "\nWARNING: the box side lengths of --img2match are already equal to --boxsize."
+	
+			if options.apix:
+				if options.apix != img2matchapix:
+					cmd = 'e2fixheaderparam.py --input=' + options.img2match + ' --stem=apix --stemval=' + str( options.apix ) + ' --valtype=float'
+					runcmd( options, cmd )
+				else:
+					print "\nWARNING: the apix of --img2match is already equal to --apix."
+		
+			'''
+			fix the origin values for --img2match
+			'''		
+			cmd = 'e2fixheaderparam.py --input=' + options.img2match + ' --stem=origin --stemval=0 && e2fixheaderparam.py --input=' + options.img2match + " --params=MRC.nxstart:0,MRC.nystart:0,MRC.nzstart:0"
+			
+				
+	'''
+	iterate through img2process files
+	'''
+	imgs2process = options.img2process.split(',')
+	
+	for img2p in imgs2process:
+		
+		img2p
+		
+		if len(imgs2process) > 1 or not options.output:
+			options.output = img2p.split('.')[0] + '_PREP.hdf'
+		
+		if options.verbose:
+			print "\n--output is", options.output
 
-		if '.hdf' not in options.stack2process and '.pdb' not in options.stack2process and '.mrc' not in options.stack2process:
-			print "(e2spt_refprep.py) ERROR: The format of the reference to edit must be .pdb, .mrc or .hdf"
+		if '.hdf' not in img2p and '.pdb' not in img2p and '.mrc' not in img2p:
+			print "\n(e2match) ERROR: The format of --img2process %s must be .pdb, .mrc or .hdf" %( img2p )
 			sys.exit()
 	
-		if '.hdf' not in options.output and '.mrc' not in options.output:
-			print "(e2spt_refprep.py) ERROR: The output reference must be written to either an mrc or an hdf file."
+		if '.hdf' not in options.output:
+			print "\n(e2match) ERROR: --output must be in .hdf format."
 			sys.exit() 
-	
-		check=0
 	
 		current = os.getcwd()
 		findir = os.listdir(current)
 	
-		if options.stack2process.split('/')[-1] not in findir:
-			os.system('cp ' + options.stack2process + ' ' + current)
-			options.stack2process = current + '/' + options.stack2process.split('/')[-1]
+		if '.pdb' in img2p:
+			pdbmodel = img2p
+			#pdbmodel = pdbmodel.split('/')[-1]
+			hdfmodel = os.path.basename( pdbmodel ).replace('.pdb','.hdf')
 		
-		if '.pdb' in options.stack2process:
-			pdbmodel = options.stack2process
-			pdbmodel = pdbmodel.split('/')[-1]
-			mrcmodel = pdbmodel.replace('.pdb','.mrc')
+			cmd = 'e2pdb2mrc.py ' + pdbmodel + ' ' + hdfmodel
+			runcmd( options, cmd )
 		
-			cmd = 'e2pdb2mrc.py ' + pdbmodel + ' ' + mrcmodel
-			p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-			text=p.communicate()	
-			p.stdout.close()
-
-			options.stack2process = mrcmodel
-			check=1
+			img2p = hdfmodel
 			if options.verbose:
-				print "(e2spt_refprep.py) I've converted the .pdf reference to .mrc"
+				print "\n(e2match) I've converted the .pdb reference to .hdf"
 	
-		if '.mrc' in options.stack2process:
-			mrcmodel = options.stack2process
-			if check==0:
-				mrcmodel = mrcmodel.split('/')[-1]
-			hdfmodel = mrcmodel.replace('.mrc','.hdf')
+		elif '.mrc' in img2p:
+			mrcmodel = img2p
+			hdfmodel = os.path.basename( mrcmodel ).replace('.mrc','.hdf')
 		
-			cmd = 'e2proc3d.py ' + mrcmodel + ' ' + hdfmodel + ' && rm ' + mrcmodel
-			p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-			text=p.communicate()	
-			p.stdout.close()
-		
-			options.stack2process = hdfmodel
-			check=1
-			if options.verbose:
-				print "(e2spt_refprep.py) I've converted the .mrc reference to .hdf"
-	
-	
-		nStack2process = EMUtil.get_image_count( options.stack2process )
-	
-		if options.verbose:
-			print "\n\n(e2spt_refprep.py) There are these many particles in stack2process to be edited",nStack2process
-	
-		'''
-		Make all sides of the reference box equally sized and even, if they're not
-		'''
-	
-		stack2processEd = options.stack2process.replace('.hdf','_ed.hdf')
-		if options.output:
-			stack2processEd = options.output
-	
-	
-		#print "(e2spt_refprep.py) stack2processEd is", stack2processEd
-	
-		stack2processSample = EMData( options.stack2process, 0, True)
-	
-		cmd = 'e2proc3d.py ' + options.stack2process + ' ' + stack2processEd + ' && e2fixheaderparam.py --input=' + stack2processEd + ' --stem=origin --stemval=0' 
-		
-		
-		#print "(e2spt_refprep.py) This command will copy and create it", cmd
-	
-		p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		text=p.communicate()	
-		p.stdout.close()
-	
-		#print "(e2spt_refprep.py) Command executed. Feedback was", text
-	
-		if stack2processSample['nx'] != stack2processSample['ny'] or stack2processSample['nx'] != stack2processSample['nz'] or stack2processSample['ny'] != stack2processSample['nz']:	
-			x0 = stack2processSample['nx']
-			y0 = stack2processSample['ny']
-			z0 = stack2processSample['nz']
-	
-			side = max(x0,y0,z0)
-			if side % 2:
-				side += 1
-		
-			cmd = 'e2proc3d.py ' + stack2processEd + ' ' + stack2processEd + ' --clip=' + str(side)
-			p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-			text=p.communicate()	
-			p.stdout.close()
-		
-			#R = Region((x0 - side)/2, (y0 - side)/2, (z0 - side)/2, side, side, side)
-			#ref.clip_inplace(R)
+			cmd = 'e2proc3d.py ' + mrcmodel + ' ' + hdfmodel
+			runcmd( options, cmd )
+			
+			img2p = hdfmodel
 			
 			if options.verbose:
-				print "\n(e2spt_refprep.py) I have clipped the particles in stack2process to have a cubical and even-sided box size."
-
-		'''
-		If options.apix is supplied, first change the apix of stack2match to that; then make stack2process match it
-		'''
-		stack2matchhdr=EMData(options.stack2match,0)
-		targetApix = round(stack2matchhdr['apix_x'],4)
-		targetBox = stack2matchhdr['nx']
+				print "\n(e2match) I've converted the .mrc reference to .hdf"
 		
-		if options.stack2match:
-			print "\n\n\n(e2spt_refprep.py) Options stack2match is", options.stack2match
+		if '.hdf' in img2p:
 			
-			if options.apix:		
-				cmd = 'e2fixheaderparam.py --input=' + str (options.stack2match) + ' --stem=apix --stemval=' + str( options.apix )
+			img2processED = os.path.basename( img2p ).replace( '.','_ED.')
+			cmd = 'cp ' + img2p+ ' ' + img2processED
+			runcmd( options, cmd )
+			img2p = img2processED
 			
-				p = subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-				text=p.communicate()
-				p.stdout.close()
-			
-			print "\n\nWill call ref match\n\n"
-			print "before refmatch, size is", EMData(stack2processEd,0)['nx']
-			refmatch(options, stack2processEd, stack2processSample)
-			print "after refmatch, size is", EMData(stack2processEd,0)['nx']
-			print "because targetbox is", targetBox
-			
-			refpostprocessing(options.stack2process, stack2processEd, options )
+			nStack2process = EMUtil.get_image_count( img2p )
+	
+			if options.verbose:
+				print "\n(e2match) There are these many images in --img2process file %s" %( img2p )
+	
+			'''
+			fix origin on header of --img2process current file img2p
+			'''	
+			cmd = ' e2fixheaderparam.py --input=' + img2p+ ' --stem=origin --stemval=0 && e2fixheaderparam.py --input=' + img2p + " --params=MRC.nxstart:0,MRC.nystart:0,MRC.nzstart:0" 
+			runcmd( options, cmd )
 		
-		else:
-			print "(e2spt_refprep.py) You have NOT supplied stack2match !!!"
+			img2phdr = EMData( img2p, 0, True )
 			
-			if options.shrink > 1.0:
-				targetApix = round(stack2processSample['apix_x'],4) * options.shrink
-				targetBox = stack3processSample['nx'] / options.shrink
-				print "There's shrink >1.0"
-				
-			elif options.shrink:
-				print """ERROR: If supplying --shrink, it needs to be a decimal number
-				larger than 1.0"""
-				sys.exit()
+			
+			'''
+			make all sides of --img2process img2p equally sized and even, if they're not.
+			In principle, you shouldn't ned to, but --process=scale:clip in e2proc3d crashes 
+			if all the dimensions of an img are not equal
+			'''
+			if img2phdr['nx']!= img2phdr['ny'] or img2phdr['nx'] != img2phdr['nz'] or img2phdr['ny'] != img2phdr['nz']:	
+	
+				newsize = max(img2phdr['nx'],img2phdr['ny'],img2phdr['nz'])
+				if newsize % 2:
+					newsize += 1
 		
-			print "test apix"
-			if options.apix:
-				print "(e2spt_refprep.py) There's options.apix", options.apix
-				targetApix = float( options.apix )
+				cmd = 'e2proc3d.py ' + img2p + ' ' + img2p+ ' --clip=' + str( newsize )
+				runcmd( options, cmd )
+					
+				img2phdr = EMData( img2p, 0, True )
 			
-			print "Test bpx"
+			targetApix = None
+			targetBox = max(img2phdr['nx'],img2phdr['ny'],img2phdr['nz'])
+			if targetBox % 2:
+				targetBox += 1
 			if options.boxsize:
-				print "There's boxsize"
-				targetBox = options.boxsize	
+				targetBox = int( options.boxsize )
 			
-			print "test preproc opts"
-			if not options.lowpass and not options.highpass and not options.shrink and not options.preprocess and not options.mask and not options.normproc and not options.threshold and not options.mirror and not options.sym and not options.boxsize and not options.apix:
-				print """(e2spt_refprep.py) ERROR: You must supply at least one of the following preprocessing parameters,
-				if you don't supply a stack to match via --stack2match:
-				--lowpass, --highpass, --shrink, --preprocess, --mask, --threshold, --normproc, --mirror, --sym"""
-				sys.exit()
-			
+			if options.img2match:
+				img2matchhdr = EMData(options.img2match,0, True)
+				targetBox = img2matchhdr['nx']
+				targetApix = img2matchhdr['apix_x']	
 			else:
-				print "You have supplied at least one processing parameter and therefore you'll get an output file"
-				refpostprocessing(stack2processSample, stack2processEd, options )
+				if options.apix:
+					targetApix = round(float( options.apix ),4 )
+				else:
+					print """\nERROR: --apix required if img2match is not provided.
+					If the apix of --img2process is already correct and you just want to
+					match the boxsize, use e2proc3d.py input output --clip=targetBoxSize"""
+					sys.exit()
+				
+			print "\n\ncalling preciseshrink function"
+			print "before, size is", img2phdr['nx']		
+						
+			preciseshrink( options, img2p, targetApix, targetBox)
 			
-				if options.shrink:
-					preciseShrink(options, stack2processSample, stack2processEd, targetApix, targetBox)
+			img2processhdr = EMData( img2p, 0, True )
+			print "after preciseshrink, size is", img2processhdr['nx']
 			
-			print "Will proceed"
+			if options.normproc or options.mask or options.preprocess or options.lowpass or options.highpass or options.threshold or options.mirror or options.sym:			
+				refpostprocessing( options, img2p )		
+				
+			cmd = 'e2fixheaderparam.py --input=' + img2p + ' --stem=origin --stemval=0 && e2fixheaderparam.py --input=' + img2p + " --params=MRC.nxstart:0,MRC.nystart:0,MRC.nzstart:0"
+			if options.verbose:
+				print "The first command to fix the header is", cmd
+		
+			hdr = EMData( img2p, 0, True )
+			nx = hdr['nx']
+			ny = hdr['ny']
+			nz = hdr['nz']
+		
+			cmd2 = ' && e2fixheaderparam.py --input=' + img2p + ' --params=MRC.mx:' + str(targetBox) + ',MRC.my:' + str(targetBox) + ',MRC.mz:' + str(targetBox) + ',MRC.nx:' + str(targetBox) + ',MRC.ny:' + str(targetBox) + ',MRC.nz:' + str(targetBox)
+			cmd2 += ',MRC.xlen:' + str(targetBox) + ',MRC.ylen:' + str(targetBox) + ',MRC.zlen:' + str(targetBox) + ',MRC.nxstart:0,MRC.nystart:0,MRC.nzstart:0'	
+			if options.verbose:
+				print "The second command to fix the header is", cmd2
+		
+			cmdf = cmd + cmd2
+			runcmd( options, cmdf )
 			
-		print "The file whose header needs fixing is", stack2processEd
-			
-		cmd = 'e2fixheaderparam.py --input=' + stack2processEd + ' --stem=origin --stemval=0'
-		print "The first command to fix the header is", cmd
-		
-		p = subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		text=p.communicate()
-		p.stdout.close()
-		
-		hdr = EMData( stack2processEd, 0, True )
-		nx = hdr['nx']
-		ny = hdr['ny']
-		nz = hdr['nz']
-		
-		cmd2 = 'e2fixheaderparam.py --input=' + stack2processEd + ' --params=MRC.mx:' + str(targetBox) + ',MRC.my:' + str(targetBox) + ',MRC.mz:' + str(targetBox) + ',MRC.nx:' + str(targetBox) + ',MRC.ny:' + str(targetBox) + ',MRC.nz:' + str(targetBox)
-		cmd2 += ',MRC.xlen:' + str(targetBox) + ',MRC.ylen:' + str(targetBox) + ',MRC.zlen:' + str(targetBox) + ',MRC.nxstart:0,MRC.nystart:0,MRC.nzstart:0'	
-		print "The second command to fix the header is", cmd2
-		
-		p = subprocess.Popen( cmd2, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		text=p.communicate()
-		p.stdout.close()
-		
 	E2end(logger)
 		
 	return
-
-
-def refmatch( options , stack2processEd, stack2processSample):
-	'''
-	Get the target boxsize for the reference. If options.boxsize is supplied, first change the boxsize of the data the reference is supposed to match.
-	'''	
-	#if options.refStack:
-
-	print "\nInside refmatch"
-	targetApix = round(EMData(options.stack2match,0,True)['apix_x'],4)
 	
-	if options.apix:
-		targetApix = float( options.apix )
 
-	targetBox = EMData(options.stack2match,0,True)['nx']
+def runcmd(options,cmd):
+	if options.verbose > 9:
+		print "(e2spt_autoboxer.py)(runcmd) Running command", cmd
 	
-	print "\n\nTargetBox is", targetBox
-	cmd = ''
-	if options.boxsize:
-		if int( options.boxsize ) != int( targetBox ):
-			refStackEd = options.stack2match.replace('.hdf','_ed.hdf')
-		
-			print "(e2spt_refprep.py) refStackEd is", refStackEd
-		
-			cmd ='e2proc3d.py ' + str(options.stack2match) + ' ' + str(refStackEd) + ' --clip=' + str( options.boxsize )
-			p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-			text=p.communicate()	
-			p.stdout.close()
-	
-			options.stack2match = refStackEd
-
-		targetBox = options.boxsize
-
-	#if not options.stack2match and not options.boxsize:
-	#	print """(e2spt_refprep.py) ERROR: You must supply an image through --refStack to get the target boxsize for the edited stack2process, or specify this number through --boxsize. If all you want to do
-	#	is scale the data in refStack or stack2process by an integer amount, you ought to use e2proc3d.py <input> <output> --process=math.meanshrink:n="""
-	#	sys.exit()
-
-	cmd = 'e2fixheaderparam.py --input=' + stack2processEd + ' --stem=origin --stemval=0 && e2fixheaderparam.py --input=' + stack2processEd + " --params=MRC.nxstart:0,MRC.nystart:0,MRC.nzstart:0"
 	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 	text=p.communicate()	
 	p.stdout.close()
-	#print "\n(e2spt_refprep.py) Feedback from fix original is", text
-
-	#stack2processEdHdr = EMData(stack2processEd,0,True)
-	#stack2processEdApix = float( stack2processEdHdr['apix_x'])
-
-	#refStackHdr = EMData(options.stack2match,0,True)
-	#refStackApix = float( refStackHdr['apix_x'])
-	#print "\n(e2spt_refprep.py) stack2processEdApix and refStackApix are", stack2processEdApix,refStackApix
-	#if stack2processEdApix != refStackApix:
-	#	cmd = 'e2fixheaderparam.py --input=' + stack2processEd + ' --stem=apix --stemval=' + str( targetApix ) 
-	#	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-	#	text=p.communicate()	
-	#	p.stdout.close()
-	#	print "Feedback from fix apix is", text
-
-
-	#ref.process_inplace("xform.scale",{"scale":scalefactor,"clip":target_boxsize})
-
-	preciseShrink( options, stack2processSample, stack2processEd, targetApix, targetBox)
-	if options.verbose:
-		print "\n(e2spt_refprep.py) The stack2process %shas now been precisely shrunk" %(stack2processEd)
 	
+	if options.verbose > 9:
+		print "(e2spt_autoboxer.py)(runcmd) Done"
 	return
 	
 
-def preciseShrink( options, stack2processSample, stack2processEd, targetApix, targetBox ):
+def preciseshrink( options, img2processEd, targetApix, targetBox ):
 	'''
-	Calculate the scale between the reference model and the data, round to the nearest integer to be able to use math.meanshrink (which preserves features),
-	then calculate the scale factor again and use xform.scale, to get the exact scaling, even if features might become a bit distorted by xform.scale
-	'''	
+	Calculate the scale between the reference model and the data, round to the nearest 
+	integer to be able to use math.meanshrink (which preserves features), then calculate 
+	the scale factor again and use xform.scale, to get the exact scaling, even if features 
+	might become a bit distorted by xform.scale.
 	
-	print "inside preciseshrink targetbox is", targetBox
+	Process img2proccessEd via the command line calling e2proc3d.py because it might be a stack,
+	so we don't bother to iterate over the images in here.
+	'''
 	
-	stack2processApix = round(float( stack2processSample['apix_x'] ),4)
+	print "\n(e2match)(preciseshrink)"
+	img2processEdhdr = EMData(img2processEd,0, True )
+	img2processApix = round(float( img2processEdhdr['apix_x'] ),4)
 	if options.verbose:
-		print "\n(e2spt_refprep.py) I've read the apix of the particles in stack2process, which is", stack2processApix
+		print "\n(e2match) I've read the apix of the particles in img2process, which is", img2processApix
 
-	meanshrinkfactor = float( targetApix )/float(stack2processApix)
+	meanshrinkfactor = float( targetApix )/float(img2processApix)
 	#meanshrinkfactor_int = int(round(meanshrinkfactor))
 
 	meanshrinkfactor_int = int(meanshrinkfactor)
 
 	if options.verbose:
-		print "\n(e2spt_refprep.py) The refStack apix is", round(EMData( options.stack2match, 0, True)['apix_x'],4)
-		print "(e2spt_refprep.py) And the target apix is", targetApix
-		print "(e2spt_refprep.py) Therefore, the meanshrink factor is", meanshrinkfactor
-		print "(e2spt_refprep.py) Which, for the first step of shrinking (using math.meanshrink), will be rounded to", meanshrinkfactor_int
+		print "\n(e2match) the refStack or --img2match apix is", round(EMData( options.img2match, 0, True)['apix_x'],4)
+		print "(e2match) and the target apix is", targetApix
+		print "(e2match) therefore, the meanshrink factor is", meanshrinkfactor
+		print "(e2match) which, for the first step of shrinking (using math.meanshrink), will be rounded to", meanshrinkfactor_int
 
 	cmd = ''
+	
 	if meanshrinkfactor_int > 1:
-		print "\n\n\n\n(e2spt_refprep.py) About to MEAN shrink becuase meanshrink factor is", meanshrinkfactor
-		print "(e2spt_refprep.py) The type of stack2process is", type( stack2processSample )
+		print "\n\n(e2match) about to MEAN shrink becuase meanshrink factor is > 1", meanshrinkfactor
+		print "(e2match) the type of img2process is", type( img2processEd )
 	
-		cmd = 'e2proc3d.py ' + str(stack2processEd) + ' ' + str(stack2processEd) + ' --process=math.meanshrink:n=' + str(meanshrinkfactor_int)
-		p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		text=p.communicate()	
-		p.stdout.close()
-		#print "\n(e2spt_refprep.py) Feedback from SHRINK is", text
-	
+		cmd = 'e2proc3d.py ' + img2processEd + ' ' + img2processEd + ' --process=math.meanshrink:n=' + str(meanshrinkfactor_int)
+		runcmd( options, cmd )
 	
 		#ref.process_inplace("math.meanshrink",{"n":meanshrinkfactor_int})
 		if options.verbose:
-			print "(e2spt_refprep.py) The stack2process was shrunk, to a first approximation, see", EMData(options.stack2process,0,True)['nx']
+			print "(e2match) the img2process was shrunk, to a first approximation, see", EMData(options.img2process,0,True)['nx']
 	
-		stack2processApix = round(EMData( stack2processEd, 0 , True)['apix_x'],4)
+		img2processApix = round(EMData( img2processEd, 0 , True)['apix_x'],4)
 	
 	else:
-		#targetbox = EMData( options.stack2match,0,True )['nx']
+		#targetbox = EMData( options.img2match,0,True )['nx']
 		
-		cmd = 'e2proc3d.py ' + str(stack2processEd) + ' ' + str(stack2processEd) + ' --clip=' + str(targetBox)
-
-		#cmd += ' && e2proc3d.py ' + str(stack2processEd) + ' ' + str(stack2processEd) + ' --process=math.meanshrink:n=' + str(meanshrinkfactor_int)
-		p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-		text=p.communicate()	
-		p.stdout.close()
-		
+		cmd = 'e2proc3d.py ' + img2processEd + ' ' + img2processEd + ' --clip=' + str(targetBox)
+		runcmd( options, cmd )
 	
-	scalefactor = round(float( stack2processApix ),4)/round(float( targetApix),4)
+	scalefactor = round(float( img2processApix ),4)/round(float( targetApix),4)
 
-	print "\n\n\n\n(e2spt_refprep.py) The finer scale factor to apply is", scalefactor
+	print "\n\n\n(e2match) the finer scale factor to apply is", scalefactor
 	
-	print "Right before, apix is", round(EMData(stack2processEd,0,True)['apix_x'],4)
-	print "(e2spt_refprep.py) The final clip box is", targetBox
+	print "right before, apix is", round(EMData(img2processEd,0,True)['apix_x'],4)
+	print "(e2match) the final clip box is", targetBox
 
-	cmd = 'e2proc3d.py ' + str(stack2processEd) + ' ' + str(stack2processEd) + ' --process=xform.scale:scale=' + str(scalefactor) 
+	cmd = 'e2proc3d.py ' + img2processEd + ' ' + img2processEd + ' --process=xform.scale:scale=' + str(scalefactor) 
 	
 	'''
 	Only need to add clipping to scaling if the box wasn't clipped before. Boxes need to be clipped first when you're "scaling up the data" (making it bigger) rather than shrinking it
 	'''
 	if int(meanshrinkfactor_int) > 1:
 		cmd += ':clip=' + str(targetBox) + ' --apix=' + str(targetApix)
-		cmd += ' && e2fixheaderparam.py --input=' + str(stack2processEd) + ' --stem apix --valtype float --stemval ' + str(targetApix)
+		cmd += ' && e2fixheaderparam.py --input=' + img2processEd + ' --stem apix --valtype float --stemval ' + str(targetApix)
 		print "meanshrinkfactor_int > 1, it is", meanshrinkfactor_int
 		print "target apix is", targetApix
 		print "cmd is", cmd
 	elif int(meanshrinkfactor_int) < 1:
-		cmd += ' && e2proc3d.py ' + str(stack2processEd) + ' ' + str(stack2processEd) + ' --clip=' + str(targetBox)
-		cmd += ' && e2fixheaderparam.py --input=' + str(stack2processEd) + ' --stem apix --valtype float --stemval ' + str(targetApix)
+		cmd += ' && e2proc3d.py ' + img2processEd + ' ' + img2processEd + ' --clip=' + str(targetBox)
+		cmd += ' && e2fixheaderparam.py --input=' + str(img2processEd) + ' --stem apix --valtype float --stemval ' + str(targetApix)
 		print "meanshrinkfactor_int < 1, it is", meanshrinkfactor_int
 		print "target apix is", targetApix
 		print "cmd is", cmd
 	
-	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-	text=p.communicate()	
-	p.stdout.close()
+	runcmd( options, cmd )
 	
 		
-	print "Right after, apix is", round(EMData(stack2processEd,0,True)['apix_x'],4)
+	print "Right after, apix is", round(EMData(img2processEd,0,True)['apix_x'],4)
 
-	#print "(e2spt_refprep.py) Feedback from scale and clip is", text
+	#print "(e2match) Feedback from scale and clip is", text
 
 
-	print "\n\n!!!!!!!!!!!!\n(e2spt_refprep.py) stack2porcessEd should have been clipped by now, let's see", EMData(stack2processEd,0,True)['nx']
+	print "\n\n!!!!!!!!!!!!\n(e2match) img2porcessEd should have been clipped by now, let's see", EMData(img2processEd,0,True)['nx']
 	
 	return
 
 
-def refpostprocessing(stack2process, stack2processEd, options ):
+def refpostprocessing( options, img2processEd ):
 
 	''' 
 	Apply processing options. First, parse those that need to be parsed, then apply
@@ -473,12 +415,12 @@ def refpostprocessing(stack2process, stack2processEd, options ):
 		print "I have parsed the processing options."
 	
 	
-	nptcls = EMUtil.get_image_count(stack2processEd)
+	nptcls = EMUtil.get_image_count(img2processEd)
 	
 	
 	for i in range(nptcls):
 		
-		ref = EMData(stack2processEd,i)
+		ref = EMData(img2processEd,i)
 	
 		'''
 		Make the mask first (if specified), use it to normalize (optionally), then apply it.
@@ -493,13 +435,14 @@ def refpostprocessing(stack2process, stack2processEd, options ):
 			if options.normproc[0]=="normalize.mask": 
 				options.normproc[1]["mask"]=mask
 		
-			ref.process_inplace(options.normproc[0],options.normproc[1])
+			#ref.process_inplace(options.normproc[0],options.normproc[1])
 	
+		'''
+		If normalizing, it's best to do mask->normalize>mask
+		'''
+		
 		ref.mult(mask)
-	
-		'''
-		If normalizing, it's best to do normalize->mask->normalize>mask
-		'''
+		
 		if options.normproc:		
 			ref.process_inplace(options.normproc[0],options.normproc[1])
 			ref.mult(mask)
@@ -521,9 +464,9 @@ def refpostprocessing(stack2process, stack2processEd, options ):
 		'''
 
 		if options.sharpfiltres:
-			stack2processHdr = EMData(stack2processEd,0,True)
-			stack2processBox = stack2processHdr['nx']
-			stack2processApix = round(stack2processHdr['apix_x'],4)
+			img2processHdr = EMData(img2processEd,0,True)
+			img2processBox = img2processHdr['nx']
+			img2processApix = round(img2processHdr['apix_x'],4)
 	
 			resfac = 1.0/float(options.sharpfiltres)
 			npixels = int(round(float( ref_box * ref_apix * res_fac )))
@@ -532,9 +475,9 @@ def refpostprocessing(stack2process, stack2processEd, options ):
 	
 			if options.verbose:
 				print "The sharp lowpass filter will be actually applied at this resolution", actual_res
-				print "Becuase these many pixels in Fourier space will be zeroed out", stack2processBox/2 - npixels
+				print "Becuase these many pixels in Fourier space will be zeroed out", img2processBox/2 - npixels
 	
-			ref_table = [1.0] * npixels + [0.0] * (( stack2processBox/2) - npixels )
+			ref_table = [1.0] * npixels + [0.0] * (( img2processBox/2) - npixels )
 	
 			ref.process_inplace("filter.radialtable",{"table":ref_table})
 
@@ -558,20 +501,18 @@ def refpostprocessing(stack2process, stack2processEd, options ):
 		ref['MRC.ylen']= ref['ny']
 		ref['MRC.zlen']= ref['nz']
 	
-		ref.write_image(stack2processEd,i)
+		ref.write_image(img2processEd,i)
 
 		if options.sym and options.sym != 'c1':
-			cmd = ''
-			cmd = 'e2proc3d.py ' + str(stack2processEd) + ' ' + str(stack2processEd) + ' --sym=' + options.sym
+			cmd = 'e2proc3d.py ' + str(img2processEd) + ' ' + str(img2processEd) + ' --sym=' + options.sym
 			p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 			text=p.communicate()	
 			p.stdout.close()
 
 		if options.mirror:
+			img2processEdMirror = img2processEd.replace('.hdf','_mirror.hdf')
 	
-			stack2processEdMirror = stack2processEd.replace('.hdf','_mirror.hdf')
-	
-			cmd = 'e2proc3d.py ' + stack2processEd + ' ' + stack2processEdMirror + ' --process=xform.mirror:axis=x'
+			cmd = 'e2proc3d.py ' + img2processEd + ' ' + img2processEdMirror + ' --process=xform.mirror:axis=z'
 			p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 			text=p.communicate()	
 			p.stdout.close()
