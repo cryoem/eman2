@@ -1688,16 +1688,16 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			temp = Util.multiref_polar_ali_2d_peaklist(alldata[im], refi, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi)
 			for iref in xrange(numref):
 				from utilities import inverse_transform2
-				qd0,qd1,qd3,qd4 = inverse_transform2(temp[iref*5+1], temp[iref*5+2], temp[iref*5+3], int(temp[iref*5+4]))
-				if(abs(qd1)>xrng or abs(qd2)>yrng):  print  " multiref1 ",sxi,syi,qd0,qd1,qd3,qd4
+				qd0,qd1,qd2,qd3 = inverse_transform2(temp[iref*5+1], temp[iref*5+2], temp[iref*5+3], int(temp[iref*5+4]))
+				if(abs(qd1)>xrng or abs(qd2)>yrng):  print  " multiref1 ",sxi,syi,qd0,qd1,qd2,qd3
 				[alphan, sxn, syn, mn] = \
 				   combine_params2(0.0, -sxi, -syi, 0, temp[iref*5+1], temp[iref*5+2], temp[iref*5+3], int(temp[iref*5+4]))
 				peak_list[iref][(im-image_start)*4+0] = alphan
 				peak_list[iref][(im-image_start)*4+1] = sxn
 				peak_list[iref][(im-image_start)*4+2] = syn
 				peak_list[iref][(im-image_start)*4+3] = mn
-				qd0,qd1,qd3,qd4 = inverse_transform2(alphan, sxn, syn, mn)
-				if(abs(qd1)>xrng or abs(qd2)>yrng):  print  " multiref2 ",qd0,qd1,qd3,qd4
+				qd0,qd1,qd2,qd3 = inverse_transform2(alphan, sxn, syn, mn)
+				if(abs(qd1)>xrng or abs(qd2)>yrng):  print  " multiref2 ",qd0,qd1,qd2,qd3
 				d[iref*nima+im] = temp[iref*5]
 		del refi, temp
 
