@@ -208,7 +208,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		
 	avg_num = 0
 	Iter = 1
-	match_initialization = False
+	match_initialization = True#False
 	avg_first_stage = "class_averages_candidate_generation_%d.hdf"%generation
 
 	if  not candidatesexist:
@@ -232,8 +232,8 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 			# Generate random averages for each group
 			if key == group_main_node:
-				
 				refim = generate_random_averages(data, K, 9023)
+				#refim = generate_random_averages(data, K, -1)
 				#for j in xrange(len(refim)):  refim[j].write_image("refim_%d.hdf"%color, j)
 			else:
 				refim = [model_blank(nx, nx) for i in xrange(K)]
@@ -1602,8 +1602,8 @@ def match_2_way(data, refi, indep_run, thld_grp, FH, FF, find_unique=True, wayne
 def generate_random_averages(data, K, rand_seed = -1):
 
 	from random import shuffle, seed, randint
-	avgs = [data[i].copy() for i in xrange(K)]
-	return avgs
+	#avgs = [data[i].copy() for i in xrange(K)]
+	#return avgs
 	#  I prefer to take random images....  PAP
 	if rand_seed == -1:  seed(randint(1,2000111222))
 	else:                seed(rand_seed)
