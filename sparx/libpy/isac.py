@@ -1602,6 +1602,8 @@ def match_2_way(data, refi, indep_run, thld_grp, FH, FF, find_unique=True, wayne
 def generate_random_averages(data, K, rand_seed = -1):
 
 	from random import shuffle, seed, randint
+	avgs = [data[i].copy() for i in xrange(K)]
+	return avgs
 	#  I prefer to take random images....  PAP
 	if rand_seed == -1:  seed(randint(1,2000111222))
 	else:                seed(rand_seed)
