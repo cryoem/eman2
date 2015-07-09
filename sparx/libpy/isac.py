@@ -242,15 +242,15 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				bcast_EMData_to_all(refim[i], key, group_main_node, group_comm)
 
 			# Generate inital averages
-			#if myid == main_node: print "	 Generating initial averages ",localtime()[:5]
+			if myid == main_node: print "	 Generating initial averages ",color,myid,localtime()[:5]
 			refi = isac_MPI(data, refim, maskfile=None, outname=None, ir=ir, ou=ou, rs=rs, xrng=xr, yrng=yr, step=ts, 
 					maxit=maxit, isac_iter=init_iter, CTF=CTF, snr=snr, rand_seed=-1, color=color, comm=group_comm, 
 					stability=False, FL=FL, FH=FH, FF=FF, dst=dst, method = alimethod)
 			del refim
 
 			# gather the data on main node
-			if match_initialization:
-				if key == group_main_node:
+			if match_initialization:                #  This is not executed at all .  It was always this way, at least since version 1.1 by Piotr
+				if key == group_main_node:          # as all refims are initialized the same way and also the flag is set to False!
 					#print "Begin gathering ...", myid, len(refi)
 					refi = gather_EMData(refi, indep_run, myid, main_node)
 				if myid == main_node:
@@ -279,6 +279,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 			if key == group_main_node:
 				for i in xrange(K):
+					#  Each color has the same set of refim
 					current_refim[i].write_image("init_group%d_round%d.hdf"%(color, Iter), i)
 
 			# Run ISAC
@@ -300,7 +301,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				for im in data:
 					alpha, sx, sy, mirror, scale = get_params2D(im)
 					all_ali_params[0].append(alpha)
-					all_ali_params[1].append(sx)			
+					all_ali_params[1].append(sx)
 					all_ali_params[2].append(sy)
 					all_ali_params[3].append(mirror)
 					#all_ali_params[4].append(scale)
@@ -315,6 +316,10 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				if key == group_main_node:
 					refi = gather_EMData(refi, indep_run, myid, main_node)
 
+					for i in xrange(len(refi)):
+						#  Each color has the same set of refim
+						refi[i].write_image("refi%d_round%d.hdf"%(color, Iter), i)
+
 				if mloop != match_first:
 					if myid == main_node:
 						current_refim = match_2_way(data, refi, indep_run, thld_grp, FH, FF, suffix="_"+str(mloop) )
@@ -327,7 +332,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 			# Run Matching
 			if myid == main_node:
-				#print " Before matching ...  ", localtime()[:5] #len(data), len(refi), indep_run
+				print " Before matching ...  ", color, myid,localtime()[:5] #len(data), len(refi), indep_run
 				matched_data = match_2_way(data, refi, indep_run, thld_grp, FH, FF, suffix="_"+str(mloop) )
 				members = []
 				for im in matched_data:

@@ -42,7 +42,7 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + " stack output_average --radius=particle_radius --xr=xr --yr=yr --ts=ts --thld_err=thld_err --num_ali=num_ali --fl=fl --aa=aa --CTF --verbose --stables"
 	parser = OptionParser(usage,version=SPARXVERSION)
-	parser.add_option("--radius",           type="int",              default=-1,          help=" particle radius for alignment")
+	parser.add_option("--radius",       type="int",              default=-1,          help=" particle radius for alignment")
 	parser.add_option("--xr",           type="string"      ,     default="2 1",       help="range for translation search in x direction, search is +/xr (default 2,1)")
 	parser.add_option("--yr",           type="string"      ,     default="-1",        help="range for translation search in y direction, search is +/yr (default = same as xr)")
 	parser.add_option("--ts",           type="string"      ,     default="1 0.5",     help="step size of the translation search in both directions, search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional (default: 1,0.5)")
@@ -116,7 +116,7 @@ def main():
 				avet = within_group_refinement(class_data, mask, True, 1, ou, 1, xrng, yrng, step, 90.0, \
 						maxit = options.maxit, FH=options.fl, FF=options.aa, method = options.method)
 				from utilities import info
-				print "  avet  ",info(avet)
+				#print "  avet  ",info(avet)
 			for im in class_data:
 				alpha, sx, sy, mirror, scale = get_params2D(im)
 				ali_params.extend([alpha, sx, sy, mirror])
