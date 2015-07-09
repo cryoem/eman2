@@ -333,10 +333,11 @@ def binaryTreeRef(options,nptclForRef,nseed,ic,etc):
 	#	nseed=64
 	#	print "Limiting seeding to the first 64 images"
 
-	nseediter=int(log(nseed,2))			# number of iterations we'll need
+	nseediter = int(log(nseed,2))			# number of iterations we'll need
 	
 	if options.iterstop:
-		nseediter=options.iterstop
+		if options.iterstop < nseediter:
+			nseediter=options.iterstop
 	
 	if options.verbose: 
 		print "Seedtree to produce initial reference. Using %d particles in a %d level tree"%(nseed,nseediter)
@@ -378,6 +379,8 @@ def binaryTreeRef(options,nptclForRef,nseed,ic,etc):
 	'''
 	#Outer loop covering levels in the converging binary tree
 	'''
+	
+	print "\nnseediter is", nseediter
 	for i in range( nseediter ):
 		infile="%s/seedtree_%d_cl_%d.hdf"%(options.path,i,ic)
 		if ic < 0:
@@ -399,47 +402,56 @@ def binaryTreeRef(options,nptclForRef,nseed,ic,etc):
 		transform = None
 		# loop over volumes in the current level
 		
-		for j in range(0,nseed/(2**i),2):
+		nptclsinInfile = EMUtil.get_image_count( infile )
+		
+		if nptclsinInfile > 1:
+		
+			for j in range(0,nseed/(2**i),2):
 
-			#Unfortunately this tree structure limits the parallelism to the number of pairs at the current level :^(
-			if options.parallel:
-				#task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
-				#	options.npeakstorefine,options.align,options.aligncmp,options.falign,options.faligncmp,options.shrink,options.shrinkfine,transform,options.verbose-1,options.randomizewedge,options.wedgeangle,options.wedgei,options.wedgef)
+				#Unfortunately this tree structure limits the parallelism to the number of pairs at the current level :^(
+				if options.parallel:
+					#task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair %d at level %d"%(j/2,i),options.mask,options.normproc,options.preprocess,options.lowpass,options.highpass,
+					#	options.npeakstorefine,options.align,options.aligncmp,options.falign,options.faligncmp,options.shrink,options.shrinkfine,transform,options.verbose-1,options.randomizewedge,options.wedgeangle,options.wedgei,options.wedgef)
 				
-				task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair #%d at level %d"%(j/2,i),options,transform,0)
-				tasks.append(task)
+					task=Align3DTask(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair #%d at level %d"%(j/2,i),options,transform,0)
+					tasks.append(task)
+				else:
+					#print "No parallelism specified"
+					result=align3Dfunc(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair #%d at level %d"%(j/2,i),options,transform,0)
+					results.append(result['final'])
+			'''		
+			#Start the alignments for this level
+			'''
+			if options.parallel:
+				tids=etc.send_tasks(tasks)
+				if options.verbose: 
+					print "%d tasks queued in seedtree level %d"%(len(tids),i) 
+
+				"""Wait for alignments to finish and get results"""
+				results=get_results(etc,tids,options.verbose,nseed,'binarytree')
+
+				#results=get_results(etc,tids,options.verbose,{},len(ptclnums),0,'binarytree')
+				#results=get_results(etc,tids,options.verbose,{},nptclForRef,0)
+				#def get_results(etc,tids,verbose,nptcls,refmethod=''):
+
+
+
+				if options.verbose>2 : 
+					print "Results:"
+					pprint(results)
 			else:
 				#print "No parallelism specified"
-				result=align3Dfunc(["cache",infile,j],["cache",infile,j+1],j/2,"Seed Tree pair #%d at level %d"%(j/2,i),options,transform,0)
-				results.append(result['final'])
-		'''		
-		#Start the alignments for this level
-		'''
-		if options.parallel:
-			tids=etc.send_tasks(tasks)
-			if options.verbose: 
-				print "%d tasks queued in seedtree level %d"%(len(tids),i) 
-
-			"""Wait for alignments to finish and get results"""
-			results=get_results(etc,tids,options.verbose,nseed,'binarytree')
-
-			#results=get_results(etc,tids,options.verbose,{},len(ptclnums),0,'binarytree')
-			#results=get_results(etc,tids,options.verbose,{},nptclForRef,0)
-			#def get_results(etc,tids,verbose,nptcls,refmethod=''):
-
-
-
-			if options.verbose>2 : 
-				print "Results:"
-				pprint(results)
-		else:
-			#print "No parallelism specified"
-			#results=tasks
-			if options.verbose>2 : 
-				print "Results:" 
-				pprint(results)
+				#results=tasks
+				if options.verbose>2 : 
+					print "Results:" 
+					pprint(results)
 						
-		makeAveragePairs(options,infile,outfile,results)
+			makeAveragePairs(options,infile,outfile,results)
+		
+		else:
+			print "\nalgorithm converged since infile %s has only one particle, nimgs=%d" %(infile,nptclsinInfile)
+			os.rename( infile, outfile )
+		
 		
 	#ref = EMData( outfile, 0 )		# result of the last iteration
 	
