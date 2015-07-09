@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Jesus Galaz-Montoya 01/Nov/2014
+# Author: Jesus Galaz-Montoya July/08/2015
 # Last modification: 19/Feb/2015
 # Copyright (c) 2011 Baylor College of Medicine
 #
