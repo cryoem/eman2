@@ -2,8 +2,8 @@
 
 #
 # Author: Jesus Galaz-Montoya 03/2011, 
-# (based on Steven Ludtke's initial implementation [02/15/2011] of Jesus's older scripts).
-# Last modification: 19/Feb/2015
+# (based on Steven Ludtke's initial implementation [02/15/2011] of Jesus's older scripts, from M.F.Schmid's methods).
+# Last modification: July/08/2015
 #
 # Copyright (c) 2011 Baylor College of Medicine
 #
@@ -328,9 +328,10 @@ def main():
 			subsetcmd = 'e2proc3d.py ' + options.input + ' ' + subsetStack + ' --first=0 --last=' + str(options.subset-1) 
 			print "Subset cmd is", subsetcmd
 		
-			p=subprocess.Popen( subsetcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE )
-			text=p.communicate()	
-			p.stdout.close()
+			runcmd( options, subsetcmd )
+			#p=subprocess.Popen( subsetcmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+			#text=p.communicate()	
+			#p.stdout.close()
 		
 			options.input = subsetStack
 			nptcl = EMUtil.get_image_count(options.input)
@@ -1151,7 +1152,8 @@ def main():
 			if it > 0 and len(avgshdrs[0]) > 1 and len(avgshdrs[1]) > 1:
 				if avgshdrs[0][-1]['mean'] == avgshdrs[0][-2]['mean'] and avgshdrs[1][-1]['mean'] == avgshdrs[0][-2]['mean']:
 					print "Both independent averages have converged!"
-					os.system('rm ' + options.path + '/tmpref.hdf')
+					#os.system('rm ' + options.path + '/tmpref.hdf')
+					os.remove( options.path + '/tmpref.hdf' )
 					sys.exit()
 				
 			fscfile = options.path + '/fsc_' + str(it).zfill( len( str(options.iter))) + '.txt'
@@ -1194,7 +1196,8 @@ def main():
 					print "The average has converged!"
 					outname = options.path + '/final_avg.hdf'
 					avg.write_image( outname , 0)
-					os.system('rm ' + options.path + '/tmpref.hdf')
+					#os.system('rm ' + options.path + '/tmpref.hdf')
+					os.remove( options.path + '/tmpref.hdf' )
 					sys.exit()
 
 			originalref = EMData( options.ref, 0 )
@@ -1253,7 +1256,8 @@ def main():
 	if options.inixforms: 
 		preOrientationsDict.close()
 	
-	os.system('rm ' + options.path + '/tmpref.hdf')
+	#os.system('rm ' + options.path + '/tmpref.hdf')
+	os.remove( options.path + '/tmpref.hdf' )
 	
 	print "Logger ending"	
 	E2end(logger)
@@ -1611,6 +1615,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				
 			if not method and not options.ref:
 				method = 'bt'
+				print "\n\n\nbt by default!!!!"
 				
 			#elif options.hacref:
 			if method == 'hac':
@@ -1666,15 +1671,21 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				cmdhac+=' --path=' + hacrefsubdir
 				cmdhac+=' --iter='+str(niterhac)
 				cmdhac+=' --input='+subsetForHacRef
+				
+				runcmd( options, cmdhac )
+				#cmdhac += ' && mv ' + hacrefsubdir + ' ' + options.path + '/' + ' && mv ' + subsetForHacRef + ' ' + options.path
 
-				cmdhac+= ' && mv ' + hacrefsubdir + ' ' + options.path + '/' + ' && mv ' + subsetForHacRef + ' ' + options.path
+				#cmdhac2 = 'mv ' + hacrefsubdir + ' ' + options.path + '/'
+				#runcmd( options, cmdhac2 )
+				os.rename( hacrefsubdir, options.path + '/' + hacrefsubdir)
 
+				
+				#cmdhac3 = 'mv ' + subsetForHacRef + ' ' + options.path
+				#runcmd( options, cmdhac3 )
+				os.rename( subsetForHacRef, options.path + '/' + subsetForHacRef)
+				
 				if options.verbose:
 					print "\n(e2spt_classaverage)(sptRefGen) - Command to generate hacref is", cmdhac
-
-				p=subprocess.Popen( cmdhac, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-				text=p.communicate()	
-				p.stdout.close()
 				
 				ref = EMData( options.path + '/' + hacrefsubdir +'/final_avg.hdf', 0 )
 
@@ -1695,7 +1706,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				nptclsforref = 10
 				try:
 					if options.ssaref:
-						nptclsforref=options.ssaref		
+						nptclsforref=options.ssaref	
 				except:
 					if subset4ref:
 						nptclsforref=subset4ref
@@ -1736,19 +1747,30 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				cmdssa += ' --path=' + ssarefsubdir
 				cmdssa += ' --symmetrize'
 				cmdssa += ' --average'
-			
+				
+				runcmd( options, cmdssa )
+				
 				#ssarefname = 'ssaref_' + klassidref + '.hdf'
 				ssarefname = 'final_avg.hdf'
 				#cmdssa += ' --output=' + ssarefname
 			
-				cmdssa += ' && mv ' + ssarefsubdir + ' ' + options.path + '/' + ' && mv ' + subsetForSsaRef + ' ' + options.path
+				#cmdssa += ' && mv ' + ssarefsubdir + ' ' + options.path + '/' + ' && mv ' + subsetForSsaRef + ' ' + options.path
 
+				#cmdssa2 = 'mv ' + ssarefsubdir + ' ' + options.path + '/'
+				#runcmd( options, cmdssa2 )
+				os.rename( ssarefsubdir, options.path + '/' + ssarefsubdir)
+				
+				
+				#cmdssa3 =  'mv ' + subsetForSsaRef + ' ' + options.path
+				#runcmd( options, cmdssa3 )
+				os.rename( subsetForSsaRef, options.path + '/' + subsetForSsaRef)
+				
 				if options.verbose:
 					print "\n(e2spt_classaverage)(sptRefGen) - Command to generate ssaref is", cmdssa
 
-				p=subprocess.Popen( cmdssa, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-				text=p.communicate()	
-				p.stdout.close()
+				#p=subprocess.Popen( cmdssa, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+				#text=p.communicate()	
+				#p.stdout.close()
 			
 				ref = EMData( options.path + '/' + ssarefsubdir +'/' + ssarefname, 0 )
 
@@ -1757,33 +1779,59 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 			#elif not options.hacref and not options.ssaref:				
 			if method == 'bt':
 		
-				nptclForRef = len(ptclnums)
-
-				#from e2spt_binarytree import binaryTreeRef
+				nptclsforref = 64
+				
+				#try:
+				#	if options.btref:
+				#		nptclsforref = options.btref		
+				#except:
+				#	if subset4ref:
+				#		nptclsforref = subset4ref
 			
-				#print "len ptclnums is", len(ptclnums)
-				#print "log 2 of that is" 
+				#if nptclsforref >= len(ptclnums):
+				#	nptclsforref =  len(ptclnums)
+				
+				
+				
+				#from e2spt_binarytree import binaryTreeRef
+				print "\ninput is", options.input
+				print "with nimgs", EMUtil.get_image_count( options.input )
+				print "--goldstandardoff is", options.goldstandardoff
+				print "len ptclnums is", len(ptclnums)
+				
+				print "log 2 of that is" 
 				print log( len(ptclnums), 2 )
 			
-				niter = int(floor(log( len(ptclnums) ,2 )))
-				nseed=2**niter
-			
-				try:
-					if options.btref:
-						niter = int(floor(log( options.btref, 2 )))
-						nseed=2**niter			
-				except:
-					if subset4ref:
-						niter = int(floor(log( subset4ref, 2 )))
-						nseed=2**niter	
+				niter = int(floor(log( len(ptclnums), 2 )))
+				print "and niter is", niter
+				nseed = 2**niter
+				print "therefore nseed=2**niter is", nseed
+				
+				
+				#try:
+				#	if options.btref:
+				#		niter = int(floor(log( options.btref, 2 )))
+				#		nseed=2**niter			
+				#except:
+				#	if subset4ref:
+				#		niter = int(floor(log( subset4ref, 2 )))
+				#		nseed=2**niter	
+				
+				
+				#if not options.goldstandardoff:
+				#	nseed /= 2
+				
 					
-			
-
-
 				subsetForBTRef = 'sptbt_refsubset'+ klassidref + '.hdf'
 			
 				i = 0
+				
+				
+				#print "ptclnums are", ptclnums
+				#print "with len", len(ptclnums)
+				
 				while i < nseed :
+					print "i is", i
 					a = EMData( options.input, ptclnums[i] )
 					a.write_image( subsetForBTRef, i )
 					print "writing image %d to file %s, which will contain the subset of particles used for BTA refernece building" %(i,subsetForBTRef)
@@ -1814,15 +1862,30 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 				cmdbt+=' --path=' + btrefsubdir
 				cmdbt+=' --iter=' + str( niter )
 				cmdbt+=' --input=' + subsetForBTRef
-
-				cmdbt+= ' && mv ' + btrefsubdir + ' ' + options.path + '/' + ' && mv ' + subsetForBTRef + ' ' + options.path
-
+				
+				runcmd( options, cmdbt )
+				
+				#cmdbt+= ' && mv ' + btrefsubdir + ' ' + options.path + '/' + ' && mv ' + subsetForBTRef + ' ' + options.path
+			
+				
 				if options.verbose:
 					print "\n(e2spt_classaverage)(sptRefGen) - Command to generate btref is", cmdbt
 
-				p=subprocess.Popen( cmdbt, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-				text=p.communicate()	
-				p.stdout.close()
+				#p=subprocess.Popen( cmdbt, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+				#text=p.communicate()	
+				#p.stdout.close()
+			
+			
+				#cmdbt2 = 'mv ' + btrefsubdir + ' ' + options.path + '/' 
+				#runcmd( options, cmdbt2 )
+				os.rename( btrefsubdir, options.path + '/' + btrefsubdir )
+				
+				
+				#cmdbt3 = 'mv ' + subsetForBTRef + ' ' + options.path
+				#runcmd( options, cmdbt3 )
+				os.rename( subsetForBTRef, options.path + '/' + subsetForBTRef )
+				
+				
 			
 				#if os.getcwd() not in options.path:
 				#	options.path = os.getcwd() + '/' + ptions.path
@@ -1856,6 +1919,19 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 
 	return refsdict
 	
+
+def runcmd(options,cmd):
+	if options.verbose > 9:
+		print "(e2spt_classaverage)(runcmd) running command", cmd
+	
+	p=subprocess.Popen( cmd, shell=True,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+	text=p.communicate()	
+	p.stdout.close()
+	
+	if options.verbose > 9:
+		print "(e2spt_classaverage)(runcmd) done"
+	return
+
 
 def sptOptionsParser( options ):
 	try:
@@ -2315,7 +2391,9 @@ def sptmakepath(options, stem='spt'):
 	if options.path not in files:
 		if options.verbose:
 			print "I will make THIS path", options.path
-		os.system('mkdir ' + options.path)
+		
+		#os.system('mkdir ' + options.path)
+		os.mkdir( options.path )
 	
 	return options
 
