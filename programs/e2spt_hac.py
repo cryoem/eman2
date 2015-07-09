@@ -2,7 +2,7 @@
 
 #
 # Author: Jesus Galaz-Montoya, 07/2011
-# Last modification: 19/Feb/2015
+# Last modification: July/08/2015
 # Copyright (c) 2011 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -149,7 +149,7 @@ def main():
 	
 	parser.add_argument("--breaksym",action="store_true", default=False,help="""Default=False. Break symmetry. Do not apply symmetrization after averaging, even if searching the asymmetric unit provided through --sym only for alignment. Default=False""", guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, nosharedb=True, mode=',breaksym[True]')
 	
-	parser.add_argument("--groups",type=int,default=1,help="""Default=1 (all particles will converge to a single average if enough iterations are specified through --iter). This parameter will split the data into a user defined number of groups. For purposes of gold-standard FSC computation later, select --group=2.""")
+	parser.add_argument("--groups",type=int,default=1,help="""Default=1 (all particles will converge to a single average if --iterstop is not specified). This parameter will split the data into a user defined number of groups. For purposes of gold-standard FSC computation later, select --group=2.""")
 		
 	parser.add_argument("--randomizewedge",action="store_true",  default=False,help="""Default=False. This parameter is EXPERIMENTAL. It randomizes the position of the particles BEFORE alignment, to minimize missing wedge bias and artifacts during symmetric alignment where only a fraction of space is scanned""")
 	
@@ -301,7 +301,9 @@ def main():
 				groupDIR = originalpath + '/group' + str(i+1).zfill(len(str(options.groups)))
 				groupID = 'group' + str(i+1).zfill(len(str(options.groups))) + 'ptcls.hdf'
 				groupPATH = groupDIR + '/' + groupID
-				os.system('mkdir ' + groupDIR)				
+				#os.system('mkdir ' + groupDIR)				
+				os.mkdir( groupDIR )
+				
 				
 				#groupID = 'group' + str(i+1).zfill(len(str(options.nrefs)))
 				#groupDIR = originalPath + '/' + groupID
@@ -423,7 +425,8 @@ def exclusive_classes(options):
 		print i
 
 	udir = options.path + '/me_classes_' + str(options.exclusive_class_min).zfill(len(str(options.exclusive_class_min)))
-	os.system('mkdir ' + udir)
+	#os.system('mkdir ' + udir)
+	os.mkdir( udir )
 
 	for i in range(len(me_classes)):
 		out = udir + '/me_class' + str(i).zfill(len(str(len(me_classes)))) + '_s' + str(me_classes[i]['multiplicity']) + '.hdf'
@@ -1299,7 +1302,9 @@ def allvsall(options):
 		fs=os.listdir( options.path)
 		
 		if 'oldptclstack.hdf' in fs:						#This seems not to be needed in the last round. Sometimes the program fails with an error saying there's no old stack in the directory.
-			os.system('rm ' + options.path + '/oldptclstack.hdf')
+			#os.system('rm ' + options.path + '/oldptclstack.hdf')
+			os.remove( options.path + '/oldptclstack.hdf' )
+		
 		#a=EMData(nx,ny,nz)
 		#a.write_image(oldptclstack.hdf,0)					#
 		
