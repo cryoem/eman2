@@ -239,7 +239,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				refi = [model_blank(nx, nx) for i in xrange(K)]
 
 			for i in xrange(K):
-				bcast_EMData_to_all(refim[i], key, group_main_node, group_comm)
+				bcast_EMData_to_all(refi[i], key, group_main_node, group_comm)
 
 			# Generate inital averages
 			if myid == main_node: print "	 Generating initial averages ",color,myid,localtime()[:5]
