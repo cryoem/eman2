@@ -232,26 +232,25 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 			# Generate random averages for each group
 			if key == group_main_node:
-				refim = generate_random_averages(data, K, 9023)
-				#refim = generate_random_averages(data, K, -1)
-				#for j in xrange(len(refim)):  refim[j].write_image("refim_%d.hdf"%color, j)
+				#refi = generate_random_averages(data, K, 9023)
+				refi = generate_random_averages(data, K, -1)
+				#for j in xrange(len(refi)):  refi[j].write_image("refim_%d.hdf"%color, j)
 			else:
-				refim = [model_blank(nx, nx) for i in xrange(K)]
+				refi = [model_blank(nx, nx) for i in xrange(K)]
 
 			for i in xrange(K):
 				bcast_EMData_to_all(refim[i], key, group_main_node, group_comm)
 
 			# Generate inital averages
 			if myid == main_node: print "	 Generating initial averages ",color,myid,localtime()[:5]
-			refi = isac_MPI(data, refim, maskfile=None, outname=None, ir=ir, ou=ou, rs=rs, xrng=xr, yrng=yr, step=ts, 
+			refi = isac_MPI(data, refi, maskfile=None, outname=None, ir=ir, ou=ou, rs=rs, xrng=xr, yrng=yr, step=ts, 
 					maxit=maxit, isac_iter=init_iter, CTF=CTF, snr=snr, rand_seed=-1, color=color, comm=group_comm, 
 					stability=False, FL=FL, FH=FH, FF=FF, dst=dst, method = alimethod)
-			del refim
 
 			# gather the data on main node
 			if match_initialization:                #  This is not executed at all .  It was always this way, at least since version 1.1 by Piotr
 				if key == group_main_node:          # as all refims are initialized the same way and also the flag is set to False!
-					#print "Begin gathering ...", myid, len(refi)
+					print "Begin gathering ...", myid, len(refi)  #  It will append data
 					refi = gather_EMData(refi, indep_run, myid, main_node)
 				if myid == main_node:
 					# Match all averages in the initialization and select good ones
@@ -1205,11 +1204,10 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 								if(abs(sx)>mashi or abs(sy)>mashi):  print  "PARAMETERS OUTSIDE THE RANGE 11111 ::::: ",mashi,get_params2D(class_data[im]),alpha, sx, sy, mirror
 
 
-
 						stable_set, mirror_consistent_rate, err = multi_align_stability(ali_params, 0.0, 10000.0, thld_err, False, last_ring*2)
 
-						print  "Color % d, class %d ...... Size of the group = %4d and of the stable subset = %4d, Pixer threshold = %8.2f, Mirror consistent rate = %5.3f,  Average pixel error = %10.2f"\
-										%(color, j, len(class_data), len(stable_set),thld_err, mirror_consistent_rate, err)
+						print  "Color % d, class %d ...... Size of the group = %4d and of the stable subset = %4d, Mirror consistent rate = %5.3f,  Average pixel error = %10.2f"\
+										%(color, j, len(class_data), len(stable_set),mirror_consistent_rate, err)
 
 						# If the size of stable subset is too small (say 1, 2), it will cause many problems, so we manually increase it to 5
 						while len(stable_set) < 5:
