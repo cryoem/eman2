@@ -720,7 +720,8 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 			for i in xrange(num_ali):
 				ali_params_cleaned[i].extend(ali_params_mir_stab[i][j*4:j*4+4])
 	nima3 = len(cleaned_part)
-	if nima3 <= 1:  return [], mir_stab_rate, sqrt(sum(pixel_error_before)/nima2)
+	prever = sqrt(sum(pixel_error_before)/nima2)
+	if nima3 <= 1:  return [], mir_stab_rate, prever
 
 	#print "  cleaned part  ",nima3
 
@@ -763,9 +764,8 @@ def multi_align_stability(ali_params, mir_stab_thld = 0.0, grp_err_thld = 10000.
 				if print_individual:  print "Particle %4d :  pixel error = %18.4f  unstable"%(i, err)
 		else:
 			if print_individual:  print "Particle %4d :  Mirror unstable"%i
-
-	return stable_set, mir_stab_rate, sqrt(val)
-
+	#  return average pixel error before pruning as it is more informative
+	return stable_set, mir_stab_rate, prever# sqrt(val/len(stable_set))
 
 
 # args - G, data - [T, d]

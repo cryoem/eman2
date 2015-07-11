@@ -84,8 +84,8 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 			nx = ima.get_xsize()
 			ny = ima.get_ysize()
 			alpha, sx, sy, mirror, dummy = get_params2D(data[im], ali_params)
-			alpha, sx, sy, mirror        = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
-			alphai, sxi, syi, scalei     = inverse_transform2(alpha, sx, sy)
+			alpha, sx, sy, dummy         = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
+			alphai, sxi, syi, dummy      = combine_params2(0.0, sx, sy, 0, -alpha, 0,0, 0)
 			#  introduce constraints on parameters to accomodate use of cs centering
 			sxi = min(max(sxi,-mashi),mashi)
 			syi = min(max(syi,-mashi),mashi)
@@ -93,7 +93,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 		#  The search range procedure was adjusted for 3D searches, so since in 2D the order of operations is inverted, we have to invert ranges
 		txrng = search_range(nx, ou, sxi, xrng, "ali2d_single_iter")
 		txrng = [txrng[1],txrng[0]]
-		tyrng = search_range(ny, ou, syi, yrng)
+		tyrng = search_range(ny, ou, syi, yrng, "ali2d_single_iter")
 		tyrng = [tyrng[1],tyrng[0]]
 		#print im, "B",cnx,sxi,syi,txrng, tyrng
 		# align current image to the reference
@@ -141,15 +141,10 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 			angt, sxn, syn, mn = combine_params2(0.0, -sxst, -syst, 0, angt, 0, 0, mirrort)
 			set_params2D(data[im][0][0], [angt, sxn, syn, mn, 1.0], ali_params)
 		else:
-			#print im, round(sxi,3), round(syi,3)
 			if nomirror:  [angt, sxst, syst, mirrort, peakt] = ornq(ima, cimage, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi)
 			else:	      [angt, sxst, syst, mirrort, peakt] = ormq(ima, cimage, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi, delta)
 			# combine parameters and set them to the header, ignore previous angle and mirror
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
-			alphan, sxn, syn, mn = inverse_transform2(alphan, sxn, syn, mn)
-			sxn = min(max(sxn,-mashi),mashi)
-			syn = min(max(syn,-mashi),mashi)
-			alphan, sxn, syn, mn = inverse_transform2(alphan, sxn, syn, mn)
 			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
 
 		if mn == 0: sx_sum += sxn

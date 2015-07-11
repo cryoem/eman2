@@ -15835,6 +15835,227 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 	from fundamentals import fshift, fft
 	from random	      import randint, random
 	from statistics   import ave_series
+	from utilities    import get_input_from_string, model_circle, center_2D
+	from utilities    import set_params2D, get_params2D, combine_params2, inverse_transform2
+
+	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit);
+	nima = len(data)
+	nx = data[0].get_xsize()
+	if last_ring == -1:  last_ring = nx/2-2
+	if maskfile: mask = maskfile
+	else:        mask = model_circle(last_ring, nx, nx)
+
+	lx = [0]*nima
+	ly = [0]*nima
+	for im in xrange(nima):
+		alpha, sx, sy, mirrorn, scale = get_params2D(data[im])
+		alphai, sxi, syi, dummy    = combine_params2(0.0, sx, sy, 0, -alpha, 0.,0.,0)
+		lx[im] = int(round(sxi,0)) 
+		ly[im] = int(round(syi,0)) 
+		sxi -= lx[im]
+		syi -= ly[im]
+		Util.cyclicshift(data[im] , {"dx":-lx[im],"dy":-ly[im],"dz":0})
+		if randomize :
+			#alphan, sxn, syn, mirrorn    = combine_params2(0.0, -sxi, -syi, 0, random()*360.0, 0.0, 0.0, randint(0, 1))
+			alphan, sxn, syn, mirrorn = combine_params2(0.0, randint(-xrng[0],xrng[0]), randint(-xrng[0],xrng[0]), 0, random()*360.0, 0, 0, randint(0, 1))
+		else:
+			alphan, sxn, syn, dumme = combine_params2(0.0, sxi, syi, 0, -alpha, 0.0, 0.0, 0)
+		set_params2D(data[im], [alpha, sxn, syn, mirrorn, 1.0])
+		
+
+	cnx = nx/2+1
+	cny = cnx
+	mode = "F"
+	numr = Numrinit(first_ring, last_ring, rstep, mode)
+	wr = ringwe(numr, mode)
+
+	sx_sum = 0.0
+	sy_sum = 0.0
+	cs = [0.0]*2
+	total_iter = 0
+	if(method == "SHC"):
+		#  This is my failed attempt to use SHC for 2D alignment.  
+		#    Inexplicably, it did not do all that well.  While initially it converges fast
+		#     and generally yields a very good solution, it converges to cluster of images scattered
+		#     around the 'best' solution, i.e., the shifts are within a fraction of a pixel of what they
+		#     should be and, as a result, some are in wrong positions and overall pixel error is large.
+		#     Overall, Yang's method works much better, so I am leaving it at that.  PAP 01/22/2015
+		for im in data:  im.set_attr('previousmax', -1.0e23)
+		tavg = ave_series(data)
+		for N_step in xrange(len(xrng)):
+			nope = 0
+			Iter = 0
+			while(nope < len(data)//1 and Iter < max_iter ):
+				total_iter += 1
+				Iter += 1
+				if( FH > 0.0):
+					tavg = filt_tanl(fft(tavg), FH, FF)
+					if( xrng[0] > 0.0 ): cs[0] = sx_sum/float(nima)
+					if( yrng[0] > 0.0 ): cs[1] = sy_sum/float(nima)
+					tavg = fft(fshift(tavg, -cs[0], -cs[1]))
+				else:
+					tavg = filt_tanl(tavg, FH, FF)
+				sx_sum, sy_sum, nope = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
+															xrng[N_step], yrng[N_step], step[N_step], \
+															mode=mode, CTF=False, random_method = method)
+				#print  "  iteration  shc   %03d   %03d   %7.2f    %7.2f  "%(total_iter,nope,cs[0],cs[1])
+				#print total_iter,nope
+				#for i in data:  print "  ",i.get_attr('previousmax'),
+				#print "  "
+				#tavg.write_image('tata.hdf',total_iter-1)
+				tavg = ave_series(data)
+		"""
+		tavg.write_image('tata.hdf')
+		for Iter in xrange(0):#max_iter):  # large number
+			total_iter += 1
+			tavg = ave_series(data)
+			if( FH > 0.0):
+				fl = FH
+				tavg = filt_tanl(fft(tavg), fl, FF)
+				if total_iter == len(xrng)*max_iter:  return fft(tavg)
+				if( xrng[0] > 0.0 ): cs[0] = sx_sum/float(nima)
+				if( yrng[0] > 0.0 ): cs[1] = sy_sum/float(nima)
+				tavg = fft(fshift(tavg, -cs[0], -cs[1]))
+			else:
+				if total_iter == len(xrng)*max_iter:  return tavg
+				if( xrng[0] > 0.0 ): cs[0] = sx_sum/float(nima)
+				if( yrng[0] > 0.0 ): cs[1] = sy_sum/float(nima)
+				tavg = fshift(tavg, -cs[0], -cs[1])
+			
+			print  "  iteration  ***   %03d   %7.2f    %7.2f  "%(total_iter,cs[0],cs[1])
+			if Iter%4 != 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0
+			else:                                                 delta = dst
+			sx_sum, sy_sum, nope = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
+														xrng[N_step], yrng[N_step], step[N_step], \
+														mode=mode, CTF=False, delta=delta)
+			if( (abs(cs[0]) + abs(cs[1])) < 0.01 and Iter > 1):  break
+		"""
+
+
+	elif( method == "PCP"):
+		from isac import prepref
+		from utilities import model_circle
+		stp = step[-1]
+		rings = prepref(data, model_circle(nx//2-1,nx,nx), cnx, cnx, numr, mode, xrng[0], xrng[0], stp)
+		print " rings  ",len(rings)
+		for im in xrange(len(data)):
+			rings[im][0][0].set_attr("sxi",0)
+			rings[im][0][0].set_attr("syi",0)
+			rings[im][0][0].set_attr("inx",nx)
+		tavg = ave_series(data)
+		for N_step in xrange(len(xrng)):
+			print " xrng ",xrng[N_step]
+			for Iter in xrange(max_iter):
+				total_iter += 1
+				if( FH > 0.0):
+					fl = 0.1+(FH-0.1)*Iter/float(max_iter-1)
+					tavg = filt_tanl(tavg, fl, FF)
+					"""
+					tavg = filt_tanl(fft(tavg), fl, FF)
+					if total_iter == len(xrng)*max_iter:  return fft(tavg)
+					if( xrng[0] > 0.0 ): cs[0] = sx_sum/float(nima)
+					if( yrng[0] > 0.0 ): cs[1] = sy_sum/float(nima)
+					tavg = fft(fshift(tavg, -cs[0], -cs[1]))
+					"""
+				else:
+					"""
+					if total_iter == len(xrng)*max_iter:  return tavg
+					if( xrng[0] > 0.0 ): cs[0] = sx_sum/float(nima)
+					if( yrng[0] > 0.0 ): cs[1] = sy_sum/float(nima)
+					tavg = fshift(tavg, -cs[0], -cs[1])
+					"""
+				cs = [0,0]
+				#print  "  iteration  std   %03d   %7.2f    %7.2f  "%(total_iter,cs[0],cs[1])
+				if Iter%4 != 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0
+				else:                                                 delta = dst
+				sx_sum, sy_sum, nope = ali2d_single_iter(rings, numr, wr, cs, tavg, cnx, cny, \
+															xrng[N_step], yrng[N_step], step[N_step], \
+															mode=mode, CTF=False, delta=delta, random_method = method)
+				for im in xrange(len(data)):
+					alpha, tx, ty, mirror, scale = get_params2D(rings[im][0][0])
+					set_params2D(data[im],[alpha, tx, ty, mirror, scale])
+				tavg = ave_series(data)
+				#print  "tata ",total_iter-1,Util.infomask(tavg,None,True)
+				#tavg.write_image('tata.hdf',total_iter-1)
+	else:
+		tavg = ave_series(data)
+		for N_step in xrange(len(xrng)):
+			for Iter in xrange(max_iter):
+				total_iter += 1
+				cs = Util.infomask(tavg, mask, False)
+				tavg -= cs[0]
+				if( FH > 0.0):
+					fl = 0.1+(FH-0.1)*Iter/float(max_iter-1)
+					tavg = filt_tanl(tavg, fl, FF)
+				"""
+					tavg = filt_tanl(fft(tavg), fl, FF)
+					if total_iter == len(xrng)*max_iter:  return fft(tavg)
+					if( xrng[0] > 0.0 ): cs[0] = sx_sum/float(nima)
+					if( yrng[0] > 0.0 ): cs[1] = sy_sum/float(nima)
+					tavg = fft(fshift(tavg, -cs[0], -cs[1]))
+				else:
+					if total_iter == len(xrng)*max_iter:  return tavg
+					if( xrng[0] > 0.0 ): cs[0] = sx_sum/float(nima)
+					if( yrng[0] > 0.0 ): cs[1] = sy_sum/float(nima)
+					tavg = fshift(tavg, -cs[0], -cs[1])
+				"""
+				cs = [0,0]
+				if Iter%4 != 0 or total_iter > max_iter*len(xrng)-10:
+					delta = 0.0
+				else:
+					delta = dst
+					tavg, asx,asy = \
+						center_2D(tavg, center_method = 7, searching_range = cnx//2, self_defined_reference = mask)
+					if(asx != 0 or asy != 0):
+						#  Shift images by this additional amount
+						for im in xrange(len(data)):
+							alpha, sx, sy, mirror, scale = get_params2D(data[im])
+							alphai, sxi, syi, dummy      = combine_params2(0, sx, sy, 0, -alpha, 0,0,0)
+							sxi -= asx
+							syi -= asy
+							Util.cyclicshift(data[im] , {"dx":-asx,"dy":-asy,"dz":0})
+							lx[im] += asx
+							ly[im] += asy
+							alphan, sxn, syn, dummy = combine_params2(0.0, sxi, syi, 0, -alpha, 0.0, 0.0, 0)
+							set_params2D(data[im], [alpha, sxn, syn, mirror, 1.0])
+
+				sx_sum, sy_sum, nope = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
+															xrng[N_step], yrng[N_step], step[N_step], \
+															mode=mode, CTF=False, delta=delta)
+
+				tavg = ave_series(data)
+				#for im in data:  print get_params2D(im)
+				#print  "tata ",total_iter-1,Util.infomask(tavg,None,True)
+				#tavg.write_image('tata.hdf',total_iter-1)
+
+		#  Shift data back and adjust parameters
+		for im in xrange(len(data)):
+			alpha, sx, sy, mirror, scale = get_params2D(data[im])
+			alphai, sxi, syi, dummy      = combine_params2(0, sx, sy, 0, -alpha, 0,0,0)
+			Util.cyclicshift(data[im] , {"dx":lx[im],"dy":ly[im],"dz":0})
+			sxi += lx[im]
+			syi += ly[im]
+			alphai, sxi, syi, mirrori    = combine_params2(0.0, sxi, syi, 0, -alpha, 0.0, 0.0, 0)
+			set_params2D(data[im], [alpha, sxi, syi, mirror, 1.0])
+
+	return tavg
+
+
+'''
+
+
+
+#  Version before I started messing with centering of averages  PAP 07/10/2015
+def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, step, dst, maxit, FH, FF, method = ""):
+
+	# Comment by Zhengfan Yang 03/11/11
+	# This is a simple version of ali2d_data (down to the bone), no output dir, no logfile, no CTF, no MPI or CUDA, no Fourvar, no auto stop, no user function
+	
+	from alignment    import Numrinit, ringwe, ali2d_single_iter
+	from filter	      import filt_tanl
+	from fundamentals import fshift, fft
+	from random	      import randint, random
+	from statistics   import ave_series
 	from utilities    import get_input_from_string, model_circle, set_params2D, get_params2D, combine_params2, inverse_transform2
 
 	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit);
@@ -16003,7 +16224,6 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 	return tavg
 
 
-'''
 #  commented out to prevent problems 03/02/2015
 def within_group_refinement_fast(data, dimage, maskfile, randomize, ir, ou, rs, xrng, yrng, step, maxrange, dst, maxit, FH, FF):
 	#  It is not used anywhere, however, the check of boundaries has to be added or the code removed

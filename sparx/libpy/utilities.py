@@ -2667,6 +2667,7 @@ def recv_EMData(src, tag, comm=-1):
 def gather_EMData(data, number_of_proc, myid, main_node):
 	"""
 	Gather the a list of EMData on all nodes to the main node, we assume the list has the same length on each node.
+											It is a dangerous assumption, it will have to be changed  07/10/2015
 	"""
 	from mpi import MPI_COMM_WORLD, MPI_INT, MPI_TAG_UB
 	from mpi import mpi_send, mpi_recv	

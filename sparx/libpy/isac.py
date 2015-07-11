@@ -248,7 +248,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 					stability=False, FL=FL, FH=FH, FF=FF, dst=dst, method = alimethod)
 
 			# gather the data on main node
-			if match_initialization:                #  This is not executed at all .  It was always this way, at least since version 1.1 by Piotr
+			if match_initialization:                #  This is not executed at all.  It was always this way, at least since version 1.1 by Piotr
 				if key == group_main_node:          # as all refims are initialized the same way and also the flag is set to False!
 					print "Begin gathering ...", myid, len(refi)  #  It will append data
 					refi = gather_EMData(refi, indep_run, myid, main_node)
@@ -939,7 +939,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 	while main_iter < max_iter:
 		Iter += 1
-		#if my_abs_id == main_node: print "Iteration within isac_MPI = ", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start, localtime()[0:5], myid
+		if my_abs_id == main_node: print "Iteration within isac_MPI = ", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start, localtime()[0:5], myid
 		for j in xrange(numref):
 			refi[j].process_inplace("normalize.mask", {"mask":mask, "no_sigma":1}) # normalize reference images to N(0,1)
 			cimage = Util.Polar2Dm(refi[j] , cnx, cny, numr, mode)
@@ -953,6 +953,9 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		#    d matrix required by EQ-Kmeans can be huge!!  PAP 01/17/2015
 		d = zeros(numref*nima, dtype=float32)
 		# begin MPI section
+		# ???  This is attempt to do mref with restricted searches.  It does not work out as some classes may require
+		#      much larger shifts to center averages than other.
+		"""
 		mashi = cnx-ou-2  # needed for maximum shift
 		for im in xrange(image_start, image_end):
 			alpha, sx, sy, mirror, scale = get_params2D(alldata[im])
@@ -984,6 +987,33 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 				qd0,qd1,qd2,qd3 = inverse_transform2(alphan, sxn, syn, mn)
 				if(abs(qd1)>mashi or abs(qd2)>mashi):  print  " multiref2 ",sxi,syi,temp[iref*5+1], temp[iref*5+2], temp[iref*5+3], int(temp[iref*5+4]),alphan, sxn, syn, mn,qd0,qd1,qd2,qd3
 				d[iref*nima+im] = temp[iref*5]
+		"""
+		#  This version does cyclic shifts of images to center them prior to multiref 
+		#      to keep them within permissible range of translations.
+		for im in xrange(image_start, image_end):
+			alphai, sxi, syi, mirrori, scale = get_params2D(alldata[im])
+			lx = int(round(sxi,0))
+			ly = int(round(syi,0))
+			sxi -= lx
+			syi -= ly
+			tempdata = alldata[im].copy()
+			Util.cyclicshift(tempdata, {"dx":-lx,"dy":-ly,"dz":0})
+
+			# normalize
+			tempdata.process_inplace("normalize.mask", {"mask":mask, "no_sigma":0}) # subtract average under the mask
+
+			#  Since shifts are now a fraction of pixel, we do not have to worry about checking the ranges
+			# align current image to all references
+			temp = Util.multiref_polar_ali_2d_peaklist(tempdata, [refi], [xrng,xrng], [yrng,yrng], step, mode, numr, cnx+sxi, cny+syi)
+			for iref in xrange(numref):
+				alphan, sxn, syn, mn = inverse_transform2(-temp[iref*5+1], -temp[iref*5+2]+sxi+lx, -temp[iref*5+3]+syi+ly, 0)
+				mn = int(temp[iref*5+4])
+				peak_list[iref][(im-image_start)*4+0] = alphan
+				peak_list[iref][(im-image_start)*4+1] = sxn
+				peak_list[iref][(im-image_start)*4+2] = syn
+				peak_list[iref][(im-image_start)*4+3] = mn
+				d[iref*nima+im] = temp[iref*5]
+
 		del refi, temp
 
 		#  This is the main memory bottleneck that limits the usefulness of the program.  The array d is numref x nima,
@@ -1203,10 +1233,9 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 								mashi = cnx-ou-2
 								if(abs(sx)>mashi or abs(sy)>mashi):  print  "PARAMETERS OUTSIDE THE RANGE 11111 ::::: ",mashi,get_params2D(class_data[im]),alpha, sx, sy, mirror
 
-
 						stable_set, mirror_consistent_rate, err = multi_align_stability(ali_params, 0.0, 10000.0, thld_err, False, last_ring*2)
 
-						print  "Color % d, class %d ...... Size of the group = %4d and of the stable subset = %4d, Mirror consistent rate = %5.3f,  Average pixel error = %10.2f"\
+						print  "Color %2d, class %4d ...... Size of the group = %4d and of the stable subset = %4d, Mirror consistent rate = %5.3f,  Average pixel error prior to class pruning = %10.2f"\
 										%(color, j, len(class_data), len(stable_set),mirror_consistent_rate, err)
 
 						# If the size of stable subset is too small (say 1, 2), it will cause many problems, so we manually increase it to 5
@@ -1219,6 +1248,8 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 									if p == ss[1]: duplicate = True
 							stable_set.append([100.0, p, [0.0, 0.0, 0.0, 0]])
 
+						"""
+						#  No need for that in preshifting approach.	
 						# Force average parameters into permissible range
 						mashi = cnx-ou-2
 						axa=1.0e10;axb=-1.0e10;aya=1.0e10;ayb=-1.0e10
@@ -1254,7 +1285,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 								stable_set[i][2][0], stable_set[i][2][1], stable_set[i][2][2], stable_set[i][2][3] = inverse_transform2(temp[i][0], temp[i][1], temp[i][2], temp[i][3])
 								mashi = cnx-ou-2
 								if(abs(temp[i][1])>mashi or abs(temp[i][2])>mashi):  print  "PARAMETERS OUTSIDE THE RANGE 22222 ::::: ",i,mashi,temp[i][0], temp[i][1], temp[i][2], temp[i][3]
-								
+						"""
 
 						stable_data = []
 						stable_members = []
