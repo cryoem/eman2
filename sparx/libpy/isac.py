@@ -1156,7 +1156,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			xxx=0
 			print  "  WRITING refis  for color:",color
 			for j in xrange(numref):
-				refi[j].write_imagee("refaligned%d_round%d.hdf"%(color, xxx), j)
+				refi[j].write_image("refaligned%d_round%d.hdf"%(color, xxx), j)
 			
 
 		## # Compensate the centering to averages
