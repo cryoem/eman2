@@ -208,7 +208,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		
 	avg_num = 0
 	Iter = 1
-	match_initialization = True#False
+	match_initialization = False
 	avg_first_stage = "class_averages_candidate_generation_%d.hdf"%generation
 
 	if  not candidatesexist:
@@ -233,8 +233,9 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			# Generate random averages for each group
 			if key == group_main_node:
 				#refi = generate_random_averages(data, K, 9023)
-				refi = generate_random_averages(data, K, -1)
-				#for j in xrange(len(refi)):  refi[j].write_image("refim_%d.hdf"%color, j)
+				refi = generate_random_averages(data, K, Iter)
+				#refi = generate_random_averages(data, K, -1)
+				for j in xrange(len(refi)):  refi[j].write_image("refim_%d.hdf"%color, j)
 			else:
 				refi = [model_blank(nx, nx) for i in xrange(K)]
 
@@ -1037,7 +1038,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		if myid != main_node:
 			del d
 		mpi_barrier(comm) # to make sure that slaves freed the matrix d
-		
+
 		if myid == main_node:
 			#  PAP 03/20/2015  added cleaning of long lists...
 			id_list_long = Util.assign_groups(str(d.__array_interface__['data'][0]), numref, nima) # string with memory address is passed as parameters
@@ -1228,10 +1229,10 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 							for im in xrange(len(class_data)):
 								alpha, sx, sy, mirror, scale = get_params2D(class_data[im])
 								ali_params[ii].extend([alpha, sx, sy, mirror])
-								#  TEST WHETHER PARAMETERS ARE WITHIN RANGE
-								alpha, sx, sy, mirror = inverse_transform2(alpha, sx, sy, mirror)
-								mashi = cnx-ou-2
-								if(abs(sx)>mashi or abs(sy)>mashi):  print  "PARAMETERS OUTSIDE THE RANGE 11111 ::::: ",mashi,get_params2D(class_data[im]),alpha, sx, sy, mirror
+								##  TEST WHETHER PARAMETERS ARE WITHIN RANGE
+								#alpha, sx, sy, mirror = inverse_transform2(alpha, sx, sy, mirror) # it should be combine_params here
+								#mashi = cnx-ou-2
+								#if(abs(sx)>mashi or abs(sy)>mashi):  print  "PARAMETERS OUTSIDE THE RANGE 11111 ::::: ",mashi,get_params2D(class_data[im]),alpha, sx, sy, mirror
 
 						stable_set, mirror_consistent_rate, err = multi_align_stability(ali_params, 0.0, 10000.0, thld_err, False, last_ring*2)
 
@@ -1629,7 +1630,9 @@ def match_2_way(data, refi, indep_run, thld_grp, FH, FF, find_unique=True, wayne
 
 
 def generate_random_averages(data, K, rand_seed = -1):
-
+	ll = [i for i in xrange(rand_seed, 100*K, 100]
+	print  " generate_random_averages   ",K,ll[:10]
+	return [data[i].copy() for i in ll]
 	from random import shuffle, seed, randint
 	#avgs = [data[i].copy() for i in xrange(K)]
 	#return avgs
@@ -1639,8 +1642,7 @@ def generate_random_averages(data, K, rand_seed = -1):
 	ndata = len(data)
 	ll = range(ndata)
 	shuffle(ll)
-	avgs = [data[ll[i]].copy() for i in xrange(K)]
-	return avgs
+	return [data[ll[i]].copy() for i in xrange(K)]
 
 	'''
 	from alignment import align2d
