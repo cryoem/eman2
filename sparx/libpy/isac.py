@@ -1004,7 +1004,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 			#  Since shifts are now a fraction of pixel, we do not have to worry about checking the ranges
 			# align current image to all references
-			temp = Util.multiref_polar_ali_2d_peaklist(tempdata, [refi], [xrng,xrng], [yrng,yrng], step, mode, numr, cnx+sxi, cny+syi)
+			temp = Util.multiref_polar_ali_2d_peaklist(tempdata, refi, [xrng,xrng], [yrng,yrng], step, mode, numr, cnx+sxi, cny+syi)
 			for iref in xrange(numref):
 				alphan, sxn, syn, mn = inverse_transform2(-temp[iref*5+1], -temp[iref*5+2]+sxi+lx, -temp[iref*5+3]+syi+ly, 0)
 				mn = int(temp[iref*5+4])
