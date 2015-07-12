@@ -997,7 +997,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			sxi -= lx
 			syi -= ly
 			tempdata = alldata[im].copy()
-			Util.cyclicshift(tempdata, {"dx":-lx,"dy":-ly,"dz":0})
+			Util.cyclicshift(tempdata, {"dx":-lx,"dy":-ly})
 
 			# normalize
 			tempdata.process_inplace("normalize.mask", {"mask":mask, "no_sigma":0}) # subtract average under the mask
