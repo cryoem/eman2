@@ -1152,6 +1152,12 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		for j in xrange(numref):
 			bcast_EMData_to_all(refi[j], myid, main_node, comm)
 
+		if myid == main_node:
+			xxx=0
+			for j in xrange(numref):
+				refi[j].write_imagee("refaligned%d_round%d.hdf"%(color, xxx), j)
+			
+
 		## # Compensate the centering to averages
 		## for im in xrange(image_start, image_end):
 		## 	matchref = belongsto[im]
