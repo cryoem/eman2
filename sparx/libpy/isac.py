@@ -1630,7 +1630,7 @@ def match_2_way(data, refi, indep_run, thld_grp, FH, FF, find_unique=True, wayne
 
 
 def generate_random_averages(data, K, rand_seed = -1):
-	ll = [i for i in xrange(rand_seed, 100*K, 100]
+	ll = [i for i in xrange(rand_seed, 100*K, 100)]
 	print  " generate_random_averages   ",K,ll[:10]
 	return [data[i].copy() for i in ll]
 	from random import shuffle, seed, randint
