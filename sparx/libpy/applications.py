@@ -2087,6 +2087,7 @@ def mref_ali2d(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, y
 					data[im] = filt_ctf(data[im], ctf_params)
 					data[im].set_attr('ctf_applied', 1)
 			alpha, sx, sy, mirror, scale = get_params2D(data[im])
+			#  Why inverse?  07/11/2015  PAP
 			alphai, sxi, syi, scalei = inverse_transform2(alpha, sx, sy)
 			# normalize
 			data[im].process_inplace("normalize.mask", {"mask":mask, "no_sigma":0})
@@ -2343,6 +2344,7 @@ def mref_ali2d_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrn
 		# begin MPI section
 		for im in xrange(image_start, image_end):
 			alpha, sx, sy, mirror, scale = get_params2D(data[im-image_start])
+			#  Why inverse?  07/11/2015 PAP
 			alphai, sxi, syi, scalei = inverse_transform2(alpha, sx, sy)
 			# normalize
 			data[im-image_start].process_inplace("normalize.mask", {"mask":mask, "no_sigma":0}) # subtract average under the mask
@@ -3147,13 +3149,14 @@ def ali2d_ras(data2d, randomize = False, ir = 1, ou = -1, rs = 1, step = 1.0, ds
 	for im in xrange(nima):
 		if randomize:
 			alpha, sx, sy, miri, scale = get_params2D(data2d[im])
+			#  Check this 07/11/2015 PAP
 			alphai, sxi, syi, mirrori = inverse_transform2(alpha, sx, sy)
 			if check_mirror: alphan, sxn, syn, mirrorn = combine_params2(0.0, -sxi, -syi, 0, random()*360.0, 0.0, 0.0, randint(0, 1))
 			else:            alphan, sxn, syn, mirrorn = combine_params2(0.0, -sxi, -syi, 0, random()*360.0, 0.0, 0.0, 0)			
 			set_params2D(data2d[im], [alphan, sxn, syn, mirrorn, 1.0] )
 		else:
 			alphan, sxn, syn, mirrorn, scale = get_params2D(data2d[im])
-		#  Here we need inverse transformation shifts for resampling into polar
+		#  Here we need inverse transformation shifts for resampling into polar  WHY inverse ?  07/11/PAP
 		alphai, sxn, syn, mirrori = inverse_transform2(alphan, sxn, syn)
 		params.append([sxn, syn])
 		nring = len(numr)/3
@@ -15848,18 +15851,19 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 	lx = [0]*nima
 	ly = [0]*nima
 	for im in xrange(nima):
-		alpha, sx, sy, mirrorn, scale = get_params2D(data[im])
+		alpha, sx, sy, mirrorn, dummy = get_params2D(data[im])
 		alphai, sxi, syi, dummy    = combine_params2(0.0, sx, sy, 0, -alpha, 0.,0.,0)
-		lx[im] = int(round(sxi,0)) 
-		ly[im] = int(round(syi,0)) 
+		if(mirrorn == 1):  sxi = -sxi
+		lx[im] = int(round(sxi,0))
+		ly[im] = int(round(syi,0))
 		sxi -= lx[im]
 		syi -= ly[im]
-		Util.cyclicshift(data[im] , {"dx":-lx[im],"dy":-ly[im],"dz":0})
 		if randomize :
 			#alphan, sxn, syn, mirrorn    = combine_params2(0.0, -sxi, -syi, 0, random()*360.0, 0.0, 0.0, randint(0, 1))
 			alphan, sxn, syn, mirrorn = combine_params2(0.0, randint(-xrng[0],xrng[0]), randint(-xrng[0],xrng[0]), 0, random()*360.0, 0, 0, randint(0, 1))
 		else:
-			alphan, sxn, syn, dumme = combine_params2(0.0, sxi, syi, 0, -alpha, 0.0, 0.0, 0)
+			alphan, sxn, syn, dummy = combine_params2(0.0, sxi, syi, 0, alpha, 0.0, 0.0, 0)
+		if(mirrorn == 1):  sxn = -sxn
 		set_params2D(data[im], [alpha, sxn, syn, mirrorn, 1.0])
 		
 
@@ -15972,8 +15976,8 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 															xrng[N_step], yrng[N_step], step[N_step], \
 															mode=mode, CTF=False, delta=delta, random_method = method)
 				for im in xrange(len(data)):
-					alpha, tx, ty, mirror, scale = get_params2D(rings[im][0][0])
-					set_params2D(data[im],[alpha, tx, ty, mirror, scale])
+					alpha, tx, ty, mir, scale = get_params2D(rings[im][0][0])
+					set_params2D(data[im],[alpha, tx, ty, mir, scale])
 				tavg = ave_series(data)
 				#print  "tata ",total_iter-1,Util.infomask(tavg,None,True)
 				#tavg.write_image('tata.hdf',total_iter-1)
@@ -16008,16 +16012,19 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 						center_2D(tavg, center_method = 7, searching_range = cnx//2, self_defined_reference = mask)
 					if(asx != 0 or asy != 0):
 						#  Shift images by this additional amount
-						for im in xrange(len(data)):
-							alpha, sx, sy, mirror, scale = get_params2D(data[im])
-							alphai, sxi, syi, dummy      = combine_params2(0, sx, sy, 0, -alpha, 0,0,0)
-							sxi -= asx
-							syi -= asy
-							Util.cyclicshift(data[im] , {"dx":-asx,"dy":-asy,"dz":0})
+						for im in xrange(nima):
+							alpha, sx, sy, mir, scale = get_params2D(data[im])
+							if mir == 0:  sxn = sx-asx
+							else:  sxn = sx+asx
+							syn = sy-asy
+							alphai, sxn, syn, dummy  = combine_params2(0, sxn, syn, 0, -alpha, 0,0, 0)
+							sxn += asx
+							syn += asy
+							Util.cyclicshift(data[im] , {"dx":-asx,"dy":-asy})
 							lx[im] += asx
 							ly[im] += asy
-							alphan, sxn, syn, dummy = combine_params2(0.0, sxi, syi, 0, -alpha, 0.0, 0.0, 0)
-							set_params2D(data[im], [alpha, sxn, syn, mirror, 1.0])
+							alphai, sxn, syn, dummy  = combine_params2(0, sxn, syn, 0, alpha, 0,0, 0)
+							set_params2D(data[im], [alpha, sxn, syn, mir, 1.0])
 
 				sx_sum, sy_sum, nope = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 															xrng[N_step], yrng[N_step], step[N_step], \
@@ -16029,14 +16036,12 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 				#tavg.write_image('tata.hdf',total_iter-1)
 
 		#  Shift data back and adjust parameters
-		for im in xrange(len(data)):
-			alpha, sx, sy, mirror, scale = get_params2D(data[im])
-			alphai, sxi, syi, dummy      = combine_params2(0, sx, sy, 0, -alpha, 0,0,0)
-			Util.cyclicshift(data[im] , {"dx":lx[im],"dy":ly[im],"dz":0})
-			sxi += lx[im]
-			syi += ly[im]
-			alphai, sxi, syi, mirrori    = combine_params2(0.0, sxi, syi, 0, -alpha, 0.0, 0.0, 0)
-			set_params2D(data[im], [alpha, sxi, syi, mirror, 1.0])
+		for im in xrange(nima):
+			alpha, sx, sy, mir, scale = get_params2D(data[im])
+			alphai, sxn, syn, dummy  = combine_params2(0, sx, sy, 0, -alpha, 0,0, 0)
+			Util.cyclicshift(data[im] , {"dx":lx[im],"dy":ly[im]})
+			alphai, sxn, syn, dummy  = combine_params2(0, sxn-lx[im], syn-ly[im], 0, alpha, 0,0, 0)
+			set_params2D(data[im], [alpha, sxn, syn, mir, 1.0])
 
 	return tavg
 

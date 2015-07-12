@@ -595,7 +595,6 @@ def ormq_fast(dimage, crefim, xrng, yrng, step, sxi, syi, numr, mode, delta = 0.
 	"""Determine shift and rotation between image and reference image (crefim)
 		crefim should be as FT of polar coords with applied weights
 	        consider mirror
-		quadratic interpolation
 		cnx, cny in FORTRAN convention
 	"""
 	#from math import pi, cos, sin, radians
@@ -633,10 +632,7 @@ def ormq_fast(dimage, crefim, xrng, yrng, step, sxi, syi, numr, mode, delta = 0.
 	sxs = sx*co - sy*so
 	sys = sx*so + sy*co
 	"""
-	if( peak < -1.0e5):
-		print " ORMQ_FAST failed, most likelt due to search ranges "
-		from sys import exit
-		exit()
+	if( peak < -1.0e20): ERROR("ormq_fast","failed, most likely due to search ranges",1)
 	return  ang, sx/2.0, sy/2.0, mirror, peak
 			
 

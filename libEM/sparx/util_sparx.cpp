@@ -18862,8 +18862,6 @@ vector<float> Util::multiref_polar_ali_2d_peaklist(EMData* image, const vector< 
 	const float qv = static_cast<float>( pi/180.0 );
 	size_t crefim_len = crefim.size();
 
-//	int   ky = int(2*yrng/step+0.5)/2;
-//	int   kx = int(2*xrng/step+0.5)/2;
 	int lkx = int(xrng[0]/step);
 	int rkx = int(xrng[1]/step);
 	int lky = int(yrng[0]/step);
@@ -18891,17 +18889,15 @@ vector<float> Util::multiref_polar_ali_2d_peaklist(EMData* image, const vector< 
 				double qn = retvals["qn"];
 				double qm = retvals["qm"];
 				if(qn >= peak[iref*5] || qm >= peak[iref*5]) {
+					peak[iref*5+2] = -ix;
+					peak[iref*5+3] = -iy;
 					if (qn >= qm) {
 						peak[iref*5] = static_cast<float>(qn);
 						peak[iref*5+1] = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-						peak[iref*5+2] = -ix;
-						peak[iref*5+3] = -iy;
 						peak[iref*5+4] = 0;
 					} else {
 						peak[iref*5] = static_cast<float>(qm);
 						peak[iref*5+1] = ang_n(retvals["tmt"], mode, numr[numr.size()-1]);
-						peak[iref*5+2] = -ix;
-						peak[iref*5+3] = -iy;
 						peak[iref*5+4] = 1;
 					}
 				}
@@ -18909,6 +18905,7 @@ vector<float> Util::multiref_polar_ali_2d_peaklist(EMData* image, const vector< 
 		}
 	}
 
+	/*  Do not invert the order.  This command is only used in isac and I will handle it there properly 07/10/2015 PAP
 	for (int iref = 0; iref < (int)crefim_len; iref++) {
 		float ang = peak[iref*5+1];
 		float sx  = peak[iref*5+2];
@@ -18920,6 +18917,7 @@ vector<float> Util::multiref_polar_ali_2d_peaklist(EMData* image, const vector< 
 		peak[iref*5+2] = sxs;
 		peak[iref*5+3] = sys;
 	}
+	*/
 	return peak;
 }
 
