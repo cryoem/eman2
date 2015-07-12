@@ -1063,7 +1063,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		belongsto = map(int, belongsto)
 		#if my_abs_id == main_node: print "Completed EQ-mref within isac_MPI = ", Iter, "	main_iter = ", main_iter , localtime()[0:5], myid
 
-		#  I have to brutally remove centering of averages based on average shift method as 
+		#  I have to remove brutally centering of averages based on average shift method as 
 		#    it results in inadmissible shifts of individual images.  It remains to be seen 
 		#    whether the average itself should be shifted, but this is risky business,
 		#     so for the time being all shifting is commented out with ##.  07/08/2015  PAP
@@ -1137,8 +1137,8 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			#  this is most likely meant to center them, if so, it works poorly, 
 			#      it has to be checked and probably a better method used PAP 01/17/2015
 			#  There is additional inconsistency.  Above the lowpass is set to fl, here it is FH
-			dummy = within_group_refinement(refi, mask, True, first_ring, last_ring, rstep, \
-											[xrng], [yrng], [step], dst, maxit, FH, FF, method )
+			##   dummy = within_group_refinement(refi, mask, True, first_ring, last_ring, rstep, \
+			##  								[xrng], [yrng], [step], dst, maxit, FH, FF, method )
 			ref_ali_params = []
 			for j in xrange(numref):
 				alpha, sx, sy, mirror, scale = get_params2D(refi[j])
@@ -1154,6 +1154,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 		if myid == main_node:
 			xxx=0
+			print  "  WRITING refis  for color:",color
 			for j in xrange(numref):
 				refi[j].write_imagee("refaligned%d_round%d.hdf"%(color, xxx), j)
 			
