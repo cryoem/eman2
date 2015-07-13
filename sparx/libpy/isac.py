@@ -1142,11 +1142,15 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			#  There is additional inconsistency.  Above the lowpass is set to fl, here it is FH
 			##   dummy = within_group_refinement(refi, mask, True, first_ring, last_ring, rstep, \
 			##  								[xrng], [yrng], [step], dst, maxit, FH, FF, method )
+			#  TRY CENTERING HERE  07/13/2015
+			from utilities import center_2D
 			ref_ali_params = []
 			for j in xrange(numref):
-				alpha, sx, sy, mirror, scale = get_params2D(refi[j])
-				refi[j] = rot_shift2D(refi[j], alpha, sx, sy, mirror)
-				ref_ali_params.extend([alpha, sx, sy, mirror])
+				ref[j], sx, sy = center_2D(refi[j], ,7, self_defined_reference=mask)
+				ref_ali_params.extend([0.0, -sx, -sy, 0])
+				#alpha, sx, sy, mirror, scale = get_params2D(refi[j])
+				#refi[j] = rot_shift2D(refi[j], alpha, sx, sy, mirror)
+				#ref_ali_params.extend([alpha, sx, sy, mirror])
 		else:
 			ref_ali_params = [0.0]*(numref*4)
 		ref_ali_params = mpi_bcast(ref_ali_params, numref*4, MPI_FLOAT, main_node, comm)
@@ -1161,14 +1165,13 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 				refi[j].write_image("refaligned%02d_round%02d.hdf"%(color, Iter), j)
 			
 
-		## # Compensate the centering to averages
-		## for im in xrange(image_start, image_end):
-		## 	matchref = belongsto[im]
-		## 	alpha, sx, sy, mirror, scale = get_params2D(alldata[im])
-		## 	alphan, sxn, syn, mirrorn = combine_params2(alpha, sx, sy, mirror, ref_ali_params[matchref*4], ref_ali_params[matchref*4+1], \
-		## 		ref_ali_params[matchref*4+2], int(ref_ali_params[matchref*4+3]))
-		## 	#  If we really want to transfer the parameters from centering we would have to make sure shifts are within permissible range PAP 07/06/2015
-		## 	set_params2D(alldata[im], [alphan, sxn, syn, int(mirrorn), 1.0])
+		# Compensate the centering to averages
+		for im in xrange(image_start, image_end):
+			matchref = belongsto[im]
+			alpha, sx, sy, mirror, scale = get_params2D(alldata[im])
+			alphan, sxn, syn, mirrorn = combine_params2(alpha, sx, sy, mirror, ref_ali_params[matchref*4], ref_ali_params[matchref*4+1], \
+				ref_ali_params[matchref*4+2], int(ref_ali_params[matchref*4+3]))
+			set_params2D(alldata[im], [alphan, sxn, syn, int(mirrorn), 1.0])
 
 		do_within_group = 0
 		fl += 0.05
