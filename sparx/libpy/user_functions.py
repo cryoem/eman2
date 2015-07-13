@@ -864,6 +864,106 @@ def dovolume( ref_data ):
 	return  vol, cs
 
 
+# def do_volume_mrk01(data, Tracker, iter, mpi_comm = None):
+def do_volume_mrk02(ref_data):
+	"""
+		data - projections (scattered between cpus) or the volume.  If volume, just do the volume processing
+		options - the same for all cpus
+		return - volume the same for all cpus
+	"""
+	from EMAN2          import Util
+	from mpi            import mpi_comm_rank, MPI_COMM_WORLD
+	from filter         import filt_table
+	from reconstruction import recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
+	from utilities      import bcast_EMData_to_all
+	import types
+
+	# Retrieve the function specific input arguments from ref_data
+	data     = ref_data[0]
+	Tracker  = ref_data[1]
+	iter     = ref_data[2]
+	mpi_comm = ref_data[3]
+	
+	if(mpi_comm == None):  mpi_comm = MPI_COMM_WORLD
+	myid = mpi_comm_rank(mpi_comm)
+	
+
+	#=========================================================================
+	# volume reconstruction
+	if( type(data) == types.ListType ):
+		if Tracker["constants"]["CTF"]:
+			vol = recons3d_4nn_ctf_MPI(myid, data, Tracker["constants"]["snr"], \
+					symmetry=Tracker["constants"]["sym"], npad=Tracker["constants"]["npad"], mpi_comm=mpi_comm)
+		else:
+			vol = recons3d_4nn_MPI    (myid, data,\
+					symmetry=Tracker["constants"]["sym"], npad=Tracker["constants"]["npad"], mpi_comm=mpi_comm)
+	else:
+		vol = data
+
+	if myid == 0:
+		from morphology import threshold
+		from filter     import filt_tanl, filt_btwl
+		from utilities  import model_circle, get_im
+		import types
+		nx = vol.get_xsize()
+		if(Tracker["constants"]["mask3D"] == None):
+			mask3D = model_circle(int(Tracker["constants"]["radius"]*float(nx)/float(Tracker["constants"]["nnxo"])+0.5), nx, nx, nx)
+		elif(Tracker["constants"]["mask3D"] == "auto"):
+			from utilities import adaptive_mask
+			mask3D = adaptive_mask(vol)
+		else:
+			if( type(Tracker["constants"]["mask3D"]) == types.StringType ):  mask3D = get_im(Tracker["constants"]["mask3D"])
+			else:  mask3D = (Tracker["constants"]["mask3D"]).copy()
+			nxm = mask3D.get_xsize()
+			if( nx != nxm):
+				from fundamentals import rot_shift3D
+				mask3D = Util.window(rot_shift3D(mask3D,scale=float(nx)/float(nxm)),nx,nx,nx)
+				nxm = mask3D.get_xsize()
+				assert(nx == nxm)
+
+		stat = Util.infomask(vol, mask3D, False)
+		vol -= stat[0]
+		Util.mul_scalar(vol, 1.0/stat[1])
+		vol = threshold(vol)
+		#Util.mul_img(vol, mask3D)
+		if( Tracker["PWadjustment"] ):
+			from utilities    import read_text_file
+			from fundamentals import rops_table, fftip, fft
+			rt = read_text_file( Tracker["PWadjustment"] )
+			fftip(vol)
+			ro = rops_table(vol)
+			#  Here unless I am mistaken it is enough to take the beginning of the reference pw.
+			for i in xrange(1,len(ro)):  ro[i] = (rt[i]/ro[i])**Tracker["upscale"]
+			if( type(Tracker["lowpass"]) == types.ListType ):
+				vol = fft( filt_table( filt_table(vol, Tracker["lowpass"]), ro) )
+			else:
+				vol = fft( filt_table( filt_tanl(vol, Tracker["lowpass"], Tracker["falloff"]), ro) )
+		else:
+			if( type(Tracker["lowpass"]) == types.ListType ):
+				vol = filt_table(vol, Tracker["lowpass"])
+			else:
+				vol = filt_tanl(vol, Tracker["lowpass"], Tracker["falloff"])
+		stat = Util.infomask(vol, mask3D, False)
+		vol -= stat[0]
+		Util.mul_scalar(vol, 1.0/stat[1])
+		vol = threshold(vol)
+		vol = filt_btwl(vol, 0.38, 0.5)
+		Util.mul_img(vol, mask3D)
+		del mask3D
+		# vol.write_image('toto%03d.hdf'%iter)
+	# broadcast volume
+	bcast_EMData_to_all(vol, myid, 0, comm=mpi_comm)
+	#=========================================================================
+	
+	# # NOTE: 2015/07/13 Toshio Moriya
+	# # There is no center flag for now. Do we need to return dummy value?
+	# cs = [0.0]*3 
+	# 
+	# return vol, cs
+
+	return vol
+
+
 # rewrote factory dict to provide a flexible interface for providing user functions dynamically.
 #    factory is a class that checks how it's called. static labels are rerouted to the original
 #    functions, new are are routed to build_user_function (provided below), to load from file
@@ -895,6 +995,7 @@ class factory_class:
 		self.contents["ref_7grp"]           = ref_7grp
 		self.contents["steady"]             = steady
 		self.contents["dovolume"]           = dovolume	 
+		self.contents["do_volume_mrk02"]    = do_volume_mrk02	 
 		self.contents["constant"]           = constant	 
 
 	def __getitem__(self,index):
