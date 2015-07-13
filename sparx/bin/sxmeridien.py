@@ -832,7 +832,7 @@ def main():
 	from global_def import SPARXVERSION
 	from EMAN2 import EMData
 	from multi_shc import multi_shc
-	from development import do_volume_mrk01
+	# from development import do_volume_mrk01
 	from logger import Logger, BaseLogger_Files
 	import sys
 	import os
@@ -842,7 +842,7 @@ def main():
 	# ------------------------------------------------------------------------------------
 	# PARSE COMMAND OPTIONS
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack  [output_directory]  initial_volume  --radius=particle_radius --ref_a=S --sym=c1 --startangles --inires  --mask3D --CTF"
+	usage = progname + " stack  [output_directory]  initial_volume  --radius=particle_radius --ref_a=S --sym=c1 --startangles --inires  --mask3D --CTF --function=user_function"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	#parser.add_option("--ir",      		type= "int",   default= 1,			help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--radius",      		type= "int",   default= -1,			help="Outer radius [in pixels] for rotational correlation < int(nx/2)-1 (Please set to the radius of the particle)")
@@ -870,7 +870,7 @@ def main():
 	parser.add_option("--inires",		type="float",	default=25.,		help="Resolution of the initial_volume volume (default 25A)")
 	parser.add_option("--pwreference",	type="string",	default="",			help="text file with a reference power spectrum (default no power spectrum adjustment)")
 	parser.add_option("--mask3D",		type="string",	default=None,		help="3D mask file (default a sphere with radius (nx/2)-1)")
-
+	parser.add_option("--function",     type="string",  default="do_volume_mrk02",  help="name of the reference preparation function (default do_volume_mrk02)")
 
 	(options, args) = parser.parse_args(sys.argv[1:])
 
@@ -923,6 +923,7 @@ def main():
 	Constants["masterdir"]    = masterdir
 	Constants["best"]         = 0
 	Constants["states"]       = ["INITIAL", "EXHAUSTIVE", "RESTRICTED", "LOCAL", "FINAL1", "FINAL2"]
+	Constants["user_func"]    = user_functions.factory[options.function]
 	#Constants["mempernode"]   = 4.0e9
 	#  The program will use three different meanings of x-size
 	#  nnxo         - original nx of the data, will not be changed
@@ -1305,11 +1306,17 @@ def main():
 			if( myid == main_node ):\
 				volf = 0.5*(get_im(os.path.join(Tracker["directory"] ,"vol0.hdf"))+get_im(os.path.join(Tracker["directory"] ,"vol0.hdf")))
 			else:  volf = model_blank(Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
-			volf = do_volume_mrk01(volf, Tracker, mainiteration, mpi_comm = MPI_COMM_WORLD)
+			
+			# volf = do_volume_mrk01(volf, Tracker, mainiteration, mpi_comm = MPI_COMM_WORLD)
+			user_func = Tracker["constants"] ["user_func"]
+			ref_data[0] = volf
+			ref_data[1] = Tracker
+			ref_data[2] = mainiteration
+			ref_data[3] = mpi_comm
+			volf = user_func(ref_data)
+			
 			if(myid == main_node):
 				fpol(volf, Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"] ,"volf.hdf"))
-
-
 
 		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"error_thresholds.txt"), keepchecking, myid, main_node)
 		if  doit:
