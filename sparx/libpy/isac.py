@@ -947,6 +947,11 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			Util.Frngs(cimage, numr)
 			Util.Applyws(cimage, numr, wr)
 			refi[j] = cimage.copy()
+		if myid == main_node:
+			print  "  WRITING refincoming  for color:",color
+			for j in xrange(numref):
+				refi[j].write_image("refincoming%02d_round%02d.hdf"%(color, Iter), j)
+			
 
 #		if CTF: ctf2 = [[[0.0]*lctf for k in xrange(2)] for j in xrange(numref)]
 		peak_list = [zeros(4*(image_end-image_start), dtype=float32) for i in xrange(numref)]
@@ -1153,10 +1158,9 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			bcast_EMData_to_all(refi[j], myid, main_node, comm)
 
 		if myid == main_node:
-			xxx=0
 			print  "  WRITING refis  for color:",color
 			for j in xrange(numref):
-				refi[j].write_image("refaligned%d_round%d.hdf"%(color, xxx), j)
+				refi[j].write_image("refaligned%02d_round%02d.hdf"%(color, Iter), j)
 			
 
 		## # Compensate the centering to averages
