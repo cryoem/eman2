@@ -944,7 +944,6 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		for j in xrange(numref):
 			refi[j].process_inplace("normalize.mask", {"mask":mask, "no_sigma":1}) # normalize reference images to N(0,1)
 			if myid == main_node:
-				print  "  WRITING refincoming  for color:",color
 				refi[j].write_image("refincoming%02d_round%02d.hdf"%(color, Iter), j)
 			cimage = Util.Polar2Dm(refi[j] , cnx, cny, numr, mode)
 			Util.Frngs(cimage, numr)

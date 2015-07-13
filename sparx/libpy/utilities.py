@@ -481,7 +481,7 @@ def center_2D(image_to_be_centered, center_method = 1, searching_range = -1, Gau
 		from utilities    import model_blank
 		from EMAN2        import rsconvolution
 		p = Util.infomask(image_to_be_centered,None,True)
-		cc = binarize(rsconvolution(binarize(image_to_be_centered,p[0]+p[1]),model_blank(5,5,1,1.0/(5.0*5.0))))	
+		cc = binarize(rsconvolution(binarize(image_to_be_centered,p[0]+p[1]),model_blank(5,5,1,1.0/(5.0*5.0))),0.5)	
 		c = ccf(cc, self_defined_reference)
 		p = Util.infomask(c,None,True)[3]
 		nx = c.get_xsize()
