@@ -3453,7 +3453,7 @@ EMData* EMData::downsample(Util::sincBlackman& kb, float scale) {
 	int kbmax = -kbmin;*/
 
 	int nxn, nyn, nzn;
-	nxn = (int)(nx*scale); nyn = (int)(ny*scale); nzn = (int)(nz*scale);
+	nxn = (int)(nx*scale+0.5f); nyn = (int)(ny*scale+0.5f); nzn = (int)(nz*scale+0.5f);
 
 	vector<int> saved_offsets = get_array_offsets();
 	set_array_offsets(0,0,0);
