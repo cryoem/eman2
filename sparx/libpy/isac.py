@@ -285,7 +285,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			# Run ISAC
 			if myid == main_node:
 				print "**********************************************************************"
-				print "                     The main part of ISAC program   "+strftime("%a, %d %b %Y %H:%M:%S", localtime())
+				print "                     Processing of candidate averages   "+strftime("%a, %d %b %Y %H:%M:%S", localtime())
 				print "**********************************************************************"
 	
 			for mloop in xrange(1, match_first+1):
@@ -878,8 +878,8 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 	nx = alldata[0].get_xsize()
 
 	nima = len(alldata)
-	#  Explicitly force all parameters to be zero on input  08/07/2015  PAP
-	for im in xrange(nima):  set_params2D(alldata[im], [0.,0.,0.,0, 1.0])
+	#  Explicitly force all parameters to be zero on input  07/08/2015  PAP Would it be necessary?  08/13/2015
+	#  for im in xrange(nima):  set_params2D(alldata[im], [0.,0.,0.,0, 1.0])
 		
 	
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
@@ -1180,7 +1180,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		check_stability = (stability and (main_iter%iter_reali==0))
 
 		if do_within_group == 1:
-			#if my_abs_id == main_node: print "Doing within group alignment .......", localtime()[0:5]
+			if my_abs_id == main_node: print "Doing within group alignment .......", localtime()[0:5]
 
 			# Broadcast the alignment parameters to all nodes
 			for i in xrange(number_of_proc):
@@ -1200,16 +1200,16 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 					sy = ali_params[(im-im_start)*4+2]
 					mirror = int(ali_params[(im-im_start)*4+3])
 					set_params2D(alldata[im], [alpha, sx, sy, mirror, 1.0])
-	
+
 			main_iter += 1
-			
+
 			# There are two approaches to scatter calculations among MPI processes during stability checking.
 			# The first one is the original one. I added the second method.
 			# Here we try to estimate the calculation time for both approaches.
 			stab_calc_time_method_1 = stab_ali * ((numref-1) // number_of_proc + 1)
 			stab_calc_time_method_2 = (numref * stab_ali - 1) // number_of_proc + 1
 			#if my_abs_id == main_node: print "Times estimation: ", stab_calc_time_method_1, stab_calc_time_method_2
-	
+
 			# When there is no stability checking or estimated calculation time of new method is greater than 80% of estimated calculation time of original method 
 			# then the original method is used. In other case. the second (new) method is used.
 			#if (not check_stability) or (stab_calc_time_method_2 > 0.80 * stab_calc_time_method_1):
@@ -1228,6 +1228,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 													[xrng], [yrng], [step], dst, maxit, FH, FF, method = method)
 
 					if check_stability:
+						if my_abs_id == main_node: print "Checking within group stability, original approach .......", check_stability, "  ",localtime()[0:5]
 						ali_params = [[] for qq in xrange(stab_ali)]
 						for ii in xrange(stab_ali):
 							if ii > 0:  # The first one does not have to be repeated
@@ -1243,7 +1244,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 						stable_set, mirror_consistent_rate, err = multi_align_stability(ali_params, 0.0, 10000.0, thld_err, False, last_ring*2)
 
-						print  "Color %2d, class %4d ...... Size of the group = %4d and of the stable subset = %4d, Mirror consistent rate = %5.3f,  Average pixel error prior to class pruning = %10.2f"\
+						#print  "Color %2d, class %4d ...... Size of the group = %4d and of the stable subset = %4d, Mirror consistent rate = %5.3f,  Average pixel error prior to class pruning = %10.2f"\
 										%(color, j, len(class_data), len(stable_set),mirror_consistent_rate, err)
 
 						# If the size of stable subset is too small (say 1, 2), it will cause many problems, so we manually increase it to 5
@@ -1379,6 +1380,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 # All MPI processes must have the same values of all parameters
 # This function returns list of references images with numref elements, elements with index holds (index % mpi_comm_size(comm) == mpi_comm_rank(comm)) contains corresponding reference images, 
 # rest of elements contains blank images
+'''
 def isac_stability_check_mpi(alldata, numref, belongsto, stab_ali, thld_err, mask, first_ring, last_ring, rstep, xrng, yrng, step, \
 								dst, maxit, FH, FF, alimethod, comm):
 	from applications import within_group_refinement
@@ -1493,7 +1495,7 @@ def isac_stability_check_mpi(alldata, numref, belongsto, stab_ali, thld_err, mas
 	
 	mpi_barrier(comm)
 	return refi
-
+...
 
 
 def match_independent_runs(data, refi, n_group, T):
