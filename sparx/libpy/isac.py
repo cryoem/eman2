@@ -1146,7 +1146,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			from utilities import center_2D
 			ref_ali_params = []
 			for j in xrange(numref):
-				ref[j], sx, sy = center_2D(refi[j], ,7, self_defined_reference=mask)
+				refi[j], sx, sy = center_2D(refi[j], 7, self_defined_reference=mask)
 				ref_ali_params.extend([0.0, -sx, -sy, 0])
 				#alpha, sx, sy, mirror, scale = get_params2D(refi[j])
 				#refi[j] = rot_shift2D(refi[j], alpha, sx, sy, mirror)

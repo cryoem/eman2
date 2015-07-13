@@ -16038,9 +16038,11 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 				if Iter%4 != 0 or total_iter > max_iter*len(xrng)-10:
 					delta = 0.0
 				else:
-					delta = dst
-					tavg, asx,asy = \
-						center_2D(tavg, center_method = 7, searching_range = cnx//2, self_defined_reference = mask)
+					asx=0
+					asy=0
+					#delta = dst
+					#tavg, asx,asy = \
+					#	center_2D(tavg, center_method = 7, searching_range = cnx//2, self_defined_reference = mask)
 					if(asx != 0 or asy != 0):
 						#  Shift images by this additional amount
 						for im in xrange(nima):
