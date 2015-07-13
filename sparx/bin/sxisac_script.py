@@ -287,11 +287,17 @@ def main():
 
 		#  We assume the target image size will be 64, radius will be 29, and xr = 2.  Note images can be also upscaled, in which case shrink_ratio > 1.
 		shrink_ratio = float(target_radius)/float(radi)
+		from fundamentals import rot_shift2D, resample
+		if shrink_ratio < 1.0:
+			my_test_image  = resample(aligned_images[0], shrink_ratio)
+			while my_test_image.get_xsize() != 64:
+				shrink_ratio -= (my_test_image.get_xsize() - 64)/1000.0
+				my_test_image  = resample(aligned_images[0], shrink_ratio)
+	
 		# print "shrink_ratio", shrink_ratio
 		nx = aligned_images[0].get_xsize()
 		needs_windowing = int(nx*shrink_ratio+0.5) > 64
 
-		from fundamentals import rot_shift2D, resample
 		nima = len(aligned_images)
 		for im in xrange(nima):  
 			alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
@@ -307,7 +313,11 @@ def main():
 		gather_compacted_EMData_to_root(number_of_images_in_stack, aligned_images, myid)
 
 		if( myid == main_node ):
-			for i in range(number_of_images_in_stack):  aligned_images[i].write_image(stack_processed_by_ali2d_base__filename,i)
+			from EMAN2db import db_open_dict
+			DB = db_open_dict(stack_processed_by_ali2d_base__filename)
+			for i in range(number_of_images_in_stack):
+				DB[i] = aligned_images[i]
+			DB.close()
 
 
 		del params2d
