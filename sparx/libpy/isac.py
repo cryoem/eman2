@@ -114,7 +114,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	if myid == main_node:
 		print "****************************************************************************************************"
 		print "*                                                                                                  *"
-		print "*                 Beginning of the ISAC program               "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"           *"
+		print "*                 Beginning of the ISAC program                "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"           *"
 		print "*                                                                                                  *"
 		print "* Iterative Stable Alignment and Clustering                                                        *"
 		print "* By Zhengfan Yang, Jia Fang, Francisco Asturias and Pawel A. Penczek                              *"
@@ -943,14 +943,13 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		if my_abs_id == main_node: print "Iteration within isac_MPI = ", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start, localtime()[0:5], myid
 		for j in xrange(numref):
 			refi[j].process_inplace("normalize.mask", {"mask":mask, "no_sigma":1}) # normalize reference images to N(0,1)
+			if myid == main_node:
+				print  "  WRITING refincoming  for color:",color
+				refi[j].write_image("refincoming%02d_round%02d.hdf"%(color, Iter), j)
 			cimage = Util.Polar2Dm(refi[j] , cnx, cny, numr, mode)
 			Util.Frngs(cimage, numr)
 			Util.Applyws(cimage, numr, wr)
 			refi[j] = cimage.copy()
-		if myid == main_node:
-			print  "  WRITING refincoming  for color:",color
-			for j in xrange(numref):
-				refi[j].write_image("refincoming%02d_round%02d.hdf"%(color, Iter), j)
 			
 
 #		if CTF: ctf2 = [[[0.0]*lctf for k in xrange(2)] for j in xrange(numref)]
