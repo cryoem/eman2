@@ -1156,7 +1156,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			bcast_EMData_to_all(refi[j], myid, main_node, comm)
 
 		if myid == main_node:
-			print  "  WRITING refis  for color:",color
+			print  "  WRITING refaligned  for color:",color
 			for j in xrange(numref):
 				refi[j].write_image("refaligned%02d_round%02d.hdf"%(color, Iter), j)
 			
@@ -1350,7 +1350,12 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 							members = refi[j].get_attr('members')
 							mpi_send(len(members), 1, MPI_INT, main_node, MPI_TAG_UB, comm)
 							mpi_send(members, len(members), MPI_INT, main_node, MPI_TAG_UB, comm)
-#			if myid == main_node:  print "within group alignment done. ", localtime()[0:5]
+			if myid == main_node:  print "within group alignment done. ", localtime()[0:5]
+			if myid == main_node:
+				print  "  WRITING refrealigned  for color:",color
+				for j in xrange(numref):
+					refi[j].write_image("refrealigned%02d_round%02d.hdf"%(color, Iter), j)
+
 		# end of do_within_group
 		mpi_barrier(comm)
 
