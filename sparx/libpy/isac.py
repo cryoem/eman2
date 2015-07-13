@@ -1495,7 +1495,7 @@ def isac_stability_check_mpi(alldata, numref, belongsto, stab_ali, thld_err, mas
 	
 	mpi_barrier(comm)
 	return refi
-...
+'''
 
 
 def match_independent_runs(data, refi, n_group, T):

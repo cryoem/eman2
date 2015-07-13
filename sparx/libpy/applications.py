@@ -15890,8 +15890,8 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 		sxi -= lx[im]
 		syi -= ly[im]
 		if randomize :
-			#alphan, sxn, syn, mirrorn    = combine_params2(0.0, -sxi, -syi, 0, random()*360.0, 0.0, 0.0, randint(0, 1))
-			alphan, sxn, syn, mirrorn = combine_params2(0.0, randint(-xrng[0],xrng[0]), randint(-xrng[0],xrng[0]), 0, random()*360.0, 0, 0, randint(0, 1))
+			alphan, sxn, syn, mirrorn    = combine_params2(0.0, -sxi, -syi, 0, random()*360.0, 0.0, 0.0, randint(0, 1))
+			#alphan, sxn, syn, mirrorn = combine_params2(0.0, randint(-xrng[0],xrng[0]), randint(-xrng[0],xrng[0]), 0, random()*360.0, 0, 0, randint(0, 1))
 		else:
 			alphan, sxn, syn, dummy = combine_params2(0.0, sxi, syi, 0, alpha, 0.0, 0.0, 0)
 		if(mirrorn == 1):  sxn = -sxn

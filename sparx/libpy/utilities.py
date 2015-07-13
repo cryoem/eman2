@@ -478,6 +478,8 @@ def center_2D(image_to_be_centered, center_method = 1, searching_range = -1, Gau
 	elif center_method == 7:
 		from fundamentals import ccf, cyclic_shift
 		from morphology   import binarize
+		from utilities    import model_blank
+		from EMAN2        import rsconvolution
 		p = Util.infomask(image_to_be_centered,None,True)
 		cc = binarize(rsconvolution(binarize(image_to_be_centered,p[0]+p[1]),model_blank(5,5,1,1.0/(5.0*5.0))))	
 		c = ccf(cc, self_defined_reference)
