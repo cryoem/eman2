@@ -1245,7 +1245,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 						stable_set, mirror_consistent_rate, err = multi_align_stability(ali_params, 0.0, 10000.0, thld_err, False, last_ring*2)
 
 						#print  "Color %2d, class %4d ...... Size of the group = %4d and of the stable subset = %4d, Mirror consistent rate = %5.3f,  Average pixel error prior to class pruning = %10.2f"\
-										%(color, j, len(class_data), len(stable_set),mirror_consistent_rate, err)
+						#				%(color, j, len(class_data), len(stable_set),mirror_consistent_rate, err)
 
 						# If the size of stable subset is too small (say 1, 2), it will cause many problems, so we manually increase it to 5
 						while len(stable_set) < 5:

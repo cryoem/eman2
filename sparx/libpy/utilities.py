@@ -463,7 +463,7 @@ def center_2D(image_to_be_centered, center_method = 1, searching_range = -1, Gau
 		7. binarize at ave+sigma and cross-correlate with a circle
 	        The function will return centered_image, and shifts
 	"""
-	from   utilities import peak_search
+	from   utilities    import peak_search
 	from   fundamentals import fshift
 	import types
 	if type(image_to_be_centered) == types.StringType: image_to_be_centered = get_im(image_to_be_centered)
@@ -479,7 +479,7 @@ def center_2D(image_to_be_centered, center_method = 1, searching_range = -1, Gau
 		from fundamentals import ccf, cyclic_shift
 		from morphology   import binarize
 		p = Util.infomask(image_to_be_centered,None,True)
-		cc = binarize(image_to_be_centered,p[0]+p[1])
+		cc = binarize(rsconvolution(binarize(image_to_be_centered,p[0]+p[1]),model_blank(5,5,1,1.0/(5.0*5.0))))	
 		c = ccf(cc, self_defined_reference)
 		p = Util.infomask(c,None,True)[3]
 		nx = c.get_xsize()
@@ -501,7 +501,7 @@ def center_2D(image_to_be_centered, center_method = 1, searching_range = -1, Gau
 			if(abs(shiftx) > searching_range):  shiftx=0
 			if(abs(shifty) > searching_range):  shifty=0
 		return cyclic_shift(image_to_be_centered, -shiftx, -shifty), shiftx, shifty
-		
+
 	elif center_method == 5:
 		from fundamentals import rot_avg_image,ccf
 		from math import sqrt
@@ -520,7 +520,7 @@ def center_2D(image_to_be_centered, center_method = 1, searching_range = -1, Gau
 			shiftx += peak[0][4]
 			shifty += peak[0][5]
 		return centered_image, shiftx, shifty
-		
+
 	elif center_method == 6:
 		from morphology import threshold_to_minval
 		nx = image_to_be_centered.get_xsize()
