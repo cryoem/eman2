@@ -73,7 +73,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
 		else:
 			if nomirror:  [angt, sxst, syst, mirrort, peakt] = ornq(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
-			else:	      [angt, sxst, syst, mirrort, peakt] = ormq(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi, delta)
+			else:	      [angt, sxst, syst, mirrort, peakt] = ormq(ima, cimage, [xrng,xrng], [yrng,yrng], step, mode, numr, cnx+sxi, cny+syi, delta)
 			# combine parameters and set them to the header, ignore previous angle and mirror
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
 			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
