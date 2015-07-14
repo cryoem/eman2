@@ -30,6 +30,8 @@
 
 from global_def import *
 
+
+#  06-12-14 code lifted
 def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 						xrng, yrng, step, nomirror = False, mode="F", CTF=False, \
 						random_method="", T=1.0, ali_params="xform.align2d", delta = 0.0):
@@ -43,6 +45,58 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 	if CTF:
 		from filter  import filt_ctf
 
+	# 2D alignment using rotational ccf in polar coords and quadratic interpolation
+	cimage = Util.Polar2Dm(tavg, cnx, cny, numr, mode)
+	Util.Frngs(cimage, numr)
+	Util.Applyws(cimage, numr, wr)
+
+	maxrin = numr[-1]
+	sx_sum = 0.0
+	sy_sum = 0.0
+	for im in xrange(len(data)):
+		if CTF:
+			#Apply CTF to image
+			ctf_params = data[im].get_attr("ctf")
+			ima = filt_ctf(data[im], ctf_params, True)
+		else:
+			ima = data[im]
+		alpha, sx, sy, mirror, dummy = get_params2D(data[im], ali_params)
+		alpha, sx, sy, mirror        = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
+		alphai, sxi, syi, scalei     = inverse_transform2(alpha, sx, sy)
+
+		# align current image to the reference
+		if random_method == "SA":
+			peaks = ormq_peaks(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
+			[angt, sxst, syst, mirrort, peakt, select] = sim_anneal(peaks, T, step, mode, maxrin)
+			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
+			data[im].set_attr_dict({"select":select, "peak":peakt})
+			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
+		else:
+			if nomirror:  [angt, sxst, syst, mirrort, peakt] = ornq(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
+			else:	      [angt, sxst, syst, mirrort, peakt] = ormq(ima, cimage, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi, delta)
+			# combine parameters and set them to the header, ignore previous angle and mirror
+			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
+			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
+
+		if mn == 0: sx_sum += sxn
+		else:       sx_sum -= sxn
+		sy_sum += syn
+
+	return sx_sum, sy_sum
+
+
+def Xali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
+						xrng, yrng, step, nomirror = False, mode="F", CTF=False, \
+						random_method="", T=1.0, ali_params="xform.align2d", delta = 0.0):
+	"""
+		single iteration of 2D alignment using ormq
+		if CTF = True, apply CTF to data (not to reference!)
+	"""
+	from utilities import combine_params2, inverse_transform2, get_params2D, set_params2D
+	from alignment import ormq, ornq
+
+	if CTF:
+		from filter  import filt_ctf
 
 	maxrin = numr[-1]  #  length
 	ou = numr[-3]  #  maximum radius

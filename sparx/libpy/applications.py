@@ -15859,7 +15859,60 @@ def ave_ali(name_stack, name_out = None, ali = False, param_to_save_size = None,
 		ave.write_image(name_out, 0)
 
 
-def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, step, dst, maxit, FH, FF, method = ""):
+#  06-12-2014 code lifted
+def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, step, dst, maxit, FH, FF):
+
+	# Comment by Zhengfan Yang 03/11/11
+	# This is a simple version of ali2d_data (down to the bone), no output dir, no logfile, no CTF, no MPI or CUDA, no Fourvar, no auto stop, no user function
+	
+	from alignment    import Numrinit, ringwe, ali2d_single_iter
+	from filter	  import filt_tanl
+	from fundamentals import fshift
+	from random	  import randint, random
+	from statistics   import ave_series
+	from utilities    import get_input_from_string, model_circle, set_params2D, get_params2D, combine_params2, inverse_transform2
+
+	first_ring=int(ir); last_ring=int(ou); rstep=int(rs); max_iter=int(maxit);
+	nima = len(data)
+	nx = data[0].get_xsize()
+	if last_ring == -1:  last_ring = nx/2-2
+	if maskfile: mask = maskfile
+	else: mask = model_circle(last_ring, nx, nx)
+
+	if randomize:
+		for im in data:
+			alpha, sx, sy, mirror, scale = get_params2D(im)
+			alphai, sxi, syi, mirrori = inverse_transform2(alpha, sx, sy)
+			alphan, sxn, syn, mirrorn = combine_params2(0.0, -sxi, -syi, 0, random()*360.0, 0.0, 0.0, randint(0, 1))
+			set_params2D(im, [alphan, sxn, syn, mirrorn, 1.0])
+
+	cnx = nx/2+1
+	cny = cnx
+	mode = "F"
+	numr = Numrinit(first_ring, last_ring, rstep, mode)
+	wr = ringwe(numr, mode)
+
+	sx_sum = 0.0
+	sy_sum = 0.0
+	cs = [0.0]*2
+	total_iter = 0
+	for N_step in xrange(len(xrng)):
+		for Iter in xrange(max_iter):
+			total_iter += 1
+			tavg = ave_series(data)
+			if( FH > 0.0):
+				fl = 0.1+(FH-0.1)*Iter/float(max_iter-1)
+				tavg = filt_tanl(tavg, fl, FF)
+			if total_iter == len(xrng)*max_iter:  return tavg
+			#if( xrng[0] > 0.0 ): cs[0] = sx_sum/float(nima)
+			#if( yrng[0] > 0.0 ): cs[1] = sy_sum/float(nima)
+			#tavg = fshift(tavg, -cs[0], -cs[1])
+			if Iter%4 != 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0
+			else: delta = dst
+			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode=mode, CTF=False, delta=delta)
+
+
+def Xwithin_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, step, dst, maxit, FH, FF, method = ""):
 
 	# Comment by Zhengfan Yang 03/11/11
 	# This is a simple version of ali2d_data (down to the bone), no output dir, no logfile, no CTF, no MPI or CUDA, no Fourvar, no auto stop, no user function
@@ -16038,11 +16091,9 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 				if Iter%4 != 0 or total_iter > max_iter*len(xrng)-10:
 					delta = 0.0
 				else:
-					asx=0
-					asy=0
-					#delta = dst
-					#tavg, asx,asy = \
-					#	center_2D(tavg, center_method = 7, searching_range = cnx//2, self_defined_reference = mask)
+					delta = dst
+					tavg, asx,asy = \
+						center_2D(tavg, center_method = 7, searching_range = cnx//2, self_defined_reference = mask)
 					if(asx != 0 or asy != 0):
 						#  Shift images by this additional amount
 						for im in xrange(nima):
