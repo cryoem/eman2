@@ -48,8 +48,8 @@ from libpyTypeConverter2 import *
 from libpyFundamentals2 import *
 from libpyPolarData2 import * 
 from libpyAnalyzer2 import *
-from libpyTomoSeg2 import *
+try: from libpyTomoSeg2 import * 			# this module may not exist on Windows, which is okay, so prevent crash.
+except: pass
 try: from libpyMarchingCubes2 import *		# this module won't always exist. Somethings may fail without it, but that's inevitable
 except: pass
 #from libpyGLUtils2 import *
-
