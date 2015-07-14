@@ -2648,6 +2648,8 @@ EMData* Util::Polar2Dm(EMData* image, float cnx2, float cny2, vector<int> numr, 
 	
 	int nx = image->get_xsize();
 	int ny = image->get_ysize();
+	
+	int limit = nx*ny - 2; // As required by bilinear function
 
 	int lcirc = numr[3*nring-2]+numr[3*nring-1]-1;
 	float xold, yold, xnew, ynew;
@@ -2686,20 +2688,20 @@ EMData* Util::Polar2Dm(EMData* image, float cnx2, float cny2, vector<int> numr, 
 
 		xold  = 0.0f+cnx2;
 		yold  = inr+cny2;
-		circ(kcirc) = bilinear(xold,yold,nx,ny,xim);    // Sampling on 90 degree
+		circ(kcirc) = bilinear(xold,yold,nx,limit,xim);    // Sampling on 90 degree
 
 		xold  = inr+cnx2;
 		yold  = 0.0f+cny2;
-		circ(iRef+kcirc) = bilinear(xold,yold,nx,ny,xim);  // Sampling on 0 degree
+		circ(iRef+kcirc) = bilinear(xold,yold,nx,limit,xim);  // Sampling on 0 degree
 
 		if (mode == 'F') {
 			xold = 0.0f+cnx2;
 			yold = -inr+cny2;
-			circ(2*iRef+kcirc) = bilinear(xold,yold,nx,ny,xim);  // Sampling on 270 degree
+			circ(2*iRef+kcirc) = bilinear(xold,yold,nx,limit,xim);  // Sampling on 270 degree
 
 			xold = -inr+cnx2;
 			yold = 0.0f+cny2;
-			circ(3*iRef+kcirc) = bilinear(xold,yold,nx,ny,xim); // Sampling on 180 degree
+			circ(3*iRef+kcirc) = bilinear(xold,yold,nx,limit,xim); // Sampling on 180 degree
 		}
 
 		int nPoints = iRef-1;
@@ -2712,22 +2714,22 @@ EMData* Util::Polar2Dm(EMData* image, float cnx2, float cny2, vector<int> numr, 
 
 			xold = xnew+cnx2;
 			yold = ynew+cny2;
-			circ(jt+kcirc) = bilinear(xold,yold,nx,ny,xim);      // Sampling on the first quadrant
+			circ(jt+kcirc) = bilinear(xold,yold,nx,limit,xim);      // Sampling on the first quadrant
 
 			xold = ynew+cnx2;
 			yold = -xnew+cny2;
-			circ(jt+iRef+kcirc) = bilinear(xold,yold,nx,ny,xim);	// Sampling on the fourth quadrant
+			circ(jt+iRef+kcirc) = bilinear(xold,yold,nx,limit,xim);	// Sampling on the fourth quadrant
 
 			if (mode == 'F') {
 				xold = -xnew+cnx2;
 				yold = -ynew+cny2;
 
-				circ(jt+2*iRef+kcirc) = bilinear(xold,yold,nx,ny,xim); // Sampling on the third quadrant
+				circ(jt+2*iRef+kcirc) = bilinear(xold,yold,nx,limit,xim); // Sampling on the third quadrant
 
 				xold = -ynew+cnx2;
 				yold = xnew+cny2;
 
-				circ(jt+3*iRef+kcirc) = bilinear(xold,yold,nx,ny,xim);  // Sampling on the second quadrant
+				circ(jt+3*iRef+kcirc) = bilinear(xold,yold,nx,limit,xim);  // Sampling on the second quadrant
 			}
 		}
 	}
@@ -2828,11 +2830,12 @@ EMData* Util::Polar2Dm(EMData* image, float cnx2, float cny2, vector<int> numr, 
 }
 
 */
-float Util::bilinear(float xold, float yold, int nsam, int nrow, float* xim)
+float Util::bilinear(float xold, float yold, int nsam, int limit, float* xim)
 {
 /*
 c  purpose: linear interpolation
   Optimized for speed, circular closer removed, checking of ranges removed
+  limit should be set to nsam*nrow-2.
 */
     float bilinear;
     int   ixold, iyold;
@@ -2860,11 +2863,26 @@ c  purpose: linear interpolation
 	ydif = yold - iyold;
 	xdif = xold - ixold;
 	//if( ixold < 1 || ixold > 64 || iyold < 1 || iyold > 64)  printf(" OUT OF RANGE  %3d  %3d \n",ixold,iyold);
+	// xim[(j-1)*nsam + i-1]
+	/*
 	bilinear = xim(ixold, iyold) + ydif* (xim(ixold, iyold+1) - xim(ixold, iyold)) +
 	           xdif* (xim(ixold+1, iyold) - xim(ixold, iyold) +
 			   ydif* (xim(ixold+1, iyold+1) - xim(ixold+1, iyold) - xim(ixold, iyold+1) + xim(ixold, iyold)) );
-
+	//printf("location and output %d  %d  %f \n", ixold, iyold, bilinear);
 	return bilinear;
+	*/
+	//int ind1 = (iyold-1)*nsam + ixold-1;
+	//int ind2 = ind1 + 1;
+	//int ind3 = ind1 + nsam;
+	//int ind4 = ind3 + 1;
+	//  This is not exactly accurate, but optimized for speed. The min/max adds 50% time
+	int ind1 = min(max((iyold-1)*nsam + ixold-1,0),limit);
+	int ind2 = ind1 + 1;
+	int ind3 = min(ind1 + nsam,limit);
+	int ind4 = ind3 + 1;
+	return xim[ind1] + ydif* (xim[ind3] - xim[ind1]) +
+	           xdif* (xim[ind2] - xim[ind1] +
+			   ydif* (xim[ind4] - xim[ind2] - xim[ind3] + xim[ind1]) );
 }
 
 void Util::alrl_ms(float *xim, int    nsam, int  nrow, float cns2, float cnr2,
@@ -21840,7 +21858,25 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 	}
 
 	cout <<"  VERSION  07/04/2015  11:00 AM"<<endl;
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	EMData * img2 = new EMData();
+	img2->set_size(nx,ny,nz);
+	img2->to_zero();
+	float *img_ptr  = img->get_data();
+	float *img2_ptr = img2->get_data();
+	int limit = nx*ny-2;
+	for (int j=0; j<ny; j++) {
+		for (int i=0; i<nx; i++)  {
+			float xold = i+1+qprob;
+			float yold = j+1+qprob;
+			img2_ptr(i,j,0) = bilinear(xold, yold, nx, limit, img_ptr);
+		}
+	}
+	img2->update();
 
+	EXITFUNC;
+	return img2;
+	/*
 	exit(0);
 
 	float dummy;
@@ -21969,6 +22005,7 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 
 	EXITFUNC;
 	return img2;
+	*/
 }
 #undef img_ptr
 #undef img2_ptr
