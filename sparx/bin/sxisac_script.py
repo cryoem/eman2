@@ -313,12 +313,7 @@ def main():
 		gather_compacted_EMData_to_root(number_of_images_in_stack, aligned_images, myid)
 
 		if( myid == main_node ):
-			from EMAN2db import db_open_dict
-			DB = db_open_dict(stack_processed_by_ali2d_base__filename)
-			for i in range(number_of_images_in_stack):
-				DB[i] = aligned_images[i]
-			DB.close()
-
+			for i in range(number_of_images_in_stack):  aligned_images[i].write_image(stack_processed_by_ali2d_base__filename,i)
 
 		del params2d
 
