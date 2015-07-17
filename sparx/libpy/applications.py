@@ -15858,7 +15858,7 @@ def ave_ali(name_stack, name_out = None, ali = False, param_to_save_size = None,
 	else:
 		ave.write_image(name_out, 0)
 
-
+'''
 #  06-12-2014 code lifted
 def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, step, dst, maxit, FH, FF):
 
@@ -15911,12 +15911,12 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 			else: delta = dst
 			sx_sum, sy_sum = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, xrng[N_step], yrng[N_step], step[N_step], mode=mode, CTF=False, delta=delta)
 
-
+'''
 def Xwithin_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, step, dst, maxit, FH, FF, method = ""):
 
 	# Comment by Zhengfan Yang 03/11/11
 	# This is a simple version of ali2d_data (down to the bone), no output dir, no logfile, no CTF, no MPI or CUDA, no Fourvar, no auto stop, no user function
-	
+
 	from alignment    import Numrinit, ringwe, ali2d_single_iter
 	from filter	      import filt_tanl
 	from fundamentals import fshift, fft
@@ -15937,17 +15937,16 @@ def Xwithin_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, 
 	for im in xrange(nima):
 		alpha, sx, sy, mirrorn, dummy = get_params2D(data[im])
 		alphai, sxi, syi, dummy    = combine_params2(0.0, sx, sy, 0, -alpha, 0.,0.,0)
-		if(mirrorn == 1):  sxi = -sxi
 		lx[im] = int(round(sxi,0))
 		ly[im] = int(round(syi,0))
+		Util.cyclicshift(data[im] , {"dx":lx[im],"dy":ly[im]})
 		sxi -= lx[im]
 		syi -= ly[im]
 		if randomize :
-			alphan, sxn, syn, mirrorn    = combine_params2(0.0, -sxi, -syi, 0, random()*360.0, 0.0, 0.0, randint(0, 1))
+			alphan, sxn, syn, mirrorn    = combine_params2(0.0, sxi, syi, 0, random()*360.0, 0.0, 0.0, randint(0, 1))
 			#alphan, sxn, syn, mirrorn = combine_params2(0.0, randint(-xrng[0],xrng[0]), randint(-xrng[0],xrng[0]), 0, random()*360.0, 0, 0, randint(0, 1))
 		else:
 			alphan, sxn, syn, dummy = combine_params2(0.0, sxi, syi, 0, alpha, 0.0, 0.0, 0)
-		if(mirrorn == 1):  sxn = -sxn
 		set_params2D(data[im], [alpha, sxn, syn, mirrorn, 1.0])
 		
 
@@ -16092,8 +16091,10 @@ def Xwithin_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, 
 					delta = 0.0
 				else:
 					delta = dst
-					tavg, asx,asy = \
-						center_2D(tavg, center_method = 7, searching_range = cnx//2, self_defined_reference = mask)
+					asx = 0
+					asy = 0
+					#tavg, asx,asy = \
+					#	center_2D(tavg, center_method = 7, searching_range = cnx//2, self_defined_reference = mask)
 					if(asx != 0 or asy != 0):
 						#  Shift images by this additional amount
 						for im in xrange(nima):
@@ -16123,14 +16124,12 @@ def Xwithin_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, 
 		for im in xrange(nima):
 			alpha, sx, sy, mir, scale = get_params2D(data[im])
 			alphai, sxn, syn, dummy  = combine_params2(0, sx, sy, 0, -alpha, 0,0, 0)
-			Util.cyclicshift(data[im] , {"dx":lx[im],"dy":ly[im]})
+			Util.cyclicshift(data[im] , {"dx":-lx[im],"dy":-ly[im]})
 			alphai, sxn, syn, dummy  = combine_params2(0, sxn-lx[im], syn-ly[im], 0, alpha, 0,0, 0)
 			set_params2D(data[im], [alpha, sxn, syn, mir, 1.0])
 
 	return tavg
 
-
-'''
 
 
 
@@ -16158,8 +16157,8 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 		for im in data:
 			alpha, sx, sy, mirror, scale = get_params2D(im)
 			alphai, sxi, syi, mirrori    = inverse_transform2(alpha, sx, sy)
-			#alphan, sxn, syn, mirrorn    = combine_params2(0.0, -sxi, -syi, 0, random()*360.0, 0.0, 0.0, randint(0, 1))
-			alphan, sxn, syn, mirrorn    = combine_params2(0.0, -sxi+randint(-xrng[0],xrng[0]), -syi+randint(-xrng[0],xrng[0]), 0, random()*360.0, 0, 0, randint(0, 1))
+			alphan, sxn, syn, mirrorn    = combine_params2(0.0, -sxi, -syi, 0, random()*360.0, 0.0, 0.0, randint(0, 1))
+			#alphan, sxn, syn, mirrorn    = combine_params2(0.0, -sxi+randint(-xrng[0],xrng[0]), -syi+randint(-xrng[0],xrng[0]), 0, random()*360.0, 0, 0, randint(0, 1))
 			set_params2D(im, [alphan, sxn, syn, mirrorn, 1.0])
 
 	cnx = nx/2+1
@@ -16311,6 +16310,8 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 				#tavg.write_image('tata.hdf',total_iter-1)
 
 	return tavg
+
+'''
 
 
 #  commented out to prevent problems 03/02/2015

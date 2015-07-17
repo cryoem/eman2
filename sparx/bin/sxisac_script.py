@@ -205,10 +205,11 @@ def main():
 	#  PARAMETERS OF THE PROCEDURE
 	if( options.xr == -1 ):
 		#  Default values
-		target_radius = 29
+		target_radius = 26
 		target_xr = 2
 	else:  #  nx//2
-		target_radius = 31 - options.xr
+		#  Check below!
+		target_radius = 28 - options.xr
 		target_xr = options.xr
 
 	# mpi_barrier(MPI_COMM_WORLD)

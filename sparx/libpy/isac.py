@@ -232,8 +232,8 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 			# Generate random averages for each group
 			if key == group_main_node:
-				#refi = generate_random_averages(data, K, 9023)
-				refi = generate_random_averages(data, K, Iter)
+				refi = generate_random_averages(data, K, 9023)
+				#refi = generate_random_averages(data, K, Iter)
 				#refi = generate_random_averages(data, K, -1)
 				for j in xrange(len(refi)):  refi[j].write_image("refim_%d.hdf"%color, j)
 			else:
@@ -718,16 +718,16 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 			l_stable_set = len(stable_set)
 			stable_set_id = [0]*l_stable_set
-			all_alpha = [0]*l_stable_set
-			all_sx = [0]*l_stable_set
-			all_sy = [0]*l_stable_set
-			all_mirror = [0]*l_stable_set
-			#all_scale = [1.0]*l_stable_set
+			all_alpha     = [0]*l_stable_set
+			all_sx        = [0]*l_stable_set
+			all_sy        = [0]*l_stable_set
+			all_mirror    = [0]*l_stable_set
+			#all_scale     = [1.0]*l_stable_set
 			for j in xrange(l_stable_set): 
 				stable_set_id[j] = members_id[stable_set[j][1]]
 				all_alpha[j]     = stable_set[j][2][0]
-				all_sx[j]	     = stable_set[j][2][1]
-				all_sy[j]	     = stable_set[j][2][2]
+				all_sx[j]        = stable_set[j][2][1]
+				all_sy[j]        = stable_set[j][2][2]
 				all_mirror[j]    = stable_set[j][2][3]
 
 			mpi_send(l_stable_set, 1, MPI_INT, main_node, i+30000, MPI_COMM_WORLD)
@@ -750,7 +750,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		print "*                   End of the ISAC program                 "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"            *"
 		print "*                                                                                                  *"
 		print "****************************************************************************************************"
-
+	return
 
 
 
@@ -878,8 +878,8 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 	nx = alldata[0].get_xsize()
 
 	nima = len(alldata)
-	#  Explicitly force all parameters to be zero on input  07/08/2015  PAP Would it be necessary?  08/13/2015
-	#  for im in xrange(nima):  set_params2D(alldata[im], [0.,0.,0.,0, 1.0])
+	#  Explicitly force all parameters to be zero on input
+	for im in xrange(nima):  set_params2D(alldata[im], [0.,0.,0.,0, 1.0])
 		
 	
 	image_start, image_end = MPI_start_end(nima, number_of_proc, myid)
@@ -957,8 +957,26 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		#    d matrix required by EQ-Kmeans can be huge!!  PAP 01/17/2015
 		d = zeros(numref*nima, dtype=float32)
 		# begin MPI section
+		for im in xrange(image_start, image_end):
+			alpha, sx, sy, mirror, scale = get_params2D(alldata[im])
+			alphai, sxi, syi, scalei = inverse_transform2(alpha, sx, sy)
+			# normalize
+			alldata[im].process_inplace("normalize.mask", {"mask":mask, "no_sigma":0}) # subtract average under the mask
+
+			# align current image to the reference
+			temp = Util.multiref_polar_ali_2d_peaklist(alldata[im], ringref, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
+			for iref in xrange(numref):
+				[alphan, sxn, syn, mn] = \
+				   combine_params2(0.0, -sxi, -syi, 0, temp[iref*5+1], temp[iref*5+2], temp[iref*5+3], int(temp[iref*5+4]))
+				peak_list[iref][(im-image_start)*4+0] = alphan
+				peak_list[iref][(im-image_start)*4+1] = sxn
+				peak_list[iref][(im-image_start)*4+2] = syn
+				peak_list[iref][(im-image_start)*4+3] = mn
+				d[iref*nima+im] = temp[iref*5]
+
 		# ???  This is attempt to do mref with restricted searches.  It does not work out as some classes may require
 		#      much larger shifts to center averages than other.
+
 		"""
 		mashi = cnx-ou-2  # needed for maximum shift
 		for im in xrange(image_start, image_end):
@@ -992,6 +1010,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 				if(abs(qd1)>mashi or abs(qd2)>mashi):  print  " multiref2 ",sxi,syi,temp[iref*5+1], temp[iref*5+2], temp[iref*5+3], int(temp[iref*5+4]),alphan, sxn, syn, mn,qd0,qd1,qd2,qd3
 				d[iref*nima+im] = temp[iref*5]
 		"""
+		"""
 		#  This version does cyclic shifts of images to center them prior to multiref 
 		#      to keep them within permissible range of translations.
 		for im in xrange(image_start, image_end):
@@ -1017,6 +1036,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 				peak_list[iref][(im-image_start)*4+2] = syn
 				peak_list[iref][(im-image_start)*4+3] = mn
 				d[iref*nima+im] = temp[iref*5]
+		"""
 
 		del refi, temp
 
@@ -1064,93 +1084,78 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		mpi_barrier(comm)
 		belongsto = mpi_bcast(belongsto, nima, MPI_INT, main_node, comm)
 		belongsto = map(int, belongsto)
-		#if my_abs_id == main_node: print "Completed EQ-mref within isac_MPI = ", Iter, "	main_iter = ", main_iter , localtime()[0:5], myid
+		if my_abs_id == main_node: print "Completed EQ-mref within isac_MPI = ", Iter, "	main_iter = ", main_iter , localtime()[0:5], color, myid
 
-		#  I have to remove brutally centering of averages based on average shift method as 
-		#    it results in inadmissible shifts of individual images.  It remains to be seen 
-		#    whether the average itself should be shifted, but this is risky business,
-		#     so for the time being all shifting is commented out with ##.  07/08/2015  PAP
+
 		#  Compute partial averages
 		members = [0]*numref
-		##sx_sum = [0.0]*numref
-		##sy_sum = [0.0]*numref
-		refi = [model_blank(nx,nx) for j in xrange(numref)]
+		sx_sum = [0.0]*numref
+		sy_sum = [0.0]*numref
+		for j in xrange(numref):  refi[j].to_zero()
 		for im in xrange(image_start, image_end):
 			matchref = belongsto[im]
 			alphan = float(peak_list[matchref][(im-image_start)*4+0])
-			sxn    = float(peak_list[matchref][(im-image_start)*4+1])
-			syn    = float(peak_list[matchref][(im-image_start)*4+2])
-			mn     = int(peak_list[matchref][(im-image_start)*4+3])
-			##if mn == 0: sx_sum[matchref] += sxn
-			##else:	    sx_sum[matchref] -= sxn
-			##sy_sum[matchref] += syn
+			sxn = float(peak_list[matchref][(im-image_start)*4+1])
+			syn = float(peak_list[matchref][(im-image_start)*4+2])
+			mn = int(peak_list[matchref][(im-image_start)*4+3])
+			if mn == 0: sx_sum[matchref] += sxn
+			else:	   sx_sum[matchref] -= sxn
+			sy_sum[matchref] += syn
 			# apply current parameters and add to the average
 			Util.add_img(refi[matchref], rot_shift2D(alldata[im], alphan, sxn, syn, mn))
 #			if CTF:
 #				ctm = ctf_2(nx, ctf_params)
 #				for i in xrange(lctf):  ctf2[matchref][it][i] += ctm[i]
 			members[matchref] += 1
-		#  HERE SHIFTS ARE USED FOR CENTERING based on principle that original images are shifted randomly,
-		#    so after alignment sum of shifts should be zero PAP 01/17/2015
-		##sx_sum  = mpi_reduce(sx_sum, numref, MPI_FLOAT, MPI_SUM, main_node, comm)
-		##sy_sum  = mpi_reduce(sy_sum, numref, MPI_FLOAT, MPI_SUM, main_node, comm)
+		sx_sum = mpi_reduce(sx_sum, numref, MPI_FLOAT, MPI_SUM, main_node, comm)
+		sy_sum = mpi_reduce(sy_sum, numref, MPI_FLOAT, MPI_SUM, main_node, comm)
 		members = mpi_reduce(members, numref, MPI_INT, MPI_SUM, main_node, comm)
 		if myid != main_node:
-			##sx_sum  = [0.0]*numref
-			##sy_sum  = [0.0]*numref
+			sx_sum = [0.0]*numref
+			sy_sum = [0.0]*numref
 			members = [0.0]*numref
-		##sx_sum  = mpi_bcast(sx_sum, numref, MPI_FLOAT, main_node, comm)
-		##sy_sum  = mpi_bcast(sy_sum, numref, MPI_FLOAT, main_node, comm)
+		sx_sum = mpi_bcast(sx_sum, numref, MPI_FLOAT, main_node, comm)
+		sy_sum = mpi_bcast(sy_sum, numref, MPI_FLOAT, main_node, comm)
 		members = mpi_bcast(members, numref, MPI_INT, main_node, comm)
-		##sx_sum  = map(float, sx_sum)
-		##sy_sum  = map(float, sy_sum)
+		sx_sum = map(float, sx_sum)
+		sy_sum = map(float, sy_sum)
 		members = map(int, members)
 
-		##for j in xrange(numref):
-		##	sx_sum[j] /= float(members[j])
-		##	sy_sum[j] /= float(members[j])
+		for j in xrange(numref):
+			sx_sum[j] /= float(members[j])
+			sy_sum[j] /= float(members[j])
 
 		for im in xrange(image_start, image_end):
 			matchref = belongsto[im]
 			alphan = float(peak_list[matchref][(im-image_start)*4+0])
 			sxn = float(peak_list[matchref][(im-image_start)*4+1])
 			syn = float(peak_list[matchref][(im-image_start)*4+2])
-			mn  = int(peak_list[matchref][(im-image_start)*4+3])
-			##if mn == 0:
-			##	set_params2D(alldata[im], [alphan, sxn-sx_sum[matchref], syn-sy_sum[matchref], mn, scale])
-			##else:
-			##	set_params2D(alldata[im], [alphan, sxn+sx_sum[matchref], syn-sy_sum[matchref], mn, scale])
+			mn = int(peak_list[matchref][(im-image_start)*4+3])
 			if mn == 0:
-				set_params2D(alldata[im], [alphan, sxn, syn, mn, scale])
+				set_params2D(alldata[im], [alphan, sxn-sx_sum[matchref], syn-sy_sum[matchref], mn, scale])
 			else:
-				set_params2D(alldata[im], [alphan, sxn, syn, mn, scale])
+				set_params2D(alldata[im], [alphan, sxn+sx_sum[matchref], syn-sy_sum[matchref], mn, scale])
 
 		del peak_list
 
 		for j in xrange(numref):
 			reduce_EMData_to_root(refi[j], myid, main_node, comm)
 			if myid == main_node:
-				# Golden rule when to do within-group refinement
+				# Golden rule when to do within group refinement
 				Util.mul_scalar(refi[j], 1.0/float(members[j]))
-				#refi[j] = fft( fshift(filt_tanl( fft(refi[j]), fl, FF), -sx_sum[j], -sy_sum[j]) )
-				refi[j] = filt_tanl( refi[j], fl, FF)
-				set_params2D(refi[j], [0.0, 0.0, 0.0, 0, 1.0])
+				refi[j] = filt_tanl(refi[j], fl, FF)
+				refi[j] = fshift(refi[j], -sx_sum[j], -sy_sum[j])
+				set_params2D(refi[j], [0.0, 0.0, 0.0, 0, 1.0])	
 
 		if myid == main_node:
 			#  this is most likely meant to center them, if so, it works poorly, 
 			#      it has to be checked and probably a better method used PAP 01/17/2015
-			#  There is additional inconsistency.  Above the lowpass is set to fl, here it is FH
-			##   dummy = within_group_refinement(refi, mask, True, first_ring, last_ring, rstep, \
-			##  								[xrng], [yrng], [step], dst, maxit, FH, FF, method )
-			#  TRY CENTERING HERE  07/13/2015
-			from utilities import center_2D
+			dummy = within_group_refinement(refi, mask, True, first_ring, last_ring, rstep, [xrng], [yrng], [step], dst, maxit, FH, FF)
 			ref_ali_params = []
 			for j in xrange(numref):
-				refi[j], sx, sy = center_2D(refi[j], 7, self_defined_reference=mask)
-				ref_ali_params.extend([0.0, -sx, -sy, 0])
-				#alpha, sx, sy, mirror, scale = get_params2D(refi[j])
-				#refi[j] = rot_shift2D(refi[j], alpha, sx, sy, mirror)
-				#ref_ali_params.extend([alpha, sx, sy, mirror])
+				alpha, sx, sy, mirror, scale = get_params2D(refi[j])
+				refi[j] = rot_shift2D(refi[j], alpha, sx, sy, mirror)
+				ref_ali_params.extend([alpha, sx, sy, mirror])
 		else:
 			ref_ali_params = [0.0]*(numref*4)
 		ref_ali_params = mpi_bcast(ref_ali_params, numref*4, MPI_FLOAT, main_node, comm)
@@ -1159,11 +1164,13 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		for j in xrange(numref):
 			bcast_EMData_to_all(refi[j], myid, main_node, comm)
 
+		for j in xrange(numref):
+			bcast_EMData_to_all(refi[j], myid, main_node, comm)
+
 		if myid == main_node:
 			print  "  WRITING refaligned  for color:",color
 			for j in xrange(numref):
 				refi[j].write_image("refaligned%02d_round%02d.hdf"%(color, Iter), j)
-			
 
 		# Compensate the centering to averages
 		for im in xrange(image_start, image_end):
@@ -1261,46 +1268,6 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 								for ss in stable_set:
 									if p == ss[1]: duplicate = True
 							stable_set.append([100.0, p, [0.0, 0.0, 0.0, 0]])
-
-						"""
-						#  No need for that in preshifting approach.	
-						# Force average parameters into permissible range
-						mashi = cnx-ou-2
-						axa=1.0e10;axb=-1.0e10;aya=1.0e10;ayb=-1.0e10
-						temp = []
-						for err in stable_set:
-							#  TEST WHETHER PARAMETERS ARE WITHIN RANGE
-							alpha, sx, sy, mirror = inverse_transform2(err[2][0], err[2][1], err[2][2], int(err[2][3]))
-							temp.append([alpha, sx, sy, mirror])
-							axa=min(axa,sx);axb=max(axb,sx);aya=min(aya,sy);ayb=max(ayb,sy);
-						aa = [axa,aya]
-						ab = [axb,ayb]
-						axa = False
-						for k in xrange(2):
-							if(aa[k]<mashi or ab[k]>mashi):
-								axa = True
-								#  Do both ranges stick out?
-								if(aa[k]<-mashi and ab[k]>mashi):
-									#  Shift such that both ends stick out about the same
-									ss = (aa[k]+ab[k])/2.0
-								else:
-									if(aa[k]<-mashi):
-										ss = aa[k] + mashi
-										if( ab[k] - ss > mashi): ss=(aa[k] + ab[k])/2.0
-									else:
-										ss = ab[k] - mashi
-										if( aa[k] - ss < -mashi): ss=(aa[k] + ab[k])/2.0
-								for im in xrange(len(temp)):
-									temp[im][k+1] = min(max(temp[im][k+1] - ss,-mashi), mashi)
-						if axa:
-							#  There was a shift, restore shifted parameters
-							for i in xrange(len(stable_set)):
-								#  TEST WHETHER PARAMETERS ARE WITHIN RANGE
-								stable_set[i][2][0], stable_set[i][2][1], stable_set[i][2][2], stable_set[i][2][3] = inverse_transform2(temp[i][0], temp[i][1], temp[i][2], temp[i][3])
-								mashi = cnx-ou-2
-								if(abs(temp[i][1])>mashi or abs(temp[i][2])>mashi):  print  "PARAMETERS OUTSIDE THE RANGE 22222 ::::: ",i,mashi,temp[i][0], temp[i][1], temp[i][2], temp[i][3]
-						"""
-
 						stable_data = []
 						stable_members = []
 						for err in stable_set:
@@ -1649,12 +1616,6 @@ def match_2_way(data, refi, indep_run, thld_grp, FH, FF, find_unique=True, wayne
 
 
 def generate_random_averages(data, K, rand_seed = -1):
-	ll = [i for i in xrange(rand_seed, 100*K, 100)]
-	print  " generate_random_averages   ",K,ll[:10]
-	return [data[i].copy() for i in ll]
-	from random import shuffle, seed, randint
-	#avgs = [data[i].copy() for i in xrange(K)]
-	#return avgs
 	#  I prefer to take random images....  PAP
 	if rand_seed == -1:  seed(randint(1,2000111222))
 	else:                seed(rand_seed)

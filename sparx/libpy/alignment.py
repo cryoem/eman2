@@ -32,7 +32,7 @@ from global_def import *
 
 
 #  06-12-14 code lifted
-def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
+def XXali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 						xrng, yrng, step, nomirror = False, mode="F", CTF=False, \
 						random_method="", T=1.0, ali_params="xform.align2d", delta = 0.0):
 	"""
@@ -85,7 +85,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 	return sx_sum, sy_sum
 
 
-def Xali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
+def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 						xrng, yrng, step, nomirror = False, mode="F", CTF=False, \
 						random_method="", T=1.0, ali_params="xform.align2d", delta = 0.0):
 	"""
