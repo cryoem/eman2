@@ -18923,7 +18923,6 @@ vector<float> Util::multiref_polar_ali_2d_peaklist(EMData* image, const vector< 
 		}
 	}
 
-	/*  Do not invert the order.  This command is only used in isac and I will handle it there properly 07/10/2015 PAP
 	for (int iref = 0; iref < (int)crefim_len; iref++) {
 		float ang = peak[iref*5+1];
 		float sx  = peak[iref*5+2];
@@ -18935,7 +18934,6 @@ vector<float> Util::multiref_polar_ali_2d_peaklist(EMData* image, const vector< 
 		peak[iref*5+2] = sxs;
 		peak[iref*5+3] = sys;
 	}
-	*/
 	return peak;
 }
 
