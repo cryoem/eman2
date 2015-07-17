@@ -1301,9 +1301,9 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 						from statistics   import hist_list
 						lhist = 12
 						region, histo = hist_list(gpixer, lhist)
-						print  "=========== Histogram of average pixel errors prior to class pruning =============="
-						for lhx in xrange(lhist):  print   "          %10.3f     %7d"%(region[lhx], histo[lhx])
-						print  "==================================================================================="
+						print  "\n=== Histogram of average within-class pixel errors prior to class pruning ==="
+						for lhx in xrange(lhist):  print   "     %10.3f     %7d"%(region[lhx], histo[lhx])
+						print  "=============================================================================\n"
 					del gpixer
 				mpi_barrier(comm)
 
