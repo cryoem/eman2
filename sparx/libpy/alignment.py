@@ -189,11 +189,12 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, mirrort)
 			set_params2D(data[im], [alphan, sxn, syn, mn, 1.0], ali_params)
 		elif random_method == "PCP":
-			[angt, sxst, syst, mirrort, peakt] = ormq_fast(data[im], cimage, txrng, tyrng, step, sxi, syi, numr, mode, delta)
-			data[im][0][0].set_attr('sxi', int(sxst))
-			data[im][0][0].set_attr('syi', int(syst))
-			angt, sxn, syn, mn = combine_params2(0.0, -sxst, -syst, 0, angt, 0, 0, mirrort)
-			set_params2D(data[im][0][0], [angt, sxn, syn, mn, 1.0], ali_params)
+			[angt, sxst, syst, mirrort, peakt] = ormq_fast(data[im], cimage, txrng, tyrng, step, numr, mode, delta)
+			sxst = rings[0][0][0].get_attr("sxi")
+			syst = rings[0][0][0].get_attr("syi")
+			print sxst, syst,sx,sy
+			dummy,sxs,sys, dummy = inverse_transform2(-angt,sx+sxst,sy+syst)
+			set_params2D(data[im][0][0], [angt, sxs, sys, mirrort, 1.0], ali_params)
 		else:
 			if nomirror:  [angt, sxst, syst, mirrort, peakt] = ornq(ima, cimage, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi)
 			else:	      [angt, sxst, syst, mirrort, peakt] = ormq(ima, cimage, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi, delta)
@@ -645,7 +646,7 @@ def ormq(image, crefim, xrng, yrng, step, mode, numr, cnx, cny, delta = 0.0):
 	sys = sx*so + sy*co
 	return  ang, sxs, sys, mirror, peak
 
-def ormq_fast(dimage, crefim, xrng, yrng, step, sxi, syi, numr, mode, delta = 0.0):
+def ormq_fast(dimage, crefim, xrng, yrng, step, numr, mode, delta = 0.0):
 	"""Determine shift and rotation between image and reference image (crefim)
 		crefim should be as FT of polar coords with applied weights
 	        consider mirror
@@ -654,17 +655,22 @@ def ormq_fast(dimage, crefim, xrng, yrng, step, sxi, syi, numr, mode, delta = 0.
 	#from math import pi, cos, sin, radians
 	#print "ORMQ_FAST"
 	maxrange = len(dimage)//2
-	istep = int(2*step)
+	#istep = int(2*step)
+	istep = int(step)
+	"""
 	lkx = int(xrng[0]*istep)
 	rkx = int(xrng[-1]*istep)
 
 	lky = int(yrng[0]*istep)
 	rky = int(yrng[-1]*istep)
+	"""
+	lkx = rkx = int(xrng*istep)
+
+	lky = rky = int(yrng*istep)
 
 	peak = -1.0E23
 	for j in xrange(-lky, rky+1, istep):
 		for i in xrange(-lkx, rkx+1, istep):
-			# The following code is used when mirror is considered
 			if delta == 0.0: retvals = Util.Crosrng_ms(crefim, dimage[i+maxrange][j+maxrange], numr)
 			else:            retvals = Util.Crosrng_ms_delta(crefim, dimage[i+maxrange][j+maxrange], numr, 0.0, delta)
 			qn = retvals["qn"]
@@ -687,8 +693,39 @@ def ormq_fast(dimage, crefim, xrng, yrng, step, sxi, syi, numr, mode, delta = 0.
 	sys = sx*so + sy*co
 	"""
 	if( peak < -1.0e20): ERROR("ormq_fast","failed, most likely due to search ranges",1)
-	return  ang, sx/2.0, sy/2.0, mirror, peak
+	#return  ang, sx/2.0, sy/2.0, mirror, peak
+	return  ang, sx, sy, mirror, peak
 			
+
+def prepref(data, maskfile, cnx, cny, numr, mode, maxrangex, maxrangey, step):
+	from utilities import get_params2D, combine_params2
+	from EMAN2 import Util
+	#step = 1
+	mashi = cnx -numr[-3] -2
+	nima = len(data)
+	istep = int(1.0/step)
+	dimage = [[[None for j in xrange(2*maxrangey*istep+1)] for i in xrange(2*maxrangex*istep+1)] for im in xrange(nima) ]
+	for im in xrange(nima):
+		sts = Util.infomask(data[im], maskfile, False)
+		data[im] -= sts[0]
+		data[im] /= sts[1]
+		alpha, sx, sy, mirror, dummy = get_params2D(data[im])
+		#alpha, sx, sy, dummy         = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
+		alphai, sxi, syi, dummy      = combine_params2(0.0, sx, sy, 0, -alpha, 0,0, 0)
+		#  introduce constraints on parameters to accomodate use of cs centering
+		sxi = min(max(sxi,-mashi),mashi)
+		syi = min(max(syi,-mashi),mashi)	
+		for j in xrange(-maxrangey*istep, maxrangey*istep+1):
+			iy = j*step
+			for i in xrange(-maxrangex*istep, maxrangex*istep+1):
+				ix = i*step
+				dimage[im][i+maxrangex][j+maxrangey] = Util.Polar2Dm(data[im], cnx+sxi+ix, cny+syi+iy, numr, mode)
+				#print ' prepref  ',j,i,j+maxrangey,i+maxrangex
+				Util.Frngs(dimage[im][i+maxrangex][j+maxrangey], numr)
+		dimage[im][0][0].set_attr("sxi",sxi)
+		dimage[im][0][0].set_attr("syi",syi)
+
+	return dimage
 
 def ormq_peaks(image, crefim, xrng, yrng, step, mode, numr, cnx, cny):
 	"""

@@ -963,7 +963,10 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			##  TEST WHETHER PARAMETERS ARE WITHIN RANGE
 			alphai, sxi, syi, scalei = inverse_transform2(alpha, sx, sy)
 			# If shifts are outside of the permissible range, reset them
-			if(abs(sx)>mashi or abs(sy)>mashi):  set_params2D(refi[j],[0.0,0.0,0.0,0,1.0])
+			if(abs(sxi)>mashi or abs(syi)>mashi):
+				sxi = 0.0
+				syi = 0.0
+				set_params2D(refi[j],[0.0,0.0,0.0,0,1.0])
 			# normalize
 			alldata[im].process_inplace("normalize.mask", {"mask":mask, "no_sigma":0}) # subtract average under the mask
 			ny = nx
@@ -1261,7 +1264,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 						stable_set, mirror_consistent_rate, err = multi_align_stability(ali_params, 0.0, 10000.0, thld_err, False, last_ring*2)
 
-						print  "Color %2d, class %4d ...... Size of the group = %4d and of the stable subset = %4d, Mirror consistent rate = %5.3f,  Average pixel error prior to class pruning = %10.2f"\
+						print  "Color %1d, class %4d ...... Size of the group = %4d and of the stable subset = %4d  Mirror consistent rate = %5.3f  Average pixel error prior to class pruning = %10.2f"\
 										%(color, j, len(class_data), len(stable_set), mirror_consistent_rate, err)
 
 						# If the size of stable subset is too small (say 1, 2), it will cause many problems, so we manually increase it to 5
@@ -1697,27 +1700,6 @@ def get_unique_averages(data, indep_run, m_th=0.45):
 		if flag[im] == 3:	 data_good.append(data[im])
 	
 	return data_good
-
-
-#  Not used anywhere
-def prepref(data, maskfile, cnx, cny, numr, mode, maxrangex, maxrangey, step):
-	from EMAN2 import Util
-	#step = 1
-	nima = len(data)
-	istep = int(1.0/step)
-	dimage = [[[None for j in xrange(2*maxrangey*istep+1)] for i in xrange(2*maxrangex*istep+1)] for im in xrange(nima) ]
-	for im in xrange(nima):
-		sts = Util.infomask(data[im], maskfile, False)
-		data[im] -= sts[0]
-		data[im] /= sts[1]
-		for j in xrange(-maxrangey*istep, maxrangey*istep+1):
-			iy = j*step
-			for i in xrange(-maxrangex*istep, maxrangex*istep+1):
-				ix = i*step
-				dimage[im][i+maxrangex][j+maxrangey] = Util.Polar2Dm(data[im], cnx+ix, cny+iy, numr, mode)
-				#print ' prepref  ',j,i,j+maxrangey,i+maxrangex
-				Util.Frngs(dimage[im][i+maxrangex][j+maxrangey], numr)
-	return dimage
 
 """
 #  This program removes from candidate averages numbers of accounted for images

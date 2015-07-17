@@ -16231,14 +16231,12 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 
 
 	elif( method == "PCP"):
-		from isac import prepref
+		from alignent import prepref
 		from utilities import model_circle
 		stp = step[-1]
 		rings = prepref(data, model_circle(nx//2-1,nx,nx), cnx, cnx, numr, mode, xrng[0], xrng[0], stp)
 		print " rings  ",len(rings)
 		for im in xrange(len(data)):
-			rings[im][0][0].set_attr("sxi",0)
-			rings[im][0][0].set_attr("syi",0)
 			rings[im][0][0].set_attr("inx",nx)
 		tavg = ave_series(data)
 		for N_step in xrange(len(xrng)):
