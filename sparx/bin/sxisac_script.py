@@ -204,12 +204,14 @@ def main():
 	#  PARAMETERS OF THE PROCEDURE
 	if( options.xr == -1 ):
 		#  Default values
-		target_radius = 26
-		target_xr = 2
+		target_nx = 76
+		target_radius = 29
+		target_xr = 1
 	else:  #  nx//2
 		#  Check below!
-		target_radius = 28 - options.xr
 		target_xr = options.xr
+		target_nx = 76 + target_xr - 1 # subtract one, which is default
+		target_radius = 29
 
 	# mpi_barrier(MPI_COMM_WORLD)
 	# from mpi import mpi_finalize
@@ -286,38 +288,49 @@ def main():
 		if( myid == main_node ):
 			write_text_row(params2d,os.path.join(init2dir, "initial2Dparams.txt"))
 
-		#  We assume the target image size will be 64, radius will be 29, and xr = 2.  Note images can be also upscaled, in which case shrink_ratio > 1.
+		#  We assume the target image size will be target_nx, radius will be 29, and xr = 1.  Note images can be also padded, in which case shrink_ratio > 1.
 		shrink_ratio = float(target_radius)/float(radi)
-		from fundamentals import rot_shift2D, resample
-		if shrink_ratio < 1.0:
-			my_test_image  = resample(aligned_images[0], shrink_ratio)
-			while my_test_image.get_xsize() != 64:
-				shrink_ratio -= (my_test_image.get_xsize() - 64)/1000.0
-				my_test_image  = resample(aligned_images[0], shrink_ratio)
-	
-		# print "shrink_ratio", shrink_ratio
 		nx = aligned_images[0].get_xsize()
-		needs_windowing = int(nx*shrink_ratio+0.5) > 64
-
 		nima = len(aligned_images)
-		for im in xrange(nima):  
-			alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
-			#  Here we should use only shifts, will have o figure it
-			#alpha, sx, sy, mirror = inverse_transform2(alpha, sx, sy, mirror)
-			aligned_images[im] = rot_shift2D(aligned_images[im], alpha, sx, sy, mirror)
+		newx = int(nx*shrink_ratio + 0.5)
+		if    newx > target_nx  : opt = 1
+		elif  newx == target_nx : opt = 0
+		else                    : opt = -1
+
+		if opt == -1 :   msk = model_circle(nx//2-2, nx,  nx)
+		else:            msk = model_circle(target_radius, target_nx, target_nx)
+
+		from fundamentals import rot_shift2D, resample
+		from utilities import pad, combine_params2
+		for im in xrange(nima):
+			#  Here we should use only shifts
+			alpha, sx, sy, mirror = combine_params2(0, params2d[im][1], params2d[im][2], 0, -params2d[im][0], 0, 0, 0)
+			aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
 			if shrink_ratio < 1.0:
 				aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
-				if needs_windowing:
-					aligned_images[im] = Util.window(aligned_images[im], 64, 64, 1)
-	
-		assert(aligned_images[0].get_xsize() == 64)  #  Just to make sure
+			if   opt == 1 or opt == 0:
+				if opt == 1:  aligned_images[im] = Util.window(aligned_images[im], target_nx, target_nx, 1)
+				p = Util.infomask(aligned_images[im], msk, False)
+				aligned_images[im] -= p[0]
+				p = Util.infomask(aligned_images[im], msk, True)
+				aligned_images[im] /= p[1]
+			elif opt == -1:
+				#  Different mask!
+				p = Util.infomask(aligned_images[im], msk, False)
+				aligned_images[im] -= p[0]
+				p = Util.infomask(aligned_images[im], msk, True)
+				aligned_images[im] /= p[1]					
+				aligned_images[im] = pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
+				
+				
+		del msk, params2d
+
 		gather_compacted_EMData_to_root(number_of_images_in_stack, aligned_images, myid)
 
 		if( myid == main_node ):
 			for i in range(number_of_images_in_stack):  aligned_images[i].write_image(stack_processed_by_ali2d_base__filename,i)
 
-		del params2d
-
+	
 		mpi_barrier(MPI_COMM_WORLD)
 
 	"""
