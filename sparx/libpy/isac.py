@@ -1299,11 +1299,10 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 					gpixer = wrap_mpi_gatherv(gpixer, main_node, comm)
 					if my_abs_id == main_node and color == 0:
 						from statistics   import hist_list
-						lhx = 0
+						lhist = 12
 						region, histo = hist_list(gpixer, lhist)
 						print  "=========== Histogram of average pixel errors prior to class pruning =============="
-						for lhx in xrange(lhist):
-							print   "          %10.3f     %7d"%(region[lhx], histo[lhx])
+						for lhx in xrange(lhist):  print   "          %10.3f     %7d"%(region[lhx], histo[lhx])
 						print  "==================================================================================="
 					del gpixer
 				mpi_barrier(comm)
