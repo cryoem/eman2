@@ -1101,12 +1101,12 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 				cs = [0.0]*2
 
 			if auto_stop:
-				again = mpi_bcast(again, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+				again = mpi_bcast(again, 1, MPI_INT, main_node, mpi_comm)
 				if int(again[0]) == 0: break
 
 			if Fourvar:  del vav
 			bcast_EMData_to_all(tavg, myid, main_node)
-			cs = mpi_bcast(cs, 2, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			cs = mpi_bcast(cs, 2, MPI_FLOAT, main_node, mpi_comm)
 			cs = map(float, cs)
 			if total_iter != max_iter*len(xrng):
 				old_ali_params = []
@@ -1121,12 +1121,12 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 												nomirror=nomirror, mode=mode, CTF=CTF, delta=delta, \
 												random_method = random_method)
 
-				sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-				sy_sum = mpi_reduce(sy_sum, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
+				sx_sum = mpi_reduce(sx_sum, 1, MPI_FLOAT, MPI_SUM, main_node, mpi_comm)
+				sy_sum = mpi_reduce(sy_sum, 1, MPI_FLOAT, MPI_SUM, main_node, mpi_comm)
 				#  for SHC
 				if  random_method == "SHC":
-					nope   = mpi_reduce(nope, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
-					nope   = mpi_bcast(nope, 1, MPI_INT, main_node, MPI_COMM_WORLD)
+					nope   = mpi_reduce(nope, 1, MPI_INT, MPI_SUM, main_node, mpi_comm)
+					nope   = mpi_bcast(nope, 1, MPI_INT, main_node, mpi_comm)
 					if int(nope[0]) == total_nima: break
 
 				pixel_error       = 0.0
@@ -1140,9 +1140,9 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 						pixel_error_list[im] = this_error
 						mirror_consistent += 1
 				del old_ali_params
-				mirror_consistent = mpi_reduce(mirror_consistent, 1, MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
-				pixel_error       = mpi_reduce(pixel_error, 1, MPI_FLOAT, MPI_SUM, main_node, MPI_COMM_WORLD)
-				pixel_error_list  = mpi_gatherv(pixel_error_list, nima, MPI_FLOAT, recvcount, disp, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+				mirror_consistent = mpi_reduce(mirror_consistent, 1, MPI_INT, MPI_SUM, main_node, mpi_comm)
+				pixel_error       = mpi_reduce(pixel_error, 1, MPI_FLOAT, MPI_SUM, main_node, mpi_comm)
+				pixel_error_list  = mpi_gatherv(pixel_error_list, nima, MPI_FLOAT, recvcount, disp, MPI_FLOAT, main_node, mpi_comm)
 				if myid == main_node:
 					log.add("Mirror consistency rate = %8.4f%%"%(float(mirror_consistent)/total_nima*100))
 					if mirror_consistent!=0:
@@ -1157,7 +1157,7 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 
 	if myid == main_node and outdir:  drop_image(tavg, os.path.join(outdir, "aqfinal.hdf"))
 	# write out headers and STOP, under MPI writing has to be done sequentially
-	mpi_barrier(MPI_COMM_WORLD)
+	mpi_barrier(mpi_comm)
 	if write_headers:
 		par_str = ["xform.align2d", "ID"]
 		if myid == main_node:
@@ -1174,10 +1174,11 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 	for im in xrange(nima):  
 		alpha, sx, sy, mirror, scale = get_params2D(data[im])
 		params.append([alpha, sx, sy, mirror])
+	print "ali2d  ",myid,len(params)
 	params = wrap_mpi_gatherv(params, main_node, mpi_comm)
 
 	if myid == main_node: log.add("Finished ali2d_base")
-	
+	print "ali2d  ",myid,len(params)
 	return params, data
 
 '''
