@@ -962,9 +962,14 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			alphai, sxi, syi, scalei = inverse_transform2(alpha, sx, sy)
 			# normalize
 			alldata[im].process_inplace("normalize.mask", {"mask":mask, "no_sigma":0}) # subtract average under the mask
+			ny = nx
+			txrng = search_range(nx, ou, sxi, xrng, "ISAC")
+			txrng = [txrng[1],txrng[0]]
+			tyrng = search_range(ny, ou, syi, yrng, "ISAC")
+			tyrng = [tyrng[1],tyrng[0]]
 
 			# align current image to the reference
-			temp = Util.multiref_polar_ali_2d_peaklist(alldata[im], ringref, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
+			temp = Util.multiref_polar_ali_2d_peaklist(alldata[im], refi, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi)
 			for iref in xrange(numref):
 				[alphan, sxn, syn, mn] = \
 				   combine_params2(0.0, -sxi, -syi, 0, temp[iref*5+1], temp[iref*5+2], temp[iref*5+3], int(temp[iref*5+4]))
