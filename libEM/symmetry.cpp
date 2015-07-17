@@ -45,6 +45,7 @@ const string OctahedralSym::NAME = "oct";
 const string IcosahedralSym::NAME = "icos";
 const string Icosahedral2Sym::NAME = "icos2";
 const string EmanOrientationGenerator::NAME = "eman";
+const string SingleOrientationGenerator::NAME = "single";
 const string SaffOrientationGenerator::NAME = "saff";
 const string EvenOrientationGenerator::NAME = "even";
 const string RandomOrientationGenerator::NAME = "rand";
@@ -144,6 +145,7 @@ Symmetry3D* Factory < Symmetry3D >::get(const string & instancename_)
 template <> Factory < OrientationGenerator >::Factory()
 {
 	force_add<EmanOrientationGenerator>();
+	force_add<SingleOrientationGenerator>();
 	force_add<RandomOrientationGenerator>();
 	force_add<EvenOrientationGenerator>();
 	force_add<SaffOrientationGenerator>();
@@ -408,7 +410,7 @@ vector<Transform> EmanOrientationGenerator::gen_orientations(const Symmetry3D* c
 	float paltmax = params.set_default("alt_max",180.0f);
 	if (altmax>paltmax) altmax=paltmax;
 
-	bool perturb = params.set_default("perturb",true);
+	bool perturb = params.set_default("perturb",false);		// changed to false default on 7/17/15 by steve
 
 	float alt_iterator = 0.0f;
 
@@ -508,6 +510,33 @@ vector<Transform> EmanOrientationGenerator::gen_orientations(const Symmetry3D* c
 
 	return ret;
 }
+
+int SingleOrientationGenerator::get_orientations_tally(const Symmetry3D* const sym, const float& delta) const
+{
+return 1;
+}
+	
+vector<Transform> SingleOrientationGenerator::gen_orientations(const Symmetry3D* const sym) const
+{
+	float az = params.set_default("az", 0.0f);
+	float alt = params.set_default("alt", 0.0f);
+	float phi = params.set_default("phi", 0.0f);
+
+	float alt_iterator = 0.0f;
+
+	Transform base(Dict("type","eman","az",az,"alt",alt,"phi",phi));
+	
+	vector<Transform> ret;
+	ret.push_back(base);
+	
+// 	for (int i=0; i<sym->get_nsym(); i++) {
+// 		ret.push_back(base*sym->get_sym(i));
+// 	}
+	
+	
+	return ret;
+}
+
 
 vector<Transform> RandomOrientationGenerator::gen_orientations(const Symmetry3D* const sym) const
 {

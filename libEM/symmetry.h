@@ -1156,6 +1156,74 @@ class EmanOrientationGenerator : public OrientationGenerator
 
 };
 
+ /** SingleOrientationGenerator generates a single orientation with the specified EMAN-style Euler angles
+ * @author Steve Ludtke
+ * @date August 17, 2015
+  */
+class SingleOrientationGenerator : public OrientationGenerator
+{
+	public:
+		SingleOrientationGenerator() {};
+		virtual  ~SingleOrientationGenerator() {};
+
+		/** Factory support function NEW
+		 * @return a newly instantiated class of this type
+		 */
+		static OrientationGenerator *NEW()
+		{
+			return new SingleOrientationGenerator();
+		}
+
+		/** Return 	"eman"
+		 * @return the unique name of this class
+		 */
+		virtual string get_name() const { return NAME; }
+
+		/** Get a description
+		 * @return a clear desciption of this class
+		 */
+		virtual string get_desc() const { return "Generate a single orientation with the specified EMAN style Euler angles. Symmetry is ignored."; }
+
+		/** Get a dictionary containing the permissable parameters of this class
+		 * @return a dictionary containing the permissable parameters of this class
+		 * parameters are explained in the dictionary itself
+		 */
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d = OrientationGenerator::get_param_types();
+			d.put("az", EMObject::FLOAT, "Azimuthal angle (Z rotation in deg)");
+			d.put("alt", EMObject::FLOAT, "Altitude (X rotation in deg)");
+			d.put("phi", EMObject::FLOAT, "Phi angle (Z' rotation in deg");
+			d.put("phitoo", EMObject::INT, "This option is ignored for the single orientation generator");
+			d.put("randomphi", EMObject::INT, "This option is ignored for the single orientation generator");
+			return d;
+		}
+
+		/** generate orientations given some symmetry type
+		 * @param sym the symmetry which defines the interesting asymmetric unit
+		 * @return a vector of Transform objects containing the set of evenly distributed orientations
+		 */
+		virtual vector<Transform> gen_orientations(const Symmetry3D* const sym) const;
+
+		/// The name of this class - used to access it from factories etc. Should be "icos"
+		static const string NAME;
+	private:
+		/** Disallow copy construction */
+		SingleOrientationGenerator(const SingleOrientationGenerator&);
+		/** Disallow assignment */
+		SingleOrientationGenerator& operator=(const SingleOrientationGenerator&);
+
+		/** This function returns how many orientations will be generated for a given delta (angular spacing)
+		 * It does this by simulated gen_orientations.
+		 * @param sym the symmetry which defines the interesting asymmetric unit
+		 * @param delta the desired angular spacing of the orientations
+		 * @return the number of orientations that will be generated using these parameters
+		 */
+		virtual int get_orientations_tally(const Symmetry3D* const sym, const float& delta) const;
+
+};
+
+
 /** Random Orientation Generator - carefully generates uniformly random orientations in any asymmetric unit.
  *  For points distributed in the unit sphere, just use the CSym type with nysm = 1.
  * (i.e. c1 symmetry)
