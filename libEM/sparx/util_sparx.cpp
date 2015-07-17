@@ -2871,15 +2871,15 @@ c  purpose: linear interpolation
 	//printf("location and output %d  %d  %f \n", ixold, iyold, bilinear);
 	return bilinear;
 	*/
-	//int ind1 = (iyold-1)*nsam + ixold-1;
-	//int ind2 = ind1 + 1;
-	//int ind3 = ind1 + nsam;
-	//int ind4 = ind3 + 1;
-	//  This is not exactly accurate, but optimized for speed. The min/max adds 50% time
-	int ind1 = min(max((iyold-1)*nsam + ixold-1,0),limit);
+	int ind1 = (iyold-1)*nsam + ixold-1;
 	int ind2 = ind1 + 1;
-	int ind3 = min(ind1 + nsam,limit);
+	int ind3 = ind1 + nsam;
 	int ind4 = ind3 + 1;
+	//  This is not exactly accurate, but optimized for speed. The min/max adds 50% time
+	// int ind1 = min(max((iyold-1)*nsam + ixold-1,0),limit);
+	// int ind2 = ind1 + 1;
+	// int ind3 = min(ind1 + nsam,limit);
+	// int ind4 = ind3 + 1;
 	return xim[ind1] + ydif* (xim[ind3] - xim[ind1]) +
 	           xdif* (xim[ind2] - xim[ind1] +
 			   ydif* (xim[ind4] - xim[ind2] - xim[ind3] + xim[ind1]) );
