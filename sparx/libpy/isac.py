@@ -941,6 +941,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 	while main_iter < max_iter:
 		Iter += 1
 		if my_abs_id == main_node: print "Iteration within isac_MPI = ", Iter, "	main_iter = ", main_iter, "	len data = ", image_end-image_start, localtime()[0:5], myid
+		mashi = cnx-ou-2
 		for j in xrange(numref):
 			refi[j].process_inplace("normalize.mask", {"mask":mask, "no_sigma":1}) # normalize reference images to N(0,1)
 			if myid == main_node:
@@ -959,7 +960,10 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		# begin MPI section
 		for im in xrange(image_start, image_end):
 			alpha, sx, sy, mirror, scale = get_params2D(alldata[im])
-			alphai, sxi, syi, scalei = inverse_transform2(alpha, sx, sy)
+			##  TEST WHETHER PARAMETERS ARE WITHIN RANGE
+			alpha, sx, sy, mirror  = combine_params2(0, sx, sy, 0, -alpha, 0,0, 0)
+			# If shifts are outside of the permissible range, reset them
+			if(abs(sx)>mashi or abs(sy)>mashi):  set_params2D(refi[j],[0.0,0.0,0.0,0,1.0])
 			# normalize
 			alldata[im].process_inplace("normalize.mask", {"mask":mask, "no_sigma":0}) # subtract average under the mask
 			ny = nx
@@ -1096,7 +1100,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		members = [0]*numref
 		sx_sum = [0.0]*numref
 		sy_sum = [0.0]*numref
-		for j in xrange(numref):  refi[j].to_zero()
+		refi = [model_blank(nx,ny) for j in xrange(numref)]
 		for im in xrange(image_start, image_end):
 			matchref = belongsto[im]
 			alphan = float(peak_list[matchref][(im-image_start)*4+0])
@@ -1254,15 +1258,11 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 							for im in xrange(len(class_data)):
 								alpha, sx, sy, mirror, scale = get_params2D(class_data[im])
 								ali_params[ii].extend([alpha, sx, sy, mirror])
-								##  TEST WHETHER PARAMETERS ARE WITHIN RANGE
-								#alpha, sx, sy, mirror = inverse_transform2(alpha, sx, sy, mirror) # it should be combine_params here
-								#mashi = cnx-ou-2
-								#if(abs(sx)>mashi or abs(sy)>mashi):  print  "PARAMETERS OUTSIDE THE RANGE 11111 ::::: ",mashi,get_params2D(class_data[im]),alpha, sx, sy, mirror
 
 						stable_set, mirror_consistent_rate, err = multi_align_stability(ali_params, 0.0, 10000.0, thld_err, False, last_ring*2)
 
-						#print  "Color %2d, class %4d ...... Size of the group = %4d and of the stable subset = %4d, Mirror consistent rate = %5.3f,  Average pixel error prior to class pruning = %10.2f"\
-						#				%(color, j, len(class_data), len(stable_set),mirror_consistent_rate, err)
+						print  "Color %2d, class %4d ...... Size of the group = %4d and of the stable subset = %4d, Mirror consistent rate = %5.3f,  Average pixel error prior to class pruning = %10.2f"\
+										%(color, j, len(class_data), len(stable_set), mirror_consistent_rate, err)
 
 						# If the size of stable subset is too small (say 1, 2), it will cause many problems, so we manually increase it to 5
 						while len(stable_set) < 5:
