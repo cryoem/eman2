@@ -1305,8 +1305,8 @@ def prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", 
 			refrings[i] = cimage
 
 	if MPI:
-		from utilities import bcast_compacted_EMData_to_all
-		bcast_compacted_EMData_to_all(refrings, myid, comm=mpi_comm)
+		from utilities import bcast_compacted_EMData_all_to_all
+		bcast_compacted_EMData_all_to_all(refrings, myid, comm=mpi_comm)
 
 	for i in xrange(len(ref_angles)):
 		n1,n2,n3 = getfvec(ref_angles[i][0], ref_angles[i][1])
@@ -1391,10 +1391,10 @@ def prepare_refrings_projections( volft, kb, nz = -1, delta = 2.0, ref_a = "P", 
 		projections[i] = prjref
 
 	if MPI:
-		from utilities import bcast_compacted_EMData_to_all
+		from utilities import bcast_compacted_EMData_all_to_all
 		from utilities import info
-		bcast_compacted_EMData_to_all(projections, myid, comm=mpi_comm)
-		bcast_compacted_EMData_to_all(refrings, myid, comm=mpi_comm)
+		bcast_compacted_EMData_all_to_all(projections, myid, comm=mpi_comm)
+		bcast_compacted_EMData_all_to_all(refrings, myid, comm=mpi_comm)
 
 	#dd = {'is_complex':1, 'is_fftodd':nz%2, 'is_fftpad':1}
 	for i in xrange(num_ref):

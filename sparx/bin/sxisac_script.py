@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 import os
 import sys
 
@@ -220,6 +219,7 @@ def main():
 	# exit()
 
 	# ali2d_base
+	program_state_stack.restart_location_title = "ali2d_base"
 	if program_state_stack(locals(), getframeinfo(currentframe())):
 	# if 1:		
 
@@ -346,6 +346,9 @@ def main():
 	os.chdir(masterdir)
 	if(myid == 0): print "Location: B   " + os.getcwd()
 
+	# import random
+	# image_list  = random.shuffle(range(number_of_images_in_stack))
+	
 	# for isac_generation in range(1,10):
 	isac_generation = 0
 	#  Stopping criterion should be inside the program.
@@ -358,7 +361,14 @@ def main():
 		
 		
 		if (myid == main_node):
-			cmdexecute("mkdir -p " + NAME_OF_MAIN_DIR + "%04d"%isac_generation)
+			if os.path.exists(NAME_OF_MAIN_DIR + "%04d"%isac_generation):
+				backup_dir_no = get_latest_directory_increment_value(".", "000_backup", myformat="%05d") + 1
+				main_dir_no = get_latest_directory_increment_value(".", NAME_OF_MAIN_DIR, myformat="%04d")
+				cmdexecute("mkdir -p " + "000_backup" + "%05d"%backup_dir_no)
+				for i in xrange(main_dir_no):
+					cmdexecute("mv  " + NAME_OF_MAIN_DIR + "%04d"%i +  " 000_backup" + "%05d"%backup_dir_no)
+			else:
+				cmdexecute("mkdir -p " + NAME_OF_MAIN_DIR + "%04d"%isac_generation)
 			
 		mpi_barrier(MPI_COMM_WORLD)
 		os.chdir(NAME_OF_MAIN_DIR + "%04d"%isac_generation)
@@ -373,7 +383,16 @@ def main():
 				options.dst, options.FL, options.FH, options.FF, options.init_iter, options.main_iter, options.iter_reali, options.match_first, \
 				options.max_round, options.match_second, options.stab_ali, options.thld_err, options.indep_run, options.thld_grp, \
 				options.img_per_grp, isac_generation, options.candidatesexist, random_seed=options.rand_seed, new=False)#options.new)
-				
+			pass
+			
+			# this_generation_members_acc = image_list[:len(image_list)/5]
+			# this_generation_members_unacc = image_list[len(image_list)/5:]
+
+			# write_text_file(this_generation_members_acc, "this_generation_%d_accounted.txt"%isac_generation)
+			# write_text_file(this_generation_members_unacc, "this_generation_%d_unaccounted.txt"%isac_generation)
+			
+			# image_list  = random.shuffle(range(this_generation_members_unacc))
+			
 	
 		error_status = 0
 		if program_state_stack(locals(), getframeinfo(currentframe())):
@@ -381,8 +400,8 @@ def main():
 
 				# number_of_accounted_images = sum(1 for line in open("generation_%04d/generation_%d_accounted.txt"%(isac_generation, isac_generation))
 				# number_of_unaccounted_images = sum(1 for line in open("generation_%04d/generation_%d_unaccounted.txt"%(isac_generation, isac_generation))
-				number_of_accounted_images = sum(1 for line in open("generation_%d_accounted.txt"%(isac_generation)))
-				number_of_unaccounted_images = sum(1 for line in open("generation_%d_unaccounted.txt"%(isac_generation)))
+				number_of_accounted_images = sum(1 for line in open("this_generation_%d_accounted.txt"%(isac_generation)))
+				number_of_unaccounted_images = sum(1 for line in open("this_generation_%d_unaccounted.txt"%(isac_generation)))
 				
 				if number_of_accounted_images == 0:
 					error_status = 1

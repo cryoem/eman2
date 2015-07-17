@@ -2241,10 +2241,10 @@ def reduce_EMData_to_root(data, myid, main_node = 0, comm = -1):
 
 
 
-def bcast_compacted_EMData_to_all(list_of_em_objects, myid, comm=-1):
+def bcast_compacted_EMData_all_to_all(list_of_em_objects, myid, comm=-1):
 
 	"""
-	The assumption in <<bcast_compacted_EMData_to_all>> is that each processor
+	The assumption in <<bcast_compacted_EMData_all_to_all>> is that each processor
 	calculates part of the list of elements and then each processor sends
 	its results to the other ones. I
 
@@ -4600,10 +4600,10 @@ def string_found_in_file(myregex, filename):
 			return True
 	return False
 
-def get_latest_directory_increment_value(directory_location, directory_name, start_value = 1):
+def get_latest_directory_increment_value(directory_location, directory_name, start_value = 1, myformat = "%03d"):
 	import os
 	dir_count = start_value
-	while os.path.isdir(directory_location + directory_name + "%03d"%(dir_count)):
+	while os.path.isdir(directory_location + directory_name + myformat%(dir_count)):
 		dir_count += 1
 	if dir_count == start_value:
 		return start_value
@@ -4776,11 +4776,19 @@ def program_state_stack(full_current_state, frameinfo, file_name_of_saved_state=
 	# error_status = 1
 	# if_error_all_processes_quit_program(error_status)
 	
-	location_in_program = frameinfo.filename + "_" + str(frameinfo.lineno) + "_" + last_call
-	
-	current_state = {"location_in_program" : location_in_program}
+	current_state = dict()
 	for var in program_state_stack.PROGRAM_STATE_VARIABLES & set(full_current_state) :
 		current_state[var] =  full_current_state[var]
+
+	if "restart_location_title" in program_state_stack.__dict__:
+		location_in_program = frameinfo.filename + "_" + program_state_stack.restart_location_title + "_" + last_call
+		del program_state_stack.restart_location_title
+	else:
+		location_in_program = frameinfo.filename + "_" + str(frameinfo.lineno) + "_" + last_call
+		
+	current_state["location_in_program"] = location_in_program
+	
+	
 	
 	current_stack = get_current_stack_info()
 
@@ -4876,3 +4884,30 @@ def qw(s):
 	s = s.replace("\n"," ")
 	s = s.replace("\t"," ")
 	return tuple(s.split())
+
+
+
+def debug_mpi_barrier(comm):
+	from mpi import mpi_barrier, mpi_comm_rank, mpi_bcast
+	from traceback import extract_stack
+
+	if mpi_comm_rank(comm) == 0:
+		print "Stack info::0::", extract_stack()[-3:]
+	if mpi_comm_rank(comm) == 1:
+		print "Stack info::1::", extract_stack()[-3:]
+	return mpi_barrier(comm)
+
+
+
+
+def debug_mpi_bcast(newv, s, t, m, comm):
+	from mpi import mpi_comm_rank, mpi_bcast
+	from traceback import extract_stack	
+	
+
+	if mpi_comm_rank(comm) == 0:
+		print "Stack info::0::", extract_stack()[-3:]
+	if mpi_comm_rank(comm) == 1:
+		print "Stack info::1::", extract_stack()[-3:]
+	return mpi_bcast(newv, s, t, m, comm)
+

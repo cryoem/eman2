@@ -752,85 +752,242 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		print "****************************************************************************************************"
 	return
 
+class RangeDict(dict):
+	def __init__(self, d = {}):
+		for k,v in d.items():
+			self[k] = v
+
+	def __getitem__(self, key):
+		for k, v in self.items():
+			if k[0] <= key < k[1]:
+				return v
+		raise KeyError("Key '%s' is not between any values in the BetweenDict" % key)
+
+	def __setitem__(self, key, value):
+		try:
+			if len(key) == 2:
+				if key[0] < key[1]:
+					dict.__setitem__(self, (key[0], key[1]), value)
+				else:
+					raise RuntimeError('First element of a BetweenDict key '
+                                       'must be strictly less than the '
+                                       'second element')
+			else:
+				raise ValueError('Key of a BetweenDict must be an iterable '
+				                 'with length two')
+		except TypeError:
+			raise TypeError('Key of a BetweenDict must be an iterable '
+			                 'with length two')
+
+	def __contains__(self, key):
+		try:
+			return bool(self[key]) or True
+		except KeyError:
+			return False
+ 
 
 
+	
 
-def mpi_assign_groups(data_m, nref, nima):
-	pass
+def mpi_sort(data_m, total_number_of_images, nref):
+	"""
+	data_m is distributed among processors
+	for each process, the size of data_m is given by: (process_image_end - process_image_start)*nref
+	
+		with 
+		
+		process_image_start, process_image_end = \
+			MPI_start_end(total_number_of_images, total_number_of_processes, process_id)
+			
+	"""
+	
 	from mpi          import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, MPI_FLOAT, MPI_INT
-	from mpi          import mpi_bcast, mpi_barrier, mpi_send, mpi_recv, mpi_comm_split
-	from mpi import mpi_alltoall, mpi_bcast
+	from mpi          import mpi_bcast, mpi_barrier, mpi_send, mpi_recv
+	from mpi import mpi_bcast, mpi_gather, MPI_TAG_UB
+	from applications import MPI_start_end
+
 
 	my_id = mpi_comm_rank(MPI_COMM_WORLD)
 	total_number_of_processes = mpi_comm_size(MPI_COMM_WORLD)
 
-	index_of_sorted_data_m = [i[0] for i in sorted(enumerate(data_m), reverse=False, key=lambda x: x[1])]
+	# build a dictionary that maps ranges of elements to process id
+	matrix_element_to_process_id = RangeDict()
+	for process_id in xrange(total_number_of_processes):
+		process_image_start, process_image_end = \
+			MPI_start_end(total_number_of_images, total_number_of_processes, process_id)
+		matrix_element_to_process_id[process_image_start*nref, process_image_end*nref] = process_id
+			
+	this_process_image_start, this_process_image_end = \
+		MPI_start_end(total_number_of_images, total_number_of_processes, my_id)
+
+	# sort local data
+	index_of_sorted_data_m = [i[0] for i in sorted(enumerate(data_m), reverse=True, key=lambda x: x[1])]
+	
+	# this variable is incremented by all processes in synchrony, no need to broadcast it
+	global_index_for_positioning_merged_data_distributively = 0
+	
+	# keeps track of elements in the local process
+	local_index = 0
+	
+	# this is what the function returns and represents the part of the global indices stored locally
+	global_sorted_indices = []
+	
+	while global_index_for_positioning_merged_data_distributively < total_number_of_images*nref:
+		
+		if local_index >= len(index_of_sorted_data_m):
+			# currently the sort is in reverse, so 
+			data_to_send = -3.4e38
+		else:
+			index_of_data = index_of_sorted_data_m[local_index]
+			data_to_send = data_m[index_of_data]
+		
+		recv_array  = mpi_gather(data_to_send, 1, MPI_FLOAT, 1, MPI_FLOAT, 0, MPI_COMM_WORLD)
+		if (my_id == 0):
+			recv_array_argmax = recv_array.argmax()
+		else:
+			recv_array_argmax = 0
+			
+		recv_array_argmax = mpi_bcast(recv_array_argmax, 1, MPI_INT, 0, MPI_COMM_WORLD)
+
+		process_that_needs_to_receive_data = matrix_element_to_process_id[global_index_for_positioning_merged_data_distributively]
+		global_index_for_positioning_merged_data_distributively += 1
+		
+		if process_that_needs_to_receive_data == my_id and recv_array_argmax == my_id:
+			global_index_for_data = index_of_data + this_process_image_start*nref
+			global_sorted_indices.append(global_index_for_data)
+			local_index += 1
+		elif process_that_needs_to_receive_data == my_id:
+			global_index_for_data = mpi_recv(1,MPI_INT, recv_array_argmax, MPI_TAG_UB, MPI_COMM_WORLD).tolist()[0]
+			global_sorted_indices.append(global_index_for_data)
+		elif recv_array_argmax == my_id:
+			global_index_for_data = index_of_data + this_process_image_start*nref
+			mpi_send(global_index_for_data, 1, MPI_INT, process_that_needs_to_receive_data, MPI_TAG_UB, MPI_COMM_WORLD)
+			local_index += 1
+		
+		mpi_barrier(MPI_COMM_WORLD)
+			
+	return global_sorted_indices		
+		
+
+def mpi_assign_groups(data_m, nref, nima):
+	from mpi          import mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD, MPI_FLOAT, MPI_INT
+	from mpi          import mpi_bcast, mpi_barrier, mpi_send, mpi_recv, mpi_comm_split
+	from mpi import mpi_bcast
+	from utilities import wrap_mpi_recv, wrap_mpi_send
+	from applications import MPI_start_end
+
+	my_id = mpi_comm_rank(MPI_COMM_WORLD)
+	total_number_of_processes = mpi_comm_size(MPI_COMM_WORLD)
+
+	parallel_index_of_sorted_data_m = mpi_sort(data_m, nima, nref)
+	# print "parallel_index_of_sorted_data_m", parallel_index_of_sorted_data_m, len(parallel_index_of_sorted_data_m)
 	
 	del_row = [False]*nref
 	del_col = [False]*nima
-	# recv_array = [0.0]*total_number_of_processes
 	
 	id_list = [[] for i in xrange(nref)]
-	id_list_size = [0]*len(nref)
-	
+	id_list_index = [[] for i in xrange(nref)]
+	id_list_size = [0]*nref
+
+	this_process_image_start, this_process_image_end = \
+		MPI_start_end(nima, total_number_of_processes, my_id)
+
+	# build a dictionary that maps ranges of elements to process id
+	matrix_element_to_process_id = RangeDict()
+	for process_id in xrange(total_number_of_processes):
+		process_image_start, process_image_end = \
+			MPI_start_end(nima, total_number_of_processes, process_id)
+		matrix_element_to_process_id[process_image_start*nref, process_image_end*nref] = process_id
+
 	maxasi = nima/nref
 	kt = nref
 	begin = 0
-	while kt > 0:
-		flag = True
-		while flag:
-			l = index_of_sorted_data_m[begin]
-			group = l/nima
-			ima = l%nima
-			if (del_col[ima] or del_row[group]): begin += 1
-			else:
-				# MPI_Allgather(&l, 1, MPI_FLOAT, recv_array, total_number_of_processes, MPI_FLOAT, MPI_COMM_WORLD)
-				# def mpi_alltoall(sendbuf, sendcount, sendtype, recvcount, recvtype, comm): # real signature unknown; restored from __doc__
-				recv_array = mpi_alltoall(l, 1, MPI_FLOAT, total_number_of_processes, MPI_FLOAT, MPI_COMM_WORLD)
-				
-				max_recv_array = max(recv_array)
-				max_idx = recv_array.index(max_recv_array)
-				flag = max_idx != my_id
-				# if (flag)  MPI_Bcast(&group, 1, MPI_INT, my_id, MPI_COMM_WORLD)
-				if (flag):  
-					group = mpi_bcast(group, 1, MPI_INT, my_id, MPI_COMM_WORLD)[0]
+	group = -2
+	
+	mpi_barrier(MPI_COMM_WORLD)
+	for proc_id in xrange(total_number_of_processes):
+		if proc_id == my_id:
+			while kt > 0 and begin < (this_process_image_end - this_process_image_start)*nref:
+				flag = True
+				while flag and begin < (this_process_image_end - this_process_image_start)*nref:
+					l = parallel_index_of_sorted_data_m[begin]
+					group = l/nima
+					ima = l%nima
+					if my_id == total_number_of_processes - 2:
+						print l, nima, ima, group, len(del_col), del_col,  len(del_row), del_row, del_row[group]
+					if (del_col[ima] or del_row[group]):
+						begin += 1
+					else:
+						flag = False
+				if begin >= (this_process_image_end - this_process_image_start)*nref:
+					break
+				id_list[group].append(ima)
+				id_list_size[group] += 1
+
+				if kt > 1:
+					if (id_list_size[group] < maxasi):
+						group = -1
+					else:
+						kt -= 1
+				else:
+					if (id_list_size[group] < maxasi+nima%nref):
+						group = -1
+					else:
+						kt -= 1
+				del_col[ima] = 1
+				if group != -1:
+					del_row[group] = 1
+		
+		mpi_barrier(MPI_COMM_WORLD)
+		
+		del_row = mpi_bcast(del_row, nref, MPI_INT, proc_id, MPI_COMM_WORLD)
+		del_col = mpi_bcast(del_col, nima, MPI_INT, proc_id, MPI_COMM_WORLD)
+		id_list_size = mpi_bcast(id_list_size, nima, MPI_INT, proc_id, MPI_COMM_WORLD)
+		kt = mpi_bcast(kt, 1, MPI_INT, proc_id, MPI_COMM_WORLD)[0]
+		last_group = mpi_bcast(group, 1, MPI_INT, proc_id, MPI_COMM_WORLD)[0]
+		if last_group >= 0:
+			group = last_group
+		
+	mpi_barrier(MPI_COMM_WORLD)
+	if my_id == 0:
+		id_list_receive = [[] for i in range(total_number_of_processes)]
+		id_list_index_receive = [[] for i in range(total_number_of_processes)]
+		id_list_receive[0] = id_list
+		id_list_index_receive[0] = id_list_index
+	
+	for i in xrange(1, total_number_of_processes):
+		if my_id == 0:
+			id_list_receive[i] = wrap_mpi_recv(i, MPI_COMM_WORLD)
+			id_list_index_receive[i] = wrap_mpi_recv(i, MPI_COMM_WORLD)
+		elif my_id == i:
+			wrap_mpi_send(id_list, 0, MPI_COMM_WORLD)
+			wrap_mpi_send(id_list_index, 0, MPI_COMM_WORLD)
+
+	mpi_barrier(MPI_COMM_WORLD)
+
+	if my_id == 0:
+		id_list_master = []
+		
+		for iref in xrange(nref):
+			y = []
+			for i in xrange(total_number_of_processes):
+				y.extend(id_list_receive[i][iref])
+			id_list_master.append(y)	
 					
-				if (group >=0): del_row[group] = True
-				else: id_list_size[group + 2*nref] =+ 1
-
-		id_list[group].append(ima)		
-		id_list_size[group] += 1		
+		# print "id_list_master", id_list_master
+		
+		id_list_1 = [] 
+		for iref in xrange(nref):
+			for im in xrange(maxasi):
+				id_list_1.append(id_list_master[iref][im])
 				
-		if (kt > 1):
-			if (id_list_size[group] < maxasi): group -= 2*nref
-			else: kt -= 1
-		else:
-			if (id_list_size[group] < maxasi+total_nima%nref): group -= 2*nref
-			else: kt -= 1
-
-		del_col[ima] = True
-		# MPI_Bcast(&group, 1, MPI_INT, my_id, MPI_COMM_WORLD)
-		group = mpi_bcast(group, 1, MPI_INT, my_id, MPI_COMM_WORLD)[0]
-		
-		if (group >= 0):
-			del_row[group] = True
-		
-	id_list_1 =[]
-	for iref in xrange(nref):
-		for im in xrange(maxasi):
-			id_list_1.append(id_list[iref][im])		
-
-	for im in xrange(maxasi, maxasi+nima%nref):
-		id_list_1.append(id_list[group][im])
-		
-	id_list_1.append(group)
+		for im in xrange(maxasi, maxasi+nima%nref):
+			id_list_1.append(id_list_master[group][im])
+		id_list_1.append(group)
 
 
 	return id_list_1
 		
-
-
-
 # stack - list of images (filename also accepted)
 # refim - list of reference images (filename also accepted)
 # maskfile - image with mask (filename also accepted)
