@@ -287,7 +287,7 @@ def main():
 
 		if( myid == main_node ):
 			write_text_row(params2d,os.path.join(init2dir, "initial2Dparams.txt"))
-		print myid,len(params2d)
+		del params2d
 		mpi_barrier(MPI_COMM_WORLD)
 
 		#  We assume the target image size will be target_nx, radius will be 29, and xr = 1.  Note images can be also padded, in which case shrink_ratio > 1.
@@ -306,7 +306,8 @@ def main():
 		from utilities import pad, combine_params2
 		for im in xrange(nima):
 			#  Here we should use only shifts
-			alpha, sx, sy, mirror = combine_params2(0, params2d[im][1], params2d[im][2], 0, -params2d[im][0], 0, 0, 0)
+			alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
+			alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
 			aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
 			if shrink_ratio < 1.0:
 				aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
@@ -324,15 +325,18 @@ def main():
 				aligned_images[im] /= p[1]					
 				aligned_images[im] = pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
 				
-				
-		del msk, params2d
+		del msk
 
 		gather_compacted_EMData_to_root(number_of_images_in_stack, aligned_images, myid)
 
 		if( myid == main_node ):
 			for i in range(number_of_images_in_stack):  aligned_images[i].write_image(stack_processed_by_ali2d_base__filename,i)
+			#  It has to be explicitly closed
+			from EMAN2db import db_open_dict
+			DB = db_open_dict(stack_processed_by_ali2d_base__filename)
+			DB.close()
+			
 
-	
 		mpi_barrier(MPI_COMM_WORLD)
 
 	"""

@@ -1174,11 +1174,10 @@ def ali2d_base(stack, outdir, maskfile=None, ir=1, ou=-1, rs=1, xr="4 2 1 1", yr
 	for im in xrange(nima):  
 		alpha, sx, sy, mirror, scale = get_params2D(data[im])
 		params.append([alpha, sx, sy, mirror])
-	print "ali2d  ",myid,len(params)
 	params = wrap_mpi_gatherv(params, main_node, mpi_comm)
 
 	if myid == main_node: log.add("Finished ali2d_base")
-	print "ali2d  ",myid,len(params)
+
 	return params, data
 
 '''
