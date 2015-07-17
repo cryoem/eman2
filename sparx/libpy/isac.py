@@ -235,7 +235,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				refi = generate_random_averages(data, K, 9023)
 				#refi = generate_random_averages(data, K, Iter)
 				#refi = generate_random_averages(data, K, -1)
-				for j in xrange(len(refi)):  refi[j].write_image("refim_%d.hdf"%color, j)
+				###for j in xrange(len(refi)):  refi[j].write_image("refim_%d.hdf"%color, j)
 			else:
 				refi = [model_blank(nx, nx) for i in xrange(K)]
 
@@ -243,7 +243,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				bcast_EMData_to_all(refi[i], key, group_main_node, group_comm)
 
 			# Generate inital averages
-			if myid == main_node: print "	 Generating initial averages ",color,myid,localtime()[:5]
+			###if myid == main_node: print "	 Generating initial averages ",color,myid,localtime()[:5]
 			refi = isac_MPI(data, refi, maskfile=None, outname=None, ir=ir, ou=ou, rs=rs, xrng=xr, yrng=yr, step=ts, 
 					maxit=maxit, isac_iter=init_iter, CTF=CTF, snr=snr, rand_seed=-1, color=color, comm=group_comm, 
 					stability=False, FL=FL, FH=FH, FF=FF, dst=dst, method = alimethod)
@@ -251,14 +251,14 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			# gather the data on main node
 			if match_initialization:                #  This is not executed at all.  It was always this way, at least since version 1.1 by Piotr
 				if key == group_main_node:          # as all refims are initialized the same way and also the flag is set to False!
-					print "Begin gathering ...", myid, len(refi)  #  It will append data
+					###print "Begin gathering ...", myid, len(refi)  #  It will append data
 					refi = gather_EMData(refi, indep_run, myid, main_node)
 				if myid == main_node:
 					# Match all averages in the initialization and select good ones
 					#print "before matching, len = ", len(refi)
 					current_refim = get_unique_averages(refi, indep_run)
 					# If data_good is too few, add some random ones, otherwise, cut to K
-					print " found data good = ", len(current_refim)
+					###print " found data good = ", len(current_refim)
 					if len(current_refim) > K:
 						current_refim = current_refim[:K]
 					elif len(current_refim) < K:
@@ -277,10 +277,10 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				bcast_EMData_to_all(current_refim[i], myid, main_node)
 			mpi_barrier(MPI_COMM_WORLD)
 
-			if key == group_main_node:
-				for i in xrange(K):
-					#  Each color has the same set of refim
-					current_refim[i].write_image("init_group%d_round%d.hdf"%(color, Iter), i)
+			###if key == group_main_node:
+			###	for i in xrange(K):
+			###		#  Each color has the same set of refim
+			###		current_refim[i].write_image("init_group%d_round%d.hdf"%(color, Iter), i)
 
 			# Run ISAC
 			if myid == main_node:
@@ -316,9 +316,9 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				if key == group_main_node:
 					refi = gather_EMData(refi, indep_run, myid, main_node)
 
-					for i in xrange(len(refi)):
-						#  Each color has the same set of refim
-						refi[i].write_image("refi%d_round%d.hdf"%(color, Iter), i)
+					###for i in xrange(len(refi)):
+					###	#  Each color has the same set of refim
+					###	refi[i].write_image("refi%d_round%d.hdf"%(color, Iter), i)
 
 				if mloop != match_first:
 					if myid == main_node:
@@ -332,7 +332,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 			# Run Matching
 			if myid == main_node:
-				print " Before matching ...  ", color, myid,localtime()[:5] #len(data), len(refi), indep_run
+				###print " Before matching ...  ", color, myid,localtime()[:5] #len(data), len(refi), indep_run
 				matched_data = match_2_way(data, refi, indep_run, thld_grp, FH, FF, suffix="_"+str(mloop) )
 				members = []
 				for im in matched_data:
@@ -944,8 +944,8 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		mashi = cnx-ou-2
 		for j in xrange(numref):
 			refi[j].process_inplace("normalize.mask", {"mask":mask, "no_sigma":1}) # normalize reference images to N(0,1)
-			if myid == main_node:
-				refi[j].write_image("refincoming%02d_round%02d.hdf"%(color, Iter), j)
+			###if myid == main_node:
+			###	refi[j].write_image("refincoming%02d_round%02d.hdf"%(color, Iter), j)
 			cimage = Util.Polar2Dm(refi[j] , cnx, cny, numr, mode)
 			Util.Frngs(cimage, numr)
 			Util.Applyws(cimage, numr, wr)
@@ -1179,10 +1179,10 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		for j in xrange(numref):
 			bcast_EMData_to_all(refi[j], myid, main_node, comm)
 
-		if myid == main_node:
-			print  "  WRITING refaligned  for color:",color
-			for j in xrange(numref):
-				refi[j].write_image("refaligned%02d_round%02d.hdf"%(color, Iter), j)
+		###if myid == main_node:
+		###	print  "  WRITING refaligned  for color:",color
+		###	for j in xrange(numref):
+		###		refi[j].write_image("refaligned%02d_round%02d.hdf"%(color, Iter), j)
 
 		# Compensate the centering to averages
 		for im in xrange(image_start, image_end):
@@ -1204,7 +1204,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		check_stability = (stability and (main_iter%iter_reali==0))
 
 		if do_within_group == 1:
-			if my_abs_id == main_node: print "Doing within group alignment .......", localtime()[0:5]
+			###if my_abs_id == main_node: print "Doing within group alignment .......", localtime()[0:5]
 
 			# Broadcast the alignment parameters to all nodes
 			for i in xrange(number_of_proc):
@@ -1239,8 +1239,9 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			#if (not check_stability) or (stab_calc_time_method_2 > 0.80 * stab_calc_time_method_1):
 			#  For the time being only use this method as the other one is not worked out as far as parameter ranges go.
 			if True :
-				if my_abs_id == main_node: print "Within group refinement and checking within group stability, original approach .......", check_stability, "  ",localtime()[0:5]
+				###if my_abs_id == main_node: print "Within group refinement and checking within group stability, original approach .......", check_stability, "  ",localtime()[0:5]
 				# ====================================== standard approach is used, calculations are parallelized by scatter groups (averages) among MPI processes
+				if check_stability: gpixer = []
 				for j in xrange(myid, numref, number_of_proc):
 					assign = []
 					for im in xrange(nima):
@@ -1252,7 +1253,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 													[xrng], [yrng], [step], dst, maxit, FH, FF, method = method)
 
 					if check_stability:
-						if my_abs_id == main_node: print "Checking within group stability, original approach .......", check_stability, "  ",localtime()[0:5]
+						###if my_abs_id == main_node: print "Checking within group stability, original approach .......", check_stability, "  ",localtime()[0:5]
 						ali_params = [[] for qq in xrange(stab_ali)]
 						for ii in xrange(stab_ali):
 							if ii > 0:  # The first one does not have to be repeated
@@ -1263,9 +1264,10 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 								ali_params[ii].extend([alpha, sx, sy, mirror])
 
 						stable_set, mirror_consistent_rate, err = multi_align_stability(ali_params, 0.0, 10000.0, thld_err, False, last_ring*2)
+						gpixer.append(err)
 
-						print  "Color %1d, class %4d ...... Size of the group = %4d and of the stable subset = %4d  Mirror consistent rate = %5.3f  Average pixel error prior to class pruning = %10.2f"\
-										%(color, j, len(class_data), len(stable_set), mirror_consistent_rate, err)
+						###print  "Color %1d, class %4d ...... Size of the group = %4d and of the stable subset = %4d  Mirror consistent rate = %5.3f  Average pixel error prior to class pruning = %10.2f"\
+						###				%(color, j, len(class_data), len(stable_set), mirror_consistent_rate, err)
 
 						# If the size of stable subset is too small (say 1, 2), it will cause many problems, so we manually increase it to 5
 						while len(stable_set) < 5:
@@ -1291,6 +1293,19 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 						del stable_members
 					# end of stability
 					del assign
+				if check_stability:
+					#  gather all pixers and print a histogram
+					from utilities import wrap_mpi_gatherv
+					gpixer = wrap_mpi_gatherv(gpixer, main_node, mpi_comm)
+					if my_abs_id == main_node and color == 0:
+						from statistics   import hist_list
+						lhx = 0
+						region, histo = hist_list(all_pixer, lhist)
+						print  "=========== Histogram of average pixel errors prior to class pruning =============="
+						for lhx in xrange(lhist):
+							print   "          %10.3f     %7d"%(region[lhx], histo[lhx])
+						print  "==================================================================================="
+					del gpixer
 				mpi_barrier(comm)
 
 				for im in xrange(nima):
@@ -1305,7 +1320,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 					set_params2D(alldata[im], [ali_params[0], ali_params[1], ali_params[2], int(ali_params[3]), 1.0])
 
 			else:
-				if my_abs_id == main_node: print "Checking within group stability, new approach .......", localtime()[0:5]
+				###if my_abs_id == main_node: print "Checking within group stability, new approach .......", localtime()[0:5]
 				# ================================================ more complicated approach is used - runs of within_group_refinement are scattered among MPI processes
 				refi = isac_stability_check_mpi(alldata, numref, belongsto, stab_ali, thld_err, mask, first_ring, last_ring, rstep, xrng, yrng, step, \
 												dst, maxit, FH, FF, method, comm)
@@ -1328,11 +1343,11 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 							members = refi[j].get_attr('members')
 							mpi_send(len(members), 1, MPI_INT, main_node, MPI_TAG_UB, comm)
 							mpi_send(members, len(members), MPI_INT, main_node, MPI_TAG_UB, comm)
-			if myid == main_node:  print "within group alignment done. ", localtime()[0:5]
-			if myid == main_node:
-				print  "  WRITING refrealigned  for color:",color
-				for j in xrange(numref):
-					refi[j].write_image("refrealigned%02d_round%02d.hdf"%(color, Iter), j)
+			###if myid == main_node:  print "within group alignment done. ", localtime()[0:5]
+			###if myid == main_node:
+			###	print  "  WRITING refrealigned  for color:",color
+			###	for j in xrange(numref):
+			###		refi[j].write_image("refrealigned%02d_round%02d.hdf"%(color, Iter), j)
 
 		# end of do_within_group
 		mpi_barrier(comm)
