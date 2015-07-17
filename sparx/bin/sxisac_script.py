@@ -355,7 +355,8 @@ def main():
 			cmdexecute("sxheader.py  --consecutive  --params=originalid   %s"%stack_processed_by_ali2d_base__filename)
 			cmdexecute("e2bdb.py %s --makevstack=%s_001"%(stack_processed_by_ali2d_base__filename, stack_processed_by_ali2d_base__filename))
 
-	if program_state_stack(locals(), getframeinfo(currentframe()), force_starting_execution = True):
+	if program_state_stack(locals(), getframeinfo(currentframe())):
+	#if program_state_stack(locals(), getframeinfo(currentframe()), force_starting_execution = True):
 	# if 1:
 		if(myid == 0): print  "  STARTED OK"
 		pass
