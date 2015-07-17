@@ -961,7 +961,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		for im in xrange(image_start, image_end):
 			alpha, sx, sy, mirror, scale = get_params2D(alldata[im])
 			##  TEST WHETHER PARAMETERS ARE WITHIN RANGE
-			alpha, sx, sy, mirror  = combine_params2(0, sx, sy, 0, -alpha, 0,0, 0)
+			alphai, sxi, syi, scalei = inverse_transform2(alpha, sx, sy)
 			# If shifts are outside of the permissible range, reset them
 			if(abs(sx)>mashi or abs(sy)>mashi):  set_params2D(refi[j],[0.0,0.0,0.0,0,1.0])
 			# normalize
