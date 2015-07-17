@@ -90,7 +90,7 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_clip_inplace_overloads_1_2, E
 
 //BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_align_overloads_2_5, EMAN::EMData::align, 2, 5)
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_xform_align_nbest_overloads_2_6, EMAN::EMData::xform_align_nbest, 2, 6)
+//BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_xform_align_nbest_overloads_2_6, EMAN::EMData::xform_align_nbest, 2, 6)
 
 BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_project_overloads_1_2, EMAN::EMData::project, 1, 2)
 
@@ -218,8 +218,55 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(EMAN_EMData_compute_missingwedge_overload
 }// namespace
 
 using namespace EMAN;
-
 //// These give us threadsafety. Couldn't find a more elegant way to do it with overloading :^/
+vector<Dict> EMData_align_nbest_wrapper6(EMData &ths, const string & aligner_name, EMData * to_img, const Dict & params, int nsoln, const string & cmp_name, const Dict& cmp_params) {
+	vector<Dict> ret;
+	PyThreadState *_save = PyEval_SaveThread();
+
+	try {
+		ret = ths.xform_align_nbest(aligner_name,to_img,params,nsoln,cmp_name,cmp_params);
+	}
+	catch (std::exception &e) {
+		PyEval_RestoreThread(_save);
+		cerr << e.what() << endl;
+		throw e;
+	}
+	PyEval_RestoreThread(_save);
+	return ret;
+}
+
+vector<Dict> EMData_align_nbest_wrapper5(EMData &ths, const string & aligner_name, EMData * to_img, const Dict & params, int nsoln, const string & cmp_name) {
+	vector<Dict> ret;
+	PyThreadState *_save = PyEval_SaveThread();
+
+	try {
+		ret = ths.xform_align_nbest(aligner_name,to_img,params,nsoln,cmp_name);
+	}
+	catch (std::exception &e) {
+		PyEval_RestoreThread(_save);
+		cerr << e.what() << endl;
+		throw e;
+	}
+	PyEval_RestoreThread(_save);
+	return ret;
+}
+
+vector<Dict> EMData_align_nbest_wrapper4(EMData &ths, const string & aligner_name, EMData * to_img, const Dict & params, int nsoln) {
+	vector<Dict> ret;
+	PyThreadState *_save = PyEval_SaveThread();
+
+	try {
+		ret = ths.xform_align_nbest(aligner_name,to_img,params,nsoln);
+	}
+	catch (std::exception &e) {
+		PyEval_RestoreThread(_save);
+		cerr << e.what() << endl;
+		throw e;
+	}
+	PyEval_RestoreThread(_save);
+	return ret;
+}
+
 EMData *EMData_align_wrapper2(EMData &ths, const string & aligner_name, EMData * to_img) {
 	EMData *ret;
 	PyThreadState *_save = PyEval_SaveThread();
@@ -485,7 +532,9 @@ BOOST_PYTHON_MODULE(libpyEMData2)
 	.def("process_inplace", (void (EMAN::EMData::*)(EMAN::Processor*) )&EMAN::EMData::process_inplace, args("p"), "Call the process_inplace with an instance od Processor, usually this instancecan\nbe get by (in Python) Processors.get('name', {'k':v, 'k':v}).\n \np - the processor object")
 	.def("cmp", &EMData_cmp_wrapper2, args("cmpname", "with"), "Compare this image with another image.\n \ncmpname - Comparison algorithm name.\nwith - The image you want to compare to.\nparams - Comparison parameters in a keyed dictionary, default to Null.\n \nreturn comparison score. The bigger, the better.\nexception - NotExistingObjectError If the comparison algorithm doesn't exist.")
 	.def("cmp", &EMData_cmp_wrapper3, args("cmpname", "with", "params"), "Compare this image with another image.\n \ncmpname - Comparison algorithm name.\nwith - The image you want to compare to.\nparams - Comparison parameters in a keyed dictionary, default to Null.\n \nreturn comparison score. The bigger, the better.\nexception - NotExistingObjectError If the comparison algorithm doesn't exist.")
-	.def("xform_align_nbest", &EMAN::EMData::xform_align_nbest, EMAN_EMData_xform_align_nbest_overloads_2_6(args("aligner_name", "to_img", "params", "nsoln", "cmp_name", "cmp_params"), "Align this image with another image, return the parameters of the \"n best\" solutions.\nThis function first added in the context of the 3D aligners used by e2tomohunter:\nwhich wants the n best solutions, as opposed to just the best. Return value is an\nordered vector of Dicts of length nsoln. The data with idx 0 has the best solution in it.\n \naligner_name - Alignment algorithm name.\nto_img - The image 'this' image aligns to.\nparams - Alignment algorithm parameters in a keyed dictionary, default to Null.\nnsoln - the number of solutions you want to receive in the return vector, default to 1.\ncmp_name - Comparison algorithm used in alignment, default to 'dot'.\ncmp_params - Parameter dictionary for comparison algorithm, default to NUll.\n \nreturn an ordered vector of Dicts of length nsoln. The Dicts in the vector have keys \"score\" (i.e. correlation score) and \"xform.align3d\" (Transform containing the alignment)\nexception - NotExistingObjectError If the alignment algorithm doesn't exist."))
+	.def("xform_align_nbest", &EMData_align_nbest_wrapper4, args("aligner_name", "to_img", "params", "nsoln"), "Align this image with another image, return the parameters of the N best solutions. Identical to align() method, but also takes number of solutions as a parameter, and returns a list of dictionaries containing the ordered solutions.")
+	.def("xform_align_nbest", &EMData_align_nbest_wrapper5, args("aligner_name", "to_img", "params", "nsoln", "cmp_name"), "Align this image with another image, return the parameters of the N best solutions. Identical to align() method, but also takes number of solutions as a parameter, and returns a list of dictionaries containing the ordered solutions.")
+	.def("xform_align_nbest", &EMData_align_nbest_wrapper6, args("aligner_name", "to_img", "params", "nsoln", "cmp_name"), "Align this image with another image, return the parameters of the N best solutions. Identical to align() method, but also takes number of solutions as a parameter, and returns a list of dictionaries containing the ordered solutions.")
 	.def("align", &EMData_align_wrapper2,args("aligner_name", "to_img"),return_value_policy< manage_new_object >(), "Align this image with another image and return the result image.\n \naligner_name - Alignment algorithm name.\nto_img - The image 'this' image aligns to.\nparams - Alignment algorithm parameters in a keyed dictionary, default to Null.\ncmp_name - Comparison algorithm used in alignment, default to 'dot'.\ncmp_params - Parameter dictionary for comparison algorithm, default to Null.\n \nreturn The result image.\nexception - NotExistingObjectError If the alignment algorithm doesn't exist.")
 	.def("align", &EMData_align_wrapper3,args("aligner_name", "to_img", "params"),return_value_policy< manage_new_object >(), "Align this image with another image and return the result image.\n \naligner_name - Alignment algorithm name.\nto_img - The image 'this' image aligns to.\nparams - Alignment algorithm parameters in a keyed dictionary, default to Null.\ncmp_name - Comparison algorithm used in alignment, default to 'dot'.\ncmp_params - Parameter dictionary for comparison algorithm, default to Null.\n \nreturn The result image.\nexception - NotExistingObjectError If the alignment algorithm doesn't exist.")
 	.def("align", &EMData_align_wrapper4,args("aligner_name", "to_img", "params", "cmp_name"),return_value_policy< manage_new_object >(), "Align this image with another image and return the result image.\n \naligner_name - Alignment algorithm name.\nto_img - The image 'this' image aligns to.\nparams - Alignment algorithm parameters in a keyed dictionary, default to Null.\ncmp_name - Comparison algorithm used in alignment, default to 'dot'.\ncmp_params - Parameter dictionary for comparison algorithm, default to Null.\n \nreturn The result image.\nexception - NotExistingObjectError If the alignment algorithm doesn't exist.")

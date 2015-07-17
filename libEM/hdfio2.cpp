@@ -642,7 +642,12 @@ int HdfIO2::read_header(Dict & dict, int image_index, const Region * area, bool)
 	sprintf(ipath,"/MDF/images/%d", image_index);
 	hid_t igrp=H5Gopen(file, ipath);
 
-	if (igrp<0) throw ImageReadException(filename,"Image does not exist");
+	if (igrp<0) {
+		char msg[40];
+		sprintf(msg,"Image %d does not exist",image_index); // yes, sprintf(), terrible I know
+		throw ImageReadException(filename,msg);
+	}
+	
 	int nattr=H5Aget_num_attrs(igrp);
 	char name[ATTR_NAME_LEN];
 
