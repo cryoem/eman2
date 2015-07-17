@@ -1296,7 +1296,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 				if check_stability:
 					#  gather all pixers and print a histogram
 					from utilities import wrap_mpi_gatherv
-					gpixer = wrap_mpi_gatherv(gpixer, main_node, mpi_comm)
+					gpixer = wrap_mpi_gatherv(gpixer, main_node, comm)
 					if my_abs_id == main_node and color == 0:
 						from statistics   import hist_list
 						lhx = 0
