@@ -425,22 +425,22 @@ def main():
 				
 				if number_of_accounted_images == 0:
 					error_status = 1
-					pr.disable()
-					s = StringIO.StringIO()
-					sortby = 'cumulative'
-					ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
-					ps.print_stats()
-					print s.getvalue()
+					# pr.disable()
+					# s = StringIO.StringIO()
+					# sortby = 'cumulative'
+					# ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+					# ps.print_stats()
+					# print s.getvalue()
 					break
 					
 				if number_of_unaccounted_images < 2*options.img_per_grp:
 					error_status = 1
-					pr.disable()
-					s = StringIO.StringIO()
-					sortby = 'cumulative'
-					ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
-					ps.print_stats()
-					print s.getvalue()
+					# pr.disable()
+					# s = StringIO.StringIO()
+					# sortby = 'cumulative'
+					# ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+					# ps.print_stats()
+					# print s.getvalue()
 					break
 			
 				# cmdexecute("e2bdb.py %s --makevstack=%s --list=%s%04d/generation_%d_unaccounted.txt"%
