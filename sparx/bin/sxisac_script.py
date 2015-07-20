@@ -63,7 +63,7 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = ( progname + " stack_file  <output_directory> --radius=particle_radius --img_per_grp=img_per_grp --CTF <The remaining parameters are optional --ir=ir --rs=rs --xr=xr --yr=yr --ts=ts --maxit=maxit --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --main_maxit=main_iter" +
 			" --iter_reali=iter_reali --match_first=match_first --max_round=max_round --match_second=match_second --stab_ali=stab_ali --thld_err=thld_err --indep_run=indep_run --thld_grp=thld_grp" +
-			"  --generation=generation --candidatesexist --rand_seed=rand_seed>" )
+			"  --generation=generation  --rand_seed=rand_seed>" )
 	
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--radius",         type="int",          default=-1,      help="Particle radius, it has to be provided.")
@@ -89,9 +89,9 @@ def main():
 	parser.add_option("--stab_ali",       type="int",          default=5,       help="number of alignments when checking stability (5)")
 	parser.add_option("--thld_err",       type="float",        default=0.7,     help="the threshold of pixel error when checking stability (0.7)")
 	parser.add_option("--indep_run",      type="int",          default=4,       help="number of indepentdent runs for reproducibility (default=4, only values 2, 3 and 4 are supported (4)")
-	parser.add_option("--thld_grp",       type="int",          default=10,      help="the threshold of size of reproducible class (essentially minimum size of class) (10)")
+	parser.add_option("--thld_grp",       type="int",          default=10,      help="minimum size of class (10)")
 	parser.add_option("--generation",     type="int",          default=1,       help="current generation number (1)")
-	parser.add_option("--candidatesexist",action="store_true", default=False,   help="Candidate class averages exist use them (default False)")
+	#parser.add_option("--candidatesexist",action="store_true", default=False,   help="Candidate class averages exist use them (default False)")
 	parser.add_option("--rand_seed",      type="int",          default=None,    help="random seed set before calculations, useful for testing purposes (default None - total randomness)")
 	parser.add_option("--new",            action="store_true", default=False,   help="use new code (default = False)")
 	parser.add_option("--debug",          action="store_true", default=False,   help="debug info printout (default = False)")
@@ -358,13 +358,9 @@ def main():
 	if program_state_stack(locals(), getframeinfo(currentframe())):
 	#if program_state_stack(locals(), getframeinfo(currentframe()), force_starting_execution = True):
 	# if 1:
-		if(myid == 0): print  "  STARTED OK"
 		pass
 
-	if(myid == 0): print "Location: A   " + os.getcwd()
-
 	os.chdir(masterdir)
-	if(myid == 0): print "Location: B   " + os.getcwd()
 
 	# import random
 	# image_list  = random.shuffle(range(number_of_images_in_stack))
@@ -394,15 +390,27 @@ def main():
 		os.chdir(NAME_OF_MAIN_DIR + "%04d"%isac_generation)
 
 		if (myid == main_node):
-			print "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-			print "isac_generation: ", isac_generation
-			print "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+			print "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+			print " ISAC, calculation of candidate class averages. Generation: %2d"%isac_generation
+			print "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 
 		if program_state_stack(locals(), getframeinfo(currentframe())):
 			iter_isac(data64_stack_current, options.ir, target_radius, options.rs, target_xr, target_xr, options.ts, options.maxit, False, 1.0,\
 				options.dst, options.FL, options.FH, options.FF, options.init_iter, options.main_iter, options.iter_reali, options.match_first, \
 				options.max_round, options.match_second, options.stab_ali, options.thld_err, options.indep_run, options.thld_grp, \
-				options.img_per_grp, isac_generation, options.candidatesexist, random_seed=options.rand_seed, new=False)#options.new)
+				options.img_per_grp, isac_generation, False, random_seed=options.rand_seed, new=False)#options.new)
+			pass
+
+		if (myid == main_node):
+			print "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+			print " ISAC, calculation of reproducible class averages. Generation: %2d"%isac_generation
+			print "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+
+		if program_state_stack(locals(), getframeinfo(currentframe())):
+			iter_isac(data64_stack_current, options.ir, target_radius, options.rs, target_xr, target_xr, options.ts, options.maxit, False, 1.0,\
+				options.dst, options.FL, options.FH, options.FF, options.init_iter, options.main_iter, options.iter_reali, options.match_first, \
+				options.max_round, options.match_second, options.stab_ali, options.thld_err, options.indep_run, options.thld_grp, \
+				options.img_per_grp, isac_generation, True, random_seed=options.rand_seed, new=False)#options.new)
 			pass
 			
 			# this_generation_members_acc = image_list[:len(image_list)/5]
