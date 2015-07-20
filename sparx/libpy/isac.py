@@ -951,8 +951,8 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 		if myid == main_node:
 			#  PAP 03/20/2015  added cleaning of long lists...
-			# id_list_long = Util.assign_groups(str(d.__array_interface__['data'][0]), numref, nima) # string with memory address is passed as parameters
-			#####del d
+			id_list_long = Util.assign_groups(str(d.__array_interface__['data'][0]), numref, nima) # string with memory address is passed as parameters
+			del d
 			id_list = [[] for i in xrange(numref)]
 			maxasi = nima/numref
 			for i in xrange(maxasi*numref):
@@ -967,7 +967,6 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			for iref in xrange(numref):
 				for im in id_list[iref]: belongsto[im] = iref
 		else:
-			#####del d
 			belongsto = [0]*nima
 		mpi_barrier(comm)
 		belongsto = mpi_bcast(belongsto, nima, MPI_INT, main_node, comm)
