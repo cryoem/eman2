@@ -16274,27 +16274,26 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 				#print  "tata ",total_iter-1,Util.infomask(tavg,None,True)
 				#tavg.write_image('tata.hdf',total_iter-1)
 	else:
-		tavg = ave_series(data)
 		for N_step in xrange(len(xrng)):
 			for Iter in xrange(max_iter):
 				total_iter += 1
+				tavg = ave_series(data)
 				if( FH > 0.0):
 					fl = 0.1+(FH-0.1)*Iter/float(max_iter-1)
 					tavg = filt_tanl(tavg, fl, FF)
-					"""
+				"""
 					tavg = filt_tanl(fft(tavg), fl, FF)
 					if total_iter == len(xrng)*max_iter:  return fft(tavg)
 					if( xrng[0] > 0.0 ): cs[0] = sx_sum/float(nima)
 					if( yrng[0] > 0.0 ): cs[1] = sy_sum/float(nima)
 					tavg = fft(fshift(tavg, -cs[0], -cs[1]))
-					"""
 				else:
-					"""
 					if total_iter == len(xrng)*max_iter:  return tavg
 					if( xrng[0] > 0.0 ): cs[0] = sx_sum/float(nima)
 					if( yrng[0] > 0.0 ): cs[1] = sy_sum/float(nima)
 					tavg = fshift(tavg, -cs[0], -cs[1])
-					"""
+				"""
+				if total_iter == len(xrng)*max_iter:  return tavg
 				cs = [0,0]
 				#print  "  iteration  std   %03d   %7.2f    %7.2f  "%(total_iter,cs[0],cs[1])
 				if Iter%4 != 0 or total_iter > max_iter*len(xrng)-10: delta = 0.0
@@ -16302,7 +16301,6 @@ def within_group_refinement(data, maskfile, randomize, ir, ou, rs, xrng, yrng, s
 				sx_sum, sy_sum, nope = ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 															xrng[N_step], yrng[N_step], step[N_step], \
 															mode=mode, CTF=False, delta=delta)
-				tavg = ave_series(data)
 				#for im in data:  print get_params2D(im)
 				#print  "tata ",total_iter-1,Util.infomask(tavg,None,True)
 				#tavg.write_image('tata.hdf',total_iter-1)

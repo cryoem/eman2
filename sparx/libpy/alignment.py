@@ -139,7 +139,7 @@ def ali2d_single_iter(data, numr, wr, cs, tavg, cnx, cny, \
 			ny = ima.get_ysize()
 			alpha, sx, sy, mirror, dummy = get_params2D(data[im], ali_params)
 			alpha, sx, sy, dummy         = combine_params2(alpha, sx, sy, mirror, 0.0, -cs[0], -cs[1], 0)
-			alphai, sxi, syi, dummy      = combine_params2(0.0, sx, sy, 0, -alpha, 0,0, 0)
+			alphai, sxi, syi, scalei     = inverse_transform2(alpha, sx, sy)
 			#  introduce constraints on parameters to accomodate use of cs centering
 			sxi = min(max(sxi,-mashi),mashi)
 			syi = min(max(syi,-mashi),mashi)

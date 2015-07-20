@@ -27,41 +27,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
 #
-"""
-I removed this function.  It appears to be a copy of iter_isac and was confusing me.  PAP 09/07/2015
-iter_isac_with_program_state_stack_restart
-"""
-
-"""
-PAP 01/25/2015
-Things to be done:
-
-1. introduce outputting sensible information.  The program rejects groups based on their
-mirror stability and pixel error.  However, it does not output them prior to reject, so the
-user is left in the dark what to improve (if mirror stability is too low, nothing could be done,
-the alignment is pretty much random, one can increase pixel error threshold, but this is dangerous).
-To do that: 
-in pixel_error.py function multi_align_stability computes necessary stuff, but it does not
-return it.  I left comments there.  After it does return numbers, they have to be gathered in
-correct places in ISAC and printed as histograms ro something
-
-2. memory problem: In EQK-means code in ISAC a huge matrix (nima x nref) has to be collected
-for clustering of images.  This is where program crashes on memory.  I left lengthy explanations
-and suggestion around line #865.  Something has to be done.
-
-4. Add reusing of candidate averages.  Since calculation of candidates takes so much time,
-I had an idea of reusing them, i.e., instead of starting the program in the next generation all over from
-preparation of candidates, one could cycle phase two couple of times reusing existing candidates.
-I tested it with the program attached at the end of this file - it works.  The problem is handling
-of image numbers, Yang did it in some kind of manner and I do not know the details.  Note
-one has current numbering of images (the subset), but also has to know the original IDs, 
-the same problem as in VIPER.  How it is done in ISAC I do not know and it is also more complicated.
-However, my intuitive coding gave good results, so it cannot be too tough.
-
-Since all of the points here are very important to users, this is publishable.
-
-"""
-
 
 def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, init_iter, main_iter, iter_reali, \
 			  match_first, max_round, match_second, stab_ali, thld_err, indep_run, thld_grp, img_per_grp, \
@@ -223,11 +188,10 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		while Iter <= max_round and couldnt_find_stable < 3 and K > 3:
 			if myid == main_node: 
 				print "################################################################################"
-				print "#           Beginning of Round %2d           "%Iter+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"         #"
+				print "#           Beginning of Round %2d           "%Iter+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"          #"
 				print "################################################################################"
-				print "**********************************************************************"
-				print "               Initialization of averages using EQ-mref               "
-				print "**********************************************************************"
+				print "     Initialization of averages using EQ-mref"
+				print "********************************************************************************"
 				print "     We will process:  %d current images divided equally between %d groups"%(ndata, K)
 
 			# Generate random averages for each group
@@ -285,14 +249,14 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			# Run ISAC
 			if myid == main_node:
 				print "**********************************************************************"
-				print "                     Processing of candidate averages   "+strftime("%a, %d %b %Y %H:%M:%S", localtime())
+				print "     Processing of candidate averages   "+strftime("%a, %d %b %Y %H:%M:%S", localtime())
 				print "**********************************************************************"
 	
 			for mloop in xrange(1, match_first+1):
 				if myid == main_node:
-					print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-					print "                  Loop %3d for 2-way matching   "%mloop+strftime("%a, %d %b %Y %H:%M:%S", localtime())
-					print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+					print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+					print "     Loop %3d for 2-way matching   "%mloop+strftime("%a, %d %b %Y %H:%M:%S", localtime())
+					print "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 				refi = isac_MPI(data, current_refim, maskfile=None, outname=None, ir=ir, ou=ou, rs=rs, xrng=xr, yrng=yr, step=ts,
 						maxit=maxit, isac_iter=main_iter, CTF=CTF, snr=snr, rand_seed=-1, color=color, comm=group_comm,
 						stability=True, stab_ali=stab_ali, iter_reali=iter_reali, thld_err=thld_err, FL=FL, FH=FH, FF=FF, dst=dst, method = alimethod)
@@ -447,7 +411,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				wayness = indep_run
 		if myid == main_node:		
 			print "################################################################################"
-			print "#       Iteration %2d for %d-way matching       "%(mloop, wayness)+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"      #"
+			print "#       Iteration %2d for %d-way matching       "%(mloop, wayness)+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"       #"
 			print "################################################################################"
 
 			members = []
@@ -521,7 +485,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		# Run ISAC
 		if myid == main_node:
 			print "**********************************************************************"
-			print "                 Run the main part of ISAC program   "+strftime("%a, %d %b %Y %H:%M:%S", localtime())
+			print "     Run the main part of ISAC program   "+strftime("%a, %d %b %Y %H:%M:%S", localtime())
 			print "**********************************************************************"
 			print "    Number of images = %d               Number of groups = %d"%(ndata, K)
 
@@ -552,7 +516,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		if mloop != match_second:
 			if myid == main_node:
 				print "**********************************************************************"
-				print "                  Run the %d-way matching algorithm  "%wayness+strftime("%a, %d %b %Y %H:%M:%S", localtime())
+				print "     Run the %d-way matching algorithm  "%wayness+strftime("%a, %d %b %Y %H:%M:%S", localtime())
 				print "**********************************************************************"
 				# In this last two-way loop, we find all unique 2-way matches and use it as the starting
 				# point of three-way match
@@ -686,7 +650,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			write_text_file(members_unacc, "generation_%d_unaccounted.txt"%generation)
 			write_text_file(this_generation_members_unacc, "this_generation_%d_unaccounted.txt"%generation)
 		print "******************************************************************************************"
-		print "*             End of the second phase             "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"            *"
+		print "*     End of the second phase             "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"            *"
 		print "******************************************************************************************"
 	else:
 		for i in xrange(l_STB):
