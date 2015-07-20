@@ -4716,6 +4716,20 @@ def print_program_start_information():
 		
 	print "MPI Rank: %03d/%03d "%(myid, mpi_size) + "Hostname: " + gethostname() +  " proc_id: " + str(os.getpid())
 
+
+
+def store_program_state(filename, state, stack):
+	import json
+	with open(filename, "w") as fp:
+		json.dump(zip(stack, state), fp, indent = 2)
+	fp.close()
+
+def restore_program_stack_and_state(file_name_of_saved_state):
+	import json; f = open(file_name_of_saved_state, 'r')
+	saved_state_and_stack = json.load(f); f.close()
+	return list(zip(*saved_state_and_stack)[0]), list(zip(*saved_state_and_stack)[1])
+
+
 def program_state_stack(full_current_state, frameinfo, file_name_of_saved_state=None, last_call="", force_starting_execution = False):
 
 	"""
@@ -4755,17 +4769,6 @@ def program_state_stack(full_current_state, frameinfo, file_name_of_saved_state=
 	from utilities import if_error_all_processes_quit_program
 	import os
 
-	def store_program_state(filename, state, stack):
-		import json
-		with open(filename, "w") as fp:
-			json.dump(zip(stack, state), fp, indent = 2)
-		fp.close()
-
-	def restore_program_stack_and_state(file_name_of_saved_state):
-		import json; f = open(file_name_of_saved_state, 'r')
-		saved_state_and_stack = json.load(f); f.close()
-		return list(zip(*saved_state_and_stack)[0]), list(zip(*saved_state_and_stack)[1])
-	
 	def get_current_stack_info():
 		return [[x[0], x[2]] for x in extract_stack()[:-2]]
 
@@ -4781,7 +4784,7 @@ def program_state_stack(full_current_state, frameinfo, file_name_of_saved_state=
 		current_state[var] =  full_current_state[var]
 
 	if "restart_location_title" in program_state_stack.__dict__:
-		location_in_program = frameinfo.filename + "_" + program_state_stack.restart_location_title + "_" + last_call
+		location_in_program = frameinfo.filename + "___" + program_state_stack.restart_location_title + "___" + last_call
 		del program_state_stack.restart_location_title
 	else:
 		location_in_program = frameinfo.filename + "_" + str(frameinfo.lineno) + "_" + last_call
