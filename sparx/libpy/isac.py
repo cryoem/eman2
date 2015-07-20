@@ -345,6 +345,8 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			mpi_barrier(MPI_COMM_WORLD)
 	
 		del data
+		#  We will return after candidate averages are prepared so their calculation can be independently
+		return
 	#  If candidates exist start from here
 	refim_stack = avg_first_stage
 
@@ -939,24 +941,6 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		"""
 
 		del refi, temp
-
-		#  This is the main memory bottleneck that limits the usefulness of the program.  The array d is numref x nima,
-		#    in my experience it limits of what the program can handle to 50,000 images.  numref = nima/(numer of images per group),
-		#    the latter is 100-200, so the size is 4*nima^2/100 bytes
-		#    Assuming 3GB free memory, nima = sqrt(100/3.0*3.0e9), which gives me slightly over 300,000 images.
-		#    It would not be half bad if not for the fact that at this moment the program has other stuff in the memory.
-		#    First, the program unnecessarily create full d matrix on all threads, while threads 
-		#            fill ou only part of it (image_start, image_end), see loop above.  This simplifies the code as Yang could use reduce.
-		#       However, with some effort one could send back sections of d and assemble it on the destination thread
-		#    As for the overall size of d, I see only two options: 
-		#        1.  analyze the code carefully and make sure that the main thread has nothing in it - might be difficult if not impossible
-		#        2.  Assuming many threads, reserve one for processing of d.  This would be wasteful, as processing of d matrix does not take all that long
-		#                 In addition, one thread spinning idly may cause synchronization problems (die or something).
-		#    
-		#  Truth be told, there is a third option.  It would be slow, but it might be the best solution, which is to try to write
-		#    a || version of assign_groups, even taking significant speed hit.
-		#
-		#                    PAP 01/23/2015
 
 		# d = mpi_reduce(d, numref*nima, MPI_FLOAT, MPI_SUM, main_node, comm)  #  RETURNS numpy array
 		# if myid != main_node:
