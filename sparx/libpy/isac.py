@@ -163,7 +163,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 	if myid == main_node:
 		print "******************************************************************************************"
-		print "*            Beginning of the first phase           "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"           *"
+		print "*            Beginning of the first phase           "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"            *"
 		print "*                                                                                        *"
 		print "* The first phase is an exploratory phase. In this phase, we set the criteria very       *"
 		print "* loose and try to find as many candidate class averages as possible. This phase         *"
@@ -844,8 +844,8 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 		peak_list = [zeros(4*(image_end-image_start), dtype=float32) for i in xrange(numref)]
 		#  nima is the total number of images, not the one on this node, the latter is (image_end-image_start)
 		#    d matrix required by EQ-Kmeans can be huge!!  PAP 01/17/2015
-		# d = zeros(numref*nima, dtype=float32)
-		d = zeros(numref*(image_end - image_start), dtype=float32)
+		d = zeros(numref*nima, dtype=float32)
+		######d = zeros(numref*(image_end - image_start), dtype=float32)
 		# begin MPI section
 		for im in xrange(image_start, image_end):
 			alpha, sx, sy, mirror, scale = get_params2D(alldata[im])
@@ -873,8 +873,8 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 				peak_list[iref][(im-image_start)*4+1] = sxn
 				peak_list[iref][(im-image_start)*4+2] = syn
 				peak_list[iref][(im-image_start)*4+3] = mn
-				# d[iref*nima+im] = temp[iref*5]
-				d[iref*(image_end - image_start) + (im - image_start)] = temp[iref*5]
+				d[iref*nima+im] = temp[iref*5]
+				######d[iref*(image_end - image_start) + (im - image_start)] = temp[iref*5]
 
 		# ???  This is attempt to do mref with restricted searches.  It does not work out as some classes may require
 		#      much larger shifts to center averages than other.
@@ -942,12 +942,12 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 
 		del refi, temp
 
-		# d = mpi_reduce(d, numref*nima, MPI_FLOAT, MPI_SUM, main_node, comm)  #  RETURNS numpy array
-		# if myid != main_node:
-		# 	del d
-		# mpi_barrier(comm) # to make sure that slaves freed the matrix d
+		d = mpi_reduce(d, numref*nima, MPI_FLOAT, MPI_SUM, main_node, comm)  #  RETURNS numpy array
+		if myid != main_node:
+		 	del d
+		mpi_barrier(comm) # to make sure that slaves freed the matrix d
 		
-		id_list_long = mpi_assign_groups(d, numref, nima, comm)		
+		######id_list_long = mpi_assign_groups(d, numref, nima, comm)		
 
 		if myid == main_node:
 			#  PAP 03/20/2015  added cleaning of long lists...
