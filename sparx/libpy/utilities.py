@@ -4609,6 +4609,13 @@ def get_latest_directory_increment_value(directory_location, directory_name, sta
 		return start_value
 	return dir_count - 1
 
+def get_nonexistent_directory_increment_value(directory_location, directory_name, start_value = 1, myformat = "%03d"):
+	import os
+	dir_count = start_value
+	while os.path.isdir(directory_location + directory_name + myformat%(dir_count)):
+		dir_count += 1
+	return dir_count
+
 def print_with_time_info(msg):
 	from time import localtime, strftime
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>" + msg
@@ -4784,10 +4791,12 @@ def program_state_stack(full_current_state, frameinfo, file_name_of_saved_state=
 		current_state[var] =  full_current_state[var]
 
 	if "restart_location_title" in program_state_stack.__dict__:
-		location_in_program = frameinfo.filename + "___" + program_state_stack.restart_location_title + "___" + last_call
+		# location_in_program = frameinfo.filename + "___" + program_state_stack.restart_location_title + "___" + last_call
+		location_in_program = frameinfo.filename + "___" + program_state_stack.restart_location_title
 		del program_state_stack.restart_location_title
 	else:
-		location_in_program = frameinfo.filename + "_" + str(frameinfo.lineno) + "_" + last_call
+		# location_in_program = frameinfo.filename + "_" + str(frameinfo.lineno) + "_" + last_call
+		location_in_program = frameinfo.filename + "___" + last_call
 		
 	current_state["location_in_program"] = location_in_program
 	

@@ -521,7 +521,6 @@ def get_already_processed_viper_runs(run_get_already_processed_viper_runs):
 			# function needs to be called once before being used !
 			get_already_processed_viper_runs.counter = -2
 	
-			import os
 			path, dirs, files = os.walk(location_location).next()
 			# dirs = filter(lambda x:'run' in x, dirs)
 			import re

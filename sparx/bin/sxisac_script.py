@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os
 import sys
+import random
 
 import global_def
 from   global_def import *
@@ -60,7 +61,6 @@ def preparing_test_data():
 
 
 def main():
-	import sys
 	progname = os.path.basename(sys.argv[0])
 	usage = ( progname + " stack_file  <output_directory> --radius=particle_radius --img_per_grp=img_per_grp --CTF <The remaining parameters are optional --ir=ir --rs=rs --xr=xr --yr=yr --ts=ts --maxit=maxit --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --main_maxit=main_iter" +
 			" --iter_reali=iter_reali --match_first=match_first --max_round=max_round --match_second=match_second --stab_ali=stab_ali --thld_err=thld_err --indep_run=indep_run --thld_grp=thld_grp" +
@@ -201,15 +201,20 @@ def main():
 				print stored_state
 				import re
 				if "," in options.restart_section:
-					stored_state[-1]["location_in_program"] = re.sub(r"___.*___", "___%s___"%options.restart_section.split(",")[0], stored_state[-1]["location_in_program"])
+					# stored_state[-1]["location_in_program"] = re.sub(r"___.*___", "___%s___"%options.restart_section.split(",")[0], stored_state[-1]["location_in_program"])
+					stored_state[-1]["location_in_program"] = re.sub(r"___.*$", "___%s"%options.restart_section.split(",")[0], stored_state[-1]["location_in_program"])
 					generation_str_format = options.restart_section.split(",")[1]
 					if generation_str_format != "":
-						stored_state[-1]["isac_generation"] = int(generation_str_format)
+						isac_generation_from_command_line = int(generation_str_format)
+						stored_state[-1]["isac_generation"] = isac_generation_from_command_line 
 					else:
+						isac_generation_from_command_line = 1
 						if "isac_generation" in stored_state[-1]:
 							del stored_state[-1]["isac_generation"]
 				else:
-					stored_state[-1]["location_in_program"] = re.sub(r"___.*___", "___%s___"%options.restart_section, stored_state[-1]["location_in_program"])
+					isac_generation_from_command_line = -1
+					# stored_state[-1]["location_in_program"] = re.sub(r"___.*___", "___%s___"%options.restart_section, stored_state[-1]["location_in_program"])
+					stored_state[-1]["location_in_program"] = re.sub(r"___.*$", "___%s"%options.restart_section, stored_state[-1]["location_in_program"])
 					if "isac_generation" in stored_state[-1]:
 						del stored_state[-1]["isac_generation"]
 					
@@ -218,8 +223,9 @@ def main():
 				print "Please remove the restart_section option from the command line. The program must be started from the beginning."			
 				from mpi import mpi_finalize
 				mpi_finalize()
-				import sys
 				sys.exit()
+		else:
+			isac_generation_from_command_line = -1
 	
 	program_state_stack(locals(), getframeinfo(currentframe()), masterdir + NAME_OF_JSON_STATE_FILE)	
 
@@ -248,65 +254,62 @@ def main():
 	# from sys import exit
 	# exit()
 
+	mpi_barrier(MPI_COMM_WORLD)
+
+	# Initialization of stacks
+	if(myid == main_node):
+		number_of_images_in_stack = EMUtil.get_image_count(command_line_provided_stack_filename)
+	else:
+		number_of_images_in_stack = 0
+
+
+	number_of_images_in_stack = bcast_number_to_all(number_of_images_in_stack, source_node = main_node)
+	
+	nxrsteps = 4
+	
+	init2dir = os.path.join(masterdir,"2dalignment")
+
+	if(myid == 0):
+		import subprocess
+		from logger import Logger, BaseLogger_Files
+		#  Create output directory
+		log2d = Logger(BaseLogger_Files())
+		log2d.prefix = os.path.join(init2dir)
+		cmd = "mkdir "+log2d.prefix
+		outcome = subprocess.call(cmd, shell=True)
+		log2d.prefix += "/"
+		# outcome = subprocess.call("sxheader.py  "+command_line_provided_stack_filename+"   --params=xform.align2d  --zero", shell=True)
+	else:
+		outcome = 0
+		log2d = None
+
+	if(myid == main_node):
+		a = get_im(command_line_provided_stack_filename)
+		nnxo = a.get_xsize()
+	else:
+		nnxo = 0
+	nnxo = bcast_number_to_all(nnxo, source_node = main_node)
+
+	txrm = (nnxo - 2*(radi+1))//2
+	if(txrm < 0):  			ERROR( "ERROR!!   Radius of the structure larger than the window data size permits   %d"%(radi), "sxisac",1, myid)
+	if(txrm/nxrsteps>0):
+		tss = ""
+		txr = ""
+		while(txrm/nxrsteps>0):
+			tts=txrm/nxrsteps
+			tss += "  %d"%tts
+			txr += "  %d"%(tts*nxrsteps)
+			txrm =txrm//2
+	else:
+		tss = "1"
+		txr = "%d"%txrm
+
+
 	# section ali2d_base
 	program_state_stack.restart_location_title = "ali2d_base"
 	if program_state_stack(locals(), getframeinfo(currentframe())):
 	# if 1:		
 
-
-		nproc     = mpi_comm_size(MPI_COMM_WORLD)
-		myid      = mpi_comm_rank(MPI_COMM_WORLD)
-		main_node = 0
-	
-		mpi_barrier(MPI_COMM_WORLD)
-
-		# Initialization of stacks
-		if(myid == main_node):
-			number_of_images_in_stack = EMUtil.get_image_count(command_line_provided_stack_filename)
-		else:
-			number_of_images_in_stack = 0
-
-		number_of_images_in_stack = bcast_number_to_all(number_of_images_in_stack, source_node = main_node)
-		
-		nxrsteps = 4
-		
-		init2dir = os.path.join(masterdir,"2dalignment")
-
-		if(myid == 0):
-			import subprocess
-			from logger import Logger, BaseLogger_Files
-			#  Create output directory
-			log2d = Logger(BaseLogger_Files())
-			log2d.prefix = os.path.join(init2dir)
-			cmd = "mkdir "+log2d.prefix
-			outcome = subprocess.call(cmd, shell=True)
-			log2d.prefix += "/"
-			# outcome = subprocess.call("sxheader.py  "+command_line_provided_stack_filename+"   --params=xform.align2d  --zero", shell=True)
-		else:
-			outcome = 0
-			log2d = None
-
-	
-		if(myid == main_node):
-			a = get_im(command_line_provided_stack_filename)
-			nnxo = a.get_xsize()
-		else:
-			nnxo = 0
-		nnxo = bcast_number_to_all(nnxo, source_node = main_node)
-
-		txrm = (nnxo - 2*(radi+1))//2
-		if(txrm < 0):  			ERROR( "ERROR!!   Radius of the structure larger than the window data size permits   %d"%(radi), "sxisac",1, myid)
-		if(txrm/nxrsteps>0):
-			tss = ""
-			txr = ""
-			while(txrm/nxrsteps>0):
-				tts=txrm/nxrsteps
-				tss += "  %d"%tts
-				txr += "  %d"%(tts*nxrsteps)
-				txrm =txrm//2
-		else:
-			tss = "1"
-			txr = "%d"%txrm
 
 		#  centering method is set to #7
 		params2d, aligned_images = ali2d_base(command_line_provided_stack_filename, init2dir, None, 1, radi, 1, txr, txr, tss, \
@@ -346,16 +349,18 @@ def main():
 				p = Util.infomask(aligned_images[im], msk, True)
 				aligned_images[im] /= p[1]
 			elif opt == -1:
-				#  Different mask!
-				p = Util.infomask(aligned_images[im], msk, False)
-				aligned_images[im] -= p[0]
-				p = Util.infomask(aligned_images[im], msk, True)
-				aligned_images[im] /= p[1]					
-				aligned_images[im] = pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
+				# #  Different mask!
+				# p = Util.infomask(aligned_images[im], msk, False)
+				# aligned_images[im] -= p[0]
+				# p = Util.infomask(aligned_images[im], msk, True)
+				# aligned_images[im] /= p[1]					
+				# aligned_images[im] = pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
+				pass
 				
-		del msk
+		# del msk
 
 		gather_compacted_EMData_to_root(number_of_images_in_stack, aligned_images, myid)
+		number_of_images_in_stack = bcast_number_to_all(number_of_images_in_stack, source_node = main_node)
 
 		if( myid == main_node ):
 			for i in range(number_of_images_in_stack):  aligned_images[i].write_image(stack_processed_by_ali2d_base__filename,i)
@@ -390,38 +395,45 @@ def main():
 
 	os.chdir(masterdir)
 
-	# import random
-	# image_list  = random.shuffle(range(number_of_images_in_stack))
+	if (myid == main_node):
+		main_dir_no = get_latest_directory_increment_value("./", NAME_OF_MAIN_DIR, myformat="%04d")
+		print "isac_generation_from_command_line", isac_generation_from_command_line, main_dir_no
+		if isac_generation_from_command_line >= 0 and isac_generation_from_command_line <= main_dir_no: 
+			backup_dir_no = get_nonexistent_directory_increment_value("./", "000_backup", myformat="%05d", start_value=1)
+			cmdexecute("mkdir -p " + "000_backup" + "%05d"%backup_dir_no)
+			for i in xrange(isac_generation_from_command_line, main_dir_no + 1):
+				cmdexecute("mv  " + NAME_OF_MAIN_DIR + "%04d"%i +  " 000_backup" + "%05d"%backup_dir_no)
+				cmdexecute("rm  " + "EMAN2DB/"+stack_processed_by_ali2d_base__filename__without_master_dir[4:]+"_%03d.bdb"%i)
+		else:
+			isac_generation_from_command_line = 1
+	else:
+		isac_generation_from_command_line = 0
+	isac_generation_from_command_line = mpi_bcast(isac_generation_from_command_line, 1, MPI_INT, 0, MPI_COMM_WORLD)[0]
 	
+	
+
 	# for isac_generation in range(1,10):
-	isac_generation = 0
+	isac_generation = isac_generation_from_command_line - 1
 	#  Stopping criterion should be inside the program.
-	for q12345 in xrange(10):
+	while isac_generation <  10:
 		isac_generation += 1
 
 		data64_stack_current = "bdb:../"+stack_processed_by_ali2d_base__filename__without_master_dir[4:]+"_%03d"%isac_generation
 
 		data64_stack_next    = "bdb:../"+stack_processed_by_ali2d_base__filename__without_master_dir[4:]+"_%03d"%(isac_generation + 1)
 		
-		
 		if (myid == main_node):
-			if os.path.exists(NAME_OF_MAIN_DIR + "%04d"%isac_generation):
-				backup_dir_no = get_latest_directory_increment_value(".", "000_backup", myformat="%05d") + 1
-				main_dir_no = get_latest_directory_increment_value(".", NAME_OF_MAIN_DIR, myformat="%04d")
-				cmdexecute("mkdir -p " + "000_backup" + "%05d"%backup_dir_no)
-				for i in xrange(main_dir_no):
-					cmdexecute("mv  " + NAME_OF_MAIN_DIR + "%04d"%i +  " 000_backup" + "%05d"%backup_dir_no)
-			else:
-				cmdexecute("mkdir -p " + NAME_OF_MAIN_DIR + "%04d"%isac_generation)
-			
-		mpi_barrier(MPI_COMM_WORLD)
+			cmdexecute("mkdir -p " + NAME_OF_MAIN_DIR + "%04d"%isac_generation)
+
+		mpi_barrier(MPI_COMM_WORLD)			
 		os.chdir(NAME_OF_MAIN_DIR + "%04d"%isac_generation)
 
 		if (myid == main_node):
 			print "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 			print " ISAC, calculation of candidate class averages. Generation: %2d"%isac_generation
 			print "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-
+			
+		program_state_stack.restart_location_title = "candidate_class_averages"
 		if program_state_stack(locals(), getframeinfo(currentframe())):
 			iter_isac(data64_stack_current, options.ir, target_radius, options.rs, target_xr, target_xr, options.ts, options.maxit, False, 1.0,\
 				options.dst, options.FL, options.FH, options.FF, options.init_iter, options.main_iter, options.iter_reali, options.match_first, \
@@ -434,6 +446,7 @@ def main():
 			print " ISAC, calculation of reproducible class averages. Generation: %2d"%isac_generation
 			print "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 
+		program_state_stack.restart_location_title = "reproducible_class_averages"
 		if program_state_stack(locals(), getframeinfo(currentframe())):
 			iter_isac(data64_stack_current, options.ir, target_radius, options.rs, target_xr, target_xr, options.ts, options.maxit, False, 1.0,\
 				options.dst, options.FL, options.FH, options.FF, options.init_iter, options.main_iter, options.iter_reali, options.match_first, \
@@ -441,15 +454,6 @@ def main():
 				options.img_per_grp, isac_generation, True, random_seed=options.rand_seed, new=False)#options.new)
 			pass
 			
-			# this_generation_members_acc = image_list[:len(image_list)/5]
-			# this_generation_members_unacc = image_list[len(image_list)/5:]
-
-			# write_text_file(this_generation_members_acc, "this_generation_%d_accounted.txt"%isac_generation)
-			# write_text_file(this_generation_members_unacc, "this_generation_%d_unaccounted.txt"%isac_generation)
-			
-			# image_list  = random.shuffle(range(this_generation_members_unacc))
-			
-	
 		error_status = 0
 		if program_state_stack(locals(), getframeinfo(currentframe())):
 			while(myid == main_node):
@@ -479,13 +483,13 @@ def main():
 					# print s.getvalue()
 					break
 			
-				# cmdexecute("e2bdb.py %s --makevstack=%s --list=%s%04d/generation_%d_unaccounted.txt"%
-				# 		   (data64_stack_current, data64_stack_next, NAME_OF_MAIN_DIR, isac_generation, isac_generation))
+				# reference the original stack
 				cmdexecute("e2bdb.py %s --makevstack=%s --list=this_generation_%d_unaccounted.txt"%
-						   (data64_stack_current, data64_stack_next, isac_generation))
+						   ("bdb:../"+stack_processed_by_ali2d_base__filename__without_master_dir[4:], data64_stack_next, isac_generation))
 				break
 
-		if_error_all_processes_quit_program(error_status, report_program_state=True)
+		# if_error_all_processes_quit_program(error_status, report_program_state=True)
+		if_error_all_processes_quit_program(error_status)
 
 		os.chdir("..")
 
@@ -493,7 +497,7 @@ def main():
 	# if 1:
 		pass
 
-	program_state_stack(locals(), getframeinfo(currentframe()), last_call="LastCall")
+	program_state_stack(locals(), getframeinfo(currentframe()), last_call="__LastCall")
 	
 
 
