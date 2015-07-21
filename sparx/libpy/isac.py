@@ -161,15 +161,6 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 
 	ali_params_filename = "ali_params_%d"%color
 
-	if myid == main_node:
-		print "******************************************************************************************"
-		print "*            Beginning of the first phase           "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"            *"
-		print "*                                                                                        *"
-		print "* The first phase is an exploratory phase. In this phase, we set the criteria very       *"
-		print "* loose and try to find as many candidate class averages as possible. This phase         *"
-		print "* typically should have 10 to 20 rounds (default = 20). The candidate class averages are *"
-		print "* stored in class_averages_candidate_generation_n.hdf.                                   *"
-		print "******************************************************************************************"
 		
 	avg_num = 0
 	Iter = 1
@@ -177,6 +168,15 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	avg_first_stage = "class_averages_candidate_generation_%d.hdf"%generation
 
 	if  not candidatesexist:
+		if myid == main_node:
+			print "******************************************************************************************"
+			print "*            Beginning of the first phase           "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"            *"
+			print "*                                                                                        *"
+			print "* The first phase is an exploratory phase. In this phase, we set the criteria very       *"
+			print "* loose and try to find as many candidate class averages as possible. This phase         *"
+			print "* typically should have 10 to 20 rounds (default = 20). The candidate class averages are *"
+			print "* stored in class_averages_candidate_generation_n.hdf.                                   *"
+			print "******************************************************************************************"
 
 		# I am adding here Artificial Intelligence for stopping 
 		#  The program should stop if
@@ -346,15 +346,15 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	
 		del data
 		#  We will return after candidate averages are prepared so their calculation can be independently
+		print "******************************************************************************************"
+		print "*              End of the first phase             "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"             *"
+		print "******************************************************************************************"
 		return
 	#  If candidates exist start from here
 	refim_stack = avg_first_stage
 
 
 	if myid == main_node:
-		print "******************************************************************************************"
-		print "*              End of the first phase             "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"             *"
-		print "******************************************************************************************"
 		print ""
 		print "******************************************************************************************"
 		print "*           Beginning of the second phase         "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"           *"
@@ -369,6 +369,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		print "******************************************************************************************"
 		try:
 			refim = EMData.read_images(refim_stack)
+			print "* Using existing %4d candidate class averages                                            *"%len(refim)
 		except:
 			refim = []
 		nrefim = len(refim)
@@ -376,6 +377,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		nrefim = 0
 	nrefim = mpi_bcast(nrefim, 1, MPI_INT, main_node, MPI_COMM_WORLD)			# number of ref
 	nrefim = int(nrefim[0])
+	if(nrefim == 0):  ERROR("sxisac","Candidate averages do not exist",1,myid)
 
 	if myid != main_node:
 		refim = [model_blank(nx, nx) for i in xrange(nrefim)]
