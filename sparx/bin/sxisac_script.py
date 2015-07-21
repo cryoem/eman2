@@ -97,8 +97,9 @@ def main():
 	parser.add_option("--new",            action="store_true", default=False,   help="use new code (default = False)")
 	parser.add_option("--debug",          action="store_true", default=False,   help="debug info printout (default = False)")
 
-
+	# must be switched off in production
 	parser.add_option("--use_latest_master_directory", action="store_true", dest="use_latest_master_directory", default=True)
+	
 	parser.add_option("--restart_section", type="string", default="", help="restart section name (no spaces) followed immediately by comma, followed immediately by comma by generation to restart, example: --restart_section=ali2_base,1")
 
 
@@ -151,37 +152,6 @@ def main():
 		isac_generation
 	"""))
 
-	if myid == 0:
-		if options.restart_section != "":
-			if os.path.exists(NAME_OF_JSON_STATE_FILE):
-				stored_stack, stored_state = restore_program_stack_and_state(NAME_OF_JSON_STATE_FILE)
-				print stored_stack
-				print stored_state
-				import re
-				if "," in options.restart_section:
-					stored_state[-1]["location_in_program"] = re.sub(r"___.*___", "___%s___"%options.restart_section.split(",")[0], stored_state[-1]["location_in_program"])
-					generation_str_format = options.restart_section.split(",")[1]
-					if generation_str_format != "":
-						stored_state[-1]["isac_generation"] = int(generation_str_format)
-					else:
-						if "isac_generation" in stored_state[-1]:
-							del stored_state[-1]["isac_generation"]
-				else:
-					stored_state[-1]["location_in_program"] = re.sub(r"___.*___", "___%s___"%options.restart_section, stored_state[-1]["location_in_program"])
-					if "isac_generation" in stored_state[-1]:
-						del stored_state[-1]["isac_generation"]
-					
-				store_program_state(NAME_OF_JSON_STATE_FILE, stored_state, stored_stack)
-			else:
-				print "Please remove the restart_section option from the command line. The program must be started from the beginning."			
-				from mpi import mpi_finalize
-				mpi_finalize()
-				import sys
-				sys.exit()
-
-	program_state_stack(locals(), getframeinfo(currentframe()), NAME_OF_JSON_STATE_FILE)
-	
-	
 	# create or reuse master directory
 	masterdir = ""
 	stack_processed_by_ali2d_base__filename = ""
@@ -221,6 +191,37 @@ def main():
 
 	# send masterdir to all processes
 	masterdir = send_string_to_all(masterdir)
+	
+	
+	if myid == 0:
+		if options.restart_section != "":
+			if os.path.exists(masterdir + NAME_OF_JSON_STATE_FILE):
+				stored_stack, stored_state = restore_program_stack_and_state(masterdir + NAME_OF_JSON_STATE_FILE)
+				print stored_stack
+				print stored_state
+				import re
+				if "," in options.restart_section:
+					stored_state[-1]["location_in_program"] = re.sub(r"___.*___", "___%s___"%options.restart_section.split(",")[0], stored_state[-1]["location_in_program"])
+					generation_str_format = options.restart_section.split(",")[1]
+					if generation_str_format != "":
+						stored_state[-1]["isac_generation"] = int(generation_str_format)
+					else:
+						if "isac_generation" in stored_state[-1]:
+							del stored_state[-1]["isac_generation"]
+				else:
+					stored_state[-1]["location_in_program"] = re.sub(r"___.*___", "___%s___"%options.restart_section, stored_state[-1]["location_in_program"])
+					if "isac_generation" in stored_state[-1]:
+						del stored_state[-1]["isac_generation"]
+					
+				store_program_state(masterdir + NAME_OF_JSON_STATE_FILE, stored_state, stored_stack)
+			else:
+				print "Please remove the restart_section option from the command line. The program must be started from the beginning."			
+				from mpi import mpi_finalize
+				mpi_finalize()
+				import sys
+				sys.exit()
+	
+	program_state_stack(locals(), getframeinfo(currentframe()), masterdir + NAME_OF_JSON_STATE_FILE)	
 
 	stack_processed_by_ali2d_base__filename = send_string_to_all(stack_processed_by_ali2d_base__filename)
 	stack_processed_by_ali2d_base__filename__without_master_dir = \
