@@ -274,7 +274,7 @@ def main():
 		#  Create output directory
 		log2d = Logger(BaseLogger_Files())
 		log2d.prefix = os.path.join(init2dir)
-		cmd = "mkdir "+log2d.prefix
+		cmd = "mkdir -p "+log2d.prefix
 		outcome = subprocess.call(cmd, shell=True)
 		log2d.prefix += "/"
 		# outcome = subprocess.call("sxheader.py  "+command_line_provided_stack_filename+"   --params=xform.align2d  --zero", shell=True)
