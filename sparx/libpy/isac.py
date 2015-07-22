@@ -345,6 +345,8 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			mpi_barrier(MPI_COMM_WORLD)
 	
 		del data
+		
+	if myid == main_node:
 		#  We will return after candidate averages are prepared so their calculation can be independently
 		print "******************************************************************************************"
 		print "*              End of the first phase             "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"             *"

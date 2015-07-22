@@ -379,20 +379,21 @@ def main():
 	"""
 
 	global_def.BATCH = True
+
+	os.chdir(masterdir)
+
 	
 	if program_state_stack(locals(), getframeinfo(currentframe())):
 	# if 1:
 		pass
 		if (myid == main_node):
-			cmdexecute("sxheader.py  --consecutive  --params=originalid   %s"%stack_processed_by_ali2d_base__filename)
-			cmdexecute("e2bdb.py %s --makevstack=%s_001"%(stack_processed_by_ali2d_base__filename, stack_processed_by_ali2d_base__filename))
+			cmdexecute("sxheader.py  --consecutive  --params=originalid   %s"%stack_processed_by_ali2d_base__filename__without_master_dir)
+			cmdexecute("e2bdb.py %s --makevstack=%s_000"%(stack_processed_by_ali2d_base__filename__without_master_dir, stack_processed_by_ali2d_base__filename__without_master_dir))
 
 	if program_state_stack(locals(), getframeinfo(currentframe())):
 	#if program_state_stack(locals(), getframeinfo(currentframe()), force_starting_execution = True):
 	# if 1:
 		pass
-
-	os.chdir(masterdir)
 
 	if (myid == main_node):
 		main_dir_no = get_latest_directory_increment_value("./", NAME_OF_MAIN_DIR, myformat="%04d")
@@ -402,94 +403,93 @@ def main():
 			cmdexecute("mkdir -p " + "000_backup" + "%05d"%backup_dir_no)
 			for i in xrange(isac_generation_from_command_line, main_dir_no + 1):
 				cmdexecute("mv  " + NAME_OF_MAIN_DIR + "%04d"%i +  " 000_backup" + "%05d"%backup_dir_no)
-				delete_bdb(stack_processed_by_ali2d_base__filename__without_master_dir[4:]+"_%03d.bdb"%i)
+				# delete_bdb(stack_processed_by_ali2d_base__filename__without_master_dir[4:]+"_%03d.bdb"%i)
+				delete_bdb(stack_processed_by_ali2d_base__filename__without_master_dir+"_%03d"%i)
 		else:
 			isac_generation_from_command_line = 1
 	else:
 		isac_generation_from_command_line = 0
 	isac_generation_from_command_line = mpi_bcast(isac_generation_from_command_line, 1, MPI_INT, 0, MPI_COMM_WORLD)[0]
-	
-	
-
 	isac_generation = isac_generation_from_command_line - 1
+	
+	if (myid == main_node):
+		if isac_generation == 0:
+			cmdexecute("mkdir -p " + NAME_OF_MAIN_DIR + "%04d"%isac_generation)
+			write_text_file([1], os.path.join(NAME_OF_MAIN_DIR + "%04d"%isac_generation, "generation_%d_accounted.txt"%isac_generation))
+			write_text_file(range(number_of_images_in_stack), os.path.join(NAME_OF_MAIN_DIR + "%04d"%isac_generation, "generation_%d_unaccounted.txt"%isac_generation))
+
 	#  Stopping criterion should be inside the program.
 	while True:
 		isac_generation += 1
 
 		data64_stack_current = "bdb:../"+stack_processed_by_ali2d_base__filename__without_master_dir[4:]+"_%03d"%isac_generation
+		# data64_stack_next    = "bdb:../"+stack_processed_by_ali2d_base__filename__without_master_dir[4:]+"_%03d"%(isac_generation + 1)
 
-		data64_stack_next    = "bdb:../"+stack_processed_by_ali2d_base__filename__without_master_dir[4:]+"_%03d"%(isac_generation + 1)
-			
 		error_status = 0
-		if program_state_stack(locals(), getframeinfo(currentframe())):
-			while(myid == main_node):
-
-				# number_of_accounted_images = sum(1 for line in open("generation_%04d/generation_%d_accounted.txt"%(isac_generation, isac_generation))
-				# number_of_unaccounted_images = sum(1 for line in open("generation_%04d/generation_%d_unaccounted.txt"%(isac_generation, isac_generation))
-				number_of_accounted_images = sum(1 for line in open("this_generation_%d_accounted.txt"%(isac_generation)))
-				number_of_unaccounted_images = sum(1 for line in open("this_generation_%d_unaccounted.txt"%(isac_generation)))
+		if(myid == main_node):
+			
+			print "\nooooooo: isac_generation", isac_generation, "\n"
+			
+			
+			number_of_accounted_images = sum(1 for line in open(
+				os.path.join(NAME_OF_MAIN_DIR + "%04d"%(isac_generation - 1),"generation_%d_accounted.txt"%(isac_generation - 1))))
+			number_of_unaccounted_images = sum(1 for line in open(
+				os.path.join(NAME_OF_MAIN_DIR + "%04d"%(isac_generation - 1),"generation_%d_unaccounted.txt"%(isac_generation - 1))))
+			# number_of_accounted_images = sum(1 for line in open("this_generation_%d_accounted.txt"%(isac_generation)))
+			# number_of_unaccounted_images = sum(1 for line in open("this_generation_%d_unaccounted.txt"%(isac_generation)))
+			
+			if number_of_accounted_images == 0:
+				error_status = 1
 				
-				if number_of_accounted_images == 0:
-					error_status = 1
-					# pr.disable()
-					# s = StringIO.StringIO()
-					# sortby = 'cumulative'
-					# ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
-					# ps.print_stats()
-					# print s.getvalue()
-					break
-					
-				if number_of_unaccounted_images < 2*options.img_per_grp:
-					error_status = 1
-					# pr.disable()
-					# s = StringIO.StringIO()
-					# sortby = 'cumulative'
-					# ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
-					# ps.print_stats()
-					# print s.getvalue()
-					break
+			# if number_of_unaccounted_images < 2*options.img_per_grp:
+			# 	error_status = 1
 
-				# reference the original stack
-				cmdexecute("e2bdb.py %s --makevstack=%s --list=this_generation_%d_unaccounted.txt"%
-						   ("bdb:../"+stack_processed_by_ali2d_base__filename__without_master_dir[4:], data64_stack_next, isac_generation))
-				break
-		
+		if_error_all_processes_quit_program(error_status)
+
 		if (myid == main_node):
 			cmdexecute("mkdir -p " + NAME_OF_MAIN_DIR + "%04d"%isac_generation)
+			
+			# reference the original stack
+			list_file = os.path.join(NAME_OF_MAIN_DIR + "%04d"%(isac_generation - 1), "generation_%d_unaccounted.txt"%(isac_generation - 1))
+			cmdexecute("e2bdb.py %s --makevstack=%s --list=%s"%(stack_processed_by_ali2d_base__filename__without_master_dir, 
+				stack_processed_by_ali2d_base__filename__without_master_dir + "_%03d"%isac_generation, list_file))
 
 		mpi_barrier(MPI_COMM_WORLD)			
+
 		os.chdir(NAME_OF_MAIN_DIR + "%04d"%isac_generation)
 
-		if (myid == main_node):
-			print "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-			print " ISAC, calculation of candidate class averages. Generation: %2d"%isac_generation
-			print "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-			
 		program_state_stack.restart_location_title = "candidate_class_averages"
 		if program_state_stack(locals(), getframeinfo(currentframe())):
+
+			if (myid == main_node):
+				print "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+				print " ISAC, calculation of candidate class averages. Generation: %2d"%isac_generation
+				print "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+
 			iter_isac(data64_stack_current, options.ir, target_radius, options.rs, target_xr, target_xr, options.ts, options.maxit, False, 1.0,\
 				options.dst, options.FL, options.FH, options.FF, options.init_iter, options.main_iter, options.iter_reali, options.match_first, \
 				options.max_round, options.match_second, options.stab_ali, options.thld_err, options.indep_run, options.thld_grp, \
 				options.img_per_grp, isac_generation, False, random_seed=options.rand_seed, new=False)#options.new)
 			pass
 
-		if (myid == main_node):
-			print "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-			print " ISAC, calculation of reproducible class averages. Generation: %2d"%isac_generation
-			print "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-
 		program_state_stack.restart_location_title = "reproducible_class_averages"
 		if program_state_stack(locals(), getframeinfo(currentframe())):
+
+			if (myid == main_node):
+				print "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+				print " ISAC, calculation of reproducible class averages. Generation: %2d"%isac_generation
+				print "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+
 			iter_isac(data64_stack_current, options.ir, target_radius, options.rs, target_xr, target_xr, options.ts, options.maxit, False, 1.0,\
 				options.dst, options.FL, options.FH, options.FF, options.init_iter, options.main_iter, options.iter_reali, options.match_first, \
 				options.max_round, options.match_second, options.stab_ali, options.thld_err, options.indep_run, options.thld_grp, \
 				options.img_per_grp, isac_generation, True, random_seed=options.rand_seed, new=False)#options.new)
 			pass
 
-		# if_error_all_processes_quit_program(error_status, report_program_state=True)
-		if_error_all_processes_quit_program(error_status)
-
 		os.chdir("..")
+
+
+
 
 	if program_state_stack(locals(), getframeinfo(currentframe())):
 	# if 1:
