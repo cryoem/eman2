@@ -414,6 +414,7 @@ def main():
 			# it includes both command line and json file
 			my_restart_section = stored_state[-1]["location_in_program"].split("___")[-1]
 			if "fresh_start" in my_restart_section:
+				backup_dir_no = get_nonexistent_directory_increment_value("./", "000_backup", myformat="%05d", start_value=1)
 				cmdexecute("mv  " + NAME_OF_MAIN_DIR + "%04d"%isac_generation_from_command_line +  " 000_backup" + "%05d"%backup_dir_no)
 				delete_bdb(stack_processed_by_ali2d_base__filename__without_master_dir+"_%03d"%isac_generation_from_command_line)
 			elif "candidate_class_averages" in my_restart_section:
