@@ -431,10 +431,8 @@ def main():
 			print "\nooooooo: isac_generation", isac_generation, "\n"
 			
 			
-			number_of_accounted_images = sum(1 for line in open(
-				os.path.join(NAME_OF_MAIN_DIR + "%04d"%(isac_generation - 1),"generation_%d_accounted.txt"%(isac_generation - 1))))
-			number_of_unaccounted_images = sum(1 for line in open(
-				os.path.join(NAME_OF_MAIN_DIR + "%04d"%(isac_generation - 1),"generation_%d_unaccounted.txt"%(isac_generation - 1))))
+			number_of_accounted_images = sum(1 for line in open(os.path.join(NAME_OF_MAIN_DIR + "%04d"%(isac_generation - 1),"generation_%d_accounted.txt"%(isac_generation - 1))))
+			number_of_unaccounted_images = sum(1 for line in open(os.path.join(NAME_OF_MAIN_DIR + "%04d"%(isac_generation - 1),"generation_%d_unaccounted.txt"%(isac_generation - 1))))
 			# number_of_accounted_images = sum(1 for line in open("this_generation_%d_accounted.txt"%(isac_generation)))
 			# number_of_unaccounted_images = sum(1 for line in open("this_generation_%d_unaccounted.txt"%(isac_generation)))
 			
