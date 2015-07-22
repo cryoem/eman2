@@ -402,7 +402,7 @@ def main():
 			cmdexecute("mkdir -p " + "000_backup" + "%05d"%backup_dir_no)
 			for i in xrange(isac_generation_from_command_line, main_dir_no + 1):
 				cmdexecute("mv  " + NAME_OF_MAIN_DIR + "%04d"%i +  " 000_backup" + "%05d"%backup_dir_no)
-				cmdexecute("rm  " + "EMAN2DB/"+stack_processed_by_ali2d_base__filename__without_master_dir[4:]+"_%03d.bdb"%i)
+				delete_bdb(stack_processed_by_ali2d_base__filename__without_master_dir[4:]+"_%03d.bdb"%i)
 		else:
 			isac_generation_from_command_line = 1
 	else:
@@ -411,7 +411,6 @@ def main():
 	
 	
 
-	# for isac_generation in range(1,10):
 	isac_generation = isac_generation_from_command_line - 1
 	#  Stopping criterion should be inside the program.
 	while True:
@@ -420,6 +419,40 @@ def main():
 		data64_stack_current = "bdb:../"+stack_processed_by_ali2d_base__filename__without_master_dir[4:]+"_%03d"%isac_generation
 
 		data64_stack_next    = "bdb:../"+stack_processed_by_ali2d_base__filename__without_master_dir[4:]+"_%03d"%(isac_generation + 1)
+			
+		error_status = 0
+		if program_state_stack(locals(), getframeinfo(currentframe())):
+			while(myid == main_node):
+
+				# number_of_accounted_images = sum(1 for line in open("generation_%04d/generation_%d_accounted.txt"%(isac_generation, isac_generation))
+				# number_of_unaccounted_images = sum(1 for line in open("generation_%04d/generation_%d_unaccounted.txt"%(isac_generation, isac_generation))
+				number_of_accounted_images = sum(1 for line in open("this_generation_%d_accounted.txt"%(isac_generation)))
+				number_of_unaccounted_images = sum(1 for line in open("this_generation_%d_unaccounted.txt"%(isac_generation)))
+				
+				if number_of_accounted_images == 0:
+					error_status = 1
+					# pr.disable()
+					# s = StringIO.StringIO()
+					# sortby = 'cumulative'
+					# ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+					# ps.print_stats()
+					# print s.getvalue()
+					break
+					
+				if number_of_unaccounted_images < 2*options.img_per_grp:
+					error_status = 1
+					# pr.disable()
+					# s = StringIO.StringIO()
+					# sortby = 'cumulative'
+					# ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+					# ps.print_stats()
+					# print s.getvalue()
+					break
+
+				# reference the original stack
+				cmdexecute("e2bdb.py %s --makevstack=%s --list=this_generation_%d_unaccounted.txt"%
+						   ("bdb:../"+stack_processed_by_ali2d_base__filename__without_master_dir[4:], data64_stack_next, isac_generation))
+				break
 		
 		if (myid == main_node):
 			cmdexecute("mkdir -p " + NAME_OF_MAIN_DIR + "%04d"%isac_generation)
@@ -452,40 +485,6 @@ def main():
 				options.max_round, options.match_second, options.stab_ali, options.thld_err, options.indep_run, options.thld_grp, \
 				options.img_per_grp, isac_generation, True, random_seed=options.rand_seed, new=False)#options.new)
 			pass
-			
-		error_status = 0
-		if program_state_stack(locals(), getframeinfo(currentframe())):
-			while(myid == main_node):
-
-				# number_of_accounted_images = sum(1 for line in open("generation_%04d/generation_%d_accounted.txt"%(isac_generation, isac_generation))
-				# number_of_unaccounted_images = sum(1 for line in open("generation_%04d/generation_%d_unaccounted.txt"%(isac_generation, isac_generation))
-				number_of_accounted_images = sum(1 for line in open("this_generation_%d_accounted.txt"%(isac_generation)))
-				number_of_unaccounted_images = sum(1 for line in open("this_generation_%d_unaccounted.txt"%(isac_generation)))
-				
-				if number_of_accounted_images == 0:
-					error_status = 1
-					# pr.disable()
-					# s = StringIO.StringIO()
-					# sortby = 'cumulative'
-					# ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
-					# ps.print_stats()
-					# print s.getvalue()
-					break
-					
-				if number_of_unaccounted_images < 2*options.img_per_grp:
-					error_status = 1
-					# pr.disable()
-					# s = StringIO.StringIO()
-					# sortby = 'cumulative'
-					# ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
-					# ps.print_stats()
-					# print s.getvalue()
-					break
-			
-				# reference the original stack
-				cmdexecute("e2bdb.py %s --makevstack=%s --list=this_generation_%d_unaccounted.txt"%
-						   ("bdb:../"+stack_processed_by_ali2d_base__filename__without_master_dir[4:], data64_stack_next, isac_generation))
-				break
 
 		# if_error_all_processes_quit_program(error_status, report_program_state=True)
 		if_error_all_processes_quit_program(error_status)
