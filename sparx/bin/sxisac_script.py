@@ -78,7 +78,7 @@ def main():
 	parser.add_option("--maxit",          type="int",          default=30,      help="number of iterations for reference-free alignment (30)")
 	#parser.add_option("--snr",            type="float",        default=1.0,     help="signal-to-noise ratio (only meaningful when CTF is enabled, currently not supported)")
 	parser.add_option("--dst",            type="float",        default=90.0,    help="discrete angle used in within group alignment ")
-	parser.add_option("--FL",             type="float",        default=0.2,     help="lowest stopband frequency used in the tangent filter (0.1)")
+	parser.add_option("--FL",             type="float",        default=0.2,     help="lowest stopband frequency used in the tangent filter (0.2)")
 	parser.add_option("--FH",             type="float",        default=0.3,     help="highest stopband frequency used in the tangent filter (0.3)")
 	parser.add_option("--FF",             type="float",        default=0.2,     help="fall-off of the tangent filter (0.2)")
 	parser.add_option("--init_iter",      type="int",          default=3,       help="number of iterations of ISAC program in initialization (3)")
@@ -167,7 +167,6 @@ def main():
 			if len(all_dirs)>0:
 				# all_dirs = max(all_dirs, key=os.path.getctime)
 				masterdir = max(all_dirs, key=os.path.getmtime)
-				masterdir += DIR_DELIM
 				
 	#Create folder for all results or check if there is one created already
 	if(myid == main_node):
@@ -195,8 +194,8 @@ def main():
 	
 	if myid == 0:
 		if options.restart_section != "":
-			if os.path.exists(masterdir + NAME_OF_JSON_STATE_FILE):
-				stored_stack, stored_state = restore_program_stack_and_state(masterdir + NAME_OF_JSON_STATE_FILE)
+			if os.path.exists(os.path.join(masterdir,NAME_OF_JSON_STATE_FILE)):
+				stored_stack, stored_state = restore_program_stack_and_state(os.path.join(masterdir,NAME_OF_JSON_STATE_FILE))
 				print stored_stack
 				print stored_state
 				import re
@@ -218,7 +217,7 @@ def main():
 					if "isac_generation" in stored_state[-1]:
 						del stored_state[-1]["isac_generation"]
 					
-				store_program_state(masterdir + NAME_OF_JSON_STATE_FILE, stored_state, stored_stack)
+				store_program_state(os.path.join(masterdir,NAME_OF_JSON_STATE_FILE), stored_state, stored_stack)
 			else:
 				print "Please remove the restart_section option from the command line. The program must be started from the beginning."			
 				from mpi import mpi_finalize
@@ -227,7 +226,7 @@ def main():
 		else:
 			isac_generation_from_command_line = -1
 	
-	program_state_stack(locals(), getframeinfo(currentframe()), masterdir + NAME_OF_JSON_STATE_FILE)	
+	program_state_stack(locals(), getframeinfo(currentframe()), os.path.join(masterdir,NAME_OF_JSON_STATE_FILE))	
 
 	stack_processed_by_ali2d_base__filename = send_string_to_all(stack_processed_by_ali2d_base__filename)
 	stack_processed_by_ali2d_base__filename__without_master_dir = \
