@@ -4922,4 +4922,3 @@ def debug_mpi_bcast(newv, s, t, m, comm):
 	if mpi_comm_rank(comm) == 1:
 		print "Stack info::1::", extract_stack()[-3:]
 	return mpi_bcast(newv, s, t, m, comm)
-

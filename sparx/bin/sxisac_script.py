@@ -415,7 +415,7 @@ def main():
 	# for isac_generation in range(1,10):
 	isac_generation = isac_generation_from_command_line - 1
 	#  Stopping criterion should be inside the program.
-	while isac_generation <  10:
+	while True:
 		isac_generation += 1
 
 		data64_stack_current = "bdb:../"+stack_processed_by_ali2d_base__filename__without_master_dir[4:]+"_%03d"%isac_generation

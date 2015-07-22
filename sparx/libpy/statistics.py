@@ -6651,9 +6651,11 @@ def k_means_match_clusters_asg(asg1, asg2):
 
 	return list_stable, nb_tot_objs
 
-# Match two partitions with hungarian algorithm and also return the matches whose corresponding stable sets have size larger than T. Is otherwise identical
+# Match two partitions with hungarian algorithm and also return the matches whose corresponding stable sets have size larger than T. 
+#  Is otherwise identical
 # to k_means_match_clusters_asg
-# 10/11/11: If the number of elements in common between two classes, e.g., asg1[i] and asg2[j], is not greater than threshold T, then their "cost" is set to 0 in MAT, i.e., the cost table which is input to Munkres. 
+# 10/11/11: If the number of elements in common between two classes, e.g., asg1[i] and asg2[j], is not greater than threshold T, 
+#     then their "cost" is set to 0 in MAT, i.e., the cost table which is input to Munkres. 
 def k_means_match_clusters_asg_new(asg1, asg2, T=0):
 	# asg1 and asg2 are numpy array
 	from numpy      import zeros, array
