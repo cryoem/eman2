@@ -736,6 +736,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 	from numpy        import zeros, float32
 	from time         import localtime, strftime
 	import os
+	import sys
 
 	if comm == -1: comm = MPI_COMM_WORLD		
 

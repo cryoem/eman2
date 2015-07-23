@@ -91,7 +91,8 @@ def main():
 	parser.add_option("--thld_err",       type="float",        default=0.7,     help="the threshold of pixel error when checking stability (0.7)")
 	parser.add_option("--indep_run",      type="int",          default=4,       help="number of indepentdent runs for reproducibility (default=4, only values 2, 3 and 4 are supported (4)")
 	parser.add_option("--thld_grp",       type="int",          default=10,      help="minimum size of class (10)")
-	parser.add_option("--generation",     type="int",          default=1,       help="current generation number (1)")
+	parser.add_option("--n_generations",     type="int",          default=5000,       help="program stops when reaching this total number of generations")
+	#parser.add_option("--candidatesexist",action="store_true", default=False,   help="Candidate class averages exist use them (default False)")
 	parser.add_option("--rand_seed",      type="int",          default=None,    help="random seed set before calculations, useful for testing purposes (default None - total randomness)")
 	parser.add_option("--new",            action="store_true", default=False,   help="use new code (default = False)")
 	parser.add_option("--debug",          action="store_true", default=False,   help="debug info printout (default = False)")
@@ -402,7 +403,8 @@ def main():
 					backup_dir_no = get_nonexistent_directory_increment_value("./", "000_backup", myformat="%05d", start_value=1)
 					cmdexecute("mkdir -p " + "000_backup" + "%05d"%backup_dir_no)
 				cmdexecute("mv  " + NAME_OF_MAIN_DIR + "%04d"%i +  " 000_backup" + "%05d"%backup_dir_no)
-				delete_bdb(stack_processed_by_ali2d_base__filename__without_master_dir+"_%03d"%i)
+				# delete_bdb(stack_processed_by_ali2d_base__filename__without_master_dir+"_%03d"%i)
+				cmdexecute("rm  " + "EMAN2DB/"+stack_processed_by_ali2d_base__filename__without_master_dir[4:]+"_%03d.bdb"%i)
 				
 			# it includes both command line and json file
 			my_restart_section = stored_state[-1]["location_in_program"].split("___")[-1]
@@ -435,6 +437,8 @@ def main():
 	#  Stopping criterion should be inside the program.
 	while True:
 		isac_generation += 1
+		if isac_generation > options.n_generations:
+			break
 
 		data64_stack_current = "bdb:../"+stack_processed_by_ali2d_base__filename__without_master_dir[4:]+"_%03d"%isac_generation
 		# data64_stack_next    = "bdb:../"+stack_processed_by_ali2d_base__filename__without_master_dir[4:]+"_%03d"%(isac_generation + 1)
@@ -486,6 +490,7 @@ def main():
 				print "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 				print " ISAC, calculation of reproducible class averages. Generation: %2d"%isac_generation
 				print "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+				sys.stdout.flush()
 
 			iter_isac(data64_stack_current, options.ir, target_radius, options.rs, target_xr, target_xr, options.ts, options.maxit, False, 1.0,\
 				options.dst, options.FL, options.FH, options.FF, options.init_iter, options.main_iter, options.iter_reali, options.match_first, \
