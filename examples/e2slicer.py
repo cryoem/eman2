@@ -56,6 +56,10 @@ def main():
 	parser.add_argument("--onlymidy",action='store_true',default=False,help="Only extract the middle slice of the volume parallel to the XZ plane.")
 	parser.add_argument("--onlymidz",action='store_true',default=False,help="Only extract the middle slice of the volume parallel to the XY plane.")
 	
+	parser.add_argument("--singlestack",action='store_true',default=False,help="""This option will save slices from all particles into a single .hdf stack file if --onlymidz or --onlymidy or --onlymidx are provided.""")
+	
+	parser.add_argument("--shrink",type=int,default=0,help="""Integer factor to use for shrinking volumes prior to extracting slices.""")
+	
 	parser.add_argument("--allx",action='store_true',default=False,help="Get ALL the slices in a volume along the x axis.")
 	parser.add_argument("--ally",action='store_true',default=False,help="Get ALL the slices in a volume along the y axis.")
 	parser.add_argument("--allz",action='store_true',default=False,help="Get ALL the slices in a volume along the z axis.")
@@ -163,36 +167,82 @@ def main():
 	n = EMUtil.get_image_count( options.input )
 	
 	for i in range(n):
-	
-		a=EMData(options.input,0)
-		nx=a['nx']
-		ny=a['ny']
-		nz=a['nz']
+		print "processing particle", i
+		a = EMData(options.input,i)
+		
+		ap = a.copy()
+		if options.shrink:
+			nyquist = ap['apix_x'] * 2.0
+			shnyquist = nyquist * options.shrink
+			ap.process_inplace('filter.lowpass.tanh',{'cutoff_freq':1.0/shnyquist})
+			ap.process_inplace('math.meanshrink',{'n':options.shrink})
+			
+		nx=ap['nx']
+		ny=ap['ny']
+		nz=ap['nz']
 		
 		ptcltag = ''
+		slicestag = ''
+		
 		if n > 1:
-			ptcltag = '_ptcl' + str(i).zfill( len( str(n) ))
-	
-		if options.onlymidz:	
-			rmidz=Region(0, 0, nz/2, nx, ny, 1)
-			print "The region for the orthogonal y slice is", rmidz
-			slicemidz=a.get_clip(rmidz)
-			slicemidz.write_image(options.path + '/' + options.input.replace('.',ptcltag+'_SLICEmidz.'),0)
-	
-		elif options.onlymidx:
-			rmidx=Region(nx/2, 0, 0, 1, ny, nz)
-			print "The region for the orthogonal y slice is", rmidx
-
-			slicemidx=a.get_clip(rmidx)
-			slicemidx.write_image(options.path + '/' + options.input.replace('.',ptcltag+'_SLICEmidx.'),0)
+			slicestag = '_SLICESmid'
 			
-		elif options.onlymidy:
-			rmidy=Region(0, ny/2, 0, nx, 1, nz)
-			print "The region for the orthogonal y slice is", rmidy
-			slicemidy=a.get_clip(rmidy)
-			slicemidy.write_image(options.path + '/' + options.input.replace('.',ptcltag+'_SLICEmidy.'),0)
-		else:
+			if options.allz or options.ally or options.allx or not options.singlestack:
+				ptcltag = '_ptcl' + str(i).zfill( len( str(n) ))
+		
+		rmid = None
+					
+		if options.onlymidz or options.onlymidy or options.onlymidx:
+			
+			if options.onlymidz:	
+				rmid = Region(0, 0, nz/2, nx, ny, 1)
+				print "The region for the orthogonal z slice is", rmid
+				
+				slicestag += 'z'
+				if n < 2:
+					slicestag = '_SLICEmidz'			
+									
+			elif options.onlymidx:
+				rmid = Region(nx/2, 0, 0, 1, ny, nz)
+				print "The region for the orthogonal x slice is", rmid
+
+				#slicemidx=a.get_clip(rmidx)
+				#slicemidx.write_image(options.path + '/' + options.input.replace('.',ptcltag+'_SLICEmidx.'),0)
+				
+				slicestag += 'x'
+				if n < 2:
+					slicestag = '_SLICEmidx'
+				
+				#Tx = Transform({'type':'eman','az':0,'alt':-90,'phi':0})
+				#ap.transform( Tx )
 	
+			elif options.onlymidy:
+				rmid = Region(0, ny/2, 0, nx, 1, nz)
+				print "The region for the orthogonal y slice is", rmid
+	
+				#slicemidy=a.get_clip(rmidy)
+				#slicemidy.write_image(options.path + '/' + options.input.replace('.',ptcltag+'_SLICEmidy.'),0)
+				
+				slicestag += 'y'
+				if n < 2:
+					slicestag = '_SLICEmidy'
+				
+				#Ty = Transform({'type':'eman','az':0,'alt':-90,'phi':-90})
+				#ap.transform( Ty )
+							
+			
+			slicemid = ap.get_clip( rmid )
+			slicemid.set_size( nx, ny, 1)
+			slicemid.write_image(options.path + '/' + options.input.replace('.',ptcltag + slicestag + '.'),i)
+		
+		elif not options.onlymidz and not options.onlymidy and not options.onlymidx:
+			app = a.copy()
+			if options.shrink:
+				nyquist = app['apix_x'] * 2.0
+				shnyquist = nyquist * options.shrink
+				app.process_inplace('filter.lowpass.tanh',{'cutoff_freq':1.0/shnyquist})
+				app.process_inplace('math.meanshrink',{'n':options.shrink})
+			
 			#regions={}
 			if not options.orthogonaloff:
 				print "Generating orthogonal slices"
@@ -222,7 +272,7 @@ def main():
 					#d.read_image(options.input, 0, False, regions[tag])
 				
 					print "I have extracted this orthogonal region", regions[kk]
-					slice = a.get_clip(regions[kk])
+					slice = app.get_clip(regions[kk])
 					slice.set_size(x,y,1)
 					slice.write_image(options.path + '/' + options.input.replace('.',ptcltag+'_SLICESortho.'),kk)
 					print "The mean and index are", slice['mean'],kk
@@ -230,15 +280,16 @@ def main():
 				
 			if options.allz:
 				print "Generating all z slices"
-				tz = Transform({'type':'eman','az':0,'alt':0,'phi':0})
+				#Tz = Transform({'type':'eman','az':0,'alt':0,'phi':0})
+				
 				outname = options.path + '/' + options.input.replace('.',ptcltag+'_SLICESz.')
 				os.system('e2proc2d.py ' + options.input + ' ' + outname + ' --threed2twod')
 		
 			if options.allx:
 				print "Generating all x slices"
-				tx = Transform({'type':'eman','az':0,'alt':-90,'phi':0})
-				volx=a.copy()
-				volx.transform(tx)
+				Tx = Transform({'type':'eman','az':0,'alt':-90,'phi':0})
+				volx = app.copy()
+				volx.transform(Tx)
 				rotvolxname = options.path + '/' + options.input.replace('.', ptcltag+'rotx.')
 				volx.write_image(rotvolxname,0)
 			
@@ -248,9 +299,9 @@ def main():
 		
 			if options.ally:	
 				print "Generating all y slices"
-				ty = Transform({'type':'eman','az':-90,'alt':-90,'phi':0})
-				voly=a.copy()
-				voly.transform(ty)
+				Ty = Transform({'type':'eman','az':0,'alt':-90,'phi':-90})
+				voly = app.copy()
+				voly.transform(Ty)
 				rotvolyname = options.path + '/' + options.input.replace('.', ptcltag+'roty.')
 				voly.write_image(rotvolyname,0)
 			
