@@ -73,6 +73,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		ERROR('Output directory %s for alignment parameters exists, please either change its name or delete it and restart the program'%ali_params_dir, "iter_isac", 1, myid)
 	mpi_barrier(MPI_COMM_WORLD)
 
+	
 	if new: alimethod = "SHC"
 	else:   alimethod = ""
 

@@ -4795,8 +4795,8 @@ def program_state_stack(full_current_state, frameinfo, file_name_of_saved_state=
 		location_in_program = frameinfo.filename + "___" + program_state_stack.restart_location_title
 		del program_state_stack.restart_location_title
 	else:
-		# location_in_program = frameinfo.filename + "_" + str(frameinfo.lineno) + "_" + last_call
-		location_in_program = frameinfo.filename + "___" + last_call
+		location_in_program = frameinfo.filename + "___" + str(frameinfo.lineno) + "_" + last_call
+		# location_in_program = frameinfo.filename + "___" + last_call
 		
 	current_state["location_in_program"] = location_in_program
 	

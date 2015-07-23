@@ -91,7 +91,7 @@ def main():
 	parser.add_option("--thld_err",       type="float",        default=0.7,     help="the threshold of pixel error when checking stability (0.7)")
 	parser.add_option("--indep_run",      type="int",          default=4,       help="number of indepentdent runs for reproducibility (default=4, only values 2, 3 and 4 are supported (4)")
 	parser.add_option("--thld_grp",       type="int",          default=10,      help="minimum size of class (10)")
-	parser.add_option("--n_generations",     type="int",          default=5000,       help="program stops when reaching this total number of generations")
+	parser.add_option("--n_generations",     type="int",          default=100,       help="program stops when reaching this total number of generations")
 	#parser.add_option("--candidatesexist",action="store_true", default=False,   help="Candidate class averages exist use them (default False)")
 	parser.add_option("--rand_seed",      type="int",          default=None,    help="random seed set before calculations, useful for testing purposes (default None - total randomness)")
 	parser.add_option("--new",            action="store_true", default=False,   help="use new code (default = False)")
@@ -384,19 +384,16 @@ def main():
 			cmdexecute("sxheader.py  --consecutive  --params=originalid   %s"%stack_processed_by_ali2d_base__filename__without_master_dir)
 			cmdexecute("e2bdb.py %s --makevstack=%s_000"%(stack_processed_by_ali2d_base__filename__without_master_dir, stack_processed_by_ali2d_base__filename__without_master_dir))
 
-	if program_state_stack(locals(), getframeinfo(currentframe())):
-	#if program_state_stack(locals(), getframeinfo(currentframe()), force_starting_execution = True):
-	# if 1:
-		pass
-
 	if (myid == main_node):
 		main_dir_no = get_latest_directory_increment_value("./", NAME_OF_MAIN_DIR, myformat="%04d")
 		print "isac_generation_from_command_line", isac_generation_from_command_line, main_dir_no
-		
 		if isac_generation_from_command_line < 0:
-			if os.path.exists(os.path.join(masterdir,NAME_OF_JSON_STATE_FILE)):
-				stored_stack, stored_state = restore_program_stack_and_state(os.path.join(masterdir,NAME_OF_JSON_STATE_FILE))
-				isac_generation_from_command_line = stored_state[-1]["isac_generation"]
+			if os.path.exists(NAME_OF_JSON_STATE_FILE):
+				stored_stack, stored_state = restore_program_stack_and_state(NAME_OF_JSON_STATE_FILE)
+				if "isac_generation" in stored_state[-1]:
+					isac_generation_from_command_line = stored_state[-1]["isac_generation"]
+				else:
+					isac_generation_from_command_line = -1
 		if isac_generation_from_command_line >= 0 and isac_generation_from_command_line <= main_dir_no: 
 			for i in xrange(isac_generation_from_command_line+1, main_dir_no + 1):
 				if i == isac_generation_from_command_line+1:
@@ -408,14 +405,19 @@ def main():
 				
 			# it includes both command line and json file
 			my_restart_section = stored_state[-1]["location_in_program"].split("___")[-1]
-			if "fresh_start" in my_restart_section:
+			if "restart" in my_restart_section:
 				if "backup_dir_no" not in locals():
 					backup_dir_no = get_nonexistent_directory_increment_value("./", "000_backup", myformat="%05d", start_value=1)
 				cmdexecute("mv  " + NAME_OF_MAIN_DIR + "%04d"%isac_generation_from_command_line +  " 000_backup" + "%05d"%backup_dir_no)
-				delete_bdb(stack_processed_by_ali2d_base__filename__without_master_dir+"_%03d"%isac_generation_from_command_line)
+				# delete_bdb(stack_processed_by_ali2d_base__filename__without_master_dir+"_%03d"%isac_generation_from_command_line)
+				cmdexecute("rm  " + "EMAN2DB/"+stack_processed_by_ali2d_base__filename__without_master_dir[4:]+"_%03d.bdb"%isac_generation_from_command_line )
 			elif "candidate_class_averages" in my_restart_section:
-				cmdexecute("rm -f " + NAME_OF_MAIN_DIR + "%04d/class_averages_candidate*"%isac_generation_from_command_line)
+				if "backup_dir_no" not in locals():
+					backup_dir_no = get_nonexistent_directory_increment_value("./", "000_backup", myformat="%05d", start_value=1)
+				cmdexecute("mv  " + NAME_OF_MAIN_DIR + "%04d"%isac_generation_from_command_line +  " 000_backup" + "%05d"%backup_dir_no)
+				# cmdexecute("rm -f " + NAME_OF_MAIN_DIR + "%04d/class_averages_candidate*"%isac_generation_from_command_line)
 			elif "reproducible_class_averages" in my_restart_section:
+				cmdexecute("rm -rf " + NAME_OF_MAIN_DIR + "%04d/ali_params_generation_*"%isac_generation_from_command_line)
 				cmdexecute("rm -f " + NAME_OF_MAIN_DIR + "%04d/class_averages_generation*"%isac_generation_from_command_line)
 		else:
 			isac_generation_from_command_line = 1
@@ -483,6 +485,10 @@ def main():
 				options.img_per_grp, isac_generation, False, random_seed=options.rand_seed, new=False)#options.new)
 			pass
 
+		# program_state_stack.restart_location_title = "stopped_program1"
+		program_state_stack(locals(), getframeinfo(currentframe()))
+
+		
 		program_state_stack.restart_location_title = "reproducible_class_averages"
 		if program_state_stack(locals(), getframeinfo(currentframe())):
 
@@ -500,6 +506,18 @@ def main():
 
 		os.chdir("..")
 
+		if (myid == main_node):
+			cmdexecute("rm -f class_averages.hdf")
+			cpy(["generation_%04d/class_averages_generation_%d.hdf"%(i,i) for i in xrange(1, isac_generation)], "class_averages.hdf")
+
+		program_state_stack.restart_location_title = "stopped_program2"
+		program_state_stack(locals(), getframeinfo(currentframe()))
+
+		# from mpi import mpi_finalize
+		# mpi_finalize()
+		# sys.exit()
+		
+		
 	if program_state_stack(locals(), getframeinfo(currentframe())):
 	# if 1:
 		pass
