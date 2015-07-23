@@ -399,6 +399,7 @@ def main():
 				if i == isac_generation_from_command_line+1:
 					backup_dir_no = get_nonexistent_directory_increment_value("./", "000_backup", myformat="%05d", start_value=1)
 					cmdexecute("mkdir -p " + "000_backup" + "%05d"%backup_dir_no)
+				print "\nHHHHHHHHHHHHHHHH1\n"
 				cmdexecute("mv  " + NAME_OF_MAIN_DIR + "%04d"%i +  " 000_backup" + "%05d"%backup_dir_no)
 				# delete_bdb(stack_processed_by_ali2d_base__filename__without_master_dir+"_%03d"%i)
 				cmdexecute("rm  " + "EMAN2DB/"+stack_processed_by_ali2d_base__filename__without_master_dir[4:]+"_%03d.bdb"%i)
@@ -408,12 +409,14 @@ def main():
 			if "restart" in my_restart_section:
 				if "backup_dir_no" not in locals():
 					backup_dir_no = get_nonexistent_directory_increment_value("./", "000_backup", myformat="%05d", start_value=1)
+				print "\nHHHHHHHHHHHHHHHH2\n"
 				cmdexecute("mv  " + NAME_OF_MAIN_DIR + "%04d"%isac_generation_from_command_line +  " 000_backup" + "%05d"%backup_dir_no)
 				# delete_bdb(stack_processed_by_ali2d_base__filename__without_master_dir+"_%03d"%isac_generation_from_command_line)
 				cmdexecute("rm  " + "EMAN2DB/"+stack_processed_by_ali2d_base__filename__without_master_dir[4:]+"_%03d.bdb"%isac_generation_from_command_line )
 			elif "candidate_class_averages" in my_restart_section:
 				if "backup_dir_no" not in locals():
 					backup_dir_no = get_nonexistent_directory_increment_value("./", "000_backup", myformat="%05d", start_value=1)
+				print "\nHHHHHHHHHHHHHHHH3\n"
 				cmdexecute("mv  " + NAME_OF_MAIN_DIR + "%04d"%isac_generation_from_command_line +  " 000_backup" + "%05d"%backup_dir_no)
 				# cmdexecute("rm -f " + NAME_OF_MAIN_DIR + "%04d/class_averages_candidate*"%isac_generation_from_command_line)
 			elif "reproducible_class_averages" in my_restart_section:
