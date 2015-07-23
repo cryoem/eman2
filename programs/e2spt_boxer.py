@@ -1,7 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.7
 
 #
-# Author: Steven Ludtke  2/8/2011 (rewritten), Jesus Galaz-Montoya (updates/enhancements/fixes), LAST: August/04/2013
+# Author: Steven Ludtke  2/8/2011 (rewritten), Jesus Galaz-Montoya (updates/enhancements/fixes), LAST: July/08/2015
 # Author: John Flanagan  9/7/2011 (helixboxer)
 # Copyright (c) 2011- Baylor College of Medicine
 #
@@ -874,32 +874,32 @@ class EMTomoBoxer(QtGui.QMainWindow):
 
 		# box size
 		self.wboxsize=ValBox(label="Box Size:",value=boxsize)
-		self.gbl2.addWidget(self.wboxsize,0,0,1,2)
+		self.gbl2.addWidget(self.wboxsize,1,0,1,2)
 		self.oldboxsize=boxsize
 
 		# max or mean
 		self.wmaxmean=QtGui.QPushButton("MaxProj")
 		self.wmaxmean.setCheckable(True)
-		self.gbl2.addWidget(self.wmaxmean,1,0)
+		self.gbl2.addWidget(self.wmaxmean,2,0)
 
 		# number slices
 		self.wnlayers=QtGui.QSpinBox()
 		self.wnlayers.setMinimum(1)
 		self.wnlayers.setMaximum(256)
 		self.wnlayers.setValue(1)
-		self.gbl2.addWidget(self.wnlayers,1,1)
+		self.gbl2.addWidget(self.wnlayers,2,1)
 
 		# Local boxes in side view
 		self.wlocalbox=QtGui.QCheckBox("Limit Side Boxes")
-		self.gbl2.addWidget(self.wlocalbox,2,0)
+		self.gbl2.addWidget(self.wlocalbox,3,0)
 
 		# scale factor
 		self.wscale=ValSlider(rng=(.1,2),label="Sca:",value=1.0)
-		self.gbl2.addWidget(self.wscale,3,0,1,2)
+		self.gbl2.addWidget(self.wscale,4,0,1,2)
 
 		# 2-D filters
 		self.wfilt = ValSlider(rng=(0,50),label="Filt:",value=0.0)
-		self.gbl2.addWidget(self.wfilt,4,0,1,2)
+		self.gbl2.addWidget(self.wfilt,5,0,1,2)
 
 		self.curbox=-1
 		self.boxes=[]						# array of box info, each is (x,y,z,...)
@@ -907,6 +907,10 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		self.boxesimgs=[]					# z projection of each box
 		self.xydown=None
 		self.firsthbclick = None
+
+		# coordinate display
+		self.wcoords=QtGui.QLabel("X: " + str(self.get_x()) + "\t\t" + "Y: " + str(self.get_y()) + "\t\t" + "Z: " + str(self.get_z()))
+		self.gbl2.addWidget(self.wcoords, 0, 0, 1, 2)
 
 		# file menu
 		QtCore.QObject.connect(self.mfile_open,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_open  )
@@ -1171,6 +1175,25 @@ class EMTomoBoxer(QtGui.QMainWindow):
 
 	def scale(self):
 		return self.wscale.getValue()
+
+	def get_x(self):
+		return self.get_coord(0)
+
+	def get_y(self):
+		return self.get_coord(1)
+
+	def get_z(self):
+		return self.depth()
+
+	def get_coord(self, coord_index):
+		if len(self.boxes) > 1:
+			if self.curbox:
+				return self.boxes[self.curbox][coord_index]
+			else:
+				return self.boxes[-1][coord_index]
+		else:
+			return 0
+
 
 	def menu_file_open(self,tog):
 		QtGui.QMessageBox.warning(None,"Error","Sorry, in the current version, you must provide a file to open on the command-line.")
@@ -1577,6 +1600,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 		#self.xzview.update()
 		#self.zyview.update()
 
+	def update_coords(self):
+		self.wcoords.setText("X: " + str(self.get_x()) + "\t\t" + "Y: " + str(self.get_y()) + "\t\t" + "Z: " + str(self.get_z()))
 
 	def inside_box(self,n,x=-1,y=-1,z=-1):
 		"""Checks to see if a point in image coordinates is inside box number n. If any value is negative, it will not be checked."""
@@ -1793,6 +1818,8 @@ class EMTomoBoxer(QtGui.QMainWindow):
 			self.boxesviewer.set_selected((n,),True)
 
 		self.curbox=n
+		self.update_coords()
+
 
 
 	def img_selected(self,event,lc):
@@ -1817,11 +1844,12 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	def xy_down(self,event):
 		x,y=self.xyview.scr_to_img((event.x(),event.y()))
 		x,y=int(x),int(y)
+		z=int(self.get_z())
 		self.xydown=None
 		if x<0 or y<0 : return		# no clicking outside the image (on 2 sides)
 
 		for i in range(len(self.boxes)):
-			if self.inside_box(i,x,y) :
+			if self.inside_box(i,x,y,z):
 				if event.modifiers()&Qt.ShiftModifier:
 					if self.del_box(i) != "DELHELIX": self.firsthbclick = None
 				else:
@@ -1907,11 +1935,12 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	def xz_down(self,event):
 		x,z=self.xzview.scr_to_img((event.x(),event.y()))
 		x,z=int(x),int(z)
+		y=int(self.get_y())
 		self.xzdown=None
 		if x<0 or z<0 : return		# no clicking outside the image (on 2 sides)
 
 		for i in range(len(self.boxes)):
-			if (not self.wlocalbox.isChecked() and self.inside_box(i,x,-1,z)) or self.inside_box(i,x,self.cury,z) :
+			if (not self.wlocalbox.isChecked() and self.inside_box(i,x,y,z)) or self.inside_box(i,x,self.cury,z) :
 				if event.modifiers()&Qt.ShiftModifier:
 					if self.del_box(i) != "DELHELIX": self.firsthbclick = None
 				else :
@@ -1987,11 +2016,12 @@ class EMTomoBoxer(QtGui.QMainWindow):
 	def zy_down(self,event):
 		z,y=self.zyview.scr_to_img((event.x(),event.y()))
 		z,y=int(z),int(y)
+		x=int(self.get_x())
 		self.xydown=None
 		if z<0 or y<0 : return		# no clicking outside the image (on 2 sides)
 
 		for i in range(len(self.boxes)):
-			if (not self.wlocalbox.isChecked() and self.inside_box(i,-1,y,z)) or  self.inside_box(i,self.curx,y,z):
+			if (not self.wlocalbox.isChecked() and self.inside_box(i,x,y,z)) or  self.inside_box(i,self.curx,y,z):
 				if event.modifiers()&Qt.ShiftModifier:
 					if self.del_box(i) != "DELHELIX": self.firsthbclick = None
 				else :
