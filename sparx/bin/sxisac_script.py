@@ -99,7 +99,7 @@ def main():
 	# must be switched off in production
 	parser.add_option("--use_latest_master_directory", action="store_true", dest="use_latest_master_directory", default=True)
 	
-	parser.add_option("--restart_section", type="string", default="", help="restart section name (no spaces) followed immediately by comma, followed immediately by comma by generation to restart, example: --restart_section=ali2_base,1")
+	parser.add_option("--restart_section", type="string", default="", help="restart section name (no spaces) followed immediately by comma, followed immediately by comma by generation to restart, example: --restart_section=ali2_base,1.  (Sections:ali2d, candidate_class_averages, reproducible_class_averages")
 
 	(options, args) = parser.parse_args()
 	
@@ -298,7 +298,7 @@ def main():
 
 
 	# section ali2d_base
-	program_state_stack.restart_location_title = "ali2d_base"
+	program_state_stack.restart_location_title = "ali2d"
 	if program_state_stack(locals(), getframeinfo(currentframe())):
 	# if 1:		
 
@@ -447,14 +447,8 @@ def main():
 			
 			number_of_accounted_images = sum(1 for line in open(os.path.join(NAME_OF_MAIN_DIR + "%04d"%(isac_generation - 1),"generation_%d_accounted.txt"%(isac_generation - 1))))
 			number_of_unaccounted_images = sum(1 for line in open(os.path.join(NAME_OF_MAIN_DIR + "%04d"%(isac_generation - 1),"generation_%d_unaccounted.txt"%(isac_generation - 1))))
-			# number_of_accounted_images = sum(1 for line in open("this_generation_%d_accounted.txt"%(isac_generation)))
-			# number_of_unaccounted_images = sum(1 for line in open("this_generation_%d_unaccounted.txt"%(isac_generation)))
-			
 			if number_of_accounted_images == 0:
 				error_status = 1
-				
-			# if number_of_unaccounted_images < 2*options.img_per_grp:
-			# 	error_status = 1
 
 		if_error_all_processes_quit_program(error_status)
 		
@@ -465,8 +459,8 @@ def main():
 				cmdexecute("mkdir -p " + NAME_OF_MAIN_DIR + "%04d"%isac_generation)
 				# reference the original stack
 				list_file = os.path.join(NAME_OF_MAIN_DIR + "%04d"%(isac_generation - 1), "generation_%d_unaccounted.txt"%(isac_generation - 1))
-				cmdexecute("e2bdb.py %s --makevstack=%s --list=%s"%(stack_processed_by_ali2d_base__filename__without_master_dir, 
-					stack_processed_by_ali2d_base__filename__without_master_dir + "_%03d"%isac_generation, list_file))
+				cmdexecute("e2bdb.py %s --makevstack=%s --list=%s"%(stack_processed_by_ali2d_base__filename__without_master_dir,\
+						stack_processed_by_ali2d_base__filename__without_master_dir + "_%03d"%isac_generation, list_file))
 			mpi_barrier(MPI_COMM_WORLD)
 
 		os.chdir(NAME_OF_MAIN_DIR + "%04d"%isac_generation)
@@ -501,47 +495,11 @@ def main():
 
 		os.chdir("..")
 
-
-
-
 	if program_state_stack(locals(), getframeinfo(currentframe())):
 	# if 1:
 		pass
 
 	program_state_stack(locals(), getframeinfo(currentframe()), last_call="__LastCall")
-	
-
-
-	# import time
-	# 
-	# program_state_stack(locals(), getframeinfo(currentframe()), "my_state.json")
-	# 
-	# for i in range(4):
-	# 	for j in range(4):
-	# 		if program_state_stack(locals(), getframeinfo(currentframe())):
-	# 			time.sleep(1)
-	# 			f = open("1_%d%d_%d.txt"%(i,j, myid), "w")
-	# 			f.close()
-	# 		if program_state_stack(locals(), getframeinfo(currentframe())):
-	# 			time.sleep(1)
-	# 			f = open("2_%d%d_%d.txt"%(i,j, myid), "w")
-	# 			f.close()
-	# 		if program_state_stack(locals(), getframeinfo(currentframe())):
-	# 			time.sleep(1)
-	# 			f = open("3_%d%d_%d.txt"%(i,j, myid), "w")
-	# 			f.close()
-	# 		if program_state_stack(locals(), getframeinfo(currentframe())):
-	# 			time.sleep(1)
-	# 			f = open("4_%d%d_%d.txt"%(i,j, myid), "w")
-	# 			f.close()
-	# 		program_state_stack(locals(), getframeinfo(currentframe()))
-
-	# iter_isac(args[0], options.ir, options.ou, options.rs, options.xr, options.yr, options.ts, options.maxit, False, 1.0,\
-	# 	#options.CTF, options.snr, \
-	# 	options.dst, options.FL, options.FH, options.FF, options.init_iter, options.main_iter, options.iter_reali, options.match_first, \
-	# 	options.max_round, options.match_second, options.stab_ali, options.thld_err, options.indep_run, options.thld_grp, \
-	# 	options.img_per_grp, options.generation, options.candidatesexist, random_seed=options.rand_seed, new=False)#options.new)
-	# global_def.BATCH = False
 
 	from mpi import mpi_finalize
 	mpi_finalize()

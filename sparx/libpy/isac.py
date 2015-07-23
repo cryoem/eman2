@@ -88,7 +88,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		print '*            Alignment and Clustering of 2D Transmission Electron Microscope Images",              *' 
 		print '*            Structure 20, 237-247, February 8, 2012.                                              *'
 		print "*                                                                                                  *"
-		print "* Last updated: 01/17/2015 PAP                                                                     *"
+		print "* Last updated: 07/23/2015 PAP                                                                     *"
 		print "****************************************************************************************************"
 		print "*                                       Generation %3d                                             *"%(generation)
 		#print " alignment method  ",alimethod
@@ -635,24 +635,10 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 			members_unacc[c] = alldata_n[i]
 			c += 1
 
-		this_generation_members_acc = [0]*(len(members_acc))
-		this_generation_members_unacc = [0]*(ndata-len(members_acc))
-		c1 = 0; c2 = 0;
-		for i in xrange(ndata):
-			if alldata_n[i] in members_acc:
-				this_generation_members_acc[c1] = i
-				c1 += 1
-			else:
-				this_generation_members_unacc[c2] = i
-				c2 += 1
-
 		print "In the second phase, we found %d stable and reproducible averages that account for %d particles.  "%(ave_num, len(members_acc))
-		if members_acc != []:
-			write_text_file(members_acc, "generation_%d_accounted.txt"%generation)
-			write_text_file(this_generation_members_acc, "this_generation_%d_accounted.txt"%generation)
-		if members_unacc != []:
-			write_text_file(members_unacc, "generation_%d_unaccounted.txt"%generation)
-			write_text_file(this_generation_members_unacc, "this_generation_%d_unaccounted.txt"%generation)
+		#  The following will write a zero-length file if the list is empty
+		write_text_file(members_acc, "generation_%d_accounted.txt"%generation)
+		write_text_file(members_unacc, "generation_%d_unaccounted.txt"%generation)
 		print "******************************************************************************************"
 		print "*     End of the second phase             "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"            *"
 		print "******************************************************************************************"
