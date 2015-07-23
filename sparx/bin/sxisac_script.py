@@ -62,7 +62,7 @@ def preparing_test_data():
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = ( progname + " stack_file  <output_directory> --radius=particle_radius --img_per_grp=img_per_grp --CTF <The remaining parameters are optional --ir=ir --rs=rs --xr=xr --yr=yr --ts=ts --maxit=maxit --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --main_maxit=main_iter" +
+	usage = ( progname + " stack_file  <output_directory> --radius=particle_radius --img_per_grp=img_per_grp --CTF --restart_section<The remaining parameters are optional --ir=ir --rs=rs --xr=xr --yr=yr --ts=ts --maxit=maxit --dst=dst --FL=FL --FH=FH --FF=FF --init_iter=init_iter --main_maxit=main_iter" +
 			" --iter_reali=iter_reali --match_first=match_first --max_round=max_round --match_second=match_second --stab_ali=stab_ali --thld_err=thld_err --indep_run=indep_run --thld_grp=thld_grp" +
 			"  --generation=generation  --rand_seed=rand_seed>" )
 	
@@ -92,7 +92,6 @@ def main():
 	parser.add_option("--indep_run",      type="int",          default=4,       help="number of indepentdent runs for reproducibility (default=4, only values 2, 3 and 4 are supported (4)")
 	parser.add_option("--thld_grp",       type="int",          default=10,      help="minimum size of class (10)")
 	parser.add_option("--generation",     type="int",          default=1,       help="current generation number (1)")
-	#parser.add_option("--candidatesexist",action="store_true", default=False,   help="Candidate class averages exist use them (default False)")
 	parser.add_option("--rand_seed",      type="int",          default=None,    help="random seed set before calculations, useful for testing purposes (default None - total randomness)")
 	parser.add_option("--new",            action="store_true", default=False,   help="use new code (default = False)")
 	parser.add_option("--debug",          action="store_true", default=False,   help="debug info printout (default = False)")
@@ -101,12 +100,6 @@ def main():
 	parser.add_option("--use_latest_master_directory", action="store_true", dest="use_latest_master_directory", default=True)
 	
 	parser.add_option("--restart_section", type="string", default="", help="restart section name (no spaces) followed immediately by comma, followed immediately by comma by generation to restart, example: --restart_section=ali2_base,1")
-
-
-	# options found only in sx_meridien
-	# set(['outlier_percentile', 'aa', 'ref_a', 'mask3D', 'pwreference', 'iteration_start', 'npad', 'sym', 'startangles', 'nsoft', 'delta', 'an', 'fl', 'center'])
-
-
 
 	(options, args) = parser.parse_args()
 	
@@ -466,7 +459,7 @@ def main():
 		if_error_all_processes_quit_program(error_status)
 		
 
-		program_state_stack.restart_location_title = "fresh_start"
+		program_state_stack.restart_location_title = "restart"
 		if program_state_stack(locals(), getframeinfo(currentframe())):
 			if (myid == main_node):
 				cmdexecute("mkdir -p " + NAME_OF_MAIN_DIR + "%04d"%isac_generation)
@@ -474,7 +467,7 @@ def main():
 				list_file = os.path.join(NAME_OF_MAIN_DIR + "%04d"%(isac_generation - 1), "generation_%d_unaccounted.txt"%(isac_generation - 1))
 				cmdexecute("e2bdb.py %s --makevstack=%s --list=%s"%(stack_processed_by_ali2d_base__filename__without_master_dir, 
 					stack_processed_by_ali2d_base__filename__without_master_dir + "_%03d"%isac_generation, list_file))
-			mpi_barrier(MPI_COMM_WORLD)			
+			mpi_barrier(MPI_COMM_WORLD)
 
 		os.chdir(NAME_OF_MAIN_DIR + "%04d"%isac_generation)
 

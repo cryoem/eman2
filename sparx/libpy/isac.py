@@ -343,14 +343,12 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				couldnt_find_stable += 1
 			Iter += 1
 			mpi_barrier(MPI_COMM_WORLD)
-	
-		del data
 		
-	if myid == main_node:
-		#  We will return after candidate averages are prepared so their calculation can be independently
-		print "******************************************************************************************"
-		print "*              End of the first phase             "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"             *"
-		print "******************************************************************************************"
+		if myid == main_node:
+			#  We will return after candidate averages are prepared so their calculation can be independently
+			print "******************************************************************************************"
+			print "*              End of the first phase             "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"             *"
+			print "******************************************************************************************"
 		return
 	#  If candidates exist start from here
 	refim_stack = avg_first_stage
