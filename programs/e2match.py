@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Jesus G. Galaz 9/1/2010 - Last Update July/07/2015 
+# Author: Jesus G. Galaz 9/1/2010 - Last Update July/08/2015 
 # Copyright (c) 2011- Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -154,9 +154,7 @@ def main():
 	imgs2process = options.img2process.split(',')
 	
 	for img2p in imgs2process:
-		
-		img2p
-		
+			
 		if len(imgs2process) > 1 or not options.output:
 			options.output = img2p.split('.')[0] + '_PREP.hdf'
 		
@@ -316,31 +314,31 @@ def preciseshrink( options, img2processEd, targetApix, targetBox ):
 	img2processEdhdr = EMData(img2processEd,0, True )
 	img2processApix = round(float( img2processEdhdr['apix_x'] ),4)
 	if options.verbose:
-		print "\n(e2match) I've read the apix of the particles in img2process, which is", img2processApix
+		print "\n(e2match)(preciseshrink) I've read the apix of the particles in img2process, which is", img2processApix
 
 	meanshrinkfactor = float( targetApix )/float(img2processApix)
 	#meanshrinkfactor_int = int(round(meanshrinkfactor))
 
-	meanshrinkfactor_int = int(meanshrinkfactor)
-
+	meanshrinkfactor_int = round(meanshrinkfactor)
+		
 	if options.verbose:
-		print "\n(e2match) the refStack or --img2match apix is", round(EMData( options.img2match, 0, True)['apix_x'],4)
-		print "(e2match) and the target apix is", targetApix
-		print "(e2match) therefore, the meanshrink factor is", meanshrinkfactor
-		print "(e2match) which, for the first step of shrinking (using math.meanshrink), will be rounded to", meanshrinkfactor_int
+		print "\n(e2match)(preciseshrink) the refStack or --img2match apix is", round(EMData( options.img2match, 0, True)['apix_x'],4)
+		print "(e2match)(preciseshrink) and the target apix is", targetApix
+		print "(e2match)(preciseshrink) therefore, the meanshrink factor is", meanshrinkfactor
+		print "(e2match)(preciseshrink) which, for the first step of shrinking (using math.meanshrink), will be rounded to", meanshrinkfactor_int
 
 	cmd = ''
 	
-	if meanshrinkfactor_int > 1:
-		print "\n\n(e2match) about to MEAN shrink becuase meanshrink factor is > 1", meanshrinkfactor
-		print "(e2match) the type of img2process is", type( img2processEd )
+	if int( meanshrinkfactor_int ) > 1:
+		print "\n\n(e2match)(preciseshrink) about to MEAN shrink becuase meanshrinkfactor_int is %.1f > 1, rounding from meanshrinkfactor %.4f" %( meanshrinkfactor_int, meanshrinkfactor )
+		print "(e2match)(preciseshrink) the type of img2process is", type( img2processEd )
 	
 		cmd = 'e2proc3d.py ' + img2processEd + ' ' + img2processEd + ' --process=math.meanshrink:n=' + str(meanshrinkfactor_int)
 		runcmd( options, cmd )
 	
 		#ref.process_inplace("math.meanshrink",{"n":meanshrinkfactor_int})
 		if options.verbose:
-			print "(e2match) the img2process was shrunk, to a first approximation, see", EMData(options.img2process,0,True)['nx']
+			print "(e2match)(preciseshrink) the img2process was shrunk, to a first approximation, see", EMData(options.img2process,0,True)['nx']
 	
 		img2processApix = round(EMData( img2processEd, 0 , True)['apix_x'],4)
 	
@@ -350,25 +348,37 @@ def preciseshrink( options, img2processEd, targetApix, targetBox ):
 		cmd = 'e2proc3d.py ' + img2processEd + ' ' + img2processEd + ' --clip=' + str(targetBox)
 		runcmd( options, cmd )
 	
+	
+	scaleup = 0
+	scaledown = 0
+	
+	if meanshrinkfactor_int - meanshrinkfactor > 1.0:
+		scaleup =1
+	elif meanshrinkfactor_int - meanshrinkfactor < 1.0:
+		scaledown = 1
+	
+	
 	scalefactor = round(float( img2processApix ),4)/round(float( targetApix),4)
 
-	print "\n\n\n(e2match) the finer scale factor to apply is", scalefactor
+	print "\n\n\n(e2match)(preciseshrink) the finer scale factor to apply is", scalefactor
 	
 	print "right before, apix is", round(EMData(img2processEd,0,True)['apix_x'],4)
-	print "(e2match) the final clip box is", targetBox
+	print "(e2match)(preciseshrink) the final clip box is", targetBox
 
 	cmd = 'e2proc3d.py ' + img2processEd + ' ' + img2processEd + ' --process=xform.scale:scale=' + str(scalefactor) 
 	
 	'''
 	Only need to add clipping to scaling if the box wasn't clipped before. Boxes need to be clipped first when you're "scaling up the data" (making it bigger) rather than shrinking it
 	'''
-	if int(meanshrinkfactor_int) > 1:
+	#if int(meanshrinkfactor_int) > 1:
+	if scaledown:
 		cmd += ':clip=' + str(targetBox) + ' --apix=' + str(targetApix)
 		cmd += ' && e2fixheaderparam.py --input=' + img2processEd + ' --stem apix --valtype float --stemval ' + str(targetApix)
 		print "meanshrinkfactor_int > 1, it is", meanshrinkfactor_int
 		print "target apix is", targetApix
 		print "cmd is", cmd
-	elif int(meanshrinkfactor_int) < 1:
+	#elif int(meanshrinkfactor_int) < 1:
+	elif scaleup:
 		cmd += ' && e2proc3d.py ' + img2processEd + ' ' + img2processEd + ' --clip=' + str(targetBox)
 		cmd += ' && e2fixheaderparam.py --input=' + str(img2processEd) + ' --stem apix --valtype float --stemval ' + str(targetApix)
 		print "meanshrinkfactor_int < 1, it is", meanshrinkfactor_int
@@ -383,7 +393,7 @@ def preciseshrink( options, img2processEd, targetApix, targetBox ):
 	#print "(e2match) Feedback from scale and clip is", text
 
 
-	print "\n\n!!!!!!!!!!!!\n(e2match) img2porcessEd should have been clipped by now, let's see", EMData(img2processEd,0,True)['nx']
+	print "\n\n!!!!!!!!!!!!\n(e2match)(preciseshrink) img2porcessEd should have been clipped by now, let's see", EMData(img2processEd,0,True)['nx']
 	
 	return
 
