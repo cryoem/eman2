@@ -7845,14 +7845,13 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 	        		from utilities import recv_attr_dict
 	        		recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
 	        else:		send_attr_dict(main_node, data, par_str, image_start, image_end)
+		if(myid == 0):
+			print_msg( "Time to write headers: %d\n" % (time()-start_time) );start_time = time()
 		mpi_barrier(MPI_COMM_WORLD)
 		if(terminate == 1):
 			if myid==main_node:
 				print_end_msg("mref_ali3d_MPI terminated due to small number of objects changing assignments")
-			from sys import exit
-			exit()
-		if(myid == 0):
-			print_msg( "Time to write headers: %d\n" % (time()-start_time) );start_time = time()
+			break
 	if myid==main_node:
 		print_end_msg("mref_ali3d_MPI")
 
