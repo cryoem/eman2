@@ -63,7 +63,7 @@ def main():
 	parser.add_option("--ts",       type="string",       default="0.25",           help="step size of the translation search in both directions direction, search is -xr, -xr+ts, 0, xr-ts, xr ")
 	parser.add_option("--delta",    type="string",       default="10 6 4  3   2",  help="angular step of reference projections")
 	parser.add_option("--an",       type="string",       default="-1",	           help="angular neighborhood for local searches")
-	parser.add_option("--center",   type="float",        default=0,	               help="0 - if you do not want the volume to be centered, 1 - center the volume using cog (default=0)")
+	parser.add_option("--center",   type="int",          default=0,	               help="0 - if you do not want the volume to be centered, 1 - center the volume using cog (default=0)")
 	parser.add_option("--nassign",  type="int",          default=0, 	           help="number of reassignment iterations performed for each angular step (set to 3) ")
 	parser.add_option("--nrefine",  type="int",          default=1, 	           help="number of alignment iterations performed for each angular step (set to 1) ")
 	parser.add_option("--CTF",      action="store_true", default=False,            help="Consider CTF correction during the alignment ")
@@ -97,11 +97,10 @@ def main():
 		if options.MPI:
 			from mpi import mpi_init
 			sys.argv = mpi_init(len(sys.argv),sys.argv)		
-			mref_ali3d(args[0], args[1], args[2], maskfile, options.focus, options.maxit, options.ir, options.ou, options.rs, \
+			mref_ali3d_MPI(args[0], args[1], args[2], maskfile, options.focus, options.maxit, options.ir, options.ou, options.rs, \
 			options.xr, options.yr, options.ts, options.delta, options.an, options.center, \
 			options.nassign, options.nrefine, options.CTF, options.snr, options.ref_a, options.sym, \
-			options.function,  options.npad, options.debug, options.fourvar, options.stoprnct, \
-			mpi_comm = None, log = None)
+			options.function,  options.npad, options.debug, options.fourvar, options.stoprnct, mpi_comm = None, log = None)
 		else:
 			mref_ali3d(args[0], args[1], args[2], maskfile, options.focus, options.maxit, options.ir, options.ou, options.rs, 
 			options.xr, options.yr, options.ts, options.delta, options.an, options.center,

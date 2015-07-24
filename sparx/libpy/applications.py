@@ -6932,6 +6932,7 @@ def mref_ali3d(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1, ir=
 	import user_functions
 	user_func = user_functions.factory[user_func_name]
 
+	
 	if os.path.exists(outdir):  ERROR('Output directory exists, please change the name and restart the program', "mref_ali3d", 1)
 	os.mkdir(outdir)
 	import global_def
