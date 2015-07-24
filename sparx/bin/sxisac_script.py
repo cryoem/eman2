@@ -260,7 +260,8 @@ def main():
 		del params2d
 		mpi_barrier(MPI_COMM_WORLD)
 
-		#  We assume the target image size will be target_nx, radius will be 29, and xr = 1.  Note images can be also padded, in which case shrink_ratio > 1.
+		#  We assume the target image size will be target_nx, radius will be 29, and xr = 1.  
+		#  Note images can be also padded, in which case shrink_ratio > 1.
 		shrink_ratio = float(target_radius)/float(radi)
 		nx = aligned_images[0].get_xsize()
 		nima = len(aligned_images)
@@ -269,7 +270,7 @@ def main():
 		elif  newx == target_nx : opt = 0
 		else                    : opt = -1
 
-		if opt == -1 :   msk = model_circle(nx//2-2, nx,  nx)
+		if opt == -1 and shrink_ratio == 1.0:   msk = model_circle(nx//2-2, nx,  nx)
 		else:            msk = model_circle(target_radius, target_nx, target_nx)
 
 		from fundamentals import rot_shift2D, resample
@@ -279,9 +280,9 @@ def main():
 			alpha, sx, sy, mirror, scale = get_params2D(aligned_images[im])
 			alpha, sx, sy, mirror = combine_params2(0, sx,sy, 0, -alpha, 0, 0, 0)
 			aligned_images[im] = rot_shift2D(aligned_images[im], 0, sx, sy, 0)
-			if shrink_ratio < 1.0:
-				aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
 			if   opt == 1 or opt == 0:
+				if shrink_ratio < 1.0:
+					aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
 				if opt == 1:  aligned_images[im] = Util.window(aligned_images[im], target_nx, target_nx, 1)
 				p = Util.infomask(aligned_images[im], msk, False)
 				aligned_images[im] -= p[0]
@@ -292,7 +293,9 @@ def main():
 				p = Util.infomask(aligned_images[im], msk, False)
 				aligned_images[im] -= p[0]
 				p = Util.infomask(aligned_images[im], msk, True)
-				aligned_images[im] /= p[1]					
+				aligned_images[im] /= p[1]				
+				if shrink_ratio < 1.0:
+					aligned_images[im]  = resample(aligned_images[im], shrink_ratio)
 				aligned_images[im] = pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
 				
 		del msk
