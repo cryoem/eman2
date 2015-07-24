@@ -4800,8 +4800,6 @@ def program_state_stack(full_current_state, frameinfo, file_name_of_saved_state=
 		
 	current_state["location_in_program"] = location_in_program
 	
-	
-	
 	current_stack = get_current_stack_info()
 
 	error_status = 0

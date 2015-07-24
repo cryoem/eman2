@@ -152,8 +152,6 @@ def main():
 		if options.restart_section != "":
 			if os.path.exists(os.path.join(masterdir,NAME_OF_JSON_STATE_FILE)):
 				stored_stack, stored_state = restore_program_stack_and_state(os.path.join(masterdir,NAME_OF_JSON_STATE_FILE))
-				print stored_stack
-				print stored_state
 				import re
 				if "," in options.restart_section:
 					stored_state[-1]["location_in_program"] = re.sub(r"___.*$", "___%s"%options.restart_section.split(",")[0], stored_state[-1]["location_in_program"])
