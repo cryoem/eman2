@@ -4665,7 +4665,7 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 		else:
 			total_nima = 0
 		total_nima = wrap_mpi_bcast(total_nima, main_node, mpi_comm)
-		list_of_particles = range(total_nime)
+		list_of_particles = range(total_nima)
 		image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
 		# create a list of images for each node
 		list_of_particles = list_of_particles[image_start: image_end]
@@ -7153,7 +7153,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 	from utilities      import model_circle, reduce_EMData_to_root, bcast_EMData_to_all, bcast_number_to_all, drop_image
 	from utilities      import bcast_string_to_all, bcast_list_to_all, get_image, get_input_from_string, get_im
 	from utilities      import get_arb_params, set_arb_params, drop_spider_doc, send_attr_dict
-	from utilities      import get_params_proj, set_params_proj, model_blank
+	from utilities      import get_params_proj, set_params_proj, model_blank, wrap_mpi_bcast
 	from filter         import filt_params, filt_btwl, filt_ctf, filt_table, fit_tanh, filt_tanl
 	from utilities      import rotate_3D_shift,estimate_3D_center_MPI
 	from alignment      import Numrinit, prepare_refrings, proj_ali_incore
@@ -7279,7 +7279,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 		else:
 			total_nima = 0
 		total_nima = wrap_mpi_bcast(total_nima, main_node, mpi_comm)
-		list_of_particles = range(total_nime)
+		list_of_particles = range(total_nima)
 		image_start, image_end = MPI_start_end(total_nima, number_of_proc, myid)
 		# create a list of images for each node
 		list_of_particles = list_of_particles[image_start: image_end]
@@ -7354,14 +7354,14 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 	if myid == main_node:
 		refdata = [None]*7
 		for  iref in xrange(numref):
-			vol = get_im(ref_vol, iref).write_image(os.path.join(outdir, "volf0000.hdf"), iref)
+			vol = get_im(ref_vol, iref).write_image(os.path.join(outdir, "vol0000.hdf"), iref)
 		refdata[0] = numref
 		refdata[1] = outdir
 		refdata[2] = None
 		refdata[3] = 0
 		#refdata[4] = varf
 		refdata[5] = mask3D
-		refdata[6] = (runtype=="REFINEMENT") # whether to align on 50S, this only happens at refinement step
+		refdata[6] = False # whether to align on 50S, this only happens at refinement step
 		user_func( refdata )
 		#vol.write_image(os.path.join(outdir, "volf0000.hdf"), iref)
 	mpi_barrier( MPI_COMM_WORLD )
