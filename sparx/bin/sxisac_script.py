@@ -24,41 +24,11 @@ from applications import  ali2d_base
 
 from utilities import program_state_stack
 
-import string
-
 NAME_OF_JSON_STATE_FILE = "my_state.json"
 NAME_OF_ORIGINAL_IMAGE_INDEX = "originalid"
 NAME_OF_RUN_DIR = "run"
 NAME_OF_MAIN_DIR = "generation_"
 DIR_DELIM = os.sep
-
-def preparing_test_data():
-	
-	location_of_pdb_files = "/home/hvoicu/Analysis/rrviper2/single_part_demo/demo_with_cft/"
-	location_of_pdb_files = "../../generate_test_data/"
-	box_size = 90
-	# box_size = 64
-	
-			
-	os.system("mkdir -p generate_test_data")
-	os.chdir("generate_test_data")
-	for i in range(5):
-		os.system("sxpdb2em.py %sgrp%d.pdb tmp%d.hdf --apix=5.2 --box=%d"%(location_of_pdb_files, i, i, box_size))
-	os.system("sxcpy.py tmp*.hdf  ttt.hdf")
-	os.system("rm tmp*")
-	os.system("e2proc3d.py ttt.hdf fmodel_structure.hdf --process=filter.lowpass.tanh:cutoff_abs=0.15:fall_off=0.2")
-	os.system("e2proc3d.py ttt.hdf model_structure.hdf --process=filter.lowpass.tanh:cutoff_abs=0.45:fall_off=0.1")
-	os.system("rm ttt.hdf")
-	os.system("sxprocess.py model_structure.hdf particles mic --generate_projections apix=5.2:CTF=True:boxsize=%d"%box_size)
-	os.system("rm -rf ../EMAN2DB")
-	os.system("cp -r EMAN2DB ../EMAN2DB")
-	os.chdir("..")
-	
-	
-
-	# os.system("mpirun -np 5 sxcter.py pwrot partres --indir=. --nameroot=mic --micsuffix=hdf --wn=512 --apix=5.2 --Cs=2.0 --voltage=120 --ac=10.0 --f_start=0.02 --f_stop=0.1 --MPI")
-
-
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -98,7 +68,7 @@ def main():
 	parser.add_option("--debug",          action="store_true", default=False,   help="debug info printout (default = False)")
 
 	# must be switched off in production
-	parser.add_option("--use_latest_master_directory", action="store_true", dest="use_latest_master_directory", default=True)
+	parser.add_option("--use_latest_master_directory", action="store_true", dest="use_latest_master_directory", default=False)
 	
 	parser.add_option("--restart_section", type="string", default="", help="restart section name (no spaces) followed immediately by comma, followed immediately by comma by generation to restart, example: --restart_section=ali2_base,1.  (Sections:ali2d, candidate_class_averages, reproducible_class_averages")
 
@@ -116,18 +86,11 @@ def main():
 	from isac import iter_isac
 	global_def.BATCH = True
 
-	import cProfile
-	import profile
-	
-	
 	global_def.BATCH = True
 	
-	
-	# orgstack = args[0]
 	command_line_provided_stack_filename = args[0]
 
 	radi  = options.radius
-	
 	if(radi < 1):  ERROR("Particle radius has to be provided!","sxisac",1,myid)
 
 	global_def.BATCH = True
@@ -184,8 +147,7 @@ def main():
 
 	# send masterdir to all processes
 	masterdir = send_string_to_all(masterdir)
-	
-	
+
 	if myid == 0:
 		if options.restart_section != "":
 			if os.path.exists(os.path.join(masterdir,NAME_OF_JSON_STATE_FILE)):
@@ -194,7 +156,6 @@ def main():
 				print stored_state
 				import re
 				if "," in options.restart_section:
-					# stored_state[-1]["location_in_program"] = re.sub(r"___.*___", "___%s___"%options.restart_section.split(",")[0], stored_state[-1]["location_in_program"])
 					stored_state[-1]["location_in_program"] = re.sub(r"___.*$", "___%s"%options.restart_section.split(",")[0], stored_state[-1]["location_in_program"])
 					generation_str_format = options.restart_section.split(",")[1]
 					if generation_str_format != "":
@@ -206,11 +167,9 @@ def main():
 							del stored_state[-1]["isac_generation"]
 				else:
 					isac_generation_from_command_line = -1
-					# stored_state[-1]["location_in_program"] = re.sub(r"___.*___", "___%s___"%options.restart_section, stored_state[-1]["location_in_program"])
 					stored_state[-1]["location_in_program"] = re.sub(r"___.*$", "___%s"%options.restart_section, stored_state[-1]["location_in_program"])
 					if "isac_generation" in stored_state[-1]:
 						del stored_state[-1]["isac_generation"]
-					
 				store_program_state(os.path.join(masterdir,NAME_OF_JSON_STATE_FILE), stored_state, stored_stack)
 			else:
 				print "Please remove the restart_section option from the command line. The program must be started from the beginning."			
@@ -226,8 +185,6 @@ def main():
 	stack_processed_by_ali2d_base__filename__without_master_dir = \
 		send_string_to_all(stack_processed_by_ali2d_base__filename__without_master_dir)
 
-
-	
 	#  PARAMETERS OF THE PROCEDURE
 	if( options.xr == -1 ):
 		#  Default values
@@ -240,13 +197,6 @@ def main():
 		target_nx = 76 + target_xr - 1 # subtract one, which is default
 		target_radius = 29
 
-	# mpi_barrier(MPI_COMM_WORLD)
-	# from mpi import mpi_finalize
-	# mpi_finalize()
-	# print "mpi finalize"
-	# from sys import exit
-	# exit()
-
 	mpi_barrier(MPI_COMM_WORLD)
 
 	# Initialization of stacks
@@ -254,7 +204,6 @@ def main():
 		number_of_images_in_stack = EMUtil.get_image_count(command_line_provided_stack_filename)
 	else:
 		number_of_images_in_stack = 0
-
 
 	number_of_images_in_stack = bcast_number_to_all(number_of_images_in_stack, source_node = main_node)
 	
@@ -297,12 +246,9 @@ def main():
 		tss = "1"
 		txr = "%d"%txrm
 
-
 	# section ali2d_base
 	program_state_stack.restart_location_title = "ali2d"
 	if program_state_stack(locals(), getframeinfo(currentframe())):
-	# if 1:		
-
 
 		#  centering method is set to #7
 		params2d, aligned_images = ali2d_base(command_line_provided_stack_filename, init2dir, None, 1, radi, 1, txr, txr, tss, \
@@ -342,15 +288,14 @@ def main():
 				p = Util.infomask(aligned_images[im], msk, True)
 				aligned_images[im] /= p[1]
 			elif opt == -1:
-				# #  Different mask!
-				# p = Util.infomask(aligned_images[im], msk, False)
-				# aligned_images[im] -= p[0]
-				# p = Util.infomask(aligned_images[im], msk, True)
-				# aligned_images[im] /= p[1]					
-				# aligned_images[im] = pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
-				pass
+				#  Different mask!
+				p = Util.infomask(aligned_images[im], msk, False)
+				aligned_images[im] -= p[0]
+				p = Util.infomask(aligned_images[im], msk, True)
+				aligned_images[im] /= p[1]					
+				aligned_images[im] = pad(aligned_images[im], target_nx, target_nx, 1, 0.0)
 				
-		# del msk
+		del msk
 
 		gather_compacted_EMData_to_root(number_of_images_in_stack, aligned_images, myid)
 		number_of_images_in_stack = bcast_number_to_all(number_of_images_in_stack, source_node = main_node)
@@ -365,18 +310,10 @@ def main():
 
 		mpi_barrier(MPI_COMM_WORLD)
 
-	"""
-	from mpi import mpi_finalize
-	mpi_finalize()
-	import  sys
-	sys.exit()
-	"""
-
 	global_def.BATCH = True
 
 	os.chdir(masterdir)
 
-	
 	if program_state_stack(locals(), getframeinfo(currentframe())):
 	# if 1:
 		pass
@@ -400,7 +337,6 @@ def main():
 					backup_dir_no = get_nonexistent_directory_increment_value("./", "000_backup", myformat="%05d", start_value=1)
 					cmdexecute("mkdir -p " + "000_backup" + "%05d"%backup_dir_no)
 				cmdexecute("mv  " + NAME_OF_MAIN_DIR + "%04d"%i +  " 000_backup" + "%05d"%backup_dir_no)
-				# delete_bdb(stack_processed_by_ali2d_base__filename__without_master_dir+"_%03d"%i)
 				cmdexecute("rm  " + "EMAN2DB/"+stack_processed_by_ali2d_base__filename__without_master_dir[4:]+"_%03d.bdb"%i)
 				
 			# it includes both command line and json file
@@ -410,7 +346,6 @@ def main():
 					backup_dir_no = get_nonexistent_directory_increment_value("./", "000_backup", myformat="%05d", start_value=1)
 					cmdexecute("mkdir -p " + "000_backup" + "%05d"%backup_dir_no)
 				cmdexecute("mv  " + NAME_OF_MAIN_DIR + "%04d"%isac_generation_from_command_line +  " 000_backup" + "%05d"%backup_dir_no)
-				# delete_bdb(stack_processed_by_ali2d_base__filename__without_master_dir+"_%03d"%isac_generation_from_command_line)
 				cmdexecute("rm  " + "EMAN2DB/"+stack_processed_by_ali2d_base__filename__without_master_dir[4:]+"_%03d.bdb"%isac_generation_from_command_line )
 			elif "candidate_class_averages" in my_restart_section:
 				if "backup_dir_no" not in locals():
@@ -431,7 +366,6 @@ def main():
 					isac_generation_from_command_line = 1
 			else:
 				isac_generation_from_command_line = 1
-
 	else:
 		isac_generation_from_command_line = 0
 		
@@ -453,13 +387,9 @@ def main():
 			break
 
 		data64_stack_current = "bdb:../"+stack_processed_by_ali2d_base__filename__without_master_dir[4:]+"_%03d"%isac_generation
-		# data64_stack_next    = "bdb:../"+stack_processed_by_ali2d_base__filename__without_master_dir[4:]+"_%03d"%(isac_generation + 1)
 
 		error_status = 0
 		if(myid == main_node):
-			
-			print "\nooooooo: isac_generation", isac_generation, "\n"
-			
 			
 			number_of_accounted_images = sum(1 for line in open(os.path.join(NAME_OF_MAIN_DIR + "%04d"%(isac_generation - 1),"generation_%d_accounted.txt"%(isac_generation - 1))))
 			number_of_unaccounted_images = sum(1 for line in open(os.path.join(NAME_OF_MAIN_DIR + "%04d"%(isac_generation - 1),"generation_%d_unaccounted.txt"%(isac_generation - 1))))
@@ -468,7 +398,6 @@ def main():
 
 		if_error_all_processes_quit_program(error_status)
 		
-
 		program_state_stack.restart_location_title = "restart"
 		if program_state_stack(locals(), getframeinfo(currentframe())):
 			if (myid == main_node):
@@ -493,12 +422,10 @@ def main():
 				options.dst, options.FL, options.FH, options.FF, options.init_iter, options.main_iter, options.iter_reali, options.match_first, \
 				options.max_round, options.match_second, options.stab_ali, options.thld_err, options.indep_run, options.thld_grp, \
 				options.img_per_grp, isac_generation, False, random_seed=options.rand_seed, new=False)#options.new)
-			pass
 
 		# program_state_stack.restart_location_title = "stopped_program1"
-		program_state_stack(locals(), getframeinfo(currentframe()))
+		# program_state_stack(locals(), getframeinfo(currentframe()))
 
-		
 		program_state_stack.restart_location_title = "reproducible_class_averages"
 		if program_state_stack(locals(), getframeinfo(currentframe())):
 
@@ -520,17 +447,8 @@ def main():
 			cmdexecute("rm -f class_averages.hdf")
 			cpy(["generation_%04d/class_averages_generation_%d.hdf"%(i,i) for i in xrange(1, isac_generation)], "class_averages.hdf")
 
-		program_state_stack.restart_location_title = "stopped_program2"
-		program_state_stack(locals(), getframeinfo(currentframe()))
-
-		# from mpi import mpi_finalize
-		# mpi_finalize()
-		# sys.exit()
-		
-		
-	if program_state_stack(locals(), getframeinfo(currentframe())):
-	# if 1:
-		pass
+		# program_state_stack.restart_location_title = "stopped_program2"
+		# program_state_stack(locals(), getframeinfo(currentframe()))
 
 	program_state_stack(locals(), getframeinfo(currentframe()), last_call="__LastCall")
 
