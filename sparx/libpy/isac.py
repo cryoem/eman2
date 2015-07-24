@@ -584,6 +584,8 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		print  "  l_STB   ",l_STB
 	else:
 		l_STB = 0
+		from time import sleep
+		while not os.path.exists(ali_params_dir):   sleep(5)
 	mpi_barrier(MPI_COMM_WORLD)
 	l_STB = mpi_bcast(l_STB, 1, MPI_INT, main_node, MPI_COMM_WORLD)
 	l_STB = int(l_STB[0])
@@ -695,7 +697,6 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				ave_num = mpi_recv(1, MPI_INT, main_node, i+80000, MPI_COMM_WORLD)
 				ave_num = int(ave_num[0])
 				write_text_file([all_alpha, all_sx, all_sy, all_mirror], "%s/ali_params_%03d"%(ali_params_dir, ave_num))
-				#write_text_file([all_alpha, all_sx, all_sy, all_mirror, all_scale], "%s/ali_params_%03d"%(ali_params_dir, ave_num))
 
 	mpi_barrier(MPI_COMM_WORLD)
 	

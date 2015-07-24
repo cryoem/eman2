@@ -159,7 +159,7 @@ def ref_ali3dm( refdata ):
 	outdir = refdata[1]
 	fscc   = refdata[2]
 	total_iter = refdata[3]
-	varf   = refdata[4]
+	#varf   = refdata[4]
 	mask   = refdata[5]
 
 	print 'filter every volume at (0.4, 0.1)'

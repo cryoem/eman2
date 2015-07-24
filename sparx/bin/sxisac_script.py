@@ -89,10 +89,6 @@ def main():
 	global_def.BATCH = True
 	
 	command_line_provided_stack_filename = args[0]
-
-	radi  = options.radius
-	if(radi < 1):  ERROR("Particle radius has to be provided!","sxisac",1,myid)
-
 	global_def.BATCH = True
 
 	from mpi import mpi_init, mpi_comm_rank, MPI_COMM_WORLD
@@ -100,6 +96,10 @@ def main():
 	mpi_init(0, [])
 	myid = mpi_comm_rank(MPI_COMM_WORLD)
 	nproc = mpi_comm_size(MPI_COMM_WORLD)
+
+	radi  = options.radius
+	if(radi < 1):  ERROR("Particle radius has to be provided!","sxisac",1,myid)
+
 	
 	use_latest_master_directory = options.use_latest_master_directory
 	program_state_stack.restart_location_title_from_command_line = options.restart_section

@@ -2349,13 +2349,13 @@ def k_means_headlog(stackname, outname, method, N, K, crit, maskname, trials, ma
 	print_msg('Criterion                   : %s\n'     % crit)
 	print_msg('Optimization method         : %s\n'     % method)
 	if SA:
-		print_msg('Simulate annealing          : ON\n')
+		print_msg('Simulated annealing          : ON\n')
 		#if SA2: print_msg('   select neighbour         : closer according T\n')
 		#else: 	 print_msg('   select neighbour         : randomly\n')
 		print_msg('   T0                       : %f\n' % T0)
 		print_msg('   F                        : %f\n' % F)
 	else:
-		print_msg('Simulate annealing          : OFF\n')
+		print_msg('Simulated annealing          : OFF\n')
 	print_msg('Random seed                 : %i\n'     % rnd)
 	print_msg('Initialization method       : %s\n'     % init_method)
 	print_msg('Number of CPUs              : %i\n'     % ncpu)
@@ -2561,12 +2561,12 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 	else:
 		CTF  = False 
 
-	# Simulate annealing use or not
+	# Simulated annealing use or not
 	if F != 0: SA = True
 	else:      SA = False
 
 	if SA:
-		# for simulate annealing
+		# for simulated annealing
 		from math   import exp
 		from random import random
 
@@ -2626,10 +2626,10 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 	while ntrials < trials:
 		ntrials  += 1
 
-		# for simulate annealing
+		# for simulated annealing
 		SA = SA_run
 		if SA: T = T0
-		
+
 		# Init the cluster by an image empty
 		buf.to_zero()
 		for k in xrange(K):
@@ -2701,7 +2701,7 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 				else:
 					res = Util.min_dist_real(im_M[im], Cls['ave'])
 
-				# Simulate annealing
+				# Simulated annealing
 				if SA:
 					dJe = [0.0] * K
 					ni  = float(Cls['n'][assign[im]])
@@ -2782,7 +2782,7 @@ def k_means_cla(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 			if Je != 0: thd = abs(Je - old_Je) / Je
 			else:	    thd = 0
 
-			# Simulate annealing, update temperature
+			# Simulated annealing, update temperature
 			if SA:
 				if thd < 1.0e-12 and ct_pert == 0: watch_dog = maxit
 				T *= F
@@ -2913,12 +2913,12 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 	else:
 		CTF  = False
 
-	# Simulate annealing use or not
+	# Simulated annealing use or not
 	if T0 != 0: SA = True
 	else:       SA = False
 
 	if SA:
-		# for simulate annealing
+		# for simulated annealing
 		from math   import exp
 		from random import random
 
@@ -2978,7 +2978,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 	while ntrials < trials:
 		ntrials += 1
 
-		# for simulate annealing
+		# for simulated annealing
 		SA = SA_run
 		if SA: T = T0
 	
@@ -3185,7 +3185,7 @@ def k_means_SSE(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEBUG=F
 			if Je != 0: thd = abs(Je - old_Je) / Je
 			else:       thd = 0
 
-			# Simulate annealing, update temperature
+			# Simulated annealing, update temperature
 			if SA:
 				if thd < 1e-12 and ct_pert == 0: watch_dog = maxit
 				T *= F
@@ -3564,12 +3564,12 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 	else:
 		CTF  = False
 
-	# Simulate annealing use or not
+	# Simulated annealing use or not
 	if T0 != 0: SA = True
 	else:       SA = False
 
 	if SA:
-		# for simulate annealing
+		# for simulated annealing
 		from math   import exp
 		from random import random
 
@@ -3632,7 +3632,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 	while ntrials < trials:
 		ntrials += 1
 
-		# for simulate annealing
+		# for simulated annealing
 		SA = SA_run
 		if SA: T = T0
 	
@@ -3838,7 +3838,7 @@ def k_means_SSE_MPI(im_M, mask, K, rand_seed, maxit, trials, CTF, F=0, T0=0, DEB
 			if Je != 0: thd = abs(Je - old_Je) / Je
 			else:       thd = 0
 
-			# Simulate annealing, update temperature
+			# Simulated annealing, update temperature
 			if SA:
 				if thd < 1e-12 and ct_pert == 0: watch_dog = maxit
 				T *= F
@@ -4013,7 +4013,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 	im_M = [None] * N
 	im_M[N_start:N_stop] = IM
 
-	# Simulate annealing
+	# Simulated annealing
 	if F != 0: SA = True
 	else:      SA = False
 
@@ -4079,7 +4079,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 	while ntrials < trials:
 		ntrials  += 1
 
-		# Simulate annealing
+		# Simulated annealing
 		SA = SA_run
 		if SA: T = T0
 		
@@ -4222,7 +4222,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 				else:
 					res = Util.min_dist_real(im_M[im], Cls['ave'])
 
-				# [all] Simulate annealing
+				# [all] Simulated annealing
 				if SA:
 					dJe = [0.0] * K
 					ni  = float(Cls['n'][assign[im]])
@@ -4343,7 +4343,7 @@ def k_means_cla_MPI(IM, mask, K, rand_seed, maxit, trials, CTF, F, T0, myid, mai
 			if Je != 0: thd = abs(Je - old_Je) / Je
 			else:       thd = 0
 
-			# Simulate annealing, update temperature
+			# Simulated annealing, update temperature
 			if SA:
 				if thd < 1e-12 and ct_pert == 0: change = 0
 				T *= F
@@ -5332,13 +5332,13 @@ def k_means_cuda_headlog(stackname, outname, method, N, K, maskname, maxit, T0, 
 	print_msg('Criterion                   : CHD\n'    )
 	print_msg('Optimization method         : %s\n'     % method)
 	if SA:
-		print_msg('Simulate annealing          : ON\n')
+		print_msg('Simulated annealing          : ON\n')
 		print_msg('   F                        : %f\n' % F)
 		if T0 != -1: print_msg('   T0                       : %f\n' % T0)
 		else:        print_msg('   T0                       : AUTO\n')
 
 	else:
-		print_msg('Simulate annealing          : OFF\n')
+		print_msg('Simulated annealing          : OFF\n')
 	print_msg('Random seed                 : %s\n'     % txtrnd)
 	print_msg('Number of Cs              : %i\n'     % ncpu)
 	print_msg('Output seed names           : %s\n'     % outname)
@@ -5697,7 +5697,7 @@ def k_means_SA_T0(im_M, mask, K, rand_seed, CTF, F):
 				else:
 					res = Util.min_dist_real(im_M[im], Cls['ave'])
 		
-				# Simulate annealing
+				# Simulated annealing
 				dJe = [0.0] * K
 				ni  = float(Cls['n'][assign[im]])
 				di  = res['dist'][assign[im]]											
@@ -5898,7 +5898,7 @@ def k_means_SA_T0_MPI(im_M, mask, K, rand_seed, CTF, F, myid, main_node, N_start
 				else:
 					res = Util.min_dist_real(im_M[im], Cls['ave'])
 
-				# Simulate annealing
+				# Simulated annealing
 				dJe = [0.0] * K
 				ni  = float(Cls['n'][assign[im]])
 				di  = res['dist'][assign[im]]											
