@@ -290,7 +290,7 @@ def ref_ali3d( ref_data ):
 	# here figure the filtration parameters and filter vol for the  next iteration
 	#fl, fh = filt_params(res)
 	#vol	= filt_btwl(vol, fl, fh)
-	# store the filtred reference volume
+	# store the filtered reference volume
 	#lk = 0
 	#while(res[1][lk] >0.9 and res[0][lk]<0.25):
 	#	lk+=1
