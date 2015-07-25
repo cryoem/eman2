@@ -348,7 +348,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 		if myid == main_node:
 			#  We will return after candidate averages are prepared so their calculation can be independently
 			print "******************************************************************************************"
-			print "*              End of the first phase             "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"             *"
+			print "*              End of the first phase             "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"              *"
 			print "******************************************************************************************"
 		return
 	#  If candidates exist start from here
@@ -358,7 +358,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 	if myid == main_node:
 		print ""
 		print "******************************************************************************************"
-		print "*           Beginning of the second phase         "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"           *"
+		print "*           Beginning of the second phase         "+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"             *"
 		print "*                                                                                        *"
 		print "* The second phase is where the actual class averages are generated, it typically has    *"
 		print "* 3~9 iterations (default = 5) of matching. The first half of iterations are 2-way       *"
@@ -416,7 +416,7 @@ def iter_isac(stack, ir, ou, rs, xr, yr, ts, maxit, CTF, snr, dst, FL, FH, FF, i
 				wayness = indep_run
 		if myid == main_node:		
 			print "################################################################################"
-			print "#       Iteration %2d for %d-way matching       "%(mloop, wayness)+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"       #"
+			print "#       Iteration %2d for %d-way matching       "%(mloop, wayness)+strftime("%a, %d %b %Y %H:%M:%S", localtime())+"        #"
 			print "################################################################################"
 
 			members = []
