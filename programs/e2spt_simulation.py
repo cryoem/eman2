@@ -57,6 +57,8 @@ def main():
 
 	parser.add_argument("--tiltaxis",type=str,default='y',help="""Axis to produce projections about. Default is 'y'; the only other valid option is 'x'.""")
 
+	parser.add_argument('--tiltangles',type=str,default='',help="""File in .tlt or .txt format containing the tilt angle of each tilt image in the tiltseries.""")
+
 	parser.add_argument("--input", type=str, default='', help="""The name of the input volume from which simulated subtomograms will be generated. The output will be in HDF format, since volume stack support is required. The input CAN be PDB, MRC or and HDF stack. If the input file is PDB or MRC, a version of the supplied model will be written out in HDF format. If the input file is a stack, simulatd subvolumes will be generated from each model in the stack and written to different output stacks. For example, if the input file contains models A and B, two output stacks with simulated subvolumes will be generated.""")
 				
 	parser.add_argument("--lowpass",type=str, default='', help="""A filter (as in a processor from e2proc3d.py) to apply to the model before generating simulated particles from it. Type 'e2help.py processors' at the command line and find the options availbale from the processors list)""")
@@ -74,6 +76,8 @@ def main():
 	parser.add_argument("--shrink", type=int,default=0,help="Optionally shrink the input volume before the simulation if you want binned/down-sampled subtomograms.")
 	
 	parser.add_argument("--savepreprocessed",action="store_true",  default=False, help="""Will save stacks of preprocessed particles (one for coarse alignment and one for fine alignment if preprocessing options are different).""")
+	
+	parser.add_argument("--evenorientations",action="store_true",  default=False, help="""Orientations to generate simulated particles will be evenly distributed in angular space (or a subregion if --sym is specified and not equal to c1).""")
 	
 	parser.add_argument("--nptcls", type=int,default=10,help="""Number of simulated subtomograms to generate per reference model supplied.""")
 		
@@ -139,7 +143,7 @@ def main():
 
 	parser.add_argument("--snr",type=float,default=0,help="Weighing noise factor for noise added to the image.")
 	
-	parser.add_argument("--sym",type=str,default='c1',help="If your particle is symmetrical, you should randomize it's orientation withing the asymmetric unit only. Thus, provide the symmetry.")
+	parser.add_argument("--sym",type=str,default='c1',help="If your particle is symmetrical, it is only necessary to randomize orientations within the asymmetric unit only.")
 
 	parser.add_argument("--notrandomize",action="store_true",default=False,help="This will prevent the simulated particles from being rotated and translated into random orientations.")
 
@@ -613,9 +617,16 @@ def randomizer(options, model, tag):
 	print "###############\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n#################\nThe stackname inside RANDOMIZER, is", randstackname
 	print "--saverandstack is", options.saverandstack
 	print "#####################################\n\n\n\n\n\n\n\n\n\n\n\n\n"
+	
+	
+	orientations = OrientGens.get("rand",{"n": options.nptcls, "phitoo":1,"inc_mirror":1})	
+	
+	if options.evenorientations:
+		orientations = OrientGens.get("even",{"n": options.nptcls, "phitoo":1,"inc_mirror":1})						#Generate even orientations
+	
 	for i in range(options.nptcls):
 		if options.verbose:
-			print "I will generate particle #", i
+			print "generating particle #", i
 
 		b = model.copy()
 		
@@ -625,10 +636,10 @@ def randomizer(options, model, tag):
 			
 			if i > 0:
 				print "\nGenerating random orientation"
-				rand_orient = OrientGens.get("rand",{"n":1, "phitoo":1,"inc_mirror":1})						#Generate a random orientation (randomizes all 3 euler angles)
-				c1_sym = Symmetries.get("c1")
-				random_transform = rand_orient.gen_orientations(c1_sym)[0]
-			
+				#rand_orient = OrientGens.get("rand",{"n":1, "phitoo":1,"inc_mirror":1})						#Generate a random orientation (randomizes all 3 euler angles)
+				symorients = Symmetries.get( options.sym )
+				random_transform = orientations.gen_orientations( symorients )[i]
+				
 				randtx = randty = randtz = 0	
 				if options.trange and not options.txrange:
 					randtx = random.randrange(-1 * options.trange, options.trange)			#Generate random translations
@@ -648,7 +659,7 @@ def randomizer(options, model, tag):
 				if randtx or randty or randtz:
 					random_transform.translate(randtx, randty, randtz)
 			else:
-				print "\nThe orientation of the first particle is NEVER randomized"
+				print "\nthe orientation of the first particle is NEVER randomized"
 			
 			b.transform(random_transform)		
 
@@ -760,7 +771,9 @@ def subtomosim(options,ptcls,outname,dimension):
 	tasks=[]
 	#>>for i in range(len(ptcls)):
 	
-	tangles = getangles( options )
+	
+	tangles = genangles( options )
+	
 	for i in ptcls:	
 		#if options.parallel:			
 		task=SubtomoSimTask(ptcls[i],i,options,outname,tangles)
@@ -798,6 +811,11 @@ def subtomosim(options,ptcls,outname,dimension):
 		result[key]['origin_y'] = 0
 		result[key]['origin_z'] = 0
 		
+		if options.tiltaxis == 'y':
+			tt = Transform({'type':'eman','az':90,'alt':90,'phi':-90})
+			result[key].transform( tt )
+				
+		result[key]['xform.align3d'] = Transform()
 		#finaloutname = finaloutname.replace('_preproc','')
 		result[key].write_image(finaloutname,key)
 		#pn+=1
@@ -831,31 +849,42 @@ def subtomosim(options,ptcls,outname,dimension):
 	return
 	
 	
-def getangles( options ):
+def genangles( options ):
 
 	angles = []
-	lower_bound = -1 * options.tiltrange
-	alt = lower_bound
-	upper_bound = options.tiltrange
-	nslices = options.nslices
-	tiltstep = round(( float(upper_bound) - float(lower_bound) )/ float(nslices - 1),2)	
 	
-	lines = []
-	
-	for j in range( nslices ):
-		realalt = alt + j*tiltstep
-		angles.append( realalt )
-		if options.savetlt:
-			line = str( realalt ) +'\n'
-			lines.append( line )
-	
-	if options.savetlt:
-		tiltfile = options.path + '/tiltangles.tlt'
-		print "\n\n\n\nPath to save angles in is", tiltfile
+	if options.tiltangles:
+		anglesfile = open(options.tiltangles,'r')				#Open tilt angles file
+		alines = anglesfile.readlines()							#Read its lines
+		anglesfile.close()										#Close the file
 		
-		f = open( tiltfile, 'w' )
-		f.writelines( lines )
-		f.close()
+		for line in alines:
+			angle = line.replace('\n','').replace(' ','')
+			angles.append( float(angle) )
+	
+	else:
+		lower_bound = -1 * options.tiltrange
+		alt = lower_bound
+		upper_bound = options.tiltrange
+		nslices = options.nslices
+		tiltstep = round(( float(upper_bound) - float(lower_bound) )/ float(nslices - 1),2)	
+	
+		lines = []
+	
+		for j in range( nslices ):
+			realalt = alt + j*tiltstep
+			angles.append( realalt )
+			if options.savetlt:
+				line = str( realalt ) +'\n'
+				lines.append( line )
+	
+		if options.savetlt:
+			tiltfile = options.path + '/tiltangles.tlt'
+			print "\n\n\n\nPath to save angles in is", tiltfile
+		
+			f = open( tiltfile, 'w' )
+			f.writelines( lines )
+			f.close()
 	
 	return	angles
 	
@@ -1205,7 +1234,7 @@ class SubtomoSimTask(JSTask):
 		
 		rec['spt_tiltangles'] = tiltangles
 		rec['spt_tiltaxis'] = options.tiltaxis
-
+		
 		#print "The apix of rec is", rec['apix_x']
 		
 		print "\nThe outname to write the particle i", i 
