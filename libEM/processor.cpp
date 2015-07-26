@@ -255,6 +255,7 @@ const string NewHighpassGaussProcessor::NAME = "filter.highpass.gauss";
 const string NewBandpassGaussProcessor::NAME = "filter.bandpass.gauss";
 const string NewHomomorphicGaussProcessor::NAME = "filter.homomorphic.gauss";
 const string NewInverseGaussProcessor::NAME = "filter.gaussinverse";
+const string GaussZFourierProcessor::NAME = "filter.lowpass.gaussz";
 const string SHIFTProcessor::NAME = "filter.shift";
 const string InverseKaiserI0Processor::NAME = "filter.kaiser_io_inverse";
 const string InverseKaiserSinhProcessor::NAME = "filter.kaisersinhinverse";
@@ -510,6 +511,7 @@ template <> Factory < Processor >::Factory()
 	force_add<NewBandpassGaussProcessor>();
 	force_add<NewHomomorphicGaussProcessor>();
 	force_add<NewInverseGaussProcessor>();
+	force_add<GaussZFourierProcessor>();
 	force_add<LowpassRandomPhaseProcessor>();
 	force_add<NewLowpassButterworthProcessor>();
 	force_add<NewHighpassButterworthProcessor>();
@@ -890,6 +892,67 @@ void Axis0FourierProcessor::process_inplace(EMData * image)
 	image->update();
 
 }
+
+void GaussZFourierProcessor::process_inplace(EMData * image)
+{
+	if(params.has_key("apix")) {
+		image->set_attr("apix_x", (float)params["apix"]);
+		image->set_attr("apix_y", (float)params["apix"]);
+		image->set_attr("apix_z", (float)params["apix"]);
+	}
+
+	const Dict dict = image->get_attr_dict();
+	if( params.has_key("cutoff_freq") ) {
+		float val =  (float)params["cutoff_freq"] * (float)dict["apix_x"]; 
+		params["cutoff_abs"] = val;
+	}
+	else if( params.has_key("cutoff_pixels") ) {
+		float val = (0.5f*(float)params["cutoff_pixels"] / (float)dict["nx"]);
+		params["cutoff_abs"] = val;
+	}
+
+	float omega = params["cutoff_abs"];
+	omega = (omega<0?-1.0:1.0)*0.5f/omega/omega;
+	
+	EMData *fft;
+	int f=0;
+
+	if (!image) {
+		LOGWARN("NULL Image");
+		return;
+	}
+
+	if (!image->is_complex()) {
+		fft = image->do_fft();
+		f=1;
+	}
+	else {
+		fft=image;
+	}
+
+	int nx=fft->get_xsize();
+	int ny=fft->get_ysize();
+	int nz=fft->get_ysize();
+	omega /=(nz*nz)/4;
+	
+	for (int z=-nz/2; z<nz/2; z++) {
+		for (int y=-ny/2; y<ny/2; y++) {
+			for (int x=0; x<nx/2; x++) {
+				std::complex <float> v=fft->get_complex_at(x,y,z);
+				fft->set_complex_at(x,y,z,v*exp(-omega*z*z));
+			}
+		}
+	}
+
+	if (f) {
+		EMData *ift=fft->do_ift();
+		memcpy(image->get_data(),ift->get_data(),(nx-2)*ny*nz*sizeof(float));
+		delete fft;
+		delete ift;
+	}
+
+}
+
 
 void AmpweightFourierProcessor::process_inplace(EMData * image)
 {

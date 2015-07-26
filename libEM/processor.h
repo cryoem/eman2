@@ -539,6 +539,49 @@ The basic design of EMAN Processors: <br>\
 		protected:
 	};
 
+	/**Zeroes the values on the X=0 and y=0 Fourier axes (except x=y=0)
+	 */
+	class GaussZFourierProcessor:public Processor
+	{
+	  public:
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		void process_inplace(EMData * image);
+
+		void set_params(const Dict & new_params)
+		{
+			params = new_params;
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("cutoff_abs", EMObject::FLOAT, "Processor radius in terms of Nyquist (0-.5)");
+			d.put("cutoff_pixels", EMObject::FLOAT, " Width in Fourier pixels (0 - size()/2)");
+			d.put("cutoff_freq", EMObject::FLOAT, "1/Resolution in 1/A (0 - 1 / 2*apix). eg - a 20 A filter is cutoff_freq=0.05");
+			d.put("apix", EMObject::FLOAT, " Override A/pix in the image header (changes x,y and z)");
+			return d;
+		}
+
+		static Processor *NEW()
+		{
+			return new GaussZFourierProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Applies a Gaussian lowpass filter (or its inverse), but only along the Z axis. May be useful in anisotropic filtering of tomograms.";
+		}
+
+		static const string NAME;
+
+		protected:
+	};
+
+	
 
 	/**Multiplies each Fourier pixel by its amplitude
 	 *@param sum Adds the weights to sum for normalization
@@ -3450,7 +3493,7 @@ outer radius specifies width of Gaussian starting at inner_radius rather than to
 		}
 	};
 
-	/**a gaussian falloff to zero, with nonisotropic widths along x,y,z
+	/**a gaussian falloff to zero, with anisotropic widths along x,y,z
 	 *@param radius_x x-axis radius
 	 *@param radius_y y-axis radius
 	 *@param radius_z z-axis radius
@@ -3503,8 +3546,8 @@ outer radius specifies width of Gaussian starting at inner_radius rather than to
 
 		string get_desc() const
 		{
-			return "A Gaussian falloff to zero. Nonisotropic, specify inner radius for x,y,z and Gaussian falloff width. Falloff \
-width is also nonisotropic and relative to the radii, with 1 being equal to the radius on that axis.";
+			return "A Gaussian falloff to zero. Anisotropic, specify inner radius for x,y,z and Gaussian falloff width. Falloff \
+width is also anisotropic and relative to the radii, with 1 being equal to the radius on that axis.";
 		}
 
 		static const string NAME;
