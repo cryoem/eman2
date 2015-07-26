@@ -239,9 +239,7 @@ def main():
 
 	plottitle = os.path.basename( options.alistack ).replace('.hdf','') + ' CC scores distribution histogram'
 	plt.title( plottitle )
-	plt.ylabel("Number of particles")
-	plt.xlabel("Score (au)")
-  
+
   	matplotlib.rc('xtick', labelsize=16) 
 	matplotlib.rc('ytick', labelsize=16) 
   		 	
@@ -250,7 +248,7 @@ def main():
   		 	
 	pylab.rc("axes", linewidth=2.0)
 		
-	pylab.xlabel('CC score', fontsize=16, fontweight='bold')
+	pylab.xlabel('CC score (au)', fontsize=16, fontweight='bold')
   	pylab.ylabel('Number of particles', fontsize=16, fontweight='bold')
   	
   	plt.savefig( options.path + '/scores_histogram.png' )
