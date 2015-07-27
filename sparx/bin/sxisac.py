@@ -239,7 +239,7 @@ def main():
 	number_of_images_in_stack = bcast_number_to_all(number_of_images_in_stack, source_node = main_node)
 	
 	nxrsteps = 4
-	
+q	
 	init2dir = os.path.join(masterdir,"2dalignment")
 
 	if(myid == 0):
