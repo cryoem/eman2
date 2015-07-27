@@ -245,22 +245,22 @@ def main():
     5.  Retrieve original image numbers in the selected ISAC group (here group 12 from generation 3):
     	sxprocess.py  bdb:test3 class_averages_generation_3.hdf  list3_12.txt --isacgroup=12 --params=originalid
 
-    5.  Retrieve original image numbers of images listed in ISAC output stack of averages:
+    6.  Retrieve original image numbers of images listed in ISAC output stack of averages:
     	sxprocess.py  select1.hdf  ohk.txt
 
-    6.  Adjust rotationally averaged power spectrum of an image to that of a reference image or a reference 1D power spectrum stored in an ASCII file.
+    7.  Adjust rotationally averaged power spectrum of an image to that of a reference image or a reference 1D power spectrum stored in an ASCII file.
     	Optionally use a tangent low-pass filter.  Also works for a stack of images, in which case the output is also a stack.
     	sxprocess.py  vol.hdf ref.hdf  avol.hdf < 0.25 0.2> --adjpw
    	 	sxprocess.py  vol.hdf pw.txt   avol.hdf < 0.25 0.2> --adjpw
 
-	7.  Generate a 1D rotationally averaged power spectrum of an image.
+	8.  Generate a 1D rotationally averaged power spectrum of an image.
 		sxprocess.py  vol.hdf --rotwp=rotpw.txt
     	# Output will contain three columns:
        (1) rotationally averaged power spectrum
        (2) logarithm of the rotationally averaged power spectrum
        (3) integer line number (from zero to approximately to half the image size)
        
-    8.  Apply 3D transformation (rotation and/or shift) to a set of orientation parameters associated with projection data.
+    9.  Apply 3D transformation (rotation and/or shift) to a set of orientation parameters associated with projection data.
     	sxprocess.py  --transfromparams=phi,theta,psi,tx,ty,tz      input.txt  output.txt
     	The output file is then imported and 3D transformed volume computed:
     	sxheader.py  bdb:p  --params=xform.projection  --import=output.txt
@@ -268,7 +268,7 @@ def main():
     	The reconstructed volume is in the position of the volume computed using the input.txt parameters and then
     	transformed with rot_shift3D(vol, phi,theta,psi,tx,ty,tz)
 
-	9.  Import ctf parameters from the output of sxcter into windowed particle headers.
+	10.  Import ctf parameters from the output of sxcter into windowed particle headers.
 	    There are three possible input files formats:  (1) all particles are in one stack, (2 aor 3) particles are in stacks, each stack corresponds to a single micrograph.
 	    In each case the particles should contain a name of the micrograph of origin stores using attribute name 'ptcl_source_image'.  Normally this is done by e2boxer.py during windowing.
 	    Particles whose defocus or astigmatism error exceed set thresholds will be skipped, otherwise, virtual stacks with the original way preceded by G will be created.
@@ -280,7 +280,7 @@ def main():
 		e2bdb.py . --makevstack=bdb:allparticles  --filt=G
 		IMPORTANT:  Please do not move (or remove!) any input/intermediate EMAN2DB files as the information is linked between them.
 
-  10.  Scale 3D shifts.  The shifts in the input five columns text file with 3D orientation parameters will be DIVIDED by the scale factor
+   11. Scale 3D shifts.  The shifts in the input five columns text file with 3D orientation parameters will be DIVIDED by the scale factor
 		sxprocess.py  orientationparams.txt  scaledparams.txt  scale=0.5
 
 
