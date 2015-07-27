@@ -884,6 +884,12 @@ def do_volume_mrk02(ref_data):
 	iter     = ref_data[2]
 	mpi_comm = ref_data[3]
 	
+	# # For DEBUG
+	# print "Type of data %s" % (type(data))
+	# print "Type of Tracker %s" % (type(Tracker))
+	# print "Type of iter %s" % (type(iter))
+	# print "Type of mpi_comm %s" % (type(mpi_comm))
+	
 	if(mpi_comm == None):  mpi_comm = MPI_COMM_WORLD
 	myid = mpi_comm_rank(mpi_comm)
 	

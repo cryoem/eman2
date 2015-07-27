@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/home/moriya/mrk_app/EMAN2/extlib/bin/python
 #
 #  06/01/2015
 #  New version.  
@@ -1179,11 +1179,9 @@ def main():
 				volf = 0.5*(get_im(os.path.join(Tracker["directory"] ,"vol0.hdf"))+get_im(os.path.join(Tracker["directory"] ,"vol0.hdf")))
 			else:  volf = model_blank(Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 			# volf = do_volume_mrk01(volf, Tracker, mainiteration, mpi_comm = MPI_COMM_WORLD)
+			mpi_comm = MPI_COMM_WORLD
+			ref_data = [volf, Tracker, mainiteration, mpi_comm]
 			user_func = Tracker["constants"] ["user_func"]
-			ref_data[0] = volf
-			ref_data[1] = Tracker
-			ref_data[2] = mainiteration
-			ref_data[3] = mpi_comm
 			volf = user_func(ref_data)
 			
 			if(myid == main_node):

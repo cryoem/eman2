@@ -4718,17 +4718,11 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 	user_func = Tracker["constants"] ["user_func"]
 	if ref_vol:
 		# vol = do_volume_mrk01(ref_vol, Tracker, 0, mpi_comm)
-		ref_data[0] = ref_vol
-		ref_data[1] = Tracker
-		ref_data[2] = 0
-		ref_data[3] = mpi_comm
+		ref_data = [ref_vol, Tracker, 0, mpi_comm]
 		vol = user_func(ref_data)
 	else:
 		# vol = do_volume_mrk01(data, Tracker, 0, mpi_comm)
-		ref_data[0] = data
-		ref_data[1] = Tracker
-		ref_data[2] = 0
-		ref_data[3] = mpi_comm
+		ref_data = [data, Tracker, 0, mpi_comm]
 		vol = user_func(ref_data)
 	#  Restore desired fl
 	#Tracker["lowpass"] = fl
@@ -4925,11 +4919,8 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 				if myid == main_node:
 					start_time = time()
 				# vol = do_volume_mrk01(data, Tracker, total_iter, mpi_comm)
+				ref_data = [data, Tracker, total_iter, mpi_comm]
 				user_func = Tracker["constants"] ["user_func"]
-				ref_data[0] = data
-				ref_data[1] = Tracker
-				ref_data[2] = total_iter
-				ref_data[3] = mpi_comm
 				vol = user_func(ref_data)
 				#if myid == main_node:  vol.write_image('soft/smvol%04d.hdf'%total_iter)
 				# log
@@ -5219,11 +5210,8 @@ def slocal_ali3d_base(stack, templatevol, Tracker, mpi_comm = None, log= None, c
 		del templatevol
 		#  Do the 3D
 		# vol = do_volume_mrk01(vol, Tracker, 0, mpi_comm)
+		ref_data = [vol, Tracker, 0, mpi_comm]
 		user_func = Tracker["constants"] ["user_func"]
-		ref_data[0] = vol
-		ref_data[1] = Tracker
-		ref_data[2] = 0
-		ref_data[3] = mpi_comm
 		vol = user_func(ref_data)
 	else:
 		vol = None
@@ -5310,11 +5298,8 @@ def slocal_ali3d_base(stack, templatevol, Tracker, mpi_comm = None, log= None, c
 
 				#  Do the 3D
 				# vol = do_volume_mrk01(dataim, Tracker, iteration, mpi_comm)
+				ref_data = [dataim, Tracker, iteration, mpi_comm]
 				user_func = Tracker["constants"] ["user_func"]
-				ref_data[0] = dataim
-				ref_data[1] = Tracker
-				ref_data[2] = iteration
-				ref_data[3] = mpi_comm
 				vol = user_func(ref_data)
 
 				if myid == main_node:
