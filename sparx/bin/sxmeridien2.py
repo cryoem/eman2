@@ -1,4 +1,4 @@
-#!/home/moriya/mrk_app/EMAN2/extlib/bin/python
+#!/usr/bin/env python
 #
 #  06/01/2015
 #  New version.  
