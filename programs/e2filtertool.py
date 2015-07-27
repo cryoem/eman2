@@ -45,7 +45,7 @@ from emimage2d import EMImage2DWidget
 from emplot2d import EMPlot2DWidget
 from emimagemx import EMImageMXWidget
 from emscene3d import EMScene3D
-from emdataitem3d import EMDataItem3D, EMIsosurface
+from emdataitem3d import EMDataItem3D, EMIsosurface, EMSliceItem3D
 from emshape import EMShape
 from valslider import *
 import traceback
@@ -496,11 +496,13 @@ class EMFilterTool(QtGui.QMainWindow):
 		if self.viewer==None: return
 		self.viewer.append(EMImage2DWidget())
 		self.viewer[-1].show()
+		self.needupdate=1
 	
 	def menu_add_plotwin(self):
 		if self.viewer==None: return
 		self.viewer.append(EMPlot2DWidget())
 		self.viewer[-1].show()
+		self.needupdate=1
 
 	def setChange(self,line):
 		"""When the user selects a new set or hits enter after a new name"""
@@ -584,7 +586,9 @@ class EMFilterTool(QtGui.QMainWindow):
 					if isinstance(v,EMImageMXWidget):
 						v.set_data(self.procdata)
 					elif isinstance(v,EMImage2DWidget):
-						v.set_data(self.procdata)
+						if self.procdata[0]["nz"]>1 :
+							v.set_data(self.procdata[0])
+						else : v.set_data(self.procdata)
 					elif isinstance(v,EMScene3D):
 						self.sgdata.setData(self.procdata[0])
 						v.updateSG()
@@ -604,9 +608,9 @@ class EMFilterTool(QtGui.QMainWindow):
 		if self.busy: return
 	
 		# if all processors are disabled, we return without any update
-		for p in self.processorlist:
-			if p.processorParms()!=None : break
-		else: return
+		#for p in self.processorlist:
+			#if p.processorParms()!=None : break
+		#else: return
 	
 		self.needupdate=0		# we set this immediately so we reprocess again if an update happens while we're processing
 		self.procdata=[im.copy() for im in self.origdata]
@@ -689,10 +693,11 @@ class EMFilterTool(QtGui.QMainWindow):
 			self.mfile_save_map.setEnabled(True)
 			self.viewer = [EMScene3D()]
 			self.sgdata = EMDataItem3D(test_image_3d(3), transform=Transform())
+			self.viewer[0].insertNewNode('Data', self.sgdata, parentnode=self.viewer[0])
 			isosurface = EMIsosurface(self.sgdata, transform=Transform())
-			self.viewer[0].insertNewNode('Data', self.sgdata, parentnode=self.viewer)
 			self.viewer[0].insertNewNode("Iso", isosurface, parentnode=self.sgdata)
-			self.viewer[0].insertNewNode("Slice", isosurface, parentnode=self.sgdata)
+			volslice = EMSliceItem3D(self.sgdata, transform=Transform())
+			self.viewer[0].insertNewNode("Slice", volslice, parentnode=self.sgdata)
 
 		E2loadappwin("e2filtertool","image",self.viewer[0].qt_parent)
 

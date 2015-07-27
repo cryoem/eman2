@@ -968,7 +968,7 @@ two files should match extremely well, other than more noise being present in th
 <li>Run <i>e2eulerxplor.py</i> to look at the distribution of particle orientations and interactively compare projections to
 class-averages. Click on a specific peak to see the projection and corresponding filtered class-average for any specific orientation.</li>
 <li>If you wish to make a single stack where you can look at all projections/averages side-by-side:
-<br><i>e2proc2d.py {path}/classes_{iter:02d}.hdf clsvsproj.hdf --interlv {path}/projections_{iter:02d}.hdf</i></li>
+<br><i>e2proc2d.py {path}/classes_{iter:02d}_even.hdf clsvsproj.hdf --interlv {path}/projections_{iter:02d}_odd.hdf</i></li>
 <li>It may also be worthwhile to compare {path}/threed_{iter:02d}_even.hdf to {path}/threed_{iter:02d}_odd.hdf to observe
 the differences responsible for the assessed resolution.</li>
 <li>The individual FSC curves are in 2-column text files called fsc_*.txt. Both masked and unmasked FSCs are computed</li>

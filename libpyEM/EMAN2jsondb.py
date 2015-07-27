@@ -558,6 +558,8 @@ JSDicts are open at one time."""
 		try : ret=JSDict(path)
 		except:
 			cls.lock.release()
+			traceback.print_exc()
+			print "==========================="
 			raise Exception,"Unable to open "+path
 
 		cls.lock.release()
@@ -623,6 +625,7 @@ of the path is stored as self.normpath"""
 		self.delkeys=set()				# a set of keys to delete on next update
 		self.lasttime=0					# last time the database was accessed
 
+		self.busy=False					# used for some degree of threadsafety to supplement file locking
 		self.sync()
 		JSDict.opendicts[self.normpath]=self	# add ourselves to the cache
 
@@ -642,6 +645,9 @@ of the path is stored as self.normpath"""
 
 	def sync(self):
 		"""This is where all of the JSON file access occurs. This one routine handles both reading and writing, with file locking"""
+
+		while self.busy: time.sleep(.1)		# this is for some degree of threadsafety beyond file locking
+		self.busy=True
 
 		# We check for the _tmp file first
 		try:
@@ -726,6 +732,7 @@ of the path is stored as self.normpath"""
 			os.unlink(self.normpath[:-5]+"_tmp.json")
 
 		self.lasttime=os.stat(self.normpath).st_mtime	# make sure we include our recent change, if made
+		self.busy=False
 
 	def __len__(self):
 		"""Ignores any pending updates for speed"""

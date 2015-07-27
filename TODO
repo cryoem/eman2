@@ -18,6 +18,7 @@ High priority
 2/4/15		Isosurface coloring in 3d viewer messed up
 6/11/15		fix --prefilt in e2refine_easy
 6/11/15		Add breaksym to tree aigner
+7/17/15		When converting to Relion/Frealign, icos symmetry orientation needs to be adjusted on the map
 
 7/7/14		scale box locations
 7/27/14		ctf interactive seems to autosave parameters without button press
@@ -55,6 +56,9 @@ Low priority
 
 
 Complete
+7/17/15		added 'single' orientation generator
+7/17/15		made perturb default -> false for eman orientation generator
+7/16/15		Updated align_nbest to work properly with python threads
 2/12/15		xform.tocenter processor added, with pretty complex centering heuristics
 1/15		Critical fix: 2D translate() was broken due to memcopy vs memmove use. was responsible for bad 2-d class averages
 12/20/14	Critical fix: bad particle marking was partially broken. Could only mark bad one time
