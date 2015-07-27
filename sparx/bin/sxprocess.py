@@ -407,7 +407,7 @@ def main():
 		from utilities import write_text_file
 		write_text_file(l, args[2])
 
-	elif options.isacselect>-1:
+	elif options.isacselect:
 		nargs = len(args)
 		if nargs != 2:
 			ERROR("Two files needed on input!", "isacgroup", 1)
