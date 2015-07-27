@@ -42,6 +42,7 @@ import threading
 from EMAN2 import *
 from emapplication import get_application, EMApp
 from emimage2d import EMImage2DWidget
+from emplot2d import EMPlot2DWidget
 from emimagemx import EMImageMXWidget
 from emscene3d import EMScene3D
 from emdataitem3d import EMDataItem3D, EMIsosurface
@@ -423,6 +424,10 @@ class EMFilterTool(QtGui.QMainWindow):
 		self.mfile_save_map=self.mfile.addAction("Save Processed Map")
 		self.mfile_quit=self.mfile.addAction("Quit")
 
+		self.mview=self.menuBar().addMenu("View")
+		self.mview_new_2dwin=self.mview.addAction("Add 2D View")
+		self.mview_new_plotwin=self.mview.addAction("Add Plot View")
+
 		self.setCentralWidget(QtGui.QWidget())
 		self.vblm = QtGui.QVBoxLayout(self.centralWidget())		# The contents of the main window
 
@@ -454,6 +459,8 @@ class EMFilterTool(QtGui.QMainWindow):
 		QtCore.QObject.connect(self.mfile_save_stack,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_save_stack  )
 		QtCore.QObject.connect(self.mfile_save_map,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_save_map  )
 		QtCore.QObject.connect(self.mfile_quit,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_quit)
+		QtCore.QObject.connect(self.mview_new_2dwin,QtCore.SIGNAL("triggered(bool)")  ,self.menu_add_2dwin)
+		QtCore.QObject.connect(self.mview_new_plotwin,QtCore.SIGNAL("triggered(bool)")  ,self.menu_add_plotwin)
 
 		QtCore.QObject.connect(self.wsetname,QtCore.SIGNAL("currentIndexChanged(int)"),self.setChange)
 
@@ -485,6 +492,15 @@ class EMFilterTool(QtGui.QMainWindow):
 
 #		QtCore.QObject.connect(self.boxesviewer,QtCore.SIGNAL("mx_image_selected"),self.img_selected)
 
+	def menu_add_2dwin(self):
+		if self.viewer==None: return
+		self.viewer.append(EMImage2DWidget())
+		self.viewer[-1].show()
+	
+	def menu_add_plotwin(self):
+		if self.viewer==None: return
+		self.viewer.append(EMPlot2DWidget())
+		self.viewer[-1].show()
 
 	def setChange(self,line):
 		"""When the user selects a new set or hits enter after a new name"""
@@ -562,11 +578,21 @@ class EMFilterTool(QtGui.QMainWindow):
 		# When reprocessing is done, we want to redisplay from the main thread
 		if self.needredisp :
 			self.needredisp=0
-			self.viewer.show()
-			if self.nz==1 or self.force2d: self.viewer.set_data(self.procdata)
-			else :
-				self.sgdata.setData(self.procdata[0])
-				self.viewer.updateSG()
+			if self.viewer!=None:
+				for v in self.viewer: 
+					v.show()
+					if isinstance(v,EMImageMXWidget):
+						v.set_data(self.procdata)
+					elif isinstance(v,EMImage2DWidget):
+						v.set_data(self.procdata)
+					elif isinstance(v,EMScene3D):
+						self.sgdata.setData(self.procdata[0])
+						v.updateSG()
+					elif isinstance(v,EMPlot2DWidget):
+						fft=self.procdata[0].do_fft()
+						pspec=fft.calc_radial_dist(self.ny/2,0.0,1.0,1)
+						v.set_data((self.pspecs,self.pspecorig),"Orginal",True,True,color=1)
+						v.set_data((self.pspecs,pspec),"Processed",color=2)
 
 	def procChange(self,tag):
 #		print "change"
@@ -576,6 +602,12 @@ class EMFilterTool(QtGui.QMainWindow):
 		"Called when something about a processor changes (or when the data changes)"
 
 		if self.busy: return
+	
+		# if all processors are disabled, we return without any update
+		for p in self.processorlist:
+			if p.processorParms()!=None : break
+		else: return
+	
 		self.needupdate=0		# we set this immediately so we reprocess again if an update happens while we're processing
 		self.procdata=[im.copy() for im in self.origdata]
 
@@ -634,26 +666,35 @@ class EMFilterTool(QtGui.QMainWindow):
 		if self.apix<=0.0 : self.apix=self.origdata[0]["apix_x"]
 		EMProcessorWidget.parmdefault["apix"]=(0,(0.2,10.0),self.apix,None)
 
-		if self.viewer!=None : self.viewer.close()
+		origfft=self.origdata[0].do_fft()
+		self.pspecorig=origfft.calc_radial_dist(self.ny/2,0.0,1.0,1)
+		ds=1.0/(self.apix*self.ny)
+		self.pspecs=[ds*i for i in range(len(self.pspecorig))]
+
+
+		if self.viewer!=None : 
+			for v in self.viewer: v.close()
+			
 		if self.nz==1 or self.force2d:
 			if len(self.origdata)>1 :
-				self.viewer=EMImageMXWidget()
+				self.viewer=[EMImageMXWidget()]
 				self.mfile_save_stack.setEnabled(True)
 				self.mfile_save_map.setEnabled(False)
 			else :
-				self.viewer=EMImage2DWidget()
+				self.viewer=[EMImage2DWidget()]
 				self.mfile_save_stack.setEnabled(False)
 				self.mfile_save_map.setEnabled(True)
 		else :
 			self.mfile_save_stack.setEnabled(False)
 			self.mfile_save_map.setEnabled(True)
-			self.viewer = EMScene3D()
+			self.viewer = [EMScene3D()]
 			self.sgdata = EMDataItem3D(test_image_3d(3), transform=Transform())
 			isosurface = EMIsosurface(self.sgdata, transform=Transform())
-			self.viewer.insertNewNode('Data', self.sgdata, parentnode=self.viewer)
-			self.viewer.insertNewNode("Iso", isosurface, parentnode=self.sgdata)
+			self.viewer[0].insertNewNode('Data', self.sgdata, parentnode=self.viewer)
+			self.viewer[0].insertNewNode("Iso", isosurface, parentnode=self.sgdata)
+			self.viewer[0].insertNewNode("Slice", isosurface, parentnode=self.sgdata)
 
-		E2loadappwin("e2filtertool","image",self.viewer.qt_parent)
+		E2loadappwin("e2filtertool","image",self.viewer[0].qt_parent)
 
 		self.procChange(-1)
 
@@ -777,8 +818,9 @@ class EMFilterTool(QtGui.QMainWindow):
 
 #		print "Exiting"
 		if self.viewer!=None :
-			E2saveappwin("e2filtertool","image",self.viewer.qt_parent)
-			self.viewer.close()
+			E2saveappwin("e2filtertool","image",self.viewer[0].qt_parent)
+			for v in self.viewer:
+				v.close()
 		event.accept()
 		#self.app().close_specific(self)
 		self.emit(QtCore.SIGNAL("module_closed")) # this signal is important when e2ctf is being used by a program running its own event loop

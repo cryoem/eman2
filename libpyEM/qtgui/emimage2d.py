@@ -405,6 +405,11 @@ class EMImage2DWidget(EMGLWidget):
 				self.curfft = 2
 				self.__set_display_image(self.curfft)
 				fourier = True
+			elif self.curfft in [1,2,3]:
+				self.list_data = data
+				self.data = self.list_data[self.list_idx]
+				self.list_fft_data = [d.do_fft() for d in data]
+				self.__set_display_image(self.curfft)
 			else:
 				self.list_data = data
 				self.data = self.list_data[self.list_idx]
@@ -953,6 +958,8 @@ class EMImage2DWidget(EMGLWidget):
 
 		if update:
 			self.update_inspector_texture() # important for this to occur in term of the e2desktop only
+
+#		print "render",update,self.image_change_count
 
 
 		render = False
