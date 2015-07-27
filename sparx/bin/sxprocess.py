@@ -253,13 +253,13 @@ def main():
     	sxprocess.py  vol.hdf ref.hdf  avol.hdf < 0.25 0.2> --adjpw
    	 	sxprocess.py  vol.hdf pw.txt   avol.hdf < 0.25 0.2> --adjpw
 
-	8.  Generate a 1D rotationally averaged power spectrum of an image.
+    8.  Generate a 1D rotationally averaged power spectrum of an image.
 		sxprocess.py  vol.hdf --rotwp=rotpw.txt
     	# Output will contain three columns:
        (1) rotationally averaged power spectrum
        (2) logarithm of the rotationally averaged power spectrum
        (3) integer line number (from zero to approximately to half the image size)
-       
+
     9.  Apply 3D transformation (rotation and/or shift) to a set of orientation parameters associated with projection data.
     	sxprocess.py  --transfromparams=phi,theta,psi,tx,ty,tz      input.txt  output.txt
     	The output file is then imported and 3D transformed volume computed:
@@ -268,9 +268,10 @@ def main():
     	The reconstructed volume is in the position of the volume computed using the input.txt parameters and then
     	transformed with rot_shift3D(vol, phi,theta,psi,tx,ty,tz)
 
-	10.  Import ctf parameters from the output of sxcter into windowed particle headers.
+   10.  Import ctf parameters from the output of sxcter into windowed particle headers.
 	    There are three possible input files formats:  (1) all particles are in one stack, (2 aor 3) particles are in stacks, each stack corresponds to a single micrograph.
-	    In each case the particles should contain a name of the micrograph of origin stores using attribute name 'ptcl_source_image'.  Normally this is done by e2boxer.py during windowing.
+	    In each case the particles should contain a name of the micrograph of origin stores using attribute name 'ptcl_source_image'.
+        Normally this is done by e2boxer.py during windowing.
 	    Particles whose defocus or astigmatism error exceed set thresholds will be skipped, otherwise, virtual stacks with the original way preceded by G will be created.
 		sxprocess.py  --input=bdb:data  --importctf=outdir/partres  --defocuserror=10.0  --astigmatismerror=5.0
 		#  Output will be a vritual stack bdb:Gdata
