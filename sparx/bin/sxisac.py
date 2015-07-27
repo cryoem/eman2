@@ -102,7 +102,7 @@ def main():
 	# must be switched off in production
 	parser.add_option("--use_latest_master_directory", action="store_true", dest="use_latest_master_directory", default=False)
 	
-	parser.add_option("--restart_section", type="string", default="", help="restart section name (no spaces) followed immediately by comma, followed immediately by generation to restart, followed optionally by 'stop_after_candidates', to stop after the candidate section, examples: \n--restart_section=candidate_class_averages,1          --restart_section=candidate_class_averages,1,stop_after_candidates  (Sections: restart, candidate_class_averages, reproducible_class_averages)")
+	parser.add_option("--restart_section", type="string", default="", help="restart section name (no spaces) followed immediately by comma, followed immediately by generation to restart, example: \n--restart_section=candidate_class_averages,1         (Sections: restart, candidate_class_averages, reproducible_class_averages)")
 	parser.add_option("--stop_after_candidates",          action="store_true", default=False,   help="stops after the 'candidate_class_averages' section")
 
 	(options, args) = parser.parse_args()
