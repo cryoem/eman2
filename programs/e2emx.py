@@ -63,7 +63,7 @@ for option1 in optionList:
 <!--
 ##########################################################################
 #               EMX Exchange file 
-#               Produced by e2emx.py (EMAN2, version 2.1)
+#               Produced by e2emx.py (EMAN2, version 2.11)
 # 
 #  This is a EMX file.
 #
@@ -92,6 +92,16 @@ for option1 in optionList:
 			#f.write("  <amplitudeContrast>" + str(particle['ctf'].to_dict()['ampcont']) + "</amplitudeContrast>\n")
 							
 			f.write("\n")
+		else:
+			temp_micrograph_list = []
+			print "------Writing Micrograph Information Placeholders"
+			for ptcl_by_micrograph in os.listdir(cwd + "/particles"):
+				micro_string = base_name(ptcl_by_micrograph.replace("_ptcls","")).split("__")[0] + ".mrc"
+				if micro_string not in temp_micrograph_list:
+					temp_micrograph_list.append(micro_string)
+			for micrograph in temp_micrograph_list:
+				f.write("<micrograph fileName=\"" + str(micrograph) + ".mrc\">\n</micrograph>\n")
+			f.write("\n")
 		if "particles" in dir_list:
 			print "-----Writing Particle Information-----"
 			for ptcl_by_micrograph in os.listdir(cwd + "/particles"):
@@ -109,7 +119,7 @@ for option1 in optionList:
 					#print num_images
 					index = 1
 					for particle in particle_stack:
-						f.write("<particle fileName=\"" + ptcl_by_micrograph.replace(".hdf",".mrc") +"\" index=\"" + str(index) + "\">\n")
+						f.write("<particle fileName=\"" + ptcl_by_micrograph.replace(".hdf",".mrcs") +"\" index=\"" + str(index) + "\">\n")
 						f.write("  <micrograph fileName=\"" + base_name(ptcl_by_micrograph).split("_")[0] + ".mrc\"/>\n")
 						f.write("  <centerCoord>\n")
 						f.write("    <X unit=\"px\">" + str(particle['ptcl_source_coord'][0]) + "</X>\n")
@@ -119,6 +129,10 @@ for option1 in optionList:
 						f.write("    <X unit=\"px\">" + str(particle['nx']) + "</X>\n")
 						f.write("    <Y unit=\"px\">" + str(particle['ny']) + "</Y>\n")
 						f.write("  </boxSize>\n")
+						f.write("  <pixelSpacing>\n")
+						f.write("    <X unit=\"A/px\">" + str(particle['apix_x']) + "</X>\n")
+						f.write("    <Y unit=\"A/px\">" + str(particle['apix_y']) + "</Y>\n")
+						f.write("  </pixelSpacing>\n")
 						if particle.get_attr_dict().__contains__("ctf"):
 							f.write("  <defocusU unit=\"nm\">" + str(particle['ctf'].to_dict()['defocus']*1000) + "</defocusU>\n")
 							f.write("  <defocusV unit=\"nm\">" + str(particle['ctf'].to_dict()['defocus']*1000) + "</defocusV>\n")
