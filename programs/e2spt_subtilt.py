@@ -192,8 +192,13 @@ def main():
 	
 	#tiltangles = [ alines[i].replace('\n','') for i in range(len(alines)) ]	#Eliminate trailing return character, '\n', for each line in the tiltangles file
 	
-
-	tiltanglesfloatabs = [ math.fabs( float( alines[i].replace('\n','') ) ) for i in range(len(alines)) ]
+	tiltanglesfloatabs = []
+	for line in alines:
+		print "line is", line
+		ang = math.fabs( float( line.replace('\n','') ) )
+		print "ang is", ang
+		tiltanglesfloatabs.append( ang )
+	#tiltanglesfloatabs = [ math.fabs( float( alines[i].replace('\n','') ) ) for i in range(len(alines)) ]
 
 	tiltanglesfloat = [ float( alines[i].replace('\n','') ) for i in range(len(alines)) ]
 	
@@ -333,7 +338,7 @@ def main():
 				print "\nBad line removed", line
 	
 	print "icethicknessauto before if is", options.icethicknessauto
-	if zs and options.icethicknessauto:
+	if zs and options.icethicknessauto and not options.tomogram and not options.tomosides:
 		print "icethicknessauto after if is", options.icethicknessauto
 	
 		icethicknessfile = options.path + '/icethickness_estimate.txt'
@@ -427,6 +432,7 @@ def main():
 	absangles = []	#absolute value of all angles
 	
 	for ang in tiltanglesfloat:
+		
 		absangles.append( math.fabs( ang ) )
 	
 	zerotiltangleabs = min( absangles )
@@ -473,7 +479,7 @@ def main():
 
 	ptclNum3D = ptclNum = 0
 	
-	if options.ntiltslow:
+	if options.ntiltslow:				#To pick a symmetric number of tilt images, left and right of the middle tilt?
 		if not options.ntiltslow %2:
 			options.ntiltslow += 1
 	
@@ -824,8 +830,9 @@ def write2D( options, angle, icethickness, tomox, tomoy, xc, yc, zc, cumulatived
 	finalimg = img.copy()
 	
 	if not finalimg['sigma']:
-		print "ERROR: The extracted image is completely empty. Mean and sigma are", finalimg['mean'],finalimg['sigma']
-		sys.exit()
+		print "\n(e2spt_subtilt)(write2D)ERROR: the extracted image is completely empty. Mean and sigma are", finalimg['mean'],finalimg['sigma']
+		#sys.exit()
+		return None
 			
 	if options.track:
 		'''
@@ -835,7 +842,14 @@ def write2D( options, angle, icethickness, tomox, tomoy, xc, yc, zc, cumulatived
 		'''
 		ret2 = align2D( options, ref, img )
 		rdx = ret2[0]
-		rdy = ret2[1]
+		#rdy = ret2[1]
+		rdy=0 	#particles shouldn't move at all in y
+		
+		kurtosis = ret2[2]
+		
+		#if float(kurtosis) > 1.0:
+		#	print "kurtosis was > 1.0", kurtosis
+		#	return None
 
 		'''
 		Reextract better centered images taking into account accumulated x and y shifts
@@ -844,8 +858,8 @@ def write2D( options, angle, icethickness, tomox, tomoy, xc, yc, zc, cumulatived
 		cumulativedx += rdx
 		cumulativedy += rdy
 	
-		print "Cumulativedx", cumulativedx
-		print "Cumulativedy", cumulativedy
+		print "cumulativedx", cumulativedx
+		print "cumulativedy", cumulativedy
 
 		retf = extract2D( options, angle, icethickness, tomox, xc, yc, zc, cumulativedx, cumulativedy, sliceindx )
 		
@@ -887,7 +901,7 @@ def write2D( options, angle, icethickness, tomox, tomoy, xc, yc, zc, cumulatived
 			sptcoords = ( fx, fy, zc )
 			finalimg['ptcl_source_coord']=sptcoords
 
-		finalimg.process_inplace('normalize')
+		finalimg.process_inplace('normalize.edgemean')
 	
 	
 		if options.subtractbackground and maxtilt:
@@ -925,12 +939,17 @@ def write2D( options, angle, icethickness, tomox, tomoy, xc, yc, zc, cumulatived
 
 def extract2D( options, angle, icethickness, tomox, xc, yc, zc, cumulativedx, cumulativedy, sliceindx ):
 	
+	
+	print "(e2spt_subtilt)(extract2D) tomox is %d icethickness is %d" %( tomox, icethickness )
+	
 	if options.invertangles:
 		angle *= -1
 	
 	tAxisShift = tomox/2.0
 	xcToAxis = xc - tAxisShift
-
+	oldx = xcToAxis
+	
+	
 	#zSectionShift = tomoz/2.0
 	zSectionShift = -1 * icethickness/2.0
 
@@ -939,6 +958,7 @@ def extract2D( options, angle, icethickness, tomox, xc, yc, zc, cumulativedx, cu
 		zSectionShift = int( options.zshift )
 	
 	zcToMidSection = zc + zSectionShift
+	oldz = zcToMidSection
 
 	
 	'''
@@ -946,7 +966,7 @@ def extract2D( options, angle, icethickness, tomox, xc, yc, zc, cumulativedx, cu
 	Particles to the right of the tilt axis experience a NEGATIVE shift in X, regardless of what the tilt angle is.
 	To account for this, we multiply times -1.
 	'''
-	cosTerm = -1*xcToAxis * math.cos( math.radians(angle)  )
+	cosTerm = xcToAxis * math.cos( math.radians(angle)  )
 	
 	'''
 	Particles undergo additional movement in X upon tilting, due to their distance from the midZ plane of the tomogram.
@@ -960,52 +980,124 @@ def extract2D( options, angle, icethickness, tomox, xc, yc, zc, cumulativedx, cu
 	
 	sinTerm = zcToMidSection * math.sin( math.radians(angle)  )
 	
-	xtToAxis = zcToMidSection * math.sin( math.radians(angle)  ) + xcToAxis * math.cos( math.radians(angle)  )
+	xtToAxis = zcToMidSection * math.sin( math.radians(angle)  ) + 1*xcToAxis * math.cos( math.radians(angle)  )
 
 	yt = yc
 
 	xt = xtToAxis + tAxisShift
-
+		
+	
+	
+	'''
+	alternatively, model the xc, yc, zc coordinates as a vector and just rotate in 3D,
+	then retrieve the new xc2d and yc2d coordinates
+	'''
+	
+	vect = numpy.array([xc - tAxisShift,0,zc-icethickness/2.0,0])
+	newvector = yrotate( vect,angle )
+	
+	xc2d = int(newvector[0]) + tAxisShift
+	#yc2d = int(newvector[1])
+	yc2d = yt
+	zc2d = int(newvector[2]) + icethickness/2.0
+	
+	
+	
+		
+	newx = oldx * math.cos( math.radians(angle) ) + oldz * math.sin( math.radians( angle ) )
+	
+	newuncompensatedx = newx + tAxisShift
+	
+	
+	daxis = cosTerm - oldx
+	dmidz = sinTerm
+	
+	dx = xt -xc
+	dx2 = daxis + dmidz
+	
+	
+	#Translations in y should only occur when --track is on
+	print "\nFor original x=%d, compensated x=%d, original z=%d, compensated z=%d, angle=%f, newx=%f, newUNcompx=%f, xt=%f, dx=%f, dx2=%f, daxis=%f, costerm=%f, dmidz=%f" %(xc,oldx, zc,oldz, angle, newx,newuncompensatedx,xt,dx,dx2,daxis,cosTerm,dmidz)
+	
+	print "yt %d, yc %d" %(yt,yc)
 
 	if float(xt) < 0.0:
 		print "Something went awfully wrong; you have a negative X coordinate",xt
 		print "tomox and tomox/2.0 are", tomox, tomox/2.0
 
-	if float(yt) < 0.0:
-		print "Something went awfully wrong; you have a negative Y coordinate",yt
-		print "yc is", yc
+	#if float(yt) < 0.0:
+	#	print "Something went awfully wrong; you have a negative Y coordinate",yt
+	#	print "yc is", yc
 
-	if float(xt) < 0.0 or float(yt) < 0.0:
-		print "Either X or Y are negative, see", xt, yt
-		sys.exit()
+	#if float(xt) < 0.0 or float(yt) < 0.0:
+	#	print "Either X or Y are negative, see", xt, yt
+	#	sys.exit()
 
-	if float(xt) < float(options.boxsize)/2.0 or float(yt) < float(options.boxsize)/2.0:
+	if float(xt) < float(options.boxsize)/2.0: #or float(yt) < float(options.boxsize)/2.0:
 		print "Pick a smaller boxsize; otherwise, some of your particles will contain empty regions outside the image"
-		print "Particle is centered at", xt, yt
+		print "Particle is centered at", xt, yc
 		print "And boxsize/2 is", options.boxsize/2.0
 		sys.exit()
 
 	xt += cumulativedx
-	yt += cumulativedy
 	
+	#yt += cumulativedy		#particles shouldn't move at all in y
+	
+	##NEW
+	#r = Region( (2*xc2d-options.boxsize)/2, (2*yc2d-options.boxsize)/2, sliceindx, options.boxsize, options.boxsize, 1)
+	
+	##OLD
 	r = Region( (2*xt-options.boxsize)/2, (2*yt-options.boxsize)/2, sliceindx, options.boxsize, options.boxsize, 1)
+	
 	#print "\n\n\nRRRRRRRRRR\nThe region to extract is", r
+
 
 	#print "\n(e2spt_subtilt.py) Extracting image for tilt angle %f and particle %d" %( angle, ptclNum )
 	e = EMData()
 	e.read_image(options.tiltseries,0,False,r)
-	e.process_inplace('normalize')
+	e.process_inplace('normalize.edgemean')
+	
+	print "\nold way", xt, yt
+	print "new way", xc2d, yc2d
+	
+	##NEW
+	#return [ e, xc2d, yc2d ]
 
+	##OLD
 	return [ e, xt, yt ]
+
+
+def yrotate(M,theta):
+	t = math.pi*theta/180
+	cosT = math.cos( t )
+	sinT = math.sin( t )
+	#print 'M is', M
+	R = numpy.array(
+	[[ cosT,  0.0, sinT, 0.0 ],
+	[ 0.0,   1.0,  0.0, 0.0 ],
+	[-sinT,  0.0, cosT, 0.0 ],
+	[ 0.0,  0.0,  0.0, 1.0 ]], dtype=numpy.float32)
+	Mrot = numpy.dot(M ,R)
+
+	return Mrot
+
 
 
 def align2D( options, ref, img ):
 	
 	refp = ref.copy()
 	imgp = img.copy()
+	
+	kurtosis = imgp.get_attr('kurtosis')
+	#if kurtosis < 1:
+	
 	if options.lowpass or options.highpass or options.preprocess or options.threshold or options.mask or options.shrink > 1:
 		refp = preprocImg( refp, options )
 		imgp = preprocImg( imgp, options )
+	
+	#kurtosis = imgp.get_attr('kurtosis')
+	
+	imgp.process_inplace( 'filter.matchto',{'to':refp})
 	
 	ccf = refp.calc_ccf( imgp )
 	ccf.process_inplace("xform.phaseorigin.tocorner") 
@@ -1016,15 +1108,15 @@ def align2D( options, ref, img ):
 	drecenterY = refp['ny']/2.0 - locmax[1]
 	
 	if options.shrink:
-		print "On shrunk images, translation to recenter are", drecenterX, drecenterY
+		print "(e2spt_subtilt)(align2D) on shrunk images, translation to recenter are", drecenterX, drecenterY
 
 	if options.shrink:
 		drecenterX *= options.shrink
 		drecenterY *= options.shrink
 	if options.shrink:
-		print "On the actual images, translation to recenter are", drecenterX, drecenterY
+		print "(e2spt_subtilt)(align2D) on the actual images, translation to recenter are", drecenterX, drecenterY
 	
-	return [drecenterX,drecenterY]
+	return [drecenterX,drecenterY,kurtosis]
 
 
 
@@ -1032,7 +1124,7 @@ def preprocImg( iimg, options ):
 	
 	img = iimg.copy()
 	
-	img.process_inplace('normalize')
+	img.process_inplace('normalize.edgemean')
 	
 	if options.threshold and options.threshold != 'None' and options.threshold != 'none': 
 		threshold=''
