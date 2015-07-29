@@ -199,7 +199,7 @@ def find_index_of_discontinuity_in_derivative(error_curve_func, list_of_projecti
 
 	# split_point_set = np.linspace(0.71,.99,split_point_resolution)
 	# split_point_set = np.linspace(0.71,outlier_percentile/100.0,split_point_resolution)
-	split_point_set = np.linspace(0.9,outlier_percentile/100.0,split_point_resolution)
+	split_point_set = np.linspace(0.8,outlier_percentile/100.0,split_point_resolution)
 
 	minimum_goodness_of_fit_for_both_lines = 1e20
 	optimized_split_point = -1
@@ -349,7 +349,7 @@ def found_outliers(list_of_projection_indices, outlier_percentile, rviper_iter, 
 		outlier_index_threshold = outlier_percentile * (len(error_values_and_indices) - 1)/ 100.0
 	elif outlier_index_threshold_method == "angle_measure":
 		error_values = [i[0] for i in error_values_and_indices]
-		outlier_index_threshold = min(range(len(error_values)), key=lambda i: abs(error_values[i]-outlier_percentile))
+		outlier_index_threshold = min(range(len(error_values)), key=lambda i: abs(error_values[i]-angle_threshold))
 	elif outlier_index_threshold_method == "use all images":
 		outlier_index_threshold = len(error_values_and_indices)
 
@@ -579,10 +579,10 @@ def main():
 	parser.add_option("--L2threshold", type="float",  default= 0.03,            help="Stopping criterion of GA given as a maximum relative dispersion of L2 norms (set to 0.03) ")
 	parser.add_option("--doga",     type="float",  default= 0.1,                help="do GA when fraction of orientation changes less than 1.0 degrees is at least doga (default=0.1)")
 	parser.add_option("--n_shc_runs",    type="int",    default= 3,            help="number of quasi-independent runs (shc) (default=3)")
-	parser.add_option("--n_rv_runs",       type= "int",   default= 30,          help="number of r_viper runs")
+	parser.add_option("--n_rv_runs",       type= "int",   default= 10,          help="number of rviper runs")
 	parser.add_option("--n_v_runs",       type= "int",   default= 3,            help="number of viper runs for each r_viper cycle")
 	parser.add_option("--outlier_percentile",     type="float",    default= 95, help="percentile above which outliers are removed every iteration")
-	parser.add_option("--iteration_start",     type="int",    default= 0,       help="starting iteration for rviper, 0 means go to the most recent one (default).")
+	parser.add_option("--iteration_start",     type="int",    default= 0,       help="starting iteration for rviper, 0 means go to the most recent one (default=0)")
 	#parser.add_option("--CTF",      action="store_true", default=False,        help="NOT IMPLEMENTED Consider CTF correction during the alignment ")
 	#parser.add_option("--snr",      type="float",  default= 1.0,               help="Signal-to-Noise Ratio of the data (default 1.0)")
 	parser.add_option("--ref_a",    type="string", default= "S",                help="method for generating the quasi-uniformly distributed projection directions (default S)")
@@ -606,6 +606,8 @@ def main():
 	
 	parser.add_option("--use_latest_master_directory", action="store_true", dest="use_latest_master_directory", default=False)
 	
+	parser.add_option("--angle_threshold",     type="float",    default= 30, help="angle error above which projections are removed every iteration (default=30)")
+	
 	(options, args) = parser.parse_args(sys.argv[1:])
 
 	options.CTF = False
@@ -626,6 +628,7 @@ def main():
 	no_of_viper_runs_analyzed_together_from_user_options = options.n_v_runs
 	no_of_shc_runs_analyzed_together = options.n_shc_runs 
 	outlier_percentile = options.outlier_percentile 
+	angle_threshold = options.angle_threshold 
 	
 	run_get_already_processed_viper_runs = options.run_get_already_processed_viper_runs
 	get_already_processed_viper_runs(run_get_already_processed_viper_runs)
