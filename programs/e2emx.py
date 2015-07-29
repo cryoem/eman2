@@ -100,7 +100,7 @@ for option1 in optionList:
 				if micro_string not in temp_micrograph_list:
 					temp_micrograph_list.append(micro_string)
 			for micrograph in temp_micrograph_list:
-				f.write("<micrograph fileName=\"" + str(micrograph) + ".mrc\">\n</micrograph>\n")
+				f.write("<micrograph fileName=\"" + str(micrograph) + ".mrc\"/>\n")
 			f.write("\n")
 		if "particles" in dir_list:
 			print "-----Writing Particle Information-----"
