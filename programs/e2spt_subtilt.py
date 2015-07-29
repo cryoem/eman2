@@ -127,6 +127,9 @@ def main():
 	
 	parser.add_argument("--track",action='store_true',default=False,help="""Default=False (not used). If supplied, this option will track particles from one tilt image to another.""")
 	
+	parser.add_argument("--trackytoo",action='store_true',default=False,help="""Default=False (not used). In theory, particles should not drift in Y with tilt angle. Still, this option can turn Y tracking on.""")
+
+	
 	(options, args) = parser.parse_args()
 	
 	if options.ntiltslow:
@@ -842,8 +845,12 @@ def write2D( options, angle, icethickness, tomox, tomoy, xc, yc, zc, cumulatived
 		'''
 		ret2 = align2D( options, ref, img )
 		rdx = ret2[0]
-		#rdy = ret2[1]
+		
 		rdy=0 	#particles shouldn't move at all in y
+		if options.trackytoo:
+			rdy = ret2[1]
+		
+		#
 		
 		kurtosis = ret2[2]
 		
@@ -1041,7 +1048,9 @@ def extract2D( options, angle, icethickness, tomox, xc, yc, zc, cumulativedx, cu
 
 	xt += cumulativedx
 	
-	#yt += cumulativedy		#particles shouldn't move at all in y
+	#in principle, particles shouldn't move at all in y, and therefore should have no need of tracking in this direction
+	if options.trackytoo:
+		yt += cumulativedy		
 	
 	##NEW
 	#r = Region( (2*xc2d-options.boxsize)/2, (2*yc2d-options.boxsize)/2, sliceindx, options.boxsize, options.boxsize, 1)
