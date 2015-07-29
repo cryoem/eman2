@@ -2967,6 +2967,8 @@ def makeAverage(options,ic,results,it=0):
 		return [avg,weights]
 	else:
 		print "\nERROR: for class %d in iteration %d failed to compute average (the average is empty)" %(ic,it)
+		sys.exit()
+		return [avg,weights]
 
 def get_results(etc,tids,verbose,nptcls,refmethod=''):
 	'''This will get results for a list of submitted tasks. Won't return until it has all requested results.
@@ -3718,8 +3720,8 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 					imgfullsizeali = preprocessing(imgfullsizeali,options,ptclindx, savetagp ,'no',round,'noshrink')
 						
 						
-					print "before alitweak, sizes of img are and apix", imgfullsizeali['nx'], imgfullsizeali, imgfullsizeali['ny'], imgfullsizeali['nz'],imgfullsizeali['apix_x']
-					print "before alitweak, sizes of ref are and apix", reffullsizeali['nx'], reffullsizeali, reffullsizeali['ny'], reffullsizeali['nz'],reffullsizeali['apix_x']
+					print "before alitweak, sizes of img are and apix", imgfullsizeali['nx'], imgfullsizeali['ny'], imgfullsizeali['nz'],imgfullsizeali['apix_x']
+					print "before alitweak, sizes of ref are and apix", reffullsizeali['nx'], reffullsizeali['ny'], reffullsizeali['nz'],reffullsizeali['apix_x']
 					
 					#print "aligner to tweak is", ['refine_3d_grid',{'xform.align3d':bestT,'range':tweakrange,'delta':tweakdelta,'search':tweaksearch}]
 					
