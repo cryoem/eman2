@@ -618,7 +618,7 @@ def recons3d_4nn_ctf(stack_name, list_proj = [], snr = 1.0, sign=1, symmetry="c1
 	return fftvol
 
 
-def recons3d_4nn_ctf_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", info=None, npad=2, xysize=-1, zsize=-1, mpi_comm=None, params = None):
+def recons3d_4nn_ctf_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", info=None, npad=2, xysize=-1, zsize=-1, mpi_comm=None, smearstep = 0.0):
 	"""
 		recons3d_4nn_ctf - calculate CTF-corrected 3-D reconstruction from a set of projections using three Eulerian angles, two shifts, and CTF settings for each projeciton image
 		Input
@@ -651,18 +651,24 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", info=N
 
 	fftvol = EMData()
 
-	if( snr == -1.0 ):
-		snr = 1.0
+	if( smearstep > 0.0 ):
 		if myid == 0:  print "  Setting smear"
 		ns = 1
-		astep = 0.75
 		smear = []
+		for j in xrange(-ns,ns+1):
+			if( j != 0):
+				for i in xrange(-ns,ns+1):
+					for k in xrange(-ns,ns+1):
+						smear += [i*smearstep,j*smearstep,k*smearstep,1.0]
+		# Deal with theta = 0.0 cases
+		prj = []
 		for i in xrange(-ns,ns+1):
-			for j in xrange(-ns,ns+1):
-				for k in xrange(-ns,ns+1):
-					smear+= [i*astep,j*astep,k*astep,1.0]
+			for k in xrange(-ns,ns+1):
+				prj.append(i+k)
+		for i in xrange(-2*ns,2*ns+1,1):
+			 smear += [float(i),0.0,0.0,float(prj.count(i))]
 		if myid == 0:  print "  Smear  ",smear
-		fftvol.set_attr("abc", smear)
+		fftvol.set_attr("smear", smear)
 
 	weight = EMData()
 	if (xysize == -1 and zsize == -1 ):
@@ -1682,7 +1688,7 @@ def prepare_recons(data, symmetry, myid, main_node_half, half_start, step, index
 
 	return None, None
 
-
+'''  Not used anywhere?  07/29/2015  PAP
 def prepare_recons_ctf_fftvol(data, snr, symmetry, myid, main_node_half, pidlist, finfo=None, npad = 2, mpi_comm=None):
 	from utilities import reduce_EMData_to_root
 	from EMAN2 import Reconstructors
@@ -1700,10 +1706,6 @@ def prepare_recons_ctf_fftvol(data, snr, symmetry, myid, main_node_half, pidlist
 	half.setup()
 
 	for i in pidlist:
-		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
-		# if( data[i].get_attr_default('active', 1) == 1):
-		# 	xform_proj = data[i].get_attr( "xform.projection" )
-		# 	half.insert_slice(data[i], xform_proj )
 		xform_proj = data[i].get_attr( "xform.projection" )
 		half.insert_slice(data[i], xform_proj )
 
@@ -1715,8 +1717,9 @@ def prepare_recons_ctf_fftvol(data, snr, symmetry, myid, main_node_half, pidlist
 	reduce_EMData_to_root(weight_half, myid, main_node_half, mpi_comm)
 
 	return fftvol_half, weight_half
+'''
 
-def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start, step, finfo=None, npad = 2, mpi_comm=None):
+def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start, step, finfo=None, npad = 2, mpi_comm=None, smearstep = 0.0):
 	from random     import randint
 	from utilities  import reduce_EMData_to_root
 	from mpi        import mpi_barrier, MPI_COMM_WORLD
@@ -1726,16 +1729,32 @@ def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start
 		mpi_comm = MPI_COMM_WORLD
 
 	fftvol_half = EMData()
+
+	if( smearstep > 0.0 ):
+		if myid == 0:  print "  Setting smear in prepare_recons_ctf"
+		ns = 1
+		smear = []
+		for j in xrange(-ns,ns+1):
+			if( j != 0):
+				for i in xrange(-ns,ns+1):
+					for k in xrange(-ns,ns+1):
+						smear += [i*smearstep,j*smearstep,k*smearstep,1.0]
+		# Deal with theta = 0.0 cases
+		prj = []
+		for i in xrange(-ns,ns+1):
+			for k in xrange(-ns,ns+1):
+				prj.append(i+k)
+		for i in xrange(-2*ns,2*ns+1,1):
+			 smear += [float(i),0.0,0.0,float(prj.count(i))]
+		if myid == 0:  print "  Smear  ",smear
+		fftvol_half.set_attr("smear", smear)
+
 	weight_half = EMData()
 	half_params = {"size":nx, "npad":npad, "snr":snr, "sign":1, "symmetry":symmetry, "fftvol":fftvol_half, "weight":weight_half}
 	half = Reconstructors.get( "nn4_ctf", half_params )
 	half.setup()
 
 	for i in xrange(half_start, len(data), step):
-		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
-		# if( data[i].get_attr_default('active',1) == 1):
-		# 	xform_proj = data[i].get_attr( "xform.projection" )
-		# 	half.insert_slice(data[i], xform_proj )
 		xform_proj = data[i].get_attr( "xform.projection" )
 		half.insert_slice(data[i], xform_proj )
 
@@ -1818,7 +1837,7 @@ def get_image_size( imgdata, myid ):
 
 def rec3D_MPI(data, snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None, \
 		myid = 0, main_node = 0, rstep = 1.0, odd_start=0, eve_start=1, finfo=None, \
-		index=-1, npad = 2, mpi_comm=None):
+		index=-1, npad = 2, mpi_comm=None, smearstep = 0.0):
 	'''
 	  This function is to be called within an MPI program to do a reconstruction on a dataset kept 
 	  in the memory, computes reconstruction and through odd-even, in order to get the resolution
@@ -1875,8 +1894,8 @@ def rec3D_MPI(data, snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None,
 		ERROR("Warning: no images were given for reconstruction, this usually means there is an empty group, returning empty volume", "rec3D", 0)
 		return model_blank( 2, 2, 2 ), None
 
-	fftvol_odd_file,weight_odd_file = prepare_recons_ctf(nx, imgdata, snr, symmetry, myid, main_node_odd, odd_start, 2, finfo, npad, mpi_comm=mpi_comm)
-	fftvol_eve_file,weight_eve_file = prepare_recons_ctf(nx, imgdata, snr, symmetry, myid, main_node_eve, eve_start, 2, finfo, npad, mpi_comm=mpi_comm)
+	fftvol_odd_file,weight_odd_file = prepare_recons_ctf(nx, imgdata, snr, symmetry, myid, main_node_odd, odd_start, 2, finfo, npad, mpi_comm=mpi_comm, smearstep = 0.0)
+	fftvol_eve_file,weight_eve_file = prepare_recons_ctf(nx, imgdata, snr, symmetry, myid, main_node_eve, eve_start, 2, finfo, npad, mpi_comm=mpi_comm, smearstep = 0.0)
 	del imgdata
 
 	if nproc == 1:

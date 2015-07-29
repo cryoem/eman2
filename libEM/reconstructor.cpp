@@ -3443,9 +3443,9 @@ int nn4_ctfReconstructor::insert_padfft_slice( EMData* padfft, EMData* ctf2d2, c
 	
 	vector<float> abc_list;
 	int abc_list_len = 0;	
-	if (m_volume->has_attr("abc"))
+	if (m_volume->has_attr("smear"))
 	{
-		abc_list = m_volume->get_attr("abc");
+		abc_list = m_volume->get_attr("smear");
 		abc_list_len = abc_list.size();
 	}
 				
