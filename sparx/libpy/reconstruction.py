@@ -652,7 +652,7 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", info=N
 	fftvol = EMData()
 
 	if( smearstep > 0.0 ):
-		if myid == 0:  print "  Setting smear"
+		if myid == 0:  print "  Setting smear in prepare_recons_ctf"
 		ns = 1
 		smear = []
 		for j in xrange(-ns,ns+1):
@@ -666,7 +666,7 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", info=N
 			for k in xrange(-ns,ns+1):
 				prj.append(i+k)
 		for i in xrange(-2*ns,2*ns+1,1):
-			 smear += [float(i),0.0,0.0,float(prj.count(i))]
+			 smear += [i*smearstep,0.0,0.0,float(prj.count(i))]
 		if myid == 0:  print "  Smear  ",smear
 		fftvol.set_attr("smear", smear)
 
@@ -1745,7 +1745,7 @@ def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start
 			for k in xrange(-ns,ns+1):
 				prj.append(i+k)
 		for i in xrange(-2*ns,2*ns+1,1):
-			 smear += [float(i),0.0,0.0,float(prj.count(i))]
+			 smear += [i*smearstep,0.0,0.0,float(prj.count(i))]
 		if myid == 0:  print "  Smear  ",smear
 		fftvol_half.set_attr("smear", smear)
 
@@ -1894,8 +1894,8 @@ def rec3D_MPI(data, snr = 1.0, symmetry = "c1", mask3D = None, fsc_curve = None,
 		ERROR("Warning: no images were given for reconstruction, this usually means there is an empty group, returning empty volume", "rec3D", 0)
 		return model_blank( 2, 2, 2 ), None
 
-	fftvol_odd_file,weight_odd_file = prepare_recons_ctf(nx, imgdata, snr, symmetry, myid, main_node_odd, odd_start, 2, finfo, npad, mpi_comm=mpi_comm, smearstep = 0.0)
-	fftvol_eve_file,weight_eve_file = prepare_recons_ctf(nx, imgdata, snr, symmetry, myid, main_node_eve, eve_start, 2, finfo, npad, mpi_comm=mpi_comm, smearstep = 0.0)
+	fftvol_odd_file,weight_odd_file = prepare_recons_ctf(nx, imgdata, snr, symmetry, myid, main_node_odd, odd_start, 2, finfo, npad, mpi_comm=mpi_comm, smearstep = smearstep)
+	fftvol_eve_file,weight_eve_file = prepare_recons_ctf(nx, imgdata, snr, symmetry, myid, main_node_eve, eve_start, 2, finfo, npad, mpi_comm=mpi_comm, smearstep = smearstep)
 	del imgdata
 
 	if nproc == 1:
