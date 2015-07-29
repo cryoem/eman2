@@ -2815,12 +2815,12 @@ def makeAverage(options,ic,results,it=0):
 		#print "I have applied this transform before averaging", ptcl_parms[0]["xform.align3d"]			
 		
 		score = r[0][0]["score"]
-		
+		print "\n!!!score is", score
 		if score <= thresh:
 			if thresh != 1.0:
-				print "Particle kept because its score %f is LOWER than the threshold %f, when the best score was %f" %( score, thresh, maxscore )
-			else:
-				print "Particle kept because its score %f is LOWER than the DEFAULT threshold %f, when the best score was %f" %( score, thresh, maxscore )
+				print "Particle kept because its score %f is LOWER (which means BETTER, in EMAN2 good scores are more negative) than the threshold %f, when the best score was %f" %( score, thresh, maxscore )
+			#else:
+			#	print "Particle kept because its score %f is LOWER than the DEFAULT threshold %f, when the best score was %f" %( score, thresh, maxscore )
 
 							
 			#print "preavgproc1 and len and type are", options.preavgproc1, len(options.preavgproc1), type(options.preavgproc1)
@@ -2879,8 +2879,11 @@ def makeAverage(options,ic,results,it=0):
 			ptcl.mult( weight )
 			avgr.add_image( ptcl )
 			included.append( ptclindx )
+			print "\nptcl %d added (incuded in average) because its score %.6f is below (better) the threshold %.f" %(ptclindx,score,thresh) 
+			
 		
 		else:
+			print "\nptcl %d skipped (not incuded in average) because its score %.6f is above (worse) the threshold %.f" %(ptclindx,score,thresh) 
 			weights.update( {ptclindx:0.0} )
 		
 		#js["subtomo_%04d"%i] = ptcl_parms[0]['xform.align3d']
@@ -2916,51 +2919,54 @@ def makeAverage(options,ic,results,it=0):
 
 	avg=avgr.finish()
 	print "done"
-		
-	if symmetry and not breaksym:
-		avg = avg.process('xform.applysym',{'sym':symmetry})
 	
-	avg["class_ptcl_idxs"]=included
-	avg["class_ptcl_src"]=ptcl_file
-	avg['spt_multiplicity']=len(included)
-	avg['spt_ptcl_indxs']=included
 	
-	if averager[0] == 'mean':
-		varmapname = path + '/class' + klassid + '_varmap.hdf'
-		variance.write_image( varmapname , it)
+	if avg:	
+		if symmetry and not breaksym:
+			avg = avg.process('xform.applysym',{'sym':symmetry})
+	
+		avg["class_ptcl_idxs"]=included
+		avg["class_ptcl_src"]=ptcl_file
+		avg['spt_multiplicity']=len(included)
+		avg['spt_ptcl_indxs']=included
+	
+		if averager[0] == 'mean':
+			varmapname = path + '/class' + klassid + '_varmap.hdf'
+			variance.write_image( varmapname , it)
 				
-	#if not nocenterofmass:
-	#	avg.process_inplace("xform.centerofmass")
+		#if not nocenterofmass:
+		#	avg.process_inplace("xform.centerofmass")
 	
 	
-	if options.autocenter:
-		print "\n\n\n\nYou have selected to autocenter!\n", options.autocenter
+		if options.autocenter:
+			print "\n\n\n\nYou have selected to autocenter!\n", options.autocenter
 		
-		avgac = avg.copy()
-		if options.autocentermask:
-			avgac.process_inplace( options.autocentermask[0],options.autocentermask[1] )
+			avgac = avg.copy()
+			if options.autocentermask:
+				avgac.process_inplace( options.autocentermask[0],options.autocentermask[1] )
 			
-		if options.autocenterpreprocess:
-			apix = avgc['apix_x']
-			halfnyquist = apix*4
-			highpassf = apix*a['nx']/2.0
+			if options.autocenterpreprocess:
+				apix = avgc['apix_x']
+				halfnyquist = apix*4
+				highpassf = apix*a['nx']/2.0
 			
-			avgac.process_inplace( 'filter.highpass.gauss',{'cutoff_freq':highpassf,'apix':apix})
-			avgac.process_inplace( 'filter.lowpass.gauss',{'cutoff_freq':halfnyquist,'apix':apix})
-			avgac.process_inplace( 'math.meanshrink',{'n':2})
+				avgac.process_inplace( 'filter.highpass.gauss',{'cutoff_freq':highpassf,'apix':apix})
+				avgac.process_inplace( 'filter.lowpass.gauss',{'cutoff_freq':halfnyquist,'apix':apix})
+				avgac.process_inplace( 'math.meanshrink',{'n':2})
 			
-		avgac.process_inplace(options.autocenter[0],options.autocenter[1])
+			avgac.process_inplace(options.autocenter[0],options.autocenter[1])
 		
-		tcenter = avgac['xform.align3d']
-		print "Thus the average HAS BEEN be translated like this", tcenter
-		avg.transform(tcenter)
+			tcenter = avgac['xform.align3d']
+			print "Thus the average HAS BEEN be translated like this", tcenter
+			avg.transform(tcenter)
 
-	avg['origin_x']=0
-	avg['origin_y']=0
-	avg['origin_z']=0
+		avg['origin_x']=0
+		avg['origin_y']=0
+		avg['origin_z']=0
 	
-	return [avg,weights]
-		
+		return [avg,weights]
+	else:
+		print "\nERROR: for class %d in iteration %d failed to compute average (the average is empty)" %(ic,it)
 
 def get_results(etc,tids,verbose,nptcls,refmethod=''):
 	'''This will get results for a list of submitted tasks. Won't return until it has all requested results.
