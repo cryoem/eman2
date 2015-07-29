@@ -781,17 +781,14 @@ def main():
 				except:
 					pass	
 					
-									
+				transform = None					
 				if options.inixforms:
 					tomoID = "subtomo_" + str(ptclnum).zfill( len(str( len(ptclnums) )) )
 					transform = preOrientationsDict[tomoID][0]
 					
 					print transform
 					print "Of type", type(transform)
-					
-				else:
-					transform = None
-				
+			
 				if options.parallel:
 					task=Align3DTask(["cache",os.path.join(options.path,"tmpref.hdf"),0],["cache",options.input,ptclnum],ptclnum,"Ptcl %d in iter %d"%(ptclnum,it),options,transform,it)
 					tasks.append(task)
@@ -3550,19 +3547,28 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		rand_orient = OrientGens.get("rand",{"n":1,"phitoo":1})		#Fetches the orientation generator
 		c1_sym = Symmetries.get("c1")								#Generates the asymmetric unit from which you wish to generate a random orientation
 		random_transform = rand_orient.gen_orientations(c1_sym)[0]	#Generates a random orientation (in a Transform object) using the generator and asymmetric unit specified 
-		if options.align:
+		if options.align and options.align[1]:
 			options.align[1].update({'transform' : random_transform})
 		else:
 			transform = random_transform
 	
-	
-	if not options.align:
-		if not transform:
-			bestcoarse=[{"score":1.0e10,"xform.align3d":Transform()}]
-		else:
-			bestcoarse=[{"score":1.0e10,"xform.align3d":transform}]	
+	bestcoarse=[{"score":1.0e10,"xform.align3d":Transform()}]
+	if not options.align and transform:
+		#if not transform:
+		#	bestcoarse=[{"score":1.0e10,"xform.align3d":Transform()}]
+		#else:
+		ccf = sfixedimage.calc_ccf( simage )
+		locmax = ccf.calc_max_location()
+							
+		locmaxX = locmax[0]
+		locmaxY = locmax[1]
+		locmaxZ = locmax[2]
+		
+		score = ccf.get_value_at( locmaxX, locmaxY, locmaxZ )
+		
+		bestcoarse=[{"score":score,"xform.align3d":transform}]	
 
-	else:
+	elif options.align:
 		'''
 		Returns an ordered vector of Dicts of length options.npeakstorefine. 
 		The Dicts in the vector have keys "score" and "xform.align3d" 
@@ -3578,12 +3584,13 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 		#print "\n\n\nRight before COARSE ali, AFTER size adj, the boxsize of image is", simage['nx'],simage['ny'],simage['nz']
 		#print "Right before COARSE alignment,  AFTER size adj, the boxsize of FIXEDimage is", sfixedimage['nx'],sfixedimage['ny'],sfixedimage['nz']
 		
-		if options.align:
-			if simage['nx'] != sfixedimage['nx'] or simage['ny'] != sfixedimage['ny'] or simage['nz'] != sfixedimage['nz']:
-				print "\n\nERROR: COARSE alignment images not the same size"
-				#print "\nThe particle's COARSE size is", simage['nx'],simage['ny'],simage['nz']
-				#print "\nThe reference's COARSE size is", sfixedimage['nx'],sfixedimage['ny'],sfixedimage['nz']
-				sys.exit()	
+		#if options.align:
+		
+		if simage['nx'] != sfixedimage['nx'] or simage['ny'] != sfixedimage['ny'] or simage['nz'] != sfixedimage['nz']:
+			print "\n\nERROR: COARSE alignment images not the same size"
+			#print "\nThe particle's COARSE size is", simage['nx'],simage['ny'],simage['nz']
+			#print "\nThe reference's COARSE size is", sfixedimage['nx'],sfixedimage['ny'],sfixedimage['nz']
+			sys.exit()	
 		
 		#some aligners don't have the ability to return 'nbest' answers
 	#	try:
@@ -3620,6 +3627,9 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			elif options.shrink > 1.0 and options.shrinkfine > 1.0 and options.shrink == options.shrinkfine:
 				pass
 				#print "\n\nshrink and shrink refine were equal!\n\n"
+		else:
+			print "\ntree alignment returned this best score and alignment", bestcoarse
+		
 			
 	# verbose printout
 	if options.verbose > 1 :
