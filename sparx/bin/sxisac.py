@@ -503,18 +503,13 @@ def main():
 
 		data64_stack_current = "bdb:../"+stack_processed_by_ali2d_base__filename__without_master_dir[4:]+"_%03d"%isac_generation
 
-		error_status = 0
 		if(myid == main_node):
-			
-			# number_of_accounted_images = sum(1 for line in open(os.path.join(NAME_OF_MAIN_DIR + "%04d"%(isac_generation - 1),"generation_%d_accounted.txt"%(isac_generation - 1))))
-			# number_of_unaccounted_images = sum(1 for line in open(os.path.join(NAME_OF_MAIN_DIR + "%04d"%(isac_generation - 1),"generation_%d_unaccounted.txt"%(isac_generation - 1))))
 			accounted_images = read_text_file(os.path.join(NAME_OF_MAIN_DIR + "%04d"%(isac_generation - 1),"generation_%d_accounted.txt"%(isac_generation - 1)))
 			number_of_accounted_images = len(accounted_images)
 			# unaccounted_images = read_text_file(os.path.join(NAME_OF_MAIN_DIR + "%04d"%(isac_generation - 1),"generation_%d_unaccounted.txt"%(isac_generation - 1)))
 			# number_of_unaccounted_images = len(unaccounted_images)
 			
 		number_of_accounted_images = int(mpi_bcast(number_of_accounted_images, 1, MPI_INT, 0, MPI_COMM_WORLD)[0])
-		
 		if number_of_accounted_images == 0:
 			break
 		
@@ -547,6 +542,14 @@ def main():
 			mpi_finalize()
 			sys.exit()
 
+		exit_program = 0
+		if(myid == main_node):
+			if not os.path.exists("class_averages_candidate_generation_%d.hdf"%isac_generation):
+				print "This generation (%d) no class averages were generated!"%isac_generation
+				exit_program = 1
+		exit_program = int(mpi_bcast(exit_program, 1, MPI_INT, 0, MPI_COMM_WORLD)[0])
+		if exit_program:
+			break
 
 		program_state_stack.restart_location_title = "reproducible_class_averages"
 		if program_state_stack(locals(), getframeinfo(currentframe())):
