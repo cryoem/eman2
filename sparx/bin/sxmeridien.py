@@ -590,7 +590,7 @@ def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, npro
 			if Tracker["constants"]["CTF"]:
 				if Tracker["constants"]["smear"] :
 					#  Ideally, this would be available, but the problem is it is computed in metamove, which is not executed during restart
-					nx = projdata[0].get_xsize()
+					nx = projdata[procid][0].get_xsize()
 					shrinkage = float(nx)/float(Tracker["constants"]["nnxo"])
 					lowpass = float(Tracker["icurrentres"])/float(nx)
 					delta = min(round(degrees(atan(0.5/Tracker["lowpass"]/Tracker["radius"])), 2), 3.0)
@@ -638,13 +638,13 @@ def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, npro
 				#  Compute adjusted within-fsc as 2*f/(1+f)
 				fsc[procid].append(fsc[procid][1][:])
 				for k in xrange(len(fsc[procid][1])):  fsc[procid][-1][k] = 2*fsc[procid][-1][k]/(1.0+fsc[procid][-1][k])
-				write_text_file( fsc[procid], os.path.join(outputdir,"within-fsc%01d.txt"%procid) )
+				write_text_file( fsc[procid], os.path.join(Tracker["directory"],"within-fsc%01d.txt"%procid) )
 
-		lowpass, falloff, icurrentres = get_pixel_resolution(vol, mask, Tracker["constants"]["nnxo"], outputdir)
+		lowpass, falloff, icurrentres = get_pixel_resolution(vol, mask, Tracker["constants"]["nnxo"], Tracker["directory"])
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print(  line,"Current resolution  %6.2f  %6.2f A  (%d), low-pass filter cut-off %6.2f and fall-off %6.2f"%\
 						(icurrentres/float(Tracker["constants"]["nnxo"]),Tracker["constants"]["pixel_size"]*float(Tracker["constants"]["nnxo"])/float(icurrentres),icurrentres,lowpass,falloff))
-		write_text_row([[lowpass, falloff, icurrentres]],os.path.join(outputdir,"current_resolution.txt"))
+		write_text_row([[lowpass, falloff, icurrentres]],os.path.join(Tracker["directory"],"current_resolution.txt"))
 	#  Returns: low-pass filter cutoff;  low-pass filter falloff;  current resolution
 	icurrentres = bcast_number_to_all(icurrentres, source_node = main_node)
 	lowpass     = bcast_number_to_all(lowpass, source_node = main_node)
@@ -678,7 +678,7 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc,
 		print("    ")
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print(  line, "Reading data  onx: %3d, nx: %3d, CTF: %s, applyctf: %s, preshift: %s."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["constants"]["CTF"], Tracker["applyctf"], preshift) )
-		print("                       stack: %s\n                       partids: %s\n                       partstack:%s\n"%(Tracker["constants"]["stack"], partids, partstack) )
+		print("                       stack:      %s\n                       partids:     %s\n                       partstack: %s\n"%(Tracker["constants"]["stack"], partids, partstack) )
 	if( myid == main_node ): lpartids = read_text_file(partids)
 	else:  lpartids = 0
 	lpartids = wrap_mpi_bcast(lpartids, main_node)
