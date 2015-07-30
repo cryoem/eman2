@@ -652,7 +652,7 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", info=N
 	fftvol = EMData()
 
 	if( smearstep > 0.0 ):
-		if myid == 0:  print "  Setting smear in prepare_recons_ctf"
+		#if myid == 0:  print "  Setting smear in prepare_recons_ctf"
 		ns = 1
 		smear = []
 		for j in xrange(-ns,ns+1):
@@ -667,7 +667,7 @@ def recons3d_4nn_ctf_MPI(myid, prjlist, snr = 1.0, sign=1, symmetry="c1", info=N
 				prj.append(i+k)
 		for i in xrange(-2*ns,2*ns+1,1):
 			 smear += [i*smearstep,0.0,0.0,float(prj.count(i))]
-		if myid == 0:  print "  Smear  ",smear
+		#if myid == 0:  print "  Smear  ",smear
 		fftvol.set_attr("smear", smear)
 
 	weight = EMData()
@@ -1731,7 +1731,7 @@ def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start
 	fftvol_half = EMData()
 
 	if( smearstep > 0.0 ):
-		if myid == 0:  print "  Setting smear in prepare_recons_ctf"
+		#if myid == 0:  print "  Setting smear in prepare_recons_ctf"
 		ns = 1
 		smear = []
 		for j in xrange(-ns,ns+1):
@@ -1746,7 +1746,7 @@ def prepare_recons_ctf(nx, data, snr, symmetry, myid, main_node_half, half_start
 				prj.append(i+k)
 		for i in xrange(-2*ns,2*ns+1,1):
 			 smear += [i*smearstep,0.0,0.0,float(prj.count(i))]
-		if myid == 0:  print "  Smear  ",smear
+		#if myid == 0:  print "  Smear  ",smear
 		fftvol_half.set_attr("smear", smear)
 
 	weight_half = EMData()

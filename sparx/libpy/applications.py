@@ -4825,8 +4825,6 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 				#print  data[0].get_attr_dict()
 				log.add("Time of alignment = %10.1f\n"%(time()-start_time))
 				start_time = time()
-				
-				
 			#=========================================================================
 			#output pixel errors, check stop criterion
 			all_pixer = wrap_mpi_gatherv(pixer, 0, mpi_comm)

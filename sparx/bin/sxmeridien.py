@@ -601,8 +601,8 @@ def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, npro
 					mask3D = mask, fsc_curve = None, \
 					myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2, smearstep = Tracker["smearstep"])
 			else:
-				from reconstruction import rec3D_MPI_noTracker["constants"]["CTF"]
-				vol[procid],fsc[procid] = rec3D_MPI_noTracker["constants"]["CTF"](projdata[procid], symmetry = Tracker["constants"]["sym"], \
+				from reconstruction import rec3D_MPI_noCTF
+				vol[procid],fsc[procid] = rec3D_MPI_noCTF(projdata[procid], symmetry = Tracker["constants"]["sym"], \
 					mask3D = mask, fsc_curve = None, \
 					myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2)
 
