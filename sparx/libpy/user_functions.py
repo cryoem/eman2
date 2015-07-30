@@ -899,7 +899,7 @@ def do_volume_mrk02(ref_data):
 	if( type(data) == types.ListType ):
 		if Tracker["constants"]["CTF"]:
 			vol = recons3d_4nn_ctf_MPI(myid, data, Tracker["constants"]["snr"], \
-					symmetry=Tracker["constants"]["sym"], npad=Tracker["constants"]["npad"], mpi_comm=mpi_comm)
+					symmetry=Tracker["constants"]["sym"], npad=Tracker["constants"]["npad"], mpi_comm=mpi_comm, smearstep = Tracker["smearstep"])
 		else:
 			vol = recons3d_4nn_MPI    (myid, data,\
 					symmetry=Tracker["constants"]["sym"], npad=Tracker["constants"]["npad"], mpi_comm=mpi_comm)
@@ -940,15 +940,32 @@ def do_volume_mrk02(ref_data):
 			ro = rops_table(vol)
 			#  Here unless I am mistaken it is enough to take the beginning of the reference pw.
 			for i in xrange(1,len(ro)):  ro[i] = (rt[i]/ro[i])**Tracker["upscale"]
+			if Tracker["constants"]["sausage"]:
+				ny = vol.get_ysize()
+				y = float(ny)
+				for i in xrange(len(ro)):  ro[i] *= \
+				  (1.0+0.3*exp(-(((i/y/Tracker["constants"]["pixel_size"])-0.12)/0.025)**2)+0.2*exp(-(((i/y/Tracker["constants"]["pixel_size"])-0.22)/0.025)**2))
+
 			if( type(Tracker["lowpass"]) == types.ListType ):
 				vol = fft( filt_table( filt_table(vol, Tracker["lowpass"]), ro) )
 			else:
 				vol = fft( filt_table( filt_tanl(vol, Tracker["lowpass"], Tracker["falloff"]), ro) )
+			del ro
 		else:
+			if Tracker["constants"]["sausage"]:
+				ny = vol.get_ysize()
+				y = float(ny)
+				ro = [0.0]*(ny//2+2)
+				for i in xrange(len(ro)):  ro[i] = \
+				  (1.0+0.3*exp(-(((i/y/Tracker["constants"]["pixel_size"])-0.12)/0.025)**2)+0.2*exp(-(((i/y/Tracker["constants"]["pixel_size"])-0.22)/0.025)**2))
+				fftip(vol)
+				filt_table(vol, ro)
+				del ro
 			if( type(Tracker["lowpass"]) == types.ListType ):
 				vol = filt_table(vol, Tracker["lowpass"])
 			else:
 				vol = filt_tanl(vol, Tracker["lowpass"], Tracker["falloff"])
+			if Tracker["constants"]["sausage"]: vol = fft(vol)
 		stat = Util.infomask(vol, mask3D, False)
 		vol -= stat[0]
 		Util.mul_scalar(vol, 1.0/stat[1])

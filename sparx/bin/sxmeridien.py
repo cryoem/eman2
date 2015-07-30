@@ -441,9 +441,6 @@ def get_pixercutoff(radius, delta = 2.0, dsx = 0.5):
 	t2.set_trans(Vec2f(dsx, dsx))
 	return max_3D_pixel_error(t1, t2, radius)
 
-
-# NOTE: 2015/06/12 Toshio Moriya
-# This function seems to be not used
 def comparetwoalis(params1, params2, thresherr=1.0, radius = 1.0):
 	#  Find errors per image
 	nn = len(params1)
@@ -645,7 +642,6 @@ def compute_resolution(stack, outputdir, partids, partstack, org_radi, nnxo, CTF
 	return round(lowpass,4), round(falloff,4), icurrentres
 
 
-
 def getalldata(stack, myid, nproc):
 	if(myid == 0):  ndata = EMUtil.get_image_count(stack)
 	else:           ndata = 0
@@ -661,7 +657,6 @@ def getalldata(stack, myid, nproc):
 		image_start, image_end = MPI_start_end(ndata, nproc, myid)
 	data = EMData.read_images(stack, range(image_start, image_end))
 	return data
-
 
 
 def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc, preshift = False):
@@ -769,6 +764,8 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 		Tracker["ts"]    = "2.0"
 	else:
 		delta = "%f  "%min(round(degrees(atan(0.5/Tracker["lowpass"]/Tracker["radius"])), 2), 3.0)
+		if Tracker["constants"]["smear"] : Tracker["smearstep"] = 0.5*delta
+		else:                              Tracker["smearstep"] = 0.0
 		Tracker["delta"] = ""
 		for i in xrange(len(get_input_from_string(Tracker["xr"]))):  Tracker["delta"] += delta
 		Tracker["pixercutoff"] = get_pixercutoff(Tracker["radius"], float(get_input_from_string(Tracker["delta"])[0]), 0.5)
@@ -855,22 +852,24 @@ def main():
 	#parser.add_option("--center",  		type="int",  default= 0,			help="-1: average shift method; 0: no centering; 1: center of gravity (default=0)")
 	#parser.add_option("--maxit",   		type="int",  	default= 400,		help="maximum number of iterations performed for the GA part (set to 400) ")
 	parser.add_option("--outlier_percentile",type="float",    default= 95,	help="percentile above which outliers are removed every iteration")
-	parser.add_option("--iteration_start",type="int",    default= 0,		help="starting iteration for rviper, 0 means go to the most recent one (default).")
-	parser.add_option("--CTF",     		action="store_true", default=False,	help="Use CTF (Default no CTF correction)")
+	#parser.add_option("--iteration_start",   type="int",    default= 0,		help="starting iteration for rviper, 0 means go to the most recent one (default).")
+	parser.add_option("--CTF",     		     action="store_true", default=False,	help="Use CTF (Default no CTF correction)")
 	#parser.add_option("--snr",     		type="float",  default= 1.0,		help="Signal-to-Noise Ratio of the data (default 1.0)")
-	parser.add_option("--ref_a",   		type="string", default= "S",		help="method for generating the quasi-uniformly distributed projection directions (default S)")
-	parser.add_option("--sym",     		type="string", default= "c1",		help="Point-group symmetry of the refined structure")
+	parser.add_option("--ref_a",   		    type="string", default= "S",		help="method for generating the quasi-uniformly distributed projection directions (default S)")
+	parser.add_option("--sym",     		    type="string", default= "c1",		help="Point-group symmetry of the refined structure")
 	#parser.add_option("--npad",    		type="int",    default= 2,			help="padding size for 3D reconstruction (default=2)")
-	#parser.add_option("--nsoft",    	type="int",    default= 0,			help="Use SHC in first phase of refinement iteration (default=0, to turn it on set to 1)")
-	parser.add_option("--startangles",  action="store_true", default=False,	help="Use orientation parameters in the input file header to jumpstart the procedure")
+	#parser.add_option("--nsoft",    	     type="int",    default= 0,			help="Use SHC in first phase of refinement iteration (default=0, to turn it on set to 1)")
+	parser.add_option("--startangles",      action="store_true", default=False,	help="Use orientation parameters in the input file header to jumpstart the procedure")
+	parser.add_option("--smear",            action="store_true", default=False,	help="Use rotational smear")
+	parser.add_option("--sausage",          action="store_true", default=False,	help="Sausage-making filter")
 
 	#options introduced for the do_volume function
 	#parser.add_option("--fl",			type="float",	default=0.12,		help="cut-off frequency of hyperbolic tangent low-pass Fourier filter (default 0.12)")
 	#parser.add_option("--aa",			type="float",	default=0.1,		help="fall-off of hyperbolic tangent low-pass Fourier filter (default 0.1)")
-	parser.add_option("--inires",		type="float",	default=25.,		help="Resolution of the initial_volume volume (default 25A)")
-	parser.add_option("--pwreference",	type="string",	default="",			help="text file with a reference power spectrum (default no power spectrum adjustment)")
-	parser.add_option("--mask3D",		type="string",	default=None,		help="3D mask file (default a sphere with radius (nx/2)-1)")
-	parser.add_option("--function",     type="string",  default="do_volume_mrk02",  help="name of the reference preparation function (default do_volume_mrk02)")
+	parser.add_option("--inires",		     type="float",	default=25.,		help="Resolution of the initial_volume volume (default 25A)")
+	parser.add_option("--pwreference",	     type="string",	default="",			help="text file with a reference power spectrum (default no power spectrum adjustment)")
+	parser.add_option("--mask3D",		     type="string",	default=None,		help="3D mask file (default a sphere with radius (nx/2)-1)")
+	parser.add_option("--function",          type="string", default="do_volume_mrk02",  help="name of the reference preparation function (default do_volume_mrk02)")
 
 	(options, args) = parser.parse_args(sys.argv[1:])
 
@@ -913,6 +912,8 @@ def main():
 	Constants["npad"]         = 2
 	Constants["center"]       = 0
 	Constants["pwreference"]  = options.pwreference
+	Constants["smear"]        = options.smear
+	Constants["sausage"]      = options.sausage
 	Constants["CTF"]          = options.CTF
 	Constants["ref_a"]        = options.ref_a
 	Constants["snr"]          = 1.0
@@ -947,7 +948,7 @@ def main():
 	Tracker["local"]          = False
 	Tracker["PWadjustment"]   = ""
 	Tracker["upscale"]        = 0.5
-	Tracker["applyctf"]       = True  #  Should the data be premultiplied by the CTF.  Set to False for local continues.
+	Tracker["applyctf"]       = True  #  Should the data be premultiplied by the CTF.  Set to False for local continuous.
 	Tracker["refvol"]         = None
 
 	Tracker["nxinit"]         = 64
