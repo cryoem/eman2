@@ -4621,7 +4621,7 @@ def print_with_time_info(msg):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>" + msg
 	print line
 
-def if_error_all_processes_quit_program(error_status, report_program_state=False):
+def if_error_all_processes_quit_program(error_status):
 	from traceback import extract_stack
 	import sys, copy
 	from mpi import mpi_bcast, mpi_finalize, MPI_INT, MPI_COMM_WORLD
@@ -4631,10 +4631,10 @@ def if_error_all_processes_quit_program(error_status, report_program_state=False
 	error_status = int(error_status[0])
 
 	if error_status > 0:
-		if report_program_state:
-			from utilities import program_state_stack
-			from inspect import currentframe, getframeinfo
-			program_state_stack(locals(), getframeinfo(currentframe()), last_call="LastCall")
+		# if report_message:
+		# 	from utilities import program_state_stack
+		# 	from inspect import currentframe, getframeinfo
+		# 	program_state_stack(locals(), getframeinfo(currentframe()), last_call="___%s"%report_message)
 	
 		# if mpi_comm_rank(MPI_COMM_WORLD) == 0:
 		# 	print "Stack INFO -0-:", extract_stack()[-3:]

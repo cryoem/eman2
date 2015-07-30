@@ -91,7 +91,7 @@ def main():
 	parser.add_option("--match_second",   type="int",          default=5,       help="number of iterations to run 2-way (or 3-way) matching in the second phase (5)")
 	parser.add_option("--stab_ali",       type="int",          default=5,       help="number of alignments when checking stability (5)")
 	parser.add_option("--thld_err",       type="float",        default=0.7,     help="the threshold of pixel error when checking stability (0.7)")
-	parser.add_option("--indep_run",      type="int",          default=4,       help="number of indepentdent runs for reproducibility (default=4, only values 2, 3 and 4 are supported (4)")
+	parser.add_option("--indep_run",      type="int",          default=4,       help="number of independent runs for reproducibility (default=4, only values 2, 3 and 4 are supported (4)")
 	parser.add_option("--thld_grp",       type="int",          default=10,      help="minimum size of class (10)")
 	parser.add_option("--n_generations",     type="int",          default=100,       help="program stops when reaching this total number of generations")
 	#parser.add_option("--candidatesexist",action="store_true", default=False,   help="Candidate class averages exist use them (default False)")
@@ -176,7 +176,7 @@ def main():
 		filename = os.path.basename(filename)
 		stack_processed_by_ali2d_base__filename  = "bdb:" + os.path.join(masterdir, filename )
 		stack_processed_by_ali2d_base__filename__without_master_dir  = "bdb:" + filename
-	if_error_all_processes_quit_program(error_status, report_program_state=True)
+	if_error_all_processes_quit_program(error_status)
 
 	# send masterdir to all processes
 	masterdir = send_string_to_all(masterdir)
@@ -506,12 +506,17 @@ def main():
 		error_status = 0
 		if(myid == main_node):
 			
-			number_of_accounted_images = sum(1 for line in open(os.path.join(NAME_OF_MAIN_DIR + "%04d"%(isac_generation - 1),"generation_%d_accounted.txt"%(isac_generation - 1))))
-			number_of_unaccounted_images = sum(1 for line in open(os.path.join(NAME_OF_MAIN_DIR + "%04d"%(isac_generation - 1),"generation_%d_unaccounted.txt"%(isac_generation - 1))))
-			if number_of_accounted_images == 0:
-				error_status = 1
-
-		if_error_all_processes_quit_program(error_status)
+			# number_of_accounted_images = sum(1 for line in open(os.path.join(NAME_OF_MAIN_DIR + "%04d"%(isac_generation - 1),"generation_%d_accounted.txt"%(isac_generation - 1))))
+			# number_of_unaccounted_images = sum(1 for line in open(os.path.join(NAME_OF_MAIN_DIR + "%04d"%(isac_generation - 1),"generation_%d_unaccounted.txt"%(isac_generation - 1))))
+			accounted_images = read_text_file(os.path.join(NAME_OF_MAIN_DIR + "%04d"%(isac_generation - 1),"generation_%d_accounted.txt"%(isac_generation - 1)))
+			number_of_accounted_images = len(accounted_images)
+			# unaccounted_images = read_text_file(os.path.join(NAME_OF_MAIN_DIR + "%04d"%(isac_generation - 1),"generation_%d_unaccounted.txt"%(isac_generation - 1)))
+			# number_of_unaccounted_images = len(unaccounted_images)
+			
+		number_of_accounted_images = int(mpi_bcast(number_of_accounted_images, 1, MPI_INT, 0, MPI_COMM_WORLD)[0])
+		
+		if number_of_accounted_images == 0:
+			break
 		
 		program_state_stack.restart_location_title = "restart"
 		if program_state_stack(locals(), getframeinfo(currentframe())):

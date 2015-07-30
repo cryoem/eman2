@@ -566,7 +566,7 @@ def main():
 	usage = progname + " stack  [output_directory]  [initial_volume]  --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood  --center=center_type --maxit1=max_iter1 --maxit2=max_iter2 --L2threshold=0.1  --fl --aa --ref_a=S --sym=c1"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",		type= "int",   default= 1,                  help="inner radius for rotational correlation > 0 (set to 1)")
-	parser.add_option("--ou",       type= "int",   default= -1,                 help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
+	parser.add_option("--radius",       type= "int",   default= -1,                 help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
 	parser.add_option("--rs",       type= "int",   default= 1,                  help="step between rings in rotational correlation >0  (set to 1)" ) 
 	parser.add_option("--xr",       type="string", default= "0",                help="range for translation search in x direction, search is +/xr (default 0)")
 	parser.add_option("--yr",       type="string", default= "-1",               help="range for translation search in y direction, search is +/yr (default = same as xr)")
@@ -619,6 +619,8 @@ def main():
 	else:
 		options.moon_elimination = map(float, options.moon_elimination.split(","))
 
+	# this is just for benefiting from a user friendly parameter name
+	options.ou = options.radius
 	my_random_seed = options.my_random_seed
 	criterion_name = options.criterion_name
 	outlier_index_threshold_method = options.outlier_index_threshold_method
@@ -668,9 +670,9 @@ def main():
 
 	error_status = 0	
 	if mpi_size % no_of_shc_runs_analyzed_together != 0:
-		ERROR('Number of processes needs to be a multiple of total number of runs. '
+		ERROR('Number of processes needs to be a multiple of the number of quasi-independent runs (shc) within each viper run. '
 		'Total quasi-independent runs by default are 3, you can change it by specifying '
-		'--nruns option. Also, to improve communication time it is recommended that '
+		'--n_shc_runs option (in sxviper this option is called --nruns). Also, to improve communication time it is recommended that '
 		'the number of processes divided by the number of quasi-independent runs is a power '
 		'of 2 (e.g. 2, 4, 8 or 16 depending on how many physical cores each node has).', 'sxviper', 1)
 		error_status = 1
