@@ -559,7 +559,7 @@ def get_pixel_resolution(vol, mask, nnxo, fscoutputdir):
 	return  round(lowpass,4), round(falloff,4), currentres
 
 
-def compute_resolution(stack, outputdir, partids, partstack, org_radi, nnxo, CTF, mask_option, sym, myid, main_node, nproc, pixel=1.0):
+def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, nproc):
 	#  while the code pretends to accept volumes as input, it actually does not.
 	import types
 	vol = [None]*2
@@ -569,8 +569,10 @@ def compute_resolution(stack, outputdir, partids, partstack, org_radi, nnxo, CTF
 		nz = stack[0][0].get_zsize()
 	else:
 		nz = 1
-	if(mask_option is None):  mask = model_circle(org_radi,nnxo,nnxo,nnxo)
-	else:                     mask = get_im(mask_option)
+	if(Tracker["constants"]["mask3D"] is None):
+		mask = model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+	else:
+		mask = get_im(Tracker["constants"]["mask3D"])
 
 	projdata = []
 	for procid in xrange(2):
@@ -582,17 +584,25 @@ def compute_resolution(stack, outputdir, partids, partstack, org_radi, nnxo, CTF
 				projdata[procid] = stack[procid]
 			if( procid == 0 ):
 				nx = projdata[procid][0].get_xsize()
-				if( nx != nnxo):
-					mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(nnxo)),nx,nx,nx)
+				if( nx != Tracker["constants"]["nnxo"]):
+					mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(Tracker["constants"]["nnxo"])),nx,nx,nx)
 
-			if CTF:
+			if Tracker["constants"]["CTF"]:
+				if Tracker["constants"]["smear"] :
+					#  Ideally, this would be available, but the problem is it is computed in metamove, which is not executed during restart
+					nx = projdata[0].get_xsize()
+					shrinkage = float(nx)/float(Tracker["constants"]["nnxo"])
+					lowpass = float(Tracker["icurrentres"])/float(nx)
+					delta = min(round(degrees(atan(0.5/Tracker["lowpass"]/Tracker["radius"])), 2), 3.0)
+					Tracker["smearstep"] = 0.5*delta
+				else:                              Tracker["smearstep"] = 0.0
 				from reconstruction import rec3D_MPI
-				vol[procid],fsc[procid] = rec3D_MPI(projdata[procid], symmetry = sym, \
+				vol[procid],fsc[procid] = rec3D_MPI(projdata[procid], symmetry = Tracker["constants"]["sym"], \
 					mask3D = mask, fsc_curve = None, \
-					myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2)
+					myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2, smearstep = Tracker["smearstep"])
 			else:
-				from reconstruction import rec3D_MPI_noCTF
-				vol[procid],fsc[procid] = rec3D_MPI_noCTF(projdata[procid], symmetry = sym, \
+				from reconstruction import rec3D_MPI_noTracker["constants"]["CTF"]
+				vol[procid],fsc[procid] = rec3D_MPI_noTracker["constants"]["CTF"](projdata[procid], symmetry = Tracker["constants"]["sym"], \
 					mask3D = mask, fsc_curve = None, \
 					myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2)
 
@@ -601,12 +611,12 @@ def compute_resolution(stack, outputdir, partids, partstack, org_radi, nnxo, CTF
 			#  Volumes
 			vol[procid] = stack[procid]
 			nx = vol[0].get_xsize()
-			if( nx != nnxo ):
-				mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(nnxo)),nx,nx,nx)
+			if( nx != Tracker["constants"]["nnxo"] ):
+				mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(Tracker["constants"]["nnxo"])),nx,nx,nx)
 
 		if( myid == main_node):
 			from fundamentals import fpol
-			fpol(vol[procid], nnxo, nnxo, nnxo).write_image(os.path.join(outputdir,"vol%01d.hdf"%procid))
+			fpol(vol[procid], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"],"vol%01d.hdf"%procid))
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			print(  line,"Generated vol #%01d  using  image size %d "%(procid, nx))
 
@@ -617,23 +627,23 @@ def compute_resolution(stack, outputdir, partids, partstack, org_radi, nnxo, CTF
 
 	if(myid == main_node):
 		if(type(stack) == str or ( nz == 1 )):
-			if(nx<nnxo):
+			if(nx<Tracker["constants"]["nnxo"]):
 				for procid in xrange(2):
 					for i in xrange(3):
-						for k in xrange(nx/2+1, nnxo/2+1):
+						for k in xrange(nx/2+1, Tracker["constants"]["nnxo"]/2+1):
 							fsc[procid][i].append(0.0)
-					for k in xrange(nnxo/2+1):
-						fsc[procid][0][k] = float(k)/nnxo
+					for k in xrange(Tracker["constants"]["nnxo"]/2+1):
+						fsc[procid][0][k] = float(k)/Tracker["constants"]["nnxo"]
 			for procid in xrange(2):
 				#  Compute adjusted within-fsc as 2*f/(1+f)
 				fsc[procid].append(fsc[procid][1][:])
 				for k in xrange(len(fsc[procid][1])):  fsc[procid][-1][k] = 2*fsc[procid][-1][k]/(1.0+fsc[procid][-1][k])
 				write_text_file( fsc[procid], os.path.join(outputdir,"within-fsc%01d.txt"%procid) )
 
-		lowpass, falloff, icurrentres = get_pixel_resolution(vol, mask, nnxo, outputdir)
+		lowpass, falloff, icurrentres = get_pixel_resolution(vol, mask, Tracker["constants"]["nnxo"], outputdir)
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print(  line,"Current resolution  %6.2f  %6.2f A  (%d), low-pass filter cut-off %6.2f and fall-off %6.2f"%\
-						(icurrentres/float(nnxo),pixel*float(nnxo)/float(icurrentres),icurrentres,lowpass,falloff))
+						(icurrentres/float(Tracker["constants"]["nnxo"]),Tracker["constants"]["pixel_size"]*float(Tracker["constants"]["nnxo"])/float(icurrentres),icurrentres,lowpass,falloff))
 		write_text_row([[lowpass, falloff, icurrentres]],os.path.join(outputdir,"current_resolution.txt"))
 	#  Returns: low-pass filter cutoff;  low-pass filter falloff;  current resolution
 	icurrentres = bcast_number_to_all(icurrentres, source_node = main_node)
@@ -1258,11 +1268,8 @@ def main():
 						projdata[procid], oldshifts[procid] = get_shrink_data(Tracker, nxinit,\
 									partids[procid], partstack[procid], myid, main_node, nproc, preshift = False)
 
-				xlowpass, xfalloff, xcurrentres = compute_resolution(projdata, \
-													Tracker["directory"], partids, partstack, \
-													Tracker["constants"]["radius"], Tracker["constants"]["nnxo"], \
-													Tracker["constants"]["CTF"], Tracker["constants"]["mask3D"], \
-													Tracker["constants"]["sym"], myid, main_node, nproc, Tracker["constants"]["pixel_size"])
+				xlowpass, xfalloff, xcurrentres = compute_resolution(projdata, partids, partstack, \
+													Tracker, myid, main_node, nproc)
 				if( xcurrentres > (nxinit-cushion)/2 and nxinit < Tracker["constants"]["nnxo"] ):
 					nxinit = Tracker["constants"]["nnxo"]
 					projdata = [[model_blank(1,1)], [model_blank(1,1)]]
