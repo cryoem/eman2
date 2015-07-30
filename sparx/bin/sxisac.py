@@ -511,6 +511,7 @@ def main():
 			
 		number_of_accounted_images = int(mpi_bcast(number_of_accounted_images, 1, MPI_INT, 0, MPI_COMM_WORLD)[0])
 		if number_of_accounted_images == 0:
+			os.chdir("..")
 			break
 		
 		program_state_stack.restart_location_title = "restart"
@@ -549,6 +550,7 @@ def main():
 				exit_program = 1
 		exit_program = int(mpi_bcast(exit_program, 1, MPI_INT, 0, MPI_COMM_WORLD)[0])
 		if exit_program:
+			os.chdir("..")
 			break
 
 		program_state_stack.restart_location_title = "reproducible_class_averages"
