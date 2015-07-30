@@ -763,9 +763,10 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 		Tracker["delta"] = "2.0"
 		Tracker["ts"]    = "2.0"
 	else:
-		delta = "%f  "%min(round(degrees(atan(0.5/Tracker["lowpass"]/Tracker["radius"])), 2), 3.0)
+		delta = min(round(degrees(atan(0.5/Tracker["lowpass"]/Tracker["radius"])), 2), 3.0)
 		if Tracker["constants"]["smear"] : Tracker["smearstep"] = 0.5*delta
 		else:                              Tracker["smearstep"] = 0.0
+		delta = "%f  "%delta
 		Tracker["delta"] = ""
 		for i in xrange(len(get_input_from_string(Tracker["xr"]))):  Tracker["delta"] += delta
 		Tracker["pixercutoff"] = get_pixercutoff(Tracker["radius"], float(get_input_from_string(Tracker["delta"])[0]), 0.5)
