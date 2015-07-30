@@ -876,6 +876,7 @@ def do_volume_mrk02(ref_data):
 	from filter         import filt_table
 	from reconstruction import recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
 	from utilities      import bcast_EMData_to_all
+	from fundamentals import rops_table, fftip, fft
 	import types
 
 	# Retrieve the function specific input arguments from ref_data
@@ -934,7 +935,6 @@ def do_volume_mrk02(ref_data):
 		#Util.mul_img(vol, mask3D)
 		if( Tracker["PWadjustment"] ):
 			from utilities    import read_text_file
-			from fundamentals import rops_table, fftip, fft
 			rt = read_text_file( Tracker["PWadjustment"] )
 			fftip(vol)
 			ro = rops_table(vol)
@@ -943,6 +943,7 @@ def do_volume_mrk02(ref_data):
 			if Tracker["constants"]["sausage"]:
 				ny = vol.get_ysize()
 				y = float(ny)
+				from math import exp
 				for i in xrange(len(ro)):  ro[i] *= \
 				  (1.0+0.3*exp(-(((i/y/Tracker["constants"]["pixel_size"])-0.12)/0.025)**2)+0.2*exp(-(((i/y/Tracker["constants"]["pixel_size"])-0.22)/0.025)**2))
 
@@ -956,6 +957,7 @@ def do_volume_mrk02(ref_data):
 				ny = vol.get_ysize()
 				y = float(ny)
 				ro = [0.0]*(ny//2+2)
+				from math import exp
 				for i in xrange(len(ro)):  ro[i] = \
 				  (1.0+0.3*exp(-(((i/y/Tracker["constants"]["pixel_size"])-0.12)/0.025)**2)+0.2*exp(-(((i/y/Tracker["constants"]["pixel_size"])-0.22)/0.025)**2))
 				fftip(vol)
