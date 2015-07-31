@@ -39,10 +39,10 @@ def main():
 	parser.add_option("--nruns",    type="int",    default= 6,                  help="number of quasi-independent runs (default=6)")
 	parser.add_option("--doga",     type="float",  default= 0.1,                help="do GA when fraction of orientation changes less than 1.0 degrees is at least doga (default=0.1)")
 	parser.add_option("--npad",     type="int",    default= 2,                  help="padding size for 3D reconstruction (default=2)")
-	parser.add_option("--fl",      type="float",  default=0.25,    help="cut-off frequency of hyperbolic tangent low-pass Fourier filter (default 0.25)")
-	parser.add_option("--aa",      type="float",  default=0.1,    help="fall-off of hyperbolic tangent low-pass Fourier filter (default 0.1)")
-	parser.add_option("--pwreference",      type="string",  default="",    help="text file with a reference power spectrum (default no power spectrum adjustment)")
-	parser.add_option("--mask3D",      type="string",  default=None,    help="3D mask file (default a sphere)")
+	parser.add_option("--fl",       type="float",  default=0.25,                help="cut-off frequency of hyperbolic tangent low-pass Fourier filter (default 0.25)")
+	parser.add_option("--aa",       type="float",  default=0.1,                 help="fall-off of hyperbolic tangent low-pass Fourier filter (default 0.1)")
+	parser.add_option("--pwreference",      type="string",  default="",         help="text file with a reference power spectrum (default no power spectrum adjustment)")
+	parser.add_option("--mask3D",      type="string",  default=None,            help="3D mask file (default a sphere)")
 	parser.add_option("--moon_elimination",      type="string",  default=None,    help="mass in KDa and resolution in px/A separated by comma, no space")
 
 	#

@@ -1922,7 +1922,7 @@ void EMData::onelinenn_ctf_applied(int j, int n, int n2,
 void EMData::onelinenn_ctf_exists(int j, int n, int n2,
 		          EMData* w, EMData* bi, EMData* c2, const Transform& tf, float mult) {//std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
 
-        int remove = bi->get_attr_default( "remove", 0 );
+    //int remove = bi->get_attr_default( "remove", 0 );
 
 	int jp = (j >= 0) ? j+1 : n+j+1;
 	// loop over x
@@ -1955,13 +1955,13 @@ void EMData::onelinenn_ctf_exists(int j, int n, int n2,
 			if (iyn >= 0) iya = iyn + 1;
 			else          iya = n + iyn + 1;
 
-			if( remove > 0 ) {
-				cmplx(ixn,iya,iza) -= btq*mult;
-				(*w)(ixn,iya,iza) -= c2val*mult;
-			} else {
+			//if( remove > 0 ) {
+			//	cmplx(ixn,iya,iza) -= btq*mult;
+			//	(*w)(ixn,iya,iza) -= c2val*mult;
+			//} else {
 				cmplx(ixn,iya,iza) += btq*mult;
 				(*w)(ixn,iya,iza) += c2val*mult;
-			}
+			//}
 
 		}
 	}

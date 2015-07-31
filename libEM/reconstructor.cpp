@@ -3457,9 +3457,7 @@ int nn4_ctfReconstructor::insert_padfft_slice( EMData* padfft, EMData* ctf2d2, c
 			for (int i = 0; i < abc_list_len; i += 4) {
 				m_volume->nn_ctf_exists(m_wptr, padfft, ctf2d2, tsym[isym] * Transform(Dict("type", "SPIDER", "phi",  abc_list[i], "theta", abc_list[i+1], "psi", abc_list[i+2])), weight * abc_list[i+3]);
 			}
-			
 	}
-
 	return 0;
 }
 

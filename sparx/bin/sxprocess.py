@@ -309,7 +309,7 @@ def main():
 	parser.add_option("--params",	   			type="string",      default=None,    help="Name of header of parameter, which one depends on specific option")
 	parser.add_option("--adjpw", 				action="store_true",	help="Adjust rotationally averaged power spectrum of an image", default=False)
 	parser.add_option("--rotpw", 				type="string",   	default=None,    help="Name of the text file to contain rotationally averaged power spectrum of the input image.")
-	parser.add_option("--transformparams",		type="string",   	default=None,    help="Name of the text file to contain rotationally averaged power spectrum of the input image.")
+	parser.add_option("--transformparams",		type="string",   	default=None,    help="Transform 3D projection orientation parameters using six 3D parameters (phi, theta,psi,sx,sy,sz).  Input: --transformparams=45.,66.,12.,-2,3,-5.5 desired six transformation of the reconstructed structure. Output: file with modified orientation parameters.")
 
 	
 	# import ctf estimates done using cter
