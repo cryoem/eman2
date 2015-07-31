@@ -4715,7 +4715,7 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 	#  Apply initfl first, meaning true fl has to be preserved
 	#fl = Tracker["lowpass"]
 	#Tracker["lowpass"] = Tracker["initialfl"]
-	user_func = Tracker["constants"] ["user_func"]
+	user_func = Tracker["constants"]["user_func"]
 	if ref_vol:
 		# vol = do_volume_mrk01(ref_vol, Tracker, 0, mpi_comm)
 		ref_data = [ref_vol, Tracker, 0, mpi_comm]

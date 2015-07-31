@@ -750,7 +750,7 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 		cmd = "mkdir "+log.prefix
 		cmdexecute(cmd)
 		log.prefix += "/"
-		ref_vol = get_im(Tracker["constants"]["refvol"])
+		ref_vol = get_im(Tracker["refvol"])
 		nnn = ref_vol.get_xsize()
 		if(Tracker["nxinit"] != nnn ):
 			# Good enough?
