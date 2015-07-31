@@ -192,26 +192,21 @@ together."""
 			# if original images specified, also write those averages to avg.orig.hed
 			if options.original :
 				for j in range(options.ncls):
-					avg=EMData(options.original,filen[classes[j][0]])
-					if options.sigma: 
-						sig=EMData(avg.get_xsize(),avg.get_ysize(),avg.get_zsize())
-						sig.to_zero()
-						sig.addsquare(EMData(options.original,filen[classes[j][0]]))
+					i0=EMData(options.original,filen[classes[j][0]])
+					if (i0["nz"]>1) : avg=Averagers.get("mean.tomo")
+					elif options.sigma: 
+						i0.to_zero()
+						avg=Averagers.get("mean",{"ignore0":1,"sigma":i0})
+					else: avg=Averagers.get("mean",{"ignore0":1})
+					
+					for i in range(len(classes[j])):
+						avg.add_image(EMData(options.original,filen[classes[j][i]]))
 
-					for i in range(1,len(classes[j])):
-						avg+=EMData(options.original,filen[classes[j][i]])
-						if options.sigma : sig.addsquare(EMData(options.original,filen[classes[j][i]]))
-
-					avg/=len(classes[j])
-					avg.write_image("avg.orig.hdf",-1)
-
-					# sigma = sqrt(sumsq / N - avg ^2)/sqrt(N)
-					if options.sigma :
-						sig.mult(1.0/len(classes[j]))
-						sig.subsquare(avg)
-						sig.process("math.sqrt")
-						sig.mult(1.0/math.sqrt(len(classes[j])))
-						sig.write_image("avgsig.orig.hdf",-1)
+					avgi=avg.finish()
+					avgi.write_image("avg.orig.hdf",-1)
+					
+					if options.sigma and i0["nz"]==1:
+						i0.write_image("avgsig.orig.hdf",-1)
 					
 		
 	if (options.clsfiles) :

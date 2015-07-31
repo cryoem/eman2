@@ -1166,7 +1166,7 @@ EMData *DistanceSegmentProcessor::process(const EMData * const image)
 
 EMData* ApplySymProcessor::process(const EMData * const image)
 {
-	Averager* imgavg = Factory<Averager>::get((string)params.set_default("avger","mean"));
+	Averager* imgavg = Factory<Averager>::get((string)params.set_default("averager","mean"));
 
 	if (image->get_zsize()==1) {
 		string s=(string)params["sym"];

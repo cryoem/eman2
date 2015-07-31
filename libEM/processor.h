@@ -2469,6 +2469,7 @@ The basic design of EMAN Processors: <br>\
 			{
 				TypeDict d;
 				d.put("sym", EMObject::STRING, "The symmetry under which to do the alignment, Default=c1" );
+				d.put("averager", EMObject::STRING, "Name of an Averager to use. default=mean" );
 				return d;
 			}
 

@@ -119,7 +119,7 @@ void TomoAverager::add_image(EMData * image)
 		norm_image = image->copy_head();
 		norm_image->to_zero();
 		
-		thresh_sigma = (float)params.set_default("thresh_sigma", 0.1);
+		thresh_sigma = (float)params.set_default("thresh_sigma", 0.05);
 	}
 
 	float *result_data = result->get_data();
