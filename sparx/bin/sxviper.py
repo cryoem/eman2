@@ -11,13 +11,13 @@ def main():
 	import os
 	import user_functions
 	from applications import MPI_start_end
-	from optparse import OptionParser
+	from optparse import OptionParser, SUPPRESS_HELP
 	from global_def import SPARXVERSION
 	from EMAN2 import EMData
 	from multi_shc import multi_shc
 
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack  output_directory  [initial_volume]  --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --center=center_type --maxit1=max_iter1 --maxit2=max_iter2 --L2threshold=0.1 --ref_a=S --sym=c1"
+	usage = progname + " stack  output_directory  --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --center=center_type --maxit1=max_iter1 --maxit2=max_iter2 --L2threshold=0.1 --ref_a=S --sym=c1"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",       type= "int",   default= 1,                  help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--ou",       type= "int",   default= -1,                 help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
@@ -32,11 +32,14 @@ def main():
 	parser.add_option("--L2threshold", type="float",  default= 0.03,            help="Stopping criterion of GA given as a maximum relative dispersion of L2 norms (set to 0.03) ")
 	parser.add_option("--ref_a",    type="string", default= "S",                help="method for generating the quasi-uniformly distributed projection directions (default S)")
 	parser.add_option("--sym",      type="string", default= "c1",               help="symmetry of the refined structure")
-	parser.add_option("--function", type="string", default="ref_ali3d",         help="name of the reference preparation function (ref_ali3d by default)")
+	
+	# parser.add_option("--function", type="string", default="ref_ali3d",         help="name of the reference preparation function (ref_ali3d by default)")
+	parser.add_option("--function", type="string", default="ref_ali3d",         help= SUPPRESS_HELP)
+	
 	parser.add_option("--nruns",    type="int",    default= 6,                  help="number of quasi-independent runs (default=6)")
 	parser.add_option("--doga",     type="float",  default= 0.1,                help="do GA when fraction of orientation changes less than 1.0 degrees is at least doga (default=0.1)")
 	parser.add_option("--npad",     type="int",    default= 2,                  help="padding size for 3D reconstruction (default=2)")
-	parser.add_option("--fl",      type="float",  default=0.12,    help="cut-off frequency of hyperbolic tangent low-pass Fourier filter (default 0.12)")
+	parser.add_option("--fl",      type="float",  default=0.25,    help="cut-off frequency of hyperbolic tangent low-pass Fourier filter (default 0.25)")
 	parser.add_option("--aa",      type="float",  default=0.1,    help="fall-off of hyperbolic tangent low-pass Fourier filter (default 0.1)")
 	parser.add_option("--pwreference",      type="string",  default="",    help="text file with a reference power spectrum (default no power spectrum adjustment)")
 	parser.add_option("--mask3D",      type="string",  default=None,    help="3D mask file (default a sphere)")
@@ -100,10 +103,10 @@ def main():
 		outdir += "/"
 	log.prefix = outdir
 	
-	if len(args) > 2:
-		ref_vol = get_im(args[2])
-	else:
-		ref_vol = None
+	# if len(args) > 2:
+	# 	ref_vol = get_im(args[2])
+	# else:
+	ref_vol = None
 
 	options.user_func = user_functions.factory[options.function]
 

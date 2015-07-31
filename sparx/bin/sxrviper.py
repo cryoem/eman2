@@ -545,7 +545,7 @@ def main():
 
 	from logger import Logger, BaseLogger_Files
 	import user_functions
-	from optparse import OptionParser
+	from optparse import OptionParser, SUPPRESS_HELP
 	from global_def import SPARXVERSION
 	from EMAN2 import EMData
 
@@ -563,7 +563,7 @@ def main():
 	# exit()
 
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack  [output_directory]  [initial_volume]  --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood  --center=center_type --maxit1=max_iter1 --maxit2=max_iter2 --L2threshold=0.1  --fl --aa --ref_a=S --sym=c1"
+	usage = progname + " stack  [output_directory]  --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood  --center=center_type --maxit1=max_iter1 --maxit2=max_iter2 --L2threshold=0.1  --fl --aa --ref_a=S --sym=c1"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",		type= "int",   default= 1,                  help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--radius",       type= "int",   default= -1,                 help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
@@ -587,22 +587,26 @@ def main():
 	#parser.add_option("--snr",      type="float",  default= 1.0,               help="Signal-to-Noise Ratio of the data (default 1.0)")
 	parser.add_option("--ref_a",    type="string", default= "S",                help="method for generating the quasi-uniformly distributed projection directions (default S)")
 	parser.add_option("--sym",      type="string", default= "c1",               help="symmetry of the refined structure")
-	parser.add_option("--function", type="string", default="ref_ali3d",         help="name of the reference preparation function (ref_ali3d by default)")
+	# parser.add_option("--function", type="string", default="ref_ali3d",         help="name of the reference preparation function (ref_ali3d by default)")
+	parser.add_option("--function", type="string", default="ref_ali3d",         help=SUPPRESS_HELP)
 	parser.add_option("--npad",     type="int",    default= 2,                  help="padding size for 3D reconstruction (default=2)")
 
 	#options introduced for the do_volume function
-	parser.add_option("--fl",      type="float",  default=0.12,    help="cut-off frequency of hyperbolic tangent low-pass Fourier filte (default 0.12)")
+	parser.add_option("--fl",      type="float",  default=0.25,    help="cut-off frequency of hyperbolic tangent low-pass Fourier filter (default 0.25)")
 	parser.add_option("--aa",      type="float",  default=0.1,    help="fall-off of hyperbolic tangent low-pass Fourier filter (default 0.1)")
 	parser.add_option("--pwreference",      type="string",  default="",    help="text file with a reference power spectrum (default no power spectrum adjustment)")
-	parser.add_option("--mask3D",      type="string",  default=None,    help="3D mask file (default a sphere  WHAT RADIUS??)")
+	parser.add_option("--mask3D",      type="string",  default=None,    help="3D mask file (default a sphere same size as the input)")
 	parser.add_option("--moon_elimination",      type="string",  default=None,    help="mass in KDa and resolution in px/A separated by comma, no space")
 
-
-	parser.add_option("--my_random_seed",      type="int",  default=123,    help="random seed, default value: 123")
-	parser.add_option("--criterion_name",      type="string",  default="80th percentile",    help="default: 80th percentile, other options:/fastest increase in the last quartile/")
-	parser.add_option("--outlier_index_threshold_method",      type="string",  default="discontinuity_in_derivative",    help="default: discontinuity_in_derivative, other options:/percentile/angle_measure")
+	# used for debugging, help is supressed with SUPPRESS_HELP
+	parser.add_option("--my_random_seed",      type="int",  default=123,  help = SUPPRESS_HELP)
+	parser.add_option("--run_get_already_processed_viper_runs", action="store_true", dest="run_get_already_processed_viper_runs", default=False, help = SUPPRESS_HELP)
 	
-	parser.add_option("--run_get_already_processed_viper_runs", action="store_true", dest="run_get_already_processed_viper_runs", default=False)
+	
+	parser.add_option("--criterion_name",      type="string",  default="80th percentile",    help="default: '80th percentile', other options:'fastest increase in the last quartile'")
+	parser.add_option("--outlier_index_threshold_method",      type="string",  default="discontinuity_in_derivative",    help="default: discontinuity_in_derivative, other options:percentile, angle_measure")
+	
+	
 	
 	parser.add_option("--use_latest_master_directory", action="store_true", dest="use_latest_master_directory", default=False)
 	
@@ -643,10 +647,10 @@ def main():
 		print "Please run '" + progname + " -h' for detailed options"
 		return 1
 
-	if len(args) > 2:
-		ref_vol = get_im(args[2])
-	else:
-		ref_vol = None
+	# if len(args) > 2:
+	# 	ref_vol = get_im(args[2])
+	# else:
+	ref_vol = None
 
 
 	bdb_stack_location = ""
