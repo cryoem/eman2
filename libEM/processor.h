@@ -4725,6 +4725,36 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		static const string NAME;
 	};
 
+	/** Fill missing wedge with information from another image
+	 */
+	class WedgeFillProcessor:public Processor
+	{
+	  public:
+		void process_inplace(EMData * image);
+
+		string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new WedgeFillProcessor();
+		}
+
+		string get_desc() const
+		{
+			return "Identifies missing wedge voxels and fills them with data extracted from another image";
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("fillsource", EMObject::EMDATA, "The image from which to draw the missing values");
+			return d;
+		}
+
+		static const string NAME;
+	};
 
 	/**Fill zeroes at edges with nearest horizontal/vertical value.
 	 */

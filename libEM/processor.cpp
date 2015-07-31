@@ -154,6 +154,7 @@ const string RampProcessor::NAME = "filter.ramp";
 const string VerticalStripeProcessor::NAME = "math.verticalstripefix";
 const string RealToFFTProcessor::NAME = "math.realtofft";
 const string SigmaZeroEdgeProcessor::NAME = "mask.zeroedgefill";
+const string WedgeFillProcessor::NAME = "mask.wedgefill";
 const string BeamstopProcessor::NAME = "mask.beamstop";
 const string MeanZeroEdgeProcessor::NAME = "mask.dampedzeroedgefill";
 const string AverageXProcessor::NAME = "math.averageovery";
@@ -393,6 +394,7 @@ template <> Factory < Processor >::Factory()
 	force_add<VerticalStripeProcessor>();
 	force_add<RealToFFTProcessor>();
 	force_add<SigmaZeroEdgeProcessor>();
+	force_add<WedgeFillProcessor>();
 	force_add<RampProcessor>();
 
 	force_add<BeamstopProcessor>();
@@ -753,6 +755,45 @@ void AzSharpProcessor::process_inplace(EMData * image)
 		delete ift;
 	}
 
+	image->update();
+}
+
+void WedgeFillProcessor::process_inplace(EMData * image)
+{
+	if (!image) throw InvalidParameterException("WedgeFillProcessor: no image provided");
+	if (!image->is_complex()) throw ImageFormatException("WedgeFillProcessor: target image must be complex");
+
+	EMData *source=params["fillsource"];
+	if (!source) throw InvalidParameterException("WedgeFillProcessor: fillsource required");
+
+	if (!source->is_complex()) throw ImageFormatException("WedgeFillProcessor: fillsource must be complex");
+
+	int nx=image->get_xsize();
+	int ny=image->get_ysize();
+	int nz=image->get_zsize();
+	
+	vector<float> sigmaimg; 
+	sigmaimg=image->calc_radial_dist(nx/2,0,1,4);
+	for (int i=0; i<nx/2; i++) sigmaimg[i]*=.1;			// anything less than 1/10 sigma is considered to be missing
+
+	for (int z=0; z<nz; z++) {
+		for (int y=0; y<ny; y++) {
+			for (int x=0; x<nx; x+=2) {
+				float r2=Util::hypot3sq(x/2,y<ny/2?y:ny-y,z<nz/2?z:nz-z);	// origin at 0,0; periodic
+				int r=int(sqrtf(r2));
+				if (r<3) continue;		// too few points at r<3 to consider any "missing"
+				
+				float v1r=image->get_value_at(x,y,z);
+				float v1i=image->get_value_at(x+1,y,z);
+				float v1=Util::square_sum(v1r,v1i);
+				if (v1<sigmaimg[r]) continue;
+				
+				image->set_value_at_fast(x,y,z,source->get_value_at(x,y,z));
+				image->set_value_at_fast(x+1,y,z,source->get_value_at(x+1,y,z));
+			}
+		}
+	}
+	
 	image->update();
 }
 
