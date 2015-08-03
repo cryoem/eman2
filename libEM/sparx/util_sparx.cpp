@@ -18983,8 +18983,12 @@ vector<float> Util::multiref_polar_ali_2d_peaklist_local(EMData* image, const ve
 			for (int iref = 0; iref < (int)crefim_len; iref++) {
 // UUU
 //cout<<"  "<<n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3<<"  "<<ant<<endl;
-				if( n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3 >= ant ) {
-					Dict retvals = Crosrng_e(crefim[iref], cimage, numr, 0);
+				
+				float dot_product = n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3;
+//				if( n1[iref]*imn1 + n2[iref]*imn2 + n3[iref]*imn3 >= ant ) {
+				if( abs(dot_product)>=ant ) {
+//					Dict retvals = Crosrng_e(crefim[iref], cimage, numr, 0);
+					Dict retvals = Crosrng_e(crefim[iref], cimage, numr, int(dot_product < 0));
 					const float ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
 					const float sx  = -ix;
 					const float sy  = -iy;
@@ -19004,6 +19008,7 @@ vector<float> Util::multiref_polar_ali_2d_peaklist_local(EMData* image, const ve
 	}
 	return peak;
 }
+
 
 struct assign_groups_comparator {
 	const float * values;
