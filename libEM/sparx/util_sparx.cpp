@@ -19909,8 +19909,6 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 //	}
 //}
 
-
-
 vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 				vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
 				vector<int>numr, float cnx, float cny, string sym) {
@@ -19942,11 +19940,12 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 		t = image->get_attr("xform.anchor");
 		Dict d = t->get_params("spider");
 		//float phi   = d["phi"];
-		float theta  = d["theta"];
-		float psi    = d["psi"];
-		float n1 = image->get_attr("n1");
-		float n2 = image->get_attr("n2");
-		float n3 = image->get_attr("n3");
+		float phi   = (float)d["phi"]*qv;
+		float theta = (float)d["theta"]*qv;
+		float psi   = d["psi"];
+		float n1 = sin(theta)*cos(phi);
+		float n2 = sin(theta)*sin(phi);
+		float n3 = cos(theta);
         int maxrin = numr[numr.size()-1];
 
 		//printf("\nINPUT   %f   %f   %f   %f   %d \n",phi, theta, psi, 360.0f-psi,mirror);
@@ -19974,11 +19973,11 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 			//  for point-group symmetry get any close symmetry-related reference image
 			for (isym = 0; isym < nsym; ++isym) {
 				Dict u = tsym[isym].get_params("spider");
-				float phi   = u["phi"];
-				float theta = u["theta"];
-				vIms[isym].ims1 = sin(theta*qv)*cos(phi*qv);
-				vIms[isym].ims2 = sin(theta*qv)*sin(phi*qv);
-				vIms[isym].ims3 = cos(theta*qv);
+				float phi   = (float)u["phi"]*qv;
+				float theta = (float)u["theta"]*qv;
+				vIms[isym].ims1 = sin(theta)*cos(phi);
+				vIms[isym].ims2 = sin(theta)*sin(phi);
+				vIms[isym].ims3 = cos(theta);
 
                 float dot_product = n1*vIms[isym].ims1 + n2*vIms[isym].ims2 + n3*vIms[isym].ims3;
                 // Clarify abs here   06/30/2015 PAP
