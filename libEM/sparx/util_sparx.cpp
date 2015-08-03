@@ -19479,7 +19479,8 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 	if(theta1 > 90.0f) mirror = 1;
 	else               mirror = -1;
 
-    // sym is a symmetry string, t is the projection transform of the input image, tsym is a vector of transforms that are input transofrmation multiplied by all symmetries.
+    // sym is a symmetry string, t is the projection transform of the input image, 
+    //  tsym is a vector of transforms that are input transofrmation multiplied by all symmetries.
     // its length is number of symmetries.
     vector<Transform> tsym = t->get_sym_proj(sym);
 
@@ -19585,8 +19586,9 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 	if(theta1 > 90.0f) mirror = 1;
 	else               mirror = -1;
 
-	// sym is a symmetry string, t is the projection transform of the input image, tsym is a vector of transforms that are input transofrmation multiplied by all symmetries.
-	// its length is number of symmetries.
+	// sym is a symmetry string, t is the projection transform of the input image, 
+	//  tsym is a vector of transforms that are input transformation multiplied by all symmetries.
+	//  its length is number of symmetries.
 	vector<Transform> tsym = t->get_sym_proj(sym);
 
 	int isym = 0;
@@ -19940,8 +19942,8 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 		t = image->get_attr("xform.anchor");
 		Dict d = t->get_params("spider");
 		//float phi   = d["phi"];
-		float theta   = d["theta"];
-		float psi   = d["psi"];
+		float theta  = d["theta"];
+		float psi    = d["psi"];
 		float n1 = image->get_attr("n1");
 		float n2 = image->get_attr("n2");
 		float n3 = image->get_attr("n3");
@@ -19958,26 +19960,13 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 		int nsym = tsym.size();
 		vector<Ims> vIms(nsym);
 
-//		for (isym = 0; isym < nsym; ++isym) {
-//			Dict u = tsym[isym].get_params("spider");
-//			float phi   = u["phi"];
-//			float theta = u["theta"];
-////			float psi = u["psi"];
-////			printf("\n%f %f %f\n",phi, theta, psi);
-//			vIms[isym].ims1 = sin(theta*qv)*cos(phi*qv);
-//			vIms[isym].ims2 = sin(theta*qv)*sin(phi*qv);
-//			vIms[isym].ims3 = cos(theta*qv);
-//		}
 
 		//  extract indexes of reference images that are within predefined angular distance from the anchor direction.
 		vector<int> index_crefim;
 		vector<int> mirror_crefim;
 
 		for (unsigned i = 0; i < crefim_len; i++) {
-//			float n1 = crefim[i]->get_attr("n1");
-//			float n2 = crefim[i]->get_attr("n2");
-//			float n3 = crefim[i]->get_attr("n3");
-			float phiref = crefim[i]->get_attr("phi");
+			float phiref   = crefim[i]->get_attr("phi");
 			float thetaref = crefim[i]->get_attr("theta");
 			Transform t1(Dict("type", "spider", "phi",  phiref, "theta", thetaref));
 			vector<Transform> tsym = t1.get_sym_proj(sym);
@@ -20001,7 +19990,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 			}
 		}
 
-		 an = (float)acos(ant) / qv;
+		an = (float)acos(ant) / qv;
 
 		const float previousmax = image->get_attr("previousmax");
 		//printf("\n  previousmax   %f  \n",previousmax);
