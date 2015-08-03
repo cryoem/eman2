@@ -19941,7 +19941,9 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 		Dict d = t->get_params("spider");
 		//float phi   = d["phi"];
 		float phi   = (float)d["phi"]*qv;
-		float theta = (float)d["theta"]*qv;
+		float theta = d["theta"];
+		mirror = (int)(theta > 90.0f);
+		theta *= qv;
 		float psi   = d["psi"];
 		float n1 = sin(theta)*cos(phi);
 		float n2 = sin(theta)*sin(phi);
@@ -19949,7 +19951,6 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
         int maxrin = numr[numr.size()-1];
 
 		//printf("\nINPUT   %f   %f   %f   %f   %d \n",phi, theta, psi, 360.0f-psi,mirror);
-		mirror = (int)(theta > 90.0f);
         // mirror = 0 then use -psi;
 		int psi_pos = (int)fmod((float)Util::round((-psi - mirror*180)/360.0*maxrin+10*maxrin),(float)maxrin) + 1;
 
