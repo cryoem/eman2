@@ -19785,7 +19785,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 					const float iy = i * step;
 					const float ix = j * step;
 					EMData* cimage = cimages[i+lky][j+lkx];
-					Dict retvals = Crosrng_rand_e(crefim[iref], cimage, numr, mirror_crefim[iref], previousmax, an, psi_pos);
+					Dict retvals = Crosrng_rand_e(crefim[iref], cimage, numr, mirror_crefim[tiref], previousmax, an, psi_pos);
 					const float new_peak = static_cast<float>( retvals["qn"] );
 					//cout << new_peak <<endl;
 					if (new_peak > peak) {
@@ -19794,7 +19794,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 						nref = iref;
 						ang = ang_n(retvals["tot"], mode, maxrin);
 						peak = new_peak;
-						mirror = mirror_crefim[iref];
+						mirror = mirror_crefim[tiref];
 						found_better = (peak > previousmax);
 						//cout << found_better <<endl;
 						// jump out from search
