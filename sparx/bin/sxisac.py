@@ -508,6 +508,8 @@ def main():
 			number_of_accounted_images = len(accounted_images)
 			# unaccounted_images = read_text_file(os.path.join(NAME_OF_MAIN_DIR + "%04d"%(isac_generation - 1),"generation_%d_unaccounted.txt"%(isac_generation - 1)))
 			# number_of_unaccounted_images = len(unaccounted_images)
+		else:
+			number_of_accounted_images = 0
 			
 		number_of_accounted_images = int(mpi_bcast(number_of_accounted_images, 1, MPI_INT, 0, MPI_COMM_WORLD)[0])
 		if number_of_accounted_images == 0:
