@@ -19564,6 +19564,7 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 }
 
 vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMData* >& crefim,
+				vector<vector<float> > list_of_reference_angles,
                 vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
                 vector<int>numr, float cnx, float cny, string sym) {
 
@@ -20025,6 +20026,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
     bool  found_better = false;
     size_t tiref = 0;
     float an;
+    int bblock;
 
 	// cout << ant <<endl;
     if( ant > 0.0f) {  //LOCAL SEARCHES
@@ -20060,8 +20062,8 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 		//  extract indexes of reference images that are within predefined angular distance from the anchor direction.
 		vector<int> index_crefim;
 		vector<int> mirror_crefim;
-		int nsym=1;
-		int bblock = list_of_reference_angles_length/nsym/2;
+		int nsym=stoi(sym.substr(1));
+		bblock = list_of_reference_angles_length/nsym/2;
 		for (unsigned i = 0; i < list_of_reference_angles_length; i++) {
 
 			float m_phi = list_of_reference_angles[i][0] * qv;
@@ -20072,7 +20074,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 
 			float dot_product = n1*m1 + n2*m2 + n3*m3;
 			if( dot_product >= ant ) {
-				mirror_crefim.push_back(i%nsym >= bblock);  // this is python!!  I mean integer mod function
+				mirror_crefim.push_back(i%nsym >= bblock);  // it is the same in C++
 				// putting in the index of image irrespective of symmetry
 				index_crefim.push_back(i);
 				break;
@@ -20144,7 +20146,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 		}
 		//cout << "  JUMPED OUT " <<endl;
 		//printf("\n OUTPUT   %f    %d    %f   %f   %d   %d   %f\n",360.0f - psi, psi_pos, ang, peak, mirror, maxrin,an);
-		nref = nref%bblobck;  // AGAIN in PYTHON, In mean mod function.
+		nref = nref%bblock;  // same in C++, AGAIN in PYTHON, In mean mod function.
 		vector<float> res;
 		res.push_back(ang);
 		res.push_back(sxs);
