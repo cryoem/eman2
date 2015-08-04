@@ -510,12 +510,12 @@ def main():
 			# number_of_unaccounted_images = len(unaccounted_images)
 		else:
 			number_of_accounted_images = 0
-			
+
 		number_of_accounted_images = int(mpi_bcast(number_of_accounted_images, 1, MPI_INT, 0, MPI_COMM_WORLD)[0])
 		if number_of_accounted_images == 0:
 			os.chdir("..")
 			break
-		
+
 		program_state_stack.restart_location_title = "restart"
 		if program_state_stack(locals(), getframeinfo(currentframe())):
 			if (myid == main_node):
