@@ -969,7 +969,11 @@ public:
 	/* Returns first match with peak greater than previousmax or the best match in whole space (when there are no peaks > previousmax).
 	 * The reference rings are checked in random order.
 	 * */
+//	static vector<float> shc(EMData* image, const vector< EMData* >& crefim,
+//                vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
+//                vector< int >numr, float cnx, float cny, string sym);
 	static vector<float> shc(EMData* image, const vector< EMData* >& crefim,
+				vector<vector<float> > list_of_reference_angles,
                 vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
                 vector< int >numr, float cnx, float cny, string sym);
 	static vector<float> shc_multipeaks(EMData* image, const vector< EMData* >& crefim,

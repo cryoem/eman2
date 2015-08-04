@@ -19658,6 +19658,101 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 	return res;
 }
 
+//vector<float> Util::multiref_polar_ali_3d____local_original(EMData* image, const vector< EMData* >& crefim,
+//                vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
+//                vector<int>numr, float cnx, float cny, string sym) {
+//
+//	int lkx = int(xrng[0]/step);
+//	int rkx = int(xrng[1]/step);
+//	int lky = int(yrng[0]/step);
+//	int rky = int(yrng[1]/step);
+//	int   iref, nref=0, mirror=0;
+//	float iy, ix, sxs=0, sys=0;
+//	float peak = -1.0E23f;
+//	float ang  = 0.0f;
+//
+//	size_t crefim_len = crefim.size();
+//	const float qv = static_cast<float>( pi/180.0 );
+//
+//	// set mirror flag
+//	Transform * t = image->get_attr("xform.projection");
+//	Dict d = t->get_params("spider");
+//	float theta1 = d["theta"];
+//	if(theta1 > 90.0f) mirror = 1;
+//	else               mirror = -1;
+//
+//	// sym is a symmetry string, t is the projection transform of the input image, 
+//	//  tsym is a vector of transforms that are input transformation multiplied by all symmetries.
+//	//  its length is number of symmetries.
+//	vector<Transform> tsym = t->get_sym_proj(sym);
+//
+//	int isym = 0;
+//	int nsym = tsym.size();
+//	vector<Ims> vIms(nsym);
+//
+//	for (isym = 0; isym < nsym; ++isym) {
+//		Dict u = tsym[isym].get_params("spider");
+//		float phi   = u["phi"];
+//		float theta = u["theta"];
+//		vIms[isym].ims1 = sin(theta*qv)*cos(phi*qv);
+//		vIms[isym].ims2 = sin(theta*qv)*sin(phi*qv);
+//		vIms[isym].ims3 = cos(theta*qv);
+//	}
+//
+//	for (iref = 0; iref < crefim_len; iref++) {
+//
+//	    float ref_theta = crefim[iref]->get_attr("theta");
+//	    float ref_phi = crefim[iref]->get_attr("phi");
+//	    float ref_psi = crefim[iref]->get_attr("psi");
+//
+//		float n1 = crefim[iref]->get_attr("n1");
+//		float n2 = crefim[iref]->get_attr("n2");
+//		float n3 = crefim[iref]->get_attr("n3");
+//
+//		for (isym = 0; isym < nsym; ++isym) {
+//			float dot_product = -mirror*(n1*vIms[isym].ims1 + n2*vIms[isym].ims2 + n3*vIms[isym].ims3);
+//			if(dot_product >= ant) {
+//				for (int i = -lky; i <= rky; i++) {
+//					iy = i * step ;
+//					for (int j = -lkx; j <= rkx; j++) {
+//						ix = j*step;
+//						EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+//						Normalize_ring( cimage, numr );
+//						Frngs(cimage, numr);
+//						//  compare with all reference images that are on a new list
+//						Dict retvals = Crosrng_e(crefim[iref], cimage, numr, mirror);
+//						double qn = retvals["qn"];
+//
+//						if(qn >= peak) {
+//							sxs = -ix;
+//							sys = -iy;
+//							nref = iref;
+//							ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+//							peak = static_cast<float>( qn );
+//						}
+//						delete cimage; cimage = 0;
+//					}
+//				}
+//				break;
+//			}
+//		}
+//	}
+//
+//	if(peak == -1.0E23) {
+//		ang=0.0; sxs=0.0; sys=0.0; mirror=0;
+//		nref = -1;
+//	} else if( mirror == -1)  mirror=0;
+//
+//	vector<float> res;
+//	res.push_back(ang);
+//	res.push_back(sxs);
+//	res.push_back(sys);
+//	res.push_back(static_cast<float>(mirror));
+//	res.push_back(static_cast<float>(nref));
+//	res.push_back(peak);
+//	return res;
+//}
+
 
 // Needed for debugging
 //      printf("\n HHHHHHHHHHHHHHHH \n");
@@ -19909,11 +20004,17 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 //	}
 //}
 
+
+
 vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
+				vector<vector<float> > list_of_reference_angles,
 				vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
 				vector<int>numr, float cnx, float cny, string sym) {
 
 	size_t crefim_len = crefim.size();
+	
+	size_t list_of_reference_angles_length = list_of_reference_angles.size();
+	
 	const float qv = static_cast<float>( pi/180.0 );
     Transform * t = 0;
 
@@ -19951,46 +20052,55 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
         int maxrin = numr[numr.size()-1];
 
 		//printf("\nINPUT   %f   %f   %f   %f   %d \n",phi, theta, psi, 360.0f-psi,mirror);
+		mirror = (int)(theta > 90.0f);
         // mirror = 0 then use -psi;
 		int psi_pos = (int)fmod((float)Util::round((-psi - mirror*180)/360.0*maxrin+10*maxrin),(float)maxrin) + 1;
 
 		//  Multiply anchor direction object t by all symmetry group rotations.
-		vector<Transform> tsym = t->get_sym_proj(sym);
-		int isym = 0;
-		int nsym = tsym.size();
-		vector<Ims> vIms(nsym);
+//		vector<Transform> tsym = t->get_sym_proj(sym);
+//		int isym = 0;
+//		int nsym = tsym.size();
+//		vector<Ims> vIms(nsym);
 
+//		for (isym = 0; isym < nsym; ++isym) {
+//			Dict u = tsym[isym].get_params("spider");
+//			float phi   = u["phi"];
+//			float theta = u["theta"];
+////			float psi = u["psi"];
+////			printf("\n%f %f %f\n",phi, theta, psi);
+//			vIms[isym].ims1 = sin(theta*qv)*cos(phi*qv);
+//			vIms[isym].ims2 = sin(theta*qv)*sin(phi*qv);
+//			vIms[isym].ims3 = cos(theta*qv);
+//		}
 
 		//  extract indexes of reference images that are within predefined angular distance from the anchor direction.
 		vector<int> index_crefim;
 		vector<int> mirror_crefim;
 
-		for (unsigned i = 0; i < crefim_len; i++) {
-			float phiref   = crefim[i]->get_attr("phi");
-			float thetaref = crefim[i]->get_attr("theta");
-			Transform t1(Dict("type", "spider", "phi",  phiref, "theta", thetaref));
-			vector<Transform> tsym = t1.get_sym_proj(sym);
+//		for (unsigned i = 0; i < crefim_len; i++) {
+		for (unsigned i = 0; i < list_of_reference_angles_length; i++) {
+//			float n1 = crefim[i]->get_attr("n1");
+//			float n2 = crefim[i]->get_attr("n2");
+//			float n3 = crefim[i]->get_attr("n3");
 
-			//  for point-group symmetry get any close symmetry-related reference image
-			for (isym = 0; isym < nsym; ++isym) {
-				Dict u = tsym[isym].get_params("spider");
-				float phi   = (float)u["phi"]*qv;
-				float theta = (float)u["theta"]*qv;
-				vIms[isym].ims1 = sin(theta)*cos(phi);
-				vIms[isym].ims2 = sin(theta)*sin(phi);
-				vIms[isym].ims3 = cos(theta);
+			float m_phi = list_of_reference_angles[i][0] * qv;
+			float m_theta = list_of_reference_angles[i][1] * qv;
+			float m1 = sin(m_theta)*cos(m_phi);
+			float m2 = sin(m_theta)*sin(m_phi);
+			float m3 = cos(m_theta);
 
-                float dot_product = n1*vIms[isym].ims1 + n2*vIms[isym].ims2 + n3*vIms[isym].ims3;
-                // Clarify abs here   06/30/2015 PAP
-                if( abs(dot_product)>=ant ) {
-                    mirror_crefim.push_back(int(dot_product < 0));
-					index_crefim.push_back(i);
-					break;
-				}
+			float dot_product = n1*m1 + n2*m2 + n3*m3;
+			// Clarify abs here   06/30/2015 PAP
+//			if( abs(dot_product)>=ant ) {
+			if( dot_product >= ant ) {
+				mirror_crefim.push_back(int(dot_product < 0));
+				// putting in the index of image irrespective of symmetry
+				index_crefim.push_back(list_of_reference_angles[i][3]);
+				break;
 			}
 		}
 
-		an = (float)acos(ant) / qv;
+		 an = (float)acos(ant) / qv;
 
 		const float previousmax = image->get_attr("previousmax");
 		//printf("\n  previousmax   %f  \n",previousmax);
@@ -20142,6 +20252,10 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 
 	}
 }
+
+
+
+
 	
 static std::string toString(int i)
 {

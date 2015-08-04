@@ -1640,7 +1640,7 @@ def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None, sym
 
 	return peak, pixel_error
 
-def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None, sym='c1'):
+def proj_ali_incore_local(data, refrings, list_of_reference_angles_angles, numr, xrng, yrng, step, an, finfo=None, sym='c1'):
 	from alignment    import search_range
 	#from utilities    import set_params_proj, get_params_proj
 	from math         import cos, sin, pi, radians
@@ -1667,7 +1667,7 @@ def proj_ali_incore_local(data, refrings, numr, xrng, yrng, step, an, finfo=None
 		finfo.write("              : %3d  %3d  %3d    %4.1f  %4.1f %3d %3d   %4.1f  %4.1f     %4.1f  %4.1f %4.1f %4.1f\n"%(ou, nx, ny, xrng, yrng, cnx, cny, sxi, syi, txrng[0],txrng[1],tyrng[0],tyrng[1]))
 		finfo.flush()
 	
-	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_3d_local(data, refrings, txrng, tyrng, step, ant, mode, numr, cnx-sxi, cny-syi, sym)
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_3d_local(data, refrings, list_of_reference_angles_angles, txrng, tyrng, step, ant, mode, numr, cnx-sxi, cny-syi, sym)
 
 	iref=int(iref)
 	if iref > -1:
@@ -4785,3 +4785,52 @@ def search_range(n, radius, shift, range, location = ""):
 	# ???for mysterious reasons it has to be this way as C code changes the order of searches.
 	return  [ min( qe, range), min(ql, range) ]
 
+
+def generate_list_of_reference_angles_for_search(input_angles, sym):
+
+	from EMAN2 import Transform
+	nsym = int(sym[1:])
+
+	original_number_of_angles = len(input_angles)
+	# original_number_of_angles is the same as the number of refrings
+	number_of_angles = original_number_of_angles
+	
+	print "  basic angles :", number_of_angles
+	
+	list_of_reference_angles = []*number_of_angles
+	for i in xrange(number_of_angles): 
+		list_of_reference_angles[i] = [input_angles[i][0],input_angles[i][1],input_angles[i][2], i]
+
+	#  add mirror related
+	list_of_reference_angles += [[0.0,0.0,0.0, i] for i in xrange(number_of_angles)]
+
+	for i in xrange(number_of_angles):
+		list_of_reference_angles[i+number_of_angles][0] = (list_of_reference_angles[i][0]+180.0)%360.0
+		list_of_reference_angles[i+number_of_angles][1] = 180.0-list_of_reference_angles[i][1]
+		list_of_reference_angles[i+number_of_angles][2] =  list_of_reference_angles[i][2]
+	
+	number_of_angles = len(list_of_reference_angles)
+
+	#  add symmetry related
+	
+	if(nsym>1):
+		for l in xrange(1,nsym):
+			# list_of_reference_angles += [[0.0,0.0,0.0,i] for i in xrange(number_of_angles)]
+			
+			# one for original
+			list_of_reference_angles += [[0.0,0.0,0.0,i] for i in xrange(original_number_of_angles)]
+			# one for mirror
+			list_of_reference_angles += [[0.0,0.0,0.0,i] for i in xrange(original_number_of_angles)]
+	
+		for i in xrange(number_of_angles):
+			t2 = Transform({"type":"spider","phi":list_of_reference_angles[i][0],"theta":list_of_reference_angles[i][1]})
+			ts = t2.get_sym_proj(sym)
+			for ll in xrange(1,nsym,1):
+				d = ts[ll].get_params("spider")
+				list_of_reference_angles[i+ll*number_of_angles][0] = d["phi"]
+				list_of_reference_angles[i+ll*number_of_angles][1] = d["theta"]
+				list_of_reference_angles[i+ll*number_of_angles][2] = d["psi"]  #  Not needed?
+		#  reference angles done at this moment, huge list a
+		#  Now this is passed all the way down to C code proj_ali_incore_local, proj_ali_incore_local_zoom, and shc
+	
+	return list_of_reference_angles
