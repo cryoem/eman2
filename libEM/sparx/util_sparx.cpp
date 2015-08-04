@@ -19564,6 +19564,7 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 }
 
 vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMData* >& crefim,
+				vector<vector<float> > list_of_reference_angles,
                 vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
                 vector<int>numr, float cnx, float cny, string sym) {
 
@@ -20025,6 +20026,8 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
     bool  found_better = false;
     size_t tiref = 0;
     float an;
+    int  block;
+    int bblock;
 
 	// cout << ant <<endl;
     if( ant > 0.0f) {  //LOCAL SEARCHES
@@ -20056,32 +20059,15 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
         // mirror = 0 then use -psi;
 		int psi_pos = (int)fmod((float)Util::round((-psi - mirror*180)/360.0*maxrin+10*maxrin),(float)maxrin) + 1;
 
-		//  Multiply anchor direction object t by all symmetry group rotations.
-//		vector<Transform> tsym = t->get_sym_proj(sym);
-//		int isym = 0;
-//		int nsym = tsym.size();
-//		vector<Ims> vIms(nsym);
-
-//		for (isym = 0; isym < nsym; ++isym) {
-//			Dict u = tsym[isym].get_params("spider");
-//			float phi   = u["phi"];
-//			float theta = u["theta"];
-////			float psi = u["psi"];
-////			printf("\n%f %f %f\n",phi, theta, psi);
-//			vIms[isym].ims1 = sin(theta*qv)*cos(phi*qv);
-//			vIms[isym].ims2 = sin(theta*qv)*sin(phi*qv);
-//			vIms[isym].ims3 = cos(theta*qv);
-//		}
 
 		//  extract indexes of reference images that are within predefined angular distance from the anchor direction.
 		vector<int> index_crefim;
 		vector<int> mirror_crefim;
-
-//		for (unsigned i = 0; i < crefim_len; i++) {
+		int nsym=stoi(sym.substr(1));
+		
+		block  = list_of_reference_angles_length/nsym;
+		bblock = block/2;
 		for (unsigned i = 0; i < list_of_reference_angles_length; i++) {
-//			float n1 = crefim[i]->get_attr("n1");
-//			float n2 = crefim[i]->get_attr("n2");
-//			float n3 = crefim[i]->get_attr("n3");
 
 			float m_phi = list_of_reference_angles[i][0] * qv;
 			float m_theta = list_of_reference_angles[i][1] * qv;
@@ -20090,17 +20076,15 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 			float m3 = cos(m_theta);
 
 			float dot_product = n1*m1 + n2*m2 + n3*m3;
-			// Clarify abs here   06/30/2015 PAP
-//			if( abs(dot_product)>=ant ) {
 			if( dot_product >= ant ) {
-				mirror_crefim.push_back(int(dot_product < 0));
+				mirror_crefim.push_back(i%block >= bblock);
 				// putting in the index of image irrespective of symmetry
-				index_crefim.push_back(list_of_reference_angles[i][3]);
+				index_crefim.push_back(i%bblock);
 				break;
 			}
 		}
 
-		 an = (float)acos(ant) / qv;
+		an = (float)acos(ant) / qv;
 
 		const float previousmax = image->get_attr("previousmax");
 		//printf("\n  previousmax   %f  \n",previousmax);
@@ -20165,6 +20149,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 		}
 		//cout << "  JUMPED OUT " <<endl;
 		//printf("\n OUTPUT   %f    %d    %f   %f   %d   %d   %f\n",360.0f - psi, psi_pos, ang, peak, mirror, maxrin,an);
+		nref = nref%bblock;  // same in C++, AGAIN in PYTHON, In mean mod function.
 		vector<float> res;
 		res.push_back(ang);
 		res.push_back(sxs);
