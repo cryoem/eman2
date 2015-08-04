@@ -20149,8 +20149,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 		}
 		//cout << "  JUMPED OUT " <<endl;
 		//printf("\n OUTPUT   %f    %d    %f   %f   %d   %d   %f\n",360.0f - psi, psi_pos, ang, peak, mirror, maxrin,an);
-		nref = nref%bblock;  // same in C++, AGAIN in PYTHON, In mean mod function.
-		vector<float> res;
+x		vector<float> res;
 		res.push_back(ang);
 		res.push_back(sxs);
 		res.push_back(sys);
