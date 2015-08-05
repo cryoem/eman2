@@ -4218,13 +4218,21 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 			volft, kb = prep_vol(vol)
 			refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, sym, numr, MPI=False)
 			del volft, kb
+			if an[N_step] > 0:
+				# generate list of angles
+				from alignment import generate_list_of_reference_angles_for_search
+				list_of_reference_angles_angles = \
+					generate_list_of_reference_angles_for_search([[refrings[lr].get_attr("phi"), refrings[lr].get_attr("theta")] for lr in xrange(len(refrings))], sym=sym)			
+
 
 			for im in xrange(nima):
-				if an[N_step] == -1:	
+				if an[N_step] == -1:
 					peak, pixel_error = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step], sym=sym)
 				else:
-					peak, pixel_error = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],sym=sym)
+					peak, pixel_error = proj_ali_incore_local(data[im],refrings,list_of_reference_angles_angles,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],sym=sym)
 				data[im].set_attr("previousmax", peak)
+			if an[N_step] > 0: del list_of_reference_angles_angles
+
 			if center == -1 and sym[0] == 'c':
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center(data)
 				msg = "Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])

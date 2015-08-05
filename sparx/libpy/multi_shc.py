@@ -413,16 +413,13 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 			#  It has to be here
 			if orient_and_shuffle:
 				# adjust params to references, calculate psi, calculate previousmax
-				all_ref_dirs = []
-				for r in refrings:
-					all_ref_dirs.append( [r.get_attr("phi"), r.get_attr("theta")] )				
 				# generate list of angles
 				from alignment import generate_list_of_reference_angles_for_search
-				list_of_reference_angles_angles = generate_list_of_reference_angles_for_search(refrings, sym=sym)			
+				list_of_reference_angles_angles = \
+					generate_list_of_reference_angles_for_search([[refrings[lr].get_attr("phi"), refrings[lr].get_attr("theta")] for lr in xrange(len(refrings))], sym=sym)			
 				for im in xrange(nima):
 					peak, temp = proj_ali_incore_local(data[im],refrings,list_of_reference_angles_angles, numr,0.,0.,1., delta[N_step]*0.7 , sym=sym)
 					data[im].set_attr("previousmax", peak)
-				del list_of_reference_angles_angles
 				if myid == main_node:
 					log.add("Time to calculate first psi+previousmax: %f\n" % (time()-start_time))
 					start_time = time()
