@@ -20054,8 +20054,6 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
     bool  found_better = false;
     size_t tiref = 0;
     float an;
-    int  block;
-    int bblock;
 
 
 	// cout << ant <<endl;
