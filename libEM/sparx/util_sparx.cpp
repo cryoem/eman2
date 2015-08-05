@@ -19569,8 +19569,7 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
                 vector<int>numr, float cnx, float cny, string sym) {
 	size_t crefim_len = crefim.size();
 	size_t list_of_reference_angles_length = list_of_reference_angles.size();
-	const char * c = sym.substr(1).c_str();
-	int nsym = std::atoi(c);
+	int nsym = std::atoi(sym.substr(1).c_str());
 	assert(crefim_len == list_of_reference_angles_length/nsym/2);
 
 	int lkx = int(xrng[0]/step);
@@ -20040,8 +20039,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 				vector<int>numr, float cnx, float cny, string sym) {
 	size_t crefim_len = crefim.size();
 	size_t list_of_reference_angles_length = list_of_reference_angles.size();
-	const char * c = sym.substr(1).c_str();
-	int nsym = std::atoi(c);
+	int nsym = std::atoi(sym.substr(1).c_str());
 	assert(crefim_len == list_of_reference_angles_length/nsym/2);
 	
 	const float qv = static_cast<float>( pi/180.0 );
