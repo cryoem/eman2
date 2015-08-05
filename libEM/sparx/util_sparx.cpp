@@ -19568,6 +19568,11 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
                 vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
                 vector<int>numr, float cnx, float cny, string sym) {
 
+	size_t crefim_len = crefim.size();
+	size_t list_of_reference_angles_length = list_of_reference_angles.size();
+	int nsym = stoi(sym.substr(1));
+	assert(crefim_len == list_of_reference_angles_length/nsym/2);
+
 	int lkx = int(xrng[0]/step);
 	int rkx = int(xrng[1]/step);
 	int lky = int(yrng[0]/step);
@@ -19577,71 +19582,93 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 	float peak = -1.0E23f;
 	float ang  = 0.0f;
 
-	size_t crefim_len = crefim.size();
 	const float qv = static_cast<float>( pi/180.0 );
 
 	// set mirror flag
 	Transform * t = image->get_attr("xform.projection");
 	Dict d = t->get_params("spider");
-	float theta1 = d["theta"];
-	if(theta1 > 90.0f) mirror = 1;
+	float phi   = (float)d["phi"] * qv;
+	float theta = d["theta"];
+	if(theta > 90.0f) mirror = 1;
 	else               mirror = -1;
+	theta *= qv;
+	float n1 = sin(theta)*cos(phi);
+	float n2 = sin(theta)*sin(phi);
+	float n3 = cos(theta);
+
+
+
 
 	// sym is a symmetry string, t is the projection transform of the input image, 
 	//  tsym is a vector of transforms that are input transformation multiplied by all symmetries.
 	//  its length is number of symmetries.
-	vector<Transform> tsym = t->get_sym_proj(sym);
+//	vector<Transform> tsym = t->get_sym_proj(sym);
+//
+//	int isym = 0;
+//	int nsym = tsym.size();
+//	vector<Ims> vIms(nsym);
+//
+//	for (isym = 0; isym < nsym; ++isym) {
+//		Dict u = tsym[isym].get_params("spider");
+//		float phi   = u["phi"];
+//		float theta = u["theta"];
+//		vIms[isym].ims1 = sin(theta*qv)*cos(phi*qv);
+//		vIms[isym].ims2 = sin(theta*qv)*sin(phi*qv);
+//		vIms[isym].ims3 = cos(theta*qv);
+//	}
 
-	int isym = 0;
-	int nsym = tsym.size();
-	vector<Ims> vIms(nsym);
+//	for (iref = 0; iref < crefim_len; iref++) {
 
-	for (isym = 0; isym < nsym; ++isym) {
-		Dict u = tsym[isym].get_params("spider");
-		float phi   = u["phi"];
-		float theta = u["theta"];
-		vIms[isym].ims1 = sin(theta*qv)*cos(phi*qv);
-		vIms[isym].ims2 = sin(theta*qv)*sin(phi*qv);
-		vIms[isym].ims3 = cos(theta*qv);
-	}
+	for (unsigned i = 0; i < list_of_reference_angles_length; i++) {
+		iref = i % crefim_len;
+		
+		float m_phi = list_of_reference_angles[i][0] * qv;
+		float m_theta = list_of_reference_angles[i][1] * qv;
+		float m1 = sin(m_theta)*cos(m_phi);
+		float m2 = sin(m_theta)*sin(m_phi);
+		float m3 = cos(m_theta);
 
-	for (iref = 0; iref < crefim_len; iref++) {
+		float dot_product = n1*m1 + n2*m2 + n3*m3;
 
-	    float ref_theta = crefim[iref]->get_attr("theta");
-	    float ref_phi = crefim[iref]->get_attr("phi");
-	    float ref_psi = crefim[iref]->get_attr("psi");
 
-		float n1 = crefim[iref]->get_attr("n1");
-		float n2 = crefim[iref]->get_attr("n2");
-		float n3 = crefim[iref]->get_attr("n3");
+//	    float ref_theta = crefim[iref]->get_attr("theta");
+//	    float ref_phi = crefim[iref]->get_attr("phi");
+//	    float ref_psi = crefim[iref]->get_attr("psi");
+//
+//		float n1 = crefim[iref]->get_attr("n1");
+//		float n2 = crefim[iref]->get_attr("n2");
+//		float n3 = crefim[iref]->get_attr("n3");
 
-		for (isym = 0; isym < nsym; ++isym) {
-			float dot_product = -mirror*(n1*vIms[isym].ims1 + n2*vIms[isym].ims2 + n3*vIms[isym].ims3);
-			if(dot_product >= ant) {
-				for (int i = -lky; i <= rky; i++) {
-					iy = i * step ;
-					for (int j = -lkx; j <= rkx; j++) {
-						ix = j*step;
-						EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
-						Normalize_ring( cimage, numr );
-						Frngs(cimage, numr);
-						//  compare with all reference images that are on a new list
-						Dict retvals = Crosrng_e(crefim[iref], cimage, numr, mirror);
-						double qn = retvals["qn"];
+//		for (isym = 0; isym < nsym; ++isym) {
+//			float dot_product = -mirror*(n1*vIms[isym].ims1 + n2*vIms[isym].ims2 + n3*vIms[isym].ims3);
 
-						if(qn >= peak) {
-							sxs = -ix;
-							sys = -iy;
-							nref = iref;
-							ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
-							peak = static_cast<float>( qn );
-						}
-						delete cimage; cimage = 0;
+	
+		if(dot_product >= ant) {
+			for (int i = -lky; i <= rky; i++) {
+				iy = i * step ;
+				for (int j = -lkx; j <= rkx; j++) {
+					ix = j*step;
+					EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+					Normalize_ring( cimage, numr );
+					Frngs(cimage, numr);
+					//  compare with all reference images that are on a new list
+					mirror = (i/crefim_len)%2 ? 1:-1;
+					Dict retvals = Crosrng_e(crefim[iref], cimage, numr, mirror);
+					double qn = retvals["qn"];
+
+					if(qn >= peak) {
+						sxs = -ix;
+						sys = -iy;
+						nref = iref;
+						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
+						peak = static_cast<float>( qn );
 					}
+					delete cimage; cimage = 0;
 				}
-				break;
 			}
+			break;
 		}
+//		}
 	}
 
 	if(peak == -1.0E23) {
@@ -20013,8 +20040,9 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 				vector<int>numr, float cnx, float cny, string sym) {
 
 	size_t crefim_len = crefim.size();
-	
 	size_t list_of_reference_angles_length = list_of_reference_angles.size();
+	int nsym = stoi(sym.substr(1));
+	assert(crefim_len == list_of_reference_angles_length/nsym/2);
 	
 	const float qv = static_cast<float>( pi/180.0 );
     Transform * t = 0;
@@ -20028,6 +20056,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
     float an;
     int  block;
     int bblock;
+
 
 	// cout << ant <<endl;
     if( ant > 0.0f) {  //LOCAL SEARCHES
@@ -20055,7 +20084,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
         int maxrin = numr[numr.size()-1];
 
 		//printf("\nINPUT   %f   %f   %f   %f   %d \n",phi, theta, psi, 360.0f-psi,mirror);
-		mirror = (int)(theta > 90.0f);
+//		mirror = (int)(theta > 90.0f);
         // mirror = 0 then use -psi;
 		int psi_pos = (int)fmod((float)Util::round((-psi - mirror*180)/360.0*maxrin+10*maxrin),(float)maxrin) + 1;
 
@@ -20063,10 +20092,6 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 		//  extract indexes of reference images that are within predefined angular distance from the anchor direction.
 		vector<int> index_crefim;
 		vector<int> mirror_crefim;
-		int nsym=stoi(sym.substr(1));
-		
-		block  = list_of_reference_angles_length/nsym;
-		bblock = block/2;
 		for (unsigned i = 0; i < list_of_reference_angles_length; i++) {
 
 			float m_phi = list_of_reference_angles[i][0] * qv;
@@ -20077,9 +20102,10 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 
 			float dot_product = n1*m1 + n2*m2 + n3*m3;
 			if( dot_product >= ant ) {
-				mirror_crefim.push_back(i%block >= bblock);
-				// putting in the index of image irrespective of symmetry
-				index_crefim.push_back(i%bblock);
+//				mirror_crefim.push_back(i%nsym >= bblock);  // it is the same in C++
+				mirror_crefim.push_back((i/crefim_len)%2);  
+				// putting in the index of image irrespective of symmetry/mirror
+				index_crefim.push_back(i%crefim_len);
 				break;
 			}
 		}
@@ -20088,9 +20114,9 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 
 		const float previousmax = image->get_attr("previousmax");
 		//printf("\n  previousmax   %f  \n",previousmax);
-        crefim_len = index_crefim.size();
+        int index_crefim_len = index_crefim.size();
 
-        if (crefim_len > 0) {
+        if (index_crefim_len > 0) {
 			const int lkx = int(xrng[0]/step);
 			const int rkx = int(xrng[1]/step);
 			const int lky = int(yrng[0]/step);
@@ -20108,12 +20134,12 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 				}
 			}
 
-			for (unsigned i = 0; i < crefim_len; ++i) {
-				unsigned r = Util::get_irand(0,crefim_len-1);
+			for (unsigned i = 0; i < index_crefim_len; ++i) {
+				unsigned r = Util::get_irand(0,index_crefim_len-1);
 				swap( index_crefim[r], index_crefim[i] );
 			}
 			bool found_better = false;
-			for ( ;  (tiref < crefim_len) && (! found_better); tiref++) {
+			for ( ;  (tiref < index_crefim_len) && (! found_better); tiref++) {
 				const int iref = index_crefim[tiref];
 				std::vector<int> shifts = shuffled_range( 0, (lkx+rkx+1) * (lky+rky+1) - 1 );
 				for ( unsigned nodeId = 0;  nodeId < shifts.size();  ++nodeId ) {
@@ -20149,7 +20175,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 		}
 		//cout << "  JUMPED OUT " <<endl;
 		//printf("\n OUTPUT   %f    %d    %f   %f   %d   %d   %f\n",360.0f - psi, psi_pos, ang, peak, mirror, maxrin,an);
-x		vector<float> res;
+		vector<float> res;
 		res.push_back(ang);
 		res.push_back(sxs);
 		res.push_back(sys);
