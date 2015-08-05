@@ -4782,12 +4782,17 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 			if total_iter == 1 and nsoft > 0:
 				if(an[N_step] < 0.0):
 					# adjust params to references, calculate psi+shifts, calculate previousmax
+					# generate list of angles
+					from alignment import generate_list_of_reference_angles_for_search
+					list_of_reference_angles_angles = \
+					generate_list_of_reference_angles_for_search([[refrings[lr].get_attr("phi"), refrings[lr].get_attr("theta")] for lr in xrange(len(refrings))], sym=sym)			
 					for im in xrange(nima):
 						previousmax = data[im].get_attr_default("previousmax", -1.0e23)
 						if(previousmax == -1.0e23):
-							peak, pixer[im] = proj_ali_incore_local(data[im], refrings, numr, \
+							peak, pixer[im] = proj_ali_incore_local(data[im], refrings, list_of_reference_angles_angles, numr, \
 									xrng[N_step], yrng[N_step], step[N_step], delta[N_step]*2.5, sym = sym)
 							data[im].set_attr("previousmax", peak)
+					del generate_list_of_reference_angles_for_search
 				else:
 					#  Here it is supposed to be shake and bake for local SHC, but it would have to be signaled somehow
 					for im in xrange(nima):
@@ -4803,6 +4808,12 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 			# alignment
 			#number_of_checked_refs = 0
 			par_r = [0]*max(2,(nsoft+1))
+			if(an[N_step] > 0):
+				# generate list of angles
+				from alignment import generate_list_of_reference_angles_for_search
+				list_of_reference_angles_angles = \
+				generate_list_of_reference_angles_for_search([[refrings[lr].get_attr("phi"), refrings[lr].get_attr("theta")] for lr in xrange(len(refrings))], sym=sym)			
+			else:  list_of_reference_angles_angles = None
 			for im in xrange(nima):
 				if(nsoft == 0):
 					if(an[N_step] == -1):
@@ -4812,21 +4823,21 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 						else:  peak, pixer[im] = proj_ali_incore(data[im], refrings, numr, \
 														xrng[N_step], yrng[N_step], step[N_step], sym=sym)
 					else:
-						if  zoom: peak, pixer[im] = proj_ali_incore_local_zoom(data[im], refrings, numr, \
+						if  zoom: peak, pixer[im] = proj_ali_incore_local_zoom(data[im], refrings, list_of_reference_angles_angles, numr, \
 									xrng, yrng, step, an, finfo = finfo, sym=sym)
 						else:  peak, pixer[im] = proj_ali_incore_local(data[im], refrings, numr, \
 									xrng[N_step], yrng[N_step], step[N_step], an[N_step], finfo = finfo, sym=sym)
 					if(pixer[im] == 0.0):  par_r[0] += 1
 				elif(nsoft == 1):
 					peak, pixer[im], number_of_checked_refs, iref = \
-						shc(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], an[N_step], sym, finfo = finfo)
+						shc(data[im], refrings, list_of_reference_angles_angles, numr, xrng[N_step], yrng[N_step], step[N_step], an[N_step], sym, finfo = finfo)
 					if(pixer[im] == 0.0):  par_r[0] += 1
 				elif(nsoft > 1):
 					peak, pixer[im], checked_refs, number_of_peaks = shc_multi(data[im], refrings, numr, \
 												xrng[N_step], yrng[N_step], step[N_step], an[N_step], nsoft, sym, finfo = finfo)
 					par_r[number_of_peaks] += 1
 					#number_of_checked_refs += checked_refs
-
+			if(an[N_step] > 0):  del  list_of_reference_angles_angles
 			#=========================================================================
 			mpi_barrier(mpi_comm)
 			if myid == main_node:

@@ -4504,7 +4504,7 @@ def Xshc0(data, cimages, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1"
 		return peak, pixel_error, number_of_checked_refs, iref
 '''
 
-def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=None):
+def shc(data, refrings, list_of_reference_angles_angles, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=None):
 	from alignment import search_range
 	from math         import cos, sin, degrees, radians
 	from EMAN2 import Vec2f
@@ -4540,7 +4540,7 @@ def shc(data, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=Non
 		finfo.flush()
 
 	previousmax = data.get_attr("previousmax")
-	[ang, sxs, sys, mirror, iref, peak, checked_refs] = Util.shc(data, refrings, txrng, tyrng, step, ant, mode, numr, cnx-sxi, cny-syi, sym)
+	[ang, sxs, sys, mirror, iref, peak, checked_refs] = Util.shc(data, refrings, list_of_reference_angles_angles, txrng, tyrng, step, ant, mode, numr, cnx-sxi, cny-syi, sym)
 	iref=int(iref)
 	number_of_checked_refs += int(checked_refs)
 	if peak <= previousmax:
