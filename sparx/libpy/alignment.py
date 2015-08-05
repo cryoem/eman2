@@ -4802,20 +4802,20 @@ def generate_list_of_reference_angles_for_search(input_angles, sym):
 	
 	list_of_reference_angles = []*original_number_of_angles
 	for i in xrange(original_number_of_angles): 
-		list_of_reference_angles[i] = [input_angles[i][0],input_angles[i][1],input_angles[i][2]]
+		list_of_reference_angles[i] = [input_angles[i][0],input_angles[i][1]]
 
 	#  add mirror related
-	list_of_reference_angles += [[0.0,0.0,0.0] for i in xrange(original_number_of_angles)]
+	list_of_reference_angles += [[0.0,0.0] for i in xrange(original_number_of_angles)]
 	for i in xrange(original_number_of_angles):
 		list_of_reference_angles[i+original_number_of_angles][0] = (list_of_reference_angles[i][0]+180.0)%360.0
 		list_of_reference_angles[i+original_number_of_angles][1] = 180.0-list_of_reference_angles[i][1]
-		list_of_reference_angles[i+original_number_of_angles][2] =  list_of_reference_angles[i][2]
+		#list_of_reference_angles[i+original_number_of_angles][2] =  list_of_reference_angles[i][2]
 
 	#  add symmetry related
 	if(nsym>1):	
 		number_of_angles_original_and_mirror = len(list_of_reference_angles)
 		for l in xrange(1,nsym):
-			list_of_reference_angles += [[0.0,0.0,0.0] for i in xrange(number_of_angles_original_and_mirror)]
+			list_of_reference_angles += [[0.0,0.0] for i in xrange(number_of_angles_original_and_mirror)]
 
 		for i in xrange(number_of_angles_original_and_mirror):
 			t2 = Transform({"type":"spider","phi":list_of_reference_angles[i][0],"theta":list_of_reference_angles[i][1]})
@@ -4824,7 +4824,7 @@ def generate_list_of_reference_angles_for_search(input_angles, sym):
 				d = ts[ll].get_params("spider")
 				list_of_reference_angles[i+ll*number_of_angles_original_and_mirror][0] = d["phi"]
 				list_of_reference_angles[i+ll*number_of_angles_original_and_mirror][1] = d["theta"]
-				list_of_reference_angles[i+ll*number_of_angles_original_and_mirror][2] = d["psi"]  #  Not needed?
+				#list_of_reference_angles[i+ll*number_of_angles_original_and_mirror][2] = d["psi"]  #  Not needed?
 
 	return list_of_reference_angles
 
