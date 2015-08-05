@@ -4804,11 +4804,10 @@ def generate_list_of_reference_angles_for_search(input_angles, sym):
 		list_of_reference_angles[i+original_number_of_angles][0] = (list_of_reference_angles[i][0]+180.0)%360.0
 		list_of_reference_angles[i+original_number_of_angles][1] = 180.0-list_of_reference_angles[i][1]
 		list_of_reference_angles[i+original_number_of_angles][2] =  list_of_reference_angles[i][2]
-	
-	number_of_angles_original_and_mirror = len(list_of_reference_angles)
 
 	#  add symmetry related
-	if(nsym>1):
+	if(nsym>1):	
+		number_of_angles_original_and_mirror = len(list_of_reference_angles)
 		for l in xrange(1,nsym):
 			list_of_reference_angles += [[0.0,0.0,0.0] for i in xrange(number_of_angles_original_and_mirror)]
 	
