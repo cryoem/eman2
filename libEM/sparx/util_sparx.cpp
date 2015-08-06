@@ -19692,18 +19692,18 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 	
 	size_t crefim_len = crefim.size();
 	const float qv = static_cast<float>( pi/180.0 );
-    Transform * t = 0;
+	Transform * t = 0;
 
-    float ang = 0.0f;
-    float sxs=0.0f, sys=0.0f;
-    float peak = -1.0e23f;
-    int   nref = -1, mirror = 0;
-    bool  found_better = false;
-    size_t tiref = 0;
-    float an;
+	float ang = 0.0f;
+	float sxs=0.0f, sys=0.0f;
+	float peak = -1.0e23f;
+	int   nref = -1, mirror = 0;
+	bool  found_better = false;
+	size_t tiref = 0;
+	float an;
 
 	// cout << ant <<endl;
-    if( ant > 0.0f) {  //LOCAL SEARCHES
+	if( ant > 0.0f) {  //LOCAL SEARCHES
 		/*
 		Sequence of operations:
 			1. image should have reference projection orientation xform.anchor in addition to current projection orientation
@@ -19719,7 +19719,6 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 		assert(crefim_len == list_of_reference_angles_length/nsym/2);
 		t = image->get_attr("xform.anchor");
 		Dict d = t->get_params("spider");
-		//float phi   = d["phi"];
 		float phi   = (float)d["phi"]*qv;
 		float theta = d["theta"];
 		mirror = (int)(theta > 90.0f);
@@ -19749,7 +19748,6 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 
 			float dot_product = n1*m1 + n2*m2 + n3*m3;
 			if( dot_product >= ant ) {
-//				mirror_crefim.push_back(i%nsym >= bblock);  // it is the same in C++
 				mirror_crefim.push_back((i/crefim_len)%2);  
 				// putting in the index of image irrespective of symmetry/mirror
 				index_crefim.push_back(i%crefim_len);
@@ -19761,9 +19759,9 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 
 		const float previousmax = image->get_attr("previousmax");
 		//printf("\n  previousmax   %f  \n",previousmax);
-        int index_crefim_len = index_crefim.size();
+		int index_crefim_len = index_crefim.size();
 
-        if (index_crefim_len > 0) {
+		if (index_crefim_len > 0) {
 			const int lkx = int(xrng[0]/step);
 			const int rkx = int(xrng[1]/step);
 			const int lky = int(yrng[0]/step);
