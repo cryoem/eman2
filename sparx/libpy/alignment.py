@@ -1795,6 +1795,7 @@ def proj_ali_incore_local_zoom(data, refrings, list_of_reference_angles_angles, 
 	else:
 		return -1.0e23, 0.0
 
+#  This function is obsoleted
 def proj_ali_incore_delta(data, refrings, numr, xrng, yrng, step, start, delta, finfo=None):
 	from alignment import search_range
 	from utilities    import compose_transform2
@@ -1860,6 +1861,7 @@ def proj_ali_incore_delta(data, refrings, numr, xrng, yrng, step, start, delta, 
 
 	return peak, pixel_error
 
+#  This function is oboleted
 def proj_ali_incore_local_psi(data, refrings, numr, xrng, yrng, step, an, dpsi=180.0, finfo=None):
 	"""
 	  dpsi - how far psi can be from the original value.
