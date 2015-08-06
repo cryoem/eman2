@@ -1854,7 +1854,7 @@ void EMData::insert_clip(const EMData * const block, const IntPoint &origin) {
 
 
 void EMData::insert_scaled_sum(EMData *block, const FloatPoint &center,
-						   float scale, float)
+						   float scale, float mult_factor)
 {
 	ENTERFUNC;
 	float * data = get_data();
@@ -1890,7 +1890,7 @@ void EMData::insert_scaled_sum(EMData *block, const FloatPoint &center,
 				for (int z=z0; z<=z1; z++) {
 					idx = x + y * nx + (size_t)z * nx * ny;
 					data[idx] +=
-						block->sget_value_at_interp((x-center[0])/scale+bx,(y-center[1])/scale+by,(z-center[2])/scale+bz);
+						mult_factor*block->sget_value_at_interp((x-center[0])/scale+bx,(y-center[1])/scale+by,(z-center[2])/scale+bz);
 				}
 			}
 		}
@@ -1919,7 +1919,7 @@ void EMData::insert_scaled_sum(EMData *block, const FloatPoint &center,
 		for (int x=x0; x<=x1; x++) {
 			for (int y=y0; y<=y1; y++) {
 				data[x + y * nx] +=
-					block->sget_value_at_interp((x-center[0])/scale+bx,(y-center[1])/scale+by);
+					mult_factor*block->sget_value_at_interp((x-center[0])/scale+bx,(y-center[1])/scale+by);
 			}
 		}
 		update();
