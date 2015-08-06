@@ -4800,7 +4800,7 @@ def generate_list_of_reference_angles_for_search(input_angles, sym):
 	original_number_of_angles = len(input_angles)
 	# original_number_of_angles is the same as the number of refrings
 	
-	list_of_reference_angles = []*original_number_of_angles
+	list_of_reference_angles = [None]*original_number_of_angles
 	for i in xrange(original_number_of_angles): 
 		list_of_reference_angles[i] = [input_angles[i][0],input_angles[i][1]]
 
