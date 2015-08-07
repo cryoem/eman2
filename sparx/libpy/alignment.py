@@ -1664,7 +1664,7 @@ def proj_ali_incore_local(data, refrings, list_of_reference_angles_angles, numr,
 	tyrng = search_range(ny, ou, syi, yrng)
 	if finfo:
 		finfo.write("Old parameters: %6.2f %6.2f %6.2f %6.2f %6.2f\n"%(dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]))
-		finfo.write("              : %3d  %3d  %3d    %4.1f  %4.1f %3d %3d   %4.1f  %4.1f     %4.1f  %4.1f %4.1f %4.1f\n"%(ou, nx, ny, xrng, yrng, cnx, cny, sxi, syi, txrng[0],txrng[1],tyrng[0],tyrng[1]))
+		finfo.write("ou, nx, ny, xrng, yrng, cnx, cny, sxi, syi, txrng[0],txrng[1],tyrng[0],tyrng[1] : %3d  %3d  %3d    %4.1f  %4.1f %3d %3d   %4.1f  %4.1f     %4.1f  %4.1f %4.1f %4.1f\n"%(ou, nx, ny, xrng, yrng, cnx, cny, sxi, syi, txrng[0],txrng[1],tyrng[0],tyrng[1]))
 		finfo.flush()
 	
 	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_3d_local(data, refrings, list_of_reference_angles_angles, txrng, tyrng, step, ant, mode, numr, cnx-sxi, cny-syi, sym)
@@ -1672,17 +1672,13 @@ def proj_ali_incore_local(data, refrings, list_of_reference_angles_angles, numr,
 	iref=int(iref)
 	if iref > -1:
 		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-		isym = int(sym[1:])
-		phi   = refrings[iref].get_attr("phi")
-		if(isym > 1 and an > 0.0):
-			qsym = 360.0/isym
-			if(phi < 0.0 or phi >= qsym ):  phi = phi%qsym
 		if  mirror:
-			phi   = (phi+540.0)%360.0
-			theta = 180.0-refrings[iref].get_attr("theta")
+			phi   = (list_of_reference_angles_angles[iref][0]+540.0)%360.0
+			theta = 180.0-list_of_reference_angles_angles[iref][1].get_attr("theta")
 			psi   = (540.0-refrings[iref].get_attr("psi")-ang)%360.0
 		else:			
-			theta = refrings[iref].get_attr("theta")
+			phi   = list_of_reference_angles_angles[iref][0]
+			theta = list_of_reference_angles_angles[iref][1]
 			psi   = (360.0+refrings[iref].get_attr("psi")-ang)%360.0
 		s2x   = sxs + sxi
 		s2y   = sys + syi
@@ -1753,17 +1749,13 @@ def proj_ali_incore_local_zoom(data, refrings, list_of_reference_angles_angles, 
 		if iref > -1:
 			# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 			# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
-			isym = int(sym[1:])
-			phi   = refrings[iref].get_attr("phi")
-			if(isym > 1 and an > 0.0):
-				qsym = 360.0/isym
-				if(phi < 0.0 or phi >= qsym ):  phi = phi%qsym
 			if  mirror:
-				phi   = (phi+540.0)%360.0
-				theta = 180.0-refrings[iref].get_attr("theta")
+				phi   = (list_of_reference_angles_angles[iref][0]+540.0)%360.0
+				theta = 180.0-list_of_reference_angles_angles[iref][1].get_attr("theta")
 				psi   = (540.0-refrings[iref].get_attr("psi")-ang)%360.0
 			else:			
-				theta = refrings[iref].get_attr("theta")
+				phi   = list_of_reference_angles_angles[iref][0]
+				theta = list_of_reference_angles_angles[iref][1]
 				psi   = (360.0+refrings[iref].get_attr("psi")-ang)%360.0
 			s2x   = sxi + sxs
 			s2y   = syi + sys
