@@ -18821,8 +18821,6 @@ vector<float> Util::multiref_polar_ali_3d(EMData* image, const vector< EMData* >
 	const float qv = static_cast<float>( pi/180.0 );
 	size_t crefim_len = crefim.size();
 
-// 	int   ky = int(2*yrng/step+0.5)/2;
-// 	int   kx = int(2*xrng/step+0.5)/2;
 	int lkx = int(xrng[0]/step);
 	int rkx = int(xrng[1]/step);
 	int lky = int(yrng[0]/step);
@@ -19588,24 +19586,21 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 	Dict d = t->get_params("spider");
 	float phi   = (float)d["phi"] * qv;
 	float theta = (float)d["theta"] * qv;
-	//if(theta > 90.0f) mirror = 1;
-	//else              mirror = -1;
-	//theta *= qv;
 	float n1 = sin(theta)*cos(phi);
 	float n2 = sin(theta)*sin(phi);
 	float n3 = cos(theta);
 
-	for (unsigned i = 0; i < list_of_reference_angles_length; i++) {
-		iref = i % crefim_len;
-		
-		float m_phi   = list_of_reference_angles[i][0] * qv;
-		float m_theta = list_of_reference_angles[i][1] * qv;
+	for (unsigned iu = 0; iu < list_of_reference_angles_length; iu++) {
+		iref = iu % crefim_len;
+
+		float m_phi   = list_of_reference_angles[iu][0] * qv;
+		float m_theta = list_of_reference_angles[iu][1] * qv;
 		float m1 = sin(m_theta)*cos(m_phi);
 		float m2 = sin(m_theta)*sin(m_phi);
 		float m3 = cos(m_theta);
 
 		float dot_product = n1*m1 + n2*m2 + n3*m3;
-	
+
 		if(dot_product >= ant) {
 			for (int i = -lky; i <= rky; i++) {
 				iy = i * step ;
@@ -19615,7 +19610,7 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 					Normalize_ring( cimage, numr );
 					Frngs(cimage, numr);
 					//  compare with all reference images that are on a new list
-					int compmirror = (i/crefim_len)%2;
+					int compmirror = (iu/crefim_len)%2;
 					Dict retvals = Crosrng_e(crefim[iref], cimage, numr, compmirror);
 					double qn = retvals["qn"];
 
@@ -19700,19 +19695,20 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 		//  extract indexes of reference images that are within predefined angular distance from the anchor direction.
 		vector<int> index_crefim;
 		vector<int> mirror_crefim;
-		for (unsigned i = 0; i < list_of_reference_angles_length; i++) {
+		for (unsigned iu = 0; iu < list_of_reference_angles_length; iu++) {
 
-			float m_phi = list_of_reference_angles[i][0] * qv;
-			float m_theta = list_of_reference_angles[i][1] * qv;
+			float m_phi = list_of_reference_angles[iu][0] * qv;
+			float m_theta = list_of_reference_angles[iu][1] * qv;
 			float m1 = sin(m_theta)*cos(m_phi);
 			float m2 = sin(m_theta)*sin(m_phi);
 			float m3 = cos(m_theta);
 
 			float dot_product = n1*m1 + n2*m2 + n3*m3;
 			if( dot_product >= ant ) {
-				mirror_crefim.push_back((i/crefim_len)%2);
+				unsigned  qt = iu/crefim_len;
+				mirror_crefim.push_back(qt%2);
 				// putting in the index of image irrespective of symmetry/mirror
-				index_crefim.push_back(i%crefim_len);
+				index_crefim.push_back(qt);
 				break;
 			}
 		}
@@ -19789,7 +19785,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 		res.push_back(static_cast<float>(mirror));
 		res.push_back(static_cast<float>(nref));
 		res.push_back(peak);
-		//res.push_back(static_cast<float>(tiref));
+		res.push_back(static_cast<float>(tiref));
 		return res;
 
     } else {  // GLOBAL SEARCHES
