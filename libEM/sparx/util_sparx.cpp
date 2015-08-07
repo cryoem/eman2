@@ -19576,7 +19576,7 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 	int rkx = int(xrng[1]/step);
 	int lky = int(yrng[0]/step);
 	int rky = int(yrng[1]/step);
-	int   iref, nref=0, mirror=0;
+	int   iref, nref=0, mirror=0, compmirror;
 	float iy, ix, sxs=0, sys=0;
 	float peak = -1.0E23f;
 	float ang  = 0.0f;
@@ -19614,7 +19614,7 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 					Normalize_ring( cimage, numr );
 					Frngs(cimage, numr);
 					//  compare with all reference images that are on a new list
-					int compmirror = (i/crefim_len)%2 ? 1:-1;
+					compmirror = (i/crefim_len)%2 ? 1:-1;
 					Dict retvals = Crosrng_e(crefim[iref], cimage, numr, compmirror);
 					double qn = retvals["qn"];
 
@@ -19636,7 +19636,7 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 	if(peak == -1.0E23) {
 		ang=0.0; sxs=0.0; sys=0.0; mirror=0;
 		nref = -1;
-	} else if( mirror == -1)  mirror=0;
+	} else if( compmirror == -1)  compmirror=0;
 
 	vector<float> res;
 	res.push_back(ang);
