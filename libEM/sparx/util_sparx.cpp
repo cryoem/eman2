@@ -19583,64 +19583,27 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 
 	const float qv = static_cast<float>( pi/180.0 );
 
-	// set mirror flag
 	Transform * t = image->get_attr("xform.projection");
 	Dict d = t->get_params("spider");
 	float phi   = (float)d["phi"] * qv;
-	float theta = d["theta"];
-	if(theta > 90.0f) mirror = 1;
-	else               mirror = -1;
-	theta *= qv;
+	float theta = (float)d["theta"] * qv;
+	//if(theta > 90.0f) mirror = 1;
+	//else              mirror = -1;
+	//theta *= qv;
 	float n1 = sin(theta)*cos(phi);
 	float n2 = sin(theta)*sin(phi);
 	float n3 = cos(theta);
 
-
-
-
-	// sym is a symmetry string, t is the projection transform of the input image, 
-	//  tsym is a vector of transforms that are input transformation multiplied by all symmetries.
-	//  its length is number of symmetries.
-//	vector<Transform> tsym = t->get_sym_proj(sym);
-//
-//	int isym = 0;
-//	int nsym = tsym.size();
-//	vector<Ims> vIms(nsym);
-//
-//	for (isym = 0; isym < nsym; ++isym) {
-//		Dict u = tsym[isym].get_params("spider");
-//		float phi   = u["phi"];
-//		float theta = u["theta"];
-//		vIms[isym].ims1 = sin(theta*qv)*cos(phi*qv);
-//		vIms[isym].ims2 = sin(theta*qv)*sin(phi*qv);
-//		vIms[isym].ims3 = cos(theta*qv);
-//	}
-
-//	for (iref = 0; iref < crefim_len; iref++) {
-
 	for (unsigned i = 0; i < list_of_reference_angles_length; i++) {
 		iref = i % crefim_len;
 		
-		float m_phi = list_of_reference_angles[i][0] * qv;
+		float m_phi   = list_of_reference_angles[i][0] * qv;
 		float m_theta = list_of_reference_angles[i][1] * qv;
 		float m1 = sin(m_theta)*cos(m_phi);
 		float m2 = sin(m_theta)*sin(m_phi);
 		float m3 = cos(m_theta);
 
 		float dot_product = n1*m1 + n2*m2 + n3*m3;
-
-
-//	    float ref_theta = crefim[iref]->get_attr("theta");
-//	    float ref_phi = crefim[iref]->get_attr("phi");
-//	    float ref_psi = crefim[iref]->get_attr("psi");
-//
-//		float n1 = crefim[iref]->get_attr("n1");
-//		float n2 = crefim[iref]->get_attr("n2");
-//		float n3 = crefim[iref]->get_attr("n3");
-
-//		for (isym = 0; isym < nsym; ++isym) {
-//			float dot_product = -mirror*(n1*vIms[isym].ims1 + n2*vIms[isym].ims2 + n3*vIms[isym].ims3);
-
 	
 		if(dot_product >= ant) {
 			for (int i = -lky; i <= rky; i++) {
@@ -19651,14 +19614,15 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 					Normalize_ring( cimage, numr );
 					Frngs(cimage, numr);
 					//  compare with all reference images that are on a new list
-					mirror = (i/crefim_len)%2 ? 1:-1;
-					Dict retvals = Crosrng_e(crefim[iref], cimage, numr, mirror);
+					int compmirror = (i/crefim_len)%2 ? 1:-1;
+					Dict retvals = Crosrng_e(crefim[iref], cimage, numr, compmirror);
 					double qn = retvals["qn"];
 
 					if(qn >= peak) {
 						sxs = -ix;
 						sys = -iy;
 						nref = iref;
+						mirror = compmirror;
 						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
 						peak = static_cast<float>( qn );
 					}
@@ -19667,7 +19631,6 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 			}
 			break;
 		}
-//		}
 	}
 
 	if(peak == -1.0E23) {
@@ -19727,11 +19690,9 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 		float n1 = sin(theta)*cos(phi);
 		float n2 = sin(theta)*sin(phi);
 		float n3 = cos(theta);
-        int maxrin = numr[numr.size()-1];
+		int maxrin = numr[numr.size()-1];
 
 		//printf("\nINPUT   %f   %f   %f   %f   %d \n",phi, theta, psi, 360.0f-psi,mirror);
-//		mirror = (int)(theta > 90.0f);
-        // mirror = 0 then use -psi;
 		int psi_pos = (int)fmod((float)Util::round((-psi - mirror*180)/360.0*maxrin+10*maxrin),(float)maxrin) + 1;
 
 
@@ -19748,7 +19709,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 
 			float dot_product = n1*m1 + n2*m2 + n3*m3;
 			if( dot_product >= ant ) {
-				mirror_crefim.push_back((i/crefim_len)%2);  
+				mirror_crefim.push_back((i/crefim_len)%2);
 				// putting in the index of image irrespective of symmetry/mirror
 				index_crefim.push_back(i%crefim_len);
 				break;
@@ -19827,7 +19788,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 		res.push_back(static_cast<float>(mirror));
 		res.push_back(static_cast<float>(nref));
 		res.push_back(peak);
-		res.push_back(static_cast<float>(tiref));
+		//res.push_back(static_cast<float>(tiref));
 		return res;
 
     } else {  // GLOBAL SEARCHES
