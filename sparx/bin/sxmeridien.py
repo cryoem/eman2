@@ -138,7 +138,7 @@ def AI( Tracker, HISTORY ):
 				Tracker["constants"]["best"] = Tracker["mainiteration"]
 
 				if(Tracker["state"] == "EXHAUSTIVE"):
-					#  Move up if changes in angles are less than 30 degrees (why 30??)
+					#  Move up if changes in angles are less than 30 degrees (why 30??  It should depend on symmetry)
 					if(Tracker["anger"]   < 30.0 ):  move_up_phase = True
 					else:
 						Tracker["xr"] = "%d"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
@@ -246,7 +246,7 @@ def AI( Tracker, HISTORY ):
 				if Tracker["applyctf"] :  reset_data  = True
 				Tracker["upscale"]     = 0.5
 				Tracker["applyctf"]    = True
-				Tracker["an"]          = "30"
+				Tracker["an"]          = "%f"%(Tracker["anger"]*1.25)
 				Tracker["state"]       = "RESTRICTED"
 				Tracker["maxit"]       = 50
 				Tracker["xr"] = "%d"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)

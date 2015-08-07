@@ -7494,7 +7494,8 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 					if(an[N_step] == -1):
 						peak, pixel_error = proj_ali_incore(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step])
 					else:
-						peak, pixel_error = proj_ali_incore_local(data[im], refrings, list_of_reference_angles_angles, numr, xrng[N_step], yrng[N_step], step[N_step], an[N_step],sym=sym)
+						peak, pixel_error = proj_ali_incore_local(data[im], refrings, list_of_reference_angles_angles, numr, \
+																	xrng[N_step], yrng[N_step], step[N_step], an[N_step],sym=sym)
 					if not(finfo is None):
 						phi,tht,psi,s2x,s2y = get_params_proj(data[im])
 						finfo.write( "ID, iref, peak,t rans: %6d %d %f %f %f %f %f %f\n"%(list_of_particles[im],iref,peak,phi,tht,psi,s2x,s2y) )
@@ -7889,9 +7890,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 
 
 
-"""
-
-def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1, ir=1, ou=-1, rs=1, 
+def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1, ir=1, ou=-1, rs=1, 
             xr ="4 2  2  1", yr="-1", ts="1 1 0.5 0.25",   delta="10  6  4  4", an="-1",
 	      center = -1, nassign = 3, nrefine= 1, CTF = False, snr = 1.0,  ref_a="S", sym="c1",
 	      user_func_name="ref_ali3d", npad = 4, debug = False, fourvar=False, termprec = 0.0):
@@ -8090,9 +8089,19 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 			start_ime = time()
 	
 		peaks = [ -1.0e23]*nima
- 		trans = [tr_dummy]*nima
-		if runtype=="REFINEMENT":  pixer = [0.0]*nima
-
+		if runtype=="REFINEMENT":
+			trans = [tr_dummy]*nima
+			pixer = [0.0]*nima
+			if(an[N_step] > 0):
+				from utilities    import even_angles
+				ref_angles = even_angles(delta[N_step], symmetry=sym, method = ref_a, phiEqpsi = "Zero")
+				# generate list of angles
+				from alignment import generate_list_of_reference_angles_for_search
+				list_of_reference_angles_angles = \
+				generate_list_of_reference_angles_for_search(refangles, sym=sym)
+				del ref_angles
+			else:  list_of_reference_angles_angles = None
+ 
 		cs = [0.0]*3
 		for iref in xrange(numref):
 			vol = get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
@@ -8136,7 +8145,8 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 					if an[N_step] == -1:
 						peak, pixel_error = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
 					else:
-						peak, pixel_error = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step])
+						peak, pixel_error = proj_ali_incore_local(data[im], refrings, list_of_reference_angles_angles, numr,\
+																	xrng[N_step], yrng[N_step], step[N_step], an[N_step])
 					if not(finfo is None):
 						phi,tht,psi,s2x,s2y = get_params_proj(data[im])
 						finfo.write( "ID,iref,peak,trans: %6d %d %f %f %f %f %f %f\n"%(list_of_particles[im],iref,peak,phi,tht,psi,s2x,s2y) )
@@ -8164,6 +8174,9 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 		else:
 			if CTF: del prjref
 			del refrings
+			if an[N_step] > 0: del list_of_reference_angles_angles
+
+
 		#  compute number of particles that changed assignment and how man are in which group
 		nchng = 0
 		npergroup = [0]*numref
@@ -8285,7 +8298,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 			print_msg( "Time to write headers: %d\n" % (time()-start_time) );start_time = time()
 	if myid == main_node:
 		print_end_msg("mref_ali3d_MPI")
-"""
+
 def get_refiparams(nx):
 	from EMAN2 import Processor
 	M = nx
