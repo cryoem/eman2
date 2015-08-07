@@ -228,6 +228,7 @@ def AI( Tracker, HISTORY ):
 				#  Switch to exhaustive
 				Tracker["upscale"]     = 0.5
 				Tracker["state"]       = "EXHAUSTIVE"
+				Tracker["maxit"]       = 50
 				#  Develop something intelligent
 				Tracker["xr"] = "%d"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
 				Tracker["ts"] = "1"
@@ -1321,7 +1322,7 @@ def main():
 			ref_data = [volf, Tracker, mainiteration, mpi_comm]
 			user_func = Tracker["constants"] ["user_func"]
 			volf = user_func(ref_data)
-			
+
 			if(myid == main_node):
 				fpol(volf, Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"] ,"volf.hdf"))
 
