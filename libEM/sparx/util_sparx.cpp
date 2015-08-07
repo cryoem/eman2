@@ -19568,7 +19568,8 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
                 vector<int>numr, float cnx, float cny, string sym) {
 	size_t crefim_len = crefim.size();
 	size_t list_of_reference_angles_length = list_of_reference_angles.size();
-	int nsym = std::atoi(sym.substr(1).c_str());
+	Transform * t = image->get_attr("xform.projection");
+	int nsym = t->get_nsym(sym);
 	assert(crefim_len == list_of_reference_angles_length/nsym/2);
 
 	int lkx = int(xrng[0]/step);
@@ -19582,7 +19583,6 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 
 	const float qv = static_cast<float>( pi/180.0 );
 
-	Transform * t = image->get_attr("xform.projection");
 	Dict d = t->get_params("spider");
 	float phi   = (float)d["phi"] * qv;
 	float theta = (float)d["theta"] * qv;
@@ -19591,7 +19591,6 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 	float n3 = cos(theta);
 
 	for (unsigned iu = 0; iu < list_of_reference_angles_length; iu++) {
-		iref = iu % crefim_len;
 
 		float m_phi   = list_of_reference_angles[iu][0] * qv;
 		float m_theta = list_of_reference_angles[iu][1] * qv;
@@ -19602,6 +19601,7 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 		float dot_product = n1*m1 + n2*m2 + n3*m3;
 
 		if(dot_product >= ant) {
+			iref = iu % crefim_len;
 			for (int i = -lky; i <= rky; i++) {
 				iy = i * step ;
 				for (int j = -lkx; j <= rkx; j++) {
@@ -19648,7 +19648,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 				vector<vector<float> > list_of_reference_angles,
 				vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
 				vector<int>numr, float cnx, float cny, string sym) {
-	
+
 	size_t crefim_len = crefim.size();
 	const float qv = static_cast<float>( pi/180.0 );
 	Transform * t = 0;
@@ -19674,9 +19674,10 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 		shc with previousmax=-1.0e23 and reference projection direction set to the current angle.
 		*/
 		size_t list_of_reference_angles_length = list_of_reference_angles.size();
-		int nsym = std::atoi(sym.substr(1).c_str());
-		assert(crefim_len == list_of_reference_angles_length/nsym/2);
 		t = image->get_attr("xform.anchor");
+		Transform * t = image->get_attr("xform.projection");
+		int nsym = t->get_nsym(sym);
+		assert(crefim_len == list_of_reference_angles_length/nsym/2);
 		Dict d = t->get_params("spider");
 		float phi   = (float)d["phi"]*qv;
 		float theta = d["theta"];
@@ -19705,11 +19706,10 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 
 			float dot_product = n1*m1 + n2*m2 + n3*m3;
 			if( dot_product >= ant ) {
-				unsigned  qt = iu/crefim_len;
-				mirror_crefim.push_back(qt%2);
+				mirror_crefim.push_back((iu/crefim_len)%2);
 				// putting in the index of image irrespective of symmetry/mirror
-				index_crefim.push_back(qt);
-				break;
+				int iref = iu % crefim_len;
+				index_crefim.push_back(iref);
 			}
 		}
 
@@ -21827,8 +21827,7 @@ EMData* Util::move_points(EMData* img, float qprob, int ri, int ro)
 	if (!img) {
 		throw NullPointerException("NULL input image");
 	}
-
-	cout <<"  VERSION  08/05/2015  11:15 AM"<<endl;
+	cout <<"  VERSION  08/07/2015  15:15 PM"<<endl;
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	EMData * img2 = new EMData();
 	img2->set_size(nx,ny,nz);

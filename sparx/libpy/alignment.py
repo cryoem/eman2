@@ -4789,7 +4789,9 @@ def generate_list_of_reference_angles_for_search(input_angles, sym):
 			Blocks - [[basic][mirrored basic]] [[basic sym1][mirrored basic sym1]] ...
 	"""
 	from EMAN2 import Transform
-	nsym = int(sym[1:])
+	t2   = Transform()
+	nsym = t2.get_nsym(sym)
+	
 
 	original_number_of_angles = len(input_angles)
 	# original_number_of_angles is the same as the number of refrings
