@@ -19675,7 +19675,6 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 		*/
 		size_t list_of_reference_angles_length = list_of_reference_angles.size();
 		t = image->get_attr("xform.anchor");
-		Transform * t = image->get_attr("xform.projection");
 		int nsym = t->get_nsym(sym);
 		assert(crefim_len == list_of_reference_angles_length/nsym/2);
 		Dict d = t->get_params("spider");
