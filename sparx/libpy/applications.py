@@ -4218,7 +4218,7 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 			volft, kb = prep_vol(vol)
 			refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, sym, numr, MPI=False)
 			del volft, kb
-			if an[N_step] > 0:
+			if( an[N_step] > 0):
 				# generate list of angles
 				from alignment import generate_list_of_reference_angles_for_search
 				list_of_reference_angles = \
@@ -4231,7 +4231,7 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				else:
 					peak, pixel_error = proj_ali_incore_local(data[im],refrings,list_of_reference_angles,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],sym=sym)
 				data[im].set_attr("previousmax", peak)
-			if an[N_step] > 0: del list_of_reference_angles
+			if( an[N_step] > 0): del list_of_reference_angles
 
 			if center == -1 and sym[0] == 'c':
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center(data)
@@ -4818,7 +4818,7 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 			# alignment
 			#number_of_checked_refs = 0
 			par_r = [0]*max(2,(nsoft+1))
-			if(an[N_step] > 0):
+			if(an[N_step] > 0 or nsoft>0):
 				# generate list of angles
 				from alignment import generate_list_of_reference_angles_for_search
 				list_of_reference_angles = \
@@ -4848,7 +4848,7 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 												xrng[N_step], yrng[N_step], step[N_step], an[N_step], nsoft, sym, finfo = finfo)
 					par_r[number_of_peaks] += 1
 					#number_of_checked_refs += checked_refs
-			if(an[N_step] > 0):  del  list_of_reference_angles
+			if(an[N_step] > 0 or nsoft>0):  del  list_of_reference_angles
 			#=========================================================================
 			mpi_barrier(mpi_comm)
 			if myid == main_node:
