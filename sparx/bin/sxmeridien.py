@@ -841,7 +841,7 @@ def main():
 	from global_def import SPARXVERSION
 	from EMAN2 import EMData
 	from multi_shc import multi_shc
-	# from development import do_volume_mrk01
+	from development import do_volume_mrk01
 	from logger import Logger, BaseLogger_Files
 	import sys
 	import os
@@ -1317,11 +1317,11 @@ def main():
 				volf = 0.5*(get_im(os.path.join(Tracker["directory"] ,"vol0.hdf"))+get_im(os.path.join(Tracker["directory"] ,"vol0.hdf")))
 			else:  volf = model_blank(Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 			
-			# volf = do_volume_mrk01(volf, Tracker, mainiteration, mpi_comm = MPI_COMM_WORLD)
-			mpi_comm = MPI_COMM_WORLD
-			ref_data = [volf, Tracker, mainiteration, mpi_comm]
-			user_func = Tracker["constants"] ["user_func"]
-			volf = user_func(ref_data)
+			volf = do_volume_mrk01(volf, Tracker, mainiteration, mpi_comm = MPI_COMM_WORLD)
+			#mpi_comm = MPI_COMM_WORLD
+			#ref_data = [volf, Tracker, mainiteration, mpi_comm]
+			#user_func = Tracker["constants"] ["user_func"]
+			#volf = user_func(ref_data)
 
 			if(myid == main_node):
 				fpol(volf, Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"] ,"volf.hdf"))
