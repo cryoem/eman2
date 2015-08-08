@@ -4221,7 +4221,7 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 			if an[N_step] > 0:
 				# generate list of angles
 				from alignment import generate_list_of_reference_angles_for_search
-				list_of_reference_angles_angles = \
+				list_of_reference_angles = \
 					generate_list_of_reference_angles_for_search([[refrings[lr].get_attr("phi"), refrings[lr].get_attr("theta")] for lr in xrange(len(refrings))], sym=sym)			
 
 
@@ -4229,9 +4229,9 @@ def ali3d(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				if an[N_step] == -1:
 					peak, pixel_error = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step], sym=sym)
 				else:
-					peak, pixel_error = proj_ali_incore_local(data[im],refrings,list_of_reference_angles_angles,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],sym=sym)
+					peak, pixel_error = proj_ali_incore_local(data[im],refrings,list_of_reference_angles,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],sym=sym)
 				data[im].set_attr("previousmax", peak)
-			if an[N_step] > 0: del list_of_reference_angles_angles
+			if an[N_step] > 0: del list_of_reference_angles
 
 			if center == -1 and sym[0] == 'c':
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center(data)
@@ -4483,9 +4483,9 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 			if(an[N_step] > 0):
 				# generate list of angles
 				from alignment import generate_list_of_reference_angles_for_search
-				list_of_reference_angles_angles = \
+				list_of_reference_angles = \
 				generate_list_of_reference_angles_for_search([[refrings[lr].get_attr("phi"), refrings[lr].get_attr("theta")] for lr in xrange(len(refrings))], sym=sym)			
-			else:  list_of_reference_angles_angles = None
+			else:  list_of_reference_angles = None
 			if myid == main_node:
 				print_msg("Time to prepare rings: %d\n" % (time()-start_time))
 				start_time = time()
@@ -4498,12 +4498,12 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 					peak, pixer[im] = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],finfo, sym=sym)
 				else:
 					if apsi[N_step] == -1:
-						peak, pixer[im] = proj_ali_incore_local(data[im],refrings, list_of_reference_angles_angles, numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],finfo, sym = sym)
+						peak, pixer[im] = proj_ali_incore_local(data[im],refrings, list_of_reference_angles, numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],finfo, sym = sym)
 					else:
 						peak, pixer[im] = proj_ali_incore_local_psi(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],apsi[N_step],finfo)
 				data[im].set_attr("previousmax", peak)
 
-			if(an[N_step] > 0):  del  list_of_reference_angles_angles
+			if(an[N_step] > 0):  del  list_of_reference_angles
 			#=========================================================================
 
 			if myid == main_node:
@@ -4794,12 +4794,12 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 					# adjust params to references, calculate psi+shifts, calculate previousmax
 					# generate list of angles
 					from alignment import generate_list_of_reference_angles_for_search
-					list_of_reference_angles_angles = \
+					list_of_reference_angles = \
 					generate_list_of_reference_angles_for_search([[refrings[lr].get_attr("phi"), refrings[lr].get_attr("theta")] for lr in xrange(len(refrings))], sym=sym)			
 					for im in xrange(nima):
 						previousmax = data[im].get_attr_default("previousmax", -1.0e23)
 						if(previousmax == -1.0e23):
-							peak, pixer[im] = proj_ali_incore_local(data[im], refrings, list_of_reference_angles_angles, numr, \
+							peak, pixer[im] = proj_ali_incore_local(data[im], refrings, list_of_reference_angles, numr, \
 									xrng[N_step], yrng[N_step], step[N_step], delta[N_step]*2.5, sym = sym)
 							data[im].set_attr("previousmax", peak)
 					del generate_list_of_reference_angles_for_search
@@ -4821,9 +4821,9 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 			if(an[N_step] > 0):
 				# generate list of angles
 				from alignment import generate_list_of_reference_angles_for_search
-				list_of_reference_angles_angles = \
+				list_of_reference_angles = \
 				generate_list_of_reference_angles_for_search([[refrings[lr].get_attr("phi"), refrings[lr].get_attr("theta")] for lr in xrange(len(refrings))], sym=sym)			
-			else:  list_of_reference_angles_angles = None
+			else:  list_of_reference_angles = None
 			for im in xrange(nima):
 				if(nsoft == 0):
 					if(an[N_step] == -1):
@@ -4833,14 +4833,14 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 						else:  peak, pixer[im] = proj_ali_incore(data[im], refrings, numr, \
 														xrng[N_step], yrng[N_step], step[N_step], sym=sym)
 					else:
-						if  zoom: peak, pixer[im] = proj_ali_incore_local_zoom(data[im], refrings, list_of_reference_angles_angles, numr, \
+						if  zoom: peak, pixer[im] = proj_ali_incore_local_zoom(data[im], refrings, list_of_reference_angles, numr, \
 									xrng, yrng, step, an, finfo = finfo, sym=sym)
-						else:  peak, pixer[im] = proj_ali_incore_local(data[im], refrings, list_of_reference_angles_angles, numr, \
+						else:  peak, pixer[im] = proj_ali_incore_local(data[im], refrings, list_of_reference_angles, numr, \
 									xrng[N_step], yrng[N_step], step[N_step], an[N_step], finfo = finfo, sym=sym)
 					if(pixer[im] == 0.0):  par_r[0] += 1
 				elif(nsoft == 1):
 					peak, pixer[im], number_of_checked_refs, iref = \
-						shc(data[im], refrings, list_of_reference_angles_angles, numr, xrng[N_step], yrng[N_step], step[N_step], an[N_step], sym, finfo = finfo)
+						shc(data[im], refrings, list_of_reference_angles, numr, xrng[N_step], yrng[N_step], step[N_step], an[N_step], sym, finfo = finfo)
 					if(pixer[im] == 0.0):  par_r[0] += 1
 				elif(nsoft > 1):
 					#  This is not functional
@@ -4848,7 +4848,7 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 												xrng[N_step], yrng[N_step], step[N_step], an[N_step], nsoft, sym, finfo = finfo)
 					par_r[number_of_peaks] += 1
 					#number_of_checked_refs += checked_refs
-			if(an[N_step] > 0):  del  list_of_reference_angles_angles
+			if(an[N_step] > 0):  del  list_of_reference_angles
 			#=========================================================================
 			mpi_barrier(mpi_comm)
 			if myid == main_node:
@@ -5711,7 +5711,7 @@ def ali3dlocal_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs 
 					start_time = time()
 
 				for im in xrange(nima):
-					#  It needs list_of_reference_angles_angles
+					#  It needs list_of_reference_angles
 					peak, pixer[im] = proj_ali_incore_local(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],finfo, sym = sym)
 					data[im].set_attr("previousmax", peak)
 
@@ -5736,7 +5736,7 @@ def ali3dlocal_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs 
 						refrings = refprojs( volf, kb, refsincone, cnx, cny, numr, "F", wr_four )
 						#    match projections to its cone using an as a distance.
 						for im in assignments[k]:
-							#  It needs list_of_reference_angles_angles
+							#  It needs list_of_reference_angles
 							peak, pixer[im] = proj_ali_incore_local(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], an[N_step], finfo, sym = sym)
 							data[im].set_attr("previousmax", peak)
 
@@ -7065,10 +7065,10 @@ def mref_ali3d(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1, ir=
 			ref_angles = even_angles(delta[N_step], symmetry=sym, method = ref_a, phiEqpsi = "Zero")
 			# generate list of angles
 			from alignment import generate_list_of_reference_angles_for_search
-			list_of_reference_angles_angles = \
+			list_of_reference_angles = \
 			generate_list_of_reference_angles_for_search(refangles, sym=sym)
 			del ref_angles
-		else:  list_of_reference_angles_angles = None
+		else:  list_of_reference_angles = None
 
 		cs = [0.0]*3
 		for iref in xrange(numref):
@@ -7100,7 +7100,7 @@ def mref_ali3d(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1, ir=
 					if(an[N_step] == -1):	
 						peak, pixel_error = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
 					else:	           
-						peak, pixel_error = proj_ali_incore_local(data[im],refrings,list_of_reference_angles_angles,\
+						peak, pixel_error = proj_ali_incore_local(data[im],refrings,list_of_reference_angles,\
 												numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],sym=sym)
 					if not(finfo is None):
 						phi,tht,psi,s2x,s2y = get_params_proj(data[im])
@@ -7123,7 +7123,7 @@ def mref_ali3d(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1, ir=
 
 
 		if runtype=="REFINEMENT":
-			if(an[N_step] > 0):  del  list_of_reference_angles_angles
+			if(an[N_step] > 0):  del  list_of_reference_angles
 			for im in xrange(nima):
 				data[im].set_attr('xform.projection', trans[im])
 
@@ -7438,10 +7438,10 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 				ref_angles = even_angles(delta[N_step], symmetry=sym, method = ref_a, phiEqpsi = "Zero")
 				# generate list of angles
 				from alignment import generate_list_of_reference_angles_for_search
-				list_of_reference_angles_angles = \
+				list_of_reference_angles = \
 				generate_list_of_reference_angles_for_search(refangles, sym=sym)
 				del ref_angles
-			else:  list_of_reference_angles_angles = None
+			else:  list_of_reference_angles = None
 
 		cs = [0.0]*3
 		for iref in xrange(numref):
@@ -7494,7 +7494,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 					if(an[N_step] == -1):
 						peak, pixel_error = proj_ali_incore(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step])
 					else:
-						peak, pixel_error = proj_ali_incore_local(data[im], refrings, list_of_reference_angles_angles, numr, \
+						peak, pixel_error = proj_ali_incore_local(data[im], refrings, list_of_reference_angles, numr, \
 																	xrng[N_step], yrng[N_step], step[N_step], an[N_step],sym=sym)
 					if not(finfo is None):
 						phi,tht,psi,s2x,s2y = get_params_proj(data[im])
@@ -7514,7 +7514,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 		else:
 			if CTF: del prjref
 			del refrings
-			if an[N_step] > 0: del list_of_reference_angles_angles
+			if an[N_step] > 0: del list_of_reference_angles
 
 
 		#  send peak values to the main node, do the assignments, and bring them back
@@ -8097,10 +8097,10 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 				ref_angles = even_angles(delta[N_step], symmetry=sym, method = ref_a, phiEqpsi = "Zero")
 				# generate list of angles
 				from alignment import generate_list_of_reference_angles_for_search
-				list_of_reference_angles_angles = \
+				list_of_reference_angles = \
 				generate_list_of_reference_angles_for_search(refangles, sym=sym)
 				del ref_angles
-			else:  list_of_reference_angles_angles = None
+			else:  list_of_reference_angles = None
  
 		cs = [0.0]*3
 		for iref in xrange(numref):
@@ -8145,7 +8145,7 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 					if an[N_step] == -1:
 						peak, pixel_error = proj_ali_incore(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step])
 					else:
-						peak, pixel_error = proj_ali_incore_local(data[im], refrings, list_of_reference_angles_angles, numr,\
+						peak, pixel_error = proj_ali_incore_local(data[im], refrings, list_of_reference_angles, numr,\
 																	xrng[N_step], yrng[N_step], step[N_step], an[N_step])
 					if not(finfo is None):
 						phi,tht,psi,s2x,s2y = get_params_proj(data[im])
@@ -8174,7 +8174,7 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 		else:
 			if CTF: del prjref
 			del refrings
-			if an[N_step] > 0: del list_of_reference_angles_angles
+			if an[N_step] > 0: del list_of_reference_angles
 
 
 		#  compute number of particles that changed assignment and how man are in which group

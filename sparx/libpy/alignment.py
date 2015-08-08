@@ -1640,7 +1640,7 @@ def proj_ali_incore_zoom(data, refrings, numr, xrng, yrng, step, finfo=None, sym
 
 	return peak, pixel_error
 
-def proj_ali_incore_local(data, refrings, list_of_reference_angles_angles, numr, xrng, yrng, step, an, finfo=None, sym='c1'):
+def proj_ali_incore_local(data, refrings, list_of_reference_angles, numr, xrng, yrng, step, an, finfo=None, sym='c1'):
 	from alignment    import search_range
 	#from utilities    import set_params_proj, get_params_proj
 	from math         import cos, sin, pi, radians
@@ -1667,18 +1667,18 @@ def proj_ali_incore_local(data, refrings, list_of_reference_angles_angles, numr,
 		finfo.write("ou, nx, ny, xrng, yrng, cnx, cny, sxi, syi, txrng[0],txrng[1],tyrng[0],tyrng[1] : %3d  %3d  %3d    %4.1f  %4.1f %3d %3d   %4.1f  %4.1f     %4.1f  %4.1f %4.1f %4.1f\n"%(ou, nx, ny, xrng, yrng, cnx, cny, sxi, syi, txrng[0],txrng[1],tyrng[0],tyrng[1]))
 		finfo.flush()
 	
-	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_3d_local(data, refrings, list_of_reference_angles_angles, txrng, tyrng, step, ant, mode, numr, cnx-sxi, cny-syi, sym)
+	[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_3d_local(data, refrings, list_of_reference_angles, txrng, tyrng, step, ant, mode, numr, cnx-sxi, cny-syi, sym)
 
 	iref=int(iref)
 	if iref > -1:
 		# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
 		if  mirror:
-			phi   = (list_of_reference_angles_angles[iref][0]+540.0)%360.0
-			theta = 180.0-list_of_reference_angles_angles[iref][1]
+			phi   = (list_of_reference_angles[iref][0]+540.0)%360.0
+			theta = 180.0-list_of_reference_angles[iref][1]
 			psi   = (540.0-refrings[iref].get_attr("psi")-ang)%360.0
 		else:			
-			phi   = list_of_reference_angles_angles[iref][0]
-			theta = list_of_reference_angles_angles[iref][1]
+			phi   = list_of_reference_angles[iref][0]
+			theta = list_of_reference_angles[iref][1]
 			psi   = (360.0+refrings[iref].get_attr("psi")-ang)%360.0
 		s2x   = sxs + sxi
 		s2y   = sys + syi
@@ -1708,7 +1708,7 @@ def proj_ali_incore_local(data, refrings, list_of_reference_angles_angles, numr,
 		return -1.0e23, 0.0
 
 
-def proj_ali_incore_local_zoom(data, refrings, list_of_reference_angles_angles, numr, xrng, yrng, step, an, finfo=None, sym='c1'):
+def proj_ali_incore_local_zoom(data, refrings, list_of_reference_angles, numr, xrng, yrng, step, an, finfo=None, sym='c1'):
 	from alignment import search_range
 	from utilities    import compose_transform2
 	#from utilities    import set_params_proj, get_params_proj
@@ -1740,7 +1740,7 @@ def proj_ali_incore_local_zoom(data, refrings, list_of_reference_angles_angles, 
 		txrng = search_range(nx, ou, sxi, xrng[zi])
 		tyrng = search_range(ny, ou, syi, yrng[zi])
 
-		[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_3d_local(data, refrings, list_of_reference_angles_angles, txrng, tyrng, step[zi], ant, mode, numr, cnx-sxi, cny-syi, sym)
+		[ang, sxs, sys, mirror, iref, peak] = Util.multiref_polar_ali_3d_local(data, refrings, list_of_reference_angles, txrng, tyrng, step[zi], ant, mode, numr, cnx-sxi, cny-syi, sym)
 
 		iref=int(iref)
 		#[ang,sxs,sys,mirror,peak,numref] = apmq_local(projdata[imn], ref_proj_rings, xrng, yrng, step, ant, mode, numr, cnx-sxo, cny-syo)
@@ -1750,12 +1750,12 @@ def proj_ali_incore_local_zoom(data, refrings, list_of_reference_angles_angles, 
 			# The ormqip returns parameters such that the transformation is applied first, the mirror operation second.
 			# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
 			if  mirror:
-				phi   = (list_of_reference_angles_angles[iref][0]+540.0)%360.0
-				theta = 180.0-list_of_reference_angles_angles[iref][1].get_attr("theta")
+				phi   = (list_of_reference_angles[iref][0]+540.0)%360.0
+				theta = 180.0-list_of_reference_angles[iref][1].get_attr("theta")
 				psi   = (540.0-refrings[iref].get_attr("psi")-ang)%360.0
 			else:			
-				phi   = list_of_reference_angles_angles[iref][0]
-				theta = list_of_reference_angles_angles[iref][1]
+				phi   = list_of_reference_angles[iref][0]
+				theta = list_of_reference_angles[iref][1]
 				psi   = (360.0+refrings[iref].get_attr("psi")-ang)%360.0
 			s2x   = sxi + sxs
 			s2y   = syi + sys
@@ -4498,7 +4498,7 @@ def Xshc0(data, cimages, refrings, numr, xrng, yrng, step, an = -1.0, sym = "c1"
 		return peak, pixel_error, number_of_checked_refs, iref
 '''
 
-def shc(data, refrings, list_of_reference_angles_angles, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=None):
+def shc(data, refrings, list_of_reference_angles, numr, xrng, yrng, step, an = -1.0, sym = "c1", finfo=None):
 	from alignment import search_range
 	from math         import cos, sin, degrees, radians
 	from EMAN2 import Vec2f
@@ -4534,7 +4534,7 @@ def shc(data, refrings, list_of_reference_angles_angles, numr, xrng, yrng, step,
 		finfo.flush()
 
 	previousmax = data.get_attr("previousmax")
-	[ang, sxs, sys, mirror, iref, peak, checked_refs] = Util.shc(data, refrings, list_of_reference_angles_angles, txrng, tyrng, step, ant, mode, numr, cnx-sxi, cny-syi, sym)
+	[ang, sxs, sys, mirror, iref, peak, checked_refs] = Util.shc(data, refrings, list_of_reference_angles, txrng, tyrng, step, ant, mode, numr, cnx-sxi, cny-syi, sym)
 	iref=int(iref)
 	number_of_checked_refs += int(checked_refs)
 	if peak <= previousmax:
