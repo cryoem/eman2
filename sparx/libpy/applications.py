@@ -4485,7 +4485,7 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				from alignment import generate_list_of_reference_angles_for_search
 				list_of_reference_angles = \
 				generate_list_of_reference_angles_for_search([[refrings[lr].get_attr("phi"), refrings[lr].get_attr("theta")] for lr in xrange(len(refrings))], sym=sym)			
-			else:  list_of_reference_angles = None
+			else:  list_of_reference_angles = [1.0]
 			if myid == main_node:
 				print_msg("Time to prepare rings: %d\n" % (time()-start_time))
 				start_time = time()
@@ -4503,7 +4503,7 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 						peak, pixer[im] = proj_ali_incore_local_psi(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step],apsi[N_step],finfo)
 				data[im].set_attr("previousmax", peak)
 
-			if(an[N_step] > 0):  del  list_of_reference_angles
+			if(an[N_step] > 0):  del list_of_reference_angles
 			#=========================================================================
 
 			if myid == main_node:
@@ -4802,7 +4802,7 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 							peak, pixer[im] = proj_ali_incore_local(data[im], refrings, list_of_reference_angles, numr, \
 									xrng[N_step], yrng[N_step], step[N_step], delta[N_step]*2.5, sym = sym)
 							data[im].set_attr("previousmax", peak)
-					del generate_list_of_reference_angles_for_search
+					del list_of_reference_angles
 				else:
 					#  Here it is supposed to be shake and bake for local SHC, but it would have to be signaled somehow
 					for im in xrange(nima):
@@ -4818,12 +4818,12 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 			# alignment
 			#number_of_checked_refs = 0
 			par_r = [0]*max(2,(nsoft+1))
-			if(an[N_step] > 0 or nsoft>0):
+			if(an[N_step] > 0):
 				# generate list of angles
 				from alignment import generate_list_of_reference_angles_for_search
 				list_of_reference_angles = \
 				generate_list_of_reference_angles_for_search([[refrings[lr].get_attr("phi"), refrings[lr].get_attr("theta")] for lr in xrange(len(refrings))], sym=sym)			
-			else:  list_of_reference_angles = None
+			else:  list_of_reference_angles = [1.0]
 			for im in xrange(nima):
 				if(nsoft == 0):
 					if(an[N_step] == -1):
@@ -4848,7 +4848,7 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 												xrng[N_step], yrng[N_step], step[N_step], an[N_step], nsoft, sym, finfo = finfo)
 					par_r[number_of_peaks] += 1
 					#number_of_checked_refs += checked_refs
-			if(an[N_step] > 0 or nsoft>0):  del  list_of_reference_angles
+			if(an[N_step] > 0):  del list_of_reference_angles
 			#=========================================================================
 			mpi_barrier(mpi_comm)
 			if myid == main_node:
@@ -7068,7 +7068,7 @@ def mref_ali3d(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1, ir=
 			list_of_reference_angles = \
 			generate_list_of_reference_angles_for_search(refangles, sym=sym)
 			del ref_angles
-		else:  list_of_reference_angles = None
+		else:  list_of_reference_angles = [1.0]
 
 		cs = [0.0]*3
 		for iref in xrange(numref):
@@ -7441,7 +7441,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 				list_of_reference_angles = \
 				generate_list_of_reference_angles_for_search(refangles, sym=sym)
 				del ref_angles
-			else:  list_of_reference_angles = None
+			else:  list_of_reference_angles = [1.0]
 
 		cs = [0.0]*3
 		for iref in xrange(numref):
@@ -7514,7 +7514,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 		else:
 			if CTF: del prjref
 			del refrings
-			if an[N_step] > 0: del list_of_reference_angles
+			if(an[N_step] > 0): del list_of_reference_angles
 
 
 		#  send peak values to the main node, do the assignments, and bring them back
@@ -8100,7 +8100,7 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 				list_of_reference_angles = \
 				generate_list_of_reference_angles_for_search(refangles, sym=sym)
 				del ref_angles
-			else:  list_of_reference_angles = None
+			else:  list_of_reference_angles = [1.0]
  
 		cs = [0.0]*3
 		for iref in xrange(numref):

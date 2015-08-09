@@ -4818,9 +4818,9 @@ def generate_list_of_reference_angles_for_search(input_angles, sym):
 			ts = t2.get_sym_proj(sym)
 			for ll in xrange(1,nsym,1):
 				d = ts[ll].get_params("spider")
-				list_of_reference_angles[i+ll*number_of_angles_original_and_mirror][0] = d["phi"]
-				list_of_reference_angles[i+ll*number_of_angles_original_and_mirror][1] = d["theta"]
-				#list_of_reference_angles[i+ll*number_of_angles_original_and_mirror][2] = d["psi"]  #  Not needed?
+				list_of_reference_angles[i+ll*number_of_angles_original_and_mirror][0] = round(d["phi"],5)
+				list_of_reference_angles[i+ll*number_of_angles_original_and_mirror][1] = round(d["theta"],5)
+				#list_of_reference_angles[i+ll*number_of_angles_original_and_mirror][2] = round(d["psi"],5)  #  Not needed?
 
 	return list_of_reference_angles
 
