@@ -1751,7 +1751,7 @@ def proj_ali_incore_local_zoom(data, refrings, list_of_reference_angles, numr, x
 			# What that means is that one has to change the the Eulerian angles so they point into mirrored direction: phi+180, 180-theta, 180-psi
 			if  mirror:
 				phi   = (list_of_reference_angles[iref][0]+540.0)%360.0
-				theta = 180.0-list_of_reference_angles[iref][1].get_attr("theta")
+				theta = 180.0-list_of_reference_angles[iref][1]
 				psi   = (540.0-refrings[iref].get_attr("psi")-ang)%360.0
 			else:			
 				phi   = list_of_reference_angles[iref][0]

@@ -19535,7 +19535,6 @@ vector<float> Util::multiref_polar_ali_2d_local(EMData* image, const vector< EMD
 						delete cimage; cimage = 0;
 					}
 				}
-				break;
 			}
 		}
 	}
@@ -19590,6 +19589,8 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 	float n2 = sin(theta)*sin(phi);
 	float n3 = cos(theta);
 
+	//  Here the order of loops is wrong.  The resampling to polar has to be done first and cimage
+	//     precalculated.
 	for (unsigned iu = 0; iu < list_of_reference_angles_length; iu++) {
 
 		float m_phi   = list_of_reference_angles[iu][0] * qv;
@@ -19625,7 +19626,6 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 					delete cimage; cimage = 0;
 				}
 			}
-			break;
 		}
 	}
 
