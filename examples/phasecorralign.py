@@ -44,25 +44,30 @@ try: import scipy.ndimage.interpolation as ndii
 except ImportError: import ndimage.interpolation as ndii
 
 def main():
-	im0 = test_image().process('normalize.maxmin').process('normalize.edgemean')
-	im1 = test_image().process('normalize.maxmin').process('normalize.edgemean')
-	t = Transform({'tx':np.random.random()*25,'ty':np.random.random()*25})
-	im1.transform(t)
-	im1=im1.process('math.addnoise',{'noise':2.5})
-	im0 = im0.numpy().astype(np.float64)
-	im1 = im1.numpy().astype(np.float64)
+	maxshift = 20
+	#noise = 2.5
+	fname = "/Users/jmbell/workspace/data/centering/ribosome.hdf"
+	
+	n = np.random.random_integers(0,EMUtil.get_image_count(fname))
+	
+	im0 = EMData(fname,n) #test_image(0)
+	im0 = im0.process('normalize.edgemean')
+	im0 = im0.numpy().astype(np.float32)
+	
+	im1 = EMData(fname,n) #test_image(0)
+	im1 = im1.process('normalize.edgemean')
+	t = [np.random.random_integers(-maxshift,maxshift), np.random.random_integers(-maxshift,maxshift)]
+	im1.translate(t[0],t[1],0)
+	#im1=im1.process('math.addnoise',{'noise':noise})
+	im1 = im1.numpy().astype(np.float32)
 	
 	im2, scale, angle, (t0, t1), ir = similarity(im0, im1)
 	
-	tx,ty=t.get_trans_2d()
-	print("tx: {}\tty: {}".format(round(tx,0),round(ty,0)))
-	print("tx: {}\tty: {}\tScale: {}\tAngle: {}".format(float(t1),float(t0),scale,angle))
-	
-	lbls = ['im0', 'im1', 'ir', 'im2']
+	lbls = ['Image ({},{})'.format(round(t[0],0),round(t[1],0)),'Target (0,0)', 'Phase Correlation', 'Aligned ({},{})\nScale: {}, Angle: {}'.format(t[0]-t1,t[1]-t0,scale,angle)]
 	fig, axar = plt.subplots(2,2)
 	fig.subplots_adjust(right=0.8)
 	cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])	
-	ar_plts = [im0,im1,ir,im2]
+	ar_plts = [im1,im0,ir,im2]
 	for i,ax in enumerate(axar.flat):
 		im = ax.imshow(ar_plts[i], interpolation='nearest', origin='lower',cmap=plt.cm.Greys_r)
 		ax.grid(False)
