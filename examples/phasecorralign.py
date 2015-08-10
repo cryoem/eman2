@@ -45,7 +45,7 @@ except ImportError: import ndimage.interpolation as ndii
 
 def main():
 	maxshift = 20
-	#noise = 2.5
+	noise = 2.5
 	fname = "/Users/jmbell/workspace/data/centering/ribosome.hdf"
 	
 	n = np.random.random_integers(0,EMUtil.get_image_count(fname))
@@ -58,7 +58,7 @@ def main():
 	im1 = im1.process('normalize.edgemean')
 	t = [np.random.random_integers(-maxshift,maxshift), np.random.random_integers(-maxshift,maxshift)]
 	im1.translate(t[0],t[1],0)
-	#im1=im1.process('math.addnoise',{'noise':noise})
+	im1=im1.process('math.addnoise',{'noise':noise})
 	im1 = im1.numpy().astype(np.float32)
 	
 	im2, scale, angle, (t0, t1), ir = similarity(im0, im1)
@@ -85,10 +85,8 @@ def translation(im0, im1):
 	f1 = fft2(im1)
 	ir = abs(ifft2((f0 * f1.conjugate()) / (abs(f0) * abs(f1))))
 	t0, t1 = numpy.unravel_index(numpy.argmax(ir), shape)
-	if t0 > shape[0] // 2:
-		t0 -= shape[0]
-	if t1 > shape[1] // 2:
-		t1 -= shape[1]
+	if t0 > shape[0] // 2: t0 -= shape[0]
+	if t1 > shape[1] // 2: t1 -= shape[1]
 	return [t0, t1]
 
 def similarity(im0, im1):
@@ -217,31 +215,6 @@ def highpass(shape):
 		numpy.cos(numpy.linspace(-math.pi/2., math.pi/2., shape[0])),
 		numpy.cos(numpy.linspace(-math.pi/2., math.pi/2., shape[1])))
 	return (1.0 - x) * (2.0 - x)
-
-def imread(fname, norm=True):
-	"""Return image data from img&hdr uint8 files."""
-	with open(fname+'.hdr', 'r') as fh: hdr = fh.readlines()
-	img = numpy.fromfile(fname+'.img', numpy.uint8, -1)
-	img.shape = int(hdr[4].split()[-1]), int(hdr[3].split()[-1])
-	if norm:
-		img = img.astype(numpy.float64)
-		img /= 255.0
-	return img
-
-def imshow(im0, im1, im2, im3=None, cmap=None, **kwargs):
-	"""Plot images using matplotlib."""
-	from matplotlib import pyplot
-	if cmap is None: cmap = 'coolwarm'
-	if im3 is None: im3 = abs(im2 - im0)
-	pyplot.subplot(221)
-	pyplot.imshow(im0, cmap, **kwargs)
-	pyplot.subplot(222)
-	pyplot.imshow(im1, cmap, **kwargs)
-	pyplot.subplot(223)
-	pyplot.imshow(im3, cmap, **kwargs)
-	pyplot.subplot(224)
-	pyplot.imshow(im2, cmap, **kwargs)
-	pyplot.show()
 
 if __name__ == "__main__":
 	main()
