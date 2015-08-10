@@ -423,7 +423,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				if myid == main_node:
 					log.add("Time to calculate first psi+previousmax: %f\n" % (time()-start_time))
 					start_time = time()
-				del list_of_reference_angles = [[1.0,1.0]]
+				del list_of_reference_angles
 			#=========================================================================
 
 			mpi_barrier(mpi_comm)
