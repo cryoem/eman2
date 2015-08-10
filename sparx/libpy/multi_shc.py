@@ -415,14 +415,15 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				# adjust params to references, calculate psi, calculate previousmax
 				# generate list of angles
 				from alignment import generate_list_of_reference_angles_for_search
-				list_of_reference_angles_angles = \
+				list_of_reference_angles = \
 					generate_list_of_reference_angles_for_search([[refrings[lr].get_attr("phi"), refrings[lr].get_attr("theta")] for lr in xrange(len(refrings))], sym=sym)			
 				for im in xrange(nima):
-					peak, temp = proj_ali_incore_local(data[im], refrings, list_of_reference_angles_angles, numr,0.,0.,1., delta[N_step]*0.7 , sym=sym)
+					peak, temp = proj_ali_incore_local(data[im], refrings, list_of_reference_angles, numr,0.,0.,1., delta[N_step]*0.7 , sym=sym)
 					data[im].set_attr("previousmax", peak)
 				if myid == main_node:
 					log.add("Time to calculate first psi+previousmax: %f\n" % (time()-start_time))
 					start_time = time()
+				del list_of_reference_angles = [[1.0,1.0]]
 			#=========================================================================
 
 			mpi_barrier(mpi_comm)
@@ -449,7 +450,7 @@ def ali3d_multishc(stack, ref_vol, ali3d_options, mpi_comm = None, log = None, n
 				if mpi_subrank < len(proj_ids):
 					# -------- alignment
 					im = proj_ids[mpi_subrank]
-					peak, pixel_error, checked_refs, iref = shc(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], sym = sym) # an should not be used here PAP
+					peak, pixel_error, checked_refs, iref = shc(data[im], refrings, [[1.0,1.0]], numr, xrng[N_step], yrng[N_step], step[N_step], sym = sym) # an should not be used here PAP
 					# -------- gather results to root
 					vector_assigned_refs = wrap_mpi_gatherv([iref], 0, mpi_subcomm)
 					vector_previousmax   = wrap_mpi_gatherv([data[im].get_attr("previousmax")], 0, mpi_subcomm)
@@ -1104,7 +1105,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None 
 			for im in xrange(nima):
 				#peak, pixer[im], checked_refs, number_of_peaks = shc_multi(data[im],refrings,numr,xrng[N_step],yrng[N_step],step[N_step],an[N_step], number_of_runs=number_of_runs)
 				# previousmax is set in shc
-				peak, pixer[im], checked_refs, iref = shc(data[im], refrings, numr, xrng[N_step], yrng[N_step], step[N_step], sym = sym) # cannot use 'an' here
+				peak, pixer[im], checked_refs, iref = shc(data[im], refrings, [[1.0,1.0]], numr, xrng[N_step], yrng[N_step], step[N_step], sym = sym) # cannot use 'an' here
 				number_of_checked_refs += checked_refs
 			#=========================================================================
 			mpi_barrier(mpi_comm)

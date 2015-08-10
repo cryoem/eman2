@@ -4485,7 +4485,7 @@ def ali3d_MPI(stack, ref_vol, outdir, maskfile = None, ir = 1, ou = -1, rs = 1,
 				from alignment import generate_list_of_reference_angles_for_search
 				list_of_reference_angles = \
 				generate_list_of_reference_angles_for_search([[refrings[lr].get_attr("phi"), refrings[lr].get_attr("theta")] for lr in xrange(len(refrings))], sym=sym)			
-			else:  list_of_reference_angles = [1.0]
+			else:  list_of_reference_angles = [[1.0,1.0]]
 			if myid == main_node:
 				print_msg("Time to prepare rings: %d\n" % (time()-start_time))
 				start_time = time()
@@ -4823,7 +4823,7 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 				from alignment import generate_list_of_reference_angles_for_search
 				list_of_reference_angles = \
 				generate_list_of_reference_angles_for_search([[refrings[lr].get_attr("phi"), refrings[lr].get_attr("theta")] for lr in xrange(len(refrings))], sym=sym)			
-			else:  list_of_reference_angles = [1.0]
+			else:  list_of_reference_angles = [[1.0,1.0]]
 			for im in xrange(nima):
 				if(nsoft == 0):
 					if(an[N_step] == -1):
@@ -7068,7 +7068,7 @@ def mref_ali3d(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1, ir=
 			list_of_reference_angles = \
 			generate_list_of_reference_angles_for_search(refangles, sym=sym)
 			del ref_angles
-		else:  list_of_reference_angles = [1.0]
+		else:  list_of_reference_angles = [[1.0,1.0]]
 
 		cs = [0.0]*3
 		for iref in xrange(numref):
@@ -7441,7 +7441,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 				list_of_reference_angles = \
 				generate_list_of_reference_angles_for_search(refangles, sym=sym)
 				del ref_angles
-			else:  list_of_reference_angles = [1.0]
+			else:  list_of_reference_angles = [[1.0,1.0]]
 
 		cs = [0.0]*3
 		for iref in xrange(numref):
@@ -8100,7 +8100,7 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 				list_of_reference_angles = \
 				generate_list_of_reference_angles_for_search(refangles, sym=sym)
 				del ref_angles
-			else:  list_of_reference_angles = [1.0]
+			else:  list_of_reference_angles = [[1.0,1.0]]
  
 		cs = [0.0]*3
 		for iref in xrange(numref):
