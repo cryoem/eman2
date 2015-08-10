@@ -563,7 +563,7 @@ def main():
 	# exit()
 
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack  [output_directory]  --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood  --center=center_type --maxit1=max_iter1 --maxit2=max_iter2 --L2threshold=0.1  --fl --aa --ref_a=S --sym=c1"
+	usage = progname + " stack  [output_directory]  --ir=inner_radius --radius=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=angular_neighborhood  --center=center_type --maxit1=max_iter1 --maxit2=max_iter2 --L2threshold=0.1  --fl --aa --ref_a=S --sym=c1"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--ir",		type= "int",   default= 1,                  help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--radius",       type= "int",   default= -1,                 help="outer radius for rotational correlation < int(nx/2)-1 (set to the radius of the particle)")
@@ -691,51 +691,41 @@ def main():
 			timestring = strftime("%Y_%m_%d__%H_%M_%S" + DIR_DELIM, localtime())
 			masterdir = "master"+timestring
 
+		if not os.path.exists(masterdir):
 			cmd = "{} {}".format("mkdir", masterdir)
 			cmdexecute(cmd)
-		if os.path.exists(masterdir):
-			if ':' in args[0]:
-				bdb_stack_location = args[0].split(":")[0] + ":" + masterdir + args[0].split(":")[1]
-				org_stack_location = args[0]
 
-				if(not os.path.exists(os.path.join(masterdir,"EMAN2DB" + DIR_DELIM))):
-					# cmd = "{} {}".format("cp -rp EMAN2DB", masterdir, "EMAN2DB" DIR_DELIM)
-					# cmdexecute(cmd)
-					cmd = "{} {} {}".format("e2bdb.py", org_stack_location,"--makevstack=" + bdb_stack_location + "_000")
-					cmdexecute(cmd)
+		if ':' in args[0]:
+			bdb_stack_location = args[0].split(":")[0] + ":" + masterdir + args[0].split(":")[1]
+			org_stack_location = args[0]
 
-					from applications import header
-					try:
-						header(bdb_stack_location + "_000", params='original_image_index', fprint=True)
-						print "Images were already indexed!"
-					except KeyError:
-						print "Indexing images"
-						header(bdb_stack_location + "_000", params='original_image_index', consecutive=True)
-			else:
-				filename = os.path.basename(args[0])
-				bdb_stack_location = "bdb:" + masterdir + os.path.splitext(filename)[0]
-				if(not os.path.exists(os.path.join(masterdir,"EMAN2DB" + DIR_DELIM))):
-					cmd = "{} {} {}".format("sxcpy.py  ", args[0], bdb_stack_location + "_000")
-					cmdexecute(cmd)
+			if(not os.path.exists(os.path.join(masterdir,"EMAN2DB" + DIR_DELIM))):
+				# cmd = "{} {}".format("cp -rp EMAN2DB", masterdir, "EMAN2DB" DIR_DELIM)
+				# cmdexecute(cmd)
+				cmd = "{} {} {}".format("e2bdb.py", org_stack_location,"--makevstack=" + bdb_stack_location + "_000")
+				cmdexecute(cmd)
 
-					from applications import header
-					try:
-						header(bdb_stack_location + "_000", params='original_image_index', fprint=True)
-						print "Images were already indexed!"
-					except KeyError:
-						print "Indexing images"
-						header(bdb_stack_location + "_000", params='original_image_index', consecutive=True)
-
-				else:
-					ERROR('Conflicting information: EMAN2DB exists, but provided *.hdf file', "sxrviper", 1)
-					error_status = 1
-
+				from applications import header
+				try:
+					header(bdb_stack_location + "_000", params='original_image_index', fprint=True)
+					print "Images were already indexed!"
+				except KeyError:
+					print "Indexing images"
+					header(bdb_stack_location + "_000", params='original_image_index', consecutive=True)
 		else:
-			# os.path.exists(masterdir) does not exist
-			ERROR('Output directory does not exist, please change the name and restart the program', "sxrviper", 1)
-			error_status = 1
+			filename = os.path.basename(args[0])
+			bdb_stack_location = "bdb:" + masterdir + os.path.splitext(filename)[0]
+			if(not os.path.exists(os.path.join(masterdir,"EMAN2DB" + DIR_DELIM))):
+				cmd = "{} {} {}".format("sxcpy.py  ", args[0], bdb_stack_location + "_000")
+				cmdexecute(cmd)
 
-	if_error_all_processes_quit_program(error_status)
+				from applications import header
+				try:
+					header(bdb_stack_location + "_000", params='original_image_index', fprint=True)
+					print "Images were already indexed!"
+				except KeyError:
+					print "Indexing images"
+					header(bdb_stack_location + "_000", params='original_image_index', consecutive=True)
 
 	# send masterdir to all processes
 	dir_len  = len(masterdir)*int(myid == main_node)
