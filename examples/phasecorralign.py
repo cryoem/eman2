@@ -45,7 +45,7 @@ except ImportError: import ndimage.interpolation as ndii
 
 def main():
 	maxshift = 20
-	noise = 2.5
+	noise = 0.0
 	fname = "/Users/jmbell/workspace/data/centering/ribosome.hdf"
 	
 	n = np.random.random_integers(0,EMUtil.get_image_count(fname))
