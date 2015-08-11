@@ -19575,6 +19575,8 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 	int rkx = int(xrng[1]/step);
 	int lky = int(yrng[0]/step);
 	int rky = int(yrng[1]/step);
+	vector< vector<EMData*> > cimages( lky+rky+1, vector<EMData*>(lkx+rkx+1) );
+
 	int   iref, nref=0, mirror=0;
 	float iy, ix, sxs=0, sys=0;
 	float peak = -1.0E23f;
@@ -19589,8 +19591,7 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 	float n2 = sin(theta)*sin(phi);
 	float n3 = cos(theta);
 
-	//  Here the order of loops is wrong.  The resampling to polar has to be done first and cimage
-	//     precalculated.
+	bool compute_cimages = true;
 	for (unsigned iu = 0; iu < list_of_reference_angles_length; iu++) {
 
 		float m_phi   = list_of_reference_angles[iu][0] * qv;
@@ -19603,16 +19604,33 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 
 		if(dot_product >= ant) {
 			iref = iu % crefim_len;
+
+			if( compute_cimages ) {
+				compute_cimages = false;
+				for (int i = -lky; i <= rky; i++) {
+					const int iy = i * step ;
+					for (int j = -lkx; j <= rkx; j++) {
+						const int ix = j*step ;
+						EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
+						Normalize_ring( cimage, numr );
+						Frngs(cimage, numr);
+						cimages[i+lky][j+lkx] = cimage;
+					}
+				}
+			}
+
 			for (int i = -lky; i <= rky; i++) {
 				iy = i * step ;
 				for (int j = -lkx; j <= rkx; j++) {
 					ix = j*step;
+			/*
 					EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 					Normalize_ring( cimage, numr );
 					Frngs(cimage, numr);
+			*/
 					//  compare with all reference images that are on a new list
 					int compmirror = (iu/crefim_len)%2;
-					Dict retvals = Crosrng_e(crefim[iref], cimage, numr, compmirror);
+					Dict retvals = Crosrng_e(crefim[iref], cimages[i+lky][j+lkx], numr, compmirror);
 					double qn = retvals["qn"];
 
 					if(qn >= peak) {
@@ -19623,7 +19641,7 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
 						peak = static_cast<float>( qn );
 					}
-					delete cimage; cimage = 0;
+					//delete cimage; cimage = 0;
 				}
 			}
 		}
@@ -19632,6 +19650,13 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 	if(peak == -1.0E23) {
 		ang=0.0; sxs=0.0; sys=0.0; mirror=0;
 		nref = -1;
+	}
+
+	for (unsigned i = 0; i < cimages.size(); ++i) {
+		for (unsigned j = 0; j < cimages[i].size(); ++j) {
+			delete cimages[i][j];
+			cimages[i][j] = NULL;
+		}
 	}
 
 	vector<float> res;
@@ -19868,13 +19893,14 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 
 
 
-	
+/*	
 static std::string toString(int i)
 {
 	std::ostringstream s;
 	s << i;
 	return s.str();
 }
+*/
 
 vector<float> Util::shc_multipeaks(EMData* image, const vector< EMData* >& crefim,
                 vector<float> xrng, vector<float> yrng, float step, float ant, string mode,
