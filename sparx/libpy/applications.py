@@ -4629,7 +4629,7 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 	from global_def      import Util
 	from fundamentals    import resample, fshift
 	from multi_shc       import shc_multi
-	from development     import do_volume_mrk01
+	#from development     import do_volume_mrk01
 	import user_functions
 	from EMAN2           import EMUtil, EMData
 	import types
@@ -4735,13 +4735,13 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 	#Tracker["lowpass"] = Tracker["initialfl"]
 	user_func = Tracker["constants"]["user_func"]
 	if ref_vol:
-		vol = do_volume_mrk01(ref_vol, Tracker, 0, mpi_comm)
-		#ref_data = [ref_vol, Tracker, 0, mpi_comm]
-		#vol = user_func(ref_data)
+		#vol = do_volume_mrk01(ref_vol, Tracker, 0, mpi_comm)
+		ref_data = [ref_vol, Tracker, 0, mpi_comm]
+		vol = user_func(ref_data)
 	else:
-		vol = do_volume_mrk01(data, Tracker, 0, mpi_comm)
-		#ref_data = [data, Tracker, 0, mpi_comm]
-		#vol = user_func(ref_data)
+		#vol = do_volume_mrk01(data, Tracker, 0, mpi_comm)
+		ref_data = [data, Tracker, 0, mpi_comm]
+		vol = user_func(ref_data)
 	#  Restore desired fl
 	#Tracker["lowpass"] = fl
 
@@ -4946,10 +4946,10 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 				#=========================================================================
 				if myid == main_node:
 					start_time = time()
-				vol = do_volume_mrk01(data, Tracker, total_iter, mpi_comm)
-				#ref_data = [data, Tracker, total_iter, mpi_comm]
-				#user_func = Tracker["constants"] ["user_func"]
-				#vol = user_func(ref_data)
+				#vol = do_volume_mrk01(data, Tracker, total_iter, mpi_comm)
+				ref_data = [data, Tracker, total_iter, mpi_comm]
+				user_func = Tracker["constants"] ["user_func"]
+				vol = user_func(ref_data)
 				#if myid == main_node:  vol.write_image('soft/smvol%04d.hdf'%total_iter)
 				# log
 				if myid == main_node:
@@ -5037,7 +5037,7 @@ def slocal_ali3d_base(stack, templatevol, Tracker, mpi_comm = None, log= None, c
 	from utilities        import get_image, drop_image, file_type, get_im, get_input_from_string, model_blank
 	from utilities        import amoeba_multi_level, rotate_3D_shift, estimate_3D_center_MPI
 	from utilities        import print_begin_msg, print_end_msg, print_msg
-	from development      import do_volume_mrk01
+	#from development      import do_volume_mrk01
 	import user_functions
 	from statistics       import varf3d_MPI
 	from math             import pi
@@ -5237,10 +5237,10 @@ def slocal_ali3d_base(stack, templatevol, Tracker, mpi_comm = None, log= None, c
 		bcast_EMData_to_all(vol, myid, main_node)
 		del templatevol
 		#  Do the 3D
-		vol = do_volume_mrk01(vol, Tracker, 0, mpi_comm)
-		#ref_data = [vol, Tracker, 0, mpi_comm]
-		#user_func = Tracker["constants"] ["user_func"]
-		#vol = user_func(ref_data)
+		#vol = do_volume_mrk01(vol, Tracker, 0, mpi_comm)
+		ref_data = [vol, Tracker, 0, mpi_comm]
+		user_func = Tracker["constants"] ["user_func"]
+		vol = user_func(ref_data)
 	else:
 		vol = None
 
@@ -5325,10 +5325,10 @@ def slocal_ali3d_base(stack, templatevol, Tracker, mpi_comm = None, log= None, c
 					finfo.flush()
 
 				#  Do the 3D
-				vol = do_volume_mrk01(dataim, Tracker, iteration, mpi_comm)
-				#ref_data = [dataim, Tracker, iteration, mpi_comm]
-				#user_func = Tracker["constants"] ["user_func"]
-				#vol = user_func(ref_data)
+				#vol = do_volume_mrk01(dataim, Tracker, iteration, mpi_comm)
+				ref_data = [dataim, Tracker, iteration, mpi_comm]
+				user_func = Tracker["constants"] ["user_func"]
+				vol = user_func(ref_data)
 
 				if myid == main_node:
 					#drop_image(vol, os.path.join(outdir, "vol%03d_%03d.hdf"%(iteration, ic) ))

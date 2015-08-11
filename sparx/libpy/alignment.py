@@ -4791,7 +4791,6 @@ def generate_list_of_reference_angles_for_search(input_angles, sym):
 	from EMAN2 import Transform
 	t2   = Transform()
 	nsym = t2.get_nsym(sym)
-	
 
 	original_number_of_angles = len(input_angles)
 	# original_number_of_angles is the same as the number of refrings

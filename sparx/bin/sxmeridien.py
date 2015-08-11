@@ -841,7 +841,7 @@ def main():
 	from global_def import SPARXVERSION
 	from EMAN2 import EMData
 	from multi_shc import multi_shc
-	from development import do_volume_mrk01
+	#from development import do_volume_mrk01
 	from logger import Logger, BaseLogger_Files
 	import sys
 	import os
