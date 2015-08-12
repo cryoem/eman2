@@ -7989,7 +7989,7 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 		print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
 		print_msg("Reference projection method : %s\n"%(ref_a))
 		print_msg("Symmetry group              : %s\n\n"%(sym))
-		print_msg("Percentage of change for termination: %f\n"%(termprec))
+		print_msg("Percentage of change ßfor termination: %f\n"%(termprec))
 		print_msg("User function               : %s\n"%(user_func_name))
 
 	if maskfile:
@@ -8104,8 +8104,12 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
  
 		cs = [0.0]*3
 		for iref in xrange(numref):
-			vol = get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
-			volft, kb = prep_vol(vol)
+			if myid==main_node:
+				vol = get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
+				volft, kb = prep_vol(vol)
+			else:
+				volft=model_blank(nx,ny,nz)
+			bcast_EMData_to_all(volft, myid, main_node)
 			if CTF:
 				previous_defocus = -1.0
 				if runtype=="REFINEMENT":
