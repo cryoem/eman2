@@ -98,7 +98,7 @@ def main():
 		if options.MPI:
 			from mpi import mpi_init
 			sys.argv = mpi_init(len(sys.argv),sys.argv)
-			if optins.kmeans:
+			if optios.kmeans:
 				from applications import Kmref_ali3d_MPI
 				Kmref_ali3d_MPI(args[0], args[1], args[2], maskfile, options.focus, options.maxit, options.ir, options.ou, options.rs, \
 				options.xr, options.yr, options.ts, options.delta, options.an, options.center, \
