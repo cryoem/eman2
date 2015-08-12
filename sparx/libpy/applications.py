@@ -8105,11 +8105,12 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 		cs = [0.0]*3
 		for iref in xrange(numref):
 			if myid==main_node:
-				vol = get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
-				volft, kb = prep_vol(vol)
+				volft = get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
 			else:
 				volft=model_blank(nx,ny,nz)
 			bcast_EMData_to_all(volft, myid, main_node)
+			volft, kb = prep_vol(volft)
+
 			if CTF:
 				previous_defocus = -1.0
 				if runtype=="REFINEMENT":
@@ -8238,7 +8239,7 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 				del region, histo
 			del recvbuf
 
-		if CTF: del vol
+		#if CTF: del vol
 		fscc = [None]*numref
 
 		if fourvar and runtype=="REFINEMENT":
