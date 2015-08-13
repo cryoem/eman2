@@ -7989,7 +7989,7 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 		print_msg("Signal-to-Noise Ratio       : %f\n"%(snr))
 		print_msg("Reference projection method : %s\n"%(ref_a))
 		print_msg("Symmetry group              : %s\n\n"%(sym))
-		print_msg("Percentage of change ßfor termination: %f\n"%(termprec))
+		print_msg("Percentage of change for termination: %f\n"%(termprec))
 		print_msg("User function               : %s\n"%(user_func_name))
 
 	if maskfile:
