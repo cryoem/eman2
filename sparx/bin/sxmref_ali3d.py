@@ -103,7 +103,7 @@ def main():
 				Kmref_ali3d_MPI(args[0], args[1], args[2], maskfile, options.focus, options.maxit, options.ir, options.ou, options.rs, \
 				options.xr, options.yr, options.ts, options.delta, options.an, options.center, \
 				options.nassign, options.nrefine, options.CTF, options.snr, options.ref_a, options.sym, \
-				options.function,  options.npad, options.debug, options.fourvar, options.stoprnct)
+				options.function,  options.npad, options.debug, options.fourvar, options.stoprnct, mpi_comm=None, log=None)
 			else:
 				from applications import mref_ali3d_MPI
 				mref_ali3d_MPI(args[0], args[1], args[2], maskfile, options.focus, options.maxit, options.ir, options.ou, options.rs, \
