@@ -3163,6 +3163,55 @@ The basic design of EMAN Processors: <br>\
 		bool is_complex;
 	};
 
+	/**MaskAzProcessor masks out pixels within a specified cylindrical (or circular) arc.
+	 *@param phi1 angle in degrees ccw from the x-axis. Starting angle to be set to 0.
+	 *@param phi2 Ending angle to be set to 0
+	 *@param dx Modify mask center by dx relative to the default center nx/2
+	 *@param dy Modify mask center by dy relative to the default center ny/2
+	 */
+	class MaskAzProcessor:public Processor
+	{
+	  public:
+
+		void process_inplace(EMData * image);
+		
+		static Processor *NEW()
+		{
+			return new MaskAzProcessor();
+		}
+		
+		string get_name() const
+		{
+			return NAME;
+		}
+		
+		static const string NAME;
+
+		string get_desc() const
+		{
+			return "Masks out an angular arc in circular/cylindrical coordinates with a sharp edge.";
+		}
+
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+
+			d.put("phi0", EMObject::FLOAT,
+				  "Angle in degrees ccw from the x-axis. Starting angle to be set to 0.");
+			d.put("phi1", EMObject::FLOAT,
+				  "Angle in degrees ccw from the x-axis. Ending angle to be set to 0.");
+			d.put("dx", EMObject::FLOAT,
+				  "Modify mask center by dx relative to the default center nx/2");
+			d.put("dy", EMObject::FLOAT,
+				  "Modify mask center by dy relative to the default center ny/2");
+
+			return d;
+		}
+	  protected:
+
+		
+	};
+	
 	/**CircularMaskProcessor applies a circular mask to the data.This is the base class for specific circular mask processors.Its subclass must implement process_dist_pixel().
 	 *@param inner_radius inner mask radius. optional, default=-1
 	 *@param outer_radius outer mask radius

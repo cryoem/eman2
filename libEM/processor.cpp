@@ -40,6 +40,7 @@
 #include "randnum.h"
 #include "symmetry.h"
 #include "averager.h"
+#include "util.h"
 
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_statistics.h>
@@ -127,6 +128,7 @@ const string MaskSoftProcessor::NAME = "mask.soft";
 const string MaskEdgeMeanProcessor::NAME = "mask.ringmean";
 const string MaskNoiseProcessor::NAME = "mask.noise";
 const string MaskGaussProcessor::NAME = "mask.gaussian";
+const string MaskAzProcessor::NAME = "mask.azimuthal.cyl";
 const string MaskGaussNonuniformProcessor::NAME = "mask.gaussian.nonuniform";
 const string MaskGaussInvProcessor::NAME = "math.gausskernelfix";
 const string LinearPyramidProcessor::NAME = "math.linearpyramid";
@@ -363,7 +365,8 @@ template <> Factory < Processor >::Factory()
 	force_add<MaskGaussProcessor>();
 	force_add<MaskGaussNonuniformProcessor>();
 	force_add<MaskGaussInvProcessor>();
-
+	force_add<MaskAzProcessor>();
+	
 	force_add<MaxShrinkProcessor>();
 	force_add<MinShrinkProcessor>();
 	force_add<MeanShrinkProcessor>();
@@ -1754,7 +1757,32 @@ void PaintProcessor::process_inplace(EMData *image) {
 	image->update();
 }
 
+void MaskAzProcessor::process_inplace(EMData *image) {
+	if (image->is_complex()) throw ImageFormatException("MaskAzProcessor: target image must be real");
 
+	int nx=image->get_xsize();
+	int ny=image->get_ysize();
+	int nz=image->get_zsize();
+
+	float phi0 = params.set_default("phi0",0.0f)*M_PI/180.0;
+	phi0=Util::angle_norm_pi(phi0);
+	float phi1 = params.set_default("phi1",90.0f)*M_PI/180.0;
+	phi1=Util::angle_norm_pi(phi1);
+	if (phi1<phi0) phi1+=2.0*M_PI;
+	float cx = nx/2+params.set_default("dx",0.0f);
+	float cy = ny/2+params.set_default("dy",0.0f);
+	
+	for (int x=0; x<nx; x++) {
+		for (int y=0; y<ny; y++) {
+			float az=atan2(y-cy,x-cx);
+			if ((az<phi0 || az>phi1)&&(az+2.0*M_PI<phi0 || az+2.0*M_PI>phi1)) continue;
+
+			for (int z=0; z<nz; z++) {
+				image->set_value_at(x,y,z,0.0f);
+			}
+		}
+	}
+}
 
 void CircularMaskProcessor::calc_locals(EMData *)
 {
