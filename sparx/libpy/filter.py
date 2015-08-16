@@ -838,3 +838,68 @@ def filt_vols( vols, fscs, mask3D ):
 		#volf = threshold( volf )
 
 	return vols
+
+def filterlocal(ui, vi, m, falloff, myid, main_node, number_of_proc):
+	from mpi 	  	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	from mpi 	  	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_gatherv, mpi_send, mpi_recv
+	from mpi 	  	  import MPI_SUM, MPI_FLOAT, MPI_INT, MPI_TAG_UB
+	from utilities import bcast_number_to_all, bcast_list_to_all, model_blank, bcast_EMData_to_all, reduce_EMData_to_root
+	from morphology import threshold_outside
+	from filter import filt_tanl
+	from fundamentals import fft, fftip
+
+	if(myid == main_node):
+
+		nx = vi.get_xsize()
+		ny = vi.get_ysize()
+		nz = vi.get_zsize()
+		#  Round all resolution numbers to two digits
+		print  "  ini ", Util.infomask(ui,m,True)
+		for x in xrange(nx):
+			for y in xrange(ny):
+				for z in xrange(nz):
+					ui.set_value_at_fast( x,y,z, round(ui.get_value_at(x,y,z), 2) )
+		print  "  in ", Util.infomask(ui,m,True)
+		dis = [nx,ny,nz]
+	else:
+		falloff = 0.0
+		radius  = 0
+		dis = [0,0,0]
+	falloff = bcast_number_to_all(falloff, main_node)
+	dis = bcast_list_to_all(dis, myid, source_node = main_node)
+
+	if(myid != main_node):
+		nx = int(dis[0])
+		ny = int(dis[1])
+		nz = int(dis[2])
+
+		vi = model_blank(nx,ny,nz)
+		ui = model_blank(nx,ny,nz)
+
+	bcast_EMData_to_all(vi, myid, main_node)
+	bcast_EMData_to_all(ui, myid, main_node)
+
+	fftip(vi)  #  volume to be filtered
+
+	st = Util.infomask(ui, m, True)
+	
+
+	filteredvol = model_blank(nx,ny,nz)
+	cutoff = max(st[2] - 0.01,0.0)
+	while(cutoff < st[3] ):
+		cutoff = round(cutoff + 0.01, 2)
+		#if(myid == main_node):  print  cutoff,st
+		pt = Util.infomask( threshold_outside(ui, cutoff - 0.00501, cutoff + 0.005), m, True)  # Ideally, one would want to check only slices in question...
+		if(pt[0] != 0.0):
+			#print cutoff,pt[0]
+			vovo = fft( filt_tanl(vi, cutoff, falloff) )
+			for z in xrange(myid, nz, number_of_proc):
+				for x in xrange(nx):
+					for y in xrange(ny):
+						if(m.get_value_at(x,y,z) > 0.5):
+							if(round(ui.get_value_at(x,y,z),2) == cutoff):
+								filteredvol.set_value_at_fast(x,y,z,vovo.get_value_at(x,y,z))
+
+	mpi_barrier(MPI_COMM_WORLD)
+	reduce_EMData_to_root(filteredvol, myid, main_node, MPI_COMM_WORLD)
+	return filteredvol

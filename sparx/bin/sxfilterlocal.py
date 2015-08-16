@@ -77,73 +77,39 @@ def main():
 			#print sys.argv
 			vi = get_im(sys.argv[1])
 			ui = get_im(sys.argv[2])
-
+			print   Util.infomask(ui, None, True)
+			radius = options.radius
 			nx = vi.get_xsize()
 			ny = vi.get_ysize()
 			nz = vi.get_zsize()
-			#  Round all resolution numbers to two digits
-			for x in xrange(nx):
-				for y in xrange(ny):
-					for z in xrange(nz):
-						ui.set_value_at_fast( x,y,z, round(ui.get_value_at(x,y,z), 2) )
-			falloff = options.falloff
-			radius  = options.radius
-			if(radius == -1):  radius = min(nx,ny,nz)//2-1
 			dis = [nx,ny,nz]
 		else:
 			falloff = 0.0
 			radius  = 0
 			dis = [0,0,0]
-		falloff = bcast_number_to_all(falloff, main_node)
-		radius  = bcast_number_to_all(radius, main_node)
-
+			vi = None
+			ui = None
 		dis = bcast_list_to_all(dis, myid, source_node = main_node)
 
 		if(myid != main_node):
 			nx = int(dis[0])
 			ny = int(dis[1])
 			nz = int(dis[2])
-
-			vi = model_blank(nx,ny,nz)
-			ui = model_blank(nx,ny,nz)
-
+		radius  = bcast_number_to_all(radius, main_node)
 		if len(args) == 3:
-			radius = options.radius
 			if( radius == -1 ):  radius = min(nx,ny,nz)//2 -1
 			m = model_circle( radius ,nx,ny,nz)
 			outvol = args[2]
-		
+
 		elif len(args) == 4:
 			if(myid == main_node): m = binarize(get_im(args[2]), 0.5)
-			bcast_EMData_to_all(m,  myid, main_node)
+			else:  m = model_blank(nx,ny,nz)
 			outvol = args[3]
+			bcast_EMData_to_all(m, myid, main_node)
 
+		from filter import filterlocal
+		filteredvol = filterlocal(ui, vi, m, options.falloff, myid, main_node, number_of_proc)
 
-		bcast_EMData_to_all(vi, myid, main_node)
-		bcast_EMData_to_all(ui, myid, main_node)
-
-		fftip(vi)  #  volume to be filtered
-
-		st = Util.infomask(ui, m, True)
-		
-
-		filteredvol = model_blank(nx,ny,nz)
-		cutoff = max(st[2] - 0.01,0.0)
-		while(cutoff < st[3] ):
-			cutoff = round(cutoff + 0.01, 2)
-			pt = Util.infomask( threshold_outside(ui, cutoff - 0.00501, cutoff + 0.005), m, True)  # Ideally, one would want to check only slices in question...
-			if(pt[0] != 0.0):
-				#print cutoff,pt[0]
-				vovo = fft( filt_tanl(vi, cutoff, falloff) )
-				for z in xrange(myid, nz, number_of_proc):
-					for x in xrange(nx):
-						for y in xrange(ny):
-							if(m.get_value_at(x,y,z) > 0.5):
-								if(round(ui.get_value_at(x,y,z),2) == cutoff):
-									filteredvol.set_value_at_fast(x,y,z,vovo.get_value_at(x,y,z))
-
-		mpi_barrier(MPI_COMM_WORLD)
-		reduce_EMData_to_root(filteredvol, myid, main_node, MPI_COMM_WORLD)
 		if(myid == 0):   filteredvol.write_image(outvol)
 
 		from mpi import mpi_finalize
@@ -178,10 +144,10 @@ def main():
 		
 
 		filteredvol = model_blank(nn,nn,nn)
-		cutoff = st[2] - 0.01
+		cutoff = max(st[2] - 0.01,0.0)
 		while(cutoff < st[3] ):
 			cutoff = round(cutoff + 0.01, 2)
-			pt = Util.infomask( threshold_outside(ui, cutoff - 0.05, cutoff + 0.05), m, True)
+			pt = Util.infomask( threshold_outside(ui, cutoff - 0.00501, cutoff + 0.005), m, True)
 			if(pt[0] != 0.0):
 				vovo = fft(filt_tanl(vi, cutoff, falloff) )
 				for x in xrange(nn):

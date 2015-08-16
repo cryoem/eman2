@@ -1945,6 +1945,139 @@ def fsc_mask(img1, img2, mask = None, w = 1.0, filename=None):
 	s2 = Util.infomask(img2, m, True)
 	return fsc((img1-s1[0])*mask, (img2-s2[0])*mask, w, filename)
 
+
+def locres(vi, ui, m, kern, cutoff, step, myid, main_node, number_of_proc):
+	from mpi 	  	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
+	from mpi 	  	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_gatherv, mpi_send, mpi_recv
+	from mpi 	  	  import MPI_SUM, MPI_FLOAT, MPI_INT, MPI_TAG_UB
+	from fundamentals import fft
+	from utilities import model_blank, bcast_EMData_to_all, recv_EMData, send_EMData, bcast_number_to_all, info
+	from filter import filt_tophatb
+	from EMAN2 import rsconvolution
+	from morphology import square_root
+	
+
+	nx = vi.get_xsize()
+	ny = vi.get_ysize()
+	nz = vi.get_zsize()
+
+	mc = model_blank(nx,ny,nz,1.0)-m
+
+	if(myid == main_node):
+		st = Util.infomask(vi,m,True)
+		vi -= st[0]
+
+		st = Util.infomask(ui,m,True)
+		ui -= st[1]
+
+	bcast_EMData_to_all(vi, myid, main_node)
+	bcast_EMData_to_all(ui, myid, main_node)
+
+	vf = fft(vi)
+	uf = fft(ui)
+
+	if(myid == 0):
+		freqvol = model_blank(nx,ny,nz)
+		resolut = []
+	lp = int(max(nx,ny,nz)/2/step+0.5)
+	step = 0.5/lp
+	lt = lp//number_of_proc
+	lp = (lt+1)*number_of_proc
+	bailout = 0
+	for i in xrange(myid,lp,number_of_proc):
+		fl = step*i
+		fh = fl+step
+		freq=(fl+fh)/2.0
+		#print number_of_proc,myid,lp,i,step,fl,fh,freq
+
+		if i>0 :
+			v = fft(filt_tophatb( vf, fl, fh))
+			u = fft(filt_tophatb( uf, fl, fh))
+			tmp1 = Util.muln_img(v,v)
+			tmp2 = Util.muln_img(u,u)
+			tmp3 = Util.muln_img(u,v)
+			do = Util.infomask(square_root(Util.muln_img(tmp1,tmp2)),m,True)[0]
+			dp = Util.infomask(tmp3,m,True)[0]
+			#print "dpdo   ",myid,dp,do
+			if do == 0.0: dis = [freq, 0.0]
+			else:  dis = [freq, dp/do]
+		else:
+			tmp1 = model_blank(nx,ny,nz,1.0)
+			tmp2 = model_blank(nx,ny,nz,1.0)
+			tmp3 = model_blank(nx,ny,nz,1.0)
+			dis = [freq, 1.0]
+
+
+		tmp1 = rsconvolution(tmp1, kern)
+		tmp2 = rsconvolution(tmp2, kern)
+		tmp3 = rsconvolution(tmp3, kern)
+
+		Util.mul_img(tmp1,tmp2)
+
+		tmp1 = square_root(tmp1)
+
+		Util.mul_img(tmp1,m)
+		Util.add_img(tmp1,mc)
+
+
+		Util.mul_img(tmp3,m)
+		Util.add_img(tmp3,mc)
+
+		Util.div_img(tmp3,tmp1)
+
+		Util.mul_img(tmp3,m)
+
+		mpi_barrier(MPI_COMM_WORLD)
+
+		if(myid == main_node):
+			for k in xrange(number_of_proc):
+				if(k != main_node):
+					#print " start receiving",myid,i
+					tag_node = k+1001
+					dis = mpi_recv(2, MPI_FLOAT, k, MPI_TAG_UB, MPI_COMM_WORLD)
+					#print  "received ",myid,dis
+					tmp3 = recv_EMData(k, tag_node)
+					#print  "received ",myid
+				if(dis[0] <=0.5):  resolut.append(dis)
+				fl = step*(i+k)
+				fh = fl+step
+				freq=(fl+fh)/2.0
+				#print k,dis,Util.infomask(tmp3,m,True)
+				#if(k == number_of_proc-1):  bailout = 1
+				bailout = 0
+				#print  "setting freqvol  ",k
+				Util.set_freq(freqvol,tmp3,m,cutoff,freq)
+				"""
+				for x in xrange(nx):
+					for y in xrange(ny):
+						for z in xrange(nz):
+							if(m.get_value_at(x,y,z) > 0.5):
+								if(freqvol.get_value_at(x,y,z) == 0.0):
+									if(tmp3.get_value_at(x,y,z) < cutoff):
+										freqvol.set_value_at(x,y,z,freq)
+										bailout = 0
+									else:
+										if(k == number_of_proc-1):
+											bailout = 0
+				"""
+				print k,freq,Util.infomask(freqvol,m,True)
+
+		else:
+			tag_node = myid+1001
+			#print   "sent from", myid,dis
+			mpi_send(dis, 2, MPI_FLOAT, main_node, MPI_TAG_UB, MPI_COMM_WORLD)
+			#print   "sending EMD from", myid
+			send_EMData(tmp3, main_node, tag_node)
+			#print   "sent EMD from",myid
+
+		bailout = bcast_number_to_all(bailout, main_node)
+		if(bailout == 1):  break
+
+	mpi_barrier(MPI_COMM_WORLD)
+	if( myid == main_node ):  return freqvol, resolut
+	else:  return None, None
+
+
 def get_refstack(imgstack,params,nref,refstack,cs,mask,center,Iter):
 
 	"""
