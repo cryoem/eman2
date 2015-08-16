@@ -854,12 +854,10 @@ def filterlocal(ui, vi, m, falloff, myid, main_node, number_of_proc):
 		ny = vi.get_ysize()
 		nz = vi.get_zsize()
 		#  Round all resolution numbers to two digits
-		print  "  ini ", Util.infomask(ui,m,True)
 		for x in xrange(nx):
 			for y in xrange(ny):
 				for z in xrange(nz):
 					ui.set_value_at_fast( x,y,z, round(ui.get_value_at(x,y,z), 2) )
-		print  "  in ", Util.infomask(ui,m,True)
 		dis = [nx,ny,nz]
 	else:
 		falloff = 0.0
