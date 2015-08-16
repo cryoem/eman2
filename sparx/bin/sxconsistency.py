@@ -251,6 +251,60 @@ def errors_per_image(params, avgtrans, thresherr=1.0, radius = 1.0):
 	return perr
 
 
+def average_trans(params):
+	#  Compute average projection params and pixel errors
+	from utilities import getfvec
+	from pixel_error import max_3D_pixel_error
+	from math import sqrt, degrees, radians, acos
+	nn = lem(params[0])
+	avgtrans = [None]*nn
+	pixer   = [0.0]*nn
+	for j in xrange(nn):
+		nas = [0.0,0.0,0.0]
+		if( sym == 1):
+			#pixer[q[0][0]][j] = max_3D_pixel_error(fifi[0], fifi[1], r=radius)
+			for i in xrange(ll):
+				n1,n2,n3 = getfvec(params[i][j][0],params[i][j][1])
+				nas[0] += n1
+				nas[1] += n2
+				nas[2] += n3
+		else:
+			m1,m2,m3 = getfvec(params[0][j][0],params[0][j][1])
+			nas[0] = m1
+			nas[1] = m2
+			nas[2] = m3
+			for i in xrange(1,ll):
+				qnom = -1.e10
+				for j in xrange(-1,2,1):
+					t1,t2,t3 = getfvec(params[i][j][0]+j*qsym,params[i][j][1])
+					nom = t1*m1 + t2*m2 + t3*m3
+					if(nom > qnom):
+						qnom = nom
+						n1=t1
+						n2=t2
+						n3=t3
+					#if(k == 2):
+					#	print '  t1,t2,t3 ',fifi[i][0]+j*qsym,fifi[i][1],t1,t2,t3,nom,qnom
+				nas[0] += n1
+				nas[1] += n2
+				nas[2] += n3
+				print qnom, n1,n2,n3,nas
+			#  To get the correct pixer phi angle has to be taken from the above!!
+
+		nom = sqrt(nas[0]**2 + nas[1]**2 + nas[2]**2)
+
+		if(nom < 1.e-6):
+			nphi   = 0.0
+			ntheta = 0.0
+		else:
+			ntheta = degrees(acos(nas[2]/nom))%360.0
+			if(sym>1 and ntheta>90.0):  nphi   = (degrees(atan2( nas[1], nas[0] ))-180.0)%qsym + 180.0
+			else:                       nphi   =  degrees(atan2( nas[1], nas[0] ))%qsym
+
+		#print   "FIFI     %4d     %7.2f     %7.2f    %7.2f    %7.2f     %7.2f     %7.2f    %7.2f    %7.2f"%(k,fifi[0][0],fifi[0][1],fifi[1][0],fifi[1][1],fifi[2][0],fifi[2][1],nphi,ntheta)
+		twod = average2dtransform([params[ii][j][2:] for ii in xrange(ll)])
+		avgtrans[j] = [nphi, ntheta, twod[0], twod[1], twod[2]]
+	return avgtrans
 
 def main():
 	arglist = []
@@ -573,6 +627,96 @@ def main():
 				params[ii] = read_text_row(os.path.join(outdir,bp+"%01d%01d.txt"%(jj,ii)))
 				assert(nn == len(params[ii]) )
 
+			#  Compute average projection params and pixel errors
+			avgtrans = [None]*nn
+			pixer   = [0.0]*nn
+			for j in xrange(nn):
+				nas = [0.0,0.0,0.0]
+				if( sym == 1):
+					#pixer[q[0][0]][j] = max_3D_pixel_error(fifi[0], fifi[1], r=radius)
+					for i in xrange(ll):
+						n1,n2,n3 = getfvec(params[i][j][0],params[i][j][1])
+						nas[0] += n1
+						nas[1] += n2
+						nas[2] += n3
+				else:
+					m1,m2,m3 = getfvec(params[0][j][0],params[0][j][1])
+					nas[0] = m1
+					nas[1] = m2
+					nas[2] = m3
+					for i in xrange(1,ll):
+						qnom = -1.e10
+						for j in xrange(-1,2,1):
+							t1,t2,t3 = getfvec(params[i][j][0]+j*qsym,params[i][j][1])
+							nom = t1*m1 + t2*m2 + t3*m3
+							if(nom > qnom):
+								qnom = nom
+								n1=t1
+								n2=t2
+								n3=t3
+							#if(k == 2):
+							#	print '  t1,t2,t3 ',fifi[i][0]+j*qsym,fifi[i][1],t1,t2,t3,nom,qnom
+						nas[0] += n1
+						nas[1] += n2
+						nas[2] += n3
+						print qnom, n1,n2,n3,nas
+					#  To get the correct pixer phi angle has to be taken from the above!!
+
+				nom = sqrt(nas[0]**2 + nas[1]**2 + nas[2]**2)
+
+				if(nom < 1.e-6):
+					nphi   = 0.0
+					ntheta = 0.0
+				else:
+					ntheta = degrees(acos(nas[2]/nom))%360.0
+					if(sym>1 and ntheta>90.0):  nphi   = (degrees(atan2( nas[1], nas[0] ))-180.0)%qsym + 180.0
+					else:                       nphi   =  degrees(atan2( nas[1], nas[0] ))%qsym
+
+				#print   "FIFI     %4d     %7.2f     %7.2f    %7.2f    %7.2f     %7.2f     %7.2f    %7.2f    %7.2f"%(k,fifi[0][0],fifi[0][1],fifi[1][0],fifi[1][1],fifi[2][0],fifi[2][1],nphi,ntheta)
+				twod = average2dtransform([params[ii][j][2:] for ii in xrange(ll)])
+				avgtrans[j] = [nphi, ntheta, twod[0], twod[1], twod[2]]
+
+			perr =  errors_per_image(params, avgtrans, thresherr, radius )
+			rescued = []
+			rejects = []
+			for j in xrange(nn):
+				#print  chr(65+jj),j,perr[j][0],[[params[m][j][i] for i in xrange(2)] for m in xrange(ll)]
+				if( perr[j][0] <= thresherr ):  rescued.append([newbad[j],j])
+				else:							rejects.append([newbad[j],j])
+			if( len(rescued) == 0 ):    write_text_row([-1,-1],  os.path.join(outdir,"rescued%01d.txt"%jj))
+			else:                  		write_text_row(rescued,  os.path.join(outdir,"rescued%01d.txt"%jj))
+			#  We also have to write params.
+			if( len(rescued) != 0 ):
+				for ii in xrange(ll):  write_text_row([params[ii][rescued[k][1]] for k in xrange(len(rescued))]  ,  os.path.join(outdir,"params-rescued%01d%01d.txt"%(jj,ii)))
+			if( len(rejects) == 0 ):    write_text_row([-1,-1],  os.path.join(outdir,'rejects'+"%01d.txt"%jj))
+			else:                  		write_text_row(rejects,  os.path.join(outdir,'rejects'+"%01d.txt"%jj))
+			if( len(rejects) != 0 ):
+				for ii in xrange(ll):  write_text_row([params[ii][rejects[k][1]] for k in xrange(len(rejects))]  ,  os.path.join(outdir,"params-rejects%01d%01d.txt"%(jj,ii)))
+
+			hi = hist_list([perr[j][0]  for j in xrange(nn)  ], 16)
+			print  "Pixel errors for BAD GROUP  ",chr(65+jj)
+			for ii in xrange(len(hi[0])):
+				print  "%4d   %12.3f    %12.0f "%(ii,hi[0][ii],hi[1][ii])
+
+	elif options.phase == 5 and len(args) == 1:
+		#  This version is for meridien refinement.  There are simply three full sets of params.
+		outdir      = args[0]
+		bp = 'badparams'
+		#outgrouparms= args[1]
+		radius = options.ou
+		thresherr = options.thresherr
+		sym = int(options.sym[1:])
+		qsym = 360.0/sym
+		#params = [[None for i in xrange(3)] for j in xrange(4)]
+		ll = 3 # this is hardwired as we have three groups.  however, I would like to keep the code general.
+		for jj in xrange(1):
+			params = [None for ii in xrange(ll)]
+			#newbad = map(int, read_text_file(options.params+"%01d.txt"%jj) )
+			#nn = len(newbad)
+			for ii in xrange(ll):
+				params[ii] = read_text_row(os.path.join(outdir,params+"%01d.txt"%(ii)))
+				#assert(nn == len(params[ii]) )
+			nn == len(params[0])
 			#  Compute average projection params and pixel errors
 			avgtrans = [None]*nn
 			pixer   = [0.0]*nn
