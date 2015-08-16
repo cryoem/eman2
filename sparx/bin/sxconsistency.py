@@ -714,9 +714,10 @@ def main():
 			#newbad = map(int, read_text_file(options.params+"%01d.txt"%jj) )
 			#nn = len(newbad)
 			for ii in xrange(ll):
-				params[ii] = read_text_row(os.path.join(outdir,params+"%01d.txt"%(ii)))
+				params[ii] = read_text_row(os.path.join(outdir,"params%01d.txt"%(ii)))
 				#assert(nn == len(params[ii]) )
-			nn == len(params[0])
+			nn = len(params[0])
+			newbad = range(nn)
 			#  Compute average projection params and pixel errors
 			avgtrans = [None]*nn
 			pixer   = [0.0]*nn
@@ -766,6 +767,7 @@ def main():
 				twod = average2dtransform([params[ii][j][2:] for ii in xrange(ll)])
 				avgtrans[j] = [nphi, ntheta, twod[0], twod[1], twod[2]]
 
+			write_text_row(avgtrans,  os.path.join(outdir,"avgtrans.txt"))
 			perr =  errors_per_image(params, avgtrans, thresherr, radius )
 			rescued = []
 			rejects = []
