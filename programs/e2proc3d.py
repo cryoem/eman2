@@ -124,6 +124,8 @@ def main():
 
 	parser.add_option("--add", metavar="f", type="float",
 								help="Adds a constant 'f' to the densities")
+	parser.add_option("--addfile", type="string", action="append",
+								help="Adds the volume to another volume of identical size")
 	parser.add_option("--calcfsc", type="string", metavar="with input",
 								help="Calculate a FSC curve between two models. Output is a txt file. This option is the name of the second volume.")
 	parser.add_option("--calcsf", type="string", metavar="outputfile",
@@ -165,7 +167,7 @@ def main():
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_option("--step",type=str,default=None,help="Specify <init>,<step>. Processes only a subset of the input data. For example, 0,2 would process only the even numbered particles")
 
-	append_options = ["clip", "fftclip", "process", "filter", "meanshrink", "medianshrink", "scale", "sym", "multfile", "trans", "rot", "align","ralignzphi","alignctod"]
+	append_options = ["clip", "fftclip", "process", "filter", "meanshrink", "medianshrink", "scale", "sym", "multfile", "addfile", "trans", "rot", "align","ralignzphi","alignctod"]
 
 	optionlist = pyemtbx.options.get_optionlist(sys.argv[1:])
 
@@ -556,6 +558,12 @@ def main():
 
 			elif option1 == "mult":
 				data.mult(options.mult)
+
+			elif option1 == "addfile":
+				af=EMData(options.addfile[index_d[option1]],0)
+				data.add(af)
+				af=None
+				index_d[option1] += 1
 
 			elif option1 == "multfile":
 				mf=EMData(options.multfile[index_d[option1]],0)
