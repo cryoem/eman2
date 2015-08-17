@@ -340,8 +340,8 @@ def AI_restrict_shifts( Tracker, HISTORY ):
 			move_up_phase = True
 			#  Switch immediately to nxinit such that imposed shift limit is at least one
 			#  If shift limit is zero, switch to restricted searches with a small delta and full size
-			Tracker["state"]  = "EXHAUSTIVE"
 			if( Tracker["constants"]["restrict_shifts"] == 0 ):
+				Tracker["state"]  = "EXHAUSTIVE"
 				Tracker["nxinit"] = Tracker["constants"]["nnxo"]
 			else:
 				Tracker["nxinit"] = max(Tracker["nxinit"],int(1.0/float(Tracker["constants"]["restrict_shifts"])*Tracker["constants"]["nnxo"] + 0.5 ))
@@ -1414,7 +1414,7 @@ def main():
 		#  Here we need an algorithm to set things correctly
 		Tracker["xr"] , Tracker["ts"] = stepali(Tracker["nxinit"] , Tracker["constants"]["nnxo"], Tracker["constants"]["radius"])
 	else:
-		Tracker["xr"] = int( Tracker["constants"]["restrict_shifts"] * float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]) +0.5)
+		Tracker["xr"] = "%d"%int( Tracker["constants"]["restrict_shifts"] * float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]) +0.5)
 		Tracker["ts"] = 1
 	Tracker["previousoutputdir"] = initdir
 	subdict( Tracker, {"zoom":True} )
