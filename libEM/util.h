@@ -915,7 +915,7 @@ namespace EMAN
 		/** Normalize an angle in radians so it is in the 0-2pi range **/
 		static inline float angle_norm_2pi(float in)
 		{
-			float m=fmod(in,2.0*M_PI);
+			float m = fmod((float)in, (float)(2.0*M_PI));
 			
 			return m<0?m+2.0*M_PI:m;
 		}
@@ -923,7 +923,7 @@ namespace EMAN
 		/** Normalize an angle in radians so it is in the -pi to pi range **/
 		static inline float angle_norm_pi(float in)
 		{
-			float m=fmod(in,2.0*M_PI);
+			float m = fmod((float)in, (float)(2.0*M_PI));
 			if (m<-M_PI) m+=2.0*M_PI;
 			return m>M_PI?m-2.0*M_PI:m;
 		}
