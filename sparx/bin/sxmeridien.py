@@ -340,10 +340,12 @@ def AI_restrict_shifts( Tracker, HISTORY ):
 			move_up_phase = True
 			#  Switch immediately to nxinit such that imposed shift limit is at least one
 			#  If shift limit is zero, switch to restricted searches with a small delta and full size
+			Tracker["state"]  = "EXHAUSTIVE"
 			if( Tracker["constants"]["restrict_shifts"] == 0 ):
-				Tracker["state"] == "EXHAUSTIVE"
+				Tracker["nxinit"] = Tracker["constants"]["nnxo"]
 			else:
-				nxinit = 2
+				Tracker["nxinit"] = max(Tracker["nxinit"],int(1.0/float(Tracker["constants"]["restrict_shifts"])*Tracker["constants"]["nnxo"] + 0.5 ))
+				Tracker["nxinit"] = min(Tracker["constants"]["nnxo"],Tracker["nxinit"]+Tracker["nxinit"]%2)
 		else:
 			#  For all other states make a decision based on resolution change
 			direction = Tracker["ireachedres"] - Tracker["icurrentres"]
@@ -381,7 +383,7 @@ def AI_restrict_shifts( Tracker, HISTORY ):
 					#  Move up if changes in angles are less than 30 degrees (why 30??  It should depend on symmetry)
 					if(Tracker["anger"]   < 30.0 ):  move_up_phase = True
 					else:
-						Tracker["xr"] = "%d"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
+						Tracker["xr"] = "%d"%(int(Tracker["constants"]["restrict_shifts"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]) +0.5))
 				elif(Tracker["state"] == "RESTRICTED"):
 					#switch to the next phase if restricted searches make no sense anymore
 					#  The next sadly repeats what is in the function that launches refinement, but I do not know how to do it better.
@@ -391,7 +393,7 @@ def AI_restrict_shifts( Tracker, HISTORY ):
 					dd = degrees(atan(0.5/rl/rd))
 					if( Tracker["anger"]  < dd ):  move_up_phase = True
 					else:
-						Tracker["xr"] = "%d"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
+						Tracker["xr"] = "%d"%(int(Tracker["constants"]["restrict_shifts"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]) +0.5))
 						Tracker["an"] = "%f"%Tracker["anger"]
 						Tracker["ts"] = "1"
 				else:
@@ -421,10 +423,18 @@ def AI_restrict_shifts( Tracker, HISTORY ):
 						keepgoing = 1
 				elif( Tracker["state"] == "FINAL2"):  keepgoing = 0
 				else:
-					# move up with the state
-					move_up_phase = True
+					if(Tracker["constants"]["restrict_shifts"] == 0):
+						# move up with the state
+						move_up_phase = True
+					else:
+						if(Tracker["nxinit"] == Tracker["constants"]["nnxo"]):
+							# move up with the state
+							move_up_phase = True
+						else:
+							#  increase nxinit - here it should probably only increase some							
+							Tracker["nxinit"] = min(Tracker["nxinit"] + Tracker["nxstep"],Tracker["constants"]["nnxo"])
 				Tracker["constants"]["best"] = Tracker["mainiteration"]
-	
+
 			# Resolution decreased
 			elif( direction < 1 ):
 				# Come up with rules
@@ -469,8 +479,7 @@ def AI_restrict_shifts( Tracker, HISTORY ):
 				Tracker["upscale"]     = 0.5
 				Tracker["state"]       = "EXHAUSTIVE"
 				Tracker["maxit"]       = 50
-				#  Develop something intelligent
-				Tracker["xr"] = "%d"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
+				Tracker["xr"] = "%d"%(int(Tracker["constants"]["restrict_shifts"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]) +0.5))
 				Tracker["ts"] = "1"
 				keepgoing = 1
 			#  Exhaustive searches
@@ -490,7 +499,7 @@ def AI_restrict_shifts( Tracker, HISTORY ):
 				Tracker["an"]          = "%f"%(Tracker["anger"]*1.25)
 				Tracker["state"]       = "RESTRICTED"
 				Tracker["maxit"]       = 50
-				Tracker["xr"] = "%d"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
+				Tracker["xr"] = "%d"%(int(Tracker["constants"]["restrict_shifts"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]) +0.5))
 				Tracker["ts"] = "1"
 				keepgoing = 1
 			#  Restricted searches
