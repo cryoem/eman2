@@ -391,7 +391,8 @@ def AI_restrict_shifts( Tracker, HISTORY ):
 					rd = int(Tracker["constants"]["radius"] * sh +0.5)
 					rl = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
 					dd = degrees(atan(0.5/rl/rd))
-					if( Tracker["anger"]  < dd ):  move_up_phase = True
+					if( Tracker["anger"]  < dd and Tracker["constants"]["restrict_shifts"] == int(Tracker["xr"])):
+						move_up_phase = True
 					else:
 						Tracker["xr"] = "%d"%(int(Tracker["constants"]["restrict_shifts"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]) +0.5))
 						Tracker["an"] = "%f"%Tracker["anger"]
@@ -411,15 +412,14 @@ def AI_restrict_shifts( Tracker, HISTORY ):
 						Tracker["PWadjustment"] = Tracker["constants"]["pwreference"]
 						if(Tracker["state"] == "EXHAUSTIVE"):
 								xr = int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1
-								Tracker["zoom"] = True
-								Tracker["xr"] = "%d  %d"%(2*xr, xr)
-								Tracker["ts"] = "%d  %d"%(min(2*xr,2),1)
+								Tracker["zoom"] = False
+								Tracker["xr"] = "%d"%(int(Tracker["constants"]["restrict_shifts"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]) +0.5))
+								Tracker["ts"] = "1"
 						elif(Tracker["state"] == "RESTRICTED"):
-								xr = int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1
-								Tracker["zoom"] = True
-								Tracker["xr"] = "%d  %d"%(2*xr, xr)
-								Tracker["ts"] = "%d  %d"%(min(2*xr,2),1)
-								Tracker["an"] =  "%6.2f  %6.2f"%(2*Tracker["anger"],2*Tracker["anger"])					
+								Tracker["zoom"] = False
+								Tracker["xr"] = "%d"%(int(Tracker["constants"]["restrict_shifts"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]) +0.5))
+								Tracker["ts"] = "1"
+								Tracker["an"] =  "%6.2f"%(2*Tracker["anger"])					
 						keepgoing = 1
 				elif( Tracker["state"] == "FINAL2"):  keepgoing = 0
 				else:
@@ -1415,7 +1415,7 @@ def main():
 		Tracker["xr"] , Tracker["ts"] = stepali(Tracker["nxinit"] , Tracker["constants"]["nnxo"], Tracker["constants"]["radius"])
 	else:
 		Tracker["xr"] = "%d"%int( Tracker["constants"]["restrict_shifts"] * float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]) +0.5)
-		Tracker["ts"] = 1
+		Tracker["ts"] = "1"
 	Tracker["previousoutputdir"] = initdir
 	subdict( Tracker, {"zoom":True} )
 
