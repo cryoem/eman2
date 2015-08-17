@@ -3493,6 +3493,17 @@ def assign_projangles(projangles, refangles, return_asg = False):
 
 	return assignments
 
+def assign_projangles_f(projangles, refangles, return_asg = False):
+
+	asg = Util.assign_projangles_f(projangles, refangles)
+	if return_asg: return asg
+	assignments = [[] for i in xrange(len(refangles))]
+	for i in xrange(len(projangles)):
+		assignments[asg[i]].append(i)
+
+	return assignments
+
+
 def cone_ang( projangles, phi, tht, ant ):
 	from utilities import getvec
 	from math import cos, pi, degrees, radians
@@ -3507,6 +3518,23 @@ def cone_ang( projangles, phi, tht, ant ):
 			la.append(projangles[i])
 
 	return la
+
+def cone_ang_f( projangles, phi, tht, ant ):
+	from utilities import getvec
+	from math import cos, pi, degrees, radians
+	# vec = getfvec( phi, tht )
+	vec = getfvec( phi, tht )
+
+	cone = cos(radians(ant))
+	la = []
+	for i in xrange( len(projangles) ):
+		# vecs = getfvec( projangles[i][0], projangles[i][1] )
+		vecs = getfvec( projangles[i][0], projangles[i][1] )
+		s = vecs[0]*vec[0] + vecs[1]*vec[1] + vecs[2]*vec[2]
+		if s >= cone:
+			la.append(projangles[i])
+	return la
+
 
 def cone_vectors( normvectors, phi, tht, ant ):
 	from utilities import getvec

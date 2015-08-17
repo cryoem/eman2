@@ -19094,6 +19094,22 @@ int Util::nearest_ang(const vector<float>& vecref, float x, float y, float z) {
 	return best_i;
 }
 
+int Util::nearest_ang_f(const vector<vector<float> >& vecref, float x, float y, float z) {
+
+	float best_v = vecref[0][0]*x+vecref[0][1]*y+vecref[0][2]*z;
+	int best_i = 0;
+
+	for (unsigned int i=1; i<vecref.size(); i++) {
+		float v = vecref[i][0]*x+vecref[i][1]*y+vecref[i][2]*z;
+		if (v > best_v) {
+			best_v = v;
+			best_i = i;
+		}
+		
+	}
+	return best_i;
+}
+
 struct d_ang {
 	float d;
 	int i;
@@ -19113,6 +19129,24 @@ vector<int> Util::assign_projangles(const vector<float>& projangles, const vecto
 		float x, y, z;
 		getvec(projangles[i*2], projangles[i*2+1], x, y, z);
 		asg[i] = nearest_ang(vecref, x, y, z);
+	}
+	return asg;
+}
+
+vector<int> Util::assign_projangles_f(const vector<vector<float> >& projangles, const vector<vector<float> >& refangles) {
+	int length_of_refangles = refangles.size();
+	int length_of_projangles = projangles.size();
+	
+	vector<int> asg(length_of_projangles);
+	vector<vector<float> > reference_vectors(length_of_refangles, vector<float>(3));
+	
+	for (int i=0; i<length_of_refangles; i++)
+		getfvec(refangles[i][0], refangles[i][1], reference_vectors[i][0], reference_vectors[i][1], reference_vectors[i][2]);
+
+	for (int i=0; i<length_of_projangles; i++) {
+		float x, y, z;
+		getfvec(projangles[i][0], projangles[i][1], x, y, z);
+		asg[i] = nearest_ang_f(reference_vectors, x, y, z);
 	}
 	return asg;
 }

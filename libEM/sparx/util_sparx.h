@@ -911,6 +911,19 @@ public:
 
 		return;
 	}
+
+	static inline void getfvec(float phi, float theta, float& x, float& y, float& z, int option=0) {
+		float pi180 = M_PI/180.0f;
+		
+		phi   *= pi180;
+		theta *= pi180;
+
+		x = sin(theta)*cos(phi);
+		y = sin(theta)*sin(phi);
+		z = cos(theta);
+
+		return;
+	}
 	
 	static inline float ang_diff(float v11, float v12, float v13, float v21, float v22, float v23, int& mirror) {
 		float v = v11*v21+v12*v22+v13*v23;
@@ -924,9 +937,13 @@ public:
 		Notice: the input I use is different from python code, which I think is awkward.
 	*/
 	static int nearest_ang(const vector<float>& vecref, float x, float y, float z);
+	static int nearest_ang_f(const vector<vector<float> >& vecref, float x, float y, float z);
 
 	/* Assign projection angles to nearest reference projections */
 	static vector<int> assign_projangles(const vector<float>& projangles, const vector<float>& refangles); 
+
+	/* Assign projection angles to nearest reference projections  using getfvec*/
+	static vector<int> assign_projangles_f(const vector<vector<float> >& projangles, const vector<vector<float> >& refangles); 
 
 	/* Assign howmany projection angles to the nearest reference projection */
 	static vector<int> nearestk_to_refdir(const vector<float>& projangles, const vector<float>& refangles, const int howmany); 

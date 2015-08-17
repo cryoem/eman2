@@ -5024,6 +5024,21 @@ def sali3d_base(stack, ref_vol = None, Tracker = None, mpi_comm = None, log = No
 		log.add("Finish sali3d_base, nsoft = %1d"%nsoft)
 	return params
 
+
+# MUST RETURN
+# import sys
+# sys.path.insert(0, "~/EMAN2/bin")
+# sys.path.insert(0, "~/EMAN2/lib")
+# print 
+# print sys.path
+# print
+# import development
+# reload(development)
+# from development import sali3d_base_h_01
+# 
+# sali3d_base = sali3d_base_h_01
+
+
 def slocal_ali3d_base(stack, templatevol, Tracker, mpi_comm = None, log= None, chunk = -1.0, debug = False ):
 	"""
 
