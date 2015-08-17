@@ -144,7 +144,247 @@ def AI( Tracker, HISTORY ):
 						Tracker["xr"] = "%d"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
 				elif(Tracker["state"] == "RESTRICTED"):
 					#switch to the next phase if restricted searches make no sense anymore
-					#  The next sadly repeats what is in the function that launches refinement, but I do nto know how to do it better.
+					#  The next sadly repeats what is in the function that launches refinement, but I do not know how to do it better.
+					sh = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
+					rd = int(Tracker["constants"]["radius"] * sh +0.5)
+					rl = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
+					dd = degrees(atan(0.5/rl/rd))
+					if( Tracker["anger"]  < dd ):  move_up_phase = True
+					else:
+						Tracker["xr"] = "%d"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
+						Tracker["an"] = "%f"%Tracker["anger"]
+						Tracker["ts"] = "1"
+				else:
+					Tracker["anger"]   = -1.0
+					Tracker["shifter"] = -1.0
+
+			#  Resolution stalled
+			elif( direction == 0 ):
+				if Tracker["constants"]["pwreference"] :
+					if Tracker["PWadjustment"] :
+						# move up with the state
+						move_up_phase = True
+					else:
+						# turn on pwadjustment
+						Tracker["PWadjustment"] = Tracker["constants"]["pwreference"]
+						if(Tracker["state"] == "EXHAUSTIVE"):
+								xr = int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1
+								Tracker["zoom"] = True
+								Tracker["xr"] = "%d  %d"%(2*xr, xr)
+								Tracker["ts"] = "%d  %d"%(min(2*xr,2),1)
+						elif(Tracker["state"] == "RESTRICTED"):
+								xr = int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1
+								Tracker["zoom"] = True
+								Tracker["xr"] = "%d  %d"%(2*xr, xr)
+								Tracker["ts"] = "%d  %d"%(min(2*xr,2),1)
+								Tracker["an"] =  "%6.2f  %6.2f"%(2*Tracker["anger"],2*Tracker["anger"])					
+						keepgoing = 1
+				elif( Tracker["state"] == "FINAL2"):  keepgoing = 0
+				else:
+					# move up with the state
+					move_up_phase = True
+				Tracker["constants"]["best"] = Tracker["mainiteration"]
+	
+			# Resolution decreased
+			elif( direction < 1 ):
+				# Come up with rules
+				lb = -1
+				for i in xrange(len(HISTORY)):
+					if( HISTORY[i]["mainiteration"] == Tracker["constants"]["best"] ):
+						lb = i
+						break
+				if( lb == -1 ):
+					ERROR("No best solution in HISTORY, cannot be","sxmeridien",1)
+					exit()
+				#  Here we have to jump over the current state
+				#  However, how to avoid cycling between two states?
+				Tracker["movedback"] = True
+				stt = [Tracker["state"], Tracker["PWadjustment"], Tracker["mainiteration"] ]
+				Tracker = HISTORY[lb].copy()
+				Tracker["state"]          = stt[0]
+				Tracker["PWadjustment"]   = stt[1]
+				Tracker["mainiteration"]  = stt[2]
+				Tracker["icurrentres"]    = Tracker["ireachedres"]
+				#  This will set previousoutputdir to the best parames back then.
+				move_up_phase = True
+				
+	
+	
+		if move_up_phase:
+
+			#  INITIAL
+			if(Tracker["state"] == "INITIAL"):
+				#  Switch to EXHAUSTIVE
+				nxinit = Tracker["nxinit"]
+				while( Tracker["ireachedres"] + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
+				Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
+				Tracker["icurrentres"] = Tracker["ireachedres"]
+				Tracker["nsoft"]       = 0
+				Tracker["local"]       = False
+				Tracker["zoom"]        = False
+				Tracker["saturatecrit"]= 0.95
+				if not Tracker["applyctf"] :  reset_data  = True
+				Tracker["applyctf"]    = True
+				#  Switch to exhaustive
+				Tracker["upscale"]     = 0.5
+				Tracker["state"]       = "EXHAUSTIVE"
+				Tracker["maxit"]       = 50
+				#  Develop something intelligent
+				Tracker["xr"] = "%d"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
+				Tracker["ts"] = "1"
+				keepgoing = 1
+			#  Exhaustive searches
+			elif(Tracker["state"] == "EXHAUSTIVE"):
+				#  Switch to RESTRICTED
+				nxinit = Tracker["nxinit"]
+				while( Tracker["ireachedres"] + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
+				Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
+				Tracker["icurrentres"] = Tracker["ireachedres"]
+				Tracker["nsoft"]       = 0
+				Tracker["local"]       = False
+				Tracker["zoom"]        = False
+				Tracker["saturatecrit"]= 0.95
+				if Tracker["applyctf"] :  reset_data  = True
+				Tracker["upscale"]     = 0.5
+				Tracker["applyctf"]    = True
+				Tracker["an"]          = "%f"%(Tracker["anger"]*1.25)
+				Tracker["state"]       = "RESTRICTED"
+				Tracker["maxit"]       = 50
+				Tracker["xr"] = "%d"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
+				Tracker["ts"] = "1"
+				keepgoing = 1
+			#  Restricted searches
+			elif(Tracker["state"] == "RESTRICTED"):
+				#  Switch to LOCAL
+				nxinit = Tracker["nxinit"]
+				while( Tracker["ireachedres"] + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
+				Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
+				Tracker["icurrentres"] = Tracker["ireachedres"]
+				Tracker["nsoft"]       = 0
+				Tracker["local"]       = True
+				Tracker["zoom"]        = False
+				Tracker["saturatecrit"]= 0.95
+				if Tracker["applyctf"] :  reset_data  = True
+				Tracker["upscale"]     = 0.5
+				Tracker["applyctf"]    = False
+				Tracker["an"]          = "-1"
+				Tracker["state"]       = "LOCAL"
+				Tracker["maxit"]       = 10
+				Tracker["xr"] = "2"
+				Tracker["ts"] = "2"
+				keepgoing = 1
+			#  Local searches
+			elif(Tracker["state"] == "LOCAL"):
+				#  Switch to FINAL1
+				Tracker["nxinit"] = Tracker["constants"]["nnxo"]
+				Tracker["icurrentres"] = Tracker["ireachedres"]
+				Tracker["nsoft"]       = 0
+				Tracker["local"]       = True
+				Tracker["zoom"]        = False
+				Tracker["saturatecrit"]= 0.99
+				if Tracker["applyctf"] :  reset_data  = True
+				Tracker["applyctf"]    = False
+				Tracker["upscale"]     = 0.5
+				Tracker["an"]          = "-1"
+				Tracker["state"]       = "FINAL1"
+				Tracker["maxit"]       = 1
+				Tracker["xr"] = "2"
+				Tracker["ts"] = "2"
+				keepgoing = 1
+			elif(Tracker["state"] == "FINAL1"):
+				#  Switch to FINAL2
+				Tracker["nxinit"] = Tracker["constants"]["nnxo"]
+				Tracker["icurrentres"] = Tracker["ireachedres"]
+				Tracker["nsoft"]       = 0
+				Tracker["local"]       = True
+				Tracker["zoom"]        = False
+				if Tracker["applyctf"] :  reset_data  = True
+				Tracker["upscale"]     = 1.0
+				Tracker["applyctf"]    = False
+				Tracker["an"]          = "-1"
+				Tracker["state"]       = "FINAL2"
+				Tracker["maxit"]       = 1
+				Tracker["xr"] = "2"
+				Tracker["ts"] = "2"
+				keepgoing = 1
+			elif(Tracker["state"] == "FINAL2"):
+				keepgoing = 0
+			else:
+				ERROR(" Unknown phase","sxmeridien",1)
+				exit()  #  This will crash the program, but the situation cannot occur
+
+	Tracker["previousoutputdir"] = Tracker["directory"]
+	return keepgoing, reset_data, Tracker
+
+def AI_restrict_shifts( Tracker, HISTORY ):
+	#  
+	#  Possibilities we will consider:
+	#    1.  resolution improved: keep going with current settings.
+	#    2.  resolution stalled and no pwadjust: turn on pwadjust
+	#    3.  resolution stalled and pwadjust: move to the next phase
+	#    4.  resolution decreased: back off and move to the next phase
+	#    5.  All phases tried and nxinit < nnxo: set nxinit == nnxo and run local searches.
+	from sys import exit
+	reset_data = False
+	Tracker["delpreviousmax"] = False
+	#  The initial iteration was done matching to the initial structure with maxit 50
+	if(Tracker["mainiteration"] > 0):
+		#  Each case needs its own settings.  We arrived here after soft at initial window size.
+		#  Possibilities we will consider:
+		#    1.  resolution improved: keep going with current settings.
+		#    2.  resolution stalled and no pwadjust: turn on pwadjust
+		#    3.  resolution stalled and pwadjust: move to the next phase
+		#    4.  resolution decreased: back off and move to the next phase
+		#    5.  All phases tried and nxinit < nnxo: set nxinit == nnxo and run local searches.
+		if( Tracker["state"] == "INITIAL" ):
+			move_up_phase = True
+			#  Switch immediately to nxinit such that imposed shift limit is at least one
+			#  If shift limit is zero, switch to restricted searches with a small delta and full size
+			if( Tracker["constants"]["restrict_shifts"] == 0 ):
+				Tracker["state"] == "EXHAUSTIVE"
+			else:
+				nxinit = 2
+		else:
+			#  For all other states make a decision based on resolution change
+			direction = Tracker["ireachedres"] - Tracker["icurrentres"]
+			if Tracker["movedback"] :
+				# previous move was back, but the resolution did not improve
+				if direction <= 0 :
+					if Tracker["constants"]["pwreference"] :
+						if Tracker["PWadjustment"] :
+							keepgoing = 0
+						else:
+							Tracker["PWadjustment"] = Tracker["constants"]["pwreference"]
+							Tracker["movedback"] = False
+							keepgoing = 1
+					else:
+						keepgoing = 0
+				else:
+					#  Resolution improved
+					Tracker["movedback"] = False
+					#  And then continue with normal moves
+
+			move_up_phase = False
+			#  Resolution improved, adjust window size and keep going
+			if(  direction > 0 ):
+				keepgoing = 1
+				if(Tracker["state"] == "FINAL2"):
+					if( Tracker["ireachedres"] + 4 > Tracker["constants"]["nnxo"]): keepgoing = 0
+				else:
+					nxinit = Tracker["nxinit"]
+					while( Tracker["ireachedres"] + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
+					Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
+				Tracker["icurrentres"] = Tracker["ireachedres"]
+				Tracker["constants"]["best"] = Tracker["mainiteration"]
+
+				if(Tracker["state"] == "EXHAUSTIVE"):
+					#  Move up if changes in angles are less than 30 degrees (why 30??  It should depend on symmetry)
+					if(Tracker["anger"]   < 30.0 ):  move_up_phase = True
+					else:
+						Tracker["xr"] = "%d"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
+				elif(Tracker["state"] == "RESTRICTED"):
+					#switch to the next phase if restricted searches make no sense anymore
+					#  The next sadly repeats what is in the function that launches refinement, but I do not know how to do it better.
 					sh = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
 					rd = int(Tracker["constants"]["radius"] * sh +0.5)
 					rl = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
@@ -872,6 +1112,7 @@ def main():
 	#parser.add_option("--npad",    		type="int",    default= 2,			help="padding size for 3D reconstruction (default=2)")
 	#parser.add_option("--nsoft",    	     type="int",    default= 0,			help="Use SHC in first phase of refinement iteration (default=0, to turn it on set to 1)")
 	parser.add_option("--startangles",      action="store_true", default=False,	help="Use orientation parameters in the input file header to jumpstart the procedure")
+	parser.add_option("--restrict_shifts",  type="int",    default= -1,			help="Restrict initial searches for translation [unit - original size pixel] (default=-1, no restriction)")
 	parser.add_option("--smear",            action="store_true", default=False,	help="Use rotational smear")
 	parser.add_option("--sausage",          action="store_true", default=False,	help="Sausage-making filter")
 
@@ -926,6 +1167,7 @@ def main():
 	Constants["pwreference"]  = options.pwreference
 	Constants["smear"]        = options.smear
 	Constants["sausage"]      = options.sausage
+	Constants["restrict_shifts"] = options.restrict_shifts
 	Constants["CTF"]          = options.CTF
 	Constants["ref_a"]        = options.ref_a
 	Constants["snr"]          = 1.0
@@ -989,8 +1231,6 @@ def main():
 	if(myid == main_node):
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print(line,"INITIALIZATION OF MERIDIEN")
-
-
 
 		a = get_im(orgstack)
 		nnxo = a.get_xsize()
@@ -1161,8 +1401,12 @@ def main():
 	if( Tracker["nxinit"] > Tracker["constants"]["nnxo"] ):
 			ERROR("Resolution of initial volume at the range of Nyquist frequency for given window and pixel sizes","sxmeridien",1, myid)
 
-	#  Here we need an algorithm to set things correctly
-	Tracker["xr"] , Tracker["ts"] = stepali(Tracker["nxinit"] , Tracker["constants"]["nnxo"], Tracker["constants"]["radius"])
+	if( Tracker["constants"]["restrict_shifts"] == -1 ):
+		#  Here we need an algorithm to set things correctly
+		Tracker["xr"] , Tracker["ts"] = stepali(Tracker["nxinit"] , Tracker["constants"]["nnxo"], Tracker["constants"]["radius"])
+	else:
+		Tracker["xr"] = int( Tracker["constants"]["restrict_shifts"] * float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]) +0.5)
+		Tracker["ts"] = 1
 	Tracker["previousoutputdir"] = initdir
 	subdict( Tracker, {"zoom":True} )
 
@@ -1317,11 +1561,10 @@ def main():
 				volf = 0.5*(get_im(os.path.join(Tracker["directory"] ,"vol0.hdf"))+get_im(os.path.join(Tracker["directory"] ,"vol0.hdf")))
 			else:  volf = model_blank(Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 			
-			volf = do_volume_mrk01(volf, Tracker, mainiteration, mpi_comm = MPI_COMM_WORLD)
-			#mpi_comm = MPI_COMM_WORLD
-			#ref_data = [volf, Tracker, mainiteration, mpi_comm]
-			#user_func = Tracker["constants"] ["user_func"]
-			#volf = user_func(ref_data)
+			#volf = do_volume_mrk01(volf, Tracker, mainiteration, mpi_comm = MPI_COMM_WORLD)
+			ref_data = [volf, Tracker, mainiteration, MPI_COMM_WORLD]
+			user_func = Tracker["constants"] ["user_func"]
+			volf = user_func(ref_data)
 
 			if(myid == main_node):
 				fpol(volf, Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"] ,"volf.hdf"))
@@ -1373,7 +1616,8 @@ def main():
 
 		# Update HISTORY
 		HISTORY.append(Tracker.copy())
-		keepgoing, reset_data, Tracker = AI( Tracker, HISTORY )
+		if( Tracker["constants"]["restrict_shifts"] == -1 ):  keepgoing, reset_data, Tracker = AI( Tracker, HISTORY )
+		else:  keepgoing, reset_data, Tracker = AI_restrict_shifts( Tracker, HISTORY )
 
 		if( keepgoing == 1 ):
 			if reset_data :  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
