@@ -12,14 +12,14 @@ def main():
 
 	parser.add_argument("--starfile",help="""The _autopick.star file you wish to convert to .box format""",required=True,type=str)
 	parser.add_argument("--boxsize",help="""Specify the boxsize for each particle.""",required=True,type=int)
-	parser.add_argument("--noclobber",help="""If specified, this program will not overwrite existing box files.""",action="store_true",default=False)
+	#parser.add_argument("--noclobber",help="""If specified, this program will not overwrite existing box files.""",action="store_true",default=False)
 
 	(options, args) = parser.parse_args()
 
 	boxfile = options.starfile.replace('_autopick.star','.box')
 	bs = int(options.boxsize / 2)
 
-	if options.noclobber and os.path.isfile(boxfile):
+	if os.path.isfile(boxfile):
 		print("The file {} already exists. It will not be overwritten.".format(boxfile))
 		sys.exit(1)
 
@@ -31,6 +31,7 @@ def main():
 	hdr = [l.split()[0] for l in lines if '_' in l][2:]
 	xind = [i for i,x in enumerate(hdr) if x == '_rlnCoordinateX'][0]
 	yind = [i for i,x in enumerate(hdr) if x == '_rlnCoordinateY'][0]
+	
 	data = filter(None,[l.split() for l in lines if '_' not in l if l != '\n'])
 	coords = [[l[xind],l[yind]] for l in data]
 
