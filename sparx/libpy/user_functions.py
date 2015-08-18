@@ -875,7 +875,7 @@ def do_volume_mrk02(ref_data):
 	from mpi            import mpi_comm_rank, MPI_COMM_WORLD
 	from filter         import filt_table
 	from reconstruction import recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
-	from utilities      import bcast_EMData_to_all
+	from utilities      import bcast_EMData_to_all, bcast_number_to_all, model_blank
 	from fundamentals import rops_table, fftip, fft
 	import types
 
@@ -892,9 +892,11 @@ def do_volume_mrk02(ref_data):
 	# print "Type of mpi_comm %s" % (type(mpi_comm))
 	
 	if(mpi_comm == None):  mpi_comm = MPI_COMM_WORLD
-	myid = mpi_comm_rank(mpi_comm)
+	myid  = mpi_comm_rank(mpi_comm)
+	nproc = mpi_comm_size(mpi_comm)
 	
-
+	try:  local_filter = Tracker["local_filter"]
+	except:  local_filter = False
 	#=========================================================================
 	# volume reconstruction
 	if( type(data) == types.ListType ):
@@ -947,10 +949,14 @@ def do_volume_mrk02(ref_data):
 				for i in xrange(len(ro)):  ro[i] *= \
 				  (1.0+0.3*exp(-(((i/y/Tracker["constants"]["pixel_size"])-0.12)/0.025)**2)+0.2*exp(-(((i/y/Tracker["constants"]["pixel_size"])-0.22)/0.025)**2))
 
-			if( type(Tracker["lowpass"]) == types.ListType ):
-				vol = fft( filt_table( filt_table(vol, Tracker["lowpass"]), ro) )
+			if local_filter:
+				# skip low-pass filtration
+				vol = fft( filt_table( vol, ro) )
 			else:
-				vol = fft( filt_table( filt_tanl(vol, Tracker["lowpass"], Tracker["falloff"]), ro) )
+				if( type(Tracker["lowpass"]) == types.ListType ):
+					vol = fft( filt_table( filt_table(vol, Tracker["lowpass"]), ro) )
+				else:
+					vol = fft( filt_table( filt_tanl(vol, Tracker["lowpass"], Tracker["falloff"]), ro) )
 			del ro
 		else:
 			if Tracker["constants"]["sausage"]:
@@ -963,16 +969,38 @@ def do_volume_mrk02(ref_data):
 				fftip(vol)
 				filt_table(vol, ro)
 				del ro
-			if( type(Tracker["lowpass"]) == types.ListType ):
-				vol = filt_table(vol, Tracker["lowpass"])
-			else:
-				vol = filt_tanl(vol, Tracker["lowpass"], Tracker["falloff"])
+			if not local_filter:
+				if( type(Tracker["lowpass"]) == types.ListType ):
+					vol = filt_table(vol, Tracker["lowpass"])
+				else:
+					vol = filt_tanl(vol, Tracker["lowpass"], Tracker["falloff"])
 			if Tracker["constants"]["sausage"]: vol = fft(vol)
+
+	if local_filter:
+		from morphology import binarize
+		if(myid == 0): nx = mask3D.get_xsize()
+		else:  nx = 0
+		nx = bcast_number_to_all(nx, source_node = 0)
+		if(myid == 0):  mask = binarize(mask3D, 0.5)
+		else:  mask = model_blank(nx,nx,nx)
+		bcast_EMData_to_all(mask, myid, 0, comm=mpi_comm)
+		#  only main processor needs the two input volumes
+		if(myid == 0):
+			locres = get_im(Tracker["local_filter"])
+		else:
+			locres = model_blank(1,1,1)
+			vol = model_blank(1,1,1)
+		from filter import filterlocal
+		vol = filterlocal( locres, vol, mask, Tracker["falloff"], myid, main_node, nproc)
+
+
+
+	if myid == 0:
 		stat = Util.infomask(vol, mask3D, False)
 		vol -= stat[0]
 		Util.mul_scalar(vol, 1.0/stat[1])
 		vol = threshold(vol)
-		vol = filt_btwl(vol, 0.38, 0.5)
+		vol = filt_btwl(vol, 0.38, 0.5)#  This will have to be corrected.
 		Util.mul_img(vol, mask3D)
 		del mask3D
 		# vol.write_image('toto%03d.hdf'%iter)

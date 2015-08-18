@@ -411,7 +411,6 @@ def AI_restrict_shifts( Tracker, HISTORY ):
 						# turn on pwadjustment
 						Tracker["PWadjustment"] = Tracker["constants"]["pwreference"]
 						if(Tracker["state"] == "EXHAUSTIVE"):
-								xr = int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1
 								Tracker["zoom"] = False
 								Tracker["xr"] = "%d"%(int(Tracker["constants"]["restrict_shifts"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]) +0.5))
 								Tracker["ts"] = "1"
@@ -1122,6 +1121,7 @@ def main():
 	#parser.add_option("--nsoft",    	     type="int",    default= 0,			help="Use SHC in first phase of refinement iteration (default=0, to turn it on set to 1)")
 	parser.add_option("--startangles",      action="store_true", default=False,	help="Use orientation parameters in the input file header to jumpstart the procedure")
 	parser.add_option("--restrict_shifts",  type="int",    default= -1,			help="Restrict initial searches for translation [unit - original size pixel] (default=-1, no restriction)")
+	parser.add_option("--local_filter",     action="store_true", default=False,	help="Use local filtration (Default generic tangent filter)")
 	parser.add_option("--smear",            action="store_true", default=False,	help="Use rotational smear")
 	parser.add_option("--sausage",          action="store_true", default=False,	help="Sausage-making filter")
 
@@ -1177,6 +1177,7 @@ def main():
 	Constants["smear"]        = options.smear
 	Constants["sausage"]      = options.sausage
 	Constants["restrict_shifts"] = options.restrict_shifts
+	Constants["local_filter"] = options.local_filter
 	Constants["CTF"]          = options.CTF
 	Constants["ref_a"]        = options.ref_a
 	Constants["snr"]          = 1.0
@@ -1209,6 +1210,7 @@ def main():
 	Tracker["zoom"]           = True
 	Tracker["nsoft"]          = 0
 	Tracker["local"]          = False
+	Tracker["local_filter"]   = False
 	Tracker["PWadjustment"]   = ""
 	Tracker["upscale"]        = 0.5
 	Tracker["applyctf"]       = True  #  Should the data be premultiplied by the CTF.  Set to False for local continuous.
@@ -1472,6 +1474,39 @@ def main():
 
 		#mpi_finalize()
 		#exit()
+		if Tracker["local_filter"]:
+			doit, keepchecking = checkstep(os.path.join(Tracker["previousoutputdir"],"locres.hdf"), keepchecking, myid, main_node)
+			if  doit:
+				#  Compute local resolution volume
+				from statistics import locres
+				if( myid == main_node):
+					vi = get_im(os.path.join(Tracker["previousoutputdir"] ,"vol0.hdf"))
+					if( Tracker["nxinit"] != Tracker["constants"]["nnxo"] ):
+						vi = Util.window(rot_shift3D(vi,scale=float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])),Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
+				else:  vi = model_blank(Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
+				if( myid == main_node):
+					ui = get_im(os.path.join(Tracker["previousoutputdir"] ,"vol1.hdf"))
+					if( Tracker["nxinit"] != Tracker["constants"]["nnxo"] ):
+						ui = Util.window(rot_shift3D(ui,scale=float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])),Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
+				else:  ui = model_blank(Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
+				if( myid == main_node):
+					if(Tracker["constants"]["mask3D"] is None):
+						mask = model_circle(int(Tracker["constants"]["radius"]*Tracker["nxinit"]/float(Tracker["constants"]["nnxo"])+0.5),Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
+					else:
+						mask = get_im(Tracker["constants"]["mask3D"])
+						if( Tracker["nxinit"] != Tracker["constants"]["nnxo"] ):
+							mask =  Util.window(rot_shift3D(mask,scale=float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])),Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
+							mask = binarize(mask, 0.5)
+				else:
+					mask = model_blank(Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
+				bcast_EMData_to_all(mask, myid, main_node)
+				wn = max(int(13*Tracker["nxinit"]/304. + 0.5), 5)
+				wn += (1-wn%2)  #  make sure the size is odd
+				freqvol, resolut = locres(vi, ui, mask, model_blank(wn,wn,wn,1.0), 0.5, 1, myid, main_node, nproc)
+				del ui, vi, mask
+				if( myid == main_node):
+					freqvol.write_image(os.path.join(Tracker["previousoutputdir"] ,"locres.hdf"))
+				del freqvol, resolut
 
 		#print("RACING  A ",myid)
 		outvol = [os.path.join(Tracker["previousoutputdir"],"vol%01d.hdf"%procid) for procid in xrange(2)]

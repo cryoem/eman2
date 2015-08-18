@@ -1957,9 +1957,9 @@ def locres(vi, ui, m, kern, cutoff, step, myid, main_node, number_of_proc):
 	from morphology import square_root
 	
 
-	nx = vi.get_xsize()
-	ny = vi.get_ysize()
-	nz = vi.get_zsize()
+	nx = m.get_xsize()
+	ny = m.get_ysize()
+	nz = m.get_zsize()
 
 	mc = model_blank(nx,ny,nz,1.0)-m
 
