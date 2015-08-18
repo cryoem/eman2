@@ -60,10 +60,11 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 
 	parser.add_argument("--normproj",action="store_true",help="Normalize the projections resulting from 'project', such that the length of each vector is 1",default=False)
 	parser.add_argument("--normcomponent",action="store_true",help="Normalize the dot product for each component of the output vector. If the basis spans the input vector, then the projected vector length will be 1, otherwise it will be less than 1.",default=False)
-	parser.add_argument("--normalize",type=str,help="Normalize the input images using the named processor. Specify None to disable.",default="normalize.unitlen")
+	parser.add_argument("--normalize",type=str,help="Normalize the input images using the named processor. Specify 'tomean' for mean-based scaling. Specify None to disable.",default="normalize.unitlen")
 	parser.add_argument("--maskfile","-M",type=str,help="File containing a mask to apply to the particles before normalization", default=None)
 	parser.add_argument("--mean1",action="store_true",help="Indicates that the first image in the basis set is actually the mean image, which should be subtracted prior to projection. Output from e2msa requires this flag.")
 	parser.add_argument("--recalcmean",action="store_true",help="This will recompute the mean from the input set and subtract before projection. Useful if a different normalization is used than in the original basis file.")
+	parser.add_argument("--txtout",action="store_true",help="Output will be a multicolumn text file suitable for plotting")
 	parser.add_argument("--oneout",action="store_true",help="Output is a single 2-D image rather than a set of 1-D images",default=False)
 	parser.add_argument("--nbasis","-n",type=int,help="Will use the first n basis images from the input, excluding the mean if present",default=-1)
 
@@ -106,6 +107,7 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 	
 	# Project an image stack into a basis subspace
 	if args[0]=="project" :
+		if options.txtout : tout=file(args[3],"w")
 		# normalize the basis vectors to unit length
 		for b in basis: b.process_inplace("normalize.unitlen")
 		
@@ -158,7 +160,9 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 			for i in range(n):
 				im=EMData(args[2],i)
 				if maskfile!=None : im*=maskfile
-				if options.normalize!=None:
+				if options.normalize=="tomean":
+					im.process_inplace("normalize.toimage",{"to":mean,"ignore_zero":1})
+				elif options.normalize!=None:
 					try: im.process_inplace(options.normalize)
 					except: print "Warning: Normalization failed"
 				if mean!=None : im-=mean
@@ -176,7 +180,12 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 					for j in range(len(basis)): proj[j,0]/=l
 					
 				proj["isvector"]=1
-				proj.write_image(args[3],i)
+				if options.txtout: 
+					tl=["%1.5g"%proj[j] for j in xrange(proj["nx"])]
+					tout.write("\t".join(tl))
+					tout.write("\n")
+				else : proj.write_image(args[3],i)
+
 
 	
 	# Project rotated images into a basis subspace
