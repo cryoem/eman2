@@ -39,26 +39,6 @@ import sys
 from e2simmx import cmponetomany
 import traceback
 
-def read_helix(filename,sx,sy,sz,ax,ay,az):
-	print "Reading helix atoms from pdb file..."
-	points = []
-	pdbfile = open(filename, "r")
-	lines = pdbfile.readlines()
-	pdbfile.close()
-	nhlx=0
-	# Read atoms
-	for line in (i for i in lines if i.startswith("HELIX  ")):
-		atomid=[int(line[21:27].strip()), int(line[33:38].strip())]
-		for atline in (i for i in lines if i.startswith("ATOM  ")):
-			cn=int(atline[22:30].strip())
-			if cn>=atomid[0] and cn<=atomid[1]:
-				if atline[13:15]=="CA":
-					pos = (float(atline[30:38].strip())/ax+sx/2, float(atline[38:46].strip())/ay+sy/2, float(atline[46:54].strip())/az+sz/2)#,nhlx)
-					points.append( pos)
-		nhlx+=1
-	
-	return points
-
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog <input volume> [options] 
@@ -80,7 +60,9 @@ def main():
 	parser.add_argument("--shifttocenter", action="store_true", help="Shift the output pdb to center of the density map")
 	parser.add_argument("--helixfile", default=None, type=str, help="Start with existing secondary structure.")
 	parser.add_argument("--edgefile", default=None, type=str, help="Write an edge file for pathwalker.py. Only avaliable while using existing secondary structures.")
-	
+	parser.add_argument("--sym", default="c1", type=str, help="Symmetry of the target complex. Note the number of segment is per unit.")
+	parser.add_argument("--asymunit", action="store_true", help="Write points of only one asymmetrical unit.")
+
 	
 	(options, args) = parser.parse_args()
 
@@ -102,7 +84,17 @@ def main():
 		sx=0
 		sy=0
 		sz=0
-	print sx,sy,sz
+	#print sx,sy,sz
+	
+	sym=options.sym.lower()
+	if sym=="c1":
+		pass
+	else:	# now just mask a piece of asymmetrical unit out
+		msk=volume.process("mask.asymunit",{"au":1, "sym":sym})
+		volume.mult(msk)
+		volume.process_inplace("mask.dust3d",{"threshold":0,"voxels":10})
+		volume.process_inplace("mask.dust3d",{"threshold":volume["mean_nonzero"]+volume["sigma_nonzero"],"voxels":100})
+		volume.write_image("asym.hdf")
 	
 	if options.helixfile!=None:
 		helix=read_helix(options.helixfile,sx,sy,sz,volume["apix_x"],volume["apix_y"],volume["apix_z"])
@@ -145,6 +137,24 @@ def main():
 		out.close()
 		#print centers
 		
+	if sym!="c1" and not options.asymunit:	# duplicate the points accroding to the symmetry
+		#from IPython import embed
+		tr=Transform()
+		p=PointArray()
+		c=[]
+		sz=volume.get_xsize()
+		apix=volume["apix_x"]
+		for i in centers:
+			for j in i:
+				c.append((j-sz/2.0))
+			c.append(0)
+		p.set_from(c)
+		#embed()
+		p2=PointArray()
+		p2.set_from(p,sym)
+		n=p2.get_number_points()
+		centers=[p2.get_vector_at(i)+sz/2.0 for i in range(n)]
+
 		
 	# write output
 	if options.chimeraout : write_chimera_markers(options.chimeraout,centers,seg["apix_x"],seg["apix_y"],seg["apix_z"],seg["apix_x"]*3)
@@ -171,7 +181,7 @@ def write_chimera_markers(filename,centers,apix_x,apix_y,apix_z,marker_size=3.0)
 	
 def write_pdb_markers(filename,centers,apix_x,apix_y,apix_z,sx,sy,sz):
 	"""Writes a set of coordinates into a pseudo-PDB file"""
-	print sx,sy,sz
+	#print sx,sy,sz
 	try: 
 		out=file(filename,"w")
 		for j,c in enumerate(centers) :
@@ -180,6 +190,26 @@ def write_pdb_markers(filename,centers,apix_x,apix_y,apix_z,sx,sy,sz):
 	except:
 		traceback.print_exc()
 		print "\n---------------\nFailed to write PDB output file, check permissions, etc"
+
+def read_helix(filename,sx,sy,sz,ax,ay,az):
+	print "Reading helix atoms from pdb file..."
+	points = []
+	pdbfile = open(filename, "r")
+	lines = pdbfile.readlines()
+	pdbfile.close()
+	nhlx=0
+	# Read atoms
+	for line in (i for i in lines if i.startswith("HELIX  ")):
+		atomid=[int(line[21:27].strip()), int(line[33:38].strip())]
+		for atline in (i for i in lines if i.startswith("ATOM  ")):
+			cn=int(atline[22:30].strip())
+			if cn>=atomid[0] and cn<=atomid[1]:
+				if atline[13:15]=="CA":
+					pos = (float(atline[30:38].strip())/ax+sx/2, float(atline[38:46].strip())/ay+sy/2, float(atline[46:54].strip())/az+sz/2)#,nhlx)
+					points.append( pos)
+		nhlx+=1
+	
+	return points
 
 if __name__ == "__main__":
 	main()

@@ -746,7 +746,11 @@ void PointArray::set_from(PointArray * source, const string & sym, Transform *tr
 
 void PointArray::set_from(double *src,  int num, const string & sym, Transform *xform)
 {
-	 int nsym = xform->get_nsym(sym);
+	int nsym = xform->get_nsym(sym);
+	if (xform==0){
+		Transform tr;
+		xform=&tr;
+	}
 
 	if (get_number_points() != (size_t)nsym * num)
 		set_number_points((size_t)nsym * num);
