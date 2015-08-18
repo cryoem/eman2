@@ -33,6 +33,7 @@ Author: Jesus Galaz - 02/March/2013, Last update: 02/March/2013
 
 from EMAN2 import *
 import sys
+from sys import argv
 import EMAN2
 import operator
 import random
@@ -92,8 +93,14 @@ def main():
 	
 	
 	if not options.input:
-		print "ERROR: Supply volume(s) through --input=."
-		sys.exit()
+		try:
+			print 'argv[1] is', argv[1]
+			testimg = EMData(argv[1],0,True)
+			options.input = argv[1]
+		except:		
+			#print 'argv[1] is', argv[1]
+			print """\nERROR: Supply volume(s) through --input or as the first argument after the program name. For example, program.py volume.hdf --parameter1=value1 --parameter2=value2... etc."""
+			sys.exit()
 		
 	logger = E2init(sys.argv, options.ppid)
 
@@ -233,7 +240,7 @@ def main():
 			
 			slicemid = ap.get_clip( rmid )
 			slicemid.set_size( nx, ny, 1)
-			slicemid.write_image(options.path + '/' + options.input.replace('.',ptcltag + slicestag + '.'),i)
+			slicemid.write_image(options.path + '/' + os.path.basename( options.input ).replace('.',ptcltag + slicestag + '.'),i)
 		
 		elif not options.onlymidz and not options.onlymidy and not options.onlymidx:
 			app = a.copy()
@@ -274,7 +281,7 @@ def main():
 					print "I have extracted this orthogonal region", regions[kk]
 					slice = app.get_clip(regions[kk])
 					slice.set_size(x,y,1)
-					slice.write_image(options.path + '/' + options.input.replace('.',ptcltag+'_SLICESortho.'),kk)
+					slice.write_image(options.path + '/' + os.path.basename( options.input ).replace('.',ptcltag+'_SLICESortho.'),kk)
 					print "The mean and index are", slice['mean'],kk
 					#k+=1
 				
@@ -282,7 +289,7 @@ def main():
 				print "Generating all z slices"
 				#Tz = Transform({'type':'eman','az':0,'alt':0,'phi':0})
 				
-				outname = options.path + '/' + options.input.replace('.',ptcltag+'_SLICESz.')
+				outname = options.path + '/' + os.path.basename( options.input ).replace('.',ptcltag+'_SLICESz.')
 				os.system('e2proc2d.py ' + options.input + ' ' + outname + ' --threed2twod')
 		
 			if options.allx:
@@ -290,10 +297,10 @@ def main():
 				Tx = Transform({'type':'eman','az':0,'alt':-90,'phi':0})
 				volx = app.copy()
 				volx.transform(Tx)
-				rotvolxname = options.path + '/' + options.input.replace('.', ptcltag+'rotx.')
+				rotvolxname = options.path + '/' + os.path.basename( options.input ).replace('.', ptcltag+'rotx.')
 				volx.write_image(rotvolxname,0)
 			
-				outname = options.path + '/' + options.input.replace('.',ptcltag+'_SLICESx.')
+				outname = options.path + '/' + os.path.basename( options.input ).replace('.',ptcltag+'_SLICESx.')
 			
 				os.system('e2proc2d.py ' + rotvolxname + ' ' + outname + ' --threed2twod')
 		
@@ -302,10 +309,10 @@ def main():
 				Ty = Transform({'type':'eman','az':0,'alt':-90,'phi':-90})
 				voly = app.copy()
 				voly.transform(Ty)
-				rotvolyname = options.path + '/' + options.input.replace('.', ptcltag+'roty.')
+				rotvolyname = options.path + '/' + os.path.basename( options.input ).replace('.', ptcltag+'roty.')
 				voly.write_image(rotvolyname,0)
 			
-				outname = options.path + '/' + options.input.replace('.',ptcltag+'_SLICESy.')
+				outname = options.path + '/' + os.path.basename( options.input ).replace('.',ptcltag+'_SLICESy.')
 			
 				os.system('e2proc2d.py ' + rotvolyname + ' ' + outname + ' --threed2twod')
 			
