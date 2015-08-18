@@ -10,28 +10,35 @@ def main():
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_argument("--starfile",type=str,default=None,help="""The _autopick.star file you wish to convert to .box format""",required=True)
-	parser.add_argument("--boxsize",type=int, help="""Specify the boxsize for each particle.""", required=True)
+	parser.add_argument("--starfile",help="""The _autopick.star file you wish to convert to .box format""",required=True,type=str)
+	parser.add_argument("--boxsize",help="""Specify the boxsize for each particle.""",required=True,type=int)
+	parser.add_argument("--noclobber",help="""If specified, this program will not overwrite existing box files.""",action="store_true",default=False)
 
 	(options, args) = parser.parse_args()
 
-	bf = options.starfile.replace('_autopick.star','.box')
-	bs = int(options.boxsize)
+	boxfile = options.starfile.replace('_autopick.star','.box')
+	bs = int(options.boxsize / 2)
 
-	if os.path.isfile(bf):
-		print("The file {} already exists. Please move or remove it before running this program.".format(bf))
+	if options.noclobber and os.path.isfile(boxfile):
+		print("The file {} already exists. It will not be overwritten.".format(boxfile))
 		sys.exit(1)
 
 	logger = E2init(sys.argv)
 
 	with open(options.starfile) as sf:
-		lns = filter(None,[l.split()[:2] for l in sf if '_' not in l if l != '\n'])
+		lines = sf.readlines()
 
-	with open(bf,'w+') as bf:
-		for ln in lns:
-			x = int(float(ln[0])) - bs / 2
-			y = int(float(ln[1])) - bs / 2
-			bf.write("{}\t{}\t{}\t{}\n".format(x,y,bs,bs))
+	hdr = [l.split()[0] for l in lines if '_' in l][2:]
+	xind = [i for i,x in enumerate(hdr) if x == '_rlnCoordinateX'][0]
+	yind = [i for i,x in enumerate(hdr) if x == '_rlnCoordinateY'][0]
+	data = filter(None,[l.split() for l in lines if '_' not in l if l != '\n'])
+	coords = [[l[xind],l[yind]] for l in data]
+
+	with open(boxfile,'w+') as bf:
+		for coord in coords:
+			x = int(float(coord[0]))
+			y = int(float(coord[1]))
+			bf.write("{}\t{}\t{}\t{}\n".format(x-bs/2,y-bs/2,bs,bs))
 
 	E2end(logger)
 
@@ -39,5 +46,3 @@ def main():
 
 if __name__ == "__main__":
 	main()
-
-#comment
