@@ -1127,13 +1127,27 @@ int Symmetry3D::point_in_which_asym_unit(const Vec3f& p) const
 
 			// We've done a few multiplications, so detect when there are tiny residuals that may throw off the final
 			// decision
+// 			printf("%d, s: %f, t: %f, d: %f\n",i,s,t,d);
 			if (fabs(s) < Transform::ERR_LIMIT ) s = 0;
 			if (fabs(t) < Transform::ERR_LIMIT ) t = 0;
-
-			if ( fabs((fabs(s)-1.0)) < Transform::ERR_LIMIT ) s = 1;
-			if ( fabs((fabs(t)-1.0)) < Transform::ERR_LIMIT ) t = 1;
+			
+			// Edited by Muyuan Chen, 2015-08-19 
+			if ( fabs((fabs(s)-1.0)) < Transform::ERR_LIMIT ){
+				if (s>0)
+					s = 1;
+				else
+					s = -1;
+			}
+			if ( fabs((fabs(t)-1.0)) < Transform::ERR_LIMIT ){
+				if (t>0)
+					t = 1;
+				else
+					t = -1;
+			}
 
 			// The final decision, if this is true then we've hit the jackpot
+			
+			
 			if ( s >= -epsNow && t >= -epsNow && (s+t) <= 1+epsNow ) {
 //				cout << " i " << i << " j " << j << " s " << s  << " t " << t << " s+t " << s+t << endl;
 				return i;
