@@ -872,7 +872,7 @@ def do_volume_mrk02(ref_data):
 		return - volume the same for all cpus
 	"""
 	from EMAN2          import Util
-	from mpi            import mpi_comm_rank, MPI_COMM_WORLD
+	from mpi            import mpi_comm_rank, mpi_comm_size, MPI_COMM_WORLD
 	from filter         import filt_table
 	from reconstruction import recons3d_4nn_MPI, recons3d_4nn_ctf_MPI
 	from utilities      import bcast_EMData_to_all, bcast_number_to_all, model_blank

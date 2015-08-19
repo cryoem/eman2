@@ -338,6 +338,7 @@ def AI_restrict_shifts( Tracker, HISTORY ):
 		#    5.  All phases tried and nxinit < nnxo: set nxinit == nnxo and run local searches.
 		if( Tracker["state"] == "INITIAL" ):
 			move_up_phase = True
+			Tracker["local_filter"] = Tracker["constants"]["local_filter"]
 			#  Switch immediately to nxinit such that imposed shift limit is at least one
 			#  If shift limit is zero, switch to restricted searches with a small delta and full size
 			if( Tracker["constants"]["restrict_shifts"] == 0 ):
@@ -1475,7 +1476,8 @@ def main():
 		#mpi_finalize()
 		#exit()
 		if Tracker["local_filter"]:
-			doit, keepchecking = checkstep(os.path.join(Tracker["previousoutputdir"],"locres.hdf"), keepchecking, myid, main_node)
+			Tracker["local_filter"] = os.path.join(Tracker["previousoutputdir"],"locres.hdf")
+			doit, keepchecking = checkstep(Tracker["local_filter"], keepchecking, myid, main_node)
 			if  doit:
 				#  Compute local resolution volume
 				from statistics import locres
@@ -1505,7 +1507,7 @@ def main():
 				freqvol, resolut = locres(vi, ui, mask, model_blank(wn,wn,wn,1.0), 0.5, 1, myid, main_node, nproc)
 				del ui, vi, mask
 				if( myid == main_node):
-					freqvol.write_image(os.path.join(Tracker["previousoutputdir"] ,"locres.hdf"))
+					freqvol.write_image(Tracker["local_filter"])
 				del freqvol, resolut
 
 		#print("RACING  A ",myid)
