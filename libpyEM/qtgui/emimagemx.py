@@ -888,7 +888,9 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		
 		if self.inspector :
 			self.inspector.set_limits(self.mindeng, self.maxdeng, self.minden, self.maxden)
-
+			self.inspector.update_vals()
+		### just check position and scollbar.
+		self.set_scale(1)
 		if update_gl : self.updateGL()
 
 	def set_den_range(self, x0, x1, update_gl = True) :
@@ -2229,17 +2231,7 @@ class EMImageInspectorMX(QtGui.QWidget):
 		self.valsbut = QtGui.QPushButton("Values")
 		self.valsbut.setMenu(self.vals)
 
-		try:
-			self.vals.clear()
-			vn=self.target().data.get_image_header_keys()
-			vn.sort()
-			for i in vn:
-				action=self.vals.addAction(i)
-				action.setCheckable(1)
-				action.setChecked(0)
-		except Exception, inst:
-			print type(inst)	 # the exception instance
-			print inst.args	  # arguments stored in .args
+		self.update_vals()
 
 		action=self.vals.addAction("Img #")
 		action.setCheckable(1)
@@ -2373,7 +2365,20 @@ class EMImageInspectorMX(QtGui.QWidget):
 		QtCore.QObject.connect(self.bsnapshot, QtCore.SIGNAL("clicked(bool)"), self.snapShot)
 		#QtCore.QObject.connect(self.bnorm, QtCore.SIGNAL("clicked(bool)"), self.setNorm)
 		QtCore.QObject.connect(self.banim, QtCore.SIGNAL("clicked(bool)"), self.animation_clicked)
-
+	
+	def update_vals(self):
+		try:
+			self.vals.clear()
+			vn=self.target().data.get_image_header_keys()
+			vn.sort()
+			for i in vn:
+				action=self.vals.addAction(i)
+				action.setCheckable(1)
+				action.setChecked(0)
+		except Exception, inst:
+			print type(inst)	 # the exception instance
+			print inst.args	  # arguments stored in .args
+	
 	def add_panel(self,widget,name):
 		self.tabwidget.addTab(widget,name)
 
