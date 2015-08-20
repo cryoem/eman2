@@ -987,6 +987,9 @@ def do_volume_mrk02(ref_data):
 		#  only main processor needs the two input volumes
 		if(myid == 0):
 			locres = get_im(Tracker["local_filter"])
+			stat = Util.infomask(vol, mask3D, False)
+			vol -= stat[0]
+			Util.mul_scalar(vol, 1.0/stat[1])
 		else:
 			locres = model_blank(1,1,1)
 			vol = model_blank(1,1,1)
@@ -994,16 +997,22 @@ def do_volume_mrk02(ref_data):
 		vol = filterlocal( locres, vol, mask, Tracker["falloff"], myid, 0, nproc)
 
 
-
-	if myid == 0:
-		stat = Util.infomask(vol, mask3D, False)
-		vol -= stat[0]
-		Util.mul_scalar(vol, 1.0/stat[1])
-		vol = threshold(vol)
-		vol = filt_btwl(vol, 0.38, 0.5)#  This will have to be corrected.
-		Util.mul_img(vol, mask3D)
-		del mask3D
-		# vol.write_image('toto%03d.hdf'%iter)
+		if myid == 0:
+			vol = threshold(vol)
+			vol = filt_btwl(vol, 0.38, 0.5)#  This will have to be corrected.
+			Util.mul_img(vol, mask3D)
+			del mask3D
+			# vol.write_image('toto%03d.hdf'%iter)
+	else:
+		if myid == 0:
+			stat = Util.infomask(vol, mask3D, False)
+			vol -= stat[0]
+			Util.mul_scalar(vol, 1.0/stat[1])
+			vol = threshold(vol)
+			vol = filt_btwl(vol, 0.38, 0.5)#  This will have to be corrected.
+			Util.mul_img(vol, mask3D)
+			del mask3D
+			# vol.write_image('toto%03d.hdf'%iter)
 	# broadcast volume
 	bcast_EMData_to_all(vol, myid, 0, comm=mpi_comm)
 	#=========================================================================
