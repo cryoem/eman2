@@ -991,7 +991,7 @@ def do_volume_mrk02(ref_data):
 			locres = model_blank(1,1,1)
 			vol = model_blank(1,1,1)
 		from filter import filterlocal
-		vol = filterlocal( locres, vol, mask, Tracker["falloff"], myid, main_node, nproc)
+		vol = filterlocal( locres, vol, mask, Tracker["falloff"], myid, 0, nproc)
 
 
 

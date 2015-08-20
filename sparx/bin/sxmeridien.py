@@ -1439,6 +1439,42 @@ def main():
 		#  prepare output directory,  the settings are awkward
 		Tracker["directory"]     = os.path.join(masterdir,"main%03d"%Tracker["mainiteration"])
 
+		#  First deal with the local filter, if required.
+		if Tracker["local_filter"]:
+			Tracker["local_filter"] = os.path.join(Tracker["previousoutputdir"],"locres.hdf")
+			doit, keepchecking = checkstep(Tracker["local_filter"], keepchecking, myid, main_node)
+			if  doit:
+				#  Compute local resolution volume
+				from statistics import locres
+				if( myid == main_node):
+					vi = get_im(os.path.join(Tracker["previousoutputdir"] ,"vol0.hdf"))
+					if( Tracker["nxinit"] != Tracker["constants"]["nnxo"] ):
+						vi = Util.window(rot_shift3D(vi,scale=float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])),Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
+				else:  vi = model_blank(Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
+				if( myid == main_node):
+					ui = get_im(os.path.join(Tracker["previousoutputdir"] ,"vol1.hdf"))
+					if( Tracker["nxinit"] != Tracker["constants"]["nnxo"] ):
+						ui = Util.window(rot_shift3D(ui,scale=float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])),Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
+				else:  ui = model_blank(Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
+				if( myid == main_node):
+					if(Tracker["constants"]["mask3D"] is None):
+						mask = model_circle(int(Tracker["constants"]["radius"]*Tracker["nxinit"]/float(Tracker["constants"]["nnxo"])+0.5),Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
+					else:
+						mask = get_im(Tracker["constants"]["mask3D"])
+						if( Tracker["nxinit"] != Tracker["constants"]["nnxo"] ):
+							mask =  Util.window(rot_shift3D(mask,scale=float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])),Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
+							mask = binarize(mask, 0.5)
+				else:
+					mask = model_blank(Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
+				bcast_EMData_to_all(mask, myid, main_node)
+				wn = max(int(13*Tracker["nxinit"]/304. + 0.5), 5)
+				wn += (1-wn%2)  #  make sure the size is odd
+				freqvol, resolut = locres(vi, ui, mask, model_blank(wn,wn,wn,1.0), 0.5, 1, myid, main_node, nproc)
+				del ui, vi, mask
+				if( myid == main_node):
+					freqvol.write_image(Tracker["local_filter"])
+				del freqvol, resolut
+
 		if(myid == main_node):
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			print(line,"MAIN ITERATION  #%2d   %s  nxinit, icurrentres, resolution  %d   %d  %f"%\
@@ -1475,40 +1511,6 @@ def main():
 
 		#mpi_finalize()
 		#exit()
-		if Tracker["local_filter"]:
-			Tracker["local_filter"] = os.path.join(Tracker["previousoutputdir"],"locres.hdf")
-			doit, keepchecking = checkstep(Tracker["local_filter"], keepchecking, myid, main_node)
-			if  doit:
-				#  Compute local resolution volume
-				from statistics import locres
-				if( myid == main_node):
-					vi = get_im(os.path.join(Tracker["previousoutputdir"] ,"vol0.hdf"))
-					if( Tracker["nxinit"] != Tracker["constants"]["nnxo"] ):
-						vi = Util.window(rot_shift3D(vi,scale=float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])),Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
-				else:  vi = model_blank(Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
-				if( myid == main_node):
-					ui = get_im(os.path.join(Tracker["previousoutputdir"] ,"vol1.hdf"))
-					if( Tracker["nxinit"] != Tracker["constants"]["nnxo"] ):
-						ui = Util.window(rot_shift3D(ui,scale=float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])),Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
-				else:  ui = model_blank(Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
-				if( myid == main_node):
-					if(Tracker["constants"]["mask3D"] is None):
-						mask = model_circle(int(Tracker["constants"]["radius"]*Tracker["nxinit"]/float(Tracker["constants"]["nnxo"])+0.5),Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
-					else:
-						mask = get_im(Tracker["constants"]["mask3D"])
-						if( Tracker["nxinit"] != Tracker["constants"]["nnxo"] ):
-							mask =  Util.window(rot_shift3D(mask,scale=float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])),Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
-							mask = binarize(mask, 0.5)
-				else:
-					mask = model_blank(Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
-				bcast_EMData_to_all(mask, myid, main_node)
-				wn = max(int(13*Tracker["nxinit"]/304. + 0.5), 5)
-				wn += (1-wn%2)  #  make sure the size is odd
-				freqvol, resolut = locres(vi, ui, mask, model_blank(wn,wn,wn,1.0), 0.5, 1, myid, main_node, nproc)
-				del ui, vi, mask
-				if( myid == main_node):
-					freqvol.write_image(Tracker["local_filter"])
-				del freqvol, resolut
 
 		#print("RACING  A ",myid)
 		outvol = [os.path.join(Tracker["previousoutputdir"],"vol%01d.hdf"%procid) for procid in xrange(2)]
