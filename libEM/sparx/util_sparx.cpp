@@ -19158,7 +19158,33 @@ EMData* Util::fast_3d_box_convolution(EMData *input_volume, int window_size) {
 	int ny = input_volume->get_ysize();
 	int nz = input_volume->get_zsize();
 	int total_size = nx*ny*nz;
-	
+
+/*
+
+
+functions  sumstep(in, double psam, k, step)
+
+	for i in xrange(beg,end,step):
+		psam = psam - in[(i-k-1)*step] + in[(i+k)*step]
+		ou[i*step]=psam
+
+	return ou
+
+#  Initialize psam to the sum of first (2*k+1) elements
+ou = sumstep(in, double psam, k, 1)
+if(ny>1):
+	#  Initialize psam to the sum of first (2*k+1) elements with step nx
+	ou = sumstep(in, double psam, k, nx)
+if(nz>1):
+	#  Initialize psam to the sum of first (2*k+1) elements with step nx*ny
+	ou = sumstep(in, double psam, k, nx*ny)
+
+#  ou is the desired result
+
+*/
+
+
+
 	const int number_of_dimensions = 3;
 
 	int dimension_step[number_of_dimensions] = {1, nx, nx*ny};
