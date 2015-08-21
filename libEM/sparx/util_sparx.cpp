@@ -19164,7 +19164,7 @@ EMData* Util::fast_3d_box_convolution(EMData *input_volume, int window_size) {
 
 functions  sumstep(in, double psam, k, step)
 
-	for i in xrange(beg,end,step):
+	for i in xrange(beg,end):
 		psam = psam - in[(i-k-1)*step] + in[(i+k)*step]
 		ou[i*step]=psam
 
