@@ -1439,7 +1439,7 @@ def main():
 		#  prepare output directory,  the settings are awkward
 		Tracker["directory"]     = os.path.join(masterdir,"main%03d"%Tracker["mainiteration"])
 
-		#  First deal with the local filter, if required.
+		#  First deal with local filter, if required.
 		if Tracker["local_filter"]:
 			Tracker["local_filter"] = os.path.join(Tracker["previousoutputdir"],"locres.hdf")
 			doit, keepchecking = checkstep(Tracker["local_filter"], keepchecking, myid, main_node)
@@ -1469,7 +1469,7 @@ def main():
 				bcast_EMData_to_all(mask, myid, main_node)
 				wn = max(int(13*Tracker["nxinit"]/304. + 0.5), 5)
 				wn += (1-wn%2)  #  make sure the size is odd
-				freqvol, resolut = locres(vi, ui, mask, model_blank(wn,wn,wn,1.0), 0.5, 1, myid, main_node, nproc)
+				freqvol, resolut = locres(vi, ui, mask, wn, 0.5, 1, myid, main_node, nproc)
 				del ui, vi, mask
 				if( myid == main_node):
 					freqvol.write_image(Tracker["local_filter"])
