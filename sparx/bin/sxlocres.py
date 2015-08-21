@@ -79,7 +79,7 @@ def main():
 		main_node = 0
 		cutoff = options.cutoff
 
-		np = int(options.wn)
+		nk = int(options.wn)
 
 		if(myid == main_node):
 			#print sys.argv
@@ -106,7 +106,7 @@ def main():
 
 
 		if len(args) == 3:
-			m = model_circle((min(nx,ny,nz)-wn)//2,nx,ny,nz)
+			m = model_circle((min(nx,ny,nz)-nk)//2,nx,ny,nz)
 			outvol = args[2]
 		
 		elif len(args) == 4:
@@ -132,10 +132,10 @@ def main():
 		ui = get_im(args[1])
 
 		nn = vi.get_xsize()
-		wn = int(options.wn)
+		nk = int(options.wn)
 	
 		if len(args) == 3:
-			m = model_circle((nn-wn)//2,nn,nn,nn)
+			m = model_circle((nn-nk)//2,nn,nn,nn)
 			outvol = args[2]
 		
 		elif len(args) == 4:
