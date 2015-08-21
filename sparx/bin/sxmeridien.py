@@ -1438,6 +1438,12 @@ def main():
 		Tracker["mainiteration"] = mainiteration
 		#  prepare output directory,  the settings are awkward
 		Tracker["directory"]     = os.path.join(masterdir,"main%03d"%Tracker["mainiteration"])
+		if(myid == main_node):
+			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			print(line,"MAIN ITERATION  #%2d   %s  nxinit, icurrentres, resolution  %d   %d  %f"%\
+				(Tracker["mainiteration"], Tracker["state"],Tracker["nxinit"],  Tracker["icurrentres"], \
+				Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["icurrentres"])))
+			print(line,"  mainoutputdir  previousoutputdir  ",Tracker["directory"], Tracker["previousoutputdir"])
 
 		#  First deal with local filter, if required.
 		if Tracker["local_filter"]:
@@ -1474,14 +1480,9 @@ def main():
 				if( myid == main_node):
 					freqvol.write_image(Tracker["local_filter"])
 				del freqvol, resolut
+				mpi_barrier(MPI_COMM_WORLD)
 
 		if(myid == main_node):
-			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(line,"MAIN ITERATION  #%2d   %s  nxinit, icurrentres, resolution  %d   %d  %f"%\
-				(Tracker["mainiteration"], Tracker["state"],Tracker["nxinit"],  Tracker["icurrentres"], \
-				Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["icurrentres"])))
-			print(line,"  mainoutputdir  previousoutputdir  ",Tracker["directory"], Tracker["previousoutputdir"])
-
 			if keepchecking:
 				if(os.path.exists(Tracker["directory"] )):
 					doit = 0
