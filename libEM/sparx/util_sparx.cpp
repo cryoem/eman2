@@ -24477,6 +24477,7 @@ float Util::local_inner_product(EMData* image1, EMData* image2, int lx, int ly, 
 EMData* Util::box_convolution(EMData* img, int w)
 {
 	ENTERFUNC;
+	std::vector<float> wheel(w);
 	long double Psum;
 	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
 	int i,j,k;
@@ -24485,38 +24486,64 @@ EMData* Util::box_convolution(EMData* img, int w)
 	float *img_ptr  = img->get_data();
 	float *img2_ptr = img2->get_data();
 	int n = w/2;
-	for (size_t i=0;i<size;++i)           img2_ptr[i] = img_ptr[i];
+	for (size_t i=0;i<n+1;++i)  img2_ptr[i] = img_ptr[i];
+	for (size_t i=size-n-1;i<size;++i)  img2_ptr[i] = img_ptr[i];
 
+	Psum = 0.0f;
 	for (size_t i=0;i<w;++i)   Psum += img_ptr[i];
 	img2_ptr[n] = Psum;
 	for (size_t i=n+1;i<size-n;++i)  {
-		Psum += (img_ptr[i-n-1]-img_ptr[i+n]);
+		Psum += (img_ptr[i+n] - img_ptr[i-n-1]);
 		img2_ptr[i] = Psum;
 	}
 	//  For 2D transpose slices
 	if( ny > 1 ) {
-		for (size_t k=0;i<nz;++k) {
+		for (size_t k=0;k<nz;++k) {
 			for (size_t j=1;j<ny;++j) {
 				for (size_t i=0;i<j;++i) std::swap( img2_ptr(i,j,k), img2_ptr(j,i,k) );
 			}
 		}
 		// line convolution in place
+		for (size_t i=0;i<w;++i)  wheel[i] = 0.0f;
+		Psum = 0.0f;
+		for (size_t i=0;i<w;++i)   Psum += img2_ptr[i];
+		wheel[n] = Psum;
+		for (size_t i=n+1;i<size-n;++i)  {
+			Psum += (img2_ptr[i+n] - img2_ptr[i-n-1]);
+			wheel[i%w] = Psum;
+			img2_ptr[i-n-1] = wheel[(i-n-1)%w];
+		}
+		for (size_t i=size-n-1;i<size;++i) img2_ptr[i-n-1] = wheel[(i-n-1)%w];
+		// Reverse transpose
+		for (size_t k=0;k<nz;++k) {
+			for (size_t j=1;j<ny;++j) {
+				for (size_t i=0;i<j;++i) std::swap( img2_ptr(i,j,k), img2_ptr(j,i,k) );
+			}
+		}
+		// 3D
 		if( nz > 1 ) {
-			for (size_t i=0;i<nx;++k) {
-				for (size_t j=1;j<ny;++j) {
-					for (size_t k=0;k<j;++i) std::swap( img2_ptr(i,j,k), img2_ptr(i,k,j) );
+			//  For 3D transpose blades
+			for (size_t j=0;j<ny;++j) {
+				for (size_t i=1;i<nx;++i) {
+					for (size_t k=0;k<i;++k) std::swap( img2_ptr(i,j,k), img2_ptr(k,j,i) );
 				}
 			}
 			// line convolution in place
-			for (size_t i=0;i<nx;++k) {
-				for (size_t j=1;j<ny;++j) {
-					for (size_t k=0;k<j;++i) std::swap( img2_ptr(i,j,k), img2_ptr(i,k,j) );
-				}
+			for (size_t i=0;i<w;++i)  wheel[i] = 0.0f;
+			Psum = 0.0f;
+			for (size_t i=0;i<w;++i)   Psum += img2_ptr[i];
+			wheel[n] = Psum;
+			for (size_t i=n+1;i<size-n;++i)  {
+				Psum += (img2_ptr[i+n] - img2_ptr[i-n-1]);
+				wheel[i%w] = Psum;
+				img2_ptr[i-n-1] = wheel[(i-n-1)%w];
 			}
-		}
-		for (size_t k=0;i<nz;++k) {
-			for (size_t j=1;j<ny;++j) {
-				for (size_t i=0;i<j;++i) std::swap( img2_ptr(i,j,k), img2_ptr(j,i,k) );
+			for (size_t i=size-n-1;i<size;++i) img2_ptr[i-n-1] = wheel[(i-n-1)%w];
+			// Reverse transpose
+			for (size_t j=0;j<ny;++j) {
+				for (size_t i=1;i<nx;++i) {
+					for (size_t k=0;k<i;++k) std::swap( img2_ptr(i,j,k), img2_ptr(k,j,i) );
+				}
 			}
 		}
 	}
