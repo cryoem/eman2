@@ -79,9 +79,8 @@ def main():
 		main_node = 0
 		cutoff = options.cutoff
 
-		wn = int(options.wn)
+		np = int(options.wn)
 
-		kern = model_blank(wn,wn,wn,1.0)
 		if(myid == main_node):
 			#print sys.argv
 			vi = get_im(sys.argv[1])
@@ -119,7 +118,7 @@ def main():
 		bcast_EMData_to_all(m, myid, main_node)
 
 		from statistics import locres
-		freqvol, resolut = locres(vi, ui, m, kern, cutoff, options.step, myid, main_node, number_of_proc)
+		freqvol, resolut = locres(vi, ui, m, nk, cutoff, options.step, myid, main_node, number_of_proc)
 		if(myid == 0):
 			freqvol.write_image(outvol)
 			if(options.fsc != None): write_text_row(resolut, options.fsc)
@@ -134,9 +133,6 @@ def main():
 
 		nn = vi.get_xsize()
 		wn = int(options.wn)
-
-		kern = model_blank(wn,wn,wn,1.0)
-
 	
 		if len(args) == 3:
 			m = model_circle((nn-wn)//2,nn,nn,nn)
@@ -172,8 +168,6 @@ def main():
 			dp = Util.infomask(tmp3,m,True)[0]
 			resolut.append([i,(fl+fh)/2.0, dp/do])
 
-
-			nk = kern.get_xsize()
 			tmp1 = Util.box_convolution(tmp1, nk)
 			tmp2 = Util.box_convolution(tmp2, nk)
 			tmp3 = Util.box_convolution(tmp3, nk)

@@ -1946,7 +1946,7 @@ def fsc_mask(img1, img2, mask = None, w = 1.0, filename=None):
 	return fsc((img1-s1[0])*mask, (img2-s2[0])*mask, w, filename)
 
 
-def locres(vi, ui, m, kern, cutoff, step, myid, main_node, number_of_proc):
+def locres(vi, ui, m, nk, cutoff, step, myid, main_node, number_of_proc):
 	from mpi 	  	  import mpi_init, mpi_comm_size, mpi_comm_rank, MPI_COMM_WORLD
 	from mpi 	  	  import mpi_reduce, mpi_bcast, mpi_barrier, mpi_gatherv, mpi_send, mpi_recv
 	from mpi 	  	  import MPI_SUM, MPI_FLOAT, MPI_INT, MPI_TAG_UB
@@ -2008,10 +2008,6 @@ def locres(vi, ui, m, kern, cutoff, step, myid, main_node, number_of_proc):
 			dis = [freq, 1.0]
 
 
-		#tmp1 = rsconvolution(tmp1, kern)
-		#tmp2 = rsconvolution(tmp2, kern)
-		#tmp3 = rsconvolution(tmp3, kern)
-		nk = kern.get_xsize()
 		tmp1 = Util.box_convolution(tmp1, nk)
 		tmp2 = Util.box_convolution(tmp2, nk)
 		tmp3 = Util.box_convolution(tmp3, nk)
