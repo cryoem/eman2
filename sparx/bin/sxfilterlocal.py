@@ -77,7 +77,7 @@ def main():
 			#print sys.argv
 			vi = get_im(sys.argv[1])
 			ui = get_im(sys.argv[2])
-			print   Util.infomask(ui, None, True)
+			#print   Util.infomask(ui, None, True)
 			radius = options.radius
 			nx = vi.get_xsize()
 			ny = vi.get_ysize()
