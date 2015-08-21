@@ -19159,32 +19159,6 @@ EMData* Util::fast_3d_box_convolution(EMData *input_volume, int window_size) {
 	int nz = input_volume->get_zsize();
 	int total_size = nx*ny*nz;
 
-/*
-
-
-functions  sumstep(in, double psam, k, step)
-
-	for i in xrange(beg,end):
-		psam = psam - in[(i-k-1)*step] + in[(i+k)*step]
-		ou[i*step]=psam
-
-	return ou
-
-#  Initialize psam to the sum of first (2*k+1) elements
-ou = sumstep(in, double psam, k, 1)
-if(ny>1):
-	#  Initialize psam to the sum of first (2*k+1) elements with step nx
-	ou = sumstep(in, double psam, k, nx)
-if(nz>1):
-	#  Initialize psam to the sum of first (2*k+1) elements with step nx*ny
-	ou = sumstep(in, double psam, k, nx*ny)
-
-#  ou is the desired result
-
-*/
-
-
-
 	const int number_of_dimensions = 3;
 
 	int dimension_step[number_of_dimensions] = {1, nx, nx*ny};
@@ -24494,5 +24468,64 @@ float Util::local_inner_product(EMData* image1, EMData* image2, int lx, int ly, 
 	return lip/sqrt(nrm1*nrm2);
 }
 #undef img_ptr
+#undef img2_ptr
+
+
+
+#define img2_ptr(i,j,k) img2_ptr[i+(j+(k*ny))*(size_t)nx]
+
+EMData* Util::box_convolution(EMData* img, int w)
+{
+	ENTERFUNC;
+	long double Psum;
+	int nx=img->get_xsize(),ny=img->get_ysize(),nz=img->get_zsize();
+	int i,j,k;
+	size_t size = (size_t)nx*ny*nz;
+	EMData * img2   = img->copy_head();
+	float *img_ptr  = img->get_data();
+	float *img2_ptr = img2->get_data();
+	int n = w/2;
+	for (size_t i=0;i<size;++i)           img2_ptr[i] = img_ptr[i];
+
+	for (size_t i=0;i<w;++i)   Psum += img_ptr[i];
+	img2_ptr[n] = Psum;
+	for (size_t i=n+1;i<size-n;++i)  {
+		Psum += (img_ptr[i-n-1]-img_ptr[i+n]);
+		img2_ptr[i] = Psum;
+	}
+	//  For 2D transpose slices
+	if( ny > 1 ) {
+		for (size_t k=0;i<nz;++k) {
+			for (size_t j=1;j<ny;++j) {
+				for (size_t i=0;i<j;++i) std::swap( img2_ptr(i,j,k), img2_ptr(j,i,k) );
+			}
+		}
+		// line convolution in place
+		if( nz > 1 ) {
+			for (size_t i=0;i<nx;++k) {
+				for (size_t j=1;j<ny;++j) {
+					for (size_t k=0;k<j;++i) std::swap( img2_ptr(i,j,k), img2_ptr(i,k,j) );
+				}
+			}
+			// line convolution in place
+			for (size_t i=0;i<nx;++k) {
+				for (size_t j=1;j<ny;++j) {
+					for (size_t k=0;k<j;++i) std::swap( img2_ptr(i,j,k), img2_ptr(i,k,j) );
+				}
+			}
+		}
+		for (size_t k=0;i<nz;++k) {
+			for (size_t j=1;j<ny;++j) {
+				for (size_t i=0;i<j;++i) std::swap( img2_ptr(i,j,k), img2_ptr(j,i,k) );
+			}
+		}
+	}
+
+
+	img2->update();
+
+	EXITFUNC;
+	return img2;
+}
 #undef img2_ptr
 

@@ -1169,4 +1169,7 @@ public:
 	 * */
 	static std::vector<int> max_clique(std::vector<int> edges);
 
+	static EMData* box_convolution(EMData* img, int w);
+
+
 #endif	//util__sparx_h__
