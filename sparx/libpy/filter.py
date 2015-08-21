@@ -880,7 +880,7 @@ def filterlocal(ui, vi, m, falloff, myid, main_node, number_of_proc):
 	fftip(vi)  #  volume to be filtered
 
 	st = Util.infomask(ui, m, True)
-	
+
 
 	filteredvol = model_blank(nx,ny,nz)
 	cutoff = max(st[2] - 0.01,0.0)

@@ -2008,9 +2008,13 @@ def locres(vi, ui, m, kern, cutoff, step, myid, main_node, number_of_proc):
 			dis = [freq, 1.0]
 
 
-		tmp1 = rsconvolution(tmp1, kern)
-		tmp2 = rsconvolution(tmp2, kern)
-		tmp3 = rsconvolution(tmp3, kern)
+		#tmp1 = rsconvolution(tmp1, kern)
+		#tmp2 = rsconvolution(tmp2, kern)
+		#tmp3 = rsconvolution(tmp3, kern)
+		nk = kern.get_xsize()
+		tmp1 = Util.box_convolution(tmp1, nk)
+		tmp2 = Util.box_convolution(tmp2, nk)
+		tmp3 = Util.box_convolution(tmp3, nk)
 
 		Util.mul_img(tmp1,tmp2)
 

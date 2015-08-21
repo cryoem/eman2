@@ -1463,7 +1463,7 @@ def main():
 						mask = get_im(Tracker["constants"]["mask3D"])
 						if( Tracker["nxinit"] != Tracker["constants"]["nnxo"] ):
 							mask =  Util.window(rot_shift3D(mask,scale=float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])),Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
-							mask = binarize(mask, 0.5)
+						mask = binarize(mask, 0.5)
 				else:
 					mask = model_blank(Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
 				bcast_EMData_to_all(mask, myid, main_node)
