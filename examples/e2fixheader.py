@@ -209,7 +209,7 @@ def fixer(fyle, options):
 	
 	refheader = None
 	if options.refheader:
-		refheader = EMData( options.refheader, 0, True )
+		refheader = EMData( options.refheader, 0, True ).get_attr_dict()
 		print "\n(e2fixheader)(fixer) reading --refheader from", options.refheader
 	
 	n = 1
@@ -217,7 +217,7 @@ def fixer(fyle, options):
 		n = EMUtil.get_image_count( fyle )
 	
 	for i in range(n):
-		aux1=aux2=aux3=0
+		aux1=aux2=aux3=aux4=0
 		
 		indx=i
 		if fyle[-4:] == '.hdf' or fyle[-4:] == '.mrcs':
@@ -236,12 +236,20 @@ def fixer(fyle, options):
 		aux2 = 0
 		
 		if options.refheader:
-			imgHdr.set_attr_dict( refheader )
-			if '.hdf' in fyle[-4:]:
-				imgHdr.write_image(fyle,indx,EMUtil.ImageType.IMAGE_HDF,True)
+			if refheader:
+				img = EMData( fyle, indx )
+				img.set_attr_dict( refheader )
 			
-			elif fyle[-4:] in nonhdfformats:
-				imgHdr.write_image(fyle,-1,EMUtil.ImageType.IMAGE_MRC, True, None, EMUtil.EMDataType.EM_SHORT)
+				outfile = fyle
+				if options.output:
+					outfile = options.output 
+			
+				img.write_image( outfile, indx )
+				print "overwriting header of img", indx
+				aux4+=1
+			else:
+				print "ERROR: could not read --refheader", refheader
+		
 		
 		elif not options.refheader:
 		
@@ -366,15 +374,17 @@ def fixer(fyle, options):
 				else:
 					print "Couldn't find any parameters with the stem", options.stem
 	
-	if aux1 !=0:
-		print "Former parameter value changed successfully!"
-	if aux2 !=0:
-		print "A new parameter added successfully!"	
-	if aux3 !=0:
-		print "Stem used successfully to change former parameters!"
-	elif aux1 == 0 and aux2 == 0 and aux3 == 0:
-		print "No parameters seem to have changed."	
-				
+	if aux1 == n:
+		print "\nformer parameter value(s) changed successfully!"
+	if aux2 == n:
+		print "\nnew parameter(s) added successfully!"	
+	if aux3 == n:
+		print "\nstem used successfully to change former parameter(s)!"
+	if aux4 == n:
+		print "\n--refheader copied onto --input"
+	elif aux1 == 0 and aux2 == 0 and aux3 == 0 and aux4 == 0:
+		print "\nno parameter(s) changed."	
+	
 	return	
 
 
