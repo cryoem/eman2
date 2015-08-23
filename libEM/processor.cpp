@@ -1403,19 +1403,30 @@ void KmeansSegmentProcessor::process_inplace(EMData *)
 
 void LinearPyramidProcessor::process_inplace(EMData *image) {
 
-	if (image->get_zsize()!=1) { throw ImageDimensionException("Only 2-D images supported"); }
+//	if (image->get_zsize()!=1) { throw ImageDimensionException("Only 2-D images supported"); }
 
-	float *d=image->get_data();
 	int nx=image->get_xsize();
 	int ny=image->get_ysize();
+	int nz=image->get_zsize();
+	float x0 = params.set_default("x0",nx/2);
+	float y0 = params.set_default("y0",ny/2);
+	float z0 = params.set_default("z0",nz/2);
+	float xwidth = params.set_default("xwidth",nx);
+	float ywidth = params.set_default("ywidth",ny);
+	float zwidth = params.set_default("zwidth",nz);
 
-	for (int y=0; y<ny; y++) {
-		for (int x=0; x<nx; x++) {
-			int l=x+y*nx;
-			d[l]*=1.0f-abs(x-nx/2)*abs(y-ny/2)*4.0f/(nx*ny);
+	for (int z=0; z<nz; z++) {
+		for (int y=0; y<ny; y++) {
+			for (int x=0; x<nx; x++) {
+				float xf=1.0-fabs(x-x0)*2.0/xwidth;
+				float yf=1.0-fabs(y-y0)*2.0/ywidth;
+				float zf=1.0-fabs(z-z0)*2.0/zwidth;
+				float val=0.0;
+				if (xf>0&&yf>0&&zf>0) val=xf*yf*zf;
+				image->mult_value_at_fast(x,y,z,val);
+			}
 		}
 	}
-	image->update();
 }
 
 EMData * Wiener2DAutoAreaProcessor::process(const EMData * image)

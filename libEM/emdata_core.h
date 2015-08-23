@@ -524,6 +524,21 @@ inline void set_value_at(int x, int y, int z, float v)
 }
 
 
+/** Multiplies the pixel density value at coordinates (x,y,z).
+ * The validity of x, y, and z is not checked.
+ * This implementation has no bounds checking.
+ *
+ * @param x The x coordinate.
+ * @param y The y coordinate.
+ * @param z The z coordinate.
+ * @param v The pixel density value at coordinates (x,y,z).
+ */
+inline void mult_value_at_fast(int x, int y, int z, float v)
+{
+	get_data()[(size_t)x + (size_t)y * (size_t)nx + (size_t)z * (size_t)nxy] *= v;
+	update();
+}
+
 /** Set the pixel density value at coordinates (x,y,z).
  * The validity of x, y, and z is not checked.
  * This implementation has no bounds checking.

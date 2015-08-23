@@ -3683,10 +3683,22 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		{
 			return new LinearPyramidProcessor();
 		}
+		
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("x0", EMObject::FLOAT);
+			d.put("y0", EMObject::FLOAT);
+			d.put("z0", EMObject::FLOAT);
+			d.put("xwidth", EMObject::FLOAT);
+			d.put("ywidth", EMObject::FLOAT);
+			d.put("zwidth", EMObject::FLOAT);
+			return d;
+		}
 
 		string get_desc() const
 		{
-			return "Multiplies image by a 'linear pyramid', 1-(|x-xsize/2|*|y-ysize/2|*4/(xsize*ysize))";
+			return "Multiplies image by a 'linear pyramid' in 1-3 dimensions. The origin and total base width of the pyramid can be specified. Default is centered with the total image size.";
 		}
 
 		static const string NAME;
