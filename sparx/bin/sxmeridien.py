@@ -518,7 +518,7 @@ def AI_restrict_shifts( Tracker, HISTORY ):
 				Tracker["applyctf"]    = False
 				Tracker["an"]          = "-1"
 				Tracker["state"]       = "LOCAL"
-				Tracker["maxit"]       = 10
+				Tracker["maxit"]       = 1
 				Tracker["xr"] = "2"
 				Tracker["ts"] = "2"
 				keepgoing = 1
@@ -1438,14 +1438,8 @@ def main():
 		Tracker["mainiteration"] = mainiteration
 		#  prepare output directory,  the settings are awkward
 		Tracker["directory"]     = os.path.join(masterdir,"main%03d"%Tracker["mainiteration"])
-		if(myid == main_node):
-			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(line,"MAIN ITERATION  #%2d   %s  nxinit, icurrentres, resolution  %d   %d  %f"%\
-				(Tracker["mainiteration"], Tracker["state"],Tracker["nxinit"],  Tracker["icurrentres"], \
-				Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["icurrentres"])))
-			print(line,"  mainoutputdir  previousoutputdir  ",Tracker["directory"], Tracker["previousoutputdir"])
 
-		#  First deal with local filter, if required.
+		#  First deal with the local filter, if required.
 		if Tracker["local_filter"]:
 			Tracker["local_filter"] = os.path.join(Tracker["previousoutputdir"],"locres.hdf")
 			doit, keepchecking = checkstep(Tracker["local_filter"], keepchecking, myid, main_node)
@@ -1469,20 +1463,29 @@ def main():
 						mask = get_im(Tracker["constants"]["mask3D"])
 						if( Tracker["nxinit"] != Tracker["constants"]["nnxo"] ):
 							mask =  Util.window(rot_shift3D(mask,scale=float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])),Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
-						mask = binarize(mask, 0.5)
+							mask = binarize(mask, 0.5)
 				else:
 					mask = model_blank(Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
 				bcast_EMData_to_all(mask, myid, main_node)
 				wn = max(int(13*Tracker["nxinit"]/304. + 0.5), 5)
 				wn += (1-wn%2)  #  make sure the size is odd
 				freqvol, resolut = locres(vi, ui, mask, wn, 0.5, 1, myid, main_node, nproc)
-				del ui, vi, mask
+				del ui, vi
 				if( myid == main_node):
+					lowpass = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
+					st = Util.infomask(freqvol, mask, True)
+					freqvol += (lowpass - st[0])
+					print("    Local resolution volume augmented : %5.2f  %5.2f",lowpass,st[0])
 					freqvol.write_image(Tracker["local_filter"])
-				del freqvol, resolut
-				mpi_barrier(MPI_COMM_WORLD)
+				del freqvol, resolut, mask
 
 		if(myid == main_node):
+			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			print(line,"MAIN ITERATION  #%2d   %s  nxinit, icurrentres, resolution  %d   %d  %f"%\
+				(Tracker["mainiteration"], Tracker["state"],Tracker["nxinit"],  Tracker["icurrentres"], \
+				Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["icurrentres"])))
+			print(line,"  mainoutputdir  previousoutputdir  ",Tracker["directory"], Tracker["previousoutputdir"])
+
 			if keepchecking:
 				if(os.path.exists(Tracker["directory"] )):
 					doit = 0
@@ -1617,7 +1620,6 @@ def main():
 
 			if(myid == main_node):
 				fpol(volf, Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"] ,"volf.hdf"))
-			del volf
 
 		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"error_thresholds.txt"), keepchecking, myid, main_node)
 		if  doit:
