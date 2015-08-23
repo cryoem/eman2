@@ -1475,7 +1475,8 @@ def main():
 					lowpass = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
 					st = Util.infomask(freqvol, mask, True)
 					freqvol += (lowpass - st[0])
-					print("    Local resolution volume augmented : %5.2f  %5.2f",lowpass,st[0])
+					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+					print(line,"    Local resolution volume augmented : %5.2f  %5.2f"%(lowpass,st[0]))
 					freqvol.write_image(Tracker["local_filter"])
 				del freqvol, resolut, mask
 
