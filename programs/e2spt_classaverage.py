@@ -539,16 +539,29 @@ def main():
 		classmxFile = options.classmx
 		classmx = EMData.read_images( classmxFile )		# we keep the entire classification matrix in memory, since we need to update it in most cases
 		#ncls = int(classmx[0]["maximum"])
-		ncls = int( classmx[0]['nx'] )	
+		#ncls = int( classmx[0]['nx'] )					#In this program, this will always be 1 for non-goldstandard and 2 for gold standard
+		
+		scoresImg = classmx[0]
 		
 		for ic in range(ncls):
 			resultsforaverage = {}
 	
-			ptclnums = classmx_ptcls( classmx, ic )
+			#ptclnums = classmx_ptcls( classmx, ic )
+			
+			
+			#print "x dimension of classmx file is",  scoresImg['nx']
+			#ptclnums = []
+			#for j in range( scoresImg['nx'] ):				#Loop over the number of classes
+			ptclnums=[]									#each of which starts with no particles in it
+			for i in range( scoresImg['ny'] ):			#Loop over the number of particles
+				score = scoresImg.get_value_at(ic,i)
+				if score:
+					ptclnums.append(i)
 			
 			for indx in ptclnums:
 				
 				score = classmx[0][indx]
+				#classnum = classmx[0][indx]
 				weight = classmx[1][indx]
 				tx = classmx[2][indx]
 				ty = classmx[3][indx]
@@ -557,6 +570,7 @@ def main():
 				alt = classmx[6][indx]
 				phi = classmx[7][indx]
 				scale = classmx[8][indx]
+				#score = classmx[9][indx]
 				
 				alitransform = Transform({'type':'eman','az':az,'alt':alt,'phi':phi,'tx':tx,'ty':ty,'tz':tz})
 				
