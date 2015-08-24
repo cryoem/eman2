@@ -8017,12 +8017,8 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 	mask2D   = model_circle(last_ring, nx, nx) - model_circle(first_ring, nx, nx)
 
 	if myid == main_node:
-		active = EMUtil.get_all_attributes(stack, 'active')
-		list_of_particles = []
-		for im in xrange(len(active)):
-			if(active[im]):  list_of_particles.append(im)
-		del active
-		nima = len(list_of_particles)
+		nima =EMUtil.get_image_count( stack )
+		list_of_particles=range(nima)
 	else:
 		nima = 0
 
