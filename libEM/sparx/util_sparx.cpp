@@ -19158,10 +19158,11 @@ EMData* Util::fast_3d_box_convolution(EMData *input_volume, int window_size) {
 	int nz = input_volume->get_zsize();
 	int total_size = nx*ny*nz;
 
-	const int number_of_dimensions = 1 + (ny>1) + (nz>1);
+	int number_of_dimensions = 1 + (ny>1) + (nz>1);
 
 	int dimension_step_base[3] = {1, nx, nx*ny};
-	int dimension_step[number_of_dimensions];
+//	int dimension_step[number_of_dimensions]; doesn't work on Windows
+	int dimension_step[3];
 	for(int i=0; i<number_of_dimensions; ++i) dimension_step[i] = dimension_step_base[i]; 
 	EMData* output_volume = new EMData();
 	output_volume->set_size(nx, ny, nz);
