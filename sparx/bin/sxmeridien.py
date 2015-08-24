@@ -1640,13 +1640,13 @@ def main():
 				volf = 0.5*(get_im(os.path.join(Tracker["directory"] ,"vol0.hdf"))+get_im(os.path.join(Tracker["directory"] ,"vol0.hdf")))
 				[newlowpass, newfalloff, icurrentres, ares] = read_text_row( os.path.join(Tracker["directory"],"current_resolution.txt") )[0]
 				#  This structure will be calculated without local filter
-				lsave = Tracker["local_filter"]
-				Tracker["local_filter"] = False
 				Tracker["lowpass"] = float(ares)/float(Tracker["nxinit"])
-				Tracker["falloff"] = newfalloff
 			else:
 				volf = model_blank(Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 				newlowpass = 0.0; newfalloff = 0.0; icurrentres = 0; ares = 0
+			lsave = Tracker["local_filter"]
+			Tracker["local_filter"] = False
+			Tracker["falloff"] = newfalloff
 
 			#volf = do_volume_mrk01(volf, Tracker, mainiteration, mpi_comm = MPI_COMM_WORLD)
 			ref_data = [volf, Tracker, mainiteration, MPI_COMM_WORLD]
@@ -1654,9 +1654,9 @@ def main():
 			volf = user_func(ref_data)
 
 			if(myid == main_node):
-				Tracker["local_filter"] = lsave
 				fpol(volf, Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"] ,"volf.hdf"))
 			del volf
+			Tracker["local_filter"] = lsave
 
 		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"error_thresholds.txt"), keepchecking, myid, main_node)
 		if  doit:
