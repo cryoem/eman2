@@ -776,20 +776,19 @@ def get_pixel_resolution(vol, mask, nnxo, fscoutputdir):
 			nfsc[0][i] = float(i)/nnxo
 	write_text_file( nfsc, os.path.join(fscoutputdir,"fsc.txt") )
 	ns = len(nfsc[1])
-	currentres = -1
-	'''
-	#  This is actual resolution, as computed by 2*f/(1+f)
+	#  This is actual resolution, as computed by 2*f/(1+f), should be used for volf
+	ares = -1
 	for i in xrange(1,ns-1):
 		if ( nfsc[1][i] < 0.333333333333333333333333):
-			currentres = nfsc[0][i-1]
+			ares = nfsc[0][i-1]
 			break
-	'''
 	#  0.5 cut-off
+	currentres = -1
 	for i in xrange(1,ns-1):
 		if ( nfsc[1][i] < 0.5):
 			currentres = i
 			break
-	if(currentres < 0):
+	if(currentres < 0 or ares < 0):
 		print("  Something wrong with the resolution, cannot continue")
 		mpi_finalize()
 		exit()
@@ -806,7 +805,7 @@ def get_pixel_resolution(vol, mask, nnxo, fscoutputdir):
 	lowpass = nfsc[0][currentres]
 	falloff = 0.2
 
-	return  round(lowpass,4), round(falloff,4), currentres
+	return  round(lowpass,4), round(falloff,4), currentres, ares
 
 
 def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, nproc):
@@ -874,6 +873,7 @@ def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, npro
 	lowpass    = 0.0
 	falloff    = 0.0
 	icurrentres = 0
+	ares = 0
 
 	if(myid == main_node):
 		if(type(stack) == str or ( nz == 1 )):
@@ -890,16 +890,19 @@ def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, npro
 				for k in xrange(len(fsc[procid][1])):  fsc[procid][-1][k] = 2*fsc[procid][-1][k]/(1.0+fsc[procid][-1][k])
 				write_text_file( fsc[procid], os.path.join(Tracker["directory"],"within-fsc%01d.txt"%procid) )
 
-		lowpass, falloff, icurrentres = get_pixel_resolution(vol, mask, Tracker["constants"]["nnxo"], Tracker["directory"])
+		lowpass, falloff, icurrentres, ares = get_pixel_resolution(vol, mask, Tracker["constants"]["nnxo"], Tracker["directory"])
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(  line,"Current resolution  %6.2f  %6.2f A  (%d), low-pass filter cut-off %6.2f and fall-off %6.2f"%\
-						(icurrentres/float(Tracker["constants"]["nnxo"]),Tracker["constants"]["pixel_size"]*float(Tracker["constants"]["nnxo"])/float(icurrentres),icurrentres,lowpass,falloff))
-		write_text_row([[lowpass, falloff, icurrentres]],os.path.join(Tracker["directory"],"current_resolution.txt"))
+		print(  line,"Current resolution  %6.2f  %6.2f A  (%d @0.5)  (%d @0.33), low-pass filter cut-off %6.2f and fall-off %6.2f"%\
+			(icurrentres/float(Tracker["constants"]["nnxo"]),Tracker["constants"]["pixel_size"]*float(Tracker["constants"]["nnxo"])/float(icurrentres),icurrentres,ares,lowpass,falloff))
+
+		write_text_row([[lowpass, falloff, icurrentres, ares]],os.path.join(Tracker["directory"],"current_resolution.txt"))
+
 	#  Returns: low-pass filter cutoff;  low-pass filter falloff;  current resolution
 	icurrentres = bcast_number_to_all(icurrentres, source_node = main_node)
+	ares        = bcast_number_to_all(ares, source_node = main_node)
 	lowpass     = bcast_number_to_all(lowpass, source_node = main_node)
 	falloff     = bcast_number_to_all(falloff, source_node = main_node)
-	return round(lowpass,4), round(falloff,4), icurrentres
+	return round(lowpass,4), round(falloff,4), icurrentres, ares
 
 
 def getalldata(stack, myid, nproc):
@@ -1472,13 +1475,32 @@ def main():
 				freqvol, resolut = locres(vi, ui, mask, wn, 0.5, 1, myid, main_node, nproc)
 				del ui, vi
 				if( myid == main_node):
-					lowpass = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
-					st = Util.infomask(freqvol, mask, True)
-					freqvol += (lowpass - st[0])
-					line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-					print(line,"    Local resolution volume augmented : %5.2f  %5.2f"%(lowpass,st[0]))
+					#lowpass = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
+					#st = Util.infomask(freqvol, mask, True)
+					#freqvol += (lowpass - st[0])
+					#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+					#print(line,"    Local resolution volume augmented : %5.2f  %5.2f"%(lowpass,st[0]))
 					freqvol.write_image(Tracker["local_filter"])
-				del freqvol, resolut, mask
+				del freqvol, resolut
+
+
+				#  Now prepare locally filtered volumes at 0.333
+				freqvol, resolut = locres(vi, ui, mask, wn, 0.333333333333, 1, myid, main_node, nproc)
+				Tracker["local_filter"] = os.path.join(Tracker["previousoutputdir"],"locres0p3.hdf")
+				if( myid == main_node ):
+					freqvol.write_image(Tracker["local_filter"])
+					volf = 0.5*(get_im(os.path.join(Tracker["previousoutputdir"] ,"vol0.hdf"))+get_im(os.path.join(Tracker["previousoutputdir"] ,"vol0.hdf")))
+				else:
+					volf = model_blank(Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+				del freqvol, resolut
+				ref_data = [volf, Tracker, mainiteration, MPI_COMM_WORLD]
+				user_func = Tracker["constants"] ["user_func"]
+				volf = user_func(ref_data)
+
+				if(myid == main_node):
+					fpol(volf, Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["previousoutputdir"] ,"vllf.hdf"))
+				del volf, mask
+				Tracker["local_filter"] = os.path.join(Tracker["previousoutputdir"],"locres.hdf")
 
 		if(myid == main_node):
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
@@ -1566,7 +1588,7 @@ def main():
 						projdata[procid], oldshifts[procid] = get_shrink_data(Tracker, nxinit,\
 									partids[procid], partstack[procid], myid, main_node, nproc, preshift = False)
 
-				xlowpass, xfalloff, xcurrentres = compute_resolution(projdata, partids, partstack, \
+				xlowpass, xfalloff, xcurrentres, xares = compute_resolution(projdata, partids, partstack, \
 													Tracker, myid, main_node, nproc)
 				if( xcurrentres > (nxinit-cushion)/2 and nxinit < Tracker["constants"]["nnxo"] ):
 					nxinit = Tracker["constants"]["nnxo"]
@@ -1574,7 +1596,7 @@ def main():
 				else:  repeat = False
 
 			#  Make sure these variables are not carried
-			del xlowpass, xfalloff, xcurrentres, nxinit
+			del xlowpass, xfalloff, xcurrentres, xares, nxinit
 			if( myid == main_node):
 				# Carry over chunk information
 				for procid in xrange(2):
@@ -1586,7 +1608,7 @@ def main():
 			#  PRESENTABLE RESULT                <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 			#  Here I have code to generate presentable results.  IDs and params have to be merged and stored and the overall volume computed.
 			if( myid == main_node ):
-				pinids = read_text_file(partids[0]) + read_text_file(partids[1])
+				pinids = read_text_file(partids[0])  + read_text_file(partids[1])
 				params = read_text_row(partstack[0]) + read_text_row(partstack[1])
 
 				assert(len(pinids) == len(params))
@@ -1598,10 +1620,13 @@ def main():
 
 				write_text_file([pinids[i][0] for i in xrange(len(pinids))], os.path.join(Tracker["directory"] ,"indexes.txt"))
 				write_text_row( [pinids[i][1] for i in xrange(len(pinids))], os.path.join(Tracker["directory"] ,"params.txt"))
+				del pinids
 			mpi_barrier(MPI_COMM_WORLD)
+			"""
 			nfsc = read_fsc(os.path.join(Tracker["directory"] ,"fsc.txt"),Tracker["constants"]["nnxo"], myid, main_node)
 			Tracker["lowpass"], Tracker["falloff"] = fit_tanh([[float(i)/Tracker["constants"]["nnxo"] for i in xrange(len(nfsc))],nfsc], 0.01)
 			del nfsc
+			"""
 
 			# The next will have to be decided later, i.e., under which circumstances we should recalculate full size volume.
 			#  Most likely it should be done only when the program terminates.
@@ -1610,17 +1635,27 @@ def main():
 				projdata = getindexdata(Tracker["constants"]["stack"], os.path.join(Tracker["directory"] ,"indexes.txt"), \
 						os.path.join(Tracker["directory"] ,"params.txt"), myid, nproc)
 			"""
-			if( myid == main_node ):\
+			if( myid == main_node ):
 				volf = 0.5*(get_im(os.path.join(Tracker["directory"] ,"vol0.hdf"))+get_im(os.path.join(Tracker["directory"] ,"vol0.hdf")))
-			else:  volf = model_blank(Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
-			
+				[newlowpass, newfalloff, icurrentres, ares] = read_text_row( os.path.join(Tracker["directory"],"current_resolution.txt") )[0]
+				#  This structure will be calculated without local filter
+				lsave = Tracker["local_filter"]
+				Tracker["local_filter"] = False
+				Tracker["lowpass"] = float(ares)/float(Tracker["nxinit"])
+				Tracker["falloff"] = newfalloff
+			else:
+				volf = model_blank(Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+				newlowpass = 0.0; newfalloff = 0.0; icurrentres = 0; ares = 0
+
 			#volf = do_volume_mrk01(volf, Tracker, mainiteration, mpi_comm = MPI_COMM_WORLD)
 			ref_data = [volf, Tracker, mainiteration, MPI_COMM_WORLD]
 			user_func = Tracker["constants"] ["user_func"]
 			volf = user_func(ref_data)
 
 			if(myid == main_node):
+				Tracker["local_filter"] = lsave
 				fpol(volf, Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"] ,"volf.hdf"))
+			del volf
 
 		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"error_thresholds.txt"), keepchecking, myid, main_node)
 		if  doit:
@@ -1649,16 +1684,18 @@ def main():
 
 
 		if( myid == main_node):
-			[newlowpass, newfalloff, icurrentres] = read_text_row( os.path.join(Tracker["directory"],"current_resolution.txt") )[0]
+			[newlowpass, newfalloff, icurrentres, ares] = read_text_row( os.path.join(Tracker["directory"],"current_resolution.txt") )[0]
 		else:
 			newlowpass = 0.0
 			newfalloff = 0.0
 			icurrentres = 0
+			ares = 0
 		newlowpass = bcast_number_to_all(newlowpass, source_node = main_node)
 		newlowpass = round(newlowpass,4)
 		newfalloff = bcast_number_to_all(newfalloff, source_node = main_node)
 		Tracker["falloff"] = round(newfalloff,4)  # For the time being
 		icurrentres = bcast_number_to_all(icurrentres, source_node = main_node)
+		ares = bcast_number_to_all(ares, source_node = main_node)
 
 
 		#mpi_barrier(MPI_COMM_WORLD)

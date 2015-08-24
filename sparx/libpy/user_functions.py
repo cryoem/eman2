@@ -864,7 +864,6 @@ def dovolume( ref_data ):
 	return  vol, cs
 
 
-# def do_volume_mrk01(data, Tracker, iter, mpi_comm = None):
 def do_volume_mrk02(ref_data):
 	"""
 		data - projections (scattered between cpus) or the volume.  If volume, just do the volume processing
@@ -895,7 +894,7 @@ def do_volume_mrk02(ref_data):
 	myid  = mpi_comm_rank(mpi_comm)
 	nproc = mpi_comm_size(mpi_comm)
 	
-	try:  local_filter = Tracker["local_filter"]
+	try:     local_filter = Tracker["local_filter"]
 	except:  local_filter = False
 	#=========================================================================
 	# volume reconstruction
