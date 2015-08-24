@@ -1467,13 +1467,13 @@ def main():
 						mask = get_im(Tracker["constants"]["mask3D"])
 						if( Tracker["nxinit"] != Tracker["constants"]["nnxo"] ):
 							mask =  Util.window(rot_shift3D(mask,scale=float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])),Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
-							mask = binarize(mask, 0.5)
+						mask = binarize(mask, 0.5)
 				else:
 					mask = model_blank(Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
 				bcast_EMData_to_all(mask, myid, main_node)
 				wn = max(int(13*Tracker["nxinit"]/304. + 0.5), 5)
 				wn += (1-wn%2)  #  make sure the size is odd
-				freqvol, resolut = locres(vi, ui, mask, wn, 0.5, 1, myid, main_node, nproc)
+				freqvol, resolut = locres(vi, ui, mask, wn, 0.5, 1.0, myid, main_node, nproc)
 				if( myid == main_node):
 					#lowpass = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
 					#st = Util.infomask(freqvol, mask, True)
@@ -1485,7 +1485,7 @@ def main():
 
 
 				#  Now prepare locally filtered volumes at 0.333
-				freqvol, resolut = locres(vi, ui, mask, wn, 0.333333333333, 1, myid, main_node, nproc)
+				freqvol, resolut = locres(vi, ui, mask, wn, 0.333333333333, 1.0, myid, main_node, nproc)
 				del vi, ui
 				Tracker["local_filter"] = os.path.join(Tracker["previousoutputdir"],"locres0p3.hdf")
 				if( myid == main_node ):
