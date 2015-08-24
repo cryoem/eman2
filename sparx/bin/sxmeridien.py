@@ -344,6 +344,7 @@ def AI_restrict_shifts( Tracker, HISTORY ):
 			if( Tracker["constants"]["restrict_shifts"] == 0 ):
 				Tracker["state"]  = "EXHAUSTIVE"
 				Tracker["nxinit"] = Tracker["constants"]["nnxo"]
+				Tracker["anger"] = 10.0
 			else:
 				Tracker["nxinit"] = max(Tracker["nxinit"],int(1.0/float(Tracker["constants"]["restrict_shifts"])*Tracker["constants"]["nnxo"] + 0.5 ))
 				Tracker["nxinit"] = min(Tracker["constants"]["nnxo"],Tracker["nxinit"]+Tracker["nxinit"]%2)
@@ -780,7 +781,7 @@ def get_pixel_resolution(vol, mask, nnxo, fscoutputdir):
 	ares = -1
 	for i in xrange(1,ns-1):
 		if ( nfsc[1][i] < 0.333333333333333333333333):
-			ares = nfsc[0][i-1]
+			ares = i
 			break
 	#  0.5 cut-off
 	currentres = -1
@@ -1473,7 +1474,6 @@ def main():
 				wn = max(int(13*Tracker["nxinit"]/304. + 0.5), 5)
 				wn += (1-wn%2)  #  make sure the size is odd
 				freqvol, resolut = locres(vi, ui, mask, wn, 0.5, 1, myid, main_node, nproc)
-				del ui, vi
 				if( myid == main_node):
 					#lowpass = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
 					#st = Util.infomask(freqvol, mask, True)
@@ -1486,6 +1486,7 @@ def main():
 
 				#  Now prepare locally filtered volumes at 0.333
 				freqvol, resolut = locres(vi, ui, mask, wn, 0.333333333333, 1, myid, main_node, nproc)
+				del vi, ui
 				Tracker["local_filter"] = os.path.join(Tracker["previousoutputdir"],"locres0p3.hdf")
 				if( myid == main_node ):
 					freqvol.write_image(Tracker["local_filter"])
