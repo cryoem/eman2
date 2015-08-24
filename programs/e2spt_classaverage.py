@@ -218,6 +218,8 @@ def main():
 
 	parser.add_argument("--classmx", type=str, default='', help="""Default=None. The name of the classification matrix specifying how particles in 'input' should be grouped. If omitted, all particles will be averaged.""")
 	
+	parser.add_argument("--recompute",action='store_true',default=False,help="""default=False. This parameter requires --classmx and will recompute averages (for example, even and odd) based on the classmx file and the alignment parameters specified therein for each particle. No refinements will follow. This is exclusively for recomputing averages.""")
+	
 	parser.add_argument("--donotaverage",action="store_true", default=False,help="""Default=False. If e2spt_refinemulti.py is calling e2spt_classaverage.py, the latter need not average any particles, but rather only yield the alignment results.""")
 	
 	parser.add_argument("--ref", type=str, default='', help="""Default=None. Reference image. Used as an initial alignment reference. The refinements are 'gold standard' by default, and therefore two independent copies of the reference will be generated and randomphase-lowpass filtered to the resolution specified through --refrandphase. To turn dataset splitting and gold standard refinement off, supply --goldstandardoff.""", guitype='filebox', browser='EMBrowserWidget(withmodal=True,multiselect=True)', filecheck=False, row=1, col=0, rowspan=1, colspan=3, mode='alignment')
@@ -530,11 +532,64 @@ def main():
 	
 	#C: Read or initialize all classmx images as 2-D EMData files of 2 x N dimensions, where N is the number of particles.
 
+	refsdict = None
+	
 	if options.classmx:
+		print "\n--classmx=",options.classmx
 		classmxFile = options.classmx
 		classmx = EMData.read_images( classmxFile )		# we keep the entire classification matrix in memory, since we need to update it in most cases
 		#ncls = int(classmx[0]["maximum"])
-		ncls = int( classmx[0]['nx'] )		
+		ncls = int( classmx[0]['nx'] )	
+		
+		for ic in range(ncls):
+			resultsforaverage = {}
+	
+			ptclnums = classmx_ptcls( classmx, ic )
+			
+			for indx in ptclnums:
+				
+				score = classmx[0][indx]
+				weight = classmx[1][indx]
+				tx = classmx[2][indx]
+				ty = classmx[3][indx]
+				tz = classmx[4][indx]
+				az = classmx[5][indx]
+				alt = classmx[6][indx]
+				phi = classmx[7][indx]
+				scale = classmx[8][indx]
+				
+				alitransform = Transform({'type':'eman','az':az,'alt':alt,'phi':phi,'tx':tx,'ty':ty,'tz':tz})
+				
+				resultsforaverage.update( { indx:[score,alitransform] } )
+			
+			ret = makeAverage( options, ic, resultsforaverage, 0 )
+			ref = ret[0]
+			#weights = ret[1]
+			
+			refsdict.update({ ic : ref })	
+			
+			if options.recompute:
+				if ic == 0:
+					ref.write_image( options.path + '/recompavg_even.hdf', 0 )
+				elif ic == 1:
+					ref.write_image( options.path + '/recompavg_odd.hdf', 0 )
+			else:
+				if ic == 0:
+					ref.write_image( options.path + '/avgs_even.hdf', 0 )
+				elif ic == 1:
+					ref.write_image( options.path + '/avgs_odd.hdf', 0 )
+			
+		try:
+			refeven = refsdict[0]
+			refodd = refsdict[1]
+		
+			fscfile = options.path + '/recompute_fsc.txt'
+		
+			refsavg = compareEvenOdd( options, refeven, refodd, 2, etc, fscfile, 'initial' ) #We pass on an "iteration number" > 1, that is 2 here, just so that both initial references are preprocessed and treated equally (this is required since --refpreprocessing is off when --ref is supplied 
+		except:
+			print "\nERROR: building initial references from classmx failed!"
+
+			
 	else:
 		options.classmx = classmxFile
 			
@@ -602,7 +657,7 @@ def main():
 			#print "\n(e2spt_classaverage)(main) - Read classmx file and its type are", options.classmx, type(classmx)
 			pass
 			
-		#ptclnums=classmx_ptcls(classmx,ic)				# This gets the list from the classmx
+		#ptclnums = classmx_ptcls(classmx,ic)				# This gets the list from the classmx
 
 		scoresImg = classmx[0]
 		#print "x dimension of classmx file is",  scoresImg['nx']
@@ -624,8 +679,15 @@ def main():
 	
 	#originalOutput = options.output
 	
-	refsdict = sptRefGen( options, ptclnumsdict,cmdwp )
 	
+	if not refsdict:
+		print "\nno classmx provided. Building initial models from scratch"
+		refsdict = sptRefGen( options, ptclnumsdict, cmdwp )
+	
+		if not refsdict:
+			print "\nERROR: failed to build initial models from scratch"
+			sys.exit()
+		
 	if not options.goldstandardoff and ncls > 1 and nptcl > 1:
 		
 		refeven = refsdict[0]
@@ -732,11 +794,17 @@ def main():
 
 			tasks=[]
 			results=[]
+			try:
+				ref = refsdict[ ic ]
+				#if options.parallel: 
+				ref.write_image(os.path.join(options.path,"tmpref.hdf"),0)
+			
+			except:
+				print "reference is empty"
+				print "classmx is", options.classmx
 				
-			ref = refsdict[ ic ]
-			#if options.parallel: 
-			ref.write_image(os.path.join(options.path,"tmpref.hdf"),0)
-
+				sys.exit()
+			
 			# ALL CLIPPING and preprocessing should happen inside the preprocessing function
 			
 			'''
@@ -827,7 +895,16 @@ def main():
 				be the average of the aligned particles
 				'''
 				if nptcl > 1:
-					ret = makeAverage(options, ic,results,it)
+				
+					resultsforaverage = {}
+					for r in results:
+						ptclindx = r[1]
+						score = r[0][0]["score"]
+						alitransform = r[0][0]["xform.align3d"]
+						resultsforaverage.update( { ptclindx:[score,alitransform] } )
+					
+				
+					ret = makeAverage(options, ic,resultsforaverage,it)
 					ref = ret[0]
 					weights = ret[1]
 					
@@ -1425,12 +1502,16 @@ def compareEvenOdd( options, avgeven, avgodd, it, etc, fscfile, tag, average=Tru
 	
 	avgsDict = options.path + '/sptali_ir_' + str(it).zfill( len( str(options.iter))) + '_oddali2even.json'
 	
-	if not average and tag == 'refbased':
-		avgsDict = options.path + '/sptali_ir_' + str(it).zfill( len( str( it ))) + '_avgali2ref.json'
+	if not average: 
+		if tag == 'refbased':
+			avgsDict = options.path + '/sptali_ir_' + str(it).zfill( len( str( it ))) + '_avgali2ref.json'
 	
-	elif tag == 'initial':
-		avgsDict = options.path + '/initialrefs_sptali_ir_oddali2even.json'
-	
+	else:
+		if tag == 'initial':
+			avgsDict = options.path + '/sptali_ir_initialrefs_oddali2even.json'
+		if tag == 'recompute':
+			 options.path + '/sptali_ir_recompute_oddali2even.json'
+			
 	jsAvgs = js_open_dict( avgsDict )
 
 	xformslabel = 'subtomo_0'		
@@ -2699,8 +2780,8 @@ def makeAverage(options,ic,results,it=0):
 	
 	print "(e2pt_classaverage.py)(makeAverage) The results to parse are", 
 	
-	for r in results:
-		print r
+	#for r in results:
+	#	print r
 	
 	#else:
 	
@@ -2715,7 +2796,7 @@ def makeAverage(options,ic,results,it=0):
 	#print "\nresults[0][-1]", results[0][-1]
 	
 	
-	for r in results:
+	for indx in results:
 		#if 'score' in r[0]:
 		#	pass
 		#	#print "\nscore!"
@@ -2730,7 +2811,9 @@ def makeAverage(options,ic,results,it=0):
 		#print "\nr[0]", r[0]
 		#print "\nr[0][0]",r[0][0]
 		#print "score in r[0][0]", 'score' in r[0][0]
-		score = r[0][0]['score']
+		#score = r[0][0]['score']
+		
+		score = results[indx][0]
 		scores.append( score )
 			#vals.append( score )
 				
@@ -2801,17 +2884,20 @@ def makeAverage(options,ic,results,it=0):
 	#for i,ptcl_parms in enumerate(align_parms):
 	
 	ii=0
-	for r in results:
-		ptclindx = r[1]
+	for indx in results:
+		#ptclindx = r[1]
+		ptclindx = indx
 		ptcl = EMData(ptcl_file,ptclindx)
 		weight = 1.0
 		
 		#if r and r[0]:
 		
-		ptcl.process_inplace("xform",{"transform":r[0][0]["xform.align3d"]})
+		#ptcl.process_inplace("xform",{"transform":r[0][0]["xform.align3d"]})
+		ptcl.process_inplace("xform",{"transform":results[indx][1]})
 		#print "I have applied this transform before averaging", ptcl_parms[0]["xform.align3d"]			
-		
-		score = r[0][0]["score"]
+	
+		#score = r[0][0]["score"]
+		score = results[indx][0]
 		print "\n!!!score is", score
 		if score <= thresh:
 			if thresh != 1.0:
@@ -2892,7 +2978,8 @@ def makeAverage(options,ic,results,it=0):
 			ptcl['spt_score'] = score
 		
 			ptcl['xform.align3d'] = Transform()
-			ptcl['xform.align3d'] = r[0][0]["xform.align3d"]
+			#ptcl['xform.align3d'] = r[0][0]["xform.align3d"]
+			ptcl['xform.align3d'] = results[indx][1]
 			
 			#originalindex = i*2
 			#if ic == 1:
@@ -2966,6 +3053,7 @@ def makeAverage(options,ic,results,it=0):
 		print "\nERROR: for class %d in iteration %d failed to compute average (the average is empty)" %(ic,it)
 		sys.exit()
 		return [avg,weights]
+
 
 def get_results(etc,tids,verbose,nptcls,refmethod=''):
 	'''This will get results for a list of submitted tasks. Won't return until it has all requested results.
@@ -3343,7 +3431,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	
 	
 	#########################################
-	#Preprocess the reference or "fixed image"
+	#Preprocess the reference or "fixed image", only if rotate_translate_3d_tree is not used
 	#########################################
 	reffullsize = fixedimage.copy()
 	sfixedimage = fixedimage.copy()
@@ -3373,82 +3461,84 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	print "before refpreprocess, refpreprocess and iter", refpreprocess, iter
 	
 	
+	if 'rotate_translate_3d_tree' not in options.align[0]:	
 	
-	#if 'rotate_translate_3d_tree' not in options.align[0]:	
+		if not refpreprocess:
+			print "\nthere is NO refpreprocess! But an external reference WAS provided, type, len", options.ref
 	
-	if not refpreprocess:
-		print "\nthere is NO refpreprocess! But an external reference WAS provided, type, len", options.ref
-	
-		if options.shrink and int(options.shrink) > 1:
-			print "shrinking sfixedimage BEFORE, iter", sfixedimage['nx'], iter
-			sfixedimage = sfixedimage.process('math.meanshrink',{'n':options.shrink})
-			print "shrinking sfixedimage AFTER, iter", sfixedimage['nx'], iter
+			if options.shrink and int(options.shrink) > 1:
+				print "shrinking sfixedimage BEFORE, iter", sfixedimage['nx'], iter
+				sfixedimage = sfixedimage.process('math.meanshrink',{'n':options.shrink})
+				print "shrinking sfixedimage AFTER, iter", sfixedimage['nx'], iter
 		
 	
-		if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
-			print "there's fine alignment"
-			if options.procfinelikecoarse:
-				print "there's procfinelikecoarse"
-				s2fixedimage = sfixedimage.copy()
+			if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
+				print "there's fine alignment"
+				if options.procfinelikecoarse:
+					print "there's procfinelikecoarse"
+					s2fixedimage = sfixedimage.copy()
 		
-			elif options.shrinkfine and int(options.shrinkfine) > 1:
-				s2fixedimage = s2fixedimage.process('math.meanshrink',{'n':options.shrinkfine})
-				print "shrinking reference for fine alignment!!!!, iter", options.shrinkfine, s2fixedimage['nx'], iter
+				elif options.shrinkfine and int(options.shrinkfine) > 1:
+					s2fixedimage = s2fixedimage.process('math.meanshrink',{'n':options.shrinkfine})
+					print "shrinking reference for fine alignment!!!!, iter", options.shrinkfine, s2fixedimage['nx'], iter
 
-		else:
-			#s2fixedimage = sfixedimage.copy()
-			#s2fixedimage = fixedimage.copy()
-			s2fixedimage = None
+			else:
+				#s2fixedimage = sfixedimage.copy()
+				#s2fixedimage = fixedimage.copy()
+				s2fixedimage = None
 
 
-	elif refpreprocess:
-		print "there is refpreprocess, iter", iter
-		savetag = 'ref'
-		if 'odd' in label or 'even' in label:
-			savetag = ''
+		elif refpreprocess:
+			print "there is refpreprocess, iter", iter
+			savetag = 'ref'
+			if 'odd' in label or 'even' in label:
+				savetag = ''
 		
-		if options.threshold or options.normproc or options.mask or options.preprocess or options.lowpass or options.highpass or int(options.shrink) > 1:
-			#print "\nThere IS refpreprocess!"	
+			if options.threshold or options.normproc or options.mask or options.preprocess or options.lowpass or options.highpass or int(options.shrink) > 1:
+				#print "\nThere IS refpreprocess!"	
 		
-			print "BEFORE preprocessing coarse ref, because there is refpreprocess, size is %d, iter %d" %( sfixedimage['nx'],iter )
-			sfixedimage = preprocessing(sfixedimage,options, refindx, savetag ,'yes',round)
-			print "AFTER preprocessing coarse ref, because there is refpreprocess, size is %d, iter %d" %( sfixedimage['nx'],iter )
+				print "BEFORE preprocessing coarse ref, because there is refpreprocess, size is %d, iter %d" %( sfixedimage['nx'],iter )
+				sfixedimage = preprocessing(sfixedimage,options, refindx, savetag ,'yes',round)
+				print "AFTER preprocessing coarse ref, because there is refpreprocess, size is %d, iter %d" %( sfixedimage['nx'],iter )
 
-		#Only preprocess again if there's fine alignment, AND IF the parameters for fine alignment are different
+			#Only preprocess again if there's fine alignment, AND IF the parameters for fine alignment are different
 		
-		if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
-			#if options.procfinelikecoarse:
-			#	s2fixedimage = sfixedimage.copy()
-			#	print "REFERENCE fine preprocessing is equal to coarse"
+			if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none':
+				#if options.procfinelikecoarse:
+				#	s2fixedimage = sfixedimage.copy()
+				#	print "REFERENCE fine preprocessing is equal to coarse"
 		
-			print "procfinelikecoarse is", options.procfinelikecoarse
+				print "procfinelikecoarse is", options.procfinelikecoarse
 		
-			if options.procfinelikecoarse:
-				s2fixedimage = sfixedimage.copy()
+				if options.procfinelikecoarse:
+					s2fixedimage = sfixedimage.copy()
 		
-			elif options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1:
-				print "BEFORE preprocessing fine ref, because there is refpreprocess, size is %d, iter %d" %( s2fixedimage['nx'],iter)
+				elif options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1:
+					print "BEFORE preprocessing fine ref, because there is refpreprocess, size is %d, iter %d" %( s2fixedimage['nx'],iter)
 
-				s2fixedimage = preprocessing(s2fixedimage,options,refindx, savetag ,'no',round,'fine')
+					s2fixedimage = preprocessing(s2fixedimage,options,refindx, savetag ,'no',round,'fine')
 	
-				print "AFTER preprocessing fine ref, because there is refpreprocess, size is %d, iter %d" %( s2fixedimage['nx'],iter)
+					print "AFTER preprocessing fine ref, because there is refpreprocess, size is %d, iter %d" %( s2fixedimage['nx'],iter)
 
-		else:
-			#s2fixedimage = sfixedimage.copy()
-			#s2fixedimage = fixedimage.copy()	
-			s2fixedimage = None
+			else:
+				#s2fixedimage = sfixedimage.copy()
+				#s2fixedimage = fixedimage.copy()	
+				s2fixedimage = None
 
-	if sfixedimage:
-		print "after all preproc, COARSE ref is of size %d, in iter %d" %( sfixedimage['nx'], iter)
+		if sfixedimage:
+			if options.verbose:
+				print "after all preproc, COARSE ref is of size %d, in iter %d" %( sfixedimage['nx'], iter)
 
-	if s2fixedimage:
-		print "after all preproc, FINE ref is of size %d, in iter %d" %( s2fixedimage['nx'], iter)
+		if s2fixedimage:
+			if options.verbose:
+				print "after all preproc, FINE ref is of size %d, in iter %d" %( s2fixedimage['nx'], iter)
 	
-	if reffullsize:
-		print "after all preproc, REFFULLSIZE is of size %d, in iter %d" %( reffullsize['nx'], iter)
+		if reffullsize:
+			if options.verbose:
+				print "after all preproc, REFFULLSIZE is of size %d, in iter %d" %( reffullsize['nx'], iter)
 
 	#########################################
-	#Preprocess the particle or "moving image"
+	#Preprocess the particle or "moving image", only if rotate_translate_3d_tree is not used
 	#########################################
 	imgfullsize = image.copy()
 	simage = image.copy()
@@ -3477,41 +3567,44 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	
 	
 	
-	#if 'rotate_translate_3d_tree' not in options.align[0]:
+	if 'rotate_translate_3d_tree' not in options.align[0]:
 	
-	if options.threshold or options.normproc or options.mask or options.preprocess or options.lowpass or options.highpass or int(options.shrink) > 1:
+		if options.threshold or options.normproc or options.mask or options.preprocess or options.lowpass or options.highpass or int(options.shrink) > 1:
 
-		#print "\n\n\n\n\n\n\n\n\n\n\nSending moving particle to preprocessing. It's size is", simage['nx'],simage['ny'],simage['nz']
+			#print "\n\n\n\n\n\n\n\n\n\n\nSending moving particle to preprocessing. It's size is", simage['nx'],simage['ny'],simage['nz']
 
-		simage = preprocessing(simage,options,ptclindx, savetagp ,'yes',round)
+			simage = preprocessing(simage,options,ptclindx, savetagp ,'yes',round)
 
-	#print "preprocessed moving particle has size", simage['nx']
+		#print "preprocessed moving particle has size", simage['nx']
 
-	#Only preprocess again if there's fine alignment, AND IF the parameters for fine alignment are different
+		#Only preprocess again if there's fine alignment, AND IF the parameters for fine alignment are different
 
-	#print "options.falign is", options.falign
+		#print "options.falign is", options.falign
 
-	if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none': 
-		if options.procfinelikecoarse:
-			s2image = simage.copy()
-			#print "PARTICLE fine preprocessing is equal to coarse"
-		elif options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1:
-			s2image = preprocessing(s2image,options,ptclindx, savetagp ,'no',round,'fine')
-			#print "There was fine preprocessing"
-		#sys.exit()
-	else:
-		#s2image = simage.copy()
-		#s2image = image.copy()
-		s2image = None
+		if options.falign and options.falign != None and options.falign != 'None' and options.falign != 'none': 
+			if options.procfinelikecoarse:
+				s2image = simage.copy()
+				#print "PARTICLE fine preprocessing is equal to coarse"
+			elif options.preprocessfine or options.lowpassfine or options.highpassfine or int(options.shrinkfine) > 1:
+				s2image = preprocessing(s2image,options,ptclindx, savetagp ,'no',round,'fine')
+				#print "There was fine preprocessing"
+			#sys.exit()
+		else:
+			#s2image = simage.copy()
+			#s2image = image.copy()
+			s2image = None
 
-	if simage:
-		print "after all preproc, COARSE ptcl is of size %d, in iter %d" %( simage['nx'], iter)
+		if simage:
+			if options.verbose:
+				print "after all preproc, COARSE ptcl is of size %d, in iter %d" %( simage['nx'], iter)
 
-	if s2image:
-		print "after all preproc, FINE ptcl is of size %d, in iter %d" %( s2image['nx'], iter)	
+		if s2image:
+			if options.verbose:
+				print "after all preproc, FINE ptcl is of size %d, in iter %d" %( s2image['nx'], iter)	
 	
-	if imgfullsize:
-		print "after all preproc, IMGFULLSIZE is of size %d, in iter %d" %( imgfullsize['nx'], iter)
+		if imgfullsize:
+			if options.verbose:
+				print "after all preproc, IMGFULLSIZE is of size %d, in iter %d" %( imgfullsize['nx'], iter)
 
 	
 	
@@ -3739,7 +3832,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 					
 					reffullsizeali.transform( bestT )
 					
-					alitweak =imgfullsizeali.align('rotate_translate_3d_grid',reffullsizeali,{'phi0':0, 'phi1':1,'dphi':2,'az0':0,'az1':1,'daz':2,'alt0':0,'alt1':1,'dalt':2,'search':tweaksearch},options.faligncmp[0],options.faligncmp[1])
+					alitweak =imgfullsizeali.align('rotate_translate_3d_grid',reffullsizeali,{'phi0':0, 'phi1':tweakrange,'dphi':tweakdelta,'az0':0,'az1':360,'daz':tweakdelta,'alt0':0,'alt1':tweakrange,'dalt':tweakdelta,'search':tweaksearch},options.faligncmp[0],options.faligncmp[1])
 
 				
 					besttweakT = bestT
