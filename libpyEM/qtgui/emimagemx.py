@@ -890,7 +890,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			self.inspector.set_limits(self.mindeng, self.maxdeng, self.minden, self.maxden)
 			self.inspector.update_vals()
 		### just check position and scollbar.
-		self.set_scale(1)
+		self.set_scale(self.scale)
 		if update_gl : self.updateGL()
 
 	def set_den_range(self, x0, x1, update_gl = True) :
