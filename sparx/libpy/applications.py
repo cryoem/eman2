@@ -1960,7 +1960,7 @@ def mref_ali2d(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, y
 	from utilities      import   model_circle, combine_params2, inverse_transform2, drop_image, get_image
 	from utilities	    import   center_2D, get_im, get_params2D, set_params2D
 	from statistics     import   fsc
-	from alignment      import   Numrinit, ringwe, fine_2D_refinement
+	from alignment      import   Numrinit, ringwe, fine_2D_refinement, search_range
 	from fundamentals   import   rot_shift2D, fshift
 	from morphology     import   ctf_2
 	from filter         import   filt_btwl, filt_params
@@ -2060,6 +2060,7 @@ def mref_ali2d(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, y
 		#again = False
 		ringref = []
 		#print "numref",numref
+		mashi = cnx-last_ring-2
 		for j in xrange(numref):
 			refi[j][0].process_inplace("normalize.mask", {"mask":mask, "no_sigma":1})
 			cimage = Util.Polar2Dm(refi[j][0], cnx, cny, numr, mode)
@@ -2091,9 +2092,19 @@ def mref_ali2d(stack, refim, outdir, maskfile=None, ir=1, ou=-1, rs=1, xrng=0, y
 			alphai, sxi, syi, scalei = inverse_transform2(alpha, sx, sy)
 			# normalize
 			data[im].process_inplace("normalize.mask", {"mask":mask, "no_sigma":0})
+			# If shifts are outside of the permissible range, reset them
+			if(abs(sxi)>mashi or abs(syi)>mashi):
+				sxi = 0.0
+				syi = 0.0
+				set_params2D(data[im],[0.0,0.0,0.0,0,1.0])
+			ny = nx
+			txrng = search_range(nx, last_ring, sxi, xrng, "mref_ali2d")
+			txrng = [txrng[1],txrng[0]]
+			tyrng = search_range(ny, last_ring, syi, yrng, "mref_ali2d")
+			tyrng = [tyrng[1],tyrng[0]]
 			# align current image to the reference
 			[angt, sxst, syst, mirrort, xiref, peakt] = Util.multiref_polar_ali_2d(data[im], 
-				ringref, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
+				ringref, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi)
 			iref = int(xiref)
 			# combine parameters and set them to the header, ignore previous angle and mirror
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, int(mirrort))
@@ -2206,7 +2217,7 @@ def mref_ali2d_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrn
 	from utilities      import   send_attr_dict
 	from utilities	    import   center_2D
 	from statistics     import   fsc_mask
-	from alignment      import   Numrinit, ringwe
+	from alignment      import   Numrinit, ringwe, search_range
 	from fundamentals   import   rot_shift2D, fshift
 	from utilities      import   get_params2D, set_params2D
 	from random         import   seed, randint
@@ -2329,6 +2340,7 @@ def mref_ali2d_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrn
 
 	while Iter < max_iter and again:
 		ringref = []
+		mashi = cnx-last_ring-2
 		for j in xrange(numref):
 			refi[j][0].process_inplace("normalize.mask", {"mask":mask, "no_sigma":1}) # normalize reference images to N(0,1)
 			cimage = Util.Polar2Dm(refi[j][0] , cnx, cny, numr, mode)
@@ -2348,9 +2360,19 @@ def mref_ali2d_MPI(stack, refim, outdir, maskfile = None, ir=1, ou=-1, rs=1, xrn
 			alphai, sxi, syi, scalei = inverse_transform2(alpha, sx, sy)
 			# normalize
 			data[im-image_start].process_inplace("normalize.mask", {"mask":mask, "no_sigma":0}) # subtract average under the mask
+			# If shifts are outside of the permissible range, reset them
+			if(abs(sxi)>mashi or abs(syi)>mashi):
+				sxi = 0.0
+				syi = 0.0
+				set_params2D(data[im-image_start],[0.0,0.0,0.0,0,1.0])
+			ny = nx
+			txrng = search_range(nx, last_ring, sxi, xrng, "mref_ali2d_MPI")
+			txrng = [txrng[1],txrng[0]]
+			tyrng = search_range(ny, last_ring, syi, yrng, "mref_ali2d_MPI")
+			tyrng = [tyrng[1],tyrng[0]]
 			# align current image to the reference
 			[angt, sxst, syst, mirrort, xiref, peakt] = Util.multiref_polar_ali_2d(data[im-image_start], 
-				ringref, xrng, yrng, step, mode, numr, cnx+sxi, cny+syi)
+				ringref, txrng, tyrng, step, mode, numr, cnx+sxi, cny+syi)
 			iref = int(xiref)
 			# combine parameters and set them to the header, ignore previous angle and mirror
 			[alphan, sxn, syn, mn] = combine_params2(0.0, -sxi, -syi, 0, angt, sxst, syst, (int)(mirrort))

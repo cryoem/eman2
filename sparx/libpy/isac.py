@@ -845,7 +845,7 @@ def isac_MPI(stack, refim, maskfile = None, outname = "avim", ir=1, ou=-1, rs=1,
 			if(abs(sxi)>mashi or abs(syi)>mashi):
 				sxi = 0.0
 				syi = 0.0
-				set_params2D(refi[j],[0.0,0.0,0.0,0,1.0])
+				set_params2D(alldata[im],[0.0,0.0,0.0,0,1.0])
 			# normalize
 			alldata[im].process_inplace("normalize.mask", {"mask":mask, "no_sigma":0}) # subtract average under the mask
 			ny = nx
