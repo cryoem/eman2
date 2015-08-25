@@ -7929,12 +7929,15 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 	number_of_proc = mpi_comm_size(mpi_comm)
 	myid           = mpi_comm_rank(mpi_comm)
 	main_node = 0
+	if log == None:
+		from logger import Logger
+		log =Logger()
 
 	if os.path.exists(outdir): ERROR('Output directory exists, please change the name and restart the program', "mref_ali3d_MPI ", 1, myid)
 	mpi_barrier(MPI_COMM_WORLD)
 
 	if myid == main_node:	
-		print_begin_msg("mref_ali3d_MPI")
+		print_begin_msg("Kmref_ali3d_MPI")
 		os.mkdir(outdir)
 		import global_def
 		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
