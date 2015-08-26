@@ -987,17 +987,19 @@ def do_volume_mrk02(ref_data):
 			lx = locres.get_xsize()
 			if(lx != nx):
 				if(lx < nx):
+					from fundamentals import fdecimate, rot_shift3D
 					mask = Util.window(rot_shift3D(mask,scale=float(lx)/float(nx)),lx,lx,lx)
-					from fundamentals import fdecimate
 					vol = fdecimate(vol, lx,lx,lx)
 				else:  ERROR("local filter cannot be larger than input volume","user function",1)
 			stat = Util.infomask(vol, mask, False)
 			vol -= stat[0]
 			Util.mul_scalar(vol, 1.0/stat[1])
 		else:
-			mask = model_blank(1,1,1)
+			lx = 0
 			locres = model_blank(1,1,1)
 			vol = model_blank(1,1,1)
+		lx = bcast_number_to_all(lx, source_node = 0)
+		if( myid != 0 ):  mask = model_blank(lx,lx,lx)
 		bcast_EMData_to_all(mask, myid, 0, comm=mpi_comm)
 		from filter import filterlocal
 		vol = filterlocal( locres, vol, mask, Tracker["falloff"], myid, 0, nproc)
