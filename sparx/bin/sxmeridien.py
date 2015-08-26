@@ -104,6 +104,7 @@ def AI( Tracker, HISTORY ):
 		#    5.  All phases tried and nxinit < nnxo: set nxinit == nnxo and run local searches.
 		if( Tracker["state"] == "INITIAL" ):
 			move_up_phase = True
+			Tracker["local_filter"] = Tracker["constants"]["local_filter"]
 		else:
 			#  For all other states make a decision based on resolution change
 			direction = Tracker["ireachedres"] - Tracker["icurrentres"]
