@@ -980,23 +980,30 @@ def do_volume_mrk02(ref_data):
 		if(myid == 0): nx = mask3D.get_xsize()
 		else:  nx = 0
 		nx = bcast_number_to_all(nx, source_node = 0)
-		if(myid == 0):  mask = binarize(mask3D, 0.5)
-		else:  mask = model_blank(nx,nx,nx)
-		bcast_EMData_to_all(mask, myid, 0, comm=mpi_comm)
 		#  only main processor needs the two input volumes
 		if(myid == 0):
+			mask = binarize(mask3D, 0.5)
 			locres = get_im(Tracker["local_filter"])
-			stat = Util.infomask(vol, mask3D, False)
+			lx = locres.get_xsize()
+			if(lx != nx):
+				if(lx < nx):
+					mask = Util.window(rot_shift3D(mask,scale=float(lx)/float(nx)),lx,lx,lx)
+					from fundamentals import fdecimate
+					vol = fdecimate(vol, lx,lx,lx)
+				else:  ERROR("local filter cannot be larger than input volume","user function",1)
+			stat = Util.infomask(vol, mask, False)
 			vol -= stat[0]
 			Util.mul_scalar(vol, 1.0/stat[1])
 		else:
+			mask = model_blank(1,1,1)
 			locres = model_blank(1,1,1)
 			vol = model_blank(1,1,1)
+		bcast_EMData_to_all(mask, myid, 0, comm=mpi_comm)
 		from filter import filterlocal
 		vol = filterlocal( locres, vol, mask, Tracker["falloff"], myid, 0, nproc)
 
-
 		if myid == 0:
+			if(lx < nx):  vol = fpol(vol, nx,nx,nx)
 			vol = threshold(vol)
 			vol = filt_btwl(vol, 0.38, 0.5)#  This will have to be corrected.
 			Util.mul_img(vol, mask3D)
@@ -1015,13 +1022,6 @@ def do_volume_mrk02(ref_data):
 	# broadcast volume
 	bcast_EMData_to_all(vol, myid, 0, comm=mpi_comm)
 	#=========================================================================
-	
-	# # NOTE: 2015/07/13 Toshio Moriya
-	# # There is no center flag for now. Do we need to return dummy value?
-	# cs = [0.0]*3 
-	# 
-	# return vol, cs
-
 	return vol
 
 
