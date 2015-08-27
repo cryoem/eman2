@@ -7257,6 +7257,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 		os.mkdir(outdir)
 		import global_def
 		global_def.LOGFILE =  os.path.join(outdir, global_def.LOGFILE)
+		log.add("Equal Kmeans-modified K-means  ")
 	mpi_barrier(MPI_COMM_WORLD)
 
 	from time import time	
@@ -7300,33 +7301,33 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 	if (myid == main_node):
 		import user_functions
 		user_func = user_functions.factory[user_func_name]
-		print_begin_msg("mref_ali3d_MPI")
-		print_msg("Input stack                               : %s\n"%(stack))
-		print_msg("Reference volumes                         : %s\n"%(ref_vol))	
-		print_msg("Number of reference volumes               : %i\n"%(numref))
-		print_msg("Output directory                          : %s\n"%(outdir))
-		print_msg("User function                             : %s\n"%(user_func_name))
+		log.add("mref_ali3d_MPI")
+		log.add("Input stack                               : %s"%(stack))
+		log.add("Reference volumes                         : %s"%(ref_vol))	
+		log.add("Number of reference volumes               : %i"%(numref))
+		log.add("Output directory                          : %s"%(outdir))
+		log.add("User function                             : %s"%(user_func_name))
 		if(focus != None):  \
-		print_msg("Maskfile 3D for focused clustering        : %s\n"%(focus))
-		print_msg("Overall 3D mask applied in user function  : %s\n"%(maskfile))
-		print_msg("Inner radius                              : %i\n"%(first_ring))
-		print_msg("Outer radius                              : %i\n"%(last_ring))
-		print_msg("Ring step                                 : %i\n"%(rstep))
-		print_msg("X search range                            : %s\n"%(xrng))
-		print_msg("Y search range                            : %s\n"%(yrng))
-		print_msg("Translational step                        : %s\n"%(step))
-		print_msg("Angular step                              : %s\n"%(delta))
-		print_msg("Angular search range                      : %s\n"%(an))
-		print_msg("Number of assignments in each iteration   : %i\n"%(nassign))
-		print_msg("Number of alignments in each iteration    : %i\n"%(nrefine))
-		print_msg("Number of iterations                      : %i\n"%(lstp*maxit) )
-		print_msg("Center type                               : %i\n"%(center))
-		print_msg("CTF correction                            : %s\n"%(CTF))
-		print_msg("Signal-to-Noise Ratio                     : %f\n"%(snr))
-		print_msg("Reference projection method               : %s\n"%(ref_a))
-		print_msg("Symmetry group                            : %s\n\n"%(sym))
-		print_msg("Percentage of change for termination      : %f\n"%(termprec))
-		print_msg("User function                             : %s\n"%(user_func_name))
+		log.add("Maskfile 3D for focused clustering        : %s"%(focus))
+		log.add("Overall 3D mask applied in user function  : %s"%(maskfile))
+		log.add("Inner radius                              : %i"%(first_ring))
+		log.add("Outer radius                              : %i"%(last_ring))
+		log.add("Ring step                                 : %i"%(rstep))
+		log.add("X search range                            : %s"%(xrng))
+		log.add("Y search range                            : %s"%(yrng))
+		log.add("Translational step                        : %s"%(step))
+		log.add("Angular step                              : %s"%(delta))
+		log.add("Angular search range                      : %s"%(an))
+		log.add("Number of assignments in each iteration   : %i"%(nassign))
+		log.add("Number of alignments in each iteration    : %i"%(nrefine))
+		log.add("Number of iterations                      : %i"%(lstp*maxit) )
+		log.add("Center type                               : %i"%(center))
+		log.add("CTF correction                            : %s"%(CTF))
+		log.add("Signal-to-Noise Ratio                     : %f"%(snr))
+		log.add("Reference projection method               : %s"%(ref_a))
+		log.add("Symmetry group                            : %s"%(sym))
+		log.add("Percentage of change for termination      : %f"%(termprec))
+		log.add("User function                             : %s"%(user_func_name))
 
 	if(maskfile):
 		if(type(maskfile) is types.StringType): mask3D = get_image(maskfile)
@@ -7394,7 +7395,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 			#  NOTE: in case data comes in, it would have to have ID set as there is no way to tell here what was the original ordering.
 			data[im].set_attr_dict({ 'group':-1})
 	if(myid == 0):
-		print_msg( "Time to read data: %d\n" % (time()-start_time) );start_time = time()
+		log.add( "Time to read data: %d" % (time()-start_time) );start_time = time()
 
 	if fourvar:
 		from reconstruction import rec3D_MPI
@@ -7463,7 +7464,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 
 		total_iter += 1
 		if(myid == main_node):
-			print_msg("\n%s ITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f\n"%(runtype, total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],yrng[N_step],step[N_step]))
+			log.add("\n%s ITERATION #%3d,  inner iteration #%3d\nDelta = %4.1f, an = %5.2f, xrange = %5.2f, yrange = %5.2f, step = %5.2f"%(runtype, total_iter, Iter, delta[N_step], an[N_step], xrng[N_step],yrng[N_step],step[N_step]))
 			start_ime = time()
 	
 		peaks =  [ [ -1.0e23 for im in xrange(nima) ] for iref in xrange(numref) ]
@@ -7495,7 +7496,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 					start_time = time()
 					prjref = prgq( volft, kb, nx, delta[N_step], ref_a, sym, MPI=True)
 					if(myid == 0):
-						print_msg( "Calculation of projections: %d\n" % (time()-start_time) );start_time = time()
+						log.add( "Calculation of projections: %d" % (time()-start_time) );start_time = time()
 					del volft, kb
 
 			else:
@@ -7503,7 +7504,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 					start_time = time()
 					refrings = prepare_refrings( volft, kb, nx, delta[N_step], ref_a, sym, numr)
 					if(myid == 0):
-						print_msg( "Initial time to prepare rings: %d\n" % (time()-start_time) );start_time = time()
+						log.add( "Initial time to prepare rings: %d" % (time()-start_time) );start_time = time()
 					del volft, kb
 
 
@@ -7517,7 +7518,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 							rstart_time = time()
 							refrings = gen_rings_ctf( prjref, nx, ctf, numr)
 							if(myid == 0):
-								print_msg( "Repeated time to prepare rings: %d\n" % (time()-rstart_time) );rstart_time = time()
+								log.add( "Repeated time to prepare rings: %d" % (time()-rstart_time) );rstart_time = time()
 
 				if runtype=="ASSIGNMENT":
 					phi,tht,psi,s2x,s2y = get_params_proj(data[im])
@@ -7544,7 +7545,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 					trans[iref][im] = data[im].get_attr( "xform.projection" )
 
 			if(myid == 0):
-				print_msg( "Time to process particles for reference %3d: %d\n" % (iref, time()-start_time) );start_time = time()
+				log.add( "Time to process particles for reference %3d: %d" % (iref, time()-start_time) );start_time = time()
 
 
 		if runtype=="ASSIGNMENT":  del volft, kb, ref
@@ -7819,13 +7820,13 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 		if( myid == 0 ):
 			nchng = int(nchng[0])
 			precn = 100*float(nchng)/float(total_nima)
-			msg = " Number of particles that changed assignments %7d, percentage of total: %5.1f\n"%(nchng, precn)
-			print_msg(msg)
-			msg = " Group       number of particles\n"
-			print_msg(msg)
+			msg = " Number of particles that changed assignments %7d, percentage of total: %5.1f"%(nchng, precn)
+			log.add(msg)
+			msg = " Group       number of particles"
+			log.add(msg)
 			for iref in xrange(numref):
-				msg = " %5d       %7d\n"%(iref+1, npergroup[iref])
-				print_msg(msg)
+				msg = " %5d       %7d"%(iref+1, npergroup[iref])
+				log.add(msg)
 			if(precn <= termprec):  terminate = 1
 		terminate = mpi_bcast(terminate, 1, MPI_INT, 0, MPI_COMM_WORLD)
 		terminate = int(terminate[0])
@@ -7839,8 +7840,8 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 			if(center == -1):
 				cs[0], cs[1], cs[2], dummy, dummy = estimate_3D_center_MPI(data, total_nima, myid, number_of_proc, main_node)				
 				if myid == main_node:
-					msg = " Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f\n"%(cs[0], cs[1], cs[2])
-					print_msg(msg)
+					msg = " Average center x = %10.3f        Center y = %10.3f        Center z = %10.3f"%(cs[0], cs[1], cs[2])
+					log.add(msg)
 				cs = mpi_bcast(cs, 3, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 				cs = [-float(cs[0]), -float(cs[1]), -float(cs[2])]
 				rotate_3D_shift(data, cs)
@@ -7853,11 +7854,11 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 				lhist = 20
 				region, histo = hist_list(recvbuf, lhist)
 				if(region[0] < 0.0):  region[0] = 0.0
-				msg = "      Histogram of pixel errors\n      ERROR       number of particles\n"
-				print_msg(msg)
+				msg = "      Histogram of pixel errors\n      ERROR       number of particles"
+				log.add(msg)
 				for lhx in xrange(lhist):
-					msg = " %10.3f      %7d\n"%(region[lhx], histo[lhx])
-					print_msg(msg)
+					msg = " %10.3f      %7d"%(region[lhx], histo[lhx])
+					log.add(msg)
 				del region, histo
 			del recvbuf
 
@@ -7873,7 +7874,7 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 			if(CTF): volref, fscc[iref] = rec3D_MPI(data, snr, sym, model_circle(last_ring, nx, nx, nx), os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
 			else:    volref, fscc[iref] = rec3D_MPI_noCTF(data, sym, model_circle(last_ring, nx, nx, nx), os.path.join(outdir, "resolution_%02d_%04d"%(iref, total_iter)), myid, main_node, index = iref, npad = npad, finfo=frec)
 			if(myid == 0):
-				print_msg( "Time to compute 3D: %d\n" % (time()-start_time) );start_time = time()
+				log.add( "Time to compute 3D: %d" % (time()-start_time) );start_time = time()
 
 			if(myid == main_node):
 				volref.write_image(os.path.join(outdir, "vol%04d.hdf"%( total_iter)), iref)
@@ -7899,31 +7900,30 @@ def mref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1,
 			refdata[6] = (runtype=="REFINEMENT") # whether to align on 50S, this only happens at refinement step
 			user_func( refdata )
 
-		#  here we  write header info
 		mpi_barrier(MPI_COMM_WORLD)
-		start_time = time()
-		if runtype=="REFINEMENT":
-			par_str = ['xform.projection', 'ID', 'group']
-		else:
-			par_str = ['group', 'ID' ]
-	        if myid == main_node:
-			from utilities import file_type
-	        	if(file_type(stack) == "bdb"):
-	        		from utilities import recv_attr_dict_bdb
-	        		recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-	        	else:
-	        		from utilities import recv_attr_dict
-	        		recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
-	        else:		send_attr_dict(main_node, data, par_str, image_start, image_end)
-		if(myid == 0):
-			print_msg( "Time to write headers: %d\n" % (time()-start_time) );start_time = time()
-		mpi_barrier(MPI_COMM_WORLD)
-		if(terminate == 1):
+		if terminate ==1: # headers are only updated when the program is going to terminate
+			start_time = time()
+			if runtype=="REFINEMENT":
+				par_str = ['xform.projection', 'ID', 'group']
+			else:
+				par_str = ['group', 'ID' ]
+	        	if myid == main_node:
+				from utilities import file_type
+	        		if(file_type(stack) == "bdb"):
+	        			from utilities import recv_attr_dict_bdb
+	        			recv_attr_dict_bdb(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+	        		else:
+	        			from utilities import recv_attr_dict
+	        			recv_attr_dict(main_node, stack, data, par_str, image_start, image_end, number_of_proc)
+	        	else:		send_attr_dict(main_node, data, par_str, image_start, image_end)
+			if(myid == 0):
+				log.add( "Time to write headers: %d\n" % (time()-start_time) );start_time = time()
+			mpi_barrier(MPI_COMM_WORLD)
 			if myid==main_node:
-				print_end_msg("mref_ali3d_MPI terminated due to small number of objects changing assignments")
+				log.add("mref_ali3d_MPI terminated due to small number of objects changing assignments")
 			break
 	if myid==main_node:
-		print_end_msg("mref_ali3d_MPI")
+		log.add("mref_ali3d_MPI finishes")
 
 
 
