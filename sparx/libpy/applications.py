@@ -8346,7 +8346,7 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 		#if myid == main_node:
 		#	log.add( "Time to write headers: %d\n" % (time()-start_time) );start_time = time()
 	######writing paritition only in the end of the program
-	mpi_barrier(MPI_COMM_WORLD
+	mpi_barrier(MPI_COMM_WORLD)
 	if runtype=="REFINEMENT":
         	par_str = ['xform.projection', 'ID', 'group']
         else:
