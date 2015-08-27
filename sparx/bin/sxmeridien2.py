@@ -1596,10 +1596,11 @@ def main():
 				if(myid == main_node):
 					from utilities import get_symt
 					from pixel_error import max_3D_pixel_error
-					ts = get_symt(ali3d_options.sym)
+					ts = get_symt(Tracker["constants"]["sym"])
 					badapples = []
-					pixercutoff = 5.0#get_pixercutoff(radi*shrink, float(paramsdict["delta"]), 0.5)
+					pixercutoff = 2.5#get_pixercutoff(radi*shrink, float(paramsdict["delta"]), 0.5)
 					total_images_now = 0
+					shrink = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
 					for procid in xrange(2):
 						bad = []
 						ids  = map(int,read_text_file( partids[procid] ))
@@ -1618,9 +1619,9 @@ def main():
 								for kts in ts:
 									ut = t2*kts
 									# we do not care which position minimizes the error
-									pixel_error = min(max_3D_pixel_error(t1, ut, lastring), pixel_error)
+									pixel_error = min(max_3D_pixel_error(t1, ut, Tracker["constants"]["radius"]), pixel_error)
 							else:
-								pixel_error = max_3D_pixel_error(t1, t2, lastring)
+								pixel_error = max_3D_pixel_error(t1, t2, Tracker["constants"]["radius"])
 							per[i] = pixel_error
 							if(pixel_error > pixercutoff):
 								bad.append(i)
@@ -1827,6 +1828,7 @@ def main():
 			keepgoing = 1
 			reset_data = False
 			Tracker["maxit"] = 1
+			Tracker["previousoutputdir"] = Tracker["directory"]
 		if( keepgoing == 1 ):
 			if reset_data :  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
 			if(myid == main_node):
