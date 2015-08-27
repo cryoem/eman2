@@ -8144,7 +8144,7 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 			if myid==main_node:
 				volft = get_im(os.path.join(outdir, "volf%04d.hdf"%(total_iter-1)), iref)
 			else:
-				volft=model_blank(nx,ny,nz)
+				volft=model_blank(nx,nx,nx)
 			bcast_EMData_to_all(volft, myid, main_node)
 			volft, kb = prep_vol(volft)
 
