@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 #
-#  06/01/2015
-#  New version.  
-#  Data is shrank in few major steps and processed by ali3d_base in small resolution steps.
+#  08/27/2015
+#  Cross-checking of results 
 #
 #
 
@@ -29,7 +28,7 @@ global cushion
 cushion = 8
 
 
-def AI( icurrentres, Tracker, HISTORY):
+def AI( Tracker, HISTORY ):
 	#  
 	#  Possibilities we will consider:
 	#    1.  resolution improved: keep going with current settings.
@@ -39,44 +38,58 @@ def AI( icurrentres, Tracker, HISTORY):
 	#    5.  All phases tried and nxinit < nnxo: set nxinit == nnxo and run local searches.
 	from sys import exit
 	reset_data = False
+	Tracker["delpreviousmax"] = False
 	if(Tracker["mainiteration"] == 1):
 		nxinit                 = Tracker["nxinit"]
-		while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
+		while( Tracker["ireachedres"] + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
 		Tracker["nxinit"]      = min(nxinit,Tracker["constants"]["nnxo"])
-		Tracker["icurrentres"] = icurrentres
+		Tracker["icurrentres"] = Tracker["ireachedres"]
 		Tracker["nsoft"]       = 0
+		Tracker["local"]       = False
 		Tracker["zoom"]        = True
 		if not Tracker["applyctf"] :  reset_data  = True
 		Tracker["applyctf"]    = True
 		#  Develop something intelligent
 		Tracker["xr"] = "6 3"
 		Tracker["ts"] = "2 1"
+		Tracker["an"]          = "-1"
+		Tracker["anger"]       = -1.0
+		Tracker["shifter"]     = -1.0
 		Tracker["constants"]["best"] = Tracker["mainiteration"]
 		keepgoing = 1
 	elif(Tracker["mainiteration"] == 2):
 		#  Go back to initial window size and exhaustive search to improve centering of the data.
 		nxinit = HISTORY[0]["nxinit"]
 		Tracker["nxinit"]       = nxinit
-		Tracker["icurrentres"] = min(icurrentres, nxinit//2-3)
+		Tracker["icurrentres"] = min(Tracker["ireachedres"], nxinit//2-3)
 		Tracker["nsoft"]       = 0
+		Tracker["local"]       = False
 		Tracker["zoom"]        = True
 		if not Tracker["applyctf"] :  reset_data  = True
 		Tracker["applyctf"]    = True
 		#  Go back to initial settings
 		Tracker["xr"] , Tracker["ts"] = stepali(Tracker["nxinit"] , Tracker["constants"]["nnxo"], Tracker["constants"]["radius"])
+		Tracker["an"]          = "-1"
+		Tracker["anger"]       = -1.0
+		Tracker["shifter"]     = -1.0
 		Tracker["constants"]["best"] = Tracker["mainiteration"]
 		keepgoing = 1
 	elif(Tracker["mainiteration"] == 3):
 		#  Here we do soft with the initial window size
 		nxinit                 = Tracker["nxinit"]
-		Tracker["icurrentres"] = min(icurrentres, nxinit//2-3)
+		Tracker["icurrentres"] = min(Tracker["ireachedres"], nxinit//2-3)
 		Tracker["nsoft"]       = 1
+		Tracker["delpreviousmax"] = True
+		Tracker["local"]       = False
 		Tracker["zoom"]        = False
 		if not Tracker["applyctf"] :  reset_data  = True
 		Tracker["applyctf"]    = True
 		#  This is for soft
 		Tracker["xr"] = "3"
 		Tracker["ts"] = "1"
+		Tracker["an"]          = "-1"
+		Tracker["anger"]       = -1.0
+		Tracker["shifter"]     = -1.0
 		Tracker["constants"]["best"] = Tracker["mainiteration"]
 		keepgoing = 1
 	#  First four steps were preset mainly to establish shifts and decent initial structure.
@@ -89,11 +102,12 @@ def AI( icurrentres, Tracker, HISTORY):
 		#    3.  resolution stalled and pwadjust: move to the next phase
 		#    4.  resolution decreased: back off and move to the next phase
 		#    5.  All phases tried and nxinit < nnxo: set nxinit == nnxo and run local searches.
+		Tracker["local_filter"] = Tracker["constants"]["local_filter"]
 		if( Tracker["state"] == "INITIAL" ):
 			move_up_phase = True
 		else:
 			#  For all other states make a decision based on resolution change
-			direction = icurrentres - Tracker["icurrentres"]
+			direction = Tracker["ireachedres"] - Tracker["icurrentres"]
 			if Tracker["movedback"] :
 				# previous move was back, but the resolution did not improve
 				if direction <= 0 :
@@ -115,15 +129,36 @@ def AI( icurrentres, Tracker, HISTORY):
 			#  Resolution improved, adjust window size and keep going
 			if(  direction > 0 ):
 				keepgoing = 1
-				if(Tracker["state"] == "FINAL"):
-					if( icurrentres + 4 > Tracker["constants"]["nnxo"]): keepgoing = 0
+				if(Tracker["state"] == "FINAL2"):
+					if( Tracker["ireachedres"] + 4 > Tracker["constants"]["nnxo"]): keepgoing = 0
 				else:
 					nxinit = Tracker["nxinit"]
-					while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
+					while( Tracker["ireachedres"] + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
 					Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
-				Tracker["icurrentres"] = icurrentres
+				Tracker["icurrentres"] = Tracker["ireachedres"]
 				Tracker["constants"]["best"] = Tracker["mainiteration"]
-	
+
+				if(Tracker["state"] == "EXHAUSTIVE"):
+					#  Move up if changes in angles are less than 30 degrees (why 30??  It should depend on symmetry)
+					if(Tracker["anger"]   < 30.0 ):  move_up_phase = True
+					else:
+						Tracker["xr"] = "%d"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
+				elif(Tracker["state"] == "RESTRICTED"):
+					#switch to the next phase if restricted searches make no sense anymore
+					#  The next sadly repeats what is in the function that launches refinement, but I do not know how to do it better.
+					sh = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
+					rd = int(Tracker["constants"]["radius"] * sh +0.5)
+					rl = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
+					dd = degrees(atan(0.5/rl/rd))
+					if( Tracker["anger"]  < dd ):  move_up_phase = True
+					else:
+						Tracker["xr"] = "%d"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
+						Tracker["an"] = "%f"%Tracker["anger"]
+						Tracker["ts"] = "1"
+				else:
+					Tracker["anger"]   = -1.0
+					Tracker["shifter"] = -1.0
+
 			#  Resolution stalled
 			elif( direction == 0 ):
 				if Tracker["constants"]["pwreference"] :
@@ -133,8 +168,19 @@ def AI( icurrentres, Tracker, HISTORY):
 					else:
 						# turn on pwadjustment
 						Tracker["PWadjustment"] = Tracker["constants"]["pwreference"]
+						if(Tracker["state"] == "EXHAUSTIVE"):
+								xr = int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1
+								Tracker["zoom"] = True
+								Tracker["xr"] = "%d  %d"%(2*xr, xr)
+								Tracker["ts"] = "%d  %d"%(min(2*xr,2),1)
+						elif(Tracker["state"] == "RESTRICTED"):
+								xr = int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1
+								Tracker["zoom"] = True
+								Tracker["xr"] = "%d  %d"%(2*xr, xr)
+								Tracker["ts"] = "%d  %d"%(min(2*xr,2),1)
+								Tracker["an"] =  "%6.2f  %6.2f"%(2*Tracker["anger"],2*Tracker["anger"])					
 						keepgoing = 1
-				elif( Tracker["state"] == "FINAL"):  keepgoing = 0
+				elif( Tracker["state"] == "FINAL2"):  keepgoing = 0
 				else:
 					# move up with the state
 					move_up_phase = True
@@ -159,7 +205,7 @@ def AI( icurrentres, Tracker, HISTORY):
 				Tracker["state"]          = stt[0]
 				Tracker["PWadjustment"]   = stt[1]
 				Tracker["mainiteration"]  = stt[2]
-				icurrentres               = Tracker["icurrentres"]
+				Tracker["icurrentres"]    = Tracker["ireachedres"]
 				#  This will set previousoutputdir to the best parames back then.
 				move_up_phase = True
 				
@@ -171,30 +217,307 @@ def AI( icurrentres, Tracker, HISTORY):
 			if(Tracker["state"] == "INITIAL"):
 				#  Switch to EXHAUSTIVE
 				nxinit = Tracker["nxinit"]
-				while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
+				while( Tracker["ireachedres"] + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
 				Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
-				Tracker["icurrentres"] = icurrentres
+				Tracker["icurrentres"] = Tracker["ireachedres"]
 				Tracker["nsoft"]       = 0
-				Tracker["zoom"]        = True
+				Tracker["local"]       = False
+				Tracker["zoom"]        = False
+				Tracker["saturatecrit"]= 0.95
 				if not Tracker["applyctf"] :  reset_data  = True
 				Tracker["applyctf"]    = True
 				#  Switch to exhaustive
+				Tracker["upscale"]     = 0.5
 				Tracker["state"]       = "EXHAUSTIVE"
+				Tracker["maxit"]       = 50
 				#  Develop something intelligent
-				Tracker["xr"] = "6 3"
-				Tracker["ts"] = "2 1"
+				Tracker["xr"] = "%d"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
+				Tracker["ts"] = "1"
 				keepgoing = 1
 			#  Exhaustive searches
 			elif(Tracker["state"] == "EXHAUSTIVE"):
+				#  Switch to RESTRICTED
+				nxinit = Tracker["nxinit"]
+				while( Tracker["ireachedres"] + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
+				Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
+				Tracker["icurrentres"] = Tracker["ireachedres"]
+				Tracker["nsoft"]       = 0
+				Tracker["local"]       = False
+				Tracker["zoom"]        = False
+				Tracker["saturatecrit"]= 0.95
+				if Tracker["applyctf"] :  reset_data  = True
+				Tracker["upscale"]     = 0.5
+				Tracker["applyctf"]    = True
+				Tracker["an"]          = "%f"%(Tracker["anger"]*1.25)
+				Tracker["state"]       = "RESTRICTED"
+				Tracker["maxit"]       = 50
+				Tracker["xr"] = "%d"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
+				Tracker["ts"] = "1"
+				keepgoing = 1
+			#  Restricted searches
+			elif(Tracker["state"] == "RESTRICTED"):
 				#  Switch to LOCAL
 				nxinit = Tracker["nxinit"]
-				while( icurrentres + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
+				while( Tracker["ireachedres"] + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
 				Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
-				Tracker["icurrentres"] = icurrentres
+				Tracker["icurrentres"] = Tracker["ireachedres"]
 				Tracker["nsoft"]       = 0
+				Tracker["local"]       = True
+				Tracker["zoom"]        = False
+				Tracker["saturatecrit"]= 0.95
+				if Tracker["applyctf"] :  reset_data  = True
+				Tracker["upscale"]     = 0.5
+				Tracker["applyctf"]    = False
+				Tracker["an"]          = "-1"
+				Tracker["state"]       = "LOCAL"
+				Tracker["maxit"]       = 10
+				Tracker["xr"] = "2"
+				Tracker["ts"] = "2"
+				keepgoing = 1
+			#  Local searches
+			elif(Tracker["state"] == "LOCAL"):
+				#  Switch to FINAL1
+				Tracker["nxinit"] = Tracker["constants"]["nnxo"]
+				Tracker["icurrentres"] = Tracker["ireachedres"]
+				Tracker["nsoft"]       = 0
+				Tracker["local"]       = True
+				Tracker["zoom"]        = False
+				Tracker["saturatecrit"]= 0.99
+				if Tracker["applyctf"] :  reset_data  = True
+				Tracker["applyctf"]    = False
+				Tracker["upscale"]     = 0.5
+				Tracker["an"]          = "-1"
+				Tracker["state"]       = "FINAL1"
+				Tracker["maxit"]       = 1
+				Tracker["xr"] = "2"
+				Tracker["ts"] = "2"
+				keepgoing = 1
+			elif(Tracker["state"] == "FINAL1"):
+				#  Switch to FINAL2
+				Tracker["nxinit"] = Tracker["constants"]["nnxo"]
+				Tracker["icurrentres"] = Tracker["ireachedres"]
+				Tracker["nsoft"]       = 0
+				Tracker["local"]       = True
 				Tracker["zoom"]        = False
 				if Tracker["applyctf"] :  reset_data  = True
-				Tracker["applyctf"]     = False
+				Tracker["upscale"]     = 1.0
+				Tracker["applyctf"]    = False
+				Tracker["an"]          = "-1"
+				Tracker["state"]       = "FINAL2"
+				Tracker["maxit"]       = 1
+				Tracker["xr"] = "2"
+				Tracker["ts"] = "2"
+				keepgoing = 1
+			elif(Tracker["state"] == "FINAL2"):
+				keepgoing = 0
+			else:
+				ERROR(" Unknown phase","sxmeridien",1)
+				exit()  #  This will crash the program, but the situation cannot occur
+
+	Tracker["previousoutputdir"] = Tracker["directory"]
+	return keepgoing, reset_data, Tracker
+
+def AI_restrict_shifts( Tracker, HISTORY ):
+	#  
+	#  Possibilities we will consider:
+	#    1.  resolution improved: keep going with current settings.
+	#    2.  resolution stalled and no pwadjust: turn on pwadjust
+	#    3.  resolution stalled and pwadjust: move to the next phase
+	#    4.  resolution decreased: back off and move to the next phase
+	#    5.  All phases tried and nxinit < nnxo: set nxinit == nnxo and run local searches.
+	from sys import exit
+	reset_data = False
+	Tracker["delpreviousmax"] = False
+	#  The initial iteration was done matching to the initial structure with maxit 50
+	if(Tracker["mainiteration"] > 0):
+		#  Each case needs its own settings.  We arrived here after soft at initial window size.
+		#  Possibilities we will consider:
+		#    1.  resolution improved: keep going with current settings.
+		#    2.  resolution stalled and no pwadjust: turn on pwadjust
+		#    3.  resolution stalled and pwadjust: move to the next phase
+		#    4.  resolution decreased: back off and move to the next phase
+		#    5.  All phases tried and nxinit < nnxo: set nxinit == nnxo and run local searches.
+		if( Tracker["state"] == "INITIAL" ):
+			move_up_phase = True
+			Tracker["local_filter"] = Tracker["constants"]["local_filter"]
+			#  Switch immediately to nxinit such that imposed shift limit is at least one
+			#  If shift limit is zero, switch to restricted searches with a small delta and full size
+			if( Tracker["constants"]["restrict_shifts"] == 0 ):
+				Tracker["state"]  = "EXHAUSTIVE"
+				Tracker["nxinit"] = Tracker["constants"]["nnxo"]
+				Tracker["anger"] = 10.0
+			else:
+				Tracker["nxinit"] = max(Tracker["nxinit"],int(1.0/float(Tracker["constants"]["restrict_shifts"])*Tracker["constants"]["nnxo"] + 0.5 ))
+				Tracker["nxinit"] = min(Tracker["constants"]["nnxo"],Tracker["nxinit"]+Tracker["nxinit"]%2)
+		else:
+			#  For all other states make a decision based on resolution change
+			direction = Tracker["ireachedres"] - Tracker["icurrentres"]
+			if Tracker["movedback"] :
+				# previous move was back, but the resolution did not improve
+				if direction <= 0 :
+					if Tracker["constants"]["pwreference"] :
+						if Tracker["PWadjustment"] :
+							keepgoing = 0
+						else:
+							Tracker["PWadjustment"] = Tracker["constants"]["pwreference"]
+							Tracker["movedback"] = False
+							keepgoing = 1
+					else:
+						keepgoing = 0
+				else:
+					#  Resolution improved
+					Tracker["movedback"] = False
+					#  And then continue with normal moves
+
+			move_up_phase = False
+			#  Resolution improved, adjust window size and keep going
+			if(  direction > 0 ):
+				keepgoing = 1
+				if(Tracker["state"] == "FINAL2"):
+					if( Tracker["ireachedres"] + 4 > Tracker["constants"]["nnxo"]): keepgoing = 0
+				else:
+					nxinit = Tracker["nxinit"]
+					while( Tracker["ireachedres"] + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
+					Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
+				Tracker["icurrentres"] = Tracker["ireachedres"]
+				Tracker["constants"]["best"] = Tracker["mainiteration"]
+
+				if(Tracker["state"] == "EXHAUSTIVE"):
+					#  Move up if changes in angles are less than 30 degrees (why 30??  It should depend on symmetry)
+					if(Tracker["anger"]   < 30.0 ):  move_up_phase = True
+					else:
+						Tracker["xr"] = "%d"%(int(Tracker["constants"]["restrict_shifts"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]) +0.5))
+				elif(Tracker["state"] == "RESTRICTED"):
+					#switch to the next phase if restricted searches make no sense anymore
+					#  The next sadly repeats what is in the function that launches refinement, but I do not know how to do it better.
+					sh = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
+					rd = int(Tracker["constants"]["radius"] * sh +0.5)
+					rl = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
+					dd = degrees(atan(0.5/rl/rd))
+					if( Tracker["anger"]  < dd and Tracker["constants"]["restrict_shifts"] == int(Tracker["xr"])):
+						move_up_phase = True
+					else:
+						Tracker["xr"] = "%d"%(int(Tracker["constants"]["restrict_shifts"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]) +0.5))
+						Tracker["an"] = "%f"%Tracker["anger"]
+						Tracker["ts"] = "1"
+				else:
+					Tracker["anger"]   = -1.0
+					Tracker["shifter"] = -1.0
+
+			#  Resolution stalled
+			elif( direction == 0 ):
+				if Tracker["constants"]["pwreference"] :
+					if Tracker["PWadjustment"] :
+						# move up with the state
+						move_up_phase = True
+					else:
+						# turn on pwadjustment
+						Tracker["PWadjustment"] = Tracker["constants"]["pwreference"]
+						if(Tracker["state"] == "EXHAUSTIVE"):
+								Tracker["zoom"] = False
+								Tracker["xr"] = "%d"%(int(Tracker["constants"]["restrict_shifts"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]) +0.5))
+								Tracker["ts"] = "1"
+						elif(Tracker["state"] == "RESTRICTED"):
+								Tracker["zoom"] = False
+								Tracker["xr"] = "%d"%(int(Tracker["constants"]["restrict_shifts"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]) +0.5))
+								Tracker["ts"] = "1"
+								Tracker["an"] =  "%6.2f"%(2*Tracker["anger"])					
+						keepgoing = 1
+				elif( Tracker["state"] == "FINAL2"):  keepgoing = 0
+				else:
+					if(Tracker["constants"]["restrict_shifts"] == 0):
+						# move up with the state
+						move_up_phase = True
+					else:
+						if(Tracker["nxinit"] == Tracker["constants"]["nnxo"]):
+							# move up with the state
+							move_up_phase = True
+						else:
+							#  increase nxinit - here it should probably only increase some							
+							Tracker["nxinit"] = min(Tracker["nxinit"] + Tracker["nxstep"],Tracker["constants"]["nnxo"])
+				Tracker["constants"]["best"] = Tracker["mainiteration"]
+
+			# Resolution decreased
+			elif( direction < 1 ):
+				# Come up with rules
+				lb = -1
+				for i in xrange(len(HISTORY)):
+					if( HISTORY[i]["mainiteration"] == Tracker["constants"]["best"] ):
+						lb = i
+						break
+				if( lb == -1 ):
+					ERROR("No best solution in HISTORY, cannot be","sxmeridien",1)
+					exit()
+				#  Here we have to jump over the current state
+				#  However, how to avoid cycling between two states?
+				Tracker["movedback"] = True
+				stt = [Tracker["state"], Tracker["PWadjustment"], Tracker["mainiteration"] ]
+				Tracker = HISTORY[lb].copy()
+				Tracker["state"]          = stt[0]
+				Tracker["PWadjustment"]   = stt[1]
+				Tracker["mainiteration"]  = stt[2]
+				Tracker["icurrentres"]    = Tracker["ireachedres"]
+				#  This will set previousoutputdir to the best parames back then.
+				move_up_phase = True
+				
+	
+	
+		if move_up_phase:
+
+			#  INITIAL
+			if(Tracker["state"] == "INITIAL"):
+				#  Switch to EXHAUSTIVE
+				nxinit = Tracker["nxinit"]
+				while( Tracker["ireachedres"] + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
+				Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
+				Tracker["icurrentres"] = Tracker["ireachedres"]
+				Tracker["nsoft"]       = 0
+				Tracker["local"]       = False
+				Tracker["zoom"]        = False
+				Tracker["saturatecrit"]= 0.95
+				if not Tracker["applyctf"] :  reset_data  = True
+				Tracker["applyctf"]    = True
+				#  Switch to exhaustive
+				Tracker["upscale"]     = 0.5
+				Tracker["state"]       = "EXHAUSTIVE"
+				Tracker["maxit"]       = 50
+				Tracker["xr"] = "%d"%(int(Tracker["constants"]["restrict_shifts"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]) +0.5))
+				Tracker["ts"] = "1"
+				keepgoing = 1
+			#  Exhaustive searches
+			elif(Tracker["state"] == "EXHAUSTIVE"):
+				#  Switch to RESTRICTED
+				nxinit = Tracker["nxinit"]
+				while( Tracker["ireachedres"] + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
+				Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
+				Tracker["icurrentres"] = Tracker["ireachedres"]
+				Tracker["nsoft"]       = 0
+				Tracker["local"]       = False
+				Tracker["zoom"]        = False
+				Tracker["saturatecrit"]= 0.95
+				if Tracker["applyctf"] :  reset_data  = True
+				Tracker["upscale"]     = 0.5
+				Tracker["applyctf"]    = True
+				Tracker["an"]          = "%f"%(Tracker["anger"]*1.25)
+				Tracker["state"]       = "RESTRICTED"
+				Tracker["maxit"]       = 50
+				Tracker["xr"] = "%d"%(int(Tracker["constants"]["restrict_shifts"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]) +0.5))
+				Tracker["ts"] = "1"
+				keepgoing = 1
+			#  Restricted searches
+			elif(Tracker["state"] == "RESTRICTED"):
+				#  Switch to LOCAL
+				nxinit = Tracker["nxinit"]
+				while( Tracker["ireachedres"] + cushion > nxinit//2 ): nxinit += Tracker["nxstep"]
+				Tracker["nxinit"] = min(nxinit,Tracker["constants"]["nnxo"])
+				Tracker["icurrentres"] = Tracker["ireachedres"]
+				Tracker["nsoft"]       = 0
+				Tracker["local"]       = True
+				Tracker["zoom"]        = False
+				Tracker["saturatecrit"]= 0.95
+				if Tracker["applyctf"] :  reset_data  = True
+				Tracker["upscale"]     = 0.5
+				Tracker["applyctf"]    = False
 				Tracker["an"]          = "-1"
 				Tracker["state"]       = "LOCAL"
 				Tracker["maxit"]       = 1
@@ -203,30 +526,123 @@ def AI( icurrentres, Tracker, HISTORY):
 				keepgoing = 1
 			#  Local searches
 			elif(Tracker["state"] == "LOCAL"):
-				#  Switch to FINAL
+				#  Switch to FINAL1
 				Tracker["nxinit"] = Tracker["constants"]["nnxo"]
-				Tracker["icurrentres"] = icurrentres
+				Tracker["icurrentres"] = Tracker["ireachedres"]
 				Tracker["nsoft"]       = 0
+				Tracker["local"]       = True
 				Tracker["zoom"]        = False
+				Tracker["saturatecrit"]= 0.99
 				if Tracker["applyctf"] :  reset_data  = True
-				Tracker["applyctf"]     = False
+				Tracker["applyctf"]    = False
+				Tracker["upscale"]     = 0.5
 				Tracker["an"]          = "-1"
-				Tracker["state"]       = "FINAL"
+				Tracker["state"]       = "FINAL1"
 				Tracker["maxit"]       = 1
 				Tracker["xr"] = "2"
 				Tracker["ts"] = "2"
 				keepgoing = 1
-			elif(Tracker["state"] == "FINAL"):
+			elif(Tracker["state"] == "FINAL1"):
+				#  Switch to FINAL2
+				Tracker["nxinit"] = Tracker["constants"]["nnxo"]
+				Tracker["icurrentres"] = Tracker["ireachedres"]
+				Tracker["nsoft"]       = 0
+				Tracker["local"]       = True
+				Tracker["zoom"]        = False
+				if Tracker["applyctf"] :  reset_data  = True
+				Tracker["upscale"]     = 1.0
+				Tracker["applyctf"]    = False
+				Tracker["an"]          = "-1"
+				Tracker["state"]       = "FINAL2"
+				Tracker["maxit"]       = 1
+				Tracker["xr"] = "2"
+				Tracker["ts"] = "2"
+				keepgoing = 1
+			elif(Tracker["state"] == "FINAL2"):
 				keepgoing = 0
 			else:
 				ERROR(" Unknown phase","sxmeridien",1)
 				exit()  #  This will crash the program, but the situation cannot occur
 
 	Tracker["previousoutputdir"] = Tracker["directory"]
-	return keepgoing, reset_data
+	return keepgoing, reset_data, Tracker
 
 
+def threshold_params_changes(currentdir, previousdir, th = 0.95, sym = "c1"):
+	#  Indexes contain list of images processed - sorted integers, subset of the full range.
+	#  params - contain parameters associated with these images
+	#  Both lists can be of different sizes, so we have to find a common subset
+	from utilities    import getang3
+	from pixel_error  import max_3D_pixel_error
+	from EMAN2        import Vec2f
+	import sets
 
+	cids    = read_text_file(os.path.join(currentdir,"indexes.txt"))
+	pids    = read_text_file(os.path.join(previousdir,"indexes.txt"))
+	cparams = read_text_row(os.path.join(currentdir,"params.txt"))
+	pparams = read_text_row(os.path.join(previousdir,"params.txt"))
+	u = list(set(cids) & set(pids))
+	u.sort()
+	#  Extract common subsets of parameters
+	cp = []
+	pp = []
+	i = 0
+	for q in u:
+		l = cids.index(q,i)
+		cp.append(cparams[l])
+		i = l+1
+	i = 0
+	for q in u:
+		l = pids.index(q,i)
+		pp.append(pparams[l])
+		i = l+1
+	del pparams,cparams
+	n = len(u)
+	anger       = [360.0]*n
+	shifter     = [1.0e23]*n
+	if(sym == "c1"):
+		for i in xrange(n):
+			anger[i]       = getang3([cp[i][0], cp[i][1]],[pp[i][0], pp[i][1]])
+			shifter[i]     = max(abs(cp[i][3] - pp[i][3]),abs(cp[i][4] - pp[i][4]))
+			#pixel_error[i] = max_3D_pixel_error(t1, t2, radius)
+	else:
+		#from utilities import get_symt
+		#ts = get_symt(sym)
+		for i in xrange(n):
+			#t1 = Transform({"type":"spider","phi":pp[i][0],"theta":pp[i][1],"psi":pp[i][2]})
+			#t1.set_trans(Vec2f(-pp[i][3], -pp[i][4]))
+			t2 = Transform({"type":"spider","phi":cp[i][0],"theta":cp[i][1],"psi":cp[i][2]})
+			t2.set_trans(Vec2f(-cp[i][3], -cp[i][4]))
+			ts = t2.get_sym_proj(sym)
+			shifter[i] = max(abs(cp[i][3] - pp[i][3]),abs(cp[i][4] - pp[i][4]))
+			for kts in ts:
+				# we do not care which position minimizes the error
+				du = kts.get_params("spider")
+				qt = getang3([pp[i][0], pp[i][1]], [du["phi"], du["theta"]])
+				if(qt < anger[i]):   anger[i] = qt
+
+	anger.sort()
+	shifter.sort()
+	la = min(int(th*n + 0.5), n-1)
+	#  Returns error thresholds under which one has th fraction of images
+	#  The shifter is given in the full scale displacement
+	return round(anger[la],2), round(shifter[la],2)
+	"""
+
+	h1,h2 = hist_list(anger,32)
+	#print h1
+	#print h2
+	h3 = h2[:]
+	for i in xrange(1,len(h3)):
+		h3[i] = h3[i-1]+h2[i]
+	u1,u2 = hist_list(shifter,32)
+	#print u1
+	#print u2
+	u3 = u2[:]
+	for i in xrange(1,len(u3)):
+		u3[i] = u3[i-1]+u2[i]
+	return h1,h2,h3,u1,u2,u3
+	"""
 
 
 
@@ -277,9 +693,6 @@ def get_pixercutoff(radius, delta = 2.0, dsx = 0.5):
 	t2.set_trans(Vec2f(dsx, dsx))
 	return max_3D_pixel_error(t1, t2, radius)
 
-
-# NOTE: 2015/06/12 Toshio Moriya
-# This function seems to be not used
 def comparetwoalis(params1, params2, thresherr=1.0, radius = 1.0):
 	#  Find errors per image
 	nn = len(params1)
@@ -365,20 +778,19 @@ def get_pixel_resolution(vol, mask, nnxo, fscoutputdir):
 			nfsc[0][i] = float(i)/nnxo
 	write_text_file( nfsc, os.path.join(fscoutputdir,"fsc.txt") )
 	ns = len(nfsc[1])
-	currentres = -1
-	'''
-	#  This is actual resolution, as computed by 2*f/(1+f)
+	#  This is actual resolution, as computed by 2*f/(1+f), should be used for volf
+	ares = -1
 	for i in xrange(1,ns-1):
 		if ( nfsc[1][i] < 0.333333333333333333333333):
-			currentres = nfsc[0][i-1]
+			ares = i
 			break
-	'''
 	#  0.5 cut-off
+	currentres = -1
 	for i in xrange(1,ns-1):
 		if ( nfsc[1][i] < 0.5):
 			currentres = i
 			break
-	if(currentres < 0):
+	if(currentres < 0 or ares < 0):
 		print("  Something wrong with the resolution, cannot continue")
 		mpi_finalize()
 		exit()
@@ -395,10 +807,10 @@ def get_pixel_resolution(vol, mask, nnxo, fscoutputdir):
 	lowpass = nfsc[0][currentres]
 	falloff = 0.2
 
-	return  round(lowpass,4), round(falloff,4), currentres
+	return  round(lowpass,4), round(falloff,4), currentres, ares
 
 
-def compute_resolution(stack, outputdir, partids, partstack, org_radi, nnxo, CTF, mask_option, sym, myid, main_node, nproc, pixel=1.0):
+def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, nproc):
 	#  while the code pretends to accept volumes as input, it actually does not.
 	import types
 	vol = [None]*2
@@ -408,8 +820,10 @@ def compute_resolution(stack, outputdir, partids, partstack, org_radi, nnxo, CTF
 		nz = stack[0][0].get_zsize()
 	else:
 		nz = 1
-	if(mask_option is None):  mask = model_circle(org_radi,nnxo,nnxo,nnxo)
-	else:                     mask = get_im(mask_option)
+	if(Tracker["constants"]["mask3D"] is None):
+		mask = model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+	else:
+		mask = get_im(Tracker["constants"]["mask3D"])
 
 	projdata = []
 	for procid in xrange(2):
@@ -421,17 +835,25 @@ def compute_resolution(stack, outputdir, partids, partstack, org_radi, nnxo, CTF
 				projdata[procid] = stack[procid]
 			if( procid == 0 ):
 				nx = projdata[procid][0].get_xsize()
-				if( nx != nnxo):
-					mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(nnxo)),nx,nx,nx)
+				if( nx != Tracker["constants"]["nnxo"]):
+					mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(Tracker["constants"]["nnxo"])),nx,nx,nx)
 
-			if CTF:
+			if Tracker["constants"]["CTF"]:
+				if Tracker["constants"]["smear"] :
+					#  Ideally, this would be available, but the problem is it is computed in metamove, which is not executed during restart
+					nx = projdata[procid][0].get_xsize()
+					shrinkage = float(nx)/float(Tracker["constants"]["nnxo"])
+					lowpass = float(Tracker["icurrentres"])/float(nx)
+					delta = min(round(degrees(atan(0.5/Tracker["lowpass"]/Tracker["radius"])), 2), 3.0)
+					Tracker["smearstep"] = 0.5*delta
+				else:                              Tracker["smearstep"] = 0.0
 				from reconstruction import rec3D_MPI
-				vol[procid],fsc[procid] = rec3D_MPI(projdata[procid], symmetry = sym, \
+				vol[procid],fsc[procid] = rec3D_MPI(projdata[procid], symmetry = Tracker["constants"]["sym"], \
 					mask3D = mask, fsc_curve = None, \
-					myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2)
+					myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2, smearstep = Tracker["smearstep"])
 			else:
 				from reconstruction import rec3D_MPI_noCTF
-				vol[procid],fsc[procid] = rec3D_MPI_noCTF(projdata[procid], symmetry = sym, \
+				vol[procid],fsc[procid] = rec3D_MPI_noCTF(projdata[procid], symmetry = Tracker["constants"]["sym"], \
 					mask3D = mask, fsc_curve = None, \
 					myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2)
 
@@ -440,12 +862,12 @@ def compute_resolution(stack, outputdir, partids, partstack, org_radi, nnxo, CTF
 			#  Volumes
 			vol[procid] = stack[procid]
 			nx = vol[0].get_xsize()
-			if( nx != nnxo ):
-				mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(nnxo)),nx,nx,nx)
+			if( nx != Tracker["constants"]["nnxo"] ):
+				mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(Tracker["constants"]["nnxo"])),nx,nx,nx)
 
 		if( myid == main_node):
 			from fundamentals import fpol
-			fpol(vol[procid], nnxo, nnxo, nnxo).write_image(os.path.join(outputdir,"vol%01d.hdf"%procid))
+			fpol(vol[procid], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"],"vol%01d.hdf"%procid))
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			print(  line,"Generated vol #%01d  using  image size %d "%(procid, nx))
 
@@ -453,33 +875,36 @@ def compute_resolution(stack, outputdir, partids, partstack, org_radi, nnxo, CTF
 	lowpass    = 0.0
 	falloff    = 0.0
 	icurrentres = 0
+	ares = 0
 
 	if(myid == main_node):
 		if(type(stack) == str or ( nz == 1 )):
-			if(nx<nnxo):
+			if(nx<Tracker["constants"]["nnxo"]):
 				for procid in xrange(2):
 					for i in xrange(3):
-						for k in xrange(nx/2+1, nnxo/2+1):
+						for k in xrange(nx/2+1, Tracker["constants"]["nnxo"]/2+1):
 							fsc[procid][i].append(0.0)
-					for k in xrange(nnxo/2+1):
-						fsc[procid][0][k] = float(k)/nnxo
+					for k in xrange(Tracker["constants"]["nnxo"]/2+1):
+						fsc[procid][0][k] = float(k)/Tracker["constants"]["nnxo"]
 			for procid in xrange(2):
 				#  Compute adjusted within-fsc as 2*f/(1+f)
 				fsc[procid].append(fsc[procid][1][:])
 				for k in xrange(len(fsc[procid][1])):  fsc[procid][-1][k] = 2*fsc[procid][-1][k]/(1.0+fsc[procid][-1][k])
-				write_text_file( fsc[procid], os.path.join(outputdir,"within-fsc%01d.txt"%procid) )
+				write_text_file( fsc[procid], os.path.join(Tracker["directory"],"within-fsc%01d.txt"%procid) )
 
-		lowpass, falloff, icurrentres = get_pixel_resolution(vol, mask, nnxo, outputdir)
+		lowpass, falloff, icurrentres, ares = get_pixel_resolution(vol, mask, Tracker["constants"]["nnxo"], Tracker["directory"])
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(  line,"Current resolution  %6.2f  %6.2f A  (%d), low-pass filter cut-off %6.2f and fall-off %6.2f"%\
-						(icurrentres/float(nnxo),pixel*float(nnxo)/float(icurrentres),icurrentres,lowpass,falloff))
-		write_text_row([[lowpass, falloff, icurrentres]],os.path.join(outputdir,"current_resolution.txt"))
+		print(  line,"Current resolution  %6.2f  %6.2f A  (%d @0.5)  (%d @0.33), low-pass filter cut-off %6.2f and fall-off %6.2f"%\
+			(icurrentres/float(Tracker["constants"]["nnxo"]),Tracker["constants"]["pixel_size"]*float(Tracker["constants"]["nnxo"])/float(icurrentres),icurrentres,ares,lowpass,falloff))
+
+		write_text_row([[lowpass, falloff, icurrentres, ares]],os.path.join(Tracker["directory"],"current_resolution.txt"))
+
 	#  Returns: low-pass filter cutoff;  low-pass filter falloff;  current resolution
 	icurrentres = bcast_number_to_all(icurrentres, source_node = main_node)
+	ares        = bcast_number_to_all(ares, source_node = main_node)
 	lowpass     = bcast_number_to_all(lowpass, source_node = main_node)
 	falloff     = bcast_number_to_all(falloff, source_node = main_node)
-	return round(lowpass,4), round(falloff,4), icurrentres
-
+	return round(lowpass,4), round(falloff,4), icurrentres, ares
 
 
 def getalldata(stack, myid, nproc):
@@ -499,8 +924,7 @@ def getalldata(stack, myid, nproc):
 	return data
 
 
-
-def get_shrink_data(onx, nx, stack, partids, partstack, myid, main_node, nproc, CTF = False, applyctf = True, preshift = False, radi = -1):
+def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc, preshift = False):
 	# The function will read from stack a subset of images specified in partids
 	#   and assign to them parameters from partstack with optional CTF application and shifting of the data.
 	# So, the lengths of partids and partstack are the same.
@@ -508,8 +932,8 @@ def get_shrink_data(onx, nx, stack, partids, partstack, myid, main_node, nproc, 
 	if( myid == main_node ):
 		print("    ")
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-		print(  line, "Reading data  onx: %3d, nx: %3d, CTF: %s, applyctf: %s, preshift: %s."%(onx, nx, CTF, applyctf, preshift) )
-		print("                       stack: %s\n                       partids: %s\n                       partstack:%s\n"%(stack, partids, partstack) )
+		print(  line, "Reading data  onx: %3d, nx: %3d, CTF: %s, applyctf: %s, preshift: %s."%(Tracker["constants"]["nnxo"], Tracker["nxinit"], Tracker["constants"]["CTF"], Tracker["applyctf"], preshift) )
+		print("                       stack:      %s\n                       partids:     %s\n                       partstack: %s\n"%(Tracker["constants"]["stack"], partids, partstack) )
 	if( myid == main_node ): lpartids = read_text_file(partids)
 	else:  lpartids = 0
 	lpartids = wrap_mpi_bcast(lpartids, main_node)
@@ -529,41 +953,45 @@ def get_shrink_data(onx, nx, stack, partids, partstack, myid, main_node, nproc, 
 	lpartids  = lpartids[image_start:image_end]
 	partstack = partstack[image_start:image_end]
 	#  Preprocess the data
-	if radi < 0:	radi = onx//2 - 2
-	mask2D  = model_circle(radi,onx,onx)
+	mask2D  = model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 	nima = image_end - image_start
-	oldshifts = [[0.0,0.0]]*nima
+	oldshifts = [[0.0,0.0]]#*nima
 	data = [None]*nima
-	shrinkage = float(nx)/float(onx)
+	shrinkage = nxinit/float(Tracker["constants"]["nnxo"])
+	radius = int(Tracker["constants"]["radius"] * shrinkage +0.5)
+	#  Note these are in Fortran notation for polar searches
+	#txm = float(nxinit-(nxinit//2+1) - radius -1)
+	#txl = float(2 + radius - nxinit//2+1)
+	txm = float(nxinit-(nxinit//2+1) - radius)
+	txl = float(radius - nxinit//2+1)
 	for im in xrange(nima):
-		data[im] = get_im(stack, lpartids[im])
+		data[im] = get_im(Tracker["constants"]["stack"], lpartids[im])
 		phi,theta,psi,sx,sy = partstack[im][0], partstack[im][1], partstack[im][2], partstack[im][3], partstack[im][4]
-		if preshift:
-			data[im] = fshift(data[im], sx, sy)
-			set_params_proj(data[im],[phi,theta,psi,0.0,0.0])
-			oldshifts[im] = [sx,sy]
-		else:
-			set_params_proj(data[im],[phi,theta,psi,sx,sy])
-		#  For local SHC set anchor
-		#if(nsoft == 1 and an[0] > -1):
-		#  We will always set it to simplify the code
-		set_params_proj(data[im],[phi,theta,psi,0.0,0.0], "xform.anchor")
-		if CTF and applyctf:
+		if( Tracker["constants"]["CTF"] and Tracker["applyctf"] ):
 			ctf_params = data[im].get_attr("ctf")
 			st = Util.infomask(data[im], mask2D, False)
 			data[im] -= st[0]
 			data[im] = filt_ctf(data[im], ctf_params)
 			data[im].set_attr('ctf_applied', 1)
-		if(shrinkage < 1.0):
-			#  resample will properly adjusts shifts and pixel size in ctf
-			data[im] = resample(data[im], shrinkage)
-	assert( nx == data[0].get_xsize() )  #  Just to make sure.
-	oldshifts = wrap_mpi_gatherv(oldshifts, main_node, MPI_COMM_WORLD)
+		if preshift:
+			data[im] = fshift(data[im], sx, sy)
+			set_params_proj(data[im],[phi,theta,psi,0.0,0.0])
+		#oldshifts[im] = [sx,sy]
+		#  resample will properly adjusts shifts and pixel size in ctf
+		data[im] = resample(data[im], shrinkage)
+		#  We have to make sure the shifts are within correct range, shrinkage or not
+		set_params_proj(data[im],[phi,theta,psi,max(min(sx*shrinkage,txm),txl),max(min(sy*shrinkage,txm),txl)])
+		#  For local SHC set anchor
+		#if(nsoft == 1 and an[0] > -1):
+		#  We will always set it to simplify the code
+		set_params_proj(data[im],[phi,theta,psi,0.0,0.0], "xform.anchor")
+	assert( nxinit == data[0].get_xsize() )  #  Just to make sure.
+	#oldshifts = wrap_mpi_gatherv(oldshifts, main_node, MPI_COMM_WORLD)
 	return data, oldshifts
 
 
 def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid, myid, main_node, nproc):
-	from development import sali3d_base_mrk01, slocal_ali3d_base_MPI_mrk01
+	from applications import slocal_ali3d_base, sali3d_base
 	#  Takes preshrunk data and does the refinement as specified in Tracker
 	#
 	#  Will create outputdir
@@ -577,11 +1005,13 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 		cmd = "mkdir "+log.prefix
 		cmdexecute(cmd)
 		log.prefix += "/"
-		ref_vol = get_im(Tracker["constants"]["refvol"])
+		ref_vol = get_im(Tracker["refvol"])
 		nnn = ref_vol.get_xsize()
 		if(Tracker["nxinit"] != nnn ):
-			from fundamentals import resample
-			ref_vol = resample(ref_vol, shrinkage)
+			# Good enough?
+			ref_vol = Util.window(rot_shift3D(ref_vol,scale=shrinkage),Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
+			#from fundamentals import resample
+			#ref_vol = resample(ref_vol, shrinkage)
 	else:
 		log = None
 		ref_vol = model_blank(Tracker["nxinit"], Tracker["nxinit"], Tracker["nxinit"])
@@ -593,19 +1023,25 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 	if(Tracker["radius"] < 2):
 		ERROR( "ERROR!!   lastring too small  %f    %f   %d"%(Tracker["radius"], Tracker["constants"]["radius"]), "sxmeridien",1, myid)
 	Tracker["lowpass"] = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
-	if( Tracker["state"] == "LOCAL" or Tracker["state"] == "FINAL"):
-		delta = "2.0"
+	if( Tracker["state"] == "LOCAL" or Tracker["state"][:-1] == "FINAL"):
+		Tracker["pixercutoff"] = 0.5
+		Tracker["delta"] = "2.0"
+		Tracker["ts"]    = "2.0"
 	else:
-		delta = "%f  "%min(round(degrees(atan(0.5/Tracker["lowpass"]/Tracker["radius"])), 2), 3.0)
+		delta = min(round(degrees(atan(0.5/Tracker["lowpass"]/Tracker["radius"])), 2), 3.0)
+		if Tracker["constants"]["smear"] : Tracker["smearstep"] = 0.5*delta
+		else:                              Tracker["smearstep"] = 0.0
+		delta = "%f  "%delta
 		Tracker["delta"] = ""
 		for i in xrange(len(get_input_from_string(Tracker["xr"]))):  Tracker["delta"] += delta
-	Tracker["pixercutoff"] = get_pixercutoff(Tracker["radius"], float(delta), 0.5)
+		Tracker["pixercutoff"] = get_pixercutoff(Tracker["radius"], float(get_input_from_string(Tracker["delta"])[0]), 0.5)
 
 
 	if(Tracker["delpreviousmax"]):
 		for i in xrange(len(projdata)):
 			try:  projdata[i].del_attr("previousmax")
 			except:  pass
+
 	if(myid == main_node):
 		print_dict(Tracker,"METAMOVE parameters")
 		if Tracker["PWadjustment"] :
@@ -613,27 +1049,21 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 		print("                    =>  partids             :  ",partids)
 		print("                    =>  partstack           :  ",partstack)
 
-	#if(Tracker["lowpass"] > 0.48):  ERROR("Low pass filter in metamove > 0.48 on the scale of shrank data","sxmeridien",1,myid)
-
 	#  Run alignment command
-	if( Tracker["state"] == "LOCAL" ):
-		params = slocal_ali3d_base_MPI_mrk01(projdata, get_im(Tracker["refvol"]), \
-				Tracker, mpi_comm = MPI_COMM_WORLD, log = log, chunk = 1.0, \
-		    	saturatecrit = Tracker["saturatecrit"], pixercutoff =  Tracker["pixercutoff"])
-	else: params = sali3d_base_mrk01(projdata, ref_vol, \
-				Tracker, mpi_comm = MPI_COMM_WORLD, log = log, nsoft = Tracker["nsoft"], \
-				saturatecrit = Tracker["saturatecrit"],  pixercutoff =  Tracker["pixercutoff"], zoom = Tracker["zoom"] )
+	if Tracker["local"] : params = slocal_ali3d_base(projdata, get_im(Tracker["refvol"]), \
+									Tracker, mpi_comm = MPI_COMM_WORLD, log = log, chunk = 1.0)
+	else: params = sali3d_base(projdata, ref_vol, Tracker, mpi_comm = MPI_COMM_WORLD, log = log )
 
-	#  We could calculate here a 3D to get the within group resolution and return it as a result to eventually get crossresolution
 	del log
 	#  store params
 	if(myid == main_node):
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print(line,"Executed successfully: ","sali3d_base_MPI, nsoft = %d"%Tracker["nsoft"],"  number of images:%7d"%len(params))
 		for i in xrange(len(params)):
-			params[i][3] = params[i][3]/shrinkage + oldshifts[i][0]
-			params[i][4] = params[i][4]/shrinkage + oldshifts[i][1]
+			params[i][3] = params[i][3]/shrinkage# + oldshifts[i][0]
+			params[i][4] = params[i][4]/shrinkage# + oldshifts[i][1]
 		write_text_row(params, os.path.join(Tracker["directory"],"params-chunk%01d.txt"%procid) )
+	return  Tracker
 
 def print_dict(dict,theme):
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
@@ -643,12 +1073,6 @@ def print_dict(dict,theme):
 		if(key != "constants"):  print("                    => ", key+spaces[len(key):],":  ",value)
 
 
-# NOTE: 2015/06/11 Toshio Moriya
-# DESIGN
-# - "options" object 
-#   It keeps the original input option values specified by user.
-#   This object must be constant. That is, you should not assign any parameter values 
-#   to this after the initialization.
 # 
 # - "Tracker" (dictionary) object
 #   Keeps the current state of option settings and dataset 
@@ -661,11 +1085,6 @@ def print_dict(dict,theme):
 #   This can be used to restart process from an arbitrary iteration.
 #   The program will store the HISTORY in the form of file.
 #   
-# NOTE: 2015/06/11 Toshio Moriya
-# MODIFICATION
-# - merge ali3d_options to Tracker (dictionary)
-# - make paramsdict to be Tracker (dictionary) 
-#   paramsdict was earlier version of Tracker (Pawel)...
 #
 def main():
 
@@ -676,7 +1095,7 @@ def main():
 	from global_def import SPARXVERSION
 	from EMAN2 import EMData
 	from multi_shc import multi_shc
-	# from development import do_volume_mrk01
+	#from development import do_volume_mrk01
 	from logger import Logger, BaseLogger_Files
 	import sys
 	import os
@@ -686,7 +1105,7 @@ def main():
 	# ------------------------------------------------------------------------------------
 	# PARSE COMMAND OPTIONS
 	progname = os.path.basename(sys.argv[0])
-	usage = progname + " stack  [output_directory]  initial_volume  --ir=inner_radius --ou=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_search_step  --delta=angular_step --an=an  --center=center_type --fl --aa --ref_a=S --sym=c1 --function=user_function"
+	usage = progname + " stack  [output_directory]  initial_volume  --radius=particle_radius --ref_a=S --sym=c1 --startangles --inires  --mask3D --CTF --function=user_function"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	#parser.add_option("--ir",      		type= "int",   default= 1,			help="inner radius for rotational correlation > 0 (set to 1)")
 	parser.add_option("--radius",      		type= "int",   default= -1,			help="Outer radius [in pixels] for rotational correlation < int(nx/2)-1 (Please set to the radius of the particle)")
@@ -695,26 +1114,30 @@ def main():
 	#parser.add_option("--yr",      		type="string", default= "-1",		help="range for translation search in y direction, search is +/yr (default = same as xr)")
 	#parser.add_option("--ts",      		type="string", default= "1",		help="step size of the translation search in both directions, search is -xr, -xr+ts, 0, xr-ts, xr, can be fractional")
 	#parser.add_option("--delta",   		type="string", default= "-1",		help="angular step of reference projections during initialization step (default automatically selected based on radius of the structure.)")
-	parser.add_option("--an",      		type="string", default= "-1",		help="angular neighborhood for local searches (phi and theta) (Default exhaustive searches)")
-	parser.add_option("--center",  		type="float",  default= -1,			help="-1: average shift method; 0: no centering; 1: center of gravity (default=-1)")
+	#parser.add_option("--an",      		type="string", default= "-1",		help="angular neighborhood for local searches (phi and theta) (Default exhaustive searches)")
+	#parser.add_option("--center",  		type="int",  default= 0,			help="-1: average shift method; 0: no centering; 1: center of gravity (default=0)")
 	#parser.add_option("--maxit",   		type="int",  	default= 400,		help="maximum number of iterations performed for the GA part (set to 400) ")
 	parser.add_option("--outlier_percentile",type="float",    default= 95,	help="percentile above which outliers are removed every iteration")
-	parser.add_option("--iteration_start",type="int",    default= 0,		help="starting iteration for rviper, 0 means go to the most recent one (default).")
-	parser.add_option("--CTF",     		action="store_true", default=False,	help="Use CTF (Default no CTF correction)")
+	#parser.add_option("--iteration_start",   type="int",    default= 0,		help="starting iteration for rviper, 0 means go to the most recent one (default).")
+	parser.add_option("--CTF",     		     action="store_true", default=False,	help="Use CTF (Default no CTF correction)")
 	#parser.add_option("--snr",     		type="float",  default= 1.0,		help="Signal-to-Noise Ratio of the data (default 1.0)")
-	parser.add_option("--ref_a",   		type="string", default= "S",		help="method for generating the quasi-uniformly distributed projection directions (default S)")
-	parser.add_option("--sym",     		type="string", default= "c1",		help="Point-group symmetry of the refined structure")
+	parser.add_option("--ref_a",   		    type="string", default= "S",		help="method for generating the quasi-uniformly distributed projection directions (default S)")
+	parser.add_option("--sym",     		    type="string", default= "c1",		help="Point-group symmetry of the refined structure")
 	#parser.add_option("--npad",    		type="int",    default= 2,			help="padding size for 3D reconstruction (default=2)")
-	parser.add_option("--nsoft",    	type="int",    default= 0,			help="Use SHC in first phase of refinement iteration (default=0, to turn it on set to 1)")
-	parser.add_option("--startangles",  action="store_true", default=False,	help="Use orientation parameters in the input file header to jumpstart the procedure")
+	#parser.add_option("--nsoft",    	     type="int",    default= 0,			help="Use SHC in first phase of refinement iteration (default=0, to turn it on set to 1)")
+	parser.add_option("--startangles",      action="store_true", default=False,	help="Use orientation parameters in the input file header to jumpstart the procedure")
+	parser.add_option("--restrict_shifts",  type="int",    default= -1,			help="Restrict initial searches for translation [unit - original size pixel] (default=-1, no restriction)")
+	parser.add_option("--local_filter",     action="store_true", default=False,	help="Use local filtration (Default generic tangent filter)")
+	parser.add_option("--smear",            action="store_true", default=False,	help="Use rotational smear")
+	parser.add_option("--sausage",          action="store_true", default=False,	help="Sausage-making filter")
 
 	#options introduced for the do_volume function
 	#parser.add_option("--fl",			type="float",	default=0.12,		help="cut-off frequency of hyperbolic tangent low-pass Fourier filter (default 0.12)")
 	#parser.add_option("--aa",			type="float",	default=0.1,		help="fall-off of hyperbolic tangent low-pass Fourier filter (default 0.1)")
-	parser.add_option("--inires",		type="float",	default=25.,		help="Resolution of the initial_volume volume (default 25A)")
-	parser.add_option("--pwreference",	type="string",	default="",			help="text file with a reference power spectrum (default no power spectrum adjustment)")
-	parser.add_option("--mask3D",		type="string",	default=None,		help="3D mask file (default a sphere with radius (nx/2)-1)")
-	parser.add_option("--function",     type="string",  default="do_volume_mrk02",  help="name of the reference preparation function (default do_volume_mrk02)")
+	parser.add_option("--inires",		     type="float",	default=25.,		help="Resolution of the initial_volume volume (default 25A)")
+	parser.add_option("--pwreference",	     type="string",	default="",			help="text file with a reference power spectrum (default no power spectrum adjustment)")
+	parser.add_option("--mask3D",		     type="string",	default=None,		help="3D mask file (default a sphere with radius (nx/2)-1)")
+	parser.add_option("--function",          type="string", default="do_volume_mrk02",  help="name of the reference preparation function (default do_volume_mrk02)")
 
 	(options, args) = parser.parse_args(sys.argv[1:])
 
@@ -743,20 +1166,24 @@ def main():
 	# ------------------------------------------------------------------------------------
 	#  INPUT PARAMETERS
 	global_def.BATCH = True
-	
+
 
 	#  Constant settings of the project
 	Constants				= {}
 	Constants["stack"]        = args[0]
 	Constants["rs"]           = 1
 	Constants["radius"]       = options.radius
-	Constants["an"]           = options.an
+	Constants["an"]           = "-1"
 	Constants["maxit"]        = 50
 	sym = options.sym
 	Constants["sym"]          = sym[0].lower() + sym[1:]
 	Constants["npad"]         = 2
-	Constants["center"]       = options.center
+	Constants["center"]       = 0
 	Constants["pwreference"]  = options.pwreference
+	Constants["smear"]        = options.smear
+	Constants["sausage"]      = options.sausage
+	Constants["restrict_shifts"] = options.restrict_shifts
+	Constants["local_filter"] = options.local_filter
 	Constants["CTF"]          = options.CTF
 	Constants["ref_a"]        = options.ref_a
 	Constants["snr"]          = 1.0
@@ -766,7 +1193,7 @@ def main():
 	Constants["refvol"]       = volinit
 	Constants["masterdir"]    = masterdir
 	Constants["best"]         = 0
-	Constants["states"]       = ["INITIAL", "EXHAUSTIVE", "LOCAL", "FINAL"]
+	Constants["states"]       = ["INITIAL", "EXHAUSTIVE", "RESTRICTED", "LOCAL", "FINAL1", "FINAL2"]
 	Constants["user_func"]    = user_functions.factory[options.function]
 	#Constants["mempernode"]   = 4.0e9
 	#  The program will use three different meanings of x-size
@@ -787,22 +1214,26 @@ def main():
 	Tracker["an"]             = "-1"
 	Tracker["delta"]          = "2.0"
 	Tracker["zoom"]           = True
-	Tracker["nsoft"]          = options.nsoft
+	Tracker["nsoft"]          = 0
 	Tracker["local"]          = False
+	Tracker["local_filter"]   = False
 	Tracker["PWadjustment"]   = ""
-	Tracker["applyctf"]       = True  #  Should the data be premultiplied by the CTF.  Set to False for local continues.
+	Tracker["upscale"]        = 0.5
+	Tracker["applyctf"]       = True  #  Should the data be premultiplied by the CTF.  Set to False for local continuous.
 	Tracker["refvol"]         = None
 
 	Tracker["nxinit"]         = 64
 	Tracker["nxstep"]         = 32
 	Tracker["icurrentres"]    = -1
-	#Tracker["lowpass"]      = 0.4
-	#Tracker["initialfl"]    = 0.4
+	Tracker["ireachedres"]    = -1
+	Tracker["lowpass"]        = 0.4
 	Tracker["falloff"]        = 0.2
 	Tracker["inires"]         = options.inires  # Now in A, convert to absolute before using
 	Tracker["fuse_freq"]      = 50  # Now in A, convert to absolute before using
-	Tracker["delpreviousmax"] = True
-	Tracker["saturatecrit"]   = 1.0
+	Tracker["delpreviousmax"] = False
+	Tracker["anger"]          = -1.0
+	Tracker["shifter"]        = -1.0
+	Tracker["saturatecrit"]   = 0.95
 	Tracker["pixercutoff"]    = 2.0
 	Tracker["directory"]      = ""
 	Tracker["previousoutputdir"] = ""
@@ -817,8 +1248,6 @@ def main():
 	if(myid == main_node):
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print(line,"INITIALIZATION OF MERIDIEN")
-
-
 
 		a = get_im(orgstack)
 		nnxo = a.get_xsize()
@@ -914,7 +1343,7 @@ def main():
 	# Create first fake directory main000 with parameters filled with zeroes or copied from headers.  Copy initial volume in.
 	doit, keepchecking = checkstep(initdir, keepchecking, myid, main_node)
 	if  doit:
-		partids = os.path.join(masterdir, "ids.txt")
+		partids = os.path.join(initdir, "indexes.txt")
 		if( myid == main_node ):
 			cmd = "mkdir "+initdir
 			cmdexecute(cmd)
@@ -942,28 +1371,19 @@ def main():
 			
 			if(options.startangles):
 				tp_list = EMUtil.get_all_attributes(Tracker["constants"]["stack"], "xform.projection")
-				
-				dp_list1 = []
-				for l1_entry in l1:
-					dp = tp_list[l1_entry].get_params("spider")
-					dp_list1.append([dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]])
-				write_text_row(dp_list1, partstack[0])
-				del dp_list1
-				
-				dp_list2 = [] # dp: dictionary object for projection parameters
-				for l2_entry in l2:
-					dp = tp_list[l2_entry].get_params("spider")
-					dp_list2.append([dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]])
-				write_text_row(dp_list2, partstack[1])
-				del dp_list2
+				for i in xrange(len(tp_list)):
+					dp = tp_list[i].get_params("spider")
+					tp_list[i] = [dp["phi"], dp["theta"], dp["psi"], -dp["tx"], -dp["ty"]]
+				write_text_row(tp_list, os.path.join(initdir,"params.txt"))
+				write_text_row([tp_list[i] for i in l1], partstack[0])
+				write_text_row([tp_list[i] for i in l2], partstack[1])
 				line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 				print(line,"Executed successfully: Imported initial parameters from the input stack")
-
-				del tp_list
 				
 			else:
 				write_text_row([[0,0,0,0,0] for i in xrange(len(l1))], partstack[0])
 				write_text_row([[0,0,0,0,0] for i in xrange(len(l2))], partstack[1])
+				write_text_row([[0,0,0,0,0] for i in xrange(len(l1)+len(l2))], os.path.join(initdir,"params.txt"))
 			
 			del l1, l2
 				
@@ -998,8 +1418,12 @@ def main():
 	if( Tracker["nxinit"] > Tracker["constants"]["nnxo"] ):
 			ERROR("Resolution of initial volume at the range of Nyquist frequency for given window and pixel sizes","sxmeridien",1, myid)
 
-	#  Here we need an algorithm to set things correctly
-	Tracker["xr"] , Tracker["ts"] = stepali(Tracker["nxinit"] , Tracker["constants"]["nnxo"], Tracker["constants"]["radius"])
+	if( Tracker["constants"]["restrict_shifts"] == -1 ):
+		#  Here we need an algorithm to set things correctly
+		Tracker["xr"] , Tracker["ts"] = stepali(Tracker["nxinit"] , Tracker["constants"]["nnxo"], Tracker["constants"]["radius"])
+	else:
+		Tracker["xr"] = "%d"%int( Tracker["constants"]["restrict_shifts"] * float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]) +0.5)
+		Tracker["ts"] = "1"
 	Tracker["previousoutputdir"] = initdir
 	subdict( Tracker, {"zoom":True} )
 
@@ -1020,10 +1444,70 @@ def main():
 		#  prepare output directory,  the settings are awkward
 		Tracker["directory"]     = os.path.join(masterdir,"main%03d"%Tracker["mainiteration"])
 
+		#  First deal with the local filter, if required.
+		if Tracker["local_filter"]:
+			Tracker["local_filter"] = os.path.join(Tracker["previousoutputdir"],"locres.hdf")
+			doit, keepchecking = checkstep(Tracker["local_filter"], keepchecking, myid, main_node)
+			if  doit:
+				#  Compute local resolution volume
+				from statistics import locres
+				if( myid == main_node):
+					vi = get_im(os.path.join(Tracker["previousoutputdir"] ,"vol0.hdf"))
+					if( Tracker["nxinit"] != Tracker["constants"]["nnxo"] ):
+						vi = Util.window(rot_shift3D(vi,scale=float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])),Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
+				else:  vi = model_blank(Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
+				if( myid == main_node):
+					ui = get_im(os.path.join(Tracker["previousoutputdir"] ,"vol1.hdf"))
+					if( Tracker["nxinit"] != Tracker["constants"]["nnxo"] ):
+						ui = Util.window(rot_shift3D(ui,scale=float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])),Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
+				else:  ui = model_blank(Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
+				if( myid == main_node):
+					if(Tracker["constants"]["mask3D"] is None):
+						mask = model_circle(int(Tracker["constants"]["radius"]*Tracker["nxinit"]/float(Tracker["constants"]["nnxo"])+0.5),Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
+					else:
+						mask = get_im(Tracker["constants"]["mask3D"])
+						if( Tracker["nxinit"] != Tracker["constants"]["nnxo"] ):
+							mask =  Util.window(rot_shift3D(mask,scale=float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])),Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
+						mask = binarize(mask, 0.5)
+				else:
+					mask = model_blank(Tracker["nxinit"],Tracker["nxinit"],Tracker["nxinit"])
+				bcast_EMData_to_all(mask, myid, main_node)
+				wn = max(int(13*Tracker["nxinit"]/304. + 0.5), 5)
+				wn += (1-wn%2)  #  make sure the size is odd
+				freqvol, resolut = locres(vi, ui, mask, wn, 0.5, 1.0, myid, main_node, nproc)
+				if( myid == main_node):
+					#lowpass = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
+					#st = Util.infomask(freqvol, mask, True)
+					#freqvol += (lowpass - st[0])
+					#line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+					#print(line,"    Local resolution volume augmented : %5.2f  %5.2f"%(lowpass,st[0]))
+					freqvol.write_image(Tracker["local_filter"])
+				del freqvol, resolut
+
+
+				#  Now prepare locally filtered volumes at 0.333
+				freqvol, resolut = locres(vi, ui, mask, wn, 0.333333333333, 1.0, myid, main_node, nproc)
+				del vi, ui
+				Tracker["local_filter"] = os.path.join(Tracker["previousoutputdir"],"locres0p3.hdf")
+				if( myid == main_node ):
+					freqvol.write_image(Tracker["local_filter"])
+					volf = 0.5*(get_im(os.path.join(Tracker["previousoutputdir"] ,"vol0.hdf"))+get_im(os.path.join(Tracker["previousoutputdir"] ,"vol0.hdf")))
+				else:
+					volf = model_blank(Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+				del freqvol, resolut
+				ref_data = [volf, Tracker, mainiteration, MPI_COMM_WORLD]
+				user_func = Tracker["constants"] ["user_func"]
+				volf = user_func(ref_data)
+
+				if(myid == main_node):
+					fpol(volf, Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["previousoutputdir"] ,"vllf.hdf"))
+				del volf, mask
+				Tracker["local_filter"] = os.path.join(Tracker["previousoutputdir"],"locres.hdf")
+
 		if(myid == main_node):
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(line,"MAIN ITERATION  #%2d     nxinit, icurrentres, resolution  %d   %d  %f"%\
-				(Tracker["mainiteration"], Tracker["nxinit"],  Tracker["icurrentres"], \
+			print(line,"MAIN ITERATION  #%2d   %s  nxinit, icurrentres, resolution  %d   %d  %f"%\
+				(Tracker["mainiteration"], Tracker["state"],Tracker["nxinit"],  Tracker["icurrentres"], \
 				Tracker["constants"]["pixel_size"]*Tracker["constants"]["nnxo"]/float(Tracker["icurrentres"])))
 			print(line,"  mainoutputdir  previousoutputdir  ",Tracker["directory"], Tracker["previousoutputdir"])
 
@@ -1070,50 +1554,145 @@ def main():
 
 		mpi_barrier(MPI_COMM_WORLD)
 
-		#  REFINEMENT  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-		for procid in xrange(2):
-			coutdir = os.path.join(Tracker["directory"], "loga%01d"%procid)
-			doit, keepchecking = checkstep(coutdir, keepchecking, myid, main_node)
-			#  here ts has different meaning for standard and continuous
-			Tracker["refvol"] = os.path.join(Tracker["directory"], "fusevol%01d.hdf"%procid)\
-			#if(len(history)>1):  old_nx = history[-2]["nx"]
-			#else:    old_nx = Tracker["nx"]
-			#Tracker["xr"] = "3.0"#"%s"%max(3,int(1.5*Tracker["nx"]/float(old_nx) +0.5))
-			if( Tracker["nsoft"] > 0 ):
-				if( float(Tracker["an"]) == -1.0 ):
-					Tracker["saturatecrit"] = 0.90
-				else:
-					Tracker["saturatecrit"] = 0.90  # Shake and bake for local
-				Tracker["maxit"] = 1500
-			else:
-				if(Tracker["local"]):
-					Tracker["saturatecrit"] = 0.95
-					#Tracker["pixercutoff"]  = 0.5
-					#Tracker["xr"] = "2.0"
-					#Tracker["maxit"] = 5 #  ?? Lucky guess
-				else:
-					Tracker["saturatecrit"] = 0.95
-					Tracker["pixercutoff"]  = 0.5
-					#Tracker["maxit"] = 50 #  ?? Lucky guess
+		if Tracker["mainiteration"] != 9:
+			#  REFINEMENT   ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+			for procid in xrange(2):
+				coutdir = os.path.join(Tracker["directory"], "loga%01d"%procid)
+				doit, keepchecking = checkstep(coutdir, keepchecking, myid, main_node)
+				#  here ts has different meaning for standard and continuous
+				Tracker["refvol"] = os.path.join(Tracker["directory"], "fusevol%01d.hdf"%procid)
 
+				if  doit:
+					mpi_barrier(MPI_COMM_WORLD)
+					if( Tracker["nxinit"] != projdata[procid][0].get_xsize() ):
+						projdata[procid] = []
+						projdata[procid], oldshifts[procid] = get_shrink_data(Tracker, Tracker["nxinit"],\
+							partids[procid], partstack[procid], myid, main_node, nproc, preshift = False)
+
+					# METAMOVE
+					Tracker = metamove(projdata[procid], oldshifts[procid], Tracker, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
+		else:
+			#  Cross-checking   ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+			for procid in xrange(2):
+				coutdir = os.path.join(Tracker["directory"], "logc%01d"%procid)
+				doit, keepchecking = checkstep(coutdir, keepchecking, myid, main_node)
+				#  Flip reference volumes
+				Tracker["refvol"] = os.path.join(Tracker["directory"], "fusevol%01d.hdf"%(1-procid)) # switch reference volumes
+
+				if  doit:
+					mpi_barrier(MPI_COMM_WORLD)
+					if(myid == main_node):					
+						cmd = "{} {} {}".format("mv", os.path.join(Tracker["directory"],"params-chunk%01d.txt"%procid),os.path.join(Tracker["directory"],"org-params-chunk%01d.txt"%procid))
+						cmdexecute(cmd)
+
+					if( Tracker["nxinit"] != projdata[procid][0].get_xsize() ):
+						projdata[procid] = []
+						projdata[procid], oldshifts[procid] = get_shrink_data(Tracker, Tracker["nxinit"],\
+							partids[procid], partstack[procid], myid, main_node, nproc, preshift = False)
+
+					# METAMOVE
+					Tracker = metamove(projdata[procid], oldshifts[procid], Tracker, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
+
+
+			# identify bad apples
+			doit, keepchecking = checkstep(os.path.join(Tracker["directory"],"badapples.txt"), keepchecking, myid, main_node)
 			if  doit:
-				mpi_barrier(MPI_COMM_WORLD)
-				if( Tracker["nxinit"] != projdata[procid][0].get_xsize() ):
-					projdata[procid] = []
-					projdata[procid], oldshifts[procid] = get_shrink_data(Tracker["constants"]["nnxo"], Tracker["nxinit"], \
-						Tracker["constants"]["stack"], partids[procid], partstack[procid], myid, main_node, nproc, \
-						Tracker["constants"]["CTF"], Tracker["applyctf"], preshift = False, radi = Tracker["constants"]["radius"])
+				if(myid == main_node):
+					from utilities import get_symt
+					from pixel_error import max_3D_pixel_error
+					ts = get_symt(ali3d_options.sym)
+					badapples = []
+					pixercutoff = 5.0#get_pixercutoff(radi*shrink, float(paramsdict["delta"]), 0.5)
+					total_images_now = 0
+					for procid in xrange(2):
+						bad = []
+						ids  = map(int,read_text_file( partids[procid] ))
+						total_images_now += len(ids)
+						oldp = read_text_row(os.path.join(Tracker["directory"],"org-params-chunk%01d.txt"%procid))
+						newp = read_text_row(os.path.join(Tracker["directory"],"params-chunk%01d.txt"%procid))
+						per = [0.0]*len(ids)
+						for i in xrange(len(ids)):
+							t1 = Transform({"type":"spider","phi":oldp[i][0],"theta":oldp[i][1],"psi":oldp[i][2]})
+							t1.set_trans(Vec2f(-oldp[i][3]*shrink, -oldp[i][4]*shrink))
+							t2 = Transform({"type":"spider","phi":newp[i][0],"theta":newp[i][1],"psi":newp[i][2]})
+							t2.set_trans(Vec2f(-newp[i][3]*shrink, -newp[i][4]*shrink))
+							if(len(ts) > 1):
+								# only do it if it is not c1
+								pixel_error = +1.0e23
+								for kts in ts:
+									ut = t2*kts
+									# we do not care which position minimizes the error
+									pixel_error = min(max_3D_pixel_error(t1, ut, lastring), pixel_error)
+							else:
+								pixel_error = max_3D_pixel_error(t1, t2, lastring)
+							per[i] = pixel_error
+							if(pixel_error > pixercutoff):
+								bad.append(i)
 
-				# METAMOVE
-				metamove(projdata[procid], oldshifts[procid], Tracker, partids[procid], partstack[procid], coutdir, procid, myid, main_node, nproc)
-		# Update HISTORY
-		HISTORY.append(Tracker.copy())
+						write_text_file(per,os.path.join(Tracker["directory"],"pixel_errors.txt"))
+
+
+						if(len(bad)>0):
+							badapples += [ids[bad[i]] for i in xrange(len(bad))]
+							for i in xrange(len(bad)-1,-1,-1):
+								del oldp[bad[i]],ids[bad[i]]
+						if(len(ids) == 0):
+							ERROR("program diverged, all images have large angular errors, most likely the initial model is badly off","sxmeridien",1,myid)
+						"""
+						else:
+							#  This generates new parameters, hopefully to be used as starting ones in the new iteration
+							write_text_file(ids,os.path.join(Tracker["directory"],"chunk%01d.txt"%procid))
+							write_text_row(oldp,os.path.join(Tracker["directory"],"params-chunk%01d.txt"%procid))
+						"""
+					if(len(badapples)>0):
+						badapples.sort()
+						write_text_file(badapples,os.path.join(Tracker["directory"],"badapples.txt"))
+						eli = 100*float(len(badapples))/float(total_images_now)
+						line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+						print(line,"Elimination of outliers: %5.1f percent"%eli )
+					else:  eli = 0.0
+					del badapples, oldp,ids,bad,newp,ts
+				else:  eli =0.0
+				eli = bcast_number_to_all(eli, source_node = main_node)
+				mpi_finalize()
+				exit()
+
+				'''		
+				#  This part under MPI
+				if(eli > 0.0):
+					#  Compute current resolution
+					depfilter, depfalloff, depres = compute_resolution(stack, mainoutputdir, \
+							[os.path.join(mainoutputdir,"chunk%01d.txt"%procid) for procid in xrange(2)], \
+							[os.path.join(mainoutputdir,"params-chunk%01d.txt"%procid) for procid in xrange(2)], \
+							radi, nnxo, ali3d_options.CTF, myid, main_node, nproc)
+					#  AGAIN, BASED ON RESOLUTION!!
+					if(depres < currentres):
+						#  elimination of outliers decreased resolution, ignore the effort
+						eliminated_outliers = False
+					else:
+						eliminated_outliers = True
+						currentres = depres
+						newlowpass = depfilter
+						newfalloff = depfalloff
+						"""
+						#  It does not seem to be needed, as data is there, we just point to the directory
+						for procid in xrange(2):
+							#  set pointers to current parameters in main, which are for the reduced set stored above
+							partids[procid]   = os.path.join(mainoutputdir,"chunk%01d.txt"%procid
+							partstack[procid] = os.path.join(mainoutputdir,"params-chunk%01d.txt"%procid)
+						"""
+				else:
+					eliminated_outliers = False
+	
+				'''
+
+
+		#  REFINEMENT  ASSESSMENT  <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 		partstack = [None]*2
 		for procid in xrange(2):  partstack[procid] = os.path.join(Tracker["directory"], "params-chunk%01d.txt"%procid)
 
 		#  Due to efficiency reasons, we have to check it for the volf, if it does not exist, estimate the resolution and compute volf
-		outvol = os.path.join(Tracker["directory"] ,"current_resolution.txt")
 		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"volf.hdf"), keepchecking, myid, main_node)
 
 		if  doit:
@@ -1124,22 +1703,18 @@ def main():
 				if( nxinit != projdata[procid][0].get_xsize() ):
 					projdata = [[],[]]
 					for procid in xrange(2):
-						projdata[procid], oldshifts[procid] = get_shrink_data(Tracker["constants"]["nnxo"], nxinit, \
-							Tracker["constants"]["stack"], partids[procid], partstack[procid], myid, main_node, nproc, \
-							Tracker["constants"]["CTF"], Tracker["applyctf"], preshift = False, radi = Tracker["constants"]["radius"])
+						projdata[procid], oldshifts[procid] = get_shrink_data(Tracker, nxinit,\
+									partids[procid], partstack[procid], myid, main_node, nproc, preshift = False)
 
-				xlowpass, xfalloff, xcurrentres = compute_resolution(projdata, \
-													Tracker["directory"], partids, partstack, \
-													Tracker["constants"]["radius"], Tracker["constants"]["nnxo"], \
-													Tracker["constants"]["CTF"], Tracker["constants"]["mask3D"], \
-													Tracker["constants"]["sym"], myid, main_node, nproc, Tracker["constants"]["pixel_size"])
+				xlowpass, xfalloff, xcurrentres, xares = compute_resolution(projdata, partids, partstack, \
+													Tracker, myid, main_node, nproc)
 				if( xcurrentres > (nxinit-cushion)/2 and nxinit < Tracker["constants"]["nnxo"] ):
 					nxinit = Tracker["constants"]["nnxo"]
 					projdata = [[model_blank(1,1)], [model_blank(1,1)]]
 				else:  repeat = False
 
 			#  Make sure these variables are not carried
-			del xlowpass, xfalloff, xcurrentres, nxinit
+			del xlowpass, xfalloff, xcurrentres, xares, nxinit
 			if( myid == main_node):
 				# Carry over chunk information
 				for procid in xrange(2):
@@ -1147,11 +1722,11 @@ def main():
 											os.path.join(Tracker["directory"],"chunk%01d.txt"%procid) )
 					cmdexecute(cmd)
 
-		#  PRESENTABLE RESULT
-		#  Part         <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-		#  Here I have code to generate presentable results.  IDs and params have to be merged and stored and the overall volume computed.
+
+			#  PRESENTABLE RESULT                <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
+			#  Here I have code to generate presentable results.  IDs and params have to be merged and stored and the overall volume computed.
 			if( myid == main_node ):
-				pinids = read_text_file(partids[0]) + read_text_file(partids[1])
+				pinids = read_text_file(partids[0])  + read_text_file(partids[1])
 				params = read_text_row(partstack[0]) + read_text_row(partstack[1])
 
 				assert(len(pinids) == len(params))
@@ -1163,10 +1738,13 @@ def main():
 
 				write_text_file([pinids[i][0] for i in xrange(len(pinids))], os.path.join(Tracker["directory"] ,"indexes.txt"))
 				write_text_row( [pinids[i][1] for i in xrange(len(pinids))], os.path.join(Tracker["directory"] ,"params.txt"))
+				del pinids
 			mpi_barrier(MPI_COMM_WORLD)
+			"""
 			nfsc = read_fsc(os.path.join(Tracker["directory"] ,"fsc.txt"),Tracker["constants"]["nnxo"], myid, main_node)
 			Tracker["lowpass"], Tracker["falloff"] = fit_tanh([[float(i)/Tracker["constants"]["nnxo"] for i in xrange(len(nfsc))],nfsc], 0.01)
 			del nfsc
+			"""
 
 			# The next will have to be decided later, i.e., under which circumstances we should recalculate full size volume.
 			#  Most likely it should be done only when the program terminates.
@@ -1175,38 +1753,79 @@ def main():
 				projdata = getindexdata(Tracker["constants"]["stack"], os.path.join(Tracker["directory"] ,"indexes.txt"), \
 						os.path.join(Tracker["directory"] ,"params.txt"), myid, nproc)
 			"""
-			if( myid == main_node ):\
+			if( myid == main_node ):
 				volf = 0.5*(get_im(os.path.join(Tracker["directory"] ,"vol0.hdf"))+get_im(os.path.join(Tracker["directory"] ,"vol0.hdf")))
-			else:  volf = model_blank(Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
-			# volf = do_volume_mrk01(volf, Tracker, mainiteration, mpi_comm = MPI_COMM_WORLD)
-			mpi_comm = MPI_COMM_WORLD
-			ref_data = [volf, Tracker, mainiteration, mpi_comm]
+				[newlowpass, newfalloff, icurrentres, ares] = read_text_row( os.path.join(Tracker["directory"],"current_resolution.txt") )[0]
+				#  This structure will be calculated without local filter
+				Tracker["lowpass"] = float(ares)/float(Tracker["nxinit"])
+			else:
+				volf = model_blank(Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+				newlowpass = 0.0; newfalloff = 0.0; icurrentres = 0; ares = 0
+			lsave = Tracker["local_filter"]
+			Tracker["local_filter"] = False
+			Tracker["falloff"] = newfalloff
+
+			#volf = do_volume_mrk01(volf, Tracker, mainiteration, mpi_comm = MPI_COMM_WORLD)
+			ref_data = [volf, Tracker, mainiteration, MPI_COMM_WORLD]
 			user_func = Tracker["constants"] ["user_func"]
 			volf = user_func(ref_data)
-			
+
 			if(myid == main_node):
 				fpol(volf, Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"] ,"volf.hdf"))
+			del volf
+			Tracker["local_filter"] = lsave
+
+		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"error_thresholds.txt"), keepchecking, myid, main_node)
+		if  doit:
+			#  ANALYZE CHANGES IN OUTPUT PARAMETERS WITH RESPECT TO PREVIOUS INTERATION  <><><><><><><><><><><><><><><><><><><><><><><><><><><>
+			if(myid == main_node):
+				anger, shifter = threshold_params_changes( Tracker["directory"], Tracker["previousoutputdir"], 0.95, Tracker["constants"]["sym"])
+				write_text_row( [[anger, shifter]], os.path.join(Tracker["directory"] ,"error_thresholds.txt") )
+			else:
+				anger   = 0.0
+				shifter = 0.0
+		else:
+			if(myid == main_node):
+				[anger, shifter] = read_text_row( os.path.join(Tracker["directory"] ,"error_thresholds.txt") )[0]
+			else:
+				anger   = 0.0
+				shifter = 0.0
+
+		if( myid == main_node):
+			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			print(line,"Maximum displacements at 0.95 level for angular directions  %6.2f  and shifts %6.1f"%(anger, shifter) )
+
+		anger   = bcast_number_to_all(anger,   source_node = main_node)
+		shifter = bcast_number_to_all(shifter, source_node = main_node)
+		Tracker["anger"]   = anger
+		Tracker["shifter"] = shifter
 
 
 		if( myid == main_node):
-			[newlowpass, newfalloff, icurrentres] = read_text_row( os.path.join(Tracker["directory"],"current_resolution.txt") )[0]
+			[newlowpass, newfalloff, icurrentres, ares] = read_text_row( os.path.join(Tracker["directory"],"current_resolution.txt") )[0]
 		else:
 			newlowpass = 0.0
 			newfalloff = 0.0
 			icurrentres = 0
+			ares = 0
 		newlowpass = bcast_number_to_all(newlowpass, source_node = main_node)
 		newlowpass = round(newlowpass,4)
 		newfalloff = bcast_number_to_all(newfalloff, source_node = main_node)
 		Tracker["falloff"] = round(newfalloff,4)  # For the time being
 		icurrentres = bcast_number_to_all(icurrentres, source_node = main_node)
+		ares = bcast_number_to_all(ares, source_node = main_node)
 
 
 		#mpi_barrier(MPI_COMM_WORLD)
 		#mpi_finalize()
 		#exit()
-		if myid == main_node:  print("   >>> AI  <<<  ",Tracker["mainiteration"] ,icurrentres,Tracker["icurrentres"])
+		Tracker["ireachedres"] = icurrentres
+		if myid == main_node:  print("   >>> AI  <<<  ",Tracker["mainiteration"] ,Tracker["ireachedres"],Tracker["icurrentres"])
 
-		keepgoing, reset_data = AI( icurrentres, Tracker, HISTORY)
+		# Update HISTORY
+		HISTORY.append(Tracker.copy())
+		if( Tracker["constants"]["restrict_shifts"] == -1 ):  keepgoing, reset_data, Tracker = AI( Tracker, HISTORY )
+		else:  keepgoing, reset_data, Tracker = AI_restrict_shifts( Tracker, HISTORY )
 
 		if( keepgoing == 1 ):
 			if reset_data :  projdata = [[model_blank(1,1)],[model_blank(1,1)]]

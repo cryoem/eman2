@@ -1005,12 +1005,16 @@ def do_volume_mrk02(ref_data):
 		vol = filterlocal( locres, vol, mask, Tracker["falloff"], myid, 0, nproc)
 
 		if myid == 0:
-			if(lx < nx):  vol = fpol(vol, nx,nx,nx)
+			if(lx < nx):
+				from fundamentals import fpol
+				vol = fpol(vol, nx,nx,nx)
 			vol = threshold(vol)
 			vol = filt_btwl(vol, 0.38, 0.5)#  This will have to be corrected.
 			Util.mul_img(vol, mask3D)
 			del mask3D
 			# vol.write_image('toto%03d.hdf'%iter)
+		else:
+			vol = model_blank(nx,nx,nx)
 	else:
 		if myid == 0:
 			stat = Util.infomask(vol, mask3D, False)

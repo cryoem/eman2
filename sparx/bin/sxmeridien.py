@@ -102,9 +102,9 @@ def AI( Tracker, HISTORY ):
 		#    3.  resolution stalled and pwadjust: move to the next phase
 		#    4.  resolution decreased: back off and move to the next phase
 		#    5.  All phases tried and nxinit < nnxo: set nxinit == nnxo and run local searches.
+		Tracker["local_filter"] = Tracker["constants"]["local_filter"]
 		if( Tracker["state"] == "INITIAL" ):
 			move_up_phase = True
-			Tracker["local_filter"] = Tracker["constants"]["local_filter"]
 		else:
 			#  For all other states make a decision based on resolution change
 			direction = Tracker["ireachedres"] - Tracker["icurrentres"]
@@ -1558,8 +1558,7 @@ def main():
 		for procid in xrange(2):
 			coutdir = os.path.join(Tracker["directory"], "loga%01d"%procid)
 			doit, keepchecking = checkstep(coutdir, keepchecking, myid, main_node)
-			#  here ts has different meaning for standard and continuous
-			Tracker["refvol"] = os.path.join(Tracker["directory"], "fusevol%01d.hdf"%procid)\
+			Tracker["refvol"] = os.path.join(Tracker["directory"], "fusevol%01d.hdf"%procid)
 
 			if  doit:
 				mpi_barrier(MPI_COMM_WORLD)
