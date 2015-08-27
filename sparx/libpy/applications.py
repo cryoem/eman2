@@ -8247,7 +8247,7 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 					empty_group =1
 			if precn <= termprec:  
 				terminate = 1
-			if empty_group =1
+			if empty_group ==1
 				terminate = 1
 		terminate = mpi_bcast(terminate, 1, MPI_INT, 0, MPI_COMM_WORLD)
 		terminate = int(terminate[0])
