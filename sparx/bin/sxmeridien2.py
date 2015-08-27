@@ -1554,7 +1554,7 @@ def main():
 
 		mpi_barrier(MPI_COMM_WORLD)
 
-		if Tracker["mainiteration"] != 9:
+		if Tracker["mainiteration"] != 8:
 			#  REFINEMENT   ><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 			for procid in xrange(2):
 				coutdir = os.path.join(Tracker["directory"], "loga%01d"%procid)
@@ -1581,10 +1581,6 @@ def main():
 
 				if  doit:
 					mpi_barrier(MPI_COMM_WORLD)
-					if(myid == main_node):					
-						cmd = "{} {} {}".format("mv", os.path.join(Tracker["directory"],"params-chunk%01d.txt"%procid),os.path.join(Tracker["directory"],"org-params-chunk%01d.txt"%procid))
-						cmdexecute(cmd)
-
 					if( Tracker["nxinit"] != projdata[procid][0].get_xsize() ):
 						projdata[procid] = []
 						projdata[procid], oldshifts[procid] = get_shrink_data(Tracker, Tracker["nxinit"],\
@@ -1608,7 +1604,7 @@ def main():
 						bad = []
 						ids  = map(int,read_text_file( partids[procid] ))
 						total_images_now += len(ids)
-						oldp = read_text_row(os.path.join(Tracker["directory"],"org-params-chunk%01d.txt"%procid))
+						oldp = read_text_row(os.path.join(Tracker["previousoutputdir"],"params-chunk%01d.txt"%procid))
 						newp = read_text_row(os.path.join(Tracker["directory"],"params-chunk%01d.txt"%procid))
 						per = [0.0]*len(ids)
 						for i in xrange(len(ids)):
@@ -1824,9 +1820,13 @@ def main():
 
 		# Update HISTORY
 		HISTORY.append(Tracker.copy())
-		if( Tracker["constants"]["restrict_shifts"] == -1 ):  keepgoing, reset_data, Tracker = AI( Tracker, HISTORY )
-		else:  keepgoing, reset_data, Tracker = AI_restrict_shifts( Tracker, HISTORY )
-
+		if Tracker["mainiteration"] != 7:
+			if( Tracker["constants"]["restrict_shifts"] == -1 ):  keepgoing, reset_data, Tracker = AI( Tracker, HISTORY )
+			else:  keepgoing, reset_data, Tracker = AI_restrict_shifts( Tracker, HISTORY )
+		else:
+			keepgoing = 1
+			reset_data = False
+			Tracker["maxit"] = 1
 		if( keepgoing == 1 ):
 			if reset_data :  projdata = [[model_blank(1,1)],[model_blank(1,1)]]
 			if(myid == main_node):
