@@ -417,6 +417,47 @@ class EMFileType(object) :
 		target.show()
 		target.raise_()
 
+	def show2dSingle30(self, brws) :
+		"""Show a single 3-D volume as a 2-D image"""
+
+		brws.busy()
+
+		data = EMData(self.path,0)
+
+		try :
+			target = brws.view2d[-1]
+			target.set_data(data)
+		except :
+			target = EMImage2DWidget(data)
+			brws.view2d.append(target)
+
+		target.setWindowTitle(self.path.split('/')[-1])
+
+		brws.notbusy()
+		target.show()
+		target.raise_()
+	
+	def show2dSingle31(self, brws) :
+		"""Show a single 3-D volume as a 2-D image"""
+
+		brws.busy()
+
+		data = EMData(self.path,1)
+
+		try :
+			target = brws.view2d[-1]
+			target.set_data(data)
+		except :
+			target = EMImage2DWidget(data)
+			brws.view2d.append(target)
+
+		target.setWindowTitle(self.path.split('/')[-1])
+
+		brws.notbusy()
+		target.show()
+		target.raise_()
+
+
 	def show2dSingleNew(self, brws) :
 		"""Show a single 2-D image"""
 
@@ -1008,7 +1049,7 @@ class EMStackFileType(EMFileType) :
 		"""Returns a list of (name, callback) tuples detailing the operations the user can call on the current file"""
 		# 3-D stack
 		if self.nimg > 1 and self.dim[2] > 1:
-			return [("Show all 3D", "Show all in a single 3D window", self.show3DAll), ("Show 1st 3D", "Show only the first volume", self.show3DNew), ("Chimera", "Open in chimera (if installed)", self.showChimera), ("Save As", "Saves images in new file format", self.saveAs)]
+			return [("Show all 3D", "Show all in a single 3D window", self.show3DAll), ("Show 1st 3D", "Show only the first volume", self.show3DNew),("Show 1st 2D", "Show first volume as 2D stack", self.show2dSingle30),("Show 2nd 2D", "Show second volume as 2D stack", self.show2dSingle31), ("Chimera", "Open in chimera (if installed)", self.showChimera), ("Save As", "Saves images in new file format", self.saveAs)]
 		# 2-D stack
 		elif self.nimg > 1 and self.dim[1] > 1:
 			return [("Show Stack", "Show all images together in one window", self.show2dStack), ("Show Stack+", "Show all images together in a new window", self.show2dStackNew), 
