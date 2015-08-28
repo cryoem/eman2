@@ -771,8 +771,8 @@ def rops_table(img, lng = False):
 	table = [0.0]*nr
 	for ir in xrange(nr): table[ir] = ro.get_value_at(ir)
 	if lng:
-		from math import log
-		for ir in xrange(1,nr): table[ir] = log(table[ir])
+		from math import log10
+		for ir in xrange(1,nr): table[ir] = log10(table[ir])
 		table[0] = table[1]
 	return table
 

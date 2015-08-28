@@ -933,20 +933,21 @@ def do_volume_mrk02(ref_data):
 		vol -= stat[0]
 		Util.mul_scalar(vol, 1.0/stat[1])
 		vol = threshold(vol)
-		#Util.mul_img(vol, mask3D)
+		Util.mul_img(vol, mask3D)
 		if( Tracker["PWadjustment"] ):
-			from utilities    import read_text_file
+			from utilities    import read_text_file, write_text_file
 			rt = read_text_file( Tracker["PWadjustment"] )
 			fftip(vol)
 			ro = rops_table(vol)
 			#  Here unless I am mistaken it is enough to take the beginning of the reference pw.
 			for i in xrange(1,len(ro)):  ro[i] = (rt[i]/ro[i])**Tracker["upscale"]
+			#write_text_file(rops_table(filt_table( vol, ro),1),"foo.txt")
 			if Tracker["constants"]["sausage"]:
 				ny = vol.get_ysize()
 				y = float(ny)
 				from math import exp
 				for i in xrange(len(ro)):  ro[i] *= \
-				  (1.0+0.3*exp(-(((i/y/Tracker["constants"]["pixel_size"])-0.12)/0.025)**2)+0.2*exp(-(((i/y/Tracker["constants"]["pixel_size"])-0.22)/0.025)**2))
+				  (1.0+1.0*exp(-(((i/y/Tracker["constants"]["pixel_size"])-0.10)/0.025)**2)+1.0*exp(-(((i/y/Tracker["constants"]["pixel_size"])-0.215)/0.025)**2))
 
 			if local_filter:
 				# skip low-pass filtration
@@ -964,7 +965,7 @@ def do_volume_mrk02(ref_data):
 				ro = [0.0]*(ny//2+2)
 				from math import exp
 				for i in xrange(len(ro)):  ro[i] = \
-				  (1.0+0.3*exp(-(((i/y/Tracker["constants"]["pixel_size"])-0.12)/0.025)**2)+0.2*exp(-(((i/y/Tracker["constants"]["pixel_size"])-0.22)/0.025)**2))
+				  (1.0+1.0*exp(-(((i/y/Tracker["constants"]["pixel_size"])-0.10)/0.025)**2)+1.0*exp(-(((i/y/Tracker["constants"]["pixel_size"])-0.215)/0.025)**2))
 				fftip(vol)
 				filt_table(vol, ro)
 				del ro
@@ -1017,6 +1018,8 @@ def do_volume_mrk02(ref_data):
 			vol = model_blank(nx,nx,nx)
 	else:
 		if myid == 0:
+			#from utilities import write_text_file
+			#write_text_file(rops_table(vol,1),"goo.txt")
 			stat = Util.infomask(vol, mask3D, False)
 			vol -= stat[0]
 			Util.mul_scalar(vol, 1.0/stat[1])

@@ -1496,7 +1496,7 @@ def main():
 					volf = model_blank(Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 				del freqvol, resolut
 				ref_data = [volf, Tracker, mainiteration, MPI_COMM_WORLD]
-				user_func = Tracker["constants"] ["user_func"]
+				user_func = Tracker["constants"]["user_func"]
 				volf = user_func(ref_data)
 
 				if(myid == main_node):
