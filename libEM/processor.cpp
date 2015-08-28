@@ -1789,7 +1789,7 @@ void MaskAzProcessor::process_inplace(EMData *image) {
 			float az=atan2(y-cy,x-cx);
 			float r=hypot(y-cy,x-cx);
 			float val=0.0f;
-			if (r>=inner_radius&&r<=outer_radius) {
+			if (r>inner_radius&&r<=outer_radius) {
 				if (az>phicen-phirange&&az<phicen+phirange) {
 					if (phitriangle) val=1.0f-fabs(az-phicen)/phirange;
 					else val=1.0f;
@@ -1802,6 +1802,10 @@ void MaskAzProcessor::process_inplace(EMData *image) {
 					if (phitriangle) val=1.0f-fabs(az-M_PI*2.0-phicen)/phirange;
 					else val=1.0f;
 				}
+			}
+			if (r==0) {
+				if (phitriangle) val=phirange/360.0;
+				else val=1.0;
 			}
 
 			for (int z=0; z<nz; z++) {

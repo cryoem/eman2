@@ -328,6 +328,7 @@ class MovieModeAligner:
 			#state = [t for tform in self.optimal_transforms for t in tform.get_trans_2d()]
 			state = [np.random.randint(-2,2) for tform in self.optimal_transforms for t in tform.get_trans_2d()]
 			sm = Simplex(self._compares,state,[1]*len(state),kC=options.kC,kE=options.kE,kR=options.kR,data=self)
+			print state
 			if options.verbose: print("Initializing simplex minimization\n")
 			result, error, iters = sm.minimize(options.epsilon,options.maxiters,monitor=1)
 		if options.verbose:

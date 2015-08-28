@@ -52,7 +52,8 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--process", metavar="processor_name:param1=value1:param2=value2", type=str,default="segment.kmeans:ampweight=1:nseg=50:thr=0.8",
 						help="The name and parameters of a processor to perform the segmentation. 'e2help.py processor segment -v 1' for a full list. Default=segment.kmeans:ampweight=1:nseg=50:thr=0.8 ")
-	parser.add_argument("--output", default=None, type=str,help="Name of output file for segmented volume")
+	parser.add_argument("--output", default=None, type=str,help="Name of output file for segmentation map")
+	parser.add_argument("--segout", default=None, type=str,help="Output stack for individual segmented volumes")
 	parser.add_argument("--chimeraout", default=None, type=str,help="Name of file to write center of segments in UCSF Chimera marker format.")
 	parser.add_argument("--pdbout", default=None, type=str,help="Name of file to write center of segments in PDB format.")
 	parser.add_argument("--txtout", default=None, type=str,help="Name of file to write center of segments in text format (n\tx\ty\tz, with coordinates in pixels, 0,0,0 in the corner)")
@@ -120,6 +121,12 @@ def main():
 
 	if options.verbose>0: print "Writing output"
 	if options.output!=None : seg.write_image(options.output,0)
+	if options.segout!=None :
+		max=int(seg["maximum"])
+		for i in xrange(1,max+1):
+			sv=seg.process("threshold.binaryrange",{"low":i-.5,"high":i+.5})
+			sv.write_image(options.segout,i-1)
+		
 	
 	# make a list of 3-tuples for the center locations
 	centers=seg["segment_centers"]

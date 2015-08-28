@@ -2123,6 +2123,7 @@ class EMInspector3D(QtGui.QWidget):
 			if i==mdl: child.setVisibleItem(True)
 			else: child.setVisibleItem(False)
 		
+		self.updateTreeSelVis()
 		self.scenegraph().updateSG()
 
 	def _recursiveAdd(self, parentitem, parentnode,depth=0):

@@ -737,8 +737,7 @@ def parse_infile(infile, first, last, step):
 
 	if (nimg > 1):
 		#print "it appears %s contains %d image" % (infile, nimg)
-		d = EMData()
-		d.read_image(infile, 0)
+		d = EMData(infile,nimg-1)	# we read the last image, since it should always exist
 
 		x = d.get_xsize()
 		y = d.get_ysize()
