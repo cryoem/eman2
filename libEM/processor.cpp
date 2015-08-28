@@ -128,7 +128,7 @@ const string MaskSoftProcessor::NAME = "mask.soft";
 const string MaskEdgeMeanProcessor::NAME = "mask.ringmean";
 const string MaskNoiseProcessor::NAME = "mask.noise";
 const string MaskGaussProcessor::NAME = "mask.gaussian";
-const string MaskAzProcessor::NAME = "mask.azimuthal.cyl";
+const string MaskAzProcessor::NAME = "mask.cylinder";
 const string MaskGaussNonuniformProcessor::NAME = "mask.gaussian.nonuniform";
 const string MaskGaussInvProcessor::NAME = "math.gausskernelfix";
 const string LinearPyramidProcessor::NAME = "math.linearpyramid";
@@ -1775,24 +1775,41 @@ void MaskAzProcessor::process_inplace(EMData *image) {
 	int ny=image->get_ysize();
 	int nz=image->get_zsize();
 
-	float phi0 = params.set_default("phi0",0.0f)*M_PI/180.0;
-	phi0=Util::angle_norm_pi(phi0);
-	float phi1 = params.set_default("phi1",90.0f)*M_PI/180.0;
-	phi1=Util::angle_norm_pi(phi1);
-	if (phi1<phi0) phi1+=2.0*M_PI;
-	float cx = nx/2+params.set_default("dx",0.0f);
-	float cy = ny/2+params.set_default("dy",0.0f);
-	
+	float phicen = params.set_default("phicen",0.0f)*M_PI/180.0;
+	phicen=Util::angle_norm_pi(phicen);
+	float phirange = params.set_default("phirange",90.0f)*M_PI/180.0;
+	int phitriangle = params.set_default("phitriangle",0);
+	float cx = params.set_default("cx",nx/2);
+	float cy = params.set_default("cy",ny/2);
+	float inner_radius = params.set_default("inner_radius",0.0f);
+	float outer_radius = params.set_default("outer_radius",nx+ny);
+
 	for (int x=0; x<nx; x++) {
 		for (int y=0; y<ny; y++) {
 			float az=atan2(y-cy,x-cx);
-			if ((az<phi0 || az>phi1)&&(az+2.0*M_PI<phi0 || az+2.0*M_PI>phi1)) continue;
+			float r=hypot(y-cy,x-cx);
+			float val=0.0f;
+			if (r>=inner_radius&&r<=outer_radius) {
+				if (az>phicen-phirange&&az<phicen+phirange) {
+					if (phitriangle) val=1.0f-fabs(az-phicen)/phirange;
+					else val=1.0f;
+				}
+				else if (az+M_PI*2.0>phicen-phirange&&az+M_PI*2.0<phicen+phirange) {
+					if (phitriangle) val=1.0f-fabs(az+M_PI*2.0-phicen)/phirange;
+					else val=1.0f;
+				}
+				else if (az-M_PI*2.0>phicen-phirange&&az-M_PI*2.0<phicen+phirange) {
+					if (phitriangle) val=1.0f-fabs(az-M_PI*2.0-phicen)/phirange;
+					else val=1.0f;
+				}
+			}
 
 			for (int z=0; z<nz; z++) {
-				image->set_value_at(x,y,z,0.0f);
+				image->mult_value_at_fast(x,y,z,val);
 			}
 		}
 	}
+
 }
 
 void CircularMaskProcessor::calc_locals(EMData *)

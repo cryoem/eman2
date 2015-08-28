@@ -3196,14 +3196,13 @@ The basic design of EMAN Processors: <br>\
 		{
 			TypeDict d;
 
-			d.put("phi0", EMObject::FLOAT,
-				  "Angle in degrees ccw from the x-axis. Starting angle to be set to 0.");
-			d.put("phi1", EMObject::FLOAT,
-				  "Angle in degrees ccw from the x-axis. Ending angle to be set to 0.");
-			d.put("dx", EMObject::FLOAT,
-				  "Modify mask center by dx relative to the default center nx/2");
-			d.put("dy", EMObject::FLOAT,
-				  "Modify mask center by dy relative to the default center ny/2");
+			d.put("phicen", EMObject::FLOAT,"Angle in degrees ccw from the x-axis. Center of the region to NOT set to zero.");
+			d.put("phirange", EMObject::FLOAT,"Angle in degrees. Region phicen+-phirange will not be zeroed");
+			d.put("phitriangle", EMObject::BOOL, "If set mask will fall from 1 at phicen to 0 at phicen+-phirange");
+			d.put("cx", EMObject::FLOAT,"Mask X center. Default nx/2");
+			d.put("cy", EMObject::FLOAT,"Mask Y center. Default ny/2");
+			d.put("inner_radius", EMObject::INT, "inner mask radius. optional. Default 0");
+			d.put("outer_radius", EMObject::INT, "outer mask radius. optional. Default nx+ny. Negative value -> box radius + outer_radius +1");
 
 			return d;
 		}
