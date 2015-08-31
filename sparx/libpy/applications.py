@@ -7103,7 +7103,7 @@ def mref_ali3d(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1, ir=
 			# generate list of angles
 			from alignment import generate_list_of_reference_angles_for_search
 			list_of_reference_angles = \
-			generate_list_of_reference_angles_for_search(refangles, sym=sym)
+			generate_list_of_reference_angles_for_search(ref_angles, sym=sym)
 			del ref_angles
 		else:  list_of_reference_angles = [[1.0,1.0]]
 
@@ -8135,7 +8135,7 @@ def Kmref_ali3d_MPI(stack, ref_vol, outdir, maskfile=None, focus = None, maxit=1
 				# generate list of angles
 				from alignment import generate_list_of_reference_angles_for_search
 				list_of_reference_angles = \
-				generate_list_of_reference_angles_for_search(refangles, sym=sym)
+				generate_list_of_reference_angles_for_search(ref_angles, sym=sym)
 				del ref_angles
 			else:  list_of_reference_angles = [[1.0,1.0]]
  
