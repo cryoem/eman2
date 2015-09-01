@@ -769,25 +769,33 @@ def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 def get_pixel_resolution(vol, mask, nnxo, fscoutputdir):
 	# this function is single processor
 	nx = vol[0].get_xsize()
-	nfsc = fsc(vol[0]*mask,vol[1]*mask, 1.0 )
+	nfsc = fsc( vol[0]*mask, vol[1]*mask, 1.0 )
 	if(nx<nnxo):
 		for i in xrange(3):
 			for k in xrange(nx//2+1,nnxo/2+1):
 				nfsc[i].append(0.0)
 		for i in xrange(nnxo/2+1):
 			nfsc[0][i] = float(i)/nnxo
+
+	for i in xrange(len(nfsc[0])):
+		nfsc[2][i] = max(nfsc[1][i] - 0.08, 0.0)
+		if(nfsc[2][i]>0.0):  nfsc[2][i] += 0.08
+	nfsc.append(nfsc[2][:])
+	for i in xrange(1,len(nfsc[0])-1):  nfsc[2][i] = (nfsc[3][i-1]+nfsc[3][i]+nfsc[3][i+1])/3.0
+	for i in xrange(len(nfsc[0])):  nfsc[3][i] = 2*nfsc[2][i]/(1.0+nfsc[2][i])
+	#  Columns in fsc:  absfreq, raw fsc, smoothed fsc, smoothed fsc for volf
 	write_text_file( nfsc, os.path.join(fscoutputdir,"fsc.txt") )
 	ns = len(nfsc[1])
 	#  This is actual resolution, as computed by 2*f/(1+f), should be used for volf
 	ares = -1
 	for i in xrange(1,ns-1):
-		if ( nfsc[1][i] < 0.333333333333333333333333):
+		if ( nfsc[2][i] < 0.333333333333333333333333):
 			ares = i
 			break
 	#  0.5 cut-off
 	currentres = -1
 	for i in xrange(1,ns-1):
-		if ( nfsc[1][i] < 0.5):
+		if ( nfsc[2][i] < 0.5):
 			currentres = i
 			break
 	if(currentres < 0 or ares < 0):
@@ -843,10 +851,9 @@ def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, npro
 					#  Ideally, this would be available, but the problem is it is computed in metamove, which is not executed during restart
 					nx = projdata[procid][0].get_xsize()
 					shrinkage = float(nx)/float(Tracker["constants"]["nnxo"])
-					lowpass = float(Tracker["icurrentres"])/float(nx)
-					delta = min(round(degrees(atan(0.5/Tracker["lowpass"]/Tracker["radius"])), 2), 3.0)
+					delta = min(round(degrees(atan(0.5/(float(Tracker["icurrentres"])/float(nx))/Tracker["radius"])), 2), 3.0)
 					Tracker["smearstep"] = 0.5*delta
-				else:                              Tracker["smearstep"] = 0.0
+				else:  Tracker["smearstep"] = 0.0
 				from reconstruction import rec3D_MPI
 				vol[procid],fsc[procid] = rec3D_MPI(projdata[procid], symmetry = Tracker["constants"]["sym"], \
 					mask3D = mask, fsc_curve = None, \
@@ -992,6 +999,7 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc,
 
 def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid, myid, main_node, nproc):
 	from applications import slocal_ali3d_base, sali3d_base
+	from mpi import  mpi_bcast, MPI_FLOAT, MPI_COMM_WORLD
 	#  Takes preshrunk data and does the refinement as specified in Tracker
 	#
 	#  Will create outputdir
@@ -1022,13 +1030,23 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 	Tracker["radius"] = int(Tracker["constants"]["radius"] * shrinkage +0.5)
 	if(Tracker["radius"] < 2):
 		ERROR( "ERROR!!   lastring too small  %f    %f   %d"%(Tracker["radius"], Tracker["constants"]["radius"]), "sxmeridien",1, myid)
-	Tracker["lowpass"] = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
+
+	#  READ processed FSC.
+	if(myid == main_node):
+		Tracker["lowpass"] = read_text_file(os.path.join(Tracker["previousoutputdir"],"fsc.txt"),2)
+		lex = len(Tracker["lowpass"])
+	else:  lex = 0
+	lex = bcast_number_to_all(lex, source_node = main_node)
+	if(myid != main_node):  Tracker["lowpass"] = [0.0]*lex
+	Tracker["lowpass"] = mpi_bcast(Tracker["lowpass"], lex, MPI_FLOAT, main_node, mpi_comm = MPI_COMM_WORLD)
+	Tracker["lowpass"] = map(float, Tracker["lowpass"])
+	#Tracker["lowpass"] = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
 	if( Tracker["state"] == "LOCAL" or Tracker["state"][:-1] == "FINAL"):
 		Tracker["pixercutoff"] = 0.5
 		Tracker["delta"] = "2.0"
 		Tracker["ts"]    = "2.0"
 	else:
-		delta = min(round(degrees(atan(0.5/Tracker["lowpass"]/Tracker["radius"])), 2), 3.0)
+		delta = min(round(degrees(atan(0.5/(float(Tracker["icurrentres"])/float(Tracker["nxinit"]))/Tracker["radius"])), 2), 3.0)
 		if Tracker["constants"]["smear"] : Tracker["smearstep"] = 0.5*delta
 		else:                              Tracker["smearstep"] = 0.0
 		delta = "%f  "%delta
@@ -1226,7 +1244,7 @@ def main():
 	Tracker["nxstep"]         = 32
 	Tracker["icurrentres"]    = -1
 	Tracker["ireachedres"]    = -1
-	Tracker["lowpass"]        = 0.4
+	Tracker["lowpass"]        = ""
 	Tracker["falloff"]        = 0.2
 	Tracker["inires"]         = options.inires  # Now in A, convert to absolute before using
 	Tracker["fuse_freq"]      = 50  # Now in A, convert to absolute before using
@@ -1307,8 +1325,6 @@ def main():
 	if( li > 0 ):
 		masterdir = mpi_bcast(masterdir,li,MPI_CHAR,main_node,MPI_COMM_WORLD)
 		masterdir = string.join(masterdir,"")
-
-
 
 	if(myid == main_node):
 		print_dict(Tracker["constants"], "Permanent settings of meridien")
@@ -1623,11 +1639,6 @@ def main():
 				write_text_row( [pinids[i][1] for i in xrange(len(pinids))], os.path.join(Tracker["directory"] ,"params.txt"))
 				del pinids
 			mpi_barrier(MPI_COMM_WORLD)
-			"""
-			nfsc = read_fsc(os.path.join(Tracker["directory"] ,"fsc.txt"),Tracker["constants"]["nnxo"], myid, main_node)
-			Tracker["lowpass"], Tracker["falloff"] = fit_tanh([[float(i)/Tracker["constants"]["nnxo"] for i in xrange(len(nfsc))],nfsc], 0.01)
-			del nfsc
-			"""
 
 			# The next will have to be decided later, i.e., under which circumstances we should recalculate full size volume.
 			#  Most likely it should be done only when the program terminates.
@@ -1640,15 +1651,23 @@ def main():
 				volf = 0.5*(get_im(os.path.join(Tracker["directory"] ,"vol0.hdf"))+get_im(os.path.join(Tracker["directory"] ,"vol0.hdf")))
 				[newlowpass, newfalloff, icurrentres, ares] = read_text_row( os.path.join(Tracker["directory"],"current_resolution.txt") )[0]
 				#  This structure will be calculated without local filter
-				Tracker["lowpass"] = float(ares)/float(Tracker["nxinit"])
+				#Tracker["lowpass"] = float(ares)/float(Tracker["nxinit"])
+				Tracker["lowpass"] = read_text_file(os.path.join(Tracker["directory"],"fsc.txt"),3)
+				lex = len(Tracker["lowpass"])
+
 			else:
 				volf = model_blank(Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 				newlowpass = 0.0; newfalloff = 0.0; icurrentres = 0; ares = 0
+				lex = 0
 			lsave = Tracker["local_filter"]
 			Tracker["local_filter"] = False
 			Tracker["falloff"] = newfalloff
 
-			#volf = do_volume_mrk01(volf, Tracker, mainiteration, mpi_comm = MPI_COMM_WORLD)
+			lex = bcast_number_to_all(lex, source_node = main_node)
+			if(myid != main_node):  Tracker["lowpass"] = [0.0]*lex
+			Tracker["lowpass"] = mpi_bcast(Tracker["lowpass"], lex, MPI_FLOAT, main_node, mpi_comm = MPI_COMM_WORLD)
+			Tracker["lowpass"] = map(float, Tracker["lowpass"])
+
 			ref_data = [volf, Tracker, mainiteration, MPI_COMM_WORLD]
 			user_func = Tracker["constants"] ["user_func"]
 			volf = user_func(ref_data)
