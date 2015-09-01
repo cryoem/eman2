@@ -1038,7 +1038,7 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 	else:  lex = 0
 	lex = bcast_number_to_all(lex, source_node = main_node)
 	if(myid != main_node):  Tracker["lowpass"] = [0.0]*lex
-	Tracker["lowpass"] = mpi_bcast(Tracker["lowpass"], lex, MPI_FLOAT, main_node, mpi_comm = MPI_COMM_WORLD)
+	Tracker["lowpass"] = mpi_bcast([Tracker["lowpass"][i] for i in xrange(lex)], lex, MPI_FLOAT, main_node, mpi_comm = MPI_COMM_WORLD)
 	Tracker["lowpass"] = map(float, Tracker["lowpass"])
 	#Tracker["lowpass"] = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
 	if( Tracker["state"] == "LOCAL" or Tracker["state"][:-1] == "FINAL"):
@@ -1671,7 +1671,7 @@ def main():
 
 			lex = bcast_number_to_all(lex, source_node = main_node)
 			if(myid != main_node):  Tracker["lowpass"] = [0.0]*lex
-			Tracker["lowpass"] = mpi_bcast(Tracker["lowpass"], lex, MPI_FLOAT, main_node, mpi_comm = MPI_COMM_WORLD)
+			Tracker["lowpass"] = mpi_bcast([Tracker["lowpass"][i] for i in xrange(lex)], lex, MPI_FLOAT, main_node, mpi_comm = MPI_COMM_WORLD)
 			Tracker["lowpass"] = map(float, Tracker["lowpass"])
 
 			ref_data = [volf, Tracker, mainiteration, MPI_COMM_WORLD]
