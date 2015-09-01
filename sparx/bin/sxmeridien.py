@@ -1430,10 +1430,11 @@ def main():
 	Tracker["inires"] = Tracker["constants"]["pixel_size"]/Tracker["inires"]  # This is in full size image units.
 	Tracker["icurrentres"] = int(Tracker["constants"]["nnxo"]*Tracker["inires"]+0.5)
 	#  Prepare initial FSC corresponding to initial resolution
-	Tracker["lowpass"] = tanhfilter(Tracker["constants"]["nnxo"], Tracker["inires"], Tracker["falloff"])
+	[xxx,Tracker["lowpass"]] = tanhfilter(Tracker["constants"]["nnxo"], Tracker["inires"], Tracker["falloff"])
 	if(myid == main_node):
-		write_text_file([[float(i)/Tracker["constants"]["nnxo"] for i in xrange(len(Tracker["lowpass"]))],Tracker["lowpass"],Tracker["lowpass"],\
+		write_text_file([xxx,Tracker["lowpass"],Tracker["lowpass"],\
 		[2*Tracker["lowpass"][i]/(1.0+Tracker["lowpass"][i]) for i in xrange(len(Tracker["lowpass"]))]],os.path.join(initdir,"fsc.txt"))
+	del xxx
 	#  Make sure nxinit is at least what it was set to as an initial size.
 	Tracker["nxinit"] =  max(Tracker["icurrentres"]*2 + cushion , Tracker["nxinit"])
 	if( Tracker["nxinit"] > Tracker["constants"]["nnxo"] ):
