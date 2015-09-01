@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/home/zhuang/EMAN2/extlib/bin/python
 #
 #  08/13/2015
 #  New version.  
@@ -138,7 +138,7 @@ def main():
 	progname = os.path.basename(arglist[0])
 	usage = progname + " stack  outdir refvols  <mask> --focus=3Dmask --ir=inner_radius --radius=outer_radius --rs=ring_step --xr=x_range --yr=y_range  --ts=translational_searching_step " +\
 	" --delta=angular_step --an=angular_neighborhood --center=1 --nassign=reassignment_number --nrefine=alignment_number --maxit=max_iter --stoprnct=percentage_to_stop " + \
-	" --debug --fourvar=fourier_variance --CTF --snr=1.0 --ref_a=S --sym=c1 --function=user_function --independent=indenpendent_runs_for_equalmref  --Kgroup=number_of_groups  --resolution --mode=EK"
+	" --debug --fourvar=fourier_variance --CTF --snr=1.0 --ref_a=S --sym=c1 --function=user_function --independent=indenpendent_runs_for_equalmref  --Kgroup=number_of_groups  --resolution --mode=EK --import=params.txt"
 	parser = OptionParser(usage,version=SPARXVERSION)
 	parser.add_option("--focus",    type="string",       default=None,             help="3D mask for focused clustering ")
 	parser.add_option("--ir",       type= "int",         default=1, 	       help="inner radius for rotational correlation > 0 (set to 1)")
@@ -167,6 +167,7 @@ def main():
 	parser.add_option("--Kgroup",      type="int",       default= 5,               help="number of groups")
 	parser.add_option("--resolution",  type="float",     default= .40,             help="structure is low-pass-filtered to this resolution for clustering" )
 	parser.add_option("--mode",        type="string",    default="EK",             help="computing either Kmeans mref, or Equal Kmeans mref, or do both" )
+	parser.add_option("--importali3d", type="string",    default="",  help="import the xform.projection parameters as the initial configuration for 3-D reconstruction" )
 	
 	
 	(options, args) = parser.parse_args(arglist[1:])
@@ -242,7 +243,8 @@ def main():
 		Constants["verbose"]             = 0
 		Constants["mode"]                = options.mode
 		Constants["mpi_comm"]            = mpi_comm
-		Constants["main_log_prefix"]     =args[1]	
+		Constants["main_log_prefix"]     =args[1]
+		Constants["importali3d"]         =options.importali3d	
 		# -----------------------------------------------------
 		#
 		# Create and initialize Tracker dictionary with input options
@@ -538,15 +540,15 @@ def main():
 			EKMREF_iteration  ={}
 			for iter_indep in xrange(Tracker["constants"]["indep_runs"]):
 				output_for_this_run ={}
-				output_for_this_run["output_dir"]=os.path.join(masterdir,"EKMREF%03d"%iter_indep)
-				output_for_this_run["partition"] =os.path.join(output_for_this_run["output_dir"],"list2.txt")
-				output_for_this_run["refvols"]= os.path.join(initdir,"volf_run_%03d.hdf"%iter_indep)
+				output_for_this_run["output_dir"]= os.path.join(masterdir,"EKMREF%03d"%iter_indep)
+				output_for_this_run["partition"] = os.path.join(output_for_this_run["output_dir"],"list2.txt")
+				output_for_this_run["refvols"]   = os.path.join(initdir,"volf_run_%03d.hdf"%iter_indep)
+				output_for_this_run["ali3d"]     = os.path.join(output_for_this_run["output_dir"],"ali3d_params.txt")
 				#output_for_this_run["refvols"]=os.path.join(Tracker["second_main"],"vol_strable_member%03d.hf"%iter_indep			
 				EKMREF_iteration[iter_indep]=output_for_this_run
 			Tracker["EMREF"]=EKMREF_iteration
 			mpi_barrier(MPI_COMM_WORLD)
 		# Carry out independent Equal Kmeans runs
-			
 			for iter_indep in xrange(Tracker["constants"]["indep_runs"]):
 				outdir = Tracker["EMREF"][iter_indep]["output_dir"]
 				doit, keepchecking = checkstep(outdir, keepchecking, myid, main_node)
@@ -555,6 +557,11 @@ def main():
 				if myid ==main_node:
 					msg="The %5d th run equal Kmeans, outdir is %20s"%(iter_indep,outdir)
 					log_main.add(msg)
+					if Tracker["constants"]["importali3d"]!="":
+						cmd = "{} {} {} {}".format("sxheader.py",Tracker["constants"]["stack"],"--params=xform.projection", "--import="+Tracker["constants"]["importali3d"])
+                                                cmdexecute(cmd)
+
+				mpi_barrier(MPI_COMM_WORLD)
 				if doit:
 					mref_ali3d_MPI(Tracker["constants"]["stack"],Tracker["EMREF"][iter_indep]["refvols"],outdir,Tracker["constants"]["mask3D"] ,\
                         		Tracker["constants"]["focus3Dmask"],Tracker["constants"]["maxit"],Tracker["constants"]["ir"],Tracker["constants"]["radius"],Tracker["constants"]["rs"],\
@@ -564,6 +571,9 @@ def main():
 					if myid==main_node:
 						cmd = "{} {} {} {}".format("sxheader.py",Tracker["constants"]["stack"],"--params=group", "--export="+Tracker["EMREF"][iter_indep]["partition"])
                                         	cmdexecute(cmd)
+						if Tracker["constants"]["nrefine"]:
+							cmd = "{} {} {} {}".format("sxheader.py",Tracker["constants"]["stack"],"--params=xform.projection", "--export="+Tracker["EMREF"][iter_indep]["ali3d"])
+							cmdexecute(cmd)
 				else:
 					doit, keepchecking = checkstep(Tracker["EMREF"][iter_indep]["partition"],keepchecking,myid,main_node)
 					if doit:
@@ -578,6 +588,9 @@ def main():
 						if myid==main_node:
 							cmd = "{} {} {} {}".format("sxheader.py",Tracker["constants"]["stack"],"--params=group", "--export="+Tracker["EMREF"][iter_indep]["partition"])
 							cmdexecute(cmd)
+							if Tracker["constants"]["nrefine"]:
+								cmd = "{} {} {} {}".format("sxheader.py",Tracker["constants"]["stack"],"--params=xform.projection", "--export="+Tracker["EMREF"][iter_indep]["ali3d"])
+								cmdexecute(cmd)
 					else:
 						if myid==main_node:print_a_line_with_timestamp("MREF%03d has been done"%iter_indep)
 				mpi_barrier(MPI_COMM_WORLD)
@@ -587,6 +600,7 @@ def main():
                         	output_for_this_run ={}
                         	output_for_this_run["output_dir"]=os.path.join(masterdir,"KMREF%03d"%iter_indep)
                         	output_for_this_run["partition"] =os.path.join(output_for_this_run["output_dir"],"list2.txt")
+				output_for_this_run["ali3d"]     = os.path.join(output_for_this_run["output_dir"],"ali3d_params.txt")
                         	KMREF_iteration[iter_indep]=output_for_this_run
                 	Tracker["KMREF"]=KMREF_iteration
                 	mpi_barrier(MPI_COMM_WORLD)
@@ -596,6 +610,9 @@ def main():
                         	doit, keepchecking = checkstep(outdir, keepchecking, myid, main_node)
 				log_Kmref=Logger(BaseLogger_Files())
                                 log_Kmref.prefix=Tracker["KMREF"][iter_indep]["output_dir"]+"/"
+				if Tracker["constants"]["importali3d"]!="":
+					cmd = "{} {} {} {}".format("sxheader.py",Tracker["constants"]["stack"],"--params=xform.projection", "--import="+Tracker["constants"]["importali3d"])
+					cmdexecute(cmd)
                         	if doit:
                                 	empty_group = Kmref_ali3d_MPI(Tracker["constants"]["stack"],Tracker["refvols"][iter_indep],outdir,Tracker["constants"]["mask3D"] ,\
                                 	Tracker["constants"]["focus3Dmask"],Tracker["constants"]["maxit"],Tracker["constants"]["ir"],Tracker["constants"]["radius"],Tracker["constants"]["rs"],\
@@ -608,6 +625,9 @@ def main():
                                 	if myid==main_node:
                                         	cmd = "{} {} {} {}".format("sxheader.py",Tracker["constants"]["stack"], "--params=group", "--export="+Tracker["KMREF"][iter_indep]["partition"])
                                         	cmdexecute(cmd)
+						if racker["constants"]["nrefine"]:
+							cmd = "{} {} {} {}".format("sxheader.py",Tracker["constants"]["stack"],"--params=xform.projection", "--export="+Tracker["KMREF"][iter_indep]["ali3d"])
+							cmdexecute(cmd)
                         	else:
                                 	doit, keepchecking = checkstep(Tracker["KMREF"][iter_indep]["partition"],keepchecking,myid,main_node)
                                 	if doit:
@@ -623,6 +643,10 @@ def main():
                                         	if myid==main_node:
                                                 	cmd = "{} {} {} {}".format("sxheader.py",Tracker["constants"]["stack"], "--params=group", "--export="+Tracker["KMREF"][iter_indep]["partition"])
                                                 	cmdexecute(cmd)
+							if Tracker["constants"]["nrefine"]:
+                                        			cmd = "{} {} {} {}".format("sxheader.py",Tracker["constants"]["stack"],"--params=xform.projection", "--export="+Tracker["KMREF"][iter_indep]["ali3d"])
+                                        			cmdexecute(cmd)
+                                		mpi_barrier(MPI_COMM_WORLD)
                                 	else:
                                         	if myid==main_node:print_a_line_with_timestamp("KMREF%03d has been done"%iter_indep)
 		### Now do some analysis	
@@ -676,8 +700,7 @@ def main():
                                 	for a in list_stable:
                                         	a.astype(int)
                                         	new_list.append(a)
-					if iptp !=jptp:
-                                		two_ways_stable_member_list[(iptp,jptp)]=new_list
+                                	two_ways_stable_member_list[(iptp,jptp)]=new_list
 					total_pop +=1
 			summed_scores =[]
 			two_way_dict ={}
