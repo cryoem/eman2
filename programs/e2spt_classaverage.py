@@ -166,7 +166,7 @@ def main():
 	
 	parser.add_argument("--averager",type=str,default="mean.tomo",help="""Default=mean.tomo. The type of averager used to produce the class average. Default=mean.tomo.""")
 	
-	parser.add_argument("--inixforms",type=str,default="",help="""Default=None. .json file containing a dict of transforms to apply to 'pre-align' the particles.""", guitype='dirbox', dirbasename='spt_|sptsym_', row=7, col=0,rowspan=1, colspan=2, nosharedb=True, mode='breaksym')
+	parser.add_argument("--inputaliparams",type=str,default="",help="""Default=None. .json file containing a dict of transforms to apply to 'pre-align' the particles.""", guitype='dirbox', dirbasename='spt_|sptsym_', row=7, col=0,rowspan=1, colspan=2, nosharedb=True, mode='breaksym')
 	
 	parser.add_argument("--breaksym",action="store_true", default=False,help="""Default=False. Break symmetry. Do not apply symmetrization after averaging, even if searching the asymmetric unit provided through --sym only for alignment. Default=False""", guitype='boolbox', row=7, col=2, rowspan=1, colspan=1, nosharedb=True, mode=',breaksym[True]')
 	
@@ -202,7 +202,7 @@ def main():
 	
 	parser.add_argument("--preavgproc2",type=str,default='',help="""Default=None. A processor (see 'e2help.py processors -v 10' at the command line) to be applied to the raw particle after alignment but before averaging (for example, a threshold to exclude extreme values, or a highphass filter if you have phaseplate data.)""")
 
-	parser.add_argument("--weighbytiltaxis",type=str,default='',help="""Default=None. A,B, where A is an integer number and B a decimal. A represents the location of the tilt axis in the tomogram in pixels (eg.g, for a 4096x4096xZ tomogram, this value should be 2048), and B is the weight of the particles furthest from the tomogram. For example, --weighbytiltaxis=2048,0.5 means that praticles at the tilt axis (with an x coordinate of 2048) will have a weight of 1.0 during averaging, while the distance in the x coordinates of particles not-on the tilt axis will be used to weigh their contribution to the average, with particles at the edge(0+radius or 4096-radius) weighing 0.5, as specified by the value provided for B.""")
+	parser.add_argument("--weighbytiltaxis",type=str,default='',help="""Default=None. A,B, where A is an integer number and B a decimal. A represents the location of the tilt axis in the tomogram in pixels (eg.g, for a 4096x4096xZ tomogram, this value should be 2048), and B is the weight of the particles furthest from the tiltaxis. For example, --weighbytiltaxis=2048,0.5 means that praticles at the tilt axis (with an x coordinate of 2048) will have a weight of 1.0 during averaging, while the distance in the x coordinates of particles not-on the tilt axis will be used to weigh their contribution to the average, with particles at the edge(0+radius or 4096-radius) weighing 0.5, as specified by the value provided for B.""")
 
 	parser.add_argument("--weighbyscore",action='store_true',default=False,help="""Default=False. This option will weigh the contribution of each subtomogram to the average by score/bestscore.""")
 
@@ -254,10 +254,18 @@ def main():
 	if --resume is not provided.
 	'''
 	
+	if options.recompute:
+		options.align = 'rotate_translate_3d_tree'
 	
 	if 'tree' in options.align:
 		options.falign = None
-	
+		options.mask = None
+		options.lowpass = None
+		options.highpass = None
+		options.normproc = None
+		options.lowpassfine = None
+		options.highpassfine = None
+
 	rootpath = os.getcwd()
 
 	if not options.resume:
@@ -295,7 +303,7 @@ def main():
 				print "goldstandard is off"
 				if options.subset < 2:
 					if not options.ref:
-						print "ERROR: You need at least 2 particles in --input to buidl a refernece if --ref is not provided."""
+						print "ERROR: You need at least 2 particles in --input to buidl a reference if --ref is not provided."""
 						sys.exit()	
 			else:
 				print "goldstandard is on"
@@ -337,9 +345,10 @@ def main():
 		
 			options.input = subsetStack
 			nptcl = EMUtil.get_image_count(options.input)
+			print "\nnptcl for subset is now", nptcl
 			
 		else:
-			print """WARNING: --subset was larger or equal to the number of particles in --input. 
+			print """\n(e2spt_classaverage)(main) WARNING: --subset was larger or equal to the number of particles in --input. 
 			Therefore, using all particles."""
 	else:
 		if not options.ref:
@@ -351,7 +360,7 @@ def main():
 					pass
 			else:
 				if nptcl < 2:
-					print "ERROR: You need at least 2 particles in --input to build a refernece if --ref is not provided."""
+					print "ERROR: You need at least 2 particles in --input to build a reference (or to --recompute and average) if --ref is not provided."""
 					sys.exit()
 		#else:
 		#	print "ref is", options.ref
@@ -490,8 +499,8 @@ def main():
 	else:
 		etc=''
 
-	if options.inixforms: 
-		preOrientationsDict = js_open_dict(options.inixforms)
+	if options.inputaliparams: 
+		preOrientationsDict = js_open_dict(options.inputaliparams)
 		
 	resumeDict = {}
 	actualNumsDict = {}
@@ -532,7 +541,7 @@ def main():
 	
 	#C: Read or initialize all classmx images as 2-D EMData files of 2 x N dimensions, where N is the number of particles.
 
-	refsdict = None
+	refsdict = {}
 	
 	if options.classmx:
 		print "\n--classmx=",options.classmx
@@ -543,6 +552,12 @@ def main():
 		
 		scoresImg = classmx[0]
 		
+		if options.inputaliparams:
+			inputalidict = js_open_dict( options.inputaliparams )
+			numdigits = len( inputalidict.keys()[0].split('_')[-1] )	#keys are of the form 'subtomo_XXX'; we determine how many XXX the keys have
+			
+			
+			
 		for ic in range(ncls):
 			resultsforaverage = {}
 	
@@ -553,15 +568,40 @@ def main():
 			#ptclnums = []
 			#for j in range( scoresImg['nx'] ):				#Loop over the number of classes
 			ptclnums=[]									#each of which starts with no particles in it
-			for i in range( scoresImg['ny'] ):			#Loop over the number of particles
+			
+			ptclrange = scoresImg['ny']
+			if options.subset:
+				ptclrange = options.subset
+				
+			for i in range( ptclrange ):			#Loop over the number of particles
 				score = scoresImg.get_value_at(ic,i)
+				print "score in classmx is", score
 				if score:
+					print "therefore score is TRUE (should not be if it is 0.0!!!!)"
 					ptclnums.append(i)
+					
 			
 			for indx in ptclnums:
 				
-				score = classmx[0][indx]
+				score = classmx[0].get_value_at(ic,indx)
+				
+				if float( score ) > -0.000000001:
+					print "\nscore in classmx was empty (positive or zero)"
+					
+					if options.recompute:
+						if not options.inputaliparams:
+							if options.keepsig or options.keep < 1.0:
+								print "\n(e2spt_classaverage)(main) ERROR: if --recompute and --keep (or --keepsig) are provided simulaneously, you must also provide --inputaliparams"
+								sys.exit()
+							
+					if options.inputaliparams:
+						numtag = str( indx ).zfill( numdigits )
+						key = 'subtomo_' + numtag
+						score = inputalidict[ key ][1]
+						print "\nfor subtomo %d, getting score from --inputaliparams, score=%f" %( indx, score )
+					
 				#classnum = classmx[0][indx]
+				'''
 				weight = classmx[1][indx]
 				tx = classmx[2][indx]
 				ty = classmx[3][indx]
@@ -571,10 +611,34 @@ def main():
 				phi = classmx[7][indx]
 				scale = classmx[8][indx]
 				#score = classmx[9][indx]
+				'''
+				
+				weight = classmx[1].get_value_at(ic,indx)
+				tx = classmx[2].get_value_at(ic,indx)
+				ty = classmx[3].get_value_at(ic,indx)
+				tz = classmx[4].get_value_at(ic,indx)
+				az = classmx[5].get_value_at(ic,indx)
+				alt = classmx[6].get_value_at(ic,indx)
+				phi = classmx[7].get_value_at(ic,indx)
+				scale = classmx[8].get_value_at(ic,indx)
 				
 				alitransform = Transform({'type':'eman','az':az,'alt':alt,'phi':phi,'tx':tx,'ty':ty,'tz':tz})
 				
+				if options.inputaliparams:
+					key = 'subtomo_' + numtag
+					transformjson = inputalidict[ key ][0]
+					
+					print "\ntransform classmx is", alitransform
+					print "\nwhereas transform json is", transformjson
+				
 				resultsforaverage.update( { indx:[score,alitransform] } )
+			
+			print "\nic is", ic
+			if ic == 0:
+				print "\nresults for average EVEN are", resultsforaverage
+				
+			if ic == 1:
+				print "\nresults for average ODD are", resultsforaverage
 			
 			ret = makeAverage( options, ic, resultsforaverage, 0 )
 			ref = ret[0]
@@ -584,26 +648,36 @@ def main():
 			
 			if options.recompute:
 				if ic == 0:
-					ref.write_image( options.path + '/recompavg_even.hdf', 0 )
+					ref.write_image( options.path + '/recomp_avg_even.hdf', 0 )
 				elif ic == 1:
-					ref.write_image( options.path + '/recompavg_odd.hdf', 0 )
+					ref.write_image( options.path + '/recomp_avg_odd.hdf', 0 )
 			else:
 				if ic == 0:
 					ref.write_image( options.path + '/avgs_even.hdf', 0 )
 				elif ic == 1:
 					ref.write_image( options.path + '/avgs_odd.hdf', 0 )
 			
-		try:
+		#try:
+		if refsdict:
 			refeven = refsdict[0]
 			refodd = refsdict[1]
 		
 			fscfile = options.path + '/recompute_fsc.txt'
-		
+			
+			
+			
+			print "options.align is", options.align
 			refsavg = compareEvenOdd( options, refeven, refodd, 2, etc, fscfile, 'initial' ) #We pass on an "iteration number" > 1, that is 2 here, just so that both initial references are preprocessed and treated equally (this is required since --refpreprocessing is off when --ref is supplied 
-		except:
+			
+			if options.recompute:
+				refsavg.write_image( options.path + '/recomp_avg.hdf', 0 )
+			
+		else:
 			print "\nERROR: building initial references from classmx failed!"
 
-			
+		if options.recompute:
+			print "recompute finished"
+			sys.exit()	
 	else:
 		options.classmx = classmxFile
 			
@@ -864,7 +938,7 @@ def main():
 					pass	
 					
 				transform = None					
-				if options.inixforms:
+				if options.inputaliparams:
 					tomoID = "subtomo_" + str(ptclnum).zfill( len(str( len(ptclnums) )) )
 					transform = preOrientationsDict[tomoID][0]
 					
@@ -1341,7 +1415,7 @@ def main():
 		plotter(plotX, scores2plot, options, plotName, maxX, maxY, 1, sort=0)
 		
 		
-	if options.inixforms: 
+	if options.inputaliparams: 
 		preOrientationsDict.close()
 	
 	#os.system('rm ' + options.path + '/tmpref.hdf')
@@ -1500,46 +1574,47 @@ def compareEvenOdd( options, avgeven, avgodd, it, etc, fscfile, tag, average=Tru
 								#def get_results(etc,tids,verbose,nptcls,ref=''):
 	
 	
-	resultsAvgs = align3Dfunc( avgeven, avgodd, 0, "avgeven(ref) vs avgodd", options, None, 2 )
+	if not options.sym:
+		resultsAvgs = align3Dfunc( avgeven, avgodd, 0, "avgeven(ref) vs avgodd", options, None, 2 )
 								
+		##print "r['final'] is", resultsAvgs['final']
+		##print "\nr['final'][0] is", resultsAvgs['final'][0]
+		#print "\nr[0][0] is", resultsAvgs[0][0]
+		#print "\nr[0][0[0] is", resultsAvgs[0][0][0]
+		##print "\nr['final'][0]['xform.align3d'] is", resultsAvgs['final'][0]["xform.align3d"]
+		#print "\nr[0][-1]", resultsAvgs[0][-1]
 	
+		transformAliOdd2even = resultsAvgs['final'][0]['xform.align3d']
+		scoreAliOdd2even = resultsAvgs['final'][0]['score']
 	
-	##print "r['final'] is", resultsAvgs['final']
-	##print "\nr['final'][0] is", resultsAvgs['final'][0]
-	#print "\nr[0][0] is", resultsAvgs[0][0]
-	#print "\nr[0][0[0] is", resultsAvgs[0][0][0]
-	##print "\nr['final'][0]['xform.align3d'] is", resultsAvgs['final'][0]["xform.align3d"]
-	#print "\nr[0][-1]", resultsAvgs[0][-1]
+		avgsDict = options.path + '/sptali_ir_' + str(it).zfill( len( str(options.iter))) + '_oddali2even.json'
 	
-	transformAliOdd2even = resultsAvgs['final'][0]['xform.align3d']
-	scoreAliOdd2even = resultsAvgs['final'][0]['score']
+		if not average: 
+			if tag == 'refbased':
+				avgsDict = options.path + '/sptali_ir_' + str(it).zfill( len( str( it ))) + '_avgali2ref.json'
 	
-	avgsDict = options.path + '/sptali_ir_' + str(it).zfill( len( str(options.iter))) + '_oddali2even.json'
-	
-	if not average: 
-		if tag == 'refbased':
-			avgsDict = options.path + '/sptali_ir_' + str(it).zfill( len( str( it ))) + '_avgali2ref.json'
-	
-	else:
-		if tag == 'initial':
-			avgsDict = options.path + '/sptali_ir_initialrefs_oddali2even.json'
-		if tag == 'recompute':
-			 options.path + '/sptali_ir_recompute_oddali2even.json'
+		else:
+			if tag == 'initial':
+				avgsDict = options.path + '/sptali_ir_initialrefs_oddali2even.json'
+			if tag == 'recompute':
+				 options.path + '/sptali_ir_recompute_oddali2even.json'
 			
-	jsAvgs = js_open_dict( avgsDict )
+		jsAvgs = js_open_dict( avgsDict )
 
-	xformslabel = 'subtomo_0'		
+		xformslabel = 'subtomo_0'		
 	
-	jsAvgs.setval( xformslabel, [ transformAliOdd2even , scoreAliOdd2even ] )
+		jsAvgs.setval( xformslabel, [ transformAliOdd2even , scoreAliOdd2even ] )
 
-	jsAvgs.close()	
+		jsAvgs.close()
+		
+		avgodd.transform( transformAliOdd2even )
 	
 	finalA = None
 	
 	if average:
-		avgr = Averagers.get( options.averager[0], options.averager[1 ])
-		avgr.add_image( avgodd )
+		avgr = Averagers.get( options.averager[0], options.averager[1])
 		avgr.add_image( avgeven )
+		avgr.add_image( avgodd )
 		finalA = avgr.finish()
 	
 		finalA['origin_x']=0
@@ -1548,13 +1623,54 @@ def compareEvenOdd( options, avgeven, avgodd, it, etc, fscfile, tag, average=Tru
 		finalA['xform.align3d'] = Transform()
 
 		#apix = final_avg['apix_x']
-	
-	avgodd.transform( transformAliOdd2even )
-	
-	if not average:
-		finalA = avgodd.copy()
 		
+	if not average:
+		finalA = avgeven.copy()
+	
+	if options.sym and not options.sym :
+		finalA = finalA.process('xform.applysym',{'sym':options.sym})
+	
 	calcFsc( options, avgeven, avgodd, fscfile )
+	
+	apix = finalA['apix_x']
+	nyquist = 2.0 * apix			#this is nyquist 'resolution', not frequency; it's the inverse of nyquist frequency
+	halfnyquist = 2.0 * nyquist
+	twothirdsnyquist = 3.0 * nyquist / 2.0
+	
+	eventhresh = avgeven['sigma']
+	#eventhresh = 0
+	avgevenmasked = avgeven.process('mask.auto3d',{'nshells':1,'nshellsgauss':5,'radius':1,'nmaxseed':1,'threshold': eventhresh })
+	
+	oddthresh = avgodd['sigma']
+	#oddthresh = 0
+	avgoddmasked = avgodd.process('mask.auto3d',{'nshells':1,'nshellsgauss':5,'radius':1,'nmaxseed':1,'threshold': oddthresh })
+	
+	fscfilemasked = fscfile.replace('.txt','_mask_supertight.txt')
+	
+	calcFsc( options, avgevenmasked, avgoddmasked, fscfilemasked )
+	
+	avgevenmasked = avgeven.process('mask.auto3d',{'nshells':1,'nshellsgauss':6,'radius':1,'nmaxseed':1,'threshold': eventhresh })
+	avgoddmasked = avgodd.process('mask.auto3d',{'nshells':1,'nshellsgauss':6,'radius':1,'nmaxseed':1,'threshold': oddthresh })
+	
+	fscfilemasked2 = fscfile.replace('.txt','_mask_lesstight.txt')
+	calcFsc( options, avgevenmasked, avgoddmasked, fscfilemasked2 )
+	
+	avgevenmasked = avgeven.process('mask.auto3d',{'nshells':3,'nshellsgauss':6,'radius':1,'nmaxseed':1,'threshold': eventhresh })
+	avgoddmasked = avgodd.process('mask.auto3d',{'nshells':3,'nshellsgauss':6,'radius':1,'nmaxseed':1,'threshold': oddthresh })
+	
+	fscfilemasked3 = fscfile.replace('.txt','_mask_itermediate.txt')
+	calcFsc( options, avgevenmasked, avgoddmasked, fscfilemasked3 )
+	
+	avgevenmasked = avgeven.process('mask.auto3d',{'nshells':4,'nshellsgauss':6,'radius':1,'nmaxseed':1,'threshold': eventhresh })
+	avgoddmasked = avgodd.process('mask.auto3d',{'nshells':4,'nshellsgauss':6,'radius':1,'nmaxseed':1,'threshold': oddthresh })
+	
+	fscfilemasked4 = fscfile.replace('.txt','_mask_loose.txt')
+	calcFsc( options, avgevenmasked, avgoddmasked, fscfilemasked4 )
+	
+	finalthresh = finalA['sigma']
+	finalAmasked = finalA.process('mask.auto3d',{'nshells':1,'nshellsgauss':6,'radius':1,'nmaxseed':1,'threshold': finalthresh })
+	
+	finalAmasked.write_image( options.path + '/recomputed_final_avg_masked.hdf', 0 )
 	
 	return finalA
 
@@ -1926,7 +2042,7 @@ def sptRefGen( options, ptclnumsdict, cmdwp, refinemulti=0, method='',subset4ref
 					print "i is", i
 					a = EMData( options.input, ptclnums[i] )
 					a.write_image( subsetForBTRef, i )
-					print "writing image %d to file %s, which will contain the subset of particles used for BTA refernece building" %(i,subsetForBTRef)
+					print "writing image %d to file %s, which will contain the subset of particles used for BTA reference building" %(i,subsetForBTRef)
 					i+=1
 
 				btelements = []
@@ -2265,10 +2381,18 @@ def writeParameters( options, program, tag ):
 			if str(getattr(optionscopy,name)) != 'True' and str(getattr(optionscopy,name)) != 'False' and str(getattr(optionscopy,name)) != '':
 			
 				if name != 'parallel':
-					if "{" in str(getattr(optionscopy,name)) or "}" in  str(getattr(optionscopy,name)) or ")" in  str(getattr(optionscopy,name)) or ")"  in str(getattr(optionscopy,name)): 
-						cmd += ' --' + name + '=' + str(getattr(optionscopy,name)).replace(':','=').replace('(','').replace(')','').replace('{','').replace('}','').replace(',',':').replace(' ','').replace("'",'')
+					if "{" in str( getattr(optionscopy,name) ) or "}" in  str(getattr(optionscopy,name)) or ")" in  str(getattr(optionscopy,name)) or ")"  in str(getattr(optionscopy,name)): 
+						
+						tail = str( getattr(optionscopy,name) ).replace(':','=').replace('(','').replace(')','').replace('{','').replace('}','').replace(',',':').replace(' ','').replace("'",'')
+						if tail[-1] == ':':
+							tail = tail[:-1] 
+						cmd += ' --' + name + '=' + tail
 					else:
-						cmd += ' --' + name + '=' + str(getattr(optionscopy,name))
+						
+						tail = str( getattr(optionscopy,name) )
+						if tail[-1] == ':':
+							tail = tail[:-1]
+						cmd += ' --' + name + '=' + tail
 						
 				else:
 					cmd += ' --' + name + '=' + str(getattr(optionscopy,name))
@@ -2278,7 +2402,9 @@ def writeParameters( options, program, tag ):
 	
 	parmFile = 'parameters_' + tag + '.txt'
 	lines.append('\n'+cmd+'\n')
-	f=open(optionscopy.path + '/' + parmFile,'w')
+	#f=open( optionscopy.path + '/' + parmFile,'w')
+	pfile = optionscopy.path + '/' + parmFile
+	f = open( pfile, 'w')
 	f.writelines(lines)
 	f.close()
 	
@@ -2837,7 +2963,7 @@ def makeAverage(options,ic,results,it=0):
 			
 			#val=[p[0]["score"] for p in align_parms]
 		scores.sort()
-		thresh=scores[ int( keep * len(scores) ) - 1]
+		thresh = float( scores[ int( keep * len(scores) ) - 1] )
 		if verbose: 
 			print "Keep threshold : %f (min=%f  max=%f)"%(thresh,scores[0],scores[-1])
 	
@@ -2854,7 +2980,7 @@ def makeAverage(options,ic,results,it=0):
 
 		mean=val/len(scores)
 		sig=sqrt(val2/len(scores)-mean*mean)
-		thresh=mean+sig*keep
+		thresh = float( mean + sig * keep )
 		if verbose: 
 			print "Keep threshold : %f (mean=%f  sigma=%f)"%(thresh,mean,sig)
 
@@ -2875,6 +3001,9 @@ def makeAverage(options,ic,results,it=0):
 	#maxscore = None
 	#try:
 	maxscore = min( scores )
+	
+	print "\n(e2spt_classaverage)(makeAverage) maxscore is", maxscore
+	
 	#except:
 	#	print "There are no scores!", scores
 		
@@ -2901,6 +3030,7 @@ def makeAverage(options,ic,results,it=0):
 	for indx in results:
 		#ptclindx = r[1]
 		ptclindx = indx
+		print "ptclindx is", ptclindx
 		ptcl = EMData(ptcl_file,ptclindx)
 		weight = 1.0
 		
@@ -2913,9 +3043,12 @@ def makeAverage(options,ic,results,it=0):
 		#score = r[0][0]["score"]
 		score = results[indx][0]
 		print "\n!!!score is", score
+		print "and thresh is", thresh
+		
 		if score <= thresh:
-			if thresh != 1.0:
-				print "Particle kept because its score %f is LOWER (which means BETTER, in EMAN2 good scores are more negative) than the threshold %f, when the best score was %f" %( score, thresh, maxscore )
+			#if thresh != 1.0:
+		
+			print "particle kept because its score %f is LOWER (which means BETTER, in EMAN2 good scores are more negative) than the threshold %f, when the best score was %f" %( score, thresh, maxscore )
 			#else:
 			#	print "Particle kept because its score %f is LOWER than the DEFAULT threshold %f, when the best score was %f" %( score, thresh, maxscore )
 
@@ -2943,6 +3076,7 @@ def makeAverage(options,ic,results,it=0):
 				sys.exit()	
 					
 			if options.weighbytiltaxis:
+				print "\n--weighbytiltaxis is", options.weighbytiltaxis
 				px = x = int(ptcl['ptcl_source_coord'][0])
 				
 				tiltaxis = int( options.weighbytiltaxis.split(',')[0] )
@@ -2955,7 +3089,7 @@ def makeAverage(options,ic,results,it=0):
 				W = 1.0 - minweight
 				slope = W/X
 										#Having the slope of the line and its y-axis (or w-axis in this case) crossing we predict the weight of any particle depending on its dx distance to the tiltaxis
-				print "Tiltaxis is", X
+				print "tiltaxis is", X
 				print "W is", W
 				print "Therefore slope is", slope
 				
@@ -2976,11 +3110,11 @@ def makeAverage(options,ic,results,it=0):
 			ptcl.mult( weight )
 			avgr.add_image( ptcl )
 			included.append( ptclindx )
-			print "\nptcl %d added (incuded in average) because its score %.6f is below (better) the threshold %.f" %(ptclindx,score,thresh) 
+			print "\nptcl %d added (included in average) because its score %.6f is below (better) the threshold %f" %(ptclindx,score,thresh) 
 			
 		
 		else:
-			print "\nptcl %d skipped (not incuded in average) because its score %.6f is above (worse) the threshold %.f" %(ptclindx,score,thresh) 
+			print "\nptcl %d skipped (not included in average) because its score %.6f is above (worse) the threshold %f" %(ptclindx,score,thresh) 
 			weights.update( {ptclindx:0.0} )
 		
 		#js["subtomo_%04d"%i] = ptcl_parms[0]['xform.align3d']
@@ -3472,7 +3606,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			print "clipping full-sized reference for final tweaking alignment", options.clipali, reffullsize['nx']
 		
 		
-	print "before refpreprocess, refpreprocess and iter", refpreprocess, iter
+	print "before refpreprocess, refpreprocess, iter", refpreprocess, iter
 	
 	
 	if 'rotate_translate_3d_tree' not in options.align[0]:	
