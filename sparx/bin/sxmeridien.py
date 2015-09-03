@@ -835,13 +835,13 @@ def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, npro
 					mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(Tracker["constants"]["nnxo"])),nx,nx,nx)
 
 			if Tracker["constants"]["CTF"]:
-				if Tracker["constants"]["smear"] :
-					#  Ideally, this would be available, but the problem is it is computed in metamove, which is not executed during restart
-					nx = projdata[procid][0].get_xsize()
-					shrinkage = float(nx)/float(Tracker["constants"]["nnxo"])
-					delta = min(round(degrees(atan(0.5/(float(Tracker["icurrentres"])/float(nx))/Tracker["radius"])), 2), 3.0)
-					Tracker["smearstep"] = 0.5*delta
-				else:  Tracker["smearstep"] = 0.0
+				#if Tracker["constants"]["smear"] :
+				#	#  Ideally, this would be available, but the problem is it is computed in metamove, which is not executed during restart
+				#	nx = projdata[procid][0].get_xsize()
+				#	shrinkage = float(nx)/float(Tracker["constants"]["nnxo"])
+				#	delta = min(round(degrees(atan(0.5/(float(Tracker["icurrentres"])/float(nx))/Tracker["radius"])), 2), 3.0)
+				#	Tracker["smearstep"] = 0.5*delta
+				#else:  Tracker["smearstep"] = 0.0
 				from reconstruction import rec3D_MPI
 				vol[procid],fsc[procid] = rec3D_MPI(projdata[procid], symmetry = Tracker["constants"]["sym"], \
 					mask3D = mask, fsc_curve = None, \
@@ -864,7 +864,7 @@ def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, npro
 			from fundamentals import fpol
 			fpol(vol[procid], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"],"vor%01d.hdf"%procid))
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(  line,"Generated vol #%01d  using  image size %d "%(procid, nx))
+			print(  line,"Generated vor #%01d  using  image size %d "%(procid, nx))
 
 
 	lowpass    = 0.0
@@ -1704,7 +1704,7 @@ def main():
 
 				xlowpass, xfalloff, xcurrentres, xares, xfinitres = compute_resolution(projdata, partids, partstack, \
 													Tracker, myid, main_node, nproc)
-				if( xfinitres > Tracker["newnx"] and Tracker["newnx"] < Tracker["constants"]["nnxo"] ):
+				if( (xfinitres < 0) or (xfinitres > Tracker["newnx"]) and (Tracker["newnx"] < Tracker["constants"]["nnxo"]) ):
 					Tracker["newnx"] = min(Tracker["newnx"]+Tracker["nxstep"], Tracker["constants"]["nnxo"] )
 					projdata = [[model_blank(1,1)], [model_blank(1,1)]]
 				else:  repeat = False
