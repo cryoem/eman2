@@ -6460,6 +6460,46 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 		static const string NAME;
 	};
 
+	/** Processor the images by the estimated SNR in each image.if parameter 'wiener' is 1, then wiener processor the images using the estimated SNR with CTF amplitude correction.
+	 * @param defocus mean defocus in microns
+	 * @param voltage microscope voltage in Kv
+	 * @param ac amplitude contrast in %
+	 */
+	class CTFCorrProcessor:public Processor
+	{
+	  public:
+		virtual void process_inplace(EMData * image);
+
+		virtual string get_name() const
+		{
+			return NAME;
+		}
+
+		static Processor *NEW()
+		{
+			return new CTFCorrProcessor();
+		}
+
+		virtual string get_desc() const
+		{
+			return "One of the strongest visual impacts of CTF on a structure is the low resolution high-pass filter effect caused by \
+phase contrast. This Processor performs a simple linear filter to roughly correct for this. This is not a substitution or replacement \
+for the full CTF correction routine available for single particle work in EMAN, but if you are in a situation where accurate CTF \
+correction is not possible, this will allow you to approximate the correction to relieve some of the visual artifacts.";
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("defocus", EMObject::FLOAT, "Mean defocus to correct for in microns");
+			d.put("ac", EMObject::FLOAT, "Amplitude contrast in % (default 10%)");
+			d.put("voltage", EMObject::FLOAT, "Microscope Voltage in Kv (default 300)");
+			return d;
+		}
+
+		static const string NAME;
+	};
+
 
 	/** Processor the images by the estimated SNR in each image.if parameter 'wiener' is 1, then wiener processor the images using the estimated SNR with CTF amplitude correction.
 	 * @param wiener if set to 1,  then use wiener processor to process the images using the estimated SNR with CTF amplitude correction
@@ -6482,7 +6522,7 @@ since the SSNR is being computed as FSC/(1-FSC). Ie - the SSNR of the combined h
 
 		virtual string get_desc() const
 		{
-			return "Processor the images by the estimated SNR in each image.if parameter 'wiener' is 1, then wiener processor the images using the estimated SNR with CTF amplitude correction.";
+			return "Process the images by the estimated SNR in each image.if parameter 'wiener' is 1, then wiener processor the images using the estimated SNR with CTF amplitude correction.";
 		}
 
 		virtual TypeDict get_param_types() const

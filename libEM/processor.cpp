@@ -199,6 +199,7 @@ const string PhaseToMassCenterProcessor::NAME = "xform.phasecenterofmass";
 const string ToMassCenterProcessor::NAME = "xform.centerofmass";
 const string ToCenterProcessor::NAME = "xform.center";
 const string ACFCenterProcessor::NAME = "xform.centeracf";
+const string CTFCorrProcessor::NAME = "filter.ctfcorr.simple";
 const string SNRProcessor::NAME = "eman1.filter.snr";
 const string FileFourierProcessor::NAME = "eman1.filter.byfile";
 const string FSCFourierProcessor::NAME = "filter.wiener.byfsc";
@@ -457,6 +458,7 @@ template <> Factory < Processor >::Factory()
 	force_add<PhaseToMassCenterProcessor>();
 	force_add<ACFCenterProcessor>();
 //	force_add<SNRProcessor>();
+	force_add<CTFCorrProcessor>();
 	force_add<FSCFourierProcessor>();
 
 	force_add<XGradientProcessor>();
@@ -5928,8 +5930,6 @@ void PhaseToCenterProcessor::process_inplace(EMData * image)
 				}
 			}
 		}
-
-
 	}
 }
 
@@ -6759,6 +6759,47 @@ void SNRProcessor::process_inplace(EMData * image)
 		delete d2;
 		d2 = 0;
 	}
+}
+
+void CTFCorrProcessor::process_inplace(EMData * image)
+{
+	if (!image) {
+		return;
+	}
+
+	float defocus = params.set_default("defocus",3.0);
+	float ac = params.set_default("ac",10.0);
+	float voltage = params.set_default("voltage",300.0);
+	
+	EMAN2Ctf ctf;
+
+	int ny = image->get_ysize();
+	ctf.defocus=defocus;
+	ctf.voltage=voltage;
+	ctf.cs=4.1;				// has negligible impact, so we just use a default
+	ctf.apix=image->get_attr("apix_x");
+	ctf.ampcont=ac;
+	ctf.dfdiff=0;
+	ctf.bfactor=200.0;
+	ctf.dsbg=1.0/(ctf.apix*ny);
+	
+	int np=(int)ceil(ny*1.73)+1;
+	vector <float> filter = ctf.compute_1d(np,ctf.dsbg,Ctf::CTF_AMP);
+	
+	// reciprocal until the first CTF maximum, then no filter after that
+	int i;
+	for (i=1; i<np/2; i++) {
+		if (filter[i]<filter[i-1]) break;
+		filter[i]=1.0/filter[i];
+	}
+	int gi=i-1;
+	while (i<np/2) {
+		filter[i]=filter[gi];
+		i++;
+	}
+
+	image->process_inplace("filter.radialtable",Dict("table",filter));
+	
 }
 
 void FileFourierProcessor::process_inplace(EMData * image)
