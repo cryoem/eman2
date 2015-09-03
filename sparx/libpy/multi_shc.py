@@ -1039,7 +1039,7 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None 
 		refrings[0].set_attr("psi",   psi)
 
 		#print "orin  ",data[im].get_attr("ID"),get_params_proj(data[im])
-		peak, pixer = proj_ali_incore_local(data[im],refrings,numr,0.0,0.0,1.0,delta[0]/4)
+		peak, pixer = proj_ali_incore_local(data[im],refrings, [[phi, theta], [phi, theta]], numr,0.0,0.0,1.0,delta[0]/4)
 		data[im].set_attr("previousmax", peak)
 		#print  "peak ",data[im].get_attr("ID"), peak,pixer,get_params_proj(data[im])
 	del volft
