@@ -765,9 +765,6 @@ def get_pixel_resolution(vol, mask, nnxo, fscoutputdir):
 		if(nfsc[2][i]>0.0):  nfsc[2][i] += 0.08
 	nfsc.append(nfsc[2][:])
 	for i in xrange(1,len(nfsc[0])-1):  nfsc[2][i] = (nfsc[3][i-1]+nfsc[3][i]+nfsc[3][i+1])/3.0
-	for i in xrange(len(nfsc[0])):  nfsc[3][i] = 2*nfsc[2][i]/(1.0+nfsc[2][i])
-	#  Columns in fsc:  absfreq, raw fsc, smoothed fsc, smoothed fsc for volf
-	write_text_file( nfsc, os.path.join(fscoutputdir,"fsc.txt") )
 	ns = len(nfsc[1])
 	#  This is actual resolution, as computed by 2*f/(1+f), should be used for volf
 	ares = -1
@@ -799,6 +796,11 @@ def get_pixel_resolution(vol, mask, nnxo, fscoutputdir):
 			lowpass = nfsc[0][i-1]
 			break
 	"""
+	#  Columns in fsc:  absfreq, raw fsc, smoothed fsc, smoothed fsc for volf
+	if( Tracker["state"] == "INITIAL" ):
+		[lowpass,nfsc[2]] = tanhfilter(Tracker["constants"]["nnxo"], currentres, Tracker["falloff"])
+	for i in xrange(len(nfsc[0])):  nfsc[3][i] = 2*nfsc[2][i]/(1.0+nfsc[2][i])
+	write_text_file( nfsc, os.path.join(fscoutputdir,"fsc.txt") )
 	#lowpass, falloff = fit_tanh1(nfsc, 0.01)
 	lowpass = nfsc[0][currentres]
 	falloff = 0.2
@@ -1704,7 +1706,7 @@ def main():
 
 				xlowpass, xfalloff, xcurrentres, xares, xfinitres = compute_resolution(projdata, partids, partstack, \
 													Tracker, myid, main_node, nproc)
-				if( (xfinitres < 0) or (xfinitres > Tracker["newnx"]) and (Tracker["newnx"] < Tracker["constants"]["nnxo"]) ):
+				if( (xfinitres < 0) or (2*xfinitres+3 > Tracker["newnx"]) and (Tracker["newnx"] < Tracker["constants"]["nnxo"]) ):
 					Tracker["newnx"] = min(Tracker["newnx"]+Tracker["nxstep"], Tracker["constants"]["nnxo"] )
 					projdata = [[model_blank(1,1)], [model_blank(1,1)]]
 				else:  repeat = False
