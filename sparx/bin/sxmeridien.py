@@ -1696,7 +1696,7 @@ def main():
 			repeat = True
 			Tracker["newnx"] = Tracker["nxinit"]
 			while  repeat:
-				if( nxinit != projdata[procid][0].get_xsize() ):
+				if( Tracker["newnx"] != projdata[procid][0].get_xsize() ):
 					projdata = [[],[]]
 					for procid in xrange(2):
 						projdata[procid], oldshifts[procid] = get_shrink_data(Tracker, Tracker["newnx"],\
