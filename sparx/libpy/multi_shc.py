@@ -1000,7 +1000,6 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None 
 	#=========================================================================
 	# adjust params to references, calculate psi+shifts, calculate previousmax
 	#qvol = volume_reconstruction(data, ali3d_options, mpi_comm)
-	# 9here
 	qvol = do_volume(data, ali3d_options, 0, mpi_comm)
 	# log
 	"""
@@ -1048,7 +1047,6 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None 
 	if myid == main_node:
 		start_time = time()
 	# ref_vol = volume_reconstruction(data, ali3d_options, mpi_comm)
-	# 9here
 	ref_vol = do_volume(data, ali3d_options, 0, mpi_comm)
 	# log
 	if myid == main_node:
@@ -1154,7 +1152,6 @@ def ali3d_multishc_2(stack, ref_vol, ali3d_options, mpi_comm = None, log = None 
 			if myid == main_node:
 				start_time = time()
 			# vol = volume_reconstruction(data, ali3d_options, mpi_comm)
-			# 9here
 			vol = do_volume(data, ali3d_options, 0, mpi_comm)
 			# log
 			if myid == main_node:
