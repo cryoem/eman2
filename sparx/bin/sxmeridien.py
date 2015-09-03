@@ -749,16 +749,16 @@ def get_resolution_mrk01(vol, radi, nnxo, fscoutputdir, mask_option):
 	return  round(lowpass,4), round(falloff,4), round(currentres,2)
 
 
-def get_pixel_resolution(vol, mask, nnxo, fscoutputdir):
+def get_pixel_resolution(Tracker, vol, mask, fscoutputdir):
 	# this function is single processor
 	nx = vol[0].get_xsize()
 	nfsc = fsc( vol[0]*mask, vol[1]*mask, 1.0 )
-	if(nx<nnxo):
+	if(nx<Tracker["constants"]["nnxo"]):
 		for i in xrange(3):
-			for k in xrange(nx//2+1,nnxo/2+1):
+			for k in xrange(nx//2+1,Tracker["constants"]["nnxo"]/2+1):
 				nfsc[i].append(0.0)
-		for i in xrange(nnxo/2+1):
-			nfsc[0][i] = float(i)/nnxo
+		for i in xrange(Tracker["constants"]["nnxo"]/2+1):
+			nfsc[0][i] = float(i)/Tracker["constants"]["nnxo"]
 
 	for i in xrange(len(nfsc[0])):
 		nfsc[2][i] = max(nfsc[1][i] - 0.08, 0.0)
@@ -890,7 +890,7 @@ def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, npro
 				for k in xrange(len(fsc[procid][1])):  fsc[procid][-1][k] = 2*fsc[procid][-1][k]/(1.0+fsc[procid][-1][k])
 				write_text_file( fsc[procid], os.path.join(Tracker["directory"],"within-fsc%01d.txt"%procid) )
 
-		lowpass, falloff, icurrentres, ares, finitres = get_pixel_resolution(vol, mask, Tracker["constants"]["nnxo"], Tracker["directory"])
+		lowpass, falloff, icurrentres, ares, finitres = get_pixel_resolution(Tracker, vol, mask, Tracker["directory"])
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print(  line,"Current resolution  %6.2f  %6.2f A  (%d @0.5)  (%d @0.33), low-pass filter cut-off %6.2f and fall-off %6.2f"%\
 			(icurrentres/float(Tracker["constants"]["nnxo"]),Tracker["constants"]["pixel_size"]*float(Tracker["constants"]["nnxo"])/float(icurrentres),icurrentres,ares,lowpass,falloff))
@@ -990,7 +990,7 @@ def compute_volsmeared(stack, partids, partstack, Tracker, myid, main_node, npro
 				for k in xrange(len(fsc[procid][1])):  fsc[procid][-1][k] = 2*fsc[procid][-1][k]/(1.0+fsc[procid][-1][k])
 				write_text_file( fsc[procid], os.path.join(Tracker["directory"],"within-fsc%01d.txt"%procid) )
 
-		lowpass, falloff, icurrentres, ares, finitres = get_pixel_resolution(vol, mask, Tracker["constants"]["nnxo"], Tracker["directory"])
+		lowpass, falloff, icurrentres, ares, finitres = get_pixel_resolution(Tracker, vol, mask, Tracker["directory"])
 		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 		print(  line,"Current resolution  %6.2f  %6.2f A  (%d @0.5)  (%d @0.33), low-pass filter cut-off %6.2f and fall-off %6.2f"%\
 			(icurrentres/float(Tracker["constants"]["nnxo"]),Tracker["constants"]["pixel_size"]*float(Tracker["constants"]["nnxo"])/float(icurrentres),icurrentres,ares,lowpass,falloff))
