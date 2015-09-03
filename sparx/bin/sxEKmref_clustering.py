@@ -440,6 +440,11 @@ def main():
 					log_main.add("The initial random assignments are "+os.path.join(initdir,"random_list%d.txt"%irandom))
                                 	write_text_file(ll,os.path.join(initdir,"random_list%d.txt"%irandom))
                 	mpi_barrier(MPI_COMM_WORLD)
+			if myid ==main_node:
+				log_main.add("preset ali3d_parameters ")
+				if Tracker["constants"]["importali3d"]!="":
+                               		cmd = "{} {} {} {}".format("sxheader.py",Tracker["constants"]["stack"],"--params=xform.projection", "--import="+Tracker["constants"]["importali3d"])
+                                	cmdexecute(cmd)
 			### generate the initial volumes
 			for iter_indep in xrange(Tracker["constants"]["indep_runs"]):
                         	ll=read_text_file(os.path.join(initdir,"random_list%d.txt"%iter_indep))
@@ -560,6 +565,7 @@ def main():
 					if Tracker["constants"]["importali3d"]!="":
 						cmd = "{} {} {} {}".format("sxheader.py",Tracker["constants"]["stack"],"--params=xform.projection", "--import="+Tracker["constants"]["importali3d"])
                                                 cmdexecute(cmd)
+						log_main.add("Headers are re-initialized in each independent run")
 
 				mpi_barrier(MPI_COMM_WORLD)
 				if doit:
@@ -574,6 +580,7 @@ def main():
 						if Tracker["constants"]["nrefine"]:
 							cmd = "{} {} {} {}".format("sxheader.py",Tracker["constants"]["stack"],"--params=xform.projection", "--export="+Tracker["EMREF"][iter_indep]["ali3d"])
 							cmdexecute(cmd)
+							log_main.add("ali3d_params is dropped off in each indepdent run!")
 				else:
 					doit, keepchecking = checkstep(Tracker["EMREF"][iter_indep]["partition"],keepchecking,myid,main_node)
 					if doit:
@@ -591,6 +598,7 @@ def main():
 							if Tracker["constants"]["nrefine"]:
 								cmd = "{} {} {} {}".format("sxheader.py",Tracker["constants"]["stack"],"--params=xform.projection", "--export="+Tracker["EMREF"][iter_indep]["ali3d"])
 								cmdexecute(cmd)
+								log_main.add("ali3d_params is dropped off in each independent run!")
 					else:
 						if myid==main_node:print_a_line_with_timestamp("MREF%03d has been done"%iter_indep)
 				mpi_barrier(MPI_COMM_WORLD)
@@ -613,6 +621,7 @@ def main():
 				if Tracker["constants"]["importali3d"]!="":
 					cmd = "{} {} {} {}".format("sxheader.py",Tracker["constants"]["stack"],"--params=xform.projection", "--import="+Tracker["constants"]["importali3d"])
 					cmdexecute(cmd)
+					log_main.add("Headers are re-initialized in each independent run")
                         	if doit:
                                 	empty_group = Kmref_ali3d_MPI(Tracker["constants"]["stack"],Tracker["refvols"][iter_indep],outdir,Tracker["constants"]["mask3D"] ,\
                                 	Tracker["constants"]["focus3Dmask"],Tracker["constants"]["maxit"],Tracker["constants"]["ir"],Tracker["constants"]["radius"],Tracker["constants"]["rs"],\
