@@ -1710,7 +1710,7 @@ def main():
 				else:  repeat = False
 
 			#  Make sure these variables are not carried
-			del xlowpass, xfalloff, xcurrentres, xares, nxinit, xfinitres
+			del xlowpass, xfalloff, xcurrentres, xares, xfinitres
 			if( myid == main_node):
 				# Carry over chunk information
 				for procid in xrange(2):
