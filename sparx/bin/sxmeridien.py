@@ -799,6 +799,8 @@ def get_pixel_resolution(Tracker, vol, mask, fscoutputdir):
 	#  Columns in fsc:  absfreq, raw fsc, smoothed fsc, smoothed fsc for volf
 	if( Tracker["state"] == "INITIAL" ):
 		[lowpass,nfsc[2]] = tanhfilter(Tracker["constants"]["nnxo"], currentres, Tracker["falloff"])
+		if( len(nfsc[0])>len(nfsc[2]) ):  nfsc[2] += [0.0]*(len(nfsc[0])-len(nfsc[2]))
+		finitres = (Tracker["newnx"]-4)//2  #  This is to full window size adjustment
 	for i in xrange(len(nfsc[0])):  nfsc[3][i] = 2*nfsc[2][i]/(1.0+nfsc[2][i])
 	write_text_file( nfsc, os.path.join(fscoutputdir,"fsc.txt") )
 	#lowpass, falloff = fit_tanh1(nfsc, 0.01)
