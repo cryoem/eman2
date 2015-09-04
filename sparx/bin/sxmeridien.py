@@ -782,11 +782,6 @@ def get_pixel_resolution(Tracker, vol, mask, fscoutputdir):
 		print("  Something wrong with the resolution, cannot continue")
 		mpi_finalize()
 		exit()
-	finitres = -1
-	for i in xrange(1,ns-1):
-		if ( nfsc[2][i] < 0.08):
-			finitres = i
-			break
 	"""
 	lowpass = 0.5
 	ns = len(nfsc[1])
@@ -796,12 +791,16 @@ def get_pixel_resolution(Tracker, vol, mask, fscoutputdir):
 			lowpass = nfsc[0][i-1]
 			break
 	"""
-	#  Columns in fsc:  absfreq, raw fsc, smoothed fsc, smoothed fsc for volf
 	if( Tracker["state"] == "INITIAL" ):
 		[lowpass,nfsc[2]] = tanhfilter(Tracker["constants"]["nnxo"], currentres, Tracker["falloff"])
 		if( len(nfsc[0])>len(nfsc[2]) ):  nfsc[2] += [0.0]*(len(nfsc[0])-len(nfsc[2]))
-		finitres = (Tracker["newnx"]-4)//2  #  This is to full window size adjustment
+	finitres = -1
+	for i in xrange(1,ns-1):
+		if ( nfsc[2][i] < 0.08):
+			finitres = i
+			break
 	for i in xrange(len(nfsc[0])):  nfsc[3][i] = 2*nfsc[2][i]/(1.0+nfsc[2][i])
+	#  Columns in fsc:  absfreq, raw fsc, smoothed fsc, smoothed fsc for volf
 	write_text_file( nfsc, os.path.join(fscoutputdir,"fsc.txt") )
 	#lowpass, falloff = fit_tanh1(nfsc, 0.01)
 	lowpass = nfsc[0][currentres]
