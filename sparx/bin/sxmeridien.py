@@ -792,7 +792,7 @@ def get_pixel_resolution(Tracker, vol, mask, fscoutputdir):
 			break
 	"""
 	if( Tracker["state"] == "INITIAL" ):
-		[lowpass,nfsc[2]] = tanhfilter(Tracker["constants"]["nnxo"], currentres, Tracker["falloff"])
+		[lowpass,nfsc[2]] = tanhfilter(Tracker["constants"]["nnxo"], float(currentres)/Tracker["constants"]["nnxo"], Tracker["falloff"])
 		if( len(nfsc[0])>len(nfsc[2]) ):  nfsc[2] += [0.0]*(len(nfsc[0])-len(nfsc[2]))
 	finitres = -1
 	for i in xrange(1,ns-1):
@@ -968,7 +968,7 @@ def compute_volsmeared(stack, partids, partstack, Tracker, myid, main_node, npro
 			from fundamentals import fpol
 			fpol(vol[procid], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"],"vol%01d.hdf"%procid))
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(  line,"Generated vos #%01d  using  image size %d "%(procid, nx))
+			print(  line,"Generated vol #%01d  using  image size %d "%(procid, nx))
 
 	"""
 	lowpass    = 0.0
