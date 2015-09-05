@@ -1707,20 +1707,20 @@ def main():
 
 				newlowpass, newfalloff, icurrentres, ares, finitres = compute_resolution(projdata, partids, partstack, \
 													Tracker, myid, main_node, nproc)
-				if( (xfinitres < 0) or (2*(finitres+1)+cushion > nxinit) and (nxinit < Tracker["constants"]["nnxo"]) ):
+				if( (finitres < 0) or (2*(finitres+1)+cushion > nxinit) and (nxinit < Tracker["constants"]["nnxo"]) ):
 					nxinit = Tracker["constants"]["nnxo"]
 					projdata = [[model_blank(1,1)], [model_blank(1,1)]]
 				else:
 					repeat = False
 					Tracker["newnx"] = Tracker["nxinit"]
-					if( (2*(xfinitres+1)+cushion) > Tracker["nxinit"]):
+					if( (2*(finitres+1)+cushion) > Tracker["nxinit"]):
 						while( (Tracker["newnx"]<2*(finitres+1)+cushion) and Tracker["newnx"]<Tracker["constants"]["nnxo"]):
 							Tracker["newnx"] = min( Tracker["newnx"]+Tracker["nxstep"], Tracker["constants"]["nnxo"] )
 						
 			
 			newlowpass = round(newlowpass,4)
 			Tracker["falloff"] = round(newfalloff,4)  # For the time being
-			print(" newx ",newlowpass, newfalloff, icurrentres, ares, xfinitres,Tracker["newnx"])
+			if( myid == main_node ): print(" newx ",newlowpass, newfalloff, icurrentres, ares, finitres,Tracker["newnx"])
 			Tracker["ireachedres"] = icurrentres
 			if( myid == main_node):
 				# Carry over chunk information
