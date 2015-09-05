@@ -1705,20 +1705,23 @@ def main():
 						projdata[procid], oldshifts[procid] = get_shrink_data(Tracker, nxinit,\
 									partids[procid], partstack[procid], myid, main_node, nproc, preshift = False)
 
-				xlowpass, xfalloff, xcurrentres, xares, xfinitres = compute_resolution(projdata, partids, partstack, \
+				newlowpass, newfalloff, icurrentres, ares, finitres = compute_resolution(projdata, partids, partstack, \
 													Tracker, myid, main_node, nproc)
-				if( (xfinitres < 0) or (2*(xfinitres+1)+cushion > nxinit) and (nxinit < Tracker["constants"]["nnxo"]) ):
+				if( (xfinitres < 0) or (2*(finitres+1)+cushion > nxinit) and (nxinit < Tracker["constants"]["nnxo"]) ):
 					nxinit = Tracker["constants"]["nnxo"]
 					projdata = [[model_blank(1,1)], [model_blank(1,1)]]
 				else:
 					repeat = False
-					if(nxinit > Tracker["nxinit"]):
-						Tracker["newnx"] = min(nxinit+max(Tracker["nxstep"], 2*(xfinitres+1)+cushion), Tracker["constants"]["nnxo"] )
-					else:  Tracker["newnx"] = Tracker["nxinit"]
-
-
-			#  Make sure these variables are not carried
-			del xlowpass, xfalloff, xcurrentres, xares, xfinitres
+					Tracker["newnx"] = Tracker["nxinit"]
+					if( (2*(xfinitres+1)+cushion) > Tracker["nxinit"]):
+						while( (Tracker["newnx"]<2*(finitres+1)+cushion) and Tracker["newnx"]<Tracker["constants"]["nnxo"]):
+							Tracker["newnx"] = min( Tracker["newnx"]+Tracker["nxstep"], Tracker["constants"]["nnxo"] )
+						
+			
+			newlowpass = round(newlowpass,4)
+			Tracker["falloff"] = round(newfalloff,4)  # For the time being
+			print(" newx ",newlowpass, newfalloff, icurrentres, ares, xfinitres,Tracker["newnx"])
+			Tracker["ireachedres"] = icurrentres
 			if( myid == main_node):
 				# Carry over chunk information
 				for procid in xrange(2):
@@ -1754,8 +1757,7 @@ def main():
 			"""
 			#  If smear is requested, compute smeared volumes as vol*.hdf.  If not, simply copy vor
 			if Tracker["constants"]["smear"] :
-				nx = projdata[procid][0].get_xsize()
-				if(Tracker["newnx"] != nx ):
+				if(Tracker["newnx"] != projdata[procid][0].get_xsize() ):
 					projdata = [[],[]]
 					for procid in xrange(2):
 						projdata[procid], oldshifts[procid] = get_shrink_data(Tracker, Tracker["newnx"],\
@@ -1763,7 +1765,7 @@ def main():
 					
 				#  Ideally, this would be available, but the problem is it is computed in metamove, which is not executed during restart
 				shrinkage = float(Tracker["newnx"])/float(Tracker["constants"]["nnxo"])
-				delta = min(round(degrees(atan(0.5/(float(Tracker["icurrentres"])/float(nx))/Tracker["radius"])), 2), 3.0)
+				delta = min(round(degrees(atan(0.5/(float(Tracker["ireachedres"])/float(Tracker["newnx"]))/Tracker["radius"])), 2), 3.0)
 				Tracker["smearstep"] = 0.5*delta
 				compute_volsmeared(projdata, partids, partstack, Tracker, myid, main_node, nproc)
 			else:
@@ -1774,19 +1776,16 @@ def main():
 						cmdexecute(cmd)
 			if( myid == main_node ):
 				volf = 0.5*(get_im(os.path.join(Tracker["directory"] ,"vol0.hdf"))+get_im(os.path.join(Tracker["directory"] ,"vol0.hdf")))
-				[newlowpass, newfalloff, icurrentres, ares, finitres] = read_text_row( os.path.join(Tracker["directory"],"current_resolution.txt") )[0]
 				#  This structure will be calculated without local filter
 				#Tracker["lowpass"] = float(ares)/float(Tracker["nxinit"])
 				Tracker["lowpass"] = read_text_file(os.path.join(Tracker["directory"],"fsc.txt"),3)
 				lex = len(Tracker["lowpass"])
-
 			else:
 				volf = model_blank(Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
-				newlowpass = 0.0; newfalloff = 0.0; icurrentres = 0; ares = 0
 				lex = 0
 			lsave = Tracker["local_filter"]
 			Tracker["local_filter"] = False
-			Tracker["falloff"] = newfalloff
+			Tracker["falloff"]      = newfalloff
 
 			lex = bcast_number_to_all(lex, source_node = main_node)
 			if(myid != main_node):  Tracker["lowpass"] = [0.0]*lex
@@ -1827,28 +1826,6 @@ def main():
 		Tracker["anger"]   = anger
 		Tracker["shifter"] = shifter
 
-
-		if( myid == main_node):
-			[newlowpass, newfalloff, icurrentres, ares, finitres] = read_text_row( os.path.join(Tracker["directory"],"current_resolution.txt") )[0]
-		else:
-			newlowpass = 0.0
-			newfalloff = 0.0
-			icurrentres = 0
-			ares = 0
-			finitres = 0
-		newlowpass = bcast_number_to_all(newlowpass, source_node = main_node)
-		newlowpass = round(newlowpass,4)
-		newfalloff = bcast_number_to_all(newfalloff, source_node = main_node)
-		Tracker["falloff"] = round(newfalloff,4)  # For the time being
-		icurrentres = bcast_number_to_all(icurrentres, source_node = main_node)
-		ares = bcast_number_to_all(ares, source_node = main_node)
-		finitres = bcast_number_to_all(finitres, source_node = main_node)
-
-
-		#mpi_barrier(MPI_COMM_WORLD)
-		#mpi_finalize()
-		#exit()
-		Tracker["ireachedres"] = icurrentres
 		if myid == main_node:  print("   >>> AI  <<<  ",Tracker["mainiteration"] ,Tracker["ireachedres"],Tracker["icurrentres"])
 
 		# Update HISTORY
