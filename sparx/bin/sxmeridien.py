@@ -1692,9 +1692,9 @@ def main():
 		for procid in xrange(2):  partstack[procid] = os.path.join(Tracker["directory"], "params-chunk%01d.txt"%procid)
 
 		#  Due to efficiency reasons, we have to check it for the volf, if it does not exist, estimate the resolution and compute volf
-		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"volf.hdf"), keepchecking, myid, main_node)
+		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"newnx.txt"), keepchecking, myid, main_node)
 
-		if  doit:
+		if doit:
 			#  Projections have to be read
 			repeat = True
 			nxinit = Tracker["nxinit"]
@@ -1702,6 +1702,7 @@ def main():
 				if( nxinit != projdata[procid][0].get_xsize() ):
 					projdata = [[],[]]
 					for procid in xrange(2):
+						#  The data is read with shrinking to nxinit
 						projdata[procid], oldshifts[procid] = get_shrink_data(Tracker, nxinit,\
 									partids[procid], partstack[procid], myid, main_node, nproc, preshift = False)
 
@@ -1716,12 +1717,15 @@ def main():
 					if( (2*(finitres+1)+cushion) > Tracker["nxinit"]):
 						while( (Tracker["newnx"]<2*(finitres+1)+cushion) and Tracker["newnx"]<Tracker["constants"]["nnxo"]):
 							Tracker["newnx"] = min( Tracker["newnx"]+Tracker["nxstep"], Tracker["constants"]["nnxo"] )
-						
-			
+					#  Here nxinit is set to Tracker
+
 			newlowpass = round(newlowpass,4)
 			Tracker["falloff"] = round(newfalloff,4)  # For the time being
-			if( myid == main_node ): print(" newx ",newlowpass, newfalloff, icurrentres, ares, finitres,Tracker["newnx"])
 			Tracker["ireachedres"] = icurrentres
+			if( myid == main_node ):
+				write_text_file(Tracker["newnx"], os.path.join(Tracker["directory"] ,"newnx.txt") )
+				print(" newx ",newlowpass, newfalloff, icurrentres, ares, finitres,Tracker["newnx"])
+
 			if( myid == main_node):
 				# Carry over chunk information
 				for procid in xrange(2):
@@ -1729,7 +1733,28 @@ def main():
 											os.path.join(Tracker["directory"],"chunk%01d.txt"%procid) )
 					cmdexecute(cmd)
 
+		else:
+			#  restore status
+			if( myid == main_node):
+				#newlowpass, newfalloff, icurrentres, ares, finitres,Tracker["newnx"]
+				[lowpass, falloff, icurrentres, ares, finitres] = read_text_row(os.path.join(Tracker["directory"],"current_resolution.txt"))[0]
+				newnx = read_text_file(os.path.join(Tracker["directory"],"newnx.txt"))[0]
+			else:
+				lowpass=0; falloff=0; icurrentres=0; ares=0; finitres=0; newnx = 0
+			#lowpass       = bcast_number_to_all(lowpass,   source_node = main_node)
+			falloff       = bcast_number_to_all(falloff,   source_node = main_node)
+			icurrentres   = bcast_number_to_all(icurrentres,   source_node = main_node)
+			#ares          = bcast_number_to_all(ares,   source_node = main_node)
+			#finitres      = bcast_number_to_all(finitres,   source_node = main_node)
+			Tracker["ireachedres"]  = icurrentres
+			Tracker["falloff"]      = falloff
+			newnx       = bcast_number_to_all(newnx,   source_node = main_node)
+			Tracker["newnx"] = newnx
+			del lowpass, falloff, icurrentres, ares, finitres, newnx
 
+
+		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"vol0.hdf"), keepchecking, myid, main_node)
+		if doit:
 			#  PRESENTABLE RESULT  AND vol*.hdf to start next iteration     <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 			#  Here I have code to generate presentable results.  IDs and params have to be merged and stored and the overall volume computed.
 			if( myid == main_node ):
@@ -1774,6 +1799,10 @@ def main():
 						cmd = "{} {} {}".format("cp -p", os.path.join(Tracker["directory"] ,"vor%01d.hdf"), \
 											os.path.join(Tracker["directory"] ,"vol%01d.hdf") )
 						cmdexecute(cmd)
+
+		#  
+		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"volf.hdf"), keepchecking, myid, main_node)
+		if doit:
 			if( myid == main_node ):
 				volf = 0.5*(get_im(os.path.join(Tracker["directory"] ,"vol0.hdf"))+get_im(os.path.join(Tracker["directory"] ,"vol0.hdf")))
 				#  This structure will be calculated without local filter
@@ -1800,6 +1829,22 @@ def main():
 				fpol(volf, Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"] ,"volf.hdf"))
 			del volf
 			Tracker["local_filter"] = lsave
+		"""
+		else:
+			if( myid == main_node ):
+				[lowpass, falloff, icurrentres, ares, finitres] = read_text_row(os.path.join(Tracker["directory"],"current_resolution.txt"))[0]
+			else:
+				lowpass=0; falloff=0; icurrentres=0; ares=0; finitres=0
+			#lowpass       = bcast_number_to_all(lowpass,   source_node = main_node)
+			falloff       = bcast_number_to_all(falloff,   source_node = main_node)
+			icurrentres   = bcast_number_to_all(icurrentres,   source_node = main_node)
+			#ares          = bcast_number_to_all(ares,   source_node = main_node)
+			#finitres      = bcast_number_to_all(finitres,   source_node = main_node)
+			Tracker["ireachedres"]  = icurrentres
+			Tracker["falloff"]      = falloff
+			Tracker["newnx"] = It has to be preserved, but I do not know how
+		"""
+
 
 		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"error_thresholds.txt"), keepchecking, myid, main_node)
 		if  doit:
