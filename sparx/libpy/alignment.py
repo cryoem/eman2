@@ -1275,6 +1275,8 @@ def prepare_refrings( volft, kb, nz = -1, delta = 2.0, ref_a = "P", sym = "c1", 
 	else:
 		ncpu = 1
 		myid = 0
+
+	if(nz <1):  ERROR("Data size has to be given (nz)", "prepare_refrings", 1, myid)
 	
 	ref_start, ref_end = MPI_start_end(num_ref, ncpu, myid)
 
