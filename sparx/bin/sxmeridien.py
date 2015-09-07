@@ -1691,7 +1691,7 @@ def main():
 		partstack = [None]*2
 		for procid in xrange(2):  partstack[procid] = os.path.join(Tracker["directory"], "params-chunk%01d.txt"%procid)
 
-		#  Due to efficiency reasons, we have to check it for the volf, if it does not exist, estimate the resolution and compute volf
+		# 
 		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"newnx.txt"), keepchecking, myid, main_node)
 
 		if doit:
@@ -1723,7 +1723,7 @@ def main():
 			Tracker["falloff"] = round(newfalloff,4)  # For the time being
 			Tracker["ireachedres"] = icurrentres
 			if( myid == main_node ):
-				write_text_file(Tracker["newnx"], os.path.join(Tracker["directory"] ,"newnx.txt") )
+				write_text_file([Tracker["newnx"]], os.path.join(Tracker["directory"] ,"newnx.txt") )
 				print(" newx ",newlowpass, newfalloff, icurrentres, ares, finitres,Tracker["newnx"])
 
 			if( myid == main_node):

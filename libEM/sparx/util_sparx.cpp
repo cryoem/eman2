@@ -18834,7 +18834,6 @@ vector<float> Util::multiref_polar_ali_3d(EMData* image, const vector< EMData* >
 		iy = i * step ;
 		for (int j = -lkx; j <= rkx; j++) {
 			ix = j*step ;
-			//printf(" within loop  %3d  %3d  %3d  %3d     %3d  %4.1f  %3d  %4.1f  \n",lkx,rkx,lky,rky,j,ix,i,iy);
 			EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 
 			Normalize_ring( cimage, numr );
@@ -18846,6 +18845,7 @@ vector<float> Util::multiref_polar_ali_3d(EMData* image, const vector< EMData* >
 				Dict retvals = Crosrng_ms(crefim[iref], cimage, numr);
 				double qn = retvals["qn"];
 				double qm = retvals["qm"];
+			//printf(" ex within loop  %3d  %3d  %3d  %3d     %3d  %4.1f  %3d  %4.1f  %4.1f  %4.1f  \n",lkx,rkx,lky,rky,j,ix,i,iy,qn,qm);
 				if(qn >= peak || qm >= peak) {
 					sxs = -ix;
 					sys = -iy;
@@ -18859,6 +18859,7 @@ vector<float> Util::multiref_polar_ali_3d(EMData* image, const vector< EMData* >
 						peak = static_cast<float>(qm);
 						mirror = 1;
 					}
+					//printf(" ex better within loop  %4.1f  %4.1f   %4.1f  %4.1f  \n",sxs,sys,ang,peak);
 				}
 			}  delete cimage; cimage = 0;
 		}	
@@ -19695,9 +19696,9 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 			if( compute_cimages ) {
 				compute_cimages = false;
 				for (int i = -lky; i <= rky; i++) {
-					const int iy = i * step ;
+					iy = i * step ;
 					for (int j = -lkx; j <= rkx; j++) {
-						const int ix = j*step ;
+						ix = j*step ;
 						EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 						Normalize_ring( cimage, numr );
 						Frngs(cimage, numr);
@@ -19710,16 +19711,12 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 				iy = i * step ;
 				for (int j = -lkx; j <= rkx; j++) {
 					ix = j*step;
-			/*
-					EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
-					Normalize_ring( cimage, numr );
-					Frngs(cimage, numr);
-			*/
 					//  compare with all reference images that are on a new list
 					int compmirror = (iu/crefim_len)%2;
 					Dict retvals = Crosrng_e(crefim[iref], cimages[i+lky][j+lkx], numr, compmirror);
 					double qn = retvals["qn"];
-
+		//printf(" lo within loop  %3d  %3d  %3d  %3d     %3d  %4.1f  %3d  %4.1f  %4.1f  \n",lkx,rkx,lky,rky,j,ix,i,iy,qn);
+			
 					if(qn >= peak) {
 						sxs = -ix;
 						sys = -iy;
@@ -19727,6 +19724,7 @@ vector<float> Util::multiref_polar_ali_3d_local(EMData* image, const vector< EMD
 						mirror = compmirror;
 						ang = ang_n(retvals["tot"], mode, numr[numr.size()-1]);
 						peak = static_cast<float>( qn );
+					//printf(" lo better within loop  %4.1f  %4.1f   %4.1f  %4.1f  \n",sxs,sys,ang,peak);
 					}
 					//delete cimage; cimage = 0;
 				}
