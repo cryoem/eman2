@@ -65,14 +65,14 @@ namespace EMAN
 
 	private:
 		enum MrcMode {
-			MRC_CHAR = 0,
+			MRC_UCHAR = 0,
 			MRC_SHORT = 1,
 			MRC_FLOAT = 2,
 			MRC_SHORT_COMPLEX=3,
 			MRC_FLOAT_COMPLEX=4,
 			MRC_USHORT = 6,
 			MRC_UCHAR3 = 16,	//unsigned char * 3, for rgb data, non-standard
-			MRC_UCHAR,		// non-standard, not sure what the nubmer is?
+			MRC_CHAR,		// non-standard, not sure what the nubmer is?
 			MRC_UNKNOWN
 		};
 
