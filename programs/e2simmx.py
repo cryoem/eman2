@@ -768,14 +768,14 @@ def main():
 		if options.verbose>1 : print "%d. "%r,
 		row=cmponetomany(cimgs,rimg,options.align,options.aligncmp,options.cmp, options.ralign, options.raligncmp,options.shrink,mask,subset,options.prefilt,options.verbose)
 		for c,v in enumerate(row):
-			if row==None : mxout[0].set_value_at(c,r,0,-1.0e30)
+			if v==None : mxout[0].set_value_at(c,r,0,-1.0e30)
 			else: mxout[0].set_value_at(c,r,0,v[0])
 
 		# This is to catch any NaNs - yes this is a problem but this is a temporary work around
 		mxout[0].process_inplace("math.finite",{"to":1e24})
 		if options.saveali :
 			for c,v in enumerate(row):
-				if row==None :
+				if v==None :
 					mxout[1].set_value_at(c,r,0,0)
 					mxout[2].set_value_at(c,r,0,0)
 					mxout[3].set_value_at(c,r,0,0)
