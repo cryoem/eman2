@@ -19769,7 +19769,7 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 	int   nref = -1, mirror = 0;
 	bool  found_better = false;
 	size_t tiref = 0;
-	float an;
+	float an, ix, iy;
 
 	// cout << ant <<endl;
 	if( ant > 0.0f) {  //LOCAL SEARCHES
@@ -19836,9 +19836,9 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 
 			vector< vector<EMData*> > cimages( lky+rky+1, vector<EMData*>(lkx+rkx+1) );
 			for (int i = -lky; i <= rky; i++) {
-				const int iy = i * step ;
+				iy = i * step ;
 				for (int j = -lkx; j <= rkx; j++) {
-					const int ix = j*step ;
+					ix = j*step ;
 					EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 					Normalize_ring( cimage, numr );
 					Frngs(cimage, numr);
@@ -19857,13 +19857,13 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 				for ( unsigned nodeId = 0;  nodeId < shifts.size();  ++nodeId ) {
 					const int i = ( shifts[nodeId] % (lky+rky+1) ) - lky;
 					const int j = ( shifts[nodeId] / (lky+rky+1) ) - lkx;
-					const float iy = i * step;
-					const float ix = j * step;
 					EMData* cimage = cimages[i+lky][j+lkx];
 					Dict retvals = Crosrng_rand_e(crefim[iref], cimage, numr, mirror_crefim[tiref], previousmax, an, psi_pos);
 					const float new_peak = static_cast<float>( retvals["qn"] );
 					//cout << new_peak <<endl;
 					if (new_peak > peak) {
+						iy = i * step;
+						ix = j * step;
 						sxs = -ix;
 						sys = -iy;
 						nref = iref;
@@ -19915,9 +19915,9 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 		vector< vector<EMData*> > cimages( lky+rky+1, vector<EMData*>(lkx+rkx+1) );
 
 		for (int i = -lky; i <= rky; i++) {
-			const int iy = i * step ;
+			iy = i * step ;
 			for (int j = -lkx; j <= rkx; j++) {
-				const int ix = j*step;
+				ix = j*step;
 				EMData* cimage = Polar2Dm(image, cnx+ix, cny+iy, numr, mode);
 				Normalize_ring( cimage, numr );
 				Frngs(cimage, numr);
@@ -19932,14 +19932,14 @@ vector<float> Util::shc(EMData* image, const vector< EMData* >& crefim,
 			for ( unsigned nodeId = 0;  nodeId < shifts.size();  ++nodeId ) {
 				const int i = ( shifts[nodeId] % (lky+rky+1) ) - lky;
 				const int j = ( shifts[nodeId] / (lky+rky+1) ) - lkx;
-				const float iy = i * step;
-				const float ix = j * step;
 				EMData* cimage = cimages[i+lky][j+lkx];
 
 				Dict retvals = Crosrng_rand_ms(crefim[iref], cimage, numr, previousmax);
 				const float new_peak = static_cast<float>( retvals["qn"] );
 				//cout << new_peak <<endl;
 				if (new_peak > peak) {
+					iy = i * step;
+					ix = j * step;
 					sxs = -ix;
 					sys = -iy;
 					nref = iref;
