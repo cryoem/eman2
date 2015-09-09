@@ -150,7 +150,7 @@ def AI( Tracker, HISTORY ):
 					if( Tracker["anger"]  < dd ):  move_up_phase = True
 					else:
 						Tracker["xr"] = "%d   1"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
-						Tracker["an"] = "%f"%Tracker["anger"]
+						Tracker["an"] = "%f  %f"%(Tracker["anger"],Tracker["anger"])
 						Tracker["ts"] = "1   0.32"
 				else:
 					Tracker["anger"]   = -1.0
@@ -173,9 +173,9 @@ def AI( Tracker, HISTORY ):
 						elif(Tracker["state"] == "RESTRICTED"):
 								xr = int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1
 								Tracker["zoom"] = True
-								Tracker["xr"] = "%d  %d"%(2*xr, xr)
-								Tracker["ts"] = "%d  %d"%(min(2*xr,2),1)
-								Tracker["an"] =  "%6.2f  %6.2f"%(2*Tracker["anger"],2*Tracker["anger"])					
+								Tracker["xr"] = "%d  %d"%(2*xr, xr, 1)
+								Tracker["ts"] = "%d  %d"%(min(2*xr,2),1, 0.32)
+								Tracker["an"] =  "%6.2f  %6.2f  %6.2f"%(2*Tracker["anger"],2*Tracker["anger"]2*Tracker["anger"])					
 						keepgoing = 1
 				elif( Tracker["state"] == "FINAL2"):  keepgoing = 0
 				else:
