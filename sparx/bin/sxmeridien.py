@@ -241,7 +241,7 @@ def AI( Tracker, HISTORY ):
 				if Tracker["applyctf"] :  reset_data  = True
 				Tracker["upscale"]     = 0.5
 				Tracker["applyctf"]    = True
-				Tracker["an"]          = "%f"%(Tracker["anger"]*1.25)
+				Tracker["an"]          = "%f   %f"%((Tracker["anger"]*1.25),(Tracker["anger"]*1.25))
 				Tracker["state"]       = "RESTRICTED"
 				Tracker["maxit"]       = 50
 				Tracker["xr"] = "%d   1"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
