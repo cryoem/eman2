@@ -3897,7 +3897,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 			pass
 			#print "coarse %d. %1.5g\t%s"%(i,j["score"],str(j["xform.align3d"]))
 
-	bestfinal = bestcoarse
+	besttweak = bestfinal = bestcoarse
 	
 	if 'rotate_translate_3d_tree' not in options.align[0]:	
 		if options.falign and options.falign[0] and options.falign != 'None' and options.falign != 'none' and options.falign[0] != "None" and options.falign[0] != 'none':
@@ -3922,13 +3922,15 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 					sys.exit('MIE')
 			
 				ali = s2image.align(options.falign[0],s2fixedimage,options.falign[1],options.faligncmp[0],options.faligncmp[1])
-
+				
+				#if not options.tweak:
+				
 				try: 					
 					bestfinal.append({"score":ali["score"],"xform.align3d":ali["xform.align3d"],"coarse":bc})
 					#print "\nThe appended score in TRY is", bestfinal[0]['score']					
 				except:
 					bestfinal.append({"score":1.0e10,"xform.align3d":bc["xform.align3d"],"coarse":bc})
-					#print "\nThe appended score in EXCEPT is", bestfinal[0]['score']
+				#print "\nThe appended score in EXCEPT is", bestfinal[0]['score']
 				peaknum+=1
 			
 			if options.verbose:
@@ -3952,6 +3954,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 					c["xform.align3d"].set_trans(newtrans)
 					
 				if options.tweak:
+					print "tweak is on"
 					bestfinal = sorted(bestfinal, key=itemgetter('score'))
 				
 					originalLpFine = options.lowpassfine
@@ -3995,12 +3998,26 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 					
 					#print "aligner to tweak is", ['refine_3d_grid',{'xform.align3d':bestT,'range':tweakrange,'delta':tweakdelta,'search':tweaksearch}]
 					
+					alitweak = imgfullsizeali.align('refine_3d_grid',reffullsizeali,{'xform.align3d':bestT,'range':tweakrange,'delta':tweakdelta,'search':2},options.faligncmp[0],options.faligncmp[1])
+					
 					#alitweak =imgfullsizeali.align('refine_3d_grid',reffullsizeali,{'xform.align3d':bestT,'range':tweakrange,'delta':tweakdelta,'search':tweaksearch},options.faligncmp[0],options.faligncmp[1])
 					
-					reffullsizeali.transform( bestT )
+					#reffullsizeali.transform( bestT )
 					
-					alitweak =imgfullsizeali.align('rotate_translate_3d_grid',reffullsizeali,{'phi0':0, 'phi1':tweakrange,'dphi':tweakdelta,'az0':0,'az1':360,'daz':tweakdelta,'alt0':0,'alt1':tweakrange,'dalt':tweakdelta,'search':tweaksearch},options.faligncmp[0],options.faligncmp[1])
-
+					#alitweak =imgfullsizeali.align('rotate_translate_3d_grid',reffullsizeali,{'phi0':0, 'phi1':tweakrange,'dphi':tweakdelta,'az0':0,'az1':360,'daz':tweakdelta,'alt0':0,'alt1':tweakrange,'dalt':tweakdelta,'search':tweaksearch},options.faligncmp[0],options.faligncmp[1])
+					#alitweak =imgfullsizeali.align('rotate_translate_3d',reffullsizeali,{'range':tweakrange,'delta':tweakdelta,'search':tweaksearch},options.faligncmp[0],options.faligncmp[1])
+					
+					
+					try: 					
+						besttweak.append({"score":ali["score"],"xform.align3d":ali["xform.align3d"],"coarse":bc})
+						#print "\nThe appended score in TRY is", bestfinal[0]['score']					
+					except:
+						besttweak.append({"score":1.0e10,"xform.align3d":bc["xform.align3d"],"coarse":bc})
+						#print "\nThe appended score in EXCEPT is", bestfinal[0]['score']
+					
+					
+					if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align:
+						options.align += ':sym=' + str(options.sym)
 				
 					besttweakT = bestT
 					besttweakScore = 1.0e10
@@ -4046,6 +4063,10 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	#	if options.verbose:
 	#		pass
 
+	
+	if options.tweak:
+		bestfinal = besttweak
+	
 	from operator import itemgetter							#If you just sort 'bestfinal' it will be sorted based on the 'coarse' key in the dictionaries of the list
 															#because they come before the 'score' key of the dictionary (alphabetically). Should be sorted already, except if there was no --falign
 	bestfinal = sorted(bestfinal, key=itemgetter('score'))
