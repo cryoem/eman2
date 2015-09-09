@@ -45,6 +45,7 @@ from random import choice
 from pprint import pprint
 from EMAN2jsondb import JSTask,jsonclasses
 import datetime
+import gc 	#this will be used to free-up unused memory
 
 from e2spt_hac import textwriter
 
@@ -675,6 +676,10 @@ def main():
 		else:
 			print "\nERROR: building initial references from classmx failed!"
 
+		
+		if options.inputaliparams:
+			inputalidict.close()
+		
 		if options.recompute:
 			print "recompute finished"
 			sys.exit()	
@@ -827,6 +832,7 @@ def main():
 		print "Upon initial setup, avgshdrs[1] is",  avgshdrs[1], type( avgshdrs[1] )
 	
 	
+	gc.collect()	#free up unused memory
 	for it in range( options.iter ):
 	
 		if options.verbose: 
@@ -1203,6 +1209,9 @@ def main():
 								print "Empty score for peak", pi
 						
 							pi += 1	
+						
+						jsAcoarseAll.close()
+					
 					else:
 						print "WARNING: Not enough successful alignments to compute a z-score"
 				else:
@@ -1290,6 +1299,9 @@ def main():
 				from e2spt_hac import plotter
 			
 				plotter(plotX, classScoresList2plot, options, plotName, maxX, maxY, 1, sort=1)
+			
+			gc.collect()	 #free up unused memory
+			
 			
 		
 		'''
@@ -1555,6 +1567,9 @@ def sptParseAligner( options ):
 
 def compareEvenOdd( options, avgeven, avgodd, it, etc, fscfile, tag, average=True ):
 	
+	avgeven.process_inplace( 'normalize.edgemean' )
+	avgodd.process_inplace( 'normalize.edgemean' )
+	
 	#from EMAN2PAR import EMTaskCustomer
 	#etc=EMTaskCustomer(options.parallel)
 	
@@ -1631,6 +1646,8 @@ def compareEvenOdd( options, avgeven, avgodd, it, etc, fscfile, tag, average=Tru
 		finalA = finalA.process('xform.applysym',{'sym':options.sym})
 	
 	calcFsc( options, avgeven, avgodd, fscfile )
+	
+	finalA.process_inplace('normalize.edgemean')
 	
 	apix = finalA['apix_x']
 	nyquist = 2.0 * apix			#this is nyquist 'resolution', not frequency; it's the inverse of nyquist frequency
@@ -3533,6 +3550,8 @@ should be made with caution
 '''
 def alignment( fixedimage, image, label, options, xformslabel, iter, transform, prog='e2spt_classaverage', refpreprocess=0 ):
 	
+	gc.collect() 	#free up unused memory
+	
 	from operator import itemgetter	
 	
 	
@@ -4058,6 +4077,8 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 	'''
 	
 	bestcoarse = sorted(bestcoarse, key=itemgetter('score'))
+	
+	gc.collect() 	#free up unused memory
 	
 	return [bestfinal, bestcoarse]
 	
