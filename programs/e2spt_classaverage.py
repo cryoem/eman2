@@ -113,7 +113,7 @@ def main():
 	
 	parser.add_argument("--saveallpeaks",action="store_true", default=False, help="""Default=False. If set, this will save the alignment information and score for all examined peaks --npeakstorefine during coarse alignment.""")
 	
-	parser.add_argument("--sym", dest = "sym", default='', help = """Default=None (equivalent to c1). Symmetry to impose -choices are: c<n>, d<n>, h<n>, tet, oct, icos""", guitype='symbox', row=9, col=1, rowspan=1, colspan=2, mode='alignment,breaksym')
+	parser.add_argument("--sym", type,str,dest = "sym", default='', help = """Default=None (equivalent to c1). Symmetry to impose -choices are: c<n>, d<n>, h<n>, tet, oct, icos""", guitype='symbox', row=9, col=1, rowspan=1, colspan=2, mode='alignment,breaksym')
 	
 	parser.add_argument("--mask",type=str,default="mask.soft:outer_radius=-4", help="""Default is mask.soft:outer_radius=-4. Masking processor applied to particles before alignment. IF using --clipali, make sure to express outer mask radii as negative pixels from the edge.""", returnNone=True, guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'mask\')', row=11, col=0, rowspan=1, colspan=3, mode='alignment,breaksym')
 	
@@ -2544,7 +2544,7 @@ def calcAliStep(options):
 	
 	options.align = 'rotate_translate_3d:search=' + str(searchC) +':delta=' + str(CSrounded) + ':dphi=' + str(CSrounded)
 	if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align:
-		options.align += ':sym=' + str(options.sym)
+		options.align += ':sym=' + options.sym
 	
 	
 	print "inside calcali options.falign received is", options.falign
@@ -4017,7 +4017,7 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 					
 					
 					if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align:
-						options.align += ':sym=' + str(options.sym)
+						options.align += ':sym=' + options.sym
 				
 					besttweakT = bestT
 					besttweakScore = 1.0e10
