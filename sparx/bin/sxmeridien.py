@@ -175,7 +175,7 @@ def AI( Tracker, HISTORY ):
 								Tracker["zoom"] = True
 								Tracker["xr"] = "%d  %d"%(2*xr, xr, 1)
 								Tracker["ts"] = "%d  %d"%(min(2*xr,2),1, 0.32)
-								Tracker["an"] =  "%6.2f  %6.2f  %6.2f"%(2*Tracker["anger"],2*Tracker["anger"]2*Tracker["anger"])					
+								Tracker["an"] =  "%6.2f  %6.2f  %6.2f"%(2*Tracker["anger"],2*Tracker["anger"],2*Tracker["anger"])					
 						keepgoing = 1
 				elif( Tracker["state"] == "FINAL2"):  keepgoing = 0
 				else:
