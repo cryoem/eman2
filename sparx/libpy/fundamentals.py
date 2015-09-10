@@ -493,7 +493,7 @@ def image_decimate(img, decimation=2, fit_to_fft = True, frequency_low=0, freque
 	if(decimation    == 1.0): 	return  img.copy()
 	if frequency_low <= 0  :	
 		frequency_low     = 0.5/decimation-0.02
-		if frequency_low <= 0 : ERROR("Butterworth passband frequency is too low","image_decimation",1)			
+		if frequency_low <= 0 : ERROR("Butterworth pass-band frequency is too low","image_decimation",1)			
 		frequency_high    = min(0.5/decimation + 0.02, 0.499)
 	if fit_to_fft:
 		nx       = img.get_xsize()
@@ -583,6 +583,86 @@ def resample(img, sub_rate=0.5):
 
 	return 	e
 	
+
+
+def fdownsample(img, sub_rate=0.5, RetReal = True):
+	"""
+		resample image based on the value of sub_rate.
+		the input image can be either 2D image or 3D volume.
+		sub_rate < 1.0, subsampling the image.
+		sub_rate > 1.0, upsampling the image using new gridding interpolation.
+		fit_to_fft will change the ouput image size to an fft_friendly size
+	"""
+
+	from fundamentals import fdecimate
+	from utilities    import get_pixel_size, set_pixel_size
+
+	if type(img) == str:
+		from utilities    import get_image
+		img = get_image(img)
+	nx = img.get_xsize()
+	if img.is_complex():
+		nx -= (2-nx%2)
+	ny = img.get_ysize()
+	nz = img.get_zsize()
+	if( ny == 1):  ERROR("Only 2D or 3D images allowed","resample",1)
+	if sub_rate == 1.0: return  img.copy()
+	elif sub_rate < 1.0:
+		nnx = int(nx*sub_rate+0.5)
+		nny = int(ny*sub_rate+0.5)
+		nnz = int(nz*sub_rate+0.5)
+		e = fdecimate(img, nnx, nny, nnz, RetReal = RetReal)
+	else:  #  sub_rate>1
+		ERROR("fdownsample","upscaling not implemented",1)
+		"""
+		new_nx = int(nx*sub_rate+0.5)
+		new_ny = int(ny*sub_rate+0.5)
+		if nz==1:
+			new_nz = 1
+		else:
+			new_nz = int(ny*sub_rate+0.5)
+		if ( nx!=ny and nz==1 ):
+			nn = max(new_nx, new_ny)
+			e = Util.pad(img, nn, nn,  1, 0, 0, 0, "circumference")
+			e, kb = prepi(e)
+			e = Util.window( e.rot_scale_conv_new(0.0, 0.0, 0.0, kb, sub_rate), new_nx, new_ny, 1, 0,0,0)
+		 
+		elif ((nx!=ny or nx!=nz or ny!=nz) and nz>1):
+			nn = max(new_nx, new_ny,new_nz)
+			e = Util.pad(img, nn, nn,  nn, 0, 0, 0, "circumference")
+			e, kb = prepi3D(e)
+			e = Util.window( e.rot_scale_conv_new_3D(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, kb, sub_rate), new_nx, new_ny, new_nz, 0,0,0)
+		else:
+			if nz==1:
+				e, kb = prepi(Util.pad(img, new_nx, new_ny, 1, 0, 0, 0, "circumference"))
+				e = e.rot_scale_conv_new(0.0, 0.0, 0.0, kb, sub_rate)
+			else:
+				e, kb = prepi3D(Util.pad(img, new_nx, new_ny, new_nz, 0, 0, 0, "circumference"))
+				e = e.rot_scale_conv_new_3D(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, kb, sub_rate)
+		"""
+
+	# Automatically adjust pixel size for ctf parameters
+	from utilities import get_pixel_size, set_pixel_size
+	apix = get_pixel_size(e)
+	apix /= sub_rate
+	set_pixel_size(e, apix)
+	cc = e.get_attr_default("xform.projection", None)
+	if cc:
+		cp = cc.get_params("spider")
+		cp["tx"] *= sub_rate
+		cp["ty"] *= sub_rate
+		from utilities import set_params_proj
+		set_params_proj(e, [cp["phi"], cp["theta"], cp["psi"], -cp["tx"], -cp["ty"]]) # have to invert as set inverts them again
+	cc = e.get_attr_default("xform.align2d", None)
+	if cc:
+		cp = cc.get_params("2D")
+		cp["tx"] *= sub_rate
+		cp["ty"] *= sub_rate
+		from utilities import set_params2D
+		set_params2D(e, [cp["alpha"], cp["tx"], cp["ty"], cp["mirror"], cp["scale"]])
+
+	return 	e
+
 
 def prepi(image):
 	"""
