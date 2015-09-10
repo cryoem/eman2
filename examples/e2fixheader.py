@@ -85,7 +85,6 @@ def main():
 		the original filename of a file or stack to the header of each particle.
 		This only works for .hdf files.""",default=False)
 		
-	parser.add_argument
 
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness.")
 
@@ -222,6 +221,7 @@ def fixer(fyle, options):
 		indx=i
 		if fyle[-4:] == '.hdf' or fyle[-4:] == '.mrcs':
 			print "\n(e2fixheader)(fixer) fixing the header of img %d in stack %s" %( indx, fyle )
+			refheader = EMData( options.refheader, i, True ).get_attr_dict()
 		else:
 			indx=0
 				
