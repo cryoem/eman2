@@ -168,13 +168,13 @@ def AI( Tracker, HISTORY ):
 						if(Tracker["state"] == "EXHAUSTIVE"):
 								xr = int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1
 								Tracker["zoom"] = True
-								Tracker["xr"] = "%d  %d"%(2*xr, xr, 1)
-								Tracker["ts"] = "%d  %d"%(min(2*xr,2),1, 0.32)
+								Tracker["xr"] = "%d  %d  %d"%(2*xr, xr, 1)
+								Tracker["ts"] = "%f  %f  %f"%(min(2.0*xr,2.0),1.0, 0.32)
 						elif(Tracker["state"] == "RESTRICTED"):
 								xr = int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1
 								Tracker["zoom"] = True
 								Tracker["xr"] = "%d  %d  %d"%(2*xr, xr, 1)
-								Tracker["ts"] = "%d  %d  %d"%(min(2*xr,2),1, 0.32)
+								Tracker["ts"] = "%f  %f  %f"%(min(2.0*xr,2.0),1, 0.32)
 								Tracker["an"] =  "%6.2f  %6.2f  %6.2f"%(2*Tracker["anger"],2*Tracker["anger"],2*Tracker["anger"])					
 						keepgoing = 1
 				elif( Tracker["state"] == "FINAL2"):  keepgoing = 0
