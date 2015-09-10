@@ -168,8 +168,8 @@ def AI( Tracker, HISTORY ):
 						if(Tracker["state"] == "EXHAUSTIVE"):
 								xr = int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1
 								Tracker["zoom"] = True
-								Tracker["xr"] = "%d  %d"%(2*xr, xr)
-								Tracker["ts"] = "%d  %d"%(min(2*xr,2),1)
+								Tracker["xr"] = "%d  %d"%(2*xr, xr, 1)
+								Tracker["ts"] = "%d  %d"%(min(2*xr,2),1, 0.32)
 						elif(Tracker["state"] == "RESTRICTED"):
 								xr = int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1
 								Tracker["zoom"] = True
