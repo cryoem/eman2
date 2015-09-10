@@ -4016,8 +4016,8 @@ def alignment( fixedimage, image, label, options, xformslabel, iter, transform, 
 						#print "\nThe appended score in EXCEPT is", bestfinal[0]['score']
 					
 					
-					if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align:
-						options.align += ':sym=' + options.sym
+					#if options.sym and options.sym is not 'c1' and options.sym is not 'C1' and 'sym' not in options.align:
+					#	options.align += ':sym=' + options.sym
 				
 					besttweakT = bestT
 					besttweakScore = 1.0e10
