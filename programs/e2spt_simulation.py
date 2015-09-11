@@ -348,8 +348,8 @@ def main():
 					#preprocessingallocator( options, image, fftstackC='', fftstackF='', imageindex=0, postfft = 0 )
 					#model = preprocessingallocator( options, model, '','', 0, postfft=1)
 					
-					#from e2spt_classaverage import preprocessing 
-					#model = preprocessing( model, options, 'ptcls','yes',-1,'yes')
+					from e2spt_classaverage import preprocessing 
+					model = preprocessing( model, options, 'ptcls','yes',-1,'yes')
 					
 					
 					#image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1,finetag=''
