@@ -1070,17 +1070,14 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc,
 			ctf_params = data[im].get_attr("ctf")
 			st = Util.infomask(data[im], mask2D, False)
 			data[im] -= st[0]
-			data[im] = filt_ctf(fft(data[im]), ctf_params)
+			data[im] = filt_ctf(data[im], ctf_params)
 			data[im].set_attr('ctf_applied', 1)
 		if preshift:
-			if not Tracker["constants"]["CTF"] and shrinkage != 1.0:  data[im] = fft(data[im])
 			data[im] = fshift(data[im], sx, sy)
 			set_params_proj(data[im],[phi,theta,psi,0.0,0.0])
 		#oldshifts[im] = [sx,sy]
 		#  resample will properly adjusts shifts and pixel size in ctf
-		if( shrinkage  !=  1.0 ):   data[im] = fdownsample(data[im], shrinkage)
-		else:
-			if data[im].is_complex:  data[im] = fft(data[im])
+		data[im] = resample(data[im], shrinkage)
 		#  We have to make sure the shifts are within correct range, shrinkage or not
 		set_params_proj(data[im],[phi,theta,psi,max(min(sx*shrinkage,txm),txl),max(min(sy*shrinkage,txm),txl)])
 		#  For local SHC set anchor
