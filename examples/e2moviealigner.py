@@ -70,6 +70,7 @@ def main():
 	parser.add_argument("--steps", type=int, help="Set the number of steps to run simulated annealing. Default is 500.",default=500)
 	parser.add_argument("--fixbadpixels",action="store_true",default=False,help="Tries to identify bad pixels in the dark/gain reference, and fills images in with sane values instead")
 	parser.add_argument('--xybadlines', help="specify the list of bad pixel coordinates for your detector.", nargs=2, default=['3106,3093','3621,3142','4719,3494'])
+	parser.add_argument("--average",action="store_true",default=False,help="Save an hdf file containing the averaged, aligned frames")
 	parser.add_argument("--frames",action="store_true",default=False,help="Save the dark/gain corrected frames")
 	parser.add_argument("--normalize",action="store_true",default=False,help="Apply edgenormalization to input images after dark/gain")
 	parser.add_argument("--simpleavg", action="store_true",help="Will save a simple average of the dark/gain corrected frames (no alignment or weighting)",default=False)
@@ -109,7 +110,7 @@ def main():
 
 	for fname in args:
 
-		if options.verbose: print("\nProcessing {}\n".format(fname))
+		if options.verbose: print(font.BOLD + "\nProcessing {}\n".format(fname) + font.END)
 		
 		options.path = fname
 		
@@ -120,7 +121,7 @@ def main():
 			if options.verbose: print("No dark or gain references supplied. No correction applied.")
 			dgc = None
 		
-		if options.xybadlines:
+		if options.xybadlines and "proc" not in fname:
 			if options.verbose: print("Removing bad lines from movie frames")
 			fname = MovieModeAligner.remove_bad_lines(options)
 			options.path = fname
@@ -150,6 +151,12 @@ def main():
 		if options.movie and len(args) < 2:
 			if options.verbose: print("Displaying aligned movie")
 			alignment.show_movie(options.movie)
+		
+		if options.average and len(args) < 2:
+			if options.verbose: print("Averaging aligned movie")
+			alignment.save_alignment(fname)
+		
+		del alignment
 
 	E2end(pid)
 
@@ -176,29 +183,7 @@ class MovieModeAligner:
 		else: self.hdr['nimg'] = EMUtil.get_image_count(fname)
 		self.outfile = fname.rsplit(".",1)[0]+"_align.hdf"
 		self._dir = os.path.dirname(os.path.abspath(fname))
-		self._initialize_params(boxsize,transforms)
-		if os.path.isfile(self._dir+'/'+fname[:-4]+'_incoherent.hdf'): os.remove(self._dir+'/'+fname[:-4]+'_incoherent.hdf')
-		self._calc_incoherent_power_spectrum()
-		self.write_incoherent_power_spectrum(name=fname[:-4]+'_incoherent.hdf')
-		if os.path.isfile(self._dir+'/'+fname[:-4]+'_coherent.hdf'): os.remove(self._dir+'/'+fname[:-4]+'_coherent.hdf')
-		self._calc_coherent_power_spectrum()
-		self.write_coherent_power_spectrum(name=fname[:-4]+'_coherent.hdf')
-		#self.write_coherent_power_spectrum()
-		self._energies = [np.inf]
-		self._minimization_path = []
-		self._update_energy()
-		self._optimized = False
-	
-	def _initialize_params(self,boxsize,transforms):
-		"""
-		A private method to keep the initialization code clean and readable. 
-		This function takes care of initializing the variables (and allocating 
-		the subsequent memory) that will be used through the lifetime of the 
-		MovieModeAligner.
-
-		@param int boxsize: Size of boxes used to compute average power spectra.
-		@param list transforms: A list of Transform objects.
-		"""
+		self.frames = [EMData(self.path,i) for i in xrange(self.hdr['nimg'])]
 		self._boxsize = boxsize
 		self._regions = {}
 		mx = xrange(1,self.hdr['nx'] / boxsize - 1,1)
@@ -213,11 +198,22 @@ class MovieModeAligner:
 			self._stacks[ir] = [self._regions[i][ir] for i in xrange(self.hdr['nimg'])]
 		self._nstacks = len(self._stacks)
 		if transforms: self._transforms = transforms
-		else: self._transforms = np.repeat(Transform({"type":"eman","tx":0.0,"ty":0.0}), self.hdr['nimg']).tolist()
+		else: self._transforms = [Transform({"type":"eman","tx":0.0,"ty":0.0}) for i in xrange(self.hdr['nimg'])]
 		self.optimal_transforms = self._transforms
 		self._cpsflag = False
 		self._ipsflag = False
 		self._computed_objective = False
+		if os.path.isfile(self._dir+'/'+fname[:-4]+'_incoherent.hdf'): os.remove(self._dir+'/'+fname[:-4]+'_incoherent.hdf')
+		self._calc_incoherent_power_spectrum()
+		self.write_incoherent_power_spectrum(name=fname[:-4]+'_incoherent.hdf')
+		if os.path.isfile(self._dir+'/'+fname[:-4]+'_coherent.hdf'): os.remove(self._dir+'/'+fname[:-4]+'_coherent.hdf')
+		self._calc_coherent_power_spectrum()
+		self.write_coherent_power_spectrum(name=fname[:-4]+'_coherent.hdf')
+		#self.write_coherent_power_spectrum()
+		self._energies = [np.inf]
+		self._minimization_path = []
+		self._update_energy()
+		self._optimized = False
 
 	def _calc_incoherent_power_spectrum(self):
 		"""
@@ -231,10 +227,11 @@ class MovieModeAligner:
 		else: self._computed_objective = True
 		ips = Averagers.get('mean')
 		for i in xrange(self.hdr['nimg']):
-			img = EMData(self.path,i)
+			img = self.frames[i]
 			img_ips = Averagers.get('mean')
 			for r in self._regions[i]:
-				reg = img.get_clip(r)
+				reg = self.frames[i].get_clip(r)
+				#reg = img.get_clip(r)
 				reg.process_inplace("normalize.edgemean")
 				reg.do_fft_inplace()
 				reg.ri2inten()
@@ -247,7 +244,10 @@ class MovieModeAligner:
 	@staticmethod
 	def _background_subtract(ps):
 		ps["is_intensity"]=0 # allow use of calc_radial_dist in math.nonconvex
-		ps.sub(ps.process("math.nonconvex")) # subtract background
+		
+		bkgd=ps.process("math.nonconvex")
+		ps.sub(bkgd) # subtract background
+		
 		ps["is_intensity"]=1 # revert intensity attribute
 		return ps
 
@@ -261,7 +261,7 @@ class MovieModeAligner:
 		for s in xrange(self._nstacks):
 			stack_cps = Averagers.get('mean')
 			for i,r in enumerate(self._stacks[s]):
-				stack_cps.add_image(EMData(self.path,i,False,r))
+				stack_cps.add_image(self.frames[i].get_clip(r)) #EMData(self.path,i,False,r))
 			avg = stack_cps.finish()
 			avg.process_inplace('normalize.edgemean')
 			avg.do_fft_inplace()
@@ -324,12 +324,12 @@ class MovieModeAligner:
 			if options.verbose: print("Running simulated annealing\n")
 			annealed = cs.anneal()
 		if options.minimizer == 'simplex':
-			if options.verbose: print("Organizing simplex minimizer")
+			if options.verbose: print("Initializing simplex minimization")
 			#state = [t for tform in self.optimal_transforms for t in tform.get_trans_2d()]
-			state = [np.random.randint(-2,2) for tform in self.optimal_transforms for t in tform.get_trans_2d()]
+			state = [np.random.randint(-4,4) for tform in self.optimal_transforms for t in tform.get_trans_2d()]
 			sm = Simplex(self._compares,state,[1]*len(state),kC=options.kC,kE=options.kE,kR=options.kR,data=self)
-			print state
-			if options.verbose: print("Initializing simplex minimization\n")
+			#print state
+			#if options.verbose: print("Performing simplex minimization\n")
 			result, error, iters = sm.minimize(options.epsilon,options.maxiters,monitor=1)
 		if options.verbose:
 			print("\n\nOptimal Frame Translations:\n")
@@ -348,9 +348,9 @@ class MovieModeAligner:
 		@param MovieModeAligner aligner: aligner object
 		"""
 		for vi in range(0,len(vec),2):
-			if vi != len(vec)/2 and vi != len(vec)/2-1:
-				t = Transform({'type':'eman','tx':vec[vi],'ty':vec[vi+1]})
-				aligner._update_frame_params(vi/2,t)
+			#if vi != len(vec)/2 and vi != len(vec)/2-1:
+			t = Transform({'type':'eman','tx':vec[vi],'ty':vec[vi+1]})
+			aligner._update_frame_params(vi/2,t)
 		aligner._update_energy()
 		return aligner.get_last_energy()
 
@@ -364,7 +364,7 @@ class MovieModeAligner:
 		elif name[:-4] != '.hdf': name = name[:-4] + '.hdf'	 # force HDF
 		if not self._optimized: print("Warning: Saving non-optimal alignment. Run the optimize method to determine best frame translations.")
 		for i in xrange(self.hdr['nimg']):
-			im = EMData(self.path,i)
+			im = self.frames[i]
 			im.transform(self._transforms[i])
 			im.write_image(name,i)
 
@@ -394,8 +394,19 @@ class MovieModeAligner:
 		else: rips.write_image(self._dir+'/'+name)
 		self._ipsflag = True
 
+	def save_alignment(self):
+		"""
+		Save averaged alignment
+		"""
+		avg = Averagers.get('mean')
+		for f,t in zip(self.frames,self._transforms):
+			tf = f.transform(t)
+			avg.add_image(tf)
+		aligned = avg.finish()
+		aligned.write_image(self.path[:-4]+"_aligned.hdf")
+
 	def get_transforms(self): return self.optimal_transforms
-	def get_data(self): return EMData(self.path)
+	def get_data(self): return self.frames
 	def get_header(self): return self.hdr
 	def get_aligned_filename(self): return self.outfile
 
@@ -408,8 +419,7 @@ class MovieModeAligner:
 	def get_coherent_power_spectrum(self): return self._cps
 
 	def show_power_spectra(self): display([self._ips,self._cps])
-	#def show_bgsub(self): display([EMData(self.bgsub,i) for i in xrange(self.hdr['nimg'])])
-	def show_orig(self): display([EMData(self.path,i) for i in xrange(self.hdr['nimg'])])
+	def show_orig(self): display(self.frames)
 
 	def show_movie(self,f2avg=5):
 		"""
@@ -419,7 +429,7 @@ class MovieModeAligner:
 		"""
 		mov=[]
 		for i in xrange(f2avg+1,self.hdr['nimg']):
-			outim = EMData(self.path,i)
+			outim = self.frames[i]
 			im=sum(outim[i-f2avg-1:i])
 			mov.append(im)
 		display(mov)
@@ -664,6 +674,18 @@ class Annealer(BaseAnnealer):
 	def energy(self):
 		#return self.aligner.get_last_energy() 
 		return self.aligner.get_lowest_energy()
+
+class font:
+   PURPLE = '\033[95m'
+   CYAN = '\033[96m'
+   DARKCYAN = '\033[36m'
+   BLUE = '\033[94m'
+   GREEN = '\033[92m'
+   YELLOW = '\033[93m'
+   RED = '\033[91m'
+   BOLD = '\033[1m'
+   UNDERLINE = '\033[4m'
+   END = '\033[0m'
 
 if __name__ == "__main__":
 	main()
