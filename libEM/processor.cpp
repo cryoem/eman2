@@ -315,7 +315,8 @@ template <> Factory < Processor >::Factory()
 	force_add<Axis0FourierProcessor>();
 	force_add<Wiener2DFourierProcessor>();
 	force_add<LowpassAutoBProcessor>();
-
+	force_add<CtfSimProcessor>();
+	
 	force_add<LinearPyramidProcessor>();
 	force_add<LinearRampProcessor>();
 	force_add<AbsoluateValueProcessor>();
