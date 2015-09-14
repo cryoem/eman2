@@ -811,7 +811,7 @@ def get_pixel_resolution(Tracker, vol, mask, fscoutputdir):
 	"""
 	#if( Tracker["state"] == "INITIAL" ):
 	[lowpass,nfsc[3]] = tanhfilter(Tracker["constants"]["nnxo"], float(currentres)/Tracker["constants"]["nnxo"], Tracker["falloff"])
-	if( len(nfsc[0])>len(nfsc[3]) ):  nfsc[3] += [0.0]*(len(nfsc[0])-len(nfsc[2]))
+	if( len(nfsc[0])>len(nfsc[3]) ):  nfsc[3] += [0.0]*(len(nfsc[0])-len(nfsc[3]))
 	finitres = -1
 	for i in xrange(1,ns-1):
 		if ( nfsc[3][i] < 0.143):
