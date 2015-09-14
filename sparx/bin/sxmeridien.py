@@ -1969,8 +1969,8 @@ def main():
 				Tracker["lowpass"] = 0.0; Tracker["falloff"] = 0.0; icurrentres = 0; ares = 0
 			lsave = Tracker["local_filter"]
 			Tracker["local_filter"] = False
-			Tracker["lowpass"] = mpi_bcast(Tracker["lowpass"], 1, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-			Tracker["falloff"] = mpi_bcast(Tracker["falloff"], 1, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			Tracker["lowpass"] = bcast_number_to_al(Tracker["lowpass"], source_node = main_node)
+			Tracker["falloff"] = bcast_number_to_al(Tracker["falloff"], source_node = main_node)
 
 			#volf = do_volume_mrk01(volf, Tracker, mainiteration, mpi_comm = MPI_COMM_WORLD)
 			ref_data = [volf, Tracker, mainiteration, MPI_COMM_WORLD]
