@@ -137,9 +137,9 @@ def AI( Tracker, HISTORY ):
 
 				if(Tracker["state"] == "EXHAUSTIVE"):
 					#  Move up if changes in angles are less than 30 degrees (why 30??  It should depend on symmetry)
-					if(Tracker["anger"]   < 30.0 ):  move_up_phase = True
+					if(Tracker["anger"]   < 30.0/5 ):  move_up_phase = True
 					else:
-						Tracker["xr"] = "%d"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
+						Tracker["xr"] , Tracker["ts"] = stepshift(int(Tracker["shifter"]+0.5), nxrsteps = 2)
 				elif(Tracker["state"] == "RESTRICTED"):
 					#switch to the next phase if restricted searches make no sense anymore
 					#  The next sadly repeats what is in the function that launches refinement, but I do not know how to do it better.
@@ -147,7 +147,7 @@ def AI( Tracker, HISTORY ):
 					rd = int(Tracker["constants"]["radius"] * sh +0.5)
 					rl = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
 					dd = degrees(atan(0.5/rl/rd))
-					if( Tracker["anger"]  < dd ):  move_up_phase = True
+					if( False and Tracker["anger"]  < dd ):  move_up_phase = True
 					else:
 						Tracker["xr"] = "%d   1"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
 						Tracker["an"] = "%f  %f"%(Tracker["anger"],Tracker["anger"])
@@ -164,13 +164,13 @@ def AI( Tracker, HISTORY ):
 						move_up_phase = True
 					else:
 						# turn on pwadjustment
-						Tracker["PWadjustment"] = Tracker["constants"]["pwreference"]
 						if(Tracker["state"] == "EXHAUSTIVE"):
-								xr = int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1
+								xr = int(max(Tracker["shifter"],1.0)*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1
 								Tracker["zoom"] = True
 								Tracker["xr"] = "%d  %d  %d"%(2*xr, xr, 1)
 								Tracker["ts"] = "%f  %f  %f"%(min(2.0*xr,2.0),1.0, 0.32)
 						elif(Tracker["state"] == "RESTRICTED"):
+								Tracker["PWadjustment"] = Tracker["constants"]["pwreference"]
 								xr = int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1
 								Tracker["zoom"] = True
 								Tracker["xr"] = "%d  %d  %d"%(2*xr, xr, 1)
@@ -226,7 +226,7 @@ def AI( Tracker, HISTORY ):
 				Tracker["state"]       = "EXHAUSTIVE"
 				Tracker["maxit"]       = 50
 				#  Develop something intelligent
-				Tracker["xr"] = "%d    1"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
+				Tracker["xr"] = "%d    1"%(int(max(Tracker["shifter"],1.0)*float(Tracker["constants"]["nnxo"])/float(Tracker["nxinit"])))# This should be derived from the previous size
 				Tracker["ts"] = "1    0.32"
 				keepgoing = 1
 			#  Exhaustive searches
@@ -652,6 +652,25 @@ def stepali(nxinit, nnxo, irad, nxrsteps = 3):
 	return txr, tss
 
 
+
+def stepshift(txrm, nxrsteps = 2):
+
+	txrm += txrm%2	
+	if (txrm/nxrsteps>0):
+		tss = ""
+		txr = ""
+		while(txrm/nxrsteps>0):
+			tts=txrm/nxrsteps
+			tss += "%d  "%tts
+			txr += "%d  "%(tts*nxrsteps)
+			txrm -= nxrsteps
+	else:
+		txr = "%d"%txrm
+		tss = "1"
+	return txr, tss
+
+
+
 def fuselowf(vs, fq):
 	n = len(vs)
 	for i in xrange(n): fftip(vs[i])
@@ -808,7 +827,8 @@ def get_pixel_resolution(Tracker, vol, mask, fscoutputdir):
 
 	return  round(lowpass,4), round(falloff,4), currentres, ares, finitres
 
-
+'''
+#  This version without smear
 def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, nproc):
 	#  while the code pretends to accept volumes as input, it actually does not.
 	import types
@@ -866,6 +886,104 @@ def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, npro
 		if( myid == main_node):
 			from fundamentals import fpol
 			fpol(vol[procid], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"],"vor%01d.hdf"%procid))
+			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+			print(  line,"Generated vor #%01d  using  image size %d "%(procid, nx))
+
+
+	lowpass    = 0.0
+	falloff    = 0.0
+	icurrentres = 0
+	ares = 0
+	finitres = 0
+
+	if(myid == main_node):
+		if(type(stack) == str or ( nz == 1 )):
+			if(nx<Tracker["constants"]["nnxo"]):
+				for procid in xrange(2):
+					for i in xrange(3):
+						for k in xrange(nx/2+1, Tracker["constants"]["nnxo"]/2+1):
+							fsc[procid][i].append(0.0)
+					for k in xrange(Tracker["constants"]["nnxo"]/2+1):
+						fsc[procid][0][k] = float(k)/Tracker["constants"]["nnxo"]
+			for procid in xrange(2):
+				#  Compute adjusted within-fsc as 2*f/(1+f)
+				fsc[procid].append(fsc[procid][1][:])
+				for k in xrange(len(fsc[procid][1])):  fsc[procid][-1][k] = 2*fsc[procid][-1][k]/(1.0+fsc[procid][-1][k])
+				write_text_file( fsc[procid], os.path.join(Tracker["directory"],"within-fsc%01d.txt"%procid) )
+
+		lowpass, falloff, icurrentres, ares, finitres = get_pixel_resolution(Tracker, vol, mask, Tracker["directory"])
+		line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
+		print(  line,"Current resolution  %6.2f  %6.2f A  (%d @0.5)  (%d @0.33), low-pass filter cut-off %6.2f and fall-off %6.2f"%\
+			(icurrentres/float(Tracker["constants"]["nnxo"]),Tracker["constants"]["pixel_size"]*float(Tracker["constants"]["nnxo"])/float(icurrentres),icurrentres,ares,lowpass,falloff))
+
+		write_text_row([[lowpass, falloff, icurrentres, ares, finitres]],os.path.join(Tracker["directory"],"current_resolution.txt"))
+
+	#  Returns: low-pass filter cutoff;  low-pass filter falloff;  current resolution
+	icurrentres = bcast_number_to_all(icurrentres, source_node = main_node)
+	ares        = bcast_number_to_all(ares, source_node = main_node)
+	finitres    = bcast_number_to_all(finitres, source_node = main_node)
+	lowpass     = bcast_number_to_all(lowpass, source_node = main_node)
+	falloff     = bcast_number_to_all(falloff, source_node = main_node)
+	return round(lowpass,4), round(falloff,4), icurrentres, ares, finitres
+'''
+def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, nproc):
+	#  while the code pretends to accept volumes as input, it actually does not.
+	import types
+	vol = [None]*2
+	fsc = [None]*2
+	if( type(stack[0]) == list ):
+		nx = stack[0][0].get_xsize()
+		nz = stack[0][0].get_zsize()
+	else:
+		nz = 1
+	if(Tracker["constants"]["mask3D"] is None):
+		mask = model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+	else:
+		mask = get_im(Tracker["constants"]["mask3D"])
+
+	projdata = []
+	for procid in xrange(2):
+		if(type(stack[0]) == str or ( nz == 1 )):
+			if(type(stack[0]) == str):
+				projdata.append(getindexdata(stack, partids[procid], partstack[procid], myid, nproc))
+			else:
+				projdata.append(None)
+				projdata[procid] = stack[procid]
+			if( procid == 0 ):
+				nx = projdata[procid][0].get_xsize()
+				if( nx != Tracker["constants"]["nnxo"]):
+					mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(Tracker["constants"]["nnxo"])),nx,nx,nx)
+
+			if Tracker["constants"]["CTF"]:
+				if Tracker["constants"]["smear"] :
+					#  Ideally, this would be available, but the problem is it is computed in metamove, which is not executed during restart
+					nx = projdata[procid][0].get_xsize()
+					shrinkage = float(nx)/float(Tracker["constants"]["nnxo"])
+					delta = min(round(degrees(atan(0.5/(float(Tracker["icurrentres"])/float(nx))/Tracker["radius"])), 2), 3.0)
+					Tracker["smearstep"] = 0.5*delta
+				else:  Tracker["smearstep"] = 0.0
+				from reconstruction import rec3D_MPI
+				vol[procid],fsc[procid] = rec3D_MPI(projdata[procid], symmetry = Tracker["constants"]["sym"], \
+					mask3D = mask, fsc_curve = None, \
+					myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2, smearstep = Tracker["smearstep"])
+			else:
+				from reconstruction import rec3D_MPI_noCTF
+				vol[procid],fsc[procid] = rec3D_MPI_noCTF(projdata[procid], symmetry = Tracker["constants"]["sym"], \
+					mask3D = mask, fsc_curve = None, \
+					myid = myid, main_node = main_node, odd_start = 1, eve_start = 0, finfo = None, npad = 2)
+
+			if(type(stack) == str):  del projdata
+		else:
+			#  Volumes
+			vol[procid] = stack[procid]
+			nx = vol[0].get_xsize()
+			if( nx != Tracker["constants"]["nnxo"] ):
+				mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(Tracker["constants"]["nnxo"])),nx,nx,nx)
+
+		if( myid == main_node):
+			from fundamentals import fpol
+			#fpol(vol[procid], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"],"vor%01d.hdf"%procid))
+			fpol(vol[procid], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"],"vol%01d.hdf"%procid))
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			print(  line,"Generated vor #%01d  using  image size %d "%(procid, nx))
 
@@ -1123,16 +1241,18 @@ def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid
 	if(Tracker["radius"] < 2):
 		ERROR( "ERROR!!   lastring too small  %f    %f   %d"%(Tracker["radius"], Tracker["constants"]["radius"]), "sxmeridien",1, myid)
 
-	#  READ processed FSC.
-	if(myid == main_node):
-		Tracker["lowpass"] = read_text_file(os.path.join(Tracker["previousoutputdir"],"fsc.txt"),2)
-		lex = len(Tracker["lowpass"])
-	else:  lex = 0
-	lex = bcast_number_to_all(lex, source_node = main_node)
-	if(myid != main_node):  Tracker["lowpass"] = [0.0]*lex
-	Tracker["lowpass"] = mpi_bcast(Tracker["lowpass"], lex, MPI_FLOAT, main_node, MPI_COMM_WORLD)
-	Tracker["lowpass"] = map(float, Tracker["lowpass"])
-	#Tracker["lowpass"] = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
+	if False:
+		#  READ processed FSC.
+		if(myid == main_node):
+			Tracker["lowpass"] = read_text_file(os.path.join(Tracker["previousoutputdir"],"fsc.txt"),1)
+			lex = len(Tracker["lowpass"])
+		else:  lex = 0
+		lex = bcast_number_to_all(lex, source_node = main_node)
+		if(myid != main_node):  Tracker["lowpass"] = [0.0]*lex
+		Tracker["lowpass"] = mpi_bcast(Tracker["lowpass"], lex, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+		Tracker["lowpass"] = map(float, Tracker["lowpass"])
+	else:
+		Tracker["lowpass"] = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
 	if( Tracker["state"] == "LOCAL" or Tracker["state"][:-1] == "FINAL"):
 		Tracker["pixercutoff"] = 0.5
 		Tracker["delta"] = "2.0"
@@ -1521,12 +1641,15 @@ def main():
 	#   It will be exhaustive search with zoom option to establish good shifts.
 	Tracker["inires"] = Tracker["constants"]["pixel_size"]/Tracker["inires"]  # This is in full size image units.
 	Tracker["icurrentres"] = int(Tracker["constants"]["nnxo"]*Tracker["inires"]+0.5)
-	#  Prepare initial FSC corresponding to initial resolution
-	[xxx,Tracker["lowpass"]] = tanhfilter(Tracker["constants"]["nnxo"], Tracker["inires"], Tracker["falloff"])
-	if(myid == main_node):
-		write_text_file([xxx,Tracker["lowpass"],Tracker["lowpass"],\
-		[2*Tracker["lowpass"][i]/(1.0+Tracker["lowpass"][i]) for i in xrange(len(Tracker["lowpass"]))]],os.path.join(initdir,"fsc.txt"))
-	del xxx
+	if  False:
+		#  Prepare initial FSC corresponding to initial resolution
+		[xxx,Tracker["lowpass"]] = tanhfilter(Tracker["constants"]["nnxo"], Tracker["inires"], Tracker["falloff"])
+		if(myid == main_node):
+			write_text_file([xxx,Tracker["lowpass"],Tracker["lowpass"],\
+			[2*Tracker["lowpass"][i]/(1.0+Tracker["lowpass"][i]) for i in xrange(len(Tracker["lowpass"]))]],os.path.join(initdir,"fsc.txt"))
+		del xxx
+	else:
+		Tracker["lowpass"] = Tracker["icurrentres"]
 	#  Make sure nxinit is at least what it was set to as an initial size.
 	Tracker["nxinit"] =  max(Tracker["icurrentres"]*2 + cushion , Tracker["nxinit"])
 	if( Tracker["nxinit"] > Tracker["constants"]["nnxo"] ):
@@ -1621,6 +1744,7 @@ def main():
 				Tracker["local_filter"] = os.path.join(Tracker["previousoutputdir"],"locres.hdf")
 
 		if(myid == main_node):
+			print("\n\n\n\n")
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
 			print(line,"MAIN ITERATION  #%2d   %s  nxinit, icurrentres, resolution  %d   %d  %f"%\
 				(Tracker["mainiteration"], Tracker["state"],Tracker["nxinit"],  Tracker["icurrentres"], \
@@ -1753,7 +1877,8 @@ def main():
 			del lowpass, falloff, icurrentres, ares, finitres, newnx
 
 
-		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"vol0.hdf"), keepchecking, myid, main_node)
+		#doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"vol0.hdf"), keepchecking, myid, main_node)
+		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"params.txt"), keepchecking, myid, main_node)
 		if doit:
 			#  PRESENTABLE RESULT  AND vol*.hdf to start next iteration     <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><
 			#  Here I have code to generate presentable results.  IDs and params have to be merged and stored and the overall volume computed.
@@ -1780,6 +1905,7 @@ def main():
 				projdata = getindexdata(Tracker["constants"]["stack"], os.path.join(Tracker["directory"] ,"indexes.txt"), \
 						os.path.join(Tracker["directory"] ,"params.txt"), myid, nproc)
 			"""
+			'''
 			#  If smear is requested, compute smeared volumes as vol*.hdf.  If not, simply copy vor
 			if Tracker["constants"]["smear"] :
 				if(Tracker["newnx"] != projdata[procid][0].get_xsize() ):
@@ -1799,16 +1925,17 @@ def main():
 						cmd = "{} {} {}".format("cp -p", os.path.join(Tracker["directory"] ,"vor%01d.hdf"), \
 											os.path.join(Tracker["directory"] ,"vol%01d.hdf") )
 						cmdexecute(cmd)
-
+			'''
 		#  
 		doit, keepchecking = checkstep(os.path.join(Tracker["directory"] ,"volf.hdf"), keepchecking, myid, main_node)
 		if doit:
+			'''
 			if( myid == main_node ):
 				volf = 0.5*(get_im(os.path.join(Tracker["directory"] ,"vol0.hdf"))+get_im(os.path.join(Tracker["directory"] ,"vol0.hdf")))
 				#  This structure will be calculated without local filter
-				#Tracker["lowpass"] = float(ares)/float(Tracker["nxinit"])
-				Tracker["lowpass"] = read_text_file(os.path.join(Tracker["directory"],"fsc.txt"),3)
+				Tracker["lowpass"] = read_text_file(os.path.join(Tracker["directory"],"fsc.txt"),1)
 				lex = len(Tracker["lowpass"])
+				#Tracker["lowpass"] = float(ares)/float(Tracker["nxinit"])
 			else:
 				volf = model_blank(Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
 				lex = 0
@@ -1829,6 +1956,29 @@ def main():
 				fpol(volf, Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"] ,"volf.hdf"))
 			del volf
 			Tracker["local_filter"] = lsave
+			'''
+			if( myid == main_node ):
+				volf = 0.5*(get_im(os.path.join(Tracker["directory"] ,"vol0.hdf"))+get_im(os.path.join(Tracker["directory"] ,"vol0.hdf")))
+				[newlowpass, newfalloff, icurrentres, ares] = read_text_row( os.path.join(Tracker["directory"],"current_resolution.txt") )[0]
+				#  This structure will be calculated without local filter
+				Tracker["lowpass"] = float(ares)/float(Tracker["nxinit"])
+			else:
+				volf = model_blank(Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+				#newlowpass = 0.0; newfalloff = 0.0; icurrentres = 0; ares = 0
+			lsave = Tracker["local_filter"]
+			Tracker["local_filter"] = False
+			Tracker["falloff"] = newfalloff
+
+			#volf = do_volume_mrk01(volf, Tracker, mainiteration, mpi_comm = MPI_COMM_WORLD)
+			ref_data = [volf, Tracker, mainiteration, MPI_COMM_WORLD]
+			user_func = Tracker["constants"] ["user_func"]
+			volf = user_func(ref_data)
+
+			if(myid == main_node):
+				fpol(volf, Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"] ,"volf.hdf"))
+			del volf
+			Tracker["local_filter"] = lsave
+
 		"""
 		else:
 			if( myid == main_node ):
