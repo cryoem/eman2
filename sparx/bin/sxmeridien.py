@@ -985,7 +985,7 @@ def compute_resolution(stack, partids, partstack, Tracker, myid, main_node, npro
 			#fpol(vol[procid], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"],"vor%01d.hdf"%procid))
 			fpol(vol[procid], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"], Tracker["constants"]["nnxo"]).write_image(os.path.join(Tracker["directory"],"vol%01d.hdf"%procid))
 			line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-			print(  line,"Generated vor #%01d  using  image size %d "%(procid, nx))
+			print(  line,"Generated vol #%01d  using  image size %d "%(procid, nx))
 
 
 	lowpass    = 0.0
@@ -1959,7 +1959,7 @@ def main():
 			'''
 			if( myid == main_node ):
 				volf = 0.5*(get_im(os.path.join(Tracker["directory"] ,"vol0.hdf"))+get_im(os.path.join(Tracker["directory"] ,"vol0.hdf")))
-				[newlowpass, newfalloff, icurrentres, ares] = read_text_row( os.path.join(Tracker["directory"],"current_resolution.txt") )[0]
+				[newlowpass, newfalloff, icurrentres, ares, finitres] = read_text_row( os.path.join(Tracker["directory"],"current_resolution.txt") )[0]
 				#  This structure will be calculated without local filter
 				Tracker["lowpass"] = float(ares)/float(Tracker["nxinit"])
 			else:
