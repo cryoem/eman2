@@ -1962,12 +1962,15 @@ def main():
 				[newlowpass, newfalloff, icurrentres, ares, finitres] = read_text_row( os.path.join(Tracker["directory"],"current_resolution.txt") )[0]
 				#  This structure will be calculated without local filter
 				Tracker["lowpass"] = float(ares)/float(Tracker["nxinit"])
+				Tracker["falloff"] = newfalloff
+				
 			else:
 				volf = model_blank(Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
-				#newlowpass = 0.0; newfalloff = 0.0; icurrentres = 0; ares = 0
+				Tracker["lowpass"] = 0.0; Tracker["falloff"] = 0.0; icurrentres = 0; ares = 0
 			lsave = Tracker["local_filter"]
 			Tracker["local_filter"] = False
-			Tracker["falloff"] = newfalloff
+			Tracker["lowpass"] = mpi_bcast(Tracker["lowpass"], lex, MPI_FLOAT, main_node, MPI_COMM_WORLD)
+			Tracker["falloff"] = mpi_bcast(Tracker["falloff"], lex, MPI_FLOAT, main_node, MPI_COMM_WORLD)
 
 			#volf = do_volume_mrk01(volf, Tracker, mainiteration, mpi_comm = MPI_COMM_WORLD)
 			ref_data = [volf, Tracker, mainiteration, MPI_COMM_WORLD]
