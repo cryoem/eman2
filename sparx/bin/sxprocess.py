@@ -434,7 +434,7 @@ def main():
 		d = get_im(args[0])
 		nx = d.get_xsize()
 		ny = d.get_ysize()
-		mask = get_im(args[2])
+		if nargs ==3: mask = get_im(args[2])
 		wn = int(options.wn)
 		if wn == -1:
 			wn = max(nx, ny)
@@ -447,7 +447,8 @@ def main():
 		
 		for i in xrange(n):
 			d = get_im(args[0], i)
-			d *=mask
+			if nargs==3:
+				d *=mask
 			st = Util.infomask(d, None, True)
 			d -= st[0]
 			p += periodogram(pad(d, wn, wn, 1, 0.))
