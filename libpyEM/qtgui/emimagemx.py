@@ -739,6 +739,8 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 				
 		cache_size = -1
 
+		if self.data==None : needresize=True
+
 		if isinstance(obj, EMMXDataCache) :
 			self.data = obj
 		else :
@@ -890,6 +892,18 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			self.inspector.set_limits(self.mindeng, self.maxdeng, self.minden, self.maxden)
 			self.inspector.update_vals()
 		### just check position and scollbar.
+	
+		if needresize:
+			nimg=sqrt(len(self.data))
+			x=self.data[0]["nx"]*sqrt(nimg)
+			y=self.data[0]["ny"]*sqrt(nimg)
+			xys=QtGui.QApplication.desktop().availableGeometry()
+			mx=xys.width()*2/3
+			my=xys.height()*2/3
+			
+			self.resize(min(x,mx),min(y,my))
+
+		
 		self.set_scale(self.scale)
 		if update_gl : self.updateGL()
 

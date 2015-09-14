@@ -280,7 +280,7 @@ class EMParentWin(QtGui.QWidget,Animator):
 	class hides the fact that this workaround is required.
 	"""
 	
-	def __init__(self,child,enable_timer=False):
+	def __init__(self,enable_timer=False):
 		"""
 		@param child: the central GL display widget
 		@type child: EMGLWidget
@@ -290,14 +290,11 @@ class EMParentWin(QtGui.QWidget,Animator):
 		QtGui.QWidget.__init__(self,None)
 		Animator.__init__(self)
 
-		self.child = weakref.ref(child) # Either EMGLWidget.parent_widget or EMParentWin.child must be a weakref for garbage collection purposes.
-		self.resize(child.width(),child.height())
-		self.setMaximumSize(8000,8000)
 
-		self.hbl = QtGui.QVBoxLayout()
+		self.setMaximumSize(8000,8000)
+		self.hbl = QtGui.QVBoxLayout(self)
 		
 		self.hbl.setSpacing(0)
-		self.hbl.addWidget(self.child(),100)
 		if get_platform() == "Darwin": # because OpenGL widgets in Qt don't leave room in the bottom right hand corner for the resize tool
 			self.status = QtGui.QStatusBar()
 			self.status.setSizeGripEnabled(True)
@@ -306,11 +303,18 @@ class EMParentWin(QtGui.QWidget,Animator):
 		else:
 			self.margin = 5
 		self.hbl.setMargin(self.margin)
-		self.setLayout(self.hbl)
 		
 		
 	def __del__(self):
 		pass
+	
+	def setup(self,child):
+		"""__init__ has to be called before the widget is fully ready for display, so this completes the setup process"""
+
+		self.resize(640,640)
+		self.child = weakref.ref(child) # Either EMGLWidget.parent_widget or EMParentWin.child must be a weakref for garbage collection purposes.
+		self.hbl.addWidget(self.child(),100)
+#		self.resize(self.child().width(),self.child().height())
 	
 	def get_margin(self):
 		return 50
@@ -323,8 +327,8 @@ class EMParentWin(QtGui.QWidget,Animator):
 		except: pass
 		QtGui.QWidget.closeEvent(self,e)
 		
-	def resizeEvent(self,event):
-		self.child().resizeEvent(event)
+#	def resizeEvent(self,event):
+#		self.child().resizeEvent(event)
 	
 	def get_qt_widget(self):
 		return self.child()

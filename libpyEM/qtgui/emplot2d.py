@@ -95,11 +95,11 @@ class EMPlot2DWidget(EMGLWidget):
 	"""A QT widget for drawing 2-D plots using matplotlib
 	"""
 
-	def __init__(self,application=None,winid=None):
+	def __init__(self,application=None,winid=None,parent=None):
 
 		fmt=QtOpenGL.QGLFormat()
 		fmt.setDoubleBuffer(True);
-		EMGLWidget.__init__(self, winid=winid)
+		EMGLWidget.__init__(self, parent=parent, winid=winid)
 		self.setFormat(fmt)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"plot.png"))
 
@@ -1490,7 +1490,7 @@ class DragListWidget(QtGui.QListWidget):
 		if e.mimeData().hasText() :
 			sdata=str(e.mimeData().text()).split("\n")
 
-			rex=re.compile("\s*([0-9Ee\-\.]+)(?:[\s,;:]*)")		# regular expression for parsing text with any of these separators: <space>,;:
+			rex=re.compile("\s*([0-9Ee\-\+\.]+)(?:[\s,;:]*)")		# regular expression for parsing text with any of these separators: <space>,;:
 
 			# parse the data
 			data=None
@@ -1503,7 +1503,8 @@ class DragListWidget(QtGui.QListWidget):
 
 				# parses out each number from each line and puts it in our list of lists
 				for i,f in enumerate(rex.findall(s)):
-					data[i].append(float(f))
+					try: data[i].append(float(f))
+					except: print "Error (%d): %s"%(i,f)
 
 			# Find an unused name for the data set
 			trgplot=self.datasource().target()
@@ -2149,3 +2150,32 @@ if __name__ == '__main__':
 
 	app.show()
 	app.execute()
+
+class EMDataFnPlotter(QtGui.QWidget):
+
+	def __init__(self, parent = None, data=None):
+		QtGui.QWidget.__init__(self, parent)
+
+		self.setWindowTitle("Plotter")
+		
+		self.resize(780, 580)
+		self.gbl = QtGui.QGridLayout(self)
+
+		self.plot = EMPlot2DWidget(parent=self)
+		self.gbl.addWidget(self.plot,0,0,1,1)
+
+		self.lplot = QtGui.QLabel("Plot")
+		self.gbl.addWidget(self.plot,1,0)
+
+		if data!=None : 
+			self.plot.set_data(data,"init")
+	
+	def closeEvent(self,event):
+		self.plot.closeEvent(event)
+	
+	def set_label(self,lbl):
+		self.lplot.setText(lbl)
+	
+	def set_data(self, data, key):
+		self.plot.set_data(data,key)
+		

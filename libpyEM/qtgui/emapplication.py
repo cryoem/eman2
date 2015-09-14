@@ -121,8 +121,15 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 			self.setWindowTitle(title)
 			
 	def __init__(self, parent=None,enable_timer=False, application_control=True,winid=None):
-		QtOpenGL.QGLWidget.__init__(self,parent)
-		self.qt_parent = EMParentWin(self, enable_timer)
+		if parent==None : 
+			self.qt_parent = EMParentWin(enable_timer)
+			self.myparent=True			# we allocated the parent, responsible for cleaning it up
+		else: 
+			self.qt_parent=parent
+			self.myparent=False			# we did not allocate our parent, so we should not get rid of it
+		
+		QtOpenGL.QGLWidget.__init__(self,self.qt_parent)
+		if self.myparent : self.qt_parent.setup(self)
 		
 		self.inspector = None # a Qt Widget for changing display parameters, setting the data, accessing metadata, etc.
 		self.winid=winid # a 'unique' identifier for the window used to restore locations on the screen
@@ -145,12 +152,12 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 		self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
 			
 		self.busy = False #updateGL() does nothing when self.busy == True
-	
+		
 	def closeEvent(self, event):
 		if self.inspector:
 			self.inspector.close()
 		QtOpenGL.QGLWidget.closeEvent(self, event)
-		self.qt_parent.close()
+		if self.myparent : self.qt_parent.close()
 		self.emit(QtCore.SIGNAL("module_closed")) # this could be a useful signal, especially for something like the selector module, which can potentially show a lot of images but might want to close them all when it is closed
 		event.accept()
 		

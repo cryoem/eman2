@@ -6494,6 +6494,7 @@ correction is not possible, this will allow you to approximate the correction to
 			d.put("defocus", EMObject::FLOAT, "Mean defocus to correct for in microns");
 			d.put("ac", EMObject::FLOAT, "Amplitude contrast in % (default 10%)");
 			d.put("voltage", EMObject::FLOAT, "Microscope Voltage in Kv (default 300)");
+			d.put("apix", EMObject::FLOAT, "A/pix (default value from image header)");
 			return d;
 		}
 

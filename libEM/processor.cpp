@@ -6771,6 +6771,7 @@ void CTFCorrProcessor::process_inplace(EMData * image)
 	float defocus = params.set_default("defocus",3.0);
 	float ac = params.set_default("ac",10.0);
 	float voltage = params.set_default("voltage",300.0);
+	float apix = params.set_default("apix",image->get_attr("apix_x"));
 	
 	EMAN2Ctf ctf;
 
@@ -6778,7 +6779,7 @@ void CTFCorrProcessor::process_inplace(EMData * image)
 	ctf.defocus=defocus;
 	ctf.voltage=voltage;
 	ctf.cs=4.1;				// has negligible impact, so we just use a default
-	ctf.apix=image->get_attr("apix_x");
+	ctf.apix=apix;
 	ctf.ampcont=ac;
 	ctf.dfdiff=0;
 	ctf.bfactor=200.0;
@@ -6789,16 +6790,20 @@ void CTFCorrProcessor::process_inplace(EMData * image)
 	
 	// reciprocal until the first CTF maximum, then no filter after that
 	int i;
-	for (i=1; i<np/2; i++) {
-		if (filter[i]<filter[i-1]) break;
+	for (i=0; i<np/2-1; i++) {
+		if (filter[i+1]<filter[i]) {
+			filter[i]=1.0/filter[i];
+			break;
+		}
 		filter[i]=1.0/filter[i];
 	}
-	int gi=i-1;
+	int gi=i;
 	while (i<np/2) {
 		filter[i]=filter[gi];
 		i++;
 	}
 
+//	for (i=0; i<np/2; i++) printf("%d\t%1.3g\n",i,filter[i]);
 	image->process_inplace("filter.radialtable",Dict("table",filter));
 	
 }

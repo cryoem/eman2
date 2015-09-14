@@ -90,7 +90,8 @@ class EMImage2DWidget(EMGLWidget):
 		#sizePolicy.setHeightForWidth(False)
 		#self.setSizePolicy(sizePolicy)
 
-		self.data = image 	   # EMData object to display
+#		self.data = image 	   # EMData object to display
+		self.data = None		# set to image below
 		self.file_name = ""# stores the filename of the image, if None then member functions should be smart enough to handle it
 		self.enable_clip = False
 		EMImage2DWidget.allim[self] = 0
@@ -385,6 +386,11 @@ class EMImage2DWidget(EMGLWidget):
 			self.data = None
 			return
 
+		if self.data==None :
+			needresize=True
+		else:
+			needresize=False
+
 		fourier = False
 
 		# it's a 3D image
@@ -448,6 +454,17 @@ class EMImage2DWidget(EMGLWidget):
 
 		#if not retain_current_settings:
 			#self.__load_display_settings_from_db(inspector_update=False,display_update=False)
+
+		try:
+			if needresize:
+				x=self.data["nx"]
+				y=self.data["ny"]
+				xys=QtGui.QApplication.desktop().availableGeometry()
+				mx=xys.width()*2/3
+				my=xys.height()*2/3
+				
+				self.resize(min(x,mx),min(y,my))
+		except: pass
 
 		self.inspector_update(use_fourier=fourier)
 		if self.curfft in [1,2,3] and self.data!=None and self.data.is_complex() : self.redo_fft()
@@ -2011,6 +2028,19 @@ class EMImageInspector2D(QtGui.QWidget):
 
 		self.mmtab.addTab(self.drawtab,"Draw")
 
+		# PSpec tab
+		self.pstab = QtGui.QWidget()
+		self.pstlay = QtGui.QGridLayout(self.pstab)
+		
+		self.psbsing = QtGui.QPushButton("Single")
+		self.pstlay.addWidget(self.psbsing,0,0)
+		
+		self.psbstack = QtGui.QPushButton("Stack")
+		self.pstlay.addWidget(self.psbstack,0,1)
+		
+		self.mmtab.addTab(self.pstab,"PSpec")
+		self.pspecwins=[]
+
 		# Python tab
 		self.pytab = QtGui.QWidget()
 		self.pytlay = QtGui.QGridLayout(self.pytab)
@@ -2135,6 +2165,8 @@ class EMImageInspector2D(QtGui.QWidget):
 		#self.update_brightness_contrast()
 		self.busy=0
 
+		QtCore.QObject.connect(self.psbsing,QtCore.SIGNAL("clicked(bool)"),self.do_pspec_single)
+		QtCore.QObject.connect(self.psbstack,QtCore.SIGNAL("clicked(bool)"),self.do_pspec_stack)
 		QtCore.QObject.connect(self.scale, QtCore.SIGNAL("valueChanged"), target.set_scale)
 		QtCore.QObject.connect(self.mins, QtCore.SIGNAL("valueChanged"), self.new_min)
 		QtCore.QObject.connect(self.maxs, QtCore.SIGNAL("valueChanged"), self.new_max)
@@ -2150,6 +2182,30 @@ class EMImageInspector2D(QtGui.QWidget):
 
 		self.resize(400,440) # d.woolford thinks this is a good starting size as of Nov 2008 (especially on MAC)
 
+	def do_pspec_single(self,ign):
+		try: data=self.target().list_data[self.target().list_idx]
+		except: data=self.target().get_data()
+		if data==None: return
+#		print data
+		fft=data.do_fft()
+		pspec=fft.calc_radial_dist(fft["ny"]/2,0.0,1.0,1)
+		ds=1.0/(fft["ny"]*data["apix_x"])
+		s=[ds*i for i in xrange(fft["ny"]/2)]
+		
+		from emplot2d import EMDataFnPlotter
+		
+		dfp=EMDataFnPlotter(data=(s,pspec))
+		dfp.show()
+		self.pspecwins.append(dfp)
+		
+		
+		
+	def do_pspec_stack(self,ign): 
+		from emplot2d import EMDataFnPlotter
+
+		dfp=EMDataFnPlotter()
+		dfp.show()
+		self.pspecwins.append(dfp)
 
 	def do_snapshot(self,du) :
 		if self.target().data==None or self.target() == None: return
