@@ -811,11 +811,11 @@ def get_pixel_resolution(Tracker, vol, mask, fscoutputdir):
 			break
 	"""
 	#if( Tracker["state"] == "INITIAL" ):
-	#	[lowpass,nfsc[2]] = tanhfilter(Tracker["constants"]["nnxo"], float(currentres)/Tracker["constants"]["nnxo"], Tracker["falloff"])
-	#	if( len(nfsc[0])>len(nfsc[2]) ):  nfsc[2] += [0.0]*(len(nfsc[0])-len(nfsc[2]))
+	[lowpass,nfsc[3]] = tanhfilter(Tracker["constants"]["nnxo"], float(currentres)/Tracker["constants"]["nnxo"], Tracker["falloff"])
+	if( len(nfsc[0])>len(nfsc[3]) ):  nfsc[3] += [0.0]*(len(nfsc[0])-len(nfsc[2]))
 	finitres = -1
 	for i in xrange(1,ns-1):
-		if ( nfsc[2][i] < 0.143):
+		if ( nfsc[3][i] < 0.143):
 			finitres = i
 			break
 	for i in xrange(len(nfsc[0])):  nfsc[3][i] = 2*nfsc[2][i]/(1.0+nfsc[2][i])
@@ -1969,8 +1969,8 @@ def main():
 				Tracker["lowpass"] = 0.0; Tracker["falloff"] = 0.0; icurrentres = 0; ares = 0
 			lsave = Tracker["local_filter"]
 			Tracker["local_filter"] = False
-			Tracker["lowpass"] = bcast_number_to_al(Tracker["lowpass"], source_node = main_node)
-			Tracker["falloff"] = bcast_number_to_al(Tracker["falloff"], source_node = main_node)
+			Tracker["lowpass"] = bcast_number_to_all(Tracker["lowpass"], source_node = main_node)
+			Tracker["falloff"] = bcast_number_to_all(Tracker["falloff"], source_node = main_node)
 
 			#volf = do_volume_mrk01(volf, Tracker, mainiteration, mpi_comm = MPI_COMM_WORLD)
 			ref_data = [volf, Tracker, mainiteration, MPI_COMM_WORLD]
