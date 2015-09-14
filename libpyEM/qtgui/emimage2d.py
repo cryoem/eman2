@@ -2183,6 +2183,7 @@ class EMImageInspector2D(QtGui.QWidget):
 		self.resize(400,440) # d.woolford thinks this is a good starting size as of Nov 2008 (especially on MAC)
 
 	def do_pspec_single(self,ign):
+		"""Compute 1D power spectrum of single image and plot"""
 		try: data=self.target().list_data[self.target().list_idx]
 		except: data=self.target().get_data()
 		if data==None: return
@@ -2198,12 +2199,25 @@ class EMImageInspector2D(QtGui.QWidget):
 		dfp.show()
 		self.pspecwins.append(dfp)
 		
-		
-		
 	def do_pspec_stack(self,ign): 
+		"""compute average 1D power spectrum of all images and plot"""
 		from emplot2d import EMDataFnPlotter
 
-		dfp=EMDataFnPlotter()
+		if len(self.target().list_data)<2 : return
+		for im in self.target().list_data:
+			fft=im.do_fft()
+			fft.ri2inten()
+			try: fftsum.add(fft)
+			except: fftsum=fft
+			
+		fftsum.mult(1.0/len(self.target().list_data))
+		pspec=fftsum.calc_radial_dist(fft["ny"]/2,0.0,1.0,1)	# note that this method knows about is_inten() image flag
+		ds=1.0/(fft["ny"]*self.target().get_data()["apix_x"])
+		s=[ds*i for i in xrange(fft["ny"]/2)]
+		
+		from emplot2d import EMDataFnPlotter
+		
+		dfp=EMDataFnPlotter(data=(s,pspec))
 		dfp.show()
 		self.pspecwins.append(dfp)
 
