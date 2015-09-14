@@ -42,7 +42,6 @@ def AI( Tracker, HISTORY ):
 	if(Tracker["mainiteration"] == 1):
 		Tracker["nxinit"]      = Tracker["newnx"]
 		Tracker["icurrentres"] = Tracker["ireachedres"]
-
 		Tracker["nsoft"]       = 0
 		Tracker["local"]       = False
 		Tracker["zoom"]        = True
@@ -788,13 +787,13 @@ def get_pixel_resolution(Tracker, vol, mask, fscoutputdir):
 	#  This is actual resolution, as computed by 2*f/(1+f), should be used for volf
 	ares = -1
 	for i in xrange(1,ns-1):
-		if ( nfsc[2][i] < 0.333333333333333333333333):
+		if ( nfsc[1][i] < 0.333333333333333333333333):
 			ares = i
 			break
 	#  0.5 cut-off
 	currentres = -1
 	for i in xrange(1,ns-1):
-		if ( nfsc[2][i] < 0.5):
+		if ( nfsc[1][i] < 0.5):
 			currentres = i
 			break
 	if(currentres < 0 or ares < 0):
