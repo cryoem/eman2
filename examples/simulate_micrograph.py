@@ -75,7 +75,8 @@ def main():
 		for i in np.linspace(xb,xt-2*xb,(xt-2*xb)/xb):
 			for j in np.linspace(yb,yt-2*yb,(yt-2*yb)/yb):
 				coords.append([i,j])
-				coords.append([j,i])
+				if i != j:
+					coords.append([j,i])
 	else:
 		xs=np.round(np.random.uniform(xb,xt-2*xb,size=n),0)
 		ys=np.round(np.random.uniform(yb,yt-2*yb,size=n),0)
