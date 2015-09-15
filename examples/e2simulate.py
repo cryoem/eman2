@@ -21,6 +21,8 @@ def main():
 	parser.add_argument("--mgx", type=int, help="Micrograph width in pixels",default=4096)
 	parser.add_argument("--mgy", type=int, help="Micrograph height in pixels",default=4096)
 	parser.add_argument("--nptcls", type=int, help="Number of particles to include in simulated micrograph",default=80)
+	parser.add_argument("--resolution", type=int, help="Resolution to use during pdb to mrc conversion",default=80)
+	parser.add_argument("--boxsize", type=int, help="Size of box to use during pdb to mrc conversion",default=80)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--grid",action="store_true",default=False,help="Place particles in a grid")
 	parser.add_argument("--noise", type=float, help="Level of noise to be added after CTF",default=75.0)
@@ -38,8 +40,9 @@ def main():
 	
 	if "pdb" in ext:
 		fname = base + '.mrc'
+		b = options.boxsize
 		print("Converting the input PDB file to MRC format")
-		os.system('e2pdb2mrc.py {} {}'.format(args[0],fname))
+		os.system('e2pdb2mrc.py {} {} --apix {} --box'.format(args[0],fname,options.apix,b,b,b))
 		struct=EMData(fname)
 	else:
 		struct=EMData(args[0])
