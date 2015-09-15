@@ -32,6 +32,7 @@ def main():
 		print("Need to specify a PDB structure or a MRC/HDF map.")
 		exit(1)
 	
+	fname = args[0]
 	base = args[0].split('.')[0]
 	ext = args[0].split('.')[1]
 	
