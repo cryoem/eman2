@@ -28,7 +28,8 @@ global cushion
 cushion = 6
 
 
-def AI( Tracker, HISTORY ):
+def AI( Tracker, HISTORY, chout = False):
+	#  chout - if true, one can print, call the program with, chout = (myid == main_node)
 	#  
 	#  Possibilities we will consider:
 	#    1.  resolution improved: keep going with current settings.
@@ -40,6 +41,7 @@ def AI( Tracker, HISTORY ):
 	reset_data = False
 	Tracker["delpreviousmax"] = False
 	if(Tracker["mainiteration"] == 1):
+		# newnx is decided in the main body of the program.  It is minimum that is needed to accomodate reached resolution.
 		Tracker["nxinit"]      = Tracker["newnx"]
 		Tracker["icurrentres"] = Tracker["ireachedres"]
 		Tracker["nsoft"]       = 0
@@ -136,7 +138,7 @@ def AI( Tracker, HISTORY ):
 
 				if(Tracker["state"] == "EXHAUSTIVE"):
 					#  Move up if changes in angles are less than 30 degrees (why 30??  It should depend on symmetry)
-					if(Tracker["anger"]   < 30.0/5 ):  move_up_phase = True
+					if(Tracker["anger"]   < 30.0/int(Tracker["constants"]["sym"][1:]) ):  move_up_phase = True
 					else:
 						Tracker["xr"] , Tracker["ts"] = stepshift(int(Tracker["shifter"]+0.5), nxrsteps = 2)
 				elif(Tracker["state"] == "RESTRICTED"):
@@ -146,11 +148,13 @@ def AI( Tracker, HISTORY ):
 					rd = int(Tracker["constants"]["radius"] * sh +0.5)
 					rl = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
 					dd = degrees(atan(0.5/rl/rd))
-					if( False and Tracker["anger"]  < dd ):  move_up_phase = True
+					if(Tracker["anger"]  == 0.0 ):  move_up_phase = True
 					else:
-						Tracker["xr"] = "%d   1"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
-						Tracker["an"] = "%f  %f"%(Tracker["anger"],Tracker["anger"])
-						Tracker["ts"] = "1   0.32"
+						Tracker["zoom"] = True
+						Tracker["xr"] , Tracker["ts"] = stepshift(int(Tracker["shifter"]+0.5), nxrsteps = 2)
+						Tracker["an"] = ""
+						for i in xrange(len(get_input_from_string(Tracker["xr"]))):
+							Tracker["an"] += "%f  "%(3*Tracker["anger"])
 				else:
 					Tracker["anger"]   = -1.0
 					Tracker["shifter"] = -1.0
@@ -166,15 +170,16 @@ def AI( Tracker, HISTORY ):
 						if(Tracker["state"] == "EXHAUSTIVE"):
 								xr = int(max(Tracker["shifter"],1.0)*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1
 								Tracker["zoom"] = True
-								Tracker["xr"] = "%d  %d  %d"%(2*xr, xr, 1)
-								Tracker["ts"] = "%f  %f  %f"%(min(2.0*xr,2.0),1.0, 0.32)
+								Tracker["xr"] = "%d  %d"%(2*xr, xr)
+								Tracker["ts"] = "%f  %f"%(min(2.0*xr,2.0),1.0)
 						elif(Tracker["state"] == "RESTRICTED"):
 								Tracker["PWadjustment"] = Tracker["constants"]["pwreference"]
 								xr = int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1
 								Tracker["zoom"] = True
-								Tracker["xr"] = "%d  %d  %d"%(2*xr, xr, 1)
-								Tracker["ts"] = "%f  %f  %f"%(min(2.0*xr,2.0),1, 0.32)
-								Tracker["an"] =  "%6.2f  %6.2f  %6.2f"%(2*Tracker["anger"],2*Tracker["anger"],2*Tracker["anger"])					
+								Tracker["xr"] , Tracker["ts"] = stepshift(int(Tracker["shifter"]+0.5), nxrsteps = 2)
+								Tracker["an"] = ""
+								for i in xrange(len(get_input_from_string(Tracker["xr"]))):
+									Tracker["an"] += "%f  "%(3*Tracker["anger"])
 						keepgoing = 1
 				elif( Tracker["state"] == "FINAL2"):  keepgoing = 0
 				else:
@@ -202,7 +207,7 @@ def AI( Tracker, HISTORY ):
 				Tracker["PWadjustment"]   = stt[1]
 				Tracker["mainiteration"]  = stt[2]
 				Tracker["icurrentres"]    = Tracker["ireachedres"]
-				#  This will set previousoutputdir to the best parames back then.
+				#  This will set previousoutputdir to the best params back then.
 				move_up_phase = True
 				
 	
@@ -225,8 +230,10 @@ def AI( Tracker, HISTORY ):
 				Tracker["state"]       = "EXHAUSTIVE"
 				Tracker["maxit"]       = 50
 				#  Develop something intelligent
-				Tracker["xr"] = "%d    1"%(int(max(Tracker["shifter"],1.0)*float(Tracker["constants"]["nnxo"])/float(Tracker["nxinit"])))# This should be derived from the previous size
-				Tracker["ts"] = "1    0.32"
+				Tracker["xr"] = "%d"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
+				Tracker["ts"] = "1"
+				#Tracker["xr"] = "%d    1"%(int(max(Tracker["shifter"],1.0)*float(Tracker["constants"]["nnxo"])/float(Tracker["nxinit"])))# This should be derived from the previous size
+				#Tracker["ts"] = "1    0.32"
 				keepgoing = 1
 			#  Exhaustive searches
 			elif(Tracker["state"] == "EXHAUSTIVE"):
@@ -240,11 +247,14 @@ def AI( Tracker, HISTORY ):
 				if Tracker["applyctf"] :  reset_data  = True
 				Tracker["upscale"]     = 0.5
 				Tracker["applyctf"]    = True
-				Tracker["an"]          = "%f   %f"%((Tracker["anger"]*1.25),(Tracker["anger"]*1.25))
+				#Tracker["an"]          = "%f   %f"%((Tracker["anger"]*1.25),(Tracker["anger"]*1.25))
 				Tracker["state"]       = "RESTRICTED"
 				Tracker["maxit"]       = 50
-				Tracker["xr"] = "%d   1"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
-				Tracker["ts"] = "1   0.32"
+				Tracker["an"]          = "%f"%(Tracker["anger"]*1.25)
+				Tracker["xr"] = "%d"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
+				Tracker["ts"] = "1"
+				#Tracker["xr"] = "%d   1"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
+				#Tracker["ts"] = "1   0.32"
 				keepgoing = 1
 			#  Restricted searches
 			elif(Tracker["state"] == "RESTRICTED"):
@@ -654,7 +664,7 @@ def stepali(nxinit, nnxo, irad, nxrsteps = 3):
 
 def stepshift(txrm, nxrsteps = 2):
 
-	txrm += txrm%2	
+	txrm += txrm%2
 	if (txrm/nxrsteps>0):
 		tss = ""
 		txr = ""
@@ -664,7 +674,7 @@ def stepshift(txrm, nxrsteps = 2):
 			txr += "%d  "%(tts*nxrsteps)
 			txrm -= nxrsteps
 	else:
-		txr = "%d"%txrm
+		txr = "%d"%max(txrm,1)
 		tss = "1"
 	return txr, tss
 
