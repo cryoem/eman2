@@ -166,12 +166,13 @@ def AI( Tracker, HISTORY, chout = False):
 						# move up with the state
 						move_up_phase = True
 					else:
-						# turn on pwadjustment
 						if(Tracker["state"] == "EXHAUSTIVE"):
 								xr = int(max(Tracker["shifter"],1.0)*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1
 								Tracker["zoom"] = True
-								Tracker["xr"] = "%d  %d"%(2*xr, xr)
-								Tracker["ts"] = "%f  %f"%(min(2.0*xr,2.0),1.0)
+								#Tracker["xr"] = "%d  %d"%(2*xr, xr)
+								#Tracker["ts"] = "%f  %f"%(min(2.0*xr,2.0),1.0)
+								Tracker["xr"] , Tracker["ts"] = stepshift(2*xr, nxrsteps = 2)
+						# turn on pwadjustment
 						elif(Tracker["state"] == "RESTRICTED"):
 								Tracker["PWadjustment"] = Tracker["constants"]["pwreference"]
 								xr = int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1
@@ -209,9 +210,8 @@ def AI( Tracker, HISTORY, chout = False):
 				Tracker["icurrentres"]    = Tracker["ireachedres"]
 				#  This will set previousoutputdir to the best params back then.
 				move_up_phase = True
-				
-	
-	
+
+
 		if move_up_phase:
 
 			#  INITIAL
@@ -238,7 +238,7 @@ def AI( Tracker, HISTORY, chout = False):
 			#  Exhaustive searches
 			elif(Tracker["state"] == "EXHAUSTIVE"):
 				#  Switch to RESTRICTED
-				Tracker["nxinit"]      = Tracker["newnx"]
+				Tracker["nxinit"]      = Tracker["newnx"] + Tracker["nxstep"]
 				Tracker["icurrentres"] = Tracker["ireachedres"]
 				Tracker["nsoft"]       = 0
 				Tracker["local"]       = False
@@ -250,8 +250,14 @@ def AI( Tracker, HISTORY, chout = False):
 				#Tracker["an"]          = "%f   %f"%((Tracker["anger"]*1.25),(Tracker["anger"]*1.25))
 				Tracker["state"]       = "RESTRICTED"
 				Tracker["maxit"]       = 50
-				Tracker["an"]          = "%f"%(Tracker["anger"]*1.25)
-				Tracker["xr"] = "%d"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
+				#  The next sadly repeats what is in the function that launches refinement, but I do not know how to do it better.
+				#  Turn it into a function?
+				sh = float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"])
+				rd = int(Tracker["constants"]["radius"] * sh +0.5)
+				rl = float(Tracker["icurrentres"])/float(Tracker["nxinit"])
+				dd = degrees(atan(0.5/rl/rd))
+				Tracker["an"]          = "%f"%(max(Tracker["anger"]*1.25,3*dd))
+				Tracker["xr"] = "%d"%(max(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1),2)
 				Tracker["ts"] = "1"
 				#Tracker["xr"] = "%d   1"%(int(Tracker["shifter"]*float(Tracker["nxinit"])/float(Tracker["constants"]["nnxo"]))+1)
 				#Tracker["ts"] = "1   0.32"
