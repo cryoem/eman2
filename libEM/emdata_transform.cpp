@@ -104,6 +104,7 @@ EMData *EMData::do_fft() const
 		dat->update();
 		dat->set_fftpad(true);
 		dat->set_complex(true);
+		dat->set_attr("is_intensity",false);
 		if(dat->get_ysize()==1 && dat->get_zsize()==1) dat->set_complex_x(true);
 		dat->set_ri(true);
 
@@ -380,6 +381,7 @@ EMData *EMData::do_ift()
 	dat->set_complex(false);
 	if(dat->get_ysize()==1 && dat->get_zsize()==1)  dat->set_complex_x(false);
 	dat->set_ri(false);
+	dat->set_attr("is_intensity",false);
 	dat->update();
 
 
