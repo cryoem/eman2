@@ -183,7 +183,9 @@ void ri2ap();
 void ap2ri();
 
 /** convert the complex image from real/imaginary to Intensity/0.
-This conversion cannot be reversed, and the image remains marked as R/I
+This conversion cannot be reversed, and the image remains marked as R/I.
+Also sets the is_intensity flag, which is used by routines like
+calc_radial_dist to avoid returning intensity squared.
 */
 void ri2inten();
 
