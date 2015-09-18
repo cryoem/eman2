@@ -1685,7 +1685,9 @@ def compareEvenOdd( options, avgeven, avgodd, it, etc, fscfile, tag, average=Tru
 	calcFsc( options, avgevenmasked, avgoddmasked, fscfilemasked4 )
 	
 	finalthresh = finalA['sigma']
-	finalAmasked = finalA.process('mask.auto3d',{'nshells':1,'nshellsgauss':6,'radius':1,'nmaxseed':1,'threshold': finalthresh })
+	
+	finalAfilt = finalA.copy()
+	finalAmasked = finalAfilt.process('mask.auto3d',{'nshells':1,'nshellsgauss':6,'radius':1,'nmaxseed':1,'threshold': finalthresh })
 	
 	finalAmasked.write_image( options.path + '/recomputed_final_avg_masked.hdf', 0 )
 	
@@ -2651,13 +2653,16 @@ def preprocessing(image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1,fin
 	
 	
 	if finetag:
-		if options.lowpassfine  == 'None' or options.lowpassfine == 'none':
-			options.lowpassfine = None
-		if options.highpassfine == 'None' or options.highpassfine == 'none':
-			options.highpassfine = None
-		if options.preprocessfine == 'None' or options.preprocessfine == 'none':
-			options.preprocessfine = None
-			
+		try:
+			if options.lowpassfine  == 'None' or options.lowpassfine == 'none':
+				options.lowpassfine = None
+			if options.highpassfine == 'None' or options.highpassfine == 'none':
+				options.highpassfine = None
+			if options.preprocessfine == 'None' or options.preprocessfine == 'none':
+				options.preprocessfine = None
+		except:
+			print "\nWarning: Ignore if parameters --lowpassfine, --highpassfine, preprocessfine don't exist in the program you ran. Otherwise, something went wrong."
+				
 	if coarse != 'yes':
 		#print "lowpassfine received is", options.lowpass	
 		pass
@@ -2713,7 +2718,8 @@ def preprocessing(image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1,fin
 			print "Apparently therewas no --maskfile"
 			pass
 	except:
-		pass
+		print "\nWarning: Ignore if parameter --maskfile does not exist in the program you ran. Otherwise, something went wrong."
+
 	
 	'''
 	Set the 'mask' parameter for --normproc if normalize.mask is being used
@@ -2780,7 +2786,7 @@ def preprocessing(image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1,fin
 			simage.process_inplace(options.highpass[0],options.highpass[1])
 			#fimage.write_image(options.path + '/imgPrepLpHp.hdf',-1)
 		
-		if options.shrink and int( options.shrink  ) > 1 and 'rotate_translate_3d_tree' not in options.align[0]:
+		if options.shrink and int( options.shrink  ) > 1:
 			print "(e2spt_classaverage)(preprocessing) --shrink provided:", options.shrink
 			simage.process_inplace("math.meanshrink",{"n":options.shrink })
 		
@@ -2790,27 +2796,33 @@ def preprocessing(image,options,ptclindx=0,tag='ptcls',coarse='yes',round=-1,fin
 			#fimage.write_image(options.path + '/imgPrep.hdf',-1)
 		
 	else:
-		if options.lowpassfine:
-			print "(e2spt_classaverage)(preprocessing) --lowpass provided:", options.lowpassfine
-			simage.process_inplace(options.lowpassfine[0],options.lowpassfine[1])
-			#fimage.write_image(options.path + '/imgPrepLp.hdf',-1)
+		try:
+			if options.lowpassfine:
+				print "(e2spt_classaverage)(preprocessing) --lowpass provided:", options.lowpassfine
+				simage.process_inplace(options.lowpassfine[0],options.lowpassfine[1])
+				#fimage.write_image(options.path + '/imgPrepLp.hdf',-1)
 	
-		if options.highpassfine:
-			print "(e2spt_classaverage)(preprocessing) --highpass provided:", options.highpassfine
-			simage.process_inplace(options.highpassfine[0],options.highpassfine[1])
-			#fimage.write_image(options.path + '/imgPrepLpHp.hdf',-1)
+			if options.highpassfine:
+				print "(e2spt_classaverage)(preprocessing) --highpass provided:", options.highpassfine
+				simage.process_inplace(options.highpassfine[0],options.highpassfine[1])
+				#fimage.write_image(options.path + '/imgPrepLpHp.hdf',-1)
 		
 		
-		if finetag != 'noshrink':
-			if options.shrinkfine and int( options.shrinkfine  ) > 1 :
-				print "(e2spt_classaverage)(preprocessing) --shrink provided:", options.shrinkfine
-				simage.process_inplace("math.meanshrink",{"n":options.shrinkfine })
-			#fimage.write_image(options.path + '/imgPrepLpHpSh.hdf',-1)
+			if finetag != 'noshrink':
+				if options.shrinkfine and int( options.shrinkfine  ) > 1 :
+					print "(e2spt_classaverage)(preprocessing) --shrink provided:", options.shrinkfine
+					simage.process_inplace("math.meanshrink",{"n":options.shrinkfine })
+				#fimage.write_image(options.path + '/imgPrepLpHpSh.hdf',-1)
 			
-		if options.preprocessfine:
-			print "(e2spt_classaverage)(preprocessing) --preprocess provided:", options.preprocessfine
-			simage.process_inplace(options.preprocessfine[0],options.preprocessfine[1])
-			#fimage.write_image(options.path + '/imgPrep.hdf',-1)
+			if options.preprocessfine:
+				print "(e2spt_classaverage)(preprocessing) --preprocess provided:", options.preprocessfine
+				simage.process_inplace(options.preprocessfine[0],options.preprocessfine[1])
+				#fimage.write_image(options.path + '/imgPrep.hdf',-1)
+		
+		except:
+			print "\nWarning: Ignore if parameter --maskfile does not exist in the program you ran. Otherwise, something went wrong."
+	
+	
 	preproclst = ''		
 		
 	lines=[]
