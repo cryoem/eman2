@@ -740,6 +740,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		cache_size = -1
 
 		if self.data==None : needresize=True
+		else: needresize=False
 
 		if isinstance(obj, EMMXDataCache) :
 			self.data = obj
