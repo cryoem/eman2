@@ -2002,6 +2002,59 @@ The basic design of EMAN Processors: <br>\
 		}
 	};
 
+	/** This processor can be used to correct errors when reading signed data as unsigned and vice-versa
+	 */
+	class FixSignProcessor:public RealPixelProcessor
+	{
+	  public:
+		string get_name() const
+		{
+			return NAME;
+		}
+		static Processor *NEW()
+		{
+			return new FixSignProcessor();
+		}
+
+		static const string NAME;
+
+		void set_params(const Dict & new_params)
+			{
+				params = new_params;
+				if (params.set_default("byte_stou",0)) mode=1;
+				else if (params.set_default("byte_utos",1)) mode=2;
+			}
+		
+		TypeDict get_param_types() const
+			{
+				TypeDict d;
+				d.put("byte_stou", EMObject::BOOL, "8 bit data signed read -> unsigned");
+				d.put("byte_utos", EMObject::BOOL, "8 bit data unsigned read -> signed");
+				return d;
+			}
+
+	  protected:
+		void process_pixel(float *x) const
+		{
+			switch (mode) {
+			case 1:
+				if (*x<0) *x+=256;
+				break;
+			case 2:
+				if (*x>127) *x-=256;
+				break;
+			}
+				
+		}
+
+		string get_desc() const
+		{
+			return "Fixes errors with reading signed/unsigned data. Need to specify the correct mode.";
+		}
+		
+		int mode=0;
+	};
+
 
 	/**f(x) = 0 if x = 0; f(x) = 1 if x != 0
 	 */

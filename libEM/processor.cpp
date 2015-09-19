@@ -292,6 +292,7 @@ const string BinaryInternalGradientProcessor::NAME = "morph.int_grad.binary";
 const string BinaryTopHatProcessor::NAME = "morph.tophat.binary";
 const string BinaryBlackHatProcessor::NAME = "morph.blackhat.binary";
 const string GrowSkeletonProcessor::NAME = "morph.grow";
+const string FixSignProcessor::NAME = "math.fixmode";
 
 //#ifdef EMAN2_USING_CUDA
 //const string CudaMultProcessor::NAME = "cuda.math.mult";
@@ -310,6 +311,7 @@ template <> Factory < Processor >::Factory()
 	force_add<LoGFourierProcessor>();
 	force_add<DoGFourierProcessor>();
 	force_add<AzSharpProcessor>();
+	force_add<FixSignProcessor>();
 
 	force_add<AmpweightFourierProcessor>();
 	force_add<Axis0FourierProcessor>();
