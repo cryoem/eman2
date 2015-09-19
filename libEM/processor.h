@@ -2023,6 +2023,7 @@ The basic design of EMAN Processors: <br>\
 				params = new_params;
 				if (params.set_default("byte_stou",0)) mode=1;
 				else if (params.set_default("byte_utos",1)) mode=2;
+				else mode=0;
 			}
 		
 		TypeDict get_param_types() const
@@ -2052,7 +2053,7 @@ The basic design of EMAN Processors: <br>\
 			return "Fixes errors with reading signed/unsigned data. Need to specify the correct mode.";
 		}
 		
-		int mode=0;
+		int mode;
 	};
 
 
