@@ -119,16 +119,40 @@ def main():
 #	pws1=pws.calc_radial_dist(ny/2,0,1.0,1)
 #	pws1bg=ctf.low_bg_curve(pws1,ds)
 
-	fit_defocus(pws)
+	df,flipim=fit_defocus(pws)
+	
+	img1=EMData.read_images(args[0],(5,6,7,8))
+	for i in img1:
+		try: img1c.add(i.get_clip(Region(2000,2000,BOXSIZE,BOXSIZE)))
+		except: img1c=i.get_clip(Region(2000,2000,BOXSIZE,BOXSIZE))
+		
+	img2=EMData.read_images(args[0],(12,13,14,15))
+	for i in img2:
+		try: img2c.add(i.get_clip(Region(2000,2000,BOXSIZE,BOXSIZE)))
+		except: img2c=i.get_clip(Region(2000,2000,BOXSIZE,BOXSIZE))
+
+	ccf1=img1c.calc_ccf(img2c)
+	ccf1.process_inplace("normalize")
+	ccf1.process_inplace("xform.phaseorigin.tocenter")
+	img2cf=img2c.do_fft()
+	img2cf.mult(flipim)
+	img2cp=img2cf.do_ift()
+	ccf2=img1c.calc_ccf(img2cp)
+	ccf2.process_inplace("normalize")
+	ccf1.process_inplace("xform.phaseorigin.tocenter")
+	
+	display((ccf1,ccf2),True)
 	
 def fit_defocus(img):
 	ds=1.0/(img["apix_x"]*img["ny"])
 	ns=min(int(floor(.25/ds)),img["ny"]/2)
 
+	# the data curve we are trying to fit
 	oned=np.array(img.calc_radial_dist(ns,0,1.0,1)[1:])
-	oned-=min(oned)
-	oned/=max(oned)
-	
+	oned-=min(oned)	# get rid of bulk background
+	oned/=max(oned)	# normalize a bit for convienience
+
+	# so we can generate simulated curves
 	ctf=EMAN2Ctf()
 	ctf.voltage=300.0
 	ctf.cs=4.7
@@ -142,6 +166,7 @@ def fit_defocus(img):
 	for df in arange(0.6,5,.01):
 		ctf.defocus=df
 		curve=np.array(ctf.compute_1d(ns*2,ds,Ctf.CtfType.CTF_AMP)[1:])
+		# we square the curve (no B-factor), then "normalize" it so constant background won't enter the fit other than edge effects
 		curve*=curve
 		curve-=curve.mean()
 #		plot((s,list(oned)),(s,list(curve)))
@@ -159,6 +184,12 @@ def fit_defocus(img):
 	
 	print "Best defocus ",df
 	plot((dfl,ql),(dfl,qls))
-	return df
+	
+	ctf.defocus=df
+	aliimg=img.copy()
+	ctf.compute_2d_complex(aliimg,Ctf.CtfType.CTF_ALIFILT,None)
+	
+	display(aliimg)
+	return df,aliimg
 
 if __name__ == "__main__":  main()

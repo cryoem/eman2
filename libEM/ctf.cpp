@@ -1169,6 +1169,27 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 			}
 		}
 	}
+	else if (type == CTF_ALIFILT) {
+		double vt=0;
+		for (int y = -ny/2; y < ny/2; y++) {
+			int y2=(y+ny)%ny;
+			int ynx = y2 * nx;
+
+			for (int x = 0; x < nx / 2; x++) {
+				float s = (float)Util::hypot_fast(x,y ) * ds;
+				float gam;
+				if (dfdiff==0) gam=-g1*s*s*s*s+g2*defocus*s*s;
+				else gam=-g1*s*s*s*s+g2*df(atan2((float)y,(float)x))*s*s;
+				float v = cos(gam-acac);
+				v*=v;
+				d[x * 2 + ynx] = v;
+				d[x * 2 + ynx + 1] = 0;
+				vt+=v;
+			}
+		}
+		vt/=nx*ny/2;
+		for (size_t i=0; i<image->get_xsize()*image->get_ysize(); i+=2) d[i]-=vt;
+	}
 	else printf("Unknown CTF image mode\n");
 
 	image->update();

@@ -503,6 +503,7 @@ BOOST_PYTHON_MODULE(libpyAligner2)
 	.value("CTF_POWEVAL", EMAN::Ctf::CTF_POWEVAL)
 	.value("CTF_INTEN", EMAN::Ctf::CTF_INTEN)
 	.value("CTF_NOISERATIO", EMAN::Ctf::CTF_NOISERATIO)
+	.value("CTF_ALIFILT", EMAN::Ctf::CTF_ALIFILT)
     ;
 
 
