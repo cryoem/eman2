@@ -642,6 +642,77 @@ def threshold_params_changes(currentdir, previousdir, th = 0.95, sym = "c1"):
 	return h1,h2,h3,u1,u2,u3
 	"""
 
+def build_defgroups(fi):
+	a = get_im(fi)
+
+	try:
+		stmp = a.get_attr("ptcl_source_image")
+		stmp = EMUtil.get_all_attributes(fi,"ptcl_source_image")
+	except:
+		try:
+			stmp = a.get_attr("ctf")
+			stmp = EMUtil.get_all_attributes(fi,"ctf")
+			for i in xrange(len(stmp)):  stmp[i] = round(stmp[i].defocus,4)
+		except:
+			ERROR("Either ptcl_source_image or ctf has to be present in the header.","meridien",1)
+
+
+	sd = set(stmp)
+	sd = [q for q in sd]
+	sd.sort()
+
+
+	ocup = [0]*len(sd)
+
+	for i in xrange(len(sd)):
+		ocup[i] = stmp.count(sd[i])
+	return  sd, ocup
+
+def compute_sigma(vol, sd, ocup, projdata, partids, partstack, Tracker, myid, main_node, nproc):
+	# input stack of particles comes in preshrank
+	#  input stack contains ALL particles
+	nx = projdata[0].get_xsize()
+	if(Tracker["constants"]["mask3D"] is None):
+		mask = model_circle(Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"],Tracker["constants"]["nnxo"])
+	else:
+		mask = get_im(Tracker["constants"]["mask3D"])
+	if( nx != Tracker["constants"]["nnxo"]):
+		mask = Util.window(rot_shift3D(mask,scale=float(nx)/float(Tracker["constants"]["nnxo"])),nx,nx,nx)
+	nv = vol.get_xsize()
+	if( nv != nx):
+		vol = Util.window(rot_shift3D(vol,scale=float(nx)/float(nv)),nx,nx,nx)
+	volf,kb = prep_vol(vol)
+
+	nv = rops(projdata[0]).get_xsize()
+	tsd = model_blank(nv,len(sd))
+	tocp = model_blank(len(sd))
+
+	for i in xrange(len(projdata)):
+		phi, theta, psi, sxo, syo = get_params_proj(projdata[i])
+		prj = prgs(volf,kb,[phi, theta, psi, sxo, syo])
+		try:
+			stmp = a.get_attr("ptcl_source_image")
+		except:
+			stmp = a.get_attr("ctf")
+			stmp = round(stmp.defocus,4)
+		indx = sd.index(stemp)
+		if Tracker["constants"]["CTF"]:
+			ct = projdata[i].get_attr("ctf")
+			sig = rops(filt_ctf(fft(prj),ct)-fft(projdata[i]))
+		else:
+			sig = rops(prj - projdata[i])
+		for k in xrange(nv):
+			tsd.set_value_at(k,indx,tsd.get_value_at(k,indx)+sig.get_value_at(k))
+		tocp[indx] += 1
+	
+	reduce_EMData_to_root(tsd, myid, main_node)
+	tocp = mpi_reduce(tocp, len(tocp), MPI_INT, MPI_SUM, main_node, MPI_COMM_WORLD)
+	if( myid == main_node):
+		for i in xrange(len(tocp)):
+			for k in xrange(nv):
+				tsd.set_value_at(k,i,tsd.get_value_at(k,i)/tocp[i])
+	bcast_EMData_to_all(tsd, myid, source_node = 0)
+	return tsd
 
 
 def subdict(d,u):
