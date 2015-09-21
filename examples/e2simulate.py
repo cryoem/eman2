@@ -19,7 +19,7 @@ def main():
 	parser.add_argument("--bfactor", type=float, help="Bfactor to simulate",default=200)
 	parser.add_argument("--defocus", type=float, help="Amount of defocus to simulate",default=1.4)
 	parser.add_argument("--ampcont", type=float, help="Amount of amplitude contrast to simulate",default=0.1)
-	parser.add_argument("--nptcls","-n",type=int, help="Number of particles to include in simulated micrograph",default=100)
+	parser.add_argument("--nptcls","-n",type=int, help="Number of particles to include in simulated micrograph",default=80)
 	parser.add_argument("--resolution", type=int, help="Resolution to use during pdb to mrc conversion. Defaults to 2.5*apix.",default=None)
 	parser.add_argument("--sym", type=str, help="Symmetry of specimen. Default is c1.",default="c1")
 	parser.add_argument("--grid",action="store_true",default=False,help="Place particles in a grid")
@@ -50,13 +50,14 @@ def main():
 	else:
 		struct=EMData(args[0])
 		sname=args[0]
+
 	xb=struct.get_xsize()
 	yb=struct.get_ysize()
 	zb=struct.get_zsize()
 
 	if xb != zb or yb != zb or xb != yb:
 		if options.verbose: print("Making structure's rectangular box larger and cubic to ensure quality projections")
-		ns=2*max(xb,yb,zb)
+		ns=max(xb,yb,zb)
 		n=int(ns/2)
 		clip='{}_{}.hdf'.format(base,ns)
 		os.system('e2proc3d.py {} {} --clip {},{},{},{},{},{}'.format(fname,clip,ns,ns,ns,n,n,n))
@@ -98,15 +99,17 @@ def main():
 	if not os.path.isfile(prjs):
 		if options.verbose: print("Randomly projecting map {} times".format(nprjs))
 		cores=multiprocessing.cpu_count()
-		os.system('e2project3d.py {} --outfile={} --orientgen=rand:n={}:phitoo=true:scale={} --sym={} --projector=standard --parallel=thread:{}'.format(sname,prjs,nprjs,sym,,options.scale,cores))
+		os.system('e2project3d.py {} --outfile={} --orientgen=rand:n={}:phitoo=true --sym={} --projector=standard --parallel=thread:{}'.format(sname,prjs,nprjs,sym,cores))
 	else:
 		print("Using existing file of projections. If you wish to generate new (or more) projections, simply move or delete {}.".format(prjs))
 
 	if options.verbose: print("Inserting projections into micrograph")
 
+	t = Transform({"type":"eman","scale":options.scale})
 	mg = EMData(xt,yt)
 	for i,c in enumerate(coords):
 		prj = EMData(xt,yt)
+		prj.transform(t)
 		prj.insert_clip(EMData(prjs,i),(int(c[0]),int(c[1])))
 		mg.add(prj)
 
