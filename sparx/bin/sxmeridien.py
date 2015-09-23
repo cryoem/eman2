@@ -1226,7 +1226,8 @@ def getalldata(stack, myid, nproc):
 	data = EMData.read_images(stack, range(image_start, image_end))
 	return data
 
-
+"""
+# move into utilities 09/23/2015
 def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc, preshift = False):
 	# The function will read from stack a subset of images specified in partids
 	#   and assign to them parameters from partstack with optional CTF application and shifting of the data.
@@ -1291,7 +1292,7 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc,
 	assert( nxinit == data[0].get_xsize() )  #  Just to make sure.
 	#oldshifts = wrap_mpi_gatherv(oldshifts, main_node, MPI_COMM_WORLD)
 	return data, oldshifts
-
+"""
 
 def metamove(projdata, oldshifts, Tracker, partids, partstack, outputdir, procid, myid, main_node, nproc):
 	from applications import slocal_ali3d_base, sali3d_base
@@ -1404,7 +1405,7 @@ def print_dict(dict,theme):
 #
 def main():
 
-	from utilities import write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle
+	from utilities import write_text_row, drop_image, model_gauss_noise, get_im, set_params_proj, wrap_mpi_bcast, model_circle, get_shrink_data
 	import user_functions
 	from applications import MPI_start_end
 	from optparse import OptionParser
@@ -1417,6 +1418,7 @@ def main():
 	import os
 	import time
 	import socket
+
 	
 	# ------------------------------------------------------------------------------------
 	# PARSE COMMAND OPTIONS
