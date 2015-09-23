@@ -4380,8 +4380,8 @@ EMData *SubtractOptProcessor::process(const EMData * const image)
 			norm[r]+=(double)(v2.real()*v2.real()+v2.imag()*v2.imag());
 		}
 	}
-	for (int i=0; i<ny2; i++) rad[i]/=norm[i];
-
+	for (int i=1; i<ny2; i++) rad[i]/=norm[i];
+	rad[0]=0;
 //	FILE *out=fopen("dbug.txt","w");
 //	for (int i=0; i<ny2; i++) fprintf(out,"%lf\t%lf\t%lf\n",(float)i,rad[i],norm[i]);
 //	fclose(out);

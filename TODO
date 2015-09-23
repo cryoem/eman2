@@ -53,7 +53,7 @@ High priority
 Low priority
 7/25/12		In orthographic projection in 3-D viewer, mouse wheel behavior is inverted
 11/28/12	Fix EMAN1 CTF reader. Fails unit test
-
+9/23/15		Show stack/ Filter tool only work on the first image in 3D stacks
 
 Complete
 7/17/15		added 'single' orientation generator

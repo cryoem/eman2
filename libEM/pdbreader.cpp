@@ -216,7 +216,10 @@ bool PDBReader::read_from_pdb(const char *file)
 			atomName.push_back(pWords[count].substr(12,4));
 			residueName.push_back(pWords[count].substr(17,3));
 			chainId.push_back(pWords[count].substr(21,1));
-			elementSym.push_back(pWords[count].substr(76,2));
+			if (pWords[count].size()>78)
+				elementSym.push_back(pWords[count].substr(76,2));
+			else
+				elementSym.push_back(string("Null"));
 
 			float x, y, z, tf;
 			int an, sn;
