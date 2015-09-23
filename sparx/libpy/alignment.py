@@ -1767,7 +1767,7 @@ def proj_ali_incore_local_zoom(data, refrings, list_of_reference_angles, numr, x
 			t2.set_trans(Vec2f(-s2x, -s2y))
 
 	# This trick assures that transformation is only set when at least one reference is found.
-	if( s2x ):
+	if( s2x != None ):
 		data.set_attr("xform.projection", t2)
 		from pixel_error import max_3D_pixel_error
 		ts = t2.get_sym_proj(sym)
