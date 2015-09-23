@@ -283,7 +283,10 @@ def main():
 		elif infile[0]==":" :				# special flag to create a new image
 			num_inp_images=2
 		elif os.path.isfile(infile) :
-			num_inp_images = EMUtil.get_image_count(infile)
+			try :
+				num_inp_images = EMUtil.get_image_count(infile)
+			except :
+				num_inp_images = -1
 
 			if num_inp_images == 1 :
 				[nxinp, nyinp, nzinp] = gimme_image_dimensions3D(infile)
@@ -468,8 +471,12 @@ def main():
 					sys.stdout.flush()
 					lasttime = time.time()
 
-			if imagelist and (not imagelist[i]):
-				continue
+			if imagelist :
+				if i < len(imagelist) :
+					if not imagelist[i] :
+						continue
+				else :
+					continue
 
 			if options.split and options.split > 1:
 				outfile = outfilename_no_ext + ".%02d." % (i % options.split) + outfilename_ext
