@@ -1,4 +1,4 @@
-#!/home/zhuang/EMAN2/extlib/bin/python
+#!/usr/bin/env python
 #
 #  08/13/2015
 #  New version.  
