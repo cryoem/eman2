@@ -116,7 +116,7 @@ To run this program, you would normally specify only the following options:
                          the number of cores that can be used on a single machine.
 
   Optional:
-  --apix=<A/pix>         The value will normally come from the particle data if present. You can override with this.
+  --apix=<A/pix>         The value will normally come from the particle data if present. You can override if necessary.
   --sep=<classes/ptcl>   each particle will be put into N classes. Improves contrast at cost of rotational blur.
   --classkeep=<frac>     fraction of particles to use in final average. Default 90%%. Should be >50%%
   --m3dkeep=<frac>       fraction of class-averages to use in 3-D map. Default=auto
@@ -157,7 +157,7 @@ not need to specify any of the following other than the ones already listed abov
 	parser.add_argument("--iter", dest = "iter", type = int, default=6, help = "The total number of refinement iterations to perform. Default=auto", guitype='intbox', row=10, col=2, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--mass", default=0, type=float,help="The ~mass of the particle in kilodaltons, used to run normalize.bymass. Due to resolution effects, not always the true mass.", guitype='floatbox', row=12, col=0, rowspan=1, colspan=1, mode="refinement['self.pm().getMass()']")
 	parser.add_header(name="optional", help='Just a visual separation', title="Optional:", row=14, col=0, rowspan=1, colspan=3, mode="refinement")
-	parser.add_argument("--apix", default=0, type=float,help="The angstrom per pixel of the input particles. This argument is required if you specify the --mass argument. If unspecified (set to 0), the convergence plot is generated using either the project apix, or if not an apix of 1.", guitype='floatbox', row=16, col=0, rowspan=1, colspan=1, mode="refinement['self.pm().getAPIX()']")
+	parser.add_argument("--apix", default=0, type=float,help="The angstrom per pixel of the input particles. Normally set to 0, which will read the value from the header of the input file", guitype='floatbox', row=16, col=0, rowspan=1, colspan=1, mode="refinement[0]")
 	parser.add_argument("--sep", type=int, help="The number of classes each particle can contribute towards (normally 1). Increasing will improve SNR, but produce rotational blurring.", default=-1)
 	parser.add_argument("--classkeep",type=float,help="The fraction of particles to keep in each class, based on the similarity score. (default=0.9 -> 90%%)", default=0.9, guitype='floatbox', row=18, col=0, rowspan=1, colspan=1, mode="refinement")
 	parser.add_argument("--classautomask",default=False, action="store_true", help="This will apply an automask to the class-average during iterative alignment for better accuracy. The final class averages are unmasked.",guitype='boolbox', row=20, col=1, rowspan=1, colspan=1, mode="refinement")
@@ -280,7 +280,8 @@ satisfied with the results with speed=5 you may consider reducing this number as
 	total_procs = 5*options.iter
 
 	if options.automask3d: automask_parms = parsemodopt(options.automask3d) # this is just so we only ever have to do it
-	apix = get_apix_used(options)
+	if options.apix>0 : apix=options.apix
+	else : apix=EMData(options.input,0,True)["apix_x"]
 
 	if options.targetres<apix*2:
 		print "ERROR: Target resolution is smaller than 2*A/pix value. This is impossible."
@@ -986,36 +987,6 @@ For the final completed iteration, the unmasked even and odd volumes are also re
 
 """.format(path=options.path,stars="*"*len(options.path))
 
-def get_apix_used(options):
-	'''
-	Just an encapsulation apix retrieval
-	Basically, if the apix argument is in the options, that's what you get
-	Else the project db is checked for the global.apix parameter
-	Else you just get 1
-	'''
-	apix = 0.0
-	if options.apix!=None and options.apix>0: return options.apix
-	try:
-		prj=js_open_dict("info/project.json")
-		return prj["global.apix"]
-	except: pass
-
-	try:
-		img=EMData(options.input,0,True)
-		try: apix=img["ctf"].apix
-		except: apix=img["apix_x"]
-		return apix
-	except: pass
-
-
-	else:
-		img=EMData(options.input,0,True)
-		try: apix=img["ctf"].apix
-		except: apix=img["apix_x"]
-
-	print "ERROR: Could not find a valid A/pix value anywhere. Please specify."
-
-	sys.exit(1)
 
 def run(command):
 	"Mostly here for debugging, allows you to control how commands are executed (os.system is normal)"

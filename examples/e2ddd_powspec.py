@@ -149,6 +149,7 @@ def fit_defocus(img):
 
 	# the data curve we are trying to fit
 	oned=np.array(img.calc_radial_dist(ns,0,1.0,1)[1:])
+	oned=log10(oned)
 	oned-=min(oned)	# get rid of bulk background
 	oned/=max(oned)	# normalize a bit for convienience
 
@@ -170,10 +171,13 @@ def fit_defocus(img):
 		curve*=curve
 		curve-=curve.mean()
 #		plot((s,list(oned)),(s,list(curve)))
+
+#		zeroes=[ctf.zero(i) for i in xrange(15)
+#		onedbg=bgsub(oned,zeroes)
 		
 		qual=curve.dot(oned)
 
-		print df,qual
+#		print df,qual
 		dfl.append(df)
 		ql.append(qual)
 	

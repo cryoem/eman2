@@ -1,0 +1,83 @@
+#!/usr/bin/env python
+
+# This is a simple example showing how to generate a histogram from a text file
+# specify the filename and column number with an optional number of bins, column number 0 indexed
+# Note that outliers are filtered out (>sigma*4 twice)
+from EMAN2 import *
+from numpy import *
+from sys import argv,exit
+try:
+	import matplotlib
+#	matplotlib.use("AGG")
+	import matplotlib.pyplot as plt
+	pltcolors=["k","b","g","r","m","c","darkblue","darkgreen","darkred","darkmagenta","darkcyan","0.5"]
+except:
+	print "ERROR: Matplotlib not available, cannot generate histogram"
+	sys.exit(1)
+
+def main():
+	progname = os.path.basename(sys.argv[0])
+	usage = """Usage: e2spt_stat.py [options] 
+Note that this program is not part of the original e2spt hierarchy, but is part of an experimental refactoring.
+
+This program will take an input stack of subtomograms and a reference volume, and perform a missing-wedge aware alignment of each particle to the reference. If --goldstandard is specified, then even and odd particles will be aligned to different perturbed versions of the reference volume, phase-randomized past the specified resolution."""
+
+	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
+
+	parser.add_argument("--path",type=str,default=None,help="Path to a folder containing current results (default = highest spt_XX)")
+	parser.add_argument("--bins",type=int,help="Number of bins to use in the histogram",default=100)
+	parser.add_argument("--gui",action="store_true",help="If set will open an interactive plot with the results",default=False)
+	#parser.add_argument("--threads", default=4,type=int,help="Number of alignment threads to run in parallel on a single computer. This is the only parallelism supported by e2spt_align at present.", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement")
+	#parser.add_argument("--goldstandard",type=float,help="If specified, will phase randomize the even and odd references past the specified resolution (in A, not 1/A)",default=0)
+	#parser.add_argument("--saveali",action="store_true",help="Save a stack file (aliptcls.hdf) containing the aligned subtomograms.",default=False)
+	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+
+	(options, args) = parser.parse_args()
+
+	if options.path == None:
+		fls=[int(i[-2:]) for i in os.listdir(".") if i[:4]=="spt_" and len(i)==6 and str.isdigit(i[-2:])]
+		if len(fls)==0 : 
+			print "Error, cannot find any spt_XX folders"
+			sys.exit(2)
+		options.path = "spt_{:02d}".format(max(fls))
+
+	angs=js_open_dict("{}/particle_parms.json".format(options.path))
+	data=[angs[a]["score"] for a in angs.keys()]
+	col=array(data)
+
+	# This clears out some any serious outliers
+	m=col.mean()
+	s=col.std()
+	col=col[abs(col-m)<s*4.0]
+
+	m=col.mean()
+	s=col.std()
+	col=col[abs(col-m)<s*4.0]
+
+	if options.verbose:
+		lz=len(col[col<0])
+		gz=len(col[col>0])
+		print "%1.2f (%d) less than zero"%(float(lz)/(lz+gz),lz)
+		print "%1.2f (%d) less than zero"%(float(gz)/(lz+gz),gz)
+
+	his=histogram(col,options.bins)
+
+	#out=file("hist/"+argv[1],"w")
+	#for i in xrange(len(his[0])): out.write("%f\t%f\n"%(his[1][i],his[0][i]))
+
+	fig = plt.figure()
+	ax = plt.axes([.15,.15,.8,.8])
+	ax.tick_params(axis='x', labelsize=18)
+	ax.tick_params(axis='y', labelsize=18)
+
+	#plt.title("Convergence plot (not resolution)")
+	plt.xlabel("Score",fontsize=24)
+	plt.ylabel("Number of Particles",fontsize=24)
+
+	plt.bar(his[1][:-1],his[0],his[1][1]-his[1][0])
+	if options.gui: plt.show()
+	plt.savefig("{}/hist_score.pdf".format(options.path))
+
+if __name__ == "__main__":
+	main()

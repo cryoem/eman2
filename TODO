@@ -1,5 +1,7 @@
 High priority
 2.1
+9/23/15		Seriously, got to do something about centering.
+9/23/15		Add highsym and other new programs to gui workflow
 6/27/13		DDD movies, allow 'usefilt'-like behavior for low/high dose particles
 7/22/12		Counting in filename entry in GUI (was taking a LOOONG time). Fix with new caching system.
 8/2/12		More dimensions in tilt validate
