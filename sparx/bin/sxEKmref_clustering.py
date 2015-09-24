@@ -6,13 +6,27 @@
 #
 import os
 import global_def
-from global_def import *
-from optparse import OptionParser
+from   global_def import *
+from   optparse  import OptionParser
 import sys
-from numpy import array
+from   numpy     import array
 import types
-from logger import Logger, BaseLogger_Files
+from   logger    import Logger, BaseLogger_Files
 
+def print_upper_triangular_matrix(data_table_dict,N_indep,log_main):
+        msg =""
+        for i in xrange(N_indep):
+                msg +="%7d"%i
+        log_main.add(msg)
+        for i in xrange(N_indep):
+                msg ="%5d "%i
+                for j in xrange(N_indep):
+                        if i<j:
+                                msg +="%5.2f "%data_table_dict[(i,j)]
+                        else:
+                                msg +="      "
+                log_main.add(msg)
+			
 def print_a_line_with_timestamp(string_to_be_printed ):                 
 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
  	print(line,string_to_be_printed)
@@ -108,7 +122,7 @@ def get_K_equal_assignment(input_list,K):
 		return None
 	if type(input_list) == StringType:
 		 ll=read_text_file(input_list)
-	elif type(input_list) == ListType:
+	elif type(input_list) == types.ListType:
 		ll=input_list
 	else:
 		print "Error"
@@ -120,9 +134,559 @@ def partition_to_groups(alist,K):
 		for imeb in xrange(len(alist)):
 			if alist[imeb] ==igroup:
 				this_group.append(imeb)
+		this_group.sort()
 		res.append(this_group)
-	return res	
+	return res
+
+def partition_independent_runs(run_list,K):
+	indep_runs_groups={}
+	for indep in xrange(len(run_list)):
+		this_run = run_list[indep]
+		groups = partition_to_groups(this_run,K)
+		indep_runs_groups[indep]=groups 
+	return indep_runs_groups
+
+def get_outliers(total_number,plist):
+        tlist={}
+        for i in xrange(total_number):
+                tlist[i]=i
+        for a in plist:
+                del tlist[a]
+        out =[]
+        for a in tlist:
+                out.append(a)
+        return out
+
+def merge_groups(stable_members_list):
+	alist=[]
+	for i in xrange(len(stable_members_list)):
+		for j in xrange(len(stable_members_list[i])):
+			alist.append(stable_members_list[i][j])
+	return alist
+
+def save_alist(Tracker,name_of_the_text_file,alist):
+	from utilities import write_text_file
+	import os
+	log       =Tracker["constants"]["log_main"]
+	myid      =Tracker["constants"]["myid"]
+	main_node =Tracker["constants"]["main_node"]
+	dir_to_save_list =Tracker["this_dir"]
+	if myid==main_node:
+		file_name=os.path.join(dir_to_save_list,name_of_the_text_file)
+		write_text_file(alist, file_name)
+
+def reconstruct_grouped_vols(Tracker,name_of_grouped_vols,grouped_plist):
+	from mpi import  MPI_COMM_WORLD,mpi_barrier
+	from applications import recons3d_n_MPI
+	from utilities import cmdexecute
+	import os
+	myid		 = Tracker["constants"]["myid"]
+	main_node	 = Tracker["constants"]["main_node"]
+	main_dir         = Tracker["this_dir"]
+	number_of_groups = Tracker["number_of_groups"]
+	data_stack       = Tracker["this_data_stack"]
+	log              = Tracker["constants"]["log_main"]
+	####
+	if myid ==main_node:
+		log.add("Reconstruct a group of volumes")
+	for igrp in xrange(number_of_groups):
+		#pid_list=Tracker["two_way_stable_member"][igrp]
+		pid_list =grouped_plist[igrp]
+                vol_stack=os.path.join(main_dir,"TMP_init%03d.hdf"%igrp)
+                tlist=[]
+                for b in pid_list:
+                	tlist.append(int(b))
+                recons3d_n_MPI(data_stack,tlist,vol_stack,Tracker["constants"]["CTF"],Tracker["constants"]["snr"],\
+                Tracker["constants"]["sign"],Tracker["constants"]["npad"],Tracker["constants"]["sym"], \
+		Tracker["constants"]["listfile"],Tracker["constants"]["group"],\
+                Tracker["constants"]["verbose"],Tracker["constants"]["xysize"],Tracker["constants"]["zsize"])
+                newvols=os.path.join(main_dir,"TMP_init*.hdf")
+        if myid==main_node:
+       		#cmd ="{} {} {}".format("sxcpy.py",newvols,Tracker["EKKMREF"][inew]["refvols"]) # Make stacks
+		cmd ="{} {} {}".format("sxcpy.py",newvols,name_of_grouped_vols)  
+        	cmdexecute(cmd)
+                cmd ="{} {}".format("rm",newvols)
+                cmdexecute(cmd)
+        mpi_barrier(MPI_COMM_WORLD)
+
+def N_independent_reconstructions(Tracker):
+	from applications import recons3d_n_MPI
+	from utilities import write_text_file, read_text_file, cmdexecute
+	import os
+	from mpi import mpi_barrier,MPI_COMM_WORLD
+	from random import shuffle
+	myid      =Tracker["constants"]["myid"]
+	main_node =Tracker["constants"]["main_node"]
+	initdir   =Tracker["this_dir"]
+	data_stack=Tracker["this_data_stack"]
+	total_stack =Tracker["this_total_stack"] 
+	log_main =Tracker["constants"]["log_main"]
+	if myid ==main_node:
+		log_main.add("-----------Independent reconstructions---------------")
+        for irandom in xrange(Tracker["constants"]["indep_runs"]):
+        	ll=range(total_stack)
+                shuffle(ll)
+                if myid ==main_node:
+                	log_main.add("The initial random assignments are "+os.path.join(initdir,"random_list%d.txt"%irandom))
+                        write_text_file(ll,os.path.join(initdir,"random_list%d.txt"%irandom))
+                        log_main.add("preset ali3d_parameters ")
+	mpi_barrier(MPI_COMM_WORLD)
+	if myid ==main_node:
+         	if Tracker["importali3d"]!="":
+         		cmd = "{} {} {} {}".format("sxheader.py",data_stack,"--params=xform.projection", "--import="+ \
+				Tracker["importali3d"])
+                	cmdexecute(cmd)
+			log_main.add("ali3d_parameters is preset to "+Tracker["importali3d"])
+		else:
+			log_main.add(" Parameters for this run are not altered !")
+	for iter_indep in xrange(Tracker["constants"]["indep_runs"]):
+       		ll=read_text_file(os.path.join(initdir,"random_list%d.txt"%iter_indep))
+                linit_list =[]
+                for igrp in xrange(Tracker["number_of_groups"]):
+                       	alist=ll[(total_stack*igrp)//Tracker["number_of_groups"]:(total_stack*(igrp+1))//Tracker["number_of_groups"]]
+                       	alist.sort()
+                       	linit_list.append(alist)
+                	linit_list_file_name=os.path.join(initdir,"list1_grp%0d_%0d.txt"%(igrp,iter_indep))
+			if myid ==main_node:
+                		write_text_file(alist,linit_list_file_name)
+                       	volstack =os.path.join(initdir,"TMP_vol%03d.hdf"%igrp)
+                       	recons3d_n_MPI(data_stack,alist,volstack,Tracker["constants"]["CTF"],Tracker["constants"]["snr"],Tracker["constants"]["sign"],\
+                       	Tracker["constants"]["npad"],Tracker["constants"]["sym"],Tracker["constants"]["listfile"],Tracker["constants"]["group"],\
+			Tracker["constants"]["verbose"],Tracker["constants"]["xysize"],Tracker["constants"]["zsize"])
+                newvols=os.path.join(initdir,"TMP_vol*.hdf")
+                computed_refvol_name=os.path.join(initdir,"vol_run_%03d.hdf"%iter_indep)
+                filtered_volumes =os.path.join(initdir,"volf_run_%03d.hdf"%iter_indep)
+                filter_options ="--process=filter.lowpass.tanh:cutoff_abs="+str(Tracker["low_pass"])+":fall_off=.1"
+                if myid==main_node:
+                       cmd ="{} {} {}".format("sxcpy.py",newvols,computed_refvol_name) # Make stacks 
+                       cmdexecute(cmd)
+                       cmd ="{} {}".format("rm",newvols)
+                       cmdexecute(cmd)
+                       cmd ="{}  {}  {} {}".format("e2proc3d.py",computed_refvol_name,filtered_volumes,filter_options)
+                       cmdexecute(cmd)
+		mpi_barrier(MPI_COMM_WORLD)
+
+def N_independent_Kmref(mpi_comm,Tracker):
+	from mpi import mpi_barrier,MPI_COMM_WORLD
+	from applications import Kmref_ali3d_MPI
+	from utilities import cmdexecute
+	from logger import Logger,BaseLogger_Files
+	myid            = Tracker["constants"]["myid"]
+	main_node       = Tracker["constants"]["main_node"]
+	log_main        = Tracker["constants"]["log_main"]
+	data_stack      = Tracker["this_data_stack"]
+	if myid ==main_node:
+		log_main.add("-----------%5d independent runs of Kmref -----------------"%Tracker["constants"]["indep_runs"])
+	for iter_indep in xrange(Tracker["constants"]["indep_runs"]):
+        	log_Kmref       =Logger(BaseLogger_Files())
+                log_Kmref.prefix=Tracker["KMREF"][iter_indep]["output_dir"]+"/"
+                empty_group =Kmref_ali3d_MPI(data_stack,Tracker["KMREF"][iter_indep]["refvols"],Tracker["KMREF"][iter_indep]["output_dir"], \
+		Tracker["constants"]["mask3D"],Tracker["constants"]["focus3Dmask"],Tracker["constants"]["maxit"],\
+		Tracker["constants"]["ir"],Tracker["constants"]["radius"],Tracker["constants"]["rs"],\
+                Tracker["constants"]["xr"],Tracker["constants"]["yr"],Tracker["constants"]["ts"],Tracker["constants"]["delta"],\
+		Tracker["constants"]["nassign"],Tracker["constants"]["nrefine"],Tracker["constants"]["an"],Tracker["constants"]["center"],\
+                Tracker["constants"]["CTF"],Tracker["constants"]["snr"],Tracker["constants"]["ref_a"],Tracker["constants"]["sym"],\
+                Tracker["constants"]["user_func"],Tracker["constants"]["npad"],Tracker["constants"]["debug"],\
+		Tracker["constants"]["fourvar"],Tracker["constants"]["stoprnct"],mpi_comm,log_Kmref)
+                if myid==main_node:
+                	cmd = "{} {} {} {}".format("sxheader.py",data_stack,"--params=group", \
+					"--export="+Tracker["KMREF"][iter_indep]["partition"])
+                	cmdexecute(cmd)
+                mpi_barrier(MPI_COMM_WORLD)
 	
+def do_independent_EKmref(Tracker):
+	from mpi import mpi_barrier,MPI_COMM_WORLD
+	from applications import Kmref_ali3d_MPI
+	from utilities import cmdexecute
+	from logger import Logger,BaseLogger_Files
+	myid            = Tracker["constants"]["myid"]
+        main_node       = Tracker["constants"]["main_node"]
+        log_main        = Tracker["constants"]["log_main"]
+        data_stack      = Tracker["this_data_stack"]
+	iruns           = Tracker["this_iruns"]
+	for iter_indep in xrange(iruns):
+		log_Kmref       =Logger(BaseLogger_Files())
+		log_Kmref.prefix=Tracker["EKMREF"][iter_indep]["output_dir"]+"/"
+		empty_group =Kmref_ali3d_MPI(data_stack,Tracker["EKMREF"][iter_indep]["refvols"],Tracker["EKMREF"][iter_indep]["output_dir"], \
+                Tracker["constants"]["mask3D"],Tracker["constants"]["focus3Dmask"],Tracker["constants"]["maxit"],\
+                Tracker["constants"]["ir"],Tracker["constants"]["radius"],Tracker["constants"]["rs"],\
+                Tracker["constants"]["xr"],Tracker["constants"]["yr"],Tracker["constants"]["ts"],Tracker["constants"]["delta"],\
+		Tracker["constants"]["an"],Tracker["constants"]["center"],\
+                Tracker["constants"]["nassign"],Tracker["constants"]["nrefine"],\
+                Tracker["constants"]["CTF"],Tracker["constants"]["snr"],Tracker["constants"]["ref_a"],Tracker["constants"]["sym"],\
+                Tracker["constants"]["user_func"],Tracker["constants"]["npad"],Tracker["constants"]["debug"],\
+                Tracker["constants"]["fourvar"],Tracker["constants"]["stoprnct"],Tracker["constants"]["mpi_comm"],log_Kmref)
+                if myid==main_node:
+                        cmd = "{} {} {} {}".format("sxheader.py",data_stack,"--params=group",\
+					 "--export="+Tracker["EKMREF"][iter_indep]["partition"])
+                        cmdexecute(cmd)
+                mpi_barrier(MPI_COMM_WORLD)
+
+def N_independent_mref(mpi_comm,Tracker):
+	from mpi import mpi_barrier,MPI_COMM_WORLD
+	from applications import mref_ali3d_MPI
+	from utilities import cmdexecute
+	from logger import Logger,BaseLogger_Files
+	myid      = Tracker["constants"]["myid"]
+	main_node = Tracker["constants"]["main_node"]
+	log_main  = Tracker["constants"]["log_main"]
+	data_stack= Tracker["this_data_stack"]
+	if myid ==main_node:
+        	log_main.add("-----------%5d independent runs of Equal Kmeans -----------------"%Tracker["constants"]["indep_runs"])
+	for iter_indep in xrange(Tracker["constants"]["indep_runs"]):
+		if myid==main_node:
+			log_main.add(" %d th run  starts !  "%iter_indep)
+        	outdir = Tracker["EMREF"][iter_indep]["output_dir"]
+                #doit, keepchecking = checkstep(outdir, keepchecking, myid, main_node)
+                log_Emref=Logger(BaseLogger_Files())
+                log_Emref.prefix=outdir+"/"
+                if Tracker["importali3d"]!="" and myid ==main_node:
+                	cmd = "{} {} {} {}".format("sxheader.py",data_stack,"--params=xform.projection", \
+				 "--import="+Tracker["importali3d"])
+                        cmdexecute(cmd)
+               	mpi_barrier(MPI_COMM_WORLD)
+               	mref_ali3d_MPI(data_stack,Tracker["EMREF"][iter_indep]["refvols"],outdir,Tracker["constants"]["mask3D"] ,\
+               	Tracker["constants"]["focus3Dmask"],Tracker["constants"]["maxit"],Tracker["constants"]["ir"],\
+		Tracker["constants"]["radius"],Tracker["constants"]["rs"],Tracker["constants"]["xr"],\
+		Tracker["constants"]["yr"],Tracker["constants"]["ts"],\
+               	Tracker["constants"]["delta"],Tracker["constants"]["an"],Tracker["constants"]["center"],\
+		Tracker["constants"]["nassign"],Tracker["constants"]["nrefine"],\
+               	Tracker["constants"]["CTF"],Tracker["constants"]["snr"],Tracker["constants"]["ref_a"],Tracker["constants"]["sym"],\
+               	Tracker["constants"]["user_func"],Tracker["constants"]["npad"],Tracker["constants"]["debug"],\
+		Tracker["constants"]["fourvar"],Tracker["constants"]["stoprnct"], mpi_comm,log_Emref)
+               	if myid==main_node:
+             		cmd = "{} {} {} {}".format("sxheader.py",Tracker["this_data_stack"],"--params=group",\
+			 "--export="+Tracker["EMREF"][iter_indep]["partition"])
+                        cmdexecute(cmd)
+                        if Tracker["constants"]["nrefine"]:
+                        	cmd = "{} {} {} {}".format("sxheader.py",Tracker["this_data_stack"],"--params=xform.projection",\
+				 "--export="+Tracker["EMREF"][iter_indep]["ali3d"])
+                        	cmdexecute(cmd)
+		mpi_barrier(MPI_COMM_WORLD)
+
+def prepare_EMREF_dict(Tracker):
+	main_dir =Tracker["this_dir"]
+	EMREF_iteration  ={}
+        for iter_indep in xrange(Tracker["constants"]["indep_runs"]):
+        	output_for_this_run ={}
+        	output_for_this_run["output_dir"]= os.path.join(main_dir,"EMREF_independent_%03d"%iter_indep)
+        	output_for_this_run["partition"] = os.path.join(output_for_this_run["output_dir"],"list2.txt")
+        	output_for_this_run["refvols"]   = os.path.join(main_dir,"volf_run_%03d.hdf"%iter_indep)
+        	output_for_this_run["ali3d"]     = os.path.join(output_for_this_run["output_dir"],"ali3d_params.txt")
+        	EMREF_iteration[iter_indep]=output_for_this_run
+        Tracker["EMREF"]=EMREF_iteration
+
+def prepare_KMREF_dict(Tracker):
+	main_dir =Tracker["this_dir"]
+	KMREF_iteration  ={}
+        for iter_indep in xrange(Tracker["constants"]["indep_runs"]):
+        	output_for_this_run ={}
+                output_for_this_run["output_dir"]= os.path.join(main_dir,"KMREF_independent_%03d"%iter_indep)
+                output_for_this_run["partition"] = os.path.join(output_for_this_run["output_dir"],"list2.txt")
+                output_for_this_run["refvols"]   = os.path.join(main_dir,"volf_run_%03d.hdf"%iter_indep)
+                output_for_this_run["ali3d"]     = os.path.join(output_for_this_run["output_dir"],"ali3d_params.txt")
+                KMREF_iteration[iter_indep]=output_for_this_run
+        Tracker["KMREF"]=KMREF_iteration
+
+def set_refvols_table(initdir,vol_pattern,Tracker):
+	# vol_pattern="volf_run_%03d.hdf"; volf_stable_%3d.hdf
+	import os
+	initial_random_vol={}
+        for iter_indep in xrange(Tracker["constants"]["indep_runs"]):
+        	filtered_volumes =os.path.join(initdir,vol_pattern%iter_indep)
+                initial_random_vol[iter_indep]=filtered_volumes
+        Tracker["refvols"]=initial_random_vol
+
+def prepare_EKMREF_dict(Tracker):
+	main_dir = Tracker["this_dir"]
+	KMREF_iteration  ={}
+        for iter_indep in xrange(Tracker["constants"]["indep_runs"]):
+        	output_for_this_run ={}
+                output_for_this_run["output_dir"]=os.path.join(main_dir,"EKMREF%03d"%iter_indep)
+                output_for_this_run["partition"] =os.path.join(output_for_this_run["output_dir"],"list2.txt")
+                output_for_this_run["ali3d"]     = os.path.join(output_for_this_run["output_dir"],"ali3d_params.txt")
+                KMREF_iteration[iter_indep]=output_for_this_run
+        Tracker["EKMREF"]=KMREF_iteration
+
+def partition_ali3d_params_of_outliers(Tracker):
+	from utilities import read_text_file,write_text_file
+	from mpi import mpi_barrier, MPI_COMM_WORLD
+	myid 	   = Tracker["constants"]["myid"]
+	main_node  = Tracker["constants"]["main_node"]
+	outlier_list=read_text_file(Tracker["this_uncounted"])
+        counted_list=read_text_file(Tracker["this_counted"])
+	ali3d_params_of_outliers = []
+	ali3d_params_of_counted  = []
+	if Tracker["constants"]["importali3d"] !="":
+     		ali3d_params_of_outliers = []
+        	ali3d_params_of_counted  = []
+		ali3d_params=read_text_file(Tracker["this_ali3d"])
+		for i in xrange(len(outlier_list)):
+			ali3d_params_of_outliers.append(ali3d_params[outlier_list[i]])
+		if myid ==main_node:
+			write_text_file(ali3d_params_of_outliers,Tracker["ali3d_of_outliers"])
+		for i in xrange(len(counted_list)):
+			ali3d_params_of_counted.append(ali3d_params[counted_list[i]])
+		if myid ==main_node:
+			write_text_file(ali3d_params_of_counted,Tracker["ali3d_of_counted"])
+	Tracker["number_of_uncounted"]=len(outlier_list)
+	Tracker["average_members_in_a_group"]= len(counted_list)/float(Tracker["number_of_groups"])
+	mpi_barrier(MPI_COMM_WORLD)
+
+def do_two_way_comparison(Tracker):
+	from mpi import mpi_barrier, MPI_COMM_WORLD
+	from utilities import read_text_file
+	from statistics import k_means_match_clusters_asg_new
+	######
+	myid              =Tracker["constants"]["myid"]
+	main_node         =Tracker["constants"]["main_node"]
+	log_main          =Tracker["constants"]["log_main"]
+	total_stack       =Tracker["this_total_stack"]
+	main_dir          =Tracker["this_dir"]
+	number_of_groups  =Tracker["number_of_groups"]
+	######
+	if myid ==main_node:
+		msg="-------Two_way comparisons analysis of %3d independent runs of equal Kmeans-------"%Tracker["constants"]["indep_runs"]
+		log_main.add(msg)
+        total_partition=[]
+	if Tracker["constants"]["indep_runs"]<2:
+		if myid ==main_node:
+			log_main.add(" Error! One single run cannot make two-way comparison")
+		from mip import mpi_finalize
+		mpi_finalize()
+                exit()
+        for iter_indep in xrange(Tracker["constants"]["indep_runs"]):
+		if Tracker["constants"]["mode"][0:1]=="E":
+			partition_list=read_text_file(Tracker["EMREF"][iter_indep]["partition"])
+			if myid ==main_node: 
+				log_main.add("Equal Kmeans  with %d         %d"%(total_stack,number_of_groups)+"\n")
+		else: 
+			partition_list=read_text_file(Tracker["KMREF"][iter_indep]["partition"])
+			if myid ==main_node: 
+				log_main.add("Kmeans  with %d         %d"%(total_stack,number_of_groups)+"\n")
+       		total_partition.append(partition_list)
+       	### Two-way comparision is carried out on all nodes 
+       	ptp=prepare_ptp(total_partition,number_of_groups)
+	indep_runs_to_groups =partition_independent_runs(total_partition,number_of_groups)
+	total_pop=0
+	two_ways_stable_member_list={}
+	avg_two_ways               =0.0
+	avg_two_ways_square        =0.
+	scores                     ={}
+       	for iptp in xrange(len(ptp)):
+        	for jptp in xrange(len(ptp)):
+               		newindeces, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(ptp[iptp],ptp[jptp])
+                       	tt =0.
+			if myid ==main_node and iptp<jptp:
+				aline=print_a_line_with_timestamp("Two-way comparison between independent run %3d and %3d"%(iptp,jptp))
+				log_main.add(aline)
+                        for m in xrange(len(list_stable)):
+                        	a=list_stable[m]
+                               	tt +=len(a)
+				if myid==main_node and iptp<jptp:
+					aline=print_a_line_with_timestamp("Group %d  number of stable members %10d  "%(m,len(a)))
+					log_main.add(aline)
+					aline=print_a_line_with_timestamp("The comparison is between %3d th group of %3d th run and %3d th group of %3d th run" \
+					 									%(newindeces[m][0],iptp,newindeces[m][1],jptp))
+					log_main.add(aline)
+					aline=print_a_line_with_timestamp("The  %3d th group of %3d th run contains %6d members" \
+						        %(iptp,newindeces[m][0],len(indep_runs_to_groups[iptp][newindeces[m][0]])))
+					log_main.add(aline)
+					aline=print_a_line_with_timestamp("The  %3d th group of %3d th run contains %6d members"%(jptp,newindeces[m][1],\
+								len(indep_runs_to_groups[jptp][newindeces[m][1]]))) 
+			if myid==main_node and iptp<jptp:
+				uncounted=total_stack-tt
+				ratio_uncounted = 100.-tt/total_stack*100.
+				ratio_counted   = tt/total_stack*100
+				aline           = print_a_line_with_timestamp("Counted data is %6d, %5.2f "%(int(tt),ratio_counted))
+				log_main.add(aline)
+				aline=print_a_line_with_timestamp("Unounted data is %6d, %5.2f"%(int(uncounted),ratio_uncounted))
+				log_main.add(aline)
+                       	rate=tt/total_stack*100.0
+			scores[(iptp,jptp)] =rate
+			if iptp<jptp:
+				avg_two_ways 	    +=rate
+				avg_two_ways_square +=rate**2
+				total_pop +=1
+                       	if myid ==main_node and iptp<jptp:
+                               	aline=print_a_line_with_timestamp("The two-way comparison stable member total ratio %3d %3d %5.3f  "%(iptp,jptp,rate))
+				log_main.add(aline)
+                       	new_list=[]
+                       	for a in list_stable:
+                       		a.tolist()
+                                new_list.append(a)
+                        two_ways_stable_member_list[(iptp,jptp)]=new_list
+	if myid ==main_node:
+		log_main.add("two_way comparison is done!")
+	#### Score each independent run by pairwise summation
+	summed_scores =[]
+	two_way_dict  ={}
+	for ipp in xrange(len(ptp)):
+		avg_scores =0.0
+		for jpp in xrange(len(ptp)):
+			if ipp!=jpp:
+				avg_scores +=scores[(ipp,jpp)]
+		avg_rate =avg_scores/(len(ptp)-1)
+		summed_scores.append(avg_rate)
+		two_way_dict[avg_rate] =ipp
+	#### Select two independent runs that have the first two highest scores
+	if Tracker["constants"]["indep_runs"]>2:
+		rate1=max(summed_scores)
+		run1 =two_way_dict[rate1]
+		summed_scores.remove(rate1)
+		rate2 =max(summed_scores)
+		run2 = two_way_dict[rate2]
+	else:
+		run1 =0
+		run2 =1
+		rate1  =max(summed_scores)
+		rate2  =rate1
+	Tracker["two_way_stable_member"]      =two_ways_stable_member_list[(run1,run2)]
+	Tracker["pop_size_of_stable_members"] =1
+	if myid ==main_node:
+                log_main.add("Get outliers of the selected comparison")
+	####  Save counted ones and uncounted ones
+	counted_list = merge_groups(two_ways_stable_member_list[(run1,run2)])
+	outliers     = get_outliers(total_stack,counted_list)
+	if myid ==main_node:
+                log_main.add("Save outliers")
+	save_alist(Tracker,"Uncounted.txt",outliers)
+	mpi_barrier(MPI_COMM_WORLD)
+	save_alist(Tracker,"Counted.txt",counted_list)
+	mpi_barrier(MPI_COMM_WORLD)
+	Tracker["this_uncounted_dir"]=main_dir
+	Tracker["this_uncounted"]    =os.path.join(main_dir,"Uncounted.txt")
+	Tracker["this_counted"]      =os.path.join(main_dir,"Counted.txt")
+	Tracker["ali3d_of_outliers"] =os.path.join(main_dir,"ali3d_params_of_outliers.txt")
+	Tracker["ali3d_of_counted"]  =os.path.join(main_dir, "ali3d_params_of_counted.txt")
+	if myid==main_node:
+		log_main.add(" Selected indepedent runs are %5d and  %5d"%(run1,run2))
+		log_main.add(" Their pair-wise averaged rates are %5.2f  and %5.2f "%(rate1,rate2))		
+	from math import sqrt
+	avg_two_ways = avg_two_ways/total_pop
+	two_ways_std = sqrt(avg_two_ways_square/total_pop-avg_two_ways**2)
+	net_rate     = avg_two_ways-1./number_of_groups*100.
+	if myid ==main_node: 
+		msg="average of two-way comparison  %5.3f"%avg_two_ways
+		log_main.add(msg)
+		msg="net rate of two-way comparison  %5.3f"%net_rate
+		log_main.add(msg)
+		msg="std of two-way comparison %5.3f"%two_ways_std
+		log_main.add(msg)
+		msg ="Score table of two_way comparison when Kgroup =  %5d"%number_of_groups
+		log_main.add(msg)
+		print_upper_triangular_matrix(scores,Tracker["constants"]["indep_runs"],log_main)
+	del two_ways_stable_member_list
+	Tracker["score_of_this_comparison"]=(avg_two_ways,two_ways_std,net_rate)
+	mpi_barrier(MPI_COMM_WORLD)
+	
+def do_EKmref(Tracker):
+	from mpi import mpi_barrier, MPI_COMM_WORLD
+	from utilities import cmdexecute
+	## Use stable members of only one two-way comparison
+	main_dir  =Tracker["this_dir"]
+	pop_size  =Tracker["pop_size_of_stable_members"]# Currently is 1, can be changed
+	log_main  =Tracker["constants"]["log_main"]
+	myid      =Tracker["constants"]["myid"]
+	main_node =Tracker["constants"]["main_node"]
+	import os
+	###
+	EKMREF_iteration ={}
+	if myid ==main_node:
+		log_main.add("-----------------EKmref---------------------------")
+	for inew in xrange(1):# new independent run
+        	output_for_this_run ={}
+                output_for_this_run["output_dir"]=os.path.join(main_dir,"EKMREF%03d"%inew)
+                output_for_this_run["partition"] =os.path.join(output_for_this_run["output_dir"],"list2.txt")
+                output_for_this_run["refvols"]=os.path.join(main_dir,"vol_stable_member_%03d.hdf"%inew)
+                EKMREF_iteration[inew]=output_for_this_run
+        Tracker["EKMREF"]=EKMREF_iteration
+        for inew in xrange(1):
+        	if myid ==main_node:
+                	msg="Create %dth two-way reference  model"%inew
+                	log_main.add(msg)
+                name_of_grouped_vols=Tracker["EKMREF"][inew]["refvols"]
+                #Tracker["this_data_stack"] =Tracker["constants"]["stack"]
+                grouped_plist=Tracker["two_way_stable_member"]
+                reconstruct_grouped_vols(Tracker,name_of_grouped_vols,grouped_plist)
+	########
+	Tracker["this_iruns"]=1
+	Tracker["data_stack_of_counted"]="bdb:"+os.path.join(Tracker["this_dir"],"counted")
+	partition_ali3d_params_of_outliers(Tracker)
+	if myid==main_node:
+		cmd = "{} {} {} {} {}".format("e2bdb.py",Tracker["this_data_stack"],"--makevstack",\
+			Tracker["data_stack_of_counted"],"--list="+Tracker["this_counted"])
+       		cmdexecute(cmd)
+		#cmd = "{} {} {} {}  {}".format("sxheader.py", Tracker["data_stack_of_counted"],"--params=xform.projection",\
+		#		 "--import="+Tracker["ali3d_of_counted"], "--consecutive ")
+		#cmdexecute(cmd)
+	mpi_barrier(MPI_COMM_WORLD)
+	Tracker["this_data_stack"]=Tracker["data_stack_of_counted"]
+	do_independent_EKmref(Tracker)
+
+def Kgroup_guess(Tracker,data_stack):
+	myid      = Tracker["constants"]["myid"]
+	main_node = Tracker["constants"]["main_node"]
+	log_main  = Tracker["constants"]["log_main"]
+	if myid==main_node:
+		msg="Program Kgroup_guess"
+		log_main.add(msg)
+		msg="Estimate how many groups the dataset can be partitioned into"
+		log_main.add(msg)
+	number_of_groups=2
+	Tracker["this_data_stack"]=data_stack
+	maindir                   =Tracker["this_dir"]
+	terminate                 =0
+	while terminate !=1:
+		do_EKTC_for_a_given_number_of_groups(Tracker,number_of_groups)
+		(score_this, score_std_this, score_net)=Tracker["score_of_this_comparison"]
+		number_of_groups +=1
+		if number_of_groups >10:
+			terminate  =1
+def do_N_groups(Tracker,data_stack):
+	myid      = Tracker["constants"]["myid"]
+        main_node = Tracker["constants"]["main_node"]
+        log_main  = Tracker["constants"]["log_main"]
+        if myid==main_node:
+                msg="Program do_N_groups"
+                log_main.add(msg)
+                msg="Estimate how many groups the dataset can be partitioned into"
+                log_main.add(msg)
+        Tracker["this_data_stack"]=data_stack
+        maindir                   =Tracker["this_dir"]
+	number_of_groups          =Tracker["number_of_groups"]
+	for Ngroup in xrange(2,number_of_groups+1):
+		Tracker["this_data_stack"]=data_stack
+		Tracker["this_dir"]       =maindir
+		Tracker["number_of_groups"]=Ngroup
+		do_EKTC_for_a_given_number_of_groups(Tracker,Ngroup)
+                (score_this, score_std_this, score_net)=Tracker["score_of_this_comparison"]
+		Tracker["this_dir"]       =os.path.join(maindir,"GRP%03d"%Tracker["number_of_groups"])
+		do_EKmref(Tracker)
+
+def do_EKTC_for_a_given_number_of_groups(Tracker,given_number_of_groups):
+	import os
+	from utilities import cmdexecute
+	Tracker["number_of_groups"]= given_number_of_groups
+	from mpi import mpi_barrier,MPI_COMM_WORLD
+	log_main  = Tracker["constants"]["log_main"]
+	myid      = Tracker["constants"]["myid"]
+	main_node = Tracker["constants"]["main_node"]
+	maindir   = Tracker["this_dir"]
+	workdir   = os.path.join(maindir,"GRP%03d"%Tracker["number_of_groups"])
+	if myid ==main_node:
+		msg ="Number of group is %5d"%given_number_of_groups
+		log_main.add(msg)
+ 		cmd="{} {}".format("mkdir",workdir)
+        	cmdexecute(cmd)
+	mpi_barrier(MPI_COMM_WORLD)
+	Tracker["this_dir"]=workdir
+	N_independent_reconstructions(Tracker)
+	prepare_EMREF_dict(Tracker)
+	N_independent_mref(Tracker["constants"]["mpi_comm"],Tracker)
+	do_two_way_comparison(Tracker)
+	Tracker["this_dir"]=maindir # always reset maindir
+
 def main():
 	from logger import Logger, BaseLogger_Files
         arglist = []
@@ -166,10 +730,10 @@ def main():
 	parser.add_option("--independent", type="int",       default= 3,               help="number of independent run")
 	parser.add_option("--Kgroup",      type="int",       default= 5,               help="number of groups")
 	parser.add_option("--resolution",  type="float",     default= .40,             help="structure is low-pass-filtered to this resolution for clustering" )
-	parser.add_option("--mode",        type="string",    default="EK",             help="computing either Kmeans mref, or Equal Kmeans mref, or do both" )
-	parser.add_option("--importali3d", type="string",    default="",  help="import the xform.projection parameters as the initial configuration for 3-D reconstruction" )
-	
-	
+	parser.add_option("--mode",        type="string",    default="EK_only",             help="computing either Kmeans mref, or Equal Kmeans mref, or do both" )
+	parser.add_option("--importali3d", type="string",    default="",               help="import the xform.projection parameters as the initial configuration for 3-D reconstruction" )
+	parser.add_option("--do_uncounted",  action="store_true",default=False,        help="continue clustering on uncounted images" )
+	parser.add_option("--Kgroup_guess",  action="store_true",default=False,        help="Guess the possible number of groups existing in one dataset" )
 	(options, args) = parser.parse_args(arglist[1:])
 	if len(args) < 1  or len(args) > 4:
     		print "usage: " + usage
@@ -195,7 +759,7 @@ def main():
 		mpi_comm = MPI_COMM_WORLD
 		main_node = 0
 		# import some utilites
-		from utilities import get_im,bcast_number_to_all,cmdexecute, write_text_file, read_text_file
+		from utilities import get_im,bcast_number_to_all,cmdexecute,write_text_file,read_text_file  #get_shrink_data
 		from applications import recons3d_n_MPI, mref_ali3d_MPI, Kmref_ali3d_MPI
 		from statistics import k_means_match_clusters_asg_new,k_means_stab_bbenum 
 		# Create the main log file
@@ -206,7 +770,7 @@ def main():
                 else:
                         log_main =None
 		#--- fill input parameters into dictionary named after Constants
-		Constants		       	         ={}
+		Constants		         ={}
 		Constants["stack"]               = args[0]
         	Constants["masterdir"]           = masterdir
 		Constants["mask3D"]              = mask_file
@@ -244,7 +808,11 @@ def main():
 		Constants["mode"]                = options.mode
 		Constants["mpi_comm"]            = mpi_comm
 		Constants["main_log_prefix"]     =args[1]
-		Constants["importali3d"]         =options.importali3d	
+		Constants["importali3d"]         =options.importali3d
+		Constants["myid"]	         =myid
+		Constants["main_node"]           =main_node
+		Constants["log_main"]            =log_main
+		Constants["do_uncounted"]        =options.do_uncounted
 		# -----------------------------------------------------
 		#
 		# Create and initialize Tracker dictionary with input options
@@ -289,7 +857,7 @@ def main():
 		# Get the pixel size; if none, set to 1.0, and the original image size
         	if(myid == main_node):
                 	line = strftime("%Y-%m-%d_%H:%M:%S", localtime()) + " =>"
-                	print(line,"INITIALIZATION OF KMREF")
+                	print(line,"INITIALIZATION OF Equal-Kmeans & Kmeans Clustering")
 
                 	a = get_im(orgstack)
                 	nnxo = a.get_xsize()
@@ -346,7 +914,7 @@ def main():
 			masterdir = mpi_bcast(masterdir,li,MPI_CHAR,main_node,MPI_COMM_WORLD)
 			masterdir = string.join(masterdir,"")
 		if myid ==main_node:
-			print_dict(Tracker["constants"], "Permanent settings of MKREF")
+			print_dict(Tracker["constants"], "Permanent settings of Equal-Kmeans & Kmeans Clustering")
 		######### create a vstack from input stack to the local stack in masterdir
 		# stack name set to default
 		Tracker["constants"]["stack"] = "bdb:"+masterdir+"/rdata"
@@ -369,687 +937,249 @@ def main():
         	total_stack = bcast_number_to_all(total_stack, source_node = main_node)
 		
 		###----------------------------------------------------------------------------------
-		# Inititialization
+		# Initial data analysis 
 		from random import shuffle
-		initdir = os.path.join(masterdir,"main000")
-		## fill in dictionaries
-		initial_random_vol={}
-		for iter_indep in xrange(Tracker["constants"]["indep_runs"]):
-			filtered_volumes =os.path.join(initdir,"volf_run_%03d.hdf"%iter_indep)
-			initial_random_vol[iter_indep]= filtered_volumes
-		Tracker["refvols"]=initial_random_vol
-		doit, keepchecking = checkstep(initdir, keepchecking, myid, main_node)
-		if doit:
-			if myid ==main_node:
-				cmd="mkdir "+initdir
-				cmdexecute(cmd)
-			mpi_barrier(MPI_COMM_WORLD)
-			# Compute the resolution 
-			partids =[None]*2
-			for procid in xrange(2):partids[procid] =os.path.join(initdir, "chunk%01d.txt"%procid)
-			inivol =[None]*2
-			for procid in xrange(2):inivol[procid]  =os.path.join(initdir,"vol%01d.hdf"%procid)
+		# Compute the resolution 
+		partids =[None]*2
+		for procid in xrange(2):partids[procid] =os.path.join(masterdir, "chunk%01d.txt"%procid)
+		inivol =[None]*2
+		for procid in xrange(2):inivol[procid]  =os.path.join(masterdir,"vol%01d.hdf"%procid)
 					
-			if myid ==main_node:
-				ll=range(total_stack)
-				shuffle(ll)
-				l1=ll[0:total_stack//2]
-				l2=ll[total_stack//2:]
-				del ll
-				l1.sort()
-				l2.sort()
-				write_text_file(l1,partids[0])
-				write_text_file(l2,partids[1])
-			mpi_barrier(MPI_COMM_WORLD)
-			ll =[]
-			for procid in xrange(2):
-				l=read_text_file(partids[procid])
-				ll.append(l)
-			### create two volumes to estimate resolution
-			vols=[]
-			for procid in xrange(2):
-				recons3d_n_MPI(Tracker["constants"]["stack"],ll[procid],inivol[procid],Tracker["constants"]["CTF"],Tracker["constants"]["snr"],Tracker["constants"]["sign"],Tracker["constants"]["npad"],Tracker["constants"]["sym"],\
-					Tracker["constants"]["listfile"],Tracker["constants"]["group"],Tracker["constants"]["verbose"],Tracker["constants"]["xysize"],Tracker["constants"]["zsize"])
-			mpi_barrier(MPI_COMM_WORLD)
-			for procid in xrange(2):
-				if myid==main_node:
-					vols.append(get_im(inivol[procid]))
-				else:
-					vols.append(None)
-			if myid ==main_node:
-				low_pass, falloff,currentres =get_resolution_mrk01(vols,Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],initdir,Tracker["constants"]["mask3D"])
-				if low_pass >Tracker["constants"]["resolution"]:
-					low_pass= Tracker["constants"]["resolution"]
-			else:
-				low_pass    =0.0
-				falloff     =0.0
-				currentres  =0.0
-			bcast_number_to_all(currentres,source_node = main_node)
-			bcast_number_to_all(low_pass,source_node = main_node)
-			bcast_number_to_all(falloff,source_node = main_node)
-			Tracker["currentres"]= currentres
-			Tracker["low_pass"]  = low_pass
-			Tracker["falloff"]   = falloff
-			if myid ==main_node:
-				log_main.add("%3d runs of %8d particles assignment to %3d groups "%(Tracker["constants"]["indep_runs"],total_stack,Tracker["constants"]["Kgroup"]))
-			### generate the initial random assignment
-	             	for irandom in xrange(Tracker["constants"]["indep_runs"]):
-                        	ll=range(total_stack)
-                        	shuffle(ll)
-                        	if myid ==main_node:
-					log_main.add("The initial random assignments are "+os.path.join(initdir,"random_list%d.txt"%irandom))
-                                	write_text_file(ll,os.path.join(initdir,"random_list%d.txt"%irandom))
-                	mpi_barrier(MPI_COMM_WORLD)
-			if myid ==main_node:
-				log_main.add("preset ali3d_parameters ")
-				if Tracker["constants"]["importali3d"]!="":
-                               		cmd = "{} {} {} {}".format("sxheader.py",Tracker["constants"]["stack"],"--params=xform.projection", "--import="+Tracker["constants"]["importali3d"])
-                                	cmdexecute(cmd)
-			### generate the initial volumes
-			for iter_indep in xrange(Tracker["constants"]["indep_runs"]):
-                        	ll=read_text_file(os.path.join(initdir,"random_list%d.txt"%iter_indep))
-                        	linit_list =[]
-                        	for igrp in xrange(Tracker["constants"]["Kgroup"]):
-					alist=ll[(total_stack*igrp)//Tracker["constants"]["Kgroup"]:(total_stack*(igrp+1))//Tracker["constants"]["Kgroup"]]
-					alist.sort()
-                                	linit_list.append(alist)
-                                	linit_list_file_name=os.path.join(initdir,"list1_grp%0d_%0d.txt"%(igrp,iter_indep))
-                                	write_text_file(alist,linit_list_file_name)
-					volstack =os.path.join(initdir,"TMP_vol%03d.hdf"%igrp)
-					recons3d_n_MPI(Tracker["constants"]["stack"],alist,volstack,Tracker["constants"]["CTF"],Tracker["constants"]["snr"],Tracker["constants"]["sign"],\
-					Tracker["constants"]["npad"],Tracker["constants"]["sym"],Tracker["constants"]["listfile"],Tracker["constants"]["group"],Tracker["constants"]["verbose"],Tracker["constants"]["xysize"],Tracker["constants"]["zsize"])
-	                      	mpi_barrier(MPI_COMM_WORLD)
-				newvols=os.path.join(initdir,"TMP_vol*.hdf")
-                        	computed_refvol_name=os.path.join(initdir,"vol_run_%03d.hdf"%iter_indep)
-				filtered_volumes =os.path.join(initdir,"volf_run_%03d.hdf"%iter_indep)
-				filter_options ="--process=filter.lowpass.tanh:cutoff_abs="+str(Tracker["low_pass"])+":fall_off=.1"
-                        	if myid==main_node:
-                                	cmd ="{} {} {}".format("sxcpy.py",newvols,computed_refvol_name) # Make stacks 
-                                	cmdexecute(cmd)
-                                	cmd ="{} {}".format("rm",newvols)
-                                	cmdexecute(cmd)
-					cmd ="{}  {}  {} {}".format("e2proc3d.py",computed_refvol_name,filtered_volumes,filter_options)
-					cmdexecute(cmd)
-                        mpi_barrier(MPI_COMM_WORLD)
-
-		else:# check items inside the directory
-			if myid ==main_node: print "%20s exists, check inside"%initdir 
-			partids =[None]*2
-			doall=1 # check initial partition
-			for procid in xrange(2):
-				partids[procid] =os.path.join(initdir, "chunk%01d.txt"%procid) 
-				doit, keepchecking = checkstep(partids[procid], keepchecking, myid, main_node)
-				doall *=doit
-			if doall:
-				if myid ==main_node:
-                                	ll=range(total_stack)
-                                	shuffle(ll)
-                                	l1=ll[0:total_stack//2]
-                                	l2=ll[total_stack//2:]
-                                	del ll
-                                	l1.sort()
-                                	l2.sort()
-                                	write_text_file(l1,partids[0])
-                                	write_text_file(l2,partids[1])
-                        	mpi_barrier(MPI_COMM_WORLD)
-			else:
-				if myid==main_node: print_a_line_with_timestamp("The initial partition are there!")
-			 # check the global resolution of the data
-			inivol =[None]*2
-			for procid in xrange(2):
-				inivol[procid]  =os.path.join(initdir,"vol%01d.hdf"%procid)
-				doit, keepchecking = checkstep(inivol[procid], keepchecking, myid, main_node)
-				if doit:
-					plist=read_text_file(partids[procid])
-					recons3d_n_MPI(Tracker["constants"]["stack"],plist,inivol[procid],Tracker["constants"]["CTF"],Tracker["constants"]["snr"],Tracker["constants"]["sign"],Tracker["constants"]["npad"],Tracker["constants"]["sym"],\
-                                        Tracker["constants"]["listfile"],Tracker["constants"]["group"],Tracker["constants"]["verbose"],Tracker["constants"]["xysize"],Tracker["constants"]["zsize"])
-				else:
-					if myid ==main_node: print_a_line_with_timestamp("%20s  exists!"%inivol[procid])
-			### check the resolution curve
-			init_fsc_file=os.path.join(initdir, "fsc.txt")
-			doit, keepchecking = checkstep(init_fsc_file, keepchecking, myid, main_node)
-			if doit:
-				vols =[]
-				if myid ==main_node:
-					for procid in xrange(2):
-                                		vols.appened(get_im(os.path.join(initdir,"vol%01d.hdf"%procid)))
-					low_pass, falloff,currentres =get_resolution_mrk01(vols,Tracker["constants"]["radius"],Tracker["constants"]["nnxo"],initdir,Tracker["constants"]["mask3D"])
-				else:
-					vols.append(None)
-					low_pass   =0.0
-					falloff    =0.0
-					currentres =0.0
-				mpi_barrier(MPI_COMM_WORLD)
-				bcast_number_to_all(currentres,source_node = main_node)
-             		        bcast_number_to_all(low_pass,source_node   = main_node)
-                       		bcast_number_to_all(falloff,source_node    = main_node)
-                        	Tracker["currentres"]= currentres
-                        	Tracker["low_pass"]  = low_pass
-                        	Tracker["falloff"]   = falloff
-				if myid==main_node: print_a_line_with_timestamp("recompute the global resolution curve")
-                        	mpi_barrier(MPI_COMM_WORLD)
-			else:
-				if myid==main_node: print_a_line_with_timestamp("The initial fsc curve is there")
-		#msg="The estimated resolution of the data is %5.2f"%currentres
-		#if myid ==main_node:
-		#	msg="The estimated resolution of the data is %5.2f"%Tracker["currentres"]
-		#	log_main.add(msg)
-		mpi_barrier(MPI_COMM_WORLD)
-		# Start independent runs, first fill in a dictionary for this run
 		if myid ==main_node:
-			msg="The current mode is %5s"%Tracker["constants"]["mode"]
-			log_main.add(msg)
-			msg="The number of independent runs is %5d"%Tracker["constants"]["indep_runs"]
-			log_main.add(msg)
-		if Tracker["constants"]["mode"][0:1]=="E": 
-			EKMREF_iteration  ={}
-			for iter_indep in xrange(Tracker["constants"]["indep_runs"]):
-				output_for_this_run ={}
-				output_for_this_run["output_dir"]= os.path.join(masterdir,"EKMREF%03d"%iter_indep)
-				output_for_this_run["partition"] = os.path.join(output_for_this_run["output_dir"],"list2.txt")
-				output_for_this_run["refvols"]   = os.path.join(initdir,"volf_run_%03d.hdf"%iter_indep)
-				output_for_this_run["ali3d"]     = os.path.join(output_for_this_run["output_dir"],"ali3d_params.txt")
-				#output_for_this_run["refvols"]=os.path.join(Tracker["second_main"],"vol_strable_member%03d.hf"%iter_indep			
-				EKMREF_iteration[iter_indep]=output_for_this_run
-			Tracker["EMREF"]=EKMREF_iteration
-			mpi_barrier(MPI_COMM_WORLD)
-		# Carry out independent Equal Kmeans runs
-			for iter_indep in xrange(Tracker["constants"]["indep_runs"]):
-				outdir = Tracker["EMREF"][iter_indep]["output_dir"]
-				doit, keepchecking = checkstep(outdir, keepchecking, myid, main_node)
-				log_Emref=Logger(BaseLogger_Files())
-				log_Emref.prefix=outdir+"/"
-				if myid ==main_node:
-					msg="The %5d th run equal Kmeans, outdir is %20s"%(iter_indep,outdir)
-					log_main.add(msg)
-					if Tracker["constants"]["importali3d"]!="":
-						cmd = "{} {} {} {}".format("sxheader.py",Tracker["constants"]["stack"],"--params=xform.projection", "--import="+Tracker["constants"]["importali3d"])
-                                                cmdexecute(cmd)
-						log_main.add("Headers are re-initialized in each independent run")
-
-				mpi_barrier(MPI_COMM_WORLD)
-				if doit:
-					mref_ali3d_MPI(Tracker["constants"]["stack"],Tracker["EMREF"][iter_indep]["refvols"],outdir,Tracker["constants"]["mask3D"] ,\
-                        		Tracker["constants"]["focus3Dmask"],Tracker["constants"]["maxit"],Tracker["constants"]["ir"],Tracker["constants"]["radius"],Tracker["constants"]["rs"],\
-                        		Tracker["constants"]["xr"],Tracker["constants"]["yr"],Tracker["constants"]["ts"],Tracker["constants"]["delta"],Tracker["constants"]["an"],Tracker["constants"]["center"],\
-                        		Tracker["constants"]["nassign"],Tracker["constants"]["nrefine"],Tracker["constants"]["CTF"],Tracker["constants"]["snr"],Tracker["constants"]["ref_a"],Tracker["constants"]["sym"],\
-                        		Tracker["constants"]["user_func"],Tracker["constants"]["npad"],Tracker["constants"]["debug"],Tracker["constants"]["fourvar"],Tracker["constants"]["stoprnct"], mpi_comm,log_Emref)
-					if myid==main_node:
-						cmd = "{} {} {} {}".format("sxheader.py",Tracker["constants"]["stack"],"--params=group", "--export="+Tracker["EMREF"][iter_indep]["partition"])
-                                        	cmdexecute(cmd)
-						if Tracker["constants"]["nrefine"]:
-							cmd = "{} {} {} {}".format("sxheader.py",Tracker["constants"]["stack"],"--params=xform.projection", "--export="+Tracker["EMREF"][iter_indep]["ali3d"])
-							cmdexecute(cmd)
-							log_main.add("ali3d_params is dropped off in each indepdent run!")
-				else:
-					doit, keepchecking = checkstep(Tracker["EMREF"][iter_indep]["partition"],keepchecking,myid,main_node)
-					if doit:
-						if myid==main_node:
-							cmd="rm -rf "+outdir
-							cmdexecute(cmd)
-			        		mref_ali3d_MPI(Tracker["constants"]["stack"],Tracker["refvols"][iter_indep],outdir,Tracker["constants"]["mask3D"] ,\
-                                		Tracker["constants"]["focus3Dmask"],Tracker["constants"]["maxit"],Tracker["constants"]["ir"],Tracker["constants"]["radius"],Tracker["constants"]["rs"],\
-                                		Tracker["constants"]["xr"],Tracker["constants"]["yr"],Tracker["constants"]["ts"],Tracker["constants"]["delta"],Tracker["constants"]["an"],Tracker["constants"]["center"],\
-                                		Tracker["constants"]["nassign"],Tracker["constants"]["nrefine"],Tracker["constants"]["CTF"],Tracker["constants"]["snr"],Tracker["constants"]["ref_a"],Tracker["constants"]["sym"],\
-                                		Tracker["constants"]["user_func"],Tracker["constants"]["npad"],Tracker["constants"]["debug"],Tracker["constants"]["fourvar"],Tracker["constants"]["stoprnct"], mpi_comm,log_Emref)
-						if myid==main_node:
-							cmd = "{} {} {} {}".format("sxheader.py",Tracker["constants"]["stack"],"--params=group", "--export="+Tracker["EMREF"][iter_indep]["partition"])
-							cmdexecute(cmd)
-							if Tracker["constants"]["nrefine"]:
-								cmd = "{} {} {} {}".format("sxheader.py",Tracker["constants"]["stack"],"--params=xform.projection", "--export="+Tracker["EMREF"][iter_indep]["ali3d"])
-								cmdexecute(cmd)
-								log_main.add("ali3d_params is dropped off in each independent run!")
-					else:
-						if myid==main_node:print_a_line_with_timestamp("MREF%03d has been done"%iter_indep)
-				mpi_barrier(MPI_COMM_WORLD)
-		else: 
-			KMREF_iteration  ={}	
-			for iter_indep in xrange(Tracker["constants"]["indep_runs"]):
-                        	output_for_this_run ={}
-                        	output_for_this_run["output_dir"]=os.path.join(masterdir,"KMREF%03d"%iter_indep)
-                        	output_for_this_run["partition"] =os.path.join(output_for_this_run["output_dir"],"list2.txt")
-				output_for_this_run["ali3d"]     = os.path.join(output_for_this_run["output_dir"],"ali3d_params.txt")
-                        	KMREF_iteration[iter_indep]=output_for_this_run
-                	Tracker["KMREF"]=KMREF_iteration
-                	mpi_barrier(MPI_COMM_WORLD)
-                	# Carry out independent runs of Kmeans
-                	for iter_indep in xrange(Tracker["constants"]["indep_runs"]):
-                        	outdir = Tracker["KMREF"][iter_indep]["output_dir"]
-                        	doit, keepchecking = checkstep(outdir, keepchecking, myid, main_node)
-				log_Kmref=Logger(BaseLogger_Files())
-                                log_Kmref.prefix=Tracker["KMREF"][iter_indep]["output_dir"]+"/"
-				if Tracker["constants"]["importali3d"]!="":
-					cmd = "{} {} {} {}".format("sxheader.py",Tracker["constants"]["stack"],"--params=xform.projection", "--import="+Tracker["constants"]["importali3d"])
-					cmdexecute(cmd)
-					log_main.add("Headers are re-initialized in each independent run")
-                        	if doit:
-                                	empty_group = Kmref_ali3d_MPI(Tracker["constants"]["stack"],Tracker["refvols"][iter_indep],outdir,Tracker["constants"]["mask3D"] ,\
-                                	Tracker["constants"]["focus3Dmask"],Tracker["constants"]["maxit"],Tracker["constants"]["ir"],Tracker["constants"]["radius"],Tracker["constants"]["rs"],\
-                                	Tracker["constants"]["xr"],Tracker["constants"]["yr"],Tracker["constants"]["ts"],Tracker["constants"]["delta"],Tracker["constants"]["an"],Tracker["constants"]["center"],\
-                                	Tracker["constants"]["nassign"],Tracker["constants"]["nrefine"],Tracker["constants"]["CTF"],Tracker["constants"]["snr"],Tracker["constants"]["ref_a"],Tracker["constants"]["sym"],\
-                                	Tracker["constants"]["user_func"],Tracker["constants"]["npad"],Tracker["constants"]["debug"],Tracker["constants"]["fourvar"],Tracker["constants"]["stoprnct"], mpi_comm,log_Kmref )
-					if myid ==main_node:
-						if empty_group ==1:
-							log_main.add("K-means encounters an empty group, need re-create reference files!")
-                                	if myid==main_node:
-                                        	cmd = "{} {} {} {}".format("sxheader.py",Tracker["constants"]["stack"], "--params=group", "--export="+Tracker["KMREF"][iter_indep]["partition"])
-                                        	cmdexecute(cmd)
-						if racker["constants"]["nrefine"]:
-							cmd = "{} {} {} {}".format("sxheader.py",Tracker["constants"]["stack"],"--params=xform.projection", "--export="+Tracker["KMREF"][iter_indep]["ali3d"])
-							cmdexecute(cmd)
-                        	else:
-                                	doit, keepchecking = checkstep(Tracker["KMREF"][iter_indep]["partition"],keepchecking,myid,main_node)
-                                	if doit:
-                                        	if myid==main_node:
-                                                	cmd="rm -rf "+outdir
-                                                	cmdexecute(cmd)
-						mpi_barrier(MPI_COMM_WORLD)
-                                        	empty_group = Kmref_ali3d_MPI(Tracker["constants"]["stack"],Tracker["refvols"][iter_indep],outdir,Tracker["constants"]["mask3D"] ,\
-                                        	Tracker["constants"]["focus3Dmask"],Tracker["constants"]["maxit"],Tracker["constants"]["ir"],Tracker["constants"]["radius"],Tracker["constants"]["rs"],\
-                                        	Tracker["constants"]["xr"],Tracker["constants"]["yr"],Tracker["constants"]["ts"],Tracker["constants"]["delta"],Tracker["constants"]["an"],Tracker["constants"]["center"],\
-                                        	Tracker["constants"]["nassign"],Tracker["constants"]["nrefine"],Tracker["constants"]["CTF"],Tracker["constants"]["snr"],Tracker["constants"]["ref_a"],Tracker["constants"]["sym"],\
-                                        	Tracker["constants"]["user_func"],Tracker["constants"]["npad"],Tracker["constants"]["debug"],Tracker["constants"]["fourvar"],Tracker["constants"]["stoprnct"], mpi_comm,log_Kmref)
-                                        	if myid==main_node:
-                                                	cmd = "{} {} {} {}".format("sxheader.py",Tracker["constants"]["stack"], "--params=group", "--export="+Tracker["KMREF"][iter_indep]["partition"])
-                                                	cmdexecute(cmd)
-							if Tracker["constants"]["nrefine"]:
-                                        			cmd = "{} {} {} {}".format("sxheader.py",Tracker["constants"]["stack"],"--params=xform.projection", "--export="+Tracker["KMREF"][iter_indep]["ali3d"])
-                                        			cmdexecute(cmd)
-                                		mpi_barrier(MPI_COMM_WORLD)
-                                	else:
-                                        	if myid==main_node:print_a_line_with_timestamp("KMREF%03d has been done"%iter_indep)
-		### Now do some analysis	
+			ll=range(total_stack)
+			shuffle(ll)
+			l1=ll[0:total_stack//2]
+			l2=ll[total_stack//2:]
+			del ll
+			l1.sort()
+			l2.sort()
+			write_text_file(l1,partids[0])
+			write_text_file(l2,partids[1])
 		mpi_barrier(MPI_COMM_WORLD)
-		if Tracker["constants"]["indep_runs"] >1:
-			if myid ==main_node:
-				msg="Two-comparisions are done on indepndent runs of equal Kmeans"
-				log_main.add(msg)
-                	total_partition=[]
-                	for iter_indep in xrange(Tracker["constants"]["indep_runs"]):
-				if Tracker["constants"]["mode"][0:1]=="E":
-					partition_list=read_text_file(Tracker["EMREF"][iter_indep]["partition"])
-					if myid ==main_node: 
-						log_main.add("Equal Kmeans  with %d         %d"%(total_stack, Tracker["constants"]["Kgroup"])+"\n")
-				else: 
-					partition_list=read_text_file(Tracker["KMREF"][iter_indep]["partition"])
-					if myid ==main_node: 
-						log_main.add("Kmeans  with %d         %d"%(total_stack, Tracker["constants"]["Kgroup"])+"\n")
-                       		total_partition.append(partition_list)
-                	mpi_barrier(MPI_COMM_WORLD)
-                	### Conduct two ways comparision Keep all nodes busy
-                	ptp=prepare_ptp(total_partition,Tracker["constants"]["Kgroup"])
-                	# three ways comparision:
-                	#TCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_bbenum(ptp, T=0, J=50, max_branching=40, stmult=0.1, branchfunc=2)#  T is the minimum group size
-                	#tc =0.
-                	#for a in STB_PART:
-                	#        tc +=len(a)
-                	#rate=tc/float(nima)*100.
-                	#if  myid==0: print "%5.2f"%rate,"%","three way comparision"
-			total_pop=0
-			two_ways_stable_member_list={}
-			avg_two_ways =0.0
-			avg_two_ways_square =0.
-			scores ={}
-                	for iptp in xrange(len(ptp)):
-                        	for jptp in xrange(len(ptp)):
-                                	newindexes, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(ptp[iptp], ptp[jptp])
-                                	tt =0.
-                                	for m in xrange(len(list_stable)):
-                                        	a=list_stable[m]
-                                        	tt +=len(a)
-                                	rate=tt/total_stack*100.0
-					scores[(iptp,jptp)]=rate
-					scores[(jptp,iptp)]=rate
-					avg_two_ways 	    +=rate
-					avg_two_ways_square +=rate**2
-                                	if myid ==main_node and iptp !=jptp:
-                                        	aline=print_a_line_with_timestamp("two-way comparison  %3d %3d %5.3f  "%(iptp,jptp,rate))
-						log_main.add(aline)
-                                	new_list=[]
-                                	for a in list_stable:
-                                        	a.astype(int)
-                                        	new_list.append(a)
-                                	two_ways_stable_member_list[(iptp,jptp)]=new_list
-					total_pop +=1
-			summed_scores =[]
-			two_way_dict ={}
-			for ipp in xrange(len(ptp)):
-				avg_scores =0.0
-				for jpp in xrange(len(ptp)):
-					if ipp !=jpp:
-						avg_scores +=scores[(ipp,jpp)]
-				avg_rate =avg_scores/(len(ptp)-1)
-				summed_scores.append(avg_rate)
-				two_way_dict[avg_rate] =ipp
-			rate1=max(summed_scores)
-			run1 =two_way_dict[rate1]
-			summed_scores.remove(rate1)
-			rate2 =max(summed_scores)
-			run2 = two_way_dict[rate2]
-			Tracker["two_way_stable_member"]=two_ways_stable_member_list[(run1,run2)]
+		ll =[]
+		for procid in xrange(2):
+			l=read_text_file(partids[procid])
+			ll.append(l)
+		### create two volumes to estimate resolution
+		vols=[]
+		for procid in xrange(2):
+			recons3d_n_MPI(Tracker["constants"]["stack"],ll[procid],inivol[procid],Tracker["constants"]["CTF"],\
+			Tracker["constants"]["snr"],Tracker["constants"]["sign"],Tracker["constants"]["npad"],\
+			Tracker["constants"]["sym"],Tracker["constants"]["listfile"],Tracker["constants"]["group"],\
+			Tracker["constants"]["verbose"],Tracker["constants"]["xysize"],Tracker["constants"]["zsize"])
+		mpi_barrier(MPI_COMM_WORLD)
+		for procid in xrange(2):
 			if myid==main_node:
-				log_main.add(" selected indepedent runs are %5d and  %5d"%(run1,run2))
-				log_main.add(" their averaged rates are %5.2f  and %5.2f "%(rate1,rate2))		
-			from math import sqrt
-			avg_two_ways = avg_two_ways/total_pop
-			two_ways_std=sqrt(avg_two_ways_square/total_pop-avg_two_ways**2)
-			if myid ==main_node: 
-				aline=print_a_line_with_timestamp("average of two-way comparison  %5.3f"%avg_two_ways)
-				log_main.add(aline)
-			if myid ==main_node: 
-				aline=print_a_line_with_timestamp("std of two-way comparison %5.3f"%two_ways_std)
-				log_main.add(aline)
-			two_way_of_two_way_stable_member_list = []
-			two_way_of_two_way_pop =0
+				vols.append(get_im(inivol[procid]))
+			else:
+				vols.append(None)
+		if myid ==main_node:
+			low_pass, falloff,currentres =get_resolution_mrk01(vols,Tracker["constants"]["radius"],\
+			Tracker["constants"]["nnxo"],masterdir,Tracker["constants"]["mask3D"])
+			if low_pass >Tracker["constants"]["resolution"]:
+				low_pass= Tracker["constants"]["resolution"]
+		else:
+			low_pass    =0.0
+			falloff     =0.0
+			currentres  =0.0
+		bcast_number_to_all(currentres,source_node = main_node)
+		bcast_number_to_all(low_pass,source_node = main_node)
+		bcast_number_to_all(falloff,source_node = main_node)
+		Tracker["currentres"]= currentres
+		Tracker["low_pass"]  = low_pass
+		Tracker["falloff"]   = falloff
+		if myid ==main_node:
+			log_main.add("The command-line inputs are as following:")
+			log_main.add("**********************************************************")
+		for a in sys.argv:
 			if myid ==main_node:
-				msg="two-way of two-way comparision"
+				log_main.add(a)
+			else:
+				continue
+		if myid ==main_node:
+			log_main.add("**********************************************************")
+		### START EK Clustering
+		if myid ==main_node:
+                        log_main.add("----------EK Clustering------- ")
+		if Tracker["constants"]["mode"]=="Kgroup_guess":
+			if myid ==main_node:
+                        	log_main.add("------Current mode is Kgroup_guess------")
+			Tracker["this_dir"] =os.path.join(masterdir,"Kgroup_guess")
+			if myid ==main_node:
+                        	cmd="{} {}".format("mkdir",Tracker["this_dir"])
+                        	cmdexecute(cmd)
+                	Tracker["this_data_stack"]  ="bdb:"+os.path.join(Tracker["this_dir"],"data")
+                	Tracker["this_total_stack"] =total_stack
+                	Tracker["number_of_groups"] =Tracker["constants"]["Kgroup"]
+                	Tracker["this_ali3d"]       =Tracker["constants"]["importali3d"]
+                	Tracker["importali3d"]      =Tracker["constants"]["importali3d"]
+	                ### Create data stack
+         		if myid ==main_node:
+                        	log_main.add("----create data stack ")
+                        	cmd = "{} {} {} {} ".format("e2bdb.py",orgstack,"--makevstack",\
+                        		Tracker["this_data_stack"])
+                        	cmdexecute(cmd)
+                        	cmd = "{} {}".format("sxheader.py  --consecutive  --params=originalid", Tracker["this_data_stack"])
+                        	cmdexecute(cmd)
+                        	if Tracker["importali3d"] !="":
+                                	cmd = "{} {} {} {} ".format("sxheader.py", Tracker["this_data_stack"],"--params=xform.projection",\
+                                 	"--import="+Tracker["importali3d"])
+                        	cmdexecute(cmd)
+                	mpi_barrier(MPI_COMM_WORLD)
+			Kgroup_guess(Tracker,Tracker["this_data_stack"])
+			if myid ==main_node:
+				msg ="Kgroup guessing is done!"
 				log_main.add(msg)
-			"""
-                	for itwo_ways in xrange(len(two_ways_stable_member_list)-1):
-                		for jtwo_ways in xrange(itwo_ways+1,len(two_ways_stable_member_list)):
-					tt =0.
-                        		newindexes, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(two_ways_stable_member_list[itwo_ways], two_ways_stable_member_list[jtwo_ways])
-                                	tt= 0.
-					for m in xrange(len(list_stable)):
-						a=list_stable[m]
-						tt +=len(a)
-					new_list=[]
-					for a in list_stable:
-						a.astype(int)
-						new_list.append(a)
-					two_way_of_two_way_stable_member_list.append(new_list)
-					rate=float(nb_tot_objs)/total_stack*100.0
-                                	if myid ==main_node:
-                                		aline =print_a_line_with_timestamp("two-way of two-way comparision ratio is %5.3f"%rate+"%")
-						log_main.add(aline)
-					two_way_of_two_way_pop +=1
-			Tracker["two_way_pop"]			=total_pop
-			Tracker["two_way_stable"]		=two_ways_stable_member_list
-			Tracker["two_way_of_two_way_pop"]	= two_way_of_two_way_pop
-			Tracker["two_way_of_two_way_stable"]	=two_way_of_two_way_stable_member_list
-			"""
-			## Now carry out Kmref using stable members selected by  pairwise comparsion 
-			if Tracker["constants"]["mode"]=="K" or Tracker["constants"]["mode"]=="E":
-				if myid ==main_node:
-					msg="This is indepedent runs of %s-means"%Tracker["constants"]["mode"]
-					log_main.add(msg)
-					msg="Program stops here."
-					log_main.add(msg) 
-				mpi_barrier(MPI_COMM_WORLD)
-				from mpi import mpi_finalize
-                		mpi_finalize()
-				exit()
-			else:
-				## first fill in dictionary for this run
-				## Create the second main directory 
-				if myid ==main_node: 
-					log_main.add("Now do  K-means using stable members given by equal K-means")
-				second_main=os.path.join(masterdir,"main001")
-				Tracker["second_main"]= second_main
-                        	EKKMREF_iteration ={}
-				#EK_total_runs = Tracker["two_way_pop"]
-                        	for inew in xrange(1):# new independent run
-                                	output_for_this_run ={}
-                                	output_for_this_run["output_dir"]=os.path.join(masterdir,"EKKMREF%03d"%inew)
-                                	output_for_this_run["partition"] =os.path.join(output_for_this_run["output_dir"],"list2.txt")
-					output_for_this_run["refvols"]=os.path.join(Tracker["second_main"],"vol_stable_member_%03d.hdf"%inew)
-                                	EKKMREF_iteration[inew]=output_for_this_run
-                        	Tracker["EKKMREF"]=EKKMREF_iteration
-				doit, keepchecking = checkstep(Tracker["second_main"],keepchecking,myid,main_node)
-				if doit:
-					if myid==main_node:
-						cmd="mkdir "+second_main
-						cmdexecute(cmd)
-					for inew in xrange(1):
-						if myid ==main_node:
-							msg="Create %dth two-way reference  model"%inew
-							log_main.add(msg)
-		        			for igrp in xrange(Tracker["constants"]["Kgroup"]):
-                                			pid_list=Tracker["two_way_stable_member"][igrp]
-                                			vol_stack=os.path.join(Tracker["second_main"],"TMP_init%03d.hdf"%igrp)
-							tlist=[]
-							for b in pid_list:
-								tlist.append(int(b))
-							mpi_barrier(MPI_COMM_WORLD)
-							if myid ==main_node:
-								msg="%d th model %d th group   particle number %5d"%(inew,igrp,len(tlist))
-								log_main.add(msg)
-                                			recons3d_n_MPI(Tracker["constants"]["stack"],tlist,vol_stack,Tracker["constants"]["CTF"],Tracker["constants"]["snr"],\
-							Tracker["constants"]["sign"],Tracker["constants"]["npad"],Tracker["constants"]["sym"],Tracker["constants"]["listfile"],Tracker["constants"]["group"],\
-							Tracker["constants"]["verbose"],Tracker["constants"]["xysize"],Tracker["constants"]["zsize"])
-                 				newvols=os.path.join(Tracker["second_main"],"TMP_init*.hdf")
-                        			if myid==main_node:
-                                			cmd ="{} {} {}".format("sxcpy.py",newvols,Tracker["EKKMREF"][inew]["refvols"]) # Make stacks 
-                                			cmdexecute(cmd)
-                                			cmd ="{} {}".format("rm",newvols)
-                                			cmdexecute(cmd)
-                        			mpi_barrier(MPI_COMM_WORLD)
-					for inew in xrange(1):
-						# Start KMREF
-						log_Kmref=Logger(BaseLogger_Files())
-						log_Kmref.prefix=Tracker["EKKMREF"][inew]["output_dir"]+"/" 
-						if myid ==main_node:
-							msg="Kmref_ali3d_MPI with two-way equal K-means stable members as starting point "
-							log_main.add(msg)
-							msg = "%5d "%inew+Tracker["EKKMREF"][inew]["output_dir"]
-							log_main.add(msg)
-                        			Kmref_ali3d_MPI(Tracker["constants"]["stack"],Tracker["EKKMREF"][inew]["refvols"],Tracker["EKKMREF"][inew]["output_dir"],Tracker["constants"]["mask3D"],\
-				        	Tracker["constants"]["focus3Dmask"],Tracker["constants"]["maxit"],Tracker["constants"]["ir"],Tracker["constants"]["radius"],Tracker["constants"]["rs"],\
-                                        	Tracker["constants"]["xr"],Tracker["constants"]["yr"],Tracker["constants"]["ts"],Tracker["constants"]["delta"],Tracker["constants"]["an"],Tracker["constants"]["center"],\
-                                        	Tracker["constants"]["nassign"],Tracker["constants"]["nrefine"],Tracker["constants"]["CTF"],Tracker["constants"]["snr"],Tracker["constants"]["ref_a"],Tracker["constants"]["sym"],\
-                                        	Tracker["constants"]["user_func"],Tracker["constants"]["npad"],Tracker["constants"]["debug"],Tracker["constants"]["fourvar"],Tracker["constants"]["stoprnct"], mpi_comm,log_Kmref)
-                        			if myid==main_node:
-                                        		cmd = "{} {} {} {}".format("sxheader.py",Tracker["constants"]["stack"],"--params=group", "--export="+Tracker["EKKMREF"][inew]["partition"])
-                                        		cmdexecute(cmd)
-                        			mpi_barrier(MPI_COMM_WORLD)
-					"""
-					## Analysis on KMREF results
-					total_partition=[]
-                			for iter_indep  in xrange(Tracker["two_way_pop"]):
-                        			partition_list=read_text_file(Tracker["EKKMREF"][iter_indep]["partition"])
-                        			total_partition.append(partition_list)
-                			### Conduct two ways comparision Keep all nodes busy
-                			two_ways_stable_member_list=[]
-                			ptp=prepare_ptp(total_partition,Tracker["constants"]["Kgroup"])
-                			# three ways comparision:
-                			#TCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_bbenum(ptp, T=0, J=50, max_branching=40, stmult=0.1, branchfunc=2)#  T is the minimum group size
-                			#tc =0.
-                			#for a in STB_PART:
-                        		#	tc +=len(a)
-                			#rate=tc/float(nima)*100.
-                			#if myid ==main_node: print "%5.2f"%rate,"%","three-way comparision"
-                			for iptp in xrange(len(ptp)-1):
-                        			for jptp in xrange(iptp+1,len(ptp)):
-                                			newindexes, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(ptp[iptp], ptp[jptp])
-                                			tt =0.
-                                			for m in xrange(len(list_stable)):
-                                        			a=list_stable[m]
-                                        			tt +=len(a)
-                                			rate=tt/total_stack*100.0
-                                			if myid ==main_node:
-                                        			aline =print_a_line_with_timestamp("two-way comparision  rate %5.2f"%rate)
-								log_main.add(aline)
-                                			two_ways_stable_member_list.append(list_stable)
-                        		# Compare stability of two ways comparision!
-                        		for itwo_ways in xrange(len(two_ways_stable_member_list)-1):
-                                		for jtwo_ways in xrange(itwo_ways+1,len(two_ways_stable_member_list)):
-                                        		newindexes, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(two_ways_stable_member_list[itwo_ways], two_ways_stable_member_list[jtwo_ways])
-                                        		rate=float(nb_tot_objs)/total_stack*100.0
-                                        		if myid ==main_node:
-                                                		aline =print_a_line_with_timestamp("the two-way of two-way matching ratio is %5.3f"%rate+"%")
-								log_main.add(aline)
-				else:
-					for inew in xrange(Tracker["two_way_pop"]):
-						doit, keepchecking = checkstep(Tracker["EKKMREF"][inew]["refvols"],keepchecking,myid,main_node)
-						if doit:
-							for igrp in xrange(Tracker["constants"]["Kgroup"]):
-                                                		pid_list=Tracker["two_way_stable"][inew][igrp]
-                                                		vol_stack=os.path.join(Tracker["second_main"],"TMP_init%03d.hdf"%igrp)
-                                                		tlist=[]
-                                                		for b in pid_list:
-                                                        		tlist.append(int(b))
-                                                		mpi_barrier(MPI_COMM_WORLD)
-                                                		recons3d_n_MPI(Tracker["constants"]["stack"],tlist,vol_stack,Tracker["constants"]["CTF"],Tracker["constants"]["snr"],\
-                                                		Tracker["constants"]["sign"],Tracker["constants"]["npad"],Tracker["constants"]["sym"],Tracker["constants"]["listfile"],Tracker["constants"]["group"],\
-                                                		Tracker["constants"]["verbose"],Tracker["constants"]["xysize"],Tracker["constants"]["zsize"])
-                                        		newvols=os.path.join(Tracker["second_main"],"TMP_init*.hdf")
-                                        		if myid==main_node:
-                                                		cmd ="{} {} {}".format("sxcpy.py",newvols,Tracker["EKKMREF"][inew]["refvols"]) # Make stacks 
-                                                		cmdexecute(cmd)
-                                                		cmd ="{} {}".format("rm",newvols)
-                                                		cmdexecute(cmd)
-						else:
-							if myid==main_node: 
-								aline=print_a_line_with_timestamp("%d  refvol is there "%inew )
-								log_main.add(aline)
-                                        		mpi_barrier(MPI_COMM_WORLD)
-					for inew in xrange(Tracker["two_way_pop"]):
-                                        	doit, keepchecking = checkstep(Tracker["EKKMREF"][inew]["partition"],keepchecking,myid,main_node)
-						if doit:
-							if myid ==main_node:
-								doit, keepchecking = checkstep(Tracker["EKKMREF"][inew]["output_dir"],keepchecking,myid,main_node)
-								if doit :cmd ="{} {}".format("rm -rf",Tracker["EKKMREF"][inew]["output_dir"])
-							mpi_barrier(MPI_COMM_WORLD)
-							log_Kmref=Logger(BaseLogger_Files())
-							log_Kmref.prefix=Tracker["EKKMREF"][inew]["output_dir"]+"/"
-							Kmref_ali3d_MPI(Tracker["constants"]["stack"],Tracker["EKKMREF"][inew]["refvols"],Tracker["EKKMREF"][inew]["output_dir"],Tracker["constants"]["mask3D"],\
-                                        		Tracker["constants"]["focus3Dmask"],Tracker["constants"]["maxit"],Tracker["constants"]["ir"],Tracker["constants"]["radius"],Tracker["constants"]["rs"],\
-                                        		Tracker["constants"]["xr"],Tracker["constants"]["yr"],Tracker["constants"]["ts"],Tracker["constants"]["delta"],Tracker["constants"]["an"],Tracker["constants"]["center"],\
-                                        		Tracker["constants"]["nassign"],Tracker["constants"]["nrefine"],Tracker["constants"]["CTF"],Tracker["constants"]["snr"],Tracker["constants"]["ref_a"],Tracker["constants"]["sym"],\
-                                        		Tracker["constants"]["user_func"],Tracker["constants"]["npad"],Tracker["constants"]["debug"],Tracker["constants"]["fourvar"],Tracker["constants"]["stoprnct"],mpi_comm,log_Kmref)
-                                        		if myid==main_node:
-                                                		cmd = "{} {} {} {}".format("sxheader.py",Tracker["constants"]["stack"],"--params=group", "--export="+Tracker["EKKMREF"][inew]["partition"])
-                                                		cmdexecute(cmd)
-						else:
-							if myid==main_node: 
-								aline=print_a_line_with_timestamp(Tracker["EKKMREF"][inew]["partition"]+"is there")
-								log_main.add(aline)
-                                        		mpi_barrier(MPI_COMM_WORLD)
-					### Analysis is required at any case:
-					total_partition=[]
-                                	for iter_indep  in xrange(Tracker["two_way_pop"]):
-                                        	partition_list=read_text_file(Tracker["EKKMREF"][iter_indep]["partition"])
-                                        	total_partition.append(partition_list)
-                                	### Conduct two ways comparision Keep all nodes busy
-                                	two_ways_stable_member_list=[]
-                                	ptp=prepare_ptp(total_partition,Tracker["constants"]["Kgroup"])
-                                	# three ways comparision:
-                                	#TCH, STB_PART, CT_s, CT_t, ST, st = k_means_stab_bbenum(ptp, T=0, J=50, max_branching=40, stmult=0.1, branchfunc=2)#  T is the minimum group size
-                                	#tc =0.
-                                	#for a in STB_PART:
-                                	#       tc +=len(a)
-                                	#rate=tc/float(nima)*100.
-                                	#if myid ==main_node: print "%5.2f"%rate,"%","three-way comparision"
-					avg =0.0
-					avg2=0.0
-					total_pop =0
-                                	for iptp in xrange(len(ptp)-1):
-                                        	for jptp in xrange(iptp+1,len(ptp)):
-                                                	newindexes, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(ptp[iptp], ptp[jptp])
-                                                	tt =0.
-                                                	for m in xrange(len(list_stable)):
-                                                        	a=list_stable[m]
-                                                        	tt +=len(a)
-                                                	rate=tt/total_stack*100.0
-							avg  +=rate
-							avg2 +=rate*rate 
-                                                	if myid ==main_node:
-                                                        	aline =print_a_line_with_timestamp("two-way comparision  rate%5.3f"%rate)
-								log_main.add(aline)
-                                                	two_ways_stable_member_list.append(list_stable)
-							total_pop +=1
-                                        # Compare stability of two ways comparision!
-					from math import sqrt
-					avg =avg/total_pop
-					std=sqrt(avg2/total_pop-avg*avg)
-					if myid ==maind_node:
-						aline=print_a_line_with_timestamp("avg and std rate of two-way is %5.1f %5.1f"%(avg,std))
-						log_main(aline)
-					avg  =0.0
-					avg2 =0.0
-					total_pop=0
-                                	for itwo_ways in xrange(len(two_ways_stable_member_list)-1):
-                                        	for jtwo_ways in xrange(itwo_ways+1,len(two_ways_stable_member_list)):
-                                                	newindexes, list_stable, nb_tot_objs = k_means_match_clusters_asg_new(two_ways_stable_member_list[itwo_ways], two_ways_stable_member_list[jtwo_ways])
-                                                	rate=float(nb_tot_objs)/total_stack*100.0
-							total_pop +=1
-                                                	if myid ==main_node:
-                                                        	aline=print_a_line_with_timestamp("the two-way of two-way matching ratio is %5.3f"%rate+"%")
-								log_main.add(aline)
-					avg =avg/total_pop
-                                	std=sqrt(avg2/total_pop-avg*avg)
-					if myid ==maind_node:
-                                        	aline=print_a_line_with_timestamp("avg and std rate of two-way of two-way is %5.1f %5.1f"%(avg,std))
-						log_main.add(aline)
-			"""
-			mpi_barrier(MPI_COMM_WORLD)
-			from mpi import mpi_finalize
-			mpi_finalize()
-		else: # single Equal Kmeans and single K-means
-			second_main=os.path.join(masterdir,"main001")
-                        Tracker["second_main"]= second_main
-			doit, keepchecking = checkstep(Tracker["second_main"],keepchecking,myid,main_node)
-                        if doit:
-                        	if myid==main_node:
-                                	cmd="mkdir "+second_main
-                                        cmdexecute(cmd)
-					log_main.add("second main is created!")
-			else:
-				if myid==main_node:
-					log_main.add("second main is existing")
-			mpi_barrier(MPI_COMM_WORLD)
-			## define EKKMREF varibles
-			EKKMREF_iteration ={}
-                        for inew in xrange(Tracker["constants"]["indep_runs"]):# new independent run
-                               	output_for_this_run ={}
-                                output_for_this_run["output_dir"]=os.path.join(masterdir,"EKKMREF%03d"%inew)
-                               	output_for_this_run["partition"] =os.path.join(output_for_this_run["output_dir"],"list2.txt")
-                                output_for_this_run["refvols"]=os.path.join(Tracker["second_main"],"vol_stable_member_%03d.hdf"%inew)
-                                EKKMREF_iteration[inew]=output_for_this_run
-                                Tracker["EKKMREF"]=EKKMREF_iteration
-			for iter_indep in xrange(Tracker["constants"]["indep_runs"]):
-				res_of_EQ=read_text_file(Tracker["EMREF"][iter_indep]["partition"])
-				a_list_of_groups=partition_to_groups(res_of_EQ,Tracker["constants"]["Kgroup"])
-				for igrp in xrange(Tracker["constants"]["Kgroup"]):
-                               		plist = a_list_of_groups[igrp]
-                                        vol_stack=os.path.join(Tracker["second_main"],"TMP_init%03d.hdf"%igrp)
-                                        if myid ==main_node:
-                                        	msg="%d th model %d th group   particle number %5d"%(iter_indep,igrp,len(plist))
-                                               	log_main.add(msg)
-                                        recons3d_n_MPI(Tracker["constants"]["stack"],plist,vol_stack,Tracker["constants"]["CTF"],Tracker["constants"]["snr"],\
-                                        Tracker["constants"]["sign"],Tracker["constants"]["npad"],Tracker["constants"]["sym"],Tracker["constants"]["listfile"],Tracker["constants"]["group"],\
-                                        Tracker["constants"]["verbose"],Tracker["constants"]["xysize"],Tracker["constants"]["zsize"])
-                                        newvols=os.path.join(Tracker["second_main"],"TMP_init*.hdf")
-                              	if myid==main_node:
-                                    	cmd ="{} {} {}".format("sxcpy.py",newvols,Tracker["EKKMREF"][inew]["refvols"]) # Make stacks 
-                                     	cmdexecute(cmd)
-                                       	cmd ="{} {}".format("rm",newvols)
-                                       	cmdexecute(cmd)
-				mpi_barrier(MPI_COMM_WORLD)
-			for inew in xrange(1):
-                        # Start KMREF
-                        	log_Kmref=Logger(BaseLogger_Files())
-                                log_Kmref.prefix=Tracker["EKKMREF"][inew]["output_dir"]+"/"
-                                if myid ==main_node:
-                                      	msg="Kmref_ali3d_MPI with two-way equal K-means stable members as starting point "
-                                      	log_main.add(msg)
-                                      	msg = "%5d "%inew+Tracker["EKKMREF"][inew]["output_dir"]
-                                      	log_main.add(msg)
-                              	Kmref_ali3d_MPI(Tracker["constants"]["stack"],Tracker["EKKMREF"][inew]["refvols"],Tracker["EKKMREF"][inew]["output_dir"],Tracker["constants"]["mask3D"],\
-                              	Tracker["constants"]["focus3Dmask"],Tracker["constants"]["maxit"],Tracker["constants"]["ir"],Tracker["constants"]["radius"],Tracker["constants"]["rs"],\
-                              	Tracker["constants"]["xr"],Tracker["constants"]["yr"],Tracker["constants"]["ts"],Tracker["constants"]["delta"],Tracker["constants"]["an"],Tracker["constants"]["center"],\
-                               	Tracker["constants"]["nassign"],Tracker["constants"]["nrefine"],Tracker["constants"]["CTF"],Tracker["constants"]["snr"],Tracker["constants"]["ref_a"],Tracker["constants"]["sym"],\
-                               	Tracker["constants"]["user_func"],Tracker["constants"]["npad"],Tracker["constants"]["debug"],Tracker["constants"]["fourvar"],Tracker["constants"]["stoprnct"], mpi_comm,log_Kmref)
-                               	if myid==main_node:
-                                       	cmd = "{} {} {} {}".format("sxheader.py",Tracker["constants"]["stack"],"--params=group", "--export="+Tracker["EKKMREF"][inew]["partition"])
-                                       	cmdexecute(cmd)
-                                mpi_barrier(MPI_COMM_WORLD)
+		elif Tracker["constants"]["mode"]=="EK_only":
+			if myid==main_node:
+				msg ="--------Current mode is EK_only--------"
+                                log_main.add(msg)
+			Tracker["this_dir"] =os.path.join(masterdir,"EK_only")
+	             	if myid ==main_node:
+                                cmd="{} {}".format("mkdir",Tracker["this_dir"])
+                                cmdexecute(cmd)
+			Tracker["this_data_stack"]  ="bdb:"+os.path.join(Tracker["this_dir"],"data")
+                        Tracker["this_total_stack"] =total_stack
+                        Tracker["number_of_groups"] =Tracker["constants"]["Kgroup"]
+                        Tracker["this_ali3d"]       =Tracker["constants"]["importali3d"]
+                        Tracker["importali3d"]      =Tracker["constants"]["importali3d"]
+			### Create data stack
 			if myid ==main_node:
-				log_main.add(" Kmref_ali3d_MPI is done!")
+                        	log_main.add("----Create data stack ")
+                                cmd = "{} {} {} {} ".format("e2bdb.py",orgstack,"--makevstack",\
+                                Tracker["this_data_stack"])
+                                cmdexecute(cmd)
+                                cmd = "{} {}".format("sxheader.py  --consecutive  --params=originalid", Tracker["this_data_stack"])
+                                cmdexecute(cmd)
+                       		if Tracker["importali3d"] !="":
+                                	cmd = "{} {} {} {} ".format("sxheader.py", Tracker["this_data_stack"],"--params=xform.projection",\
+                                	 "--import="+Tracker["importali3d"])
+                        		cmdexecute(cmd)
+                        mpi_barrier(MPI_COMM_WORLD)
+			N_independent_reconstructions(Tracker)
+			prepare_EMREF_dict(Tracker)
+                	N_independent_mref(mpi_comm,Tracker)
+                	do_two_way_comparison(Tracker)
+                	mpi_barrier(MPI_COMM_WORLD)
+			do_EKmref(Tracker)
+			if myid ==main_node:
+                                msg ="Equal-kmeans and K-means is done!"
+                                log_main.add(msg)
+			if Tracker["constants"]["do_uncounted"]:
+				if myid ==main_node:
+					msg ="----Continue EK clustering on those uncounted members-----"
+					log_main.add(msg)
+                                Tracker["this_dir"]   =os.path.join(Tracker["this_uncounted_dir"],"Uncounted")
+				Tracker["last_data_stack"] =Tracker["constants"]["stack"]
+				Tracker["this_data_stack"] ="bdb:"+os.path.join(Tracker["this_dir"],"data")
+				Tracker["number_of_groups"]=Tracker["constants"]["Kgroup"]
+				if myid ==main_node:
+                        		cmd="{} {}".format("mkdir",Tracker["this_dir"])
+                        		cmdexecute(cmd)
+					cmd = "{} {} {} {} {}".format("e2bdb.py",Tracker["last_data_stack"],"--makevstack",\
+                                        Tracker["this_data_stack"],"--list="+Tracker["this_uncounted"])
+                                        cmdexecute(cmd)
+					#cmd = "{} {} {} {}  {}".format("sxheader.py", Tracker["this_data_stack"],"--params=xform.projection",\
+                                        #      "--import="+Tracker["ali3d_of_outliers"], "--consecutive")
+                                        #cmdexecute(cmd)
+				mpi_barrier(MPI_COMM_WORLD)
+				Tracker["this_total_stack"] =Tracker["number_of_uncounted"]
+				do_N_groups(Tracker,Tracker["this_data_stack"])
+                        	mpi_barrier(MPI_COMM_WORLD)
+		elif Tracker["constants"]["mode"]=="auto_search":
+			generation =0
+			if myid ==main_node:
+				log_main.add("Current mode is auto_search")
+                        	log_main.add("clustering generation %3d"%generation)
+                	Tracker["this_dir"]   =os.path.join(masterdir,"generation%03d"%generation)
+                	if myid ==main_node:
+                        	cmd="{} {}".format("mkdir",Tracker["this_dir"])
+                        	cmdexecute(cmd)
+                	Tracker["this_data_stack"]  ="bdb:"+os.path.join(Tracker["this_dir"],"data")
+                	Tracker["this_total_stack"] =total_stack
+                	Tracker["number_of_groups"] =Tracker["constants"]["Kgroup"]
+                	Tracker["this_ali3d"]       =Tracker["constants"]["importali3d"]
+                	Tracker["importali3d"]      =Tracker["constants"]["importali3d"]
+			### Create data stack
+			if myid ==main_node:
+                        	log_main.add("----Create data stack ")
+                                cmd = "{} {} {} {} ".format("e2bdb.py",orgstack,"--makevstack",\
+                                        Tracker["this_data_stack"])
+                                cmdexecute(cmd)
+                                cmd = "{} {}".format("sxheader.py  --consecutive  --params=originalid", Tracker["this_data_stack"])
+                                cmdexecute(cmd)
+                        	if Tracker["importali3d"] !="":
+                                	cmd = "{} {} {} {} ".format("sxheader.py", Tracker["this_data_stack"],"--params=xform.projection",\
+                                 	"--import="+Tracker["importali3d"])
+                        		cmdexecute(cmd)
+                        mpi_barrier(MPI_COMM_WORLD)
+			if myid==main_node:
+				log_main.add("Create referece volumes for %3d independent runs"%Tracker["constants"]["indep_runs"])
+			N_independent_reconstructions(Tracker)
+			if myid ==main_node:
+				log_main.add("----------Equal-Kmeans---------")
+			prepare_EMREF_dict(Tracker)
+			N_independent_mref(mpi_comm,Tracker)
+			do_two_way_comparison(Tracker)
 			mpi_barrier(MPI_COMM_WORLD)
-                        from mpi import mpi_finalize
-                        mpi_finalize()
-			exit()
-
+			if myid ==main_node:
+				log_main.add("--------EKmref------- ")
+			do_EKmref(Tracker)
+			if myid ==main_node:
+                        	log_main.add("----------EKmref---------")
+			number_of_groups=min(Tracker["number_of_groups"],int(Tracker["number_of_uncounted"]/float(Tracker["average_members_in_a_group"])))
+			Tracker["last_dir"]   =os.path.join(masterdir,"generation%03d"%generation)
+			Tracker["last_data_stack"]="bdb:"+os.path.join(Tracker["last_dir"],"data")
+			if myid ==main_node:
+				log_main.add("Kgroup for the next generation is %d"%number_of_groups)
+				log_main.add("the number of outliers is  %5d"%Tracker["number_of_uncounted"]) 
+				log_main.add("average_members_in_a_group  %5d"%int(Tracker["average_members_in_a_group"]))
+			mpi_barrier(MPI_COMM_WORLD)
+			while number_of_groups >=2 and Tracker["constants"]["do_uncounted"]:
+				generation            +=1
+				if myid ==main_node:
+                        		log_main.add("clustering generation %03d"%generation)
+                		Tracker["this_dir"]   =os.path.join(masterdir,"generation%03d"%generation)
+                		if myid ==main_node:
+                        		cmd="{} {}".format("mkdir",Tracker["this_dir"])
+                        		cmdexecute(cmd)
+                		Tracker["this_data_stack"]  ="bdb:"+os.path.join(Tracker["this_dir"],"data")
+                		Tracker["this_total_stack"] =Tracker["number_of_uncounted"]
+                		Tracker["number_of_groups"] =number_of_groups
+				Tracker["this_ali3d"]       =Tracker["ali3d_of_outliers"]
+				### Create data stack
+				if myid==main_node:
+					log_main.add("----Create data stack uncounted in the last generation")
+                			cmd = "{} {} {} {} {}".format("e2bdb.py",Tracker["last_data_stack"],"--makevstack",\
+                        		Tracker["this_data_stack"],"--list="+Tracker["this_uncounted"])
+                			cmdexecute(cmd)
+					cmd = "{} {}".format("sxheader.py  --consecutive", Tracker["this_data_stack"])
+                        		cmdexecute(cmd)
+                			#cmd = "{} {} {} {}".format("sxheader.py", Tracker["this_data_stack"],"--params=xform.projection",\
+                                 	#"--import="+Tracker["this_ali3d"])
+					#cmdexecute(cmd)
+				mpi_barrier(MPI_COMM_WORLD)
+				if myid ==main_node:
+                        		log_main.add("-----Create referece volumes for %3d independent runs"%Tracker["constants"]["indep_runs"])
+                		N_independent_reconstructions(Tracker)
+				if myid ==main_node:
+                        		log_main.add("---------Equal-Kmeans----------")
+                		prepare_EMREF_dict(Tracker)
+                		N_independent_mref(mpi_comm,Tracker)
+				do_two_way_comparison(Tracker)
+                		mpi_barrier(MPI_COMM_WORLD)
+                		if myid ==main_node:
+                        		log_main.add("---------EKmref---------")
+                		do_EKmref(Tracker)
+                		if myid ==main_node:
+                        		log_main.add("------- end of EKmref-------")
+                		number_of_groups=int(Tracker["number_of_uncounted"]/Tracker["average_members_in_a_group"])
+				Tracker["last_dir"]   =os.path.join(masterdir,"generation%03d"%generation)
+                		Tracker["last_data_stack"]="bdb:"+os.path.join(Tracker["last_dir"],"data")
+		# Finish program
+               	mpi_barrier(MPI_COMM_WORLD)
+               	from mpi import mpi_finalize
+               	mpi_finalize()
+		exit()
 if __name__ == "__main__":
 	main()
