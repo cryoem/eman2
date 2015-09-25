@@ -93,16 +93,35 @@ def image_from_formula(n_x, n_y, n_z, formula) :
 	# Create a 2D or 3D image from a formula in x, y, z,
 	# with 0 <= x <= n_x-1, 0 <= y <= n_y-1, 0 <= z <= n_z-1,
 	# with a formula like "x+y+z" or "x*y+10*z" or "x+y".
+	# The formula may contain variables nx, ny, or nz or
+	# xn, yn, or zn (x, y, and z normalized from 0.0 to 1.0).
 
-	emd  = EMData(n_x, n_y, n_z)
+	nx = int(n_x)
+	ny = int(n_y)
+	nz = int(n_z)
+
+	x1 = 1.0 / max(nx-1, 1)
+	y1 = 1.0 / max(ny-1, 1)
+	z1 = 1.0 / max(nz-1, 1)
+
+	emd  = EMData(nx, ny, nz)
 	emdn = EMNumPy.em2numpy(emd)
 
-	for z in xrange(0, n_z) :
-		for y in xrange(0, n_y) :
-			for x in xrange(0, n_x) :
-				v = eval(formula)
+	for z in xrange(0, nz) :
+		zn = z * z1
 
-				if n_z > 1 :
+		for y in xrange(0, ny) :
+			yn = y * y1
+
+			for x in xrange(0, nx) :
+				xn = x * x1
+
+				try :
+					v = eval(formula)
+				except :
+					v = 0.0
+
+				if nz > 1 :
 					emdn[z][y][x] = v
 				else :
 					emdn[y][x] = v
@@ -505,9 +524,15 @@ def main():
 					if len(vals) >= 4 : func = vals[-1]
 
 					try :
-						x = 0.0
-						y = 0.0
-						z = 0.0
+						x  = 0.0
+						y  = 0.0
+						z  = 0.0
+						xn = 0.0
+						yn = 0.0
+						zn = 0.0
+						nx = 1
+						ny = 1
+						nz = 1
 						w = eval(func)
 					except :
 						print "Error: Syntax error in image expression '" + func + "'"
