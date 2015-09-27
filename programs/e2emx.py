@@ -33,7 +33,7 @@ parser = EMArgumentParser(usage, version=EMANVERSION)
 parser.add_argument("--export_whole_project", action="store_true", help="This option will create an emx directory, where it will export the eman2 project into EMX format", default=False)
 #parser.add_argument("--import_box_coordinates", type=str, help="Import box coordinates and corresponding micrographs")
 parser.add_argument("--import_emx", type=str, help="Import emx information and corresponding micrographs")
-parser.add_argument("--import_2d_alignment", type=str, help="Import particles and corresponding transformation information")
+#parser.add_argument("--import_2d_alignment", type=str, help="Import particles and corresponding transformation information")
 parser.add_argument("--refinedefocus",  action="store_true", help="Will use EMAN2 CTF fitting to refine the defocus by SNR optimization (+-0.1 micron from the current values, no astigmatism adjustment)")
 parser.add_argument("--refitdefocus",  action="store_true", help="Will use EMAN2 CTF fitting to refit the defocus values (+-0.1 micron, astigmatism unchanged)")
 parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
@@ -153,7 +153,7 @@ for option1 in optionList:
 		first_index = 0
 		last_part_filename=""
 		current_micrograph = ""
-		boxsize=centercoord=twod_xform=False
+		boxsize = centercoord = twod_xform = threed_xform = False
 		for item in emx:
 			if item.tag == "micrograph":
 				micrograph_filename = item.attrib['fileName']
@@ -279,7 +279,14 @@ for option1 in optionList:
 							transform_dict[item.find('micrograph').get('fileName')].append(t)
 						else:
 							transform_dict[item.find('micrograph').get('fileName')] = [t]
-						twod_xform = True
+						if not item2.find('t31') and not item2.find('t32') and item2.find('t33'):
+							if not twod_xform:
+								print "2D transforms found"
+							twod_xform = True
+						else:
+							if not threed_xform:
+								print "3D transforms found"
+							threed_xform = True
 				part_list.append(temp_dict)
 				if particle_micrograph_filename != last_part_filename:
 					micro_dict[particle_micrograph_filename]['first_index'] = int(particle) - 1
@@ -329,10 +336,20 @@ for option1 in optionList:
 				for i in range(len(transform_dict[micrograph_xform])):
 					temp_images[i]['xform.projection'] = transform_dict[micrograph_xform][i]
 					temp_images[i].write_image("particles/" + base_name(micrograph_xform) + "_ptcls.hdf",i)
+		elif threed_xform:
+			for micrograph_xform in transform_dict.keys():
+				temp_images = EMData.read_images("particles/" + base_name(micrograph_xform) + "_ptcls.hdf")
+				for i in range(len(transform_dict[micrograph_xform])):
+					temp_images[i]['xform.align3d'] = transform_dict[micrograph_xform][i]
+					temp_images[i].write_image("particles/" + base_name(micrograph_xform) + "_ptcls.hdf",i)
 		if found_per_particle:
 			print "Per-particle defocus values or angles found. Please note that we do not support import of this information at the moment. Using the per-micrograph information provided"
 			
+print "e2emx.py finished!"	
 	
+	
+	
+	#------------------------Everything below here is legacy code for reference--------------------------------------------------
 	
 	#elif option1 == "import_box_coordinates":
 		#current_micrograph = ""
@@ -434,27 +451,27 @@ for option1 in optionList:
 					#db.setval("boxes",db['boxes'],deferupdate=True)
 
 
-	elif option1 == "import_2d_alignment":
-		et = xml.etree.ElementTree.parse(options.import_2d_alignment)
-		emx = et.getroot()
-		for item in emx:
-			if item.tag == "particle":
-				for particle_attrib in item.attrib:
-					if particle_attrib == "fileName":
-						particle_filename = item.attrib['fileName']
-					elif particle_attrib == "index":
-						particle_index = item.attrib['index']
-					else:
-						print "Unknown tag: " + particle_attrib
-			for item2 in item:
-				if item2.tag == "transformationMatrix":
-					t = Transform([float(item2.find('t11').text),float(item2.find('t12').text),float(item2.find('t13').text),float(item2.find('t14').text),float(item2.find('t21').text),float(item2.find('t22').text),float(item2.find('t23').text),float(item2.find('t24').text),float(item2.find('t31').text),float(item2.find('t32').text),float(item2.find('t33').text),float(item2.find('t34').text)])
-					alpha = t.get_params('2d')['alpha']
-					tx = t.get_params('2d')['tx']
-					ty = t.get_params('2d')['ty']
-					mirror = t.get_params('2d')['mirror']
-					scale = t.get_params('2d')['scale']
-					print t
+	#elif option1 == "import_2d_alignment":
+		#et = xml.etree.ElementTree.parse(options.import_2d_alignment)
+		#emx = et.getroot()
+		#for item in emx:
+			#if item.tag == "particle":
+				#for particle_attrib in item.attrib:
+					#if particle_attrib == "fileName":
+						#particle_filename = item.attrib['fileName']
+					#elif particle_attrib == "index":
+						#particle_index = item.attrib['index']
+					#else:
+						#print "Unknown tag: " + particle_attrib
+			#for item2 in item:
+				#if item2.tag == "transformationMatrix":
+					#t = Transform([float(item2.find('t11').text),float(item2.find('t12').text),float(item2.find('t13').text),float(item2.find('t14').text),float(item2.find('t21').text),float(item2.find('t22').text),float(item2.find('t23').text),float(item2.find('t24').text),float(item2.find('t31').text),float(item2.find('t32').text),float(item2.find('t33').text),float(item2.find('t34').text)])
+					#alpha = t.get_params('2d')['alpha']
+					#tx = t.get_params('2d')['tx']
+					#ty = t.get_params('2d')['ty']
+					#mirror = t.get_params('2d')['mirror']
+					#scale = t.get_params('2d')['scale']
+					#print t
 
 
 
@@ -536,7 +553,7 @@ for option1 in optionList:
 				#db['boxes'].append(tup)
 				#db.setval("boxes",db['boxes'],deferupdate=True)
 #js_close_dict(info_name(particle_micrograph_filename))
-print "e2emx.py finished!"
+
 
 
 
