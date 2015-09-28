@@ -1180,15 +1180,20 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				float gam;
 				if (dfdiff==0) gam=-g1*s*s*s*s+g2*defocus*s*s;
 				else gam=-g1*s*s*s*s+g2*df(atan2((float)y,(float)x))*s*s;
-				float v = cos(gam-acac);
-				v*=v;
+				// this make values near the zero crossings negative to cancel out 0,0 correlation
+//				float v = (pow(cos(gam-acac),2.0)-0.5)*exp(-(bfactor/4.0f * s*s));
+				// Basically just a CTF weight
+				float v = (pow(cos(gam-acac),2.0))*exp(-(bfactor/4.0f * s*s));
+				//v*=v;
+				//v=fabs(v);
 				d[x * 2 + ynx] = v;
 				d[x * 2 + ynx + 1] = 0;
 				vt+=v;
 			}
 		}
 		vt/=nx*ny/2;
-		for (size_t i=0; i<image->get_xsize()*image->get_ysize(); i+=2) d[i]-=vt;
+//		for (size_t i=0; i<image->get_xsize()*image->get_ysize(); i+=2) d[i]=(d[i]-vt)<0?-1.0:1.0;
+//		for (size_t i=0; i<image->get_xsize()*image->get_ysize(); i+=2) d[i]=(d[i]-vt);
 	}
 	else printf("Unknown CTF image mode\n");
 

@@ -31,7 +31,9 @@ This program will take an input stack of subtomograms and a reference volume, an
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_argument("--threads", default=4,type=int,help="Number of alignment threads to run in parallel on a single computer. This is the only parallelism supported by e2spt_align at present.", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement")
+	parser.add_argument("--iter",type=int,help="Iteration number within path. Default = start a new iteration",default=0)
 	parser.add_argument("--goldstandard",type=float,help="If specified, will phase randomize the even and odd references past the specified resolution (in A, not 1/A)",default=0)
+	parser.add_argument("--goldcontinue",action="store_true",help="Will use even/odd refs corresponding to specified reference to continue refining without phase randomizing again",default=False)
 	parser.add_argument("--saveali",action="store_true",help="Save a stack file (aliptcls.hdf) containing the aligned subtomograms.",default=False)
 	parser.add_argument("--path",type=str,default=None,help="Path to a folder where results should be stored, following standard naming conventions (default = spt_XX)")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
@@ -46,28 +48,40 @@ This program will take an input stack of subtomograms and a reference volume, an
 		try: os.mkdir(options.path)
 		except: pass
 
+	if options.iter<=0 :
+		fls=[int(i[15:17]) for i in os.listdir(options.path) if i[:15]=="particle_parms_" and str.isdigit(i[15:17])]
+		if len(fls)==0 : options.iter=1
+		else: options.iter=max(fls)+1
 
 	reffile=args[1]
 	NTHREADS=max(options.threads+1,2)		# we have one thread just writing results
 
 	logid=E2init(sys.argv, options.ppid)
 
-	ref=[]
-	ref.append(EMData(reffile,0))
-	ref.append(EMData(reffile,0))
-
-	if options.goldstandard>0 : 
-		ref[0].process_inplace("filter.lowpass.randomphase",{"cutoff_freq":1.0/options.goldstandard})
-		ref[1].process_inplace("filter.lowpass.randomphase",{"cutoff_freq":1.0/options.goldstandard})
-		ref[0].write_image("{}/align_ref.hdf".format(options.path),0)
-		ref[1].write_image("{}/align_ref.hdf".format(options.path),1)
+	if options.goldcontinue:
+		ref=[]
+		try:
+			ref.append(EMData(reffile[:-4]+"_even.hdf",0))
+			ref.append(EMData(reffile[:-4]+"_odd.hdf",0))
+		except:
+			print "Error: cannot find one of reference files, eg: ",EMData(reffile[:-4]+"_even.hdf",0)
+	else:
+		ref=[]
+		ref.append(EMData(reffile,0))
+		ref.append(EMData(reffile,0))
+	
+		if options.goldstandard>0 : 
+			ref[0].process_inplace("filter.lowpass.randomphase",{"cutoff_freq":1.0/options.goldstandard})
+			ref[1].process_inplace("filter.lowpass.randomphase",{"cutoff_freq":1.0/options.goldstandard})
+			ref[0].write_image("{}/align_ref.hdf".format(options.path),0)
+			ref[1].write_image("{}/align_ref.hdf".format(options.path),1)
 
 	ref[0]=ref[0].do_fft()
 	ref[0].process_inplace("xform.phaseorigin.tocorner")
 	ref[1]=ref[1].do_fft()
 	ref[1].process_inplace("xform.phaseorigin.tocorner")
 
-	angs=js_open_dict("{}/particle_parms.json".format(options.path))
+	angs=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
 	jsd=Queue.Queue(0)
 
 	n=-1

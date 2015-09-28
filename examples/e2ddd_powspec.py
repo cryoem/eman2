@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
+# Author: Steven Ludtke, 9/2015 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -62,6 +62,7 @@ def main():
 	h=EMData(args[0],0,True)
 	nx=h["nx"]
 	ny=h["ny"]
+	fullbox=good_boxsize(min(nx-10,ny-10),False)	# this is the size we will do the phase inversion on
 	
 	N=0
 	clpav=[]
@@ -99,6 +100,7 @@ def main():
 		
 		clpav[im]=None
 					
+	# incoherent power spectrum (good for CTF estimation)
 	pws.mult(1.0/N)
 	pws.process_inplace("math.sqrt")
 	pws["is_intensity"]=0			# These 2 steps are done so the 2-D display of the FFT looks better. Things would still work properly in 1-D without it
@@ -109,6 +111,7 @@ def main():
 	pws[0,0]=0
 	pws.do_ift().write_image("pws.hdf",0)
 
+	# coherent power spectrum (drift more observable)
 	pwsc.mult(1.0/N)
 	pwsc[0,0]=0
 	pwsc.process_inplace("math.sqrt")
@@ -119,29 +122,65 @@ def main():
 #	pws1=pws.calc_radial_dist(ny/2,0,1.0,1)
 #	pws1bg=ctf.low_bg_curve(pws1,ds)
 
-	df,flipim=fit_defocus(pws)
-	
-	img1=EMData.read_images(args[0],(5,6,7,8))
-	for i in img1:
-		try: img1c.add(i.get_clip(Region(2000,2000,BOXSIZE,BOXSIZE)))
-		except: img1c=i.get_clip(Region(2000,2000,BOXSIZE,BOXSIZE))
-		
-	img2=EMData.read_images(args[0],(12,13,14,15))
-	for i in img2:
-		try: img2c.add(i.get_clip(Region(2000,2000,BOXSIZE,BOXSIZE)))
-		except: img2c=i.get_clip(Region(2000,2000,BOXSIZE,BOXSIZE))
+	df,ctf=fit_defocus(pws)
 
-	ccf1=img1c.calc_ccf(img2c)
-	ccf1.process_inplace("normalize")
-	ccf1.process_inplace("xform.phaseorigin.tocenter")
-	img2cf=img2c.do_fft()
-	img2cf.mult(flipim)
-	img2cp=img2cf.do_ift()
-	ccf2=img1c.calc_ccf(img2cp)
-	ccf2.process_inplace("normalize")
-	ccf1.process_inplace("xform.phaseorigin.tocenter")
+	# "fix" phases for one entire image to use as a reference
+#	for i in xrange(3,8):
+#	for i in xrange(n):
+#		img0=EMData(args[0],i)
+#		try:img1.add(img0)
+#		except:img1=img0
+
+	img1=EMData(args[0],8)
+	dx=(img1["nx"]-fullbox)/2
+	dy=(img1["ny"]-fullbox)/2
 	
-	display((ccf1,ccf2),True)
+	reffix=img1.get_clip(Region(dx,dy,fullbox,fullbox))
+	reffixf=reffix.do_fft()
+	pha=reffixf.copy()
+	ctf.bfactor=200
+	ctf.compute_2d_complex(pha,Ctf.CtfType.CTF_ALIFILT,None)
+#	display((reffixf.do_ift(),pha.do_ift()),True)
+	reffixf.mult(pha)
+	reffix=reffixf.do_ift()
+
+	
+	for i in xrange(n):
+		#if i==5: continue
+		img1=EMData(args[0],i)
+		for x in xrange(0,fullbox-256,256):
+			for y in xrange(0,fullbox-256,256):
+				clipr=reffix.get_clip(Region(x,y,256,256))
+				clip=img1.get_clip(Region(x+dx,y+dy,256,256))
+				ccf=clip.calc_ccf(clipr)
+				try: ccfa.add(ccf)
+				except: ccfa=ccf
+		ccfa.process_inplace("xform.phaseorigin.tocenter")
+		ccfa.process_inplace("normalize.edgemean")
+		ccfa.write_image("ccfs.hdf",i)
+		
+	
+#	img1=EMData.read_images(args[0],(5,6,7,8))
+#	for i in img1:
+#		try: img1c.add(i.get_clip(Region(2000,2000,BOXSIZE,BOXSIZE)))
+#		except: img1c=i.get_clip(Region(2000,2000,BOXSIZE,BOXSIZE))
+#		
+#	img2=EMData.read_images(args[0],(12,13,14,15))
+#	for i in img2:
+#		try: img2c.add(i.get_clip(Region(2000,2000,BOXSIZE,BOXSIZE)))
+#		except: img2c=i.get_clip(Region(2000,2000,BOXSIZE,BOXSIZE))
+#
+#	ccf1=img1c.calc_ccf(img2c)
+#	ccf1.process_inplace("normalize")
+#	ccf1.process_inplace("xform.phaseorigin.tocenter")
+#	img2cf=img2c.do_fft()
+#	img2cf.mult(flipim)
+#	img2cp=img2cf.do_ift()
+#	ccf2=img1c.calc_ccf(img2cp)
+#	ccf2.process_inplace("normalize")
+#	ccf2.process_inplace("xform.phaseorigin.tocenter")
+#	
+#	display((ccf1,ccf2),True)
 	
 def fit_defocus(img):
 	ds=1.0/(img["apix_x"]*img["ny"])
@@ -149,7 +188,7 @@ def fit_defocus(img):
 
 	# the data curve we are trying to fit
 	oned=np.array(img.calc_radial_dist(ns,0,1.0,1)[1:])
-	oned=log10(oned)
+	oned=np.log10(oned)
 	oned-=min(oned)	# get rid of bulk background
 	oned/=max(oned)	# normalize a bit for convienience
 
@@ -169,31 +208,50 @@ def fit_defocus(img):
 		curve=np.array(ctf.compute_1d(ns*2,ds,Ctf.CtfType.CTF_AMP)[1:])
 		# we square the curve (no B-factor), then "normalize" it so constant background won't enter the fit other than edge effects
 		curve*=curve
-		curve-=curve.mean()
-#		plot((s,list(oned)),(s,list(curve)))
+#		curve-=curve.mean()
+		curve-=0.5	# duh
 
-#		zeroes=[ctf.zero(i) for i in xrange(15)
-#		onedbg=bgsub(oned,zeroes)
+		zeroes=[int(ctf.zero(i)/ds) for i in xrange(15)]
+		zeroes=[i for i in zeroes if i<len(curve) and i>0]
+#		plot(zeroes)
+		onedbg=bgsub(oned,zeroes)
 		
-		qual=curve.dot(oned)
+#		plot((s,list(oned)),(s,list(onedbg)),(s,list(curve)))
+		
+		qual=curve.dot(onedbg)
 
 #		print df,qual
 		dfl.append(df)
 		ql.append(qual)
 	
-	qls=np.convolve(ql,[.2,.2,.2,.2,.2,.2,.2],mode="same")
-	qls[0]=qls[1]=qls[2]=qls[-3]=qls[-2]=qls[-1]=-2
-	a=np.argmax(qls)
+#	qls=np.convolve(ql,[.2,.2,.2,.2,.2,.2,.2],mode="same")
+#	qls[0]=qls[1]=qls[2]=qls[-3]=qls[-2]=qls[-1]=-2
+#	a=np.argmax(qls)
+	a=np.argmax(ql)
 	df=dfl[a]
 	
 	print "Best defocus ",df
-	plot((dfl,ql),(dfl,qls))
+#	plot((dfl,ql),(dfl,qls))
+#	plot((dfl,ql))
 	
 	ctf.defocus=df
-	aliimg=img.copy()
-	ctf.compute_2d_complex(aliimg,Ctf.CtfType.CTF_ALIFILT,None)
+#	aliimg=img.copy()
+#	ctf.compute_2d_complex(aliimg,Ctf.CtfType.CTF_ALIFILT,None)
 	
-	display(aliimg)
-	return df,aliimg
+#	display(aliimg)
+	return df,ctf
 
+def bgsub(curve,zeroes):
+	floc=min(zeroes[0]/2,8)
+	itpx=[curve[:floc].argmin()]+list(zeroes)+[len(curve)-1]
+	itpy=[min(curve[i-1:i+2]) for i in itpx]
+	itpy[0]=curve[:floc].min()
+#	plot((range(len(curve)),curve.tolist()),(itpx,itpy))
+	itpx=np.array(itpx)
+	itpy=np.array(itpy)
+	ret=curve-np.interp(range(len(curve)),itpx,itpy)
+	ret[:floc]=0
+	return ret
+		
+		
 if __name__ == "__main__":  main()

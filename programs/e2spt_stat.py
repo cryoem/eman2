@@ -25,6 +25,7 @@ This program will take an input stack of subtomograms and a reference volume, an
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
 	parser.add_argument("--path",type=str,default=None,help="Path to a folder containing current results (default = highest spt_XX)")
+	parser.add_argument("--iter",type=int,help="Iteration number within path. Default = auto",default=0)
 	parser.add_argument("--bins",type=int,help="Number of bins to use in the histogram",default=100)
 	parser.add_argument("--gui",action="store_true",help="If set will open an interactive plot with the results",default=False)
 	#parser.add_argument("--threads", default=4,type=int,help="Number of alignment threads to run in parallel on a single computer. This is the only parallelism supported by e2spt_align at present.", guitype='intbox', row=24, col=2, rowspan=1, colspan=1, mode="refinement")
@@ -42,7 +43,15 @@ This program will take an input stack of subtomograms and a reference volume, an
 			sys.exit(2)
 		options.path = "spt_{:02d}".format(max(fls))
 
-	angs=js_open_dict("{}/particle_parms.json".format(options.path))
+	if options.iter<=0 :
+		fls=[int(i[15:17]) for i in os.listdir(options.path) if i[:15]=="particle_parms_" and str.isdigit(i[15:17])]
+		if len(fls)==0 : 
+			print "Cannot find a {}/particle_parms* file".format(options.path)
+			sys.exit(2)
+		options.iter=max(fls)
+		
+
+	angs=js_open_dict("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
 	data=[angs[a]["score"] for a in angs.keys()]
 	col=array(data)
 
@@ -72,6 +81,7 @@ This program will take an input stack of subtomograms and a reference volume, an
 	ax.tick_params(axis='y', labelsize=18)
 
 	#plt.title("Convergence plot (not resolution)")
+	plt.title("{}/particle_parms_{:02d}.json".format(options.path,options.iter))
 	plt.xlabel("Score",fontsize=24)
 	plt.ylabel("Number of Particles",fontsize=24)
 

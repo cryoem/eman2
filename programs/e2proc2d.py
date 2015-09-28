@@ -186,8 +186,9 @@ def main():
 	parser.add_argument("--select", metavar="selectname", type=str, help="Works only on the images in named selection set from bdb:select")
 	parser.add_argument("--inplace", action="store_true", help="Output overwrites input, USE SAME FILENAME, DO NOT 'clip' images.")
 	parser.add_argument("--interlv", metavar="interleave-file", type=str, help="Specifies a 2nd input file. Output will be 2 files interleaved.")
-	parser.add_argument("--meanshrink", metavar="n", type=int, action="append", help="Reduce an image size by an integral scaling factor using average. Clip is not required.")
-	parser.add_argument("--medianshrink", metavar="n", type=int, action="append", help="Reduce an image size by an integral scaling factor, uses median filter. Clip is not required.")
+	parser.add_argument("--meanshrink", metavar="n", type=float, action="append", help="Reduce an image size by an integral (1.5 also allowed) scaling factor using average. eg - 2 will reduce image size to 1/2. Clip is not required.")
+	parser.add_argument("--medianshrink", metavar="n", type=int, action="append", help="Reduce an image size by an integral scaling factor, uses median filter. eg - 2 will reduce image size to 1/2. Clip is not required.")
+	parser.add_argument("--fouriershrink", metavar="n", type=float, action="append", help="Reduce an image size by an arbitrary scaling factor by clipping in Fourier space. eg - 2 will reduce image size to 1/2.")
 	parser.add_argument("--mraprep",  action="store_true", help="this is an experimental option")
 	parser.add_argument("--outmode", type=str, default="float", help="All EMAN2 programs write images with 4-byte floating point values when possible by default. This allows specifying an alternate format when supported (float, int8, int16, int32, uint8, uint16, uint32). Values are rescaled to fill MIN-MAX range.")
 	parser.add_argument("--outnorescale", action="store_true", default=False, help="If specified, floating point values will not be rescaled when writing data as integers. Values outside of range are truncated.")
@@ -209,6 +210,7 @@ def main():
 	parser.add_argument("--setsfpairs",  action="store_true", help="Applies the radial structure factor of the 1st image to the 2nd, the 3rd to the 4th, etc")
 	parser.add_argument("--split", metavar="n", type=int, help="Splits the input file into a set of n output files")
 	parser.add_argument("--translate", type=str, action="append", help="Translate by x,y pixels")
+	parser.add_argument("--headertransform", type=int, action="append", help="This will take the xform.align2d header value from each particle, and apply it. Pass 0 to perform the transform or 1 to perform the inverse.")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higner number means higher level of verboseness",default=1)
 	parser.add_argument("--plane", metavar=threedplanes, type=str, default='xy', help="Change the plane of image processing, useful for processing 3D mrcs as 2D images.")
 	parser.add_argument("--writejunk", action="store_true", help="Writes the image even if its sigma is 0.", default=False)
@@ -224,7 +226,7 @@ def main():
 
 	parser.add_argument("--parallel","-P",type=str,help="Run in parallel, specify type:n=<proc>:option:option",default=None)
 
-	append_options = ["clip", "process", "meanshrink", "medianshrink", "scale", "randomize", "rotate", "translate", "multfile"]
+	append_options = ["clip", "process", "meanshrink", "medianshrink", "fouriershrink", "scale", "randomize", "rotate", "translate", "multfile", "headertransform"]
 
 	optionlist = pyemtbx.options.get_optionlist(sys.argv[1:])
 
@@ -738,6 +740,29 @@ def main():
 
 					index_d[option1] += 1
 
+				elif option1 == "fouriershrink":
+					fshrink = options.fouriershrink[index_d[option1]]
+
+					if fshrink > 1:
+						d.process_inplace("math.fft.resample",{"n":fshrink})
+
+					index_d[option1] += 1
+					
+				elif option1 == "headertransform":
+					xfmode = options.headertransform[index_d[option1]]
+					
+					if xfmode not in (0,1) :
+						print "Error: headertransform must be set to 0 or 1"
+						sys.exit(1)
+					
+					try: xform=d["xform.align2d"]
+					except: print "Error: particle has no xform.align2d header value"
+
+					if xfmode == 1 : xform.invert()
+					
+					d.process_inplace("xform",{"transform":xform})
+					
+					
 				elif option1 == "selfcl":
 					scl = options.selfcl[0] / 2
 					sclmd = options.selfcl[1]
