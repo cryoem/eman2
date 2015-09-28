@@ -1183,7 +1183,7 @@ void EMAN2Ctf::compute_2d_complex(EMData * image, CtfType type, XYData * sf)
 				// this make values near the zero crossings negative to cancel out 0,0 correlation
 //				float v = (pow(cos(gam-acac),2.0)-0.5)*exp(-(bfactor/4.0f * s*s));
 				// Basically just a CTF weight
-				float v = (pow(cos(gam-acac),2.0))*exp(-(bfactor/4.0f * s*s));
+				float v = (pow((float)cos(gam-acac),2.0f))*exp(-(bfactor/4.0f * s*s));
 				//v*=v;
 				//v=fabs(v);
 				d[x * 2 + ynx] = v;
