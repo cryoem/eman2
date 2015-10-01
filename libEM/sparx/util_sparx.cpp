@@ -18239,8 +18239,8 @@ EMData* Util::muln_img(EMData* img, EMData* img1)
 	float *img1_ptr = img1->get_data();
 	if(img->is_complex()) {
 		for (size_t i=0; i<size; i+=2) {
-			img2_ptr[i]   = img_ptr[i] * img1_ptr[i]   - img_ptr[i+1] * img1_ptr[i+1] ;
-			img2_ptr[i+1] = img_ptr[i] * img1_ptr[i+1] + img_ptr[i+1] * img1_ptr[i] ;
+			img2_ptr[i]   = img_ptr[i] * img1_ptr[i]   + img_ptr[i+1] * img1_ptr[i+1] ;
+			img2_ptr[i+1] = img_ptr[i] * img1_ptr[i+1] - img_ptr[i+1] * img1_ptr[i] ;
 		}
 		img2->set_complex(true);
 		if(img->is_fftodd()) img2->set_fftodd(true); else img2->set_fftodd(false);
