@@ -684,7 +684,8 @@ def compute_sigma(vol, sd, ocup, projdata, partids, partstack, Tracker, myid, ma
 	volf,kb = prep_vol(vol)
 
 	nv = rops(projdata[0]).get_xsize()
-	tsd = model_blank(nv,len(sd))
+	mv = Tracker["constants"]["nnxo"]//2+1
+	tsd = model_blank(mv,len(sd))
 	tocp = model_blank(len(sd))
 
 	for i in xrange(len(projdata)):

@@ -3098,7 +3098,6 @@ int nnSSNR_Reconstructor::insert_padfft_slice( EMData* padfft, const Transform& 
 }
 
 
-#define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
 EMData* nnSSNR_Reconstructor::finish(bool)
 {
 /*
@@ -3249,7 +3248,6 @@ EMData* nnSSNR_Reconstructor::finish(bool)
 
 	return 0;
 }
-#undef  tw
 
 // -----------------------------------------------------------------------------------
 // End of this addition
@@ -3387,23 +3385,23 @@ int nn4_ctfReconstructor::insert_slice(const EMData* const slice, const Transfor
 
 		if( padffted != 0 ) padfft = new EMData(*slice);
 		else                padfft = padfft_slice( slice, t, m_npad );
-		
+
 		float tmp = padfft->get_attr_default("ctf_applied", 0);
 		int   ctf_applied = (int) tmp;
 
 		// Generate 2D CTF (EMData object)
     	ctf_store_real::init( padfft->get_ysize(), padfft->get_attr( "ctf" ) );
     	EMData* ctf2d = ctf_store_real::get_ctf_real(); //This is in 2D projection plane
- 		 		
+
 		int nx=ctf2d->get_xsize(),ny=ctf2d->get_ysize(),nz=ctf2d->get_zsize();
 		float *ctf2d_ptr  = ctf2d->get_data();
-		
+
 		size_t size = (size_t)nx*ny*nz;
 		if (!ctf_applied) {
 			for (int i = 0; i < size; ++i) padfft->cmplx(i) *= ctf2d_ptr[i]; // Multiply padfft by CTF
 		}
 
-		for (int i = 0; i < size; ++i) ctf2d_ptr[i] *= ctf2d_ptr[i];     // Square 2D CTF 
+		for (int i = 0; i < size; ++i) ctf2d_ptr[i] *= ctf2d_ptr[i];     // Square 2D CTF
 		
 		insert_padfft_slice(padfft, ctf2d, t, weight);
 
@@ -3461,7 +3459,6 @@ int nn4_ctfReconstructor::insert_padfft_slice( EMData* padfft, EMData* ctf2d2, c
 	return 0;
 }
 
-#define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
 EMData* nn4_ctfReconstructor::finish(bool)
 {
 	m_volume->set_array_offsets(0, 1, 1);
@@ -3556,7 +3553,6 @@ EMData* nn4_ctfReconstructor::finish(bool)
 
 	return 0;
 }
-#undef  tw
 
 
 
@@ -3710,8 +3706,101 @@ int nn4_ctfwReconstructor::insert_padfft_slice_weighted( EMData* padfft, EMData*
 	return 0;
 }
 
-#define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
 EMData* nn4_ctfwReconstructor::finish(bool)
+{
+	m_volume->set_array_offsets(0, 1, 1);
+	m_wptr->set_array_offsets(0, 1, 1);
+	m_volume->symplane0_ctf(m_wptr);
+
+	int box = 7;
+	int vol = box*box*box;
+	int kc = (box-1)/2;
+	vector< float > pow_a( 3*kc+1, 1.0 );
+	for( unsigned int i=1; i < pow_a.size(); ++i ) pow_a[i] = pow_a[i-1] * exp(m_wghta);
+	pow_a[3*kc]=0.0;
+
+
+	float max = max3d( kc, pow_a );
+	float alpha = ( 1.0f - 1.0f/(float)vol ) / max;
+	float osnr = 1.0f/m_snr;
+
+	// normalize
+	int ix,iy,iz;
+	for (iz = 1; iz <= m_vnzp; iz++) {
+		for (iy = 1; iy <= m_vnyp; iy++) {
+			for (ix = 0; ix <= m_vnxc; ix++) {
+				if ( (*m_wptr)(ix,iy,iz) > 0.0f) {//(*v) should be treated as complex!!
+					float tmp=0.0f;
+					if( m_varsnr )  {
+					    int iyp = (iy<=m_vnyc) ? iy - 1 : iy-m_vnyp-1;
+					    int izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
+						float freq = sqrt( (float)(ix*ix+iyp*iyp+izp*izp) );
+						tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+freq*osnr);//*m_sign;
+					} else  {
+						tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+osnr);//*m_sign;
+					}
+
+			if( m_weighting == ESTIMATE ) {
+				int cx = ix;
+				int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;
+				int cz = (iz<=m_vnzc) ? iz - 1 : iz - 1 - m_vnzp;
+				float sum = 0.0;
+				for( int ii = -kc; ii <= kc; ++ii ) {
+					int nbrcx = cx + ii;
+					if( nbrcx >= m_vnxc ) continue;
+					for( int jj= -kc; jj <= kc; ++jj ) {
+						int nbrcy = cy + jj;
+						if( nbrcy <= -m_vnyc || nbrcy >= m_vnyc ) continue;
+						for( int kk = -kc; kk <= kc; ++kk ) {
+							int nbrcz = cz + jj;
+							if( nbrcz <= -m_vnyc || nbrcz >= m_vnyc ) continue;
+							if( nbrcx < 0 ) {
+								nbrcx = -nbrcx;
+								nbrcy = -nbrcy;
+								nbrcz = -nbrcz;
+							}
+
+							int nbrix = nbrcx;
+							int nbriy = nbrcy >= 0 ? nbrcy + 1 : nbrcy + 1 + m_vnyp;
+							int nbriz = nbrcz >= 0 ? nbrcz + 1 : nbrcz + 1 + m_vnzp;
+							if( (*m_wptr)( nbrix, nbriy, nbriz ) == 0.0 ) {
+								int c = 3*kc+1 - std::abs(ii) - std::abs(jj) - std::abs(kk);
+								sum = sum + pow_a[c];
+					          		  // if(ix%20==0 && iy%20==0 && iz%20==0)
+					           		 //   std::cout << boost::format( "%4d %4d %4d %4d %10.3f" ) % nbrix % nbriy % nbriz % c % sum << std::endl;
+							}
+						}
+					}
+				}
+				float wght = 1.0f / ( 1.0f - alpha * sum );
+/*
+                        if(ix%10==0 && iy%10==0)
+                        {
+                            std::cout << boost::format( "%4d %4d %4d " ) % ix % iy %iz;
+                            std::cout << boost::format( "%10.3f %10.3f %10.3f " )  % tmp % wght % sum;
+                            std::  << boost::format( "%10.3f %10.3e " ) % pow_b[r] % alpha;
+                            std::cout << std::endl;
+                        }
+ */
+				tmp = tmp * wght;
+				}
+				(*m_volume)(2*ix,iy,iz) *= tmp;
+				(*m_volume)(2*ix+1,iy,iz) *= tmp;
+				}
+			}
+		}
+	}
+
+	// back fft
+	m_volume->do_ift_inplace();
+	int npad = m_volume->get_attr("npad");
+	m_volume->depad();
+	circumf( m_volume, npad );
+	m_volume->set_array_offsets( 0, 0, 0 );
+
+	return 0;
+}
+#ifdef False
 {
 	m_volume->set_array_offsets(0, 1, 1);
 	m_wptr->set_array_offsets(0, 1, 1);
@@ -3871,8 +3960,7 @@ for (ix = 0; ix <= m_vnyc+1; ix++)  cout<<"  tau2  "<< ix <<"   "<<count[ix]<<en
 
 	return 0;
 }
-#undef  tw
-
+#endif
 
 
 //####################################################################################
@@ -4074,7 +4162,6 @@ int nn4_ctf_rectReconstructor::insert_padfft_slice( EMData* padfft, const Transf
 	return 0;
 }
 
-#define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
 EMData* nn4_ctf_rectReconstructor::finish(bool)
 {
 	m_volume->set_array_offsets(0, 1, 1);
@@ -4168,7 +4255,6 @@ EMData* nn4_ctf_rectReconstructor::finish(bool)
 	m_volume->set_array_offsets( 0, 0, 0 );
 	return 0;
 }
-#undef  tw
 
 
 
@@ -4327,7 +4413,6 @@ int nnSSNR_ctfReconstructor::insert_padfft_slice( EMData* padfft, const Transfor
 	return 0;
 }
 
-#define  tw(i,j,k)      tw[ i-1 + (j-1+(k-1)*iy)*ix ]
 EMData* nnSSNR_ctfReconstructor::finish(bool)
 {
 /*
@@ -4476,7 +4561,7 @@ EMData* nnSSNR_ctfReconstructor::finish(bool)
 
 	return 0;
 }
-#undef  tw
+
 // -----------------------------------------------------------------------------------
 // End of this addition
 
