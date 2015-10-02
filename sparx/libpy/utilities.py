@@ -4994,11 +4994,11 @@ def get_shrink_data(Tracker, nxinit, partids, partstack, myid, main_node, nproc,
 	txl = float(radius - nxinit//2+1)
 	for im in xrange(nima):
 		data[im] = get_im(Tracker["constants"]["stack"], lpartids[im])
+		st = Util.infomask(data[im], mask2D, False)
+		data[im] = (data[im] - st[0])/st[1]  #  Always normalize the data
 		phi,theta,psi,sx,sy = partstack[im][0], partstack[im][1], partstack[im][2], partstack[im][3], partstack[im][4]
 		if( Tracker["constants"]["CTF"] and Tracker["applyctf"] ):
 			ctf_params = data[im].get_attr("ctf")
-			st = Util.infomask(data[im], mask2D, False)
-			data[im] -= st[0]
 			data[im] = filt_ctf(data[im], ctf_params)
 			data[im].set_attr('ctf_applied', 1)
 		if preshift:

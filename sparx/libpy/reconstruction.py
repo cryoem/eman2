@@ -484,9 +484,6 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, 
 	ll = 0
 	while prjlist.goToNext():
 		prj = prjlist.image()
-		# horatio active_refactoring Jy51i1EwmLD4tWZ9_00000_1
-		# active = prj.get_attr_default('active', 1)
-		# if(active == 1):
 		if ll%100 == 0:  print "  moved  ",ll
 		ll +=1
 		ml = prj.get_attr('groupindex')#int(prj.get_attr('data_path')[4:8])
