@@ -3681,11 +3681,11 @@ int nn4_ctfwReconstructor::insert_slice(const EMData* const slice, const Transfo
 		EMData* padfft = NULL;
 		EMData* sigmasq2;
 		sigmasq2 = slice->get_attr("sigmasq2");
-
+		//cout<<"  size  "<<sigmasq2->get_xsize()<<"   "<<sigmasq2->get_ysize()<<endl;
 		if( padffted != 0 ) padfft = new EMData(*slice);
 		else                padfft = padfft_slice( slice, t, m_npad );
 
-///for (int ix = 0; ix <= 20; ix++) cout <<"  "<<(*sigmasq2)(ix,1) <<"  "<<(*padfft)(ix,1);
+//for (int ix = 0; ix <= 20; ix++) cout <<"  "<<(*sigmasq2)(ix) ;//<<"  "<<(*padfft)(ix,1);
 //cout <<endl;
 		insert_padfft_slice_weighted( padfft, sigmasq2, t, weight );
 

@@ -71,7 +71,7 @@ def insert_slices(reconstructor, proj):
 		# putting params in a list does not seem to be necessary, one could call reconstructor as one goes.
 		xforms.append(xform_proj)
 		#weights.append(proj.get_attr_default("weight" + str(ixform), 1.0))
-		weights.append(1.0))
+		weights.append(1.0)
 	for i in xrange(len(xforms)):
 		reconstructor.insert_slice( proj, xforms[i], weights[i] )
 
