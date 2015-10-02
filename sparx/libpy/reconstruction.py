@@ -70,7 +70,8 @@ def insert_slices(reconstructor, proj):
 			break
 		# putting params in a list does not seem to be necessary, one could call reconstructor as one goes.
 		xforms.append(xform_proj)
-		weights.append(proj.get_attr_default("weight" + str(ixform), 1.0))
+		#weights.append(proj.get_attr_default("weight" + str(ixform), 1.0))
+		weights.append(1.0))
 	for i in xrange(len(xforms)):
 		reconstructor.insert_slice( proj, xforms[i], weights[i] )
 
@@ -484,16 +485,6 @@ def recons3d_4nnw_MPI(myid, prjlist, prevol, symmetry="c1", finfo=None, npad=2, 
 	ll = 0
 	while prjlist.goToNext():
 		prj = prjlist.image()
-		if ll%100 == 0:  print "  moved  ",ll
-		ll +=1
-		ml = prj.get_attr('groupindex')#int(prj.get_attr('data_path')[4:8])
-		prj.set_attr("sigmasq2", models[groupkeys[1].index(ml)])
-		insert_slices(r, prj)
-		if( not (finfo is None) ):
-			nimg += 1
-			info.write("Image %4d inserted.\n" %(nimg) )
-			info.flush()
-
 		if ll%100 == 0:  print "  moved  ",ll
 		ll +=1
 		ml = prj.get_attr('groupindex')#int(prj.get_attr('data_path')[4:8])
