@@ -922,10 +922,30 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 
 	get_region_dims(area, nx, &xlen, ny, &ylen, nz, &zlen);
 
+	bool debug = (getenv("DEBUG_IO") != NULL);
+
+	if (debug) {
+		printf ("-------------- process_region_io --------------\n");
+		printf ("rw, indx, modsiz, nx, ny, nz = %d %d %ld %d %d %d\n",
+					rw_mode, image_index, mode_size, nx, ny, nz);
+		printf ("flip, imtyp, prerow, postrow = %d %d %d %d\n",
+					(int) need_flip, (int) imgtype, pre_row, post_row);
+		printf ("xlen, ylen, zlen = %d %d %d\n", xlen, ylen, zlen);
+
+		if (area != NULL) {
+			printf ("x0, y0, z0, mx, my, mz, ndim = %g %g %g %g %g %g %d\n",
+						area->x_origin(),
+						area->y_origin(),
+						area->z_origin(),
+						area->get_width(),
+						area->get_height(),
+						area->get_depth(),
+						area->get_ndim());
+		}
+	}
+
 	if (area) { // Accommodate for all boundary overlaps of the region
-
 		Vec3i origin = area->get_origin();
-
 
 		fx0 = origin[0]; dx0 = origin[0];
 		fy0 = origin[1]; dy0 = origin[1];
@@ -971,7 +991,7 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 
 		if ((fx0 + xlen)> nx) xlen = nx-fx0;
 		if ((fy0 + ylen)> ny) ylen = ny-fy0;
-		if ((fz0 + zlen)> nz) zlen = nz-fz0;
+		if ((fz0 + zlen)> nz && nz > 1) zlen = nz-fz0;
 
 		// This is fine - the region was entirely outside the image
 
@@ -1012,6 +1032,16 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 	float nxlendata[1];
 	int floatsize = (int) sizeof(float);
 	nxlendata[0] = (float)(nx * floatsize);
+
+	if (debug) {
+		printf ("fz0, dz0, xlen, ylen, zlen = %d %d %d %d %d\n",
+					fz0, dz0, xlen, ylen, zlen);
+		printf ("x_pre_gap, x_post_gap, y_pre_gap, y_post_gap = %d %d %d %d\n",
+					x_pre_gap, x_post_gap, y_pre_gap, y_post_gap);
+		printf ("mem_sec_siz, img_row_siz, are_row_siz, mem_row_siz = %ld %ld %ld %ld\n",
+					memory_sec_size, img_row_size, area_row_size, memory_row_size);
+		printf ("-----------------------------------------------\n");
+	}
 
 	for (int k = dz0; k < (dz0+zlen); k++) {
 		if (y_pre_gap > 0) {
