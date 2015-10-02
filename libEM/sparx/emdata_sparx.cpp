@@ -1830,10 +1830,10 @@ void EMData::onelinenn_ctf(int j, int n, int n2, EMData* w, EMData* bi, const Tr
 //  Helper functions for method nn4_ctfw
 void EMData::onelinenn_ctfw(int j, int n, int n2, EMData* w, EMData* bi, EMData* sigmasq2, const Transform& tf, float weight) {
 //std::cout<<"   onelinenn_ctf  "<<j<<"  "<<n<<"  "<<n2<<"  "<<std::endl;
-//for (int i = 0; i <= 127; i++)  cout <<"  "<<i<<"  "<<(*sigmasq2)(i)<<endl;
+//for (int i = 0; i <= 12; i++)  cout <<"  "<<i<<"  "<<(*sigmasq2)(i)<<endl;
     int nnd4 = n*n/4;
 	int jp = (j >= 0) ? j+1 : n+j+1;
-	//for (int i = 0; i<190; i++) cout <<"  "<<i<<"  "<< (*sigmasq2)(i)<<endl;
+	//for (int i = 0; i<sigmasq2->get_xsize(); i++) cout <<"  "<<i<<"  "<< (*sigmasq2)(i)<<endl;
 	// loop over x
 	for (int i = 0; i <= n2; i++) {
 		int r2 = i*i+j*j;
