@@ -259,10 +259,25 @@ def main():
 				relion_defocusV = float(tokens_line[col_relion_item_defocusV - 1])
 				relion_defocus_angle = float(tokens_line[col_relion_item_defocus_angle - 1])
 				
+				# NOTE: 2015/09/14 Toshio Moriya
+				# Corrected CTF paramter conversion from CTFFIND4 to SXCTER format
+				#
+				# # Pawel Article Version (Currently published)
+				# sparx_defocus = (relion_defocusU + relion_defocusV) / (2 * 10000)   # convert format from RELION to SPARX
+				# sparx_astig_amp = (relion_defocusU - relion_defocusV) / (2 * 10000) # convert format from RELION to SPARX
+				# sparx_astig_angle = 45.0 - relion_defocus_angle # convert format from RELION to SPARX
+				# 
+				# Corrected Version 
+				# The oder of subtraction is swapped from ones in the CTER paper (Penczek, 2014).
 				sparx_defocus = (relion_defocusU + relion_defocusV) / (2 * 10000)   # convert format from RELION to SPARX
-				sparx_astig_amp = (relion_defocusU - relion_defocusV) / (2 * 10000) # convert format from RELION to SPARX
+				sparx_astig_amp = (relion_defocusV - relion_defocusU) / (2 * 10000) # convert format from RELION to SPARX
 				sparx_astig_angle = 45.0 - relion_defocus_angle # convert format from RELION to SPARX
-
+				while sparx_astig_angle  >= 180:
+					sparx_astig_angle -= 180
+				while sparx_astig_angle < 0:
+					sparx_astig_angle += 180
+				assert(sparx_astig_angle < 180 and sparx_astig_angle >= 0)
+				
 				sparx_cs = float(tokens_line[col_relion_item_cs - 1])
 
 				relion_det_pix_size = float(tokens_line[col_relion_item_det_pix_size - 1])
