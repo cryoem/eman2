@@ -3729,7 +3729,7 @@ EMData* nn4_ctfwReconstructor::finish(bool)
 	for (iz = 1; iz <= m_vnzp; iz++) {
 		for (iy = 1; iy <= m_vnyp; iy++) {
 			for (ix = 0; ix <= m_vnxc; ix++) {
-			cout<<"  m_wptr  "<<(*m_wptr)(ix,iy,iz)<<endl;
+			//cout<<"  m_wptr  "<<(*m_wptr)(ix,iy,iz)<<endl;
 				if ( (*m_wptr)(ix,iy,iz) > 0.0f) {//(*v) should be treated as complex!!
 					float tmp=0.0f;
 					if( m_varsnr )  {
