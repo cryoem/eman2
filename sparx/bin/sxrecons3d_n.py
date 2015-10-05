@@ -58,6 +58,7 @@ def main():
 	parser.add_option("--verbose", type="int",          default=0,     help="verbose level: 0 no verbose, 1 verbose" )
 	parser.add_option("--xysize",  type="int",	        default=-1,    help="user expected size at xy direction" )
 	parser.add_option("--zsize",   type="int",	        default=-1,    help="user expected size at z direction" )
+	parser.add_option("--smearstep",   type="float",	default=0.0,   help="Rotational smear step (default 0.0, no smear)" )
 
 	(options,args) = parser.parse_args(arglist[1:])
 
@@ -93,7 +94,8 @@ def main():
 	from applications import recons3d_n
 
 	global_def.BATCH = True
-	recons3d_n(prj_stack, pid_list, vol_stack, options.CTF, options.snr, 1, options.npad, options.sym, options.list, options.group, options.verbose, options.MPI,options.xysize, options.zsize)
+	recons3d_n(prj_stack, pid_list, vol_stack, options.CTF, options.snr, 1, options.npad,\
+		 options.sym, options.list, options.group, options.verbose, options.MPI,options.xysize, options.zsize, options.smearstep)
 	global_def.BATCH = False
 
 	if options.MPI:

@@ -13176,9 +13176,9 @@ def transform2d(stack_data, stack_data_ali, shift = False, ignore_mirror = False
 		data.set_attr("xform.align2d", t)
 		data.write_image(stack_data_ali, im)
 
-def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=4, sym="c1", listfile = "", group = -1, verbose=0, MPI=False,xysize=-1, zsize = -1):
+def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=4, sym="c1", listfile = "", group = -1, verbose=0, MPI=False,xysize=-1, zsize = -1, smearstep = 0.0):
 	if MPI:
-		recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose,xysize, zsize)
+		recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose, xysize, zsize, smearstep)
 		#newrecons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF, snr, 1, npad, sym, listfile, group, verbose,xysize, zsize)
 		return
 
@@ -13203,7 +13203,7 @@ def recons3d_n(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=
 	else:
 		drop_image(vol, vol_stack)
 
-def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=2, sym="c1", listfile="", group=-1, verbose=0,xysize=-1, zsize=-1):
+def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, npad=2, sym="c1", listfile="", group=-1, verbose=0,xysize=-1, zsize=-1, smearstep = 0.0):
 	from reconstruction import recons3d_4nn_ctf_MPI, recons3d_4nn_MPI
 	from utilities      import get_im, drop_image, bcast_number_to_all
 	from string         import replace
@@ -13250,7 +13250,7 @@ def recons3d_n_MPI(prj_stack, pid_list, vol_stack, CTF=False, snr=1.0, sign=1, n
 	prjlist = iterImagesStack(prj_stack, pid_list[image_start:image_end])
 	del pid_list
 
-	if CTF: vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, finfo, npad, xysize, zsize)
+	if CTF: vol = recons3d_4nn_ctf_MPI(myid, prjlist, snr, sign, sym, finfo, npad, xysize, zsize, smearstep = smearstep)
 	else:	vol = recons3d_4nn_MPI(myid, prjlist, sym, finfo, npad, xysize, zsize)
 	if myid == 0 :
 		if(vol_stack[-3:] == "spi"):
