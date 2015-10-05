@@ -288,8 +288,7 @@ def amoeba_multi_level(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itm
 				if i != ssbest and i != ssworst:
 					for j in xrange(nvar):
 						simplex[i][j] = 0.5*simplex[ssbest][j] + 0.5*simplex[i][j]
-						
-				fvalue[i]  = func(simplex[i],data=data)
+					fvalue[i]  = func(simplex[i],data=data)
 				#### <--------->
 			for j in xrange(nvar):
 				pnew[j] = 0.5*simplex[ssbest][j] + 0.5*simplex[ssworst][j]
