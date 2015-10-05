@@ -3795,25 +3795,89 @@ EMData* nn4_ctfwReconstructor::finish(bool)
 	float max = max3d( kc, pow_a );
 	float alpha = ( 1.0f - 1.0f/(float)vol ) / max;
 	float osnr = 1.0f/m_snr;
+ 
+    vector<float> sigma2(m_vnyc+1, 0.0f);
+    vector<float> count(m_vnyc+1, 0.0f);
+
+	int ix,iy,iz;
+	// compute sigma2
+	for (iz = 1; iz <= m_vnzp; iz++) {
+		int   izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
+		float argz = float(izp*izp);
+		for (iy = 1; iy <= m_vnyp; iy++) {
+			int   iyp = (iy<=m_vnyc) ? iy - 1 : iy-m_vnyp-1;
+            float argy = argz + float(iyp*iyp);
+			for (ix = 0; ix <= m_vnxc; ix++) {
+			    if(ix>0 || (izp>=0 && (iyp>=0 || izp!=0))) {  //Skip Friedel related values
+                    float r = std::sqrt(argy + float(ix*ix));
+                    int  ir = int(r);
+                    if (ir <= m_vnyc) {
+                        float frac = r - float(ir);
+                        float qres = 1.0f - frac;
+                        float temp = (*m_wptr)(ix,iy,iz);
+                        //cout<<" WEIGHTS "<<jx<<"  "<<jy<<"  "<<ir<<"  "<<temp<<"  "<<frac<<endl;
+                        //cout<<" WEIGHTS "<<ix<<"  "<<iy-1<<"  "<<iz-1<<"  "<<temp<<"  "<<endl;
+                        sigma2[ir]   += temp*qres;
+                        sigma2[ir+1] += temp*frac;
+                        count[ir]    += qres;
+                        count[ir+1]  += frac;
+                    }
+                }
+            }
+        }
+    }
+    for (ix = 0; ix <= m_vnyc+1; ix++) {
+        if( sigma2[ix] > 0.0f )  sigma2[ix] = count[ix]/sigma2[ix];
+        cout<<"  1/sigma2  "<< ix <<"   "<<sigma2[ix]<<endl;
+    }
+    // now counter will serve to keep fsc-derived stuff
+	//  refvol carries fsc
+    for (ix = 0; ix <= m_vnyc+1; ix++)
+		  count[ix] = Util::get_max(0.0f, Util::get_min( 0.999f, (*m_refvol)(ix) ) );
+    for (ix = 0; ix <= m_vnyc+1; ix++)  count[ix] = count[ix]/(1.0f - count[ix]) * sigma2[ix];
+    for (ix = 0; ix <= m_vnyc+1; ix++)  {
+        if ( count[ix] >0.0f) count[ix] = 1.0f/count[ix];  //fudge?
+    }
+for (ix = 0; ix <= m_vnyc+1; ix++)  cout<<"  tau2  "<< ix <<"   "<<count[ix]<<"  m_wptr  "<<(*m_wptr)(ix,1,1)<<endl;
 
 	// normalize
-	int ix,iy,iz;
 	for (iz = 1; iz <= m_vnzp; iz++) {
+		int   izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
+		float argz = float(izp*izp);
 		for (iy = 1; iy <= m_vnyp; iy++) {
+			int   iyp = (iy<=m_vnyc) ? iy - 1 : iy-m_vnyp-1;
+            float argy = argz + float(iyp*iyp);
 			for (ix = 0; ix <= m_vnxc; ix++) {
+                    float r = std::sqrt(argy + float(ix*ix));
+                    int  ir = int(r);
 			//cout<<"  m_wptr  "<<(*m_wptr)(ix,iy,iz)<<endl;
-				if ( (*m_wptr)(ix,iy,iz) > 0.0f) {//(*v) should be treated as complex!!
+                    if (ir <= m_vnyc) {
+                        float frac = r - float(ir);
+                        float qres = 1.0f - frac;
+                        osnr = qres*count[ir] + frac*count[ir+1];
+                        if(osnr == 0.0f)  osnr = 1.0f/(0.001*(*m_wptr)(ix,iy,iz));
+                        //cout<<"  "<<iz<<"   "<<iy<<"   "<<"   "<<ix<<"   "<<(*m_wptr)(ix,iy,iz)<<"   "<<osnr<<"      "<<(*m_volume)(2*ix,iy,iz)<<"      "<<(*m_volume)(2*ix+1,iy,iz)<<endl;
+ 					    float tmp=((*m_wptr)(ix,iy,iz)+osnr);
+					    //if( m_varsnr )  tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+freq*osnr)*m_sign;
+					    //else {
+					    //cout<<"  "<<iz<<"  "<<iy<<"  "<<"  "<<ix<<"  "<<iz<<"  "<<"  "<<(*m_wptr)(ix,iy,iz)<<"  "<<osnr<<"  "<<endl;
+					    if(tmp>0.0f) {
+					        tmp = (-2*((ix+iy+iz)%2)+1)/tmp;
+
+
+				/*if ( (*m_wptr)(ix,iy,iz) > 0.0f) {//(*v) should be treated as complex!!
 					float tmp=0.0f;
 					if( m_varsnr )  {
 					    int iyp = (iy<=m_vnyc) ? iy - 1 : iy-m_vnyp-1;
 					    int izp = (iz<=m_vnzc) ? iz - 1 : iz-m_vnzp-1;
 						float freq = sqrt( (float)(ix*ix+iyp*iyp+izp*izp) );
-						tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+freq*osnr);//*m_sign;
+						tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+freq*osnr);//   *m_sign;
 					} else  {
-						tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+osnr);//*m_sign;
+						tmp = (-2*((ix+iy+iz)%2)+1)/((*m_wptr)(ix,iy,iz)+osnr);//   *m_sign;
 					}
+				*/
 
-			if( m_weighting == ESTIMATE ) {
+			/*if( m_weighting == ESTIMATE ) {
 				int cx = ix;
 				int cy = (iy<=m_vnyc) ? iy - 1 : iy - 1 - m_vnyp;
 				int cz = (iz<=m_vnzc) ? iz - 1 : iz - 1 - m_vnzp;
@@ -3846,7 +3910,7 @@ EMData* nn4_ctfwReconstructor::finish(bool)
 					}
 				}
 				float wght = 1.0f / ( 1.0f - alpha * sum );
-/*
+/
                         if(ix%10==0 && iy%10==0)
                         {
                             std::cout << boost::format( "%4d %4d %4d " ) % ix % iy %iz;
@@ -3854,11 +3918,15 @@ EMData* nn4_ctfwReconstructor::finish(bool)
                             std::  << boost::format( "%10.3f %10.3e " ) % pow_b[r] % alpha;
                             std::cout << std::endl;
                         }
- */
+ /
 				tmp = tmp * wght;
-				}
+				}*/
 				(*m_volume)(2*ix,iy,iz) *= tmp;
 				(*m_volume)(2*ix+1,iy,iz) *= tmp;
+				} else {
+				(*m_volume)(2*ix,iy,iz)   = 0.0f;
+				(*m_volume)(2*ix+1,iy,iz) = 0.0f;
+				}
 				}
 			}
 		}
@@ -3929,7 +3997,7 @@ EMData* nn4_ctfwReconstructor::finish(bool)
         cout<<"  1/sigma2  "<< ix <<"   "<<sigma2[ix]<<endl;
     }
     // now counter will serve to keep fsc-derived stuff
-
+	//  refvol carries fsc
     for (ix = 0; ix <= m_vnyc+1; ix++)
 		  count[ix] = Util::get_max(0.0f, Util::get_min( 0.999f, (*m_refvol)(ix) ) );
     for (ix = 0; ix <= m_vnyc+1; ix++)  count[ix] = count[ix]/(1.0f - count[ix]) * sigma2[ix];
