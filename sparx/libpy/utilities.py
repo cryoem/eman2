@@ -229,86 +229,88 @@ def amoeba_multi_level(var, scale, func, ftolerance=1.e-4, xtolerance=1.e-4, itm
 	simplex = [0]*(nvar+1)  # set the initial simplex
 	simplex[0] = var[:]
 	for i in xrange(nvar):
-	    simplex[i+1] = var[:]
-	    simplex[i+1][i] += scale[i]
+		simplex[i+1] = var[:]
+		simplex[i+1][i] += scale[i]
 
 	fvalue = []
 	for i in xrange(nsimplex):  # set the function values for the simplex
-	    result, passout = func(simplex[i], data=data)
-	    #print  " amoeba setting ",i,simplex[i],result, passout
-	    fvalue.append([result, passout])
+		result, passout = func(simplex[i], data=data)
+		#print  " amoeba setting ",i,simplex[i],result, passout
+		fvalue.append([result, passout])
 
 	# Ooze the simplex to the maximum
 
 	iteration = 0
 
 	while 1:
-	    # find the index of the best and worst vertices in the simplex
-	    ssworst = 0
-	    ssbest  = 0
-	    for i in xrange(nsimplex):
-		if fvalue[i][0] > fvalue[ssbest][0]:
-		    ssbest = i
-		if fvalue[i][0] < fvalue[ssworst][0]:
-		    ssworst = i
-		    
-	    # get the average of the nsimplex-1 best vertices in the simplex
-	    pavg = [0.0]*nvar
-	    for i in xrange(nsimplex):
-		if i != ssworst:
-		    for j in range(nvar): pavg[j] += simplex[i][j]
-	    for j in xrange(nvar): pavg[j] = pavg[j]/nvar # nvar is nsimplex-1
-	    simscale = 0.0
-	    for i in range(nvar):
-		simscale += abs(pavg[i]-simplex[ssworst][i])/scale[i]
-	    simscale = simscale/nvar
-
-	    # find the range of the function values
-	    fscale = (abs(fvalue[ssbest][0])+abs(fvalue[ssworst][0]))/2.0
-	    if fscale != 0.0:
-		frange = abs(fvalue[ssbest][0]-fvalue[ssworst][0])/fscale
-	    else:
-		frange = 0.0  # all the fvalues are zero in this case
-		
-	    # have we converged?
-	    if (((ftolerance <= 0.0 or frange < ftolerance) and    # converged to maximum
-		 (xtolerance <= 0.0 or simscale < xtolerance)) or  # simplex contracted enough
-		(itmax and iteration >= itmax)):	     # ran out of iterations
-		return simplex[ssbest],fvalue[ssbest][0],iteration,fvalue[ssbest][1]
-
-	    # reflect the worst vertex
-	    pnew = [0.0]*nvar
-	    for i in xrange(nvar):
-		pnew[i] = 2.0*pavg[i] - simplex[ssworst][i]
-	    fnew = func(pnew,data=data)
-	    if fnew[0] <= fvalue[ssworst][0]:
-		# the new vertex is worse than the worst so shrink
-		# the simplex.
+		# find the index of the best and worst vertices in the simplex
+		ssworst = 0
+		ssbest  = 0
 		for i in xrange(nsimplex):
-		    if i != ssbest and i != ssworst:
-			for j in xrange(nvar):
-			    simplex[i][j] = 0.5*simplex[ssbest][j] + 0.5*simplex[i][j]
-	    		fvalue[i]  = func(simplex[i],data=data)
-		for j in xrange(nvar):
-		    pnew[j] = 0.5*simplex[ssbest][j] + 0.5*simplex[ssworst][j]  	    
-		fnew = func(pnew, data=data)
-	    elif fnew[0] >= fvalue[ssbest][0]:
-		# the new vertex is better than the best so expand
-		# the simplex.
-		pnew2 = [0.0]*nvar
+			if fvalue[i][0] > fvalue[ssbest][0]:
+				ssbest = i
+			if fvalue[i][0] < fvalue[ssworst][0]:
+				ssworst = i
+		    
+		# get the average of the nsimplex-1 best vertices in the simplex
+		pavg = [0.0]*nvar
+		for i in xrange(nsimplex):
+			if i != ssworst:
+				for j in range(nvar): pavg[j] += simplex[i][j]
+		for j in xrange(nvar): pavg[j] = pavg[j]/nvar # nvar is nsimplex-1
+		simscale = 0.0
+		for i in range(nvar):
+			simscale += abs(pavg[i]-simplex[ssworst][i])/scale[i]
+		simscale = simscale/nvar
+
+		# find the range of the function values
+		fscale = (abs(fvalue[ssbest][0])+abs(fvalue[ssworst][0]))/2.0
+		if fscale != 0.0:
+			frange = abs(fvalue[ssbest][0]-fvalue[ssworst][0])/fscale
+		else:
+			frange = 0.0  # all the fvalues are zero in this case
+		
+		# have we converged?
+		if (((ftolerance <= 0.0 or frange < ftolerance) and    # converged to maximum
+		(xtolerance <= 0.0 or simscale < xtolerance)) or  # simplex contracted enough
+		(itmax and iteration >= itmax)):	     # ran out of iterations
+			return simplex[ssbest],fvalue[ssbest][0],iteration,fvalue[ssbest][1]
+
+		# reflect the worst vertex
+		pnew = [0.0]*nvar
 		for i in xrange(nvar):
-		    pnew2[i] = 3.0*pavg[i] - 2.0*simplex[ssworst][i]
-		fnew2 = func(pnew2,data=data)
-		if fnew2[0] > fnew[0]:
-		    # accept the new vertex in the simplexe
-		    pnew = pnew2
-		    fnew = fnew2
-	    # replace the worst vertex with the new vertex
-	    for i in xrange(nvar):
-		simplex[ssworst][i] = pnew[i]
-	    fvalue[ssworst] = fnew
-	    iteration += 1
-	    #print "Iteration:",iteration,"  ",ssbest,"  ",fvalue[ssbest]
+			pnew[i] = 2.0*pavg[i] - simplex[ssworst][i]
+		fnew = func(pnew,data=data)
+		if fnew[0] <= fvalue[ssworst][0]:
+			# the new vertex is worse than the worst so shrink
+			# the simplex.
+			for i in xrange(nsimplex):
+				if i != ssbest and i != ssworst:
+					for j in xrange(nvar):
+						simplex[i][j] = 0.5*simplex[ssbest][j] + 0.5*simplex[i][j]
+						
+				fvalue[i]  = func(simplex[i],data=data)
+				#### <--------->
+			for j in xrange(nvar):
+				pnew[j] = 0.5*simplex[ssbest][j] + 0.5*simplex[ssworst][j]
+			fnew = func(pnew, data=data)
+		elif fnew[0] >= fvalue[ssbest][0]:
+			# the new vertex is better than the best so expand
+			# the simplex.
+			pnew2 = [0.0]*nvar
+			for i in xrange(nvar):
+				pnew2[i] = 3.0*pavg[i] - 2.0*simplex[ssworst][i]
+			fnew2 = func(pnew2,data=data)
+			if fnew2[0] > fnew[0]:
+				# accept the new vertex in the simplexe
+				pnew = pnew2
+				fnew = fnew2
+		# replace the worst vertex with the new vertex
+		for i in xrange(nvar):
+			simplex[ssworst][i] = pnew[i]
+		fvalue[ssworst] = fnew
+		iteration += 1
+		#print "Iteration:",iteration,"  ",ssbest,"  ",fvalue[ssbest]
 
 '''
 def golden(func, args=(), brack=None, tol=1.e-4, full_output=0):
