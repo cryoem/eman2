@@ -3832,11 +3832,12 @@ EMData* nn4_ctfwReconstructor::finish(bool)
     }
     // now counter will serve to keep fsc-derived stuff
 	//  refvol carries fsc
+	float fudge = m_volume->get_attr("fudge");
     for (ix = 0; ix <= m_vnyc+1; ix++)
 		  count[ix] = Util::get_max(0.0f, Util::get_min( 0.999f, (*m_refvol)(ix) ) );
     for (ix = 0; ix <= m_vnyc+1; ix++)  count[ix] = count[ix]/(1.0f - count[ix]) * sigma2[ix];
     for (ix = 0; ix <= m_vnyc+1; ix++)  {
-        if ( count[ix] >0.0f) count[ix] = 1.0f/count[ix];  //fudge?
+        if ( count[ix] >0.0f) count[ix] = fudge/count[ix];  //fudge?
     }
 for (ix = 0; ix <= m_vnyc+1; ix++)  cout<<"  tau2  "<< ix <<"   "<<count[ix]<<"  m_wptr  "<<(*m_wptr)(ix,1,1)<<endl;
 
